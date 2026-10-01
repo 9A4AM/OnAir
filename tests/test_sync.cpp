@@ -70,6 +70,13 @@ static bool run(const Case& c, bool verbose) {
         chOk = best >= 0 && std::abs((best - main) - c.echoDelay) <= 2 && std::fabs(t.irDb[best] + c.echoDb) < 3.0;
         if (!chOk && verbose) printf("  echo check: main %d best %d (delta %d, want %d) level %.1f want %.1f\n", main, best, best - main, c.echoDelay, best >= 0 ? t.irDb[best] : 0.f, -c.echoDb);
     }
+    // phase 2: L1 signalling
+    const L1Pre& gp = gen.l1pre();
+    bool l1Ok = t.l1preOk && t.l1pre.numDataSyms == gp.numDataSyms && t.l1pre.guardInterval == c.gi && t.l1pre.pilotPattern == gen.params().pp &&
+                t.l1pre.bwtExt == (c.ext ? 1 : 0) && t.l1pre.cellId == gp.cellId && t.l1pre.s2 == gp.s2 && t.l1pre.postScrambled == gp.postScrambled;
+    bool postOk = t.l1postOk && t.l1post.numPlp == 1 && t.l1post.plps.size() == 1 && t.l1post.plps[0].mod == 2 && t.l1post.rf[0].freq == 522000000u;
+    if (!l1Ok || !postOk) { if (verbose || true) printf("  L1 check: pre=%d post=%d (pre fail %llu, post fail %llu) numData %d/%d\n", t.l1preOk, t.l1postOk, (unsigned long long)t.l1preBad, (unsigned long long)t.l1postBad, t.l1pre.numDataSyms, gp.numDataSyms); }
+    chOk = chOk && l1Ok && postOk;
     bool ok = chOk && t.p1.valid && t.p1.s1 == 0 && t.p1.s2field1 == c.s2 && t.state == 2 && t.giIdx == c.gi &&
               std::fabs(t.cfoHz - c.cfo) < 0.05 * fn / fm->n && t.fftN == fm->n;
     if (verbose || !ok)

@@ -1,4 +1,5 @@
 #include "dect2/t2gen.h"
+#include "dect2/t2interleave.h"
 #include <Accelerate/Accelerate.h>
 #include <cmath>
 #include <cstring>
@@ -81,6 +82,29 @@ T2Generator::T2Generator(const TxParams& p) : i_(new Impl), p_(p) {
         symbols_ = std::min(symbols_, 400);
     }
     buildP1(*i_, p.s1, (p.s2field1 << 1) | (p.mixed ? 1 : 0));
+
+    // L1 signalling for this configuration
+    pre_.type = 0;
+    pre_.bwtExt = pc.ext ? 1 : 0;
+    pre_.s1 = p.s1;
+    pre_.s2 = (p.s2field1 << 1) | (p.mixed ? 1 : 0);
+    pre_.guardInterval = p.giIdx;
+    pre_.papr = p.tr ? 2 : 0;
+    pre_.l1Mod = p.l1Mod;
+    pre_.pilotPattern = p_.pp;
+    pre_.cellId = p.cellId; pre_.networkId = p.networkId; pre_.systemId = p.systemId;
+    pre_.numFrames = 2;
+    pre_.numDataSyms = symbols_ - nP2_;
+    pre_.numRf = 1;
+    pre_.version = 2;
+    pre_.postScrambled = p.l1Scrambled ? 1 : 0;
+    post_.rf.resize(1);
+    post_.rf[0].freq = 522000000;
+    post_.plps.resize(1);
+    post_.plps[0].id = 0; post_.plps[0].type = 1; post_.plps[0].mod = 2; post_.plps[0].cod = 2; post_.plps[0].fecType = 1;
+    post_.plps[0].numBlocksMax = 100; post_.plps[0].groupId = 1; post_.plps[0].timeIlLength = 3; post_.plps[0].plpMode = 1;
+    post_.dyn.resize(1);
+    post_.dyn[0].numBlocks = 100;
 }
 
 T2Generator::~T2Generator() {
@@ -100,8 +124,32 @@ void T2Generator::nextFrame(std::vector<cf32>& out) {
     const float a = 0.70710678f;
     const float norm = 5.0f / std::sqrt(27.0f * (float)k_);
     std::vector<uint8_t> types;
+    // ---- P2 payload: L1-pre, L1-post, then filler, distributed over the P2 symbols and frequency interleaved
+    post_.frameIdx = frameNo_ & 0xff;
+    L1Pre pre = pre_;
+    auto postCells = encodeL1Post(pre, post_, nP2_, false);
+    auto preCells = encodeL1Pre(pre);
+    const int cP2 = pm_->p2DataCells();
+    std::vector<cf32> stream;
+    stream.insert(stream.end(), preCells.begin(), preCells.end());
+    stream.insert(stream.end(), postCells.begin(), postCells.end());
+    while ((int)stream.size() < nP2_ * cP2) {
+        uint32_t r = I.rng();
+        stream.push_back(cf32((r & 1) ? 0.70710678f : -0.70710678f, (r & 2) ? 0.70710678f : -0.70710678f));
+    }
+    std::vector<std::vector<cf32>> p2sym;
+    p2Distribute(stream, nP2_, cP2, (int)preCells.size(), (int)postCells.size(), p2sym);
+    for (int l = 0; l < nP2_; l++) {
+        std::vector<int> H;
+        freqInterleaverSeq(p_.s2field1, cP2, (l & 1) != 0, H);
+        std::vector<cf32> out(cP2);
+        for (int j = 0; j < cP2; j++) out[j] = p2sym[l][H[j]];
+        p2sym[l] = out;
+    }
+    frameNo_++;
     for (int s = 0; s < symbols_; s++) {
         pm_->symbolTypes(s, symbols_, types);
+        int p2idx = 0;
         std::fill(I.re.begin(), I.re.end(), 0.f);
         std::fill(I.im.begin(), I.im.end(), 0.f);
         for (int k = 0; k < k_; k++) {
@@ -109,9 +157,15 @@ void T2Generator::nextFrame(std::vector<cf32>& out) {
             size_t bin = (size_t)((f + n_) % n_);
             switch (types[k]) {
             case kCellData: {
-                uint32_t r = I.rng();
-                I.re[bin] = (r & 1) ? a : -a;
-                I.im[bin] = (r & 2) ? a : -a;
+                if (s < nP2_) {
+                    cf32 v = p2sym[s][p2idx++];
+                    I.re[bin] = v.real();
+                    I.im[bin] = v.imag();
+                } else {
+                    uint32_t r = I.rng();
+                    I.re[bin] = (r & 1) ? a : -a;
+                    I.im[bin] = (r & 2) ? a : -a;
+                }
             } break;
             case kCellP2Papr:
             case kCellTrPapr: break;

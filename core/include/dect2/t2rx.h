@@ -3,6 +3,7 @@
 #pragma once
 #include "ring.h"
 #include "t2.h"
+#include "t2l1.h"
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -61,6 +62,13 @@ struct RxTelemetry {
     int snrStep = 3;              // carriers between points
     float p2SnrDb = 0;
     std::vector<cf32> eqCells;    // equalised P2 data cells (subsampled)
+
+    // ---- L1 signalling
+    bool l1preOk = false, l1postOk = false;
+    L1Pre l1pre;
+    L1Post l1post;
+    uint64_t l1preGood = 0, l1preBad = 0, l1postGood = 0, l1postBad = 0;
+    int l1Iters = 0;
 };
 
 constexpr int kTraceDecim = 512;

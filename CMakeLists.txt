@@ -13,7 +13,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(HACKRF REQUIRED IMPORTED_TARGET libhackrf)
 pkg_check_modules(GLFW REQUIRED IMPORTED_TARGET glfw3)
 
-add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/t2_tables.cpp core/src/t2gen.cpp core/src/t2rx.cpp core/src/t2pilots.cpp core/src/t2ofdm.cpp core/src/t2_pilot_tables.cpp)
+add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/t2_tables.cpp core/src/t2gen.cpp core/src/t2rx.cpp core/src/t2pilots.cpp core/src/t2ofdm.cpp core/src/ldpc.cpp core/src/t2l1.cpp core/src/t2interleave.cpp core/src/t2_pilot_tables.cpp)
 target_include_directories(dect2core PUBLIC core/include)
 target_link_libraries(dect2core PUBLIC PkgConfig::HACKRF "-framework Accelerate")
 
@@ -33,3 +33,7 @@ add_executable(test_sync tests/test_sync.cpp)
 target_link_libraries(test_sync PRIVATE dect2core)
 enable_testing()
 add_test(NAME sync COMMAND test_sync)
+
+add_executable(test_l1 tests/test_l1.cpp)
+target_link_libraries(test_l1 PRIVATE dect2core)
+add_test(NAME l1 COMMAND test_l1)
