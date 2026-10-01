@@ -4,6 +4,8 @@
 #include "ring.h"
 #include "t2.h"
 #include "t2l1.h"
+#include "t2plp.h"
+#include <functional>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -77,6 +79,20 @@ struct RxTelemetry {
     std::vector<cf32> eqData;     // equalised data cells of the last frame (subsampled)
     std::vector<float> dataSnrCarrier; // per pilot-grid point
     uint64_t dataFrames = 0;
+
+    // ---- PLP decoding (FEC)
+    bool plpValid = false;       // a PLP was selected and submitted at least once
+    int plpId = 0;
+    PlpFec plpFec;
+    int plpBlocks = 0;           // FEC blocks in the last decoded frame
+    uint64_t plpFrames = 0, plpFramesDropped = 0;
+    uint64_t blocksOk = 0, blocksBad = 0, headersOk = 0;
+    double plpMerDb = 0, plpPreBer = 0, plpIters = 0, plpDecodeMs = 0;
+    uint64_t plpBchCorrected = 0;
+    std::vector<cf32> plpConst;
+    std::vector<uint8_t> plpConstErr;
+    int plpHeaderUpl = 0, plpHeaderDfl = 0, plpHeaderSyncd = 0;
+    int plpSkipped = 0;          // frames skipped (unsupported TI type, missing cells, ...)
 };
 
 constexpr int kTraceDecim = 512;
@@ -89,6 +105,8 @@ public:
     void reset();
     void feed(const cf32* x, size_t n);
     bool telemetry(RxTelemetry& out, uint64_t lastSeq);
+    // Called (on the receiver thread) for every decoded PLP frame, in order.
+    void setPlpCallback(std::function<void(const PlpResult&)> cb);
 
 private:
     struct Impl;

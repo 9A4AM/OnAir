@@ -118,6 +118,19 @@ struct T2Receiver::Impl {
     bool chDelayKnown = false;
     std::vector<float> dataSnrCar;
     uint64_t dataFrames = 0;
+    // PLP
+    PlpDecoder plpDec;
+    std::function<void(const PlpResult&)> plpCb;
+    std::vector<std::vector<cf32>> p2Sym, p2G2;
+    uint64_t frameCounter = 0;
+    bool plpValid = false;
+    int plpId = 0, plpBlocks = 0, plpSkipped = 0;
+    PlpFec plpFec;
+    uint64_t plpFrames = 0, blocksOk = 0, blocksBad = 0, headersOk = 0, plpBchCorr = 0;
+    double plpMer = 0, plpPre = 0, plpIters = 0, plpMs = 0;
+    std::vector<cf32> plpConst;
+    std::vector<uint8_t> plpConstErr;
+    int hUpl = 0, hDfl = 0, hSyncd = 0;
 
     // ---- outputs
     std::mutex mu;
@@ -586,7 +599,7 @@ struct T2Receiver::Impl {
 
         // equalised P2 data cells, per symbol in carrier order, then frequency de-interleaved
         const int cP2 = pm.p2DataCells();
-        std::vector<std::vector<cf32>> sym(nP2);
+        std::vector<std::vector<cf32>> sym(nP2), gsym(nP2);
         std::vector<cf32> eqAll;
         for (int l = 0; l < nP2; l++) {
             pm.symbolTypes(l, nP2 + 2, types);
@@ -597,6 +610,12 @@ struct T2Receiver::Impl {
             std::vector<int> Hi;
             freqInterleaverSeq(fftCode, cP2, (l & 1) != 0, Hi);
             sym[l].assign(cP2, cf32(0, 0));
+            gsym[l].assign(cP2, cf32(0, 0));
+            {
+                int jj = 0;
+                for (int kk = 0; kk < K; kk++)
+                    if (types[kk] == kCellData && jj < cP2) { gsym[l][Hi[jj]] = cf32(std::norm(H[kk]), 0); jj++; }
+            }
             for (int j = 0; j < cP2 && j < (int)rx.size(); j++) sym[l][Hi[j]] = rx[j];
             eqAll.insert(eqAll.end(), rx.begin(), rx.end());
         }
@@ -625,7 +644,7 @@ struct T2Receiver::Impl {
         extDetected = ext;
         chH = H; chK = K; chValid = true;
         l1preOk = preOk; l1postOk = postOk;
-        if (preOk) { l1pre = pre; l1preGood++; } else l1preBad++;
+        if (preOk) { l1pre = pre; l1preGood++; p2Sym = sym; p2G2.assign(nP2, {}); for (int l = 0; l < nP2; l++) { p2G2[l].resize(cP2); for (int j = 0; j < cP2; j++) p2G2[l][j] = gsym[l][j].real(); } } else l1preBad++;
         if (postOk) { l1post = post; l1postGood++; } else if (preOk) l1postBad++;
         l1N0 = n0;
         snrDbv.clear();
@@ -702,6 +721,61 @@ struct T2Receiver::Impl {
         if (!extPossible) { p2Hypothesis(false, true); return; }
         if (p2Hypothesis(guess, false)) return;
         p2Hypothesis(!guess, false) || p2Hypothesis(guess, true);
+    }
+
+    // Assemble the frame's cell stream, cut out the PLP and hand it to the decoder threads.
+    void submitPlp(const std::vector<cf32>& dstream, const std::vector<float>& dn0, double sigma2) {
+        const int cP2 = (int)p2Sym[0].size();
+        const int nPre = 1840, nPost = l1pre.postSize;
+        // pick the data PLP (first non-common PLP, else the first)
+        int sel = 0;
+        for (size_t i = 0; i < l1post.plps.size(); i++) if (l1post.plps[i].type != 0) { sel = (int)i; break; }
+        const L1PlpConf& pc = l1post.plps[sel];
+        if (sel >= (int)l1post.dyn.size()) return;
+        const L1PlpDyn& dy = l1post.dyn[sel];
+        if (pc.timeIlType != 0) { plpSkipped++; return; } // inter-frame time interleaving not implemented
+        PlpJob job;
+        job.frameNo = ++frameCounter;
+        job.plpId = pc.id;
+        job.fec.shortFrame = pc.fecType == 0;
+        job.fec.rate = pc.cod;
+        job.fec.mod = pc.mod;
+        job.fec.rotation = pc.rotation != 0;
+        job.numBlocks = dy.numBlocks;
+        job.tiBlocks = pc.timeIlLength;
+        FecDims d = fecDims(job.fec);
+        if (!d.ok || job.numBlocks <= 0) { plpSkipped++; return; }
+        std::vector<cf32> stream, g2s;
+        p2Gather(p2Sym, nP2, cP2, nPre, nPost, stream);
+        {
+            std::vector<std::vector<cf32>> gs(nP2);
+            for (int l = 0; l < nP2; l++) { gs[l].resize(cP2); for (int j = 0; j < cP2; j++) gs[l][j] = p2G2[l][j]; }
+            p2Gather(gs, nP2, cP2, nPre, nPost, g2s);
+        }
+        std::vector<float> n0s(stream.size());
+        for (size_t i = 0; i < stream.size(); i++) n0s[i] = (float)(sigma2 / (2.0 * std::max(1e-12f, g2s[i].real())));
+        stream.insert(stream.end(), dstream.begin(), dstream.end());
+        n0s.insert(n0s.end(), dn0.begin(), dn0.end());
+        const size_t start = (size_t)nPre + nPost + dy.start;
+        const size_t need = (size_t)job.numBlocks * d.cellsPerBlock;
+        if (start + need > stream.size()) { plpSkipped++; return; }
+        job.cells.assign(stream.begin() + start, stream.begin() + start + need);
+        job.n0.assign(n0s.begin() + start, n0s.begin() + start + need);
+        plpValid = true; plpId = pc.id; plpFec = job.fec; plpBlocks = job.numBlocks;
+        plpDec.submit(std::move(job));
+    }
+
+    void pollPlp() {
+        PlpResult r;
+        while (plpDec.poll(r)) {
+            plpFrames++;
+            blocksOk += r.blocksOk; blocksBad += r.bchFailed; headersOk += r.headerOk; plpBchCorr += r.bchCorrected;
+            plpMer = r.blocksOk ? r.merDb : plpMer;
+            plpPre = r.preBer; plpIters = r.avgLdpcIters; plpMs = r.decodeMs;
+            if (!r.constellation.empty()) { plpConst = r.constellation; plpConstErr = r.constErr; }
+            for (auto& f : r.frames) if (f.header.crcOk) { hUpl = f.header.upl; hDfl = f.header.dfl; hSyncd = f.header.syncd; break; }
+            if (plpCb) plpCb(r);
+        }
     }
 
     // Scattered-pilot channel estimation for the data / frame-closing symbols of the frame just received.
@@ -882,6 +956,15 @@ struct T2Receiver::Impl {
         const int back = std::min(G / 4, 32);
         std::vector<cf32> all;
         const int firstData = nP2;
+        // noise power of the raw FFT cells: variance of the pilot observations times the pilot power
+        double sigma2 = 0;
+        {
+            double sn = 0; int cn = 0;
+            for (int n = 0; n < M; n++) if (varN[n] > 0) { sn += varN[n]; cn++; }
+            sigma2 = cn ? sn / cn * amp2 : 0;
+        }
+        std::vector<cf32> dstream; std::vector<float> dn0;
+        const bool wantPlp = l1postOk && !l1post.plps.empty() && !p2Sym.empty() && sigma2 > 0;
         for (int l = firstData; l < L; l++) {
             for (int n = 0; n < M; n++) {
                 auto& o = obs[n];
@@ -903,8 +986,28 @@ struct T2Receiver::Impl {
             }
             for (int kk = 0; kk < K; kk++)
                 if (types[l][kk] == kCellData) all.push_back(frameCells[l][off + kk] / H[kk]);
+            if (wantPlp) {
+                int cD = 0;
+                for (int kk = 0; kk < K; kk++) cD += types[l][kk] == kCellData;
+                std::vector<int> Hi;
+                freqInterleaverSeq(fftCode, cD, (l & 1) != 0, Hi);
+                std::vector<cf32> orig(cD);
+                std::vector<float> on0(cD);
+                int jj = 0;
+                for (int kk = 0; kk < K; kk++)
+                    if (types[l][kk] == kCellData) {
+                        cf32 hh = H[kk];
+                        float g2 = std::max(1e-12f, std::norm(hh));
+                        orig[Hi[jj]] = frameCells[l][off + kk] * std::conj(hh) / g2;
+                        on0[Hi[jj]] = (float)(sigma2 / (2.0 * g2));
+                        jj++;
+                    }
+                dstream.insert(dstream.end(), orig.begin(), orig.end());
+                dn0.insert(dn0.end(), on0.begin(), on0.end());
+            }
             if (l == firstData + (L - firstData) / 2) { chH = H; chK = K; } // keep a mid-frame channel snapshot for display
         }
+        if (wantPlp) submitPlp(dstream, dn0, sigma2);
         eqData.clear();
         size_t step = std::max<size_t>(1, all.size() / 6000);
         for (size_t i = 0; i < all.size(); i += step) eqData.push_back(all[i]);
@@ -1102,6 +1205,13 @@ struct T2Receiver::Impl {
         t.eqData = eqData;
         t.dataSnrCarrier = dataSnrCar;
         t.dataFrames = dataFrames;
+        pollPlp();
+        t.plpValid = plpValid; t.plpId = plpId; t.plpFec = plpFec; t.plpBlocks = plpBlocks;
+        t.plpFrames = plpFrames; t.plpFramesDropped = plpDec.dropped();
+        t.blocksOk = blocksOk; t.blocksBad = blocksBad; t.headersOk = headersOk; t.plpBchCorrected = plpBchCorr;
+        t.plpMerDb = plpMer; t.plpPreBer = plpPre; t.plpIters = plpIters; t.plpDecodeMs = plpMs;
+        t.plpConst = plpConst; t.plpConstErr = plpConstErr;
+        t.plpHeaderUpl = hUpl; t.plpHeaderDfl = hDfl; t.plpHeaderSyncd = hSyncd; t.plpSkipped = plpSkipped;
         if (dataValid) t.snrStep = dataDx;
     }
 };
@@ -1135,6 +1245,8 @@ void T2Receiver::feed(const cf32* x, size_t n) {
     else I.buf.insert(I.buf.end(), x, x + n);
     I.run();
 }
+
+void T2Receiver::setPlpCallback(std::function<void(const PlpResult&)> cb) { p_->plpCb = std::move(cb); }
 
 bool T2Receiver::telemetry(RxTelemetry& out, uint64_t lastSeq) {
     Impl& I = *p_;
