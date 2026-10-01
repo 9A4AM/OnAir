@@ -13,7 +13,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(HACKRF REQUIRED IMPORTED_TARGET libhackrf)
 pkg_check_modules(GLFW REQUIRED IMPORTED_TARGET glfw3)
 
-add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/t2_tables.cpp core/src/t2gen.cpp core/src/t2rx.cpp core/src/t2pilots.cpp core/src/t2ofdm.cpp core/src/ldpc.cpp core/src/t2l1.cpp core/src/t2interleave.cpp core/src/t2fec_tables.cpp core/src/t2fec.cpp core/src/t2plp.cpp core/src/t2_pilot_tables.cpp)
+add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/t2_tables.cpp core/src/t2gen.cpp core/src/t2rx.cpp core/src/t2pilots.cpp core/src/t2ofdm.cpp core/src/ldpc.cpp core/src/t2l1.cpp core/src/t2interleave.cpp core/src/t2fec_tables.cpp core/src/t2fec.cpp core/src/t2plp.cpp core/src/resampler.cpp core/src/t2_pilot_tables.cpp)
 target_include_directories(dect2core PUBLIC core/include)
 target_link_libraries(dect2core PUBLIC PkgConfig::HACKRF "-framework Accelerate" pthread)
 

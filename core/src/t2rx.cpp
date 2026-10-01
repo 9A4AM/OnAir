@@ -1,5 +1,6 @@
 #include "dect2/t2rx.h"
 #include "dect2/t2ofdm.h"
+#include "dect2/resampler.h"
 #include "dect2/t2pilots.h"
 #include "dect2/t2l1.h"
 #include "dect2/t2interleave.h"
@@ -39,8 +40,8 @@ struct T2Receiver::Impl {
     // ---- configuration
     double inRate = 0, fn = 0;
     bool decimate = false, rateOk = true;
-    std::vector<float> decTaps;
-    std::vector<cf32> decIn;
+    RationalResampler resampler;
+    std::vector<cf32> rsOut;
 
     // ---- native-rate buffer
     std::vector<cf32> buf;
@@ -145,7 +146,7 @@ struct T2Receiver::Impl {
     }
 
     void resetAll() {
-        decIn.clear();
+        resampler.reset();
         buf.clear();
         base = 0;
         scanPos = 0;
@@ -174,44 +175,6 @@ struct T2Receiver::Impl {
         p2cells.clear(); chValid = false; chH.clear(); chMag.clear(); chPh.clear(); irDb.clear(); snrDbv.clear(); eqP2.clear();
         l1pre = L1Pre(); l1post = L1Post(); l1preOk = l1postOk = false; l1preGood = l1preBad = l1postGood = l1postBad = 0;
         frameCells.clear(); dataValid = false; eqData.clear(); dataSnrCar.clear(); dataFrames = 0;
-    }
-
-    // ------------------------------------------------------------ decimation (2x -> 1x)
-    void designDecimator() {
-        const int taps = 63;
-        decTaps.assign(taps, 0.f);
-        const double fc = 0.25, beta = 6.0;
-        auto i0 = [](double x) {
-            double s = 1, t = 1;
-            for (int k = 1; k < 30; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; }
-            return s;
-        };
-        double sum = 0;
-        for (int i = 0; i < taps; i++) {
-            double m = i - (taps - 1) / 2.0;
-            double sinc = m == 0 ? 2 * fc : std::sin(kTwoPi * fc * m) / (M_PI * m);
-            double r = 2.0 * i / (taps - 1) - 1.0;
-            double w = i0(beta * std::sqrt(std::max(0.0, 1 - r * r))) / i0(beta);
-            decTaps[i] = (float)(sinc * w);
-            sum += decTaps[i];
-        }
-        for (auto& t : decTaps) t = (float)(t / sum);
-    }
-
-    void decimateAppend(const cf32* x, size_t n) {
-        decIn.insert(decIn.end(), x, x + n);
-        const size_t taps = decTaps.size();
-        if (decIn.size() < taps + 1) return;
-        size_t nOut = (decIn.size() - taps) / 2 + 1;
-        size_t used = 2 * (nOut - 1) + taps;
-        std::vector<float> re(used), im(used), ore(nOut), oim(nOut);
-        for (size_t i = 0; i < used; i++) { re[i] = decIn[i].real(); im[i] = decIn[i].imag(); }
-        vDSP_desamp(re.data(), 2, decTaps.data(), ore.data(), nOut, taps);
-        vDSP_desamp(im.data(), 2, decTaps.data(), oim.data(), nOut, taps);
-        size_t old = buf.size();
-        buf.resize(old + nOut);
-        for (size_t i = 0; i < nOut; i++) buf[old + i] = cf32(ore[i], oim[i]);
-        decIn.erase(decIn.begin(), decIn.begin() + 2 * nOut);
     }
 
     // ------------------------------------------------------------ P1 detection
@@ -1216,7 +1179,7 @@ struct T2Receiver::Impl {
     }
 };
 
-T2Receiver::T2Receiver() : p_(new Impl) { p_->designDecimator(); }
+T2Receiver::T2Receiver() : p_(new Impl) {}
 T2Receiver::~T2Receiver() = default;
 
 void T2Receiver::configure(double inputRateHz, double bandwidthMhz) {
@@ -1224,12 +1187,8 @@ void T2Receiver::configure(double inputRateHz, double bandwidthMhz) {
     std::lock_guard<std::mutex> lk(I.mu);
     I.inRate = inputRateHz;
     I.fn = nativeRateHz(bandwidthMhz);
-    double r = inputRateHz / I.fn;
-    I.decimate = false;
-    I.rateOk = true;
-    if (std::fabs(r - 1.0) < 0.01) {}
-    else if (std::fabs(r - 2.0) < 0.02) I.decimate = true;
-    else I.rateOk = false;
+    I.rateOk = I.resampler.configure(inputRateHz, I.fn) && inputRateHz >= 7.9e6 * (bandwidthMhz / 8.0);
+    I.decimate = I.rateOk && !I.resampler.passthrough();
     I.resetAll();
 }
 
@@ -1241,7 +1200,7 @@ void T2Receiver::reset() {
 void T2Receiver::feed(const cf32* x, size_t n) {
     Impl& I = *p_;
     if (!I.rateOk || I.fn <= 0) return;
-    if (I.decimate) I.decimateAppend(x, n);
+    if (I.decimate) { I.rsOut.clear(); I.resampler.process(x, n, I.rsOut); I.buf.insert(I.buf.end(), I.rsOut.begin(), I.rsOut.end()); }
     else I.buf.insert(I.buf.end(), x, x + n);
     I.run();
 }

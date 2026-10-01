@@ -118,7 +118,8 @@ static void refreshDevices(App& a) {
 }
 
 static void applyBandwidth(App& a) {
-    a.tune.sampleRate = std::min(20e6, kBw[a.bwIdx].nativeMsps * 2e6);
+    // HackRF Pro: the tuned centre is only exact at <= 10 Msps and at 20 Msps, so use 10 Msps (8 for narrow channels)
+    a.tune.sampleRate = kBw[a.bwIdx].mhz >= 7 ? 10e6 : 8e6;
     a.tune.basebandFilterHz = 0;
     a.tune.bandwidthMhz = kBw[a.bwIdx].mhz;
 }
@@ -917,7 +918,7 @@ int main(int argc, char** argv) {
         if (app.devices[i].kind == DeviceInfo::HackRF) { app.devIdx = i; break; }
     if (app.devices.size() == 2) app.engine.log("no HackRF connected - use the synthetic signal or an IQ file");
 
-    bool autostart = false;
+    bool autostart = false, hackrfStart = false;
     const char* shotPath = nullptr;
     int shotFrame = 0;
     for (int i = 1; i < argc; i++) {
@@ -932,6 +933,10 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--echodelay" && i + 1 < argc) app.tune.synth.echoDelay = atoi(argv[++i]);
         if (std::string(argv[i]) == "--pp" && i + 1 < argc) app.tune.synth.tx.pp = atoi(argv[++i]);
         if (std::string(argv[i]) == "--ext") app.tune.synth.tx.ext = true;
+        if (std::string(argv[i]) == "--hackrf") hackrfStart = true;
+        if (std::string(argv[i]) == "--lna" && i + 1 < argc) app.tune.lnaDb = atoi(argv[++i]);
+        if (std::string(argv[i]) == "--vga" && i + 1 < argc) app.tune.vgaDb = atoi(argv[++i]);
+        if (std::string(argv[i]) == "--amp") app.tune.ampOn = true;
     }
     layer.framebufferOnly = NO;
     double last = glfwGetTime();
@@ -955,8 +960,10 @@ int main(int argc, char** argv) {
             ImGui::NewFrame();
             if (autostart) {
                 autostart = false;
-                app.devIdx = 0; app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
-                app.engine.start(app.devices[0], app.tune, app.file);
+                app.devIdx = 0;
+                if (hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == DeviceInfo::HackRF) app.devIdx = i;
+                app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
+                app.engine.start(app.devices[app.devIdx], app.tune, app.file);
             }
             double now = glfwGetTime();
             last = now;
@@ -966,7 +973,7 @@ int main(int argc, char** argv) {
             [enc endEncoding];
             [cb presentDrawable:drawable];
             [cb commit];
-            if (shotPath && ++shotFrame == 400) {
+            if (shotPath && ++shotFrame == (hackrfStart ? 900 : 400)) {
                 [cb waitUntilCompleted];
                 id<MTLTexture> t = drawable.texture;
                 NSUInteger tw = t.width, th = t.height;

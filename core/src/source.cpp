@@ -309,6 +309,15 @@ std::vector<DeviceInfo> listHackrfDevices(std::string& err) {
             d.kind = DeviceInfo::HackRF;
             d.serial = l->serial_numbers[i] ? l->serial_numbers[i] : "";
             d.board = hackrf_usb_board_id_name(l->usb_board_ids[i]);
+            // the USB product id does not distinguish a HackRF Pro from a One: ask the board itself
+            {
+                hackrf_device* dev = nullptr;
+                if (hackrf_open_by_serial(d.serial.c_str(), &dev) == HACKRF_SUCCESS) {
+                    uint8_t id = BOARD_ID_UNDETECTED;
+                    if (hackrf_board_id_read(dev, &id) == HACKRF_SUCCESS) d.board = hackrf_board_id_name((hackrf_board_id)id);
+                    hackrf_close(dev);
+                }
+            }
             std::string tail = d.serial.size() > 8 ? d.serial.substr(d.serial.size() - 8) : d.serial;
             d.name = d.board + " (" + tail + ")";
             out.push_back(d);
