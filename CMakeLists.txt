@@ -13,7 +13,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(HACKRF REQUIRED IMPORTED_TARGET libhackrf)
 pkg_check_modules(GLFW REQUIRED IMPORTED_TARGET glfw3)
 
-add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/t2_tables.cpp core/src/t2gen.cpp core/src/t2rx.cpp core/src/t2pilots.cpp core/src/t2ofdm.cpp core/src/ldpc.cpp core/src/t2l1.cpp core/src/t2interleave.cpp core/src/t2_pilot_tables.cpp)
+add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/t2_tables.cpp core/src/t2gen.cpp core/src/t2rx.cpp core/src/t2pilots.cpp core/src/t2ofdm.cpp core/src/ldpc.cpp core/src/t2l1.cpp core/src/t2interleave.cpp core/src/t2fec_tables.cpp core/src/t2fec.cpp core/src/t2_pilot_tables.cpp)
 target_include_directories(dect2core PUBLIC core/include)
 target_link_libraries(dect2core PUBLIC PkgConfig::HACKRF "-framework Accelerate")
 
@@ -44,3 +44,7 @@ add_test(NAME pilots COMMAND test_pilots)
 
 add_executable(dect2cli tools/dect2cli.cpp)
 target_link_libraries(dect2cli PRIVATE dect2core)
+
+add_executable(test_fec tests/test_fec.cpp)
+target_link_libraries(test_fec PRIVATE dect2core)
+add_test(NAME fec COMMAND test_fec)

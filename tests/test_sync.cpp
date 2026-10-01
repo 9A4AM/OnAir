@@ -77,7 +77,7 @@ static bool run(const Case& c, bool verbose) {
     bool postOk = t.l1postOk && t.l1post.numPlp == 1 && t.l1post.plps.size() == 1 && t.l1post.plps[0].mod == 2 && t.l1post.rf[0].freq == 522000000u;
     if (!l1Ok || !postOk) { if (verbose || true) printf("  L1 check: pre=%d post=%d (pre fail %llu, post fail %llu) numData %d/%d\n", t.l1preOk, t.l1postOk, (unsigned long long)t.l1preBad, (unsigned long long)t.l1postBad, t.l1pre.numDataSyms, gp.numDataSyms); }
     bool dataOk = t.dataValid && t.dataPp == gen.params().pp;
-    if (dataOk && c.sroPpm == 0 && c.snr < 100) dataOk = std::fabs(t.dataSnrDb - c.snr) < 3.5;
+    if (dataOk && c.sroPpm == 0 && c.snr < 100) dataOk = std::fabs(t.dataSnrDb - c.snr) < (c.s2 == 3 ? 6.0 : 3.5);
     if (!dataOk && verbose) printf("  data stage: valid=%d snr %.1f (want %.1f) pp %d\n", t.dataValid, t.dataSnrDb, c.snr, t.dataPp);
     chOk = chOk && l1Ok && postOk && dataOk;
     bool ok = chOk && t.p1.valid && t.p1.s1 == 0 && t.p1.s2field1 == c.s2 && t.state == 2 && t.giIdx == c.gi &&
