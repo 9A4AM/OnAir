@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.20)
+project(DecT2 LANGUAGES C CXX OBJCXX)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_OBJCXX_STANDARD 20)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_OBJCXX_FLAGS_RELEASE "-O3")
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(HACKRF REQUIRED IMPORTED_TARGET libhackrf)
+pkg_check_modules(GLFW REQUIRED IMPORTED_TARGET glfw3)
+
+add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp)
+target_include_directories(dect2core PUBLIC core/include)
+target_link_libraries(dect2core PUBLIC PkgConfig::HACKRF "-framework Accelerate")
+
+add_library(imgui STATIC
+  third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp
+  third_party/imgui/backends/imgui_impl_glfw.cpp third_party/imgui/backends/imgui_impl_metal.mm
+  third_party/implot/implot.cpp third_party/implot/implot_items.cpp)
+target_include_directories(imgui PUBLIC third_party/imgui third_party/imgui/backends third_party/implot)
+target_link_libraries(imgui PUBLIC PkgConfig::GLFW "-framework Metal" "-framework MetalKit" "-framework QuartzCore" "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
+target_compile_options(imgui PRIVATE -fobjc-arc)
+
+add_executable(dect2 app/main.mm)
+target_compile_options(dect2 PRIVATE -fobjc-arc)
+target_link_libraries(dect2 PRIVATE dect2core imgui)
