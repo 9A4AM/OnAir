@@ -51,3 +51,7 @@ add_test(NAME fec COMMAND test_fec)
 
 add_executable(bench_fec tests/bench_fec.cpp)
 target_link_libraries(bench_fec PRIVATE dect2core)
+
+add_executable(test_ts tests/test_ts.cpp)
+target_link_libraries(test_ts PRIVATE dect2core)
+add_test(NAME ts COMMAND test_ts)

@@ -50,7 +50,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         unpack_ = BbUnpacker();
         tsSnap_ = TsSnapshot();
         lastT2Frame_ = -1;
-        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); outputs_.packet(pkt, &tsSnap_); });
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
     }
     rx_.setPlpCallback([this](const PlpResult& r) { if (plpDump_) plpDump_(r); onPlp(r); });
     {
@@ -95,6 +95,7 @@ bool Engine::retune(const TuneSettings& tune) {
 
 void Engine::onPlp(const PlpResult& r) {
     std::lock_guard<std::mutex> lk(tsMu_);
+    frameBuf_.clear();
     if (lastT2Frame_ >= 0 && ((r.t2Frame - lastT2Frame_) & 0xFF) != 1) { unpack_.lost(); demux_.markLoss(); }
     lastT2Frame_ = r.t2Frame;
     for (const auto& f : r.frames) {
@@ -103,6 +104,8 @@ void Engine::onPlp(const PlpResult& r) {
     }
     demux_.advance(r.frameSec);
     tsSnap_ = demux_.snapshot();
+    outputs_.packets(frameBuf_.data(), frameBuf_.size() / 188, &tsSnap_);
+    frameBuf_.clear();
     outputs_.burstDone(r.frameSec);
 }
 

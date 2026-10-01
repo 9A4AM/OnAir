@@ -351,7 +351,7 @@ TsSnapshot TsDemux::snapshot() const {
         if (a.lcn != b.lcn) return (a.lcn ? a.lcn : 9999) < (b.lcn ? b.lcn : 9999);
         return a.id < b.id;
     });
-    label[0] = "PAT"; label[0x10] = "NIT"; label[0x11] = "SDT/BAT"; label[0x12] = "EIT"; label[0x14] = "TDT/TOT"; label[0x1FFF] = "null";
+    label[0] = "PAT"; label[1] = "CAT"; label[0x10] = "NIT"; label[0x11] = "SDT/BAT"; label[0x12] = "EIT"; label[0x14] = "TDT/TOT"; label[0x1FFF] = "null";
     label[0x13] = "RST"; label[0x1F] = "DIT"; label[0x1E] = "ST";
     for (auto& kv : pids_) {
         TsPid p;

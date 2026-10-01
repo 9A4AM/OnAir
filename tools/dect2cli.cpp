@@ -72,6 +72,7 @@ int main(int argc, char** argv) {
         size_t n;
         auto lines = e.logSnapshot(n);
         for (; shown < lines.size(); shown++) printf("  log: %s\n", lines[shown].c_str());
+        if (out.udp) { OutputStats os = e.outputStats(); printf("  udp: sent %llu queue %.0f ms dropped %llu\n", (unsigned long long)os.udpDatagrams, os.udpQueueMs, (unsigned long long)os.udpDropped); }
         printf("level %6.1f dBFS clip %.3f%% | state %d P1 %llu (s1 %d fft %d) GI %s | CFO %+8.1f Hz | CP %.2f | L1 pre %llu/%llu post %llu/%llu | data %d SNR %.1f dB | sym %llu sinceP1 %.2f | PLP %llu fr, blocks %llu ok/%llu bad, MER %.1f dB preBER %.1e it %.1f %.0f ms | dropped %llu\n",
                sf.stats.rmsDbfs, sf.stats.clipFraction * 100, t.state, (unsigned long long)t.p1Count, t.p1.s1, t.fftN,
                t.giIdx >= 0 ? guardName(t.giIdx) : "-", t.cfoHz, t.cpCorr, (unsigned long long)t.l1preGood, (unsigned long long)(t.l1preGood + t.l1preBad),

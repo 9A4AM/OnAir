@@ -64,6 +64,7 @@ private:
     TsSnapshot tsSnap_;
     OutputManager outputs_;
     int lastT2Frame_ = -1;
+    std::vector<uint8_t> frameBuf_;
     double tSpec_ = 0, tRx_ = 0;
     double nSamp_ = 0;
     uint64_t logP1Count_ = 0;

@@ -40,6 +40,8 @@ public:
     OutputConfig config() const;
     // One transport-stream packet in stream order. `snap` supplies the PIDs of the selected service.
     void packet(const uint8_t* pkt188, const TsSnapshot* snap);
+    // Many packets at once (one lock): `n` packets of 188 bytes back to back.
+    void packets(const uint8_t* data, size_t n, const TsSnapshot* snap);
     // A burst of packets (one T2 frame) is complete; `frameSeconds` is the time it represents (used for UDP pacing).
     void burstDone(double frameSeconds);
     OutputStats stats() const;

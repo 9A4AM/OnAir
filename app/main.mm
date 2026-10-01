@@ -103,6 +103,13 @@ struct App {
     std::string hackrfErr;
     RxTelemetry rx;
     uint64_t rxSeq = 0;
+    TsSnapshot ts;
+    BbStats bb;
+    double tsT = 0;
+    OutputConfig out;
+    int selService = -1;     // service id used for outputs (-1 = whole multiplex)
+    char udpHost[64] = "127.0.0.1";
+    char filePath[512] = "";
     std::deque<float> hCfo, hSnr, hTiming;
     bool rxSeen = false;
 };
@@ -131,6 +138,13 @@ static std::string openFileDialog() {
     return {};
 }
 
+static std::string saveFileDialog(const char* name) {
+    NSSavePanel* p = [NSSavePanel savePanel];
+    p.nameFieldStringValue = [NSString stringWithUTF8String:name];
+    if ([p runModal] == NSModalResponseOK) return std::string(p.URL.path.UTF8String);
+    return {};
+}
+
 static void loadPrefs(App& a) {
     NSUserDefaults* d = NSUserDefaults.standardUserDefaults;
     if ([d objectForKey:@"freqMhz"]) a.freqMhz = [d doubleForKey:@"freqMhz"];
@@ -140,6 +154,13 @@ static void loadPrefs(App& a) {
     a.bwIdx = std::min((int)(sizeof kBw / sizeof *kBw) - 1, (int)[d integerForKey:@"bw"]);
     NSString* fp = [d stringForKey:@"filePath"];
     if (fp) a.file.path = fp.UTF8String;
+    NSString* op = [d stringForKey:@"outPath"];
+    if (op) snprintf(a.filePath, sizeof a.filePath, "%s", op.UTF8String);
+    NSString* oh = [d stringForKey:@"udpHost"];
+    if (oh) snprintf(a.udpHost, sizeof a.udpHost, "%s", oh.UTF8String);
+    if ([d objectForKey:@"udpPort"]) a.out.port = (int)[d integerForKey:@"udpPort"];
+    a.out.rtp = [d boolForKey:@"udpRtp"];
+    a.out.dropNull = [d boolForKey:@"dropNull"];
 }
 
 static void savePrefs(const App& a) {
@@ -150,6 +171,11 @@ static void savePrefs(const App& a) {
     [d setBool:a.tune.ampOn forKey:@"amp"];
     [d setInteger:a.bwIdx forKey:@"bw"];
     [d setObject:[NSString stringWithUTF8String:a.file.path.c_str()] forKey:@"filePath"];
+    [d setObject:[NSString stringWithUTF8String:a.filePath] forKey:@"outPath"];
+    [d setObject:[NSString stringWithUTF8String:a.udpHost] forKey:@"udpHost"];
+    [d setInteger:a.out.port forKey:@"udpPort"];
+    [d setBool:a.out.rtp forKey:@"udpRtp"];
+    [d setBool:a.out.dropNull forKey:@"dropNull"];
 }
 
 // ------------------------------------------------------------------ UI pieces
@@ -344,7 +370,11 @@ static void statusBar(App& a) {
         lamp("LDPC", fec); ImGui::SameLine(0, 12);
         lamp("BCH", fec); ImGui::SameLine(0, 12);
     }
-    const char* later[] = {"TS", "Video", "Audio"};
+    {
+        int tsl = !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1;
+        lamp("TS", tsl); ImGui::SameLine(0, 12);
+    }
+    const char* later[] = {"Video", "Audio"};
     for (auto* l : later) { lamp(l, 0); ImGui::SameLine(0, 12); }
     ImGui::TextDisabled("|"); ImGui::SameLine();
     ImGui::PushFont(a.mono, 0);
@@ -386,6 +416,8 @@ static void ingestSpectrum(App& a) {
 }
 
 static void ingestRx(App& a) {
+    double now = glfwGetTime();
+    if (a.engine.running() && now - a.tsT > 0.25) { a.ts = a.engine.tsSnapshot(); a.bb = a.engine.bbStats(); a.tsT = now; }
     RxTelemetry t;
     if (!a.engine.latestRx(t, a.rxSeq)) return;
     a.rxSeq = t.seq;
@@ -773,13 +805,119 @@ static void fecTab(App& a) {
     ImGui::PopFont();
 }
 
+static const char* fmtKbps(char* b, size_t n, double k) { if (k >= 1000) snprintf(b, n, "%.2f Mbit/s", k / 1000); else snprintf(b, n, "%.0f kbit/s", k); return b; }
+
+static void tsTab(App& a) {
+    const TsSnapshot& ts = a.ts;
+    ImGui::PushFont(a.mono, 0);
+    char b[64], b2[64];
+    ImGui::Text("network \"%s\"  onid 0x%04X  tsid 0x%04X   %s", ts.networkName.c_str(), ts.onid, ts.tsid, ts.utc.c_str());
+    ImGui::Text("multiplex %s (null packets %s)   packets %llu   continuity errors %llu   TEI %llu",
+                fmtKbps(b, sizeof b, ts.muxKbps), fmtKbps(b2, sizeof b2, ts.nullKbps), (unsigned long long)ts.totalPackets, (unsigned long long)ts.ccErrors, (unsigned long long)ts.teiPackets);
+    ImGui::Text("BB frames %llu (lost %llu)  mode %s  ISSYI %d NPD %d  resyncs %llu  CRC-8 errors %llu", (unsigned long long)a.bb.frames, (unsigned long long)a.bb.framesLost,
+                a.bb.hem ? "high-efficiency" : "normal", a.bb.issyi, a.bb.npd, (unsigned long long)a.bb.resyncs, (unsigned long long)a.bb.crcErrors);
+    ImGui::PopFont();
+    ImGui::Spacing();
+    if (ImGui::BeginTable("pids", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp, ImVec2(0, -1))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn("PID", ImGuiTableColumnFlags_WidthFixed, 70);
+        ImGui::TableSetupColumn("content");
+        ImGui::TableSetupColumn("packets", ImGuiTableColumnFlags_WidthFixed, 90);
+        ImGui::TableSetupColumn("rate", ImGuiTableColumnFlags_WidthFixed, 100);
+        ImGui::TableSetupColumn("CC err", ImGuiTableColumnFlags_WidthFixed, 70);
+        ImGui::TableSetupColumn("scr", ImGuiTableColumnFlags_WidthFixed, 40);
+        ImGui::TableHeadersRow();
+        for (auto& p : ts.pids) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("0x%04X", p.pid);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(p.label.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)p.packets);
+            ImGui::TableNextColumn(); { char r[32]; ImGui::TextUnformatted(fmtKbps(r, sizeof r, p.kbps)); }
+            ImGui::TableNextColumn(); if (p.ccErrors) ImGui::TextColored(ImVec4(0.95f, 0.5f, 0.3f, 1), "%llu", (unsigned long long)p.ccErrors); else ImGui::TextDisabled("0");
+            ImGui::TableNextColumn(); if (p.scrambled) ImGui::TextColored(ImVec4(0.95f, 0.7f, 0.2f, 1), "yes"); else ImGui::TextDisabled("-");
+        }
+        ImGui::EndTable();
+    }
+}
+
+static void applyOutputs(App& a) {
+    a.out.host = a.udpHost;
+    a.out.path = a.filePath;
+    a.out.serviceId = a.selService;
+    a.engine.setOutputs(a.out);
+    savePrefs(a);
+}
+
+static void outputsTab(App& a) {
+    bool ch = false;
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "What to send");
+    {
+        std::string cur = "Whole multiplex";
+        for (auto& sv : a.ts.services) if (sv.id == a.selService) cur = sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name;
+        ImGui::SetNextItemWidth(320);
+        if (ImGui::BeginCombo("service", cur.c_str())) {
+            if (ImGui::Selectable("Whole multiplex", a.selService < 0)) { a.selService = -1; ch = true; }
+            for (auto& sv : a.ts.services) {
+                std::string n = (sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name) + "  [" + sv.typeName() + "]";
+                if (ImGui::Selectable(n.c_str(), sv.id == a.selService)) { a.selService = sv.id; ch = true; }
+            }
+            ImGui::EndCombo();
+        }
+    }
+    if (ImGui::Checkbox("remove null packets", &a.out.dropNull)) ch = true;
+    ImGui::SameLine(); ImGui::TextDisabled("(a single service is always rewritten with its own PAT)");
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "File (.ts)");
+    ImGui::SetNextItemWidth(520);
+    ImGui::InputText("##fp", a.filePath, sizeof a.filePath);
+    ImGui::SameLine();
+    if (ImGui::Button("Choose...")) { auto p = saveFileDialog("recording.ts"); if (!p.empty()) snprintf(a.filePath, sizeof a.filePath, "%s", p.c_str()); }
+    ImGui::SameLine();
+    if (ImGui::Checkbox("record", &a.out.file)) ch = true;
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "UDP");
+    ImGui::SetNextItemWidth(200);
+    if (ImGui::InputText("address", a.udpHost, sizeof a.udpHost)) {}
+    ImGui::SameLine(); ImGui::SetNextItemWidth(90);
+    ImGui::InputInt("port", &a.out.port, 0, 0);
+    ImGui::SameLine(); ImGui::SetNextItemWidth(70);
+    ImGui::InputInt("TTL", &a.out.ttl, 0, 0);
+    ImGui::SameLine();
+    ImGui::Checkbox("RTP", &a.out.rtp);
+    ImGui::SameLine();
+    if (ImGui::Checkbox("stream", &a.out.udp)) ch = true;
+    ImGui::TextDisabled("Unicast or multicast (e.g. 239.1.1.1). Datagrams carry 7 packets and are paced evenly. Play with: ffplay udp://@:%d", a.out.port);
+    if (ch || ImGui::IsItemDeactivatedAfterEdit()) applyOutputs(a);
+    if (ImGui::Button("Apply address / port / TTL")) applyOutputs(a);
+    ImGui::Spacing();
+    OutputStats os = a.engine.outputStats();
+    ImGui::PushFont(a.mono, 0);
+    if (os.fileOpen) ImGui::Text("recording: %llu packets, %.1f MB", (unsigned long long)os.filePackets, os.fileBytes / 1e6);
+    else ImGui::TextDisabled("recording: off");
+    if (os.udpOpen) ImGui::Text("streaming: %llu datagrams, queue %.0f ms, dropped %llu", (unsigned long long)os.udpDatagrams, os.udpQueueMs, (unsigned long long)os.udpDropped);
+    else ImGui::TextDisabled("streaming: off");
+    ImGui::PopFont();
+    if (!os.error.empty()) ImGui::TextColored(ImVec4(0.95f, 0.4f, 0.3f, 1), "%s", os.error.c_str());
+}
+
 static void rightPanel(App& a) {
     ImGui::TextDisabled("Services");
-    for (int i = 0; i < 4; i++) {
-        ImGui::BeginChild(("svc" + std::to_string(i)).c_str(), ImVec2(0, 34), ImGuiChildFlags_Borders);
-        ImGui::TextDisabled("%d  —", i);
-        ImGui::EndChild();
+    ImGui::BeginChild("svcs", ImVec2(0, 250), ImGuiChildFlags_Borders);
+    if (a.ts.services.empty()) ImGui::TextDisabled("waiting for PAT / SDT...");
+    for (auto& sv : a.ts.services) {
+        std::string vc, ac;
+        double kb = 0;
+        for (auto& st : sv.streams) { kb += st.kbps; if (st.kind == "video" && vc.empty()) vc = st.codec; if (st.kind == "audio" && ac.empty()) ac = st.codec; }
+        std::string label = (sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name);
+        ImGui::PushID(sv.id);
+        bool sel = sv.id == a.selService;
+        if (ImGui::Selectable(label.c_str(), sel)) { a.selService = sel ? -1 : sv.id; applyOutputs(a); }
+        char r[32];
+        ImGui::TextDisabled("  %s  %s%s%s  %s%s", sv.typeName(), vc.c_str(), (!vc.empty() && !ac.empty()) ? " + " : "", ac.c_str(), fmtKbps(r, sizeof r, kb), sv.caFlag ? "  [scrambled]" : "");
+        if (!sv.now.empty()) ImGui::TextDisabled("  now: %s", sv.now.c_str());
+        ImGui::PopID();
     }
+    ImGui::EndChild();
     ImGui::Spacing();
     ImGui::TextDisabled("Video");
     ImGui::BeginChild("video", ImVec2(0, 180), ImGuiChildFlags_Borders);
@@ -857,7 +995,9 @@ static void drawUI(App& a, ImVec2 disp) {
         if (tabItem("Impulse response")) { impulseTab(a); ImGui::EndTabItem(); }
         if (tabItem("SNR per carrier")) { snrTab(a); ImGui::EndTabItem(); }
         if (tabItem("FEC")) { fecTab(a); ImGui::EndTabItem(); }
-        const char* later[] = {"Frame map", "TS", "History", "Outputs"};
+        if (tabItem("TS")) { tsTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Outputs")) { outputsTab(a); ImGui::EndTabItem(); }
+        const char* later[] = {"Frame map", "History"};
         for (auto* t : later)
             if (tabItem(t)) { ImGui::TextDisabled("Not implemented yet (see PROJECT_BRIEF.md, development plan)."); ImGui::EndTabItem(); }
         ImGui::EndTabBar();

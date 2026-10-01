@@ -125,14 +125,18 @@ static void buildPat(int tsid, int sid, int pmtPid, int& cc, uint8_t* out) {
     memcpy(out + 5, sec, 16);
 }
 
-void OutputManager::packet(const uint8_t* pkt, const TsSnapshot* snap) {
+void OutputManager::packet(const uint8_t* pkt, const TsSnapshot* snap) { packets(pkt, 1, snap); }
+
+void OutputManager::packets(const uint8_t* data, size_t n, const TsSnapshot* snap) {
     std::lock_guard<std::mutex> lk(p_->mu);
     Impl& I = *p_;
     if (!I.file && I.sock < 0) return;
+    for (size_t i = 0; i < n; i++) {
+    const uint8_t* pkt = data + i * 188;
     const int pid = ((pkt[1] & 0x1F) << 8) | pkt[2];
     uint8_t rewritten[188];
     const uint8_t* out = pkt;
-    if (I.cfg.dropNull && pid == 0x1FFF) return;
+    if (I.cfg.dropNull && pid == 0x1FFF) continue;
     if (I.cfg.serviceId >= 0) {
         if (snap) {
             if (I.patServiceId != I.cfg.serviceId || I.pass.empty()) {
@@ -143,12 +147,12 @@ void OutputManager::packet(const uint8_t* pkt, const TsSnapshot* snap) {
                 }
             }
         }
-        if (I.pass.empty()) return;
+        if (I.pass.empty()) continue;
         if (pid == 0) {
-            if (!(pkt[1] & 0x40)) return;                 // continuation of the original PAT: dropped
+            if (!(pkt[1] & 0x40)) continue;               // continuation of the original PAT: dropped
             buildPat(I.patTsid, I.patServiceId, I.patPmtPid, I.patCc, rewritten);
             out = rewritten;
-        } else if (!I.pass.count(pid)) return;
+        } else if (!I.pass.count(pid)) continue;
     }
     if (I.file) { fwrite(out, 1, 188, I.file); I.st.fileBytes += 188; I.st.filePackets++; }
     if (I.sock >= 0) {
@@ -157,6 +161,7 @@ void OutputManager::packet(const uint8_t* pkt, const TsSnapshot* snap) {
             I.burst.push_back(std::move(I.building));
             I.building.clear();
         }
+    }
     }
 }
 
@@ -174,13 +179,16 @@ void OutputManager::burstDone(double frameSeconds) {
     const double span = std::max(0.02, frameSeconds);
     const auto now = Clock::now();
     auto base = std::max(now, I.lastDue);
-    // keep the queue bounded: if more than ~1.5 frames are waiting, drop what is oldest
-    if (!I.queue.empty() && std::chrono::duration<double>(I.queue.back().due - now).count() > 1.5 * span + 0.3) {
+    // keep the queue bounded: if more than ~3 frames are waiting, drop what is oldest
+    if (!I.queue.empty() && std::chrono::duration<double>(I.queue.back().due - now).count() > 3.0 * span + 0.2) {
         I.st.udpDropped += I.queue.size();
         I.queue.clear();
         base = now;
     }
-    const double step = span / I.burst.size();
+    // if a backlog has built up, drain it a little faster instead of letting the latency grow
+    const double backlog = std::chrono::duration<double>(base - now).count();
+    const double eff = backlog > span ? span * 0.6 : span;
+    const double step = eff / I.burst.size();
     for (size_t i = 0; i < I.burst.size(); i++) {
         Impl::Dgram d;
         if (I.cfg.rtp) {
