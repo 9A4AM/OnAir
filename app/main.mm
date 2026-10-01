@@ -14,6 +14,7 @@
 #import <QuartzCore/QuartzCore.h>
 
 #include "dect2/engine.h"
+#include "dect2/scanner.h"
 #include "theme.h"
 
 #include <algorithm>
@@ -145,6 +146,10 @@ struct App {
     char filePath[512] = "";
     std::deque<float> hCfo, hSnr, hTiming;
     bool rxSeen = false;
+    Scanner scanner;
+    ScanConfig scanCfg;
+    int scanPreset = 0;
+    bool scanWasRunning = false;
 };
 
 static void refreshDevices(App& a) {
@@ -881,6 +886,85 @@ static void applyOutputs(App& a) {
     savePrefs(a);
 }
 
+
+static void scanTab(App& a) {
+    ScanProgress pr = a.scanner.progress();
+    auto res = a.scanner.results();
+    int hw = -1;
+    for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].kind == DeviceInfo::HackRF) hw = i;
+    if (hw < 0) { ImGui::TextDisabled("Scanning needs a HackRF."); return; }
+    ImGui::BeginDisabled(pr.running);
+    const char* presets[] = {"UHF 474-858 MHz (8 MHz)", "VHF III 174-230 MHz (7 MHz)", "Custom"};
+    ImGui::SetNextItemWidth(240);
+    if (ImGui::Combo("##range", &a.scanPreset, presets, 3)) {
+        if (a.scanPreset == 0) { a.scanCfg.startMHz = 474; a.scanCfg.stopMHz = 858; a.scanCfg.stepMHz = 8; a.scanCfg.bwMhz = 8; }
+        if (a.scanPreset == 1) { a.scanCfg.startMHz = 177.5; a.scanCfg.stopMHz = 226.5; a.scanCfg.stepMHz = 7; a.scanCfg.bwMhz = 7; }
+    }
+    ImGui::SameLine(); ImGui::TextUnformatted("from"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(80); ImGui::InputDouble("##from", &a.scanCfg.startMHz, 0, 0, "%.1f");
+    ImGui::SameLine(); ImGui::TextUnformatted("to"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(80); ImGui::InputDouble("##to", &a.scanCfg.stopMHz, 0, 0, "%.1f");
+    ImGui::SameLine(); ImGui::TextUnformatted("step"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(60); ImGui::InputDouble("##step", &a.scanCfg.stepMHz, 0, 0, "%.1f");
+    ImGui::SameLine(); ImGui::TextUnformatted("bw"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(60); ImGui::InputDouble("##bw", &a.scanCfg.bwMhz, 0, 0, "%.0f");
+    ImGui::Checkbox("read service names (slower, ~9 s per mux)", &a.scanCfg.identifyServices);
+    ImGui::EndDisabled();
+    if (a.scanCfg.stepMHz < 1) a.scanCfg.stepMHz = 1;
+    if (!pr.running) {
+        if (ImGui::Button("  Start scan  ")) {
+            a.scanWasRunning = a.engine.running();
+            if (a.scanWasRunning) a.engine.stop();
+            a.scanCfg.tune = a.tune;
+            std::string err;
+            if (!a.scanner.start(a.devices[hw], a.scanCfg, err)) a.engine.log("scan: " + err);
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s  (uses the gains from the toolbar; stops the receiver while scanning)", pr.phase.c_str());
+    } else {
+        if (ImGui::Button("  Stop scan  ")) a.scanner.stop();
+        ImGui::SameLine();
+        ImGui::ProgressBar(pr.total ? (float)pr.index / pr.total : 0, ImVec2(260, 0));
+        ImGui::SameLine();
+        ImGui::Text("%.1f MHz - %s", pr.currentMHz, pr.phase.c_str());
+    }
+    ImGui::Separator();
+    if (ImGui::BeginTable("scan", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn("MHz", ImGuiTableColumnFlags_WidthFixed, 70);
+        ImGui::TableSetupColumn("level", ImGuiTableColumnFlags_WidthFixed, 90);
+        ImGui::TableSetupColumn("result", ImGuiTableColumnFlags_WidthFixed, 80);
+        ImGui::TableSetupColumn("mode", ImGuiTableColumnFlags_WidthFixed, 240);
+        ImGui::TableSetupColumn("SNR", ImGuiTableColumnFlags_WidthFixed, 60);
+        ImGui::TableSetupColumn("PLP", ImGuiTableColumnFlags_WidthFixed, 180);
+        ImGui::TableSetupColumn("services");
+        ImGui::TableHeadersRow();
+        for (size_t i = 0; i < res.size(); i++) {
+            auto& r = res[i];
+            if (!r.occupied && !r.t2) continue; // hide empty channels
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            char lbl[32]; snprintf(lbl, sizeof lbl, "%.1f##%zu", r.freqMHz, i);
+            if (ImGui::Selectable(lbl, false, ImGuiSelectableFlags_SpanAllColumns) && !pr.running) {
+                a.freqMhz = r.freqMHz; a.bwIdx = r.bwMhz >= 7.5 ? 0 : 1;
+                for (int k = 0; k < (int)(sizeof(kBw) / sizeof(kBw[0])); k++) if (kBw[k].mhz == r.bwMhz) a.bwIdx = k;
+                a.tune.centerHz = a.freqMhz * 1e6; applyBandwidth(a);
+                a.engine.start(a.devices[hw], a.tune, a.file);
+                a.devIdx = hw; a.smooth.clear(); a.peak.clear(); a.lastSeq = 0; savePrefs(a);
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Click to tune the receiver to this channel");
+            ImGui::TableNextColumn(); ImGui::Text("%.1f dBFS", r.levelDbfs);
+            ImGui::TableNextColumn();
+            if (r.t2) ImGui::TextColored(ImVec4(0.4f, 1, 0.5f, 1), "DVB-T2"); else ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "other");
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(r.mode.c_str());
+            ImGui::TableNextColumn(); if (r.t2) ImGui::Text("%.1f dB", r.snrDb);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(r.plpInfo.c_str());
+            ImGui::TableNextColumn();
+            std::string sv;
+            for (auto& x : r.services) { if (!sv.empty()) sv += ",  "; sv += x; }
+            if (sv.empty() && !r.t2) sv = r.note;
+            ImGui::TextWrapped("%s", sv.c_str());
+        }
+        ImGui::EndTable();
+    }
+}
+
 static void outputsTab(App& a) {
     bool ch = false;
     ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "What to send");
@@ -1084,6 +1168,7 @@ static void drawUI(App& a, ImVec2 disp) {
         if (tabItem("FEC")) { fecTab(a); ImGui::EndTabItem(); }
         if (tabItem("TS")) { tsTab(a); ImGui::EndTabItem(); }
         if (tabItem("Outputs")) { outputsTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Scan")) { scanTab(a); ImGui::EndTabItem(); }
         const char* later[] = {"Frame map", "History"};
         for (auto* t : later)
             if (tabItem(t)) { ImGui::TextDisabled("Not implemented yet (see PROJECT_BRIEF.md, development plan)."); ImGui::EndTabItem(); }

@@ -66,6 +66,14 @@ void SpectrumAnalyzer::feed(const cf32* x, size_t n) {
     s.pending.erase(s.pending.begin(), s.pending.begin() + off);
 }
 
+void SpectrumAnalyzer::reset() {
+    Impl& s = *p_;
+    std::fill(s.accum.begin(), s.accum.end(), 0.f);
+    s.pending.clear();
+    s.blocks = 0; s.sumSq = s.sumI = s.sumQ = 0; s.peak = 0; s.count = s.clip = 0;
+    std::fill(std::begin(s.hist), std::end(s.hist), 0u);
+}
+
 bool SpectrumAnalyzer::takeFrame(SpectrumFrame& out) {
     Impl& s = *p_;
     if (s.blocks == 0 || s.count == 0) return false;

@@ -32,6 +32,9 @@ public:
     bool start(const DeviceInfo& dev, const TuneSettings& tune, const FileOptions& file);
     void stop();
     bool retune(const TuneSettings& tune);
+    // Retune and flush every stage (receiver, spectrum, transport stream) - used by the channel scanner.
+    bool retuneReset(const TuneSettings& tune);
+    uint64_t resetCount() const { return resets_.load(); }
     bool running() const { return running_; }
     double sampleRate() const { return rate_; }
     uint64_t droppedSamples() const { return ring_.dropped(); }
@@ -67,6 +70,9 @@ private:
     OutputManager outputs_;
     Player player_;
     int lastT2Frame_ = -1;
+    std::atomic<bool> resetReq_{false};
+    std::atomic<uint64_t> resets_{0};
+    void applyReset();
     std::vector<uint8_t> frameBuf_;
     double tSpec_ = 0, tRx_ = 0;
     double nSamp_ = 0;

@@ -97,6 +97,39 @@ bool Engine::retune(const TuneSettings& tune) {
     return true;
 }
 
+bool Engine::retuneReset(const TuneSettings& tune) {
+    if (!src_) return false;
+    std::string err;
+    if (!src_->retune(tune, err)) { log("retune failed: " + err); return false; }
+    resetReq_ = true;
+    return true;
+}
+
+void Engine::applyReset() {
+    ring_.clear();
+    rx_.reset();
+    analyzer_.reset();
+    {
+        std::lock_guard<std::mutex> lk(tsMu_);
+        demux_.reset();
+        unpack_ = BbUnpacker();
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
+        tsSnap_ = TsSnapshot();
+        lastT2Frame_ = -1;
+        frameBuf_.clear();
+    }
+    {
+        std::lock_guard<std::mutex> lk(specMu_);
+        spec_ = SpectrumFrame();
+    }
+    {
+        std::lock_guard<std::mutex> lk(rxMu_);
+        rxTel_ = RxTelemetry();
+    }
+    logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
+    resets_++;
+}
+
 void Engine::onPlp(const PlpResult& r) {
     if (getenv("DECT2_FRAMESTATS")) fprintf(stderr, "[frame] t2 %d: blocks %d ok %d bad %d MER %.1f preBER %.3f iters %.1f\n", r.t2Frame, r.blocks, r.blocksOk, r.bchFailed, r.merDb, r.preBer, r.avgLdpcIters);
     std::lock_guard<std::mutex> lk(tsMu_);
@@ -172,8 +205,9 @@ void Engine::analysisLoop() {
     SpectrumFrame f;
     uint64_t rxSeq = 0;
     while (!stopReq_) {
+        if (resetReq_.exchange(false)) { applyReset(); rxSeq = 0; }
         size_t n;
-        while ((n = ring_.read(buf.data(), buf.size())) > 0) { auto a0 = std::chrono::steady_clock::now(); analyzer_.feed(buf.data(), n); auto a1 = std::chrono::steady_clock::now(); rx_.feed(buf.data(), n); auto a2 = std::chrono::steady_clock::now(); tSpec_ += std::chrono::duration<double>(a1 - a0).count(); tRx_ += std::chrono::duration<double>(a2 - a1).count(); nSamp_ += n; }
+        while ((n = ring_.read(buf.data(), buf.size())) > 0) { auto a0 = std::chrono::steady_clock::now(); analyzer_.feed(buf.data(), n); auto a1 = std::chrono::steady_clock::now(); rx_.feed(buf.data(), n); auto a2 = std::chrono::steady_clock::now(); tSpec_ += std::chrono::duration<double>(a1 - a0).count(); tRx_ += std::chrono::duration<double>(a2 - a1).count(); nSamp_ += n; if (std::chrono::steady_clock::now() > next + std::chrono::milliseconds(250)) break; } // keep publishing spectrum/telemetry even when the receiver is behind
         next += std::chrono::milliseconds(33);
         {
             RxTelemetry t;

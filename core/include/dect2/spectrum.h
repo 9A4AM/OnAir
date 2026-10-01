@@ -28,6 +28,7 @@ public:
     // Consume samples; average power over everything fed since the last takeFrame().
     void feed(const cf32* x, size_t n);
     bool takeFrame(SpectrumFrame& out); // false if nothing accumulated
+    void reset();                       // forget accumulated data (after retuning)
 
 private:
     struct Impl;
