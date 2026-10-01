@@ -5,27 +5,45 @@
 
 namespace dect2 {
 
+static double bessel0(double x) { double s = 1, t = 1; for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; } return s; }
+
 void GridInterpolator::build(int S, double cutoff) {
     S_ = S;
     cut_ = cutoff;
-    half_ = std::min(64, std::max(8, (int)std::ceil(8.0 / cutoff)));
-    const int T = 2 * half_;
+    const int T = 2 * kHalf;
     taps_.assign((size_t)S * T, 0.f);
-    auto i0 = [](double x) { double s = 1, t = 1; for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; } return s; };
     const double beta = 5.0;
     for (int p = 0; p < S; p++) {
-        double frac = (double)p / S;
-        double sum = 0;
+        double frac = (double)p / S, sum = 0;
+        std::vector<double> h(T);
         for (int t = 0; t < T; t++) {
-            double x = frac - (t - (half_ - 1));
+            double x = frac - (t - (kHalf - 1));
+            double sinc = std::fabs(x) < 1e-12 ? 1.0 : std::sin(M_PI * x) / (M_PI * x);
+            double r = x / kHalf;
+            double w = std::fabs(r) >= 1 ? 0 : bessel0(beta * std::sqrt(1 - r * r)) / bessel0(beta);
+            h[t] = sinc * w;
+            sum += h[t];
+        }
+        // vDSP_conv computes a correlation, which is what the polyphase sum needs
+        for (int t = 0; t < T; t++) taps_[(size_t)p * T + t] = (float)(h[t] / sum);
+    }
+    // grid smoothing: windowed-sinc lowpass at `cutoff` of the grid Nyquist
+    smoothHalf_ = cutoff >= 0.9 ? 0 : std::min(48, std::max(6, (int)std::ceil(5.0 / cutoff)));
+    smooth_.clear();
+    if (smoothHalf_) {
+        int L = 2 * smoothHalf_ + 1;
+        smooth_.resize(L);
+        double sum = 0;
+        std::vector<double> h(L);
+        for (int i = 0; i < L; i++) {
+            double x = i - smoothHalf_;
             double a = cutoff * x;
             double sinc = std::fabs(a) < 1e-12 ? 1.0 : std::sin(M_PI * a) / (M_PI * a);
-            double r = x / half_;
-            double w = std::fabs(r) >= 1 ? 0 : i0(beta * std::sqrt(1 - r * r)) / i0(beta);
-            taps_[(size_t)p * T + t] = (float)(sinc * w);
-            sum += sinc * w;
+            double r = x / (smoothHalf_ + 1);
+            h[i] = sinc * bessel0(beta * std::sqrt(std::max(0.0, 1 - r * r))) / bessel0(beta);
+            sum += h[i];
         }
-        for (int t = 0; t < T; t++) taps_[(size_t)p * T + t] = (float)(taps_[(size_t)p * T + t] / sum);
+        for (int i = 0; i < L; i++) smooth_[L - 1 - i] = (float)(h[i] / sum);
     }
 }
 
@@ -33,25 +51,61 @@ void GridInterpolator::run(const std::vector<cf32>& grid, int S, int K, int N, d
     cutoff = std::min(1.0, std::max(0.05, cutoff));
     if (S != S_ || std::fabs(cutoff - cut_) > 1e-9) build(S, cutoff);
     const int M = (int)grid.size();
-    const int T = 2 * half_;
-    std::vector<cf32> g(M);
-    for (int n = 0; n < M; n++) {
-        double a = 2 * M_PI * (double)(S * n) * tau0 / N;
-        g[n] = grid[n] * cf32((float)std::cos(a), (float)std::sin(a));
+    const int T = 2 * kHalf;
+    const int pad = smoothHalf_ + kHalf + 2;
+    const int Mp = M + 2 * pad;
+    pre_.assign(Mp, 0.f); pim_.assign(Mp, 0.f);
+    // pre-rotation (delay centring) with a double-precision phasor recurrence
+    {
+        const double step = 2 * M_PI * (double)S * tau0 / N;
+        std::complex<double> w(1, 0), ws(std::cos(step), std::sin(step));
+        for (int n = 0; n < M; n++) {
+            cf32 v = grid[n] * cf32((float)w.real(), (float)w.imag());
+            pre_[pad + n] = v.real(); pim_[pad + n] = v.imag();
+            w *= ws;
+            if ((n & 255) == 255) w /= std::abs(w);
+        }
     }
-    auto at = [&](int n) -> cf32 {
-        if (n < 0) return 2.0f * g[0] - g[std::min(M - 1, -n)];
-        if (n >= M) return 2.0f * g[M - 1] - g[std::max(0, 2 * (M - 1) - n)];
-        return g[n];
-    };
-    H.resize(K);
-    for (int k = 0; k < K; k++) {
-        int n0 = k / S, p = k % S;
+    // odd reflection about both edges keeps linear trends intact
+    for (int i = 1; i <= pad; i++) {
+        int a = std::min(M - 1, i), b = std::max(0, M - 1 - i);
+        pre_[pad - i] = 2 * pre_[pad] - pre_[pad + a];
+        pim_[pad - i] = 2 * pim_[pad] - pim_[pad + a];
+        pre_[pad + M - 1 + i] = 2 * pre_[pad + M - 1] - pre_[pad + b];
+        pim_[pad + M - 1 + i] = 2 * pim_[pad + M - 1] - pim_[pad + b];
+    }
+    const float* gr = pre_.data();
+    const float* gi = pim_.data();
+    // stage 1: delay-domain denoising as a lowpass along the grid
+    if (smoothHalf_) {
+        const int L = 2 * smoothHalf_ + 1;
+        const int outN = M + 2 * (kHalf + 2);
+        sre_.assign(outN, 0.f); sim_.assign(outN, 0.f);
+        const int start = pad - (kHalf + 2) - smoothHalf_;
+        vDSP_conv(pre_.data() + start, 1, smooth_.data(), 1, sre_.data(), 1, outN, L);
+        vDSP_conv(pim_.data() + start, 1, smooth_.data(), 1, sim_.data(), 1, outN, L);
+        gr = sre_.data() + (kHalf + 2) - pad; // so that gr[pad + n] addresses grid point n again
+        gi = sim_.data() + (kHalf + 2) - pad;
+        // gr[pad+n] -> sre_[(kHalf+2)+n]
+    }
+    // stage 2: polyphase interpolation, one phase at a time (strided output)
+    ore_.assign((size_t)S * M + S, 0.f); oim_.assign((size_t)S * M + S, 0.f);
+    for (int p = 0; p < S; p++) {
         const float* h = &taps_[(size_t)p * T];
-        cf32 acc = 0;
-        for (int t = 0; t < T; t++) acc += h[t] * at(n0 + t - (half_ - 1));
-        double a = -2 * M_PI * (double)k * tau0 / N;
-        H[k] = acc * cf32((float)std::cos(a), (float)std::sin(a));
+        // out[n] = sum_t h[t] * g[n + t - (kHalf - 1)]  -> input starts at g[-(kHalf-1)] = gr[pad - (kHalf-1)]
+        vDSP_conv(gr + pad - (kHalf - 1), 1, h, 1, ore_.data() + p, S, M, T);
+        vDSP_conv(gi + pad - (kHalf - 1), 1, h, 1, oim_.data() + p, S, M, T);
+    }
+    // post-rotation
+    H.resize(K);
+    {
+        const double step = -2 * M_PI * tau0 / N;
+        std::complex<double> w(1, 0), ws(std::cos(step), std::sin(step));
+        for (int k = 0; k < K; k++) {
+            H[k] = cf32(ore_[k], oim_[k]) * cf32((float)w.real(), (float)w.imag());
+            w *= ws;
+            if ((k & 255) == 255) w /= std::abs(w);
+        }
     }
 }
 

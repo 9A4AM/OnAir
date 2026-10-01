@@ -15,10 +15,14 @@ public:
     void run(const std::vector<cf32>& grid, int S, int K, int N, double tau0, std::vector<cf32>& H, double cutoff = 1.0);
 
 private:
-    int S_ = 0, half_ = 8;
-    double cut_ = 0;
-    std::vector<float> taps_; // [phase][tap]
+    int S_ = 0;
+    double cut_ = -1;
+    static constexpr int kHalf = 8;          // half-length of the interpolation kernel (grid points)
+    int smoothHalf_ = 0;
+    std::vector<float> taps_;                // interpolation polyphase kernels [phase][tap], stored reversed for vDSP_conv
+    std::vector<float> smooth_;              // grid smoothing kernel (reversed)
     void build(int S, double cutoff);
+    std::vector<float> pre_, pim_, sre_, sim_, ore_, oim_;
 };
 
 // Delay extent of the channel: samples (relative to the main path) where the power-delay profile is significant.
