@@ -13,6 +13,8 @@ extern "C" {
 
 #include <algorithm>
 #include <chrono>
+#include <pthread.h>
+#include <pthread/qos.h>
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -174,6 +176,7 @@ static enum AVPixelFormat pickHw(AVCodecContext*, const enum AVPixelFormat* fmts
 }
 
 void Player::threadMain() {
+    pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);
     av_log_set_level(AV_LOG_ERROR);
     Impl& I = *p_;
     while (!stop_) {

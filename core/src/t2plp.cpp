@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <pthread.h>
+#include <pthread/qos.h>
 
 namespace dect2 {
 
@@ -13,7 +15,7 @@ void parallelFor(int n, int threads, F fn) {
     std::atomic<int> next{0};
     std::vector<std::thread> ts;
     for (int t = 0; t < std::min(threads, n); t++)
-        ts.emplace_back([&] { for (int i; (i = next++) < n;) fn(i); });
+        ts.emplace_back([&] { pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0); for (int i; (i = next++) < n;) fn(i); });
     for (auto& t : ts) t.join();
 }
 } // namespace
@@ -153,6 +155,7 @@ int PlpDecoder::pending() const {
 }
 
 void PlpDecoder::loop() {
+    pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
     for (;;) {
         PlpJob job;
         {

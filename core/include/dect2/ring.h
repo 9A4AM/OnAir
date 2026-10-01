@@ -11,7 +11,7 @@ using cf32 = std::complex<float>;
 
 class IqRing {
 public:
-    explicit IqRing(size_t capacityPow2 = 1u << 23) : buf_(capacityPow2), mask_(capacityPow2 - 1) {}
+    explicit IqRing(size_t capacityPow2 = 1u << 24) : buf_(capacityPow2), mask_(capacityPow2 - 1) {}
 
     // Producer. Returns number written; samples that do not fit are counted as dropped.
     size_t write(const cf32* src, size_t n) {
