@@ -56,6 +56,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         snprintf(b, sizeof b, "tuned %.3f MHz  LNA %d dB  VGA %d dB  amp %s", tune.centerHz / 1e6, tune.lnaDb, tune.vgaDb, tune.ampOn ? "on" : "off");
         log(b);
     }
+    tSpec_ = tRx_ = 0; nSamp_ = 0;
     stopReq_ = false;
     running_ = true;
     th_ = std::thread([this] { analysisLoop(); });
@@ -66,7 +67,13 @@ void Engine::stop() {
     if (!running_ && !src_) return;
     stopReq_ = true;
     if (th_.joinable()) th_.join();
-    if (src_) { src_->stop(); src_.reset(); log("source stopped"); }
+    if (src_) {
+        src_->stop(); src_.reset();
+        char b[160];
+        double dur = nSamp_ / std::max(1.0, rate_.load());
+        snprintf(b, sizeof b, "source stopped (CPU load: spectrum %.0f%%, receiver %.0f%% of real time)", 100 * tSpec_ / std::max(1e-9, dur), 100 * tRx_ / std::max(1e-9, dur));
+        log(b);
+    }
     running_ = false;
 }
 
@@ -131,7 +138,7 @@ void Engine::analysisLoop() {
     uint64_t rxSeq = 0;
     while (!stopReq_) {
         size_t n;
-        while ((n = ring_.read(buf.data(), buf.size())) > 0) { analyzer_.feed(buf.data(), n); rx_.feed(buf.data(), n); }
+        while ((n = ring_.read(buf.data(), buf.size())) > 0) { auto a0 = std::chrono::steady_clock::now(); analyzer_.feed(buf.data(), n); auto a1 = std::chrono::steady_clock::now(); rx_.feed(buf.data(), n); auto a2 = std::chrono::steady_clock::now(); tSpec_ += std::chrono::duration<double>(a1 - a0).count(); tRx_ += std::chrono::duration<double>(a2 - a1).count(); nSamp_ += n; }
         next += std::chrono::milliseconds(33);
         {
             RxTelemetry t;
@@ -149,7 +156,7 @@ void Engine::analysisLoop() {
         // keep reading while we wait so the ring never fills
         while (std::chrono::steady_clock::now() < next && !stopReq_) {
             size_t m = ring_.read(buf.data(), buf.size());
-            if (m) { analyzer_.feed(buf.data(), m); rx_.feed(buf.data(), m); }
+            if (m) { auto a0 = std::chrono::steady_clock::now(); analyzer_.feed(buf.data(), m); auto a1 = std::chrono::steady_clock::now(); rx_.feed(buf.data(), m); auto a2 = std::chrono::steady_clock::now(); tSpec_ += std::chrono::duration<double>(a1 - a0).count(); tRx_ += std::chrono::duration<double>(a2 - a1).count(); nSamp_ += m; }
             else std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
     }

@@ -11,14 +11,19 @@ namespace dect2 {
 class GridInterpolator {
 public:
     // grid[n] is the channel value at carrier k = S*n (n = 0..M-1); output H[k], k = 0..K-1.
-    void run(const std::vector<cf32>& grid, int S, int K, int N, double tau0, std::vector<cf32>& H);
+    // `cutoff` (0..1) narrows the delay passband to cutoff * N/(2S) samples around tau0 (noise reduction).
+    void run(const std::vector<cf32>& grid, int S, int K, int N, double tau0, std::vector<cf32>& H, double cutoff = 1.0);
 
 private:
-    int S_ = 0;
+    int S_ = 0, half_ = 8;
+    double cut_ = 0;
     std::vector<float> taps_; // [phase][tap]
-    static constexpr int kHalf = 8;
-    void build(int S);
+    void build(int S, double cutoff);
 };
+
+// Delay extent of the channel: samples (relative to the main path) where the power-delay profile is significant.
+// Returns false if no clear profile was found.
+bool delaySpan(const std::vector<cf32>& H, int N, int searchLo, int searchHi, int centre, int& tMin, int& tMax);
 
 // Power-delay profile in dB from a channel estimate: returns |h(tau)|^2 for tau = tauMin .. tauMax-1 samples
 // (negative delays wrap from the end of the IFFT). `centre` shifts the axis so the main path sits near 0.

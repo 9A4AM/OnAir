@@ -44,6 +44,8 @@ public:
 private:
     void analysisLoop();
     void logRxEvents(const RxTelemetry& t);
+    double tSpec_ = 0, tRx_ = 0;
+    double nSamp_ = 0;
     uint64_t logP1Count_ = 0;
     int logS1_ = -1, logS2_ = -1, logGi_ = -2, logState_ = -1, logFrameSyms_ = 0;
 

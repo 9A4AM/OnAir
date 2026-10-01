@@ -11,6 +11,8 @@
 #include <cmath>
 #include <complex>
 #include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <deque>
 #include <mutex>
 
@@ -112,6 +114,8 @@ struct T2Receiver::Impl {
     float dataSnr = 0;
     int dataDx = 0, dataDy = 0, dataPp = 0;
     std::vector<cf32> eqData;
+    double chDelayCentre = 0, chDelayHalf = 0; // delay support of the channel (samples rel. to the main path)
+    bool chDelayKnown = false;
     std::vector<float> dataSnrCar;
     uint64_t dataFrames = 0;
 
@@ -566,6 +570,19 @@ struct T2Receiver::Impl {
         const int back = std::min(G / 4, 32);
         std::vector<cf32> H;
         interp.run(hg, S, K, N, (double)back + G / 2.0, H);
+        {
+            // second pass: narrow the delay passband to where the channel actually has energy
+            int tMin, tMax;
+            int lim = std::min(N / 2 - 1, G * 3 / 2);
+            if (delaySpan(H, N, -std::min(lim, std::max(G / 2, 64)), lim, back, tMin, tMax)) {
+                double centre = 0.5 * (tMin + tMax), half = 0.5 * (tMax - tMin) + 48;
+                double cut = half / ((double)N / (2.0 * S));
+                if (cut < 0.9) {
+                    interp.run(hg, S, K, N, (double)back + centre, H, cut);
+                    chDelayCentre = centre; chDelayHalf = half; chDelayKnown = true;
+                } else { chDelayKnown = false; }
+            } else chDelayKnown = false;
+        }
 
         // equalised P2 data cells, per symbol in carrier order, then frequency de-interleaved
         const int cP2 = pm.p2DataCells();
@@ -712,6 +729,119 @@ struct T2Receiver::Impl {
                 obs[n].push_back({l, frameCells[l][off + k] / pv.real(), t});
             }
         }
+        if (getenv("DECT2_DEBUG")) {
+            // which pilot configuration explains the received cells? coherence of consecutive symbols on that config's continual pilots
+            for (int e2 = 0; e2 < 2; e2++) for (int ppc = 0; ppc < 8; ppc++) {
+                PilotConfig c2 = pc; c2.pp = ppc; c2.ext = e2;
+                PilotMap m2(c2);
+                if (!m2.valid()) continue;
+                int K2 = m2.carriers(), off2 = (kMax - K2) / 2;
+                cd tot = 0; double mag = 0; int n2 = 0;
+                std::vector<uint8_t> ta, tb;
+                for (int l = nP2 + 1; l < std::min(L - 1, nP2 + 12); l++) {
+                    m2.symbolTypes(l, L, ta); m2.symbolTypes(l - 1, L, tb);
+                    for (int kk = 0; kk < K2; kk++) {
+                        if (ta[kk] != kCellContinual || tb[kk] != kCellContinual) continue;
+                        cf32 za = frameCells[l][off2 + kk] / m2.pilot(l, kk, kCellContinual).real();
+                        cf32 zb = frameCells[l - 1][off2 + kk] / m2.pilot(l - 1, kk, kCellContinual).real();
+                        cd pr = cd(za.real(), za.imag()) * std::conj(cd(zb.real(), zb.imag()));
+                        tot += pr; mag += std::abs(pr); n2++;
+                    }
+                }
+                // scattered pilots, symbols 16 apart / dy apart, same carriers: coherence over dy symbols
+                cd tot2 = 0; double mag2 = 0; int n3 = 0;
+                int dy2 = m2.dy();
+                for (int l = nP2; l + dy2 < std::min(L - 1, nP2 + 3 * dy2); l++) {
+                    m2.symbolTypes(l, L, ta); m2.symbolTypes(l + dy2, L, tb);
+                    for (int kk = 0; kk < K2; kk++) {
+                        if (ta[kk] != kCellScattered || tb[kk] != kCellScattered) continue;
+                        cf32 za = frameCells[l][off2 + kk] / m2.pilot(l, kk, kCellScattered).real();
+                        cf32 zb = frameCells[l + dy2][off2 + kk] / m2.pilot(l + dy2, kk, kCellScattered).real();
+                        cd pr = cd(za.real(), za.imag()) * std::conj(cd(zb.real(), zb.imag()));
+                        tot2 += pr; mag2 += std::abs(pr); n3++;
+                    }
+                }
+                fprintf(stderr, "  [dbg] ext %d PP%d: continual coherence %.3f (%d)  scattered(dy) coherence %.3f (%d) phase %.2f\n", e2, ppc + 1, mag > 0 ? std::abs(tot) / mag : 0.0, n2, mag2 > 0 ? std::abs(tot2) / mag2 : 0.0, n3, std::arg(tot2));
+            }
+        }
+        // Common phase error and residual timing: compare each symbol with the previous one on the continual pilots.
+        // The symbol grid has integer-sample resolution, so the sub-sample timing error shows up as a phase slope
+        // across the carriers (up to ~1 rad at the band edge for 32K); it is estimated and removed here.
+        {
+            double cumA = 0, cumB = 0;
+            std::vector<int> cont;
+            std::vector<cd> prod;
+            std::vector<cf32> prevRaw = frameCells[nP2]; // raw (uncorrected) cells of the previous symbol
+            for (int l = nP2 + 1; l < L; l++) {
+                std::vector<cf32> curRaw = frameCells[l];
+                cont.clear(); prod.clear();
+                for (int kk = 0; kk < K; kk++) {
+                    if (types[l][kk] != kCellContinual || types[l - 1][kk] != kCellContinual) continue;
+                    cf32 za = frameCells[l][off + kk] / pm.pilot(l, kk, kCellContinual).real();
+                    cf32 zb = prevRaw[off + kk] / pm.pilot(l - 1, kk, kCellContinual).real();
+                    cd pr = cd(za.real(), za.imag()) * std::conj(cd(zb.real(), zb.imag()));
+                    cont.push_back(kk);
+                    prod.push_back(pr);
+                }
+                prevRaw = curRaw;
+                if (cont.size() < 4) continue;
+                // slope from phase differences of neighbouring pilots
+                cd sl = 0;
+                double wsum = 0, dsum = 0;
+                for (size_t i = 0; i + 1 < cont.size(); i++) {
+                    double w = std::min(std::abs(prod[i]), std::abs(prod[i + 1]));
+                    sl += prod[i + 1] * std::conj(prod[i]) / std::max(1e-12, std::abs(prod[i]) * std::abs(prod[i + 1])) * w;
+                    dsum += w * (cont[i + 1] - cont[i]);
+                    wsum += w;
+                }
+                double beta = (wsum > 0 && dsum > 0) ? std::arg(sl) / (dsum / wsum) : 0.0;
+                cd a = 0;
+                for (size_t i = 0; i < cont.size(); i++) a += prod[i] * std::polar(1.0, -beta * (cont[i] - (K - 1) / 2.0));
+                double alpha = std::arg(a);
+                cumA += alpha;
+                cumB += beta;
+                if (getenv("DECT2_DEBUG") && l < nP2 + 14) fprintf(stderr, "  [dbg] sym %d: alpha %+.3f beta*10k %+.3f (cum %+.2f, %+.2f) pilots %zu\n", l, alpha, beta * 1e4, cumA, cumB * 1e4, cont.size());
+                for (int kk = 0; kk < K; kk++) {
+                    double ph = -(cumA + cumB * (kk - (K - 1) / 2.0));
+                    frameCells[l][off + kk] *= cf32((float)std::cos(ph), (float)std::sin(ph));
+                }
+            }
+            if (getenv("DECT2_DEBUG")) {
+                std::vector<uint8_t> ta2, tb2;
+                cd tot2 = 0; double mag2 = 0; int n3 = 0;
+                for (int l = nP2; l + dy < std::min(L - 1, nP2 + 3 * dy); l++) {
+                    for (int kk = 0; kk < K; kk++) {
+                        if (types[l][kk] != kCellScattered || types[l + dy][kk] != kCellScattered) continue;
+                        cf32 za = frameCells[l][off + kk] / pm.pilot(l, kk, kCellScattered).real();
+                        cf32 zb = frameCells[l + dy][off + kk] / pm.pilot(l + dy, kk, kCellScattered).real();
+                        cd pr = cd(za.real(), za.imag()) * std::conj(cd(zb.real(), zb.imag()));
+                        tot2 += pr; mag2 += std::abs(pr); n3++;
+                    }
+                }
+                for (int lag : {1, 4, 16}) {
+                    cd tc = 0; double mc = 0; int nc = 0;
+                    for (int l = nP2; l + lag < std::min(L, nP2 + 40); l++)
+                        for (int kk = 0; kk < K; kk++) {
+                            if (types[l][kk] != kCellContinual || types[l + lag][kk] != kCellContinual) continue;
+                            cf32 za = frameCells[l][off + kk] / pm.pilot(l, kk, kCellContinual).real();
+                            cf32 zb = frameCells[l + lag][off + kk] / pm.pilot(l + lag, kk, kCellContinual).real();
+                            cd pr = cd(za.real(), za.imag()) * std::conj(cd(zb.real(), zb.imag()));
+                            tc += pr; mc += std::abs(pr); nc++;
+                        }
+                    fprintf(stderr, "  [dbg] continual coherence at lag %d: %.3f (%d)\n", lag, mc > 0 ? std::abs(tc) / mc : 0.0, nc);
+                }
+                fprintf(stderr, "  [dbg] AFTER correction: scattered(dy) coherence %.3f (%d) phase %.2f\n", mag2 > 0 ? std::abs(tot2) / mag2 : 0.0, n3, std::arg(tot2));
+            }
+            // rebuild the pilot observations from the phase-corrected cells
+            for (int n = 0; n < M; n++) obs[n].clear();
+            for (int l = 0; l < L; l++)
+                for (int n = 0; n < M; n++) {
+                    int k = dx * n;
+                    uint8_t t = types[l][k];
+                    if (t != kCellP2Pilot && t != kCellScattered && t != kCellContinual) continue;
+                    obs[n].push_back({l, frameCells[l][off + k] / pm.pilot(l, k, t).real(), t});
+                }
+        }
         // per-grid-point noise from scattered-pilot second differences
         std::vector<float> varN(M, 0.f), pw(M, 0.f);
         double sumSig = 0, sumNoise = 0;
@@ -739,6 +869,12 @@ struct T2Receiver::Impl {
             dataSnrCar.push_back((float)(10 * std::log10(std::max(1e-9, sa) / std::max(1e-12, na * amp2))));
         }
         dataSnr = (float)(10 * std::log10(std::max(1e-9, sumSig) / std::max(1e-12, sumNoise * amp2)));
+        if (getenv("DECT2_DEBUG")) {
+            int cntN = 0; for (int n = 0; n < M; n++) cntN += varN[n] > 0;
+            double ratioMed = 0; std::vector<double> rr; for (int n = 0; n < M; n++) if (varN[n] > 0 && pw[n] > 0) rr.push_back(10 * std::log10(pw[n] / varN[n]));
+            std::sort(rr.begin(), rr.end()); if (!rr.empty()) ratioMed = rr[rr.size() / 2];
+            fprintf(stderr, "  [dbg] data SNR: grid %d with noise est %d, sumSig %.3g sumNoise %.3g amp2 %.2f median pilot-SNR %.1f dB => %.1f dB\n", M, cntN, sumSig, sumNoise, amp2, ratioMed, dataSnr);
+        }
 
         // channel per data symbol: time-interpolate each grid point, then frequency-interpolate
         std::vector<size_t> ptr(M, 0);
@@ -760,7 +896,11 @@ struct T2Receiver::Impl {
                     grid[n] = a.v + (b.v - a.v) * w;
                 }
             }
-            interp.run(grid, dx, K, N, (double)back + G / 2.0, H);
+            {
+                double tau0 = (double)back + (chDelayKnown ? chDelayCentre : G / 2.0);
+                double cut = chDelayKnown ? std::min(1.0, chDelayHalf / ((double)N / (2.0 * dx))) : 1.0;
+                interp.run(grid, dx, K, N, tau0, H, cut);
+            }
             for (int kk = 0; kk < K; kk++)
                 if (types[l][kk] == kCellData) all.push_back(frameCells[l][off + kk] / H[kk]);
             if (l == firstData + (L - firstData) / 2) { chH = H; chK = K; } // keep a mid-frame channel snapshot for display
