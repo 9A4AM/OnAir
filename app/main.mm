@@ -925,7 +925,12 @@ static void rightPanel(App& a) {
     ImGui::EndChild();
     ImGui::Spacing();
     ImGui::TextDisabled("Outputs");
-    ImGui::TextDisabled("File ○   UDP ○   Live ○   (phase 4–5)");
+    {
+        OutputStats os = a.engine.outputStats();
+        ImGui::Text("File %s   UDP %s   Live %s", os.fileOpen ? "●" : "○", os.udpOpen ? "●" : "○", "○");
+        if (os.fileOpen) ImGui::TextDisabled("recording %.1f MB", os.fileBytes / 1e6);
+        if (os.udpOpen) ImGui::TextDisabled("udp %s:%d%s", a.udpHost, a.out.port, a.out.rtp ? " (RTP)" : "");
+    }
     ImGui::Spacing();
     ImGui::TextDisabled("ADC occupancy");
     histogramPlot(a, ImVec2(-1, 150));
