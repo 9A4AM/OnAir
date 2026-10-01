@@ -1,13 +1,26 @@
 // IQ sample sources: HackRF, recorded file, built-in synthetic DVB-T2-like signal.
 #pragma once
 #include "ring.h"
+#include "t2gen.h"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace dect2 {
 
+// Synthetic test-signal configuration (never transmitted; samples are generated in memory only).
+struct SynthConfig {
+    TxParams tx;           // FFT size, guard interval, ...
+    double snrDb = 30;
+    double cfoHz = 0;
+    double sroPpm = 0;
+    double echoDb = 0;     // 0 = off; otherwise echo attenuation
+    int echoDelay = 300;   // samples
+};
+
 struct TuneSettings {
+    double bandwidthMhz = 8;
+    SynthConfig synth;
     double centerHz = 522e6;
     double sampleRate = 18285714.2857; // 2x native rate for an 8 MHz channel
     double basebandFilterHz = 0;       // 0 = auto

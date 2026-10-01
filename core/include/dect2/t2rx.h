@@ -1,0 +1,68 @@
+// DVB-T2 receiver front-end (phase 1): P1 detection and S1/S2 decoding, guard-interval detection,
+// symbol synchronisation, CFO / timing tracking and raw OFDM cell extraction.
+#pragma once
+#include "ring.h"
+#include "t2.h"
+#include <cstdint>
+#include <memory>
+#include <vector>
+
+namespace dect2 {
+
+struct P1Info {
+    bool valid = false;
+    int s1 = -1;
+    int s2field1 = -1;
+    bool mixed = false;
+    int fftN = 0;
+    double cfoHz = 0;     // from the P1 correlation + comb search
+    float conf = 0;       // 0..1 correlation of the decoded S1/S2 sequences
+    float metric = 0;     // C-A-B correlation peak, 0..1
+    double timingFrac = 0; // sub-sample refinement applied to the position
+    uint64_t pos = 0;      // absolute native-rate sample index of P1 start
+};
+
+struct RxTelemetry {
+    uint64_t seq = 0;
+    bool rateOk = true;
+    bool decimating = false;
+    double inputRate = 0, nativeRate = 0;
+    int state = 0; // 0 searching P1, 1 waiting for GI, 2 locked
+    P1Info p1;
+    uint64_t p1Count = 0;
+    double secSinceP1 = 0;
+    double frameMs = 0;
+    int symbolsPerFrame = 0;
+    double sroPpm = 0;
+    float giScore[kNumGi] = {};
+    int giIdx = -1;
+    float giMargin = 0;
+    double cfoHz = 0;
+    float cpCorr = 0;
+    float cpSnrDb = 0;
+    float timingErr = 0;
+    uint64_t symbols = 0;
+    int fftN = 0, guard = 0, carriers = 0;
+    std::vector<float> p1Trace;   // decimated C-A-B metric, newest last (kTraceDecim samples per point)
+    std::vector<cf32> p1Const;    // differentially decoded P1 carriers (BPSK ~ +-1)
+    std::vector<cf32> cells;      // inter-symbol differential cells (diagnostic), subsampled
+    std::vector<cf32> rawCells;   // raw FFT cells of the latest symbol, subsampled
+};
+
+constexpr int kTraceDecim = 512;
+
+class T2Receiver {
+public:
+    T2Receiver();
+    ~T2Receiver();
+    void configure(double inputRateHz, double bandwidthMhz);
+    void reset();
+    void feed(const cf32* x, size_t n);
+    bool telemetry(RxTelemetry& out, uint64_t lastSeq);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> p_;
+};
+
+} // namespace dect2

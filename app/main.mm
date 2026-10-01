@@ -18,7 +18,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -66,6 +68,13 @@ struct Waterfall {
     }
 };
 
+static std::string gForceTab; // dev: --tab <name> selects a tab for screenshots
+static bool tabItem(const char* name) {
+    ImGuiTabItemFlags fl = 0;
+    if (!gForceTab.empty() && gForceTab == name) { fl = ImGuiTabItemFlags_SetSelected; gForceTab.clear(); }
+    return ImGui::BeginTabItem(name, nullptr, fl);
+}
+
 // ------------------------------------------------------------------ app state
 
 struct BwChoice { const char* label; double mhz; double nativeMsps; };
@@ -92,6 +101,10 @@ struct App {
     double lastFrameT = 0, frameDt = 1.0 / 30;
     ImFont* mono = nullptr;
     std::string hackrfErr;
+    RxTelemetry rx;
+    uint64_t rxSeq = 0;
+    std::deque<float> hCfo, hSnr, hTiming;
+    bool rxSeen = false;
 };
 
 static void refreshDevices(App& a) {
@@ -107,6 +120,7 @@ static void refreshDevices(App& a) {
 static void applyBandwidth(App& a) {
     a.tune.sampleRate = std::min(20e6, kBw[a.bwIdx].nativeMsps * 2e6);
     a.tune.basebandFilterHz = 0;
+    a.tune.bandwidthMhz = kBw[a.bwIdx].mhz;
 }
 
 static std::string openFileDialog() {
@@ -235,6 +249,37 @@ static void toolbar(App& a) {
         savePrefs(a);
     }
 
+    if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic) {
+        SynthConfig& sc = a.tune.synth;
+        bool ch = false;
+        ImGui::TextDisabled("synthetic");
+        ImGui::SameLine();
+        static const struct { const char* n; int code; } fm[] = {{"2K", 0}, {"8K", 1}, {"4K", 2}, {"1K", 3}, {"16K", 4}, {"32K", 5}};
+        const char* cur = "?";
+        for (auto& f : fm) if (f.code == sc.tx.s2field1) cur = f.n;
+        ImGui::SetNextItemWidth(60);
+        if (ImGui::BeginCombo("##sfft", cur)) {
+            for (auto& f : fm) if (ImGui::Selectable(f.n, f.code == sc.tx.s2field1)) { sc.tx.s2field1 = f.code; ch = true; }
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine(); ImGui::TextDisabled("GI"); ImGui::SameLine();
+        ImGui::SetNextItemWidth(70);
+        if (ImGui::BeginCombo("##sgi", guardName(sc.tx.giIdx))) {
+            for (int g = 0; g < kNumGi; g++) if (ImGui::Selectable(guardName(g), g == sc.tx.giIdx)) { sc.tx.giIdx = g; ch = true; }
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine();
+        if (ImGui::Checkbox("ext", &sc.tx.ext)) ch = true;
+        ImGui::SameLine(); ImGui::TextDisabled("SNR"); ImGui::SameLine(); ImGui::SetNextItemWidth(90);
+        float snr = (float)sc.snrDb; if (ImGui::SliderFloat("##ssnr", &snr, 0, 40, "%.0f dB")) { sc.snrDb = snr; ch = true; }
+        ImGui::SameLine(); ImGui::TextDisabled("CFO"); ImGui::SameLine(); ImGui::SetNextItemWidth(110);
+        float cfo = (float)(sc.cfoHz / 1e3); if (ImGui::SliderFloat("##scfo", &cfo, -40, 40, "%.2f kHz")) { sc.cfoHz = cfo * 1e3; ch = true; }
+        ImGui::SameLine(); ImGui::TextDisabled("SRO"); ImGui::SameLine(); ImGui::SetNextItemWidth(90);
+        float sro = (float)sc.sroPpm; if (ImGui::SliderFloat("##ssro", &sro, -50, 50, "%.0f ppm")) { sc.sroPpm = sro; ch = true; }
+        ImGui::SameLine(); ImGui::TextDisabled("echo"); ImGui::SameLine(); ImGui::SetNextItemWidth(90);
+        float ec = (float)sc.echoDb; if (ImGui::SliderFloat("##sec", &ec, 0, 20, ec == 0 ? "off" : "-%.0f dB")) { sc.echoDb = ec; ch = true; }
+        if (ch && running) a.engine.retune(a.tune);
+    }
     if (isFile && !running) {
         ImGui::TextDisabled("file");
         ImGui::SameLine();
@@ -262,7 +307,15 @@ static void statusBar(App& a) {
     const SignalStats& st = a.spec.stats;
     int iq = !run ? 0 : (st.clipFraction > 0.01f ? 3 : (st.clipFraction > 0.0005f || st.rmsDbfs < -45) ? 2 : 1);
     lamp("IQ", iq); ImGui::SameLine(0, 12);
-    const char* later[] = {"P1", "GI", "L1-pre", "L1-post", "Frame", "LDPC", "BCH", "TS", "Video", "Audio"};
+    {
+        const RxTelemetry& rx = a.rx;
+        double frameS = rx.frameMs > 0 ? rx.frameMs / 1e3 : 0.5;
+        int p1s = !run || !a.rxSeen ? 0 : (rx.p1.valid && rx.secSinceP1 < std::max(1.0, 3 * frameS) ? 1 : 2);
+        int gis = !run ? 0 : rx.state == 2 ? 1 : rx.state == 1 ? 2 : 0;
+        lamp("P1", p1s); ImGui::SameLine(0, 12);
+        lamp("GI", gis); ImGui::SameLine(0, 12);
+    }
+    const char* later[] = {"L1-pre", "L1-post", "Frame", "LDPC", "BCH", "TS", "Video", "Audio"};
     for (auto* l : later) { lamp(l, 0); ImGui::SameLine(0, 12); }
     ImGui::TextDisabled("|"); ImGui::SameLine();
     ImGui::PushFont(a.mono, 0);
@@ -272,6 +325,12 @@ static void statusBar(App& a) {
                     (unsigned long long)a.engine.droppedSamples());
     } else ImGui::TextDisabled("stopped");
     ImGui::PopFont();
+    if (run && a.rx.state == 2) {
+        ImGui::PushFont(a.mono, 0);
+        ImGui::Text("%s %s GI %s   CFO %+.1f Hz   CP-SNR %.1f dB   SRO %+.1f ppm", s1Name(a.rx.p1.s1),
+                    fftModeFromSize(a.rx.fftN) ? fftModeFromSize(a.rx.fftN)->name : "?", guardName(a.rx.giIdx), a.rx.cfoHz, a.rx.cpSnrDb, a.rx.sroPpm);
+        ImGui::PopFont();
+    }
     if (run && a.devices[a.devIdx].kind == DeviceInfo::HackRF) {
         if (st.clipFraction > 0.0005f) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.45f, 0.25f, 1), " ADC CLIPPING - reduce gain"); }
         else if (st.rmsDbfs < -45) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), " low ADC level (<6 bits used) - raise gain; 8-bit ADC limits SNR"); }
@@ -293,6 +352,20 @@ static void ingestSpectrum(App& a) {
     if (a.lastFrameT > 0) a.frameDt = a.frameDt * 0.9 + (t - a.lastFrameT) * 0.1;
     a.lastFrameT = t;
     a.wf.push(f.dbfs);
+}
+
+static void ingestRx(App& a) {
+    RxTelemetry t;
+    if (!a.engine.latestRx(t, a.rxSeq)) return;
+    a.rxSeq = t.seq;
+    if (t.p1Count > 0) a.rxSeen = true;
+    a.rx = std::move(t);
+    auto push = [](std::deque<float>& d, float v) { d.push_back(v); if (d.size() > 600) d.pop_front(); };
+    if (a.rx.state == 2) {
+        push(a.hCfo, (float)a.rx.cfoHz);
+        push(a.hSnr, a.rx.cpSnrDb);
+        push(a.hTiming, a.rx.timingErr);
+    }
 }
 
 static std::vector<double> xs(const App& a) {
@@ -367,6 +440,141 @@ static void histogramPlot(App& a, ImVec2 size) {
     }
 }
 
+static void scatter(const char* id, const std::vector<cf32>& pts, ImVec2 size, double lim, ImVec4 col) {
+    if (ImPlot::BeginPlot(id, size, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
+        ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -lim, lim, ImPlotCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -lim, lim, ImPlotCond_Always);
+        if (!pts.empty()) {
+            ImPlotSpec sp;
+            sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.6f; sp.Stride = sizeof(cf32);
+            sp.MarkerFillColor = col; sp.MarkerLineColor = col; sp.LineColor = col;
+            const float* d = reinterpret_cast<const float*>(pts.data());
+            ImPlot::PlotScatter("pts", d, d + 1, (int)pts.size(), sp);
+        }
+        ImPlot::EndPlot();
+    }
+}
+
+static void historyPlot(const char* id, const char* ylabel, const std::deque<float>& h, ImVec2 size) {
+    if (ImPlot::BeginPlot(id, size, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+        ImPlot::SetupAxes("samples (~30/s)", ylabel, 0, ImPlotAxisFlags_AutoFit);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, 600, ImPlotCond_Always);
+        if (!h.empty()) {
+            std::vector<float> v(h.begin(), h.end());
+            ImPlot::PlotLine("h", v.data(), (int)v.size());
+        }
+        ImPlot::EndPlot();
+    }
+}
+
+static void syncTab(App& a) {
+    const RxTelemetry& rx = a.rx;
+    float h = ImGui::GetContentRegionAvail().y;
+    ImGui::TextDisabled("P1 detector - C-A-B correlation (peak > 0.30 triggers an S1/S2 decode)");
+    if (ImPlot::BeginPlot("##p1", ImVec2(-1, h * 0.33f), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+        ImPlot::SetupAxes("time (ms)", "correlation");
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1.05, ImPlotCond_Always);
+        if (!rx.p1Trace.empty() && rx.nativeRate > 0) {
+            std::vector<float> xv(rx.p1Trace.size());
+            double dt = kTraceDecim / rx.nativeRate * 1e3;
+            for (size_t i = 0; i < xv.size(); i++) xv[i] = (float)((i - (double)xv.size()) * dt);
+            ImPlot::SetupAxisLimits(ImAxis_X1, xv.front(), 0, ImPlotCond_Always);
+            ImPlot::PlotLine("m", xv.data(), rx.p1Trace.data(), (int)xv.size());
+            float tx[2] = {xv.front(), 0}, ty[2] = {0.30f, 0.30f};
+            ImPlotSpec ts; ts.LineColor = ImVec4(0.9f, 0.7f, 0.2f, 0.7f);
+            ImPlot::PlotLine("thr", tx, ty, 2, ts);
+        }
+        ImPlot::EndPlot();
+    }
+    float w = ImGui::GetContentRegionAvail().x;
+    ImGui::TextDisabled("guard-interval score (mean cyclic-prefix correlation over 3 symbols)");
+    if (ImPlot::BeginPlot("##gi", ImVec2(w * 0.38f, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+        ImPlot::SetupAxes(nullptr, "score", ImPlotAxisFlags_NoGridLines, 0);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1.05, ImPlotCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -0.6, kNumGi - 0.4, ImPlotCond_Always);
+        double pos[kNumGi]; const char* lab[kNumGi];
+        for (int i = 0; i < kNumGi; i++) { pos[i] = i; lab[i] = guardName(i); }
+        ImPlot::SetupAxisTicks(ImAxis_X1, pos, kNumGi, lab);
+        float sc[kNumGi], x[kNumGi];
+        for (int i = 0; i < kNumGi; i++) { sc[i] = rx.giScore[i]; x[i] = (float)i; }
+        ImPlotSpec bs; bs.FillColor = ImVec4(0.45f, 0.65f, 1.0f, 0.85f);
+        ImPlot::PlotBars("gi", x, sc, kNumGi, 0.7, bs);
+        ImPlot::EndPlot();
+    }
+    ImGui::SameLine();
+    ImGui::BeginChild("hist", ImVec2(0, -1));
+    float hh = ImGui::GetContentRegionAvail().y / 3 - 4;
+    historyPlot("##hc", "CFO (Hz)", a.hCfo, ImVec2(-1, hh));
+    historyPlot("##hs", "CP-SNR (dB)", a.hSnr, ImVec2(-1, hh));
+    historyPlot("##ht", "timing (samples)", a.hTiming, ImVec2(-1, hh));
+    ImGui::EndChild();
+}
+
+static void signallingTab(App& a) {
+    const RxTelemetry& rx = a.rx;
+    ImGui::PushFont(a.mono, 0);
+    auto row = [](const char* k, const char* fmt, ...) {
+        char b[160];
+        va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof b, fmt, ap); va_end(ap);
+        ImGui::TextDisabled("%-22s", k); ImGui::SameLine(); ImGui::TextUnformatted(b);
+    };
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "P1 preamble");
+    if (rx.p1.valid) {
+        const FftMode* fm = fftModeFromS2(rx.p1.s2field1);
+        row("S1", "%d  %s", rx.p1.s1, s1Name(rx.p1.s1));
+        row("S2 field 1", "%d  FFT %s", rx.p1.s2field1, fm ? fm->name : "?");
+        row("S2 field 2", "%d  %s", rx.p1.mixed, rx.p1.mixed ? "mixed (T2 + FEF/other frames)" : "all frames same preamble type");
+        row("sequence correlation", "%.2f", rx.p1.conf);
+        row("C-A-B correlation", "%.2f", rx.p1.metric);
+        row("P1 carrier CFO", "%+.1f Hz", rx.p1.cfoHz);
+        row("P1 detections", "%llu", (unsigned long long)rx.p1Count);
+        row("last P1", "%.2f s ago", rx.secSinceP1);
+    } else ImGui::TextDisabled("no P1 decoded yet");
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "OFDM / frame (blind, before L1-pre)");
+    if (rx.state >= 1) {
+        row("FFT size", "%d", rx.fftN);
+        row("carriers (normal)", "%d", rx.carriers);
+        if (rx.giIdx >= 0) {
+            row("guard interval", "%s  (%d samples)  margin %.2fx", guardName(rx.giIdx), rx.guard, rx.giMargin);
+            row("symbol duration", "%.1f us", (rx.fftN + rx.guard) / rx.nativeRate * 1e6);
+        }
+        if (rx.frameMs > 0) {
+            row("frame length", "%.2f ms  =  P1 + %d symbols", rx.frameMs, rx.symbolsPerFrame);
+            row("sample clock offset", "%+.1f ppm", rx.sroPpm);
+        }
+        row("CFO (tracked)", "%+.1f Hz", rx.cfoHz);
+        row("CP correlation", "%.3f  (~%.1f dB SNR)", rx.cpCorr, rx.cpSnrDb);
+        row("symbols processed", "%llu", (unsigned long long)rx.symbols);
+    }
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "L1-pre / L1-post");
+    ImGui::TextDisabled("(phase 2: pilots, channel estimation and L1 decoding)");
+    ImGui::PopFont();
+}
+
+static void constellationsTab(App& a) {
+    float w = ImGui::GetContentRegionAvail().x / 3 - 8;
+    float h = std::min(ImGui::GetContentRegionAvail().y - 40, w);
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("P1 carriers (DBPSK, differential)");
+    scatter("##c1", a.rx.p1Const, ImVec2(w, h), 2.5, ImVec4(0.95f, 0.7f, 0.2f, 0.9f));
+    ImGui::EndGroup();
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("OFDM cells, inter-symbol differential");
+    scatter("##c2", a.rx.cells, ImVec2(w, h), 3.0, ImVec4(0.35f, 0.85f, 0.45f, 0.8f));
+    ImGui::EndGroup();
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("OFDM cells, raw (no channel correction)");
+    scatter("##c3", a.rx.rawCells, ImVec2(w, h), 3.0, ImVec4(0.45f, 0.65f, 1.0f, 0.7f));
+    ImGui::EndGroup();
+    ImGui::TextDisabled("Raw cells are rotated by the channel and timing, so they form a ring until pilot-based channel estimation (phase 2). "
+                        "The differential view cancels the channel: tight clusters = good lock.");
+}
+
 static void rightPanel(App& a) {
     ImGui::TextDisabled("Services");
     for (int i = 0; i < 4; i++) {
@@ -411,6 +619,7 @@ static void logPanel(App& a) {
 
 static void drawUI(App& a, ImVec2 disp) {
     ingestSpectrum(a);
+    ingestRx(a);
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(disp);
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
@@ -424,29 +633,32 @@ static void drawUI(App& a, ImVec2 disp) {
     float mainH = ImGui::GetContentRegionAvail().y - logH - 6;
     ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16, mainH));
     if (ImGui::BeginTabBar("tabs")) {
-        if (ImGui::BeginTabItem("Overview")) {
+        if (tabItem("Overview")) {
             float h = ImGui::GetContentRegionAvail().y;
             spectrumPlot(a, ImVec2(-1, h * 0.5f));
             waterfallPlot(a, ImVec2(-1, -1));
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Spectrum")) {
+        if (tabItem("Spectrum")) {
             ImGui::Checkbox("peak hold", &a.peakHold);
             ImGui::SameLine(); ImGui::SetNextItemWidth(160);
             ImGui::DragFloatRange2("dB range", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
             spectrumPlot(a, ImVec2(-1, -1));
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Waterfall")) {
+        if (tabItem("Waterfall")) {
             ImGui::SetNextItemWidth(220);
             ImGui::DragFloatRange2("colour range (dB)", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
             waterfallPlot(a, ImVec2(-1, -1));
             ImGui::EndTabItem();
         }
-        const char* later[] = {"Sync", "Signalling", "Constellations", "Channel", "Impulse response", "SNR per carrier",
+        if (tabItem("Sync")) { syncTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Signalling")) { signallingTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Constellations")) { constellationsTab(a); ImGui::EndTabItem(); }
+        const char* later[] = {"Channel", "Impulse response", "SNR per carrier",
                                "FEC", "Frame map", "TS", "History", "Outputs"};
         for (auto* t : later)
-            if (ImGui::BeginTabItem(t)) { ImGui::TextDisabled("Not implemented yet (see PROJECT_BRIEF.md, development plan)."); ImGui::EndTabItem(); }
+            if (tabItem(t)) { ImGui::TextDisabled("Not implemented yet (see PROJECT_BRIEF.md, development plan)."); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     ImGui::EndChild();
@@ -511,6 +723,11 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (std::string(argv[i]) == "--autostart") autostart = true;
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
+        if (std::string(argv[i]) == "--tab" && i + 1 < argc) gForceTab = argv[++i];
+        if (std::string(argv[i]) == "--fft" && i + 1 < argc) app.tune.synth.tx.s2field1 = atoi(argv[++i]);
+        if (std::string(argv[i]) == "--gi" && i + 1 < argc) app.tune.synth.tx.giIdx = atoi(argv[++i]);
+        if (std::string(argv[i]) == "--cfo" && i + 1 < argc) app.tune.synth.cfoHz = atof(argv[++i]);
+        if (std::string(argv[i]) == "--snr" && i + 1 < argc) app.tune.synth.snrDb = atof(argv[++i]);
     }
     layer.framebufferOnly = NO;
     double last = glfwGetTime();

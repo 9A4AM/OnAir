@@ -70,8 +70,8 @@ bool SpectrumAnalyzer::takeFrame(SpectrumFrame& out) {
     Impl& s = *p_;
     if (s.blocks == 0 || s.count == 0) return false;
     out.dbfs.resize(n_);
-    // vDSP forward FFT is scaled by 2; normalise so the sum over bins equals total power (dBFS/bin)
-    float inv = 1.0f / ((float)s.blocks * 4.0f * (float)n_ * (float)n_);
+    // normalise so the sum over bins equals total power (dBFS/bin)
+    float inv = 1.0f / ((float)s.blocks * (float)n_ * (float)n_);
     for (size_t i = 0; i < n_; i++) {
         size_t src = (i + n_ / 2) % n_; // DC-centre
         out.dbfs[i] = 10.0f * std::log10(std::max(s.accum[src] * inv, 1e-14f));

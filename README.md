@@ -2,7 +2,7 @@
 
 Open-source DVB-T2 receiver for macOS (HackRF One / HackRF Pro). See [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
 
-**Status: phase 0** — IQ sources (HackRF, recorded file, synthetic signal), spectrum, waterfall, status lamps, log.
+**Status: phase 1** — P1 detection and S1/S2 decoding, guard-interval detection, CFO/timing tracking, raw OFDM cells; synthetic DVB-T2-style signal generator with impairments. Tests: `build/test_sync`.
 
 ## Build
 ```

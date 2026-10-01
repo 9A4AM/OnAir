@@ -212,60 +212,87 @@ private:
     std::vector<uint8_t> raw_;
 };
 
-// ---------------------------------------------------------------- synthetic DVB-T2-like OFDM (8K, 8 MHz, GI 1/32)
+// ---------------------------------------------------------------- synthetic DVB-T2-like signal
 
 class SyntheticSource : public PacedSource {
 public:
-    ~SyntheticSource() override {
-        stop();
-        if (setup_) vDSP_destroy_fftsetup(setup_);
+    ~SyntheticSource() override { stop(); }
+
+    bool retune(const TuneSettings& s, std::string&) override {
+        std::lock_guard<std::mutex> lk(mu_);
+        cfg_ = s.synth;
+        regen_ = true;
+        return true;
     }
 
 protected:
-    double effectiveRate(const TuneSettings&) override { return 64.0e6 * 1.0 / 7.0; } // 9.142857 Msps
-    bool prepare(const TuneSettings&, std::string&) override {
-        setup_ = vDSP_create_fftsetup(13, kFFTRadix2);
-        re_.resize(kN); im_.resize(kN);
-        return setup_ != nullptr;
+    double effectiveRate(const TuneSettings& s) override { return nativeRateHz(s.bandwidthMhz); }
+    bool prepare(const TuneSettings& s, std::string&) override {
+        cfg_ = s.synth;
+        regen_ = true;
+        return true;
     }
+
     size_t produce(cf32* dst, size_t maxN) override {
-        if (pos_ >= sym_.size()) makeSymbol();
-        size_t m = std::min(maxN, sym_.size() - pos_);
-        memcpy(dst, sym_.data() + pos_, m * sizeof(cf32));
-        pos_ += m;
-        return m;
+        std::lock_guard<std::mutex> lk(mu_);
+        if (regen_) {
+            gen_ = std::make_unique<T2Generator>(cfg_.tx);
+            sbuf_.assign(4, cf32(0, 0));
+            pos_ = 1;
+            regen_ = false;
+            delay_.assign(8192, cf32(0, 0));
+            dpos_ = 0;
+        }
+        const double step = 1.0 + cfg_.sroPpm * 1e-6;
+        const double nsig = std::pow(10.0, -cfg_.snrDb / 20.0) / std::sqrt(2.0);
+        const float ea = cfg_.echoDb > 0 ? (float)std::pow(10.0, -cfg_.echoDb / 20.0) : 0.f;
+        const int ed = std::min<int>(std::max(1, cfg_.echoDelay), (int)delay_.size() - 1);
+        const double dph = 2 * M_PI * cfg_.cfoHz / rate_;
+        std::normal_distribution<float> nd(0.f, 1.f);
+        const float gain = 0.25f; // leave ADC headroom: OFDM peak/rms is ~12 dB
+        for (size_t i = 0; i < maxN; i++) {
+            size_t i0 = (size_t)pos_;
+            while (sbuf_.size() < i0 + 4) { gen_->nextFrame(frame_); sbuf_.insert(sbuf_.end(), frame_.begin(), frame_.end()); }
+            cf32 v;
+            if (cfg_.sroPpm == 0) v = sbuf_[i0];
+            else { // 4-point Lagrange interpolation
+                float f = (float)(pos_ - i0);
+                cf32 a = sbuf_[i0 - 1], b = sbuf_[i0], c = sbuf_[i0 + 1], d = sbuf_[i0 + 2];
+                float w0 = -f * (f - 1) * (f - 2) / 6, w1 = (f + 1) * (f - 1) * (f - 2) / 2,
+                      w2 = -(f + 1) * f * (f - 2) / 2, w3 = (f + 1) * f * (f - 1) / 6;
+                v = a * w0 + b * w1 + c * w2 + d * w3;
+            }
+            pos_ += step;
+            delay_[dpos_ & 8191] = v;
+            if (ea > 0) v += ea * delay_[(dpos_ - ed) & 8191];
+            dpos_++;
+            phase_ += dph;
+            if (phase_ > M_PI) phase_ -= 2 * M_PI;
+            if (phase_ < -M_PI) phase_ += 2 * M_PI;
+            v *= cf32((float)std::cos(phase_), (float)std::sin(phase_));
+            v += cf32(nd(rng_), nd(rng_)) * (float)nsig;
+            v *= gain;
+            // 8-bit ADC, like the HackRF
+            auto q = [](float x) { return std::round(std::min(127.f, std::max(-128.f, x * 128.f))) / 128.f; };
+            dst[i] = cf32(q(v.real()), q(v.imag()));
+        }
+        size_t drop = (size_t)pos_ - 2;
+        if (drop > 0 && drop < sbuf_.size()) {
+            sbuf_.erase(sbuf_.begin(), sbuf_.begin() + drop);
+            pos_ -= drop;
+        }
+        return maxN;
     }
 
 private:
-    static constexpr size_t kN = 8192, kGI = kN / 32, kCarriers = 6817;
-    void makeSymbol() {
-        // Random QPSK on the occupied carriers, noise floor ~ -28 dB, one weak echo for realism.
-        std::fill(re_.begin(), re_.end(), 0.f);
-        std::fill(im_.begin(), im_.end(), 0.f);
-        const float a = 0.7071f;
-        for (size_t k = 0; k < kCarriers; k++) {
-            int idx = (int)k - (int)(kCarriers / 2);
-            size_t bin = idx >= 0 ? (size_t)idx : (size_t)(idx + (int)kN);
-            re_[bin] = (rng_() & 1) ? a : -a;
-            im_[bin] = (rng_() & 1) ? a : -a;
-        }
-        DSPSplitComplex sc{re_.data(), im_.data()};
-        vDSP_fft_zip(setup_, &sc, 1, 13, FFT_INVERSE);
-        float scale = 0.2f / std::sqrt((float)kCarriers);
-        std::vector<cf32> body(kN);
-        for (size_t i = 0; i < kN; i++) body[i] = cf32(re_[i], im_[i]) * scale;
-        sym_.resize(kN + kGI);
-        for (size_t i = 0; i < kGI; i++) sym_[i] = body[kN - kGI + i];
-        for (size_t i = 0; i < kN; i++) sym_[kGI + i] = body[i];
-        std::normal_distribution<float> nd(0.f, 0.0035f);
-        for (auto& v : sym_) v += cf32(nd(rng_), nd(rng_));
-        pos_ = 0;
-    }
-    FFTSetup setup_ = nullptr;
-    std::vector<float> re_, im_;
-    std::vector<cf32> sym_;
-    size_t pos_ = 0;
-    std::mt19937 rng_{1234};
+    std::mutex mu_;
+    SynthConfig cfg_;
+    bool regen_ = true;
+    std::unique_ptr<T2Generator> gen_;
+    std::vector<cf32> sbuf_, frame_, delay_;
+    double pos_ = 1, phase_ = 0;
+    size_t dpos_ = 0;
+    std::mt19937 rng_{99};
 };
 
 } // namespace
