@@ -44,6 +44,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rate_ = src_->sampleRate();
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
     rx_.configure(rate_, tune.bandwidthMhz);
+    rx_.setPlpCallback([this](const PlpResult& r) { if (plpDump_) plpDump_(r); });
     {
         RxTelemetry t;
         if (!rx_.telemetry(t, 0)) {}

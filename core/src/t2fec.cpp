@@ -531,10 +531,12 @@ static unsigned getBits(const uint8_t* b, int pos, int n) { unsigned v = 0; for 
 bool parseBbHeader(const uint8_t* b, BbHeader& h) {
     uint8_t crc = crc8Bits(b, 72);
     unsigned got = getBits(b, 72, 8);
-    h.crcOk = crc == got;
+    h.hem = crc == (got ^ 0x01u); // MODE bit is XORed into the CRC LSB
+    h.crcOk = crc == got || h.hem;
     h.tsGs = getBits(b, 0, 2); h.sisMis = b[2]; h.ccmAcm = b[3]; h.issyi = b[4]; h.npd = b[5]; h.ro = getBits(b, 6, 2);
     h.isi = getBits(b, 8, 8);
     h.upl = getBits(b, 16, 16); h.dfl = getBits(b, 32, 16); h.sync = getBits(b, 48, 8); h.syncd = getBits(b, 56, 16);
+    if (h.hem) { h.issy = (getBits(b, 16, 16) << 8) | getBits(b, 48, 8); h.upl = 1504; h.sync = 0x47; }
     return h.crcOk;
 }
 

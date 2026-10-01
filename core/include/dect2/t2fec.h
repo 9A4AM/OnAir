@@ -73,6 +73,8 @@ struct BbHeader {
     int tsGs = 3, sisMis = 1, ccmAcm = 1, issyi = 0, npd = 0, ro = 0, isi = 0;
     int upl = 1504, dfl = 0, sync = 0x47, syncd = 0;
     bool crcOk = false;
+    bool hem = false;      // high-efficiency mode: CRC-8 is XORed (LSB); UPL/SYNC carry ISSY instead
+    unsigned issy = 0;     // 24-bit ISSY (counter) in HEM
 };
 bool parseBbHeader(const uint8_t* bits80, BbHeader& h); // bits are descrambled, one per byte
 void buildBbHeader(const BbHeader& h, uint8_t* bits80);

@@ -4,6 +4,7 @@
 #include "spectrum.h"
 #include "t2rx.h"
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -35,6 +36,7 @@ public:
     bool latestSpectrum(SpectrumFrame& out, uint64_t lastSeq);
 
     bool latestRx(RxTelemetry& out, uint64_t lastSeq);
+    void setPlpDump(std::function<void(const PlpResult&)> cb) { plpDump_ = std::move(cb); }
 
     // Log
     void log(const std::string& line);
@@ -44,6 +46,7 @@ public:
 private:
     void analysisLoop();
     void logRxEvents(const RxTelemetry& t);
+    std::function<void(const PlpResult&)> plpDump_;
     double tSpec_ = 0, tRx_ = 0;
     double nSamp_ = 0;
     uint64_t logP1Count_ = 0;

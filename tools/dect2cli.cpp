@@ -46,6 +46,10 @@ int main(int argc, char** argv) {
         printf("device: %s\n", dev.name.c_str());
     }
     (void)haveDev;
+    if (getenv("DECT2_BBDUMP")) e.setPlpDump([](const PlpResult& r) {
+        static int shown = 0;
+        for (auto& f : r.frames) if (!f.bits.empty() && shown < 6) { shown++; printf("BBFRAME blk %d hdr:", f.blockIndex); for (int B = 0; B < 14; B++) { unsigned v = 0; for (int i = 0; i < 8; i++) v = (v << 1) | f.bits[B * 8 + i]; printf(" %02x", v); } printf("  crc %d upl %d dfl %d syncd %d\n", f.header.crcOk, f.header.upl, f.header.dfl, f.header.syncd); }
+    });
     if (!e.start(dev, tune, file)) {
         size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
         return 1;
