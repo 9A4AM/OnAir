@@ -57,10 +57,17 @@ static void buildP1(T2Generator::Impl& I, int s1, int s2code) {
 
 T2Generator::T2Generator(const TxParams& p) : i_(new Impl), p_(p) {
     const FftMode* m = fftModeFromS2(p.s2field1);
-    if (!m) m = fftModeFromS2(1);
+    if (!m || p.s2field1 > 5) m = fftModeFromS2(1);
+    p_.s2field1 = m->code;
     n_ = m->n;
     g_ = guardSamples(n_, p.giIdx);
-    k_ = (p.ext && m->kExt) ? m->kExt : m->kNormal;
+    nP2_ = m->nP2;
+    PilotConfig pc;
+    pc.fftCode = m->code; pc.ext = p.ext && m->kExt; pc.pp = p.pp; pc.tr = p.tr; pc.giIdx = p.giIdx;
+    pm_.reset(new PilotMap(pc));
+    for (int pp = 0; !pm_->valid() && pp < 8; pp++) { pc.pp = pp; pm_.reset(new PilotMap(pc)); }
+    p_.pp = pc.pp;
+    k_ = pm_->carriers();
     i_->log2N = (int)std::lround(std::log2((double)n_));
     i_->fft1k = vDSP_create_fftsetup(10, kFFTRadix2);
     i_->fftN = vDSP_create_fftsetup(i_->log2N, kFFTRadix2);
@@ -90,19 +97,30 @@ void T2Generator::nextFrame(std::vector<cf32>& out) {
     memcpy(o, I.p1a, sizeof I.p1a); o += kP1ALen;
     memcpy(o, I.p1b, sizeof I.p1b); o += kP1BLen;
 
-    const float a = 0.70710678f / std::sqrt((float)k_);
+    const float a = 0.70710678f;
+    const float norm = 5.0f / std::sqrt(27.0f * (float)k_);
+    std::vector<uint8_t> types;
     for (int s = 0; s < symbols_; s++) {
+        pm_->symbolTypes(s, symbols_, types);
         std::fill(I.re.begin(), I.re.end(), 0.f);
         std::fill(I.im.begin(), I.im.end(), 0.f);
         for (int k = 0; k < k_; k++) {
             int f = k - (k_ - 1) / 2;
-            uint32_t r = I.rng();
-            I.re[(f + n_) % n_] = (r & 1) ? a : -a;
-            I.im[(f + n_) % n_] = (r & 2) ? a : -a;
+            size_t bin = (size_t)((f + n_) % n_);
+            switch (types[k]) {
+            case kCellData: {
+                uint32_t r = I.rng();
+                I.re[bin] = (r & 1) ? a : -a;
+                I.im[bin] = (r & 2) ? a : -a;
+            } break;
+            case kCellP2Papr:
+            case kCellTrPapr: break;
+            default: I.re[bin] = pm_->pilot(s, k, types[k]).real(); break;
+            }
         }
         inverseFft(I.fftN, I.log2N, I.re, I.im);
-        for (int i = 0; i < g_; i++) o[i] = cf32(I.re[n_ - g_ + i], I.im[n_ - g_ + i]);
-        for (int i = 0; i < n_; i++) o[g_ + i] = cf32(I.re[i], I.im[i]);
+        for (int i = 0; i < g_; i++) o[i] = cf32(I.re[n_ - g_ + i], I.im[n_ - g_ + i]) * norm;
+        for (int i = 0; i < n_; i++) o[g_ + i] = cf32(I.re[i], I.im[i]) * norm;
         o += n_ + g_;
     }
 }

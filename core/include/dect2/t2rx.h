@@ -47,6 +47,20 @@ struct RxTelemetry {
     std::vector<cf32> p1Const;    // differentially decoded P1 carriers (BPSK ~ +-1)
     std::vector<cf32> cells;      // inter-symbol differential cells (diagnostic), subsampled
     std::vector<cf32> rawCells;   // raw FFT cells of the latest symbol, subsampled
+
+    // ---- P2 / channel (phase 2)
+    bool chValid = false;
+    bool extCarriers = false;     // extended carrier mode detected
+    int chCarriers = 0;           // K_total of the estimate
+    std::vector<float> chMagDb;   // |H| per carrier, dB (decimated to <= 4096 points)
+    std::vector<float> chPhase;   // arg(H) per carrier, radians (same decimation)
+    int chDecim = 1;
+    std::vector<float> irDb;      // power-delay profile (dB rel. peak) from irTauMin, 1 sample per entry
+    int irTauMin = 0;
+    std::vector<float> snrDb;     // pilot-derived SNR per pilot-grid point
+    int snrStep = 3;              // carriers between points
+    float p2SnrDb = 0;
+    std::vector<cf32> eqCells;    // equalised P2 data cells (subsampled)
 };
 
 constexpr int kTraceDecim = 512;

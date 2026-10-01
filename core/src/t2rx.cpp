@@ -1,4 +1,6 @@
 #include "dect2/t2rx.h"
+#include "dect2/t2ofdm.h"
+#include "dect2/t2pilots.h"
 
 #include <Accelerate/Accelerate.h>
 
@@ -84,6 +86,17 @@ struct T2Receiver::Impl {
     int64_t prevSymAbs = -1;
     int64_t lastP1Seen = 0;
 
+    // ---- P2 stage
+    int kMax = 0;
+    std::vector<std::vector<cf32>> p2cells;
+    GridInterpolator interp;
+    bool chValid = false, extDetected = false;
+    std::vector<cf32> chH;
+    int chK = 0, irMin = 0;
+    std::vector<float> chMag, chPh, irDb, snrDbv;
+    float p2Snr = 0;
+    std::vector<cf32> eqP2;
+
     // ---- outputs
     std::mutex mu;
     RxTelemetry tel;
@@ -123,6 +136,7 @@ struct T2Receiver::Impl {
         prevCells.clear();
         prevSymAbs = -1;
         p1Const.clear(); diffCells.clear(); rawCells.clear();
+        p2cells.clear(); chValid = false; chH.clear(); chMag.clear(); chPh.clear(); irDb.clear(); snrDbv.clear(); eqP2.clear();
     }
 
     // ------------------------------------------------------------ decimation (2x -> 1x)
@@ -366,6 +380,8 @@ struct T2Receiver::Impl {
             prevPos = -1;
             cfoEst = info.cfoHz;
             prevCells.clear();
+            p2cells.clear(); chValid = false;
+            kMax = fm->kExt ? fm->kExt : fm->kNormal;
             state = 1;
             giAnchor = (int64_t)std::llround(pos) + kP1Len;
             carriers = fm->kNormal;
@@ -380,7 +396,7 @@ struct T2Receiver::Impl {
         } else if (state == 2) {
             Frame f;
             f.anchor = (int64_t)std::llround(pos) + kP1Len;
-            f.maxSyms = 6;
+            f.maxSyms = std::max(6, nP2);
             frames.push_back(f);
         }
         if (cfoEst == 0) cfoEst = info.cfoHz;
@@ -444,7 +460,7 @@ struct T2Receiver::Impl {
         // process the symbols that follow this first P1 so something is displayed immediately
         Frame f;
         f.anchor = giAnchor;
-        f.maxSyms = 6;
+        f.maxSyms = std::max(6, nP2);
         frames.push_back(f);
         return true;
     }
@@ -465,6 +481,134 @@ struct T2Receiver::Impl {
             if (f.next >= f.maxSyms) frames.pop_front();
             else { (void)progressed; break; }
         }
+    }
+
+    // FFT of the symbol that starts at s (guard included); returns the K central carriers, CFO-corrected.
+    void fftCells(int64_t s, std::vector<cf32>& cells, int K) {
+        const int N = fftN, G = guard;
+        int back = std::min(G / 4, 32);
+        int64_t w0 = s + G - back;
+        fr.assign(N, 0.f); fi.assign(N, 0.f);
+        double dph = -kTwoPi * cfoEst / fn;
+        double ph0 = dph * (double)(w0 - p1.pos);
+        for (int n = 0; n < N; n++) {
+            cf32 x = at(w0 + n);
+            double a = ph0 + dph * n;
+            float cs = (float)std::cos(a), sn = (float)std::sin(a);
+            fr[n] = x.real() * cs - x.imag() * sn;
+            fi[n] = x.real() * sn + x.imag() * cs;
+        }
+        doFft((int)std::lround(std::log2((double)N)));
+        cells.resize(K);
+        for (int kk = 0; kk < K; kk++) {
+            int f = kk - (K - 1) / 2;
+            int b = (f + N) % N;
+            cells[kk] = cf32(fr[b], fi[b]);
+        }
+    }
+
+    void runP2Stage() {
+        const FftMode* fm = fftModeFromS2(fftCode);
+        if (!fm || p2cells.size() != (size_t)nP2) return;
+        for (auto& c : p2cells) if ((int)c.size() != kMax) return;
+        const int G = guard, N = fftN;
+        bool extPossible = fm->kExt != 0;
+        // extended-mode detection: do the extra edge carriers carry energy?
+        bool ext = false;
+        if (extPossible) {
+            int off = (kMax - fm->kNormal) / 2;
+            double edge = 0, mid = 0;
+            int ne = 0, nm = 0;
+            for (auto& c : p2cells) {
+                for (int i = 0; i < off; i++) { edge += std::norm(c[i]) + std::norm(c[kMax - 1 - i]); ne += 2; }
+                for (int i = kMax / 2 - 200; i < kMax / 2 + 200; i++) { mid += std::norm(c[i]); nm++; }
+            }
+            ext = ne && nm && (edge / ne) > 0.25 * (mid / nm);
+        }
+        PilotConfig pc; pc.fftCode = fftCode; pc.ext = ext; pc.pp = 0;
+        PilotMap pm(pc);
+        if (!pm.valid()) { pc.pp = 1; pm = PilotMap(pc); }
+        if (!pm.valid()) return;
+        const int K = pm.carriers(), off = (kMax - K) / 2;
+        extDetected = ext;
+        const int S = fftCode == 5 ? 6 : 3;
+        const int M = (K - 1) / S + 1;
+        std::vector<cf32> hg(M, cf32(0, 0));
+        std::vector<int> cnt(M, 0);
+        std::vector<std::vector<cf32>> obs(nP2, std::vector<cf32>(M, cf32(0, 0)));
+        std::vector<uint8_t> types;
+        for (int l = 0; l < nP2; l++) {
+            pm.symbolTypes(l, nP2 + 2, types);
+            for (int n = 0; n < M; n++) {
+                int kk = S * n;
+                if (types[kk] != kCellP2Pilot) continue;
+                cf32 v = p2cells[l][off + kk] / pm.pilot(l, kk, kCellP2Pilot).real();
+                obs[l][n] = v;
+                hg[n] += v;
+                cnt[n]++;
+            }
+        }
+        // fill missing grid points (tone-reservation carriers replace some pilots)
+        std::vector<char> have(M);
+        for (int n = 0; n < M; n++) { have[n] = cnt[n] > 0; if (have[n]) hg[n] /= (float)cnt[n]; }
+        for (int n = 0; n < M; n++) {
+            if (have[n]) continue;
+            int a = n - 1, b = n + 1;
+            while (a >= 0 && !have[a]) a--;
+            while (b < M && !have[b]) b++;
+            if (a >= 0 && b < M) hg[n] = hg[a] + (hg[b] - hg[a]) * ((float)(n - a) / (float)(b - a));
+            else if (a >= 0) hg[n] = hg[a];
+            else if (b < M) hg[n] = hg[b];
+        }
+        int back = std::min(G / 4, 32);
+        interp.run(hg, S, K, N, (double)back + G / 2.0, chH);
+        chK = K;
+        chValid = true;
+
+        // pilot SNR from the spread between P2 symbols (needs >= 2 symbols)
+        snrDbv.clear();
+        float sigAll = 0, noiseAll = 0;
+        if (nP2 >= 2) {
+            std::vector<float> sig(M), nz(M);
+            for (int n = 0; n < M; n++) {
+                float v = 0, m2 = std::norm(hg[n]);
+                int c = 0;
+                for (int l = 0; l < nP2; l++) if (have[n]) { v += std::norm(obs[l][n] - hg[n]); c++; }
+                sig[n] = m2;
+                nz[n] = c > 1 ? v / (float)(c - 1) / (float)c : 0.f; // variance of the mean estimate x nP2 => per-observation
+                nz[n] *= (float)c;
+            }
+            const int W = 12;
+            for (int n = 0; n < M; n += 1) {
+                double sa = 0, na = 0;
+                int c = 0;
+                for (int j = std::max(0, n - W); j <= std::min(M - 1, n + W); j++) { sa += sig[j]; na += nz[j]; c++; }
+                snrDbv.push_back((float)(10 * std::log10(std::max(1e-9, sa) / std::max(1e-12, na))));
+            }
+            for (int n = 0; n < M; n++) { sigAll += sig[n]; noiseAll += nz[n]; }
+            p2Snr = (float)(10 * std::log10(std::max(1e-9f, sigAll) / std::max(1e-12f, noiseAll)));
+        }
+
+        // channel display (decimated) and power-delay profile
+        chMag.clear(); chPh.clear();
+        int dec = std::max(1, K / 4096);
+        for (int i = 0; i < K; i += dec) {
+            chMag.push_back(20 * std::log10(std::max(1e-9f, std::abs(chH[i]))));
+            chPh.push_back(std::arg(chH[i]));
+        }
+        impulseResponse(chH, N, -std::max(8, G / 4), G + std::max(8, G / 4), back, irDb);
+        irMin = -std::max(8, G / 4);
+
+        // equalised P2 data cells
+        eqP2.clear();
+        std::vector<cf32> all;
+        for (int l = 0; l < nP2; l++) {
+            pm.symbolTypes(l, nP2 + 2, types);
+            for (int kk = 0; kk < K; kk++)
+                if (types[kk] == kCellData) all.push_back(p2cells[l][off + kk] / chH[kk]);
+        }
+        size_t step = std::max<size_t>(1, all.size() / 4096);
+        for (size_t i = 0; i < all.size(); i += step) eqP2.push_back(all[i]);
     }
 
     void processSymbol(int64_t s, int k) {
@@ -515,6 +659,11 @@ struct T2Receiver::Impl {
         timingAvg += 0.05 * (off - timingAvg);
         if (std::fabs(timingAvg) > 6 && rho > 0.3) { gridOff += (int64_t)std::llround(timingAvg); timingAvg = 0; }
 
+        if (k < nP2) {
+            if ((int)p2cells.size() != nP2) p2cells.assign(nP2, {});
+            fftCells(s, p2cells[k], kMax);
+            if (k == nP2 - 1) runP2Stage();
+        }
         symbols++;
         symCounter++;
         // display: FFT consecutive symbol pairs, at a limited rate
@@ -610,6 +759,18 @@ struct T2Receiver::Impl {
         t.p1Const = p1Const;
         t.cells = diffCells;
         t.rawCells = rawCells;
+        t.chValid = chValid;
+        t.extCarriers = extDetected;
+        t.chCarriers = chK;
+        t.chMagDb = chMag;
+        t.chPhase = chPh;
+        t.chDecim = chK > 0 ? std::max(1, chK / 4096) : 1;
+        t.irDb = irDb;
+        t.irTauMin = irMin;
+        t.snrDb = snrDbv;
+        t.snrStep = fftCode == 5 ? 6 : 3;
+        t.p2SnrDb = p2Snr;
+        t.eqCells = eqP2;
     }
 };
 

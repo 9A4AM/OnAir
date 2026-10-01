@@ -56,13 +56,27 @@ static bool run(const Case& c, bool verbose) {
     }
     rx.telemetry(t, 0);
     const FftMode* fm = fftModeFromS2(c.s2);
-    bool ok = t.p1.valid && t.p1.s1 == 0 && t.p1.s2field1 == c.s2 && t.state == 2 && t.giIdx == c.gi &&
+    // phase 2: channel estimate from the P2 pilots
+    bool chOk = t.chValid && t.extCarriers == c.ext;
+    if (chOk && fm->nP2 >= 2 && c.snr < 100 && c.sroPpm == 0) chOk = std::fabs(t.p2SnrDb - c.snr) < 3.5 || c.echoDb > 0;
+    if (chOk && c.echoDb > 0 && c.echoDelay > 0) {
+        int main = 0;
+        for (size_t i = 0; i < t.irDb.size(); i++) if (t.irDb[i] > t.irDb[main]) main = (int)i;
+        int best = -1;
+        for (size_t i = 0; i < t.irDb.size(); i++) {
+            if (std::abs((int)i - main) < 4) continue;
+            if (best < 0 || t.irDb[i] > t.irDb[best]) best = (int)i;
+        }
+        chOk = best >= 0 && std::abs((best - main) - c.echoDelay) <= 2 && std::fabs(t.irDb[best] + c.echoDb) < 3.0;
+        if (!chOk && verbose) printf("  echo check: main %d best %d (delta %d, want %d) level %.1f want %.1f\n", main, best, best - main, c.echoDelay, best >= 0 ? t.irDb[best] : 0.f, -c.echoDb);
+    }
+    bool ok = chOk && t.p1.valid && t.p1.s1 == 0 && t.p1.s2field1 == c.s2 && t.state == 2 && t.giIdx == c.gi &&
               std::fabs(t.cfoHz - c.cfo) < 0.05 * fn / fm->n && t.fftN == fm->n;
     if (verbose || !ok)
-        printf("%s %-3s gi %-6s snr %4.1f cfo %+8.1f echo %.0fdB/%d sro %+.0f | p1=%d s1=%d s2=%d conf %.2f  state %d gi=%s margin %.2f  cfo %+8.1f  cp %.2f(%.1f dB) frame %.1f ms syms %d sro %.0f  nsym %llu\n",
+        printf("%s %-3s gi %-6s snr %4.1f cfo %+8.1f echo %.0fdB/%d sro %+.0f | p1=%d s1=%d s2=%d conf %.2f  state %d gi=%s margin %.2f  cfo %+8.1f  cp %.2f(%.1f dB) frame %.1f ms syms %d sro %.0f  nsym %llu | ch=%d ext=%d p2snr %.1f\n",
                ok ? "PASS" : "FAIL", fm->name, guardName(c.gi), c.snr, c.cfo, c.echoDb, c.echoDelay, c.sroPpm, t.p1.valid, t.p1.s1,
                t.p1.s2field1, t.p1.conf, t.state, t.giIdx >= 0 ? guardName(t.giIdx) : "-", t.giMargin, t.cfoHz, t.cpCorr, t.cpSnrDb,
-               t.frameMs, t.symbolsPerFrame, t.sroPpm, (unsigned long long)t.symbols);
+               t.frameMs, t.symbolsPerFrame, t.sroPpm, (unsigned long long)t.symbols, t.chValid, t.extCarriers, t.p2SnrDb);
     return ok;
 }
 
