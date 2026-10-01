@@ -1,0 +1,82 @@
+// Headless receiver: prints sync / L1 telemetry once per second. Useful for bring-up and logs.
+//   dect2cli --hackrf [--freq MHz] [--lna dB] [--vga dB] [--amp] [--bw MHz] [--secs N]
+//   dect2cli --file path.cs8 --rate Msps [--format cs8|cu8|cf32] [--bw MHz] [--secs N]
+//   dect2cli --record out.cs8 --secs N   (HackRF only; raw IQ capture at the 2x native rate)
+#include "dect2/engine.h"
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <thread>
+
+using namespace dect2;
+
+int main(int argc, char** argv) {
+    Engine e;
+    DeviceInfo dev;
+    TuneSettings tune;
+    FileOptions file;
+    double freq = 522, secs = 10;
+    bool useFile = false, haveDev = false;
+    std::string record;
+    for (int i = 1; i < argc; i++) {
+        std::string a = argv[i];
+        auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)""; };
+        if (a == "--hackrf") haveDev = true;
+        else if (a == "--freq") freq = atof(next());
+        else if (a == "--lna") tune.lnaDb = atoi(next());
+        else if (a == "--vga") tune.vgaDb = atoi(next());
+        else if (a == "--amp") tune.ampOn = true;
+        else if (a == "--bw") tune.bandwidthMhz = atof(next());
+        else if (a == "--secs") secs = atof(next());
+        else if (a == "--file") { useFile = true; file.path = next(); file.format = guessFormat(file.path); }
+        else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
+        else if (a == "--format") { std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
+        else if (a == "--record") record = next();
+    }
+    tune.centerHz = freq * 1e6;
+    tune.sampleRate = nativeRateHz(tune.bandwidthMhz) * 2;
+    if (useFile) { dev.kind = DeviceInfo::File; dev.name = file.path; file.loop = false; }
+    else {
+        std::string err;
+        auto list = listHackrfDevices(err);
+        if (list.empty()) { fprintf(stderr, "no HackRF found %s\n", err.c_str()); return 1; }
+        dev = list[0];
+        printf("device: %s\n", dev.name.c_str());
+    }
+    (void)haveDev;
+    if (!e.start(dev, tune, file)) {
+        size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
+        return 1;
+    }
+    size_t shown = 0;
+    RxTelemetry t; uint64_t seq = 0;
+    SpectrumFrame sf; uint64_t sseq = 0;
+    auto t0 = std::chrono::steady_clock::now();
+    while (std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() < secs) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        e.latestRx(t, 0);
+        e.latestSpectrum(sf, 0);
+        size_t n;
+        auto lines = e.logSnapshot(n);
+        for (; shown < lines.size(); shown++) printf("  log: %s\n", lines[shown].c_str());
+        printf("level %6.1f dBFS clip %.3f%% | state %d P1 %llu (s1 %d fft %d) GI %s | CFO %+8.1f Hz | CP %.2f | L1 pre %llu/%llu post %llu/%llu | data %d SNR %.1f dB | dropped %llu\n",
+               sf.stats.rmsDbfs, sf.stats.clipFraction * 100, t.state, (unsigned long long)t.p1Count, t.p1.s1, t.fftN,
+               t.giIdx >= 0 ? guardName(t.giIdx) : "-", t.cfoHz, t.cpCorr, (unsigned long long)t.l1preGood, (unsigned long long)(t.l1preGood + t.l1preBad),
+               (unsigned long long)t.l1postGood, (unsigned long long)(t.l1postGood + t.l1postBad), t.dataValid, t.dataSnrDb, (unsigned long long)e.droppedSamples());
+    }
+    if (t.l1preGood) {
+        const L1Pre& p = t.l1pre;
+        printf("\nL1-pre: type %d ext %d s1 %d s2 %d gi %s papr %d l1mod %d cod %d fec %d postSize %d postInfo %d PP%d tx %d cell %d net 0x%04X sys 0x%04X frames %d dataSyms %d regen %d ext %d rf %d/%d ver %d scr %d lite %d\n",
+               p.type, p.bwtExt, p.s1, p.s2, guardName(p.guardInterval), p.papr, p.l1Mod, p.l1Cod, p.l1Fec, p.postSize, p.postInfoSize, p.pilotPattern + 1,
+               p.txIdAvail, p.cellId, p.networkId, p.systemId, p.numFrames, p.numDataSyms, p.regen, p.postExtension, p.numRf, p.curRf, p.version, p.postScrambled, p.lite);
+    }
+    if (t.l1postGood) {
+        const L1Post& q = t.l1post;
+        printf("L1-post: plps %d aux %d rf %.3f MHz\n", q.numPlp, q.numAux, q.rf.empty() ? 0.0 : q.rf[0].freq / 1e6);
+        for (auto& c : q.plps) printf("  PLP %d type %d payload %d cod %d mod %d rot %d fec %d blocksMax %d TI %d/%d group %d mode %d\n", c.id, c.type, c.payloadType, c.cod, c.mod, c.rotation, c.fecType, c.numBlocksMax, c.timeIlLength, c.timeIlType, c.groupId, c.plpMode);
+    }
+    e.stop();
+    return 0;
+}

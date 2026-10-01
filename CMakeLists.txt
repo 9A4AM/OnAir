@@ -41,3 +41,6 @@ add_test(NAME l1 COMMAND test_l1)
 add_executable(test_pilots tests/test_pilots.cpp)
 target_link_libraries(test_pilots PRIVATE dect2core)
 add_test(NAME pilots COMMAND test_pilots)
+
+add_executable(dect2cli tools/dect2cli.cpp)
+target_link_libraries(dect2cli PRIVATE dect2core)
