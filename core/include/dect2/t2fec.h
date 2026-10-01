@@ -55,6 +55,8 @@ void qamMapBlock(const PlpFec& f, const std::vector<uint16_t>& labels, std::vect
 // Soft demapping of a FEC block. `n0[i]` is the noise variance per real dimension of equalised cell i.
 // Output llr has cells*bitsPerCell entries in label-bit order (positive = bit 0).
 void qamDemapBlock(const PlpFec& f, const cf32* cells, const float* n0, int nCells, float* llr);
+// Exact (slow) version over the whole constellation, used as a reference in tests.
+void qamDemapBlockExact(const PlpFec& f, const cf32* cells, const float* n0, int nCells, float* llr);
 
 // ---- cell / time interleaver (TIME_IL_TYPE 0: one interleaving frame per T2 frame)
 // `blocks` FEC blocks of cellsPerBlock cells, split into `tiBlocks` time-interleaver blocks (0 = no time interleaving)

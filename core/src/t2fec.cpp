@@ -258,7 +258,8 @@ void qamMapBlock(const PlpFec& f, const std::vector<uint16_t>& labels, std::vect
     for (int j = 0; j < n; j++) cells[j] = cf32(tab[labels[j]].real(), tab[labels[(j + n - 1) % n]].imag());
 }
 
-void qamDemapBlock(const PlpFec& f, const cf32* cells, const float* n0, int nCells, float* llr) {
+// Exact max-log demapper over the full constellation (reference for tests).
+void qamDemapBlockExact(const PlpFec& f, const cf32* cells, const float* n0, int nCells, float* llr) {
     const int M = 2 * (f.mod + 1), P = 1 << M;
     const auto& tab = f.rotation ? qam().rot[f.mod] : qam().plain[f.mod];
     std::vector<float> d(P);
@@ -277,6 +278,86 @@ void qamDemapBlock(const PlpFec& f, const cf32* cells, const float* n0, int nCel
             for (int p = 0; p < P; p++) { float v = d[p]; if ((p >> sh) & 1) { if (v < m1) m1 = v; } else if (v < m0) m0 = v; }
             llr[(size_t)s * M + b] = m1 - m0;
         }
+    }
+}
+
+namespace {
+// The square QAM labels are separable: some label bits select the in-phase level, the others the quadrature level.
+struct AxisMap {
+    int bitsPerAxis = 0;
+    std::vector<int> reBits, imBits;      // label bit positions (0 = MSB), most significant axis bit first
+    std::vector<float> reLevel, imLevel;  // coordinate for each axis index
+    cf32 derot;                           // e^{-j phi}
+};
+const AxisMap& axisMap(int mod) {
+    static AxisMap maps[4];
+    static std::once_flag once;
+    std::call_once(once, [] {
+        for (int mod = 0; mod < 4; mod++) {
+            AxisMap& A = maps[mod];
+            const int M = 2 * (mod + 1), P = 1 << M;
+            const auto& pl = qam().plain[mod];
+            for (int b = 0; b < M; b++) {
+                const int sh = M - 1 - b;
+                bool movesRe = false, movesIm = false;
+                for (int p = 0; p < P; p++) {
+                    int q = p ^ (1 << sh);
+                    if (std::fabs(pl[p].real() - pl[q].real()) > 1e-6f) movesRe = true;
+                    if (std::fabs(pl[p].imag() - pl[q].imag()) > 1e-6f) movesIm = true;
+                }
+                (movesRe ? A.reBits : A.imBits).push_back(b);
+            }
+            A.bitsPerAxis = M / 2;
+            const int L = 1 << A.bitsPerAxis;
+            A.reLevel.assign(L, 0); A.imLevel.assign(L, 0);
+            for (int p = 0; p < P; p++) {
+                int ri = 0, ii = 0;
+                for (int b : A.reBits) ri = (ri << 1) | ((p >> (M - 1 - b)) & 1);
+                for (int b : A.imBits) ii = (ii << 1) | ((p >> (M - 1 - b)) & 1);
+                A.reLevel[ri] = pl[p].real();
+                A.imLevel[ii] = pl[p].imag();
+            }
+        }
+    });
+    return maps[mod];
+}
+const float kRotDeg[4] = {29.f, 16.8f, 8.6f, 3.576334375f};
+
+// max-log LLRs of one axis: bits of the axis index, most significant first
+inline void axisLlr(const std::vector<float>& lev, int nb, float y, float w, float* out) {
+    float d[16];
+    const int L = 1 << nb;
+    for (int i = 0; i < L; i++) { float e = y - lev[i]; d[i] = e * e * w; }
+    for (int b = 0; b < nb; b++) {
+        const int sh = nb - 1 - b;
+        float m0 = 1e30f, m1 = 1e30f;
+        for (int i = 0; i < L; i++) { if ((i >> sh) & 1) m1 = std::min(m1, d[i]); else m0 = std::min(m0, d[i]); }
+        out[b] = m1 - m0;
+    }
+}
+} // namespace
+
+void qamDemapBlock(const PlpFec& f, const cf32* cells, const float* n0, int nCells, float* llr) {
+    const AxisMap& A = axisMap(f.mod);
+    const int M = 2 * (f.mod + 1), nb = A.bitsPerAxis;
+    float cr = 1.f, sr = 0.f;
+    if (f.rotation) { double a = kRotDeg[f.mod] * M_PI / 180.0; cr = (float)std::cos(a); sr = (float)std::sin(a); }
+    float lr[8], li[8];
+    for (int s = 0; s < nCells; s++) {
+        float yI, yQ, nv;
+        if (f.rotation) {
+            int s1 = (s + 1) % nCells;
+            // derotate the (I from this cell, Q from the next cell) observation back onto the unrotated grid
+            float aI = cells[s].real(), aQ = cells[s1].imag();
+            yI = aI * cr + aQ * sr;
+            yQ = aQ * cr - aI * sr;
+            nv = 0.5f * (n0[s] + n0[s1]);
+        } else { yI = cells[s].real(); yQ = cells[s].imag(); nv = n0[s]; }
+        const float w = 1.f / std::max(1e-9f, 2 * nv);
+        axisLlr(A.reLevel, nb, yI, w, lr);
+        axisLlr(A.imLevel, nb, yQ, w, li);
+        float* o = llr + (size_t)s * M;
+        for (int b = 0; b < nb; b++) { o[A.reBits[b]] = lr[b]; o[A.imBits[b]] = li[b]; }
     }
 }
 

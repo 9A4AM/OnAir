@@ -53,7 +53,7 @@ static bool chain(const PlpFec& f, float snrDb, int blocks, int tiBlocks, std::m
         qamDemapBlock(f, rd.data() + (size_t)b * cells, nd0.data() + (size_t)b * cells, cells, llrLab.data());
         for (int p = 0; p < d.nLdpc; p++) llr[map[p]] = llrLab[p];
         std::vector<uint8_t> hard;
-        ldpc.decode(llr, 50, hard);
+        ldpc.decodeFast(llr, 50, hard);
         std::vector<uint8_t> bb(hard.begin(), hard.begin() + d.kLdpc);
         int ne = bch.decode(bb);
         bool same = ne >= 0;

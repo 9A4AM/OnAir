@@ -336,7 +336,14 @@ static void statusBar(App& a) {
         int fs = !run ? 0 : a.rx.dataValid ? 1 : a.rx.l1preOk ? 2 : 0;
         lamp("Frame", fs); ImGui::SameLine(0, 12);
     }
-    const char* later[] = {"LDPC", "BCH", "TS", "Video", "Audio"};
+    {
+        const RxTelemetry& rx = a.rx;
+        double okFrac = (rx.blocksOk + rx.blocksBad) ? (double)rx.blocksOk / (rx.blocksOk + rx.blocksBad) : 0;
+        int fec = !run || !rx.plpValid || rx.plpFrames == 0 ? 0 : okFrac > 0.995 ? 1 : okFrac > 0.5 ? 2 : 3;
+        lamp("LDPC", fec); ImGui::SameLine(0, 12);
+        lamp("BCH", fec); ImGui::SameLine(0, 12);
+    }
+    const char* later[] = {"TS", "Video", "Audio"};
     for (auto* l : later) { lamp(l, 0); ImGui::SameLine(0, 12); }
     ImGui::TextDisabled("|"); ImGui::SameLine();
     ImGui::PushFont(a.mono, 0);
@@ -627,7 +634,28 @@ static void constellationsTab(App& a) {
     ImGui::EndGroup();
     ImGui::SameLine();
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Data cells, equalised (frame %llu)", (unsigned long long)a.rx.dataFrames);
+    if (!a.rx.plpConst.empty()) ImGui::TextDisabled("PLP %d cells (FEC-clean blocks), MER %.1f dB", a.rx.plpId, a.rx.plpMerDb);
+    else ImGui::TextDisabled("Data cells, equalised (frame %llu)", (unsigned long long)a.rx.dataFrames);
+    if (!a.rx.plpConst.empty()) {
+        // PLP cells that belong to correctly decoded FEC blocks; points far from their transmitted constellation point are red
+        std::vector<cf32> good, bad;
+        for (size_t i = 0; i < a.rx.plpConst.size(); i++) (a.rx.plpConstErr.size() > i && a.rx.plpConstErr[i] ? bad : good).push_back(a.rx.plpConst[i]);
+        if (ImPlot::BeginPlot("##c2", ImVec2(w, h), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
+            ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+            ImPlot::SetupAxisLimits(ImAxis_X1, -1.5, 1.5, ImPlotCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -1.5, 1.5, ImPlotCond_Always);
+            auto draw = [&](const char* id, const std::vector<cf32>& v, ImVec4 col) {
+                if (v.empty()) return;
+                ImPlotSpec sp; sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.4f; sp.Stride = sizeof(cf32);
+                sp.MarkerFillColor = col; sp.MarkerLineColor = col; sp.LineColor = col;
+                const float* d = reinterpret_cast<const float*>(v.data());
+                ImPlot::PlotScatter(id, d, d + 1, (int)v.size(), sp);
+            };
+            draw("ok", good, ImVec4(0.35f, 0.85f, 0.45f, 0.55f));
+            draw("err", bad, ImVec4(0.95f, 0.35f, 0.3f, 0.8f));
+            ImPlot::EndPlot();
+        }
+    } else
     scatter("##c2", a.rx.eqData, ImVec2(w, h), 1.8, ImVec4(0.35f, 0.85f, 0.45f, 0.6f));
     ImGui::EndGroup();
     ImGui::SameLine();
@@ -636,8 +664,8 @@ static void constellationsTab(App& a) {
     scatter("##c3", a.rx.rawCells, ImVec2(w, h), 3.0, ImVec4(0.45f, 0.65f, 1.0f, 0.7f));
     ImGui::EndGroup();
     if (a.rx.dataValid)
-        ImGui::TextDisabled("Pilot pattern PP%d (dx %d, dy %d). Data SNR %.1f dB. Equalised data cells are a mix of every PLP in the frame; "
-                            "separate constellations per PLP come with the PLP decoder (phase 3).", a.rx.dataPp + 1, a.rx.dataDx, a.rx.dataDy, a.rx.dataSnrDb);
+        ImGui::TextDisabled("Pilot pattern PP%d (dx %d, dy %d). Data SNR %.1f dB. The PLP panel shows the cells of FEC blocks that decoded cleanly; "
+                            "red points are cells whose error exceeded the decision distance.", a.rx.dataPp + 1, a.rx.dataDx, a.rx.dataDy, a.rx.dataSnrDb);
     else
         ImGui::TextDisabled("Raw cells are rotated by the channel and timing (a ring). Equalised views appear once L1-pre has been decoded.");
 }
@@ -706,6 +734,42 @@ static void snrTab(App& a) {
         ImPlot::PlotLine("snr", xs.data(), rx.snrDb.data(), (int)xs.size(), sp);
         ImPlot::EndPlot();
     }
+}
+
+static void fecTab(App& a) {
+    const RxTelemetry& rx = a.rx;
+    ImGui::PushFont(a.mono, 0);
+    auto row = [](const char* k, const char* fmt, ...) {
+        char b[200];
+        va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof b, fmt, ap); va_end(ap);
+        ImGui::TextDisabled("%-26s", k); ImGui::SameLine(); ImGui::TextUnformatted(b);
+    };
+    if (!rx.plpValid) {
+        ImGui::TextDisabled("waiting for L1-post (PLP configuration)...");
+        if (rx.plpSkipped) ImGui::TextColored(ImVec4(0.95f, 0.7f, 0.2f, 1), "%d frame(s) skipped: PLP uses inter-frame time interleaving or lies outside the received cells", rx.plpSkipped);
+        ImGui::PopFont();
+        return;
+    }
+    static const char* modN[] = {"QPSK", "16-QAM", "64-QAM", "256-QAM"};
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "PLP %d", rx.plpId);
+    row("FEC frame / code rate", "%s, %s", rx.plpFec.shortFrame ? "short (16200)" : "normal (64800)", rateName(rx.plpFec.rate));
+    row("constellation", "%s%s", modN[rx.plpFec.mod & 3], rx.plpFec.rotation ? ", rotated + cyclic Q delay" : "");
+    row("FEC blocks per frame", "%d", rx.plpBlocks);
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "decoder (all frames since start)");
+    double tot = (double)(rx.blocksOk + rx.blocksBad);
+    row("frames decoded", "%llu  (dropped, decoder busy: %llu)", (unsigned long long)rx.plpFrames, (unsigned long long)rx.plpFramesDropped);
+    row("FEC blocks OK / failed", "%llu / %llu  (%.2f%% good)", (unsigned long long)rx.blocksOk, (unsigned long long)rx.blocksBad, tot ? 100.0 * rx.blocksOk / tot : 0.0);
+    row("BB headers with valid CRC", "%llu", (unsigned long long)rx.headersOk);
+    row("BCH bit errors corrected", "%llu", (unsigned long long)rx.plpBchCorrected);
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "last frame");
+    row("MER", "%.1f dB", rx.plpMerDb);
+    row("BER before LDPC", "%.2e", rx.plpPreBer);
+    row("LDPC iterations (average)", "%.1f", rx.plpIters);
+    row("decode time", "%.0f ms for %.0f ms of signal", rx.plpDecodeMs, rx.frameMs);
+    if (rx.plpHeaderUpl) row("BB header", "UPL %d bits, DFL %d bits, SYNCD %d", rx.plpHeaderUpl, rx.plpHeaderDfl, rx.plpHeaderSyncd);
+    ImGui::PopFont();
 }
 
 static void rightPanel(App& a) {
@@ -791,7 +855,8 @@ static void drawUI(App& a, ImVec2 disp) {
         if (tabItem("Channel")) { channelTab(a); ImGui::EndTabItem(); }
         if (tabItem("Impulse response")) { impulseTab(a); ImGui::EndTabItem(); }
         if (tabItem("SNR per carrier")) { snrTab(a); ImGui::EndTabItem(); }
-        const char* later[] = {"FEC", "Frame map", "TS", "History", "Outputs"};
+        if (tabItem("FEC")) { fecTab(a); ImGui::EndTabItem(); }
+        const char* later[] = {"Frame map", "TS", "History", "Outputs"};
         for (auto* t : later)
             if (tabItem(t)) { ImGui::TextDisabled("Not implemented yet (see PROJECT_BRIEF.md, development plan)."); ImGui::EndTabItem(); }
         ImGui::EndTabBar();

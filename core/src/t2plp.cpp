@@ -52,7 +52,7 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads) {
         qamDemapBlock(job.fec, c, nn, cells, llrLab.data());
         for (int p = 0; p < d.nLdpc; p++) llr[map[p]] = llrLab[p];
         std::vector<uint8_t> hard;
-        ldpc.decode(llr, 40, hard, &o.iters);
+        ldpc.decodeFast(llr, 50, hard, &o.iters);
         // hard decisions before LDPC, for the pre-FEC bit error rate
         long pre = 0;
         std::vector<uint8_t> bb(hard.begin(), hard.begin() + d.kLdpc);

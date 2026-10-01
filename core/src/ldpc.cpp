@@ -1,11 +1,19 @@
 #include "dect2/ldpc.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
 
 namespace dect2 {
 
 LdpcCode::LdpcCode(int k, int n, const std::vector<std::vector<int>>& rows) : k_(k), n_(n), m_(n - k) {
     const int q = m_ / 360;
+    q_ = q;
+    groups_ = (int)rows.size();
+    layers_.assign(q, {});
+    for (int g = 0; g < groups_; g++) for (int a : rows[g]) layers_[a % q].push_back({g, a / q});
     std::vector<std::vector<int>> chk(m_);
     int im = 0;
     for (auto& row : rows) {
@@ -79,6 +87,135 @@ bool LdpcCode::decode(const std::vector<float>& llr, int maxIter, std::vector<ui
         }
         if (ok) { it++; break; }
     }
+    if (iters) *iters = it;
+    return ok;
+}
+
+bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters) const {
+    constexpr int Z = 360;
+    constexpr float kBig = 1e4f;
+    const int q = q_, G = groups_;
+    // posterior LLRs: information groups [G][Z]; parity groups [q][Z+1] with a leading pad slot (index -1)
+    std::vector<float> inf((size_t)G * Z), par((size_t)q * (Z + 1));
+    auto P = [&](int r) { return par.data() + (size_t)r * (Z + 1) + 1; };
+    for (int i = 0; i < G * Z; i++) inf[i] = llr[i];
+    for (int r = 0; r < q; r++) {
+        float* p = P(r);
+        p[-1] = kBig;
+        for (int m = 0; m < Z; m++) p[m] = llr[k_ + r + q * m];
+    }
+    // check-to-variable messages per layer and connection (+2 parity connections)
+    std::vector<size_t> base(q + 1, 0);
+    for (int r = 0; r < q; r++) base[r + 1] = base[r] + (layers_[r].size() + 2) * Z;
+    std::vector<float> msg(base[q], 0.f);
+    std::vector<float> L, min1(Z), min2(Z);
+    std::vector<int> idx1(Z);
+    std::vector<uint32_t> sg(Z);
+    const float alpha = 0.78f;
+    int it = 0;
+    bool ok = false;
+    for (; it < maxIter; it++) {
+        for (int r = 0; r < q; r++) {
+            const auto& cn = layers_[r];
+            const int nc = (int)cn.size() + 2;
+            L.assign((size_t)nc * Z, 0.f);
+            float* mr = msg.data() + base[r];
+            // gather variable-to-check messages
+            for (int j = 0; j < nc; j++) {
+                float* Lj = L.data() + (size_t)j * Z;
+                const float* mj = mr + (size_t)j * Z;
+                if (j < (int)cn.size()) {
+                    const float* src = inf.data() + (size_t)cn[j].group * Z;
+                    const int s = cn[j].shift;
+                    // check m reads variable n = (m - s) mod Z
+                    for (int m = s; m < Z; m++) Lj[m] = src[m - s] - mj[m];
+                    for (int m = 0; m < s; m++) Lj[m] = src[m - s + Z] - mj[m];
+                } else {
+                    const float* src = (j == (int)cn.size()) ? P(r) : (r > 0 ? P(r - 1) : P(q - 1) - 1);
+                    for (int m = 0; m < Z; m++) Lj[m] = src[m] - mj[m];
+                }
+            }
+            // min-sum over the nc connections, for all 360 checks of the layer at once
+            for (int m = 0; m < Z; m++) { min1[m] = 1e30f; min2[m] = 1e30f; idx1[m] = -1; sg[m] = 0; }
+            for (int j = 0; j < nc; j++) {
+                const float* Lj = L.data() + (size_t)j * Z;
+#if defined(__ARM_NEON)
+                const int32x4_t jv = vdupq_n_s32(j);
+                for (int m = 0; m < Z; m += 4) {
+                    float32x4_t x = vld1q_f32(Lj + m);
+                    float32x4_t a = vabsq_f32(x);
+                    float32x4_t m1 = vld1q_f32(&min1[m]), m2 = vld1q_f32(&min2[m]);
+                    uint32x4_t lt = vcltq_f32(a, m1);
+                    vst1q_f32(&min2[m], vbslq_f32(lt, m1, vminq_f32(m2, a)));
+                    vst1q_s32(&idx1[m], vbslq_s32(lt, jv, vld1q_s32(&idx1[m])));
+                    vst1q_f32(&min1[m], vminq_f32(m1, a));
+                    vst1q_u32(&sg[m], veorq_u32(vld1q_u32(&sg[m]), vandq_u32(vreinterpretq_u32_f32(x), vdupq_n_u32(0x80000000u))));
+                }
+#else
+                for (int m = 0; m < Z; m++) {
+                    float a = std::fabs(Lj[m]);
+                    uint32_t sb; std::memcpy(&sb, &Lj[m], 4); sg[m] ^= sb & 0x80000000u;
+                    if (a < min1[m]) { min2[m] = min1[m]; min1[m] = a; idx1[m] = j; }
+                    else if (a < min2[m]) min2[m] = a;
+                }
+#endif
+            }
+            for (int j = 0; j < nc; j++) {
+                float* Lj = L.data() + (size_t)j * Z;
+                float* mj = mr + (size_t)j * Z;
+#if defined(__ARM_NEON)
+                const int32x4_t jv = vdupq_n_s32(j);
+                const float32x4_t al = vdupq_n_f32(alpha);
+                for (int m = 0; m < Z; m += 4) {
+                    float32x4_t x = vld1q_f32(Lj + m);
+                    uint32x4_t isMin = vceqq_s32(vld1q_s32(&idx1[m]), jv);
+                    float32x4_t mag = vmulq_f32(vbslq_f32(isMin, vld1q_f32(&min2[m]), vld1q_f32(&min1[m])), al);
+                    uint32x4_t sbit = veorq_u32(vld1q_u32(&sg[m]), vandq_u32(vreinterpretq_u32_f32(x), vdupq_n_u32(0x80000000u)));
+                    float32x4_t nm = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(mag), sbit));
+                    vst1q_f32(mj + m, nm);
+                    vst1q_f32(Lj + m, vaddq_f32(x, nm));
+                }
+#else
+                for (int m = 0; m < Z; m++) {
+                    float mag = (idx1[m] == j ? min2[m] : min1[m]) * alpha;
+                    uint32_t sb; std::memcpy(&sb, &Lj[m], 4);
+                    uint32_t mb; std::memcpy(&mb, &mag, 4);
+                    mb |= (sg[m] ^ (sb & 0x80000000u));
+                    float nm; std::memcpy(&nm, &mb, 4);
+                    mj[m] = nm;
+                    Lj[m] += nm;
+                }
+#endif
+                if (j < (int)cn.size()) {
+                    float* dst = inf.data() + (size_t)cn[j].group * Z;
+                    const int s = cn[j].shift;
+                    for (int m = s; m < Z; m++) dst[m - s] = Lj[m];
+                    for (int m = 0; m < s; m++) dst[m - s + Z] = Lj[m];
+                } else {
+                    float* dst = (j == (int)cn.size()) ? P(r) : (r > 0 ? P(r - 1) : P(q - 1) - 1);
+                    for (int m = 0; m < Z; m++) dst[m] = Lj[m];
+                }
+            }
+            P(q - 1)[-1] = kBig; // the non-existent parity bit before the first one stays known
+        }
+        // syndrome check on hard decisions
+        ok = true;
+        for (int r = 0; r < q && ok; r++) {
+            const auto& cn = layers_[r];
+            for (int m = 0; m < Z; m++) {
+                int p = (P(r)[m] < 0) ^ (r > 0 ? (P(r - 1)[m] < 0) : (m > 0 ? (P(q - 1)[m - 1] < 0) : 0));
+                for (const auto& c : cn) {
+                    int n = m - c.shift; if (n < 0) n += Z;
+                    p ^= inf[(size_t)c.group * Z + n] < 0;
+                }
+                if (p) { ok = false; break; }
+            }
+        }
+        if (ok) { it++; break; }
+    }
+    hard.assign(n_, 0);
+    for (int i = 0; i < G * Z; i++) hard[i] = inf[i] < 0;
+    for (int r = 0; r < q; r++) for (int m = 0; m < Z; m++) hard[k_ + r + q * m] = P(r)[m] < 0;
     if (iters) *iters = it;
     return ok;
 }
