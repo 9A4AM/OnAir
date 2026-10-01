@@ -87,6 +87,8 @@ struct T2Receiver::Impl {
     std::vector<cf32> prevCells;
     int64_t prevSymAbs = -1;
     int64_t lastP1Seen = 0;
+    double frameCfo = 0;   // CFO used for every symbol of the current frame (constant, so phase stays continuous)
+    int64_t curAnchor = 0;
 
     // ---- P2 stage
     int kMax = 0;
@@ -104,6 +106,14 @@ struct T2Receiver::Impl {
     uint64_t l1preGood = 0, l1preBad = 0, l1postGood = 0, l1postBad = 0;
     int l1Iters = 0;
     float l1N0 = 0;
+    // data stage
+    std::vector<std::vector<cf32>> frameCells;
+    bool dataValid = false;
+    float dataSnr = 0;
+    int dataDx = 0, dataDy = 0, dataPp = 0;
+    std::vector<cf32> eqData;
+    std::vector<float> dataSnrCar;
+    uint64_t dataFrames = 0;
 
     // ---- outputs
     std::mutex mu;
@@ -146,6 +156,7 @@ struct T2Receiver::Impl {
         p1Const.clear(); diffCells.clear(); rawCells.clear();
         p2cells.clear(); chValid = false; chH.clear(); chMag.clear(); chPh.clear(); irDb.clear(); snrDbv.clear(); eqP2.clear();
         l1pre = L1Pre(); l1post = L1Post(); l1preOk = l1postOk = false; l1preGood = l1preBad = l1postGood = l1postBad = 0;
+        frameCells.clear(); dataValid = false; eqData.clear(); dataSnrCar.clear(); dataFrames = 0;
     }
 
     // ------------------------------------------------------------ decimation (2x -> 1x)
@@ -478,17 +489,16 @@ struct T2Receiver::Impl {
     void processFrames() {
         const int N = fftN, G = guard;
         while (!frames.empty()) {
-            Frame& f = frames.front();
-            bool progressed = false;
-            while (f.next < f.maxSyms) {
+            bool stalled = false;
+            while (!frames.empty() && frames.front().next < frames.front().maxSyms) {
+                Frame& f = frames.front();
                 int64_t s = f.anchor + gridOff + (int64_t)std::llround((double)f.next * (N + G) * (1.0 + sro));
-                if (s + N + G + 40 > end()) break;
-                processSymbol(s, f.next);
-                f.next++;
-                progressed = true;
+                if (s + N + G + 40 > end()) { stalled = true; break; }
+                int idx = f.next++;
+                processSymbol(s, idx); // may clear `frames` (loss of lock / guard-interval correction)
             }
-            if (f.next >= f.maxSyms) frames.pop_front();
-            else { (void)progressed; break; }
+            if (stalled || frames.empty()) break;
+            frames.pop_front();
         }
     }
 
@@ -498,8 +508,8 @@ struct T2Receiver::Impl {
         int back = std::min(G / 4, 32);
         int64_t w0 = s + G - back;
         fr.assign(N, 0.f); fi.assign(N, 0.f);
-        double dph = -kTwoPi * cfoEst / fn;
-        double ph0 = dph * (double)(w0 - p1.pos);
+        double dph = -kTwoPi * frameCfo / fn;
+        double ph0 = dph * (double)(w0 - curAnchor);
         for (int n = 0; n < N; n++) {
             cf32 x = at(w0 + n);
             double a = ph0 + dph * n;
@@ -636,6 +646,22 @@ struct T2Receiver::Impl {
         eqP2.clear();
         size_t step = std::max<size_t>(1, eqAll.size() / 4096);
         for (size_t i = 0; i < eqAll.size(); i += step) eqP2.push_back(eqAll[i]);
+        if (preOk) {
+            if (pre.guardInterval != giIdx && pre.guardInterval < kNumGi) {
+                // the blind guard-interval guess was wrong: adopt the signalled value and resynchronise
+                giIdx = pre.guardInterval;
+                guard = guardSamples(fftN, giIdx);
+                frames.clear();
+                frameSyms = 0;
+                frameLen = 0;
+                prevPos = -1;
+                dataValid = false;
+                return preOk;
+            }
+            int total = nP2 + pre.numDataSyms;
+            if (total != frameSyms) { frameSyms = total; frameMsv = (kP1Len + (double)total * (fftN + guard)) / fn * 1e3; }
+            if (!frames.empty()) frames.front().maxSyms = std::max(frames.front().maxSyms, frameSyms);
+        }
         return preOk;
     }
 
@@ -661,8 +687,107 @@ struct T2Receiver::Impl {
         p2Hypothesis(!guess, false) || p2Hypothesis(guess, true);
     }
 
+    // Scattered-pilot channel estimation for the data / frame-closing symbols of the frame just received.
+    void runDataStage() {
+        const FftMode* fm = fftModeFromS2(fftCode);
+        if (!fm || !l1preOk) return;
+        const int L = frameSyms, N = fftN, G = guard;
+        for (int l = 0; l < L; l++) if ((int)frameCells[l].size() != kMax) return;
+        PilotConfig pc;
+        pc.fftCode = fftCode; pc.ext = l1pre.bwtExt != 0; pc.pp = l1pre.pilotPattern; pc.tr = (l1pre.papr & 2) != 0; pc.giIdx = giIdx;
+        PilotMap pm(pc);
+        if (!pm.valid()) { dataValid = false; return; }
+        const int K = pm.carriers(), off = (kMax - K) / 2, dx = pm.dx(), dy = pm.dy();
+        const int M = (K - 1) / dx + 1;
+        struct Obs { int l; cf32 v; uint8_t type; };
+        std::vector<std::vector<Obs>> obs(M);
+        std::vector<std::vector<uint8_t>> types(L);
+        for (int l = 0; l < L; l++) {
+            pm.symbolTypes(l, L, types[l]);
+            for (int n = 0; n < M; n++) {
+                int k = dx * n;
+                uint8_t t = types[l][k];
+                if (t != kCellP2Pilot && t != kCellScattered && t != kCellContinual) continue;
+                cf32 pv = pm.pilot(l, k, t);
+                obs[n].push_back({l, frameCells[l][off + k] / pv.real(), t});
+            }
+        }
+        // per-grid-point noise from scattered-pilot second differences
+        std::vector<float> varN(M, 0.f), pw(M, 0.f);
+        double sumSig = 0, sumNoise = 0;
+        for (int n = 0; n < M; n++) {
+            std::vector<const Obs*> sc;
+            for (auto& o : obs[n]) if (o.type == kCellScattered) sc.push_back(&o);
+            double acc = 0, p = 0;
+            int c = 0;
+            for (size_t j = 1; j + 1 < sc.size(); j++) {
+                double w = (double)(sc[j]->l - sc[j - 1]->l) / (double)(sc[j + 1]->l - sc[j - 1]->l);
+                cf32 pred = sc[j - 1]->v + (sc[j + 1]->v - sc[j - 1]->v) * (float)w;
+                double e = std::norm(sc[j]->v - pred) / (1.0 + w * w + (1 - w) * (1 - w));
+                acc += e;
+                p += std::norm(sc[j]->v);
+                c++;
+            }
+            if (c) { varN[n] = (float)(acc / c); pw[n] = (float)(p / c); sumSig += pw[n]; sumNoise += varN[n]; }
+        }
+        const float amp2 = [&] { cf32 pv = pm.pilot(nP2, 0, kCellScattered); return pv.real() * pv.real(); }();
+        dataSnrCar.clear();
+        const int Wd = 10;
+        for (int n = 0; n < M; n++) {
+            double sa = 0, na = 0;
+            for (int j = std::max(0, n - Wd); j <= std::min(M - 1, n + Wd); j++) { sa += pw[j]; na += varN[j]; }
+            dataSnrCar.push_back((float)(10 * std::log10(std::max(1e-9, sa) / std::max(1e-12, na * amp2))));
+        }
+        dataSnr = (float)(10 * std::log10(std::max(1e-9, sumSig) / std::max(1e-12, sumNoise * amp2)));
+
+        // channel per data symbol: time-interpolate each grid point, then frequency-interpolate
+        std::vector<size_t> ptr(M, 0);
+        std::vector<cf32> grid(M), H;
+        const int back = std::min(G / 4, 32);
+        std::vector<cf32> all;
+        const int firstData = nP2;
+        for (int l = firstData; l < L; l++) {
+            for (int n = 0; n < M; n++) {
+                auto& o = obs[n];
+                if (o.empty()) { grid[n] = n ? grid[n - 1] : cf32(1, 0); continue; }
+                while (ptr[n] + 1 < o.size() && o[ptr[n] + 1].l <= l) ptr[n]++;
+                const Obs& a = o[ptr[n]];
+                if (a.l == l || ptr[n] + 1 >= o.size()) grid[n] = a.v;
+                else if (a.l > l) grid[n] = a.v;
+                else {
+                    const Obs& b = o[ptr[n] + 1];
+                    float w = (float)(l - a.l) / (float)(b.l - a.l);
+                    grid[n] = a.v + (b.v - a.v) * w;
+                }
+            }
+            interp.run(grid, dx, K, N, (double)back + G / 2.0, H);
+            for (int kk = 0; kk < K; kk++)
+                if (types[l][kk] == kCellData) all.push_back(frameCells[l][off + kk] / H[kk]);
+            if (l == firstData + (L - firstData) / 2) { chH = H; chK = K; } // keep a mid-frame channel snapshot for display
+        }
+        eqData.clear();
+        size_t step = std::max<size_t>(1, all.size() / 6000);
+        for (size_t i = 0; i < all.size(); i += step) eqData.push_back(all[i]);
+        dataValid = true;
+        dataDx = dx; dataDy = dy; dataPp = pc.pp;
+        dataFrames++;
+        // refresh channel-derived displays from the data-symbol estimate
+        chMag.clear(); chPh.clear();
+        int dec = std::max(1, K / 4096);
+        for (int i = 0; i < K; i += dec) {
+            chMag.push_back(20 * std::log10(std::max(1e-9f, std::abs(chH[i]))));
+            chPh.push_back(std::arg(chH[i]));
+        }
+        irMin = -std::max(8, G / 4);
+        impulseResponse(chH, N, irMin, G + std::max(8, G / 4), back, irDb);
+        snrDbv = dataSnrCar;
+        p2Snr = dataSnr;
+        (void)fm;
+    }
+
     void processSymbol(int64_t s, int k) {
         const int N = fftN, G = guard;
+        if (k == 0) { frameCfo = cfoEst; curAnchor = s; }
         // cyclic-prefix correlation
         auto cpCorr = [&](int64_t st, double& e) {
             cd c = 0;
@@ -713,6 +838,12 @@ struct T2Receiver::Impl {
             if ((int)p2cells.size() != nP2) p2cells.assign(nP2, {});
             fftCells(s, p2cells[k], kMax);
             if (k == nP2 - 1) runP2Stage();
+        }
+        if (l1preOk && frameSyms > 0 && k < frameSyms && k >= 0) {
+            if ((int)frameCells.size() != frameSyms) frameCells.assign(frameSyms, {});
+            if (k >= nP2) fftCells(s, frameCells[k], kMax);
+            else frameCells[k] = p2cells[k];
+            if (k == frameSyms - 1) runDataStage();
         }
         symbols++;
         symCounter++;
@@ -825,6 +956,13 @@ struct T2Receiver::Impl {
         t.l1pre = l1pre; t.l1post = l1post;
         t.l1preGood = l1preGood; t.l1preBad = l1preBad; t.l1postGood = l1postGood; t.l1postBad = l1postBad;
         t.l1Iters = l1Iters;
+        t.dataValid = dataValid;
+        t.dataPp = dataPp; t.dataDx = dataDx; t.dataDy = dataDy;
+        t.dataSnrDb = dataSnr;
+        t.eqData = eqData;
+        t.dataSnrCarrier = dataSnrCar;
+        t.dataFrames = dataFrames;
+        if (dataValid) t.snrStep = dataDx;
     }
 };
 

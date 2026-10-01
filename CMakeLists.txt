@@ -37,3 +37,7 @@ add_test(NAME sync COMMAND test_sync)
 add_executable(test_l1 tests/test_l1.cpp)
 target_link_libraries(test_l1 PRIVATE dect2core)
 add_test(NAME l1 COMMAND test_l1)
+
+add_executable(test_pilots tests/test_pilots.cpp)
+target_link_libraries(test_pilots PRIVATE dect2core)
+add_test(NAME pilots COMMAND test_pilots)

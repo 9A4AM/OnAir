@@ -76,14 +76,17 @@ static bool run(const Case& c, bool verbose) {
                 t.l1pre.bwtExt == (c.ext ? 1 : 0) && t.l1pre.cellId == gp.cellId && t.l1pre.s2 == gp.s2 && t.l1pre.postScrambled == gp.postScrambled;
     bool postOk = t.l1postOk && t.l1post.numPlp == 1 && t.l1post.plps.size() == 1 && t.l1post.plps[0].mod == 2 && t.l1post.rf[0].freq == 522000000u;
     if (!l1Ok || !postOk) { if (verbose || true) printf("  L1 check: pre=%d post=%d (pre fail %llu, post fail %llu) numData %d/%d\n", t.l1preOk, t.l1postOk, (unsigned long long)t.l1preBad, (unsigned long long)t.l1postBad, t.l1pre.numDataSyms, gp.numDataSyms); }
-    chOk = chOk && l1Ok && postOk;
+    bool dataOk = t.dataValid && t.dataPp == gen.params().pp;
+    if (dataOk && c.sroPpm == 0 && c.snr < 100) dataOk = std::fabs(t.dataSnrDb - c.snr) < 3.5;
+    if (!dataOk && verbose) printf("  data stage: valid=%d snr %.1f (want %.1f) pp %d\n", t.dataValid, t.dataSnrDb, c.snr, t.dataPp);
+    chOk = chOk && l1Ok && postOk && dataOk;
     bool ok = chOk && t.p1.valid && t.p1.s1 == 0 && t.p1.s2field1 == c.s2 && t.state == 2 && t.giIdx == c.gi &&
               std::fabs(t.cfoHz - c.cfo) < 0.05 * fn / fm->n && t.fftN == fm->n;
     if (verbose || !ok)
-        printf("%s %-3s gi %-6s snr %4.1f cfo %+8.1f echo %.0fdB/%d sro %+.0f | p1=%d s1=%d s2=%d conf %.2f  state %d gi=%s margin %.2f  cfo %+8.1f  cp %.2f(%.1f dB) frame %.1f ms syms %d sro %.0f  nsym %llu | ch=%d ext=%d p2snr %.1f\n",
+        printf("%s %-3s gi %-6s snr %4.1f cfo %+8.1f echo %.0fdB/%d sro %+.0f | p1=%d s1=%d s2=%d conf %.2f  state %d gi=%s margin %.2f  cfo %+8.1f  cp %.2f(%.1f dB) frame %.1f ms syms %d sro %.0f  nsym %llu | ch=%d ext=%d p2snr %.1f data %.1f\n",
                ok ? "PASS" : "FAIL", fm->name, guardName(c.gi), c.snr, c.cfo, c.echoDb, c.echoDelay, c.sroPpm, t.p1.valid, t.p1.s1,
                t.p1.s2field1, t.p1.conf, t.state, t.giIdx >= 0 ? guardName(t.giIdx) : "-", t.giMargin, t.cfoHz, t.cpCorr, t.cpSnrDb,
-               t.frameMs, t.symbolsPerFrame, t.sroPpm, (unsigned long long)t.symbols, t.chValid, t.extCarriers, t.p2SnrDb);
+               t.frameMs, t.symbolsPerFrame, t.sroPpm, (unsigned long long)t.symbols, t.chValid, t.extCarriers, t.p2SnrDb, t.dataSnrDb);
     return ok;
 }
 

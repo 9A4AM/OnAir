@@ -2,14 +2,4 @@
 
 Open-source DVB-T2 receiver for macOS (HackRF One / HackRF Pro). See [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
 
-**Status: phase 1** — P1 detection and S1/S2 decoding, guard-interval detection, CFO/timing tracking, raw OFDM cells; synthetic DVB-T2-style signal generator with impairments. Tests: `build/test_sync`.
-
-## Build
-```
-brew install cmake glfw hackrf pkg-config
-cmake -S . -B build && cmake --build build -j
-build/dect2
-```
-Dev flags: `--autostart` (start the synthetic source), `--shot out.png` (save a screenshot after ~400 frames and quit).
-
-License: GPL-3.0-or-later. Bundled: Dear ImGui and ImPlot (MIT).
+**Status: phase 2** — P1/GI/CFO sync, pilot-aided channel estimation (P2 + scattered pilots), L1-pre and L1-post decoding (LDPC, BCH, CRC-32), equalised constellations, channel / impulse-response / SNR-per-carrier views. The signal generator is a real T2 transmitter model (pilots + L1) used for tests; its L1 encoders, pilot maps and frequency interleaver were checked bit-for-bit against the open-source gr-dvbt2 transmitter. Tests: `build/test_sync`, `build/test_l1`, `build/test_pilots`.

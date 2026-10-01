@@ -69,6 +69,14 @@ struct RxTelemetry {
     L1Post l1post;
     uint64_t l1preGood = 0, l1preBad = 0, l1postGood = 0, l1postBad = 0;
     int l1Iters = 0;
+
+    // ---- data symbols (after L1-pre gives the pilot pattern)
+    bool dataValid = false;
+    int dataPp = 0, dataDx = 0, dataDy = 0;
+    float dataSnrDb = 0;
+    std::vector<cf32> eqData;     // equalised data cells of the last frame (subsampled)
+    std::vector<float> dataSnrCarrier; // per pilot-grid point
+    uint64_t dataFrames = 0;
 };
 
 constexpr int kTraceDecim = 512;

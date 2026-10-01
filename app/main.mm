@@ -270,6 +270,16 @@ static void toolbar(App& a) {
         }
         ImGui::SameLine();
         if (ImGui::Checkbox("ext", &sc.tx.ext)) ch = true;
+        ImGui::SameLine(); ImGui::SetNextItemWidth(62);
+        {
+            char ppl[8]; snprintf(ppl, sizeof ppl, "PP%d", sc.tx.pp + 1);
+            if (ImGui::BeginCombo("##spp", ppl)) {
+                for (int q = 0; q < 8; q++) { snprintf(ppl, sizeof ppl, "PP%d", q + 1); if (ImGui::Selectable(ppl, q == sc.tx.pp)) { sc.tx.pp = q; ch = true; } }
+                ImGui::EndCombo();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Checkbox("TR", &sc.tx.tr)) ch = true;
         ImGui::SameLine(); ImGui::TextDisabled("SNR"); ImGui::SameLine(); ImGui::SetNextItemWidth(90);
         float snr = (float)sc.snrDb; if (ImGui::SliderFloat("##ssnr", &snr, 0, 40, "%.0f dB")) { sc.snrDb = snr; ch = true; }
         ImGui::SameLine(); ImGui::TextDisabled("CFO"); ImGui::SameLine(); ImGui::SetNextItemWidth(110);
@@ -315,7 +325,18 @@ static void statusBar(App& a) {
         lamp("P1", p1s); ImGui::SameLine(0, 12);
         lamp("GI", gis); ImGui::SameLine(0, 12);
     }
-    const char* later[] = {"L1-pre", "L1-post", "Frame", "LDPC", "BCH", "TS", "Video", "Audio"};
+    {
+        const RxTelemetry& rx = a.rx;
+        int l1p = !run ? 0 : rx.l1preOk ? 1 : rx.l1preGood > 0 ? 2 : rx.chValid ? 3 : 0;
+        int l1q = !run ? 0 : rx.l1postOk ? 1 : rx.l1postGood > 0 ? 2 : rx.l1preOk ? 3 : 0;
+        lamp("L1-pre", l1p); ImGui::SameLine(0, 12);
+        lamp("L1-post", l1q); ImGui::SameLine(0, 12);
+    }
+    {
+        int fs = !run ? 0 : a.rx.dataValid ? 1 : a.rx.l1preOk ? 2 : 0;
+        lamp("Frame", fs); ImGui::SameLine(0, 12);
+    }
+    const char* later[] = {"LDPC", "BCH", "TS", "Video", "Audio"};
     for (auto* l : later) { lamp(l, 0); ImGui::SameLine(0, 12); }
     ImGui::TextDisabled("|"); ImGui::SameLine();
     ImGui::PushFont(a.mono, 0);
@@ -327,8 +348,10 @@ static void statusBar(App& a) {
     ImGui::PopFont();
     if (run && a.rx.state == 2) {
         ImGui::PushFont(a.mono, 0);
-        ImGui::Text("%s %s GI %s   CFO %+.1f Hz   CP-SNR %.1f dB   SRO %+.1f ppm", s1Name(a.rx.p1.s1),
-                    fftModeFromSize(a.rx.fftN) ? fftModeFromSize(a.rx.fftN)->name : "?", guardName(a.rx.giIdx), a.rx.cfoHz, a.rx.cpSnrDb, a.rx.sroPpm);
+        ImGui::Text("%s %s GI %s%s   CFO %+.1f Hz   SRO %+.1f ppm   SNR %.1f dB%s", s1Name(a.rx.p1.s1),
+                    fftModeFromSize(a.rx.fftN) ? fftModeFromSize(a.rx.fftN)->name : "?", guardName(a.rx.giIdx), a.rx.extCarriers ? " ext" : "", a.rx.cfoHz, a.rx.sroPpm,
+                    a.rx.dataValid ? a.rx.dataSnrDb : a.rx.cpSnrDb, a.rx.dataValid ? "" : " (CP)");
+        if (a.rx.l1preOk) ImGui::SameLine(), ImGui::Text("  PP%d  cell %d", a.rx.l1pre.pilotPattern + 1, a.rx.l1pre.cellId);
         ImGui::PopFont();
     }
     if (run && a.devices[a.devIdx].kind == DeviceInfo::HackRF) {
@@ -549,13 +572,49 @@ static void signallingTab(App& a) {
         row("symbols processed", "%llu", (unsigned long long)rx.symbols);
     }
     ImGui::Spacing();
-    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "L1-pre / L1-post");
-    ImGui::TextDisabled("(phase 2: pilots, channel estimation and L1 decoding)");
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "L1-pre   (decoded %llu, failed %llu, LDPC iterations %d)", (unsigned long long)rx.l1preGood, (unsigned long long)rx.l1preBad, rx.l1Iters);
+    if (rx.l1preGood > 0) {
+        const L1Pre& p = rx.l1pre;
+        static const char* paprN[] = {"off", "ACE", "TR", "ACE + TR"};
+        static const char* modN[] = {"BPSK", "QPSK", "16-QAM", "64-QAM"};
+        static const char* verN[] = {"1.1.1", "1.2.1", "1.3.1"};
+        row("TYPE", "%d  %s", p.type, p.type == 0 ? "TS" : p.type == 1 ? "GSE/GS" : "TS + GS");
+        row("carrier mode", "%s", p.bwtExt ? "extended" : "normal");
+        row("S1 / S2", "%d / %d (FFT %s%s)", p.s1, p.s2, fftModeFromS2(p.s2 >> 1) ? fftModeFromS2(p.s2 >> 1)->name : "?", (p.s2 & 1) ? ", FEF present" : "");
+        row("guard interval", "%s", guardName(p.guardInterval));
+        row("PAPR", "%s", p.papr < 4 ? paprN[p.papr] : "reserved");
+        row("L1-post", "%s, rate 1/2, %s FEC, %d cells, %d info bits%s", p.l1Mod < 4 ? modN[p.l1Mod] : "?", p.l1Fec == 0 ? "16K" : "64K", p.postSize, p.postInfoSize, p.postScrambled ? ", scrambled" : "");
+        row("pilot pattern", "PP%d", p.pilotPattern + 1);
+        row("cell / network / system", "%d / 0x%04X / 0x%04X", p.cellId, p.networkId, p.systemId);
+        row("T2 frames per super-frame", "%d", p.numFrames);
+        row("data symbols per frame", "%d", p.numDataSyms);
+        row("T2 version", "%s%s", p.version < 3 ? verN[p.version] : "?", p.lite ? "  (T2-Lite)" : "");
+        row("RF channels", "%d (current %d)  regen %d  tx-id %d", p.numRf, p.curRf, p.regen, p.txIdAvail);
+    } else ImGui::TextDisabled("not decoded yet");
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "L1-post   (decoded %llu, failed %llu)", (unsigned long long)rx.l1postGood, (unsigned long long)rx.l1postBad);
+    if (rx.l1postGood > 0) {
+        const L1Post& q = rx.l1post;
+        static const char* cod[] = {"1/2", "3/5", "2/3", "3/4", "4/5", "5/6", "1/3", "2/5"};
+        static const char* pmod[] = {"QPSK", "16-QAM", "64-QAM", "256-QAM"};
+        static const char* ptype[] = {"common", "data type 1", "data type 2"};
+        row("sub-slices / PLPs / aux", "%d / %d / %d", q.subSlices, q.numPlp, q.numAux);
+        for (auto& rf : q.rf) row("RF frequency", "%.3f MHz  (index %d)", rf.freq / 1e6, rf.idx);
+        row("frame index", "%d   change counter %d", q.frameIdx, q.changeCounter);
+        for (size_t i = 0; i < q.plps.size(); i++) {
+            const L1PlpConf& c = q.plps[i];
+            char hdr[32]; snprintf(hdr, sizeof hdr, "PLP %d", c.id);
+            row(hdr, "%s, %s, rate %s, %s, %s FEC, rotation %s", c.type < 3 ? ptype[c.type] : "?", c.mod < 4 ? pmod[c.mod] : "?", c.cod < 8 ? cod[c.cod] : "?",
+                c.payloadType == 3 ? "TS" : c.payloadType == 0 ? "GFPS" : c.payloadType == 1 ? "GCS" : "GSE", c.fecType == 1 ? "64K" : "16K", c.rotation ? "on" : "off");
+            row("", "max %d FEC blocks, TI %d (%s), group %d, interval %d, mode %d", c.numBlocksMax, c.timeIlLength, c.timeIlType ? "multi-frame" : "one frame", c.groupId, c.frameInterval, c.plpMode);
+            if (i < q.dyn.size()) row("", "start %d, %d blocks in this frame", q.dyn[i].start, q.dyn[i].numBlocks);
+        }
+    } else ImGui::TextDisabled("%s", rx.l1preGood ? "not decoded (L1-pre must be valid first)" : "not decoded yet");
     ImGui::PopFont();
 }
 
 static void constellationsTab(App& a) {
-    float w = ImGui::GetContentRegionAvail().x / 3 - 8;
+    float w = ImGui::GetContentRegionAvail().x / 4 - 8;
     float h = std::min(ImGui::GetContentRegionAvail().y - 40, w);
     ImGui::BeginGroup();
     ImGui::TextDisabled("P1 carriers (DBPSK, differential)");
@@ -563,16 +622,90 @@ static void constellationsTab(App& a) {
     ImGui::EndGroup();
     ImGui::SameLine();
     ImGui::BeginGroup();
-    ImGui::TextDisabled("OFDM cells, inter-symbol differential");
-    scatter("##c2", a.rx.cells, ImVec2(w, h), 3.0, ImVec4(0.35f, 0.85f, 0.45f, 0.8f));
+    ImGui::TextDisabled("P2 cells, equalised (L1 + PLP)");
+    scatter("##ceq", a.rx.eqCells, ImVec2(w, h), 2.0, ImVec4(0.9f, 0.45f, 0.75f, 0.8f));
     ImGui::EndGroup();
     ImGui::SameLine();
     ImGui::BeginGroup();
-    ImGui::TextDisabled("OFDM cells, raw (no channel correction)");
+    ImGui::TextDisabled("Data cells, equalised (frame %llu)", (unsigned long long)a.rx.dataFrames);
+    scatter("##c2", a.rx.eqData, ImVec2(w, h), 1.8, ImVec4(0.35f, 0.85f, 0.45f, 0.6f));
+    ImGui::EndGroup();
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("OFDM cells, raw");
     scatter("##c3", a.rx.rawCells, ImVec2(w, h), 3.0, ImVec4(0.45f, 0.65f, 1.0f, 0.7f));
     ImGui::EndGroup();
-    ImGui::TextDisabled("Raw cells are rotated by the channel and timing, so they form a ring until pilot-based channel estimation (phase 2). "
-                        "The differential view cancels the channel: tight clusters = good lock.");
+    if (a.rx.dataValid)
+        ImGui::TextDisabled("Pilot pattern PP%d (dx %d, dy %d). Data SNR %.1f dB. Equalised data cells are a mix of every PLP in the frame; "
+                            "separate constellations per PLP come with the PLP decoder (phase 3).", a.rx.dataPp + 1, a.rx.dataDx, a.rx.dataDy, a.rx.dataSnrDb);
+    else
+        ImGui::TextDisabled("Raw cells are rotated by the channel and timing (a ring). Equalised views appear once L1-pre has been decoded.");
+}
+
+static void channelTab(App& a) {
+    const RxTelemetry& rx = a.rx;
+    if (!rx.chValid) { ImGui::TextDisabled("no channel estimate yet (needs a decoded P1 and a P2 symbol)"); return; }
+    float h = ImGui::GetContentRegionAvail().y;
+    double fnMhz = rx.nativeRate / 1e6, binMhz = fnMhz / rx.fftN;
+    std::vector<float> xs(rx.chMagDb.size());
+    for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(a.freqMhz + ((double)(i * rx.chDecim) - (rx.chCarriers - 1) / 2.0) * binMhz);
+    ImGui::TextDisabled("channel magnitude |H(f)| from P2 pilots (relative, dB) - %d carriers%s", rx.chCarriers, rx.extCarriers ? ", extended mode" : "");
+    if (ImPlot::BeginPlot("##chm", ImVec2(-1, h * 0.5f), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+        ImPlot::SetupAxes("frequency (MHz)", "dB", 0, ImPlotAxisFlags_AutoFit);
+        ImPlot::SetupAxisFormat(ImAxis_X1, "%.2f");
+        ImPlot::SetupAxisLimits(ImAxis_X1, xs.front(), xs.back(), ImPlotCond_Always);
+        ImPlotSpec sp; sp.LineColor = ImVec4(0.45f, 0.75f, 1, 1);
+        ImPlot::PlotLine("mag", xs.data(), rx.chMagDb.data(), (int)xs.size(), sp);
+        ImPlot::EndPlot();
+    }
+    ImGui::TextDisabled("channel phase (radians); a steady slope is timing offset, curvature is echoes");
+    if (ImPlot::BeginPlot("##chp", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+        ImPlot::SetupAxes("frequency (MHz)", "rad");
+        ImPlot::SetupAxisFormat(ImAxis_X1, "%.2f");
+        ImPlot::SetupAxisLimits(ImAxis_X1, xs.front(), xs.back(), ImPlotCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -3.3, 3.3, ImPlotCond_Always);
+        ImPlotSpec sp; sp.LineColor = ImVec4(0.95f, 0.7f, 0.2f, 1); sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.2f;
+        sp.LineWeight = 0.0f;
+        ImPlot::PlotScatter("ph", xs.data(), rx.chPhase.data(), (int)xs.size(), sp);
+        ImPlot::EndPlot();
+    }
+}
+
+static void impulseTab(App& a) {
+    const RxTelemetry& rx = a.rx;
+    if (!rx.chValid || rx.irDb.empty()) { ImGui::TextDisabled("no channel estimate yet"); return; }
+    std::vector<float> xs(rx.irDb.size());
+    double usPerSample = 1e6 / rx.nativeRate;
+    for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)((rx.irTauMin + (double)i) * usPerSample);
+    ImGui::TextDisabled("power-delay profile (dB rel. strongest path). Shaded: guard interval (%.1f us)", rx.guard * usPerSample);
+    if (ImPlot::BeginPlot("##ir", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+        ImPlot::SetupAxes("delay (us)", "dB");
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -80, 5, ImPlotCond_Once);
+        ImPlot::SetupAxisLimits(ImAxis_X1, xs.front(), xs.back(), ImPlotCond_Once);
+        double gx[2] = {0, rx.guard * usPerSample}, gy[2] = {5, 5};
+        ImPlotSpec gs; gs.FillColor = ImVec4(0.15f, 0.55f, 0.20f, 0.18f); gs.LineColor = ImVec4(0, 0, 0, 0);
+        ImPlot::PlotShaded("gi", gx, gy, 2, -80.0, gs);
+        ImPlotSpec sp; sp.LineColor = ImVec4(0.45f, 0.75f, 1, 1);
+        ImPlot::PlotLine("pdp", xs.data(), rx.irDb.data(), (int)xs.size(), sp);
+        ImPlot::EndPlot();
+    }
+}
+
+static void snrTab(App& a) {
+    const RxTelemetry& rx = a.rx;
+    if (rx.snrDb.empty()) { ImGui::TextDisabled("per-carrier SNR appears once a full frame has been received"); if (rx.chValid) ImGui::Text("SNR estimate: %.1f dB", rx.p2SnrDb); return; }
+    double binMhz = rx.nativeRate / 1e6 / rx.fftN;
+    std::vector<float> xs(rx.snrDb.size());
+    for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(a.freqMhz + ((double)(i * rx.snrStep) - (rx.chCarriers - 1) / 2.0) * binMhz);
+    ImGui::Text("pilot-derived SNR across the channel (scattered pilots, smoothed over %d points); mean %.1f dB", 21, rx.p2SnrDb);
+    if (ImPlot::BeginPlot("##snrc", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+        ImPlot::SetupAxes("frequency (MHz)", "SNR (dB)", 0, ImPlotAxisFlags_AutoFit);
+        ImPlot::SetupAxisFormat(ImAxis_X1, "%.2f");
+        ImPlot::SetupAxisLimits(ImAxis_X1, xs.front(), xs.back(), ImPlotCond_Always);
+        ImPlotSpec sp; sp.LineColor = ImVec4(0.35f, 0.85f, 0.45f, 1);
+        ImPlot::PlotLine("snr", xs.data(), rx.snrDb.data(), (int)xs.size(), sp);
+        ImPlot::EndPlot();
+    }
 }
 
 static void rightPanel(App& a) {
@@ -655,8 +788,10 @@ static void drawUI(App& a, ImVec2 disp) {
         if (tabItem("Sync")) { syncTab(a); ImGui::EndTabItem(); }
         if (tabItem("Signalling")) { signallingTab(a); ImGui::EndTabItem(); }
         if (tabItem("Constellations")) { constellationsTab(a); ImGui::EndTabItem(); }
-        const char* later[] = {"Channel", "Impulse response", "SNR per carrier",
-                               "FEC", "Frame map", "TS", "History", "Outputs"};
+        if (tabItem("Channel")) { channelTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Impulse response")) { impulseTab(a); ImGui::EndTabItem(); }
+        if (tabItem("SNR per carrier")) { snrTab(a); ImGui::EndTabItem(); }
+        const char* later[] = {"FEC", "Frame map", "TS", "History", "Outputs"};
         for (auto* t : later)
             if (tabItem(t)) { ImGui::TextDisabled("Not implemented yet (see PROJECT_BRIEF.md, development plan)."); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
@@ -728,6 +863,10 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--gi" && i + 1 < argc) app.tune.synth.tx.giIdx = atoi(argv[++i]);
         if (std::string(argv[i]) == "--cfo" && i + 1 < argc) app.tune.synth.cfoHz = atof(argv[++i]);
         if (std::string(argv[i]) == "--snr" && i + 1 < argc) app.tune.synth.snrDb = atof(argv[++i]);
+        if (std::string(argv[i]) == "--echo" && i + 1 < argc) app.tune.synth.echoDb = atof(argv[++i]);
+        if (std::string(argv[i]) == "--echodelay" && i + 1 < argc) app.tune.synth.echoDelay = atoi(argv[++i]);
+        if (std::string(argv[i]) == "--pp" && i + 1 < argc) app.tune.synth.tx.pp = atoi(argv[++i]);
+        if (std::string(argv[i]) == "--ext") app.tune.synth.tx.ext = true;
     }
     layer.framebufferOnly = NO;
     double last = glfwGetTime();
