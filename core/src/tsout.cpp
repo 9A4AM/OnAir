@@ -21,9 +21,7 @@ struct OutputManager::Impl {
     sockaddr_in dst{};
     OutputStats st;
     // service filter
-    std::set<int> pass;
-    int patCc = 0;
-    int patServiceId = -1, patPmtPid = 0, patTsid = 0;
+    ServiceFilter filter;
     // udp pacing
     struct Dgram { std::vector<uint8_t> data; Clock::time_point due; };
     std::deque<Dgram> queue;
@@ -106,23 +104,7 @@ void OutputManager::configure(const OutputConfig& c) {
             }
         }
     }
-    if (c.serviceId != old.serviceId) { I.pass.clear(); I.patServiceId = -1; }
-}
-
-static void buildPat(int tsid, int sid, int pmtPid, int& cc, uint8_t* out) {
-    uint8_t sec[16];
-    sec[0] = 0x00;
-    sec[1] = 0xB0; sec[2] = 13;                     // section length 13
-    sec[3] = tsid >> 8; sec[4] = tsid & 0xFF;
-    sec[5] = 0xC1; sec[6] = 0; sec[7] = 0;
-    sec[8] = sid >> 8; sec[9] = sid & 0xFF;
-    sec[10] = 0xE0 | (pmtPid >> 8); sec[11] = pmtPid & 0xFF;
-    uint32_t crc = mpegCrc32(sec, 12);
-    sec[12] = crc >> 24; sec[13] = crc >> 16; sec[14] = crc >> 8; sec[15] = crc;
-    memset(out, 0xFF, 188);
-    out[0] = 0x47; out[1] = 0x40; out[2] = 0x00; out[3] = 0x10 | (cc++ & 15);
-    out[4] = 0x00; // pointer field
-    memcpy(out + 5, sec, 16);
+    if (c.serviceId != old.serviceId) I.filter.select(c.serviceId);
 }
 
 void OutputManager::packet(const uint8_t* pkt, const TsSnapshot* snap) { packets(pkt, 1, snap); }
@@ -138,21 +120,9 @@ void OutputManager::packets(const uint8_t* data, size_t n, const TsSnapshot* sna
     const uint8_t* out = pkt;
     if (I.cfg.dropNull && pid == 0x1FFF) continue;
     if (I.cfg.serviceId >= 0) {
-        if (snap) {
-            if (I.patServiceId != I.cfg.serviceId || I.pass.empty()) {
-                for (auto& sv : snap->services) if (sv.id == I.cfg.serviceId && sv.havePmt) {
-                    I.pass = {0x11, 0x12, 0x14, sv.pmtPid, sv.pcrPid};
-                    for (auto& st : sv.streams) I.pass.insert(st.pid);
-                    I.patServiceId = sv.id; I.patPmtPid = sv.pmtPid; I.patTsid = snap->tsid;
-                }
-            }
-        }
-        if (I.pass.empty()) continue;
-        if (pid == 0) {
-            if (!(pkt[1] & 0x40)) continue;               // continuation of the original PAT: dropped
-            buildPat(I.patTsid, I.patServiceId, I.patPmtPid, I.patCc, rewritten);
-            out = rewritten;
-        } else if (!I.pass.count(pid)) continue;
+        if (I.filter.selected() != I.cfg.serviceId) I.filter.select(I.cfg.serviceId);
+        if (!I.filter.process(pkt, snap, rewritten)) continue;
+        out = rewritten;
     }
     if (I.file) { fwrite(out, 1, 188, I.file); I.st.fileBytes += 188; I.st.filePackets++; }
     if (I.sock >= 0) {

@@ -6,6 +6,7 @@
 #include "bbunpack.h"
 #include "ts.h"
 #include "tsout.h"
+#include "player.h"
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -47,6 +48,7 @@ public:
     void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }
+    Player& player() { return player_; }
 
     // Log
     void log(const std::string& line);
@@ -63,6 +65,7 @@ private:
     TsDemux demux_;
     TsSnapshot tsSnap_;
     OutputManager outputs_;
+    Player player_;
     int lastT2Frame_ = -1;
     std::vector<uint8_t> frameBuf_;
     double tSpec_ = 0, tRx_ = 0;

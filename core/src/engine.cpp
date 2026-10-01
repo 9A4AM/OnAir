@@ -1,6 +1,7 @@
 #include "dect2/engine.h"
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 
 namespace dect2 {
 
@@ -73,6 +74,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
 }
 
 void Engine::stop() {
+    player_.select(-1);
     if (!running_ && !src_) return;
     stopReq_ = true;
     if (th_.joinable()) th_.join();
@@ -94,6 +96,7 @@ bool Engine::retune(const TuneSettings& tune) {
 }
 
 void Engine::onPlp(const PlpResult& r) {
+    if (getenv("DECT2_FRAMESTATS")) fprintf(stderr, "[frame] t2 %d: blocks %d ok %d bad %d MER %.1f preBER %.3f iters %.1f\n", r.t2Frame, r.blocks, r.blocksOk, r.bchFailed, r.merDb, r.preBer, r.avgLdpcIters);
     std::lock_guard<std::mutex> lk(tsMu_);
     frameBuf_.clear();
     if (lastT2Frame_ >= 0 && ((r.t2Frame - lastT2Frame_) & 0xFF) != 1) { unpack_.lost(); demux_.markLoss(); }
@@ -105,6 +108,7 @@ void Engine::onPlp(const PlpResult& r) {
     demux_.advance(r.frameSec);
     tsSnap_ = demux_.snapshot();
     outputs_.packets(frameBuf_.data(), frameBuf_.size() / 188, &tsSnap_);
+    if (player_.selected() >= 0) player_.push(frameBuf_.data(), frameBuf_.size() / 188, tsSnap_);
     frameBuf_.clear();
     outputs_.burstDone(r.frameSec);
 }

@@ -82,8 +82,41 @@ static const BwChoice kBw[] = {
     {"8 MHz", 8, 64.0 / 7}, {"7 MHz", 7, 8.0}, {"6 MHz", 6, 48.0 / 7}, {"5 MHz", 5, 40.0 / 7}, {"1.7 MHz", 1.7, 131.0 / 71},
 };
 
+static id<MTLDevice> gDevice;
+
+struct VideoTex {
+    id<MTLTexture> tex = nil;
+    int w = 0, h = 0;
+    uint64_t seq = 0;
+    void update(Player& pl) {
+        auto f = pl.videoFrame(seq);
+        if (!f || f->w <= 0) return;
+        if (!tex || w != f->w || h != f->h) {
+            MTLTextureDescriptor* d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:f->w height:f->h mipmapped:NO];
+            d.usage = MTLTextureUsageShaderRead;
+            tex = [gDevice newTextureWithDescriptor:d];
+            w = f->w; h = f->h;
+        }
+        [tex replaceRegion:MTLRegionMake2D(0, 0, f->w, f->h) mipmapLevel:0 withBytes:f->rgba.data() bytesPerRow:f->w * 4];
+    }
+    void draw(ImVec2 box) {
+        if (!tex) return;
+        float ar = (float)w / h;
+        ImVec2 sz = box;
+        if (box.x / box.y > ar) sz.x = box.y * ar; else sz.y = box.x / ar;
+        ImVec2 p = ImGui::GetCursorPos();
+        ImGui::SetCursorPos(ImVec2(p.x + (box.x - sz.x) * 0.5f, p.y + (box.y - sz.y) * 0.5f));
+        ImGui::Image((ImTextureID)(__bridge void*)tex, sz);
+        ImGui::SetCursorPos(p);
+    }
+};
+
 struct App {
     Engine engine;
+    VideoTex video;
+    float volume = 1.f;
+    bool muted = false, subsOn = true;
+    int playReq = -1;
     std::vector<DeviceInfo> devices; // [0]=synthetic, [1]=file, then HackRFs
     int devIdx = 0;
     TuneSettings tune;
@@ -900,6 +933,46 @@ static void outputsTab(App& a) {
     if (!os.error.empty()) ImGui::TextColored(ImVec4(0.95f, 0.4f, 0.3f, 1), "%s", os.error.c_str());
 }
 
+static void playerTab(App& a) {
+    Player& pl = a.engine.player();
+    PlayerStats ps = pl.stats();
+    float h = ImGui::GetContentRegionAvail().y - 92;
+    ImGui::BeginChild("vbox", ImVec2(-1, h), ImGuiChildFlags_Borders);
+    if (pl.selected() < 0) ImGui::TextDisabled("Pick a service in the list on the right to start playback.");
+    else if (!a.video.tex) ImGui::TextDisabled("%s", ps.hasAudio && !ps.hasVideo ? "audio only" : ps.status.c_str());
+    else a.video.draw(ImGui::GetContentRegionAvail());
+    ImGui::EndChild();
+    if (ImGui::Button(pl.selected() >= 0 ? "Stop" : "Play")) { if (pl.selected() >= 0) pl.select(-1); else if (a.playReq < 0 && !a.ts.services.empty()) { int sid = a.ts.services[0].id; pl.select(sid); pl.setVolume(a.volume); } }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(160);
+    if (ImGui::SliderFloat("volume", &a.volume, 0, 1, "%.2f")) pl.setVolume(a.volume);
+    ImGui::SameLine();
+    if (ImGui::Checkbox("mute", &a.muted)) pl.setMuted(a.muted);
+    ImGui::SameLine();
+    auto tracks = pl.audioTracks();
+    if (!tracks.empty()) {
+        static int cur = 0;
+        cur = std::min(cur, (int)tracks.size() - 1);
+        std::string lab = tracks[cur].codec + " " + tracks[cur].lang;
+        ImGui::SetNextItemWidth(170);
+        if (ImGui::BeginCombo("audio", lab.c_str())) {
+            for (int i = 0; i < (int)tracks.size(); i++) {
+                std::string l = tracks[i].codec + " " + tracks[i].lang + " (" + std::to_string(tracks[i].channels) + " ch)";
+                if (ImGui::Selectable(l.c_str(), i == cur)) { cur = i; pl.setAudioTrack(i); }
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine();
+    }
+    if (pl.subtitlesAvailable()) { if (ImGui::Checkbox("subtitles", &a.subsOn)) pl.setSubtitles(a.subsOn); }
+    ImGui::PushFont(a.mono, 0);
+    ImGui::Text("%s  %s%s %dx%d %.1f fps   audio %s %d ch   buffer %.0f ms   A/V %+.0f ms",
+                ps.status.c_str(), ps.videoCodec.c_str(), ps.hardware ? " (VideoToolbox)" : " (software)", ps.width, ps.height, ps.fps, ps.audioCodec.c_str(), ps.audioChannels, ps.audioBufferMs, ps.avOffsetMs);
+    ImGui::Text("pictures: decoded %llu  shown %llu  late %llu  errors %llu  queue %d    audio underruns %d",
+                (unsigned long long)ps.decoded, (unsigned long long)ps.shown, (unsigned long long)ps.late, (unsigned long long)ps.errors, ps.videoQueue, ps.underruns);
+    ImGui::PopFont();
+}
+
 static void rightPanel(App& a) {
     ImGui::TextDisabled("Services");
     ImGui::BeginChild("svcs", ImVec2(0, 250), ImGuiChildFlags_Borders);
@@ -910,8 +983,8 @@ static void rightPanel(App& a) {
         for (auto& st : sv.streams) { kb += st.kbps; if (st.kind == "video" && vc.empty()) vc = st.codec; if (st.kind == "audio" && ac.empty()) ac = st.codec; }
         std::string label = (sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name);
         ImGui::PushID(sv.id);
-        bool sel = sv.id == a.selService;
-        if (ImGui::Selectable(label.c_str(), sel)) { a.selService = sel ? -1 : sv.id; applyOutputs(a); }
+        bool sel = sv.id == a.engine.player().selected();
+        if (ImGui::Selectable(label.c_str(), sel)) { if (sel) a.engine.player().select(-1); else { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); } }
         char r[32];
         ImGui::TextDisabled("  %s  %s%s%s  %s%s", sv.typeName(), vc.c_str(), (!vc.empty() && !ac.empty()) ? " + " : "", ac.c_str(), fmtKbps(r, sizeof r, kb), sv.caFlag ? "  [scrambled]" : "");
         if (!sv.now.empty()) ImGui::TextDisabled("  now: %s", sv.now.c_str());
@@ -920,8 +993,14 @@ static void rightPanel(App& a) {
     ImGui::EndChild();
     ImGui::Spacing();
     ImGui::TextDisabled("Video");
-    ImGui::BeginChild("video", ImVec2(0, 180), ImGuiChildFlags_Borders);
-    ImGui::TextDisabled("(live video — phase 5)");
+    ImGui::BeginChild("video", ImVec2(0, 190), ImGuiChildFlags_Borders);
+    {
+        PlayerStats ps = a.engine.player().stats();
+        if (a.engine.player().selected() < 0) ImGui::TextDisabled("click a service to play it");
+        else if (!ps.hasVideo && ps.hasAudio) ImGui::TextDisabled("audio only: %s", ps.audioCodec.c_str());
+        else if (!a.video.tex) ImGui::TextDisabled("%s", ps.status.c_str());
+        else a.video.draw(ImGui::GetContentRegionAvail());
+    }
     ImGui::EndChild();
     ImGui::Spacing();
     ImGui::TextDisabled("Outputs");
@@ -961,6 +1040,8 @@ static void logPanel(App& a) {
 static void drawUI(App& a, ImVec2 disp) {
     ingestSpectrum(a);
     ingestRx(a);
+    a.video.update(a.engine.player());
+    if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(disp);
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
@@ -974,6 +1055,7 @@ static void drawUI(App& a, ImVec2 disp) {
     float mainH = ImGui::GetContentRegionAvail().y - logH - 6;
     ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16, mainH));
     if (ImGui::BeginTabBar("tabs")) {
+        if (tabItem("Player")) { playerTab(a); ImGui::EndTabItem(); }
         if (tabItem("Overview")) {
             float h = ImGui::GetContentRegionAvail().y;
             spectrumPlot(a, ImVec2(-1, h * 0.5f));
@@ -1029,6 +1111,7 @@ int main(int argc, char** argv) {
     if (!window) return 1;
 
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+    gDevice = device;
     id<MTLCommandQueue> queue = [device newCommandQueue];
 
     IMGUI_CHECKVERSION();
@@ -1079,6 +1162,7 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--pp" && i + 1 < argc) app.tune.synth.tx.pp = atoi(argv[++i]);
         if (std::string(argv[i]) == "--ext") app.tune.synth.tx.ext = true;
         if (std::string(argv[i]) == "--hackrf") hackrfStart = true;
+        if (std::string(argv[i]) == "--play" && i + 1 < argc) app.playReq = atoi(argv[++i]);
         if (std::string(argv[i]) == "--lna" && i + 1 < argc) app.tune.lnaDb = atoi(argv[++i]);
         if (std::string(argv[i]) == "--vga" && i + 1 < argc) app.tune.vgaDb = atoi(argv[++i]);
         if (std::string(argv[i]) == "--amp") app.tune.ampOn = true;
@@ -1118,7 +1202,7 @@ int main(int argc, char** argv) {
             [enc endEncoding];
             [cb presentDrawable:drawable];
             [cb commit];
-            if (shotPath && ++shotFrame == (hackrfStart ? 900 : 400)) {
+            if (shotPath && ++shotFrame == (hackrfStart ? (app.playReq >= 0 || app.engine.player().selected() >= 0 ? 2400 : 900) : 400)) {
                 [cb waitUntilCompleted];
                 id<MTLTexture> t = drawable.texture;
                 NSUInteger tw = t.width, th = t.height;
@@ -1128,6 +1212,8 @@ int main(int argc, char** argv) {
                 unsigned char* planes[1] = {px.data()};
                 NSBitmapImageRep* rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:planes pixelsWide:tw pixelsHigh:th bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:tw * 4 bitsPerPixel:32];
                 [[rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}] writeToFile:[NSString stringWithUTF8String:shotPath] atomically:YES];
+                { PlayerStats ps = app.engine.player().stats(); { BbStats bb = app.engine.bbStats(); fprintf(stderr, "stream: BB frames %llu lost %llu, PLP frames dropped by busy decoder %llu, FEC blocks ok %llu bad %llu, samples dropped %llu, CPU decode %.0f ms\n", (unsigned long long)bb.frames, (unsigned long long)bb.framesLost, (unsigned long long)app.rx.plpFramesDropped, (unsigned long long)app.rx.blocksOk, (unsigned long long)app.rx.blocksBad, (unsigned long long)app.engine.droppedSamples(), app.rx.plpDecodeMs); }
+                fprintf(stderr, "player: %s hw=%d %s %dx%d decoded %llu shown %llu late %llu errors %llu audio %s ch %d buf %.0f ms underruns %d A/V %+.0f ms\n", ps.status.c_str(), ps.hardware, ps.videoCodec.c_str(), ps.width, ps.height, (unsigned long long)ps.decoded, (unsigned long long)ps.shown, (unsigned long long)ps.late, (unsigned long long)ps.errors, ps.audioCodec.c_str(), ps.audioChannels, ps.audioBufferMs, ps.underruns, ps.avOffsetMs); }
                 glfwSetWindowShouldClose(window, 1);
             }
         }

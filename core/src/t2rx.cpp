@@ -66,6 +66,8 @@ struct T2Receiver::Impl {
     bool scanFirst = true;
     std::array<cd, 1024> phiTab; // exp(-j 2 pi g / 1024)
     int64_t lastP1Abs = INT64_MIN / 2;
+    double rejectedPos = 0;
+    bool haveRejected = false;
     std::vector<float> trace;
 
     // ---- state
@@ -85,7 +87,7 @@ struct T2Receiver::Impl {
     double cfoEst = 0;
     double cpCorrAvg = 0, timingAvg = 0;
     int lowCount = 0;
-    int64_t gridOff = 0;
+    int64_t gridOff = 0, pendingGridOff = 0;
     uint64_t symbols = 0, symCounter = 0;
     std::vector<cf32> prevCells;
     int64_t prevSymAbs = -1;
@@ -341,6 +343,29 @@ struct T2Receiver::Impl {
         P1Decode r = decodeP1(d, epsC);
         if (!r.ok) return;
 
+        // Once the frame length is known, a P1 that does not land where the previous frame predicts is suspicious (a false
+        // detection would make a whole garbage frame). Ignore it - unless the next P1 agrees with it, which means the
+        // timeline really did jump (e.g. samples were lost), so resynchronise on it.
+        if (state == 2 && frameLen > 0 && prevPos >= 0) {
+            auto plausible = [&](double from, double at) {
+                double dist = at - from, k = std::round(dist / frameLen), err = dist - k * frameLen;
+                return k >= 1 && std::fabs(err) <= std::max(300.0, frameLen * 150e-6);
+            };
+            if (!plausible(prevPos, (double)d)) {
+                bool confirmsRejected = haveRejected && plausible(rejectedPos, (double)d);
+                if (!confirmsRejected) {
+                    if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] ignored implausible P1 (%.0f samples from the expected position)\n", (double)d - prevPos - frameLen);
+                    rejectedPos = (double)d; haveRejected = true;
+                    lastP1Abs = d;
+                    return;
+                }
+                // the timeline jumped: drop what is in flight and start over from this P1
+                frames.clear(); frameCells.clear(); p2cells.clear();
+                prevPos = -1;
+                if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] timeline jump confirmed, resynchronising\n");
+            }
+            haveRejected = false;
+        }
         lastP1Abs = d;
         P1Info info;
         info.valid = true;
@@ -385,6 +410,14 @@ struct T2Receiver::Impl {
             state = 1;
             giAnchor = (int64_t)std::llround(pos) + kP1Len;
             carriers = fm->kNormal;
+        }
+        if (getenv("DECT2_DEBUG") && prevPos >= 0 && frameLen > 0) fprintf(stderr, "  [dbg] P1 spacing error %+.1f samples (metric %.2f conf %.2f cfo %+.0f)\n", (pos - prevPos) - frameLen, info.metric, info.conf, info.cfoHz);
+        if (state == 0 && !changed && giIdx >= 0 && guard > 0) {
+            // lost lock earlier but the parameters are unchanged: resume without re-detecting the guard interval
+            state = 2;
+            frames.clear(); frameCells.clear(); p2cells.clear();
+            prevPos = -1;
+            cfoEst = info.cfoHz;
         }
         if (prevPos >= 0) onFrameSpacing(pos - prevPos);
         prevPos = pos;
@@ -472,6 +505,7 @@ struct T2Receiver::Impl {
             bool stalled = false;
             while (!frames.empty() && frames.front().next < frames.front().maxSyms) {
                 Frame& f = frames.front();
+                if (f.next == 0) { gridOff += pendingGridOff; pendingGridOff = 0; }
                 int64_t s = f.anchor + gridOff + (int64_t)std::llround((double)f.next * (N + G) * (1.0 + sro));
                 if (s + N + G + 40 > end()) { stalled = true; break; }
                 int idx = f.next++;
@@ -960,6 +994,7 @@ struct T2Receiver::Impl {
             if (c) { varN[n] = (float)(acc / c); pw[n] = (float)(p / c); sumSig += pw[n]; sumNoise += varN[n]; }
         }
         const float amp2 = [&] { cf32 pv = pm.pilot(nP2, 0, kCellScattered); return pv.real() * pv.real(); }();
+        const float cpAmp2 = [&] { for (int kk = 0; kk < K; kk++) if (types[nP2][kk] == kCellContinual) { cf32 pv = pm.pilot(nP2, kk, kCellContinual); return pv.real() * pv.real(); } return amp2; }();
         dataSnrCar.clear();
         const int Wd = 10;
         for (int n = 0; n < M; n++) {
@@ -990,20 +1025,45 @@ struct T2Receiver::Impl {
         }
         std::vector<cf32> dstream; std::vector<float> dn0;
         const bool wantPlp = l1postOk && !l1post.plps.empty() && !p2Sym.empty() && sigma2 > 0;
-        for (int l = firstData; l < L; l++) {
-            for (int n = 0; n < M; n++) {
-                auto& o = obs[n];
-                if (o.empty()) { grid[n] = n ? grid[n - 1] : cf32(1, 0); continue; }
-                while (ptr[n] + 1 < o.size() && o[ptr[n] + 1].l <= l) ptr[n]++;
-                const Obs& a = o[ptr[n]];
-                if (a.l == l || ptr[n] + 1 >= o.size()) grid[n] = a.v;
-                else if (a.l > l) grid[n] = a.v;
-                else {
-                    const Obs& b = o[ptr[n] + 1];
-                    float w = (float)(l - a.l) / (float)(b.l - a.l);
-                    grid[n] = a.v + (b.v - a.v) * w;
-                }
+        // Per grid carrier: weighted least-squares fit of H(l) = a + b (l - lbar) over every pilot observation in the frame
+        // (P2 symbols excluded: they carry a different phase/timing reference). The slope is shrunk towards zero when it is
+        // not significant, which averages the pilot noise over the whole frame for a quasi-static channel.
+        std::vector<cf32> fa(M), fb(M);
+        std::vector<float> flbar(M, 0.f);
+        for (int n = 0; n < M; n++) {
+            double sw = 0, sl = 0;
+            cd sv = 0;
+            int cnt = 0;
+            for (auto& o : obs[n]) {
+                if (o.type == kCellP2Pilot) continue;
+                const double w = (o.type == kCellContinual ? cpAmp2 : amp2);
+                sw += w; sl += w * o.l; sv += w * cd(o.v.real(), o.v.imag()); cnt++;
             }
+            if (cnt == 0) { fa[n] = n ? fa[n - 1] : cf32(1, 0); fb[n] = 0; continue; }
+            const double lbar = sl / sw;
+            const cd a0 = sv / sw;
+            double stt = 0;
+            cd stv = 0;
+            for (auto& o : obs[n]) {
+                if (o.type == kCellP2Pilot) continue;
+                const double w = (o.type == kCellContinual ? cpAmp2 : amp2), t = o.l - lbar;
+                stt += w * t * t;
+                stv += w * t * cd(o.v.real(), o.v.imag());
+            }
+            cd b0 = 0;
+            if (cnt >= 3 && stt > 1e-9) {
+                b0 = stv / stt;
+                double snr = stt * std::norm(b0) / std::max(1e-18, (double)varN[n] * amp2 * 0 + 1.0 / 1.0 * 0 + (varN[n] > 0 ? varN[n] * amp2 : 1e-9));
+                // James-Stein style shrinkage of the slope: keep it only if it stands out of the noise
+                double shrink = std::max(0.0, 1.0 - 1.0 / std::max(1e-9, snr));
+                b0 *= shrink;
+            }
+            fa[n] = cf32((float)a0.real(), (float)a0.imag());
+            fb[n] = cf32((float)b0.real(), (float)b0.imag());
+            flbar[n] = (float)lbar;
+        }
+        for (int l = firstData; l < L; l++) {
+            for (int n = 0; n < M; n++) grid[n] = fa[n] + fb[n] * ((float)l - flbar[n]);
             {
                 double tau0 = (double)back + (chDelayKnown ? chDelayCentre : G / 2.0);
                 double cut = chDelayKnown ? std::min(1.0, chDelayHalf / ((double)N / (2.0 * dx))) : 1.0;
@@ -1100,7 +1160,7 @@ struct T2Receiver::Impl {
             if (den < 0) off += 0.5 * (a - cc) / den;
         }
         timingAvg += 0.05 * (off - timingAvg);
-        if (std::fabs(timingAvg) > 6 && rho > 0.3) { gridOff += (int64_t)std::llround(timingAvg); timingAvg = 0; }
+        if (std::fabs(timingAvg) > 6 && rho > 0.3) { pendingGridOff += (int64_t)std::llround(timingAvg); timingAvg = 0; } // applied at the next frame start
 
         if (k < nP2) {
             if ((int)p2cells.size() != nP2) p2cells.assign(nP2, {});

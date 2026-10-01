@@ -72,6 +72,41 @@ const char* TsService::typeName() const {
     }
 }
 
+static void buildPatPacket(int tsid, int sid, int pmtPid, int& cc, uint8_t* out) {
+    uint8_t sec[16];
+    sec[0] = 0x00; sec[1] = 0xB0; sec[2] = 13;
+    sec[3] = tsid >> 8; sec[4] = tsid & 0xFF;
+    sec[5] = 0xC1; sec[6] = 0; sec[7] = 0;
+    sec[8] = sid >> 8; sec[9] = sid & 0xFF;
+    sec[10] = 0xE0 | (pmtPid >> 8); sec[11] = pmtPid & 0xFF;
+    uint32_t crc = mpegCrc32(sec, 12);
+    sec[12] = crc >> 24; sec[13] = crc >> 16; sec[14] = crc >> 8; sec[15] = crc;
+    memset(out, 0xFF, 188);
+    out[0] = 0x47; out[1] = 0x40; out[2] = 0x00; out[3] = 0x10 | (cc++ & 15);
+    out[4] = 0x00;
+    memcpy(out + 5, sec, 16);
+}
+
+bool ServiceFilter::process(const uint8_t* in, const TsSnapshot* snap, uint8_t* out) {
+    if (sid_ < 0) { memcpy(out, in, 188); return true; }
+    if (snap && (patSid_ != sid_ || pass_.empty())) {
+        for (auto& sv : snap->services) if (sv.id == sid_ && sv.havePmt) {
+            pass_ = {0x11, 0x12, 0x14, sv.pmtPid, sv.pcrPid};
+            for (auto& st : sv.streams) pass_.push_back(st.pid);
+            patSid_ = sv.id; patPmt_ = sv.pmtPid; patTsid_ = snap->tsid;
+        }
+    }
+    if (pass_.empty()) return false;
+    const int pid = ((in[1] & 0x1F) << 8) | in[2];
+    if (pid == 0) {
+        if (!(in[1] & 0x40)) return false;
+        buildPatPacket(patTsid_, patSid_, patPmt_, patCc_, out);
+        return true;
+    }
+    for (int p : pass_) if (p == pid) { memcpy(out, in, 188); return true; }
+    return false;
+}
+
 void TsDemux::reset() { *this = TsDemux(); }
 
 void TsDemux::markLoss() { for (auto& kv : pids_) kv.second.resync = true; for (auto& kv : sec_) kv.second.active = false; }

@@ -74,6 +74,20 @@ private:
     double muxKbps_ = 0, nullKbps_ = 0;
 };
 
+// Selects one service from a multiplex: passes its PMT/ES/PCR PIDs and SI, and replaces the PAT with a single-program one.
+class ServiceFilter {
+public:
+    void select(int serviceId) { sid_ = serviceId; pass_.clear(); patSid_ = -1; }
+    int selected() const { return sid_; }
+    // Returns true if the packet should be forwarded; `out` receives the (possibly rewritten) packet.
+    bool process(const uint8_t* in, const TsSnapshot* snap, uint8_t* out);
+
+private:
+    int sid_ = -1;
+    std::vector<int> pass_;
+    int patCc_ = 0, patSid_ = -1, patPmt_ = 0, patTsid_ = 0;
+};
+
 uint32_t mpegCrc32(const uint8_t* p, int n);
 std::string dvbText(const uint8_t* p, int n); // DVB text with character-table prefix -> UTF-8
 

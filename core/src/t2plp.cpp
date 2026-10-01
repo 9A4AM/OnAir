@@ -44,8 +44,11 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads) {
         std::vector<uint8_t> perr;
     };
     std::vector<BlockOut> outs(nb);
+    std::atomic<int> tried{0}, failedFirst{0};
     parallelFor(nb, threads, [&](int b) {
         BlockOut& o = outs[b];
+        // a frame whose first blocks all fail to decode is garbage (lost sync): do not burn CPU on the rest
+        if (tried.load() >= 16 && failedFirst.load() >= 16) { o.frame.blockIndex = b; return; }
         const cf32* c = rx.data() + (size_t)b * cells;
         const float* nn = n0.data() + (size_t)b * cells;
         std::vector<float> llrLab((size_t)cells * bps), llr(d.nLdpc);
@@ -58,9 +61,17 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads) {
         std::vector<uint8_t> bb(hard.begin(), hard.begin() + d.kLdpc);
         int corr = bch.decode(bb);
         o.frame.blockIndex = b;
+        if (tried.load() < 16) { tried++; if (corr < 0) failedFirst++; }
         if (corr < 0) return;
         o.ok = true;
         o.corrected = corr;
+        std::vector<uint8_t> cw0;
+        const bool measure = (b % 8) == 0;
+        o.frame.bits.assign(bb.begin(), bb.begin() + d.kBch);
+        const uint8_t* rnd0 = bbRandomiser();
+        for (int i = 0; i < d.kBch; i++) o.frame.bits[i] ^= rnd0[i];
+        parseBbHeader(o.frame.bits.data(), o.frame.header);
+        if (!measure) return;
         // reconstruct the codeword to measure the pre-LDPC error rate and the MER
         std::vector<uint8_t> cw(bb.begin(), bb.begin() + d.kBch);
         bch.encode(cw, d.kBch);
@@ -78,22 +89,17 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads) {
             o.errP += std::norm(e);
             if ((size_t)k % step == 0) { o.pts.push_back(c[k]); o.perr.push_back(std::abs(e) > 0.5f * 0.7f); }
         }
-        // descramble the BB frame
-        o.frame.bits.assign(bb.begin(), bb.begin() + d.kBch);
-        const uint8_t* rnd = bbRandomiser();
-        for (int i = 0; i < d.kBch; i++) o.frame.bits[i] ^= rnd[i];
-        parseBbHeader(o.frame.bits.data(), o.frame.header);
     });
     double sig = 0, err = 0;
     long preErr = 0, preBits = 0;
+    int measured = 0;
     long itSum = 0;
     for (auto& o : outs) {
         itSum += o.iters;
         if (o.ok) {
             res.blocksOk++;
             res.bchCorrected += o.corrected;
-            sig += o.sigP; err += o.errP;
-            preErr += o.errBits; preBits += d.nLdpc;
+            if (o.sigP > 0) { sig += o.sigP; err += o.errP; preErr += o.errBits; preBits += d.nLdpc; measured++; }
             if (o.frame.header.crcOk) res.headerOk++;
             res.constellation.insert(res.constellation.end(), o.pts.begin(), o.pts.end());
             res.constErr.insert(res.constErr.end(), o.perr.begin(), o.perr.end());
