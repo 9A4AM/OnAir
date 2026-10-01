@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
         else if (a == "--record") record = next();
     }
     tune.centerHz = freq * 1e6;
-    tune.sampleRate = nativeRateHz(tune.bandwidthMhz) * 2;
+    tune.sampleRate = tune.bandwidthMhz >= 7 ? 10e6 : 8e6; // HackRF Pro: exact tuning only at <= 10 Msps
     if (useFile) { dev.kind = DeviceInfo::File; dev.name = file.path; file.loop = false; }
     else {
         std::string err;

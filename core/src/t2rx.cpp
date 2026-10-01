@@ -550,7 +550,9 @@ struct T2Receiver::Impl {
             // second pass: narrow the delay passband to where the channel actually has energy
             int tMin, tMax;
             int lim = std::min(N / 2 - 1, G * 3 / 2);
-            if (delaySpan(H, N, -std::min(lim, std::max(G / 2, 64)), lim, back, tMin, tMax)) {
+            bool spanOk = !getenv("DECT2_NONARROW") && delaySpan(H, N, -std::min(lim, std::max(G / 2, 64)), lim, back, tMin, tMax);
+            if (getenv("DECT2_DEBUG") && spanOk) fprintf(stderr, "  [dbg] delay span %d .. %d samples (G=%d)\n", tMin, tMax, G);
+            if (spanOk) {
                 double centre = 0.5 * (tMin + tMax), half = 0.5 * (tMax - tMin) + 48;
                 double cut = half / ((double)N / (2.0 * S));
                 if (cut < 0.9) {
@@ -560,6 +562,16 @@ struct T2Receiver::Impl {
             } else chDelayKnown = false;
         }
 
+        if (getenv("DECT2_DEBUG")) {
+            std::vector<float> ir;
+            impulseResponse(H, N, -N / 4, N / 2, back, ir);
+            std::vector<std::pair<float,int>> pk;
+            for (int i = 2; i + 2 < (int)ir.size(); i++) if (ir[i] > ir[i-1] && ir[i] >= ir[i+1] && ir[i] > -45) pk.push_back({ir[i], i - N / 4});
+            std::sort(pk.rbegin(), pk.rend());
+            fprintf(stderr, "  [dbg] P2 IR peaks (delay samples rel. main: dB):");
+            for (size_t i = 0; i < pk.size() && i < 10; i++) fprintf(stderr, " %d:%.0f", pk[i].second, pk[i].first);
+            fprintf(stderr, "\n");
+        }
         // equalised P2 data cells, per symbol in carrier order, then frequency de-interleaved
         const int cP2 = pm.p2DataCells();
         std::vector<std::vector<cf32>> sym(nP2), gsym(nP2);
@@ -588,6 +600,11 @@ struct T2Receiver::Impl {
         float n0 = 0;
         for (auto& c : preCells) n0 += c.imag() * c.imag();
         n0 = std::max(1e-4f, n0 / 1840.f);
+        if (getenv("DECT2_DEBUG")) {
+            double mr = 0; for (auto& c : preCells) mr += std::fabs(c.real());
+            int neg = 0; for (auto& c : preCells) neg += c.real() < 0;
+            fprintf(stderr, "  [dbg] P2 hyp ext=%d: n0 %.4f mean|Re| %.3f neg %d/1840 K %d\n", (int)ext, n0, mr / 1840, neg, K);
+        }
         L1Pre pre;
         L1Result r = decodeL1Pre(preCells, n0, pre);
         bool preOk = r.ok;
@@ -664,10 +681,53 @@ struct T2Receiver::Impl {
         return preOk;
     }
 
+    // Integer-bin frequency error: the CP correlation only resolves the offset modulo one carrier spacing, so a wrong
+    // P1-based estimate can leave the whole spectrum shifted by whole carriers. Correlate the P2 pilots at shifts.
+    int p2IntegerShift() {
+        PilotConfig pc; pc.fftCode = fftCode; pc.ext = false; pc.pp = 0;
+        PilotMap pm(pc);
+        for (int q = 1; !pm.valid() && q < 8; q++) { pc.pp = q; pm = PilotMap(pc); }
+        if (!pm.valid() || p2cells.empty() || (int)p2cells[0].size() != kMax) return 0;
+        const int K = pm.carriers(), off = (kMax - K) / 2;
+        const int S = fftCode == 5 ? 6 : 3;
+        std::vector<uint8_t> types;
+        pm.symbolTypes(0, nP2 + 2, types);
+        double best = -1, base = 0;
+        int bestS = 0;
+        for (int sh = -6; sh <= 6; sh++) {
+            cd acc = 0;
+            double pw = 0;
+            for (int kk = 0; kk + S < K; kk += S) {
+                if (types[kk] != kCellP2Pilot || types[kk + S] != kCellP2Pilot) continue;
+                int i0 = off + kk + sh, i1 = off + kk + S + sh;
+                if (i0 < 0 || i1 >= kMax) continue;
+                const cf32 a = p2cells[0][i0], b = p2cells[0][i1];
+                float p0 = pm.pilot(0, kk, kCellP2Pilot).real(), p1 = pm.pilot(0, kk + S, kCellP2Pilot).real();
+                cf32 d = b * std::conj(a) * (p0 * p1);
+                acc += cd(d.real(), d.imag());
+                pw += std::abs(d);
+            }
+            double sc = pw > 0 ? std::abs(acc) / pw : 0;
+            if (sh == 0) base = sc;
+            if (sc > best) { best = sc; bestS = sh; }
+        }
+        if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] P2 integer-bin search: best shift %d score %.3f (shift 0: %.3f)\n", bestS, best, base);
+        return (bestS != 0 && best > 0.35 && best > 1.8 * base) ? bestS : 0;
+    }
+
     void runP2Stage() {
         const FftMode* fm = fftModeFromS2(fftCode);
         if (!fm || p2cells.size() != (size_t)nP2) return;
         for (auto& c : p2cells) if ((int)c.size() != kMax) return;
+        if (int sh = p2IntegerShift()) {
+            double bin = fn / fftN;
+            cfoEst += sh * bin;
+            frameCfo = cfoEst;
+            char b2[120]; snprintf(b2, sizeof b2, "corrected a %+d-carrier frequency offset (CFO now %+.1f Hz)", sh, cfoEst);
+            if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] %s\n", b2);
+            frames.clear(); frameCells.clear(); p2cells.clear();
+            return;
+        }
         bool extPossible = fm->kExt != 0;
         bool guess = false;
         if (extPossible) {
