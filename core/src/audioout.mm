@@ -28,7 +28,7 @@ static OSStatus renderCb(void* ref, AudioUnitRenderActionFlags*, const AudioTime
     uint64_t w = I->w.load(std::memory_order_acquire), r = I->r.load(std::memory_order_relaxed);
     uint64_t avail = w - r;
     if (!I->playing) {
-        if ((int)avail >= I->startThreshold.load()) { I->playing = true; I->startThreshold = 16800; } // resume sooner after the first start
+        if ((int)avail >= I->startThreshold.load()) { I->playing = true; I->startThreshold = 38400; } // resume after an underrun once 0.8 s are buffered
     }
     uint32_t n = 0;
     if (I->playing) {
@@ -49,7 +49,7 @@ static OSStatus renderCb(void* ref, AudioUnitRenderActionFlags*, const AudioTime
 }
 
 AudioOut::AudioOut() : p_(new Impl) {
-    p_->frames = 1 << 17; // 131072 frames ~ 2.7 s at 48 kHz
+    p_->frames = 1 << 18; // 262144 frames ~ 5.5 s at 48 kHz
     p_->ring.assign(p_->frames * 2, 0.f);
 }
 AudioOut::~AudioOut() { stop(); }

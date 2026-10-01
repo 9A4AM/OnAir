@@ -286,7 +286,7 @@ void Player::threadMain() {
             }
             if (actx) { I.st.audioCodec = avcodec_get_name(actx->codec_id); I.st.audioChannels = actx->ch_layout.nb_channels; }
         }
-        audio_.setStartThreshold((int)(0.5 * 48000)); // the stream arrives in 242 ms bursts: keep more than one burst buffered
+        audio_.setStartThreshold((int)(1.2 * 48000)); // the stream arrives in 242 ms bursts and decoding time varies: keep a jitter buffer
 
         AVPacket* pkt = av_packet_alloc();
         AVFrame* frame = av_frame_alloc();
@@ -369,7 +369,7 @@ void Player::threadMain() {
             }
             std::lock_guard<std::mutex> lk(I.vmu);
             I.vq.push_back(vf);
-            while (I.vq.size() > 48) { I.vq.pop_front(); std::lock_guard<std::mutex> sl(I.smu); I.st.late++; }
+            while (I.vq.size() > 80) { I.vq.pop_front(); std::lock_guard<std::mutex> sl(I.smu); I.st.late++; }
         };
 
         auto pushAudio = [&](AVFrame* f) {
@@ -416,7 +416,7 @@ void Player::threadMain() {
                 bool running = clockNow(clock);
                 { std::lock_guard<std::mutex> lk(I.vmu); if (!I.vq.empty()) ahead = I.vq.back()->pts - clock; }
                 const int ab = audio_.bufferedFrames();
-                bool block = (running && audio_.playing() && ab >= 7200 && ahead > 0.5) || ab >= 2 * 48000;
+                bool block = (running && audio_.playing() && ab >= 38400 && ahead > 2.4) || ab >= 3 * 48000;
                 if (!block) break;
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }

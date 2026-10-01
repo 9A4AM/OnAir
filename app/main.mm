@@ -771,7 +771,7 @@ static void constellationsTab(App& a) {
     ImGui::EndGroup();
     ImGui::SameLine();
     ImGui::BeginGroup();
-    if (!a.rx.plpConst.empty()) ImGui::TextDisabled("PLP %d cells (FEC-clean blocks), MER %.1f dB", a.rx.plpId, a.rx.plpMerDb);
+    if (!a.rx.plpConst.empty()) ImGui::TextDisabled("PLP %d symbols, derotated, MER %.1f dB", a.rx.plpId, a.rx.plpMerDb);
     else ImGui::TextDisabled("Data cells, equalised (frame %llu)", (unsigned long long)a.rx.dataFrames);
     if (!a.rx.plpConst.empty()) {
         // PLP cells that belong to correctly decoded FEC blocks; points far from their transmitted constellation point are red
@@ -788,6 +788,15 @@ static void constellationsTab(App& a) {
                 const float* d = reinterpret_cast<const float*>(v.data());
                 ImPlot::PlotScatter(id, d, d + 1, (int)v.size(), sp);
             };
+            {   // the transmitted (unrotated) constellation points
+                const int M = 2 * (a.rx.plpFec.mod + 1);
+                std::vector<cf32> grid;
+                for (unsigned l = 0; l < (1u << M); l++) grid.push_back(qamPoint(a.rx.plpFec.mod, false, l));
+                ImPlotSpec gs; gs.Marker = ImPlotMarker_Cross; gs.MarkerSize = 3.f; gs.Stride = sizeof(cf32);
+                gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(1, 1, 1, 0.45f);
+                const float* g = reinterpret_cast<const float*>(grid.data());
+                ImPlot::PlotScatter("ideal", g, g + 1, (int)grid.size(), gs);
+            }
             draw("ok", good, ImVec4(0.35f, 0.85f, 0.45f, 0.55f));
             draw("err", bad, ImVec4(0.95f, 0.35f, 0.3f, 0.8f));
             ImPlot::EndPlot();
@@ -1202,7 +1211,7 @@ static void drawUI(App& a, ImVec2 disp) {
     statusBar(a);
     ImGui::Separator();
 
-    float logH = 150, rightW = 330;
+    float logH = 250, rightW = 330;
     float mainH = ImGui::GetContentRegionAvail().y - logH - 6;
     ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16, mainH));
     if (ImGui::BeginTabBar("tabs")) {
@@ -1236,6 +1245,7 @@ static void drawUI(App& a, ImVec2 disp) {
         if (tabItem("TS")) { tsTab(a); ImGui::EndTabItem(); }
         if (tabItem("Outputs")) { outputsTab(a); ImGui::EndTabItem(); }
         if (tabItem("Scan")) { scanTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Log")) { logPanel(a); ImGui::EndTabItem(); }
         const char* later[] = {"Frame map", "History"};
         for (auto* t : later)
             if (tabItem(t)) { ImGui::TextDisabled("Not implemented yet (see PROJECT_BRIEF.md, development plan)."); ImGui::EndTabItem(); }
@@ -1248,8 +1258,8 @@ static void drawUI(App& a, ImVec2 disp) {
     ImGui::EndChild();
 
     ImGui::Separator();
-    ImGui::BeginChild("log", ImVec2(0, 0));
-    logPanel(a);
+    ImGui::BeginChild("constellations", ImVec2(0, 0));
+    constellationsTab(a);
     ImGui::EndChild();
     ImGui::End();
 }

@@ -110,11 +110,26 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
         std::vector<cf32> ideal;
         qamMapBlock(job.fec, lab, ideal);
         const size_t step = std::max<size_t>(1, (size_t)cells / 600);
+        // display points: the derotated observation (I of this cell, Q of the next) against the unrotated transmitted point
+        static const float kDmin[4] = {1.4142f, 0.6325f, 0.3086f, 0.1534f};
+        float cr = 1.f, sr = 0.f;
+        if (job.fec.rotation) { static const double deg[4] = {29.0, 16.8, 8.6, 3.576}; double ang = deg[job.fec.mod] * M_PI / 180.0; cr = (float)std::cos(ang); sr = (float)std::sin(ang); }
         for (int k = 0; k < cells; k++) {
             cf32 e = c[k] - ideal[k];
             o.sigP += std::norm(ideal[k]);
             o.errP += std::norm(e);
-            if ((size_t)k % step == 0) { o.pts.push_back(c[k]); o.perr.push_back(std::abs(e) > 0.5f * 0.7f); }
+            if ((size_t)k % step == 0) {
+                cf32 obs = c[k];
+                if (job.fec.rotation) {
+                    float aI = c[k].real(), aQ = c[(k + 1) % cells].imag();
+                    obs = cf32(aI * cr + aQ * sr, aQ * cr - aI * sr);
+                }
+                cf32 tx = qamPoint(job.fec.mod, false, lab[k]);
+                cf32 de = obs - tx;
+                const float h = 0.5f * kDmin[job.fec.mod];
+                o.pts.push_back(obs);
+                o.perr.push_back(std::fabs(de.real()) > h || std::fabs(de.imag()) > h);
+            }
         }
     });
     double sig = 0, err = 0;
