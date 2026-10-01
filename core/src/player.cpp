@@ -177,7 +177,7 @@ static enum AVPixelFormat pickHw(AVCodecContext*, const enum AVPixelFormat* fmts
 
 void Player::threadMain() {
     pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);
-    av_log_set_level(AV_LOG_ERROR);
+    av_log_set_level(getenv("DECT2_PLAYDEBUG") ? AV_LOG_ERROR : AV_LOG_FATAL); // damaged streams make the H.264 decoder very chatty
     Impl& I = *p_;
     while (!stop_) {
         if (sid_ < 0) { std::this_thread::sleep_for(std::chrono::milliseconds(50)); continue; }
@@ -292,6 +292,7 @@ void Player::threadMain() {
         AVFrame* frame = av_frame_alloc();
         AVFrame* sw = av_frame_alloc();
         SwsContext* sws = nullptr;
+        SwsContext* nv12ctx = nullptr;
         std::vector<float> abuf;
         int swrRate = 0; AVSampleFormat swrFmt = AV_SAMPLE_FMT_NONE; int swrCh = 0;
         bool firstVideo = true;
@@ -306,24 +307,27 @@ void Player::threadMain() {
                 src = sw;
             }
             const int w = src->width, h = src->height;
-            sws = sws_getCachedContext(sws, w, h, (AVPixelFormat)src->format, w, h, AV_PIX_FMT_RGBA, SWS_BILINEAR, nullptr, nullptr, nullptr);
-            if (!sws) return;
-            const int* coef = sws_getCoefficients((src->colorspace == AVCOL_SPC_BT709 || (src->colorspace == AVCOL_SPC_UNSPECIFIED && h >= 720)) ? SWS_CS_ITU709 : SWS_CS_ITU601);
-            sws_setColorspaceDetails(sws, coef, src->color_range == AVCOL_RANGE_JPEG, sws_getCoefficients(SWS_CS_DEFAULT), 1, 0, 1 << 16, 1 << 16);
+            const bool b709 = src->colorspace == AVCOL_SPC_BT709 || (src->colorspace == AVCOL_SPC_UNSPECIFIED && h >= 720);
             auto vf = std::make_shared<VideoFrame>();
             vf->w = w; vf->h = h;
-            vf->rgba.resize((size_t)w * h * 4);
-            uint8_t* dst[4] = {vf->rgba.data(), nullptr, nullptr, nullptr};
-            int ls[4] = {w * 4, 0, 0, 0};
-            sws_scale(sws, src->data, src->linesize, 0, h, dst, ls);
+            vf->bt709 = b709; vf->fullRange = src->color_range == AVCOL_RANGE_JPEG;
             int64_t ts = f->best_effort_timestamp != AV_NOPTS_VALUE ? f->best_effort_timestamp : f->pts;
             if (ts == AV_NOPTS_VALUE) return;
             vf->pts = ts * av_q2d(fmt->streams[vIdx]->time_base);
-            // DVB subtitle overlay
-            if (subsOn_) {
-                std::shared_ptr<Subtitle> sb;
-                { std::lock_guard<std::mutex> lk(I.submu); sb = I.sub; }
-                if (sb && vf->pts >= sb->start && vf->pts <= sb->end) {
+            // DVB subtitle overlay: only frames that carry a subtitle are converted to RGBA on the CPU
+            std::shared_ptr<Subtitle> sb;
+            if (subsOn_) { std::lock_guard<std::mutex> lk(I.submu); sb = I.sub; }
+            const bool needRgba = sb && vf->pts >= sb->start && vf->pts <= sb->end;
+            if (needRgba) {
+                sws = sws_getCachedContext(sws, w, h, (AVPixelFormat)src->format, w, h, AV_PIX_FMT_RGBA, SWS_BILINEAR, nullptr, nullptr, nullptr);
+                if (!sws) return;
+                const int* coef = sws_getCoefficients(b709 ? SWS_CS_ITU709 : SWS_CS_ITU601);
+                sws_setColorspaceDetails(sws, coef, vf->fullRange, sws_getCoefficients(SWS_CS_DEFAULT), 1, 0, 1 << 16, 1 << 16);
+                vf->rgba.resize((size_t)w * h * 4);
+                uint8_t* dst[4] = {vf->rgba.data(), nullptr, nullptr, nullptr};
+                int ls[4] = {w * 4, 0, 0, 0};
+                sws_scale(sws, src->data, src->linesize, 0, h, dst, ls);
+                {
                     const double sx = (double)w / sb->canvasW, sy = (double)h / sb->canvasH;
                     for (auto& im : sb->images) {
                         for (int yy = 0; yy < im.h; yy++) {
@@ -340,6 +344,19 @@ void Player::threadMain() {
                         }
                     }
                 }
+            } else {
+                const int hc = h / 2;
+                vf->y.resize((size_t)w * h); vf->uv.resize((size_t)w * hc);
+                if (src->format == AV_PIX_FMT_NV12) {
+                    for (int yy = 0; yy < h; yy++) memcpy(&vf->y[(size_t)yy * w], src->data[0] + (size_t)yy * src->linesize[0], w);
+                    for (int yy = 0; yy < hc; yy++) memcpy(&vf->uv[(size_t)yy * w], src->data[1] + (size_t)yy * src->linesize[1], w);
+                } else { // software decoder output (planar): a plain repack to NV12, no scaling and no colour maths
+                    nv12ctx = sws_getCachedContext(nv12ctx, w, h, (AVPixelFormat)src->format, w, h, AV_PIX_FMT_NV12, SWS_POINT, nullptr, nullptr, nullptr);
+                    if (!nv12ctx) return;
+                    uint8_t* dst[4] = {vf->y.data(), vf->uv.data(), nullptr, nullptr};
+                    int ls[4] = {w, w, 0, 0};
+                    sws_scale(nv12ctx, src->data, src->linesize, 0, h, dst, ls);
+                }
             }
             if (firstVideo) {
                 firstVideo = false;
@@ -352,7 +369,7 @@ void Player::threadMain() {
             }
             std::lock_guard<std::mutex> lk(I.vmu);
             I.vq.push_back(vf);
-            while (I.vq.size() > 20) I.vq.pop_front();
+            while (I.vq.size() > 48) { I.vq.pop_front(); std::lock_guard<std::mutex> sl(I.smu); I.st.late++; }
         };
 
         auto pushAudio = [&](AVFrame* f) {
@@ -399,7 +416,7 @@ void Player::threadMain() {
                 bool running = clockNow(clock);
                 { std::lock_guard<std::mutex> lk(I.vmu); if (!I.vq.empty()) ahead = I.vq.back()->pts - clock; }
                 const int ab = audio_.bufferedFrames();
-                bool block = (running && audio_.playing() && ab >= 7200 && ahead > 0.8) || ab >= 2 * 48000;
+                bool block = (running && audio_.playing() && ab >= 7200 && ahead > 0.5) || ab >= 2 * 48000;
                 if (!block) break;
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
@@ -457,6 +474,7 @@ void Player::threadMain() {
         av_frame_free(&frame);
         av_frame_free(&sw);
         if (sws) sws_freeContext(sws);
+        if (nv12ctx) sws_freeContext(nv12ctx);
         if (swr) swr_free(&swr);
         if (actx) avcodec_free_context(&actx);
         if (vctx) avcodec_free_context(&vctx);

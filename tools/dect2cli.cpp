@@ -18,6 +18,8 @@ int main(int argc, char** argv) {
     TuneSettings tune;
     FileOptions file;
     double freq = 522, secs = 10;
+    int computeMode = 2, playSid = -1;
+    uint64_t vseq = 0;
     bool useFile = false, haveDev = false;
     std::string record;
     OutputConfig out;
@@ -31,6 +33,8 @@ int main(int argc, char** argv) {
         else if (a == "--amp") tune.ampOn = true;
         else if (a == "--bw") tune.bandwidthMhz = atof(next());
         else if (a == "--secs") secs = atof(next());
+        else if (a == "--play") playSid = atoi(next());
+        else if (a == "--compute") { std::string v = next(); computeMode = v == "cpu" ? 0 : v == "gpu" ? 1 : 2; }
         else if (a == "--file") { useFile = true; file.path = next(); file.format = guessFormat(file.path); }
         else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
         else if (a == "--format") { std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
@@ -57,6 +61,7 @@ int main(int argc, char** argv) {
         for (auto& f : r.frames) if (!f.bits.empty() && shown < 6) { shown++; printf("BBFRAME blk %d hdr:", f.blockIndex); for (int B = 0; B < 14; B++) { unsigned v = 0; for (int i = 0; i < 8; i++) v = (v << 1) | f.bits[B * 8 + i]; printf(" %02x", v); } printf("  crc %d upl %d dfl %d syncd %d\n", f.header.crcOk, f.header.upl, f.header.dfl, f.header.syncd); }
     });
     e.setOutputs(out);
+    e.setComputeMode(computeMode);
     if (!e.start(dev, tune, file)) {
         size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
         return 1;
@@ -66,17 +71,22 @@ int main(int argc, char** argv) {
     SpectrumFrame sf; uint64_t sseq = 0;
     auto t0 = std::chrono::steady_clock::now();
     while (std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() < secs) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        for (int w = 0; w < 100; w++) { std::this_thread::sleep_for(std::chrono::milliseconds(10)); if (playSid >= 0) e.player().videoFrame(vseq); }
         e.latestRx(t, 0);
         e.latestSpectrum(sf, 0);
+        if (playSid >= 0) {
+            if (e.player().selected() < 0) { for (auto& sv : e.tsSnapshot().services) if (sv.id == playSid && sv.havePmt) { e.player().select(sv.id); e.player().setVolume(0.f); } }
+            PlayerStats ps = e.player().stats();
+            printf("  player: %s %dx%d %s decoded %llu shown %llu late %llu errors %llu queue %d audio buf %.0f ms A/V %+.0f ms underruns %d\n", ps.status.c_str(), ps.width, ps.height, ps.hardware ? "HW" : "SW", (unsigned long long)ps.decoded, (unsigned long long)ps.shown, (unsigned long long)ps.late, (unsigned long long)ps.errors, ps.videoQueue, ps.audioBufferMs, ps.avOffsetMs, ps.underruns);
+        }
         size_t n;
         auto lines = e.logSnapshot(n);
         for (; shown < lines.size(); shown++) printf("  log: %s\n", lines[shown].c_str());
         if (out.udp) { OutputStats os = e.outputStats(); printf("  udp: sent %llu queue %.0f ms dropped %llu\n", (unsigned long long)os.udpDatagrams, os.udpQueueMs, (unsigned long long)os.udpDropped); }
-        printf("level %6.1f dBFS clip %.3f%% | state %d P1 %llu (s1 %d fft %d) GI %s | CFO %+8.1f Hz | CP %.2f | L1 pre %llu/%llu post %llu/%llu | data %d SNR %.1f dB | sym %llu sinceP1 %.2f | PLP %llu fr, blocks %llu ok/%llu bad, MER %.1f dB preBER %.1e it %.1f %.0f ms | dropped %llu\n",
+        printf("level %6.1f dBFS clip %.3f%% | state %d P1 %llu (s1 %d fft %d) GI %s | CFO %+8.1f Hz | CP %.2f | L1 pre %llu/%llu post %llu/%llu | data %d SNR %.1f dB | sym %llu sinceP1 %.2f | PLP %llu fr, blocks %llu ok/%llu bad, MER %.1f dB preBER %.1e it %.1f %.0f ms %s | dropped %llu\n",
                sf.stats.rmsDbfs, sf.stats.clipFraction * 100, t.state, (unsigned long long)t.p1Count, t.p1.s1, t.fftN,
                t.giIdx >= 0 ? guardName(t.giIdx) : "-", t.cfoHz, t.cpCorr, (unsigned long long)t.l1preGood, (unsigned long long)(t.l1preGood + t.l1preBad),
-               (unsigned long long)t.l1postGood, (unsigned long long)(t.l1postGood + t.l1postBad), t.dataValid, t.dataSnrDb, (unsigned long long)t.symbols, t.secSinceP1, (unsigned long long)t.plpFrames, (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad, t.plpMerDb, t.plpPreBer, t.plpIters, t.plpDecodeMs, (unsigned long long)e.droppedSamples());
+               (unsigned long long)t.l1postGood, (unsigned long long)(t.l1postGood + t.l1postBad), t.dataValid, t.dataSnrDb, (unsigned long long)t.symbols, t.secSinceP1, (unsigned long long)t.plpFrames, (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad, t.plpMerDb, t.plpPreBer, t.plpIters, t.plpDecodeMs, t.plpOnGpu ? "GPU" : "CPU", (unsigned long long)e.droppedSamples());
     }
     if (t.l1preGood) {
         const L1Pre& p = t.l1pre;

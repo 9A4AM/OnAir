@@ -131,6 +131,7 @@ struct T2Receiver::Impl {
     PlpFec plpFec;
     uint64_t plpFrames = 0, blocksOk = 0, blocksBad = 0, headersOk = 0, plpBchCorr = 0;
     double plpMer = 0, plpPre = 0, plpIters = 0, plpMs = 0;
+    bool plpGpu = false;
     std::vector<cf32> plpConst;
     std::vector<uint8_t> plpConstErr;
     int hUpl = 0, hDfl = 0, hSyncd = 0;
@@ -830,7 +831,7 @@ struct T2Receiver::Impl {
             plpFrames++;
             blocksOk += r.blocksOk; blocksBad += r.bchFailed; headersOk += r.headerOk; plpBchCorr += r.bchCorrected;
             plpMer = r.blocksOk ? r.merDb : plpMer;
-            plpPre = r.preBer; plpIters = r.avgLdpcIters; plpMs = r.decodeMs;
+            plpPre = r.preBer; plpIters = r.avgLdpcIters; plpMs = r.decodeMs; plpGpu = r.usedGpu;
             if (!r.constellation.empty()) { plpConst = r.constellation; plpConstErr = r.constErr; }
             for (auto& f : r.frames) if (f.header.crcOk) { hUpl = f.header.upl; hDfl = f.header.dfl; hSyncd = f.header.syncd; break; }
             if (plpCb) plpCb(r);
@@ -1294,7 +1295,7 @@ struct T2Receiver::Impl {
         t.plpValid = plpValid; t.plpId = plpId; t.plpFec = plpFec; t.plpBlocks = plpBlocks;
         t.plpFrames = plpFrames; t.plpFramesDropped = plpDec.dropped();
         t.blocksOk = blocksOk; t.blocksBad = blocksBad; t.headersOk = headersOk; t.plpBchCorrected = plpBchCorr;
-        t.plpMerDb = plpMer; t.plpPreBer = plpPre; t.plpIters = plpIters; t.plpDecodeMs = plpMs;
+        t.plpMerDb = plpMer; t.plpPreBer = plpPre; t.plpIters = plpIters; t.plpDecodeMs = plpMs; t.plpOnGpu = plpGpu; t.gpuAvailable = plpDec.gpuAvailable(); t.computeMode = plpDec.mode();
         t.plpConst = plpConst; t.plpConstErr = plpConstErr;
         t.plpHeaderUpl = hUpl; t.plpHeaderDfl = hDfl; t.plpHeaderSyncd = hSyncd; t.plpSkipped = plpSkipped;
         if (dataValid) t.snrStep = dataDx;
@@ -1327,6 +1328,7 @@ void T2Receiver::feed(const cf32* x, size_t n) {
     I.run();
 }
 
+void T2Receiver::setComputeMode(int m) { p_->plpDec.setMode(m); }
 void T2Receiver::setPlpCallback(std::function<void(const PlpResult&)> cb) { p_->plpCb = std::move(cb); }
 
 bool T2Receiver::telemetry(RxTelemetry& out, uint64_t lastSeq) {

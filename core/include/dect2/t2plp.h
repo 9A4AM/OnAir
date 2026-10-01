@@ -42,6 +42,7 @@ struct PlpResult {
     double preBer = 0;          // hard-decision bit error rate before LDPC (measured against the decoded codewords)
     double merDb = 0;           // modulation error ratio over correctly decoded blocks
     double decodeMs = 0;
+    bool usedGpu = false;       // LDPC ran on the GPU
     std::vector<BbFrame> frames;
     std::vector<cf32> constellation; // equalised cells of decoded blocks (subsampled)
     std::vector<uint8_t> constErr;   // 1 where the nearest ideal point is not the transmitted one
@@ -56,7 +57,12 @@ public:
     bool poll(PlpResult& out); // oldest finished result
     int pending() const;
     uint64_t dropped() const { return dropped_; }
-    static PlpResult decodeNow(const PlpJob& job, int threads);
+    static PlpResult decodeNow(const PlpJob& job, int threads, bool useGpu = false);
+    // 0 = CPU, 1 = GPU, 2 = auto (CPU until it falls behind, then GPU)
+    void setMode(int m) { mode_ = m; if (m != 2) autoGpu_ = false; }
+    int mode() const { return mode_; }
+    bool gpuAvailable() const { return gpuOk_; }
+    bool autoOnGpu() const { return autoGpu_; }
 
 private:
     void loop();
@@ -69,6 +75,10 @@ private:
     std::atomic<bool> stop_{false};
     std::atomic<uint64_t> dropped_{0};
     bool busy_ = false;
+    std::atomic<int> mode_{2};
+    std::atomic<bool> autoGpu_{false};
+    bool gpuOk_ = false;
+    uint64_t lastDropped_ = 0;
 };
 
 } // namespace dect2

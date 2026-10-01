@@ -88,6 +88,8 @@ struct RxTelemetry {
     uint64_t plpFrames = 0, plpFramesDropped = 0;
     uint64_t blocksOk = 0, blocksBad = 0, headersOk = 0;
     double plpMerDb = 0, plpPreBer = 0, plpIters = 0, plpDecodeMs = 0;
+    bool plpOnGpu = false, gpuAvailable = false;
+    int computeMode = 2;         // 0 CPU, 1 GPU, 2 auto
     uint64_t plpBchCorrected = 0;
     std::vector<cf32> plpConst;
     std::vector<uint8_t> plpConstErr;
@@ -106,6 +108,8 @@ public:
     void feed(const cf32* x, size_t n);
     bool telemetry(RxTelemetry& out, uint64_t lastSeq);
     // Called (on the receiver thread) for every decoded PLP frame, in order.
+    // LDPC compute backend: 0 = CPU, 1 = GPU, 2 = auto (GPU once the CPU can't keep up)
+    void setComputeMode(int m);
     void setPlpCallback(std::function<void(const PlpResult&)> cb);
 
 private:

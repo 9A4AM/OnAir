@@ -84,21 +84,62 @@ static const BwChoice kBw[] = {
 };
 
 static id<MTLDevice> gDevice;
+static id<MTLCommandQueue> gQueue;
+
+static NSString* const kYuvShader = @R"MSL(
+#include <metal_stdlib>
+using namespace metal;
+kernel void nv12(texture2d<float, access::read> Y [[texture(0)]], texture2d<float, access::read> UV [[texture(1)]],
+                 texture2d<float, access::write> out [[texture(2)]], constant float2& prm [[buffer(0)]], uint2 gid [[thread_position_in_grid]]) {
+    if (gid.x >= out.get_width() || gid.y >= out.get_height()) return;
+    float y = Y.read(gid).r;
+    float2 c = UV.read(gid / 2).rg;
+    if (prm.y < 0.5) { y = (y - 16.0 / 255.0) * (255.0 / 219.0); c = (c - 128.0 / 255.0) * (255.0 / 224.0); }
+    else c -= 0.5;
+    float3 rgb;
+    if (prm.x > 0.5) rgb = float3(y + 1.5748 * c.y, y - 0.1873 * c.x - 0.4681 * c.y, y + 1.8556 * c.x);
+    else rgb = float3(y + 1.402 * c.y, y - 0.344136 * c.x - 0.714136 * c.y, y + 1.772 * c.x);
+    out.write(float4(saturate(rgb), 1.0), gid);
+}
+)MSL";
 
 struct VideoTex {
-    id<MTLTexture> tex = nil;
+    id<MTLTexture> tex = nil, yTex = nil, uvTex = nil;
+    id<MTLComputePipelineState> pso = nil;
     int w = 0, h = 0;
     uint64_t seq = 0;
-    void update(Player& pl) {
+    void update(Player& pl, id<MTLCommandQueue> q) {
         auto f = pl.videoFrame(seq);
         if (!f || f->w <= 0) return;
+        const bool yuv = f->rgba.empty();
         if (!tex || w != f->w || h != f->h) {
             MTLTextureDescriptor* d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:f->w height:f->h mipmapped:NO];
-            d.usage = MTLTextureUsageShaderRead;
+            d.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
             tex = [gDevice newTextureWithDescriptor:d];
+            MTLTextureDescriptor* dy = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm width:f->w height:f->h mipmapped:NO];
+            yTex = [gDevice newTextureWithDescriptor:dy];
+            MTLTextureDescriptor* du = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRG8Unorm width:f->w / 2 height:f->h / 2 mipmapped:NO];
+            uvTex = [gDevice newTextureWithDescriptor:du];
             w = f->w; h = f->h;
         }
-        [tex replaceRegion:MTLRegionMake2D(0, 0, f->w, f->h) mipmapLevel:0 withBytes:f->rgba.data() bytesPerRow:f->w * 4];
+        if (!yuv) { [tex replaceRegion:MTLRegionMake2D(0, 0, f->w, f->h) mipmapLevel:0 withBytes:f->rgba.data() bytesPerRow:f->w * 4]; return; }
+        if (!pso) {
+            NSError* err = nil;
+            id<MTLLibrary> lib = [gDevice newLibraryWithSource:kYuvShader options:nil error:&err];
+            pso = lib ? [gDevice newComputePipelineStateWithFunction:[lib newFunctionWithName:@"nv12"] error:&err] : nil;
+            if (!pso) { NSLog(@"yuv shader: %@", err); return; }
+        }
+        [yTex replaceRegion:MTLRegionMake2D(0, 0, f->w, f->h) mipmapLevel:0 withBytes:f->y.data() bytesPerRow:f->w];
+        [uvTex replaceRegion:MTLRegionMake2D(0, 0, f->w / 2, f->h / 2) mipmapLevel:0 withBytes:f->uv.data() bytesPerRow:f->w];
+        id<MTLCommandBuffer> cb = [q commandBuffer];
+        id<MTLComputeCommandEncoder> e = [cb computeCommandEncoder];
+        [e setComputePipelineState:pso];
+        float prm[2] = {f->bt709 ? 1.f : 0.f, f->fullRange ? 1.f : 0.f};
+        [e setBytes:prm length:sizeof prm atIndex:0];
+        [e setTexture:yTex atIndex:0]; [e setTexture:uvTex atIndex:1]; [e setTexture:tex atIndex:2];
+        [e dispatchThreads:MTLSizeMake(f->w, f->h, 1) threadsPerThreadgroup:MTLSizeMake(16, 16, 1)];
+        [e endEncoding];
+        [cb commit]; // the render pass later on the same queue sees the converted texture
     }
     void draw(ImVec2 box) {
         if (!tex) return;
@@ -146,6 +187,7 @@ struct App {
     char filePath[512] = "";
     std::deque<float> hCfo, hSnr, hTiming;
     bool rxSeen = false;
+    int computeMode = 2; // 0 CPU, 1 GPU, 2 auto
     Scanner scanner;
     ScanConfig scanCfg;
     int scanPreset = 0;
@@ -189,6 +231,7 @@ static void loadPrefs(App& a) {
     if ([d objectForKey:@"lna"]) a.tune.lnaDb = (int)[d integerForKey:@"lna"];
     if ([d objectForKey:@"vga"]) a.tune.vgaDb = (int)[d integerForKey:@"vga"];
     a.tune.ampOn = [d boolForKey:@"amp"];
+    if ([d objectForKey:@"compute"]) a.computeMode = (int)[d integerForKey:@"compute"];
     a.bwIdx = std::min((int)(sizeof kBw / sizeof *kBw) - 1, (int)[d integerForKey:@"bw"]);
     NSString* fp = [d stringForKey:@"filePath"];
     if (fp) a.file.path = fp.UTF8String;
@@ -207,6 +250,7 @@ static void savePrefs(const App& a) {
     [d setInteger:a.tune.lnaDb forKey:@"lna"];
     [d setInteger:a.tune.vgaDb forKey:@"vga"];
     [d setBool:a.tune.ampOn forKey:@"amp"];
+    [d setInteger:a.computeMode forKey:@"compute"];
     [d setInteger:a.bwIdx forKey:@"bw"];
     [d setObject:[NSString stringWithUTF8String:a.file.path.c_str()] forKey:@"filePath"];
     [d setObject:[NSString stringWithUTF8String:a.filePath] forKey:@"outPath"];
@@ -299,12 +343,34 @@ static void toolbar(App& a) {
             applyBandwidth(a);
             if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
             else {
+                a.engine.setComputeMode(a.computeMode);
                 a.engine.start(a.devices[a.devIdx], a.tune, a.file);
                 savePrefs(a);
                 a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
             }
         }
     } else if (ImGui::Button("  Stop  ")) a.engine.stop();
+
+    ImGui::SameLine(0, 14);
+    {
+        static const char* modes[] = {"CPU", "GPU", "Auto"};
+        char lbl[48];
+        const bool gpuNow = a.rx.plpOnGpu;
+        snprintf(lbl, sizeof lbl, "%s", a.computeMode == 2 ? (gpuNow ? "Auto (GPU)" : "Auto (CPU)") : modes[a.computeMode]);
+        ImGui::TextDisabled("decode");
+        ImGui::SameLine(0, 6);
+        ImGui::SetNextItemWidth(110);
+        if (ImGui::BeginCombo("##compute", lbl)) {
+            for (int i = 0; i < 3; i++) {
+                const bool dis = i == 1 && !a.rx.gpuAvailable && running;
+                if (dis) ImGui::BeginDisabled();
+                if (ImGui::Selectable(modes[i], a.computeMode == i)) { a.computeMode = i; a.engine.setComputeMode(i); savePrefs(a); }
+                if (dis) ImGui::EndDisabled();
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("LDPC decoding backend.\nCPU: NEON on all cores. GPU: Metal compute.\nAuto: CPU until it falls behind real time, then GPU.");
+    }
 
     if (retune && running) {
         a.tune.centerHz = a.freqMhz * 1e6;
@@ -838,7 +904,7 @@ static void fecTab(App& a) {
     row("MER", "%.1f dB", rx.plpMerDb);
     row("BER before LDPC", "%.2e", rx.plpPreBer);
     row("LDPC iterations (average)", "%.1f", rx.plpIters);
-    row("decode time", "%.0f ms for %.0f ms of signal", rx.plpDecodeMs, rx.frameMs);
+    row("decode time", "%.0f ms for %.0f ms of signal (%s)", rx.plpDecodeMs, rx.frameMs, rx.plpOnGpu ? "GPU" : "CPU");
     if (rx.plpHeaderUpl) row("BB header", "UPL %d bits, DFL %d bits, SYNCD %d", rx.plpHeaderUpl, rx.plpHeaderDfl, rx.plpHeaderSyncd);
     ImGui::PopFont();
 }
@@ -945,6 +1011,7 @@ static void scanTab(App& a) {
                 a.freqMhz = r.freqMHz; a.bwIdx = r.bwMhz >= 7.5 ? 0 : 1;
                 for (int k = 0; k < (int)(sizeof(kBw) / sizeof(kBw[0])); k++) if (kBw[k].mhz == r.bwMhz) a.bwIdx = k;
                 a.tune.centerHz = a.freqMhz * 1e6; applyBandwidth(a);
+                a.engine.setComputeMode(a.computeMode);
                 a.engine.start(a.devices[hw], a.tune, a.file);
                 a.devIdx = hw; a.smooth.clear(); a.peak.clear(); a.lastSeq = 0; savePrefs(a);
             }
@@ -1124,7 +1191,7 @@ static void logPanel(App& a) {
 static void drawUI(App& a, ImVec2 disp) {
     ingestSpectrum(a);
     ingestRx(a);
-    a.video.update(a.engine.player());
+    a.video.update(a.engine.player(), gQueue);
     if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(disp);
@@ -1198,6 +1265,7 @@ int main(int argc, char** argv) {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     gDevice = device;
     id<MTLCommandQueue> queue = [device newCommandQueue];
+    gQueue = queue;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -1277,6 +1345,7 @@ int main(int argc, char** argv) {
                 app.devIdx = 0;
                 if (hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == DeviceInfo::HackRF) app.devIdx = i;
                 app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
+                app.engine.setComputeMode(app.computeMode);
                 app.engine.start(app.devices[app.devIdx], app.tune, app.file);
             }
             double now = glfwGetTime();

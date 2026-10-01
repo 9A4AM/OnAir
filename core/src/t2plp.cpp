@@ -1,4 +1,5 @@
 #include "dect2/t2plp.h"
+#include "dect2/gpu_ldpc.h"
 
 #include <algorithm>
 #include <chrono>
@@ -20,7 +21,7 @@ void parallelFor(int n, int threads, F fn) {
 }
 } // namespace
 
-PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads) {
+PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
     auto t0 = std::chrono::steady_clock::now();
     PlpResult res;
     res.frameNo = job.frameNo; res.t2Frame = job.t2Frame; res.frameSec = job.frameSec; res.plpId = job.plpId; res.fec = job.fec;
@@ -46,6 +47,23 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads) {
         std::vector<uint8_t> perr;
     };
     std::vector<BlockOut> outs(nb);
+    // GPU path: demap every block, decode all LDPC blocks in one batch on the GPU, then finish (BCH etc.) on the CPU
+    std::vector<float> gLlr;
+    std::vector<uint8_t> gHard, gOk;
+    std::vector<int> gIt;
+    if (useGpu && GpuLdpc::instance().available()) {
+        gLlr.resize((size_t)nb * d.nLdpc);
+        parallelFor(nb, threads, [&](int b) {
+            std::vector<float> llrLab((size_t)cells * bps);
+            qamDemapBlock(job.fec, rx.data() + (size_t)b * cells, n0.data() + (size_t)b * cells, cells, llrLab.data());
+            float* llr = gLlr.data() + (size_t)b * d.nLdpc;
+            for (int p = 0; p < d.nLdpc; p++) llr[map[p]] = llrLab[p];
+        });
+        gHard.resize((size_t)nb * d.nLdpc); gOk.resize(nb); gIt.resize(nb);
+        if (GpuLdpc::instance().decode(ldpc, gLlr.data(), nb, 50, gHard.data(), gOk.data(), gIt.data())) res.usedGpu = true;
+        else { gLlr.clear(); }
+    }
+    const bool gpuDone = res.usedGpu;
     std::atomic<int> tried{0}, failedFirst{0};
     parallelFor(nb, threads, [&](int b) {
         BlockOut& o = outs[b];
@@ -53,11 +71,18 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads) {
         if (tried.load() >= 16 && failedFirst.load() >= 16) { o.frame.blockIndex = b; return; }
         const cf32* c = rx.data() + (size_t)b * cells;
         const float* nn = n0.data() + (size_t)b * cells;
-        std::vector<float> llrLab((size_t)cells * bps), llr(d.nLdpc);
-        qamDemapBlock(job.fec, c, nn, cells, llrLab.data());
-        for (int p = 0; p < d.nLdpc; p++) llr[map[p]] = llrLab[p];
+        std::vector<float> llr(d.nLdpc);
         std::vector<uint8_t> hard;
-        ldpc.decodeFast(llr, 50, hard, &o.iters);
+        if (gpuDone) {
+            std::copy(gLlr.begin() + (size_t)b * d.nLdpc, gLlr.begin() + (size_t)(b + 1) * d.nLdpc, llr.begin());
+            hard.assign(gHard.begin() + (size_t)b * d.nLdpc, gHard.begin() + (size_t)(b + 1) * d.nLdpc);
+            o.iters = gIt[b];
+        } else {
+            std::vector<float> llrLab((size_t)cells * bps);
+            qamDemapBlock(job.fec, c, nn, cells, llrLab.data());
+            for (int p = 0; p < d.nLdpc; p++) llr[map[p]] = llrLab[p];
+            ldpc.decodeFast(llr, 50, hard, &o.iters);
+        }
         // hard decisions before LDPC, for the pre-FEC bit error rate
         long pre = 0;
         std::vector<uint8_t> bb(hard.begin(), hard.begin() + d.kLdpc);
@@ -123,6 +148,7 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads) {
 }
 
 PlpDecoder::PlpDecoder(int threads) {
+    gpuOk_ = GpuLdpc::instance().available();
     threads_ = threads > 0 ? threads : std::max(1u, std::thread::hardware_concurrency());
     th_ = std::thread([this] { loop(); });
 }
@@ -166,7 +192,15 @@ void PlpDecoder::loop() {
             jobs_.pop_front();
             busy_ = true;
         }
-        PlpResult r = decodeNow(job, threads_);
+        const int mode = mode_.load();
+        const bool wantGpu = gpuOk_ && (mode == 1 || (mode == 2 && autoGpu_));
+        PlpResult r = decodeNow(job, threads_, wantGpu);
+        if (mode == 2 && !autoGpu_ && gpuOk_) {
+            // Auto: move to the GPU as soon as the CPU can't keep up (slow decode, or frames being dropped)
+            const uint64_t dr = dropped_.load();
+            if (r.decodeMs > 0.7 * r.frameSec * 1000.0 || dr > lastDropped_) autoGpu_ = true;
+            lastDropped_ = dr;
+        }
         {
             std::lock_guard<std::mutex> lk(mu_);
             results_.push_back(std::move(r));

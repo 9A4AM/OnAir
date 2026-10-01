@@ -19,6 +19,12 @@ public:
     // hard[0..n) receives the decided bits. `iters` gets the iteration count used.
     bool decode(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters = nullptr) const;
 
+    // Quasi-cyclic layer structure (used by the GPU decoder): layer r lists (group, shift) of the information columns.
+    struct Conn { int group, shift; };
+    const std::vector<std::vector<Conn>>& layers() const { return layers_; }
+    int q() const { return q_; }
+    int groups() const { return groups_; }
+
     // Fast layered normalised min-sum exploiting the quasi-cyclic (360) structure; same interface and conventions.
     bool decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters = nullptr) const;
 
@@ -27,7 +33,6 @@ private:
     // check -> variable adjacency (CSR)
     std::vector<int> chkStart_, chkVar_;
     // quasi-cyclic layer structure: layer r lists (group, shift) of the information columns that reach it
-    struct Conn { int group, shift; };
     std::vector<std::vector<Conn>> layers_;
     int q_ = 0, groups_ = 0;
     // information-bit edges for encoding: parity index p, info index d
