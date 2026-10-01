@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
     double freq = 522, secs = 10;
     bool useFile = false, haveDev = false;
     std::string record;
+    OutputConfig out;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)""; };
@@ -34,6 +35,11 @@ int main(int argc, char** argv) {
         else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
         else if (a == "--format") { std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
         else if (a == "--record") record = next();
+        else if (a == "--ts") out.file = true, out.path = next();
+        else if (a == "--udp") { std::string hp = next(); auto c = hp.find(':'); out.udp = true; out.host = hp.substr(0, c); if (c != std::string::npos) out.port = atoi(hp.c_str() + c + 1); }
+        else if (a == "--rtp") out.rtp = true;
+        else if (a == "--service") out.serviceId = atoi(next());
+        else if (a == "--no-null") out.dropNull = true;
     }
     tune.centerHz = freq * 1e6;
     tune.sampleRate = tune.bandwidthMhz >= 7 ? 10e6 : 8e6; // HackRF Pro: exact tuning only at <= 10 Msps
@@ -50,6 +56,7 @@ int main(int argc, char** argv) {
         static int shown = 0;
         for (auto& f : r.frames) if (!f.bits.empty() && shown < 6) { shown++; printf("BBFRAME blk %d hdr:", f.blockIndex); for (int B = 0; B < 14; B++) { unsigned v = 0; for (int i = 0; i < 8; i++) v = (v << 1) | f.bits[B * 8 + i]; printf(" %02x", v); } printf("  crc %d upl %d dfl %d syncd %d\n", f.header.crcOk, f.header.upl, f.header.dfl, f.header.syncd); }
     });
+    e.setOutputs(out);
     if (!e.start(dev, tune, file)) {
         size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
         return 1;
@@ -80,6 +87,20 @@ int main(int argc, char** argv) {
         const L1Post& q = t.l1post;
         printf("L1-post: plps %d aux %d rf %.3f MHz\n", q.numPlp, q.numAux, q.rf.empty() ? 0.0 : q.rf[0].freq / 1e6);
         for (auto& c : q.plps) printf("  PLP %d type %d payload %d cod %d mod %d rot %d fec %d blocksMax %d TI %d/%d group %d mode %d\n", c.id, c.type, c.payloadType, c.cod, c.mod, c.rotation, c.fecType, c.numBlocksMax, c.timeIlLength, c.timeIlType, c.groupId, c.plpMode);
+    }
+    {
+        TsSnapshot ts = e.tsSnapshot();
+        BbStats bb = e.bbStats();
+        printf("\nBB frames %llu (lost %llu) packets %llu resyncs %llu  mode %s ISSYI %d NPD %d\n", (unsigned long long)bb.frames, (unsigned long long)bb.framesLost, (unsigned long long)bb.packets, (unsigned long long)bb.resyncs, bb.hem ? "HEM" : "normal", bb.issyi, bb.npd);
+        printf("TS: network \"%s\" onid 0x%04X tsid 0x%04X  %s  mux %.0f kbit/s (null %.0f)  CC errors %llu\n", ts.networkName.c_str(), ts.onid, ts.tsid, ts.utc.c_str(), ts.muxKbps, ts.nullKbps, (unsigned long long)ts.ccErrors);
+        for (auto& sv : ts.services) {
+            printf("  [%4d] %-24s %-8s lcn %-3d pmt 0x%04X %s\n", sv.id, sv.name.c_str(), sv.typeName(), sv.lcn, sv.pmtPid, sv.caFlag ? "(scrambled)" : "");
+            for (auto& st : sv.streams) printf("          pid 0x%04X %-10s %-14s %s %.0f kbit/s\n", st.pid, st.kind.c_str(), st.codec.c_str(), st.lang.c_str(), st.kbps);
+            if (!sv.now.empty()) printf("          now: %s | next: %s\n", sv.now.c_str(), sv.next.c_str());
+        }
+        OutputStats os = e.outputStats();
+        if (os.fileOpen) printf("file: %llu packets, %llu bytes\n", (unsigned long long)os.filePackets, (unsigned long long)os.fileBytes);
+        if (os.udpOpen) printf("udp: %llu datagrams, dropped %llu\n", (unsigned long long)os.udpDatagrams, (unsigned long long)os.udpDropped);
     }
     e.stop();
     { size_t n; auto lines = e.logSnapshot(n); for (; shown < lines.size(); shown++) printf("  log: %s\n", lines[shown].c_str()); }

@@ -44,7 +44,15 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rate_ = src_->sampleRate();
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
     rx_.configure(rate_, tune.bandwidthMhz);
-    rx_.setPlpCallback([this](const PlpResult& r) { if (plpDump_) plpDump_(r); });
+    {
+        std::lock_guard<std::mutex> lk(tsMu_);
+        demux_.reset();
+        unpack_ = BbUnpacker();
+        tsSnap_ = TsSnapshot();
+        lastT2Frame_ = -1;
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); outputs_.packet(pkt, &tsSnap_); });
+    }
+    rx_.setPlpCallback([this](const PlpResult& r) { if (plpDump_) plpDump_(r); onPlp(r); });
     {
         RxTelemetry t;
         if (!rx_.telemetry(t, 0)) {}
@@ -84,6 +92,22 @@ bool Engine::retune(const TuneSettings& tune) {
     if (!src_->retune(tune, err)) { log("retune failed: " + err); return false; }
     return true;
 }
+
+void Engine::onPlp(const PlpResult& r) {
+    std::lock_guard<std::mutex> lk(tsMu_);
+    if (lastT2Frame_ >= 0 && ((r.t2Frame - lastT2Frame_) & 0xFF) != 1) { unpack_.lost(); demux_.markLoss(); }
+    lastT2Frame_ = r.t2Frame;
+    for (const auto& f : r.frames) {
+        if (f.bits.empty()) { unpack_.lost(); demux_.markLoss(); continue; }
+        unpack_.push(f.bits, f.header);
+    }
+    demux_.advance(r.frameSec);
+    tsSnap_ = demux_.snapshot();
+    outputs_.burstDone(r.frameSec);
+}
+
+TsSnapshot Engine::tsSnapshot() { std::lock_guard<std::mutex> lk(tsMu_); return tsSnap_; }
+BbStats Engine::bbStats() { std::lock_guard<std::mutex> lk(tsMu_); return unpack_.stats(); }
 
 bool Engine::latestRx(RxTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(rxMu_);

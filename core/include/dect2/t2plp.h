@@ -14,6 +14,8 @@ namespace dect2 {
 
 struct PlpJob {
     uint64_t frameNo = 0;
+    int t2Frame = 0;        // L1-post FRAME_IDX
+    double frameSec = 0;    // duration of the T2 frame
     int plpId = 0;
     PlpFec fec;
     int numBlocks = 0;
@@ -30,6 +32,8 @@ struct BbFrame {
 
 struct PlpResult {
     uint64_t frameNo = 0;
+    int t2Frame = 0;
+    double frameSec = 0;
     int plpId = 0;
     PlpFec fec;
     int blocks = 0, blocksOk = 0, bchFailed = 0, headerOk = 0;

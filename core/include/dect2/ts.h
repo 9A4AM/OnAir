@@ -1,0 +1,80 @@
+// MPEG transport-stream analysis: PSI/SI parsing (PAT, PMT, SDT, NIT, EIT now/next, TDT), per-PID statistics.
+#pragma once
+#include <cstdint>
+#include <map>
+#include <string>
+#include <vector>
+
+namespace dect2 {
+
+struct TsStream {
+    int pid = 0, streamType = 0;
+    std::string codec;     // "H.264", "HEVC", "AAC", "AC-3", ...
+    std::string kind;      // "video", "audio", "subtitles", "teletext", "data"
+    std::string lang;
+    double kbps = 0;
+    bool scrambled = false;
+};
+
+struct TsService {
+    int id = 0;
+    std::string name, provider;
+    int type = 0;            // DVB service type
+    int pmtPid = 0, pcrPid = 0;
+    bool caFlag = false;     // free_CA_mode or CA descriptors present
+    bool haveSdt = false, havePmt = false;
+    std::vector<TsStream> streams;
+    std::string now, next;   // EIT present / following event names
+    int lcn = 0;
+    const char* typeName() const;
+};
+
+struct TsPid {
+    int pid = 0;
+    uint64_t packets = 0, ccErrors = 0, tei = 0;
+    double kbps = 0;
+    bool scrambled = false;
+    std::string label;
+};
+
+struct TsSnapshot {
+    std::vector<TsService> services;
+    std::vector<TsPid> pids;
+    std::string networkName, utc;
+    int onid = 0, tsid = 0;
+    uint64_t totalPackets = 0, nullPackets = 0, teiPackets = 0, ccErrors = 0;
+    double muxKbps = 0, nullKbps = 0;
+};
+
+class TsDemux {
+public:
+    void feed(const uint8_t* pkt188);
+    void markLoss();                 // data was lost before the next packet (do not count continuity errors)
+    void advance(double dtSeconds);  // stream time passed; updates bit rates
+    TsSnapshot snapshot() const;
+    void reset();
+
+private:
+    struct SectionBuf { std::vector<uint8_t> data; bool active = false; };
+    struct PidState { uint64_t packets = 0, bytesWin = 0, ccErrors = 0, tei = 0; int lastCc = -1; double kbps = 0; bool scrambled = false; bool resync = true; };
+    void section(int pid, const uint8_t* s, int len);
+    void parsePat(const uint8_t* s, int len);
+    void parsePmt(int pid, const uint8_t* s, int len);
+    void parseSdt(const uint8_t* s, int len);
+    void parseNit(const uint8_t* s, int len);
+    void parseEit(const uint8_t* s, int len);
+    void parseTdt(const uint8_t* s, int len);
+    std::map<int, PidState> pids_;
+    std::map<int, SectionBuf> sec_;
+    std::map<int, TsService> services_;   // by service id
+    std::map<int, int> pmtToService_;
+    std::string network_, utc_;
+    int onid_ = 0, tsid_ = 0;
+    uint64_t total_ = 0, nulls_ = 0, tei_ = 0, ccErr_ = 0, nullWin_ = 0, totalWin_ = 0;
+    double muxKbps_ = 0, nullKbps_ = 0;
+};
+
+uint32_t mpegCrc32(const uint8_t* p, int n);
+std::string dvbText(const uint8_t* p, int n); // DVB text with character-table prefix -> UTF-8
+
+} // namespace dect2

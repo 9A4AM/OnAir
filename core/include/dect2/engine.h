@@ -3,6 +3,9 @@
 #include "source.h"
 #include "spectrum.h"
 #include "t2rx.h"
+#include "bbunpack.h"
+#include "ts.h"
+#include "tsout.h"
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -38,6 +41,13 @@ public:
     bool latestRx(RxTelemetry& out, uint64_t lastSeq);
     void setPlpDump(std::function<void(const PlpResult&)> cb) { plpDump_ = std::move(cb); }
 
+    // Transport stream (phase 4)
+    TsSnapshot tsSnapshot();
+    BbStats bbStats();
+    void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
+    OutputConfig outputConfig() const { return outputs_.config(); }
+    OutputStats outputStats() const { return outputs_.stats(); }
+
     // Log
     void log(const std::string& line);
     std::vector<std::string> logSnapshot(size_t& total);
@@ -47,6 +57,13 @@ private:
     void analysisLoop();
     void logRxEvents(const RxTelemetry& t);
     std::function<void(const PlpResult&)> plpDump_;
+    void onPlp(const PlpResult& r);
+    std::mutex tsMu_;
+    BbUnpacker unpack_;
+    TsDemux demux_;
+    TsSnapshot tsSnap_;
+    OutputManager outputs_;
+    int lastT2Frame_ = -1;
     double tSpec_ = 0, tRx_ = 0;
     double nSamp_ = 0;
     uint64_t logP1Count_ = 0;

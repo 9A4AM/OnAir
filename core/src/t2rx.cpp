@@ -759,6 +759,8 @@ struct T2Receiver::Impl {
         if (pc.timeIlType != 0) { plpSkipped++; return; } // inter-frame time interleaving not implemented
         PlpJob job;
         job.frameNo = ++frameCounter;
+        job.t2Frame = l1post.frameIdx;
+        job.frameSec = frameMsv / 1e3;
         job.plpId = pc.id;
         job.fec.shortFrame = pc.fecType == 0;
         job.fec.rate = pc.cod;

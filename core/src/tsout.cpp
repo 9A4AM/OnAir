@@ -1,0 +1,205 @@
+#include "dect2/tsout.h"
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include <chrono>
+#include <cstdio>
+#include <cstring>
+
+namespace dect2 {
+
+using Clock = std::chrono::steady_clock;
+
+struct OutputManager::Impl {
+    mutable std::mutex mu;
+    OutputConfig cfg;
+    FILE* file = nullptr;
+    int sock = -1;
+    sockaddr_in dst{};
+    OutputStats st;
+    // service filter
+    std::set<int> pass;
+    int patCc = 0;
+    int patServiceId = -1, patPmtPid = 0, patTsid = 0;
+    // udp pacing
+    struct Dgram { std::vector<uint8_t> data; Clock::time_point due; };
+    std::deque<Dgram> queue;
+    std::vector<uint8_t> building;   // datagram under construction (payload packets)
+    std::vector<std::vector<uint8_t>> burst; // datagrams of the current frame
+    std::condition_variable cv;
+    std::thread sender;
+    bool running = false;
+    uint16_t rtpSeq = 0;
+    uint32_t rtpTs = 0;
+    Clock::time_point lastDue = Clock::now();
+
+    void startSender() {
+        running = true;
+        sender = std::thread([this] {
+            std::unique_lock<std::mutex> lk(mu);
+            while (running) {
+                if (queue.empty()) { cv.wait_for(lk, std::chrono::milliseconds(50)); continue; }
+                auto due = queue.front().due;
+                if (Clock::now() < due) { cv.wait_until(lk, due); continue; }
+                Dgram d = std::move(queue.front());
+                queue.pop_front();
+                if (sock >= 0) {
+                    ssize_t n = sendto(sock, d.data.data(), d.data.size(), 0, (sockaddr*)&dst, sizeof dst);
+                    if (n > 0) { st.udpDatagrams++; st.udpBytes += (uint64_t)n; }
+                }
+                if (!queue.empty()) st.udpQueueMs = std::chrono::duration<double, std::milli>(queue.back().due - Clock::now()).count();
+                else st.udpQueueMs = 0;
+            }
+        });
+    }
+    void stopSender() {
+        { std::lock_guard<std::mutex> lk(mu); running = false; }
+        cv.notify_all();
+        if (sender.joinable()) sender.join();
+    }
+};
+
+OutputManager::OutputManager() : p_(new Impl) { p_->startSender(); }
+OutputManager::~OutputManager() { close(); p_->stopSender(); delete p_; }
+
+OutputConfig OutputManager::config() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->cfg; }
+
+void OutputManager::close() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (p_->file) { fclose(p_->file); p_->file = nullptr; }
+    if (p_->sock >= 0) { ::close(p_->sock); p_->sock = -1; }
+    p_->queue.clear();
+    p_->building.clear();
+    p_->burst.clear();
+    p_->st.fileOpen = p_->st.udpOpen = false;
+}
+
+void OutputManager::configure(const OutputConfig& c) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& I = *p_;
+    OutputConfig old = I.cfg;
+    I.cfg = c;
+    I.st.error.clear();
+    if (I.file && (!c.file || c.path != old.path)) { fclose(I.file); I.file = nullptr; I.st.fileOpen = false; }
+    if (c.file && !I.file && !c.path.empty()) {
+        I.file = fopen(c.path.c_str(), "wb");
+        if (!I.file) I.st.error = "cannot open " + c.path;
+        else { I.st.fileOpen = true; I.st.fileBytes = I.st.filePackets = 0; }
+    }
+    if (I.sock >= 0 && (!c.udp || c.host != old.host || c.port != old.port)) { ::close(I.sock); I.sock = -1; I.st.udpOpen = false; I.queue.clear(); }
+    if (c.udp && I.sock < 0) {
+        I.sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (I.sock < 0) I.st.error = "socket failed";
+        else {
+            memset(&I.dst, 0, sizeof I.dst);
+            I.dst.sin_family = AF_INET;
+            I.dst.sin_port = htons((uint16_t)c.port);
+            if (inet_pton(AF_INET, c.host.c_str(), &I.dst.sin_addr) != 1) { I.st.error = "bad UDP address " + c.host; ::close(I.sock); I.sock = -1; }
+            else {
+                int ttl = c.ttl;
+                setsockopt(I.sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof ttl);
+                I.st.udpOpen = true;
+                I.st.udpDatagrams = I.st.udpBytes = I.st.udpDropped = 0;
+            }
+        }
+    }
+    if (c.serviceId != old.serviceId) { I.pass.clear(); I.patServiceId = -1; }
+}
+
+static void buildPat(int tsid, int sid, int pmtPid, int& cc, uint8_t* out) {
+    uint8_t sec[16];
+    sec[0] = 0x00;
+    sec[1] = 0xB0; sec[2] = 13;                     // section length 13
+    sec[3] = tsid >> 8; sec[4] = tsid & 0xFF;
+    sec[5] = 0xC1; sec[6] = 0; sec[7] = 0;
+    sec[8] = sid >> 8; sec[9] = sid & 0xFF;
+    sec[10] = 0xE0 | (pmtPid >> 8); sec[11] = pmtPid & 0xFF;
+    uint32_t crc = mpegCrc32(sec, 12);
+    sec[12] = crc >> 24; sec[13] = crc >> 16; sec[14] = crc >> 8; sec[15] = crc;
+    memset(out, 0xFF, 188);
+    out[0] = 0x47; out[1] = 0x40; out[2] = 0x00; out[3] = 0x10 | (cc++ & 15);
+    out[4] = 0x00; // pointer field
+    memcpy(out + 5, sec, 16);
+}
+
+void OutputManager::packet(const uint8_t* pkt, const TsSnapshot* snap) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& I = *p_;
+    if (!I.file && I.sock < 0) return;
+    const int pid = ((pkt[1] & 0x1F) << 8) | pkt[2];
+    uint8_t rewritten[188];
+    const uint8_t* out = pkt;
+    if (I.cfg.dropNull && pid == 0x1FFF) return;
+    if (I.cfg.serviceId >= 0) {
+        if (snap) {
+            if (I.patServiceId != I.cfg.serviceId || I.pass.empty()) {
+                for (auto& sv : snap->services) if (sv.id == I.cfg.serviceId && sv.havePmt) {
+                    I.pass = {0x11, 0x12, 0x14, sv.pmtPid, sv.pcrPid};
+                    for (auto& st : sv.streams) I.pass.insert(st.pid);
+                    I.patServiceId = sv.id; I.patPmtPid = sv.pmtPid; I.patTsid = snap->tsid;
+                }
+            }
+        }
+        if (I.pass.empty()) return;
+        if (pid == 0) {
+            if (!(pkt[1] & 0x40)) return;                 // continuation of the original PAT: dropped
+            buildPat(I.patTsid, I.patServiceId, I.patPmtPid, I.patCc, rewritten);
+            out = rewritten;
+        } else if (!I.pass.count(pid)) return;
+    }
+    if (I.file) { fwrite(out, 1, 188, I.file); I.st.fileBytes += 188; I.st.filePackets++; }
+    if (I.sock >= 0) {
+        I.building.insert(I.building.end(), out, out + 188);
+        if (I.building.size() >= 7 * 188) {
+            I.burst.push_back(std::move(I.building));
+            I.building.clear();
+        }
+    }
+}
+
+void OutputManager::burstDone(double frameSeconds) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& I = *p_;
+    if (I.file) fflush(I.file);
+    if (I.sock < 0) { I.burst.clear(); I.building.clear(); return; }
+    if (!I.building.empty()) { // pad the tail datagram with nulls so nothing waits for the next frame
+        while (I.building.size() < 7 * 188) { uint8_t nul[188]; memset(nul, 0xFF, 188); nul[0] = 0x47; nul[1] = 0x1F; nul[2] = 0xFF; nul[3] = 0x10; I.building.insert(I.building.end(), nul, nul + 188); }
+        I.burst.push_back(std::move(I.building));
+        I.building.clear();
+    }
+    if (I.burst.empty()) return;
+    const double span = std::max(0.02, frameSeconds);
+    const auto now = Clock::now();
+    auto base = std::max(now, I.lastDue);
+    // keep the queue bounded: if more than ~1.5 frames are waiting, drop what is oldest
+    if (!I.queue.empty() && std::chrono::duration<double>(I.queue.back().due - now).count() > 1.5 * span + 0.3) {
+        I.st.udpDropped += I.queue.size();
+        I.queue.clear();
+        base = now;
+    }
+    const double step = span / I.burst.size();
+    for (size_t i = 0; i < I.burst.size(); i++) {
+        Impl::Dgram d;
+        if (I.cfg.rtp) {
+            d.data.resize(12);
+            d.data[0] = 0x80; d.data[1] = 33;
+            d.data[2] = I.rtpSeq >> 8; d.data[3] = I.rtpSeq & 0xFF; I.rtpSeq++;
+            I.rtpTs += (uint32_t)(step * 90000);
+            d.data[4] = I.rtpTs >> 24; d.data[5] = I.rtpTs >> 16; d.data[6] = I.rtpTs >> 8; d.data[7] = I.rtpTs;
+            d.data[8] = 0x44; d.data[9] = 0x54; d.data[10] = 0x32; d.data[11] = 0x00;
+            d.data.insert(d.data.end(), I.burst[i].begin(), I.burst[i].end());
+        } else d.data = std::move(I.burst[i]);
+        d.due = base + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(step * i));
+        I.queue.push_back(std::move(d));
+    }
+    I.lastDue = base + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(span));
+    I.burst.clear();
+    I.cv.notify_all();
+}
+
+OutputStats OutputManager::stats() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->st; }
+
+} // namespace dect2
