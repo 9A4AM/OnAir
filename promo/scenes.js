@@ -295,7 +295,7 @@ T.finale=(c,bt)=>{
     [.38,.86,.52,.28,.22,.30,.41,.63].forEach((s,i)=>{ const a=-Math.PI/2+i*Math.PI/4, len=(R-26)*s; c.strokeStyle=i===1?PAL.ok:PAL.accent; c.lineWidth=7; c.beginPath(); c.moveTo(cx+Math.cos(a)*22,cy+Math.sin(a)*22); c.lineTo(cx+Math.cos(a)*(22+len),cy+Math.sin(a)*(22+len)); c.stroke(); }); txt(c,'N',cx,cy-R-8,{size:15,w:600,al:'center',col:C.ink}); });
   // the headline lands on the climax hit
   const k=ease(bt,4.0,.9); if(k>0){ c.save(); c.globalAlpha=k; const bg=c.createLinearGradient(0,380,0,700); bg.addColorStop(0,'rgba(5,7,10,0)'); bg.addColorStop(.5,'rgba(5,7,10,.72)'); bg.addColorStop(1,'rgba(5,7,10,0)'); c.fillStyle=bg; c.fillRect(0,380,W,320);
-    txt(c,'All of it. At once.',W/2,566+(1-k)*10,{size:112,w:400,ls:-3,al:'center'}); const ps=['DVB-T2','DVB-T','ATSC','DAB','DAB+']; ps.forEach((s,i)=>chip(c,s,W/2+(i-2)*170,640,ease(bt,4.6+i*.2,.6),{size:22,pad:38})); c.restore(); }
+    txt(c,'All of it. At once.',W/2,566+(1-k)*10,{size:112,w:400,ls:-3,al:'center'}); const ps=['DVB-T2','DVB-T','ATSC','DAB','DAB+','More to come']; const ws=[150,130,120,110,120,230]; let cx0=W/2-(ws.reduce((a,b)=>a+b,0)+(ps.length-1)*20)/2; ps.forEach((s,i)=>{ chip(c,s,cx0+ws[i]/2,640,ease(bt,4.6+i*.2,.6),{size:22,pad:38,col:i===5?C.dim:C.ink}); cx0+=ws[i]+20; }); c.restore(); }
 };
 // ---------------------------------------------------------------- 11. outro
 T.outro=(c,bt)=>{
@@ -303,7 +303,7 @@ T.outro=(c,bt)=>{
   fadeUp(c,bt,.2,()=>{ c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=50; c.shadowOffsetY=22; c.drawImage(logo,W/2-120,120,240,240); c.restore(); },{dur:1.6,dy:12});
   line(c,'OnAir',W/2,540,bt,1.2,{size:110,w:500,ls:-4,al:'center',dur:1.6});
   line(c,'Digital TV and radio, decoded in software.',W/2,610,bt,2.4,{size:36,w:300,col:C.dim,al:'center',dur:1.6});
-  ['DVB-T2','DVB-T','ATSC','DAB','DAB+'].forEach((s,i)=>chip(c,s,W/2+(i-2)*170,700,ease(bt,3.5+i*1.0,1.0),{size:22,pad:38}));
+  { const ps=['DVB-T2','DVB-T','ATSC','DAB','DAB+','More to come'], ws=[150,130,120,110,120,230]; let cx0=W/2-(ws.reduce((a,b)=>a+b,0)+100)/2; ps.forEach((s,i)=>{ chip(c,s,cx0+ws[i]/2,700,ease(bt,3.5+i*.9,1.0),{size:22,pad:38,col:i===5?C.dim:C.ink}); cx0+=ws[i]+20; }); }
   fadeUp(c,bt,9.0,()=>{ ['macOS','Linux'].forEach((pl,i)=>{ const px=W/2-212+i*216; panel(c,px,770,200,60,{r:30,active:true,blur:10,dy:4}); txt(c,pl,px+100,809,{size:27,w:500,al:'center'}); }); txt(c,'Runs natively on macOS and Linux*',W/2,882,{size:25,w:400,al:'center',col:C.ink}); },{dy:8,dur:1.4});
   line(c,'Open-source digital TV and radio receiver for your SDR.',W/2,950,bt,10.0,{size:26,w:300,col:C.dim,al:'center',dur:1.4});
   line(c,'github.com/adswill/OnAir',W/2,1000,bt,10.8,{size:28,w:500,col:PAL.accent,al:'center',dur:1.4});
@@ -333,7 +333,7 @@ const bufA=mk(), bufB=mk(), ca=bufA.getContext('2d'), cb=bufB.getContext('2d');
 function sceneAt(c,s,t){ c.clearRect(0,0,W,H); const bt=t-s.start; CURBT=bt; CURT=t; c.save();
   const z=1+.0025*clamp(bt+.6,0,14); c.translate(W/2,H/2); c.scale(z,z); c.translate(-W/2,-H/2);
   T[s[0]](c,bt); c.restore();
-  if(TAG[s[0]]){ const a=ease(bt,.6,.8); c.save(); c.globalAlpha=a*.7; txt(c,String(s.idx).padStart(2,'0')+'  ·  '+TAG[s[0]],W-110,84,{size:17,mono:true,w:500,col:C.dim,al:'right',ls:3}); c.restore(); } }
+  }
 function composite(t){
   const act=SCENES.filter(s=>t>=s.t0&&t<s.t1);
   if(act.length===1){ sceneAt(ctx,act[0],t); return; }

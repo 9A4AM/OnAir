@@ -45,7 +45,9 @@ def energy(t):                                     # 0..10, the film's intensity
     if t < 70: return 5
     if t < 72: return 4.5
     if t < 84: return 8.5 if t >= 80 else 8
-    if t < 90: return 5
+    if t < 86: return 7
+    if t < 88: return 6
+    if t < 92: return 4.5
     return 3
 
 class Stem:
@@ -250,7 +252,7 @@ rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-5
 win = 80                                               # 4 s centred window
 sm = np.sqrt(np.convolve(rms ** 2, np.ones(win) / win, 'same'))
 tt = (np.arange(nb) + .5) * blk / SR
-want = np.interp(tt, [0, 4, 8, 24, 66, 72, 76, 79.9, 84, 90, 98], [.075, .110, .095, .105, .105, .085, .090, .120, .10, .07, .055])
+want = np.interp(tt, [0, 4, 8, 24, 66, 72, 76, 79.9, 84, 88, 92, 98], [.075, .110, .095, .105, .105, .085, .090, .120, .105, .092, .075, .055])
 g = np.clip(want / sm, .5, 3.5)
 g = np.convolve(g, np.ones(60) / 60, 'same')           # 3 s smoothing: gain never moves audibly
 gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
