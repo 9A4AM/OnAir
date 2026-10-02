@@ -329,3 +329,24 @@ The verdict is none / mild / likely / severe, with advice to re-aim the antenna 
 
 - **Signal-quality bar** on the Player tab: a red bar that fills green as reception improves. The value is the decoder's SNR margin over what the current modulation and code rate needs (0 dB margin = 25%, +6 dB or more = 100%), multiplied by the square of the share of FEC blocks that decoded over the last frames. Hover for the numbers. (`core/src/quality.cpp`; the required-SNR table is approximate AWGN values from EN 302 755 annex C.) On the 522 MHz recording it reads about 74% "good".
 - **Channel selector** on the Player tab, above the video, next to the services list on the right: lists the DVB-T2 muxes the scanner has found (frequency, first service name and the number of further services, SNR). Picking one stops playback and tunes the HackRF there automatically (retune and flush; a restart if the bandwidth differs). The list is remembered between runs and merged from every scan.
+
+## 12. Status after phases 6 and 7 (2026-10-02)
+
+**Phase 6 (done):** frame map and history tabs, favourite channels, pop-out and fullscreen video, GPU deinterlacing (adaptive comb filter, so only moving, combed pixels are touched), teletext decoder and tab, gain control (AGC, gain sweep, ADC warnings), multipath detector, quality bar and channel selector, faster CPU paths, and a real-time check: a worst-case mux (256-QAM 5/6, about 910 FEC blocks per second) needs about 0.2 s of GPU time per second.
+
+**Bug found while doing it:** the layered LDPC decoder treated every layer as touching 360 different variables, but in all DVB-T2 codes some layers reach the same variable group twice. The CPU decoder silently dropped one of the two updates, and the GPU kernel raced. Both now apply posterior increments (the GPU applies repeated edges in separate steps), the GPU matches the CPU bit for bit at every iteration count, and failed blocks on the 522 MHz recording fell from about 1.95% to 1.37%.
+
+**Phase 7 (partly done, honestly):**
+
+| Item | State |
+|---|---|
+| T2-Lite SISO | locks in the synthetic test; FEC rates 1/3 and 2/5 verified against the reference encoder; no real T2-Lite signal tested |
+| Multi-PLP | PLP selector for type-1 PLPs, common PLP shown but not merged back into the data PLP's transport stream |
+| MISO | **not implemented**. Detected and reported ("MISO transmission ... not implemented") in the app and the scanner. Needs two channel estimates and Alamouti combining; there is no reference vector or real signal to check it against |
+| Inter-frame time interleaving (TIME_IL_TYPE 1) | **not implemented**, detected and reported. The reference encoder does not produce it either |
+| Type-2 PLPs / sub-slicing | **not implemented**, detected and reported |
+| FEF frames, generic streams (GSE) | detected and reported |
+| Robustness | receiver fuzz test (noise, NaN/Inf, bursts, dropped and repeated chunks, resets, reconfiguration) and AddressSanitizer/UndefinedBehaviorSanitizer runs of the test suite and the real recording; one real out-of-bounds read at a P2 resync was found and fixed |
+
+Next steps for the remaining Phase 7 items need real signals or reference vectors: a MISO capture, a multi-frame-interleaved capture (UK and some other countries use TIME_IL_TYPE 1), or a transmitter that can produce them.
+
