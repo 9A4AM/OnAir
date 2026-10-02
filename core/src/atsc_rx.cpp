@@ -12,10 +12,8 @@
 #include <deque>
 #include <mutex>
 #include <thread>
-#ifdef __APPLE__
-#include <Accelerate/Accelerate.h>
-#endif
-#if defined(__ARM_NEON)
+#include "dect2/dsp_compat.h"
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
 #endif
 
@@ -185,7 +183,7 @@ struct Core {
             const float* pr = &inRe[b0];
             const float* pi_ = &inIm[b0];
             float re = 0, im = 0;
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
             {
                 float32x4_t ar = vdupq_n_f32(0), ai = vdupq_n_f32(0);
                 int j = 0;
@@ -548,7 +546,7 @@ struct Core {
     double eqSnrNow = 0;
 
     static float dotf(const float* a, const float* b, int n) {
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
         float32x4_t acc = vdupq_n_f32(0);
         int i = 0;
         for (; i + 4 <= n; i += 4) acc = vfmaq_f32(acc, vld1q_f32(a + i), vld1q_f32(b + i));
@@ -568,20 +566,13 @@ struct Core {
         if (N < n) return false;
         std::vector<double> A((size_t)n * n, 0.0);
         sol.assign(n, 0.0);
-#ifdef __APPLE__
         {
             std::vector<float> Af((size_t)n * n, 0.f), bf(n, 0.f);
-            cblas_ssyrk(CblasRowMajor, CblasLower, CblasTrans, n, N, 1.f, X.data(), n, 0.f, Af.data(), n);
-            cblas_sgemv(CblasRowMajor, CblasTrans, N, n, 1.f, X.data(), n, tgt.data(), 1, 0.f, bf.data(), 1);
+            syrkLowerT(X.data(), N, n, Af.data());
+            gemvT(X.data(), N, n, tgt.data(), bf.data());
             for (size_t i = 0; i < Af.size(); i++) A[i] = Af[i];
             for (int i = 0; i < n; i++) sol[i] = bf[i];
         }
-#else
-        for (int r = 0; r < N; r++) {
-            const float* x = &X[(size_t)r * n];
-            for (int i = 0; i < n; i++) { double* row = &A[(size_t)i * n]; const double xi = x[i]; for (int j = 0; j <= i; j++) row[j] += xi * x[j]; sol[i] += xi * tgt[r]; }
-        }
-#endif
         double tr0 = 0;
         for (int i = 0; i < n; i++) tr0 += A[(size_t)i * n + i];
         for (int i = 0; i < n; i++) A[(size_t)i * n + i] += ridge * tr0 / n;
@@ -669,11 +660,7 @@ struct Core {
         for (int k = 0; k < L; k++) wr[k] = tp.ff[L - 1 - k];
         const int64_t first = v.f0 + kNFf - (L - 1);
         for (size_t k = 0; k < xr.size(); k++) xr[k] = v.at(first + (int64_t)k);
-#ifdef __APPLE__
-        vDSP_conv(xr.data(), 1, wr.data(), 1, ffo.data(), 1, (vDSP_Length)kFieldSyms, (vDSP_Length)L);
-#else
-        for (int i = 0; i < kFieldSyms; i++) { float y = 0; for (int k = 0; k < L; k++) y += wr[k] * xr[(size_t)i + k]; ffo[(size_t)i] = y; }
-#endif
+        convCorr(xr.data(), wr.data(), ffo.data(), 1, kFieldSyms, L);
         std::vector<float> rfb(B);
         for (int m = 0; m < B; m++) rfb[m] = tp.fb[B - 1 - m];
         double mse = 0; int nm = 0;

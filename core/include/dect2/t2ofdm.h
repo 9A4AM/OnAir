@@ -19,7 +19,7 @@ private:
     double cut_ = -1;
     static constexpr int kHalf = 8;          // half-length of the interpolation kernel (grid points)
     int smoothHalf_ = 0;
-    std::vector<float> taps_;                // interpolation polyphase kernels [phase][tap], stored reversed for vDSP_conv
+    std::vector<float> taps_;                // interpolation polyphase kernels [phase][tap], stored reversed for the correlation (convCorr)
     std::vector<float> smooth_;              // grid smoothing kernel (reversed)
     void build(int S, double cutoff);
     std::vector<float> pre_, pim_, sre_, sim_, ore_, oim_;

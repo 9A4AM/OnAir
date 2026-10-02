@@ -1,23 +1,19 @@
 #include "dect2/t2gen.h"
 #include "dect2/t2interleave.h"
-#include <Accelerate/Accelerate.h>
+#include "dect2/dsp_compat.h"
 #include <cmath>
 #include <cstring>
 
 namespace dect2 {
 
 struct T2Generator::Impl {
-    FFTSetup fft1k = nullptr, fftN = nullptr;
     int log2N = 0;
     std::mt19937 rng;
     cf32 p1c[kP1CLen], p1a[kP1ALen], p1b[kP1BLen];
     std::vector<float> re, im;
 };
 
-static void inverseFft(FFTSetup s, int log2n, std::vector<float>& re, std::vector<float>& im) {
-    DSPSplitComplex sc{re.data(), im.data()};
-    vDSP_fft_zip(s, &sc, 1, log2n, FFT_INVERSE);
-}
+static void inverseFft(int log2n, std::vector<float>& re, std::vector<float>& im) { fftSplit(re.data(), im.data(), log2n, true); }
 
 static void buildP1(T2Generator::Impl& I, int s1, int s2code) {
     int mod[384], idx = 0;
@@ -45,7 +41,7 @@ static void buildP1(T2Generator::Impl& I, int s1, int s2code) {
             int f = kP1ActiveCarriers[i] + 86 - 512 + shift; // signed carrier index
             re[(f + 1024) % 1024] = c[i];
         }
-        inverseFft(I.fft1k, 10, re, im);
+        inverseFft(10, re, im);
         float sc = 1.0f / std::sqrt(384.0f);
         for (int n = 0; n < 1024; n++) out[n] = cf32(re[n] * sc, im[n] * sc);
     };
@@ -70,8 +66,6 @@ T2Generator::T2Generator(const TxParams& p) : i_(new Impl), p_(p) {
     p_.pp = pc.pp;
     k_ = pm_->carriers();
     i_->log2N = (int)std::lround(std::log2((double)n_));
-    i_->fft1k = vDSP_create_fftsetup(10, kFFTRadix2);
-    i_->fftN = vDSP_create_fftsetup(i_->log2N, kFFTRadix2);
     i_->rng.seed(p.seed);
     i_->re.resize(n_);
     i_->im.resize(n_);
@@ -108,8 +102,6 @@ T2Generator::T2Generator(const TxParams& p) : i_(new Impl), p_(p) {
 }
 
 T2Generator::~T2Generator() {
-    vDSP_destroy_fftsetup(i_->fft1k);
-    vDSP_destroy_fftsetup(i_->fftN);
     delete i_;
 }
 
@@ -172,7 +164,7 @@ void T2Generator::nextFrame(std::vector<cf32>& out) {
             default: I.re[bin] = pm_->pilot(s, k, types[k]).real(); break;
             }
         }
-        inverseFft(I.fftN, I.log2N, I.re, I.im);
+        inverseFft(I.log2N, I.re, I.im);
         for (int i = 0; i < g_; i++) o[i] = cf32(I.re[n_ - g_ + i], I.im[n_ - g_ + i]) * norm;
         for (int i = 0; i < n_; i++) o[g_ + i] = cf32(I.re[i], I.im[i]) * norm;
         o += n_ + g_;

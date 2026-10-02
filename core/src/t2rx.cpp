@@ -5,7 +5,7 @@
 #include "dect2/t2l1.h"
 #include "dect2/t2interleave.h"
 
-#include <Accelerate/Accelerate.h>
+#include "dect2/dsp_compat.h"
 
 #include <algorithm>
 #include <array>
@@ -50,16 +50,8 @@ struct T2Receiver::Impl {
     const cf32& at(int64_t abs) const { return buf[(size_t)(abs - base)]; }
 
     // ---- FFT
-    std::array<FFTSetup, 17> fft{};
     std::vector<float> fr, fi;
-    FFTSetup setup(int log2n) {
-        if (!fft[log2n]) fft[log2n] = vDSP_create_fftsetup(log2n, kFFTRadix2);
-        return fft[log2n];
-    }
-    void doFft(int log2n, bool inverse = false) {
-        DSPSplitComplex sc{fr.data(), fi.data()};
-        vDSP_fft_zip(setup(log2n), &sc, 1, log2n, inverse ? FFT_INVERSE : FFT_FORWARD);
-    }
+    void doFft(int log2n, bool inverse = false) { fftSplit(fr.data(), fi.data(), log2n, inverse); }
 
     // ---- P1 scanner
     int64_t scanPos = 0;
@@ -147,9 +139,6 @@ struct T2Receiver::Impl {
 
     Impl() {
         for (int i = 0; i < 1024; i++) phiTab[i] = std::polar(1.0, -kTwoPi * i / 1024.0);
-    }
-    ~Impl() {
-        for (auto s : fft) if (s) vDSP_destroy_fftsetup(s);
     }
 
     void resetAll() {

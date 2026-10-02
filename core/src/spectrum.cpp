@@ -1,12 +1,11 @@
 #include "dect2/spectrum.h"
-#include <Accelerate/Accelerate.h>
+#include "dect2/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 
 namespace dect2 {
 
 struct SpectrumAnalyzer::Impl {
-    FFTSetup setup = nullptr;
     int log2n = 0;
     std::vector<float> window, re, im, accum;
     std::vector<cf32> pending; // partial block carried across feed() calls
@@ -21,16 +20,14 @@ struct SpectrumAnalyzer::Impl {
 
 SpectrumAnalyzer::SpectrumAnalyzer(size_t fftSize) : p_(new Impl), n_(fftSize) {
     p_->log2n = (int)std::lround(std::log2((double)n_));
-    p_->setup = vDSP_create_fftsetup(p_->log2n, kFFTRadix2);
     p_->window.resize(n_);
-    vDSP_hann_window(p_->window.data(), n_, vDSP_HANN_NORM);
+    hannWindowNorm(p_->window.data(), (int)n_);
     p_->re.resize(n_);
     p_->im.resize(n_);
     p_->accum.assign(n_, 0.f);
 }
 
 SpectrumAnalyzer::~SpectrumAnalyzer() {
-    vDSP_destroy_fftsetup(p_->setup);
     delete p_;
 }
 
@@ -57,8 +54,7 @@ void SpectrumAnalyzer::feed(const cf32* x, size_t n) {
             s.re[i] = b[i].real() * s.window[i];
             s.im[i] = b[i].imag() * s.window[i];
         }
-        DSPSplitComplex sc{s.re.data(), s.im.data()};
-        vDSP_fft_zip(s.setup, &sc, 1, s.log2n, FFT_FORWARD);
+        fftSplit(s.re.data(), s.im.data(), s.log2n, false);
         for (size_t i = 0; i < n_; i++) s.accum[i] += s.re[i] * s.re[i] + s.im[i] * s.im[i];
         s.blocks++;
         off += n_;

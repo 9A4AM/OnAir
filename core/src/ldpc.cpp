@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
 #endif
 
@@ -138,7 +138,7 @@ bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vecto
             for (int m = 0; m < Z; m++) { min1[m] = 1e30f; min2[m] = 1e30f; idx1[m] = -1; sg[m] = 0; }
             for (int j = 0; j < nc; j++) {
                 const float* Lj = L.data() + (size_t)j * Z;
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
                 const int32x4_t jv = vdupq_n_s32(j);
                 for (int m = 0; m < Z; m += 4) {
                     float32x4_t x = vld1q_f32(Lj + m);
@@ -162,7 +162,7 @@ bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vecto
             for (int j = 0; j < nc; j++) {
                 float* Lj = L.data() + (size_t)j * Z;
                 float* mj = mr + (size_t)j * Z;
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
                 const int32x4_t jv = vdupq_n_s32(j);
                 const float32x4_t al = vdupq_n_f32(alpha);
                 for (int m = 0; m < Z; m += 4) {

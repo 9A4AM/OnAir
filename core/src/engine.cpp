@@ -1,8 +1,7 @@
 #include "dect2/engine.h"
 #include "dect2/dvbt.h"
 #include <chrono>
-#include <pthread.h>
-#include <pthread/qos.h>
+#include "dect2/platform.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -324,7 +323,7 @@ bool Engine::latestSpectrum(SpectrumFrame& out, uint64_t lastSeq) {
 }
 
 void Engine::analysisLoop() {
-    pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0); // the sample path must never wait for decoders or the UI
+    setThreadPriority(ThreadPriority::Realtime); // the sample path must never wait for decoders or the UI
     std::vector<cf32> buf(1 << 16);
     auto next = std::chrono::steady_clock::now();
     SpectrumFrame f;

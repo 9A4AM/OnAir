@@ -1,5 +1,5 @@
 #include "dect2/t2ofdm.h"
-#include <Accelerate/Accelerate.h>
+#include "dect2/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 
@@ -82,8 +82,8 @@ void GridInterpolator::run(const std::vector<cf32>& grid, int S, int K, int N, d
         const int outN = M + 2 * (kHalf + 2);
         sre_.assign(outN, 0.f); sim_.assign(outN, 0.f);
         const int start = pad - (kHalf + 2) - smoothHalf_;
-        vDSP_conv(pre_.data() + start, 1, smooth_.data(), 1, sre_.data(), 1, outN, L);
-        vDSP_conv(pim_.data() + start, 1, smooth_.data(), 1, sim_.data(), 1, outN, L);
+        convCorr(pre_.data() + start, smooth_.data(), sre_.data(), 1, outN, L);
+        convCorr(pim_.data() + start, smooth_.data(), sim_.data(), 1, outN, L);
         gr = sre_.data() + (kHalf + 2) - pad; // so that gr[pad + n] addresses grid point n again
         gi = sim_.data() + (kHalf + 2) - pad;
         // gr[pad+n] -> sre_[(kHalf+2)+n]
@@ -93,8 +93,8 @@ void GridInterpolator::run(const std::vector<cf32>& grid, int S, int K, int N, d
     for (int p = 0; p < S; p++) {
         const float* h = &taps_[(size_t)p * T];
         // out[n] = sum_t h[t] * g[n + t - (kHalf - 1)]  -> input starts at g[-(kHalf-1)] = gr[pad - (kHalf-1)]
-        vDSP_conv(gr + pad - (kHalf - 1), 1, h, 1, ore_.data() + p, S, M, T);
-        vDSP_conv(gi + pad - (kHalf - 1), 1, h, 1, oim_.data() + p, S, M, T);
+        convCorr(gr + pad - (kHalf - 1), h, ore_.data() + p, S, M, T);
+        convCorr(gi + pad - (kHalf - 1), h, oim_.data() + p, S, M, T);
     }
     // post-rotation
     H.resize(K);
@@ -111,8 +111,6 @@ void GridInterpolator::run(const std::vector<cf32>& grid, int S, int K, int N, d
 
 bool delaySpan(const std::vector<cf32>& H, int N, int searchLo, int searchHi, int centre, int& tMin, int& tMax) {
     int lg = (int)std::lround(std::log2((double)N));
-    static FFTSetup setup[17] = {};
-    if (!setup[lg]) setup[lg] = vDSP_create_fftsetup(lg, kFFTRadix2);
     std::vector<float> re(N, 0.f), im(N, 0.f);
     int K = (int)H.size();
     for (int k = 0; k < K; k++) {
@@ -121,8 +119,7 @@ bool delaySpan(const std::vector<cf32>& H, int N, int searchLo, int searchHi, in
         re[b] = H[k].real();
         im[b] = H[k].imag();
     }
-    DSPSplitComplex sc{re.data(), im.data()};
-    vDSP_fft_zip(setup[lg], &sc, 1, lg, FFT_INVERSE);
+    fftSplit(re.data(), im.data(), lg, true);
     std::vector<float> pw(N);
     double peak = 0;
     for (int n = 0; n < N; n++) { pw[n] = re[n] * re[n] + im[n] * im[n]; peak = std::max(peak, (double)pw[n]); }
@@ -142,8 +139,6 @@ bool delaySpan(const std::vector<cf32>& H, int N, int searchLo, int searchHi, in
 
 void impulseResponse(const std::vector<cf32>& H, int N, int tauMin, int tauMax, int centre, std::vector<float>& outDb) {
     int lg = (int)std::lround(std::log2((double)N));
-    static FFTSetup setup[17] = {};
-    if (!setup[lg]) setup[lg] = vDSP_create_fftsetup(lg, kFFTRadix2);
     std::vector<float> re(N, 0.f), im(N, 0.f);
     int K = (int)H.size();
     for (int k = 0; k < K; k++) {
@@ -152,8 +147,7 @@ void impulseResponse(const std::vector<cf32>& H, int N, int tauMin, int tauMax, 
         re[b] = H[k].real();
         im[b] = H[k].imag();
     }
-    DSPSplitComplex sc{re.data(), im.data()};
-    vDSP_fft_zip(setup[lg], &sc, 1, lg, FFT_INVERSE);
+    fftSplit(re.data(), im.data(), lg, true);
     outDb.assign(std::max(0, tauMax - tauMin), -120.f);
     double peak = 1e-30;
     for (int n = 0; n < N; n++) peak = std::max(peak, (double)re[n] * re[n] + (double)im[n] * im[n]);

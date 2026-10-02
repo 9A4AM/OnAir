@@ -1,5 +1,5 @@
 #include "dect2/resampler.h"
-#include <Accelerate/Accelerate.h>
+#include "dect2/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <numeric>
@@ -78,8 +78,8 @@ void RationalResampler::process(const cf32* in, size_t n, std::vector<cf32>& out
         const float* hp = taps_[p].data();
         const float* sr = re_.data() + base_[p];
         const float* si = im_.data() + base_[p];
-        vDSP_desamp(sr, M_, hp, tr.data(), (vDSP_Length)P, (vDSP_Length)T_);
-        vDSP_desamp(si, M_, hp, ti.data(), (vDSP_Length)P, (vDSP_Length)T_);
+        desamp(sr, M_, hp, tr.data(), (int)P, T_);
+        desamp(si, M_, hp, ti.data(), (int)P, T_);
         for (long long k = 0; k < P; k++) { ore[(size_t)k * L_ + nOfPhase_[p]] = tr[k]; oim[(size_t)k * L_ + nOfPhase_[p]] = ti[k]; }
     }
     size_t o0 = out.size();

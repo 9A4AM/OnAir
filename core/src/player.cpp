@@ -13,8 +13,7 @@ extern "C" {
 
 #include <algorithm>
 #include <chrono>
-#include <pthread.h>
-#include <pthread/qos.h>
+#include "dect2/platform.h"
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -170,13 +169,15 @@ std::shared_ptr<const VideoFrame> Player::videoFrame(uint64_t& seqIn) {
 
 // ------------------------------------------------------------------ decoding session
 
+#ifdef __APPLE__
 static enum AVPixelFormat pickHw(AVCodecContext*, const enum AVPixelFormat* fmts) {
     for (const enum AVPixelFormat* f = fmts; *f != AV_PIX_FMT_NONE; f++) if (*f == AV_PIX_FMT_VIDEOTOOLBOX) return *f;
     return fmts[0];
 }
+#endif
 
 void Player::threadMain() {
-    pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);
+    setThreadPriority(ThreadPriority::High);
     av_log_set_level(getenv("DECT2_PLAYDEBUG") ? AV_LOG_ERROR : AV_LOG_FATAL); // damaged streams make the H.264 decoder very chatty
     Impl& I = *p_;
     while (!stop_) {
@@ -241,11 +242,15 @@ void Player::threadMain() {
                 // damaged streams: let the decoder conceal missing slices and keep outputting pictures instead of waiting for a keyframe
                 vctx->flags |= AV_CODEC_FLAG_OUTPUT_CORRUPT;
                 vctx->flags2 |= AV_CODEC_FLAG2_SHOW_ALL;
+#ifdef __APPLE__   // hardware decoding: VideoToolbox here; VAAPI / D3D11VA for Linux / Windows is still to do (software decoding is used there)
                 if (!(swEnv && *swEnv) && av_hwdevice_ctx_create(&hwdev, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, nullptr, nullptr, 0) >= 0) {
                     vctx->hw_device_ctx = av_buffer_ref(hwdev);
                     vctx->get_format = pickHw;
                     hw = true;
                 }
+#else
+                (void)swEnv;
+#endif
                 if (hwdev) av_buffer_unref(&hwdev);
                 vctx->thread_count = hw ? 2 : 4;
                 if (avcodec_open2(vctx, c, nullptr) < 0) {
@@ -305,6 +310,7 @@ void Player::threadMain() {
 
         auto convertVideo = [&](AVFrame* f) {
             AVFrame* src = f;
+#ifdef __APPLE__
             if (f->format == AV_PIX_FMT_VIDEOTOOLBOX) {
                 av_frame_unref(sw);
                 if (av_hwframe_transfer_data(sw, f, 0) < 0) return;
@@ -312,6 +318,7 @@ void Player::threadMain() {
                 sw->colorspace = f->colorspace; sw->color_range = f->color_range;
                 src = sw;
             }
+#endif
             const int w = src->width, h = src->height;
             const bool b709 = src->colorspace == AVCOL_SPC_BT709 || (src->colorspace == AVCOL_SPC_UNSPECIFIED && h >= 720);
             auto vf = std::make_shared<VideoFrame>();
