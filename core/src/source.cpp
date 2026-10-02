@@ -160,6 +160,7 @@ protected:
     virtual double effectiveRate(const TuneSettings& s) { return s.sampleRate; }
     virtual bool prepare(const TuneSettings&, std::string&) { return true; }
     virtual size_t produce(cf32* dst, size_t maxN) = 0; // return samples produced; 0 = end of data
+    virtual double pace() { return 1.0; }               // speed relative to the nominal sample rate
 
     void loop() {
         std::vector<cf32> buf(1 << 15);
@@ -170,7 +171,7 @@ protected:
             if (n == 0) break;
             ring_->write(buf.data(), n);
             sent += n;
-            auto due = t0 + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(sent / rate_));
+            auto due = t0 + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(sent / (rate_ * pace())));
             std::this_thread::sleep_until(due);
         }
     }
@@ -235,6 +236,7 @@ public:
     }
 
 protected:
+    double pace() override { std::lock_guard<std::mutex> lk(mu_); return cfg_.pace > 0.01 ? cfg_.pace : 1.0; }
     double effectiveRate(const TuneSettings& s) override { return s.synth.atsc ? (s.sampleRate > 0 && s.sampleRate < 12e6 ? s.sampleRate : 8e6) : nativeRateHz(s.bandwidthMhz); }
     bool prepare(const TuneSettings& s, std::string&) override {
         cfg_ = s.synth;

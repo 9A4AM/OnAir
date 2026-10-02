@@ -10,6 +10,9 @@ using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)
 
+// The signal runs at half speed, so a machine that decodes DVB-T2 at half of real time still passes: the result must not depend on CPU speed.
+static const double kPace = 0.5;
+
 static MultipathReport run(double echoDb, int echoDelay, double secs) {
     Engine e;
     DeviceInfo dev;
@@ -19,13 +22,14 @@ static MultipathReport run(double echoDb, int echoDelay, double secs) {
     t.synth.tx.giIdx = 3;      // 1/8
     t.synth.echoDb = echoDb;
     t.synth.echoDelay = echoDelay;
+    t.synth.pace = kPace;
     FileOptions fo;
     e.setStandard(1);   // DVB-T2 only: no time lost on the DVB-T search, so the result does not depend on how fast the machine is
     e.start(dev, t, fo);
     MultipathDetector md;
     RxTelemetry rx; uint64_t seq = 0;
     const auto t0 = std::chrono::steady_clock::now();
-    while (std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() < secs) {
+    while (std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() < secs / kPace) {
         if (e.latestRx(rx, seq)) { seq = rx.seq; md.update(rx); }
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
