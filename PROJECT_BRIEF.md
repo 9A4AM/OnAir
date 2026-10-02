@@ -281,6 +281,10 @@ A **headless CLI** (`dect2 --iq file.cs8 --out out.ts`) comes for free from this
 
 Added 2026-10-02 at the user's request.
 
+### 11.10 ATSC 1.0 (built 2026-10-02, untested on a real signal)
+
+The DVB/ATSC switch under the tuner settings selects ATSC (8-VSB, 6 MHz, 8 Msps capture). Pieces: coding chain and decoder (`core/src/atsc.cpp`, bit-exact against gr-dtv), test signal generator (`atsc_gen.cpp`), receiver (`atsc_rx.cpp`: matched filter and resampler, pilot loop, symbol clock from the segment sync, field sync, per-field equaliser, trellis, RS; field work on a worker thread, about 0.5x real time on the sample thread), engine integration, UI (lamps, level histogram, equaliser plot, Receiver page), quality row (15.2 dB), PSIP channel table, scanner and presets. Tests: `test_atsc_fec`, `test_atsc_rx` (14 impairment cases plus noise and dropout), PSIP in `test_ts`. Open: real-signal validation, EIT/ETT guide, acquisition with a 0 dB echo, ATSC 3.0 (a different standard). Full details and the history of design decisions: `docs/ATSC_HANDOFF.md`.
+
 ### 11.9 Automatic channel bandwidth (built 2026-10-02)
 
 The bandwidth choice (1.7, 5, 6, 7, 8 MHz) is automatic by default. `core/src/bandwidth.cpp` averages the spectrum and measures the width of the flat top (edges found outward from the centre, noise floor from the quietest 5% of bins, so a deep fade or the DC spike does not matter). While nothing is locked the engine switches the receivers to the matching bandwidth in place; the app follows it and restarts only when the capture rate has to change (10 Msps for 7/8 MHz, 8 Msps for narrower channels). The scanner measures each channel's width and records it. 10 MHz channels are not supported (they are not used in practice). Tested on modelled spectra (`tests/test_bandwidth.cpp`) and on the 522 MHz recording (starting from a wrong bandwidth it switches to 8 MHz and locks).

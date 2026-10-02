@@ -216,5 +216,31 @@ int main() {
         }
         printf("EPG parsing checked\n");
     }
+    {   // ATSC PSIP: virtual channel table gives the names and numbers
+        TsDemux a;
+        int c2 = 0;
+        std::vector<uint8_t> pat2 = {0x00, 0xB0, 13, 0x00, 0x07, 0xC1, 0, 0, 0x00, 3, 0xE1, 0x00};
+        feedSection(a, 0, section(pat2), c2);
+        std::vector<uint8_t> v = {0xC8, 0xF0, 0, 0x00, 0x07, 0xC1, 0, 0, 0x00, 1};
+        const char* nm = "KDEC-DT";
+        for (int k = 0; k < 7; k++) { v.push_back(0); v.push_back((uint8_t)nm[k]); }
+        const int major = 5, minor = 1;
+        v.push_back(0xF0 | (major >> 6)); v.push_back((uint8_t)(((major & 0x3F) << 2) | (minor >> 8))); v.push_back((uint8_t)(minor & 0xFF));
+        v.push_back(0x04);                       // modulation: 8-VSB
+        for (int k = 0; k < 4; k++) v.push_back(0);
+        v.push_back(0x00); v.push_back(0x07);    // channel TSID
+        v.push_back(0x00); v.push_back(0x03);    // program number 3
+        v.push_back(0x00); v.push_back(0x02);    // service type 2
+        v.push_back(0x00); v.push_back(0x01);    // source id
+        v.push_back(0xFC); v.push_back(0x00);    // no descriptors
+        v.push_back(0xFC); v.push_back(0x00);    // additional descriptors length 0
+        v[2] = (uint8_t)(v.size() - 3 + 4);
+        feedSection(a, 0x1FFB, section(v), c2);
+        TsSnapshot sn = a.snapshot();
+        bool found = false;
+        for (auto& sv : sn.services) if (sv.id == 3) { found = true; CHECK(sv.name == "KDEC-DT" && sv.provider == "channel 5.1" && sv.lcn == 501, "TVCT: name '%s' provider '%s' lcn %d", sv.name.c_str(), sv.provider.c_str(), sv.lcn); }
+        CHECK(found, "TVCT service missing");
+        printf("ATSC PSIP (TVCT) checked\n");
+    }
     return fails ? 1 : 0;
 }

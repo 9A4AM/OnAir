@@ -66,7 +66,8 @@ Details and the full status are in `docs/ATSC_HANDOFF.md`.
 - [x] Scanner support and US presets (compiles; not exercised on hardware).
 - [x] Tests: clean, carrier/clock offsets, SNR 16.5 dB, moderate echoes, noise only, dropout recovery.
 - [x] Decision feedback equaliser (trained on decoded symbols): -6 dB at 5 us, -3 dB at 5 us, -1.5 dB at 8 us decode. Limit: a 0 dB echo cannot be acquired.
-- [ ] PSIP (channel names, guide) and AC-3 audio check.
+- [x] PSIP channel table (names, numbers) and AC-3/E-AC-3 stream recognition (the player uses FFmpeg, which decodes AC-3; not tried on a real stream).
+- [ ] PSIP guide (EIT/ETT).
 - [ ] Real-signal validation **(needs a capture from an ATSC country)**; scan on hardware.
 - [ ] Fuzz/ASan runs, README and brief updates.
 

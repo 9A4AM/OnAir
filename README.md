@@ -2,9 +2,11 @@
 
 # OnAir
 
-Open-source DVB-T2 and DVB-T receiver for macOS (HackRF One / HackRF Pro). See [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
+Open-source DVB-T2, DVB-T and ATSC (8-VSB) receiver for macOS (HackRF One / HackRF Pro). See [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
 
 **Status:** receives DVB-T2 (T2-Base/Lite SISO; MISO, inter-frame time interleaving and sub-sliced PLPs are detected and reported but not decoded) and DVB-T (2K/8K, all guard intervals, QPSK/16-QAM/64-QAM, all code rates; hierarchical modulation not decoded), with automatic standard detection. Live player (FFmpeg, VideoToolbox, CoreAudio, DVB subtitles, teletext, programme guide), channel scanner, AGC and gain helper, multipath detector, GPU (Metal) LDPC decoding, TS output to file/UDP. Verified on a live 522 MHz Sharjah DVB-T2 multiplex and against GNU Radio reference encoders; DVB-T has been tested against generated signals only, not yet against a real transmitter.
+
+**ATSC 1.0 (8-VSB, 6 MHz)** is implemented too (switch next to the tuner settings): pilot and symbol-clock recovery, field sync, an adaptive equaliser (plain plus decision feedback, handles echoes up to about -1.5 dB at 8 us), trellis decoding, Reed-Solomon, channel names and numbers from PSIP, scanner presets for the US channel plan. Its channel coding is bit-exact against GNU Radio's gr-dtv and the receiver is tested on generated signals with carrier and clock offsets, noise and echoes. It has **not** been tried on a real ATSC transmission yet (the author is in a DVB-T2 country); a 6 MHz capture at 8-10 Msps would be welcome. Not done: ATSC programme guide (EIT/ETT), a 0 dB echo cannot be acquired. See [docs/ATSC_HANDOFF.md](docs/ATSC_HANDOFF.md).
 ## HackRF Pro note
 With firmware 2026.01.3 the tuned centre of a HackRF Pro is only exact at sample rates <= 10 Msps and at 20 Msps; in between it is offset by (20 - fs)/2 MHz. The app therefore captures at 10 Msps and resamples to the T2 native rate.
 Good gain for a weak signal: LNA 32, VGA 20, RF amp on.

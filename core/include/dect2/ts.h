@@ -76,6 +76,7 @@ private:
     void parsePmt(int pid, const uint8_t* s, int len);
     void parseSdt(const uint8_t* s, int len);
     void parseNit(const uint8_t* s, int len);
+    void parseTvct(const uint8_t* s, int len);   // ATSC PSIP terrestrial/cable virtual channel table: names and channel numbers
     void parseEit(const uint8_t* s, int len);
     void parseTdt(const uint8_t* s, int len);
     std::map<int, PidState> pids_;

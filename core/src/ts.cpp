@@ -132,7 +132,7 @@ void TsDemux::feed(const uint8_t* p) {
     if (afc == 3) off += 1 + p[4];
     if (off >= 188) return;
     // only PSI/SI PIDs and PMT PIDs carry sections we care about
-    const bool psi = pid == 0 || pid == 0x10 || pid == 0x11 || pid == 0x12 || pid == 0x14 || pmtToService_.count(pid);
+    const bool psi = pid == 0 || pid == 0x10 || pid == 0x11 || pid == 0x12 || pid == 0x14 || pid == 0x1FFB || pmtToService_.count(pid);
     if (!psi) return;
     SectionBuf& sb = sec_[pid];
     const uint8_t* d = p + off;
@@ -177,6 +177,41 @@ void TsDemux::section(int pid, const uint8_t* s, int len) {
     else if (tid == 0x40) parseNit(s, len);
     else if (tid == 0x4E || (tid >= 0x50 && tid <= 0x5F)) parseEit(s, len);
     else if (tid == 0x70 || tid == 0x73) parseTdt(s, len);
+    else if (pid == 0x1FFB && (tid == 0xC8 || tid == 0xC9)) parseTvct(s, len);
+}
+
+// ATSC A/65 virtual channel table: for each channel a 7 character name, major.minor number, the program number it maps to and
+// the service type. Shown like DVB services (name, number in the provider line).
+void TsDemux::parseTvct(const uint8_t* s, int len) {
+    if (len < 14) return;
+    tsid_ = (s[3] << 8) | s[4];
+    const int n = s[9];
+    int i = 10;
+    for (int c = 0; c < n && i + 32 <= len - 4; c++) {
+        std::string name;
+        for (int k = 0; k < 7; k++) {
+            const int hi = s[i + 2 * k], lo = s[i + 2 * k + 1];
+            if (hi == 0 && lo == 0) break;
+            name += hi == 0 && lo >= 0x20 && lo < 0x7F ? (char)lo : '?';
+        }
+        const int major = ((s[i + 14] & 0x0F) << 6) | (s[i + 15] >> 2);
+        const int minor = ((s[i + 15] & 0x03) << 8) | s[i + 16];
+        const int prog = (s[i + 24] << 8) | s[i + 25];
+        const int stype = s[i + 27] & 0x3F;   // 2 digital TV, 3 audio, 4 data
+        const int dl = ((s[i + 30] & 0x03) << 8) | s[i + 31];
+        if (prog != 0 && prog != 0xFFFF) {
+            TsService& sv = services_[prog];
+            sv.id = prog;
+            sv.name = name;
+            sv.haveSdt = true;
+            sv.lcn = major * 100 + minor;
+            sv.type = stype == 2 ? 0x01 : stype == 3 ? 0x02 : 0x0C;
+            char b[40];
+            snprintf(b, sizeof b, "channel %d.%d", major, minor);
+            sv.provider = b;
+        }
+        i += 32 + dl;
+    }
 }
 
 void TsDemux::parsePat(const uint8_t* s, int len) {

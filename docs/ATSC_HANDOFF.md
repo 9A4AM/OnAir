@@ -210,10 +210,9 @@ noise and dropout tests.
 
 1. **Acquisition with a 0 dB echo** and longer echoes (>15 us); more equaliser tests (A/74-style ensembles, Doppler).
 2. **Real signal validation** (needs a capture, or an ATSC modulator): check field sync thresholds, SNR estimate, pilot level, then tune.
-3. **PSIP and AC-3.** ATSC streams carry channel names/numbers/guide in PSIP tables (PID 0x1FFB: STT 0xCD, MGT 0xC7, TVCT 0xC8, EIT 0xCB)
-   instead of DVB SDT/NIT/EIT. `core/src/ts.cpp` (`TsDemux`) only parses DVB tables, so ATSC services currently appear as "service N"
-   (the synthetic test stream uses DVB SDT, so it shows a name). Parse TVCT for names/major.minor numbers and EIT/ETT for the guide.
-   Check that `core/src/player.cpp` plays AC-3 (stream type 0x81) and that the PMT parser reports it as audio.
+3. **PSIP guide.** The virtual channel table (TVCT/CVCT, PID 0x1FFB) is parsed (`TsDemux::parseTvct`: name, major.minor shown in the provider line,
+   program number, service type; test in `tests/test_ts.cpp`). Still missing: MGT (0xC7), EIT (0xCB) and ETT for the programme guide, and
+   STT (0xCD) for the clock. AC-3/E-AC-3 are recognised in the PMT (stream types 0x81/0x87); playback relies on FFmpeg and is untested.
 4. **Scanner check on hardware**: US channel centre frequencies are `473 + 6 (n - 14)` MHz for UHF (n = 14..36), `177 + 6 (n - 7)` for VHF high
    (n = 7..13); run a scan with the HackRF in the US/Korea (or with a recording of several channels).
 5. **Speed polish**: sample thread 0.5x real time; field worker about 0.55x. Smaller resampler (`J` about 14 instead of 22), a 4-state
