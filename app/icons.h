@@ -188,7 +188,7 @@ inline void iconInline(Ic id, ImU32 col, float scale = 1.f) {
 }
 
 inline ImU32 iconDim() { return IM_COL32(120, 132, 148, 255); }
-inline ImU32 iconAccent() { return IM_COL32(110, 190, 255, 255); }
+inline ImU32 iconAccent() { return IM_COL32(132, 158, 184, 255); }
 
 // Icon followed by a dim label ("icon  text") on the current line
 inline void iconLabel(Ic id, const char* text, ImU32 col = 0) {

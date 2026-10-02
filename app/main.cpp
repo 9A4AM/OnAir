@@ -47,11 +47,13 @@ struct Waterfall {
         for (int i = 0; i < 256; i++) lut[i] = jet(i / 255.0f);
     }
     static uint32_t jet(float v) {
-        auto c = [](float x) { return std::min(1.f, std::max(0.f, x)); };
-        float r = c(1.5f - std::fabs(4 * v - 3)), g = c(1.5f - std::fabs(4 * v - 2)), b = c(1.5f - std::fabs(4 * v - 1));
-        // deep navy floor (like the reference waterfalls) rising through cyan, green and yellow to red
-        b = std::max(b, 0.28f * (1.f - c(v * 2.2f)) + 0.08f);
-        return 0xFF000000u | ((uint32_t)(b * 255) << 16) | ((uint32_t)(g * 255) << 8) | (uint32_t)(r * 255);
+        // calm single-hue ramp: near-black navy, deep blue, teal, pale ice
+        static const float stops[5][3] = {{6, 10, 20}, {16, 38, 70}, {30, 100, 140}, {110, 190, 205}, {240, 250, 250}};
+        v = std::min(1.f, std::max(0.f, v)) * 4.f;
+        const int i = std::min(3, (int)v);
+        const float f = v - i;
+        auto ch = [&](int k) { return (uint32_t)(stops[i][k] + (stops[i + 1][k] - stops[i][k]) * f + 0.5f); };
+        return 0xFF000000u | (ch(2) << 16) | (ch(1) << 8) | ch(0);
     }
     void push(const std::vector<float>& dbfs) {
         std::vector<uint32_t> row(W);
@@ -332,8 +334,8 @@ static void gaugePill(float width, float frac, ImU32 fill, const char* text) {
 // label : value readout in the status area (label dim, value in the mono font)
 
 static void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/, int icon = -1) {
-    ImVec4 c = state == 1 ? ImVec4(0.30f, 0.85f, 0.35f, 1) : state == 2 ? ImVec4(0.95f, 0.70f, 0.15f, 1)
-             : state == 3 ? ImVec4(0.90f, 0.25f, 0.25f, 1) : ImVec4(0.30f, 0.32f, 0.35f, 1);
+    ImVec4 c = state == 1 ? pal::okGreen() : state == 2 ? pal::warnAmber()
+             : state == 3 ? pal::badRed() : ImVec4(0.26f, 0.29f, 0.33f, 1);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     ImVec2 p = ImGui::GetCursorScreenPos();
     float r = 5;
@@ -477,7 +479,7 @@ static void toolbar(App& a) {
     vSeparator();
     if (!running) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.42f, 0.28f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.14f, 0.56f, 0.36f, 1));
-        const bool startClicked = iconButton(Ic::Play, "Start", IM_COL32(26, 107, 71, 255), IM_COL32(36, 143, 92, 255));
+        const bool startClicked = iconButton(Ic::Play, "Start", IM_COL32(32, 96, 140, 255), IM_COL32(44, 124, 178, 255));
         ImGui::PopStyleColor(2);
         if (startClicked) {
             a.tune.centerHz = a.freqMhz * 1e6;
@@ -493,7 +495,7 @@ static void toolbar(App& a) {
         }
     } else {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.16f, 0.16f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.70f, 0.22f, 0.22f, 1));
-        const bool stopClicked = iconButton(Ic::Stop, "Stop", IM_COL32(140, 41, 41, 255), IM_COL32(178, 56, 56, 255));
+        const bool stopClicked = iconButton(Ic::Stop, "Stop", IM_COL32(112, 48, 48, 255), IM_COL32(146, 62, 62, 255));
         ImGui::PopStyleColor(2);
         if (stopClicked) a.engine.stop();
     }
@@ -740,7 +742,7 @@ static void statusBar(App& a) {
     ImGui::AlignTextToFramePadding();
     iconInline(Ic::Gauge, iconDim(), 0.9f); ImGui::SameLine(0, 4); ImGui::TextDisabled("Level"); ImGui::SameLine(0, 5);
     {
-        const ImU32 col = adc == AdcStatus::Overload ? IM_COL32(200, 50, 45, 255) : adc == AdcStatus::Good ? IM_COL32(36, 130, 170, 255) : IM_COL32(190, 140, 40, 255);
+        const ImU32 col = adc == AdcStatus::Overload ? IM_COL32(176, 66, 58, 255) : adc == AdcStatus::Good ? IM_COL32(40, 112, 150, 255) : IM_COL32(176, 130, 48, 255);
         snprintf(b, sizeof b, run ? "%.1f dBFS" : "-", st.rmsDbfs);
         gaugePill(130, run ? (st.rmsDbfs + 60.f) / 60.f : 0.f, col, b);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("ADC level (rms). %s\npeak %.2f   clip %.3f%%   DC %+.3f / %+.3f", adcAdvice(adc).c_str(), st.peak, st.clipFraction * 100, st.dcI, st.dcQ);
@@ -751,7 +753,7 @@ static void statusBar(App& a) {
     {
         const QualityReport& q = a.quality.report();
         const float t = run && q.valid ? (float)q.percent / 100.f : 0.f;
-        const ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(0.92f - 0.62f * t, 0.45f + 0.40f * t, 0.15f + 0.20f * t, 1));
+        const ImU32 col = t < 0.25f ? IM_COL32(176, 66, 58, 255) : t < 0.5f ? IM_COL32(176, 130, 48, 255) : IM_COL32(40, 112, 150, 255);
         snprintf(b, sizeof b, run && q.valid ? "%.0f%%  %s" : "-", q.percent, q.label.c_str());
         gaugePill(130, t, col, b);
         if (ImGui::IsItemHovered() && run && q.valid) ImGui::SetTooltip("data SNR %.1f dB, needed about %.1f dB (margin %+.1f dB)\nFEC blocks decoded %.1f%%", q.snrDb, q.requiredDb, q.marginDb, q.fecOk * 100);
@@ -890,18 +892,18 @@ static void spectrumPlot(App& a, ImVec2 size) {
             double bw = kBw[a.bwIdx].mhz;
             double xo[2] = {a.freqMhz - bw / 2 * 0.95, a.freqMhz + bw / 2 * 0.95};
             double yo[2] = {a.yMax, a.yMax};
-            ImPlotSpec band; band.FillColor = ImVec4(0.15f, 0.55f, 0.20f, 0.18f); band.LineColor = ImVec4(0, 0, 0, 0);
+            ImPlotSpec band; band.FillColor = pal::accent(0.10f); band.LineColor = ImVec4(0, 0, 0, 0);
             ImPlot::PlotShaded("band", xo, yo, 2, a.yMin, band);
             if (a.peakHold) {
-                ImPlotSpec ps; ps.LineColor = ImVec4(0.9f, 0.7f, 0.2f, 0.45f); ps.LineWeight = 1.0f;
+                ImPlotSpec ps; ps.LineColor = pal::grey(0.40f); ps.LineWeight = 1.0f;
                 std::vector<double> yp(a.peak.begin(), a.peak.end());
                 ImPlot::PlotLine("peak", x.data(), yp.data(), (int)x.size(), ps);
             }
-            ImPlotSpec ss; ss.LineColor = ImVec4(0.45f, 0.65f, 1.0f, 1); ss.LineWeight = 1.3f;
+            ImPlotSpec ss; ss.LineColor = pal::accent(); ss.LineWeight = 1.3f;
             std::vector<double> ysm(a.smooth.begin(), a.smooth.end());
             ImPlot::PlotLine("spectrum", x.data(), ysm.data(), (int)x.size(), ss);
             double cx[2] = {a.freqMhz, a.freqMhz}, cy[2] = {a.yMin, a.yMax};
-            ImPlotSpec cs; cs.LineColor = ImVec4(1, 0.8f, 0.2f, 0.6f);
+            ImPlotSpec cs; cs.LineColor = pal::grey(0.35f);
             ImPlot::PlotLine("centre", cx, cy, 2, cs);
         }
         ImPlot::EndPlot();
@@ -934,7 +936,7 @@ static void histogramPlot(App& a, ImVec2 size) {
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, 1, ImPlotCond_Once);
         float h[64], x[64];
         for (int i = 0; i < 64; i++) { h[i] = (float)std::max<uint32_t>(1, a.spec.stats.hist[i]); x[i] = (i + 0.5f) / 64; }
-        ImPlotSpec bs; bs.FillColor = ImVec4(0.45f, 0.65f, 1.0f, 0.8f);
+        ImPlotSpec bs; bs.FillColor = pal::accent(0.8f);
         ImPlot::PlotBars("adc", x, h, 64, 1.0 / 64, bs);
         ImPlot::EndPlot();
     }
@@ -1423,7 +1425,12 @@ static void constDensityPlot(App& a, ImVec2 sz) {
             std::vector<float> v(c.grid.size());
             float mx = 0;
             for (size_t i = 0; i < v.size(); i++) { v[i] = std::sqrt(c.grid[i]); mx = std::max(mx, v[i]); }   // square root: faint areas stay visible
-            ImPlot::PushColormap(ImPlotColormap_Hot);
+            static ImPlotColormap cm = -1;
+            if (cm < 0) {   // black -> accent -> white, instead of the rainbow-like "hot" map
+                const ImVec4 cols[4] = {ImVec4(0.02f, 0.03f, 0.05f, 1), ImVec4(0.10f, 0.28f, 0.45f, 1), pal::accent(), ImVec4(0.95f, 0.98f, 1.f, 1)};
+                cm = ImPlot::AddColormap("onair", cols, 4);
+            }
+            ImPlot::PushColormap(cm);
             ImPlot::PlotHeatmap("density", v.data(), G, G, 0, std::max(1.f, mx * 0.85f), nullptr, ImPlotPoint(-1.4, -1.4), ImPlotPoint(1.4, 1.4));
             ImPlot::PopColormap();
         }
@@ -1431,7 +1438,7 @@ static void constDensityPlot(App& a, ImVec2 sz) {
         std::vector<cf32> grid;
         for (unsigned l = 0; l < (1u << M); l++) grid.push_back(qamPoint(a.rx.plpFec.mod, false, l));
         ImPlotSpec gs; gs.Marker = ImPlotMarker_Cross; gs.MarkerSize = 4.f; gs.Stride = sizeof(cf32);
-        gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(0.4f, 0.8f, 1, 0.9f);
+        gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(1, 1, 1, 0.55f);
         const float* g = reinterpret_cast<const float*>(grid.data());
         ImPlot::PlotScatter("ideal", g, g + 1, (int)grid.size(), gs);
         ImPlot::EndPlot();
@@ -1518,7 +1525,7 @@ static void atscPanels(App& a) {
         float mx = 1;
         for (float v : at.levels) { const int k = (int)((v + 9.f) / 18.f * NB); if (k >= 0 && k < NB) mx = std::max(mx, ++cnt[k]); }
         ImPlot::SetupAxisLimits(ImAxis_Y1, 0, mx * 1.15, ImPlotCond_Always);
-        ImPlotSpec sp; sp.FillColor = ImVec4(0.35f, 0.62f, 1.f, 0.85f); sp.LineColor = ImVec4(0.35f, 0.62f, 1.f, 1.f);
+        ImPlotSpec sp; sp.FillColor = pal::accent(0.85f); sp.LineColor = pal::accent();
         ImPlot::PlotBars("levels", xs, cnt, NB, 18.0 / NB * 0.9, sp);
         const double lv[8] = {-7, -5, -3, -1, 1, 3, 5, 7};
         ImPlotSpec gs; gs.LineColor = ImVec4(1, 1, 1, 0.35f);
@@ -1535,7 +1542,7 @@ static void atscPanels(App& a) {
             std::vector<float> xs(at.eqTaps.size());
             for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(at.eqCursor - (int)i);   // symbols relative to the main tap: positive = echoes of later symbols
             ImPlot::SetupAxisLimits(ImAxis_X1, -(double)(at.eqTaps.size() - 1 - at.eqCursor) - 1, (double)at.eqCursor + 1, ImPlotCond_Always);
-            ImPlotSpec sp; sp.LineColor = ImVec4(0.9f, 0.7f, 0.2f, 1.f);
+            ImPlotSpec sp; sp.LineColor = pal::accent();
             ImPlot::PlotLine("taps", xs.data(), at.eqTaps.data(), (int)xs.size(), sp);
         }
         ImPlot::EndPlot();
@@ -1550,7 +1557,7 @@ static void atscPanels(App& a) {
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, std::max<size_t>(2, at.levels.size()), ImPlotCond_Always);
         if (!at.levels.empty()) {
             ImPlotSpec sp; sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.3f;
-            sp.MarkerFillColor = sp.MarkerLineColor = sp.LineColor = ImVec4(0.35f, 0.85f, 0.45f, 0.6f);
+            sp.MarkerFillColor = sp.MarkerLineColor = sp.LineColor = pal::accent(0.6f);
             ImPlot::PlotScatter("l", at.levels.data(), (int)at.levels.size(), 1.0, 0.0, sp);
         }
         const double lv[8] = {-7, -5, -3, -1, 1, 3, 5, 7};
@@ -1590,12 +1597,12 @@ static void constellationsTab(App& a) {
     auto caption = [&](const char* fmt, auto... args) { snprintf(cap, sizeof cap, fmt, args...); ImGui::TextDisabled("%s", cap); };
     ImGui::BeginGroup();
     if (rx.standard == 1) caption("TPS carriers, DBPSK (%zu cells)", rx.p1Const.size()); else caption("P1 carriers (%zu cells)", rx.p1Const.size());
-    scatter("##c1", rx.p1Const, sz, 2.5, ImVec4(0.95f, 0.7f, 0.2f, 0.9f));
+    scatter("##c1", rx.p1Const, sz, 2.5, pal::accent(0.9f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
     if (rx.standard == 1) caption("Pilots, equalised (%zu cells)", rx.eqCells.size()); else caption("P2 cells, equalised (%zu cells)", rx.eqCells.size());
-    scatter("##ceq", rx.eqCells, sz, 2.0, ImVec4(0.9f, 0.45f, 0.75f, 0.8f));
+    scatter("##ceq", rx.eqCells, sz, 2.0, pal::accent(0.8f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
@@ -1620,8 +1627,8 @@ static void constellationsTab(App& a) {
                 const float* d = reinterpret_cast<const float*>(v.data());
                 ImPlot::PlotScatter(id, d, d + 1, (int)v.size(), sp);
             };
-            draw("ok", good, ImVec4(0.35f, 0.62f, 1.0f, 0.60f));
-            draw("err", bad, ImVec4(0.95f, 0.45f, 0.30f, 0.75f));
+            draw("ok", good, pal::accent(0.60f));
+            draw("err", bad, ImVec4(0.88f, 0.52f, 0.40f, 0.75f));
             {   // the transmitted (unrotated) constellation points, drawn on top like the reference decoders do
                 const int M = 2 * (rx.plpFec.mod + 1);
                 std::vector<cf32> grid;
@@ -1662,12 +1669,12 @@ static void constellationsTab(App& a) {
             ImPlot::EndPlot();
         }
     } else
-        scatter("##c2", rx.eqData, sz, 1.8, ImVec4(0.35f, 0.85f, 0.45f, 0.6f));
+        scatter("##c2", rx.eqData, sz, 1.8, pal::accent(0.6f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
     caption("OFDM cells, raw (%zu cells)", rx.rawCells.size());
-    scatter("##c3", rx.rawCells, sz, 3.0, ImVec4(0.45f, 0.65f, 1.0f, 0.7f));
+    scatter("##c3", rx.rawCells, sz, 3.0, pal::accent(0.7f));
     ImGui::EndGroup();
 }
 
@@ -1690,7 +1697,7 @@ static void channelTab(App& a) {
         ImPlot::SetupAxes("frequency (MHz)", "dB", 0, ImPlotAxisFlags_AutoFit);
         ImPlot::SetupAxisFormat(ImAxis_X1, "%.2f");
         ImPlot::SetupAxisLimits(ImAxis_X1, xs.front(), xs.back(), ImPlotCond_Always);
-        ImPlotSpec sp; sp.LineColor = ImVec4(0.45f, 0.75f, 1, 1);
+        ImPlotSpec sp; sp.LineColor = pal::accent();
         ImPlot::PlotLine("mag", xs.data(), rx.chMagDb.data(), (int)xs.size(), sp);
         ImPlot::EndPlot();
     }
@@ -2263,10 +2270,10 @@ static void rightPanel(App& a) {
         float x = p.x + 10;
         const float ty = p.y + 27;
         const bool radio = sv.type == 0x02 || sv.type == 0x0A || (!hasVideo && !ac.empty());
-        x += tagAt(dl, ImVec2(x, ty), radio ? "radio" : hasVideo ? "TV" : sv.typeName(), radio ? IM_COL32(88, 62, 132, 255) : IM_COL32(30, 90, 142, 255)) + 4;
-        if (!vc.empty()) x += tagAt(dl, ImVec2(x, ty), vc.c_str(), IM_COL32(32, 98, 98, 255)) + 4;
-        if (!ac.empty()) x += tagAt(dl, ImVec2(x, ty), ac.c_str(), IM_COL32(52, 98, 50, 255)) + 4;
-        if (sv.caFlag) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(150, 50, 46, 255)) + 4;
+        x += tagAt(dl, ImVec2(x, ty), radio ? "radio" : hasVideo ? "TV" : sv.typeName(), IM_COL32(34, 74, 108, 255)) + 4;
+        if (!vc.empty()) x += tagAt(dl, ImVec2(x, ty), vc.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
+        if (!ac.empty()) x += tagAt(dl, ImVec2(x, ty), ac.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
+        if (sv.caFlag) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(112, 52, 50, 255)) + 4;
         // what is on
         const EpgEvent* cur = epgCurrent(a, sv.id);
         std::string line;
@@ -2321,11 +2328,11 @@ static void rightPanel(App& a) {
         OutputStats os = a.engine.outputStats();
         iconLabel(Ic::Link, "Outputs", iconAccent());
         ImGui::SameLine(0, 10);
-        iconInline(Ic::File, os.fileOpen ? IM_COL32(100, 230, 130, 255) : IM_COL32(86, 94, 104, 255), 0.9f); ImGui::SameLine(0, 3);
-        ImGui::TextColored(os.fileOpen ? ImVec4(0.4f, 0.9f, 0.5f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "file");
+        iconInline(Ic::File, os.fileOpen ? IM_COL32(120, 190, 235, 255) : IM_COL32(86, 94, 104, 255), 0.9f); ImGui::SameLine(0, 3);
+        ImGui::TextColored(os.fileOpen ? ImVec4(0.55f, 0.76f, 0.92f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "file");
         ImGui::SameLine(0, 10);
-        iconInline(Ic::Globe, os.udpOpen ? IM_COL32(100, 230, 130, 255) : IM_COL32(86, 94, 104, 255), 0.9f); ImGui::SameLine(0, 3);
-        ImGui::TextColored(os.udpOpen ? ImVec4(0.4f, 0.9f, 0.5f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "udp");
+        iconInline(Ic::Globe, os.udpOpen ? IM_COL32(120, 190, 235, 255) : IM_COL32(86, 94, 104, 255), 0.9f); ImGui::SameLine(0, 3);
+        ImGui::TextColored(os.udpOpen ? ImVec4(0.55f, 0.76f, 0.92f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "udp");
         if (os.fileOpen) { ImGui::SameLine(); ImGui::TextDisabled("%.1f MB", os.fileBytes / 1e6); }
         if (os.udpOpen) { ImGui::SameLine(); ImGui::TextDisabled("%s:%d%s", a.udpHost, a.out.port, a.out.rtp ? " RTP" : ""); }
     }
