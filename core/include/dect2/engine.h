@@ -18,6 +18,10 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <chrono>
+#include <cstdint>
+#include <map>
+#include <utility>
 
 namespace dect2 {
 

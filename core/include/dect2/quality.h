@@ -4,6 +4,8 @@
 #include "t2rx.h"
 #include <deque>
 #include <string>
+#include <cstdint>
+#include <utility>
 
 namespace dect2 {
 

@@ -1,4 +1,4 @@
-// CoreAudio output with a lock-free ring buffer; keeps count of frames written and played for A/V sync.
+// Audio output (CoreAudio on macOS, miniaudio elsewhere) with a lock-free ring buffer; keeps count of frames written and played for A/V sync.
 #pragma once
 #include <cstdint>
 #include <memory>

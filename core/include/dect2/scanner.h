@@ -7,6 +7,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <memory>
 
 namespace dect2 {
 

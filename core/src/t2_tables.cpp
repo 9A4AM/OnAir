@@ -1,6 +1,7 @@
 // Standard tables for the DVB-T2 P1 preamble (ETSI EN 302 755, clause 7.2.5 / 9.8).
 // Values taken from the open-source gr-dvbt2 transmitter (GPL-3.0); not yet checked against the spec text.
 #include "dect2/t2.h"
+#include <cstdint>
 
 namespace dect2 {
 

@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cstdio>
 #include <thread>
+#include <cstdint>
+#include <cstdlib>
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)
@@ -18,6 +20,7 @@ static MultipathReport run(double echoDb, int echoDelay, double secs) {
     t.synth.echoDb = echoDb;
     t.synth.echoDelay = echoDelay;
     FileOptions fo;
+    e.setStandard(1);   // DVB-T2 only: no time lost on the DVB-T search, so the result does not depend on how fast the machine is
     e.start(dev, t, fo);
     MultipathDetector md;
     RxTelemetry rx; uint64_t seq = 0;
@@ -37,12 +40,12 @@ static void print(const char* name, const MultipathReport& r) {
 }
 
 int main() {
-    MultipathReport clean = run(0, 300, 9);
+    MultipathReport clean = run(0, 300, 12);
     print("clean", clean);
     CHECK(clean.level == MultipathLevel::None || clean.level == MultipathLevel::Mild, "clean channel flagged as %s", multipathName(clean.level));
     CHECK(clean.echoes.empty() || clean.echoes[0].levelDb < -15, "clean channel shows a strong echo");
 
-    MultipathReport echo = run(4, 100, 9); // echo 4 dB below the main path, 100 samples (~11 us) later, inside the 1/8 guard
+    MultipathReport echo = run(4, 100, 12); // echo 4 dB below the main path, 100 samples (~11 us) later, inside the 1/8 guard
     print("echo -4 dB @ 100 samples", echo);
     CHECK(echo.level >= MultipathLevel::Likely, "strong echo not detected (%s)", multipathName(echo.level));
     CHECK(!echo.echoes.empty(), "no echo reported");

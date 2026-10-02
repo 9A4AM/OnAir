@@ -4,6 +4,8 @@
 #include <deque>
 #include <functional>
 #include <random>
+#include <cstdint>
+#include <vector>
 
 namespace dect2 {
 class Fft;

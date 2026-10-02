@@ -1,6 +1,7 @@
 // Generated tables for the DVB-T2 data path (LDPC address tables, bit-interleaver twists/muxes, QAM constellations,
 // BCH component polynomials). Extracted from the open-source gr-dvbt2 transmitter (GPL-3.0). Do not edit by hand.
 #include "dect2/t2fec_tables.h"
+#include <cstdint>
 
 namespace dect2 {
 

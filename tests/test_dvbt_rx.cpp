@@ -7,6 +7,9 @@
 #include <cstdio>
 #include <cstring>
 #include <random>
+#include <algorithm>
+#include <cstdint>
+#include <vector>
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)

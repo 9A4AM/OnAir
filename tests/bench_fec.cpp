@@ -4,6 +4,10 @@
 #include <cmath>
 #include <cstdio>
 #include <random>
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
 using namespace dect2;
 int main(int argc, char** argv) {
     // usage: bench_fec [snr_dB] [mod 0..3] [rate 0..5] [blocks per second the mux needs]

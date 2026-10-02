@@ -9,6 +9,7 @@
 #include <memory>
 #include <random>
 #include <vector>
+#include <cstdint>
 
 namespace dect2 {
 

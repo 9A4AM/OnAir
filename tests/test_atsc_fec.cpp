@@ -4,6 +4,8 @@
 #include <cstdio>
 #include <cstring>
 #include <random>
+#include <cstdint>
+#include <vector>
 using namespace dect2::atsc;
 
 static int fails = 0;

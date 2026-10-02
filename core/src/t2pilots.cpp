@@ -1,6 +1,8 @@
 #include "dect2/t2pilots.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <vector>
 
 namespace dect2 {
 

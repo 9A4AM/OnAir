@@ -2,6 +2,8 @@
 #pragma once
 #include "dvbt.h"
 #include <deque>
+#include <cstdint>
+#include <vector>
 
 namespace dect2 {
 namespace dvbt {

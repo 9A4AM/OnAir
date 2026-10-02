@@ -1,5 +1,8 @@
 #include "dect2/bbunpack.h"
 #include <cstring>
+#include <algorithm>
+#include <cstdint>
+#include <vector>
 
 namespace dect2 {
 

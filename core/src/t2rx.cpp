@@ -5,7 +5,7 @@
 #include "dect2/t2l1.h"
 #include "dect2/t2interleave.h"
 
-#include <Accelerate/Accelerate.h>
+#include "dect2/dsp_compat.h"
 
 #include <algorithm>
 #include <array>
@@ -16,6 +16,11 @@
 #include <cstdio>
 #include <deque>
 #include <mutex>
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 
@@ -47,19 +52,17 @@ struct T2Receiver::Impl {
     std::vector<cf32> buf;
     int64_t base = 0; // absolute index of buf[0]
     int64_t end() const { return base + (int64_t)buf.size(); }
-    const cf32& at(int64_t abs) const { return buf[(size_t)(abs - base)]; }
+    // Samples outside the buffered range read as silence: timing corrections can place a symbol slightly before the oldest retained
+    // sample or after the newest one, and that must cost one symbol, not a crash.
+    const cf32& at(int64_t abs) const {
+        static const cf32 kZero(0.f, 0.f);
+        const int64_t i = abs - base;
+        return (i >= 0 && i < (int64_t)buf.size()) ? buf[(size_t)i] : kZero;
+    }
 
     // ---- FFT
-    std::array<FFTSetup, 17> fft{};
     std::vector<float> fr, fi;
-    FFTSetup setup(int log2n) {
-        if (!fft[log2n]) fft[log2n] = vDSP_create_fftsetup(log2n, kFFTRadix2);
-        return fft[log2n];
-    }
-    void doFft(int log2n, bool inverse = false) {
-        DSPSplitComplex sc{fr.data(), fi.data()};
-        vDSP_fft_zip(setup(log2n), &sc, 1, log2n, inverse ? FFT_INVERSE : FFT_FORWARD);
-    }
+    void doFft(int log2n, bool inverse = false) { fftSplit(fr.data(), fi.data(), log2n, inverse); }
 
     // ---- P1 scanner
     int64_t scanPos = 0;
@@ -147,9 +150,6 @@ struct T2Receiver::Impl {
 
     Impl() {
         for (int i = 0; i < 1024; i++) phiTab[i] = std::polar(1.0, -kTwoPi * i / 1024.0);
-    }
-    ~Impl() {
-        for (auto s : fft) if (s) vDSP_destroy_fftsetup(s);
     }
 
     void resetAll() {

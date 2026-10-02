@@ -2,6 +2,11 @@
 #include <algorithm>
 #include <cstring>
 #include <iconv.h>
+#include <cstdint>
+#include <cstdio>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace dect2 {
 

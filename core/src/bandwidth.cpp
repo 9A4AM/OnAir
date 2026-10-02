@@ -1,6 +1,7 @@
 #include "dect2/bandwidth.h"
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace dect2 {
 

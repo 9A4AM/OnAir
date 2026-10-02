@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstdio>
 #include <random>
+#include <algorithm>
+#include <vector>
 
 using namespace dect2;
 

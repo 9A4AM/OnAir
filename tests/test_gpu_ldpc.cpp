@@ -5,6 +5,8 @@
 #include <cmath>
 #include <cstdio>
 #include <random>
+#include <cstdint>
+#include <vector>
 using namespace dect2;
 int main() {
     auto& g = GpuLdpc::instance();

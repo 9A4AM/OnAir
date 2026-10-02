@@ -2,7 +2,6 @@
 #include "dect2/dvbt_gen.h"
 #include "dect2/atsc_gen.h"
 
-#include <Accelerate/Accelerate.h>
 #include <libhackrf/hackrf.h>
 
 #include <atomic>
@@ -13,6 +12,13 @@
 #include <mutex>
 #include <random>
 #include <thread>
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 

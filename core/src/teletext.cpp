@@ -1,6 +1,9 @@
 #include "dect2/teletext.h"
 #include <algorithm>
 #include <cstring>
+#include <cstdint>
+#include <mutex>
+#include <vector>
 
 namespace dect2 {
 

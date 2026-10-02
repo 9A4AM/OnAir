@@ -8,6 +8,14 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
+#include <condition_variable>
+#include <cstdint>
+#include <deque>
+#include <mutex>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 

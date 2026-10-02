@@ -4,6 +4,7 @@
 #include "t2rx.h"
 #include <functional>
 #include <memory>
+#include <cstdint>
 
 namespace dect2 {
 

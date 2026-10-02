@@ -6,6 +6,7 @@
 #include <functional>
 #include <random>
 #include <vector>
+#include <cstdint>
 
 namespace dect2 {
 namespace atsc {

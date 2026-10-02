@@ -12,6 +12,8 @@
 #include <cstring>
 #include <fstream>
 #include <thread>
+#include <cstdint>
+#include <string>
 
 using namespace dect2;
 
