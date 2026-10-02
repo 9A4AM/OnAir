@@ -55,6 +55,16 @@ Goal: normal installers for macOS arm64, macOS Intel, Windows x64, Linux x64/arm
 - [ ] FEF frames and GSE: pass through or report in more detail.
 - [ ] T2-Lite on a real signal **(needs signal)**.
 
+## C2. ATSC 1.0 support (8VSB, 6 MHz)
+
+The DVB / ATSC switch under the tuner settings is in the UI already; ATSC mode only shows a "not implemented" notice and disables Start.
+- [ ] Signal generator for tests (8VSB: sync, field sync, trellis encoder, interleaver, RS(207,187), randomizer), verified against GNU Radio `gr-dtv`.
+- [ ] Front end: pilot/carrier recovery, symbol timing from the segment sync, field-sync detection, resampling from the capture rate.
+- [ ] Adaptive equalizer (training on field sync, then blind/decision-directed); multipath tests with echoes.
+- [ ] Trellis (Viterbi) decoder, de-interleaver, Reed-Solomon, de-randomizer -> MPEG transport stream into the existing TS/EPG/player path (AC-3 audio).
+- [ ] Engine integration, UI (8-level eye view, equalizer and field-sync lamps), scanner (6 MHz US channel plan), quality meter table.
+- [ ] Real-signal validation **(needs a capture from a country with ATSC)**.
+
 ## D. Real-world validation (when the HackRF is available)
 
 - [ ] Direction finder with a real antenna: tune the 14 s window, score weights and the flat-signal rules.

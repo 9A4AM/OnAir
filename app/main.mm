@@ -197,6 +197,7 @@ struct App {
     TuneSettings tune;
     FileOptions file;
     int bwIdx = 0;
+    bool atscMode = false;    // standard family: false = DVB (T2/T), true = ATSC (receiver not built yet)
     bool bwAuto = true;       // the engine measures the channel width and switches by itself
     double freqMhz = 522.0;
     bool autoScroll = true;
@@ -490,7 +491,9 @@ static void toolbar(App& a) {
     ImGui::SameLine(0, 14);
     if (!running) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.42f, 0.28f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.14f, 0.56f, 0.36f, 1));
+        ImGui::BeginDisabled(a.atscMode);
         const bool startClicked = ImGui::Button("  Start  ");
+        ImGui::EndDisabled();
         ImGui::PopStyleColor(2);
         if (startClicked) {
             a.tune.centerHz = a.freqMhz * 1e6;
@@ -2409,6 +2412,32 @@ static void followBandwidth(App& a) {
     }
 }
 
+
+// DVB <-> ATSC switch under the tuner settings
+static void standardSwitch(App& a) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const float h = ImGui::GetFrameHeight() - 4, w = h * 2.1f;
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextColored(a.atscMode ? ImVec4(0.55f, 0.6f, 0.66f, 1) : ImVec4(0.95f, 0.97f, 1, 1), "DVB");
+    ImGui::SameLine(0, 8);
+    const ImVec2 p = ImGui::GetCursorScreenPos();
+    if (ImGui::InvisibleButton("##stdswitch", ImVec2(w, h + 4))) {
+        if (a.engine.running()) a.engine.log("stop the receiver before switching the standard family");
+        else a.atscMode = !a.atscMode;
+    }
+    const bool hov = ImGui::IsItemHovered();
+    const ImVec2 q(p.x, p.y + 2);
+    dl->AddRectFilled(q, ImVec2(q.x + w, q.y + h), a.atscMode ? IM_COL32(150, 100, 30, 255) : IM_COL32(24, 106, 166, 255), h * 0.5f);
+    if (hov) dl->AddRect(q, ImVec2(q.x + w, q.y + h), IM_COL32(220, 228, 236, 255), h * 0.5f);
+    dl->AddCircleFilled(ImVec2(a.atscMode ? q.x + w - h * 0.5f : q.x + h * 0.5f, q.y + h * 0.5f), h * 0.5f - 2.5f, IM_COL32(240, 244, 248, 255));
+    ImGui::SameLine(0, 8);
+    ImGui::TextColored(a.atscMode ? ImVec4(0.95f, 0.97f, 1, 1) : ImVec4(0.55f, 0.6f, 0.66f, 1), "ATSC");
+    ImGui::SameLine(0, 14);
+    if (a.atscMode) ImGui::TextColored(ImVec4(0.95f, 0.7f, 0.3f, 1), "ATSC (8VSB, 6 MHz) is not implemented yet: the receiver below only handles DVB-T2 and DVB-T.");
+    else ImGui::TextDisabled("DVB-T2 / DVB-T, detected automatically");
+    if (hov) ImGui::SetTooltip("Left: DVB (T2 and T, automatic).\nRight: ATSC (US, Canada, Mexico, South Korea).");
+}
+
 static void drawUI(App& a, ImVec2 disp) {
     ingestSpectrum(a);
     ingestRx(a);
@@ -2463,6 +2492,7 @@ static void drawUI(App& a, ImVec2 disp) {
 
     toolbar(a);
     if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) sourceOptions(a);
+    standardSwitch(a);
     ImGui::Separator();
     statusBar(a);
     ImGui::Separator();
