@@ -60,7 +60,8 @@ Goal: normal installers for macOS arm64, macOS Intel, Windows x64, Linux x64/arm
 ## C2. ATSC 1.0 support (8VSB, 6 MHz)
 
 The DVB / ATSC switch under the tuner settings is in the UI already; ATSC mode only shows a "not implemented" notice and disables Start.
-- [ ] Signal generator for tests (8VSB: sync, field sync, trellis encoder, interleaver, RS(207,187), randomizer), verified against GNU Radio `gr-dtv`.
+- [x] Channel coding (randomiser, RS(207,187), byte interleaver, trellis, field sync) and Viterbi/field decoder; transmit chain bit-exact against `gr-dtv` (`tests/reference/cmp_atsc.cc`, `test_atsc_fec`).
+- [x] Test signal generator (`atsc_gen`), first receiver (`atsc_rx`: resampler/matched filter, pilot loop, symbol clock, field sync, per-field least-squares equaliser): locks and decodes a clean generated signal in `test_atsc_rx` (SNR plateaus near 25 dB, first two fields after lock still fail, receiver about 2x too slow for real time, no engine/UI integration yet, echo/CFO/SRO/noise cases not tested).
 - [ ] Front end: pilot/carrier recovery, symbol timing from the segment sync, field-sync detection, resampling from the capture rate.
 - [ ] Adaptive equalizer (training on field sync, then blind/decision-directed); multipath tests with echoes.
 - [ ] Trellis (Viterbi) decoder, de-interleaver, Reed-Solomon, de-randomizer -> MPEG transport stream into the existing TS/EPG/player path (AC-3 audio).
