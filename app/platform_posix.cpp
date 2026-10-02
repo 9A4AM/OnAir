@@ -45,6 +45,11 @@ std::string configDir() {
     return std::string(h ? h : ".") + "/.config/onair";
 }
 
+void makeDirs(const std::string& path) {
+    for (size_t i = 1; i <= path.size(); i++)
+        if (i == path.size() || path[i] == '/') mkdir(path.substr(0, i).c_str(), 0755);
+}
+
 std::string clean(const std::string& s) { std::string r = s; for (char& c : r) if (c == '\n' || c == '\r' || c == '|') c = ' '; return r; }
 
 struct FilePrefs : Prefs {
@@ -88,8 +93,7 @@ struct FilePrefs : Prefs {
     void setChannels(const std::vector<Channel>& c) override { channels = c; dirty = true; }
     void flush() override {
         if (!dirty) return;
-        mkdir((std::string(getenv("HOME") ? getenv("HOME") : ".") + "/.config").c_str(), 0755);
-        mkdir(configDir().c_str(), 0755);
+        makeDirs(configDir());
         const std::string tmp = path + ".tmp";
         {
             std::ofstream f(tmp);
