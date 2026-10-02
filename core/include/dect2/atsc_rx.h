@@ -24,6 +24,9 @@ public:
     bool rateOk() const;
     // Waits until the field worker thread has finished everything queued so far (used by tests; the callback runs on that thread)
     void flush();
+    // true: when the field worker is busy the sample thread waits for it (files, tests). false (default): fields are dropped and the
+    // decoder restarts, which is what a live source needs so that the sample path never stalls.
+    void setBlocking(bool b);
 
 private:
     struct Impl;

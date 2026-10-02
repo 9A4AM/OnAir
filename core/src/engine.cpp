@@ -53,6 +53,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxT_.configure(rate_, tune.bandwidthMhz);
     rxT_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });
     rxA_.configure(rate_);
+    rxA_.setBlocking(!src_->realtimeHardware());
     rxA_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });   // runs on the ATSC worker thread
     atscSeq_ = 0; logAState_ = -1;
     activeStd_ = stdMode_.load() == 2 ? 1 : stdMode_.load() == 3 ? 2 : 0;

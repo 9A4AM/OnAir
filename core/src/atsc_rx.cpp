@@ -216,7 +216,12 @@ struct Core {
                 omega += beta * e;
                 const float xb = beta * e;
                 rot *= cf32(1.f - 0.5f * xb * xb, -xb);
-                if (++renorm >= 64) { renorm = 0; ph /= std::abs(ph); rot = expj(-omega); }
+                if (++renorm >= 64) {
+                    renorm = 0; ph /= std::abs(ph);
+                    const double lim = 2.0 * kPi * 60e3 / fs2;   // no real carrier offset is larger; keeps the loop from wandering off in noise
+                    omega = std::max(omega0 - lim, std::min(omega0 + lim, omega));
+                    rot = expj(-omega);
+                }
                 if (dbg && (++dbgCnt % 500000) == 0) fprintf(stderr, "[atsc] pll e=%.3f cfo=%.0f Hz |pf|=%.3f re=%.3f im=%.3f pw=%.3f dc=%.3f\n", e, (omega - omega0) * fs2 / (2 * kPi), std::abs(pf), pf.real(), pf.imag(), pw, dc);
             }
         }
@@ -265,7 +270,7 @@ struct Core {
     int64_t fastSegs = getenv("ATSC_FAST") ? atoi(getenv("ATSC_FAST")) : 300;
     double kpT = getenv("ATSC_KP") ? atof(getenv("ATSC_KP")) : 0.003, kiT = getenv("ATSC_KI") ? atof(getenv("ATSC_KI")) : 1e-5;
     bool dbg = getenv("ATSC_DBG") != nullptr;
-    long dbgCnt = 0;
+    long dbgCnt = 0, stageCnt = 0;
 
     // ---------------------------------------------------------------- stage C: symbol clock
     float interpAt(double t) const {
@@ -280,6 +285,7 @@ struct Core {
     uint64_t dEnd() const { return dBase + d.size(); }
 
     void stageC() {
+        if (dbg && (++stageCnt % 40) == 0) fprintf(stderr, "[atsc] stage C: seg %d tau %.0f dBase %llu dEnd %llu rate %.5f segAbs %llu inBase %llu pos %.0f\n", (int)seg, tau, (unsigned long long)dBase, (unsigned long long)dEnd(), rate, (unsigned long long)segAbs, (unsigned long long)inBase, pos);
         if (!seg) {
             // correlate the sync pattern at every sample position, averaged over segments
             while (accIdx + 8 < dEnd()) {
@@ -311,6 +317,7 @@ struct Core {
                         idx -= (idx % kSegSamples + kSegSamples - m) % kSegSamples;
                         tau = (double)idx + delta;
                         rate = 2.0; rr = 0; segPos = 0; segSyms.clear(); lowQ = 0;
+                        if (dbg) fprintf(stderr, "[atsc] segment sync acquired (peak %.1f, bin %d)\n", acc[m], m);
                         seg = true; segAbs = 0; symAbs = 0; raw.clear(); rawBase = 0;
                         fieldLock = false; fieldStartSeg = -1; fsMisses = 0; lastFsSeg = -1; pendingStart = -1;
                         workerReset();
@@ -330,7 +337,7 @@ struct Core {
                 if (segPos == kSegSyms) { onSegment(); segPos = 0; segSyms.clear(); if (!seg) return; }
             }
             trimD((uint64_t)std::max(0.0, std::floor(tau) - 1900));   // keep the previous segment's sync symbols for the timing measurement
-            if (tau - kInterpJ - 1 < (double)dBase) { seg = false; accIdx = dEnd(); }   // fell behind the buffer: reacquire
+            if (tau - kInterpJ - 1 < (double)dBase) { if (dbg) fprintf(stderr, "[atsc] symbol clock fell behind the buffer\n"); seg = false; accIdx = dEnd(); }   // fell behind the buffer: reacquire
         }
     }
 
@@ -365,7 +372,7 @@ struct Core {
         rr = std::max(-0.01, std::min(0.01, rr));
         rate = 2.0 + rr;
         (void)eps;
-        if (q < 0.3) { if (++lowQ > 12) { seg = false; accIdx = dEnd(); lastSearch = accIdx; std::fill(acc.begin(), acc.end(), 0.f); lastPeak = -1; peakRun = 0; fieldLock = false; workerReset(); t.lockLosses++; return; } }
+        if (q < 0.3) { if (++lowQ > 12) { if (dbg) fprintf(stderr, "[atsc] segment sync lost at segment %llu\n", (unsigned long long)segAbs); seg = false; accIdx = dEnd(); lastSearch = accIdx; std::fill(acc.begin(), acc.end(), 0.f); lastPeak = -1; peakRun = 0; fieldLock = false; workerReset(); t.lockLosses++; return; } }
         else lowQ = 0;
         raw.insert(raw.end(), segSyms.begin(), segSyms.end());
         segAbs++;
@@ -408,7 +415,7 @@ struct Core {
             else {
                 t.fieldSyncMisses++;
                 nextParity = 3 - pendingParity;   // the polarity alternates every field
-                if (++fsMisses > 3) { fieldLock = false; lastFsSeg = -1; pendingStart = -1; workerReset(); t.lockLosses++; return; }
+                if (++fsMisses > 3) { if (dbg) fprintf(stderr, "[atsc] field sync lost at segment %lld\n", (long long)thisSeg); fieldLock = false; lastFsSeg = -1; pendingStart = -1; workerReset(); t.lockLosses++; return; }
             }
             finishFieldAt(thisSeg);
         }
@@ -456,6 +463,8 @@ struct Core {
     std::condition_variable jcv;
     std::deque<Job> jobs;
     bool stopW = false, decResetReq = true, working = false;
+    std::atomic<bool> blocking{false};   // wait for the worker instead of dropping fields (files, tests)
+    std::condition_variable jspace;
     DecOut decOut;
     std::mutex dmu;
     ~Core() { stopWorker(); }
@@ -463,6 +472,7 @@ struct Core {
     void stopWorker() {
         { std::lock_guard<std::mutex> lk(jm); stopW = true; }
         jcv.notify_all();
+        jspace.notify_all();
         if (worker.joinable()) worker.join();
     }
     void flush() {
@@ -483,6 +493,7 @@ struct Core {
                 if (decResetReq) { decResetReq = false; doReset = true; }
                 if (!jobs.empty()) { j = std::move(jobs.front()); jobs.pop_front(); working = true; }
             }
+            jspace.notify_all();
             if (doReset) {
                 dec.reset();
                 w.assign(kL, 0.f); bias = 0; snrAvg = 0; dataSnrAvg = 0; segErr = 0;
@@ -493,6 +504,7 @@ struct Core {
         }
     }
     void decodeField(int64_t startSeg, int fieldParity) {
+        if (dbg) fprintf(stderr, "[atsc] queue field at segment %lld (segAbs %llu)\n", (long long)startSeg, (unsigned long long)segAbs);
         Job j;
         j.f0 = startSeg * kSegSyms;
         j.parity = fieldParity;
@@ -501,7 +513,8 @@ struct Core {
         j.s.resize((size_t)(end - j.base));
         for (size_t k = 0; k < j.s.size(); k++) j.s[k] = rawAt(j.base + (int64_t)k);
         {
-            std::lock_guard<std::mutex> lk(jm);
+            std::unique_lock<std::mutex> lk(jm);
+            if (blocking) jspace.wait(lk, [&] { return jobs.size() < 2 || stopW; });
             if (jobs.size() >= 3) { jobs.clear(); decResetReq = true; t.fieldSyncMisses++; }   // the worker fell behind: start over cleanly
             jobs.push_back(std::move(j));
         }
@@ -598,6 +611,7 @@ struct Core {
             decOut.seq++;
         };
         if (!ok2 || snr < 9.0) {   // the equaliser did not find a usable channel: do not feed the decoder garbage
+            if (dbg) fprintf(stderr, "[atsc] field start %lld: equaliser SNR %.1f dB (solved %d), not decoded\n", (long long)(f0 / kSegSyms), snr, (int)ok2);
             dec.reset();
             tsFlow = 0;
             publishDec(false, nullptr);
@@ -655,6 +669,7 @@ AtscReceiver::~AtscReceiver() = default;
 void AtscReceiver::configure(double inputRateHz) { p_->c.configure(inputRateHz); }
 void AtscReceiver::reset() { if (p_->c.ok) p_->c.reset(); }
 void AtscReceiver::flush() { p_->c.flush(); }
+void AtscReceiver::setBlocking(bool b) { p_->c.blocking = b; }
 bool AtscReceiver::rateOk() const { return p_->c.ok; }
 void AtscReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { p_->c.cb = std::move(cb); }
 void AtscReceiver::feed(const cf32* x, size_t n) {

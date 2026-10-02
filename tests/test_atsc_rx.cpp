@@ -21,6 +21,7 @@ static Result run(const atsc::ChannelConfig& cc, double inRate, double seconds, 
     atsc::Generator gen(dvbt::testTsSource(), cc, inRate, seed);
     AtscReceiver rx;
     rx.configure(inRate);
+    rx.setBlocking(true);
     std::vector<uint8_t> got;
     double sigSec = 0;
     rx.setPacketCallback([&](const uint8_t* p, size_t n, double s) { got.insert(got.end(), p, p + n * 188); sigSec += s; });
@@ -91,6 +92,7 @@ int main(int argc, char** argv) {
     {   // noise only: no lock, no packets
         AtscReceiver rx;
         rx.configure(8e6);
+        rx.setBlocking(true);
         size_t pk = 0;
         rx.setPacketCallback([&](const uint8_t*, size_t n, double) { pk += n; });
         std::mt19937 g(5);
@@ -106,6 +108,7 @@ int main(int argc, char** argv) {
         atsc::Generator gen(dvbt::testTsSource(), cc, 8e6, 3);
         AtscReceiver rx;
         rx.configure(8e6);
+        rx.setBlocking(true);
         size_t pk = 0;
         rx.setPacketCallback([&](const uint8_t*, size_t n, double) { pk += n; });
         std::mt19937 g(9);
