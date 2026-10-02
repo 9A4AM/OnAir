@@ -52,7 +52,10 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rx_.configure(rate_, tune.bandwidthMhz);
     rxT_.configure(rate_, tune.bandwidthMhz);
     rxT_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });
-    activeStd_ = stdMode_.load() == 2 ? 1 : 0;
+    rxA_.configure(rate_);
+    rxA_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });   // runs on the ATSC worker thread
+    atscSeq_ = 0; logAState_ = -1;
+    activeStd_ = stdMode_.load() == 2 ? 1 : stdMode_.load() == 3 ? 2 : 0;
     autoMark_ = 0; lastLockSec_ = 0; logTMode_ = logTGi_ = logTTps_ = -1; logTFec_ = false;
     {
         std::lock_guard<std::mutex> lk(tsMu_);
@@ -116,6 +119,7 @@ void Engine::applyReset() {
     ring_.clear();
     rx_.reset();
     rxT_.reset();
+    rxA_.reset();
     autoMark_ = nSamp_ / std::max(1.0, rate_.load()); lastLockSec_ = autoMark_;
     analyzer_.reset();
     {
@@ -156,7 +160,8 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
 // Auto mode alternates between the two receivers until one locks, then stays with it. Only the active receiver sees samples,
 // so idle searching costs one receiver, not two.
 void Engine::feedRx(const cf32* x, size_t n) {
-    if (activeStd_.load() == 1) rxT_.feed(x, n); else rx_.feed(x, n);
+    const int a = activeStd_.load();
+    if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else rx_.feed(x, n);
 }
 
 void Engine::changeBandwidth(double mhz) {
@@ -175,7 +180,7 @@ void Engine::bandwidthStep(const SpectrumFrame& f, const RxTelemetry& t, bool tL
     const double now = nSamp_ / std::max(1.0, rate_.load());
     if (bwReset_.exchange(false)) { bwDet_.reset(); bwMark_ = now; bwVote_ = 0; }
     if (bwReq_.exchange(false)) { changeBandwidth(bwReqVal_); bwDet_.reset(); bwMark_ = now; }
-    if (!bwAuto_) return;
+    if (!bwAuto_ || activeStd_ == 2) return;   // an ATSC channel is always 6 MHz
     const bool locked = activeStd_ == 0 ? t.state == 2 : tLocked;
     if (locked) { bwDet_.reset(); bwMark_ = now; bwVote_ = 0; return; }
     bwDet_.add(f.dbfs, rate_ / 1e6);
@@ -198,6 +203,7 @@ void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
         const int m = stdMode_.load();
         if (m == 1 && activeStd_ != 0) { activeStd_ = 0; rx_.reset(); }
         else if (m == 2 && activeStd_ != 1) { activeStd_ = 1; rxT_.reset(); }
+        else if (m == 3 && activeStd_ != 2) { activeStd_ = 2; rxA_.reset(); }
         autoMark_ = lastLockSec_ = now;
         return;
     }
@@ -209,6 +215,17 @@ void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
     if (activeStd_ == 0) { activeStd_ = 1; rxT_.reset(); log("auto: trying DVB-T"); }
     else { activeStd_ = 0; rx_.reset(); log("auto: trying DVB-T2"); }
     autoMark_ = now;
+}
+
+void Engine::logAtscEvents(const RxTelemetry& t) {
+    const AtscTelemetry& a = t.atsc;
+    const int level = a.tsOk ? 4 : a.fieldSync ? 3 : a.segSync ? 2 : a.pilot ? 1 : 0;
+    if (level != logAState_) {
+        static const char* nm[] = {"ATSC: searching for the pilot and segment sync", "ATSC: pilot locked", "ATSC: segment sync, symbol clock locked", "ATSC: field sync found", "ATSC: transport stream flowing"};
+        log(nm[level]);
+        if (level >= 3) { char b[120]; snprintf(b, sizeof b, "ATSC: carrier offset %+.0f Hz, symbol clock %+.1f ppm, SNR %.1f dB", a.cfoHz, a.sroPpm, a.snrDb); log(b); }
+        logAState_ = level;
+    }
 }
 
 void Engine::logDvbtEvents(const RxTelemetry& t) {
@@ -319,7 +336,24 @@ void Engine::analysisLoop() {
         {
             RxTelemetry t;
             const bool dvbt = activeStd_.load() == 1;
-            if (dvbt ? rxT_.telemetry(t, rxSeq) : rx_.telemetry(t, rxSeq)) {
+            if (activeStd_.load() == 2) {
+                AtscTelemetry at;
+                if (rxA_.telemetry(at, atscSeq_)) {
+                    atscSeq_ = at.seq;
+                    t.standard = 2;
+                    t.atsc = at;
+                    t.seq = at.seq;
+                    t.state = at.fieldSync ? 2 : at.segSync ? 1 : 0;
+                    t.dataValid = at.fieldSync && at.eqTrained;
+                    t.dataSnrDb = (float)at.snrDb;
+                    t.blocksOk = at.rsClean + at.rsCorrected;
+                    t.blocksBad = at.rsFailed;
+                    t.rateOk = rxA_.rateOk();
+                    logAtscEvents(t);
+                    std::lock_guard<std::mutex> lk(rxMu_);
+                    rxTel_ = std::move(t);
+                }
+            } else if (dvbt ? rxT_.telemetry(t, rxSeq) : rx_.telemetry(t, rxSeq)) {
                 rxSeq = t.seq;
                 if (dvbt) logDvbtEvents(t); else logRxEvents(t);
                 autoSelect(t, dvbt && (t.dvbt.tpsOk || t.dvbt.fecSync));

@@ -3,6 +3,7 @@
 #pragma once
 #include <string>
 #include "ring.h"
+#include "atsc_tel.h"
 #include "t2.h"
 #include "t2l1.h"
 #include "t2plp.h"
@@ -27,8 +28,9 @@ struct P1Info {
 };
 
 struct RxTelemetry {
+    AtscTelemetry atsc;          // valid when standard == 2
     uint64_t seq = 0;
-    int standard = 0;            // 0 DVB-T2, 1 DVB-T
+    int standard = 0;            // 0 DVB-T2, 1 DVB-T, 2 ATSC
     struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics
         bool tpsOk = false, fecSync = false;
         int mode = 0, guard = 0, mod = 0, hier = 0, crHp = 0, crLp = 0, cellId = 0, frameIdx = 0, punctPhase = 0;

@@ -24,6 +24,31 @@ static double dvbtRequiredDb(int mod, int rate) {
 }
 
 void QualityMeter::update(const RxTelemetry& rx) {
+    if (rx.standard == 2) {   // ATSC: the threshold of visibility is about 15.2 dB SNR (A/74)
+        const AtscTelemetry& a = rx.atsc;
+        if (!a.fieldSync) { rep_ = QualityReport(); rep_.label = "no lock"; return; }
+        const uint64_t good = a.rsClean + a.rsCorrected, bad = a.rsFailed;
+        if (lastOk_ != ~0ull && good >= lastOk_ && bad >= lastBad_ && (good - lastOk_ + bad - lastBad_) > 0) {
+            hist_.push_back({good - lastOk_, bad - lastBad_});
+            if (hist_.size() > 30) hist_.pop_front();
+        }
+        lastOk_ = good; lastBad_ = bad; lastFrames_ = 0;
+        uint64_t ok = 0, ng = 0;
+        for (auto& h : hist_) { ok += h.first; ng += h.second; }
+        QualityReport r;
+        r.valid = true;
+        r.snrDb = a.snrDb;
+        r.requiredDb = 15.2;
+        r.marginDb = r.snrDb - r.requiredDb;
+        r.fecOk = (ok + ng) ? (double)ok / (double)(ok + ng) : (a.tsOk ? 1.0 : 0.0);
+        const double qs = std::max(0.0, std::min(100.0, 25.0 + r.marginDb * 12.5));
+        const double q = qs * r.fecOk * r.fecOk;
+        smooth_ = rep_.valid ? smooth_ + 0.25 * (q - smooth_) : q;
+        r.percent = smooth_;
+        r.label = r.percent >= 85 ? "excellent" : r.percent >= 65 ? "good" : r.percent >= 40 ? "marginal" : "poor";
+        rep_ = r;
+        return;
+    }
     if (rx.standard == 1) {
         if (!rx.dvbt.tpsOk) { if (rx.state != 2) { rep_ = QualityReport(); rep_.label = "no lock"; } return; }
         const uint64_t good = rx.dvbt.rsClean + rx.dvbt.rsCorrected, bad = rx.dvbt.rsFailed;

@@ -4,6 +4,7 @@
 #include "spectrum.h"
 #include "t2rx.h"
 #include "dvbt_rx.h"
+#include "atsc_rx.h"
 #include "bbunpack.h"
 #include "ts.h"
 #include "tsout.h"
@@ -41,10 +42,10 @@ public:
     bool running() const { return running_; }
     void setComputeMode(int m) { rx_.setComputeMode(m); }
     void selectPlp(int id) { rx_.selectPlp(id); }
-    // Which standard to decode: 0 = automatic (alternates between DVB-T2 and DVB-T until one locks), 1 = DVB-T2, 2 = DVB-T
+    // Which standard to decode: 0 = automatic (alternates between DVB-T2 and DVB-T until one locks), 1 = DVB-T2, 2 = DVB-T, 3 = ATSC
     void setStandard(int m) { stdMode_ = m; stdReq_ = true; }
     int standardMode() const { return stdMode_.load(); }
-    int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T
+    int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T, 2 = ATSC
     double sampleRate() const { return rate_; }
     // Channel bandwidth: with automatic detection on, the engine measures the width of the signal in the spectrum while nothing is
     // locked and reconfigures the receivers by itself. setBandwidth() forces a value (used by the scanner).
@@ -102,6 +103,10 @@ private:
     SpectrumAnalyzer analyzer_{4096};
     T2Receiver rx_;
     DvbtReceiver rxT_;
+    AtscReceiver rxA_;
+    uint64_t atscSeq_ = 0;
+    int logAState_ = -1;
+    void logAtscEvents(const RxTelemetry& t);
     std::atomic<int> stdMode_{0}, activeStd_{0};
     std::atomic<bool> stdReq_{false};
     double autoMark_ = 0, lastLockSec_ = 0;

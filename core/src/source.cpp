@@ -1,5 +1,6 @@
 #include "dect2/source.h"
 #include "dect2/dvbt_gen.h"
+#include "dect2/atsc_gen.h"
 
 #include <Accelerate/Accelerate.h>
 #include <libhackrf/hackrf.h>
@@ -228,7 +229,7 @@ public:
     }
 
 protected:
-    double effectiveRate(const TuneSettings& s) override { return nativeRateHz(s.bandwidthMhz); }
+    double effectiveRate(const TuneSettings& s) override { return s.synth.atsc ? (s.sampleRate > 0 && s.sampleRate < 12e6 ? s.sampleRate : 8e6) : nativeRateHz(s.bandwidthMhz); }
     bool prepare(const TuneSettings& s, std::string&) override {
         cfg_ = s.synth;
         gainDb_ = s.lnaDb + s.vgaDb + (s.ampOn ? 14 : 0);
@@ -238,6 +239,21 @@ protected:
 
     size_t produce(cf32* dst, size_t maxN) override {
         std::lock_guard<std::mutex> lk(mu_);
+        if (cfg_.atsc) {
+            if (regen_ || !agen_) {
+                atsc::ChannelConfig cc;
+                cc.snrDb = cfg_.snrDb; cc.cfoHz = cfg_.cfoHz; cc.sroPpm = cfg_.sroPpm;
+                if (cfg_.echoDb > 0) cc.echoes.push_back({cfg_.echoDelay / rate_ * 1e6, -cfg_.echoDb, 0});
+                agen_ = std::make_unique<atsc::Generator>(dvbt::testTsSource(), cc, rate_);
+                regen_ = false;
+            }
+            atmp_.clear();
+            agen_->generate(maxN, atmp_);
+            const float g = 0.22f / 6.7f * (cfg_.gainModel ? (float)std::pow(10.0, (gainDb_ - 62) / 20.0) : 1.f);   // the 8-VSB signal has an rms of about 6.7 units
+            auto q = [](float x) { return std::round(std::min(127.f, std::max(-128.f, x * 128.f))) / 128.f; };
+            for (size_t i = 0; i < maxN; i++) dst[i] = cf32(q(atmp_[i].real() * g), q(atmp_[i].imag() * g));
+            return maxN;
+        }
         if (regen_) {
             if (cfg_.dvbt) {
                 dvbt::Params tp;
@@ -296,6 +312,8 @@ protected:
     }
 
 private:
+    std::unique_ptr<atsc::Generator> agen_;
+    std::vector<cf32> atmp_;
     std::mutex mu_;
     SynthConfig cfg_;
     bool regen_ = true;

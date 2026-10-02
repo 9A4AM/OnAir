@@ -43,13 +43,14 @@ int main(int argc, char** argv) {
         else if (a == "--secs") secs = atof(next());
         else if (a == "--play") playSid = atoi(next());
         else if (a == "--synthetic") synthetic = true;
+        else if (a == "--atsc") { tune.synth.atsc = true; tune.bandwidthMhz = 6; tune.sampleRate = 8e6; standard = 3; }   // ATSC 8-VSB (synthetic, or with --file at 8 Msps)
         else if (a == "--dvbt") { tune.synth.dvbt = true; synthetic = true; }                 // synthetic source generates DVB-T
         else if (a == "--dvbt-mode") tune.synth.dvbtMode = atoi(next());   // 0 = 2K, 1 = 8K
         else if (a == "--dvbt-gi") tune.synth.dvbtGuard = atoi(next());    // 0..3 = 1/32, 1/16, 1/8, 1/4
         else if (a == "--dvbt-mod") tune.synth.dvbtMod = atoi(next());     // 0 QPSK, 1 16-QAM, 2 64-QAM
         else if (a == "--dvbt-rate") tune.synth.dvbtRate = atoi(next());   // 0..4 = 1/2, 2/3, 3/4, 5/6, 7/8
         else if (a == "--snr") tune.synth.snrDb = atof(next());
-        else if (a == "--standard") { std::string v = next(); standard = v == "t2" ? 1 : v == "t" || v == "dvbt" ? 2 : 0; }
+        else if (a == "--standard") { std::string v = next(); standard = v == "t2" ? 1 : v == "t" || v == "dvbt" ? 2 : v == "atsc" ? 3 : 0; }
         else if (a == "--compute") { std::string v = next(); computeMode = v == "cpu" ? 0 : v == "gpu" ? 1 : 2; }
         else if (a == "--file") { useFile = true; file.path = next(); file.format = guessFormat(file.path); }
         else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
@@ -104,7 +105,13 @@ int main(int argc, char** argv) {
         auto lines = e.logSnapshot(n);
         for (; shown < lines.size(); shown++) printf("  log: %s\n", lines[shown].c_str());
         if (out.udp) { OutputStats os = e.outputStats(); printf("  udp: sent %llu queue %.0f ms dropped %llu\n", (unsigned long long)os.udpDatagrams, os.udpQueueMs, (unsigned long long)os.udpDropped); }
-        if (t.standard == 1) {
+        if (t.standard == 2) {
+            const AtscTelemetry& a = t.atsc;
+            printf("level %6.1f dBFS | ATSC pilot %d seg %d field %d ts %d | CFO %+7.0f Hz SRO %+6.1f ppm | SNR %.1f dB (data %.1f) sync %.2f | fields %llu RS clean %llu corrected %llu failed %llu | dropped %llu\n",
+                   sf.stats.rmsDbfs, a.pilot, a.segSync, a.fieldSync, a.tsOk, a.cfoHz, a.sroPpm, a.snrDb, a.dataSnrDb, a.syncQuality, (unsigned long long)a.fields,
+                   (unsigned long long)a.rsClean, (unsigned long long)a.rsCorrected, (unsigned long long)a.rsFailed, (unsigned long long)e.droppedSamples());
+            continue_t2 = false;
+        } else if (t.standard == 1) {
             printf("level %6.1f dBFS | DVB-T state %d %s GI %s | CFO %+8.1f Hz | TPS %d %s %s | data SNR %.1f dB | packets %llu RS clean %llu corrected %llu failed %llu | Viterbi margin %.2f phase %d | dropped %llu\n",
                    sf.stats.rmsDbfs, t.state, t.fftN == 8192 ? "8K" : t.fftN == 2048 ? "2K" : "?", t.giIdx >= 0 ? dvbt::guardName(t.giIdx) : "-", t.cfoHz, t.dvbt.tpsOk,
                    t.dvbt.tpsOk ? dvbt::modName(t.dvbt.mod) : "-", t.dvbt.tpsOk ? dvbt::rateName(t.dvbt.crHp) : "-", t.dataSnrDb, (unsigned long long)t.dvbt.packets,

@@ -16,6 +16,7 @@ struct SynthConfig {
     double sroPpm = 0;
     double echoDb = 0;     // 0 = off; otherwise echo attenuation
     int echoDelay = 300;   // samples
+    bool atsc = false;     // generate ATSC 8-VSB (6 MHz channel) instead
     bool dvbt = false;     // generate DVB-T (with a small test transport stream) instead of DVB-T2
     int dvbtMode = 1, dvbtGuard = 2, dvbtMod = 2, dvbtRate = 1; // 8K, GI 1/8, 64-QAM, 2/3
     bool gainModel = false; // scale the level with the LNA/VGA/amp gains (for testing AGC): 62 dB total = the nominal level
