@@ -9,6 +9,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
+#ifdef __APPLE__
+#include <Accelerate/Accelerate.h>
+#endif
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
 
 namespace dect2 {
 namespace atsc {
@@ -53,7 +59,7 @@ struct Core {
     int J = 24;
     int NPH = 128;
     std::vector<float> taps;
-    std::vector<cf32> inBuf;
+    std::vector<float> inRe, inIm;   // input samples, split
     uint64_t inBase = 0;
     double pos = 0, step = 0;
     // ---- stage B: pilot loop
@@ -142,7 +148,7 @@ struct Core {
     }
 
     void reset() {
-        inBuf.clear(); inBase = 0; pos = J;
+        inRe.clear(); inIm.clear(); inBase = 0; pos = J;
         omega0 = 2.0 * kPi * kPilotHz / fs2; omega = omega0; theta = 0; ph = cf32(1, 0); rot = expj(-omega); pf = cf32(0, 0);
         pfA = 1.0 - std::exp(-1.0 / (fs2 * 5e-6)); pfAt = 1.0 - std::exp(-1.0 / (fs2 * 40e-6)); tracking = false; goodRun = badRun = 0;
         pllCnt = 0; dcInit = false; dc = 0; pw = 0; pilotLock = false; pilotGood = 0; pilotRel = 0;
@@ -160,19 +166,39 @@ struct Core {
     }
 
     // ---------------------------------------------------------------- stage A + B
+    double tPfb = 0, tCd = 0, tDec = 0;
+    static double now() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
     void processInput(std::vector<cf32>& in, size_t n_) {
         (void)n_;
-        inBuf.insert(inBuf.end(), in.begin(), in.end());
+        const double tA = now();
+        for (const cf32& v : in) { inRe.push_back(v.real()); inIm.push_back(v.imag()); }
         std::vector<float> dchunk;
-        dchunk.reserve(inBuf.size() * 2);
-        while (pos + J + 2 < (double)(inBase + inBuf.size())) {
+        dchunk.reserve(inRe.size() * 3);
+        const int T = 2 * J;
+        while (pos + J + 2 < (double)(inBase + inRe.size())) {
             int64_t i0 = (int64_t)std::floor(pos);
             int phi = (int)((pos - (double)i0) * NPH + 0.5);
             if (phi >= NPH) { phi = 0; i0++; }
-            const float* tp = &taps[(size_t)phi * 2 * J];
-            const cf32* base = &inBuf[(size_t)(i0 - (int64_t)inBase - J + 1)];
+            const float* tp = &taps[(size_t)phi * T];
+            const size_t b0 = (size_t)(i0 - (int64_t)inBase - J + 1);
+            const float* pr = &inRe[b0];
+            const float* pi_ = &inIm[b0];
             float re = 0, im = 0;
-            for (int j = 0; j < 2 * J; j++) { re += base[j].real() * tp[j]; im += base[j].imag() * tp[j]; }
+#if defined(__ARM_NEON)
+            {
+                float32x4_t ar = vdupq_n_f32(0), ai = vdupq_n_f32(0);
+                int j = 0;
+                for (; j + 4 <= T; j += 4) {
+                    const float32x4_t t4 = vld1q_f32(tp + j);
+                    ar = vfmaq_f32(ar, vld1q_f32(pr + j), t4);
+                    ai = vfmaq_f32(ai, vld1q_f32(pi_ + j), t4);
+                }
+                re = vaddvq_f32(ar); im = vaddvq_f32(ai);
+                for (; j < T; j++) { re += pr[j] * tp[j]; im += pi_[j] * tp[j]; }
+            }
+#else
+            for (int j = 0; j < T; j++) { re += pr[j] * tp[j]; im += pi_[j] * tp[j]; }
+#endif
             pos += step;
             // pilot loop
             const cf32 z = cf32(re, im) * ph;
@@ -193,10 +219,12 @@ struct Core {
         }
         const int64_t keepFrom = (int64_t)std::floor(pos) - J - 1;
         if (keepFrom > (int64_t)inBase) {
-            const size_t drop = (size_t)(keepFrom - (int64_t)inBase);
-            inBuf.erase(inBuf.begin(), inBuf.begin() + std::min(drop, inBuf.size()));
+            const size_t drop = std::min((size_t)(keepFrom - (int64_t)inBase), inRe.size());
+            inRe.erase(inRe.begin(), inRe.begin() + drop);
+            inIm.erase(inIm.begin(), inIm.begin() + drop);
             inBase += drop;
         }
+        tPfb += now() - tA;
         if (dchunk.empty()) return;
         // DC (pilot) and gain
         if (!dcInit) {
@@ -226,9 +254,13 @@ struct Core {
             pilotLock = tracking && goodRun > 20000;
         }
         d.insert(d.end(), dchunk.begin(), dchunk.end());
+        const double tB = now();
         stageC();
+        tCd += now() - tB;
     }
     int renorm = 0;
+    int64_t fastSegs = getenv("ATSC_FAST") ? atoi(getenv("ATSC_FAST")) : 300;
+    double kpT = getenv("ATSC_KP") ? atof(getenv("ATSC_KP")) : 0.003, kiT = getenv("ATSC_KI") ? atof(getenv("ATSC_KI")) : 1e-5;
     bool dbg = getenv("ATSC_DBG") != nullptr;
     long dbgCnt = 0;
 
@@ -321,8 +353,12 @@ struct Core {
         syncQ += 0.1 * (q - syncQ);
         const double eps = e / -16.8 * -1.0;   // estimated lateness of the sampling instant, in samples (late = positive)
         // late sampling gives a negative e: move the next instants earlier
-        tau += 0.12 * (e / 16.8);
-        rr += 0.01 * (e / 16.8) / kSegSyms;
+        // wide loop while the clock offset is being found, then a narrow one: the data symbols next to the sync pattern make each
+        // single measurement noisy and a wide loop would turn that into timing jitter
+        const bool fastLoop = (int64_t)segAbs < fastSegs;
+        const double kp = fastLoop ? 0.12 : kpT, ki = fastLoop ? 0.01 : kiT;
+        tau += kp * (e / 16.8);
+        rr += ki * (e / 16.8) / kSegSyms;
         rr = std::max(-0.01, std::min(0.01, rr));
         rate = 2.0 + rr;
         (void)eps;
@@ -402,6 +438,8 @@ struct Core {
     }
 
     void decodeField(int64_t startSeg, int fieldParity) {
+        const double tD0 = now();
+        struct Timer { double& acc; double t0; ~Timer() { acc += now() - t0; } } timer{tDec, tD0};
         const int64_t f0 = startSeg * kSegSyms;   // absolute index of the field sync's first symbol
         // known training symbols
         uint8_t prev12[12] = {};
@@ -430,7 +468,7 @@ struct Core {
         }
         double tr0 = 0;
         for (int i = 0; i < n; i++) tr0 += A[(size_t)i * n + i];
-        const double lambda = 2e-3 * tr0 / n;
+        const double lambda = (getenv("ATSC_LAMBDA") ? atof(getenv("ATSC_LAMBDA")) : 2e-5) * tr0 / n;
         for (int i = 0; i < n; i++) A[(size_t)i * n + i] += lambda;
         std::vector<double> sol = b;
         const bool ok2 = solveSpd(A, sol, n);
@@ -468,6 +506,14 @@ struct Core {
             dd /= std::max(1, cnt);
             const double dsnr = 10.0 * std::log10(21.0 / std::max(dd, 1e-6));
             dataSnrAvg = dataSnrAvg == 0 ? dsnr : dataSnrAvg + 0.3 * (dsnr - dataSnrAvg);
+        }
+        if (!ok2 || snr < 9.0) {   // the equaliser did not find a usable channel: do not feed the decoder garbage
+            dec.reset();
+            tsFlow = 0;
+            t.eqTrained = false;
+            lastTaps.assign(w.begin(), w.end());
+            publish(true);
+            return;
         }
         FieldStats st;
         std::vector<uint8_t> out((size_t)kDataSegs * kTsBytes);
@@ -532,6 +578,8 @@ void AtscReceiver::feed(const cf32* x, size_t n) {
     if (!p_->c.ok || !n) return;
     std::vector<cf32> v(x, x + n);
     p_->c.processInput(v, n);
+    static long cnt = 0;
+    if (getenv("ATSC_PROF") && ++cnt % 380 == 0) fprintf(stderr, "[atsc] time: pfb+pll %.2f s, symbol clock %.2f s, field decode %.2f s\n", p_->c.tPfb, p_->c.tCd, p_->c.tDec);
 }
 bool AtscReceiver::telemetry(AtscTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->c.mu);

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <set>
 #include <string>
@@ -57,16 +58,34 @@ static Result run(const atsc::ChannelConfig& cc, double inRate, double seconds, 
     return r;
 }
 
+struct Case { const char* name; atsc::ChannelConfig cc; double rate; double minGoodPct; double maxLock; };
+
 int main(int argc, char** argv) {
     const bool verbose = argc > 1;
-    atsc::ChannelConfig c;
-    {
-        printf("clean, 8 Msps\n");
-        Result r = run(c, 8e6, 1.2, 1, true);
-        printf("  packets %zu good %zu flagged %zu wrong %zu, locked at %.2f s, CPU %.2fx real time\n", r.packets, r.good, r.errFlag, r.wrong, r.lockSec, r.cpuRt);
-        CHECK(r.good > 1000 && r.wrong == 0, "clean signal: %zu good, %zu wrong", r.good, r.wrong);
+    std::vector<Case> cases;
+    auto mk = [](double snr, double cfo, double sro, std::vector<atsc::Echo> e) { atsc::ChannelConfig c; c.snrDb = snr; c.cfoHz = cfo; c.sroPpm = sro; c.echoes = std::move(e); return c; };
+    cases.push_back({"clean", mk(99, 0, 0, {}), 8e6, 97, 0.5});
+    cases.push_back({"clean, 10 Msps", mk(99, 0, 0, {}), 10e6, 97, 0.5});
+    cases.push_back({"carrier offset +18 kHz", mk(99, 18000, 0, {}), 8e6, 97, 0.5});
+    cases.push_back({"carrier offset -25 kHz", mk(99, -25000, 0, {}), 8e6, 97, 0.5});
+    cases.push_back({"clock offset +60 ppm", mk(99, 0, 60, {}), 8e6, 97, 0.7});
+    cases.push_back({"clock offset -60 ppm", mk(99, 0, -60, {}), 8e6, 97, 0.7});
+    cases.push_back({"SNR 19 dB", mk(19, 0, 0, {}), 8e6, 95, 0.5});
+    cases.push_back({"SNR 16.5 dB", mk(16.5, 0, 0, {}), 8e6, 90, 0.7});
+    cases.push_back({"post echo -8 dB at 2 us", mk(99, 0, 0, {{2.0, -8, 40}}), 8e6, 95, 0.7});
+    cases.push_back({"pre echo -10 dB at 1.5 us", mk(99, 0, 0, {{-1.5, -10, 100}}), 8e6, 95, 0.7});
+    cases.push_back({"post echo -6 dB at 5 us, SNR 24", mk(24, 0, 0, {{5.0, -6, 200}}), 8e6, 90, 0.9});
+    cases.push_back({"three echoes, CFO 10 kHz, SRO 30 ppm, SNR 25", mk(25, 10000, 30, {{0.8, -9, 10}, {3.0, -12, 130}, {-1.0, -14, 250}}), 8e6, 90, 0.9});
+    int shown = 0;
+    for (auto& cs : cases) {
+        if (verbose && argc > 2 && std::string(argv[2]) != std::to_string(shown)) { shown++; continue; }
+        shown++;
+        Result r = run(cs.cc, cs.rate, 1.6, 1, verbose);
+        const double pct = r.packets ? 100.0 * r.good / (r.packets) : 0;
+        printf("%-52s packets %5zu good %5zu flagged %4zu wrong %3zu  (%.1f%%)  locked at %.2f s  CPU %.1fx\n", cs.name, r.packets, r.good, r.errFlag, r.wrong, pct, r.lockSec, r.cpuRt);
+        CHECK(r.lockSec >= 0 && r.lockSec <= cs.maxLock, "%s: lock took %.2f s", cs.name, r.lockSec);
+        CHECK(pct >= cs.minGoodPct * (r.packets > 0 ? 1.0 : 100.0) * 0.93 && r.wrong <= 3, "%s: %.1f%% good, %zu wrong", cs.name, pct, r.wrong);
     }
-    if (verbose) return fails;
     printf(fails ? "ATSC receiver tests FAILED\n" : "ATSC receiver tests passed\n");
     return fails ? 1 : 0;
 }

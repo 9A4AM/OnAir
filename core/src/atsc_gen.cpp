@@ -40,7 +40,7 @@ Generator::Generator(PacketSource src, const ChannelConfig& cfg, double outRate,
     rrc_ = rrcTaps(fs2, 96);   // +-96 samples = +-48 symbols
     acc_.assign(rrc_.size(), cf32(0, 0));
     // output resampler: windowed sinc, cut-off just above the channel
-    const int J = 16;
+    const int J = 48;
     const int NPH = 256;
     sinc_.resize((size_t)NPH * 2 * J);
     const double fc = 0.46 * outRate / fs2;   // cut-off in cycles per hi sample
@@ -132,7 +132,7 @@ void Generator::makeField() {
 void Generator::generate(size_t n, std::vector<cf32>& out) {
     const double fs2 = 2.0 * kSymbolRate;
     const double step = fs2 / outRate_ / (1.0 + cfg_.sroPpm * 1e-6);   // hi samples per output sample
-    const int J = 16;
+    const int J = 48;
     const int NPH = 256;
     for (size_t k = 0; k < n; k++) {
         const double pos = outPos_;
