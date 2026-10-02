@@ -17,6 +17,7 @@
 #include "dect2/scanner.h"
 #include "dect2/gain.h"
 #include "dect2/channel.h"
+#include "dect2/quality.h"
 #include "theme.h"
 
 #include <algorithm>
@@ -155,6 +156,13 @@ struct VideoTex {
     }
 };
 
+struct SavedChannel {
+    double freqMhz = 0, bwMhz = 8;
+    std::string name, mode;
+    float snrDb = 0;
+    int nServices = 0;
+};
+
 struct App {
     Engine engine;
     VideoTex video;
@@ -191,6 +199,10 @@ struct App {
     bool rxSeen = false;
     int computeMode = 2; // 0 CPU, 1 GPU, 2 auto
     MultipathDetector mpd;
+    QualityMeter quality;
+    std::vector<SavedChannel> channels; // DVB-T2 muxes found by the scanner (remembered)
+    bool scanWas = false;
+    double scanHarvestT = 0;
     bool agcOn = false;
     AutoGain agc;
     GainSweep sweep;
@@ -249,6 +261,14 @@ static void loadPrefs(App& a) {
     if ([d objectForKey:@"udpPort"]) a.out.port = (int)[d integerForKey:@"udpPort"];
     a.out.rtp = [d boolForKey:@"udpRtp"];
     a.out.dropNull = [d boolForKey:@"dropNull"];
+    a.channels.clear();
+    for (NSDictionary* c in [d arrayForKey:@"channels"]) {
+        SavedChannel sc;
+        sc.freqMhz = [c[@"f"] doubleValue]; sc.bwMhz = [c[@"bw"] doubleValue];
+        sc.name = [c[@"name"] UTF8String] ?: ""; sc.mode = [c[@"mode"] UTF8String] ?: "";
+        sc.snrDb = [c[@"snr"] floatValue]; sc.nServices = [c[@"n"] intValue];
+        if (sc.freqMhz > 0) a.channels.push_back(sc);
+    }
 }
 
 static void savePrefs(const App& a) {
@@ -257,6 +277,12 @@ static void savePrefs(const App& a) {
     [d setInteger:a.tune.lnaDb forKey:@"lna"];
     [d setInteger:a.tune.vgaDb forKey:@"vga"];
     [d setBool:a.tune.ampOn forKey:@"amp"];
+    {
+        NSMutableArray* arr = [NSMutableArray array];
+        for (auto& c : a.channels)
+            [arr addObject:@{@"f": @(c.freqMhz), @"bw": @(c.bwMhz), @"name": [NSString stringWithUTF8String:c.name.c_str()], @"mode": [NSString stringWithUTF8String:c.mode.c_str()], @"snr": @(c.snrDb), @"n": @(c.nServices)}];
+        [d setObject:arr forKey:@"channels"];
+    }
     [d setInteger:a.computeMode forKey:@"compute"];
     [d setInteger:a.bwIdx forKey:@"bw"];
     [d setObject:[NSString stringWithUTF8String:a.file.path.c_str()] forKey:@"filePath"];
@@ -566,9 +592,10 @@ static void ingestRx(App& a) {
     if (!a.engine.latestRx(t, a.rxSeq)) return;
     a.rxSeq = t.seq;
     if (t.p1Count > 0) a.rxSeen = true;
-    if (t.dataFrames < a.rx.dataFrames) a.mpd.reset(); // receiver was restarted or retuned
+    if (t.dataFrames < a.rx.dataFrames) { a.mpd.reset(); a.quality.reset(); } // receiver was restarted or retuned
     a.rx = std::move(t);
     a.mpd.update(a.rx);
+    a.quality.update(a.rx);
     auto push = [](std::deque<float>& d, float v) { d.push_back(v); if (d.size() > 600) d.pop_front(); };
     if (a.rx.state == 2) {
         push(a.hCfo, (float)a.rx.cfoHz);
@@ -1142,9 +1169,119 @@ static void outputsTab(App& a) {
     if (!os.error.empty()) ImGui::TextColored(ImVec4(0.95f, 0.4f, 0.3f, 1), "%s", os.error.c_str());
 }
 
+static std::string channelLabel(const SavedChannel& c) {
+    char b[200];
+    snprintf(b, sizeof b, "%.3f MHz  %s%s", c.freqMhz, c.name.empty() ? "DVB-T2 mux" : c.name.c_str(), c.nServices > 1 ? (" +" + std::to_string(c.nServices - 1)).c_str() : "");
+    return b;
+}
+
+// Merge DVB-T2 muxes found by the scanner into the remembered channel list.
+static void harvestScan(App& a) {
+    ScanProgress pr = a.scanner.progress();
+    const double now = glfwGetTime();
+    const bool due = pr.running ? now - a.scanHarvestT > 0.5 : a.scanWas;
+    if (!due) return;
+    a.scanWas = pr.running;
+    a.scanHarvestT = now;
+    bool changed = false;
+    for (auto& r : a.scanner.results()) {
+        if (!r.t2) continue;
+        SavedChannel sc;
+        sc.freqMhz = r.freqMHz; sc.bwMhz = r.bwMhz; sc.mode = r.mode; sc.snrDb = r.snrDb; sc.nServices = (int)r.services.size();
+        if (!r.services.empty()) { sc.name = r.services[0]; size_t br = sc.name.rfind(" ["); if (br != std::string::npos) sc.name.resize(br); }
+        if (sc.name.empty()) sc.name = r.networkName;
+        bool found = false;
+        for (auto& c : a.channels)
+            if (std::fabs(c.freqMhz - sc.freqMhz) < 0.01) { if (c.name != sc.name || c.nServices != sc.nServices || c.mode != sc.mode) { c = sc; changed = true; } found = true; break; }
+        if (!found) { a.channels.push_back(sc); changed = true; }
+    }
+    if (changed) {
+        std::sort(a.channels.begin(), a.channels.end(), [](const SavedChannel& x, const SavedChannel& y) { return x.freqMhz < y.freqMhz; });
+        savePrefs(a);
+    }
+}
+
+// Select a remembered channel: stop what is playing and tune the HackRF to it.
+static void tuneToChannel(App& a, const SavedChannel& c) {
+    int hw = -1;
+    for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].kind == DeviceInfo::HackRF) hw = i;
+    if (hw < 0) { a.engine.log("channel selector needs a HackRF"); return; }
+    if (a.scanner.progress().running) a.scanner.stop();
+    const double oldBw = a.tune.bandwidthMhz;
+    a.freqMhz = c.freqMhz;
+    for (int k = 0; k < (int)(sizeof(kBw) / sizeof(kBw[0])); k++) if (kBw[k].mhz == c.bwMhz) a.bwIdx = k;
+    a.tune.centerHz = a.freqMhz * 1e6;
+    applyBandwidth(a);
+    a.engine.player().select(-1);
+    a.selService = -1;
+    if (a.engine.running() && a.devIdx == hw && oldBw == a.tune.bandwidthMhz) {
+        a.engine.log("channel: " + channelLabel(c));
+        a.engine.retuneReset(a.tune);
+    } else {
+        if (a.engine.running()) a.engine.stop();
+        a.devIdx = hw;
+        a.engine.setComputeMode(a.computeMode);
+        a.engine.start(a.devices[hw], a.tune, a.file);
+    }
+    a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
+    a.mpd.reset(); a.quality.reset();
+    savePrefs(a);
+}
+
+static void qualityBar(App& a, float width) {
+    const QualityReport& q = a.quality.report();
+    const bool run = a.engine.running();
+    const float pct = run && q.valid ? (float)q.percent : 0.f;
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    const float h = ImGui::GetFrameHeight();
+    dl->AddRectFilled(p, ImVec2(p.x + width, p.y + h), IM_COL32(120, 28, 28, 255), 3.f); // red = nothing yet
+    const float t = pct / 100.f;
+    const ImVec4 lo(0.95f, 0.55f, 0.15f, 1), hi(0.25f, 0.85f, 0.35f, 1);
+    const ImVec4 col(lo.x + (hi.x - lo.x) * t, lo.y + (hi.y - lo.y) * t, lo.z + (hi.z - lo.z) * t, 1);
+    if (pct > 0) dl->AddRectFilled(p, ImVec2(p.x + width * t, p.y + h), ImGui::ColorConvertFloat4ToU32(col), 3.f);
+    dl->AddRect(p, ImVec2(p.x + width, p.y + h), IM_COL32(70, 76, 84, 255), 3.f);
+    char txt[96];
+    if (!run || !q.valid) snprintf(txt, sizeof txt, "signal quality: %s", run ? "no lock" : "-");
+    else snprintf(txt, sizeof txt, "signal quality %.0f%%  %s", q.percent, q.label.c_str());
+    ImVec2 ts = ImGui::CalcTextSize(txt);
+    dl->AddText(ImVec2(p.x + (width - ts.x) * 0.5f, p.y + (h - ts.y) * 0.5f), IM_COL32(235, 238, 242, 255), txt);
+    ImGui::Dummy(ImVec2(width, h));
+    if (ImGui::IsItemHovered() && run && q.valid) {
+        ImGui::BeginTooltip();
+        ImGui::Text("data SNR %.1f dB, needed for this modulation/code rate about %.1f dB", q.snrDb, q.requiredDb);
+        ImGui::Text("margin %+.1f dB, FEC blocks decoded %.1f%% (last frames)", q.marginDb, q.fecOk * 100);
+        ImGui::TextDisabled("0 dB margin is the edge of reception (25%%); +6 dB or more is comfortable.");
+        ImGui::EndTooltip();
+    }
+}
+
 static void playerTab(App& a) {
     Player& pl = a.engine.player();
     PlayerStats ps = pl.stats();
+    {   // channel selector (muxes found by the scanner) and the signal-quality bar
+        const SavedChannel* cur = nullptr;
+        for (auto& c : a.channels) if (std::fabs(c.freqMhz - a.freqMhz) < 0.01) cur = &c;
+        char fb[48]; snprintf(fb, sizeof fb, "%.3f MHz", a.freqMhz);
+        const std::string curLab = cur ? channelLabel(*cur) : std::string(fb);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("channel");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(360);
+        if (ImGui::BeginCombo("##chan", curLab.c_str())) {
+            if (a.channels.empty()) ImGui::TextDisabled("no channels yet - run a scan (Scan tab)");
+            for (size_t i = 0; i < a.channels.size(); i++) {
+                const SavedChannel& c = a.channels[i];
+                std::string l = channelLabel(c);
+                char extra[64]; snprintf(extra, sizeof extra, "   SNR %.0f dB", c.snrDb);
+                if (ImGui::Selectable((l + extra).c_str(), cur == &c)) tuneToChannel(a, c);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", c.mode.c_str());
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine(0, 18);
+        qualityBar(a, std::max(200.f, ImGui::GetContentRegionAvail().x - 8));
+    }
     float h = ImGui::GetContentRegionAvail().y - 92;
     ImGui::BeginChild("vbox", ImVec2(-1, h), ImGuiChildFlags_Borders);
     if (pl.selected() < 0) ImGui::TextDisabled("Pick a service in the list on the right to start playback.");
@@ -1272,6 +1409,7 @@ static void gainControl(App& a) {
 static void drawUI(App& a, ImVec2 disp) {
     ingestSpectrum(a);
     ingestRx(a);
+    harvestScan(a);
     gainControl(a);
     a.video.update(a.engine.player(), gQueue);
     if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }

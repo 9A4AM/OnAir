@@ -324,3 +324,8 @@ The program tells the user when it thinks the signal suffers from multipath or f
 3. **Time variation**: frame-to-frame SNR spread and how many recent frames lost a noticeable share of their FEC blocks.
 
 The verdict is none / mild / likely / severe, with advice to re-aim the antenna for the worse levels. It is covered by `tests/test_channel.cpp` (clean channel reads "none", a synthetic echo is found at the right delay and level). On the 522 MHz recording it reports a likely multipath channel: echoes at -7 dB (+1.1 us) and weaker ones, several dips around 12 dB, and fades in about one frame in eight. Open points: thresholds need tuning against more real recordings, and the direction finder (11.1) should use this report as part of its per-direction score.
+
+### 11.5 Signal-quality bar and channel selector (built 2026-10-02)
+
+- **Signal-quality bar** on the Player tab: a red bar that fills green as reception improves. The value is the decoder's SNR margin over what the current modulation and code rate needs (0 dB margin = 25%, +6 dB or more = 100%), multiplied by the square of the share of FEC blocks that decoded over the last frames. Hover for the numbers. (`core/src/quality.cpp`; the required-SNR table is approximate AWGN values from EN 302 755 annex C.) On the 522 MHz recording it reads about 74% "good".
+- **Channel selector** on the Player tab, above the video, next to the services list on the right: lists the DVB-T2 muxes the scanner has found (frequency, first service name and the number of further services, SNR). Picking one stops playback and tunes the HackRF there automatically (retune and flush; a restart if the bandwidth differs). The list is remembered between runs and merged from every scan.

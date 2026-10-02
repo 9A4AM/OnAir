@@ -4,6 +4,7 @@
 //   dect2cli --record out.cs8 --secs N   (HackRF only; raw IQ capture at the 2x native rate)
 #include "dect2/engine.h"
 #include "dect2/channel.h"
+#include "dect2/quality.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -22,6 +23,7 @@ int main(int argc, char** argv) {
     int computeMode = 2, playSid = -1;
     uint64_t vseq = 0;
     MultipathDetector mpd;
+    QualityMeter qm;
     bool useFile = false, haveDev = false;
     std::string record;
     OutputConfig out;
@@ -76,6 +78,7 @@ int main(int argc, char** argv) {
         for (int w = 0; w < 100; w++) { std::this_thread::sleep_for(std::chrono::milliseconds(10)); if (playSid >= 0) e.player().videoFrame(vseq); }
         e.latestRx(t, 0);
         mpd.update(t);
+        qm.update(t);
         e.latestSpectrum(sf, 0);
         if (playSid >= 0) {
             if (e.player().selected() < 0) { for (auto& sv : e.tsSnapshot().services) if (sv.id == playSid && sv.havePmt) { e.player().select(sv.id); e.player().setVolume(0.f); } }
@@ -91,6 +94,7 @@ int main(int argc, char** argv) {
                t.giIdx >= 0 ? guardName(t.giIdx) : "-", t.cfoHz, t.cpCorr, (unsigned long long)t.l1preGood, (unsigned long long)(t.l1preGood + t.l1preBad),
                (unsigned long long)t.l1postGood, (unsigned long long)(t.l1postGood + t.l1postBad), t.dataValid, t.dataSnrDb, (unsigned long long)t.symbols, t.secSinceP1, (unsigned long long)t.plpFrames, (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad, t.plpMerDb, t.plpPreBer, t.plpIters, t.plpDecodeMs, t.plpOnGpu ? "GPU" : "CPU", (unsigned long long)e.droppedSamples());
     }
+    { const QualityReport& q = qm.report(); printf("quality: %.0f%% %s (SNR %.1f dB, needs %.1f, margin %+.1f dB, FEC %.1f%%)\n", q.percent, q.label.c_str(), q.snrDb, q.requiredDb, q.marginDb, q.fecOk * 100); }
     {
         const MultipathReport& mr = mpd.report();
         printf("multipath: %s (%s)\n", multipathName(mr.level), mr.headline.c_str());
