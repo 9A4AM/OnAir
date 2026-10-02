@@ -16,6 +16,8 @@ struct GainSetting {
 
 // A sensible split of a total gain over the stages: RF amp only for high totals, LNA before VGA.
 GainSetting gainForTotal(int totalDb);
+// Generic radios have one overall gain: it travels in `vga` (lna = 0, amp off), limited to maxDb.
+GainSetting genericGain(int totalDb, int maxDb);
 
 enum class AdcStatus { NoSignal, Low, Good, High, Overload };
 AdcStatus classifyAdc(double rmsDbfs, double peak, double clipFraction);
@@ -30,9 +32,11 @@ public:
         double targetDbfs = -16, lowDbfs = -22, highDbfs = -11;
         double settleSec = 1.2;     // wait after every change before judging again
         double maxStepDb = 8;
+        int genericMaxDb = 0;       // > 0: a radio with a single overall gain of 0..genericMaxDb dB instead of the HackRF stages
     };
     AutoGain() = default;
     explicit AutoGain(const Config& c) : cfg_(c) {}
+    void setGenericMax(int db) { cfg_.genericMaxDb = db; }   // 0 = HackRF stages
     void reset();
     // Feed the newest ADC statistics; returns true when `g` was changed and must be applied to the device.
     bool update(double nowSec, const SignalStats& st, GainSetting& g);
@@ -50,7 +54,7 @@ class GainSweep {
 public:
     struct Sample { double snrDb = 0; bool locked = false; float clip = 0, rms = -120, peak = 0; };
     struct Entry { GainSetting g; double snrDb = -100; float rms = -120, clip = 0; int n = 0; bool done = false; };
-    void start(double nowSec);
+    void start(double nowSec, int genericMaxDb = 0);   // genericMaxDb > 0: sweep one overall gain over 0..genericMaxDb
     bool active() const { return active_; }
     // Returns true when `g` changed (apply it). When the sweep ends, `g` is the winner and active() is false.
     bool update(double nowSec, const Sample& s, GainSetting& g);

@@ -3,6 +3,15 @@
 #include "imgui.h"
 #include "implot.h"
 
+// One accent colour for data and highlights; red / amber / green appear only where they mean a status.
+namespace pal {
+inline ImVec4 accent(float a = 1.f) { return ImVec4(0.36f, 0.66f, 0.86f, a); }
+inline ImVec4 okGreen() { return ImVec4(0.40f, 0.76f, 0.52f, 1); }
+inline ImVec4 warnAmber() { return ImVec4(0.90f, 0.70f, 0.28f, 1); }
+inline ImVec4 badRed() { return ImVec4(0.88f, 0.38f, 0.34f, 1); }
+inline ImVec4 grey(float a = 1.f) { return ImVec4(0.62f, 0.67f, 0.73f, a); }
+}
+
 inline void applyTheme() {
     ImGui::StyleColorsDark();
     ImGuiStyle& s = ImGui::GetStyle();

@@ -14,6 +14,10 @@ static int fails = 0;
 
 static double now() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 
+// The synthetic signal runs at half speed, so a slow machine does not change the outcome. The AGC and the sweep are given
+// signal time (wall time x pace), which is what they would see on real hardware.
+static const double kPace = 0.5;
+
 static TuneSettings synthTune(GainSetting g) {
     TuneSettings t;
     t.bandwidthMhz = 8;
@@ -21,6 +25,7 @@ static TuneSettings synthTune(GainSetting g) {
     t.synth.tx.s2field1 = 1;   // 8K carriers: the AGC does not care about the mode, and a slow machine can keep up
     t.synth.tx.giIdx = 3;
     t.synth.gainModel = true;
+    t.synth.pace = kPace;
     t.lnaDb = g.lna; t.vgaDb = g.vga; t.ampOn = g.amp;
     return t;
 }
@@ -38,10 +43,10 @@ static void runAgc(const char* name, GainSetting start, double secs) {
     uint64_t seq = 0;
     int changes = 0;
     const double t0 = now();
-    while (now() - t0 < secs) {
+    while ((now() - t0) * kPace < secs) {
         if (e.latestSpectrum(sf, seq)) {
             seq = sf.seq;
-            if (agc.update(now(), sf.stats, g)) { t.lnaDb = g.lna; t.vgaDb = g.vga; t.ampOn = g.amp; e.retune(t); changes++; }
+            if (agc.update((now() - t0) * kPace, sf.stats, g)) { t.lnaDb = g.lna; t.vgaDb = g.vga; t.ampOn = g.amp; e.retune(t); changes++; }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(15));
     }
@@ -82,17 +87,18 @@ int main() {
         e.start(dev, t, fo);
         GainSweep sw;
         GainSetting g{32, 20, true};
-        sw.start(now());
+        const double sw0 = now();
+        sw.start(0);
         SpectrumFrame sf; uint64_t seq = 0;
         RxTelemetry rx; uint64_t rseq = 0;
         double snr = 0; bool locked = false;
         const double t0 = now();
-        while (sw.active() && now() - t0 < 120) {
+        while (sw.active() && (now() - t0) * kPace < 120) {
             if (e.latestSpectrum(sf, seq)) seq = sf.seq;
             if (e.latestRx(rx, rseq)) { rseq = rx.seq; }
             locked = rx.dataValid; snr = rx.dataSnrDb;
             GainSweep::Sample s; s.snrDb = snr; s.locked = locked; s.clip = sf.stats.clipFraction; s.rms = sf.stats.rmsDbfs; s.peak = sf.stats.peak;
-            if (sw.update(now(), s, g)) { t.lnaDb = g.lna; t.vgaDb = g.vga; t.ampOn = g.amp; e.retune(t); }
+            if (sw.update((now() - sw0) * kPace, s, g)) { t.lnaDb = g.lna; t.vgaDb = g.vga; t.ampOn = g.amp; e.retune(t); }
             std::this_thread::sleep_for(std::chrono::milliseconds(15));
         }
         CHECK(!sw.active(), "sweep did not finish");
