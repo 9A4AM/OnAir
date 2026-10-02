@@ -18,6 +18,8 @@ static TuneSettings synthTune(GainSetting g) {
     TuneSettings t;
     t.bandwidthMhz = 8;
     t.synth.snrDb = 32;
+    t.synth.tx.s2field1 = 1;   // 8K carriers: the AGC does not care about the mode, and a slow machine can keep up
+    t.synth.tx.giIdx = 3;
     t.synth.gainModel = true;
     t.lnaDb = g.lna; t.vgaDb = g.vga; t.ampOn = g.amp;
     return t;
