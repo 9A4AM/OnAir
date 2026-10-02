@@ -8,7 +8,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <condition_variable>
+#include <deque>
 #include <mutex>
+#include <thread>
 #ifdef __APPLE__
 #include <Accelerate/Accelerate.h>
 #endif
@@ -104,10 +107,8 @@ struct Core {
     std::function<void(const uint8_t*, size_t, double)> cb;
     // ---- statistics
     AtscTelemetry t;
-    double snrAvg = 0, dataSnrAvg = 0;
-    double segErr = 0;
     std::vector<float> lastTaps;
-    int tsFlow = 0;
+    std::atomic<int> tsFlow{0};
     std::chrono::steady_clock::time_point lastPub;
     std::vector<float> levelsOut;
     // equaliser working state
@@ -145,6 +146,7 @@ struct Core {
             for (int j = 0; j < 2 * kInterpJ; j++) interp[(size_t)p * 2 * kInterpJ + j] /= (float)sum;
         }
         reset();
+        startWorker();
     }
 
     void reset() {
@@ -156,9 +158,8 @@ struct Core {
         seg = false; tau = 0; rate = 2.0; rr = 0; segPos = 0; segSyms.clear(); lowQ = 0; syncQ = 0;
         raw.clear(); rawBase = 0; symAbs = 0; segAbs = 0;
         fieldLock = false; fieldStartSeg = -1; fsMisses = 0; lastFsSeg = -1; fsSeen = false; pendingStart = -1;
-        dec.reset();
-        w.assign(kL, 0.f); bias = 0;
-        snrAvg = 0; dataSnrAvg = 0; segErr = 0; tsFlow = 0;
+        workerReset();
+        tsFlow = 0;
         AtscTelemetry keep;
         keep.seq = t.seq;
         t = keep;
@@ -166,7 +167,7 @@ struct Core {
     }
 
     // ---------------------------------------------------------------- stage A + B
-    double tPfb = 0, tCd = 0, tDec = 0;
+    double tPfb = 0, tCd = 0, tDec = 0, tLs = 0, tEq = 0, tVit = 0;
     static double now() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
     void processInput(std::vector<cf32>& in, size_t n_) {
         (void)n_;
@@ -209,12 +210,14 @@ struct Core {
                 pllCnt = 0;
                 float e = std::atan2(pf.imag(), pf.real());
                 e = std::max(-1.2f, std::min(1.2f, e));
-                const double alpha = getenv("ATSC_NOPLL") ? 1e-6 : (tracking ? 0.0035 : 0.035), beta = alpha * alpha / 4.0 / (tracking ? 1.0 : 4.0);
-                ph *= expj(-alpha * e);
+                const float alpha = tracking ? 0.0035f : 0.035f, beta = alpha * alpha / 4.0f / (tracking ? 1.0f : 4.0f);
+                const float xa = alpha * e;                   // phase correction, at most about 0.04 rad: a small-angle rotation is exact enough
+                ph *= cf32(1.f - 0.5f * xa * xa, -xa);
                 omega += beta * e;
-                rot = expj(-omega);
+                const float xb = beta * e;
+                rot *= cf32(1.f - 0.5f * xb * xb, -xb);
+                if (++renorm >= 64) { renorm = 0; ph /= std::abs(ph); rot = expj(-omega); }
                 if (dbg && (++dbgCnt % 500000) == 0) fprintf(stderr, "[atsc] pll e=%.3f cfo=%.0f Hz |pf|=%.3f re=%.3f im=%.3f pw=%.3f dc=%.3f\n", e, (omega - omega0) * fs2 / (2 * kPi), std::abs(pf), pf.real(), pf.imag(), pw, dc);
-                if (++renorm >= 256) { renorm = 0; ph /= std::abs(ph); }
             }
         }
         const int64_t keepFrom = (int64_t)std::floor(pos) - J - 1;
@@ -310,7 +313,7 @@ struct Core {
                         rate = 2.0; rr = 0; segPos = 0; segSyms.clear(); lowQ = 0;
                         seg = true; segAbs = 0; symAbs = 0; raw.clear(); rawBase = 0;
                         fieldLock = false; fieldStartSeg = -1; fsMisses = 0; lastFsSeg = -1; pendingStart = -1;
-                        dec.reset();
+                        workerReset();
                         break;
                     }
                 }
@@ -362,7 +365,7 @@ struct Core {
         rr = std::max(-0.01, std::min(0.01, rr));
         rate = 2.0 + rr;
         (void)eps;
-        if (q < 0.3) { if (++lowQ > 12) { seg = false; accIdx = dEnd(); lastSearch = accIdx; std::fill(acc.begin(), acc.end(), 0.f); lastPeak = -1; peakRun = 0; fieldLock = false; dec.reset(); t.lockLosses++; return; } }
+        if (q < 0.3) { if (++lowQ > 12) { seg = false; accIdx = dEnd(); lastSearch = accIdx; std::fill(acc.begin(), acc.end(), 0.f); lastPeak = -1; peakRun = 0; fieldLock = false; workerReset(); t.lockLosses++; return; } }
         else lowQ = 0;
         raw.insert(raw.end(), segSyms.begin(), segSyms.end());
         segAbs++;
@@ -405,7 +408,7 @@ struct Core {
             else {
                 t.fieldSyncMisses++;
                 nextParity = 3 - pendingParity;   // the polarity alternates every field
-                if (++fsMisses > 3) { fieldLock = false; lastFsSeg = -1; pendingStart = -1; dec.reset(); t.lockLosses++; return; }
+                if (++fsMisses > 3) { fieldLock = false; lastFsSeg = -1; pendingStart = -1; workerReset(); t.lockLosses++; return; }
             }
             finishFieldAt(thisSeg);
         }
@@ -437,14 +440,86 @@ struct Core {
         return raw[(size_t)k];
     }
 
+    // ---------------------------------------------------------------- field worker
+    // The per-field work (equaliser fit, filtering, trellis decoding, Reed-Solomon) runs on its own thread so that the sample thread only
+    // does the resampler, the pilot loop and the symbol clock. Fields are processed strictly in order (the de-interleaver needs that).
+    struct Job { int64_t f0 = 0; int parity = 1; int64_t base = 0; std::vector<float> s; };
+    struct DecOut {
+        uint64_t fields = 0, segments = 0, rsClean = 0, rsCorrected = 0, rsFailed = 0;
+        double snr = 0, dataSnr = 0, segErr = 0;
+        bool eqTrained = false;
+        std::vector<float> taps, levels;
+        uint64_t seq = 0;
+    };
+    std::thread worker;
+    std::mutex jm;
+    std::condition_variable jcv;
+    std::deque<Job> jobs;
+    bool stopW = false, decResetReq = true, working = false;
+    DecOut decOut;
+    std::mutex dmu;
+    ~Core() { stopWorker(); }
+    void startWorker() { if (worker.joinable()) return; stopW = false; worker = std::thread([this] { workerLoop(); }); }
+    void stopWorker() {
+        { std::lock_guard<std::mutex> lk(jm); stopW = true; }
+        jcv.notify_all();
+        if (worker.joinable()) worker.join();
+    }
+    void flush() {
+        for (int i = 0; i < 4000; i++) {
+            { std::lock_guard<std::mutex> lk(jm); if (jobs.empty() && !working) return; }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+    void workerReset() { std::lock_guard<std::mutex> lk(jm); jobs.clear(); decResetReq = true; }
+    void workerLoop() {
+        for (;;) {
+            Job j;
+            bool doReset = false;
+            {
+                std::unique_lock<std::mutex> lk(jm);
+                jcv.wait(lk, [&] { return stopW || !jobs.empty() || decResetReq; });
+                if (stopW) return;
+                if (decResetReq) { decResetReq = false; doReset = true; }
+                if (!jobs.empty()) { j = std::move(jobs.front()); jobs.pop_front(); working = true; }
+            }
+            if (doReset) {
+                dec.reset();
+                w.assign(kL, 0.f); bias = 0; snrAvg = 0; dataSnrAvg = 0; segErr = 0;
+                tsFlow = 0;
+            }
+            if (!j.s.empty()) runJob(j);
+            { std::lock_guard<std::mutex> lk(jm); working = false; }
+        }
+    }
     void decodeField(int64_t startSeg, int fieldParity) {
+        Job j;
+        j.f0 = startSeg * kSegSyms;
+        j.parity = fieldParity;
+        j.base = j.f0 - kNP - 4;
+        const int64_t end = j.f0 + kFieldSyms + kNF + 4;
+        j.s.resize((size_t)(end - j.base));
+        for (size_t k = 0; k < j.s.size(); k++) j.s[k] = rawAt(j.base + (int64_t)k);
+        {
+            std::lock_guard<std::mutex> lk(jm);
+            if (jobs.size() >= 3) { jobs.clear(); decResetReq = true; t.fieldSyncMisses++; }   // the worker fell behind: start over cleanly
+            jobs.push_back(std::move(j));
+        }
+        jcv.notify_one();
+    }
+
+    double snrAvg = 0, dataSnrAvg = 0, segErr = 0;   // worker-owned running averages
+    void runJob(const Job& job) {
         const double tD0 = now();
         struct Timer { double& acc; double t0; ~Timer() { acc += now() - t0; } } timer{tDec, tD0};
-        const int64_t f0 = startSeg * kSegSyms;   // absolute index of the field sync's first symbol
-        // known training symbols
+        const int64_t f0 = job.f0;
+        auto at = [&](int64_t idx) -> float {
+            const int64_t k = idx - job.base;
+            return (k < 0 || k >= (int64_t)job.s.size()) ? 0.f : job.s[(size_t)k];
+        };
         uint8_t prev12[12] = {};
         uint8_t fsSym[kSegSyms];
-        const bool field2 = fieldParity == 2;
+        const bool field2 = job.parity == 2;
         fieldSyncSymbols(field2, prev12, fsSym);
         struct Tr { int64_t t; float d; };
         std::vector<Tr> tr;
@@ -452,12 +527,12 @@ struct Core {
         for (int i = 0; i < 728; i++) tr.push_back({f0 + i, levelOf(fsSym[i])});
         static const float sy[4] = {5, -5, -5, 5};
         for (int s = 1; s < kFieldSegs; s++) for (int j = 0; j < 4; j++) tr.push_back({f0 + (int64_t)s * kSegSyms + j, sy[j]});
-        // normal equations
+        const double tM0 = now();
         const int n = kL + 1;
         std::vector<double> A((size_t)n * n, 0.0), b(n, 0.0);
         std::vector<float> x(n);
         for (auto& r : tr) {
-            for (int i = 0; i < kL; i++) x[i] = rawAt(r.t + kNF - i);
+            for (int i = 0; i < kL; i++) x[i] = at(r.t + kNF - i);
             x[kL] = 1.f;
             for (int i = 0; i < n; i++) {
                 const double xi = x[i];
@@ -468,34 +543,39 @@ struct Core {
         }
         double tr0 = 0;
         for (int i = 0; i < n; i++) tr0 += A[(size_t)i * n + i];
-        const double lambda = (getenv("ATSC_LAMBDA") ? atof(getenv("ATSC_LAMBDA")) : 2e-5) * tr0 / n;
+        const double lambda = 2e-5 * tr0 / n;
         for (int i = 0; i < n; i++) A[(size_t)i * n + i] += lambda;
         std::vector<double> sol = b;
         const bool ok2 = solveSpd(A, sol, n);
         if (ok2) { for (int i = 0; i < kL; i++) w[i] = (float)sol[i]; bias = (float)sol[kL]; }
-        t.eqTrained = ok2;
-        // equalise the field's data region (and the sync segment for the telemetry)
+        tLs += now() - tM0;
+        const double tM1 = now();
         std::vector<float> lv((size_t)kFieldSyms, 0.f);
         double mse = 0; int nm = 0;
-        auto eqAt = [&](int64_t tt) {
+        for (auto& r : tr) {
             float y = bias;
-            const int64_t k0 = tt + kNF - (int64_t)rawBase;
-            if (k0 - (kL - 1) >= 0 && k0 < (int64_t)raw.size()) {
-                const float* r = &raw[(size_t)(k0 - (kL - 1))];
-                // taps are stored for decreasing sample index
-                for (int i = 0; i < kL; i++) y += w[i] * r[kL - 1 - i];
-            } else for (int i = 0; i < kL; i++) y += w[i] * rawAt(tt + kNF - i);
-            return y;
-        };
-        for (auto& r : tr) { const double e = eqAt(r.t) - r.d; mse += e * e; nm++; }
+            for (int i = 0; i < kL; i++) y += w[i] * at(r.t + kNF - i);
+            const double e = y - r.d; mse += e * e; nm++;
+        }
         mse /= std::max(1, nm);
-        for (int i = kSegSyms; i < kFieldSyms; i++) lv[i] = eqAt(f0 + i);
+        {   // the whole data region as one block filter: y[i] = bias + sum_k wr[k] * x[i + k]
+            const int N = kFieldSyms - kSegSyms;
+            const int64_t first = f0 + kSegSyms + kNF - (kL - 1);
+            std::vector<float> xr((size_t)N + kL - 1), wr(kL);
+            for (int k = 0; k < kL; k++) wr[k] = w[kL - 1 - k];
+            for (size_t k = 0; k < xr.size(); k++) xr[k] = at(first + (int64_t)k);
+#ifdef __APPLE__
+            vDSP_conv(xr.data(), 1, wr.data(), 1, lv.data() + kSegSyms, 1, (vDSP_Length)N, (vDSP_Length)kL);
+            for (int i = 0; i < N; i++) lv[kSegSyms + i] += bias;
+#else
+            for (int i = 0; i < N; i++) { float y = bias; for (int k = 0; k < kL; k++) y += wr[k] * xr[(size_t)i + k]; lv[kSegSyms + i] = y; }
+#endif
+        }
         const double snr = 10.0 * std::log10(25.0 / std::max(mse, 1e-6));
         snrAvg = snrAvg == 0 ? snr : snrAvg + 0.3 * (snr - snrAvg);
-        // data symbols: distance to the nearest level
+        std::vector<float> levelsOut;
         {
             double dd = 0; int cnt = 0;
-            levelsOut.clear();
             for (int i = kSegSyms; i < kFieldSyms; i++) {
                 if (i % kSegSyms < 4) continue;
                 const float v = lv[i];
@@ -507,29 +587,36 @@ struct Core {
             const double dsnr = 10.0 * std::log10(21.0 / std::max(dd, 1e-6));
             dataSnrAvg = dataSnrAvg == 0 ? dsnr : dataSnrAvg + 0.3 * (dsnr - dataSnrAvg);
         }
+        auto publishDec = [&](bool trained, const FieldStats* st) {
+            std::lock_guard<std::mutex> lk(dmu);
+            decOut.fields++;
+            if (st) { decOut.rsClean += st->rsClean; decOut.rsCorrected += st->rsCorrected; decOut.rsFailed += st->rsFailed; decOut.segments += st->segments; }
+            decOut.snr = snrAvg; decOut.dataSnr = dataSnrAvg; decOut.segErr = segErr;
+            decOut.eqTrained = trained;
+            decOut.taps.assign(w.begin(), w.end());
+            decOut.levels = levelsOut;
+            decOut.seq++;
+        };
         if (!ok2 || snr < 9.0) {   // the equaliser did not find a usable channel: do not feed the decoder garbage
             dec.reset();
             tsFlow = 0;
-            t.eqTrained = false;
-            lastTaps.assign(w.begin(), w.end());
-            publish(true);
+            publishDec(false, nullptr);
             return;
         }
+        tEq += now() - tM1;
+        const double tM2 = now();
         FieldStats st;
         std::vector<uint8_t> out((size_t)kDataSegs * kTsBytes);
         const int np = dec.decode(lv.data(), out.data(), &st);
-        t.fields++;
-        if (dbg) fprintf(stderr, "[atsc] field %llu start seg %lld parity %d: snr %.1f data %.1f  RS clean %d corr %d fail %d np %d\n", (unsigned long long)t.fields, (long long)startSeg, fieldParity, snr, dataSnrAvg, st.rsClean, st.rsCorrected, st.rsFailed, np);
-        t.rsClean += st.rsClean; t.rsCorrected += st.rsCorrected; t.rsFailed += st.rsFailed;
-        t.segments += st.segments;
+        tVit += now() - tM2;
+        if (dbg) fprintf(stderr, "[atsc] field start %lld parity %d: snr %.1f data %.1f  RS clean %d corr %d fail %d np %d\n", (long long)(f0 / kSegSyms), job.parity, snr, dataSnrAvg, st.rsClean, st.rsCorrected, st.rsFailed, np);
         if (st.segments) { const double r = (double)st.rsFailed / st.segments; segErr = segErr + 0.3 * (r - segErr); }
         if (np > 0 && cb) {
-            const double secs = (double)np * 0.0000774 * 1.0;   // one packet per data segment: 832 symbols / 10.76 MHz
+            const double secs = (double)np * 0.0000774;   // one packet per data segment: 832 symbols / 10.76 MHz
             cb(out.data(), (size_t)np, secs);
             tsFlow = 6;
         } else if (tsFlow > 0) tsFlow--;
-        lastTaps.assign(w.begin(), w.end());
-        publish(true);
+        publishDec(true, &st);
     }
 
     void publish(bool force) {
@@ -546,14 +633,9 @@ struct Core {
         nt.fieldParity = parity;
         nt.cfoHz = (omega - omega0) * fs2 / (2.0 * kPi);
         nt.sroPpm = rr / 2.0 * 1e6;
-        nt.snrDb = snrAvg;
-        nt.dataSnrDb = dataSnrAvg;
         nt.pilotDb = pilotRel > 0 ? 20.0 * std::log10(pilotRel) : -99;
         nt.syncQuality = syncQ;
-        nt.segErrorRate = segErr;
-        nt.eqTaps = lastTaps;
         nt.eqCursor = kL - 1 - kNF;
-        nt.levels = levelsOut;
         nt.seq = pub.seq + 1;
         pub = std::move(nt);
         t.seq = pub.seq;
@@ -572,6 +654,7 @@ AtscReceiver::AtscReceiver() : p_(new Impl) {}
 AtscReceiver::~AtscReceiver() = default;
 void AtscReceiver::configure(double inputRateHz) { p_->c.configure(inputRateHz); }
 void AtscReceiver::reset() { if (p_->c.ok) p_->c.reset(); }
+void AtscReceiver::flush() { p_->c.flush(); }
 bool AtscReceiver::rateOk() const { return p_->c.ok; }
 void AtscReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { p_->c.cb = std::move(cb); }
 void AtscReceiver::feed(const cf32* x, size_t n) {
@@ -579,12 +662,19 @@ void AtscReceiver::feed(const cf32* x, size_t n) {
     std::vector<cf32> v(x, x + n);
     p_->c.processInput(v, n);
     static long cnt = 0;
-    if (getenv("ATSC_PROF") && ++cnt % 380 == 0) fprintf(stderr, "[atsc] time: pfb+pll %.2f s, symbol clock %.2f s, field decode %.2f s\n", p_->c.tPfb, p_->c.tCd, p_->c.tDec);
+    if (getenv("ATSC_PROF") && ++cnt % 380 == 0) fprintf(stderr, "[atsc] time: pfb+pll %.2f s, symbol clock+fields %.2f s, field decode %.2f s (LS fit %.2f, equalise %.2f, trellis+RS %.2f)\n", p_->c.tPfb, p_->c.tCd, p_->c.tDec, p_->c.tLs, p_->c.tEq, p_->c.tVit);
 }
 bool AtscReceiver::telemetry(AtscTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->c.mu);
-    if (p_->c.pub.seq <= lastSeq) return false;
+    std::lock_guard<std::mutex> lk2(p_->c.dmu);
+    const uint64_t seq = p_->c.pub.seq + p_->c.decOut.seq;
+    if (seq <= lastSeq) return false;
     out = p_->c.pub;
+    const auto& d = p_->c.decOut;
+    out.fields = d.fields; out.segments = d.segments; out.rsClean = d.rsClean; out.rsCorrected = d.rsCorrected; out.rsFailed = d.rsFailed;
+    out.snrDb = d.snr; out.dataSnrDb = d.dataSnr; out.segErrorRate = d.segErr; out.eqTrained = d.eqTrained;
+    out.eqTaps = d.taps; out.levels = d.levels;
+    out.seq = seq;
     return true;
 }
 int AtscReceiver::detectLevel() const {

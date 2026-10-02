@@ -269,50 +269,50 @@ void FieldDecoder::reset() {
 namespace {
 // Viterbi over one encoder's symbol sequence (squared distance), returns the decoded dibits
 float viterbiRun(const float* x, int n, uint8_t* dibits) {
-    const TrellisTables& tt = trellis();
-    struct In { uint8_t from, in, sym; };
-    static const struct Incoming {
-        In e[8][8]; int n[8];
-        Incoming() {
-            memset(n, 0, sizeof n);
+    // incoming transitions of every state: source state, input dibit and the symbol sent
+    struct Tab {
+        uint8_t from[8][4], in[8][4], sym[8][4];
+        Tab() {
             const TrellisTables& t = trellis();
+            int cnt[8] = {};
             for (int s = 0; s < 8; s++) for (int u = 0; u < 4; u++) {
                 const int ns = t.next[s * 4 + u];
-                e[ns][n[ns]++] = In{(uint8_t)s, (uint8_t)u, t.out[s * 4 + u]};
+                from[ns][cnt[ns]] = (uint8_t)s; in[ns][cnt[ns]] = (uint8_t)u; sym[ns][cnt[ns]] = t.out[s * 4 + u];
+                cnt[ns]++;
             }
         }
-    } inc;
-    (void)tt;
+    };
+    static const Tab tab;   // every state has exactly four incoming transitions
     std::vector<uint8_t> dec((size_t)n * 8);
     float pm[8] = {}, nm[8];
-    float lvl[8];
-    for (int s = 0; s < 8; s++) lvl[s] = levelOf(s);
     for (int t = 0; t < n; t++) {
         float d[8];
-        for (int s = 0; s < 8; s++) { const float v = x[t] - lvl[s]; d[s] = v * v; }
+        const float xv = x[t];
+        for (int s = 0; s < 8; s++) { const float v = xv - (float)(2 * s - 7); d[s] = v * v; }
+        uint8_t* dp = &dec[(size_t)t * 8];
+        float mn = 1e30f;
         for (int ns = 0; ns < 8; ns++) {
-            float best = 1e30f; int bi = 0;
-            for (int k = 0; k < inc.n[ns]; k++) {
-                const In& e = inc.e[ns][k];
-                const float m = pm[e.from] + d[e.sym];
-                if (m < best) { best = m; bi = k; }
-            }
+            float m0 = pm[tab.from[ns][0]] + d[tab.sym[ns][0]];
+            float m1 = pm[tab.from[ns][1]] + d[tab.sym[ns][1]];
+            float m2 = pm[tab.from[ns][2]] + d[tab.sym[ns][2]];
+            float m3 = pm[tab.from[ns][3]] + d[tab.sym[ns][3]];
+            uint8_t b01 = m1 < m0, b23 = m3 < m2;
+            const float a = b01 ? m1 : m0, c = b23 ? m3 : m2;
+            const uint8_t bi = c < a ? (uint8_t)(2 + b23) : b01;
+            const float best = c < a ? c : a;
             nm[ns] = best;
-            dec[(size_t)t * 8 + ns] = (uint8_t)bi;
+            dp[ns] = bi;
+            mn = best < mn ? best : mn;
         }
-        float mn = nm[0];
-        for (int s = 1; s < 8; s++) mn = std::min(mn, nm[s]);
         for (int s = 0; s < 8; s++) pm[s] = nm[s] - mn;
     }
     int state = 0;
     for (int s = 1; s < 8; s++) if (pm[s] < pm[state]) state = s;
-    float metric = 0;
     for (int t = n; t-- > 0;) {
-        const In& e = inc.e[state][dec[(size_t)t * 8 + state]];
-        dibits[t] = e.in;
-        state = e.from;
+        const int k = dec[(size_t)t * 8 + state];
+        dibits[t] = tab.in[state][k];
+        state = tab.from[state][k];
     }
-    (void)metric;
     return 0;
 }
 }

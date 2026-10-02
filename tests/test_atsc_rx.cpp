@@ -39,6 +39,7 @@ static Result run(const atsc::ChannelConfig& cc, double inRate, double seconds, 
         total += blk.size();
         if (r.lockSec < 0 && rx.detectLevel() >= 4) r.lockSec = total / inRate;
     }
+    rx.flush();
     uint64_t seq = 0;
     rx.telemetry(r.tel, seq);
     r.cpuRt = cpu / seconds;

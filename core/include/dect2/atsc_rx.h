@@ -22,6 +22,8 @@ public:
     // 0 nothing, 1 pilot, 2 segment sync, 3 field sync, 4 transport stream flowing
     int detectLevel() const;
     bool rateOk() const;
+    // Waits until the field worker thread has finished everything queued so far (used by tests; the callback runs on that thread)
+    void flush();
 
 private:
     struct Impl;
