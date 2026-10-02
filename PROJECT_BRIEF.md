@@ -1,6 +1,6 @@
 # DVB-T2 Decoder for macOS — Project Brief
 
-*Working name: **DecT2** (placeholder — rename freely)*
+*Name: **OnAir** (previously the working name DecT2; the command-line tools, library and source namespace still use the short name `dect2`)*
 *Status: draft for review · 2026-10-01*
 
 ---

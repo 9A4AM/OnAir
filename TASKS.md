@@ -1,4 +1,4 @@
-# DecT2 task list
+# OnAir task list
 
 Order matters: each block depends on the ones above it. `[ ]` open, `[x]` done. Items marked **(needs signal)** cannot be finished without a real capture or a reference vector.
 

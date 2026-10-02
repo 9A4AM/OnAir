@@ -1,4 +1,6 @@
-# DecT2
+<p align="center"><img src="assets/onair_1024.png" width="160" alt="OnAir logo"></p>
+
+# OnAir
 
 Open-source DVB-T2 and DVB-T receiver for macOS (HackRF One / HackRF Pro). See [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
 

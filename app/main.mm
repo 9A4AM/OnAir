@@ -1,4 +1,4 @@
-// DecT2 — DVB-T2 receiver for macOS. Phase 0 shell: sources, spectrum, waterfall, status, log.
+// OnAir — digital TV receiver (DVB-T2, DVB-T, ATSC) for macOS. Phase 0 shell: sources, spectrum, waterfall, status, log.
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_metal.h"
@@ -419,7 +419,7 @@ static void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/) 
 static void toolbar(App& a) {
     bool running = a.engine.running();
     ImGui::AlignTextToFramePadding();
-    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1.f, 1), "DecT2");
+    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1.f, 1), "OnAir");
     ImGui::SameLine(0, 14);
     ImGui::TextDisabled("source");
     ImGui::SameLine();
@@ -2676,7 +2676,7 @@ static void drawUI(App& a, ImVec2 disp) {
 int main(int argc, char** argv) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(1500, 900, "DecT2", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1500, 900, "OnAir", nullptr, nullptr);
     if (!window) return 1;
     gWindow = window;
 
@@ -2712,7 +2712,7 @@ int main(int argc, char** argv) {
 
     app.wf.init(device);
     loadPrefs(app);
-    app.engine.log("DecT2 phase 0 - IQ sources, spectrum, waterfall");
+    app.engine.log("OnAir started");
     refreshDevices(app);
     for (int i = 0; i < (int)app.devices.size(); i++)
         if (app.devices[i].kind == DeviceInfo::HackRF) { app.devIdx = i; break; }
