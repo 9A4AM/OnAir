@@ -85,6 +85,19 @@ def roll(stem, t_end, dur, note, v0, v1, drum=False, **kw):
         v = int(v0 + (v1 - v0) * i / max(1, n - 1))
         (drums.add(t_end - x, .1, note, v, 0.001) if drum else timp.add(t_end - x, .4, note, v, 0.001))
 
+_open = {}
+def held(stem, name, t0, notes, vel, expr):
+    """sustain a chord across bars: extend the open notes instead of re-striking them every bar (re-strikes were audible dips)"""
+    o = _open.get(name); key = tuple(notes)
+    if o and o[0] == key and abs(o[1] - t0) < 1e-6:
+        for i in o[2]: t, d, n, v = stem.ev[i]; stem.ev[i] = (t, d + BAR, n, v)
+        _open[name] = (key, t0 + BAR, o[2])
+    else:
+        idx = []
+        for n in notes: stem.add(t0, BAR + .05, n, vel, 0); idx.append(len(stem.ev) - 1)
+        _open[name] = (key, t0 + BAR, idx)
+    stem.cc.append((t0, 11, int(max(0, min(127, expr)))))
+
 # ---------------------------------------------------------------- arrangement
 # strings / pad: one sustained, swelling chord for each build; otherwise a chord per bar
 for a, b in BUILDS:
@@ -96,10 +109,13 @@ for b in range(NBARS):
     t0 = b * BAR; E = energy(t0)
     if E is None: continue
     c = chord_at(t0); T_ = c['notes']; first = (b % 2 == 0)
-    for n in T_: pad.add(t0, BAR * 1.05, n, 38 + 3 * E, 0)
-    for n in (T_[0] - 12 if T_[0] > 55 else T_[0], T_[2], T_[3]): strings.add(t0, BAR * 1.05, n, 26 + 6 * E, 0)
+    inb = any(a_ <= t0 < b_ for a_, b_ in BUILDS)
+    if not inb: held(pad, 'pad', t0, T_, 70, 58 + 7 * E)
+    if not inb: held(strings, 'str', t0, (T_[0] - 12 if T_[0] > 55 else T_[0], T_[2], T_[3]), 70, 40 + 9 * E)
+    in_riser = any(h_ - min(6.0, b_ - a_) <= t0 < h_ for (a_, b_), (h_, _) in zip(BUILDS, HITS))
     # piano: slow rising quarter notes, then a flowing eighth-note ostinato, doubled in the octave at the climax
-    if E < 5:
+    if in_riser: pass
+    elif E < 5:
         pat = [0, 2, 3, 4] if first else [1, 3, 4, 3]
         for k, i in enumerate(pat): piano.add(t0 + k * 0.5, 1.6 - k * .1, T_[i], 46 - k * 2)
     else:
@@ -118,7 +134,7 @@ for b in range(NBARS):
             for k in range(8): bass.add(t0 + k * .25, .22, c['root'] + (12 if k % 4 == 2 else 0), 60 + (8 if k % 2 == 0 else 0))
     # horn pads under the big sections
     if E >= 4.5:
-        for n in (T_[0], T_[3]): horn.add(t0, BAR * 1.05, n, 32 + 4 * E, 0)
+        held(horn, 'horn', t0, (T_[0], T_[3]), 70, 48 + 7 * E)
     # vibraphone melody
     if 3.5 <= E <= 8:
         mo = MOTIF[(int(t0 // BAR) // 2) % 4]; vibes.add(t0, .95, mo[(b % 2) * 2], 44); vibes.add(t0 + 1.0, .95, mo[(b % 2) * 2 + 1], 40)
@@ -143,10 +159,6 @@ bass.add(98.0, 6.0, 33, 50)
 # ---------------------------------------------------------------- builds and hits
 for (a, b), (h, size) in zip(BUILDS, HITS):
     ch = chord_at(h + .1)
-    # piano and hat energy inside the build (eighth notes that crescendo)
-    if b - a > 4 or a > 0:
-        k0 = a + (b - a) * .35; n_ = int((b - k0) / .25)
-        for k in range(n_): piano.add(k0 + k * .25, .5, chord_at(k0 + .1)['notes'][[0, 2, 3, 4, 3, 2][k % 6]], 30 + int(40 * k / n_))
     # timpani / snare roll into the hit
     roll(timp, h, min(4.0, b - a), 33 if a > 0 else 33, 30, 100, start_gap=.5)
     # piano riser: a rising arpeggio through the build chord, eighths then sixteenths, crescendo, landing on the hit
