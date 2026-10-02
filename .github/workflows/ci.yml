@@ -53,3 +53,22 @@ jobs:
           export ASAN_OPTIONS=detect_leaks=0:abort_on_error=0
           ./build/test_gain || true
           ./build/test_channel || true
+
+  backtrace:
+    name: Linux x86_64 (gdb backtrace of test_gain)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config gdb libhackrf-dev libusb-1.0-0-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
+      - name: Configure and build (optimised, with debug symbols)
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=OFF -DCMAKE_CXX_FLAGS="-g"
+          cmake --build build -j 4 --target test_gain
+      - name: Run under gdb (several tries: the crash is intermittent)
+        run: |
+          for i in 1 2 3; do
+            gdb -batch -ex "handle SIGPIPE nostop" -ex run -ex "thread apply all bt 12" --args ./build/test_gain 2>&1 | tail -80
+          done
