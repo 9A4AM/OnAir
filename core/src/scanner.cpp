@@ -63,8 +63,7 @@ void Scanner::run() {
     const auto freqs = channels(cfg_);
     TuneSettings tune = cfg_.tune;
     tune.bandwidthMhz = cfg_.bwMhz;
-    // with automatic bandwidth the scan captures 20 Msps (+-10 MHz), wide enough to measure any channel up to 10 MHz
-    tune.sampleRate = cfg_.autoBandwidth ? 20e6 : cfg_.bwMhz >= 7 ? 10e6 : 8e6;
+    tune.sampleRate = cfg_.bwMhz >= 7 || cfg_.autoBandwidth ? 10e6 : 8e6;
     tune.centerHz = freqs.empty() ? 0 : freqs[0] * 1e6;
     FileOptions fo;
     if (!e.start(dev_, tune, fo)) {

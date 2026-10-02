@@ -1,5 +1,5 @@
 // Channel bandwidth detection from the spectrum: an OFDM signal has a flat top with sharp edges, so the width of that plateau
-// tells which channel raster (1.7, 5, 6, 7, 8 or 10 MHz) is in use.
+// tells which channel raster (1.7, 5, 6, 7 or 8 MHz) is in use.
 #pragma once
 #include <vector>
 
@@ -10,8 +10,7 @@ struct BandwidthEstimate {
     double occupiedMhz = 0;   // measured width of the flat top
     double bwMhz = 0;         // nearest channel bandwidth
     double snrDb = 0;         // plateau over the noise floor
-    bool noFloor = false;     // no quiet part in the spectrum: an empty channel, or a signal wider than the capture
-    bool atLimit = false;     // the signal reaches the edge of the capture: it may be wider than the capture shows
+    bool noFloor = false;     // no quiet part in the spectrum (no signal)
 };
 
 double snapBandwidth(double occupiedMhz);   // occupied width -> channel bandwidth

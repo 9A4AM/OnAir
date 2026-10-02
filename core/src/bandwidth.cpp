@@ -5,13 +5,12 @@
 namespace dect2 {
 
 double snapBandwidth(double occ) {
-    // the occupied width of an OFDM signal is about 95% of the channel (1.54 / 4.76 / 5.71 / 6.66 / 7.61 / 9.52 MHz)
+    // the occupied width of an OFDM signal is about 95% of the channel (1.54 / 4.76 / 5.71 / 6.66 / 7.61 MHz)
     if (occ < 3.2) return 1.7;
     if (occ < 5.3) return 5;
     if (occ < 6.2) return 6;
     if (occ < 7.2) return 7;
-    if (occ < 8.6) return 8;
-    return 10;
+    return 8;
 }
 
 void BandwidthDetector::add(const std::vector<float>& dbfs, double fsMhz) {
@@ -69,7 +68,6 @@ BandwidthEstimate BandwidthDetector::estimate() const {
     for (size_t i = mid; i > 0; i--) { if (db[i] >= thr) { lo = i; below = 0; } else if (++below >= gap) break; }
     e.occupiedMhz = freq(hi) - freq(lo);
     e.bwMhz = snapBandwidth(e.occupiedMhz);
-    e.atLimit = std::fabs(freq(hi)) > 0.9 * nyq || std::fabs(freq(lo)) > 0.9 * nyq;
     e.valid = e.occupiedMhz > 1.0;
     return e;
 }

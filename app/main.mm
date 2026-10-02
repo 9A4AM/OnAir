@@ -86,7 +86,7 @@ static bool tabItem(const char* name) {
 
 struct BwChoice { const char* label; double mhz; double nativeMsps; };
 static const BwChoice kBw[] = {
-    {"8 MHz", 8, 64.0 / 7}, {"7 MHz", 7, 8.0}, {"6 MHz", 6, 48.0 / 7}, {"5 MHz", 5, 40.0 / 7}, {"1.7 MHz", 1.7, 131.0 / 71}, {"10 MHz", 10, 80.0 / 7},
+    {"8 MHz", 8, 64.0 / 7}, {"7 MHz", 7, 8.0}, {"6 MHz", 6, 48.0 / 7}, {"5 MHz", 5, 40.0 / 7}, {"1.7 MHz", 1.7, 131.0 / 71},
 };
 
 static id<MTLDevice> gDevice;
@@ -268,8 +268,7 @@ static void refreshDevices(App& a) {
 
 static void applyBandwidth(App& a) {
     // HackRF Pro: the tuned centre is only exact at <= 10 Msps and at 20 Msps, so use 10 Msps (8 for narrow channels)
-    // a 10 MHz channel does not fit in 10 Msps (the filter edges would clip it), so it uses the 20 Msps setting, which is also exact
-    a.tune.sampleRate = kBw[a.bwIdx].mhz >= 10 ? 20e6 : kBw[a.bwIdx].mhz >= 7 ? 10e6 : 8e6;
+    a.tune.sampleRate = kBw[a.bwIdx].mhz >= 7 ? 10e6 : 8e6;
     a.tune.basebandFilterHz = 0;
     a.tune.bandwidthMhz = kBw[a.bwIdx].mhz;
 }
@@ -452,7 +451,7 @@ static void toolbar(App& a) {
             ImGui::EndCombo();
         }
         ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7, 8 or 10 MHz) is set for you.");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7 or 8 MHz) is set for you.");
     }
 
     ImGui::SameLine(0, 14);
@@ -2386,13 +2385,12 @@ static void antennaTab(App& a) {
 }
 
 
-// Automatic bandwidth: follow what the engine detected; a change of capture rate (10 <-> 20 Msps) needs a restart
+// Automatic bandwidth: follow what the engine detected; a change between 8 and 10 Msps (7/8 MHz vs narrower) needs a restart
 static void followBandwidth(App& a) {
     a.engine.setBandwidthAuto(a.bwAuto);
     if (!a.bwAuto || !a.engine.running()) return;
     const bool hw = a.devices[a.devIdx].kind == DeviceInfo::HackRF;
-    double want = a.engine.activeBandwidth();
-    if (hw && a.engine.wantsWideCapture() && a.tune.sampleRate < 15e6) want = 10;
+    const double want = a.engine.activeBandwidth();
     if (want == a.tune.bandwidthMhz) return;
     int idx = -1;
     for (int k = 0; k < (int)(sizeof kBw / sizeof *kBw); k++) if (kBw[k].mhz == want) idx = k;
@@ -2402,7 +2400,7 @@ static void followBandwidth(App& a) {
     applyBandwidth(a);
     savePrefs(a);
     if (hw && a.tune.sampleRate != oldRate) {
-        a.engine.log(want >= 10 ? "restarting at 20 Msps for a 10 MHz channel" : "restarting at 10 Msps");
+        a.engine.log(a.tune.sampleRate > oldRate ? "restarting at 10 Msps" : "restarting at 8 Msps");
         a.engine.stop();
         a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
         a.engine.start(a.devices[a.devIdx], a.tune, a.file);

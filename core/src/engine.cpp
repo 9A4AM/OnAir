@@ -48,7 +48,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rate_ = src_->sampleRate();
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
     bwMhz_ = tune.bandwidthMhz; bwActive_ = bwMhz_;
-    bwDetected_ = 0; wideWanted_ = false; bwReset_ = true; bwReq_ = false;
+    bwDetected_ = 0; bwReset_ = true; bwReq_ = false;
     rx_.configure(rate_, tune.bandwidthMhz);
     rxT_.configure(rate_, tune.bandwidthMhz);
     rxT_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });
@@ -173,7 +173,7 @@ void Engine::changeBandwidth(double mhz) {
 // While nothing is locked: average the spectrum, measure the width of the flat top and switch to that channel bandwidth
 void Engine::bandwidthStep(const SpectrumFrame& f, const RxTelemetry& t, bool tLocked) {
     const double now = nSamp_ / std::max(1.0, rate_.load());
-    if (bwReset_.exchange(false)) { bwDet_.reset(); bwMark_ = now; bwVote_ = 0; wideWanted_ = false; }
+    if (bwReset_.exchange(false)) { bwDet_.reset(); bwMark_ = now; bwVote_ = 0; }
     if (bwReq_.exchange(false)) { changeBandwidth(bwReqVal_); bwDet_.reset(); bwMark_ = now; }
     if (!bwAuto_) return;
     const bool locked = activeStd_ == 0 ? t.state == 2 : tLocked;
@@ -181,21 +181,13 @@ void Engine::bandwidthStep(const SpectrumFrame& f, const RxTelemetry& t, bool tL
     bwDet_.add(f.dbfs, rate_ / 1e6);
     if (bwDet_.frames() < 12) return;
     const BandwidthEstimate e = bwDet_.estimate();
-    const bool hw = src_ && src_->realtimeHardware();
-    const bool narrowCapture = rate_ < 15e6;
-    if (e.valid && !(e.atLimit && narrowCapture && hw)) {
+    if (e.valid) {
         bwVote_ = e.bwMhz == bwVote_ ? bwVote_ : e.bwMhz;
         if (e.bwMhz == bwVote_ && bwDet_.frames() >= 20) {
             bwDetected_ = e.bwMhz;
-            wideWanted_ = false;
             if (e.bwMhz != bwMhz_) { char b[160]; snprintf(b, sizeof b, "signal is %.2f MHz wide: %.4g MHz channel", e.occupiedMhz, e.bwMhz); log(b); changeBandwidth(e.bwMhz); }
             bwDet_.reset(); bwMark_ = now;
         }
-    } else if ((e.noFloor || (e.valid && e.atLimit)) && narrowCapture && hw && now - bwMark_ > 3.0) {
-        // the whole capture is filled: either an empty channel or a signal wider than 10 Msps can show
-        if (!wideWanted_) log("spectrum fills the capture: checking for a wider (10 MHz) channel");
-        wideWanted_ = true;
-        bwDetected_ = 10;
     }
     if (now - bwMark_ > 6.0) { bwDet_.reset(); bwMark_ = now; }   // keep the average fresh
 }
@@ -210,7 +202,6 @@ void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
         return;
     }
     if (stdMode_.load() != 0) return;
-    if (bwMhz_ >= 10) return;   // DVB-T has no 10 MHz channel: stay on DVB-T2
     const bool locked = activeStd_ == 0 ? t.state == 2 : tLocked;
     if (locked) { lastLockSec_ = now; autoMark_ = now; return; }
     const double slice = activeStd_ == 0 ? 1.6 : 1.3;
