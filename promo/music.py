@@ -12,7 +12,7 @@ from scipy import signal
 SR = 44100
 OUT = os.environ.get('OUT', 'music_work'); os.makedirs(OUT, exist_ok=True)
 SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
-BAR = 2.0; NBARS = 49; DUR = NBARS * BAR           # 98 s
+BAR = 2.0; NBARS = 47; DUR = NBARS * BAR           # 94 s
 rnd = random.Random(11)
 HITS = [(4.0, 1), (24.0, 2), (46.0, 3), (80.0, 4)]   # time, size
 BUILDS = [(0.0, 4.0), (20.0, 24.0), (42.0, 46.0), (72.0, 80.0)]

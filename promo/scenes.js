@@ -300,18 +300,17 @@ T.finale=(c,bt)=>{
 // ---------------------------------------------------------------- 11. outro
 T.outro=(c,bt)=>{
   bgd(c,1);
-  fadeUp(c,bt,.2,()=>{ c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=50; c.shadowOffsetY=22; c.drawImage(logo,W/2-120,120,240,240); c.restore(); },{dur:1.6,dy:12});
-  line(c,'OnAir',W/2,540,bt,1.2,{size:110,w:500,ls:-4,al:'center',dur:1.6});
-  line(c,'Digital TV and radio, decoded in software.',W/2,610,bt,2.4,{size:36,w:300,col:C.dim,al:'center',dur:1.6});
-  { const ps=['DVB-T2','DVB-T','ATSC','DAB','DAB+','More to come'], ws=[150,130,120,110,120,230]; let cx0=W/2-(ws.reduce((a,b)=>a+b,0)+100)/2; ps.forEach((s,i)=>{ chip(c,s,cx0+ws[i]/2,700,ease(bt,3.5+i*.9,1.0),{size:22,pad:38,col:i===5?C.dim:C.ink}); cx0+=ws[i]+20; }); }
-  fadeUp(c,bt,9.0,()=>{ ['macOS','Linux'].forEach((pl,i)=>{ const px=W/2-212+i*216; panel(c,px,770,200,60,{r:30,active:true,blur:10,dy:4}); txt(c,pl,px+100,809,{size:27,w:500,al:'center'}); }); txt(c,'Runs natively on macOS and Linux*',W/2,882,{size:25,w:400,al:'center',col:C.ink}); },{dy:8,dur:1.4});
-  line(c,'Open-source digital TV and radio receiver for your SDR.',W/2,950,bt,10.0,{size:26,w:300,col:C.dim,al:'center',dur:1.4});
-  line(c,'github.com/adswill/OnAir',W/2,1000,bt,10.8,{size:28,w:500,col:PAL.accent,al:'center',dur:1.4});
-  line(c,'* Windows coming soon.',W/2,1046,bt,11.4,{size:20,w:300,col:C.dim,al:'center',dur:1.4});
+  fadeUp(c,bt,.2,()=>{ c.drawImage(logo,W/2-120,110,240,240); },{dur:1.2,dy:12});
+  line(c,'OnAir',W/2,530,bt,.8,{size:110,w:500,ls:-4,al:'center',dur:1.2});
+  line(c,'Digital TV and radio, decoded in software.',W/2,600,bt,1.4,{size:36,w:300,col:C.dim,al:'center',dur:1.2});
+  { const ps=['DVB-T2','DVB-T','ATSC','DAB','DAB+','More to come'], ws=[150,130,120,110,120,230]; let cx0=W/2-(ws.reduce((a,b)=>a+b,0)+100)/2; ps.forEach((s,i)=>{ chip(c,s,cx0+ws[i]/2,690,ease(bt,2.0+i*.5,.9),{size:22,pad:38,col:i===5?C.dim:C.ink}); cx0+=ws[i]+20; }); }
+  fadeUp(c,bt,5.0,()=>{ [['Linux',0],['macOS',1],['Windows',2]].forEach(([pl,i])=>{ const px=W/2-320+i*224, soon=i===2; panel(c,px,760,208,60,{r:30,active:!soon,blur:10,dy:4}); txt(c,pl,px+104,799,{size:27,w:500,al:'center',col:soon?C.dim:C.ink}); }); },{dy:8,dur:1.2});
+  line(c,'Native on Linux and macOS at launch. Windows to follow.',W/2,886,bt,6.0,{size:28,w:400,col:C.ink,al:'center',dur:1.2});
+  line(c,'Coming soon.',W/2,980,bt,7.0,{size:52,w:400,ls:-1,col:PAL.accent,al:'center',dur:1.2});
 };
 
 // ---------------------------------------------------------------- timeline (bar lines at 120 BPM: one bar = 2 s) and cue grid for music.py
-const B=[['title',0,10,null,0],['standards',10,18,'dissolve',.7],['radios',18,24,'dissolve',.7],['tv',24,32,'cut',0],['radio',32,40,'dissolve',.7],['auto',40,46,'dissolve',.7],['see',46,54,'cut',0],['fix',54,64,'dissolve',.7],['exact',64,70,'dissolve',.7],['out',70,76,'dissolve',.7],['finale',76,84,'dissolve',.7],['outro',84,98,'dissolve',.9]];
+const B=[['title',0,10,null,0],['standards',10,18,'dissolve',.7],['radios',18,24,'dissolve',.7],['tv',24,32,'cut',0],['radio',32,40,'dissolve',.7],['auto',40,46,'dissolve',.7],['see',46,54,'cut',0],['fix',54,64,'dissolve',.7],['exact',64,70,'dissolve',.7],['out',70,76,'dissolve',.7],['finale',76,84,'dissolve',.7],['outro',84,94,'dissolve',.9]];
 // on-screen cues (seconds), all on the beat; music.py reads this list. Hits: 4 (title), 24 (live TV), 46 (signal), 80 (finale).
 const CUES=[7.0,7.5,8.0,8.5,9.0,
   11.0,12.0,13.0,14.0,15.0,15.5,16.0,
@@ -324,10 +323,10 @@ const CUES=[7.0,7.5,8.0,8.5,9.0,
   65.0,66.0,67.0,
   71.5,72.0,72.5,
   77.0,77.5,78.0,78.5,79.0,79.5,
-  87.5,88.5,89.5,90.5,91.5,93.0];
+  86.0,86.5,87.0,87.5,88.0,88.5,89.0,90.0,91.0];
 const TAG={standards:'STANDARDS',radios:'ANY RADIO',tv:'LIVE TV',radio:'DIGITAL RADIO',auto:'AUTOMATIC',see:'SIGNAL',fix:'RECEPTION',exact:'EXACT',out:'OUTPUT'};
 const SCENES=B.map((s,i)=>{ const next=B[i+1]; const t0=s[1]-(s[4]||0)/2; const t1=s[2]+(next?next[4]/2:0); const o=[s[0],t1-t0,s[3],s[4]||0]; o.t0=t0; o.t1=t1; o.start=s[1]; o.idx=i; return o; });
-const TOTAL=98; window.TOTAL=TOTAL; window.NF=Math.round(TOTAL*FPS);
+const TOTAL=94; window.TOTAL=TOTAL; window.NF=Math.round(TOTAL*FPS);
 window.SCENES=SCENES.map(s=>({name:s[0],t0:s.t0,t1:s.t1,tr:s[2],trd:s[3]}));
 const bufA=mk(), bufB=mk(), ca=bufA.getContext('2d'), cb=bufB.getContext('2d');
 function sceneAt(c,s,t){ c.clearRect(0,0,W,H); const bt=t-s.start; CURBT=bt; CURT=t; c.save();
