@@ -1,5 +1,6 @@
 frames/
 clips/
+music_work/
 audio*.wav
+music.wav
 render*.log
-shot/app_headless.cpp
