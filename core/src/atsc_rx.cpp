@@ -326,7 +326,7 @@ struct Core {
                 tau += rate;
                 if (segPos == kSegSyms) { onSegment(); segPos = 0; segSyms.clear(); if (!seg) return; }
             }
-            trimD((uint64_t)std::max(0.0, std::floor(tau) - 16));
+            trimD((uint64_t)std::max(0.0, std::floor(tau) - 1900));   // keep the previous segment's sync symbols for the timing measurement
             if (tau - kInterpJ - 1 < (double)dBase) { seg = false; accIdx = dEnd(); }   // fell behind the buffer: reacquire
         }
     }
@@ -345,7 +345,7 @@ struct Core {
         static const float pat[4] = {1, -1, -1, 1};
         double e = 0, q = 0;
         for (int j = 0; j < 4; j++) {
-            if (tauSync[j] - 1.0 < (double)dBase) continue;
+            if (tauSync[j] - 0.5 - kInterpJ - 1 < (double)dBase) continue;   // not in the buffer any more
             e += pat[j] * (interpAt(tauSync[j] + 0.5) - interpAt(tauSync[j] - 0.5));
             q += pat[j] * segSyms[j];
         }
