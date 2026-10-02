@@ -101,7 +101,7 @@ CUES = [2.5, 2.75, 3.0, 3.25,                                # lock lamps (hook)
         13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5,          # radio cards
         22.5, 23.0, 23.5, 25.0, 25.5, 26.0, 26.5,                # standards / scanner
         29.5, 30.0, 30.5, 31.0,                                  # live chips
-        37.5, 38.5, 39.0, 40.0, 40.5, 41.0,                      # T2-Lite: narrow block, RTL-SDR window, chips
+        37.5, 38.5, 39.5, 40.0, 40.5, 41.0,                      # standards columns, then chips
         45.0, 46.0, 47.0,                                        # "built to be exact" cards
         51.5, 52.5, 53.5,                                        # data panels
         59.5, 60.0, 60.5, 61.0, 61.5,                            # multipath echoes
