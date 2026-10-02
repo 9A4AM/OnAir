@@ -52,6 +52,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         src_.reset();
         return false;
     }
+    if (!err.empty()) log("note: " + err);
     rate_ = src_->sampleRate();
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
     bwMhz_ = tune.bandwidthMhz; bwActive_ = bwMhz_;
@@ -82,6 +83,10 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     char b[160];
     snprintf(b, sizeof b, "source started: %s  fs=%.4f Msps", dev.name.c_str(), rate_.load() / 1e6);
     log(b);
+    if (dev.kind == DeviceInfo::Soapy) {
+        snprintf(b, sizeof b, "tuned %.3f MHz  gain %.0f dB", tune.centerHz / 1e6, tune.gainDb);
+        log(b);
+    }
     if (dev.kind == DeviceInfo::HackRF) {
         snprintf(b, sizeof b, "tuned %.3f MHz  LNA %d dB  VGA %d dB  amp %s", tune.centerHz / 1e6, tune.lnaDb, tune.vgaDb, tune.ampOn ? "on" : "off");
         log(b);

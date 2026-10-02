@@ -367,9 +367,27 @@ std::vector<DeviceInfo> listHackrfDevices(std::string& err) {
     return out;
 }
 
+#ifdef DECT2_HAVE_SOAPY
+std::unique_ptr<IqSource> makeSoapySource(const DeviceInfo& d);
+#else
+bool soapySupported() { return false; }
+std::vector<DeviceInfo> listSoapyDevices(std::string&) { return {}; }
+#endif
+
+std::vector<DeviceInfo> listRadios(std::string& err) {
+    std::vector<DeviceInfo> out = listHackrfDevices(err);
+    std::string e2;
+    for (auto& d : listSoapyDevices(e2)) out.push_back(d);
+    if (err.empty()) err = e2;
+    return out;
+}
+
 std::unique_ptr<IqSource> makeSource(const DeviceInfo& d) {
     switch (d.kind) {
     case DeviceInfo::HackRF: return std::make_unique<HackrfSource>(d.serial);
+#ifdef DECT2_HAVE_SOAPY
+    case DeviceInfo::Soapy: return makeSoapySource(d);
+#endif
     case DeviceInfo::Synthetic: return std::make_unique<SyntheticSource>();
     default: return nullptr;
     }

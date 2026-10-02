@@ -213,16 +213,24 @@ static void refreshDevices(App& a) {
     std::string err;
     for (auto& d : listHackrfDevices(err)) a.devices.push_back(d);
     a.hackrfErr = err;
-    a.engine.log("device scan: " + std::to_string(a.devices.size() - 2) + " HackRF found");
+    const size_t nHack = a.devices.size() - 2;
+    std::string serr;
+    for (auto& d : listSoapyDevices(serr)) a.devices.push_back(d);
+    a.engine.log("device scan: " + std::to_string(nHack) + " HackRF, " + std::to_string(a.devices.size() - 2 - nHack) + " other radio(s)" + (soapySupported() ? "" : " (built without SoapySDR)") + (serr.empty() ? "" : "  " + serr));
 }
 
 static void applyBandwidth(App& a) {
     // HackRF Pro: the tuned centre is only exact at <= 10 Msps and at 20 Msps, so use 10 Msps (8 for narrow channels)
     a.tune.sampleRate = kBw[a.bwIdx].mhz >= 7 ? 10e6 : 8e6;
+    {   // a radio that cannot reach that rate runs as fast as it can (the source picks the nearest rate it offers)
+        const DeviceInfo& dv = a.devices[a.devIdx];
+        if (dv.kind == DeviceInfo::Soapy && dv.maxRateHz > 0) a.tune.sampleRate = std::min(a.tune.sampleRate, dv.maxRateHz);
+        if (dv.kind == DeviceInfo::Soapy && a.tune.gainDb > dv.gainMaxDb && dv.gainMaxDb > 0) a.tune.gainDb = dv.gainMaxDb;
+    }
     a.tune.basebandFilterHz = 0;
     a.tune.bandwidthMhz = kBw[a.bwIdx].mhz;
     a.tune.synth.atsc = a.atscMode;
-    if (a.atscMode) { a.tune.bandwidthMhz = 6; a.tune.sampleRate = 8e6; }   // an ATSC channel is always 6 MHz wide
+    if (a.atscMode) { a.tune.bandwidthMhz = 6; a.tune.sampleRate = 8e6; if (a.devices[a.devIdx].kind == DeviceInfo::Soapy && a.devices[a.devIdx].maxRateHz > 0) a.tune.sampleRate = std::min(a.tune.sampleRate, a.devices[a.devIdx].maxRateHz); }   // an ATSC channel is always 6 MHz wide
 }
 
 static std::string openFileDialog() { return plat::openFileDialog(); }
@@ -233,6 +241,7 @@ static void loadPrefs(App& a) {
     if (d.has("freqMhz")) a.freqMhz = d.getD("freqMhz", a.freqMhz);
     if (d.has("lna")) a.tune.lnaDb = (int)d.getI("lna", a.tune.lnaDb);
     if (d.has("vga")) a.tune.vgaDb = (int)d.getI("vga", a.tune.vgaDb);
+    if (d.has("gain")) a.tune.gainDb = d.getD("gain", a.tune.gainDb);
     a.tune.ampOn = d.getB("amp", false);
     if (d.has("compute")) a.computeMode = (int)d.getI("compute", a.computeMode);
     if (d.has("standard")) a.stdMode = (int)d.getI("standard", a.stdMode);
@@ -252,6 +261,7 @@ static void savePrefs(const App& a) {
     d.setD("freqMhz", a.freqMhz);
     d.setI("lna", a.tune.lnaDb);
     d.setI("vga", a.tune.vgaDb);
+    d.setD("gain", a.tune.gainDb);
     d.setB("amp", a.tune.ampOn);
     d.setChannels(a.channels);
     d.setI("compute", a.computeMode);
@@ -352,7 +362,9 @@ static void toolbar(App& a) {
     if (ImGui::SmallButton("Rescan")) refreshDevices(a), a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
     ImGui::EndDisabled();
 
-    bool isHw = a.devices[a.devIdx].kind == DeviceInfo::HackRF;
+    bool isHw = a.devices[a.devIdx].isRadio();
+    const DeviceInfo& curDev = a.devices[a.devIdx];
+    const bool generic = curDev.kind == DeviceInfo::Soapy;
     bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
 
     ImGui::SameLine(0, 14);
@@ -380,10 +392,24 @@ static void toolbar(App& a) {
         }
         ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7 or 8 MHz) is set for you.");
+        if (generic && curDev.maxRateHz > 0 && curDev.maxRateHz < 7.9e6 * kBw[a.bwIdx].mhz / 8.0 - 1) {
+            ImGui::SameLine(0, 6);
+            ImGui::TextColored(ImVec4(0.9f, 0.7f, 0.28f, 1), "(!)");
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("This radio tops out at %.2f Msps; a %g MHz channel needs about %.1f Msps.\nChoose a narrower channel (for example 1.7 MHz DVB-T2-Lite) or a faster radio.", curDev.maxRateHz / 1e6, kBw[a.bwIdx].mhz, 7.9 * kBw[a.bwIdx].mhz / 8.0);
+        }
     }
 
     ImGui::SameLine(0, 14);
     ImGui::BeginDisabled(!isHw);
+    if (generic) {
+        ImGui::TextDisabled("Gain");
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(150);
+        float gdb = (float)a.tune.gainDb;
+        ImGui::SliderFloat("##gain", &gdb, (float)curDev.gainMinDb, (float)std::max(curDev.gainMaxDb, curDev.gainMinDb + 1.0), "%.0f dB");
+        a.tune.gainDb = std::round(gdb);
+        if (ImGui::IsItemDeactivatedAfterEdit()) retune = true, a.agcOn = false;
+    } else {
     ImGui::TextDisabled("LNA");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(78);
@@ -401,6 +427,7 @@ static void toolbar(App& a) {
     if (ImGui::IsItemDeactivatedAfterEdit()) retune = true, a.agcOn = false;
     ImGui::SameLine();
     if (ImGui::Checkbox("Amp", &a.tune.ampOn)) retune = true, a.agcOn = false;
+    }
     ImGui::SameLine();
     if (ImGui::Checkbox("AGC", &a.agcOn)) { a.agc.reset(); }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.");
@@ -408,12 +435,12 @@ static void toolbar(App& a) {
     if (a.sweep.active()) {
         if (ImGui::Button("Stop tune")) { a.sweep = GainSweep(); }
     } else if (ImGui::Button("Auto-tune") && running) {
-        a.sweep.start(ImGui::GetTime());
+        a.sweep.start(ImGui::GetTime(), generic ? (int)curDev.gainMaxDb : 0);
         a.agcOn = false;
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.");
     ImGui::EndDisabled();
-    if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Gain controls apply to HackRF only");
+    if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Gain controls apply to radios only (not to a recording or the synthetic signal)");
 
     ImGui::SameLine(0, 14);
     if (!running) {
@@ -1769,8 +1796,8 @@ static void scanTab(App& a) {
     ScanProgress pr = a.scanner.progress();
     auto res = a.scanner.results();
     int hw = -1;
-    for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].kind == DeviceInfo::HackRF) hw = i;
-    if (hw < 0) { ImGui::TextDisabled("Scanning needs a HackRF."); return; }
+    for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].isRadio()) hw = i;
+    if (hw < 0) { ImGui::TextDisabled("Scanning needs a radio (HackRF, Airspy, SDRplay, ...)."); return; }
     ImGui::BeginDisabled(pr.running);
     const char* presetsDvb[] = {"UHF 474-858 MHz (8 MHz)", "VHF III 174-230 MHz (7 MHz)", "Custom"};
     const char* presetsAtsc[] = {"US UHF ch 14-36 (470-608 MHz)", "US VHF high ch 7-13 (174-216 MHz)", "Custom"};
@@ -1947,8 +1974,8 @@ static void harvestScan(App& a) {
 // Select a remembered channel: stop what is playing and tune the HackRF to it.
 static void tuneToChannel(App& a, const SavedChannel& c) {
     int hw = -1;
-    for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].kind == DeviceInfo::HackRF) hw = i;
-    if (hw < 0) { a.engine.log("channel selector needs a HackRF"); return; }
+    for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].isRadio()) hw = i;
+    if (hw < 0) { a.engine.log("channel selector needs a radio"); return; }
     if (a.scanner.progress().running) a.scanner.stop();
     const double oldBw = a.tune.bandwidthMhz;
     a.freqMhz = c.freqMhz;
@@ -2371,7 +2398,11 @@ static void routeTab(App& a, const std::string& name) {
 
 static void gainControl(App& a) {
     if (!a.engine.running() || a.devices[a.devIdx].kind == DeviceInfo::File) { a.sweep = GainSweep(); return; }
-    GainSetting g{a.tune.lnaDb, a.tune.vgaDb, a.tune.ampOn};
+    const DeviceInfo& cd = a.devices[a.devIdx];
+    const bool generic = cd.kind == DeviceInfo::Soapy;
+    const int gmax = generic ? std::max(1, (int)cd.gainMaxDb) : 0;
+    a.agc.setGenericMax(gmax);
+    GainSetting g = generic ? genericGain((int)std::lround(a.tune.gainDb), gmax) : GainSetting{a.tune.lnaDb, a.tune.vgaDb, a.tune.ampOn};
     bool changed = false;
     const double now = ImGui::GetTime();
     if (a.sweep.active()) {
@@ -2384,11 +2415,12 @@ static void gainControl(App& a) {
         changed = a.agc.update(now, a.spec.stats, g);
     }
     if (changed) {
-        a.tune.lnaDb = g.lna; a.tune.vgaDb = g.vga; a.tune.ampOn = g.amp;
+        if (generic) a.tune.gainDb = g.vga; else { a.tune.lnaDb = g.lna; a.tune.vgaDb = g.vga; a.tune.ampOn = g.amp; }
         a.tune.centerHz = a.freqMhz * 1e6;
         a.engine.retune(a.tune);
         if (!a.sweep.active() || true) savePrefs(a);
-        if (a.agcOn && !a.sweep.active()) a.engine.log("AGC: LNA " + std::to_string(g.lna) + " dB, VGA " + std::to_string(g.vga) + " dB, amp " + (g.amp ? "on" : "off"));
+        if (a.agcOn && !a.sweep.active() && generic) a.engine.log("AGC: gain " + std::to_string(g.vga) + " dB");
+        else if (a.agcOn && !a.sweep.active()) a.engine.log("AGC: LNA " + std::to_string(g.lna) + " dB, VGA " + std::to_string(g.vga) + " dB, amp " + (g.amp ? "on" : "off"));
     }
 }
 
@@ -2464,7 +2496,7 @@ static void antennaTab(App& a) {
     DirectionFinder& d = a.dir;
     const DirectionFinder::State st = d.state();
     const bool running = a.engine.running();
-    const bool inDevice = running && a.devices[a.devIdx].kind == DeviceInfo::HackRF;
+    const bool inDevice = running && a.devices[a.devIdx].isRadio();
     const float w = ImGui::GetContentRegionAvail().x, h = ImGui::GetContentRegionAvail().y;
     const float leftW = std::max(300.f, w * 0.52f);
 
@@ -2566,7 +2598,7 @@ static void antennaTab(App& a) {
 static void followBandwidth(App& a) {
     a.engine.setBandwidthAuto(a.bwAuto && !a.atscMode);
     if (!a.bwAuto || a.atscMode || !a.engine.running()) return;
-    const bool hw = a.devices[a.devIdx].kind == DeviceInfo::HackRF;
+    const bool hw = a.devices[a.devIdx].isRadio();
     const double want = a.engine.activeBandwidth();
     if (want == a.tune.bandwidthMhz) return;
     int idx = -1;
@@ -2744,8 +2776,8 @@ int main(int argc, char** argv) {
     app.engine.log("OnAir started");
     refreshDevices(app);
     for (int i = 0; i < (int)app.devices.size(); i++)
-        if (app.devices[i].kind == DeviceInfo::HackRF) { app.devIdx = i; break; }
-    if (app.devices.size() == 2) app.engine.log("no HackRF connected - use the synthetic signal or an IQ file");
+        if (app.devices[i].isRadio()) { app.devIdx = i; break; }
+    if (app.devices.size() == 2) app.engine.log("no radio connected - use the synthetic signal or an IQ file");
 
     bool autostart = false, hackrfStart = false, fileStart = false;
     const char* shotPath = nullptr;
