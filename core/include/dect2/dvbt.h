@@ -81,6 +81,7 @@ public:
 private:
     int rate_;
     unsigned reg_ = 0;
+    size_t step_ = 0;   // position inside the puncturing pattern, kept across calls so the stream is continuous
 };
 // bit interleaver (126-word blocks) and symbol interleaver permutation, non-hierarchical
 void bitInterleave(const std::vector<uint8_t>& codedBits, int mod, std::vector<uint8_t>& words); // words hold v bits (MSB first)

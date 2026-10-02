@@ -28,6 +28,14 @@ struct P1Info {
 
 struct RxTelemetry {
     uint64_t seq = 0;
+    int standard = 0;            // 0 DVB-T2, 1 DVB-T
+    struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics
+        bool tpsOk = false, fecSync = false;
+        int mode = 0, guard = 0, mod = 0, hier = 0, crHp = 0, crLp = 0, cellId = 0, frameIdx = 0, punctPhase = 0;
+        uint64_t packets = 0, rsClean = 0, rsCorrected = 0, rsFailed = 0;
+        double viterbiMargin = 0, secSinceTps = 0;
+        int symbolIdx = 0;
+    } dvbt;
     bool rateOk = true;
     bool decimating = false;
     double inputRate = 0, nativeRate = 0;

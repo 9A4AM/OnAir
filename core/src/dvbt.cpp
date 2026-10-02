@@ -237,7 +237,8 @@ void InnerEncoder::encode(const std::vector<uint8_t>& bits, std::vector<uint8_t>
         reg_ |= (unsigned)(bits[i] & 1) << 7;
         reg_ >>= 1;
         const unsigned x = __builtin_parity(reg_ & 0x79), y = __builtin_parity(reg_ & 0x5B);
-        const int pat = kPat[rate_][i % k];
+        const int pat = kPat[rate_][step_ % k];
+        step_++;
         if (pat & 1) coded.push_back((uint8_t)x);
         if (pat & 2) coded.push_back((uint8_t)y);
     }
