@@ -1,4 +1,5 @@
 #include "dect2/dsp_compat.h"
+#include "dect2/simd.h"
 #include <atomic>
 #include <cmath>
 #include <cstdint>
@@ -69,7 +70,7 @@ const Plan& planFor(int log2n) {
     return *p;
 }
 
-void forward(float* __restrict re, float* __restrict im, int log2n) {
+DECT2_MULTIVERSION void forward(float* __restrict re, float* __restrict im, int log2n) {
     const Plan& pl = planFor(log2n);
     const int n = pl.n;
     for (int i = 0; i < n; i++) {
@@ -106,7 +107,7 @@ void fftSplit(float* re, float* im, int log2n, bool inverse) {
     else forward(re, im, log2n);
 }
 
-void convCorr(const float* a, const float* f, float* c, int strideC, int n, int p) {
+DECT2_MULTIVERSION void convCorr(const float* a, const float* f, float* c, int strideC, int n, int p) {
     for (int i = 0; i < n; i++) {
         float acc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         const float* x = a + i;
@@ -118,7 +119,7 @@ void convCorr(const float* a, const float* f, float* c, int strideC, int n, int 
     }
 }
 
-void desamp(const float* a, int decim, const float* f, float* c, int n, int p) {
+DECT2_MULTIVERSION void desamp(const float* a, int decim, const float* f, float* c, int n, int p) {
     for (int i = 0; i < n; i++) {
         float acc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         const float* x = a + (size_t)i * decim;
@@ -135,7 +136,7 @@ void hannWindowNorm(float* w, int n) {
     for (int i = 0; i < n; i++) w[i] = (float)(scale * 0.5 * (1.0 - std::cos(2.0 * M_PI * i / n)));
 }
 
-void syrkLowerT(const float* x, int rows, int n, float* a) {
+DECT2_MULTIVERSION void syrkLowerT(const float* x, int rows, int n, float* a) {
     std::memset(a, 0, sizeof(float) * (size_t)n * n);
     for (int r = 0; r < rows; r++) {
         const float* __restrict xr = x + (size_t)r * n;
@@ -147,7 +148,7 @@ void syrkLowerT(const float* x, int rows, int n, float* a) {
     }
 }
 
-void gemvT(const float* x, int rows, int n, const float* t, float* b) {
+DECT2_MULTIVERSION void gemvT(const float* x, int rows, int n, const float* t, float* b) {
     std::memset(b, 0, sizeof(float) * n);
     for (int r = 0; r < rows; r++) {
         const float* __restrict xr = x + (size_t)r * n;

@@ -1,4 +1,5 @@
 #include "dect2/ldpc.h"
+#include "dect2/simd.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -9,6 +10,38 @@
 #endif
 
 namespace dect2 {
+
+#if !(defined(__ARM_NEON) && !defined(DECT2_NO_SIMD))
+namespace {
+// Branch-free min-sum kernels over one connection (Z checks at a time); the compiler vectorises them (AVX2 clone on x86-64).
+DECT2_MULTIVERSION void minSumAccumulate(const float* __restrict Lj, float* __restrict min1, float* __restrict min2,
+                                         int* __restrict idx1, uint32_t* __restrict sg, int j, int Z) {
+    for (int m = 0; m < Z; m++) {
+        const float x = Lj[m], a = std::fabs(x);
+        uint32_t sb; std::memcpy(&sb, &x, 4);
+        sg[m] ^= sb & 0x80000000u;
+        const float m1 = min1[m], m2 = min2[m];
+        const bool lt = a < m1;
+        min2[m] = lt ? m1 : (a < m2 ? a : m2);
+        idx1[m] = lt ? j : idx1[m];
+        min1[m] = lt ? a : m1;
+    }
+}
+DECT2_MULTIVERSION void minSumApply(float* __restrict Lj, float* __restrict mj, const float* __restrict min1, const float* __restrict min2,
+                                    const int* __restrict idx1, const uint32_t* __restrict sg, int j, int Z, float alpha) {
+    for (int m = 0; m < Z; m++) {
+        const float mag = (idx1[m] == j ? min2[m] : min1[m]) * alpha;
+        uint32_t sb; std::memcpy(&sb, &Lj[m], 4);
+        uint32_t mb; std::memcpy(&mb, &mag, 4);
+        mb |= (sg[m] ^ (sb & 0x80000000u));
+        float nm; std::memcpy(&nm, &mb, 4);
+        const float old = mj[m];
+        mj[m] = nm;
+        Lj[m] = nm - old;
+    }
+}
+} // namespace
+
 
 LdpcCode::LdpcCode(int k, int n, const std::vector<std::vector<int>>& rows) : k_(k), n_(n), m_(n - k) {
     const int q = m_ / 360;
@@ -93,7 +126,7 @@ bool LdpcCode::decode(const std::vector<float>& llr, int maxIter, std::vector<ui
     return ok;
 }
 
-bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const {
+DECT2_MULTIVERSION bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const {
     constexpr int Z = 360;
     constexpr float kBig = 1e4f;
     const int q = q_, G = groups_;
@@ -153,12 +186,7 @@ bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vecto
                     vst1q_u32(&sg[m], veorq_u32(vld1q_u32(&sg[m]), vandq_u32(vreinterpretq_u32_f32(x), vdupq_n_u32(0x80000000u))));
                 }
 #else
-                for (int m = 0; m < Z; m++) {
-                    float a = std::fabs(Lj[m]);
-                    uint32_t sb; std::memcpy(&sb, &Lj[m], 4); sg[m] ^= sb & 0x80000000u;
-                    if (a < min1[m]) { min2[m] = min1[m]; min1[m] = a; idx1[m] = j; }
-                    else if (a < min2[m]) min2[m] = a;
-                }
+                minSumAccumulate(Lj, min1.data(), min2.data(), idx1.data(), sg.data(), j, Z);
 #endif
             }
             for (int j = 0; j < nc; j++) {
@@ -178,16 +206,7 @@ bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vecto
                     vst1q_f32(Lj + m, vsubq_f32(nm, old)); // posterior increment (a variable can appear twice in a layer)
                 }
 #else
-                for (int m = 0; m < Z; m++) {
-                    float mag = (idx1[m] == j ? min2[m] : min1[m]) * alpha;
-                    uint32_t sb; std::memcpy(&sb, &Lj[m], 4);
-                    uint32_t mb; std::memcpy(&mb, &mag, 4);
-                    mb |= (sg[m] ^ (sb & 0x80000000u));
-                    float nm; std::memcpy(&nm, &mb, 4);
-                    const float old = mj[m];
-                    mj[m] = nm;
-                    Lj[m] = nm - old;
-                }
+                minSumApply(Lj, mj, min1.data(), min2.data(), idx1.data(), sg.data(), j, Z, alpha);
 #endif
                 if (j < (int)cn.size()) {
                     float* dst = inf.data() + (size_t)cn[j].group * Z;
