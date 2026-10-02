@@ -32,7 +32,7 @@ def chord_at(t):
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
-    if 76 <= t < 80: return 7                       # the finale's groove is already running under the last build
+    if 76 <= t < 80: return 4.4                       # the finale's groove is already running under the last build
     for a, b in BUILDS:
         if a <= t < b: return None
     if t < 10: return 4
@@ -43,7 +43,7 @@ def energy(t):                                     # 0..10, the film's intensity
     if t < 54: return 7
     if t < 64: return 7.5
     if t < 70: return 5
-    if t < 72: return 3
+    if t < 72: return 4.5
     if t < 84: return 8.5 if t >= 80 else 8
     if t < 90: return 5
     return 3
@@ -89,7 +89,7 @@ for a, b in BUILDS:
     ch = chord_at(a + .1)
     for n in (ch['notes'][0] - 12 if ch['notes'][0] > 55 else ch['notes'][0], ch['notes'][2], ch['notes'][3], ch['notes'][4]): strings.add(a, b - a + .6, n, 58, 0)
     for n in ch['notes']: pad.add(a, b - a + .6, n, 44, 0)
-    strings.ramp(a, b, 22 if a == 0 else (30 if b - a <= 4 else 44), 118); pad.ramp(a, b, 20, 100, ctrl=11)
+    strings.ramp(a, b, 22 if a == 0 else (30 if b - a <= 4 else 70), 118); pad.ramp(a, b, 20, 100, ctrl=11)
 for b in range(NBARS):
     t0 = b * BAR; E = energy(t0)
     if E is None: continue
@@ -147,8 +147,16 @@ for (a, b), (h, size) in zip(BUILDS, HITS):
         for k in range(n_): piano.add(k0 + k * .25, .5, chord_at(k0 + .1)['notes'][[0, 2, 3, 4, 3, 2][k % 6]], 30 + int(40 * k / n_))
     # timpani / snare roll into the hit
     roll(timp, h, min(4.0, b - a), 33 if a > 0 else 33, 30, 100, start_gap=.5)
-    if a > 0:
-        roll(drums, h, min(3.0, b - a), 38, 25, 95, start_gap=.25, min_gap=.0625, drum=True)
+    # piano riser: a rising arpeggio through the build chord, eighths then sixteenths, crescendo, landing on the hit
+    d_ = min(6.0, b - a); xs = []; x = d_
+    while x > 1e-6:
+        xs.append(x); x -= (.5 if x > 4 else .25 if x > 2 else .125)
+    pcs = [g % 12 for g in CH[3]['notes']]; pool = [n for n in range(43, 97) if n % 12 in pcs]
+    for i, x in enumerate(xs):
+        f = i / max(1, len(xs) - 1); n = pool[int(f * (len(pool) - 1))]
+        piano.add(h - x, .9, n, int(32 + 70 * f ** 1.3), 0.001)
+        if f > .5: piano.add(h - x, .9, n - 12, int(26 + 50 * f), 0.001)
+    piano.cc.append((h - d_, 64, 127)); piano.cc.append((h - .02, 64, 0))
     # the hit itself: timpani, kick, crash, horn + strings chord
     timp.add(h, 2.5, 33, 85 + 8 * size); timp.add(h, 2.5, 40, 70 + 8 * size)
     drums.add(h, 1.5, 49, min(127, 60 + 14 * size), 0.002); drums.add(h, .2, 36, 88, 0.002); kicks.append(h)
@@ -229,8 +237,7 @@ def impact(t, g, f0=70):
     nz = lp(rng.standard_normal((n, 1)), 3500)[:, 0] * np.exp(-x * 3.2) * .5
     y = np.zeros_like(mix); i = int(t * SR); sig = np.stack([s_ + nz, s_ + nz], 1) * g; y[i:i + n] = sig[:len(y) - i]; return y
 fx = np.zeros_like(mix)
-for (a, b), (h, size), g in zip(BUILDS, HITS, (.22, .26, .28, .30)): fx += riser(h - .04, b - a, g)
-for (h, size), g in zip(HITS, (.12, .20, .24, .26)): fx += impact(h, g)
+for (h, size), g in zip(HITS, (.08, .14, .17, .19)): fx += impact(h, g)
 mix += fx + rv(fx, IR_HALL) * .35
 # gain riding: lift the final build, trim the climax, settle for the outro
 mix *= np.minimum(1, T / .8)[:, None]
@@ -240,12 +247,13 @@ mix = hp(mix, 28); mix = lp(mix, 14500)
 blk = 2205                                             # 50 ms
 nb = len(mix) // blk
 rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-5
-win = 30                                               # 1.5 s centred window
+win = 80                                               # 4 s centred window
 sm = np.sqrt(np.convolve(rms ** 2, np.ones(win) / win, 'same'))
 tt = (np.arange(nb) + .5) * blk / SR
-want = np.interp(tt, [0, 4, 8, 24, 66, 72, 76, 80, 84, 90, 98], [.075, .110, .095, .105, .105, .100, .108, .118, .10, .07, .055])
-g = np.clip(want / sm, .4, 4.5)
-g = np.convolve(g, np.ones(20) / 20, 'same'); gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
+want = np.interp(tt, [0, 4, 8, 24, 66, 72, 76, 79.9, 84, 90, 98], [.075, .110, .095, .105, .105, .085, .090, .120, .10, .07, .055])
+g = np.clip(want / sm, .5, 3.5)
+g = np.convolve(g, np.ones(60) / 60, 'same')           # 3 s smoothing: gain never moves audibly
+gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
 mix *= gain[:, None]
 mix = np.where(np.abs(mix) > .85, np.sign(mix) * (.85 + .15 * np.tanh((np.abs(mix) - .85) / .15)), mix)
 mix = mix[:int((DUR + 2.4) * SR)]; mix /= np.abs(mix).max() * 1.05
