@@ -268,7 +268,7 @@ void FieldDecoder::reset() {
 
 namespace {
 // Viterbi over one encoder's symbol sequence (squared distance), returns the decoded dibits
-float viterbiRun(const float* x, int n, uint8_t* dibits) {
+float viterbiRun(const float* x, int n, uint8_t* dibits, uint8_t* symbols = nullptr) {
     // incoming transitions of every state: source state, input dibit and the symbol sent
     struct Tab {
         uint8_t from[8][4], in[8][4], sym[8][4];
@@ -311,24 +311,28 @@ float viterbiRun(const float* x, int n, uint8_t* dibits) {
     for (int t = n; t-- > 0;) {
         const int k = dec[(size_t)t * 8 + state];
         dibits[t] = tab.in[state][k];
+        if (symbols) symbols[t] = tab.sym[state][k];
         state = tab.from[state][k];
     }
     return 0;
 }
 }
 
-int FieldDecoder::decode(const float* levels, uint8_t* out, FieldStats* st) {
+int FieldDecoder::decode(const float* levels, uint8_t* out, FieldStats* st, uint8_t* symbolsOut) {
     const TrellisMap& tm = trellisMap();
     std::vector<uint8_t> bytes((size_t)kDataSegs * kSegBytes, 0);
     const int per = 26 * 828;
     std::vector<float> x(per);
-    std::vector<uint8_t> dib(per);
+    std::vector<uint8_t> dib(per), psym(symbolsOut ? per : 0);
     double dist = 0; long cntSym = 0;
     for (int e = 0; e < kNumEnc; e++) {
         for (int blk = 0; blk < 26; blk++)
             for (int k = 0; k < 828; k++)
                 x[blk * 828 + k] = levels[(size_t)(1 + blk * 12) * kSegSyms + tm.symPos[e][k]];
-        viterbiRun(x.data(), per, dib.data());
+        viterbiRun(x.data(), per, dib.data(), symbolsOut ? psym.data() : nullptr);
+        if (symbolsOut)
+            for (int blk = 0; blk < 26; blk++)
+                for (int k = 0; k < 828; k++) symbolsOut[(size_t)(1 + blk * 12) * kSegSyms + tm.symPos[e][k]] = psym[blk * 828 + k];
         for (int blk = 0; blk < 26; blk++)
             for (int k = 0; k < 828; k++) {
                 uint8_t& b = bytes[(size_t)blk * 12 * kSegBytes + tm.byteIdx[e][k]];

@@ -298,12 +298,15 @@ struct Core {
                     lastSearch = accIdx;
                     int m = 0;
                     for (int i = 1; i < kSegSamples; i++) if (acc[i] > acc[m]) m = i;
-                    double rms = 0; int cnt = 0;
+                    // noise level of the correlation: the median magnitude away from the peak (a second peak caused by an echo must not count)
+                    std::vector<float> mags;
+                    mags.reserve(kSegSamples);
                     for (int i = 0; i < kSegSamples; i++) {
                         int dd = std::abs(i - m); dd = std::min(dd, kSegSamples - dd);
-                        if (dd > 8) { rms += acc[i] * acc[i]; cnt++; }
+                        if (dd > 8) mags.push_back(std::fabs(acc[i]));
                     }
-                    rms = std::sqrt(rms / std::max(1, cnt));
+                    std::nth_element(mags.begin(), mags.begin() + mags.size() / 2, mags.end());
+                    const double rms = 1.4826 * mags[mags.size() / 2];
                     const bool strong = acc[m] > 8.0 && acc[m] > 5.0 * rms;
                     if (strong && lastPeak >= 0 && std::min(std::abs(m - lastPeak), kSegSamples - std::abs(m - lastPeak)) <= 1) peakRun++;
                     else peakRun = strong ? 1 : 0;
@@ -386,8 +389,8 @@ struct Core {
         for (int i = 0; i < kSegSyms; i++) m += s[i];
         m /= kSegSyms;
         int err = 0;
-        for (int j = 0; j < 511 && err < 90; j++) err += ((s[4 + j] - m) >= 0) != (kPn511[j] != 0);
-        if (err >= 90) return false;
+        for (int j = 0; j < 511 && err < 175; j++) err += ((s[4 + j] - m) >= 0) != (kPn511[j] != 0);
+        if (err >= 175) return false;   // random data would give about 255 +- 11 errors, so this cannot be mistaken for a field sync even through an echo
         int e2 = 0;
         for (int j = 0; j < 63; j++) e2 += ((s[4 + 511 + 63 + j] - m) >= 0) != (kPn63[j] != 0);
         *par = e2 < 32 ? 1 : 2;
@@ -496,7 +499,7 @@ struct Core {
             jspace.notify_all();
             if (doReset) {
                 dec.reset();
-                w.assign(kL, 0.f); bias = 0; snrAvg = 0; dataSnrAvg = 0; segErr = 0;
+                eqLast = Taps(); snrAvg = 0; dataSnrAvg = 0; segErr = 0; cleanFields = 0; havePrev = false;
                 tsFlow = 0;
             }
             if (!j.s.empty()) runJob(j);
@@ -522,108 +525,294 @@ struct Core {
     }
 
     double snrAvg = 0, dataSnrAvg = 0, segErr = 0;   // worker-owned running averages
+
+    // ---- equaliser (worker-owned state)
+    // y[t] = sum_k ff[k] r[t + NF - k] + sum_j fb[j] a[t - 1 - j] + bias, with a[] the decided symbols. With B = 0 this is the plain
+    // feed-forward equaliser (long, 128 taps, trained on the field sync and the segment syncs: robust for mild channels). With
+    // B > 0 it is a decision feedback equaliser (shorter feed-forward part plus B feedback taps) that copes with strong echoes; it is
+    // trained on decoded symbols: those of the previous field once decoding has been clean for two fields, or the field's own
+    // decisions when a field came out badly.
+    static constexpr int kNFf = 24;   // feed-forward taps after the cursor
+    struct Taps {
+        int NP = 103, B = 0;
+        std::vector<float> ff, fb;
+        float bias = 0;
+        bool ok = false;
+        int L() const { return kNFf + NP + 1; }
+    };
+    Taps eqLast;               // the taps used for the telemetry
+    int cleanFields = 0;
+    std::vector<float> prevS, prevLv, prevY;
+    int64_t prevBase = 0, prevF0 = 0;
+    bool havePrev = false;
+    double eqSnrNow = 0;
+
+    static float dotf(const float* a, const float* b, int n) {
+#if defined(__ARM_NEON)
+        float32x4_t acc = vdupq_n_f32(0);
+        int i = 0;
+        for (; i + 4 <= n; i += 4) acc = vfmaq_f32(acc, vld1q_f32(a + i), vld1q_f32(b + i));
+        float r = vaddvq_f32(acc);
+        for (; i < n; i++) r += a[i] * b[i];
+        return r;
+#else
+        float r = 0;
+        for (int i = 0; i < n; i++) r += a[i] * b[i];
+        return r;
+#endif
+    }
+
+    // least squares for the rows in X (N x n, row-major) against tgt; ridge relative to the mean diagonal
+    static bool solveLs(const std::vector<float>& X, const std::vector<float>& tgt, int n, double ridge, std::vector<double>& sol) {
+        const int N = (int)tgt.size();
+        if (N < n) return false;
+        std::vector<double> A((size_t)n * n, 0.0);
+        sol.assign(n, 0.0);
+#ifdef __APPLE__
+        {
+            std::vector<float> Af((size_t)n * n, 0.f), bf(n, 0.f);
+            cblas_ssyrk(CblasRowMajor, CblasLower, CblasTrans, n, N, 1.f, X.data(), n, 0.f, Af.data(), n);
+            cblas_sgemv(CblasRowMajor, CblasTrans, N, n, 1.f, X.data(), n, tgt.data(), 1, 0.f, bf.data(), 1);
+            for (size_t i = 0; i < Af.size(); i++) A[i] = Af[i];
+            for (int i = 0; i < n; i++) sol[i] = bf[i];
+        }
+#else
+        for (int r = 0; r < N; r++) {
+            const float* x = &X[(size_t)r * n];
+            for (int i = 0; i < n; i++) { double* row = &A[(size_t)i * n]; const double xi = x[i]; for (int j = 0; j <= i; j++) row[j] += xi * x[j]; sol[i] += xi * tgt[r]; }
+        }
+#endif
+        double tr0 = 0;
+        for (int i = 0; i < n; i++) tr0 += A[(size_t)i * n + i];
+        for (int i = 0; i < n; i++) A[(size_t)i * n + i] += ridge * tr0 / n;
+        return solveSpd(A, sol, n);
+    }
+
+    static void unpackTaps(const std::vector<double>& sol, Taps& tp) {
+        const int L = tp.L();
+        tp.ff.assign(L, 0.f); tp.fb.assign(tp.B, 0.f);
+        for (int k = 0; k < L; k++) tp.ff[k] = (float)sol[k];
+        for (int j = 0; j < tp.B; j++) tp.fb[j] = (float)sol[L + j];
+        tp.bias = (float)sol[L + tp.B];
+        tp.ok = true;
+    }
+
+    // One field's raw samples and the symbols known or decided for it
+    struct View {
+        const std::vector<float>* s; int64_t base, f0;
+        float at(int64_t idx) const { const int64_t k = idx - base; return (k < 0 || k >= (int64_t)s->size()) ? 0.f : (*s)[(size_t)k]; }
+    };
+
+    // Plain feed-forward taps from the field sync and the segment syncs
+    bool trainFF(const View& v, const float* fsLv, Taps& tp) {
+        tp.NP = 103; tp.B = 0;
+        const int n = tp.L() + 1;
+        std::vector<float> X, tgt;
+        X.reserve((size_t)2000 * n);
+        auto row = [&](int64_t t, float target) {
+            const size_t o = X.size(); X.resize(o + n);
+            float* x = &X[o];
+            for (int k = 0; k < tp.L(); k++) x[k] = v.at(t + kNFf - k);
+            x[n - 1] = 1.f;
+            tgt.push_back(target);
+        };
+        for (int i = 0; i < 728; i++) row(v.f0 + i, fsLv[i]);
+        static const float sy[4] = {5, -5, -5, 5};
+        for (int sg = 1; sg < kFieldSegs; sg++) for (int j = 0; j < 4; j++) row(v.f0 + (int64_t)sg * kSegSyms + j, sy[j]);
+        std::vector<double> sol;
+        if (!solveLs(X, tgt, n, 2e-5, sol)) return false;
+        unpackTaps(sol, tp);
+        return true;
+    }
+
+    // Decision feedback taps: feed-forward 65 + feedback 128. `dataRows` lists positions p (inside the field, >= 832 + B) used with the
+    // symbol levels lvl[] (full field) and the soft values y[] to skip rows where decision and reception disagree.
+    bool trainDFE(const View& v, const View& dv, const float* fsLv, const std::vector<float>& lvl, const std::vector<float>& y, double ridge, Taps& tp) {
+        tp.NP = 40; tp.B = 128;
+        const int L = tp.L(), B = tp.B, n = L + B + 1;
+        std::vector<float> X, tgt;
+        X.reserve((size_t)6000 * n);
+        for (int i = B; i < 728; i++) {   // field sync: the past symbols are known too
+            const size_t o = X.size(); X.resize(o + n);
+            float* x = &X[o];
+            for (int k = 0; k < L; k++) x[k] = v.at(v.f0 + i + kNFf - k);
+            for (int j = 0; j < B; j++) x[L + j] = fsLv[i - 1 - j];
+            x[n - 1] = 1.f;
+            tgt.push_back(fsLv[i]);
+        }
+        const int first = kSegSyms + B, last = kFieldSyms - 1;
+        const int step = std::max(1, (last - first) / 5000);
+        for (int p = first; p <= last && !lvl.empty(); p += step) {
+            if (std::fabs(y[(size_t)p] - lvl[(size_t)p]) > 1.0f) continue;
+            const size_t o = X.size(); X.resize(o + n);
+            float* x = &X[o];
+            for (int k = 0; k < L; k++) x[k] = dv.at(dv.f0 + p + kNFf - k);   // the field the decisions belong to
+            for (int j = 0; j < B; j++) x[L + j] = lvl[(size_t)(p - 1 - j)];
+            x[n - 1] = 1.f;
+            tgt.push_back(lvl[(size_t)p]);
+        }
+        std::vector<double> sol;
+        if (!solveLs(X, tgt, n, ridge, sol)) return false;
+        unpackTaps(sol, tp);
+        return true;
+    }
+
+    // Equalises a whole field. `hist` (optional, B levels, oldest first) is the end of the previous field. Fills lv (soft values) and
+    // hv (decisions, with B entries of history in front). Returns the SNR measured on the known field sync symbols.
+    double equalize(const View& v, const float* fsLv, const Taps& tp, const float* hist, std::vector<float>& lv, std::vector<float>& hv) {
+        const int L = tp.L(), B = tp.B;
+        static const float syncLv[4] = {5, -5, -5, 5};
+        lv.assign((size_t)kFieldSyms, 0.f);
+        hv.assign((size_t)kFieldSyms + B, 0.f);
+        if (hist && B) for (int j = 0; j < B; j++) hv[(size_t)j] = hist[j];
+        std::vector<float> xr((size_t)kFieldSyms + L - 1), wr(L), ffo((size_t)kFieldSyms);
+        for (int k = 0; k < L; k++) wr[k] = tp.ff[L - 1 - k];
+        const int64_t first = v.f0 + kNFf - (L - 1);
+        for (size_t k = 0; k < xr.size(); k++) xr[k] = v.at(first + (int64_t)k);
+#ifdef __APPLE__
+        vDSP_conv(xr.data(), 1, wr.data(), 1, ffo.data(), 1, (vDSP_Length)kFieldSyms, (vDSP_Length)L);
+#else
+        for (int i = 0; i < kFieldSyms; i++) { float y = 0; for (int k = 0; k < L; k++) y += wr[k] * xr[(size_t)i + k]; ffo[(size_t)i] = y; }
+#endif
+        std::vector<float> rfb(B);
+        for (int m = 0; m < B; m++) rfb[m] = tp.fb[B - 1 - m];
+        double mse = 0; int nm = 0;
+        for (int i = 0; i < kFieldSyms; i++) {
+            float y = ffo[(size_t)i] + tp.bias;
+            if (B) y += dotf(rfb.data(), &hv[(size_t)i], B);
+            float dec;
+            if (i < 728) dec = fsLv[i];
+            else if (i % kSegSyms < 4) dec = syncLv[i % kSegSyms];
+            else dec = std::max(-7.f, std::min(7.f, 2.f * std::floor(y * 0.5f) + 1.f));
+            if (i >= std::max(B, 8) && i < 728) { const double e = y - fsLv[i]; mse += e * e; nm++; }
+            lv[(size_t)i] = y;
+            hv[(size_t)B + i] = dec;
+        }
+        mse /= std::max(1, nm);
+        return 10.0 * std::log10(25.0 / std::max(mse, 1e-6));
+    }
+
+    // the symbol levels of a decoded field: known field sync, known segment syncs, trellis path elsewhere
+    void levelsFromPath(const float* fsLv, const std::vector<uint8_t>& psym, const std::vector<float>& hvDec, int B, std::vector<float>& out) {
+        static const float syncLv[4] = {5, -5, -5, 5};
+        out.assign((size_t)kFieldSyms, 0.f);
+        for (int i = 0; i < kSegSyms; i++) out[(size_t)i] = i < 728 ? fsLv[i] : hvDec[(size_t)B + i];
+        for (int i = kSegSyms; i < kFieldSyms; i++) out[(size_t)i] = (i % kSegSyms < 4) ? syncLv[i % kSegSyms] : levelOf(psym[(size_t)i]);
+    }
+
     void runJob(const Job& job) {
         const double tD0 = now();
         struct Timer { double& acc; double t0; ~Timer() { acc += now() - t0; } } timer{tDec, tD0};
         const int64_t f0 = job.f0;
-        auto at = [&](int64_t idx) -> float {
-            const int64_t k = idx - job.base;
-            return (k < 0 || k >= (int64_t)job.s.size()) ? 0.f : job.s[(size_t)k];
-        };
+        const View view{&job.s, job.base, f0};
         uint8_t prev12[12] = {};
         uint8_t fsSym[kSegSyms];
-        const bool field2 = job.parity == 2;
-        fieldSyncSymbols(field2, prev12, fsSym);
-        struct Tr { int64_t t; float d; };
-        std::vector<Tr> tr;
-        tr.reserve(728 + 312 * 4);
-        for (int i = 0; i < 728; i++) tr.push_back({f0 + i, levelOf(fsSym[i])});
-        static const float sy[4] = {5, -5, -5, 5};
-        for (int s = 1; s < kFieldSegs; s++) for (int j = 0; j < 4; j++) tr.push_back({f0 + (int64_t)s * kSegSyms + j, sy[j]});
+        fieldSyncSymbols(job.parity == 2, prev12, fsSym);
+        float fsLv[kSegSyms];
+        for (int i = 0; i < kSegSyms; i++) fsLv[i] = levelOf(fsSym[i]);
         const double tM0 = now();
-        const int n = kL + 1;
-        std::vector<double> A((size_t)n * n, 0.0), b(n, 0.0);
-        std::vector<float> x(n);
-        for (auto& r : tr) {
-            for (int i = 0; i < kL; i++) x[i] = at(r.t + kNF - i);
-            x[kL] = 1.f;
-            for (int i = 0; i < n; i++) {
-                const double xi = x[i];
-                double* row = &A[(size_t)i * n];
-                for (int j = 0; j <= i; j++) row[j] += xi * x[j];
-                b[i] += xi * r.d;
-            }
-        }
-        double tr0 = 0;
-        for (int i = 0; i < n; i++) tr0 += A[(size_t)i * n + i];
-        const double lambda = 2e-5 * tr0 / n;
-        for (int i = 0; i < n; i++) A[(size_t)i * n + i] += lambda;
-        std::vector<double> sol = b;
-        const bool ok2 = solveSpd(A, sol, n);
-        if (ok2) { for (int i = 0; i < kL; i++) w[i] = (float)sol[i]; bias = (float)sol[kL]; }
+        const bool usePrev = havePrev && cleanFields >= 2;
+        Taps tp;
+        bool trained;
+        std::vector<float> lv, hv;
+        double snr = 0;
+        if (usePrev) {
+            const View pview{&prevS, prevBase, prevF0};
+            trained = trainDFE(view, pview, fsLv, prevLv, prevY, 1e-5, tp);
+            if (!trained) trained = trainFF(view, fsLv, tp);
+        } else trained = trainFF(view, fsLv, tp);
         tLs += now() - tM0;
         const double tM1 = now();
-        std::vector<float> lv((size_t)kFieldSyms, 0.f);
-        double mse = 0; int nm = 0;
-        for (auto& r : tr) {
-            float y = bias;
-            for (int i = 0; i < kL; i++) y += w[i] * at(r.t + kNF - i);
-            const double e = y - r.d; mse += e * e; nm++;
+        if (trained) snr = equalize(view, fsLv, tp, (usePrev && tp.B) ? &prevLv[(size_t)(kFieldSyms - tp.B)] : nullptr, lv, hv);
+        if (!trained || snr < 9.0) {   // the plain equaliser does not fit: try the decision feedback one on the sync symbols alone (strong echoes)
+            Taps tf;
+            const std::vector<float> none;
+            if (trainDFE(view, view, fsLv, none, none, 1e-3, tf)) {
+                std::vector<float> lv2, hv2;
+                const double s2 = equalize(view, fsLv, tf, nullptr, lv2, hv2);
+                if (!trained || s2 > snr) { tp = tf; lv = std::move(lv2); hv = std::move(hv2); snr = s2; trained = true; }
+            }
         }
-        mse /= std::max(1, nm);
-        {   // the whole data region as one block filter: y[i] = bias + sum_k wr[k] * x[i + k]
-            const int N = kFieldSyms - kSegSyms;
-            const int64_t first = f0 + kSegSyms + kNF - (kL - 1);
-            std::vector<float> xr((size_t)N + kL - 1), wr(kL);
-            for (int k = 0; k < kL; k++) wr[k] = w[kL - 1 - k];
-            for (size_t k = 0; k < xr.size(); k++) xr[k] = at(first + (int64_t)k);
-#ifdef __APPLE__
-            vDSP_conv(xr.data(), 1, wr.data(), 1, lv.data() + kSegSyms, 1, (vDSP_Length)N, (vDSP_Length)kL);
-            for (int i = 0; i < N; i++) lv[kSegSyms + i] += bias;
-#else
-            for (int i = 0; i < N; i++) { float y = bias; for (int k = 0; k < kL; k++) y += wr[k] * xr[(size_t)i + k]; lv[kSegSyms + i] = y; }
-#endif
-        }
-        const double snr = 10.0 * std::log10(25.0 / std::max(mse, 1e-6));
+        eqSnrNow = snr;
         snrAvg = snrAvg == 0 ? snr : snrAvg + 0.3 * (snr - snrAvg);
         std::vector<float> levelsOut;
-        {
+        auto measureData = [&]() {
+            levelsOut.clear();
             double dd = 0; int cnt = 0;
             for (int i = kSegSyms; i < kFieldSyms; i++) {
                 if (i % kSegSyms < 4) continue;
-                const float v = lv[i];
-                const float nearest = std::max(-7.f, std::min(7.f, 2.f * std::floor(v * 0.5f) + 1.f));
-                dd += (v - nearest) * (v - nearest); cnt++;
-                if ((i * 2654435761u >> 7) % 128 == 0) levelsOut.push_back(v);
+                const float vv = lv[(size_t)i];
+                const float nearest = std::max(-7.f, std::min(7.f, 2.f * std::floor(vv * 0.5f) + 1.f));
+                dd += (vv - nearest) * (vv - nearest); cnt++;
+                if ((i * 2654435761u >> 7) % 128 == 0) levelsOut.push_back(vv);
             }
             dd /= std::max(1, cnt);
             const double dsnr = 10.0 * std::log10(21.0 / std::max(dd, 1e-6));
             dataSnrAvg = dataSnrAvg == 0 ? dsnr : dataSnrAvg + 0.3 * (dsnr - dataSnrAvg);
-        }
-        auto publishDec = [&](bool trained, const FieldStats* st) {
+        };
+        if (trained) measureData();
+        auto publishDec = [&](bool ok, const FieldStats* st) {
             std::lock_guard<std::mutex> lk(dmu);
             decOut.fields++;
             if (st) { decOut.rsClean += st->rsClean; decOut.rsCorrected += st->rsCorrected; decOut.rsFailed += st->rsFailed; decOut.segments += st->segments; }
             decOut.snr = snrAvg; decOut.dataSnr = dataSnrAvg; decOut.segErr = segErr;
-            decOut.eqTrained = trained;
-            decOut.taps.assign(w.begin(), w.end());
+            decOut.eqTrained = ok;
+            decOut.taps = eqLast.ff;
             decOut.levels = levelsOut;
             decOut.seq++;
         };
-        if (!ok2 || snr < 9.0) {   // the equaliser did not find a usable channel: do not feed the decoder garbage
-            if (dbg) fprintf(stderr, "[atsc] field start %lld: equaliser SNR %.1f dB (solved %d), not decoded\n", (long long)(f0 / kSegSyms), snr, (int)ok2);
+        if (!trained || snr < 9.0) {   // no usable channel estimate: do not feed the decoder garbage
+            if (dbg) fprintf(stderr, "[atsc] field start %lld: equaliser SNR %.1f dB (solved %d), not decoded\n", (long long)(f0 / kSegSyms), snr, (int)trained);
             dec.reset();
             tsFlow = 0;
+            cleanFields = 0; havePrev = false;
             publishDec(false, nullptr);
             return;
         }
+        eqLast = tp;
         tEq += now() - tM1;
         const double tM2 = now();
+        FieldDecoder backup = dec;      // for the second try below
         FieldStats st;
-        std::vector<uint8_t> out((size_t)kDataSegs * kTsBytes);
-        const int np = dec.decode(lv.data(), out.data(), &st);
+        std::vector<uint8_t> out((size_t)kDataSegs * kTsBytes), psym((size_t)kFieldSyms, 0);
+        int np = dec.decode(lv.data(), out.data(), &st, psym.data());
+        bool secondTry = false;
+        // A badly decoded field gets a second try with the other kind of equaliser: after the decision feedback one (which can run away
+        // after a wrong decision) the plain one; after the plain one a decision feedback equaliser trained on this field's own decisions.
+        if (st.segments > 0 && st.rsFailed * 5 > st.segments) {
+            Taps alt;
+            std::vector<float> lv2, hv2;
+            bool haveAlt = false;
+            if (usePrev) haveAlt = trainFF(view, fsLv, alt);
+            else {
+                std::vector<float> selfLv;
+                levelsFromPath(fsLv, psym, hv, tp.B, selfLv);
+                haveAlt = trainDFE(view, view, fsLv, selfLv, lv, 1e-4, alt);
+            }
+            if (haveAlt) {
+                const double snr2 = equalize(view, fsLv, alt, nullptr, lv2, hv2);
+                if (snr2 >= 9.0) {
+                    FieldDecoder keep = dec;
+                    dec = backup;
+                    FieldStats st2;
+                    std::vector<uint8_t> out2((size_t)kDataSegs * kTsBytes), psym2((size_t)kFieldSyms, 0);
+                    const int np2 = dec.decode(lv2.data(), out2.data(), &st2, psym2.data());
+                    if (st2.rsFailed < st.rsFailed) {
+                        secondTry = true;
+                        st = st2; np = np2; out = std::move(out2); psym = std::move(psym2); lv = std::move(lv2); hv = std::move(hv2); tp = alt; eqLast = alt;
+                        snrAvg = snr2; measureData();
+                    } else dec = keep;
+                }
+            }
+        }
         tVit += now() - tM2;
-        if (dbg) fprintf(stderr, "[atsc] field start %lld parity %d: snr %.1f data %.1f  RS clean %d corr %d fail %d np %d\n", (long long)(f0 / kSegSyms), job.parity, snr, dataSnrAvg, st.rsClean, st.rsCorrected, st.rsFailed, np);
+        if (dbg) fprintf(stderr, "[atsc] field start %lld parity %d: snr %.1f data %.1f  RS clean %d corr %d fail %d np %d%s%s\n", (long long)(f0 / kSegSyms), job.parity, snr, dataSnrAvg, st.rsClean, st.rsCorrected, st.rsFailed, np, usePrev ? "  (DFE, trained with the previous field)" : "", secondTry ? "  (second try with the other equaliser)" : "");
+        if (st.segments == kDataSegs && st.rsFailed == 0) cleanFields++; else cleanFields = 0;
+        {   // this field's decisions train the next field
+            prevS = job.s; prevBase = job.base; prevF0 = f0; prevY = lv;
+            levelsFromPath(fsLv, psym, hv, tp.B, prevLv);
+            havePrev = true;
+        }
         if (st.segments) { const double r = (double)st.rsFailed / st.segments; segErr = segErr + 0.3 * (r - segErr); }
         if (np > 0 && cb) {
             const double secs = (double)np * 0.0000774;   // one packet per data segment: 832 symbols / 10.76 MHz
@@ -677,7 +866,7 @@ void AtscReceiver::feed(const cf32* x, size_t n) {
     std::vector<cf32> v(x, x + n);
     p_->c.processInput(v, n);
     static long cnt = 0;
-    if (getenv("ATSC_PROF") && ++cnt % 380 == 0) fprintf(stderr, "[atsc] time: pfb+pll %.2f s, symbol clock+fields %.2f s, field decode %.2f s (LS fit %.2f, equalise %.2f, trellis+RS %.2f)\n", p_->c.tPfb, p_->c.tCd, p_->c.tDec, p_->c.tLs, p_->c.tEq, p_->c.tVit);
+    if (getenv("ATSC_PROF") && ++cnt % 195 == 0) fprintf(stderr, "[atsc] time: pfb+pll %.2f s, symbol clock+fields %.2f s, field decode %.2f s (LS fit %.2f, equalise %.2f, trellis+RS %.2f)\n", p_->c.tPfb, p_->c.tCd, p_->c.tDec, p_->c.tLs, p_->c.tEq, p_->c.tVit);
 }
 bool AtscReceiver::telemetry(AtscTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->c.mu);

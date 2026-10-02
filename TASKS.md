@@ -65,7 +65,7 @@ Details and the full status are in `docs/ATSC_HANDOFF.md`.
 - [x] Engine integration, DVB/ATSC switch, lamps/readouts/panels, quality meter row, synthetic ATSC source, `dect2cli --synthetic --atsc`.
 - [x] Scanner support and US presets (compiles; not exercised on hardware).
 - [x] Tests: clean, carrier/clock offsets, SNR 16.5 dB, moderate echoes, noise only, dropout recovery.
-- [ ] Decision feedback equaliser for strong echoes (-6 dB at 5 us currently fails).
+- [x] Decision feedback equaliser (trained on decoded symbols): -6 dB at 5 us, -3 dB at 5 us, -1.5 dB at 8 us decode. Limit: a 0 dB echo cannot be acquired.
 - [ ] PSIP (channel names, guide) and AC-3 audio check.
 - [ ] Real-signal validation **(needs a capture from an ATSC country)**; scan on hardware.
 - [ ] Fuzz/ASan runs, README and brief updates.

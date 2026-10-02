@@ -101,7 +101,9 @@ public:
     // `levels`: kFieldSyms soft values around -7..+7 (the field sync segment is skipped). Writes up to 312 packets (188 bytes,
     // 0x47 first) to `out`; the transport_error_indicator is set on uncorrectable packets. Returns the number of packets written
     // (0 while the de-interleaver is still filling after reset()).
-    int decode(const float* levels, uint8_t* out, FieldStats* st);
+    // `symbolsOut` (optional, kFieldSyms entries): the symbols (0..7) of the decoded trellis path for the data segments; positions of
+    // sync segments are left untouched.
+    int decode(const float* levels, uint8_t* out, FieldStats* st, uint8_t* symbolsOut = nullptr);
 private:
     ByteInterleaver dil_{true};
     Randomizer rnd_;

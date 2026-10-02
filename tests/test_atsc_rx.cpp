@@ -78,6 +78,8 @@ int main(int argc, char** argv) {
     cases.push_back({"post echo -8 dB at 2 us", mk(99, 0, 0, {{2.0, -8, 40}}), 8e6, 95, 0.7});
     cases.push_back({"pre echo -10 dB at 1.5 us", mk(99, 0, 0, {{-1.5, -10, 100}}), 8e6, 95, 0.7});
     cases.push_back({"post echo -6 dB at 5 us, SNR 24", mk(24, 0, 0, {{5.0, -6, 200}}), 8e6, 90, 0.9});
+    cases.push_back({"post echo -3 dB at 5 us, SNR 28", mk(28, 0, 0, {{5.0, -3, 200}}), 8e6, 90, 0.9});
+    cases.push_back({"post echo -1.5 dB at 8 us, SNR 30", mk(30, 0, 0, {{8.0, -1.5, 70}}), 8e6, 90, 0.9});
     cases.push_back({"three echoes, CFO 10 kHz, SRO 30 ppm, SNR 25", mk(25, 10000, 30, {{0.8, -9, 10}, {3.0, -12, 130}, {-1.0, -14, 250}}), 8e6, 90, 0.9});
     int shown = 0;
     for (auto& cs : cases) {

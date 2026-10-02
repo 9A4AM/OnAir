@@ -31,8 +31,7 @@ Receiver-tab page, the quality meter has an ATSC row (15.2 dB), the scanner and 
 device can generate ATSC, and `dect2cli --synthetic --atsc` runs the whole path (verified: locks in 0.2 s, TS flows, no continuity
 errors, service list shows). The stall/flakiness (old section 5.2) was an out-of-range read in the timing measurement and is fixed;
 the receiver also recovers quickly after a signal dropout and does not lock on noise. The sample thread needs about 0.5x real time;
-the per-field work runs on a worker thread. **11 of 12 impairment cases pass; the failing one is a strong post-echo (-6 dB at 5 us)
-which needs a decision feedback equaliser (section 5.3).** What has *never* been done: running on a real ATSC signal or the HackRF,
+the per-field work runs on a worker thread. **All 14 test cases now pass** (the equaliser is a plain 128-tap feed-forward one plus a decision feedback equaliser trained on the sync symbols and on trellis-decoded symbols, see 5.3). **Known limit: a 0 dB echo (equal to the main signal) cannot be acquired; -1.5 dB at 8 us and -3 dB at 5 us work (about 95 % of packets, the rest are lost in the first few fields).** What has *never* been done: running on a real ATSC signal or the HackRF,
 AC-3 audio and PSIP (ATSC channel names / guide), and an actual scan.
 
 ## 3. Repository map (ATSC-relevant)
@@ -143,19 +142,21 @@ but **fragile lock/reacquisition logic** that a tiny numeric change tips over. S
 4. Make the loss criteria and the field-sync threshold less brittle (use soft correlation instead of hard-decision counts, and
    accept a field sync when two of three independent indicators agree).
 
-### 5.3 Strong echoes need a decision feedback equaliser
-The equaliser is a T-spaced feed-forward FIR of 128 taps (24 future, 103 past, plus a bias) solved per field by least squares on
-the known symbols (field sync segment: first 728 symbols; plus the 4 sync symbols of every segment, 1976 equations). It copes with
-echoes up to about -8 dB at 2 us and pre-echoes of -10 dB at 1.5 us, but not with -6 dB at 5 us or 0 dB echoes: inverting a strong
-post-echo needs many taps (geometric series). Real ATSC receivers use a DFE. Plan:
-- Add feedback taps (B about 128) on past decisions, FF about 64.
-- Initial solution: LS on the field sync (past symbols known; for the first B symbols of the field sync use the previous field's
-  decoded symbols) = 728 equations.
-- Refinement: the **Viterbi path gives much better decisions than a slicer** (coding gain). After pass 1, take the survivor path's
-  8-level symbols as targets, re-solve LS on a subset (about 2000 positions), re-equalise, re-decode. The Viterbi currently returns
-  only dibits: extend `viterbiRun` to also output the path's symbol (`out_symbol[state*4+input]` is in `trellis().out`).
-- Also keep an eye on error propagation in the feedback path; limit feedback to decisions with margin.
-Budget: current LS costs 16 MMAC/field; DFE doubles filter cost, so the speed work (5.4) matters first.
+### 5.3 Equaliser (implemented): plain feed-forward + decision feedback
+`Core::runJob` (worker thread) chooses per field:
+- Normal start / mild channels: plain T-spaced feed-forward FIR of 128 taps (24 future, 103 past, plus a bias) solved by least squares
+  on the field sync segment and the 4 sync symbols of each segment (`trainFF`).
+- If that fits badly (training SNR < 9 dB): a decision feedback equaliser (65 feed-forward + 128 feedback taps) trained on the field
+  sync alone with a strong ridge (`trainDFE`, no data rows).
+- After two consecutive clean fields: the decision feedback equaliser is trained on the *previous* field's trellis-decoded symbols
+  (rows where decision and reception agree within 1.0) plus the field sync; the Viterbi path symbols come from
+  `FieldDecoder::decode(..., symbolsOut)`.
+- A field that decodes badly (>= 20 % failed segments) gets one more try with the other kind of equaliser (the feedback one can run
+  away after a wrong decision); the one with fewer failed segments is kept (the de-interleaver state is snapshotted and restored).
+Acquisition was made robust to echoes: the segment-sync peak test uses the median magnitude, the field-sync match tolerates up to
+175 of 511 hard-decision errors (random data gives about 255).
+Possible improvements: soft/trellis-aided feedback decisions, fractional (T/2) spacing, averaging the normal equations across
+fields, equalising before the field sync search so that 0 dB echoes can be acquired.
 
 ### 5.4 Speed (about 2.1x real time on an M-series Mac, needs < 0.5x including the rest of the app)
 Timings (ATSC_PROF, clean case, 8 Msps in): resampler+matched filter+pilot loop ~1.2 s, symbol clock + per-field decode ~2.0 s
@@ -207,8 +208,7 @@ Done since the first version of this list: lock-loss fix, speed + worker thread,
 (7.5 except quality details), ATSC row in the quality meter, scanner + presets (untested without a HackRF), synthetic ATSC source,
 noise and dropout tests.
 
-1. **Decision feedback equaliser and decision-directed refinement** (5.3). This is the main quality gap: echoes stronger than about
-   -8 dB at 2 us (or any echo beyond ~10 us) are not handled. Add tests with -3 dB / 0 dB echoes at 5-15 us.
+1. **Acquisition with a 0 dB echo** and longer echoes (>15 us); more equaliser tests (A/74-style ensembles, Doppler).
 2. **Real signal validation** (needs a capture, or an ATSC modulator): check field sync thresholds, SNR estimate, pilot level, then tune.
 3. **PSIP and AC-3.** ATSC streams carry channel names/numbers/guide in PSIP tables (PID 0x1FFB: STT 0xCD, MGT 0xC7, TVCT 0xC8, EIT 0xCB)
    instead of DVB SDT/NIT/EIT. `core/src/ts.cpp` (`TsDemux`) only parses DVB tables, so ATSC services currently appear as "service N"
