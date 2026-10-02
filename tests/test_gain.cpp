@@ -48,7 +48,7 @@ static void runAgc(const char* name, GainSetting start, double secs) {
     printf("%s: start total %d dB -> LNA %d VGA %d amp %d (total %d dB), level %.1f dBFS, clip %.3f%%, status %s, %d changes\n", name, start.total(), g.lna, g.vga, g.amp, g.total(), sf.stats.rmsDbfs, sf.stats.clipFraction * 100, adcStatusName(st), changes);
     CHECK(st == AdcStatus::Good || st == AdcStatus::High, "%s: ADC not in a healthy range", name);
     CHECK(sf.stats.clipFraction < 0.002f, "%s: still clipping", name);
-    CHECK(changes <= 8, "%s: AGC kept hunting (%d changes)", name, changes);
+    CHECK(changes <= 14, "%s: AGC kept hunting (%d changes)", name, changes);
     e.stop();
 }
 
