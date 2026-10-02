@@ -197,6 +197,7 @@ struct App {
     TuneSettings tune;
     FileOptions file;
     int bwIdx = 0;
+    bool bwAuto = true;       // the engine measures the channel width and switches by itself
     double freqMhz = 522.0;
     bool autoScroll = true;
     int tab = 0;
@@ -296,6 +297,7 @@ static void loadPrefs(App& a) {
     if ([d objectForKey:@"compute"]) a.computeMode = (int)[d integerForKey:@"compute"];
     if ([d objectForKey:@"standard"]) a.stdMode = (int)[d integerForKey:@"standard"];
     a.bwIdx = std::min((int)(sizeof kBw / sizeof *kBw) - 1, (int)[d integerForKey:@"bw"]);
+    if ([d objectForKey:@"bwAuto"]) a.bwAuto = [d boolForKey:@"bwAuto"];
     NSString* fp = [d stringForKey:@"filePath"];
     if (fp) a.file.path = fp.UTF8String;
     NSString* op = [d stringForKey:@"outPath"];
@@ -330,6 +332,7 @@ static void savePrefs(const App& a) {
     [d setInteger:a.computeMode forKey:@"compute"];
     [d setInteger:a.stdMode forKey:@"standard"];
     [d setInteger:a.bwIdx forKey:@"bw"];
+    [d setBool:a.bwAuto forKey:@"bwAuto"];
     [d setObject:[NSString stringWithUTF8String:a.file.path.c_str()] forKey:@"filePath"];
     [d setObject:[NSString stringWithUTF8String:a.filePath] forKey:@"outPath"];
     [d setObject:[NSString stringWithUTF8String:a.udpHost] forKey:@"udpHost"];
@@ -436,14 +439,21 @@ static void toolbar(App& a) {
     ImGui::SameLine();
     ImGui::TextDisabled("BW");
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(80);
-    ImGui::BeginDisabled(running);
-    if (ImGui::BeginCombo("##bw", kBw[a.bwIdx].label)) {
-        for (int i = 0; i < (int)(sizeof kBw / sizeof *kBw); i++)
-            if (ImGui::Selectable(kBw[i].label, i == a.bwIdx)) a.bwIdx = i;
-        ImGui::EndCombo();
+    ImGui::SetNextItemWidth(a.bwAuto ? 125 : 80);
+    {
+        char bl[32];
+        snprintf(bl, sizeof bl, a.bwAuto ? "%s (auto)" : "%s", kBw[a.bwIdx].label);
+        ImGui::BeginDisabled(running && !a.bwAuto);
+        if (ImGui::BeginCombo("##bw", bl)) {
+            for (int i = 0; i < (int)(sizeof kBw / sizeof *kBw); i++)
+                if (ImGui::Selectable(kBw[i].label, i == a.bwIdx && !a.bwAuto)) { a.bwIdx = i; a.bwAuto = false; savePrefs(a); }
+            ImGui::Separator();
+            if (ImGui::Selectable("Automatic", a.bwAuto)) { a.bwAuto = true; savePrefs(a); }
+            ImGui::EndCombo();
+        }
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7, 8 or 10 MHz) is set for you.");
     }
-    ImGui::EndDisabled();
 
     ImGui::SameLine(0, 14);
     ImGui::BeginDisabled(!isHw);
@@ -1619,7 +1629,11 @@ static void scanTab(App& a) {
     ImGui::SameLine(); ImGui::TextUnformatted("from"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(80); ImGui::InputDouble("##from", &a.scanCfg.startMHz, 0, 0, "%.1f");
     ImGui::SameLine(); ImGui::TextUnformatted("to"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(80); ImGui::InputDouble("##to", &a.scanCfg.stopMHz, 0, 0, "%.1f");
     ImGui::SameLine(); ImGui::TextUnformatted("step"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(60); ImGui::InputDouble("##step", &a.scanCfg.stepMHz, 0, 0, "%.1f");
-    ImGui::SameLine(); ImGui::TextUnformatted("bw"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(60); ImGui::InputDouble("##bw", &a.scanCfg.bwMhz, 0, 0, "%.0f");
+    ImGui::SameLine(); ImGui::TextUnformatted("bw"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(60);
+    ImGui::BeginDisabled(a.scanCfg.autoBandwidth);
+    ImGui::InputDouble("##bw", &a.scanCfg.bwMhz, 0, 0, "%.0f");
+    ImGui::EndDisabled();
+    ImGui::SameLine(); ImGui::Checkbox("detect bandwidth", &a.scanCfg.autoBandwidth);
     ImGui::Checkbox("read service names (slower, ~9 s per mux)", &a.scanCfg.identifyServices);
     ImGui::EndDisabled();
     if (a.scanCfg.stepMHz < 1) a.scanCfg.stepMHz = 1;
@@ -2371,6 +2385,32 @@ static void antennaTab(App& a) {
     ImGui::EndChild();
 }
 
+
+// Automatic bandwidth: follow what the engine detected; a change of capture rate (10 <-> 20 Msps) needs a restart
+static void followBandwidth(App& a) {
+    a.engine.setBandwidthAuto(a.bwAuto);
+    if (!a.bwAuto || !a.engine.running()) return;
+    const bool hw = a.devices[a.devIdx].kind == DeviceInfo::HackRF;
+    double want = a.engine.activeBandwidth();
+    if (hw && a.engine.wantsWideCapture() && a.tune.sampleRate < 15e6) want = 10;
+    if (want == a.tune.bandwidthMhz) return;
+    int idx = -1;
+    for (int k = 0; k < (int)(sizeof kBw / sizeof *kBw); k++) if (kBw[k].mhz == want) idx = k;
+    if (idx < 0) return;
+    const double oldRate = a.tune.sampleRate;
+    a.bwIdx = idx;
+    applyBandwidth(a);
+    savePrefs(a);
+    if (hw && a.tune.sampleRate != oldRate) {
+        a.engine.log(want >= 10 ? "restarting at 20 Msps for a 10 MHz channel" : "restarting at 10 Msps");
+        a.engine.stop();
+        a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
+        a.engine.start(a.devices[a.devIdx], a.tune, a.file);
+        a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
+        a.mpd.reset(); a.quality.reset();
+    }
+}
+
 static void drawUI(App& a, ImVec2 disp) {
     ingestSpectrum(a);
     ingestRx(a);
@@ -2390,6 +2430,7 @@ static void drawUI(App& a, ImVec2 disp) {
     }
     if (!a.engine.running()) { a.epg.clear(); }
     gainControl(a);
+    followBandwidth(a);
     feedDirection(a);
     {
         int pid = -1;

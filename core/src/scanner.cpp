@@ -1,4 +1,5 @@
 #include "dect2/scanner.h"
+#include "dect2/bandwidth.h"
 #include "dect2/dvbt.h"
 #include <algorithm>
 #include <chrono>
@@ -62,7 +63,8 @@ void Scanner::run() {
     const auto freqs = channels(cfg_);
     TuneSettings tune = cfg_.tune;
     tune.bandwidthMhz = cfg_.bwMhz;
-    tune.sampleRate = cfg_.bwMhz >= 7 ? 10e6 : 8e6;
+    // with automatic bandwidth the scan captures 20 Msps (+-10 MHz), wide enough to measure any channel up to 10 MHz
+    tune.sampleRate = cfg_.autoBandwidth ? 20e6 : cfg_.bwMhz >= 7 ? 10e6 : 8e6;
     tune.centerHz = freqs.empty() ? 0 : freqs[0] * 1e6;
     FileOptions fo;
     if (!e.start(dev_, tune, fo)) {
@@ -93,6 +95,7 @@ void Scanner::run() {
         std::vector<float> floorBins;
         uint64_t seq = 0;
         int frames = 0;
+        BandwidthDetector bwDet;
         auto t0 = Clock::now();
         SpectrumFrame sf;
         while (frames < 8 && std::chrono::duration<double>(Clock::now() - t0).count() < 1.5 && !cancel_) {
@@ -101,6 +104,7 @@ void Scanner::run() {
             if (frames++ < 2) continue; // settle
             const size_t n = sf.dbfs.size();
             const double fs = e.sampleRate();
+            bwDet.add(sf.dbfs, fs / 1e6);
             for (size_t b = 0; b < n; b++) {
                 double fhz = ((double)b / n - 0.5) * fs / 1e6;
                 double a = std::fabs(fhz);
@@ -118,6 +122,21 @@ void Scanner::run() {
         }
         (void)floorSum; (void)nFl;
         r.occupied = r.occupancyDb >= cfg_.occupancyDb;
+        // the width of the signal: occupied if a flat-topped signal is there, and decoded with that channel bandwidth
+        if (cfg_.autoBandwidth) {
+            const BandwidthEstimate be = bwDet.estimate();
+            if (be.valid) {
+                r.occupied = true;
+                r.bwMhz = be.bwMhz;
+                r.occupancyDb = std::max(r.occupancyDb, be.snrDb);
+                if (be.bwMhz != tune.bandwidthMhz) {
+                    tune.bandwidthMhz = be.bwMhz;
+                    e.setBandwidth(be.bwMhz);
+                    uint64_t rc2 = e.resetCount();
+                    for (int w = 0; w < 100 && e.resetCount() == rc2 && !cancel_; w++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
+            } else if (r.occupied && be.noFloor == false) r.occupied = false;   // power but no signal shape: not a TV channel
+        }
         if (!r.occupied) {
             r.note = "empty";
             std::lock_guard<std::mutex> lk(mu_);

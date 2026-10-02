@@ -281,6 +281,10 @@ A **headless CLI** (`dect2 --iq file.cs8 --out out.ts`) comes for free from this
 
 Added 2026-10-02 at the user's request.
 
+### 11.9 Automatic channel bandwidth (built 2026-10-02)
+
+The bandwidth choice (5, 6, 7, 8, 10 MHz) is automatic by default. `core/src/bandwidth.cpp` averages the spectrum and measures the width of the flat top (edges found outward from the centre, noise floor from the quietest 5% of bins, so a deep fade or the DC spike does not matter). While nothing is locked the engine switches the receivers to the matching bandwidth in place. A 10 MHz channel fills a 10 Msps capture, so when the spectrum has no quiet part the app restarts at 20 Msps to look again, and returns to 10 Msps when the signal is narrower. The scanner captures at 20 Msps, detects each channel's width and records it. Tested on modelled spectra (`tests/test_bandwidth.cpp`) and on the 522 MHz recording (starting from a wrong bandwidth it switches to 8 MHz and locks). Not tested on a real 10 MHz signal. Costs: an empty channel at 10 Msps triggers one restart at 20 Msps.
+
 ### 11.1 Antenna direction finder (built 2026-10-02; untested with a real antenna)
 
 Implemented in `core/src/direction.cpp` with the Antenna tab (compass rose, Measure/Skip buttons, results table). It asks for the antenna type first (directional / dipole / omnidirectional, the last compares places instead of headings), measures ~14 s per direction (AGC paused), scores with quality, occupancy and multipath, refines around the best heading and interpolates. A weak signal that is flat over the first four directions gets the diagonals too before it is called flat. Simulated antennas are covered by `tests/test_direction.cpp`.

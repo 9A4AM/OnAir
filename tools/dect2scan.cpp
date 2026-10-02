@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
         std::string a = argv[i];
         auto nx = [&]() { return i + 1 < argc ? atof(argv[++i]) : 0.0; };
         if (a == "--from") c.startMHz = nx(); else if (a == "--to") c.stopMHz = nx(); else if (a == "--step") c.stepMHz = nx();
-        else if (a == "--bw") c.bwMhz = nx(); else if (a == "--quick") c.identifyServices = false;
+        else if (a == "--bw") { c.bwMhz = nx(); c.autoBandwidth = false; } else if (a == "--quick") c.identifyServices = false;
         else if (a == "--lna") c.tune.lnaDb = (int)nx(); else if (a == "--vga") c.tune.vgaDb = (int)nx(); else if (a == "--noamp") c.tune.ampOn = false;
         else if (a == "--occ") c.occupancyDb = nx();
     }

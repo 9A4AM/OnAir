@@ -17,6 +17,7 @@ using namespace dect2;
 
 int main(int argc, char** argv) {
     Engine e;
+    bool autoBw = false;
     DeviceInfo dev;
     TuneSettings tune;
     FileOptions file;
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
         else if (a == "--vga") tune.vgaDb = atoi(next());
         else if (a == "--amp") tune.ampOn = true;
         else if (a == "--bw") tune.bandwidthMhz = atof(next());
+        else if (a == "--autobw") autoBw = true;
         else if (a == "--secs") secs = atof(next());
         else if (a == "--play") playSid = atoi(next());
         else if (a == "--synthetic") synthetic = true;
@@ -78,6 +80,7 @@ int main(int argc, char** argv) {
     e.setOutputs(out);
     e.setComputeMode(computeMode);
     e.setStandard(standard);
+    e.setBandwidthAuto(autoBw);
     if (!e.start(dev, tune, file)) {
         size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
         return 1;

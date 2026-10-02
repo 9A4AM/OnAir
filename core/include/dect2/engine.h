@@ -9,6 +9,7 @@
 #include "tsout.h"
 #include "player.h"
 #include "teletext.h"
+#include "bandwidth.h"
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -45,6 +46,13 @@ public:
     int standardMode() const { return stdMode_.load(); }
     int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T
     double sampleRate() const { return rate_; }
+    // Channel bandwidth: with automatic detection on, the engine measures the width of the signal in the spectrum while nothing is
+    // locked and reconfigures the receivers by itself. setBandwidth() forces a value (used by the scanner).
+    void setBandwidthAuto(bool on) { if (bwAuto_.exchange(on) != on) bwReset_ = true; }
+    void setBandwidth(double mhz) { bwReqVal_ = mhz; bwReq_ = true; }
+    double activeBandwidth() const { return bwActive_.load(); }
+    double detectedBandwidth() const { return bwDetected_.load(); }   // last bandwidth the detector settled on (0 = none yet)
+    bool wantsWideCapture() const { return wideWanted_.load(); }      // the signal may be wider than this capture shows: restart at 20 Msps
     uint64_t droppedSamples() const { return ring_.dropped(); }
 
     // Latest spectrum snapshot; returns true if newer than `lastSeq`.
@@ -99,6 +107,13 @@ private:
     std::atomic<bool> stdReq_{false};
     double autoMark_ = 0, lastLockSec_ = 0;
     double bwMhz_ = 8;
+    std::atomic<double> bwActive_{8}, bwDetected_{0}, bwReqVal_{0};
+    std::atomic<bool> bwAuto_{false}, bwReq_{false}, bwReset_{false}, wideWanted_{false};
+    BandwidthDetector bwDet_;
+    double bwMark_ = 0, bwLastEval_ = 0;
+    double bwVote_ = 0;
+    void bandwidthStep(const SpectrumFrame& f, const RxTelemetry& t, bool tLocked);
+    void changeBandwidth(double mhz);
     void feedRx(const cf32* x, size_t n);
     void autoSelect(const RxTelemetry& t, bool tLocked);
     void onTsPackets(const uint8_t* pk, size_t n, double secs);

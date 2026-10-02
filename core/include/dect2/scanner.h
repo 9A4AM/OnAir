@@ -13,6 +13,7 @@ namespace dect2 {
 struct ScanConfig {
     double startMHz = 474, stopMHz = 858, stepMHz = 8;
     double bwMhz = 8;
+    bool autoBandwidth = true;     // measure the width of each signal found and decode it with the matching channel bandwidth
     bool identifyServices = true;
     double occupancyDb = 5.0;      // in-band power must exceed the out-of-band floor by this much
     double lockTimeoutSec = 5.0;   // time allowed to lock (the receiver alternates DVB-T2 and DVB-T searches)
