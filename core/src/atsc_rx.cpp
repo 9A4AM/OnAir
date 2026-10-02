@@ -15,6 +15,10 @@
 #include "dect2/dsp_compat.h"
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
+#include <cstdint>
+#include <functional>
+#include <utility>
+#include <vector>
 #endif
 
 namespace dect2 {

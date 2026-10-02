@@ -3,6 +3,15 @@
 #include "dect2/ts.h"
 #include <cmath>
 #include <cstring>
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <random>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 namespace dvbt {

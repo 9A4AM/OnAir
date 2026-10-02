@@ -16,6 +16,11 @@
 #include <cstdio>
 #include <deque>
 #include <mutex>
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 

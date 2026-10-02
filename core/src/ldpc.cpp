@@ -4,6 +4,8 @@
 #include <cstring>
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
+#include <cstdint>
+#include <vector>
 #endif
 
 namespace dect2 {

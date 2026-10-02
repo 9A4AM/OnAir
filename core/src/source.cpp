@@ -12,6 +12,13 @@
 #include <mutex>
 #include <random>
 #include <thread>
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 

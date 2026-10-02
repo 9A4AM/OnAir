@@ -18,6 +18,14 @@ extern "C" {
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <atomic>
+#include <cstdint>
+#include <deque>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 

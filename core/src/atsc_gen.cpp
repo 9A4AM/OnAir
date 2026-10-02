@@ -2,6 +2,10 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cstdint>
+#include <random>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 namespace atsc {

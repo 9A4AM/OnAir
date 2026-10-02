@@ -5,6 +5,7 @@
 #include <deque>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace dect2 {
 

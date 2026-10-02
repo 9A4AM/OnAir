@@ -11,6 +11,9 @@
 #include <cmath>
 #include <cstdio>
 #include <random>
+#include <algorithm>
+#include <cstdint>
+#include <vector>
 using namespace dect2;
 
 static int fails = 0;

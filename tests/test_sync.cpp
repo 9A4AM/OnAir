@@ -5,6 +5,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <random>
+#include <algorithm>
+#include <cstdint>
+#include <vector>
 
 using namespace dect2;
 

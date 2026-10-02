@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cstdio>
 #include <thread>
+#include <cstdint>
+#include <cstdlib>
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)

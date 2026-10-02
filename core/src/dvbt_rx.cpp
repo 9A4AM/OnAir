@@ -12,6 +12,12 @@
 #include <cstring>
 #include <deque>
 #include <mutex>
+#include <complex>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 

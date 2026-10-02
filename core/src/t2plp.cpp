@@ -7,6 +7,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include "dect2/platform.h"
+#include <atomic>
+#include <cstdint>
+#include <mutex>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 

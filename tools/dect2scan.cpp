@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <thread>
+#include <string>
 using namespace dect2;
 int main(int argc, char** argv) {
     ScanConfig c;

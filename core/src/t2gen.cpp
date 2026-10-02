@@ -3,6 +3,10 @@
 #include "dect2/dsp_compat.h"
 #include <cmath>
 #include <cstring>
+#include <algorithm>
+#include <cstdint>
+#include <random>
+#include <vector>
 
 namespace dect2 {
 

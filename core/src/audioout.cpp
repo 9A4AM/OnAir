@@ -1,6 +1,7 @@
 #include "audioout_impl.h"
 #include <algorithm>
 #include <cstring>
+#include <cstdint>
 
 namespace dect2 {
 

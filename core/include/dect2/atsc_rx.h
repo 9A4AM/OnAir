@@ -5,6 +5,7 @@
 #include "ring.h"
 #include <functional>
 #include <memory>
+#include <cstdint>
 
 namespace dect2 {
 

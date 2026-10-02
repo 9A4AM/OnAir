@@ -7,6 +7,8 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <cstdint>
+#include <vector>
 
 namespace dect2 {
 

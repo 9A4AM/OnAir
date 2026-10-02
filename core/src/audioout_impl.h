@@ -4,6 +4,7 @@
 #include "dect2/audioout.h"
 #include <atomic>
 #include <vector>
+#include <cstdint>
 
 namespace dect2 {
 

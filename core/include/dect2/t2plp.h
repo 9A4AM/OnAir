@@ -9,6 +9,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <cstdint>
 
 namespace dect2 {
 

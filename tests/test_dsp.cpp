@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <random>
 #include <vector>
+#include <algorithm>
 using namespace dect2;
 
 static int fails = 0;

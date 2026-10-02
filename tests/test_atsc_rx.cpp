@@ -10,6 +10,9 @@
 #include <cstring>
 #include <set>
 #include <string>
+#include <cstdint>
+#include <utility>
+#include <vector>
 using namespace dect2;
 
 static int fails = 0;

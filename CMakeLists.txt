@@ -21,7 +21,7 @@ option(DECT2_PORTABLE "Use the portable DSP kernels instead of Accelerate (macOS
 option(DECT2_NO_SIMD "Disable the SIMD intrinsics and use the plain C++ code" OFF)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(HACKRF REQUIRED IMPORTED_TARGET libhackrf)
+pkg_check_modules(HACKRF REQUIRED libhackrf)   # plain variables: some package managers list include paths that do not exist
 pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil libswscale libswresample)
 if(DECT2_BUILD_APP)
   pkg_check_modules(GLFW REQUIRED IMPORTED_TARGET glfw3)
@@ -36,7 +36,9 @@ endif()
 if(DECT2_NO_SIMD)
   target_compile_definitions(dect2core PUBLIC DECT2_NO_SIMD)
 endif()
-target_link_libraries(dect2core PUBLIC PkgConfig::HACKRF PkgConfig::FFMPEG)
+target_include_directories(dect2core PUBLIC ${HACKRF_INCLUDE_DIRS})
+target_link_directories(dect2core PUBLIC ${HACKRF_LIBRARY_DIRS})
+target_link_libraries(dect2core PUBLIC ${HACKRF_LIBRARIES} PkgConfig::FFMPEG)
 if(APPLE)
   # Metal LDPC decoder and CoreAudio output
   target_sources(dect2core PRIVATE core/src/gpu_ldpc.mm core/src/audioout_coreaudio.mm)

@@ -2,6 +2,8 @@
 #include "dect2/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <vector>
 
 namespace dect2 {
 

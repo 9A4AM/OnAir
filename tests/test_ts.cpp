@@ -4,6 +4,10 @@
 #include <cstdio>
 #include <cstring>
 #include <random>
+#include <algorithm>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace dect2;
 static int fails = 0;

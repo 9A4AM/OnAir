@@ -4,6 +4,14 @@
 #include "dect2/platform.h"
 #include <cstdio>
 #include <cstdlib>
+#include <algorithm>
+#include <cstdint>
+#include <map>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace dect2 {
 

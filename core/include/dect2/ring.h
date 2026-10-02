@@ -4,6 +4,7 @@
 #include <complex>
 #include <cstddef>
 #include <vector>
+#include <cstdint>
 
 namespace dect2 {
 

@@ -10,6 +10,7 @@
 #if defined(__APPLE__) && !defined(DECT2_PORTABLE)
 #define DECT2_USE_ACCELERATE 1
 #include <Accelerate/Accelerate.h>
+#include <algorithm>
 #endif
 
 namespace dect2 {

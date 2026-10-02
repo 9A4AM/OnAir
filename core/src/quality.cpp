@@ -1,6 +1,7 @@
 #include "dect2/quality.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 namespace dect2 {
 
