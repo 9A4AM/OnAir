@@ -7,9 +7,11 @@ Order matters: each block depends on the ones above it. `[ ]` open, `[x]` done. 
 Goal: normal installers for macOS arm64, macOS Intel, Windows x64, Linux x64/arm64. The CPU path stays the baseline everywhere; GPU acceleration is an optional extra per platform.
 
 **A1. Find what is macOS-only**
-- [ ] List every use of Metal, Accelerate/vDSP, NEON intrinsics, CoreAudio, VideoToolbox, Cocoa (NSUserDefaults, NSOpenPanel), `pthread_set_qos_class_self_np`, `.mm` files. Write the list into this file.
+- [x] Audit done: see `docs/PORTING_AUDIT.md` (inventory with effort estimates, replacements and the recommended order of work).
+  Summary: Accelerate (FFT, convolution, resampling, BLAS) in 9 core files without fallbacks is the main blocker for the core library;
+  the GUI is one Objective-C++ file with about 100 Apple-specific lines; audio, GPU LDPC and video output already sit behind small interfaces.
 
-**A2. Build system and dependencies**
+**A2. Build system and dependencies** (first coding step: make `dect2core`, the tests and the tools build with no Objective-C and no Apple frameworks)
 - [ ] CMake presets for macOS, Windows (MSVC) and Linux; `vcpkg.json` manifest (libhackrf, FFmpeg, GLFW, libusb).
 - [ ] Build options: `DECT2_GPU_METAL`, `DECT2_GPU_PORTABLE`, `DECT2_UI_BACKEND` (Metal / OpenGL3); the Metal parts compile only on macOS.
 - [ ] Make `dect2core` (the decoder, with no UI and no GPU) build and pass its tests with a plain C++17 compiler on Linux first. This is the fastest way to find problems.
