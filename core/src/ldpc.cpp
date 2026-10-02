@@ -41,7 +41,7 @@ DECT2_MULTIVERSION void minSumApply(float* __restrict Lj, float* __restrict mj, 
     }
 }
 } // namespace
-
+#endif
 
 LdpcCode::LdpcCode(int k, int n, const std::vector<std::vector<int>>& rows) : k_(k), n_(n), m_(n - k) {
     const int q = m_ / 360;
