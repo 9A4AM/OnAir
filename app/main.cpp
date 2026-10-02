@@ -1,17 +1,11 @@
 // OnAir — digital TV receiver (DVB-T2, DVB-T, ATSC) for macOS. Phase 0 shell: sources, spectrum, waterfall, status, log.
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
-#include "imgui_impl_metal.h"
 #include "implot.h"
 
 #define GLFW_INCLUDE_NONE
-#define GLFW_EXPOSE_NATIVE_COCOA
 #include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
 
-#import <Cocoa/Cocoa.h>
-#import <Metal/Metal.h>
-#import <QuartzCore/QuartzCore.h>
 
 #include "dect2/engine.h"
 #include "dect2/scanner.h"
@@ -22,6 +16,8 @@
 #include "dect2/direction.h"
 #include "dect2/teletext.h"
 #include "theme.h"
+#include "gfx.h"
+#include "platform.h"
 
 #include <algorithm>
 #include <cmath>
@@ -30,6 +26,7 @@
 #include <deque>
 #include <string>
 #include <vector>
+#include <unistd.h>
 
 using namespace dect2;
 
@@ -37,18 +34,14 @@ using namespace dect2;
 
 struct Waterfall {
     static constexpr int W = 1024, H = 512;
-    id<MTLTexture> tex = nil;
+    gfx::Image* img = nullptr;
     std::vector<uint32_t> lut;
     int writeRow = 0; // newest row; older rows follow at writeRow+1 ... wrapping
     int filled = 0;
     float minDb = -100, maxDb = -32;
 
-    void init(id<MTLDevice> dev) {
-        MTLTextureDescriptor* d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:W height:H mipmapped:NO];
-        d.usage = MTLTextureUsageShaderRead;
-        tex = [dev newTextureWithDescriptor:d];
-        std::vector<uint32_t> black((size_t)W * H, 0xFF000000u);
-        [tex replaceRegion:MTLRegionMake2D(0, 0, W, H) mipmapLevel:0 withBytes:black.data() bytesPerRow:W * 4];
+    void init(gfx::Backend* gfx) {
+        img = gfx->createImage(W, H, 0xFF000000u);
         lut.resize(256);
         for (int i = 0; i < 256; i++) lut[i] = jet(i / 255.0f);
     }
@@ -70,7 +63,7 @@ struct Waterfall {
             row[x] = lut[(int)(std::min(1.f, std::max(0.f, v)) * 255)];
         }
         writeRow = (writeRow + H - 1) % H;
-        [tex replaceRegion:MTLRegionMake2D(0, writeRow, W, 1) mipmapLevel:0 withBytes:row.data() bytesPerRow:W * 4];
+        img->update(0, writeRow, W, 1, row.data());
         filled = std::min(H, filled + 1);
     }
 };
@@ -89,8 +82,7 @@ static const BwChoice kBw[] = {
     {"8 MHz", 8, 64.0 / 7}, {"7 MHz", 7, 8.0}, {"6 MHz", 6, 48.0 / 7}, {"5 MHz", 5, 40.0 / 7}, {"1.7 MHz", 1.7, 131.0 / 71},
 };
 
-static id<MTLDevice> gDevice;
-static id<MTLCommandQueue> gQueue;
+static gfx::Backend* gGfx = nullptr;
 static GLFWwindow* gWindow = nullptr;
 static int gWinX = 100, gWinY = 100, gWinW = 1500, gWinH = 900;
 static void toggleFullscreen() {
@@ -102,69 +94,23 @@ static void toggleFullscreen() {
     glfwSetWindowMonitor(gWindow, m, 0, 0, vm->width, vm->height, vm->refreshRate);
 }
 
-static NSString* const kYuvShader = @R"MSL(
-#include <metal_stdlib>
-using namespace metal;
-kernel void nv12(texture2d<float, access::read> Y [[texture(0)]], texture2d<float, access::read> UV [[texture(1)]],
-                 texture2d<float, access::write> out [[texture(2)]], constant float3& prm [[buffer(0)]], uint2 gid [[thread_position_in_grid]]) {
-    if (gid.x >= out.get_width() || gid.y >= out.get_height()) return;
-    float y = Y.read(gid).r;
-    if (prm.z > 0.5) { // interlaced: replace combed pixels (a line that differs from both neighbours in the same direction) by the line average
-        const uint H = out.get_height();
-        float ya = Y.read(uint2(gid.x, gid.y > 0 ? gid.y - 1 : gid.y)).r;
-        float yb = Y.read(uint2(gid.x, gid.y + 1 < H ? gid.y + 1 : gid.y)).r;
-        float comb = (y - ya) * (y - yb);
-        float w = clamp((comb - 0.0008) / 0.004, 0.0, 1.0);
-        y = mix(y, 0.5 * (ya + yb), w);
-    }
-    float2 c = UV.read(gid / 2).rg;
-    if (prm.y < 0.5) { y = (y - 16.0 / 255.0) * (255.0 / 219.0); c = (c - 128.0 / 255.0) * (255.0 / 224.0); }
-    else c -= 0.5;
-    float3 rgb;
-    if (prm.x > 0.5) rgb = float3(y + 1.5748 * c.y, y - 0.1873 * c.x - 0.4681 * c.y, y + 1.8556 * c.x);
-    else rgb = float3(y + 1.402 * c.y, y - 0.344136 * c.x - 0.714136 * c.y, y + 1.772 * c.x);
-    out.write(float4(saturate(rgb), 1.0), gid);
-}
-)MSL";
-
 struct VideoTex {
-    id<MTLTexture> tex = nil, yTex = nil, uvTex = nil;
-    id<MTLComputePipelineState> pso = nil;
+    gfx::Video* tex = nullptr;
     int w = 0, h = 0;
     uint64_t seq = 0;
     bool deint = true;
-    void update(Player& pl, id<MTLCommandQueue> q) {
+    bool has() const { return tex != nullptr; }
+    void update(Player& pl) {
         auto f = pl.videoFrame(seq);
         if (!f || f->w <= 0) return;
         const bool yuv = f->rgba.empty();
         if (!tex || w != f->w || h != f->h) {
-            MTLTextureDescriptor* d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:f->w height:f->h mipmapped:NO];
-            d.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
-            tex = [gDevice newTextureWithDescriptor:d];
-            MTLTextureDescriptor* dy = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm width:f->w height:f->h mipmapped:NO];
-            yTex = [gDevice newTextureWithDescriptor:dy];
-            MTLTextureDescriptor* du = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRG8Unorm width:f->w / 2 height:f->h / 2 mipmapped:NO];
-            uvTex = [gDevice newTextureWithDescriptor:du];
+            delete tex;
+            tex = gGfx->createVideo(f->w, f->h);
             w = f->w; h = f->h;
         }
-        if (!yuv) { [tex replaceRegion:MTLRegionMake2D(0, 0, f->w, f->h) mipmapLevel:0 withBytes:f->rgba.data() bytesPerRow:f->w * 4]; return; }
-        if (!pso) {
-            NSError* err = nil;
-            id<MTLLibrary> lib = [gDevice newLibraryWithSource:kYuvShader options:nil error:&err];
-            pso = lib ? [gDevice newComputePipelineStateWithFunction:[lib newFunctionWithName:@"nv12"] error:&err] : nil;
-            if (!pso) { NSLog(@"yuv shader: %@", err); return; }
-        }
-        [yTex replaceRegion:MTLRegionMake2D(0, 0, f->w, f->h) mipmapLevel:0 withBytes:f->y.data() bytesPerRow:f->w];
-        [uvTex replaceRegion:MTLRegionMake2D(0, 0, f->w / 2, f->h / 2) mipmapLevel:0 withBytes:f->uv.data() bytesPerRow:f->w];
-        id<MTLCommandBuffer> cb = [q commandBuffer];
-        id<MTLComputeCommandEncoder> e = [cb computeCommandEncoder];
-        [e setComputePipelineState:pso];
-        float prm[4] = {f->bt709 ? 1.f : 0.f, f->fullRange ? 1.f : 0.f, (f->interlaced && deint) ? 1.f : 0.f, 0.f};
-        [e setBytes:prm length:sizeof prm atIndex:0];
-        [e setTexture:yTex atIndex:0]; [e setTexture:uvTex atIndex:1]; [e setTexture:tex atIndex:2];
-        [e dispatchThreads:MTLSizeMake(f->w, f->h, 1) threadsPerThreadgroup:MTLSizeMake(16, 16, 1)];
-        [e endEncoding];
-        [cb commit]; // the render pass later on the same queue sees the converted texture
+        if (!yuv) { tex->uploadRGBA(f->rgba.data()); return; }
+        tex->uploadNV12(f->y.data(), f->uv.data(), f->bt709, f->fullRange, f->interlaced && deint);
     }
     void draw(ImVec2 box) {
         if (!tex) return;
@@ -173,18 +119,13 @@ struct VideoTex {
         if (box.x / box.y > ar) sz.x = box.y * ar; else sz.y = box.x / ar;
         ImVec2 p = ImGui::GetCursorPos();
         ImGui::SetCursorPos(ImVec2(p.x + (box.x - sz.x) * 0.5f, p.y + (box.y - sz.y) * 0.5f));
-        ImGui::Image((ImTextureID)(__bridge void*)tex, sz);
+        ImGui::Image(tex->texture(), sz);
         ImGui::SetCursorPos(p);
     }
 };
 
-struct SavedChannel {
-    double freqMhz = 0, bwMhz = 8;
-    std::string name, mode;
-    float snrDb = 0;
-    int nServices = 0;
-    bool favourite = false;
-};
+using SavedChannel = plat::Channel;
+
 
 struct App {
     Engine engine;
@@ -284,71 +225,46 @@ static void applyBandwidth(App& a) {
     if (a.atscMode) { a.tune.bandwidthMhz = 6; a.tune.sampleRate = 8e6; }   // an ATSC channel is always 6 MHz wide
 }
 
-static std::string openFileDialog() {
-    NSOpenPanel* p = [NSOpenPanel openPanel];
-    p.canChooseFiles = YES; p.canChooseDirectories = NO; p.allowsMultipleSelection = NO;
-    if ([p runModal] == NSModalResponseOK) return std::string(p.URL.path.UTF8String);
-    return {};
-}
-
-static std::string saveFileDialog(const char* name) {
-    NSSavePanel* p = [NSSavePanel savePanel];
-    p.nameFieldStringValue = [NSString stringWithUTF8String:name];
-    if ([p runModal] == NSModalResponseOK) return std::string(p.URL.path.UTF8String);
-    return {};
-}
+static std::string openFileDialog() { return plat::openFileDialog(); }
+static std::string saveFileDialog(const char* name) { return plat::saveFileDialog(name); }
 
 static void loadPrefs(App& a) {
-    NSUserDefaults* d = NSUserDefaults.standardUserDefaults;
-    if ([d objectForKey:@"freqMhz"]) a.freqMhz = [d doubleForKey:@"freqMhz"];
-    if ([d objectForKey:@"lna"]) a.tune.lnaDb = (int)[d integerForKey:@"lna"];
-    if ([d objectForKey:@"vga"]) a.tune.vgaDb = (int)[d integerForKey:@"vga"];
-    a.tune.ampOn = [d boolForKey:@"amp"];
-    if ([d objectForKey:@"compute"]) a.computeMode = (int)[d integerForKey:@"compute"];
-    if ([d objectForKey:@"standard"]) a.stdMode = (int)[d integerForKey:@"standard"];
-    a.bwIdx = std::min((int)(sizeof kBw / sizeof *kBw) - 1, (int)[d integerForKey:@"bw"]);
-    if ([d objectForKey:@"bwAuto"]) a.bwAuto = [d boolForKey:@"bwAuto"];
-    NSString* fp = [d stringForKey:@"filePath"];
-    if (fp) a.file.path = fp.UTF8String;
-    NSString* op = [d stringForKey:@"outPath"];
-    if (op) snprintf(a.filePath, sizeof a.filePath, "%s", op.UTF8String);
-    NSString* oh = [d stringForKey:@"udpHost"];
-    if (oh) snprintf(a.udpHost, sizeof a.udpHost, "%s", oh.UTF8String);
-    if ([d objectForKey:@"udpPort"]) a.out.port = (int)[d integerForKey:@"udpPort"];
-    a.out.rtp = [d boolForKey:@"udpRtp"];
-    a.out.dropNull = [d boolForKey:@"dropNull"];
-    a.channels.clear();
-    for (NSDictionary* c in [d arrayForKey:@"channels"]) {
-        SavedChannel sc;
-        sc.freqMhz = [c[@"f"] doubleValue]; sc.bwMhz = [c[@"bw"] doubleValue];
-        sc.name = [c[@"name"] UTF8String] ?: ""; sc.mode = [c[@"mode"] UTF8String] ?: "";
-        sc.snrDb = [c[@"snr"] floatValue]; sc.nServices = [c[@"n"] intValue]; sc.favourite = [c[@"fav"] boolValue];
-        if (sc.freqMhz > 0) a.channels.push_back(sc);
-    }
+    plat::Prefs& d = plat::prefs();
+    if (d.has("freqMhz")) a.freqMhz = d.getD("freqMhz", a.freqMhz);
+    if (d.has("lna")) a.tune.lnaDb = (int)d.getI("lna", a.tune.lnaDb);
+    if (d.has("vga")) a.tune.vgaDb = (int)d.getI("vga", a.tune.vgaDb);
+    a.tune.ampOn = d.getB("amp", false);
+    if (d.has("compute")) a.computeMode = (int)d.getI("compute", a.computeMode);
+    if (d.has("standard")) a.stdMode = (int)d.getI("standard", a.stdMode);
+    a.bwIdx = std::max(0, std::min((int)(sizeof kBw / sizeof *kBw) - 1, (int)d.getI("bw", 0)));
+    if (d.has("bwAuto")) a.bwAuto = d.getB("bwAuto", a.bwAuto);
+    if (d.has("filePath")) a.file.path = d.getS("filePath", "");
+    if (d.has("outPath")) snprintf(a.filePath, sizeof a.filePath, "%s", d.getS("outPath", "").c_str());
+    if (d.has("udpHost")) snprintf(a.udpHost, sizeof a.udpHost, "%s", d.getS("udpHost", "").c_str());
+    if (d.has("udpPort")) a.out.port = (int)d.getI("udpPort", a.out.port);
+    a.out.rtp = d.getB("udpRtp", false);
+    a.out.dropNull = d.getB("dropNull", false);
+    a.channels = d.getChannels();
 }
 
 static void savePrefs(const App& a) {
-    NSUserDefaults* d = NSUserDefaults.standardUserDefaults;
-    [d setDouble:a.freqMhz forKey:@"freqMhz"];
-    [d setInteger:a.tune.lnaDb forKey:@"lna"];
-    [d setInteger:a.tune.vgaDb forKey:@"vga"];
-    [d setBool:a.tune.ampOn forKey:@"amp"];
-    {
-        NSMutableArray* arr = [NSMutableArray array];
-        for (auto& c : a.channels)
-            [arr addObject:@{@"f": @(c.freqMhz), @"bw": @(c.bwMhz), @"name": [NSString stringWithUTF8String:c.name.c_str()], @"mode": [NSString stringWithUTF8String:c.mode.c_str()], @"snr": @(c.snrDb), @"n": @(c.nServices), @"fav": @(c.favourite)}];
-        [d setObject:arr forKey:@"channels"];
-    }
-    [d setInteger:a.computeMode forKey:@"compute"];
-    [d setInteger:a.stdMode forKey:@"standard"];
-    [d setInteger:a.bwIdx forKey:@"bw"];
-    [d setBool:a.bwAuto forKey:@"bwAuto"];
-    [d setObject:[NSString stringWithUTF8String:a.file.path.c_str()] forKey:@"filePath"];
-    [d setObject:[NSString stringWithUTF8String:a.filePath] forKey:@"outPath"];
-    [d setObject:[NSString stringWithUTF8String:a.udpHost] forKey:@"udpHost"];
-    [d setInteger:a.out.port forKey:@"udpPort"];
-    [d setBool:a.out.rtp forKey:@"udpRtp"];
-    [d setBool:a.out.dropNull forKey:@"dropNull"];
+    plat::Prefs& d = plat::prefs();
+    d.setD("freqMhz", a.freqMhz);
+    d.setI("lna", a.tune.lnaDb);
+    d.setI("vga", a.tune.vgaDb);
+    d.setB("amp", a.tune.ampOn);
+    d.setChannels(a.channels);
+    d.setI("compute", a.computeMode);
+    d.setI("standard", a.stdMode);
+    d.setI("bw", a.bwIdx);
+    d.setB("bwAuto", a.bwAuto);
+    d.setS("filePath", a.file.path);
+    d.setS("outPath", a.filePath);
+    d.setS("udpHost", a.udpHost);
+    d.setI("udpPort", a.out.port);
+    d.setB("udpRtp", a.out.rtp);
+    d.setB("dropNull", a.out.dropNull);
+    d.flush();
 }
 
 // ------------------------------------------------------------------ UI pieces
@@ -925,9 +841,9 @@ static void waterfallPlot(App& a, ImVec2 size) {
         ImPlot::SetupAxisFormat(ImAxis_X1, "%.2f");
         int w = a.wf.writeRow;
         double secA = (H - w) * a.frameDt;
-        ImPlot::PlotImage("a", (ImTextureID)(__bridge void*)a.wf.tex, ImPlotPoint(x0, -secA), ImPlotPoint(x1, 0), ImVec2(0, (float)w / H), ImVec2(1, 1));
+        ImPlot::PlotImage("a", a.wf.img->texture(), ImPlotPoint(x0, -secA), ImPlotPoint(x1, 0), ImVec2(0, (float)w / H), ImVec2(1, 1));
         if (w > 0)
-            ImPlot::PlotImage("b", (ImTextureID)(__bridge void*)a.wf.tex, ImPlotPoint(x0, -secs), ImPlotPoint(x1, -secA), ImVec2(0, 0), ImVec2(1, (float)w / H));
+            ImPlot::PlotImage("b", a.wf.img->texture(), ImPlotPoint(x0, -secs), ImPlotPoint(x1, -secA), ImVec2(0, 0), ImVec2(1, (float)w / H));
         ImPlot::EndPlot();
     }
 }
@@ -2161,7 +2077,7 @@ static void playerTab(App& a) {
     float h = ImGui::GetContentRegionAvail().y - 44 - (haveNN ? 46.f : 0.f);
     ImGui::BeginChild("vbox", ImVec2(-1, h), ImGuiChildFlags_Borders);
     if (pl.selected() < 0) ImGui::TextDisabled("Pick a service in the list on the right to start playback.");
-    else if (!a.video.tex) ImGui::TextDisabled("%s", ps.hasAudio && !ps.hasVideo ? "audio only" : ps.status.c_str());
+    else if (!a.video.has()) ImGui::TextDisabled("%s", ps.hasAudio && !ps.hasVideo ? "audio only" : ps.status.c_str());
     else a.video.draw(ImGui::GetContentRegionAvail());
     ImGui::EndChild();
     if (ImGui::Button(pl.selected() >= 0 ? "Stop" : "Play")) { if (pl.selected() >= 0) pl.select(-1); else if (a.playReq < 0 && !a.ts.services.empty()) { int sid = a.ts.services[0].id; pl.select(sid); pl.setVolume(a.volume); } }
@@ -2316,7 +2232,7 @@ static void rightPanel(App& a) {
         const PlayerStats ps = a.engine.player().stats();
         if (a.engine.player().selected() < 0) ImGui::TextDisabled("no picture");
         else if (!ps.hasVideo && ps.hasAudio) ImGui::TextDisabled("audio only");
-        else if (!a.video.tex) ImGui::TextDisabled("%s", ps.status.c_str());
+        else if (!a.video.has()) ImGui::TextDisabled("%s", ps.status.c_str());
         else a.video.draw(ImGui::GetContentRegionAvail());
         ImGui::EndChild();
     }
@@ -2723,13 +2639,13 @@ static void drawUI(App& a, ImVec2 disp) {
         if (sid >= 0) for (auto& sv : a.ts.services) if (sv.id == sid) for (auto& st : sv.streams) if (st.kind == "teletext") { pid = st.pid; break; }
         a.engine.teletext().setPid(pid);
     }
-    a.video.update(a.engine.player(), gQueue);
+    a.video.update(a.engine.player());
     if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }
     {
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
             if (a.videoOnly) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
-            else if (a.video.tex) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+            else if (a.video.has()) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
         }
         if (a.videoOnly && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
     }
@@ -2738,7 +2654,7 @@ static void drawUI(App& a, ImVec2 disp) {
         ImGui::SetNextWindowSize(disp);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
         ImGui::Begin("##vonly", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-        if (a.video.tex) a.video.draw(disp); else ImGui::TextDisabled("no picture - press Esc");
+        if (a.video.has()) a.video.draw(disp); else ImGui::TextDisabled("no picture - press Esc");
         if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
         ImGui::End();
         ImGui::PopStyleColor();
@@ -2784,7 +2700,7 @@ static void drawUI(App& a, ImVec2 disp) {
         ImGui::SetNextWindowPos(ImVec2(200, 160), ImGuiCond_FirstUseEver);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
         if (ImGui::Begin("Video", &a.popOut)) {
-            if (a.video.tex) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("no picture");
+            if (a.video.has()) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("no picture");
             if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
         }
         ImGui::End();
@@ -2796,42 +2712,34 @@ static void drawUI(App& a, ImVec2 disp) {
 
 int main(int argc, char** argv) {
     glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    gfx::windowHints();
     GLFWwindow* window = glfwCreateWindow(1500, 900, "OnAir", nullptr, nullptr);
     if (!window) return 1;
     gWindow = window;
 
-    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-    gDevice = device;
-    id<MTLCommandQueue> queue = [device newCommandQueue];
-    gQueue = queue;
-
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImPlot::CreateContext();
+    gfx::Backend* gfxBackend = gfx::create(window);
+    if (!gfxBackend) { fprintf(stderr, "could not start the graphics back end\n"); return 1; }
+    gGfx = gfxBackend;
+
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = nullptr;
     applyTheme();
 
     App app;
-    ImFont* ui = io.Fonts->AddFontFromFileTTF("/System/Library/Fonts/Helvetica.ttc", 14.5f);
-    app.mono = io.Fonts->AddFontFromFileTTF("/System/Library/Fonts/Menlo.ttc", 13.0f);
+    ImFont* ui = nullptr;
+    for (const auto& f : plat::uiFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (ui = io.Fonts->AddFontFromFileTTF(f.c_str(), 14.5f))) break;
+    app.mono = nullptr;
+    for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (app.mono = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break;
     if (!ui) ui = io.Fonts->AddFontDefault();
     app.ui = ui;
     if (!app.mono) app.mono = ui;
 
     ImGui_ImplGlfw_InitForOther(window, true);
-    ImGui_ImplMetal_Init(device);
 
-    NSWindow* nswin = glfwGetCocoaWindow(window);
-    CAMetalLayer* layer = [CAMetalLayer layer];
-    layer.device = device;
-    layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
-    nswin.contentView.layer = layer;
-    nswin.contentView.wantsLayer = YES;
-    MTLRenderPassDescriptor* rpd = [MTLRenderPassDescriptor new];
-
-    app.wf.init(device);
+    app.wf.init(gfxBackend);
     loadPrefs(app);
     app.engine.log("OnAir started");
     refreshDevices(app);
@@ -2870,24 +2778,15 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--vga" && i + 1 < argc) app.tune.vgaDb = atoi(argv[++i]);
         if (std::string(argv[i]) == "--amp") app.tune.ampOn = true;
     }
-    layer.framebufferOnly = NO;
     double last = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
-        @autoreleasepool {
+        {
             glfwPollEvents();
             int w, h;
             glfwGetFramebufferSize(window, &w, &h);
             if (w == 0 || h == 0) { glfwWaitEventsTimeout(0.1); continue; }
-            layer.drawableSize = CGSizeMake(w, h);
-            id<CAMetalDrawable> drawable = [layer nextDrawable];
-            id<MTLCommandBuffer> cb = [queue commandBuffer];
-            rpd.colorAttachments[0].clearColor = MTLClearColorMake(0.04, 0.045, 0.05, 1);
-            rpd.colorAttachments[0].texture = drawable.texture;
-            rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
-            rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
-            id<MTLRenderCommandEncoder> enc = [cb renderCommandEncoderWithDescriptor:rpd];
-
-            ImGui_ImplMetal_NewFrame(rpd);
+            static const float kClear[4] = {0.04f, 0.045f, 0.05f, 1.f};
+            gfxBackend->newFrame(w, h, kClear);
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
             if (autostart) {
@@ -2902,20 +2801,9 @@ int main(int argc, char** argv) {
             last = now;
             drawUI(app, io.DisplaySize);
             ImGui::Render();
-            ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), cb, enc);
-            [enc endEncoding];
-            [cb presentDrawable:drawable];
-            [cb commit];
-            if (shotPath && ++shotFrame == (hackrfStart ? (app.playReq >= 0 || app.engine.player().selected() >= 0 ? 2400 : 900) : 400)) {
-                [cb waitUntilCompleted];
-                id<MTLTexture> t = drawable.texture;
-                NSUInteger tw = t.width, th = t.height;
-                std::vector<uint8_t> px(tw * th * 4);
-                [t getBytes:px.data() bytesPerRow:tw * 4 fromRegion:MTLRegionMake2D(0, 0, tw, th) mipmapLevel:0];
-                for (size_t i = 0; i < px.size(); i += 4) std::swap(px[i], px[i + 2]); // BGRA -> RGBA
-                unsigned char* planes[1] = {px.data()};
-                NSBitmapImageRep* rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:planes pixelsWide:tw pixelsHigh:th bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:tw * 4 bitsPerPixel:32];
-                [[rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}] writeToFile:[NSString stringWithUTF8String:shotPath] atomically:YES];
+            const bool shotNow = shotPath && ++shotFrame == (hackrfStart ? (app.playReq >= 0 || app.engine.player().selected() >= 0 ? 2400 : 900) : 400);
+            gfxBackend->endFrame(ImGui::GetDrawData(), shotNow ? shotPath : nullptr);
+            if (shotNow) {
                 { PlayerStats ps = app.engine.player().stats(); { BbStats bb = app.engine.bbStats(); fprintf(stderr, "stream: BB frames %llu lost %llu, PLP frames dropped by busy decoder %llu, FEC blocks ok %llu bad %llu, samples dropped %llu, CPU decode %.0f ms\n", (unsigned long long)bb.frames, (unsigned long long)bb.framesLost, (unsigned long long)app.rx.plpFramesDropped, (unsigned long long)app.rx.blocksOk, (unsigned long long)app.rx.blocksBad, (unsigned long long)app.engine.droppedSamples(), app.rx.plpDecodeMs); }
                 fprintf(stderr, "player: %s hw=%d %s %dx%d decoded %llu shown %llu late %llu errors %llu audio %s ch %d buf %.0f ms underruns %d A/V %+.0f ms\n", ps.status.c_str(), ps.hardware, ps.videoCodec.c_str(), ps.width, ps.height, (unsigned long long)ps.decoded, (unsigned long long)ps.shown, (unsigned long long)ps.late, (unsigned long long)ps.errors, ps.audioCodec.c_str(), ps.audioChannels, ps.audioBufferMs, ps.underruns, ps.avOffsetMs); }
                 glfwSetWindowShouldClose(window, 1);
@@ -2923,7 +2811,7 @@ int main(int argc, char** argv) {
         }
     }
     app.engine.stop();
-    ImGui_ImplMetal_Shutdown();
+    gfxBackend->shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImPlot::DestroyContext();
     ImGui::DestroyContext();

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, linux-port]
+    branches: [main, linux-port, linux-app]
   pull_request:
 
 jobs:
@@ -34,6 +34,32 @@ jobs:
         run: cmake --build build -j 4
       - name: Test
         run: ctest --test-dir build --output-on-failure --timeout 1500
+
+  app:
+    name: GUI (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Linux x86_64, OpenGL", os: ubuntu-24.04, extra: "" }
+          - { name: "Linux arm64, OpenGL", os: ubuntu-24.04-arm, extra: "" }
+          - { name: "macOS arm64, Metal", os: macos-14, extra: "" }
+          - { name: "macOS arm64, OpenGL", os: macos-14, extra: "-DDECT2_UI_BACKEND=OpenGL3" }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config libhackrf-dev libusb-1.0-0-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev libglfw3-dev
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake pkg-config hackrf libusb ffmpeg glfw
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=OFF ${{ matrix.extra }}
+      - name: Build the app
+        run: cmake --build build -j 4 --target dect2
 
   sanitize:
     name: Linux x86_64 (AddressSanitizer + UBSan)

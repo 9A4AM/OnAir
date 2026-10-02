@@ -19,6 +19,7 @@ struct SynthConfig {
     bool atsc = false;     // generate ATSC 8-VSB (6 MHz channel) instead
     bool dvbt = false;     // generate DVB-T (with a small test transport stream) instead of DVB-T2
     int dvbtMode = 1, dvbtGuard = 2, dvbtMod = 2, dvbtRate = 1; // 8K, GI 1/8, 64-QAM, 2/3
+    double pace = 1.0;     // 1 = real time; below 1 the signal runs in slow motion (tests on slow machines: the receiver gets 1/pace times the time)
     bool gainModel = false; // scale the level with the LNA/VGA/amp gains (for testing AGC): 62 dB total = the nominal level
 };
 
