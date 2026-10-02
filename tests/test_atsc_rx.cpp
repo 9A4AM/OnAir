@@ -3,6 +3,7 @@
 #include "dect2/atsc_rx.h"
 #include "dect2/dvbt_gen.h"
 #include <chrono>
+#include <random>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -86,6 +87,39 @@ int main(int argc, char** argv) {
         printf("%-52s packets %5zu good %5zu flagged %4zu wrong %3zu  (%.1f%%)  locked at %.2f s  CPU %.1fx\n", cs.name, r.packets, r.good, r.errFlag, r.wrong, pct, r.lockSec, r.cpuRt);
         CHECK(r.lockSec >= 0 && r.lockSec <= cs.maxLock, "%s: lock took %.2f s", cs.name, r.lockSec);
         CHECK(pct >= cs.minGoodPct * (r.packets > 0 ? 1.0 : 100.0) * 0.93 && r.wrong <= 3, "%s: %.1f%% good, %zu wrong", cs.name, pct, r.wrong);
+    }
+    {   // noise only: no lock, no packets
+        AtscReceiver rx;
+        rx.configure(8e6);
+        size_t pk = 0;
+        rx.setPacketCallback([&](const uint8_t*, size_t n, double) { pk += n; });
+        std::mt19937 g(5);
+        std::normal_distribution<float> nd(0.f, 1.f);
+        std::vector<cf32> blk(1 << 15);
+        for (int i = 0; i < 250; i++) { for (auto& v : blk) v = cf32(nd(g), nd(g)); rx.feed(blk.data(), blk.size()); }
+        rx.flush();
+        printf("noise only: level %d, packets %zu\n", rx.detectLevel(), pk);
+        CHECK(rx.detectLevel() < 3 && pk == 0, "noise produced a lock (level %d, %zu packets)", rx.detectLevel(), pk);
+    }
+    {   // signal, then a 0.4 s gap of noise, then the signal again: the receiver must find it again
+        atsc::ChannelConfig cc; cc.snrDb = 25;
+        atsc::Generator gen(dvbt::testTsSource(), cc, 8e6, 3);
+        AtscReceiver rx;
+        rx.configure(8e6);
+        size_t pk = 0;
+        rx.setPacketCallback([&](const uint8_t*, size_t n, double) { pk += n; });
+        std::mt19937 g(9);
+        std::normal_distribution<float> nd(0.f, 3.f);
+        std::vector<cf32> blk;
+        auto feedSignal = [&](double sec) { for (size_t done = 0; done < (size_t)(sec * 8e6); done += 1 << 15) { blk.clear(); gen.generate(1 << 15, blk); rx.feed(blk.data(), blk.size()); } rx.flush(); };
+        feedSignal(0.6);
+        const size_t before = pk;
+        for (int i = 0; i < 100; i++) { blk.assign(1 << 15, cf32(0, 0)); for (auto& v : blk) v = cf32(nd(g), nd(g)); rx.feed(blk.data(), blk.size()); }
+        rx.flush();
+        const size_t mid = pk;
+        feedSignal(1.0);
+        printf("dropout: %zu packets before the gap, %zu during, %zu after; level %d\n", before, mid - before, pk - mid, rx.detectLevel());
+        CHECK(before > 2000 && pk - mid > 5000, "no recovery after a dropout (%zu before, %zu after)", before, pk - mid);
     }
     printf(fails ? "ATSC receiver tests FAILED\n" : "ATSC receiver tests passed\n");
     return fails ? 1 : 0;

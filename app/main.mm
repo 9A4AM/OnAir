@@ -280,6 +280,8 @@ static void applyBandwidth(App& a) {
     a.tune.sampleRate = kBw[a.bwIdx].mhz >= 7 ? 10e6 : 8e6;
     a.tune.basebandFilterHz = 0;
     a.tune.bandwidthMhz = kBw[a.bwIdx].mhz;
+    a.tune.synth.atsc = a.atscMode;
+    if (a.atscMode) { a.tune.bandwidthMhz = 6; a.tune.sampleRate = 8e6; }   // an ATSC channel is always 6 MHz wide
 }
 
 static std::string openFileDialog() {
@@ -451,7 +453,8 @@ static void toolbar(App& a) {
     {
         char bl[32];
         snprintf(bl, sizeof bl, a.bwAuto ? "%s (auto)" : "%s", kBw[a.bwIdx].label);
-        ImGui::BeginDisabled(running && !a.bwAuto);
+        if (a.atscMode) snprintf(bl, sizeof bl, "6 MHz");
+        ImGui::BeginDisabled(a.atscMode || (running && !a.bwAuto));
         if (ImGui::BeginCombo("##bw", bl)) {
             for (int i = 0; i < (int)(sizeof kBw / sizeof *kBw); i++)
                 if (ImGui::Selectable(kBw[i].label, i == a.bwIdx && !a.bwAuto)) { a.bwIdx = i; a.bwAuto = false; savePrefs(a); }
@@ -499,9 +502,7 @@ static void toolbar(App& a) {
     ImGui::SameLine(0, 14);
     if (!running) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.42f, 0.28f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.14f, 0.56f, 0.36f, 1));
-        ImGui::BeginDisabled(a.atscMode);
         const bool startClicked = ImGui::Button("  Start  ");
-        ImGui::EndDisabled();
         ImGui::PopStyleColor(2);
         if (startClicked) {
             a.tune.centerHz = a.freqMhz * 1e6;
@@ -509,7 +510,7 @@ static void toolbar(App& a) {
             if (isFile) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate
             if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
             else {
-                a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
+                a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.atscMode ? 3 : a.stdMode);
                 a.engine.start(a.devices[a.devIdx], a.tune, a.file);
                 savePrefs(a);
                 a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
@@ -549,7 +550,7 @@ static void toolbar(App& a) {
         (void)act;
         ImGui::SetNextItemWidth(112);
         if (ImGui::BeginCombo("##std", lbl)) {
-            for (int i = 0; i < 3; i++) if (ImGui::Selectable(names[i], a.stdMode == i)) { a.stdMode = i; a.engine.setStandard(i); savePrefs(a); }
+            for (int i = 0; i < 3; i++) if (!a.atscMode && ImGui::Selectable(names[i], a.stdMode == i)) { a.stdMode = i; a.engine.setStandard(i); savePrefs(a); }
             ImGui::EndCombo();
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Which broadcast standard to decode.\nAuto alternates between DVB-T2 and DVB-T until one locks.");
@@ -574,9 +575,11 @@ static void sourceOptions(App& a) {
         bool ch = false;
         ImGui::TextDisabled("synthetic");
         ImGui::SameLine();
-        if (ImGui::Checkbox("DVB-T", &sc.dvbt)) ch = true;
+        if (!a.atscMode && ImGui::Checkbox("DVB-T", &sc.dvbt)) ch = true;
         ImGui::SameLine();
-        if (sc.dvbt) {
+        if (a.atscMode) {
+            ImGui::TextDisabled("ATSC 8-VSB, 6 MHz");
+        } else if (sc.dvbt) {
             static const char* fftN[] = {"2K", "8K"}; static const char* gis[] = {"1/32", "1/16", "1/8", "1/4"};
             static const char* mods[] = {"QPSK", "16-QAM", "64-QAM"}; static const char* rates[] = {"1/2", "2/3", "3/4", "5/6", "7/8"};
             ImGui::SetNextItemWidth(60);
@@ -660,7 +663,16 @@ static void statusBar(App& a) {
         const bool isT = rx.standard == 1;
         const double okFrac = (rx.blocksOk + rx.blocksBad) ? (double)rx.blocksOk / (rx.blocksOk + rx.blocksBad) : 0;
         const int fec = !run || !rx.plpValid || rx.plpFrames == 0 ? 0 : okFrac > 0.995 ? 1 : okFrac > 0.5 ? 2 : 3;
-        if (isT) {
+        if (rx.standard == 2) {
+            const AtscTelemetry& at = rx.atsc;
+            const double okF = (at.rsClean + at.rsCorrected + at.rsFailed) ? (double)(at.rsClean + at.rsCorrected) / (double)(at.rsClean + at.rsCorrected + at.rsFailed) : 0;
+            lamp("Pilot", !run ? 0 : at.pilot ? 1 : 0); ImGui::SameLine(0, 12);
+            lamp("Seg", !run ? 0 : at.segSync ? 1 : 0); ImGui::SameLine(0, 12);
+            lamp("Field", !run ? 0 : at.fieldSync ? 1 : at.segSync ? 2 : 0); ImGui::SameLine(0, 12);
+            lamp("Eq", !run ? 0 : at.eqTrained ? 1 : at.fieldSync ? 2 : 0); ImGui::SameLine(0, 12);
+            lamp("Trellis", !run ? 0 : at.tsOk ? 1 : at.eqTrained ? 2 : 0); ImGui::SameLine(0, 12);
+            lamp("RS", !run || at.fields == 0 ? 0 : okF > 0.995 ? 1 : okF > 0.5 ? 2 : 3); ImGui::SameLine(0, 12);
+        } else if (isT) {
             // DVB-T: cyclic-prefix sync, guard interval, TPS signalling, channel estimate, then Viterbi and Reed-Solomon
             lamp("Sync", !run ? 0 : rx.state >= 1 ? 1 : 0); ImGui::SameLine(0, 12);
             lamp("GI", !run ? 0 : rx.giIdx >= 0 ? (rx.state == 2 ? 1 : 2) : 0); ImGui::SameLine(0, 12);
@@ -695,7 +707,12 @@ static void statusBar(App& a) {
     else if (rx.state == 2) ro("State", "Locked", ImVec4(0.35f, 0.90f, 0.45f, 1));
     else if (rx.state == 1) ro("State", "syncing", ImVec4(0.95f, 0.75f, 0.2f, 1));
     else ro("State", "searching", ImVec4(0.6f, 0.64f, 0.68f, 1));
-    if (run && rx.standard == 1 && rx.state >= 1) {
+    if (run && rx.standard == 2 && rx.state >= 1) {
+        ro("Mode", "ATSC 8-VSB");
+        ro("Channel", "6 MHz");
+        snprintf(b, sizeof b, "%d", rx.atsc.fieldParity); ro("Field", b);
+        ro("Pilot", rx.atsc.pilot ? "locked" : "-");
+    } else if (run && rx.standard == 1 && rx.state >= 1) {
         ro("Mode", "DVB-T");
         ro("FFT", rx.fftN == 8192 ? "8K" : "2K");
         ro("GI", dvbt::guardName(rx.giIdx));
@@ -1487,7 +1504,87 @@ static void constClusterPlot(App& a, ImVec2 sz) {
     }
 }
 
+// ATSC: histogram of the equalised symbols (eight peaks), equaliser response, strip chart of the levels and a text summary
+static void atscPanels(App& a) {
+    const AtscTelemetry& at = a.rx.atsc;
+    const float availW = ImGui::GetContentRegionAvail().x, availH = ImGui::GetContentRegionAvail().y;
+    const float side = std::max(90.f, std::min(availH - 26.f, availW / 4.f - 16.f));
+    const float gap = std::max(6.f, (availW - 4 * side) / 5.f);
+    const ImVec2 sz(side, side);
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + gap);
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("Equalised levels (%zu symbols)", at.levels.size());
+    if (ImPlot::BeginPlot("##ah", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_NoMouseText)) {
+        ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -9, 9, ImPlotCond_Always);
+        constexpr int NB = 72;
+        float cnt[NB] = {}, xs[NB];
+        for (int i = 0; i < NB; i++) xs[i] = -9.f + (i + 0.5f) * 18.f / NB;
+        float mx = 1;
+        for (float v : at.levels) { const int k = (int)((v + 9.f) / 18.f * NB); if (k >= 0 && k < NB) mx = std::max(mx, ++cnt[k]); }
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, mx * 1.15, ImPlotCond_Always);
+        ImPlotSpec sp; sp.FillColor = ImVec4(0.35f, 0.62f, 1.f, 0.85f); sp.LineColor = ImVec4(0.35f, 0.62f, 1.f, 1.f);
+        ImPlot::PlotBars("levels", xs, cnt, NB, 18.0 / NB * 0.9, sp);
+        const double lv[8] = {-7, -5, -3, -1, 1, 3, 5, 7};
+        ImPlotSpec gs; gs.LineColor = ImVec4(1, 1, 1, 0.35f);
+        ImPlot::PlotInfLines("ideal", lv, 8, gs);
+        ImPlot::EndPlot();
+    }
+    ImGui::EndGroup();
+    ImGui::SameLine(0, gap);
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("Equaliser response (%zu taps)", at.eqTaps.size());
+    if (ImPlot::BeginPlot("##ae", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_NoMouseText)) {
+        ImPlot::SetupAxes("symbols", nullptr, 0, ImPlotAxisFlags_AutoFit);
+        if (!at.eqTaps.empty()) {
+            std::vector<float> xs(at.eqTaps.size());
+            for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(at.eqCursor - (int)i);   // symbols relative to the main tap: positive = echoes of later symbols
+            ImPlot::SetupAxisLimits(ImAxis_X1, -(double)(at.eqTaps.size() - 1 - at.eqCursor) - 1, (double)at.eqCursor + 1, ImPlotCond_Always);
+            ImPlotSpec sp; sp.LineColor = ImVec4(0.9f, 0.7f, 0.2f, 1.f);
+            ImPlot::PlotLine("taps", xs.data(), at.eqTaps.data(), (int)xs.size(), sp);
+        }
+        ImPlot::EndPlot();
+    }
+    ImGui::EndGroup();
+    ImGui::SameLine(0, gap);
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("Symbol levels in sequence");
+    if (ImPlot::BeginPlot("##as", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_NoMouseText)) {
+        ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -9, 9, ImPlotCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, std::max<size_t>(2, at.levels.size()), ImPlotCond_Always);
+        if (!at.levels.empty()) {
+            ImPlotSpec sp; sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.3f;
+            sp.MarkerFillColor = sp.MarkerLineColor = sp.LineColor = ImVec4(0.35f, 0.85f, 0.45f, 0.6f);
+            ImPlot::PlotScatter("l", at.levels.data(), (int)at.levels.size(), 1.0, 0.0, sp);
+        }
+        const double lv[8] = {-7, -5, -3, -1, 1, 3, 5, 7};
+        ImPlotSpec gs; gs.LineColor = ImVec4(1, 1, 1, 0.25f); gs.Flags = ImPlotInfLinesFlags_Horizontal;
+        ImPlot::PlotInfLines("ideal", lv, 8, gs);
+        ImPlot::EndPlot();
+    }
+    ImGui::EndGroup();
+    ImGui::SameLine(0, gap);
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("ATSC receiver");
+    ImGui::BeginChild("atxt", sz);
+    ImGui::PushFont(a.mono, 0);
+    ImGui::Text("pilot       %s", at.pilot ? "locked" : "searching");
+    ImGui::Text("segment     %s  sync %.2f", at.segSync ? "locked" : "searching", at.syncQuality);
+    ImGui::Text("field       %s  (%d)", at.fieldSync ? "locked" : "searching", at.fieldParity);
+    ImGui::Text("CFO %+.0f Hz  SRO %+.1f ppm", at.cfoHz, at.sroPpm);
+    ImGui::Text("SNR %.1f dB  data %.1f dB", at.snrDb, at.dataSnrDb);
+    ImGui::Text("fields %llu", (unsigned long long)at.fields);
+    ImGui::Text("RS ok %llu fixed %llu", (unsigned long long)at.rsClean, (unsigned long long)at.rsCorrected);
+    ImGui::Text("RS failed %llu (%.1f%%)", (unsigned long long)at.rsFailed, at.segErrorRate * 100);
+    ImGui::Text("lock losses %llu", (unsigned long long)at.lockLosses);
+    ImGui::PopFont();
+    ImGui::EndChild();
+    ImGui::EndGroup();
+}
+
 static void constellationsTab(App& a) {
+    if (a.rx.standard == 2) { atscPanels(a); return; }
     const RxTelemetry& rx = a.rx;
     const float availW = ImGui::GetContentRegionAvail().x, availH = ImGui::GetContentRegionAvail().y;
     const float side = std::max(90.f, std::min(availH - 26.f - ImGui::GetFrameHeight(), availW / 4.f - 16.f));
@@ -1814,7 +1911,7 @@ static void scanTab(App& a) {
                 a.freqMhz = r.freqMHz; a.bwIdx = r.bwMhz >= 7.5 ? 0 : 1;
                 for (int k = 0; k < (int)(sizeof(kBw) / sizeof(kBw[0])); k++) if (kBw[k].mhz == r.bwMhz) a.bwIdx = k;
                 a.tune.centerHz = a.freqMhz * 1e6; applyBandwidth(a);
-                a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
+                a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.atscMode ? 3 : a.stdMode);
                 a.engine.start(a.devices[hw], a.tune, a.file);
                 a.devIdx = hw; a.smooth.clear(); a.peak.clear(); a.lastSeq = 0; savePrefs(a);
             }
@@ -1943,7 +2040,7 @@ static void tuneToChannel(App& a, const SavedChannel& c) {
     } else {
         if (a.engine.running()) a.engine.stop();
         a.devIdx = hw;
-        a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
+        a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.atscMode ? 3 : a.stdMode);
         a.engine.start(a.devices[hw], a.tune, a.file);
     }
     a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
@@ -2288,6 +2385,23 @@ static void channelDashboard(App& a) {
 }
 
 static void receiverTab(App& a) {
+    if (a.rx.standard == 2 || a.atscMode) {
+        const AtscTelemetry& at = a.rx.atsc;
+        ImGui::TextDisabled("ATSC 8-VSB receiver: matched filter, pilot loop, symbol clock, field sync, per-field equaliser, trellis, Reed-Solomon");
+        ImGui::Spacing();
+        auto row = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); ImGui::SameLine(190); ImGui::PushFont(a.mono, 0); ImGui::Text(fmt, v...); ImGui::PopFont(); };
+        row("pilot carrier", "%s", at.pilot ? "locked" : "searching");
+        row("carrier offset", "%+.1f Hz", at.cfoHz);
+        row("symbol clock offset", "%+.2f ppm", at.sroPpm);
+        row("segment sync", "%s  (correlation %.2f)", at.segSync ? "locked" : "searching", at.syncQuality);
+        row("field sync", "%s  (field %d)", at.fieldSync ? "locked" : "searching", at.fieldParity);
+        row("equaliser", "%s, SNR %.1f dB from the known sync symbols", at.eqTrained ? "trained" : "not trained", at.snrDb);
+        row("data symbols", "%.1f dB from the nearest of the 8 levels", at.dataSnrDb);
+        row("fields decoded", "%llu", (unsigned long long)at.fields);
+        row("Reed-Solomon", "%llu clean, %llu corrected, %llu failed", (unsigned long long)at.rsClean, (unsigned long long)at.rsCorrected, (unsigned long long)at.rsFailed);
+        row("lock losses", "%llu (field sync misses %llu)", (unsigned long long)at.lockLosses, (unsigned long long)at.fieldSyncMisses);
+        return;
+    }
     subNav("rx", a.subRx, {"Sync", "Signalling", "FEC", "Frame map", "Channel"});
     switch (a.subRx) {
     case 0: syncTab(a); break;
@@ -2527,8 +2641,8 @@ static void antennaTab(App& a) {
 
 // Automatic bandwidth: follow what the engine detected; a change between 8 and 10 Msps (7/8 MHz vs narrower) needs a restart
 static void followBandwidth(App& a) {
-    a.engine.setBandwidthAuto(a.bwAuto);
-    if (!a.bwAuto || !a.engine.running()) return;
+    a.engine.setBandwidthAuto(a.bwAuto && !a.atscMode);
+    if (!a.bwAuto || a.atscMode || !a.engine.running()) return;
     const bool hw = a.devices[a.devIdx].kind == DeviceInfo::HackRF;
     const double want = a.engine.activeBandwidth();
     if (want == a.tune.bandwidthMhz) return;
@@ -2542,7 +2656,7 @@ static void followBandwidth(App& a) {
     if (hw && a.tune.sampleRate != oldRate) {
         a.engine.log(a.tune.sampleRate > oldRate ? "restarting at 10 Msps" : "restarting at 8 Msps");
         a.engine.stop();
-        a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
+        a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.atscMode ? 3 : a.stdMode);
         a.engine.start(a.devices[a.devIdx], a.tune, a.file);
         a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
         a.mpd.reset(); a.quality.reset();
@@ -2570,7 +2684,7 @@ static void standardSwitch(App& a) {
     ImGui::SameLine(0, 8);
     ImGui::TextColored(a.atscMode ? ImVec4(0.95f, 0.97f, 1, 1) : ImVec4(0.55f, 0.6f, 0.66f, 1), "ATSC");
     ImGui::SameLine(0, 14);
-    if (a.atscMode) ImGui::TextColored(ImVec4(0.95f, 0.7f, 0.3f, 1), "ATSC (8VSB, 6 MHz) is not implemented yet: the receiver below only handles DVB-T2 and DVB-T.");
+    if (a.atscMode) ImGui::TextDisabled("ATSC 8-VSB, 6 MHz channel (the DVB-only settings are off)");
     else ImGui::TextDisabled("DVB-T2 / DVB-T, detected automatically");
     if (hov) ImGui::SetTooltip("Left: DVB (T2 and T, automatic).\nRight: ATSC (US, Canada, Mexico, South Korea).");
 }
@@ -2725,6 +2839,7 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--autostart") autostart = true;
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
+        if (std::string(argv[i]) == "--atsc") app.atscMode = true;
         if (std::string(argv[i]) == "--constview" && i + 1 < argc) app.constView = atoi(argv[++i]);
         if (std::string(argv[i]) == "--synthgain") app.tune.synth.gainModel = true;
         if (std::string(argv[i]) == "--dvbt") { app.tune.synth.dvbt = true; app.tune.synth.snrDb = 28; }
@@ -2773,7 +2888,7 @@ int main(int argc, char** argv) {
                 app.devIdx = 0;
                 if (hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == (fileStart ? DeviceInfo::File : DeviceInfo::HackRF)) app.devIdx = i;
                 app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
-                app.engine.setComputeMode(app.computeMode); app.engine.setStandard(app.stdMode);
+                app.engine.setComputeMode(app.computeMode); app.engine.setStandard(app.atscMode ? 3 : app.stdMode);
                 app.engine.start(app.devices[app.devIdx], app.tune, app.file);
             }
             double now = glfwGetTime();

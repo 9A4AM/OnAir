@@ -344,6 +344,7 @@ void Engine::analysisLoop() {
                     t.atsc = at;
                     t.seq = at.seq;
                     t.state = at.fieldSync ? 2 : at.segSync ? 1 : 0;
+                    t.cfoHz = at.cfoHz; t.sroPpm = at.sroPpm;
                     t.dataValid = at.fieldSync && at.eqTrained;
                     t.dataSnrDb = (float)at.snrDb;
                     t.blocksOk = at.rsClean + at.rsCorrected;

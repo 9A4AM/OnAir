@@ -635,7 +635,7 @@ struct Core {
         nt.sroPpm = rr / 2.0 * 1e6;
         nt.pilotDb = pilotRel > 0 ? 20.0 * std::log10(pilotRel) : -99;
         nt.syncQuality = syncQ;
-        nt.eqCursor = kL - 1 - kNF;
+        nt.eqCursor = kNF;   // index of the main tap; lower indices are later samples
         nt.seq = pub.seq + 1;
         pub = std::move(nt);
         t.seq = pub.seq;
