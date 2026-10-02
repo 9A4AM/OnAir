@@ -17,6 +17,7 @@
 #include "dect2/teletext.h"
 #include "theme.h"
 #include "gfx.h"
+#include "icons.h"
 #include "platform.h"
 
 #include <algorithm>
@@ -69,10 +70,18 @@ struct Waterfall {
 };
 
 static std::string gForceTab; // dev: --tab <name> selects a tab for screenshots
-static bool tabItem(const char* name) {
+static bool tabItem(const char* name, Ic icon) {
     ImGuiTabItemFlags fl = 0;
     if (!gForceTab.empty() && gForceTab == name) { fl = ImGuiTabItemFlags_SetSelected; gForceTab.clear(); }
-    return ImGui::BeginTabItem(name, nullptr, fl);
+    // the label is padded with spaces to leave room for the icon, which is drawn over that gap
+    const float gap = iconSize() + 5.f;
+    const int nSp = (int)std::ceil(gap / ImGui::CalcTextSize(" ").x);
+    const std::string label = std::string(nSp, ' ') + name + "###" + name;
+    const bool open = ImGui::BeginTabItem(label.c_str(), nullptr, fl);
+    const ImVec2 r0 = ImGui::GetItemRectMin(), r1 = ImGui::GetItemRectMax();
+    icons::draw(icon, ImVec2(r0.x + ImGui::GetStyle().FramePadding.x + iconSize() * 0.5f + 1.f, (r0.y + r1.y) * 0.5f), iconSize() * 0.92f,
+                open ? IM_COL32(255, 255, 255, 255) : IM_COL32(140, 154, 170, 255));
+    return open;
 }
 
 // ------------------------------------------------------------------ app state
@@ -322,25 +331,71 @@ static void gaugePill(float width, float frac, ImU32 fill, const char* text) {
 
 // label : value readout in the status area (label dim, value in the mono font)
 
-static void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/) {
+static void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/, int icon = -1) {
     ImVec4 c = state == 1 ? ImVec4(0.30f, 0.85f, 0.35f, 1) : state == 2 ? ImVec4(0.95f, 0.70f, 0.15f, 1)
              : state == 3 ? ImVec4(0.90f, 0.25f, 0.25f, 1) : ImVec4(0.30f, 0.32f, 0.35f, 1);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     ImVec2 p = ImGui::GetCursorScreenPos();
     float r = 5;
-    dl->AddCircleFilled(ImVec2(p.x + r + 1, p.y + ImGui::GetTextLineHeight() * 0.5f), r, ImGui::ColorConvertFloat4ToU32(c));
-    ImGui::Dummy(ImVec2(r * 2 + 4, ImGui::GetTextLineHeight()));
+    const ImU32 cu = ImGui::ColorConvertFloat4ToU32(c);
+    const ImVec2 mid(p.x + r + 1, p.y + ImGui::GetTextLineHeight() * 0.5f);
+    if (icon >= 0) {
+        icons::draw((Ic)icon, ImVec2(mid.x + 1, mid.y), iconSize() * 0.95f, cu);
+        ImGui::Dummy(ImVec2(iconSize() + 3, ImGui::GetTextLineHeight()));
+    } else {
+        if (state) dl->AddCircleFilled(mid, r + 2.5f, (cu & 0x00FFFFFF) | 0x28000000);   // soft glow for a lit lamp
+        dl->AddCircleFilled(mid, r, cu);
+        if (state) dl->AddCircleFilled(ImVec2(mid.x - 1.5f, mid.y - 1.5f), 1.6f, IM_COL32(255, 255, 255, 90));
+        ImGui::Dummy(ImVec2(r * 2 + 4, ImGui::GetTextLineHeight()));
+    }
     ImGui::SameLine(0, 0);
     ImGui::TextDisabled("%s", label);
+    static const struct { const char* k; const char* tip; } kTips[] = {
+        {"IQ", "Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping."},
+        {"P1", "DVB-T2: the P1 preamble symbol (frame start and mode) is being found."},
+        {"GI", "Guard interval and symbol timing are locked."},
+        {"L1-pre", "DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC."},
+        {"L1-post", "DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC."},
+        {"Frame", "A full T2 frame is being received and equalised."},
+        {"LDPC", "Forward error correction, inner code: share of blocks that decode."},
+        {"BCH", "Forward error correction, outer code: share of blocks that decode."},
+        {"TS", "Transport stream: services found, continuity errors counted."},
+        {"Video", "The player is decoding and showing pictures."},
+        {"Audio", "The player has audio buffered and playing."},
+        {"Sync", "DVB-T: OFDM symbol sync from the cyclic prefix."},
+        {"TPS", "DVB-T: the transmission parameter signalling bits are decoded."},
+        {"Chan", "Channel estimate from the pilots is valid."},
+        {"Viterbi", "DVB-T: the convolutional decoder found the packet sync."},
+        {"RS", "Reed-Solomon outer code: share of packets that are clean."},
+        {"Pilot", "ATSC: the 8-VSB pilot carrier is locked."},
+        {"Seg", "ATSC: data segment sync found."},
+        {"Field", "ATSC: field sync found."},
+        {"Eq", "ATSC: the equaliser is trained."},
+        {"Trellis", "ATSC: the trellis decoder produces a valid transport stream."}};
+    {
+        const ImVec2 mx = ImGui::GetItemRectMax();
+        if (ImGui::IsMouseHoveringRect(p, ImVec2(mx.x, p.y + ImGui::GetTextLineHeight()))) {
+            for (auto& e : kTips) if (!strcmp(e.k, label)) { ImGui::SetTooltip("%s", e.tip); break; }
+        }
+    }
 }
 
 static void toolbar(App& a) {
     bool running = a.engine.running();
     ImGui::AlignTextToFramePadding();
-    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1.f, 1), "OnAir");
-    ImGui::SameLine(0, 14);
-    ImGui::TextDisabled("source");
-    ImGui::SameLine();
+    {
+        const ImVec2 p = ImGui::GetCursorScreenPos();
+        const float ls = ImGui::GetFrameHeight() * 0.95f;
+        icons::draw(Ic::Logo, ImVec2(p.x + ls * 0.5f, p.y + ImGui::GetFrameHeight() * 0.5f), ls, 0);
+        ImGui::Dummy(ImVec2(ls, ImGui::GetFrameHeight()));
+        ImGui::SameLine(0, 7);
+        ImGui::PushFont(a.ui, 17.f);
+        ImGui::TextColored(ImVec4(0.55f, 0.80f, 1.f, 1), "OnAir");
+        ImGui::PopFont();
+    }
+    ImGui::SameLine(0, 16);
+    iconInline(a.devices[a.devIdx].kind == DeviceInfo::HackRF ? Ic::Usb : a.devices[a.devIdx].kind == DeviceInfo::File ? Ic::File : Ic::Wave, iconAccent());
+    ImGui::SameLine(0, 5);
     ImGui::SetNextItemWidth(190);
     ImGui::BeginDisabled(running);
     if (ImGui::BeginCombo("##src", a.devices[a.devIdx].name.c_str())) {
@@ -349,22 +404,24 @@ static void toolbar(App& a) {
         ImGui::EndCombo();
     }
     ImGui::SameLine();
-    if (ImGui::SmallButton("Rescan")) refreshDevices(a), a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
+    if (iconFlat(Ic::Refresh, "Rescan for devices")) refreshDevices(a), a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
     ImGui::EndDisabled();
 
     bool isHw = a.devices[a.devIdx].kind == DeviceInfo::HackRF;
     bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
 
-    ImGui::SameLine(0, 14);
-    ImGui::TextDisabled("freq");
-    ImGui::SameLine();
+    vSeparator();
+    iconInline(Ic::Antenna, iconAccent());
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Centre frequency");
+    ImGui::SameLine(0, 5);
     ImGui::SetNextItemWidth(110);
     bool retune = false;
     ImGui::InputDouble("##freq", &a.freqMhz, 0, 0, "%.3f MHz");
     if (ImGui::IsItemDeactivatedAfterEdit()) retune = true;
-    ImGui::SameLine();
-    ImGui::TextDisabled("BW");
-    ImGui::SameLine();
+    ImGui::SameLine(0, 10);
+    iconInline(Ic::Wave, iconAccent());
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Channel bandwidth");
+    ImGui::SameLine(0, 5);
     ImGui::SetNextItemWidth(a.bwAuto ? 125 : 80);
     {
         char bl[32];
@@ -382,8 +439,10 @@ static void toolbar(App& a) {
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7 or 8 MHz) is set for you.");
     }
 
-    ImGui::SameLine(0, 14);
+    vSeparator();
     ImGui::BeginDisabled(!isHw);
+    iconInline(Ic::Sliders, isHw ? iconAccent() : iconDim());
+    ImGui::SameLine(0, 5);
     ImGui::TextDisabled("LNA");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(78);
@@ -415,10 +474,10 @@ static void toolbar(App& a) {
     ImGui::EndDisabled();
     if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Gain controls apply to HackRF only");
 
-    ImGui::SameLine(0, 14);
+    vSeparator();
     if (!running) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.42f, 0.28f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.14f, 0.56f, 0.36f, 1));
-        const bool startClicked = ImGui::Button("  Start  ");
+        const bool startClicked = iconButton(Ic::Play, "Start", IM_COL32(26, 107, 71, 255), IM_COL32(36, 143, 92, 255));
         ImGui::PopStyleColor(2);
         if (startClicked) {
             a.tune.centerHz = a.freqMhz * 1e6;
@@ -434,17 +493,18 @@ static void toolbar(App& a) {
         }
     } else {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.16f, 0.16f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.70f, 0.22f, 0.22f, 1));
-        const bool stopClicked = ImGui::Button("  Stop  ");
+        const bool stopClicked = iconButton(Ic::Stop, "Stop", IM_COL32(140, 41, 41, 255), IM_COL32(178, 56, 56, 255));
         ImGui::PopStyleColor(2);
         if (stopClicked) a.engine.stop();
     }
 
-    ImGui::SameLine(0, 14);
+    vSeparator();
     {
         static const char* modes[] = {"CPU", "GPU", "Auto"};
         char lbl[48];
         const bool gpuNow = a.rx.plpOnGpu;
         snprintf(lbl, sizeof lbl, "%s", a.computeMode == 2 ? (gpuNow ? "Auto (GPU)" : "Auto (CPU)") : modes[a.computeMode]);
+        iconInline(Ic::Chip, iconAccent()); ImGui::SameLine(0, 5);
         ImGui::SetNextItemWidth(104);
         if (ImGui::BeginCombo("##compute", lbl)) {
             for (int i = 0; i < 3; i++) {
@@ -464,6 +524,7 @@ static void toolbar(App& a) {
         const int act = a.engine.activeStandard();
         snprintf(lbl, sizeof lbl, "%s", a.stdMode == 0 ? (a.rx.standard == 1 ? "Auto (DVB-T)" : "Auto (DVB-T2)") : names[a.stdMode]);
         (void)act;
+        iconInline(Ic::Tv, iconAccent()); ImGui::SameLine(0, 5);
         ImGui::SetNextItemWidth(112);
         if (ImGui::BeginCombo("##std", lbl)) {
             for (int i = 0; i < 3; i++) if (!a.atscMode && ImGui::Selectable(names[i], a.stdMode == i)) { a.stdMode = i; a.engine.setStandard(i); savePrefs(a); }
@@ -571,10 +632,15 @@ static void statusBar(App& a) {
     const SignalStats& st = a.spec.stats;
     const RxTelemetry& rx = a.rx;
     const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
+    {   // a tinted panel behind the two status lines
+        const ImVec2 p = ImGui::GetCursorScreenPos();
+        const float h = ImGui::GetFrameHeight() * 2.f + ImGui::GetStyle().ItemSpacing.y * 2.f;
+        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(p.x - 4, p.y - 2), ImVec2(p.x + ImGui::GetContentRegionAvail().x + 4, p.y + h), IM_COL32(25, 32, 42, 255), 7.f);
+    }
     // ---- line 1: lamps, lock state and signal mode
     {
         int iq = run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0;
-        lamp("IQ", iq); ImGui::SameLine(0, 12);
+        lamp("IQ", iq, (int)Ic::Wave); ImGui::SameLine(0, 12);
         const double frameS = rx.frameMs > 0 ? rx.frameMs / 1e3 : 0.5;
         const bool isT = rx.standard == 1;
         const double okFrac = (rx.blocksOk + rx.blocksBad) ? (double)rx.blocksOk / (rx.blocksOk + rx.blocksBad) : 0;
@@ -605,15 +671,27 @@ static void statusBar(App& a) {
         lamp("LDPC", fec); ImGui::SameLine(0, 12);
         lamp("BCH", fec); ImGui::SameLine(0, 12);
         }
-        lamp("TS", !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1); ImGui::SameLine(0, 12);
+        lamp("TS", !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1, (int)Ic::Layers); ImGui::SameLine(0, 12);
         const PlayerStats ps = a.engine.player().stats();
         const bool pl = run && ps.active;
-        lamp("Video", !pl || !ps.hasVideo ? 0 : (ps.shown > 0 && ps.videoQueue > 2) ? 1 : 2); ImGui::SameLine(0, 12);
-        lamp("Audio", !pl || !ps.hasAudio ? 0 : (ps.audioBufferMs > 150) ? 1 : 2); ImGui::SameLine(0, 10);
+        lamp("Video", !pl || !ps.hasVideo ? 0 : (ps.shown > 0 && ps.videoQueue > 2) ? 1 : 2, (int)Ic::Tv); ImGui::SameLine(0, 12);
+        lamp("Audio", !pl || !ps.hasAudio ? 0 : (ps.audioBufferMs > 150) ? 1 : 2, (int)Ic::Speaker); ImGui::SameLine(0, 10);
         ImGui::TextDisabled("|"); ImGui::SameLine(0, 10);
     }
     auto ro = [&](const char* label, const std::string& val, ImVec4 col = ImVec4(0.93f, 0.95f, 0.97f, 1)) {
+        static const struct { const char* k; Ic ic; } kIcons[] = {
+            {"State", Ic::Pulse}, {"Mode", Ic::Layers}, {"FFT", Ic::Grid}, {"GI", Ic::Echo}, {"Pilots", Ic::Target}, {"PLP", Ic::Layers},
+            {"CFO", Ic::Wave}, {"SRO", Ic::Clock}, {"SNR", Ic::Signal}, {"MER", Ic::Target}, {"Delay", Ic::Echo}, {"fs", Ic::Gauge},
+            {"dropped", Ic::Warning}, {"Channel", Ic::Antenna}, {"Field", Ic::Layers}, {"TPS", Ic::Info}, {"hier", Ic::Layers}, {"Pilot", Ic::Target}};
         ImGui::AlignTextToFramePadding();
+        for (auto& e : kIcons) if (!strcmp(e.k, label)) {
+            const bool isState = !strcmp(label, "State");
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+            iconInline(e.ic, isState ? ImGui::ColorConvertFloat4ToU32(col) : iconDim(), 0.9f);
+            ImGui::PopStyleVar();
+            ImGui::SameLine(0, 4);
+            break;
+        }
         ImGui::TextDisabled("%s", label); ImGui::SameLine(0, 5);
         ImGui::PushFont(a.mono, 0); ImGui::TextColored(col, "%s", val.c_str()); ImGui::PopFont();
         ImGui::SameLine(0, 15);
@@ -660,7 +738,7 @@ static void statusBar(App& a) {
     }
     if (run) { snprintf(b, sizeof b, "%.3f Msps", a.engine.sampleRate() / 1e6); ro("fs", b); }
     ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Level"); ImGui::SameLine(0, 5);
+    iconInline(Ic::Gauge, iconDim(), 0.9f); ImGui::SameLine(0, 4); ImGui::TextDisabled("Level"); ImGui::SameLine(0, 5);
     {
         const ImU32 col = adc == AdcStatus::Overload ? IM_COL32(200, 50, 45, 255) : adc == AdcStatus::Good ? IM_COL32(36, 130, 170, 255) : IM_COL32(190, 140, 40, 255);
         snprintf(b, sizeof b, run ? "%.1f dBFS" : "-", st.rmsDbfs);
@@ -669,7 +747,7 @@ static void statusBar(App& a) {
     }
     ImGui::SameLine(0, 15);
     ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Quality"); ImGui::SameLine(0, 5);
+    iconInline(Ic::Signal, iconDim(), 0.9f); ImGui::SameLine(0, 4); ImGui::TextDisabled("Quality"); ImGui::SameLine(0, 5);
     {
         const QualityReport& q = a.quality.report();
         const float t = run && q.valid ? (float)q.percent / 100.f : 0.f;
@@ -685,6 +763,7 @@ static void statusBar(App& a) {
         const ImVec4 col = mr.level == MultipathLevel::None ? ImVec4(0.5f, 0.55f, 0.6f, 1) : mr.level == MultipathLevel::Mild ? ImVec4(0.95f, 0.8f, 0.3f, 1)
                          : mr.level == MultipathLevel::Likely ? ImVec4(0.95f, 0.6f, 0.2f, 1) : ImVec4(0.95f, 0.35f, 0.25f, 1);
         ImGui::AlignTextToFramePadding();
+        iconInline(Ic::Echo, ImGui::ColorConvertFloat4ToU32(col), 0.9f); ImGui::SameLine(0, 4);
         ImGui::TextColored(col, "multipath: %s", multipathName(mr.level));
         if (ImGui::IsItemHovered()) {
             ImGui::BeginTooltip();
@@ -2152,7 +2231,7 @@ static void rightPanel(App& a) {
         ImGui::TextDisabled("local %s   (%s)", fmtLocal(now, "%H:%M").c_str(), a.ts.utcNow ? "broadcast time" : "computer clock");
     }
     ImGui::Spacing();
-    ImGui::TextDisabled("Services");
+    sectionHeader(Ic::Tv, "Services");
     // ---- service cards
     const float cardH = 68;
     ImGui::BeginChild("svcs", ImVec2(0, std::max(140.f, ImGui::GetContentRegionAvail().y * 0.40f)));
@@ -2174,7 +2253,9 @@ static void rightPanel(App& a) {
         dl->AddRect(p, ImVec2(p.x + w, p.y + cardH - 4), sel ? IM_COL32(42, 130, 190, 255) : IM_COL32(40, 46, 54, 255), 6.f, 0, sel ? 1.6f : 1.f);
         // name and bit rate
         const std::string name = sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name;
-        dl->AddText(a.ui, 16.f, ImVec2(p.x + 10, p.y + 6), IM_COL32(245, 247, 250, 255), name.c_str());
+        const bool isRadio = sv.type == 0x02 || sv.type == 0x0A || (!hasVideo && !ac.empty());
+        icons::draw(isRadio ? Ic::Radio : Ic::Tv, ImVec2(p.x + 20, p.y + 15), 17.f, sel ? IM_COL32(120, 200, 255, 255) : IM_COL32(120, 136, 156, 255), dl);
+        dl->AddText(a.ui, 16.f, ImVec2(p.x + 34, p.y + 6), IM_COL32(245, 247, 250, 255), name.c_str());
         char kbs[32]; fmtKbps(kbs, sizeof kbs, kb);
         const ImVec2 ks = ImGui::CalcTextSize(kbs);
         dl->AddText(ImVec2(p.x + w - ks.x - 10, p.y + 8), IM_COL32(150, 158, 168, 255), kbs);
@@ -2203,20 +2284,20 @@ static void rightPanel(App& a) {
     {
         const Player& pl = a.engine.player();
         const PlayerStats ps = pl.stats();
-        ImGui::TextDisabled("Player");
+        sectionHeader(Ic::Play, "Player");
         if (pl.selected() < 0) ImGui::TextDisabled("click a service to play it");
         else if (ImGui::BeginTable("pkv", 2, ImGuiTableFlags_SizingFixedFit)) {
-            ImGui::TableSetupColumn("k", ImGuiTableColumnFlags_WidthFixed, 66);
-            auto row = [&](const char* k, const char* fmt, auto... args) {
-                ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", k); ImGui::TableNextColumn();
+            ImGui::TableSetupColumn("k", ImGuiTableColumnFlags_WidthFixed, 88);
+            auto row = [&](Ic ic, const char* k, const char* fmt, auto... args) {
+                ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(ic, iconDim(), 0.9f); ImGui::SameLine(0, 5); ImGui::TextDisabled("%s", k); ImGui::TableNextColumn();
                 char b[120]; snprintf(b, sizeof b, fmt, args...); ImGui::TextUnformatted(b);
             };
-            if (ps.hasVideo) row("Video", "%s  %dx%d  %.1f fps  %s", ps.videoCodec.c_str(), ps.width, ps.height, ps.fps, ps.hardware ? "(hardware)" : "(software)");
-            if (ps.hasAudio) row("Audio", "%s  %d ch", ps.audioCodec.c_str(), ps.audioChannels);
-            row("Buffer", "%.0f ms     A/V %+.0f ms", ps.audioBufferMs, ps.avOffsetMs);
-            row("Pictures", "%llu shown / %llu late", (unsigned long long)ps.shown, (unsigned long long)ps.late);
-            row("Errors", "%llu     underruns %d", (unsigned long long)ps.errors, ps.underruns);
-            ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("Volume"); ImGui::TableNextColumn();
+            if (ps.hasVideo) row(Ic::Tv, "Video", "%s  %dx%d  %.1f fps  %s", ps.videoCodec.c_str(), ps.width, ps.height, ps.fps, ps.hardware ? "(hardware)" : "(software)");
+            if (ps.hasAudio) row(Ic::Speaker, "Audio", "%s  %d ch", ps.audioCodec.c_str(), ps.audioChannels);
+            row(Ic::Clock, "Buffer", "%.0f ms     A/V %+.0f ms", ps.audioBufferMs, ps.avOffsetMs);
+            row(Ic::Camera, "Pictures", "%llu shown / %llu late", (unsigned long long)ps.shown, (unsigned long long)ps.late);
+            row(Ic::Warning, "Errors", "%llu     underruns %d", (unsigned long long)ps.errors, ps.underruns);
+            ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(a.muted ? Ic::Mute : Ic::Speaker, iconDim(), 0.9f); ImGui::SameLine(0, 5); ImGui::TextDisabled("Volume"); ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
             float vol = a.volume * 100.f;
             if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) { a.volume = vol / 100.f; a.engine.player().setVolume(a.volume); }
@@ -2238,10 +2319,12 @@ static void rightPanel(App& a) {
     }
     {
         OutputStats os = a.engine.outputStats();
-        ImGui::TextDisabled("Outputs");
-        ImGui::SameLine();
+        iconLabel(Ic::Link, "Outputs", iconAccent());
+        ImGui::SameLine(0, 10);
+        iconInline(Ic::File, os.fileOpen ? IM_COL32(100, 230, 130, 255) : IM_COL32(86, 94, 104, 255), 0.9f); ImGui::SameLine(0, 3);
         ImGui::TextColored(os.fileOpen ? ImVec4(0.4f, 0.9f, 0.5f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "file");
-        ImGui::SameLine();
+        ImGui::SameLine(0, 10);
+        iconInline(Ic::Globe, os.udpOpen ? IM_COL32(100, 230, 130, 255) : IM_COL32(86, 94, 104, 255), 0.9f); ImGui::SameLine(0, 3);
         ImGui::TextColored(os.udpOpen ? ImVec4(0.4f, 0.9f, 0.5f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "udp");
         if (os.fileOpen) { ImGui::SameLine(); ImGui::TextDisabled("%.1f MB", os.fileBytes / 1e6); }
         if (os.udpOpen) { ImGui::SameLine(); ImGui::TextDisabled("%s:%d%s", a.udpHost, a.out.port, a.out.rtp ? " RTP" : ""); }
@@ -2675,13 +2758,13 @@ static void drawUI(App& a, ImVec2 disp) {
     float mainH = ImGui::GetContentRegionAvail().y - logH - 6;
     ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16, mainH));
     if (ImGui::BeginTabBar("tabs")) {
-        if (tabItem("Overview")) { overviewTab(a); ImGui::EndTabItem(); }
-        if (tabItem("TV")) { tvTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Receiver")) { receiverTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Stream")) { streamTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Scan")) { scanTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Antenna")) { antennaTab(a); ImGui::EndTabItem(); }
-        if (tabItem("History")) { historyLogTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Overview", Ic::Grid)) { overviewTab(a); ImGui::EndTabItem(); }
+        if (tabItem("TV", Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Receiver", Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Stream", Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Scan", Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Antenna", Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
+        if (tabItem("History", Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     ImGui::EndChild();
