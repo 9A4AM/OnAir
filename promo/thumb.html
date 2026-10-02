@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts.css"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body><canvas id="c" width="1920" height="1080"></canvas>
+<script src="common_head.js"></script><script src="signals.js"></script><script src="map_data.js"></script><script src="scenes.js"></script>
+<script>
+window.drawThumb=async()=>{ await window.ready; const c=ctx; CURT=50;
+  c.fillStyle='#05070a'; c.fillRect(0,0,W,H);
+  const g=c.createRadialGradient(1380,430,0,1380,430,900); g.addColorStop(0,'rgba(40,100,150,.30)'); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g; c.fillRect(0,0,W,H);
+  // right: instrument panel
+  const px=960,py=150,pw=900,ph=780; panel(c,px,py,pw,ph,{r:14,fill:'#080c10'});
+  const sg=[{dat:'T',u:.5,w:.38,k:1}];
+  spectrum(c,px+30,py+30,pw-60,300,12.3,sg,{n:560,lw:3,grid:true}); waterfall(c,px+30,py+350,pw-60,230,12.3,sg); c.strokeStyle=PAL.border; c.lineWidth=1.2; c.strokeRect(px+30.6,py+350.6,pw-61.2,228.8);
+  constel(c,px+30,py+600,150,64,.045,12.3,{n:700,dot:2.2});
+  tvPicture(c,px+210,py+600,266,150,12.3,{noLower:true});
+  txt(c,'MER',px+520,py+668,{size:22,col:C.dim}); txt(c,'31.2 dB',px+520,py+716,{size:46,w:500,mono:true,col:PAL.accent});
+  [['DVB-T2'],['DAB+']].forEach(()=>{});
+  // left: headline
+  c.drawImage(logo,90,90,150,150);
+  txt(c,'OnAir',266,196,{size:84,w:600,ls:-3});
+  txt(c,'EVERY',90,520,{size:128,w:600,ls:-4}); txt(c,'BROADCAST.',90,650,{size:128,w:600,ls:-4,col:PAL.accent});
+  txt(c,'One open-source receiver.',96,730,{size:46,w:300,col:C.ink});
+  const ps=['DVB-T2','DVB-T','ATSC','DAB','DAB+']; const ws=[168,142,128,112,128]; let x=96; ps.forEach((s,i)=>{ chip(c,s,x+ws[i]/2,860,1,{size:28,pad:36}); x+=ws[i]+12; }); txt(c,'Digital TV and radio, decoded in software.',96,960,{size:34,w:300,col:C.dim});
+  return true; };
+</script></body></html>
