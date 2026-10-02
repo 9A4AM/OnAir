@@ -69,7 +69,7 @@ Details and the full status are in `docs/ATSC_HANDOFF.md`.
 - [x] PSIP channel table (names, numbers) and AC-3/E-AC-3 stream recognition (the player uses FFmpeg, which decodes AC-3; not tried on a real stream).
 - [ ] PSIP guide (EIT/ETT).
 - [ ] Real-signal validation **(needs a capture from an ATSC country)**; scan on hardware.
-- [ ] Fuzz/ASan runs, README and brief updates.
+- [x] Fuzz and ASan/UBSan runs, README and brief updates.
 
 ## D. Real-world validation (when the HackRF is available)
 

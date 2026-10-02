@@ -2,6 +2,9 @@
 // and make sure it neither crashes nor hangs (build with -fsanitize=address,undefined to make this meaningful).
 #include "dect2/dvbt_gen.h"
 #include "dect2/dvbt_rx.h"
+#include "dect2/atsc_rx.h"
+#include "dect2/atsc_gen.h"
+#include "dect2/dvbt_gen.h"
 #include "dect2/t2gen.h"
 #include "dect2/t2rx.h"
 #include <chrono>
@@ -137,6 +140,44 @@ int main() {
         for (size_t i = 0; i < v.size(); i += 1 << 15) rx.feed(v.data() + i, std::min<size_t>(1 << 15, v.size() - i));
         std::fill(v.begin(), v.end(), cf32(0, 0));
         for (size_t i = 0; i < v.size(); i += 1 << 15) rx.feed(v.data() + i, std::min<size_t>(1 << 15, v.size() - i));
+    }
+    // 7. ATSC receiver: the same treatment (the field worker thread is exercised too)
+    {
+        std::normal_distribution<float> nd3(0, 1);
+        for (int round = 0; round < 3; round++) {
+            atsc::ChannelConfig cc; cc.snrDb = 22; if (round == 1) cc.echoes.push_back({3.0, -8, 30}); if (round == 2) cc.cfoHz = 15000;
+            atsc::Generator g(dvbt::testTsSource(), cc, 8e6, 11 + round);
+            AtscReceiver rx; rx.configure(8e6); rx.setBlocking(round != 1);
+            size_t pk = 0; rx.setPacketCallback([&](const uint8_t*, size_t n, double) { pk += n; });
+            std::vector<cf32> sig;
+            for (int i = 0; i < 100000; i++) sig.push_back(cf32(nd3(rng), nd3(rng)) * 0.5f);
+            g.generate(2'400'000, sig);
+            for (int k = 0; k < 100; k++) { const size_t i = rng() % sig.size(); const float bad[3] = {NAN, INFINITY, -INFINITY}; sig[i] = cf32(bad[rng() % 3], bad[rng() % 3]); }
+            size_t pos = 0;
+            while (pos < sig.size()) {
+                size_t n = std::min<size_t>(sig.size() - pos, 3000 + rng() % 90000);
+                switch (rng() % 7) {
+                case 0: { std::vector<cf32> nz(n); for (auto& x : nz) x = cf32(nd3(rng), nd3(rng)); rx.feed(nz.data(), n); break; }
+                case 1: break;
+                case 2: rx.feed(sig.data() + pos, n); rx.feed(sig.data() + pos, n); break;
+                default: rx.feed(sig.data() + pos, n); break;
+                }
+                pos += n;
+                if (rng() % 30 == 0) rx.reset();
+                if (rng() % 60 == 0) rx.configure(rng() % 2 ? 8e6 : 10e6);
+            }
+            rx.flush();
+            AtscTelemetry t; rx.telemetry(t, 0);
+            printf("ATSC fuzz round %d ok (%.1f s) level %d packets %zu\n", round, secs(), rx.detectLevel(), pk);
+        }
+        AtscReceiver rx; rx.configure(8e6);
+        std::vector<cf32> v(2'000'000);
+        for (auto& x : v) x = cf32(nd3(rng), nd3(rng)) * 0.3f;
+        for (size_t i = 0; i < v.size(); i += 1 << 15) rx.feed(v.data() + i, std::min<size_t>(1 << 15, v.size() - i));
+        std::fill(v.begin(), v.end(), cf32(0, 0));
+        for (size_t i = 0; i < v.size(); i += 1 << 15) rx.feed(v.data() + i, std::min<size_t>(1 << 15, v.size() - i));
+        rx.configure(5e6);   // too low a rate: must be refused quietly
+        rx.feed(v.data(), 4096);
     }
     printf("bandwidths ok (%.1f s)\nfuzz passed\n", secs());
     return fails ? 1 : 0;

@@ -218,8 +218,8 @@ noise and dropout tests.
 5. **Speed polish**: sample thread 0.5x real time; field worker about 0.55x. Smaller resampler (`J` about 14 instead of 22), a 4-state
    trellis decoder, and skipping RS work on clean segments would give margin for slower machines. Portable (non-Accelerate) fallbacks
    exist for the filters but are unoptimised.
-6. **Robustness**: add the ATSC receiver to `tests/fuzz_rx.cpp` and run the ASan/UBSan build (`build-asan`) on `test_atsc_rx`
-   (slow under ASan: use a short case) before releasing.
+6. **Robustness** (done): the ATSC receiver is part of `tests/fuzz_rx.cpp` (noise, NaN/Inf, dropped/repeated chunks, resets, reconfiguration, too-low
+   sample rate) and runs clean under ASan/UBSan (`build-asan`); `test_atsc_fec` and the pre-echo case of `test_atsc_rx` were run under ASan too.
 7. **UI polish**: the standard combo is disabled in ATSC mode; the TV/Guide tabs show DVB-style data; "Stream" tab outputs work unchanged.
 8. **Documentation**: README status table, `PROJECT_BRIEF.md` sections 11.x and 12, `TASKS.md` block C2 ticks.
 
