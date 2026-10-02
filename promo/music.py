@@ -32,7 +32,7 @@ def chord_at(t):
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
-    if 76 <= t < 80: return 8                       # the finale's groove is already running under the last build
+    if 76 <= t < 80: return 7                       # the finale's groove is already running under the last build
     for a, b in BUILDS:
         if a <= t < b: return None
     if t < 10: return 4
@@ -50,8 +50,8 @@ def energy(t):                                     # 0..10, the film's intensity
 
 class Stem:
     def __init__(s, program=0, ch=0): s.ev = []; s.cc = []; s.program = program; s.ch = ch
-    def add(s, t, dur, note, vel, jitter=0.008):
-        t = max(0, t + rnd.uniform(-jitter, jitter)); vel = int(max(1, min(127, vel + rnd.randint(-3, 3)))); s.ev.append((t, dur, note, vel))
+    def add(s, t, dur, note, vel, jitter=0.0015):
+        t = max(0, t + rnd.uniform(-jitter, jitter)); vel = int(max(1, min(127, vel + rnd.randint(-1, 1)))); s.ev.append((t, dur, note, vel))
     def ramp(s, t0, t1, v0, v1, ctrl=11, steps=24):
         for k in range(steps + 1): s.cc.append((t0 + (t1 - t0) * k / steps, ctrl, int(v0 + (v1 - v0) * (k / steps) ** 1.4)))
     def save(s, path):
@@ -70,14 +70,18 @@ class Stem:
 piano = Stem(0); pad = Stem(89); strings = Stem(48); horn = Stem(60); bass = Stem(39); vibes = Stem(11); timp = Stem(47); drums = Stem(0, 9); bells = Stem(9)
 kicks = []
 
-def roll(stem, t_end, dur, note, v0, v1, start_gap=.5, min_gap=.0625, drum=False):
-    """accelerating roll that ends exactly on t_end"""
-    ts = []; t = t_end; g = min_gap
-    while t > t_end - dur and len(ts) < 200: ts.append(t); t -= g; g = min(start_gap, g * 1.18)
-    ts = ts[::-1]
-    for i, tt in enumerate(ts[:-1]):
-        v = int(v0 + (v1 - v0) * i / max(1, len(ts) - 2))
-        (drums.add(tt, .1, note, v, 0.002) if drum else timp.add(tt, .4, note, v, 0.002))
+def roll(stem, t_end, dur, note, v0, v1, drum=False, **kw):
+    """roll on the 120 BPM grid that ends on t_end: quarters, eighths, sixteenths, thirty-seconds (seconds-before-end bands)"""
+    offs = []
+    for far, near, step in ((4.0, 3.0, .5), (3.0, 2.0, .25), (2.0, 1.0, .125), (1.0, 0.0, .0625)):
+        x = far
+        while x > near + 1e-6:
+            if x <= dur + 1e-6: offs.append(x)
+            x -= step
+    n = len(offs)
+    for i, x in enumerate(offs):
+        v = int(v0 + (v1 - v0) * i / max(1, n - 1))
+        (drums.add(t_end - x, .1, note, v, 0.001) if drum else timp.add(t_end - x, .4, note, v, 0.001))
 
 # ---------------------------------------------------------------- arrangement
 # strings / pad: one sustained, swelling chord for each build; otherwise a chord per bar
@@ -150,9 +154,9 @@ for (a, b), (h, size) in zip(BUILDS, HITS):
     drums.add(h, 1.5, 49, min(127, 60 + 14 * size), 0.002); drums.add(h, .2, 36, 88, 0.002); kicks.append(h)
     for n in ch['notes'][:4]: horn.add(h, 4.0, n, 48 + 8 * size, 0)
     horn.ramp(h - .05, h + 4.0, 105, 60, steps=12)
-# the title: a heartbeat of soft timpani + sparse piano inside the first build, nothing else
-for t, v in [(.8, 26), (1.8, 32), (2.6, 40), (3.1, 48), (3.5, 60), (3.75, 72)]: timp.add(t, .6, 33 if v < 60 else 40, v)
-for t, n, v in [(1.0, 76, 36), (2.2, 79, 34), (3.2, 81, 40)]: piano.add(t, 1.6, n, v)
+# the title: quarter-note heartbeat of soft timpani, then a bar of eighths, with sparse piano on the beat
+for t, v in [(0.0, 24), (1.0, 30), (2.0, 38), (2.5, 46), (3.0, 56), (3.25, 64), (3.5, 74), (3.75, 86)]: timp.add(t, .6, 33 if v < 60 else 40, v)
+for t, n, v in [(1.0, 76, 34), (2.0, 79, 34), (3.0, 81, 40), (3.5, 84, 44)]: piano.add(t, 1.6, n, v)
 # the finale stack: three octave hits right on the climax
 for n in (45, 57, 69): piano.add(80.0, 3.0, n, 100)
 
@@ -210,32 +214,38 @@ bl = audio['bells'];                                         mix += (echo(bl, .5
 d = lp(audio['drums'], 9000);                                mix += (d * .85 + hp(d, 5000) * .4 + rv(d, IR_ROOM) * .18)
 rng = np.random.default_rng(3)
 def riser(t_end, dur, g):
-    n = int(dur * SR); w = rng.standard_normal((n, 2)); out = np.zeros((n, 2)); x = np.arange(n) / n
-    for k in range(0, n, 2048):
-        c = 300 + (x[k] ** 2.3) * 9500; sg = w[k:k + 2048] * np.hanning(min(2048, n - k))[:, None]
-        S = np.fft.rfft(sg, axis=0); f = np.fft.rfftfreq(len(sg), 1 / SR); S *= np.exp(-((np.log(f + 1) - np.log(c)) ** 2) / 1.0)[:, None]
-        out[k:k + 2048] += np.fft.irfft(S, len(sg), axis=0)
-    out *= (x ** 2.4)[:, None]; out /= np.abs(out).max() + 1e-9
-    i = max(0, int((t_end - dur) * SR)); y = np.zeros_like(mix); y[i:i + n] = out[:len(y) - i][:n] * g; return y
+    """tonal riser: a bright saw sweeping an octave pair up to E (a chord tone of every hit chord) plus a soft filtered-noise bed"""
+    n = int(dur * SR); x = np.arange(n) / n
+    f = 164.81 * 2 ** (3 * x ** 1.6)                  # E3 -> E6
+    ph = np.cumsum(2 * np.pi * f / SR)
+    tone = sum(np.sin(k * ph) / k for k in range(1, 9)) * .5 + np.sin(ph * 2.0 * 1.003) * .3
+    tone = tone * (1 - np.exp(-x * 8)) * (x ** 2.0)
+    w = rng.standard_normal(n); sos = signal.butter(2, [400, 7000], 'bp', fs=SR, output='sos'); w = signal.sosfilt(sos, w) * (x ** 3.0) * .5
+    sig = (tone + w)[:, None] * np.ones((1, 2)); sig /= np.abs(sig).max() + 1e-9
+    i = max(0, int((t_end - dur) * SR)); y = np.zeros_like(mix); m = min(n, len(y) - i); y[i:i + m] = sig[:m] * g; return y
 def impact(t, g, f0=70):
     n = int(4.0 * SR); x = np.arange(n) / SR; fr = f0 * np.exp(-x * 1.1) + 36
     s_ = np.sin(2 * np.pi * np.cumsum(fr) / SR) * (np.minimum(1, x / .02) * np.exp(-x * 1.5))
     nz = lp(rng.standard_normal((n, 1)), 3500)[:, 0] * np.exp(-x * 3.2) * .5
     y = np.zeros_like(mix); i = int(t * SR); sig = np.stack([s_ + nz, s_ + nz], 1) * g; y[i:i + n] = sig[:len(y) - i]; return y
 fx = np.zeros_like(mix)
-for (a, b), (h, size), g in zip(BUILDS, HITS, (.14, .24, .28, .34)): fx += riser(h - .04, b - a, g)
-for (h, size), g in zip(HITS, (.12, .24, .30, .34)): fx += impact(h, g)
+for (a, b), (h, size), g in zip(BUILDS, HITS, (.22, .26, .28, .30)): fx += riser(h - .04, b - a, g)
+for (h, size), g in zip(HITS, (.12, .20, .24, .26)): fx += impact(h, g)
 mix += fx + rv(fx, IR_HALL) * .35
 # gain riding: lift the final build, trim the climax, settle for the outro
-rd = np.interp(T, [0, 40, 60, 72, 79.9, 80.5, 84, 90, 98], [1, 1, 1, 1.25, 1.3, .62, .62, .8, .9])
-mix *= rd[:, None]
 mix *= np.minimum(1, T / .8)[:, None]
 tail = np.clip((DUR + 2.4 - T) / 3.4, 0, 1) ** 1.5; mix *= tail[:, None]
 mix = hp(mix, 28); mix = lp(mix, 14500)
-blk = 1024; nb = len(mix) // blk
-rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-6
-g = np.where(rms > .20, (.20 / rms) ** (1 - 1 / 1.6), 1.0)
-g = np.convolve(g, np.ones(14) / 14, 'same'); gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
+# loudness leveller: ride the gain so every section sits within ~2 dB of the target curve (no sudden jumps), hits keep their transient
+blk = 2205                                             # 50 ms
+nb = len(mix) // blk
+rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-5
+win = 30                                               # 1.5 s centred window
+sm = np.sqrt(np.convolve(rms ** 2, np.ones(win) / win, 'same'))
+tt = (np.arange(nb) + .5) * blk / SR
+want = np.interp(tt, [0, 4, 8, 24, 66, 72, 76, 80, 84, 90, 98], [.075, .110, .095, .105, .105, .100, .108, .118, .10, .07, .055])
+g = np.clip(want / sm, .4, 4.5)
+g = np.convolve(g, np.ones(20) / 20, 'same'); gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
 mix *= gain[:, None]
 mix = np.where(np.abs(mix) > .85, np.sign(mix) * (.85 + .15 * np.tanh((np.abs(mix) - .85) / .15)), mix)
 mix = mix[:int((DUR + 2.4) * SR)]; mix /= np.abs(mix).max() * 1.05

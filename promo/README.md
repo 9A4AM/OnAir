@@ -16,3 +16,6 @@ Order: title, every broadcast (DVB-T2, DVB-T, ATSC, DAB/DAB+), any radio, watch 
 music.py reads the cue times from the CUES list in scenes.js, so picture and score stay in sync.
 
 Structure: the film keeps topping itself. Hits at 4 s (title), 24 s (live TV), 46 s (signal views) and 80 s ("All of it. At once."); each is preceded by a build in the music and followed by a higher baseline.
+
+## Signals
+`gen_signals.py` synthesises DVB-T (8K, 64-QAM) and DAB captures through a moving multipath channel and writes `signals.js` (Welch-averaged FFT rows); spectra and waterfalls are plotted from that data.

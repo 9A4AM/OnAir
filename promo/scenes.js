@@ -11,7 +11,15 @@ const ease=(bt,t0,d=.9)=>eio3(seg(bt,t0,t0+d*.6));
 // ---------------------------------------------------------------- signal model
 const NB=1024;
 function expAvg(bin,f,M=6){ let a=0; for(let j=0;j<M;j++){ const u=Math.max(1e-6,hash(bin*1.7321+(f-j)*131.31)); a+=-Math.log(u); } return a/M; }
+// real captures: signals.js holds Welch-averaged FFT rows of synthesised OFDM (DVB-T 8K 64-QAM, two DAB ensembles) through a moving multipath channel
+const SD=(()=>{ const d=window.SIGDATA, un=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0)); return {nf:d.nf,nb:d.nb,db0:d.db0,db1:d.db1,T_s:un(d.T_s),T_n:un(d.T_n),D_s:un(d.D_s),D_n:un(d.D_n)}; })();
+function dataDb(kind,u,t,kl,kr){
+  const nf=SD.nf, f=((Math.floor(t*30)%nf)+nf)%nf, b=Math.min(SD.nb-1,Math.max(0,Math.round(u*(SD.nb-1)))), o=f*SD.nb+b, sc=(SD.db1-SD.db0)/255;
+  const S=Math.pow(10,(SD[kind+'_s'][o]*sc+SD.db0)/10), N=Math.pow(10,(SD[kind+'_n'][o]*sc+SD.db0)/10);
+  const k=u<.5?kl:kr; return 10*Math.log10(S*k*k+N);
+}
 function specDb(u,t,sigs){
+  if(sigs.length&&sigs[0].dat){ const k0=sigs[0].k??1, k1=sigs.length>1?(sigs[1].k??1):k0; return dataDb(sigs[0].dat,u,t,k0,k1); }
   const f=Math.floor(t*30), bin=Math.min(NB-1,Math.max(0,Math.round(u*NB)));
   const breathe=.6*Math.sin(t*.35+1.3)+.3*Math.sin(t*.9), tilt=1.8*(.5-u);
   let P=Math.pow(10,(-86+tilt)/10)*expAvg(bin,f);                                   // thermal noise floor, video-averaged
@@ -61,16 +69,15 @@ function constel(c,x,y,s,M,sigma,t,o={}){
 function lamp(c,x,y,on,label,size=26){ c.fillStyle=on>0?PAL.ok:'#434a52'; c.beginPath(); c.arc(x,y,size*.3,0,7); c.fill(); if(label) txt(c,label,x+size*.65,y+size*.35,{size,w:500,col:on>0?C.ink:C.dim}); }
 
 // ---------------------------------------------------------------- layout kit: flat hairline panels, light type, slow fades
-function bgd(c,glow=.7){ glow*=(.7+.9*clamp(CURT/90)); c.fillStyle='#05070a'; c.fillRect(0,0,W,H);
-  const g=c.createRadialGradient(W*.68,H*.5,0,W*.68,H*.5,W*.8); g.addColorStop(0,`rgba(38,92,140,${.10*glow})`); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g; c.fillRect(0,0,W,H);
-  const g2=c.createLinearGradient(0,0,0,H); g2.addColorStop(0,'rgba(255,255,255,.016)'); g2.addColorStop(.5,'rgba(255,255,255,0)'); c.fillStyle=g2; c.fillRect(0,0,W,H); }
-function panel(c,x,y,w,h,o={}){ c.save(); c.shadowColor='rgba(0,0,0,.45)'; c.shadowBlur=o.blur??26; c.shadowOffsetY=o.dy??10; rr(c,x,y,w,h,o.r??10); c.fillStyle=o.fill||PAL.panel; c.fill(); c.shadowColor='transparent';
-  rr(c,x+.6,y+.6,w-1.2,h-1.2,o.r??10); c.strokeStyle=o.active?'rgba(110,180,225,.65)':'rgba(255,255,255,.10)'; c.lineWidth=1.2; c.stroke(); c.restore(); }
+function bgd(c,glow=.7){ c.fillStyle='#06080b'; c.fillRect(0,0,W,H);
+  const g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(255,255,255,.014)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,0,W,H); }
+function panel(c,x,y,w,h,o={}){ c.save(); rr(c,x,y,w,h,o.r??6); c.fillStyle=o.fill||PAL.panel; c.fill();
+  rr(c,x+.5,y+.5,w-1,h-1,o.r??6); c.strokeStyle=o.active?'rgba(110,180,225,.55)':'rgba(255,255,255,.09)'; c.lineWidth=1; c.stroke(); c.restore(); }
 function line(c,s,x,y,bt,t0,o={}){ const k=ease(bt,t0,o.dur??.9); if(k<=0) return 0; c.save(); c.globalAlpha*=k; c.font=`${o.w||400} ${o.size||30}px Inter`; c.letterSpacing=(o.ls??0)+'px'; c.textAlign='left'; c.fillStyle=o.col||C.ink; const tw=c.measureText(s).width; c.fillText(s,o.al==='center'?x-tw/2:o.al==='right'?x-tw:x,y+(1-k)*(o.dy??9)); c.restore(); return tw; }
 function head(c,l1,l2,bt,t0,o={}){ const x=o.x??120,y=o.y??150,s=o.size??58; line(c,l1,x,y,bt,t0,{size:s,w:400,ls:-s*.018,al:o.al}); if(l2) line(c,l2,x,y+s*1.12,bt,t0+.25,{size:s,w:400,ls:-s*.018,col:PAL.accent,al:o.al}); }
 function sub(c,s,bt,t0,y=222,x=120){ line(c,s,x,y,bt,t0,{size:26,w:300,col:C.dim,ls:.1}); }
 function chip(c,s,cx,cy,a=1,o={}){ c.save(); c.globalAlpha*=a; c.font=`${o.w||400} ${o.size||22}px Inter`; const tw=c.measureText(s).width+(o.pad||40), th=(o.size||22)+24;
-  rr(c,cx-tw/2,cy-th/2,tw,th,th/2); c.fillStyle='rgba(255,255,255,.03)'; c.fill(); c.strokeStyle=o.stroke||'rgba(255,255,255,.18)'; c.lineWidth=1.2; c.stroke();
+  rr(c,cx-tw/2,cy-th/2,tw,th,5); c.fillStyle='rgba(255,255,255,.025)'; c.fill(); c.strokeStyle=o.stroke||'rgba(255,255,255,.14)'; c.lineWidth=1; c.stroke();
   txt(c,s,cx,cy+(o.size||22)*.35,{size:o.size||22,w:o.w||400,al:'center',col:o.col||C.ink}); c.restore(); return tw; }
 function fadeUp(c,bt,t0,fn,o={}){ const k=ease(bt,t0,o.dur??.9); if(k<=0) return; c.save(); c.globalAlpha*=k; c.translate(0,(1-k)*(o.dy??10)); fn(k); c.restore(); }
 function wrapText(c,s,x,y,maxW,lh,col){ const words=s.split(' '); let ln='',yy=y; c.fillStyle=col; for(const w of words){ const t=ln?ln+' '+w:w; if(c.measureText(t).width>maxW&&ln){ c.fillText(ln,x,yy); ln=w; yy+=lh; } else ln=t; } c.fillText(ln,x,yy); }
@@ -99,11 +106,11 @@ const T={};
 // ---------------------------------------------------------------- 1. title
 T.title=(c,bt)=>{
   bgd(c,.35+.65*seg(bt,3,5));
-  const sg=[{u:.5,w:.3,k:ease(bt,2.2,1.8)}];
+  const sg=[{dat:'T',u:.5,w:.38,k:ease(bt,2.2,1.8)}];
   // the build: a carrier line grows from the centre, then the broadcast rises out of the noise floor
   const gw=eio3(seg(bt,.2,3.2))*W; c.save(); c.globalAlpha=.75*ease(bt,.1,1)*(1-.6*seg(bt,3.4,4.4)); c.strokeStyle=acc(.85); c.lineWidth=1.6; c.beginPath(); c.moveTo(W/2-gw/2,930); c.lineTo(W/2+gw/2,930); c.stroke(); c.restore();
   c.save(); c.globalAlpha=.55*ease(bt,1.6,2.2); spectrum(c,0,830,W,200,bt+3,sg,{n:500,lw:1.8,noFrame:true,grid:false,band:false}); c.restore();
-  const hit=bt>4?Math.exp(-2.4*(bt-4)):0; if(bt>3.9){ const g=c.createRadialGradient(W/2,400,0,W/2,400,760); g.addColorStop(0,`rgba(120,175,215,${.05+.20*hit})`); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g; c.fillRect(0,0,W,H); }
+  const hit=bt>4?Math.exp(-2.4*(bt-4)):0; if(false){ const g=c.createRadialGradient(W/2,400,0,W/2,400,760); g.addColorStop(0,`rgba(120,175,215,${.05+.20*hit})`); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g; c.fillRect(0,0,W,H); }
   fadeUp(c,bt,3.97,()=>{ c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=50; c.shadowOffsetY=22; c.drawImage(logo,W/2-130,200,260,260); c.restore(); },{dur:.7,dy:10});
   line(c,'OnAir',W/2,650,bt,4.5,{size:124,w:500,ls:-4,al:'center',dur:.9});
   line(c,'Digital TV and radio, decoded in software.',W/2,734,bt,6.4,{size:38,w:300,col:C.ink,ls:.2,al:'center',dur:1.4});
@@ -170,7 +177,7 @@ T.radio=(c,bt)=>{
   bgd(c,.9);
   head(c,'And digital radio.',null,bt,.2,{y:150});
   sub(c,'DAB and DAB+ ensembles, decoded and played.',bt,.6,214);
-  fadeUp(c,bt,1.0,()=>{ const x=120,y=300,w=830,h=300; txt(c,'Band III  ·  6 MHz view',x,y-14,{size:18,col:C.dim}); const sg=[{u:.27,w:.128,k:1},{u:.72,w:.128,k:ease(bt,1.6,1.2)}];
+  fadeUp(c,bt,1.0,()=>{ const x=120,y=300,w=830,h=300; txt(c,'Band III  ·  6 MHz view',x,y-14,{size:18,col:C.dim}); const sg=[{dat:'D',u:.27,w:.128,k:1},{dat:'D',u:.72,w:.128,k:ease(bt,1.6,1.2)}];
     plotFrame(c,x,y,w,h); spectrum(c,x,y,w,h,bt+4,sg,{n:380});
     const ex=x+.27*w; c.strokeStyle=acc(.8); c.lineWidth=1.4; c.beginPath(); c.moveTo(ex,y+h*.3); c.lineTo(ex,y+34); c.stroke(); txt(c,'Ensemble · 1.536 MHz',ex,y+26,{size:20,w:500,col:PAL.accent,al:'center'});
     txt(c,'Waterfall',x,y+h+66,{size:18,col:C.dim}); waterfall(c,x,y+h+76,w,150,bt+4,sg); c.strokeStyle=PAL.border; c.lineWidth=1.2; c.strokeRect(x+.6,y+h+76.6,w-1.2,148.8); },{dur:1.1});
@@ -203,7 +210,7 @@ T.see=(c,bt)=>{
   bgd(c,.9);
   head(c,'See what the radio sees.',null,bt,.1,{y:150});
   sub(c,'Every stage of the receiver is visible, live.',bt,.6,214);
-  const sigs=[{u:.5,w:.3,k:1}];
+  const sigs=[{dat:'T',u:.5,w:.38,k:1}];
   fadeUp(c,bt,1.0,()=>{ const x=160,y=300,w=1040; txt(c,'Spectrum and waterfall',x,y-14,{size:18,col:C.dim}); spectrum(c,x,y,w,270,bt+5,sigs,{n:420,axes:true,db:true,fs:14,f0:598}); waterfall(c,x,y+310,w,240,bt+5,sigs); c.strokeStyle=PAL.border; c.lineWidth=1.2; c.strokeRect(x+.6,y+310.6,w-1.2,238.8); },{dur:1.1});
   fadeUp(c,bt,2.0,()=>{ txt(c,'Constellation',1290,286,{size:18,col:C.dim}); constel(c,1290,300,510,64,lerp(.6,.05,ease(bt,2.2,3.8)),bt,{n:1800,dot:3}); txt(c,'MER',1290,846,{size:19,col:C.dim}); txt(c,lerp(8.5,31.2,ease(bt,2.2,3.8)).toFixed(1)+' dB',1345,846,{size:28,w:500,mono:true,col:PAL.accent}); },{dur:1.1});
   [['Channel response',160,3.0],['SNR per carrier',560,3.5],['FEC blocks',960,4.0]].forEach(([nme,mx,t0],i)=>fadeUp(c,bt,t0,()=>{ const w=360,h=112,y=920; txt(c,nme,mx,y-12,{size:17,col:C.dim}); plotFrame(c,mx,y,w,h);
@@ -253,7 +260,7 @@ T.exact=(c,bt)=>{
     panel(c,x,y,w,h,{r:12,active:i===0}); c.save(); c.font='500 74px Inter'; c.letterSpacing='-2px'; c.fillStyle='#eef2f5'; c.fillText(cd[0],x+40,y+116); c.restore(); c.save(); c.font='300 27px Inter'; wrapText(c,cd[1],x+42,y+172,w-84,38,C.dim); c.restore();
     const gx=x+40,gy=y+260,gw=w-80,gh=h-300;
     if(i===0){ for(let r=0;r<5;r++){ const yy=gy+6+r*38; for(let q=0;q<9;q++){ const v=((hash(r*13+q*5)*255)|0).toString(16).padStart(2,'0').toUpperCase(); const scn=seg(bt,2.0,3.0)*10-r*1.6; txt(c,v,gx+q*50,yy+24,{size:24,mono:true,col:scn>.5?PAL.ok:C.dim}); } } check(c,gx+gw-28,gy+gh-30,24,PAL.ok); txt(c,'identical',gx,gy+gh-14,{size:25,w:500,col:PAL.ok}); }
-    else if(i===1){ plotFrame(c,gx,gy,gw,gh*.75); const sg=[{u:.5,w:.3,k:1}]; c.save(); c.beginPath(); c.rect(gx,gy,gw,gh*.75); c.clip(); c.strokeStyle=PAL.accent; c.lineWidth=2; c.beginPath(); for(let j=0;j<=240;j++){ const u=j/240, d=specDb(u,bt+3,sg); const px=gx+u*gw, py=gy+gh*.75-clamp((d+100)/68)*gh*.75; j?c.lineTo(px,py):c.moveTo(px,py);} c.stroke(); c.restore(); txt(c,'live broadcast',gx,gy+gh-8,{size:24,mono:true,w:500,col:PAL.accent}); }
+    else if(i===1){ plotFrame(c,gx,gy,gw,gh*.75); const sg=[{dat:'T',u:.5,w:.38,k:1}]; c.save(); c.beginPath(); c.rect(gx,gy,gw,gh*.75); c.clip(); c.strokeStyle=PAL.accent; c.lineWidth=2; c.beginPath(); for(let j=0;j<=240;j++){ const u=j/240, d=specDb(u,bt+3,sg); const px=gx+u*gw, py=gy+gh*.75-clamp((d+100)/68)*gh*.75; j?c.lineTo(px,py):c.moveTo(px,py);} c.stroke(); c.restore(); txt(c,'live broadcast',gx,gy+gh-8,{size:24,mono:true,w:500,col:PAL.accent}); }
     else { for(let r=0;r<5;r++)for(let q=0;q<14;q++){ const on=clamp((bt-3.0)*14-(q+r)); c.fillStyle=on>0?acc(.55+.3*Math.sin(bt*3+q*.6+r)):'rgba(255,255,255,.07)'; c.fillRect(gx+q*37,gy+r*38,31,31); } txt(c,'GPU · SIMD',gx,gy+gh-8,{size:24,w:500,col:PAL.accent}); } },{dur:1.0,dy:12}));
 };
 // ---------------------------------------------------------------- 10. record / stream
@@ -273,7 +280,7 @@ T.out=(c,bt)=>{
 // ---------------------------------------------------------------- finale: all of it, at once
 T.finale=(c,bt)=>{
   bgd(c,1.3);
-  const cols=[120,690,1260], rows=[250,610], w=540, h=330, sig=[{u:.5,w:.3,k:1}];
+  const cols=[120,690,1260], rows=[250,610], w=540, h=330, sig=[{dat:'T',u:.5,w:.38,k:1}];
   const dim=1-.5*ease(bt,4.0,.7);
   const P=(i,fn)=>{ const x=cols[i%3], y=rows[Math.floor(i/3)]; fadeUp(c,bt,1.0+i*.5,()=>{ c.save(); c.globalAlpha*=dim; panel(c,x,y,w,h,{r:10,blur:18,dy:6}); c.save(); rr(c,x,y,w,h,10); c.clip(); fn(x,y); c.restore(); c.restore(); },{dur:.7,dy:10}); };
   P(0,(x,y)=>tvPicture(c,x,y,w,h,bt,{lt:1.5}));
@@ -339,11 +346,8 @@ const grain=mk(256,256), gx_=grain.getContext('2d'); { const id=gx_.createImageD
 const BUILDS=[[0,4],[20,24],[42,46],[72,80]];
 function post(t,frame){
   // the picture builds with the music: a thin carrier line grows along the bottom edge during each riser and is released on the hit
-  for(const [a,b] of BUILDS){ if(t>=a&&t<b+.25){ const k=t<b?Math.pow((t-a)/(b-a),2.2):1, rel=t<b?1:1-seg(t,b,b+.25); if(a>0||true){ ctx.save(); ctx.globalAlpha=.8*rel; ctx.strokeStyle='rgba(120,185,230,.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(W/2-W*k/2,H-4); ctx.lineTo(W/2+W*k/2,H-4); ctx.stroke(); const g=ctx.createLinearGradient(0,H-90,0,H); g.addColorStop(0,'rgba(92,168,219,0)'); g.addColorStop(1,`rgba(92,168,219,${.10*k*rel})`); ctx.fillStyle=g; ctx.fillRect(0,H-90,W,90); ctx.restore(); } } }
-  bl1x.filter='contrast(1.7) brightness(.78)'; bl1x.drawImage(cv,0,0,480,270); bl1x.filter='none';
-  bl2x.filter='blur(5px)'; bl2x.clearRect(0,0,240,135); bl2x.drawImage(bl1,0,0,240,135); bl2x.filter='none';
-  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=.07+.10*clamp(t/TOTAL); ctx.imageSmoothingQuality='high'; ctx.drawImage(bl2,0,0,W,H); ctx.restore();
-  const g=ctx.createRadialGradient(W/2,H/2,H*.5,W/2,H/2,H*1.02); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.4)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for(const [a,b] of BUILDS){ if(t>=a&&t<b+.25){ const k=t<b?Math.pow((t-a)/(b-a),2.2):1, rel=t<b?1:1-seg(t,b,b+.25); if(a>0||true){ ctx.save(); ctx.globalAlpha=.8*rel; ctx.strokeStyle='rgba(120,185,230,.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(W/2-W*k/2,H-4); ctx.lineTo(W/2+W*k/2,H-4); ctx.stroke(); ctx.restore(); } } }
+  const g=ctx.createRadialGradient(W/2,H/2,H*.5,W/2,H/2,H*1.02); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.28)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   ctx.save(); ctx.globalAlpha=.028; ctx.globalCompositeOperation='overlay'; const ox=(hash(frame*1.7)*256)|0, oy=(hash(frame*2.3)*256)|0; for(let x=-ox;x<W;x+=256) for(let y=-oy;y<H;y+=256) ctx.drawImage(grain,x,y); ctx.restore();
   const o=seg(t,TOTAL-1.4,TOTAL); if(o>0){ctx.fillStyle=`rgba(0,0,0,${o})`;ctx.fillRect(0,0,W,H)}
   const f=1-seg(t,0,.8); if(f>0){ctx.fillStyle=`rgba(0,0,0,${f})`;ctx.fillRect(0,0,W,H)}
