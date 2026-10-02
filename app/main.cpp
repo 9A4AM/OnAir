@@ -17,6 +17,7 @@
 #include "dect2/teletext.h"
 #include "theme.h"
 #include "gfx.h"
+#include "icons.h"
 #include "platform.h"
 
 #include <algorithm>
@@ -46,11 +47,13 @@ struct Waterfall {
         for (int i = 0; i < 256; i++) lut[i] = jet(i / 255.0f);
     }
     static uint32_t jet(float v) {
-        auto c = [](float x) { return std::min(1.f, std::max(0.f, x)); };
-        float r = c(1.5f - std::fabs(4 * v - 3)), g = c(1.5f - std::fabs(4 * v - 2)), b = c(1.5f - std::fabs(4 * v - 1));
-        // deep navy floor (like the reference waterfalls) rising through cyan, green and yellow to red
-        b = std::max(b, 0.28f * (1.f - c(v * 2.2f)) + 0.08f);
-        return 0xFF000000u | ((uint32_t)(b * 255) << 16) | ((uint32_t)(g * 255) << 8) | (uint32_t)(r * 255);
+        // calm single-hue ramp: near-black navy, deep blue, teal, pale ice
+        static const float stops[5][3] = {{6, 10, 20}, {16, 38, 70}, {30, 100, 140}, {110, 190, 205}, {240, 250, 250}};
+        v = std::min(1.f, std::max(0.f, v)) * 4.f;
+        const int i = std::min(3, (int)v);
+        const float f = v - i;
+        auto ch = [&](int k) { return (uint32_t)(stops[i][k] + (stops[i + 1][k] - stops[i][k]) * f + 0.5f); };
+        return 0xFF000000u | (ch(2) << 16) | (ch(1) << 8) | ch(0);
     }
     void push(const std::vector<float>& dbfs) {
         std::vector<uint32_t> row(W);
@@ -69,10 +72,18 @@ struct Waterfall {
 };
 
 static std::string gForceTab; // dev: --tab <name> selects a tab for screenshots
-static bool tabItem(const char* name) {
+static bool tabItem(const char* name, Ic icon) {
     ImGuiTabItemFlags fl = 0;
     if (!gForceTab.empty() && gForceTab == name) { fl = ImGuiTabItemFlags_SetSelected; gForceTab.clear(); }
-    return ImGui::BeginTabItem(name, nullptr, fl);
+    // the label is padded with spaces to leave room for the icon, which is drawn over that gap
+    const float gap = iconSize() + 5.f;
+    const int nSp = (int)std::ceil(gap / ImGui::CalcTextSize(" ").x);
+    const std::string label = std::string(nSp, ' ') + name + "###" + name;
+    const bool open = ImGui::BeginTabItem(label.c_str(), nullptr, fl);
+    const ImVec2 r0 = ImGui::GetItemRectMin(), r1 = ImGui::GetItemRectMax();
+    icons::draw(icon, ImVec2(r0.x + ImGui::GetStyle().FramePadding.x + iconSize() * 0.5f + 1.f, (r0.y + r1.y) * 0.5f), iconSize() * 0.92f,
+                open ? IM_COL32(255, 255, 255, 255) : IM_COL32(140, 154, 170, 255));
+    return open;
 }
 
 // ------------------------------------------------------------------ app state
@@ -332,25 +343,71 @@ static void gaugePill(float width, float frac, ImU32 fill, const char* text) {
 
 // label : value readout in the status area (label dim, value in the mono font)
 
-static void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/) {
-    ImVec4 c = state == 1 ? ImVec4(0.30f, 0.85f, 0.35f, 1) : state == 2 ? ImVec4(0.95f, 0.70f, 0.15f, 1)
-             : state == 3 ? ImVec4(0.90f, 0.25f, 0.25f, 1) : ImVec4(0.30f, 0.32f, 0.35f, 1);
+static void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/, int icon = -1) {
+    ImVec4 c = state == 1 ? pal::okGreen() : state == 2 ? pal::warnAmber()
+             : state == 3 ? pal::badRed() : ImVec4(0.26f, 0.29f, 0.33f, 1);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     ImVec2 p = ImGui::GetCursorScreenPos();
     float r = 5;
-    dl->AddCircleFilled(ImVec2(p.x + r + 1, p.y + ImGui::GetTextLineHeight() * 0.5f), r, ImGui::ColorConvertFloat4ToU32(c));
-    ImGui::Dummy(ImVec2(r * 2 + 4, ImGui::GetTextLineHeight()));
+    const ImU32 cu = ImGui::ColorConvertFloat4ToU32(c);
+    const ImVec2 mid(p.x + r + 1, p.y + ImGui::GetTextLineHeight() * 0.5f);
+    if (icon >= 0) {
+        icons::draw((Ic)icon, ImVec2(mid.x + 1, mid.y), iconSize() * 0.95f, cu);
+        ImGui::Dummy(ImVec2(iconSize() + 3, ImGui::GetTextLineHeight()));
+    } else {
+        if (state) dl->AddCircleFilled(mid, r + 2.5f, (cu & 0x00FFFFFF) | 0x28000000);   // soft glow for a lit lamp
+        dl->AddCircleFilled(mid, r, cu);
+        if (state) dl->AddCircleFilled(ImVec2(mid.x - 1.5f, mid.y - 1.5f), 1.6f, IM_COL32(255, 255, 255, 90));
+        ImGui::Dummy(ImVec2(r * 2 + 4, ImGui::GetTextLineHeight()));
+    }
     ImGui::SameLine(0, 0);
     ImGui::TextDisabled("%s", label);
+    static const struct { const char* k; const char* tip; } kTips[] = {
+        {"IQ", "Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping."},
+        {"P1", "DVB-T2: the P1 preamble symbol (frame start and mode) is being found."},
+        {"GI", "Guard interval and symbol timing are locked."},
+        {"L1-pre", "DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC."},
+        {"L1-post", "DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC."},
+        {"Frame", "A full T2 frame is being received and equalised."},
+        {"LDPC", "Forward error correction, inner code: share of blocks that decode."},
+        {"BCH", "Forward error correction, outer code: share of blocks that decode."},
+        {"TS", "Transport stream: services found, continuity errors counted."},
+        {"Video", "The player is decoding and showing pictures."},
+        {"Audio", "The player has audio buffered and playing."},
+        {"Sync", "DVB-T: OFDM symbol sync from the cyclic prefix."},
+        {"TPS", "DVB-T: the transmission parameter signalling bits are decoded."},
+        {"Chan", "Channel estimate from the pilots is valid."},
+        {"Viterbi", "DVB-T: the convolutional decoder found the packet sync."},
+        {"RS", "Reed-Solomon outer code: share of packets that are clean."},
+        {"Pilot", "ATSC: the 8-VSB pilot carrier is locked."},
+        {"Seg", "ATSC: data segment sync found."},
+        {"Field", "ATSC: field sync found."},
+        {"Eq", "ATSC: the equaliser is trained."},
+        {"Trellis", "ATSC: the trellis decoder produces a valid transport stream."}};
+    {
+        const ImVec2 mx = ImGui::GetItemRectMax();
+        if (ImGui::IsMouseHoveringRect(p, ImVec2(mx.x, p.y + ImGui::GetTextLineHeight()))) {
+            for (auto& e : kTips) if (!strcmp(e.k, label)) { ImGui::SetTooltip("%s", e.tip); break; }
+        }
+    }
 }
 
 static void toolbar(App& a) {
     bool running = a.engine.running();
     ImGui::AlignTextToFramePadding();
-    ImGui::TextColored(ImVec4(0.45f, 0.75f, 1.f, 1), "OnAir");
-    ImGui::SameLine(0, 14);
-    ImGui::TextDisabled("source");
-    ImGui::SameLine();
+    {
+        const ImVec2 p = ImGui::GetCursorScreenPos();
+        const float ls = ImGui::GetFrameHeight() * 0.95f;
+        icons::draw(Ic::Logo, ImVec2(p.x + ls * 0.5f, p.y + ImGui::GetFrameHeight() * 0.5f), ls, 0);
+        ImGui::Dummy(ImVec2(ls, ImGui::GetFrameHeight()));
+        ImGui::SameLine(0, 7);
+        ImGui::PushFont(a.ui, 17.f);
+        ImGui::TextColored(ImVec4(0.55f, 0.80f, 1.f, 1), "OnAir");
+        ImGui::PopFont();
+    }
+    ImGui::SameLine(0, 16);
+    iconInline(a.devices[a.devIdx].kind == DeviceInfo::HackRF ? Ic::Usb : a.devices[a.devIdx].kind == DeviceInfo::File ? Ic::File : Ic::Wave, iconAccent());
+    ImGui::SameLine(0, 5);
     ImGui::SetNextItemWidth(190);
     ImGui::BeginDisabled(running);
     if (ImGui::BeginCombo("##src", a.devices[a.devIdx].name.c_str())) {
@@ -359,7 +416,7 @@ static void toolbar(App& a) {
         ImGui::EndCombo();
     }
     ImGui::SameLine();
-    if (ImGui::SmallButton("Rescan")) refreshDevices(a), a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
+    if (iconFlat(Ic::Refresh, "Rescan for devices")) refreshDevices(a), a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
     ImGui::EndDisabled();
 
     bool isHw = a.devices[a.devIdx].isRadio();
@@ -367,16 +424,18 @@ static void toolbar(App& a) {
     const bool generic = curDev.kind == DeviceInfo::Soapy;
     bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
 
-    ImGui::SameLine(0, 14);
-    ImGui::TextDisabled("freq");
-    ImGui::SameLine();
+    vSeparator();
+    iconInline(Ic::Antenna, iconAccent());
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Centre frequency");
+    ImGui::SameLine(0, 5);
     ImGui::SetNextItemWidth(110);
     bool retune = false;
     ImGui::InputDouble("##freq", &a.freqMhz, 0, 0, "%.3f MHz");
     if (ImGui::IsItemDeactivatedAfterEdit()) retune = true;
-    ImGui::SameLine();
-    ImGui::TextDisabled("BW");
-    ImGui::SameLine();
+    ImGui::SameLine(0, 10);
+    iconInline(Ic::Wave, iconAccent());
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Channel bandwidth");
+    ImGui::SameLine(0, 5);
     ImGui::SetNextItemWidth(a.bwAuto ? 125 : 80);
     {
         char bl[32];
@@ -399,8 +458,10 @@ static void toolbar(App& a) {
         }
     }
 
-    ImGui::SameLine(0, 14);
+    vSeparator();
     ImGui::BeginDisabled(!isHw);
+    iconInline(Ic::Sliders, isHw ? iconAccent() : iconDim());
+    ImGui::SameLine(0, 5);
     if (generic) {
         ImGui::TextDisabled("Gain");
         ImGui::SameLine();
@@ -442,10 +503,10 @@ static void toolbar(App& a) {
     ImGui::EndDisabled();
     if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Gain controls apply to radios only (not to a recording or the synthetic signal)");
 
-    ImGui::SameLine(0, 14);
+    vSeparator();
     if (!running) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.42f, 0.28f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.14f, 0.56f, 0.36f, 1));
-        const bool startClicked = ImGui::Button("  Start  ");
+        const bool startClicked = iconButton(Ic::Play, "Start", IM_COL32(32, 96, 140, 255), IM_COL32(44, 124, 178, 255));
         ImGui::PopStyleColor(2);
         if (startClicked) {
             a.tune.centerHz = a.freqMhz * 1e6;
@@ -461,17 +522,18 @@ static void toolbar(App& a) {
         }
     } else {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.16f, 0.16f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.70f, 0.22f, 0.22f, 1));
-        const bool stopClicked = ImGui::Button("  Stop  ");
+        const bool stopClicked = iconButton(Ic::Stop, "Stop", IM_COL32(112, 48, 48, 255), IM_COL32(146, 62, 62, 255));
         ImGui::PopStyleColor(2);
         if (stopClicked) a.engine.stop();
     }
 
-    ImGui::SameLine(0, 14);
+    vSeparator();
     {
         static const char* modes[] = {"CPU", "GPU", "Auto"};
         char lbl[48];
         const bool gpuNow = a.rx.plpOnGpu;
         snprintf(lbl, sizeof lbl, "%s", a.computeMode == 2 ? (gpuNow ? "Auto (GPU)" : "Auto (CPU)") : modes[a.computeMode]);
+        iconInline(Ic::Chip, iconAccent()); ImGui::SameLine(0, 5);
         ImGui::SetNextItemWidth(104);
         if (ImGui::BeginCombo("##compute", lbl)) {
             for (int i = 0; i < 3; i++) {
@@ -491,6 +553,7 @@ static void toolbar(App& a) {
         const int act = a.engine.activeStandard();
         snprintf(lbl, sizeof lbl, "%s", a.stdMode == 0 ? (a.rx.standard == 1 ? "Auto (DVB-T)" : "Auto (DVB-T2)") : names[a.stdMode]);
         (void)act;
+        iconInline(Ic::Tv, iconAccent()); ImGui::SameLine(0, 5);
         ImGui::SetNextItemWidth(112);
         if (ImGui::BeginCombo("##std", lbl)) {
             for (int i = 0; i < 3; i++) if (!a.atscMode && ImGui::Selectable(names[i], a.stdMode == i)) { a.stdMode = i; a.engine.setStandard(i); savePrefs(a); }
@@ -598,10 +661,15 @@ static void statusBar(App& a) {
     const SignalStats& st = a.spec.stats;
     const RxTelemetry& rx = a.rx;
     const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
+    {   // a tinted panel behind the two status lines
+        const ImVec2 p = ImGui::GetCursorScreenPos();
+        const float h = ImGui::GetFrameHeight() * 2.f + ImGui::GetStyle().ItemSpacing.y * 2.f;
+        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(p.x - 4, p.y - 2), ImVec2(p.x + ImGui::GetContentRegionAvail().x + 4, p.y + h), IM_COL32(25, 32, 42, 255), 7.f);
+    }
     // ---- line 1: lamps, lock state and signal mode
     {
         int iq = run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0;
-        lamp("IQ", iq); ImGui::SameLine(0, 12);
+        lamp("IQ", iq, (int)Ic::Wave); ImGui::SameLine(0, 12);
         const double frameS = rx.frameMs > 0 ? rx.frameMs / 1e3 : 0.5;
         const bool isT = rx.standard == 1;
         const double okFrac = (rx.blocksOk + rx.blocksBad) ? (double)rx.blocksOk / (rx.blocksOk + rx.blocksBad) : 0;
@@ -632,15 +700,27 @@ static void statusBar(App& a) {
         lamp("LDPC", fec); ImGui::SameLine(0, 12);
         lamp("BCH", fec); ImGui::SameLine(0, 12);
         }
-        lamp("TS", !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1); ImGui::SameLine(0, 12);
+        lamp("TS", !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1, (int)Ic::Layers); ImGui::SameLine(0, 12);
         const PlayerStats ps = a.engine.player().stats();
         const bool pl = run && ps.active;
-        lamp("Video", !pl || !ps.hasVideo ? 0 : (ps.shown > 0 && ps.videoQueue > 2) ? 1 : 2); ImGui::SameLine(0, 12);
-        lamp("Audio", !pl || !ps.hasAudio ? 0 : (ps.audioBufferMs > 150) ? 1 : 2); ImGui::SameLine(0, 10);
+        lamp("Video", !pl || !ps.hasVideo ? 0 : (ps.shown > 0 && ps.videoQueue > 2) ? 1 : 2, (int)Ic::Tv); ImGui::SameLine(0, 12);
+        lamp("Audio", !pl || !ps.hasAudio ? 0 : (ps.audioBufferMs > 150) ? 1 : 2, (int)Ic::Speaker); ImGui::SameLine(0, 10);
         ImGui::TextDisabled("|"); ImGui::SameLine(0, 10);
     }
     auto ro = [&](const char* label, const std::string& val, ImVec4 col = ImVec4(0.93f, 0.95f, 0.97f, 1)) {
+        static const struct { const char* k; Ic ic; } kIcons[] = {
+            {"State", Ic::Pulse}, {"Mode", Ic::Layers}, {"FFT", Ic::Grid}, {"GI", Ic::Echo}, {"Pilots", Ic::Target}, {"PLP", Ic::Layers},
+            {"CFO", Ic::Wave}, {"SRO", Ic::Clock}, {"SNR", Ic::Signal}, {"MER", Ic::Target}, {"Delay", Ic::Echo}, {"fs", Ic::Gauge},
+            {"dropped", Ic::Warning}, {"Channel", Ic::Antenna}, {"Field", Ic::Layers}, {"TPS", Ic::Info}, {"hier", Ic::Layers}, {"Pilot", Ic::Target}};
         ImGui::AlignTextToFramePadding();
+        for (auto& e : kIcons) if (!strcmp(e.k, label)) {
+            const bool isState = !strcmp(label, "State");
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+            iconInline(e.ic, isState ? ImGui::ColorConvertFloat4ToU32(col) : iconDim(), 0.9f);
+            ImGui::PopStyleVar();
+            ImGui::SameLine(0, 4);
+            break;
+        }
         ImGui::TextDisabled("%s", label); ImGui::SameLine(0, 5);
         ImGui::PushFont(a.mono, 0); ImGui::TextColored(col, "%s", val.c_str()); ImGui::PopFont();
         ImGui::SameLine(0, 15);
@@ -687,20 +767,20 @@ static void statusBar(App& a) {
     }
     if (run) { snprintf(b, sizeof b, "%.3f Msps", a.engine.sampleRate() / 1e6); ro("fs", b); }
     ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Level"); ImGui::SameLine(0, 5);
+    iconInline(Ic::Gauge, iconDim(), 0.9f); ImGui::SameLine(0, 4); ImGui::TextDisabled("Level"); ImGui::SameLine(0, 5);
     {
-        const ImU32 col = adc == AdcStatus::Overload ? IM_COL32(200, 50, 45, 255) : adc == AdcStatus::Good ? IM_COL32(36, 130, 170, 255) : IM_COL32(190, 140, 40, 255);
+        const ImU32 col = adc == AdcStatus::Overload ? IM_COL32(176, 66, 58, 255) : adc == AdcStatus::Good ? IM_COL32(40, 112, 150, 255) : IM_COL32(176, 130, 48, 255);
         snprintf(b, sizeof b, run ? "%.1f dBFS" : "-", st.rmsDbfs);
         gaugePill(130, run ? (st.rmsDbfs + 60.f) / 60.f : 0.f, col, b);
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("ADC level (rms). %s\npeak %.2f   clip %.3f%%   DC %+.3f / %+.3f", adcAdvice(adc).c_str(), st.peak, st.clipFraction * 100, st.dcI, st.dcQ);
     }
     ImGui::SameLine(0, 15);
     ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Quality"); ImGui::SameLine(0, 5);
+    iconInline(Ic::Signal, iconDim(), 0.9f); ImGui::SameLine(0, 4); ImGui::TextDisabled("Quality"); ImGui::SameLine(0, 5);
     {
         const QualityReport& q = a.quality.report();
         const float t = run && q.valid ? (float)q.percent / 100.f : 0.f;
-        const ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(0.92f - 0.62f * t, 0.45f + 0.40f * t, 0.15f + 0.20f * t, 1));
+        const ImU32 col = t < 0.25f ? IM_COL32(176, 66, 58, 255) : t < 0.5f ? IM_COL32(176, 130, 48, 255) : IM_COL32(40, 112, 150, 255);
         snprintf(b, sizeof b, run && q.valid ? "%.0f%%  %s" : "-", q.percent, q.label.c_str());
         gaugePill(130, t, col, b);
         if (ImGui::IsItemHovered() && run && q.valid) ImGui::SetTooltip("data SNR %.1f dB, needed about %.1f dB (margin %+.1f dB)\nFEC blocks decoded %.1f%%", q.snrDb, q.requiredDb, q.marginDb, q.fecOk * 100);
@@ -712,6 +792,7 @@ static void statusBar(App& a) {
         const ImVec4 col = mr.level == MultipathLevel::None ? ImVec4(0.5f, 0.55f, 0.6f, 1) : mr.level == MultipathLevel::Mild ? ImVec4(0.95f, 0.8f, 0.3f, 1)
                          : mr.level == MultipathLevel::Likely ? ImVec4(0.95f, 0.6f, 0.2f, 1) : ImVec4(0.95f, 0.35f, 0.25f, 1);
         ImGui::AlignTextToFramePadding();
+        iconInline(Ic::Echo, ImGui::ColorConvertFloat4ToU32(col), 0.9f); ImGui::SameLine(0, 4);
         ImGui::TextColored(col, "multipath: %s", multipathName(mr.level));
         if (ImGui::IsItemHovered()) {
             ImGui::BeginTooltip();
@@ -838,18 +919,18 @@ static void spectrumPlot(App& a, ImVec2 size) {
             double bw = kBw[a.bwIdx].mhz;
             double xo[2] = {a.freqMhz - bw / 2 * 0.95, a.freqMhz + bw / 2 * 0.95};
             double yo[2] = {a.yMax, a.yMax};
-            ImPlotSpec band; band.FillColor = ImVec4(0.15f, 0.55f, 0.20f, 0.18f); band.LineColor = ImVec4(0, 0, 0, 0);
+            ImPlotSpec band; band.FillColor = pal::accent(0.10f); band.LineColor = ImVec4(0, 0, 0, 0);
             ImPlot::PlotShaded("band", xo, yo, 2, a.yMin, band);
             if (a.peakHold) {
-                ImPlotSpec ps; ps.LineColor = ImVec4(0.9f, 0.7f, 0.2f, 0.45f); ps.LineWeight = 1.0f;
+                ImPlotSpec ps; ps.LineColor = pal::grey(0.40f); ps.LineWeight = 1.0f;
                 std::vector<double> yp(a.peak.begin(), a.peak.end());
                 ImPlot::PlotLine("peak", x.data(), yp.data(), (int)x.size(), ps);
             }
-            ImPlotSpec ss; ss.LineColor = ImVec4(0.45f, 0.65f, 1.0f, 1); ss.LineWeight = 1.3f;
+            ImPlotSpec ss; ss.LineColor = pal::accent(); ss.LineWeight = 1.3f;
             std::vector<double> ysm(a.smooth.begin(), a.smooth.end());
             ImPlot::PlotLine("spectrum", x.data(), ysm.data(), (int)x.size(), ss);
             double cx[2] = {a.freqMhz, a.freqMhz}, cy[2] = {a.yMin, a.yMax};
-            ImPlotSpec cs; cs.LineColor = ImVec4(1, 0.8f, 0.2f, 0.6f);
+            ImPlotSpec cs; cs.LineColor = pal::grey(0.35f);
             ImPlot::PlotLine("centre", cx, cy, 2, cs);
         }
         ImPlot::EndPlot();
@@ -882,7 +963,7 @@ static void histogramPlot(App& a, ImVec2 size) {
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, 1, ImPlotCond_Once);
         float h[64], x[64];
         for (int i = 0; i < 64; i++) { h[i] = (float)std::max<uint32_t>(1, a.spec.stats.hist[i]); x[i] = (i + 0.5f) / 64; }
-        ImPlotSpec bs; bs.FillColor = ImVec4(0.45f, 0.65f, 1.0f, 0.8f);
+        ImPlotSpec bs; bs.FillColor = pal::accent(0.8f);
         ImPlot::PlotBars("adc", x, h, 64, 1.0 / 64, bs);
         ImPlot::EndPlot();
     }
@@ -1371,7 +1452,12 @@ static void constDensityPlot(App& a, ImVec2 sz) {
             std::vector<float> v(c.grid.size());
             float mx = 0;
             for (size_t i = 0; i < v.size(); i++) { v[i] = std::sqrt(c.grid[i]); mx = std::max(mx, v[i]); }   // square root: faint areas stay visible
-            ImPlot::PushColormap(ImPlotColormap_Hot);
+            static ImPlotColormap cm = -1;
+            if (cm < 0) {   // black -> accent -> white, instead of the rainbow-like "hot" map
+                const ImVec4 cols[4] = {ImVec4(0.02f, 0.03f, 0.05f, 1), ImVec4(0.10f, 0.28f, 0.45f, 1), pal::accent(), ImVec4(0.95f, 0.98f, 1.f, 1)};
+                cm = ImPlot::AddColormap("onair", cols, 4);
+            }
+            ImPlot::PushColormap(cm);
             ImPlot::PlotHeatmap("density", v.data(), G, G, 0, std::max(1.f, mx * 0.85f), nullptr, ImPlotPoint(-1.4, -1.4), ImPlotPoint(1.4, 1.4));
             ImPlot::PopColormap();
         }
@@ -1379,7 +1465,7 @@ static void constDensityPlot(App& a, ImVec2 sz) {
         std::vector<cf32> grid;
         for (unsigned l = 0; l < (1u << M); l++) grid.push_back(qamPoint(a.rx.plpFec.mod, false, l));
         ImPlotSpec gs; gs.Marker = ImPlotMarker_Cross; gs.MarkerSize = 4.f; gs.Stride = sizeof(cf32);
-        gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(0.4f, 0.8f, 1, 0.9f);
+        gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(1, 1, 1, 0.55f);
         const float* g = reinterpret_cast<const float*>(grid.data());
         ImPlot::PlotScatter("ideal", g, g + 1, (int)grid.size(), gs);
         ImPlot::EndPlot();
@@ -1466,7 +1552,7 @@ static void atscPanels(App& a) {
         float mx = 1;
         for (float v : at.levels) { const int k = (int)((v + 9.f) / 18.f * NB); if (k >= 0 && k < NB) mx = std::max(mx, ++cnt[k]); }
         ImPlot::SetupAxisLimits(ImAxis_Y1, 0, mx * 1.15, ImPlotCond_Always);
-        ImPlotSpec sp; sp.FillColor = ImVec4(0.35f, 0.62f, 1.f, 0.85f); sp.LineColor = ImVec4(0.35f, 0.62f, 1.f, 1.f);
+        ImPlotSpec sp; sp.FillColor = pal::accent(0.85f); sp.LineColor = pal::accent();
         ImPlot::PlotBars("levels", xs, cnt, NB, 18.0 / NB * 0.9, sp);
         const double lv[8] = {-7, -5, -3, -1, 1, 3, 5, 7};
         ImPlotSpec gs; gs.LineColor = ImVec4(1, 1, 1, 0.35f);
@@ -1483,7 +1569,7 @@ static void atscPanels(App& a) {
             std::vector<float> xs(at.eqTaps.size());
             for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(at.eqCursor - (int)i);   // symbols relative to the main tap: positive = echoes of later symbols
             ImPlot::SetupAxisLimits(ImAxis_X1, -(double)(at.eqTaps.size() - 1 - at.eqCursor) - 1, (double)at.eqCursor + 1, ImPlotCond_Always);
-            ImPlotSpec sp; sp.LineColor = ImVec4(0.9f, 0.7f, 0.2f, 1.f);
+            ImPlotSpec sp; sp.LineColor = pal::accent();
             ImPlot::PlotLine("taps", xs.data(), at.eqTaps.data(), (int)xs.size(), sp);
         }
         ImPlot::EndPlot();
@@ -1498,7 +1584,7 @@ static void atscPanels(App& a) {
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, std::max<size_t>(2, at.levels.size()), ImPlotCond_Always);
         if (!at.levels.empty()) {
             ImPlotSpec sp; sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.3f;
-            sp.MarkerFillColor = sp.MarkerLineColor = sp.LineColor = ImVec4(0.35f, 0.85f, 0.45f, 0.6f);
+            sp.MarkerFillColor = sp.MarkerLineColor = sp.LineColor = pal::accent(0.6f);
             ImPlot::PlotScatter("l", at.levels.data(), (int)at.levels.size(), 1.0, 0.0, sp);
         }
         const double lv[8] = {-7, -5, -3, -1, 1, 3, 5, 7};
@@ -1538,12 +1624,12 @@ static void constellationsTab(App& a) {
     auto caption = [&](const char* fmt, auto... args) { snprintf(cap, sizeof cap, fmt, args...); ImGui::TextDisabled("%s", cap); };
     ImGui::BeginGroup();
     if (rx.standard == 1) caption("TPS carriers, DBPSK (%zu cells)", rx.p1Const.size()); else caption("P1 carriers (%zu cells)", rx.p1Const.size());
-    scatter("##c1", rx.p1Const, sz, 2.5, ImVec4(0.95f, 0.7f, 0.2f, 0.9f));
+    scatter("##c1", rx.p1Const, sz, 2.5, pal::accent(0.9f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
     if (rx.standard == 1) caption("Pilots, equalised (%zu cells)", rx.eqCells.size()); else caption("P2 cells, equalised (%zu cells)", rx.eqCells.size());
-    scatter("##ceq", rx.eqCells, sz, 2.0, ImVec4(0.9f, 0.45f, 0.75f, 0.8f));
+    scatter("##ceq", rx.eqCells, sz, 2.0, pal::accent(0.8f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
@@ -1568,8 +1654,8 @@ static void constellationsTab(App& a) {
                 const float* d = reinterpret_cast<const float*>(v.data());
                 ImPlot::PlotScatter(id, d, d + 1, (int)v.size(), sp);
             };
-            draw("ok", good, ImVec4(0.35f, 0.62f, 1.0f, 0.60f));
-            draw("err", bad, ImVec4(0.95f, 0.45f, 0.30f, 0.75f));
+            draw("ok", good, pal::accent(0.60f));
+            draw("err", bad, ImVec4(0.88f, 0.52f, 0.40f, 0.75f));
             {   // the transmitted (unrotated) constellation points, drawn on top like the reference decoders do
                 const int M = 2 * (rx.plpFec.mod + 1);
                 std::vector<cf32> grid;
@@ -1610,12 +1696,12 @@ static void constellationsTab(App& a) {
             ImPlot::EndPlot();
         }
     } else
-        scatter("##c2", rx.eqData, sz, 1.8, ImVec4(0.35f, 0.85f, 0.45f, 0.6f));
+        scatter("##c2", rx.eqData, sz, 1.8, pal::accent(0.6f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
     caption("OFDM cells, raw (%zu cells)", rx.rawCells.size());
-    scatter("##c3", rx.rawCells, sz, 3.0, ImVec4(0.45f, 0.65f, 1.0f, 0.7f));
+    scatter("##c3", rx.rawCells, sz, 3.0, pal::accent(0.7f));
     ImGui::EndGroup();
 }
 
@@ -1638,7 +1724,7 @@ static void channelTab(App& a) {
         ImPlot::SetupAxes("frequency (MHz)", "dB", 0, ImPlotAxisFlags_AutoFit);
         ImPlot::SetupAxisFormat(ImAxis_X1, "%.2f");
         ImPlot::SetupAxisLimits(ImAxis_X1, xs.front(), xs.back(), ImPlotCond_Always);
-        ImPlotSpec sp; sp.LineColor = ImVec4(0.45f, 0.75f, 1, 1);
+        ImPlotSpec sp; sp.LineColor = pal::accent();
         ImPlot::PlotLine("mag", xs.data(), rx.chMagDb.data(), (int)xs.size(), sp);
         ImPlot::EndPlot();
     }
@@ -2179,7 +2265,7 @@ static void rightPanel(App& a) {
         ImGui::TextDisabled("local %s   (%s)", fmtLocal(now, "%H:%M").c_str(), a.ts.utcNow ? "broadcast time" : "computer clock");
     }
     ImGui::Spacing();
-    ImGui::TextDisabled("Services");
+    sectionHeader(Ic::Tv, "Services");
     // ---- service cards
     const float cardH = 68;
     ImGui::BeginChild("svcs", ImVec2(0, std::max(140.f, ImGui::GetContentRegionAvail().y * 0.40f)));
@@ -2201,7 +2287,9 @@ static void rightPanel(App& a) {
         dl->AddRect(p, ImVec2(p.x + w, p.y + cardH - 4), sel ? IM_COL32(42, 130, 190, 255) : IM_COL32(40, 46, 54, 255), 6.f, 0, sel ? 1.6f : 1.f);
         // name and bit rate
         const std::string name = sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name;
-        dl->AddText(a.ui, 16.f, ImVec2(p.x + 10, p.y + 6), IM_COL32(245, 247, 250, 255), name.c_str());
+        const bool isRadio = sv.type == 0x02 || sv.type == 0x0A || (!hasVideo && !ac.empty());
+        icons::draw(isRadio ? Ic::Radio : Ic::Tv, ImVec2(p.x + 20, p.y + 15), 17.f, sel ? IM_COL32(120, 200, 255, 255) : IM_COL32(120, 136, 156, 255), dl);
+        dl->AddText(a.ui, 16.f, ImVec2(p.x + 34, p.y + 6), IM_COL32(245, 247, 250, 255), name.c_str());
         char kbs[32]; fmtKbps(kbs, sizeof kbs, kb);
         const ImVec2 ks = ImGui::CalcTextSize(kbs);
         dl->AddText(ImVec2(p.x + w - ks.x - 10, p.y + 8), IM_COL32(150, 158, 168, 255), kbs);
@@ -2209,10 +2297,10 @@ static void rightPanel(App& a) {
         float x = p.x + 10;
         const float ty = p.y + 27;
         const bool radio = sv.type == 0x02 || sv.type == 0x0A || (!hasVideo && !ac.empty());
-        x += tagAt(dl, ImVec2(x, ty), radio ? "radio" : hasVideo ? "TV" : sv.typeName(), radio ? IM_COL32(88, 62, 132, 255) : IM_COL32(30, 90, 142, 255)) + 4;
-        if (!vc.empty()) x += tagAt(dl, ImVec2(x, ty), vc.c_str(), IM_COL32(32, 98, 98, 255)) + 4;
-        if (!ac.empty()) x += tagAt(dl, ImVec2(x, ty), ac.c_str(), IM_COL32(52, 98, 50, 255)) + 4;
-        if (sv.caFlag) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(150, 50, 46, 255)) + 4;
+        x += tagAt(dl, ImVec2(x, ty), radio ? "radio" : hasVideo ? "TV" : sv.typeName(), IM_COL32(34, 74, 108, 255)) + 4;
+        if (!vc.empty()) x += tagAt(dl, ImVec2(x, ty), vc.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
+        if (!ac.empty()) x += tagAt(dl, ImVec2(x, ty), ac.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
+        if (sv.caFlag) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(112, 52, 50, 255)) + 4;
         // what is on
         const EpgEvent* cur = epgCurrent(a, sv.id);
         std::string line;
@@ -2230,20 +2318,20 @@ static void rightPanel(App& a) {
     {
         const Player& pl = a.engine.player();
         const PlayerStats ps = pl.stats();
-        ImGui::TextDisabled("Player");
+        sectionHeader(Ic::Play, "Player");
         if (pl.selected() < 0) ImGui::TextDisabled("click a service to play it");
         else if (ImGui::BeginTable("pkv", 2, ImGuiTableFlags_SizingFixedFit)) {
-            ImGui::TableSetupColumn("k", ImGuiTableColumnFlags_WidthFixed, 66);
-            auto row = [&](const char* k, const char* fmt, auto... args) {
-                ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", k); ImGui::TableNextColumn();
+            ImGui::TableSetupColumn("k", ImGuiTableColumnFlags_WidthFixed, 88);
+            auto row = [&](Ic ic, const char* k, const char* fmt, auto... args) {
+                ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(ic, iconDim(), 0.9f); ImGui::SameLine(0, 5); ImGui::TextDisabled("%s", k); ImGui::TableNextColumn();
                 char b[120]; snprintf(b, sizeof b, fmt, args...); ImGui::TextUnformatted(b);
             };
-            if (ps.hasVideo) row("Video", "%s  %dx%d  %.1f fps  %s", ps.videoCodec.c_str(), ps.width, ps.height, ps.fps, ps.hardware ? "(hardware)" : "(software)");
-            if (ps.hasAudio) row("Audio", "%s  %d ch", ps.audioCodec.c_str(), ps.audioChannels);
-            row("Buffer", "%.0f ms     A/V %+.0f ms", ps.audioBufferMs, ps.avOffsetMs);
-            row("Pictures", "%llu shown / %llu late", (unsigned long long)ps.shown, (unsigned long long)ps.late);
-            row("Errors", "%llu     underruns %d", (unsigned long long)ps.errors, ps.underruns);
-            ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("Volume"); ImGui::TableNextColumn();
+            if (ps.hasVideo) row(Ic::Tv, "Video", "%s  %dx%d  %.1f fps  %s", ps.videoCodec.c_str(), ps.width, ps.height, ps.fps, ps.hardware ? "(hardware)" : "(software)");
+            if (ps.hasAudio) row(Ic::Speaker, "Audio", "%s  %d ch", ps.audioCodec.c_str(), ps.audioChannels);
+            row(Ic::Clock, "Buffer", "%.0f ms     A/V %+.0f ms", ps.audioBufferMs, ps.avOffsetMs);
+            row(Ic::Camera, "Pictures", "%llu shown / %llu late", (unsigned long long)ps.shown, (unsigned long long)ps.late);
+            row(Ic::Warning, "Errors", "%llu     underruns %d", (unsigned long long)ps.errors, ps.underruns);
+            ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(a.muted ? Ic::Mute : Ic::Speaker, iconDim(), 0.9f); ImGui::SameLine(0, 5); ImGui::TextDisabled("Volume"); ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
             float vol = a.volume * 100.f;
             if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) { a.volume = vol / 100.f; a.engine.player().setVolume(a.volume); }
@@ -2265,11 +2353,13 @@ static void rightPanel(App& a) {
     }
     {
         OutputStats os = a.engine.outputStats();
-        ImGui::TextDisabled("Outputs");
-        ImGui::SameLine();
-        ImGui::TextColored(os.fileOpen ? ImVec4(0.4f, 0.9f, 0.5f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "file");
-        ImGui::SameLine();
-        ImGui::TextColored(os.udpOpen ? ImVec4(0.4f, 0.9f, 0.5f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "udp");
+        iconLabel(Ic::Link, "Outputs", iconAccent());
+        ImGui::SameLine(0, 10);
+        iconInline(Ic::File, os.fileOpen ? IM_COL32(120, 190, 235, 255) : IM_COL32(86, 94, 104, 255), 0.9f); ImGui::SameLine(0, 3);
+        ImGui::TextColored(os.fileOpen ? ImVec4(0.55f, 0.76f, 0.92f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "file");
+        ImGui::SameLine(0, 10);
+        iconInline(Ic::Globe, os.udpOpen ? IM_COL32(120, 190, 235, 255) : IM_COL32(86, 94, 104, 255), 0.9f); ImGui::SameLine(0, 3);
+        ImGui::TextColored(os.udpOpen ? ImVec4(0.55f, 0.76f, 0.92f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "udp");
         if (os.fileOpen) { ImGui::SameLine(); ImGui::TextDisabled("%.1f MB", os.fileBytes / 1e6); }
         if (os.udpOpen) { ImGui::SameLine(); ImGui::TextDisabled("%s:%d%s", a.udpHost, a.out.port, a.out.rtp ? " RTP" : ""); }
     }
@@ -2707,13 +2797,13 @@ static void drawUI(App& a, ImVec2 disp) {
     float mainH = ImGui::GetContentRegionAvail().y - logH - 6;
     ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16, mainH));
     if (ImGui::BeginTabBar("tabs")) {
-        if (tabItem("Overview")) { overviewTab(a); ImGui::EndTabItem(); }
-        if (tabItem("TV")) { tvTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Receiver")) { receiverTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Stream")) { streamTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Scan")) { scanTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Antenna")) { antennaTab(a); ImGui::EndTabItem(); }
-        if (tabItem("History")) { historyLogTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Overview", Ic::Grid)) { overviewTab(a); ImGui::EndTabItem(); }
+        if (tabItem("TV", Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Receiver", Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Stream", Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Scan", Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Antenna", Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
+        if (tabItem("History", Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     ImGui::EndChild();
