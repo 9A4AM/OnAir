@@ -2824,7 +2824,7 @@ int main(int argc, char** argv) {
             if (autostart) {
                 autostart = false;
                 app.devIdx = 0;
-                if (hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == (fileStart ? DeviceInfo::File : DeviceInfo::HackRF)) app.devIdx = i;
+                if (hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == (fileStart ? DeviceInfo::File : DeviceInfo::HackRF) || (!fileStart && app.devices[i].isRadio())) app.devIdx = i;
                 app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
                 app.engine.setComputeMode(app.computeMode); app.engine.setStandard(app.atscMode ? 3 : app.stdMode);
                 app.engine.start(app.devices[app.devIdx], app.tune, app.file);
