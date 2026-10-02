@@ -6,7 +6,7 @@ const PAL={accent:'#5ca8db',ok:'#66c285',warn:'#e6b347',bad:'#e06157',grey:'#9ea
 const acc=a=>`rgba(92,168,219,${a})`;
 let CURBT=0, CURT=0;
 const eio3=k=>{k=clamp(k);return k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2};
-const ease=(bt,t0,d=.9)=>eio3(seg(bt,t0,t0+d*.6));
+const ease=(bt,t0,d=.9)=>eio3(seg(bt,t0-.2,t0-.2+d*.6));   // fades start slightly early so the visual arrives on the beat
 
 // ---------------------------------------------------------------- signal model
 const NB=1024;
@@ -343,7 +343,11 @@ function composite(t){
 const bl1=mk(480,270), bl1x=bl1.getContext('2d'), bl2=mk(240,135), bl2x=bl2.getContext('2d');
 const grain=mk(256,256), gx_=grain.getContext('2d'); { const id=gx_.createImageData(256,256); for(let i=0;i<256*256;i++){ const v=(hash(i*1.37)*255)|0; id.data[i*4]=id.data[i*4+1]=id.data[i*4+2]=v; id.data[i*4+3]=255; } gx_.putImageData(id,0,0); }
 const BUILDS=[[0,4],[20,24],[42,46],[72,80]];
+const pun=mk(), punx=pun.getContext('2d'); const HITS_T=[4,24,46,80];
 function post(t,frame){
+  let pk=0; for(const h of HITS_T){ if(t>=h&&t<h+1) pk=Math.max(pk,Math.exp(-(t-h)*7)); }
+  if(pk>.01){ punx.clearRect(0,0,W,H); punx.drawImage(cv,0,0); const z=1+.022*pk; ctx.save(); ctx.fillStyle='#05070a'; ctx.fillRect(0,0,W,H); ctx.translate(W/2,H/2); ctx.scale(z,z); ctx.translate(-W/2,-H/2); ctx.drawImage(pun,0,0); ctx.restore();
+    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=.07*pk; ctx.fillStyle='#9cc6e6'; ctx.fillRect(0,0,W,H); ctx.restore(); }
   // the picture builds with the music: a thin carrier line grows along the bottom edge during each riser and is released on the hit
   for(const [a,b] of BUILDS){ if(t>=a&&t<b+.25){ const k=t<b?Math.pow((t-a)/(b-a),2.2):1, rel=t<b?1:1-seg(t,b,b+.25); if(a>0||true){ ctx.save(); ctx.globalAlpha=.8*rel; ctx.strokeStyle='rgba(120,185,230,.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(W/2-W*k/2,H-4); ctx.lineTo(W/2+W*k/2,H-4); ctx.stroke(); ctx.restore(); } } }
   const g=ctx.createRadialGradient(W/2,H/2,H*.5,W/2,H/2,H*1.02); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.28)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);

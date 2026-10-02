@@ -241,6 +241,12 @@ def impact(t, g, f0=70):
 fx = np.zeros_like(mix)
 for (h, size), g in zip(HITS, (.08, .14, .17, .19)): fx += impact(h, g)
 mix += fx + rv(fx, IR_HALL) * .35
+# pre-hit pull-back: ~0.2 s of near-silence right before each big hit so the hit lands harder (classic trailer dropout)
+dip = np.ones(len(T), np.float32)
+for h, _ in HITS[1:]:
+    a, b = h - .22, h - .004; r = .015
+    dip *= (1 - .93 * np.clip(np.minimum((T - a) / r, (b - T) / r), 0, 1)).astype(np.float32)
+mix *= dip[:, None]
 # gain riding: lift the final build, trim the climax, settle for the outro
 mix *= np.minimum(1, T / .8)[:, None]
 tail = np.clip((DUR + 2.4 - T) / 3.4, 0, 1) ** 1.5; mix *= tail[:, None]
