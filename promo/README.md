@@ -1,6 +1,6 @@
 # OnAir promo video
 
-`OnAir_promo.mp4` (1080p30, 66 s). Every scene is drawn on a canvas in the app's own palette (accent blue, navy waterfall ramp,
+`OnAir_promo.mp4` (1080p30, 82 s). Every scene is drawn on a canvas in the app's own palette (accent blue, navy waterfall ramp,
 accent-coloured constellations on near-black plots); nothing imitates the app's windows.
 
 * `scenes.js` + `common_head.js` + `index.html`: the scenes. `node render.cjs render 4` renders frames with Playwright
@@ -8,3 +8,6 @@ accent-coloured constellations on near-black plots); nothing imitates the app's 
 * `music.py`: the score. Composed as MIDI stems (piano, pads, strings, bass, vibraphone, drums, glockenspiel), rendered with
   FluidSynth (FluidR3 GM soundfont), levelled and mixed with reverb, sidechain and compression. 120 BPM, one bar = 2 s, so every
   scene boundary falls on a bar line. Needs `fluidsynth`, `fluid-soundfont-gm`, `mido`, `scipy`.
+
+Claims on screen: T2-Lite is described as rarely covered by public decoders "to our knowledge"; the footnote says it is only verified
+in synthetic tests (FEC rates 1/3 and 2/5 against the reference encoder). The outro says native on macOS and Linux, Windows coming soon.
