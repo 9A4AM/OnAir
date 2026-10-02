@@ -314,3 +314,13 @@ Work this needs (the code today is macOS-only in a few places):
 - **Platform glue:** NSUserDefaults settings, file dialogs and QoS thread classes need equivalents (a settings file, native dialogs, thread priorities).
 - **CI and release:** GitHub Actions matrix (macOS arm64 + Intel, Windows, Linux) that builds, runs the tests, packages (`create-dmg`, NSIS/WiX or Inno Setup, AppImage/`dpkg-deb`), signs/notarises where possible, and attaches the artifacts to a GitHub Release when a tag is pushed.
 - **Docs:** per-platform install and HackRF driver notes (WinUSB/Zadig on Windows, udev rules on Linux).
+
+### 11.4 Multipath / fading detector (first version built 2026-10-02)
+
+The program tells the user when it thinks the signal suffers from multipath or fading, and why. Implemented in `core/src/channel.cpp` and shown as a "multipath: ..." badge in the status bar (hover for the reasons) and as a report at the top of the Channel tab. It combines three independent clues:
+
+1. **Echoes** in the power-delay profile (level and delay relative to the strongest path, and whether an echo falls outside the guard interval, which causes inter-symbol interference).
+2. **Frequency-selective fading**: dips in |H(f)|, counted and measured in depth.
+3. **Time variation**: frame-to-frame SNR spread and how many recent frames lost a noticeable share of their FEC blocks.
+
+The verdict is none / mild / likely / severe, with advice to re-aim the antenna for the worse levels. It is covered by `tests/test_channel.cpp` (clean channel reads "none", a synthetic echo is found at the right delay and level). On the 522 MHz recording it reports a likely multipath channel: echoes at -7 dB (+1.1 us) and weaker ones, several dips around 12 dB, and fades in about one frame in eight. Open points: thresholds need tuning against more real recordings, and the direction finder (11.1) should use this report as part of its per-direction score.

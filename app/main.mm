@@ -16,6 +16,7 @@
 #include "dect2/engine.h"
 #include "dect2/scanner.h"
 #include "dect2/gain.h"
+#include "dect2/channel.h"
 #include "theme.h"
 
 #include <algorithm>
@@ -189,6 +190,7 @@ struct App {
     std::deque<float> hCfo, hSnr, hTiming;
     bool rxSeen = false;
     int computeMode = 2; // 0 CPU, 1 GPU, 2 auto
+    MultipathDetector mpd;
     bool agcOn = false;
     AutoGain agc;
     GainSweep sweep;
@@ -517,6 +519,18 @@ static void statusBar(App& a) {
         if (a.rx.l1preOk) ImGui::SameLine(), ImGui::Text("  PP%d  cell %d", a.rx.l1pre.pilotPattern + 1, a.rx.l1pre.cellId);
         ImGui::PopFont();
     }
+    if (run && a.mpd.report().level != MultipathLevel::Unknown) {
+        const MultipathReport& mr = a.mpd.report();
+        const ImVec4 col = mr.level == MultipathLevel::None ? ImVec4(0.5f, 0.55f, 0.6f, 1) : mr.level == MultipathLevel::Mild ? ImVec4(0.95f, 0.8f, 0.3f, 1)
+                         : mr.level == MultipathLevel::Likely ? ImVec4(0.95f, 0.6f, 0.2f, 1) : ImVec4(0.95f, 0.35f, 0.25f, 1);
+        ImGui::SameLine(); ImGui::TextColored(col, "  multipath: %s", multipathName(mr.level));
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted(mr.headline.c_str());
+            for (auto& r : mr.reasons) ImGui::BulletText("%s", r.c_str());
+            ImGui::EndTooltip();
+        }
+    }
     if (run && a.devices[a.devIdx].kind != DeviceInfo::File) {
         const AdcStatus as = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
         if (a.sweep.active()) {
@@ -552,7 +566,9 @@ static void ingestRx(App& a) {
     if (!a.engine.latestRx(t, a.rxSeq)) return;
     a.rxSeq = t.seq;
     if (t.p1Count > 0) a.rxSeen = true;
+    if (t.dataFrames < a.rx.dataFrames) a.mpd.reset(); // receiver was restarted or retuned
     a.rx = std::move(t);
+    a.mpd.update(a.rx);
     auto push = [](std::deque<float>& d, float v) { d.push_back(v); if (d.size() > 600) d.pop_front(); };
     if (a.rx.state == 2) {
         push(a.hCfo, (float)a.rx.cfoHz);
@@ -845,6 +861,13 @@ static void constellationsTab(App& a) {
 static void channelTab(App& a) {
     const RxTelemetry& rx = a.rx;
     if (!rx.chValid) { ImGui::TextDisabled("no channel estimate yet (needs a decoded P1 and a P2 symbol)"); return; }
+    {
+        const MultipathReport& mr = a.mpd.report();
+        ImGui::TextColored(mr.level == MultipathLevel::None ? ImVec4(0.4f, 0.85f, 0.5f, 1) : mr.level == MultipathLevel::Mild ? ImVec4(0.95f, 0.8f, 0.3f, 1) : ImVec4(0.95f, 0.5f, 0.25f, 1),
+                           "Multipath analysis: %s", mr.headline.c_str());
+        for (auto& r : mr.reasons) { ImGui::SameLine(0, 0); ImGui::NewLine(); ImGui::TextDisabled("  - %s", r.c_str()); }
+        ImGui::Separator();
+    }
     float h = ImGui::GetContentRegionAvail().y;
     double fnMhz = rx.nativeRate / 1e6, binMhz = fnMhz / rx.fftN;
     std::vector<float> xs(rx.chMagDb.size());
