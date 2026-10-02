@@ -276,3 +276,41 @@ A **headless CLI** (`dect2 --iq file.cs8 --out out.ts`) comes for free from this
 ## 10. Open questions
 
 - HackRF Pro specifics (sample-rate ceiling, ADC width, gain ranges) — confirm with `hackrf_info` when connected.
+
+## 11. Requested features (not built yet)
+
+Added 2026-10-02 at the user's request.
+
+### 11.1 Antenna direction finder
+
+An assistant that tells the user where to point the antenna, step by step:
+
+1. The user points the antenna **north, east, south, west** in turn (the app says when to turn; each step it measures for a few seconds).
+2. From those four readings it picks the best sector and asks for the **in-between directions** next (NE, SE, SW, NW), and then finer ones around the best one, until it can say "point it this way".
+3. The measure is the decoder's own quality figure, not just signal level: data SNR / MER and the share of FEC blocks that decode, with ADC level as a fallback while there is no lock. Multipath and fades matter as much as strength, so the score also penalises block loss over the measuring window.
+4. UI: a compass rose with the measured score per direction, the current instruction ("Turn to NE and hold still"), a progress bar for the measuring window, and the final recommendation. Remembered per frequency, so a saved location can be reused. It must work from recorded files for development (a recording is just one direction), so the scoring logic is unit-tested on synthetic per-direction data.
+
+### 11.2 Constellation display like the reference UI
+
+The constellation panels should look like the reference screenshot: clearly separated, tightly packed dots on the ideal QAM grid, not a fuzzy cloud. Direction of travel: plot the derotated symbols (done), with a density-based colour/brightness, small points, equal axes with the ideal grid drawn *above* the dots, symbols from correctly decoded blocks only, and optional averaging/persistence. Note that how tight the clusters look is limited by the real MER (about 15 dB on the 522 MHz signal); the reference picture comes from a much cleaner signal, so also consider showing decision-directed (decoded) symbols with their error vectors as an alternative view.
+
+### 11.3 Native builds for every platform, and releases
+
+The repository will become public. A release should offer a normal installer per platform:
+
+| Platform | Artifact |
+|---|---|
+| macOS Apple Silicon (arm64) | `.dmg` |
+| macOS Intel (x86_64) | `.dmg` (or one universal `.dmg`) |
+| Windows (x64) | `.exe` installer (and a portable `.zip`) |
+| Linux (x64, arm64) | `AppImage` plus `.deb`; a tarball for everything else |
+
+Work this needs (the code today is macOS-only in a few places):
+
+- **Build system:** CMake presets per platform; dependencies via vcpkg/Conan or system packages (libhackrf, FFmpeg, GLFW).
+- **GPU/graphics:** the UI renders with Metal and the LDPC accelerator is a Metal kernel. Replace or add portable back ends: ImGui's OpenGL3/Vulkan back end for the UI, and a portable compute path (Vulkan compute or OpenCL, possibly via a thin abstraction) for LDPC. The CPU path always remains as the fallback, and the Auto mode stays.
+- **SIMD:** the LDPC and DSP code uses ARM NEON and Apple's Accelerate/vDSP. Add SSE/AVX2 (x86) implementations, or portable fallbacks (e.g. PFFFT/KissFFT or FFTW instead of vDSP).
+- **Audio and video:** CoreAudio and VideoToolbox become a cross-platform audio layer (miniaudio or SDL) and FFmpeg hardware decoding per platform (VideoToolbox on macOS, D3D11VA/DXVA on Windows, VAAPI on Linux).
+- **Platform glue:** NSUserDefaults settings, file dialogs and QoS thread classes need equivalents (a settings file, native dialogs, thread priorities).
+- **CI and release:** GitHub Actions matrix (macOS arm64 + Intel, Windows, Linux) that builds, runs the tests, packages (`create-dmg`, NSIS/WiX or Inno Setup, AppImage/`dpkg-deb`), signs/notarises where possible, and attaches the artifacts to a GitHub Release when a tag is pushed.
+- **Docs:** per-platform install and HackRF driver notes (WinUSB/Zadig on Windows, udev rules on Linux).

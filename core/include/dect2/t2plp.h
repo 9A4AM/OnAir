@@ -37,6 +37,7 @@ struct PlpResult {
     int plpId = 0;
     PlpFec fec;
     int blocks = 0, blocksOk = 0, bchFailed = 0, headerOk = 0;
+    int retryRecovered = 0;     // blocks that only decoded on the second-chance pass
     int bchCorrected = 0;       // total bit errors corrected by BCH
     double avgLdpcIters = 0;
     double preBer = 0;          // hard-decision bit error rate before LDPC (measured against the decoded codewords)

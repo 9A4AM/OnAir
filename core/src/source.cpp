@@ -221,6 +221,7 @@ public:
     bool retune(const TuneSettings& s, std::string&) override {
         std::lock_guard<std::mutex> lk(mu_);
         cfg_ = s.synth;
+        gainDb_ = s.lnaDb + s.vgaDb + (s.ampOn ? 14 : 0);
         regen_ = true;
         return true;
     }
@@ -229,6 +230,7 @@ protected:
     double effectiveRate(const TuneSettings& s) override { return nativeRateHz(s.bandwidthMhz); }
     bool prepare(const TuneSettings& s, std::string&) override {
         cfg_ = s.synth;
+        gainDb_ = s.lnaDb + s.vgaDb + (s.ampOn ? 14 : 0);
         regen_ = true;
         return true;
     }
@@ -249,7 +251,7 @@ protected:
         const int ed = std::min<int>(std::max(1, cfg_.echoDelay), (int)delay_.size() - 1);
         const double dph = 2 * M_PI * cfg_.cfoHz / rate_;
         std::normal_distribution<float> nd(0.f, 1.f);
-        const float gain = 0.25f; // leave ADC headroom: OFDM peak/rms is ~12 dB
+        const float gain = 0.25f * (cfg_.gainModel ? (float)std::pow(10.0, (gainDb_ - 62) / 20.0) : 1.f); // leave ADC headroom: OFDM peak/rms is ~12 dB
         for (size_t i = 0; i < maxN; i++) {
             size_t i0 = (size_t)pos_;
             while (sbuf_.size() < i0 + 4) { gen_->nextFrame(frame_); sbuf_.insert(sbuf_.end(), frame_.begin(), frame_.end()); }
@@ -293,6 +295,7 @@ private:
     double pos_ = 1, phase_ = 0;
     size_t dpos_ = 0;
     std::mt19937 rng_{99};
+    int gainDb_ = 62;
 };
 
 } // namespace

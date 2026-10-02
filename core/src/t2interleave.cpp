@@ -1,3 +1,5 @@
+#include <map>
+#include <mutex>
 #include "dect2/t2interleave.h"
 
 namespace dect2 {
@@ -18,7 +20,7 @@ const int logic1k[2] = {0, 4}, logic2k[2] = {0, 3}, logic4k[2] = {0, 2}, logic8k
           logic16k[6] = {0, 1, 4, 5, 9, 11}, logic32k[4] = {0, 1, 2, 12};
 } // namespace
 
-void freqInterleaverSeq(int fftCode, int nCells, bool oddSymbol, std::vector<int>& H) {
+static void freqInterleaverSeqCompute(int fftCode, int nCells, bool oddSymbol, std::vector<int>& H) {
     int degree = 0, xorSize = 0;
     const int *logic = logic1k, *permEven = bitperm1keven, *permOdd = bitperm1kodd;
     switch (fftCode) {
@@ -60,6 +62,21 @@ void freqInterleaverSeq(int fftCode, int nCells, bool oddSymbol, std::vector<int
         he = inv;
     }
     H = oddSymbol ? ho : he;
+}
+
+// The sequence only depends on (FFT size, active cells, symbol parity): compute it once.
+void freqInterleaverSeq(int fftCode, int nCells, bool oddSymbol, std::vector<int>& H) {
+    static std::mutex mu;
+    static std::map<long, std::vector<int>> cache;
+    const long key = ((long)fftCode << 40) | ((long)nCells << 1) | (oddSymbol ? 1 : 0);
+    std::lock_guard<std::mutex> lk(mu);
+    auto it = cache.find(key);
+    if (it == cache.end()) {
+        std::vector<int> v;
+        freqInterleaverSeqCompute(fftCode, nCells, oddSymbol, v);
+        it = cache.emplace(key, std::move(v)).first;
+    }
+    H = it->second;
 }
 
 } // namespace dect2

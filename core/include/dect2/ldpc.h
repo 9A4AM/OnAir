@@ -26,7 +26,7 @@ public:
     int groups() const { return groups_; }
 
     // Fast layered normalised min-sum exploiting the quasi-cyclic (360) structure; same interface and conventions.
-    bool decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters = nullptr) const;
+    bool decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters = nullptr, float alpha = 0.78f) const;
 
 private:
     int k_, n_, m_;

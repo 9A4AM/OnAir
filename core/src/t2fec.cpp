@@ -101,13 +101,45 @@ void BchCode::remainder(const std::vector<uint8_t>& bits, std::vector<uint8_t>& 
     std::vector<uint64_t> g(W, 0), r(W, 0);
     for (int i = 0; i < deg_; i++) if (gen_[i]) g[i >> 6] |= 1ull << (i & 63);
     const int topw = (deg_ - 1) >> 6, topb = (deg_ - 1) & 63;
-    for (size_t k = 0; k < bits.size(); k++) {
+    const uint64_t lastMask = (deg_ & 63) ? ((1ull << (deg_ & 63)) - 1) : ~0ull;
+    auto stepBit = [&](unsigned bit) {
         uint64_t top = (r[topw] >> topb) & 1;
         for (int w = W - 1; w > 0; w--) r[w] = (r[w] << 1) | (r[w - 1] >> 63);
-        r[0] = (r[0] << 1) | bits[k];
-        if (deg_ & 63) r[W - 1] &= (1ull << (deg_ & 63)) - 1;
+        r[0] = (r[0] << 1) | bit;
+        r[W - 1] &= lastMask;
         if (top) for (int w = 0; w < W; w++) r[w] ^= g[w];
+    };
+    // byte-at-a-time table: tab[t] = (t(x) * x^deg) mod g(x) for the 8 bits t that leave the register
+    {
+        std::lock_guard<std::mutex> lk(tabMu_);
+        if (tab_.empty()) {
+            std::vector<uint64_t> save = r;
+            tab_.assign((size_t)256 * W, 0);
+            for (int t = 0; t < 256; t++) {
+                std::fill(r.begin(), r.end(), 0ull);
+                for (int b = 7; b >= 0; b--) stepBit((t >> b) & 1);
+                for (int z = 0; z < deg_; z++) stepBit(0);
+                for (int w = 0; w < W; w++) tab_[(size_t)t * W + w] = r[w];
+            }
+            r = save;
+        }
     }
+    size_t k = 0;
+    const size_t nb8 = bits.size() & ~(size_t)7;
+    for (; k < nb8; k += 8) {
+        const unsigned byte = (bits[k] << 7) | (bits[k + 1] << 6) | (bits[k + 2] << 5) | (bits[k + 3] << 4) | (bits[k + 4] << 3) | (bits[k + 5] << 2) | (bits[k + 6] << 1) | bits[k + 7];
+        // the 8 highest register bits (deg-1 .. deg-8)
+        const int hb = deg_ - 8, hw = hb >> 6, ho = hb & 63;
+        uint64_t t = r[hw] >> ho;
+        if (ho > 56 && hw + 1 < W) t |= r[hw + 1] << (64 - ho);
+        t &= 0xFF;
+        for (int w = W - 1; w > 0; w--) r[w] = (r[w] << 8) | (r[w - 1] >> 56);
+        r[0] = (r[0] << 8) | byte;
+        r[W - 1] &= lastMask;
+        const uint64_t* T = &tab_[(size_t)t * W];
+        for (int w = 0; w < W; w++) r[w] ^= T[w];
+    }
+    for (; k < bits.size(); k++) stepBit(bits[k]);
     rem.assign(deg_, 0);
     for (int i = 0; i < deg_; i++) rem[i] = (r[i >> 6] >> (i & 63)) & 1;
 }
@@ -337,8 +369,52 @@ inline void axisLlr(const std::vector<float>& lev, int nb, float y, float w, flo
 }
 } // namespace
 
+namespace {
+// max-log LLR of axis bit b is w * f_b(y), where f_b(y) = min over levels with bit 1 minus min over levels with bit 0 of (y-level)^2.
+// f_b is piecewise linear in y, so a fine grid with linear interpolation is exact up to ~1e-3.
+struct AxisLut {
+    static constexpr int G = 2048;
+    float R = 0, scale = 0;
+    int nb = 0;
+    std::vector<float> re[4], im[4]; // [bit][G+1]
+};
+const AxisLut& axisLut(int mod) {
+    static AxisLut luts[4];
+    static std::once_flag once;
+    std::call_once(once, [] {
+        for (int m = 0; m < 4; m++) {
+            const AxisMap& A = axisMap(m);
+            AxisLut& L = luts[m];
+            L.nb = A.bitsPerAxis;
+            float mx = 0;
+            for (float v : A.reLevel) mx = std::max(mx, std::fabs(v));
+            for (float v : A.imLevel) mx = std::max(mx, std::fabs(v));
+            L.R = mx + 1.0f;
+            L.scale = (float)AxisLut::G / (2 * L.R);
+            for (int axis = 0; axis < 2; axis++) {
+                const auto& lev = axis ? A.imLevel : A.reLevel;
+                auto* out = axis ? L.im : L.re;
+                const int nlev = 1 << L.nb;
+                for (int b = 0; b < L.nb; b++) {
+                    out[b].resize(AxisLut::G + 2);
+                    const int sh = L.nb - 1 - b;
+                    for (int g = 0; g <= AxisLut::G + 1; g++) {
+                        float y = -L.R + (float)g / L.scale;
+                        float m0 = 1e30f, m1 = 1e30f;
+                        for (int i = 0; i < nlev; i++) { float e = y - lev[i]; e *= e; if ((i >> sh) & 1) m1 = std::min(m1, e); else m0 = std::min(m0, e); }
+                        out[b][g] = m1 - m0;
+                    }
+                }
+            }
+        }
+    });
+    return luts[mod];
+}
+} // namespace
+
 void qamDemapBlock(const PlpFec& f, const cf32* cells, const float* n0, int nCells, float* llr) {
     const AxisMap& A = axisMap(f.mod);
+    const AxisLut& L = axisLut(f.mod);
     const int M = 2 * (f.mod + 1), nb = A.bitsPerAxis;
     float cr = 1.f, sr = 0.f;
     if (f.rotation) { double a = kRotDeg[f.mod] * M_PI / 180.0; cr = (float)std::cos(a); sr = (float)std::sin(a); }
@@ -354,8 +430,17 @@ void qamDemapBlock(const PlpFec& f, const cf32* cells, const float* n0, int nCel
             nv = 0.5f * (n0[s] + n0[s1]);
         } else { yI = cells[s].real(); yQ = cells[s].imag(); nv = n0[s]; }
         const float w = 1.f / std::max(1e-9f, 2 * nv);
-        axisLlr(A.reLevel, nb, yI, w, lr);
-        axisLlr(A.imLevel, nb, yQ, w, li);
+        {
+            auto lut = [&](const std::vector<float>* tab, float y, float* res) {
+                float t = (y + L.R) * L.scale;
+                t = std::min(std::max(t, 0.f), (float)AxisLut::G - 0.001f);
+                const int i = (int)t;
+                const float fr = t - (float)i;
+                for (int b = 0; b < nb; b++) res[b] = w * (tab[b][i] + fr * (tab[b][i + 1] - tab[b][i]));
+            };
+            lut(L.re, yI, lr);
+            lut(L.im, yQ, li);
+        }
         float* o = llr + (size_t)s * M;
         for (int b = 0; b < nb; b++) { o[A.reBits[b]] = lr[b]; o[A.imBits[b]] = li[b]; }
     }

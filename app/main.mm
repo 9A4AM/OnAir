@@ -15,6 +15,7 @@
 
 #include "dect2/engine.h"
 #include "dect2/scanner.h"
+#include "dect2/gain.h"
 #include "theme.h"
 
 #include <algorithm>
@@ -188,6 +189,10 @@ struct App {
     std::deque<float> hCfo, hSnr, hTiming;
     bool rxSeen = false;
     int computeMode = 2; // 0 CPU, 1 GPU, 2 auto
+    bool agcOn = false;
+    AutoGain agc;
+    GainSweep sweep;
+    bool sweepRetune = false;
     Scanner scanner;
     ScanConfig scanCfg;
     int scanPreset = 0;
@@ -322,7 +327,7 @@ static void toolbar(App& a) {
     int lna = a.tune.lnaDb;
     ImGui::SliderInt("##lna", &lna, 0, 40, "%d dB");
     a.tune.lnaDb = (lna + 4) / 8 * 8; // hardware steps are 8 dB
-    if (ImGui::IsItemDeactivatedAfterEdit()) retune = true;
+    if (ImGui::IsItemDeactivatedAfterEdit()) retune = true, a.agcOn = false;
     ImGui::SameLine();
     ImGui::TextDisabled("VGA");
     ImGui::SameLine();
@@ -330,9 +335,20 @@ static void toolbar(App& a) {
     int vga = a.tune.vgaDb;
     ImGui::SliderInt("##vga", &vga, 0, 62, "%d dB");
     a.tune.vgaDb = (vga + 1) / 2 * 2; // 2 dB steps
-    if (ImGui::IsItemDeactivatedAfterEdit()) retune = true;
+    if (ImGui::IsItemDeactivatedAfterEdit()) retune = true, a.agcOn = false;
     ImGui::SameLine();
-    if (ImGui::Checkbox("Amp", &a.tune.ampOn)) retune = true;
+    if (ImGui::Checkbox("Amp", &a.tune.ampOn)) retune = true, a.agcOn = false;
+    ImGui::SameLine();
+    if (ImGui::Checkbox("AGC", &a.agcOn)) { a.agc.reset(); }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.");
+    ImGui::SameLine();
+    if (a.sweep.active()) {
+        if (ImGui::Button("Stop tune")) { a.sweep = GainSweep(); }
+    } else if (ImGui::Button("Auto-tune") && running) {
+        a.sweep.start(ImGui::GetTime());
+        a.agcOn = false;
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.");
     ImGui::EndDisabled();
     if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Gain controls apply to HackRF only");
 
@@ -446,7 +462,8 @@ static void toolbar(App& a) {
 static void statusBar(App& a) {
     bool run = a.engine.running();
     const SignalStats& st = a.spec.stats;
-    int iq = !run ? 0 : (st.clipFraction > 0.01f ? 3 : (st.clipFraction > 0.0005f || st.rmsDbfs < -45) ? 2 : 1);
+    int iq = 0;
+    if (run) { const AdcStatus as = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction); iq = as == AdcStatus::Overload ? 3 : (as == AdcStatus::Good ? 1 : 2); }
     lamp("IQ", iq); ImGui::SameLine(0, 12);
     {
         const RxTelemetry& rx = a.rx;
@@ -478,8 +495,12 @@ static void statusBar(App& a) {
         int tsl = !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1;
         lamp("TS", tsl); ImGui::SameLine(0, 12);
     }
-    const char* later[] = {"Video", "Audio"};
-    for (auto* l : later) { lamp(l, 0); ImGui::SameLine(0, 12); }
+    {
+        const PlayerStats ps = a.engine.player().stats();
+        const bool pl = run && ps.active;
+        lamp("Video", !pl || !ps.hasVideo ? 0 : (ps.shown > 0 && ps.videoQueue > 2) ? 1 : 2); ImGui::SameLine(0, 12);
+        lamp("Audio", !pl || !ps.hasAudio ? 0 : (ps.audioBufferMs > 150) ? 1 : 2); ImGui::SameLine(0, 12);
+    }
     ImGui::TextDisabled("|"); ImGui::SameLine();
     ImGui::PushFont(a.mono, 0);
     if (run) {
@@ -496,9 +517,14 @@ static void statusBar(App& a) {
         if (a.rx.l1preOk) ImGui::SameLine(), ImGui::Text("  PP%d  cell %d", a.rx.l1pre.pilotPattern + 1, a.rx.l1pre.cellId);
         ImGui::PopFont();
     }
-    if (run && a.devices[a.devIdx].kind == DeviceInfo::HackRF) {
-        if (st.clipFraction > 0.0005f) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.45f, 0.25f, 1), " ADC CLIPPING - reduce gain"); }
-        else if (st.rmsDbfs < -45) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), " low ADC level (<6 bits used) - raise gain; 8-bit ADC limits SNR"); }
+    if (run && a.devices[a.devIdx].kind != DeviceInfo::File) {
+        const AdcStatus as = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
+        if (a.sweep.active()) {
+            ImGui::SameLine(); ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), " gain helper %d/%d ...", std::max(0, a.sweep.current()) + 1, (int)a.sweep.entries().size());
+        } else if (as == AdcStatus::Overload) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.35f, 0.25f, 1), " ADC OVERLOAD - %s", a.agcOn ? "AGC is lowering the gain" : "reduce the gain (or enable AGC)"); }
+        else if (as == AdcStatus::High) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), " ADC level high"); }
+        else if (as == AdcStatus::Low) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), " ADC level low - raise the gain; 8 bits limit the SNR"); }
+        else if (as == AdcStatus::NoSignal) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), " ADC sees almost nothing - antenna / gain?"); }
     }
 }
 
@@ -1197,9 +1223,33 @@ static void logPanel(App& a) {
     ImGui::EndChild();
 }
 
+static void gainControl(App& a) {
+    if (!a.engine.running() || a.devices[a.devIdx].kind == DeviceInfo::File) { a.sweep = GainSweep(); return; }
+    GainSetting g{a.tune.lnaDb, a.tune.vgaDb, a.tune.ampOn};
+    bool changed = false;
+    const double now = ImGui::GetTime();
+    if (a.sweep.active()) {
+        GainSweep::Sample sm;
+        sm.locked = a.rx.dataValid; sm.snrDb = a.rx.dataSnrDb;
+        sm.clip = a.spec.stats.clipFraction; sm.rms = a.spec.stats.rmsDbfs; sm.peak = a.spec.stats.peak;
+        changed = a.sweep.update(now, sm, g);
+        if (!a.sweep.active()) a.engine.log("gain helper: " + a.sweep.summary());
+    } else if (a.agcOn) {
+        changed = a.agc.update(now, a.spec.stats, g);
+    }
+    if (changed) {
+        a.tune.lnaDb = g.lna; a.tune.vgaDb = g.vga; a.tune.ampOn = g.amp;
+        a.tune.centerHz = a.freqMhz * 1e6;
+        a.engine.retune(a.tune);
+        if (!a.sweep.active() || true) savePrefs(a);
+        if (a.agcOn && !a.sweep.active()) a.engine.log("AGC: LNA " + std::to_string(g.lna) + " dB, VGA " + std::to_string(g.vga) + " dB, amp " + (g.amp ? "on" : "off"));
+    }
+}
+
 static void drawUI(App& a, ImVec2 disp) {
     ingestSpectrum(a);
     ingestRx(a);
+    gainControl(a);
     a.video.update(a.engine.player(), gQueue);
     if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }
     ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -1316,6 +1366,8 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--autostart") autostart = true;
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) gForceTab = argv[++i];
+        if (std::string(argv[i]) == "--synthgain") app.tune.synth.gainModel = true;
+        if (std::string(argv[i]) == "--agc") app.agcOn = true;
         if (std::string(argv[i]) == "--fft" && i + 1 < argc) app.tune.synth.tx.s2field1 = atoi(argv[++i]);
         if (std::string(argv[i]) == "--gi" && i + 1 < argc) app.tune.synth.tx.giIdx = atoi(argv[++i]);
         if (std::string(argv[i]) == "--cfo" && i + 1 < argc) app.tune.synth.cfoHz = atof(argv[++i]);

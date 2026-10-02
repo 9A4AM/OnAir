@@ -14,8 +14,9 @@ pkg_check_modules(HACKRF REQUIRED IMPORTED_TARGET libhackrf)
 pkg_check_modules(GLFW REQUIRED IMPORTED_TARGET glfw3)
 pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil libswscale libswresample)
 
-add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/t2_tables.cpp core/src/t2gen.cpp core/src/t2rx.cpp core/src/t2pilots.cpp core/src/t2ofdm.cpp core/src/ldpc.cpp core/src/t2l1.cpp core/src/t2interleave.cpp core/src/t2fec_tables.cpp core/src/t2fec.cpp core/src/t2plp.cpp core/src/resampler.cpp core/src/bbunpack.cpp core/src/ts.cpp core/src/tsout.cpp core/src/scanner.cpp core/src/gpu_ldpc.mm core/src/player.cpp core/src/audioout.mm core/src/t2_pilot_tables.cpp)
+add_library(dect2core STATIC core/src/source.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/t2_tables.cpp core/src/t2gen.cpp core/src/t2rx.cpp core/src/t2pilots.cpp core/src/t2ofdm.cpp core/src/ldpc.cpp core/src/t2l1.cpp core/src/t2interleave.cpp core/src/t2fec_tables.cpp core/src/t2fec.cpp core/src/t2plp.cpp core/src/resampler.cpp core/src/bbunpack.cpp core/src/ts.cpp core/src/tsout.cpp core/src/scanner.cpp core/src/gain.cpp core/src/gpu_ldpc.mm core/src/player.cpp core/src/audioout.mm core/src/t2_pilot_tables.cpp)
 target_include_directories(dect2core PUBLIC core/include)
+target_compile_options(dect2core PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fcx-limited-range>)
 set_source_files_properties(core/src/gpu_ldpc.mm PROPERTIES COMPILE_OPTIONS -fobjc-arc)
 target_link_libraries(dect2core PUBLIC PkgConfig::HACKRF PkgConfig::FFMPEG "-framework Accelerate" "-framework AudioToolbox" "-framework CoreAudio" "-framework CoreFoundation" "-framework Metal" "-framework Foundation" "-framework VideoToolbox" "-framework CoreMedia" "-framework CoreVideo" pthread iconv)
 
@@ -63,3 +64,6 @@ target_link_libraries(dect2scan PRIVATE dect2core)
 
 add_executable(test_gpu_ldpc tests/test_gpu_ldpc.cpp)
 target_link_libraries(test_gpu_ldpc PRIVATE dect2core)
+
+add_executable(test_gain tests/test_gain.cpp)
+target_link_libraries(test_gain PRIVATE dect2core)

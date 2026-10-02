@@ -16,6 +16,7 @@ struct SynthConfig {
     double sroPpm = 0;
     double echoDb = 0;     // 0 = off; otherwise echo attenuation
     int echoDelay = 300;   // samples
+    bool gainModel = false; // scale the level with the LNA/VGA/amp gains (for testing AGC): 62 dB total = the nominal level
 };
 
 struct TuneSettings {

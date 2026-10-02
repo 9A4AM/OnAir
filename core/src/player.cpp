@@ -237,13 +237,17 @@ void Player::threadMain() {
                 vctx = avcodec_alloc_context3(c);
                 avcodec_parameters_to_context(vctx, fmt->streams[vIdx]->codecpar);
                 AVBufferRef* hwdev = nullptr;
-                if (av_hwdevice_ctx_create(&hwdev, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, nullptr, nullptr, 0) >= 0) {
+                const char* swEnv = getenv("DECT2_SWVIDEO");
+                // damaged streams: let the decoder conceal missing slices and keep outputting pictures instead of waiting for a keyframe
+                vctx->flags |= AV_CODEC_FLAG_OUTPUT_CORRUPT;
+                vctx->flags2 |= AV_CODEC_FLAG2_SHOW_ALL;
+                if (!(swEnv && *swEnv) && av_hwdevice_ctx_create(&hwdev, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, nullptr, nullptr, 0) >= 0) {
                     vctx->hw_device_ctx = av_buffer_ref(hwdev);
                     vctx->get_format = pickHw;
                     hw = true;
                 }
                 if (hwdev) av_buffer_unref(&hwdev);
-                vctx->thread_count = 2;
+                vctx->thread_count = hw ? 2 : 4;
                 if (avcodec_open2(vctx, c, nullptr) < 0) {
                     avcodec_free_context(&vctx);
                     vctx = nullptr;
@@ -291,6 +295,8 @@ void Player::threadMain() {
         AVPacket* pkt = av_packet_alloc();
         AVFrame* frame = av_frame_alloc();
         AVFrame* sw = av_frame_alloc();
+        double lastVPts = 0, vFrameDur = 0.04;
+        bool haveVPts = false;
         SwsContext* sws = nullptr;
         SwsContext* nv12ctx = nullptr;
         std::vector<float> abuf;
@@ -312,8 +318,16 @@ void Player::threadMain() {
             vf->w = w; vf->h = h;
             vf->bt709 = b709; vf->fullRange = src->color_range == AVCOL_RANGE_JPEG;
             int64_t ts = f->best_effort_timestamp != AV_NOPTS_VALUE ? f->best_effort_timestamp : f->pts;
-            if (ts == AV_NOPTS_VALUE) return;
-            vf->pts = ts * av_q2d(fmt->streams[vIdx]->time_base);
+            if (ts != AV_NOPTS_VALUE) {
+                vf->pts = ts * av_q2d(fmt->streams[vIdx]->time_base);
+                if (haveVPts && vf->pts < lastVPts - 0.5) { /* timeline restarted: accept */ }
+            } else {
+                // concealed/damaged pictures often come without a timestamp: extrapolate so the picture is still shown
+                if (!haveVPts) return;
+                vf->pts = lastVPts + vFrameDur;
+                I.st.errors += 0;
+            }
+            lastVPts = vf->pts; haveVPts = true;
             // DVB subtitle overlay: only frames that carry a subtitle are converted to RGBA on the CPU
             std::shared_ptr<Subtitle> sb;
             if (subsOn_) { std::lock_guard<std::mutex> lk(I.submu); sb = I.sub; }
@@ -388,17 +402,40 @@ void Player::threadMain() {
             if (n <= 0) return;
             int64_t ts = f->best_effort_timestamp != AV_NOPTS_VALUE ? f->best_effort_timestamp : f->pts;
             double pts = ts != AV_NOPTS_VALUE ? ts * av_q2d(fmt->streams[aIdx[curTrack]]->time_base) : I.nextPts;
+            double gapSec = 0;
             {
                 std::lock_guard<std::mutex> lk(I.cmu);
-                if (!I.baseValid || std::fabs(pts - I.nextPts) > 0.15) {
+                bool rebase = !I.baseValid;
+                if (I.baseValid) {
+                    const double d = pts - I.nextPts;
+                    // Audio data was lost (a deep fade damaged the stream): keep the timeline continuous by playing silence for the
+                    // missing time. Re-basing the clock instead would throw away every decoded picture of the gap.
+                    if (d > 0.02 && d <= 4.0) gapSec = d;
+                    else if (std::fabs(d) > 0.15) rebase = true;
+                }
+                if (rebase) {
                     bool had = I.baseValid;
                     if (getenv("DECT2_PLAYDEBUG")) fprintf(stderr, "[play] audio clock reset: pts %.3f expected %.3f (had=%d)\n", pts, I.nextPts, (int)had);
                     I.basePts = pts;
                     I.baseIndex = audio_.writtenFrames();
                     I.baseValid = true;
-                    if (had) { std::lock_guard<std::mutex> l2(I.vmu); I.vq.clear(); } // timestamp jump: drop stale pictures
+                    if (had) { std::lock_guard<std::mutex> l2(I.vmu); I.vq.clear(); } // genuine timestamp jump: drop stale pictures
                 }
                 I.nextPts = pts + (double)n / 48000.0;
+            }
+            if (gapSec > 0) {
+                if (getenv("DECT2_PLAYDEBUG")) fprintf(stderr, "[play] audio gap %.3f s filled with silence\n", gapSec);
+                size_t gf = (size_t)(gapSec * 48000.0);
+                std::vector<float> zeros((size_t)4800 * 2, 0.f);
+                while (gf > 0 && !stop_ && !restart_) {
+                    size_t c = std::min<size_t>(gf, 4800), dn = 0;
+                    while (dn < c && !stop_ && !restart_) {
+                        size_t w = audio_.write(zeros.data(), (int)(c - dn));
+                        dn += w;
+                        if (dn < c) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                    }
+                    gf -= dn;
+                }
             }
             int done = 0;
             while (done < n && !stop_ && !restart_) {

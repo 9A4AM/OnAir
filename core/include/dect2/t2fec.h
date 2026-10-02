@@ -1,6 +1,7 @@
 // DVB-T2 data-path FEC and mapping: BCH, LDPC, bit interleaver, constellations (with rotation and cyclic Q delay),
 // cell / time interleaver, BB scrambler. Encoder and decoder directions share the same tables.
 #pragma once
+#include <mutex>
 #include "ldpc.h"
 #include "ring.h"
 #include <cstdint>
@@ -39,6 +40,8 @@ private:
     int m_, t_, deg_;
     std::vector<uint32_t> exp_, log_;
     std::vector<uint8_t> gen_; // generator polynomial, gen_[i] = coefficient of x^i
+    mutable std::vector<uint64_t> tab_; // byte-wise remainder table (built on first use)
+    mutable std::mutex tabMu_;
     int fieldMul(int a, int b) const;
     void remainder(const std::vector<uint8_t>& bits, std::vector<uint8_t>& rem) const;
 };

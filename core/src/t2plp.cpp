@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <pthread.h>
 #include <pthread/qos.h>
 
@@ -33,6 +35,12 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
     std::vector<float> n0((size_t)nb * cells);
     cellDeinterleave(job.fec, nb, job.tiBlocks, job.cells.data(), rx.data());
     cellDeinterleaveF(job.fec, nb, job.tiBlocks, job.n0.data(), n0.data());
+    if (getenv("DECT2_PLPDUMP")) {
+        double m = 0, nn = 0; size_t cnt = job.cells.size();
+        for (auto& c : job.cells) m += std::abs(c);
+        for (float v : job.n0) nn += v;
+        fprintf(stderr, "[plp] frame %d cells %zu mean|c| %.3f mean n0 %.4f blocks %d ti %d mod %d rate %d rot %d\n", job.t2Frame, cnt, m / std::max<size_t>(1, cnt), nn / std::max<size_t>(1, job.n0.size()), nb, job.tiBlocks, job.fec.mod, job.fec.rate, (int)job.fec.rotation);
+    }
     const LdpcCode& ldpc = ldpcFor(job.fec);
     const BchCode& bch = bchFor(job.fec);
     const auto& map = bitInterleaverMap(job.fec);
@@ -41,6 +49,7 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
         bool ok = false;
         int iters = 0, corrected = 0;
         long errBits = 0;
+        bool retried = false;
         double sigP = 0, errP = 0;
         BbFrame frame;
         std::vector<cf32> pts;
@@ -87,6 +96,18 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
         long pre = 0;
         std::vector<uint8_t> bb(hard.begin(), hard.begin() + d.kLdpc);
         int corr = bch.decode(bb);
+        // second chance for blocks that did not converge: more iterations and other min-sum normalisations
+        if (corr < 0 && !(tried.load() >= 16 && failedFirst.load() >= 16)) {
+            static const float kAlpha[3] = {0.78f, 0.66f, 0.9f};
+            std::vector<uint8_t> h2;
+            for (int a = 0; a < 3 && corr < 0; a++) {
+                int it2 = 0;
+                ldpc.decodeFast(llr, 150, h2, &it2, kAlpha[a]);
+                std::vector<uint8_t> b2(h2.begin(), h2.begin() + d.kLdpc);
+                int c2 = bch.decode(b2);
+                if (c2 >= 0) { corr = c2; bb = std::move(b2); hard = std::move(h2); o.iters = it2; o.retried = true; }
+            }
+        }
         o.frame.blockIndex = b;
         if (tried.load() < 16) { tried++; if (corr < 0) failedFirst++; }
         if (corr < 0) return;
@@ -140,6 +161,7 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
         itSum += o.iters;
         if (o.ok) {
             res.blocksOk++;
+            if (o.retried) res.retryRecovered++;
             res.bchCorrected += o.corrected;
             if (o.sigP > 0) { sig += o.sigP; err += o.errP; preErr += o.errBits; preBits += d.nLdpc; measured++; }
             if (o.frame.header.crcOk) res.headerOk++;

@@ -91,7 +91,7 @@ bool LdpcCode::decode(const std::vector<float>& llr, int maxIter, std::vector<ui
     return ok;
 }
 
-bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters) const {
+bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const {
     constexpr int Z = 360;
     constexpr float kBig = 1e4f;
     const int q = q_, G = groups_;
@@ -111,7 +111,6 @@ bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vecto
     std::vector<float> L, min1(Z), min2(Z);
     std::vector<int> idx1(Z);
     std::vector<uint32_t> sg(Z);
-    const float alpha = 0.78f;
     int it = 0;
     bool ok = false;
     for (; it < maxIter; it++) {
