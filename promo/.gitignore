@@ -1,3 +1,5 @@
 frames/
-audio.wav
-render.log
+clips/
+audio*.wav
+render*.log
+shot/app_headless.cpp

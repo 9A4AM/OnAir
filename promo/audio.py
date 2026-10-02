@@ -1,5 +1,5 @@
 import numpy as np, wave
-SR=44100; DUR=59.4; N=int(SR*DUR); rng=np.random.default_rng(7)
+SR=44100; DUR=53.9; N=int(SR*DUR); rng=np.random.default_rng(7)
 L=np.zeros(N); R=np.zeros(N); T=np.arange(N)/SR
 def add(sig,t0,pan=0.0,g=1.0):
     i=int(t0*SR); 
@@ -38,49 +38,44 @@ def pad(t0,t1,notes,g=.05):
     out=fftfilt(out,lambda f:1/(1+(f/900)**2)); out/=np.abs(out).max()+1e-9
     a=np.minimum(1,x/2.0)*np.minimum(1,(t1-t0-x)/2.0); add(out*a*(1+.15*np.sin(x*.8)),t0,0,g*3)
 def hz(m): return 440*2**((m-69)/12)
-S=[(0,5.8),(5.1,10.7),(9.9,19.5),(18.8,25),(24.3,29.7),(29,34.4),(33.6,39.8),(39.1,44.5),(43.8,48.8),(48.1,52.7),(51.8,59.4)]
-# harmony: Am - F - C - G style progression over 8s bars
+TR=[5.5,10.1,18.9,25.8,32.7,41.0,46.3]
 prog=[[45,57,60,64],[41,53,57,60],[48,60,64,67],[43,55,59,62]]
 for k in range(0,8):
-    t0=k*7.6; 
+    t0=k*7.6
     if t0>=DUR: break
     pad(t0,min(DUR,t0+8.6),[hz(m) for m in prog[k%4]],g=.05)
-# whooshes at transitions
-for i,(a,b) in enumerate(S[1:],1):
-    tr=S[i][0]; whoosh(tr-.1,1.2,up=i%2==1,g=.45)
-# opening: sparse ping at peaks
-tick(.9+.6,2200,.10); tick(1.4+.6,1500,.08); tick(3.4,2600,.1,.3)
+# hook: three hits, each led by a short riser
+for t0 in (0.0,2.0,4.0):
+    if t0>0: whoosh(t0-.9,.9,True,.4)
+    boom(t0+.02,.75,85)
+    for i,m in enumerate([69,76,81]): pluck(t0+.03+i*.07,hz(m),.05,(-1)**i*.4,1.0)
+whoosh(5.0,.8,True,.4)
 # logo pop
-boom(7.0,.8,90); 
-for i,m in enumerate([81,84,88,93]): pluck(7.05+i*.09,hz(m),.07,(-1)**i*.4)
-# lamps in app
-for i in range(11): tick(9.9+.9+i*.22,1500+i*130,.1,-.3+i*.06)
-tick(9.9+.9+11*.22+.1,3000,.12)
-# callouts
-for k,t0 in enumerate([3.0,3.5,4.0,4.5,5.0]): tick(9.9+t0,2400,.08,(-1)**k*.5)
-# standards scan ticks
-for k,t0 in enumerate([2.2,2.9,3.6]): tick(18.8+t0,1900+k*300,.12)
-# stats: counter ticks
-for i in range(11): tick(24.3+.5+i*.17,1200+i*80,.07)
-boom(24.3+.4,.5,70)
-# beat from s4 onwards (kick on beat, hats off-beat), 112 bpm -> .536s
-bt=60/112
-t=18.8
-while t<51.5:
-    kick(t, .32 if t<24 else .45); hat(t+bt/2,.05 + (.02 if t>29 else 0)); 
-    if t>29 and int((t-18.8)/bt)%2==1: hat(t+bt*.25,.03,.3)
+boom(5.62,.9,90)
+for i,m in enumerate([81,84,88,93]): pluck(5.7+i*.09,hz(m),.07,(-1)**i*.4,2.0)
+# transitions
+for i,tr in enumerate(TR[1:],1): whoosh(tr-.12,1.2,up=i%2==1,g=.42)
+# callout / checklist ticks
+for k,t0 in enumerate([12.0,12.5,13.0]): tick(t0,2400,.09,(-1)**k*.4)
+for k,t0 in enumerate([19.8,20.5,21.2,21.9]): tick(t0,1500+k*200,.12)
+for k,t0 in enumerate([23.9,24.5]): tick(t0,2600,.09,(-1)**k*.5)
+for k,t0 in enumerate([26.2,26.7,27.2]): tick(t0,1800+k*250,.09)
+for k,t0 in enumerate([34.5,35.7,38.1]): tick(t0,2200,.09,(-1)**k*.5)
+for k,t0 in enumerate([42.4,42.75,43.1]): tick(t0,2000+k*300,.1)
+# beat from the logo on, 112 bpm
+bt=60/112; t=6.2
+while t<45.5:
+    kick(t,.30 if t<10 else .42); hat(t+bt/2,.05+(.02 if t>18 else 0))
+    if t>18 and int((t-6.2)/bt)%2==1: hat(t+bt*.25,.03,.3)
     t+=bt
-# arpeggio from 29
 arp=[[69,72,76,81],[65,69,72,77],[72,76,79,84],[67,71,74,79]]
-t=29.0; step=bt/2; j=0
-while t<51.5:
-    ch=arp[int((t-29)//(bt*8))%4]; pluck(t,hz(ch[j%4]),.035,(-1)**j*.5,.9); j+=1; t+=step
-# build into outro
-whoosh(49.8,2.4,True,.5)
-# outro hit
-boom(52.15,1.0,80)
-for i,m in enumerate([69,76,81,84,88,93]): pluck(52.2+i*.1,hz(m),.08,(-1)**i*.5,2.5)
-pad(52,59.4,[hz(m) for m in (45,57,64,69,72)],g=.06)
+t=10.4; step=bt/2; j=0
+while t<45.5:
+    ch=arp[int((t-10.4)//(bt*8))%4]; pluck(t,hz(ch[j%4]),.035,(-1)**j*.5,.9); j+=1; t+=step
+whoosh(44.4,2.0,True,.5)
+boom(46.5,1.0,80)
+for i,m in enumerate([69,76,81,84,88,93]): pluck(46.55+i*.1,hz(m),.08,(-1)**i*.5,2.5)
+pad(46.3,53.9,[hz(m) for m in (45,57,64,69,72)],g=.06)
 # air shimmer high
 sh=fftfilt(noise(DUR),lambda f:(f>4000)*(1/(1+(f/9000)**2)))*.004; L+=sh; R+=sh[::-1]
 # master fades
