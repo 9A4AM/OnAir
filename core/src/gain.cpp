@@ -18,6 +18,13 @@ GainSetting gainForTotal(int total) {
     return g;
 }
 
+GainSetting genericGain(int total, int maxDb) {
+    GainSetting g;
+    g.lna = 0; g.amp = false;
+    g.vga = std::max(0, std::min(total, maxDb));
+    return g;
+}
+
 AdcStatus classifyAdc(double rms, double peak, double clip) {
     if (clip > 0.002 || peak >= 0.99) return AdcStatus::Overload;
     if (rms < -50) return AdcStatus::NoSignal;
@@ -64,7 +71,7 @@ bool AutoGain::update(double now, const SignalStats& st, GainSetting& g) {
     double delta = 0;
     if (clip_ > 0.002 || peak_ >= 0.99) delta = -6;
     else if (rms_ > cfg_.highDbfs) delta = std::max(-cfg_.maxStepDb, cfg_.targetDbfs - rms_);
-    else if (rms_ < cfg_.lowDbfs && peak_ < 0.85 && (rms_ > -70 || g.total() < 62)) // an empty ADC at low gain: climb, but not blindly to the maximum
+    else if (rms_ < cfg_.lowDbfs && peak_ < 0.85 && (rms_ > -70 || g.total() < (cfg_.genericMaxDb > 0 ? cfg_.genericMaxDb * 6 / 10 : 62))) // an empty ADC at low gain: climb, but not blindly to the maximum
         delta = std::min(cfg_.maxStepDb, std::max(4.0, cfg_.targetDbfs - rms_));
     if (std::fabs(delta) < 1.0) return false;
 
@@ -72,7 +79,7 @@ bool AutoGain::update(double now, const SignalStats& st, GainSetting& g) {
     int step = (int)std::lround(delta / 2.0) * 2;
     if (step == 0) step = delta > 0 ? 2 : -2;
     for (int tries = 0; tries < 6; tries++, step += delta > 0 ? 2 : -2) {
-        GainSetting n = gainForTotal(tot + step);
+        GainSetting n = cfg_.genericMaxDb > 0 ? genericGain(tot + step, cfg_.genericMaxDb) : gainForTotal(tot + step);
         if (!(n == g) && (delta > 0 ? n.total() > tot : n.total() < tot)) {
             g = n;
             changedAt_ = now;
@@ -85,12 +92,16 @@ bool AutoGain::update(double now, const SignalStats& st, GainSetting& g) {
 }
 
 // ------------------------------------------------------------------ sweep
-void GainSweep::start(double now) {
+void GainSweep::start(double now, int genericMaxDb) {
     e_.clear();
+    if (genericMaxDb > 0) {
+        for (int pct : {20, 32, 44, 56, 68, 80}) { Entry e; e.g = genericGain(genericMaxDb * pct / 100, genericMaxDb); e_.push_back(e); }
+    } else {
     for (int lna : {24, 32, 40})
         for (int vga : {12, 20, 28}) { Entry e; e.g = {lna, vga, true}; e_.push_back(e); }
     for (int lna : {32, 40})
         for (int vga : {20, 32}) { Entry e; e.g = {lna, vga, false}; e_.push_back(e); }
+    }
     idx_ = -1;
     active_ = true;
     t0_ = now;

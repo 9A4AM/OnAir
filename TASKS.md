@@ -39,6 +39,13 @@ Goal: normal installers for macOS arm64, macOS Intel, Windows x64, Linux x64/arm
 - [ ] Release workflow on tag: attach artifacts, release notes; put the 60 s test recording in a release asset for the tests.
 - [ ] Docs: install guide per platform, driver notes, README badges.
 
+## A6. More radios
+- [x] SoapySDR source (Airspy, SDRplay, RTL-SDR, PlutoSDR, BladeRF, LimeSDR, USRP): device list, rate negotiation, one overall gain with AGC and the gain helper, CLI tools; tested with a fake radio.
+- [ ] Try it on real Airspy / SDRplay / Pluto hardware **(needs the radios)**.
+- [ ] Remote radios: `rtl_tcp` / SpyServer client.
+- [ ] Per-stage gains (LNA / mixer / VGA) for radios that expose them.
+- [ ] Windows: SoapySDR and driver notes.
+
 ## B. Constellation polish (brief 11.2)
 
 - [x] Decision-directed data: the decoder now returns the transmitted point label for every displayed cell of a correctly decoded block.

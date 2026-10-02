@@ -23,5 +23,5 @@ run bash -c "cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_AP
 if [ "$MODE" = all ]; then
   run ctest --test-dir /build --output-on-failure --timeout 1500
 else
-  run ctest --test-dir /build --output-on-failure --timeout 600 -R 'sync|l1|pilots|fec|ts|teletext|dsp|dvbt$|bandwidth|direction|atsc_fec'
+  run ctest --test-dir /build --output-on-failure --timeout 600 -R 'sync|l1|pilots|fec|ts|teletext|dsp|dvbt$|bandwidth|direction|atsc_fec|soapy'
 fi

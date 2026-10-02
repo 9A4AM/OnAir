@@ -60,6 +60,7 @@ int main(int argc, char** argv) {
         else if (a == "--record") record = next();
         else if (a == "--ts") out.file = true, out.path = next();
         else if (a == "--udp") { std::string hp = next(); auto c = hp.find(':'); out.udp = true; out.host = hp.substr(0, c); if (c != std::string::npos) out.port = atoi(hp.c_str() + c + 1); }
+        else if (a == "--gain") { tune.gainDb = atof(next()); }
         else if (a == "--rtp") out.rtp = true;
         else if (a == "--service") out.serviceId = atoi(next());
         else if (a == "--no-null") out.dropNull = true;
@@ -70,10 +71,15 @@ int main(int argc, char** argv) {
     else if (synthetic) { dev.kind = DeviceInfo::Synthetic; dev.name = "synthetic"; }
     else {
         std::string err;
-        auto list = listHackrfDevices(err);
-        if (list.empty()) { fprintf(stderr, "no HackRF found %s\n", err.c_str()); return 1; }
+        auto list = listRadios(err);
+        if (list.empty()) { fprintf(stderr, "no radio found (HackRF or SoapySDR) %s\n", err.c_str()); return 1; }
         dev = list[0];
         printf("device: %s\n", dev.name.c_str());
+        if (dev.kind == DeviceInfo::Soapy) {
+            if (dev.maxRateHz > 0) tune.sampleRate = std::min(tune.sampleRate, dev.maxRateHz);
+            if (tune.gainDb == 30) tune.gainDb = std::max(dev.gainMinDb, dev.gainMaxDb * 0.6);   // a sensible start; --gain overrides
+            printf("radio: up to %.2f Msps, gain %.0f..%.0f dB, using %.2f Msps / %.0f dB\n", dev.maxRateHz / 1e6, dev.gainMinDb, dev.gainMaxDb, tune.sampleRate / 1e6, tune.gainDb);
+        }
     }
     (void)haveDev;
     if (getenv("DECT2_BBDUMP")) e.setPlpDump([](const PlpResult& r) {

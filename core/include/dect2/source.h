@@ -29,16 +29,23 @@ struct TuneSettings {
     double centerHz = 522e6;
     double sampleRate = 18285714.2857; // 2x native rate for an 8 MHz channel
     double basebandFilterHz = 0;       // 0 = auto
+    double gainDb = 30;                // overall gain of generic (SoapySDR) radios; the three HackRF stages below are not used there
     int lnaDb = 16;                    // 0..40 step 8
     int vgaDb = 20;                    // 0..62 step 2
     bool ampOn = false;
 };
 
 struct DeviceInfo {
-    enum Kind { Synthetic, File, HackRF } kind = Synthetic;
+    enum Kind { Synthetic, File, HackRF, Soapy } kind = Synthetic;
     std::string name;   // display name
     std::string serial; // HackRF serial / file path
-    std::string board;  // "HackRF One", "HackRF Pro", ...
+    std::string board;  // "HackRF One", "HackRF Pro", "airspy", "sdrplay", ...
+    // generic radios (SoapySDR)
+    std::string soapyArgs;     // device arguments, e.g. "driver=airspy,serial=..."
+    double maxRateHz = 0;      // fastest complex sample rate the radio offers (0 = unknown)
+    double minRateHz = 0;
+    double gainMinDb = 0, gainMaxDb = 0;
+    bool isRadio() const { return kind == HackRF || kind == Soapy; }
 };
 
 class IqSource {
@@ -52,6 +59,11 @@ public:
 };
 
 std::vector<DeviceInfo> listHackrfDevices(std::string& err);
+// Every other radio that SoapySDR knows (Airspy, SDRplay, RTL-SDR, PlutoSDR, LimeSDR, BladeRF, USRP, ...). Empty when built without SoapySDR.
+std::vector<DeviceInfo> listSoapyDevices(std::string& err);
+bool soapySupported();
+// Every radio found: HackRF first, then the SoapySDR ones.
+std::vector<DeviceInfo> listRadios(std::string& err);
 std::unique_ptr<IqSource> makeSource(const DeviceInfo& d);
 
 // File format helpers (sidecar-free for now): .cs8 interleaved signed 8-bit IQ, .cu8 unsigned, .cf32 float.

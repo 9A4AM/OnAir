@@ -19,8 +19,12 @@ int main(int argc, char** argv) {
         else if (a == "--occ") c.occupancyDb = nx();
     }
     std::string err;
-    auto list = listHackrfDevices(err);
-    if (list.empty()) { fprintf(stderr, "no HackRF found\n"); return 1; }
+    auto list = listRadios(err);
+    if (list.empty()) { fprintf(stderr, "no radio found (HackRF or SoapySDR)\n"); return 1; }
+    if (list[0].kind == DeviceInfo::Soapy) {
+        if (list[0].maxRateHz > 0) c.tune.sampleRate = std::min(c.tune.sampleRate, list[0].maxRateHz);
+        c.tune.gainDb = std::max(list[0].gainMinDb, list[0].gainMaxDb * 0.6);
+    }
     Scanner s;
     if (!s.start(list[0], c, err)) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
     size_t shown = 0;
