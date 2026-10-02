@@ -52,7 +52,13 @@ struct T2Receiver::Impl {
     std::vector<cf32> buf;
     int64_t base = 0; // absolute index of buf[0]
     int64_t end() const { return base + (int64_t)buf.size(); }
-    const cf32& at(int64_t abs) const { return buf[(size_t)(abs - base)]; }
+    // Samples outside the buffered range read as silence: timing corrections can place a symbol slightly before the oldest retained
+    // sample or after the newest one, and that must cost one symbol, not a crash.
+    const cf32& at(int64_t abs) const {
+        static const cf32 kZero(0.f, 0.f);
+        const int64_t i = abs - base;
+        return (i >= 0 && i < (int64_t)buf.size()) ? buf[(size_t)i] : kZero;
+    }
 
     // ---- FFT
     std::vector<float> fr, fi;

@@ -33,7 +33,12 @@ struct DvbtReceiver::Impl {
     std::vector<cf32> buf;
     int64_t base = 0;
     int64_t end() const { return base + (int64_t)buf.size(); }
-    const cf32& at(int64_t i) const { return buf[(size_t)(i - base)]; }
+    // outside the buffered range reads as silence (a misplaced symbol must not crash the receiver)
+    const cf32& at(int64_t i) const {
+        static const cf32 kZero(0.f, 0.f);
+        const int64_t k = i - base;
+        return (k >= 0 && k < (int64_t)buf.size()) ? buf[(size_t)k] : kZero;
+    }
 
     // ---- geometry / state
     int state = 0;                // 0 searching, 1 tracking (CP locked, waiting for TPS), 2 TPS locked and decoding
