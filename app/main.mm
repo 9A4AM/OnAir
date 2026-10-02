@@ -86,7 +86,7 @@ static bool tabItem(const char* name) {
 
 struct BwChoice { const char* label; double mhz; double nativeMsps; };
 static const BwChoice kBw[] = {
-    {"8 MHz", 8, 64.0 / 7}, {"7 MHz", 7, 8.0}, {"6 MHz", 6, 48.0 / 7}, {"5 MHz", 5, 40.0 / 7}, {"1.7 MHz", 1.7, 131.0 / 71},
+    {"8 MHz", 8, 64.0 / 7}, {"7 MHz", 7, 8.0}, {"6 MHz", 6, 48.0 / 7}, {"5 MHz", 5, 40.0 / 7}, {"1.7 MHz", 1.7, 131.0 / 71}, {"10 MHz", 10, 80.0 / 7},
 };
 
 static id<MTLDevice> gDevice;
@@ -267,7 +267,8 @@ static void refreshDevices(App& a) {
 
 static void applyBandwidth(App& a) {
     // HackRF Pro: the tuned centre is only exact at <= 10 Msps and at 20 Msps, so use 10 Msps (8 for narrow channels)
-    a.tune.sampleRate = kBw[a.bwIdx].mhz >= 7 ? 10e6 : 8e6;
+    // a 10 MHz channel does not fit in 10 Msps (the filter edges would clip it), so it uses the 20 Msps setting, which is also exact
+    a.tune.sampleRate = kBw[a.bwIdx].mhz >= 10 ? 20e6 : kBw[a.bwIdx].mhz >= 7 ? 10e6 : 8e6;
     a.tune.basebandFilterHz = 0;
     a.tune.bandwidthMhz = kBw[a.bwIdx].mhz;
 }

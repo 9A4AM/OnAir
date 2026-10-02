@@ -47,6 +47,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     }
     rate_ = src_->sampleRate();
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
+    bwMhz_ = tune.bandwidthMhz;
     rx_.configure(rate_, tune.bandwidthMhz);
     rxT_.configure(rate_, tune.bandwidthMhz);
     rxT_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });
@@ -167,6 +168,7 @@ void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
         return;
     }
     if (stdMode_.load() != 0) return;
+    if (bwMhz_ >= 10) return;   // DVB-T has no 10 MHz channel: stay on DVB-T2
     const bool locked = activeStd_ == 0 ? t.state == 2 : tLocked;
     if (locked) { lastLockSec_ = now; autoMark_ = now; return; }
     const double slice = activeStd_ == 0 ? 1.6 : 1.3;

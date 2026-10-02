@@ -98,6 +98,7 @@ private:
     std::atomic<int> stdMode_{0}, activeStd_{0};
     std::atomic<bool> stdReq_{false};
     double autoMark_ = 0, lastLockSec_ = 0;
+    double bwMhz_ = 8;
     void feedRx(const cf32* x, size_t n);
     void autoSelect(const RxTelemetry& t, bool tLocked);
     void onTsPackets(const uint8_t* pk, size_t n, double secs);
