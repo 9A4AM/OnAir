@@ -39,7 +39,7 @@ struct Waterfall {
     std::vector<uint32_t> lut;
     int writeRow = 0; // newest row; older rows follow at writeRow+1 ... wrapping
     int filled = 0;
-    float minDb = -110, maxDb = -40;
+    float minDb = -100, maxDb = -32;
 
     void init(id<MTLDevice> dev) {
         MTLTextureDescriptor* d = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm width:W height:H mipmapped:NO];
@@ -53,9 +53,9 @@ struct Waterfall {
     static uint32_t jet(float v) {
         auto c = [](float x) { return std::min(1.f, std::max(0.f, x)); };
         float r = c(1.5f - std::fabs(4 * v - 3)), g = c(1.5f - std::fabs(4 * v - 2)), b = c(1.5f - std::fabs(4 * v - 1));
-        // fade the very bottom to black so the noise floor is calm
-        float fade = c(v * 6.0f);
-        return 0xFF000000u | ((uint32_t)(b * fade * 255) << 16) | ((uint32_t)(g * fade * 255) << 8) | (uint32_t)(r * fade * 255);
+        // deep navy floor (like the reference waterfalls) rising through cyan, green and yellow to red
+        b = std::max(b, 0.28f * (1.f - c(v * 2.2f)) + 0.08f);
+        return 0xFF000000u | ((uint32_t)(b * 255) << 16) | ((uint32_t)(g * 255) << 8) | (uint32_t)(r * 255);
     }
     void push(const std::vector<float>& dbfs) {
         std::vector<uint32_t> row(W);
@@ -206,6 +206,7 @@ struct App {
     bool peakHold = true;
     double lastFrameT = 0, frameDt = 1.0 / 30;
     ImFont* mono = nullptr;
+    ImFont* ui = nullptr;
     std::string hackrfErr;
     RxTelemetry rx;
     uint64_t rxSeq = 0;
@@ -227,6 +228,7 @@ struct App {
     int histWindow = 60;
     int ttxPage = 100;
     int plpSel = -1; // -1 = automatic
+    int subTv = 0, subRx = 0, subStream = 0; // sub-view of the TV / Receiver / Stream tabs
     std::map<int, std::vector<EpgEvent>> epg;
     double epgT = -10;
     int guideSid = -1, guideEvent = -1;
@@ -329,6 +331,59 @@ static void savePrefs(const App& a) {
 
 // ------------------------------------------------------------------ UI pieces
 
+
+// ------------------------------------------------------------------ small widgets (pills, tags, gauges)
+
+static bool pillButton(const char* label, bool selected, float padX = 11) {
+    ImGui::PushID(label);
+    const ImVec2 ts = ImGui::CalcTextSize(label);
+    const ImVec2 sz(ts.x + padX * 2, ImGui::GetFrameHeight() - 3);
+    const ImVec2 p = ImGui::GetCursorScreenPos();
+    const bool clicked = ImGui::InvisibleButton("##pill", sz);
+    const bool hov = ImGui::IsItemHovered();
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImU32 bg = selected ? IM_COL32(24, 106, 166, 255) : hov ? IM_COL32(46, 56, 68, 255) : IM_COL32(30, 35, 42, 255);
+    dl->AddRectFilled(p, ImVec2(p.x + sz.x, p.y + sz.y), bg, sz.y * 0.5f);
+    dl->AddText(ImVec2(p.x + padX, p.y + (sz.y - ts.y) * 0.5f), selected ? IM_COL32(255, 255, 255, 255) : IM_COL32(176, 184, 194, 255), label);
+    ImGui::PopID();
+    return clicked;
+}
+
+// A row of pills that switches between sub-views of a tab. Returns the selected index.
+static int subNav(const char* id, int& cur, std::initializer_list<const char*> names) {
+    ImGui::PushID(id);
+    int i = 0;
+    for (const char* n : names) { if (i) ImGui::SameLine(0, 6); if (pillButton(n, cur == i)) cur = i; i++; }
+    ImGui::PopID();
+    ImGui::Spacing();
+    return cur;
+}
+
+// Small rounded label drawn at an absolute position; returns its width.
+static float tagAt(ImDrawList* dl, ImVec2 pos, const char* text, ImU32 bg, ImU32 fg = IM_COL32(225, 232, 240, 255)) {
+    const ImVec2 ts = ImGui::CalcTextSize(text);
+    const float w = ts.x + 10, h = ts.y + 2;
+    dl->AddRectFilled(pos, ImVec2(pos.x + w, pos.y + h), bg, 4.f);
+    dl->AddText(ImVec2(pos.x + 5, pos.y + 1), fg, text);
+    return w;
+}
+
+static void gaugePill(float width, float frac, ImU32 fill, const char* text) {
+    const float h = ImGui::GetFrameHeight() - 2;
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    p.y += 1;
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->AddRectFilled(p, ImVec2(p.x + width, p.y + h), IM_COL32(14, 16, 20, 255), h * 0.5f);
+    frac = std::min(1.f, std::max(0.f, frac));
+    if (frac > 0.02f) dl->AddRectFilled(p, ImVec2(p.x + std::max(h, width * frac), p.y + h), fill, h * 0.5f);
+    dl->AddRect(p, ImVec2(p.x + width, p.y + h), IM_COL32(52, 58, 66, 255), h * 0.5f);
+    const ImVec2 ts = ImGui::CalcTextSize(text);
+    dl->AddText(ImVec2(p.x + (width - ts.x) * 0.5f, p.y + (h - ts.y) * 0.5f), IM_COL32(240, 244, 248, 255), text);
+    ImGui::Dummy(ImVec2(width, h));
+}
+
+// label : value readout in the status area (label dim, value in the mono font)
+
 static void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/) {
     ImVec4 c = state == 1 ? ImVec4(0.30f, 0.85f, 0.35f, 1) : state == 2 ? ImVec4(0.95f, 0.70f, 0.15f, 1)
              : state == 3 ? ImVec4(0.90f, 0.25f, 0.25f, 1) : ImVec4(0.30f, 0.32f, 0.35f, 1);
@@ -348,7 +403,7 @@ static void toolbar(App& a) {
     ImGui::SameLine(0, 14);
     ImGui::TextDisabled("source");
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(300);
+    ImGui::SetNextItemWidth(230);
     ImGui::BeginDisabled(running);
     if (ImGui::BeginCombo("##src", a.devices[a.devIdx].name.c_str())) {
         for (int i = 0; i < (int)a.devices.size(); i++)
@@ -385,7 +440,7 @@ static void toolbar(App& a) {
     ImGui::BeginDisabled(!isHw);
     ImGui::TextDisabled("LNA");
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(90);
+    ImGui::SetNextItemWidth(78);
     int lna = a.tune.lnaDb;
     ImGui::SliderInt("##lna", &lna, 0, 40, "%d dB");
     a.tune.lnaDb = (lna + 4) / 8 * 8; // hardware steps are 8 dB
@@ -393,7 +448,7 @@ static void toolbar(App& a) {
     ImGui::SameLine();
     ImGui::TextDisabled("VGA");
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(90);
+    ImGui::SetNextItemWidth(78);
     int vga = a.tune.vgaDb;
     ImGui::SliderInt("##vga", &vga, 0, 62, "%d dB");
     a.tune.vgaDb = (vga + 1) / 2 * 2; // 2 dB steps
@@ -416,7 +471,10 @@ static void toolbar(App& a) {
 
     ImGui::SameLine(0, 14);
     if (!running) {
-        if (ImGui::Button("  Start  ")) {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.42f, 0.28f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.14f, 0.56f, 0.36f, 1));
+        const bool startClicked = ImGui::Button("  Start  ");
+        ImGui::PopStyleColor(2);
+        if (startClicked) {
             a.tune.centerHz = a.freqMhz * 1e6;
             applyBandwidth(a);
             if (isFile) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate
@@ -428,7 +486,12 @@ static void toolbar(App& a) {
                 a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
             }
         }
-    } else if (ImGui::Button("  Stop  ")) a.engine.stop();
+    } else {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.16f, 0.16f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.70f, 0.22f, 0.22f, 1));
+        const bool stopClicked = ImGui::Button("  Stop  ");
+        ImGui::PopStyleColor(2);
+        if (stopClicked) a.engine.stop();
+    }
 
     ImGui::SameLine(0, 14);
     {
@@ -459,6 +522,12 @@ static void toolbar(App& a) {
         savePrefs(a);
     }
 
+}
+
+// Options of the selected source that are not gain/frequency: the synthetic generator's parameters, or the IQ file.
+static void sourceOptions(App& a) {
+    bool running = a.engine.running();
+    bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
     if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic) {
         SynthConfig& sc = a.tune.synth;
         bool ch = false;
@@ -523,84 +592,108 @@ static void toolbar(App& a) {
 }
 
 static void statusBar(App& a) {
-    bool run = a.engine.running();
+    const bool run = a.engine.running();
     const SignalStats& st = a.spec.stats;
-    int iq = 0;
-    if (run) { const AdcStatus as = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction); iq = as == AdcStatus::Overload ? 3 : (as == AdcStatus::Good ? 1 : 2); }
-    lamp("IQ", iq); ImGui::SameLine(0, 12);
+    const RxTelemetry& rx = a.rx;
+    const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
+    // ---- line 1: lamps, lock state and signal mode
     {
-        const RxTelemetry& rx = a.rx;
-        double frameS = rx.frameMs > 0 ? rx.frameMs / 1e3 : 0.5;
-        int p1s = !run || !a.rxSeen ? 0 : (rx.p1.valid && rx.secSinceP1 < std::max(1.0, 3 * frameS) ? 1 : 2);
-        int gis = !run ? 0 : rx.state == 2 ? 1 : rx.state == 1 ? 2 : 0;
-        lamp("P1", p1s); ImGui::SameLine(0, 12);
-        lamp("GI", gis); ImGui::SameLine(0, 12);
-    }
-    {
-        const RxTelemetry& rx = a.rx;
-        int l1p = !run ? 0 : rx.l1preOk ? 1 : rx.l1preGood > 0 ? 2 : rx.chValid ? 3 : 0;
-        int l1q = !run ? 0 : rx.l1postOk ? 1 : rx.l1postGood > 0 ? 2 : rx.l1preOk ? 3 : 0;
-        lamp("L1-pre", l1p); ImGui::SameLine(0, 12);
-        lamp("L1-post", l1q); ImGui::SameLine(0, 12);
-    }
-    {
-        int fs = !run ? 0 : a.rx.dataValid ? 1 : a.rx.l1preOk ? 2 : 0;
-        lamp("Frame", fs); ImGui::SameLine(0, 12);
-    }
-    {
-        const RxTelemetry& rx = a.rx;
-        double okFrac = (rx.blocksOk + rx.blocksBad) ? (double)rx.blocksOk / (rx.blocksOk + rx.blocksBad) : 0;
-        int fec = !run || !rx.plpValid || rx.plpFrames == 0 ? 0 : okFrac > 0.995 ? 1 : okFrac > 0.5 ? 2 : 3;
+        int iq = run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0;
+        lamp("IQ", iq); ImGui::SameLine(0, 12);
+        const double frameS = rx.frameMs > 0 ? rx.frameMs / 1e3 : 0.5;
+        lamp("P1", !run || !a.rxSeen ? 0 : (rx.p1.valid && rx.secSinceP1 < std::max(1.0, 3 * frameS) ? 1 : 2)); ImGui::SameLine(0, 12);
+        lamp("GI", !run ? 0 : rx.state == 2 ? 1 : rx.state == 1 ? 2 : 0); ImGui::SameLine(0, 12);
+        lamp("L1-pre", !run ? 0 : rx.l1preOk ? 1 : rx.l1preGood > 0 ? 2 : rx.chValid ? 3 : 0); ImGui::SameLine(0, 12);
+        lamp("L1-post", !run ? 0 : rx.l1postOk ? 1 : rx.l1postGood > 0 ? 2 : rx.l1preOk ? 3 : 0); ImGui::SameLine(0, 12);
+        lamp("Frame", !run ? 0 : rx.dataValid ? 1 : rx.l1preOk ? 2 : 0); ImGui::SameLine(0, 12);
+        const double okFrac = (rx.blocksOk + rx.blocksBad) ? (double)rx.blocksOk / (rx.blocksOk + rx.blocksBad) : 0;
+        const int fec = !run || !rx.plpValid || rx.plpFrames == 0 ? 0 : okFrac > 0.995 ? 1 : okFrac > 0.5 ? 2 : 3;
         lamp("LDPC", fec); ImGui::SameLine(0, 12);
         lamp("BCH", fec); ImGui::SameLine(0, 12);
-    }
-    {
-        int tsl = !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1;
-        lamp("TS", tsl); ImGui::SameLine(0, 12);
-    }
-    {
+        lamp("TS", !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1); ImGui::SameLine(0, 12);
         const PlayerStats ps = a.engine.player().stats();
         const bool pl = run && ps.active;
         lamp("Video", !pl || !ps.hasVideo ? 0 : (ps.shown > 0 && ps.videoQueue > 2) ? 1 : 2); ImGui::SameLine(0, 12);
-        lamp("Audio", !pl || !ps.hasAudio ? 0 : (ps.audioBufferMs > 150) ? 1 : 2); ImGui::SameLine(0, 12);
+        lamp("Audio", !pl || !ps.hasAudio ? 0 : (ps.audioBufferMs > 150) ? 1 : 2); ImGui::SameLine(0, 10);
+        ImGui::TextDisabled("|"); ImGui::SameLine(0, 10);
     }
-    ImGui::TextDisabled("|"); ImGui::SameLine();
-    ImGui::PushFont(a.mono, 0);
-    if (run) {
-        ImGui::Text("fs %.3f Msps   level %.1f dBFS   peak %.2f   clip %.3f%%   DC %+.3f/%+.3f   dropped %llu",
-                    a.engine.sampleRate() / 1e6, st.rmsDbfs, st.peak, st.clipFraction * 100, st.dcI, st.dcQ,
-                    (unsigned long long)a.engine.droppedSamples());
-    } else ImGui::TextDisabled("stopped");
-    ImGui::PopFont();
-    if (run && a.rx.state == 2) {
-        ImGui::PushFont(a.mono, 0);
-        ImGui::Text("%s %s GI %s%s   CFO %+.1f Hz   SRO %+.1f ppm   SNR %.1f dB%s", s1Name(a.rx.p1.s1),
-                    fftModeFromSize(a.rx.fftN) ? fftModeFromSize(a.rx.fftN)->name : "?", guardName(a.rx.giIdx), a.rx.extCarriers ? " ext" : "", a.rx.cfoHz, a.rx.sroPpm,
-                    a.rx.dataValid ? a.rx.dataSnrDb : a.rx.cpSnrDb, a.rx.dataValid ? "" : " (CP)");
-        if (a.rx.l1preOk) ImGui::SameLine(), ImGui::Text("  PP%d  cell %d", a.rx.l1pre.pilotPattern + 1, a.rx.l1pre.cellId);
-        ImGui::PopFont();
+    auto ro = [&](const char* label, const std::string& val, ImVec4 col = ImVec4(0.93f, 0.95f, 0.97f, 1)) {
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("%s", label); ImGui::SameLine(0, 5);
+        ImGui::PushFont(a.mono, 0); ImGui::TextColored(col, "%s", val.c_str()); ImGui::PopFont();
+        ImGui::SameLine(0, 15);
+    };
+    char b[96];
+    if (!run) ro("State", "stopped", ImVec4(0.6f, 0.64f, 0.68f, 1));
+    else if (rx.state == 2) ro("State", "Locked", ImVec4(0.35f, 0.90f, 0.45f, 1));
+    else if (rx.state == 1) ro("State", "syncing", ImVec4(0.95f, 0.75f, 0.2f, 1));
+    else ro("State", "searching", ImVec4(0.6f, 0.64f, 0.68f, 1));
+    if (run && rx.state == 2) {
+        ro("Mode", s1Name(rx.p1.s1));
+        const FftMode* fm = fftModeFromSize(rx.fftN);
+        snprintf(b, sizeof b, "%s%s", fm ? fm->name : "?", rx.extCarriers ? " ext" : ""); ro("FFT", b);
+        ro("GI", guardName(rx.giIdx));
+        if (rx.l1preOk) { snprintf(b, sizeof b, "PP%d", rx.l1pre.pilotPattern + 1); ro("Pilots", b); }
+        if (rx.plpValid) {
+            static const char* mods[] = {"QPSK", "16-QAM", "64-QAM", "256-QAM"}; static const char* rates[] = {"1/2", "3/5", "2/3", "3/4", "4/5", "5/6", "1/3", "2/5"};
+            snprintf(b, sizeof b, "%s %s%s", rx.plpFec.mod >= 0 && rx.plpFec.mod < 4 ? mods[rx.plpFec.mod] : "?", rx.plpFec.rate >= 0 && rx.plpFec.rate < 8 ? rates[rx.plpFec.rate] : "?", rx.plpFec.rotation ? " rot" : "");
+            ro("PLP", b);
+        }
     }
+    ImGui::NewLine();
+    // ---- line 2: numbers and gauges
+    if (run && rx.state == 2) {
+        snprintf(b, sizeof b, "%+.1f Hz", rx.cfoHz); ro("CFO", b);
+        snprintf(b, sizeof b, "%+.1f ppm", rx.sroPpm); ro("SRO", b);
+        snprintf(b, sizeof b, "%.1f dB", rx.dataValid ? rx.dataSnrDb : rx.cpSnrDb); ro("SNR", b);
+        if (rx.plpMerDb > 0 && rx.plpMerDb < 90) { snprintf(b, sizeof b, "%.1f dB", rx.plpMerDb); ro("MER", b); }
+        if (!a.mpd.report().echoes.empty()) { snprintf(b, sizeof b, "%.2f us", std::fabs(a.mpd.report().echoes[0].delayUs)); ro("Delay", b); }
+    }
+    if (run) { snprintf(b, sizeof b, "%.3f Msps", a.engine.sampleRate() / 1e6); ro("fs", b); }
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Level"); ImGui::SameLine(0, 5);
+    {
+        const ImU32 col = adc == AdcStatus::Overload ? IM_COL32(200, 50, 45, 255) : adc == AdcStatus::Good ? IM_COL32(36, 130, 170, 255) : IM_COL32(190, 140, 40, 255);
+        snprintf(b, sizeof b, run ? "%.1f dBFS" : "-", st.rmsDbfs);
+        gaugePill(130, run ? (st.rmsDbfs + 60.f) / 60.f : 0.f, col, b);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("ADC level (rms). %s\npeak %.2f   clip %.3f%%   DC %+.3f / %+.3f", adcAdvice(adc).c_str(), st.peak, st.clipFraction * 100, st.dcI, st.dcQ);
+    }
+    ImGui::SameLine(0, 15);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Quality"); ImGui::SameLine(0, 5);
+    {
+        const QualityReport& q = a.quality.report();
+        const float t = run && q.valid ? (float)q.percent / 100.f : 0.f;
+        const ImU32 col = ImGui::ColorConvertFloat4ToU32(ImVec4(0.92f - 0.62f * t, 0.45f + 0.40f * t, 0.15f + 0.20f * t, 1));
+        snprintf(b, sizeof b, run && q.valid ? "%.0f%%  %s" : "-", q.percent, q.label.c_str());
+        gaugePill(130, t, col, b);
+        if (ImGui::IsItemHovered() && run && q.valid) ImGui::SetTooltip("data SNR %.1f dB, needed about %.1f dB (margin %+.1f dB)\nFEC blocks decoded %.1f%%", q.snrDb, q.requiredDb, q.marginDb, q.fecOk * 100);
+    }
+    ImGui::SameLine(0, 15);
+    if (run) { snprintf(b, sizeof b, "%llu", (unsigned long long)a.engine.droppedSamples()); ro("dropped", b, a.engine.droppedSamples() ? ImVec4(0.95f, 0.45f, 0.3f, 1) : ImVec4(0.93f, 0.95f, 0.97f, 1)); }
     if (run && a.mpd.report().level != MultipathLevel::Unknown) {
         const MultipathReport& mr = a.mpd.report();
         const ImVec4 col = mr.level == MultipathLevel::None ? ImVec4(0.5f, 0.55f, 0.6f, 1) : mr.level == MultipathLevel::Mild ? ImVec4(0.95f, 0.8f, 0.3f, 1)
                          : mr.level == MultipathLevel::Likely ? ImVec4(0.95f, 0.6f, 0.2f, 1) : ImVec4(0.95f, 0.35f, 0.25f, 1);
-        ImGui::SameLine(); ImGui::TextColored(col, "  multipath: %s", multipathName(mr.level));
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextColored(col, "multipath: %s", multipathName(mr.level));
         if (ImGui::IsItemHovered()) {
             ImGui::BeginTooltip();
             ImGui::TextUnformatted(mr.headline.c_str());
             for (auto& r : mr.reasons) ImGui::BulletText("%s", r.c_str());
             ImGui::EndTooltip();
         }
+        ImGui::SameLine(0, 15);
     }
     if (run && a.devices[a.devIdx].kind != DeviceInfo::File) {
-        const AdcStatus as = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
-        if (a.sweep.active()) {
-            ImGui::SameLine(); ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), " gain helper %d/%d ...", std::max(0, a.sweep.current()) + 1, (int)a.sweep.entries().size());
-        } else if (as == AdcStatus::Overload) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.35f, 0.25f, 1), " ADC OVERLOAD - %s", a.agcOn ? "AGC is lowering the gain" : "reduce the gain (or enable AGC)"); }
-        else if (as == AdcStatus::High) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), " ADC level high"); }
-        else if (as == AdcStatus::Low) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), " ADC level low - raise the gain; 8 bits limit the SNR"); }
-        else if (as == AdcStatus::NoSignal) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), " ADC sees almost nothing - antenna / gain?"); }
-    }
+        ImGui::AlignTextToFramePadding();
+        if (a.sweep.active()) ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "gain helper %d/%d ...", std::max(0, a.sweep.current()) + 1, (int)a.sweep.entries().size());
+        else if (adc == AdcStatus::Overload) ImGui::TextColored(ImVec4(0.95f, 0.35f, 0.25f, 1), "ADC OVERLOAD - %s", a.agcOn ? "AGC is lowering the gain" : "reduce the gain (or enable AGC)");
+        else if (adc == AdcStatus::High) ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), "ADC level high");
+        else if (adc == AdcStatus::Low) ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), "ADC level low - raise the gain");
+        else if (adc == AdcStatus::NoSignal) ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), "ADC sees almost nothing - antenna / gain?");
+        else ImGui::NewLine();
+    } else ImGui::NewLine();
 }
 
 static void ingestSpectrum(App& a) {
@@ -807,32 +900,41 @@ static void historyTab(App& a) {
     {
         static const int wins[] = {30, 60, 300, 900};
         static const char* names[] = {"30 s", "1 min", "5 min", "15 min"};
-        ImGui::TextDisabled("window"); ImGui::SameLine();
-        for (int i = 0; i < 4; i++) { if (i) ImGui::SameLine(); if (ImGui::RadioButton(names[i], a.histWindow == wins[i])) a.histWindow = wins[i]; }
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("window");
+        for (int i = 0; i < 4; i++) { ImGui::SameLine(0, 6); if (pillButton(names[i], a.histWindow == wins[i])) a.histWindow = wins[i]; }
+        ImGui::SameLine(0, 14);
+        ImGui::TextDisabled("gaps in a line mean the receiver was not locked; CFO and SRO are on Receiver > Sync");
     }
-    const float h = (ImGui::GetContentRegionAvail().y - 30) / 4.f;
-    auto series = [&](const char* id, const char* ylab, std::initializer_list<std::pair<const char*, float App::HistSample::*>> ser, ImVec2 size, double ymin, double ymax, bool fixed) {
-        if (!ImPlot::BeginPlot(id, size, ImPlotFlags_NoTitle)) return;
-        ImPlot::SetupAxes("seconds ago", ylab, 0, fixed ? 0 : ImPlotAxisFlags_AutoFit);
+    std::vector<float> xs(a.hist.size());
+    for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(a.hist[i].t - nowT);
+    auto series = [&](const char* id, const char* ylab, std::initializer_list<std::pair<const char*, float App::HistSample::*>> ser, double ymin, double ymax, bool fixed, bool last) {
+        if (!ImPlot::BeginPlot(id, ImVec2(0, 0), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend)) return;
+        ImPlot::SetupAxes(last ? "seconds ago" : nullptr, nullptr, last ? 0 : ImPlotAxisFlags_NoTickLabels, fixed ? 0 : ImPlotAxisFlags_AutoFit);
         ImPlot::SetupAxisLimits(ImAxis_X1, -a.histWindow, 0, ImPlotCond_Always);
         if (fixed) ImPlot::SetupAxisLimits(ImAxis_Y1, ymin, ymax, ImPlotCond_Once);
-        std::vector<float> xs(a.hist.size());
-        for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(a.hist[i].t - nowT);
         int k = 0;
         static const ImVec4 cols[3] = {ImVec4(0.45f, 0.75f, 1, 1), ImVec4(0.95f, 0.7f, 0.2f, 1), ImVec4(0.4f, 0.85f, 0.5f, 1)};
         for (auto& s : ser) {
             std::vector<float> ys(a.hist.size());
             for (size_t i = 0; i < ys.size(); i++) ys[i] = a.hist[i].*(s.second);
-            ImPlotSpec sp; sp.LineColor = cols[k++ % 3];
+            ImPlotSpec sp; sp.LineColor = cols[k++ % 3]; sp.LineWeight = 1.6f;
             ImPlot::PlotLine(s.first, xs.data(), ys.data(), (int)xs.size(), sp);
+        }
+        {   // caption inside the plot instead of a rotated axis label (the plots are short)
+            const ImPlotRect lim = ImPlot::GetPlotLimits();
+            const float tw = ImGui::CalcTextSize(ylab).x;
+            ImPlot::PlotText(ylab, lim.X.Min, lim.Y.Max, ImVec2(tw * 0.5f + 8, 10));
         }
         ImPlot::EndPlot();
     };
-    series("##h1", "quality (%)", {{"quality", &App::HistSample::quality}}, ImVec2(-1, h), 0, 100, true);
-    series("##h2", "SNR / MER (dB)", {{"data SNR", &App::HistSample::snr}, {"MER", &App::HistSample::mer}}, ImVec2(-1, h), 0, 0, false);
-    series("##h3", "FEC block loss (%)", {{"lost blocks", &App::HistSample::loss}}, ImVec2(-1, h), 0, 100, true);
-    series("##h4", "ADC level (dBFS)", {{"rms", &App::HistSample::level}}, ImVec2(-1, h), -60, 0, true);
-    ImGui::TextDisabled("CFO and SRO are on the Sync tab. Gaps in a line mean the receiver was not locked.");
+    if (ImPlot::BeginSubplots("##hist", 4, 1, ImVec2(-1, -1), ImPlotSubplotFlags_LinkAllX | ImPlotSubplotFlags_NoTitle | ImPlotSubplotFlags_NoLegend | ImPlotSubplotFlags_NoMenus)) {
+        series("quality (%)##h1", "quality %", {{"quality", &App::HistSample::quality}}, 0, 100, true, false);
+        series("SNR / MER (dB)##h2", "SNR / MER dB", {{"data SNR", &App::HistSample::snr}, {"MER", &App::HistSample::mer}}, 0, 0, false, false);
+        series("FEC block loss (%)##h3", "lost blocks %", {{"lost blocks", &App::HistSample::loss}}, 0, 100, true, false);
+        series("ADC level (dBFS)##h4", "ADC dBFS", {{"rms", &App::HistSample::level}}, -60, 0, true, true);
+        ImPlot::EndSubplots();
+    }
 }
 
 static void frameMapTab(App& a) {
@@ -1133,62 +1235,63 @@ static void signallingTab(App& a) {
 }
 
 static void constellationsTab(App& a) {
-    float w = ImGui::GetContentRegionAvail().x / 4 - 8;
-    float h = std::min(ImGui::GetContentRegionAvail().y - 40, w);
+    const RxTelemetry& rx = a.rx;
+    const float availW = ImGui::GetContentRegionAvail().x, availH = ImGui::GetContentRegionAvail().y;
+    const float side = std::max(90.f, std::min(availH - 26.f, availW / 4.f - 16.f));
+    const float gap = std::max(6.f, (availW - 4 * side) / 5.f);
+    const ImVec2 sz(side, side);
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + gap);
+    char cap[96];
+    auto caption = [&](const char* fmt, auto... args) { snprintf(cap, sizeof cap, fmt, args...); ImGui::TextDisabled("%s", cap); };
     ImGui::BeginGroup();
-    ImGui::TextDisabled("P1 carriers (DBPSK, differential)");
-    scatter("##c1", a.rx.p1Const, ImVec2(w, h), 2.5, ImVec4(0.95f, 0.7f, 0.2f, 0.9f));
+    caption("P1 carriers (%zu cells)", rx.p1Const.size());
+    scatter("##c1", rx.p1Const, sz, 2.5, ImVec4(0.95f, 0.7f, 0.2f, 0.9f));
     ImGui::EndGroup();
-    ImGui::SameLine();
+    ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("P2 cells, equalised (L1 + PLP)");
-    scatter("##ceq", a.rx.eqCells, ImVec2(w, h), 2.0, ImVec4(0.9f, 0.45f, 0.75f, 0.8f));
+    caption("P2 cells, equalised (%zu cells)", rx.eqCells.size());
+    scatter("##ceq", rx.eqCells, sz, 2.0, ImVec4(0.9f, 0.45f, 0.75f, 0.8f));
     ImGui::EndGroup();
-    ImGui::SameLine();
+    ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    if (!a.rx.plpConst.empty()) ImGui::TextDisabled("PLP %d symbols, derotated, MER %.1f dB", a.rx.plpId, a.rx.plpMerDb);
-    else ImGui::TextDisabled("Data cells, equalised (frame %llu)", (unsigned long long)a.rx.dataFrames);
-    if (!a.rx.plpConst.empty()) {
-        // PLP cells that belong to correctly decoded FEC blocks; points far from their transmitted constellation point are red
+    if (!rx.plpConst.empty()) caption("PLP %d, derotated  MER %.1f dB (%zu cells)", rx.plpId, rx.plpMerDb, rx.plpConst.size());
+    else caption("Data cells, equalised (frame %llu)", (unsigned long long)rx.dataFrames);
+    if (!rx.plpConst.empty()) {
+        // cells of correctly decoded FEC blocks; points beyond the decision distance from the transmitted point are red
         std::vector<cf32> good, bad;
-        for (size_t i = 0; i < a.rx.plpConst.size(); i++) (a.rx.plpConstErr.size() > i && a.rx.plpConstErr[i] ? bad : good).push_back(a.rx.plpConst[i]);
-        if (ImPlot::BeginPlot("##c2", ImVec2(w, h), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
+        for (size_t i = 0; i < rx.plpConst.size(); i++) (rx.plpConstErr.size() > i && rx.plpConstErr[i] ? bad : good).push_back(rx.plpConst[i]);
+        if (ImPlot::BeginPlot("##c2", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
             ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
-            ImPlot::SetupAxisLimits(ImAxis_X1, -1.5, 1.5, ImPlotCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, -1.5, 1.5, ImPlotCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_X1, -1.4, 1.4, ImPlotCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -1.4, 1.4, ImPlotCond_Always);
             auto draw = [&](const char* id, const std::vector<cf32>& v, ImVec4 col) {
                 if (v.empty()) return;
-                ImPlotSpec sp; sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.4f; sp.Stride = sizeof(cf32);
+                ImPlotSpec sp; sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.3f; sp.Stride = sizeof(cf32);
                 sp.MarkerFillColor = col; sp.MarkerLineColor = col; sp.LineColor = col;
                 const float* d = reinterpret_cast<const float*>(v.data());
                 ImPlot::PlotScatter(id, d, d + 1, (int)v.size(), sp);
             };
-            {   // the transmitted (unrotated) constellation points
-                const int M = 2 * (a.rx.plpFec.mod + 1);
+            draw("ok", good, ImVec4(0.35f, 0.62f, 1.0f, 0.60f));
+            draw("err", bad, ImVec4(0.95f, 0.45f, 0.30f, 0.75f));
+            {   // the transmitted (unrotated) constellation points, drawn on top like the reference decoders do
+                const int M = 2 * (rx.plpFec.mod + 1);
                 std::vector<cf32> grid;
-                for (unsigned l = 0; l < (1u << M); l++) grid.push_back(qamPoint(a.rx.plpFec.mod, false, l));
-                ImPlotSpec gs; gs.Marker = ImPlotMarker_Cross; gs.MarkerSize = 3.f; gs.Stride = sizeof(cf32);
-                gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(1, 1, 1, 0.45f);
+                for (unsigned l = 0; l < (1u << M); l++) grid.push_back(qamPoint(rx.plpFec.mod, false, l));
+                ImPlotSpec gs; gs.Marker = ImPlotMarker_Cross; gs.MarkerSize = 4.f; gs.Stride = sizeof(cf32);
+                gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(1, 1, 1, 0.85f);
                 const float* g = reinterpret_cast<const float*>(grid.data());
                 ImPlot::PlotScatter("ideal", g, g + 1, (int)grid.size(), gs);
             }
-            draw("ok", good, ImVec4(0.35f, 0.85f, 0.45f, 0.55f));
-            draw("err", bad, ImVec4(0.95f, 0.35f, 0.3f, 0.8f));
             ImPlot::EndPlot();
         }
     } else
-    scatter("##c2", a.rx.eqData, ImVec2(w, h), 1.8, ImVec4(0.35f, 0.85f, 0.45f, 0.6f));
+        scatter("##c2", rx.eqData, sz, 1.8, ImVec4(0.35f, 0.85f, 0.45f, 0.6f));
     ImGui::EndGroup();
-    ImGui::SameLine();
+    ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("OFDM cells, raw");
-    scatter("##c3", a.rx.rawCells, ImVec2(w, h), 3.0, ImVec4(0.45f, 0.65f, 1.0f, 0.7f));
+    caption("OFDM cells, raw (%zu cells)", rx.rawCells.size());
+    scatter("##c3", rx.rawCells, sz, 3.0, ImVec4(0.45f, 0.65f, 1.0f, 0.7f));
     ImGui::EndGroup();
-    if (a.rx.dataValid)
-        ImGui::TextDisabled("Pilot pattern PP%d (dx %d, dy %d). Data SNR %.1f dB. The PLP panel shows the cells of FEC blocks that decoded cleanly; "
-                            "red points are cells whose error exceeded the decision distance.", a.rx.dataPp + 1, a.rx.dataDx, a.rx.dataDy, a.rx.dataSnrDb);
-    else
-        ImGui::TextDisabled("Raw cells are rotated by the channel and timing (a ring). Equalised views appear once L1-pre has been decoded.");
 }
 
 static void channelTab(App& a) {
@@ -1198,15 +1301,15 @@ static void channelTab(App& a) {
         const MultipathReport& mr = a.mpd.report();
         ImGui::TextColored(mr.level == MultipathLevel::None ? ImVec4(0.4f, 0.85f, 0.5f, 1) : mr.level == MultipathLevel::Mild ? ImVec4(0.95f, 0.8f, 0.3f, 1) : ImVec4(0.95f, 0.5f, 0.25f, 1),
                            "Multipath analysis: %s", mr.headline.c_str());
-        for (auto& r : mr.reasons) { ImGui::SameLine(0, 0); ImGui::NewLine(); ImGui::TextDisabled("  - %s", r.c_str()); }
+        for (auto& r : mr.reasons) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("- %s", r.c_str()); ImGui::PopTextWrapPos(); }
         ImGui::Separator();
     }
-    float h = ImGui::GetContentRegionAvail().y;
+    const float h = ImGui::GetContentRegionAvail().y - 56;   // room for the two captions
     double fnMhz = rx.nativeRate / 1e6, binMhz = fnMhz / rx.fftN;
     std::vector<float> xs(rx.chMagDb.size());
     for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(a.freqMhz + ((double)(i * rx.chDecim) - (rx.chCarriers - 1) / 2.0) * binMhz);
-    ImGui::TextDisabled("channel magnitude |H(f)| from P2 pilots (relative, dB) - %d carriers%s", rx.chCarriers, rx.extCarriers ? ", extended mode" : "");
-    if (ImPlot::BeginPlot("##chm", ImVec2(-1, h * 0.5f), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
+    ImGui::TextDisabled("|H(f)| from P2 pilots, dB (%d carriers%s)", rx.chCarriers, rx.extCarriers ? ", extended" : "");
+    if (ImPlot::BeginPlot("##chm", ImVec2(-1, std::max(60.f, h * 0.5f)), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
         ImPlot::SetupAxes("frequency (MHz)", "dB", 0, ImPlotAxisFlags_AutoFit);
         ImPlot::SetupAxisFormat(ImAxis_X1, "%.2f");
         ImPlot::SetupAxisLimits(ImAxis_X1, xs.front(), xs.back(), ImPlotCond_Always);
@@ -1214,7 +1317,7 @@ static void channelTab(App& a) {
         ImPlot::PlotLine("mag", xs.data(), rx.chMagDb.data(), (int)xs.size(), sp);
         ImPlot::EndPlot();
     }
-    ImGui::TextDisabled("channel phase (radians); a steady slope is timing offset, curvature is echoes");
+    ImGui::TextDisabled("phase of H(f), rad (slope = timing, curvature = echoes)");
     if (ImPlot::BeginPlot("##chp", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle)) {
         ImPlot::SetupAxes("frequency (MHz)", "rad");
         ImPlot::SetupAxisFormat(ImAxis_X1, "%.2f");
@@ -1642,7 +1745,7 @@ static void playerTab(App& a) {
         for (auto& u : rx.unsupported) { ImGui::TextColored(ImVec4(0.95f, 0.6f, 0.2f, 1), "! %s", u.c_str()); }
     }
     const bool haveNN = pl.selected() >= 0;
-    float h = ImGui::GetContentRegionAvail().y - 92 - (haveNN ? 46.f : 0.f);
+    float h = ImGui::GetContentRegionAvail().y - 44 - (haveNN ? 46.f : 0.f);
     ImGui::BeginChild("vbox", ImVec2(-1, h), ImGuiChildFlags_Borders);
     if (pl.selected() < 0) ImGui::TextDisabled("Pick a service in the list on the right to start playback.");
     else if (!a.video.tex) ImGui::TextDisabled("%s", ps.hasAudio && !ps.hasVideo ? "audio only" : ps.status.c_str());
@@ -1678,12 +1781,7 @@ static void playerTab(App& a) {
         ImGui::SameLine();
     }
     if (pl.subtitlesAvailable()) { if (ImGui::Checkbox("subtitles", &a.subsOn)) pl.setSubtitles(a.subsOn); }
-    ImGui::PushFont(a.mono, 0);
-    ImGui::Text("%s  %s%s %dx%d %.1f fps   audio %s %d ch   buffer %.0f ms   A/V %+.0f ms",
-                ps.status.c_str(), ps.videoCodec.c_str(), ps.hardware ? " (VideoToolbox)" : " (software)", ps.width, ps.height, ps.fps, ps.audioCodec.c_str(), ps.audioChannels, ps.audioBufferMs, ps.avOffsetMs);
-    ImGui::Text("pictures: decoded %llu  shown %llu  late %llu  errors %llu  queue %d    audio underruns %d",
-                (unsigned long long)ps.decoded, (unsigned long long)ps.shown, (unsigned long long)ps.late, (unsigned long long)ps.errors, ps.videoQueue, ps.underruns);
-    ImGui::PopFont();
+    ImGui::NewLine();
     if (pl.selected() >= 0) {   // what is on now, and what comes next
         const EpgEvent* nx = nullptr;
         const EpgEvent* cur = epgCurrent(a, pl.selected(), &nx);
@@ -1704,49 +1802,121 @@ static void playerTab(App& a) {
 }
 
 static void rightPanel(App& a) {
+    const bool run = a.engine.running();
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    // ---- clock: broadcast time (TDT) when the stream has one, otherwise this computer's clock
+    {
+        const int64_t now = utcNowOf(a);
+        time_t t = (time_t)now; struct tm m; gmtime_r(&t, &m);
+        char hm[16], ss[8], date[40];
+        strftime(hm, sizeof hm, "%H:%M", &m); strftime(ss, sizeof ss, ":%S", &m); strftime(date, sizeof date, "%a %d %b %Y", &m);
+        ImGui::PushFont(a.ui, 40.f);
+        ImGui::TextUnformatted(hm);
+        ImGui::PopFont();
+        ImGui::SameLine(0, 4);
+        ImGui::BeginGroup();
+        ImGui::TextDisabled("UTC");
+        ImGui::TextDisabled("%s", ss);
+        ImGui::EndGroup();
+        ImGui::TextDisabled("%s", date);
+        ImGui::SameLine(0, 10);
+        ImGui::TextDisabled("local %s   (%s)", fmtLocal(now, "%H:%M").c_str(), a.ts.utcNow ? "broadcast time" : "computer clock");
+    }
+    ImGui::Spacing();
     ImGui::TextDisabled("Services");
-    ImGui::BeginChild("svcs", ImVec2(0, 250), ImGuiChildFlags_Borders);
-    if (a.ts.services.empty()) ImGui::TextDisabled("waiting for PAT / SDT...");
+    // ---- service cards
+    const float cardH = 68;
+    ImGui::BeginChild("svcs", ImVec2(0, std::max(140.f, ImGui::GetContentRegionAvail().y * 0.40f)));
+    dl = ImGui::GetWindowDrawList(); // draw into the child so the cards are clipped and scroll with it
+    if (a.ts.services.empty()) ImGui::TextDisabled(run ? "waiting for PAT / SDT..." : "start the receiver to see services");
     for (auto& sv : a.ts.services) {
         std::string vc, ac;
         double kb = 0;
-        for (auto& st : sv.streams) { kb += st.kbps; if (st.kind == "video" && vc.empty()) vc = st.codec; if (st.kind == "audio" && ac.empty()) ac = st.codec; }
-        std::string label = (sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name);
+        bool hasVideo = false;
+        for (auto& st : sv.streams) { kb += st.kbps; if (st.kind == "video") { hasVideo = true; if (vc.empty()) vc = st.codec; } if (st.kind == "audio" && ac.empty()) ac = st.codec; }
+        const bool sel = sv.id == a.engine.player().selected();
         ImGui::PushID(sv.id);
-        bool sel = sv.id == a.engine.player().selected();
-        if (ImGui::Selectable(label.c_str(), sel)) { if (sel) a.engine.player().select(-1); else { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); } }
-        char r[32];
-        ImGui::TextDisabled("  %s  %s%s%s  %s%s", sv.typeName(), vc.c_str(), (!vc.empty() && !ac.empty()) ? " + " : "", ac.c_str(), fmtKbps(r, sizeof r, kb), sv.caFlag ? "  [scrambled]" : "");
-        {
-            const EpgEvent* cur = epgCurrent(a, sv.id);
-            if (cur) ImGui::TextDisabled("  %s-%s  %s", fmtLocal(cur->start, "%H:%M").c_str(), fmtLocal(cur->end(), "%H:%M").c_str(), cur->title.c_str());
-            else if (!sv.now.empty()) ImGui::TextDisabled("  now: %s", sv.now.c_str());
-        }
+        const float w = ImGui::GetContentRegionAvail().x;
+        const ImVec2 p = ImGui::GetCursorScreenPos();
+        const bool clicked = ImGui::InvisibleButton("##card", ImVec2(w, cardH));
+        const bool hov = ImGui::IsItemHovered();
+        if (clicked) { if (sel) a.engine.player().select(-1); else { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); } }
+        dl->AddRectFilled(p, ImVec2(p.x + w, p.y + cardH - 4), sel ? IM_COL32(17, 50, 78, 255) : hov ? IM_COL32(30, 36, 44, 255) : IM_COL32(22, 26, 32, 255), 6.f);
+        dl->AddRect(p, ImVec2(p.x + w, p.y + cardH - 4), sel ? IM_COL32(42, 130, 190, 255) : IM_COL32(40, 46, 54, 255), 6.f, 0, sel ? 1.6f : 1.f);
+        // name and bit rate
+        const std::string name = sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name;
+        dl->AddText(a.ui, 16.f, ImVec2(p.x + 10, p.y + 6), IM_COL32(245, 247, 250, 255), name.c_str());
+        char kbs[32]; fmtKbps(kbs, sizeof kbs, kb);
+        const ImVec2 ks = ImGui::CalcTextSize(kbs);
+        dl->AddText(ImVec2(p.x + w - ks.x - 10, p.y + 8), IM_COL32(150, 158, 168, 255), kbs);
+        // tag pills
+        float x = p.x + 10;
+        const float ty = p.y + 27;
+        const bool radio = sv.type == 0x02 || sv.type == 0x0A || (!hasVideo && !ac.empty());
+        x += tagAt(dl, ImVec2(x, ty), radio ? "radio" : hasVideo ? "TV" : sv.typeName(), radio ? IM_COL32(88, 62, 132, 255) : IM_COL32(30, 90, 142, 255)) + 4;
+        if (!vc.empty()) x += tagAt(dl, ImVec2(x, ty), vc.c_str(), IM_COL32(32, 98, 98, 255)) + 4;
+        if (!ac.empty()) x += tagAt(dl, ImVec2(x, ty), ac.c_str(), IM_COL32(52, 98, 50, 255)) + 4;
+        if (sv.caFlag) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(150, 50, 46, 255)) + 4;
+        // what is on
+        const EpgEvent* cur = epgCurrent(a, sv.id);
+        std::string line;
+        if (cur) line = fmtLocal(cur->start, "%H:%M") + "-" + fmtLocal(cur->end(), "%H:%M") + "  " + cur->title;
+        else if (!sv.now.empty()) line = sv.now;
+        else if (!sv.provider.empty()) line = sv.provider;
+        dl->PushClipRect(ImVec2(p.x + 8, p.y), ImVec2(p.x + w - 8, p.y + cardH), true);
+        dl->AddText(ImVec2(p.x + 10, p.y + 47), IM_COL32(128, 136, 146, 255), line.c_str());
+        dl->PopClipRect();
         ImGui::PopID();
     }
     ImGui::EndChild();
-    ImGui::Spacing();
-    ImGui::TextDisabled("Video");
-    ImGui::BeginChild("video", ImVec2(0, 190), ImGuiChildFlags_Borders);
+
+    // ---- what the player is doing, as label / value rows
     {
-        PlayerStats ps = a.engine.player().stats();
-        if (a.engine.player().selected() < 0) ImGui::TextDisabled("click a service to play it");
-        else if (!ps.hasVideo && ps.hasAudio) ImGui::TextDisabled("audio only: %s", ps.audioCodec.c_str());
+        const Player& pl = a.engine.player();
+        const PlayerStats ps = pl.stats();
+        ImGui::TextDisabled("Player");
+        if (pl.selected() < 0) ImGui::TextDisabled("click a service to play it");
+        else if (ImGui::BeginTable("pkv", 2, ImGuiTableFlags_SizingFixedFit)) {
+            ImGui::TableSetupColumn("k", ImGuiTableColumnFlags_WidthFixed, 66);
+            auto row = [&](const char* k, const char* fmt, auto... args) {
+                ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", k); ImGui::TableNextColumn();
+                char b[120]; snprintf(b, sizeof b, fmt, args...); ImGui::TextUnformatted(b);
+            };
+            if (ps.hasVideo) row("Video", "%s  %dx%d  %.1f fps  %s", ps.videoCodec.c_str(), ps.width, ps.height, ps.fps, ps.hardware ? "(hardware)" : "(software)");
+            if (ps.hasAudio) row("Audio", "%s  %d ch", ps.audioCodec.c_str(), ps.audioChannels);
+            row("Buffer", "%.0f ms     A/V %+.0f ms", ps.audioBufferMs, ps.avOffsetMs);
+            row("Pictures", "%llu shown / %llu late", (unsigned long long)ps.shown, (unsigned long long)ps.late);
+            row("Errors", "%llu     underruns %d", (unsigned long long)ps.errors, ps.underruns);
+            ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("Volume"); ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-1);
+            float vol = a.volume * 100.f;
+            if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) { a.volume = vol / 100.f; a.engine.player().setVolume(a.volume); }
+            ImGui::EndTable();
+        }
+    }
+    ImGui::Spacing();
+    // ---- video preview and outputs
+    {
+        const float vw = ImGui::GetContentRegionAvail().x;
+        const float vh = std::min(vw * 9.f / 16.f, std::max(60.f, ImGui::GetContentRegionAvail().y - 52.f));
+        ImGui::BeginChild("video", ImVec2(0, vh), ImGuiChildFlags_Borders);
+        const PlayerStats ps = a.engine.player().stats();
+        if (a.engine.player().selected() < 0) ImGui::TextDisabled("no picture");
+        else if (!ps.hasVideo && ps.hasAudio) ImGui::TextDisabled("audio only");
         else if (!a.video.tex) ImGui::TextDisabled("%s", ps.status.c_str());
         else a.video.draw(ImGui::GetContentRegionAvail());
+        ImGui::EndChild();
     }
-    ImGui::EndChild();
-    ImGui::Spacing();
-    ImGui::TextDisabled("Outputs");
     {
         OutputStats os = a.engine.outputStats();
-        ImGui::Text("File %s   UDP %s   Live %s", os.fileOpen ? "●" : "○", os.udpOpen ? "●" : "○", "○");
-        if (os.fileOpen) ImGui::TextDisabled("recording %.1f MB", os.fileBytes / 1e6);
-        if (os.udpOpen) ImGui::TextDisabled("udp %s:%d%s", a.udpHost, a.out.port, a.out.rtp ? " (RTP)" : "");
+        ImGui::TextDisabled("Outputs");
+        ImGui::SameLine();
+        ImGui::TextColored(os.fileOpen ? ImVec4(0.4f, 0.9f, 0.5f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "file");
+        ImGui::SameLine();
+        ImGui::TextColored(os.udpOpen ? ImVec4(0.4f, 0.9f, 0.5f, 1) : ImVec4(0.45f, 0.48f, 0.52f, 1), "udp");
+        if (os.fileOpen) { ImGui::SameLine(); ImGui::TextDisabled("%.1f MB", os.fileBytes / 1e6); }
+        if (os.udpOpen) { ImGui::SameLine(); ImGui::TextDisabled("%s:%d%s", a.udpHost, a.out.port, a.out.rtp ? " RTP" : ""); }
     }
-    ImGui::Spacing();
-    ImGui::TextDisabled("ADC occupancy");
-    histogramPlot(a, ImVec2(-1, 150));
 }
 
 static void logPanel(App& a) {
@@ -1769,6 +1939,88 @@ static void logPanel(App& a) {
     ImGui::PopFont();
     if (a.autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 4) ImGui::SetScrollHereY(1.0f);
     ImGui::EndChild();
+}
+
+// ------------------------------------------------------------------ the six top-level views
+
+static void overviewTab(App& a) {
+    ImGui::Checkbox("peak hold", &a.peakHold);
+    ImGui::SameLine(0, 16); ImGui::SetNextItemWidth(170);
+    ImGui::DragFloatRange2("spectrum dB", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
+    ImGui::SameLine(0, 16); ImGui::SetNextItemWidth(170);
+    ImGui::DragFloatRange2("waterfall dB", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
+    const float h = ImGui::GetContentRegionAvail().y;
+    spectrumPlot(a, ImVec2(-1, h * 0.5f - 2));
+    waterfallPlot(a, ImVec2(-1, -1));
+}
+
+static void tvTab(App& a) {
+    subNav("tv", a.subTv, {"Player", "Guide", "Teletext"});
+    if (a.subTv == 0) playerTab(a);
+    else if (a.subTv == 1) guideTab(a);
+    else teletextTab(a);
+}
+
+// channel estimate, impulse response and per-carrier SNR on one screen
+static void channelDashboard(App& a) {
+    const float w = ImGui::GetContentRegionAvail().x, h = ImGui::GetContentRegionAvail().y;
+    ImGui::BeginChild("chA", ImVec2(w * 0.5f - 4, h));
+    channelTab(a);
+    ImGui::EndChild();
+    ImGui::SameLine();
+    ImGui::BeginChild("chB", ImVec2(0, h));
+    ImGui::BeginChild("chB1", ImVec2(0, h * 0.5f - 2));
+    impulseTab(a);
+    ImGui::EndChild();
+    ImGui::BeginChild("chB2", ImVec2(0, 0));
+    snrTab(a);
+    ImGui::EndChild();
+    ImGui::EndChild();
+}
+
+static void receiverTab(App& a) {
+    subNav("rx", a.subRx, {"Sync", "Signalling", "FEC", "Frame map", "Channel"});
+    switch (a.subRx) {
+    case 0: syncTab(a); break;
+    case 1: signallingTab(a); break;
+    case 2: fecTab(a); break;
+    case 3: frameMapTab(a); break;
+    default: channelDashboard(a); break;
+    }
+}
+
+static void streamTab(App& a) {
+    subNav("st", a.subStream, {"Outputs", "Transport stream"});
+    if (a.subStream == 0) outputsTab(a); else tsTab(a);
+}
+
+static void historyLogTab(App& a) {
+    const float h = ImGui::GetContentRegionAvail().y;
+    ImGui::BeginChild("hplots", ImVec2(0, h * 0.70f));
+    historyTab(a);
+    ImGui::EndChild();
+    ImGui::BeginChild("hlog", ImVec2(0, 0), ImGuiChildFlags_Borders);
+    logPanel(a);
+    ImGui::EndChild();
+}
+
+// the old per-view names (for --tab in screenshots) map onto the new tabs and sub-views
+static void routeTab(App& a, const std::string& name) {
+    struct R { const char* old; const char* tab; int tv, rx, st; };
+    static const R map[] = {
+        {"Player", "TV", 0, -1, -1}, {"Guide", "TV", 1, -1, -1}, {"Teletext", "TV", 2, -1, -1},
+        {"Overview", "Overview", -1, -1, -1}, {"Spectrum", "Overview", -1, -1, -1}, {"Waterfall", "Overview", -1, -1, -1}, {"Constellations", "Overview", -1, -1, -1},
+        {"Sync", "Receiver", -1, 0, -1}, {"Signalling", "Receiver", -1, 1, -1}, {"FEC", "Receiver", -1, 2, -1}, {"Frame map", "Receiver", -1, 3, -1},
+        {"Channel", "Receiver", -1, 4, -1}, {"Impulse response", "Receiver", -1, 4, -1}, {"SNR per carrier", "Receiver", -1, 4, -1},
+        {"Outputs", "Stream", -1, -1, 0}, {"TS", "Stream", -1, -1, 1}, {"Scan", "Scan", -1, -1, -1}, {"History", "History", -1, -1, -1}, {"Log", "History", -1, -1, -1}};
+    for (auto& r : map) if (name == r.old) {
+        gForceTab = r.tab;
+        if (r.tv >= 0) a.subTv = r.tv;
+        if (r.rx >= 0) a.subRx = r.rx;
+        if (r.st >= 0) a.subStream = r.st;
+        return;
+    }
+    gForceTab = name;
 }
 
 static void gainControl(App& a) {
@@ -1845,49 +2097,21 @@ static void drawUI(App& a, ImVec2 disp) {
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     toolbar(a);
+    if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) sourceOptions(a);
     ImGui::Separator();
     statusBar(a);
     ImGui::Separator();
 
-    float logH = 250, rightW = 330;
+    float logH = 250, rightW = 350;
     float mainH = ImGui::GetContentRegionAvail().y - logH - 6;
     ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16, mainH));
     if (ImGui::BeginTabBar("tabs")) {
-        if (tabItem("Player")) { playerTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Overview")) {
-            float h = ImGui::GetContentRegionAvail().y;
-            spectrumPlot(a, ImVec2(-1, h * 0.5f));
-            waterfallPlot(a, ImVec2(-1, -1));
-            ImGui::EndTabItem();
-        }
-        if (tabItem("Spectrum")) {
-            ImGui::Checkbox("peak hold", &a.peakHold);
-            ImGui::SameLine(); ImGui::SetNextItemWidth(160);
-            ImGui::DragFloatRange2("dB range", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
-            spectrumPlot(a, ImVec2(-1, -1));
-            ImGui::EndTabItem();
-        }
-        if (tabItem("Waterfall")) {
-            ImGui::SetNextItemWidth(220);
-            ImGui::DragFloatRange2("colour range (dB)", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
-            waterfallPlot(a, ImVec2(-1, -1));
-            ImGui::EndTabItem();
-        }
-        if (tabItem("Sync")) { syncTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Signalling")) { signallingTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Constellations")) { constellationsTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Channel")) { channelTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Impulse response")) { impulseTab(a); ImGui::EndTabItem(); }
-        if (tabItem("SNR per carrier")) { snrTab(a); ImGui::EndTabItem(); }
-        if (tabItem("FEC")) { fecTab(a); ImGui::EndTabItem(); }
-        if (tabItem("TS")) { tsTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Outputs")) { outputsTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Overview")) { overviewTab(a); ImGui::EndTabItem(); }
+        if (tabItem("TV")) { tvTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Receiver")) { receiverTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Stream")) { streamTab(a); ImGui::EndTabItem(); }
         if (tabItem("Scan")) { scanTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Guide")) { guideTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Teletext")) { teletextTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Log")) { logPanel(a); ImGui::EndTabItem(); }
-        if (tabItem("Frame map")) { frameMapTab(a); ImGui::EndTabItem(); }
-        if (tabItem("History")) { historyTab(a); ImGui::EndTabItem(); }
+        if (tabItem("History")) { historyLogTab(a); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     ImGui::EndChild();
@@ -1936,9 +2160,10 @@ int main(int argc, char** argv) {
     applyTheme();
 
     App app;
-    ImFont* ui = io.Fonts->AddFontFromFileTTF("/System/Library/Fonts/Helvetica.ttc", 14.0f);
+    ImFont* ui = io.Fonts->AddFontFromFileTTF("/System/Library/Fonts/Helvetica.ttc", 14.5f);
     app.mono = io.Fonts->AddFontFromFileTTF("/System/Library/Fonts/Menlo.ttc", 13.0f);
     if (!ui) ui = io.Fonts->AddFontDefault();
+    app.ui = ui;
     if (!app.mono) app.mono = ui;
 
     ImGui_ImplGlfw_InitForOther(window, true);
@@ -1966,7 +2191,7 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         if (std::string(argv[i]) == "--autostart") autostart = true;
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
-        if (std::string(argv[i]) == "--tab" && i + 1 < argc) gForceTab = argv[++i];
+        if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
         if (std::string(argv[i]) == "--synthgain") app.tune.synth.gainModel = true;
         if (std::string(argv[i]) == "--nodeint") app.video.deint = false;
         if (std::string(argv[i]) == "--fakeepg") app.fakeEpg = true;
