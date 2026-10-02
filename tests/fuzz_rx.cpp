@@ -1,5 +1,7 @@
 // Robustness: feed the receiver noise, NaN/Inf samples, bursts of corruption, dropped chunks, resets and re-configurations
 // and make sure it neither crashes nor hangs (build with -fsanitize=address,undefined to make this meaningful).
+#include "dect2/dvbt_gen.h"
+#include "dect2/dvbt_rx.h"
 #include "dect2/t2gen.h"
 #include "dect2/t2rx.h"
 #include <chrono>
@@ -99,6 +101,42 @@ int main() {
         std::vector<cf32> n(500000);
         for (auto& x : n) x = cf32(nd(rng), nd(rng)) * 0.1f;
         feedChunks(rx, n);
+    }
+    // 6. DVB-T receiver: noise, NaN/Inf, corrupted/dropped/repeated chunks, resets, mode changes
+    {
+        std::normal_distribution<float> nd2(0, 1);
+        for (int round = 0; round < 4; round++) {
+            dvbt::Params p; p.mode = round % 2; p.guard = round % 4; p.mod = round % 3; p.crHp = p.crLp = round % 5;
+            dvbt::Generator g(p);
+            DvbtReceiver rx; rx.configure(fs, 8);
+            size_t pk = 0; rx.setPacketCallback([&](const uint8_t*, size_t n, double) { pk += n; });
+            std::vector<cf32> sig, sym;
+            for (int i = 0; i < 50000; i++) sig.push_back(cf32(nd2(rng), nd2(rng)) * 0.05f);
+            for (int s2 = 0; s2 < 68 * (p.mode ? 4 : 10); s2++) { g.nextSymbol(sym); sig.insert(sig.end(), sym.begin(), sym.end()); }
+            for (int k = 0; k < 100; k++) { const size_t i = rng() % sig.size(); const float bad[3] = {NAN, INFINITY, -INFINITY}; sig[i] = cf32(bad[rng() % 3], bad[rng() % 3]); }
+            size_t pos = 0;
+            while (pos < sig.size()) {
+                size_t n = std::min<size_t>(sig.size() - pos, 5000 + rng() % 100000);
+                switch (rng() % 7) {
+                case 0: { std::vector<cf32> nz(n); for (auto& x : nz) x = cf32(nd2(rng), nd2(rng)); rx.feed(nz.data(), n); break; }
+                case 1: break;
+                case 2: rx.feed(sig.data() + pos, n); rx.feed(sig.data() + pos, n); break;
+                default: rx.feed(sig.data() + pos, n); break;
+                }
+                pos += n;
+                if (rng() % 25 == 0) rx.reset();
+                if (rng() % 40 == 0) rx.configure(fs, 8);
+            }
+            RxTelemetry t; rx.telemetry(t, 0);
+            printf("DVB-T fuzz round %d ok (%.1f s) state %d packets %zu\n", round, secs(), t.state, pk);
+        }
+        // pure noise and silence
+        DvbtReceiver rx; rx.configure(fs, 8);
+        std::vector<cf32> v(2'000'000);
+        for (auto& x : v) x = cf32(nd2(rng), nd2(rng)) * 0.3f;
+        for (size_t i = 0; i < v.size(); i += 1 << 15) rx.feed(v.data() + i, std::min<size_t>(1 << 15, v.size() - i));
+        std::fill(v.begin(), v.end(), cf32(0, 0));
+        for (size_t i = 0; i < v.size(); i += 1 << 15) rx.feed(v.data() + i, std::min<size_t>(1 << 15, v.size() - i));
     }
     printf("bandwidths ok (%.1f s)\nfuzz passed\n", secs());
     return fails ? 1 : 0;
