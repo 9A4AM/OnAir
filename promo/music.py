@@ -10,7 +10,7 @@ from scipy import signal
 SR = 44100
 OUT = os.environ.get('OUT', 'music_work'); os.makedirs(OUT, exist_ok=True)
 SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
-BAR = 2.0; NBARS = 41; DUR = NBARS * BAR           # 82 s
+BAR = 2.0; NBARS = 42; DUR = NBARS * BAR           # 84 s
 rnd = random.Random(11)
 
 CH = [  # chord per bar (cycle of 4): bass root, voicing for pad/piano
@@ -51,7 +51,7 @@ for b in range(NBARS):
     t0 = b * BAR; c = chord(b); T = c['notes']; ext = T + [n + 12 for n in T]
     # pads: whole bars, from the first bar (swell comes from the mix)
     for n in T: pad.add(t0, BAR * 1.02, n, 52 if b < 3 else 60, 0)
-    if b >= 2 and not (34 <= b <= 36):
+    if b >= 2 and not (35 <= b <= 37):
         for n in (T[0] - 12 if T[0] > 55 else T[0], T[2], T[3]): strings.add(t0, BAR * 1.02, n, 54 if b < 10 else 64, 0)
     # piano
     if b == 0:
@@ -61,53 +61,46 @@ for b in range(NBARS):
     else:
         pat = [0, 2, 4, 6, 4, 2, 5, 3] if b % 2 == 0 else [1, 3, 5, 7, 5, 3, 6, 4]
         vel = 60 if b < 6 else 68
-        if 34 <= b <= 36: vel = 58
+        if 35 <= b <= 37: vel = 58
         for k, i in enumerate(pat): piano.add(t0 + k * 0.25 + 0.0, 0.5, ext[i], vel + (8 if k % 4 == 0 else 0) + (4 if k % 2 == 0 else 0))
     # bass
-    if b >= 2 and not (34 <= b <= 35):
+    if b >= 2 and not (35 <= b <= 36):
         r = c['root']
-        if b < 6 or b == 36: bass.add(t0, BAR * .98, r, 80)
+        if b < 6 or b == 37: bass.add(t0, BAR * .98, r, 80)
         else:
             for k, (o, v) in enumerate([(0, 98), (0, 70), (12, 82), (0, 70), (0, 92), (0, 70), (12, 80), (0, 72)]): bass.add(t0 + k * 0.25, 0.23, r + o, v)
-    if b == 40: bass.add(t0, 4.0, c['root'], 80)
+    if b == 41: bass.add(t0, 4.0, c['root'], 80)
     # vibraphone melody
-    if 14 <= b <= 33 or 38 <= b <= 39:
-        for (bt, ln, n) in MOTIF[b % 4]: vibes.add(t0 + bt * .5, ln * .5 * 0.95, n + (12 if 25 <= b <= 28 and bt >= 2 else 0) - (12 if n > 84 else 0), 70)
+    if 12 <= b <= 34 or 38 <= b <= 39:
+        for (bt, ln, n) in MOTIF[b % 4]: vibes.add(t0 + bt * .5, ln * .5 * 0.95, n + (12 if 23 <= b <= 26 and bt >= 2 else 0) - (12 if n > 84 else 0), 70)
     # bells (glockenspiel) sparkle on the last beat of every second bar from the logo
-    if b >= 3 and b % 2 == 1 and not 34 <= b <= 36: bells.add(t0 + 1.5, 0.4, [84, 88, 91, 96][(b // 2) % 4], 48)
+    if b >= 3 and b % 2 == 1 and not 35 <= b <= 37: bells.add(t0 + 1.5, 0.4, [84, 88, 91, 96][(b // 2) % 4], 48)
     # drums
-    kickOn = b >= 1 and not (b == 35)
+    kickOn = b >= 1 and not (b == 36)
     if kickOn:
         for k in range(4):
-            tk = t0 + k * 0.5; v = 66 if b < 6 else (92 if b < 34 else 78)
-            if b == 36: v = 70
+            tk = t0 + k * 0.5; v = 66 if b < 6 else (92 if b < 35 else 78)
+            if b == 37: v = 70
             drums.add(tk, 0.1, 36, v, 0.002); kicks.append(tk)
-    if b >= 6 and not 34 <= b <= 35:
+    if b >= 6 and not 35 <= b <= 36:
         for k in (1, 3): drums.add(t0 + k * 0.5, 0.1, 39, 82, 0.003)
-    if b >= 3 and not 34 <= b <= 35:
+    if b >= 3 and not 35 <= b <= 36:
         for k in range(8):
             v = 34 + (16 if k % 2 == 1 else 0) + (6 if b >= 10 else 0)
             drums.add(t0 + k * 0.25 + 0.0, 0.05, 42, v, 0.003)
         if b >= 10 and b % 2 == 1: drums.add(t0 + 1.75, 0.2, 46, 54, 0.003)
     # crashes / fills
-    if b in (2, 6, 10, 14, 18, 22, 25, 29, 34, 37): drums.add(t0, 1.5, 49, 90, 0.002)
-    if b in (5, 9, 13, 17, 21, 24, 28, 33, 36):          # snare build in the last half bar
+    if b in (2, 4, 8, 12, 16, 20, 23, 27, 32, 38): drums.add(t0, 1.5, 49, 90, 0.002)
+    if b in (3, 7, 11, 15, 19, 22, 26, 31, 34, 37):          # snare build in the last half bar
         for k in range(8): drums.add(t0 + 1.0 + k * 0.125, 0.1, 38, 50 + k * 8, 0.002)
 # the very first bar: soft tom heartbeat so the first cut has weight
 for tt in (0.0,): drums.add(tt, .5, 41, 70, 0)
 
 # UI ticks: glockenspiel notes (A minor pentatonic) at animation cues
-CUES = [2.5, 2.75, 3.0, 3.25,                                # lock lamps (hook)
-        13.0, 13.5, 14.0, 14.5, 15.0, 15.5, 16.0, 16.5,          # radio cards
-        22.5, 23.0, 23.5, 25.0, 25.5, 26.0, 26.5,                # standards / scanner
-        29.5, 30.0, 30.5, 31.0,                                  # live chips
-        37.5, 38.5, 39.5, 40.0, 40.5, 41.0,                      # standards columns, then chips
-        45.0, 46.0, 47.0,                                        # "built to be exact" cards
-        51.5, 52.5, 53.5,                                        # data panels
-        59.5, 60.0, 60.5, 61.0, 61.5,                            # multipath echoes
-        63.0, 63.5, 64.0, 64.5, 65.0, 65.5, 66.0, 66.5,          # antenna directions
-        69.5, 70.0, 70.5,                                        # outputs
-        76.0, 76.5, 77.0, 77.5, 78.0]                            # outro chips + platforms
+import re
+_js=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'scenes.js')).read()
+_blk=re.search(r'const CUES=\[(.*?)\];',_js,re.S).group(1)
+CUES=[float(x) for x in re.findall(r'\d+\.\d+',re.sub(r'//[^\n]*','',_blk))]
 scale = [69, 72, 76, 79, 81, 84, 88]
 for i, t in enumerate(CUES): bells.add(t, 0.25, scale[i % 7] + 12 if i % 7 < 3 else scale[i % 7], 62, 0.0)
 
@@ -172,9 +165,8 @@ def impact(t, g=.9, f0=80):
     nz = lp(rng.standard_normal((n, 1)), 2500)[:, 0] * np.exp(-x * 4) * .5
     y = np.zeros_like(mix); i = int(t * SR); sig = np.stack([s_ + nz, s_ + nz], 1) * g; y[i:i + n] = sig[:len(y) - i]; return y
 fx = np.zeros_like(mix)
-for tb in (6, 12, 20, 28, 36, 44, 50, 58, 68, 74): fx += riser(tb, 1.4, .30)
-fx += riser(2, 1.8, .25) + riser(4, 1.8, .30)
-for ti, g in ((0.0, .20), (2.0, .28), (4.0, .32), (6.1, .28), (74.0, .38)): fx += impact(ti, g)
+for tb in (8, 16, 24, 32, 40, 46, 54, 64, 70, 76): fx += riser(tb, 1.4, .30)
+for ti, g in ((0.0, .16), (76.0, .36)): fx += impact(ti, g)
 mix += fx * .8 + rv(fx, IR_HALL) * .35
 # fades: gentle fade-in on the first second, long tail on the end
 mix *= np.minimum(1, T / 0.6)[:, None] ** 1.0
