@@ -107,6 +107,7 @@ struct T2Receiver::Impl {
     std::vector<cf32> eqP2;
     L1Pre l1pre;
     L1Post l1post;
+    std::atomic<int> plpSelect{-1};
     bool l1preOk = false, l1postOk = false;
     uint64_t l1preGood = 0, l1preBad = 0, l1postGood = 0, l1postBad = 0;
     int l1Iters = 0;
@@ -127,7 +128,7 @@ struct T2Receiver::Impl {
     std::vector<std::vector<cf32>> p2Sym, p2G2;
     uint64_t frameCounter = 0;
     bool plpValid = false;
-    int plpId = 0, plpBlocks = 0, plpSkipped = 0;
+    int plpId = 0, plpBlocks = 0, plpSkipped = 0, selectedPlpId = -1;
     PlpFec plpFec;
     uint64_t plpFrames = 0, blocksOk = 0, blocksBad = 0, headersOk = 0, plpBchCorr = 0;
     double plpMer = 0, plpPre = 0, plpIters = 0, plpMs = 0;
@@ -787,12 +788,16 @@ struct T2Receiver::Impl {
         const int cP2 = (int)p2Sym[0].size();
         const int nPre = 1840, nPost = l1pre.postSize;
         // pick the data PLP (first non-common PLP, else the first)
-        int sel = 0;
-        for (size_t i = 0; i < l1post.plps.size(); i++) if (l1post.plps[i].type != 0) { sel = (int)i; break; }
+        int sel = -1;
+        const int want = plpSelect.load();
+        if (want >= 0) for (size_t i = 0; i < l1post.plps.size(); i++) if (l1post.plps[i].id == want) { sel = (int)i; break; }
+        if (sel < 0) { sel = 0; for (size_t i = 0; i < l1post.plps.size(); i++) if (l1post.plps[i].type == 1) { sel = (int)i; break; } }
+        if (sel < 0 || sel >= (int)l1post.plps.size()) return;
         const L1PlpConf& pc = l1post.plps[sel];
         if (sel >= (int)l1post.dyn.size()) return;
         const L1PlpDyn& dy = l1post.dyn[sel];
-        if (pc.timeIlType != 0) { plpSkipped++; return; } // inter-frame time interleaving not implemented
+        selectedPlpId = pc.id;
+        if (pc.timeIlType != 0 || pc.type == 2 || l1post.subSlices > 1) { plpSkipped++; return; } // inter-frame interleaving and sub-slicing are not implemented
         PlpJob job;
         job.frameNo = ++frameCounter;
         job.t2Frame = l1post.frameIdx;
@@ -1178,7 +1183,8 @@ struct T2Receiver::Impl {
         if (l1preOk && frameSyms > 0 && k < frameSyms && k >= 0) {
             if ((int)frameCells.size() != frameSyms) frameCells.assign(frameSyms, {});
             if (k >= nP2) fftCells(s, frameCells[k], kMax);
-            else frameCells[k] = p2cells[k];
+            else if (k < (int)p2cells.size()) frameCells[k] = p2cells[k];
+            else frameCells[k].clear(); // runP2Stage() just reset the receiver (cleared the P2 cells)
             if (k == frameSyms - 1) runDataStage();
         }
         symbols++;
@@ -1290,6 +1296,27 @@ struct T2Receiver::Impl {
         t.eqCells = eqP2;
         t.l1preOk = l1preOk; t.l1postOk = l1postOk;
         t.l1pre = l1pre; t.l1post = l1post;
+        t.plpSelectedId = selectedPlpId;
+        t.plpList.clear(); t.unsupported.clear();
+        if (l1postOk) {
+            for (size_t i = 0; i < l1post.plps.size(); i++) {
+                const L1PlpConf& c = l1post.plps[i];
+                RxTelemetry::PlpInfo pi;
+                pi.id = c.id; pi.type = c.type; pi.payloadType = c.payloadType; pi.mod = c.mod; pi.cod = c.cod; pi.rotation = c.rotation;
+                pi.fecType = c.fecType; pi.tiType = c.timeIlType; pi.tiLength = c.timeIlLength;
+                pi.blocks = i < l1post.dyn.size() ? l1post.dyn[i].numBlocks : 0;
+                pi.supported = c.timeIlType == 0 && c.type != 2 && l1post.subSlices <= 1;
+                t.plpList.push_back(pi);
+                char b[160];
+                if (c.timeIlType != 0) { snprintf(b, sizeof b, "PLP %d uses inter-frame time interleaving (TIME_IL_TYPE 1), which is not implemented", c.id); t.unsupported.push_back(b); }
+                if (c.type == 2 || l1post.subSlices > 1) { snprintf(b, sizeof b, "PLP %d is sub-sliced (type 2 / %d sub-slices per frame), which is not implemented", c.id, l1post.subSlices); t.unsupported.push_back(b); }
+            }
+        }
+        if (l1preOk) {
+            if (l1pre.s1 == 1 || l1pre.s1 == 4) t.unsupported.insert(t.unsupported.begin(), "MISO transmission (two transmitters, Alamouti coding) is not implemented");
+            if (l1pre.type != 0) t.unsupported.push_back("the multiplex carries generic streams (GSE/GS), not an MPEG transport stream");
+        }
+        if (l1postOk && l1post.fefLength > 0) t.unsupported.push_back("the signal contains FEF (future extension) frames; they are skipped");
         t.l1preGood = l1preGood; t.l1preBad = l1preBad; t.l1postGood = l1postGood; t.l1postBad = l1postBad;
         t.l1Iters = l1Iters;
         t.dataValid = dataValid;
@@ -1336,6 +1363,7 @@ void T2Receiver::feed(const cf32* x, size_t n) {
     I.run();
 }
 
+void T2Receiver::selectPlp(int id) { p_->plpSelect = id; }
 void T2Receiver::setComputeMode(int m) { p_->plpDec.setMode(m); }
 void T2Receiver::setPlpCallback(std::function<void(const PlpResult&)> cb) { p_->plpCb = std::move(cb); }
 

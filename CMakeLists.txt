@@ -73,3 +73,9 @@ target_link_libraries(test_channel PRIVATE dect2core)
 
 add_executable(test_teletext tests/test_teletext.cpp)
 target_link_libraries(test_teletext PRIVATE dect2core)
+
+add_executable(test_modes tests/test_modes.cpp)
+target_link_libraries(test_modes PRIVATE dect2core)
+
+add_executable(fuzz_rx tests/fuzz_rx.cpp)
+target_link_libraries(fuzz_rx PRIVATE dect2core)

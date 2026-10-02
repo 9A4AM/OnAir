@@ -1,6 +1,7 @@
 // DVB-T2 receiver front-end (phase 1): P1 detection and S1/S2 decoding, guard-interval detection,
 // symbol synchronisation, CFO / timing tracking and raw OFDM cell extraction.
 #pragma once
+#include <string>
 #include "ring.h"
 #include "t2.h"
 #include "t2l1.h"
@@ -95,6 +96,10 @@ struct RxTelemetry {
     std::vector<uint8_t> plpConstErr;
     int plpHeaderUpl = 0, plpHeaderDfl = 0, plpHeaderSyncd = 0;
     int plpSkipped = 0;          // frames skipped (unsupported TI type, missing cells, ...)
+    struct PlpInfo { int id = 0, type = 0, payloadType = 0, mod = 0, cod = 0, rotation = 0, fecType = 0, tiType = 0, tiLength = 0, blocks = 0; bool supported = true; };
+    std::vector<PlpInfo> plpList;          // every PLP signalled in L1-post
+    int plpSelectedId = -1;                // PLP being decoded
+    std::vector<std::string> unsupported;  // reasons why (part of) this multiplex cannot be decoded, e.g. "MISO transmission"
     std::vector<std::vector<uint8_t>> blockMap; // per decoded frame (oldest first, last 90): 1 = FEC block decoded, 0 = failed
 };
 
@@ -111,6 +116,8 @@ public:
     // Called (on the receiver thread) for every decoded PLP frame, in order.
     // LDPC compute backend: 0 = CPU, 1 = GPU, 2 = auto (GPU once the CPU can't keep up)
     void setComputeMode(int m);
+    // Which PLP to decode: its PLP_ID, or -1 for automatic (the first data PLP).
+    void selectPlp(int id);
     void setPlpCallback(std::function<void(const PlpResult&)> cb);
 
 private:

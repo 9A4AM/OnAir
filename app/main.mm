@@ -226,6 +226,7 @@ struct App {
     bool popOut = false, videoOnly = false;
     int histWindow = 60;
     int ttxPage = 100;
+    int plpSel = -1; // -1 = automatic
     char favName[64] = "";
     MultipathDetector mpd;
     QualityMeter quality;
@@ -1318,6 +1319,7 @@ static void scanTab(App& a) {
             std::string sv;
             for (auto& x : r.services) { if (!sv.empty()) sv += ",  "; sv += x; }
             if (sv.empty() && !r.t2) sv = r.note;
+            if (!r.unsupported.empty()) sv = (sv.empty() ? "" : sv + "  ") + "! " + r.unsupported[0];
             ImGui::TextWrapped("%s", sv.c_str());
         }
         ImGui::EndTable();
@@ -1515,6 +1517,31 @@ static void playerTab(App& a) {
         }
         ImGui::SameLine(0, 18);
         qualityBar(a, std::max(200.f, ImGui::GetContentRegionAvail().x - 8));
+    }
+    {   // PLP selector for multi-PLP multiplexes, and a notice for anything the receiver cannot decode
+        const RxTelemetry& rx = a.rx;
+        if (rx.plpList.size() > 1) {
+            static const char* mods[] = {"QPSK", "16-QAM", "64-QAM", "256-QAM"};
+            static const char* rates[] = {"1/2", "3/5", "2/3", "3/4", "4/5", "5/6", "1/3", "2/5"};
+            auto lab = [&](const RxTelemetry::PlpInfo& p) {
+                char b[120];
+                snprintf(b, sizeof b, "PLP %d  type %d  %s %s%s%s", p.id, p.type, p.mod >= 0 && p.mod < 4 ? mods[p.mod] : "?", p.cod >= 0 && p.cod < 8 ? rates[p.cod] : "?", p.type == 0 ? "  (common)" : "", p.supported ? "" : "  (not supported)");
+                return std::string(b);
+            };
+            std::string cur = a.plpSel < 0 ? "automatic" : "PLP " + std::to_string(a.plpSel);
+            if (a.plpSel < 0 && rx.plpSelectedId >= 0) cur += " (PLP " + std::to_string(rx.plpSelectedId) + ")";
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled("PLP");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(260);
+            if (ImGui::BeginCombo("##plp", cur.c_str())) {
+                if (ImGui::Selectable("automatic (first data PLP)", a.plpSel < 0)) { a.plpSel = -1; a.engine.selectPlp(-1); }
+                for (auto& p : rx.plpList) if (ImGui::Selectable(lab(p).c_str(), a.plpSel == p.id)) { a.plpSel = p.id; a.engine.selectPlp(p.id); }
+                ImGui::EndCombo();
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("This multiplex carries several physical layer pipes. The receiver decodes one at a time.");
+        }
+        for (auto& u : rx.unsupported) { ImGui::TextColored(ImVec4(0.95f, 0.6f, 0.2f, 1), "! %s", u.c_str()); }
     }
     float h = ImGui::GetContentRegionAvail().y - 92;
     ImGui::BeginChild("vbox", ImVec2(-1, h), ImGuiChildFlags_Borders);

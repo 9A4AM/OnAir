@@ -38,6 +38,7 @@ public:
     uint64_t resetCount() const { return resets_.load(); }
     bool running() const { return running_; }
     void setComputeMode(int m) { rx_.setComputeMode(m); }
+    void selectPlp(int id) { rx_.selectPlp(id); }
     double sampleRate() const { return rate_; }
     uint64_t droppedSamples() const { return ring_.dropped(); }
 

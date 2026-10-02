@@ -3,3 +3,4 @@ build/
 *.cs8
 *.ts
 recordings/
+build-asan/

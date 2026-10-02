@@ -197,7 +197,8 @@ void Scanner::run() {
             uint64_t tot = t.blocksOk + t.blocksBad;
             r.fecGood = tot ? (double)t.blocksOk / tot : 0;
         }
-        r.note = "DVB-T2";
+        r.unsupported = t.unsupported;
+        r.note = r.unsupported.empty() ? "DVB-T2" : "DVB-T2, partly unsupported: " + r.unsupported[0];
         std::lock_guard<std::mutex> lk(mu_);
         results_.push_back(r);
         prog_.index = (int)i + 1;

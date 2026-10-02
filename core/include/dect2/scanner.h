@@ -34,6 +34,7 @@ struct ScanResult {
     int cellId = 0, networkId = 0;
     std::string networkName;
     std::vector<std::string> services;
+    std::vector<std::string> unsupported; // modes found that the receiver cannot decode (MISO, TI type 1, sub-slicing, ...)
     double muxKbps = 0;
     double fecGood = 0;            // fraction of FEC blocks decoded
 };
