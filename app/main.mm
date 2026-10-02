@@ -197,6 +197,14 @@ struct App {
     TuneSettings tune;
     FileOptions file;
     int bwIdx = 0;
+    int constView = 0;        // data constellation: 0 cells, 1 density, 2 clusters
+    struct ConstStats {       // statistics of the decoded cells, collected over the last few seconds
+        static constexpr int G = 96;
+        uint64_t seq = 0; int mod = -1, plp = -1;
+        std::vector<float> grid;                         // G x G density, row 0 at the top
+        struct Pt { double n = 0, ei = 0, eq = 0, e2 = 0; };
+        std::vector<Pt> pts;                             // per transmitted point: count, mean error, summed squared error
+    } cst;
     bool atscMode = false;    // standard family: false = DVB (T2/T), true = ATSC (receiver not built yet)
     bool bwAuto = true;       // the engine measures the channel width and switches by itself
     double freqMhz = 522.0;
@@ -788,8 +796,37 @@ static void ingestRx(App& a) {
     if (!a.engine.latestRx(t, a.rxSeq)) return;
     a.rxSeq = t.seq;
     if (t.p1Count > 0) a.rxSeen = true;
-    if (t.dataFrames < a.rx.dataFrames) { a.mpd.reset(); a.quality.reset(); } // receiver was restarted or retuned
+    if (t.dataFrames < a.rx.dataFrames) { a.mpd.reset(); a.quality.reset(); a.cst.mod = -1; } // receiver was restarted or retuned
     a.rx = std::move(t);
+    {   // statistics of the decoded constellation cells
+        App::ConstStats& c = a.cst;
+        const RxTelemetry& r = a.rx;
+        if (r.plpConst.empty() || r.plpConstTx.size() != r.plpConst.size()) { c.seq = 0; c.mod = -1; }
+        else if (r.plpConstSeq != c.seq) {
+            const int nPts = 1 << (2 * (r.plpFec.mod + 1));
+            if (c.mod != r.plpFec.mod || c.plp != r.plpId || (int)c.pts.size() != nPts || c.grid.empty()) {
+                c.mod = r.plpFec.mod; c.plp = r.plpId;
+                c.pts.assign(nPts, App::ConstStats::Pt());
+                c.grid.assign(App::ConstStats::G * App::ConstStats::G, 0.f);
+            }
+            c.seq = r.plpConstSeq;
+            for (float& v : c.grid) v *= 0.93f;
+            for (auto& p : c.pts) { p.n *= 0.97; p.ei *= 0.97; p.eq *= 0.97; p.e2 *= 0.97; }
+            const int G = App::ConstStats::G;
+            const float lim = 1.4f;
+            for (size_t i = 0; i < r.plpConst.size(); i++) {
+                const cf32 o = r.plpConst[i];
+                const int gx = (int)((o.real() + lim) / (2 * lim) * G), gy = (int)((lim - o.imag()) / (2 * lim) * G);
+                if (gx >= 0 && gx < G && gy >= 0 && gy < G) c.grid[gy * G + gx] += 1.f;
+                const unsigned l = r.plpConstTx[i];
+                if (l < c.pts.size()) {
+                    const cf32 e = o - qamPoint(c.mod, false, l);
+                    auto& p = c.pts[l];
+                    p.n += 1; p.ei += e.real(); p.eq += e.imag(); p.e2 += std::norm(e);
+                }
+            }
+        }
+    }
     a.mpd.update(a.rx);
     a.quality.update(a.rx);
     {
@@ -1361,10 +1398,99 @@ static void signallingTab(App& a) {
     ImGui::PopFont();
 }
 
+
+// Decoded-cell views of the data constellation: density heat map and per-point clusters
+static void constDensityPlot(App& a, ImVec2 sz) {
+    const App::ConstStats& c = a.cst;
+    if (ImPlot::BeginPlot("##c2d", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal | ImPlotFlags_NoMouseText)) {
+        ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -1.4, 1.4, ImPlotCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -1.4, 1.4, ImPlotCond_Always);
+        const int G = App::ConstStats::G;
+        if ((int)c.grid.size() == G * G) {
+            std::vector<float> v(c.grid.size());
+            float mx = 0;
+            for (size_t i = 0; i < v.size(); i++) { v[i] = std::sqrt(c.grid[i]); mx = std::max(mx, v[i]); }   // square root: faint areas stay visible
+            ImPlot::PushColormap(ImPlotColormap_Hot);
+            ImPlot::PlotHeatmap("density", v.data(), G, G, 0, std::max(1.f, mx * 0.85f), nullptr, ImPlotPoint(-1.4, -1.4), ImPlotPoint(1.4, 1.4));
+            ImPlot::PopColormap();
+        }
+        const int M = 2 * (a.rx.plpFec.mod + 1);
+        std::vector<cf32> grid;
+        for (unsigned l = 0; l < (1u << M); l++) grid.push_back(qamPoint(a.rx.plpFec.mod, false, l));
+        ImPlotSpec gs; gs.Marker = ImPlotMarker_Cross; gs.MarkerSize = 4.f; gs.Stride = sizeof(cf32);
+        gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(0.4f, 0.8f, 1, 0.9f);
+        const float* g = reinterpret_cast<const float*>(grid.data());
+        ImPlot::PlotScatter("ideal", g, g + 1, (int)grid.size(), gs);
+        ImPlot::EndPlot();
+    }
+}
+
+static void constClusterPlot(App& a, ImVec2 sz) {
+    const App::ConstStats& c = a.cst;
+    const int mod = a.rx.plpFec.mod;
+    static const float kDmin[4] = {1.4142f, 0.6325f, 0.3086f, 0.1534f};
+    const float half = 0.5f * kDmin[mod];
+    if (ImPlot::BeginPlot("##c2k", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal | ImPlotFlags_NoMouseText)) {
+        ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -1.4, 1.4, ImPlotCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -1.4, 1.4, ImPlotCond_Always);
+        int hover = -1;
+        double meanRatio = 0; int nr = 0;
+        for (auto& p : c.pts) if (p.n >= 4) { meanRatio += std::sqrt(p.e2 / (2 * p.n)); nr++; }
+        meanRatio = nr ? meanRatio / nr : 1;
+        const ImPlotPoint mp = ImPlot::GetPlotMousePos();
+        double bestD = 1e9;
+        for (size_t l = 0; l < c.pts.size(); l++) {
+            const App::ConstStats::Pt& p = c.pts[l];
+            const cf32 tx = qamPoint(mod, false, (unsigned)l);
+            const double d = std::hypot(mp.x - tx.real(), mp.y - tx.imag());
+            if (ImPlot::IsPlotHovered() && d < bestD && d < half * 1.2) { bestD = d; hover = (int)l; }
+            if (p.n < 4) continue;
+            const double sg = std::sqrt(p.e2 / (2 * p.n));        // standard deviation per axis
+            // colour relative to the average ring: green = tighter than average, red = looser (a coded signal is decoded at
+            // noise levels where all rings overlap, so an absolute scale would show everything red)
+            const float t = (float)std::min(1.0, std::max(0.0, 0.5 + (sg / meanRatio - 1.0) * 4.0));
+            const ImVec4 col(0.25f + 0.7f * t, 0.85f - 0.5f * t, 0.45f - 0.15f * t, 0.9f);
+            const double cx = tx.real() + p.ei / p.n, cy = tx.imag() + p.eq / p.n;
+            float xs[25], ys[25];
+            for (int k = 0; k < 25; k++) { const double th = k * 2 * M_PI / 24; xs[k] = (float)(cx + sg * std::cos(th)); ys[k] = (float)(cy + sg * std::sin(th)); }
+            ImPlotSpec ls; ls.LineColor = col; ls.LineWeight = (int)l == hover ? 2.5f : 1.3f;
+            ImPlot::PlotLine("##ring", xs, ys, 25, ls);
+            ImPlotSpec ds; ds.Marker = ImPlotMarker_Circle; ds.MarkerSize = 2.f; ds.MarkerFillColor = ds.MarkerLineColor = ds.LineColor = col;
+            const float px = (float)cx, py = (float)cy;
+            ImPlot::PlotScatter("##centre", &px, &py, 1, ds);
+        }
+        {
+            const int M = 2 * (mod + 1);
+            std::vector<cf32> grid;
+            for (unsigned l = 0; l < (1u << M); l++) grid.push_back(qamPoint(mod, false, l));
+            ImPlotSpec gs; gs.Marker = ImPlotMarker_Cross; gs.MarkerSize = 4.f; gs.Stride = sizeof(cf32);
+            gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(1, 1, 1, 0.8f);
+            const float* g = reinterpret_cast<const float*>(grid.data());
+            ImPlot::PlotScatter("ideal", g, g + 1, (int)grid.size(), gs);
+        }
+        if (hover >= 0 && c.pts[hover].n >= 4) {
+            const App::ConstStats::Pt& p = c.pts[hover];
+            const int M = 2 * (mod + 1);
+            char bits[16];
+            for (int b = 0; b < M; b++) bits[b] = ((hover >> (M - 1 - b)) & 1) ? '1' : '0';
+            bits[M] = 0;
+            ImGui::BeginTooltip();
+            ImGui::Text("point %s", bits);
+            ImGui::Text("sigma %.3f per axis (%.0f%% of the half-distance to a neighbour)", std::sqrt(p.e2 / (2 * p.n)), 100 * std::sqrt(p.e2 / (2 * p.n)) / half);
+            ImGui::Text("offset %+.3f %+.3f", p.ei / p.n, p.eq / p.n);
+            ImGui::Text("EVM %.1f dB", 10 * std::log10(std::max(1e-9, p.e2 / p.n)));
+            ImGui::EndTooltip();
+        }
+        ImPlot::EndPlot();
+    }
+}
+
 static void constellationsTab(App& a) {
     const RxTelemetry& rx = a.rx;
     const float availW = ImGui::GetContentRegionAvail().x, availH = ImGui::GetContentRegionAvail().y;
-    const float side = std::max(90.f, std::min(availH - 26.f, availW / 4.f - 16.f));
+    const float side = std::max(90.f, std::min(availH - 26.f - ImGui::GetFrameHeight(), availW / 4.f - 16.f));
     const float gap = std::max(6.f, (availW - 4 * side) / 5.f);
     const ImVec2 sz(side, side);
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + gap);
@@ -1381,14 +1507,17 @@ static void constellationsTab(App& a) {
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    if (!rx.plpConst.empty()) caption("PLP %d, derotated  MER %.1f dB (%zu cells)", rx.plpId, rx.plpMerDb, rx.plpConst.size());
+    if (!rx.plpConst.empty()) caption("PLP %d, decoded cells  MER %.1f dB", rx.plpId, rx.plpMerDb);
     else if (rx.standard == 1) caption("Data cells, equalised (%zu cells)", rx.eqData.size());
     else caption("Data cells, equalised (frame %llu)", (unsigned long long)rx.dataFrames);
     if (!rx.plpConst.empty()) {
         // cells of correctly decoded FEC blocks; points beyond the decision distance from the transmitted point are red
         std::vector<cf32> good, bad;
         for (size_t i = 0; i < rx.plpConst.size(); i++) (rx.plpConstErr.size() > i && rx.plpConstErr[i] ? bad : good).push_back(rx.plpConst[i]);
-        if (ImPlot::BeginPlot("##c2", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
+        const bool haveStats = a.cst.mod == rx.plpFec.mod && !a.cst.pts.empty();
+        if (a.constView == 1 && haveStats) constDensityPlot(a, sz);
+        else if (a.constView == 2 && haveStats) constClusterPlot(a, sz);
+        else if (ImPlot::BeginPlot("##c2", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
             ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
             ImPlot::SetupAxisLimits(ImAxis_X1, -1.4, 1.4, ImPlotCond_Always);
             ImPlot::SetupAxisLimits(ImAxis_Y1, -1.4, 1.4, ImPlotCond_Always);
@@ -1412,6 +1541,14 @@ static void constellationsTab(App& a) {
             }
             ImPlot::EndPlot();
         }
+        ImGui::PushID("cview");
+        if (pillButton("cells", a.constView == 0, 8)) a.constView = 0;
+        ImGui::SameLine(0, 4);
+        if (pillButton("density", a.constView == 1, 8)) a.constView = 1;
+        ImGui::SameLine(0, 4);
+        if (pillButton("clusters", a.constView == 2, 8)) a.constView = 2;
+        ImGui::PopID();
+        if (a.constView == 2 && ImGui::IsItemHovered()) ImGui::SetTooltip("One ring per transmitted point: centre = average received position, radius = 1 sigma of the error.\nColour is relative to the average ring: green = tighter, red = looser.\nAt this MER the rings overlap their neighbours; the LDPC code corrects the resulting errors.");
     } else if (rx.standard == 1 && rx.dvbt.tpsOk) {
         if (ImPlot::BeginPlot("##c2", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
             ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
@@ -2588,6 +2725,7 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--autostart") autostart = true;
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
+        if (std::string(argv[i]) == "--constview" && i + 1 < argc) app.constView = atoi(argv[++i]);
         if (std::string(argv[i]) == "--synthgain") app.tune.synth.gainModel = true;
         if (std::string(argv[i]) == "--dvbt") { app.tune.synth.dvbt = true; app.tune.synth.snrDb = 28; }
         if (std::string(argv[i]) == "--t2only") app.stdMode = 1;

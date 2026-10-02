@@ -39,11 +39,13 @@ Goal: normal installers for macOS arm64, macOS Intel, Windows x64, Linux x64/arm
 
 ## B. Constellation polish (brief 11.2)
 
-- [ ] Decision-directed view: after a block decodes, re-encode it to get the exact transmitted cells and plot received cells against the true points, so clusters are tight and colour-coded by error.
-- [ ] Error-vector statistics per point (EVM per constellation point), shown on hover.
-- [ ] Persistence / averaging control and a density colour map; only symbols from correctly decoded blocks (option).
+- [x] Decision-directed data: the decoder now returns the transmitted point label for every displayed cell of a correctly decoded block.
+- [x] Density view (heat map with persistence): shows the 64 / 256 clusters as blobs on the ideal grid.
+- [x] Cluster view: one ring per transmitted point (centre = average received position, radius = 1 sigma), coloured relative to the average; tooltip with point bits, sigma, offset and EVM.
 - [ ] Per-carrier and per-symbol MER plots from the same data (shows which carriers or symbols are bad).
-- [ ] Update screenshots in the README.
+- [ ] Optional cleaner display: 2x2 / 4x4 zoom on one quadrant of the constellation.
+- [ ] DVB-T: the same views for its data cells (needs decoded-block labels from the DVB-T chain).
+- [ ] Update the screenshots in the README.
 
 ## C. Decoder completeness
 

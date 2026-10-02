@@ -54,6 +54,7 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
         BbFrame frame;
         std::vector<cf32> pts;
         std::vector<uint8_t> perr;
+        std::vector<uint16_t> ptx;
     };
     std::vector<BlockOut> outs(nb);
     // GPU path: demap every block, decode all LDPC blocks in one batch on the GPU, then finish (BCH etc.) on the CPU
@@ -149,6 +150,7 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
                 cf32 de = obs - tx;
                 const float h = 0.5f * kDmin[job.fec.mod];
                 o.pts.push_back(obs);
+                o.ptx.push_back(lab[k]);
                 o.perr.push_back(std::fabs(de.real()) > h || std::fabs(de.imag()) > h);
             }
         }
@@ -167,6 +169,7 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
             if (o.frame.header.crcOk) res.headerOk++;
             res.constellation.insert(res.constellation.end(), o.pts.begin(), o.pts.end());
             res.constErr.insert(res.constErr.end(), o.perr.begin(), o.perr.end());
+            res.constTx.insert(res.constTx.end(), o.ptx.begin(), o.ptx.end());
         } else res.bchFailed++;
         res.frames.push_back(std::move(o.frame));
     }
@@ -176,9 +179,9 @@ PlpResult PlpDecoder::decodeNow(const PlpJob& job, int threads, bool useGpu) {
     // thin the constellation sample
     if (res.constellation.size() > 6000) {
         size_t st = res.constellation.size() / 6000 + 1;
-        std::vector<cf32> c2; std::vector<uint8_t> e2;
-        for (size_t i = 0; i < res.constellation.size(); i += st) { c2.push_back(res.constellation[i]); e2.push_back(res.constErr[i]); }
-        res.constellation = std::move(c2); res.constErr = std::move(e2);
+        std::vector<cf32> c2; std::vector<uint8_t> e2; std::vector<uint16_t> t2;
+        for (size_t i = 0; i < res.constellation.size(); i += st) { c2.push_back(res.constellation[i]); e2.push_back(res.constErr[i]); t2.push_back(res.constTx[i]); }
+        res.constellation = std::move(c2); res.constErr = std::move(e2); res.constTx = std::move(t2);
     }
     res.decodeMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
     return res;

@@ -47,6 +47,7 @@ struct PlpResult {
     std::vector<BbFrame> frames;
     std::vector<cf32> constellation; // equalised cells of decoded blocks (subsampled)
     std::vector<uint8_t> constErr;   // 1 where the nearest ideal point is not the transmitted one
+    std::vector<uint16_t> constTx;   // label of the transmitted (unrotated) point for each display cell
 };
 
 class PlpDecoder {

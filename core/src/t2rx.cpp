@@ -136,6 +136,8 @@ struct T2Receiver::Impl {
     std::deque<std::vector<uint8_t>> blockMaps;
     std::vector<cf32> plpConst;
     std::vector<uint8_t> plpConstErr;
+    std::vector<uint16_t> plpConstTx;
+    uint64_t plpConstSeq = 0;
     int hUpl = 0, hDfl = 0, hSyncd = 0;
 
     // ---- outputs
@@ -844,7 +846,7 @@ struct T2Receiver::Impl {
                 blockMaps.push_back(std::move(bm));
                 if (blockMaps.size() > 90) blockMaps.pop_front();
             }
-            if (!r.constellation.empty()) { plpConst = r.constellation; plpConstErr = r.constErr; }
+            if (!r.constellation.empty()) { plpConst = r.constellation; plpConstErr = r.constErr; plpConstTx = r.constTx; plpConstSeq++; }
             for (auto& f : r.frames) if (f.header.crcOk) { hUpl = f.header.upl; hDfl = f.header.dfl; hSyncd = f.header.syncd; break; }
             if (plpCb) plpCb(r);
         }
@@ -1330,7 +1332,7 @@ struct T2Receiver::Impl {
         t.plpFrames = plpFrames; t.plpFramesDropped = plpDec.dropped();
         t.blocksOk = blocksOk; t.blocksBad = blocksBad; t.headersOk = headersOk; t.plpBchCorrected = plpBchCorr;
         t.plpMerDb = plpMer; t.plpPreBer = plpPre; t.plpIters = plpIters; t.plpDecodeMs = plpMs; t.plpOnGpu = plpGpu; t.gpuAvailable = plpDec.gpuAvailable(); t.computeMode = plpDec.mode();
-        t.plpConst = plpConst; t.plpConstErr = plpConstErr;
+        t.plpConst = plpConst; t.plpConstErr = plpConstErr; t.plpConstTx = plpConstTx; t.plpConstSeq = plpConstSeq;
         t.blockMap.assign(blockMaps.begin(), blockMaps.end());
         t.plpHeaderUpl = hUpl; t.plpHeaderDfl = hDfl; t.plpHeaderSyncd = hSyncd; t.plpSkipped = plpSkipped;
         if (dataValid) t.snrStep = dataDx;

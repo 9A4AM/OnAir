@@ -102,6 +102,8 @@ struct RxTelemetry {
     uint64_t plpBchCorrected = 0;
     std::vector<cf32> plpConst;
     std::vector<uint8_t> plpConstErr;
+    std::vector<uint16_t> plpConstTx;   // transmitted point label for each plpConst cell
+    uint64_t plpConstSeq = 0;           // increases whenever plpConst is replaced
     int plpHeaderUpl = 0, plpHeaderDfl = 0, plpHeaderSyncd = 0;
     int plpSkipped = 0;          // frames skipped (unsupported TI type, missing cells, ...)
     struct PlpInfo { int id = 0, type = 0, payloadType = 0, mod = 0, cod = 0, rotation = 0, fecType = 0, tiType = 0, tiLength = 0, blocks = 0; bool supported = true; };
