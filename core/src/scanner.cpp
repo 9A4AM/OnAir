@@ -1,4 +1,5 @@
 #include "dect2/scanner.h"
+#include "dect2/dvbt.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -126,20 +127,22 @@ void Scanner::run() {
         }
 
         // ---- try to lock DVB-T2
-        setPhase("looking for DVB-T2", (int)i, f);
+        setPhase("looking for DVB-T2 / DVB-T", (int)i, f);
         RxTelemetry t;
         uint64_t rxSeq = 0;
         auto tl = Clock::now();
-        bool l1 = false;
+        bool l1 = false, tlock = false;
         while (std::chrono::duration<double>(Clock::now() - tl).count() < cfg_.lockTimeoutSec && !cancel_) {
             if (e.latestRx(t, rxSeq)) {
                 rxSeq = t.seq;
-                if (t.l1preOk && t.chValid) { l1 = true; if ((t.l1postOk && t.dataValid) || std::chrono::duration<double>(Clock::now() - tl).count() > 3.0) break; }
+                if (t.standard == 1) {
+                    if (t.dvbt.tpsOk) { tlock = true; if (t.dvbt.fecSync && t.dataValid) break; if (std::chrono::duration<double>(Clock::now() - tl).count() > cfg_.lockTimeoutSec - 0.8) break; }
+                } else if (t.l1preOk && t.chValid) { l1 = true; if ((t.l1postOk && t.dataValid) || std::chrono::duration<double>(Clock::now() - tl).count() > 3.0) break; }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(25));
         }
         if (cancel_) break;
-        if (!l1) {
+        if (!l1 && !tlock) {
             r.note = t.p1Count > 0 ? "T2 preamble found, L1 not decodable (weak?)" : "signal present, no DVB-T2";
             if (t.p1Count > 0 && t.p1.valid) {
                 const FftMode* fm = fftModeFromS2(t.p1.s2field1);
@@ -152,7 +155,17 @@ void Scanner::run() {
         }
         r.t2 = true;
         r.l1post = t.l1postOk;
-        {
+        if (tlock) {
+            r.standard = "DVB-T";
+            char b[160];
+            snprintf(b, sizeof b, "DVB-T %s GI %s", t.fftN == 8192 ? "8K" : "2K", dvbt::guardName(t.giIdx));
+            r.mode = b;
+            snprintf(b, sizeof b, "%s %s%s", dvbt::modName(t.dvbt.mod), dvbt::rateName(t.dvbt.crHp), t.dvbt.hier ? " (hierarchical)" : "");
+            r.plpInfo = b;
+            r.cellId = t.dvbt.cellId;
+            r.snrDb = t.dataSnrDb;
+            if (t.dvbt.hier) t.unsupported.push_back("hierarchical modulation: only the high-priority stream is decoded");
+        } else {
             const L1Pre& p = t.l1pre;
             const FftMode* fm = fftModeFromS2(p.s2 >> 1);
             char b[160];
@@ -160,9 +173,11 @@ void Scanner::run() {
             r.mode = b;
             r.cellId = p.cellId; r.networkId = p.networkId;
         }
+        if (!tlock) {
         r.snrDb = t.dataValid ? t.dataSnrDb : t.p2SnrDb;
         if (t.plpMerDb > 0) r.snrDb = (float)t.plpMerDb;
-        if (t.l1postOk) {
+        }
+        if (!tlock && t.l1postOk) {
             static const char* modN[] = {"QPSK", "16-QAM", "64-QAM", "256-QAM"};
             std::string s;
             for (size_t k = 0; k < t.l1post.plps.size(); k++) {
@@ -193,12 +208,13 @@ void Scanner::run() {
             for (auto& sv : ts.services) r.services.push_back((sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name) + " [" + sv.typeName() + "]");
             r.muxKbps = ts.muxKbps;
             e.latestRx(t, 0);
-            if (t.plpValid && t.plpMerDb > 0) r.snrDb = (float)t.plpMerDb; else if (t.dataValid) r.snrDb = t.dataSnrDb;
+            if (t.standard == 1) r.snrDb = t.dataSnrDb;
+            else if (t.plpValid && t.plpMerDb > 0) r.snrDb = (float)t.plpMerDb; else if (t.dataValid) r.snrDb = t.dataSnrDb;
             uint64_t tot = t.blocksOk + t.blocksBad;
             r.fecGood = tot ? (double)t.blocksOk / tot : 0;
         }
         r.unsupported = t.unsupported;
-        r.note = r.unsupported.empty() ? "DVB-T2" : "DVB-T2, partly unsupported: " + r.unsupported[0];
+        r.note = r.unsupported.empty() ? r.standard : r.standard + ", partly unsupported: " + r.unsupported[0];
         std::lock_guard<std::mutex> lk(mu_);
         results_.push_back(r);
         prog_.index = (int)i + 1;

@@ -423,10 +423,78 @@ struct Trellis {
 };
 const Trellis& trellis() { static Trellis t; return t; }
 
-// decode soft[2*a .. 2*b) (steps a..b-1); returns the bits of all steps; start metrics are equal (unknown start state)
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+// NEON path. States 2j and 2j+1 feed new states j and j+32; both branch outputs flip when either the new bit or the oldest
+// state bit flips (both generator polynomials have those taps), so one metric M_j = +/-sx +/- sy per butterfly is enough:
+//   new[j]    = max(old[2j] + M, old[2j+1] - M)      new[j+32] = max(old[2j] - M, old[2j+1] + M)
+struct NeonTables {
+    int16_t sigX[32], sigY[32];
+    NeonTables() {
+        for (int j = 0; j < 32; j++) {
+            const unsigned reg = (unsigned)(2 * j);
+            sigX[j] = __builtin_parity(reg & 0x79) ? -1 : 1;
+            sigY[j] = __builtin_parity(reg & 0x5B) ? -1 : 1;
+        }
+    }
+};
+const NeonTables& neonTables() { static NeonTables t; return t; }
+
+inline uint8_t maskBits(uint16x8_t m) {
+    static const uint16_t w[8] = {1, 2, 4, 8, 16, 32, 64, 128};
+    return (uint8_t)vaddvq_u16(vandq_u16(m, vld1q_u16(w)));
+}
+
+void viterbiRange(const int8_t* soft, size_t steps, std::vector<uint8_t>& bits, long* metricOut) {
+    const NeonTables& T = neonTables();
+    std::vector<uint64_t> dec(steps);
+    long off = 0; // total subtracted by the renormalisation: the absolute path metric is off + pm
+    alignas(16) int16_t pm[64] = {}, nm[64];
+    int16x8_t sigX[4], sigY[4];
+    for (int q = 0; q < 4; q++) { sigX[q] = vld1q_s16(T.sigX + 8 * q); sigY[q] = vld1q_s16(T.sigY + 8 * q); }
+    for (size_t t = 0; t < steps; t++) {
+        const int16_t a = soft[2 * t], b = soft[2 * t + 1];
+        int16x8x2_t o[4];
+        for (int q = 0; q < 4; q++) o[q] = vld2q_s16(pm + 16 * q);
+        uint8_t lo[4], hi[4];
+        for (int q = 0; q < 4; q++) {
+            const int16x8_t M = vaddq_s16(vmulq_n_s16(sigX[q], a), vmulq_n_s16(sigY[q], b));
+            const int16x8_t A = o[q].val[0], B = o[q].val[1];
+            const int16x8_t p0 = vqaddq_s16(A, M), p1 = vqsubq_s16(B, M);
+            const int16x8_t r0 = vqsubq_s16(A, M), r1 = vqaddq_s16(B, M);
+            vst1q_s16(nm + 8 * q, vmaxq_s16(p0, p1));
+            vst1q_s16(nm + 32 + 8 * q, vmaxq_s16(r0, r1));
+            lo[q] = maskBits(vcgtq_s16(p1, p0));
+            hi[q] = maskBits(vcgtq_s16(r1, r0));
+        }
+        uint64_t d = 0;
+        for (int q = 0; q < 4; q++) { d |= (uint64_t)lo[q] << (8 * q); d |= (uint64_t)hi[q] << (32 + 8 * q); }
+        dec[t] = d;
+        // renormalise every 4 steps so int16 never saturates
+        if ((t & 3) == 3) {
+            int16x8_t mx = vld1q_s16(nm);
+            for (int q = 1; q < 8; q++) mx = vmaxq_s16(mx, vld1q_s16(nm + 8 * q));
+            off += vmaxvq_s16(mx);
+            const int16x8_t m = vdupq_n_s16(vmaxvq_s16(mx));
+            for (int q = 0; q < 8; q++) vst1q_s16(pm + 8 * q, vsubq_s16(vld1q_s16(nm + 8 * q), m));
+        } else memcpy(pm, nm, sizeof pm);
+    }
+    int state = 0;
+    int bm = pm[0];
+    for (int s = 1; s < 64; s++) if (pm[s] > bm) { bm = pm[s]; state = s; }
+    bits.assign(steps, 0);
+    for (size_t t = steps; t-- > 0;) {
+        bits[t] = (uint8_t)(state >> 5);
+        const int b = (int)((dec[t] >> state) & 1);
+        state = ((state & 31) << 1) | b;
+    }
+    if (metricOut) *metricOut = off + bm;
+}
+#else
 void viterbiRange(const int8_t* soft, size_t steps, std::vector<uint8_t>& bits, long* metricOut) {
     const Trellis& T = trellis();
     std::vector<uint64_t> dec(steps);
+    long off = 0;
     int32_t pm[64] = {}, nm[64];
     for (size_t t = 0; t < steps; t++) {
         const int sx = soft[2 * t], sy = soft[2 * t + 1];
@@ -439,6 +507,7 @@ void viterbiRange(const int8_t* soft, size_t steps, std::vector<uint8_t>& bits, 
         }
         int best = nm[0];
         for (int s = 1; s < 64; s++) best = std::max(best, nm[s]);
+        off += best;
         for (int s = 0; s < 64; s++) pm[s] = nm[s] - best;
         dec[t] = d;
     }
@@ -450,8 +519,9 @@ void viterbiRange(const int8_t* soft, size_t steps, std::vector<uint8_t>& bits, 
         const int b = (int)((dec[t] >> state) & 1);
         state = ((state & 31) << 1) | b;
     }
-    if (metricOut) *metricOut = bm;
+    if (metricOut) *metricOut = off + bm;
 }
+#endif
 } // namespace
 
 void Viterbi::decode(const std::vector<int8_t>& soft, std::vector<uint8_t>& out, int threads, long* metric) {

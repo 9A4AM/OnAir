@@ -25,6 +25,7 @@ static void runAgc(const char* name, GainSetting start, double secs) {
     DeviceInfo dev;
     TuneSettings t = synthTune(start);
     FileOptions fo;
+    e.setStandard(1); // these tests are about DVB-T2 lock
     if (!e.start(dev, t, fo)) { printf("FAIL: cannot start\n"); fails++; return; }
     AutoGain agc;
     GainSetting g = start;
@@ -72,6 +73,7 @@ int main() {
         DeviceInfo dev;
         TuneSettings t = synthTune({32, 20, true});
         FileOptions fo;
+        e.setStandard(1);
         e.start(dev, t, fo);
         GainSweep sw;
         GainSetting g{32, 20, true};

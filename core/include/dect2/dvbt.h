@@ -35,6 +35,12 @@ inline int carriersK(int mode) { return mode == k8K ? 6817 : 1705; }           /
 inline int dataCarriers(int mode) { return mode == k8K ? 6048 : 1512; }
 inline int guardSamples(int mode, int guard) { return fftN(mode) >> (5 - guard); } // N/32, N/16, N/8, N/4
 inline int symbolsPerFrame() { return 68; }
+// Useful (MPEG transport stream) bit rate of a configuration, for an OFDM sampling rate fs (Hz)
+inline double netBitrate(const Params& p, double fs) {
+    static const double rate[5] = {1.0 / 2, 2.0 / 3, 3.0 / 4, 5.0 / 6, 7.0 / 8};
+    const double symSec = (double)(fftN(p.mode) + guardSamples(p.mode, p.guard)) / fs;
+    return dataCarriers(p.mode) * (2.0 * (p.mod + 1)) * rate[p.crHp] * (188.0 / 204.0) / symSec;
+}
 inline int bitsPerCell(int mod) { return 2 * (mod + 1); }
 inline int alphaOf(int hier) { return hier == 2 ? 2 : hier == 3 ? 4 : 1; }
 const char* guardName(int g);
@@ -76,6 +82,7 @@ private:
 class InnerEncoder {                                                          // convolutional code (171,133) with puncturing
 public:
     explicit InnerEncoder(int rate) : rate_(rate) {}
+    void setPhase(size_t step) { step_ = step; }   // start inside the puncturing pattern (tests the receiver's phase search)
     // `bits` are info bits (one per byte); returns punctured coded bits (one per byte)
     void encode(const std::vector<uint8_t>& bits, std::vector<uint8_t>& coded);
 private:

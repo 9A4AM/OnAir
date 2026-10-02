@@ -1,4 +1,5 @@
 #include "dect2/engine.h"
+#include "dect2/dvbt.h"
 #include <chrono>
 #include <pthread.h>
 #include <pthread/qos.h>
@@ -47,6 +48,10 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rate_ = src_->sampleRate();
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
     rx_.configure(rate_, tune.bandwidthMhz);
+    rxT_.configure(rate_, tune.bandwidthMhz);
+    rxT_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });
+    activeStd_ = stdMode_.load() == 2 ? 1 : 0;
+    autoMark_ = 0; lastLockSec_ = 0; logTMode_ = logTGi_ = logTTps_ = -1; logTFec_ = false;
     {
         std::lock_guard<std::mutex> lk(tsMu_);
         demux_.reset();
@@ -108,6 +113,8 @@ bool Engine::retuneReset(const TuneSettings& tune) {
 void Engine::applyReset() {
     ring_.clear();
     rx_.reset();
+    rxT_.reset();
+    autoMark_ = nSamp_ / std::max(1.0, rate_.load()); lastLockSec_ = autoMark_;
     analyzer_.reset();
     {
         std::lock_guard<std::mutex> lk(tsMu_);
@@ -128,6 +135,66 @@ void Engine::applyReset() {
     }
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
     resets_++;
+}
+
+void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
+    std::lock_guard<std::mutex> lk(tsMu_);
+    for (size_t i = 0; i < n; i++) {
+        const uint8_t* q = pk + i * 188;
+        demux_.feed(q);
+        ttx_.feedTs(q);
+    }
+    demux_.advance(secs);
+    tsSnap_ = demux_.snapshot();
+    outputs_.packets(pk, n, &tsSnap_);
+    if (player_.selected() >= 0) player_.push(pk, n, tsSnap_);
+    outputs_.burstDone(secs);
+}
+
+// Auto mode alternates between the two receivers until one locks, then stays with it. Only the active receiver sees samples,
+// so idle searching costs one receiver, not two.
+void Engine::feedRx(const cf32* x, size_t n) {
+    if (activeStd_.load() == 1) rxT_.feed(x, n); else rx_.feed(x, n);
+}
+
+void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
+    const double now = nSamp_ / std::max(1.0, rate_.load());
+    if (stdReq_.exchange(false)) {
+        const int m = stdMode_.load();
+        if (m == 1 && activeStd_ != 0) { activeStd_ = 0; rx_.reset(); }
+        else if (m == 2 && activeStd_ != 1) { activeStd_ = 1; rxT_.reset(); }
+        autoMark_ = lastLockSec_ = now;
+        return;
+    }
+    if (stdMode_.load() != 0) return;
+    const bool locked = activeStd_ == 0 ? t.state == 2 : tLocked;
+    if (locked) { lastLockSec_ = now; autoMark_ = now; return; }
+    const double slice = activeStd_ == 0 ? 1.6 : 1.3;
+    if (now - autoMark_ < slice) return;
+    if (activeStd_ == 0) { activeStd_ = 1; rxT_.reset(); log("auto: trying DVB-T"); }
+    else { activeStd_ = 0; rx_.reset(); log("auto: trying DVB-T2"); }
+    autoMark_ = now;
+}
+
+void Engine::logDvbtEvents(const RxTelemetry& t) {
+    char b[200];
+    if (t.fftN && (t.fftN != logTMode_ || t.giIdx != logTGi_)) {
+        snprintf(b, sizeof b, "DVB-T found: %s, guard interval %s, CFO %+.1f Hz", t.fftN == 8192 ? "8K" : "2K", dvbt::guardName(t.giIdx), t.cfoHz);
+        log(b);
+        logTMode_ = t.fftN; logTGi_ = t.giIdx;
+    }
+    const int tps = t.dvbt.tpsOk ? 1 : 0;
+    if (tps != logTTps_) {
+        if (tps) {
+            snprintf(b, sizeof b, "TPS decoded: %s, code rate %s, cell id %d", dvbt::modName(t.dvbt.mod), dvbt::rateName(t.dvbt.crHp), t.dvbt.cellId);
+            log(b);
+        } else if (logTTps_ == 1) log("TPS lost");
+        logTTps_ = tps;
+    }
+    if (t.dvbt.fecSync != logTFec_) {
+        log(t.dvbt.fecSync ? "transport stream locked (Viterbi + Reed-Solomon)" : "transport stream sync lost");
+        logTFec_ = t.dvbt.fecSync;
+    }
 }
 
 void Engine::onPlp(const PlpResult& r) {
@@ -212,16 +279,18 @@ void Engine::analysisLoop() {
     while (!stopReq_) {
         if (resetReq_.exchange(false)) { applyReset(); rxSeq = 0; }
         size_t n;
-        while ((n = ring_.read(buf.data(), buf.size())) > 0) { auto a0 = std::chrono::steady_clock::now(); analyzer_.feed(buf.data(), n); auto a1 = std::chrono::steady_clock::now(); rx_.feed(buf.data(), n); auto a2 = std::chrono::steady_clock::now(); tSpec_ += std::chrono::duration<double>(a1 - a0).count(); tRx_ += std::chrono::duration<double>(a2 - a1).count(); nSamp_ += n; if (std::chrono::steady_clock::now() > next + std::chrono::milliseconds(250)) break; } // keep publishing spectrum/telemetry even when the receiver is behind
+        while ((n = ring_.read(buf.data(), buf.size())) > 0) { auto a0 = std::chrono::steady_clock::now(); analyzer_.feed(buf.data(), n); auto a1 = std::chrono::steady_clock::now(); feedRx(buf.data(), n); auto a2 = std::chrono::steady_clock::now(); tSpec_ += std::chrono::duration<double>(a1 - a0).count(); tRx_ += std::chrono::duration<double>(a2 - a1).count(); nSamp_ += n; if (std::chrono::steady_clock::now() > next + std::chrono::milliseconds(250)) break; } // keep publishing spectrum/telemetry even when the receiver is behind
         next += std::chrono::milliseconds(33);
         {
             RxTelemetry t;
-            if (rx_.telemetry(t, rxSeq)) {
+            const bool dvbt = activeStd_.load() == 1;
+            if (dvbt ? rxT_.telemetry(t, rxSeq) : rx_.telemetry(t, rxSeq)) {
                 rxSeq = t.seq;
-                logRxEvents(t);
+                if (dvbt) logDvbtEvents(t); else logRxEvents(t);
+                autoSelect(t, dvbt && (t.dvbt.tpsOk || t.dvbt.fecSync));
                 std::lock_guard<std::mutex> lk(rxMu_);
                 rxTel_ = std::move(t);
-            }
+            } else autoSelect(rxTel_, dvbt && rxTel_.dvbt.tpsOk);
         }
         if (analyzer_.takeFrame(f)) {
             std::lock_guard<std::mutex> lk(specMu_);
@@ -230,7 +299,7 @@ void Engine::analysisLoop() {
         // keep reading while we wait so the ring never fills
         while (std::chrono::steady_clock::now() < next && !stopReq_) {
             size_t m = ring_.read(buf.data(), buf.size());
-            if (m) { auto a0 = std::chrono::steady_clock::now(); analyzer_.feed(buf.data(), m); auto a1 = std::chrono::steady_clock::now(); rx_.feed(buf.data(), m); auto a2 = std::chrono::steady_clock::now(); tSpec_ += std::chrono::duration<double>(a1 - a0).count(); tRx_ += std::chrono::duration<double>(a2 - a1).count(); nSamp_ += m; }
+            if (m) { auto a0 = std::chrono::steady_clock::now(); analyzer_.feed(buf.data(), m); auto a1 = std::chrono::steady_clock::now(); feedRx(buf.data(), m); auto a2 = std::chrono::steady_clock::now(); tSpec_ += std::chrono::duration<double>(a1 - a0).count(); tRx_ += std::chrono::duration<double>(a2 - a1).count(); nSamp_ += m; }
             else std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
     }

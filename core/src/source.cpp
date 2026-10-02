@@ -1,4 +1,5 @@
 #include "dect2/source.h"
+#include "dect2/dvbt_gen.h"
 
 #include <Accelerate/Accelerate.h>
 #include <libhackrf/hackrf.h>
@@ -238,7 +239,12 @@ protected:
     size_t produce(cf32* dst, size_t maxN) override {
         std::lock_guard<std::mutex> lk(mu_);
         if (regen_) {
-            gen_ = std::make_unique<T2Generator>(cfg_.tx);
+            if (cfg_.dvbt) {
+                dvbt::Params tp;
+                tp.mode = cfg_.dvbtMode; tp.guard = cfg_.dvbtGuard; tp.mod = cfg_.dvbtMod; tp.crHp = tp.crLp = cfg_.dvbtRate;
+                tgen_ = std::make_unique<dvbt::Generator>(tp, dvbt::testTsSource());
+                gen_.reset();
+            } else { gen_ = std::make_unique<T2Generator>(cfg_.tx); tgen_.reset(); }
             sbuf_.assign(4, cf32(0, 0));
             pos_ = 1;
             regen_ = false;
@@ -254,7 +260,10 @@ protected:
         const float gain = 0.25f * (cfg_.gainModel ? (float)std::pow(10.0, (gainDb_ - 62) / 20.0) : 1.f); // leave ADC headroom: OFDM peak/rms is ~12 dB
         for (size_t i = 0; i < maxN; i++) {
             size_t i0 = (size_t)pos_;
-            while (sbuf_.size() < i0 + 4) { gen_->nextFrame(frame_); sbuf_.insert(sbuf_.end(), frame_.begin(), frame_.end()); }
+            while (sbuf_.size() < i0 + 4) {
+                if (tgen_) tgen_->nextSymbol(frame_); else gen_->nextFrame(frame_);
+                sbuf_.insert(sbuf_.end(), frame_.begin(), frame_.end());
+            }
             cf32 v;
             if (cfg_.sroPpm == 0) v = sbuf_[i0];
             else { // 4-point Lagrange interpolation
@@ -291,6 +300,7 @@ private:
     SynthConfig cfg_;
     bool regen_ = true;
     std::unique_ptr<T2Generator> gen_;
+    std::unique_ptr<dvbt::Generator> tgen_;
     std::vector<cf32> sbuf_, frame_, delay_;
     double pos_ = 1, phase_ = 0;
     size_t dpos_ = 0;

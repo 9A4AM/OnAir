@@ -17,7 +17,37 @@ double requiredSnrDb(const PlpFec& f) {
 
 void QualityMeter::reset() { *this = QualityMeter(); }
 
+// DVB-T: required C/N for quasi error free reception in a Gaussian channel (EN 300 744 table), by modulation and code rate
+static double dvbtRequiredDb(int mod, int rate) {
+    static const double t[3][5] = {{3.1, 4.9, 5.9, 6.9, 7.7}, {8.8, 11.1, 12.5, 13.5, 13.9}, {14.4, 16.5, 18.0, 19.3, 20.1}};
+    return t[std::max(0, std::min(2, mod))][std::max(0, std::min(4, rate))];
+}
+
 void QualityMeter::update(const RxTelemetry& rx) {
+    if (rx.standard == 1) {
+        if (!rx.dvbt.tpsOk) { if (rx.state != 2) { rep_ = QualityReport(); rep_.label = "no lock"; } return; }
+        const uint64_t good = rx.dvbt.rsClean + rx.dvbt.rsCorrected, bad = rx.dvbt.rsFailed;
+        if (lastOk_ != ~0ull && (good >= lastOk_ && bad >= lastBad_) && (good - lastOk_ + bad - lastBad_) > 0) {
+            hist_.push_back({good - lastOk_, bad - lastBad_});
+            if (hist_.size() > 40) hist_.pop_front();
+        }
+        lastOk_ = good; lastBad_ = bad; lastFrames_ = 0;
+        uint64_t ok = 0, ng = 0;
+        for (auto& h : hist_) { ok += h.first; ng += h.second; }
+        QualityReport r;
+        r.valid = true;
+        r.snrDb = rx.dataSnrDb;
+        r.requiredDb = dvbtRequiredDb(rx.dvbt.mod, rx.dvbt.crHp);
+        r.marginDb = r.snrDb - r.requiredDb;
+        r.fecOk = (ok + ng) ? (double)ok / (double)(ok + ng) : (rx.dvbt.fecSync ? 1.0 : 0.0);
+        const double qs = std::max(0.0, std::min(100.0, 25.0 + r.marginDb * 12.5));
+        const double q = qs * (rx.dvbt.fecSync ? r.fecOk * r.fecOk : 0.5);
+        smooth_ = rep_.valid ? smooth_ + 0.25 * (q - smooth_) : q;
+        r.percent = smooth_;
+        r.label = r.percent >= 85 ? "excellent" : r.percent >= 65 ? "good" : r.percent >= 40 ? "marginal" : "poor";
+        rep_ = r;
+        return;
+    }
     if (!rx.dataValid) { if (rx.state != 2) { rep_ = QualityReport(); rep_.label = "no lock"; } return; }
     if (rx.dataFrames != lastFrames_) {
         if (lastFrames_ != ~0ull && rx.blocksOk + rx.blocksBad >= lastOk_ + lastBad_) {

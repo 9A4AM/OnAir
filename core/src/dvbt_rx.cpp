@@ -85,7 +85,7 @@ struct DvbtReceiver::Impl {
     std::mutex mu;
     RxTelemetry tel;
     uint64_t seq = 0;
-    std::vector<cf32> eqShow, rawShow;
+    std::vector<cf32> eqShow, rawShow, tpsShow, pilotShow;
     std::vector<float> chMag, chPh;
     std::vector<float> irDb;
     int irTauMin = 0;
@@ -299,6 +299,10 @@ struct DvbtReceiver::Impl {
             for (size_t i = 0; i < tpsK.size(); i++) acc += (Y[tpsK[i]] * std::conj(prevTps[i])).real();
             tpsBitsSeen.push_back(acc < 0 ? 1 : 0);
         } else tpsBitsSeen.push_back(-1);
+        if (prevValid && prevTps.size() == tpsK.size() && symbols % 3 == 0) {
+            tpsShow.clear();
+            for (size_t i = 0; i < tpsK.size(); i++) { const cf32 z = Y[tpsK[i]] * std::conj(prevTps[i]); const float m = std::abs(z); if (m > 1e-9f) tpsShow.push_back(z / m); }
+        }
         prevTps.resize(tpsK.size());
         for (size_t i = 0; i < tpsK.size(); i++) prevTps[i] = Y[tpsK[i]];
         prevValid = true;
@@ -471,6 +475,9 @@ struct DvbtReceiver::Impl {
             const int dec = std::max(1, K / 2048);
             for (int k = 0; k < K; k += dec) { chMag.push_back(20.f * std::log10(std::max(1e-6f, std::abs(H[k])))); chPh.push_back(std::arg(H[k])); }
             chDecimV = dec;
+            pilotShow.clear();   // equalised pilots (BPSK, +-1 after removing the 4/3 boost): a quick picture of the channel estimate's quality
+            for (int k = 3 * l4; k < K; k += 12) pilotShow.push_back(Yc[k] / H[k] * 0.75f);
+            for (int k : cp) if (k % 12 != 3 * l4) pilotShow.push_back(Yc[k] / H[k] * 0.75f);
             const int back0 = G / 8;
             irTauMin = -N / 16;
             impulseResponse(H, N, irTauMin, G + std::max(8, G / 4), back + back0, irDb);
@@ -502,7 +509,8 @@ struct DvbtReceiver::Impl {
         t.cpSnrDb = (float)snrDb;
         t.eqData = eqShow;
         t.rawCells = rawShow;
-        t.eqCells = eqShow;
+        t.eqCells = pilotShow;
+        t.p1Const = tpsShow;
         t.chValid = !chMag.empty();
         t.chMagDb = chMag; t.chPhase = chPh; t.chDecim = chDecimV; t.chCarriers = K;
         t.irDb = irDb; t.irTauMin = irTauMin;

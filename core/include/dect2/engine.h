@@ -3,6 +3,7 @@
 #include "source.h"
 #include "spectrum.h"
 #include "t2rx.h"
+#include "dvbt_rx.h"
 #include "bbunpack.h"
 #include "ts.h"
 #include "tsout.h"
@@ -39,6 +40,10 @@ public:
     bool running() const { return running_; }
     void setComputeMode(int m) { rx_.setComputeMode(m); }
     void selectPlp(int id) { rx_.selectPlp(id); }
+    // Which standard to decode: 0 = automatic (alternates between DVB-T2 and DVB-T until one locks), 1 = DVB-T2, 2 = DVB-T
+    void setStandard(int m) { stdMode_ = m; stdReq_ = true; }
+    int standardMode() const { return stdMode_.load(); }
+    int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T
     double sampleRate() const { return rate_; }
     uint64_t droppedSamples() const { return ring_.dropped(); }
 
@@ -89,6 +94,15 @@ private:
     std::unique_ptr<IqSource> src_;
     SpectrumAnalyzer analyzer_{4096};
     T2Receiver rx_;
+    DvbtReceiver rxT_;
+    std::atomic<int> stdMode_{0}, activeStd_{0};
+    std::atomic<bool> stdReq_{false};
+    double autoMark_ = 0, lastLockSec_ = 0;
+    void feedRx(const cf32* x, size_t n);
+    void autoSelect(const RxTelemetry& t, bool tLocked);
+    void onTsPackets(const uint8_t* pk, size_t n, double secs);
+    void logDvbtEvents(const RxTelemetry& t);
+    int logTMode_ = -1, logTGi_ = -1, logTTps_ = -1; bool logTFec_ = false;
     std::mutex rxMu_;
     RxTelemetry rxTel_;
     std::thread th_;

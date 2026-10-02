@@ -9,6 +9,9 @@ namespace dect2 {
 class Fft;
 namespace dvbt {
 
+class Generator;
+std::function<void(uint8_t*)> testTsSource(unsigned seed = 1);
+
 class Generator {
 public:
     using PacketSource = std::function<void(uint8_t* pkt188)>;

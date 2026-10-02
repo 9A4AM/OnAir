@@ -3,6 +3,7 @@
 //   dect2cli --file path.cs8 --rate Msps [--format cs8|cu8|cf32] [--bw MHz] [--secs N]
 //   dect2cli --record out.cs8 --secs N   (HackRF only; raw IQ capture at the 2x native rate)
 #include "dect2/engine.h"
+#include "dect2/dvbt.h"
 #include "dect2/channel.h"
 #include "dect2/quality.h"
 #include <chrono>
@@ -20,11 +21,12 @@ int main(int argc, char** argv) {
     TuneSettings tune;
     FileOptions file;
     double freq = 522, secs = 10;
-    int computeMode = 2, playSid = -1;
+    int computeMode = 2, playSid = -1, standard = 0;
     uint64_t vseq = 0;
+    bool continue_t2 = true;
     MultipathDetector mpd;
     QualityMeter qm;
-    bool useFile = false, haveDev = false;
+    bool useFile = false, haveDev = false, synthetic = false;
     std::string record;
     OutputConfig out;
     for (int i = 1; i < argc; i++) {
@@ -38,6 +40,14 @@ int main(int argc, char** argv) {
         else if (a == "--bw") tune.bandwidthMhz = atof(next());
         else if (a == "--secs") secs = atof(next());
         else if (a == "--play") playSid = atoi(next());
+        else if (a == "--synthetic") synthetic = true;
+        else if (a == "--dvbt") { tune.synth.dvbt = true; synthetic = true; }                 // synthetic source generates DVB-T
+        else if (a == "--dvbt-mode") tune.synth.dvbtMode = atoi(next());   // 0 = 2K, 1 = 8K
+        else if (a == "--dvbt-gi") tune.synth.dvbtGuard = atoi(next());    // 0..3 = 1/32, 1/16, 1/8, 1/4
+        else if (a == "--dvbt-mod") tune.synth.dvbtMod = atoi(next());     // 0 QPSK, 1 16-QAM, 2 64-QAM
+        else if (a == "--dvbt-rate") tune.synth.dvbtRate = atoi(next());   // 0..4 = 1/2, 2/3, 3/4, 5/6, 7/8
+        else if (a == "--snr") tune.synth.snrDb = atof(next());
+        else if (a == "--standard") { std::string v = next(); standard = v == "t2" ? 1 : v == "t" || v == "dvbt" ? 2 : 0; }
         else if (a == "--compute") { std::string v = next(); computeMode = v == "cpu" ? 0 : v == "gpu" ? 1 : 2; }
         else if (a == "--file") { useFile = true; file.path = next(); file.format = guessFormat(file.path); }
         else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
@@ -52,6 +62,7 @@ int main(int argc, char** argv) {
     tune.centerHz = freq * 1e6;
     tune.sampleRate = tune.bandwidthMhz >= 7 ? 10e6 : 8e6; // HackRF Pro: exact tuning only at <= 10 Msps
     if (useFile) { dev.kind = DeviceInfo::File; dev.name = file.path; file.loop = false; }
+    else if (synthetic) { dev.kind = DeviceInfo::Synthetic; dev.name = "synthetic"; }
     else {
         std::string err;
         auto list = listHackrfDevices(err);
@@ -66,6 +77,7 @@ int main(int argc, char** argv) {
     });
     e.setOutputs(out);
     e.setComputeMode(computeMode);
+    e.setStandard(standard);
     if (!e.start(dev, tune, file)) {
         size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
         return 1;
@@ -89,6 +101,14 @@ int main(int argc, char** argv) {
         auto lines = e.logSnapshot(n);
         for (; shown < lines.size(); shown++) printf("  log: %s\n", lines[shown].c_str());
         if (out.udp) { OutputStats os = e.outputStats(); printf("  udp: sent %llu queue %.0f ms dropped %llu\n", (unsigned long long)os.udpDatagrams, os.udpQueueMs, (unsigned long long)os.udpDropped); }
+        if (t.standard == 1) {
+            printf("level %6.1f dBFS | DVB-T state %d %s GI %s | CFO %+8.1f Hz | TPS %d %s %s | data SNR %.1f dB | packets %llu RS clean %llu corrected %llu failed %llu | Viterbi margin %.2f phase %d | dropped %llu\n",
+                   sf.stats.rmsDbfs, t.state, t.fftN == 8192 ? "8K" : t.fftN == 2048 ? "2K" : "?", t.giIdx >= 0 ? dvbt::guardName(t.giIdx) : "-", t.cfoHz, t.dvbt.tpsOk,
+                   t.dvbt.tpsOk ? dvbt::modName(t.dvbt.mod) : "-", t.dvbt.tpsOk ? dvbt::rateName(t.dvbt.crHp) : "-", t.dataSnrDb, (unsigned long long)t.dvbt.packets,
+                   (unsigned long long)t.dvbt.rsClean, (unsigned long long)t.dvbt.rsCorrected, (unsigned long long)t.dvbt.rsFailed, t.dvbt.viterbiMargin, t.dvbt.punctPhase, (unsigned long long)e.droppedSamples());
+            continue_t2 = false;
+        } else continue_t2 = true;
+        if (continue_t2)
         printf("level %6.1f dBFS clip %.3f%% | state %d P1 %llu (s1 %d fft %d) GI %s | CFO %+8.1f Hz | CP %.2f | L1 pre %llu/%llu post %llu/%llu | data %d SNR %.1f dB | sym %llu sinceP1 %.2f | PLP %llu fr, blocks %llu ok/%llu bad, MER %.1f dB preBER %.1e it %.1f %.0f ms %s | dropped %llu\n",
                sf.stats.rmsDbfs, sf.stats.clipFraction * 100, t.state, (unsigned long long)t.p1Count, t.p1.s1, t.fftN,
                t.giIdx >= 0 ? guardName(t.giIdx) : "-", t.cfoHz, t.cpCorr, (unsigned long long)t.l1preGood, (unsigned long long)(t.l1preGood + t.l1preBad),

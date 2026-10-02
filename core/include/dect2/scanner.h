@@ -15,7 +15,7 @@ struct ScanConfig {
     double bwMhz = 8;
     bool identifyServices = true;
     double occupancyDb = 5.0;      // in-band power must exceed the out-of-band floor by this much
-    double lockTimeoutSec = 3.5;   // time allowed to find P1 and decode L1
+    double lockTimeoutSec = 5.0;   // time allowed to lock (the receiver alternates DVB-T2 and DVB-T searches)
     double serviceTimeoutSec = 9;  // time allowed to read the service list (identify = true)
     TuneSettings tune;             // gain / amp / filter settings
 };
@@ -25,7 +25,8 @@ struct ScanResult {
     double levelDbfs = -120;       // mean in-band power per bin (dBFS)
     double occupancyDb = 0;        // in-band minus out-of-band floor
     bool occupied = false;
-    bool t2 = false;               // L1-pre decoded
+    bool t2 = false;               // a DVB-T2 or DVB-T signal was locked (see `standard`)
+    std::string standard = "DVB-T2"; // "DVB-T2" or "DVB-T"
     bool l1post = false;
     std::string note;
     std::string mode;              // e.g. "T2-Base SISO 32K 1/8 PP8 ext"

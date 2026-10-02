@@ -17,6 +17,7 @@
 #include "dect2/scanner.h"
 #include "dect2/gain.h"
 #include "dect2/channel.h"
+#include "dect2/dvbt.h"
 #include "dect2/quality.h"
 #include "dect2/teletext.h"
 #include "theme.h"
@@ -224,6 +225,7 @@ struct App {
     uint64_t histOk = 0, histBad = 0;
     bool rxSeen = false;
     int computeMode = 2; // 0 CPU, 1 GPU, 2 auto
+    int stdMode = 0;     // 0 auto, 1 DVB-T2, 2 DVB-T
     bool popOut = false, videoOnly = false;
     int histWindow = 60;
     int ttxPage = 100;
@@ -287,6 +289,7 @@ static void loadPrefs(App& a) {
     if ([d objectForKey:@"vga"]) a.tune.vgaDb = (int)[d integerForKey:@"vga"];
     a.tune.ampOn = [d boolForKey:@"amp"];
     if ([d objectForKey:@"compute"]) a.computeMode = (int)[d integerForKey:@"compute"];
+    if ([d objectForKey:@"standard"]) a.stdMode = (int)[d integerForKey:@"standard"];
     a.bwIdx = std::min((int)(sizeof kBw / sizeof *kBw) - 1, (int)[d integerForKey:@"bw"]);
     NSString* fp = [d stringForKey:@"filePath"];
     if (fp) a.file.path = fp.UTF8String;
@@ -320,6 +323,7 @@ static void savePrefs(const App& a) {
         [d setObject:arr forKey:@"channels"];
     }
     [d setInteger:a.computeMode forKey:@"compute"];
+    [d setInteger:a.stdMode forKey:@"standard"];
     [d setInteger:a.bwIdx forKey:@"bw"];
     [d setObject:[NSString stringWithUTF8String:a.file.path.c_str()] forKey:@"filePath"];
     [d setObject:[NSString stringWithUTF8String:a.filePath] forKey:@"outPath"];
@@ -403,7 +407,7 @@ static void toolbar(App& a) {
     ImGui::SameLine(0, 14);
     ImGui::TextDisabled("source");
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(230);
+    ImGui::SetNextItemWidth(190);
     ImGui::BeginDisabled(running);
     if (ImGui::BeginCombo("##src", a.devices[a.devIdx].name.c_str())) {
         for (int i = 0; i < (int)a.devices.size(); i++)
@@ -480,7 +484,7 @@ static void toolbar(App& a) {
             if (isFile) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate
             if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
             else {
-                a.engine.setComputeMode(a.computeMode);
+                a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
                 a.engine.start(a.devices[a.devIdx], a.tune, a.file);
                 savePrefs(a);
                 a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
@@ -499,9 +503,7 @@ static void toolbar(App& a) {
         char lbl[48];
         const bool gpuNow = a.rx.plpOnGpu;
         snprintf(lbl, sizeof lbl, "%s", a.computeMode == 2 ? (gpuNow ? "Auto (GPU)" : "Auto (CPU)") : modes[a.computeMode]);
-        ImGui::TextDisabled("decode");
-        ImGui::SameLine(0, 6);
-        ImGui::SetNextItemWidth(110);
+        ImGui::SetNextItemWidth(104);
         if (ImGui::BeginCombo("##compute", lbl)) {
             for (int i = 0; i < 3; i++) {
                 const bool dis = i == 1 && !a.rx.gpuAvailable && running;
@@ -512,6 +514,20 @@ static void toolbar(App& a) {
             ImGui::EndCombo();
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("LDPC decoding backend.\nCPU: NEON on all cores. GPU: Metal compute.\nAuto: CPU until it falls behind real time, then GPU.");
+    }
+    ImGui::SameLine(0, 14);
+    {
+        static const char* names[] = {"Auto", "DVB-T2", "DVB-T"};
+        char lbl[48];
+        const int act = a.engine.activeStandard();
+        snprintf(lbl, sizeof lbl, "%s", a.stdMode == 0 ? (a.rx.standard == 1 ? "Auto (DVB-T)" : "Auto (DVB-T2)") : names[a.stdMode]);
+        (void)act;
+        ImGui::SetNextItemWidth(112);
+        if (ImGui::BeginCombo("##std", lbl)) {
+            for (int i = 0; i < 3; i++) if (ImGui::Selectable(names[i], a.stdMode == i)) { a.stdMode = i; a.engine.setStandard(i); savePrefs(a); }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Which broadcast standard to decode.\nAuto alternates between DVB-T2 and DVB-T until one locks.");
     }
 
     if (retune && running) {
@@ -533,6 +549,20 @@ static void sourceOptions(App& a) {
         bool ch = false;
         ImGui::TextDisabled("synthetic");
         ImGui::SameLine();
+        if (ImGui::Checkbox("DVB-T", &sc.dvbt)) ch = true;
+        ImGui::SameLine();
+        if (sc.dvbt) {
+            static const char* fftN[] = {"2K", "8K"}; static const char* gis[] = {"1/32", "1/16", "1/8", "1/4"};
+            static const char* mods[] = {"QPSK", "16-QAM", "64-QAM"}; static const char* rates[] = {"1/2", "2/3", "3/4", "5/6", "7/8"};
+            ImGui::SetNextItemWidth(60);
+            if (ImGui::BeginCombo("##tfft", fftN[sc.dvbtMode & 1])) { for (int i = 0; i < 2; i++) if (ImGui::Selectable(fftN[i], i == sc.dvbtMode)) { sc.dvbtMode = i; ch = true; } ImGui::EndCombo(); }
+            ImGui::SameLine(); ImGui::TextDisabled("GI"); ImGui::SameLine(); ImGui::SetNextItemWidth(66);
+            if (ImGui::BeginCombo("##tgi", gis[sc.dvbtGuard & 3])) { for (int i = 0; i < 4; i++) if (ImGui::Selectable(gis[i], i == sc.dvbtGuard)) { sc.dvbtGuard = i; ch = true; } ImGui::EndCombo(); }
+            ImGui::SameLine(); ImGui::SetNextItemWidth(84);
+            if (ImGui::BeginCombo("##tmod", mods[sc.dvbtMod % 3])) { for (int i = 0; i < 3; i++) if (ImGui::Selectable(mods[i], i == sc.dvbtMod)) { sc.dvbtMod = i; ch = true; } ImGui::EndCombo(); }
+            ImGui::SameLine(); ImGui::SetNextItemWidth(60);
+            if (ImGui::BeginCombo("##trate", rates[sc.dvbtRate % 5])) { for (int i = 0; i < 5; i++) if (ImGui::Selectable(rates[i], i == sc.dvbtRate)) { sc.dvbtRate = i; ch = true; } ImGui::EndCombo(); }
+        } else {
         static const struct { const char* n; int code; } fm[] = {{"2K", 0}, {"8K", 1}, {"4K", 2}, {"1K", 3}, {"16K", 4}, {"32K", 5}};
         const char* cur = "?";
         for (auto& f : fm) if (f.code == sc.tx.s2field1) cur = f.n;
@@ -559,6 +589,7 @@ static void sourceOptions(App& a) {
         }
         ImGui::SameLine();
         if (ImGui::Checkbox("TR", &sc.tx.tr)) ch = true;
+        }
         ImGui::SameLine(); ImGui::TextDisabled("SNR"); ImGui::SameLine(); ImGui::SetNextItemWidth(90);
         float snr = (float)sc.snrDb; if (ImGui::SliderFloat("##ssnr", &snr, 0, 40, "%.0f dB")) { sc.snrDb = snr; ch = true; }
         ImGui::SameLine(); ImGui::TextDisabled("CFO"); ImGui::SameLine(); ImGui::SetNextItemWidth(110);
@@ -601,15 +632,26 @@ static void statusBar(App& a) {
         int iq = run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0;
         lamp("IQ", iq); ImGui::SameLine(0, 12);
         const double frameS = rx.frameMs > 0 ? rx.frameMs / 1e3 : 0.5;
+        const bool isT = rx.standard == 1;
+        const double okFrac = (rx.blocksOk + rx.blocksBad) ? (double)rx.blocksOk / (rx.blocksOk + rx.blocksBad) : 0;
+        const int fec = !run || !rx.plpValid || rx.plpFrames == 0 ? 0 : okFrac > 0.995 ? 1 : okFrac > 0.5 ? 2 : 3;
+        if (isT) {
+            // DVB-T: cyclic-prefix sync, guard interval, TPS signalling, channel estimate, then Viterbi and Reed-Solomon
+            lamp("Sync", !run ? 0 : rx.state >= 1 ? 1 : 0); ImGui::SameLine(0, 12);
+            lamp("GI", !run ? 0 : rx.giIdx >= 0 ? (rx.state == 2 ? 1 : 2) : 0); ImGui::SameLine(0, 12);
+            lamp("TPS", !run ? 0 : rx.dvbt.tpsOk ? 1 : rx.state == 1 ? 2 : 0); ImGui::SameLine(0, 12);
+            lamp("Chan", !run ? 0 : rx.chValid && rx.dataValid ? 1 : rx.dvbt.tpsOk ? 2 : 0); ImGui::SameLine(0, 12);
+            lamp("Viterbi", !run ? 0 : rx.dvbt.fecSync ? 1 : rx.dvbt.tpsOk ? 2 : 0); ImGui::SameLine(0, 12);
+            lamp("RS", fec); ImGui::SameLine(0, 12);
+        } else {
         lamp("P1", !run || !a.rxSeen ? 0 : (rx.p1.valid && rx.secSinceP1 < std::max(1.0, 3 * frameS) ? 1 : 2)); ImGui::SameLine(0, 12);
         lamp("GI", !run ? 0 : rx.state == 2 ? 1 : rx.state == 1 ? 2 : 0); ImGui::SameLine(0, 12);
         lamp("L1-pre", !run ? 0 : rx.l1preOk ? 1 : rx.l1preGood > 0 ? 2 : rx.chValid ? 3 : 0); ImGui::SameLine(0, 12);
         lamp("L1-post", !run ? 0 : rx.l1postOk ? 1 : rx.l1postGood > 0 ? 2 : rx.l1preOk ? 3 : 0); ImGui::SameLine(0, 12);
         lamp("Frame", !run ? 0 : rx.dataValid ? 1 : rx.l1preOk ? 2 : 0); ImGui::SameLine(0, 12);
-        const double okFrac = (rx.blocksOk + rx.blocksBad) ? (double)rx.blocksOk / (rx.blocksOk + rx.blocksBad) : 0;
-        const int fec = !run || !rx.plpValid || rx.plpFrames == 0 ? 0 : okFrac > 0.995 ? 1 : okFrac > 0.5 ? 2 : 3;
         lamp("LDPC", fec); ImGui::SameLine(0, 12);
         lamp("BCH", fec); ImGui::SameLine(0, 12);
+        }
         lamp("TS", !run ? 0 : a.ts.services.empty() ? 0 : (a.ts.ccErrors > 0 && a.bb.framesLost > 0.02 * (a.bb.frames + 1)) ? 2 : 1); ImGui::SameLine(0, 12);
         const PlayerStats ps = a.engine.player().stats();
         const bool pl = run && ps.active;
@@ -628,7 +670,16 @@ static void statusBar(App& a) {
     else if (rx.state == 2) ro("State", "Locked", ImVec4(0.35f, 0.90f, 0.45f, 1));
     else if (rx.state == 1) ro("State", "syncing", ImVec4(0.95f, 0.75f, 0.2f, 1));
     else ro("State", "searching", ImVec4(0.6f, 0.64f, 0.68f, 1));
-    if (run && rx.state == 2) {
+    if (run && rx.standard == 1 && rx.state >= 1) {
+        ro("Mode", "DVB-T");
+        ro("FFT", rx.fftN == 8192 ? "8K" : "2K");
+        ro("GI", dvbt::guardName(rx.giIdx));
+        if (rx.dvbt.tpsOk) {
+            snprintf(b, sizeof b, "%s %s", dvbt::modName(rx.dvbt.mod), dvbt::rateName(rx.dvbt.crHp));
+            ro("TPS", b);
+            if (rx.dvbt.hier) ro("hier", "yes", ImVec4(0.95f, 0.7f, 0.2f, 1));
+        } else ro("TPS", "searching", ImVec4(0.6f, 0.64f, 0.68f, 1));
+    } else if (run && rx.state == 2) {
         ro("Mode", s1Name(rx.p1.s1));
         const FftMode* fm = fftModeFromSize(rx.fftN);
         snprintf(b, sizeof b, "%s%s", fm ? fm->name : "?", rx.extCarriers ? " ext" : ""); ro("FFT", b);
@@ -642,9 +693,9 @@ static void statusBar(App& a) {
     }
     ImGui::NewLine();
     // ---- line 2: numbers and gauges
-    if (run && rx.state == 2) {
+    if (run && (rx.state == 2 || (rx.standard == 1 && rx.state >= 1))) {
         snprintf(b, sizeof b, "%+.1f Hz", rx.cfoHz); ro("CFO", b);
-        snprintf(b, sizeof b, "%+.1f ppm", rx.sroPpm); ro("SRO", b);
+        if (rx.standard != 1) { snprintf(b, sizeof b, "%+.1f ppm", rx.sroPpm); ro("SRO", b); }
         snprintf(b, sizeof b, "%.1f dB", rx.dataValid ? rx.dataSnrDb : rx.cpSnrDb); ro("SNR", b);
         if (rx.plpMerDb > 0 && rx.plpMerDb < 90) { snprintf(b, sizeof b, "%.1f dB", rx.plpMerDb); ro("MER", b); }
         if (!a.mpd.report().echoes.empty()) { snprintf(b, sizeof b, "%.2f us", std::fabs(a.mpd.report().echoes[0].delayUs)); ro("Delay", b); }
@@ -852,6 +903,23 @@ static void historyPlot(const char* id, const char* ylabel, const std::deque<flo
 }
 
 static void syncTab(App& a) {
+    if (a.rx.standard == 1) {
+        const RxTelemetry& rx = a.rx;
+        ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "DVB-T synchronisation");
+        if (rx.state == 0) { ImGui::TextDisabled("looking for a cyclic prefix: the FFT size (2K/8K) and guard interval are found from the correlation of each symbol's guard with its end"); return; }
+        if (ImGui::BeginTable("synct", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg)) {
+            ImGui::TableSetupColumn("k", ImGuiTableColumnFlags_WidthFixed, 220);
+            auto row = [&](const char* k, const char* fmt, auto... args) { ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", k); ImGui::TableNextColumn(); char b[160]; snprintf(b, sizeof b, fmt, args...); ImGui::TextUnformatted(b); };
+            row("FFT size / guard interval", "%d / %s (%d samples)", rx.fftN, dvbt::guardName(rx.giIdx), rx.guard);
+            row("Carrier frequency offset", "%+.1f Hz", rx.cfoHz);
+            row("Symbols processed", "%llu", (unsigned long long)rx.symbols);
+            row("Frame length", "%.2f ms (68 symbols)", rx.frameMs);
+            row("TPS frame sync", "%s", rx.dvbt.tpsOk ? "locked" : "searching (sync word + BCH over 68 symbols)");
+            row("Noise / SNR estimate", "%.1f dB", rx.dataSnrDb);
+            ImGui::EndTable();
+        }
+        return;
+    }
     const RxTelemetry& rx = a.rx;
     float h = ImGui::GetContentRegionAvail().y;
     ImGui::TextDisabled("P1 detector - C-A-B correlation (peak > 0.30 triggers an S1/S2 decode)");
@@ -938,6 +1006,24 @@ static void historyTab(App& a) {
 }
 
 static void frameMapTab(App& a) {
+    if (a.rx.standard == 1) {
+        const RxTelemetry& rx = a.rx;
+        ImGui::TextDisabled("A DVB-T frame has 68 OFDM symbols; four frames form a superframe. Forward error correction here is a continuous stream (Viterbi + Reed-Solomon), so there is no block map as in DVB-T2.");
+        if (rx.dvbt.tpsOk) {
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            ImVec2 o = ImGui::GetCursorScreenPos();
+            const float W = ImGui::GetContentRegionAvail().x - 10, H = 22;
+            for (int f = 0; f < 4; f++) {
+                const float x0 = o.x + f * W / 4;
+                dl->AddRectFilled(ImVec2(x0, o.y + f * 0), ImVec2(x0 + W / 4 - 3, o.y + H), f == rx.dvbt.frameIdx ? IM_COL32(40, 120, 70, 255) : IM_COL32(40, 46, 54, 255), 4.f);
+                char t[24]; snprintf(t, sizeof t, "frame %d", f + 1);
+                dl->AddText(ImVec2(x0 + 8, o.y + 4), IM_COL32(230, 235, 240, 255), t);
+                if (f == rx.dvbt.frameIdx) dl->AddRectFilled(ImVec2(x0, o.y + H - 4), ImVec2(x0 + (W / 4 - 3) * (rx.dvbt.symbolIdx + 1) / 68.f, o.y + H), IM_COL32(110, 220, 140, 255), 2.f);
+            }
+            ImGui::Dummy(ImVec2(W, H + 8));
+        }
+        return;
+    }
     const RxTelemetry& rx = a.rx;
     if (!rx.l1preOk) { ImGui::TextDisabled("the frame structure appears once L1-pre has been decoded"); return; }
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -1156,6 +1242,30 @@ static void guideTab(App& a) {
 }
 
 static void signallingTab(App& a) {
+    if (a.rx.standard == 1) {
+        const RxTelemetry& rx = a.rx;
+        if (!rx.dvbt.tpsOk) { ImGui::TextDisabled("TPS (transmission parameter signalling) has not been decoded yet"); return; }
+        static const char* modes[] = {"2K", "8K"}; static const char* hier[] = {"non-hierarchical", "hierarchical, alpha = 1", "hierarchical, alpha = 2", "hierarchical, alpha = 4"};
+        dvbt::Params q; q.mode = rx.dvbt.mode; q.guard = rx.dvbt.guard; q.mod = rx.dvbt.mod; q.hier = rx.dvbt.hier; q.crHp = rx.dvbt.crHp; q.crLp = rx.dvbt.crLp;
+        ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "DVB-T transmission parameters (TPS, EN 300 744)");
+        if (ImGui::BeginTable("tps", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg)) {
+            ImGui::TableSetupColumn("k", ImGuiTableColumnFlags_WidthFixed, 200);
+            auto row = [&](const char* k, const char* fmt, auto... args) { ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", k); ImGui::TableNextColumn(); char b[160]; snprintf(b, sizeof b, fmt, args...); ImGui::TextUnformatted(b); };
+            row("FFT mode", "%s (%d carriers, %d data carriers per symbol)", modes[rx.dvbt.mode & 1], dvbt::carriersK(rx.dvbt.mode), dvbt::dataCarriers(rx.dvbt.mode));
+            row("Guard interval", "%s of the useful symbol (%d samples)", dvbt::guardName(rx.dvbt.guard), dvbt::guardSamples(rx.dvbt.mode, rx.dvbt.guard));
+            row("Constellation", "%s", dvbt::modName(rx.dvbt.mod));
+            row("Hierarchy", "%s", hier[rx.dvbt.hier & 3]);
+            row("Code rate (high priority)", "%s", dvbt::rateName(rx.dvbt.crHp));
+            row("Code rate (low priority)", "%s", dvbt::rateName(rx.dvbt.crLp));
+            row("Cell identifier", "%d", rx.dvbt.cellId);
+            row("Frame in superframe", "%d of 4   (symbol %d of 68)", rx.dvbt.frameIdx + 1, rx.dvbt.symbolIdx + 1);
+            row("Net bit rate", "%.2f Mbit/s", dvbt::netBitrate(q, rx.nativeRate) / 1e6);
+            row("TPS block age", "%.2f s", rx.dvbt.secSinceTps);
+            ImGui::EndTable();
+        }
+        if (rx.dvbt.hier) ImGui::TextColored(ImVec4(0.95f, 0.6f, 0.2f, 1), "! hierarchical modulation is announced: only the high-priority stream is decoded correctly by this receiver");
+        return;
+    }
     const RxTelemetry& rx = a.rx;
     ImGui::PushFont(a.mono, 0);
     auto row = [](const char* k, const char* fmt, ...) {
@@ -1244,17 +1354,18 @@ static void constellationsTab(App& a) {
     char cap[96];
     auto caption = [&](const char* fmt, auto... args) { snprintf(cap, sizeof cap, fmt, args...); ImGui::TextDisabled("%s", cap); };
     ImGui::BeginGroup();
-    caption("P1 carriers (%zu cells)", rx.p1Const.size());
+    if (rx.standard == 1) caption("TPS carriers, DBPSK (%zu cells)", rx.p1Const.size()); else caption("P1 carriers (%zu cells)", rx.p1Const.size());
     scatter("##c1", rx.p1Const, sz, 2.5, ImVec4(0.95f, 0.7f, 0.2f, 0.9f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    caption("P2 cells, equalised (%zu cells)", rx.eqCells.size());
+    if (rx.standard == 1) caption("Pilots, equalised (%zu cells)", rx.eqCells.size()); else caption("P2 cells, equalised (%zu cells)", rx.eqCells.size());
     scatter("##ceq", rx.eqCells, sz, 2.0, ImVec4(0.9f, 0.45f, 0.75f, 0.8f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
     if (!rx.plpConst.empty()) caption("PLP %d, derotated  MER %.1f dB (%zu cells)", rx.plpId, rx.plpMerDb, rx.plpConst.size());
+    else if (rx.standard == 1) caption("Data cells, equalised (%zu cells)", rx.eqData.size());
     else caption("Data cells, equalised (frame %llu)", (unsigned long long)rx.dataFrames);
     if (!rx.plpConst.empty()) {
         // cells of correctly decoded FEC blocks; points beyond the decision distance from the transmitted point are red
@@ -1282,6 +1393,26 @@ static void constellationsTab(App& a) {
                 const float* g = reinterpret_cast<const float*>(grid.data());
                 ImPlot::PlotScatter("ideal", g, g + 1, (int)grid.size(), gs);
             }
+            ImPlot::EndPlot();
+        }
+    } else if (rx.standard == 1 && rx.dvbt.tpsOk) {
+        if (ImPlot::BeginPlot("##c2", sz, ImPlotFlags_NoLegend | ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
+            ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoTickLabels, ImPlotAxisFlags_NoTickLabels);
+            ImPlot::SetupAxisLimits(ImAxis_X1, -1.5, 1.5, ImPlotCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -1.5, 1.5, ImPlotCond_Always);
+            if (!rx.eqData.empty()) {
+                ImPlotSpec sp; sp.Marker = ImPlotMarker_Circle; sp.MarkerSize = 1.3f; sp.Stride = sizeof(cf32);
+                const ImVec4 col(0.35f, 0.62f, 1.0f, 0.55f);
+                sp.MarkerFillColor = col; sp.MarkerLineColor = col; sp.LineColor = col;
+                const float* d = reinterpret_cast<const float*>(rx.eqData.data());
+                ImPlot::PlotScatter("data", d, d + 1, (int)rx.eqData.size(), sp);
+            }
+            std::vector<dvbt::cf32> pts;
+            dvbt::constellation(rx.dvbt.mod, 0, pts);
+            ImPlotSpec gs; gs.Marker = ImPlotMarker_Cross; gs.MarkerSize = 4.f; gs.Stride = sizeof(dvbt::cf32);
+            gs.MarkerFillColor = gs.MarkerLineColor = gs.LineColor = ImVec4(1, 1, 1, 0.85f);
+            const float* g = reinterpret_cast<const float*>(pts.data());
+            ImPlot::PlotScatter("ideal", g, g + 1, (int)pts.size(), gs);
             ImPlot::EndPlot();
         }
     } else
@@ -1368,6 +1499,26 @@ static void snrTab(App& a) {
 }
 
 static void fecTab(App& a) {
+    if (a.rx.standard == 1) {
+        const RxTelemetry& rx = a.rx;
+        ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "DVB-T channel decoder: de-interleaving, Viterbi (inner code), outer de-interleaver, Reed-Solomon (204,188)");
+        if (!rx.dvbt.tpsOk) { ImGui::TextDisabled("waiting for TPS"); return; }
+        const double tot = (double)(rx.dvbt.rsClean + rx.dvbt.rsCorrected + rx.dvbt.rsFailed);
+        if (ImGui::BeginTable("fect", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg)) {
+            ImGui::TableSetupColumn("k", ImGuiTableColumnFlags_WidthFixed, 230);
+            auto row = [&](const char* k, const char* fmt, auto... args) { ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", k); ImGui::TableNextColumn(); char b[160]; snprintf(b, sizeof b, fmt, args...); ImGui::TextUnformatted(b); };
+            row("Transport stream sync", "%s", rx.dvbt.fecSync ? "locked" : "searching (puncturing phase, byte phase)");
+            row("Puncturing phase", "%d", rx.dvbt.punctPhase);
+            row("Viterbi path-metric margin", "%.2f   (1.0 = noiseless)", rx.dvbt.viterbiMargin);
+            row("Reed-Solomon blocks", "%llu", (unsigned long long)rx.dvbt.packets);
+            row("   decoded without errors", "%llu  (%.2f%%)", (unsigned long long)rx.dvbt.rsClean, tot ? 100.0 * rx.dvbt.rsClean / tot : 0.0);
+            row("   corrected", "%llu  (%.2f%%)", (unsigned long long)rx.dvbt.rsCorrected, tot ? 100.0 * rx.dvbt.rsCorrected / tot : 0.0);
+            row("   uncorrectable", "%llu  (%.2f%%)", (unsigned long long)rx.dvbt.rsFailed, tot ? 100.0 * rx.dvbt.rsFailed / tot : 0.0);
+            ImGui::EndTable();
+        }
+        ImGui::TextDisabled("Uncorrectable packets are passed on with the transport_error_indicator set, so the player skips them.");
+        return;
+    }
     const RxTelemetry& rx = a.rx;
     ImGui::PushFont(a.mono, 0);
     auto row = [](const char* k, const char* fmt, ...) {
@@ -1505,14 +1656,14 @@ static void scanTab(App& a) {
                 a.freqMhz = r.freqMHz; a.bwIdx = r.bwMhz >= 7.5 ? 0 : 1;
                 for (int k = 0; k < (int)(sizeof(kBw) / sizeof(kBw[0])); k++) if (kBw[k].mhz == r.bwMhz) a.bwIdx = k;
                 a.tune.centerHz = a.freqMhz * 1e6; applyBandwidth(a);
-                a.engine.setComputeMode(a.computeMode);
+                a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
                 a.engine.start(a.devices[hw], a.tune, a.file);
                 a.devIdx = hw; a.smooth.clear(); a.peak.clear(); a.lastSeq = 0; savePrefs(a);
             }
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Click to tune the receiver to this channel");
             ImGui::TableNextColumn(); ImGui::Text("%.1f dBFS", r.levelDbfs);
             ImGui::TableNextColumn();
-            if (r.t2) ImGui::TextColored(ImVec4(0.4f, 1, 0.5f, 1), "DVB-T2"); else ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "other");
+            if (r.t2) ImGui::TextColored(ImVec4(0.4f, 1, 0.5f, 1), "%s", r.standard.c_str()); else ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "other");
             ImGui::TableNextColumn(); ImGui::TextUnformatted(r.mode.c_str());
             ImGui::TableNextColumn(); if (r.t2) ImGui::Text("%.1f dB", r.snrDb);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(r.plpInfo.c_str());
@@ -1634,7 +1785,7 @@ static void tuneToChannel(App& a, const SavedChannel& c) {
     } else {
         if (a.engine.running()) a.engine.stop();
         a.devIdx = hw;
-        a.engine.setComputeMode(a.computeMode);
+        a.engine.setComputeMode(a.computeMode); a.engine.setStandard(a.stdMode);
         a.engine.start(a.devices[hw], a.tune, a.file);
     }
     a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
@@ -2193,6 +2344,9 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
         if (std::string(argv[i]) == "--synthgain") app.tune.synth.gainModel = true;
+        if (std::string(argv[i]) == "--dvbt") { app.tune.synth.dvbt = true; app.tune.synth.snrDb = 28; }
+        if (std::string(argv[i]) == "--t2only") app.stdMode = 1;
+        if (std::string(argv[i]) == "--dvbtonly") app.stdMode = 2;
         if (std::string(argv[i]) == "--nodeint") app.video.deint = false;
         if (std::string(argv[i]) == "--fakeepg") app.fakeEpg = true;
         if (std::string(argv[i]) == "--agc") app.agcOn = true;
@@ -2236,7 +2390,7 @@ int main(int argc, char** argv) {
                 app.devIdx = 0;
                 if (hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == (fileStart ? DeviceInfo::File : DeviceInfo::HackRF)) app.devIdx = i;
                 app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
-                app.engine.setComputeMode(app.computeMode);
+                app.engine.setComputeMode(app.computeMode); app.engine.setStandard(app.stdMode);
                 app.engine.start(app.devices[app.devIdx], app.tune, app.file);
             }
             double now = glfwGetTime();

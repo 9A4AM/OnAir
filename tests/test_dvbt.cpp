@@ -47,7 +47,7 @@ static void testTps() {
 }
 
 // whole coding chain
-static bool chain(const Params& p, double esn0Db, int symbols, double* decodeSecs = nullptr, FecStats* statsOut = nullptr) {
+static bool chain(const Params& p, double esn0Db, int symbols, double* decodeSecs = nullptr, FecStats* statsOut = nullptr, int phase = 0) {
     const int N = dataCarriers(p.mode), m = bitsPerCell(p.mod);
     const int k = std::vector<int>{1, 2, 3, 5, 7}[p.crHp], n = std::vector<int>{2, 3, 4, 6, 8}[p.crHp];
     const size_t codedBits = (size_t)symbols * N * m;
@@ -64,6 +64,7 @@ static bool chain(const Params& p, double esn0Db, int symbols, double* decodeSec
     std::vector<uint8_t> bits(il.size() * 8), coded;
     for (size_t i = 0; i < il.size(); i++) for (int j = 0; j < 8; j++) bits[i * 8 + j] = (il[i] >> (7 - j)) & 1;
     InnerEncoder enc(p.crHp);
+    enc.setPhase(phase);
     enc.encode(bits, coded);
     coded.resize(codedBits, 0);
     std::vector<uint8_t> words;
@@ -121,6 +122,18 @@ int main() {
         printf("%-16s @ %4.1f dB Es/N0: %s  (RS clean %llu corrected %llu failed %llu, phase %d, %.0f symbols/s)\n", c.name, c.snr, ok ? "TS recovered" : "FAILED", (unsigned long long)st.rsClean, (unsigned long long)st.rsCorrected, (unsigned long long)st.rsFailed, st.punctPhase, symPerSec);
         CHECK(ok, "%s did not recover the transport stream", c.name);
     }
+    // the puncturing pattern's phase relative to the symbol stream is not known to the receiver: it must find it
+    for (int cr = kR23; cr <= kR78; cr++) {
+        const int k = std::vector<int>{1, 2, 3, 5, 7}[cr];
+        for (int ph = 0; ph < k; ph++) {
+            Params p; p.mode = k2K; p.mod = k16Qam; p.crHp = cr; p.crLp = cr;
+            FecStats st;
+            const bool ok = chain(p, 22.0, 136, nullptr, &st, ph);
+            CHECK(ok, "rate %s with puncturing phase %d not recovered (receiver chose %d)", rateName(cr), ph, st.punctPhase);
+            CHECK(st.punctPhase == ph, "rate %s: phase %d detected as %d", rateName(cr), ph, st.punctPhase);
+        }
+    }
+    printf("puncturing phase search checked for rates 2/3 .. 7/8\n");
     printf(fails ? "DVB-T tests FAILED\n" : "DVB-T tests passed\n");
     return fails ? 1 : 0;
 }
