@@ -12,9 +12,9 @@ from scipy import signal
 SR = 44100
 OUT = os.environ.get('OUT', 'music_work'); os.makedirs(OUT, exist_ok=True)
 SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
-BAR = 2.0; NBARS = 46; DUR = NBARS * BAR           # 92 s
+BAR = 2.0; NBARS = 49; DUR = NBARS * BAR           # 98 s
 rnd = random.Random(11)
-HITS = [(4.0, 1), (24.0, 2), (46.0, 3), (80.0, 5)]   # time, size
+HITS = [(4.0, 1), (24.0, 2), (46.0, 3), (80.0, 4)]   # time, size
 BUILDS = [(0.0, 4.0), (20.0, 24.0), (42.0, 46.0), (72.0, 80.0)]
 
 CH = [  # Am9 - Fmaj7 - Cmaj7 - G6
@@ -28,7 +28,7 @@ def chord_at(t):
     for h, _ in HITS:
         if h - 4 <= t < h: return CH[3]            # every build hangs on G6
         if h <= t < h + 4: return CH[0]            # every hit lands on Am9
-    if t >= 88: return CH[0]
+    if t >= 90: return CH[0]
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
@@ -44,8 +44,8 @@ def energy(t):                                     # 0..10, the film's intensity
     if t < 64: return 7.5
     if t < 70: return 5
     if t < 72: return 3
-    if t < 84: return 10 if t >= 80 else 8
-    if t < 88: return 6
+    if t < 84: return 8.5 if t >= 80 else 8
+    if t < 90: return 5
     return 3
 
 class Stem:
@@ -132,8 +132,8 @@ for b in range(NBARS):
     if E >= 8:
         for k in (.5, 1.5): drums.add(t0 + k, .1, 38, 36 + 3 * E, 0.003)
 # resolve: a long held chord under the last bars
-timp.add(88.0, 3.0, 33, 40)
-bass.add(88.0, 4.0, 33, 50)
+timp.add(90.0, 3.0, 33, 40)
+bass.add(90.0, 6.0, 33, 50)
 # ---------------------------------------------------------------- builds and hits
 for (a, b), (h, size) in zip(BUILDS, HITS):
     ch = chord_at(h + .1)
@@ -216,22 +216,25 @@ def riser(t_end, dur, g):
         S = np.fft.rfft(sg, axis=0); f = np.fft.rfftfreq(len(sg), 1 / SR); S *= np.exp(-((np.log(f + 1) - np.log(c)) ** 2) / 1.0)[:, None]
         out[k:k + 2048] += np.fft.irfft(S, len(sg), axis=0)
     out *= (x ** 2.4)[:, None]; out /= np.abs(out).max() + 1e-9
-    i = int((t_end - dur) * SR); y = np.zeros_like(mix); y[i:i + n] = out * g; return y
+    i = max(0, int((t_end - dur) * SR)); y = np.zeros_like(mix); y[i:i + n] = out[:len(y) - i][:n] * g; return y
 def impact(t, g, f0=70):
     n = int(4.0 * SR); x = np.arange(n) / SR; fr = f0 * np.exp(-x * 1.1) + 36
     s_ = np.sin(2 * np.pi * np.cumsum(fr) / SR) * (np.minimum(1, x / .02) * np.exp(-x * 1.5))
     nz = lp(rng.standard_normal((n, 1)), 3500)[:, 0] * np.exp(-x * 3.2) * .5
     y = np.zeros_like(mix); i = int(t * SR); sig = np.stack([s_ + nz, s_ + nz], 1) * g; y[i:i + n] = sig[:len(y) - i]; return y
 fx = np.zeros_like(mix)
-for (a, b), (h, size), g in zip(BUILDS, HITS, (.14, .26, .32, .40)): fx += riser(h, b - a, g)
-for (h, size), g in zip(HITS, (.12, .26, .36, .58)): fx += impact(h, g)
+for (a, b), (h, size), g in zip(BUILDS, HITS, (.14, .24, .28, .34)): fx += riser(h - .04, b - a, g)
+for (h, size), g in zip(HITS, (.12, .24, .30, .34)): fx += impact(h, g)
 mix += fx + rv(fx, IR_HALL) * .35
+# gain riding: lift the final build, trim the climax, settle for the outro
+rd = np.interp(T, [0, 40, 60, 72, 79.9, 80.5, 84, 90, 98], [1, 1, 1, 1.25, 1.3, .62, .62, .8, .9])
+mix *= rd[:, None]
 mix *= np.minimum(1, T / .8)[:, None]
 tail = np.clip((DUR + 2.4 - T) / 3.4, 0, 1) ** 1.5; mix *= tail[:, None]
 mix = hp(mix, 28); mix = lp(mix, 14500)
 blk = 1024; nb = len(mix) // blk
 rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-6
-g = np.where(rms > .22, (.22 / rms) ** (1 - 1 / 1.6), 1.0)
+g = np.where(rms > .20, (.20 / rms) ** (1 - 1 / 1.6), 1.0)
 g = np.convolve(g, np.ones(14) / 14, 'same'); gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
 mix *= gain[:, None]
 mix = np.where(np.abs(mix) > .85, np.sign(mix) * (.85 + .15 * np.tanh((np.abs(mix) - .85) / .15)), mix)

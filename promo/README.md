@@ -1,6 +1,6 @@
 # OnAir promo video
 
-`OnAir_promo.mp4` (1080p30, 92 s). Every scene is drawn on a canvas in the app's own palette (with glass cards, a 3D waterfall, particle constellations, bloom, grain and motion-blurred transitions) (accent blue, navy waterfall ramp,
+`OnAir_promo.mp4` (1080p30, 98 s). Every scene is drawn on a canvas in the app's own palette (with glass cards, a 3D waterfall, particle constellations, bloom, grain and motion-blurred transitions) (accent blue, navy waterfall ramp,
 accent-coloured constellations on near-black plots); nothing imitates the app's windows.
 
 * `scenes.js` + `common_head.js` + `index.html`: the scenes. `node render.cjs render 4` renders frames with Playwright
