@@ -65,6 +65,7 @@ void Scanner::run() {
     tune.bandwidthMhz = cfg_.bwMhz;
     tune.sampleRate = cfg_.bwMhz >= 7 || cfg_.autoBandwidth ? 10e6 : 8e6;
     tune.centerHz = freqs.empty() ? 0 : freqs[0] * 1e6;
+    if (cfg_.atsc) { tune.bandwidthMhz = 6; tune.sampleRate = 8e6; e.setStandard(3); }   // ATSC: always 6 MHz, no bandwidth detection
     FileOptions fo;
     if (!e.start(dev_, tune, fo)) {
         std::lock_guard<std::mutex> lk(mu_);
@@ -122,7 +123,7 @@ void Scanner::run() {
         (void)floorSum; (void)nFl;
         r.occupied = r.occupancyDb >= cfg_.occupancyDb;
         // the width of the signal: occupied if a flat-topped signal is there, and decoded with that channel bandwidth
-        if (cfg_.autoBandwidth) {
+        if (cfg_.autoBandwidth && !cfg_.atsc) {
             const BandwidthEstimate be = bwDet.estimate();
             if (be.valid) {
                 r.occupied = true;
@@ -149,19 +150,21 @@ void Scanner::run() {
         RxTelemetry t;
         uint64_t rxSeq = 0;
         auto tl = Clock::now();
-        bool l1 = false, tlock = false;
+        bool l1 = false, tlock = false, alock = false;
         while (std::chrono::duration<double>(Clock::now() - tl).count() < cfg_.lockTimeoutSec && !cancel_) {
             if (e.latestRx(t, rxSeq)) {
                 rxSeq = t.seq;
-                if (t.standard == 1) {
+                if (t.standard == 2) {
+                    if (t.atsc.fieldSync && t.atsc.eqTrained) { alock = true; if (t.atsc.tsOk) break; }
+                } else if (t.standard == 1) {
                     if (t.dvbt.tpsOk) { tlock = true; if (t.dvbt.fecSync && t.dataValid) break; if (std::chrono::duration<double>(Clock::now() - tl).count() > cfg_.lockTimeoutSec - 0.8) break; }
                 } else if (t.l1preOk && t.chValid) { l1 = true; if ((t.l1postOk && t.dataValid) || std::chrono::duration<double>(Clock::now() - tl).count() > 3.0) break; }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(25));
         }
         if (cancel_) break;
-        if (!l1 && !tlock) {
-            r.note = t.p1Count > 0 ? "T2 preamble found, L1 not decodable (weak?)" : "signal present, no DVB-T2";
+        if (!l1 && !tlock && !alock) {
+            r.note = cfg_.atsc ? "signal present, no ATSC" : t.p1Count > 0 ? "T2 preamble found, L1 not decodable (weak?)" : "signal present, no DVB-T2";
             if (t.p1Count > 0 && t.p1.valid) {
                 const FftMode* fm = fftModeFromS2(t.p1.s2field1);
                 r.mode = std::string(s1Name(t.p1.s1)) + " " + (fm ? fm->name : "?");
@@ -173,7 +176,14 @@ void Scanner::run() {
         }
         r.t2 = true;
         r.l1post = t.l1postOk;
-        if (tlock) {
+        if (alock) {
+            r.standard = "ATSC";
+            r.mode = "8-VSB, 6 MHz";
+            char b[120];
+            snprintf(b, sizeof b, "field sync %d, SNR %.1f dB", t.atsc.fieldParity, t.atsc.snrDb);
+            r.plpInfo = b;
+            r.snrDb = (float)t.atsc.snrDb;
+        } else if (tlock) {
             r.standard = "DVB-T";
             char b[160];
             snprintf(b, sizeof b, "DVB-T %s GI %s", t.fftN == 8192 ? "8K" : "2K", dvbt::guardName(t.giIdx));
@@ -191,11 +201,11 @@ void Scanner::run() {
             r.mode = b;
             r.cellId = p.cellId; r.networkId = p.networkId;
         }
-        if (!tlock) {
+        if (!tlock && !alock) {
         r.snrDb = t.dataValid ? t.dataSnrDb : t.p2SnrDb;
         if (t.plpMerDb > 0) r.snrDb = (float)t.plpMerDb;
         }
-        if (!tlock && t.l1postOk) {
+        if (!tlock && !alock && t.l1postOk) {
             static const char* modN[] = {"QPSK", "16-QAM", "64-QAM", "256-QAM"};
             std::string s;
             for (size_t k = 0; k < t.l1post.plps.size(); k++) {
@@ -226,7 +236,8 @@ void Scanner::run() {
             for (auto& sv : ts.services) r.services.push_back((sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name) + " [" + sv.typeName() + "]");
             r.muxKbps = ts.muxKbps;
             e.latestRx(t, 0);
-            if (t.standard == 1) r.snrDb = t.dataSnrDb;
+            if (t.standard == 2) r.snrDb = (float)t.atsc.snrDb;
+            else if (t.standard == 1) r.snrDb = t.dataSnrDb;
             else if (t.plpValid && t.plpMerDb > 0) r.snrDb = (float)t.plpMerDb; else if (t.dataValid) r.snrDb = t.dataSnrDb;
             uint64_t tot = t.blocksOk + t.blocksBad;
             r.fecGood = tot ? (double)t.blocksOk / tot : 0;

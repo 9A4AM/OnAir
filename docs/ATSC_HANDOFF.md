@@ -23,14 +23,17 @@ so far is against signals produced by our own generator, and the FEC chain is ve
 A real ATSC capture (cs8/cu8, ~8-10 Msps, any US/Korean station) would be the best next validation; ask the user if someone can
 record one.
 
-## 2. State in one paragraph
+## 2. State in one paragraph (updated later the same day, after commit `4699d7c`)
 
-The channel coding (randomiser, Reed-Solomon (207,187), convolutional byte interleaver, 12-way trellis code, field sync) and its
-inverse (Viterbi, de-interleaver, RS, de-randomiser) are finished and verified. A test-signal generator exists. A first complete
-receiver exists (resampler + matched filter, pilot loop, symbol clock, field sync, per-field least-squares equaliser, decoder)
-and decodes clean and impaired generated signals, **but**: (a) it is about 2x too slow for real time, (b) a recent change made some
-test cases flaky (see 5.2, the first thing to fix), (c) strong post-echoes (e.g. -6 dB at 5 us) are not handled (needs a decision
-feedback equaliser), and (d) it is **not connected to the engine, UI, scanner or quality meter at all**.
+The coding chain, generator and receiver exist and are **integrated**: the engine has an ATSC mode (`Engine::setStandard(3)`, the
+DVB/ATSC switch in the app), the app shows ATSC lamps, readouts, an 8-level histogram, equaliser response, level strip and a
+Receiver-tab page, the quality meter has an ATSC row (15.2 dB), the scanner and the Scan tab have ATSC presets, the synthetic
+device can generate ATSC, and `dect2cli --synthetic --atsc` runs the whole path (verified: locks in 0.2 s, TS flows, no continuity
+errors, service list shows). The stall/flakiness (old section 5.2) was an out-of-range read in the timing measurement and is fixed;
+the receiver also recovers quickly after a signal dropout and does not lock on noise. The sample thread needs about 0.5x real time;
+the per-field work runs on a worker thread. **11 of 12 impairment cases pass; the failing one is a strong post-echo (-6 dB at 5 us)
+which needs a decision feedback equaliser (section 5.3).** What has *never* been done: running on a real ATSC signal or the HackRF,
+AC-3 audio and PSIP (ATSC channel names / guide), and an actual scan.
 
 ## 3. Repository map (ATSC-relevant)
 
@@ -122,7 +125,10 @@ Run-to-run, the same cases passed 100 % in the run before the last two code chan
 6. gr-dtv's deinterleaver has an extra 156-byte alignment FIFO so interleaver + de-interleaver delay the stream by exactly 52 segments;
    our `ByteInterleaver(true)` reproduces it. The de-randomiser is reset at output segment 52 of each field.
 
-### 5.2 FIRST THING TO FIX: lock loss / stalls introduced by the last edits
+### 5.2 RESOLVED: lock loss / stalls (kept for the record)
+Cause found with AddressSanitizer: the symbol-timing measurement read samples that had already been discarded (random leftover memory),
+so results varied with tiny numeric changes. Fixed by checking that all needed samples are still buffered and keeping one segment of
+history. The original analysis follows.
 Between the run where all cases except the 5 us echo passed and the last run, the changes were: the NEON/split-array resampler
 (`processInput`), profiling hooks, and a small reordering. Results are not bit-identical any more (different float summation order)
 and several cases now stop delivering packets after ~6 fields or lose lock. Almost certainly this is not the NEON code being wrong
@@ -197,31 +203,26 @@ segments after a reset are discarded.
 
 ## 7. Work still to do, in order
 
-1. **Fix the lock-loss/stall problem** (5.2) and make the test table green again. Add a stress test: lock, drop 0.3 s of signal,
-   reacquire; random start offsets; very low SNR; no-signal noise (must not report lock; check false lock rate).
-2. **Speed** (5.4) until the ATSC path needs < 50 % of one core at 8 Msps; threading for the field decode.
-3. **DFE and decision-directed refinement** (5.3), tests with 0 dB, -3 dB echoes up to 10-15 us and the A/74-style ensembles.
-4. **Engine integration** (follow what was done for DVB-T):
-   - `RxTelemetry`: add `AtscTelemetry atsc;` and `standard == 2`; `Engine` holds an `AtscReceiver rxA_`, `Engine::setStandard(0/1/2/3)`
-     or a separate "family" flag (UI switch) so that DVB auto-detection (T2 <-> T alternation) is not used in ATSC mode;
-     `activeStd_`, `autoSelect`, `feedRx`, `applyReset`, `start/stop/configure` (rate >= 6.5 Msps; the HackRF Pro tunes exactly
-     only at <= 10 Msps, use 8 or 10 Msps), `logAtscEvents` (lock messages), packet callback -> `onTsPackets` (it expects 188-byte
-     packets and the signal duration in seconds).
-   - The ATSC channel is 6 MHz wide: bandwidth fixed at 6 MHz in the app when ATSC mode is on (the automatic bandwidth detector is for DVB).
-   - ATSC carries MPEG-2/H.264 video with **AC-3/E-AC-3 audio**: check that `Player` (FFmpeg) plays AC-3 and that `TsDemux`
-     recognises the stream types (0x81 AC-3 private audio in ATSC PSIP) and parses PSIP (VCT/EIT) tables for channel names and the
-     programme guide (ATSC does not use SDT/NIT/DVB EIT). PSIP parsing is a separate task: base PID 0x1FFB, tables TVCT (0xC8), MGT (0xC7),
-     EIT (0xCB), STT (0xCD).
-5. **UI.** Remove the "not implemented" notice in `standardSwitch()` and enable Start. Header lamps (pilot, segment sync, field
-   sync, equaliser, TS), readouts (CFO, SRO, SNR, segment error rate), constellation panel replaced by an 8-level histogram/eye view
-   (`AtscTelemetry::levels`), equaliser impulse response plot (`eqTaps`, cursor at `eqCursor`), history plots, Receiver tab contents.
-   Quality bar: add an ATSC row to the `QualityMeter` table (threshold of visibility about 15.2 dB SNR).
-6. **Scanner.** US channel plan: UHF channels 14-36 at 6 MHz steps (centre of channel 14 is 473 MHz; centre frequency of a channel
-   is `470 + 6 (n - 14) + 3` MHz), VHF high 7-13 (177-213 MHz). South Korea uses the same raster. Presets in the Scan tab, ATSC mode
-   in `Scanner::run` (lock criteria = field sync + RS success), names from PSIP.
-7. **Synthetic source in the app** (Synthetic device -> ATSC variant using `atsc::Generator` for demonstrations without hardware).
-8. **Real signal validation** (needs a capture), then tuning of thresholds (field sync error limit, lock criteria, SNR thresholds).
-9. Documentation: README status table, `PROJECT_BRIEF.md` sections 11.x and 12, `TASKS.md` block C2 ticks.
+Done since the first version of this list: lock-loss fix, speed + worker thread, engine integration (7.4 first bullet), app UI
+(7.5 except quality details), ATSC row in the quality meter, scanner + presets (untested without a HackRF), synthetic ATSC source,
+noise and dropout tests.
+
+1. **Decision feedback equaliser and decision-directed refinement** (5.3). This is the main quality gap: echoes stronger than about
+   -8 dB at 2 us (or any echo beyond ~10 us) are not handled. Add tests with -3 dB / 0 dB echoes at 5-15 us.
+2. **Real signal validation** (needs a capture, or an ATSC modulator): check field sync thresholds, SNR estimate, pilot level, then tune.
+3. **PSIP and AC-3.** ATSC streams carry channel names/numbers/guide in PSIP tables (PID 0x1FFB: STT 0xCD, MGT 0xC7, TVCT 0xC8, EIT 0xCB)
+   instead of DVB SDT/NIT/EIT. `core/src/ts.cpp` (`TsDemux`) only parses DVB tables, so ATSC services currently appear as "service N"
+   (the synthetic test stream uses DVB SDT, so it shows a name). Parse TVCT for names/major.minor numbers and EIT/ETT for the guide.
+   Check that `core/src/player.cpp` plays AC-3 (stream type 0x81) and that the PMT parser reports it as audio.
+4. **Scanner check on hardware**: US channel centre frequencies are `473 + 6 (n - 14)` MHz for UHF (n = 14..36), `177 + 6 (n - 7)` for VHF high
+   (n = 7..13); run a scan with the HackRF in the US/Korea (or with a recording of several channels).
+5. **Speed polish**: sample thread 0.5x real time; field worker about 0.55x. Smaller resampler (`J` about 14 instead of 22), a 4-state
+   trellis decoder, and skipping RS work on clean segments would give margin for slower machines. Portable (non-Accelerate) fallbacks
+   exist for the filters but are unoptimised.
+6. **Robustness**: add the ATSC receiver to `tests/fuzz_rx.cpp` and run the ASan/UBSan build (`build-asan`) on `test_atsc_rx`
+   (slow under ASan: use a short case) before releasing.
+7. **UI polish**: the standard combo is disabled in ATSC mode; the TV/Guide tabs show DVB-style data; "Stream" tab outputs work unchanged.
+8. **Documentation**: README status table, `PROJECT_BRIEF.md` sections 11.x and 12, `TASKS.md` block C2 ticks.
 
 ## 8. Facts and conventions for whoever continues
 - The user's preferences: dense dark instrument-style UI, everything automatic with manual override, honest reporting of limits
@@ -231,5 +232,5 @@ segments after a reset are discarded.
 - Verification method used throughout the project: build the reference code (GNU Radio blocks) against stub headers and compare bit
   for bit; generate signals ourselves and run them through the receiver with impairments; run ASan/UBSan (`build-asan` directory) and
   the fuzz test (`tests/fuzz_rx.cpp`) when a receiver changes; extend the fuzz test with the ATSC receiver once the code stabilises.
-- Commits for this work: `5281aab` coding chain, `fc9838b` generator + first receiver, `4699d7c` timing/PLL fixes and test table
-  (this document is committed with the next commit).
+- Commits for this work: `5281aab` coding chain, `fc9838b` generator + first receiver, `4699d7c` timing/PLL fixes and test table, then later commits for the timing-read fix, speed/worker thread, engine integration, UI,
+  scanner, tests (see `git log`).

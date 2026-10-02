@@ -1856,11 +1856,17 @@ static void scanTab(App& a) {
     for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].kind == DeviceInfo::HackRF) hw = i;
     if (hw < 0) { ImGui::TextDisabled("Scanning needs a HackRF."); return; }
     ImGui::BeginDisabled(pr.running);
-    const char* presets[] = {"UHF 474-858 MHz (8 MHz)", "VHF III 174-230 MHz (7 MHz)", "Custom"};
-    ImGui::SetNextItemWidth(240);
-    if (ImGui::Combo("##range", &a.scanPreset, presets, 3)) {
-        if (a.scanPreset == 0) { a.scanCfg.startMHz = 474; a.scanCfg.stopMHz = 858; a.scanCfg.stepMHz = 8; a.scanCfg.bwMhz = 8; }
-        if (a.scanPreset == 1) { a.scanCfg.startMHz = 177.5; a.scanCfg.stopMHz = 226.5; a.scanCfg.stepMHz = 7; a.scanCfg.bwMhz = 7; }
+    const char* presetsDvb[] = {"UHF 474-858 MHz (8 MHz)", "VHF III 174-230 MHz (7 MHz)", "Custom"};
+    const char* presetsAtsc[] = {"US UHF ch 14-36 (470-608 MHz)", "US VHF high ch 7-13 (174-216 MHz)", "Custom"};
+    ImGui::SetNextItemWidth(260);
+    if (ImGui::Combo("##range", &a.scanPreset, a.atscMode ? presetsAtsc : presetsDvb, 3)) {
+        if (a.atscMode) {
+            if (a.scanPreset == 0) { a.scanCfg.startMHz = 473; a.scanCfg.stopMHz = 605; a.scanCfg.stepMHz = 6; a.scanCfg.bwMhz = 6; }
+            if (a.scanPreset == 1) { a.scanCfg.startMHz = 177; a.scanCfg.stopMHz = 213; a.scanCfg.stepMHz = 6; a.scanCfg.bwMhz = 6; }
+        } else {
+            if (a.scanPreset == 0) { a.scanCfg.startMHz = 474; a.scanCfg.stopMHz = 858; a.scanCfg.stepMHz = 8; a.scanCfg.bwMhz = 8; }
+            if (a.scanPreset == 1) { a.scanCfg.startMHz = 177.5; a.scanCfg.stopMHz = 226.5; a.scanCfg.stepMHz = 7; a.scanCfg.bwMhz = 7; }
+        }
     }
     ImGui::SameLine(); ImGui::TextUnformatted("from"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(80); ImGui::InputDouble("##from", &a.scanCfg.startMHz, 0, 0, "%.1f");
     ImGui::SameLine(); ImGui::TextUnformatted("to"); ImGui::SameLine(0, 4); ImGui::SetNextItemWidth(80); ImGui::InputDouble("##to", &a.scanCfg.stopMHz, 0, 0, "%.1f");
@@ -1878,6 +1884,7 @@ static void scanTab(App& a) {
             a.scanWasRunning = a.engine.running();
             if (a.scanWasRunning) a.engine.stop();
             a.scanCfg.tune = a.tune;
+            a.scanCfg.atsc = a.atscMode;
             std::string err;
             if (!a.scanner.start(a.devices[hw], a.scanCfg, err)) a.engine.log("scan: " + err);
         }

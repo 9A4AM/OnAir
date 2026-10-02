@@ -59,14 +59,16 @@ Goal: normal installers for macOS arm64, macOS Intel, Windows x64, Linux x64/arm
 
 ## C2. ATSC 1.0 support (8VSB, 6 MHz)
 
-The DVB / ATSC switch under the tuner settings is in the UI already; ATSC mode only shows a "not implemented" notice and disables Start.
-- [x] Channel coding (randomiser, RS(207,187), byte interleaver, trellis, field sync) and Viterbi/field decoder; transmit chain bit-exact against `gr-dtv` (`tests/reference/cmp_atsc.cc`, `test_atsc_fec`).
-- [x] Test signal generator (`atsc_gen`), first receiver (`atsc_rx`: resampler/matched filter, pilot loop, symbol clock, field sync, per-field least-squares equaliser): locks and decodes a clean generated signal in `test_atsc_rx` (SNR plateaus near 25 dB, first two fields after lock still fail, receiver about 2x too slow for real time, no engine/UI integration yet, echo/CFO/SRO/noise cases not tested).
-- [ ] Front end: pilot/carrier recovery, symbol timing from the segment sync, field-sync detection, resampling from the capture rate.
-- [ ] Adaptive equalizer (training on field sync, then blind/decision-directed); multipath tests with echoes.
-- [ ] Trellis (Viterbi) decoder, de-interleaver, Reed-Solomon, de-randomizer -> MPEG transport stream into the existing TS/EPG/player path (AC-3 audio).
-- [ ] Engine integration, UI (8-level eye view, equalizer and field-sync lamps), scanner (6 MHz US channel plan), quality meter table.
-- [ ] Real-signal validation **(needs a capture from a country with ATSC)**.
+Details and the full status are in `docs/ATSC_HANDOFF.md`.
+- [x] Channel coding and decoder, bit-exact against `gr-dtv` (`test_atsc_fec`, `tests/reference/cmp_atsc.cc`).
+- [x] Test signal generator and receiver (resampler/matched filter, pilot loop, symbol clock, field sync, per-field equaliser), worker thread, about 0.5x real time on the sample thread.
+- [x] Engine integration, DVB/ATSC switch, lamps/readouts/panels, quality meter row, synthetic ATSC source, `dect2cli --synthetic --atsc`.
+- [x] Scanner support and US presets (compiles; not exercised on hardware).
+- [x] Tests: clean, carrier/clock offsets, SNR 16.5 dB, moderate echoes, noise only, dropout recovery.
+- [ ] Decision feedback equaliser for strong echoes (-6 dB at 5 us currently fails).
+- [ ] PSIP (channel names, guide) and AC-3 audio check.
+- [ ] Real-signal validation **(needs a capture from an ATSC country)**; scan on hardware.
+- [ ] Fuzz/ASan runs, README and brief updates.
 
 ## D. Real-world validation (when the HackRF is available)
 
