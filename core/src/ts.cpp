@@ -175,7 +175,7 @@ void TsDemux::section(int pid, const uint8_t* s, int len) {
     else if (tid == 0x02) parsePmt(pid, s, len);
     else if (tid == 0x42) parseSdt(s, len);
     else if (tid == 0x40) parseNit(s, len);
-    else if (tid == 0x4E) parseEit(s, len);
+    else if (tid == 0x4E || (tid >= 0x50 && tid <= 0x5F)) parseEit(s, len);
     else if (tid == 0x70 || tid == 0x73) parseTdt(s, len);
 }
 
@@ -317,26 +317,93 @@ void TsDemux::parseNit(const uint8_t* s, int len) {
 }
 
 void TsDemux::parseEit(const uint8_t* s, int len) {
-    int sid = (s[3] << 8) | s[4];
-    int secNum = s[6];
-    if (secNum > 1 || len < 18) return;
+    const int tid = s[0];
+    const int sid = (s[3] << 8) | s[4];
+    const int secNum = s[6];
+    if (len < 18) return;
+    // legacy: present / following event names for the service list
+    if (tid == 0x4E && secNum <= 1) {
+        int i = 14;
+        std::string nameOut;
+        if (i + 12 <= len - 4) {
+            int dl = ((s[i + 10] & 0x0F) << 8) | s[i + 11];
+            for (int j = i + 12; j + 2 <= i + 12 + dl && j + 2 <= len; ) {
+                int tag = s[j], l = s[j + 1];
+                if (tag == 0x4D && l >= 5) {
+                    const uint8_t* d = s + j + 2;
+                    int nl = d[3];
+                    if (4 + nl <= l) nameOut = dvbText(d + 4, nl);
+                }
+                j += 2 + l;
+            }
+        }
+        TsService& sv = services_[sid];
+        sv.id = sid;
+        (secNum == 0 ? sv.now : sv.next) = nameOut;
+    }
+    // the guide: every event in the section
+    auto bcd = [](int v) { return (v >> 4) * 10 + (v & 15); };
     int i = 14;
-    std::string nameOut;
-    if (i + 12 <= len - 4) {
-        int dl = ((s[i + 10] & 0x0F) << 8) | s[i + 11];
-        for (int j = i + 12; j + 2 <= i + 12 + dl && j + 2 <= len; ) {
-            int tag = s[j], l = s[j + 1];
-            if (tag == 0x4D && l >= 5) {
-                const uint8_t* d = s + j + 2;
-                int nl = d[3];
-                if (4 + nl <= l) nameOut = dvbText(d + 4, nl);
+    const int end = len - 4;
+    auto& evs = epg_[sid];
+    while (i + 12 <= end) {
+        EpgEvent ev;
+        ev.eventId = (s[i] << 8) | s[i + 1];
+        const int mjd = (s[i + 2] << 8) | s[i + 3];
+        const bool undefined = s[i + 2] == 0xFF && s[i + 3] == 0xFF && s[i + 4] == 0xFF;
+        ev.start = undefined ? 0 : (int64_t)(mjd - 40587) * 86400 + bcd(s[i + 4]) * 3600 + bcd(s[i + 5]) * 60 + bcd(s[i + 6]);
+        ev.duration = bcd(s[i + 7]) * 3600 + bcd(s[i + 8]) * 60 + bcd(s[i + 9]);
+        ev.running = s[i + 10] >> 5;
+        const int dl = ((s[i + 10] & 0x0F) << 8) | s[i + 11];
+        const int dend = std::min(end, i + 12 + dl);
+        std::map<int, std::string> ext;
+        for (int j = i + 12; j + 2 <= dend; ) {
+            const int tag = s[j], l = s[j + 1];
+            if (j + 2 + l > dend) break;
+            const uint8_t* d = s + j + 2;
+            if (tag == 0x4D && l >= 5) {              // short event descriptor
+                ev.lang.assign((const char*)d, 3);
+                const int nl = d[3];
+                if (4 + nl < l) {
+                    ev.title = dvbText(d + 4, nl);
+                    const int tl = d[4 + nl];
+                    if (5 + nl + tl <= l) ev.text = dvbText(d + 5 + nl, tl);
+                }
+            } else if (tag == 0x4E && l >= 6) {       // extended event descriptor (several pieces, in order)
+                const int num = d[0] >> 4;
+                const int itemsLen = d[4];
+                if (5 + itemsLen < l) {
+                    const int tl = d[5 + itemsLen];
+                    if (6 + itemsLen + tl <= l) ext[num] = dvbText(d + 6 + itemsLen, tl);
+                }
+            } else if (tag == 0x54 && l >= 2) {       // content descriptor
+                ev.genre = d[0] >> 4;
             }
             j += 2 + l;
         }
+        for (auto& kv : ext) ev.extended += kv.second;
+        i = dend;
+        if (ev.start == 0 || ev.duration <= 0) continue;
+        auto it = evs.find(ev.eventId);
+        if (it != evs.end() && ev.extended.empty()) ev.extended = it->second.extended;
+        evs[ev.eventId] = ev;
     }
-    TsService& sv = services_[sid];
-    sv.id = sid;
-    (secNum == 0 ? sv.now : sv.next) = nameOut;
+    // keep the table bounded: drop the oldest events
+    while (evs.size() > 400) {
+        auto oldest = evs.begin();
+        for (auto it = evs.begin(); it != evs.end(); ++it) if (it->second.start < oldest->second.start) oldest = it;
+        evs.erase(oldest);
+    }
+}
+
+std::map<int, std::vector<EpgEvent>> TsDemux::epg() const {
+    std::map<int, std::vector<EpgEvent>> out;
+    for (auto& kv : epg_) {
+        auto& v = out[kv.first];
+        for (auto& e : kv.second) v.push_back(e.second);
+        std::sort(v.begin(), v.end(), [](const EpgEvent& a, const EpgEvent& b) { return a.start < b.start; });
+    }
+    return out;
 }
 
 void TsDemux::parseTdt(const uint8_t* s, int len) {
@@ -351,10 +418,13 @@ void TsDemux::parseTdt(const uint8_t* s, int len) {
     y += k; m = m - 1 - k * 12;
     char b[40]; snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d:%02d UTC", 1900 + y, m, d, hh, mm, ss);
     utc_ = b;
+    tdtUnix_ = (int64_t)(mjd - 40587) * 86400 + hh * 3600 + mm * 60 + ss;
+    tdtAt_ = streamClock_;
 }
 
 void TsDemux::advance(double dt) {
     if (dt <= 0) return;
+    streamClock_ += dt;
     const double a = 0.35;
     for (auto& kv : pids_) {
         double k = kv.second.bytesWin * 8.0 / dt / 1000.0;
@@ -371,6 +441,7 @@ TsSnapshot TsDemux::snapshot() const {
     sn.networkName = network_; sn.utc = utc_; sn.onid = onid_; sn.tsid = tsid_;
     sn.totalPackets = total_; sn.nullPackets = nulls_; sn.teiPackets = tei_; sn.ccErrors = ccErr_;
     sn.muxKbps = muxKbps_; sn.nullKbps = nullKbps_;
+    sn.utcNow = tdtUnix_ ? tdtUnix_ + (int64_t)(streamClock_ - tdtAt_) : 0;
     std::map<int, std::string> label;
     for (auto& kv : services_) {
         TsService sv = kv.second;

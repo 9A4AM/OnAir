@@ -227,6 +227,10 @@ struct App {
     int histWindow = 60;
     int ttxPage = 100;
     int plpSel = -1; // -1 = automatic
+    std::map<int, std::vector<EpgEvent>> epg;
+    double epgT = -10;
+    int guideSid = -1, guideEvent = -1;
+    bool fakeEpg = false; // --fakeepg: made-up programmes, for checking the layout when the mux sends none
     char favName[64] = "";
     MultipathDetector mpd;
     QualityMeter quality;
@@ -415,6 +419,7 @@ static void toolbar(App& a) {
         if (ImGui::Button("  Start  ")) {
             a.tune.centerHz = a.freqMhz * 1e6;
             applyBandwidth(a);
+            if (isFile) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate
             if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
             else {
                 a.engine.setComputeMode(a.computeMode);
@@ -498,7 +503,7 @@ static void toolbar(App& a) {
     if (isFile && !running) {
         ImGui::TextDisabled("file");
         ImGui::SameLine();
-        if (ImGui::SmallButton("Open…")) { auto p = openFileDialog(); if (!p.empty()) { a.file.path = p; a.file.format = guessFormat(p); } }
+        if (ImGui::SmallButton("Open…")) { auto p = openFileDialog(); if (!p.empty()) { a.file.path = p; a.file.format = guessFormat(p); const double r = guessSampleRate(p); if (r > 0) a.file.sampleRate = r; } }
         ImGui::SameLine();
         ImGui::TextUnformatted(a.file.path.empty() ? "(none)" : a.file.path.c_str());
         ImGui::SameLine();
@@ -953,6 +958,99 @@ static void teletextTab(App& a) {
     snprintf(title, sizeof title, "P%d%s", pg.number, pg.subtitle ? "  (subtitle page)" : "");
     dl->AddText(ImVec2(o.x + 2, o.y + 1), IM_COL32(255, 255, 255, 255), title);
     ImGui::Dummy(ImVec2(cw * 40, ch * 25));
+}
+
+// ---- programme guide helpers
+static int64_t utcNowOf(const App& a) { return a.ts.utcNow ? a.ts.utcNow : (int64_t)time(nullptr); }
+static std::string fmtLocal(int64_t utc, const char* f) {
+    time_t t = (time_t)utc; struct tm m; localtime_r(&t, &m);
+    char b[48]; strftime(b, sizeof b, f, &m);
+    return b;
+}
+static const EpgEvent* epgCurrent(const App& a, int sid, const EpgEvent** next = nullptr) {
+    auto it = a.epg.find(sid);
+    if (it == a.epg.end()) return nullptr;
+    const int64_t now = utcNowOf(a);
+    const EpgEvent* cur = nullptr;
+    if (next) *next = nullptr;
+    for (size_t i = 0; i < it->second.size(); i++) {
+        const EpgEvent& e = it->second[i];
+        if (e.start <= now && now < e.end()) { cur = &e; if (next && i + 1 < it->second.size()) *next = &it->second[i + 1]; break; }
+        if (e.start > now) { if (next && !*next) *next = &e; break; }
+    }
+    return cur;
+}
+static const char* genreName(int g) {
+    static const char* n[] = {"", "Movie / drama", "News / current affairs", "Show / game show", "Sports", "Children's / youth", "Music / ballet / dance", "Arts / culture", "Social / political / economics", "Education / science", "Leisure / hobbies"};
+    return g >= 1 && g <= 10 ? n[g] : "";
+}
+
+static void guideTab(App& a) {
+    const int64_t now = utcNowOf(a);
+    if (a.ts.services.empty()) { ImGui::TextDisabled("waiting for the service list..."); return; }
+    size_t total = 0;
+    for (auto& kv : a.epg) total += kv.second.size();
+    if (total == 0) {
+        ImGui::TextWrapped("No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). "
+                           "Some multiplexes send none at all: the 522 MHz Sharjah mux transmits empty EIT sections.");
+        ImGui::TextDisabled("clock: %s%s", fmtLocal(now, "%a %d %b %H:%M").c_str(), a.ts.utcNow ? " (from the broadcast time signal)" : " (this computer's clock)");
+        return;
+    }
+    if (a.guideSid < 0 || !a.epg.count(a.guideSid)) { a.guideSid = a.engine.player().selected() >= 0 && a.epg.count(a.engine.player().selected()) ? a.engine.player().selected() : a.epg.begin()->first; }
+    ImGui::BeginChild("gsv", ImVec2(260, 0), ImGuiChildFlags_Borders);
+    for (auto& sv : a.ts.services) {
+        auto it = a.epg.find(sv.id);
+        if (it == a.epg.end()) continue;
+        const EpgEvent* nx = nullptr;
+        const EpgEvent* cur = epgCurrent(a, sv.id, &nx);
+        ImGui::PushID(sv.id);
+        if (ImGui::Selectable(sv.name.empty() ? std::to_string(sv.id).c_str() : sv.name.c_str(), a.guideSid == sv.id)) { a.guideSid = sv.id; a.guideEvent = -1; }
+        ImGui::TextDisabled("  %s", cur ? (fmtLocal(cur->start, "%H:%M") + " " + cur->title).c_str() : "-");
+        ImGui::PopID();
+    }
+    ImGui::EndChild();
+    ImGui::SameLine();
+    ImGui::BeginChild("gev", ImVec2(0, 0));
+    const auto& evs = a.epg[a.guideSid];
+    ImGui::TextDisabled("%zu events   local time %s", evs.size(), fmtLocal(now, "%a %d %b %H:%M").c_str());
+    const float detailH = 150;
+    ImGui::BeginChild("evlist", ImVec2(0, -detailH), ImGuiChildFlags_Borders);
+    if (ImGui::BeginTable("evt", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
+        ImGui::TableSetupColumn("time", ImGuiTableColumnFlags_WidthFixed, 150);
+        ImGui::TableSetupColumn("length", ImGuiTableColumnFlags_WidthFixed, 60);
+        ImGui::TableSetupColumn("programme");
+        std::string lastDay;
+        for (size_t i = 0; i < evs.size(); i++) {
+            const EpgEvent& e = evs[i];
+            if (e.end() < now - 1800) continue; // hide what ended more than half an hour ago
+            const bool cur = e.start <= now && now < e.end();
+            const std::string day = fmtLocal(e.start, "%a %d %b");
+            if (day != lastDay) { ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextColored(ImVec4(0.45f, 0.75f, 1, 1), "%s", day.c_str()); lastDay = day; }
+            ImGui::TableNextRow();
+            if (cur) ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, IM_COL32(40, 110, 60, 110));
+            ImGui::TableNextColumn();
+            char lbl[64]; snprintf(lbl, sizeof lbl, "%s - %s##%d", fmtLocal(e.start, "%H:%M").c_str(), fmtLocal(e.end(), "%H:%M").c_str(), e.eventId);
+            if (ImGui::Selectable(lbl, a.guideEvent == e.eventId, ImGuiSelectableFlags_SpanAllColumns)) a.guideEvent = e.eventId;
+            ImGui::TableNextColumn(); ImGui::Text("%d min", (e.duration + 30) / 60);
+            ImGui::TableNextColumn();
+            if (cur) { const float f = (float)(now - e.start) / (float)e.duration; ImGui::Text("%s", e.title.c_str()); ImGui::SameLine(); ImGui::TextDisabled("  now, %.0f%%", f * 100); }
+            else ImGui::TextUnformatted(e.title.c_str());
+        }
+        ImGui::EndTable();
+    }
+    ImGui::EndChild();
+    ImGui::BeginChild("evdet", ImVec2(0, 0), ImGuiChildFlags_Borders);
+    const EpgEvent* sel = nullptr;
+    for (auto& e : evs) if (e.eventId == a.guideEvent) sel = &e;
+    if (!sel) sel = epgCurrent(a, a.guideSid);
+    if (sel) {
+        ImGui::TextColored(ImVec4(0.95f, 0.85f, 0.4f, 1), "%s", sel->title.c_str());
+        ImGui::TextDisabled("%s - %s  (%d min)%s%s", fmtLocal(sel->start, "%a %H:%M").c_str(), fmtLocal(sel->end(), "%H:%M").c_str(), (sel->duration + 30) / 60, genreName(sel->genre)[0] ? "   " : "", genreName(sel->genre));
+        if (!sel->text.empty()) ImGui::TextWrapped("%s", sel->text.c_str());
+        if (!sel->extended.empty()) ImGui::TextWrapped("%s", sel->extended.c_str());
+    } else ImGui::TextDisabled("select a programme");
+    ImGui::EndChild();
+    ImGui::EndChild();
 }
 
 static void signallingTab(App& a) {
@@ -1543,7 +1641,8 @@ static void playerTab(App& a) {
         }
         for (auto& u : rx.unsupported) { ImGui::TextColored(ImVec4(0.95f, 0.6f, 0.2f, 1), "! %s", u.c_str()); }
     }
-    float h = ImGui::GetContentRegionAvail().y - 92;
+    const bool haveNN = pl.selected() >= 0;
+    float h = ImGui::GetContentRegionAvail().y - 92 - (haveNN ? 46.f : 0.f);
     ImGui::BeginChild("vbox", ImVec2(-1, h), ImGuiChildFlags_Borders);
     if (pl.selected() < 0) ImGui::TextDisabled("Pick a service in the list on the right to start playback.");
     else if (!a.video.tex) ImGui::TextDisabled("%s", ps.hasAudio && !ps.hasVideo ? "audio only" : ps.status.c_str());
@@ -1585,6 +1684,23 @@ static void playerTab(App& a) {
     ImGui::Text("pictures: decoded %llu  shown %llu  late %llu  errors %llu  queue %d    audio underruns %d",
                 (unsigned long long)ps.decoded, (unsigned long long)ps.shown, (unsigned long long)ps.late, (unsigned long long)ps.errors, ps.videoQueue, ps.underruns);
     ImGui::PopFont();
+    if (pl.selected() >= 0) {   // what is on now, and what comes next
+        const EpgEvent* nx = nullptr;
+        const EpgEvent* cur = epgCurrent(a, pl.selected(), &nx);
+        if (cur) {
+            const int64_t now = utcNowOf(a);
+            const float f = std::min(1.f, std::max(0.f, (float)(now - cur->start) / (float)cur->duration));
+            ImGui::TextColored(ImVec4(0.95f, 0.85f, 0.4f, 1), "NOW");
+            ImGui::SameLine();
+            ImGui::Text("%s - %s  %s", fmtLocal(cur->start, "%H:%M").c_str(), fmtLocal(cur->end(), "%H:%M").c_str(), cur->title.c_str());
+            ImGui::SameLine();
+            char left[32]; snprintf(left, sizeof left, "%d min left", (int)std::max<int64_t>(0, (cur->end() - now + 30) / 60));
+            ImGui::ProgressBar(f, ImVec2(160, 12), left);
+            if (nx) { ImGui::TextDisabled("NEXT"); ImGui::SameLine(); ImGui::Text("%s  %s", fmtLocal(nx->start, "%H:%M").c_str(), nx->title.c_str()); }
+        } else if (nx) {
+            ImGui::TextDisabled("NEXT"); ImGui::SameLine(); ImGui::Text("%s  %s", fmtLocal(nx->start, "%H:%M").c_str(), nx->title.c_str());
+        } else ImGui::TextDisabled("no programme information is broadcast for this service");
+    }
 }
 
 static void rightPanel(App& a) {
@@ -1601,7 +1717,11 @@ static void rightPanel(App& a) {
         if (ImGui::Selectable(label.c_str(), sel)) { if (sel) a.engine.player().select(-1); else { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); } }
         char r[32];
         ImGui::TextDisabled("  %s  %s%s%s  %s%s", sv.typeName(), vc.c_str(), (!vc.empty() && !ac.empty()) ? " + " : "", ac.c_str(), fmtKbps(r, sizeof r, kb), sv.caFlag ? "  [scrambled]" : "");
-        if (!sv.now.empty()) ImGui::TextDisabled("  now: %s", sv.now.c_str());
+        {
+            const EpgEvent* cur = epgCurrent(a, sv.id);
+            if (cur) ImGui::TextDisabled("  %s-%s  %s", fmtLocal(cur->start, "%H:%M").c_str(), fmtLocal(cur->end(), "%H:%M").c_str(), cur->title.c_str());
+            else if (!sv.now.empty()) ImGui::TextDisabled("  now: %s", sv.now.c_str());
+        }
         ImGui::PopID();
     }
     ImGui::EndChild();
@@ -1678,6 +1798,20 @@ static void drawUI(App& a, ImVec2 disp) {
     ingestSpectrum(a);
     ingestRx(a);
     harvestScan(a);
+    if (a.engine.running() && glfwGetTime() - a.epgT > 1.0) {
+        a.epg = a.engine.epg();
+        if (a.fakeEpg) {
+            const int64_t base = (int64_t)time(nullptr) / 1800 * 1800 - 1800;
+            static const char* titles[] = {"Morning News", "The Garden Show", "Football: Derby", "Documentary: Oceans", "Quiz Night", "Late Film"};
+            for (auto& sv : a.ts.services) for (int k = 0; k < 8; k++) {
+                EpgEvent e; e.eventId = k + 1; e.start = base + k * 3600; e.duration = 3600; e.running = k == 1 ? 4 : 0; e.genre = 1 + k % 5;
+                e.title = std::string(titles[(k + sv.id) % 6]); e.text = "Short synopsis of " + e.title; e.extended = "A longer description of the programme, with details about the presenters, guests and what to expect during the hour.";
+                a.epg[sv.id].push_back(e);
+            }
+        }
+        a.epgT = glfwGetTime();
+    }
+    if (!a.engine.running()) { a.epg.clear(); }
     gainControl(a);
     {
         int pid = -1;
@@ -1749,6 +1883,7 @@ static void drawUI(App& a, ImVec2 disp) {
         if (tabItem("TS")) { tsTab(a); ImGui::EndTabItem(); }
         if (tabItem("Outputs")) { outputsTab(a); ImGui::EndTabItem(); }
         if (tabItem("Scan")) { scanTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Guide")) { guideTab(a); ImGui::EndTabItem(); }
         if (tabItem("Teletext")) { teletextTab(a); ImGui::EndTabItem(); }
         if (tabItem("Log")) { logPanel(a); ImGui::EndTabItem(); }
         if (tabItem("Frame map")) { frameMapTab(a); ImGui::EndTabItem(); }
@@ -1834,6 +1969,7 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) gForceTab = argv[++i];
         if (std::string(argv[i]) == "--synthgain") app.tune.synth.gainModel = true;
         if (std::string(argv[i]) == "--nodeint") app.video.deint = false;
+        if (std::string(argv[i]) == "--fakeepg") app.fakeEpg = true;
         if (std::string(argv[i]) == "--agc") app.agcOn = true;
         if (std::string(argv[i]) == "--fft" && i + 1 < argc) app.tune.synth.tx.s2field1 = atoi(argv[++i]);
         if (std::string(argv[i]) == "--gi" && i + 1 < argc) app.tune.synth.tx.giIdx = atoi(argv[++i]);

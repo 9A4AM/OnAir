@@ -53,6 +53,8 @@ std::unique_ptr<IqSource> makeSource(const DeviceInfo& d);
 // File format helpers (sidecar-free for now): .cs8 interleaved signed 8-bit IQ, .cu8 unsigned, .cf32 float.
 enum class FileFormat { CS8, CU8, CF32 };
 FileFormat guessFormat(const std::string& path);
+// Sample rate in Hz from a file name such as "capture_10Msps.cs8" or "x_2.5msps.cu8"; 0 if the name does not say.
+double guessSampleRate(const std::string& path);
 std::unique_ptr<IqSource> makeFileSource(const std::string& path, FileFormat fmt, double sampleRate, bool loop);
 
 } // namespace dect2

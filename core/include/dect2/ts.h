@@ -29,6 +29,17 @@ struct TsService {
     const char* typeName() const;
 };
 
+// One programme from the Event Information Table (EN 300 468): what is on, when, and what it is about.
+struct EpgEvent {
+    int eventId = 0;
+    int64_t start = 0;        // seconds since 1970, UTC
+    int duration = 0;         // seconds
+    int running = 0;          // running_status (4 = running)
+    int genre = -1;           // first content nibble (0x1 movie, 0x2 news, 0x4 sport, ...), -1 unknown
+    std::string title, text, extended, lang;
+    int64_t end() const { return start + duration; }
+};
+
 struct TsPid {
     int pid = 0;
     uint64_t packets = 0, ccErrors = 0, tei = 0;
@@ -44,6 +55,7 @@ struct TsSnapshot {
     int onid = 0, tsid = 0;
     uint64_t totalPackets = 0, nullPackets = 0, teiPackets = 0, ccErrors = 0;
     double muxKbps = 0, nullKbps = 0;
+    int64_t utcNow = 0;      // current UTC from the TDT (advanced with the stream), 0 until one has been received
 };
 
 class TsDemux {
@@ -52,6 +64,8 @@ public:
     void markLoss();                 // data was lost before the next packet (do not count continuity errors)
     void advance(double dtSeconds);  // stream time passed; updates bit rates
     TsSnapshot snapshot() const;
+    // Programme guide per service id, sorted by start time (now/next plus the schedule when the broadcaster sends it).
+    std::map<int, std::vector<EpgEvent>> epg() const;
     void reset();
 
 private:
@@ -68,6 +82,10 @@ private:
     std::map<int, SectionBuf> sec_;
     std::map<int, TsService> services_;   // by service id
     std::map<int, int> pmtToService_;
+    std::map<int, std::map<int, EpgEvent>> epg_;   // service id -> event id -> event
+    std::map<int, std::map<int, std::string>> epgExt_; // extended text pieces by event
+    int64_t tdtUnix_ = 0;
+    double streamClock_ = 0, tdtAt_ = 0;
     std::string network_, utc_;
     int onid_ = 0, tsid_ = 0;
     uint64_t total_ = 0, nulls_ = 0, tei_ = 0, ccErr_ = 0, nullWin_ = 0, totalWin_ = 0;

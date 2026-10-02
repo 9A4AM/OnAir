@@ -96,6 +96,27 @@ int main(int argc, char** argv) {
     }
     { const QualityReport& q = qm.report(); printf("quality: %.0f%% %s (SNR %.1f dB, needs %.1f, margin %+.1f dB, FEC %.1f%%)\n", q.percent, q.label.c_str(), q.snrDb, q.requiredDb, q.marginDb, q.fecOk * 100); }
     {
+        auto epg = e.epg();
+        TsSnapshot ts = e.tsSnapshot();
+        const int64_t now = ts.utcNow;
+        printf("programme guide (UTC now %s):\n", ts.utc.c_str());
+        for (auto& sv : ts.services) {
+            auto it = epg.find(sv.id);
+            if (it == epg.end() || it->second.empty()) continue;
+            printf("  %s: %zu events\n", sv.name.c_str(), it->second.size());
+            int shown = 0;
+            for (auto& ev : it->second) {
+                if (now && ev.end() < now) continue;
+                time_t a = (time_t)ev.start, b = (time_t)ev.end();
+                char ta[16], tb[16];
+                struct tm ma, mb; gmtime_r(&a, &ma); gmtime_r(&b, &mb);
+                strftime(ta, sizeof ta, "%H:%M", &ma); strftime(tb, sizeof tb, "%H:%M", &mb);
+                printf("    %s-%s %s%s%s\n", ta, tb, now && ev.start <= now && ev.end() > now ? "[now] " : "", ev.title.c_str(), ev.text.empty() ? "" : (" - " + ev.text.substr(0, 60)).c_str());
+                if (++shown >= 4) break;
+            }
+        }
+    }
+    {
         const MultipathReport& mr = mpd.report();
         printf("multipath: %s (%s)\n", multipathName(mr.level), mr.headline.c_str());
         for (auto& x : mr.echoes) printf("   echo %.1f dB at %+.2f us%s\n", x.levelDb, x.delayUs, x.insideGuard ? "" : " (outside guard)");

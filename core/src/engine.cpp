@@ -149,6 +149,11 @@ void Engine::onPlp(const PlpResult& r) {
 }
 
 TsSnapshot Engine::tsSnapshot() { std::lock_guard<std::mutex> lk(tsMu_); return tsSnap_; }
+std::map<int, std::vector<EpgEvent>> Engine::epg() {
+    std::lock_guard<std::mutex> lk(tsMu_);
+    return demux_.epg();
+}
+
 BbStats Engine::bbStats() { std::lock_guard<std::mutex> lk(tsMu_); return unpack_.stats(); }
 
 bool Engine::latestRx(RxTelemetry& out, uint64_t lastSeq) {

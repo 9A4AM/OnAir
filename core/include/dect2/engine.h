@@ -51,6 +51,7 @@ public:
     // Transport stream (phase 4)
     TsSnapshot tsSnapshot();
     BbStats bbStats();
+    std::map<int, std::vector<EpgEvent>> epg();
     void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }

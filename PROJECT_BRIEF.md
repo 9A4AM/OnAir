@@ -350,3 +350,7 @@ The verdict is none / mild / likely / severe, with advice to re-aim the antenna 
 
 Next steps for the remaining Phase 7 items need real signals or reference vectors: a MISO capture, a multi-frame-interleaved capture (UK and some other countries use TIME_IL_TYPE 1), or a transmitter that can produce them.
 
+### 11.6 Programme guide (EPG) (built 2026-10-02)
+
+The receiver reads the DVB Event Information Table (EN 300 468): present/following and the schedule tables, with title, start and end time, duration, short and extended description, genre and running status, plus the broadcast time signal (TDT) for the current time. The **Guide** tab lists a service's programmes by day with the current one highlighted, a detail box for the selected one and the services on the left with what is on now. The Player tab shows NOW (time range, title, progress bar, minutes left) and NEXT for the playing service, and the services list shows the time range of what is on. Covered by a unit test with a hand-built EIT (`tests/test_ts.cpp`). The 522 MHz Sharjah mux sends empty EIT sections, so there is no real guide data in the recording; `--fakeepg` in the app fills made-up programmes for checking the layout.
+

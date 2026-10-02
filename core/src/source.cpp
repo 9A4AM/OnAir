@@ -346,6 +346,18 @@ FileFormat guessFormat(const std::string& path) {
     return FileFormat::CS8;
 }
 
+double guessSampleRate(const std::string& path) {
+    std::string n = path;
+    for (auto& c : n) c = (char)tolower((unsigned char)c);
+    size_t p = n.find("msps");
+    if (p == std::string::npos || p == 0) return 0;
+    size_t b = p;
+    while (b > 0 && (isdigit((unsigned char)n[b - 1]) || n[b - 1] == '.')) b--;
+    if (b == p) return 0;
+    const double v = atof(n.substr(b, p - b).c_str());
+    return v >= 0.5 && v <= 100 ? v * 1e6 : 0;
+}
+
 std::unique_ptr<IqSource> makeFileSource(const std::string& path, FileFormat fmt, double sampleRate, bool loop) {
     return std::make_unique<FileSource>(path, fmt, sampleRate, loop);
 }
