@@ -18,6 +18,7 @@
 #include "dect2/gain.h"
 #include "dect2/channel.h"
 #include "dect2/quality.h"
+#include "dect2/teletext.h"
 #include "theme.h"
 
 #include <algorithm>
@@ -88,14 +89,32 @@ static const BwChoice kBw[] = {
 
 static id<MTLDevice> gDevice;
 static id<MTLCommandQueue> gQueue;
+static GLFWwindow* gWindow = nullptr;
+static int gWinX = 100, gWinY = 100, gWinW = 1500, gWinH = 900;
+static void toggleFullscreen() {
+    if (!gWindow) return;
+    if (glfwGetWindowMonitor(gWindow)) { glfwSetWindowMonitor(gWindow, nullptr, gWinX, gWinY, gWinW, gWinH, 0); return; }
+    glfwGetWindowPos(gWindow, &gWinX, &gWinY); glfwGetWindowSize(gWindow, &gWinW, &gWinH);
+    GLFWmonitor* m = glfwGetPrimaryMonitor();
+    const GLFWvidmode* vm = glfwGetVideoMode(m);
+    glfwSetWindowMonitor(gWindow, m, 0, 0, vm->width, vm->height, vm->refreshRate);
+}
 
 static NSString* const kYuvShader = @R"MSL(
 #include <metal_stdlib>
 using namespace metal;
 kernel void nv12(texture2d<float, access::read> Y [[texture(0)]], texture2d<float, access::read> UV [[texture(1)]],
-                 texture2d<float, access::write> out [[texture(2)]], constant float2& prm [[buffer(0)]], uint2 gid [[thread_position_in_grid]]) {
+                 texture2d<float, access::write> out [[texture(2)]], constant float3& prm [[buffer(0)]], uint2 gid [[thread_position_in_grid]]) {
     if (gid.x >= out.get_width() || gid.y >= out.get_height()) return;
     float y = Y.read(gid).r;
+    if (prm.z > 0.5) { // interlaced: replace combed pixels (a line that differs from both neighbours in the same direction) by the line average
+        const uint H = out.get_height();
+        float ya = Y.read(uint2(gid.x, gid.y > 0 ? gid.y - 1 : gid.y)).r;
+        float yb = Y.read(uint2(gid.x, gid.y + 1 < H ? gid.y + 1 : gid.y)).r;
+        float comb = (y - ya) * (y - yb);
+        float w = clamp((comb - 0.0008) / 0.004, 0.0, 1.0);
+        y = mix(y, 0.5 * (ya + yb), w);
+    }
     float2 c = UV.read(gid / 2).rg;
     if (prm.y < 0.5) { y = (y - 16.0 / 255.0) * (255.0 / 219.0); c = (c - 128.0 / 255.0) * (255.0 / 224.0); }
     else c -= 0.5;
@@ -111,6 +130,7 @@ struct VideoTex {
     id<MTLComputePipelineState> pso = nil;
     int w = 0, h = 0;
     uint64_t seq = 0;
+    bool deint = true;
     void update(Player& pl, id<MTLCommandQueue> q) {
         auto f = pl.videoFrame(seq);
         if (!f || f->w <= 0) return;
@@ -137,7 +157,7 @@ struct VideoTex {
         id<MTLCommandBuffer> cb = [q commandBuffer];
         id<MTLComputeCommandEncoder> e = [cb computeCommandEncoder];
         [e setComputePipelineState:pso];
-        float prm[2] = {f->bt709 ? 1.f : 0.f, f->fullRange ? 1.f : 0.f};
+        float prm[4] = {f->bt709 ? 1.f : 0.f, f->fullRange ? 1.f : 0.f, (f->interlaced && deint) ? 1.f : 0.f, 0.f};
         [e setBytes:prm length:sizeof prm atIndex:0];
         [e setTexture:yTex atIndex:0]; [e setTexture:uvTex atIndex:1]; [e setTexture:tex atIndex:2];
         [e dispatchThreads:MTLSizeMake(f->w, f->h, 1) threadsPerThreadgroup:MTLSizeMake(16, 16, 1)];
@@ -161,6 +181,7 @@ struct SavedChannel {
     std::string name, mode;
     float snrDb = 0;
     int nServices = 0;
+    bool favourite = false;
 };
 
 struct App {
@@ -196,8 +217,16 @@ struct App {
     char udpHost[64] = "127.0.0.1";
     char filePath[512] = "";
     std::deque<float> hCfo, hSnr, hTiming;
+    struct HistSample { float t, snr, mer, loss, cfo, sro, level, clip, quality; };
+    std::deque<HistSample> hist;      // 4 samples per second, last 15 minutes
+    double histT = 0;
+    uint64_t histOk = 0, histBad = 0;
     bool rxSeen = false;
     int computeMode = 2; // 0 CPU, 1 GPU, 2 auto
+    bool popOut = false, videoOnly = false;
+    int histWindow = 60;
+    int ttxPage = 100;
+    char favName[64] = "";
     MultipathDetector mpd;
     QualityMeter quality;
     std::vector<SavedChannel> channels; // DVB-T2 muxes found by the scanner (remembered)
@@ -266,7 +295,7 @@ static void loadPrefs(App& a) {
         SavedChannel sc;
         sc.freqMhz = [c[@"f"] doubleValue]; sc.bwMhz = [c[@"bw"] doubleValue];
         sc.name = [c[@"name"] UTF8String] ?: ""; sc.mode = [c[@"mode"] UTF8String] ?: "";
-        sc.snrDb = [c[@"snr"] floatValue]; sc.nServices = [c[@"n"] intValue];
+        sc.snrDb = [c[@"snr"] floatValue]; sc.nServices = [c[@"n"] intValue]; sc.favourite = [c[@"fav"] boolValue];
         if (sc.freqMhz > 0) a.channels.push_back(sc);
     }
 }
@@ -280,7 +309,7 @@ static void savePrefs(const App& a) {
     {
         NSMutableArray* arr = [NSMutableArray array];
         for (auto& c : a.channels)
-            [arr addObject:@{@"f": @(c.freqMhz), @"bw": @(c.bwMhz), @"name": [NSString stringWithUTF8String:c.name.c_str()], @"mode": [NSString stringWithUTF8String:c.mode.c_str()], @"snr": @(c.snrDb), @"n": @(c.nServices)}];
+            [arr addObject:@{@"f": @(c.freqMhz), @"bw": @(c.bwMhz), @"name": [NSString stringWithUTF8String:c.name.c_str()], @"mode": [NSString stringWithUTF8String:c.mode.c_str()], @"snr": @(c.snrDb), @"n": @(c.nServices), @"fav": @(c.favourite)}];
         [d setObject:arr forKey:@"channels"];
     }
     [d setInteger:a.computeMode forKey:@"compute"];
@@ -596,6 +625,25 @@ static void ingestRx(App& a) {
     a.rx = std::move(t);
     a.mpd.update(a.rx);
     a.quality.update(a.rx);
+    {
+        const double nowT = glfwGetTime();
+        if (a.engine.running() && nowT - a.histT >= 0.25) {
+            App::HistSample h;
+            h.t = (float)nowT;
+            h.snr = a.rx.dataValid ? a.rx.dataSnrDb : NAN;
+            h.mer = a.rx.plpMerDb > 0 && a.rx.plpMerDb < 90 ? (float)a.rx.plpMerDb : NAN;
+            const uint64_t dOk = a.rx.blocksOk >= a.histOk ? a.rx.blocksOk - a.histOk : 0, dBad = a.rx.blocksBad >= a.histBad ? a.rx.blocksBad - a.histBad : 0;
+            h.loss = (dOk + dBad) ? 100.f * (float)dBad / (float)(dOk + dBad) : NAN;
+            a.histOk = a.rx.blocksOk; a.histBad = a.rx.blocksBad;
+            h.cfo = a.rx.state == 2 ? (float)a.rx.cfoHz : NAN;
+            h.sro = a.rx.state == 2 ? (float)a.rx.sroPpm : NAN;
+            h.level = a.spec.stats.rmsDbfs; h.clip = a.spec.stats.clipFraction * 100.f;
+            h.quality = a.quality.report().valid ? (float)a.quality.report().percent : NAN;
+            a.hist.push_back(h);
+            if (a.hist.size() > 3600) a.hist.pop_front();
+            a.histT = nowT;
+        }
+    }
     auto push = [](std::deque<float>& d, float v) { d.push_back(v); if (d.size() > 600) d.pop_front(); };
     if (a.rx.state == 2) {
         push(a.hCfo, (float)a.rx.cfoHz);
@@ -745,6 +793,165 @@ static void syncTab(App& a) {
     historyPlot("##hs", "CP-SNR (dB)", a.hSnr, ImVec2(-1, hh));
     historyPlot("##ht", "timing (samples)", a.hTiming, ImVec2(-1, hh));
     ImGui::EndChild();
+}
+
+static void historyTab(App& a) {
+    if (a.hist.empty()) { ImGui::TextDisabled("history fills while the receiver runs (4 samples per second, last 15 minutes)"); return; }
+    const double nowT = glfwGetTime();
+    {
+        static const int wins[] = {30, 60, 300, 900};
+        static const char* names[] = {"30 s", "1 min", "5 min", "15 min"};
+        ImGui::TextDisabled("window"); ImGui::SameLine();
+        for (int i = 0; i < 4; i++) { if (i) ImGui::SameLine(); if (ImGui::RadioButton(names[i], a.histWindow == wins[i])) a.histWindow = wins[i]; }
+    }
+    const float h = (ImGui::GetContentRegionAvail().y - 30) / 4.f;
+    auto series = [&](const char* id, const char* ylab, std::initializer_list<std::pair<const char*, float App::HistSample::*>> ser, ImVec2 size, double ymin, double ymax, bool fixed) {
+        if (!ImPlot::BeginPlot(id, size, ImPlotFlags_NoTitle)) return;
+        ImPlot::SetupAxes("seconds ago", ylab, 0, fixed ? 0 : ImPlotAxisFlags_AutoFit);
+        ImPlot::SetupAxisLimits(ImAxis_X1, -a.histWindow, 0, ImPlotCond_Always);
+        if (fixed) ImPlot::SetupAxisLimits(ImAxis_Y1, ymin, ymax, ImPlotCond_Once);
+        std::vector<float> xs(a.hist.size());
+        for (size_t i = 0; i < xs.size(); i++) xs[i] = (float)(a.hist[i].t - nowT);
+        int k = 0;
+        static const ImVec4 cols[3] = {ImVec4(0.45f, 0.75f, 1, 1), ImVec4(0.95f, 0.7f, 0.2f, 1), ImVec4(0.4f, 0.85f, 0.5f, 1)};
+        for (auto& s : ser) {
+            std::vector<float> ys(a.hist.size());
+            for (size_t i = 0; i < ys.size(); i++) ys[i] = a.hist[i].*(s.second);
+            ImPlotSpec sp; sp.LineColor = cols[k++ % 3];
+            ImPlot::PlotLine(s.first, xs.data(), ys.data(), (int)xs.size(), sp);
+        }
+        ImPlot::EndPlot();
+    };
+    series("##h1", "quality (%)", {{"quality", &App::HistSample::quality}}, ImVec2(-1, h), 0, 100, true);
+    series("##h2", "SNR / MER (dB)", {{"data SNR", &App::HistSample::snr}, {"MER", &App::HistSample::mer}}, ImVec2(-1, h), 0, 0, false);
+    series("##h3", "FEC block loss (%)", {{"lost blocks", &App::HistSample::loss}}, ImVec2(-1, h), 0, 100, true);
+    series("##h4", "ADC level (dBFS)", {{"rms", &App::HistSample::level}}, ImVec2(-1, h), -60, 0, true);
+    ImGui::TextDisabled("CFO and SRO are on the Sync tab. Gaps in a line mean the receiver was not locked.");
+}
+
+static void frameMapTab(App& a) {
+    const RxTelemetry& rx = a.rx;
+    if (!rx.l1preOk) { ImGui::TextDisabled("the frame structure appears once L1-pre has been decoded"); return; }
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const L1Pre& p = rx.l1pre;
+    static const int nP2tab[6] = {8, 2, 4, 16, 1, 1};
+    const int fftCode = p.s2 >> 1;
+    const int nP2 = fftCode >= 0 && fftCode < 6 ? nP2tab[fftCode] : 1;
+    const int nData = p.numDataSyms;
+    ImGui::TextDisabled("T2 frame: P1 + %d P2 symbol%s + %d data symbols (%s, GI %s)  -  %.1f ms", nP2, nP2 == 1 ? "" : "s", nData, fftModeFromSize(rx.fftN) ? fftModeFromSize(rx.fftN)->name : "?", guardName(rx.giIdx), rx.frameMs);
+    ImVec2 o = ImGui::GetCursorScreenPos();
+    const float W = ImGui::GetContentRegionAvail().x - 10, H = 34;
+    const double symUnits = 1.0;             // widths in OFDM symbols; P1 is about half a long symbol
+    const double p1u = 0.5, total = p1u + nP2 + nData;
+    float x = o.x;
+    auto seg = [&](double units, ImU32 col, const char* label) {
+        const float w = (float)(units / total * W);
+        dl->AddRectFilled(ImVec2(x, o.y), ImVec2(x + w - 1, o.y + H), col, 2.f);
+        if (w > 28) { ImVec2 ts = ImGui::CalcTextSize(label); dl->AddText(ImVec2(x + (w - ts.x) / 2, o.y + (H - ts.y) / 2), IM_COL32(15, 18, 22, 255), label); }
+        x += w;
+    };
+    (void)symUnits;
+    seg(p1u, IM_COL32(240, 180, 60, 255), "P1");
+    seg(nP2, IM_COL32(230, 120, 190, 255), "P2");
+    seg(nData, IM_COL32(90, 200, 120, 255), "data symbols (PLP cells, pilots, edge pilots)");
+    ImGui::Dummy(ImVec2(W, H + 6));
+    if (rx.plpValid) ImGui::TextDisabled("PLP %d: %d FEC blocks per frame (%s, rate index %d%s), time interleaver %d", rx.plpId, rx.plpBlocks, rx.plpFec.mod == 0 ? "QPSK" : rx.plpFec.mod == 1 ? "16-QAM" : rx.plpFec.mod == 2 ? "64-QAM" : "256-QAM", rx.plpFec.rate, rx.plpFec.rotation ? ", rotated" : "", p.numDataSyms > 0 ? 0 : 0);
+    ImGui::Separator();
+    ImGui::TextDisabled("FEC block map: one row per decoded frame (newest at the bottom), one cell per FEC block. Green = decoded, red = failed.");
+    const auto& bm = rx.blockMap;
+    if (bm.empty()) { ImGui::TextDisabled("no decoded frames yet"); return; }
+    size_t nb = 0;
+    for (auto& f : bm) nb = std::max(nb, f.size());
+    ImVec2 g = ImGui::GetCursorScreenPos();
+    const float availW = ImGui::GetContentRegionAvail().x - 80, availH = ImGui::GetContentRegionAvail().y - 4;
+    const float cw = nb ? std::max(1.f, availW / (float)nb) : 1.f;
+    const float ch = std::max(2.f, std::min(10.f, availH / (float)bm.size()));
+    for (size_t r = 0; r < bm.size(); r++) {
+        const float y = g.y + r * ch;
+        int ok = 0;
+        for (size_t b = 0; b < bm[r].size(); b++) {
+            ok += bm[r][b];
+            dl->AddRectFilled(ImVec2(g.x + b * cw, y), ImVec2(g.x + (b + 1) * cw, y + ch - 1), bm[r][b] ? IM_COL32(60, 170, 90, 255) : IM_COL32(220, 60, 55, 255));
+        }
+        const float pct = bm[r].empty() ? 0.f : 100.f * ok / (float)bm[r].size();
+        char t[16]; snprintf(t, sizeof t, "%.0f%%", pct);
+        if (ch >= 8) dl->AddText(ImVec2(g.x + nb * cw + 6, y - 2), pct < 99.5f ? IM_COL32(240, 140, 120, 255) : IM_COL32(140, 150, 160, 255), t);
+    }
+    ImGui::Dummy(ImVec2(availW + 70, ch * bm.size()));
+}
+
+static ImU32 ttxColour(int c, float alpha = 1.f) {
+    static const ImVec4 col[8] = {ImVec4(0, 0, 0, 1), ImVec4(1, 0.1f, 0.1f, 1), ImVec4(0.1f, 1, 0.1f, 1), ImVec4(1, 1, 0.1f, 1),
+                                  ImVec4(0.2f, 0.3f, 1, 1), ImVec4(1, 0.2f, 1, 1), ImVec4(0.1f, 1, 1, 1), ImVec4(1, 1, 1, 1)};
+    ImVec4 v = col[c & 7]; v.w = alpha;
+    return ImGui::ColorConvertFloat4ToU32(v);
+}
+
+static void teletextTab(App& a) {
+    TeletextDecoder& tx = a.engine.teletext();
+    const Player& pl = a.engine.player();
+    if (tx.pid() < 0) {
+        ImGui::TextDisabled(pl.selected() < 0 ? "Play a service (Player tab) - teletext is read from the playing service." : "The playing service has no teletext stream.");
+        return;
+    }
+    ImGui::SetNextItemWidth(80);
+    ImGui::InputInt("page", &a.ttxPage, 0, 0);
+    a.ttxPage = std::max(100, std::min(899, a.ttxPage));
+    ImGui::SameLine(); if (ImGui::SmallButton("<")) a.ttxPage = std::max(100, a.ttxPage - 1);
+    ImGui::SameLine(); if (ImGui::SmallButton(">")) a.ttxPage = std::min(899, a.ttxPage + 1);
+    ImGui::SameLine(); if (ImGui::SmallButton("100")) a.ttxPage = 100;
+    ImGui::SameLine();
+    {
+        auto pages = tx.pages();
+        ImGui::TextDisabled("%zu pages received, %llu packets", pages.size(), (unsigned long long)tx.packets());
+        if (!pages.empty()) {
+            ImGui::SameLine();
+            std::string l = "available: ";
+            int n = 0;
+            for (int p : pages) { if (n++ >= 14) { l += "..."; break; } l += std::to_string(p) + " "; }
+            ImGui::TextDisabled("%s", l.c_str());
+        }
+    }
+    TtxPage pg;
+    if (!tx.page(a.ttxPage, pg)) { ImGui::TextDisabled("page %d has not been received yet (pages repeat every few seconds)", a.ttxPage); return; }
+    TtxGrid grid;
+    ttxRender(pg, grid);
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+    const float cw = std::max(6.f, std::min(avail.x / 40.f, avail.y / 25.f * 0.55f)), ch = cw / 0.55f;
+    ImVec2 o = ImGui::GetCursorScreenPos();
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->AddRectFilled(o, ImVec2(o.x + cw * 40, o.y + ch * 25), IM_COL32(0, 0, 0, 255));
+    const bool flashOn = std::fmod(ImGui::GetTime(), 1.0) < 0.6;
+    for (int r = 0; r < 25; r++)
+        for (int c = 0; c < 40; c++) {
+            const TtxCell& cell = grid[r][c];
+            const ImVec2 p0(o.x + c * cw, o.y + r * ch), p1(p0.x + cw, p0.y + ch);
+            if (cell.bg) dl->AddRectFilled(p0, p1, ttxColour(cell.bg));
+            if (cell.flash && !flashOn) continue;
+            if (cell.mosaic) {
+                const float gx = cell.separated ? 1.f : 0.f;
+                for (int k = 0; k < 6; k++) {
+                    if (!(cell.sextants & (1 << k))) continue;
+                    const int cx = k & 1, cy = k >> 1;
+                    dl->AddRectFilled(ImVec2(p0.x + cx * cw / 2 + gx, p0.y + cy * ch / 3 + gx), ImVec2(p0.x + (cx + 1) * cw / 2 - gx, p0.y + (cy + 1) * ch / 3 - gx), ttxColour(cell.fg));
+                }
+            } else if (cell.ch > ' ') {
+                char buf[5] = {0};
+                uint32_t u = cell.ch;
+                if (u < 0x80) buf[0] = (char)u;
+                else if (u < 0x800) { buf[0] = (char)(0xC0 | (u >> 6)); buf[1] = (char)(0x80 | (u & 0x3F)); }
+                else { buf[0] = (char)(0xE0 | (u >> 12)); buf[1] = (char)(0x80 | ((u >> 6) & 0x3F)); buf[2] = (char)(0x80 | (u & 0x3F)); }
+                ImFont* f = a.mono;
+                const float fs = cell.dh ? ch * 2.0f * 0.8f : ch * 0.8f;
+                if (cell.dh == 1) { dl->PushClipRect(p0, p1, true); dl->AddText(f, fs, ImVec2(p0.x, p0.y), ttxColour(cell.fg), buf); dl->PopClipRect(); }
+                else if (cell.dh == 2) { dl->PushClipRect(p0, p1, true); dl->AddText(f, fs, ImVec2(p0.x, p0.y - ch), ttxColour(cell.fg), buf); dl->PopClipRect(); }
+                else dl->AddText(f, fs, ImVec2(p0.x, p0.y), ttxColour(cell.fg), buf);
+            }
+        }
+    char title[64];
+    snprintf(title, sizeof title, "P%d%s", pg.number, pg.subtitle ? "  (subtitle page)" : "");
+    dl->AddText(ImVec2(o.x + 2, o.y + 1), IM_COL32(255, 255, 255, 255), title);
+    ImGui::Dummy(ImVec2(cw * 40, ch * 25));
 }
 
 static void signallingTab(App& a) {
@@ -1192,7 +1399,11 @@ static void harvestScan(App& a) {
         if (sc.name.empty()) sc.name = r.networkName;
         bool found = false;
         for (auto& c : a.channels)
-            if (std::fabs(c.freqMhz - sc.freqMhz) < 0.01) { if (c.name != sc.name || c.nServices != sc.nServices || c.mode != sc.mode) { c = sc; changed = true; } found = true; break; }
+            if (std::fabs(c.freqMhz - sc.freqMhz) < 0.01) {
+                if (c.favourite) { sc.name = c.name; sc.favourite = true; }
+                if (c.name != sc.name || c.nServices != sc.nServices || c.mode != sc.mode) { c = sc; changed = true; }
+                found = true; break;
+            }
         if (!found) { a.channels.push_back(sc); changed = true; }
     }
     if (changed) {
@@ -1268,16 +1479,39 @@ static void playerTab(App& a) {
         ImGui::TextDisabled("channel");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(360);
-        if (ImGui::BeginCombo("##chan", curLab.c_str())) {
+        if (ImGui::BeginCombo("##chan", ((cur && cur->favourite) ? "* " + curLab : curLab).c_str())) {
             if (a.channels.empty()) ImGui::TextDisabled("no channels yet - run a scan (Scan tab)");
             for (size_t i = 0; i < a.channels.size(); i++) {
                 const SavedChannel& c = a.channels[i];
-                std::string l = channelLabel(c);
+                std::string l = (c.favourite ? "* " : "") + channelLabel(c);
                 char extra[64]; snprintf(extra, sizeof extra, "   SNR %.0f dB", c.snrDb);
                 if (ImGui::Selectable((l + extra).c_str(), cur == &c)) tuneToChannel(a, c);
                 if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", c.mode.c_str());
             }
             ImGui::EndCombo();
+        }
+        ImGui::SameLine();
+        if (ImGui::SmallButton("+##fav")) { ImGui::OpenPopup("savefav"); if (!a.favName[0] && cur) snprintf(a.favName, sizeof a.favName, "%s", cur->name.c_str()); }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Save the current frequency as a favourite channel");
+        if (ImGui::BeginPopup("savefav")) {
+            ImGui::TextDisabled("name for %.3f MHz", a.freqMhz);
+            ImGui::SetNextItemWidth(220);
+            ImGui::InputText("##favn", a.favName, sizeof a.favName);
+            if (ImGui::Button("Save")) {
+                SavedChannel sc; sc.freqMhz = a.freqMhz; sc.bwMhz = kBw[a.bwIdx].mhz; sc.name = a.favName; sc.favourite = true;
+                if (cur) { sc.mode = cur->mode; sc.snrDb = cur->snrDb; sc.nServices = cur->nServices; }
+                bool f = false;
+                for (auto& c : a.channels) if (std::fabs(c.freqMhz - sc.freqMhz) < 0.01) { c = sc; f = true; }
+                if (!f) a.channels.push_back(sc);
+                std::sort(a.channels.begin(), a.channels.end(), [](const SavedChannel& x, const SavedChannel& y) { return x.freqMhz < y.freqMhz; });
+                a.favName[0] = 0; savePrefs(a); ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+        if (cur) {
+            ImGui::SameLine();
+            if (ImGui::SmallButton("x##del")) { const double f = cur->freqMhz; a.channels.erase(std::remove_if(a.channels.begin(), a.channels.end(), [&](const SavedChannel& c) { return std::fabs(c.freqMhz - f) < 0.01; }), a.channels.end()); savePrefs(a); }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Forget this channel");
         }
         ImGui::SameLine(0, 18);
         qualityBar(a, std::max(200.f, ImGui::GetContentRegionAvail().x - 8));
@@ -1294,6 +1528,13 @@ static void playerTab(App& a) {
     if (ImGui::SliderFloat("volume", &a.volume, 0, 1, "%.2f")) pl.setVolume(a.volume);
     ImGui::SameLine();
     if (ImGui::Checkbox("mute", &a.muted)) pl.setMuted(a.muted);
+    ImGui::SameLine();
+    ImGui::Checkbox("pop out", &a.popOut);
+    ImGui::SameLine();
+    if (ImGui::Button("Fullscreen")) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Video fills the screen (press F or Esc to leave)");
+    ImGui::SameLine();
+    ImGui::Checkbox("deinterlace", &a.video.deint);
     ImGui::SameLine();
     auto tracks = pl.audioTracks();
     if (!tracks.empty()) {
@@ -1411,8 +1652,33 @@ static void drawUI(App& a, ImVec2 disp) {
     ingestRx(a);
     harvestScan(a);
     gainControl(a);
+    {
+        int pid = -1;
+        const int sid = a.engine.player().selected();
+        if (sid >= 0) for (auto& sv : a.ts.services) if (sv.id == sid) for (auto& st : sv.streams) if (st.kind == "teletext") { pid = st.pid; break; }
+        a.engine.teletext().setPid(pid);
+    }
     a.video.update(a.engine.player(), gQueue);
     if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
+            if (a.videoOnly) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+            else if (a.video.tex) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+        }
+        if (a.videoOnly && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+    }
+    if (a.videoOnly) {
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize(disp);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+        ImGui::Begin("##vonly", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+        if (a.video.tex) a.video.draw(disp); else ImGui::TextDisabled("no picture - press Esc");
+        if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+        ImGui::End();
+        ImGui::PopStyleColor();
+        return;
+    }
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(disp);
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
@@ -1456,10 +1722,10 @@ static void drawUI(App& a, ImVec2 disp) {
         if (tabItem("TS")) { tsTab(a); ImGui::EndTabItem(); }
         if (tabItem("Outputs")) { outputsTab(a); ImGui::EndTabItem(); }
         if (tabItem("Scan")) { scanTab(a); ImGui::EndTabItem(); }
+        if (tabItem("Teletext")) { teletextTab(a); ImGui::EndTabItem(); }
         if (tabItem("Log")) { logPanel(a); ImGui::EndTabItem(); }
-        const char* later[] = {"Frame map", "History"};
-        for (auto* t : later)
-            if (tabItem(t)) { ImGui::TextDisabled("Not implemented yet (see PROJECT_BRIEF.md, development plan)."); ImGui::EndTabItem(); }
+        if (tabItem("Frame map")) { frameMapTab(a); ImGui::EndTabItem(); }
+        if (tabItem("History")) { historyTab(a); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     ImGui::EndChild();
@@ -1473,6 +1739,17 @@ static void drawUI(App& a, ImVec2 disp) {
     constellationsTab(a);
     ImGui::EndChild();
     ImGui::End();
+    if (a.popOut) {
+        ImGui::SetNextWindowSize(ImVec2(640, 380), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(200, 160), ImGuiCond_FirstUseEver);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+        if (ImGui::Begin("Video", &a.popOut)) {
+            if (a.video.tex) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("no picture");
+            if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+        }
+        ImGui::End();
+        ImGui::PopStyleColor();
+    }
 }
 
 // ------------------------------------------------------------------ main
@@ -1482,6 +1759,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     GLFWwindow* window = glfwCreateWindow(1500, 900, "DecT2", nullptr, nullptr);
     if (!window) return 1;
+    gWindow = window;
 
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     gDevice = device;
@@ -1520,7 +1798,7 @@ int main(int argc, char** argv) {
         if (app.devices[i].kind == DeviceInfo::HackRF) { app.devIdx = i; break; }
     if (app.devices.size() == 2) app.engine.log("no HackRF connected - use the synthetic signal or an IQ file");
 
-    bool autostart = false, hackrfStart = false;
+    bool autostart = false, hackrfStart = false, fileStart = false;
     const char* shotPath = nullptr;
     int shotFrame = 0;
     for (int i = 1; i < argc; i++) {
@@ -1528,6 +1806,7 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) gForceTab = argv[++i];
         if (std::string(argv[i]) == "--synthgain") app.tune.synth.gainModel = true;
+        if (std::string(argv[i]) == "--nodeint") app.video.deint = false;
         if (std::string(argv[i]) == "--agc") app.agcOn = true;
         if (std::string(argv[i]) == "--fft" && i + 1 < argc) app.tune.synth.tx.s2field1 = atoi(argv[++i]);
         if (std::string(argv[i]) == "--gi" && i + 1 < argc) app.tune.synth.tx.giIdx = atoi(argv[++i]);
@@ -1538,6 +1817,7 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--pp" && i + 1 < argc) app.tune.synth.tx.pp = atoi(argv[++i]);
         if (std::string(argv[i]) == "--ext") app.tune.synth.tx.ext = true;
         if (std::string(argv[i]) == "--hackrf") hackrfStart = true;
+        if (std::string(argv[i]) == "--file" && i + 1 < argc) { app.file.path = argv[++i]; app.file.sampleRate = 10e6; app.file.format = FileFormat::CS8; fileStart = true; hackrfStart = true; autostart = true; }
         if (std::string(argv[i]) == "--play" && i + 1 < argc) app.playReq = atoi(argv[++i]);
         if (std::string(argv[i]) == "--lna" && i + 1 < argc) app.tune.lnaDb = atoi(argv[++i]);
         if (std::string(argv[i]) == "--vga" && i + 1 < argc) app.tune.vgaDb = atoi(argv[++i]);
@@ -1566,7 +1846,7 @@ int main(int argc, char** argv) {
             if (autostart) {
                 autostart = false;
                 app.devIdx = 0;
-                if (hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == DeviceInfo::HackRF) app.devIdx = i;
+                if (hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == (fileStart ? DeviceInfo::File : DeviceInfo::HackRF)) app.devIdx = i;
                 app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
                 app.engine.setComputeMode(app.computeMode);
                 app.engine.start(app.devices[app.devIdx], app.tune, app.file);

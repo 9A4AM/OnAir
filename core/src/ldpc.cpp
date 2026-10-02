@@ -171,8 +171,9 @@ bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vecto
                     float32x4_t mag = vmulq_f32(vbslq_f32(isMin, vld1q_f32(&min2[m]), vld1q_f32(&min1[m])), al);
                     uint32x4_t sbit = veorq_u32(vld1q_u32(&sg[m]), vandq_u32(vreinterpretq_u32_f32(x), vdupq_n_u32(0x80000000u)));
                     float32x4_t nm = vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(mag), sbit));
+                    float32x4_t old = vld1q_f32(mj + m);
                     vst1q_f32(mj + m, nm);
-                    vst1q_f32(Lj + m, vaddq_f32(x, nm));
+                    vst1q_f32(Lj + m, vsubq_f32(nm, old)); // posterior increment (a variable can appear twice in a layer)
                 }
 #else
                 for (int m = 0; m < Z; m++) {
@@ -181,18 +182,19 @@ bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vecto
                     uint32_t mb; std::memcpy(&mb, &mag, 4);
                     mb |= (sg[m] ^ (sb & 0x80000000u));
                     float nm; std::memcpy(&nm, &mb, 4);
+                    const float old = mj[m];
                     mj[m] = nm;
-                    Lj[m] += nm;
+                    Lj[m] = nm - old;
                 }
 #endif
                 if (j < (int)cn.size()) {
                     float* dst = inf.data() + (size_t)cn[j].group * Z;
                     const int s = cn[j].shift;
-                    for (int m = s; m < Z; m++) dst[m - s] = Lj[m];
-                    for (int m = 0; m < s; m++) dst[m - s + Z] = Lj[m];
+                    for (int m = s; m < Z; m++) dst[m - s] += Lj[m];
+                    for (int m = 0; m < s; m++) dst[m - s + Z] += Lj[m];
                 } else {
                     float* dst = (j == (int)cn.size()) ? P(r) : (r > 0 ? P(r - 1) : P(q - 1) - 1);
-                    for (int m = 0; m < Z; m++) dst[m] = Lj[m];
+                    for (int m = 0; m < Z; m++) dst[m] += Lj[m];
                 }
             }
             P(q - 1)[-1] = kBig; // the non-existent parity bit before the first one stays known

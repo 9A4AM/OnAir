@@ -19,7 +19,7 @@ struct VideoFrame {
     int w = 0, h = 0;
     std::vector<uint8_t> rgba;           // RGBA8, only when a subtitle was burnt in; otherwise empty
     std::vector<uint8_t> y, uv;          // NV12 planes (w*h and w*(h/2) bytes, tightly packed); converted to RGB on the GPU
-    bool bt709 = true, fullRange = false;
+    bool bt709 = true, fullRange = false, interlaced = false;
 };
 
 struct AudioTrackInfo { int pid = 0; std::string codec, lang; int channels = 0; };

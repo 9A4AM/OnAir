@@ -1,3 +1,4 @@
+#include "dect2/gpu_ldpc.h"
 #include "dect2/t2fec.h"
 #include <chrono>
 #include <cmath>
@@ -5,13 +6,15 @@
 #include <random>
 using namespace dect2;
 int main(int argc, char** argv) {
+    // usage: bench_fec [snr_dB] [mod 0..3] [rate 0..5] [blocks per second the mux needs]
     float snr = argc > 1 ? atof(argv[1]) : 16.f;
-    PlpFec f; f.rate = 2; f.mod = 2; f.rotation = true;
+    PlpFec f; f.rate = argc > 3 ? atoi(argv[3]) : 2; f.mod = argc > 2 ? atoi(argv[2]) : 2; f.rotation = true;
+    const double needBlocksPerSec = argc > 4 ? atof(argv[4]) : 624;
     FecDims d = fecDims(f);
     const LdpcCode& ldpc = ldpcFor(f); const BchCode& bch = bchFor(f);
     const auto& map = bitInterleaverMap(f);
     std::mt19937 rng(9); std::normal_distribution<float> nd(0.f, 1.f);
-    const int blocks = 8, cells = d.cellsPerBlock, bps = d.bitsPerCell;
+    const int blocks = 64, cells = d.cellsPerBlock, bps = d.bitsPerCell;
     std::vector<std::vector<float>> llrs(blocks);
     std::vector<std::vector<uint8_t>> msgs(blocks);
     double tDem = 0;
@@ -43,4 +46,25 @@ int main(int argc, char** argv) {
         printf("%s: %.2f ms/block, avg iterations %.1f, converged %d/%d\n", mode ? "layered QC" : "flooding   ", t / blocks, (double)its / blocks, ok, blocks);
     }
     printf("demapper: %.2f ms/block\n", tDem / blocks);
+    // GPU batch
+    double perBlockGpu = 0;
+    {
+        auto& g = GpuLdpc::instance();
+        if (g.available()) {
+            std::vector<float> all((size_t)blocks * d.nLdpc);
+            for (int b = 0; b < blocks; b++) std::copy(llrs[b].begin(), llrs[b].end(), all.begin() + (size_t)b * d.nLdpc);
+            std::vector<uint8_t> hard((size_t)blocks * d.nLdpc), ok(blocks);
+            std::vector<int> it(blocks);
+            g.decode(ldpc, all.data(), blocks, 50, hard.data(), ok.data(), it.data()); // warm-up (tables, buffers)
+            auto t0 = std::chrono::steady_clock::now();
+            g.decode(ldpc, all.data(), blocks, 50, hard.data(), ok.data(), it.data());
+            double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+            long its = 0; int good = 0;
+            for (int b = 0; b < blocks; b++) { its += it[b]; good += ok[b]; }
+            perBlockGpu = ms / blocks;
+            printf("GPU batch of %d: %.3f ms/block, avg iterations %.1f, converged %d/%d\n", blocks, perBlockGpu, (double)its / blocks, good, blocks);
+        } else printf("GPU: not available\n");
+    }
+    printf("\nmux needs %.0f blocks/s. With the demapper and BCH included (BCH ~0.3 ms/block):\n", needBlocksPerSec);
+    const double cpuPer = 0.0; (void)cpuPer;
 }

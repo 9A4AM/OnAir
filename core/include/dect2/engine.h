@@ -7,6 +7,7 @@
 #include "ts.h"
 #include "tsout.h"
 #include "player.h"
+#include "teletext.h"
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -53,6 +54,7 @@ public:
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }
     Player& player() { return player_; }
+    TeletextDecoder& teletext() { return ttx_; }
 
     // Log
     void log(const std::string& line);
@@ -70,6 +72,7 @@ private:
     TsSnapshot tsSnap_;
     OutputManager outputs_;
     Player player_;
+    TeletextDecoder ttx_;
     int lastT2Frame_ = -1;
     std::atomic<bool> resetReq_{false};
     std::atomic<uint64_t> resets_{0};

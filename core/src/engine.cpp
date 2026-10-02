@@ -53,7 +53,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         unpack_ = BbUnpacker();
         tsSnap_ = TsSnapshot();
         lastT2Frame_ = -1;
-        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
     }
     rx_.setPlpCallback([this](const PlpResult& r) { if (plpDump_) plpDump_(r); onPlp(r); });
     {
@@ -113,7 +113,7 @@ void Engine::applyReset() {
         std::lock_guard<std::mutex> lk(tsMu_);
         demux_.reset();
         unpack_ = BbUnpacker();
-        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
         tsSnap_ = TsSnapshot();
         lastT2Frame_ = -1;
         frameBuf_.clear();

@@ -132,6 +132,7 @@ struct T2Receiver::Impl {
     uint64_t plpFrames = 0, blocksOk = 0, blocksBad = 0, headersOk = 0, plpBchCorr = 0;
     double plpMer = 0, plpPre = 0, plpIters = 0, plpMs = 0;
     bool plpGpu = false;
+    std::deque<std::vector<uint8_t>> blockMaps;
     std::vector<cf32> plpConst;
     std::vector<uint8_t> plpConstErr;
     int hUpl = 0, hDfl = 0, hSyncd = 0;
@@ -832,6 +833,12 @@ struct T2Receiver::Impl {
             blocksOk += r.blocksOk; blocksBad += r.bchFailed; headersOk += r.headerOk; plpBchCorr += r.bchCorrected;
             plpMer = r.blocksOk ? r.merDb : plpMer;
             plpPre = r.preBer; plpIters = r.avgLdpcIters; plpMs = r.decodeMs; plpGpu = r.usedGpu;
+            {
+                std::vector<uint8_t> bm(r.frames.size(), 0);
+                for (size_t i = 0; i < r.frames.size(); i++) bm[i] = r.frames[i].bits.empty() ? 0 : 1;
+                blockMaps.push_back(std::move(bm));
+                if (blockMaps.size() > 90) blockMaps.pop_front();
+            }
             if (!r.constellation.empty()) { plpConst = r.constellation; plpConstErr = r.constErr; }
             for (auto& f : r.frames) if (f.header.crcOk) { hUpl = f.header.upl; hDfl = f.header.dfl; hSyncd = f.header.syncd; break; }
             if (plpCb) plpCb(r);
@@ -1297,6 +1304,7 @@ struct T2Receiver::Impl {
         t.blocksOk = blocksOk; t.blocksBad = blocksBad; t.headersOk = headersOk; t.plpBchCorrected = plpBchCorr;
         t.plpMerDb = plpMer; t.plpPreBer = plpPre; t.plpIters = plpIters; t.plpDecodeMs = plpMs; t.plpOnGpu = plpGpu; t.gpuAvailable = plpDec.gpuAvailable(); t.computeMode = plpDec.mode();
         t.plpConst = plpConst; t.plpConstErr = plpConstErr;
+        t.blockMap.assign(blockMaps.begin(), blockMaps.end());
         t.plpHeaderUpl = hUpl; t.plpHeaderDfl = hDfl; t.plpHeaderSyncd = hSyncd; t.plpSkipped = plpSkipped;
         if (dataValid) t.snrStep = dataDx;
     }

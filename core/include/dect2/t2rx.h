@@ -95,6 +95,7 @@ struct RxTelemetry {
     std::vector<uint8_t> plpConstErr;
     int plpHeaderUpl = 0, plpHeaderDfl = 0, plpHeaderSyncd = 0;
     int plpSkipped = 0;          // frames skipped (unsupported TI type, missing cells, ...)
+    std::vector<std::vector<uint8_t>> blockMap; // per decoded frame (oldest first, last 90): 1 = FEC block decoded, 0 = failed
 };
 
 constexpr int kTraceDecim = 512;

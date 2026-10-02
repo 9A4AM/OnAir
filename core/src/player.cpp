@@ -317,6 +317,7 @@ void Player::threadMain() {
             auto vf = std::make_shared<VideoFrame>();
             vf->w = w; vf->h = h;
             vf->bt709 = b709; vf->fullRange = src->color_range == AVCOL_RANGE_JPEG;
+            vf->interlaced = (src->flags & AV_FRAME_FLAG_INTERLACED) != 0;
             int64_t ts = f->best_effort_timestamp != AV_NOPTS_VALUE ? f->best_effort_timestamp : f->pts;
             if (ts != AV_NOPTS_VALUE) {
                 vf->pts = ts * av_q2d(fmt->streams[vIdx]->time_base);

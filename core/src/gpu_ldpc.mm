@@ -24,7 +24,7 @@ inline int vidx(int j, int nc0, int c0, int r, int m, int q, int G, device const
 kernel void ldpc(constant P& p [[buffer(0)]], device const int* lStart [[buffer(1)]], device const int* cGrp [[buffer(2)]],
                  device const int* cSh [[buffer(3)]], device const uint* mBase [[buffer(4)]], device float* postAll [[buffer(5)]],
                  device float* msgAll [[buffer(6)]], device const float* llrAll [[buffer(7)]], device uchar* hardAll [[buffer(8)]],
-                 device int* info [[buffer(9)]], uint mt [[thread_position_in_threadgroup]], uint blk [[threadgroup_position_in_grid]]) {
+                 device int* info [[buffer(9)]], device const int* cRank [[buffer(10)]], device const int* layerR [[buffer(11)]], uint mt [[thread_position_in_threadgroup]], uint blk [[threadgroup_position_in_grid]]) {
     const int m = (int)mt;
     device float* inf = postAll + (ulong)blk * p.postPer;
     device float* msg = msgAll + (ulong)blk * p.msgPer;
@@ -54,13 +54,32 @@ kernel void ldpc(constant P& p [[buffer(0)]], device const int* lStart [[buffer(
                 if (a < min1) { min2 = min1; min1 = a; idx1 = j; }
                 else if (a < min2) min2 = a;
             }
+            // A layer may reach the same variable group twice (a variable then has two edges in the layer, owned by different
+            // threads). Every new message is computed from the posteriors as they were at the start of the layer, and the
+            // posterior increments are applied afterwards: unique edges at once, repeated ones one rank at a time.
+            const int R = layerR[r];
+            float dl[64];
             for (int j = 0; j < nc; j++) {
                 const int vi = vidx(j, nc0, c0, r, m, q, G, cGrp, cSh);
                 float x = inf[vi] - mr[j * Z + m];
                 float mag = (idx1 == j ? min2 : min1) * p.alpha;
                 float nm = as_type<float>(as_type<uint>(mag) | (sg ^ (as_type<uint>(x) & 0x80000000u)));
+                const float d = nm - mr[j * Z + m];
                 mr[j * Z + m] = nm;
-                if (!(r == 0 && j == nc0 + 1 && m == 0)) inf[vi] = x + nm; // the pad variable stays known
+                if (R == 0) { if (!(r == 0 && j == nc0 + 1 && m == 0)) inf[vi] += d; } // the pad variable stays known
+                else dl[j] = d;
+            }
+            if (R > 0) {
+                threadgroup_barrier(mem_flags::mem_device);
+                for (int rk = 0; rk <= R; rk++) {
+                    for (int j = 0; j < nc; j++) {
+                        const int rank = j < nc0 ? cRank[c0 + j] : 0;
+                        if (rank != rk) continue;
+                        if (r == 0 && j == nc0 + 1 && m == 0) continue;
+                        inf[vidx(j, nc0, c0, r, m, q, G, cGrp, cSh)] += dl[j];
+                    }
+                    threadgroup_barrier(mem_flags::mem_device);
+                }
             }
             threadgroup_barrier(mem_flags::mem_device);
         }
@@ -92,7 +111,8 @@ struct GpuLdpc::Impl {
     std::mutex mu;
 
     struct State {
-        id<MTLBuffer> lStart, cGrp, cSh, mBase;
+        id<MTLBuffer> lStart, cGrp, cSh, mBase, cRank, layerR;
+        bool ok = true;
         uint32_t msgPer = 0, postPer = 0;
         int cap = 0;
         id<MTLBuffer> post, msg, llr, hard, info;
@@ -108,11 +128,19 @@ struct GpuLdpc::Impl {
         if (it != codes.end()) return it->second;
         State s;
         const auto& L = c.layers();
-        std::vector<int> ls(1, 0), cg, cs;
+        std::vector<int> ls(1, 0), cg, cs, rk, lr;
         std::vector<uint32_t> mb;
         uint32_t off = 0;
         for (auto& l : L) {
-            for (auto& cn : l) { cg.push_back(cn.group); cs.push_back(cn.shift); }
+            int maxRank = 0;
+            for (size_t i = 0; i < l.size(); i++) {
+                int rank = 0;
+                for (size_t k = 0; k < i; k++) if (l[k].group == l[i].group) rank++;
+                maxRank = std::max(maxRank, rank);
+                cg.push_back(l[i].group); cs.push_back(l[i].shift); rk.push_back(rank);
+            }
+            lr.push_back(maxRank);
+            if (l.size() + 2 > 64) s.ok = false; // kernel keeps one increment per edge in a fixed array
             ls.push_back((int)cg.size());
             mb.push_back(off);
             off += (uint32_t)(l.size() + 2) * 360;
@@ -124,6 +152,8 @@ struct GpuLdpc::Impl {
         s.cGrp = mk(cg.data(), cg.size() * 4);
         s.cSh = mk(cs.data(), cs.size() * 4);
         s.mBase = mk(mb.data(), mb.size() * 4);
+        s.cRank = mk(rk.data(), rk.size() * 4);
+        s.layerR = mk(lr.data(), lr.size() * 4);
         return codes.emplace(&c, std::move(s)).first->second;
     }
 };
@@ -154,6 +184,7 @@ bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter
     @autoreleasepool {
         Impl& d = *p_;
         Impl::State& s = d.state(code);
+        if (!s.ok) return false;
         const int n = code.n();
         for (int b0 = 0; b0 < nb; b0 += Impl::kChunk) {
             const int cnt = std::min(Impl::kChunk, nb - b0);
@@ -180,6 +211,8 @@ bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter
             [enc setBuffer:s.llr offset:0 atIndex:7];
             [enc setBuffer:s.hard offset:0 atIndex:8];
             [enc setBuffer:s.info offset:0 atIndex:9];
+            [enc setBuffer:s.cRank offset:0 atIndex:10];
+            [enc setBuffer:s.layerR offset:0 atIndex:11];
             [enc dispatchThreadgroups:MTLSizeMake(cnt, 1, 1) threadsPerThreadgroup:MTLSizeMake(360, 1, 1)];
             [enc endEncoding];
             [cb commit];
