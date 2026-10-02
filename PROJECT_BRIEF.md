@@ -281,7 +281,9 @@ A **headless CLI** (`dect2 --iq file.cs8 --out out.ts`) comes for free from this
 
 Added 2026-10-02 at the user's request.
 
-### 11.1 Antenna direction finder
+### 11.1 Antenna direction finder (built 2026-10-02; untested with a real antenna)
+
+Implemented in `core/src/direction.cpp` with the Antenna tab (compass rose, Measure/Skip buttons, results table). It asks for the antenna type first (directional / dipole / omnidirectional, the last compares places instead of headings), measures ~14 s per direction (AGC paused), scores with quality, occupancy and multipath, refines around the best heading and interpolates. A weak signal that is flat over the first four directions gets the diagonals too before it is called flat. Simulated antennas are covered by `tests/test_direction.cpp`.
 
 An assistant that tells the user where to point the antenna, step by step:
 
