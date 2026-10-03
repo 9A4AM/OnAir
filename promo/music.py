@@ -14,8 +14,8 @@ OUT = os.environ.get('OUT', 'music_work'); os.makedirs(OUT, exist_ok=True)
 SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
 BAR = 2.0; NBARS = 61; DUR = NBARS * BAR           # 122 s
 rnd = random.Random(11)
-HITS = [(4.0, 1), (20.0, 2), (68.0, 3), (84.0, 4), (102.0, 5)]   # time, size
-BUILDS = [(0.0, 4.0), (16.0, 20.0), (64.0, 68.0), (80.0, 84.0), (94.0, 102.0)]
+HITS = [(4.0, 1), (20.0, 2), (68.0, 3), (84.0, 4), (102.0, 5), (116.0, 4)]   # time, size
+BUILDS = [(0.0, 4.0), (16.0, 20.0), (64.0, 68.0), (80.0, 84.0), (94.0, 102.0), (112.0, 116.0)]
 
 CH = [  # Am9 - Fmaj7 - Cmaj7 - G6
     dict(root=45, notes=[57, 60, 64, 67, 71]),
@@ -28,7 +28,7 @@ def chord_at(t):
     for h, _ in HITS:
         if h - 4 <= t < h: return CH[3]            # every build hangs on G6
         if h <= t < h + 4: return CH[0]            # every hit lands on Am9
-    if t >= 118: return CH[0]
+    if t >= 120: return CH[0]
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
@@ -37,7 +37,7 @@ def energy(t):                                     # 0..10, the film's intensity
     for a, b in BUILDS:
         if a <= t < b: return energy(a - .01) if (a > 0 and t < a + 2) else None   # first half of a build keeps the groove: no sudden drop
     for lim, e in ((8, 4), (16, 4.5), (32, 6), (40, 6), (46, 5.5), (54, 6.5), (60, 6), (64, 5), (72, 7), (80, 6.5), (90, 8), (94, 8),
-                   (106, 10), (110, 9), (112, 7), (114, 6), (118, 4.5)):
+                   (106, 10), (110, 9), (112, 8.5), (116, 8), (118, 6), (120, 4)):
         if t < lim: return e
     return 3
 
@@ -158,8 +158,8 @@ for b in range(NBARS):
     mo = MOTIF[(int(t0 // BAR) // 2) % 4]
     for k in range(2): lead.add(t0 + k * 1.0, 1.05, mo[(b % 2) * 2 + k], 70, 0)
 # resolve: a long held chord under the last bars
-timp.add(118.0, 3.0, 33, 40)
-bass.add(118.0, 6.0, 33, 50)
+timp.add(120.0, 2.5, 33, 36)
+bass.add(120.0, 4.0, 33, 46)
 # ---------------------------------------------------------------- builds and hits
 for (a, b), (h, size) in zip(BUILDS, HITS):
     ch = chord_at(h + .1)
@@ -257,7 +257,21 @@ def impact(t, g, f0=70):
     nz = lp(rng.standard_normal((n, 1)), 3500)[:, 0] * np.exp(-x * 3.2) * .5
     y = np.zeros_like(mix); i = int(t * SR); sig = np.stack([s_ + nz, s_ + nz], 1) * g; y[i:i + n] = sig[:len(y) - i]; return y
 fx = np.zeros_like(mix)
-for (h, size), g in zip(HITS, (.07, .11, .14, .17, .21)): fx += impact(h, g)
+for (h, size), g in zip(HITS, (.07, .11, .14, .17, .21, .18)): fx += impact(h, g)
+# ---- sound design under the score (kept quiet)
+def burst(t, dur, g, lo, hi, decay):
+    n = int(dur * SR); x = np.arange(n) / SR; w = rng.standard_normal(n); w = signal.sosfilt(signal.butter(2, [lo, hi], 'bp', fs=SR, output='sos'), w) * np.exp(-x / decay)
+    y = np.zeros_like(mix); i = int(t * SR); m_ = min(n, len(y) - i); y[i:i + m_] = np.stack([w, w], 1)[:m_] * g; return y
+# cold open: TV static that thins out as the signal comes in, cut dead on the lock / picture snap at 3.5 s
+n = int(3.5 * SR); x = np.arange(n) / SR; st = rng.standard_normal((n, 2)); st = signal.sosfilt(signal.butter(2, [900, 7000], 'bp', fs=SR, output='sos'), st, axis=0)
+crack = (rng.random(n) > .9985).astype(float) * rng.random(n) * 3; st += np.stack([crack, crack], 1) * .4
+env = np.minimum(1, x / .25) * (1 - .65 * np.clip((x - 1.4) / 1.8, 0, 1)); env[-int(.01 * SR):] *= np.linspace(1, 0, int(.01 * SR))
+fx[:n] += st * env[:, None] * .05
+fx += burst(3.5, .5, .10, 60, 400, .08)                           # the picture snapping on
+fx += burst(67.95, .05, .22, 2000, 7000, .006)                   # the click on "fill gaps"
+fx += burst(83.80, .05, .20, 1500, 6000, .006) + burst(83.83, .05, .12, 1500, 6000, .005)   # remote button
+tv = np.zeros_like(mix); i = int(84.0 * SR); n2 = int(.5 * SR); x2 = np.arange(n2) / SR; th_ = np.sin(2 * np.pi * (48 + 30 * np.exp(-x2 * 12)) * x2) * np.exp(-x2 * 7)
+tv[i:i + n2] = np.stack([th_, th_], 1) * .16; fx += tv + burst(84.0, .25, .05, 6000, 12000, .04)  # the TV powering on
 mix += fx + rv(fx, IR_HALL) * .35
 # pre-hit pull-back: ~0.2 s of near-silence right before each big hit so the hit lands harder (classic trailer dropout)
 dip = np.ones(len(T), np.float32)
@@ -278,7 +292,7 @@ rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-5
 win = 80                                               # 4 s centred window
 sm = np.sqrt(np.convolve(rms ** 2, np.ones(win) / win, 'same'))
 tt = (np.arange(nb) + .5) * blk / SR
-want = np.interp(tt, [0, 4, 15.9, 20, 60, 63.9, 68, 79.9, 84, 93.9, 101.9, 102, 110, 114, 118, 126], [.070, .095, .088, .100, .100, .096, .108, .098, .116, .108, .118, .150, .132, .100, .075, .055])
+want = np.interp(tt, [0, 4, 15.9, 20, 60, 63.9, 68, 79.9, 84, 93.9, 101.9, 102, 110, 113.9, 116, 119, 122, 126], [.070, .095, .088, .100, .100, .096, .108, .098, .116, .108, .118, .150, .128, .120, .145, .110, .070, .050])
 g = np.clip(want / sm, .5, 3.5)
 g = np.convolve(g, np.ones(60) / 60, 'same')           # 3 s smoothing: gain never moves audibly
 gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])

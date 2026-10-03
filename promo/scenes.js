@@ -121,8 +121,9 @@ async function ensure(srcs){ await Promise.all([...srcs].map(async s=>{ const i=
 function camMix(a,b,k){ return {cx:lerp(a.cx,b.cx,k),cy:lerp(a.cy,b.cy,k),z:lerp(a.z,b.z,k)}; }
 function camFix(cm){ const hw=W/(2*cm.z), hh=H/(2*cm.z); return {cx:clamp(cm.cx,hw,W-hw),cy:clamp(cm.cy,hh,H-hh),z:cm.z}; }
 function toScreen(cm,x,y){ return [W/2+(x-cm.cx)*cm.z, H/2+(y-cm.cy)*cm.z]; }
+let FOOTBLUR=0;
 function foot(c,src,cm,after){ cm=camFix(cm); const im=img(src); c.save(); c.fillStyle='#0b0c0e'; c.fillRect(0,0,W,H);
-  c.translate(W/2,H/2); c.scale(cm.z,cm.z); c.translate(-cm.cx,-cm.cy); c.imageSmoothingQuality='high'; if(im) c.drawImage(im,0,0,W,H); if(after) after(c,cm); c.restore(); return cm; }
+  c.translate(W/2,H/2); c.scale(cm.z,cm.z); c.translate(-cm.cx,-cm.cy); c.imageSmoothingQuality='high'; if(FOOTBLUR>.05) c.filter=`blur(${FOOTBLUR.toFixed(2)}px)`; if(im) c.drawImage(im,0,0,W,H); if(after) after(c,cm); c.filter='none'; c.restore(); return cm; }
 // the decoded programme, drawn into the app's video rectangles at full frame rate (the capture machine could not show it smoothly)
 const RECT_TV=[326,200,920,518], RECT_THUMB=[1606,604,268,151];
 function progInto(c,t,r,a=1){ const im=img(progSrc(t)); if(!im) return; c.save(); c.globalAlpha*=a; c.drawImage(im,r[0],r[1],r[2],r[3]); c.restore(); }
@@ -154,12 +155,28 @@ function cursor(c,x,y,press=0){ c.save(); c.translate(x,y); const s=1.25*(1-.12*
   c.shadowColor='rgba(0,0,0,.5)'; c.shadowBlur=6; c.shadowOffsetY=2; c.fillStyle='#fff'; c.fill(); c.shadowColor='transparent'; c.lineWidth=1.3; c.strokeStyle='#111'; c.stroke(); c.restore(); }
 
 // ---------------------------------------------------------------- 1. title
+const stat=mk(240,135), statx=stat.getContext('2d'), statd=statx.createImageData(240,135);
+function lampsUi(c,x,y,names,on,sz=18){ let xx=x; names.forEach((n,i)=>{ const st=on[i]; c.fillStyle=st===1?'#62c37f':st===2?'#d9a441':'#4a5059'; c.beginPath(); c.arc(xx+sz*.4,y-sz*.32,sz*.36,0,7); c.fill(); c.save(); c.font=`${sz}px ${UI.font}`; c.fillStyle=st?UI.text:UI.dim; c.fillText(n,xx+sz*.95,y); xx+=sz*1.6+c.measureText(n).width; c.restore(); }); return xx; }
 T.title=(c,bt)=>{
   bgd(c);
-  const sg=[{dat:'T',u:.5,w:.38,k:ease(bt,2.2,1.8)}];
-  const gw=eio3(seg(bt,.2,3.2))*W; c.save(); c.globalAlpha=.75*ease(bt,.1,1)*(1-.6*seg(bt,3.4,4.4)); c.strokeStyle=acc(.85); c.lineWidth=1.6; c.beginPath(); c.moveTo(W/2-gw/2,930); c.lineTo(W/2+gw/2,930); c.stroke(); c.restore();
-  c.save(); c.globalAlpha=.55*ease(bt,1.6,2.2); spectrum(c,0,830,W,200,bt+3,sg,{n:500,lw:1.8,noFrame:true,grid:false,band:false}); c.restore();
-  fadeUp(c,bt,4.0,()=>{ c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=50; c.shadowOffsetY=22; c.drawImage(logo,W/2-130,160,260,260); c.restore(); },{dur:.7,dy:10});
+  if(bt<4){ // cold open: a dead TV, a signal flickers in, the receiver locks, the picture snaps on
+    const tx=330,ty=110,tw=1260,th=709, fr=Math.floor(bt*30);
+    c.save(); c.shadowColor='rgba(0,0,0,.7)'; c.shadowBlur=60; rr(c,tx-16,ty-16,tw+32,th+32,14); c.fillStyle='#08090b'; c.fill(); c.restore();
+    c.save(); rr(c,tx,ty,tw,th,4); c.clip();
+    const snap=bt>=3.5;
+    if(!snap){ const d=statd.data; for(let i=0;i<240*135;i++){ const v=(hash(i*1.31+fr*977.7)*255)|0, roll=Math.sin((i/240+fr*3)*.21)*18; d[i*4]=d[i*4+1]=d[i*4+2]=Math.max(0,Math.min(255,v*.55+roll+20)); d[i*4+3]=255; } statx.putImageData(statd,0,0);
+      c.imageSmoothingEnabled=false; c.globalAlpha=1-.55*ease(bt,2.0,1.2); c.drawImage(stat,tx,ty,tw,th); c.globalAlpha=1; c.imageSmoothingEnabled=true;
+      c.fillStyle=`rgba(4,6,9,${.35+.4*ease(bt,1.6,1.0)})`; c.fillRect(tx,ty,tw,th);
+      const ns=ease(bt,.3,.6)*(1-ease(bt,1.9,.4)); if(ns>0){ c.save(); c.globalAlpha=ns; rr(c,tx+50,ty+50,250,58,6); c.fillStyle='rgba(0,0,0,.75)'; c.fill(); txt(c,'NO SIGNAL',tx+175,ty+90,{size:28,w:600,al:'center',mono:true}); c.restore(); } }
+    // the signal: spectrum flickers in, then holds steady when it locks
+    const lock=3.0, flick=bt<lock? (.45+.55*hash(Math.floor(bt*14)))*ease(bt,1.4,1.2):1;
+    if(!snap){ const sg=[{dat:'T',u:.5,w:.38,k:flick}]; c.save(); c.globalAlpha=ease(bt,1.3,.6); spectrum(c,tx+60,ty+250,tw-120,300,bt+3,sg,{n:520,lw:2.4,band:false}); c.restore();
+      const on=['P1','GI','L1-pre','L1-post','Frame','LDPC'].map((n,i)=>bt>=lock+i*.06?1:bt>1.8?2:0); c.save(); c.globalAlpha=ease(bt,1.5,.5); rr(c,tx+60,ty+590,tw-120,60,8); c.fillStyle='rgba(25,32,42,.92)'; c.fill(); let xe=lampsUi(c,tx+86,ty+630,['P1','GI','L1-pre','L1-post','Frame','LDPC'],on,22);
+      c.font=`22px ${UI.font}`; c.fillStyle=bt>=lock+.35?'#62c37f':'#9aa4ae'; c.fillText(bt>=lock+.35?'State  Locked':'State  searching…',xe+30,ty+630); c.restore(); }
+    else { const im=img(progSrc(bt+1)); if(im) c.drawImage(im,tx,ty,tw,th); const f=1-seg(bt,3.5,3.75); if(f>0){ c.fillStyle=`rgba(255,255,255,${.55*f})`; c.fillRect(tx,ty,tw,th); } }
+    c.restore();
+    return; }
+  fadeUp(c,bt,4.0,()=>{ c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=50; c.shadowOffsetY=22; c.drawImage(logo,W/2-130,160,260,260); c.restore(); },{dur:.5,dy:10});
   line(c,'OnAir',W/2,610,bt,4.5,{size:124,w:500,ls:-4,al:'center'});
   line(c,'Digital TV and radio, decoded in software.',W/2,690,bt,5.5,{size:38,w:300,al:'center'});
   const k=ease(bt,6.5,.8); if(k>0){ c.save(); c.globalAlpha=k; c.translate(0,(1-k)*8); pill(c,'Version 0.1.0  ·  Out now',W/2,780,{accent:true}); c.restore(); }
@@ -169,15 +186,25 @@ const STD=[['TELEVISION','DVB-T2','T2-Base and T2-Lite',['1.7 – 10 MHz channel
            ['TELEVISION','DVB-T','First-generation terrestrial',['2K and 8K carriers','QPSK, 16- and 64-QAM','All guard intervals','All code rates']],
            ['TELEVISION','ATSC 1.0','North American 8-VSB',['6 MHz channels','Adaptive equaliser (DFE)','Trellis + Reed-Solomon','PSIP channel names']],
            ['RADIO','DAB / DAB+','Digital radio ensembles',['DAB and DAB+ audio','1.5 MHz wide ensembles','Many stations per ensemble','Automatic station list']]];
+const LOCKS=[['DVB-T2','T2-Base  ·  32K  ·  256-QAM',[{dat:'T',u:.5,w:.38,k:1}],['P1','GI','L1','Frame','LDPC']],
+             ['DVB-T','8K  ·  64-QAM  ·  2/3',[{dat:'T',u:.5,w:.38,k:1}],['Sync','TPS','Chan','Viterbi','RS']],
+             ['ATSC','8-VSB  ·  6 MHz',[{u:.5,w:.3,k:1}],['Pilot','Seg','Field','Eq','RS']],
+             ['DAB+','Ensemble  ·  11 stations',[{dat:'D',u:.27,w:.128,k:1},{dat:'D',u:.72,w:.128,k:1}],['Sync','FIC','MSC','Audio']]];
 T.standards=(c,bt)=>{
   bgd(c);
   head(c,'Every broadcast.','One receiver.',bt,.1,{y:150});
-  const x0=120, cw=400, gap=24, y=330, h=470;
-  txt(c,'TELEVISION',x0,y-18,{size:15,mono:true,col:PAL.faint,ls:3,a:ease(bt,.5)}); txt(c,'RADIO',x0+3*(cw+gap),y-18,{size:15,mono:true,col:PAL.faint,ls:3,a:ease(bt,.5)});
-  STD.forEach((cd,i)=>{ const k0=.5+i*.5; fadeUp(c,bt,k0,()=>{ const x=x0+i*(cw+gap);
-    panel(c,x,y,cw,h,{active:i===3}); txt(c,cd[1],x+30,y+76,{size:44,w:500,ls:-1}); txt(c,cd[2],x+31,y+114,{size:21,w:300,col:C.dim});
-    cd[3].forEach((it,j)=>{ const a=ease(bt,k0+.25+j*.12,.6); c.save(); c.globalAlpha*=a; const yy=y+196+j*58; check(c,x+44,yy-8,14); txt(c,it,x+72,yy,{size:23,w:400}); c.restore(); }); },{dur:.8,dy:12}); });
-  [['Automatic standard detection',3.5],['Automatic bandwidth',4.0],['Transport stream out',4.5]].forEach(([s,t0],i)=>chip(c,s,[420,960,1450][i],900,ease(bt,t0,.7),{size:24}));
+  const x0=120, pw=405, gap=20, y=340, ph=500;
+  LOCKS.forEach(([nm,mode,sg,lamps],i)=>{ const L=1.5+i*1.0, x=x0+i*(pw+gap); fadeUp(c,bt,.3+i*.15,()=>{
+    const locked=bt>=L, flash=locked?Math.exp(-(bt-L)*5):0;
+    panel(c,x,y,pw,ph,{active:locked,fill:'#0c1014'}); if(flash>0){ c.save(); c.globalAlpha=flash*.5; rr(c,x,y,pw,ph,6); c.strokeStyle='#62c37f'; c.lineWidth=3; c.stroke(); c.restore(); }
+    txt(c,nm,x+26,y+62,{size:40,w:600,ls:-.8});
+    const sx=x+20, sy=y+90, sw=pw-40, sh=210; spectrum(c,sx,sy,sw,sh,bt+3+i*.7,sg,{n:260,lw:1.6,band:locked});
+    if(nm==='ATSC'){ c.save(); c.strokeStyle=UI.line; c.lineWidth=1.6; const px=sx+sw*.205; c.beginPath(); c.moveTo(px,sy+sh*.62); c.lineTo(px,sy+sh*.18); c.stroke(); c.restore(); }
+    const on=lamps.map((n,j)=>bt>=L+j*.05?1:bt>L-1.0?2:0); lampsUi(c,x+24,y+350,lamps,on,17);
+    c.save(); c.font=`20px ${UI.font}`; c.fillStyle=locked?'#62c37f':'#9aa4ae'; c.fillText(locked?'Locked':'searching…',x+24,y+400); c.restore();
+    txt(c,locked?mode:'',x+24,y+446,{size:21,w:400,col:'#c2ccd6',a:ease(bt,L,.5)});
+  },{dur:.6,dy:10}); });
+  line(c,'Detected and locked automatically.',120,950,bt,5.0,{size:30,w:300,col:C.dim});
 };
 // ---------------------------------------------------------------- 3. any radio
 const RADIOS=[['HackRF One / Pro','native driver','20',20],['Airspy','via SoapySDR','6–10',10],['SDRplay RSP','via SoapySDR','~10',10],['PlutoSDR','via SoapySDR','20+',20],['BladeRF','via SoapySDR','20+',20],['LimeSDR','via SoapySDR','20+',20],['USRP','via SoapySDR','20+',20],['RTL-SDR','narrow signals only','2.4',2.4]];
@@ -203,7 +230,8 @@ T.app=(c,bt)=>{
   const t=APP_OFF+bt;
   const z0={cx:640,cy:120,z:2.4}, z1={cx:960,cy:540,z:1.0};
   let cm=camMix(z0,z1,eio3(seg(bt,2.5,5.2))); cm.z*=1+.010*Math.max(0,bt-5.2);
-  cm=foot(c,clipSrc('overview',t),cm,cc=>{ if(t>=THUMB_FROM) progInto(cc,t,RECT_THUMB,ease(t,THUMB_FROM,.5)); });
+  FOOTBLUR=2.2*ease(bt,6.2,.8)*(1-ease(bt,10.8,.6)); cm=foot(c,clipSrc('overview',t),cm,cc=>{ if(t>=THUMB_FROM) progInto(cc,t,RECT_THUMB,ease(t,THUMB_FROM,.5)); });
+  FOOTBLUR=0;
   // the lock: a short accent sweep across the status lamps
   const lk=seg(bt,2.0,2.8); if(lk>0&&lk<1){ const [x0,y0]=toScreen(cm,10,60), [x1,y1]=toScreen(cm,1300,110); c.save(); c.globalCompositeOperation='lighter'; const g=c.createLinearGradient(lerp(x0,x1,lk)-200,0,lerp(x0,x1,lk)+40,0); g.addColorStop(0,'rgba(120,200,255,0)'); g.addColorStop(.8,'rgba(120,200,255,.20)'); g.addColorStop(1,'rgba(120,200,255,0)'); c.fillStyle=g; c.fillRect(x0,y0,x1-x0,y1-y0); c.restore(); }
   callout(c,bt,6.5,cm,330,72,'Lock status at a glance',170,150);
@@ -399,23 +427,23 @@ T.finale=(c,bt)=>{
 // ---------------------------------------------------------------- 13. outro: the release
 T.outro=(c,bt)=>{
   bgd(c);
-  fadeUp(c,bt,.2,()=>{ c.drawImage(logo,W/2-110,90,220,220); },{dur:1.0,dy:12});
-  line(c,'OnAir',W/2,440,bt,.6,{size:104,w:500,ls:-4,al:'center'});
-  line(c,'Digital TV and radio, decoded in software.',W/2,505,bt,1.0,{size:34,w:300,col:C.dim,al:'center'});
-  const k=ease(bt,1.5,.8); if(k>0){ c.save(); c.globalAlpha=k; pill(c,'Version 0.1.0  ·  Available now',W/2,590,{accent:true,size:28}); c.restore(); }
-  { const ps=['DVB-T2','DVB-T','ATSC','DAB','DAB+','More to come'], ws=[150,130,120,110,120,230]; let cx0=W/2-(ws.reduce((a,b)=>a+b,0)+100)/2; ps.forEach((s,i)=>{ chip(c,s,cx0+ws[i]/2,690,ease(bt,2.5+i*.25,.7),{size:22,pad:38,col:i===5?C.dim:C.ink}); cx0+=ws[i]+20; }); }
-  fadeUp(c,bt,4.5,()=>{ ['macOS','Linux','Windows'].forEach((pl,i)=>{ const px=W/2-336+i*228; panel(c,px,760,212,58,{r:29,active:true}); txt(c,pl,px+106,798,{size:26,w:500,al:'center'}); }); },{dy:8,dur:1.0});
-  line(c,'Native on all three.',W/2,872,bt,5.0,{size:26,w:300,col:C.dim,al:'center'});
-  line(c,'github.com/adswill/OnAir',W/2,970,bt,6.0,{size:50,w:500,ls:-.5,col:PAL.accent,al:'center'});
+  const tw=1120, th=630, tx=W/2-tw/2, ty=90-14*ease(bt,5.6,.8);
+  c.save(); c.globalCompositeOperation='lighter'; const g=c.createRadialGradient(W/2,ty+th/2,200,W/2,ty+th/2,1000); g.addColorStop(0,'rgba(170,130,190,.20)'); g.addColorStop(1,'rgba(170,130,190,0)'); c.fillStyle=g; c.fillRect(0,0,W,H); c.restore();
+  c.save(); c.shadowColor='rgba(0,0,0,.7)'; c.shadowBlur=70; rr(c,tx-14,ty-14,tw+28,th+28,12); c.fillStyle='#08090b'; c.fill(); c.restore();
+  const im=img(progSrc(bt+14)); if(im) c.drawImage(im,tx,ty,tw,th);
+  const bb=ease(bt,.3,.5); if(bb>0){ c.save(); c.globalAlpha=bb; rr(c,tx+24,ty+24,300,46,6); c.fillStyle='rgba(8,12,18,.8)'; c.fill(); c.fillStyle='#4fb36a'; c.beginPath(); c.arc(tx+50,ty+47,6,0,7); c.fill(); txt(c,'LIVE · Channel One HD',tx+66,ty+55,{size:20,w:600}); c.restore(); }
+  fadeUp(c,bt,.5,()=>{ c.drawImage(logo,W/2-430,ty+th+56,92,92); txt(c,'OnAir 0.1.0',W/2-318,ty+th+130,{size:82,w:600,ls:-2.5}); },{dur:.8});
+  const k=ease(bt,1.5,.6); if(k>0){ c.save(); c.globalAlpha=k; pill(c,'Out now',W/2+330,ty+th+104,{accent:true,size:34}); c.restore(); }
+  line(c,'Native on macOS, Linux and Windows.',W/2,ty+th+210,bt,2.5,{size:30,w:300,col:'#c2ccd6',al:'center'});
+  const gk=ease(bt,6.0,.35); if(gk>0){ c.save(); c.globalAlpha=gk; const s_=1+.12*(1-gk); c.translate(W/2,ty+th+300); c.scale(s_,s_); txt(c,'github.com/adswill/OnAir',0,0,{size:58,w:600,ls:-.6,col:'#8cc8ff',al:'center'}); c.restore(); }
 };
-
 // ---------------------------------------------------------------- timeline (120 BPM: one bar = 2 s) and cue grid for music.py
-const B=[['title',0,8,null,0],['standards',8,14,'dissolve',.6],['radios',14,20,'dissolve',.6],['app',20,32,'cut',0],['tv',32,40,'dissolve',.5],['radio',40,46,'dissolve',.5],['signal',46,54,'dissolve',.5],['fix',54,60,'dissolve',.5],['gaps',60,72,'dissolve',.5],['web',72,90,'dissolve',.6],['platforms',90,102,'dissolve',.6],['finale',102,110,'cut',0],['outro',110,122,'dissolve',.9]];
+const B=[['title',0,8,null,0],['standards',8,14,'dissolve',.6],['radios',14,20,'dissolve',.6],['app',20,32,'cut',0],['tv',32,40,'dissolve',.5],['radio',40,46,'dissolve',.5],['signal',46,54,'dissolve',.5],['fix',54,60,'dissolve',.5],['gaps',60,72,'dissolve',.5],['web',72,90,'dissolve',.6],['platforms',90,102,'dissolve',.6],['finale',102,110,'cut',0],['outro',110,122,'dissolve',.6]];
 // hits: 4 (title), 20 (the app), 68 (fill gaps on), 84 (the TV comes on), 102 (all of it)
-const HITS_T=[4,20,68,84,102];
-const BUILDS=[[0,4],[16,20],[64,68],[80,84],[94,102]];
+const HITS_T=[4,20,68,84,102,116];
+const BUILDS=[[0,4],[16,20],[64,68],[80,84],[94,102],[112,116]];
 const CUES=[5.5,6.5,
-  8.5,9.0,9.5,10.0,11.5,12.0,12.5,
+  9.5,10.5,11.5,12.5,13.0,
   14.5,15.5,16.5,17.5,
   22.0,25.5,26.5,27.0,27.5,28.0,
   32.5,36.0,
@@ -426,15 +454,19 @@ const CUES=[5.5,6.5,
   72.5,84.5,
   90.5,94.0,98.0,100.5,
   104.0,104.5,105.0,105.5,106.0,
-  110.5,111.0,111.5,112.5,113.0,113.5,114.0,114.5,115.0,116.0];
+  110.5,111.5,112.5];
 const SCENES=B.map((s,i)=>{ const next=B[i+1]; const t0=s[1]-(s[4]||0)/2; const t1=s[2]+(next?next[4]/2:0); const o=[s[0],t1-t0,s[3],s[4]||0]; o.t0=t0; o.t1=t1; o.start=s[1]; o.idx=i; return o; });
 const TOTAL=122; window.TOTAL=TOTAL; window.NF=Math.round(TOTAL*FPS);
 window.SCENES=SCENES.map(s=>({name:s[0],t0:s.t0,t1:s.t1,tr:s[2],trd:s[3]}));
 const bufA=mk(), bufB=mk(), ca=bufA.getContext('2d'), cb=bufB.getContext('2d');
 function sceneAt(c,s,t){ c.clearRect(0,0,W,H); const bt=t-s.start; CURBT=bt; CURT=t; c.save(); T[s[0]](c,bt); c.restore(); }
+const MB=new Set(['app','tv','radio','signal','fix','web','platforms']);   // camera moves get a short shutter (3 sub-frames)
+const mbA=mk(), mbx=mbA.getContext('2d');
+function sceneMB(c,s,t){ if(!MB.has(s[0])){ sceneAt(c,s,t); return; } sceneAt(c,s,t); mbx.clearRect(0,0,W,H);
+  for(const [dt,al] of [[-1/90,1/2],[-2/90,1/3]]){ sceneAt(mbx,s,t+dt); c.save(); c.globalAlpha=al; c.drawImage(mbA,0,0); c.restore(); } }
 function composite(t){
   const act=SCENES.filter(s=>t>=s.t0&&t<s.t1);
-  if(act.length===1){ sceneAt(ctx,act[0],t); return; }
+  if(act.length===1){ sceneMB(ctx,act[0],t); return; }
   const A=act[0],Bn=act[1], p=clamp((t-Bn.t0)/Bn[3]); sceneAt(ca,A,t); sceneAt(cb,Bn,t);
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.drawImage(bufA,0,0); ctx.save(); ctx.globalAlpha=eio3(p); ctx.drawImage(bufB,0,0); ctx.restore();
 }
