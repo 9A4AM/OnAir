@@ -14,7 +14,7 @@ OUT = os.environ.get('OUT', 'music_work'); os.makedirs(OUT, exist_ok=True)
 SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
 BAR = 2.0; NBARS = 61; DUR = NBARS * BAR           # 122 s
 rnd = random.Random(11)
-HITS = [(4.0, 1), (20.0, 2), (68.0, 3), (84.0, 3), (102.0, 4)]   # time, size
+HITS = [(4.0, 1), (20.0, 2), (68.0, 3), (84.0, 4), (102.0, 5)]   # time, size
 BUILDS = [(0.0, 4.0), (16.0, 20.0), (64.0, 68.0), (80.0, 84.0), (94.0, 102.0)]
 
 CH = [  # Am9 - Fmaj7 - Cmaj7 - G6
@@ -32,11 +32,12 @@ def chord_at(t):
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
-    if 94 <= t < 102: return 4.4                      # the finale's groove already runs under the last (longest) build
+    if 94 <= t < 98: return 7                         # the groove keeps going into the last (longest) build, then thins out
+    if 98 <= t < 102: return 5.5
     for a, b in BUILDS:
-        if a <= t < b: return None
-    for lim, e in ((8, 4), (16, 4.5), (32, 6), (40, 6.5), (46, 5.5), (54, 7), (60, 6), (64, 5), (72, 7.5), (80, 4), (90, 7), (94, 7.5),
-                   (106, 8.5), (110, 8), (112, 7), (114, 6), (118, 4.5)):
+        if a <= t < b: return energy(a - .01) if (a > 0 and t < a + 2) else None   # first half of a build keeps the groove: no sudden drop
+    for lim, e in ((8, 4), (16, 4.5), (32, 6), (40, 6), (46, 5.5), (54, 6.5), (60, 6), (64, 5), (72, 7), (80, 6.5), (90, 8), (94, 8),
+                   (106, 10), (110, 9), (112, 7), (114, 6), (118, 4.5)):
         if t < lim: return e
     return 3
 
@@ -94,7 +95,7 @@ for a, b in BUILDS:
     ch = chord_at(a + .1)
     for n in (ch['notes'][0] - 12 if ch['notes'][0] > 55 else ch['notes'][0], ch['notes'][2], ch['notes'][3], ch['notes'][4]): strings.add(a, b - a + .6, n, 58, 0)
     for n in ch['notes']: pad.add(a, b - a + .6, n, 44, 0)
-    strings.ramp(a, b, 22 if a == 0 else (30 if b - a <= 4 else 70), 118); pad.ramp(a, b, 20, 100, ctrl=11)
+    strings.ramp(a, b, 22 if a == 0 else (62 if b - a <= 4 else 70), 118); pad.ramp(a, b, 55, 105, ctrl=11)
 for b in range(NBARS):
     t0 = b * BAR; E = energy(t0)
     if E is None: continue
@@ -256,14 +257,14 @@ def impact(t, g, f0=70):
     nz = lp(rng.standard_normal((n, 1)), 3500)[:, 0] * np.exp(-x * 3.2) * .5
     y = np.zeros_like(mix); i = int(t * SR); sig = np.stack([s_ + nz, s_ + nz], 1) * g; y[i:i + n] = sig[:len(y) - i]; return y
 fx = np.zeros_like(mix)
-for (h, size), g in zip(HITS, (.08, .14, .17, .19)): fx += impact(h, g)
+for (h, size), g in zip(HITS, (.07, .11, .14, .17, .21)): fx += impact(h, g)
 mix += fx + rv(fx, IR_HALL) * .35
 # pre-hit pull-back: ~0.2 s of near-silence right before each big hit so the hit lands harder (classic trailer dropout)
 dip = np.ones(len(T), np.float32)
 for h, _ in HITS[1:]:
     a, b = h - .22, h - .004; r = .015
     dip *= (1 - .93 * np.clip(np.minimum((T - a) / r, (b - T) / r), 0, 1)).astype(np.float32)
-mix *= dip[:, None]
+# (pre-hit pull-backs removed: they read as the audio cutting out)
 # gain riding: lift the final build, trim the climax, settle for the outro
 mix *= np.minimum(1, T / .8)[:, None]
 tail = np.clip((DUR + 2.4 - T) / 3.4, 0, 1) ** 1.5; mix *= tail[:, None]
@@ -277,7 +278,7 @@ rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-5
 win = 80                                               # 4 s centred window
 sm = np.sqrt(np.convolve(rms ** 2, np.ones(win) / win, 'same'))
 tt = (np.arange(nb) + .5) * blk / SR
-want = np.interp(tt, [0, 4, 8, 20, 60, 64, 68, 72, 80, 84, 90, 94, 101.9, 106, 110, 114, 118, 126], [.075, .110, .095, .105, .105, .095, .110, .105, .088, .110, .105, .095, .120, .115, .100, .085, .070, .055])
+want = np.interp(tt, [0, 4, 15.9, 20, 60, 63.9, 68, 79.9, 84, 93.9, 101.9, 102, 110, 114, 118, 126], [.070, .095, .088, .100, .100, .096, .108, .098, .116, .108, .118, .150, .132, .100, .075, .055])
 g = np.clip(want / sm, .5, 3.5)
 g = np.convolve(g, np.ones(60) / 60, 'same')           # 3 s smoothing: gain never moves audibly
 gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
@@ -285,13 +286,12 @@ mix *= gain[:, None]
 _js2 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scenes.js')).read()
 _st = re.search(r'const STALLS=\[(.*?)\];', _js2).group(1)
 STALLS = [(60 + float(a), 60 + float(b)) for a, b in re.findall(r'\[([\d.]+),([\d.]+)\]', _st)]
-for a, b in STALLS:                                   # loop a 62 ms grain from the moment the picture freezes, darker and quieter
-    i0, i1 = int(a * SR), int(b * SR); g = int(.0625 * SR); grain = mix[i0 - g:i0].copy()
-    f = 64; grain[:f] *= np.linspace(0, 1, f)[:, None]; grain[-f:] *= np.linspace(1, 0, f)[:, None]
-    n = i1 - i0; rep = np.tile(grain, (n // g + 2, 1))[:n] * .55
-    rep = lp(rep, 2200); fade = np.ones(n); fade[-int(.01 * SR):] = np.linspace(1, 0, int(.01 * SR)); rep *= fade[:, None]
-    x = mix[i0:i1]; x *= 0; x += rep
-    k = int(.008 * SR); mix[i1:i1 + k] *= np.linspace(0, 1, k)[:, None]
+for a, b in STALLS:                                   # while the picture is frozen the music dips and darkens a little (never stops)
+    i0, i1 = int(a * SR), int(b * SR); n = i1 - i0; r = int(.04 * SR)
+    env = np.ones(n); env[:r] = np.linspace(1, 0, r); env[-r:] = np.linspace(0, 1, r); env = 1 - .25 * np.minimum(1, np.minimum(np.arange(n), n - 1 - np.arange(n)) / r)
+    seg_ = mix[i0:i1]; dark = lp(seg_, 1400)
+    w = (1 - env)[:, None] / .25
+    mix[i0:i1] = (seg_ * (1 - w) + dark * w) * env[:, None]
 mix = np.where(np.abs(mix) > .85, np.sign(mix) * (.85 + .15 * np.tanh((np.abs(mix) - .85) / .15)), mix)
 mix = mix[:int((DUR + 2.4) * SR)]; mix /= np.abs(mix).max() * 1.05
 wavfile.write('music.wav', SR, (mix * 32000).astype('<i2'))
