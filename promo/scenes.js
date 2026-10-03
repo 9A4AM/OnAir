@@ -280,19 +280,36 @@ const FG_X=850, FG_Y=731, CLICK=7.95;
 function stallState(bt){ let lost=0; for(const [a,b] of STALLS){ if(bt>=b) lost+=b-a; else if(bt>=a) return {frozen:true,at:a-lost,since:bt-a}; } return {frozen:false,at:bt-lost}; }
 T.gaps=(c,bt)=>{
   const t=3+bt, on=bt>=8.0; const st=on?{frozen:false,at:bt}:stallState(bt);
-  const cm={cx:700,cy:470,z:1.28};
+  const pk=bt>=8?Math.exp(-(bt-8)*3.2)*Math.min(1,(bt-8)/.08):0; const cm={cx:700+60*pk,cy:470-20*pk,z:1.28+.12*pk};
   foot(c,clipSrc('Player',t),cm,cc=>{
     progInto(cc,st.at+2,RECT_TV);
     if(st.frozen){ const [x,y,w,h]=RECT_TV; const im=img(progSrc(st.at+2));
       if(im&&st.since<.22){ for(let k=0;k<26;k++){ const bw=32+((hash(k*3+Math.floor(st.at*10))*4)|0)*16, sx=x+hash(k*7+st.at)*(w-bw), sy=y+hash(k*11+st.at)*(h-bw); cc.drawImage(im,(sx-x)/w*1280+18,(sy-y)/h*720+10,bw/w*1280,bw/h*720,sx,sy,bw,bw); } }
       cc.fillStyle=`rgba(0,0,0,${.25*clamp(st.since/.4)})`; cc.fillRect(x,y,w,h);
       if(st.since>.25){ const cx=x+w/2, cy=y+h/2; for(let k=0;k<12;k++){ const a=bt*7+k/12*Math.PI*2; cc.fillStyle=`rgba(230,240,250,${(k/12)*.9})`; cc.beginPath(); cc.arc(cx+Math.cos(a)*24,cy+Math.sin(a)*24,4,0,7); cc.fill(); } } }
+    // on the click: a sheen of light sweeps across the picture
+    const sw=seg(bt,8.0,8.6); if(sw>0&&sw<1){ const [x,y,w,h]=RECT_TV; cc.save(); cc.beginPath(); cc.rect(x,y,w,h); cc.clip(); cc.globalCompositeOperation='lighter'; const gx=x-300+sw*(w+600); const g=cc.createLinearGradient(gx-180,0,gx+180,0); g.addColorStop(0,'rgba(150,210,255,0)'); g.addColorStop(.5,'rgba(150,210,255,.35)'); g.addColorStop(1,'rgba(150,210,255,0)'); cc.fillStyle=g; cc.fillRect(x,y,w,h); cc.restore(); }
     const hov=bt>7.2&&bt<8.6; cc.fillStyle='#141619'; cc.fillRect(FG_X-6,FG_Y-4,120,27); uiCheck(cc,FG_X,FG_Y,'fill gaps',on,hov);
   });
   // the cursor
   const ck=ease(bt,5.4,.5); if(ck>0){ const [tx,ty]=toScreen(camFix(cm),FG_X+9,FG_Y+10); const k=eio3(seg(bt,5.6,7.3)); const x=lerp(1500,tx,k)+Math.sin(k*Math.PI)*-60, y=lerp(980,ty,k)-Math.sin(k*Math.PI)*40;
     const pr=bt>CLICK-.06&&bt<CLICK+.14?1:0; c.save(); c.globalAlpha*=ck*(1-ease(bt,10.2,.6)); cursor(c,x,y,pr);
     const rk=seg(bt,CLICK,CLICK+.5); if(rk>0&&rk<1){ c.strokeStyle=`rgba(160,215,250,${.8*(1-rk)})`; c.lineWidth=2; c.beginPath(); c.arc(tx,ty,8+rk*34,0,7); c.stroke(); } c.restore(); }
+  // stream-health timeline: every drop-out marked in red as it happens, then filled in blue after the click
+  { const k=ease(bt,.8,.6); if(k>0){ const x0=360, y0=1014, w=1200, h=22, tx=v=>x0+v/12*w; c.save(); c.globalAlpha=k;
+      rr(c,x0-24,y0-58,w+48,h+92,12); c.fillStyle='rgba(8,11,15,.88)'; c.fill(); c.strokeStyle='rgba(255,255,255,.12)'; c.lineWidth=1; c.stroke();
+      txt(c,'Stream',x0,y0-22,{size:20,w:500,col:'#9aa6b2'});
+      const nGap=STALLS.filter(([a])=>bt>=a).length, fillK=seg(bt,8.0,9.0);
+      const label= bt<8? (nGap?nGap+' drop-out'+(nGap>1?'s':'')+', picture frozen':'') : 'Filled '+Math.min(STALLS.length,Math.ceil(fillK*STALLS.length))+' / '+STALLS.length+'  ·  picture never stops';
+      txt(c,label,x0+w,y0-22,{size:20,w:600,al:'right',col:bt<8?'#e06157':'#7cc6f5'});
+      rr(c,x0,y0,w,h,5); c.fillStyle='#1a1f26'; c.fill();
+      const head=Math.min(bt,12); c.save(); rr(c,x0,y0,w,h,5); c.clip(); c.fillStyle='#3f8f5c'; c.fillRect(x0,y0,tx(head)-x0,h);
+      STALLS.forEach(([a,b2])=>{ if(bt<a) return; const e=Math.min(b2,head); const filled=bt>=8&&fillK*12>=a; c.fillStyle=filled?'#4aa3e0':'#e06157'; c.fillRect(tx(a),y0,tx(e)-tx(a),h);
+        if(filled){ const sh=clamp((fillK*12-a)/1.2); c.fillStyle=`rgba(255,255,255,${.6*(1-sh)})`; c.fillRect(tx(a),y0,tx(e)-tx(a),h); } }); c.restore();
+      c.fillStyle='#e8eef3'; c.fillRect(tx(head)-1.5,y0-6,3,h+12);
+      c.restore(); }
+    const bk=ease(bt,8.6,.5); if(bk>0){ c.save(); c.globalAlpha=bk; const s_=1+.25*(1-eoBack(clamp((bt-8.4)/.5))); c.translate(W-330,240); c.scale(s_,s_); rr(c,-150,-36,300,72,36); c.fillStyle='rgba(30,90,55,.92)'; c.fill(); c.strokeStyle='#62c37f'; c.lineWidth=2; c.stroke();
+      c.strokeStyle='#bff0cf'; c.lineWidth=4; c.lineCap='round'; c.beginPath(); c.moveTo(-118,0); c.lineTo(-106,12); c.lineTo(-86,-12); c.stroke(); txt(c,'Uninterrupted',14,10,{size:28,w:600,al:'center'}); c.restore(); } }
   caption(c,bt,.5,'Drop-outs freeze the picture.',null,{top:true,t1:7.2,size:58});
   caption(c,bt,8.4,'Fill the gaps.','Short drop-outs no longer stop the picture.',{top:true});
 };
