@@ -283,9 +283,94 @@ T.gaps=(c,bt)=>{
   caption(c,bt,.5,'Drop-outs freeze the picture.',null,{top:true,t1:7.2,size:58});
   caption(c,bt,8.4,'Fill the gaps.','Short drop-outs no longer stop the picture.',{top:true});
 };
-// ---------------------------------------------------------------- 10. web streaming: from the desk to the couch (3D shot, see room/)
+// ---------------------------------------------------------------- 10. web streaming: from the desk to the couch (2D illustration, side view)
+// world: a 3600 px wide room; the camera pans/zooms over it. Person angles: 0 = limb straight down, positive = towards the way he faces.
+function limb(c,x,y,a1,l1,a2,l2,w,col){ const x1=x+Math.sin(a1)*l1, y1=y+Math.cos(a1)*l1, x2=x1+Math.sin(a1+a2)*l2, y2=y1+Math.cos(a1+a2)*l2;
+  c.strokeStyle=col; c.lineWidth=w; c.lineCap='round'; c.lineJoin='round'; c.beginPath(); c.moveTo(x,y); c.lineTo(x1,y1); c.lineTo(x2,y2); c.stroke(); return [x2,y2]; }
+function person(c,x,y,face,p){ const r=Math.PI/180; c.save(); c.translate(x,y); c.scale(face,1);
+  const lean=(p.lean||0)*r, nx=Math.sin(lean)*150, ny=-Math.cos(lean)*150;   // hip -> neck
+  const jeans='#2b3a52', jeans2='#22304a', hood='#3a4150', hood2='#2f3542', skin='#c49a80', hair='#1c1612';
+  // far side limbs first (darker)
+  limb(c,0,0,(p.hR||0)*r,95,-(p.kR||0)*r,95,34,jeans2); 
+  limb(c,nx*.92,ny*.92,(p.sR||0)*r-lean*0,70,-(p.eR||0)*r*-1,64,24,hood2);
+  // torso (hoodie) as a rounded capsule along the spine
+  c.save(); c.rotate(lean); rr(c,-34,-160,68,170,30); c.fillStyle=hood; c.fill(); rr(c,-30,-40,60,40,14); c.fillStyle='rgba(0,0,0,.12)'; c.fill(); c.restore();
+  // head
+  const hx=Math.sin(lean)*188, hy=-Math.cos(lean)*188; c.save(); c.translate(hx,hy); c.rotate(lean+(p.nod||0)*r);
+  c.fillStyle=skin; rr(c,-6,10,14,22,6); c.fill(); c.beginPath(); c.ellipse(4,-4,30,34,0,0,7); c.fill();
+  c.fillStyle=hair; c.beginPath(); c.ellipse(-2,-14,31,26,-.2,Math.PI*.9,Math.PI*2.15); c.fill(); c.beginPath(); c.ellipse(-14,-2,18,24,0,0,7); c.fill();
+  c.fillStyle='#b88f76'; c.beginPath(); c.ellipse(-4,0,7,9,0,0,7); c.fill(); c.restore();
+  // near side limbs
+  limb(c,0,0,(p.hL||0)*r,95,-(p.kL||0)*r,95,36,jeans);
+  // shoes
+  c.restore();
+  c.save(); c.translate(x,y); c.scale(face,1);
+  [[p.hL,p.kL,'#e9e7e2'],[p.hR,p.kR,'#cfcbc4']].forEach(([h,k,col])=>{ const a1=(h||0)*r, a2=-(k||0)*r; const fx=Math.sin(a1)*95+Math.sin(a1+a2)*95, fy=Math.cos(a1)*95+Math.cos(a1+a2)*95; c.fillStyle=col; rr(c,fx-12,fy+6,46,18,8); c.fill(); });
+  limb(c,nx*.92,ny*.92,(p.sL||0)*r,70,(p.eL||0)*r,64,26,hood);
+  { const a1=(p.sL||0)*r, a2=(p.eL||0)*r; const hx2=nx*.92+Math.sin(a1)*70+Math.sin(a1+a2)*64, hy2=ny*.92+Math.cos(a1)*70+Math.cos(a1+a2)*64; c.fillStyle=skin; c.beginPath(); c.arc(hx2,hy2,12,0,7); c.fill(); }
+  c.restore(); }
+function couchShape(c,x,y){ c.fillStyle='#3d4654'; rr(c,x,y-150,70,170,26); c.fill(); rr(c,x+40,y-30,460,90,22); c.fill(); c.fillStyle='#465062'; rr(c,x+60,y-58,420,56,20); c.fill(); c.fillStyle='#353d4a'; rr(c,x+470,y-80,60,140,24); c.fill(); c.fillStyle='#22272f'; c.fillRect(x+70,y+60,14,20); c.fillRect(x+470,y+60,14,20); }
+const WEB={ desk:[640,700], couch:[2150,700], tv:[3120,430] };
+function webPose(bt){ // returns {x,y,face,p}
+  const D={x:845,y:585,face:-1,p:{lean:10,hL:88,kL:92,hR:84,kR:88,sL:62,eL:-30,sR:58,eR:-35,nod:6}};
+  const S={x:800,y:520,face:-1,p:{lean:2,hL:0,kL:0,hR:0,kR:0,sL:4,eL:-8,sR:-4,eR:-8}};
+  const C={x:2260,y:640,face:1,p:{lean:-14,hL:84,kL:88,hR:80,kR:84,sL:22,eL:-50,sR:18,eR:-55,nod:4}};
+  const mixP=(A,B,k)=>{ const o={}; for(const key of new Set([...Object.keys(A.p),...Object.keys(B.p)])) o[key]=lerp(A.p[key]||0,B.p[key]||0,k); return {x:lerp(A.x,B.x,k),y:lerp(A.y,B.y,k),face:k<.5?A.face:B.face,p:o}; };
+  const e=k=>{k=clamp(k);return k*k*(3-2*k)};
+  if(bt<3.6){ const o=JSON.parse(JSON.stringify(D)); o.p.eL+=Math.sin(bt*9)*6; o.p.eR+=Math.sin(bt*8+1)*6; return o; }
+  if(bt<5.0){ const k=e((bt-3.6)/1.4); const o=mixP(D,S,k); o.p.lean+=26*Math.sin(Math.PI*k); return o; }
+  if(bt<5.5){ const o=JSON.parse(JSON.stringify(S)); o.face=bt<5.25?-1:1; return o; }
+  if(bt<9.4){ const k=(bt-5.5)/3.9, ph=(bt-5.5)*Math.PI*1.9, sw=Math.sin(ph), amp=Math.min(1,(bt-5.5)/.4)*Math.min(1,(9.4-bt)/.4);
+    const x=lerp(820,2230,e(k)*.8+k*.2); return {x,y:520-Math.abs(Math.cos(ph))*6*amp,face:1,p:{lean:4,hL:26*sw*amp,kL:Math.max(0,-sw)*45*amp+4,hR:-26*sw*amp,kR:Math.max(0,sw)*45*amp+4,sL:-22*sw*amp,eL:-14,sR:22*sw*amp,eR:-14}}; }
+  if(bt<10.0){ const o={x:2230,y:520,face:-1,p:{...S.p}}; return o; }    // turns his back to the couch
+  if(bt<11.4){ const k=e((bt-10.0)/1.4); const A={x:2230,y:520,face:-1,p:S.p}, B={...C,face:-1}; const o=mixP(A,B,k); o.x=lerp(2230,2290,k); o.p.lean=lerp(0,-C.p.lean,k)+22*Math.sin(Math.PI*k); o.face=-1; o.p.lean=-o.p.lean*-1; return k<1?o:{...C}; }
+  const o=JSON.parse(JSON.stringify(C)); o.p.nod=4+Math.sin(bt*.8)*2; return o; }
 T.web=(c,bt)=>{
-  const im=img(roomSrc(bt)); c.fillStyle='#000'; c.fillRect(0,0,W,H); if(im) c.drawImage(im,0,0,W,H);
+  // camera: desk close-up -> follow the walk -> over the shoulder at the TV
+  const K=[[0,780,560,1.55],[3.4,760,560,1.5],[5.6,1100,560,1.0],[9.4,2000,560,1.0],[11.4,2450,520,1.05],[13.2,2780,500,1.45],[18,2800,500,1.55]];
+  let i=0; while(i<K.length-2&&bt>K[i+1][0]) i++; const a=K[i], b2=K[i+1], kk=eio3(seg(bt,a[0],b2[0])); const cx=lerp(a[1],b2[1],kk), cy=lerp(a[2],b2[2],kk), z=lerp(a[3],b2[3],kk);
+  const on=12.0;
+  c.save(); c.fillStyle='#0d1118'; c.fillRect(0,0,W,H); c.translate(W/2,H/2); c.scale(z,z); c.translate(-cx,-cy);
+  // wall + floor
+  const wall=c.createLinearGradient(0,0,0,760); wall.addColorStop(0,'#1a2030'); wall.addColorStop(1,'#232a3a'); c.fillStyle=wall; c.fillRect(-400,-200,4400,960);
+  const fl=c.createLinearGradient(0,760,0,1300); fl.addColorStop(0,'#2b2422'); fl.addColorStop(1,'#151110'); c.fillStyle=fl; c.fillRect(-400,760,4400,600);
+  c.fillStyle='#2e3546'; c.fillRect(-400,748,4400,14);
+  for(let x=-400;x<4000;x+=180){ c.fillStyle='rgba(0,0,0,.12)'; c.fillRect(x,762,2,500); }
+  // window with the night outside
+  c.save(); rr(c,140,180,300,380,6); c.clip(); const sk=c.createLinearGradient(0,180,0,560); sk.addColorStop(0,'#0a1020'); sk.addColorStop(1,'#1d2a48'); c.fillStyle=sk; c.fillRect(140,180,300,380);
+  for(let k=0;k<40;k++){ c.fillStyle=`rgba(255,${200+hash(k)*50|0},140,${.3+hash(k*3)*.6})`; c.beginPath(); c.arc(140+hash(k*7)*300,430+hash(k*11)*130,1.5+hash(k*5)*2,0,7); c.fill(); } c.restore();
+  c.strokeStyle='#39414f'; c.lineWidth=10; rr(c,140,180,300,380,6); c.stroke(); c.beginPath(); c.moveTo(290,180); c.lineTo(290,560); c.stroke();
+  // shelf and art
+  c.fillStyle='#3b3029'; c.fillRect(1500,330,360,12); [[1530,60,70,'#6b5a4a'],[1610,44,54,'#3f5266'],[1680,70,58,'#5a4b40']].forEach(([x,w,h,col])=>{ c.fillStyle=col; c.fillRect(x,330-h,w,h); });
+  rr(c,1980,220,260,170,4); c.fillStyle='#2c3a4c'; c.fill(); c.fillStyle='rgba(230,170,120,.35)'; c.beginPath(); c.arc(2160,280,30,0,7); c.fill(); c.strokeStyle='#4a3a2e'; c.lineWidth=8; rr(c,1980,220,260,170,4); c.stroke();
+  // desk + monitor (the real app on screen)
+  c.fillStyle='#4a3628'; c.fillRect(380,560,420,18); c.fillStyle='#2a2422'; c.fillRect(400,578,14,182); c.fillRect(770,578,14,182);
+  const mx=430, my=330, mw=340, mh=191; c.fillStyle='#0c0d10'; rr(c,mx-10,my-10,mw+20,mh+20,8); c.fill(); c.fillRect(mx+mw/2-8,my+mh+10,16,30); c.fillRect(mx+mw/2-50,my+mh+38,100,8);
+  const im=img(clipSrc('Player',2+bt*.6)); if(im) c.drawImage(im,mx,my,mw,mh); progInto(c,bt+2,[mx+RECT_TV[0]*mw/W,my+RECT_TV[1]*mh/H,RECT_TV[2]*mw/W,RECT_TV[3]*mh/H]);
+  c.save(); c.globalCompositeOperation='lighter'; const mg=c.createRadialGradient(mx+mw/2,my+mh/2,40,mx+mw/2+120,my+mh/2+120,520); mg.addColorStop(0,'rgba(110,160,230,.16)'); mg.addColorStop(1,'rgba(110,160,230,0)'); c.fillStyle=mg; c.fillRect(mx-200,my-200,1000,900); c.restore();
+  // chair (rolls back as he stands)
+  const ck=clamp((bt-3.6)/1.2); const chx=820+ck*90; c.fillStyle='#1c1f25'; rr(c,chx-10,580,90,24,8); c.fill(); rr(c,chx+56,420,26,170,10); c.fill(); c.fillRect(chx+30,604,10,110); c.fillRect(chx-10,712,100,8);
+  // floor lamp (warm) near the couch
+  const lx=1900; c.fillStyle='#22252b'; c.fillRect(lx-3,330,6,430); c.fillRect(lx-40,754,80,8);
+  c.fillStyle='#e9dcc4'; c.beginPath(); c.moveTo(lx-50,330); c.lineTo(lx+50,330); c.lineTo(lx+36,260); c.lineTo(lx-36,260); c.closePath(); c.fill();
+  c.save(); c.globalCompositeOperation='lighter'; const lg=c.createRadialGradient(lx,320,10,lx,420,620); lg.addColorStop(0,'rgba(255,190,120,.30)'); lg.addColorStop(1,'rgba(255,190,120,0)'); c.fillStyle=lg; c.fillRect(lx-700,-200,1400,1100); c.restore();
+  // TV on a low console
+  const tx=2900, ty=300, tw=460, th=259; c.fillStyle='#2b231d'; rr(c,2840,620,580,140,6); c.fill(); c.fillStyle='#0a0b0d'; rr(c,tx-8,ty-8,tw+16,th+16,6); c.fill();
+  c.fillStyle='#030304'; c.fillRect(tx,ty,tw,th);
+  if(bt>on-2.6&&bt<on){ const k=clamp((bt-(on-2.6))/.4); c.save(); c.globalAlpha=k; c.fillStyle='#0d1014'; c.fillRect(tx,ty,tw,th); c.font='600 26px Inter'; c.fillStyle='#8cc8ff'; c.textAlign='center'; c.fillText('OnAir',tx+tw/2,ty+110); c.font='300 15px Inter'; c.fillStyle='#9aa4ae'; c.fillText('Connecting to the receiver on your network…',tx+tw/2,ty+140);
+    for(let q=0;q<12;q++){ const a2=bt*6+q/12*Math.PI*2; c.fillStyle=`rgba(140,200,255,${q/12})`; c.beginPath(); c.arc(tx+tw/2+Math.cos(a2)*16,ty+190+Math.sin(a2)*16,2.6,0,7); c.fill(); } c.restore(); }
+  if(bt>=on){ const pim=img(progSrc(bt+2)); if(pim){ c.save(); c.globalAlpha=clamp((bt-on)/.25); c.drawImage(pim,tx,ty,tw,th); c.restore(); }
+    const bb=clamp((bt-on-.6)/.4)*(1-clamp((bt-on-4.4)/.5)); if(bb>0){ c.save(); c.globalAlpha=bb; c.fillStyle='rgba(8,12,18,.8)'; rr(c,tx+14,ty+14,190,30,4); c.fill(); c.fillStyle='#4fb36a'; c.beginPath(); c.arc(tx+30,ty+29,4.5,0,7); c.fill(); txt(c,'LIVE · Channel One HD',tx+42,ty+35,{size:14,w:600}); c.restore(); }
+    c.save(); c.globalCompositeOperation='lighter'; const tg=c.createRadialGradient(tx+tw/2,ty+th/2,60,tx,ty+th/2+100,900); tg.addColorStop(0,`rgba(170,140,200,${.22*clamp((bt-on)/.3)})`); tg.addColorStop(1,'rgba(170,140,200,0)'); c.fillStyle=tg; c.fillRect(tx-1100,ty-500,1800,1300); c.restore(); }
+  // the couch (facing the TV), then the person on top
+  const P=webPose(bt);
+  couchShape(c,2120,700);
+  person(c,P.x,P.y,P.face,P.p);
+  // coffee table in front (overlaps legs a little)
+  c.fillStyle='#2e2620'; rr(c,2560,640,260,14,4); c.fill(); c.fillRect(2580,654,10,106); c.fillRect(2790,654,10,106);
+  c.restore();
+  // soft vignette for the over-the-shoulder framing
+  const vk=seg(bt,11.4,13.2); if(vk>0){ c.save(); const g=c.createRadialGradient(W*.62,H*.42,H*.25,W*.5,H*.5,H*1.0); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,`rgba(0,0,0,${.45*vk})`); c.fillStyle=g; c.fillRect(0,0,W,H); c.restore(); }
   caption(c,bt,.5,'Your computer is the receiver.',null,{top:true,t1:4.4,size:58});
   caption(c,bt,12.4,'Watch on any screen at home.','Built-in web streaming over your Wi-Fi.',{top:true});
 };
@@ -343,7 +428,7 @@ T.finale=(c,bt)=>{
     c.save(); c.globalAlpha*=k*dim; c.translate(0,(1-k)*16); rr(c,x,y,w,h,10); c.save(); c.clip(); c.fillStyle='#0b0c0e'; c.fillRect(x,y,w,h);
     const sc=Math.max(w/sr[2],h/sr[3]), dw=sr[2]*sc, dh=sr[3]*sc;
     if(kind==='prog'){ const im=img(progSrc(bt+6)); if(im) c.drawImage(im,x,y,w,h); }
-    else if(clip==='room'){ const im=img(roomSrc(16.5+bt*.05)); if(im) c.drawImage(im,0,180,1920,1080-180,x+(w-dw)/2,y+(h-dh)/2,dw,dh*(900/1080)); }
+    else if(clip==='room'){ const im=img(progSrc(bt+9)); if(im) c.drawImage(im,x,y,w,h); }
     else { const t=clip==='overview'?24+bt:4+bt; const im=img(clipSrc(clip,t)); if(im) c.drawImage(im,sr[0],sr[1],sr[2],sr[3],x+(w-dw)/2,y+(h-dh)/2,dw,dh); }
     c.restore(); rr(c,x+.5,y+.5,w-1,h-1,10); c.strokeStyle='rgba(255,255,255,.12)'; c.stroke(); c.restore(); });
   const k=ease(bt,2.0,.9); if(k>0){ c.save(); c.globalAlpha=k; const bg=c.createLinearGradient(0,330,0,760); bg.addColorStop(0,'rgba(5,7,10,0)'); bg.addColorStop(.5,'rgba(5,7,10,.8)'); bg.addColorStop(1,'rgba(5,7,10,0)'); c.fillStyle=bg; c.fillRect(0,330,W,430);

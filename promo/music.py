@@ -59,7 +59,7 @@ class Stem:
         for tk, _, m in msgs: m.time = tk - last; last = tk; tr.append(m)
         mid.save(path)
 
-piano = Stem(0); pad = Stem(89); strings = Stem(48); horn = Stem(60); bass = Stem(39); vibes = Stem(11); timp = Stem(47); drums = Stem(0, 9); bells = Stem(9)
+piano = Stem(0); pad = Stem(89); strings = Stem(48); horn = Stem(60); bass = Stem(39); vibes = Stem(11); timp = Stem(47); drums = Stem(0, 9); bells = Stem(9); cello = Stem(42); lead = Stem(49)
 kicks = []
 
 def roll(stem, t_end, dur, note, v0, v1, drum=False, **kw):
@@ -143,6 +143,19 @@ for b in range(NBARS):
         for k in (.5, 1.5): drums.add(t0 + k, .1, 39, 40 + 4 * E, 0.003)
     if E >= 8:
         for k in (.5, 1.5): drums.add(t0 + k, .1, 38, 36 + 3 * E, 0.003)
+# cello counter-line: a slow, singing line through the chord tones under the steady sections
+for b in range(NBARS):
+    t0 = b * BAR; E = energy(t0)
+    if E is None or E < 5.5: continue
+    T_ = chord_at(t0)['notes']; lo = [n - 12 for n in T_]
+    line = [lo[0], lo[2]] if b % 2 == 0 else [lo[3], lo[1]]
+    for k, n in enumerate(line): cello.add(t0 + k * 1.0, 1.02, n, 52 + int(2 * E), 0)
+# string lead for the climax and the finale: the motif, an octave up, sustained
+for b in range(NBARS):
+    t0 = b * BAR
+    if not (102 <= t0 < 112 or 84 <= t0 < 90): continue
+    mo = MOTIF[(int(t0 // BAR) // 2) % 4]
+    for k in range(2): lead.add(t0 + k * 1.0, 1.05, mo[(b % 2) * 2 + k], 70, 0)
 # resolve: a long held chord under the last bars
 timp.add(118.0, 3.0, 33, 40)
 bass.add(118.0, 6.0, 33, 50)
@@ -179,7 +192,7 @@ CUES = [float(x) for x in re.findall(r'\d+\.\d+', re.sub(r'//[^\n]*', '', _blk))
 scale = [76, 79, 81, 84, 88]
 for i, t in enumerate(CUES): bells.add(t, 0.3, scale[i % 5], 38, 0.0)
 
-stems = dict(piano=piano, pad=pad, strings=strings, horn=horn, bass=bass, vibes=vibes, timp=timp, drums=drums, bells=bells)
+stems = dict(piano=piano, pad=pad, strings=strings, horn=horn, bass=bass, vibes=vibes, timp=timp, drums=drums, bells=bells, cello=cello, lead=lead)
 audio = {}
 for name, st in stems.items():
     mid = f'{OUT}/{name}.mid'; wav = f'{OUT}/{name}.wav'; st.save(mid)
@@ -190,7 +203,7 @@ for name, st in stems.items():
     y = np.zeros((n, 2), np.float32); y[:min(n, len(x))] = x[:n]; audio[name] = y
 
 # ---------------------------------------------------------------- level the stems (measured over the steady middle of the film)
-TARGET = dict(piano=.050, pad=.036, strings=.036, horn=.030, bass=.030, vibes=.022, timp=.030, drums=.026, bells=.012)
+TARGET = dict(piano=.050, pad=.036, strings=.036, horn=.030, bass=.030, vibes=.022, timp=.030, drums=.026, bells=.012, cello=.020, lead=.012)
 for n, tg in TARGET.items():
     seg = audio[n][4 * SR:int(DUR * SR)]; r = float(np.sqrt((seg ** 2).mean())) + 1e-9; audio[n] *= tg / r
 # ---------------------------------------------------------------- mix
@@ -220,6 +233,8 @@ pd = hp(lp(audio['pad'], 3600), 110) * duck[:, None];        mix += (pd * .55 + 
 s = hp(lp(audio['strings'], 4200), 140) * duck[:, None];     mix += (s * .55 + rv(s, IR_HALL) * .50)
 hn = hp(lp(audio['horn'], 3000), 120);                       mix += (hn * .55 + rv(hn, IR_HALL) * .5)
 b_ = lp(audio['bass'], 600) * duck[:, None];                 mix += b_ * .85
+ce = hp(lp(audio['cello'], 3000), 70) * duck[:, None];        mix += (ce * .6 + rv(ce, IR_HALL) * .45)
+ld = hp(lp(audio['lead'], 6000), 250);                       mix += (ld * .5 + rv(ld, IR_HALL) * .8)
 v = audio['vibes'];                                          mix += (echo(v, .5, .3, .3) * .55 + hp(v, 2500) * .4 + rv(v, IR_HALL) * .6)
 tp = lp(audio['timp'], 2500);                                mix += (tp * .9 + rv(tp, IR_HALL) * .6)
 bl = audio['bells'];                                         mix += (echo(bl, .5, .3, .3) * .5 + rv(bl, IR_HALL) * .7)
@@ -253,6 +268,8 @@ mix *= dip[:, None]
 mix *= np.minimum(1, T / .8)[:, None]
 tail = np.clip((DUR + 2.4 - T) / 3.4, 0, 1) ** 1.5; mix *= tail[:, None]
 mix = hp(mix, 28); mix = lp(mix, 14500)
+low = lp(mix, 110); high = hp(mix, 9000); mix = mix + low * .25 + high * .18           # a touch of weight and air
+mid = (mix[:, 0] + mix[:, 1]) / 2; side = (mix[:, 0] - mix[:, 1]) / 2; mix = np.stack([mid + side * 1.25, mid - side * 1.25], 1)
 # loudness leveller: ride the gain so every section sits within ~2 dB of the target curve (no sudden jumps), hits keep their transient
 blk = 2205                                             # 50 ms
 nb = len(mix) // blk
