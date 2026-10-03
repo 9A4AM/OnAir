@@ -1,22 +1,25 @@
 <!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="fonts.css"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body><canvas id="c" width="1920" height="1080"></canvas>
-<script src="common_head.js"></script><script src="signals.js"></script><script src="map_data.js"></script><script src="scenes.js"></script>
+<script src="common_head.js"></script><script src="signals.js"></script><script src="scenes.js"></script>
 <script>
-window.drawThumb=async()=>{ await window.ready; const c=ctx; CURT=50;
+// YouTube thumbnail for the 0.1.0 release: the real app (live TV tab) in a window, big version headline
+const ld=s=>new Promise(r=>{const i=new Image(); i.onload=()=>r(i); i.src=s;});
+window.drawThumb=async()=>{ await window.ready; const c=ctx;
+  const app=await ld('file:///tmp/clips/Player/f_00200.jpg'), prog=await ld('file:///tmp/progf/p_0120.jpg');
   c.fillStyle='#05070a'; c.fillRect(0,0,W,H);
-  const g=c.createRadialGradient(1380,430,0,1380,430,900); g.addColorStop(0,'rgba(40,100,150,.30)'); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g; c.fillRect(0,0,W,H);
-  // right: instrument panel
-  const px=960,py=150,pw=900,ph=780; panel(c,px,py,pw,ph,{r:14,fill:'#080c10'});
-  const sg=[{dat:'T',u:.5,w:.38,k:1}];
-  spectrum(c,px+30,py+30,pw-60,300,12.3,sg,{n:560,lw:3,grid:true}); waterfall(c,px+30,py+350,pw-60,230,12.3,sg); c.strokeStyle=PAL.border; c.lineWidth=1.2; c.strokeRect(px+30.6,py+350.6,pw-61.2,228.8);
-  constel(c,px+30,py+600,150,64,.045,12.3,{n:700,dot:2.2});
-  tvPicture(c,px+210,py+600,266,150,12.3,{noLower:true});
-  txt(c,'MER',px+520,py+668,{size:22,col:C.dim}); txt(c,'31.2 dB',px+520,py+716,{size:46,w:500,mono:true,col:PAL.accent});
-  [['DVB-T2'],['DAB+']].forEach(()=>{});
+  const g=c.createRadialGradient(1400,520,0,1400,520,1000); g.addColorStop(0,'rgba(60,110,170,.35)'); g.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g; c.fillRect(0,0,W,H);
+  const g2=c.createRadialGradient(1500,560,0,1500,560,700); g2.addColorStop(0,'rgba(200,120,150,.18)'); g2.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=g2; c.fillRect(0,0,W,H);
+  // app window (real capture), cropped to the TV view, with the programme drawn in
+  const x=840,y=170,w=1160,h=700, sx=230, sy=110, sw=1100, sh=sw*h/w;
+  c.save(); c.shadowColor='rgba(0,0,0,.7)'; c.shadowBlur=80; c.shadowOffsetY=30; rr(c,x,y,w,h+40,18); c.fillStyle='#141619'; c.fill(); c.restore();
+  c.save(); rr(c,x,y,w,h+40,18); c.clip(); c.fillStyle='#26282c'; c.fillRect(x,y,w,40); ['#ff5f57','#febc2e','#28c840'].forEach((cl,i)=>{ c.fillStyle=cl; c.beginPath(); c.arc(x+26+i*24,y+20,8,0,7); c.fill(); });
+  const s=w/sw; c.drawImage(app,sx,sy,sw,sh,x,y+40,w,h); c.drawImage(prog,x+(RECT_TV[0]-sx)*s,y+40+(RECT_TV[1]-sy)*s,RECT_TV[2]*s,RECT_TV[3]*s); c.restore();
+  c.save(); rr(c,x+.5,y+.5,w-1,h+39,18); c.strokeStyle='rgba(255,255,255,.16)'; c.stroke(); c.restore();
   // left: headline
-  c.drawImage(logo,90,90,150,150);
-  txt(c,'OnAir',266,196,{size:84,w:600,ls:-3});
-  txt(c,'EVERY',90,520,{size:128,w:600,ls:-4}); txt(c,'BROADCAST.',90,650,{size:128,w:600,ls:-4,col:PAL.accent});
-  txt(c,'One open-source receiver.',96,730,{size:46,w:300,col:C.ink});
-  const ps=['DVB-T2','DVB-T','ATSC','DAB','DAB+']; const ws=[168,142,128,112,128]; let x=96; ps.forEach((s,i)=>{ chip(c,s,x+ws[i]/2,860,1,{size:28,pad:36}); x+=ws[i]+12; }); txt(c,'Digital TV and radio, decoded in software.',96,960,{size:34,w:300,col:C.dim});
+  c.drawImage(logo,90,80,140,140); txt(c,'OnAir',256,182,{size:86,w:600,ls:-3});
+  txt(c,'0.1.0',84,520,{size:230,w:700,ls:-10});
+  txt(c,'OUT NOW',96,610,{size:64,w:700,ls:2,col:'#5ca8db'});
+  txt(c,'Live TV & digital radio',96,700,{size:44,w:500}); txt(c,'from your SDR.',96,756,{size:44,w:500});
+  ['macOS','Linux','Windows'].forEach((p,i)=>{ const px=96+i*228; rr(c,px,870,208,64,32); c.fillStyle='rgba(92,168,219,.14)'; c.fill(); c.strokeStyle='rgba(120,190,235,.8)'; c.lineWidth=2; c.stroke(); txt(c,p,px+104,912,{size:30,w:600,al:'center'}); });
+  txt(c,'DVB-T2 · DVB-T · ATSC · DAB+',96,1010,{size:32,w:400,col:'#9aa6b2'});
   return true; };
 </script></body></html>
