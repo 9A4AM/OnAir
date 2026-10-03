@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../fonts.css"></head><body style="margin:0;background:#000"><canvas id="c" width="1280" height="720"></canvas>
+<script>
+// "Channel One HD" programme: a calm sunset landscape (parallax hills, lake, drifting clouds, birds) with a station bug and lower third
+const cv=document.getElementById('c'), c=cv.getContext('2d'), W=1280, H=720;
+const hash=x=>{const s=Math.sin(x*127.1+311.7)*43758.5453;return s-Math.floor(s)};
+const vn=x=>{const i=Math.floor(x),f=x-i,u=f*f*(3-2*f);return hash(i)*(1-u)+hash(i+1)*u};
+const fbm=x=>vn(x)*.5+vn(x*2.1)*.25+vn(x*4.3)*.125+vn(x*8.7)*.0625;
+function ridge(y0,amp,sc,off,col,t,speed){ c.fillStyle=col; c.beginPath(); c.moveTo(0,H); for(let x=0;x<=W;x+=4){ c.lineTo(x,y0-fbm((x+t*speed)/sc+off)*amp); } c.lineTo(W,H); c.closePath(); c.fill(); }
+window.frame=(i)=>{ const t=i/25;
+  const sky=c.createLinearGradient(0,0,0,H*.62); sky.addColorStop(0,'#1d2b4f'); sky.addColorStop(.45,'#6a4a78'); sky.addColorStop(.75,'#e0806a'); sky.addColorStop(1,'#f6c27a'); c.fillStyle=sky; c.fillRect(0,0,W,H*.62);
+  const sx=W*.62, sy=H*.50+ t*1.2; const sg=c.createRadialGradient(sx,sy,0,sx,sy,260); sg.addColorStop(0,'rgba(255,236,180,1)'); sg.addColorStop(.12,'rgba(255,214,150,.9)'); sg.addColorStop(.4,'rgba(255,170,110,.25)'); sg.addColorStop(1,'rgba(255,150,100,0)'); c.fillStyle=sg; c.fillRect(0,0,W,H);
+  // clouds: soft, blurred elongated blobs drifting slowly
+  c.save(); c.filter='blur(10px)'; for(let k=0;k<16;k++){ const y=70+hash(k*3.3)*230, w=180+hash(k*1.7)*320, x=((hash(k*9.1)*(W+600)+t*(6+hash(k)*8))%(W+600))-300; c.globalAlpha=.16+.14*hash(k*5.5); c.fillStyle=y>220?'#ffc9a0':'#b893b4'; c.beginPath(); c.ellipse(x,y,w/2,10+hash(k*2.2)*16,0,0,7); c.fill(); } c.restore(); c.globalAlpha=1;
+  ridge(H*.56,110,260,3,'#5a3d63',t,4); ridge(H*.60,80,180,7,'#3d2a4d',t,8); ridge(H*.64,50,120,13,'#24182f',t,14); c.fillStyle='#000'; c.fillRect(0,H*.64,W,H*.36);
+  // lake with reflection
+  c.save(); c.translate(0,H*.64*2); c.scale(1,-1); c.globalAlpha=.6; c.drawImage(cv,0,0,W,H*.64,0,0,W,H*.64); c.restore(); c.globalAlpha=1;
+  const lk=c.createLinearGradient(0,H*.64,0,H); lk.addColorStop(0,'rgba(40,30,60,.35)'); lk.addColorStop(1,'rgba(10,10,25,.85)'); c.fillStyle=lk; c.fillRect(0,H*.64,W,H*.36);
+  for(let k=0;k<70;k++){ const y=H*.65+hash(k)*H*.33, x=((hash(k*3)*W+t*12*(1+hash(k*5)))%(W+200))-100, w=30+hash(k*7)*120; c.fillStyle=`rgba(255,200,150,${.05+.12*(1-(y-H*.64)/(H*.36))*Math.abs(Math.sin(t*1.3+k))})`; c.fillRect(x,y,w,1.5); }
+  // near shore: a thin dark band at the waterline
+  c.fillStyle='#140d1a'; c.beginPath(); c.moveTo(0,H*.66); for(let x=0;x<=W;x+=4) c.lineTo(x,H*.645-fbm((x+t*22)/60+21)*14); c.lineTo(W,H*.66); c.closePath(); c.fill();
+  // birds
+  for(let b=0;b<5;b++){ const bx=((t*40+b*90)%1600)-160, by=180+b*14+Math.sin(t*2+b)*6, fl=Math.sin(t*9+b*1.7)*7; c.strokeStyle='rgba(30,20,35,.8)'; c.lineWidth=2; c.beginPath(); c.moveTo(bx-10,by-fl); c.quadraticCurveTo(bx-4,by-2,bx,by); c.quadraticCurveTo(bx+4,by-2,bx+10,by-fl); c.stroke(); }
+  // station bug + lower third
+  c.font='600 26px Inter'; c.fillStyle='rgba(255,255,255,.75)'; c.fillText('ONE HD',W-150,58);
+  const lt=Math.min(1,Math.max(0,(t-1.5)/0.6))*(1-Math.min(1,Math.max(0,(t-14)/0.6)));
+  if(lt>0){ c.save(); c.globalAlpha=lt; c.fillStyle='rgba(10,14,22,.82)'; c.fillRect(70,560,560,86); c.fillStyle='#d24a3a'; c.fillRect(70,560,8,86); c.font='600 34px Inter'; c.fillStyle='#fff'; c.fillText('Evening Landscapes',98,600); c.font='400 22px Inter'; c.fillStyle='#c9d2dc'; c.fillText('Channel One HD  ·  Nature',98,632); c.restore(); }
+};
+window.ready=document.fonts.load('600 20px Inter');
+</script></body></html>

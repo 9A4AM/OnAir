@@ -12,10 +12,10 @@ from scipy import signal
 SR = 44100
 OUT = os.environ.get('OUT', 'music_work'); os.makedirs(OUT, exist_ok=True)
 SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
-BAR = 2.0; NBARS = 51; DUR = NBARS * BAR           # 102 s
+BAR = 2.0; NBARS = 61; DUR = NBARS * BAR           # 122 s
 rnd = random.Random(11)
-HITS = [(4.0, 1), (24.0, 2), (46.0, 3), (88.0, 4)]   # time, size
-BUILDS = [(0.0, 4.0), (20.0, 24.0), (42.0, 46.0), (80.0, 88.0)]
+HITS = [(4.0, 1), (20.0, 2), (68.0, 3), (84.0, 3), (102.0, 4)]   # time, size
+BUILDS = [(0.0, 4.0), (16.0, 20.0), (64.0, 68.0), (80.0, 84.0), (94.0, 102.0)]
 
 CH = [  # Am9 - Fmaj7 - Cmaj7 - G6
     dict(root=45, notes=[57, 60, 64, 67, 71]),
@@ -28,26 +28,16 @@ def chord_at(t):
     for h, _ in HITS:
         if h - 4 <= t < h: return CH[3]            # every build hangs on G6
         if h <= t < h + 4: return CH[0]            # every hit lands on Am9
-    if t >= 98: return CH[0]
+    if t >= 118: return CH[0]
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
-    if 80 <= t < 88: return 4.4                       # the finale's groove is already running under the last build
+    if 94 <= t < 102: return 4.4                      # the finale's groove already runs under the last (longest) build
     for a, b in BUILDS:
         if a <= t < b: return None
-    if t < 10: return 4
-    if t < 20: return 4.5
-    if t < 24: return 4.5
-    if t < 40: return 6
-    if t < 42: return 4.5
-    if t < 54: return 7
-    if t < 64: return 7.5
-    if t < 70: return 5
-    if t < 80: return 5
-    if t < 92: return 8.5 if t >= 88 else 8
-    if t < 94: return 7
-    if t < 96: return 6
-    if t < 100: return 4.5
+    for lim, e in ((8, 4), (16, 4.5), (32, 6), (40, 6.5), (46, 5.5), (54, 7), (60, 6), (64, 5), (72, 7.5), (80, 4), (90, 7), (94, 7.5),
+                   (106, 8.5), (110, 8), (112, 7), (114, 6), (118, 4.5)):
+        if t < lim: return e
     return 3
 
 class Stem:
@@ -154,8 +144,8 @@ for b in range(NBARS):
     if E >= 8:
         for k in (.5, 1.5): drums.add(t0 + k, .1, 38, 36 + 3 * E, 0.003)
 # resolve: a long held chord under the last bars
-timp.add(98.0, 3.0, 33, 40)
-bass.add(98.0, 6.0, 33, 50)
+timp.add(118.0, 3.0, 33, 40)
+bass.add(118.0, 6.0, 33, 50)
 # ---------------------------------------------------------------- builds and hits
 for (a, b), (h, size) in zip(BUILDS, HITS):
     ch = chord_at(h + .1)
@@ -180,7 +170,7 @@ for (a, b), (h, size) in zip(BUILDS, HITS):
 for t, v in [(0.0, 24), (1.0, 30), (2.0, 38), (2.5, 46), (3.0, 56), (3.25, 64), (3.5, 74), (3.75, 86)]: timp.add(t, .6, 33 if v < 60 else 40, v)
 for t, n, v in [(1.0, 76, 34), (2.0, 79, 34), (3.0, 81, 40), (3.5, 84, 44)]: piano.add(t, 1.6, n, v)
 # the finale stack: three octave hits right on the climax
-for n in (45, 57, 69): piano.add(88.0, 3.0, n, 100)
+for n in (45, 57, 69): piano.add(102.0, 3.0, n, 100)
 
 # ---------------------------------------------------------------- on-screen cues: soft glockenspiel notes on the beat
 _js = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scenes.js')).read()
@@ -202,7 +192,7 @@ for name, st in stems.items():
 # ---------------------------------------------------------------- level the stems (measured over the steady middle of the film)
 TARGET = dict(piano=.050, pad=.036, strings=.036, horn=.030, bass=.030, vibes=.022, timp=.030, drums=.026, bells=.012)
 for n, tg in TARGET.items():
-    seg = audio[n][26 * SR:60 * SR]; r = float(np.sqrt((seg ** 2).mean())) + 1e-9; audio[n] *= tg / r
+    seg = audio[n][4 * SR:int(DUR * SR)]; r = float(np.sqrt((seg ** 2).mean())) + 1e-9; audio[n] *= tg / r
 # ---------------------------------------------------------------- mix
 N = int(DUR * SR); T = np.arange(N + SR * 4) / SR
 def reverb_ir(t60=2.4, pre=0.02, damp=6000, seed=1):
@@ -270,11 +260,21 @@ rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-5
 win = 80                                               # 4 s centred window
 sm = np.sqrt(np.convolve(rms ** 2, np.ones(win) / win, 'same'))
 tt = (np.arange(nb) + .5) * blk / SR
-want = np.interp(tt, [0, 4, 8, 24, 66, 72, 80, 87.9, 92, 96, 100, 106], [.075, .110, .095, .105, .105, .095, .088, .120, .105, .092, .075, .055])
+want = np.interp(tt, [0, 4, 8, 20, 60, 64, 68, 72, 80, 84, 90, 94, 101.9, 106, 110, 114, 118, 126], [.075, .110, .095, .105, .105, .095, .110, .105, .088, .110, .105, .095, .120, .115, .100, .085, .070, .055])
 g = np.clip(want / sm, .5, 3.5)
 g = np.convolve(g, np.ones(60) / 60, 'same')           # 3 s smoothing: gain never moves audibly
 gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
 mix *= gain[:, None]
+_js2 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scenes.js')).read()
+_st = re.search(r'const STALLS=\[(.*?)\];', _js2).group(1)
+STALLS = [(60 + float(a), 60 + float(b)) for a, b in re.findall(r'\[([\d.]+),([\d.]+)\]', _st)]
+for a, b in STALLS:                                   # loop a 62 ms grain from the moment the picture freezes, darker and quieter
+    i0, i1 = int(a * SR), int(b * SR); g = int(.0625 * SR); grain = mix[i0 - g:i0].copy()
+    f = 64; grain[:f] *= np.linspace(0, 1, f)[:, None]; grain[-f:] *= np.linspace(1, 0, f)[:, None]
+    n = i1 - i0; rep = np.tile(grain, (n // g + 2, 1))[:n] * .55
+    rep = lp(rep, 2200); fade = np.ones(n); fade[-int(.01 * SR):] = np.linspace(1, 0, int(.01 * SR)); rep *= fade[:, None]
+    x = mix[i0:i1]; x *= 0; x += rep
+    k = int(.008 * SR); mix[i1:i1 + k] *= np.linspace(0, 1, k)[:, None]
 mix = np.where(np.abs(mix) > .85, np.sign(mix) * (.85 + .15 * np.tanh((np.abs(mix) - .85) / .15)), mix)
 mix = mix[:int((DUR + 2.4) * SR)]; mix /= np.abs(mix).max() * 1.05
 wavfile.write('music.wav', SR, (mix * 32000).astype('<i2'))
