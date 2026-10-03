@@ -15,7 +15,7 @@ SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
 BAR = 2.0; NBARS = 61; DUR = NBARS * BAR           # 122 s
 rnd = random.Random(11)
 HITS = [(4.0, 1), (20.0, 2), (68.0, 3), (84.0, 4), (102.0, 5), (116.0, 4)]   # time, size
-BUILDS = [(0.0, 4.0), (16.0, 20.0), (64.0, 68.0), (80.0, 84.0), (94.0, 102.0), (112.0, 116.0)]
+BUILDS = [(0.0, 4.0), (16.0, 20.0), (64.0, 68.0), (80.0, 84.0), (94.0, 102.0)]
 
 CH = [  # Am9 - Fmaj7 - Cmaj7 - G6
     dict(root=45, notes=[57, 60, 64, 67, 71]),
@@ -183,6 +183,10 @@ for (a, b), (h, size) in zip(BUILDS, HITS):
 # the title: quarter-note heartbeat of soft timpani, then a bar of eighths, with sparse piano on the beat
 for t, v in [(0.0, 24), (1.0, 30), (2.0, 38), (2.5, 46), (3.0, 56), (3.25, 64), (3.5, 74), (3.75, 86)]: timp.add(t, .6, 33 if v < 60 else 40, v)
 for t, n, v in [(1.0, 76, 34), (2.0, 79, 34), (3.0, 81, 40), (3.5, 84, 44)]: piano.add(t, 1.6, n, v)
+# the closing hit (116 s, the GitHub link) has no build before it, so it is added here on its own
+timp.add(116.0, 2.5, 33, 105); timp.add(116.0, 2.5, 40, 92); drums.add(116.0, 1.8, 49, 100, 0.002); drums.add(116.0, .2, 36, 88, 0.002); kicks.append(116.0)
+for n in CH[0]['notes'][:4]: horn.add(116.0, 4.0, n, 80, 0)
+for k, t_ in enumerate([115.0, 115.25, 115.5, 115.625, 115.75, 115.875]): timp.add(t_, .3, 33, 50 + k * 9, 0.001)
 # the finale stack: three octave hits right on the climax
 for n in (45, 57, 69): piano.add(102.0, 3.0, n, 100)
 
@@ -262,12 +266,6 @@ for (h, size), g in zip(HITS, (.07, .11, .14, .17, .21, .18)): fx += impact(h, g
 def burst(t, dur, g, lo, hi, decay):
     n = int(dur * SR); x = np.arange(n) / SR; w = rng.standard_normal(n); w = signal.sosfilt(signal.butter(2, [lo, hi], 'bp', fs=SR, output='sos'), w) * np.exp(-x / decay)
     y = np.zeros_like(mix); i = int(t * SR); m_ = min(n, len(y) - i); y[i:i + m_] = np.stack([w, w], 1)[:m_] * g; return y
-# cold open: TV static that thins out as the signal comes in, cut dead on the lock / picture snap at 3.5 s
-n = int(3.5 * SR); x = np.arange(n) / SR; st = rng.standard_normal((n, 2)); st = signal.sosfilt(signal.butter(2, [900, 7000], 'bp', fs=SR, output='sos'), st, axis=0)
-crack = (rng.random(n) > .9985).astype(float) * rng.random(n) * 3; st += np.stack([crack, crack], 1) * .4
-env = np.minimum(1, x / .25) * (1 - .65 * np.clip((x - 1.4) / 1.8, 0, 1)); env[-int(.01 * SR):] *= np.linspace(1, 0, int(.01 * SR))
-fx[:n] += st * env[:, None] * .05
-fx += burst(3.5, .5, .10, 60, 400, .08)                           # the picture snapping on
 fx += burst(67.95, .05, .22, 2000, 7000, .006)                   # the click on "fill gaps"
 fx += burst(83.80, .05, .20, 1500, 6000, .006) + burst(83.83, .05, .12, 1500, 6000, .005)   # remote button
 tv = np.zeros_like(mix); i = int(84.0 * SR); n2 = int(.5 * SR); x2 = np.arange(n2) / SR; th_ = np.sin(2 * np.pi * (48 + 30 * np.exp(-x2 * 12)) * x2) * np.exp(-x2 * 7)

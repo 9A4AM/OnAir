@@ -155,32 +155,17 @@ function cursor(c,x,y,press=0){ c.save(); c.translate(x,y); const s=1.25*(1-.12*
   c.shadowColor='rgba(0,0,0,.5)'; c.shadowBlur=6; c.shadowOffsetY=2; c.fillStyle='#fff'; c.fill(); c.shadowColor='transparent'; c.lineWidth=1.3; c.strokeStyle='#111'; c.stroke(); c.restore(); }
 
 // ---------------------------------------------------------------- 1. title
-const stat=mk(240,135), statx=stat.getContext('2d'), statd=statx.createImageData(240,135);
-function lampsUi(c,x,y,names,on,sz=18){ let xx=x; names.forEach((n,i)=>{ const st=on[i]; c.fillStyle=st===1?'#62c37f':st===2?'#d9a441':'#4a5059'; c.beginPath(); c.arc(xx+sz*.4,y-sz*.32,sz*.36,0,7); c.fill(); c.save(); c.font=`${sz}px ${UI.font}`; c.fillStyle=st?UI.text:UI.dim; c.fillText(n,xx+sz*.95,y); xx+=sz*1.6+c.measureText(n).width; c.restore(); }); return xx; }
 T.title=(c,bt)=>{
   bgd(c);
-  if(bt<4){ // cold open: a dead TV, a signal flickers in, the receiver locks, the picture snaps on
-    const tx=330,ty=110,tw=1260,th=709, fr=Math.floor(bt*30);
-    c.save(); c.shadowColor='rgba(0,0,0,.7)'; c.shadowBlur=60; rr(c,tx-16,ty-16,tw+32,th+32,14); c.fillStyle='#08090b'; c.fill(); c.restore();
-    c.save(); rr(c,tx,ty,tw,th,4); c.clip();
-    const snap=bt>=3.5;
-    if(!snap){ const d=statd.data; for(let i=0;i<240*135;i++){ const v=(hash(i*1.31+fr*977.7)*255)|0, roll=Math.sin((i/240+fr*3)*.21)*18; d[i*4]=d[i*4+1]=d[i*4+2]=Math.max(0,Math.min(255,v*.55+roll+20)); d[i*4+3]=255; } statx.putImageData(statd,0,0);
-      c.imageSmoothingEnabled=false; c.globalAlpha=1-.55*ease(bt,2.0,1.2); c.drawImage(stat,tx,ty,tw,th); c.globalAlpha=1; c.imageSmoothingEnabled=true;
-      c.fillStyle=`rgba(4,6,9,${.35+.4*ease(bt,1.6,1.0)})`; c.fillRect(tx,ty,tw,th);
-      const ns=ease(bt,.3,.6)*(1-ease(bt,1.9,.4)); if(ns>0){ c.save(); c.globalAlpha=ns; rr(c,tx+50,ty+50,250,58,6); c.fillStyle='rgba(0,0,0,.75)'; c.fill(); txt(c,'NO SIGNAL',tx+175,ty+90,{size:28,w:600,al:'center',mono:true}); c.restore(); } }
-    // the signal: spectrum flickers in, then holds steady when it locks
-    const lock=3.0, flick=bt<lock? (.45+.55*hash(Math.floor(bt*14)))*ease(bt,1.4,1.2):1;
-    if(!snap){ const sg=[{dat:'T',u:.5,w:.38,k:flick}]; c.save(); c.globalAlpha=ease(bt,1.3,.6); spectrum(c,tx+60,ty+250,tw-120,300,bt+3,sg,{n:520,lw:2.4,band:false}); c.restore();
-      const on=['P1','GI','L1-pre','L1-post','Frame','LDPC'].map((n,i)=>bt>=lock+i*.06?1:bt>1.8?2:0); c.save(); c.globalAlpha=ease(bt,1.5,.5); rr(c,tx+60,ty+590,tw-120,60,8); c.fillStyle='rgba(25,32,42,.92)'; c.fill(); let xe=lampsUi(c,tx+86,ty+630,['P1','GI','L1-pre','L1-post','Frame','LDPC'],on,22);
-      c.font=`22px ${UI.font}`; c.fillStyle=bt>=lock+.35?'#62c37f':'#9aa4ae'; c.fillText(bt>=lock+.35?'State  Locked':'State  searching…',xe+30,ty+630); c.restore(); }
-    else { const im=img(progSrc(bt+1)); if(im) c.drawImage(im,tx,ty,tw,th); const f=1-seg(bt,3.5,3.75); if(f>0){ c.fillStyle=`rgba(255,255,255,${.55*f})`; c.fillRect(tx,ty,tw,th); } }
-    c.restore();
-    return; }
-  fadeUp(c,bt,4.0,()=>{ c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=50; c.shadowOffsetY=22; c.drawImage(logo,W/2-130,160,260,260); c.restore(); },{dur:.5,dy:10});
+  const sg=[{dat:'T',u:.5,w:.38,k:ease(bt,2.2,1.8)}];
+  const gw=eio3(seg(bt,.2,3.2))*W; c.save(); c.globalAlpha=.75*ease(bt,.1,1)*(1-.6*seg(bt,3.4,4.4)); c.strokeStyle=acc(.85); c.lineWidth=1.6; c.beginPath(); c.moveTo(W/2-gw/2,930); c.lineTo(W/2+gw/2,930); c.stroke(); c.restore();
+  c.save(); c.globalAlpha=.55*ease(bt,1.6,2.2); spectrum(c,0,830,W,200,bt+3,sg,{n:500,lw:1.8,noFrame:true,grid:false,band:false}); c.restore();
+  fadeUp(c,bt,4.0,()=>{ c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=50; c.shadowOffsetY=22; c.drawImage(logo,W/2-130,160,260,260); c.restore(); },{dur:.7,dy:10});
   line(c,'OnAir',W/2,610,bt,4.5,{size:124,w:500,ls:-4,al:'center'});
   line(c,'Digital TV and radio, decoded in software.',W/2,690,bt,5.5,{size:38,w:300,al:'center'});
   const k=ease(bt,6.5,.8); if(k>0){ c.save(); c.globalAlpha=k; c.translate(0,(1-k)*8); pill(c,'Version 0.1.0  ·  Out now',W/2,780,{accent:true}); c.restore(); }
 };
+function lampsUi(c,x,y,names,on,sz=18){ let xx=x; names.forEach((n,i)=>{ const st=on[i]; c.fillStyle=st===1?'#62c37f':st===2?'#d9a441':'#4a5059'; c.beginPath(); c.arc(xx+sz*.4,y-sz*.32,sz*.36,0,7); c.fill(); c.save(); c.font=`${sz}px ${UI.font}`; c.fillStyle=st?UI.text:UI.dim; c.fillText(n,xx+sz*.95,y); xx+=sz*1.6+c.measureText(n).width; c.restore(); }); return xx; }
 // ---------------------------------------------------------------- 2. every standard
 const STD=[['TELEVISION','DVB-T2','T2-Base and T2-Lite',['1.7 – 10 MHz channels','FFT 1K to 32K','QPSK to 256-QAM','Pilot patterns PP1–PP8']],
            ['TELEVISION','DVB-T','First-generation terrestrial',['2K and 8K carriers','QPSK, 16- and 64-QAM','All guard intervals','All code rates']],
@@ -313,13 +298,14 @@ T.gaps=(c,bt)=>{
 };
 // ---------------------------------------------------------------- 10. web streaming: the app -> the computer -> the TV, switched on with a remote
 function screenImg(c,bt,r){ // the live-TV view of the app (real footage) with the programme at full frame rate
-  const im=img(clipSrc('Player',2+bt*.6)); c.save(); rr(c,r[0],r[1],r[2],r[3],Math.min(6,r[2]/200)); c.clip(); c.fillStyle='#141619'; c.fillRect(r[0],r[1],r[2],r[3]);
-  if(im) c.drawImage(im,r[0],r[1],r[2],r[3]); const sx=r[2]/W, sy=r[3]/H; progInto(c,bt+2,[r[0]+RECT_TV[0]*sx,r[1]+RECT_TV[1]*sy,RECT_TV[2]*sx,RECT_TV[3]*sy]); progInto(c,bt+2,[r[0]+RECT_THUMB[0]*sx,r[1]+RECT_THUMB[1]*sy,RECT_THUMB[2]*sx,RECT_THUMB[3]*sy]); c.restore(); }
+  const im=img(clipSrc('Player',Math.min(13.9,15+bt*.0))); c.save(); rr(c,r[0],r[1],r[2],r[3],Math.min(6,r[2]/200)); c.clip(); c.fillStyle='#141619'; c.fillRect(r[0],r[1],r[2],r[3]);
+  if(im) c.drawImage(im,r[0],r[1],r[2],r[3]); const sx=r[2]/W, sy=r[3]/H; progInto(c,bt+14,[r[0]+RECT_TV[0]*sx,r[1]+RECT_TV[1]*sy,RECT_TV[2]*sx,RECT_TV[3]*sy]); progInto(c,bt+14,[r[0]+RECT_THUMB[0]*sx,r[1]+RECT_THUMB[1]*sy,RECT_THUMB[2]*sx,RECT_THUMB[3]*sy]);
+  c.save(); c.translate(r[0],r[1]); c.scale(sx,sy); c.fillStyle='#141619'; c.fillRect(FG_X-6,FG_Y-4,120,27); uiCheck(c,FG_X,FG_Y,'fill gaps',true,false); c.restore(); c.restore(); }
 const lerpR=(a,b,k)=>a.map((v,i)=>lerp(v,b[i],k));
 T.web=(c,bt)=>{
   const on=12.0;
-  const kz=eio3(seg(bt,2.6,5.0)), ks=eio3(seg(bt,5.4,7.4));
-  const R0=[0,0,W,H], R1=[560,250,800,450], R2=[150,300,600,338];
+  const kz=eio3(seg(bt,1.2,4.6)), ks=eio3(seg(bt,5.4,7.4));
+  const R0=[W/2-750*1.28,H/2-470*1.28,W*1.28,H*1.28], R1=[560,250,800,450], R2=[150,300,600,338];
   const scr=lerpR(lerpR(R0,R1,kz),R2,ks);
   bgd(c);
   // floor / room hint
@@ -338,7 +324,7 @@ T.web=(c,bt)=>{
     rr(c,tx-12,ty-12,tw+24,th+24,10); c.fillStyle='#08090b'; c.fill(); c.strokeStyle='rgba(255,255,255,.07)'; c.stroke();
     c.fillStyle='#020203'; c.fillRect(tx,ty,tw,th);
     const ref=c.createLinearGradient(tx,ty,tx+tw*.7,ty+th); ref.addColorStop(0,'rgba(255,255,255,.06)'); ref.addColorStop(.4,'rgba(255,255,255,0)'); c.fillStyle=ref; c.fillRect(tx,ty,tw,th);
-    if(bt>=on){ const pim=img(progSrc(bt+2)); const k=clamp((bt-on)/.18); if(pim){ c.save(); c.globalAlpha=k; c.drawImage(pim,tx,ty,tw,th); c.restore(); }
+    if(bt>=on){ const pim=img(progSrc(bt+14)); const k=clamp((bt-on)/.18); if(pim){ c.save(); c.globalAlpha=k; c.drawImage(pim,tx,ty,tw,th); c.restore(); }
       if(bt<on+.15){ c.fillStyle=`rgba(255,255,255,${.5*(1-(bt-on)/.15)})`; c.fillRect(tx,ty+th/2-3,tw,6); }
       const bb=clamp((bt-on-.5)/.4)*(1-clamp((bt-on-4.4)/.5)); if(bb>0){ c.save(); c.globalAlpha=bb; c.fillStyle='rgba(8,12,18,.8)'; rr(c,tx+22,ty+22,290,44,6); c.fill(); c.fillStyle='#4fb36a'; c.beginPath(); c.arc(tx+46,ty+44,6,0,7); c.fill(); txt(c,'LIVE · Channel One HD',tx+62,ty+52,{size:20,w:600}); c.restore(); }
       c.save(); c.globalCompositeOperation='lighter'; const tg=c.createRadialGradient(tx+tw/2,ty+th/2,tw*.3,tx+tw/2,ty+th/2,tw*1.1); tg.addColorStop(0,`rgba(180,140,200,${.16*k})`); tg.addColorStop(1,'rgba(180,140,200,0)'); c.fillStyle=tg; c.fillRect(tx-tw,ty-th,tw*3,th*3); c.restore(); }
@@ -438,10 +424,10 @@ T.outro=(c,bt)=>{
   const gk=ease(bt,6.0,.35); if(gk>0){ c.save(); c.globalAlpha=gk; const s_=1+.12*(1-gk); c.translate(W/2,ty+th+300); c.scale(s_,s_); txt(c,'github.com/adswill/OnAir',0,0,{size:58,w:600,ls:-.6,col:'#8cc8ff',al:'center'}); c.restore(); }
 };
 // ---------------------------------------------------------------- timeline (120 BPM: one bar = 2 s) and cue grid for music.py
-const B=[['title',0,8,null,0],['standards',8,14,'dissolve',.6],['radios',14,20,'dissolve',.6],['app',20,32,'cut',0],['tv',32,40,'dissolve',.5],['radio',40,46,'dissolve',.5],['signal',46,54,'dissolve',.5],['fix',54,60,'dissolve',.5],['gaps',60,72,'dissolve',.5],['web',72,90,'dissolve',.6],['platforms',90,102,'dissolve',.6],['finale',102,110,'cut',0],['outro',110,122,'dissolve',.6]];
+const B=[['title',0,8,null,0],['standards',8,14,'dissolve',.6],['radios',14,20,'dissolve',.6],['app',20,32,'cut',0],['tv',32,40,'dissolve',.5],['radio',40,46,'dissolve',.5],['signal',46,54,'dissolve',.5],['fix',54,60,'dissolve',.5],['gaps',60,72,'dissolve',.5],['web',72,90,'cut',0],['platforms',90,102,'dissolve',.6],['finale',102,110,'cut',0],['outro',110,122,'dissolve',.6]];
 // hits: 4 (title), 20 (the app), 68 (fill gaps on), 84 (the TV comes on), 102 (all of it)
 const HITS_T=[4,20,68,84,102,116];
-const BUILDS=[[0,4],[16,20],[64,68],[80,84],[94,102],[112,116]];
+const BUILDS=[[0,4],[16,20],[64,68],[80,84],[94,102]];
 const CUES=[5.5,6.5,
   9.5,10.5,11.5,12.5,13.0,
   14.5,15.5,16.5,17.5,
