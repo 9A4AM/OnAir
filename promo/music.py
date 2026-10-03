@@ -32,12 +32,12 @@ def chord_at(t):
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
-    if 94 <= t < 98: return 7                         # the groove keeps going into the last (longest) build, then thins out
-    if 98 <= t < 102: return 5.5
+    if 94 <= t < 98: return 9                         # the groove keeps going into the last (longest) build, then thins out
+    if 98 <= t < 102: return 8
     for a, b in BUILDS:
         if a <= t < b: return energy(a - .01) if (a > 0 and t < a + 2) else None   # first half of a build keeps the groove: no sudden drop
-    for lim, e in ((8, 4), (16, 4.5), (32, 6), (40, 6), (46, 5.5), (54, 6.5), (60, 6), (64, 5), (72, 7), (80, 6.5), (90, 8), (94, 8),
-                   (106, 10), (110, 9), (112, 8.5), (116, 8), (118, 6), (120, 4)):
+    for lim, e in ((8, 5), (16, 6), (32, 8), (40, 8.5), (46, 8), (54, 8.5), (60, 8), (64, 7), (72, 9), (80, 8.5), (90, 9.5), (94, 9.5),
+                   (106, 10), (110, 10), (112, 9.5), (116, 9.5), (118, 6), (120, 4)):
         if t < lim: return e
     return 3
 
@@ -144,6 +144,19 @@ for b in range(NBARS):
         for k in (.5, 1.5): drums.add(t0 + k, .1, 39, 40 + 4 * E, 0.003)
     if E >= 8:
         for k in (.5, 1.5): drums.add(t0 + k, .1, 38, 36 + 3 * E, 0.003)
+# hype layer: a syncopated (3-3-2) 16th-note piano ostinato high up, and low toms like taiko drums
+ACC = (0, 3, 6, 8, 11, 14)
+for b in range(NBARS):
+    t0 = b * BAR; E = energy(t0)
+    if E is None or E < 8: continue
+    T_ = chord_at(t0)['notes']; hi = [n + 12 for n in T_]
+    for k in range(16):
+        n = hi[[0, 2, 4, 2, 3, 2, 4, 3][k % 8]]; acc = k in ACC
+        piano.add(t0 + k * .125, .09 if not acc else .14, n, (72 if acc else 44) + int(2 * (E - 8)), 0.001)
+    for tb, note, v in ((0, 41, 96), (.75, 43, 80), (1.0, 41, 88), (1.5, 45, 76)):
+        drums.add(t0 + tb, .3, note, v, 0.001)
+    if b % 2 == 1:
+        for k in range(6): drums.add(t0 + 1.25 + k * .125, .1, [45, 43, 43, 41, 41, 41][k], 70 + k * 7, 0.001)
 # cello counter-line: a slow, singing line through the chord tones under the steady sections
 for b in range(NBARS):
     t0 = b * BAR; E = energy(t0)
@@ -230,7 +243,7 @@ def echo(x, d=0.5, fb=.3, mix=.25):
 duck = np.ones(len(T), np.float32)
 for tk in kicks:
     i = int(tk * SR); seg = np.arange(len(T) - i)[:int(.5 * SR)] / SR
-    duck[i:i + len(seg)] *= (1 - .16 * np.exp(-seg / .14)).astype(np.float32)
+    duck[i:i + len(seg)] *= (1 - .28 * np.exp(-seg / .13)).astype(np.float32)
 
 mix = np.zeros((len(T), 2), np.float32)
 p = hp(audio['piano'], 90);                                  mix += (p * .80 + hp(p, 2800) * .5 + rv(p, IR_HALL) * .75)
