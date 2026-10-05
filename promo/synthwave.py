@@ -68,11 +68,11 @@ def pad_note(t, dur, m, vel, bright=2400):
 def bass_note(t, dur, m, vel):
     n = int((dur + .05) * SR); tt = np.arange(n) / SR
     x = saw(mf(m), n) + .5 * signal.square(2 * np.pi * mf(m) / 2 * tt)
-    y = np.tanh(2.5 * (lp(x, 1300) * .6 + lp(x, 4000) * .5 * np.exp(-tt / .06)))   # driven, growling
+    y = np.tanh(3.5 * (lp(x, 1500) * .6 + lp(x, 4000) * .5 * np.exp(-tt / .06)))   # driven, growling
     put(bass, t, y * adsr(n, .003, .1, .7, .04, dur) * vel * .5, 0)
 def arp_note(t, m, vel, bright):
     n = int(.22 * SR); tt = np.arange(n) / SR; x = saw(mf(m), n) + saw(mf(m) * 1.004, n)
-    y = lp(x, 600 + bright) * np.exp(-tt / .09)
+    y = np.tanh(2.0 * lp(x, 600 + bright)) * np.exp(-tt / .09)
     put(arp, t, y * vel * .22, .25 * np.sin(t * 3))
 def lead_note(t, dur, m, vel):
     n = int((dur + .4) * SR); tt = np.arange(n) / SR
@@ -80,31 +80,26 @@ def lead_note(t, dur, m, vel):
     ph = 2 * np.pi * np.cumsum(mf(m) * vib) / SR
     x = signal.sawtooth(ph) + signal.sawtooth(ph * 1.007) + .5 * signal.square(ph / 2)
     x = x + .6 * signal.square(ph, .25)                          # a 25% pulse on top: brassy and aggressive
-    put(lead, t, np.tanh(2.2 * lp(x, 7000)) * adsr(n, .01, .2, .85, .3, dur) * vel * .2, 0)
-tri = np.zeros((N, 2)); stab = np.zeros((N, 2))
+    put(lead, t, np.tanh(3.2 * lp(x, 8000)) * adsr(n, .01, .2, .85, .3, dur) * vel * .2, 0)
+tri = np.zeros((N, 2)); stab = np.zeros((N, 2)); wall = np.zeros((N, 2))
+def supersaw(t, dur, ms, vel):   # 7 detuned saws per note, the big wall of sound
+    n = int((dur + .3) * SR); env = adsr(n, .02, .3, .9, .25, dur)
+    for m in ms:
+        for k, det in enumerate((-.25, -.16, -.07, 0, .07, .16, .25)):
+            x = saw(mf(m) * 2 ** (det / 12), n, rng.uniform(0, 6)) * env * vel * .05
+            put(wall, t, lp(x, 6500), -.9 + k * .3)
 def tri_note(t, m, vel):      # the triangle tone: a clean, glassy 8-bit style arpeggio two octaves up
     n = int(.16 * SR); tt = np.arange(n) / SR; x = signal.sawtooth(2 * np.pi * mf(m) * tt, .5)
     put(tri, t, x * np.exp(-tt / .1) * vel * .3, -.35 * np.sin(t * 2.2))
 def stab_note(t, ms, vel):    # short, hard saw chord stabs on the off-beats
     n = int(.16 * SR); tt = np.arange(n) / SR; x = sum(saw(mf(m), n) + saw(mf(m) * 1.01, n) for m in ms)
     put(stab, t, np.tanh(1.8 * lp(x, 5000)) * np.exp(-tt / .06) * vel * .16, 0)
-def kick(t, vel=1.0):
-    n = int(.45 * SR); tt = np.arange(n) / SR; f = 45 + 110 * np.exp(-tt / .035)
-    x = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / .18) + .3 * np.exp(-tt / .004) * rng.standard_normal(n) * .2
-    put(drums, t, x * vel * .9, 0); kicks.append(t)
-def snare_hit(t, vel=1.0):     # big gated-reverb snare: dry body + plate tail cut off sharply at ~260 ms
-    n = int(.6 * SR); tt = np.arange(n) / SR
-    body = np.sin(2 * np.pi * 190 * tt) * np.exp(-tt / .05) * .7 + bp(rng.standard_normal(n), 1200, 8000) * np.exp(-tt / .09)
-    put(snare, t, body * vel * .55, 0); snares.append(t)
-def hat(t, vel=1.0, open_=False):
-    n = int((.25 if open_ else .05) * SR); tt = np.arange(n) / SR
-    put(drums, t, hp(rng.standard_normal(n), 7500) * np.exp(-tt / (.08 if open_ else .015)) * vel * .18, .3)
-def tom(t, m, vel=1.0):
-    n = int(.5 * SR); tt = np.arange(n) / SR; f = mf(m) * (1 + .6 * np.exp(-tt / .05))
-    put(drums, t, np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / .22) * vel * .6, -.3 + .2 * (m % 5))
-def crash(t, vel=1.0):
-    n = int(2.4 * SR); tt = np.arange(n) / SR
-    put(drums, t, hp(rng.standard_normal(n), 3500) * np.exp(-tt / .8) * vel * .2, .2)
+DRUMEV = []   # (time, note, velocity 0..1, track) rendered with real drum samples further down
+def kick(t, vel=1.0): DRUMEV.append((t, 36, vel, 'kit')); kicks.append(t)
+def snare_hit(t, vel=1.0): DRUMEV.append((t, 38, vel, 'snare')); snares.append(t)
+def hat(t, vel=1.0, open_=False): DRUMEV.append((t, 46 if open_ else 42, vel * .8, 'kit'))
+def tom(t, m, vel=1.0): DRUMEV.append((t, {52: 50, 50: 48, 47: 47, 45: 45, 43: 43, 41: 41, 40: 41, 38: 41}.get(m, 45), vel, 'kit'))
+def crash(t, vel=1.0): DRUMEV.append((t, 49, min(1, vel), 'kit')); DRUMEV.append((t, 57, min(1, vel) * .8, 'kit'))
 def boom(t, vel=1.0):
     n = int(2.0 * SR); tt = np.arange(n) / SR; f = 32 + 60 * np.exp(-tt * 1.2)
     put(fxb, t, np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt * 1.6) * vel * .55, 0)
@@ -133,6 +128,7 @@ for b in range(int(DUR // BAR)):
     if E >= 8:   # triangle arpeggio and off-beat stabs
         tseq = [ch[2] + 24, ch[0] + 24, ch[1] + 24, ch[0] + 24, ch[2] + 24, ch[1] + 24, ch[0] + 36, ch[1] + 24]
         for k in range(16): tri_note(t0 + k * .125, tseq[k % 8], .9 if k % 2 == 0 else .6)
+        if E >= 9.5: supersaw(t0, BAR, [root, ch[0], ch[1], ch[2], ch[0] + 12], .9)
         if E >= 9: [stab_note(t0 + k * BEAT + .25, [m + 12 for m in ch], .9) for k in range(4)]
     if E >= 7:   # drums: four on the floor, gated snare on 2 and 4, hats
         for k in range(4): kick(t0 + k * BEAT, .95)
@@ -162,6 +158,24 @@ n = int(.5 * SR); tt = np.arange(n) / SR; put(fxb, 68.0, np.sin(2 * np.pi * (48 
 # outro: the last chord rings out
 for m in (50, 62, 65, 69): pad_note(112.0, 3.5, m, .6, 2000)
 
+# ---------------------------------------------------------------- render the drums with sampled kits (FluidR3: Power kit)
+import subprocess, tempfile
+from mido import MidiFile, MidiTrack, Message, MetaMessage, bpm2tempo
+def render_drums(track):
+    mid = MidiFile(ticks_per_beat=480); tr = MidiTrack(); mid.tracks.append(tr); tr.append(MetaMessage('set_tempo', tempo=bpm2tempo(120)))
+    tr.append(Message('control_change', control=0, value=0, channel=9)); tr.append(Message('program_change', program=16, channel=9))
+    ev = []
+    for t, n, v, k in DRUMEV:
+        if k != track: continue
+        ev.append((int(t * 960), 1, n, max(1, min(127, int(v * 118))))); ev.append((int((t + .2) * 960), 0, n, 0))
+    ev.sort(key=lambda e: (e[0], e[1])); last = 0
+    for tk, on, n, v in ev: tr.append(Message('note_on' if on else 'note_off', note=n, velocity=v, channel=9, time=tk - last)); last = tk
+    d = tempfile.mkdtemp(); mid.save(d + '/d.mid')
+    subprocess.run(['fluidsynth', '-ni', '-q', '-g', '0.9', '-r', str(SR), '-F', d + '/d.wav', '/usr/share/sounds/sf2/FluidR3_GM.sf2', d + '/d.mid'], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    sr_, y = wavfile.read(d + '/d.wav'); y = y.astype(float) / 32768
+    out = np.zeros((N, 2)); out[:min(N, len(y))] = y[:N]; return out
+drums += render_drums('kit') * 1.6
+snare += render_drums('snare') * 1.6
 # ---------------------------------------------------------------- mix
 duck = np.ones(N)
 for tk in kicks:
@@ -175,8 +189,9 @@ mix = (pad * D * .55 + rv(pad, IR_HALL) * .35 * D
        + bass * D * .7
        + arp * D * .45 + rv(arp, IR_PLATE) * .18
        + lead * .55 + rv(lead, IR_HALL) * .35
-       + drums * .8 + rv(drums, IR_PLATE) * .08
+       + drums * .9 + rv(drums, IR_PLATE) * .1
        + snr * .6 + fxb * .8 + rv(fxb, IR_HALL) * .2
+       + wall * D * .6 + rv(wall, IR_HALL) * .2
        + tri * D * .5 + rv(tri, IR_PLATE) * .2 + stab * D * .55 + rv(stab, IR_PLATE) * .15)
 # echo on the lead and arp (dotted eighth ping-pong)
 dl = int(.375 * SR); e = np.zeros_like(mix); src = lead * .55 + arp * .2
