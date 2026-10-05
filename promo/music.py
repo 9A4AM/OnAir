@@ -12,32 +12,32 @@ from scipy import signal
 SR = 44100
 OUT = os.environ.get('OUT', 'music_work'); os.makedirs(OUT, exist_ok=True)
 SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
-BAR = 2.0; NBARS = 61; DUR = NBARS * BAR           # 122 s
+BAR = 2.0; NBARS = 58; DUR = NBARS * BAR           # 116 s
 rnd = random.Random(11)
-HITS = [(4.0, 1), (20.0, 2), (68.0, 3), (84.0, 4), (102.0, 5), (116.0, 4)]   # time, size
-BUILDS = [(0.0, 4.0), (16.0, 20.0), (64.0, 68.0), (80.0, 84.0), (94.0, 102.0)]
+HITS = [(4.0, 1), (18.0, 2), (52.0, 3), (68.0, 4), (96.0, 6), (110.0, 5)]   # time, size
+BUILDS = [(0.0, 4.0), (14.0, 18.0), (48.0, 52.0), (64.0, 68.0), (88.0, 96.0)]
 
-CH = [  # Am9 - Fmaj7 - Cmaj7 - G6
-    dict(root=45, notes=[57, 60, 64, 67, 71]),
-    dict(root=41, notes=[53, 57, 60, 64, 67]),
-    dict(root=48, notes=[55, 60, 64, 67, 71]),
-    dict(root=43, notes=[55, 59, 62, 64, 69]),
+CH = [  # D minor: Dm(add9) - Bbmaj7 - F(add9) - C(sus2); builds hang on C, hits land on Dm
+    dict(root=38, notes=[62, 65, 69, 72, 76]),
+    dict(root=34, notes=[58, 62, 65, 69, 72]),
+    dict(root=41, notes=[60, 65, 69, 72, 79]),
+    dict(root=36, notes=[60, 62, 67, 72, 74]),
 ]
-MOTIF = [[81, 79, 76, 72], [84, 81, 79, 77], [79, 76, 79, 83], [86, 83, 81, 79]]
+MOTIF = [[74, 77, 81, 79], [77, 74, 72, 69], [72, 76, 79, 77], [81, 79, 77, 76]]
 def chord_at(t):
     for h, _ in HITS:
         if h - 4 <= t < h: return CH[3]            # every build hangs on G6
         if h <= t < h + 4: return CH[0]            # every hit lands on Am9
-    if t >= 120: return CH[0]
+    if t >= 112: return CH[0]
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
-    if 94 <= t < 98: return 9                         # the groove keeps going into the last (longest) build, then thins out
-    if 98 <= t < 102: return 8
+    if 88 <= t < 92: return 9.5                         # the groove keeps going into the last (longest) build, then thins out
+    if 92 <= t < 96: return 8
     for a, b in BUILDS:
         if a <= t < b: return energy(a - .01) if (a > 0 and t < a + 2) else None   # first half of a build keeps the groove: no sudden drop
-    for lim, e in ((8, 5), (16, 6), (32, 8), (40, 8.5), (46, 8), (54, 8.5), (60, 8), (64, 7), (72, 9), (80, 8.5), (90, 9.5), (94, 9.5),
-                   (106, 10), (110, 10), (112, 9.5), (116, 9.5), (118, 6), (120, 4)):
+    for lim, e in ((10, 5.5), (14, 7), (30, 8.5), (38, 8.5), (44, 8.5), (48, 7.5), (56, 9.5), (64, 9), (72, 10), (78, 9.5), (86, 8.5), (88, 9.5),
+                   (104, 10), (108, 10), (110, 9.5), (112, 8), (114, 5), (116, 3)):
         if t < lim: return e
     return 3
 
@@ -60,7 +60,7 @@ class Stem:
         for tk, _, m in msgs: m.time = tk - last; last = tk; tr.append(m)
         mid.save(path)
 
-piano = Stem(0); pad = Stem(89); strings = Stem(48); horn = Stem(60); bass = Stem(39); vibes = Stem(11); timp = Stem(47); drums = Stem(0, 9); bells = Stem(9); cello = Stem(42); lead = Stem(49)
+piano = Stem(0); pad = Stem(89); strings = Stem(48); horn = Stem(60); bass = Stem(39); vibes = Stem(11); timp = Stem(47); drums = Stem(0, 9); bells = Stem(9); cello = Stem(42); lead = Stem(49); arp = Stem(81); choir = Stem(52)
 kicks = []
 
 def roll(stem, t_end, dur, note, v0, v1, drum=False, **kw):
@@ -157,6 +157,15 @@ for b in range(NBARS):
         drums.add(t0 + tb, .3, note, v, 0.001)
     if b % 2 == 1:
         for k in range(6): drums.add(t0 + 1.25 + k * .125, .1, [45, 43, 43, 41, 41, 41][k], 70 + k * 7, 0.001)
+# saw-synth arpeggio: 16ths up and down the chord, the pulse that drives the film from the app reveal on
+for b in range(NBARS):
+    t0 = b * BAR; E = energy(t0)
+    if E is None or E < 7.5: continue
+    T_ = chord_at(t0)['notes']; seq = [T_[0], T_[2], T_[4], T_[2] + 12, T_[4], T_[2], T_[1] + 12, T_[2]]
+    for k in range(16): arp.add(t0 + k * .125, .1, seq[k % 8], 70 + (14 if k % 4 == 0 else 0), 0.001)
+# choir on the two biggest moments
+for t0, t1 in ((68, 72), (96, 104), (110, 112)):
+    for n in (CH[0]['notes'][0], CH[0]['notes'][1], CH[0]['notes'][2], CH[0]['notes'][0] + 12): choir.add(t0, t1 - t0 + 1.5, n, 84, 0)
 # cello counter-line: a slow, singing line through the chord tones under the steady sections
 for b in range(NBARS):
     t0 = b * BAR; E = energy(t0)
@@ -171,8 +180,8 @@ for b in range(NBARS):
     mo = MOTIF[(int(t0 // BAR) // 2) % 4]
     for k in range(2): lead.add(t0 + k * 1.0, 1.05, mo[(b % 2) * 2 + k], 70, 0)
 # resolve: a long held chord under the last bars
-timp.add(120.0, 2.5, 33, 36)
-bass.add(120.0, 4.0, 33, 46)
+timp.add(112.0, 2.5, 38, 40)
+bass.add(112.0, 4.0, 38, 50)
 # ---------------------------------------------------------------- builds and hits
 for (a, b), (h, size) in zip(BUILDS, HITS):
     ch = chord_at(h + .1)
@@ -197,11 +206,11 @@ for (a, b), (h, size) in zip(BUILDS, HITS):
 for t, v in [(0.0, 24), (1.0, 30), (2.0, 38), (2.5, 46), (3.0, 56), (3.25, 64), (3.5, 74), (3.75, 86)]: timp.add(t, .6, 33 if v < 60 else 40, v)
 for t, n, v in [(1.0, 76, 34), (2.0, 79, 34), (3.0, 81, 40), (3.5, 84, 44)]: piano.add(t, 1.6, n, v)
 # the closing hit (116 s, the GitHub link) has no build before it, so it is added here on its own
-timp.add(116.0, 2.5, 33, 105); timp.add(116.0, 2.5, 40, 92); drums.add(116.0, 1.8, 49, 100, 0.002); drums.add(116.0, .2, 36, 88, 0.002); kicks.append(116.0)
-for n in CH[0]['notes'][:4]: horn.add(116.0, 4.0, n, 80, 0)
-for k, t_ in enumerate([115.0, 115.25, 115.5, 115.625, 115.75, 115.875]): timp.add(t_, .3, 33, 50 + k * 9, 0.001)
+timp.add(110.0, 2.5, 38, 105); timp.add(110.0, 2.5, 45, 92); drums.add(110.0, 1.8, 49, 100, 0.002); drums.add(110.0, .2, 36, 88, 0.002); kicks.append(110.0)
+for n in CH[0]['notes'][:4]: horn.add(110.0, 4.0, n, 80, 0)
+for k, t_ in enumerate([109.0, 109.25, 109.5, 109.625, 109.75, 109.875]): timp.add(t_, .3, 38, 50 + k * 9, 0.001)
 # the finale stack: three octave hits right on the climax
-for n in (45, 57, 69): piano.add(102.0, 3.0, n, 100)
+for n in (38, 50, 62): piano.add(96.0, 3.0, n, 100)
 
 # ---------------------------------------------------------------- on-screen cues: soft glockenspiel notes on the beat
 _js = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scenes.js')).read()
@@ -210,7 +219,7 @@ CUES = [float(x) for x in re.findall(r'\d+\.\d+', re.sub(r'//[^\n]*', '', _blk))
 scale = [76, 79, 81, 84, 88]
 for i, t in enumerate(CUES): bells.add(t, 0.3, scale[i % 5], 38, 0.0)
 
-stems = dict(piano=piano, pad=pad, strings=strings, horn=horn, bass=bass, vibes=vibes, timp=timp, drums=drums, bells=bells, cello=cello, lead=lead)
+stems = dict(piano=piano, pad=pad, strings=strings, horn=horn, bass=bass, vibes=vibes, timp=timp, drums=drums, bells=bells, cello=cello, lead=lead, arp=arp, choir=choir)
 audio = {}
 for name, st in stems.items():
     mid = f'{OUT}/{name}.mid'; wav = f'{OUT}/{name}.wav'; st.save(mid)
@@ -221,7 +230,7 @@ for name, st in stems.items():
     y = np.zeros((n, 2), np.float32); y[:min(n, len(x))] = x[:n]; audio[name] = y
 
 # ---------------------------------------------------------------- level the stems (measured over the steady middle of the film)
-TARGET = dict(piano=.050, pad=.036, strings=.036, horn=.030, bass=.030, vibes=.022, timp=.030, drums=.026, bells=.012, cello=.020, lead=.012)
+TARGET = dict(piano=.050, pad=.036, strings=.036, horn=.030, bass=.030, vibes=.022, timp=.030, drums=.026, bells=.012, cello=.020, lead=.012, arp=.018, choir=.016)
 for n, tg in TARGET.items():
     seg = audio[n][4 * SR:int(DUR * SR)]; r = float(np.sqrt((seg ** 2).mean())) + 1e-9; audio[n] *= tg / r
 # ---------------------------------------------------------------- mix
@@ -253,6 +262,8 @@ hn = hp(lp(audio['horn'], 3000), 120);                       mix += (hn * .55 + 
 b_ = lp(audio['bass'], 600) * duck[:, None];                 mix += b_ * .85
 ce = hp(lp(audio['cello'], 3000), 70) * duck[:, None];        mix += (ce * .6 + rv(ce, IR_HALL) * .45)
 ld = hp(lp(audio['lead'], 6000), 250);                       mix += (ld * .5 + rv(ld, IR_HALL) * .8)
+ar = hp(lp(audio['arp'], 3800), 180) * duck[:, None];        mix += (ar * .55 + echo(ar, .375, .3, .25) * .3 + rv(ar, IR_ROOM) * .2)
+ch_ = hp(lp(audio['choir'], 5000), 150);                     mix += (ch_ * .5 + rv(ch_, IR_HALL) * .9)
 v = audio['vibes'];                                          mix += (echo(v, .5, .3, .3) * .55 + hp(v, 2500) * .4 + rv(v, IR_HALL) * .6)
 tp = lp(audio['timp'], 2500);                                mix += (tp * .9 + rv(tp, IR_HALL) * .6)
 bl = audio['bells'];                                         mix += (echo(bl, .5, .3, .3) * .5 + rv(bl, IR_HALL) * .7)
@@ -274,15 +285,14 @@ def impact(t, g, f0=70):
     nz = lp(rng.standard_normal((n, 1)), 3500)[:, 0] * np.exp(-x * 3.2) * .5
     y = np.zeros_like(mix); i = int(t * SR); sig = np.stack([s_ + nz, s_ + nz], 1) * g; y[i:i + n] = sig[:len(y) - i]; return y
 fx = np.zeros_like(mix)
-for (h, size), g in zip(HITS, (.07, .11, .14, .17, .21, .18)): fx += impact(h, g)
+for (h, size), g in zip(HITS, (.07, .11, .14, .17, .22, .19)): fx += impact(h, g)
 # ---- sound design under the score (kept quiet)
 def burst(t, dur, g, lo, hi, decay):
     n = int(dur * SR); x = np.arange(n) / SR; w = rng.standard_normal(n); w = signal.sosfilt(signal.butter(2, [lo, hi], 'bp', fs=SR, output='sos'), w) * np.exp(-x / decay)
     y = np.zeros_like(mix); i = int(t * SR); m_ = min(n, len(y) - i); y[i:i + m_] = np.stack([w, w], 1)[:m_] * g; return y
-fx += burst(67.95, .05, .22, 2000, 7000, .006)                   # the click on "fill gaps"
-fx += burst(83.80, .05, .20, 1500, 6000, .006) + burst(83.83, .05, .12, 1500, 6000, .005)   # remote button
-tv = np.zeros_like(mix); i = int(84.0 * SR); n2 = int(.5 * SR); x2 = np.arange(n2) / SR; th_ = np.sin(2 * np.pi * (48 + 30 * np.exp(-x2 * 12)) * x2) * np.exp(-x2 * 7)
-tv[i:i + n2] = np.stack([th_, th_], 1) * .16; fx += tv + burst(84.0, .25, .05, 6000, 12000, .04)  # the TV powering on
+fx += burst(51.95, .05, .22, 2000, 7000, .006)                   # the click on "smooth picture gaps"
+tv = np.zeros_like(mix); i = int(68.0 * SR); n2 = int(.5 * SR); x2 = np.arange(n2) / SR; th_ = np.sin(2 * np.pi * (48 + 30 * np.exp(-x2 * 12)) * x2) * np.exp(-x2 * 7)
+tv[i:i + n2] = np.stack([th_, th_], 1) * .16; fx += tv + burst(68.0, .25, .05, 6000, 12000, .04)  # every screen switching on
 mix += fx + rv(fx, IR_HALL) * .35
 # pre-hit pull-back: ~0.2 s of near-silence right before each big hit so the hit lands harder (classic trailer dropout)
 dip = np.ones(len(T), np.float32)
@@ -303,14 +313,14 @@ rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-5
 win = 80                                               # 4 s centred window
 sm = np.sqrt(np.convolve(rms ** 2, np.ones(win) / win, 'same'))
 tt = (np.arange(nb) + .5) * blk / SR
-want = np.interp(tt, [0, 4, 15.9, 20, 60, 63.9, 68, 79.9, 84, 93.9, 101.9, 102, 110, 113.9, 116, 119, 122, 126], [.070, .095, .088, .100, .100, .096, .108, .098, .116, .108, .118, .150, .128, .120, .145, .110, .070, .050])
+want = np.interp(tt, [0, 4, 13.9, 18, 44, 47.9, 52, 63.9, 68, 87.9, 95.9, 96, 104, 109.9, 110, 113, 116, 120], [.070, .095, .090, .102, .102, .096, .110, .104, .120, .110, .118, .152, .135, .128, .146, .100, .060, .045])
 g = np.clip(want / sm, .5, 3.5)
 g = np.convolve(g, np.ones(60) / 60, 'same')           # 3 s smoothing: gain never moves audibly
 gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
 mix *= gain[:, None]
 _js2 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scenes.js')).read()
 _st = re.search(r'const STALLS=\[(.*?)\];', _js2).group(1)
-STALLS = [(60 + float(a), 60 + float(b)) for a, b in re.findall(r'\[([\d.]+),([\d.]+)\]', _st)]
+STALLS = [(44 + float(a), 44 + float(b)) for a, b in re.findall(r'\[([\d.]+),([\d.]+)\]', _st)]
 for a, b in STALLS:                                   # while the picture is frozen the music dips and darkens a little (never stops)
     i0, i1 = int(a * SR), int(b * SR); n = i1 - i0; r = int(.04 * SR)
     env = np.ones(n); env[:r] = np.linspace(1, 0, r); env[-r:] = np.linspace(0, 1, r); env = 1 - .25 * np.minimum(1, np.minimum(np.arange(n), n - 1 - np.arange(n)) / r)
