@@ -68,7 +68,7 @@ def pad_note(t, dur, m, vel, bright=2400):
 def bass_note(t, dur, m, vel):
     n = int((dur + .05) * SR); tt = np.arange(n) / SR
     x = saw(mf(m), n) + .5 * signal.square(2 * np.pi * mf(m) / 2 * tt)
-    cut = 300 + 1600 * np.exp(-tt / .07); y = lp(x, 900) * .6 + lp(x, 2400) * .4 * np.exp(-tt / .07)
+    y = np.tanh(2.5 * (lp(x, 1300) * .6 + lp(x, 4000) * .5 * np.exp(-tt / .06)))   # driven, growling
     put(bass, t, y * adsr(n, .003, .1, .7, .04, dur) * vel * .5, 0)
 def arp_note(t, m, vel, bright):
     n = int(.22 * SR); tt = np.arange(n) / SR; x = saw(mf(m), n) + saw(mf(m) * 1.004, n)
@@ -79,7 +79,15 @@ def lead_note(t, dur, m, vel):
     vib = 1 + .006 * np.sin(2 * np.pi * 5.6 * tt) * np.clip((tt - .18) / .3, 0, 1)
     ph = 2 * np.pi * np.cumsum(mf(m) * vib) / SR
     x = signal.sawtooth(ph) + signal.sawtooth(ph * 1.007) + .5 * signal.square(ph / 2)
-    put(lead, t, lp(x, 3800) * adsr(n, .02, .2, .8, .35, dur) * vel * .16, 0)
+    x = x + .6 * signal.square(ph, .25)                          # a 25% pulse on top: brassy and aggressive
+    put(lead, t, np.tanh(2.2 * lp(x, 7000)) * adsr(n, .01, .2, .85, .3, dur) * vel * .2, 0)
+tri = np.zeros((N, 2)); stab = np.zeros((N, 2))
+def tri_note(t, m, vel):      # the triangle tone: a clean, glassy 8-bit style arpeggio two octaves up
+    n = int(.16 * SR); tt = np.arange(n) / SR; x = signal.sawtooth(2 * np.pi * mf(m) * tt, .5)
+    put(tri, t, x * np.exp(-tt / .1) * vel * .3, -.35 * np.sin(t * 2.2))
+def stab_note(t, ms, vel):    # short, hard saw chord stabs on the off-beats
+    n = int(.16 * SR); tt = np.arange(n) / SR; x = sum(saw(mf(m), n) + saw(mf(m) * 1.01, n) for m in ms)
+    put(stab, t, np.tanh(1.8 * lp(x, 5000)) * np.exp(-tt / .06) * vel * .16, 0)
 def kick(t, vel=1.0):
     n = int(.45 * SR); tt = np.arange(n) / SR; f = 45 + 110 * np.exp(-tt / .035)
     x = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt / .18) + .3 * np.exp(-tt / .004) * rng.standard_normal(n) * .2
@@ -110,25 +118,29 @@ for b in range(int(DUR // BAR)):
     t0 = b * BAR; E = energy(t0 + .01); root, ch = chord_at(t0 + .01)
     inbuild = E < 0
     # pad: every bar (a swell in builds)
-    if t0 < 112 or b == 56: pad_note(t0, BAR, ch[0], .7 if not inbuild else .85, 1800 if E < 8 else 2800); [pad_note(t0, BAR, m, .55, 1800 if E < 8 else 2800) for m in ch[1:]]
+    if t0 < 112 or b == 56: pad_note(t0, BAR, ch[0], .7 if not inbuild else .85, 2400 if E < 8 else 4800); [pad_note(t0, BAR, m, .55, 2400 if E < 8 else 4800) for m in ch[1:]]
     if E >= 5:   # octave bass, 8ths (16ths at the top)
-        step = .125 if E >= 10 else .25
+        step = .125 if E >= 8 else .25
         for k in range(int(BAR / step)): bass_note(t0 + k * step, step * .9, root - 12 + (12 if k % 2 else 0), .8 if E >= 8 else .55)
     if E >= 6 or inbuild:   # saw arpeggio; in builds its filter opens toward the hit
         seq = [ch[0], ch[1], ch[2], ch[0] + 12, ch[2], ch[1], ch[0] + 12, ch[1] + 12]
-        bright = 1200 if E < 8 else 2600
+        bright = 2400 if E < 8 else 5200
         for k in range(16):
             tk = t0 + k * .125
             if inbuild:
                 a, bb = next((a, bb) for a, bb in BUILDS if a <= t0 < bb); bright = 300 + 4200 * ((tk - a) / (bb - a)) ** 1.6
             arp_note(tk, seq[k % 8] + 12, .9 if k % 4 == 0 else .65, bright)
+    if E >= 8:   # triangle arpeggio and off-beat stabs
+        tseq = [ch[2] + 24, ch[0] + 24, ch[1] + 24, ch[0] + 24, ch[2] + 24, ch[1] + 24, ch[0] + 36, ch[1] + 24]
+        for k in range(16): tri_note(t0 + k * .125, tseq[k % 8], .9 if k % 2 == 0 else .6)
+        if E >= 9: [stab_note(t0 + k * BEAT + .25, [m + 12 for m in ch], .9) for k in range(4)]
     if E >= 7:   # drums: four on the floor, gated snare on 2 and 4, hats
         for k in range(4): kick(t0 + k * BEAT, .95)
         snare_hit(t0 + .5, .9); snare_hit(t0 + 1.5, .9)
         hstep = .125 if E >= 9.5 else .25
         for k in range(int(BAR / hstep)): hat(t0 + k * hstep, .9 if k % 2 == 0 else .55, open_=(E >= 9.5 and k % 4 == 2))
         if b % 4 == 3: [tom(t0 + 1.5 + k * .125, [50, 47, 45, 41][k], .9) for k in range(4)]
-    if E >= 9.5:   # the lead hook
+    if E >= 8:   # the lead hook (from the app reveal on)
         for (bo, du, m) in HOOK[b % 4]: lead_note(t0 + bo * BEAT, du * BEAT * .95, m, 1.0)
         if E >= 10.5: [lead_note(t0 + bo * BEAT, du * BEAT * .95, m + 12, .45) for (bo, du, m) in HOOK[b % 4]]
 # builds: gated snare roll accelerating into the hit, toms on the last beat, a kick-less last bar
@@ -164,7 +176,8 @@ mix = (pad * D * .55 + rv(pad, IR_HALL) * .35 * D
        + arp * D * .45 + rv(arp, IR_PLATE) * .18
        + lead * .55 + rv(lead, IR_HALL) * .35
        + drums * .8 + rv(drums, IR_PLATE) * .08
-       + snr * .6 + fxb * .8 + rv(fxb, IR_HALL) * .2)
+       + snr * .6 + fxb * .8 + rv(fxb, IR_HALL) * .2
+       + tri * D * .5 + rv(tri, IR_PLATE) * .2 + stab * D * .55 + rv(stab, IR_PLATE) * .15)
 # echo on the lead and arp (dotted eighth ping-pong)
 dl = int(.375 * SR); e = np.zeros_like(mix); src = lead * .55 + arp * .2
 for k in range(1, 4): e[k * dl:, k % 2] += src[:-k * dl, 0] * (.35 ** k)
