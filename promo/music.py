@@ -60,7 +60,7 @@ class Stem:
         for tk, _, m in msgs: m.time = tk - last; last = tk; tr.append(m)
         mid.save(path)
 
-piano = Stem(0); pad = Stem(89); strings = Stem(48); horn = Stem(60); bass = Stem(39); vibes = Stem(11); timp = Stem(47); drums = Stem(0, 9); bells = Stem(9); cello = Stem(42); lead = Stem(49); arp = Stem(81); choir = Stem(52)
+piano = Stem(90); pad = Stem(89); strings = Stem(50); horn = Stem(62); bass = Stem(38); vibes = Stem(80); timp = Stem(47); drums = Stem(0, 9); bells = Stem(9); cello = Stem(42); lead = Stem(49); arp = Stem(81); choir = Stem(52)
 kicks = []
 
 def roll(stem, t_end, dur, note, v0, v1, drum=False, **kw):
