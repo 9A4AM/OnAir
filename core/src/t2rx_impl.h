@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <deque>
+#include <map>
 #include <mutex>
 #include <atomic>
 #include <cstdint>
@@ -130,6 +131,7 @@ struct T2Receiver::Impl {
     bool scanFirst = true;
     std::vector<cd> pq1, pq2;   // scanP1 scratch (prefix sums), kept to avoid reallocating per chunk
     int64_t trackKeep = -1;               // samples from here on stay buffered while tracking, so a missed P1 can be searched for again
+    std::vector<std::pair<int64_t, int64_t>> done;   // stretches of `m` the last P1 search filled in
     int trackMiss = 0, trackFrames = 0;   // windowed P1 search: expected P1s not found in a row, P1s accepted since the last full pass
     double trackExpect = 0;               // where the next P1 is expected (absolute sample index), 0 = not set
     int64_t trackFullUntil = 0;           // search everything up to here
@@ -176,6 +178,13 @@ struct T2Receiver::Impl {
         std::unique_ptr<PilotMap> pm;
         std::vector<std::vector<uint8_t>> types;
     } dsCache;
+    // pilot maps of the P2 stage by configuration (building one generates a 28,000-value PRBS, and the stage runs every frame)
+    std::map<int, std::unique_ptr<PilotMap>> pmCache;
+    const PilotMap& cachedPilotMap(int fftCode, bool ext, int pp) {
+        std::unique_ptr<PilotMap>& e = pmCache[(fftCode * 2 + (ext ? 1 : 0)) * 8 + pp];
+        if (!e) { PilotConfig c; c.fftCode = fftCode; c.ext = ext; c.pp = pp; e.reset(new PilotMap(c)); }
+        return *e;
+    }
     bool chValid = false, extDetected = false;
     std::vector<cf32> chH;
     int chK = 0, irMin = 0;
