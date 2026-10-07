@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""OnAir 0.2.0 promo score: a piano-led film score that keeps topping itself. Intro build -> hit 1 (the version roll), build -> hit 2
-(the new interface), build -> hit 3 (the wall of modes), build -> hit 4 (native radios), build -> hit 5 (more), then the longest build
-of the film -> the climax at "All of it. At once." and the closing hit on the GitHub link.
+"""OnAir promo score (the piano score, unchanged since 0.1.4 apart from the removed glockenspiel cues and sound effects), v3: a film score that keeps topping itself. Quiet intro build -> hit 1 (title), steady, build -> hit 2 (live TV),
+build -> hit 3 (signal views), a breath, then the biggest build of the film -> the climax at "All of it. At once." and a warm resolve.
 Composed as MIDI stems (piano, pad, strings, horn, bass, vibraphone, timpani, drums, glockenspiel cues), rendered with FluidSynth
 (FluidR3 GM soundfont), mixed with a long hall reverb and light glue compression.
 120 BPM grid (one bar = 2 s): every scene boundary, hit and on-screen cue (CUES in scenes.js) falls on a beat."""
@@ -13,10 +12,10 @@ from scipy import signal
 SR = 44100
 OUT = os.environ.get('OUT', 'music_work'); os.makedirs(OUT, exist_ok=True)
 SF2 = '/usr/share/sounds/sf2/FluidR3_GM.sf2'
-BAR = 2.0; NBARS = 60; DUR = NBARS * BAR           # 120 s
+BAR = 2.0; NBARS = 61; DUR = NBARS * BAR           # 122 s
 rnd = random.Random(11)
-HITS = [(4.0, 1), (20.0, 2), (48.0, 3), (64.0, 4), (84.0, 5), (100.0, 7), (114.0, 6)]   # time, size
-BUILDS = [(0.0, 4.0), (16.0, 20.0), (44.0, 48.0), (60.0, 64.0), (80.0, 84.0), (92.0, 100.0)]
+HITS = [(4.0, 1), (20.0, 2), (68.0, 3), (84.0, 4), (102.0, 5), (116.0, 4)]   # time, size
+BUILDS = [(0.0, 4.0), (16.0, 20.0), (64.0, 68.0), (80.0, 84.0), (94.0, 102.0)]
 
 CH = [  # Am9 - Fmaj7 - Cmaj7 - G6
     dict(root=45, notes=[57, 60, 64, 67, 71]),
@@ -29,16 +28,16 @@ def chord_at(t):
     for h, _ in HITS:
         if h - 4 <= t < h: return CH[3]            # every build hangs on G6
         if h <= t < h + 4: return CH[0]            # every hit lands on Am9
-    if t >= 116: return CH[0]
+    if t >= 120: return CH[0]
     return CH[(int(t // BAR) // 2) % 4]
 
 def energy(t):                                     # 0..10, the film's intensity
-    if 92 <= t < 96: return 9.5                       # the groove keeps going into the last (longest) build, then thins out
-    if 96 <= t < 100: return 8.5
+    if 94 <= t < 98: return 9                         # the groove keeps going into the last (longest) build, then thins out
+    if 98 <= t < 102: return 8
     for a, b in BUILDS:
         if a <= t < b: return energy(a - .01) if (a > 0 and t < a + 2) else None   # first half of a build keeps the groove: no sudden drop
-    for lim, e in ((10, 5), (16, 6), (32, 8), (44, 8.5), (54, 9), (60, 8.5), (76, 9), (80, 9), (92, 9.5),
-                   (108, 10), (114, 9.5), (116, 6), (118, 4)):
+    for lim, e in ((8, 5), (16, 6), (32, 8), (40, 8.5), (46, 8), (54, 8.5), (60, 8), (64, 7), (72, 9), (80, 8.5), (90, 9.5), (94, 9.5),
+                   (106, 10), (110, 10), (112, 9.5), (116, 9.5), (118, 6), (120, 4)):
         if t < lim: return e
     return 3
 
@@ -168,12 +167,12 @@ for b in range(NBARS):
 # string lead for the climax and the finale: the motif, an octave up, sustained
 for b in range(NBARS):
     t0 = b * BAR
-    if not (100 <= t0 < 110 or 84 <= t0 < 90): continue
+    if not (102 <= t0 < 112 or 84 <= t0 < 90): continue
     mo = MOTIF[(int(t0 // BAR) // 2) % 4]
     for k in range(2): lead.add(t0 + k * 1.0, 1.05, mo[(b % 2) * 2 + k], 70, 0)
 # resolve: a long held chord under the last bars
-timp.add(116.0, 2.5, 33, 36)
-bass.add(116.0, 4.0, 33, 46)
+timp.add(120.0, 2.5, 33, 36)
+bass.add(120.0, 4.0, 33, 46)
 # ---------------------------------------------------------------- builds and hits
 for (a, b), (h, size) in zip(BUILDS, HITS):
     ch = chord_at(h + .1)
@@ -197,21 +196,14 @@ for (a, b), (h, size) in zip(BUILDS, HITS):
 # the title: quarter-note heartbeat of soft timpani, then a bar of eighths, with sparse piano on the beat
 for t, v in [(0.0, 24), (1.0, 30), (2.0, 38), (2.5, 46), (3.0, 56), (3.25, 64), (3.5, 74), (3.75, 86)]: timp.add(t, .6, 33 if v < 60 else 40, v)
 for t, n, v in [(1.0, 76, 34), (2.0, 79, 34), (3.0, 81, 40), (3.5, 84, 44)]: piano.add(t, 1.6, n, v)
-# the closing hit (114 s, the GitHub link) has no build before it, so it is added here on its own
-timp.add(114.0, 2.5, 33, 110); timp.add(114.0, 2.5, 40, 96); drums.add(114.0, 1.8, 49, 108, 0.002); drums.add(114.0, .2, 36, 92, 0.002); kicks.append(114.0)
-for n in CH[0]['notes'][:4]: horn.add(114.0, 4.0, n, 86, 0)
-for k, t_ in enumerate([113.0, 113.25, 113.5, 113.625, 113.75, 113.875]): timp.add(t_, .3, 33, 50 + k * 9, 0.001)
+# the closing hit (116 s, the GitHub link) has no build before it, so it is added here on its own
+timp.add(116.0, 2.5, 33, 105); timp.add(116.0, 2.5, 40, 92); drums.add(116.0, 1.8, 49, 100, 0.002); drums.add(116.0, .2, 36, 88, 0.002); kicks.append(116.0)
+for n in CH[0]['notes'][:4]: horn.add(116.0, 4.0, n, 80, 0)
+for k, t_ in enumerate([115.0, 115.25, 115.5, 115.625, 115.75, 115.875]): timp.add(t_, .3, 33, 50 + k * 9, 0.001)
 # the finale stack: three octave hits right on the climax
-for n in (33, 45, 57, 69): piano.add(100.0, 3.0, n, 108)
+for n in (45, 57, 69): piano.add(102.0, 3.0, n, 100)
 
-# ---------------------------------------------------------------- on-screen cues: soft glockenspiel notes on the beat
-_js = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scenes.js')).read()
-_blk = re.search(r'const CUES=\[(.*?)\];', _js, re.S).group(1)
-CUES = [float(x) for x in re.findall(r'\d+\.\d+', re.sub(r'//[^\n]*', '', _blk))]
-scale = [76, 79, 81, 84, 88]
-for i, t in enumerate(CUES): bells.add(t, 0.3, scale[i % 5], 38, 0.0)
-
-stems = dict(piano=piano, pad=pad, strings=strings, horn=horn, bass=bass, vibes=vibes, timp=timp, drums=drums, bells=bells, cello=cello, lead=lead)
+stems = dict(piano=piano, pad=pad, strings=strings, horn=horn, bass=bass, vibes=vibes, timp=timp, drums=drums, cello=cello, lead=lead)
 audio = {}
 for name, st in stems.items():
     mid = f'{OUT}/{name}.mid'; wav = f'{OUT}/{name}.wav'; st.save(mid)
@@ -222,7 +214,7 @@ for name, st in stems.items():
     y = np.zeros((n, 2), np.float32); y[:min(n, len(x))] = x[:n]; audio[name] = y
 
 # ---------------------------------------------------------------- level the stems (measured over the steady middle of the film)
-TARGET = dict(piano=.050, pad=.036, strings=.036, horn=.030, bass=.030, vibes=.022, timp=.030, drums=.026, bells=.012, cello=.020, lead=.012)
+TARGET = dict(piano=.050, pad=.036, strings=.036, horn=.030, bass=.030, vibes=.022, timp=.030, drums=.026, cello=.020, lead=.012)
 for n, tg in TARGET.items():
     seg = audio[n][4 * SR:int(DUR * SR)]; r = float(np.sqrt((seg ** 2).mean())) + 1e-9; audio[n] *= tg / r
 # ---------------------------------------------------------------- mix
@@ -256,7 +248,6 @@ ce = hp(lp(audio['cello'], 3000), 70) * duck[:, None];        mix += (ce * .6 + 
 ld = hp(lp(audio['lead'], 6000), 250);                       mix += (ld * .5 + rv(ld, IR_HALL) * .8)
 v = audio['vibes'];                                          mix += (echo(v, .5, .3, .3) * .55 + hp(v, 2500) * .4 + rv(v, IR_HALL) * .6)
 tp = lp(audio['timp'], 2500);                                mix += (tp * .9 + rv(tp, IR_HALL) * .6)
-bl = audio['bells'];                                         mix += (echo(bl, .5, .3, .3) * .5 + rv(bl, IR_HALL) * .7)
 d = lp(audio['drums'], 9000);                                mix += (d * .85 + hp(d, 5000) * .4 + rv(d, IR_ROOM) * .18)
 rng = np.random.default_rng(3)
 def riser(t_end, dur, g):
@@ -275,7 +266,7 @@ def impact(t, g, f0=70):
     nz = lp(rng.standard_normal((n, 1)), 3500)[:, 0] * np.exp(-x * 3.2) * .5
     y = np.zeros_like(mix); i = int(t * SR); sig = np.stack([s_ + nz, s_ + nz], 1) * g; y[i:i + n] = sig[:len(y) - i]; return y
 fx = np.zeros_like(mix)
-for (h, size), g in zip(HITS, (.07, .10, .12, .14, .16, .21, .18)): fx += impact(h, g)
+for (h, size), g in zip(HITS, (.07, .11, .14, .17, .21, .18)): fx += impact(h, g)
 # ---- sound design under the score (kept quiet)
 def burst(t, dur, g, lo, hi, decay):
     n = int(dur * SR); x = np.arange(n) / SR; w = rng.standard_normal(n); w = signal.sosfilt(signal.butter(2, [lo, hi], 'bp', fs=SR, output='sos'), w) * np.exp(-x / decay)
@@ -300,7 +291,7 @@ rms = np.sqrt((mix[:nb * blk] ** 2).reshape(nb, blk, 2).mean((1, 2))) + 1e-5
 win = 80                                               # 4 s centred window
 sm = np.sqrt(np.convolve(rms ** 2, np.ones(win) / win, 'same'))
 tt = (np.arange(nb) + .5) * blk / SR
-want = np.interp(tt, [0, 4, 15.9, 20, 43.9, 48, 59.9, 64, 79.9, 84, 91.9, 99.9, 100, 108, 113.9, 114, 117, 120, 124], [.070, .095, .088, .100, .096, .104, .098, .108, .102, .114, .108, .118, .150, .128, .120, .145, .110, .070, .050])
+want = np.interp(tt, [0, 4, 15.9, 20, 60, 63.9, 68, 79.9, 84, 93.9, 101.9, 102, 110, 113.9, 116, 119, 122, 126], [.070, .095, .088, .100, .100, .096, .108, .098, .116, .108, .118, .150, .128, .120, .145, .110, .070, .050])
 g = np.clip(want / sm, .5, 3.5)
 g = np.convolve(g, np.ones(60) / 60, 'same')           # 3 s smoothing: gain never moves audibly
 gain = np.repeat(g, blk); gain = np.concatenate([gain, np.full(len(mix) - len(gain), g[-1])])
