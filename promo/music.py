@@ -271,6 +271,24 @@ for (h, size), g in zip(HITS, (.07, .11, .14, .17, .21, .18)): fx += impact(h, g
 def burst(t, dur, g, lo, hi, decay):
     n = int(dur * SR); x = np.arange(n) / SR; w = rng.standard_normal(n); w = signal.sosfilt(signal.butter(2, [lo, hi], 'bp', fs=SR, output='sos'), w) * np.exp(-x / decay)
     y = np.zeros_like(mix); i = int(t * SR); m_ = min(n, len(y) - i); y[i:i + m_] = np.stack([w, w], 1)[:m_] * g; return y
+# ---- sound design (quiet, nothing melodic): short swishes on the camera moves, ticks on the counters, the mouse click
+def swish(t, d, g, pan=1):
+    n = int(d * SR); x = np.arange(n) / n; w = rng.standard_normal(n); env = np.sin(np.pi * x) ** 2
+    out = np.zeros(n); fc = 500 + 2600 * np.sin(np.pi * x)            # the band sweeps up and back down
+    for k in range(8):
+        a, b = int(k * n / 8), int((k + 1) * n / 8); f = fc[(a + b) // 2]
+        out[a:b] = signal.sosfilt(signal.butter(2, [f * .6, min(f * 1.6, 9000)], 'bp', fs=SR, output='sos'), w[a:b])
+    out *= env * g; L = out * (1 - .4 * pan * (x - .5) * 2); Rr = out * (1 + .4 * pan * (x - .5) * 2)
+    y = np.zeros_like(mix); i = int(t * SR); m_ = min(n, len(y) - i); y[i:i + m_] = np.stack([L, Rr], 1)[:m_]; return y
+def tick(t, g, f=4200):
+    n = int(.03 * SR); x = np.arange(n) / SR; s_ = np.sin(2 * np.pi * f * x) * np.exp(-x / .004) + rng.standard_normal(n) * np.exp(-x / .002) * .3
+    y = np.zeros_like(mix); i = int(t * SR); y[i:i + n] = np.stack([s_, s_], 1)[:len(y) - i] * g; return y
+for t_ in (12.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.35): fx += swish(t_ - .05, .5, .045, 1 if int(t_) % 4 else -1)   # look swing, UI tour whips
+for t_ in (33.75, 53.8, 63.75, 75.8, 93.75, 109.7): fx += swish(t_, .55, .05)                                      # scene transitions
+for t_ in (86.2, 88.7, 91.2): fx += swish(t_, .6, .04, -1)                                                         # "and more" screens
+for t_ in (1.0, 1.5, 2.0, 2.5, 3.0): fx += tick(t_, .05, 3600)                                                     # version odometer
+for k in range(11): fx += tick(36.0 + k * .05, .03 + .002 * k, 3000 + 120 * k)                                     # 3 -> 14 counter
+fx += tick(32.0, .09, 2600) + tick(32.06, .05, 2000)                                                               # the click on the waterfall
 mix += fx + rv(fx, IR_HALL) * .35
 # pre-hit pull-back: ~0.2 s of near-silence right before each big hit so the hit lands harder (classic trailer dropout)
 dip = np.ones(len(T), np.float32)

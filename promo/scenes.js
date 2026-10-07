@@ -357,7 +357,10 @@ T.title=(c,bt)=>{
   cine(c,bt,{glow:.06+.14*seg(bt,4,5)}); const out=1-ease(bt,9.85,.35); c.save(); c.globalAlpha*=out;
   if(bt>=4){ const k=eio3(seg(bt,4,6.5)); const t=bt-4;
     blurred(c,lerp(14,7,k),x=>screen3(x,texClip(TEXL[0],'dvbt_tv',2+t),{pos:[lerp(0,60,k),lerp(900,260,k),lerp(1600,700,k)],w:1700,rx:lerp(.7,.32,k),ry:lerp(-.2,-.12,k),a:.75*k,glow:.6,nx:16,ny:9})); }
-  c.save(); c.globalAlpha*=.4*ease(bt,1.2,2.2)*(1-seg(bt,4,5)); spectrum(c,0,860,W,200,bt+3,[{dat:'T',u:.5,w:.38,k:ease(bt,1.6,2.0)}],{n:500,lw:1.8,noFrame:true,grid:false,band:false}); c.restore();
+  if(bt<4.6){ const sk=seg(bt,.3,3.6), fo=1-seg(bt,4,4.6);
+    c.save(); c.globalAlpha*=.28*ease(bt,0,.8)*fo; c.filter='blur(3px)'; waterfall(c,0,0,W,H,bt+3,[{u:.5,w:.38,k:sk*sk}],.05); c.fillStyle='rgba(4,6,9,.72)'; c.fillRect(0,0,W,H); c.restore();
+    c.save(); c.globalAlpha*=fo; spectrum(c,0,760,W,300,bt+3,[{u:.5,w:.38,k:sk*sk}],{n:600,lw:2.2,noFrame:true,grid:false,band:false}); c.restore();
+    if(bt<1.2){ c.save(); c.globalAlpha=.35*(1-bt/1.2); c.globalCompositeOperation='lighter'; const ox=(hash(Math.floor(bt*30)*1.7)*256)|0; for(let x=-ox;x<W;x+=256) for(let y=-ox;y<H;y+=256) c.drawImage(grain,x,y); c.restore(); } }
   let i=0; while(i<ROLL.length-1&&bt>=ROLL[i+1][0]) i++; const v=ROLL[i][1], since=bt-ROLL[i][0];
   if(bt<4){ const yy=640, step=280, k=eio3(clamp(since/.24)), prev=i>0?ROLL[i-1][1]:null, shake=bt>3?Math.sin(bt*90)*4*seg(bt,3,4):0;
     c.save(); c.translate(shake,0); c.beginPath(); c.rect(0,yy-230,W,290); c.clip(); c.globalAlpha*=ease(bt,.2,.6);
@@ -460,10 +463,13 @@ T.outro=(c,bt)=>{
   fadeUp(c,bt,.5,()=>{ c.drawImage(logo,W/2-430,ty+th+56,92,92); txt(c,'OnAir '+VERSION,W/2-318,ty+th+130,{size:82,w:700,ls:-2.5}); },{dur:.8});
   const pk=ease(bt,1.5,.6); if(pk>0){ c.save(); c.globalAlpha=pk; pill(c,'Out now',W/2+330,ty+th+104,{accent:true,size:34}); c.restore(); }
   kt(c,'Free and open source. macOS, Windows and Linux.',W/2,ty+th+210,bt,2.5,{size:30,w:400,al:'center',col:'#c2ccd6',stagger:.04});
-  slam(c,'github.com/adswill/OnAir',W/2,ty+th+300,bt,6.0,{size:60,w:700,col:'#8cc8ff',from:1.4,glow:true});
+  const bk=seg(bt,6,7.4); if(bk>0&&bk<1){ c.save(); c.globalCompositeOperation='lighter'; const r=lerp(80,1300,eio3(bk)); const g=c.createRadialGradient(W/2,ty+th+290,0,W/2,ty+th+290,r); g.addColorStop(0,`rgba(140,200,255,${.45*(1-bk)})`); g.addColorStop(1,'rgba(140,200,255,0)'); c.fillStyle=g; c.fillRect(0,0,W,H);
+    c.strokeStyle=`rgba(170,220,255,${.6*(1-bk)})`; c.lineWidth=3; c.beginPath(); c.ellipse(W/2,ty+th+290,r*.9,r*.28,0,0,7); c.stroke(); c.restore(); }
+  slam(c,'github.com/adswill/OnAir',W/2,ty+th+300,bt,6.0,{size:64,w:700,col:'#8cc8ff',from:1.6,glow:true});
+  const gl=seg(bt,7.2,8.4); if(gl>0&&gl<1){ c.save(); c.globalCompositeOperation='lighter'; const gx=lerp(W/2-500,W/2+500,gl); const g=c.createLinearGradient(gx-120,0,gx+120,0); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(.5,'rgba(255,255,255,.35)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(gx-120,ty+th+40,240,300); c.restore(); }
 };
 // ---------------------------------------------------------------- timeline (120 BPM: one bar = 2 s) and cue grid for music.py
-const B=[['title',0,10,null,0],['look',10,20,'cut',0],['newui',20,34,'cut',0],['modes',34,48,'dissolve',.4],['wall',48,54,'cut',0],['spot',54,64,'dissolve',.4],['radios',64,76,'dissolve',.4],['speed',76,84,'dissolve',.4],['more',84,94,'cut',0],['platforms',94,102,'dissolve',.4],['finale',102,110,'cut',0],['outro',110,122,'dissolve',.5]];
+const B=[['title',0,10,null,0],['look',10,20,'cut',0],['newui',20,34,'cut',0],['modes',34,48,'zoom',.5],['wall',48,54,'cut',0],['spot',54,64,'whip',.4],['radios',64,76,'zoom',.5],['speed',76,84,'whip',.4],['more',84,94,'cut',0],['platforms',94,102,'zoom',.5],['finale',102,110,'cut',0],['outro',110,122,'zoom',.6]];
 // hits: 4 the version, 20 the new UI, 68 native radios, 84 and more, 102 all of it, 116 the link
 const HITS_T=[4,20,68,84,102,116];
 const BUILDS=[[0,4],[16,20],[64,68],[80,84],[94,102]];
@@ -481,7 +487,12 @@ function composite(t){
   const act=SCENES.filter(s=>t>=s.t0&&t<s.t1);
   if(act.length===1){ sceneMB(ctx,act[0],t); return; }
   const A=act[0],Bn=act[1], p=clamp((t-Bn.t0)/Bn[3]); sceneAt(ca,A,t); sceneAt(cb,Bn,t);
-  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.drawImage(bufA,0,0); ctx.save(); ctx.globalAlpha=eio3(p); ctx.drawImage(bufB,0,0); ctx.restore();
+  const e=eio3(p), tr=Bn[2]; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  const lay=(buf,sc,dx,a,bl)=>{ ctx.save(); ctx.globalAlpha=a; if(bl>.3) ctx.filter=`blur(${bl.toFixed(1)}px)`; ctx.translate(W/2+dx,H/2); ctx.scale(sc,sc); ctx.drawImage(buf,-W/2,-H/2); ctx.restore(); };
+  if(tr==='zoom'){ lay(bufA,lerp(1,1.35,e),0,1-e*.9,e*18); lay(bufB,lerp(.78,1,e),0,clamp(e*1.6),(1-e)*16);
+    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=.18*Math.sin(Math.PI*e); ctx.fillStyle='#9cc6e6'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+  else if(tr==='whip'){ lay(bufA,1,-W*.9*e,1-e*.6,Math.sin(Math.PI*e)*26); lay(bufB,1,W*.9*(1-e),clamp(e*1.8),Math.sin(Math.PI*e)*26); }
+  else { ctx.drawImage(bufA,0,0); ctx.save(); ctx.globalAlpha=e; ctx.drawImage(bufB,0,0); ctx.restore(); }
 }
 // ---------------------------------------------------------------- post: hit punch, build line, vignette, fine grain, fades
 const grain=mk(256,256), gx_=grain.getContext('2d'); { const id=gx_.createImageData(256,256); for(let i=0;i<256*256;i++){ const v=(hash(i*1.37)*255)|0; id.data[i*4]=id.data[i*4+1]=id.data[i*4+2]=v; id.data[i*4+3]=255; } gx_.putImageData(id,0,0); }
