@@ -11,3 +11,8 @@ Clips are extracted to `/tmp/clips/<name>/f_%05d.jpg`; the 3D living-room shot (
 
 ## v0.1.4 footage
 Captured from the current `main` build (`cap.sh` with `APP=/tmp/bmain/dect2`, `cap2.sh` for the first-start tour with Onny). Clips are extracted to `/tmp/clips2/<name>/f_%05d.jpg` (overview, Player, Guide, Outputs, echo, onny).
+
+## v0.2.0 footage
+Captured from the 0.2.0 build with `cap3.sh` (Xvfb, mouse parked off-screen; `CLICKS` drives click-to-tune; capture-only `ONAIR_PACE`/`ONAIR_WFAUTO` slow the file and auto-range the waterfall). The new modes are shown from their built-in test signals (`--mode dvbs|dtmb|atv|drm|adsb|dmr|gnss`, `--dab`, `--atsc3`, `--isdbt`, `--fm`). Clips are extracted to `/tmp/clips3/<name>/f_%05d.jpg`; the 0.1.4 interface for the before/after wipe comes from `/tmp/clips2`.
+
+The speed figures are measured with `cpu.sh`: `dect2cli` decodes the same 30 s DVB-T 8K 64-QAM file with the 0.1.4 build and the 0.2.0 build, and its own load meter reports 306–310 % vs 96–98 % of real time (about 3.2× less CPU).
