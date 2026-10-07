@@ -199,7 +199,7 @@ T.title=(c,bt)=>{
     c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=40; c.drawImage(logo,W/2-55,70,110,110); c.restore();
   }
   kt(c,'The biggest update yet.',W/2,700,bt,5.5,{size:52,w:500,al:'center',acc:[1,2]});
-  ['New interface','14 modes','Native radios','Faster everywhere'].forEach((s,j)=>{ const kk=ease(bt,6.5+j*.5,.5); if(kk>0){ c.save(); c.globalAlpha*=kk; c.translate(0,(1-kk)*12); pill(c,s,W/2-570+j*380,800,{accent:j===0,size:26}); c.restore(); } });
+  ['New interface','14 modes','Native radios','Less CPU'].forEach((s,j)=>{ const kk=ease(bt,6.5+j*.5,.5); if(kk>0){ c.save(); c.globalAlpha*=kk; c.translate(0,(1-kk)*12); pill(c,s,W/2-570+j*380,800,{accent:j===0,size:26}); c.restore(); } });
   c.restore();
 };
 // ---------------------------------------------------------------- 2. a new look: 0.1.4 wiped away by 0.2.0
@@ -296,22 +296,23 @@ T.radios=(c,bt)=>{
     NATIVE.forEach((s_,j)=>{ const on=ease(bt,4.3+j*.5,.3); const y=400+j*72; c.save(); c.globalAlpha*=.3+.7*on; c.translate((1-on)*12,0); check(c,940,y-12,18,on>.5?PAL.ok:'#4a5059'); txt(c,s_,980,y,{size:40,w:600}); txt(c,j===0?'own driver':'built in',1780,y,{size:26,w:500,al:'right',col:on>.5?PAL.ok:C.dim}); c.restore(); });
     txt(c,'Nothing else to install.',920,915,{size:34,w:600,col:'#e3e9ef',a:ease(bt,8.0,.5)}); c.restore(); }
 };
-// ---------------------------------------------------------------- 8. faster: every mode lights up on the beat, into the hit
-const SPEEDM=['DVB-T2','DVB-T','ATSC','ATSC 3.0','ISDB-T','DVB-S/S2','DTMB','Analog TV','DAB+','FM','DRM','ADS-B','GNSS','DMR'];
+// ---------------------------------------------------------------- 8. faster: measured receiver CPU (dect2cli load meter, same recording, same machine)
+// DVB-T 8K 64-QAM file: 0.1.0 305-307 %, 0.2.0 102-104 %. ISDB-T test recording: 0.1.5 172 %, 0.2.0 138-141 %. (% of real time = CPU cores busy.)
+const SPEEDG=[['DVB-T',[['0.1.0',3.06],['0.2.0',1.03]],'3× less',.8],['ISDB-T',[['0.1.5',1.72],['0.2.0',1.40]],'19% less',3.0]];
 T.speed=(c,bt)=>{
   bgd(c);
-  kt(c,'Faster. Every mode.',W/2,230,bt,.1,{size:96,w:700,al:'center',acc:[0]});
-  const cols=7, w=232, h=150, gx=22, gy=26, x0=(W-(cols*w+(cols-1)*gx))/2, y0=360;
-  SPEEDM.forEach((m,j)=>{ const x=x0+(j%cols)*(w+gx), y=y0+Math.floor(j/cols)*(h+gy); const tOn=1.0+j*.5, on=seg(bt,tOn-.05,tOn+.25), k=ease(bt,.3+j*.03,.5);
-    c.save(); c.globalAlpha*=k; rr(c,x,y,w,h,12); c.fillStyle=on>0?'#0f1a24':'#0b0e12'; c.fill(); c.strokeStyle=on>0?`rgba(92,168,219,${.35+.5*on})`:'rgba(255,255,255,.1)'; c.lineWidth=1.6; c.stroke();
-    c.save(); rr(c,x,y,w,h,12); c.clip();
-    if(on>0&&on<1){ c.globalCompositeOperation='lighter'; const sx=x-w+on*w*2.2; const g=c.createLinearGradient(sx-140,0,sx,0); g.addColorStop(0,'rgba(92,168,219,0)'); g.addColorStop(1,'rgba(160,215,250,.55)'); c.fillStyle=g; c.fillRect(sx-140,y,140,h); }
-    c.restore();
-    txt(c,m,x+22,y+62,{size:30,w:600,col:on>0?'#fff':'#8d97a1'});
-    if(on>0){ c.save(); c.globalAlpha*=on; for(let q=0;q<3;q++){ c.fillStyle=PAL.accent; c.beginPath(); const ax=x+26+q*16, ay=y+108; c.moveTo(ax,ay-9); c.lineTo(ax+9,ay); c.lineTo(ax,ay+9); c.closePath(); c.fill(); } txt(c,'faster',x+82,y+117,{size:24,w:500,col:PAL.accent}); c.restore(); }
-    c.restore(); });
-  kt(c,'Every receiver re-tuned for speed.',W/2,800,bt,1.2,{size:40,w:500,al:'center',col:'#e3e9ef',stagger:.05});
-  kt(c,'And the screen redraws only when something changes.',W/2,870,bt,2.2,{size:34,w:400,al:'center',col:'#aeb8c2',stagger:.04});
+  kt(c,'Less CPU. Same signal.',120,170,bt,.1,{size:84,w:700,acc:[0,1]});
+  txt(c,'Receiver load in CPU cores, decoding the same recording on the same machine',122,232,{size:26,w:400,col:C.dim,a:ease(bt,.5,.5)});
+  const bx=330, maxw=860, per=maxw/3.2;
+  SPEEDG.forEach(([mode,rows,gain,t0],g)=>{ const y0=330+g*290;
+    txt(c,mode,120,y0+20,{size:44,w:700,a:ease(bt,t0-.2,.4)});
+    rows.forEach(([v,cores],j)=>{ const y=y0+60+j*84, k=eio3(seg(bt,t0+j*.6,t0+j*.6+.9)), now=v==='0.2.0';
+      txt(c,v,120,y+44,{size:32,w:600,col:now?PAL.accent:'#8d97a1',mono:true,a:ease(bt,t0+j*.6-.1,.3)});
+      if(k>0){ rr(c,bx,y+4,Math.max(10,cores*per*k),56,8); c.fillStyle=now?PAL.accent:'#5d6670'; c.fill();
+        txt(c,(cores*k).toFixed(1)+((cores*k).toFixed(1)==='1.0'?' core':' cores'),bx+cores*per*k+22,y+44,{size:32,w:600,col:now?'#fff':'#aeb8c2',a:k}); } });
+    const gk=ease(bt,t0+1.6,.35); if(gk>0){ c.save(); c.globalAlpha*=gk; const s_=1+.25*(1-gk); c.translate(W-110,y0+150); c.scale(s_,s_); txt(c,gain,0,0,{size:104,w:800,al:'right',col:'#fff',ls:-3}); c.restore(); } });
+  kt(c,'Every receiver re-tuned. The screen redraws only when something changes.',120,960,bt,5.0,{size:34,w:500,col:'#d3dbe3',stagger:.03});
+  txt(c,'Measured with OnAir’s own load meter (dect2cli): DVB-T 8K 64-QAM recording, ISDB-T 13-segment test recording, 30 s each, two runs.',120,1040,{size:18,w:400,col:'#5f6872',a:ease(bt,1,.5)});
 };
 // ---------------------------------------------------------------- 9. and more
 const MORE=[['Updates itself.','Checks GitHub, installs on quit.','dvbt_lock',[1700,0,220,60]],['A test signal for every mode.','Try everything, no radio needed.','atv_video',[150,80,560,330]],['Click to tune.','Right on the spectrum or waterfall.','dvbt_hover',[900,500,700,280]],['On every screen.','Network tuner, HLS and AirPlay.','dvbt_tv',[440,170,1000,580]]];

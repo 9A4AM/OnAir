@@ -15,4 +15,13 @@ Captured from the current `main` build (`cap.sh` with `APP=/tmp/bmain/dect2`, `c
 ## v0.2.0 footage
 Captured from the 0.2.0 build with `cap3.sh` (Xvfb, mouse parked off-screen; `CLICKS` drives click-to-tune; capture-only `ONAIR_PACE`/`ONAIR_WFAUTO` slow the file and auto-range the waterfall). The new modes are shown from their built-in test signals (`--mode dvbs|dtmb|atv|drm|adsb|dmr|gnss`, `--dab`, `--atsc3`, `--isdbt`, `--fm`). Clips are extracted to `/tmp/clips3/<name>/f_%05d.jpg`; the 0.1.4 interface for the before/after wipe comes from `/tmp/clips2`.
 
-The speed scene names no figure. Measured with `dect2cli` on the same 30 s DVB-T 8K 64-QAM file, the receiver costs about 310 % of real time in 0.1.4 and about 100 % in both 0.1.5 and 0.2.0: the DVB-T speed-up shipped in 0.1.5. 0.2.0's speed work is in the other receivers and in the screen pacing, so the video says that and shows no 0.1.x-vs-0.2.0 number. `cpu.sh` measures the whole app under Xvfb.
+The speed scene shows receiver CPU from `dect2cli`'s own load meter (% of real time = CPU cores busy), each build made from its release tag, the same recording, the same machine, 30 s per run, two runs each:
+
+| mode | 0.1.0 | 0.1.5 | 0.2.0 |
+|---|---|---|---|
+| DVB-T (8K 64-QAM file) | 305–307 % | 100–103 % | 102–104 % |
+| ISDB-T (`isdbtgen` 13-segment test recording) | – | 172 % | 138–141 % |
+| ATSC (`--synthetic --atsc`) | 231–241 % | 255–256 % | 242–245 % |
+| DAB (`dabtool gen` recording) | – | 9 % | 8–9 % |
+
+The video shows DVB-T against 0.1.0 (3x less; the gain shipped in 0.1.5) and ISDB-T against 0.1.5 (19 % less), each bar labelled with its version. Whole-app CPU under Xvfb (software rendering) was the same for 0.1.5 and 0.2.0, so the screen pacing is described, not quantified.
