@@ -179,23 +179,48 @@ function prog3(c,t,tv=true){ if(tv) progInto(c,t,TV3); progInto(c,t,TH3); }
 function scrim(c,k,top=false){ if(k<=0) return; c.save(); c.globalAlpha*=k; const y0=top?0:H-340, g=c.createLinearGradient(0,y0,0,y0+340);
   const a=[[0,'rgba(5,7,10,0)'],[.55,'rgba(5,7,10,.78)'],[1,'rgba(5,7,10,.94)']]; (top?a.slice().reverse().map(([o,col])=>[1-o,col]):a).forEach(([o,col])=>g.addColorStop(o,col)); c.fillStyle=g; c.fillRect(0,y0,W,340); c.restore(); }
 
-// ---------------------------------------------------------------- 3. the new UI, live (real footage): lock, sidebar, readout, click to tune
 const LOCK_OFF=4.4;
+// ---------------------------------------------------------------- 3. the new UI: a guided camera tour of the live app in 3D
+// Each stop: the camera whips to one part of the real UI (frame coordinates), the rest dims, the part gets a glowing frame and a statement.
+const TEXF=mk();
+const TOUR=[  // t, camera {cx,cy: frame point; z: zoom; tx,ty: where that point sits on screen (from centre); ry,rx: tilt}, region, label
+  [0,  {cx:960,cy:540,z:.8,tx:0,ty:40,ry:.24,rx:.07}],
+  [1.4,{cx:960,cy:540,z:.9,tx:0,ty:10,ry:.06,rx:.02}],
+  [2.0,{cx:765,cy:95,z:1.85,tx:160,ty:-170,ry:-.12,rx:.04},[300,70,1230,118],['Found.','Locked.','Playing.'],'Mode, guard interval and code rate, detected on their own.','L'],
+  [4.0,{cx:148,cy:270,z:2.0,tx:-420,ty:0,ry:.16,rx:.02},[5,118,293,422],['Every mode,','one click away.'],'Fourteen modes in one list: TV, radio and data.','R'],
+  [6.0,{cx:870,cy:928,z:1.4,tx:-40,ty:-330,ry:-.1,rx:-.05},[312,838,1432,1018],['See the','signal itself.'],'Constellations, SNR, MER and error correction, live.','L'],
+  [8.0,{cx:940,cy:464,z:1.25,tx:330,ty:0,ry:-.14,rx:.02},[456,194,1424,734],['Watch it','right here.'],'Services, guide and picture in one window.','L'],
+  [10.0,{cx:1000,cy:645,z:1.45,tx:-170,ty:60,ry:.1,rx:.03},[338,500,1558,792],['Click the','waterfall.'],'Anywhere on the spectrum or the waterfall.','R'],
+  [12.35,{cx:178,cy:37,z:3.1,tx:-260,ty:-40,ry:.12,rx:.02},[58,14,296,60],['Tuned.'],'600.000 to 607.926 MHz, in one click.','R']];
+function tourCam(bt){ let i=0; while(i<TOUR.length-1&&bt>=TOUR[i+1][0]) i++; const s=TOUR[i], prev=TOUR[Math.max(0,i-1)];
+  const wd=i<=1?1.4:.42, k=i===0?0:eio3(seg(bt,s[0],s[0]+wd)); const a=i===1?TOUR[0][1]:prev[1], b=s[1]; const m={};
+  for(const key in b) m[key]=lerp(a[key],b[key],k); const hold=seg(bt,s[0]+wd,(TOUR[i+1]||[14])[0]); m.z*=1+.035*hold; return {cam:m,i,k,hold}; }
+function camScreen(m){ return {pos:[m.tx-(m.cx-W/2)*m.z, m.ty-(m.cy-H/2)*m.z, 0], w:W*m.z, h:H*m.z, rx:m.rx, ry:m.ry}; }
+function fp(o,x,y){ const q=rot3([(x/W-.5)*o.w,(y/H-.5)*o.h,0],o.rx,o.ry); return proj([q[0]+o.pos[0],q[1]+o.pos[1],q[2]+o.pos[2]]); }   // frame point -> screen
 T.newui=(c,bt)=>{
-  let src, cm;
-  if(bt<8.5){ const t=LOCK_OFF+bt; src=c3('dvbt_lock',t);
-    const K=[[0,{cx:960,cy:540,z:1}],[2.6,{cx:960,cy:540,z:1.02}],[3.6,{cx:150,cy:280,z:2.1}],[5.6,{cx:160,cy:300,z:2.0}],[6.4,{cx:300,cy:40,z:2.3}],[8.5,{cx:320,cy:45,z:2.2}]];
-    let i=0; while(i<K.length-2&&bt>K[i+1][0]) i++; cm=camMix(K[i][1],K[i+1][1],eio3(seg(bt,K[i][0],K[i+1][0])));
-    cm=foot(c,src,cm,cc=>{ if(t>=12) prog3(cc,t,false); });
-    const lk=seg(bt,2.0,2.8); if(lk>0&&lk<1){ const [x0,y0]=toScreen(cm,300,74), [x1,y1]=toScreen(cm,1580,118); c.save(); c.globalCompositeOperation='lighter'; const g=c.createLinearGradient(lerp(x0,x1,lk)-200,0,lerp(x0,x1,lk)+40,0); g.addColorStop(0,'rgba(120,200,255,0)'); g.addColorStop(.8,'rgba(120,200,255,.25)'); g.addColorStop(1,'rgba(120,200,255,0)'); c.fillStyle=g; c.fillRect(x0,y0,x1-x0,y1-y0); c.restore(); }
-    callout(c,bt,4.0,cm,90,240,'Every mode, one click away',260,40);
-    callout(c,bt,6.9,cm,170,36,'The frequency, big and clear',300,130);
-    scrim(c,ease(bt,.2,.6)*(1-ease(bt,3.4,.6))); slam(c,[['Meet the new ',0],['OnAir.',1]],110,H-110,bt,.5,{size:104,al:'left',t1:3.2});
-  } else { const t=bt-8.5+.9; src=c3('dvbt_hover',t); cm={cx:1050,cy:560,z:1.35};
-    cm=foot(c,src,cm,cc=>prog3(cc,t+20,false));
-    const HV=window.HOVERX||[]; const f=clamp(Math.floor(t*30),0,HV.length-1), hx=HV[f]; if(hx>0){ const mx=hx<1400?hx-18:1300; const [sx,sy]=toScreen(cm,mx,640); cursor(c,sx,sy,0); }
-    scrim(c,ease(bt,8.6,.6)); slam(c,[['Click the waterfall ',0],['to tune.',1]],110,H-110,bt,8.9,{size:96,al:'left'});
-  }
+  cine(c,bt+20,{glow:.14}); const {cam,i,k,hold}=tourCam(bt), st=TOUR[i];
+  const seg_=bt<8.22?0:bt<10.22?1:2, t=seg_===0?LOCK_OFF+bt:seg_===1?4+(bt-8):1.2+(bt-10), clip=['dvbt_lock','dvbt_tv','dvbt_click'][seg_];
+  tex(TEXF,x=>{ const im=img(c3(clip,t)); if(im) x.drawImage(im,0,0,W,H); if(clip==='dvbt_tv') prog3(x,t+20); else if(clip==='dvbt_lock'&&t>=12) prog3(x,t,false); });
+  const o=camScreen(cam); screen3(c,TEXF,{...o,nx:28,ny:16,glow:i<=1?.6:.25,sheen:i<=1?seg(bt,.2,1.8):null});
+  // spotlight on the stop's region
+  if(st[2]){ const [x0,y0,x1,y1]=st[2], sp=eio3(seg(bt,st[0]+.15,st[0]+.55))*(1-eio3(seg(bt,(TOUR[i+1]||[99])[0]-.12,(TOUR[i+1]||[99])[0])));
+    if(sp>0){ const q=[fp(o,x0-8,y0-8),fp(o,x1+8,y0-8),fp(o,x1+8,y1+8),fp(o,x0-8,y1+8)];
+      c.save(); c.globalAlpha*=sp; c.beginPath(); c.rect(0,0,W,H); q.forEach((p,j)=>j?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.closePath(); c.fillStyle='rgba(3,5,8,.72)'; c.fill('evenodd');
+      c.shadowColor='rgba(92,168,219,.9)'; c.shadowBlur=30; c.strokeStyle='rgba(150,210,250,.95)'; c.lineWidth=2.5; c.beginPath(); q.forEach((p,j)=>j?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.closePath(); c.stroke();
+      c.shadowBlur=0; c.lineWidth=5; c.strokeStyle='#fff'; q.forEach((p,j)=>{ const a=q[(j+3)%4], b=q[(j+1)%4], L=28; const da=Math.hypot(a[0]-p[0],a[1]-p[1]), db=Math.hypot(b[0]-p[0],b[1]-p[1]); c.beginPath(); c.moveTo(p[0]+(a[0]-p[0])/da*L,p[1]+(a[1]-p[1])/da*L); c.lineTo(p[0],p[1]); c.lineTo(p[0]+(b[0]-p[0])/db*L,p[1]+(b[1]-p[1])/db*L); c.stroke(); });
+      c.restore(); }
+    // the statement, on the side away from the region
+    const L=st[3], left=st[5]==='L', x=left?110:W-110, al=left?'left':'right', out=(TOUR[i+1]||[99])[0]-.15;
+    const gs=c.createLinearGradient(left?0:W,0,left?W*.55:W*.45,0); gs.addColorStop(0,`rgba(3,5,8,${.75*sp})`); gs.addColorStop(1,'rgba(3,5,8,0)'); c.fillStyle=gs; c.fillRect(0,0,W,H);
+    const y0_=H/2-(L.length-1)*62+40;
+    L.forEach((l,j)=>slam(c,[[l,j===L.length-1&&L.length>1?1:0]],x,y0_+j*124,bt,st[0]+.2+j*.14,{size:L.length>2?104:116,al,from:1.35,t1:out}));
+    txt(c,st[4],x,y0_+L.length*124-30,{size:30,w:400,al,col:'#c8d2dc',a:seg(bt,st[0]+.6,st[0]+.9)*(1-seg(bt,out,out+.2))}); }
+  // the cursor and the click (frame 96 of the click clip = bt 12.0, at frame point 1180,640)
+  if(seg_===2){ const ct=bt-10, mx=lerp(760,1180,eio3(seg(ct,.3,1.7))), my=lerp(700,640,eio3(seg(ct,.3,1.7))), [sx,sy]=fp(o,mx,my);
+    const r=seg(ct,2.0,2.6); if(r>0&&r<1){ c.save(); c.strokeStyle=`rgba(160,215,250,${1-r})`; c.lineWidth=3; for(const d of [0,.25]){ const rr_=clamp(r-d)*90; if(rr_>0){ c.beginPath(); c.arc(sx,sy,rr_,0,7); c.stroke(); } } c.restore(); }
+    if(ct<2.5) cursor(c,sx,sy,ct>1.95&&ct<2.1?1:0); }
+  if(i<=1) slam(c,[['Meet the new ',0],['OnAir.',1]],W/2,H-90,bt,.5,{size:104,t1:1.8});
+  const f=i>=2?seg(bt,st[0],st[0]+.12):1; if(f<1){ c.fillStyle=`rgba(200,230,255,${.12*(1-f)})`; c.fillRect(0,0,W,H); }
 };
 // ---------------------------------------------------------------- 4. from 3 standards to 14 modes, then the montage
 const MONT=[['DVB-T2 / DVB-T','Europe, Asia, Africa','dvbt_tv',{cx:940,cy:470,z:1.55}],['ATSC 3.0','NextGen TV','atsc3_tv',{cx:900,cy:430,z:1.5}],['ISDB-T','Japan, Brazil','isdbt_tv',{cx:900,cy:430,z:1.5}],
@@ -320,7 +345,7 @@ function slam(c,s,x,y,bt,t0,o={}){ const d=o.d??.26, k=seg(bt,t0-d*.6,t0+d*.4); 
   const e=1-Math.pow(1-k,3), sc=lerp(o.from??1.5,1,e)*(1+.06*out); const size=o.size||150;
   c.save(); c.globalAlpha*=clamp(k*2.5)*(1-out); c.translate(x,y); c.scale(sc,sc); if(k<1||out>0) c.filter=`blur(${((1-e)*16+out*10).toFixed(1)}px)`;
   if(o.glow){ c.shadowColor='rgba(92,168,219,.6)'; c.shadowBlur=50; }
-  if(Array.isArray(s)){ c.font=`${o.w||800} ${size}px Inter`; c.letterSpacing=(-size*.035)+'px'; const ws=s.map(p=>c.measureText(p[0]).width), tot=ws.reduce((a,b)=>a+b,0); let xx=o.al==='left'?0:-tot/2;
+  if(Array.isArray(s)){ c.font=`${o.w||800} ${size}px Inter`; c.letterSpacing=(-size*.035)+'px'; const ws=s.map(p=>c.measureText(p[0]).width), tot=ws.reduce((a,b)=>a+b,0); let xx=o.al==='left'?0:o.al==='right'?-tot:-tot/2;
     s.forEach((p,i)=>{ txt(c,p[0],xx,0,{size,w:o.w||800,col:p[1]?PAL.accent:(o.col||'#fff'),ls:-size*.035}); xx+=ws[i]; }); }
   else txt(c,s,0,0,{size,w:o.w||800,al:o.al||'center',col:o.col||'#fff',ls:-size*.035});
   c.restore(); }
@@ -449,7 +474,7 @@ const bufA=mk(), bufB=mk(), ca=bufA.getContext('2d'), cb=bufB.getContext('2d');
 function sceneAt(c,s,t){ c.clearRect(0,0,W,H); const bt=t-s.start; CURBT=bt; CURT=t; c.save(); T[s[0]](c,bt); c.restore(); }
 const MB=new Set(['newui','spot']);   // camera moves get a short shutter (3 sub-frames)
 const mbA=mk(), mbx=mbA.getContext('2d');
-const SLOT={spot:bt=>bt<SPS[1]?0:bt<SPS[2]?1:2, newui:bt=>bt<8.5?0:1};   // no blur across a hard cut inside a scene
+const SLOT={spot:bt=>bt<SPS[1]?0:bt<SPS[2]?1:2, newui:bt=>bt<8.22?0:bt<10.22?1:2};   // no blur across a hard cut inside a scene
 function sceneMB(c,s,t){ const sl=SLOT[s[0]]; if(!MB.has(s[0])||(sl&&sl(t-s.start)!==sl(t-s.start-2/90))){ sceneAt(c,s,t); return; } sceneAt(c,s,t); mbx.clearRect(0,0,W,H);
   for(const [dt,al] of [[-1/90,1/2],[-2/90,1/3]]){ sceneAt(mbx,s,t+dt); c.save(); c.globalAlpha=al; c.drawImage(mbA,0,0); c.restore(); } }
 function composite(t){
