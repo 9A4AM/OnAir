@@ -131,9 +131,9 @@ function caption(c,bt,t0,l1,l2,o={}){ const k=ease(bt,t0,1.0)*(o.t1!=null?1-ease
   c.save(); c.globalAlpha*=k;
   if(top){ const g=c.createLinearGradient(0,0,0,360); g.addColorStop(0,'rgba(5,7,10,.88)'); g.addColorStop(.6,'rgba(5,7,10,.55)'); g.addColorStop(1,'rgba(5,7,10,0)'); c.fillStyle=g; c.fillRect(0,0,W,360); }
   else { const g=c.createLinearGradient(0,H-380,0,H); g.addColorStop(0,'rgba(5,7,10,0)'); g.addColorStop(.5,'rgba(5,7,10,.72)'); g.addColorStop(1,'rgba(5,7,10,.92)'); c.fillStyle=g; c.fillRect(0,H-380,W,380); }
-  const y=top?150:H-150, x=o.x??110;
+  const y=top?170:H-170, x=o.x??110;
   c.translate(0,(1-ease(bt,t0,1.0))*10);
-  txt(c,l1,x,y,{size:o.size??64,w:500,ls:-1.4}); if(l2) txt(c,l2,x+2,y+54,{size:29,w:300,col:'#c2ccd6',a:ease(bt,t0+.25,1.0)});
+  txt(c,l1,x,y,{size:o.size??64,w:700,ls:-(o.size??64)*.03}); if(l2) txt(c,l2,x+2,y+(o.size??64)*.3+42,{size:29,w:300,col:'#c2ccd6',a:ease(bt,t0+.25,1.0)});
   c.restore(); }
 // ---- callout: a dot on the footage, a hairline and a small label
 function callout(c,bt,t0,cm,fx,fy,label,dx,dy){ const k=ease(bt,t0,.8); if(k<=0) return; const [x,y]=toScreen(cm,fx,fy); const lx=x+dx, ly=y+dy;
@@ -179,40 +179,6 @@ function prog3(c,t,tv=true){ if(tv) progInto(c,t,TV3); progInto(c,t,TH3); }
 function scrim(c,k,top=false){ if(k<=0) return; c.save(); c.globalAlpha*=k; const y0=top?0:H-340, g=c.createLinearGradient(0,y0,0,y0+340);
   const a=[[0,'rgba(5,7,10,0)'],[.55,'rgba(5,7,10,.78)'],[1,'rgba(5,7,10,.94)']]; (top?a.slice().reverse().map(([o,col])=>[1-o,col]):a).forEach(([o,col])=>g.addColorStop(o,col)); c.fillStyle=g; c.fillRect(0,y0,W,340); c.restore(); }
 
-// ---------------------------------------------------------------- 1. title: the version rolls through every 0.1.x release to 0.2.0 on the first hit
-const ROLL=[[0,'0.1.0'],[1.0,'0.1.1'],[1.5,'0.1.2'],[2.0,'0.1.3'],[2.5,'0.1.4'],[3.0,'0.1.5'],[4.0,'0.2.0']];
-T.title=(c,bt)=>{
-  bgd(c); const out=1-ease(bt,9.85,.35); c.save(); c.globalAlpha*=out;
-  const sg=[{dat:'T',u:.5,w:.38,k:ease(bt,1.6,2.0)}];
-  c.save(); c.globalAlpha*=.5*ease(bt,1.2,2.2)*(1-.4*seg(bt,4,5)); spectrum(c,0,840,W,200,bt+3,sg,{n:500,lw:1.8,noFrame:true,grid:false,band:false}); c.restore();
-  let i=0; while(i<ROLL.length-1&&bt>=ROLL[i+1][0]) i++; const v=ROLL[i][1], since=bt-ROLL[i][0], big=v==='0.2.0';
-  if(!big){ // odometer: the old number leaves upwards, the next one arrives from below, inside a window
-    const shake=bt>3.0?Math.sin(bt*90)*3*seg(bt,3.0,4):0, yy=600, step=190, k=eio3(clamp(since/.24)), prev=i>0?ROLL[i-1][1]:null;
-    c.save(); c.translate(shake,0); c.beginPath(); c.rect(0,yy-150,W,195); c.clip(); c.globalAlpha*=ease(bt,.2,.6);
-    if(prev&&k<1) txt(c,prev,W/2,yy-k*step,{size:150,w:600,al:'center',col:'#6b7480',ls:-6});
-    txt(c,v,W/2,yy+(1-k)*step,{size:150,w:600,al:'center',col:'#7d8691',ls:-6}); c.restore();
-    txt(c,'OnAir',W/2,400,{size:44,w:600,al:'center',col:'#7d8691',a:ease(bt,.3,.6)});
-  } else {
-    const k=eio3(clamp(since/.3)), s_=lerp(1.35,1,k);
-    c.save(); c.translate(W/2,560); c.scale(s_,s_); c.shadowColor='rgba(92,168,219,.55)'; c.shadowBlur=60*Math.exp(-since*1.2)+20; txt(c,v,0,0,{size:250,w:700,al:'center',col:'#ffffff',ls:-10}); c.restore();
-    txt(c,'OnAir',W/2,255,{size:54,w:600,al:'center'});
-    c.save(); c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=40; c.drawImage(logo,W/2-55,70,110,110); c.restore();
-  }
-  kt(c,'The biggest update yet.',W/2,700,bt,5.5,{size:52,w:500,al:'center',acc:[1,2]});
-  ['New interface','14 modes','Native radios','Less CPU'].forEach((s,j)=>{ const kk=ease(bt,6.5+j*.5,.5); if(kk>0){ c.save(); c.globalAlpha*=kk; c.translate(0,(1-kk)*12); pill(c,s,W/2-570+j*380,800,{accent:j===0,size:26}); c.restore(); } });
-  c.restore();
-};
-// ---------------------------------------------------------------- 2. a new look: 0.1.4 wiped away by 0.2.0
-T.look=(c,bt)=>{
-  bgd(c);
-  c.save(); c.globalAlpha*=eio3(seg(bt,-.05,.25)); const z=lerp(.74,1.0,eio3(seg(bt,6,10))); const w=W*z, h=H*z, x=(W-w)/2, y=(H-h)/2+lerp(70,0,eio3(seg(bt,6,10)));
-  const wipe=eio3(seg(bt,2.0,3.4)), ex=x+w*wipe;
-  card(c,c3('dvbt_lock',4.4),[0,0,W,H],x,y,w,h,{r:lerp(14,0,seg(bt,8.5,10))});
-  if(wipe<1){ c.save(); c.beginPath(); c.rect(ex,y-2,x+w-ex+4,h+4); c.clip(); card(c,c2('overview',6+bt*.2),[0,0,W,H],x,y,w,h,{r:14,shadow:false}); c.restore(); }
-  if(wipe>0&&wipe<1){ c.save(); c.globalCompositeOperation='lighter'; const g=c.createLinearGradient(ex-120,0,ex+30,0); g.addColorStop(0,'rgba(120,200,255,0)'); g.addColorStop(.85,'rgba(170,220,255,.55)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(ex-120,y,150,h); c.fillStyle='rgba(255,255,255,.9)'; c.fillRect(ex-1.5,y,3,h); c.restore(); }
-  const lk=1-ease(bt,6.2,.5); if(lk>0){ c.save(); c.globalAlpha*=lk; const old=wipe<.5; pill(c,old?'0.1.x':'0.2.0',x+120,y-40,{accent:!old,size:26}); c.restore(); }
-  c.restore(); kt(c,'A whole new look.',W/2,110,bt,.3,{size:64,w:600,al:'center',acc:[2,3],t1:6.0});
-};
 // ---------------------------------------------------------------- 3. the new UI, live (real footage): lock, sidebar, readout, click to tune
 const LOCK_OFF=4.4;
 T.newui=(c,bt)=>{
@@ -224,11 +190,11 @@ T.newui=(c,bt)=>{
     const lk=seg(bt,2.0,2.8); if(lk>0&&lk<1){ const [x0,y0]=toScreen(cm,300,74), [x1,y1]=toScreen(cm,1580,118); c.save(); c.globalCompositeOperation='lighter'; const g=c.createLinearGradient(lerp(x0,x1,lk)-200,0,lerp(x0,x1,lk)+40,0); g.addColorStop(0,'rgba(120,200,255,0)'); g.addColorStop(.8,'rgba(120,200,255,.25)'); g.addColorStop(1,'rgba(120,200,255,0)'); c.fillStyle=g; c.fillRect(x0,y0,x1-x0,y1-y0); c.restore(); }
     callout(c,bt,4.0,cm,90,240,'Every mode, one click away',260,40);
     callout(c,bt,6.9,cm,170,36,'The frequency, big and clear',300,130);
-    scrim(c,ease(bt,.2,.6)*(1-ease(bt,3.4,.6))); kt(c,'Meet the new OnAir.',110,H-110,bt,.4,{size:64,w:600,t1:3.2});
+    scrim(c,ease(bt,.2,.6)*(1-ease(bt,3.4,.6))); slam(c,[['Meet the new ',0],['OnAir.',1]],110,H-110,bt,.5,{size:104,al:'left',t1:3.2});
   } else { const t=bt-8.5+.9; src=c3('dvbt_hover',t); cm={cx:1050,cy:560,z:1.35};
     cm=foot(c,src,cm,cc=>prog3(cc,t+20,false));
     const HV=window.HOVERX||[]; const f=clamp(Math.floor(t*30),0,HV.length-1), hx=HV[f]; if(hx>0){ const mx=hx<1400?hx-18:1300; const [sx,sy]=toScreen(cm,mx,640); cursor(c,sx,sy,0); }
-    scrim(c,ease(bt,8.6,.6)); kt(c,'Click the waterfall to tune.',110,H-110,bt,8.8,{size:58,w:600,acc:[1]});
+    scrim(c,ease(bt,8.6,.6)); slam(c,[['Click the waterfall ',0],['to tune.',1]],110,H-110,bt,8.9,{size:96,al:'left'});
   }
 };
 // ---------------------------------------------------------------- 4. from 3 standards to 14 modes, then the montage
@@ -239,50 +205,24 @@ const MONT=[['DVB-T2 / DVB-T','Europe, Asia, Africa','dvbt_tv',{cx:940,cy:470,z:
 const MSLOT=(()=>{ const s=[]; let t=4; for(let i=0;i<12;i++){ const d=i<4?1.0:.5; s.push([t,t+d]); t+=d; } return s; })();   // 4..12 s
 function montFrame(c,i,bt,cmOverride){ const [nm,sub,clip,cm0]=MONT[i]; const t=3+bt*.8+i*.3; const cm=cmOverride||{...cm0,z:cm0.z*(1+.03*(bt%1))};
   foot(c,c3(clip,t),cm,cc=>{ if(clip==='dvbt_tv') prog3(cc,t+30); }); }
-T.modes=(c,bt)=>{
-  if(bt<4){ bgd(c);
-    txt(c,'In 0.1.0',W/2,250,{size:34,w:500,al:'center',col:C.dim,a:ease(bt,.2,.5)*(1-ease(bt,2.15,.3))});
-    const n=bt<2?3:Math.min(14,3+Math.floor((bt-2)/.07)); const big=n===14;
-    c.save(); c.globalAlpha*=ease(bt,.2,.5); if(big){ c.shadowColor='rgba(92,168,219,.6)'; c.shadowBlur=50; } txt(c,String(n),W/2,560,{size:300,w:700,al:'center',col:big?'#fff':C.ink,ls:-10}); c.restore();
-    txt(c,bt<2?'standards':'modes',W/2,650,{size:44,w:400,al:'center',col:big?PAL.accent:C.dim,a:ease(bt,.4,.5)});
-    if(bt<2.4){ ['DVB-T2','DVB-T','ATSC'].forEach((s,j)=>chip(c,s,W/2-200+j*200,760,ease(bt,.6+j*.25,.4)*(1-ease(bt,2.0,.3)),{size:24,pad:40})); }
-    else { txt(c,'Now',W/2,250,{size:34,w:600,al:'center',col:PAL.accent,a:ease(bt,2.6,.4)}); kt(c,'TV. Radio. Satellite. Aircraft. Navigation.',W/2,770,bt,2.8,{size:44,w:500,al:'center',stagger:.1}); }
-    return; }
-  if(bt<12){ let i=0; while(i<11&&bt>=MSLOT[i+1][0]) i++; const [a,b]=MSLOT[i]; montFrame(c,i,bt);
-    scrim(c,.8); const kin=eio3(seg(bt,a,a+.18)); c.save(); c.translate((1-kin)*-40,0); label(c,MONT[i][0],MONT[i][1],90,H-120,kin); c.restore();
-    txt(c,String(i+1).padStart(2,'0')+' / 12',W-90,H-70,{size:22,w:600,mono:true,al:'right',col:'#c9d3dc'});
-    const f=seg(bt,a,a+.12); if(f<1){ c.fillStyle=`rgba(255,255,255,${.18*(1-f)})`; c.fillRect(0,0,W,H); }
-    return; }
-  // 12..14: everything flickers past on the eighth notes, under the count
-  const i=Math.floor((bt-12)*4)%12; montFrame(c,i,bt,{...MONT[i][3],z:MONT[i][3].z*lerp(1,1.2,seg(bt,12,14))});
-  c.fillStyle=`rgba(5,7,10,${.45+.2*seg(bt,12,14)})`; c.fillRect(0,0,W,H);
-  kt(c,'14 modes.',W/2,H/2+40,bt,12.0,{size:150,w:700,al:'center'});
-};
 // ---------------------------------------------------------------- 5. the wall: everything at once, cards fly in from depth
 function wallTile(c,i,x,y,w,h,bt){ const [nm,sub,clip,cm0]=MONT[i]; const t=4+bt*.8+i*.3; const sr=[cm0.cx-W/(2*cm0.z)*1.1,cm0.cy-H/(2*cm0.z)*1.1,W/cm0.z*1.1,H/cm0.z*1.1];
   card(c,c3(clip,t),sr,x,y,w,h,{after:clip==='dvbt_tv'?(cc=>{ const s=Math.max(w/sr[2],h/sr[3]); const ox=x+(w-sr[2]*s)/2-sr[0]*s, oy=y+(h-sr[3]*s)/2-sr[1]*s; progInto(cc,t+30,[ox+TV3[0]*s,oy+TV3[1]*s,TV3[2]*s,TV3[3]*s]); }):null});
   txt(c,nm,x+16,y+h-16,{size:22,w:600}); }
-T.wall=(c,bt)=>{
-  bgd(c);
-  const cols=4, w=410, h=231, gx=26, gy=26, x0=(W-(cols*w+(cols-1)*gx))/2, y0=150;
-  for(let i=0;i<12;i++){ const k=eoBack(clamp((bt+.3-i*.03)/.5)); if(k<=0) continue; const x=x0+(i%cols)*(w+gx), y=y0+Math.floor(i/cols)*(h+gy);
-    c.save(); c.globalAlpha*=clamp(k); const s=lerp(1.5,1,clamp(k)); c.translate(x+w/2,y+h/2); c.scale(s,s); c.rotate((1-clamp(k))*(i%2?.06:-.06)); c.translate(-(x+w/2),-(y+h/2)); wallTile(c,i,x,y,w,h,bt); c.restore(); }
-  kt(c,'One app. Every signal.',W/2,1000,bt,.6,{size:56,w:600,al:'center',acc:[2,3]});
-};
 // ---------------------------------------------------------------- 6. spotlights: analog TV, aircraft, satellites
 const SPOT=[['atv_video',{cx:370,cy:250,z:2.6},{cx:390,cy:260,z:2.3},'Analog TV is back.','PAL, SECAM and NTSC, in colour.'],['adsb_air',{cx:700,cy:250,z:2.0},{cx:740,cy:270,z:1.8},'Aircraft overhead.','ADS-B, live on a map.'],['gnss_sky',{cx:520,cy:690,z:2.0},{cx:470,cy:720,z:2.2},'Satellites, tracked.','GPS, GLONASS and BeiDou.']];
 const SPS=[0,3.5,7,10];
 T.spot=(c,bt)=>{ const i=bt<SPS[1]?0:bt<SPS[2]?1:2, a=SPS[i], b=SPS[i+1]; const [clip,z0,z1,h1,h2]=SPOT[i];
   const cm=camMix(z0,z1,eio3(seg(bt,a,b))); foot(c,c3(clip,(clip==='gnss_sky'?6:3)+(bt-a)),cm);
   const f=seg(bt,a,a+.12); if(f<1){ c.fillStyle=`rgba(255,255,255,${.2*(1-f)})`; c.fillRect(0,0,W,H); }
-  caption(c,bt-a,.2,h1,h2,{top:clip==='gnss_sky'});
+  caption(c,bt-a,.2,h1,h2,{top:clip==='gnss_sky',size:100});
 };
 // ---------------------------------------------------------------- 7. native radios: the old way during the build, the new list slams in on the hit (bt 4)
 const NATIVE=['HackRF One / Pro','RTL-SDR','Airspy','BladeRF','LimeSDR','PlutoSDR','USRP'];
 T.radios=(c,bt)=>{
-  bgd(c);
-  kt(c,'Radios in 0.1.x',120,150,bt,.1,{size:66,w:600,t1:3.6,col:'#9aa4ae'});
-  kt(c,'Native radios.',120,150,bt,3.95,{size:66,w:700,stagger:.05});
+  cine(c,bt+64);
+  kt(c,'Radios in 0.1.x',120,170,bt,.1,{size:96,w:700,t1:3.6,col:'#9aa4ae'});
+  slam(c,[['Native ',1],['radios.',0]],120,170,bt,4.0,{size:112,al:'left',glow:true});
   // then: centred and big during the build, pushed aside and dimmed on the hit
   const mv=eio3(seg(bt,3.9,4.3)), sc=lerp(1,.72,mv), cx=lerp(W/2,90+380,mv), cy=lerp(590,600,mv);
   c.save(); c.globalAlpha*=ease(bt,.2,.5)*lerp(1,.55,mv); c.translate(cx,cy); c.scale(sc,sc); c.translate(-W/2,-590);
@@ -300,8 +240,8 @@ T.radios=(c,bt)=>{
 // DVB-T 8K 64-QAM file: 0.1.0 305-307 %, 0.2.0 102-104 %. ISDB-T test recording: 0.1.5 172 %, 0.2.0 138-141 %. (% of real time = CPU cores busy.)
 const SPEEDG=[['DVB-T',[['0.1.0',3.06],['0.2.0',1.03]],'3× less',.8],['ISDB-T',[['0.1.5',1.72],['0.2.0',1.40]],'19% less',3.0]];
 T.speed=(c,bt)=>{
-  bgd(c);
-  kt(c,'Less CPU. Same signal.',120,170,bt,.1,{size:84,w:700,acc:[0,1]});
+  cine(c,bt+76,{glow:.1});
+  slam(c,[['Less CPU. ',1],['Same signal.',0]],120,170,bt,.2,{size:96,al:'left'});
   txt(c,'Receiver load in CPU cores, decoding the same recording on the same machine',122,232,{size:26,w:400,col:C.dim,a:ease(bt,.5,.5)});
   const bx=330, maxw=860, per=maxw/3.2;
   SPEEDG.forEach(([mode,rows,gain,t0],g)=>{ const y0=330+g*290;
@@ -310,19 +250,9 @@ T.speed=(c,bt)=>{
       txt(c,v,120,y+44,{size:32,w:600,col:now?PAL.accent:'#8d97a1',mono:true,a:ease(bt,t0+j*.6-.1,.3)});
       if(k>0){ rr(c,bx,y+4,Math.max(10,cores*per*k),56,8); c.fillStyle=now?PAL.accent:'#5d6670'; c.fill();
         txt(c,(cores*k).toFixed(1)+((cores*k).toFixed(1)==='1.0'?' core':' cores'),bx+cores*per*k+22,y+44,{size:32,w:600,col:now?'#fff':'#aeb8c2',a:k}); } });
-    const gk=ease(bt,t0+1.6,.35); if(gk>0){ c.save(); c.globalAlpha*=gk; const s_=1+.25*(1-gk); c.translate(W-110,y0+150); c.scale(s_,s_); txt(c,gain,0,0,{size:104,w:800,al:'right',col:'#fff',ls:-3}); c.restore(); } });
+    const gk=ease(bt,t0+1.6,.35); if(gk>0){ c.save(); c.globalAlpha*=gk; const s_=1+.25*(1-gk); c.translate(W-110,y0+150); c.scale(s_,s_); c.shadowColor='rgba(92,168,219,.6)'; c.shadowBlur=40*gk; txt(c,gain,0,0,{size:124,w:800,al:'right',col:'#fff',ls:-4}); c.restore(); } });
   kt(c,'Every receiver re-tuned. The screen redraws only when something changes.',120,960,bt,5.0,{size:34,w:500,col:'#d3dbe3',stagger:.03});
   txt(c,'Measured with OnAir’s own load meter (dect2cli): DVB-T 8K 64-QAM recording, ISDB-T 13-segment test recording, 30 s each, two runs.',120,1040,{size:18,w:400,col:'#5f6872',a:ease(bt,1,.5)});
-};
-// ---------------------------------------------------------------- 9. and more
-const MORE=[['Updates itself.','Checks GitHub, installs on quit.','dvbt_lock',[1700,0,220,60]],['A test signal for every mode.','Try everything, no radio needed.','atv_video',[150,80,560,330]],['Click to tune.','Right on the spectrum or waterfall.','dvbt_hover',[900,500,700,280]],['On every screen.','Network tuner, HLS and AirPlay.','dvbt_tv',[440,170,1000,580]]];
-T.more=(c,bt)=>{
-  bgd(c);
-  kt(c,'And so much more.',W/2,130,bt,-.35,{size:60,w:600,al:'center'});
-  MORE.forEach(([h1,h2,clip,sr],j)=>{ const k=eoBack(clamp((bt+.25-j*.5)/.45)); if(k<=0) return; const w=820, h=330, x=W/2-w-20+(j%2)*(w+40), y=200+Math.floor(j/2)*(h+120);
-    c.save(); c.globalAlpha*=clamp(k); const s=lerp(.85,1,clamp(k)); c.translate(x+w/2,y+h/2); c.scale(s,s); c.translate(-(x+w/2),-(y+h/2));
-    const t=6+bt*.5; card(c,c3(clip,clip==='dvbt_hover'?3.2:t),sr,x,y,w,h,{after:clip==='dvbt_tv'?(cc=>{ const sc=Math.max(w/sr[2],h/sr[3]); const ox=x+(w-sr[2]*sc)/2-sr[0]*sc, oy=y+(h-sr[3]*sc)/2-sr[1]*sc; progInto(cc,t+40,[ox+TV3[0]*sc,oy+TV3[1]*sc,TV3[2]*sc,TV3[3]*sc]); }):null});
-    txt(c,h1,x,y+h+44,{size:32,w:600}); txt(c,h2,x,y+h+78,{size:22,w:400,col:C.dim}); c.restore(); });
 };
 // ---------------------------------------------------------------- 10. native on macOS, Windows and Linux
 const OSES=[{name:'macOS',clip:'overview',ct:24},{name:'Windows',clip:'Player',ct:5},{name:'Linux',clip:'Guide',ct:5}];
@@ -350,39 +280,162 @@ function appWindow(c,os,src,x,y,w,progT){ const h=w*9/16, tb=os==='Linux'?46:os=
   else if(os==='Linux'){ txt(c,'OnAir',x+w/2,y+tb/2+6,{size:16,w:700,al:'center',col:'#eee'}); [0,1,2].forEach(i=>{ const cx=x+w-26-i*34; c.fillStyle='rgba(255,255,255,.1)'; c.beginPath(); c.arc(cx,y+tb/2,12,0,7); c.fill(); c.strokeStyle='#ddd'; c.lineWidth=1.6; c.beginPath(); if(i===0){ c.moveTo(cx-4,y+tb/2-4); c.lineTo(cx+4,y+tb/2+4); c.moveTo(cx+4,y+tb/2-4); c.lineTo(cx-4,y+tb/2+4); } else if(i===1){ c.rect(cx-4,y+tb/2-4,8,8); } else { c.moveTo(cx-4,y+tb/2+3); c.lineTo(cx+4,y+tb/2+3); } c.stroke(); }); }
   else { c.drawImage(logo,x+12,y+7,18,18); txt(c,'OnAir',x+38,y+21,{size:13,w:400,col:'#ddd'}); const gx=x+w; c.strokeStyle='#ddd'; c.lineWidth=1.2; c.beginPath(); c.moveTo(gx-138,y+16); c.lineTo(gx-128,y+16); c.rect(gx-88,y+11,10,10); c.moveTo(gx-38,y+11); c.lineTo(gx-28,y+21); c.moveTo(gx-28,y+11); c.lineTo(gx-38,y+21); c.stroke(); }
 }
+// ================================================================ v6: cinematic pass. App screens placed in 3D (perspective, depth of field,
+// glow), full-screen slam type on the beats, and more of the live app on screen. Timeline and music unchanged.
+const F3=2200;   // focal length (px): world z=0 maps 1:1 onto the frame
+function proj(p){ const s=F3/(F3+p[2]); return [W/2+p[0]*s, H/2+p[1]*s, s]; }
+function rot3(p,rx,ry,rz=0){ let [x,y,z]=p, c_=Math.cos(ry), s_=Math.sin(ry); [x,z]=[x*c_+z*s_,-x*s_+z*c_]; c_=Math.cos(rx); s_=Math.sin(rx); [y,z]=[y*c_-z*s_,y*s_+z*c_];
+  if(rz){ c_=Math.cos(rz); s_=Math.sin(rz); [x,y]=[x*c_-y*s_,x*s_+y*c_]; } return [x,y,z]; }
+// a flat screen in space: src (image or canvas) on a w x h rectangle centred at pos, turned by rx/ry/rz; drawn as a grid of affine tiles
+function screen3(c,src,o){ const pos=o.pos||[0,0,0], w=o.w||1600, h=o.h||w*9/16, rx=o.rx||0, ry=o.ry||0, rz=o.rz||0, nx=o.nx||24, ny=o.ny||14;
+  const P=(u,v)=>{ const q=rot3([(u-.5)*w,(v-.5)*h,0],rx,ry,rz); return proj([q[0]+pos[0],q[1]+pos[1],q[2]+pos[2]]); };
+  const cs=[P(0,0),P(1,0),P(1,1),P(0,1)]; const poly=()=>{ c.beginPath(); cs.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.closePath(); };
+  c.save(); c.globalAlpha*=(o.a??1);
+  c.save(); c.shadowColor=o.glow?`rgba(92,168,219,${.5*o.glow})`:'rgba(0,0,0,.7)'; c.shadowBlur=o.glow?110:80; c.shadowOffsetY=o.glow?0:34*cs[0][2]; poly(); c.fillStyle='#0a0b0d'; c.fill(); c.restore();
+  if(src){ const sw=src.naturalWidth||src.width, sh=src.naturalHeight||src.height, dw=sw/nx, dh=sh/ny; const m=c.getTransform();
+    c.save(); poly(); c.clip();
+    for(let j=0;j<ny;j++) for(let i=0;i<nx;i++){ const A=P(i/nx,j/ny), Bq=P((i+1)/nx,j/ny), Cq=P(i/nx,(j+1)/ny);
+      c.setTransform(m.a,m.b,m.c,m.d,m.e,m.f); c.transform((Bq[0]-A[0])/dw,(Bq[1]-A[1])/dw,(Cq[0]-A[0])/dh,(Cq[1]-A[1])/dh,A[0],A[1]);
+      const ow=Math.min(dw*1.04,sw-i*dw), oh=Math.min(dh*1.04,sh-j*dh); c.drawImage(src,i*dw,j*dh,ow,oh,0,0,ow,oh); }
+    c.setTransform(m); c.restore(); }
+  // light: the side turned away darkens, a soft sheen follows the angle
+  const sh_=Math.min(.55,Math.abs(Math.sin(ry))*.9+Math.abs(Math.sin(rx))*.4); if(sh_>.01){ const g=c.createLinearGradient(cs[0][0],0,cs[1][0],0); const dark=`rgba(0,0,0,${sh_})`, clear='rgba(0,0,0,0)';
+    g.addColorStop(0,ry>0?clear:dark); g.addColorStop(1,ry>0?dark:clear); poly(); c.fillStyle=g; c.fill(); }
+  if(o.sheen!=null){ const sx=lerp(cs[0][0],cs[1][0],o.sheen); c.save(); poly(); c.clip(); c.globalCompositeOperation='lighter'; const g=c.createLinearGradient(sx-260,0,sx+260,0); g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(.5,'rgba(190,225,255,.16)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=g; c.fillRect(0,0,W,H); c.restore(); }
+  poly(); c.strokeStyle=o.glow?`rgba(140,200,240,${.3+.4*o.glow})`:'rgba(255,255,255,.16)'; c.lineWidth=1.4; c.stroke();
+  c.restore(); return cs; }
+// depth of field: anything drawn by fn is blurred as one layer
+const SCR=mk(), scrx=SCR.getContext('2d');
+function blurred(c,px,fn){ if(px<.4){ fn(c); return; } scrx.setTransform(1,0,0,1,0,0); scrx.clearRect(0,0,W,H); fn(scrx); c.save(); c.filter=`blur(${px.toFixed(1)}px)`; c.drawImage(SCR,0,0); c.restore(); }
+// textures: footage frames with the programme drawn in, rendered into small canvases
+const TEXL=[0,1,2,3].map(()=>mk(1280,720)), TEXS=[...Array(14)].map(()=>mk(640,360));
+function tex(buf,fn){ const x=buf.getContext('2d'); x.setTransform(1,0,0,1,0,0); x.fillStyle='#0b0c0e'; x.fillRect(0,0,buf.width,buf.height); x.save(); x.scale(buf.width/W,buf.height/H); fn(x); x.restore(); return buf; }
+function texClip(buf,clip,t,cm){ return tex(buf,x=>{ if(cm) foot(x,c3(clip,t),cm,cc=>{ if(clip==='dvbt_tv') prog3(cc,t+30); }); else { const im=img(c3(clip,t)); if(im) x.drawImage(im,0,0,W,H); if(clip==='dvbt_tv') prog3(x,t+30); } }); }
+// background: near-black with a slow accent glow and out-of-focus specks
+function cine(c,bt,o={}){ bgd(c); const gx=W/2+Math.sin(bt*.2)*200, gy=o.gy??H*.62; const g=c.createRadialGradient(gx,gy,0,gx,gy,W*.62); g.addColorStop(0,`rgba(60,120,170,${o.glow??.16})`); g.addColorStop(1,'rgba(60,120,170,0)'); c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.save(); c.globalCompositeOperation='lighter'; for(let i=0;i<26;i++){ const r=18+hash(i*7.1)*70, x=((hash(i*3.3)*W+bt*(8+hash(i)*22)*(i%2?1:-1))%(W+200)+W+200)%(W+200)-100, y=hash(i*5.7)*H+Math.sin(bt*.3+i)*20;
+    const gg=c.createRadialGradient(x,y,0,x,y,r); gg.addColorStop(0,`rgba(120,180,230,${.035+.04*hash(i*9.1)})`); gg.addColorStop(1,'rgba(120,180,230,0)'); c.fillStyle=gg; c.fillRect(x-r,y-r,2*r,2*r); } c.restore(); }
+// slam type: arrives big and blurred, snaps into place on the beat
+function slam(c,s,x,y,bt,t0,o={}){ const d=o.d??.26, k=seg(bt,t0-d*.6,t0+d*.4); if(k<=0) return; const out=o.t1!=null?seg(bt,o.t1,o.t1+.22):0; if(out>=1) return;
+  const e=1-Math.pow(1-k,3), sc=lerp(o.from??1.5,1,e)*(1+.06*out); const size=o.size||150;
+  c.save(); c.globalAlpha*=clamp(k*2.5)*(1-out); c.translate(x,y); c.scale(sc,sc); if(k<1||out>0) c.filter=`blur(${((1-e)*16+out*10).toFixed(1)}px)`;
+  if(o.glow){ c.shadowColor='rgba(92,168,219,.6)'; c.shadowBlur=50; }
+  if(Array.isArray(s)){ c.font=`${o.w||800} ${size}px Inter`; c.letterSpacing=(-size*.035)+'px'; const ws=s.map(p=>c.measureText(p[0]).width), tot=ws.reduce((a,b)=>a+b,0); let xx=o.al==='left'?0:-tot/2;
+    s.forEach((p,i)=>{ txt(c,p[0],xx,0,{size,w:o.w||800,col:p[1]?PAL.accent:(o.col||'#fff'),ls:-size*.035}); xx+=ws[i]; }); }
+  else txt(c,s,0,0,{size,w:o.w||800,al:o.al||'center',col:o.col||'#fff',ls:-size*.035});
+  c.restore(); }
+const lerp3=(a,b,k)=>a.map((v,i)=>lerp(v,b[i],k));
+
+// ---------------------------------------------------------------- 1. title: odometer through 0.1.x, 0.2.0 slams in, the app rises behind, four statements
+const ROLL=[[0,'0.1.0'],[1.0,'0.1.1'],[1.5,'0.1.2'],[2.0,'0.1.3'],[2.5,'0.1.4'],[3.0,'0.1.5'],[4.0,'0.2.0']];
+T.title=(c,bt)=>{
+  cine(c,bt,{glow:.06+.14*seg(bt,4,5)}); const out=1-ease(bt,9.85,.35); c.save(); c.globalAlpha*=out;
+  if(bt>=4){ const k=eio3(seg(bt,4,6.5)); const t=bt-4;
+    blurred(c,lerp(14,7,k),x=>screen3(x,texClip(TEXL[0],'dvbt_tv',2+t),{pos:[lerp(0,60,k),lerp(900,260,k),lerp(1600,700,k)],w:1700,rx:lerp(.7,.32,k),ry:lerp(-.2,-.12,k),a:.75*k,glow:.6,nx:16,ny:9})); }
+  c.save(); c.globalAlpha*=.4*ease(bt,1.2,2.2)*(1-seg(bt,4,5)); spectrum(c,0,860,W,200,bt+3,[{dat:'T',u:.5,w:.38,k:ease(bt,1.6,2.0)}],{n:500,lw:1.8,noFrame:true,grid:false,band:false}); c.restore();
+  let i=0; while(i<ROLL.length-1&&bt>=ROLL[i+1][0]) i++; const v=ROLL[i][1], since=bt-ROLL[i][0];
+  if(bt<4){ const yy=640, step=280, k=eio3(clamp(since/.24)), prev=i>0?ROLL[i-1][1]:null, shake=bt>3?Math.sin(bt*90)*4*seg(bt,3,4):0;
+    c.save(); c.translate(shake,0); c.beginPath(); c.rect(0,yy-230,W,290); c.clip(); c.globalAlpha*=ease(bt,.2,.6);
+    if(prev&&k<1) txt(c,prev,W/2,yy-k*step,{size:240,w:700,al:'center',col:'#5d6670',ls:-10});
+    txt(c,v,W/2,yy+(1-k)*step,{size:240,w:700,al:'center',col:lerp(0,1,seg(bt,2.5,4))>.5?'#9aa4ae':'#6f7984',ls:-10}); c.restore();
+    txt(c,'OnAir',W/2,330,{size:52,w:600,al:'center',col:'#7d8691',a:ease(bt,.3,.6)});
+  } else { const m=eio3(seg(bt,5.6,6.2)), y=lerp(600,300,m), s_=lerp(1,.5,m);
+    c.save(); c.translate(W/2,y); c.scale(s_,s_); slam(c,'0.2.0',0,0,bt,4.0,{size:330,w:800,glow:true,from:1.8}); c.restore();
+    c.save(); c.globalAlpha*=1-m; c.shadowColor='rgba(0,0,0,.6)'; c.shadowBlur=40; c.drawImage(logo,W/2-60,150,120,120); txt(c,'OnAir',W/2,330,{size:56,w:600,al:'center'}); c.restore();
+    const S4=[[['New ',0],['interface.',1]],[['14 ',1],['modes.',0]],[['Native ',1],['radios.',0]],[['Less ',0],['CPU.',1]]];
+    S4.forEach((s,j)=>slam(c,s,W/2,640,bt,6+j,{size:150,t1:j<3?6.62+j:null}));
+  }
+  c.restore(); };
+
+// ---------------------------------------------------------------- 2. a new look: the 0.1.x screen swings away, 0.2.0 swings in, the camera flies into it
+T.look=(c,bt)=>{
+  cine(c,bt+10); const fin=eio3(seg(bt,6,10)), sw=eio3(seg(bt,2,3.2));
+  const base={pos:[0,60,200],w:1500,ry:-.05*seg(bt,0,2)};
+  if(sw<1){ screen3(c,img(c2('overview',6+bt*.2)),{pos:[lerp(0,-1100,sw),60,lerp(200,700,sw)],w:1500,ry:lerp(base.ry,-1.15,sw),a:1-sw*.8,nx:16,ny:9}); }
+  if(sw>0){ const pos=lerp3(lerp3([1100,60,700],[0,60,200],sw),[0,0,0],fin); screen3(c,img(c3('dvbt_lock',4.4)),{pos,w:lerp(1500,W,fin),h:lerp(1500*9/16,H,fin),ry:lerp(lerp(1.15,0,sw),0,fin)+(.06*Math.sin(bt*.5))*(1-fin)*(sw>=1?1:0),glow:(1-fin)*(sw<1?1:.4),sheen:sw<1?sw:null,nx:28,ny:16}); }
+  const pk=1-ease(bt,6,.5); if(pk>0){ c.save(); c.globalAlpha*=pk; pill(c,sw<.5?'0.1.x':'0.2.0',W/2,170+40,{accent:sw>=.5,size:30}); c.restore(); }
+  slam(c,[['A whole ',0],['new look.',1]],W/2,130,bt,.4,{size:110,t1:5.8});
+};
+// ---------------------------------------------------------------- 4. modes: the count, then a 3D carousel of the live receivers
+T.modes=(c,bt)=>{
+  if(bt<4){ cine(c,bt);
+    txt(c,'In 0.1.0',W/2,250,{size:46,w:500,al:'center',col:C.dim,a:ease(bt,.2,.5)*(1-ease(bt,2.15,.3))});
+    txt(c,'Now',W/2,250,{size:46,w:700,al:'center',col:PAL.accent,a:ease(bt,2.6,.4)});
+    const n=bt<2?3:Math.min(14,3+Math.floor((bt-2)/.05)), big=n===14, pulse=bt>=2&&!big?1+.04*((bt-2)/.05%1):1;
+    c.save(); c.globalAlpha*=ease(bt,.2,.5); c.translate(W/2,690); c.scale(pulse,pulse); if(big){ c.shadowColor='rgba(92,168,219,.7)'; c.shadowBlur=80; } txt(c,String(n),0,0,{size:460,w:800,al:'center',col:big?'#fff':'#c8d0d8',ls:-20}); c.restore();
+    txt(c,bt<2?'standards':'modes',W/2,800,{size:64,w:500,al:'center',col:big?PAL.accent:C.dim,a:ease(bt,.4,.5)});
+    if(bt<2.3) ['DVB-T2','DVB-T','ATSC'].forEach((s,j)=>chip(c,s,W/2-260+j*260,900,ease(bt,.6+j*.25,.4)*(1-ease(bt,2.0,.3)),{size:34,pad:50}));
+    else ['TV.','Radio.','Satellite.','Aircraft.','Navigation.'].forEach((s,j)=>slam(c,s,W/2-640+[0,190,410,690,980][j]+40,920,bt,2.7+j*.25,{size:56,w:700,al:'left',from:1.3}));
+    return; }
+  if(bt<12){ let i=0; while(i<11&&bt>=MSLOT[i+1][0]) i++; const [a,b]=MSLOT[i], p=seg(bt,a,b), [nm,sub,clip,cm0]=MONT[i];
+    cine(c,bt,{glow:.12});
+    c.save(); c.globalAlpha*=.10; txt(c,nm.toUpperCase(),W/2+lerp(260,-260,p),H/2+120,{size:300,w:900,al:'center',ls:-8}); c.restore();
+    const t=3+bt*.8+i*.3; screen3(c,texClip(TEXL[0],clip,t,{...cm0,z:cm0.z*.92}),{pos:[lerp(140,-140,p),-30,lerp(80,-40,p)],w:1500,ry:lerp(.2,-.2,p),rx:.05,glow:.5,sheen:p,nx:18,ny:10});
+    scrim(c,.85); slam(c,nm,110,H-110,bt,a+.02,{size:i<4?96:84,al:'left',from:1.25,d:.18}); txt(c,sub,114,H-56,{size:30,w:400,col:'#c2ccd6',a:seg(bt,a,a+.15)});
+    txt(c,String(i+1).padStart(2,'0')+' / 12',W-90,H-70,{size:26,w:600,mono:true,al:'right',col:'#c9d3dc'});
+    const f=seg(bt,a,a+.1); if(f<1){ c.fillStyle=`rgba(255,255,255,${.22*(1-f)})`; c.fillRect(0,0,W,H); }
+    return; }
+  const i=Math.floor((bt-12)*4)%12; montFrame(c,i,bt,{...MONT[i][3],z:MONT[i][3].z*lerp(1,1.2,seg(bt,12,14))});
+  c.fillStyle=`rgba(5,7,10,${.5+.2*seg(bt,12,14)})`; c.fillRect(0,0,W,H);
+  slam(c,[['14 ',1],['modes.',0]],W/2,H/2+70,bt,12.0,{size:230,glow:true});
+};
+// ---------------------------------------------------------------- 5. the wall: twelve live receivers on a plane in depth, the camera tracks across it
+function wall3(c,bt,o){ const cols=4, tw=o.tw||600, th=tw*9/16, g=o.gap||46, ry=o.ry, rx=o.rx, off=o.off, items=[];
+  for(let i=0;i<12;i++){ const gx=((i%cols)-(cols-1)/2)*(tw+g), gy=(Math.floor(i/cols)-1)*(th+g); const q=rot3([gx,gy,0],rx,ry); const fly=o.fly?o.fly(i):0;
+    items.push({i,pos:[q[0]+off[0],q[1]+off[1],q[2]+off[2]+fly*900],fly}); }
+  items.sort((a,b)=>b.pos[2]-a.pos[2]);
+  const buckets=new Map(); for(const it of items){ const bl=Math.round(Math.min(10,Math.abs(it.pos[2]-(o.focus??off[2]))/120)); if(!buckets.has(bl)) buckets.set(bl,[]); buckets.get(bl).push(it); }
+  [...buckets.keys()].sort((a,b)=>b-a).forEach(bl=>blurred(c,bl,x=>buckets.get(bl).forEach(it=>{ const [nm,sub,clip,cm0]=MONT[it.i]; const t=4+bt*.8+it.i*.3;
+    const cs=screen3(x,texClip(TEXS[it.i],clip,t,{...cm0,z:cm0.z*.95}),{pos:it.pos,w:tw,h:th,rx,ry,a:(o.a??1)*(1-it.fly),nx:8,ny:5,glow:o.glowAll?.35:0});
+    if(o.labels!==false){ x.save(); x.globalAlpha*=(1-it.fly)*(o.a??1); txt(x,nm,cs[3][0]+12,cs[3][1]-16,{size:Math.max(14,30*cs[3][2]),w:700}); x.restore(); } })));
+}
+T.wall=(c,bt)=>{
+  cine(c,bt+48,{glow:.18}); const k=bt/6;
+  wall3(c,bt,{ry:-.42,rx:.12,off:[lerp(380,-260,k),-20,lerp(900,620,k)],focus:lerp(900,620,k)-60,fly:i=>1-eio3(clamp((bt+.35-i*.03)/.55))});
+  scrim(c,1); slam(c,[['One app. ',0],['Every signal.',1]],W/2,H-90,bt,.6,{size:110});
+};
+// ---------------------------------------------------------------- 9. more: a live screen in 3D on the right, big statements on the left
+const MORE3=[['dvbt_hover',3,null,['Click','to tune.'],'Right on the spectrum or the waterfall.'],['atv_video',3,null,['A test signal','for every mode.'],'Try everything, no radio needed.'],
+  ['dvbt_tv',6,null,['On every','screen.'],'Network tuner, HLS and AirPlay.'],['dvbt_lock',22,{cx:1660,cy:150,z:2.6},['Updates','itself.'],'Checks GitHub, installs on quit.']];
+T.more=(c,bt)=>{
+  cine(c,bt+84,{gy:H*.5}); const i=clamp(Math.floor(bt/2.5),0,3), a=i*2.5, p=seg(bt,a,a+2.5); const [clip,t0,cm,lines,sub]=MORE3[i];
+  const inK=eio3(seg(bt,a-.3,a+.3)), outK=i<3?eio3(seg(bt,a+2.2,a+2.5)):0;
+  const t=t0+(bt-a)*(clip==='dvbt_hover'?.9:1);
+  screen3(c,texClip(TEXL[0],clip,t,cm),{pos:[lerp(1400,360,inK)+lerp(0,-1500,outK),20,lerp(300,120,p)],w:1350,ry:lerp(-.9,-.32,inK)+lerp(0,.6,outK)+.05*p,rx:.04,glow:.55,sheen:p,a:1-outK*.7,nx:20,ny:12});
+  if(clip==='dvbt_hover'){ /* the live tooltip moves in the footage itself */ }
+  txt(c,'AND MORE',110,300,{size:26,w:700,col:PAL.accent,ls:6,a:1-outK});
+  lines.forEach((l,j)=>slam(c,l,110,420+j*130,bt,a+.1+j*.12,{size:118,al:'left',from:1.3,t1:i<3?a+2.25:null}));
+  txt(c,sub,114,420+lines.length*130+10,{size:32,w:400,col:'#c2ccd6',a:seg(bt,a+.5,a+.8)*(1-outK)});
+};
+// ---------------------------------------------------------------- 10. platforms: three desktops in an arc, the camera pushes in
+const OSB=[0,1,2].map(()=>mk(1280,720));
 T.platforms=(c,bt)=>{
-  c.fillStyle='#000'; c.fillRect(0,0,W,H); bgd(c);
-  const tw=580, th=326, gap=40, x0=W/2-(3*tw+2*gap)/2, y0=380; const zz=lerp(1,1.06,seg(bt,0,8)); c.save(); c.translate(W/2,y0+th/2); c.scale(zz,zz); c.translate(-W/2,-(y0+th/2));
-  const OS3=[['macOS','dvbt_lock',20],['Windows','atv_video',5],['Linux','adsb_air',5]];
-  OS3.forEach(([os,clip,ct],i)=>{ const k=eoBack(clamp((bt-.2-i*.25)/.5)); if(k<=0) return; const fx=x0+i*(tw+gap), fy=y0;
-    c.save(); c.globalAlpha*=clamp(k); c.translate(fx+tw/2,fy+th/2); c.scale(lerp(.8,1,clamp(k)),lerp(.8,1,clamp(k))); c.translate(-(fx+tw/2),-(fy+th/2));
-    rr(c,fx,fy,tw,th,12); c.save(); c.clip(); desktop(c,os,bt,fx,fy,tw,th); const sc=tw/W; appWindow(c,os,c3(clip,ct+bt*.5),fx+300*sc,fy+206*sc,1320*sc,bt+5+i*3); c.restore();
-    txt(c,os,fx+tw/2,fy+th+64,{size:40,w:600,al:'center'}); c.restore(); }); c.restore();
-  kt(c,'Native on macOS, Windows and Linux.',W/2,250,bt,.4,{size:68,w:600,al:'center'});
+  cine(c,bt+94); const push=eio3(seg(bt,4,8)), orb=Math.sin(bt*.4)*.06;
+  const OS3=[['macOS','dvbt_lock',20,-1],['Windows','atv_video',5,0],['Linux','adsb_air',5,1]];
+  OS3.forEach(([os,clip,ct,side],i)=>{ const k=eoBack(clamp((bt-.15-i*.2)/.5)); if(k<=0) return;
+    const b=tex(OSB[i],x=>{ desktop(x,os,bt,0,0,W,H); appWindow(x,os,c3(clip,ct+bt*.5),300,206,1320,bt+5+i*3); });
+    const cs=screen3(c,b,{pos:[side*700,lerp(60,30,push),lerp(side?360:0,side?300:-80,push)+(1-clamp(k))*600],w:660,ry:-side*.5+orb,rx:.04,a:clamp(k),nx:14,ny:8,glow:side?0:.4});
+    txt(c,os,(cs[2][0]+cs[3][0])/2,cs[3][1]+70,{size:44,w:700,al:'center',a:clamp(k)}); });
+  slam(c,[['Native on ',0],['macOS, Windows',1],[' and ',0],['Linux.',1]],W/2,220,bt,.4,{size:86});
 };
-// ---------------------------------------------------------------- 11. finale: all of it, at once
+// ---------------------------------------------------------------- 11. finale: the wall again, rushing at the camera, then the statement
 T.finale=(c,bt)=>{
-  bgd(c);
-  const cols=4, w=410, h=231, gx=26, gy=26, x0=(W-(cols*w+(cols-1)*gx))/2, y0=130; const dim=1-.6*ease(bt,1.6,.6);
-  for(let i=0;i<12;i++){ const k=clamp((bt+.3-i*.02)/.3); if(k<=0) continue; const x=x0+(i%cols)*(w+gx), y=y0+Math.floor(i/cols)*(h+gy);
-    c.save(); c.globalAlpha*=k*dim; const s=lerp(1.25,1,eio3(k)); c.translate(x+w/2,y+h/2); c.scale(s,s); c.translate(-(x+w/2),-(y+h/2)); wallTile(c,i,x,y,w,h,bt+6); c.restore(); }
-  const k=ease(bt,1.6,.8); if(k>0){ c.save(); c.globalAlpha=k; const g=c.createLinearGradient(0,330,0,760); g.addColorStop(0,'rgba(5,7,10,0)'); g.addColorStop(.5,'rgba(5,7,10,.82)'); g.addColorStop(1,'rgba(5,7,10,0)'); c.fillStyle=g; c.fillRect(0,330,W,430); c.restore(); }
-  kt(c,'All of it. At once.',W/2,560,bt,1.6,{size:116,w:700,al:'center',ls:-3});
+  cine(c,bt+102,{glow:.22}); const k=eio3(seg(bt,0,8)), dim=1-.55*ease(bt,1.6,.6);
+  c.save(); c.globalAlpha*=dim; wall3(c,bt+6,{ry:lerp(.3,-.12,k),rx:lerp(.25,.06,k),off:[lerp(-200,120,k),0,lerp(1300,150,k)],focus:lerp(1300,150,k),labels:false,glowAll:true,fly:i=>1-clamp((bt+.3-i*.015)/.25)}); c.restore();
+  const g0=ease(bt,1.6,.8); if(g0>0){ c.save(); c.globalAlpha=g0; const g=c.createLinearGradient(0,330,0,780); g.addColorStop(0,'rgba(5,7,10,0)'); g.addColorStop(.5,'rgba(5,7,10,.85)'); g.addColorStop(1,'rgba(5,7,10,0)'); c.fillStyle=g; c.fillRect(0,330,W,450); c.restore(); }
+  slam(c,'All of it.',W/2-290,580,bt,1.6,{size:150}); slam(c,[['At once.',1]],W/2+320,580,bt,2.1,{size:150,glow:true});
   const ps=['DVB-T2','DVB-T','ATSC','ATSC 3.0','ISDB-T','DVB-S2','DTMB','Analog TV','DAB+','FM','DRM','ADS-B','GNSS','DMR'];
-  let cx0=180; ps.forEach((s,i)=>{ c.font='400 21px Inter'; const ww=c.measureText(s).width+34; chip(c,s,cx0+ww/2,660,ease(bt,2.4+i*.08,.4),{size:21,pad:34}); cx0+=ww+10; });
+  let cx0=150; ps.forEach((s,i)=>{ c.font='500 24px Inter'; const ww=c.measureText(s).width+38; chip(c,s,cx0+ww/2,690,ease(bt,2.6+i*.08,.4),{size:24,pad:38,w:500}); cx0+=ww+10; });
 };
-// ---------------------------------------------------------------- 12. outro on the TV, final hit on the link
+// ---------------------------------------------------------------- 12. outro: the TV settles flat, the name, the link on the last hit
 T.outro=(c,bt)=>{
-  bgd(c);
-  const tw=1120, th=630, tx=W/2-tw/2, ty=90-14*ease(bt,5.6,.8);
-  c.save(); c.globalCompositeOperation='lighter'; const g=c.createRadialGradient(W/2,ty+th/2,200,W/2,ty+th/2,1000); g.addColorStop(0,'rgba(170,130,190,.20)'); g.addColorStop(1,'rgba(170,130,190,0)'); c.fillStyle=g; c.fillRect(0,0,W,H); c.restore();
-  c.save(); c.shadowColor='rgba(0,0,0,.7)'; c.shadowBlur=70; rr(c,tx-14,ty-14,tw+28,th+28,12); c.fillStyle='#08090b'; c.fill(); c.restore();
-  const im=img(progSrc(bt+14)); if(im) c.drawImage(im,tx,ty,tw,th);
-  const bb=ease(bt,.3,.5); if(bb>0){ c.save(); c.globalAlpha=bb; rr(c,tx+24,ty+24,300,46,6); c.fillStyle='rgba(8,12,18,.8)'; c.fill(); c.fillStyle='#4fb36a'; c.beginPath(); c.arc(tx+50,ty+47,6,0,7); c.fill(); txt(c,'LIVE · Channel One HD',tx+66,ty+55,{size:20,w:600}); c.restore(); }
-  fadeUp(c,bt,.5,()=>{ c.drawImage(logo,W/2-430,ty+th+56,92,92); txt(c,'OnAir '+VERSION,W/2-318,ty+th+130,{size:82,w:600,ls:-2.5}); },{dur:.8});
-  const k=ease(bt,1.5,.6); if(k>0){ c.save(); c.globalAlpha=k; pill(c,'Out now',W/2+330,ty+th+104,{accent:true,size:34}); c.restore(); }
+  cine(c,bt+110,{gy:H*.35,glow:.2}); const k=eio3(seg(bt,0,2.2)), lift=14*ease(bt,5.6,.8);
+  const tw=1120, th=630; screen3(c,img(progSrc(bt+14)),{pos:[0,-H/2+90+th/2-lift,lerp(260,0,k)],w:tw,h:th,rx:lerp(.22,0,k),ry:lerp(-.25,0,k),glow:.5,nx:16,ny:9,sheen:seg(bt,.2,2.4)});
+  const ty=90-lift; const bb=ease(bt,1.0,.5); if(bb>0){ const tx=W/2-tw/2; c.save(); c.globalAlpha=bb; rr(c,tx+24,ty+24,300,46,6); c.fillStyle='rgba(8,12,18,.8)'; c.fill(); c.fillStyle='#4fb36a'; c.beginPath(); c.arc(tx+50,ty+47,6,0,7); c.fill(); txt(c,'LIVE · Channel One HD',tx+66,ty+55,{size:20,w:600}); c.restore(); }
+  fadeUp(c,bt,.5,()=>{ c.drawImage(logo,W/2-430,ty+th+56,92,92); txt(c,'OnAir '+VERSION,W/2-318,ty+th+130,{size:82,w:700,ls:-2.5}); },{dur:.8});
+  const pk=ease(bt,1.5,.6); if(pk>0){ c.save(); c.globalAlpha=pk; pill(c,'Out now',W/2+330,ty+th+104,{accent:true,size:34}); c.restore(); }
   kt(c,'Free and open source. macOS, Windows and Linux.',W/2,ty+th+210,bt,2.5,{size:30,w:400,al:'center',col:'#c2ccd6',stagger:.04});
-  const gk=ease(bt,6.0,.35); if(gk>0){ c.save(); c.globalAlpha=gk; const s_=1+.12*(1-gk); c.translate(W/2,ty+th+300); c.scale(s_,s_); txt(c,'github.com/adswill/OnAir',0,0,{size:58,w:600,ls:-.6,col:'#8cc8ff',al:'center'}); c.restore(); }
+  slam(c,'github.com/adswill/OnAir',W/2,ty+th+300,bt,6.0,{size:60,w:700,col:'#8cc8ff',from:1.4,glow:true});
 };
 // ---------------------------------------------------------------- timeline (120 BPM: one bar = 2 s) and cue grid for music.py
 const B=[['title',0,10,null,0],['look',10,20,'cut',0],['newui',20,34,'cut',0],['modes',34,48,'dissolve',.4],['wall',48,54,'cut',0],['spot',54,64,'dissolve',.4],['radios',64,76,'dissolve',.4],['speed',76,84,'dissolve',.4],['more',84,94,'cut',0],['platforms',94,102,'dissolve',.4],['finale',102,110,'cut',0],['outro',110,122,'dissolve',.5]];
