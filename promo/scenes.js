@@ -264,7 +264,7 @@ T.wall=(c,bt)=>{
 };
 // ---------------------------------------------------------------- 6. spotlights: analog TV, aircraft, satellites
 const SPOT=[['atv_video',{cx:370,cy:250,z:2.6},{cx:390,cy:260,z:2.3},'Analog TV is back.','PAL, SECAM and NTSC, in colour.'],['adsb_air',{cx:700,cy:250,z:2.0},{cx:740,cy:270,z:1.8},'Aircraft overhead.','ADS-B, live on a map.'],['gnss_sky',{cx:620,cy:240,z:2.2},{cx:640,cy:250,z:2.0},'Satellites in the sky.','GPS, GLONASS and BeiDou.']];
-T.spot=(c,bt)=>{ const i=Math.min(2,Math.floor(bt/(10/3))), a=i*10/3; const [clip,z0,z1,h1,h2]=SPOT[i];
+T.spot=(c,bt)=>{ const i=clamp(Math.floor(bt/(10/3)),0,2), a=i*10/3; const [clip,z0,z1,h1,h2]=SPOT[i];
   const cm=camMix(z0,z1,eio3(seg(bt,a,a+10/3))); foot(c,c3(clip,3+(bt-a)),cm);
   const f=seg(bt,a,a+.12); if(f<1){ c.fillStyle=`rgba(255,255,255,${.2*(1-f)})`; c.fillRect(0,0,W,H); }
   caption(c,bt-a,.2,h1,h2);
