@@ -303,7 +303,8 @@ struct GnssSim::Impl {
             inavPut(w, 105, 20, tow);
         } else if (type >= 7 && type <= 10) {
             inavPut(w, 6, 4, 5);                  // IODa; the almanac fields are left zero (not simulated)
-            if (type == 10) {
+            if (type == 10 && !cfg.galGgto) { inavPut(w, 86, 16, 0xFFFF); inavPut(w, 102, 12, 0xFFF); inavPut(w, 114, 8, 0xFF); inavPut(w, 122, 6, 0x3F); }
+            else if (type == 10) {
                 inavPut(w, 86, 16, twos(qs(ggtoS, std::ldexp(1.0, -35), 16), 16));
                 inavPut(w, 102, 12, 0);
                 inavPut(w, 114, 8, (uint32_t)((tStart / 3600.0)) & 0xFF);
@@ -668,8 +669,9 @@ GnssSim::GnssSim(const GnssSimConfig& cfg, double sampleRate) : p_(std::make_uni
         const Impl::Geo g = p.geometry(i, p.tStart);
         s.azDeg = g.az; s.elDeg = g.el;
         s.transmitted = g.el >= cfg.maskDeg;
-        // Galileo: the E1-B data component carries half the E1 power (the pilot E1-C is not simulated); SBAS a little weaker
-        s.cn0 = cn0Of(g, s.sys == GnssGalileo ? 29600e3 - 6378137.0 : 35786e3) - (s.sys == GnssGalileo ? 3.0 : s.sys == GnssSbas ? 2.0 : 0.0);
+        // Galileo: the E1-B data component carries half the E1 power (the pilot E1-C is not simulated): E1 is specified 1.5 dB above GPS C/A at the
+        // ground (-157 against -158.5 dBW), so E1-B alone is 1.5 dB below it; SBAS a little weaker than GPS
+        s.cn0 = cn0Of(g, s.sys == GnssGalileo ? 29600e3 - 6378137.0 : 35786e3) - (s.sys == GnssGalileo ? 1.5 : s.sys == GnssSbas ? 2.0 : 0.0);
     }
 
     // broadcast parameters of the ionosphere and UTC: typical values (the integers of the fields)

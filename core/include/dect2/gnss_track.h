@@ -39,6 +39,10 @@ public:
     int sys = 0, prn = 0, fcn = 0;
     // Start tracking at band sample `idx` (the leading edge of the sample) where the code phase is `phase` chips, with this Doppler estimate.
     void start(const GnssSignalSpec& spec, const uint8_t* chips, int prn, double dopplerHz, int64_t idx, double phase);
+    // The code rate error the code loop starts with (chips per second on top of the carrier aiding), e.g. a sample clock error measured on other channels
+    void setCodeRateHint(double chipsPerSec) { dllInt_ = dllRate_ = chipsPerSec; }
+    // That error as the loop holds it now
+    double codeRateCorrection() const { return dllInt_; }
     // Process one code period if the band has the samples. Returns false when it has not.
     bool step(const GnssBand& band);
     int64_t position() const { return pos_; }          // the next band sample this channel needs
@@ -101,6 +105,8 @@ private:
     int syncMiss_ = 0;
     uint8_t evenBits_[120] = {};
     int64_t evenAt_ = -1;
+    int inavNoSync_ = 0, inavTry_ = 0;
+    double inavBase_ = 0;
     // code and carrier
     std::vector<float> chips_;
     double phi_ = 0;              // code phase in chips at the leading edge of sample pos_

@@ -4,6 +4,7 @@
 //   gnsstool run <seconds> [options]                        generator straight into the receiver (no file)
 // Generator options: --rate Hz (default 4e6)  --cn0 dBHz (zenith, default 44)  --cfo Hz  --sro ppm  --sats N  --cold (start 13 s into the frame)
 //   --seed N  --lat deg --lon deg --height m  --jammer  --dc X  --noise X (rms per component, default 0.14)
+//   --systems M (simulated systems, gnssSystemBit mask: 1 GPS, 8 Galileo, 16 QZSS, 32 SBAS; default 1)  --rxsys M (systems the receiver looks for, default all)
 // The simulated satellites are synthetic (see docs/modes/gnss.md): nothing here is a real signal.
 #include "dect2/gnss_rx.h"
 #include "dect2/gnss_sim.h"
@@ -21,13 +22,15 @@ struct Opt {
     double rate = 4e6, cn0 = 44, cfo = 0, sro = 0, lat = 25.2, lon = 55.36, height = 10, dc = 0, noise = 0.14, center = 1575.42, secs = 0;
     int sats = 0;
     unsigned seed = 1;
+    unsigned systems = 1;          // the simulated sky: gnssSystemBit mask (1 GPS, 8 Galileo, 16 QZSS, 32 SBAS)
+    unsigned rxSystems = 0;        // what the receiver looks for (0 = all it supports)
     bool cold = false, jammer = false, quiet = false;
     std::string format = "cs8";
 };
 
 static GnssSimConfig simConfig(const Opt& o) {
     GnssSimConfig c;
-    c.cn0Top = o.cn0; c.cfoHz = o.cfo; c.sroPpm = o.sro; c.maxSats = o.sats; c.warmStart = !o.cold; c.seed = o.seed;
+    c.cn0Top = o.cn0; c.cfoHz = o.cfo; c.sroPpm = o.sro; c.maxSats = o.sats; c.warmStart = !o.cold; c.seed = o.seed; c.systems = o.systems;
     c.latDeg = o.lat; c.lonDeg = o.lon; c.heightM = o.height; c.jammer = o.jammer; c.dcOffset = o.dc; c.noiseRms = o.noise;
     return c;
 }
@@ -49,6 +52,8 @@ static bool parseOpts(int argc, char** argv, int from, Opt& o) {
         else if (a == "--center" && next(v)) o.center = v;
         else if (a == "--secs" && next(v)) o.secs = v;
         else if (a == "--sats" && next(v)) o.sats = (int)v;
+        else if (a == "--systems" && next(v)) o.systems = (unsigned)v;
+        else if (a == "--rxsys" && next(v)) o.rxSystems = (unsigned)v;
         else if (a == "--seed" && next(v)) o.seed = (unsigned)v;
         else if (a == "--cold") o.cold = true;
         else if (a == "--jammer") o.jammer = true;
@@ -83,7 +88,7 @@ static void printFix(const GnssTelemetry& t) {
 static int cmdRun(const Opt& o, double secs, bool toFile, FILE* fo, bool cs8) {
     GnssSim sim(simConfig(o), o.rate);
     GnssReceiver rx;
-    if (!toFile) { rx.configure(o.rate); rx.setCenterMhz(o.center); rx.setLogCallback([](const std::string& s) { printf("    [log] %s\n", s.c_str()); }); }
+    if (!toFile) { rx.configure(o.rate); rx.setCenterMhz(o.center); if (o.rxSystems) rx.setSystems(o.rxSystems); rx.setLogCallback([](const std::string& s) { printf("    [log] %s\n", s.c_str()); }); }
     const size_t block = 65536;
     std::vector<cf32> buf(block);
     const size_t total = (size_t)(secs * o.rate);
@@ -141,6 +146,7 @@ static int cmdRx(const std::string& path, const Opt& o) {
     GnssReceiver rx;
     rx.configure(o.rate);
     rx.setCenterMhz(o.center);
+    if (o.rxSystems) rx.setSystems(o.rxSystems);
     rx.setLogCallback([](const std::string& s) { printf("    [log] %s\n", s.c_str()); });
     const size_t block = 65536;
     std::vector<cf32> buf(block);

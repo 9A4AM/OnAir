@@ -30,6 +30,7 @@ struct GnssAcqConfig {
                                  // (the first window; setPlan() moves it)
     double pfa = 1e-4;           // false alarm probability of one search of a satellite
     double rfHz = 1575.42e6;     // the carrier: the code drifts by frequency / rfHz against the samples
+    int offsets = 4;             // frequency offsets per FFT bin (4 or 2: a 4 ms code needs only half a bin of resolution)
     bool coherentPairs = true;   // add two code periods coherently (GPS: 20 periods a bit); false for a signal with a data symbol every period (Galileo E1-B)
     std::vector<int> prns;       // the satellites to search, in the order of the first round
     // the replica of the code of one satellite, `n` samples of one code period, as complex (real) samples; false when the satellite has none
@@ -67,6 +68,9 @@ public:
     int blocksNow() const { return blocks_; }
     void endRound() { if (state_ == 1) qPos_ = queue_.size(); }   // give up the round in progress: the next call takes a new segment
     static constexpr int kMaxBlocks = 64;
+    // A sample clock that does not follow the oscillator (measured on the satellites already tracked): the code runs this fraction faster against
+    // the samples than its Doppler says. The integration follows it (the narrow peak of a BOC code smears within 16 ms at 20 ppm otherwise).
+    void setCodeRateError(double frac) { codeRateFrac_ = frac; }
 private:
     void buildQueue(const std::function<bool(int)>& skip);
     void captureSegment(const GnssBand& band);
@@ -76,6 +80,8 @@ private:
     GnssAcqConfig cfg_;
     int N_ = 0, nBins_ = 0;
     double binHz_ = 1000.0;
+    int nOff_ = 4;
+    double codeRateFrac_ = 0;
     float threshold_ = 5.0f;
     // the plan: wanted, and in use (the window for the satellite being searched, the integration for the segment held)
     int wantLo_ = -8, wantHi_ = 7, wantBlocks_ = 16;

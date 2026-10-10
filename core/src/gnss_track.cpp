@@ -82,7 +82,7 @@ void GnssTracker::start(const GnssSignalSpec& sp, const uint8_t* chips, int prn_
     framesOk_ = framesBad_ = 0; badInRow_ = 0; framesSinceSync_ = 0;
     sym_.clear(); symBase_ = symCount_ = lastWindowAt_ = 0; pairOffset_ = -1; lastMsgSym_ = -1; symAcc_ = 0; symHalf_ = 0;
     pairAmp_[0] = pairAmp_[1] = 0; havePrevI_ = false; prevIsym_ = 0;
-    isym_.clear(); isymBase_ = 0; nextPart_ = -1; inavPol_ = 1; syncMiss_ = 0; evenAt_ = -1;
+    isym_.clear(); isymBase_ = 0; nextPart_ = -1; inavPol_ = 1; syncMiss_ = 0; evenAt_ = -1; inavNoSync_ = 0; inavTry_ = 0; inavBase_ = 0;
     events_.clear();
     epochT_.clear(); epochTFirst_ = 0;
     scatter_.clear(); cn0Hist_.clear(); lastHistEpoch_ = 0;
@@ -413,9 +413,28 @@ void GnssTracker::sbasLayer(float I) {
 // Galileo I/NAV on E1-B: one symbol per code period. A page part is 250 symbols that begin with the sync pattern 0101100000; found once twice
 // 250 symbols apart, the parts are decoded one by one (deinterleaving, Viterbi) and an even part and the odd part after it make a page with a CRC.
 void GnssTracker::inavLayer(float I) {
+    // symbols are numbered by their epoch: a gap (the lock lost for a while) starts the buffer again
+    if (isym_.empty() || isymBase_ + (int64_t)isym_.size() != (int64_t)ecount_) { isym_.clear(); isymBase_ = (int64_t)ecount_; nextPart_ = -1; evenAt_ = -1; }
     isym_.push_back(I);
     if (isym_.size() > 1000) { isym_.pop_front(); isymBase_++; }
     const int64_t last = isymBase_ + (int64_t)isym_.size() - 1;        // absolute number (= epoch count) of the newest symbol
+    if (nextPart_ < 0 && !frameSync_) {
+        // No sync pattern after 4 s of lock: a carrier locked half the epoch rate (125 Hz) or a multiple of it away turns the symbols over every
+        // epoch, which the Costas loop cannot see with a symbol in every epoch. Try the neighbouring lock points in turn: +1, -1, +2, -2 times 125 Hz.
+        if (++inavNoSync_ > 1000) {
+            static const int kTry[4] = {1, -1, 2, -2};
+            if (inavTry_ == 0) inavBase_ = fcar_;
+            const double half = 0.5 / spec.epochS;
+            if (inavTry_ < 4) {
+                pllF0_ = inavBase_ + kTry[inavTry_] * half;
+                fcar_ = pllF0_; pllInt_ = 0; lockIdx_ = 0;
+                inavTry_++;
+            } else { pllF0_ = inavBase_; fcar_ = pllF0_; pllInt_ = 0; inavTry_ = 0; }
+            inavNoSync_ = 0;
+            isym_.clear(); isymBase_ = (int64_t)ecount_ + 1;
+            return;
+        }
+    }
     if (nextPart_ < 0) {
         // two sync patterns 250 symbols apart, in the same polarity
         const int64_t s0 = last - 259;
@@ -430,7 +449,7 @@ void GnssTracker::inavLayer(float I) {
         };
         const int a = match(s0), b = match(s0 + 250);
         if (a == 0 || a != b) return;
-        inavPol_ = a; nextPart_ = s0; syncMiss_ = 0; evenAt_ = -1;
+        inavPol_ = a; nextPart_ = s0; syncMiss_ = 0; evenAt_ = -1; inavNoSync_ = 0; inavTry_ = 0;
         bitSync_ = true;
     }
     while (nextPart_ >= 0 && last >= nextPart_ + 249) {

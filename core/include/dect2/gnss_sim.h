@@ -29,6 +29,7 @@ struct GnssSimConfig {
     bool realAtmosphere = true;      // ionosphere and troposphere delays on (the receiver corrects them with the broadcast model, so a residual stays)
     unsigned seed = 1;               // the constellation and its parameters
     unsigned noiseSeed = 0;          // the noise (0 = the same as seed)
+    bool galGgto = true;             // Galileo word type 10 carries the GST-GPS offset (else all ones: not available)
 };
 
 struct GnssSimSat {

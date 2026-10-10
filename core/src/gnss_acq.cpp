@@ -48,10 +48,11 @@ void GnssAcq::init(const GnssAcqConfig& cfg) {
     cfg_ = cfg;
     N_ = 1 << cfg.fftLog2;
     binHz_ = cfg.fsOut / (double)N_;
+    nOff_ = cfg.offsets == 2 ? 2 : 4;
     wantLo_ = cfg.qMin; wantHi_ = cfg.qMax;
     wantBlocks_ = std::max(2, std::min(kMaxBlocks, cfg.blocks & ~1));
     qLo_ = wantLo_; qHi_ = wantHi_; blocks_ = wantBlocks_;
-    nBins_ = (qHi_ - qLo_ + 1) * 4;
+    nBins_ = (qHi_ - qLo_ + 1) * nOff_;
     thrBins_ = thrPairs_ = -1;
     startPrn();
     codeRe_.assign(cfg.prns.size(), {});
@@ -73,7 +74,7 @@ void GnssAcq::setPlan(double centerHz, double halfWidthHz, int blocks) {
 // The window for the next satellite, and the threshold for its size and the integration of the segment
 void GnssAcq::startPrn() {
     qLo_ = wantLo_; qHi_ = wantHi_;
-    nBins_ = (qHi_ - qLo_ + 1) * 4;
+    nBins_ = (qHi_ - qLo_ + 1) * nOff_;
     const int pairs = blocks_ / 2;
     if (nBins_ != thrBins_ || pairs != thrPairs_) {
         // cells searched: bins x code phases at chip resolution, and the noise mean estimated from the grid itself
@@ -112,11 +113,11 @@ void GnssAcq::captureSegment(const GnssBand& band) {
     const int blocks = blocks_;
     segStart_ = band.end() - (int64_t)blocks * N_;
     nextCapture_ = band.end();
-    data_.resize((size_t)4 * blocks);
+    data_.resize((size_t)nOff_ * blocks);
     const float w0 = -2.f * (float)M_PI / (float)cfg_.fsOut;
     std::vector<float> re(N_), im(N_);
-    for (int d = 0; d < 4; d++) {
-        const double delta = 0.25 * binHz_ * d;
+    for (int d = 0; d < nOff_; d++) {
+        const double delta = binHz_ / nOff_ * d;
         for (int k = 0; k < blocks; k++) {
             const cf32* x = band.at(segStart_ + (int64_t)k * N_);
             // multiplication by exp(-j 2 pi delta t), phase continuous over the whole segment (needed to add blocks coherently)
@@ -165,9 +166,9 @@ int GnssAcq::work(const GnssBand& band, int units, const std::function<bool(int)
             const int blocks = wantBlocks_;
             if (band.end() - nextCapture_ < (int64_t)blocks * N_ + idleGap_ && nextCapture_ != 0) return used;
             if (band.end() - band.base() < (int64_t)blocks * N_) return used;
-            if (units - used < 4 * blocks) return used;
+            if (units - used < nOff_ * blocks) return used;
             captureSegment(band);
-            used += 4 * blocks;
+            used += nOff_ * blocks;
             buildQueue(skip);
             startPrn();
             continue;
@@ -190,10 +191,10 @@ int GnssAcq::work(const GnssBand& band, int units, const std::function<bool(int)
         if (codeValid_[pi] == 2) { qPos_++; startPrn(); continue; }
         if (units - used < blocks && used > 0) return used;
         // one step: offset d and Doppler bin q of this satellite
-        const int d = curBin_ % 4, qi = curBin_ / 4, q = qLo_ + qi;
-        const double f = q * binHz_ + 0.25 * binHz_ * d;
+        const int d = curBin_ % nOff_, qi = curBin_ / nOff_, q = qLo_ + qi;
+        const double f = q * binHz_ + binHz_ / nOff_ * d;
         // the code start moves back this many samples a millisecond (the code runs faster with the frequency)
-        const double drift = (double)N_ * f / cfg_.rfHz;
+        const double drift = (double)N_ * (f / cfg_.rfHz + codeRateFrac_);
         float* P = curP_.data();
         std::memset(P, 0, (size_t)N_ * sizeof(float));
         const float* cr = codeRe_[pi].data();
@@ -241,7 +242,7 @@ bool GnssAcq::confirm(const GnssBand& band, int prn, double fd, int hitBlocks, G
     if (!codeFft(pi)) return false;
     const int64_t seg = band.end() - (int64_t)K2 * N_;
     const double dfs[3] = {-0.1 * binHz_, 0.0, 0.1 * binHz_};
-    const double drift = (double)N_ * fd / cfg_.rfHz;
+    const double drift = (double)N_ * (fd / cfg_.rfHz + codeRateFrac_);
     std::vector<std::vector<float>> P(3, std::vector<float>((size_t)N_, 0.f));
     std::vector<float> re(N_), im(N_), pRe(N_), pIm(N_);
     for (int d = 0; d < 3; d++) {
@@ -309,7 +310,7 @@ void GnssAcq::finishPrn(std::vector<GnssAcqHit>& hits) {
     const int per = N_ / 256;
     for (int i = 0; i < 256; i++) { float m = 0; for (int k = 0; k < per; k++) m = std::max(m, P[i * per + k]); lastCorr_[i] = m / std::max(best, 1e-30f); }
     lastPeakIdx_ = bN / per;
-    const double f0 = (qLo_ * binHz_) + 0.25 * binHz_ * bBin;
+    const double f0 = (qLo_ * binHz_) + binHz_ / nOff_ * bBin;
     lastDoppler_ = f0;
     if (ratio < threshold_) return;
     GnssAcqHit h;
@@ -325,7 +326,7 @@ void GnssAcq::finishPrn(std::vector<GnssAcqHit>& hits) {
         if (hasLeft_ && hasRight_) {
             const float fa = leftVal_, fb = best, fc = rightVal_;
             const float dd = fa - 2 * fb + fc;
-            if (std::fabs(dd) > 1e-20f) fd += 0.25 * binHz_ * std::max(-0.5f, std::min(0.5f, 0.5f * (fa - fc) / dd));
+            if (std::fabs(dd) > 1e-20f) fd += binHz_ / nOff_ * std::max(-0.5f, std::min(0.5f, 0.5f * (fa - fc) / dd));
         }
         h.dopplerHz = fd;
         lastDoppler_ = fd;

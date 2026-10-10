@@ -93,8 +93,11 @@ struct GnssFix {
     bool valid = false;
     double latDeg = 0, lonDeg = 0, heightM = 0;      // WGS-84, height above the ellipsoid
     double ecef[3] = {0, 0, 0};
-    double clockBiasM[GnssSystems] = {0, 0, 0, 0};   // the receiver clock error against each system's time, metres (0 when the system is not in the fix)
-    bool systemInFix[GnssSystems] = {false, false, false, false};
+    double clockBiasM[GnssSystems] = {};             // the receiver clock error against each system's time, metres (0 when the system is not in the fix);
+                                                     // QZSS shares the GPS clock. Galileo: its own unknown, or the GPS one with the broadcast GST-GPS offset applied
+    bool systemInFix[GnssSystems] = {};
+    bool ggtoApplied = false;                        // the Galileo pseudoranges were moved to GPS time with the broadcast offset (word type 10)
+    double ggtoNs = 0;                               // that offset, GST minus GPS time
     double clockDriftMps = 0;                        // frequency error of the receiver clock in metres per second (from the Doppler of the tracked satellites)
     bool timeValid = false;                          // the date and time below are known
     int year = 0, month = 0, day = 0, hour = 0, minute = 0;
