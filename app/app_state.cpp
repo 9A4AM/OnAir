@@ -221,11 +221,11 @@ void saveSampleRate(App& a, double hz) {
     plat::prefs().setD(k.c_str(), hz > 0 ? hz : 0);
     plat::prefs().flush();
 }
-// antenna power, saved per mode and per radio (prefs "bias.<mode id>.<radioKeyOf>"): only that same radio gets it back, never another one
+// antenna power, saved per radio (prefs "bias.<radioKeyOf>"): kept in every mode and after a restart, never given to another radio
 std::string biasContext(const App& a) {
     if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size() || !a.devices[a.devIdx].hasBiasTee) return "";
     const std::string rk = radioKeyOf(a.devices[a.devIdx]);
-    return rk.empty() ? "" : "bias." + rateModeId(a) + "." + rk;
+    return rk.empty() ? "" : "bias." + rk;   // per radio, in every mode: the antenna and its amplifier do not change with the mode
 }
 void loadBiasTee(App& a) {
     const std::string k = biasContext(a);
