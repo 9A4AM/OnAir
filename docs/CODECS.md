@@ -107,6 +107,17 @@ File names OnAir looks for: `mbe.dll`, `libmbe.dll` or `mbelib.dll` (Windows), `
 `libmbe.so`, `libmbe.so.1` or `libmbe.so.1.3` (Linux). Open D-STAR: the **?** next to the voice says `mbelib found: <path>`;
 **Look again** searches again without a restart.
 
+## AMBE+2 (NXDN voice) through mbelib
+
+NXDN voice (NXDN48 and NXDN96) uses AMBE+2 (the 3600x2450 variant), which is patented. Without a codec OnAir shows every call (unit
+IDs, talkgroups, call type, encryption), status and short data messages, the site information and the voice frame count, but plays
+no sound. If you install the open mbelib library (<https://github.com/szechyjs/mbelib>, ISC licence) yourself, OnAir loads it at run
+time and plays NXDN voice; encrypted calls stay silent. mbelib's own notice says that using it may need a patent licence; check the
+rules where you live first.
+
+It is the same library as for D-STAR: build and install it as described there (macOS, Linux, Windows), with the same file names. Open
+NXDN: the **?** next to the voice says `mbelib found: <path>`; **Look again** searches again without a restart.
+
 ## HDC (HD Radio sound)
 
 HD Radio sound uses HDC, a patented codec. OnAir shows the stations, the data and the pictures, but plays no sound. To hear HD Radio,
