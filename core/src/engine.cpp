@@ -1477,11 +1477,11 @@ void Engine::analysisLoop() {
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
                 }
-            } else if (activeStd_.load() == 36) {
-                HfdlTelemetry mt;
-                if (rxHfdl_.telemetry(mt, modeSeq_[29])) {
-                    modeSeq_[29] = mt.seq;
-                    t.standard = 36;
+            } else if (activeStd_.load() == 35) {
+                CwTelemetry mt;
+                if (rxCw_.telemetry(mt, modeSeq_[28])) {
+                    modeSeq_[28] = mt.seq;
+                    t.standard = 35;
                     t.seq = mt.seq;
                     t.state = mt.state;
                     t.cfoHz = mt.cfoHz;
