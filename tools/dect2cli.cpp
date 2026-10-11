@@ -149,6 +149,7 @@ int main(int argc, char** argv) {
     e.fm().setSilent(!listen);
     e.vor().setSilent(!listen);   // VOR / ILS: the voice only with --listen
     e.m17().setSilent(!listen);   // M17 voice only with --listen as well
+    e.cw().setSilent(!listen);    // CW sidetone only with --listen as well
     if (!wavPath.empty()) e.fm().setAudioTap([&wav](const float* l, const float* r, size_t n) {
         for (size_t i = 0; i < n; i++) { wav.push_back((int16_t)std::lround(std::max(-1.f, std::min(1.f, l[i])) * 32767)); wav.push_back((int16_t)std::lround(std::max(-1.f, std::min(1.f, r[i])) * 32767)); }
     });

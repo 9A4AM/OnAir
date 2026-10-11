@@ -227,8 +227,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         rxVor_.setSignalOffset(o);
         rxVor_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // VOR, localizer, glide slope or marker by the frequency
         rxM17_.setSignalOffset(o);
-        rxCell_.setSignalOffset(o);
-        rxCell_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // the cells' EARFCNs
+        rxCw_.setSignalOffset(o);
     }
     rxSonde_.configure(rate_);
     rxSonde_.setLogCallback([this](const std::string& s) { log(s); });
@@ -266,8 +265,8 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxVor_.setLogCallback([this](const std::string& s) { log(s); });
     rxM17_.configure(rate_);
     rxM17_.setLogCallback([this](const std::string& s) { log(s); });
-    rxCell_.configure(rate_);
-    rxCell_.setLogCallback([this](const std::string& s) { log(s); });
+    rxCw_.configure(rate_);
+    rxCw_.setLogCallback([this](const std::string& s) { log(s); });
     if (const ModeTuning* mt = modeTuning(stdMode_.load()))
         if (rate_.load() < mt->minSampleRate - 1) {
             char m[200];
@@ -471,7 +470,7 @@ void Engine::applyReset() {
     rxIsm_.reset();
     rxVor_.reset();
     rxM17_.reset();
-    rxCell_.reset();
+    rxCw_.reset();
     autoMark_ = nSamp_ / std::max(1.0, rate_.load()); lastLockSec_ = autoMark_;
     analyzer_.reset();
     {
@@ -514,7 +513,7 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
 // so idle searching costs one receiver, not two.
 void Engine::feedRx(const cf32* x, size_t n) {
     const int a = activeStd_.load();
-    if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else if (a == 33) rxCell_.feed(x, n); else rx_.feed(x, n);
+    if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else if (a == 35) rxCw_.feed(x, n); else rx_.feed(x, n);
 }
 
 void Engine::changeBandwidth(double mhz) {
@@ -590,7 +589,7 @@ void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
             case 29: rxIsm_.reset(); break;
             case 31: rxVor_.reset(); break;
             case 32: rxM17_.reset(); break;
-            case 33: rxCell_.reset(); break;
+            case 35: rxCw_.reset(); break;
             default: break;
             }
         }
@@ -1431,19 +1430,19 @@ void Engine::analysisLoop() {
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
                 }
-            } else if (activeStd_.load() == 33) {
-                CellTelemetry mt;
-                if (rxCell_.telemetry(mt, modeSeq_[26])) {
-                    modeSeq_[26] = mt.seq;
-                    t.standard = 33;
+            } else if (activeStd_.load() == 35) {
+                CwTelemetry mt;
+                if (rxCw_.telemetry(mt, modeSeq_[28])) {
+                    modeSeq_[28] = mt.seq;
+                    t.standard = 35;
                     t.seq = mt.seq;
                     t.state = mt.state;
                     t.cfoHz = mt.cfoHz;
                     t.dataValid = mt.dataValid;
                     t.dataSnrDb = mt.snrDb;
                     t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
-                    t.rateOk = rxCell_.ready();
-                    t.cell = std::move(mt);
+                    t.rateOk = rxCw_.ready();
+                    t.cw = std::move(mt);
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
                 }

@@ -95,6 +95,7 @@ These receivers are built from the published specifications and checked end to e
 | **DMR** | Digital two-way radio | Talkgroups, IDs and data (no voice) |
 | **ADS-B** | Aircraft transponders, 1090 MHz | Aircraft on a map, with altitude, speed and callsign |
 | **ACARS** | Aircraft data link, VHF | Messages, and positions on a map |
+| **CW** | Morse code on the HF bands | Every CW signal in a 14 kHz window at once: speed, SNR and text, callsigns highlighted |
 | **M17** | Open digital voice, 2 m / 70 cm | Callsigns, voice through your libcodec2, text messages, positions on a map |
 | **Airband** | AM voice, 118 - 137 MHz | Several 25 and 8.33 kHz channels at once: squelch, scan, priority, activity log |
 | **VDL Mode 2** | Aircraft data link, 136.7 - 137 MHz | Every VDL2 channel at once: ACARS, X.25 / CLNP, ADS-C, aircraft and ground stations, positions on a map |
