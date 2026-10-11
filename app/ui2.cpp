@@ -1,6 +1,7 @@
 // The new interface, in a plain developer-tool style: flat, dense and monochrome. A text list of modes with keyboard shortcuts on the left,
 // square bordered panes and hairlines instead of cards, one muted accent. It reuses every panel of the classic interface (main.cpp).
 #include "app.h"
+#include "imgui_internal.h"   // RenderArrow for the folding mode groups
 
 namespace {
 // set the waterfall range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor)
@@ -308,11 +309,41 @@ void modeList(App& a) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const bool running = a.engine.running();
     const ImVec2 first = ImGui::GetCursorScreenPos();
+    static char q[32] = "";
+    static bool open[kNumGroups] = {};   // every group starts folded; a search opens the groups that match
+    ImGui::SetNextItemWidth(-1);
+    ImGui::InputTextWithHint("##modeside", "search modes (FT8, LoRa, APRS...)", q, sizeof q);
+    if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) q[0] = 0;
+    const bool searching = q[0] != 0;
+    int shown = 0;
     for (int g = 0; g < kNumGroups; g++) {
-        ImGui::TextDisabled("%s", kGroupNames[g]);
+        int matches = 0;
+        const ModeDef* cur = nullptr;
+        for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g) {
+            if (modeMatches(kModes[i], q)) matches++;
+            if (modeSelected(a, kModes[i])) cur = &kModes[i];
+        }
+        if (searching && !matches) continue;
+        shown++;
+        // the group header: a fold arrow, the name, and the selected mode when the group is folded
+        const float hh = ImGui::GetFrameHeight() - 4 * gUi, hw = ImGui::GetContentRegionAvail().x;
+        ImGui::PushID(1000 + g);
+        if (ImGui::InvisibleButton("##grp", ImVec2(hw, hh)) && !searching) open[g] = !open[g];
+        ImGui::PopID();
+        const bool unfolded = searching || open[g];
+        const ImVec2 g0 = ImGui::GetItemRectMin();
+        if (ImGui::IsItemHovered()) dl->AddRectFilled(g0, ImVec2(g0.x + hw, g0.y + hh), IM_COL32(255, 255, 255, 10));
+        const float ty = g0.y + (hh - ImGui::GetTextLineHeight()) * 0.5f;
+        ImGui::RenderArrow(dl, ImVec2(g0.x + 2 * gUi, ty), u32(T.dim), unfolded ? ImGuiDir_Down : ImGuiDir_Right, 0.7f);
+        dl->AddText(ImVec2(g0.x + 18 * gUi, ty), u32(T.dim), kGroupNames[g]);
+        if (!unfolded && cur) {
+            const ImVec2 cs = ImGui::CalcTextSize(cur->name);
+            dl->AddText(ImVec2(g0.x + hw - cs.x - 6 * gUi, ty), u32(T.accent), cur->name);
+        }
+        if (!unfolded) continue;
         for (int i = 0; i < kNumModes; i++) {
             const ModeDef& m = kModes[i];
-            if (m.group != g) continue;
+            if (m.group != g || !modeMatches(m, q)) continue;
             const float h = ImGui::GetFrameHeight() - 2 * gUi, w = ImGui::GetContentRegionAvail().x;
             ImGui::PushID(i);
             const bool clicked = ImGui::InvisibleButton("##mode", ImVec2(w, h));
@@ -332,6 +363,7 @@ void modeList(App& a) {
             if (hov && running && !sel) ImGui::SetTooltip("Stop the receiver to switch mode");
         }
     }
+    if (!shown) ImGui::TextDisabled("no mode matches \"%s\"", q);
     a.tgMin[TgSwitch] = first; a.tgMax[TgSwitch] = ImVec2(first.x + ImGui::GetContentRegionAvail().x, ImGui::GetCursorScreenPos().y);
 }
 
