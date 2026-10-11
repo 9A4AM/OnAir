@@ -133,6 +133,9 @@ int effRegion(const App& a) {   // the selected plan, or the entry's first when 
     for (int i = 0; i < kNumPlans; i++) if (planFits(a, i)) return i;
     return 0;
 }
+// a node's or station's protocol (1 Meshtastic, 2 MeshCore, 3 LoRa APRS, 4 MeshCom) shown in this entry: a protocol entry shows only its own
+bool shows(const App& a, int proto) { const int m = subMask(a); return !m || (m & (proto == 1 ? 1 : proto == 2 ? 2 : proto == 3 ? 4 : 8)); }
+bool stationEntry(const App& a) { const int m = subMask(a); return m == 4 || m == 8; }   // LoRa APRS, MeshCom: stations, not nodes
 int effProtocols(const App& a) { const int m = subMask(a); return m ? m : S.protocols; }
 bool planCombo(App& a, const char* id, int& r, bool shortNames) {   // the band plans this entry can use
     bool ch = false;
@@ -174,9 +177,9 @@ void tick(App& a) {
 
 // ---------------------------------------------------------------- tables
 
-std::vector<const dect2::MeshNode*> sortedNodes(const dect2::MeshTelemetry& t) {
+std::vector<const dect2::MeshNode*> sortedNodes(const App& a) {
     std::vector<const dect2::MeshNode*> v;
-    for (const auto& n : t.nodes) v.push_back(&n);
+    for (const auto& n : a.rx.mesh.nodes) if (shows(a, n.protocol)) v.push_back(&n);
     std::sort(v.begin(), v.end(), [](const dect2::MeshNode* x, const dect2::MeshNode* y) { return x->lastHeard > y->lastHeard; });
     return v;
 }
@@ -203,7 +206,7 @@ void nodeTable(const App& a, bool compact) {
     }
     ImGui::TableHeadersRow();
     if (on) {
-        for (const dect2::MeshNode* n : sortedNodes(t)) {
+        for (const dect2::MeshNode* n : sortedNodes(a)) {
             ImGui::TableNextRow();
             const bool sel = S.sel == nodeKey(*n);
             ImGui::TableNextColumn();
@@ -232,7 +235,7 @@ void nodeTable(const App& a, bool compact) {
         }
     }
     ImGui::EndTable();
-    if (!on || t.nodes.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", !on ? "start the receiver to see nodes" : "no node heard yet: a Meshtastic node announces itself every few minutes"); ImGui::PopTextWrapPos(); }
+    if (!on || sortedNodes(a).empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", !on ? "start the receiver to see nodes" : subMask(a) == 2 ? "no node heard yet: a MeshCore node advertises itself now and then" : "no node heard yet: a Meshtastic node announces itself every few minutes"); ImGui::PopTextWrapPos(); }
 }
 
 void packetTable(const App& a) {
@@ -286,9 +289,39 @@ std::string symbolText(const dect2::PacketStation& s) {
     return b;
 }
 
-void aprsTable(const App& a) {
+std::vector<const dect2::MeshAprsStation*> sortedStations(const App& a) {
+    std::vector<const dect2::MeshAprsStation*> v;
+    for (const auto& x : a.rx.mesh.aprsStations) if (shows(a, x.protocol)) v.push_back(&x);
+    std::sort(v.begin(), v.end(), [](const dect2::MeshAprsStation* x, const dect2::MeshAprsStation* y) { return x->st.lastHeardSec > y->st.lastHeardSec; });
+    return v;
+}
+
+void aprsTable(const App& a, bool compact = false) {
     const dect2::MeshTelemetry& t = a.rx.mesh;
     const bool on = live(a);
+    const char* none = !on ? "start the receiver to see stations"
+                     : subMask(a) == 4 ? "no LoRa APRS station heard yet: tune 433.775 MHz"
+                     : subMask(a) == 8 ? "no MeshCom station heard yet: tune 433.175 MHz"
+                     : "no LoRa APRS or MeshCom station heard yet: pick a 70 cm plan (433.775 or 433.175 MHz) in the tuner";
+    if (compact) {   // the list beside the main view: call, heard, SNR
+        if (ImGui::BeginTable("##maprs_s", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableSetupColumn("Station", ImGuiTableColumnFlags_WidthStretch); ImGui::TableSetupColumn("Heard"); ImGui::TableSetupColumn("SNR");
+            ImGui::TableHeadersRow();
+            if (on) for (const auto* s : sortedStations(a)) {
+                ImGui::TableNextRow();
+                ImGui::PushID(aprsKey(*s).c_str());
+                ImGui::TableNextColumn();
+                if (ImGui::Selectable(s->st.call.c_str(), S.sel == aprsKey(*s), ImGuiSelectableFlags_SpanAllColumns)) S.sel = aprsKey(*s);
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(t.timeSec, s->st.lastHeardSec).c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%.1f", s->lastSnrDb);
+                ImGui::PopID();
+            }
+            ImGui::EndTable();
+        }
+        if (!on || sortedStations(a).empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", none); ImGui::PopTextWrapPos(); }
+        return;
+    }
     if (!ImGui::BeginTable("##maprs", 10, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable,
                            ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
@@ -299,10 +332,7 @@ void aprsTable(const App& a) {
     ImGui::TableSetupColumn("Comment", ImGuiTableColumnFlags_WidthFixed, 320 * gUi);
     ImGui::TableHeadersRow();
     if (on) {
-        std::vector<const dect2::MeshAprsStation*> v;
-        for (const auto& x : t.aprsStations) v.push_back(&x);
-        std::sort(v.begin(), v.end(), [](const dect2::MeshAprsStation* x, const dect2::MeshAprsStation* y) { return x->st.lastHeardSec > y->st.lastHeardSec; });
-        for (const auto* s : v) {
+        for (const auto* s : sortedStations(a)) {
             ImGui::TableNextRow();
             ImGui::PushID(aprsKey(*s).c_str());
             ImGui::TableNextColumn();
@@ -323,11 +353,7 @@ void aprsTable(const App& a) {
         }
     }
     ImGui::EndTable();
-    if (!on || t.aprsStations.empty()) {
-        ImGui::PushTextWrapPos(0);
-        ImGui::TextDisabled("%s", !on ? "start the receiver to see stations" : "no LoRa APRS or MeshCom station heard yet: pick a 70 cm plan (433.775 or 433.175 MHz) in the tuner");
-        ImGui::PopTextWrapPos();
-    }
+    if (!on || sortedStations(a).empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", none); ImGui::PopTextWrapPos(); }
 }
 
 // ---------------------------------------------------------------- map
@@ -596,14 +622,15 @@ void settingsView(App& a) {
 
 void tab(App& a) {
     loadState();
-    if (const int m = subMask(a)) {   // a protocol entry: only its own views (LoRa APRS: stations instead of nodes and chat)
-        static const int aprsIds[] = {5, 1, 3, 4}, meshIds[] = {0, 1, 2, 3, 4};
-        const bool ap = m == 4;
-        const int* ids = ap ? aprsIds : meshIds;
+    if (const int m = subMask(a)) {   // a protocol entry: only its own views (LoRa APRS: stations instead of nodes and chat; MeshCom: stations and chat)
+        static const int aprsIds[] = {5, 1, 3, 4}, comIds[] = {5, 1, 2, 3, 4}, meshIds[] = {0, 1, 2, 3, 4};
+        const bool ap = m == 4, com = m == 8;
+        const int* ids = ap ? aprsIds : com ? comIds : meshIds;
         const int n = ap ? 4 : 5;
         int k = 0;
         for (int i = 0; i < n; i++) if (ids[i] == S.view) k = i;
         if (ap) subNav("meshva", k, {"Stations", "Map", "Packets", "Settings"});
+        else if (com) subNav("meshvc", k, {"Stations", "Map", "Chat", "Packets", "Settings"});
         else subNav("meshvm", k, {"Nodes", "Map", "Chat", "Packets", "Settings"});
         S.view = ids[k];
     } else subNav("meshv", S.view, {"Nodes", "Map", "Chat", "Packets", "Settings", "APRS"});
@@ -627,8 +654,15 @@ void tab(App& a) {
 void list(App& a) {
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see nodes"); ImGui::PopTextWrapPos(); } return; }
     const dect2::MeshTelemetry& t = a.rx.mesh;
-    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu nodes, %zu APRS stations, %zu messages", t.nodes.size(), t.aprsStations.size(), t.messages.size()); ImGui::PopTextWrapPos(); }
-    nodeTable(a, true);
+    size_t msgs = 0;
+    for (const auto& m : t.messages) msgs += shows(a, m.protocol) ? 1 : 0;
+    ImGui::PushTextWrapPos(0);
+    if (stationEntry(a)) ImGui::TextDisabled("%zu stations, %zu messages", sortedStations(a).size(), msgs);
+    else if (subMask(a)) ImGui::TextDisabled("%zu nodes, %zu messages", sortedNodes(a).size(), msgs);
+    else ImGui::TextDisabled("%zu nodes, %zu APRS stations, %zu messages", t.nodes.size(), t.aprsStations.size(), t.messages.size());
+    ImGui::PopTextWrapPos();
+    if (stationEntry(a)) aprsTable(a, true);
+    else nodeTable(a, true);
 }
 
 void receiver(App& a) {
