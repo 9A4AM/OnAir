@@ -544,6 +544,23 @@ float menuBar(App& a) {
             if (ImGui::MenuItem("Guided tour")) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
             ImGui::EndMenu();
         }
+        {   // the credit, in a quiet box left of the version
+            const char* credit = "by: Kristijonas Adomaitis, made with help from the community";
+            const float cw = ImGui::CalcTextSize(credit).x + 2 * ImGui::GetStyle().FramePadding.x;
+            const float x = ImGui::GetWindowWidth() - 150 * gUi - cw - 10 * gUi;
+            if (x > ImGui::GetCursorPosX() + 20 * gUi) {   // only when the menu bar has room for it
+                ImGui::SameLine(x);
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 1, 1, 0.04f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.08f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.08f));
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.62f, 0.68f, 0.75f, 1));
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+                ImGui::SmallButton(credit);
+                ImGui::PopStyleVar();
+                ImGui::PopStyleColor(4);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("Thank you to everyone who reported bugs, sent recordings and opened pull requests.");
+            }
+        }
         ImGui::SameLine(ImGui::GetWindowWidth() - 150 * gUi);
         updateButton(a);
         ImGui::EndMainMenuBar();
