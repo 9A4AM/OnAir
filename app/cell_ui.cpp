@@ -1,9 +1,11 @@
 // Cell towers screens: the cell table (operator, band, EARFCN, PCI, eNB / sector, TAC, bandwidth, RSRP / RSRQ, last seen), cells grouped
 // by site, the neighbour lists of SIB4 / SIB5, the strongest cell per operator, a band scan over the LTE EARFCN raster, and an optional
-// map from a tower position file the user downloads (OpenCelliD CSV: radio,mcc,net,area,cell,unit,lon,lat,...; opencellid.org,
-// CC BY-SA 4.0; nothing is bundled or fetched). Only what cells broadcast to every phone is shown.
+// map of the towers: looked up on OpenCelliD with the user's own API key (only the cell identity and the key are sent; cached on disk), or
+// from a tower position file the user downloads (OpenCelliD CSV: radio,mcc,net,area,cell,unit,lon,lat,...). Data (c) OpenCelliD, CC BY-SA
+// 4.0; nothing is bundled. Only what cells broadcast to every phone is shown.
 #include "app.h"
 #include "adsb_map.h"
+#include "dect2/cell_ocid.h"
 #include "dect2/cell_rx.h"
 #include "dect2/cell_tel.h"
 #include <algorithm>
@@ -12,6 +14,7 @@
 #include <ctime>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -32,6 +35,9 @@ struct State {
     std::map<uint64_t, Pos> towers;   // (mcc, mnc, eci) -> position
     std::string towerFile, towerNote;
     adsbmap::View map;
+    bool keyLoaded = false, showKey = false, fitted = false;
+    char key[128] = {};
+    std::unique_ptr<dect2::OcidLookup> ocid;
 };
 State S;
 const int kScanBands[8] = {20, 8, 3, 1, 7, 28, 32, 38};
@@ -69,10 +75,47 @@ void loadTowers(const std::string& path) {
     S.towerNote = b; S.towerFile = path;
 }
 
-const Pos* towerOf(const dect2::CellTower& c) {
-    if (!c.hasSib1) return nullptr;
+dect2::OcidLookup& ocid() {
+    if (!S.ocid) {
+        const std::string tmp = plat::cacheDir() + "/ocid-answer.json";
+        S.ocid = std::make_unique<dect2::OcidLookup>([tmp](const std::string& url, std::string& body) {
+            std::remove(tmp.c_str());
+            if (!plat::fetchUrl(url, tmp, "OnAir/" ONAIR_VERSION)) return false;
+            std::ifstream f(tmp); std::stringstream ss; ss << f.rdbuf(); body = ss.str();
+            std::remove(tmp.c_str());
+            return true;
+        }, plat::dataDir() + "/opencellid-cache.csv");
+    }
+    if (!S.keyLoaded) { S.keyLoaded = true; snprintf(S.key, sizeof S.key, "%s", plat::prefs().getS("ocidKey", "").c_str()); S.ocid->setKey(S.key); }
+    return *S.ocid;
+}
+
+dect2::OcidCellKey ocidKey(const dect2::CellTower& c) {
+    dect2::OcidCellKey k; k.mcc = c.mcc; k.mnc = c.mnc; k.lac = c.tac; k.cell = c.cellId; k.radio = "LTE";
+    return k;
+}
+
+enum { kLocNone, kLocDb, kLocCsv };
+struct Loc { Pos p{0, 0}; int range = 0, samples = 0, src = kLocNone; };
+
+// the database's answer first, else the loaded CSV
+Loc towerOf(const dect2::CellTower& c) {
+    Loc l;
+    if (!c.hasSib1 || c.mcc < 0) return l;
+    dect2::OcidEntry e;
+    if (ocid().lookup(ocidKey(c), e) && e.r.status == dect2::OcidStatus::Found) { l.p = {e.r.lat, e.r.lon}; l.range = e.r.range; l.samples = e.r.samples; l.src = kLocDb; return l; }
     auto it = S.towers.find(towerKey(c.mcc, c.mnc, c.cellId));
-    return it == S.towers.end() ? nullptr : &it->second;
+    if (it != S.towers.end()) { l.p = it->second; l.src = kLocCsv; }
+    return l;
+}
+
+const char* locText(int src) { return src == kLocDb ? "database" : src == kLocCsv ? "CSV" : "unknown"; }
+
+ImU32 opColour(const dect2::CellTower& c, int alpha) {   // one colour per operator (PLMN)
+    const std::string k = c.plmns.empty() ? "?" : c.plmns[0];
+    uint32_t h = 2166136261u; for (char ch : k) h = (h ^ (uint8_t)ch) * 16777619u;
+    float r, g, b; ImGui::ColorConvertHSVtoRGB((h % 360) / 360.0f, 0.65f, 0.95f, r, g, b);
+    return IM_COL32((int)(r * 255), (int)(g * 255), (int)(b * 255), alpha);
 }
 
 std::string opText(const dect2::CellTower& c) {
@@ -117,12 +160,12 @@ void cellTable(App& a) {
     const dect2::CellTelemetry& t = a.rx.cell;
     // a narrow window keeps the columns that identify a cell; the rest are in the detail lines below
     const bool wide = ImGui::GetContentRegionAvail().x > 980 * gUi;
-    const int nc = wide ? 11 : 6;
+    const int nc = wide ? 12 : 7;
     const ImGuiTableFlags fl = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV;
     if (!ImGui::BeginTable("##cells", nc, fl, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
-    if (wide) for (const char* h : {"Operator", "Band", "EARFCN", "MHz", "PCI", "eNB / sector", "TAC", "Width", "RSRP", "RSRQ", "Seen"}) ImGui::TableSetupColumn(h);
-    else for (const char* h : {"Operator", "Band", "EARFCN", "PCI", "eNB / sector", "RSRP"}) ImGui::TableSetupColumn(h);
+    if (wide) for (const char* h : {"Operator", "Band", "EARFCN", "MHz", "PCI", "eNB / sector", "TAC", "Width", "RSRP", "RSRQ", "Seen", "Location"}) ImGui::TableSetupColumn(h);
+    else for (const char* h : {"Operator", "Band", "EARFCN", "PCI", "eNB / sector", "RSRP", "Location"}) ImGui::TableSetupColumn(h);
     ImGui::TableHeadersRow();
     for (size_t i = 0; i < t.cells.size(); i++) {
         const auto& c = t.cells[i];
@@ -141,6 +184,8 @@ void cellTable(App& a) {
         ImGui::TableNextColumn(); ImGui::Text("%.0f", c.rsrpDb);
         if (wide) { ImGui::TableNextColumn(); ImGui::Text("%.1f", c.rsrqDb); }
         if (wide) { ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(c.lastWall).c_str()); }
+        ImGui::TableNextColumn();
+        { const Loc lc = towerOf(c); if (lc.src == kLocNone) ImGui::TextDisabled("unknown"); else ImGui::TextUnformatted(locText(lc.src)); }
     }
     ImGui::EndTable();
 }
@@ -209,24 +254,95 @@ void opView(App& a) {
                           b.second->enb, b.second->sector, b.second->rsrpDb, b.second->rsrqDb);
 }
 
+void keyHelpButton() {
+    if (ImGui::SmallButton("?##ocidhelp")) ImGui::OpenPopup("ocidhelp");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("How to get an OpenCelliD API key");
+    if (ImGui::BeginPopup("ocidhelp")) {
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30);
+        ImGui::TextUnformatted("OpenCelliD API key");
+        ImGui::Separator();
+        ImGui::TextUnformatted("Cell towers broadcast who they are (operator, area code, cell id) but not where they stand. OpenCelliD is an open, "
+                               "crowd-sourced database of tower positions; OnAir asks it where each decoded cell is. It needs a free personal API key.");
+        ImGui::Spacing();
+        ImGui::TextUnformatted("1. Sign up (free) at https://opencellid.org and confirm the e-mail.\n2. Log in and open your account page (My Account / API "
+                               "access): your API token (pk.\xE2\x80\xA6) is shown there.\n3. Paste it into the key field here. It is saved with the other settings.");
+        ImGui::Spacing();
+        ImGui::TextUnformatted("Lookups need internet, at most one a second; only the cell identity (MCC, MNC, TAC, cell id) and the key are sent. Answers are "
+                               "cached on disk, so a cell is asked for once and the map works offline afterwards; a cell not in the database is asked again "
+                               "after a day. The free key has a daily limit. A CSV downloaded from OpenCelliD still works as an alternative (Load tower file).");
+        ImGui::Spacing();
+        ImGui::TextDisabled("Tower data \xC2\xA9 OpenCelliD, CC BY-SA 4.0");
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
+    }
+}
+
+void keyBar() {
+    dect2::OcidLookup& L = ocid();
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("OpenCelliD API key"); ImGui::SameLine();
+    const float fs = ImGui::GetFontSize();
+    ImGui::SetNextItemWidth(std::min(22 * fs, std::max(8 * fs, ImGui::GetContentRegionAvail().x - 7 * fs)));
+    if (ImGui::InputText("##ocidkey", S.key, sizeof S.key, S.showKey ? 0 : ImGuiInputTextFlags_Password)) {
+        std::string k = S.key;
+        while (!k.empty() && isspace((unsigned char)k.back())) k.pop_back();
+        while (!k.empty() && isspace((unsigned char)k.front())) k.erase(0, 1);
+        plat::prefs().setS("ocidKey", k);
+        L.setKey(k);
+    }
+    ImGui::SameLine(); ImGui::Checkbox("show##ocidshow", &S.showKey);
+    ImGui::SameLine(); keyHelpButton();
+}
+
 void mapView(App& a) {
+    keyBar();
+    dect2::OcidLookup& L = ocid();
     if (ImGui::SmallButton("Load tower file")) { const std::string p = openFileDialog(); if (!p.empty()) loadTowers(p); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("A CSV of public tower positions you downloaded yourself, OpenCelliD format (opencellid.org, CC BY-SA 4.0):\nradio,mcc,net,area,cell,unit,lon,lat,...  Cells are matched by MCC, MNC and the 28-bit cell id.");
-    ImGui::SameLine(); ImGui::TextDisabled("%s", S.towerNote.empty() ? "no file loaded" : S.towerNote.c_str());
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Instead of (or as well as) the key: a CSV of public tower positions you downloaded yourself, OpenCelliD format (opencellid.org, CC BY-SA 4.0):\nradio,mcc,net,area,cell,unit,lon,lat,...  Cells are matched by MCC, MNC and the 28-bit cell id.");
+    ImGui::SameLine(); ImGui::TextDisabled("%s", S.towerNote.empty() ? "no file" : S.towerNote.c_str());
+    ImGui::SameLine();
+    const std::string st = L.status();
+    const size_t pend = L.pending();
+    ImGui::PushTextWrapPos(0);
+    if (!S.key[0]) ImGui::TextDisabled("| no key: positions only from a file");
+    else if (pend) ImGui::TextDisabled("| looking up %zu cell%s%s%s", pend, pend == 1 ? "" : "s", st.empty() ? "" : ": ", st.c_str());
+    else ImGui::TextDisabled("| %s", st.empty() ? "lookups idle" : st.c_str());
+    ImGui::PopTextWrapPos();
     const ImVec2 sz = ImGui::GetContentRegionAvail();
     if (sz.y < 40) return;
+    const double rLat = plat::prefs().getD("adsbLat", 0), rLon = plat::prefs().getD("adsbLon", 0);
+    const bool haveRx = rLat != 0 || rLon != 0;   // the antenna position the map modes share
+    if (!S.fitted) {   // centre on the first tower placed, else the receiver
+        for (const auto& c : a.rx.cell.cells) { const Loc l = towerOf(c); if (l.src) { S.map.lat = l.p.lat; S.map.lon = l.p.lon; S.map.zoom = 13; S.fitted = true; break; } }
+        if (!S.fitted && haveRx) { S.map.lat = rLat; S.map.lon = rLon; S.map.zoom = 12; }
+    }
     const ImVec2 p0 = ImGui::GetCursorScreenPos();
     adsbmap::draw(S.map, sz);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->PushClipRect(p0, ImVec2(p0.x + sz.x, p0.y + sz.y), true);
-    for (const auto& c : a.rx.cell.cells)
-        if (const Pos* p = towerOf(c)) {
-            const ImVec2 q = adsbmap::project(p->lat, p->lon);
-            dl->AddCircleFilled(q, 5 * gUi, ImGui::GetColorU32(pal::accent()));
-            char b[48]; snprintf(b, sizeof b, "%u/%d", c.enb, c.sector);
-            dl->AddText(ImVec2(q.x + 7 * gUi, q.y - 7 * gUi), IM_COL32(230, 230, 230, 255), b);
+    if (haveRx) {
+        const ImVec2 q = adsbmap::project(rLat, rLon);
+        dl->AddRectFilled(ImVec2(q.x - 4 * gUi, q.y - 4 * gUi), ImVec2(q.x + 4 * gUi, q.y + 4 * gUi), IM_COL32(255, 255, 255, 230));
+        dl->AddText(ImVec2(q.x + 7 * gUi, q.y - 7 * gUi), IM_COL32(255, 255, 255, 230), "receiver");
+    }
+    int shown = 0;
+    for (const auto& c : a.rx.cell.cells) {
+        const Loc l = towerOf(c);
+        if (!l.src) continue;
+        shown++;
+        const ImVec2 q = adsbmap::project(l.p.lat, l.p.lon);
+        if (l.range > 0) {   // the database's range: faint
+            const float rpx = std::fabs(adsbmap::project(l.p.lat + l.range / 111320.0, l.p.lon).y - q.y);
+            if (rpx > 2 && rpx < 4000) { dl->AddCircleFilled(q, rpx, opColour(c, 22), 48); dl->AddCircle(q, rpx, opColour(c, 70), 48); }
         }
+        dl->AddCircleFilled(q, 5 * gUi, opColour(c, 255));
+        dl->AddCircle(q, 5 * gUi, IM_COL32(0, 0, 0, 200));
+        char b[96]; snprintf(b, sizeof b, "%s eNB %u/%d PCI %d", c.op.empty() ? (c.plmns.empty() ? "?" : c.plmns[0].c_str()) : c.op.c_str(), c.enb, c.sector, c.pci);
+        dl->AddText(ImVec2(q.x + 7 * gUi, q.y - 7 * gUi), IM_COL32(240, 240, 240, 255), b);
+    }
     dl->PopClipRect();
+    ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + sz.y - ImGui::GetTextLineHeight() - 6 * gUi));
+    adsbmap::legend(sz.x, "%d tower%s placed. Tower data \xC2\xA9 OpenCelliD, CC BY-SA 4.0", shown, shown == 1 ? "" : "s");
 }
 
 void logView(App& a) {
@@ -235,6 +351,10 @@ void logView(App& a) {
 }
 
 void tick(App& a) {
+    if (live(a)) {   // ask the database about every identified cell (cached and queued ones are not asked again)
+        dect2::OcidLookup& L = ocid();
+        if (S.key[0]) for (const auto& c : a.rx.cell.cells) if (c.hasSib1 && c.mcc >= 0) L.request(ocidKey(c));
+    }
     if (!S.scanning) return;
     if (!a.engine.running()) { S.scanning = false; return; }
     const double now = ImGui::GetTime();

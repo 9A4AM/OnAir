@@ -135,6 +135,16 @@ iridium-parser.py output.bits > output.parsed
 OnAir writes the bits only and never decodes voice (the AMBE codec is patented). Extracting voice from `output.parsed` with the toolkit's voice tools is up to you and happens outside OnAir.
 </details>
 
+### Cell tower map (OpenCelliD key)
+
+Cell towers broadcast who they are (operator, area code, cell id) but not where they stand. The Cells mode can look each decoded LTE cell up in [OpenCelliD](https://opencellid.org), an open, crowd-sourced tower database, and put it on the map:
+
+1. Sign up (free) at https://opencellid.org and confirm your e-mail.
+2. Log in and open your account page (My Account / API access); copy your API token.
+3. In OnAir, open Cells → Map and paste it into **OpenCelliD API key** (the "?" next to it repeats these steps).
+
+Lookups need internet and run in the background at most once a second; only the cell identity (MCC, MNC, TAC, cell id) and your key are sent. Answers are cached on disk, so the map also works offline afterwards. A CSV downloaded from OpenCelliD still works instead (Load tower file). Tower data © OpenCelliD, CC BY-SA 4.0.
+
 ### Channel scanner and shared channel list
 
 The TV channel scanner covers DVB, ATSC, ATSC 3.0, ISDB-T and DTMB. Scan results can be shared with other users through a public, crowd-sourced channel list, picked by country and city. You can also browse it on GitHub: **[adswill/OnAir-channels](https://github.com/adswill/OnAir-channels)**.
