@@ -39,6 +39,7 @@
 #include "dpmr_tel.h"
 #include "gsmr_tel.h"
 #include "dvbc_tel.h"
+#include "orbcomm_tel.h"
 #include "uplink_tel.h"
 #include "psk_tel.h"
 #include "js8_tel.h"
@@ -96,7 +97,7 @@ struct RxTelemetry {
     AirbandTelemetry airband;   // valid when standard == 27
     Vdl2Telemetry vdl2;         // valid when standard == 28
     uint64_t seq = 0;
-    int standard = 0;            // 0 DVB-T2, 1 DVB-T, 2 ATSC, 3 DAB, 4 ATSC 3.0 (details: Engine::atsc3Telemetry), 5 ISDB-T, 6 FM, 7 DVB-S/S2, 8 DTMB, 9 analog TV, 10 DMR, 11 DRM, 12 ADS-B, 13 GNSS, 14 radiosonde, 15 AIS, 16 marine, 17 ACARS, 18 Inmarsat-C, 19 Inmarsat Aero, 20 Iridium, 21 mesh, 22 HD Radio, 23 CDR, 24 pagers, 25 APRS / packet, 26 HF digital, 27 airband, 28 VDL Mode 2, 29 ISM sensors, 31 VOR / ILS, 32 M17, 34 D-STAR, 35 CW, 36 HFDL, 37 PSK31, 38 JS8Call, 41 DVB-C, 44 Mode S uplink, 39 NXDN
+    int standard = 0;            // 0 DVB-T2, 1 DVB-T, 2 ATSC, 3 DAB, 4 ATSC 3.0 (details: Engine::atsc3Telemetry), 5 ISDB-T, 6 FM, 7 DVB-S/S2, 8 DTMB, 9 analog TV, 10 DMR, 11 DRM, 12 ADS-B, 13 GNSS, 14 radiosonde, 15 AIS, 16 marine, 17 ACARS, 18 Inmarsat-C, 19 Inmarsat Aero, 20 Iridium, 21 mesh, 22 HD Radio, 23 CDR, 24 pagers, 25 APRS / packet, 26 HF digital, 27 airband, 28 VDL Mode 2, 29 ISM sensors, 31 VOR / ILS, 32 M17, 34 D-STAR, 35 CW, 36 HFDL, 37 PSK31, 38 JS8Call, 41 DVB-C, 45 Orbcomm, 39 NXDN, 39 NXDN
     IsmTelemetry ism;           // valid when standard == 29
     VorTelemetry vor;           // valid when standard == 31
     HfdlTelemetry hfdl;         // valid when standard == 36

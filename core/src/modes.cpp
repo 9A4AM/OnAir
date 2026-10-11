@@ -79,6 +79,7 @@
 #include "dect2/gsmr_gen.h"
 #include "dect2/gsmr_tel.h"
 #include "dect2/dvbc_rx.h"
+#include "dect2/orbcomm_rx.h"
 #include "dect2/uplink_rx.h"
 #include "dect2/uplink_gen.h"
 #include "dect2/modes.h"
@@ -162,7 +163,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), uplinkTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning()};
     return t;
 }
 
@@ -259,6 +260,8 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 40: return makeNxdnSynth(cfg, sampleRate);
     case 41: return makeGsmrSynth(cfg, sampleRate);
     case 42: return makeDvbcSynth(cfg, sampleRate);
+    case 47: return makeDpmrSynth(cfg, sampleRate);
+    case 46: return makeOrbcommSynth(cfg, sampleRate);
     case 45: return makeUplinkSynth(cfg, sampleRate);
     case 38: return makePskSynth(cfg, sampleRate);
     case 39: return makeJs8Synth(cfg, sampleRate);
@@ -303,6 +306,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 46: return dpmrSummary(t.dpmr);
     case 40: return gsmrSummary(t.gsmr);
     case 41: return dvbcSummary(t.dvbc);
+    case 45: return orbcommSummary(t.orbcomm);
     case 44: return uplinkSummary(t.uplink);
     case 37: return pskSummary(t.psk);
     case 38: return js8Summary(t.js8);
