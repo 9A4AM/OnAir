@@ -227,6 +227,8 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         rxVor_.setSignalOffset(o);
         rxVor_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // VOR, localizer, glide slope or marker by the frequency
         rxM17_.setSignalOffset(o);
+        rxCell_.setSignalOffset(o);
+        rxCell_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // the cells' EARFCNs
         rxCw_.setSignalOffset(o);
         rxDstar_.setSignalOffset(o);
     }
@@ -266,6 +268,8 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxVor_.setLogCallback([this](const std::string& s) { log(s); });
     rxM17_.configure(rate_);
     rxM17_.setLogCallback([this](const std::string& s) { log(s); });
+    rxCell_.configure(rate_);
+    rxCell_.setLogCallback([this](const std::string& s) { log(s); });
     rxCw_.configure(rate_);
     rxCw_.setLogCallback([this](const std::string& s) { log(s); });
     rxDstar_.configure(rate_);
@@ -473,6 +477,7 @@ void Engine::applyReset() {
     rxIsm_.reset();
     rxVor_.reset();
     rxM17_.reset();
+    rxCell_.reset();
     rxCw_.reset();
     rxDstar_.reset();
     autoMark_ = nSamp_ / std::max(1.0, rate_.load()); lastLockSec_ = autoMark_;
@@ -593,6 +598,7 @@ void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
             case 29: rxIsm_.reset(); break;
             case 31: rxVor_.reset(); break;
             case 32: rxM17_.reset(); break;
+            case 33: rxCell_.reset(); break;
             case 35: rxCw_.reset(); break;
             case 34: rxDstar_.reset(); break;
             default: break;
@@ -1432,6 +1438,22 @@ void Engine::analysisLoop() {
                     t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
                     t.rateOk = rxM17_.ready();
                     t.m17 = std::move(mt);
+                    std::lock_guard<std::mutex> lk(rxMu_);
+                    publishRx(std::move(t));
+                }
+            } else if (activeStd_.load() == 33) {
+                CellTelemetry mt;
+                if (rxCell_.telemetry(mt, modeSeq_[26])) {
+                    modeSeq_[26] = mt.seq;
+                    t.standard = 33;
+                    t.seq = mt.seq;
+                    t.state = mt.state;
+                    t.cfoHz = mt.cfoHz;
+                    t.dataValid = mt.dataValid;
+                    t.dataSnrDb = mt.snrDb;
+                    t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
+                    t.rateOk = rxCell_.ready();
+                    t.cell = std::move(mt);
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
                 }

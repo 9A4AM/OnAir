@@ -31,6 +31,7 @@
 #include "ism_tel.h"
 #include "vor_tel.h"
 #include "m17_tel.h"
+#include "cell_tel.h"
 #include "cw_tel.h"
 #include "dstar_tel.h"
 #include "t2.h"
@@ -89,6 +90,7 @@ struct RxTelemetry {
     IsmTelemetry ism;           // valid when standard == 29
     VorTelemetry vor;           // valid when standard == 31
     M17Telemetry m17;           // valid when standard == 32
+    CellTelemetry cell;         // valid when standard == 33
     CwTelemetry cw;             // valid when standard == 35
     DstarTelemetry dstar;       // valid when standard == 34
     struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics

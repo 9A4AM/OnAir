@@ -40,6 +40,7 @@
 #include "ism_rx.h"
 #include "vor_rx.h"
 #include "m17_rx.h"
+#include "cell_rx.h"
 #include "cw_rx.h"
 #include "dstar_rx.h"
 #include "bbunpack.h"
@@ -283,6 +284,7 @@ private:
     IsmReceiver rxIsm_;
     VorReceiver rxVor_;
     M17Receiver rxM17_;
+    CellReceiver rxCell_;
     CwReceiver rxCw_;
     DstarReceiver rxDstar_;
     uint64_t modeSeq_[32] = {};      // the last report taken from each of the modes added after FM (same order as above)
