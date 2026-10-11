@@ -96,7 +96,7 @@ size_t SrrcResampler::pull(std::vector<cf32>& out, size_t maxOut) {
         pos_ += step_;
     }
     // drop what is no longer needed
-    const long keepFrom = (long)(pos_ >> 32) - (half_ - 1) - 1;
+    const long keepFrom = (long)(pos_ >> 32) - (half_ - 1) - 1 - kHistory;
     if (keepFrom > 16384) {
         const size_t d = (size_t)keepFrom;
         std::memmove(re_.data(), re_.data() + d, (fill_ - d) * sizeof(float));

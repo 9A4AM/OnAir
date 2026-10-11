@@ -5,6 +5,7 @@
 #include "fftutil.h"
 #include <cmath>
 #include <complex>
+#include <algorithm>
 #include <vector>
 
 namespace dect2 {
@@ -14,6 +15,9 @@ public:
     // rate: input sample rate; width: the channel's occupied (flat) width, Hz
     void configure(double rate, double width) { rate_ = rate; width_ = width; reset(); }
     void reset() { pow_.assign(kF, 0.0); blocks_ = 0; skip_ = 0; have_.clear(); }
+    // The centre from the two edges of the channel (where its power falls to half) instead of the box with the most power: a channel whose
+    // spectrum is tilted by strong echoes pulls the box towards its strong side by a good part of a hundred kHz
+    void setEdgeCentre(bool on) { edgeCentre_ = on; }
     // Feed input; returns true when an estimate is ready (about every 50 ms of input). found: a clear channel was seen, at hz from the centre.
     bool feed(const std::complex<float>* x, size_t n, double& hz, bool& found) {
         const size_t stride = (size_t)std::max<double>(kF, rate_ * 0.0015);   // one FFT every 1.5 ms: a few percent of the cost of the receiver
@@ -39,6 +43,7 @@ private:
     std::vector<std::complex<float>> have_;
     int blocks_ = 0;
     size_t skip_ = 0;
+    bool edgeCentre_ = false;
 
     void block() {
         Fft f(kF);
@@ -69,6 +74,25 @@ private:
         };
         if (!edgeOk(best - e - 2, best - 2) || !edgeOk(best + W + 2, best + W + e + 2)) return;
         hz = ((double)best + W / 2.0 - kF / 2.0) * rate_ / kF;
+        if (edgeCentre_) {
+            // the level inside: the median of the box, which a few deep notches do not pull down
+            std::vector<double> in(pow_.begin() + best, pow_.begin() + best + W);
+            std::nth_element(in.begin(), in.begin() + W / 2, in.end());
+            const double half = 0.5 * in[(size_t)W / 2];
+            const int r = W / 6;
+            auto edge = [&](int c, bool rising) {   // the crossing of half the level nearest the box edge c, by averages over three bins
+                int bestI = c; int bestD = 1 << 20;
+                for (int i = std::max(1, c - r); i <= std::min(kF - 2, c + r); i++) {
+                    const double a = (pow_[(size_t)i - 1] + pow_[(size_t)i] + pow_[(size_t)i + 1]) / 3.0;
+                    const double b = (pow_[(size_t)i] + pow_[(size_t)i + 1] + pow_[(size_t)std::min(kF - 1, i + 2)]) / 3.0;
+                    const bool cross = rising ? (a < half && b >= half) : (a >= half && b < half);
+                    if (cross && std::abs(i - c) < bestD) { bestD = std::abs(i - c); bestI = i; }
+                }
+                return bestI;
+            };
+            const int lo = edge(best, true), hi = edge(best + W, false);
+            if (hi - lo > W / 2) hz = ((lo + hi + 1) / 2.0 - kF / 2.0) * rate_ / kF;
+        }
         found = true;
     }
 };

@@ -356,7 +356,8 @@ struct DtmbReceiver::Impl {
     bool processFrame() {
         const HeaderInfo& hi = headerInfo(hdr);
         const int Lh = hi.length, Lf = Lh + kBody;
-        if (!ensure(S + Lf + Lh + std::max(est->post(), estWide->post()) + 16)) return false;
+        // (a frame further on than the header after this one: room to look for that header after lost samples, and the one after it)
+        if (!ensure(S + Lf + relockSpan())) return false;
         const long S2 = S + Lf;
         const int phA = phaseOf(fnum), phB = phaseOf(fnum + 1);
         if (++sinceWide >= 32) { sinceWide = 0; adaptWindow(S2, phB); haveA = false; }
@@ -366,6 +367,7 @@ struct DtmbReceiver::Impl {
         const bool goodB = cleanB.peakPower > kPeakNoiseRatio * rawB.tapVar;
         lossAvg = 0.95 * lossAvg + 0.05 * ((goodA && goodB) ? 0.0 : 1.0);
         frames++;
+        if (!goodB && relock(S2)) { lostRun = 0; return true; }
         if (!goodB) {
             // no header where it should be: coast on the old timing
             lostRun++;
@@ -376,6 +378,16 @@ struct DtmbReceiver::Impl {
             return true;
         }
         lostRun = 0;
+        // ---- samples lost inside this frame, fewer than the header is long: the whole channel moves in this header, earlier by the number lost or,
+        // as the cyclic header repeats every period, later by a period less that. The grid below would follow only after three frames, decoding
+        // those at the wrong place, and possibly to the alias. The channel of this header against that of the one before: the same shape moved
+        // is a gap, and the header is looked for over the frame as for a header that is missing. (A path that grows while another fades, the
+        // takeover below, does not keep the shape; neither does an echo that was there before.)
+        if (goodA && std::abs(cleanB.peakIndex - cleanA.peakIndex) >= 4) {
+            double off = 0, off0 = 0;
+            const int sh = cleanB.peakIndex - cleanA.peakIndex;
+            if (shapeOffset(cleanA, cleanB, sh, off) > 0.8 && std::fabs(off) < 1.0 && shapeOffset(cleanA, cleanB, 0, off0, 0) < 0.5 && relock(S2)) return true;
+        }
         // ---- timing: the reference path of the frame grid. Normally the strongest tap. With two paths of similar strength (a single-frequency network,
         // a strong echo) the strongest one changes from frame to frame as the sampling phase drifts and splits a path over two taps, and a grid that
         // follows it jumps back and forth; so the grid sticks to the path it has (the strongest tap within 3 symbols of it, as long as that is within
@@ -403,7 +415,8 @@ struct DtmbReceiver::Impl {
                 timeJumpRun++;
                 if (timeJumpRun >= 3 || std::fabs(e) < 4.0) j = (int)std::lround(e);
             } else timeJumpRun = 0;
-            const double ef = e - j;
+            // a jump that is not taken yet must not reach the loops: a few frames of a 16 symbol error would pull the clock 50 ppm off
+            const double ef = (std::fabs(e) >= 1.5 && j == 0) ? 0.0 : e - j;
             front.shift(0.20 * ef);
             const double sp = front.spacing() + 0.015 * ef / Lf;
             front.setSpacing(std::max(-3e-4, std::min(3e-4, sp)));
@@ -469,7 +482,9 @@ struct DtmbReceiver::Impl {
         if (siOk) {
             merAvg += 0.3 * (10.0 * std::log10(1.0 / std::max(frameErr, 1e-9)) - merAvg);
             if (!chain) makeChain();
-            chain->pushFrame(act.data.data(), act.dvar.data());
+            // a frame whose grid is several symbols off and waiting to move (the body taken at the wrong place) is erased, not decoded as garbage
+            if (timeJumpRun > 0 && pendingJump == 0) chain->skipFrame();
+            else chain->pushFrame(act.data.data(), act.dvar.data());
         }
         updateCells();
         updateCir();
@@ -498,6 +513,156 @@ struct DtmbReceiver::Impl {
     }
     int pendingJump = 0;
     int takeoverRun = 0;
+    uint64_t relocks = 0;
+
+    // Samples lost on the way in (a radio whose buffers overflowed): the next header sits earlier than the grid says, by the number of samples
+    // lost modulo a frame, and the frames that went with the gap move the phase of a rotating header on. The header is looked for over the
+    // frame before the expected one, under every super-frame number up to kMaxLost frames on; the frame holding the gap and the lost ones are
+    // erased in the decoder, which stays in step.
+    static constexpr int kMaxLost = 200;   // 125 ms of PN945 frames, 111 ms of PN420
+    std::vector<float> corrRe, corrIm;
+    // After lost samples the new grid sits a fraction of a symbol off the old sampling instants (the gap is a whole number of input samples, not
+    // of symbols); the timing loop would take tens of frames to pull it in. The symbols from shortly before the new header on are taken again
+    // at instants moved by that fraction, from the input the front end still holds.
+    void regrid(long newS, double frac) {
+        if (std::fabs(frac) < 0.02) return;
+        const long t0 = std::max(base, newS - 512);
+        const long k = produced() - t0;
+        if ((double)k * front.ratio() + 64 > (double)SrrcResampler::kHistory) return;
+        buf.resize((size_t)(t0 - base));
+        front.shift(-(double)k + frac);
+        const double dph = -2.0 * kPi * cfoHz / symRate;
+        derotPhase = std::fmod(derotPhase - dph * (double)k, 2.0 * kPi);
+    }
+
+    // Where the channel of b sits against that of a moved by `shift` symbols (lags, whatever the windows of the two): the best match (1 = the same shape) of the tap powers (summed over
+    // three taps) over offsets of up to R (at most four) symbols, and that offset to a fraction of a symbol
+    static double shapeOffset(const Taps& a, const Taps& b, int shift, double& off, int R = 4) {
+        auto smooth = [](const Taps& t) {
+            const int L = (int)t.v.size();
+            std::vector<double> p((size_t)L, 0.0);
+            for (int k = 0; k < L; k++) for (int d = -1; d <= 1; d++) if (k + d >= 0 && k + d < L) p[(size_t)k] += std::norm(t.v[(size_t)(k + d)]);
+            return p;
+        };
+        const std::vector<double> pa = smooth(a), pb = smooth(b);
+        double ea = 0, eb = 0;
+        for (double x : pa) ea += x * x;
+        for (double y : pb) eb += y * y;
+        double c[9];
+        R = std::max(0, std::min(4, R));
+        for (int d = -R; d <= R; d++) {
+            double num = 0;
+            for (int k = 0; k < (int)pa.size(); k++) {
+                const int k2 = k - a.pre + b.pre + shift + d;
+                if (k2 >= 0 && k2 < (int)pb.size()) num += pa[(size_t)k] * pb[(size_t)k2];
+            }
+            c[d + R] = num / std::sqrt(std::max(1e-30, ea * eb));
+        }
+        int bi = 0;
+        for (int i = 1; i <= 2 * R; i++) if (c[i] > c[bi]) bi = i;
+        off = bi - R;
+        if (bi > 0 && bi < 2 * R) {
+            const double den = c[bi - 1] - 2 * c[bi] + c[bi + 1];
+            if (std::fabs(den) > 1e-12) off += std::max(-0.5, std::min(0.5, 0.5 * (c[bi - 1] - c[bi + 1]) / den));
+        }
+        return c[bi];
+    }
+    long relockSpan() const { const int Lh = headerInfo(hdr).length; return 8 + Lh + kBody + 2 * Lh + 512 + std::max(est->post(), estWide->post()); }
+    bool relock(long S2) {
+        const HeaderInfo& hi = headerInfo(hdr);
+        const int Lh = hi.length, Lf = Lh + kBody;
+        // (Not reaching back into the header of this frame: it repeats itself as the new one does, and the header of frame f + 2 m is that of f
+        // moved m chips, it would be taken for lost frames.)
+        // Once a frame has been coasted, the header of this frame was not found either: the new one may sit where it was (lost samples that
+        // were most of a frame), so the search starts a little before it.
+        const long lo = lostRun > 0 ? S2 - Lf - 16 : S2 - Lf + Lh, hiPos = S2 + 8;
+        if (lo - 512 < base) return false;
+        if (!ensure(S2 + relockSpan())) return false;
+        // correlation of the received samples with the core of each candidate header, at every position
+        // over the whole header: a cyclic header is one periodic sequence, another phase is the same sequence shifted, and only its ends (where the
+        // body starts) tell the two apart
+        const int nPos = (int)(hiPos - lo + 1), clen = Lh, coff = 0;
+        corrRe.resize((size_t)nPos + (size_t)clen); corrIm.resize(corrRe.size());
+        for (int i = 0; i < nPos + clen; i++) { const cf32 v = *at(lo + coff + i); corrRe[(size_t)i] = v.real(); corrIm[(size_t)i] = v.imag(); }
+        double pw = 0;
+        for (int i = 0; i < nPos + clen; i++) pw += (double)corrRe[(size_t)i] * corrRe[(size_t)i] + (double)corrIm[(size_t)i] * corrIm[(size_t)i];
+        pw /= (nPos + clen);
+        // a cyclic header repeats itself 511 (PN945) or 255 (PN420) symbols on, whatever its phase: a sliding correlation of the samples with
+        // themselves one period on finds where it starts, and the phases are then tried only around there (a search over all positions and phases
+        // costs several frames of processing)
+        int qLo = 0, qHi = nPos - 1;
+        if (hi.cyclic()) {
+            const int P = hi.core, W = Lh - P;
+            auto cw = [&](int i) { return std::complex<double>(corrRe[(size_t)i], corrIm[(size_t)i]); };
+            std::complex<double> acc = 0;
+            for (int t = 0; t < W; t++) acc += cw(t) * std::conj(cw(t + P));
+            double bestC = -1; int q0 = 0;
+            for (int q = 0; q < nPos; q++) {
+                const double c = std::norm(acc);
+                if (c > bestC) { bestC = c; q0 = q; }
+                if (q + W + P < nPos + clen) acc += cw(q + W) * std::conj(cw(q + W + P)) - cw(q) * std::conj(cw(q + P));
+            }
+            qLo = std::max(0, q0 - 48); qHi = std::min(nPos - 1, q0 + 48);
+        }
+        const int nm = rotates ? kMaxLost : 1;
+        int bestM = -1; double best = 0;
+        std::vector<double> mBest((size_t)nm, 0.0); std::vector<long> mPos((size_t)nm, 0);
+        std::vector<float> ch((size_t)clen);
+        int8_t chips[945];
+        for (int m = 0; m < nm; m++) {
+            pnHeader(hdr, phaseOf(fnum + 1 + m), chips);
+            bool dup = false;   // a phase met already at a smaller m (the rotation turns back half way through the super-frame)
+            for (int k = 0; k < m && !dup; k++) dup = phaseOf(fnum + 1 + k) == phaseOf(fnum + 1 + m);
+            if (dup) continue;
+            for (int t = 0; t < clen; t++) ch[(size_t)t] = (float)chips[coff + t];
+            for (int q = qLo; q <= qHi; q++) {
+                float sr = 0, si = 0;
+                const float* re = &corrRe[(size_t)q]; const float* im = &corrIm[(size_t)q];
+                for (int t = 0; t < clen; t++) { sr += re[t] * ch[(size_t)t]; si += im[t] * ch[(size_t)t]; }
+                const double c = (double)sr * sr + (double)si * si;
+                if (c > mBest[(size_t)m]) { mBest[(size_t)m] = c; mPos[(size_t)m] = lo + q; }
+            }
+            best = std::max(best, mBest[(size_t)m]);
+        }
+        // The phase of frame f + 2 is that of frame f moved by one chip, so one header fits m and m + 2 (one symbol apart) about equally. The
+        // header after it tells them apart: the odd frames' phases count up and the even ones' down, so under m + 2 the channel in the next header
+        // shows up two symbols from where it is in this one, under the other parity a good many. The offset is measured on the shape of the
+        // channel (the power of its taps), not on its strongest tap, which two echoes of about the same strength take in turns. The candidate
+        // with the channel in the same place in both headers wins; between those about as good, the fewest lost frames.
+        if (best <= 30.0 * clen * pw) return false;   // a header stands far above the correlation of noise (clen * power per lag)
+        Taps raw, clean, raw2, clean2;
+        long newS = 0;
+        double newFrac = 0, bestOff = 1e9;
+        for (int m = 0; m < nm; m++) {
+            if (mBest[(size_t)m] < 0.5 * best) continue;
+            est->estimate(at(mPos[(size_t)m]), phaseOf(fnum + 1 + m), raw);
+            clean = raw; HeaderEstimator::clean(clean, raw.tapVar, 12.f);
+            if (clean.peakPower <= kPeakNoiseRatio * raw.tapVar) continue;
+            const long s1 = mPos[(size_t)m] + clean.peakIndex;
+            est->estimate(at(s1 + Lf), phaseOf(fnum + 2 + m), raw2);
+            clean2 = raw2; HeaderEstimator::clean(clean2, raw2.tapVar, 12.f);
+            if (clean2.peakPower <= kPeakNoiseRatio * raw2.tapVar) continue;
+            // the tap at lag l of the first estimate is the one at lag l - peakIndex of the second
+            double off = 0;
+            if (shapeOffset(clean, clean2, -clean.peakIndex, off) < 0.6) continue;
+            if (std::fabs(off) > 0.7) continue;
+            if (std::fabs(off) < bestOff - 0.3) { bestOff = std::fabs(off); bestM = m; newS = s1; newFrac = clean.peakFrac; }
+        }
+        if (bestM < 0) return false;
+        if (newS == S2 && bestM == 0) return false;   // the header is where it should be, only weak: not a gap
+        // erase the frame that held the gap and the frames lost with it
+        if (chain && siOk) for (int k = 0; k <= bestM; k++) chain->skipFrame();
+        char b[160];
+        snprintf(b, sizeof b, "samples lost: frame grid moved by %ld symbols, %d frame(s) erased", newS - S2 - (long)bestM * Lf, bestM + 1);
+        log(b);
+        relocks++;
+        S = newS; fnum += 1 + bestM;
+        haveA = false; timeJumpRun = 0; takeoverRun = 0;
+        sinceWide = 1 << 20;   // the window may have grown to the channel seen across the gap: fit it again on the next frame
+        regrid(S, newFrac);
+        dropBefore(S - 2048);
+        return true;
+    }
 
     // ------------------------------------------------------------------ system information
     // The gain of the body against the header, taken out of the symbols and their variances; the symbols have unit power afterwards
@@ -522,7 +687,9 @@ struct DtmbReceiver::Impl {
         if (k >= 0) {
             const int idx = k == 0 ? idx0 : idx1, mode = k == 0 ? 3780 : 1;
             Profile p;
-            if ((!siOk || siIndex != idx || carriers != mode) && profileFromSi(idx, p)) {
+            // a decoder that runs is not thrown away for a word that won a few frames hit by a gap or an impulse
+            const bool change = !siOk || ((siIndex != idx || carriers != mode) && body[k].tracker.run >= 40);
+            if (change && profileFromSi(idx, p)) {
                 siOk = true; siIndex = idx; profile = p; carriers = mode; siLost = 0;
                 chain.reset();
                 char b[200];
@@ -653,6 +820,7 @@ void DtmbReceiver::configure(double inputRateHz, double bwMhz) {
     s.rateOk = s.front.configure(inputRateHz, s.symRate);
     s.mixer.set(0, inputRateHz); s.mirror = false; s.flips = 0; s.flipReq = false;
     s.locator.configure(inputRateHz, s.symRate);
+    s.locator.setEdgeCentre(true);
     s.doReset();
 }
 
@@ -678,7 +846,7 @@ void DtmbReceiver::feed(const cf32* x, size_t n) {
         // a channel recorded beside the centre: until the system information is found, the spectrum says where it is
         if (!s.siOk) {
             double hz; bool found;
-            if (s.locator.feed(x, n, hz, found) && found && std::fabs(hz - s.mixer.hz) > 30e3) {
+            if (s.locator.feed(x, n, hz, found) && found && std::fabs(hz - s.mixer.hz) > 100e3) {   // (the search covers +-54 kHz itself; a spectrum shaped by echoes moves the estimate by tens of kHz)
                 s.log("channel found " + std::to_string((int)std::lround(hz / 1e3)) + " kHz from the centre");
                 s.mixer.set(hz, s.inRate); s.doReset();
             }
@@ -701,7 +869,7 @@ void DtmbReceiver::feed(const cf32* x, size_t n) {
     if (s.chain && s.siOk) {
         const ChainStats st = s.chain->stats();
         if (st.cwOk > 0) s.flips = 0;
-        else if (st.cwBad + st.cwSkipped >= 60 && s.flips < 4 && s.snrPn >= 10.0) s.flipReq = true;
+        else if (st.cwBad + st.cwSkipped >= (s.relocks ? 2000u : 60u) && s.flips < 4 && s.snrPn >= 10.0) s.flipReq = true;
     }
     if (s.flipReq) { s.flipReq = false; s.mirror = !s.mirror; s.flips++; s.log(s.mirror ? "trying I and Q swapped" : "trying I and Q as they come"); s.doReset(); }
 }

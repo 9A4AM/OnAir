@@ -24,6 +24,7 @@ struct Scenario {
     double iqGainDb = 0, iqPhaseDeg = 0;
     double gapAt = -1, gapSec = 0; bool gapRemove = false;   // a dropout: zeros, or samples that are simply missing
     double resetAt = -1;
+    double dropsPerSec = 0; int dropMin = 100, dropMax = 3000;   // radio overflows: runs of dropMin .. dropMax samples lost at random times
     double stepAt = -1, stepDb = 0;                          // the level changes by stepDb at stepAt (AGC)
     double toneDb = -100, toneHz = 0;                        // a carrier wave at toneDb relative to the signal power, at toneHz from the centre
     double burstsPerSec = 0, burstUs = 20, burstDb = 10;     // impulse noise: bursts of Gaussian noise, burstDb above the signal power
@@ -37,6 +38,7 @@ struct Result {
     uint64_t good = 0, wrong = 0, missing = 0, backwards = 0;   // numbered test packets
     double firstGoodSec = -1, lastGoodSec = -1;
     uint64_t goodAfterReset = 0;
+    uint64_t dropped = 0;        // samples lost by dropsPerSec
     DtmbTelemetry tel;
     uint64_t seqBack = 0;
     double rxCpu = 0, signalSec = 0;                            // CPU seconds of the thread that calls feed() (flush included)
@@ -99,6 +101,7 @@ inline Result run(const Scenario& o, bool verbose = false) {
     static const size_t odd[] = {1, 7, 4096, 65536, 3, 1000, 12345, 65535, 17, 8191};
     size_t oddIdx = 0;
     double cpu = 0, tonePhase = 0;
+    size_t dropLeft = 0;
     std::uniform_real_distribution<double> ur(0.0, 1.0);
     const float lvl = (float)std::pow(10.0, o.levelDb / 20.0), stepGain = (float)std::pow(10.0, o.stepDb / 20.0);
     r.lastRate = netBitrate(o.sc.tx.header, o.sc.tx.profile, o.sc.symbolRate);
@@ -129,7 +132,16 @@ inline Result run(const Scenario& o, bool verbose = false) {
         if (inGap && o.gapRemove) { /* the samples never arrive */ }
         else {
             if (inGap) for (auto& v : buf) v = cf32(0, 0);
-            rx.feed(buf.data(), n);
+            if (o.dropsPerSec > 0) {
+                // each sample may start a run of lost ones (a run may reach into the next chunk)
+                size_t w = 0;
+                for (size_t i = 0; i < n; i++) {
+                    if (dropLeft == 0 && ur(rng) < o.dropsPerSec / o.sc.rate) { dropLeft = o.dropMin + (size_t)(ur(rng) * (o.dropMax - o.dropMin)); r.dropped += dropLeft; }
+                    if (dropLeft) { dropLeft--; continue; }
+                    buf[w++] = buf[i];
+                }
+                if (w) rx.feed(buf.data(), w);
+            } else rx.feed(buf.data(), n);
         }
         cpu += threadCpuSeconds() - c0;
         produced += n;

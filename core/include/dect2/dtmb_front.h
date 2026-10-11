@@ -23,7 +23,14 @@ public:
     // Symbol-rate samples that pull() could deliver now
     size_t available() const;
     // Moves the following sampling instants by `symbols` symbol periods (positive: later)
-    void shift(double symbols) { pos_ += (int64_t)std::llround(symbols * ratio_ * kOne); }
+    // (never before the oldest stored input: the filter would read outside its buffer). Up to kHistory input samples that were already used stay
+    // stored, so that the receiver can go back and take the symbols again at other instants (after lost samples).
+    void shift(double symbols) {
+        pos_ += (int64_t)std::llround(symbols * ratio_ * kOne);
+        const int64_t lo = (int64_t)half_ << 32;
+        if (pos_ < lo) pos_ = lo;
+    }
+    static constexpr long kHistory = 32768;
     // Output spacing = one symbol * (1 + s)
     void setSpacing(double s) { step_ = (int64_t)std::llround(ratio_ * (1.0 + s) * kOne); spacing_ = s; }
     double spacing() const { return spacing_; }
