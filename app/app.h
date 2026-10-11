@@ -168,8 +168,8 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 32;   // App::family runs from 0 to kNumFamilies - 1
-constexpr int kNumSubModes = 18;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
+constexpr int kNumFamilies = 33;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumSubModes = 16;   // dect2::subModes(): the protocols of HF digital, mesh, pagers and marine listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
 struct App {
@@ -495,7 +495,7 @@ extern float gSwitchWidth;
 struct ModeDef { int family; const char* name; int group; ImU32 col; const char* blurb; const char* tip; const char* sub; ImVec4 accent; const char* subId = nullptr; const char* keys = nullptr; };
 extern const ModeDef kModes[];
 extern const int kNumModes;
-constexpr int kNumGroups = 7;   // TV, radio, aviation, maritime, satellite, utility, amateur
+constexpr int kNumGroups = 8;   // TV, radio, aviation, maritime, satellite, utility, amateur, network
 extern const char* const kGroupNames[kNumGroups];
 // The screens of a mode added after FM (family 6 and up). Each mode has one in its app/<mode>_ui.cpp and modeui.cpp lists them; the shell calls whichever
 // entry is set where it would draw the DVB version. A null entry means: nothing of this kind for the mode (or the default noted).
