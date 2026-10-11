@@ -215,7 +215,7 @@ struct App {
     int dtmbBwMhz = 8;        // DTMB channel width: 8 MHz (China, Hong Kong), 6 MHz (Cuba)
     bool atvFm = false;       // analog TV: FM video as analog FPV links send it (20 Msps), not the amplitude modulated broadcast signal
     bool lightUi = false;     // View > Light: every colour drawn with its lightness turned over (dark on white), hues kept (main.cpp)
-    int family = 0;           // 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 42 spectrum analyser, 38 NXDN, 40 DVB-C (6 and up: see ModeUi; engine standard code = family + 2)
+    int family = 0;           // 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 42 spectrum analyser, 38 NXDN, 40 DVB-C, 45 dPMR (6 and up: see ModeUi; engine standard code = family + 2)
     int sub = 0;              // 1 .. kNumSubModes: the protocol entry (dect2::subModes() index + 1) of HF digital, mesh, pagers, marine or VOR / ILS; 0 none
     std::deque<float> dabSnrH, dabFicH;
     std::deque<float> fmSnrH, fmPilotH, fmRdsH;
@@ -423,7 +423,7 @@ ImVec4 lossColour(const SampleLoss& l, ImVec4 normal = ImVec4(0.93f, 0.95f, 0.97
 void lossTooltip(const SampleLoss& l);
 // The "?" button next to the sound of a mode whose voice needs a codec OnAir does not ship (codec_help.cpp, docs/CODECS.md): found or not,
 // what it is, how to install it here, where to put it, a link to the full page and "Look again"
-enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe };
+enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe };
 void codecHelpButton(CodecHelp c);
 // rows that wrap in a narrow window: flowNext() between the groups of a row (a label and its control, a lamp, a read-out) instead of
 // ImGui::SameLine(); the next group stays on the line if it fits (as wide as in the last frame). flowBreak() ends the line, like NewLine().

@@ -84,6 +84,7 @@ cw	--mode cw	Overview|CW|Receiver|History
 dstar	--mode dstar	Overview|D-STAR|Receiver|History
 hfdl	--mode hfdl	Overview|Messages|Receiver|History
 nxdn	--mode nxdn	Overview|NXDN|Receiver|History
+dpmr	--mode dpmr	Overview|dPMR|Receiver|History
 gsmr	--mode gsmr	Overview|Cells|Receiver|History
 psk	--mode psk	Overview|PSK31|Receiver|History
 js8	--mode js8	Overview|JS8Call|Receiver|History

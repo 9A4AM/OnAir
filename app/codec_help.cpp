@@ -80,6 +80,22 @@ Text textOf(CodecHelp c) {
                 "  mkdir build && cd build && cmake .. && make && sudo make install",
 #endif
                 true};
+    case CodecHelp::DpmrAmbe:
+        return {"mbelib (dPMR AMBE+2 voice)",
+                "dPMR voice uses AMBE+2, a patented vocoder. OnAir does not ship it: calls, own and called IDs, colour codes, status and short "
+                "messages are shown without it. The open mbelib library decodes AMBE; when you install it yourself, OnAir loads it and plays dPMR "
+                "voice. Its own notice says that using it may need a patent licence: check the rules where you live first.",
+#if defined(__APPLE__)
+                "Homebrew has no formula; build it from github.com/szechyjs/mbelib:\n  brew install cmake\n  (clone the repository)\n"
+                "  mkdir build && cd build && cmake .. && make\nthen copy libmbe.dylib into an OnAir codecs folder below.",
+#elif defined(_WIN32)
+                "Build mbelib (github.com/szechyjs/mbelib) with CMake and Visual Studio, or take mbe.dll / libmbe.dll from a Windows build of "
+                "DSD-FME, and copy it into an OnAir codecs folder below. Use the same kind of Windows (x86_64 or ARM) as OnAir.",
+#else
+                "Most distributions do not package it; build it from github.com/szechyjs/mbelib (needs cmake and a C compiler):\n"
+                "  mkdir build && cd build && cmake .. && make && sudo make install",
+#endif
+                true};
     case CodecHelp::NxdnAmbe:
         return {"mbelib (NXDN AMBE+2 voice)",
                 "NXDN voice uses AMBE+2, a patented vocoder. OnAir does not ship it: calls, unit IDs, talkgroups, messages and site information are shown without "
@@ -113,8 +129,8 @@ void codecHelpButton(CodecHelp c) {
         ImGui::Separator();
         if (t.loadable) {
             std::string path, ver;
-            const bool mbe = c == CodecHelp::DstarAmbe || c == CodecHelp::NxdnAmbe;
-            const bool found = c == CodecHelp::NxdnAmbe ? dect2::nxdnAmbeAvailable(&path) : mbe ? dect2::dstarAmbeAvailable(&path) : dect2::hfdigFreedvLibrary(&path, &ver);
+            const bool mbe = c == CodecHelp::DstarAmbe || c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe;
+            const bool found = c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe ? dect2::nxdnAmbeAvailable(&path) : mbe ? dect2::dstarAmbeAvailable(&path) : dect2::hfdigFreedvLibrary(&path, &ver);
             if (found) ImGui::TextColored(pal::okGreen(), "%s found: %s", mbe ? "mbelib" : "codec2", path.c_str());
             else ImGui::TextColored(pal::warnAmber(), "%s not found%s", mbe ? "mbelib" : "codec2", mbe ? ": calls and data are shown, without sound" : "");
         } else {
@@ -135,7 +151,7 @@ void codecHelpButton(CodecHelp c) {
 #endif
             for (const auto& d : dect2::codecFolderList()) ImGui::BulletText("%s", d.c_str());
             ImGui::Spacing();
-            if (ImGui::Button("Look again")) { if (c == CodecHelp::NxdnAmbe) dect2::nxdnAmbeRescan(); else if (c == CodecHelp::DstarAmbe) dect2::dstarAmbeRescan(); else dect2::hfdigFreedvRescan(); }
+            if (ImGui::Button("Look again")) { if (c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe) dect2::nxdnAmbeRescan(); else if (c == CodecHelp::DstarAmbe) dect2::dstarAmbeRescan(); else dect2::hfdigFreedvRescan(); }
             ImGui::SameLine();
         }
         if (ImGui::Button("Full instructions")) dect2::openUrl(kDocUrl);

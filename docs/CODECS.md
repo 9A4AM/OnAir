@@ -118,6 +118,17 @@ rules where you live first.
 It is the same library as for D-STAR: build and install it as described there (macOS, Linux, Windows), with the same file names. Open
 NXDN: the **?** next to the voice says `mbelib found: <path>`; **Look again** searches again without a restart.
 
+## AMBE+2 (dPMR voice) through mbelib
+
+dPMR voice (ETSI TS 102 490, PMR446 digital and the licensed bands) uses AMBE+2 (the 3600x2450 variant), which is patented. Without a
+codec OnAir shows every call (own and called IDs, call type, colour code, emergency), status messages, short messages, packet data and
+the voice frame count, but plays no sound. If you install the open mbelib library (<https://github.com/szechyjs/mbelib>, ISC licence)
+yourself, OnAir loads it at run time and plays dPMR voice. mbelib's own notice says that using it may need a patent licence; check the
+rules where you live first.
+
+It is the same library as for D-STAR and NXDN: build and install it as described there, with the same file names. Open dPMR: the **?**
+next to the voice says `mbelib found: <path>`; **Look again** searches again without a restart.
+
 ## HDC (HD Radio sound)
 
 HD Radio sound uses HDC, a patented codec. OnAir shows the stations, the data and the pictures, but plays no sound. To hear HD Radio,

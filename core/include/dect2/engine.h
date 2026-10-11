@@ -45,6 +45,7 @@
 #include "cw_rx.h"
 #include "dstar_rx.h"
 #include "nxdn_rx.h"
+#include "dpmr_rx.h"
 #include "gsmr_rx.h"
 #include "dvbc_rx.h"
 #include "psk_rx.h"
@@ -196,6 +197,7 @@ public:
     CellReceiver& cell() { return rxCell_; }   // Cell towers: the receiver's own controls and results (the interface reads telemetry through latestRx)
     IsmReceiver& ism() { return rxIsm_; }   // ISM sensors: the receiver's own controls and results (the interface reads telemetry through latestRx)
     CwReceiver& cw() { return rxCw_; }   // CW: the receiver's own controls and results (the interface reads telemetry through latestRx)
+    DpmrReceiver& dpmr() { return rxDpmr_; }   // dPMR: scan, sound (the interface reads telemetry through latestRx)
     NxdnReceiver& nxdn() { return rxNxdn_; }   // NXDN: the receiver's own controls and results (the interface reads telemetry through latestRx)
     SpecxReceiver& specx() { return rxSpecx_; }   // spectrum explorer: FFT size and averaging
     SpecanReceiver& specan() { return rxSpecan_; }   // spectrum analyser: range, resolution, averaging (telemetry through latestRx)
@@ -310,6 +312,7 @@ private:
     CwReceiver rxCw_;
     DstarReceiver rxDstar_;
     NxdnReceiver rxNxdn_;
+    DpmrReceiver rxDpmr_;
     GsmrReceiver rxGsmr_;
     PskReceiver rxPsk_;
     Js8Receiver rxJs8_;

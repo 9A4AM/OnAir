@@ -36,6 +36,7 @@
 #include "cw_tel.h"
 #include "dstar_tel.h"
 #include "nxdn_tel.h"
+#include "dpmr_tel.h"
 #include "gsmr_tel.h"
 #include "dvbc_tel.h"
 #include "psk_tel.h"
@@ -108,6 +109,7 @@ struct RxTelemetry {
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34
     NxdnTelemetry nxdn;         // valid when standard == 39
+    DpmrTelemetry dpmr;         // valid when standard == 46
     GsmrTelemetry gsmr;         // valid when standard == 40
     struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics
         bool tpsOk = false, fecSync = false;
