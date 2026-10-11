@@ -42,6 +42,7 @@ dab	--dab	Overview|Radio|Ensemble|Map|Scan|Antenna|History
 fm	--fm	Overview|Radio|Scan|History
 dvbs	--mode dvbs	Overview|TV|Receiver|Stream|TS|History
 dtmb	--mode dtmb	Overview|TV|Receiver|Stream|TS|Scan|History
+dvbc	--mode dvbc	Overview|TV|Receiver|Stream|TS|History
 atv	--mode atv	Overview|Video|Receiver|History
 dmr	--mode dmr	Overview|Calls|Receiver|History
 drm	--mode drm	Overview|Radio|Receiver|History

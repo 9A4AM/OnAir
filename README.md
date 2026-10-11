@@ -90,6 +90,7 @@ These receivers are built from the published specifications and checked end to e
 |---|---|---|
 | **DVB-S / DVB-S2** | Satellite TV (through an LNB) | Channels and playback, all DVB-S2 MODCODs |
 | **DTMB** | Digital TV in China, Hong Kong, Macau (8 MHz) and Cuba (6 MHz) | Channels and playback |
+| **DVB-C** | Cable TV, EN 300 429 / J.83 annex A and C, 16 to 256-QAM (needs a cable feed) | Symbol rate and QAM found automatically, channels and playback |
 | **Analog TV** | PAL, SECAM, NTSC | Picture and sound |
 | **DRM** | Digital radio on long, medium and short wave | Audio and station information |
 | **DMR** | Digital two-way radio | Talkgroups, IDs and data (no voice) |

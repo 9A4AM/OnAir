@@ -49,6 +49,7 @@ int main(int argc, char** argv) {
     MultipathDetector mpd;
     QualityMeter qm;
     bool useFile = false, haveDev = false, synthetic = false, listen = false, atvFm = false;
+    double dvbcSr = 0; int dvbcQam = 0; bool dvbcAnnexC = false;
     const SubMode* subMode = nullptr;   // --standard named one protocol of a shared receiver
     std::string wavPath;
     std::vector<int16_t> wav;
@@ -59,7 +60,10 @@ int main(int argc, char** argv) {
         auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)""; };
         if (a == "--hackrf") haveDev = true;
         else if (a == "--radio") { const std::string kv = next(); const auto eq = kv.find('='); if (eq != std::string::npos) tune.radio[kv.substr(0, eq)] = kv.substr(eq + 1); }   // a setting of the radio, e.g. --radio iqformat=cs8 (PlutoSDR with Tezuka), --radio ppm=-3
-        else if (a == "--atv-fm") atvFm = true;   // with --standard atv: FM video (analog FPV links), 20 Msps
+        else if (a == "--atv-fm") atvFm = true;
+        else if (a == "--dvbc-sr") dvbcSr = atof(next()) * 1e6;   // with --standard dvbc: a manual symbol rate in Msym/s (default: measured)
+        else if (a == "--dvbc-qam") dvbcQam = atoi(next());       // with --standard dvbc: 16, 32, 64, 128 or 256 (default: found from the stream)
+        else if (a == "--dvbc-annexc") dvbcAnnexC = true;          // with --standard dvbc: J.83 annex C (roll-off 0.13)   // with --standard atv: FM video (analog FPV links), 20 Msps
         else if (a == "--freq") { freq = atof(next()); freqSet = true; }
         else if (a == "--lna") tune.lnaDb = atoi(next());
         else if (a == "--vga") tune.vgaDb = atoi(next());
@@ -151,9 +155,10 @@ int main(int argc, char** argv) {
     e.m17().setSilent(!listen);   // M17 voice only with --listen as well
     e.cw().setSilent(!listen);    // CW sidetone only with --listen as well
     e.psk().setSilent(true);    // PSK31: text only, no sound
-    e.js8().setSilent(true);
-    e.specx().setSilent(true);  // spectrum explorer: the summary line only    // JS8Call: text only, no sound
-    e.specan().setSilent(true);   // spectrum analyser: no sound    // JS8Call: text only, no sound
+    e.js8().setSilent(true);    // JS8Call: text only, no sound
+    e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
+    e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
+    e.dvbc().setAnnexC(dvbcAnnexC);
     e.dstar().setSilent(!listen); // D-STAR voice (mbelib) too
     e.nxdn().setSilent(!listen);  // NXDN voice (mbelib) too
     if (!wavPath.empty()) e.fm().setAudioTap([&wav](const float* l, const float* r, size_t n) {

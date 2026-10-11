@@ -750,7 +750,7 @@ void gainControl(App& a) {
 
 // The receiver modes. Adding a mode is one row here (and its family number in app.h / setFamily).
 // The families are also stored in the settings: 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh,
-// 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 32 cell towers, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 38 NXDN, 39 GSM-R, 42 spectrum analyser.
+// 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 32 cell towers, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 38 NXDN, 39 GSM-R, 40 DVB-C.
 // Within a group the rows are shown in this order; the keys 1-9 pick the modes in the same order.
 const ModeDef kModes[] = {
     {0, "DVB",        0, IM_COL32(52, 92, 108, 255),  "DVB-T2 / DVB-T, detected automatically",                                    "DVB-T2 and DVB-T, automatic (Europe, Middle East, Africa, Asia, Australia)", "T2 and T, automatic",   ImVec4(0.36f, 0.74f, 0.86f, 1)},
@@ -760,6 +760,7 @@ const ModeDef kModes[] = {
     {6, "DVB-S/S2", 0, IM_COL32(52, 96, 150, 255), "DVB-S, DVB-S2 and DVB-S2X satellite TV (L-band IF through an LNB)", "DVB-S / S2 / S2X satellite television, needs a dish and an LNB", "Satellite", ImVec4(0.42f, 0.64f, 0.96f, 1)},
     {7, "DTMB", 0, IM_COL32(150, 62, 74, 255), "DTMB / DTMB-A digital TV (China, Hong Kong, Cuba), 8 or 6 MHz channel", "DTMB digital terrestrial television (China, Hong Kong, Macau, Cuba, Pakistan)", "China, Hong Kong, Cuba", ImVec4(0.92f, 0.46f, 0.50f, 1)},
     {8, "Analog TV", 0, IM_COL32(100, 102, 112, 255), "Analogue TV: PAL, SECAM and NTSC with FM sound", "Analogue television (PAL, SECAM, NTSC)", "PAL, SECAM, NTSC", ImVec4(0.76f, 0.79f, 0.84f, 1)},
+    {40, "DVB-C", 0, IM_COL32(70, 110, 120, 255), "DVB-C cable TV (EN 300 429 / J.83 annex A and C): 16 to 256-QAM, symbol rate measured or set; needs a cable feed", "DVB-C digital cable television, needs the cable network as the input (not an antenna)", "Cable", ImVec4(0.45f, 0.78f, 0.84f, 1), nullptr, "dvbc dvb-c cable qam j.83 annex catv tv"},
     {2, "DAB / DAB+", 1, IM_COL32(40, 130, 96, 255),  "DAB / DAB+ digital radio, Band III channels 5A to 13F",                     "DAB and DAB+ digital radio",                                                  "Digital radio",         ImVec4(0.36f, 0.82f, 0.58f, 1)},
     {5, "FM",         1, IM_COL32(140, 90, 100, 255), "FM broadcast radio (87.5 - 108 MHz), stereo and RDS",                       "FM broadcast radio with stereo and RDS",                                      "Stereo and RDS",        ImVec4(0.95f, 0.52f, 0.62f, 1)},
     {10, "DRM", 1, IM_COL32(48, 112, 128, 255), "DRM30 and DRM+ digital radio (shortwave, medium wave, VHF)", "DRM digital radio: DRM30 below 30 MHz, DRM+ in the VHF bands", "SW, MW, VHF", ImVec4(0.46f, 0.82f, 0.82f, 1)},

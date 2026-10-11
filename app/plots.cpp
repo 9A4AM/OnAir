@@ -38,6 +38,7 @@ ChanWidth channelWidth(const App& a) {
         w.settable = w.hasAuto = true; w.manual = a.fmChanKhz > 0;
         w.mhz = (w.manual ? a.fmChanKhz * 1e3 : FmReceiver::kDefaultChannelWidthHz) / 1e6;
     } else if (a.family == 7) { w.mhz = a.dtmbBwMhz; w.settable = w.manual = true; }
+    else if (a.family == 40 && a.engine.running() && a.rx.standard == 41 && a.rx.dvbc.symbolRate > 0) w.mhz = a.rx.dvbc.symbolRate * (1 + a.rx.dvbc.rollOff) / 1e6;
     else if (a.family == 6 && a.engine.running() && a.rx.standard == 7 && a.rx.dvbs.symbolRate > 0) w.mhz = a.rx.dvbs.symbolRate * (1 + a.rx.dvbs.rollOff) / 1e6;
     else if (const ModeTuning* mt = modeTuning(a.family + 2)) w.mhz = mt->bandwidthMhz;
     return w;

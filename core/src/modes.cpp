@@ -76,6 +76,7 @@
 #include "dect2/gsmr_rx.h"
 #include "dect2/gsmr_gen.h"
 #include "dect2/gsmr_tel.h"
+#include "dect2/dvbc_rx.h"
 #include "dect2/modes.h"
 #include "dect2/demo_ts.h"
 #include "dect2/exact_resampler.h"
@@ -157,7 +158,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), gsmrTuning(), pskTuning(), js8Tuning(), dvbcTuning()};
     return t;
 }
 
@@ -253,6 +254,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 35: return makeDstarSynth(cfg, sampleRate);
     case 40: return makeNxdnSynth(cfg, sampleRate);
     case 41: return makeGsmrSynth(cfg, sampleRate);
+    case 42: return makeDvbcSynth(cfg, sampleRate);
     case 38: return makePskSynth(cfg, sampleRate);
     case 39: return makeJs8Synth(cfg, sampleRate);
     case 43: return makeSpecxSynth(cfg, sampleRate);
@@ -294,6 +296,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 34: return dstarSummary(t.dstar);
     case 39: return nxdnSummary(t.nxdn);
     case 40: return gsmrSummary(t.gsmr);
+    case 41: return dvbcSummary(t.dvbc);
     case 37: return pskSummary(t.psk);
     case 38: return js8Summary(t.js8);
     case 42: return specxSummary(t.specx);
