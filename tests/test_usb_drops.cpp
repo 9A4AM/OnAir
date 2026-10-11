@@ -1,8 +1,8 @@
 // DVB-T and DVB-T2 through a lossy USB link (a PlutoSDR on its USB 2 cable run above the ~4 Msps it carries, rate_choice.h linkRateFor):
 // gaps of 1-10 ms of lost samples, spaced so 0.5 %, 2 % or 5 % of the samples are gone (tests/impair.h drop). Prints the packet (DVB-T)
-// and baseband-frame (DVB-T2) error rates, which are what the app can promise; checks only that the clean signal decodes fully and that
-// the receiver still decodes most of the stream with light losses (0.5 % in 10 ms gaps). Many short gaps hurt far more than a few long
-// ones: each gap moves the symbol timing and the receiver has to find it again.
+// and baseband-frame (DVB-T2) error rates, which are what the app can promise, and checks them against limits. Each gap moves the symbol
+// timing: the receivers notice within a symbol or two (DVB-T) or from the next P1 (DVB-T2), find the symbol start again and keep the
+// carrier, the channel estimate and the frame position, so a gap costs roughly the symbols it touches.
 #include "dect2/dvbt_gen.h"
 #include "dect2/dvbt_rx.h"
 #include "dect2/t2.h"
@@ -14,6 +14,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <mutex>
@@ -25,7 +26,9 @@ using testjobs::jprintf;
 static std::atomic<int> fails{0};
 #define CHECK(c, ...) do { if (!(c)) { jprintf("FAIL: " __VA_ARGS__); jprintf("\n"); fails++; } } while (0)
 
-struct Loss { double fraction; double gapMs; };   // fraction of the samples lost, in gaps of gapMs (each 0.5x to 1.5x of it)
+// fraction of the samples lost, in gaps of gapMs (each 0.5x to 1.5x of it), and the worst DVB-T packet and DVB-T2 baseband-frame error
+// rates accepted (what the receiver does now, with a margin: each gap should cost little more than the symbols it touches)
+struct Loss { double fraction; double gapMs; double maxPerT; double maxFerT2; };
 
 // The samples a lossy link hands on: gaps of random length around gapMs, their spacing set so `fraction` of the samples are lost
 static std::vector<cf32> lossy(const std::vector<cf32>& x, double rate, Loss l, unsigned seed, size_t start) {
@@ -41,6 +44,7 @@ static std::vector<cf32> lossy(const std::vector<cf32>& x, double rate, Loss l, 
         const size_t to = std::min(x.size(), (size_t)next);
         out.insert(out.end(), x.begin() + (ptrdiff_t)pos, x.begin() + (ptrdiff_t)to);
         pos = to + (size_t)(gapMean * u(rng));   // the gap: impair::drop on the stream as it goes
+        if (getenv("USB_DROPS_DEBUG") && to < x.size()) fprintf(stderr, "  [gap] at rx %zu: %zu samples\n", out.size(), std::min(pos, x.size()) - to);
         next = pos + period * u(rng);
     }
     return out;
@@ -85,7 +89,7 @@ static void dvbtCase(Loss l) {
     jprintf("DVB-T  8K 64QAM 2/3  lost %4.1f %% in %4.1f ms gaps: %6zu good of %6zu sent, %5zu damaged, %5zu missing between -> PER %5.1f %%\n",
             l.fraction * 100, l.gapMs, good, sentAfter, bad, missing, per * 100);
     if (l.fraction == 0) CHECK(good > 1000 && bad + missing == 0, "DVB-T clean: %zu good, %zu bad, %zu missing", good, bad, missing);
-    if (l.fraction > 0 && l.fraction <= 0.005 && l.gapMs >= 10) CHECK(good > 1000 && per < 0.25, "DVB-T 0.5 %% losses in 10 ms gaps: PER %.2f", per);
+    if (l.fraction > 0) CHECK(good > 1000 && per < l.maxPerT, "DVB-T %.1f %% losses in %.0f ms gaps: PER %.3f, at most %.2f expected", l.fraction * 100, l.gapMs, per, l.maxPerT);
 }
 
 static void t2Case(Loss l) {
@@ -143,14 +147,22 @@ static void t2Case(Loss l) {
     jprintf("DVB-T2 32K 256QAM 2/3 lost %4.1f %% in %4.1f ms gaps: %4d of %4d baseband frames intact -> BBFRAME error rate %5.1f %%\n",
             l.fraction * 100, l.gapMs, same, sentBlocks, fer * 100);
     if (l.fraction == 0) CHECK(same == sentBlocks && sentBlocks > 0, "DVB-T2 clean: %d of %d", same, sentBlocks);
-    if (l.fraction > 0 && l.fraction <= 0.005 && l.gapMs >= 10) CHECK(fer < 0.25, "DVB-T2 0.5 %% losses in 10 ms gaps: %.2f", fer);
+    if (l.fraction > 0) CHECK(fer < l.maxFerT2, "DVB-T2 %.1f %% losses in %.0f ms gaps: BBFRAME error rate %.3f, at most %.2f expected", l.fraction * 100, l.gapMs, fer, l.maxFerT2);
 }
 
-int main() {
-    const Loss losses[] = {{0, 0}, {0.005, 1}, {0.005, 10}, {0.02, 1}, {0.02, 10}, {0.05, 1}, {0.05, 10}};
+int main(int argc, char** argv) {
+    // optional filter: "t" runs only DVB-T, "t2" only DVB-T2, a third argument picks one loss case by index (for working on one case)
+    const char* only = argc > 1 ? argv[1] : "";
+    const int pick = argc > 2 ? atoi(argv[2]) : -1;
+    // measured (Oct 2026): DVB-T 2.8, 1.0, 14.1, 4.5, 26.8, 5.7 %; DVB-T2 3.7, 0, 20.6, 14.3, 57.8, 4.8 %. Before the quick resynchronisation
+    // DVB-T lost 53, 4.8, 93, 14, 93, 51 % and DVB-T2 21, 0, 60, 14, 62, 24 %.
+    const Loss losses[] = {{0, 0, 0, 0}, {0.005, 1, 0.06, 0.10}, {0.005, 10, 0.03, 0.03}, {0.02, 1, 0.22, 0.32},
+                           {0.02, 10, 0.09, 0.25}, {0.05, 1, 0.40, 0.75}, {0.05, 10, 0.12, 0.15}};
     testjobs::Jobs jobs;
-    for (const Loss& l : losses) jobs.add([l] { dvbtCase(l); });
-    for (const Loss& l : losses) jobs.add([l] { t2Case(l); });
+    int idx = 0;
+    for (const Loss& l : losses) { if (strcmp(only, "t2") && (pick < 0 || pick == idx)) jobs.add([l] { dvbtCase(l); }); idx++; }
+    idx = 0;
+    for (const Loss& l : losses) { if (strcmp(only, "t") && (pick < 0 || pick == idx)) jobs.add([l] { t2Case(l); }); idx++; }
     jobs.run(2);   // the T2 decoder thread drops frames it is busy for: few cases at once, so only the losses count
     jprintf(fails ? "USB drop tests FAILED\n" : "USB drop tests passed\n");
     return fails ? 1 : 0;

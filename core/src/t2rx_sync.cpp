@@ -377,16 +377,34 @@ void T2Receiver::Impl::handleP1Candidate(int64_t d, float metric) {
         };
         if (!plausible(prevPos, (double)d)) {
             bool confirmsRejected = haveRejected && plausible(rejectedPos, (double)d);
+            // A clear P1 with the same signalling, earlier than expected, where the expected one did not show up (or close before it): samples
+            // were lost (a USB stall) and the timeline jumped back by that much. Take it at once instead of waiting for the next frame to agree,
+            // which lost one more whole frame per gap. Samples can only go missing, so a P1 later than expected still needs the confirmation.
+            const FftMode* fmNow = fftModeFromS2(r.s2 >> 1);
+            const int codeNow = (r.s2 >> 1) == 7 ? 5 : (r.s2 >> 1) == 6 ? 1 : (r.s2 >> 1);
+            const double expect = prevPos + frameLen;
+            const bool sameSignal = fmNow && fmNow->n == fftN && r.s1 == curS1 && codeNow == fftCode;
+            const bool lostSamples = sameSignal && r.conf >= 0.9 && metric >= 0.5 && (double)d < expect - 32 && (double)d > prevPos + kP1Len;
+            if (lostSamples) confirmsRejected = true;
             if (!confirmsRejected) {
                 if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] ignored implausible P1 (%.0f samples from the expected position)\n", (double)d - prevPos - frameLen);
                 rejectedPos = (double)d; haveRejected = true;
                 lastP1Abs = d;
                 return;
             }
-            // the timeline jumped: drop what is in flight and start over from this P1
-            frames.clear(); frameCells.clear(); p2cells.clear();
+            // the timeline jumped: drop what is in flight and start over from this P1. When it jumped because samples were lost, the frame
+            // that holds the gap is kept: it learns how many were lost and decodes its symbols after the gap at their new place.
+            Frame* hit = nullptr;
+            if (lostSamples && !frames.empty() && frames.back().anchor == (int64_t)std::llround(prevPos) + kP1Len && !frames.back().lostKnown) hit = &frames.back();
+            if (hit) {
+                hit->lost = (int64_t)std::llround(prevPos + frameLen - ((double)d - r.frac));
+                hit->lostKnown = true;
+                if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] %lld samples lost in the frame\n", (long long)hit->lost);
+            } else {
+                frames.clear(); frameCells.clear(); p2cells.clear();
+            }
             prevPos = -1;
-            if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] timeline jump confirmed, resynchronising\n");
+            if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] timeline jump %s, resynchronising\n", lostSamples ? "(samples lost)" : "confirmed");
         }
         haveRejected = false;
     }

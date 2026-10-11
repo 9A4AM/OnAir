@@ -95,7 +95,9 @@ void T2Receiver::Impl::runDataStage() {
     struct Obs { int l; cf32 v; uint8_t type; };
     std::vector<std::vector<Obs>> obs(M);
     const std::vector<std::vector<uint8_t>>& types = dsCache.types;
+    auto erased = [&](int l) { return l < (int)symErased.size() && symErased[(size_t)l]; };
     for (int l = 0; l < L; l++) {
+        if (erased(l)) continue;
         for (int n = 0; n < M; n++) {
             int k = dx * n;
             uint8_t t = types[l][k];
@@ -150,7 +152,9 @@ void T2Receiver::Impl::runDataStage() {
         std::vector<cf32> prevRaw(K), curRaw(K);
         auto isPilot = [](uint8_t t) { return t == kCellContinual || t == kCellScattered; };
         for (int kk = 0; kk < K; kk++) if (isPilot(types[nP2][kk])) prevRaw[kk] = frameCells[nP2][off + kk];
+        int pl = nP2;   // the last symbol compared (symbols lost with dropped samples are stepped over)
         for (int l = nP2 + 1; l < L; l++) {
+            if (erased(l)) continue;
             cont.clear(); prod.clear();
             for (int kk = 0; kk < K; kk++) if (isPilot(types[l][kk])) curRaw[kk] = frameCells[l][off + kk];
             // Continual pilots on both symbols as a rule. The frame-closing symbol has none: there the carriers where both symbols have a
@@ -160,16 +164,17 @@ void T2Receiver::Impl::runDataStage() {
             for (int pass = 0; pass < 2 && cont.size() < 4; pass++) {
                 cont.clear(); prod.clear();
                 for (int kk = 0; kk < K; kk++) {
-                    const uint8_t ta = types[l][kk], tb = types[l - 1][kk];
+                    const uint8_t ta = types[l][kk], tb = types[pl][kk];
                     if (pass == 0 ? (ta != kCellContinual || tb != kCellContinual) : (!isPilot(ta) || !isPilot(tb))) continue;
                     cf32 za = frameCells[l][off + kk] / pm.pilot(l, kk, ta).real();
-                    cf32 zb = prevRaw[kk] / pm.pilot(l - 1, kk, tb).real();
+                    cf32 zb = prevRaw[kk] / pm.pilot(pl, kk, tb).real();
                     cd pr = cd(za.real(), za.imag()) * std::conj(cd(zb.real(), zb.imag()));
                     cont.push_back(kk);
                     prod.push_back(pr);
                 }
             }
             std::swap(prevRaw, curRaw);
+            pl = l;
             if (cont.size() < 4) continue;
             // slope from phase differences of neighbouring pilots
             cd sl = 0;
@@ -227,6 +232,7 @@ void T2Receiver::Impl::runDataStage() {
         for (int n = 0; n < M; n++) obs[n].clear();
         for (int l = 0; l < L; l++)
             for (int n = 0; n < M; n++) {
+                if (erased(l)) break;
                 int k = dx * n;
                 uint8_t t = types[l][k];
                 if (t != kCellP2Pilot && t != kCellScattered && t != kCellContinual) continue;
@@ -397,7 +403,8 @@ void T2Receiver::Impl::runDataStage() {
                     float g2 = std::max(1e-12f, std::norm(hh));
                     orig[Hi[jj]] = frameCells[l][off + kk] * std::conj(hh) / g2;
                     const float nk = noiseCar[kk] > 0 ? noiseCar[kk] : (float)sigma2;
-                    on0[Hi[jj]] = (float)(nk * symScale[(size_t)l] / (2.0 * g2));
+                    on0[Hi[jj]] = erased(l) ? 1e6f : (float)(nk * symScale[(size_t)l] / (2.0 * g2));
+                    if (erased(l)) orig[Hi[jj]] = cf32(0, 0);
                     jj++;
                 }
             dstream.insert(dstream.end(), orig.begin(), orig.end());

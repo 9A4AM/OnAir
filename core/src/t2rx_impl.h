@@ -64,6 +64,12 @@ struct Frame {
     int next = 0;        // next symbol index to process
     int maxSyms = 0;
     double sro = 0;      // clock error left in its samples when it started: the placement of its symbols must not change half-way through
+    // Samples lost inside the frame (a USB stall): from symbol lostAt on (the first whose cyclic prefix no longer matched) the symbols sit
+    // `lost` samples earlier, known exactly from where the next P1 turned up. Those that overlap the gap are erased; the rest decode.
+    int lostAt = -1;
+    bool lostKnown = false, intactAgain = false;
+    int64_t lost = 0;
+    int64_t lostFrom = 0;   // where the first mismatching symbol would have started: the gap lies after it
 };
 
 } // namespace t2rxi
@@ -232,6 +238,9 @@ struct T2Receiver::Impl {
     float l1N0 = 0;
     // data stage
     std::vector<std::vector<cf32>> frameCells;
+    std::vector<uint8_t> symErased;   // per symbol of the current frame: lost with the samples (no pilots, no data)
+    double cpRhoAt(int64_t s) const;
+    void eraseSymbol(int k);
     bool dataValid = false;
     float dataSnr = 0;
     int dataDx = 0, dataDy = 0, dataPp = 0;
