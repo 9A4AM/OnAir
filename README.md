@@ -97,6 +97,7 @@ These receivers are built from the published specifications and checked end to e
 | **ACARS** | Aircraft data link, VHF | Messages, and positions on a map |
 | **CW** | Morse code on the HF bands | Every CW signal in a 14 kHz window at once: speed, SNR and text, callsigns highlighted |
 | **M17** | Open digital voice, 2 m / 70 cm | Callsigns, voice through your libcodec2, text messages, positions on a map |
+| **D-STAR** | Amateur digital voice, 2 m / 70 cm | Call log with callsigns and repeaters, slow data messages, D-PRS / GPS positions on a map, voice through your mbelib |
 | **Airband** | AM voice, 118 - 137 MHz | Several 25 and 8.33 kHz channels at once: squelch, scan, priority, activity log |
 | **VDL Mode 2** | Aircraft data link, 136.7 - 137 MHz | Every VDL2 channel at once: ACARS, X.25 / CLNP, ADS-C, aircraft and ground stations, positions on a map |
 | **VOR** | Navigation beacons, 108 - 118 MHz | The radial (conventional and Doppler VOR), Morse identification, voice; a position from two stations on the map |

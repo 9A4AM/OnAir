@@ -12,6 +12,7 @@ restart.
 |---|---|---|---|
 | HF digital, FreeDV | codec2 | plays speech when codec2 is installed | **yes** |
 | DMR | AMBE+2 | finds, counts and logs voice calls; no sound | no |
+| D-STAR | AMBE (3600x2400) | call log, messages, positions; plays voice when mbelib is installed | **yes** (mbelib) |
 | HD Radio | HDC | stations, data and pictures; no sound | no |
 | CDR | DRA+ | service list; no sound | no |
 | Inmarsat Aero | AMBE (C channel voice) | P channel data only; voice channels are not tuned | no |
@@ -74,6 +75,37 @@ load an AMBE library. The open mbelib library (<https://github.com/szechyjs/mbel
 that using it may need a patent licence. Wiring it into OnAir's DMR receiver is not a small change, so it is not done.
 
 To hear DMR voice, use a separate program such as DSD-FME (<https://github.com/lwvmobile/dsd-fme>).
+
+## AMBE (D-STAR voice) through mbelib
+
+D-STAR voice uses AMBE (the 3600x2400 variant), which is patented. Without a codec OnAir shows every call (callsigns, repeaters,
+flags), the slow data message, the GPS and D-PRS positions and the voice frame count, but plays no sound. If you install the open
+mbelib library (<https://github.com/szechyjs/mbelib>, ISC licence) yourself, OnAir loads it at run time and plays D-STAR voice. mbelib's
+own notice says that using it may need a patent licence; check the rules where you live first.
+
+mbelib has no ready-made downloads, so it is built from source (it needs CMake and a C compiler):
+
+### macOS
+
+1. Install Homebrew (<https://brew.sh>), then `brew install cmake`.
+2. `git clone https://github.com/szechyjs/mbelib`, then `cd mbelib && mkdir build && cd build && cmake .. && make`.
+3. Copy `libmbe.dylib` (or `libmbe.1.3.dylib`) into an OnAir codecs folder (above), or run `sudo make install` (`/usr/local/lib`).
+
+### Linux
+
+1. Install `git`, `cmake` and a compiler (Debian / Ubuntu: `sudo apt install git cmake build-essential`; Fedora:
+   `sudo dnf install git cmake gcc`).
+2. `git clone https://github.com/szechyjs/mbelib`, then `cd mbelib && mkdir build && cd build && cmake .. && make && sudo make install`
+   (then `sudo ldconfig`), or copy `libmbe.so*` into an OnAir codecs folder.
+
+### Windows
+
+Build mbelib with CMake and Visual Studio (x64), or take `mbe.dll` / `libmbe.dll` from a Windows build of DSD-FME
+(<https://github.com/lwvmobile/dsd-fme>), and put it into an OnAir codecs folder (above).
+
+File names OnAir looks for: `mbe.dll`, `libmbe.dll` or `mbelib.dll` (Windows), `libmbe.dylib` or `libmbe.1.3.dylib` (macOS),
+`libmbe.so`, `libmbe.so.1` or `libmbe.so.1.3` (Linux). Open D-STAR: the **?** next to the voice says `mbelib found: <path>`;
+**Look again** searches again without a restart.
 
 ## HDC (HD Radio sound)
 

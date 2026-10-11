@@ -78,7 +78,9 @@ ism	--mode ism	Overview|Sensors|Receiver|History
 vor	--mode vor	Overview|Navigation|Receiver|History
 ils	--mode ils	Overview|Navigation|Receiver|History
 m17	--mode m17	Overview|M17|Receiver|History
-cw	--mode cw	Overview|CW|Receiver|History"
+cell	--mode cell	Overview|Cells|Receiver|History
+cw	--mode cw	Overview|CW|Receiver|History
+dstar	--mode dstar	Overview|D-STAR|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"

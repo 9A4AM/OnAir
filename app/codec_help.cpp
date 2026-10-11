@@ -2,6 +2,7 @@
 // the codec was found and where, what it is, how to install it on this computer, where to put it, a link to the full page, and "Look again".
 #include "app.h"
 #include "dect2/hfdig_freedv.h"
+#include "dect2/dstar_ambe.h"
 #include "dect2/updater.h"
 #include <string>
 #include <vector>
@@ -62,6 +63,22 @@ Text textOf(CodecHelp c) {
                 "Save a .bits file (Save for iridium-toolkit), then use iridium-toolkit (github.com/muccc/iridium-toolkit) with the "
                 "ir77_ambe_decode program from osmo-ir77. Their README explains the steps.",
                 false};
+    case CodecHelp::DstarAmbe:
+        return {"mbelib (D-STAR AMBE voice)",
+                "D-STAR voice uses AMBE, a patented vocoder. OnAir does not ship it: calls, callsigns, messages and positions are shown without "
+                "it. The open mbelib library decodes AMBE; when you install it yourself, OnAir loads it and plays D-STAR voice. Its own notice "
+                "says that using it may need a patent licence: check the rules where you live first.",
+#if defined(__APPLE__)
+                "Homebrew has no formula; build it from github.com/szechyjs/mbelib:\n  brew install cmake\n  (clone the repository)\n"
+                "  mkdir build && cd build && cmake .. && make\nthen copy libmbe.dylib into an OnAir codecs folder below.",
+#elif defined(_WIN32)
+                "Build mbelib (github.com/szechyjs/mbelib) with CMake and Visual Studio, or take mbe.dll / libmbe.dll from a Windows build of "
+                "DSD-FME, and copy it into an OnAir codecs folder below. Use the same kind of Windows (x86_64 or ARM) as OnAir.",
+#else
+                "Most distributions do not package it; build it from github.com/szechyjs/mbelib (needs cmake and a C compiler):\n"
+                "  mkdir build && cd build && cmake .. && make && sudo make install",
+#endif
+                true};
     }
     return {"", "", "", false};
 }
@@ -79,8 +96,10 @@ void codecHelpButton(CodecHelp c) {
         ImGui::Separator();
         if (t.loadable) {
             std::string path, ver;
-            if (dect2::hfdigFreedvLibrary(&path, &ver)) ImGui::TextColored(pal::okGreen(), "codec2 found: %s", path.c_str());
-            else ImGui::TextColored(pal::warnAmber(), "codec2 not found");
+            const bool mbe = c == CodecHelp::DstarAmbe;
+            const bool found = mbe ? dect2::dstarAmbeAvailable(&path) : dect2::hfdigFreedvLibrary(&path, &ver);
+            if (found) ImGui::TextColored(pal::okGreen(), "%s found: %s", mbe ? "mbelib" : "codec2", path.c_str());
+            else ImGui::TextColored(pal::warnAmber(), "%s not found%s", mbe ? "mbelib" : "codec2", mbe ? ": calls and data are shown, without sound" : "");
         } else {
             ImGui::TextColored(pal::warnAmber(), "Not decoded in OnAir");
         }
@@ -99,7 +118,7 @@ void codecHelpButton(CodecHelp c) {
 #endif
             for (const auto& d : dect2::codecFolderList()) ImGui::BulletText("%s", d.c_str());
             ImGui::Spacing();
-            if (ImGui::Button("Look again")) dect2::hfdigFreedvRescan();
+            if (ImGui::Button("Look again")) { if (c == CodecHelp::DstarAmbe) dect2::dstarAmbeRescan(); else dect2::hfdigFreedvRescan(); }
             ImGui::SameLine();
         }
         if (ImGui::Button("Full instructions")) dect2::openUrl(kDocUrl);

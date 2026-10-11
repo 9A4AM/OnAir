@@ -52,6 +52,8 @@
 #include "dect2/vor_rx.h"
 #include "dect2/vor_gen.h"
 #include "dect2/m17_rx.h"
+#include "dect2/dstar_rx.h"
+#include "dect2/dstar_gen.h"
 #include "dect2/m17_gen.h"
 #include "dect2/cw_rx.h"
 #include "dect2/cw_gen.h"
@@ -136,7 +138,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cwTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning()};
     return t;
 }
 
@@ -227,6 +229,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 32: return makeVorSynth(cfg, sampleRate);
     case 33: return makeM17Synth(cfg, sampleRate);
     case 36: return makeCwSynth(cfg, sampleRate);
+    case 35: return makeDstarSynth(cfg, sampleRate);
     default: return nullptr;
     }
 }
@@ -259,6 +262,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 31: return vorSummary(t.vor);
     case 32: return m17Summary(t.m17);
     case 35: return cwSummary(t.cw);
+    case 34: return dstarSummary(t.dstar);
     default: return "";
     }
 }
