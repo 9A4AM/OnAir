@@ -108,6 +108,8 @@ struct LteFound {                // a cell found by the synchronisation signals
     double frameStart = 0;       // input sample (at the input rate) where a radio frame starts (subframe 0)
     double clockPpm = 0;         // the sample clock error measured from the PSS spacing
     float pssDb = 0;             // detection strength (peak to mean)
+    float sssScore = 0;          // SSS match (0..1)
+    float sssSig = 0;            // SSS significance: the match against the spread of all the other identities
 };
 struct LteMibInfo { bool ok = false; int nRb = 0, ports = 0, phichDur = 0, phichRes = 0, sfn = 0; double frameStart = 0; };
 struct LteMeas { float rsrpDb = -200, rsrqDb = -99, sinrDb = -99, rssiDb = -200; };
@@ -123,7 +125,10 @@ struct LteCellResult {
 
 // Search a block (at rate fs, the candidate carrier at fs offset `offsetHz` from 0 Hz) for LTE cells and decode what they broadcast.
 // maxCfoHz: the carrier offset searched (+-). wantSi: decode SIBs (needs the whole carrier inside the block).
-struct LteSearchOpts { double maxCfoHz = 25000; bool wantSi = true; int maxCells = 4; float minPssDb = 9.0f; };
+struct LteSearchOpts { double maxCfoHz = 25000; bool wantSi = true; int maxCells = 12; float minPssDb = 9.0f; };
 std::vector<LteCellResult> lteSearchDecode(const cf32* x, size_t n, double fs, double offsetHz, const LteSearchOpts& o);
+// a quick PSS-only look (20 ms) at each offset: the offsets where some PSS stands minDb over the correlation mean, with its strength
+struct LtePssProbe { double offsetHz = 0; float db = 0; };
+std::vector<LtePssProbe> ltePssProbe(const cf32* x, size_t n, double fs, const std::vector<double>& offsetsHz, double maxCfoHz = 25000, float minDb = 9.0f);
 
 } // namespace dect2::cell

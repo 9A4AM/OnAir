@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     for (const auto& c : t.carriers) printf("carrier %.2f MHz, %.2f MHz wide, %.1f dB over the floor\n", c.freqHz / 1e6, c.widthHz / 1e6, c.levelDb);
     for (const auto& c : t.cells) {
         printf("\nPCI %3d  %.1f MHz EARFCN %d band %d  %s %.1f MHz %d ports  RSRP %.1f dBFS RSRQ %.1f dB SINR %.1f dB  cfo %+.0f Hz  seen %llu\n", c.pci, c.freqHz / 1e6, c.earfcn, c.band,
-               c.tdd ? "TDD" : "FDD", c.nRb * 0.18 + 0.0, c.ports, c.rsrpDb, c.rsrqDb, c.sinrDb, c.cfoHz, (unsigned long long)c.seen);
+               c.tdd ? "TDD" : "FDD", c.hasMib ? c.nRb * 0.18 : 0.0, c.ports, c.rsrpDb, c.rsrqDb, c.sinrDb, c.cfoHz, (unsigned long long)c.seen);
         if (c.hasSib1) {
             printf("  SIB1: ");
             for (const auto& p : c.plmns) printf("%s ", p.c_str());

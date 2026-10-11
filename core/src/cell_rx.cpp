@@ -231,7 +231,29 @@ struct CellReceiver::Impl {
             }
         };
         addCand(dialOff, true);
-        for (const auto& c : car) addCand(c.freqHz, true);
+        // carriers side by side (the operators' blocks fill a band edge to edge) make one wide block, or none, in the spectrum: look for a
+        // PSS on every 100 kHz raster point inside the sample band, and keep the strongest point of each 1.4 MHz
+        if (center > 0) {
+            const double lim = fs / 2 * 0.92 - 0.7e6;
+            std::vector<double> offs;
+            for (long k = (long)std::ceil((center - lim) / 100e3); k * 100e3 <= center + lim; k++) offs.push_back(k * 100e3 - center);
+            std::vector<cell::LtePssProbe> pr = cell::ltePssProbe(x.data(), x.size(), fs, offs, 25000, 10.0f);
+            std::sort(pr.begin(), pr.end(), [](const cell::LtePssProbe& a, const cell::LtePssProbe& b) { return a.db > b.db; });
+            std::vector<double> kept;
+            for (const auto& p : pr) {
+                bool near = false;
+                for (double k : kept) if (std::fabs(k - p.offsetHz) < 1.4e6) near = true;
+                if (near) continue;
+                kept.push_back(p.offsetHz);
+                addCand(p.offsetHz, true);
+            }
+            // the spectrum's blocks too, where no PSS point stood out near them (the probe looks at 20 ms only)
+            for (const auto& c : car) {
+                bool near = false;
+                for (double k : kept) if (std::fabs(k - c.freqHz) < 1.4e6) near = true;
+                if (!near) addCand(c.freqHz, true);
+            }
+        } else for (const auto& c : car) addCand(c.freqHz, true);
         std::vector<std::pair<Cand, std::vector<cell::LteCellResult>>> found;
         for (size_t k = 0; k < cands.size(); k++) {
             if (gen.load() != g) return;   // retuned meanwhile: these samples belong to another frequency
@@ -275,6 +297,7 @@ struct CellReceiver::Impl {
         const double actual = (center > 0 ? center : 0.0) + cd.off + r.found.cfoHz;
         const double nominal = center > 0 ? std::round(actual / 100e3) * 100e3 : cd.off;
         const int ear = center > 0 ? lteHzToEarfcn(nominal) : -1;
+        if (center > 0 && ear < 0 && !r.mib.ok) return;   // off every LTE band raster and without a MIB: not a cell
         CellTower* t = nullptr;
         for (auto& c : tel.cells) if (c.pci == r.found.pci && std::fabs(c.freqHz - nominal) < 60e3) { t = &c; break; }
         const bool isNew = !t;
@@ -285,14 +308,17 @@ struct CellReceiver::Impl {
             t->band = ear >= 0 ? lteBandOfEarfcn(ear) : 0;
         }
         t->tdd = r.found.tdd; t->extCp = r.found.extCp;
-        t->nRb = r.mib.nRb; t->ports = r.mib.ports; t->phichDur = r.mib.phichDur; t->phichRes = r.mib.phichRes; t->sfn = r.mib.sfn;
+        if (r.mib.ok) { t->hasMib = true; t->nRb = r.mib.nRb; t->ports = r.mib.ports; t->phichDur = r.mib.phichDur; t->phichRes = r.mib.phichRes; t->sfn = r.mib.sfn; }
         t->rsrpDb = r.meas.rsrpDb; t->rsrqDb = r.meas.rsrqDb; t->sinrDb = r.meas.sinrDb; t->pssDb = r.found.pssDb;
         t->cfoHz = actual - (center > 0 ? nominal : cd.off);
         t->clockPpm = r.found.clockPpm;
         t->lastWall = wallNow(); t->lastSec = sec; t->seen++;
         char b[256];
         if (isNew) {
-            if (center > 0) snprintf(b, sizeof b, "PCI %d at %.1f MHz (EARFCN %d), %.0f MHz, %d port%s", t->pci, nominal / 1e6, ear, t->nRb * 0.2, t->ports, t->ports == 1 ? "" : "s");
+            if (!r.mib.ok) {
+                if (center > 0) snprintf(b, sizeof b, "PCI %d at %.1f MHz (EARFCN %d), synchronisation signals only", t->pci, nominal / 1e6, ear);
+                else snprintf(b, sizeof b, "PCI %d at %+.1f kHz, synchronisation signals only", t->pci, nominal / 1e3);
+            } else if (center > 0) snprintf(b, sizeof b, "PCI %d at %.1f MHz (EARFCN %d), %.0f MHz, %d port%s", t->pci, nominal / 1e6, ear, t->nRb * 0.2, t->ports, t->ports == 1 ? "" : "s");
             else snprintf(b, sizeof b, "PCI %d at %+.1f kHz, %.0f MHz, %d port%s", t->pci, nominal / 1e3, t->nRb * 0.2, t->ports, t->ports == 1 ? "" : "s");
             event(b, sec);
         }

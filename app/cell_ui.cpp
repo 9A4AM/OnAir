@@ -28,6 +28,7 @@ struct State {
     size_t step = 0;
     double stepAt = 0;
     float dwell = 3.0f;
+    uint64_t blocksAt = 0;        // receiver blocks done when this step was tuned
     std::map<uint64_t, Pos> towers;   // (mcc, mnc, eci) -> position
     std::string towerFile, towerNote;
     adsbmap::View map;
@@ -136,7 +137,7 @@ void cellTable(App& a) {
         ImGui::TableNextColumn(); ImGui::Text("%d", c.pci);
         ImGui::TableNextColumn(); if (c.hasSib1) ImGui::Text("%u/%d", c.enb, c.sector); else ImGui::TextDisabled("-");
         if (wide) { ImGui::TableNextColumn(); if (c.hasSib1) ImGui::Text("%u", c.tac); else ImGui::TextDisabled("-"); }
-        if (wide) { ImGui::TableNextColumn(); ImGui::Text("%.1f MHz", c.nRb * 0.2); }
+        if (wide) { ImGui::TableNextColumn(); if (c.hasMib) ImGui::Text("%.1f MHz", c.nRb * 0.2); else ImGui::TextDisabled("sync only"); }
         ImGui::TableNextColumn(); ImGui::Text("%.0f", c.rsrpDb);
         if (wide) { ImGui::TableNextColumn(); ImGui::Text("%.1f", c.rsrqDb); }
         if (wide) { ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(c.lastWall).c_str()); }
@@ -237,11 +238,16 @@ void tick(App& a) {
     if (!S.scanning) return;
     if (!a.engine.running()) { S.scanning = false; return; }
     const double now = ImGui::GetTime();
-    if (S.stepAt == 0 || now - S.stepAt >= S.dwell) {
+    // a step ends once the dwell is over and the receiver has finished two blocks at this centre (searching a 20 Msps block for every
+    // carrier takes longer than the dwell on a slow machine; a block cut off by the retune is thrown away), or after 30 s
+    const dect2::CellTelemetry& t = a.rx.cell;
+    const bool done = t.blocks >= S.blocksAt + 2;   // blocks of an older centre are dropped uncounted
+    if (S.stepAt == 0 || (now - S.stepAt >= S.dwell && done) || now - S.stepAt >= 30) {
         if (S.stepAt != 0) S.step++;
         if (S.step >= S.plan.size()) { S.scanning = false; return; }
         tuneFreq(a, S.plan[S.step]);
         S.stepAt = now;
+        S.blocksAt = t.blocks;
     }
 }
 

@@ -18,6 +18,8 @@ namespace {
 constexpr double kSyncRate = 1.92e6;   // the central 6 resource blocks, FFT 128
 constexpr int kHalf = 9600;            // a half frame at that rate
 constexpr int kNfft6 = 128;
+constexpr float kSssSigExtra = 5.0f;    // SSS significance for a second / third cell behind one PSS timing
+constexpr float kSssListAlone = 5.5f;   // SSS significance that lists a cell whose MIB did not decode (noise alone stays under 4.5)
 
 const std::array<std::vector<cf32>, 3>& pssTime() {
     static const std::array<std::vector<cf32>, 3> T = [] {
@@ -86,29 +88,41 @@ std::vector<cf32> withCfo(const std::vector<cf32>& t, double hz, double fs) {
 
 struct Cand { int nid2 = 0; double cfo = 0; double t0 = 0; float db = 0; };
 
-// PSS peaks: the folded correlation energy over the first half frames, for each NID2 and carrier offset hypothesis
-std::vector<Cand> pssSearch(const std::vector<cf32>& y, double maxCfo, float minDb) {
+// PSS peaks: the folded correlation energy over the first half frames, for each NID2 and carrier offset hypothesis. Several peaks per NID2
+// (cells of other sites arrive at other times), the strongest first; a peak blocks +-64 samples (33 us: its echoes) around it.
+std::vector<Cand> pssSearch(const std::vector<cf32>& y, double maxCfo, float minDb, int halves = 8, int perNid2 = 3) {
     std::vector<Cand> out;
-    const size_t nUse = std::min(y.size(), (size_t)(8 * kHalf + kNfft6));
+    const size_t nUse = std::min(y.size(), (size_t)(halves * kHalf + kNfft6));
     if (nUse < (size_t)(kHalf + kNfft6)) return out;
     const double step = 7500;
     const int nh = std::max(0, (int)std::ceil(maxCfo / step - 0.34));
     std::vector<cf32> c;
+    std::vector<std::vector<float>> folds;
+    std::vector<double> means;
     for (int n2 = 0; n2 < 3; n2++) {
-        Cand best; float bestDb = -1;
+        folds.clear(); means.clear();
         for (int h = -nh; h <= nh; h++) {
-            const double hz = h * step;
-            xcorr(y.data(), nUse, withCfo(pssTime()[(size_t)n2], hz, kSyncRate), c);
+            xcorr(y.data(), nUse, withCfo(pssTime()[(size_t)n2], h * step, kSyncRate), c);
             std::vector<float> fold((size_t)kHalf, 0.f);
             for (size_t t = 0; t < c.size(); t++) fold[t % kHalf] += std::norm(c[t]);
             double mean = 0;
             for (float v : fold) mean += v;
-            mean /= kHalf;
-            const int pk = (int)(std::max_element(fold.begin(), fold.end()) - fold.begin());
-            const float db = (float)(10 * std::log10(fold[(size_t)pk] / std::max(1e-30, mean)));
-            if (db > bestDb) { bestDb = db; best.nid2 = n2; best.cfo = hz; best.t0 = pk; best.db = db; }
+            means.push_back(std::max(1e-30, mean / kHalf));
+            folds.push_back(std::move(fold));
         }
-        if (bestDb >= minDb) out.push_back(best);
+        for (int k = 0; k < perNid2; k++) {
+            int bh = 0, bt = 0; float bdb = -100;
+            for (size_t h = 0; h < folds.size(); h++) {
+                const auto& f = folds[h];
+                const int pk = (int)(std::max_element(f.begin(), f.end()) - f.begin());
+                const float db = (float)(10 * std::log10(std::max(1e-30, (double)f[(size_t)pk]) / means[h]));
+                if (db > bdb) { bdb = db; bh = (int)h; bt = pk; }
+            }
+            if (bdb < (k == 0 ? minDb : std::max(minDb, 12.0f))) break;   // a later peak must stand clear of the first one's sidelobes
+            Cand cd; cd.nid2 = n2; cd.cfo = (bh - nh) * step; cd.t0 = bt; cd.db = bdb;
+            out.push_back(cd);
+            for (auto& f : folds) for (int d = -64; d <= 64; d++) f[(size_t)((bt + d + kHalf) % kHalf)] = 0;
+        }
     }
     std::sort(out.begin(), out.end(), [](const Cand& a, const Cand& b) { return a.db > b.db; });
     return out;
@@ -178,7 +192,7 @@ bool pssTrack(const std::vector<cf32>& y, const Cand& cd, Track& tr) {
     return true;
 }
 
-struct SssResult { bool ok = false; int nid1 = 0; bool ext = false, tdd = false; int sf0Parity = 0; float score = 0; };
+struct SssResult { bool ok = false; int nid1 = 0; bool ext = false, tdd = false; int sf0Parity = 0; float score = 0, sig = 0; };
 
 void fft128(const cf32* x, std::vector<cf32>& out) {
     static thread_local std::unique_ptr<Fft> f;
@@ -187,7 +201,22 @@ void fft128(const cf32* x, std::vector<cf32>& out) {
     f->forward(out.data());
 }
 
-SssResult sssDetect(const std::vector<cf32>& ys, int nid2, const Track& tr) {
+// a cell already found: its PSS / SSS are taken out before the search for weaker cells behind the same timing
+struct KnownSync { int nid1 = 0, nid2 = 0, parity = 0, off = 0; std::vector<double> t; };
+
+// +-6 subcarrier moving sum (the channel hardly changes over 90 kHz; noise and other cells' sequences average out)
+inline void smooth62(const cf32* in, cf32* out) {
+    for (int n = 0; n < 62; n++) {
+        cf32 h(0, 0);
+        for (int k = std::max(0, n - 6); k <= std::min(61, n + 6); k++) h += in[k];
+        out[n] = h / (float)(std::min(61, n + 6) - std::max(0, n - 6) + 1);
+    }
+}
+
+// the cell identity groups heard behind one PSS timing, the most significant first: time-synchronised cells of the same NID2 share the
+// PSS. The known cells at this timing are cancelled first (their sequences and channels, estimated from the received symbols).
+std::vector<SssResult> sssDetect(const std::vector<cf32>& ys, int nid2, const Track& tr, const std::vector<KnownSync>& known = {}) {
+    std::vector<SssResult> all;
     struct Hyp { bool ext, tdd; int off; };
     const Hyp hyps[4] = {{false, false, 128 + 9}, {true, false, 128 + 32}, {false, true, 412}, {true, true, 480}};
     cf32 pss[62];
@@ -203,12 +232,31 @@ SssResult sssDetect(const std::vector<cf32>& ys, int nid2, const Track& tr) {
             if (s < 0 || (size_t)(p + kNfft6) > ys.size()) continue;
             fft128(&ys[(size_t)p], P);
             fft128(&ys[(size_t)s], S);
+            cf32 Pv[62], Sv[62], tmp[62], hs[62], hSame[62];
+            for (int n = 0; n < 62; n++) { const int b = lteBin(n + 5, 6, kNfft6); Pv[n] = P[(size_t)b]; Sv[n] = S[(size_t)b]; hSame[n] = cf32(0, 0); }
+            for (const KnownSync& k : known) {
+                if ((size_t)m >= k.t.size() || std::fabs(k.t[(size_t)m] - tr.t[(size_t)m]) > 2.5 || k.off != h.off) continue;
+                const float* d = sssSeq(k.nid2, k.nid1, (m % 2) == k.parity ? 0 : 1);
+                for (int n = 0; n < 62; n++) tmp[n] = Sv[n] * d[n];
+                smooth62(tmp, hs);
+                for (int n = 0; n < 62; n++) Sv[n] -= hs[n] * d[n];
+                if (k.nid2 == nid2) {   // the same PSS: it carries both channels; take the known cell's (from its SSS) out of the estimate below
+                    for (int n = 0; n < 62; n++) hSame[n] += hs[n];
+                    continue;
+                }
+                cf32 kp[62];
+                ltePss(k.nid2, kp);
+                for (int n = 0; n < 62; n++) tmp[n] = Pv[n] * std::conj(kp[n]);
+                smooth62(tmp, hs);
+                for (int n = 0; n < 62; n++) Pv[n] -= hs[n] * kp[n];
+            }
+            for (int n = 0; n < 62; n++) tmp[n] = Pv[n] * std::conj(pss[n]);
+            smooth62(tmp, hs);
+            for (int n = 0; n < 62; n++) hs[n] -= hSame[n];
             float z[62];
             double e = 0;
             for (int n = 0; n < 62; n++) {
-                const int b = lteBin(n + 5, 6, kNfft6);
-                const cf32 H = P[(size_t)b] * std::conj(pss[n]);
-                z[n] = (S[(size_t)b] * std::conj(H)).real();
+                z[n] = (Sv[n] * std::conj(hs[n])).real();
                 e += (double)z[n] * z[n];
             }
             norm += std::sqrt(e * 62);
@@ -223,13 +271,29 @@ SssResult sssDetect(const std::vector<cf32>& ys, int nid2, const Track& tr) {
             }
         }
         if (!used || norm <= 0) continue;
+        // significance: the score against the spread of all 336 hypotheses (noise gives about 1, the largest of 1344 about 3.5; a strong
+        // cell's own sequence cross-correlations raise the spread, so the cells under it stand out once it is cancelled)
+        double ms = 0;
+        for (double v : acc) ms += v * v;
+        const double rms = std::sqrt(ms / (double)acc.size());
         for (int i = 0; i < 168 * 2; i++) {
-            const float sc = (float)(acc[(size_t)i] / norm);
-            if (sc > best.score) { best.score = sc; best.nid1 = i / 2; best.sf0Parity = i % 2; best.ext = h.ext; best.tdd = h.tdd; }
+            const float sc = (float)(acc[(size_t)i] / norm), sg = rms > 0 ? (float)(acc[(size_t)i] / rms) : 0.f;
+            bool isKnown = false;
+            for (const KnownSync& k : known) if (k.nid2 == nid2 && k.nid1 == i / 2) isKnown = true;
+            if (!isKnown && (sc > 0.25f || sg >= kSssSigExtra)) { SssResult r; r.ok = true; r.score = sc; r.sig = sg; r.nid1 = i / 2; r.sf0Parity = i % 2; r.ext = h.ext; r.tdd = h.tdd; all.push_back(r); }
+            if (sc > best.score) { best.score = sc; best.sig = sg; best.nid1 = i / 2; best.sf0Parity = i % 2; best.ext = h.ext; best.tdd = h.tdd; }
         }
     }
-    best.ok = best.score > 0.25f;
-    return best;
+    std::sort(all.begin(), all.end(), [](const SssResult& a, const SssResult& b) { return a.sig > b.sig; });
+    std::vector<SssResult> out;
+    for (const auto& r : all) {
+        if (out.size() >= 3 || (!out.empty() && r.sig < kSssSigExtra)) break;
+        bool dup = false;
+        for (const auto& o : out) if (o.nid1 == r.nid1) dup = true;
+        if (!dup) out.push_back(r);
+    }
+    if (out.empty()) { best.ok = false; out.push_back(best); }
+    return out;
 }
 
 std::vector<std::pair<int, int>> pbchRes(int pci, bool ext) {
@@ -345,14 +409,27 @@ std::vector<LteCellResult> lteSearchDecode(const cf32* x, size_t n, double fs, d
     std::vector<Cand> cands = pssSearch(y, o.maxCfoHz, o.minPssDb);
     static const bool dbg = getenv("CELL_DEBUG") != nullptr;
     if (dbg) for (const auto& c : cands) fprintf(stderr, "[cell] off %.0f: PSS nid2 %d cfo %.0f t %.0f %.1f dB\n", offsetHz, c.nid2, c.cfo, c.t0, c.db);
+    // cells found so far: cancelled from the SSS search of the others; a second pass looks behind every PSS timing again with all of them out
+    std::vector<KnownSync> known;
+    auto remember = [&](const SssResult& ss, int nid2, const Track& t) {
+        KnownSync k; k.nid1 = ss.nid1; k.nid2 = nid2; k.parity = ss.sf0Parity; k.off = !ss.tdd ? (ss.ext ? 128 + 32 : 128 + 9) : (ss.ext ? 480 : 412); k.t = t.t;
+        known.push_back(std::move(k));
+    };
+    for (int pass = 0; pass < 2; pass++) {
+    if (pass == 1 && known.empty()) break;
     for (const Cand& cd : cands) {
         if ((int)out.size() >= o.maxCells) break;
         Track tr;
         if (!pssTrack(y, cd, tr)) continue;
         std::vector<cf32> ys = y;
         mixDown(ys.data(), ys.size(), tr.cfo, kSyncRate);
-        const SssResult ss = sssDetect(ys, cd.nid2, tr);
-        if (dbg) fprintf(stderr, "[cell]   track cfo %.0f slope %.3f halves %d; SSS nid1 %d score %.2f ext %d tdd %d\n", tr.cfo, tr.slope, tr.nHalf, ss.nid1, ss.score, ss.ext, ss.tdd);
+        const Track tr0 = tr;
+        const std::vector<cf32> ys0 = ys;
+        const std::vector<SssResult> sss = sssDetect(ys, cd.nid2, tr, known);
+        for (const SssResult& ss : sss) {
+        if ((int)out.size() >= o.maxCells) break;
+        tr = tr0; ys = ys0;
+        if (dbg) fprintf(stderr, "[cell]   track cfo %.0f slope %.3f halves %d; SSS nid1 %d score %.2f sig %.1f ext %d tdd %d\n", tr.cfo, tr.slope, tr.nHalf, ss.nid1, ss.score, ss.sig, ss.ext, ss.tdd);
         if (!ss.ok) continue;
         const int pci = 3 * ss.nid1 + cd.nid2;
         bool dup = false;
@@ -372,6 +449,8 @@ std::vector<LteCellResult> lteSearchDecode(const cf32* x, size_t n, double fs, d
         R.found.cfoHz = tr.cfo;
         R.found.clockPpm = (tr.slope / kHalf - 1) * 1e6;
         R.found.pssDb = cd.db;
+        R.found.sssScore = ss.score;
+        R.found.sssSig = ss.sig;
         R.found.frameStart = fs0 / toSync;
         // PBCH, from the central 6 resource blocks
         LteCellCfg c6;
@@ -420,7 +499,11 @@ std::vector<LteCellResult> lteSearchDecode(const cf32* x, size_t n, double fs, d
         }
         const MibTry mt = mibDecode(llr, pci, ss.ext);
         if (dbg) fprintf(stderr, "[cell]   PCI %d MIB %d: %d RB %d ports sfn %d, RSRP %.1f SINR %.1f\n", pci, mt.ok, mt.mib.nRb, mt.mib.ports, mt.mib.sfn, R.meas.rsrpDb, R.meas.sinrDb);
-        if (!mt.ok) continue;
+        if (!mt.ok) {
+            // the PBCH did not decode (too weak, or under a stronger cell): a clear SSS still lists the cell, without its MIB
+            if (ss.sig >= kSssListAlone) { remember(ss, cd.nid2, tr0); out.push_back(std::move(R)); }
+            continue;
+        }
         R.mib = mt.mib;
         R.mib.frameStart = R.found.frameStart;
         const int sfnAt0 = (mt.mib.sfn - mt.frame + 1024 * 4) & 1023;   // SFN of the first whole frame in the block
@@ -566,7 +649,46 @@ std::vector<LteCellResult> lteSearchDecode(const cf32* x, size_t n, double fs, d
                 }
             }
         }
+        remember(ss, cd.nid2, tr0);
         out.push_back(std::move(R));
+        }
+    }
+    }
+    return out;
+}
+
+std::vector<LtePssProbe> ltePssProbe(const cf32* x, size_t n, double fs, const std::vector<double>& offsetsHz, double maxCfoHz, float minDb) {
+    std::vector<LtePssProbe> out;
+    if (!x || fs < kSyncRate * 0.99 || offsetsHz.empty()) return out;
+    const size_t nSync = (size_t)(4 * kHalf + kNfft6 + 16);
+    const size_t len = (size_t)std::ceil((double)nSync * fs / kSyncRate) + 64;
+    if (n < len) return out;
+    // one FFT of the 20 ms; each offset takes its own slice of bins (a brick-wall filter of +-0.7 MHz), back to the time domain at a
+    // low power-of-two fraction of the rate, then to 1.92 Msps with a short filter. Far cheaper than filtering at the full rate per offset.
+    int N = 1; while ((size_t)N < len) N <<= 1;
+    int M = 1; while (fs * M / N < 2.4e6) M <<= 1;
+    if (M > N) M = N;
+    const double fsM = fs * M / N, binHz = fs / N;
+    Fft big(N), small(M);
+    std::vector<cf32> X((size_t)N, cf32(0, 0));
+    for (size_t i = 0; i < len; i++) X[i] = x[i];
+    big.forward(X.data());
+    const int half = (int)std::floor(0.7e6 / binHz);
+    std::vector<cf32> Y((size_t)M);
+    static const bool dbg = getenv("CELL_DEBUG") != nullptr;
+    for (double off : offsetsHz) {
+        const long c = std::lround(off / binHz);   // the slice centre; the rest of the offset is left as a carrier offset
+        std::fill(Y.begin(), Y.end(), cf32(0, 0));
+        for (int k = -half; k <= half && k < M / 2; k++) {
+            const long src = ((c + k) % N + N) % N;
+            Y[(size_t)((k + M) % M)] = X[(size_t)src] / (float)N;
+        }
+        small.inverse(Y.data());
+        const double rest = off - c * binHz;
+        const std::vector<cf32> y = resampleBlock(Y.data(), (size_t)M, fsM, kSyncRate, rest, 1.4e6, 0, nSync);
+        const std::vector<Cand> cd = pssSearch(y, maxCfoHz, minDb, 4, 1);
+        if (dbg && !cd.empty()) fprintf(stderr, "[cell] probe %.0f: %.1f dB\n", off, cd[0].db);
+        if (!cd.empty()) out.push_back({off, cd[0].db});
     }
     return out;
 }

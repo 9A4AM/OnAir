@@ -149,7 +149,7 @@ void lteChanEst(const LteGrid& y, const LteCellCfg& c, int sf, int nRbGrid, int,
         }
     }
     out.noiseVar = nres ? (float)(resid / nres / 0.375) : 1e-3f;
-    out.rsrp = nrs ? (float)std::max(1e-12, rsrp / nrs - out.noiseVar) : 0.f;
+    out.rsrp = nrs ? (float)std::max(std::max(1e-12, 0.05 * rsrp / nrs), rsrp / nrs - out.noiseVar) : 0.f;   // a weak cell under others: noise estimate above it; floor at -13 dB of the raw power
     out.rssi = nrssi ? (float)(rssi / nrssi) : 0.f;
 }
 

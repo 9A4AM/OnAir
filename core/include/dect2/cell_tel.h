@@ -24,6 +24,7 @@ struct CellTower {
     int nRb = 0, ports = 0, phichDur = 0, phichRes = 0;   // MIB: bandwidth in resource blocks, antenna ports, PHICH duration / Ng index
     int sfn = 0;                  // the last system frame number read
     // SIB1
+    bool hasMib = false;          // the PBCH decoded at least once (else the cell is known from PSS / SSS only)
     bool hasSib1 = false;
     std::vector<std::string> plmns;   // "246-01", the first is the primary
     int mcc = -1, mnc = -1, mncDigits = 2;
