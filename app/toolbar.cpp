@@ -145,7 +145,8 @@ void sampleRateControl(App& a) {
         ImGui::TextDisabled("Sample rate (Msps)");
         ImGui::SetNextItemWidth(120 * gUi);
         if (openManual) ImGui::SetKeyboardFocusHere();
-        const bool enter = ImGui::InputDouble("##sratev", &typed, 0, 0, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::InputDouble("##sratev", &typed, 0, 0, "%.3f");   // InputScalar does not take EnterReturnsTrue (an assertion in Windows builds)
+        const bool enter = ImGui::IsItemDeactivatedAfterEdit() && (ImGui::IsKeyPressed(ImGuiKey_Enter, false) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false));
         ImGui::SameLine();
         if (ImGui::Button("Use") || enter) {
             const RateCheck c = checkManualRate(L, need, std::round(typed * 1e3) * 1e3);
