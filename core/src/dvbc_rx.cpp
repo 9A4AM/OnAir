@@ -158,6 +158,12 @@ struct DvbcReceiver::Impl {
             f.forward(b.data());
             for (int i = 0; i < N; i++) p[(size_t)((i + N / 2) % N)] += std::norm(b[(size_t)i]);
         }
+        {   // the radio's DC spike (a HackRF's LO leaks through, and a recording keeps it) would set the plateau and the width: bridge it
+            double side = 0;
+            for (int j = 4; j <= 8; j++) side += p[(size_t)(N / 2 - j)] + p[(size_t)(N / 2 + j)];
+            side /= 10;
+            if (p[(size_t)N / 2] > 4 * side) for (int j = -3; j <= 3; j++) p[(size_t)(N / 2 + j)] = side;
+        }
         std::vector<double> sm((size_t)N, 0);
         for (int i = 0; i < N; i++) { double s = 0; int c = 0; for (int j = -16; j <= 16; j++) if (i + j >= 0 && i + j < N) { s += p[(size_t)(i + j)]; c++; } sm[(size_t)i] = 10 * std::log10(s / c + 1e-30); }
         const double mx = *std::max_element(sm.begin() + N / 20, sm.end() - N / 20), mn = *std::min_element(sm.begin(), sm.end());
