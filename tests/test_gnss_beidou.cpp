@@ -9,6 +9,7 @@
 #include "dect2/test_parallel.h"
 #include "gnss_faults.h"
 #include <cmath>
+#include <cstring>
 #include <cstdio>
 #include <cstdlib>
 using namespace dect2;
@@ -64,6 +65,11 @@ static int unitChecks() {
             worst = std::max(worst, std::abs(c));
         }
         if (worst > 200) fail("cross-correlation too high");
+    }
+    // ICD v3.0 Table 4-1 three-tap codes are new sequences, not copies of the BDS-2 ones
+    for (int p = 38; p <= kBdsMaxPrn; p++) {
+        bdsB1iChips(p, a);
+        for (int q = 1; q < p; q++) { bdsB1iChips(q, b); if (!memcmp(a, b, kBdsLen)) { fail("duplicate ranging code"); break; } }
     }
     if (!bdsIsGeo(1) || !bdsIsGeo(5) || bdsIsGeo(6) || !bdsIsGeo(59) || !bdsIsGeo(63)) fail("GEO ranging codes");
     return fails;
@@ -129,7 +135,8 @@ static void runCase(const Case& k, CaseOut& out) {
         if (k.offset) CHECK(t.fix.bdtGpsApplied && std::fabs(t.fix.bdtGpsNs - 30.0) < 0.1, "BDT-GPS offset not applied (%.2f ns)", t.fix.bdtGpsNs);
         else CHECK(!t.fix.bdtGpsApplied && t.fix.systemInFix[GnssBeidou], "without the broadcast offset BeiDou needs its own clock unknown");
     }
-    int ephOk = 0, geoOk = 0;
+    int ephOk = 0, geoOk = 0, bds3Ok = 0, bds3GeoOk = 0, bds3High = 0, bds3GeoHigh = 0;
+    for (size_t i : bds) if (sim.sats()[i].elDeg >= 10.0 && sim.sats()[i].prn >= 38) (sim.sats()[i].eph.geo ? bds3GeoHigh : bds3High)++;
     for (size_t i : bds) {
         const GnssSimSat& s = sim.sats()[i];
         int n = 0; double sum = 0, sum2 = 0;
@@ -156,9 +163,15 @@ static void runCase(const Case& k, CaseOut& out) {
             CHECK(same, "%s: decoded ephemeris differs from the one sent", gnssSatName(GnssBeidou, s.prn).c_str());
             ephOk += same;
             geoOk += same && b.geo;
+            bds3Ok += same && s.prn >= 38 && !b.geo;
+            bds3GeoOk += same && s.prn >= 59 && b.geo;
         }
     }
     CHECK(ephOk >= high - (weak ? 3 : 1), "%d BeiDou ephemerides, %d satellites above 10 degrees", ephOk, high);
+    out.print("  BDS-3 (PRN 38-63): %d MEO ephemerides of %d above 10 degrees, %d GEO of %d\n", bds3Ok, bds3High, bds3GeoOk, bds3GeoHigh);
+    CHECK(bds3High + bds3GeoHigh > 0, "no BDS-3 satellite in view");
+    CHECK(bds3Ok >= bds3High - (weak ? 2 : 0), "%d BDS-3 MEO ephemerides, %d in view", bds3Ok, bds3High);
+    if (!weak) CHECK(bds3GeoOk >= bds3GeoHigh, "%d BDS-3 GEO ephemerides of %d in view", bds3GeoOk, bds3GeoHigh);
     if (!weak) CHECK(geoOk >= geoHigh, "%d GEO (D2) ephemerides of %d in view", geoOk, geoHigh);
     int sky = 0;
     for (auto& s : t.sky) sky += s.sys == GnssBeidou;

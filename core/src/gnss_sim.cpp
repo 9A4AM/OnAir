@@ -608,15 +608,18 @@ void GnssSim::Impl::addBeidou() {
     // GEO: a 5 degree inclination in the frame of the ICD's GEO algorithm, which turns it back to the equator; the node on X; the satellite's
     // longitude is its argument of latitude
     const double aGeo = std::cbrt(kGalMu / (we * we));
-    orbs.push_back({1, aGeo, 0.0002, -5.0 * kPiS / 180.0, we * toeB, 80.0 * kPiS / 180.0, true});
-    orbs.push_back({5, aGeo, 0.0003, -5.0 * kPiS / 180.0, we * toeB, 58.75 * kPiS / 180.0, true});
+    // BDS-2 GEO C01 and BDS-3 GEO C59/C60 (ICD v3.0 GEO ranging codes 59-63)
+    orbs.push_back({1, aGeo, 0.0002, -5.0 * kPiS / 180.0, we * toeB, 140.0 * kPiS / 180.0, true});
+    orbs.push_back({59, aGeo, 0.0002, -5.0 * kPiS / 180.0, we * toeB, 80.0 * kPiS / 180.0, true});
+    orbs.push_back({60, aGeo, 0.0003, -5.0 * kPiS / 180.0, we * toeB, 58.75 * kPiS / 180.0, true});
     for (int k = 0; k < 3; k++) {
         const double a = 42164e3, n0 = std::sqrt(kGalMu / (a * a * a));
         orbs.push_back({6 + k, a, 0.003, 55.0 * kPiS / 180.0, (igsoOff + 120.0 * k) * kPiS / 180.0 + we * tB, -120.0 * k * kPiS / 180.0 + n0 * (toeB - tB), false});
     }
     for (int k = 0; k < 24; k++) {
         const double a = 27906e3, n0 = std::sqrt(kGalMu / (a * a * a));
-        orbs.push_back({11 + k, a, 0.0006, 55.0 * kPiS / 180.0, (bestR + 120.0 * (k / 8)) * kPiS / 180.0 + we * tB,
+        // MEO C19-C30 and C35-C46: BDS-3, half of them on the ranging codes added in ICD v3.0
+        orbs.push_back({k < 12 ? 19 + k : 23 + k, a, 0.0006, 55.0 * kPiS / 180.0, (bestR + 120.0 * (k / 8)) * kPiS / 180.0 + we * tB,
                         (bestM + 45.0 * (k % 8) + 15.0 * (k / 8)) * kPiS / 180.0 + n0 * (toeB - tB), false});
     }
     for (const Orb& o : orbs) {

@@ -35,7 +35,7 @@ bool galE1bChips(int prn, uint8_t* chips);
 constexpr int kBdsLen = 2046;
 constexpr double kBdsChipRate = 2.046e6;
 constexpr double kBdsB1Hz = 1561.098e6;
-constexpr int kBdsMaxPrn = 37;
+constexpr int kBdsMaxPrn = 63;
 bool bdsB1iChips(int prn, uint8_t* chips);
 // GEO satellites (D2 navigation message at 500 bps, no secondary code): ranging codes 1..5 and 59..63
 inline bool bdsIsGeo(int prn) { return (prn >= 1 && prn <= 5) || (prn >= 59 && prn <= 63); }
