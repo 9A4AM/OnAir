@@ -82,7 +82,8 @@ cell	--mode cell	Overview|Cells|Receiver|History
 cw	--mode cw	Overview|CW|Receiver|History
 dstar	--mode dstar	Overview|D-STAR|Receiver|History
 psk	--mode psk	Overview|PSK31|Receiver|History
-js8	--mode js8	Overview|JS8Call|Receiver|History"
+js8	--mode js8	Overview|JS8Call|Receiver|History
+specx	--mode specx	Overview|Explorer"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"

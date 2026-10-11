@@ -37,6 +37,7 @@
 #include "dstar_tel.h"
 #include "psk_tel.h"
 #include "js8_tel.h"
+#include "specx_tel.h"
 #include "t2.h"
 #include "t2l1.h"
 #include "t2plp.h"
@@ -96,6 +97,7 @@ struct RxTelemetry {
     M17Telemetry m17;           // valid when standard == 32
     CellTelemetry cell;         // valid when standard == 33
     CwTelemetry cw;             // valid when standard == 35
+    SpecxTelemetry specx;  // valid when standard == 42
     Js8Telemetry js8;      // valid when standard == 38
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34

@@ -168,7 +168,7 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 38;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumFamilies = 42;   // App::family runs from 0 to kNumFamilies - 1
 constexpr int kNumSubModes = 18;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
@@ -529,6 +529,7 @@ enum TbPart { TbSource = 1, TbFreq = 2, TbTuner = 4, TbGain = 8, TbDecoder = 16,
 void toolbarParts(App& a, int mask, bool vertical);   // pieces of the top bar, for the sidebar of the new interface
 void receiverGlance(App& a, float w, float h);       // analysis_tabs.cpp: a few key/value lines about the receiver
 void tuneFreq(App& a, double mhz);                     // set the frequency now (resets the FM receiver)
+void dvbsSetSymbolRate(App& a, double msym);   // dvbs_ui.cpp: the DVB-S/S2 symbol rate, set from elsewhere (the spectrum explorer)
 void mainTabs(App& a);          // the tab bar with the tabs that fit the current mode (main.cpp)
 void drawShell2(App& a, ImVec2 disp);   // ui2.cpp: the new interface
 void applyUiTheme(App& a);              // ui2.cpp: classic or new colours and shapes
