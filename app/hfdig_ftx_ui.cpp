@@ -162,6 +162,36 @@ void mapView(App& a, const dect2::HfdigFtxTelemetry& f, ImVec2 size) {
 
 } // namespace
 
+// the usual dial frequencies (upper sideband) of each mode, as WSJT-X lists them; 60 m WSPR is the Region 1 one
+struct FtxBand { const char* name; double mhz; };
+const FtxBand kFt8Bands[] = {{"160m", 1.840}, {"80m", 3.573}, {"60m", 5.357}, {"40m", 7.074}, {"30m", 10.136}, {"20m", 14.074}, {"17m", 18.100},
+                             {"15m", 21.074}, {"12m", 24.915}, {"10m", 28.074}, {"6m", 50.313}, {"4m", 70.154}, {"2m", 144.174}};
+const FtxBand kFt4Bands[] = {{"80m", 3.575}, {"40m", 7.0475}, {"30m", 10.140}, {"20m", 14.080}, {"17m", 18.104}, {"15m", 21.140},
+                             {"12m", 24.919}, {"10m", 28.180}, {"6m", 50.318}, {"2m", 144.170}};
+const FtxBand kFt2Bands[] = {{"20m", 14.084}};
+const FtxBand kWsprBands[] = {{"160m", 1.8366}, {"80m", 3.5686}, {"60m", 5.3647}, {"40m", 7.0386}, {"30m", 10.1387}, {"20m", 14.0956},
+                              {"17m", 18.1046}, {"15m", 21.0946}, {"12m", 24.9246}, {"10m", 28.1246}, {"6m", 50.293}, {"2m", 144.489}};
+
+void bandButtons(App& a, int mode) {
+    const FtxBand* b = kFt8Bands; int n = IM_ARRAYSIZE(kFt8Bands);
+    if (mode == 1) { b = kFt4Bands; n = IM_ARRAYSIZE(kFt4Bands); }
+    else if (mode == 2) { b = kFt2Bands; n = IM_ARRAYSIZE(kFt2Bands); }
+    else if (mode == 3) { b = kWsprBands; n = IM_ARRAYSIZE(kWsprBands); }
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Band"); flowNext(6 * gUi);
+    for (int i = 0; i < n; i++) {
+        const bool here = std::fabs(a.freqMhz - b[i].mhz) < 0.002;
+        if (here) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.45f));
+        ImGui::PushID(i);
+        if (ImGui::SmallButton(b[i].name)) tuneFreq(a, b[i].mhz);
+        ImGui::PopID();
+        if (here) ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s on %s: dial %.4f MHz (upper sideband)", mode == 3 ? "WSPR" : mode == 2 ? "FT2" : mode == 1 ? "FT4" : "FT8", b[i].name, b[i].mhz);
+        flowNext(4 * gUi);
+    }
+    flowEnd();
+}
+
 void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
     using namespace dect2;
     if (!S.loaded) { S.loaded = true; S.map.zoom = (int)plat::prefs().getI("ftxZoom", 3); }
@@ -198,6 +228,7 @@ void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
     flowNext(10 * gUi);
     if (ImGui::Button("Clear")) dec.clearDecodes();
     flowEnd();
+    bandButtons(a, only >= 0 ? only : 0);
     // the clock
     {
         char now[16];
