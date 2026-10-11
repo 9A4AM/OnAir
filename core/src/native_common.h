@@ -166,7 +166,7 @@ inline std::vector<std::string> libNames(const char* stem, std::initializer_list
 #if defined(_WIN32)
     // The copies shipped in the program's folder first, by full path: a bare name would let Windows hand over another program's copy of the
     // same library from the PATH (SDR#, PothosSDR and others install their own rtlsdr.dll / airspy.dll), and that may not work with OnAir.
-    // Then the folders of the vendor installers (PothosSDR, which also carries LimeSuite.dll, and UHD), each only if it exists; by full
+    // Then the folders of the vendor installers (PothosSDR, which also carries LimeSuite.dll, UHD, and the LimeSuite installer), each only if it exists; by full
     // path, so that the libraries such a DLL needs in turn are found in its own folder (tryOpen loads it with LOAD_WITH_ALTERED_SEARCH_PATH).
     // Bare names only after that, for radios whose library is not shipped with OnAir and that the user installed (libiio puts its DLL in System32).
     {
@@ -178,7 +178,7 @@ inline std::vector<std::string> libNames(const char* stem, std::initializer_list
         }
     }
     if (const char* pf = getenv("ProgramFiles")) {
-        for (const char* sub : {"\\PothosSDR\\bin\\", "\\UHD\\bin\\"}) {
+        for (const char* sub : {"\\PothosSDR\\bin\\", "\\UHD\\bin\\", "\\LimeSuite\\bin\\"}) {
             const std::string dir = std::string(pf) + sub;
             const DWORD a = GetFileAttributesA(dir.c_str());
             if (a != INVALID_FILE_ATTRIBUTES && (a & FILE_ATTRIBUTE_DIRECTORY)) for (const char* w : winNames) v.push_back(dir + w);

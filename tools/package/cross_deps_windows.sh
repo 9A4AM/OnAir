@@ -139,7 +139,10 @@ OBJDUMP=${OBJDUMP:-$HOST-objdump}
   mkdir -p "$P/licenses"; cp -R "$MS"/ucrt64/share/licenses/. "$P/licenses/" 2>/dev/null || true; }
 
 # --- LimeSuite 23.11.0 (LimeSDR): the library only, as libLimeSuite.dll. The LimeSDR Mini/Mini 2 talk through FTDI's FTD3XX.dll (from the tarball),
-# shipped next to it. The LimeSDR-USB (Cypress FX3 / CyAPI, not available) is built without: those users keep a LimeSuite installed by the vendor.
+# shipped next to it. The LimeSDR-USB (Cypress FX3 / CyAPI: MSVC-only Cypress SDK, not redistributable here) is built without, so this copy
+# cannot see a LimeSDR-USB on the Cypress (CyUSB3) driver; at run time OnAir then asks a vendor LimeSuite.dll (PothosSDR, LimeSuite
+# installer) as well (source_limesdr.cpp, listLime). A release that wants FX3 itself must build LimeSuite with MSVC, -DENABLE_FX3=ON and
+# the FX3 SDK (CyAPI.lib), and ship that LimeSuite.dll instead.
 # The patch only makes the sources compile with MinGW.
 [ -f "$P/bin/libLimeSuite.dll" ] && [ -f "$P/bin/FTD3XX.dll" ] || { step LimeSuite; unpack LimeSuite-23.11.0.tar.gz LimeSuite-23.11.0
   [ -f LimeSuite-23.11.0/.onair-patched ] || { for pf in "$ROOT"/tools/package/patches/limesuite-*.patch; do patch -s -d LimeSuite-23.11.0 -p1 < "$pf"; done; touch LimeSuite-23.11.0/.onair-patched; }

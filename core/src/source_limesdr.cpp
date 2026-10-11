@@ -45,8 +45,9 @@ struct LimeApi {
     int (DECT2_CALL* get_sample_rate)(lms_device_t*, bool, size_t, double*, double*) = nullptr;   // optional
     bool ok = false;
     DynLib lib;
-    LimeApi() {
-        if (nativeDisabled() || !lib.open(libNames("LimeSuite", {".23.11-1", ".22.09-1", ".20.10-1", ".20.01-1", ".19.04-1", ".18.06-1", ""}, {"libLimeSuite.dll", "LimeSuite.dll"}))) return;
+    static std::vector<std::string> names() { return libNames("LimeSuite", {".23.11-1", ".22.09-1", ".20.10-1", ".20.01-1", ".19.04-1", ".18.06-1", ""}, {"libLimeSuite.dll", "LimeSuite.dll"}); }
+    explicit LimeApi(const std::vector<std::string>& candidates) {
+        if (nativeDisabled() || candidates.empty() || !lib.open(candidates)) return;
         ok = lib.get(get_device_list, "LMS_GetDeviceList") && lib.get(open, "LMS_Open") && lib.get(close, "LMS_Close") && lib.get(init, "LMS_Init") &&
              lib.get(enable_channel, "LMS_EnableChannel") && lib.get(set_sample_rate, "LMS_SetSampleRate") &&
              lib.get(get_sample_rate_range, "LMS_GetSampleRateRange") && lib.get(set_lo_frequency, "LMS_SetLOFrequency") &&
@@ -61,7 +62,16 @@ struct LimeApi {
         return t && *t ? std::string(": ") + t : std::string();
     }
 };
-LimeApi& lime() { static LimeApi a; return a; }
+// The library in use. On Windows it can change once: the copy shipped with OnAir has no Cypress FX3 (CyAPI) support, so a LimeSDR-USB on
+// the Cypress driver that LimeGUI installs is invisible to it; when it finds nothing, the other LimeSuite copies installed on the machine
+// (PothosSDR, LimeSuite) are asked as well, and the first one that sees a radio is kept. The libraries are never unloaded.
+std::mutex gLimeMu;
+LimeApi* gLime = nullptr;
+LimeApi& lime() {
+    std::lock_guard<std::mutex> lk(gLimeMu);
+    if (!gLime) gLime = new LimeApi(LimeApi::names());
+    return *gLime;
+}
 
 namespace {
 
@@ -220,9 +230,52 @@ private:
     double calLo_ = 0;         // LO frequency of the last calibration
 };
 
+namespace {
+// The scan result goes to the log (only when it changes, the list is scanned again and again): a radio that does not show up can then be
+// told apart from a library that failed
+void logLimeScan(const LimeApi& a, int n) {
+    static std::mutex mu;
+    static std::string last;
+    std::string line = "LimeSuite " + a.lib.path + ": " + (n < 0 ? "device scan failed" + a.text() : std::to_string(n) + " radio(s)");
+    if (n == 0) {
+        const std::string e = a.text();
+        if (!e.empty()) line += " (last message" + e + ")";
+    }
+    std::lock_guard<std::mutex> lk(mu);
+    if (line == last) return;
+    last = line;
+    fprintf(stderr, "%s\n", line.c_str());
+    fflush(stderr);
+}
+} // namespace
+
 void listLime(std::vector<DeviceInfo>& out) {
     if (!lime().ok) return;
-    const int n = lime().get_device_list(nullptr);
+    int n = lime().get_device_list(nullptr);
+    logLimeScan(lime(), n);
+#ifdef _WIN32
+    static std::vector<std::string> tried;   // the copies that were asked and found nothing (asked once each)
+    if (n <= 0) {
+        for (const auto& c : LimeApi::names()) {
+            const bool full = c.find('\\') != std::string::npos || c.find('/') != std::string::npos;
+            if (!full || c == lime().lib.path || std::find(tried.begin(), tried.end(), c) != tried.end()) continue;
+            if (GetFileAttributesA(c.c_str()) == INVALID_FILE_ATTRIBUTES) continue;
+            tried.push_back(c);
+            LimeApi* other = new LimeApi(std::vector<std::string>{c});   // never freed: a loaded library stays
+            if (!other->ok) continue;
+            const int m = other->get_device_list(nullptr);
+            logLimeScan(*other, m);
+            if (m > 0) {
+                fprintf(stderr, "LimeSuite: using %s from now on\n", c.c_str());
+                fflush(stderr);
+                std::lock_guard<std::mutex> lk(gLimeMu);
+                gLime = other;
+                n = m;
+                break;
+            }
+        }
+    }
+#endif
     if (n <= 0) return;
     std::vector<char> raw((size_t)n * sizeof(LimeApi::info_str_t), 0);   // n strings of 256 characters
     const int got = lime().get_device_list(reinterpret_cast<LimeApi::info_str_t*>(raw.data()));
