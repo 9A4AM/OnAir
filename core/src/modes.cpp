@@ -45,8 +45,8 @@
 #include "dect2/hfdig_gen.h"
 #include "dect2/airband_rx.h"
 #include "dect2/airband_gen.h"
-#include "dect2/ism_rx.h"
-#include "dect2/ism_gen.h"
+#include "dect2/vor_rx.h"
+#include "dect2/vor_gen.h"
 #include "dect2/modes.h"
 #include "dect2/demo_ts.h"
 #include "dect2/exact_resampler.h"
@@ -128,7 +128,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), ismTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vorTuning()};
     return t;
 }
 
@@ -138,7 +138,7 @@ const ModeTuning* modeTuning(int stdMode) {
 }
 
 // the protocols listed as modes of their own (mode_tuning.h): RTTY, SSTV, FreeDV and the WSJT modes of HF digital, the four LoRa networks
-// of mesh, POCSAG and FLEX, and the three marine services
+// of mesh, POCSAG and FLEX, the three marine services, and VOR and ILS
 static const SubMode kSubModes[] = {
     {"rtty",       "RTTY",       27, 1, -1, 14.080,  {0, 0, 0}},
     {"sstv",       "SSTV",       27, 2, -1, 14.230,  {1, 0, 0}},
@@ -156,6 +156,8 @@ static const SubMode kSubModes[] = {
     {"navtex",     "NAVTEX",     17, 0, 1,  0.518,   {1, 0, 0}},
     {"dsc",        "DSC",        17, 0, 2,  2.1875,  {2, 0, 0}},
     {"wefax",      "Weather fax", 17, 0, 3, 7.880,   {3, 0, 0}},
+    {"vor",        "VOR",        32, 1, 1, 113.000, {0, 0, 0}},   // sel: VorReceiver::setFunction
+    {"ils",        "ILS",        32, 2, 2, 110.300, {2, 0, 0}},
 };
 const SubMode* subModes(int& count) { count = (int)(sizeof kSubModes / sizeof *kSubModes); return kSubModes; }
 const SubMode* subModeById(const std::string& id) {
@@ -212,7 +214,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 26: return makePacketSynth(cfg, sampleRate);
     case 27: return makeHfdigSynth(cfg, sampleRate);
     case 28: return makeAirbandSynth(cfg, sampleRate);
-    case 30: return makeIsmSynth(cfg, sampleRate);
+    case 32: return makeVorSynth(cfg, sampleRate);
     default: return nullptr;
     }
 }
@@ -240,7 +242,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 25: return packetSummary(t.packet);
     case 26: return hfdigSummary(t.hfdig);
     case 27: return airbandSummary(t.airband);
-    case 29: return ismSummary(t.ism);
+    case 31: return vorSummary(t.vor);
     default: return "";
     }
 }

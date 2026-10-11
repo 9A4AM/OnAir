@@ -73,7 +73,8 @@ ft4	--mode ft4	Overview|Decoders|Receiver|History
 ft2	--mode ft2	Overview|Decoders|Receiver|History
 wspr	--mode wspr	Overview|Decoders|Receiver|History
 airband	--mode airband	Overview|Channels|Receiver|History
-ism	--mode ism	Overview|Sensors|Receiver|History"
+vor	--mode vor	Overview|Navigation|Receiver|History
+ils	--mode ils	Overview|Navigation|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"
