@@ -103,7 +103,7 @@ static void interp(const std::vector<int>& pos, const std::vector<cf32>& val, in
     }
 }
 
-void lteChanEst(const LteGrid& y, const LteCellCfg& c, int sf, int nRbGrid, int, int ports, LteChan& out) {
+void lteChanEst(const LteGrid& y, const LteCellCfg& c, int sf, int nRbGrid, int, int ports, LteChan& out, int wide, int lsfLo, int lsfHi) {
     (void)nRbGrid;
     const int N = lteSymbPerSlot(c.extCp), nsym = 2 * N, nsc = 12 * c.nRb;
     out.h.assign((size_t)ports, LteGrid());
@@ -117,7 +117,7 @@ void lteChanEst(const LteGrid& y, const LteCellCfg& c, int sf, int nRbGrid, int,
         for (int lsf = 0; lsf < nsym; lsf++) {
             const int l = lsf % N, ns = 2 * sf + lsf / N;
             const bool has = (p <= 1) ? (l == 0 || l == N - 3) : (l == 1);
-            if (!has) continue;
+            if (!has || lsf < lsfLo || lsf > lsfHi) continue;
             lteCrsSeq(c.pci, ns, l, c.extCp, r);
             std::vector<int> pos;
             std::vector<cf32> ls;
@@ -133,11 +133,40 @@ void lteChanEst(const LteGrid& y, const LteCellCfg& c, int sf, int nRbGrid, int,
                 if (p == 0 && i > 0 && i + 1 < ls.size()) { resid += std::norm(ls[i] - sm[i]); nres++; }
                 if (p == 0) { rsrp += std::norm(ls[i]); nrs++; }
             }
+            if (wide > 1 && ls.size() > 1) {   // the mean of +-wide pilots, the delay's phase slope taken out first
+                const int n = (int)ls.size();
+                cf32 st(0, 0);
+                for (int i = 0; i + 1 < n; i++) st += ls[(size_t)i + 1] * std::conj(ls[(size_t)i]);
+                const float ph = std::arg(st) / (float)(pos[1] - pos[0]);   // per subcarrier
+                std::vector<cf32> dr((size_t)n);
+                for (int i = 0; i < n; i++) dr[(size_t)i] = ls[(size_t)i] * std::polar(1.f, -ph * (float)pos[(size_t)i]);
+                for (int i = 0; i < n; i++) {
+                    cf32 a(0, 0);
+                    const int lo = std::max(0, i - wide), hi = std::min(n - 1, i + wide);
+                    for (int j = lo; j <= hi; j++) a += dr[(size_t)j];
+                    sm[(size_t)i] = a / (float)(hi - lo + 1) * std::polar(1.f, ph * (float)pos[(size_t)i]);
+                }
+            }
             if (p == 0) { double e = 0; for (int k = 0; k < nsc; k++) e += std::norm(y.at(lsf, k)); rssi += e; nrssi++; }
             std::vector<cf32> full((size_t)nsc);
             interp(pos, sm, nsc, full.data(), 1);
             syms.push_back(lsf);
             fr.push_back(std::move(full));
+        }
+        if (wide > 1 && fr.size() > 1) {   // the mean over the subframe, the carrier offset's phase drift taken out first
+            double sw = 0, sp = 0;
+            for (size_t i = 0; i + 1 < fr.size(); i++) {
+                cf32 a(0, 0);
+                for (int k = 0; k < nsc; k++) a += fr[i + 1][(size_t)k] * std::conj(fr[i][(size_t)k]);
+                sw += std::abs(a); sp += std::abs(a) * std::arg(a) / (syms[i + 1] - syms[i]);
+            }
+            const float ps = sw > 0 ? (float)(sp / sw) : 0.f;   // per symbol
+            for (int k = 0; k < nsc; k++) {
+                cf32 a(0, 0);
+                for (size_t i = 0; i < fr.size(); i++) a += fr[i][(size_t)k] * std::polar(1.f, -ps * (float)syms[i]);
+                a /= (float)fr.size();
+                for (size_t i = 0; i < fr.size(); i++) fr[i][(size_t)k] = a * std::polar(1.f, ps * (float)syms[i]);
+            }
         }
         // time
         std::vector<cf32> col(syms.size());

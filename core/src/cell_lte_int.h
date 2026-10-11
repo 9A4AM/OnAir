@@ -28,6 +28,14 @@ void lteOfdmDemod(const cf32* x, int nRb, bool ext, int nfft, LteGrid& g);
 
 // Channel estimate per port from the reference signals of one subframe (symbols of the whole subframe), and the noise variance
 struct LteChan { std::vector<LteGrid> h; float noiseVar = 1e-3f; float rsrp = 0, rssi = 0; };
-void lteChanEst(const LteGrid& y, const LteCellCfg& c, int sf, int nRbGrid, int rbOffset, int ports, LteChan& out);
+// wide > 1: the estimate is the mean of +-wide pilots in frequency and of the subframe's pilot symbols in time (a weak cell: less noise on
+// the channel, for a channel that changes little over the band and the millisecond). lsfLo..lsfHi: only the pilots of these symbols
+// (the PBCH symbols, where nothing unknown lies once the decoded cells are cancelled)
+void lteChanEst(const LteGrid& y, const LteCellCfg& c, int sf, int nRbGrid, int rbOffset, int ports, LteChan& out, int wide = 0, int lsfLo = 0, int lsfHi = 99);
+// Rebuild one port-summed subframe of a known cell from its channel and add it to y times scale (-1: subtract): the reference signals of every port, and in
+// subframe 0 the PBCH of frame sfn (its MIB rebuilt with bandwidth mibNRb; 0 = none); used to take a decoded cell out from under a weaker one at the same timing
+// symbols sent with transmit diversity on a list of REs (a decoded PDCCH or PDSCH), also rebuilt and taken out
+struct LteTxPart { std::vector<std::pair<int, int>> res; std::vector<cf32> d; };
+void lteCancelKnown(LteGrid& y, const LteChan& ch, const LteCellCfg& c, int sf, int sfn, int mibNRb, float scale = -1.f, const std::vector<LteTxPart>* extra = nullptr);
 
 } // namespace dect2::cell
