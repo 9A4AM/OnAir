@@ -113,6 +113,7 @@ These receivers are built from the published specifications and checked end to e
 | **Inmarsat Aero** | Aircraft satellite data link, L band | Messages, and positions on a map |
 | **Inmarsat-C** | Maritime satellite broadcasts | Safety messages (SafetyNET) and system information |
 | **Iridium** | Satellite phone network | Satellites on a map, pager messages, ring alerts |
+| **Orbcomm** | Satellite data downlinks, 137.2 to 137.8 MHz (4800 bit/s SDPSK) | Two downlinks at once with Doppler tracking, satellites on the map from their ephemeris, packet log by type |
 | **AIS** | Ship transponders | Ships on a map |
 | **Maritime** | NAVTEX, DSC, weather fax | Safety messages, distress and calling, fax pictures |
 | **Radiosondes** | Weather balloons, 400 – 406 MHz | Balloon tracks, altitude and weather data |

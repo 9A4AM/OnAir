@@ -57,6 +57,7 @@ acars	--mode acars	Overview|Messages|Receiver|History
 inmc	--mode inmc	Overview|Messages|Receiver|History
 aero	--mode aero	Overview|Messages|Receiver|History
 iridium	--mode iridium	Overview|Iridium|Receiver|History
+orbcomm	--mode orbcomm	Overview|Orbcomm|Receiver|History
 meshtastic	--mode meshtastic	Overview|Mesh|Receiver|History
 meshcore	--mode meshcore	Overview|Mesh|Receiver|History
 loraaprs	--mode loraaprs	Overview|Mesh|Receiver|History
