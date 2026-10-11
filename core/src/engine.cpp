@@ -128,6 +128,8 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         if (p.ok) { offHz_ = p.offsetHz; offRate_ = p.rateHz; }
         else { offsetDc_ = true; offNote = "offset tuning not possible (" + p.why + "): removing the DC spike instead"; }
     }
+    // the spectrum analyser on a HackRF: the radio's own sweep (DECT2_SPECAN_STEPPED=1 steps it like any other radio)
+    specanSweep_ = stdMode_.load() == 44 && dev.kind == DeviceInfo::HackRF && !getenv("DECT2_SPECAN_STEPPED");
     if (!src_->start(radioTune(tune), ring_, err)) {
         log("source start failed: " + err);
         src_.reset();
@@ -284,8 +286,20 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxPsk_.configure(rate_);
     rxPsk_.setLogCallback([this](const std::string& s) { log(s); });
     rxJs8_.configure(rate_);
-    rxSpecx_.configure(rate_);
-    rxSpecx_.setLogCallback([this](const std::string& s) { log(s); });
+    rxSpecan_.configure(rate_);
+    rxSpecan_.setLogCallback([this](const std::string& s) { log(s); });
+    rxSpecan_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
+    // stepped sweeps retune the radio straight from the receiver (no hold, no reset: the receiver skips the settling samples itself);
+    // a file, the test signal and the HackRF's own sweep do not step
+    if (stdMode_.load() == 44 && dev.isRadio() && !specanSweep_)
+        rxSpecan_.setRetuneCallback([this](double hz) {
+            if (!src_) return false;
+            TuneSettings t; { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; }
+            t.centerHz = hz;
+            std::string err;
+            return src_->retune(radioTune(t), err);
+        });
+    else rxSpecan_.setRetuneCallback(nullptr);
     rxJs8_.setLogCallback([this](const std::string& s) { log(s); });
     if (const ModeTuning* mt = modeTuning(stdMode_.load()))
         if (rate_.load() < mt->minSampleRate - 1) {
@@ -402,6 +416,12 @@ TuneSettings Engine::radioTune(const TuneSettings& t) const {
     TuneSettings r = t;
     if (const ModeTuning* mt = modeTuning(stdMode_.load())) r.centerHz += mt->tuneOffsetHz;
     if (offHz_ > 0) { r.centerHz -= offHz_; r.sampleRate = offRate_; r.basebandFilterHz = 0; }   // offset tuning: the radio below the channel
+    if (specanSweep_) {   // HackrfSource sweeps this range itself (MHz)
+        double lo = 0, hi = 0;
+        rxSpecan_.range(lo, hi);
+        r.radio["specan_sweep"] = std::to_string(lo / 1e6) + ":" + std::to_string(hi / 1e6);
+        r.sampleRate = 20e6; r.basebandFilterHz = 15e6;
+    }
     return r;
 }
 
@@ -496,7 +516,7 @@ void Engine::applyReset() {
     rxDstar_.reset();
     rxPsk_.reset();
     rxJs8_.reset();
-    rxSpecx_.reset();
+    rxSpecan_.reset();
     autoMark_ = nSamp_ / std::max(1.0, rate_.load()); lastLockSec_ = autoMark_;
     analyzer_.reset();
     {
@@ -539,7 +559,7 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
 // so idle searching costs one receiver, not two.
 void Engine::feedRx(const cf32* x, size_t n) {
     const int a = activeStd_.load();
-    if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else if (a == 33) rxCell_.feed(x, n); else if (a == 35) rxCw_.feed(x, n); else if (a == 34) rxDstar_.feed(x, n); else if (a == 36) rxHfdl_.feed(x, n); else if (a == 39) rxNxdn_.feed(x, n); else if (a == 40) rxGsmr_.feed(x, n); else if (a == 37) rxPsk_.feed(x, n); else if (a == 38) rxJs8_.feed(x, n); else if (a == 42) rxSpecx_.feed(x, n); else rx_.feed(x, n);
+    if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else if (a == 33) rxCell_.feed(x, n); else if (a == 35) rxCw_.feed(x, n); else if (a == 34) rxDstar_.feed(x, n); else if (a == 36) rxHfdl_.feed(x, n); else if (a == 39) rxNxdn_.feed(x, n); else if (a == 40) rxGsmr_.feed(x, n); else if (a == 37) rxPsk_.feed(x, n); else if (a == 38) rxJs8_.feed(x, n); else if (a == 43) rxSpecan_.feed(x, n); else rx_.feed(x, n);
 }
 
 void Engine::changeBandwidth(double mhz) {
@@ -621,7 +641,7 @@ void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
             case 34: rxDstar_.reset(); break;
             case 37: rxPsk_.reset(); break;
             case 38: rxJs8_.reset(); break;
-            case 42: rxSpecx_.reset(); break;
+            case 43: rxSpecan_.reset(); break;
             default: break;
             }
         }
@@ -1567,6 +1587,21 @@ void Engine::analysisLoop() {
                     t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
                     t.rateOk = rxJs8_.ready();
                     t.js8 = std::move(mt);
+                    std::lock_guard<std::mutex> lk(rxMu_);
+                    publishRx(std::move(t));
+                }
+            } else if (activeStd_.load() == 43) {
+                SpecanTelemetry mt;
+                if (rxSpecan_.telemetry(mt, modeSeq_[37])) {
+                    modeSeq_[37] = mt.seq;
+                    t.standard = 43;
+                    t.seq = mt.seq;
+                    t.state = mt.state;
+                    t.cfoHz = 0;
+                    t.dataValid = mt.dataValid;
+                    t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
+                    t.rateOk = rxSpecan_.ready();
+                    t.specan = std::move(mt);
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
                 }

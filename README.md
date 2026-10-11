@@ -98,6 +98,7 @@ These receivers are built from the published specifications and checked end to e
 | **ACARS** | Aircraft data link, VHF | Messages, and positions on a map |
 | **HFDL** | Aircraft data link on HF, 3 - 22 MHz | Squitters and ground stations, ACARS, positions on a map; every channel in the band at once |
 | **CW** | Morse code on the HF bands | Every CW signal in a 14 kHz window at once: speed, SNR and text, callsigns highlighted |
+| **Spectrum analyser** | Wide sweeps, 1 - 6000 MHz in about a second with a HackRF (its native sweep), stepped retuning on other radios | Live, peak-hold and averaged traces, persistence, waterfall, markers, EU band overlay, spur removal, CSV export |
 | **JS8Call** | Weak-signal keyboard messaging on HF (normal, fast, turbo) | Every frame in the passband, messages put together from their frames, heartbeats and CQs, relays, stations and their grids on a map |
 | **Spectrum explorer** | No decoder: a tool to look around | Spectrum and waterfall with markers, zoom and pan, region measurements (occupied bandwidth at -3 / -26 dB, channel power, SNR, symbol rate), LNB and converter offsets, range sweeps with signal detection, bookmarks |
 | **M17** | Open digital voice, 2 m / 70 cm | Callsigns, voice through your libcodec2, text messages, positions on a map |

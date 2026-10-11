@@ -4,6 +4,7 @@
 #include "dect2/demo_ts.h"
 #include "dect2/dvbt_gen.h"
 #include "dect2/atsc_gen.h"
+#include "dect2/specan_dsp.h"
 
 #include <libhackrf/hackrf.h>
 
@@ -124,6 +125,23 @@ public:
             return false;
         }
         rate_ = s.sampleRate;
+        sweep_ = false;
+        const std::string sw = radioOption(s, "specan_sweep");
+        if (!sw.empty()) {   // the spectrum analyser: libhackrf's sweep, as hackrf_sweep runs it (20 MHz steps, interleaved, LO 7.5 MHz over the tag)
+            double lo = 1, hi = 6000;
+            sscanf(sw.c_str(), "%lf:%lf", &lo, &hi);
+            uint16_t f[2];
+            f[0] = (uint16_t)std::max(0.0, std::floor(lo));
+            const double span = std::max(20.0, std::ceil((hi - f[0]) / 20.0) * 20.0);
+            f[1] = (uint16_t)std::min(7250.0, f[0] + span);
+            r = hackrf_init_sweep(dev_, f, 1, BYTES_PER_BLOCK * 16, 20000000, 7500000, INTERLEAVED);
+            if (r == HACKRF_SUCCESS) {
+                SaSweepTap::get().setActive(true, s.sampleRate, 7.5e6);
+                sweep_ = true;
+                r = hackrf_start_rx_sweep(dev_, &HackrfSource::sweepCb, this);
+                if (r != HACKRF_SUCCESS) { SaSweepTap::get().setActive(false); sweep_ = false; }
+            }
+        } else
         r = hackrf_start_rx(dev_, &HackrfSource::rxCb, this);
         if (r != HACKRF_SUCCESS) {
             err = std::string("start_rx: ") + hackrf_error_name((hackrf_error)r);
@@ -140,6 +158,7 @@ public:
     void stop() override {
         if (!dev_) return;
         hackrf_stop_rx(dev_);
+        if (sweep_) { SaSweepTap::get().setActive(false); sweep_ = false; }
         if (bias_) hackrf_set_antenna_enable(dev_, 0);   // antenna power never stays on
         bias_ = false;
         hackrf_close(dev_);
@@ -165,7 +184,7 @@ private:
         uint32_t bw = s.basebandFilterHz > 0 ? (uint32_t)s.basebandFilterHz : hackrfAutoFilterHz(s.sampleRate, s.bandwidthMhz);   // as hackrf_usb.cpp
         if (!chk(hackrf_set_baseband_filter_bandwidth(dev_, bw), "set_baseband_filter")) return false;
         // the HackRF's library has no frequency correction: the clock error is taken out of the frequency asked for
-        if (!chk(hackrf_set_freq(dev_, (uint64_t)ppmCorrectedHz(s.centerHz, radioPpm(s))), "set_freq")) return false;
+        if (!sweep_ && !chk(hackrf_set_freq(dev_, (uint64_t)ppmCorrectedHz(s.centerHz, radioPpm(s))), "set_freq")) return false;
         if (!chk(hackrf_set_lna_gain(dev_, (uint32_t)s.lnaDb), "set_lna_gain")) return false;
         if (!chk(hackrf_set_vga_gain(dev_, (uint32_t)s.vgaDb), "set_vga_gain")) return false;
         if (!chk(hackrf_set_amp_enable(dev_, s.ampOn ? 1 : 0), "set_amp_enable")) return false;
@@ -192,6 +211,27 @@ private:
         return 0;
     }
 
+    // sweep mode: blocks of 16384 bytes, each 0x7F 0x7F, the tuning as a little-endian uint64 (Hz), then samples; the samples after
+    // the first 16 bytes go to the analyser (tagged) and to the ring (level, recording)
+    static int sweepCb(hackrf_transfer* t) {
+        auto* self = static_cast<HackrfSource*>(t->rx_ctx);
+        const uint8_t* buf = t->buffer;
+        constexpr size_t kSkip = 16, kN = (BYTES_PER_BLOCK - kSkip) / 2;
+        cf32 tmp[kN];
+        for (int off = 0; off + BYTES_PER_BLOCK <= t->valid_length; off += BYTES_PER_BLOCK) {
+            const uint8_t* b = buf + off;
+            if (b[0] != 0x7F || b[1] != 0x7F) continue;
+            uint64_t f = 0;
+            for (int i = 0; i < 8; i++) f |= (uint64_t)b[2 + i] << (8 * i);
+            const int8_t* p = reinterpret_cast<const int8_t*>(b + kSkip);
+            for (size_t k = 0; k < kN; k++) tmp[k] = cf32(p[2 * k] * (1.0f / 128), p[2 * k + 1] * (1.0f / 128));
+            SaSweepTap::get().post((double)f, tmp, kN);
+            self->ring_->write(tmp, kN);
+        }
+        return 0;
+    }
+
+    bool sweep_ = false;
     std::string serial_;
     hackrf_device* dev_ = nullptr;
     IqRing* ring_ = nullptr;
@@ -207,7 +247,7 @@ public:
     bool start(const TuneSettings& s, IqRing& ring, std::string& err) override {
         stop();
         std::string ownErr;
-        if (!getenv("DECT2_LIBHACKRF")) {
+        if (!getenv("DECT2_LIBHACKRF") && radioOption(s, "specan_sweep").empty()) {   // the sweep needs libhackrf
             auto u = makeUsbHackrfSource(serial_);
             if (u->start(s, ring, ownErr)) { impl_ = std::move(u); if (getenv("DECT2_DEBUG")) fprintf(stderr, "HackRF: own USB driver\n"); return true; }
             if (getenv("DECT2_DEBUG")) fprintf(stderr, "HackRF: own USB driver failed (%s), trying libhackrf\n", ownErr.c_str());

@@ -46,7 +46,7 @@
 #include "dstar_rx.h"
 #include "psk_rx.h"
 #include "js8_rx.h"
-#include "specx_rx.h"
+#include "specan_rx.h"
 #include "bbunpack.h"
 #include "ts.h"
 #include "tsout.h"
@@ -193,7 +193,7 @@ public:
     IsmReceiver& ism() { return rxIsm_; }   // ISM sensors: the receiver's own controls and results (the interface reads telemetry through latestRx)
     CwReceiver& cw() { return rxCw_; }   // CW: the receiver's own controls and results (the interface reads telemetry through latestRx)
     NxdnReceiver& nxdn() { return rxNxdn_; }   // NXDN: the receiver's own controls and results (the interface reads telemetry through latestRx)
-    SpecxReceiver& specx() { return rxSpecx_; }   // spectrum explorer: FFT size and averaging
+    SpecanReceiver& specan() { return rxSpecan_; }   // spectrum analyser: range, resolution, averaging (telemetry through latestRx)
     Js8Receiver& js8() { return rxJs8_; }   // JS8Call: the receiver's own controls and results (the interface reads telemetry through latestRx)
     PskReceiver& psk() { return rxPsk_; }   // PSK31: the receiver's own controls and results (the interface reads telemetry through latestRx)
     DstarReceiver& dstar() { return rxDstar_; }   // D-STAR: the receiver's own controls and results (the interface reads telemetry through latestRx)
@@ -300,7 +300,8 @@ private:
     DstarReceiver rxDstar_;
     PskReceiver rxPsk_;
     Js8Receiver rxJs8_;
-    SpecxReceiver rxSpecx_;
+    SpecanReceiver rxSpecan_;
+    bool specanSweep_ = false;   // the HackRF sweeps by itself (spectrum analyser)
     uint64_t modeSeq_[48] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;
