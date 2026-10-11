@@ -207,7 +207,6 @@ struct App {
     bool fmMode = false;      // FM radio (family 5)
     bool newUi = true;        // the new interface (ui2.cpp) instead of the classic one (View > Classic interface)
     struct FamGain { int lna = 32, vga = 20; bool amp = true, known = false; } famGain[kNumFamilies];   // the radio gains remembered for each mode
-    bool famBias[kNumFamilies] = {};    // antenna power per mode while the app runs (never saved: it starts off)
     double famFreq[kNumFamilies] = {};  // the frequency each of the modes added after FM was last tuned to (0 = never)
     int uiVariant = 0;        // layout of the new interface: 0 sidebar (the default), 1 scope, 2 tiles, 3 faceplate, 4-6 scope children, 7 panel
     int uiTheme = 1;          // its palette: 0 terminal, 1 instrument, 2 mono
@@ -289,6 +288,7 @@ struct App {
     std::string gainDev;   // the radio a.tune.gainDb was set for (board:serial); another radio starts at its own sensible gain
     double autoRateHz = 0;      // the mode's own radio rate ("Auto" of the sample-rate control), set by applyBandwidth()
     double chosenRateHz = 0;    // the rate chosen for this mode on this radio and applied by applyBandwidth() (0 = Auto)
+    std::string biasCtx;        // the mode / radio the antenna power was last loaded for (biasContext)
     std::string rateCtx;        // mode / radio / channel width applyBandwidth() last ran for (the control refreshes Auto when it changes)
     std::string radioKey;  // the radio a.tune.radio (its own settings, DeviceInfo::settings) was loaded for (radioKeyOf); "" = none
     AutoGain agc;
@@ -447,7 +447,10 @@ std::string rateContext(const App& a);
 double savedSampleRate(const App& a);
 void saveSampleRate(App& a, double hz);
 double modeMinSampleRate(const App& a);
-void sampleRateControl(App& a);   // toolbar.cpp: the "Sample rate" control under the frequency
+void sampleRateControl(App& a);
+std::string biasContext(const App& a);   // the prefs key of the antenna power for this mode on this radio ("" = none)
+void loadBiasTee(App& a);
+void saveBiasTee(const App& a);   // toolbar.cpp: the "Sample rate" control under the frequency
 // The radio's own settings (DeviceInfo::settings, TuneSettings::radio), saved per radio: the key a radio is saved under, loading the
 // selected radio's values into a.tune.radio when another radio was chosen, saving them after a change
 std::string radioKeyOf(const DeviceInfo& d);

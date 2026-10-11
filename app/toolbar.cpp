@@ -181,7 +181,6 @@ void toolbarParts(App& a, int mask, bool vertical) {
             if (ImGui::Selectable(a.devices[i].name.c_str(), i == a.devIdx) && i != a.devIdx) {
                 a.devIdx = i;
                 a.tune.biasTee = false;   // antenna power set for another radio (and its antenna) is never carried over
-                for (bool& b : a.famBias) b = false;
             }
         ImGui::EndCombo();
     }
@@ -329,9 +328,15 @@ void toolbarParts(App& a, int mask, bool vertical) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Corrects I/Q gain and phase imbalance, which puts a faint mirror image of every signal on the other side of the centre.\nMeasured from the signal itself; now %.2f dB, %.1f degrees. Not applied in DTMB and analog TV (their signals fool the measurement).", a.engine.iqFix().gainDb(), a.engine.iqFix().phaseDeg());
     }
     if (!curDev.hasBiasTee) a.tune.biasTee = false;   // a radio without antenna power never inherits the setting of another one
+    if (const std::string bc = biasContext(a); bc != a.biasCtx) {   // another mode or radio (or the start): its own saved antenna power
+        a.biasCtx = bc;
+        const bool was = a.tune.biasTee;
+        loadBiasTee(a);
+        if (a.tune.biasTee != was && a.engine.running()) retune = true;
+    }
     if (curDev.hasBiasTee) {
         if (vertical) ImGui::NewLine(); else flowNext(14 * gUi);
-        if (ImGui::Checkbox("Bias-tee (antenna power)", &a.tune.biasTee)) retune = true;
+        if (ImGui::Checkbox("Bias-tee (antenna power)", &a.tune.biasTee)) { retune = true; saveBiasTee(a); }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Sends DC power up the antenna cable for an active antenna or LNA (e.g. a GNSS patch antenna). Leave it off with a passive antenna, and never with a DC short in the antenna path (some antennas, splitters or filters): it can damage the radio.");
         if (a.family == 12 && !a.tune.biasTee) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Most GNSS antennas are active and need this on."); ImGui::PopTextWrapPos(); }
     }

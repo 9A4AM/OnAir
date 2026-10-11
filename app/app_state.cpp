@@ -53,8 +53,6 @@ void setFamily(App& a, int f) {
     if (a.family >= 6 && a.family < kNumFamilies && f != a.family) a.famFreq[a.family] = a.freqMhz;   // each of the newer modes comes back on the frequency it was left on
     if (a.family >= 0 && a.family < kNumFamilies && f != a.family) {   // the gains that suit FM are not the ones for a TV channel: remember them per mode
         a.famGain[a.family] = {a.tune.lnaDb, a.tune.vgaDb, a.tune.ampOn, true};
-        a.famBias[a.family] = a.tune.biasTee;
-        a.tune.biasTee = a.famBias[f];
         const App::FamGain& g = a.famGain[f];
         if (g.known) { a.tune.lnaDb = g.lna; a.tune.vgaDb = g.vga; a.tune.ampOn = g.amp; }
         else if (f == 5) { a.tune.lnaDb = 24; a.tune.vgaDb = 20; a.tune.ampOn = false; }   // FM stations are strong
@@ -94,7 +92,6 @@ void refreshDevices(App& a) {
         for (int i = 2; i < (int)a.devices.size(); i++) if (a.devices[i].name == keep) { idx = i; break; }
         if (idx < 0) {   // it is gone: another radio must not inherit its antenna power
             a.tune.biasTee = false;
-            for (bool& b : a.famBias) b = false;
         }
         a.devIdx = idx >= 0 ? idx : std::min(a.devIdx, (int)a.devices.size() - 1);
     }
@@ -180,10 +177,27 @@ void saveSampleRate(App& a, double hz) {
     plat::prefs().setD(k.c_str(), hz > 0 ? hz : 0);
     plat::prefs().flush();
 }
+// antenna power, saved per mode and per radio (prefs "bias.<mode id>.<radioKeyOf>"): only that same radio gets it back, never another one
+std::string biasContext(const App& a) {
+    if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size() || !a.devices[a.devIdx].hasBiasTee) return "";
+    const std::string rk = radioKeyOf(a.devices[a.devIdx]);
+    return rk.empty() ? "" : "bias." + rateModeId(a) + "." + rk;
+}
+void loadBiasTee(App& a) {
+    const std::string k = biasContext(a);
+    a.tune.biasTee = !k.empty() && plat::prefs().getI(k.c_str(), 0) != 0;
+}
+void saveBiasTee(const App& a) {
+    const std::string k = biasContext(a);
+    if (k.empty()) return;
+    plat::prefs().setI(k.c_str(), a.tune.biasTee ? 1 : 0);
+    plat::prefs().flush();
+}
 double modeMinSampleRate(const App& a) { return minSampleRateFor(engineStd(a), a.tune.bandwidthMhz > 0 ? a.tune.bandwidthMhz : kBw[a.bwIdx].mhz); }
 
 void applyBandwidth(App& a) {
     syncRadioSettings(a);   // the selected radio's own settings go with every start
+    if (const std::string bc = biasContext(a); bc != a.biasCtx) { a.biasCtx = bc; loadBiasTee(a); }   // antenna power saved for this mode and radio
     // HackRF Pro: the tuned centre is only exact at <= 10 Msps and at 20 Msps, so use 10 Msps (8 for narrow channels)
     a.tune.sampleRate = kBw[a.bwIdx].mhz >= 7 ? 10e6 : 8e6;
     {   // a radio that cannot reach that rate runs as fast as it can (the source picks the nearest rate it offers)
