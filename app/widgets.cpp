@@ -398,7 +398,7 @@ void lossTooltip(const SampleLoss& l) {
         ImGui::TextDisabled("Signal OnAir had to skip because the receiver could not keep up with the sample rate. Close other programs, or pick a lower sample rate or a narrower channel.");
         ImGui::Spacing();
         ImGui::Text("Receiver load: %.0f%% of real time", l.loadPct);
-        ImGui::TextDisabled("The receiver's time on the sample thread per second of signal. Near or above 100%, signal is skipped.");
+        ImGui::TextDisabled("The receiver's time on the sample thread per second of signal. Near or above 100%%, signal is skipped.");
     }
     ImGui::PopTextWrapPos();
     ImGui::EndTooltip();
