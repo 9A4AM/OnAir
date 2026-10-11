@@ -75,6 +75,9 @@ wspr	--mode wspr	Overview|Decoders|Receiver|History
 airband	--mode airband	Overview|Channels|Receiver|History
 vdl2	--mode vdl2	Overview|Messages|Receiver|History
 ism	--mode ism	Overview|Sensors|Receiver|History
+vor	--mode vor	Overview|Navigation|Receiver|History
+ils	--mode ils	Overview|Navigation|Receiver|History
+m17	--mode m17	Overview|M17|Receiver|History
 cell	--mode cell	Overview|Cells|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"

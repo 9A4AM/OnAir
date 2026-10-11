@@ -169,7 +169,7 @@ using SavedChannel = plat::Channel;
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
 constexpr int kNumFamilies = 33;   // App::family runs from 0 to kNumFamilies - 1
-constexpr int kNumSubModes = 16;   // dect2::subModes(): the protocols of HF digital, mesh, pagers and marine listed as modes of their own
+constexpr int kNumSubModes = 18;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
 struct App {

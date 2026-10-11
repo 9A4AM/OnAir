@@ -38,6 +38,8 @@
 #include "airband_rx.h"
 #include "vdl2_rx.h"
 #include "ism_rx.h"
+#include "vor_rx.h"
+#include "m17_rx.h"
 #include "cell_rx.h"
 #include "bbunpack.h"
 #include "ts.h"
@@ -104,7 +106,7 @@ public:
     // Which standard to decode: 0 = automatic (alternates between DVB-T2 and DVB-T until one locks), 1 = DVB-T2, 2 = DVB-T, 3 = ATSC, 4 = DAB, 5 = ATSC 3.0, 6 = ISDB-T, 7 = FM,
     // 8 = DVB-S/S2, 9 = DTMB, 10 = analog TV, 11 = DMR, 12 = DRM, 13 = ADS-B, 14 = GNSS,
     // 15 = radiosonde, 16 = AIS, 17 = marine, 18 = ACARS, 19 = Inmarsat-C, 20 = Inmarsat Aero, 21 = Iridium, 22 = mesh,
-    // 23 = HD Radio, 24 = CDR, 25 = pagers, 26 = APRS / packet, 27 = HF digital, 28 = airband, 29 = VDL Mode 2, 30 = ISM sensors, 34 = cell towers
+    // 23 = HD Radio, 24 = CDR, 25 = pagers, 26 = APRS / packet, 27 = HF digital, 28 = airband, 29 = VDL Mode 2, 30 = ISM sensors, 32 = VOR / ILS, 33 = M17, 34 = cell towers
     void setStandard(int m) { stdMode_ = m; stdReq_ = true; }
     int standardMode() const { return stdMode_.load(); }
     int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T, 2 = ATSC, 3 = DAB, 4 = ATSC 3.0, 5 = ISDB-T, 6 = FM, 7 = DVB-S/S2, 8 = DTMB, 9 = analog TV, 10 = DMR, 11 = DRM, 12 = ADS-B, 13 = GNSS, 14 to 27 = radiosonde, AIS, marine, ACARS, Inmarsat-C, Inmarsat Aero, Iridium, mesh, HD Radio, CDR, pagers, APRS / packet, HF digital, airband, VDL Mode 2, ISM sensors, VOR / ILS, M17 (always the standard code minus one)
@@ -276,8 +278,10 @@ private:
     AirbandReceiver rxAirband_;
     Vdl2Receiver rxVdl2_;
     IsmReceiver rxIsm_;
+    VorReceiver rxVor_;
+    M17Receiver rxM17_;
     CellReceiver rxCell_;
-    uint64_t modeSeq_[27] = {};      // the last report taken from each of the modes added after FM (same order as above)
+    uint64_t modeSeq_[32] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;
     uint64_t atsc3Seq_ = 0;

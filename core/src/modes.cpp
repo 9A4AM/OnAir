@@ -49,6 +49,10 @@
 #include "dect2/vdl2_gen.h"
 #include "dect2/ism_rx.h"
 #include "dect2/ism_gen.h"
+#include "dect2/vor_rx.h"
+#include "dect2/vor_gen.h"
+#include "dect2/m17_rx.h"
+#include "dect2/m17_gen.h"
 #include "dect2/cell_rx.h"
 #include "dect2/cell_gen.h"
 #include "dect2/cell_tel.h"
@@ -133,7 +137,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), cellTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning()};
     return t;
 }
 
@@ -221,6 +225,8 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 28: return makeAirbandSynth(cfg, sampleRate);
     case 29: return makeVdl2Synth(cfg, sampleRate);
     case 30: return makeIsmSynth(cfg, sampleRate);
+    case 32: return makeVorSynth(cfg, sampleRate);
+    case 33: return makeM17Synth(cfg, sampleRate);
     case 34: return makeCellSynth(cfg, sampleRate);
     default: return nullptr;
     }
@@ -251,6 +257,8 @@ std::string modeSummary(const RxTelemetry& t) {
     case 27: return airbandSummary(t.airband);
     case 28: return vdl2Summary(t.vdl2);
     case 29: return ismSummary(t.ism);
+    case 31: return vorSummary(t.vor);
+    case 32: return m17Summary(t.m17);
     case 33: return cellSummary(t.cell);
     default: return "";
     }
