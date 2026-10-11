@@ -749,7 +749,7 @@ void gainControl(App& a) {
 
 // The receiver modes. Adding a mode is one row here (and its family number in app.h / setFamily).
 // The families are also stored in the settings: 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh,
-// 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 30 VOR / ILS.
+// 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 31 M17.
 // Within a group the rows are shown in this order; the keys 1-9 pick the modes in the same order.
 const ModeDef kModes[] = {
     {0, "DVB",        0, IM_COL32(52, 92, 108, 255),  "DVB-T2 / DVB-T, detected automatically",                                    "DVB-T2 and DVB-T, automatic (Europe, Middle East, Africa, Asia, Australia)", "T2 and T, automatic",   ImVec4(0.36f, 0.74f, 0.86f, 1)},
@@ -790,6 +790,7 @@ const ModeDef kModes[] = {
     {25, "RTTY", 6, IM_COL32(100, 80, 130, 255), "RTTY teletype (45.45 bd, 170 Hz shift) on upper sideband, 1 to 30 MHz", "RTTY: radio teletype text", "Teletype, 14.080 MHz", ImVec4(0.72f, 0.62f, 0.94f, 1), "rtty", "rtty hf digital teletype"},
     {25, "SSTV", 6, IM_COL32(130, 70, 100, 255), "SSTV slow-scan TV pictures (Martin, Scottie, Robot, PD) on upper sideband", "SSTV: slow-scan television pictures", "Pictures, 14.230 MHz", ImVec4(0.94f, 0.56f, 0.76f, 1), "sstv", "sstv hf digital pictures"},
     {25, "FreeDV", 6, IM_COL32(70, 100, 130, 255), "FreeDV digital voice (700D, 700E, 1600) on upper sideband", "FreeDV: open digital voice on HF", "Digital voice, 14.236 MHz", ImVec4(0.52f, 0.72f, 0.94f, 1), "freedv", "freedv hf digital voice"},
+    {31, "M17", 6, IM_COL32(60, 110, 90, 255), "M17 open digital voice and data (4FSK, 9 kHz), 2 m and 70 cm", "M17: open digital voice, text messages and positions on VHF / UHF", "Digital voice, 433.475 MHz", ImVec4(0.48f, 0.86f, 0.66f, 1), nullptr, "m17 digital voice codec2 amateur vhf uhf"},
     {25, "FT8", 6, IM_COL32(110, 70, 120, 255), "FT8 weak-signal contacts in 15 s slots, 14.074 MHz", "FT8: weak-signal amateur contacts", "WSJT, 14.074 MHz", ImVec4(0.86f, 0.58f, 0.92f, 1), "ft8", "ft8 wsjt hf digital"},
     {25, "FT4", 6, IM_COL32(120, 76, 96, 255), "FT4 contest mode in 7.5 s slots, 14.080 MHz", "FT4: fast weak-signal amateur contacts", "WSJT, 14.080 MHz", ImVec4(0.92f, 0.60f, 0.70f, 1), "ft4", "ft4 wsjt hf digital"},
     {25, "FT2", 6, IM_COL32(96, 76, 130, 255), "FT2 in 3.75 s slots, 14.084 MHz", "FT2: the fastest of the FT modes", "WSJT, 14.084 MHz", ImVec4(0.66f, 0.58f, 0.96f, 1), "ft2", "ft2 wsjt hf digital"},

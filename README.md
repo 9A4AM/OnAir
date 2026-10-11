@@ -95,6 +95,7 @@ These receivers are built from the published specifications and checked end to e
 | **DMR** | Digital two-way radio | Talkgroups, IDs and data (no voice) |
 | **ADS-B** | Aircraft transponders, 1090 MHz | Aircraft on a map, with altitude, speed and callsign |
 | **ACARS** | Aircraft data link, VHF | Messages, and positions on a map |
+| **M17** | Open digital voice, 2 m / 70 cm | Callsigns, voice through your libcodec2, text messages, positions on a map |
 | **Airband** | AM voice, 118 - 137 MHz | Several 25 and 8.33 kHz channels at once: squelch, scan, priority, activity log |
 | **VOR** | Navigation beacons, 108 - 118 MHz | The radial (conventional and Doppler VOR), Morse identification, voice; a position from two stations on the map |
 | **ILS** | Approach guidance, 75 / 108 - 112 / 329 - 335 MHz | Localizer and glide slope needles (DDM), marker beacons, identification |
