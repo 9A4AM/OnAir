@@ -397,6 +397,12 @@ bool tabItem(const char* name, Ic icon);
 extern bool gTightTabs;   // the tabs of mainTabs() get less padding (a narrow pane)
 void toggleFullscreen();
 GLFWmonitor* monitorFor(int x, int y, int w, int h);   // widgets.cpp: the monitor holding most of the rectangle
+// The monitors, kept from the last change GLFW reported (glfwSetMonitorCallback) instead of asked for on each use: a monitor that goes away
+// (display asleep, cable out) is dropped from the list before anything asks for its size or position again.
+void watchMonitors();                                  // after ImGui_ImplGlfw_Init (it installs a monitor callback of its own; this one chains it)
+const std::vector<GLFWmonitor*>& monitors();
+GLFWmonitor* primaryMonitor();                         // nullptr when there is none (all asleep)
+extern bool gWayland;   // main.cpp: GLFW runs on Wayland (window positions cannot be read or set there)
 // popout.cpp: the video pop-out as a window of its own
 extern bool gNoOsWindows;            // --hidden: no extra OS windows (the pop-out stays a panel inside the main window)
 void popOutFrame(App& a);            // inside the ImGui frame: opens/closes the window and builds its picture

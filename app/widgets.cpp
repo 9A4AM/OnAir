@@ -19,13 +19,41 @@ bool tabItem(const char* name, Ic icon) {
     return open;
 }
 
-// The monitor holding most of the rectangle (screen coordinates), the primary one when it is on none.
+namespace {
+std::vector<GLFWmonitor*> gMons;
+GLFWmonitor* gPrimaryMon = nullptr;
+bool gMonsStale = true;
+GLFWmonitorfun gPrevMonitorCb = nullptr;
+void onMonitor(GLFWmonitor* m, int event) {
+    gMonsStale = true;   // read again at the next use
+    if (gPrevMonitorCb) gPrevMonitorCb(m, event);
+}
+}   // namespace
+
+void watchMonitors() {
+    gPrevMonitorCb = glfwSetMonitorCallback(onMonitor);
+    gMonsStale = true;
+}
+const std::vector<GLFWmonitor*>& monitors() {
+    if (gMonsStale) {
+        gMonsStale = false;
+        gMons.clear();
+        int count = 0;
+        if (GLFWmonitor** m = glfwGetMonitors(&count)) gMons.assign(m, m + std::max(count, 0));
+        gPrimaryMon = gMons.empty() ? nullptr : glfwGetPrimaryMonitor();
+    }
+    return gMons;
+}
+GLFWmonitor* primaryMonitor() { monitors(); return gPrimaryMon; }
+
+// The monitor holding most of the rectangle (screen coordinates), the primary one when it is on none. On Wayland a window's position is not
+// known (glfwGetWindowPos does not work there): the primary one.
 GLFWmonitor* monitorFor(int x, int y, int w, int h) {
-    GLFWmonitor* m = glfwGetPrimaryMonitor();
-    int count = 0;
-    GLFWmonitor** mons = glfwGetMonitors(&count);
+    const auto& mons = monitors();
+    GLFWmonitor* m = primaryMonitor();
+    if (gWayland) return m;
     long best = 0;
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < mons.size(); i++) {
         int mx = 0, my = 0;
         glfwGetMonitorPos(mons[i], &mx, &my);
         const GLFWvidmode* mv = glfwGetVideoMode(mons[i]);
@@ -40,7 +68,8 @@ GLFWmonitor* monitorFor(int x, int y, int w, int h) {
 void toggleFullscreen() {
     if (!gWindow) return;
     if (glfwGetWindowMonitor(gWindow)) { glfwSetWindowMonitor(gWindow, nullptr, gWinX, gWinY, gWinW, gWinH, 0); return; }
-    glfwGetWindowPos(gWindow, &gWinX, &gWinY); glfwGetWindowSize(gWindow, &gWinW, &gWinH);
+    if (!gWayland) glfwGetWindowPos(gWindow, &gWinX, &gWinY);
+    glfwGetWindowSize(gWindow, &gWinW, &gWinH);
     // Full screen on the monitor the window is on (the one holding most of it), not always the primary one: someone who drags OnAir to a
     // TV on the second output wants the picture there (issue #29).
     GLFWmonitor* m = monitorFor(gWinX, gWinY, gWinW, gWinH);

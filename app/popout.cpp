@@ -33,10 +33,11 @@ void onKey(GLFWwindow*, int key, int, int action, int) {
 void saveGeometry() {
     if (!gPop) return;
     int x = gWx, y = gWy, w = gWw, h = gWh;
-    if (!glfwGetWindowMonitor(gPop)) { glfwGetWindowPos(gPop, &x, &y); glfwGetWindowSize(gPop, &w, &h); }
+    if (!glfwGetWindowMonitor(gPop)) { if (!gWayland) glfwGetWindowPos(gPop, &x, &y); glfwGetWindowSize(gPop, &w, &h); }
     if (w <= 0 || h <= 0) return;
     plat::Prefs& d = plat::prefs();
-    d.setI("popX", x); d.setI("popY", y); d.setI("popW", w); d.setI("popH", h);
+    if (!gWayland) { d.setI("popX", x); d.setI("popY", y); }   // (Wayland: the compositor places windows, a position cannot be read)
+    d.setI("popW", w); d.setI("popH", h);
     d.flush();
 }
 
@@ -48,7 +49,8 @@ void setFullscreen(bool on) {
         glfwSetWindowAttrib(gPop, GLFW_FLOATING, gTop ? GLFW_TRUE : GLFW_FALSE);
         return;
     }
-    glfwGetWindowPos(gPop, &gWx, &gWy); glfwGetWindowSize(gPop, &gWw, &gWh);
+    if (!gWayland) glfwGetWindowPos(gPop, &gWx, &gWy);
+    glfwGetWindowSize(gPop, &gWw, &gWh);
     GLFWmonitor* m = monitorFor(gWx, gWy, gWw, gWh);   // the monitor the window is on
     const GLFWvidmode* vm = m ? glfwGetVideoMode(m) : nullptr;
     if (vm) glfwSetWindowMonitor(gPop, m, 0, 0, vm->width, vm->height, vm->refreshRate);
@@ -78,21 +80,20 @@ bool openWindow(const App& a) {
     if (!gPop) return false;
     gTop = a.popTop;
     glfwSetWindowSizeLimits(gPop, 160, 90, GLFW_DONT_CARE, GLFW_DONT_CARE);
-    if (d.has("popX") && d.has("popY")) {
+    if (!gWayland && d.has("popX") && d.has("popY")) {
         // back where it was, if that is still on a screen: a monitor unplugged since would leave it out of reach. At least a good part of
         // the window's top (its title bar) must lie in some monitor's work area, otherwise it goes to the middle of the primary one.
         const int x = (int)d.getI("popX", 0), y = (int)d.getI("popY", 0);
-        int count = 0;
-        GLFWmonitor** mons = glfwGetMonitors(&count);
+        const auto& mons = monitors();
         bool onScreen = false;
-        for (int i = 0; i < count && !onScreen; i++) {
+        for (size_t i = 0; i < mons.size() && !onScreen; i++) {
             int mx = 0, my = 0, mw = 0, mh = 0;
             glfwGetMonitorWorkarea(mons[i], &mx, &my, &mw, &mh);
             const int ox = std::min(x + w, mx + mw) - std::max(x, mx);
             onScreen = ox >= std::min(w, 100) && y >= my && y < my + mh - 40;
         }
         if (onScreen) glfwSetWindowPos(gPop, x, y);
-        else if (GLFWmonitor* pm = glfwGetPrimaryMonitor()) {
+        else if (GLFWmonitor* pm = primaryMonitor()) {
             int mx = 0, my = 0, mw = 0, mh = 0;
             glfwGetMonitorWorkarea(pm, &mx, &my, &mw, &mh);
             if (mw > 0 && mh > 0) {

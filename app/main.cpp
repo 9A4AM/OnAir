@@ -2,6 +2,9 @@
 #include "app.h"
 #include "dect2/crash_report.h"
 #include <cstdlib>
+#if defined(__linux__)
+#include <dlfcn.h>
+#endif
 
 // The processor check, before anything else runs. The receiver library is built for AVX2 and FMA on Windows and Intel Macs (no runtime
 // dispatch there), and the start-up code of its files (global objects) already uses AVX: a check in main() came too late, and a Mac Pro 5,1
@@ -319,6 +322,49 @@ static void lightenDrawData(ImDrawData* dd) {
     }
 }
 
+bool gWayland = false;
+
+#if defined(__linux__)
+// Linux: X11 (XWayland on a Wayland desktop) unless asked for Wayland.
+// Crash report from 0.2.2 (Ubuntu 26.04, GLFW 3.4 on Wayland, "after some time"): SIGSEGV reading 0x40 in wl_proxy_get_version(NULL), called
+// from GLFW's event loop (glfwPollEvents / glfwWaitEventsTimeout -> handleEvents -> the cursor timer -> setCursorImage). 0x40 is where
+// libwayland keeps a proxy's version: GLFW sent a request on a NULL wl_pointer. GLFW 3.4 animates every theme cursor that has a frame delay
+// on a timer while the pointer is over the window; when the seat loses its pointer (the mouse sleeps or is unplugged, a KVM switch, the
+// screen locks or turns off) it destroys the wl_pointer and sets it to NULL, but neither disarms the timer nor forgets the window under the
+// pointer, so the next tick calls wl_pointer_set_cursor(NULL, ...). That is inside GLFW and cannot be caught from here, so:
+// - by default OnAir asks a GLFW that has both (3.4 and later) for X11 when an X server is there (every GNOME / KDE Wayland session runs
+//   XWayland); the X11 code has none of this
+// - ONAIR_DISPLAY=wayland (or --wayland, or the "displayServer" setting) keeps native Wayland; ONAIR_DISPLAY=x11 / --x11 forces X11
+// - on native Wayland ImGui does not change the cursor shape (ImGuiConfigFlags_NoMouseCursorChange): with the default cursor GLFW's timer
+//   finds no cursor of OnAir's to animate, which avoids the crash at the cost of resize / text cursors
+// The functions are looked up at run time: the build may have the GLFW 3.3 headers, the library on the user's system decides.
+constexpr int kGlfwPlatform = 0x00050003, kGlfwAnyPlatform = 0x00060000, kGlfwPlatformWayland = 0x00060003, kGlfwPlatformX11 = 0x00060004;
+static void chooseGlfwPlatform(int argc, char** argv) {
+    std::string want = plat::prefs().getS("displayServer", "auto");
+    if (const char* e = getenv("ONAIR_DISPLAY")) if (*e) want = e;
+    for (int i = 1; i < argc; i++) {
+        if (std::string(argv[i]) == "--wayland") want = "wayland";
+        if (std::string(argv[i]) == "--x11") want = "x11";
+    }
+    auto supported = (int (*)(int))dlsym(RTLD_DEFAULT, "glfwPlatformSupported");
+    if (!supported) return;   // GLFW 3.3: one platform per library
+    const char* wd = getenv("WAYLAND_DISPLAY");
+    const char* xd = getenv("DISPLAY");
+    const bool wl = wd && *wd, x11 = xd && *xd;
+    if (want == "wayland") {
+        if (supported(kGlfwPlatformWayland)) glfwInitHint(kGlfwPlatform, kGlfwPlatformWayland);
+    } else if ((want == "x11" || (wl && x11)) && supported(kGlfwPlatformX11)) {
+        glfwInitHint(kGlfwPlatform, kGlfwPlatformX11);
+        if (wl) fprintf(stderr, "display: X11 (XWayland) on a Wayland desktop; ONAIR_DISPLAY=wayland for native Wayland\n");
+    }
+}
+static bool glfwOnWayland() {
+    if (auto getPlatform = (int (*)())dlsym(RTLD_DEFAULT, "glfwGetPlatform")) return getPlatform() == kGlfwPlatformWayland;
+    auto display = (void* (*)())dlsym(RTLD_DEFAULT, "glfwGetWaylandDisplay");   // GLFW 3.3 built for Wayland
+    return display && display();
+}
+#endif
+
 int main(int argc, char** argv) {
     dect2::crash::install();   // first: a crash from here on leaves a report
 #ifdef _WIN32
@@ -339,7 +385,17 @@ int main(int argc, char** argv) {
         plat::showFatalError("OnAir", "This version of OnAir needs a processor with AVX2 and FMA instructions (any Intel or AMD processor from about 2013 on).");
         return 1;
     }
+#if defined(__linux__)
+    chooseGlfwPlatform(argc, argv);
+    if (!glfwInit()) {   // X11 asked for and no X server after all: whatever GLFW finds
+        glfwInitHint(kGlfwPlatform, kGlfwAnyPlatform);
+        glfwInit();
+    }
+    gWayland = glfwOnWayland();
+    if (gWayland) fprintf(stderr, "display: native Wayland (window positions are left to the compositor; the cursor shape stays the default)\n");
+#else
     glfwInit();
+#endif
     gfx::windowHints();
     for (int i = 1; i < argc; i++) if (std::string(argv[i]) == "--hidden") { glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); gNoOsWindows = true; }   // dev: with --shot, render without showing the window
     GLFWwindow* window = glfwCreateWindow(1500, 900, "OnAir", nullptr, nullptr);
@@ -351,14 +407,14 @@ int main(int argc, char** argv) {
         glfwGetWindowContentScale(window, &xs, &ys);
         const float s = std::max(1.f, std::max(xs, ys));
         int wx = 0, wy = 0, ww = 0, wh = 0;
-        if (GLFWmonitor* mon = glfwGetPrimaryMonitor()) glfwGetMonitorWorkarea(mon, &wx, &wy, &ww, &wh);
+        if (GLFWmonitor* mon = primaryMonitor()) glfwGetMonitorWorkarea(mon, &wx, &wy, &ww, &wh);
         int fl = 0, ft = 0, fr = 0, fb = 0;   // the frame and title bar around the window's content
         glfwGetWindowFrameSize(window, &fl, &ft, &fr, &fb);
         int w = (int)(1500 * s), h = (int)(900 * s);
         if (ww > 0 && wh > 0) { w = std::max(640, std::min(w, ww - fl - fr)); h = std::max(480, std::min(h, wh - ft - fb)); }
         if (w != 1500 || h != 900) {
             glfwSetWindowSize(window, w, h);
-            if (ww > 0 && wh > 0) {   // and wholly on the screen
+            if (ww > 0 && wh > 0 && !gWayland) {   // and wholly on the screen (Wayland: the compositor places it)
                 int x = 0, y = 0;
                 glfwGetWindowPos(window, &x, &y);
                 x = std::max(wx + fl, std::min(x, wx + ww - fr - w));
@@ -396,6 +452,8 @@ int main(int argc, char** argv) {
     if (!app.mono) app.mono = ui;
 
     ImGui_ImplGlfw_InitForOther(window, true);
+    watchMonitors();
+    if (gWayland) ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // see chooseGlfwPlatform()
 
     app.wf.init(gfxBackend);
     loadPrefs(app);
