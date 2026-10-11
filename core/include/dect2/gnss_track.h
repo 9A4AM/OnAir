@@ -1,7 +1,8 @@
 // One tracking channel: carrier and code loops, C/N0, bit synchronisation and the framing of the navigation message.
 // A channel reads whole code periods from its band's buffer; every epoch it updates the loops. The message layer is the LNAV of GPS and QZSS (50 bps,
 // 20 code periods a bit), the SBAS messages (500 symbols a second, two code periods a symbol, Viterbi decoding) or the Galileo I/NAV of E1-B
-// (one symbol per 4 ms code period, page parts found by their sync pattern), the BeiDou D1 (50 bps under the 20 bit NH code) and D2 (500 bps) subframes.
+// (one symbol per 4 ms code period, page parts found by their sync pattern), the BeiDou D1 (50 bps under the 20 bit NH code) and D2 (500 bps) subframes,
+// or the GLONASS strings (10 ms symbols, strings of 2 s found by their time mark).
 #pragma once
 #include "gnss_front.h"
 #include "gnss_nav.h"
@@ -89,6 +90,15 @@ private:
     void inavPart(int64_t p);
     void bdsLayer(float I);
     void bdsTrySubframe();
+    void gloLayer(float I);
+    void gloTry();
+    void gloString(int64_t startSym);
+    std::deque<float> gsym_;           // GLONASS 10 ms symbols, absolute number gsymBase_ + index (symbol k starts at epoch firstBitEpoch_ + 10 k)
+    int64_t gsymBase_ = 0;
+    int64_t gloNextTm_ = -1;           // the symbol that ends the next time mark when synchronised
+    int gloTmMiss_ = 0;
+    double gloPendT0_ = 0;            // the time string 1 gave, until the next string confirms it
+    bool gloPend_ = false;
     float nhRing_[20] = {};
     double nhAcc_[20] = {}, nhAlt_[20] = {};
     int nhFill_ = 0;

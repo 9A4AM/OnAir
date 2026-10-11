@@ -3,8 +3,10 @@
 #include "dect2/gen_util.h"
 #include "dect2/gnss_bds.h"
 #include "dect2/gnss_codes.h"
+#include "dect2/gnss_glo.h"
 #include "dect2/gnss_msg.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 
@@ -192,8 +194,10 @@ struct GnssSim::Impl {
         const GpsEphemeris& e = sats[i].eph;
         double tau = 0.075, p[3], sE = 0;
         const double tScale = sats[i].sys == GnssBeidou ? -kBdtGpsSeconds : 0.0;     // a BeiDou ephemeris counts in BDT
+        const bool glo = sats[i].sys == GnssGlonass;
         for (int k = 0; k < 4; k++) {
-            simPosition(e, tRx - tau + tScale, p, &sE);
+            if (glo) gloTruth(i, gloTod(tRx - tau), p);
+            else simPosition(e, tRx - tau + tScale, p, &sE);
             const double a = kEarthRate * tau, ca = std::cos(a), sa = std::sin(a);
             const double x = p[0] * ca + p[1] * sa, y = -p[0] * sa + p[1] * ca;
             const double dx = x - rx[0], dy = y - rx[1], dz = p[2] - rx[2];
@@ -228,15 +232,33 @@ struct GnssSim::Impl {
         // a Galileo satellite keeps Galileo time (GST): its signal is ahead of GPS time by the offset between the two
         if (sats[i].sys == GnssGalileo) g.dtsv += ggtoS;
         if (sats[i].sys == GnssBeidou) g.dtsv += bdtS;
+        if (glo) {
+            // a GLONASS satellite: its own time minus GLONASS time (ICD 3.3.3), and GLONASS time behind GPS time by tau_GPS (the whole
+            // seconds and hours are counted in element())
+            const GloEphemeris& ge = sats[i].glo;
+            g.dtsv = -ge.tauN + ge.gammaN * gloWrapDay(gloTod(tRx - tau) - ge.tb) - gloTauGpsS;
+        }
         return g;
     }
-    double carrierOf(size_t i) const { return sats[i].sys == GnssBeidou ? kBdsB1Hz : kGpsL1Hz; }
+    double carrierOf(size_t i) const { return sats[i].sys == GnssBeidou ? kBdsB1Hz : sats[i].sys == GnssGlonass ? gloL1Hz(sats[i].fcn) : kGpsL1Hz; }
     void addBeidou();
+    // ---- GLONASS: GLONASS time is UTC(SU) + 3 h; GPS time is UTC + the leap seconds (18 here): GLONASS time of day at GPS time of week t
+    static constexpr double kGloShift = 10800.0 - 18.0;
+    double gloTauGpsS = 20e-9;                    // GPS - GLONASS time less the whole seconds (tau_GPS); string 5 broadcasts it
+    double gloTauCS = -12e-9;                     // tau_c (GLONASS time to UTC(SU) + 3 h), broadcast only
+    std::vector<std::vector<double>> gloTab;      // per satellite: the true orbit at whole seconds of the GLONASS day (x y z vx vy vz)
+    std::vector<double> gloTab0;                  // the time of day of the first row
+    std::vector<std::array<int64_t, 12>> gloRaw;  // per satellite: the broadcast integers (position, velocity, acceleration x y z, tau_n, gamma_n, dtau_n)
+    static double gloTod(double gpsTow) { double t = std::fmod(gpsTow + kGloShift, 86400.0); return t < 0 ? t + 86400.0 : t; }
+    void gloTruth(size_t i, double tod, double out[3]) const;
+    void addGlonass();
+    void gloStringBits(size_t i, int64_t dayAbs, int64_t strInDay, uint8_t* r85) const;
     // chips (relative to kBase) of the satellite's code at the receiver time t, and the carrier phase in cycles
     void phases(size_t i, double t, double* chips, double* cyc) const {
         const Geo g = geometry(i, t);
         const int sy = sats[i].sys;
-        *chips = kGpsCaChipRate * (sy == GnssGalileo || sy == GnssBeidou ? 2.0 : 1.0) * (t - tStart - g.tauCode + g.dtsv);
+        if (sy == GnssGlonass) *chips = kGloChipRate * (t - tStart - g.tauCode + g.dtsv);
+        else *chips = kGpsCaChipRate * (sy == GnssGalileo || sy == GnssBeidou ? 2.0 : 1.0) * (t - tStart - g.tauCode + g.dtsv);
         // the carrier at its place in the band, and the radio's frequency error (the same for every signal: the oscillator is off by cfoHz at L1)
         const double fc = carrierOf(i);
         *cyc = -fc * g.tauCarr + ((fc - cfg.centerHz) + cfg.cfoHz * (cfg.centerHz / kGpsL1Hz)) * (t - tStart);
@@ -380,6 +402,19 @@ struct GnssSim::Impl {
 
     // the value (+-1) of code element `idx` (chips, Galileo half chips, counted from the start of the week) with the data on it
     float element(Chan& c, int64_t idx) {
+        if (c.sys == GnssGlonass) {
+            // 0.511 Mcps, counted in milliseconds from the start of the GPS week; the GLONASS day began kGloShift seconds earlier
+            const int64_t msW = idx / 511;
+            const int64_t aMs = (int64_t)kWeek * 604800000LL + msW + (int64_t)(kGloShift * 1000);
+            const int64_t dayAbs = aMs / 86400000LL, inDay = aMs % 86400000LL;
+            const int64_t str = inDay / 2000, within = inDay % 2000;
+            const int64_t key = dayAbs * 43200 + str;
+            if (key != c.msgCached) { gloStringBits(c.sat, dayAbs, str, c.syms); c.msgCached = key; }
+            int v;
+            if (within < 1700) v = c.syms[within / 20] ^ (int)((within / 10) & 1);      // the bit in relative code under the meander
+            else v = kGloTimeMark[(within - 1700) / 10] - '0';
+            return (v ? -1.f : 1.f) * (c.code[idx % 511] ? -1.f : 1.f);
+        }
         if (c.sys == GnssBeidou) {
             // 2.046 Mcps; the BDT week starts 14 s after the GPS week
             const int64_t ms = idx / 2046 - (int64_t)(kBdtGpsSeconds * 1000);
@@ -673,6 +708,196 @@ void GnssSim::Impl::addBeidou() {
     }
 }
 
+// ---- GLONASS
+namespace {
+// the equations of motion of ICD A.3.1.2 (the generator's own writing): central term, J2, the rotating frame, a constant luni-solar acceleration
+void gloForce(const double* s, const double* acc, double* d) {
+    const double r2 = s[0] * s[0] + s[1] * s[1] + s[2] * s[2];
+    const double r = std::sqrt(r2), r5 = r2 * r2 * r;
+    const double c = kGloMu / (r2 * r);
+    const double j2 = 1.5 * kGloJ2 * kGloMu * kGloAe * kGloAe / r5;
+    const double q = 5.0 * s[2] * s[2] / r2;
+    const double w = kGloOmega;
+    d[0] = s[3]; d[1] = s[4]; d[2] = s[5];
+    d[3] = -c * s[0] - j2 * s[0] * (1.0 - q) + w * w * s[0] + 2.0 * w * s[4] + acc[0];
+    d[4] = -c * s[1] - j2 * s[1] * (1.0 - q) + w * w * s[1] - 2.0 * w * s[3] + acc[1];
+    d[5] = -c * s[2] - j2 * s[2] * (3.0 - q) + acc[2];
+}
+void gloStep(double* s, const double* acc, double h) {
+    double a[6], b[6], c[6], d[6], t[6];
+    gloForce(s, acc, a);
+    for (int q = 0; q < 6; q++) t[q] = s[q] + 0.5 * h * a[q];
+    gloForce(t, acc, b);
+    for (int q = 0; q < 6; q++) t[q] = s[q] + 0.5 * h * b[q];
+    gloForce(t, acc, c);
+    for (int q = 0; q < 6; q++) t[q] = s[q] + h * c[q];
+    gloForce(t, acc, d);
+    for (int q = 0; q < 6; q++) s[q] += h * (a[q] + 2.0 * b[q] + 2.0 * c[q] + d[q]) / 6.0;
+}
+uint32_t signMag(int64_t v, int bits) { return v < 0 ? (uint32_t)((1u << (bits - 1)) | (uint32_t)(-v)) : (uint32_t)v; }
+int64_t qsm(double v, double lsb, int bits) {
+    const int64_t lim = ((int64_t)1 << (bits - 1)) - 1;
+    return std::max(-lim, std::min(lim, (int64_t)std::llround(v / lsb)));
+}
+// an orbit by its elements to position and velocity in a frame that does not turn
+void keplerState(double a, double e, double inc, double raan, double argp, double M, double* out) {
+    double E = M;
+    for (int k = 0; k < 30; k++) E -= (E - e * std::sin(E) - M) / (1 - e * std::cos(E));
+    const double nu = 2 * std::atan2(std::sqrt(1 + e) * std::sin(E / 2), std::sqrt(1 - e) * std::cos(E / 2));
+    const double pp = a * (1 - e * e), r = pp / (1 + e * std::cos(nu)), u = argp + nu;
+    const double vr = std::sqrt(kGloMu / pp) * e * std::sin(nu), vt = std::sqrt(kGloMu / pp) * (1 + e * std::cos(nu));
+    const double px = r * std::cos(u), py = r * std::sin(u);
+    const double vx = vr * std::cos(u) - vt * std::sin(u), vy = vr * std::sin(u) + vt * std::cos(u);
+    const double ci = std::cos(inc), si = std::sin(inc), cO = std::cos(raan), sO = std::sin(raan);
+    out[0] = px * cO - py * ci * sO; out[1] = px * sO + py * ci * cO; out[2] = py * si;
+    out[3] = vx * cO - vy * ci * sO; out[4] = vx * sO + vy * ci * cO; out[5] = vy * si;
+}
+} // namespace
+
+void GnssSim::Impl::gloTruth(size_t i, double tod, double out[3]) const {
+    const std::vector<double>& tab = gloTab[i];
+    double x = gloWrapDay(tod - gloTab0[i]);
+    const int n = (int)(tab.size() / 6);
+    int k = (int)std::floor(x);
+    if (k < 0) k = 0;
+    if (k > n - 2) k = n - 2;
+    const double u = x - k;
+    // cubic Hermite between two rows from their positions and velocities
+    const double h00 = 2 * u * u * u - 3 * u * u + 1, h10 = u * u * u - 2 * u * u + u, h01 = -2 * u * u * u + 3 * u * u, h11 = u * u * u - u * u;
+    for (int q = 0; q < 3; q++) out[q] = h00 * tab[6 * k + q] + h10 * tab[6 * k + 3 + q] + h01 * tab[6 * (k + 1) + q] + h11 * tab[6 * (k + 1) + 3 + q];
+}
+
+// 24 satellites in three planes of eight (19100 km, 64.8 degrees), the planes phased so that 7 to 9 are in view; the satellites in view get distinct
+// frequency channels, the outermost two (-7 and +6) the highest ones
+void GnssSim::Impl::addGlonass() {
+    Impl& p = *this;
+    const double todStart = gloTod(p.tStart);
+    const double tb = std::round(todStart / 900.0) * 900.0;
+    const double a = 25510e3, inc = 64.8 * kPiS / 180.0;
+    auto ecefAt = [&](int k, double ro, double mo, double dt, double* st) {
+        const double n0 = std::sqrt(kGloMu / (a * a * a));
+        keplerState(a, 0.001, inc, (ro + 120.0 * (k / 8)) * kPiS / 180.0, 0.0, (mo + 45.0 * (k % 8) + 15.0 * (k / 8)) * kPiS / 180.0 + n0 * dt, st);
+        // the earth-fixed frame coincides with this one at tb
+        const double th = kGloOmega * dt, c = std::cos(th), s = std::sin(th);
+        const double x = c * st[0] + s * st[1], y = -s * st[0] + c * st[1];
+        const double vx = c * st[3] + s * st[4], vy = -s * st[3] + c * st[4];
+        st[0] = x; st[1] = y; st[3] = vx + kGloOmega * y; st[4] = vy - kGloOmega * x;
+    };
+    double bestR = 0, bestM = 0, bestScore = -1e9;
+    for (int ro = 0; ro < 120; ro += 5)
+        for (int mo = 0; mo < 45; mo += 5) {
+            int c = 0;
+            for (int k = 0; k < 24; k++) {
+                double st[6], az, el;
+                ecefAt(k, ro, mo, todStart - tb, st);
+                azElFromEcef(p.rx, st, &az, &el);
+                c += el > cfg.maskDeg + 3;
+            }
+            const double score = -std::fabs(c - 8.0);
+            if (score > bestScore) { bestScore = score; bestR = ro; bestM = mo; }
+        }
+    const size_t first = p.sats.size();
+    std::vector<double> elev;
+    for (int k = 0; k < 24; k++) {
+        GnssSimSat g;
+        g.sys = GnssGlonass; g.prn = k + 1;
+        Rng r2(cfg.seed * 60013u + (uint64_t)k * 23u + 17u);
+        double st[6];
+        ecefAt(k, bestR, bestM, 0.0, st);
+        GloEphemeris& e = g.glo;
+        e.n = k + 1; e.tb = tb; e.tbIndex = (int)std::lround(tb / 900.0);
+        // the transmitted integers (ICD Table 4.5) and the values they stand for
+        int64_t rp[3], rv[3], ra[3];
+        for (int q = 0; q < 3; q++) {
+            rp[q] = qsm(st[q] / 1000.0, std::ldexp(1.0, -11), 27);
+            rv[q] = qsm(st[3 + q] / 1000.0, std::ldexp(1.0, -20), 24);
+            ra[q] = (int64_t)std::floor(r2.r(-2.999, 3.0));
+            e.pos[q] = rp[q] * std::ldexp(1.0, -11) * 1000.0;
+            e.vel[q] = rv[q] * std::ldexp(1.0, -20) * 1000.0;
+            e.acc[q] = ra[q] * std::ldexp(1.0, -30) * 1000.0;
+        }
+        const int64_t rTau = qsm(r2.r(-3e-4, 3e-4), std::ldexp(1.0, -30), 22), rGam = qsm(r2.r(-5e-12, 5e-12), std::ldexp(1.0, -40), 11);
+        const int64_t rDt = qsm(r2.r(-5e-9, 5e-9), std::ldexp(1.0, -30), 5);
+        e.tauN = rTau * std::ldexp(1.0, -30); e.gammaN = rGam * std::ldexp(1.0, -40); e.dTauN = rDt * std::ldexp(1.0, -30);
+        e.P1 = 1; e.P2 = e.tbIndex & 1; e.P3 = 1; e.FT = 2; e.M = 1; e.has5 = true;
+        e.tauC = qsm(gloTauCS, std::ldexp(1.0, -31), 32) * std::ldexp(1.0, -31);
+        e.tauGps = qsm(gloTauGpsS, std::ldexp(1.0, -30), 22) * std::ldexp(1.0, -30);
+        // the true orbit: the broadcast state integrated from tb with the force model, a row a second around the run
+        const double t0 = std::floor(todStart) - 60.0;
+        const int rows = 600;
+        std::vector<double> tab((size_t)rows * 6);
+        double y[6] = {e.pos[0], e.pos[1], e.pos[2], e.vel[0], e.vel[1], e.vel[2]};
+        {
+            const double span = gloWrapDay(t0 - tb);
+            const int steps = (int)std::ceil(std::fabs(span) / 1.0);
+            const double h = steps ? span / steps : 0.0;
+            for (int q = 0; q < steps; q++) gloStep(y, e.acc, h);
+        }
+        for (int row = 0; row < rows; row++) {
+            for (int q = 0; q < 6; q++) tab[(size_t)row * 6 + q] = y[q];
+            for (int sub = 0; sub < 4; sub++) gloStep(y, e.acc, 0.25);
+        }
+        p.sats.push_back(g);
+        p.sf1.emplace_back(); p.sf2.emplace_back(); p.sf3.emplace_back(); p.alm.emplace_back();
+        p.gloTab.resize(p.sats.size()); p.gloTab0.resize(p.sats.size(), 0.0); p.gloRaw.resize(p.sats.size());
+        p.gloTab.back() = tab; p.gloTab0.back() = t0;
+        std::array<int64_t, 12> raw = {rp[0], rp[1], rp[2], rv[0], rv[1], rv[2], ra[0], ra[1], ra[2], rTau, rGam, rDt};
+        p.gloRaw.back() = raw;
+        double pos[3], az, el;
+        gloTruth(p.sats.size() - 1, todStart, pos);
+        azElFromEcef(p.rx, pos, &az, &el);
+        elev.push_back(el);
+    }
+    // the frequency channels: distinct among the satellites in view, the outermost ones on the two highest
+    static const int kOrder[14] = {-7, 6, 0, -3, 3, -5, 4, -1, 1, -6, 5, -2, 2, -4};
+    std::vector<int> idx(24);
+    for (int k = 0; k < 24; k++) idx[(size_t)k] = k;
+    std::sort(idx.begin(), idx.end(), [&](int x, int y2) { return elev[(size_t)x] > elev[(size_t)y2]; });
+    for (int r = 0; r < 24; r++) {
+        GnssSimSat& g = p.sats[first + (size_t)idx[(size_t)r]];
+        g.fcn = kOrder[r % 14];
+        g.glo.k = g.fcn;
+    }
+}
+
+// String `strInDay` (0..43199) of GLONASS day `dayAbs` (days since 1980-01-06) of satellite i, as the 85 bits sent in relative code (r85[0] is bit 85)
+void GnssSim::Impl::gloStringBits(size_t i, int64_t dayAbs, int64_t strInDay, uint8_t* r85) const {
+    const GloEphemeris& e = sats[i].glo;
+    const std::array<int64_t, 12>& w = gloRaw[i];
+    uint8_t s[86] = {};
+    const int m = (int)(strInDay % 15) + 1;
+    const int64_t frameTod = (strInDay / 15) * 30;
+    const int64_t days = dayAbs - kGloDaysTo1996;
+    const int N4 = (int)(days / 1461) + 1, NT = (int)(days % 1461) + 1;
+    gloPut(s, 84, 4, (uint32_t)m);
+    if (m >= 1 && m <= 3) {
+        const int q = m - 1;
+        gloPut(s, 64, 24, signMag(w[3 + q], 24));
+        gloPut(s, 40, 5, signMag(w[6 + q], 5));
+        gloPut(s, 35, 27, signMag(w[q], 27));
+    }
+    if (m == 1) {
+        gloPut(s, 78, 2, (uint32_t)e.P1);
+        gloPut(s, 76, 5, (uint32_t)(frameTod / 3600)); gloPut(s, 71, 6, (uint32_t)((frameTod % 3600) / 60)); gloPut(s, 65, 1, (uint32_t)((frameTod % 60) / 30));
+    } else if (m == 2) {
+        gloPut(s, 80, 3, (uint32_t)e.Bn); gloPut(s, 77, 1, (uint32_t)e.P2); gloPut(s, 76, 7, (uint32_t)e.tbIndex);
+    } else if (m == 3) {
+        gloPut(s, 80, 1, (uint32_t)e.P3); gloPut(s, 79, 11, signMag(w[10], 11)); gloPut(s, 67, 2, (uint32_t)e.P); gloPut(s, 65, 1, (uint32_t)e.ln);
+    } else if (m == 4) {
+        gloPut(s, 80, 22, signMag(w[9], 22)); gloPut(s, 58, 5, signMag(w[11], 5)); gloPut(s, 53, 5, (uint32_t)e.En); gloPut(s, 34, 1, (uint32_t)e.P4);
+        gloPut(s, 33, 4, (uint32_t)e.FT); gloPut(s, 26, 11, (uint32_t)NT); gloPut(s, 15, 5, (uint32_t)e.n); gloPut(s, 10, 2, (uint32_t)e.M);
+    } else if (m == 5) {
+        gloPut(s, 80, 11, (uint32_t)NT);
+        gloPut(s, 69, 32, signMag(qsm(gloTauCS, std::ldexp(1.0, -31), 32), 32));
+        gloPut(s, 36, 5, (uint32_t)N4);
+        gloPut(s, 31, 22, signMag(qsm(gloTauGpsS, std::ldexp(1.0, -30), 22), 22));
+    }
+    gloSetHamming(s);
+    // relative code in the order of transmission (bit 85 first)
+    uint8_t prev = 0;
+    for (int j = 0; j < 85; j++) { prev = (uint8_t)(s[85 - j] ^ prev); r85[j] = prev; }
+}
+
 GnssSim::GnssSim(const GnssSimConfig& cfg, double sampleRate) : p_(std::make_unique<Impl>(cfg, sampleRate)) {
     Impl& p = *p_;
     llaToEcef(cfg.latDeg, cfg.lonDeg, cfg.heightM, p.rx);
@@ -876,6 +1101,7 @@ GnssSim::GnssSim(const GnssSimConfig& cfg, double sampleRate) : p_(std::make_uni
         }
     }
     if (cfg.systems & gnssSystemBit(GnssBeidou)) p.addBeidou();
+    if (cfg.systems & gnssSystemBit(GnssGlonass)) p.addGlonass();
     p.galWords.resize(p.sats.size());
     p.bdsInfo.resize(p.sats.size());
     for (size_t i = 30; i < p.sats.size(); i++) {
@@ -886,8 +1112,10 @@ GnssSim::GnssSim(const GnssSimConfig& cfg, double sampleRate) : p_(std::make_uni
         // Galileo: the E1-B data component carries half the E1 power (the pilot E1-C is not simulated): E1 is specified 1.5 dB above GPS C/A at the
         // ground (-157 against -158.5 dBW), so E1-B alone is 1.5 dB below it; SBAS a little weaker than GPS
         // BeiDou B1I: specified at -163 dBW against GPS's -158.5 for the MEO satellites; a little weaker than GPS here
-        const double rZen = s.sys == GnssGalileo ? 29600e3 - 6378137.0 : (s.sys == GnssBeidou && !s.eph.geo && s.eph.sqrtA < 6000.0) ? 21528e3 : 35786e3;
-        s.cn0 = cn0Of(g, rZen) - (s.sys == GnssGalileo ? 1.5 : s.sys == GnssSbas ? 2.0 : s.sys == GnssBeidou ? 1.0 : 0.0);
+        // GLONASS L1OF: -161 dBW against GPS's -158.5 (ICD 3.3.1.6), its orbit 19100 km high; a little weaker than GPS here
+        const double rZen = s.sys == GnssGalileo ? 29600e3 - 6378137.0 : (s.sys == GnssBeidou && !s.eph.geo && s.eph.sqrtA < 6000.0) ? 21528e3 :
+                            s.sys == GnssGlonass ? 19100e3 : 35786e3;
+        s.cn0 = cn0Of(g, rZen) - (s.sys == GnssGalileo ? 1.5 : s.sys == GnssSbas ? 2.0 : s.sys == GnssBeidou ? 1.0 : s.sys == GnssGlonass ? 1.0 : 0.0);
     }
 
     // broadcast parameters of the ionosphere and UTC: typical values (the integers of the fields)
@@ -923,8 +1151,9 @@ GnssSim::GnssSim(const GnssSimConfig& cfg, double sampleRate) : p_(std::make_uni
         if (std::fabs(c.fc - cfg.centerHz) > 0.5 * sampleRate) continue;
         if (c.sys == GnssGalileo) { galE1bChips(p.sats[i].prn, c.code); c.mult = 2; }
         else if (c.sys == GnssBeidou) { bdsB1iChips(p.sats[i].prn, c.code); c.mult = 2; }
+        else if (c.sys == GnssGlonass) gloCaChips(c.code);
         else l1caChips(p.sats[i].prn, c.code);
-        c.base = p.kBase * c.mult;
+        c.base = c.sys == GnssGlonass ? (int64_t)std::llround(kGloChipRate * p.tStart) : p.kBase * c.mult;
         const double N0 = 2.0 * cfg.noiseRms * cfg.noiseRms / sampleRate;
         c.amp = (float)std::sqrt(std::pow(10.0, p.sats[i].cn0 / 10.0) * N0);
         p.ch.push_back(c);

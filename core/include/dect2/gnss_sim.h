@@ -4,6 +4,7 @@
 // The orbit, delay and message code here is written separately from the receiver's (gnss_nav.cpp, gnss_solve.cpp), so that a position that comes out
 // of the receiver is not just the generator's own arithmetic read back.
 #pragma once
+#include "gnss_glo.h"
 #include "gnss_nav.h"
 #include "gnss_tel.h"
 #include "ring.h"
@@ -15,7 +16,7 @@ namespace dect2 {
 
 struct GnssSimConfig {
     unsigned systems = 1;            // bit mask of the systems (gnssSystemBit): GPS, QZSS (3 satellites), SBAS (3 geostationary), Galileo E1-B (24),
-                                     // BeiDou B1I (24 MEO, 3 IGSO and 2 GEO satellites)
+                                     // BeiDou B1I (24 MEO, 3 IGSO and 2 GEO satellites), GLONASS L1OF (24 satellites in 3 planes, FDMA)
     double centerHz = 1575.42e6;     // the tuned centre: a signal appears at its carrier minus this; signals whose carrier lies outside the band are left out
     double latDeg = 25.2, lonDeg = 55.36, heightM = 10;   // the receiver (Dubai)
     double cn0Top = 44;              // C/N0 of a satellite at the zenith, dB-Hz; lower satellites are weaker (range and antenna pattern)
@@ -39,6 +40,8 @@ struct GnssSimSat {
     int sys = 0, prn = 0;
     GpsEphemeris eph;                // what is broadcast, as the decoded values of the transmitted integers (BeiDou: beidou = true, times in BDT)
     GpsAlmanac alm;
+    int fcn = 0;                     // GLONASS: the frequency channel k (-7..6)
+    GloEphemeris glo;                // GLONASS: what strings 1..5 broadcast (the decoded values of the integers)
     bool transmitted = false;        // above the mask: its signal is in the stream
     double cn0 = 0;
     double azDeg = 0, elDeg = 0;     // at the start

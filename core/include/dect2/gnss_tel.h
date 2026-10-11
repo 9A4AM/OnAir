@@ -70,6 +70,7 @@ struct GnssSky {
 // What the navigation message of one satellite has delivered
 struct GnssNavInfo {
     int sys = 0, prn = 0;
+    int fcn = 0;                 // GLONASS frequency channel
     bool hasEphemeris = false;
     int iode = -1;               // GPS IODE / BeiDou AODE, GLONASS: the ephemeris reference time index
     float ephAgeS = 0;           // seconds since the ephemeris reference time (negative: it lies ahead)
@@ -100,6 +101,9 @@ struct GnssFix {
     double ggtoNs = 0;                               // that offset, GST minus GPS time
     bool bdtGpsApplied = false;                      // the BeiDou pseudoranges were moved to GPS time with the broadcast A0GPS, A1GPS
     double bdtGpsNs = 0;                             // that offset, BDT minus GPS time less the whole 14 s
+    bool gloTimeValid = false;                       // GLONASS string 5 has given tau_GPS and tau_c
+    double gloTauGpsNs = 0;                          // GPS minus GLONASS time less the whole seconds (tau_GPS); the GLONASS satellites keep a clock unknown of their own
+    double gloTauCNs = 0;                            // GLONASS time to UTC(SU) + 3 h (tau_c)
     double clockDriftMps = 0;                        // frequency error of the receiver clock in metres per second (from the Doppler of the tracked satellites)
     bool timeValid = false;                          // the date and time below are known
     int year = 0, month = 0, day = 0, hour = 0, minute = 0;

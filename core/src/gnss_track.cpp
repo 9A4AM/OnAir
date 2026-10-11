@@ -1,6 +1,7 @@
 // One tracking channel (see gnss_track.h).
 #include "dect2/gnss_track.h"
 #include "dect2/gnss_bds.h"
+#include "dect2/gnss_glo.h"
 #include "dect2/gnss_msg.h"
 #include <algorithm>
 #include <cmath>
@@ -83,6 +84,7 @@ void GnssTracker::start(const GnssSignalSpec& sp, const uint8_t* chips, int prn_
     framesOk_ = framesBad_ = 0; badInRow_ = 0; framesSinceSync_ = 0;
     sym_.clear(); symBase_ = symCount_ = lastWindowAt_ = 0; pairOffset_ = -1; lastMsgSym_ = -1; symAcc_ = 0; symHalf_ = 0;
     pairAmp_[0] = pairAmp_[1] = 0; havePrevI_ = false; prevIsym_ = 0;
+    gsym_.clear(); gsymBase_ = 0; gloNextTm_ = -1; gloTmMiss_ = 0; gloPend_ = false;
     std::memset(nhRing_, 0, sizeof nhRing_); std::memset(nhAcc_, 0, sizeof nhAcc_); std::memset(nhAlt_, 0, sizeof nhAlt_); nhFill_ = 0; bdsInv_ = 0;
     isym_.clear(); isymBase_ = 0; nextPart_ = -1; inavPol_ = 1; syncMiss_ = 0; evenAt_ = -1; inavNoSync_ = 0; inavTry_ = 0; inavBase_ = 0;
     events_.clear();
@@ -244,6 +246,7 @@ void GnssTracker::epoch(const GnssBand& band, int N, double startIdx) {
         if (spec.msg == GnssMsgSbas) sbasLayer((float)I);
         else if (spec.msg == GnssMsgInav) inavLayer((float)I);
         else if (spec.msg == GnssMsgBdsD1 || spec.msg == GnssMsgBdsD2) bdsLayer((float)I);
+        else if (spec.msg == GnssMsgGlo) gloLayer((float)I);
         else bitLayer((float)I);
     }
     ecount_++;
@@ -629,6 +632,107 @@ void GnssTracker::bdsTrySubframe() {
     framesSinceSync_++;
     ev.towStart = towStart;
     ev.startEpoch = startEpoch;
+    events_.push_back(ev);
+}
+
+// GLONASS: 10 ms symbols (the 100 Hz meander turns every data bit over half way, so the symbol edges are found like the GPS bit edges, by the
+// sign changes counted modulo 10 epochs). A string is 170 data symbols and the 30 chip time mark: found once by the time mark, then every 200
+// symbols. Each data bit is two symbols of opposite sign; the bits are in relative code, so neither the meander's nor the carrier's sign matters.
+void GnssTracker::gloLayer(float I) {
+    const int sign = I >= 0 ? 1 : -1;
+    if (!bitSync_) {
+        if (prevSign_ != 0 && sign != prevSign_) { hist_[ecount_ % 10]++; bitHistTotal_++; }
+        prevSign_ = sign;
+        if (bitHistTotal_ >= 40) {
+            int best = 0, second = 0, at = 0;
+            for (int i = 0; i < 10; i++) if (hist_[i] > best) { best = hist_[i]; at = i; }
+            for (int i = 0; i < 10; i++) if (i != at && hist_[i] > second) second = hist_[i];
+            if (best >= 24 && best >= 3 * second) {
+                bitSync_ = true; syncPhase_ = at; bitAcc_ = 0; bitCount_ = 0; firstBitEpoch_ = -1;
+                gsym_.clear(); gsymBase_ = 0; gloNextTm_ = -1; gloTmMiss_ = 0; frameSync_ = false; syncEpoch_ = ecount_;
+            } else if (bitHistTotal_ > 400) { std::memset(hist_, 0, sizeof hist_); bitHistTotal_ = 0; }
+        }
+        return;
+    }
+    if ((int)(ecount_ % 10) == syncPhase_) {
+        if (firstBitEpoch_ < 0) firstBitEpoch_ = (int64_t)ecount_;
+        else if (bitCount_ == 10) {
+            gsym_.push_back((float)bitAcc_);
+            if (gsym_.size() > 1000) { gsym_.pop_front(); gsymBase_++; }
+            gloTry();
+        }
+        bitAcc_ = 0; bitCount_ = 0;
+    }
+    if (firstBitEpoch_ >= 0) { bitAcc_ += I; bitCount_++; }
+    if (!frameSync_ && ecount_ - syncEpoch_ > 60000) { bitSync_ = false; std::memset(hist_, 0, sizeof hist_); bitHistTotal_ = 0; prevSign_ = 0; }
+}
+
+void GnssTracker::gloTry() {
+    const int64_t last = gsymBase_ + (int64_t)gsym_.size() - 1;
+    auto tmMatch = [&](int64_t end) {
+        if (end - 29 < gsymBase_) return 0;
+        int pos = 0;
+        for (int k = 0; k < 30; k++) pos += ((gsym_[(size_t)(end - 29 + k - gsymBase_)] < 0) ? 1 : 0) == (kGloTimeMark[k] - '0');
+        return pos;                    // agreements in one polarity (30 - pos in the other)
+    };
+    if (gloNextTm_ < 0) {
+        const int p = tmMatch(last);
+        if (p != 30 && p != 0) return;
+        gloNextTm_ = last;
+        gloTmMiss_ = 0;
+    }
+    if (last != gloNextTm_) return;
+    const int p = tmMatch(last);
+    if (p < 26 && p > 4) {
+        if (++gloTmMiss_ >= 3) { gloNextTm_ = -1; frameSync_ = false; return; }
+    } else gloTmMiss_ = 0;
+    if (last - 199 >= gsymBase_) gloString(last - 199);
+    gloNextTm_ += 200;
+}
+
+void GnssTracker::gloString(int64_t start) {
+    uint8_t r[85];
+    for (int j = 0; j < 85; j++) {
+        const float a = gsym_[(size_t)(start + 2 * j - gsymBase_)], b = gsym_[(size_t)(start + 2 * j + 1 - gsymBase_)];
+        r[j] = (a - b) < 0 ? 1 : 0;
+    }
+    GnssSubframeEvent ev;
+    ev.kind = GnssMsgGlo;
+    uint8_t* s = ev.bits;
+    s[85] = 0;
+    for (int j = 1; j < 85; j++) s[85 - j] = (uint8_t)(r[j] ^ r[j - 1]);
+    const int chk = gloCheckString(s);
+    const int m = (int)gloField(s, 84, 4);
+    const int64_t startEpoch = firstBitEpoch_ + 10 * start;
+    if (chk < 0 || m < 1 || m > 15) {
+        if (frameSync_) { framesBad_++; if (++badInRow_ >= 6) frameSync_ = false; }
+        return;
+    }
+    // the time: string 1 says when its frame began (tk, the satellite's time of day); the others must fall where that puts them
+    // (a time from string 1 is used once the next string falls where it says: a string that passed the check by chance cannot set it)
+    auto expectedM = [&](double t0) {
+        const double tod = t0 + (double)startEpoch * 1e-3;
+        return (int)std::lround(std::fmod(std::fmod(tod, 30.0) + 30.0, 30.0) / 2.0) % 15 + 1;
+    };
+    if (m == 1) {
+        const double tk = gloField(s, 76, 5) * 3600.0 + gloField(s, 71, 6) * 60.0 + gloField(s, 65, 1) * 30.0;
+        const double t0 = tk - (double)startEpoch * 1e-3;
+        if (timeValid_ && std::fabs(gloWrapDay(t0 - towAtEpoch0_)) > 2e-4) { framesBad_++; timeValid_ = false; gloPendT0_ = t0; gloPend_ = true; return; }
+        if (!timeValid_) { gloPendT0_ = t0; gloPend_ = true; }
+    } else if (timeValid_) {
+        if (expectedM(towAtEpoch0_) != m) { framesBad_++; timeValid_ = false; return; }
+    } else if (gloPend_) {
+        if (expectedM(gloPendT0_) == m) { towAtEpoch0_ = gloPendT0_; timeValid_ = true; }
+        gloPend_ = false;
+    }
+    framesOk_++;
+    badInRow_ = 0;
+    frameSync_ = true;
+    framesSinceSync_++;
+    ev.startEpoch = startEpoch;
+    const bool known = timeValid_ || (m == 1 && gloPend_);
+    const double base = timeValid_ ? towAtEpoch0_ : gloPendT0_;
+    ev.towStart = known ? std::fmod(base + (double)startEpoch * 1e-3 + 86400.0, 86400.0) : -1;
     events_.push_back(ev);
 }
 

@@ -4,7 +4,7 @@
 //   gnsstool run <seconds> [options]                        generator straight into the receiver (no file)
 // Generator options: --rate Hz (default 4e6)  --cn0 dBHz (zenith, default 44)  --cfo Hz  --sro ppm  --sats N  --cold (start 13 s into the frame)
 //   --seed N  --lat deg --lon deg --height m  --jammer  --dc X  --noise X (rms per component, default 0.14)
-//   --systems M (simulated systems, gnssSystemBit mask: 1 GPS, 4 BeiDou, 8 Galileo, 16 QZSS, 32 SBAS; default 1)  --center MHz (the tune, default 1575.42)  --rxsys M (systems the receiver looks for, default all)
+//   --systems M (simulated systems, gnssSystemBit mask: 1 GPS, 2 GLONASS, 4 BeiDou, 8 Galileo, 16 QZSS, 32 SBAS; default 1)  --center MHz (the tune, default 1575.42)  --rxsys M (systems the receiver looks for, default all)
 // The simulated satellites are synthetic (see docs/modes/gnss.md): nothing here is a real signal.
 #include "dect2/gnss_rx.h"
 #include "dect2/gnss_sim.h"
@@ -22,7 +22,7 @@ struct Opt {
     double rate = 4e6, cn0 = 44, cfo = 0, sro = 0, lat = 25.2, lon = 55.36, height = 10, dc = 0, noise = 0.14, center = 1575.42, secs = 0;
     int sats = 0;
     unsigned seed = 1;
-    unsigned systems = 1;          // the simulated sky: gnssSystemBit mask (1 GPS, 4 BeiDou, 8 Galileo, 16 QZSS, 32 SBAS)
+    unsigned systems = 1;          // the simulated sky: gnssSystemBit mask (1 GPS, 2 GLONASS, 4 BeiDou, 8 Galileo, 16 QZSS, 32 SBAS)
     unsigned rxSystems = 0;        // what the receiver looks for (0 = all it supports)
     bool cold = false, jammer = false, quiet = false;
     std::string format = "cs8";

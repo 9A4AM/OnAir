@@ -2,6 +2,7 @@
 // the correlator plots and the options of the test signal.
 #include "app.h"
 #include "adsb_map.h"
+#include "dect2/rate_choice.h"
 #include <cctype>
 #include <cmath>
 #include <deque>
@@ -63,7 +64,14 @@ ImU32 cn0Colour(float cn0, float alpha = 1.f) {
 std::string satName(int sys, int prn, int fcn = 0) {
     char b[16];
     if (sys == GnssGlonass && prn == 0) snprintf(b, sizeof b, "R k%+d", fcn);
-    else return gnssSatName(sys, prn);     // G05, E11, J01 (QZSS PRN 193), S27 (SBAS PRN 127)
+    else return gnssSatName(sys, prn);     // G05, E11, J01 (QZSS PRN 193), S27 (SBAS PRN 127), C19, R05
+    return b;
+}
+// with the GLONASS frequency channel: "R05 k-3"
+std::string satNameK(int sys, int prn, int fcn) {
+    if (sys != GnssGlonass || prn == 0) return satName(sys, prn, fcn);
+    char b[20];
+    snprintf(b, sizeof b, "R%02d k%+d", prn, fcn);
     return b;
 }
 
@@ -170,7 +178,7 @@ void skyPlot(const GnssTelemetry& t, bool on, ImVec2 size) {
         }
     }
     if (tip) {
-        ImGui::SetTooltip("%s (%s)  azimuth %.0f, elevation %.0f deg\n%s%s%s", satName(tip->sys, tip->prn, tip->fcn).c_str(), gnssSystemName(tip->sys), tip->azDeg, tip->elDeg,
+        ImGui::SetTooltip("%s (%s)  azimuth %.0f, elevation %.0f deg\n%s%s%s", satNameK(tip->sys, tip->prn, tip->fcn).c_str(), gnssSystemName(tip->sys), tip->azDeg, tip->elDeg,
                           tip->tracked ? "tracked" : "not tracked", tip->used ? ", in the fix" : "", tip->fromEphemeris ? "" : "  (position from the almanac)");
     }
     if (t.sky.empty()) dl->AddText(ImVec2(p0.x + 8 * gUi, p0.y + 6 * gUi), IM_COL32(150, 154, 158, 255), "no satellite positions yet: they come with the first ephemeris");
@@ -221,7 +229,7 @@ std::vector<std::string> progressLines(const GnssTelemetry& t) {
     std::vector<std::string> out;
     char b[200];
     if (t.activeMask == 0) {
-        snprintf(b, sizeof b, "No signal band fits at %.3f MHz and %.2f Msps: tune to 1575.42 MHz (L1 / E1, 2.05 Msps or more) or 1561.098 MHz (BeiDou B1I, 4 Msps)", t.centerMhz, t.inputRate / 1e6);
+        snprintf(b, sizeof b, "No signal band fits at %.3f MHz and %.2f Msps: tune to 1575.42 MHz (L1 / E1, 2.05 Msps or more), 1561.098 MHz (BeiDou B1I, 4 Msps) or 1602 MHz (GLONASS, 10 Msps)", t.centerMhz, t.inputRate / 1e6);
         out.push_back(b);
         return out;
     }
@@ -247,6 +255,7 @@ std::vector<std::string> progressLines(const GnssTelemetry& t) {
         if (!t.fix.valid) {
             if (soonest >= 0) { snprintf(b, sizeof b, "Collecting ephemeris: G%02d %d/3 subframes, about %.0f s left (each satellite sends it every 30 s)", soonPrn, soonParts, soonest); out.push_back(b); }
             else if (t.decodeMask == gnssSystemBit(GnssBeidou) && withEph < 4) out.push_back("Collecting ephemeris: BeiDou sends it every 30 s (subframes 1-3, or ten pages from a GEO satellite)");
+            else if (t.decodeMask == gnssSystemBit(GnssGlonass) && withEph < 4) out.push_back("Collecting ephemeris: GLONASS sends it in strings 1-4 at the start of every 30 s frame");
             else if (framed == 0 && withEph < 4) out.push_back("Waiting for the start of the navigation message (up to 6 s after the bit sync)");
             if (withEph >= 4) out.push_back("Ephemeris complete: the fix comes with the next measurement");
         }
@@ -356,8 +365,11 @@ void channelTable(const App& a, bool compact) {
         for (const GnssChannel* pc : ch) {
             const GnssChannel& c = *pc;
             ImGui::TableNextRow();
-            ImGui::TableNextColumn(); ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(sysColour(c.sys))); ImGui::TextUnformatted(satName(c.sys, c.prn, c.fcn).c_str()); ImGui::PopStyleColor();
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s PRN %d", gnssSystemName(c.sys), c.prn);
+            ImGui::TableNextColumn(); ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(sysColour(c.sys))); ImGui::TextUnformatted(satNameK(c.sys, c.prn, c.fcn).c_str()); ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered()) {
+                if (c.sys == GnssGlonass) ImGui::SetTooltip("GLONASS slot %d, frequency channel k = %+d (%.4f MHz)", c.prn, c.fcn, 1602.0 + 0.5625 * c.fcn);
+                else ImGui::SetTooltip("%s PRN %d", gnssSystemName(c.sys), c.prn);
+            }
             if (!compact) { ImGui::TableNextColumn(); ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(sysColour(c.sys))); ImGui::TextUnformatted(gnssSystemName(c.sys)); ImGui::PopStyleColor(); }
             ImGui::TableNextColumn(); ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(cn0Colour(c.cn0))); ImGui::Text("%.1f", c.cn0); ImGui::PopStyleColor();
             if (!compact) {
@@ -473,6 +485,8 @@ void receiver(App& a) {
     if (t.firstLockSecs >= 0) kv("first lock", "%.1f s", t.firstLockSecs);
     kv("navigation", "%llu frames good, %llu failed the parity", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
     if (t.sbasMessages > 0) kv("SBAS", "%llu messages (types shown, corrections not applied)", (unsigned long long)t.sbasMessages);
+    if (t.fix.gloTimeValid) kv("GLONASS time", "tau_GPS %+.1f ns, tau_c %+.1f ns (UTC(SU) + 3 h)", t.fix.gloTauGpsNs, t.fix.gloTauCNs);
+    if (t.fix.bdtGpsApplied || t.fix.bdtGpsNs != 0) kv("BDT - GPS", "%+.1f ns (less 14 s)", t.fix.bdtGpsNs);
     kv("almanac", "%d GPS satellites", t.almanacGps);
     kv("ionosphere", "%s", t.ionoValid ? "model from the satellites" : "not yet");
     if (t.utcValid) kv("leap seconds", "%d", t.leapSeconds); else kv("leap seconds", "not yet");
@@ -487,7 +501,7 @@ void receiver(App& a) {
         ImGui::TableHeadersRow();
         for (const auto& n : t.nav) {
             ImGui::TableNextRow();
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(satName(n.sys, n.prn).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(satNameK(n.sys, n.prn, n.fcn).c_str());
             ImGui::TableNextColumn();
             if (n.hasEphemeris) ImGui::TextUnformatted("yes");
             else if (n.sys == GnssSbas) { if (n.sbasMessages > 0) ImGui::Text("%u msgs, type %d", n.sbasMessages, n.sbasLastType); else ImGui::TextUnformatted("no message yet"); }
@@ -590,7 +604,16 @@ void tuner(App& a, bool& retune) {
     static const TuneItem kItems[] = {
         {"L1 / E1  1575.42 MHz", "GPS L1 C/A, Galileo E1, QZSS and SBAS, all at once on the same band."},
         {"BeiDou B1I  1561.098 MHz", "BeiDou B1I: the MEO and IGSO satellites (D1 message) and the GEO satellites (D2), 4 Msps.\n14 MHz below L1: a tune of its own."},
+        {"GLONASS L1  1602 MHz", "GLONASS L1OF: fourteen frequency channels, 1602 MHz + k x 0.5625 MHz (k = -7 .. +6), 10 Msps for all of them.\n"
+                                 "A radio held to fewer (a PlutoSDR on USB, 4 Msps) gets the middle channels, about k = -2 .. +2."},
+        {"All systems  1582 MHz", "GPS, Galileo, QZSS, SBAS, BeiDou and GLONASS in one tune: 1559 to 1606 MHz at 50 Msps."},
     };
+    // All systems needs a radio that runs 50 Msps (PlutoSDR on Ethernet, bladeRF, USRP); the test signal stops at 20 Msps
+    const DeviceInfo* dev = a.devIdx >= 0 && a.devIdx < (int)a.devices.size() ? &a.devices[(size_t)a.devIdx] : nullptr;
+    const RateLimits lim = dev ? rateLimitsOf(*dev) : RateLimits();
+    const bool allOk = dev && dev->isRadio() && lim.maxHz >= kGnssAllRate - 1;
+    const char* allWhy = !dev || !dev->isRadio() ? "All systems needs a radio that runs 50 Msps; the test signal and recordings stop at 20 Msps."
+                                                 : "This radio does not reach 50 Msps (a PlutoSDR on Ethernet, a bladeRF or a USRP does): tune the systems one by one.";
     // a tune the radio runs at another rate is opened again; the same rate is a plain retune
     auto pick = [&](int k) {
         a.freqMhz = kGnssTuneMhz[k]; a.tune.centerHz = a.freqMhz * 1e6;
@@ -602,16 +625,15 @@ void tuner(App& a, bool& retune) {
     };
     if (ImGui::BeginCombo("##gband", cur >= 0 ? kItems[cur].label : "custom frequency")) {
         for (int k = 0; k < (int)(sizeof kItems / sizeof *kItems); k++) {
+            const bool off = k == GnssTuneAll && !allOk;
+            if (off) ImGui::BeginDisabled();
             if (ImGui::Selectable(kItems[k].label, cur == k) && cur != k) pick(k);
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kItems[k].tip);
+            if (off) ImGui::EndDisabled();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s%s%s", kItems[k].tip, off ? "\n\n" : "", off ? allWhy : "");
         }
-        ImGui::BeginDisabled();
-        ImGui::Selectable("GLONASS L1  1602 MHz", false);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("GLONASS is not decoded yet.");
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("GPS, Galileo, QZSS and SBAS on 1575.42 MHz, BeiDou B1I on 1561.098 MHz. Galileo needs 4 Msps or more and starts once GPS has a fix.\n"
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("GPS, Galileo, QZSS and SBAS on 1575.42 MHz, BeiDou B1I on 1561.098 MHz, GLONASS on 1602 MHz. Galileo needs 4 Msps or more and starts once GPS has a fix.\n"
                                                   "An active antenna is needed: switch on the antenna power of the radio (HackRF: the antenna port power)\n"
                                                   "and give the antenna a view of the sky. Indoors there is usually nothing to receive.");
 }
@@ -631,10 +653,10 @@ void synth(App& a, bool& changed) {
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("simulated sky"); ImGui::PopTextWrapPos(); }
     {
         // the systems in the simulated sky (modeOpt[0], gnssSystemBit; 0 = GPS alone)
-        const int sysList[5] = {GnssGps, GnssGalileo, GnssQzss, GnssSbas, GnssBeidou};
+        const int sysList[6] = {GnssGps, GnssGalileo, GnssQzss, GnssSbas, GnssBeidou, GnssGlonass};
         if (sc.modeOpt[0] <= 0) {   // a fresh sky shows every system the receiver decodes
             unsigned all = 0;
-            for (int k = 0; k < 5; k++) all |= gnssSystemBit(sysList[k]);
+            for (int k = 0; k < 6; k++) all |= gnssSystemBit(sysList[k]);
             sc.modeOpt[0] = (int)all; changed = true;
         }
         // a system whose band the tune now holds is switched on (once per tune: it can be switched off again)
@@ -642,10 +664,11 @@ void synth(App& a, bool& changed) {
         const int tune = gnssTuneOf(a.freqMhz);
         if (tune != lastTune) {
             lastTune = tune;
-            if (tune == GnssTuneB1I && !(sc.modeOpt[0] & (int)gnssSystemBit(GnssBeidou))) { sc.modeOpt[0] |= (int)gnssSystemBit(GnssBeidou); changed = true; }
+            if ((tune == GnssTuneB1I || tune == GnssTuneAll) && !(sc.modeOpt[0] & (int)gnssSystemBit(GnssBeidou))) { sc.modeOpt[0] |= (int)gnssSystemBit(GnssBeidou); changed = true; }
+            if ((tune == GnssTuneGlo || tune == GnssTuneAll) && !(sc.modeOpt[0] & (int)gnssSystemBit(GnssGlonass))) { sc.modeOpt[0] |= (int)gnssSystemBit(GnssGlonass); changed = true; }
         }
         unsigned m = (unsigned)sc.modeOpt[0];
-        for (int k = 0; k < 5; k++) {
+        for (int k = 0; k < 6; k++) {
             flowNext();
             bool on = (m & gnssSystemBit(sysList[k])) != 0;
             if (ImGui::Checkbox(gnssSystemName(sysList[k]), &on)) {
@@ -654,7 +677,7 @@ void synth(App& a, bool& changed) {
                 sc.modeOpt[0] = (int)m; changed = true;
             }
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("QZSS and SBAS send on the GPS band with their own codes; Galileo E1-B needs 4 Msps or more.\nBeiDou B1I is on 1561.098 MHz: only a tune that holds its band shows it.");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("QZSS and SBAS send on the GPS band with their own codes; Galileo E1-B needs 4 Msps or more.\nBeiDou B1I is on 1561.098 MHz and GLONASS on 1598 to 1605 MHz: only a tune that holds their band shows them.");
     }
     flowNext(); ImGui::SetNextItemWidth(100 * gUi);
     float cn0 = sc.modeVal[3] > 0 ? (float)sc.modeVal[3] : 44.f;
