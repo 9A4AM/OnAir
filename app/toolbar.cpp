@@ -750,7 +750,7 @@ void gainControl(App& a) {
 
 // The receiver modes. Adding a mode is one row here (and its family number in app.h / setFamily).
 // The families are also stored in the settings: 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh,
-// 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 32 cell towers, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 38 NXDN, 39 GSM-R, 42 spectrum analyser, 40 DVB-C, 44 Orbcomm.
+// 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 32 cell towers, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 38 NXDN, 39 GSM-R, 42 spectrum analyser, 40 DVB-C, 43 Mode S uplink.
 // Within a group the rows are shown in this order; the keys 1-9 pick the modes in the same order.
 const ModeDef kModes[] = {
     {0, "DVB",        0, IM_COL32(52, 92, 108, 255),  "DVB-T2 / DVB-T, detected automatically",                                    "DVB-T2 and DVB-T, automatic (Europe, Middle East, Africa, Asia, Australia)", "T2 and T, automatic",   ImVec4(0.36f, 0.74f, 0.86f, 1)},
@@ -767,6 +767,7 @@ const ModeDef kModes[] = {
     {21, "HD Radio", 1, IM_COL32(130, 96, 50, 255), "HD Radio (NRSC-5) digital sidebands of FM and AM stations (USA)", "HD Radio: the digital part of hybrid FM and AM stations", "USA, FM and AM", ImVec4(0.92f, 0.72f, 0.40f, 1)},
     {22, "CDR", 1, IM_COL32(140, 60, 60, 255), "CDR (China Digital Radio) OFDM digital radio in the FM band", "CDR: China's digital radio in the FM band", "China digital radio", ImVec4(0.94f, 0.48f, 0.44f, 1)},
     {11, "ADS-B", 2, IM_COL32(58, 98, 160, 255), "ADS-B / Mode S: aircraft on 1090 MHz", "ADS-B aircraft position and identity reports", "Aircraft, 1090 MHz", ImVec4(0.52f, 0.74f, 0.98f, 1)},
+    {43, "Mode S uplink", 2, IM_COL32(64, 92, 140, 255), "Mode S uplink: the 1030 MHz interrogations of radars and ACAS (Mode A/C, intermode, UF0 to UF24); needs 8 Msps", "Mode S uplink: interrogators, rotation periods, aircraft asked for registers, TCAS coordination", "Interrogations, 1030 MHz", ImVec4(0.56f, 0.70f, 0.96f, 1), nullptr, "mode s uplink 1030 interrogation interrogator radar ssr all-call roll-call tcas acas uf11 comm-b bds sidelobe"},
     {16, "ACARS", 2, IM_COL32(110, 100, 60, 255), "ACARS aircraft data link messages around 131 MHz", "ACARS: short messages between aircraft and the ground", "Aircraft messages, VHF", ImVec4(0.88f, 0.80f, 0.50f, 1)},
     {26, "Airband", 2, IM_COL32(70, 96, 130, 255), "Airband AM voice, 118 to 137 MHz: several 25 and 8.33 kHz channels at once", "Airband: tower, ground and ATIS voice on several channels at once", "AM voice, 118-137 MHz", ImVec4(0.58f, 0.72f, 0.92f, 1)},
     {27, "VDL2", 2, IM_COL32(96, 104, 64, 255), "VDL Mode 2: the aircraft data link on 136.725 to 136.975 MHz, every channel at once", "VDL Mode 2: ACARS and ATN messages between aircraft and ground stations, positions on a map", "Data link, 136.9 MHz", ImVec4(0.80f, 0.84f, 0.50f, 1), nullptr, "vdl vdl2 avlc acars atn cpdlc ads-c x.25 clnp datalink"},

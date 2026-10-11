@@ -161,6 +161,7 @@ int main(int argc, char** argv) {
     e.psk().setSilent(true);    // PSK31: text only, no sound
     e.js8().setSilent(true);
     e.specx().setSilent(true);  // spectrum explorer: the summary line only    // JS8Call: text only, no sound
+    e.uplink().setSilent(true);   // Mode S uplink: no sound
     e.specan().setSilent(true);   // spectrum analyser: no sound    // JS8Call: text only, no sound
     e.js8().setSilent(true);    // JS8Call: text only, no sound
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs

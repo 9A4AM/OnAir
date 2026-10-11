@@ -97,6 +97,7 @@ These receivers are built from the published specifications and checked end to e
 | **NXDN** | Digital two-way radio, NXDN48 and NXDN96 | Call log with unit IDs and talkgroups, status and short data messages, site information, voice through your mbelib |
 | **dPMR / PMR446** | Digital two-way radio (ETSI TS 102 490), 6.25 kHz, PMR446 channels 1 to 16 | Call log with own and called IDs and colour codes, status and short messages, packet data, scan of all 16 PMR446 channels, voice through your mbelib |
 | **ADS-B** | Aircraft transponders, 1090 MHz | Aircraft on a map, with altitude, speed and callsign |
+| **Mode S uplink** | Radar and ACAS interrogations, 1030 MHz (needs 8 Msps) | Interrogator codes and rotation periods, aircraft and the registers asked for, TCAS coordination |
 | **ACARS** | Aircraft data link, VHF | Messages, and positions on a map |
 | **HFDL** | Aircraft data link on HF, 3 - 22 MHz | Squitters and ground stations, ACARS, positions on a map; every channel in the band at once |
 | **CW** | Morse code on the HF bands | Every CW signal in a 14 kHz window at once: speed, SNR and text, callsigns highlighted |
