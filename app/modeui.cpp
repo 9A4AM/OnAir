@@ -30,6 +30,7 @@ extern const ModeUi kCellUi;
 extern const ModeUi kCwUi;
 extern const ModeUi kDstarUi;
 extern const ModeUi kPskUi;
+extern const ModeUi kJs8Ui;
 
 const ModeUi* modeUi(int family) {
     switch (family) {
@@ -62,6 +63,7 @@ const ModeUi* modeUi(int family) {
     case 34: return &kCwUi;
     case 33: return &kDstarUi;
     case 36: return &kPskUi;
+    case 37: return &kJs8Ui;
     default: return nullptr;
     }
 }

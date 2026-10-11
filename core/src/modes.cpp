@@ -56,6 +56,8 @@
 #include "dect2/dstar_gen.h"
 #include "dect2/psk_rx.h"
 #include "dect2/psk_gen.h"
+#include "dect2/js8_rx.h"
+#include "dect2/js8_gen.h"
 #include "dect2/m17_gen.h"
 #include "dect2/hfdl_rx.h"
 #include "dect2/hfdl_gen.h"
@@ -148,7 +150,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), pskTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), pskTuning(), js8Tuning()};
     return t;
 }
 
@@ -243,6 +245,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 36: return makeCwSynth(cfg, sampleRate);
     case 35: return makeDstarSynth(cfg, sampleRate);
     case 38: return makePskSynth(cfg, sampleRate);
+    case 39: return makeJs8Synth(cfg, sampleRate);
     default: return nullptr;
     }
 }
@@ -279,6 +282,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 35: return cwSummary(t.cw);
     case 34: return dstarSummary(t.dstar);
     case 37: return pskSummary(t.psk);
+    case 38: return js8Summary(t.js8);
     default: return "";
     }
 }

@@ -750,7 +750,7 @@ void gainControl(App& a) {
 
 // The receiver modes. Adding a mode is one row here (and its family number in app.h / setFamily).
 // The families are also stored in the settings: 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh,
-// 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 32 cell towers, 33 D-STAR, 34 CW, 36 PSK31.
+// 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 32 cell towers, 33 D-STAR, 34 CW, 36 PSK31, 37 JS8Call.
 // Within a group the rows are shown in this order; the keys 1-9 pick the modes in the same order.
 const ModeDef kModes[] = {
     {0, "DVB",        0, IM_COL32(52, 92, 108, 255),  "DVB-T2 / DVB-T, detected automatically",                                    "DVB-T2 and DVB-T, automatic (Europe, Middle East, Africa, Asia, Australia)", "T2 and T, automatic",   ImVec4(0.36f, 0.74f, 0.86f, 1)},
@@ -800,6 +800,7 @@ const ModeDef kModes[] = {
     {34, "CW", 6, IM_COL32(110, 96, 60, 255), "CW (Morse) skimmer: every signal in a 14 kHz window, 5 to 50 WPM, on the HF CW segments", "CW: Morse code from every signal in the window, speed and callsigns", "Morse, 14.020 MHz", ImVec4(0.92f, 0.80f, 0.52f, 1), nullptr, "cw morse skimmer hf amateur telegraphy"},
     {33, "D-STAR", 6, IM_COL32(70, 90, 130, 255), "D-STAR digital voice (GMSK 4800 bit/s, 6.25 kHz), 2 m and 70 cm", "D-STAR: callsigns, repeaters, messages and D-PRS positions on VHF / UHF", "Digital voice, 145.375 MHz", ImVec4(0.56f, 0.70f, 0.96f, 1), nullptr, "dstar d-star dv digital voice ambe icom jarl d-prs amateur vhf uhf repeater"},
     {36, "PSK31", 6, IM_COL32(60, 100, 120, 255), "PSK31 / PSK63 keyboard chat (BPSK and QPSK): every signal in the 3 kHz passband at once, 14.070 MHz", "PSK31: keyboard chat, every signal in the passband", "Keyboard chat, 14.070 MHz", ImVec4(0.50f, 0.80f, 0.92f, 1), nullptr, "psk31 psk63 bpsk qpsk psk varicode keyboard chat hf amateur digital"},
+    {37, "JS8Call", 6, IM_COL32(90, 80, 130, 255), "JS8Call keyboard messaging (8-FSK, normal / fast / turbo slots): heartbeats, directed messages, relays, 14.078 MHz", "JS8Call: weak-signal messages, heartbeats and relays", "Messaging, 14.078 MHz", ImVec4(0.70f, 0.64f, 0.96f, 1), nullptr, "js8 js8call ft8 weak signal messaging heartbeat relay grid hf amateur digital"},
     {25, "FT8", 6, IM_COL32(110, 70, 120, 255), "FT8 weak-signal contacts in 15 s slots, 14.074 MHz", "FT8: weak-signal amateur contacts", "WSJT, 14.074 MHz", ImVec4(0.86f, 0.58f, 0.92f, 1), "ft8", "ft8 wsjt hf digital"},
     {25, "FT4", 6, IM_COL32(120, 76, 96, 255), "FT4 contest mode in 7.5 s slots, 14.080 MHz", "FT4: fast weak-signal amateur contacts", "WSJT, 14.080 MHz", ImVec4(0.92f, 0.60f, 0.70f, 1), "ft4", "ft4 wsjt hf digital"},
     {25, "FT2", 6, IM_COL32(96, 76, 130, 255), "FT2 in 3.75 s slots, 14.084 MHz", "FT2: the fastest of the FT modes", "WSJT, 14.084 MHz", ImVec4(0.66f, 0.58f, 0.96f, 1), "ft2", "ft2 wsjt hf digital"},

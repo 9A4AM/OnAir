@@ -81,7 +81,8 @@ m17	--mode m17	Overview|M17|Receiver|History
 cell	--mode cell	Overview|Cells|Receiver|History
 cw	--mode cw	Overview|CW|Receiver|History
 dstar	--mode dstar	Overview|D-STAR|Receiver|History
-psk	--mode psk	Overview|PSK31|Receiver|History"
+psk	--mode psk	Overview|PSK31|Receiver|History
+js8	--mode js8	Overview|JS8Call|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"
