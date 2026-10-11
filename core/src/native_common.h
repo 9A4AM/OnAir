@@ -32,6 +32,7 @@
 #else
 #include <dlfcn.h>
 #include <glob.h>
+#include <unistd.h>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
@@ -225,6 +226,77 @@ inline std::vector<std::string> libNames(const char* stem, std::initializer_list
 #endif
     for (auto& p : versionedLibs(stem, dirs)) v.push_back(p);
 #endif
+    return v;
+}
+
+// ------------------------------------------------------------------ voice and audio codecs the user installs (docs/CODECS.md)
+
+// The OnAir "codecs" folders, where a user can put a codec library that OnAir does not ship: next to the program (macOS: next to OnAir.app,
+// and Contents/MacOS/codecs inside it) and in the user data folder (%LOCALAPPDATA%\OnAir\codecs, ~/Library/Application Support/OnAir/codecs,
+// $XDG_DATA_HOME/onair/codecs or ~/.local/share/onair/codecs). Each ends with the path separator.
+inline std::vector<std::string> codecFolders() {
+    std::vector<std::string> v;
+#if defined(_WIN32)
+    char path[MAX_PATH * 2] = {0};
+    if (GetModuleFileNameA(nullptr, path, (DWORD)sizeof path - 1)) {
+        std::string d = path;
+        const size_t cut = d.find_last_of("\\/");
+        if (cut != std::string::npos) v.push_back(d.substr(0, cut + 1) + "codecs\\");
+    }
+    if (const char* la = getenv("LOCALAPPDATA")) if (*la) v.push_back(std::string(la) + "\\OnAir\\codecs\\");
+#else
+    std::string exe;
+    char path[4096];
+#if defined(__APPLE__)
+    uint32_t size = sizeof path;
+    if (_NSGetExecutablePath(path, &size) == 0) exe = path;
+#else
+    const ssize_t n = readlink("/proc/self/exe", path, sizeof path - 1);
+    if (n > 0) exe.assign(path, (size_t)n);
+#endif
+    const size_t sl = exe.find_last_of('/');
+    if (sl != std::string::npos) {
+        const std::string dir = exe.substr(0, sl + 1);
+        v.push_back(dir + "codecs/");
+#if defined(__APPLE__)
+        const size_t at = dir.rfind(".app/Contents/MacOS/");
+        if (at != std::string::npos) {   // the folder that holds OnAir.app
+            const size_t up = dir.find_last_of('/', at);
+            if (up != std::string::npos) v.push_back(dir.substr(0, up + 1) + "codecs/");
+        }
+#endif
+    }
+    const char* home = getenv("HOME");
+#if defined(__APPLE__)
+    if (home && *home) v.push_back(std::string(home) + "/Library/Application Support/OnAir/codecs/");
+#else
+    const char* x = getenv("XDG_DATA_HOME");
+    if (x && *x) v.push_back(std::string(x) + "/onair/codecs/");
+    else if (home && *home) v.push_back(std::string(home) + "/.local/share/onair/codecs/");
+#endif
+#endif
+    return v;
+}
+
+// A codec library: the copies in the OnAir codecs folders first (any of the usual file names), then the system's places (libNames)
+inline std::vector<std::string> codecLibNames(const char* stem, std::initializer_list<const char*> soVersions, std::initializer_list<const char*> winNames) {
+    std::vector<std::string> v;
+    const std::vector<std::string> dirs = codecFolders();
+    for (const auto& dir : dirs) {
+#if defined(_WIN32)
+        for (const char* w : winNames) v.push_back(dir + w);
+#elif defined(__APPLE__)
+        for (const char* ver : soVersions) v.push_back(dir + "lib" + stem + ver + ".dylib");
+        v.push_back(dir + "lib" + stem + ".dylib");
+#else
+        for (const char* ver : soVersions) v.push_back(dir + "lib" + stem + ".so" + ver);
+        v.push_back(dir + "lib" + stem + ".so");
+#endif
+    }
+#ifndef _WIN32
+    for (auto& p : versionedLibs(stem, dirs)) if (std::find(v.begin(), v.end(), p) == v.end()) v.push_back(p);
+#endif
+    for (auto& p : libNames(stem, soVersions, winNames)) v.push_back(p);
     return v;
 }
 

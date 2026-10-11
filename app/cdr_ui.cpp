@@ -107,7 +107,7 @@ void details(App& a, float w, float h) {
     if (s->audio) {
         snprintf(b, sizeof b, "%d units, %d bytes per logical frame", s->audioUnits, s->audioBytes); kvRow(a, "received", b);
         ImGui::TextDisabled("sound"); kvColumn(110 * gUi);
-        { ImGui::PushTextWrapPos(0); ImGui::TextColored(kWarn, "%s", kDraNote); ImGui::PopTextWrapPos(); }
+        { codecHelpButton(CodecHelp::Dra); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(kWarn, "%s", kDraNote); ImGui::PopTextWrapPos(); }
     }
     if (s->data) {
         std::string ty;

@@ -422,6 +422,10 @@ void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/, int ico
 std::string lossText(const SampleLoss& l);
 ImVec4 lossColour(const SampleLoss& l, ImVec4 normal = ImVec4(0.93f, 0.95f, 0.97f, 1));
 void lossTooltip(const SampleLoss& l);
+// The "?" button next to the sound of a mode whose voice needs a codec OnAir does not ship (codec_help.cpp, docs/CODECS.md): found or not,
+// what it is, how to install it here, where to put it, a link to the full page and "Look again"
+enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe };
+void codecHelpButton(CodecHelp c);
 // rows that wrap in a narrow window: flowNext() between the groups of a row (a label and its control, a lamp, a read-out) instead of
 // ImGui::SameLine(); the next group stays on the line if it fits (as wide as in the last frame). flowBreak() ends the line, like NewLine().
 bool flowNext(float spacing = -1);   // true: on the same line

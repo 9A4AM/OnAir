@@ -200,6 +200,7 @@ OnAir checks GitHub for a newer version a few seconds after it starts (then at m
 ## Good to know
 
 - Encrypted (scrambled) services cannot be decoded.
+- Some voice and audio codecs are not shipped with OnAir (codec2 for FreeDV; AMBE, HDC and DRA+ are patented). **[docs/CODECS.md](docs/CODECS.md)** says how to install the ones you can, and what to use for the others. The **?** button next to the sound of each such mode says the same.
 - Reception depends heavily on your antenna and location. A weak or echo-filled signal is the usual cause of a broken picture; the quality score and echo detector are there to help you improve it.
 - Receiving broadcasts is legal in most places, but laws differ. Check the rules where you live.
 

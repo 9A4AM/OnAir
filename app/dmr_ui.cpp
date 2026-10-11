@@ -234,6 +234,8 @@ void tab(App& a) {
     slotCard(a, 1, cw, cardH);
     // what the vocoder situation is, where a person looks for the sound
     ImGui::Spacing();
+    codecHelpButton(CodecHelp::DmrAmbe);
+    ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, pal::warnAmber());
     ImGui::PushTextWrapPos(0);
     ImGui::TextUnformatted("Voice audio is not decoded: DMR voice uses the proprietary AMBE+2 vocoder, which OnAir does not include. Voice calls are found, counted and logged, there is no sound.");

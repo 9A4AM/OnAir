@@ -13,7 +13,7 @@ const char* installHint() {
 #if defined(__APPLE__)
     return "On macOS, install it with Homebrew: brew install codec2";
 #elif defined(_WIN32)
-    return "On Windows, codec2 will be shipped with OnAir in a later version.";
+    return "On Windows, copy libcodec2.dll from a FreeDV install into the OnAir codecs folder.";
 #else
     return "On Linux, install your distribution's codec2 package (libcodec2).";
 #endif
@@ -33,9 +33,11 @@ void hfdigFreedvTab(App& a, const dect2::HfdigTelemetry& t) {
         lamp(b, run && found && f.sync[m] ? 1 : 0);
         if (m + 1 < dect2::kFreedvModes) ImGui::SameLine(0, 12 * gUi);
     }
+    ImGui::SameLine(0, 12 * gUi);
+    codecHelpButton(CodecHelp::Codec2);
     if (!found) {
         ImGui::PushTextWrapPos(0);
-        ImGui::TextDisabled("codec2 library not found: FreeDV needs it to decode.");
+        ImGui::TextDisabled("codec2 library not found: FreeDV needs it to decode. Press ? to see how to get it.");
         ImGui::TextDisabled("%s", installHint());
         ImGui::PopTextWrapPos();
     }

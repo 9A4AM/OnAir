@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -72,13 +73,15 @@ std::string versionOf(const std::string& path) {
     return v;
 }
 
-const Api& api() {
-    static const Api a = [] {
-        Api r;
+// One search for the library. A failed search can be repeated (hfdigFreedvRescan, the "Look again" button); a found library stays for the
+// life of the program. Every Api made is kept (never freed), since decoders hold references to the one they started with.
+const Api* scan() {
+    Api* p = new Api;
+    [](Api& r) {
         std::vector<std::string> names;
         if (const char* e = getenv("DECT2_CODEC2_PATH")) if (*e) names.push_back(e);
-        if (names.empty()) names = native::libNames("codec2", {".1.2", ".1.1", ".1.0", ".1", ".0.9"}, {"codec2.dll", "libcodec2.dll"});
-        if (!r.lib.open(names)) return r;
+        if (names.empty()) names = native::codecLibNames("codec2", {".1.2", ".1.1", ".1.0", ".1", ".0.9"}, {"codec2.dll", "libcodec2.dll"});
+        if (!r.lib.open(names)) return;
         native::DynLib& l = r.lib;
         const bool ok = l.get(r.open, "freedv_open") && l.get(r.close, "freedv_close") && l.get(r.nin, "freedv_nin") && l.get(r.rx, "freedv_rx") &&
                         l.get(r.tx, "freedv_tx") && l.get(r.stats, "freedv_get_modem_stats") && l.get(r.setTxt, "freedv_set_callback_txt") &&
@@ -87,7 +90,7 @@ const Api& api() {
         l.opt(r.nMaxSpeech, "freedv_get_n_max_speech_samples");
         l.opt(r.bitErrors, "freedv_get_total_bit_errors");
         l.opt(r.totalBits, "freedv_get_total_bits");
-        if (!ok) return r;
+        if (!ok) return;
         r.ok = true;
 #ifndef _WIN32
         // the real file behind a bare name, for the report
@@ -95,9 +98,18 @@ const Api& api() {
         if (dlsym(l.h, "freedv_open") && dladdr(reinterpret_cast<void*>(r.open), &info) && info.dli_fname) l.path = info.dli_fname;
 #endif
         r.version = versionOf(l.path);
-        return r;
-    }();
-    return a;
+    }(*p);
+    return p;
+}
+
+std::mutex gApiMu;
+std::atomic<const Api*> gApi{nullptr};
+
+const Api& api() {
+    if (const Api* a = gApi.load(std::memory_order_acquire)) return *a;
+    std::lock_guard<std::mutex> lk(gApiMu);
+    if (!gApi.load()) gApi.store(scan(), std::memory_order_release);
+    return *gApi.load();
 }
 
 std::atomic<int> gModeChoice{0};
@@ -114,6 +126,13 @@ bool hfdigFreedvLibrary(std::string* path, std::string* version) {
         if (version) *version = a.version;
     }
     return a.ok;
+}
+std::vector<std::string> codecFolderList() { return native::codecFolders(); }
+bool hfdigFreedvRescan() {
+    api();
+    std::lock_guard<std::mutex> lk(gApiMu);
+    if (!gApi.load()->ok) gApi.store(scan(), std::memory_order_release);
+    return gApi.load()->ok;
 }
 
 // ------------------------------------------------------------------ receiver
@@ -202,6 +221,12 @@ void HfdigFreedv::feedAudio(const float* x, size_t n) {
     s.tel.audioSamples += n;
     const Api& a = api();
     if (!a.ok) return;
+    if (!s.tel.libFound) {   // the library was found after this decoder started ("Look again"): open the modes now
+        const uint64_t fed = s.tel.audioSamples;
+        s.closeAll();
+        s.openAll();
+        s.tel.audioSamples = fed;
+    }
     const int choice = gModeChoice;
     if (choice != s.lastChoice) {   // the user picked another mode: start clean
         s.lastChoice = choice;

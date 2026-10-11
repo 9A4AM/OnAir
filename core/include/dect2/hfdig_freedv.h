@@ -4,8 +4,8 @@
 // hfdig_freedv.cpp from codec2's public freedv_api.h, release 1.2.0 (the mode constants are stable across 1.x).
 // FreeDV 700D, 700E and 1600 listen to the same audio at the same time (cheap); the one that has sync (the first, in that order, and
 // it stays until it has been lost for 2 s) makes the speech, the text channel (callsign) and the SNR shown.
-// Library search: DECT2_CODEC2_PATH (a full path; dev and tests), then macOS Contents/Frameworks, /opt/homebrew/lib, /usr/local/lib;
-// Linux the system folders; Windows codec2.dll / libcodec2.dll next to the program.
+// Library search: DECT2_CODEC2_PATH (a full path; dev and tests), then the OnAir codecs folders (codecFolderList), then macOS
+// Contents/Frameworks, /opt/homebrew/lib, /usr/local/lib; Linux the system folders; Windows codec2.dll / libcodec2.dll next to the program.
 // Test audio (hfdig_gen.h, makeFreedvTestAudio): only with the library. SynthConfig::modeOpt[0] = 2 picks FreeDV (the shell), and
 // modeOpt[1] picks the FreeDV mode: 0 = 700D (default), 1 = 700E, 2 = 1600. The transmission is a synthetic speech-like signal with
 // the text "ONAIR TEST" in the text channel. Without the library makeFreedvTestAudio() returns nullptr and the shell sends noise.
@@ -17,6 +17,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace dect2 {
 
@@ -46,6 +47,10 @@ void hfdigFreedvSetMode(int choice);
 int hfdigFreedvMode();
 // Looks for the library once (a later call gives the same answer): true when found, and where.
 bool hfdigFreedvLibrary(std::string* path = nullptr, std::string* version = nullptr);
+// Looks again when it was not found (the "Look again" button: no restart needed; a running decoder picks it up). True when found.
+bool hfdigFreedvRescan();
+// The OnAir "codecs" folders, searched before the system's places, for any codec library the user installs (docs/CODECS.md)
+std::vector<std::string> codecFolderList();
 
 class HfdigFreedv : public HfdigDecoder {
 public:

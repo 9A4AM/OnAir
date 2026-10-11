@@ -104,6 +104,8 @@ const char* stateName(int s) { return s >= 3 ? "data" : s == 2 ? "frames in sync
 ImVec4 stateColour(int s) { return s >= 3 ? pal::okGreen() : s == 2 ? pal::warnAmber() : pal::grey(); }
 
 void notDecodedNote() {
+    codecHelpButton(CodecHelp::AeroAmbe);
+    ImGui::SameLine();
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("P channels only: C channel voice is not supported, R and T channels are not started."); ImGui::PopTextWrapPos(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kNotDecoded);
 }

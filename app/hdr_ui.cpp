@@ -234,6 +234,8 @@ void programCards(App& a, const char* id) {
 
 void hdcNote() {
     ImGui::PushTextWrapPos(0);
+    codecHelpButton(CodecHelp::Hdc);
+    ImGui::SameLine();
     ImGui::TextDisabled("%s", kHdcNote);
     ImGui::PopTextWrapPos();
 }

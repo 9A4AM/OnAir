@@ -243,6 +243,8 @@ void counters(App& a) {
         }
         ImGui::EndTable();
     }
+    codecHelpButton(CodecHelp::IridiumAmbe);
+    ImGui::SameLine();
     ImGui::TextWrapped("Voice frames are counted only, never decoded.");
 }
 
