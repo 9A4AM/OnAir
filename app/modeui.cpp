@@ -22,6 +22,9 @@ extern const ModeUi kPagerUi;
 extern const ModeUi kPacketUi;
 extern const ModeUi kHfdigUi;
 extern const ModeUi kAirbandUi;
+extern const ModeUi kVdl2Ui;
+extern const ModeUi kIsmUi;
+extern const ModeUi kVorUi;
 extern const ModeUi kM17Ui;
 
 const ModeUi* modeUi(int family) {
@@ -47,6 +50,9 @@ const ModeUi* modeUi(int family) {
     case 24: return &kPacketUi;
     case 25: return &kHfdigUi;
     case 26: return &kAirbandUi;
+    case 27: return &kVdl2Ui;
+    case 28: return &kIsmUi;
+    case 30: return &kVorUi;
     case 31: return &kM17Ui;
     default: return nullptr;
     }

@@ -222,6 +222,10 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         rxVdl2_.setSignalOffset(o);
         rxVdl2_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxAirband_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // the channels are placed from it
+        rxIsm_.setSignalOffset(o);
+        rxIsm_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // the devices' frequencies
+        rxVor_.setSignalOffset(o);
+        rxVor_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // VOR, localizer, glide slope or marker by the frequency
         rxM17_.setSignalOffset(o);
     }
     rxSonde_.configure(rate_);
@@ -254,6 +258,10 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxVdl2_.configure(rate_);
     rxVdl2_.setLogCallback([this](const std::string& s) { log(s); });
     rxAirband_.setLogCallback([this](const std::string& s) { log(s); });
+    rxIsm_.configure(rate_);
+    rxIsm_.setLogCallback([this](const std::string& s) { log(s); });
+    rxVor_.configure(rate_);
+    rxVor_.setLogCallback([this](const std::string& s) { log(s); });
     rxM17_.configure(rate_);
     rxM17_.setLogCallback([this](const std::string& s) { log(s); });
     if (const ModeTuning* mt = modeTuning(stdMode_.load()))
@@ -382,7 +390,7 @@ bool Engine::retune(const TuneSettings& tune) {
     setNote(err, true);
     if (restartIfRateChanged(tune)) return running_;
     { std::lock_guard<std::mutex> lk(tuneMu_); lastTune_ = tune; }
-    if (lastDev_.kind != DeviceInfo::File) { rxAcars_.setCenterHz(radioTune(tune).centerHz); rxAirband_.setCenterHz(radioTune(tune).centerHz); rxVor_.setCenterHz(radioTune(tune).centerHz); }
+    if (lastDev_.kind != DeviceInfo::File) { rxAcars_.setCenterHz(radioTune(tune).centerHz); rxAirband_.setCenterHz(radioTune(tune).centerHz); rxVdl2_.setCenterHz(radioTune(tune).centerHz); rxIsm_.setCenterHz(radioTune(tune).centerHz); rxVor_.setCenterHz(radioTune(tune).centerHz); }
     return true;
 }
 
@@ -419,7 +427,7 @@ bool Engine::retuneReset(const TuneSettings& tune) {
     setNote(err, true);
     if (restartIfRateChanged(tune)) return running_;
     { std::lock_guard<std::mutex> lk(tuneMu_); lastTune_ = tune; }
-    if (lastDev_.kind != DeviceInfo::File) { rxAcars_.setCenterHz(radioTune(tune).centerHz); rxAirband_.setCenterHz(radioTune(tune).centerHz); rxVor_.setCenterHz(radioTune(tune).centerHz); }
+    if (lastDev_.kind != DeviceInfo::File) { rxAcars_.setCenterHz(radioTune(tune).centerHz); rxAirband_.setCenterHz(radioTune(tune).centerHz); rxVdl2_.setCenterHz(radioTune(tune).centerHz); rxIsm_.setCenterHz(radioTune(tune).centerHz); rxVor_.setCenterHz(radioTune(tune).centerHz); }
     resetReq_ = true;
     return true;
 }
@@ -455,6 +463,9 @@ void Engine::applyReset() {
     rxPacket_.reset();
     rxHfdig_.reset();
     rxAirband_.reset();
+    rxVdl2_.reset();
+    rxIsm_.reset();
+    rxVor_.reset();
     rxM17_.reset();
     autoMark_ = nSamp_ / std::max(1.0, rate_.load()); lastLockSec_ = autoMark_;
     analyzer_.reset();
@@ -498,7 +509,7 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
 // so idle searching costs one receiver, not two.
 void Engine::feedRx(const cf32* x, size_t n) {
     const int a = activeStd_.load();
-    if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else rx_.feed(x, n);
+    if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else rx_.feed(x, n);
 }
 
 void Engine::changeBandwidth(double mhz) {
@@ -570,6 +581,9 @@ void Engine::autoSelect(const RxTelemetry& t, bool tLocked) {
             case 25: rxPacket_.reset(); break;
             case 26: rxHfdig_.reset(); break;
             case 27: rxAirband_.reset(); break;
+            case 28: rxVdl2_.reset(); break;
+            case 29: rxIsm_.reset(); break;
+            case 31: rxVor_.reset(); break;
             case 32: rxM17_.reset(); break;
             default: break;
             }
@@ -1344,6 +1358,54 @@ void Engine::analysisLoop() {
                     t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
                     t.rateOk = rxAirband_.ready();
                     t.airband = std::move(mt);
+                    std::lock_guard<std::mutex> lk(rxMu_);
+                    publishRx(std::move(t));
+                }
+            } else if (activeStd_.load() == 28) {
+                Vdl2Telemetry mt;
+                if (rxVdl2_.telemetry(mt, modeSeq_[21])) {
+                    modeSeq_[21] = mt.seq;
+                    t.standard = 28;
+                    t.seq = mt.seq;
+                    t.state = mt.state;
+                    t.cfoHz = mt.cfoHz;
+                    t.dataValid = mt.dataValid;
+                    t.dataSnrDb = mt.snrDb;
+                    t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
+                    t.rateOk = rxVdl2_.ready();
+                    t.vdl2 = std::move(mt);
+                    std::lock_guard<std::mutex> lk(rxMu_);
+                    publishRx(std::move(t));
+                }
+            } else if (activeStd_.load() == 29) {
+                IsmTelemetry mt;
+                if (rxIsm_.telemetry(mt, modeSeq_[22])) {
+                    modeSeq_[22] = mt.seq;
+                    t.standard = 29;
+                    t.seq = mt.seq;
+                    t.state = mt.state;
+                    t.cfoHz = mt.cfoHz;
+                    t.dataValid = mt.dataValid;
+                    t.dataSnrDb = mt.snrDb;
+                    t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
+                    t.rateOk = rxIsm_.ready();
+                    t.ism = std::move(mt);
+                    std::lock_guard<std::mutex> lk(rxMu_);
+                    publishRx(std::move(t));
+                }
+            } else if (activeStd_.load() == 31) {
+                VorTelemetry mt;
+                if (rxVor_.telemetry(mt, modeSeq_[24])) {
+                    modeSeq_[24] = mt.seq;
+                    t.standard = 31;
+                    t.seq = mt.seq;
+                    t.state = mt.state;
+                    t.cfoHz = mt.cfoHz;
+                    t.dataValid = mt.dataValid;
+                    t.dataSnrDb = mt.snrDb;
+                    t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
+                    t.rateOk = rxVor_.ready();
+                    t.vor = std::move(mt);
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
                 }
