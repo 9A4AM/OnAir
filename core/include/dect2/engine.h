@@ -313,6 +313,9 @@ private:
     GsmrReceiver rxGsmr_;
     PskReceiver rxPsk_;
     Js8Receiver rxJs8_;
+    SpecxReceiver rxSpecx_;
+    SpecanReceiver rxSpecan_;
+    bool specanSweep_ = false;   // the HackRF sweeps by itself (spectrum analyser)
     DvbcReceiver rxDvbc_;
     uint64_t modeSeq_[48] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;

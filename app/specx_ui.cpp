@@ -447,7 +447,7 @@ void strip(App& a) {
 void sweepPanel(App& a, float h) {
     Sweep& w = S.sw;
     struct P { const char* n; double lo, hi; };
-    static const P kP[] = {{"Satellite IF", 950, 2150}, {"FM broadcast", 87.5, 108}, {"Airband", 118, 137}, {"2 m", 144, 146}, {"70 cm", 430, 440},
+    static const P kP[] = {{"Satellite IF", 950, 2150}, {"Ku LNB IF (Bullseye, 739-2150)", 739, 2150}, {"FM broadcast", 87.5, 108}, {"Airband", 118, 137}, {"2 m", 144, 146}, {"70 cm", 430, 440},
                            {"ISM 433", 433.05, 434.79}, {"ISM 868", 863, 870}, {"L band", 1525, 1660}, {"Full range", 1, 6000}};
     double lo = w.loRf / 1e6, hi = w.hiRf / 1e6;
     ImGui::SetNextItemWidth(90 * gUi);
@@ -463,7 +463,7 @@ void sweepPanel(App& a, float h) {
         for (const P& p : kP) if (ImGui::Selectable(p.n)) { w.loRf = p.lo * 1e6; w.hiRf = p.hi * 1e6; }
         ImGui::EndCombo();
     }
-    tip("Ranges: satellite IF, FM broadcast, airband, 2 m, 70 cm, ISM 433 / 868, L band, the radio's full range");
+    tip("Ranges: satellite IF, Ku LNB IF 739-2150 MHz (Bullseye: QO-100 at 739.5 MHz), FM broadcast, airband, 2 m, 70 cm, ISM 433 / 868, L band, the radio's full range");
     ImGui::SameLine();
     if (!w.active) {
         if (ImGui::Button("Sweep a range")) {

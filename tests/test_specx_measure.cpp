@@ -37,7 +37,7 @@ int main() {
     CHECK(std::fabs(l.radioHz(3800e6) - 1350e6) < 1 && std::fabs(l.rfHz(1350e6) - 3800e6) < 1 && l.inverted(), "C band");
     l.on = false;
     CHECK(l.radioHz(123e6) == 123e6 && l.rfHz(123e6) == 123e6, "off");
-    int np; lnbPresets(np); CHECK(np == 5, "presets %d", np);
+    int np; lnbPresets(np); CHECK(np == 7, "presets %d", np);
 
     // a synthetic spectrum: 8192 bins over 10 MHz, a floor of -100 dB tilted by 6 dB across, noise (exponential power per bin,
     // averaged over 8), a 2 Msym/s carrier (roll-off 0.25) at -2 MHz 30 dB up, a CW tone at +3 MHz

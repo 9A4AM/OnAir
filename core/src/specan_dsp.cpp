@@ -185,7 +185,7 @@ const SaPreset* saPresets(int& count) {
     static const SaPreset kP[] = {
         {"Full 1 - 6000 MHz", 1, 6000}, {"FM broadcast", 87.5, 108}, {"Airband", 108, 137}, {"2 m", 144, 146}, {"70 cm", 430, 440},
         {"ISM 433", 433, 435}, {"ISM 868", 863, 870}, {"Mobile 700 - 2700", 700, 2700}, {"L-band", 1000, 2000},
-        {"2.4 GHz", 2400, 2500}, {"5.8 GHz", 5650, 5925}, {"Satellite IF", 950, 2150},
+        {"2.4 GHz", 2400, 2500}, {"5.8 GHz", 5650, 5925}, {"Satellite IF", 950, 2150}, {"Ku LNB IF 739-2150", 739, 2150},
     };
     count = (int)(sizeof kP / sizeof *kP);
     return kP;

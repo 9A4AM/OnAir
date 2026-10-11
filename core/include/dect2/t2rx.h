@@ -103,6 +103,7 @@ struct RxTelemetry {
     CwTelemetry cw;             // valid when standard == 35
     SpecxTelemetry specx;  // valid when standard == 42
     Js8Telemetry js8;      // valid when standard == 38
+    SpecanTelemetry specan;   // valid when standard == 43 (spectrum analyser)
     DvbcTelemetry dvbc;    // valid when standard == 41
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34

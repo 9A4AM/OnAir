@@ -45,7 +45,8 @@ std::string freqText(double hz) {
 
 const LnbPreset* lnbPresets(int& count) {
     static const LnbPreset k[] = {{"Universal LNB, low band (9750 MHz)", 9750, 0}, {"Universal LNB, high band (10600 MHz)", 10600, 0},
-                                  {"QO-100 (9750 MHz)", 9750, 0}, {"C band LNB (5150 MHz, inverted)", 5150, 2}, {"Upconverter (+125 MHz)", 125, 1}};
+                                  {"QO-100 (9750 MHz)", 9750, 0}, {"Ku LNB, Bullseye / Universal Single, low (9750 MHz, IF 739-1950)", 9750, 0},
+                                  {"Ku LNB, Bullseye / Universal Single, high (10600 MHz, IF 1100-2150)", 10600, 0}, {"C band LNB (5150 MHz, inverted)", 5150, 2}, {"Upconverter (+125 MHz)", 125, 1}};
     count = (int)(sizeof k / sizeof *k);
     return k;
 }
