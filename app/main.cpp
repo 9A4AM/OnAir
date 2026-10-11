@@ -1,6 +1,8 @@
 // OnAir: window, main loop and the layout of the panels.
 #include "app.h"
 #include "dect2/crash_report.h"
+#include "discord_rpc.h"
+#include <chrono>
 #include <cstdlib>
 #if defined(__linux__)
 #include <dlfcn.h>
@@ -365,6 +367,23 @@ static bool glfwOnWayland() {
 }
 #endif
 
+static discord::Rpc* gDiscord = nullptr;   // created on first use (View > Show in Discord)
+static void discordTick(const App& a) {   // posts the wanted Rich Presence; the thread does the talking
+    if (!a.discordOn || !*discord::appId()) { if (gDiscord) { discord::Presence off; gDiscord->set(off); } return; }
+    if (!gDiscord) gDiscord = new discord::Rpc();
+    discord::Presence p; p.enabled = true; p.running = a.engine.running();
+    for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) { p.mode = kModes[i].name; break; }
+    const int kind = a.devIdx >= 0 && a.devIdx < (int)a.devices.size() ? (int)a.devices[a.devIdx].kind : -1;
+    if (kind == (int)DeviceInfo::File) p.freq = "File playback";
+    else if (kind == (int)DeviceInfo::Synthetic) p.freq = "Synthetic signal";
+    else if (a.discordFreq) { char b[32]; snprintf(b, sizeof b, "%.3f MHz", a.freqMhz); p.freq = b; }
+    static discord::Presence prev; static long long start = 0;
+    if (!start || prev.running != p.running || prev.mode != p.mode || prev.freq != p.freq)
+        start = (long long)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    prev = p; p.startUnix = start;
+    gDiscord->set(p);
+}
+
 int main(int argc, char** argv) {
     dect2::crash::install();   // first: a crash from here on leaves a report
 #ifdef _WIN32
@@ -542,6 +561,7 @@ int main(int argc, char** argv) {
     double last = glfwGetTime();
     double frameNext = 0, lastInputT = 0;
     while (!glfwWindowShouldClose(window)) {
+        discordTick(app);
         {
             {   // frame pacing: the screen is only redrawn as often as it can change, otherwise the loop would run at the refresh rate of the display (120 Hz on
                 // a ProMotion Mac) and draw the same spectrum three times over. Input wakes the loop at once; --shot keeps the unpaced loop its frame counts rely on.
@@ -656,6 +676,7 @@ int main(int argc, char** argv) {
             }
         }
     }
+    delete gDiscord;   // clears the status and joins its thread
     app.engine.stop();
     updateOnExit(app);   // a downloaded update replaces this program once it has ended
     popOutShutdown();   // its window and surface go before the back end

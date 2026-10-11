@@ -348,6 +348,8 @@ void loadPrefs(App& a) {
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
     if (d.has("dtmbBw")) a.dtmbBwMhz = d.getI("dtmbBw", 8) == 6 ? 6 : 8;
     if (d.has("atvFm")) a.atvFm = d.getI("atvFm", 0) != 0;
+    if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
+    if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
     if (d.has("lightUi")) a.lightUi = d.getI("lightUi", 0) != 0;
     if (d.has("uiTheme")) a.uiTheme = std::max(0, std::min(2, (int)d.getI("uiTheme", 1)));
     if (d.has("fmStations")) {
@@ -412,6 +414,8 @@ void savePrefs(const App& a) {
     for (int f = 6; f < kNumSlots; f++) if (a.famFreq[f] > 0 || (f == curSlot && a.family >= 6)) d.setD(("fFreq" + slotKey(f)).c_str(), f == curSlot ? a.freqMhz : a.famFreq[f]);
     d.setI("uiTheme", a.uiTheme);
     d.setI("lightUi", a.lightUi ? 1 : 0);
+    d.setI("discordOn", a.discordOn ? 1 : 0);
+    d.setI("discordFreq", a.discordFreq ? 1 : 0);
     d.setI("dtmbBw", a.dtmbBwMhz);
     d.setI("atvFm", a.atvFm ? 1 : 0);
     d.setI("uiVariant", a.uiVariant);

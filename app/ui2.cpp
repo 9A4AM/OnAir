@@ -1,5 +1,6 @@
 // The new interface, in a plain developer-tool style: flat, dense and monochrome. A text list of modes with keyboard shortcuts on the left,
 // square bordered panes and hairlines instead of cards, one muted accent. It reuses every panel of the classic interface (main.cpp).
+#include "discord_rpc.h"
 #include "app.h"
 #include "imgui_internal.h"   // RenderArrow for the folding mode groups
 
@@ -536,6 +537,20 @@ float menuBar(App& a) {
             static const char* names[3] = {"Terminal palette", "Instrument palette", "Mono palette"};
             for (int t = 0; t < 3; t++) if (ImGui::MenuItem(names[t], nullptr, a.uiTheme == t)) { a.uiTheme = t; savePrefs(a); }
             if (ImGui::MenuItem("Light (dark on white)", nullptr, &a.lightUi)) savePrefs(a);
+            ImGui::Separator();
+            {   // opt-in Discord Rich Presence
+                const bool have = *discord::appId() != 0;
+                ImGui::BeginDisabled(!have);
+                if (ImGui::MenuItem("Show in Discord", nullptr, &a.discordOn)) savePrefs(a);
+                ImGui::BeginDisabled(!a.discordOn);
+                if (ImGui::MenuItem("Show the frequency", nullptr, &a.discordFreq)) savePrefs(a);
+                ImGui::EndDisabled();
+                ImGui::EndDisabled();
+                ImGui::SameLine();
+                ImGui::TextDisabled("(?)");
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                    ImGui::SetTooltip("%s", have ? "Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running." : "Discord application ID not set in this build");
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Classic interface")) { a.newUi = false; savePrefs(a); }
             ImGui::EndMenu();

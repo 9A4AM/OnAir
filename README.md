@@ -226,6 +226,12 @@ OnAir checks GitHub for a newer version a few seconds after it starts (then at m
 - macOS replaces `OnAir.app`; Windows runs the installer quietly (Windows asks for permission); Linux replaces the portable folder, and a `.deb` install asks for your password through the system's installer.
 - Only github.com is contacted, and nothing is sent but the usual request.
 
+## Discord status
+
+Off by default. **View > Show in Discord** shows on your Discord profile that you are using OnAir, the mode and (optionally, **Show the frequency**) the frequency. It needs the Discord desktop app running, talks only to it on your computer, and sends nothing else anywhere.
+
+The official builds ship with the Application ID of the OnAir Discord application. To use your own (a fork): create an application named OnAir at https://discord.com/developers/applications, copy its Application ID into `kDiscordAppId` in `app/discord_rpc.cpp` (or set the environment variable `ONAIR_DISCORD_APP_ID`), and upload the icon (`assets/onair.svg` rendered to PNG) as a Rich Presence art asset named `onair`.
+
 ## Good to know
 
 - Encrypted (scrambled) services cannot be decoded.
