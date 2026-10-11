@@ -45,6 +45,8 @@
 #include "dect2/hfdig_gen.h"
 #include "dect2/airband_rx.h"
 #include "dect2/airband_gen.h"
+#include "dect2/vdl2_rx.h"
+#include "dect2/vdl2_gen.h"
 #include "dect2/modes.h"
 #include "dect2/demo_ts.h"
 #include "dect2/exact_resampler.h"
@@ -126,7 +128,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning()};
     return t;
 }
 
@@ -210,6 +212,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 26: return makePacketSynth(cfg, sampleRate);
     case 27: return makeHfdigSynth(cfg, sampleRate);
     case 28: return makeAirbandSynth(cfg, sampleRate);
+    case 29: return makeVdl2Synth(cfg, sampleRate);
     default: return nullptr;
     }
 }
@@ -237,6 +240,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 25: return packetSummary(t.packet);
     case 26: return hfdigSummary(t.hfdig);
     case 27: return airbandSummary(t.airband);
+    case 28: return vdl2Summary(t.vdl2);
     default: return "";
     }
 }

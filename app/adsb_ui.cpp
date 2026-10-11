@@ -6,6 +6,8 @@
 #include <deque>
 #include <vector>
 
+void vdl2NoteAdsb(const dect2::AdsbTelemetry& t);   // vdl2_ui.cpp: VDL2 links its aircraft to what ADS-B heard
+
 namespace {
 
 struct State {
@@ -63,6 +65,7 @@ void tick(App& a) {
         S.pushedLat = S.refLat; S.pushedLon = S.refLon;
     }
     S.wasRunning = run;
+    if (live(a) && a.rx.seq != S.lastSeq) vdl2NoteAdsb(a.rx.adsb);
     if (live(a) && a.rx.seq != S.lastSeq) {
         S.lastSeq = a.rx.seq;
         const AdsbTelemetry& t = a.rx.adsb;

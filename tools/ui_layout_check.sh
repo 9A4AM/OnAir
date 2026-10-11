@@ -72,7 +72,8 @@ ft8	--mode ft8	Overview|Decoders|Receiver|History
 ft4	--mode ft4	Overview|Decoders|Receiver|History
 ft2	--mode ft2	Overview|Decoders|Receiver|History
 wspr	--mode wspr	Overview|Decoders|Receiver|History
-airband	--mode airband	Overview|Channels|Receiver|History"
+airband	--mode airband	Overview|Channels|Receiver|History
+vdl2	--mode vdl2	Overview|Messages|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"
