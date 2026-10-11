@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
         else if (a == "--lan") serveLan = true;
         else if (a == "--synthetic") synthetic = true;
         else if (a == "--wav") wavPath = next();   // FM: write the sound to a 48 kHz stereo WAV file
-        else if (a == "--listen") listen = true;   // FM: play the sound (the command line is silent otherwise)
+        else if (a == "--listen") listen = true;   // FM, voice, CW and ham modes: play the sound (the command line is silent otherwise)
         else if (a == "--demo") tune.synth.demoTv = true;   // synthetic DVB-T / ATSC carries the test-card programme
         else if (a == "--atsc") { tune.synth.atsc = true; tune.bandwidthMhz = 6; tune.sampleRate = 8e6; standard = 3; }   // ATSC 8-VSB (synthetic, or with --file at 8 Msps)
         else if (a == "--dvbt") { tune.synth.dvbt = true; synthetic = true; }                 // synthetic source generates DVB-T
@@ -159,12 +159,12 @@ int main(int argc, char** argv) {
     e.vor().setSilent(!listen);   // VOR / ILS: the voice only with --listen
     e.m17().setSilent(!listen);   // M17 voice only with --listen as well
     e.cw().setSilent(!listen);    // CW sidetone only with --listen as well
-    e.psk().setSilent(true);    // PSK31: text only, no sound
-    e.js8().setSilent(true);
-    e.specx().setSilent(true);  // spectrum explorer: the summary line only    // JS8Call: text only, no sound
+    e.psk().setListen(listen);    // PSK31, JS8Call, HF digital (RTTY, SSTV, FT8 ...): the sideband audio only with --listen
+    e.js8().setListen(listen);
+    e.hfdig().setListen(listen);
+    e.specx().setSilent(true);  // spectrum explorer: the summary line only
     e.uplink().setSilent(true);   // Mode S uplink: no sound
-    e.specan().setSilent(true);   // spectrum analyser: no sound    // JS8Call: text only, no sound
-    e.js8().setSilent(true);    // JS8Call: text only, no sound
+    e.specan().setSilent(true);   // spectrum analyser: no sound
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
     e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
     e.dvbc().setAnnexC(dvbcAnnexC);

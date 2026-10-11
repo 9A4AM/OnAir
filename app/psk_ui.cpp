@@ -19,6 +19,7 @@ struct State {
     float thrDb = 8;
     bool wasRunning = false;
     int pushedMode = -1; float pushedThr = -1;
+    bool listen = false; int pushedListen = -1; float pushedVol = -1; bool pushedMute = false;   // "Listen": off until switched on
     bool loaded = false;
     static constexpr int kRows = 160;
     int bins = 0;
@@ -38,6 +39,7 @@ void load() {
     S.loaded = true;
     S.mode = std::max(0, std::min(dect2::kPskModes - 1, (int)plat::prefs().getI("pskMode", 0)));
     S.thrDb = (float)plat::prefs().getD("pskThreshold", 8);
+    S.listen = plat::prefs().getB("pskListen", false);
 }
 
 const ImVec4 kCallCol(1.0f, 0.82f, 0.36f, 1);
@@ -100,6 +102,8 @@ void presets(App& a) {
     ImGui::SetNextItemWidth(110 * gUi);
     if (ImGui::SliderFloat("##pskthr", &S.thrDb, 4, 20, "%.0f dB")) plat::prefs().setD("pskThreshold", S.thrDb);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("How far over the noise floor a signal must be to get a decoder");
+    flowNext(8 * gUi);
+    listenControls(a, S.listen, "pskListen", "psk", "Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way");
     flowNext(8 * gUi);
     if (ImGui::Button("Clear##psk")) a.engine.psk().clearSignals();
     flowEnd();
@@ -237,6 +241,11 @@ void tick(App& a) {
     dect2::PskReceiver& r = a.engine.psk();
     if (!S.wasRunning || S.mode != S.pushedMode) { r.setMode(S.mode); S.pushedMode = S.mode; }
     if (!S.wasRunning || S.thrDb != S.pushedThr) { r.setThresholdDb(S.thrDb); S.pushedThr = S.thrDb; }
+    if (!S.wasRunning || (int)S.listen != S.pushedListen) { r.setListen(S.listen); S.pushedListen = S.listen; }
+    if (!S.wasRunning || a.volume != S.pushedVol || a.muted != S.pushedMute) {   // the sound controls are shared with the other modes
+        r.setVolume(a.volume); r.setMuted(a.muted);
+        S.pushedVol = a.volume; S.pushedMute = a.muted;
+    }
     S.wasRunning = true;
 }
 

@@ -41,7 +41,14 @@ public:
     void clearDecodes();
     void waitIdle();                     // tests: until every slot handed to the decoder is done
     void flush();                        // tests: decode the slot in progress now (the end of a recording)
-    void setSilent(bool) {}              // JS8 has no sound of its own
+    // "Listen" (off by default): the upper sideband, 200 .. 3800 Hz above the dial, as audio on the sound card; volume and mute are the
+    // app's shared sound controls. The decoding does not change with it.
+    void setListen(bool on);
+    bool listening() const;
+    void setVolume(float v);             // 0 .. 1
+    void setMuted(bool m);
+    void setSilent(bool s);              // listen without opening the sound device (tests, command line)
+    void setListenTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz audio Listen plays, called from feed()
 
 private:
     struct Impl;

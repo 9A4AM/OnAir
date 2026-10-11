@@ -8,7 +8,7 @@
 #include "dect2/hfdig_ftx.h"
 #include "dect2/marine_dsp.h"
 #include "dect2/audioout.h"
-#include "hfdig_usb.h"
+#include "ham_listen.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -21,79 +21,6 @@
 #include <vector>
 
 namespace dect2 {
-
-namespace {
-
-// Upper sideband audio: 24 kHz complex (the dial frequency at 0 Hz) -> real audio at 8 kHz, 200 .. 3800 Hz, with a slow AGC
-class UsbAudio {
-public:
-    static constexpr int kTaps = 383;          // about 270 Hz of transition at 24 kHz: the lower sideband is gone 200 Hz below the dial
-    static constexpr int kDecim = 3;           // 24 kHz -> 8 kHz
-    UsbAudio() {
-        const auto h = hfdig::usbTaps(kTaps, marine::kBaseRate);
-        taps_.resize(kTaps);
-        for (int j = 0; j < kTaps; j++) taps_[(size_t)j] = h[(size_t)(kTaps - 1 - j)];   // the history is kept oldest first
-        hist_.assign(2 * kTaps, cf32(0.f, 0.f));
-    }
-    void reset() { std::fill(hist_.begin(), hist_.end(), cf32(0.f, 0.f)); pos_ = 0; phase_ = 0; env_ = 0; }
-    // appends to out; adds |band|^2 of every output sample to power (before the AGC)
-    void process(const cf32* x, size_t n, std::vector<float>& out, double& power) {
-        for (size_t i = 0; i < n; i++) {
-            hist_[(size_t)pos_] = x[i]; hist_[(size_t)(pos_ + kTaps)] = x[i];   // twice, so the window never wraps
-            if (++pos_ >= kTaps) pos_ = 0;
-            if (++phase_ < kDecim) continue;
-            phase_ = 0;
-            const cf32* w = &hist_[(size_t)pos_];   // the last kTaps samples, oldest first
-            float ar = 0, ai = 0;
-            for (int k = 0; k < kTaps; k++) {
-                const cf32 v = w[k], t = taps_[(size_t)k];
-                ar += t.real() * v.real() - t.imag() * v.imag();
-                ai += t.real() * v.imag() + t.imag() * v.real();
-            }
-            const float mag2 = ar * ar + ai * ai;
-            power += mag2;
-            const float mag = std::sqrt(mag2);
-            env_ += (mag > env_ ? 0.01f : 0.0001f) * (mag - env_);   // fast attack, slow release
-            const float g = 0.5f / (env_ + 1e-9f);
-            out.push_back(std::max(-1.f, std::min(1.f, ar * g)));
-        }
-    }
-private:
-    std::vector<cf32> taps_, hist_;
-    int pos_ = 0, phase_ = 0;
-    float env_ = 0;
-};
-
-// FreeDV's speech: 8 kHz mono -> 48 kHz stereo for the sound card (polyphase interpolation by 6, pass band up to 3.6 kHz)
-class Upsample6 {
-public:
-    static constexpr int kUp = 6, kPerPhase = 24;
-    Upsample6() {
-        const auto lp = hfdig::lowpass(kUp * kPerPhase, 3600.0 / (kUp * kHfdigAudioRate), 7.0);
-        for (int p = 0; p < kUp; p++)
-            for (int k = 0; k < kPerPhase; k++) taps_[p][k] = (float)(kUp * lp[(size_t)(p + kUp * k)]);
-        reset();
-    }
-    void reset() { for (auto& v : hist_) v = 0; pos_ = 0; }
-    void process(const float* x, size_t n, std::vector<float>& stereo) {
-        for (size_t i = 0; i < n; i++) {
-            hist_[pos_] = x[i]; hist_[pos_ + kPerPhase] = x[i];
-            if (++pos_ >= kPerPhase) pos_ = 0;
-            const float* w = &hist_[pos_];   // oldest first: w[kPerPhase - 1] is x[i]
-            for (int p = 0; p < kUp; p++) {
-                float s = 0;
-                for (int k = 0; k < kPerPhase; k++) s += taps_[p][k] * w[kPerPhase - 1 - k];
-                stereo.push_back(s); stereo.push_back(s);
-            }
-        }
-    }
-private:
-    float taps_[kUp][kPerPhase] = {};
-    float hist_[2 * kPerPhase] = {};
-    int pos_ = 0;
-};
-
-} // namespace
 
 struct HfdigReceiver::Impl {
     std::mutex mu;                         // guards the members up to pub
@@ -114,7 +41,8 @@ struct HfdigReceiver::Impl {
     double power = 0, audioPower = 0;      // sum of |x|^2 of the input and of the sideband since the last report
     int64_t nPower = 0, nAudio = 0;
     marine::Front front;
-    UsbAudio usb;
+    hfdig::UsbAudio usb;
+    hfdig::Listen listen;                  // "Listen": the sideband audio on the sound card (off by default)
     std::vector<cf32> base;
     std::vector<float> audio;
     std::unique_ptr<HfdigRtty> rtty = makeRttyDecoder();
@@ -124,7 +52,7 @@ struct HfdigReceiver::Impl {
     HfdigDecoder* decoders[4] = {rtty.get(), sstv.get(), freedv.get(), ftx.get()};
     std::atomic<int> decMask{15};          // setDecoders(): which of the four run
     std::function<void(const float*, size_t)> audioTap, speechTap;
-    Upsample6 up;
+    hfdig::Upsample6 up;
     std::vector<float> pcm;
     std::unique_ptr<AudioOut> audioOut;
 
@@ -145,6 +73,7 @@ struct HfdigReceiver::Impl {
         base.clear(); audio.clear(); pcm.clear();
         for (HfdigDecoder* d : decoders) d->reset();
         if (audioOut) audioOut->flush();
+        listen.reset();
         if (cb && curRate > 0) cb("HF digital: listening to the sideband audio for RTTY, SSTV, FreeDV, FT8, FT4, FT2 and WSPR");
     }
 
@@ -218,6 +147,7 @@ void HfdigReceiver::feed(const cf32* x, size_t n) {
             if (m.audioTap) m.audioTap(m.audio.data(), m.audio.size());
             const int dm = m.decMask.load();
             for (int k = 0; k < 4; k++) if (dm & (1 << k)) m.decoders[k]->feedAudio(m.audio.data(), m.audio.size());
+            if (dm != 4) m.listen.play(m.audio.data(), m.audio.size());   // FreeDV alone plays its speech instead
         }
     }
     // about four reports a second of signal
@@ -234,9 +164,12 @@ bool HfdigReceiver::telemetry(HfdigTelemetry& out, uint64_t lastSeq) {
     return true;
 }
 void HfdigReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
-void HfdigReceiver::setVolume(float v) { p_->volume = std::max(0.f, std::min(1.f, v)); }
-void HfdigReceiver::setMuted(bool m) { p_->muted = m; }
-void HfdigReceiver::setSilent(bool s) { p_->silent = s; }
+void HfdigReceiver::setVolume(float v) { p_->volume = std::max(0.f, std::min(1.f, v)); p_->listen.volume = p_->volume.load(); }
+void HfdigReceiver::setMuted(bool m) { p_->muted = m; p_->listen.muted = m; }
+void HfdigReceiver::setSilent(bool s) { p_->silent = s; p_->listen.silent = s; }
+void HfdigReceiver::setListen(bool on) { p_->listen.on = on; }
+bool HfdigReceiver::listening() const { return p_->listen.on.load(); }
+void HfdigReceiver::setListenTap(std::function<void(const float* x, size_t n)> cb) { p_->listen.setTap(std::move(cb)); }
 void HfdigReceiver::setAudioTap(std::function<void(const float* x, size_t n)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->audioTapSet = std::move(cb); p_->tapsReq = true; }
 void HfdigReceiver::setSpeechTap(std::function<void(const float* x, size_t n)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->speechTapSet = std::move(cb); p_->tapsReq = true; }
 

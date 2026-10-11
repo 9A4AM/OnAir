@@ -104,6 +104,31 @@ int main() {
         CHECK(dec->baudIndex() == 2 && dec->shiftIndex() == 4, "settings 2");
     }
 
+    {   // "Listen": the same samples into two receivers, one listening (silent, through the tap): the same text, 8000 audio samples a second
+        const double rate = 1e6, secs = 12;
+        SynthConfig sc;
+        sc.mode = 27; sc.snrDb = 20; sc.modeOpt[0] = 0;
+        auto syn = makeModeSynth(27, sc, rate);
+        HfdigReceiver off, on;
+        size_t heard = 0;
+        bool inRange = true;
+        for (HfdigReceiver* r : {&off, &on}) { r->setSilent(true); r->setDecoders(1); r->configure(rate); r->setSignalOffset(-hfdigTuning().tuneOffsetHz); }
+        CHECK(!off.listening(), "Listen should be off by default");
+        on.setListen(true);
+        on.setListenTap([&](const float* x, size_t n) { heard += n; for (size_t i = 0; i < n; i++) inRange &= x[i] >= -1.f && x[i] <= 1.f; });
+        std::vector<cf32> v(100000);
+        for (int k = 0; k < (int)std::lround(secs * rate / (double)v.size()); k++) {
+            syn->generate(v.data(), v.size());
+            off.feed(v.data(), v.size());
+            on.feed(v.data(), v.size());
+        }
+        HfdigTelemetry a, b;
+        off.telemetry(a, 0); on.telemetry(b, 0);
+        printf("listen: %zu audio samples in %.0f s, text %s (%zu characters)\n", heard, secs, a.rtty.text == b.rtty.text ? "the same" : "DIFFERENT", b.rtty.text.size());
+        CHECK(on.listening() && std::fabs((double)heard - secs * 8000) < 400 && inRange, "listen audio: %zu samples", heard);
+        CHECK(!a.rtty.text.empty() && a.rtty.text == b.rtty.text && a.rtty.chars == b.rtty.chars, "text with listen \"%s\" vs without \"%s\"", b.rtty.text.c_str(), a.rtty.text.c_str());
+    }
+
     // through the engine
     Engine e;
     e.hfdig().setSilent(true);

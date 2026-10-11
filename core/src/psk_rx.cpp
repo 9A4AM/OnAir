@@ -4,6 +4,7 @@
 #include "dect2/psk_varicode.h"
 #include "dect2/cw_morse.h"
 #include "dect2/marine_dsp.h"
+#include "ham_listen.h"
 #include "dect2/fftutil.h"
 #include <algorithm>
 #include <atomic>
@@ -80,6 +81,7 @@ struct PskReceiver::Impl {
     double nextReport = 0;
     double power = 0; int64_t nPower = 0;
     marine::Front front;
+    hfdig::Listen listen;        // "Listen": the sideband on the sound card (off by default)
     std::vector<cf32> base, fftIn;
     Fft fft{kN};
     std::vector<float> win, held, acc;
@@ -122,6 +124,7 @@ struct PskReceiver::Impl {
         nIn = nBase = 0; nextReport = 0; power = 0; nPower = 0;
         running = curRate >= pskTuning().minSampleRate - 1;
         if (running) { front.configure(curRate); front.setOffsetHz(off); }
+        listen.reset();
         base.clear(); fftIn.clear();
         const int W = kHiBin - kLoBin + 1;
         held.assign((size_t)W, 0.f); acc.assign((size_t)W, 0.f); accN = 0; frames = 0; floorLin = 0;
@@ -431,6 +434,7 @@ void PskReceiver::feed(const cf32* x, size_t n) {
         m.base.clear();
         m.front.process(x, n, m.base);
         for (cf32& v : m.base) if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
+        m.listen.playBase(m.base.data(), m.base.size());   // a copy to the sound card only while listening
         m.process(m.base.data(), m.base.size());
     }
     while ((double)m.nIn >= m.nextReport) {
@@ -445,6 +449,12 @@ bool PskReceiver::telemetry(PskTelemetry& out, uint64_t lastSeq) {
     out = p_->pub;
     return true;
 }
+void PskReceiver::setListen(bool on) { p_->listen.on = on; }
+bool PskReceiver::listening() const { return p_->listen.on.load(); }
+void PskReceiver::setVolume(float v) { p_->listen.volume = std::max(0.f, std::min(1.f, v)); }
+void PskReceiver::setMuted(bool m) { p_->listen.muted = m; }
+void PskReceiver::setSilent(bool s) { p_->listen.silent = s; }
+void PskReceiver::setListenTap(std::function<void(const float* x, size_t n)> cb) { p_->listen.setTap(std::move(cb)); }
 void PskReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void PskReceiver::setMode(int m) { p_->modeReq = std::max(0, std::min(kPskModes - 1, m)); }
 void PskReceiver::setFocusHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->focusReq = true; p_->focusHz = hz; }

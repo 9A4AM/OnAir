@@ -28,6 +28,8 @@ struct State {
     float pushedVol = -1;
     bool pushedMute = false;
     bool tapSet = false;
+    bool listen = false, listenLoaded = false;   // "Listen": off until switched on
+    int pushedListen = -1;
     // the audio spectrum (UI thread): 1024-point frames every 512 samples, four of them averaged into one display row
     std::vector<float> pend;             // audio not yet analysed
     std::vector<float> acc;              // power sum of the frames of the row being built (bins 0 .. 4000 Hz)
@@ -138,6 +140,8 @@ void tick(App& a) {
         a.engine.hfdig().setMuted(a.muted);
         S.pushedVol = a.volume; S.pushedMute = a.muted;
     }
+    if (!S.listenLoaded) { S.listenLoaded = true; S.listen = plat::prefs().getB("hfdigListen", false); }
+    if (run && (!S.wasRunning || (int)S.listen != S.pushedListen)) { a.engine.hfdig().setListen(S.listen); S.pushedListen = S.listen; }
     if (run && a.rx.standard == 26) {
         if (!S.tapSet) {   // the 8 kHz audio for the spectrum, handed over from the receiver thread
             S.tapSet = true;
@@ -153,6 +157,10 @@ void tick(App& a) {
 }
 
 void tab(App& a) {
+    if (decMask(a) != 4) {   // FreeDV plays its own speech; the other decoders are silent unless Listen is on
+        listenControls(a, S.listen, "hfdigListen", "hfdig", "Play the sideband audio the decoders hear (dial + 200 Hz to 3.8 kHz); decoding is the same either way");
+        flowEnd();
+    }
     if (const int m = decMask(a); m != 15) {   // one protocol entry: only its own view
         const dect2::HfdigTelemetry& t = a.rx.hfdig;
         if (m == 1) hfdigRttyTab(a, t);

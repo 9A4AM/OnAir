@@ -403,3 +403,22 @@ void lossTooltip(const SampleLoss& l) {
     ImGui::PopTextWrapPos();
     ImGui::EndTooltip();
 }
+
+bool listenControls(App& a, bool& on, const char* prefKey, const char* id, const char* tip) {
+    char lbl[48];
+    snprintf(lbl, sizeof lbl, "Listen##%s", id);
+    const bool changed = ImGui::Checkbox(lbl, &on);
+    if (changed) plat::prefs().setB(prefKey, on);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tip);
+    if (!on) return changed;
+    flowNext(6 * gUi);
+    ImGui::PushID(id);
+    if (iconFlat(a.muted ? Ic::Mute : Ic::Speaker, a.muted ? "Unmute" : "Mute")) a.muted = !a.muted;
+    ImGui::SameLine(0, 4 * gUi);
+    ImGui::SetNextItemWidth(90 * gUi);
+    float vol = a.volume * 100.f;
+    if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) a.volume = vol / 100.f;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Volume (shared with the other modes)");
+    ImGui::PopID();
+    return changed;
+}

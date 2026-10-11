@@ -47,10 +47,14 @@ public:
     bool telemetry(HfdigTelemetry& out, uint64_t lastSeq);
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
-    // Sound (volume, mute) as in FmReceiver; the app pushes its shared controls here. Only FreeDV makes sound.
+    // Sound (volume, mute) as in FmReceiver; the app pushes its shared controls here. FreeDV plays its speech; the other decoders are
+    // silent unless setListen(true), which plays the sideband audio they decode (not while FreeDV runs alone).
     void setVolume(float v);                             // 0 .. 1
     void setMuted(bool m);
     void setSilent(bool s);                              // decode but do not open the sound device (tests, command line)
+    void setListen(bool on);                             // "Listen": the 8 kHz sideband audio on the sound card (default off)
+    bool listening() const;
+    void setListenTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz audio Listen plays (also when silent)
     void setAudioTap(std::function<void(const float* x, size_t n)> cb);    // tests: the demodulated 8 kHz audio, called from feed()
     void setSpeechTap(std::function<void(const float* x, size_t n)> cb);   // tests: FreeDV's 8 kHz speech, called from feed()
     HfdigFtx& ftx();                                     // FT8 / FT4 / FT2 / WSPR: settings and the slot clock (thread safe, hfdig_ftx.h)

@@ -20,6 +20,7 @@ struct State {
     bool en[3] = {true, true, true};
     bool pushed[3] = {false, false, false};
     bool wasRunning = false, loaded = false;
+    bool listen = false; int pushedListen = -1; float pushedVol = -1; bool pushedMute = false;   // "Listen": off until switched on
     int view = 0;                        // 0 frames, 1 messages, 2 stations, 3 map
     static constexpr int kRows = 140;
     int bins = 0;
@@ -41,6 +42,7 @@ void load() {
     S.loaded = true;
     for (int m = 0; m < 3; m++) { char k[24]; snprintf(k, sizeof k, "js8Sub%d", m); S.en[m] = plat::prefs().getB(k, true); }
     S.map.zoom = (int)plat::prefs().getI("js8Zoom", 4);
+    S.listen = plat::prefs().getB("js8Listen", false);
 }
 
 void utcText(double t, char* out, size_t n) {
@@ -78,6 +80,8 @@ void presets(App& a) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tips[m]);
         flowNext(6 * gUi);
     }
+    listenControls(a, S.listen, "js8Listen", "js8", "Play the sideband (dial + 200 Hz to 3.8 kHz) on the sound card; decoding is the same either way");
+    flowNext(8 * gUi);
     if (ImGui::Button("Clear##js8")) a.engine.js8().clearDecodes();
     flowEnd();
 }
@@ -273,6 +277,11 @@ void tick(App& a) {
     if (live(a)) follow(a.rx.js8);
     dect2::Js8Receiver& r = a.engine.js8();
     for (int m = 0; m < 3; m++) if (!S.wasRunning || S.en[m] != S.pushed[m]) { r.setEnabled(m, S.en[m]); S.pushed[m] = S.en[m]; }
+    if (!S.wasRunning || (int)S.listen != S.pushedListen) { r.setListen(S.listen); S.pushedListen = S.listen; }
+    if (!S.wasRunning || a.volume != S.pushedVol || a.muted != S.pushedMute) {   // the sound controls are shared with the other modes
+        r.setVolume(a.volume); r.setMuted(a.muted);
+        S.pushedVol = a.volume; S.pushedMute = a.muted;
+    }
     S.wasRunning = true;
 }
 

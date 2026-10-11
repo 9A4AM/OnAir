@@ -103,6 +103,28 @@ int main() {
         CHECK(hasDecode(t, "OH2AA: @HB HEARTBEAT KP20", "fast +1.0"), "fast offsets");
         CHECK(hasDecode(t, "OH3BB: @HB HEARTBEAT KP21", "turbo -0.5"), "turbo offsets");
     }
+    {   // "Listen": the same samples into two receivers, one listening (silent, through the tap): the same decodes, 8000 audio samples a second
+        Js8GenConfig c;
+        c.rate = kRate; c.dialOffsetHz = kOff; c.stations = {hb("LY2ABC", "KO24", 1200, -6)}; c.seed = 7; c.slotPhaseSec = 0;
+        Js8Generator g(c);
+        Js8Receiver off, on;
+        for (Js8Receiver* r : {&off, &on}) { r->setStartTime(0); r->configure(kRate); r->setSignalOffset(kOff); r->setSilent(true); }
+        CHECK(!off.listening(), "Listen should be off by default");
+        on.setListen(true);
+        size_t heard = 0;
+        on.setListenTap([&](const float*, size_t n) { heard += n; });
+        const double secs = 16;
+        std::vector<cf32> x(25000);
+        for (double t = 0; t < secs - 1e-9; t += 0.1) { g.generate(x.data(), x.size()); off.feed(x.data(), x.size()); on.feed(x.data(), x.size()); }
+        off.waitIdle(); on.waitIdle();
+        Js8Telemetry a, b;
+        off.telemetry(a, 0); on.telemetry(b, 0);
+        bool same = a.decodes.size() == b.decodes.size();
+        for (size_t i = 0; same && i < a.decodes.size(); i++) same = a.decodes[i].text == b.decodes[i].text && a.decodes[i].hz == b.decodes[i].hz;
+        printf("  listen: %zu audio samples in %.0f s, %zu decodes %s\n", heard, secs, b.decodes.size(), same ? "the same" : "DIFFERENT");
+        CHECK(std::fabs((double)heard - secs * 8000) < 400, "listen audio: %zu samples", heard);
+        CHECK(!a.decodes.empty() && same, "decodes with listen differ");
+    }
     {   // noise only
         const Js8Telemetry t = run({}, 31);
         printf("  noise only: %zu decodes, %llu slots\n", t.decodes.size(), (unsigned long long)(t.slots[0] + t.slots[1] + t.slots[2]));

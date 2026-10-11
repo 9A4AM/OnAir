@@ -3,6 +3,7 @@
 #include "dect2/js8_tel.h"
 #include "dect2/js8_proto.h"
 #include "dect2/marine_dsp.h"
+#include "ham_listen.h"
 #include "dect2/fftutil.h"
 #include <algorithm>
 #include <atomic>
@@ -276,6 +277,7 @@ struct Js8Receiver::Impl {
     double curRate = 0;
     bool running = false;
     marine::Front front;
+    hfdig::Listen listen;        // "Listen": the sideband on the sound card (off by default)
     std::vector<cf32> base;
     std::vector<float> lp;
     cf32 hist[2 * kTaps] = {};
@@ -333,6 +335,7 @@ struct Js8Receiver::Impl {
         { std::lock_guard<std::mutex> lk(mu); curRate = rate; off = offsetHz; cb = log; st = startReq; }
         running = curRate >= js8Tuning().minSampleRate - 1;
         if (running) { front.configure(curRate); front.setOffsetHz(off); }
+        listen.reset();
         base.clear(); buf.clear(); bufStart = 0; n4 = 0; histPos = 0; decPhase = 0; rot = 1; rotN = 0;
         std::fill(std::begin(hist), std::end(hist), cf32(0, 0));
         nIn = 0; nextReport = 0; power = 0; nPower = 0;
@@ -617,6 +620,7 @@ void Js8Receiver::feed(const cf32* x, size_t n) {
         m.base.clear();
         m.front.process(x, n, m.base);
         for (cf32& v : m.base) if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
+        m.listen.playBase(m.base.data(), m.base.size());   // a copy to the sound card only while listening
         m.process(m.base.data(), m.base.size());
         if (m.flushReq.exchange(false)) m.schedule(true);
     }
@@ -632,6 +636,12 @@ bool Js8Receiver::telemetry(Js8Telemetry& out, uint64_t lastSeq) {
     out = p_->pub;
     return true;
 }
+void Js8Receiver::setListen(bool on) { p_->listen.on = on; }
+bool Js8Receiver::listening() const { return p_->listen.on.load(); }
+void Js8Receiver::setVolume(float v) { p_->listen.volume = std::max(0.f, std::min(1.f, v)); }
+void Js8Receiver::setMuted(bool m) { p_->listen.muted = m; }
+void Js8Receiver::setSilent(bool s) { p_->listen.silent = s; }
+void Js8Receiver::setListenTap(std::function<void(const float* x, size_t n)> cb) { p_->listen.setTap(std::move(cb)); }
 void Js8Receiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void Js8Receiver::setEnabled(int m, bool on) { if (m >= 0 && m < 3) p_->enabled[m] = on; }
 void Js8Receiver::setStartTime(double utc) { std::lock_guard<std::mutex> lk(p_->mu); p_->startReq = utc; p_->resetReq = true; }

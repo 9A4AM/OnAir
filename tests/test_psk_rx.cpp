@@ -120,6 +120,26 @@ int main() {
         CHECK(f && std::fabs(f->offsetHz - 2500) < 15, "focus %.0f", f ? f->offsetHz : -1);
         if (f) CHECK(f->text.find("LA1XYZ") != std::string::npos, "focus text \"%s\"", f->text.c_str());
     }
+    {   // "Listen": the same samples into two receivers, one listening (silent, through the tap): the same text, 8000 audio samples a second
+        PskGenConfig c;
+        c.rate = kRate; c.dialOffsetHz = kOff; c.signals = {sig(1000, "CQ CQ DE LY2ABC LY2ABC KO24 K\n", 12)}; c.seed = 9;
+        PskGenerator g(c);
+        PskReceiver off, on;
+        for (PskReceiver* r : {&off, &on}) { r->configure(kRate); r->setSignalOffset(kOff); r->setSilent(true); }
+        CHECK(!off.listening(), "Listen should be off by default");
+        on.setListen(true);
+        size_t heard = 0;
+        on.setListenTap([&](const float*, size_t n) { heard += n; });
+        const double secs = 8;
+        std::vector<cf32> x(25000);
+        for (double t = 0; t < secs - 1e-9; t += 0.1) { g.generate(x.data(), x.size()); off.feed(x.data(), x.size()); on.feed(x.data(), x.size()); }
+        PskTelemetry a, b;
+        off.telemetry(a, 0); on.telemetry(b, 0);
+        const PskSignal* sa = near(a, 1000); const PskSignal* sb = near(b, 1000);
+        printf("  listen: %zu audio samples in %.0f s, text \"%s\"\n", heard, secs, sb ? sb->text.c_str() : "-");
+        CHECK(std::fabs((double)heard - secs * 8000) < 400, "listen audio: %zu samples", heard);
+        CHECK(sa && sb && !sa->text.empty() && sa->text == sb->text && a.signals.size() == b.signals.size(), "text with listen differs");
+    }
     {   // noise only: no signals that make text
         const PskTelemetry t = run({}, 12);
         uint64_t chars = 0;

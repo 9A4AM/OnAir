@@ -426,6 +426,9 @@ void lossTooltip(const SampleLoss& l);
 // what it is, how to install it here, where to put it, a link to the full page and "Look again"
 enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe };
 void codecHelpButton(CodecHelp c);
+// "Listen" for a decoder mode that is silent by default (HF digital, PSK, JS8Call): the switch, remembered under prefKey, then the shared
+// mute and volume, in a flow row (widgets.cpp). True when the switch changed.
+bool listenControls(App& a, bool& on, const char* prefKey, const char* id, const char* tip);
 // rows that wrap in a narrow window: flowNext() between the groups of a row (a label and its control, a lamp, a read-out) instead of
 // ImGui::SameLine(); the next group stays on the line if it fits (as wide as in the last frame). flowBreak() ends the line, like NewLine().
 bool flowNext(float spacing = -1);   // true: on the same line
