@@ -265,6 +265,11 @@ private:
     int logS1_ = -1, logS2_ = -1, logGi_ = -2, logState_ = -1, logFrameSyms_ = 0;
 
     IqRing ring_;
+    // The log is declared before every receiver: members are destroyed in reverse order, and receiver worker
+    // threads (joined in the receivers' destructors) may still log until then.
+    std::mutex logMu_;
+    std::vector<std::string> log_;
+    std::chrono::steady_clock::time_point t0_;
     IqRecorder rec_;
     std::unique_ptr<IqSource> src_;
     SpectrumAnalyzer analyzer_{4096};
@@ -382,9 +387,6 @@ private:
     std::mutex specMu_;
     SpectrumFrame spec_;
 
-    std::mutex logMu_;
-    std::vector<std::string> log_;
-    std::chrono::steady_clock::time_point t0_;
 };
 
 // One protocol of a shared receiver as its own mode (mode_tuning.h): runs that receiver with only this protocol's decoder.
