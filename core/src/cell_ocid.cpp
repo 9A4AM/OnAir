@@ -79,6 +79,15 @@ const OcidEntry* OcidCache::get(const OcidCellKey& k, int64_t now) const {
     return &it->second;
 }
 
+const OcidEntry* OcidCache::findSite(const OcidCellKey& k) const {
+    if (k.radio != "LTE") return nullptr;
+    for (const auto& kv : m_) {
+        const OcidCellKey& o = kv.first;
+        if (kv.second.r.status == OcidStatus::Found && o.radio == k.radio && o.mcc == k.mcc && o.mnc == k.mnc && (o.cell >> 8) == (k.cell >> 8)) return &kv.second;
+    }
+    return nullptr;
+}
+
 void OcidCache::put(const OcidCellKey& k, const OcidResult& r, int64_t now) {
     if (r.status != OcidStatus::Found && r.status != OcidStatus::NotFound) return;
     m_[k] = {r, now};
@@ -149,6 +158,7 @@ void OcidLookup::request(const OcidCellKey& k) {
 bool OcidLookup::lookup(const OcidCellKey& k, OcidEntry& e) {
     std::lock_guard<std::mutex> l(mu_);
     const OcidEntry* p = cache_.get(k, (int64_t)std::time(nullptr));
+    if (!p || p->r.status != OcidStatus::Found) { if (const OcidEntry* s = cache_.findSite(k)) p = s; }   // the site's position from another sector
     if (!p) return false;
     e = *p;
     return true;
@@ -164,6 +174,7 @@ void OcidLookup::run() {
     std::unique_lock<std::mutex> l(mu_);
     while (!stop_) {
         if (q_.empty() || key_.empty() || halted_) { cv_.wait(l); continue; }
+        if (probes_.count(q_.front()) && cache_.findSite(q_.front())) { queued_.erase(q_.front()); q_.pop_front(); continue; }   // the site is placed already
         const double now = std::chrono::duration<double>(clk::now() - t0).count();
         const double w = rl.waitFor(now);
         if (w > 0) { cv_.wait_for(l, std::chrono::duration<double>(w)); continue; }
@@ -179,8 +190,14 @@ void OcidLookup::run() {
         char b[160];
         if (!ok) { snprintf(b, sizeof b, "no answer from opencellid.org (offline?)"); q_.clear(); queued_.clear(); }
         else switch (r.status) {
-            case OcidStatus::Found: snprintf(b, sizeof b, "found cell %u: %d samples, range %d m", k.cell, r.samples, r.range); break;
-            case OcidStatus::NotFound: snprintf(b, sizeof b, "cell %u is not in the database (asked again tomorrow)", k.cell); break;
+            case OcidStatus::Found:
+                if (probes_.count(k)) snprintf(b, sizeof b, "site %u placed from its sector %u: %d samples, range %d m", k.cell >> 8, k.cell & 255, r.samples, r.range);
+                else snprintf(b, sizeof b, "found cell %u: %d samples, range %d m", k.cell, r.samples, r.range);
+                break;
+            case OcidStatus::NotFound:
+                if (probes_.count(k)) snprintf(b, sizeof b, "site %u: sector %u not in the database either", k.cell >> 8, k.cell & 255);
+                else snprintf(b, sizeof b, "cell %u is not in the database: trying the other sectors of site %u", k.cell, k.cell >> 8);
+                break;
             case OcidStatus::BadKey: snprintf(b, sizeof b, "the API key was refused: check it in the key field"); halted_ = true; break;
             case OcidStatus::Limit: snprintf(b, sizeof b, "daily lookup limit reached: try again tomorrow"); halted_ = true; break;
             default: snprintf(b, sizeof b, "error: %s", r.message.empty() ? "unexpected answer" : r.message.c_str()); break;
@@ -189,6 +206,16 @@ void OcidLookup::run() {
         if (r.status == OcidStatus::Found || r.status == OcidStatus::NotFound) {
             cache_.put(k, r, (int64_t)std::time(nullptr));
             if (!path_.empty()) cache_.save(path_);
+        }
+        // not found: ask for the usual sector numbers of the same site (operators number them 1-6, 11-16, 21-26 ...), which share its mast
+        if (r.status == OcidStatus::NotFound && !probes_.count(k) && k.radio == "LTE" && !cache_.findSite(k)) {
+            static const unsigned kSectors[] = {1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16, 21, 22, 23, 31, 32, 33, 41, 42, 43, 0};
+            const int64_t t = (int64_t)std::time(nullptr);
+            for (unsigned s : kSectors) {
+                OcidCellKey p = k; p.cell = (k.cell & ~255u) | s;
+                if (p.cell == k.cell || queued_.count(p) || cache_.get(p, t)) continue;
+                probes_.insert(p); queued_.insert(p); q_.push_back(p);
+            }
         }
         if (halted_) { q_.clear(); queued_.clear(); }
     }

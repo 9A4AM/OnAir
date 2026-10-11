@@ -44,6 +44,8 @@ public:
     // a found position is kept for good; "not found" for a day; errors are never stored
     const OcidEntry* get(const OcidCellKey& k, int64_t now) const;
     void put(const OcidCellKey& k, const OcidResult& r, int64_t now);
+    // an LTE cell of the same site (eNB = cell / 256, same operator) whose position is known: the sectors of a site share a mast
+    const OcidEntry* findSite(const OcidCellKey& k) const;
     bool load(const std::string& path);
     bool save(const std::string& path) const;
     size_t size() const { return m_.size(); }
@@ -80,6 +82,7 @@ private:
     OcidCache cache_;
     std::deque<OcidCellKey> q_;
     std::set<OcidCellKey> queued_;
+    std::set<OcidCellKey> probes_;     // other sectors asked for because the cell itself was not in the database
     std::mutex mu_;
     std::condition_variable cv_;
     bool stop_ = false, halted_ = false;   // halted: bad key or daily limit; cleared by a new key

@@ -58,9 +58,24 @@ int main() {
         for (int i = 0; i < 40 && (L.pending() || at.size() < 2); i++) std::this_thread::sleep_for(std::chrono::milliseconds(100));
         OcidEntry x;
         CHECK(L.lookup(k, x) && x.r.status == OcidStatus::Found && x.r.lat == 1.5, "looked up");
-        CHECK(L.lookup(k2, x) && x.r.status == OcidStatus::NotFound, "not found cached");
+        CHECK(L.lookup(k2, x) && x.r.status == OcidStatus::Found && x.r.lat == 1.5, "a sector not in the database takes its site's position");
         CHECK(at.size() == 2 && at[1] - at[0] >= 0.95, "spaced %zu", at.size());
         L.request(k); CHECK(L.pending() == 0, "cached, not asked again");
+    }
+    {
+        // a cell missing from the database: the other sectors of its site are asked for, and the first one found places the site
+        std::vector<std::string> asked;
+        OcidLookup L([&](const std::string& url, std::string& body) {
+            asked.push_back(url);
+            body = url.find("cellid=6553857") != std::string::npos ? "{\"lat\":3.5,\"lon\":4.5,\"range\":200,\"samples\":9}" : "{\"error\":\"Cell not found\",\"code\":1}";
+            return true;
+        }, "");
+        OcidCellKey m = k; m.cell = 25601 * 256 + 12;   // sector 12 of site 25601; only its sector 1 (6553857) is known
+        L.setKey("KEY"); L.request(m);
+        for (int i = 0; i < 60 && (L.pending() || asked.size() < 2); i++) std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        OcidEntry x;
+        CHECK(L.lookup(m, x) && x.r.status == OcidStatus::Found && x.r.lat == 3.5, "placed from sector 1");
+        CHECK(asked.size() == 2 && L.pending() == 0, "stops once the site is placed (%zu asked)", asked.size());
     }
     {
         int n = 0;
