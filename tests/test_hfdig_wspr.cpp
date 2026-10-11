@@ -51,6 +51,19 @@ int main() {
         for (const auto& x : d) err += std::fabs(x.snrDb + 26);
         if (!c.dial && !c.mir) CHECK(!d.empty() && err / (double)d.size() < 2.5, "SNR estimate off by %.1f dB", d.empty() ? 99.0 : err / (double)d.size());
     }
+    // a recording whose start time is unknown and not on an even minute: the slots are found from the signals (slot search); the
+    // first decodes come from the first window, the clock moves so that the later slots sit at DT 0
+    for (double startSec : {47.0, 101.5}) {
+        Faults f; f.startSec = startSec;
+        std::vector<Station> st = {{"K1ABC FN42 37", 1450, -18, 0.0}, {"G4XYZ IO91 23", 1520, -18, 0.6}};
+        HfdigFtxTelemetry t;
+        const auto d = decode(audio(M, st, 3, f, 31), M, 0, true, &t);
+        print(d);
+        int both = 0, late = 0;
+        for (const auto& s : st) both += find(d, s.msg) ? 1 : 0;
+        for (const auto& x : d) if (t.timeMode == 3 && std::fabs(x.dt) < 0.8) late++;
+        CHECK(both == 2 && t.timeMode == 3 && late >= 2, "start %.1f s into a slot: %d stations, mode %d, %d near DT 0", startSec, both, t.timeMode, late);
+    }
     {
         const auto d = decode(audio(M, {}, 2, Faults(), 21), M, kT0);
         print(d);

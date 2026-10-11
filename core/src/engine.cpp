@@ -145,6 +145,9 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     srcRate_ = src_->sampleRate();
     rate_ = srcRate_;
     live_ = src_->realtimeHardware();
+    // FT8 / WSPR slots: a live radio follows the system clock; a recording or the test signal starts anywhere in a slot, so the
+    // slots are found from the signals
+    hfdig().ftx().setSlotSearch(!live_.load());
     offMix_.set(offHz_, srcRate_);
     offResample_ = false;
     if (offHz_ > 0) {

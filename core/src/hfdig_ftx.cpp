@@ -735,8 +735,10 @@ struct HfdigFtx::Impl {
         const Spec& s = spec(m);
         const Layout l = layoutOf(m);
         const double len = s.nn * s.symSec;
-        dtMax = search ? s.period / 2 : l.dtMax;
-        dtMin = -dtMax;
+        // a slot search: windows every half period, each looking for starts over that half period and a little beyond (so that
+        // two windows cover every offset, and WSPR needs 3 minutes of audio for the first decode instead of 4)
+        dtMax = search ? s.period * 0.55 : l.dtMax;
+        dtMin = search ? -s.period * 0.05 : -dtMax;
         const double guard = 2 * s.symSec;
         a = s.t0 + dtMin - guard;
         b = s.t0 + len + dtMax + guard;
@@ -754,6 +756,7 @@ struct HfdigFtx::Impl {
             window(m, search, a, b, dtMin, dtMax);
             const double uStart = utcOfAudio(r.inputPos((double)bufBase[st]));
             const double uEnd = utcOfAudio(r.inputPos((double)(bufBase[st] + (int64_t)buf[st].size())));
+            if (std::isnan(nextSlot[m]) && search) nextSlot[m] = uStart;   // no clock yet: the first window starts with the audio
             if (std::isnan(nextSlot[m])) {
                 double S = std::floor(uStart / P) * P;
                 const double late = search ? 0.1 : 1.0;   // start mid-slot: a transmission missing more than its first second waits for the next slot
@@ -765,7 +768,7 @@ struct HfdigFtx::Impl {
                 const bool complete = uEnd >= S + b;
                 const bool partial = flushAll && uEnd > S + spec(m).t0 + 0.5 * spec(m).nn * spec(m).symSec;
                 if (!complete && !partial) break;
-                nextSlot[m] = S + P;
+                nextSlot[m] = S + (search ? P / 2 : P);
                 if (!enabled[m].load()) continue;
                 Job j;
                 j.mode = m; j.slotUtc = S; j.search = search; j.dtMin = dtMin; j.dtMax = dtMax;
@@ -891,7 +894,9 @@ struct HfdigFtx::Impl {
                 std::vector<float> dts;
                 for (const auto& d : dec) dts.push_back(d.dt);
                 std::nth_element(dts.begin(), dts.begin() + dts.size() / 2, dts.end());
-                searchShift = dts[dts.size() / 2];
+                // the transmissions start at slotUtc + t0 + DT; the clock moves so that they start at t0 into a slot of the mode's grid
+                const double P = spec(m).period, at = j.slotUtc + dts[dts.size() / 2];
+                searchShift = at - std::round(at / P) * P;
             }
             clockStats();
         }
