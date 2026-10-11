@@ -298,6 +298,7 @@ struct FmReceiver::Impl {
     std::vector<cf32> findBuf, mixBuf;
     int findFrames = 0;
     bool finding = true;
+    std::atomic<bool> autoFind{true};            // off for a live radio: the frequency the user tuned is the station, however weak
     double unlockedSecs = 0;
     double tuneHz = 0;                           // the station's frequency in the input; mixed to the centre
     cf32 mixRot = cf32(1, 0), mixStep = cf32(1, 0);
@@ -498,6 +499,7 @@ struct FmReceiver::Impl {
     void feed(const cf32* x, size_t n) {
         if (!ready || n == 0) return;
         if (const double w = chanWant.load(std::memory_order_relaxed); w != chanPass) designChan(w);   // a new width: the filter starts empty
+        if (!autoFind.load(std::memory_order_relaxed) && (finding || tuneHz != 0)) { finding = false; if (tuneHz != 0) { setTune(0); reset(); } }
         if (finding) findFeed(x, n);
         if (tuneHz != 0) {
             mixBuf.resize(n);
@@ -711,7 +713,7 @@ struct FmReceiver::Impl {
         t.state = !t.carrier ? 0 : snr >= 20 ? 2 : snr >= 10 ? 1 : 0;
         // nothing receivable for two seconds: look for the station again (a new recording, a retune that did not reset)
         unlockedSecs = t.state == 0 ? unlockedSecs + (double)sincePubN / inRate : 0;
-        if (unlockedSecs > 2 && !finding) { restartFinder(); }
+        if (unlockedSecs > 2 && !finding && autoFind.load(std::memory_order_relaxed)) { restartFinder(); }
         if (!t.carrier) { t.stereo = false; t.pilotPct = 0; }
         t.mpxMaxHz = 80000.f;
         const int nb = (int)(80e3 / binHz);
@@ -743,6 +745,8 @@ void FmReceiver::setDeemphasis(double us) {
     p_->deemphUs = us;
     if (p_->ready) { p_->deL.configure(us, p_->fa); p_->deR.configure(us, p_->fa); }
 }
+void FmReceiver::setStationFinder(bool on) { p_->autoFind = on; }
+
 void FmReceiver::setChannelWidth(double hz) {
     p_->chanWant = hz > 0 ? std::min(kMaxChannelWidthHz, std::max(kMinChannelWidthHz, hz)) * 0.5 : kChanPass;
 }

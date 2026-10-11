@@ -27,6 +27,7 @@ public:
     // strong neighbour out at the cost of distortion on loud passages and of RDS; it takes effect with the next samples (any thread).
     static constexpr double kDefaultChannelWidthHz = 220e3, kMinChannelWidthHz = 100e3, kMaxChannelWidthHz = 300e3;
     void setChannelWidth(double hz);
+    void setStationFinder(bool on);                      // look for a station off the centre and move to it (recordings); off for a live radio
     double channelWidth() const;
     void setSilent(bool s);                              // decode but do not open the sound device (tests, command line)
     // Tests: the demodulated audio (left, right) at 48 kHz, called from feed()
