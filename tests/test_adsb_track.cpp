@@ -401,6 +401,47 @@ static void testCommBWind() {
     CHECK(!a.hasRa, "RA still shown after a minute");
 }
 
+static void testCommBWeatherDf21() {
+    const uint32_t icao = 0x4CA7B2;
+    uint8_t m44[7], m45[7];
+    adsb::mbMetRoutine(m44, 1, 45, 280.0, -52.25, 227, 1, 30.0);   // fits 36000 ft
+    adsb::mbMetHazard(m45, 2, -1, -1, 1, -1, -52.0, 227, -1);
+    // a tracked altitude 5 s old (ADS-B position): both decode from identity replies
+    AdsbTracker tr;
+    feed(tr, raw(adsb::encodeAirbornePosition(icao, 5, 11, 36000, false, false, 54.7, 25.3), 1.0));
+    feed(tr, raw(adsb::encodeCommB(icao, true, 0, 1200, m44), 6.0));
+    feed(tr, raw(adsb::encodeCommB(icao, true, 0, 1200, m45), 6.5));
+    AdsbAircraft a = get(tr, icao, 7.0);
+    CHECK(a.hasWindRep && a.windRepKt == 45 && a.hasPressure && a.pressureHpa == 227 && a.icing == 1 && a.turbulence == 2, "DF21 weather with a tracked altitude: wind %d icing %d", a.hasWindRep, a.icing);
+    // the altitude of a DF4 reply counts as well
+    AdsbTracker t4;
+    feed(t4, raw(adsb::encodeIdentification(icao, 5, 4, 3, "TEST21"), 1.0));
+    feed(t4, raw(adsb::encodeAltitudeReply(icao, 0, 36000, false), 2.0));
+    feed(t4, raw(adsb::encodeCommB(icao, true, 0, 1200, m44), 3.0));
+    a = get(t4, icao, 3.0);
+    CHECK(a.hasWindRep, "DF21 weather with a DF4 altitude refused");
+    // no altitude at all: refused
+    AdsbTracker t0;
+    feed(t0, raw(adsb::encodeIdentification(icao, 5, 4, 3, "TEST21"), 1.0));
+    feed(t0, raw(adsb::encodeCommB(icao, true, 0, 1200, m44), 2.0));
+    feed(t0, raw(adsb::encodeCommB(icao, true, 0, 1200, m45), 2.5));
+    a = get(t0, icao, 3.0);
+    CHECK(!a.hasWindRep && !a.hasSat && a.icing == -1, "DF21 weather without an altitude accepted");
+    // a stale altitude (40 s): refused
+    AdsbTracker ts;
+    feed(ts, raw(adsb::encodeAirbornePosition(icao, 5, 11, 36000, false, false, 54.7, 25.3), 1.0));
+    feed(ts, raw(adsb::encodeIdentification(icao, 5, 4, 3, "TEST21"), 40.0));   // keeps the address known
+    feed(ts, raw(adsb::encodeCommB(icao, true, 0, 1200, m44), 41.0));
+    a = get(ts, icao, 41.0);
+    CHECK(a.messages >= 3 && !a.hasWindRep, "DF21 weather with a stale altitude accepted (messages %u)", a.messages);
+    // a wrong altitude: the 36000 ft report is refused at 5000 ft
+    AdsbTracker tw;
+    feed(tw, raw(adsb::encodeAirbornePosition(icao, 5, 11, 5000, false, false, 54.7, 25.3), 1.0));
+    feed(tw, raw(adsb::encodeCommB(icao, true, 0, 1200, m44), 2.0));
+    a = get(tw, icao, 2.0);
+    CHECK(!a.hasWindRep, "DF21 weather that does not fit the tracked altitude accepted");
+}
+
 int main() {
     testPublishedMessages();
     testChecks();
@@ -410,6 +451,7 @@ int main() {
     testStatus();
     testExpiryAndLimits();
     testCommBWind();
+    testCommBWeatherDf21();
     printf(fails ? "adsb_track: %d FAILED\n" : "adsb_track: all passed\n", fails);
     return fails ? 1 : 0;
 }

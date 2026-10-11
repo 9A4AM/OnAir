@@ -289,7 +289,7 @@ void AdsbTracker::applyMsg(Rec& r, const AdsbFrame& f) {
     if (m.hasAlt) {
         if (m.altGnss) { a.hasGeoAlt = true; a.geoAltFt = m.altFt; }
         else {
-            a.hasAlt = true; a.altFt = m.altFt;
+            a.hasAlt = true; a.altFt = m.altFt; r.baroAltTime = now;
             if (f.df == 17 || f.df == 18) { r.altTime = now; r.trustedAltFt = m.altFt; }   // checked by the CRC itself: the yardstick for replies
         }
     }
@@ -319,7 +319,12 @@ void AdsbTracker::applyMsg(Rec& r, const AdsbFrame& f) {
         else airbornePosition(r, m, now);
     }
     // Comm-B
-    const CommB& c = m.commb;
+    // An identity reply (DF21) has no altitude of its own: the weather registers are tried with the aircraft's last barometric altitude
+    // when it is at most 30 s old, and refused without one
+    CommB cb21;
+    const bool alt21 = f.df == 21 && a.hasAlt && now - r.baroAltTime <= 30.0;
+    if (alt21) cb21 = inferCommB(f.bytes + 4, a.altFt);
+    const CommB& c = alt21 ? cb21 : m.commb;
     if (c.bds == 0x20) a.callsign = c.callsign;
     if (c.bds == 0x40) {
         if (c.hasSelAlt) { a.hasSelAlt = true; a.selAltFt = c.selAltMcpFt; }

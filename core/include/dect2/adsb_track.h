@@ -78,7 +78,7 @@ private:
         int rejects = 0;
         int emergencyTc = 0;     // from type code 28
         int emergencySq = 0;     // from the squawk
-        double altTime = -1e9; int trustedAltFt = 0;      // the last altitude from an ADS-B message
+        double altTime = -1e9; int trustedAltFt = 0; double baroAltTime = -1e9;   // baroAltTime: any barometric altitude (DF0/4/16/17/18/20)      // the last altitude from an ADS-B message
         int pendingSquawk = -1; double pendingTime = 0;   // a changed squawk from a reply, waiting for a second one
         adsb::CommB c50, c60; double t50 = -1e9, t60 = -1e9;     // the last 5,0 and 6,0, for the derived wind and temperature
         double windE = 0, windN = 0, tWind = -1e9;               // smoothed derived wind vector (towards, kt)
