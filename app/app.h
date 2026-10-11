@@ -209,7 +209,6 @@ struct App {
     bool fmMode = false;      // FM radio (family 5)
     bool newUi = true;        // the new interface (ui2.cpp) instead of the classic one (View > Classic interface)
     struct FamGain { int lna = 32, vga = 20; bool amp = true, known = false; } famGain[kNumSlots];   // the radio gains remembered for each mode
-    bool famBias[kNumSlots] = {};    // antenna power per mode while the app runs (never saved: it starts off)
     double famFreq[kNumSlots] = {};  // the frequency each of the modes added after FM was last tuned to (0 = never)
     int uiVariant = 0;        // layout of the new interface: 0 sidebar (the default), 1 scope, 2 tiles, 3 faceplate, 4-6 scope children, 7 panel
     int uiTheme = 1;          // its palette: 0 terminal, 1 instrument, 2 mono
@@ -448,7 +447,7 @@ void setFamily(App& a, int f);                 // a family with protocol entries
 void setMode(App& a, int f, int sub);          // a mode-list entry: family and protocol entry (0 none, or the family's first)
 const dect2::SubMode* curSub(const App& a);    // the protocol entry selected, nullptr for a mode without them
 int subIndexOf(const char* id);                // 1 .. kNumSubModes, 0 when not one
-int modeSlot(const App& a);                    // index of famFreq / famGain / famBias for the current entry
+int modeSlot(const App& a);                    // index of famFreq / famGain for the current entry
 int engineStd(const App& a);
 void refreshDevices(App& a);
 void applyBandwidth(App& a);
