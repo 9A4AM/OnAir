@@ -30,6 +30,13 @@ public:
     void setOffline(bool on);
     void flush();                        // waits until every burst found so far is demodulated and decoded
     // Every burst with a unique word, with its frame (tool output, tests). Called on the worker thread.
+    // iridium-toolkit: writes every burst with a unique word (downlink, uplink, simplex) as a gr-iridium iridium-extractor "RAW:" line
+    // (iridium_bits.h). Timestamps: the wall clock when writing started plus the receiver's sample clock since then.
+    bool startBitsFile(const std::string& path, std::string* err = nullptr);
+    void stopBitsFile();
+    bool bitsFileOpen() const;
+    uint64_t bitsLines() const;
+    std::string bitsPath() const;
     void setBurstCallback(std::function<void(const IridiumBurstBits&, const IridiumFrame&)> cb);
 
 private:

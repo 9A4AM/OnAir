@@ -24,6 +24,8 @@ struct State {
     float thrDb = 13.f;
     double pushedCenter = 0;
     float pushedThr = -1;
+    char bitsName[256] = "output.bits";   // iridium-toolkit file, in the recordings folder unless a full path is typed
+    std::string bitsErr;
 };
 State S;
 
@@ -35,6 +37,8 @@ void loadState() {
     plat::Prefs& d = plat::prefs();
     S.map.zoom = (int)d.getI("iridiumZoom", 4);
     S.thrDb = (float)d.getD("iridiumThr", 13.0);
+    const std::string bn = d.getS("iridiumBitsName", "output.bits");
+    snprintf(S.bitsName, sizeof S.bitsName, "%s", bn.empty() ? "output.bits" : bn.c_str());
 }
 
 ImU32 satColour(int id, float alpha = 1.f) {
@@ -528,13 +532,51 @@ void tick(App& a) {
     if (S.pushedThr != S.thrDb) { r.setThresholdDb(S.thrDb); S.pushedThr = S.thrDb; }
 }
 
+// Save for iridium-toolkit: every burst as a gr-iridium "RAW:" line (.bits). The toolkit's iridium-parser.py turns it into
+// output.parsed; anything further (voice included) is done with the toolkit, outside OnAir.
+void toolkitSave(App& a) {
+    dect2::IridiumReceiver& r = a.engine.iridium();
+    const bool on = r.bitsFileOpen();
+    ImGui::Spacing();
+    ImGui::TextDisabled("SAVE FOR IRIDIUM-TOOLKIT");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Writes every demodulated burst as gr-iridium iridium-extractor RAW lines.\nRun: iridium-parser.py output.bits > output.parsed\nOnAir never decodes voice; that is up to you, with the toolkit.");
+    ImGui::TextDisabled("format"); ImGui::SameLine(0, 5 * gUi);
+    ImGui::SetNextItemWidth(std::min(120 * gUi, ImGui::GetContentRegionAvail().x));
+    int fmt = 0;
+    static const char* fmts[] = {".bits (RAW)"};
+    ImGui::Combo("##irbfmt", &fmt, fmts, 1);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("RAW lines as iridium-extractor writes them. For output.parsed run the toolkit's iridium-parser.py on this file:\nOnAir does not write .parsed itself.");
+    ImGui::BeginDisabled(on);
+    ImGui::SetNextItemWidth(std::min(160 * gUi, ImGui::GetContentRegionAvail().x));
+    if (ImGui::InputText("##irbname", S.bitsName, sizeof S.bitsName)) plat::prefs().setS("iridiumBitsName", S.bitsName);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("File name in the recordings folder, or a full path.");
+    ImGui::EndDisabled();
+    ImGui::BeginDisabled(!a.engine.running() && !on);
+    if (ImGui::Button(on ? "Stop##irb" : "Start##irb")) {
+        if (on) r.stopBitsFile();
+        else {
+            const std::string name = S.bitsName[0] ? S.bitsName : "output.bits";
+            const bool full = name.find_first_of("/\\") != std::string::npos;
+            const std::string path = full ? name : plat::dataDir() + "/recordings/" + name;
+            S.bitsErr.clear();
+            r.startBitsFile(path, &S.bitsErr);
+        }
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine(0, 8 * gUi);
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("%llu lines", (unsigned long long)r.bitsLines());
+    if (ImGui::IsItemHovered() && !r.bitsPath().empty()) ImGui::SetTooltip("%s", r.bitsPath().c_str());
+    if (!S.bitsErr.empty()) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", S.bitsErr.c_str());
+}
+
 void decoder(App& a, bool&) {
     loadState();
-    (void)a;
     ImGui::TextDisabled("THRESHOLD"); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(std::min(90 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
     if (ImGui::SliderFloat("##irthr", &S.thrDb, 8.f, 24.f, "%.0f dB")) plat::prefs().setD("iridiumThr", S.thrDb);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Burst level over the noise floor needed to demodulate a burst. Lower finds weaker bursts but costs more CPU on noise.");
+    toolkitSave(a);
 }
 
 void synth(App& a, bool& changed) {

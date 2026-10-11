@@ -107,6 +107,18 @@ These receivers are built from the published specifications and checked end to e
 
 In development (the mode is in the app, but nothing is decoded yet): **HD Radio**, **CDR** (China Digital Radio), **Pagers** (POCSAG, FLEX), **APRS / Packet** (AX.25) and **HF digital** (RTTY, SSTV, FreeDV).
 
+<details>
+<summary><b>Iridium bursts for iridium-toolkit</b></summary>
+
+In the Iridium screen, **Save for iridium-toolkit** writes every demodulated burst (downlink, uplink and simplex, unique word included) as the `RAW:` lines of gr-iridium's `iridium-extractor`, by default to `output.bits` in the recordings folder. From the command line: `onair-cli --standard iridium --iridium-bits output.bits --secs 600`. Then run the toolkit ([muccc/iridium-toolkit](https://github.com/muccc/iridium-toolkit)) on it as usual:
+
+```
+iridium-parser.py output.bits > output.parsed
+```
+
+OnAir writes the bits only and never decodes voice (the AMBE codec is patented). Extracting voice from `output.parsed` with the toolkit's voice tools is up to you and happens outside OnAir.
+</details>
+
 ### Channel scanner and shared channel list
 
 The TV channel scanner covers DVB, ATSC, ATSC 3.0, ISDB-T and DTMB. Scan results can be shared with other users through a public, crowd-sourced channel list, picked by country and city. You can also browse it on GitHub: **[adswill/OnAir-channels](https://github.com/adswill/OnAir-channels)**.

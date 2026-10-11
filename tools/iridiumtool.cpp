@@ -6,6 +6,7 @@
 //   iridiumtool sky [secs] [--seed n] [--sats n]
 #include "dect2/iridium_gen.h"
 #include "dect2/iridium_rx.h"
+#include "dect2/iridium_bits.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -113,10 +114,7 @@ static int rx(int argc, char** argv) {
     r.setBurstCallback([&](const IridiumBurstBits& b, const IridiumFrame& fr) {
         std::lock_guard<std::mutex> lk(m);
         if (raw) {
-            // gr-iridium's output line: RAW: <file> <ms> <freq> A:OK I:<id> <confidence>% <level> <symbols> <bits incl. unique word>
-            const char* uw = b.downlink ? "001100000011000011110011" : "110011000011110011111100";
-            printf("RAW: i-%ld-t1 %012.4f %010.0f A:OK I:%011llu %3.0f%% %7.5f %3zu %s%s\n", startUnix, b.timeSec * 1e3, b.freqHz, (unsigned long long)id++,
-                   b.confidence, std::pow(10.0, b.levelDb / 20), b.bits.size() / 2, uw, bitsStr(b.bits).c_str());
+            printf("%s\n", iridiumRawLine(b, startUnix, (double)startUnix + b.timeSec, id++).c_str());   // gr-iridium iridium-extractor line
             return;
         }
         printf("%9.4f s %11.0f Hz %s %3.0f%% %-4s", b.timeSec, b.freqHz, b.downlink ? "DL" : "UL", b.confidence, fr.typeName.empty() ? "?" : fr.typeName.c_str());

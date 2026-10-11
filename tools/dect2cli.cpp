@@ -3,6 +3,8 @@
 //   dect2cli --file path.cs8 --rate Msps [--format cs8|cu8|cf32] [--bw MHz] [--secs N]
 //   dect2cli ... --record out.cs8|out.cf32|folder|auto --secs N   (any radio or --synthetic, not --file: saves the radio's raw samples at its own
 //     rate while receiving, for N seconds, and prints the size; a folder or "auto" (the current folder) gets a name like
+//   dect2cli --standard iridium ... --iridium-bits output.bits   (Iridium: every burst as a gr-iridium "RAW:" line for iridium-toolkit;
+//     then `iridium-parser.py output.bits > output.parsed`. --iridium-parsed is not written by OnAir: use the toolkit's parser)
 //     onair_dvb_554.000MHz_10Msps_20261009-071530.cs8, which reopens with the right rate and format)
 #include "dect2/rate_choice.h"
 #include "dect2/engine.h"
@@ -49,7 +51,7 @@ int main(int argc, char** argv) {
     bool useFile = false, haveDev = false, synthetic = false, listen = false, atvFm = false;
     std::string wavPath;
     std::vector<int16_t> wav;
-    std::string record;
+    std::string record, iridiumBits;
     OutputConfig out;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -90,6 +92,8 @@ int main(int argc, char** argv) {
         else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
         else if (a == "--format") { std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
         else if (a == "--record") record = next();
+        else if (a == "--iridium-bits") iridiumBits = next();
+        else if (a == "--iridium-parsed") { fprintf(stderr, "--iridium-parsed: OnAir writes .bits only; run iridium-toolkit's iridium-parser.py on an --iridium-bits file for output.parsed\n"); return 1; }
         else if (a == "--ts") out.file = true, out.path = next();
         else if (a == "--udp") { std::string hp = next(); auto c = hp.find(':'); out.udp = true; out.host = hp.substr(0, c); if (c != std::string::npos) out.port = atoi(hp.c_str() + c + 1); }
         else if (a == "--gain") { tune.gainDb = atof(next()); }
@@ -157,6 +161,11 @@ int main(int argc, char** argv) {
         if (folder) { rfmt = FileFormat::CS8; rpath = (record == "auto" ? std::string(".") : record) + "/" + e.recordingName(rfmt); }
         if (!e.startRecording(rpath, rfmt, rerr)) { fprintf(stderr, "recording: %s\n", rerr.c_str()); e.stop(); return 1; }
         printf("recording the radio's samples to %s\n", rpath.c_str());
+    }
+    if (!iridiumBits.empty()) {
+        std::string ierr;
+        if (!e.iridium().startBitsFile(iridiumBits, &ierr)) { fprintf(stderr, "iridium bits: %s\n", ierr.c_str()); e.stop(); return 1; }
+        printf("writing Iridium bursts for iridium-toolkit to %s\n", iridiumBits.c_str());
     }
     size_t shown = 0;
     double lastPic = 0, freezeSecs = 0; int freezes = 0, pics = 0;
@@ -233,6 +242,10 @@ int main(int argc, char** argv) {
         e.stopRecording();
         printf("recorded %.1f s (%.1f MB) to %s%s\n", rs.seconds, rs.bytes / 1e6, rs.path.c_str(), rs.droppedSamples ? ": SOME SAMPLES WERE DROPPED, the disk was too slow" : "");
         if (!rs.error.empty()) printf("recording stopped early: %s\n", rs.error.c_str());
+    }
+    if (!iridiumBits.empty()) {
+        e.iridium().stopBitsFile();
+        printf("iridium bits: %llu lines in %s (iridium-parser.py %s > output.parsed)\n", (unsigned long long)e.iridium().bitsLines(), iridiumBits.c_str(), iridiumBits.c_str());
     }
     { const QualityReport& q = qm.report(); printf("quality: %.0f%% %s (SNR %.1f dB, needs %.1f, margin %+.1f dB, FEC %.1f%%)\n", q.percent, q.label.c_str(), q.snrDb, q.requiredDb, q.marginDb, q.fecOk * 100); }
     {

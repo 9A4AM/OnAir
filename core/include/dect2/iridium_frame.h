@@ -19,6 +19,7 @@ struct IridiumBurstBits {
     std::vector<uint8_t> bits;
     bool downlink = true;
     double freqHz = 0, timeSec = 0, levelDb = 0, confidence = 0;
+    double snrDb = 0;                   // Es/N0 of the symbols (the noise figure of the .bits lines)
     double refUnixTime = 0;             // wall clock the Iridium time of IBC frames is read against; 0 = this computer's clock
 };
 

@@ -2,6 +2,8 @@
 // ring of input samples (no copy per burst on the feed side; a burst whose samples were overwritten before the worker got to it is
 // dropped and counted).
 #include "dect2/iridium_rx.h"
+#include "dect2/iridium_bits.h"
+#include <chrono>
 #include "dect2/iridium_frame.h"
 #include "dect2/iridium_phy.h"
 #include "dect2/iridium_sbd.h"
@@ -67,6 +69,12 @@ struct IridiumReceiver::Impl {
     IridiumIdaAssembler idaAsm;
     struct Recent { double t, f; float level; };
     std::deque<Recent> recent;
+
+    // iridium-toolkit .bits file: unix time of a burst = bitsWall0 + (timeSec - bitsT0)
+    IridiumBitsWriter bitsOut;
+    std::atomic<double> bitsWall0{0}, bitsT0{0};
+    static double wallNow() { return std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count(); }
+    void bitsReanchor() { bitsT0 = 0; bitsWall0 = wallNow(); }   // the sample clock restarted (configure / reset)
 
     // results (mu)
     IridiumTelemetry tel;                     // persistent parts (counters, tables)
@@ -157,7 +165,9 @@ struct IridiumReceiver::Impl {
             bb.timeSec = tBurst + d.uwTime;
             bb.levelDb = d.levelDb;
             bb.confidence = d.confidence;
+            bb.snrDb = d.snrDb;
             f = decodeIridiumBurst(bb);
+            if (bitsOut.isOpen() && bb.timeSec >= bitsT0.load()) bitsOut.write(bb, bitsWall0.load() + (bb.timeSec - bitsT0.load()));
             haveFrame = true;
         }
         if (haveFrame && burstCb) burstCb(bb, f);
@@ -368,6 +378,7 @@ void IridiumReceiver::configure(double inputRateHz) {
     p_->sinceReport = 0;
     p_->waiting.clear();
     p_->written = 0;
+    p_->bitsReanchor();
     if (inputRateHz <= 0) return;
     p_->det.configure(inputRateHz, p_->thrDb);
     p_->demod.configure(inputRateHz);
@@ -403,6 +414,7 @@ void IridiumReceiver::reset() {
     p_->sinceReport = 0;
     p_->waiting.clear();
     p_->written = 0;
+    p_->bitsReanchor();
     if (p_->rate > 0) p_->det.reset();
     p_->nco = 1;
     p_->assembler.reset();
@@ -476,6 +488,18 @@ void IridiumReceiver::setBurstCallback(std::function<void(const IridiumBurstBits
     std::lock_guard<std::mutex> wl(p_->wmu);
     p_->burstCb = std::move(cb);
 }
+bool IridiumReceiver::startBitsFile(const std::string& path, std::string* err) {
+    std::lock_guard<std::mutex> wl(p_->wmu);
+    double r;
+    { std::lock_guard<std::mutex> lk(p_->mu); r = p_->rate; }
+    p_->bitsT0 = p_->written.load() / std::max(1.0, r);
+    p_->bitsWall0 = Impl::wallNow();
+    return p_->bitsOut.open(path, err);
+}
+void IridiumReceiver::stopBitsFile() { std::lock_guard<std::mutex> wl(p_->wmu); p_->bitsOut.close(); }
+bool IridiumReceiver::bitsFileOpen() const { return p_->bitsOut.isOpen(); }
+uint64_t IridiumReceiver::bitsLines() const { return p_->bitsOut.lines(); }
+std::string IridiumReceiver::bitsPath() const { return p_->bitsOut.path(); }
 void IridiumReceiver::setOffline(bool on) { std::lock_guard<std::mutex> fl(p_->fmu); p_->offline = on; }
 void IridiumReceiver::flush() {
     {
