@@ -49,6 +49,7 @@ int main(int argc, char** argv) {
     MultipathDetector mpd;
     QualityMeter qm;
     bool useFile = false, haveDev = false, synthetic = false, listen = false, atvFm = false;
+    const SubMode* subMode = nullptr;   // --standard named one protocol of a shared receiver
     std::string wavPath;
     std::vector<int16_t> wav;
     std::string record, iridiumBits;
@@ -83,9 +84,12 @@ int main(int argc, char** argv) {
         else if (a == "--sopt") { const int k = atoi(next()); const int v = atoi(next()); if (k >= 0 && k < 8) tune.synth.modeOpt[k] = v; }       // option k of the mode's test signal (see its <mode>_gen.h)
         else if (a == "--sval") { const int k = atoi(next()); const double v = atof(next()); if (k >= 0 && k < 4) tune.synth.modeVal[k] = v; }   // value k of the mode's test signal
         else if (a == "--standard") { std::string v = next(); standard = v == "t2" ? 1 : v == "t" || v == "dvbt" ? 2 : v == "atsc" ? 3 : v == "dab" ? 4 : v == "atsc3" ? 5 : v == "isdbt" ? 6 : v == "fm" ? 7 : 0; if (standard == 7) { tune.bandwidthMhz = 0.25; tune.sampleRate = 4e6; tune.basebandFilterHz = 2.5e6; }
-            if (const ModeTuning* mt = modeTuningById(v)) {   // dvbs, dtmb, atv, dmr, drm, adsb: the tuning table of the mode says how to set the radio up
+            const SubMode* sm = subModeById(v);   // rtty, ft8, meshtastic, pocsag, navtex ...: one protocol of a shared receiver
+            subMode = sm;
+            if (sm) tune.synth.mode = sm->stdMode, applySubModeSynth(tune.synth, *sm);
+            if (const ModeTuning* mt = sm ? modeTuning(sm->stdMode) : modeTuningById(v)) {   // dvbs, dtmb, atv, dmr, drm, adsb: the tuning table of the mode says how to set the radio up
                 standard = mt->stdMode; tune.bandwidthMhz = mt->bandwidthMhz; tune.sampleRate = mt->sampleRate; tune.basebandFilterHz = mt->basebandHz;
-                if (!freqSet) freq = mt->defMhz;
+                if (!freqSet) freq = sm ? sm->defMhz : mt->defMhz;
             } }
         else if (a == "--compute") { std::string v = next(); computeMode = v == "cpu" ? 0 : v == "gpu" ? 1 : 2; }
         else if (a == "--file") { useFile = true; file.path = next(); file.format = guessFormat(file.path); }
@@ -147,6 +151,8 @@ int main(int argc, char** argv) {
         for (size_t i = 0; i < n; i++) { wav.push_back((int16_t)std::lround(std::max(-1.f, std::min(1.f, l[i])) * 32767)); wav.push_back((int16_t)std::lround(std::max(-1.f, std::min(1.f, r[i])) * 32767)); }
     });
     e.setStandard(standard);
+    applySubMode(e, subMode);
+    if (standard == 22) e.mesh().setTunedHz(freq * 1e6);   // mesh places its channels from the tuned frequency
     if (atvFm) e.atv().setModulation(1);
     e.setBandwidthAuto(autoBw);
     e.setSpectrumEnabled(autoBw);   // cli doesn't show the spectrum

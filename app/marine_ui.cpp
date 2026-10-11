@@ -320,24 +320,25 @@ void faxView(App& a) {
     static const char* const iocN[] = {"IOC: start tone", "IOC 576", "IOC 288"};
     ImGui::SetNextItemWidth(110 * gUi);
     if (ImGui::Combo("##mflpm", &S.lpmIdx, lpmN, 5)) plat::prefs().setI("marineLpm", S.lpmIdx);
-    ImGui::SameLine(); ImGui::SetNextItemWidth(130 * gUi);
+    flowNext(); ImGui::SetNextItemWidth(130 * gUi);   // the controls wrap in a narrow window
     if (ImGui::Combo("##mfioc", &S.iocIdx, iocN, 3)) plat::prefs().setI("marineIoc", S.iocIdx);
-    ImGui::SameLine();
+    flowNext();
     if (ImGui::Checkbox("auto slant", &S.autoSlant)) plat::prefs().setB("marineAutoSlant", S.autoSlant);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Measure the sample clock error from the phasing lines and straighten the picture.\nThe slider is added on top.");
-    ImGui::SameLine(); ImGui::SetNextItemWidth(150 * gUi);
+    flowNext(); ImGui::SetNextItemWidth(150 * gUi);
     if (ImGui::SliderFloat("##mfsl", &S.slant, -300.f, 300.f, "slant %+.1f ppm")) plat::prefs().setD("marineSlant", S.slant);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Straighten a slanted picture by hand. Applies to the lines already received too. Double-click to type.");
     ImGui::SameLine();
     if (ImGui::SmallButton("0")) { S.slant = 0; plat::prefs().setD("marineSlant", 0.0); }
-    ImGui::SameLine(0, 14 * gUi);
+    flowNext(14 * gUi);
     if (ImGui::SmallButton("fit")) { S.zoom = 0; S.pan = ImVec2(0, 0); }
     ImGui::SameLine();
     if (ImGui::SmallButton("1:1")) { S.zoom = 1; }
-    ImGui::SameLine(0, 14 * gUi);
+    flowNext(14 * gUi);
     ImGui::BeginDisabled(S.last.width <= 0);
     if (ImGui::SmallButton("save PNG")) saveFax();
     ImGui::EndDisabled();
+    flowEnd();
     static const char* const st[] = {"waiting for the start tone", "phasing", "receiving", "stopped"};
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s, IOC %d, %d lpm, %d lines, %d px wide, slant %+.1f ppm, black at %.0f Hz (%+.0f Hz off), last tone %.0f Hz",
                         st[std::max(0, std::min(3, f.state))], f.ioc, f.lpm, f.lines, f.width, f.slantPpm, f.blackHz, f.blackHz - 1500.0, f.toneHz); ImGui::PopTextWrapPos(); }
@@ -489,6 +490,9 @@ void panels(App& a) {
 
 // ---------------------------------------------------------------- the hooks
 
+// a protocol entry (NAVTEX, DSC, weather fax): its service, 0 without one
+int subService(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->sel : 0; }
+
 void tick(App& a) {
     loadState();
     if (!a.engine.running()) { S.pushedService = S.pushedLpm = S.pushedIoc = S.pushedAuto = -1; S.pushedFreq = -1; S.pushedSlant = 1e9f; return; }
@@ -498,7 +502,8 @@ void tick(App& a) {
         S.saver.update(a.rx.marine.navtex, plat::dataDir() + "/navtex", dk == DeviceInfo::Synthetic || dk == DeviceInfo::File ? 0.0 : a.freqMhz * 1e6);
         if (S.saver.failed() && S.saveErr.empty()) S.saveErr = S.saver.error();
     }
-    if (S.pushedService != S.service) { r.setService(S.service); S.pushedService = S.service; }
+    const int svc = subService(a) ? subService(a) : S.service;   // a protocol entry runs only its own decoder
+    if (S.pushedService != svc) { r.setService(svc); S.pushedService = svc; }
     // a test signal or a recording has no dial frequency: auto then runs every decoder
     const DeviceInfo::Kind k = a.devices.empty() ? DeviceInfo::Synthetic : a.devices[(size_t)std::max(0, std::min((int)a.devices.size() - 1, a.devIdx))].kind;
     const double fz = k == DeviceInfo::Synthetic || k == DeviceInfo::File ? 0.0 : a.freqMhz * 1e6;
@@ -512,6 +517,12 @@ void tick(App& a) {
 
 void tab(App& a) {
     loadState();
+    if (const int svc = subService(a)) {   // a protocol entry: its own view and the tuning view
+        static const char* const names[] = {"", "NAVTEX", "DSC", "Fax"};
+        int k = S.view == 3 ? 1 : 0;
+        subNav("marv1", k, {names[svc], "Tuning"});
+        S.view = k == 1 ? 3 : svc - 1;
+    } else {
     const int act = live(a) ? a.rx.marine.serviceActive : 0;
     if (S.follow && act != S.lastActive && act != 0) S.view = act == 1 ? 0 : act == 3 ? 2 : 1;
     S.lastActive = act;
@@ -524,8 +535,10 @@ void tab(App& a) {
     ImGui::SetNextItemWidth(120 * gUi);
     if (ImGui::Combo("##marsv", &S.service, sv, 4)) plat::prefs().setI("marineService", S.service);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("auto: by the frequency (490, 518, 4209.5 kHz NAVTEX; the DSC frequencies; otherwise fax).\nWith the test signal or a recording every decoder runs.");
+    }
     ImGui::SameLine();
     if (ImGui::SmallButton("clear")) a.engine.marine().clearMessages();
+    if (subService(a) == 0 || subService(a) == 1) {   // saving is for NAVTEX messages
     sameLineIf(ImGui::GetFrameHeight() + ImGui::CalcTextSize("Save messages").x + 100 * gUi, 20 * gUi);
     if (ImGui::Checkbox("Save messages", &S.saveNav)) { plat::prefs().setB("marineSaveNavtex", S.saveNav); S.saver.clearError(); S.saveErr.clear(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Write each NAVTEX message to a text file as soon as it has been received (also one cut short, marked as such).\nOne file per message, in a folder per day.");
@@ -535,6 +548,7 @@ void tab(App& a) {
         std::error_code ec;
         std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>(d.c_str())), ec);
         dect2::openUrl(d);
+    }
     }
     if (!S.saveErr.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::badRed(), "%s", S.saveErr.c_str()); ImGui::PopTextWrapPos(); }
     switch (S.view) {
@@ -553,8 +567,9 @@ void list(App& a) {
     ImGui::BeginChild("##mar_list");
     struct Row { double sec; int kind; size_t i; };
     std::vector<Row> rows;
-    for (size_t i = 0; i < t.navtex.size(); i++) rows.push_back({t.navtex[i].rxSec, 0, i});
-    for (size_t i = 0; i < t.dsc.size(); i++) rows.push_back({t.dsc[i].rxSec, 1, i});
+    const int svc = subService(a);
+    if (svc == 0 || svc == 1) for (size_t i = 0; i < t.navtex.size(); i++) rows.push_back({t.navtex[i].rxSec, 0, i});
+    if (svc == 0 || svc == 2) for (size_t i = 0; i < t.dsc.size(); i++) rows.push_back({t.dsc[i].rxSec, 1, i});
     std::sort(rows.begin(), rows.end(), [](const Row& x, const Row& y) { return x.sec > y.sec; });
     int n = 0;
     for (const Row& r : rows) {
@@ -613,7 +628,8 @@ void status(App& a) {
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
-    l1 = "Marine";
+    const SubMode* sm = curSub(a);
+    l1 = sm ? sm->name : "Marine";
     if (live(a)) l2 = dect2::marineSummary(a.rx.marine);
 }
 
@@ -622,7 +638,10 @@ void synth(App& a, bool& changed) {
     ImGui::TextDisabled("send"); ImGui::SameLine(); ImGui::SetNextItemWidth(130 * gUi);
     static const char* const sv[] = {"NAVTEX", "DSC MF/HF", "weather fax", "DSC VHF ch 70"};
     int s = std::max(1, std::min(4, sc.modeOpt[0] ? sc.modeOpt[0] : 1)) - 1;
-    if (ImGui::Combo("##msv", &s, sv, 4)) { sc.modeOpt[0] = s + 1; changed = true; }
+    const int only = subService(a);   // a protocol entry sends only its own service (DSC: MF/HF or VHF)
+    if (only == 2) { int v = s == 3 ? 1 : 0; static const char* const dv[] = {"DSC MF/HF", "DSC VHF ch 70"}; if (ImGui::Combo("##msv", &v, dv, 2)) { sc.modeOpt[0] = v ? 4 : 2; changed = true; } }
+    else if (only) ImGui::TextDisabled("%s", sv[only == 3 ? 2 : 0]);
+    else if (ImGui::Combo("##msv", &s, sv, 4)) { sc.modeOpt[0] = s + 1; changed = true; }
     flowNext();
     bool fade = sc.modeOpt[1] == 1;
     if (ImGui::Checkbox("HF fading", &fade)) { sc.modeOpt[1] = fade ? 1 : 0; changed = true; }

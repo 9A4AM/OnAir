@@ -1,10 +1,12 @@
 // application state: preferences, device list, bandwidth, ingesting spectrum and receiver telemetry, channel list
 #include "app.h"
+#include <cstring>
 #include "dect2/usb_diag.h"
 #include "dect2/rate_choice.h"
 
 // the name of the built-in test signal in the source list: it follows the mode
 static std::string synthLabel(const App& a) {
+    if (const SubMode* sm = curSub(a)) return std::string("Synthetic test signal (") + sm->name + ")";
     switch (a.family) {
     case 0: return "Synthetic test signal (DVB-T2 8K, 8 MHz)";
     case 1: return "Synthetic test signal (ATSC 8-VSB)";
@@ -49,19 +51,59 @@ static void setFamilyFlags(App& a, int f) {
     nameSynth(a);
 }
 
-void setFamily(App& a, int f) {
-    if (a.family >= 6 && a.family < kNumFamilies && f != a.family) a.famFreq[a.family] = a.freqMhz;   // each of the newer modes comes back on the frequency it was left on
-    if (a.family >= 0 && a.family < kNumFamilies && f != a.family) {   // the gains that suit FM are not the ones for a TV channel: remember them per mode
-        a.famGain[a.family] = {a.tune.lnaDb, a.tune.vgaDb, a.tune.ampOn, true};
-        const App::FamGain& g = a.famGain[f];
+// the protocol entries (dect2::subModes()): index + 1 in App::sub
+const SubMode* curSub(const App& a) {
+    int n = 0;
+    const SubMode* t = subModes(n);
+    return a.sub >= 1 && a.sub <= n && t[a.sub - 1].stdMode == a.family + 2 ? &t[a.sub - 1] : nullptr;
+}
+int subIndexOf(const char* id) {
+    int n = 0;
+    const SubMode* t = subModes(n);
+    for (int i = 0; id && i < n; i++) if (!strcmp(t[i].id, id)) return i + 1;
+    return 0;
+}
+static int firstSubOf(int f) {   // HF digital, mesh, pagers and marine are only listed as their protocols: 0 for the other families
+    int n = 0;
+    const SubMode* t = subModes(n);
+    for (int i = 0; i < n; i++) if (t[i].stdMode == f + 2) return i + 1;
+    return 0;
+}
+static int slotOf(int f, int sub) { return sub >= 1 && sub <= kNumSubModes ? kNumFamilies + sub - 1 : f; }
+int modeSlot(const App& a) { return slotOf(a.family, curSub(a) ? a.sub : 0); }
+static std::string slotKey(int slot) {   // the suffix of the per-mode settings: the family number, or "." and the protocol's id
+    if (slot < kNumFamilies) return std::to_string(slot);
+    int n = 0;
+    const SubMode* t = subModes(n);
+    return slot - kNumFamilies < n ? std::string(".") + t[slot - kNumFamilies].id : std::to_string(slot);
+}
+
+void setFamily(App& a, int f) { setMode(a, f, firstSubOf(f)); }
+
+void setMode(App& a, int f, int sub) {
+    {   // a protocol entry of another family, or none for a family that has them: the family's first
+        int n = 0;
+        const SubMode* t = subModes(n);
+        if (!(sub >= 1 && sub <= n && t[sub - 1].stdMode == f + 2)) sub = firstSubOf(f);
+    }
+    const int from = modeSlot(a), to = slotOf(f, sub);
+    if (a.family >= 6 && from < kNumSlots && to != from) a.famFreq[from] = a.freqMhz;   // each of the newer modes comes back on the frequency it was left on
+    if (a.family >= 0 && from < kNumSlots && to != from) {   // the gains that suit FM are not the ones for a TV channel: remember them per mode
+        a.famGain[from] = {a.tune.lnaDb, a.tune.vgaDb, a.tune.ampOn, true};
+        a.famBias[from] = a.tune.biasTee;
+        a.tune.biasTee = a.famBias[to];
+        const App::FamGain& g = a.famGain[to];
         if (g.known) { a.tune.lnaDb = g.lna; a.tune.vgaDb = g.vga; a.tune.ampOn = g.amp; }
         else if (f == 5) { a.tune.lnaDb = 24; a.tune.vgaDb = 20; a.tune.ampOn = false; }   // FM stations are strong
         else if (a.family == 5 || f >= 6) { a.tune.lnaDb = 32; a.tune.vgaDb = 20; a.tune.ampOn = true; }
     }
+    a.sub = sub;
     setFamilyFlags(a, f);
     if (f >= 6) {
         const ModeTuning* mt = modeTuning(f + 2);
-        a.freqMhz = mt && a.famFreq[f] >= mt->minMhz && a.famFreq[f] <= mt->maxMhz ? a.famFreq[f] : mt ? mt->defMhz : a.freqMhz;
+        const SubMode* sm = curSub(a);
+        const double def = sm ? sm->defMhz : mt ? mt->defMhz : a.freqMhz;
+        a.freqMhz = mt && a.famFreq[to] >= mt->minMhz && a.famFreq[to] <= mt->maxMhz ? a.famFreq[to] : def;
     }
     if (f == 0 && !(a.freqMhz >= 170 && a.freqMhz <= 870)) a.freqMhz = 522.0;       // a TV channel, not a leftover FM or DAB frequency
     if (f == 1 && !(a.freqMhz >= 170 && a.freqMhz <= 870)) a.freqMhz = 473.0;
@@ -69,6 +111,7 @@ void setFamily(App& a, int f) {
     if (f == 2 && !(a.freqMhz >= 174 && a.freqMhz <= 240)) a.freqMhz = 218.640;
     if (f == 4 && !(a.freqMhz >= 170 && a.freqMhz <= 770)) a.freqMhz = 473.143;   // the centre of UHF channel 13/14 of the 6 MHz raster
     if (f == 5 && !(a.freqMhz >= 87.5 && a.freqMhz <= 108)) a.freqMhz = 100.0;     // FM band, default to 100 MHz
+    nameSynth(a);
 }
 
 // what to tell the engine: 0 auto, 1 DVB-T2, 2 DVB-T, 3 ATSC, 4 DAB, 5 ATSC 3.0, 6 ISDB-T, 7 FM, 8 DVB-S/S2, 9 DTMB, 10 analog TV, 11 DMR, 12 DRM, 13 ADS-B, 14 GNSS, 15 radiosonde, 16 AIS, 17 marine, 18 ACARS, 19 Inmarsat-C, 20 Inmarsat Aero, 21 Iridium, 22 mesh, 23 HD Radio, 24 CDR, 25 pagers, 26 APRS / packet, 27 HF digital, 28 airband (Engine::start maps these to activeStandard())
@@ -157,6 +200,7 @@ void saveRadioSettings(const App& a) {
 
 // ---- the sample rate chosen per mode and per radio
 std::string rateModeId(const App& a) {
+    if (const SubMode* sm = curSub(a)) return sm->id;   // each protocol entry has its own rate
     if (const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr) return mt->id;
     static const char* kIds[] = {"dvb", "atsc", "dab", "atsc3", "isdbt", "fm"};
     return a.family >= 0 && a.family < 6 ? kIds[a.family] : "mode" + std::to_string(a.family);
@@ -166,7 +210,7 @@ static std::string ratePrefKey(const App& a) {
     const std::string rk = radioKeyOf(a.devices[a.devIdx]);
     return rk.empty() ? "" : "rate." + rateModeId(a) + "." + rk;
 }
-std::string rateContext(const App& a) { return ratePrefKey(a) + "|" + std::to_string(a.devIdx) + "|" + std::to_string(a.family) + "|" + std::to_string(a.bwIdx) + "|" + std::to_string(a.dtmbBwMhz); }
+std::string rateContext(const App& a) { return ratePrefKey(a) + "|" + std::to_string(a.devIdx) + "|" + std::to_string(a.family) + "." + std::to_string(a.sub) + "|" + std::to_string(a.bwIdx) + "|" + std::to_string(a.dtmbBwMhz); }
 double savedSampleRate(const App& a) {
     const std::string k = ratePrefKey(a);
     return k.empty() ? 0 : plat::prefs().getD(k.c_str(), 0);
@@ -232,6 +276,7 @@ void applyBandwidth(App& a) {
         }
         const DeviceInfo& dv = a.devices[a.devIdx];
         if (dv.isGeneric()) a.tune.sampleRate = linkRateFor(dv, a.tune, a.tune.sampleRate, mt->minSampleRate);
+        if (const SubMode* sm = curSub(a)) { applySubModeSynth(a.tune.synth, *sm); applySubMode(a.engine, sm); }   // one protocol: only its decoder, only its test signal
     } else if (a.dabMode) {   // a DAB ensemble is 1.536 MHz wide: 2.048 Msps is the natural rate (RTL-SDR dongles do it too)
         a.tune.bandwidthMhz = 1.7; a.tune.sampleRate = 2.048e6; a.tune.basebandFilterHz = 1.75e6;
         const DeviceInfo& dv = a.devices[a.devIdx];
@@ -268,13 +313,32 @@ void loadPrefs(App& a) {
     a.gainDev = d.getS("gainDev", "");
     a.tune.ampOn = d.getB("amp", false);
     a.recFormat = d.getI("recFormat", 0) == 1 ? 1 : 0;
-    if (d.has("family")) { const int f = std::max(0, std::min(kNumFamilies - 1, (int)d.getI("family", 0))); setFamilyFlags(a, f); if (a.fmMode && !(a.freqMhz >= 87.5 && a.freqMhz <= 108)) a.freqMhz = 100.0; }
-    for (int f = 0; f < kNumFamilies; f++) {   // as many as savePrefs writes
-        if (!d.has(("gLna" + std::to_string(f)).c_str())) continue;
-        a.famGain[f] = {(int)d.getI(("gLna" + std::to_string(f)).c_str(), 32), (int)d.getI(("gVga" + std::to_string(f)).c_str(), 20), d.getB(("gAmp" + std::to_string(f)).c_str(), true), true};
+    if (d.has("family")) {
+        const int f = std::max(0, std::min(kNumFamilies - 1, (int)d.getI("family", 0)));
+        // the protocol entry; settings from before the split (HF digital, Mesh, Pagers, Marine as one entry) open the family's first
+        a.sub = subIndexOf(d.getS("subMode", "").c_str());
+        a.family = f;
+        if (!curSub(a)) a.sub = firstSubOf(f);
+        setFamilyFlags(a, f);
+        if (a.fmMode && !(a.freqMhz >= 87.5 && a.freqMhz <= 108)) a.freqMhz = 100.0;
     }
-    if (a.family >= 0 && a.family < kNumFamilies && a.famGain[a.family].known) { a.tune.lnaDb = a.famGain[a.family].lna; a.tune.vgaDb = a.famGain[a.family].vga; a.tune.ampOn = a.famGain[a.family].amp; }
-    for (int f = 6; f < kNumFamilies; f++) a.famFreq[f] = d.getD(("fFreq" + std::to_string(f)).c_str(), 0.0);
+    for (int f = 0; f < kNumSlots; f++) {   // as many as savePrefs writes
+        const std::string k = slotKey(f);
+        if (!d.has(("gLna" + k).c_str())) continue;
+        a.famGain[f] = {(int)d.getI(("gLna" + k).c_str(), 32), (int)d.getI(("gVga" + k).c_str(), 20), d.getB(("gAmp" + k).c_str(), true), true};
+    }
+    {   // a protocol entry never used yet starts with the gains its family had as one entry
+        int n = 0;
+        const SubMode* t = subModes(n);
+        for (int i = 0; i < n && i < kNumSubModes; i++) if (!a.famGain[kNumFamilies + i].known && t[i].stdMode >= 8) a.famGain[kNumFamilies + i] = a.famGain[t[i].stdMode - 2];
+    }
+    if (const int sl = modeSlot(a); sl >= 0 && sl < kNumSlots && a.famGain[sl].known) { a.tune.lnaDb = a.famGain[sl].lna; a.tune.vgaDb = a.famGain[sl].vga; a.tune.ampOn = a.famGain[sl].amp; }
+    for (int f = 6; f < kNumSlots; f++) a.famFreq[f] = d.getD(("fFreq" + slotKey(f)).c_str(), 0.0);
+    if (const SubMode* sm = curSub(a)) {   // the protocol entry's own frequency
+        const ModeTuning* mt = modeTuning(sm->stdMode);
+        const double fr = a.famFreq[modeSlot(a)];
+        if (mt && !(a.freqMhz >= mt->minMhz && a.freqMhz <= mt->maxMhz && fr > 0)) a.freqMhz = fr >= mt->minMhz && fr <= mt->maxMhz ? fr : sm->defMhz;
+    }
     if (d.has("newUi")) a.newUi = d.getB("newUi", true);
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
     if (d.has("dtmbBw")) a.dtmbBwMhz = d.getI("dtmbBw", 8) == 6 ? 6 : 8;
@@ -327,17 +391,20 @@ void savePrefs(const App& a) {
     d.setS("gainDev", a.gainDev);
     d.setB("amp", a.tune.ampOn);
     d.setI("family", a.family);
+    { const SubMode* sm = curSub(a); d.setS("subMode", sm ? sm->id : ""); }
     d.setI("fmDeemph", a.fmDeemph);
     d.setI("fmChanKhz", a.fmChanKhz);
     d.setB("newUi", a.newUi);
-    for (int f = 0; f < kNumFamilies; f++) {   // gains per mode (the current mode from the live settings)
-        const bool cur = f == a.family;
+    const int curSlot = modeSlot(a);
+    for (int f = 0; f < kNumSlots; f++) {   // gains per mode (the current mode from the live settings)
+        const bool cur = f == curSlot;
         if (!cur && !a.famGain[f].known) continue;
-        d.setI(("gLna" + std::to_string(f)).c_str(), cur ? a.tune.lnaDb : a.famGain[f].lna);
-        d.setI(("gVga" + std::to_string(f)).c_str(), cur ? a.tune.vgaDb : a.famGain[f].vga);
-        d.setB(("gAmp" + std::to_string(f)).c_str(), cur ? a.tune.ampOn : a.famGain[f].amp);
+        const std::string k = slotKey(f);
+        d.setI(("gLna" + k).c_str(), cur ? a.tune.lnaDb : a.famGain[f].lna);
+        d.setI(("gVga" + k).c_str(), cur ? a.tune.vgaDb : a.famGain[f].vga);
+        d.setB(("gAmp" + k).c_str(), cur ? a.tune.ampOn : a.famGain[f].amp);
     }
-    for (int f = 6; f < kNumFamilies; f++) if (a.famFreq[f] > 0 || f == a.family) d.setD(("fFreq" + std::to_string(f)).c_str(), f == a.family ? a.freqMhz : a.famFreq[f]);
+    for (int f = 6; f < kNumSlots; f++) if (a.famFreq[f] > 0 || (f == curSlot && a.family >= 6)) d.setD(("fFreq" + slotKey(f)).c_str(), f == curSlot ? a.freqMhz : a.famFreq[f]);
     d.setI("uiTheme", a.uiTheme);
     d.setI("lightUi", a.lightUi ? 1 : 0);
     d.setI("dtmbBw", a.dtmbBwMhz);

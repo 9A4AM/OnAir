@@ -1,4 +1,6 @@
 // The modes added after FM, seen together: tuning table, test signals, status lines.
+#include "dect2/source.h"
+#include "dect2/mode_tuning.h"
 #include "dect2/dvbs_rx.h"
 #include "dect2/dvbs_gen.h"
 #include "dect2/dtmb_rx.h"
@@ -131,6 +133,36 @@ static const std::vector<ModeTuning>& table() {
 const ModeTuning* modeTuning(int stdMode) {
     for (const auto& m : table()) if (m.stdMode == stdMode) return &m;
     return nullptr;
+}
+
+// the protocols listed as modes of their own (mode_tuning.h): RTTY, SSTV, FreeDV and the WSJT modes of HF digital, the four LoRa networks
+// of mesh, POCSAG and FLEX, and the three marine services
+static const SubMode kSubModes[] = {
+    {"rtty",       "RTTY",       27, 1, -1, 14.080,  {0, 0, 0}},
+    {"sstv",       "SSTV",       27, 2, -1, 14.230,  {1, 0, 0}},
+    {"freedv",     "FreeDV",     27, 4, -1, 14.236,  {2, 0, 0}},
+    {"ft8",        "FT8",        27, 8, 0,  14.074,  {3, 0, 0}},
+    {"ft4",        "FT4",        27, 8, 1,  14.080,  {4, 0, 0}},
+    {"ft2",        "FT2",        27, 8, 2,  14.084,  {6, 0, 0}},
+    {"wspr",       "WSPR",       27, 8, 3,  14.0956, {5, 0, 0}},
+    {"meshtastic", "Meshtastic", 22, 1, 0,  869.525, {1, 0, 0}},
+    {"meshcore",   "MeshCore",   22, 2, 0,  869.618, {2, 0, 1}},
+    {"loraaprs",   "LoRa APRS",  22, 4, 0,  433.775, {4, 2, 1}},
+    {"meshcom",    "MeshCom",    22, 8, 0,  433.175, {8, 2, 0}},
+    {"pocsag",     "POCSAG",     25, 1, 0,  466.075, {1, 0, 0}},
+    {"flex",       "FLEX",       25, 2, 0,  929.6625, {2, 0, 0}},
+    {"navtex",     "NAVTEX",     17, 0, 1,  0.518,   {1, 0, 0}},
+    {"dsc",        "DSC",        17, 0, 2,  2.1875,  {2, 0, 0}},
+    {"wefax",      "Weather fax", 17, 0, 3, 7.880,   {3, 0, 0}},
+};
+const SubMode* subModes(int& count) { count = (int)(sizeof kSubModes / sizeof *kSubModes); return kSubModes; }
+const SubMode* subModeById(const std::string& id) {
+    for (const auto& m : kSubModes) if (id == m.id) return &m;
+    return nullptr;
+}
+void applySubModeSynth(SynthConfig& sc, const SubMode& s) {
+    if (!(s.stdMode == 17 && s.sel == 2 && sc.modeOpt[0] == 4)) sc.modeOpt[0] = s.synth[0];   // DSC keeps VHF channel 70 when chosen
+    if (s.stdMode == 22) { sc.modeOpt[1] = s.synth[1]; sc.modeOpt[4] = s.synth[2]; }   // mesh: the band's scene, placed for this network's frequency
 }
 
 const ModeTuning* modeTuningById(const std::string& id) {

@@ -54,7 +54,9 @@ public:
     void setAudioTap(std::function<void(const float* x, size_t n)> cb);    // tests: the demodulated 8 kHz audio, called from feed()
     void setSpeechTap(std::function<void(const float* x, size_t n)> cb);   // tests: FreeDV's 8 kHz speech, called from feed()
     HfdigFtx& ftx();                                     // FT8 / FT4 / FT2 / WSPR: settings and the slot clock (thread safe, hfdig_ftx.h)
-    HfdigRtty& rtty();                                   // the RTTY decoder's settings (thread safe, see hfdig_rtty.h)
+    HfdigRtty& rtty();
+    void setDecoders(int mask);                          // which decoders run: 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR (default 15: all)
+    int decoders() const;                                   // the RTTY decoder's settings (thread safe, see hfdig_rtty.h)
 
 private:
     struct Impl;

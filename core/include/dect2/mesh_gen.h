@@ -20,6 +20,7 @@
 //               telemetry) and 2 MeshCom nodes (positions with battery, one relayed; texts to all, to a call and to group 262)
 //   modeOpt[2]  seed of the packet ids, offsets and SNR variation (0 = 1)
 //   modeOpt[3]  1: start with a quiet second (default: the first frame starts after 0.2 s); 2 (70 cm scene): no SNR variation
+//   modeOpt[4]  1: the scene is placed for a receiver tuned to MeshCore (868 / 915) or to LoRa APRS EU 433.775 MHz (70 cm) instead
 //   modeVal[0]  SNR of the weakest node in dB (0 = snrDb - 20); the others are spread evenly between it and snrDb
 #pragma once
 #include "mode_synth.h"

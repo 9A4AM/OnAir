@@ -128,7 +128,7 @@ public:
         }
         const MeshLoraSettings c = meshcoreDefaults(region_ == 1 ? "US" : "EU");
         if ((prot & 2) && c.freqHz > 0 && lf > 0) {
-            const double off = c.freqHz - lf - tuneOffset;
+            const double off = cfg.modeOpt[4] == 1 ? -tuneOffset : c.freqHz - lf - tuneOffset;   // modeOpt[4] 1: tuned to MeshCore itself
             if (std::fabs(off) + c.bwHz < 0.45 * rate) {
                 mc_.on = true;
                 mc_.p = toParams(c);
@@ -138,9 +138,11 @@ public:
         }
         if (region_ == 2) {
             // placed for a receiver tuned to MeshCom EU (433.175 MHz): MeshCom at -tuneOffsetHz, LoRa APRS 600 kHz above it
-            const double ref = 433.175e6;
+            // (modeOpt[4] 1: tuned to LoRa APRS EU, 433.775 MHz, instead: LoRa APRS at -tuneOffsetHz, MeshCom 600 kHz below when it fits)
+            const double ref = cfg.modeOpt[4] == 1 ? 433.775e6 : 433.175e6;
             for (const auto& x : meshcomPresets()) if (x.name == "MeshCom EU" && (prot & 8)) {
-                mcm_.on = true; mcm_.p = toParams(x); mcm_.offsetHz = -tuneOffset; mcm_.bwHz = x.bwHz;
+                const double off = 433.175e6 - ref - tuneOffset;
+                if (cfg.modeOpt[4] != 1 || std::fabs(off) + x.bwHz < 0.45 * rate) { mcm_.on = true; mcm_.p = toParams(x); mcm_.offsetHz = off; mcm_.bwHz = x.bwHz; }
             }
             for (const auto& x : loraAprsPresets()) if (x.name == "LoRa APRS EU" && (prot & 4)) {
                 const double off = x.freqHz - ref - tuneOffset;

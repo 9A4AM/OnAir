@@ -169,6 +169,8 @@ using SavedChannel = plat::Channel;
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
 constexpr int kNumFamilies = 27;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumSubModes = 16;   // dect2::subModes(): the protocols of HF digital, mesh, pagers and marine listed as modes of their own
+constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
 struct App {
     Engine engine;
@@ -206,14 +208,15 @@ struct App {
     bool dabMode = false;     // DAB / DAB+ (family 2)
     bool fmMode = false;      // FM radio (family 5)
     bool newUi = true;        // the new interface (ui2.cpp) instead of the classic one (View > Classic interface)
-    struct FamGain { int lna = 32, vga = 20; bool amp = true, known = false; } famGain[kNumFamilies];   // the radio gains remembered for each mode
-    double famFreq[kNumFamilies] = {};  // the frequency each of the modes added after FM was last tuned to (0 = never)
+    struct FamGain { int lna = 32, vga = 20; bool amp = true, known = false; } famGain[kNumSlots];   // the radio gains remembered for each mode
+    bool famBias[kNumSlots] = {};    // antenna power per mode while the app runs (never saved: it starts off)
+    double famFreq[kNumSlots] = {};  // the frequency each of the modes added after FM was last tuned to (0 = never)
     int uiVariant = 0;        // layout of the new interface: 0 sidebar (the default), 1 scope, 2 tiles, 3 faceplate, 4-6 scope children, 7 panel
     int uiTheme = 1;          // its palette: 0 terminal, 1 instrument, 2 mono
     int dtmbBwMhz = 8;        // DTMB channel width: 8 MHz (China, Hong Kong), 6 MHz (Cuba)
     bool atvFm = false;       // analog TV: FM video as analog FPV links send it (20 Msps), not the amplitude modulated broadcast signal
     bool lightUi = false;     // View > Light: every colour drawn with its lightness turned over (dark on white), hues kept (main.cpp)
-    int modePreset = 0;       // a shortcut row was picked: the mode screen applies it once (1 FT8 view at 14.074 MHz, 2 LoRa APRS EU 433.775)
+    int sub = 0;              // 1 .. kNumSubModes: the protocol entry (dect2::subModes() index + 1) of HF digital, mesh, pagers or marine; 0 none
     int family = 0;           // 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband (6 and up: see ModeUi; engine standard code = family + 2)
     std::deque<float> dabSnrH, dabFicH;
     std::deque<float> fmSnrH, fmPilotH, fmRdsH;
@@ -437,7 +440,11 @@ const char* genreName(int g);
 const char* fmtKbps(char* b, size_t n, double k);
 void qualityBar(App& a, float width);
 // app_state.cpp
-void setFamily(App& a, int f);
+void setFamily(App& a, int f);                 // a family with protocol entries opens on its first one
+void setMode(App& a, int f, int sub);          // a mode-list entry: family and protocol entry (0 none, or the family's first)
+const dect2::SubMode* curSub(const App& a);    // the protocol entry selected, nullptr for a mode without them
+int subIndexOf(const char* id);                // 1 .. kNumSubModes, 0 when not one
+int modeSlot(const App& a);                    // index of famFreq / famGain / famBias for the current entry
 int engineStd(const App& a);
 void refreshDevices(App& a);
 void applyBandwidth(App& a);
@@ -481,8 +488,8 @@ void gainControl(App& a);
 void standardSwitch(App& a);
 extern float gSwitchWidth;
 // The receiver modes (toolbar.cpp). Adding a mode is one row there.
-// preset > 0: a shortcut row that opens its parent mode (same family, same settings) with a view and band already chosen (1 FT8, 2 LoRa APRS)
-struct ModeDef { int family; const char* name; int group; ImU32 col; const char* blurb; const char* tip; const char* sub; ImVec4 accent; int preset = 0; const char* keys = nullptr; };
+// subId: one protocol of a shared receiver (dect2::subModes()), a mode of its own with its own settings, decoder and views
+struct ModeDef { int family; const char* name; int group; ImU32 col; const char* blurb; const char* tip; const char* sub; ImVec4 accent; const char* subId = nullptr; const char* keys = nullptr; };
 extern const ModeDef kModes[];
 extern const int kNumModes;
 constexpr int kNumGroups = 7;   // TV, radio, aviation, maritime, satellite, utility, amateur
@@ -510,8 +517,8 @@ struct ModeUi {
 };
 const ModeUi* modeUi(int family);                       // modeui.cpp: nullptr for the original families (0 to 5)
 const char* listTitle(const App& a, bool upper);        // "STATIONS", "SERVICES" or the mode's own, for the list on the right
-void selectMode(App& a, int family, int preset = 0);
-bool modeSelected(const App& a, const ModeDef& m);    // the row of the current mode (never a shortcut row)
+void selectMode(App& a, int family, const char* subId = nullptr);
+bool modeSelected(const App& a, const ModeDef& m);    // the row of the current mode
 const char* modeSearchBox();                          // a search box at the top of a mode drop-down (toolbar.cpp); returns the query
 bool modeMatches(const ModeDef& m, const char* query); // the search box: name, subtitle, description and keywords
 void startReceiver(App& a);     // what the Start button does

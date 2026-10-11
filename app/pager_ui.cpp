@@ -66,8 +66,10 @@ void lampRow(const App& a) {
     const dect2::PagerTelemetry& t = a.rx.pager;
     lamp("Signal", !on ? 0 : t.signal ? 1 : 0); flowNext(12 * gUi);
     lamp("Sync", !on ? 0 : t.sync ? 1 : t.state == 1 ? 2 : 0); flowNext(12 * gUi);
-    lamp("POCSAG", !on ? 0 : t.timeSec - t.lastPocsagSec < 60 ? 1 : t.lastPocsagSec > 0 ? 2 : 0); flowNext(12 * gUi);
-    lamp("FLEX", !on ? 0 : t.timeSec - t.lastFlexSec < 60 ? 1 : t.lastFlexSec > 0 ? 2 : 0);
+    const SubMode* sm = curSub(a);   // a protocol entry (POCSAG or FLEX) decodes only its own
+    const int m = sm ? sm->decoders : 3;
+    if (m & 1) { lamp("POCSAG", !on ? 0 : t.timeSec - t.lastPocsagSec < 60 ? 1 : t.lastPocsagSec > 0 ? 2 : 0); flowNext(12 * gUi); }
+    if (m & 2) lamp("FLEX", !on ? 0 : t.timeSec - t.lastFlexSec < 60 ? 1 : t.lastFlexSec > 0 ? 2 : 0);
     flowEnd();
 }
 
@@ -225,7 +227,8 @@ void status(App& a) {
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
-    l1 = "Pagers";
+    const SubMode* sm = curSub(a);
+    l1 = sm ? sm->name : "Pagers";
     if (live(a)) l2 = dect2::pagerSummary(a.rx.pager);
 }
 

@@ -49,17 +49,29 @@ adsb	--mode adsb	Overview|Aircraft|Receiver|History
 gnss	--mode gnss	Overview|Sky|Receiver|History
 sonde	--mode sonde	Overview|Sondes|Receiver|History
 ais	--mode ais	Overview|Ships|Receiver|History
-marine	--mode marine	Overview|Messages|Receiver|History
+navtex	--mode navtex	Overview|Messages|Receiver|History
+dsc	--mode dsc	Overview|Messages|Receiver|History
+wefax	--mode wefax	Overview|Messages|Receiver|History
 acars	--mode acars	Overview|Messages|Receiver|History
 inmc	--mode inmc	Overview|Messages|Receiver|History
 aero	--mode aero	Overview|Messages|Receiver|History
 iridium	--mode iridium	Overview|Iridium|Receiver|History
-mesh	--mode mesh	Overview|Mesh|Receiver|History
+meshtastic	--mode meshtastic	Overview|Mesh|Receiver|History
+meshcore	--mode meshcore	Overview|Mesh|Receiver|History
+loraaprs	--mode loraaprs	Overview|Mesh|Receiver|History
+meshcom	--mode meshcom	Overview|Mesh|Receiver|History
 hdr	--mode hdr	Overview|Radio|Receiver|History
 cdr	--mode cdr	Overview|Radio|Receiver|History
-pager	--mode pager	Overview|Messages|Receiver|History
+pocsag	--mode pocsag	Overview|Messages|Receiver|History
+flex	--mode flex	Overview|Messages|Receiver|History
 packet	--mode packet	Overview|Packets|Receiver|History
-hfdig	--mode hfdig	Overview|Decoders|Receiver|History
+rtty	--mode rtty	Overview|Decoders|Receiver|History
+sstv	--mode sstv	Overview|Decoders|Receiver|History
+freedv	--mode freedv	Overview|Decoders|Receiver|History
+ft8	--mode ft8	Overview|Decoders|Receiver|History
+ft4	--mode ft4	Overview|Decoders|Receiver|History
+ft2	--mode ft2	Overview|Decoders|Receiver|History
+wspr	--mode wspr	Overview|Decoders|Receiver|History
 airband	--mode airband	Overview|Channels|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"

@@ -1,5 +1,5 @@
 // Pagers receiver on the test signal: noise and a carrier offset, then every page of a cycle must arrive with its exact text and address.
-// Cases: the mix at 15 dB with an offset, the same inverted (as some transmitters send it), the four-level FLEX speeds alone at 15 dB, and noise alone.
+// Cases: the mix at 15 dB with an offset, the mix with only POCSAG or only FLEX decoded, the same inverted (as some transmitters send it), the four-level FLEX speeds alone at 15 dB, and noise alone.
 #include "dect2/pager_gen.h"
 #include "dect2/pager_rx.h"
 #include <cmath>
@@ -9,9 +9,10 @@ using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
 
-static PagerTelemetry run(const SynthConfig& cfg, double rate, double seconds, bool noiseOnly = false) {
+static PagerTelemetry run(const SynthConfig& cfg, double rate, double seconds, bool noiseOnly = false, int protocols = 3) {
     PagerReceiver rx;
     rx.configure(rate);
+    rx.setProtocols(protocols);
     rx.setSignalOffset(-pagerTuning().tuneOffsetHz);
     auto syn = makePagerSynth(cfg, rate);
     std::vector<cf32> buf(65536);
@@ -75,6 +76,14 @@ int main() {
             c.snrDb = 15; c.cfoHz = 300; c.modeOpt[2] = sp + 1;
             const PagerTelemetry t = run(c, rate, pagerCycleSeconds(0, sp + 1) * 2.2);
             compare(t, pagerTestMessages(0, sp + 1), pagerSpeedName(sp));
+        }
+    }
+    {   // the mix with one protocol on (the POCSAG and FLEX entries of the app): only its pages, all of them
+        for (int prot = 1; prot <= 2; prot++) {
+            SynthConfig c;
+            c.snrDb = 15; c.cfoHz = 400;
+            const PagerTelemetry t = run(c, rate, pagerCycleSeconds() + 1.0, false, prot);
+            compare(t, pagerTestMessages(prot), prot == 1 ? "POCSAG only" : "FLEX only");
         }
     }
     {   // nothing but noise: no page, no state

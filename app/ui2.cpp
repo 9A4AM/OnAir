@@ -328,7 +328,7 @@ void modeList(App& a) {
             const ImVec2 ss = ImGui::CalcTextSize(m.sub);
             if (p0.x + 24 * gUi + ImGui::CalcTextSize(m.name).x + 10 * gUi < p0.x + w - ss.x - 6 * gUi)   // no room: the name alone, not both on top of each other
                 dl->AddText(ImVec2(p0.x + w - ss.x - 6 * gUi, p0.y + (h - ss.y) * 0.5f), u32(T.dim), m.sub);
-            if (clicked) selectMode(a, m.family, m.preset);
+            if (clicked) selectMode(a, m.family, m.subId);
             if (hov && running && !sel) ImGui::SetTooltip("Stop the receiver to switch mode");
         }
     }
@@ -493,7 +493,7 @@ float menuBar(App& a) {
                 if (g) ImGui::Separator();
                 for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g) {
                     char k[4]; snprintf(k, sizeof k, "%d", ++key);
-                    if (ImGui::MenuItem(kModes[i].name, key <= 9 ? k : nullptr, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].preset);   // only 1-9 are keys
+                    if (ImGui::MenuItem(kModes[i].name, key <= 9 ? k : nullptr, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);   // only 1-9 are keys
                 }
             }
             ImGui::EndMenu();
@@ -619,7 +619,7 @@ void modeCombo(App& a, float w) {
             ImGui::TextDisabled("%s", kGroupNames[g]);
             for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && modeMatches(kModes[i], q)) {
                 ImGui::PushID(i);
-                if (ImGui::Selectable(kModes[i].name, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].preset);
+                if (ImGui::Selectable(kModes[i].name, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);
                 if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kModes[i].tip);
                 ImGui::PopID();
             }
@@ -1125,7 +1125,7 @@ void modeKeys(App& a) {
             dl->AddText(ImVec2(p0.x + 30 * gUi, p0.y + (h - ns.y) * 0.5f), u32(sel ? T.bright : (running ? T.dim : T.text)), m.name);
             const float sw = ss.x * 0.84f;
             if (p0.x + 30 * gUi + ns.x + 14 * gUi < p1.x - sw - 8 * gUi) dl->AddText(ImGui::GetFont(), fs * 0.84f, ImVec2(p1.x - sw - 8 * gUi, p0.y + (h - ss.y * 0.84f) * 0.5f), u32(T.dim), m.sub);
-            if (clicked) selectMode(a, m.family, m.preset);
+            if (clicked) selectMode(a, m.family, m.subId);
             if (hov) ImGui::SetTooltip("%s", running && !sel ? "Stop the receiver to switch mode" : m.tip);
         }
         ImGui::Dummy(ImVec2(1, 2 * gUi));
@@ -1207,7 +1207,7 @@ void drawShell2(App& a, ImVec2 disp) {
         if (!io.WantTextInput && !ImGui::IsAnyItemActive() && !io.KeyCtrl && !io.KeyAlt && !io.KeySuper) {
             if (!gFreqHovered) for (int k = 0; k < 9; k++) if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_1 + k), false)) {
                 int n = 0;
-                for (int g = 0; g < kNumGroups; g++) for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && n++ == k) selectMode(a, kModes[i].family, kModes[i].preset);
+                for (int g = 0; g < kNumGroups; g++) for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && n++ == k) selectMode(a, kModes[i].family, kModes[i].subId);
             }
             if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) { if (a.engine.running()) a.engine.stop(); else startReceiver(a); }
         }

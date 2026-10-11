@@ -162,19 +162,16 @@ void mapView(App& a, const dect2::HfdigFtxTelemetry& f, ImVec2 size) {
 
 } // namespace
 
-void hfdigFtxPresetFt8(App& a) {
-    a.engine.hfdig().ftx().setEnabled(0, true);   // 0 FT8
-    S.filter = 1;                                  // 1 + FT8
-    S.view = 0;
-}
-
 void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
     using namespace dect2;
     if (!S.loaded) { S.loaded = true; S.map.zoom = (int)plat::prefs().getI("ftxZoom", 3); }
     const HfdigFtxTelemetry& f = t.ftx;
     HfdigFtx& dec = a.engine.hfdig().ftx();
-    // the modes and the filter
-    for (int m = 0; m < kFtxModes; m++) {
+    // the modes and the filter; an entry of one mode (FT8, FT4, FT2, WSPR) decodes and shows only that one
+    const SubMode* sm = curSub(a);
+    const int only = sm ? sm->sel : -1;
+    if (only >= 0) S.filter = only + 1;
+    for (int m = 0; m < kFtxModes && only < 0; m++) {
         bool on = dec.enabled(m);
         ImGui::PushStyleColor(ImGuiCol_CheckMark, modeColour(m));
         if (ImGui::Checkbox(ftxModeName(m), &on)) dec.setEnabled(m, on);
@@ -186,15 +183,17 @@ void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
     if (ImGui::Checkbox("Upside down too", &mir)) dec.setMirrored(mir);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also look for signals sent on the lower sideband (their tones run backwards).");
     flowNext(14 * gUi);
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Show"); ImGui::SameLine(0, 5 * gUi);
-    const char* fl[] = {"all", "FT8", "FT4", "FT2", "WSPR"};
-    ImGui::SetNextItemWidth(78 * gUi);
-    if (ImGui::BeginCombo("##ftxfilter", fl[S.filter])) {
-        for (int i = 0; i < 5; i++) if (ImGui::Selectable(fl[i], i == S.filter)) S.filter = i;
-        ImGui::EndCombo();
+    if (only < 0) {
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("Show"); ImGui::SameLine(0, 5 * gUi);
+        const char* fl[] = {"all", "FT8", "FT4", "FT2", "WSPR"};
+        ImGui::SetNextItemWidth(78 * gUi);
+        if (ImGui::BeginCombo("##ftxfilter", fl[S.filter])) {
+            for (int i = 0; i < 5; i++) if (ImGui::Selectable(fl[i], i == S.filter)) S.filter = i;
+            ImGui::EndCombo();
+        }
+        flowNext(10 * gUi);
     }
-    flowNext(10 * gUi);
     ImGui::Checkbox("CQ only", &S.cqOnly);
     flowNext(10 * gUi);
     if (ImGui::Button("Clear")) dec.clearDecodes();
@@ -218,13 +217,20 @@ void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
         flowEnd();
         std::string last;
         for (int m = 0; m < kFtxModes; m++) {
-            if (!f.slots[m]) continue;
+            if (!f.slots[m] || (only >= 0 && m != only)) continue;
             char tm[16], b[80];
             utcText(f.lastSlotUtc[m], tm, sizeof tm);
             snprintf(b, sizeof b, "%s%s %s: %d (%.0f ms)", last.empty() ? "" : "   ", ftxModeName(m), tm, f.lastSlotCount[m], f.decodeMs[m]);
             last += b;
         }
         if (!last.empty()) { ImGui::TextDisabled("last slots"); ImGui::SameLine(0, 6 * gUi); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(last.c_str()); ImGui::PopFont(); }
+    }
+    if (only >= 0) {   // FT8 / FT4 / FT2: decodes and map; WSPR: spots and map
+        if (S.view > 1) S.view = 0;
+        subNav("ftxv1", S.view, {only == 3 ? "Spots" : "Decodes", "Map"});
+        if (S.view == 0) decodeTable(a, f, only == 3);
+        else { const ImVec2 av = ImGui::GetContentRegionAvail(); if (av.x > 60 && av.y > 60) mapView(a, f, av); }
+        return;
     }
     subNav("ftxv", S.view, {"Decodes", "Map", "WSPR spots"});
     if (S.view == 0) decodeTable(a, f, false);

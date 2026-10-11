@@ -58,8 +58,6 @@ const Plan kPlans[] = {
     {"MeshCom EU  433.175 MHz (+ LoRa APRS 433.775)", "MeshCom EU  433.175 MHz", 433.175, 0, 2},
 };
 constexpr int kNumPlans = (int)(sizeof(kPlans) / sizeof(kPlans[0]));
-const char* planName(void*, int i) { return kPlans[i].name; }
-const char* planShort(void*, int i) { return kPlans[i].shortName; }
 
 std::string nodeKey(const dect2::MeshNode& n) { return std::to_string(n.protocol) + n.id; }
 
@@ -124,28 +122,41 @@ void loadState() {
     }
 }
 
+// a protocol entry (Meshtastic, MeshCore, LoRa APRS, MeshCom): its networks, and the band plans that carry it
+int subMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 0; }
+bool planFits(const App& a, int i) {
+    const int m = subMask(a);
+    return !m || ((m & 3) ? i <= 1 : m == 4 ? (i >= 2 && i <= 4) : i == 5);
+}
+int effRegion(const App& a) {   // the selected plan, or the entry's first when the selected one does not carry it
+    if (planFits(a, S.region)) return S.region;
+    for (int i = 0; i < kNumPlans; i++) if (planFits(a, i)) return i;
+    return 0;
+}
+int effProtocols(const App& a) { const int m = subMask(a); return m ? m : S.protocols; }
+bool planCombo(App& a, const char* id, int& r, bool shortNames) {   // the band plans this entry can use
+    bool ch = false;
+    if (ImGui::BeginCombo(id, shortNames ? kPlans[r].shortName : kPlans[r].name)) {
+        for (int i = 0; i < kNumPlans; i++) if (planFits(a, i) && ImGui::Selectable(shortNames ? kPlans[i].shortName : kPlans[i].name, i == r)) { r = i; ch = true; }
+        ImGui::EndCombo();
+    }
+    return ch;
+}
+
 void applyRegion(App& a, int region) {
     S.region = region;
     plat::prefs().setI("meshRegion", region);
     a.freqMhz = kPlans[region].mhz;                    // the plan's channel (Meshtastic LongFast, LoRa APRS, MeshCom)
+    if (subMask(a) == 2) a.freqMhz = region == 1 ? 910.525 : 869.618;   // MeshCore's own channel
     a.tune.synth.modeOpt[1] = kPlans[region].synthRegion;
 }
 
 void tick(App& a) {
     loadState();
-    if (a.modePreset == 2) {   // picked as "LoRa APRS / MeshCom" in the mode list: the LoRa APRS EU plan, LoRa APRS decoding on, the APRS stations view
-        a.modePreset = 0;
-        applyRegion(a, 2);
-        S.protocols |= 4 | 8;
-        plat::prefs().setI("meshProtocols", S.protocols);
-        S.view = 5;
-        plat::prefs().setI("meshView", S.view);
-        savePrefs(a);   // the plan's frequency
-    }
     dect2::MeshReceiver& r = a.engine.mesh();
     if (!S.keysPushed) { pushKeys(a); S.keysPushed = true; }
-    if (S.pushedRegion != S.region) { r.setRegion(kPlans[S.region].rxRegion); S.pushedRegion = S.region; }
-    if (S.pushedProtocols != S.protocols) { r.setProtocols(S.protocols); S.pushedProtocols = S.protocols; }
+    if (S.pushedRegion != effRegion(a)) { S.pushedRegion = effRegion(a); r.setRegion(kPlans[S.pushedRegion].rxRegion); }
+    if (S.pushedProtocols != effProtocols(a)) { S.pushedProtocols = effProtocols(a); r.setProtocols(S.pushedProtocols); }   // a protocol entry: only its own network
     if (S.pushedPresets != (int)S.allPresets) { r.setPresetSearch(S.allPresets); S.pushedPresets = (int)S.allPresets; }
     if (S.pushedTuned != a.freqMhz) { r.setTunedHz(a.freqMhz * 1e6); S.pushedTuned = a.freqMhz; }   // the engine does not pass the user's frequency
     if (!a.engine.running()) { S.lastSeq = 0; return; }
@@ -513,13 +524,14 @@ void settingsView(App& a) {
     loadState();
     ImGui::TextDisabled("Band plan");
     ImGui::SetNextItemWidth(340 * gUi);
-    int r = S.region;
-    if (ImGui::Combo("##mreg", &r, planName, nullptr, kNumPlans)) {
+    int r = effRegion(a);
+    if (planCombo(a, "##mreg", r, false)) {
         applyRegion(a, r);
         if (a.engine.running()) startReceiver(a);
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Sets the tuning frequency (and the Meshtastic / MeshCore channel plan). Meshtastic and MeshCore use different\nfrequencies in each region; the US pair is 3.65 MHz apart and needs a radio rate of about 8 Msps or more.\nLoRa APRS and MeshCom are on 70 cm: every known LoRa APRS and MeshCom channel inside the captured band is searched.");
     ImGui::Spacing();
+    if (!subMask(a)) {
     ImGui::TextDisabled("Networks");
     bool mt = (S.protocols & 1) != 0, mc = (S.protocols & 2) != 0, la = (S.protocols & 4) != 0, mm = (S.protocols & 8) != 0, ch = false;
     if (ImGui::Checkbox("Meshtastic", &mt)) ch = true;
@@ -532,7 +544,8 @@ void settingsView(App& a) {
     if (ImGui::Checkbox("MeshCom", &mm)) ch = true;
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("MeshCom 4 (icssw.org): sync word 0x2B, 4/6; 433.175 MHz SF11 250 kHz (EU) and the firmware's other country profiles.");
     if (ch) { S.protocols = (mt ? 1 : 0) | (mc ? 2 : 0) | (la ? 4 : 0) | (mm ? 8 : 0); plat::prefs().setI("meshProtocols", S.protocols); }
-    if (ImGui::Checkbox("Search every Meshtastic preset of the region", &S.allPresets)) plat::prefs().setB("meshPresets", S.allPresets);
+    }
+    if (!subMask(a) || subMask(a) == 1)    if (ImGui::Checkbox("Search every Meshtastic preset of the region", &S.allPresets)) plat::prefs().setB("meshPresets", S.allPresets);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Off: LongFast only (the default of every new node). On: also MediumFast, MediumSlow, ShortFast, ShortSlow, LongModerate\nand LongSlow, each on its own channel slot. Uses more CPU, and only the slots inside the captured band are searched.");
     ImGui::Spacing();
     ImGui::Separator();
@@ -583,7 +596,17 @@ void settingsView(App& a) {
 
 void tab(App& a) {
     loadState();
-    subNav("meshv", S.view, {"Nodes", "Map", "Chat", "Packets", "Settings", "APRS"});
+    if (const int m = subMask(a)) {   // a protocol entry: only its own views (LoRa APRS: stations instead of nodes and chat)
+        static const int aprsIds[] = {5, 1, 3, 4}, meshIds[] = {0, 1, 2, 3, 4};
+        const bool ap = m == 4;
+        const int* ids = ap ? aprsIds : meshIds;
+        const int n = ap ? 4 : 5;
+        int k = 0;
+        for (int i = 0; i < n; i++) if (ids[i] == S.view) k = i;
+        if (ap) subNav("meshva", k, {"Stations", "Map", "Packets", "Settings"});
+        else subNav("meshvm", k, {"Nodes", "Map", "Chat", "Packets", "Settings"});
+        S.view = ids[k];
+    } else subNav("meshv", S.view, {"Nodes", "Map", "Chat", "Packets", "Settings", "APRS"});
     plat::prefs().setI("meshView", S.view);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     if (S.view == 0) { nodeTable(a, false); return; }
@@ -737,7 +760,8 @@ void status(App& a) {
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
-    l1 = "Mesh (LoRa)";
+    const SubMode* sm = curSub(a);
+    l1 = sm ? sm->name : "Mesh (LoRa)";
     if (live(a)) l2 = dect2::meshSummary(a.rx.mesh);
 }
 
@@ -745,14 +769,18 @@ void tuner(App& a, bool& retune) {
     loadState();
     ImGui::TextDisabled("Band plan");
     ImGui::SetNextItemWidth(std::min(230 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
-    int r = S.region;
-    if (ImGui::Combo("##mreg_t", &r, planShort, nullptr, kNumPlans)) { applyRegion(a, r); retune = true; }
+    int r = effRegion(a);
+    if (planCombo(a, "##mreg_t", r, true)) { applyRegion(a, r); retune = true; }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("EU / US: the Meshtastic LongFast channel; MeshCore sits 93 kHz above it in the EU (one capture holds both).\nAPRS / MeshCom: 70 cm LoRa APRS and MeshCom; MeshCom EU at 433.175 MHz also holds LoRa APRS at 433.775 MHz.\nThe frequency box can be changed for other slots: the receiver follows it.");
 }
 
 void decoder(App& a, bool&) {
     loadState();
-    (void)a;
+    if (const int m = subMask(a)) {   // a protocol entry decodes only its own network
+        if (m == 1) { if (ImGui::Checkbox("all presets", &S.allPresets)) plat::prefs().setB("meshPresets", S.allPresets); if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also search MediumFast, MediumSlow, ShortFast, ShortSlow, LongModerate and LongSlow. Uses more CPU."); }
+        else ImGui::TextDisabled("%s only", curSub(a)->name);
+        return;
+    }
     bool mt = (S.protocols & 1) != 0, mc = (S.protocols & 2) != 0, la = (S.protocols & 4) != 0, mm = (S.protocols & 8) != 0, ch = false;
     auto boxW = [](const char* l) { return ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize(l).x; };   // on the next line when the panel is narrow
     if (ImGui::Checkbox("Meshtastic", &mt)) ch = true;
@@ -778,7 +806,8 @@ void synth(App& a, bool& changed) {
     static const char* names868[] = {"", "Meshtastic", "MeshCore", "both"};
     static const char* names70[] = {"", "", "", "", "LoRa APRS", "", "", "", "MeshCom", "", "", "", "both"};
     const int sel = p70 ? ((prot & 12) ? (prot & 12) : 12) : ((prot & 3) ? (prot & 3) : 3);
-    if (ImGui::BeginCombo("##msyp", p70 ? names70[sel] : names868[sel])) {
+    if (subMask(a)) ImGui::TextDisabled("%s", curSub(a)->name);   // a protocol entry plays only its own network
+    else if (ImGui::BeginCombo("##msyp", p70 ? names70[sel] : names868[sel])) {
         if (p70) { for (int i : {4, 8, 12}) if (ImGui::Selectable(names70[i], sel == i)) { sc.modeOpt[0] = i; changed = true; } }
         else for (int i = 1; i <= 3; i++) if (ImGui::Selectable(names868[i], sel == i)) { sc.modeOpt[0] = i; changed = true; }
         ImGui::EndCombo();
@@ -791,6 +820,7 @@ void synth(App& a, bool& changed) {
     float cfo = (float)(sc.cfoHz / 1e3);
     if (ImGui::SliderFloat("##mcfo", &cfo, -25, 25, "%.1f kHz")) { sc.cfoHz = cfo * 1e3; changed = true; }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("The radio's frequency error at 869 MHz (a 1 ppm TCXO is off by about 0.9 kHz).");
+    if (subMask(a)) return;   // the band follows the entry
     flowNext();
     bool us = sc.modeOpt[1] == 1;
     if (ImGui::Checkbox("US plan", &us)) { applyRegion(a, us ? 1 : 0); sc.modeOpt[0] = 0; changed = true; }

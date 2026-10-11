@@ -19,7 +19,6 @@ void hfdigRttyTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigSstvTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigFreedvTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t);
-void hfdigFtxPresetFt8(App& a);   // the FT8 shortcut of the mode list: decode FT8, show only FT8
 
 namespace {
 
@@ -129,13 +128,10 @@ void follow(const dect2::HfdigTelemetry& t) {
 
 bool live(const App& a) { return a.engine.running() && a.rx.standard == 26; }   // the engine reports its standard code minus one
 
+// the decoders of the selected entry (RTTY, SSTV, FreeDV or one WSJT mode): 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR; all without one
+int decMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 15; }
+
 void tick(App& a) {
-    if (a.modePreset == 1) {   // picked as "FT8 / FT4 / WSPR" in the mode list: open the FT8 / WSPR view
-        a.modePreset = 0;
-        S.view = 3;
-        plat::prefs().setI("hfdigView", 3);
-        hfdigFtxPresetFt8(a);
-    }
     const bool run = a.engine.running();
     if (run && a.rx.standard == 26 && (!S.wasRunning || a.volume != S.pushedVol || a.muted != S.pushedMute)) {   // the sound controls are shared with the other modes
         a.engine.hfdig().setVolume(a.volume);
@@ -157,6 +153,14 @@ void tick(App& a) {
 }
 
 void tab(App& a) {
+    if (const int m = decMask(a); m != 15) {   // one protocol entry: only its own view
+        const dect2::HfdigTelemetry& t = a.rx.hfdig;
+        if (m == 1) hfdigRttyTab(a, t);
+        else if (m == 2) hfdigSstvTab(a, t);
+        else if (m == 4) hfdigFreedvTab(a, t);
+        else hfdigFtxTab(a, t);
+        return;
+    }
     static bool viewLoaded = false;   // the view is remembered
     if (!viewLoaded) { viewLoaded = true; S.view = (int)std::max(0L, std::min(3L, plat::prefs().getI("hfdigView", 0))); }
     const int was = S.view;
@@ -179,10 +183,11 @@ void list(App& a) {
     const dect2::HfdigTelemetry& t = a.rx.hfdig;
     struct Ev { double t; int kind; size_t pic; };
     std::vector<Ev> ev;
-    if (!S.rttyText.empty()) ev.push_back({S.rttyT, 0, 0});
-    for (size_t i = 0; i < t.sstv.history.size() && i < 3; i++) if (t.sstv.history[i]) ev.push_back({(double)t.sstv.history[i]->unixTime, 1, i});
-    if (!S.fdvText.empty()) ev.push_back({S.fdvT, 2, 0});
-    for (size_t i = t.ftx.decodes.size(), n = 0; i-- > 0 && n < 8; n++) ev.push_back({t.ftx.decodes[i].slotUtc, 3, i});   // the newest decodes
+    const int dm = decMask(a);
+    if ((dm & 1) && !S.rttyText.empty()) ev.push_back({S.rttyT, 0, 0});
+    if (dm & 2) for (size_t i = 0; i < t.sstv.history.size() && i < 3; i++) if (t.sstv.history[i]) ev.push_back({(double)t.sstv.history[i]->unixTime, 1, i});
+    if ((dm & 4) && !S.fdvText.empty()) ev.push_back({S.fdvT, 2, 0});
+    if (dm & 8) for (size_t i = t.ftx.decodes.size(), n = 0; i-- > 0 && n < 8; n++) ev.push_back({t.ftx.decodes[i].slotUtc, 3, i});   // the newest decodes
     if (ev.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("nothing yet: listening"); ImGui::PopTextWrapPos(); return; }
     std::stable_sort(ev.begin(), ev.end(), [](const Ev& x, const Ev& y) { return x.t > y.t; });   // newest first
     ImGui::PushTextWrapPos(0);
@@ -329,10 +334,12 @@ void status(App& a) {
     StatusPanel panel;   // a tinted panel behind the status lines (they wrap in a narrow window)
     lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(12 * gUi);
     const dect2::HfdigTelemetry& t = a.rx.hfdig;
-    lamp("RTTY", on && t.rtty.state >= 1 ? 1 : 0); flowNext(10 * gUi);
-    lamp("SSTV", on && t.sstv.state == 1 ? 1 : 0); flowNext(10 * gUi);
-    lamp("FreeDV", on && t.freedv.mode >= 0 ? 1 : 0); flowNext(10 * gUi);
-    lamp("FT8/WSPR", on && t.ftx.total > 0 ? (t.ftx.clockWarn ? 2 : 1) : 0); flowNext(10 * gUi);
+    const int dm = decMask(a);
+    const SubMode* sm = curSub(a);
+    if (dm & 1) { lamp("RTTY", on && t.rtty.state >= 1 ? 1 : 0); flowNext(10 * gUi); }
+    if (dm & 2) { lamp("SSTV", on && t.sstv.state == 1 ? 1 : 0); flowNext(10 * gUi); }
+    if (dm & 4) { lamp("FreeDV", on && t.freedv.mode >= 0 ? 1 : 0); flowNext(10 * gUi); }
+    if (dm & 8) { lamp(sm ? sm->name : "FT8/WSPR", on && t.ftx.total > 0 ? (t.ftx.clockWarn ? 2 : 1) : 0); flowNext(10 * gUi); }
     ImGui::TextDisabled("|"); flowNext(10 * gUi);
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("State"); ImGui::SameLine(0, 5 * gUi);
@@ -340,7 +347,8 @@ void status(App& a) {
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
-    l1 = "HF digital";
+    const SubMode* sm = curSub(a);
+    l1 = sm ? sm->name : "HF digital";
     if (live(a)) l2 = dect2::hfdigSummary(a.rx.hfdig);
 }
 

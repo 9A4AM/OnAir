@@ -34,6 +34,7 @@
 #include "pager_rx.h"
 #include "packet_rx.h"
 #include "hfdig_rx.h"
+#include "mode_tuning.h"
 #include "airband_rx.h"
 #include "bbunpack.h"
 #include "ts.h"
@@ -342,5 +343,9 @@ private:
     std::vector<std::string> log_;
     std::chrono::steady_clock::time_point t0_;
 };
+
+// One protocol of a shared receiver as its own mode (mode_tuning.h): runs that receiver with only this protocol's decoder.
+// nullptr: every protocol of HF digital and pagers (mesh and marine keep their own settings). Any thread.
+void applySubMode(Engine& e, const SubMode* s);
 
 } // namespace dect2

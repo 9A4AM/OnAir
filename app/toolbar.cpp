@@ -454,7 +454,7 @@ void sourceOptions(App& a) {
             bool c2 = false;
             if (mu->synth) mu->synth(a, c2);
             else {   // the mode has no options of its own: noise and carrier offset, which every test signal follows
-                ImGui::TextDisabled("%s test signal", modeTuning(a.family + 2)->name);
+                ImGui::TextDisabled("%s test signal", curSub(a) ? curSub(a)->name : modeTuning(a.family + 2)->name);
                 flowNext(14 * gUi); ImGui::TextDisabled("SNR"); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi);
                 float snr = (float)sc.snrDb; if (ImGui::SliderFloat("##ssnr", &snr, 5, 45, "%.0f dB")) { sc.snrDb = snr; c2 = true; }
                 flowNext(); ImGui::TextDisabled("CFO"); ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi);
@@ -768,33 +768,42 @@ const ModeDef kModes[] = {
     {16, "ACARS", 2, IM_COL32(110, 100, 60, 255), "ACARS aircraft data link messages around 131 MHz", "ACARS: short messages between aircraft and the ground", "Aircraft messages, VHF", ImVec4(0.88f, 0.80f, 0.50f, 1)},
     {26, "Airband", 2, IM_COL32(70, 96, 130, 255), "Airband AM voice, 118 to 137 MHz: several 25 and 8.33 kHz channels at once", "Airband: tower, ground and ATIS voice on several channels at once", "AM voice, 118-137 MHz", ImVec4(0.58f, 0.72f, 0.92f, 1)},
     {14, "AIS", 3, IM_COL32(40, 110, 140, 255), "AIS ship transponders on 161.975 and 162.025 MHz", "AIS: ship positions and identities", "Ships, 162 MHz", ImVec4(0.40f, 0.76f, 0.90f, 1)},
-    {15, "Marine", 3, IM_COL32(48, 100, 120, 255), "Marine radio data: NAVTEX, DSC and weather fax from 100 kHz to 174 MHz", "Marine data: NAVTEX, DSC and other maritime messages", "NAVTEX, DSC", ImVec4(0.44f, 0.72f, 0.84f, 1)},
+    {15, "NAVTEX", 3, IM_COL32(48, 100, 120, 255), "NAVTEX navigational and weather warnings to ships, 518 kHz (SITOR-B)", "NAVTEX: safety messages for ships on 518 and 490 kHz", "Ship warnings, 518 kHz", ImVec4(0.44f, 0.72f, 0.84f, 1), "navtex", "navtex marine sitor"},
+    {15, "DSC", 3, IM_COL32(56, 92, 132, 255), "DSC digital selective calling: distress alerts and calls, MF/HF and VHF channel 70", "DSC: digital selective calling between ships and coast stations", "Ship calls, 2187.5 kHz", ImVec4(0.50f, 0.66f, 0.92f, 1), "dsc", "dsc marine distress"},
+    {15, "Weather fax", 3, IM_COL32(64, 108, 108, 255), "HF weather fax (radiofax): weather charts for ships on upper sideband", "Weather fax: HF radiofax charts for ships", "Weather charts, HF", ImVec4(0.52f, 0.80f, 0.78f, 1), "wefax", "wefax weather fax radiofax hf fax marine"},
     {17, "Inmarsat-C", 4, IM_COL32(100, 80, 140, 255), "Inmarsat-C satellite messages (EGC safety and news broadcasts) near 1537.7 MHz", "Inmarsat-C: satellite safety and news broadcasts, needs an L-band antenna", "EGC, L-band", ImVec4(0.74f, 0.64f, 0.94f, 1)},
     {18, "Inmarsat Aero", 4, IM_COL32(120, 76, 120, 255), "Inmarsat Aero satellite data link (P channels at 600, 1200 and 10500 bit/s) near 1545 MHz", "Inmarsat Aero: aircraft satellite data link, needs an L-band antenna", "Aero, L-band", ImVec4(0.88f, 0.62f, 0.88f, 1)},
     {19, "Iridium", 4, IM_COL32(140, 76, 60, 255), "Iridium satellite bursts around 1622 MHz", "Iridium satellite downlink bursts, needs an L-band antenna", "Satellites, 1622 MHz", ImVec4(0.94f, 0.60f, 0.46f, 1)},
     {12, "GNSS", 4, IM_COL32(130, 112, 52, 255), "GNSS satellites (GPS, GLONASS, BeiDou, Galileo) around 1575 MHz, needs an active antenna", "GNSS: satellite tracking and position fix", "GPS, GLONASS, BeiDou", ImVec4(0.90f, 0.78f, 0.42f, 1)},
     {13, "Radiosonde", 5, IM_COL32(60, 112, 150, 255), "Weather balloon radiosondes, 400 to 406 MHz (RS41, DFM, M10 and others)", "Radiosonde weather balloons: position, altitude and weather data", "Balloons, 403 MHz", ImVec4(0.46f, 0.74f, 0.94f, 1)},
     {9, "DMR", 5, IM_COL32(70, 120, 70, 255), "DMR two-slot digital voice and data, 12.5 kHz channel", "DMR (Digital Mobile Radio), two-slot TDMA", "Digital voice", ImVec4(0.62f, 0.84f, 0.46f, 1)},
-    {20, "Mesh", 5, IM_COL32(50, 120, 100, 255), "Meshtastic and MeshCore LoRa mesh messages (433, 868 and 915 MHz bands)", "LoRa mesh networks: Meshtastic and MeshCore", "Meshtastic, MeshCore", ImVec4(0.46f, 0.84f, 0.70f, 1), 0, "mesh meshtastic meshcore lora aprs meshcom"},
-    {23, "Pagers", 5, IM_COL32(110, 110, 50, 255), "POCSAG and FLEX paging messages on one 25 kHz channel", "Pagers: POCSAG and FLEX paging messages", "POCSAG, FLEX", ImVec4(0.84f, 0.84f, 0.44f, 1)},
-    {24, "APRS / Packet", 6, IM_COL32(90, 110, 60, 255), "APRS and AX.25 packet radio (1200 bd AFSK), 144.800 MHz in Europe; LoRa APRS is its own entry", "APRS and AX.25 packet radio, 1200 bd AFSK on VHF (not LoRa APRS)", "AFSK, 144.8 MHz", ImVec4(0.70f, 0.86f, 0.46f, 1), 0, "aprs packet ax25 afsk"},
-    {20, "LoRa APRS / MeshCom", 6, IM_COL32(50, 110, 120, 255), "LoRa APRS and MeshCom on 70 cm, 433.775 MHz in Europe (opens Mesh with the LoRa APRS plan)", "LoRa APRS and MeshCom: APRS over LoRa on 433 MHz, part of the Mesh mode", "LoRa, 70 cm", ImVec4(0.55f, 0.70f, 0.98f, 1), 2, "lora aprs meshcom mesh 433"},
-    {25, "HF digital", 6, IM_COL32(100, 80, 130, 255), "RTTY, SSTV and FreeDV on one upper sideband channel, 1 to 30 MHz", "HF digital modes: RTTY, SSTV and FreeDV, all at once", "RTTY, SSTV, FreeDV", ImVec4(0.72f, 0.62f, 0.94f, 1), 0, "hf digital rtty sstv freedv ft8 ft4 ft2 wspr"},
-    {25, "FT8 / FT4 / WSPR", 6, IM_COL32(110, 70, 120, 255), "FT8, FT4, FT2 and WSPR weak-signal modes, 14.074 MHz (opens HF digital on its FT8 / WSPR view)", "FT8, FT4, FT2 and WSPR: weak-signal amateur modes, part of HF digital", "WSJT, 20 m", ImVec4(0.86f, 0.58f, 0.92f, 1), 1, "ft8 ft4 ft2 wspr wsjt"},
+    {20, "Meshtastic", 5, IM_COL32(50, 120, 100, 255), "Meshtastic LoRa mesh messages, positions and telemetry (868 and 915 MHz bands)", "Meshtastic: LoRa mesh network nodes and messages", "LoRa mesh, 869.525 MHz", ImVec4(0.46f, 0.84f, 0.70f, 1), "meshtastic", "meshtastic mesh lora"},
+    {20, "MeshCore", 5, IM_COL32(140, 96, 48, 255), "MeshCore LoRa mesh adverts and messages (868 and 915 MHz bands)", "MeshCore: LoRa mesh network nodes and messages", "LoRa mesh, 869.618 MHz", ImVec4(0.96f, 0.68f, 0.34f, 1), "meshcore", "meshcore mesh lora"},
+    {23, "POCSAG", 5, IM_COL32(110, 110, 50, 255), "POCSAG paging messages (512, 1200 and 2400 bd) on a 25 kHz channel", "POCSAG pager messages", "Pagers, 512-2400 bd", ImVec4(0.84f, 0.84f, 0.44f, 1), "pocsag", "pocsag pager paging"},
+    {23, "FLEX", 5, IM_COL32(120, 96, 44, 255), "FLEX paging messages (1600, 3200 and 6400 bit/s) on a 25 kHz channel", "FLEX pager messages", "Pagers, 1600-6400", ImVec4(0.90f, 0.74f, 0.40f, 1), "flex", "flex pager paging"},
+    {24, "APRS (AFSK)", 6, IM_COL32(90, 110, 60, 255), "APRS and AX.25 packet radio (1200 bd AFSK), 144.800 MHz in Europe; LoRa APRS is its own entry", "APRS and AX.25 packet radio, 1200 bd AFSK on VHF (not LoRa APRS)", "AFSK, 144.8 MHz", ImVec4(0.70f, 0.86f, 0.46f, 1), nullptr, "aprs packet ax25 afsk"},
+    {20, "LoRa APRS", 6, IM_COL32(50, 110, 120, 255), "LoRa APRS on 70 cm, 433.775 MHz in Europe (SF12, 125 kHz)", "LoRa APRS: APRS stations over LoRa on 433 MHz", "LoRa, 433.775 MHz", ImVec4(0.55f, 0.70f, 0.98f, 1), "loraaprs", "lora aprs 433"},
+    {20, "MeshCom", 6, IM_COL32(110, 70, 120, 255), "MeshCom LoRa nodes on 70 cm, 433.175 MHz in Europe", "MeshCom: amateur LoRa mesh messages and positions on 433 MHz", "LoRa, 433.175 MHz", ImVec4(0.86f, 0.58f, 0.92f, 1), "meshcom", "meshcom lora mesh 433"},
+    {25, "RTTY", 6, IM_COL32(100, 80, 130, 255), "RTTY teletype (45.45 bd, 170 Hz shift) on upper sideband, 1 to 30 MHz", "RTTY: radio teletype text", "Teletype, 14.080 MHz", ImVec4(0.72f, 0.62f, 0.94f, 1), "rtty", "rtty hf digital teletype"},
+    {25, "SSTV", 6, IM_COL32(130, 70, 100, 255), "SSTV slow-scan TV pictures (Martin, Scottie, Robot, PD) on upper sideband", "SSTV: slow-scan television pictures", "Pictures, 14.230 MHz", ImVec4(0.94f, 0.56f, 0.76f, 1), "sstv", "sstv hf digital pictures"},
+    {25, "FreeDV", 6, IM_COL32(70, 100, 130, 255), "FreeDV digital voice (700D, 700E, 1600) on upper sideband", "FreeDV: open digital voice on HF", "Digital voice, 14.236 MHz", ImVec4(0.52f, 0.72f, 0.94f, 1), "freedv", "freedv hf digital voice"},
+    {25, "FT8", 6, IM_COL32(110, 70, 120, 255), "FT8 weak-signal contacts in 15 s slots, 14.074 MHz", "FT8: weak-signal amateur contacts", "WSJT, 14.074 MHz", ImVec4(0.86f, 0.58f, 0.92f, 1), "ft8", "ft8 wsjt hf digital"},
+    {25, "FT4", 6, IM_COL32(120, 76, 96, 255), "FT4 contest mode in 7.5 s slots, 14.080 MHz", "FT4: fast weak-signal amateur contacts", "WSJT, 14.080 MHz", ImVec4(0.92f, 0.60f, 0.70f, 1), "ft4", "ft4 wsjt hf digital"},
+    {25, "FT2", 6, IM_COL32(96, 76, 130, 255), "FT2 in 3.75 s slots, 14.084 MHz", "FT2: the fastest of the FT modes", "WSJT, 14.084 MHz", ImVec4(0.66f, 0.58f, 0.96f, 1), "ft2", "ft2 wsjt hf digital"},
+    {25, "WSPR", 6, IM_COL32(80, 96, 120, 255), "WSPR propagation beacons in 2 minute slots, 14.0956 MHz", "WSPR: weak-signal propagation reports", "Beacons, 14.0956 MHz", ImVec4(0.58f, 0.72f, 0.86f, 1), "wspr", "wspr wsjt hf digital beacon propagation"},
 };
 const int kNumModes = (int)(sizeof kModes / sizeof *kModes);
 const char* const kGroupNames[kNumGroups] = {"TV", "RADIO", "AVIATION", "MARITIME", "SATELLITE", "UTILITY", "AMATEUR"};
 float gSwitchWidth = 420;   // width of the mode selector as drawn (the guided tour points at it)
 
-void selectMode(App& a, int fam, int preset) {
+void selectMode(App& a, int fam, const char* subId) {
     if (a.engine.running()) { a.engine.log("stop the receiver before switching mode"); return; }
-    if (fam != a.family) setFamily(a, fam);
-    else if (!preset) return;
-    if (preset == 1) a.freqMhz = 14.074;   // FT8 on 20 m; the mesh screen tunes its own band plan
-    a.modePreset = preset;
+    const int sub = subIndexOf(subId);
+    if (fam == a.family && (sub == a.sub || !sub)) return;
+    setMode(a, fam, sub);
     savePrefs(a);
 }
-bool modeSelected(const App& a, const ModeDef& m) { return !m.preset && m.family == a.family; }
+bool modeSelected(const App& a, const ModeDef& m) { return m.family == a.family && (!m.subId || subIndexOf(m.subId) == a.sub); }
 bool modeMatches(const ModeDef& m, const char* q) {
     if (!q || !*q) return true;
     auto has = [&](const char* s) {
@@ -848,7 +857,7 @@ void standardSwitch(App& a) {
                 ImGui::TextDisabled("%s", kGroupNames[g]);
                 for (const auto& m : kModes) if (m.group == g && modeMatches(m, q)) {
                     ImGui::PushID(&m);
-                    if (ImGui::Selectable(m.name, modeSelected(a, m))) selectMode(a, m.family, m.preset);
+                    if (ImGui::Selectable(m.name, modeSelected(a, m))) selectMode(a, m.family, m.subId);
                     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", m.tip);
                     ImGui::PopID();
                 }
@@ -877,7 +886,7 @@ void standardSwitch(App& a) {
     for (int i = 0; i < kNumModes; i++) {
         ImGui::SetCursorScreenPos(ImVec2(segX[i], p.y));
         ImGui::PushID(i);
-        if (ImGui::InvisibleButton("##seg", ImVec2(segW[i], h))) selectMode(a, kModes[i].family, kModes[i].preset);
+        if (ImGui::InvisibleButton("##seg", ImVec2(segW[i], h))) selectMode(a, kModes[i].family, kModes[i].subId);
         const bool hov = ImGui::IsItemHovered();
         if (hov) ImGui::SetTooltip("%s", kModes[i].tip);
         ImGui::PopID();

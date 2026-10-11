@@ -25,6 +25,7 @@ public:
     void reset();                                        // after a retune: forget the signal and the decoded state
     void feed(const cf32* x, size_t n);
     bool telemetry(PagerTelemetry& out, uint64_t lastSeq);
+    void setProtocols(int mask);                         // 1 POCSAG, 2 FLEX (default 3: both)
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
 private:

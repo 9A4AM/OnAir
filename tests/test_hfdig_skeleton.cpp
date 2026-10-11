@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <string>
 #include <thread>
 #include <vector>
 using namespace dect2;
@@ -18,6 +19,18 @@ static int fails = 0;
 int main() {
     const ModeTuning mt = hfdigTuning();
     CHECK(mt.stdMode == 27 && modeTuningById("hfdig") && modeTuningById("hfdig")->stdMode == 27, "tuning table");
+    {   // the protocols listed as modes of their own: unique ids, a shared receiver that exists, a frequency inside its range
+        int n = 0;
+        const SubMode* sm = subModes(n);
+        CHECK(n == 16, "%d protocol entries", n);
+        for (int i = 0; i < n; i++) {
+            const ModeTuning* t = modeTuning(sm[i].stdMode);
+            CHECK(t && sm[i].defMhz >= t->minMhz && sm[i].defMhz <= t->maxMhz, "%s: receiver or frequency", sm[i].id);
+            CHECK(subModeById(sm[i].id) == &sm[i] && !modeTuningById(sm[i].id), "%s: id not unique", sm[i].id);
+            for (int j = 0; j < i; j++) CHECK(std::string(sm[i].id) != sm[j].id, "%s twice", sm[i].id);
+        }
+        for (const char* old : {"hfdig", "mesh", "pager", "marine"}) CHECK(modeTuningById(old) && !subModeById(old), "%s should still be all at once", old);
+    }
     // the generator for every test signal choice (noise alone while the decoders have no test audio)
     for (int which = 0; which < 3; which++) {
         SynthConfig sc;

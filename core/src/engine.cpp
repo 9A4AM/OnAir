@@ -1,4 +1,5 @@
 #include "dect2/engine.h"
+#include "dect2/hfdig_ftx.h"
 #include "dect2/rate_choice.h"
 #include "dect2/dvbt.h"
 #include "dect2/isdbt.h"
@@ -1356,6 +1357,20 @@ void Engine::analysisLoop() {
             if (m) ingest(buf.data(), m);
             else std::this_thread::sleep_for(std::chrono::milliseconds(2));
         }
+    }
+}
+
+void applySubMode(Engine& e, const SubMode* s) {
+    if (!s) { e.hfdig().setDecoders(15); e.pager().setProtocols(3); return; }
+    switch (s->stdMode) {
+    case 27:
+        e.hfdig().setDecoders(s->decoders);
+        if (s->sel >= 0) for (int m = 0; m < kFtxModes; m++) e.hfdig().ftx().setEnabled(m, m == s->sel);
+        break;
+    case 22: e.mesh().setProtocols(s->decoders); break;
+    case 25: e.pager().setProtocols(s->decoders); break;
+    case 17: e.marine().setService(s->sel); break;
+    default: break;
     }
 }
 

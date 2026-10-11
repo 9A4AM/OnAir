@@ -122,6 +122,7 @@ struct HfdigReceiver::Impl {
     std::unique_ptr<HfdigFreedv> freedv = makeFreedvDecoder();
     std::unique_ptr<HfdigFtx> ftx = makeFtxDecoder();
     HfdigDecoder* decoders[4] = {rtty.get(), sstv.get(), freedv.get(), ftx.get()};
+    std::atomic<int> decMask{15};          // setDecoders(): which of the four run
     std::function<void(const float*, size_t)> audioTap, speechTap;
     Upsample6 up;
     std::vector<float> pcm;
@@ -215,7 +216,8 @@ void HfdigReceiver::feed(const cf32* x, size_t n) {
         m.nAudio += (int64_t)m.audio.size();
         if (!m.audio.empty()) {
             if (m.audioTap) m.audioTap(m.audio.data(), m.audio.size());
-            for (HfdigDecoder* d : m.decoders) d->feedAudio(m.audio.data(), m.audio.size());
+            const int dm = m.decMask.load();
+            for (int k = 0; k < 4; k++) if (dm & (1 << k)) m.decoders[k]->feedAudio(m.audio.data(), m.audio.size());
         }
     }
     // about four reports a second of signal
@@ -239,6 +241,8 @@ void HfdigReceiver::setAudioTap(std::function<void(const float* x, size_t n)> cb
 void HfdigReceiver::setSpeechTap(std::function<void(const float* x, size_t n)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->speechTapSet = std::move(cb); p_->tapsReq = true; }
 
 HfdigRtty& HfdigReceiver::rtty() { return *p_->rtty; }
+void HfdigReceiver::setDecoders(int mask) { p_->decMask = mask & 15; }
+int HfdigReceiver::decoders() const { return p_->decMask.load(); }
 HfdigFtx& HfdigReceiver::ftx() { return *p_->ftx; }
 
 ModeTuning hfdigTuning() {
