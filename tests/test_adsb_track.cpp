@@ -358,6 +358,49 @@ static void testExpiryAndLimits() {
     CHECK(rate.aircraftCount() == 0 && rate.good() == 0 && rate.refValid(), "reset");
 }
 
+static void testCommBWind() {
+    // an aircraft over Lithuania flying true north at TAS 400 kt, Mach 0.687 (SAT about -50 C), wind from 270 at 50 kt
+    const uint32_t icao = 0x4CA7B1;
+    const double decl = adsb::magDeclinationDeg(54.7, 25.3);
+    uint8_t mb[7];
+    auto start = [&](AdsbTracker& t) {
+        feed(t, raw(adsb::encodeAirbornePosition(icao, 5, 11, 36000, false, false, 54.7, 25.3), 1.0));
+        feed(t, raw(adsb::encodeAirbornePosition(icao, 5, 11, 36000, false, true, 54.71, 25.3), 1.5));
+    };
+    AdsbTracker tr;
+    start(tr);
+    for (int i = 0; i < 6; i++) {
+        adsb::mbTrackAndTurn(mb, 0.0, 7.125, 403.1, 0.0, 400.0);
+        feed(tr, raw(adsb::encodeCommB(icao, false, 0, 36000, mb), 2.0 + i));
+        adsb::mbHeadingAndSpeed(mb, std::fmod(360.0 - decl, 360.0), 260, 0.687, 0, 0);
+        feed(tr, raw(adsb::encodeCommB(icao, false, 0, 36000, mb), 2.5 + i));
+    }
+    AdsbAircraft a = get(tr, icao, 8.0);
+    CHECK(a.hasWindDer && std::fabs(a.windDerDir - 270.0) < 4.0 && std::fabs(a.windDerKt - 50.0) < 4.0, "derived wind %d %.1f/%.1f", a.hasWindDer, a.windDerDir, a.windDerKt);
+    CHECK(a.hasSat && a.satDerived && std::fabs(a.satC + 50.0) < 2.0, "derived SAT %d %.1f", a.hasSat, a.satC);
+    // a pair heard too far apart, or in a turn (roll 20, coordinated rate 0.99 deg/s), gives no wind
+    AdsbTracker t2;
+    start(t2);
+    adsb::mbTrackAndTurn(mb, 20.0, 7.125, 403.1, 0.99, 400.0);
+    feed(t2, raw(adsb::encodeCommB(icao, false, 0, 36000, mb), 2.0));
+    adsb::mbHeadingAndSpeed(mb, std::fmod(360.0 - decl, 360.0), 260, 0.687, 0, 0);
+    feed(t2, raw(adsb::encodeCommB(icao, false, 0, 36000, mb), 2.5));
+    adsb::mbTrackAndTurn(mb, 0.0, 7.125, 403.1, 0.0, 400.0);
+    feed(t2, raw(adsb::encodeCommB(icao, false, 0, 36000, mb), 12.0));
+    a = get(t2, icao, 12.0);
+    CHECK(a.hasRoll && std::fabs(a.rollDeg) < 0.5 && !a.hasWindDer, "wind derived in a turn or from a stale pair (roll %.1f)", a.rollDeg);
+    // reported weather and an RA
+    adsb::mbMetRoutine(mb, 1, 45, 280.0, -52.25, 227, 1, 30.0);
+    feed(tr, raw(adsb::encodeCommB(icao, false, 0, 36000, mb), 9.0));
+    adsb::mbResolutionAdvisory(mb, 0x2000 | 0x1000 | 0x0800, 0, false, false, 0x896123);
+    feed(tr, raw(adsb::encodeCommB(icao, false, 0, 36000, mb), 9.5));
+    a = get(tr, icao, 10.0);
+    CHECK(a.hasWindRep && a.windRepKt == 45 && a.hasSat && !a.satDerived && std::fabs(a.satC + 52.25) < 0.01 && a.hasPressure && a.pressureHpa == 227, "reported weather %d %.0f sat %.2f", a.hasWindRep, a.windRepKt, a.satC);
+    CHECK(a.hasRa && a.raThreat == 0x896123 && adsb::raText(a.raAra, a.raRac, a.raTerminated) == "descend, corrective", "RA %d %06X", a.hasRa, a.raThreat);
+    a = get(tr, icao, 80.0);
+    CHECK(!a.hasRa, "RA still shown after a minute");
+}
+
 int main() {
     testPublishedMessages();
     testChecks();
@@ -366,6 +409,7 @@ int main() {
     testSurface();
     testStatus();
     testExpiryAndLimits();
+    testCommBWind();
     printf(fails ? "adsb_track: %d FAILED\n" : "adsb_track: all passed\n", fails);
     return fails ? 1 : 0;
 }

@@ -358,7 +358,22 @@ static bool statusOk(const uint8_t* mb, int statusBit, int first, int n) {
     return getBits(mb, statusBit, 1) || getBits(mb, first, n) == 0;
 }
 
-CommB inferCommB(const uint8_t* mb) {
+double isaTempC(double altFt) { return altFt < 36089.0 ? 15.0 - 1.98120 * altFt / 1000.0 : -56.5; }
+double isaPressureHpa(double altFt) {
+    const double h = altFt * 0.3048;
+    if (h < 11000.0) return 1013.25 * std::pow(1.0 - 2.25577e-5 * h, 5.25588);
+    return 226.32 * std::exp(-(h - 11000.0) / 6341.62);
+}
+
+// temperature and pressure of a weather report against the altitude of the reply
+static bool weatherFits(int altFt, double satC, bool hasP, double hpa) {
+    if (altFt == kNoAltitude) return false;
+    if (std::fabs(satC - isaTempC(altFt)) > 35.0) return false;
+    if (hasP) { const double p = isaPressureHpa(altFt); if (std::fabs(hpa - p) > 10.0 + 0.04 * p) return false; }
+    return true;
+}
+
+CommB inferCommB(const uint8_t* mb, int altFt) {
     CommB out;
     bool zero = true;
     for (int i = 0; i < 7; i++) if (mb[i]) zero = false;
@@ -415,8 +430,93 @@ CommB inferCommB(const uint8_t* mb) {
         // indicated airspeed cannot exceed Mach x the speed of sound at sea level (661.5 kt), with some room for the instrument error
         if (is60 && getBits(mb, 13, 1) && getBits(mb, 24, 1) && getBits(mb, 14, 10) > getBits(mb, 25, 10) * 0.004 * 661.5 + 25.0) is60 = false;
     }
-    if (is20 + is40 + is50 + is60 != 1) return out;   // nothing fits, or more than one fits
-    if (is20) {
+    // 1,0 data link capability (Doc 9871 table A-2-16): fixed code, reserved bits 10-14 zero, a subnetwork version that exists (0-5)
+    bool is10 = mb[0] == 0x10 && getBits(mb, 10, 5) == 0 && getBits(mb, 17, 7) <= 5;
+    // 1,7 common usage GICB capability: bits 25-56 reserved; any aircraft that answers it has 2,0 (bit 7)
+    bool is17 = getBits(mb, 25, 32) == 0 && getBits(mb, 7, 1) && getBits(mb, 1, 24) != 0;
+    // 3,0 ACAS RA (table A-2-48): fixed code, TTI 3 is not used, an address threat leaves bits 55-56 zero, no threat: no TID;
+    // a real RA has an active RA or the terminated bit
+    bool is30 = mb[0] == 0x30;
+    if (is30) {
+        const unsigned tti = getBits(mb, 29, 2);
+        if (tti == 3 || (tti == 1 && getBits(mb, 55, 2)) || (tti == 0 && getBits(mb, 31, 26))) is30 = false;
+        if (getBits(mb, 9, 14) == 0 && !getBits(mb, 27, 1)) is30 = false;
+        if (tti == 1 && getBits(mb, 31, 24) == 0) is30 = false;
+        // one threat (bit 9): bits 16-22 (the multiple threat part) are 0 and so is MTE; several threats without bit 9 set MTE
+        if (getBits(mb, 9, 1) && (getBits(mb, 16, 7) || getBits(mb, 28, 1))) is30 = false;
+        if (!getBits(mb, 9, 1) && getBits(mb, 10, 13) && !getBits(mb, 28, 1)) is30 = false;
+        if (getBits(mb, 23, 2) == 3 || getBits(mb, 25, 2)) is30 = false;   // "do not pass below" and "above" at once; turn complements (ACAS II has no horizontal RAs)
+        int ta = 0;
+        if (tti == 2 && (getBits(mb, 51, 6) > 60 || getBits(mb, 51, 6) == 0 || getBits(mb, 44, 7) == 0 || !decodeAc13(getBits(mb, 31, 13), ta))) is30 = false;   // bearing 1-60, a range, an altitude
+    }
+    // 4,4 meteorological routine air report (table A-2-68): FOM 0-4, status bits, wind <= 250 kt, SAT -80..+60 C, pressure <= 1100 hPa;
+    // at least wind and a temperature that is not 0 / exactly zero bits
+    bool is44 = getBits(mb, 1, 4) <= 4 && statusOk(mb, 5, 6, 18) && statusOk(mb, 35, 36, 11) && statusOk(mb, 47, 48, 2) && statusOk(mb, 50, 51, 6);
+    double sat44 = 0;
+    if (is44) {
+        sat44 = ((int)getBits(mb, 25, 10) - (getBits(mb, 24, 1) ? 1024 : 0)) * 0.25;
+        if (!getBits(mb, 5, 1) || getBits(mb, 6, 9) > 250 || sat44 < -80.0 || sat44 > 60.0) is44 = false;
+        if (is44 && getBits(mb, 35, 1) && (getBits(mb, 36, 11) > 1100 || getBits(mb, 36, 11) < 100)) is44 = false;
+        if (is44 && getBits(mb, 50, 1) && getBits(mb, 51, 6) * 100.0 / 64.0 > 100.0) is44 = false;
+        if (is44 && getBits(mb, 25, 10) == 0 && !getBits(mb, 24, 1)) is44 = false;   // 0.00 C at cruise is rare; an all-zero tail is more often another register
+        if (is44 && getBits(mb, 1, 4) == 0) is44 = false;                              // FOM 0: invalid
+        if (is44 && !weatherFits(altFt, sat44, getBits(mb, 35, 1), getBits(mb, 36, 11))) is44 = false;
+    }
+    // 4,5 meteorological hazard report (table A-2-69): reserved bits 52-56 zero, every status bit consistent, SAT -80..+60, pressure,
+    // radio height <= 5000 ft (it is only meaningful near the ground); needs the temperature and at least one hazard
+    bool is45 = getBits(mb, 52, 5) == 0 && statusOk(mb, 1, 2, 2) && statusOk(mb, 4, 5, 2) && statusOk(mb, 7, 8, 2) && statusOk(mb, 10, 11, 2) &&
+                statusOk(mb, 13, 14, 2) && statusOk(mb, 16, 17, 10) && statusOk(mb, 27, 28, 11) && statusOk(mb, 39, 40, 12);
+    double sat45 = 0;
+    if (is45) {
+        sat45 = ((int)getBits(mb, 18, 9) - (getBits(mb, 17, 1) ? 512 : 0)) * 0.25;
+        int hz = 0; for (int i = 0; i < 5; i++) hz += (int)getBits(mb, 1 + 3 * i, 1);
+        if (!getBits(mb, 16, 1) || hz == 0 || sat45 < -80.0 || sat45 > 60.0) is45 = false;
+        if (is45 && getBits(mb, 27, 1) && (getBits(mb, 28, 11) > 1100 || getBits(mb, 28, 11) < 100)) is45 = false;
+        if (is45 && getBits(mb, 39, 1) && getBits(mb, 40, 12) * 16 > 5000) is45 = false;
+        if (is45 && getBits(mb, 39, 1) && altFt != kNoAltitude && (int)getBits(mb, 40, 12) * 16 > altFt + 2000) is45 = false;   // radio height above the field elevation
+        if (is45 && !weatherFits(altFt, sat45, getBits(mb, 27, 1), getBits(mb, 28, 11))) is45 = false;
+    }
+    // The registers decoded first (2,0 4,0 5,0 6,0) are asked for far more often: when one of them fits alone it wins over the newer ones.
+    // A capability report that also passes as 4,0 without a baro setting is ambiguous (a real 4,0 almost always has the setting).
+    const int tier1 = is20 + is40 + is50 + is60;
+    if (tier1 > 1) return out;
+    if (tier1 == 1) {
+        if (is40 && is17 && !getBits(mb, 27, 1)) return out;
+        if ((is10 || is30) && !is20) return out;   // a fixed code byte that also passes as 4,0 / 5,0 / 6,0: decoded neither way
+        is10 = is17 = is30 = is44 = is45 = false;
+    } else {
+        if (is10 + is17 + is30 + is44 + is45 != 1) return out;
+    }
+    if (is10) {
+        out.bds = 0x10;
+        out.continuation = getBits(mb, 9, 1) != 0;
+        out.subnetVersion = (int)getBits(mb, 17, 7);
+        out.acasOperating = getBits(mb, 38, 1) != 0;
+    } else if (is17) {
+        out.bds = 0x17;
+        out.gicbMask = getBits(mb, 1, 24);
+    } else if (is30) {
+        out.bds = 0x30;
+        out.ara = getBits(mb, 9, 14); out.rac = getBits(mb, 23, 4);
+        out.raTerminated = getBits(mb, 27, 1) != 0; out.multipleThreats = getBits(mb, 28, 1) != 0;
+        out.tti = (int)getBits(mb, 29, 2);
+        if (out.tti == 1) out.threatIcao = getBits(mb, 31, 24);
+    } else if (is44) {
+        out.bds = 0x44;
+        out.fom = (int)getBits(mb, 1, 4);
+        out.hasWind = true; out.windKt = (int)getBits(mb, 6, 9); out.windDirDeg = getBits(mb, 15, 9) * 180.0 / 256.0;
+        out.hasSat = true; out.satC = sat44;
+        if (getBits(mb, 35, 1)) { out.hasPressure = true; out.pressureHpa = (int)getBits(mb, 36, 11); }
+        if (getBits(mb, 47, 1)) out.turbulence = (int)getBits(mb, 48, 2);
+        if (getBits(mb, 50, 1)) { out.hasHumidity = true; out.humidityPct = getBits(mb, 51, 6) * 100.0 / 64.0; }
+    } else if (is45) {
+        out.bds = 0x45;
+        int* lv[5] = {&out.turbulence, &out.windShear, &out.microburst, &out.icing, &out.wakeVortex};
+        for (int i = 0; i < 5; i++) if (getBits(mb, 1 + 3 * i, 1)) *lv[i] = (int)getBits(mb, 2 + 3 * i, 2);
+        out.hasSat = true; out.satC = sat45;
+        if (getBits(mb, 27, 1)) { out.hasPressure = true; out.pressureHpa = (int)getBits(mb, 28, 11); }
+        if (getBits(mb, 39, 1)) { out.hasRadioHeight = true; out.radioHeightFt = (int)getBits(mb, 40, 12) * 16; }
+    } else if (is20) {
         out.bds = 0x20;
         while (!cs.empty() && cs.back() == ' ') cs.pop_back();
         out.callsign = cs;
@@ -441,6 +541,61 @@ CommB inferCommB(const uint8_t* mb) {
         if (getBits(mb, 46, 1)) { out.hasInertialRate = true; out.inertialRateFpm = signedBits(mb, 47, 10) * 32; }
     }
     return out;
+}
+
+// ---------------------------------------------------------------- wind, temperature, declination
+
+double magDeclinationDeg(double lat, double lon) {
+    // Schmidt semi-normalised coefficients (nT), IGRF-13 epoch 2020.0, n = 1..3
+    static const double g[4][4] = {{0, 0, 0, 0}, {-29404.8, -1450.9, 0, 0}, {-2499.6, 2982.0, 1677.0, 0}, {1363.2, -2381.2, 1236.2, 525.7}};
+    static const double h[4][4] = {{0, 0, 0, 0}, {0, 4652.5, 0, 0}, {0, -2991.6, -734.6, 0}, {0, -82.1, 241.9, -543.4}};
+    auto pot = [&](double th, double ph) {   // V / a at r = a, theta the colatitude
+        const double x = std::cos(th), y = std::sin(th);
+        double P[4][4] = {};
+        P[1][0] = x; P[1][1] = y;
+        P[2][0] = 0.5 * (3 * x * x - 1); P[2][1] = std::sqrt(3.0) * x * y; P[2][2] = std::sqrt(3.0) / 2 * y * y;
+        P[3][0] = 0.5 * (5 * x * x * x - 3 * x); P[3][1] = std::sqrt(3.0 / 8) * y * (5 * x * x - 1); P[3][2] = std::sqrt(15.0) / 2 * x * y * y; P[3][3] = std::sqrt(5.0 / 8) * y * y * y;
+        double v = 0;
+        for (int n = 1; n <= 3; n++) for (int m = 0; m <= n; m++) v += (g[n][m] * std::cos(m * ph) + h[n][m] * std::sin(m * ph)) * P[n][m];
+        return v;
+    };
+    const double r = M_PI / 180.0, d = 1e-4;
+    const double th = (90.0 - std::clamp(lat, -89.0, 89.0)) * r, ph = lon * r;
+    const double X = (pot(th + d, ph) - pot(th - d, ph)) / (2 * d);                       // north: (1/r) dV/dtheta
+    const double Y = -(pot(th, ph + d) - pot(th, ph - d)) / (2 * d) / std::sin(th);       // east: -(1/(r sin theta)) dV/dphi
+    return std::atan2(Y, X) / r;
+}
+
+void windTriangle(double trk, double gs, double hdg, double tas, double& fromDeg, double& kt) {
+    const double r = M_PI / 180.0;
+    const double we = gs * std::sin(trk * r) - tas * std::sin(hdg * r), wn = gs * std::cos(trk * r) - tas * std::cos(hdg * r);
+    kt = std::hypot(we, wn);
+    fromDeg = mod(std::atan2(-we, -wn) / r, 360.0);
+}
+
+double satFromTasMach(double tas, double mach) {
+    if (mach <= 0) return -273.15;
+    const double a = tas / mach / 661.47;
+    return 288.15 * a * a - 273.15;
+}
+
+std::string raText(unsigned ara, unsigned rac, bool terminated) {
+    if (terminated) return "terminated";
+    std::string s;
+    if (ara & 0x2000) {   // bit 9 (first of the 14): one threat, the bits below give the advisory
+        s = (ara & 0x0800) ? "descend" : "climb";                                   // bit 11: downward sense
+        if (ara & 0x1000) s += ", corrective"; else s += ", preventive";            // bit 10: corrective
+        if (ara & 0x0400) s += ", increase rate";                                   // bit 12
+        if (ara & 0x0200) s += ", sense reversal";                                  // bit 13
+        if (ara & 0x0100) s += ", crossing";                                        // bit 14: altitude crossing
+        if (ara & 0x0080) s += ", positive";                                        // bit 15: positive (vs. vertical speed limit)
+    } else if (ara) s = "multiple threats";
+    else s = "advisory";
+    if (rac & 8) s += " (no descend)";
+    if (rac & 4) s += " (no climb)";
+    if (rac & 2) s += " (no left)";
+    if (rac & 1) s += " (no right)";
+    return s;
 }
 
 // ---------------------------------------------------------------- message decoding
@@ -602,7 +757,7 @@ bool decodeMsg(const uint8_t* b, int nbits, Msg& m) {
         } else {
             m.hasSquawk = true; m.squawk = decodeId13(getBits(b, 20, 13));
         }
-        if (m.df >= 20) m.commb = inferCommB(b + 4);
+        if (m.df >= 20) m.commb = inferCommB(b + 4, m.df == 20 && m.hasAlt ? m.altFt : kNoAltitude);
         break;
     }
     case 11:

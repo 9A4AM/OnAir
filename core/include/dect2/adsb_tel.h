@@ -28,6 +28,16 @@ struct AdsbAircraft {
     bool hasIas = false; int iasKt = 0; bool hasMach = false; float mach = 0;     // Comm-B 6,0
     bool hasSelAlt = false; int selAltFt = 0; bool hasSelHdg = false; float selHdgDeg = 0; bool hasBaroSet = false; float baroSetMb = 0;   // target state, Comm-B 4,0
     bool hasRoll = false; float rollDeg = 0;                 // Comm-B 5,0
+    // weather: derived from 5,0 (track, ground speed, TAS) + 6,0 (magnetic heading, Mach) heard within 4 s, smoothed; or reported in 4,4
+    bool hasWindDer = false; float windDerDir = 0, windDerKt = 0;      // direction the wind blows from, degrees true (heading corrected by a model declination: +-3 deg)
+    bool hasWindRep = false; float windRepDir = 0, windRepKt = 0;      // 4,4
+    bool hasSat = false; float satC = 0; bool satDerived = false;     // static air temperature: from TAS and Mach, or reported (4,4 / 4,5)
+    bool hasPressure = false; int pressureHpa = 0;                     // 4,4 / 4,5 static pressure
+    bool hasHumidity = false; float humidityPct = 0;                   // 4,4
+    int turbulence = -1, windShear = -1, microburst = -1, icing = -1, wakeVortex = -1;   // 4,4 / 4,5 levels 0 nil - 3 severe, -1 not reported
+    // ACAS resolution advisory (3,0), shown for a minute after it was heard
+    bool hasRa = false; unsigned raAra = 0, raRac = 0; bool raTerminated = false; uint32_t raThreat = 0; float raAgeSec = 0;
+    int subnetVersion = -1; bool acasRa = false; uint32_t gicbMask = 0;   // 1,0 and 1,7 capability
     int adsbVersion = -1; int nacp = -1;                     // operational status
     uint32_t messages = 0;           // messages received from this address
     float ageSec = 0;                // since the last message

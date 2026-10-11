@@ -258,4 +258,57 @@ void mbHeadingAndSpeed(uint8_t mb[7], double hdg, double ias, double mach, int b
     signedField(mb, 46, 47, 10, inertialRate, 32);
 }
 
+void mbDataLinkCap(uint8_t mb[7], int version, bool acas) {
+    std::memset(mb, 0, 7);
+    mb[0] = 0x10;
+    setBits(mb, 17, 7, (uint32_t)version);
+    setBits(mb, 25, 1, 1);                 // Mode S specific services
+    setBits(mb, 33, 1, 1);                 // aircraft identification capability
+    setBits(mb, 36, 1, 1);                 // common usage GICB capability report
+    if (acas) setBits(mb, 38, 1, 1);       // ACAS generates resolution advisories
+}
+
+void mbGicbCap(uint8_t mb[7], uint32_t mask) {
+    std::memset(mb, 0, 7);
+    setBits(mb, 1, 24, mask & 0xFFFFFF);
+}
+
+void mbResolutionAdvisory(uint8_t mb[7], unsigned ara, unsigned rac, bool rat, bool mte, uint32_t threat) {
+    std::memset(mb, 0, 7);
+    mb[0] = 0x30;
+    setBits(mb, 9, 14, ara); setBits(mb, 23, 4, rac); setBits(mb, 27, 1, rat); setBits(mb, 28, 1, mte);
+    setBits(mb, 29, 2, 1); setBits(mb, 31, 24, threat & 0xFFFFFF);
+}
+
+static void signMag(uint8_t* mb, int signBit, int first, int n, double v, double lsb) {
+    int q = (int)std::lround(v / lsb);
+    const int lim = 1 << n;
+    q = std::clamp(q, -lim, lim - 1);
+    setBits(mb, signBit, 1, q < 0);
+    setBits(mb, first, n, (uint32_t)(q & (lim - 1)));
+}
+
+void mbMetRoutine(uint8_t mb[7], int fom, double windKt, double windDir, double satC, double hpa, int turb, double hum) {
+    std::memset(mb, 0, 7);
+    setBits(mb, 1, 4, (uint32_t)std::max(fom, 0));
+    if (windKt >= 0) {
+        setBits(mb, 5, 1, 1);
+        setBits(mb, 6, 9, (uint32_t)std::clamp((int)std::lround(windKt), 0, 511));
+        setBits(mb, 15, 9, (uint32_t)((int)std::lround(std::fmod(windDir + 360.0, 360.0) / (180.0 / 256.0)) & 511));
+    }
+    if (!std::isnan(satC)) signMag(mb, 24, 25, 10, satC, 0.25);   // no status bit: the temperature is always sent
+    if (hpa >= 0) unsignedField(mb, 35, 36, 11, hpa, 1);
+    if (turb >= 0) { setBits(mb, 47, 1, 1); setBits(mb, 48, 2, (uint32_t)turb); }
+    if (hum >= 0) unsignedField(mb, 50, 51, 6, hum, 100.0 / 64.0);
+}
+
+void mbMetHazard(uint8_t mb[7], int turb, int shear, int burst, int icing, int wake, double satC, double hpa, double rh) {
+    std::memset(mb, 0, 7);
+    const int lv[5] = {turb, shear, burst, icing, wake};
+    for (int i = 0; i < 5; i++) if (lv[i] >= 0) { setBits(mb, 1 + 3 * i, 1, 1); setBits(mb, 2 + 3 * i, 2, (uint32_t)lv[i]); }
+    if (!std::isnan(satC)) { setBits(mb, 16, 1, 1); signMag(mb, 17, 18, 9, satC, 0.25); }
+    if (hpa >= 0) unsignedField(mb, 27, 28, 11, hpa, 1);
+    if (rh >= 0) unsignedField(mb, 39, 40, 12, rh, 16);
+}
+
 } // namespace dect2::adsb

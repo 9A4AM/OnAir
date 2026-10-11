@@ -338,6 +338,51 @@ void AdsbTracker::applyMsg(Rec& r, const AdsbFrame& f) {
         if (c.hasMach) { a.hasMach = true; a.mach = (float)c.mach; }
         if (c.hasBaroRate && !a.hasVrate) { a.hasVrate = true; a.vrateFpm = c.baroRateFpm; }
     }
+    if (c.bds == 0x50) { r.c50 = c; r.t50 = now; }
+    if (c.bds == 0x60) { r.c60 = c; r.t60 = now; }
+    if ((c.bds == 0x50 || c.bds == 0x60) && std::fabs(r.t50 - r.t60) <= 4.0) {
+        const CommB& p = r.c50; const CommB& q = r.c60;
+        const bool steady = (!p.hasRoll || std::fabs(p.rollDeg) <= 5.0) && (!p.hasTrackRate || std::fabs(p.trackRateDps) <= 0.5);   // a turn makes heading and track disagree in time
+        if (steady && p.hasTrack && p.hasGs && p.hasTas && q.hasHeading && p.tasKt >= 100) {
+            const double lat = a.hasPos ? a.lat : refValid_ ? refLat_ : 0.0, lon = a.hasPos ? a.lon : refValid_ ? refLon_ : 0.0;
+            const double hdg = q.headingDeg + ((a.hasPos || refValid_) ? magDeclinationDeg(lat, lon) : 0.0);
+            double from = 0, kt = 0;
+            windTriangle(p.trackDeg, p.gsKt, hdg, p.tasKt, from, kt);
+            if (kt <= 250.0) {
+                const double rr = M_PI / 180.0, we = -kt * std::sin(from * rr), wn = -kt * std::cos(from * rr);
+                if (now - r.tWind > 60.0) { r.windE = we; r.windN = wn; }
+                else { r.windE += 0.3 * (we - r.windE); r.windN += 0.3 * (wn - r.windN); }
+                r.tWind = now;
+                a.hasWindDer = true;
+                a.windDerKt = (float)std::hypot(r.windE, r.windN);
+                double d = std::atan2(-r.windE, -r.windN) / rr; if (d < 0) d += 360.0;
+                a.windDerDir = (float)d;
+            }
+        }
+        if (p.hasTas && q.hasMach && q.mach >= 0.4 && p.tasKt >= 150) {   // below Mach 0.4 the 0.004 step alone is worth several degrees
+            const double t = satFromTasMach(p.tasKt, q.mach);
+            if (t >= -80.0 && t <= 50.0) {
+                r.satEma = now - r.tSat > 60.0 ? t : r.satEma + 0.3 * (t - r.satEma);
+                r.tSat = now;
+                if (now - r.tSatRep > 60.0) { a.hasSat = true; a.satC = (float)r.satEma; a.satDerived = true; }
+            }
+        }
+    }
+    if (c.bds == 0x44 || c.bds == 0x45) {
+        r.tMet = now;
+        if (c.hasWind) { a.hasWindRep = true; a.windRepKt = (float)c.windKt; a.windRepDir = (float)c.windDirDeg; r.tWindRep = now; }
+        if (c.hasSat) { a.hasSat = true; a.satC = (float)c.satC; a.satDerived = false; r.tSatRep = now; }
+        if (c.hasPressure) { a.hasPressure = true; a.pressureHpa = c.pressureHpa; }
+        if (c.hasHumidity) { a.hasHumidity = true; a.humidityPct = (float)c.humidityPct; }
+        if (c.turbulence >= 0) a.turbulence = c.turbulence;
+        if (c.bds == 0x45) { a.windShear = c.windShear; a.microburst = c.microburst; a.icing = c.icing; a.wakeVortex = c.wakeVortex; }
+    }
+    if (c.bds == 0x30) {
+        r.tRa = now;
+        a.hasRa = true; a.raAra = c.ara; a.raRac = c.rac; a.raTerminated = c.raTerminated; a.raThreat = c.tti == 1 ? c.threatIcao : 0;
+    }
+    if (c.bds == 0x10) { a.subnetVersion = c.subnetVersion; a.acasRa = c.acasOperating; }
+    if (c.bds == 0x17) a.gicbMask = c.gicbMask;
 }
 
 void AdsbTracker::tick(double now) {
@@ -366,6 +411,11 @@ void AdsbTracker::snapshot(AdsbTelemetry& t, double now) const {
         a.ageSec = (float)std::max(0.0, now - r->lastSeen);
         a.posAgeSec = a.hasPos ? (float)std::max(0.0, now - r->lastPos) : 0.f;
         a.emergency = r->emergencyTc ? r->emergencyTc : r->emergencySq;
+        if (now - r->tWind > 300.0) a.hasWindDer = false;      // weather goes stale after five minutes, an advisory after one
+        if (now - r->tWindRep > 300.0) a.hasWindRep = false;
+        if (now - std::max(r->tSat, r->tSatRep) > 300.0) a.hasSat = false;
+        if (now - r->tRa > 60.0) a.hasRa = false;
+        a.raAgeSec = a.hasRa ? (float)std::max(0.0, now - r->tRa) : 0.f;
         if (refValid_ && a.hasPos) {
             a.hasRange = true;
             a.distNm = (float)distanceNm(refLat_, refLon_, a.lat, a.lon);
@@ -412,7 +462,20 @@ std::string adsbDescribe(const Msg& m) {
         std::string s = m.df == 20 ? "Comm-B altitude" : "Comm-B identity";
         if (m.df == 20 && m.hasAlt) { snprintf(b, sizeof b, " %d ft", m.altFt); s += b; }
         if (m.df == 21 && m.hasSquawk) { snprintf(b, sizeof b, " %04d", m.squawk); s += b; }
-        if (m.commb.bds) { snprintf(b, sizeof b, ", BDS %X,%X", m.commb.bds >> 4, m.commb.bds & 15); s += b; }
+        const CommB& c = m.commb;
+        if (c.bds) { snprintf(b, sizeof b, ", BDS %X,%X", c.bds >> 4, c.bds & 15); s += b; }
+        if (c.bds == 0x10) { snprintf(b, sizeof b, " capability: subnetwork v%d%s", c.subnetVersion, c.acasOperating ? ", ACAS RA" : ""); s += b; }
+        if (c.bds == 0x17) { snprintf(b, sizeof b, " GICB registers %06X", (unsigned)c.gicbMask); s += b; }
+        if (c.bds == 0x30) {
+            s += " ACAS RA: " + raText(c.ara, c.rac, c.raTerminated);
+            if (c.tti == 1) { snprintf(b, sizeof b, ", threat %06X", (unsigned)c.threatIcao); s += b; }
+        }
+        if (c.bds == 0x44) { snprintf(b, sizeof b, " wind %03.0f/%d kt, SAT %.1f C", c.windDirDeg, c.windKt, c.satC); s += b; if (c.hasPressure) { snprintf(b, sizeof b, ", %d hPa", c.pressureHpa); s += b; } }
+        if (c.bds == 0x45) {
+            snprintf(b, sizeof b, " hazard: SAT %.1f C", c.satC); s += b;
+            const char* nm[5] = {"turbulence", "wind shear", "microburst", "icing", "wake"}; const int lv[5] = {c.turbulence, c.windShear, c.microburst, c.icing, c.wakeVortex};
+            for (int i = 0; i < 5; i++) if (lv[i] > 0) { snprintf(b, sizeof b, ", %s %d", nm[i], lv[i]); s += b; }
+        }
         return s;
     }
     default: return m.df >= 24 ? "Extended length message" : "Mode S message";

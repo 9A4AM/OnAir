@@ -1,6 +1,8 @@
 // ADS-B screens: the aircraft table, a radar plot around the receiver, the message monitor, statistics and the options of the test signal.
 #include "app.h"
 #include "adsb_map.h"
+#include "dect2/adsb_msg.h"
+#include <cstring>
 #include <algorithm>
 #include <cmath>
 #include <deque>
@@ -21,6 +23,7 @@ struct State {
     int viewMode = 0;                           // 0 map, 1 table, 2 radar
     adsbmap::View map;
     bool mapHome = true;                        // the map follows the antenna position until the user drags it
+    bool winds = false;                         // "winds aloft": wind arrows at the aircraft (from Comm-B)
     std::string locMsg;
     int locBusy = 0;
 };
@@ -35,6 +38,7 @@ void loadState() {
     if (d.has("adsbLat")) S.refLat = d.getD("adsbLat", S.refLat);
     if (d.has("adsbLon")) S.refLon = d.getD("adsbLon", S.refLon);
     S.map.zoom = (int)d.getI("adsbZoom", 7);
+    S.winds = d.getB("adsbWinds", false);
     S.map.lat = S.refLat; S.map.lon = S.refLon;
 }
 
@@ -238,6 +242,24 @@ void mapView(App& a, ImVec2 size) {
             }
             if (std::fabs(ac.track.back().lat - ac.lat) < 2 && std::fabs(ac.track.back().lon - ac.lon) < 2) dl->AddLine(prev, adsbmap::project(ac.lat, ac.lon), altColour(ac, 0.45f), 1.5f);
         }
+        if (S.winds) for (const auto& ac : t.aircraft) {   // winds aloft: an arrow downwind from the aircraft, 1 px per kt, a tick per 50 kt
+            if (!ac.hasPos || ac.ground || !(ac.hasWindDer || ac.hasWindRep)) continue;
+            const float kt = ac.hasWindDer ? ac.windDerKt : ac.windRepKt, from = ac.hasWindDer ? ac.windDerDir : ac.windRepDir;
+            const ImVec2 q = adsbmap::project(ac.lat, ac.lon);
+            const float rad = (from + 180.f) * (float)M_PI / 180.f, dx = std::sin(rad), dy = -std::cos(rad);
+            const float len = (18.f + std::min(kt, 200.f) * 0.35f) * gUi;
+            const ImVec2 e(q.x + dx * len, q.y + dy * len);
+            const ImU32 col = altColour(ac, 0.9f);
+            dl->AddLine(q, e, IM_COL32(0, 0, 0, 160), 3.5f * gUi);
+            dl->AddLine(q, e, col, 2.f * gUi);
+            const float hw = 5 * gUi;
+            dl->AddTriangleFilled(ImVec2(e.x + dx * hw, e.y + dy * hw), ImVec2(e.x - dy * hw * 0.7f, e.y + dx * hw * 0.7f), ImVec2(e.x + dy * hw * 0.7f, e.y - dx * hw * 0.7f), col);
+            for (int k = 1; k * 50 <= (int)kt && k <= 4; k++) {   // ticks at the tail
+                const ImVec2 m(q.x + dx * (len * 0.12f * k + 4 * gUi), q.y + dy * (len * 0.12f * k + 4 * gUi));
+                dl->AddLine(ImVec2(m.x - dy * 4 * gUi, m.y + dx * 4 * gUi), ImVec2(m.x + dy * 4 * gUi, m.y - dx * 4 * gUi), col, 1.5f * gUi);
+            }
+            if (S.map.zoom >= 7) { char b[16]; snprintf(b, sizeof b, "%.0f", kt); dl->AddText(ImVec2(e.x + 4 * gUi, e.y - 6 * gUi), col, b); }
+        }
         for (const auto& ac : t.aircraft) {
             if (!ac.hasPos) continue;
             const ImVec2 q = adsbmap::project(ac.lat, ac.lon);
@@ -270,6 +292,9 @@ void mapView(App& a, ImVec2 size) {
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Button("antenna")) { S.map.lat = S.refLat; S.map.lon = S.refLon; S.mapHome = true; }
     ImGui::PopStyleColor();
+    ImGui::SameLine(0, 6 * gUi);
+    if (ImGui::Checkbox("winds aloft", &S.winds)) { plat::prefs().setB("adsbWinds", S.winds); plat::prefs().flush(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Wind arrows (downwind) at the aircraft, coloured by altitude: derived from Comm-B 5,0 + 6,0 replies, or reported in 4,4.");
     ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls(nullptr);
     if (wrongRef) {
@@ -316,6 +341,19 @@ void detail(const App& a) {
     kv("squawk", b);
     kv("selected alt", ac->hasSelAlt ? num(true, "%.0f ft", ac->selAltFt) : "-");
     kv("mach", ac->hasMach ? num(true, "%.2f", ac->mach) : "-");
+    if (ac->hasWindDer) snprintf(b, sizeof b, "%03.0f/%.0f kt derived", ac->windDerDir, ac->windDerKt);
+    else if (ac->hasWindRep) snprintf(b, sizeof b, "%03.0f/%.0f kt reported", ac->windRepDir, ac->windRepKt);
+    else snprintf(b, sizeof b, "-");
+    if (ac->hasWindDer && ac->hasWindRep) { char r[48]; snprintf(r, sizeof r, "\n%03.0f/%.0f kt reported", ac->windRepDir, ac->windRepKt); strncat(b, r, sizeof b - strlen(b) - 1); }
+    kv("wind", b);
+    if (ac->hasSat) snprintf(b, sizeof b, "%+.0f C %s", ac->satC, ac->satDerived ? "derived" : "reported"); else snprintf(b, sizeof b, "-");
+    kv("SAT", b);
+    if (ac->hasRa) {
+        std::string ra = dect2::adsb::raText(ac->raAra, ac->raRac, ac->raTerminated);
+        if (ac->raThreat) { snprintf(b, sizeof b, ", threat %06X", (unsigned)ac->raThreat); ra += b; }
+        snprintf(b, sizeof b, " (%.0f s ago)", ac->raAgeSec); ra += b;
+        ImGui::TextDisabled("ACAS RA"); kvColumn(96 * gUi); ImGui::TextColored(kWarn, "%s", ra.c_str());
+    } else kv("ACAS RA", "-");
     if (ac->emergency) snprintf(b, sizeof b, "state %d", ac->emergency); else snprintf(b, sizeof b, "none");
     kv("emergency", b);
     snprintf(b, sizeof b, "%u messages", ac->messages); kv("heard", b);

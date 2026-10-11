@@ -31,6 +31,13 @@ void mbCallsign(uint8_t mb[7], const std::string& callsign);                    
 void mbSelectedVertical(uint8_t mb[7], int mcpFt, int fmsFt, double baroMb);                                     // BDS 4,0
 void mbTrackAndTurn(uint8_t mb[7], double rollDeg, double trackDeg, double gsKt, double rateDps, double tasKt);   // BDS 5,0
 void mbHeadingAndSpeed(uint8_t mb[7], double headingDeg, double iasKt, double mach, int baroRateFpm, int inertialRateFpm);   // BDS 6,0
+void mbDataLinkCap(uint8_t mb[7], int subnetVersion, bool acas);                                                 // BDS 1,0
+void mbGicbCap(uint8_t mb[7], uint32_t mask24);                                                                  // BDS 1,7
+void mbResolutionAdvisory(uint8_t mb[7], unsigned ara14, unsigned rac4, bool rat, bool mte, uint32_t threatIcao);   // BDS 3,0 (TTI 1)
+// BDS 4,4; a negative value (or NaN for doubles) leaves that field out with its status bit 0
+void mbMetRoutine(uint8_t mb[7], int fom, double windKt, double windDirDeg, double satC, double pressureHpa, int turbulence, double humidityPct);
+// BDS 4,5; a negative level / NaN leaves the field out
+void mbMetHazard(uint8_t mb[7], int turb, int shear, int microburst, int icing, int wake, double satC, double pressureHpa, double radioHeightFt);
 
 // the 13 bit AC field for an altitude (Q = 1, 25 ft steps, or Gillham when gillham is set; 0 when it cannot be coded)
 unsigned encodeAc13(int altFt, bool gillham);

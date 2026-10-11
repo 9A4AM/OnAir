@@ -68,17 +68,47 @@ double bearingDeg(double lat1, double lon1, double lat2, double lon2);
 // ---- Comm-B
 // What a BDS code inference found in the 56 bit MB field of a DF20 / DF21 message
 struct CommB {
-    int bds = 0;                       // 0x20, 0x40, 0x50, 0x60, or 0 when the field is not one of them (or fits more than one)
+    int bds = 0;                       // 0x10, 0x17, 0x20, 0x30, 0x40, 0x44, 0x45, 0x50, 0x60, or 0 when the field is not one of them (or fits more than one)
     std::string callsign;              // 2,0
     bool hasSelAlt = false; int selAltMcpFt = 0; bool hasSelAltFms = false; int selAltFmsFt = 0; bool hasBaro = false; double baroMb = 0;   // 4,0
     bool hasRoll = false; double rollDeg = 0; bool hasTrack = false; double trackDeg = 0; bool hasGs = false; int gsKt = 0;                 // 5,0
     bool hasTrackRate = false; double trackRateDps = 0; bool hasTas = false; int tasKt = 0;
     bool hasHeading = false; double headingDeg = 0; bool hasIas = false; int iasKt = 0; bool hasMach = false; double mach = 0;           // 6,0
     bool hasBaroRate = false; int baroRateFpm = 0; bool hasInertialRate = false; int inertialRateFpm = 0;
+    // 1,0 data link capability: Mode S subnetwork version, ACAS operating, the continuation flag
+    int subnetVersion = -1; bool acasOperating = false, continuation = false;
+    uint32_t gicbMask = 0;             // 1,7: 24 bits, bit 23 (first transmitted) = 0,5 ... bit 0 = 6,0 (Annex 10 IV table A-2-23)
+    // 3,0 ACAS resolution advisory
+    unsigned ara = 0, rac = 0; bool raTerminated = false, multipleThreats = false; int tti = 0; uint32_t threatIcao = 0;   // tti 1: threatIcao is valid
+    // 4,4 meteorological routine report, 4,5 meteorological hazard report
+    int fom = -1;                      // 4,4 figure of merit / source 0-4
+    bool hasWind = false; int windKt = 0; double windDirDeg = 0;                 // 4,4
+    bool hasSat = false; double satC = 0;                                         // 4,4 and 4,5
+    bool hasPressure = false; int pressureHpa = 0;                                // 4,4 and 4,5 (static pressure)
+    bool hasHumidity = false; double humidityPct = 0;                             // 4,4
+    int turbulence = -1;               // 4,4 and 4,5: 0 nil, 1 light, 2 moderate, 3 severe
+    int windShear = -1, microburst = -1, icing = -1, wakeVortex = -1;            // 4,5 hazard levels 0-3 (-1 not sent)
+    bool hasRadioHeight = false; int radioHeightFt = 0;                           // 4,5
 };
 // mb: the 7 bytes of the MB field (message bits 33-88). Follows the checks of the BDS inference chapter of the Riddle: reserved bits zero,
 // status bits consistent with their values, values in a plausible range; a field that passes for two formats is not decoded.
-CommB inferCommB(const uint8_t* mb);
+// altFt: the altitude of the reply (DF20), or kNoAltitude. The weather registers 4,4 and 4,5 are only taken with it: their temperature and
+// pressure must fit the altitude (ISA +- 35 C; the static pressure is what the altimeter reads, so it is that of the pressure altitude).
+constexpr int kNoAltitude = -100000;
+CommB inferCommB(const uint8_t* mb, int altFt = kNoAltitude);
+double isaPressureHpa(double altFt);   // ISA static pressure at a pressure altitude
+double isaTempC(double altFt);
+
+// Magnetic declination (degrees, east positive) from a degree 3 spherical harmonic field (IGRF-13 main field for 2020, the
+// higher degrees left out). Good to about 2-5 degrees over Europe and North America, worse near the magnetic poles and in the South
+// Atlantic anomaly; enough to turn a BDS 6,0 magnetic heading into a true one for a wind estimate.
+double magDeclinationDeg(double lat, double lon);
+// Wind from a ground vector (track, ground speed) and an air vector (true heading, true airspeed): direction the wind blows from
+// (degrees true) and its speed, both in kt
+void windTriangle(double trackDeg, double gsKt, double trueHdgDeg, double tasKt, double& fromDeg, double& windKt);
+// Static air temperature (C) from true airspeed and Mach: a = TAS / M, T = 288.15 K (a / 661.47 kt)^2
+double satFromTasMach(double tasKt, double mach);
+std::string raText(unsigned ara, unsigned rac, bool terminated);   // "climb", "descend, crossing", ... of a BDS 3,0 advisory
 
 // ---- the decoded message
 struct Msg {
