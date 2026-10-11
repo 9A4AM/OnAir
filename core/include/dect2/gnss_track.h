@@ -1,7 +1,7 @@
 // One tracking channel: carrier and code loops, C/N0, bit synchronisation and the framing of the navigation message.
 // A channel reads whole code periods from its band's buffer; every epoch it updates the loops. The message layer is the LNAV of GPS and QZSS (50 bps,
 // 20 code periods a bit), the SBAS messages (500 symbols a second, two code periods a symbol, Viterbi decoding) or the Galileo I/NAV of E1-B
-// (one symbol per 4 ms code period, page parts found by their sync pattern).
+// (one symbol per 4 ms code period, page parts found by their sync pattern), the BeiDou D1 (50 bps under the 20 bit NH code) and D2 (500 bps) subframes.
 #pragma once
 #include "gnss_front.h"
 #include "gnss_nav.h"
@@ -23,12 +23,13 @@ struct GnssSignalSpec {
     int msg = 0;                  // the message layer: GnssMsgLnav, GnssMsgSbas or GnssMsgInav
     double epochS = 1e-3;         // one code period, seconds (codeLen / chipRate)
 };
-enum { GnssMsgLnav = 0, GnssMsgSbas = 1, GnssMsgInav = 2 };
+enum { GnssMsgLnav = 0, GnssMsgSbas = 1, GnssMsgInav = 2, GnssMsgBdsD1 = 3, GnssMsgBdsD2 = 4, GnssMsgGlo = 5 };
 
 struct GnssSubframeEvent {
     int kind = GnssMsgLnav;       // what this is: an LNAV subframe, an SBAS message or an I/NAV word
     int sbasType = -1;            // SBAS: the message type
     uint8_t word[128] = {};       // I/NAV: the 128 bit word of a page with a good CRC
+    uint8_t bits[300] = {};       // BeiDou: the information bits of the subframe (ICD numbering, after the BCH correction); GLONASS: the 85 bits of a string
     LnavSubframe sf;
     double towStart = 0;          // time of week of the first bit of the subframe, from its handover word (I/NAV: of the page, -1 when the word has none)
     int64_t startEpoch = 0;
@@ -37,6 +38,7 @@ struct GnssSubframeEvent {
 class GnssTracker {
 public:
     int sys = 0, prn = 0, fcn = 0;
+    int band = 0;                 // the receiver's band this channel reads (set by the receiver)
     // Start tracking at band sample `idx` (the leading edge of the sample) where the code phase is `phase` chips, with this Doppler estimate.
     void start(const GnssSignalSpec& spec, const uint8_t* chips, int prn, double dopplerHz, int64_t idx, double phase);
     // The code rate error the code loop starts with (chips per second on top of the carrier aiding), e.g. a sample clock error measured on other channels
@@ -85,6 +87,12 @@ private:
     void sbasLayer(float I);
     void inavLayer(float I);
     void inavPart(int64_t p);
+    void bdsLayer(float I);
+    void bdsTrySubframe();
+    float nhRing_[20] = {};
+    double nhAcc_[20] = {}, nhAlt_[20] = {};
+    int nhFill_ = 0;
+    int bdsInv_ = 0;
     // SBAS symbols
     std::vector<float> sym_;          // soft symbols (two epochs each)
     int64_t symBase_ = 0;             // absolute symbol number of sym_[0]

@@ -1,6 +1,7 @@
 // GNSS receiver: orchestrates the bands, the acquisition, the tracking channels, the navigation data base and the position solution.
 #include "dect2/gnss_rx.h"
 #include "dect2/gnss_acq.h"
+#include "dect2/gnss_bds.h"
 #include "dect2/gnss_codes.h"
 #include "dect2/gnss_front.h"
 #include "dect2/gnss_msg.h"
@@ -21,7 +22,7 @@ namespace {
 
 constexpr double kGpsFsOut = 4.096e6;
 constexpr int kGpsN = 4096;
-constexpr int kMaxChannels = 24;
+constexpr int kMaxChannels = 40;
 constexpr size_t kBlock = 16384;
 // The search: a static receiver sees the satellites within +-5 kHz of the radio's own frequency error; that error is up to 2 kHz with a TCXO,
 // 31 kHz on a HackRF (20 ppm) and 160 kHz on a dongle without one (100 ppm). The windows widen in that order while nothing is found.
@@ -51,6 +52,19 @@ constexpr int kGalPrns = 37;                 // 1..36
 constexpr int kGalHalfChips = 2 * kGalE1Len;
 constexpr int kGalN = 16384;
 constexpr int kGalMs = 4;                    // code periods integrated per search (16 ms, without coherent pairs: a symbol every period)
+// BeiDou B1I: 1 ms codes of 2046 chips at 2.046 Mcps, 4096 samples of its own band; ranging codes 1..37
+constexpr int kBdsN = 4096;
+constexpr int kBdsPrns = 64;
+
+// The search of a band without GPS to lean on: the window widens while nothing is found, as for GPS (planSearch)
+struct SearchPlan {
+    int stage = 0;
+    uint32_t stageRounds = 0;
+    int roundHits = 0, lastRoundHits = 0;
+    bool longRound = false;
+    double lastCfo = 0;
+    bool lastCfoValid = false;
+};
 
 double cpuNow() {
     timespec ts;
@@ -118,6 +132,21 @@ struct GnssReceiver::Impl {
     int galRoundHits = 0, galEmptyRounds = 0;
     double galIdleUntil = 0;
     GnssSignalSpec gpsSpec, qzssSpec, sbasSpec;
+    // BeiDou B1I band (its own tune, or with L1 at 20 Msps and more)
+    bool bdsActive = false;
+    GnssBand bdsBand;
+    GnssAcq bdsAcq;
+    GnssSignalSpec bdsD1Spec, bdsD2Spec;
+    std::vector<uint8_t> bdsChips[kBdsPrns];
+    SatNav bsat[kBdsPrns];
+    BdsNav bnav[kBdsPrns];
+    bool bdtGpsValid = false;                    // BDT - GPS from D1 subframe 5 page 9
+    double bdtA0 = 0, bdtA1 = 0;
+    double bdsCredit = 0;
+    SearchPlan bdsPlan;
+    uint32_t bdsRoundSeen = 0;
+    int bdsRoundHits = 0, bdsEmptyRounds = 0;
+    double bdsIdleUntil = 0;
     double acqCredit = 0;
     std::vector<std::unique_ptr<GnssTracker>> trackers;
     // navigation data
@@ -156,10 +185,21 @@ struct GnssReceiver::Impl {
     struct SolInfo { bool used = false; float resid = 0; float az = 0, el = 0; bool has = false; };
     SolInfo sol[kCaPrns];
     SolInfo gsol[kGalPrns];
-    SatNav& navOf(int sys, int prn) { return sys == GnssGalileo ? gsat[prn] : sat[prn]; }
-    const SatNav& navOf(int sys, int prn) const { return sys == GnssGalileo ? gsat[prn] : sat[prn]; }
-    SolInfo& solOf(int sys, int prn) { return sys == GnssGalileo ? gsol[prn] : sol[prn]; }
-    const SolInfo& solOf(int sys, int prn) const { return sys == GnssGalileo ? gsol[prn] : sol[prn]; }
+    SolInfo bsol[kBdsPrns];
+    SatNav& navOf(int sys, int prn) { return sys == GnssGalileo ? gsat[prn] : sys == GnssBeidou ? bsat[prn] : sat[prn]; }
+    const SatNav& navOf(int sys, int prn) const { return sys == GnssGalileo ? gsat[prn] : sys == GnssBeidou ? bsat[prn] : sat[prn]; }
+    SolInfo& solOf(int sys, int prn) { return sys == GnssGalileo ? gsol[prn] : sys == GnssBeidou ? bsol[prn] : sol[prn]; }
+    const SolInfo& solOf(int sys, int prn) const { return sys == GnssGalileo ? gsol[prn] : sys == GnssBeidou ? bsol[prn] : sol[prn]; }
+    // BDT - GPS time less the whole 14 s at BDT t (A0GPS + A1GPS t, ICD 5.2.4.18)
+    double bdtAt(double t) const { return bdtGpsValid ? bdtA0 + bdtA1 * t : 0.0; }
+    // a satellite's own time (GPS, QZSS: GPS time; Galileo: GST; BeiDou: BDT) on the GPS time scale
+    double toGpsTime(int sys, double t) const {
+        if (sys == GnssGalileo) return t - ggtoAt(t);
+        if (sys == GnssBeidou) { double g = t + kBdtGpsSeconds - bdtAt(t); if (g >= 604800.0) g -= 604800.0; return g; }
+        return t;
+    }
+    static double carrierOf(int sys) { return sys == GnssBeidou ? kBdsB1Hz : kGpsL1Hz; }
+    GnssBand& bandOf(const GnssTracker& t) { return t.band == 1 ? bdsBand : gpsBand; }
     // GST - GPS time at GPS time of week t (word type 10: A0G + A1G (t - t0G + 604800 (WN - WN0G)), the 6 bit week difference within +-31)
     double ggtoAt(double t) const {
         if (!ggtoValid) return 0;
@@ -234,7 +274,7 @@ struct GnssReceiver::Impl {
             gpsMaskNow = mask;
         } else {
             gpsActive = false;
-            trackers.clear();
+            dropBand(0);
         }
         // Galileo E1-B shares the band; its BOC(1,1) lobes reach 2 MHz from the carrier, so the input must be 3.5 Msps or more
         const bool wantGal = gpsActive && (mask & gnssSystemBit(GnssGalileo)) && rate >= 3.5e6;
@@ -271,16 +311,58 @@ struct GnssReceiver::Impl {
             galActive = false;
         }
         galRebuild = false;
+        // BeiDou B1I, 1561.098 MHz: the main lobe (+-2.046 MHz) mostly inside the band; 4 Msps on its own carrier is enough
+        const double offB = kBdsB1Hz - center;
+        const bool wantBds = (mask & gnssSystemBit(GnssBeidou)) && rate >= 3.9e6 && std::fabs(offB) + 1.0e6 <= 0.5 * rate;
+        if (wantBds) {
+            if (!bdsActive || std::fabs(bdsBand.offsetHz() - offB) > 1.0 || lastRate != rate) {
+                dropBand(1);
+                bdsBand.init(rate, offB, kGpsFsOut, (size_t)1 << 19);
+                GnssAcqConfig ac;
+                ac.sys = GnssBeidou; ac.fftLog2 = 12; ac.fsOut = kGpsFsOut; ac.blocks = kShortMs; ac.rfHz = kBdsB1Hz;
+                ac.pfa = 1e-3;
+                ac.coherentPairs = false;          // the NH code turns the D1 symbols over from one code period to the next
+                const int q = (int)std::ceil(dopHalf.load() / 1000.0);
+                ac.qMin = -q; ac.qMax = q - 1;
+                for (int p = 1; p <= kBdsMaxPrn; p++) ac.prns.push_back(p);
+                ac.replica = [](int prn, cf32* out, int n) {
+                    uint8_t c[kBdsLen];
+                    if (!bdsB1iChips(prn, c)) return false;
+                    for (int i = 0; i < n; i++) {
+                        const int idx = (int)(((int64_t)i * 2 + 1) * kBdsLen / (2 * (int64_t)n));
+                        out[i] = cf32(c[idx] ? -1.f : 1.f, 0.f);
+                    }
+                    return true;
+                };
+                bdsAcq.init(ac);
+                for (int p = 1; p <= kBdsMaxPrn; p++) { bdsChips[p].assign((size_t)kBdsLen, 0); bdsB1iChips(p, bdsChips[p].data()); }
+                bdsD1Spec.sys = GnssBeidou; bdsD1Spec.chipRate = kBdsChipRate; bdsD1Spec.codeLen = kBdsLen; bdsD1Spec.rfHz = kBdsB1Hz; bdsD1Spec.fsOut = kGpsFsOut;
+                bdsD1Spec.halfSpacing = 1;          // half a chip at two samples a chip
+                bdsD1Spec.msg = GnssMsgBdsD1; bdsD1Spec.epochS = 1e-3;
+                bdsD2Spec = bdsD1Spec; bdsD2Spec.msg = GnssMsgBdsD2;
+                bdsCredit = 0; bdsPlan = SearchPlan();
+            }
+            bdsActive = true;
+        } else {
+            if (bdsActive) dropBand(1);
+            bdsActive = false;
+        }
         lastRate = rate;
-        tel.activeMask = gpsActive ? gnssSystemBit(GnssGps) : 0;
+        tel.activeMask = activeMask();
+    }
+    // the bands that the tuning and the rate hold, by the system that owns each (L1: GPS)
+    unsigned activeMask() const { return (gpsActive ? gnssSystemBit(GnssGps) : 0u) | (bdsActive ? gnssSystemBit(GnssBeidou) : 0u); }
+    void dropBand(int b) {
+        trackers.erase(std::remove_if(trackers.begin(), trackers.end(), [b](const std::unique_ptr<GnssTracker>& t) { return t->band == b; }), trackers.end());
     }
     bool galRebuild = false;
     double lastRate = 0;
     unsigned gpsMaskNow = 0;
     // the systems searched or tracked now (GnssTelemetry::decodeMask)
     unsigned decodeMask() const {
-        if (!gpsActive) return 0;
-        return (gpsMaskNow & (gnssSystemBit(GnssGps) | gnssSystemBit(GnssQzss) | gnssSystemBit(GnssSbas))) | (galActive ? gnssSystemBit(GnssGalileo) : 0u);
+        const unsigned b = bdsActive ? gnssSystemBit(GnssBeidou) : 0u;
+        if (!gpsActive) return b;
+        return (gpsMaskNow & (gnssSystemBit(GnssGps) | gnssSystemBit(GnssQzss) | gnssSystemBit(GnssSbas))) | (galActive ? gnssSystemBit(GnssGalileo) : 0u) | b;
     }
 
     void resetState() {
@@ -298,6 +380,11 @@ struct GnssReceiver::Impl {
         for (auto& s : gsol) s = SolInfo();
         ggtoValid = false; galCredit = 0; predictedGal.clear();
         galRoundSeen = 0; galLong = false; galRoundHits = 0; galEmptyRounds = 0; galIdleUntil = 0; codeRateFrac = 0;
+        bdsBand.reset(); bdsAcq.reset();
+        for (auto& s : bsat) s = SatNav();
+        for (auto& n : bnav) n = BdsNav();
+        for (auto& s : bsol) s = SolInfo();
+        bdtGpsValid = false; bdsCredit = 0; bdsPlan = SearchPlan(); bdsRoundSeen = 0; bdsRoundHits = 0; bdsEmptyRounds = 0; bdsIdleUntil = 0;
         iono = GpsIono(); utc = GpsUtc(); almToa = -1; almWna = -1; almGot = false;
         fix = GnssFix(); clockSet = false; hasPrior = false; nextMeas = 1.0; fixCount = 0; firstFix = -1; lastFixSignal = -1;
         okRetired = badRetired = 0; cfoEst = driftEst = 0; cfoValid = false; sbasTotal = 0;
@@ -315,6 +402,10 @@ struct GnssReceiver::Impl {
     }
     bool trackedGal(int prn) const {
         for (auto& t : trackers) if (t->sys == GnssGalileo && t->prn == prn) return true;
+        return false;
+    }
+    bool trackedSys(int sys, int prn) const {
+        for (auto& t : trackers) if (t->sys == sys && t->prn == prn) return true;
         return false;
     }
     bool gpsLocked() const {
@@ -361,6 +452,65 @@ struct GnssReceiver::Impl {
         trackers.push_back(std::move(t));
     }
 
+    void startBdsFromHit(const GnssAcqHit& found) {
+        if (trackers.size() >= (size_t)kMaxChannels || trackedSys(GnssBeidou, found.prn)) return;
+        GnssAcqHit h;
+        units += (uint64_t)(6 * std::max(8, found.blocks));
+        if (!bdsAcq.confirm(bdsBand, found.prn, found.dopplerHz, found.blocks, &h)) return;
+        auto t = std::make_unique<GnssTracker>();
+        // A sample clock that does not follow the oscillator moves the 2.046 Mcps code by 41 chips a second at 20 ppm: more than the code loop
+        // pulls in. The hit and its confirmation are two code phase readings far apart: the code periods between them give the code rate.
+        double frac = codeRateFrac;
+        {
+            const double D = ((double)h.segStart + h.codePhase) - ((double)found.segStart + found.codePhase);
+            const double aided = 1.0 + h.dopplerHz / kBdsB1Hz;
+            if (D > 0.05 * kGpsFsOut) {
+                const double m = std::round(D * aided / kBdsN);
+                const double f = m * kBdsN / D - aided;
+                if (m > 0 && std::fabs(f) < 1e-4) frac = f;
+            }
+        }
+        const double rc = kBdsChipRate * (1.0 + h.dopplerHz / kBdsB1Hz + frac) / kGpsFsOut;
+        int64_t idx = bdsBand.end() - 3 * kBdsN;
+        if (idx < bdsBand.base()) idx = bdsBand.base();
+        double ph = std::fmod(((double)idx - ((double)h.segStart + h.codePhase)) * rc, (double)kBdsLen);
+        if (ph < 0) ph += kBdsLen;
+        t->start(bdsIsGeo(h.prn) ? bdsD2Spec : bdsD1Spec, bdsChips[h.prn].data(), h.prn, h.dopplerHz, idx, ph);
+        t->band = 1;
+        if (frac != 0) t->setCodeRateHint(frac * kBdsChipRate);
+        char b[120];
+        snprintf(b, sizeof b, "%s found: Doppler %+.0f Hz, peak %.1f times the noise", satName(GnssBeidou, h.prn).c_str(), h.dopplerHz, h.ratio);
+        logf(b);
+        trackers.push_back(std::move(t));
+    }
+
+    // BeiDou: the ephemeris from D1 subframes 1-3 of one frame or D2 pages 1-10; BDT - GPS from D1 subframe 5 page 9
+    void handleBds(GnssTracker& t, const GnssSubframeEvent& ev, double signalNow) {
+        BdsNav& n = bnav[t.prn];
+        SatNav& s = bsat[t.prn];
+        s.towLast = (int)ev.towStart;
+        s.lastSfId = (int)bdsFraId(ev.bits); s.lastSfTime = signalNow;
+        GpsEphemeris e;
+        int wk = 0;
+        const bool had = n.gpsValid;
+        if (bdsHandleSubframe(n, ev.bits, ev.kind == GnssMsgBdsD2, t.prn, &e, &wk)) {
+            if (!s.hasEph || s.eph.iodc != e.iodc || s.eph.toe != e.toe || s.eph.health != e.health) {
+                s.eph = e; s.hasEph = true; s.week = wk; s.ephSignalTime = signalNow;
+                char b[120];
+                snprintf(b, sizeof b, "%s ephemeris AODE %d, BDT week %d, health %s", satName(GnssBeidou, t.prn).c_str(), e.iodc, wk, e.health ? "bad" : "ok");
+                logf(b);
+            }
+        }
+        if (n.gpsValid && !had) {
+            if (!bdtGpsValid) {
+                char b[100];
+                snprintf(b, sizeof b, "BDT - GPS time offset %+.1f ns (from %s)", n.a0gps * 1e9, satName(GnssBeidou, t.prn).c_str());
+                logf(b);
+            }
+            bdtGpsValid = true; bdtA0 = n.a0gps; bdtA1 = n.a1gps;
+        }
+    }
+
     // Galileo I/NAV words: the ephemeris from words 1-4 of one IODnav and word 5 (BGD, health, week); the GST-GPS offset from word 10
     void handleInav(GnssTracker& t, const GnssSubframeEvent& ev, double signalNow) {
         GalNav& g = gnav[t.prn];
@@ -398,6 +548,7 @@ struct GnssReceiver::Impl {
 
     void handleSubframe(GnssTracker& t, const GnssSubframeEvent& ev, double signalNow) {
         if (ev.kind == GnssMsgInav) { handleInav(t, ev, signalNow); return; }
+        if (ev.kind == GnssMsgBdsD1 || ev.kind == GnssMsgBdsD2) { handleBds(t, ev, signalNow); return; }
         SatNav& s = sat[t.prn];
         if (ev.kind == GnssMsgSbas) {
             // SBAS: the message type is reported; the corrections are not applied
@@ -439,11 +590,11 @@ struct GnssReceiver::Impl {
     }
 
     void runTrackers(double signalNow) {
-        if (!gpsActive) return;
         for (auto& t : trackers) {
             const bool wasLocked = t->carrierLocked(), wasBit = t->bitSynced(), wasFrame = t->frameSynced();
             const uint64_t okBefore = t->framesOk();
-            while (t->step(gpsBand)) {}
+            const GnssBand& band = bandOf(*t);
+            while (t->step(band)) {}
             if (t->carrierLocked() && !wasLocked) {
                 char b[100]; snprintf(b, sizeof b, "%s locked, %.0f dB-Hz", satName(t->sys, t->prn).c_str(), t->cn0()); logf(b);
                 if (firstLock < 0) firstLock = signalNow;
@@ -458,7 +609,7 @@ struct GnssReceiver::Impl {
             if (trackers[i]->lost()) {
                 okRetired += trackers[i]->framesOk(); badRetired += trackers[i]->framesBad();
                 // a lost satellite is found again sooner by a short round than at the end of a long one
-                if (longRound && trackers[i]->lockSeconds() > 0.5) { gpsAcq.endRound(); longRound = false; }
+                if (trackers[i]->band == 0 && longRound && trackers[i]->lockSeconds() > 0.5) { gpsAcq.endRound(); longRound = false; }
                 logf(satName(trackers[i]->sys, trackers[i]->prn) + (trackers[i]->wasPullInTimeout() ? " not confirmed" : " lost"));
                 trackers.erase(trackers.begin() + (long)i);
             } else i++;
@@ -479,6 +630,7 @@ struct GnssReceiver::Impl {
         double lo = 1e18, hi = -1e18;
         int nLocked = 0, nPull = 0;
         for (auto& t : trackers) {
+            if (t->band != 0) continue;
             if (t->carrierLocked()) { lo = std::min(lo, t->dopplerHz()); hi = std::max(hi, t->dopplerHz()); nLocked++; }
             else nPull++;
         }
@@ -584,11 +736,101 @@ struct GnssReceiver::Impl {
         for (auto& h : hits) startFromHit(h);
     }
 
+    // The same plan for a band of its own (BeiDou or GLONASS tuned without L1): its own channels say where the radio's error lies, else the
+    // window widens round by round. Frequencies scale with the carrier: the remembered error is at L1.
+    void planOwn(GnssAcq& acq, SearchPlan& pl, int sys, double rf, const char* name) {
+        double lo = 1e18, hi = -1e18;
+        int nLocked = 0, nPull = 0;
+        for (auto& t : trackers) {
+            if (t->sys != sys) continue;
+            if (t->carrierLocked()) { lo = std::min(lo, t->dopplerHz()); hi = std::max(hi, t->dopplerHz()); nLocked++; }
+            else nPull++;
+        }
+        const uint32_t r = acq.rounds();
+        double c = 0, h = dopHalf.load();
+        int ms = kShortMs;
+        const bool newRound = r != pl.stageRounds;
+        if (newRound) { pl.lastRoundHits = pl.roundHits; pl.roundHits = 0; }
+        if (nLocked > 0) {
+            c = 0.5 * (lo + hi); h = std::max(kSatDopplerHz, 2 * kSatDopplerHz - 0.5 * (hi - lo)) + 500.0;
+            pl.lastCfo = c; pl.lastCfoValid = true;
+            pl.stage = 0; pl.stageRounds = r;
+            if (newRound) pl.longRound = !pl.longRound && pl.lastRoundHits == 0;
+            if (pl.longRound) ms = kLongMs;
+        } else {
+            pl.longRound = false;
+            if (newRound) {
+                pl.stageRounds = r;
+                if (nPull == 0) {
+                    pl.stage = (pl.stage + 1) % 6;
+                    static const char* what[6] = {"", "+-45 kHz", "+-170 kHz", "with a 64 ms integration", "+-45 kHz with a 64 ms integration", "+-170 kHz with a 64 ms integration"};
+                    if (pl.stage > 0) logf(std::string(name) + ": nothing found yet, searching " + what[pl.stage]);
+                }
+            }
+            const int st = pl.stage % 3;
+            if (st == 0) {
+                if (pl.lastCfoValid) c = pl.lastCfo; else if (cfoHintValid.load()) c = cfoHintHz.load() * rf / kGpsL1Hz;
+            } else h = st == 1 ? kMidHz : kWideHz;
+            if (pl.stage >= 3) ms = kLongMs;
+        }
+        acq.setPlan(c, h, ms);
+    }
+
+    // The sample clock error against the code, from the GPS channels whose code loop has settled (median); false while there is none
+    bool updateCodeRate(int sys = GnssGps, double chipRate = kGpsCaChipRate) {
+        std::vector<double> e;
+        for (auto& t : trackers) if (t->sys == sys && t->carrierLocked() && t->lockSeconds() > 3.0) e.push_back(t->codeRateCorrection() / chipRate);
+        if (e.empty()) return false;
+        std::sort(e.begin(), e.end());
+        codeRateFrac = e[e.size() / 2];
+        return true;
+    }
+
+    // BeiDou: with L1 in the same tune it is searched once GPS has a fix, in the window of the measured frequency error (as Galileo); on a tune of
+    // its own it searches like GPS does, the window widening while nothing is found.
+    void runBdsAcq(double seconds, double signalNow) {
+        if (!bdsActive) return;
+        int nB = 0, nLocked = 0;
+        for (auto& t : trackers) if (t->sys == GnssBeidou) { nB++; nLocked += t->carrierLocked(); }
+        double rateNow = (double)acqRate.load();
+        if (gpsActive) {
+            // once a GPS satellite is locked the radio's error is known to within the window of the GPS search; with a fix it is measured
+            if (!gpsLocked()) return;
+            const uint32_t r = bdsAcq.rounds();
+            if (r != bdsRoundSeen) {
+                bdsRoundSeen = r;
+                if (bdsRoundHits == 0 && nB == 0) { bdsIdleUntil = signalNow + 10.0 * (1 << std::min(bdsEmptyRounds, 3)); bdsEmptyRounds++; }
+                else bdsEmptyRounds = 0;
+                bdsRoundHits = 0;
+            }
+            if (signalNow < bdsIdleUntil) return;
+            if (updateCodeRate()) bdsAcq.setCodeRateError(codeRateFrac);
+            const double sc = kBdsB1Hz / kGpsL1Hz;
+            if (fix.valid && cfoValid) bdsAcq.setPlan(cfoEst * sc, kSatDopplerHz, nB > 0 && r % 3 == 2 ? kLongMs / 2 : kShortMs);
+            else bdsAcq.setPlan(gpsAcq.windowCenterHz() * sc, gpsAcq.windowHalfHz(), kShortMs);
+            rateNow *= 0.5;
+        } else {
+            planOwn(bdsAcq, bdsPlan, GnssBeidou, kBdsB1Hz, "BeiDou");
+            if (updateCodeRate(GnssBeidou, kBdsChipRate)) bdsAcq.setCodeRateError(codeRateFrac);
+            if (nLocked == 0) rateNow *= 2.0;
+        }
+        bdsCredit = std::min(bdsCredit + seconds * 1000.0 * rateNow, 600.0);
+        if (bdsCredit < 8) return;
+        std::vector<GnssAcqHit> hits;
+        const int used = bdsAcq.work(bdsBand, (int)bdsCredit, [this](int p) { return trackedSys(GnssBeidou, p); }, hits);
+        bdsCredit -= used;
+        units += (uint64_t)used;
+        bdsRoundHits += (int)hits.size();
+        bdsPlan.roundHits += (int)hits.size();
+        for (auto& h : hits) startBdsFromHit(h);
+    }
+
     void runAcq(double seconds) {
+        runBdsAcq(seconds, (double)inSamples / rate);
         if (!gpsActive) return;
         planSearch();
         int nLocked = 0;
-        for (auto& t : trackers) nLocked += t->carrierLocked();
+        for (auto& t : trackers) nLocked += t->band == 0 && t->carrierLocked();
         // search less when the satellites expected in view are all tracked; harder while nothing is tracked (the channels cost nothing then)
         const double rateNow = (double)acqRate.load() * (nLocked == 0 ? 2.0 : 1.0);
         acqCredit = std::min(acqCredit + seconds * 1000.0 * rateNow, 600.0);
@@ -604,10 +846,16 @@ struct GnssReceiver::Impl {
     }
 
     void trimBands() {
-        if (!gpsActive) return;
-        int64_t keepFrom = gpsBand.end();
-        for (auto& t : trackers) keepFrom = std::min(keepFrom, t->position());
-        gpsBand.trimTo(keepFrom - 8192);
+        if (gpsActive) {
+            int64_t keepFrom = gpsBand.end();
+            for (auto& t : trackers) if (t->band == 0) keepFrom = std::min(keepFrom, t->position());
+            gpsBand.trimTo(keepFrom - 8192);
+        }
+        if (bdsActive) {
+            int64_t keepFrom = bdsBand.end();
+            for (auto& t : trackers) if (t->band == 1) keepFrom = std::min(keepFrom, t->position());
+            bdsBand.trimTo(keepFrom - 8192);
+        }
     }
 
     // ------------------------------------------------------------------ the fix
@@ -618,7 +866,7 @@ struct GnssReceiver::Impl {
         std::vector<double> towv;
         for (auto& t : trackers) {
             // QZSS keeps GPS time and sends the GPS navigation message: it joins the GPS satellites (IS-QZSS-PNT); SBAS is not used for ranging
-            if ((t->sys != GnssGps && t->sys != GnssQzss && t->sys != GnssGalileo) || !t->carrierLocked() || !t->timeValid()) continue;
+            if ((t->sys != GnssGps && t->sys != GnssQzss && t->sys != GnssGalileo && t->sys != GnssBeidou) || !t->carrierLocked() || !t->timeValid()) continue;
             double tow;
             if (!t->transmitTime(S, &tow)) continue;
             GnssMeasurement m;
@@ -629,7 +877,7 @@ struct GnssReceiver::Impl {
         double tRef = 0;
         int n = 0;
         // the Galileo times are GST: on the GPS scale with the broadcast offset (a few ns; the reference only needs to be near)
-        for (auto& m : meas) { const SatNav& s = navOf(m.sys, m.prn); if (s.hasEph && s.eph.health == 0 && m.cn0 > 24.0) { tRef += m.txTow - (m.sys == GnssGalileo ? ggtoAt(m.txTow) : 0.0); n++; } }
+        for (auto& m : meas) { const SatNav& s = navOf(m.sys, m.prn); if (s.hasEph && s.eph.health == 0 && m.cn0 > 24.0) { tRef += m.sys == GnssBeidou ? toGpsTime(m.sys, m.txTow) : m.txTow - (m.sys == GnssGalileo ? ggtoAt(m.txTow) : 0.0); n++; } }
         if (n >= 1) tRef /= n;
         // average in a way that survives the week boundary: the times are within 20 ms of each other, so a plain mean is fine except at the wrap
         const double tr0 = std::round((tRef + 0.075) * 1e6) / 1e6;
@@ -650,6 +898,10 @@ struct GnssReceiver::Impl {
                 // estimates the offset as a clock of its own (one more unknown)
                 if (ggtoValid) txGps -= ggtoAt(meas[i].txTow);
                 else o.sys = GnssGalileo;
+            } else if (meas[i].sys == GnssBeidou) {
+                // BDT is 14 s behind GPS time; with the broadcast A0GPS/A1GPS BeiDou shares the GPS clock unknown, without them it has one of its own
+                txGps = toGpsTime(GnssBeidou, meas[i].txTow);
+                if (!bdtGpsValid) o.sys = GnssBeidou;
             }
             o.pr = kC * (gpsWrap(tr0 - txGps) + (dts - s.eph.tgd));
             o.sat[0] = pos[0]; o.sat[1] = pos[1]; o.sat[2] = pos[2];
@@ -659,6 +911,7 @@ struct GnssReceiver::Impl {
         }
         for (auto& s : sol) s = SolInfo();
         for (auto& s : gsol) s = SolInfo();
+        for (auto& s : bsol) s = SolInfo();
         bool solved = false;
         GnssSolution sl;
         if (obs.size() >= 4) {
@@ -687,12 +940,16 @@ struct GnssReceiver::Impl {
             hasPrior = true;
             ecefToLla(sl.x, &fix.latDeg, &fix.lonDeg, &fix.heightM);
             // the receiver's clock is the signal time plus an offset set at the first fix; its error against GPS time then grows with the oscillator error
-            const double tGpsMeas = tr0 - sl.bias[GnssGps] / kC;
+            // the clock unknown that stands for GPS time: GPS's own, else that of the first system in the fix (its time moved to the GPS scale)
+            int refSys = GnssGps;
+            if (!sl.sysUsed[GnssGps]) { static const int order[3] = {GnssGalileo, GnssBeidou, GnssGlonass}; for (int s : order) if (sl.sysUsed[s]) { refSys = s; break; } }
+            const double refBias = sl.bias[refSys];
+            const double tGpsMeas = tr0 - refBias / kC;
             if (!clockSet) { clockOffset = tGpsMeas - S; clockSet = true; }
             const double gpsBias = kC * ((S + clockOffset) - tGpsMeas);
             for (int s = 0; s < GnssSystems; s++) {
                 fix.systemInFix[s] = sl.sysUsed[s];
-                fix.clockBiasM[s] = sl.sysUsed[s] ? gpsBias + (sl.bias[s] - sl.bias[GnssGps]) : 0.0;
+                fix.clockBiasM[s] = sl.sysUsed[s] ? gpsBias + (sl.bias[s] - refBias) : 0.0;
             }
             fix.nSats = sl.nUsed;
             for (int s = 0; s < GnssSystems; s++) fix.nSatsPerSystem[s] = 0;
@@ -704,6 +961,12 @@ struct GnssReceiver::Impl {
                 fix.systemInFix[GnssGalileo] = true; fix.ggtoApplied = true;
                 fix.clockBiasM[GnssGalileo] = fix.clockBiasM[GnssGps] - kC * ggtoAt(tr0);
             }
+            fix.bdtGpsApplied = false; fix.bdtGpsNs = bdtGpsValid ? bdtAt(tr0 - kBdtGpsSeconds) * 1e9 : 0.0;
+            if (fix.nSatsPerSystem[GnssBeidou] > 0 && !sl.sysUsed[GnssBeidou]) {
+                // BeiDou moved to GPS time: the receiver clock against BDT (less the whole 14 s) is the GPS one less the offset
+                fix.systemInFix[GnssBeidou] = true; fix.bdtGpsApplied = true;
+                fix.clockBiasM[GnssBeidou] = fix.clockBiasM[GnssGps] - kC * bdtAt(tr0 - kBdtGpsSeconds);
+            }
             fix.hdop = sl.hdop; fix.vdop = sl.vdop; fix.pdop = sl.pdop; fix.tdop = sl.tdop;
             fix.hErrM = sl.hErrM;
             fix.vErrM = sl.vErrM;
@@ -714,10 +977,12 @@ struct GnssReceiver::Impl {
             snprintf(b, sizeof b, "%s %d satellites", names.c_str(), sl.nUsed);
             fix.type = b;
             // GPS time of the measurement: the reference time less the clock error
-            const double tGps = tr0 - sl.bias[GnssGps] / kC;
+            const double tGps = tr0 - refBias / kC;
             int week = 0;
             for (auto& m : meas) if (m.sys == GnssGps && sat[m.prn].hasEph) { week = sat[m.prn].week; break; }
-            if (week == 0) for (auto& m : meas) if (sat[m.prn].hasEph) { week = sat[m.prn].week; break; }
+            if (week == 0) for (auto& m : meas) if ((m.sys == GnssGps || m.sys == GnssQzss) && sat[m.prn].hasEph) { week = sat[m.prn].week; break; }
+            if (week == 0) for (auto& m : meas) if (m.sys == GnssBeidou && bsat[m.prn].hasEph) { week = bsat[m.prn].week + kBdtGpsWeeks; break; }
+            if (week == 0) for (auto& m : meas) if (m.sys == GnssGalileo && gsat[m.prn].hasEph) { week = gsat[m.prn].week; break; }
             double tow = tGps;
             if (tow < 0) { tow += 604800.0; week--; }
             if (tow >= 604800.0) { tow -= 604800.0; week++; }
@@ -759,8 +1024,10 @@ struct GnssReceiver::Impl {
             const double r2 = std::sqrt((p2[0] - sl.x[0]) * (p2[0] - sl.x[0]) + (p2[1] - sl.x[1]) * (p2[1] - sl.x[1]) + (p2[2] - sl.x[2]) * (p2[2] - sl.x[2]));
             const double rr = (r2 - r1) / 0.5;
             // the satellite clock rate in the transmitted frequency is negligible here (a few mHz)
-            const double expected = -rr / kC * kGpsL1Hz;
-            res.push_back(m.dopplerHz - expected);
+            // at the signal's own carrier; the radio's error is reported as seen at L1
+            const double fc = carrierOf(m.sys);
+            const double expected = -rr / kC * fc;
+            res.push_back((m.dopplerHz - expected) * (kGpsL1Hz / fc));
         }
         (void)tr0;
         if (res.size() >= 3) {
@@ -797,6 +1064,17 @@ struct GnssReceiver::Impl {
         // only the satellites with an ephemeris are known: the prediction just puts them first, the round still holds every other one
         galAcq.setPriority(predictedGal);
         predictedGal.clear();
+        if (bdsActive) {
+            std::vector<int> pb;
+            for (int p = 1; p <= kBdsMaxPrn; p++) {
+                if (!bsat[p].hasEph) continue;
+                double pos[3], az, el;
+                gpsEphemerisState(bsat[p].eph, tow - kBdtGpsSeconds, pos, nullptr);
+                azElFromEcef(fix.ecef, pos, &az, &el);
+                if (el > -2.0) pb.push_back(p);
+            }
+            bdsAcq.setPriority(pb);
+        }
     }
 
     // ------------------------------------------------------------------ telemetry
@@ -805,8 +1083,8 @@ struct GnssReceiver::Impl {
         t.seq = ++seq;
         t.inputRate = rate;
         t.centerMhz = centerMhz.load();
-        t.systemsMask = sysMask.load() & (gnssSystemBit(GnssGps) | gnssSystemBit(GnssQzss) | gnssSystemBit(GnssSbas) | gnssSystemBit(GnssGalileo));
-        t.activeMask = gpsActive ? 1u : 0u;
+        t.systemsMask = sysMask.load() & (gnssSystemBit(GnssGps) | gnssSystemBit(GnssQzss) | gnssSystemBit(GnssSbas) | gnssSystemBit(GnssGalileo) | gnssSystemBit(GnssBeidou));
+        t.activeMask = activeMask();
         t.decodeMask = decodeMask();
         t.sbasMessages = sbasTotal;
         t.signalSecs = signalNow;
@@ -829,7 +1107,7 @@ struct GnssReceiver::Impl {
             const SolInfo& si = solOf(tr->sys, tr->prn);
             if (fix.valid && s.hasEph) {
                 double pos[3], az, el;
-                gpsEphemerisState(s.eph, fix.gpsTow, pos, nullptr);
+                gpsEphemerisState(s.eph, fix.gpsTow - (tr->sys == GnssBeidou ? kBdtGpsSeconds : 0.0), pos, nullptr);
                 azElFromEcef(fix.ecef, pos, &az, &el);
                 c.hasAzEl = true; c.azDeg = (float)az; c.elDeg = (float)el;
             } else if (si.has) { c.hasAzEl = true; c.azDeg = si.az; c.elDeg = si.el; }
@@ -851,7 +1129,7 @@ struct GnssReceiver::Impl {
                 ni.health = s.eph.health ? 1 : 0;
                 ni.week = s.week;
                 ni.svClockBiasUs = (float)(s.eph.af0 * 1e6);
-                if (fix.valid) ni.ephAgeS = (float)gpsWrap(fix.gpsTow - s.eph.toe);
+                if (fix.valid) ni.ephAgeS = (float)gpsWrap(fix.gpsTow - (tr->sys == GnssBeidou ? kBdtGpsSeconds : 0.0) - s.eph.toe);
             }
             ni.hasAlmanac = s.alm.valid;
             ni.towS = s.towLast;
@@ -860,6 +1138,7 @@ struct GnssReceiver::Impl {
             // subframes 1, 2, 3 come every 30 s, 6 s apart: the time left is until the last missing one has arrived
             if (s.hasEph) { ni.ephParts = 3; ni.ephEtaS = 0; }
             else if (tr->sys == GnssSbas) { ni.ephParts = 0; ni.ephEtaS = -1; }
+            else if (tr->sys == GnssBeidou) { ni.ephParts = bnav[tr->prn].parts(); ni.ephEtaS = -1; }
             else if (tr->sys == GnssGalileo) {
                 // words 1-4 of one IODnav (shown as parts of 4), then word 5
                 const GalNav& g = gnav[tr->prn];
@@ -936,15 +1215,40 @@ struct GnssReceiver::Impl {
                 sk.health = sat[p].eph.health ? 1 : 0;
                 t.sky.push_back(sk);
             }
+            // BeiDou from its ephemeris (BDT)
+            for (int p = 1; p <= kBdsMaxPrn && t.sky.size() < 64; p++) {
+                if (!bsat[p].hasEph) continue;
+                double pos[3], az, el;
+                double tb = fix.gpsTow - kBdtGpsSeconds + bdtAt(fix.gpsTow - kBdtGpsSeconds);
+                if (tb < 0) tb += 604800.0;
+                gpsEphemerisState(bsat[p].eph, tb, pos, nullptr);
+                azElFromEcef(fix.ecef, pos, &az, &el);
+                if (el < 0) continue;
+                GnssSky sk;
+                sk.sys = GnssBeidou; sk.prn = p; sk.azDeg = (float)az; sk.elDeg = (float)el; sk.fromEphemeris = true;
+                for (auto& tr : trackers) if (tr->sys == GnssBeidou && tr->prn == p) { sk.tracked = tr->carrierLocked(); sk.cn0 = sk.tracked ? tr->cn0() : 0.f; }
+                sk.used = bsol[p].used;
+                sk.health = bsat[p].eph.health ? 1 : 0;
+                t.sky.push_back(sk);
+            }
         }
-        // search
-        t.searching = gpsActive;
-        t.searchSys = gpsAcq.currentPrn() > 0 ? l1caSystem(gpsAcq.currentPrn()) : GnssGps; t.searchPrn = gpsAcq.currentPrn();
-        t.searchProgress = gpsAcq.progress(); t.searchRounds = gpsAcq.rounds();
-        t.acqSys = gpsAcq.lastPrn() > 0 ? l1caSystem(gpsAcq.lastPrn()) : GnssGps; t.acqPrn = gpsAcq.lastPrn(); t.acqDopplerHz = (float)gpsAcq.lastDoppler(); t.acqPeakToNoise = gpsAcq.lastRatio();
-        t.acqCorr = gpsAcq.lastCorr(); t.acqPeakIndex = gpsAcq.lastPeakIndex();
-        t.searchCenterHz = (float)gpsAcq.windowCenterHz(); t.searchHalfHz = (float)gpsAcq.windowHalfHz(); t.searchMs = gpsAcq.blocksNow();
-        t.searchStage = t.nTracked > 0 ? 0 : stage;
+        // search: the L1 one, or the BeiDou one on a tune of its own
+        t.searching = gpsActive || bdsActive;
+        if (gpsActive) {
+            t.searchSys = gpsAcq.currentPrn() > 0 ? l1caSystem(gpsAcq.currentPrn()) : GnssGps; t.searchPrn = gpsAcq.currentPrn();
+            t.searchProgress = gpsAcq.progress(); t.searchRounds = gpsAcq.rounds();
+            t.acqSys = gpsAcq.lastPrn() > 0 ? l1caSystem(gpsAcq.lastPrn()) : GnssGps; t.acqPrn = gpsAcq.lastPrn(); t.acqDopplerHz = (float)gpsAcq.lastDoppler(); t.acqPeakToNoise = gpsAcq.lastRatio();
+            t.acqCorr = gpsAcq.lastCorr(); t.acqPeakIndex = gpsAcq.lastPeakIndex();
+            t.searchCenterHz = (float)gpsAcq.windowCenterHz(); t.searchHalfHz = (float)gpsAcq.windowHalfHz(); t.searchMs = gpsAcq.blocksNow();
+            t.searchStage = t.nTracked > 0 ? 0 : stage;
+        } else if (bdsActive) {
+            t.searchSys = GnssBeidou; t.searchPrn = bdsAcq.currentPrn();
+            t.searchProgress = bdsAcq.progress(); t.searchRounds = bdsAcq.rounds();
+            t.acqSys = GnssBeidou; t.acqPrn = bdsAcq.lastPrn(); t.acqDopplerHz = (float)bdsAcq.lastDoppler(); t.acqPeakToNoise = bdsAcq.lastRatio();
+            t.acqCorr = bdsAcq.lastCorr(); t.acqPeakIndex = bdsAcq.lastPeakIndex();
+            t.searchCenterHz = (float)bdsAcq.windowCenterHz(); t.searchHalfHz = (float)bdsAcq.windowHalfHz(); t.searchMs = bdsAcq.blocksNow();
+            t.searchStage = t.nTracked > 0 ? 0 : bdsPlan.stage;
+        }
         for (auto& tr : trackers) t.nPullIn += !tr->carrierLocked();
         t.firstLockSecs = firstLock;
         // scatter of the strongest locked channel
@@ -960,7 +1264,7 @@ struct GnssReceiver::Impl {
         t.clipPercent = (float)(clipFrac * 100.0);
         t.dcI = (float)dcI; t.dcQ = (float)dcQ;
         char b[120];
-        snprintf(b, sizeof b, "%d tracked, %d with ephemeris, %s", t.nTracked, (int)(std::count_if(sat + 1, sat + kCaPrns, [](const SatNav& s) { return s.hasEph; }) + std::count_if(gsat + 1, gsat + kGalPrns, [](const SatNav& s) { return s.hasEph; })), fix.valid ? fix.type.c_str() : "no fix");
+        snprintf(b, sizeof b, "%d tracked, %d with ephemeris, %s", t.nTracked, (int)(std::count_if(sat + 1, sat + kCaPrns, [](const SatNav& s) { return s.hasEph; }) + std::count_if(gsat + 1, gsat + kGalPrns, [](const SatNav& s) { return s.hasEph; }) + std::count_if(bsat + 1, bsat + kBdsPrns, [](const SatNav& s) { return s.hasEph; })), fix.valid ? fix.type.c_str() : "no fix");
         t.status = b;
         std::lock_guard<std::mutex> lk(telMu);
         tel = std::move(t);
@@ -1005,6 +1309,7 @@ struct GnssReceiver::Impl {
         inSamples += (int64_t)m;
         const double c0 = cpuNow();
         if (gpsActive) gpsBand.process(blk.data(), m);
+        if (bdsActive) bdsBand.process(blk.data(), m);
         const double now = (double)inSamples / rate;
         const double c1 = cpuNow();
         runTrackers(now);
@@ -1016,9 +1321,12 @@ struct GnssReceiver::Impl {
         cpuAcq += (c3 - c2);
         trimBands();
         // measurements: a second apart, once every channel has run past the instant
-        if (gpsActive && gpsBand.end() > 0) {
-            const double tEnd = gpsBand.timeOf((double)gpsBand.end());
-            while (tEnd - 0.08 > nextMeas) { measure(nextMeas); nextMeas += 1.0; }
+        {
+            double tEnd = 1e18;
+            bool any = false;
+            if (gpsActive && gpsBand.end() > 0) { tEnd = std::min(tEnd, gpsBand.timeOf((double)gpsBand.end())); any = true; }
+            if (bdsActive && bdsBand.end() > 0) { tEnd = std::min(tEnd, bdsBand.timeOf((double)bdsBand.end())); any = true; }
+            if (any) while (tEnd - 0.08 > nextMeas) { measure(nextMeas); nextMeas += 1.0; }
         }
         if (now >= nextReport) { nextReport += 0.25; buildTelemetry(now); }
     }
@@ -1099,6 +1407,12 @@ bool GnssReceiver::getEphemerisOf(int sys, int prn, GpsEphemeris& e, int* week) 
         if (week) *week = p_->gsat[prn].week;
         return true;
     }
+    if (sys == GnssBeidou) {
+        if (prn < 1 || prn >= kBdsPrns || !p_->bsat[prn].hasEph) return false;
+        e = p_->bsat[prn].eph;
+        if (week) *week = p_->bsat[prn].week;
+        return true;
+    }
     if (prn < 1 || prn >= kCaPrns || l1caSystem(prn) != sys || !p_->sat[prn].hasEph) return false;
     e = p_->sat[prn].eph;
     if (week) *week = p_->sat[prn].week;
@@ -1127,6 +1441,21 @@ ModeTuning gnssTuning() {
     t.bandwidthMhz = 2.046;
     t.minSampleRate = 2.046e6;
     return t;
+}
+
+int gnssTuneOf(double mhz) {
+    for (int k = 0; k < (int)(sizeof kGnssTuneMhz / sizeof *kGnssTuneMhz); k++) if (std::fabs(mhz - kGnssTuneMhz[k]) < 0.001) return k;
+    return GnssTuneCustom;
+}
+double gnssAutoRate(double mhz) {
+    (void)mhz;
+    return gnssTuning().sampleRate;      // L1 and B1I: the main lobe of their 1 ms codes in 4 Msps
+}
+const char* gnssTuneKey(double mhz) {
+    switch (gnssTuneOf(mhz)) {
+    case GnssTuneB1I: return "b1i";
+    default: return "";
+    }
 }
 
 } // namespace dect2

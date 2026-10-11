@@ -1,5 +1,6 @@
 // One tracking channel (see gnss_track.h).
 #include "dect2/gnss_track.h"
+#include "dect2/gnss_bds.h"
 #include "dect2/gnss_msg.h"
 #include <algorithm>
 #include <cmath>
@@ -82,6 +83,7 @@ void GnssTracker::start(const GnssSignalSpec& sp, const uint8_t* chips, int prn_
     framesOk_ = framesBad_ = 0; badInRow_ = 0; framesSinceSync_ = 0;
     sym_.clear(); symBase_ = symCount_ = lastWindowAt_ = 0; pairOffset_ = -1; lastMsgSym_ = -1; symAcc_ = 0; symHalf_ = 0;
     pairAmp_[0] = pairAmp_[1] = 0; havePrevI_ = false; prevIsym_ = 0;
+    std::memset(nhRing_, 0, sizeof nhRing_); std::memset(nhAcc_, 0, sizeof nhAcc_); std::memset(nhAlt_, 0, sizeof nhAlt_); nhFill_ = 0; bdsInv_ = 0;
     isym_.clear(); isymBase_ = 0; nextPart_ = -1; inavPol_ = 1; syncMiss_ = 0; evenAt_ = -1; inavNoSync_ = 0; inavTry_ = 0; inavBase_ = 0;
     events_.clear();
     epochT_.clear(); epochTFirst_ = 0;
@@ -186,7 +188,7 @@ void GnssTracker::epoch(const GnssBand& band, int N, double startIdx) {
         // A false lock half the epoch rate away (500 Hz with 1 ms epochs): the carrier turns half a cycle per epoch, which the Costas loop takes for
         // data changes. Where a data symbol lasts two epochs or more (LNAV, SBAS), consecutive prompts then cancel instead of adding up: compare the
         // power of their sum and of their difference over the first 500 epochs of the lock, and move the carrier by half the epoch rate if it is false.
-        if (spec.msg != GnssMsgInav && havePrev_ && locked_epochs_ > 100 && locked_epochs_ <= 600) {
+        if (spec.msg != GnssMsgInav && spec.msg != GnssMsgBdsD1 && havePrev_ && locked_epochs_ > 100 && locked_epochs_ <= 600) {
             const double si = I + prevI_, sq = Q + prevQ_, di = I - prevI_, dq = Q - prevQ_;
             flSum_ += si * si + sq * sq; flDiff_ += di * di + dq * dq;
             if (locked_epochs_ == 600) {
@@ -241,6 +243,7 @@ void GnssTracker::epoch(const GnssBand& band, int N, double startIdx) {
     if (locked_ && locked_epochs_ > 100) {
         if (spec.msg == GnssMsgSbas) sbasLayer((float)I);
         else if (spec.msg == GnssMsgInav) inavLayer((float)I);
+        else if (spec.msg == GnssMsgBdsD1 || spec.msg == GnssMsgBdsD2) bdsLayer((float)I);
         else bitLayer((float)I);
     }
     ecount_++;
@@ -497,6 +500,135 @@ void GnssTracker::inavPart(int64_t p) {
         if (timeValid_ && std::fabs(gpsWrap(t0 - towAtEpoch0_)) > 2e-4) { timeValid_ = false; }
         else { towAtEpoch0_ = t0; timeValid_ = true; }
     }
+    events_.push_back(ev);
+}
+
+// BeiDou: D1 bits last 20 code periods with the NH code on them (its phase found by correlating with the code at each of the 20 offsets), D2 bits two
+// code periods (found like the SBAS symbols). The bits go into a window searched for the preamble; a subframe of 300 bits is decoded with the BCH code.
+void GnssTracker::bdsLayer(float I) {
+    const bool d1 = spec.msg == GnssMsgBdsD1;
+    const int per = d1 ? 20 : 2;
+    if (!bitSync_) {
+        bool sync = false;
+        if (d1) {
+            nhRing_[ecount_ % 20] = I;
+            if (++nhFill_ >= 20) {
+                // a bit (and so the NH code) that started 19 epochs ago: its start lies at phase (e + 1) mod 20
+                // also with every other code period turned over: a carrier locked half the epoch rate (500 Hz) away does that to the symbols,
+                // which the Costas loop cannot see (the NH code hides it from the check the other messages use)
+                double c = 0, ca = 0;
+                for (int k = 0; k < 20; k++) {
+                    const double v = nhRing_[(ecount_ + 1 + k) % 20] * (kBdsNh[k] ? -1.0 : 1.0);
+                    c += v; ca += (k & 1) ? -v : v;
+                }
+                nhAcc_[(ecount_ + 1) % 20] += std::fabs(c);
+                nhAlt_[(ecount_ + 1) % 20] += std::fabs(ca);
+                bitHistTotal_++;
+            }
+            if (bitHistTotal_ >= 1000) {
+                int at = 0, atA = 0;
+                for (int q = 1; q < 20; q++) { if (nhAcc_[q] > nhAcc_[at]) at = q; if (nhAlt_[q] > nhAlt_[atA]) atA = q; }
+                double second = 0;
+                for (int q = 0; q < 20; q++) if (q != at) second = std::max(second, nhAcc_[q]);
+                if (nhAlt_[atA] > 1.3 * nhAcc_[at]) {
+                    // false lock: move the carrier by half the epoch rate, towards the frequency the channel started with
+                    const double half = 0.5 / spec.epochS;
+                    pllF0_ = fcar_ + (fcar0_ > fcar_ ? half : -half);
+                    fcar_ = pllF0_; pllInt_ = 0; locked_epochs_ = 0; lockIdx_ = 0;
+                    falseLocks_++;
+                    nhFill_ = 0;
+                } else if (nhAcc_[at] > 1.3 * second) { sync = true; syncPhase_ = at; }
+                std::memset(nhAcc_, 0, sizeof nhAcc_); std::memset(nhAlt_, 0, sizeof nhAlt_); bitHistTotal_ = 0;
+            }
+        } else {
+            if (havePrevI_) { pairAmp_[ecount_ % 2] += (prevIsym_ + I) * (prevIsym_ + I); bitHistTotal_++; }
+            prevIsym_ = I; havePrevI_ = true;
+            if (bitHistTotal_ >= 1000) {
+                const double a = pairAmp_[1], b = pairAmp_[0];
+                if (std::fabs(a - b) > 0.12 * std::max(a, b)) { sync = true; syncPhase_ = a > b ? 0 : 1; }
+                pairAmp_[0] = pairAmp_[1] = 0; bitHistTotal_ = 0;
+            }
+        }
+        if (sync) {
+            bitSync_ = true; bitAcc_ = 0; bitCount_ = 0; firstBitEpoch_ = -1; bitsPushed_ = 0;
+            bits_.clear(); bitsBase_ = 0; frameSync_ = false; syncEpoch_ = ecount_;
+        }
+        return;
+    }
+    if ((int)(ecount_ % per) == syncPhase_) {
+        if (firstBitEpoch_ < 0) firstBitEpoch_ = (int64_t)ecount_;
+        else if (bitCount_ == per) {
+            bits_.push_back(bitAcc_ > 0 ? 0 : 1);
+            bitsPushed_++;
+            if (bits_.size() > 1200) { bits_.erase(bits_.begin(), bits_.begin() + 600); bitsBase_ += 600; }
+            bdsTrySubframe();
+        }
+        bitAcc_ = 0; bitCount_ = 0;
+    }
+    if (firstBitEpoch_ >= 0) {
+        const int k = (int)((ecount_ + 20 - (uint64_t)syncPhase_) % 20);
+        bitAcc_ += d1 && kBdsNh[k] ? -I : I;
+        bitCount_++;
+    }
+    // a bit synchronisation that does not lead to a subframe is wrong: start again
+    if (!frameSync_ && ecount_ - syncEpoch_ > 40000) { bitSync_ = false; nhFill_ = 0; bitHistTotal_ = 0; havePrevI_ = false; pairAmp_[0] = pairAmp_[1] = 0; }
+}
+
+void GnssTracker::bdsTrySubframe() {
+    const bool d1 = spec.msg == GnssMsgBdsD1;
+    const int per = d1 ? 20 : 2;
+    const int64_t total = bitsBase_ + (int64_t)bits_.size();
+    int64_t start;
+    if (frameSync_) {
+        if (total - lastSubframeBit_ != 300) return;
+        start = lastSubframeBit_;
+    } else {
+        if (total < 300) return;
+        start = total - 300;
+    }
+    if (start < bitsBase_) { frameSync_ = false; return; }
+    const uint8_t* b = &bits_[(size_t)(start - bitsBase_)];
+    unsigned v = 0;
+    for (int i = 0; i < 11; i++) v = v << 1 | b[i];
+    int inv = -1;
+    if (v == kBdsPreamble) inv = 0;
+    else if (v == (~kBdsPreamble & 0x7FF)) inv = 1;
+    GnssSubframeEvent ev;
+    ev.kind = spec.msg;
+    bool ok = inv >= 0;
+    if (ok) {
+        uint8_t rx[300];
+        for (int i = 0; i < 300; i++) rx[i] = (uint8_t)(b[i] ^ inv);
+        const int fixed = bdsDecodeSubframe(rx, ev.bits);
+        const unsigned id = bdsFraId(ev.bits), sow = bdsSow(ev.bits);
+        ok = fixed <= 6 && id >= 1 && id <= 5 && sow < 604800 && (d1 ? sow % 6 == 0 && (sow / 6) % 5 == id - 1 : sow % 3 == 0);
+    }
+    if (!ok) {
+        if (frameSync_) {
+            framesBad_++;
+            lastSubframeBit_ += 300;
+            if (++badInRow_ >= 4) frameSync_ = false;
+        }
+        return;
+    }
+    const unsigned id = bdsFraId(ev.bits);
+    const double towStart = (double)bdsSow(ev.bits) + (d1 ? 0.0 : 0.6 * (id - 1));
+    const int64_t startEpoch = firstBitEpoch_ + per * start;
+    const double t0 = towStart - (double)startEpoch * 1e-3;
+    if (timeValid_ && std::fabs(gpsWrap(t0 - towAtEpoch0_)) > 2e-4) {
+        framesBad_++;
+        frameSync_ = false; timeValid_ = false; badInRow_ = 0;
+        return;
+    }
+    towAtEpoch0_ = t0;
+    timeValid_ = true;
+    framesOk_++;
+    badInRow_ = 0;
+    frameSync_ = true;
+    lastSubframeBit_ = start + 300;
+    framesSinceSync_++;
+    ev.towStart = towStart;
+    ev.startEpoch = startEpoch;
     events_.push_back(ev);
 }
 

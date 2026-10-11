@@ -69,6 +69,7 @@ std::string satName(int sys, int prn, int fcn = 0) {
 
 void tick(App& a) {
     loadState();
+    a.tune.synth.modeOpt[5] = (int)std::lround(a.freqMhz * 1000.0);    // the test signal renders the sky as the tune sees it
     if (a.engine.running()) {
         GnssReceiver& r = a.engine.gnss();
         if (S.pushedCenter != a.freqMhz) { r.setCenterMhz(a.freqMhz); S.pushedCenter = a.freqMhz; }
@@ -220,7 +221,7 @@ std::vector<std::string> progressLines(const GnssTelemetry& t) {
     std::vector<std::string> out;
     char b[200];
     if (t.activeMask == 0) {
-        snprintf(b, sizeof b, "GPS L1 does not fit at %.3f MHz and %.2f Msps: tune to 1575.42 MHz with at least 2.05 Msps", t.centerMhz, t.inputRate / 1e6);
+        snprintf(b, sizeof b, "No signal band fits at %.3f MHz and %.2f Msps: tune to 1575.42 MHz (L1 / E1, 2.05 Msps or more) or 1561.098 MHz (BeiDou B1I, 4 Msps)", t.centerMhz, t.inputRate / 1e6);
         out.push_back(b);
         return out;
     }
@@ -245,6 +246,7 @@ std::vector<std::string> progressLines(const GnssTelemetry& t) {
         out.push_back(b);
         if (!t.fix.valid) {
             if (soonest >= 0) { snprintf(b, sizeof b, "Collecting ephemeris: G%02d %d/3 subframes, about %.0f s left (each satellite sends it every 30 s)", soonPrn, soonParts, soonest); out.push_back(b); }
+            else if (t.decodeMask == gnssSystemBit(GnssBeidou) && withEph < 4) out.push_back("Collecting ephemeris: BeiDou sends it every 30 s (subframes 1-3, or ten pages from a GEO satellite)");
             else if (framed == 0 && withEph < 4) out.push_back("Waiting for the start of the navigation message (up to 6 s after the bit sync)");
             if (withEph >= 4) out.push_back("Ephemeris complete: the fix comes with the next measurement");
         }
@@ -583,19 +585,33 @@ void tuner(App& a, bool& retune) {
     loadState();
     ImGui::TextDisabled("Signal");
     ImGui::SetNextItemWidth(std::min(230 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
-    const bool l1 = std::fabs(a.freqMhz - 1575.42) < 0.001;
-    static const char* kL1 = "L1 / E1  1575.42 MHz";
-    if (ImGui::BeginCombo("##gband", l1 ? kL1 : "custom frequency")) {
-        if (ImGui::Selectable(kL1, l1)) { a.freqMhz = 1575.42; retune = true; }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("GPS L1 C/A, Galileo E1, QZSS and SBAS, all at once on the same band.");
+    const int cur = gnssTuneOf(a.freqMhz);
+    struct TuneItem { const char* label; const char* tip; };
+    static const TuneItem kItems[] = {
+        {"L1 / E1  1575.42 MHz", "GPS L1 C/A, Galileo E1, QZSS and SBAS, all at once on the same band."},
+        {"BeiDou B1I  1561.098 MHz", "BeiDou B1I: the MEO and IGSO satellites (D1 message) and the GEO satellites (D2), 4 Msps.\n14 MHz below L1: a tune of its own."},
+    };
+    // a tune the radio runs at another rate is opened again; the same rate is a plain retune
+    auto pick = [&](int k) {
+        a.freqMhz = kGnssTuneMhz[k]; a.tune.centerHz = a.freqMhz * 1e6;
+        a.tune.synth.modeOpt[5] = (int)std::lround(a.freqMhz * 1000.0);
+        const double oldRate = a.tune.sampleRate;
+        applyBandwidth(a);
+        if (a.engine.running() && a.tune.sampleRate != oldRate) startReceiver(a); else retune = true;
+        savePrefs(a);
+    };
+    if (ImGui::BeginCombo("##gband", cur >= 0 ? kItems[cur].label : "custom frequency")) {
+        for (int k = 0; k < (int)(sizeof kItems / sizeof *kItems); k++) {
+            if (ImGui::Selectable(kItems[k].label, cur == k) && cur != k) pick(k);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kItems[k].tip);
+        }
         ImGui::BeginDisabled();
-        ImGui::Selectable("BeiDou B1I  1561.098 MHz", false);
         ImGui::Selectable("GLONASS L1  1602 MHz", false);
         ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("BeiDou and GLONASS are not decoded yet.");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("GLONASS is not decoded yet.");
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("GPS, Galileo, QZSS and SBAS on 1575.42 MHz. Galileo needs 4 Msps or more and starts once GPS has a fix.\n"
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("GPS, Galileo, QZSS and SBAS on 1575.42 MHz, BeiDou B1I on 1561.098 MHz. Galileo needs 4 Msps or more and starts once GPS has a fix.\n"
                                                   "An active antenna is needed: switch on the antenna power of the radio (HackRF: the antenna port power)\n"
                                                   "and give the antenna a view of the sky. Indoors there is usually nothing to receive.");
 }
@@ -615,14 +631,21 @@ void synth(App& a, bool& changed) {
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("simulated sky"); ImGui::PopTextWrapPos(); }
     {
         // the systems in the simulated sky (modeOpt[0], gnssSystemBit; 0 = GPS alone)
-        const int sysList[4] = {GnssGps, GnssGalileo, GnssQzss, GnssSbas};
+        const int sysList[5] = {GnssGps, GnssGalileo, GnssQzss, GnssSbas, GnssBeidou};
         if (sc.modeOpt[0] <= 0) {   // a fresh sky shows every system the receiver decodes
             unsigned all = 0;
-            for (int k = 0; k < 4; k++) all |= gnssSystemBit(sysList[k]);
+            for (int k = 0; k < 5; k++) all |= gnssSystemBit(sysList[k]);
             sc.modeOpt[0] = (int)all; changed = true;
         }
+        // a system whose band the tune now holds is switched on (once per tune: it can be switched off again)
+        static int lastTune = -2;
+        const int tune = gnssTuneOf(a.freqMhz);
+        if (tune != lastTune) {
+            lastTune = tune;
+            if (tune == GnssTuneB1I && !(sc.modeOpt[0] & (int)gnssSystemBit(GnssBeidou))) { sc.modeOpt[0] |= (int)gnssSystemBit(GnssBeidou); changed = true; }
+        }
         unsigned m = (unsigned)sc.modeOpt[0];
-        for (int k = 0; k < 4; k++) {
+        for (int k = 0; k < 5; k++) {
             flowNext();
             bool on = (m & gnssSystemBit(sysList[k])) != 0;
             if (ImGui::Checkbox(gnssSystemName(sysList[k]), &on)) {
@@ -631,7 +654,7 @@ void synth(App& a, bool& changed) {
                 sc.modeOpt[0] = (int)m; changed = true;
             }
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("QZSS and SBAS send on the GPS band with their own codes; Galileo E1-B needs 4 Msps or more.");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("QZSS and SBAS send on the GPS band with their own codes; Galileo E1-B needs 4 Msps or more.\nBeiDou B1I is on 1561.098 MHz: only a tune that holds its band shows it.");
     }
     flowNext(); ImGui::SetNextItemWidth(100 * gUi);
     float cn0 = sc.modeVal[3] > 0 ? (float)sc.modeVal[3] : 44.f;

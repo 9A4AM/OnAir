@@ -98,6 +98,8 @@ struct GnssFix {
     bool systemInFix[GnssSystems] = {};
     bool ggtoApplied = false;                        // the Galileo pseudoranges were moved to GPS time with the broadcast offset (word type 10)
     double ggtoNs = 0;                               // that offset, GST minus GPS time
+    bool bdtGpsApplied = false;                      // the BeiDou pseudoranges were moved to GPS time with the broadcast A0GPS, A1GPS
+    double bdtGpsNs = 0;                             // that offset, BDT minus GPS time less the whole 14 s
     double clockDriftMps = 0;                        // frequency error of the receiver clock in metres per second (from the Doppler of the tracked satellites)
     bool timeValid = false;                          // the date and time below are known
     int year = 0, month = 0, day = 0, hour = 0, minute = 0;

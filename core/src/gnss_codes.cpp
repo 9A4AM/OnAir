@@ -97,4 +97,35 @@ bool galE1bChips(int prn, uint8_t* chips) {
     return true;
 }
 
+// G2 output stages per ranging code, BDS SIS ICD Table 4-2
+static const uint8_t kBdsTaps[38][2] = {
+    {0, 0}, {1, 3}, {1, 4}, {1, 5}, {1, 6}, {1, 8}, {1, 9}, {1, 10}, {1, 11}, {2, 7}, {3, 4}, {3, 5}, {3, 6}, {3, 8}, {3, 9}, {3, 10}, {3, 11}, {4, 5}, {4, 6},
+    {4, 8}, {4, 9}, {4, 10}, {4, 11}, {5, 6}, {5, 8}, {5, 9}, {5, 10}, {5, 11}, {6, 8}, {6, 9}, {6, 10}, {6, 11}, {8, 9}, {8, 10}, {8, 11}, {9, 10}, {9, 11}, {10, 11}};
+
+bool bdsB1iChips(int prn, uint8_t* chips) {
+    if (prn < 1 || prn > kBdsMaxPrn) return false;
+    int g1[12], g2[12];
+    for (int i = 1; i <= 11; i++) g1[i] = g2[i] = (i % 2 == 0) ? 1 : 0;      // 01010101010, stage 1 first
+    const int a = kBdsTaps[prn][0], b = kBdsTaps[prn][1];
+    for (int n = 0; n < kBdsLen; n++) {
+        chips[n] = (uint8_t)(g1[11] ^ g2[a] ^ g2[b]);
+        const int f1 = g1[1] ^ g1[7] ^ g1[8] ^ g1[9] ^ g1[10] ^ g1[11];
+        const int f2 = g2[1] ^ g2[2] ^ g2[3] ^ g2[4] ^ g2[5] ^ g2[8] ^ g2[9] ^ g2[11];
+        for (int i = 11; i > 1; i--) { g1[i] = g1[i - 1]; g2[i] = g2[i - 1]; }
+        g1[1] = f1; g2[1] = f2;
+    }
+    return true;
+}
+
+void gloCaChips(uint8_t* chips) {
+    int s[10];
+    for (int i = 1; i <= 9; i++) s[i] = 1;
+    for (int n = 0; n < kGloLen; n++) {
+        chips[n] = (uint8_t)s[7];
+        const int f = s[5] ^ s[9];
+        for (int i = 9; i > 1; i--) s[i] = s[i - 1];
+        s[1] = f;
+    }
+}
+
 } // namespace dect2

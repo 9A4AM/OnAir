@@ -25,6 +25,7 @@ GnssSimConfig gnssSimConfigFrom(const SynthConfig& cfg) {
     if (cfg.modeOpt[3] & 2) c.dcOffset = 0.02;
     c.noiseRms = 0.14;
     c.seed = cfg.modeOpt[4] > 0 ? (unsigned)cfg.modeOpt[4] : 1u;
+    if (cfg.modeOpt[5] > 0) c.centerHz = cfg.modeOpt[5] * 1e3;
     if (cfg.modeVal[0] != 0 || cfg.modeVal[1] != 0) { c.latDeg = cfg.modeVal[0]; c.lonDeg = cfg.modeVal[1]; c.heightM = cfg.modeVal[2]; }
     if (cfg.modeVal[3] > 0) c.cn0Top = cfg.modeVal[3];
     c.cfoHz = cfg.cfoHz;

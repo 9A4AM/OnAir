@@ -198,8 +198,11 @@ void saveRadioSettings(const App& a) {
 
 // ---- the sample rate chosen per mode and per radio
 std::string rateModeId(const App& a) {
-    if (const SubMode* sm = curSub(a)) return sm->id;   // each protocol entry has its own rate
-    if (const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr) return mt->id;
+    if (const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr) {
+        // GNSS: a rate chosen per tune (L1 keeps the plain key)
+        if (mt->stdMode == 14 && *gnssTuneKey(a.freqMhz)) return std::string(mt->id) + "-" + gnssTuneKey(a.freqMhz);
+        return mt->id;
+    }
     static const char* kIds[] = {"dvb", "atsc", "dab", "atsc3", "isdbt", "fm"};
     return a.family >= 0 && a.family < 6 ? kIds[a.family] : "mode" + std::to_string(a.family);
 }
@@ -271,6 +274,9 @@ void applyBandwidth(App& a) {
             a.tune.synth.modeOpt[7] = a.dtmbBwMhz == 6 ? 1 : 0;
         } else if (mt->stdMode == 10 && a.atvFm) {   // analog FPV video: a link about 17 MHz wide, the radio's filter at 18 MHz
             a.tune.bandwidthMhz = 18; a.tune.sampleRate = 20e6; a.tune.basebandFilterHz = 18e6;
+        } else if (mt->stdMode == 14) {   // GNSS: the rate of the tune (L1 / E1, BeiDou B1I, ...)
+            a.tune.sampleRate = gnssAutoRate(a.freqMhz);
+            if (a.tune.sampleRate > 2 * mt->basebandHz) a.tune.basebandFilterHz = 0.8 * a.tune.sampleRate;
         }
         const DeviceInfo& dv = a.devices[a.devIdx];
         if (dv.isGeneric()) a.tune.sampleRate = linkRateFor(dv, a.tune, a.tune.sampleRate, mt->minSampleRate);

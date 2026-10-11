@@ -53,6 +53,8 @@ struct GpsEphemeris {
     double toe = 0, sqrtA = 0, e = 0, m0 = 0, dn = 0, omega0 = 0, i0 = 0, omega = 0, omegaDot = 0, idot = 0;
     double cuc = 0, cus = 0, crc = 0, crs = 0, cic = 0, cis = 0;   // radians, metres
     int fitFlag = 0;
+    bool beidou = false;        // a BeiDou ephemeris (BDS SIS ICD Table 5-11): CGCS2000 constants, BDT; tgd holds TGD1 (B1I)
+    bool geo = false;           // BeiDou GEO: the orbit is computed in its own inclined frame and turned by -5 degrees (ICD Table 5-11)
     bool galileo = false;       // a Galileo ephemeris (I/NAV words 1-4): its gravitational constant and relativity factor; tgd holds BGD(E1,E5b)
     bool complete() const { return has1 && has2 && has3 && iode2 == iode3 && (iodc & 0xFF) == iode2; }
     int iode() const { return iode2; }

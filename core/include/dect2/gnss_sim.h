@@ -14,7 +14,9 @@
 namespace dect2 {
 
 struct GnssSimConfig {
-    unsigned systems = 1;            // bit mask of the systems (gnssSystemBit): GPS, QZSS (3 satellites), SBAS (3 geostationary), Galileo E1-B (24)
+    unsigned systems = 1;            // bit mask of the systems (gnssSystemBit): GPS, QZSS (3 satellites), SBAS (3 geostationary), Galileo E1-B (24),
+                                     // BeiDou B1I (24 MEO, 3 IGSO and 2 GEO satellites)
+    double centerHz = 1575.42e6;     // the tuned centre: a signal appears at its carrier minus this; signals whose carrier lies outside the band are left out
     double latDeg = 25.2, lonDeg = 55.36, heightM = 10;   // the receiver (Dubai)
     double cn0Top = 44;              // C/N0 of a satellite at the zenith, dB-Hz; lower satellites are weaker (range and antenna pattern)
     int maxSats = 0;                 // 0 = every satellite above the mask (8 to 11); otherwise the highest ones
@@ -30,11 +32,12 @@ struct GnssSimConfig {
     unsigned seed = 1;               // the constellation and its parameters
     unsigned noiseSeed = 0;          // the noise (0 = the same as seed)
     bool galGgto = true;             // Galileo word type 10 carries the GST-GPS offset (else all ones: not available)
+    bool bdsGpsOffset = true;        // BeiDou D1 subframe 5 page 9 carries BDT - GPS (A0GPS, A1GPS; else zero: not broadcast)
 };
 
 struct GnssSimSat {
     int sys = 0, prn = 0;
-    GpsEphemeris eph;                // what is broadcast, as the decoded values of the transmitted integers
+    GpsEphemeris eph;                // what is broadcast, as the decoded values of the transmitted integers (BeiDou: beidou = true, times in BDT)
     GpsAlmanac alm;
     bool transmitted = false;        // above the mask: its signal is in the stream
     double cn0 = 0;

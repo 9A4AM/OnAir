@@ -64,4 +64,14 @@ private:
 
 ModeTuning gnssTuning();
 
+// The tunes the GNSS screen offers: L1 / E1 (GPS, Galileo, QZSS, SBAS) and BeiDou B1I, each on its own carrier. A tune is recognised by its
+// centre within 1 kHz; any other frequency is a custom one.
+enum GnssTune { GnssTuneCustom = -1, GnssTuneL1 = 0, GnssTuneB1I = 1 };
+constexpr double kGnssTuneMhz[2] = {1575.42, 1561.098};
+int gnssTuneOf(double mhz);
+// The radio rate a tune needs ("Auto" of the sample-rate control): 4 Msps for L1 and for B1I; a custom frequency keeps the mode's 4 Msps
+double gnssAutoRate(double mhz);
+// A short name of the tune for the settings key of a chosen rate ("" for L1, so the rate chosen before the other tunes existed stays)
+const char* gnssTuneKey(double mhz);
+
 } // namespace dect2
