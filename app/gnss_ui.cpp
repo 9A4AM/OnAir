@@ -584,17 +584,20 @@ void tuner(App& a, bool& retune) {
     ImGui::TextDisabled("Signal");
     ImGui::SetNextItemWidth(std::min(230 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
     const bool l1 = std::fabs(a.freqMhz - 1575.42) < 0.001;
-    if (ImGui::BeginCombo("##gband", l1 ? "GPS L1 C/A  1575.42 MHz" : "custom frequency")) {
-        if (ImGui::Selectable("GPS L1 C/A  1575.42 MHz", l1)) { a.freqMhz = 1575.42; retune = true; }
+    static const char* kL1 = "L1 / E1  1575.42 MHz";
+    if (ImGui::BeginCombo("##gband", l1 ? kL1 : "custom frequency")) {
+        if (ImGui::Selectable(kL1, l1)) { a.freqMhz = 1575.42; retune = true; }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("GPS L1 C/A, Galileo E1, QZSS and SBAS, all at once on the same band.");
         ImGui::BeginDisabled();
-        ImGui::Selectable("Galileo E1  1575.42 MHz", false);
         ImGui::Selectable("BeiDou B1I  1561.098 MHz", false);
         ImGui::Selectable("GLONASS L1  1602 MHz", false);
         ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Only GPS L1 C/A is decoded so far. The receiver is built for the other systems, their decoders are not finished.");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("BeiDou and GLONASS are not decoded yet.");
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("GPS L1 C/A needs an active GPS antenna: switch on the antenna power of the radio (HackRF: the antenna port power)\nand give the antenna a view of the sky. Indoors there is usually nothing to receive.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("GPS, Galileo, QZSS and SBAS on 1575.42 MHz. Galileo needs 4 Msps or more and starts once GPS has a fix.\n"
+                                                  "An active antenna is needed: switch on the antenna power of the radio (HackRF: the antenna port power)\n"
+                                                  "and give the antenna a view of the sky. Indoors there is usually nothing to receive.");
 }
 
 void decoder(App& a, bool&) {
@@ -612,8 +615,13 @@ void synth(App& a, bool& changed) {
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("simulated sky"); ImGui::PopTextWrapPos(); }
     {
         // the systems in the simulated sky (modeOpt[0], gnssSystemBit; 0 = GPS alone)
-        unsigned m = sc.modeOpt[0] > 0 ? (unsigned)sc.modeOpt[0] : gnssSystemBit(GnssGps);
         const int sysList[4] = {GnssGps, GnssGalileo, GnssQzss, GnssSbas};
+        if (sc.modeOpt[0] <= 0) {   // a fresh sky shows every system the receiver decodes
+            unsigned all = 0;
+            for (int k = 0; k < 4; k++) all |= gnssSystemBit(sysList[k]);
+            sc.modeOpt[0] = (int)all; changed = true;
+        }
+        unsigned m = (unsigned)sc.modeOpt[0];
         for (int k = 0; k < 4; k++) {
             flowNext();
             bool on = (m & gnssSystemBit(sysList[k])) != 0;
