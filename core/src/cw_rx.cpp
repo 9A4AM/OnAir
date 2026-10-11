@@ -244,6 +244,7 @@ struct CwReceiver::Impl {
             if (!audioOut) { audioOut = std::make_unique<AudioOut>(); audioOut->start(kToneRate); audioOut->setStartThreshold(kToneRate / 20); }
             audioOut->setVolume(volume.load()); audioOut->setMuted(muted.load());
             if (audioOut->bufferedFrames() > kToneRate / 2) audioOut->flush();
+            if (!audioOut->playing()) audioOut->setStartThreshold(kToneRate / 20);   // after an underrun: the default 0.8 s restart level is above the 0.5 s kept here
             audioOut->write(toneBuf.data(), (int)(toneBuf.size() / 2));
         }
         toneBuf.clear();

@@ -103,6 +103,7 @@ public:
         if (!out_) { out_ = std::make_unique<AudioOut>(); out_->start(48000); out_->setStartThreshold(48000 / 10); }
         out_->setVolume(volume.load()); out_->setMuted(muted.load());
         if (out_->bufferedFrames() > 48000 / 2) out_->flush();   // the radio's clock runs ahead of the sound card: catch up
+        if (!out_->playing()) out_->setStartThreshold(48000 / 10);   // after an underrun (a stop, a retune) start again at 0.1 s: the default 0.8 s is above the 0.5 s kept here
         out_->write(pcm_.data(), (int)(pcm_.size() / 2));
     }
     // the 24 kHz complex baseband (dial at 0 Hz): the sideband is only worked out while listening
