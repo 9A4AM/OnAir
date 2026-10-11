@@ -13,6 +13,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <set>
 #include <vector>
 
 #if defined(_WIN32)
@@ -356,17 +357,51 @@ EXPORT sp::ErrT sdrplay_api_Update(void* dev, sp::TunerSelectT tuner, sp::Reason
 // so the test can read the sample rate back from the samples.
 struct ahf_transfer_t { void* device; void* ctx; float* samples; int sample_count; uint64_t dropped_samples; };
 static void ahfCount(const char* k) { const double v = fake_state(k); rec(k, v < 0 ? 1 : v + 1); }
-struct ahf_dev { std::atomic<bool> run{false}; std::thread th; uint32_t rate = 768000; };
+// The real library's hazards (libairspyhf 1.6.8, airspyhf.c), counted so the tests can see a driver walking into them:
+// - airspyhf_stop() leaves the cancelled USB transfers in flight (it waits 50 us for them); they come back only while libusb handles events,
+//   which each control transfer does. A close or a new start with transfers in flight -> airspyhf.inFlight (the crash on Windows).
+// - a call on a handle that was closed -> airspyhf.deadCalls; a second stop of a stopped stream -> airspyhf.extraStops; two threads in the
+//   library at once for one radio (not counting is_streaming, which only reads flags) -> airspyhf.overlap; opening a radio that is open
+//   -> airspyhf.openTwice (WinUSB refuses it)
+// - "airspyhf.unplug" = 1: the stream ends as when the radio is pulled out, and every control transfer fails at once
+struct ahf_dev { std::atomic<bool> run{false}; std::thread th; uint32_t rate = 768000; int inFlight = 0; bool started = false; };
+static std::mutex ahfMu;
+static std::set<ahf_dev*> ahfLive;
+static std::atomic<int> ahfInside{0};
+static bool ahfUnplugged() { return fake_state("airspyhf.unplug") == 1; }
+struct AhfCall {   // one entry into the library
+    bool ok;
+    explicit AhfCall(ahf_dev* d, bool control = true) {
+        { std::lock_guard<std::mutex> lk(ahfMu); ok = ahfLive.count(d) > 0; }
+        if (!ok) { ahfCount("airspyhf.deadCalls"); return; }
+        if (ahfInside.fetch_add(1) > 0) ahfCount("airspyhf.overlap");
+        std::this_thread::sleep_for(std::chrono::microseconds(200));   // widens the window an overlap needs
+        if (control) d->inFlight = 0;   // a control transfer handles libusb's events: the cancelled transfers come back
+    }
+    ~AhfCall() { if (ok) ahfInside--; }
+};
 EXPORT int airspyhf_list_devices(uint64_t* s, int n) { if (s && n > 0) s[0] = 0x3652A8D8C9E1F001ull; return 1; }
 EXPORT int airspyhf_open_sn(ahf_dev** d, uint64_t sn) {
     rec("airspyhf.serialOk", sn == 0x3652A8D8C9E1F001ull ? 1 : 0);
+    if (fake_state("airspyhf.open") == 1) { ahfCount("airspyhf.openTwice"); *d = nullptr; return -1; }
+    if (ahfUnplugged()) { *d = nullptr; return -1; }
     ahfCount("airspyhf.opens");
     rec("airspyhf.open", 1);
     *d = new ahf_dev;
+    std::lock_guard<std::mutex> lk(ahfMu);
+    ahfLive.insert(*d);
     return 0;
 }
 EXPORT int airspyhf_close(ahf_dev* d) {
-    if (d->run) { d->run = false; if (d->th.joinable()) d->th.join(); }
+    {
+        AhfCall c(d, false);
+        if (!c.ok) return -1;
+        if (d->inFlight > 0) ahfCount("airspyhf.inFlight");
+        if (d->run) { d->run = false; if (d->th.joinable()) d->th.join(); }
+        if (d->th.joinable()) d->th.join();
+        std::lock_guard<std::mutex> lk(ahfMu);
+        ahfLive.erase(d);
+    }
     delete d;
     ahfCount("airspyhf.closes");
     rec("airspyhf.open", 0);
@@ -378,10 +413,10 @@ EXPORT int airspyhf_get_samplerates(ahf_dev*, uint32_t* b, uint32_t len) {
     for (uint32_t i = 0; i < len && i < 6; i++) b[i] = v[i];
     return 0;
 }
-EXPORT int airspyhf_set_samplerate(ahf_dev* d, uint32_t r) { if (d->run) rec("airspyhf.rateWhileStreaming", 1); d->rate = r; rec("airspyhf.rate", r); return 0; }
-EXPORT int airspyhf_set_freq(ahf_dev*, uint32_t f) { rec("airspyhf.freq", f); return 0; }
+EXPORT int airspyhf_set_samplerate(ahf_dev* d, uint32_t r) { AhfCall c(d); if (!c.ok || ahfUnplugged()) return -1; if (d->run) rec("airspyhf.rateWhileStreaming", 1); d->rate = r; rec("airspyhf.rate", r); return 0; }
+EXPORT int airspyhf_set_freq(ahf_dev* d, uint32_t f) { AhfCall c(d); if (!c.ok || ahfUnplugged()) return -1; rec("airspyhf.freq", f); return 0; }
 EXPORT int airspyhf_set_hf_agc(ahf_dev*, uint8_t f) { rec("airspyhf.agc", f); return 0; }
-EXPORT int airspyhf_set_hf_att(ahf_dev*, uint8_t v) { rec("airspyhf.att", v); return 0; }
+EXPORT int airspyhf_set_hf_att(ahf_dev* d, uint8_t v) { AhfCall c(d); if (!c.ok || ahfUnplugged()) return -1; rec("airspyhf.att", v); return 0; }
 EXPORT int airspyhf_set_hf_lna(ahf_dev*, uint8_t f) { rec("airspyhf.lna", f); return 0; }
 EXPORT int airspyhf_set_lib_dsp(ahf_dev*, uint8_t f) { rec("airspyhf.dsp", f); return 0; }
 // ---- radio settings: the AGC threshold, the calibration (a factory value of 1234 ppb), antenna power on radios that have it (airspyhf.biasCount)
@@ -389,9 +424,19 @@ EXPORT int airspyhf_set_hf_agc_threshold(ahf_dev*, uint8_t f) { rec("airspyhf.ag
 EXPORT int airspyhf_get_calibration(ahf_dev*, int32_t* ppb) { *ppb = 1234; return 0; }
 EXPORT int airspyhf_set_calibration(ahf_dev*, int32_t ppb) { rec("airspyhf.cal", ppb); ahfCount("airspyhf.calCalls"); return 0; }
 EXPORT int airspyhf_get_bias_tee_count(ahf_dev*, int32_t* n) { *n = fake_state("airspyhf.biasCount") > 0 ? (int32_t)fake_state("airspyhf.biasCount") : 0; return 0; }
-EXPORT int airspyhf_set_bias_tee(ahf_dev*, int8_t v) { rec("airspyhf.bias", v); return 0; }
-EXPORT int airspyhf_is_streaming(ahf_dev* d) { return d->run ? 1 : 0; }
+EXPORT int airspyhf_set_bias_tee(ahf_dev* d, int8_t v) { AhfCall c(d); if (!c.ok || ahfUnplugged()) return -1; rec("airspyhf.bias", v); return 0; }
+EXPORT int airspyhf_is_streaming(ahf_dev* d) {
+    { std::lock_guard<std::mutex> lk(ahfMu); if (!ahfLive.count(d)) { ahfCount("airspyhf.deadCalls"); return 0; } }
+    return d->run ? 1 : 0;
+}
 EXPORT int airspyhf_start(ahf_dev* d, int (*cb)(ahf_transfer_t*), void* ctx) {
+    AhfCall c(d, false);
+    if (!c.ok) return -1;
+    d->started = true;   // (a start that fails half way may leave the library's threads running: a stop after it is right)
+    if (ahfUnplugged()) return -1;
+    if (d->inFlight > 0) ahfCount("airspyhf.inFlight");
+    if (d->th.joinable()) d->th.join();
+    d->started = true;
     d->run = true;
     rec("airspyhf.streaming", 1);
     d->th = std::thread([d, cb, ctx] {
@@ -399,15 +444,26 @@ EXPORT int airspyhf_start(ahf_dev* d, int (*cb)(ahf_transfer_t*), void* ctx) {
         std::vector<float> s(n * 2);
         ahf_transfer_t t{d, ctx, s.data(), n, 0};
         uint64_t k = 0;
-        while (d->run) {
+        while (d->run && !ahfUnplugged()) {
             for (int i = 0; i < n; i++, k++) { const double ph = 2 * M_PI * (double)(k % 8) / 8; s[2 * i] = (float)(0.5 * cos(ph)); s[2 * i + 1] = (float)(0.5 * sin(ph)); }
             cb(&t);
             pace();
         }
+        d->run = false;   // (the library's streaming flag: false when a transfer fails)
     });
     return 0;
 }
-EXPORT int airspyhf_stop(ahf_dev* d) { d->run = false; if (d->th.joinable()) d->th.join(); rec("airspyhf.streaming", 0); return 0; }
+EXPORT int airspyhf_stop(ahf_dev* d) {
+    AhfCall c(d, false);
+    if (!c.ok) return -1;
+    if (!d->started) ahfCount("airspyhf.extraStops");
+    d->started = false;
+    d->run = false;
+    if (d->th.joinable()) d->th.join();
+    if (!ahfUnplugged()) d->inFlight = 3;   // cancelled, not yet collected (an unplugged radio's transfers fail at once)
+    rec("airspyhf.streaming", 0);
+    return 0;
+}
 
 // ---- radios: the optional functions the drivers use for error texts, tuning ranges, direct sampling and the bladeRF 1's FPGA
 EXPORT int rtlsdr_get_tuner_type(rtl_dev*) { return fake_state("rtl.tuner") > 0 ? (int)fake_state("rtl.tuner") : fake_state("rtl.v4") == 1 ? 6 : 5; }   // R828D on the V4, else R820T (rtl.tuner: another)

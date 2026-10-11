@@ -1,6 +1,8 @@
 // Native driver for the Airspy HF+ and HF+ Discovery: the radio's own library (libairspyhf) is loaded at run time when it is installed. See native_common.h.
 // The radio is an HF/VHF receiver with a very narrow output (at most 912 kHz): it suits the narrow modes (DRM, AIS, marine, FM, ...), not TV.
 #include "native_common.h"
+#include <map>
+#include <set>
 
 namespace dect2 {
 namespace native {
@@ -67,6 +69,22 @@ struct AirspyHfApi {
 };
 AirspyHfApi& airspyhf() { static AirspyHfApi a; return a; }
 
+namespace {
+// libairspyhf gives every handle its own libusb context, and its stop and close are not safe against each other or against a second call
+// (crash report from 0.2.2: Windows, an access violation in ntdll under libusb under libairspyhf when Stop was pressed):
+// - airspyhf_stop() cancels the USB transfers but waits only 50 us per transfer for them to come back; the cancelled ones are still in
+//   flight when it returns. airspyhf_close() then calls airspyhf_stop() again, frees the transfers and calls libusb_exit() on the context
+//   while libusb still lists them, and the next walk of that list writes into freed memory.
+// - opening, closing and listing go through the computer's USB stack (libusb_init / libusb_exit), and a listing that opens the radio that
+//   is streaming in this program fails on Windows (one WinUSB handle per device) and races its context.
+// So: every open, start, stop, close and listing takes turns on gHfMu; the stream is stopped once, by this driver; the cancelled transfers
+// are collected before the close (each control transfer of the library runs libusb's event handling); a radio this program has open is not
+// opened again by a listing, which reports what it read before.
+std::mutex gHfMu;
+std::set<uint64_t> gHfOpen;                 // serials open in this program
+std::map<uint64_t, DeviceInfo> gHfKnown;    // what the last listing read, per serial
+}   // namespace
+
 class AirspyHfSource : public NativeSource {
 public:
     explicit AirspyHfSource(uint64_t serial) : serial_(serial) {}
@@ -75,6 +93,9 @@ public:
 protected:
     bool openDevice(const TuneSettings& s, std::string& err) override {
         if (!airspyhf().ok) { err = "Airspy HF+: the radio's library (libairspyhf) is missing"; return false; }
+        std::lock_guard<std::mutex> g(gHfMu);
+        std::lock_guard<std::mutex> lk(api_);
+        if (dev_) return configureLocked(s, err, false);   // (not reached: closeDevice() comes first)
         if (airspyhf().open_sn(&dev_, serial_) != 0 || !dev_) { dev_ = nullptr; err = "Airspy HF+: cannot open the radio (in use, or the driver is missing)"; return false; }
         if (airspyhf().set_lib_dsp) airspyhf().set_lib_dsp(dev_, 1);   // the library's own IQ correction and fine tuning
         agc_ = radioOption(s, "agc", "off");
@@ -86,9 +107,16 @@ protected:
         bias_ = false;
         int32_t nb = 0;
         hasBias_ = airspyhf().set_bias_tee && airspyhf().get_bias_tee_count && airspyhf().get_bias_tee_count(dev_, &nb) == 0 && nb > 0;
-        return configure(s, err, false);
+        gHfOpen.insert(serial_);
+        freq_ = 0;
+        streaming_ = streamed_ = false;
+        return configureLocked(s, err, false);
     }
     bool configure(const TuneSettings& s, std::string& err, bool live) override {
+        std::lock_guard<std::mutex> lk(api_);
+        return configureLocked(s, err, live);
+    }
+    bool configureLocked(const TuneSettings& s, std::string& err, bool live) {
         if (!dev_) return false;
         auto& api = airspyhf();
         if (!live) {
@@ -127,7 +155,8 @@ protected:
                 if (api.set_calibration(dev_, (int32_t)(cal0_ - std::lround(ppm * 1000))) == 0) ppm_ = ppm;
             }
         } else tuneHz = ppmCorrectedHz(s.centerHz, ppm);
-        api.set_freq(dev_, (uint32_t)std::llround(std::min(std::max(tuneHz, kMinFreqHz), kMaxFreqHz)));
+        freq_ = (uint32_t)std::llround(std::min(std::max(tuneHz, kMinFreqHz), kMaxFreqHz));
+        api.set_freq(dev_, freq_);
         // the radio's own AGC (TuneSettings "agc": off, low or high threshold); off is the default, with the slider in charge
         const std::string agc = radioOption(s, "agc", "off");
         if (agc != agc_) {
@@ -146,19 +175,51 @@ protected:
         }
         return true;
     }
+    // safe twice, after a failed open, after an unplug, and with the stream still running (it is stopped first)
     void closeDevice() override {
-        if (dev_ && bias_ && hasBias_) airspyhf().set_bias_tee(dev_, 0);   // antenna power never stays on
+        std::lock_guard<std::mutex> g(gHfMu);
+        std::lock_guard<std::mutex> lk(api_);
+        if (!dev_) return;
+        stopLocked();
+        if (bias_ && hasBias_) airspyhf().set_bias_tee(dev_, 0);   // antenna power never stays on
         bias_ = false;
-        if (dev_) airspyhf().close(dev_);
+        collectTransfers();
+        airspyhf().close(dev_);
         dev_ = nullptr;
+        gHfOpen.erase(serial_);
+        streaming_ = streamed_ = false;
     }
     void streamLoop() override {
-        if (airspyhf().start(dev_, &AirspyHfSource::callback, this) != 0) return;
+        {
+            std::lock_guard<std::mutex> g(gHfMu);
+            std::lock_guard<std::mutex> lk(api_);
+            if (!dev_ || !run_) return;
+            if (streamed_) collectTransfers();   // a restart for another rate: the transfers of the last stream first
+            streaming_ = streamed_ = true;       // also when the start fails half way: the library may have threads running, stop() joins them
+            if (airspyhf().start(dev_, &AirspyHfSource::callback, this) != 0) { stopLocked(); return; }
+        }
         while (run_ && airspyhf().is_streaming(dev_)) std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        airspyhf().stop(dev_);
+        std::lock_guard<std::mutex> g(gHfMu);
+        std::lock_guard<std::mutex> lk(api_);
+        stopLocked();
     }
 
 private:
+    void stopLocked() {   // (under api_) the library's stop, once per start
+        if (!dev_ || !streaming_) return;
+        streaming_ = false;
+        airspyhf().stop(dev_);
+    }
+    // The cancelled USB transfers of a stream that was stopped come back only while libusb handles events, which each control transfer of
+    // the library does: a few harmless ones (the frequency as it is) collect them before the next start or the close. A radio that was
+    // unplugged answers these at once with an error.
+    void collectTransfers() {
+        if (!dev_ || !streamed_) return;
+        for (int i = 0; i < 3; i++) {
+            if (freq_) airspyhf().set_freq(dev_, freq_);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
     static int DECT2_CALL callback(AirspyHfApi::transfer_t* t) {
         auto* self = static_cast<AirspyHfSource*>(t->ctx);
         if (!self->run_ || !t->samples || t->sample_count <= 0) return 0;
@@ -167,6 +228,10 @@ private:
     }
     uint64_t serial_;
     AirspyHfApi::airspyhf_device* dev_ = nullptr;
+    std::mutex api_;               // the library is entered by one thread at a time for this radio (retune, the stream thread, stop)
+    uint32_t freq_ = 0;            // the frequency the radio is set to
+    bool streaming_ = false;       // started and not yet stopped
+    bool streamed_ = false;        // has streamed since it was opened
     std::string agc_ = "off";      // the radio's AGC as set
     int32_t cal0_ = 0;             // the radio's own calibration (ppb), read at open
     bool calOk_ = false;           // the library can read and set it
@@ -176,9 +241,16 @@ private:
 
 void listAirspyHf(std::vector<DeviceInfo>& out) {
     if (!airspyhf().ok) return;
+    std::lock_guard<std::mutex> g(gHfMu);
     uint64_t sn[16] = {0};
-    const int n = airspyhf().list_devices(sn, 16);
-    for (int i = 0; i < n && i < 16; i++) {
+    const int n = std::min(airspyhf().list_devices(sn, 16), 16);
+    std::set<uint64_t> listed;
+    for (int i = 0; i < n; i++) listed.insert(sn[i]);
+    for (uint64_t s : gHfOpen) {   // a radio streaming here may be missing from the library's list (Windows): it is still there
+        if (!listed.count(s) && gHfKnown.count(s)) out.push_back(gHfKnown[s]);
+    }
+    for (int i = 0; i < n; i++) {
+        if (gHfOpen.count(sn[i]) && gHfKnown.count(sn[i])) { out.push_back(gHfKnown[sn[i]]); continue; }   // in use here: not opened again
         DeviceInfo d;
         d.kind = DeviceInfo::Native;
         d.board = "airspyhf";
@@ -192,7 +264,7 @@ void listAirspyHf(std::vector<DeviceInfo>& out) {
         // the rates come from the radio (a Discovery has 912 kHz as well); when it is busy (streaming here, or in another program) the standard model's list
         d.minRateHz = 192e3; d.maxRateHz = 768e3;
         AirspyHfApi::airspyhf_device* dev = nullptr;
-        if (airspyhf().open_sn(&dev, sn[i]) == 0 && dev) {
+        if (!gHfOpen.count(sn[i]) && airspyhf().open_sn(&dev, sn[i]) == 0 && dev) {
             uint32_t count = 0, rates[16] = {0};
             airspyhf().get_samplerates(dev, &count, 0);
             count = std::min<uint32_t>(count, 16);
@@ -214,6 +286,7 @@ void listAirspyHf(std::vector<DeviceInfo>& out) {
                                     "The HF+'s own fast AGC in front of the converter, for strong or fading HF signals. Off: the gain slider (and OnAir's AGC)\n"
                                     "set the attenuator (the default). Low / High: the AGC's threshold; the slider then has little effect.",
                                     {"off", "low", "high"}, {"Off", "On, low threshold", "On, high threshold"}, "off")};
+        gHfKnown[sn[i]] = d;
         out.push_back(d);
     }
 }

@@ -1204,6 +1204,79 @@ int main(int argc, char** argv) {
                 s3.reset();
                 CHECK(st("airspyhf.opens") == st("airspyhf.closes"), "opens %.0f, closes %.0f", st("airspyhf.opens"), st("airspyhf.closes"));
             }
+            // Stop in every order (crash report from 0.2.2: Windows, Stop pressed, libusb under libairspyhf). The fake counts what crashes the
+            // real library: a close or start with cancelled transfers in flight, a call on a closed handle, a stop of a stopped stream, two
+            // threads in the library at once, a listing opening the radio that streams.
+            auto hfSet = h ? (void (*)(const char*, double))dlsym(h, "fake_set") : nullptr;
+            CHECK(hfSet != nullptr, "fake_set missing in the airspyhf fake");
+            if (hfSet) {
+                auto hazards = [&](const char* what) {
+                    for (const char* k : {"airspyhf.inFlight", "airspyhf.deadCalls", "airspyhf.extraStops", "airspyhf.overlap", "airspyhf.openTwice"})
+                        CHECK(st(k) == -1e300, "%s: %s = %.0f", what, k, st(k));
+                    CHECK(st("airspyhf.open") == 0 && st("airspyhf.opens") == st("airspyhf.closes"), "%s: left open (opens %.0f closes %.0f)", what,
+                          st("airspyhf.opens"), st("airspyhf.closes"));
+                };
+                TuneSettings t;
+                t.centerHz = 7.1e6; t.sampleRate = 768e3; t.gainDb = 30; t.bandwidthMhz = 0.02;
+                std::string e;
+                IqRing ring(1 << 20);
+                // stop at once after start, stop twice, then the destructor
+                if (auto s = makeSource(*dev)) {
+                    if (s->start(t, ring, e)) { s->stop(); s->stop(); }
+                    s.reset();
+                    hazards("stop right after start, twice");
+                }
+                // a rate change (the stream restarts), a listing while streaming, retunes racing the stop
+                if (auto s = makeSource(*dev)) {
+                    if (s->start(t, ring, e)) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                        TuneSettings t2 = t; t2.sampleRate = 192e3;
+                        s->retune(t2, e);
+                        std::string le;
+                        bool listed = false;
+                        for (const auto& d : listNativeDevices(le)) listed |= d.board == "airspyhf";
+                        CHECK(listed, "the HF+ that streams is missing from a listing");
+                        std::atomic<bool> go{true};
+                        std::thread tuner([&] { TuneSettings t3 = t2; std::string e3; for (int i = 0; go && i < 200; i++) { t3.centerHz = 7e6 + i * 1e3; s->retune(t3, e3); } });
+                        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                        s->stop();
+                        go = false;
+                        tuner.join();
+                    }
+                    s.reset();
+                    hazards("rate change, listing, retunes during stop");
+                }
+                // unplugged while streaming, Stop pressed while it is away (the driver is trying to open it again), then plugged in again and stopped
+                if (auto s = makeSource(*dev)) {
+                    if (s->start(t, ring, e)) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                        hfSet("airspyhf.unplug", 1);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                        hfSet("airspyhf.unplug", 0);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1300));   // (reopened within a second)
+                        s->stop();
+                    }
+                    s.reset();
+                    hazards("unplug, replug, stop");
+                }
+                if (auto s = makeSource(*dev)) {
+                    if (s->start(t, ring, e)) {
+                        hfSet("airspyhf.unplug", 1);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+                        s->stop();   // while it is away
+                    }
+                    hfSet("airspyhf.unplug", 0);
+                    s.reset();
+                    hazards("unplug, stop while away");
+                }
+                // destroyed while streaming (quit)
+                if (auto s = makeSource(*dev)) {
+                    s->start(t, ring, e);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+                    s.reset();
+                    hazards("quit while running");
+                }
+            }
         }
         fakeState = nullptr;
     }
