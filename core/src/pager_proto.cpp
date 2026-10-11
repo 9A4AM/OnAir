@@ -2,6 +2,7 @@
 #include "dect2/pager_proto.h"
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cstring>
 #include <ctime>
 
@@ -67,6 +68,41 @@ std::string numericFromBits(const std::vector<uint8_t>& bits, const char* table,
     while (!s.empty() && s.back() == ' ') s.pop_back();
     return s;
 }
+
+} // namespace
+
+bool pocsagLooksAlpha(const std::vector<uint8_t>& bits) {
+    std::vector<int> ch;
+    for (size_t i = 0; i + 7 <= bits.size(); i += 7) {
+        int c = 0;
+        for (int k = 0; k < 7; k++) c |= (bits[i + (size_t)k] & 1) << k;
+        ch.push_back(c);
+    }
+    while (!ch.empty() && (ch.back() == 0 || ch.back() == 3 || ch.back() == 4)) ch.pop_back();   // padding
+    const int n = (int)ch.size();
+    if (n < 3) return false;
+    int letters = 0, digits = 0, spaces = 0, odd = 0, ctrl = 0, run = 0, maxRun = 0, pairs = 0, lowUp = 0, prev = 0;
+    for (int c : ch) {
+        if (std::isalpha(prev) && std::isalpha(c)) { pairs++; if (std::islower(prev) && std::isupper(c)) lowUp++; }   // "xY" is rare in text, common in noise
+        prev = c;
+        const bool isCtrl = (c < 0x20 && c != '\n' && c != '\r') || c == 0x7F;
+        if (isCtrl) { ctrl++; maxRun = std::max(maxRun, ++run); } else run = 0;
+        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) letters++;
+        else if (c >= '0' && c <= '9') digits++;
+        else if (c == ' ' || c == '\n' || c == '\r') spaces++;
+        else if (!isCtrl && !std::strchr(".,:;-/()#&'!?@+=*\"", c)) odd++;   // [\]^_`{|}~ and the like
+    }
+    if (n < 12) {                                                     // short: chance alone would pass the ratios below, so be strict
+        if (n < 6 || ctrl || odd || letters + digits + spaces < n - 1) return false;
+        return letters * 2 >= n && lowUp * 8 <= pairs;
+    }
+    if (maxRun >= 2 || ctrl * 10 > n) return false;
+    if ((letters + digits + spaces) * 20 < n * 17) return false;     // 85 % at least
+    if (odd * 10 > n || lowUp * 8 > pairs) return false;
+    return letters * 4 >= n;                                          // text has letters: a quarter at least
+}
+
+namespace {
 
 PagerMessage newMessage() {
     PagerMessage m;
@@ -166,12 +202,12 @@ void PocsagParser::finish(std::vector<PagerMessage>& out) {
     m.damaged = damaged_;
     if (bits_.empty()) {
         m.type = kPagerTone;
-    } else if (fn_ == 0) {
-        m.type = kPagerNumeric;
-        m.text = numericFromBits(bits_, kNumPocsag, false);
     } else {
-        m.type = kPagerAlpha;
-        m.text = alphaFromBits(bits_);
+        m.numText = numericFromBits(bits_, kNumPocsag, false);
+        m.alphaText = alphaFromBits(bits_);
+        m.looksAlpha = pocsagLooksAlpha(bits_);
+        m.type = kPagerNumeric;
+        pocsagApplyRead(m, readMode);
     }
     out.push_back(std::move(m));
 }

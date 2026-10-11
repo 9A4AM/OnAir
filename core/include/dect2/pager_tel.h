@@ -35,7 +35,39 @@ struct PagerMessage {
     std::string text;            // numeric digits or text; "secure, not shown" for secure pages
     int fixed = 0;               // bits that the BCH code corrected in the code words of this page
     bool damaged = false;        // a code word of the message could not be repaired: the text is incomplete
+    // POCSAG pages with a message: both readings, so the UI can switch between them; empty for FLEX and tone pages
+    std::string numText, alphaText;
+    bool looksAlpha = false;     // the alphanumeric reading looks like real text (pager::pocsagLooksAlpha)
+    int readHow = 0;             // PocsagReadHow: why type was picked
 };
+
+// How a POCSAG message is read. Networks often ignore the standard (function 0 = numeric): Australian emergency paging sends text with function 0.
+enum PocsagReadMode { kPocsagReadAuto, kPocsagReadByFunction, kPocsagReadAlpha, kPocsagReadNumeric, kPocsagReadModes };
+inline const char* pocsagReadModeName(int m) {
+    static const char* const n[] = {"Auto", "By function code", "Force alphanumeric", "Force numeric"};
+    return m >= 0 && m < kPocsagReadModes ? n[m] : "?";
+}
+enum PocsagReadHow { kPocsagHowFunction, kPocsagHowAuto, kPocsagHowForced, kPocsagHowAddress };
+inline const char* pocsagReadHowName(int h) {
+    static const char* const n[] = {"function", "auto", "forced", "address"};
+    return h >= 0 && h <= kPocsagHowAddress ? n[h] : "?";
+}
+// Picks the reading of a POCSAG message (type, text, readHow) for a mode; byAddress marks a per-address override. FLEX and tone pages are left alone.
+inline void pocsagApplyRead(PagerMessage& m, int mode, bool byAddress = false) {
+    if (m.flex || (m.type != kPagerNumeric && m.type != kPagerAlpha)) return;
+    bool alpha;
+    if (mode == kPocsagReadAlpha || mode == kPocsagReadNumeric) { alpha = mode == kPocsagReadAlpha; m.readHow = byAddress ? kPocsagHowAddress : kPocsagHowForced; }
+    else if (mode == kPocsagReadByFunction) { alpha = m.function != 0; m.readHow = kPocsagHowFunction; }
+    else {
+        // text-like wins; otherwise numeric, except that a page sent as alphanumeric (function 1 to 3) stays so unless its numeric reading is plain digits
+        bool plain = !m.numText.empty();
+        for (char c : m.numText) plain = plain && ((c >= '0' && c <= '9') || c == ' ' || c == '-');
+        alpha = m.looksAlpha || (m.function != 0 && !plain);
+        m.readHow = kPocsagHowAuto;
+    }
+    m.type = alpha ? kPagerAlpha : kPagerNumeric;
+    m.text = alpha ? m.alphaText : m.numText;
+}
 
 // Code words of one speed: good as received, repaired by the BCH code, lost.
 struct PagerSpeedStat {

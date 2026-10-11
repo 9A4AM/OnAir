@@ -66,6 +66,79 @@ static void pocsagTests() {
     printf("  POCSAG: %zu pages in %d batches, %d code words repaired\n", out.size(), batches, p.fixed);
 }
 
+// Runs pages through the encoder and a parser in the given read mode.
+static std::vector<PagerMessage> decodePocsag(const std::vector<PocsagPage>& pages, int mode) {
+    const std::vector<uint8_t> bits = pocsagBits(pages);
+    std::vector<PagerMessage> out;
+    PocsagParser p;
+    p.readMode = mode;
+    for (size_t i = 576; i + 32 * 17 <= bits.size(); ) {
+        i += 32;
+        for (int s = 0; s < 16; s++, i += 32) p.word(wordFromBits(&bits[i]), s, out);
+    }
+    p.flush(out);
+    return out;
+}
+
+static void readModeTests() {
+    // Australian emergency paging: text sent with function 0. The numeric reading OnAir showed before:
+    const std::string garbage = "1522- 63U 186*5]37UU ]6*3 260*969[ -]2UU9]";
+    PocsagPage g; g.ric = 1000; g.fn = 0; g.type = kPagerNumeric; g.text = garbage;
+    PocsagPage t; t.ric = 2000; t.fn = 0; t.type = kPagerAlpha; t.text = "QD4639 Segment01 Segment02 RESPOND STRUCTURE FIRE 12 MAIN ST";
+    PocsagPage tone; tone.ric = 3000; tone.fn = 0; tone.type = kPagerTone;
+    std::vector<PocsagPage> pages = {g, t, tone};
+    const char* const nums[] = {"123-456 U 789", "0412345678", "911", "12 34 56", "5551234-[22]", "000", "1234567890123", "U", "07 3333 4444 ]", "*99", "42-17", "3600"};
+    for (int k = 0; k < 12; k++) { PocsagPage n; n.ric = 4000 + (uint32_t)k * 8; n.fn = 0; n.type = kPagerNumeric; n.text = nums[k]; pages.push_back(n); }
+    for (int mode = 0; mode < kPocsagReadModes; mode++) {
+        const std::vector<PagerMessage> out = decodePocsag(pages, mode);
+        CHECK(out.size() == pages.size(), "mode %d: %zu pages", mode, out.size());
+        for (const PagerMessage& m : out) {
+            if (m.address == 3000) { CHECK(m.type == kPagerTone && m.text.empty(), "mode %d: tone page", mode); continue; }
+            const bool wantAlpha = mode == kPocsagReadAlpha || (mode == kPocsagReadAuto && (m.address == 1000 || m.address == 2000));
+            CHECK((m.type == kPagerAlpha) == wantAlpha, "mode %d address %u read as %s: '%s'", mode, m.address, pagerTypeName(m.type), m.text.c_str());
+            CHECK(m.text == (wantAlpha ? m.alphaText : m.numText), "mode %d: text follows the type", mode);
+            if (m.address == 1000) {
+                CHECK(m.numText == garbage, "numeric reading '%s'", m.numText.c_str());
+                if (mode == kPocsagReadAuto) CHECK(m.text.rfind("QD4639 Segment01 Segment", 0) == 0 && m.readHow == kPocsagHowAuto, "auto: '%s'", m.text.c_str());
+            }
+            if (m.address == 2000 && wantAlpha) CHECK(m.text == t.text, "text '%s'", m.text.c_str());
+            if (m.address >= 4000 && !wantAlpha) CHECK(m.text == nums[(m.address - 4000) / 8], "numeric '%s'", m.text.c_str());
+            if (mode == kPocsagReadAlpha || mode == kPocsagReadNumeric) CHECK(m.readHow == kPocsagHowForced, "forced reason");
+            if (mode == kPocsagReadByFunction) CHECK(m.readHow == kPocsagHowFunction, "function reason");
+        }
+    }
+    // a per-address override re-reads a decoded page
+    std::vector<PagerMessage> out = decodePocsag({g}, kPocsagReadAuto);
+    PagerMessage m = out.at(0);
+    pocsagApplyRead(m, kPocsagReadNumeric, true);
+    CHECK(m.type == kPagerNumeric && m.text == garbage && m.readHow == kPocsagHowAddress, "override numeric");
+    pocsagApplyRead(m, kPocsagReadAlpha, true);
+    CHECK(m.type == kPagerAlpha && m.readHow == kPocsagHowAddress && m.text.rfind("QD4639", 0) == 0, "override alpha");
+    pocsagApplyRead(m, kPocsagReadAuto);
+    CHECK(m.type == kPagerAlpha && m.readHow == kPocsagHowAuto, "override back to auto");
+
+    // random numeric pages and random noise words must rarely look like text
+    srand(11);
+    int numAlpha = 0, noiseAlpha = 0;
+    const int trials = 20000;
+    auto nib = [](std::vector<uint8_t>& b, int v) { for (int q = 0; q < 4; q++) b.push_back((uint8_t)((v >> q) & 1)); };
+    for (int k = 0; k < trials; k++) {
+        std::vector<uint8_t> b;
+        const int digits = 3 + rand() % 30;
+        for (int d = 0; d < digits; d++) nib(b, rand() % 4 ? rand() % 10 : 10 + rand() % 6);
+        while (b.size() % 20) nib(b, 12);              // filled with spaces
+        if (pocsagLooksAlpha(b)) numAlpha++;
+        std::vector<uint8_t> nz;
+        const int words = 1 + rand() % 8;
+        for (int w = 0; w < words * 20; w++) nz.push_back((uint8_t)(rand() & 1));
+        if (pocsagLooksAlpha(nz)) noiseAlpha++;
+    }
+    printf("  POCSAG read modes: random numeric pages taken for text %d of %d (%.3f%%), noise words %d of %d (%.3f%%)\n", numAlpha, trials, 100.0 * numAlpha / trials,
+           noiseAlpha, trials, 100.0 * noiseAlpha / trials);
+    CHECK(numAlpha * 200 < trials, "numeric pages taken for text: %d of %d", numAlpha, trials);
+    CHECK(noiseAlpha * 200 < trials, "noise taken for text: %d of %d", noiseAlpha, trials);
+}
+
 static void flexTests() {
     int cycle = 0, frame = 0;
     CHECK(flexFiwCheck(flexFiwData(9, 77), cycle, frame) && cycle == 9 && frame == 77, "FIW");
@@ -135,6 +208,7 @@ static void handBuiltTest() {
 int main() {
     bchTests();
     pocsagTests();
+    readModeTests();
     flexTests();
     handBuiltTest();
     printf("%s\n", fails ? "FAILED" : "ok");

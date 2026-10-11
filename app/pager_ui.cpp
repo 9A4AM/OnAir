@@ -1,10 +1,13 @@
 // Pagers screens: lamps for the signal, the sync and the two protocols; the message list with a filter; the statistics per speed.
 #include "app.h"
 #include "dect2/pager_tel.h"
+#include "platform.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <ctime>
+#include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -14,8 +17,50 @@ struct State {
     int view = 0;                        // 0 messages, 1 statistics
     char filter[48] = "";                // matches the address or the text
     bool pocsag = true, flex = true;
+    bool loaded = false;
+    int readMode = dect2::kPocsagReadAuto;   // PocsagReadMode, saved as "pocsagRead"
+    std::map<uint32_t, int> byAddress;       // POCSAG address -> kPocsagReadAlpha or kPocsagReadNumeric, saved as "pocsagReadAddr" ("ric:a ric:n ...")
 };
 State S;
+
+void loadRead() {
+    if (S.loaded) return;
+    S.loaded = true;
+    const long m = plat::prefs().getI("pocsagRead", dect2::kPocsagReadAuto);
+    S.readMode = m >= 0 && m < dect2::kPocsagReadModes ? (int)m : dect2::kPocsagReadAuto;
+    std::istringstream in(plat::prefs().getS("pocsagReadAddr", ""));
+    std::string tok;
+    while (in >> tok) {
+        const size_t c = tok.find(':');
+        if (c == std::string::npos || c + 1 >= tok.size()) continue;
+        const unsigned long ric = std::strtoul(tok.c_str(), nullptr, 10);
+        S.byAddress[(uint32_t)ric] = tok[c + 1] == 'a' ? dect2::kPocsagReadAlpha : dect2::kPocsagReadNumeric;
+    }
+}
+
+void saveRead(const App& a) {
+    std::string v;
+    for (const auto& [ric, mode] : S.byAddress) v += std::to_string(ric) + (mode == dect2::kPocsagReadAlpha ? ":a " : ":n ");
+    plat::prefs().setI("pocsagRead", S.readMode);
+    plat::prefs().setS("pocsagReadAddr", v);
+    savePrefs(a);
+}
+
+// The page as the user wants it read: the "Message type" setting, or the address override. FLEX pages are left alone.
+dect2::PagerMessage resolved(const dect2::PagerMessage& m) {
+    dect2::PagerMessage v = m;
+    if (m.flex || m.numText.empty() && m.alphaText.empty()) return v;
+    const auto it = S.byAddress.find(m.address);
+    if (it != S.byAddress.end()) dect2::pocsagApplyRead(v, it->second, true);
+    else dect2::pocsagApplyRead(v, S.readMode);
+    return v;
+}
+
+std::string typeText(const dect2::PagerMessage& m) {
+    std::string t = dect2::pagerTypeName(m.type);
+    if (!m.flex && (m.type == dect2::kPagerAlpha || m.type == dect2::kPagerNumeric)) t += std::string(" (") + dect2::pocsagReadHowName(m.readHow) + ")";
+    return t;
+}
 
 constexpr size_t kShown = 400;           // rows drawn at most: the list wraps its text, so every row has its own height
 
@@ -43,7 +88,7 @@ std::string oneLine(const std::string& s) {
     return o;
 }
 
-bool passes(const dect2::PagerMessage& m) {
+bool passes(const dect2::PagerMessage& m) {   // m: resolved
     if (m.flex ? !S.flex : !S.pocsag) return false;
     if (!S.filter[0]) return true;
     char adr[16];
@@ -88,14 +133,33 @@ void messageView(App& a) {
     flowNext(10 * gUi);
     ImGui::Checkbox("FLEX", &S.flex);
     flowNext(12 * gUi);
+    if (S.pocsag) {
+        ImGui::TextDisabled("Message type"); ImGui::SameLine(0, 5 * gUi);
+        ImGui::SetNextItemWidth(150 * gUi);
+        if (ImGui::BeginCombo("##pgread", dect2::pocsagReadModeName(S.readMode))) {
+            static const char* const tips[] = {
+                "Read each POCSAG message both ways and show it as text when it looks like text, else as digits. Many networks send text with function 0.",
+                "Function 0 is numeric, 1 to 3 alphanumeric, as the POCSAG standard says.",
+                "Read every POCSAG message as text.",
+                "Read every POCSAG message as digits."};
+            for (int i = 0; i < dect2::kPocsagReadModes; i++) {
+                if (ImGui::Selectable(dect2::pocsagReadModeName(i), S.readMode == i)) { S.readMode = i; saveRead(a); }
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tips[i]);
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("How POCSAG messages are read: as text (alphanumeric) or digits. Right-click an address to fix it for that address.");
+        flowNext(12 * gUi);
+    }
     const bool copy = ImGui::Button("Copy");
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Copy the pages that match the filter to the clipboard, one per line.");
     flowEnd();
     if (copy) {
         std::string txt;
-        for (const auto& m : all) {
+        for (const auto& raw : all) {
+            const dect2::PagerMessage m = resolved(raw);
             if (!passes(m)) continue;
-            txt += clock(m.wallTime) + "\t" + dect2::pagerSpeedName(m.speed) + "\t" + std::to_string(m.address) + "\t" + fnText(m) + "\t" + dect2::pagerTypeName(m.type) + "\t" + oneLine(m.text) + "\n";
+            txt += clock(m.wallTime) + "\t" + dect2::pagerSpeedName(m.speed) + "\t" + std::to_string(m.address) + "\t" + fnText(m) + "\t" + typeText(m) + "\t" + oneLine(m.text) + "\n";
         }
         ImGui::SetClipboardText(txt.c_str());
     }
@@ -106,7 +170,8 @@ void messageView(App& a) {
         ImGui::TableHeadersRow();
         size_t shown = 0, matching = 0;
         if (on) {
-            for (const auto& m : all) {
+            for (const auto& raw : all) {
+                const dect2::PagerMessage m = resolved(raw);
                 if (!passes(m)) continue;
                 matching++;
                 if (shown >= kShown) continue;
@@ -114,14 +179,33 @@ void messageView(App& a) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(m.wallTime).c_str());
                 ImGui::TableNextColumn(); ImGui::PushStyleColor(ImGuiCol_Text, pal::accent()); ImGui::TextUnformatted(dect2::pagerSpeedName(m.speed)); ImGui::PopStyleColor();
-                ImGui::TableNextColumn(); ImGui::Text("%u", (unsigned)m.address);
+                ImGui::TableNextColumn();
+                ImGui::PushID((int)m.serial);
+                ImGui::Text("%u", (unsigned)m.address);
+                if (!m.flex && ImGui::BeginPopupContextItem("##pgadr", ImGuiPopupFlags_MouseButtonRight)) {
+                    const auto it = S.byAddress.find(m.address);
+                    const int cur = it == S.byAddress.end() ? -1 : it->second;
+                    ImGui::TextDisabled("Address %u", (unsigned)m.address);
+                    if (ImGui::MenuItem("Always alphanumeric", nullptr, cur == dect2::kPocsagReadAlpha)) { S.byAddress[m.address] = dect2::kPocsagReadAlpha; saveRead(a); }
+                    if (ImGui::MenuItem("Always numeric", nullptr, cur == dect2::kPocsagReadNumeric)) { S.byAddress[m.address] = dect2::kPocsagReadNumeric; saveRead(a); }
+                    if (ImGui::MenuItem("Auto (the Message type setting)", nullptr, cur < 0)) { S.byAddress.erase(m.address); saveRead(a); }
+                    ImGui::EndPopup();
+                }
+                if (!m.flex && ImGui::IsItemHovered()) ImGui::SetTooltip("Right-click to choose how pages to this address are read.");
+                ImGui::PopID();
                 ImGui::TableNextColumn(); ImGui::TextUnformatted(fnText(m).c_str());
-                ImGui::TableNextColumn(); ImGui::TextUnformatted(dect2::pagerTypeName(m.type));
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(typeText(m).c_str());
                 ImGui::TableNextColumn();
                 ImGui::PushFont(a.mono, 0);
                 if (m.type == dect2::kPagerTone) ImGui::TextDisabled("(tone only)");
                 else ImGui::TextWrapped("%s%s", m.text.c_str(), m.damaged ? "  [incomplete]" : "");
                 ImGui::PopFont();
+                if (!m.flex && !m.numText.empty() && ImGui::IsItemHovered()) {
+                    static const char* const why[] = {"by the function code", "auto: the text reading %s", "forced by the Message type setting", "set for this address"};
+                    char reason[96];
+                    snprintf(reason, sizeof reason, why[m.readHow], m.looksAlpha ? "looks like text" : "does not look like text");
+                    ImGui::SetTooltip("Shown as %s, %s\n\nAlphanumeric: %s\nNumeric: %s", dect2::pagerTypeName(m.type), reason, oneLine(m.alphaText).c_str(), m.numText.c_str());
+                }
             }
         }
         ImGui::EndTable();
@@ -166,6 +250,7 @@ void statsView(App& a) {
 // ---------------------------------------------------------------- hooks
 
 void tab(App& a) {
+    loadRead();
     lampRow(a);
     ImGui::Spacing();
     subNav("pagerv", S.view, {"Messages", "Statistics"});
@@ -173,6 +258,7 @@ void tab(App& a) {
 }
 
 void list(App& a) {
+    loadRead();
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to see pages"); ImGui::PopTextWrapPos(); return; }
     const dect2::PagerTelemetry& t = a.rx.pager;
     const std::vector<dect2::PagerMessage>& all = messagesOf(t);
@@ -182,8 +268,9 @@ void list(App& a) {
     ImGui::TableSetupColumn("Address"); ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     size_t n = 0;
-    for (const auto& m : all) {
+    for (const auto& raw : all) {
         if (n++ >= 100) break;
+        const dect2::PagerMessage m = resolved(raw);
         ImGui::TableNextRow();
         ImGui::TableNextColumn(); ImGui::Text("%u", (unsigned)m.address);
         ImGui::TableNextColumn(); ImGui::TextUnformatted(ellipsize(m.type == dect2::kPagerTone ? std::string("(tone only)") : oneLine(m.text), ImGui::GetContentRegionAvail().x).c_str());

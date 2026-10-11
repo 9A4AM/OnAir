@@ -34,8 +34,13 @@ struct PocsagPage {
 // A whole transmission as bits: the preamble, then batches (sync word and 16 code words each)
 std::vector<uint8_t> pocsagBits(const std::vector<PocsagPage>& pages, int preambleBits = 576);
 
+// The message bits (first transmitted first) read as 7-bit characters look like real text: mostly letters, digits and spaces, few odd signs,
+// no run of control characters, at least 3 characters. Auto mode reads such a message as alphanumeric whatever its function code.
+bool pocsagLooksAlpha(const std::vector<uint8_t>& bits);
+
 class PocsagParser {
 public:
+    int readMode = kPocsagReadAuto;                // PocsagReadMode
     void reset();
     void word(uint32_t raw, int slot, std::vector<PagerMessage>& out);   // slot 0 to 15 in the batch; finished pages are appended to out
     void flush(std::vector<PagerMessage>& out);
