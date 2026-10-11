@@ -150,6 +150,7 @@ int main(int argc, char** argv) {
     e.vor().setSilent(!listen);   // VOR / ILS: the voice only with --listen
     e.m17().setSilent(!listen);   // M17 voice only with --listen as well
     e.cw().setSilent(!listen);    // CW sidetone only with --listen as well
+    e.psk().setSilent(true);    // PSK31: text only, no sound
     e.dstar().setSilent(!listen); // D-STAR voice (mbelib) too
     e.nxdn().setSilent(!listen);  // NXDN voice (mbelib) too
     if (!wavPath.empty()) e.fm().setAudioTap([&wav](const float* l, const float* r, size_t n) {
