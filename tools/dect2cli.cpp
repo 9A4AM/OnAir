@@ -152,6 +152,7 @@ int main(int argc, char** argv) {
     e.cw().setSilent(!listen);    // CW sidetone only with --listen as well
     e.psk().setSilent(true);    // PSK31: text only, no sound
     e.js8().setSilent(true);
+    e.specx().setSilent(true);  // spectrum explorer: the summary line only    // JS8Call: text only, no sound
     e.specan().setSilent(true);   // spectrum analyser: no sound    // JS8Call: text only, no sound
     e.dstar().setSilent(!listen); // D-STAR voice (mbelib) too
     e.nxdn().setSilent(!listen);  // NXDN voice (mbelib) too

@@ -44,8 +44,11 @@
 #include "cell_rx.h"
 #include "cw_rx.h"
 #include "dstar_rx.h"
+#include "nxdn_rx.h"
+#include "gsmr_rx.h"
 #include "psk_rx.h"
 #include "js8_rx.h"
+#include "specx_rx.h"
 #include "specan_rx.h"
 #include "bbunpack.h"
 #include "ts.h"
@@ -112,10 +115,10 @@ public:
     // Which standard to decode: 0 = automatic (alternates between DVB-T2 and DVB-T until one locks), 1 = DVB-T2, 2 = DVB-T, 3 = ATSC, 4 = DAB, 5 = ATSC 3.0, 6 = ISDB-T, 7 = FM,
     // 8 = DVB-S/S2, 9 = DTMB, 10 = analog TV, 11 = DMR, 12 = DRM, 13 = ADS-B, 14 = GNSS,
     // 15 = radiosonde, 16 = AIS, 17 = marine, 18 = ACARS, 19 = Inmarsat-C, 20 = Inmarsat Aero, 21 = Iridium, 22 = mesh,
-    // 23 = HD Radio, 24 = CDR, 25 = pagers, 26 = APRS / packet, 27 = HF digital, 28 = airband, 29 = VDL Mode 2, 30 = ISM sensors, 32 = VOR / ILS, 33 = M17, 34 = cell towers, 35 = D-STAR, 36 = CW, 38 = PSK31, 39 = JS8Call
+    // 23 = HD Radio, 24 = CDR, 25 = pagers, 26 = APRS / packet, 27 = HF digital, 28 = airband, 29 = VDL Mode 2, 30 = ISM sensors, 32 = VOR / ILS, 33 = M17, 34 = cell towers, 35 = D-STAR, 36 = CW, 37 = HFDL, 38 = PSK31, 39 = JS8Call, 40 = NXDN, 41 = GSM-R
     void setStandard(int m) { stdMode_ = m; stdReq_ = true; }
     int standardMode() const { return stdMode_.load(); }
-    int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T, 2 = ATSC, 3 = DAB, 4 = ATSC 3.0, 5 = ISDB-T, 6 = FM, 7 = DVB-S/S2, 8 = DTMB, 9 = analog TV, 10 = DMR, 11 = DRM, 12 = ADS-B, 13 = GNSS, 14 to 27 = radiosonde, AIS, marine, ACARS, Inmarsat-C, Inmarsat Aero, Iridium, mesh, HD Radio, CDR, pagers, APRS / packet, HF digital, airband, VDL Mode 2, ISM sensors, VOR / ILS, M17, 34 = D-STAR, 35 = CW, 37 = PSK31, 38 = JS8Call (always the standard code minus one)
+    int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T, 2 = ATSC, 3 = DAB, 4 = ATSC 3.0, 5 = ISDB-T, 6 = FM, 7 = DVB-S/S2, 8 = DTMB, 9 = analog TV, 10 = DMR, 11 = DRM, 12 = ADS-B, 13 = GNSS, 14 to 27 = radiosonde, AIS, marine, ACARS, Inmarsat-C, Inmarsat Aero, Iridium, mesh, HD Radio, CDR, pagers, APRS / packet, HF digital, airband, VDL Mode 2, ISM sensors, VOR / ILS, M17, 34 = D-STAR, 35 = CW, 36 = HFDL, 37 = PSK31, 38 = JS8Call, 39 = NXDN (always the standard code minus one)
     double sampleRate() const { return rate_; }
     double radioRate() const { return srcRate_; }   // the rate the radio (or file) runs at, as it confirmed it at the start
     // Channel bandwidth: with automatic detection on, the engine measures the width of the signal in the spectrum while nothing is
@@ -193,6 +196,7 @@ public:
     IsmReceiver& ism() { return rxIsm_; }   // ISM sensors: the receiver's own controls and results (the interface reads telemetry through latestRx)
     CwReceiver& cw() { return rxCw_; }   // CW: the receiver's own controls and results (the interface reads telemetry through latestRx)
     NxdnReceiver& nxdn() { return rxNxdn_; }   // NXDN: the receiver's own controls and results (the interface reads telemetry through latestRx)
+    SpecxReceiver& specx() { return rxSpecx_; }   // spectrum explorer: FFT size and averaging
     SpecanReceiver& specan() { return rxSpecan_; }   // spectrum analyser: range, resolution, averaging (telemetry through latestRx)
     Js8Receiver& js8() { return rxJs8_; }   // JS8Call: the receiver's own controls and results (the interface reads telemetry through latestRx)
     PskReceiver& psk() { return rxPsk_; }   // PSK31: the receiver's own controls and results (the interface reads telemetry through latestRx)
@@ -298,8 +302,11 @@ private:
     CellReceiver rxCell_;
     CwReceiver rxCw_;
     DstarReceiver rxDstar_;
+    NxdnReceiver rxNxdn_;
+    GsmrReceiver rxGsmr_;
     PskReceiver rxPsk_;
     Js8Receiver rxJs8_;
+    SpecxReceiver rxSpecx_;
     SpecanReceiver rxSpecan_;
     bool specanSweep_ = false;   // the HackRF sweeps by itself (spectrum analyser)
     uint64_t modeSeq_[48] = {};      // the last report taken from each of the modes added after FM (same order as above)

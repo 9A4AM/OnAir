@@ -54,10 +54,15 @@
 #include "dect2/m17_rx.h"
 #include "dect2/dstar_rx.h"
 #include "dect2/dstar_gen.h"
+#include "dect2/nxdn_rx.h"
+#include "dect2/nxdn_gen.h"
 #include "dect2/psk_rx.h"
 #include "dect2/psk_gen.h"
 #include "dect2/js8_rx.h"
 #include "dect2/js8_gen.h"
+#include "dect2/specx_rx.h"
+#include "dect2/specx_tel.h"
+#include "dect2/specx_gen.h"
 #include "dect2/specan_rx.h"
 #include "dect2/specan_gen.h"
 #include "dect2/m17_gen.h"
@@ -152,7 +157,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specanTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning()};
     return t;
 }
 
@@ -246,8 +251,11 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 34: return makeCellSynth(cfg, sampleRate);
     case 36: return makeCwSynth(cfg, sampleRate);
     case 35: return makeDstarSynth(cfg, sampleRate);
+    case 40: return makeNxdnSynth(cfg, sampleRate);
+    case 41: return makeGsmrSynth(cfg, sampleRate);
     case 38: return makePskSynth(cfg, sampleRate);
     case 39: return makeJs8Synth(cfg, sampleRate);
+    case 43: return makeSpecxSynth(cfg, sampleRate);
     case 44: return makeSpecanSynth(cfg, sampleRate);
     default: return nullptr;
     }
@@ -284,8 +292,11 @@ std::string modeSummary(const RxTelemetry& t) {
     case 33: return cellSummary(t.cell);
     case 35: return cwSummary(t.cw);
     case 34: return dstarSummary(t.dstar);
+    case 39: return nxdnSummary(t.nxdn);
+    case 40: return gsmrSummary(t.gsmr);
     case 37: return pskSummary(t.psk);
     case 38: return js8Summary(t.js8);
+    case 42: return specxSummary(t.specx);
     case 43: return specanSummary(t.specan);
     default: return "";
     }

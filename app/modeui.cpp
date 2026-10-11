@@ -29,8 +29,12 @@ extern const ModeUi kM17Ui;
 extern const ModeUi kCellUi;
 extern const ModeUi kCwUi;
 extern const ModeUi kDstarUi;
+extern const ModeUi kHfdlUi;
+extern const ModeUi kNxdnUi;
+extern const ModeUi kGsmrUi;
 extern const ModeUi kPskUi;
 extern const ModeUi kJs8Ui;
+extern const ModeUi kSpecxUi;
 extern const ModeUi kSpecanUi;
 
 const ModeUi* modeUi(int family) {
