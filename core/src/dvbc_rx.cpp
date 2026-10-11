@@ -182,6 +182,23 @@ struct DvbcReceiver::Impl {
         const double binHz = fs / N;
         width = area / (plateau + 1e-30) * binHz;
         cfoCoarse = (mom / (area + 1e-30) - N / 2) * binHz;
+        {   // with the neighbouring cable channels in the input their skirts add to the area: then the -10 dB edges of the carrier itself,
+            // walking out from its centre (an echo's ripple stays well above -10 dB; the notch between two channels goes below). A raised
+            // cosine is 10 dB down at (1 + 1.59 roll-off) / 2 of the symbol rate from its centre.
+            const double rollOff = annexC.load() ? 0.13 : 0.15, k10 = 1 - rollOff + 2 * rollOff * std::acos(-0.8) / kPi;
+            const double half = 10 * std::log10(plateau + floorLin) - 10;
+            const int c0 = std::max(1, std::min(N - 2, (int)std::lround(N / 2 + cfoCoarse / binHz)));
+            if (sm[(size_t)c0] > half) {
+                auto edge = [&](int dir) {
+                    int i = c0, below = 0, last = c0;
+                    while (i + dir > 0 && i + dir < N - 1 && below < 24) { i += dir; if (sm[(size_t)i] > half) { below = 0; last = i; } else below++; }
+                    const double a = sm[(size_t)last], b = sm[(size_t)(last + dir)];   // interpolate the crossing between last and the bin after it
+                    return last + dir * (a - half) / std::max(1e-9, a - b);
+                };
+                const double lo = edge(-1), hi = edge(+1), w10 = (hi - lo) * binHz / k10;
+                if (w10 > 0.3e6 && w10 < 0.92 * width) { width = w10; cfoCoarse = ((lo + hi) / 2 - N / 2) * binHz; }
+            }
+        }
         // the symbol rate line of the squared envelope
         Fft g((int)kAcqN);
         std::vector<double> pe(kAcqN, 0);
@@ -232,11 +249,13 @@ struct DvbcReceiver::Impl {
             if (rateCands.empty()) rateCands.push_back(width);
         }
         const double man = manualRs.load();
-        if (man > 0 && failCycles < 2) { rs = man; usedManual = true; rsMeasured = rateCands[0]; }
-        else {
-            if (man > 0) note = "the manual symbol rate did not lock: using the measured one";
+        if (man > 0 && (failCycles < 2 || failCycles % 2 == 0)) {   // a rate the user set (from the operator's channel list) keeps coming back:
+            rs = man; usedManual = true; rsMeasured = rateCands[0];        // a bad signal is more likely than a wrong list
+            if (failCycles >= 2) note = std::fabs(rsMeasured / man - 1) > 0.01 ? "no lock at the manual symbol rate (the measured one differs: check it)"
+                                                                               : "no lock at the manual symbol rate: the signal may be too weak or noisy for this QAM order";
+        } else {   // otherwise the measured candidates in turn (with a manual rate: every other cycle, in case it was typed wrong)
             usedManual = false;
-            rs = rsMeasured = rateCands[(size_t)(man > 0 ? failCycles - 2 : failCycles) % rateCands.size()];
+            rs = rsMeasured = rateCands[(size_t)(man > 0 ? (failCycles - 2) / 2 : failCycles) % rateCands.size()];
         }
         rsNominal = rs;
         if (rs < 0.5e6 || rs > fs * 0.95) { note = "symbol rate not usable for this input rate"; return; }
