@@ -254,7 +254,7 @@ sudo apt install build-essential cmake pkg-config libhackrf-dev libsoapysdr-dev 
   libglfw3-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
 
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON
-cmake --build build -j
+cmake --build build -j "$(getconf _NPROCESSORS_ONLN)"   # one job per core (a bare -j starts hundreds and can run out of memory)
 ctest --test-dir build          # run the test suite
 ```
 

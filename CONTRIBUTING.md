@@ -10,7 +10,7 @@ Open an issue and say: what you did, what you expected, what happened, your oper
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON
-cmake --build build -j
+cmake --build build -j "$(getconf _NPROCESSORS_ONLN)"   # one job per core (a bare -j starts hundreds and can run out of memory)
 ctest --test-dir build
 ```
 
