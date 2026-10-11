@@ -81,7 +81,9 @@ m17	--mode m17	Overview|M17|Receiver|History
 cell	--mode cell	Overview|Cells|Receiver|History
 cw	--mode cw	Overview|CW|Receiver|History
 dstar	--mode dstar	Overview|D-STAR|Receiver|History
-nxdn	--mode nxdn	Overview|NXDN|Receiver|History"
+hfdl	--mode hfdl	Overview|Messages|Receiver|History
+nxdn	--mode nxdn	Overview|NXDN|Receiver|History
+gsmr	--mode gsmr	Overview|Cells|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"

@@ -64,6 +64,9 @@
 #include "dect2/cell_tel.h"
 #include "dect2/cw_rx.h"
 #include "dect2/cw_gen.h"
+#include "dect2/gsmr_rx.h"
+#include "dect2/gsmr_gen.h"
+#include "dect2/gsmr_tel.h"
 #include "dect2/modes.h"
 #include "dect2/demo_ts.h"
 #include "dect2/exact_resampler.h"
@@ -145,7 +148,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), nxdnTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), gsmrTuning()};
     return t;
 }
 
@@ -240,6 +243,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 36: return makeCwSynth(cfg, sampleRate);
     case 35: return makeDstarSynth(cfg, sampleRate);
     case 40: return makeNxdnSynth(cfg, sampleRate);
+    case 41: return makeGsmrSynth(cfg, sampleRate);
     default: return nullptr;
     }
 }
@@ -276,6 +280,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 35: return cwSummary(t.cw);
     case 34: return dstarSummary(t.dstar);
     case 39: return nxdnSummary(t.nxdn);
+    case 40: return gsmrSummary(t.gsmr);
     default: return "";
     }
 }
