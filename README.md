@@ -103,6 +103,7 @@ These receivers are built from the published specifications and checked end to e
 | **AIS** | Ship transponders | Ships on a map |
 | **Maritime** | NAVTEX, DSC, weather fax | Safety messages, distress and calling, fax pictures |
 | **Radiosondes** | Weather balloons, 400 – 406 MHz | Balloon tracks, altitude and weather data |
+| **ISM sensors** | 433.92 / 868 / 915 MHz devices (the rtl_433 idea) | Weather stations, tyre pressure sensors, remotes and energy / water meters (wireless M-Bus header): a device table with history, a live log, unknown signals with their pulses |
 | **GNSS** | GPS L1 | Satellites, position and time |
 | **Mesh** | Meshtastic and MeshCore (LoRa) | Nodes, map and chat |
 
