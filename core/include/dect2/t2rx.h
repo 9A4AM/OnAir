@@ -54,7 +54,7 @@
 #include "astro_tel.h"
 #include "qo100_tel.h"
 #include "wifi_tel.h"
-#include "rid_tel.h"
+#include "meteor_tel.h"
 #include "t2.h"
 #include "t2l1.h"
 #include "t2plp.h"
@@ -127,7 +127,7 @@ struct RxTelemetry {
     IonoTelemetry iono;       // valid when standard == 53 (ionospheric sounders)
     Qo100Telemetry qo100;     // valid when standard == 54 (QO-100)
     WifiTelemetry wifi;       // valid when standard == 55 (Wi-Fi networks)
-    RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)
+    MeteorTelemetry meteor;   // valid when standard == 60 (Meteor-M LRPT)
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34
     NxdnTelemetry nxdn;         // valid when standard == 39

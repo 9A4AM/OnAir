@@ -22,7 +22,7 @@ namespace {
 namespace fs = std::filesystem;
 fs::path fsPath(const std::string& p) { return fs::path(reinterpret_cast<const char8_t*>(p.c_str())); }
 
-constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm
+constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kMeteor = 59;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, Meteor-M LRPT
 
 struct Source { const char* file; const char* url; };
 const Source kSources[] = {
@@ -41,8 +41,8 @@ const Known kKnown[] = {
     {"NOAA 15", 25338, 137.620, "APT", kSpecx, Weather},
     {"NOAA 18", 28654, 137.9125, "APT", kSpecx, Weather},
     {"NOAA 19", 33591, 137.100, "APT", kSpecx, Weather},
-    {"Meteor-M N2-3", 57166, 137.100, "LRPT", kSpecx, Weather},
-    {"Meteor-M N2-4", 59051, 137.900, "LRPT", kSpecx, Weather},
+    {"Meteor-M N2-3", 57166, 137.100, "LRPT", kMeteor, Weather},
+    {"Meteor-M N2-4", 59051, 137.900, "LRPT", kMeteor, Weather},
     {"ISS APRS", 25544, 145.825, "APRS", kAprs, Iss},
     {"ISS voice", 25544, 145.800, "FM voice", kSpecx, Iss},
 };
