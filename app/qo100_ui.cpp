@@ -344,7 +344,10 @@ void tick(App& a) {
 void tab(App& a) {
     load();
     strip(a);
+    // a fixed two-line height: the line wraps as its numbers change width, which would move the plots under it every frame
+    ImGui::BeginChild("##lock", ImVec2(0, 2 * ImGui::GetTextLineHeightWithSpacing() + 2 * gUi), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     lockLine(a);
+    ImGui::EndChild();
     static const char* const kV[] = {"Narrowband", "Wideband", "Drift"};
     for (int i = 0; i < 3; i++) {
         if (i) ImGui::SameLine();
