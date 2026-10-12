@@ -19,11 +19,12 @@ void hfdigRttyTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigSstvTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigFreedvTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t);
+void hfdigHamdrmTab(App& a, const dect2::HfdigTelemetry& t);
 
 namespace {
 
 struct State {
-    int view = 0;                        // 0 RTTY, 1 SSTV, 2 FreeDV, 3 FT8 / FT4 / FT2 / WSPR
+    int view = 0;                        // 0 RTTY, 1 SSTV, 2 FreeDV, 3 FT8 / FT4 / FT2 / WSPR, 4 HamDRM
     bool wasRunning = false;
     float pushedVol = -1;
     bool pushedMute = false;
@@ -130,8 +131,9 @@ void follow(const dect2::HfdigTelemetry& t) {
 
 bool live(const App& a) { return a.engine.running() && a.rx.standard == 26; }   // the engine reports its standard code minus one
 
-// the decoders of the selected entry (RTTY, SSTV, FreeDV or one WSJT mode): 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR; all without one
-int decMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 15; }
+// the decoders of the selected entry (RTTY, SSTV, FreeDV, one WSJT mode or HamDRM): 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM;
+// all without one
+int decMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 31; }
 
 void tick(App& a) {
     const bool run = a.engine.running();
@@ -161,23 +163,25 @@ void tab(App& a) {
         listenControls(a, S.listen, "hfdigListen", "hfdig", "Play the sideband audio the decoders hear (dial + 200 Hz to 3.8 kHz); decoding is the same either way");
         flowEnd();
     }
-    if (const int m = decMask(a); m != 15) {   // one protocol entry: only its own view
+    if (const int m = decMask(a); m != 31) {   // one protocol entry: only its own view
         const dect2::HfdigTelemetry& t = a.rx.hfdig;
         if (m == 1) hfdigRttyTab(a, t);
         else if (m == 2) hfdigSstvTab(a, t);
         else if (m == 4) hfdigFreedvTab(a, t);
+        else if (m == 16) hfdigHamdrmTab(a, t);
         else hfdigFtxTab(a, t);
         return;
     }
     static bool viewLoaded = false;   // the view is remembered
-    if (!viewLoaded) { viewLoaded = true; S.view = (int)std::max(0L, std::min(3L, plat::prefs().getI("hfdigView", 0))); }
+    if (!viewLoaded) { viewLoaded = true; S.view = (int)std::max(0L, std::min(4L, plat::prefs().getI("hfdigView", 0))); }
     const int was = S.view;
-    subNav("hfdv", S.view, {"RTTY", "SSTV", "FreeDV", "FT8 / WSPR"});
+    subNav("hfdv", S.view, {"RTTY", "SSTV", "FreeDV", "FT8 / WSPR", "HamDRM"});
     if (S.view != was) plat::prefs().setI("hfdigView", S.view);
     const dect2::HfdigTelemetry& t = a.rx.hfdig;
     if (S.view == 0) hfdigRttyTab(a, t);
     else if (S.view == 1) hfdigSstvTab(a, t);
     else if (S.view == 2) hfdigFreedvTab(a, t);
+    else if (S.view == 4) hfdigHamdrmTab(a, t);
     else hfdigFtxTab(a, t);
 }
 
@@ -196,6 +200,7 @@ void list(App& a) {
     if (dm & 2) for (size_t i = 0; i < t.sstv.history.size() && i < 3; i++) if (t.sstv.history[i]) ev.push_back({(double)t.sstv.history[i]->unixTime, 1, i});
     if ((dm & 4) && !S.fdvText.empty()) ev.push_back({S.fdvT, 2, 0});
     if (dm & 8) for (size_t i = t.ftx.decodes.size(), n = 0; i-- > 0 && n < 8; n++) ev.push_back({t.ftx.decodes[i].slotUtc, 3, i});   // the newest decodes
+    if (dm & 16) for (size_t i = 0; i < t.hamdrm.history.size() && i < 3; i++) if (t.hamdrm.history[i]) ev.push_back({(double)t.hamdrm.history[i]->unixTime, 4, i});
     if (ev.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("nothing yet: listening"); ImGui::PopTextWrapPos(); return; }
     std::stable_sort(ev.begin(), ev.end(), [](const Ev& x, const Ev& y) { return x.t > y.t; });   // newest first
     ImGui::PushTextWrapPos(0);
@@ -225,6 +230,12 @@ void list(App& a) {
             ImGui::PushFont(a.mono, 0);
             if (d.cq) ImGui::TextColored(pal::okGreen(), "%s", d.msg.c_str()); else ImGui::TextUnformatted(d.msg.c_str());
             ImGui::PopFont();
+        } else if (e.kind == 4) {
+            const auto& f = *t.hamdrm.history[e.pic];
+            char tm[16];
+            clock(f.unixTime, tm, sizeof tm);
+            ImGui::TextColored(pal::heading(), "HamDRM:"); ImGui::SameLine(0, 5 * gUi);
+            ImGui::Text("%s%s%s, %zu bytes, %s", f.name.empty() ? "file" : f.name.c_str(), f.callsign.empty() ? "" : " from ", f.callsign.c_str(), f.data.size(), tm);
         } else {
             ImGui::TextColored(pal::heading(), "FreeDV:"); ImGui::SameLine(0, 5 * gUi);
             ImGui::Text("%s sync, text '%s'", S.fdvMode >= 0 ? dect2::freedvModeName(S.fdvMode) : "no", S.fdvText.c_str());
@@ -347,7 +358,8 @@ void status(App& a) {
     if (dm & 1) { lamp("RTTY", on && t.rtty.state >= 1 ? 1 : 0); flowNext(10 * gUi); }
     if (dm & 2) { lamp("SSTV", on && t.sstv.state == 1 ? 1 : 0); flowNext(10 * gUi); }
     if (dm & 4) { lamp("FreeDV", on && t.freedv.mode >= 0 ? 1 : 0); flowNext(10 * gUi); }
-    if (dm & 8) { lamp(sm ? sm->name : "FT8/WSPR", on && t.ftx.total > 0 ? (t.ftx.clockWarn ? 2 : 1) : 0); flowNext(10 * gUi); }
+    if (dm & 8) { lamp(dm == 8 && sm ? sm->name : "FT8/WSPR", on && t.ftx.total > 0 ? (t.ftx.clockWarn ? 2 : 1) : 0); flowNext(10 * gUi); }
+    if (dm & 16) { lamp("HamDRM", on && t.hamdrm.state == 1 ? 1 : 0); flowNext(10 * gUi); }
     ImGui::TextDisabled("|"); flowNext(10 * gUi);
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("State"); ImGui::SameLine(0, 5 * gUi);

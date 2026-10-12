@@ -6,6 +6,7 @@
 #include "hfdig_sstv.h"
 #include "hfdig_freedv.h"
 #include "hfdig_ftx.h"
+#include "hfdig_hamdrm.h"
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -30,6 +31,7 @@ struct HfdigTelemetry {
     HfdigSstvTelemetry sstv;
     HfdigFreedvTelemetry freedv;
     HfdigFtxTelemetry ftx;
+    HfdigHamdrmTelemetry hamdrm;
 };
 
 // One short line about the three decoders, e.g. "RTTY 45.45/170 locked · SSTV Robot 36 112/240 · FreeDV no sync"; "listening" when none is active.
@@ -53,6 +55,11 @@ inline std::string hfdigSummary(const HfdigTelemetry& t) {
         for (int k = 0; k < kFtxModes; k++)
             if (t.ftx.perMode[k]) { snprintf(b, sizeof b, "%s%s %d", m.empty() ? "" : " ", ftxModeName(k), t.ftx.lastSlotCount[k]); m += b; }
         add(m.c_str());
+    }
+    if (t.hamdrm.state == 1 && t.hamdrm.mode >= 0) {
+        if (t.hamdrm.haveFile && t.hamdrm.segTotal > 0) snprintf(b, sizeof b, "HamDRM %s %d/%d", hamdrmModeName(t.hamdrm.mode), t.hamdrm.segHave, t.hamdrm.segTotal);
+        else snprintf(b, sizeof b, "HamDRM %s", hamdrmModeName(t.hamdrm.mode));
+        add(b);
     }
     return out.empty() ? "listening" : out;
 }

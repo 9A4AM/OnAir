@@ -940,6 +940,7 @@ const ModeDef kModes[] = {
     {25, "FT4", 6, IM_COL32(120, 76, 96, 255), "FT4 contest mode in 7.5 s slots, 14.080 MHz", "FT4: fast weak-signal amateur contacts", "WSJT, 14.080 MHz", ImVec4(0.92f, 0.60f, 0.70f, 1), "ft4", "ft4 wsjt hf digital"},
     {25, "FT2", 6, IM_COL32(96, 76, 130, 255), "FT2 in 3.75 s slots, 14.084 MHz", "FT2: the fastest of the FT modes", "WSJT, 14.084 MHz", ImVec4(0.66f, 0.58f, 0.96f, 1), "ft2", "ft2 wsjt hf digital"},
     {25, "WSPR", 6, IM_COL32(80, 96, 120, 255), "WSPR propagation beacons in 2 minute slots, 14.0956 MHz", "WSPR: weak-signal propagation reports", "Beacons, 14.0956 MHz", ImVec4(0.58f, 0.72f, 0.86f, 1), "wspr", "wspr wsjt hf digital beacon propagation"},
+    {25, "HamDRM", 6, IM_COL32(120, 84, 70, 255), "HamDRM / EasyPal digital SSTV: pictures as files over DRM-style OFDM in 2.3 or 2.5 kHz of upper sideband, 14.233 MHz", "HamDRM: digital SSTV pictures (EasyPal, QSSTV DRM)", "Digital SSTV, 14.233 MHz", ImVec4(0.92f, 0.66f, 0.56f, 1), "hamdrm", "hamdrm easypal qsstv drm digital sstv dsstv pictures jpeg hf"},
 };
 const int kNumModes = (int)(sizeof kModes / sizeof *kModes);
 const char* const kGroupNames[kNumGroups] = {"TV", "RADIO", "AVIATION", "MARITIME", "SATELLITE", "UTILITY", "AMATEUR", "NETWORK"};

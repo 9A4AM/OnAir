@@ -1943,7 +1943,7 @@ void Engine::analysisLoop() {
 }
 
 void applySubMode(Engine& e, const SubMode* s) {
-    if (!s) { e.hfdig().setDecoders(15); e.pager().setProtocols(3); e.vor().setFunction(0); return; }
+    if (!s) { e.hfdig().setDecoders(31); e.pager().setProtocols(3); e.vor().setFunction(0); return; }
     switch (s->stdMode) {
     case 27:
         e.hfdig().setDecoders(s->decoders);
