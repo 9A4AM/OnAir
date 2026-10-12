@@ -3,6 +3,7 @@
 // Save (PNG) and Clear, and "Save every picture" (PNG files in <data folder>/sstv/, named by the time and the mode).
 #include "app.h"
 #include "gfx.h"
+#include "icons.h"
 #include "platform.h"
 #include "dect2/hfdig_tel.h"
 #include <algorithm>
@@ -66,12 +67,24 @@ std::string fileFor(const HfdigSstvImage& im) {
     return std::string(ts) + "-" + m + ".png";
 }
 
+void writeSstvPng(const HfdigSstvImage& im, const std::string& path);
+
 void savePng(const HfdigSstvImage& im) {
     if (im.width <= 0 || im.rgb.size() < (size_t)im.width * im.height * 3) return;
     const std::string dir = plat::dataDir() + "/sstv";
     std::error_code ec;
     std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>(dir.c_str())), ec);
-    const std::string path = dir + "/" + fileFor(im);
+    writeSstvPng(im, dir + "/" + fileFor(im));
+}
+
+// a finished picture, where the user picks (the save icon on its thumbnail)
+void savePngAs(const HfdigSstvImage& im) {
+    if (im.width <= 0 || im.rgb.size() < (size_t)im.width * im.height * 3) return;
+    const std::string path = saveFileDialog(fileFor(im).c_str());
+    if (!path.empty()) writeSstvPng(im, path);
+}
+
+void writeSstvPng(const HfdigSstvImage& im, const std::string& path) {
     std::vector<uint8_t> rgba((size_t)im.width * im.height * 4);
     for (size_t i = 0; i < (size_t)im.width * im.height; i++) {
         rgba[i * 4] = im.rgb[i * 3]; rgba[i * 4 + 1] = im.rgb[i * 3 + 1]; rgba[i * 4 + 2] = im.rgb[i * 3 + 2]; rgba[i * 4 + 3] = 255;
@@ -189,6 +202,7 @@ void side(float width, bool wrap) {
         ImGui::PushID((int)i);
         ImGui::BeginGroup();
         const ImVec2 p = ImGui::GetCursorScreenPos();
+        ImGui::SetNextItemAllowOverlap();   // the save icon sits on top of it
         if (ImGui::InvisibleButton("##th", ImVec2(th, th))) S.sel = (int)i;
         ImDrawList* dl = ImGui::GetWindowDrawList();
         dl->AddRectFilled(p, ImVec2(p.x + th, p.y + th), IM_COL32(18, 19, 21, 255));
@@ -196,6 +210,14 @@ void side(float width, bool wrap) {
         if (S.sel == (int)i) dl->AddRect(p, ImVec2(p.x + th, p.y + th), IM_COL32(80, 160, 255, 255), 0, 0, 2.f);
         else if (ImGui::IsItemHovered()) dl->AddRect(p, ImVec2(p.x + th, p.y + th), IM_COL32(150, 154, 158, 255));
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s, %d lines", it.im->mode.c_str(), it.im->lines);
+        {
+            const ImVec2 after = ImGui::GetCursorScreenPos();
+            const float ih = ImGui::GetFrameHeight();
+            ImGui::SetCursorScreenPos(ImVec2(p.x + th - ih - 2 * gUi, p.y + 2 * gUi));
+            if (iconFlat(Ic::Save, "Save this picture as PNG...")) savePngAs(*it.im);
+            ImGui::SetCursorScreenPos(after);
+            ImGui::Dummy(ImVec2(0, 0));   // an item at the restored position (ImGui wants one after a cursor move)
+        }
         ImGui::EndGroup();
         ImGui::PopID();
         col++;
