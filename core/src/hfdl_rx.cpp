@@ -19,6 +19,8 @@ constexpr int kSps = 4;
 constexpr int kSearchSyms = 2 * kHfdlALen;
 constexpr int kChunk = 8;
 constexpr double kMaxCfo = 250.0;
+constexpr int kCoarseHyp = 1;          // trial offsets of the preamble search: -1 .. 1 steps
+constexpr double kCoarseStep = 125.0;   // Hz
 constexpr int kL = 12;               // feed-forward taps each side, half a symbol apart
 constexpr int kNb = 6;               // feedback taps
 constexpr double kDefCentre = 8.9e6;
@@ -186,17 +188,37 @@ struct HfdlReceiver::Impl {
     // ------------------------------------------------ search
     cf32 X(const Chan& k, int64_t i) const { const int64_t j = i - k.xBase; return j >= 0 && j < (int64_t)k.x.size() ? k.x[(size_t)j] : cf32(0, 0); }
 
-    double coarse(const Chan& k, int64_t s) const {
-        const auto& ref = hfdlPreambleRef(0);
-        double sumC = 0, sumA = 0;
-        const cf32* p = &k.x[(size_t)(s - k.xBase)];
-        for (int c = 0; c < kSearchSyms / kChunk + 1; c++) {
-            cf32 acc(0, 0);
-            const int k0 = c * kChunk, k1 = std::min(kSearchSyms, k0 + kChunk);
-            for (int q = k0; q < k1; q++) { const cf32 v = p[q * kSps]; acc += v * ref[(size_t)q]; sumA += std::abs(v); }
-            sumC += std::abs(acc);
+    // A1 + A2 against the reference turned by a few trial frequency offsets: 8-symbol chunks only stay coherent within about
+    // +-60 Hz, and a receiver off by a few ppm (or a station reported with the wrong carrier) is 100-250 Hz away
+    static const std::vector<std::vector<cf32>>& coarseRefs() {
+        static std::vector<std::vector<cf32>> r;
+        if (r.empty()) {
+            const auto& ref = hfdlPreambleRef(0);
+            for (int h = -kCoarseHyp; h <= kCoarseHyp; h++) {
+                std::vector<cf32> v((size_t)kSearchSyms);
+                for (int q = 0; q < kSearchSyms; q++) v[(size_t)q] = ref[(size_t)q] * std::polar(1.f, (float)(-2 * M_PI * h * kCoarseStep * q / kHfdlBaud));
+                r.push_back(std::move(v));
+            }
         }
-        return sumA > 1e-6 * kSearchSyms ? sumC / sumA : 0;
+        return r;
+    }
+    double coarse(const Chan& k, int64_t s) const {
+        const cf32* p = &k.x[(size_t)(s - k.xBase)];
+        double sumA = 0;
+        for (int q = 0; q < kSearchSyms; q++) sumA += std::abs(p[q * kSps]);
+        if (sumA <= 1e-6 * kSearchSyms) return 0;
+        double best = 0;
+        for (const auto& ref : coarseRefs()) {
+            double sumC = 0;
+            for (int c = 0; c < kSearchSyms / kChunk + 1; c++) {
+                cf32 acc(0, 0);
+                const int k0 = c * kChunk, k1 = std::min(kSearchSyms, k0 + kChunk);
+                for (int q = k0; q < k1; q++) acc += p[q * kSps] * ref[(size_t)q];
+                sumC += std::abs(acc);
+            }
+            best = std::max(best, sumC);
+        }
+        return best / sumA;
     }
 
     // y_k = ref_k * x(t0 + 4k), interpolated
