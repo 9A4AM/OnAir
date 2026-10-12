@@ -25,6 +25,8 @@ struct State {
     char filter[64] = "";
     float minRssi = -120;
     bool namedOnly = false;
+    std::string sel;                     // address of the device clicked in the table or list: the packet log shows only its packets
+    char pktFilter[64] = "";             // packet log: address or name substring
 };
 State S;
 
@@ -67,6 +69,29 @@ bool passes(const dect2::BleDevice& d) {
     const std::string f = lower(S.filter);
     return lower(d.name).find(f) != std::string::npos || lower(d.addr).find(f) != std::string::npos || lower(d.vendor).find(f) != std::string::npos ||
            lower(d.beacon).find(f) != std::string::npos;
+}
+
+const dect2::BleDevice* findDevice(const dect2::BleTelemetry& t, const std::string& addr) {
+    for (const auto& d : t.devices) if (d.addr == addr) return &d;
+    return nullptr;
+}
+
+void toggleSel(const std::string& addr) { S.sel = S.sel == addr ? std::string() : addr; }
+
+// The packet log rows the selection and the packet filter let through; the name comes from the device table, as packets carry only the address.
+std::vector<size_t> shownPackets(const dect2::BleTelemetry& t) {
+    std::vector<size_t> out;
+    const std::string f = lower(S.pktFilter);
+    for (size_t i = 0; i < t.log.size(); i++) {
+        const auto& p = t.log[i];
+        if (!S.sel.empty() && p.addr != S.sel) continue;
+        if (!f.empty() && lower(p.addr).find(f) == std::string::npos) {
+            const dect2::BleDevice* d = findDevice(t, p.addr);
+            if (!d || lower(d->name).find(f) == std::string::npos) continue;
+        }
+        out.push_back(i);
+    }
+    return out;
 }
 
 const char* kindShort(int k) { static const char* const n[] = {"public", "static", "private", "non-res.", "random"}; return k >= 0 && k < 5 ? n[k] : "?"; }
@@ -113,9 +138,13 @@ void devicesView(App& a) {
         if (!passes(d)) continue;
         shown++;
         ImGui::TableNextRow();
+        ImGui::PushID(d.addr.c_str());   // the per-row widgets (selectable, level history) share labels: the address keeps their IDs apart
         const double ago = std::max(0.0, t.timeSec - d.lastSec);
         const ImVec4 c = ago < 3 ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_Text);
-        ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextColored(c, "%s", d.addr.c_str()); ImGui::PopFont();
+        ImGui::TableNextColumn();
+        if (ImGui::Selectable("##row", S.sel == d.addr, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap)) toggleSel(d.addr);
+        ImGui::SameLine(0, 0);
+        ImGui::PushFont(a.mono, 0); ImGui::TextColored(c, "%s", d.addr.c_str()); ImGui::PopFont();
         if (ImGui::IsItemHovered()) {
             std::string pdus;
             for (int i = 0; i < 8; i++) if (d.pduMask >> i & 1) { if (!pdus.empty()) pdus += ", "; pdus += dect2::ble::pduTypeName(i); }
@@ -139,6 +168,7 @@ void devicesView(App& a) {
         if (!d.services.empty()) { if (!info.empty()) info += "; "; info += d.services; }
         if (d.txPower != 127) { if (!info.empty()) info += "; "; info += "tx " + std::to_string(d.txPower) + " dBm"; }
         ImGui::TextUnformatted(info.c_str());
+        ImGui::PopID();
     }
     ImGui::EndTable();
     if (t.devices.empty()) ImGui::TextDisabled("nothing heard yet");
@@ -147,10 +177,25 @@ void devicesView(App& a) {
 
 void packetsView(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to see the packets"); return; }
-    const auto& log = a.rx.ble.log;
-    if (ImGui::Button("Copy")) {
+    const dect2::BleTelemetry& t = a.rx.ble;
+    const auto& log = t.log;
+    if (!S.sel.empty()) {
+        const dect2::BleDevice* d = findDevice(t, S.sel);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextColored(pal::okGreen(), "Showing %s only", d && !d->name.empty() ? (d->name + " (" + S.sel + ")").c_str() : S.sel.c_str());
+        ImGui::SameLine(0, 8 * gUi);
+        if (ImGui::SmallButton("Show all")) S.sel.clear();
+    }
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Filter"); ImGui::SameLine(0, 5 * gUi);
+    ImGui::SetNextItemWidth(std::min(160 * gUi, ImGui::GetContentRegionAvail().x));
+    ImGui::InputTextWithHint("##blepf", "address or name", S.pktFilter, sizeof S.pktFilter);
+    ImGui::SameLine(0, 10 * gUi);
+    const std::vector<size_t> rows = shownPackets(t);
+    if (ImGui::Button("Copy")) {   // what the log shows, selection and filter applied
         std::string txt;
-        for (const auto& p : log) {
+        for (size_t i : rows) {
+            const auto& p = log[i];
             char b[600];
             snprintf(b, sizeof b, "%s\t%d\t%s\t%s\t%.0f\t%s\n", clock(p.wallTime).c_str(), p.channel, dect2::ble::pduTypeName(p.type), p.addr.c_str(), p.rssi, p.info.c_str());
             txt += b;
@@ -165,10 +210,10 @@ void packetsView(App& a) {
     ImGui::TableSetupColumn("Level"); ImGui::TableSetupColumn("Details", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     ImGuiListClipper clip;
-    clip.Begin((int)log.size());
+    clip.Begin((int)rows.size());
     while (clip.Step())
         for (int i = clip.DisplayStart; i < clip.DisplayEnd; i++) {
-            const auto& p = log[(size_t)i];
+            const auto& p = log[rows[(size_t)i]];
             ImGui::TableNextRow();
             ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(p.wallTime).c_str());
             ImGui::TableNextColumn(); ImGui::Text("%d", p.channel);
@@ -180,6 +225,7 @@ void packetsView(App& a) {
         }
     ImGui::EndTable();
     if (log.empty()) ImGui::TextDisabled("no packets yet");
+    else if (rows.empty()) ImGui::TextDisabled("no packet passes the filter");
 }
 
 void hopTo(App& a, int ch) {
@@ -241,12 +287,16 @@ void list(App& a) {
     for (const auto& d : t.devices) {
         if (!passes(d)) continue;
         ImGui::TableNextRow();
+        ImGui::PushID(d.addr.c_str());
         const bool recent = t.timeSec - d.lastSec < 3;
         ImGui::TableNextColumn();
+        if (ImGui::Selectable("##row", S.sel == d.addr, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap)) toggleSel(d.addr);
+        ImGui::SameLine(0, 0);
         if (!d.name.empty()) ImGui::TextColored(recent ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_Text), "%s", d.name.c_str());
         else { ImGui::PushFont(a.mono, 0); ImGui::TextColored(recent ? pal::okGreen() : pal::grey(0.6f), "%s", d.addr.c_str()); ImGui::PopFont(); }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s (%s)\n%s", d.addr.c_str(), dect2::ble::addrKindName(d.kind), d.vendor.c_str());
         ImGui::TableNextColumn(); ImGui::TextDisabled("%.0f", d.rssi);
+        ImGui::PopID();
     }
     ImGui::EndTable();
 }
