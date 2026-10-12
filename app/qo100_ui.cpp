@@ -54,7 +54,7 @@ struct State {
     int view = 0;                   // 0 narrowband, 1 wideband, 2 drift
     double viewLo = q::kNbLoHz - 50e3, viewHi = q::kNbHiHz + 50e3;
     double sliceLo = 0, sliceHi = 0;   // the narrowband spectrum's range (corrected RF)
-    float lo = -110, hi = -40, wlo = -110, whi = -40;
+    float lo = -110, hi = -40, wlo = -110, whi = -40, peakHold = -200, wPeakHold = -200;
     uint64_t lastSeq = 0;
     WfImage wf;
     bool dragging = false, dragMoved = false;
@@ -330,14 +330,18 @@ void tick(App& a) {
     if (!live(a) || t.seq == S.lastSeq) return;
     S.lastSeq = t.seq;
     if (!t.nb.empty()) {
-        const float lo = t.nbFloorDb - 8, hi = std::max(t.nbPeakDb + 5, t.nbFloorDb + 35);
-        S.lo += (lo - S.lo) * 0.1f; S.hi += (hi - S.hi) * 0.1f;
+        // a steady scale: whole 10 dB steps, moved only when the floor or the held peak really leave it (following every
+        // update made the spectrum jump up and down as SSB stations came and went)
+        S.peakHold = std::max(t.nbPeakDb, S.peakHold - 0.05f);
+        const float lo = std::floor((t.nbFloorDb - 8) / 10) * 10, hi = std::max(lo + 50, std::ceil((S.peakHold + 5) / 10) * 10);
+        if (S.lo == S.hi || std::fabs(lo - S.lo) >= 10 || hi > S.hi || S.hi - hi >= 20) { S.lo = lo; S.hi = hi; }
         S.wf.push(t.nb, t.nbFloorDb - 3, t.nbFloorDb + 35);
         S.sliceLo = t.nbF0Hz; S.sliceHi = t.nbF0Hz + t.nb.size() * t.nbBinHz;
     }
     if (!t.wb.empty()) {
-        const float lo = t.wbFloorDb - 8, hi = std::max(t.wbPeakDb + 5, t.wbFloorDb + 30);
-        S.wlo += (lo - S.wlo) * 0.1f; S.whi += (hi - S.whi) * 0.1f;
+        S.wPeakHold = std::max(t.wbPeakDb, S.wPeakHold - 0.05f);
+        const float lo = std::floor((t.wbFloorDb - 8) / 10) * 10, hi = std::max(lo + 40, std::ceil((S.wPeakHold + 5) / 10) * 10);
+        if (S.wlo == S.whi || std::fabs(lo - S.wlo) >= 10 || hi > S.whi || S.whi - hi >= 20) { S.wlo = lo; S.whi = hi; }   // steady, as above
     }
 }
 
