@@ -116,6 +116,12 @@
 #include "dect2/rid_rx.h"
 #include "dect2/rid_tel.h"
 #include "dect2/rid_gen.h"
+#include "dect2/meteor_rx.h"
+#include "dect2/meteor_tel.h"
+#include "dect2/meteor_gen.h"
+#include "dect2/goes_rx.h"
+#include "dect2/goes_tel.h"
+#include "dect2/goes_gen.h"
 #include "dect2/modes.h"
 #include "dect2/demo_ts.h"
 #include "dect2/exact_resampler.h"
@@ -199,7 +205,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), generalTuning(), timeTuning(), cubesatTuning(), ridTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), generalTuning(), timeTuning(), ridTuning(), meteorTuning(), goesTuning()};
     return t;
 }
 
@@ -320,6 +326,8 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 60: return makeTimeSynth(cfg, sampleRate);
     case 63: return makeCubesatSynth(cfg, sampleRate);
     case 58: return makeRidSynth(cfg, sampleRate);
+    case 61: return makeMeteorSynth(cfg, sampleRate);
+    case 62: return makeGoesSynth(cfg, sampleRate);
     case 38: return makePskSynth(cfg, sampleRate);
     case 39: return makeJs8Synth(cfg, sampleRate);
     case 43: return makeSpecxSynth(cfg, sampleRate);
@@ -378,6 +386,8 @@ std::string modeSummary(const RxTelemetry& t) {
     case 59: return timeSummary(t.timesig);
     case 62: return cubesatSummary(t.cube);
     case 57: return ridSummary(t.rid);
+    case 60: return meteorSummary(t.meteor);
+    case 61: return goesSummary(t.goes);
     case 37: return pskSummary(t.psk);
     case 38: return js8Summary(t.js8);
     case 42: return specxSummary(t.specx);

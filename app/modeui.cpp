@@ -53,6 +53,8 @@ extern const ModeUi kGeneralUi;
 extern const ModeUi kTimeUi;
 extern const ModeUi kCubesatUi;
 extern const ModeUi kRidUi;
+extern const ModeUi kMeteorUi;
+extern const ModeUi kGoesUi;
 
 const ModeUi* modeUi(int family) {
     switch (family) {
@@ -108,6 +110,8 @@ const ModeUi* modeUi(int family) {
     case 58: return &kTimeUi;
     case 61: return &kCubesatUi;
     case 56: return &kRidUi;
+    case 59: return &kMeteorUi;
+    case 60: return &kGoesUi;
     default: return nullptr;
     }
 }

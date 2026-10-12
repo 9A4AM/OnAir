@@ -1,0 +1,462 @@
+// GOES HRIT transport layer and file assembly (goes_proto.h).
+#include "dect2/goes_proto.h"
+#include "dect2/ccsds.h"
+#include "dect2/inflate.h"
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <map>
+
+namespace dect2::goes {
+
+namespace {
+inline uint32_t be16(const uint8_t* p) { return (uint32_t)p[0] << 8 | p[1]; }
+inline uint32_t be32(const uint8_t* p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
+inline uint64_t be64(const uint8_t* p) { return (uint64_t)be32(p) << 32 | be32(p + 4); }
+inline void put16(std::vector<uint8_t>& v, uint32_t x) { v.push_back((uint8_t)(x >> 8)); v.push_back((uint8_t)x); }
+inline void put32(std::vector<uint8_t>& v, uint32_t x) { put16(v, x >> 16); put16(v, x & 0xFFFF); }
+inline void put64(std::vector<uint8_t>& v, uint64_t x) { put32(v, (uint32_t)(x >> 32)); put32(v, (uint32_t)x); }
+std::string text(const uint8_t* p, size_t n) {
+    std::string s(reinterpret_cast<const char*>(p), n);
+    while (!s.empty() && (s.back() == 0 || s.back() == ' ')) s.pop_back();
+    return s;
+}
+bool contains(const std::string& s, const char* t) { return s.find(t) != std::string::npos; }
+}
+
+// ---------------------------------------------------------------- headers
+bool parseHeaders(const uint8_t* p, size_t n, Headers& h) {
+    h = Headers();
+    if (n < 16 || p[0] != 0 || be16(p + 1) != 16) return false;
+    h.fileType = p[3];
+    h.headerLength = be32(p + 4);
+    h.dataBits = be64(p + 8);
+    if (h.headerLength < 16 || h.headerLength > n) return false;
+    size_t i = 16;
+    while (i + 3 <= h.headerLength) {
+        const int type = p[i];
+        const size_t len = be16(p + i + 1);
+        if (len < 3 || i + len > h.headerLength) return false;
+        const uint8_t* r = p + i + 3;
+        const size_t rl = len - 3;
+        switch (type) {
+        case 1: if (rl >= 6) { h.hasImage = true; h.bpp = r[0]; h.columns = (int)be16(r + 1); h.lines = (int)be16(r + 3); h.compression = r[5]; } break;
+        case 2: if (rl >= 48) { h.hasNav = true; h.projection = text(r, 32); h.cfac = (int32_t)be32(r + 32); h.lfac = (int32_t)be32(r + 36); h.coff = (int32_t)be32(r + 40); h.loff = (int32_t)be32(r + 44); } break;
+        case 4: h.annotation = text(r, rl); break;
+        case 5: if (rl >= 7) { h.hasTime = true; h.days = (int)be16(r + 1); h.msOfDay = be32(r + 3); } break;
+        case 6: h.ancillary = text(r, rl); break;
+        case 128: if (rl >= 14) { h.hasSeg = true; h.imageId = (int)be16(r); h.segSeq = (int)be16(r + 2); h.startCol = (int)be16(r + 4); h.startLine = (int)be16(r + 6); h.maxSeg = (int)be16(r + 8); h.maxCol = (int)be16(r + 10); h.maxRow = (int)be16(r + 12); } break;
+        case 129: if (rl >= 11) { h.hasNoaa = true; h.productId = (int)be16(r + 4); h.subId = (int)be16(r + 6); h.parameter = (int)be16(r + 8); h.noaaCompression = r[10]; } break;
+        case 130: h.headerText = text(r, rl); break;
+        case 131: if (rl >= 4) { h.hasRice = true; h.riceFlags = (int)be16(r); h.ricePpb = r[2]; h.riceLines = r[3]; } break;
+        default: break;
+        }
+        i += len;
+    }
+    h.ok = true;
+    return true;
+}
+
+std::vector<uint8_t> buildHeaders(const Headers& h) {
+    std::vector<uint8_t> s;
+    auto rec = [&](int type, const std::vector<uint8_t>& body) { s.push_back((uint8_t)type); put16(s, (uint32_t)(body.size() + 3)); s.insert(s.end(), body.begin(), body.end()); };
+    auto str = [](const std::string& t, size_t pad = 0) { std::vector<uint8_t> b(t.begin(), t.end()); if (pad) b.resize(pad, ' '); return b; };
+    if (h.hasImage) { std::vector<uint8_t> b{(uint8_t)h.bpp}; put16(b, (uint32_t)h.columns); put16(b, (uint32_t)h.lines); b.push_back((uint8_t)h.compression); rec(1, b); }
+    if (h.hasNav) { std::vector<uint8_t> b = str(h.projection, 32); put32(b, (uint32_t)h.cfac); put32(b, (uint32_t)h.lfac); put32(b, (uint32_t)h.coff); put32(b, (uint32_t)h.loff); rec(2, b); }
+    if (!h.annotation.empty()) rec(4, str(h.annotation));
+    if (h.hasTime) { std::vector<uint8_t> b{0x40}; put16(b, (uint32_t)h.days); put32(b, h.msOfDay); rec(5, b); }
+    if (!h.ancillary.empty()) rec(6, str(h.ancillary));
+    if (h.hasSeg) { std::vector<uint8_t> b; for (int v : {h.imageId, h.segSeq, h.startCol, h.startLine, h.maxSeg, h.maxCol, h.maxRow}) put16(b, (uint32_t)v); rec(128, b); }
+    if (h.hasNoaa) { std::vector<uint8_t> b{'N', 'O', 'A', 'A'}; put16(b, (uint32_t)h.productId); put16(b, (uint32_t)h.subId); put16(b, (uint32_t)h.parameter); b.push_back((uint8_t)h.noaaCompression); rec(129, b); }
+    if (!h.headerText.empty()) rec(130, str(h.headerText));
+    if (h.hasRice) { std::vector<uint8_t> b; put16(b, (uint32_t)h.riceFlags); b.push_back((uint8_t)h.ricePpb); b.push_back((uint8_t)h.riceLines); rec(131, b); }
+    std::vector<uint8_t> out{0};
+    put16(out, 16);
+    out.push_back((uint8_t)h.fileType);
+    put32(out, (uint32_t)(16 + s.size()));
+    put64(out, h.dataBits);
+    out.insert(out.end(), s.begin(), s.end());
+    return out;
+}
+
+double headerTime(const Headers& h) {
+    if (!h.hasTime) return 0;
+    // 1958-01-01 is 4383 days before 1970-01-01
+    return ((double)h.days - 4383.0) * 86400.0 + h.msOfDay / 1000.0;
+}
+
+const char* kindName(int k) {
+    static const char* n[KNumKinds] = {"Full disk", "Mesoscale", "CONUS", "Image", "EMWIN", "Admin message", "DCS", "Text", "Other"};
+    return k >= 0 && k < KNumKinds ? n[k] : "?";
+}
+
+int classify(const Headers& h) {
+    const std::string& a = h.annotation;
+    if (h.fileType == 2) return KAdmin;
+    if (h.fileType == 130) return KDcs;
+    if (h.fileType == 214 || (h.hasNoaa && h.productId == 9) || contains(a, ".ZIS") || contains(a, ".TXT") || contains(a, "EMWIN")) return KEmwin;
+    if (h.fileType == 0 || h.hasImage) {
+        if (contains(a, "CMIPM") || contains(a, "-M1") || contains(a, "-M2") || contains(a, "_M1_") || contains(a, "_M2_") || contains(a, "Meso")) return KMeso;
+        if (contains(a, "CMIPF") || contains(a, "FD") || contains(a, "Full")) return KFullDisk;
+        if (contains(a, "CMIPC") || contains(a, "CONUS")) return KConus;
+        return KImage;
+    }
+    if (h.fileType == 1) return KText;
+    return KOther;
+}
+
+const char* compressionName(const Headers& h) {
+    if (h.hasNoaa) switch (h.noaaCompression) { case 0: return "none"; case 1: return "Rice"; case 2: return "JPEG"; case 5: return "GIF"; case 10: return "ZIP"; default: return "?"; }
+    if (h.hasRice || h.compression == 1) return "Rice";
+    if (h.compression == 2) return "lossy";
+    return "none";
+}
+
+bool unzipFirst(const std::vector<uint8_t>& z, std::vector<uint8_t>& out, std::string& name) {
+    if (z.size() < 30 || z[0] != 'P' || z[1] != 'K' || z[2] != 3 || z[3] != 4) return false;
+    auto le16 = [&](size_t i) { return (uint32_t)z[i] | (uint32_t)z[i + 1] << 8; };
+    auto le32 = [&](size_t i) { return le16(i) | le16(i + 2) << 16; };
+    const uint32_t method = le16(8), csize = le32(18), nlen = le16(26), elen = le16(28);
+    const size_t start = 30 + (size_t)nlen + elen;
+    if (start > z.size()) return false;
+    name.assign(reinterpret_cast<const char*>(z.data() + 30), nlen);
+    const size_t avail = z.size() - start;
+    if (method == 0) { const size_t n = csize && csize <= avail ? csize : avail; out.assign(z.begin() + (std::ptrdiff_t)start, z.begin() + (std::ptrdiff_t)(start + n)); return true; }
+    if (method == 8) return inflateRaw(z.data() + start, csize && csize <= avail ? csize : avail, out, 16u << 20);
+    return false;
+}
+
+// ---------------------------------------------------------------- assembler
+struct Assembler::Impl {
+    struct Vc { int64_t last = -1; std::vector<uint8_t> buf; bool have = false; };
+    struct FileState {
+        bool active = false;
+        std::vector<uint8_t> file;        // after the transport header
+        Headers h;
+        bool headersDone = false, rice = false, rawImage = false, errors = false;
+        bool rawStop = false;             // plain image: data were lost, the offsets of what follows are unknown
+        int lastSeq = -1, line = 0;
+        size_t rowsWritten = 0;
+        std::shared_ptr<Product> prod;
+    };
+    Assembler* self;
+    Vc vc[64];
+    std::map<int, FileState> files;      // vcid * 2048 + apid
+    std::map<int64_t, std::weak_ptr<Product>> images;   // segmented images being put together: vcid, image id
+    mutable std::mutex listMu;
+    std::vector<std::shared_ptr<Product>> list;           // newest first
+    size_t maxProducts = 80;
+    uint64_t nextId = 1;
+    double now = 0;
+
+    void log(const std::string& s) { if (self->onLog) self->onLog(s); }
+
+    void addProduct(const std::shared_ptr<Product>& p) {
+        std::lock_guard<std::mutex> lk(listMu);
+        list.insert(list.begin(), p);
+        if (list.size() > maxProducts) list.resize(maxProducts);
+    }
+
+    std::shared_ptr<Product> productFor(FileState& f, int vcid, int apid) {
+        const Headers& h = f.h;
+        if (h.hasImage && h.hasSeg && h.maxSeg > 1) {
+            const int64_t key = (int64_t)vcid << 32 | (uint32_t)h.imageId;
+            auto it = images.find(key);
+            if (it != images.end()) {
+                if (auto p = it->second.lock()) {
+                    std::lock_guard<std::mutex> lk(p->mu);
+                    if (!p->complete && p->segsTotal == h.maxSeg) return p;
+                }
+            }
+            auto p = newProduct(f, vcid, apid);
+            images[key] = p;
+            return p;
+        }
+        return newProduct(f, vcid, apid);
+    }
+    std::shared_ptr<Product> newProduct(FileState& f, int vcid, int apid) {
+        auto p = std::make_shared<Product>();
+        const Headers& h = f.h;
+        p->id = nextId++;
+        p->kind = classify(h);
+        p->vcid = vcid; p->apid = apid; p->hdr = h;
+        p->startSec = now;
+        p->name = !h.annotation.empty() ? h.annotation : std::string(kindName(p->kind)) + " " + std::to_string(p->id);
+        if (h.hasImage && (f.rice || f.rawImage)) {
+            p->w = h.hasSeg && h.maxCol > 0 ? h.maxCol : h.columns;
+            p->h = h.hasSeg && h.maxRow > 0 ? h.maxRow : h.lines;
+            if (p->w <= 0 || p->h <= 0 || (int64_t)p->w * p->h > (int64_t)12000 * 12000) { p->w = p->h = 0; }
+            p->pix.assign((size_t)p->w * p->h, 0);
+            p->rowDone.assign((size_t)p->h, 0);
+            p->segsTotal = h.hasSeg ? std::max(1, h.maxSeg) : 1;
+        }
+        addProduct(p);
+        return p;
+    }
+
+    void writeRow(FileState& f, int row, const uint16_t* s, int n) {
+        Product& p = *f.prod;
+        std::lock_guard<std::mutex> lk(p.mu);
+        const int y = (f.h.hasSeg ? f.h.startLine : 0) + row, x0 = f.h.hasSeg ? f.h.startCol : 0;
+        if (y < 0 || y >= p.h) return;
+        const int shift = std::max(0, f.h.bpp - 8);
+        uint8_t* d = p.pix.data() + (size_t)y * p.w;
+        for (int i = 0; i < n && x0 + i < p.w; i++) d[x0 + i] = (uint8_t)std::min(255, s[i] >> shift);
+        if (!p.rowDone[(size_t)y]) { p.rowDone[(size_t)y] = 1; p.rowsDone++; }
+        p.version++;
+    }
+
+    void headersReady(FileState& f, int vcid, int apid) {
+        f.headersDone = true;
+        const Headers& h = f.h;
+        const int nc = h.hasNoaa ? h.noaaCompression : (h.hasRice || h.compression == 1 ? 1 : 0);
+        f.rice = h.hasImage && nc == 1;
+        f.rawImage = h.hasImage && nc == 0 && h.compression == 0 && (h.bpp == 8 || h.bpp == 16);
+        f.prod = productFor(f, vcid, apid);
+        f.line = 0; f.rowsWritten = 0;
+    }
+
+    void riceLine(FileState& f, const uint8_t* d, size_t n) {
+        const Headers& h = f.h;
+        ccsds::RiceParams rp;
+        rp.bitsPerSample = std::max(1, std::min(16, h.bpp));
+        rp.blockSize = h.ricePpb > 0 ? h.ricePpb : 16;
+        rp.rsiBlocks = std::max(1, (h.columns + rp.blockSize - 1) / rp.blockSize);
+        rp.preprocess = !h.hasRice || (h.riceFlags & ccsds::kSzNn) != 0;
+        const int lines = std::max(1, h.hasRice ? h.riceLines : 1);
+        std::vector<uint16_t> s((size_t)rp.rsiBlocks * rp.blockSize * lines);
+        const size_t got = ccsds::riceDecode(d, n, rp, s.data(), s.size());
+        const size_t per = (size_t)rp.rsiBlocks * rp.blockSize;
+        for (int l = 0; l < lines; l++) {
+            if (got < per * (l + 1)) { f.errors = true; break; }
+            writeRow(f, f.line + l, s.data() + per * l, h.columns);
+        }
+        f.line += lines;
+    }
+
+    void rawRows(FileState& f) {
+        const Headers& h = f.h;
+        const size_t rowBytes = (size_t)h.columns * (h.bpp / 8);
+        if (!rowBytes || f.file.size() < h.headerLength) return;
+        const size_t avail = (f.file.size() - h.headerLength) / rowBytes;
+        std::vector<uint16_t> s((size_t)h.columns);
+        for (; f.rowsWritten < avail && (int)f.rowsWritten < h.lines; f.rowsWritten++) {
+            const uint8_t* r = f.file.data() + h.headerLength + f.rowsWritten * rowBytes;
+            for (int i = 0; i < h.columns; i++) s[(size_t)i] = h.bpp == 16 ? (uint16_t)be16(r + 2 * i) : r[i];
+            writeRow(f, (int)f.rowsWritten, s.data(), h.columns);
+        }
+    }
+
+    void finish(FileState& f, int vcid, int apid, bool truncated) {
+        f.active = false;
+        if (truncated) f.errors = true;
+        self->files++;
+        if (f.errors) self->fileErrors++;
+        if (!f.headersDone) { log("HRIT: a file ended before its headers"); return; }
+        Product& p = *f.prod;
+        const Headers& h = f.h;
+        {
+            std::lock_guard<std::mutex> lk(p.mu);
+            p.bytes += f.file.size();
+            if (f.errors) p.errors = true;
+            if (f.rice || f.rawImage) {
+                p.segsDone++;
+                if (p.segsDone >= p.segsTotal) p.complete = true;
+            } else {
+                const size_t len = std::min<size_t>(f.file.size() - h.headerLength, (size_t)((h.dataBits + 7) / 8));
+                p.data.assign(f.file.begin() + h.headerLength, f.file.begin() + (std::ptrdiff_t)(h.headerLength + len));
+                std::vector<uint8_t> inner;
+                std::string nm;
+                if ((h.hasNoaa && h.noaaCompression == 10) || (p.data.size() > 4 && p.data[0] == 'P' && p.data[1] == 'K')) {
+                    if (unzipFirst(p.data, inner, nm)) { p.innerName = nm; p.text.assign(inner.begin(), inner.end()); }
+                } else if (p.kind == KEmwin || p.kind == KAdmin || p.kind == KText || p.kind == KDcs) {
+                    p.text.assign(p.data.begin(), p.data.end());
+                }
+                p.complete = true;
+            }
+            p.version++;
+        }
+        char b[256];
+        snprintf(b, sizeof b, "HRIT: %s %s (VC %d, APID %d, %zu bytes%s)", kindName(p.kind), p.name.c_str(), vcid, apid, f.file.size(), f.errors ? ", with errors" : "");
+        log(b);
+        if (self->onFile) self->onFile(f.file, vcid, apid);
+    }
+
+    void packet(int vcid, const uint8_t* pk, size_t len) {
+        self->packets++;
+        const int apid = (int)((pk[0] & 7) << 8 | pk[1]);
+        if (apid == kIdleApid) return;
+        const int flags = pk[2] >> 6, seq = (int)((pk[2] & 0x3F) << 8 | pk[3]);
+        if (len < 8) return;
+        const uint8_t* u = pk + 6;
+        const size_t ulen = len - 6 - 2;
+        const bool crcOk = ccsds::crc16(u, ulen) == be16(u + ulen);
+        if (!crcOk) self->crcErrors++;
+        FileState& f = files[vcid * 2048 + apid];
+        if (flags == 1 || flags == 3) {
+            if (f.active) finish(f, vcid, apid, true);
+            f = FileState();
+            if (!crcOk || ulen < (size_t)kTpHeader) return;
+            f.active = true;
+            f.lastSeq = seq;
+            f.file.assign(u + kTpHeader, u + ulen);
+        } else {
+            if (!f.active) return;
+            if (seq != ((f.lastSeq + 1) & 0x3FFF)) {
+                f.errors = true;
+                f.rawStop = true;
+                if (f.rice) f.line += ((seq - f.lastSeq - 1) & 0x3FFF) * std::max(1, f.h.riceLines);
+            }
+            f.lastSeq = seq;
+            if (!crcOk) { f.errors = true; f.rawStop = true; if (f.rice) f.line += std::max(1, f.h.riceLines); }
+            else {
+                f.file.insert(f.file.end(), u, u + ulen);
+                if (f.headersDone && f.rice) riceLine(f, u, ulen);
+            }
+        }
+        if (!f.headersDone && f.file.size() >= 16) {
+            Headers h;
+            const uint32_t hl = be32(f.file.data() + 4);
+            if (f.file[0] != 0 || hl < 16 || hl > (1u << 20)) { f.active = false; return; }
+            if (f.file.size() >= hl) {
+                if (!parseHeaders(f.file.data(), f.file.size(), h)) { f.active = false; return; }
+                f.h = h;
+                headersReady(f, vcid, apid);
+                // Rice: whatever follows the headers in this packet is a scan line
+                if (f.rice && f.file.size() > hl) riceLine(f, f.file.data() + hl, f.file.size() - hl);
+            }
+        }
+        if (f.headersDone && f.rawImage && !f.rawStop) rawRows(f);
+        if (f.active && (flags == 2 || flags == 3)) finish(f, vcid, apid, false);
+    }
+
+    void take(int vcid, Vc& v) {
+        size_t off = 0;
+        while (v.buf.size() - off >= 6) {
+            const size_t len = 7 + be16(v.buf.data() + off + 4);
+            if (v.buf.size() - off < len) break;
+            packet(vcid, v.buf.data() + off, len);
+            off += len;
+        }
+        v.buf.erase(v.buf.begin(), v.buf.begin() + (std::ptrdiff_t)off);
+    }
+
+    void push(const uint8_t* d) {
+        self->vcdus++;
+        const int scid = (d[0] & 0x3F) << 2 | d[1] >> 6, vcid = d[1] & 0x3F;
+        const int64_t counter = (int64_t)((uint32_t)d[2] << 16 | (uint32_t)d[3] << 8 | d[4]);
+        self->perVcid[vcid]++;
+        if (vcid == kFillVcid) { self->fillVcdus++; return; }
+        self->scid = scid;
+        Vc& v = vc[vcid];
+        if (v.last >= 0 && counter != ((v.last + 1) & 0xFFFFFF)) { self->vcduGaps++; v.buf.clear(); v.have = false; }
+        v.last = counter;
+        const int fhp = (int)((d[6] & 7) << 8 | d[7]);
+        const uint8_t* z = d + 8;
+        if (fhp == 2047) {
+            if (v.have) { v.buf.insert(v.buf.end(), z, z + kZoneBytes); take(vcid, v); }
+            return;
+        }
+        if (fhp >= kZoneBytes) { v.buf.clear(); v.have = false; return; }
+        if (v.have) {
+            v.buf.insert(v.buf.end(), z, z + fhp);
+            take(vcid, v);
+        }
+        v.buf.assign(z + fhp, z + kZoneBytes);
+        v.have = true;
+        take(vcid, v);
+    }
+};
+
+Assembler::Assembler() : p_(std::make_unique<Impl>()) { p_->self = this; }
+Assembler::~Assembler() = default;
+void Assembler::reset() { for (auto& v : p_->vc) v = Impl::Vc(); p_->files.clear(); p_->images.clear(); }
+void Assembler::clear() {
+    reset();
+    std::lock_guard<std::mutex> lk(p_->listMu);
+    p_->list.clear();
+    vcdus = fillVcdus = vcduGaps = packets = crcErrors = files = fileErrors = 0;
+    scid = -1;
+    for (auto& c : perVcid) c = 0;
+}
+void Assembler::push(const uint8_t* vcdu, double nowSec) { p_->now = nowSec; p_->push(vcdu); }
+std::vector<std::shared_ptr<Product>> Assembler::products() const { std::lock_guard<std::mutex> lk(p_->listMu); return p_->list; }
+void Assembler::setMaxProducts(size_t n) { std::lock_guard<std::mutex> lk(p_->listMu); p_->maxProducts = std::max<size_t>(1, n); }
+
+// ---------------------------------------------------------------- mux (test signals)
+std::vector<uint8_t> makeFile(Headers h, const std::vector<uint8_t>& data) {
+    h.dataBits = (uint64_t)data.size() * 8;
+    std::vector<uint8_t> f = buildHeaders(h);
+    f.insert(f.end(), data.begin(), data.end());
+    return f;
+}
+
+void Mux::addFile(int vcid, const FileOut& f) {
+    Vc& v = vc_[vcid & 63];
+    const size_t n = f.chunks.size();
+    for (size_t i = 0; i < n; i++) {
+        const auto& u = f.chunks[i];
+        const int flags = n == 1 ? 3 : i == 0 ? 1 : i + 1 == n ? 2 : 0;
+        int& sq = seq_[f.apid & 2047];
+        v.starts.push_back(v.q.size());
+        v.q.push_back((uint8_t)((f.apid >> 8) & 7));
+        v.q.push_back((uint8_t)f.apid);
+        v.q.push_back((uint8_t)(flags << 6 | ((sq >> 8) & 0x3F)));
+        v.q.push_back((uint8_t)sq);
+        sq = (sq + 1) & 0x3FFF;
+        put16(v.q, (uint32_t)(u.size() + 2 - 1));
+        v.q.insert(v.q.end(), u.begin(), u.end());
+        put16(v.q, ccsds::crc16(u.data(), u.size()));
+    }
+    flushVc(v);
+    if (std::find(order_.begin(), order_.end(), vcid & 63) == order_.end()) order_.push_back(vcid & 63);
+}
+
+void Mux::flushVc(Vc& v) {
+    size_t rem = (kZoneBytes - v.q.size() % kZoneBytes) % kZoneBytes;
+    if (rem == 0) return;
+    if (rem < 7) rem += kZoneBytes;
+    v.starts.push_back(v.q.size());
+    v.q.push_back((uint8_t)((kIdleApid >> 8) & 7));
+    v.q.push_back((uint8_t)kIdleApid);
+    v.q.push_back(0xC0);
+    v.q.push_back(0);
+    put16(v.q, (uint32_t)(rem - 7));
+    v.q.insert(v.q.end(), rem - 6, 0x55);
+}
+
+namespace {
+void header(uint8_t* d, int scid, int vcid, uint32_t counter, int fhp) {
+    d[0] = (uint8_t)(0x40 | ((scid >> 2) & 0x3F));
+    d[1] = (uint8_t)(((scid & 3) << 6) | (vcid & 63));
+    d[2] = (uint8_t)(counter >> 16); d[3] = (uint8_t)(counter >> 8); d[4] = (uint8_t)counter;
+    d[5] = 0;
+    d[6] = (uint8_t)((fhp >> 8) & 7); d[7] = (uint8_t)fhp;
+}
+}
+
+bool Mux::next(uint8_t* d) {
+    while (!order_.empty() && vc_[order_.front()].q.empty()) order_.erase(order_.begin());
+    if (order_.empty()) return false;
+    const int id = order_.front();
+    Vc& v = vc_[id];
+    int fhp = 2047;
+    for (size_t s : v.starts) if (s < (size_t)kZoneBytes) { fhp = (int)s; break; }
+    header(d, scid_, id, v.counter, fhp);
+    v.counter = (v.counter + 1) & 0xFFFFFF;
+    memcpy(d + 8, v.q.data(), kZoneBytes);
+    v.q.erase(v.q.begin(), v.q.begin() + kZoneBytes);
+    std::vector<size_t> ns;
+    for (size_t s : v.starts) if (s >= (size_t)kZoneBytes) ns.push_back(s - kZoneBytes);
+    v.starts.swap(ns);
+    if (v.q.empty()) order_.erase(order_.begin());
+    return true;
+}
+
+void Mux::fill(uint8_t* d) {
+    header(d, scid_, kFillVcid, fillCounter_, 2047);
+    fillCounter_ = (fillCounter_ + 1) & 0xFFFFFF;
+    memset(d + 8, 0, kZoneBytes);
+}
+
+} // namespace dect2::goes

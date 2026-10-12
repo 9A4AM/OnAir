@@ -58,6 +58,8 @@
 #include "time_tel.h"
 #include "cubesat_tel.h"
 #include "rid_tel.h"
+#include "meteor_tel.h"
+#include "goes_tel.h"
 #include "t2.h"
 #include "t2l1.h"
 #include "t2plp.h"
@@ -134,6 +136,8 @@ struct RxTelemetry {
     TimeTelemetry timesig;    // valid when standard == 59 (time signals)
     CubeTelemetry cube;       // valid when standard == 62 (CubeSat telemetry)
     RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)
+    MeteorTelemetry meteor;   // valid when standard == 60 (Meteor-M LRPT)
+    GoesTelemetry goes;       // valid when standard == 61 (GOES HRIT)
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34
     NxdnTelemetry nxdn;         // valid when standard == 39
