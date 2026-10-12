@@ -132,3 +132,64 @@ const char* listTitle(const App& a, bool upper) {
     const bool stations = a.fmMode || a.dabMode;
     return upper ? (stations ? "STATIONS" : "SERVICES") : (stations ? "Stations" : "Services");
 }
+
+// ---------------------------------------------------------------- second mode
+
+namespace {
+// The mode's own screens drawn for the second mode: a.rx holds its report meanwhile, and its sound is pushed muted unless asked for
+struct SecondScope {
+    App& a;
+    bool muted;
+    explicit SecondScope(App& app) : a(app), muted(app.muted) {
+        std::swap(a.rx, a.second.rx);
+        a.muted = muted || !a.second.audio;
+        a.second.drawing = true;
+    }
+    ~SecondScope() {
+        std::swap(a.rx, a.second.rx);
+        a.muted = muted;
+        a.second.drawing = false;
+    }
+};
+}   // namespace
+
+bool setSecondMode(App& a, int idx, double mhz) {
+    if (idx < 0 || idx >= kNumModes) {
+        a.engine.clearSecondary();
+        a.second.modeIdx = -1;
+        a.second.rx = RxTelemetry(); a.second.seq = 0;
+        return true;
+    }
+    const ModeDef& m = kModes[idx];
+    if (m.subId) if (const SubMode* sm = subModeById(m.subId)) applySubMode(a.engine, sm);   // one protocol: only its decoder
+    a.engine.setSecondarySound(a.second.audio);
+    const bool ok = a.engine.setSecondaryHz(m.family + 2, mhz * 1e6);
+    a.second.rx = RxTelemetry(); a.second.seq = 0;
+    a.second.modeIdx = ok ? idx : -1;
+    a.second.mhz = mhz;
+    return ok;
+}
+
+void secondModeTick(App& a) {
+    if (a.second.modeIdx < 0) return;
+    if (a.engine.secondaryStandard() == 0) { a.second.modeIdx = -1; return; }   // refused or turned off in the engine
+    RxTelemetry t;
+    if (a.engine.latestRx2(t, a.second.seq)) { a.second.seq = t.seq; a.second.rx = std::move(t); }
+    const ModeUi* mu = modeUi(kModes[a.second.modeIdx].family);
+    if (mu && mu->tick) { SecondScope s(a); mu->tick(a); }
+}
+
+void secondModeTabs(App& a) {
+    if (a.second.modeIdx < 0) return;
+    const ModeDef& m = kModes[a.second.modeIdx];
+    char name[96];
+    snprintf(name, sizeof name, "Second: %s", m.name);
+    const ModeUi* mu = modeUi(m.family);
+    if (!tabItem(name, mu ? mu->tabIcon : Ic::Layers)) return;
+    if (!a.engine.secondaryRunning()) {
+        const std::string note = a.engine.secondaryNote();
+        ImGui::TextDisabled("%s at %.4f MHz is not running%s%s", m.name, a.second.mhz, note.empty() ? "" : ": ", note.c_str());
+    }
+    if (mu && mu->tab) { SecondScope s(a); mu->tab(a); }
+    ImGui::EndTabItem();
+}

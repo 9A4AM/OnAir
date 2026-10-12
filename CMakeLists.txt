@@ -539,6 +539,10 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_modes PRIVATE dect2core)
   add_test(NAME modes COMMAND test_modes)
 
+  add_executable(test_dual_engine tests/test_dual_engine.cpp)   # two modes at once (Engine::setSecondary)
+  target_link_libraries(test_dual_engine PRIVATE dect2core)
+  add_test(NAME dual_engine COMMAND test_dual_engine)
+
   add_executable(test_iq_record tests/test_iq_record.cpp)
   target_link_libraries(test_iq_record PRIVATE dect2core)
   add_test(NAME iq_record COMMAND test_iq_record)

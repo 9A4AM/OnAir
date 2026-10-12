@@ -297,6 +297,16 @@ struct App {
     std::string recDonePath;            // the last finished recording, for "Show recording"
     RxTelemetry rx;
     uint64_t rxSeq = 0;
+    // Second mode (Engine::setSecondary): a second receiver on the same capture. Its screens are the mode's own, drawn with a.rx swapped
+    // for its report (secondScope, modeui.cpp); its sound stays off unless asked for.
+    struct SecondMode {
+        int modeIdx = -1;     // the kModes row chosen, -1 = none
+        double mhz = 0;       // its frequency
+        bool audio = false;   // play its sound (off: muted whatever the first mode does)
+        RxTelemetry rx;
+        uint64_t seq = 0;
+        bool drawing = false; // its screens are being drawn: tuneFreq() tunes it instead of the radio
+    } second;
     TsSnapshot ts;
     BbStats bb;
     double tsT = 0;
@@ -582,6 +592,11 @@ struct ModeUi {
 };
 const ModeUi* modeUi(int family);                       // modeui.cpp: nullptr for the original families (0 to 5)
 const char* listTitle(const App& a, bool upper);        // "STATIONS", "SERVICES" or the mode's own, for the list on the right
+// Second mode (modeui.cpp): run kModes[modeIdx] at mhz beside the first mode (-1: off); false and the engine's note when refused
+bool setSecondMode(App& a, int modeIdx, double mhz);
+void secondModeTick(App& a);                 // every frame: its report, its tick (sound pushed muted unless asked for)
+void secondModeTabs(App& a);                 // in mainTabs(): the tab "Second: <mode>" with the mode's own main screen
+void secondModeControl(App& a, bool vertical);   // the tuner panel: the button and its pop-up (pick a mode and its frequency)
 void selectMode(App& a, int family, const char* subId = nullptr);
 bool modeSelected(const App& a, const ModeDef& m);    // the row of the current mode
 const char* modeSearchBox();                          // a search box at the top of a mode drop-down (toolbar.cpp); returns the query

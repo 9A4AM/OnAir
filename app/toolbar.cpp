@@ -381,6 +381,8 @@ void toolbarParts(App& a, int mask, bool vertical) {
     }
     }
 
+    if (mask & TbTuner) secondModeControl(a, vertical);
+
     if (mask & TbGain) {
     if (!a.newUi) vSeparator();   // the new interface starts the gain controls on a second row
     ImGui::BeginDisabled(!isHw);
@@ -553,6 +555,11 @@ void toolbarParts(App& a, int mask, bool vertical) {
 void toolbar(App& a) { toolbarParts(a, TbAll, false); }
 
 void tuneFreq(App& a, double mhz) {
+    if (a.second.drawing) {   // the second mode's screens tune the second mode (a refusal turns it off: secondModeTick)
+        a.second.mhz = mhz;
+        if (a.second.modeIdx >= 0) a.engine.setSecondaryHz(kModes[a.second.modeIdx].family + 2, mhz * 1e6);
+        return;
+    }
     const bool moved = std::fabs(a.tune.centerHz - mhz * 1e6) > 1;
     a.freqMhz = mhz;
     a.tune.centerHz = mhz * 1e6;
@@ -562,6 +569,63 @@ void tuneFreq(App& a, double mhz) {
         a.peak.clear();
     }
     savePrefs(a);
+}
+
+// The tuner panel's "Second mode": a second receiver decoding from the same samples (Engine::setSecondary); its screen is the tab
+// "Second: <mode>". The pop-up says at once whether the pair fits in the band the radio captures.
+void secondModeControl(App& a, bool vertical) {
+    if (!vertical) flowNext(10 * gUi);
+    char lbl[128];
+    if (a.second.modeIdx >= 0) snprintf(lbl, sizeof lbl, "Second: %s %.3f MHz###second", kModes[a.second.modeIdx].name, a.second.mhz);
+    else snprintf(lbl, sizeof lbl, "Second mode###second");
+    if (ImGui::SmallButton(lbl)) ImGui::OpenPopup("##secondmode");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Decode a second mode from the same radio samples, in its own tab.\nIts frequency must lie inside the band the radio captures.");
+    if (!ImGui::BeginPopup("##secondmode")) return;
+    static int pick = -1;
+    static double mhz = 0;
+    if (ImGui::IsWindowAppearing() && a.second.modeIdx >= 0) { pick = a.second.modeIdx; mhz = a.second.mhz; }
+    const float wrap = 380 * gUi;
+    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + wrap);
+    ImGui::TextDisabled("A second receiver decodes from the same samples as the first mode; its sound stays off unless chosen.");
+    ImGui::SetNextItemWidth(200 * gUi);
+    if (ImGui::BeginCombo("Mode##second", pick >= 0 ? kModes[pick].name : "choose a mode")) {
+        for (int i = 0; i < kNumModes; i++) {
+            const ModeDef& m = kModes[i];
+            if (m.family < 6 || m.family == a.family || !Engine::secondaryAllowed(m.family + 2)) continue;
+            if (ImGui::Selectable(m.name, i == pick)) {
+                pick = i;
+                const SubMode* sm = m.subId ? subModeById(m.subId) : nullptr;
+                const ModeTuning* mt = modeTuning(m.family + 2);
+                mhz = sm ? sm->defMhz : mt ? mt->defMhz : a.freqMhz;
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SetNextItemWidth(200 * gUi);
+    ImGui::InputDouble("MHz##second", &mhz, 0, 0, "%.4f");
+    if (ImGui::Checkbox("Play its sound", &a.second.audio)) a.engine.setSecondarySound(a.second.audio);
+    if (pick >= 0) {   // the same check the engine makes, with what the radio runs at (or will)
+        const bool run = a.engine.running();
+        const ModeTuning* pt = modeTuning(engineStd(a));
+        const double centre = run ? a.engine.captureCentreHz() : a.tune.centerHz + (pt && a.devices[a.devIdx].kind != DeviceInfo::File ? pt->tuneOffsetHz : 0);
+        const double rate = run ? a.engine.sampleRate() : a.tune.sampleRate;
+        const std::string why = Engine::secondaryCheck(engineStd(a), kModes[pick].family + 2, centre, rate, mhz * 1e6);
+        if (!why.empty()) ImGui::TextColored(ImVec4(0.95f, 0.72f, 0.3f, 1), "%s", why.c_str());
+        else ImGui::TextDisabled("Fits: %.3f MHz from the centre of the %.2f Msps capture", (mhz * 1e6 - centre) / 1e6, rate / 1e6);
+    }
+    ImGui::BeginDisabled(pick < 0);
+    if (ImGui::Button("Run")) setSecondMode(a, pick, mhz);
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    ImGui::BeginDisabled(a.second.modeIdx < 0);
+    if (ImGui::Button("Off")) { setSecondMode(a, -1, 0); pick = -1; }
+    ImGui::EndDisabled();
+    const std::string note = a.engine.secondaryNote();
+    if (!note.empty()) ImGui::TextColored(ImVec4(0.95f, 0.72f, 0.3f, 1), "%s", note.c_str());
+    if (a.engine.secondaryRunning())
+        ImGui::TextDisabled("Running at %.2f Msps; %.2f s of signal lost", a.engine.secondaryRate() / 1e6, a.engine.secondaryDropped() / std::max(1.0, a.engine.sampleRate()));
+    ImGui::PopTextWrapPos();
+    ImGui::EndPopup();
 }
 
 void sourceOptions(App& a) {

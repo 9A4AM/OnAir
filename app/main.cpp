@@ -151,6 +151,7 @@ void mainTabs(App& a) {
             if (mu->stream && tabItem("Stream", Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
             if (mu->scan && tabItem("Scan", Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
             if (tabItem("History", Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+            secondModeTabs(a);
             ImGui::EndTabBar();
             return;
         }
@@ -165,6 +166,7 @@ void mainTabs(App& a) {
         if (tabItem("Scan", Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
         if (!a.fmMode && tabItem("Antenna", Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
         if (tabItem("History", Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+        secondModeTabs(a);
         ImGui::EndTabBar();
     }
 }
@@ -177,6 +179,7 @@ void drawUI(App& a, ImVec2 disp) {
     dabHistory(a);
     fmHistory(a);
     if (const ModeUi* mu = modeUi(a.family)) if (mu->tick) mu->tick(a);
+    secondModeTick(a);
     dabScanStep(a);
     fmScanStep(a);
     harvestScan(a);
@@ -552,6 +555,11 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--mute") { app.muted = true; app.volume = 0; }
         if (std::string(argv[i]) == "--identify") gIdentifyDev = true;   // dev: identify the strongest signal once the receiver runs (with --shot)
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
+        if (std::string(argv[i]) == "--second" && i + 2 < argc) {   // dev: a second mode (the mode-list row named so) at a frequency in MHz
+            const std::string nm = argv[++i];
+            const double mhz = atof(argv[++i]);
+            for (int k = 0; k < kNumModes; k++) if (nm == kModes[k].name) { setSecondMode(app, k, mhz); break; }
+        }
         if (std::string(argv[i]) == "--dvb") setFamily(app, 0);
         if (std::string(argv[i]) == "--atsc") setFamily(app, 1);
         if (std::string(argv[i]) == "--atsc3") setFamily(app, 3);

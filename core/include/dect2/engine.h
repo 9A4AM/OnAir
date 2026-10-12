@@ -164,6 +164,30 @@ public:
     void setSpectrumEnabled(bool on) { analyzer_.setTransform(on); }
 
     bool latestRx(RxTelemetry& out, uint64_t lastSeq);
+
+    // Two modes at once: a second receiver gets a copy of the same samples on its own thread (it never holds up the first: with a live radio
+    // a second receiver that falls behind loses blocks, counted in secondaryDropped()). It is the idle receiver of its mode, shifted so that
+    // its frequency sits where the mode expects it, so its own controls (acars(), vdl2(), ...) work as for the first mode. Only the modes of
+    // secondaryAllowed(), only a pair that fits in the capture (secondaryCheck()); a refused or suspended pair says why in secondaryNote().
+    // offsetHz: the second mode's frequency less captureCentreHz(); stdMode 0 = off. Kept over restarts and retunes (as a frequency).
+    bool setSecondary(int stdMode, double offsetHz);
+    bool setSecondaryHz(int stdMode, double freqHz);   // the same with the second mode's own frequency
+    void clearSecondary() { setSecondary(0, 0); }
+    int secondaryStandard() const { return secStd_.load(); }   // the engine standard code asked for, 0 = none
+    bool secondaryRunning() const { return secAct_.load() >= 0; }
+    double secondaryHz() const { return secHz_.load(); }
+    std::string secondaryNote() const { std::lock_guard<std::mutex> lk(secNoteMu_); return secNote_; }
+    uint64_t secondaryDropped() const { return secDropped_.load(); }   // samples the second receiver lost (a live radio only)
+    double secondaryRate() const { return secRate_.load(); }   // the rate it decodes at: its mode's own, the capture resampled down to it
+    // Its sound: off by default (the first mode keeps the speakers); applies to the modes that play any (DMR, dPMR, airband, CW, ...)
+    void setSecondarySound(bool on);
+    bool latestRx2(RxTelemetry& out, uint64_t lastSeq);   // the second mode's report (as latestRx)
+    double captureCentreHz() const;   // the frequency at the centre of the samples the receivers get
+    // The modes that can run second: narrow channels that neither retune the radio, nor make a transport stream, picture or player sound
+    static bool secondaryAllowed(int stdMode);
+    // Empty when the second mode fits beside the first in a capture of rateHz around centreHz, else the reason (shown to the user)
+    static std::string secondaryCheck(int primaryStd, int secStd, double centreHz, double rateHz, double secHz);
+
     void setPlpDump(std::function<void(const PlpResult&)> cb) { plpDump_ = std::move(cb); }
 
     // Transport stream (phase 4)
@@ -408,6 +432,46 @@ private:
     void bandwidthStep(const SpectrumFrame& f, const RxTelemetry& t, bool tLocked);
     void changeBandwidth(double mhz);
     void feedRx(const cf32* x, size_t n);
+    void feedReceiver(int a, const cf32* x, size_t n);   // the receiver of active standard a
+    void resetReceiver(int a);
+    // the report of the receiver of active standard a for the modes from DVB-S on: 1 = a new one in t, 0 = none new, -1 = not one of them
+    int pollMode(int a, RxTelemetry& t, uint64_t* seqs);
+    // the second mode (setSecondary): the queue to its thread, the receiver's placement in the capture
+    void secondaryLoop(int a);
+    void startSecondary();                    // start(): the second mode asked for, suspended when it does not fit
+    void stopSecondary();                     // stop(): stays asked for
+    bool startSecondaryLocked(bool keep);     // under secCtlMu_; keep: a pair that does not fit stays asked for (suspended)
+    void stopSecondaryLocked();
+    void refreshSecondary(bool force);        // after a retune: placed again (force: the radio moved), suspended or resumed
+    bool placeSecondary(std::string& why);   // checks the pair with the current tuning and shifts the receiver there; false = refused
+    void placeReceiver(int a, double sigOffHz, double centreHz, double dialHz, double chanHz);
+    void placeReceiverAsPrimary(int a);      // back to what start() gave it
+    void configureReceiver(int a, double rateHz);
+    void muteReceiver(int a, bool muted);
+    std::atomic<bool> secSound_{false};
+    std::atomic<double> secRate_{0};          // the second receiver's rate: its mode's own, the capture resampled down to it
+    void pushSecondary(const cf32* x, size_t n);
+    void setSecNote(const std::string& s) { std::lock_guard<std::mutex> lk(secNoteMu_); secNote_ = s; }
+    std::thread secTh_;
+    std::mutex secQMu_;
+    std::condition_variable secQCv_;
+    std::deque<std::vector<cf32>> secQ_;
+    size_t secQN_ = 0;                  // samples in secQ_
+    bool secStop_ = false;
+    std::mutex secFeedMu_;              // held while the second receiver takes a block: nothing resets or moves it meanwhile
+    std::mutex secCtlMu_;               // setSecondary / start / stop of the second mode
+    std::atomic<int> secStd_{0};        // asked for: engine standard code, 0 = none
+    std::atomic<double> secHz_{0};      // its frequency
+    std::atomic<int> secAct_{-1};       // the receiver (active standard) running as the second mode, -1 = none
+    std::atomic<double> secShift_{0};   // how far its frequency lies above the centre of the capture
+    std::atomic<bool> secFlush_{false};
+    std::atomic<uint64_t> secDropped_{0};
+    uint64_t modeSeq2_[64] = {};
+    std::mutex rx2Mu_;
+    RxTelemetry rxTel2_;
+    uint64_t rx2Pub_ = 0;
+    mutable std::mutex secNoteMu_;
+    std::string secNote_;
     void autoSelect(const RxTelemetry& t, bool tLocked);
     void onTsPackets(const uint8_t* pk, size_t n, double secs);
     void logDvbtEvents(const RxTelemetry& t);
