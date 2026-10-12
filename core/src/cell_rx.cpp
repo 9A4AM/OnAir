@@ -17,15 +17,33 @@ namespace dect2 {
 // ---------------------------------------------------------------- bands and operators
 
 const std::vector<LteBand>& lteBands() {
-    // the order is the preference when a frequency lies in several bands (Europe first)
+    // 36.101 Table 5.7.3-1 (downlink EARFCN), every FDD / TDD / SDL band; the order is the preference when a frequency lies in several
+    // bands (Europe first)
     static const std::vector<LteBand> t = {
         {1, 2110, 2170, 0, false, "IMT 2100"},        {3, 1805, 1880, 1200, false, "DCS 1800"},   {7, 2620, 2690, 2750, false, "IMT-E 2600"},
         {8, 925, 960, 3450, false, "E-GSM 900"},      {20, 791, 821, 6150, false, "EU 800 DD"},   {28, 758, 803, 9210, false, "APT 700"},
         {32, 1452, 1496, 9920, false, "L-band SDL"},  {38, 2570, 2620, 37750, true, "TDD 2600"},  {40, 2300, 2400, 38650, true, "TDD 2300"},
-        {41, 2496, 2690, 39650, true, "TDD 2500"},    {42, 3400, 3600, 41590, true, "TDD 3500"},  {2, 1930, 1990, 600, false, "PCS 1900"},
+        {41, 2496, 2690, 39650, true, "TDD 2500"},    {42, 3400, 3600, 41590, true, "TDD 3500"},  {43, 3600, 3800, 43590, true, "TDD 3700"},
+        {2, 1930, 1990, 600, false, "PCS 1900"},
         {4, 2110, 2155, 1950, false, "AWS-1"},        {5, 869, 894, 2400, false, "CLR 850"},      {12, 729, 746, 5010, false, "Lower 700"},
         {13, 746, 756, 5180, false, "Upper 700 C"},   {17, 734, 746, 5730, false, "Lower 700 B/C"}, {25, 1930, 1995, 8040, false, "E-PCS 1900"},
         {26, 859, 894, 8690, false, "E-CLR 850"},     {66, 2110, 2200, 66436, false, "AWS-3"},     {71, 617, 652, 68586, false, "600 MHz"},
+        {6, 875, 885, 2650, false, "UMTS 800"},       {9, 1844.9, 1879.9, 3800, false, "UMTS 1700"}, {10, 2110, 2170, 4150, false, "E-AWS"},
+        {11, 1475.9, 1495.9, 4750, false, "Lower 1500"}, {14, 758, 768, 5280, false, "Upper 700 D"}, {18, 860, 875, 5850, false, "Lower 800"},
+        {19, 875, 890, 6000, false, "Upper 800"},     {21, 1495.9, 1510.9, 6450, false, "Upper 1500"}, {22, 3510, 3590, 6600, false, "3500 FDD"},
+        {23, 2180, 2200, 7500, false, "S-band"},      {24, 1525, 1559, 7700, false, "L-band 1600"}, {27, 852, 869, 9040, false, "SMR 800"},
+        {29, 717, 728, 9660, false, "700 SDL"},       {30, 2350, 2360, 9770, false, "WCS 2300"},   {31, 462.5, 467.5, 9870, false, "450 MHz"},
+        {33, 1900, 1920, 36000, true, "TDD 2000"},    {34, 2010, 2025, 36200, true, "TDD 2000"},   {35, 1850, 1910, 36350, true, "TDD PCS"},
+        {36, 1930, 1990, 36950, true, "TDD PCS"},     {37, 1910, 1930, 37550, true, "TDD PCS"},    {39, 1880, 1920, 38250, true, "TDD 1900"},
+        {44, 703, 803, 45590, true, "TDD 700"},       {45, 1447, 1467, 46590, true, "TDD 1500"},   {46, 5150, 5925, 46790, true, "LAA 5 GHz"},
+        {47, 5855, 5925, 54540, true, "V2X 5.9 GHz"}, {48, 3550, 3700, 55240, true, "CBRS"},       {49, 3550, 3700, 56740, true, "CBRS LAA"},
+        {50, 1432, 1517, 58240, true, "TDD 1500"},    {51, 1427, 1432, 59090, true, "TDD 1500-"},  {52, 3300, 3400, 59140, true, "TDD 3300"},
+        {53, 2483.5, 2495, 60140, true, "TDD 2.4 GHz"},
+        {65, 2110, 2200, 65536, false, "E-IMT 2100"}, {67, 738, 758, 67336, false, "EU 700 SDL"}, {68, 753, 783, 67536, false, "ME 700"},
+        {69, 2570, 2620, 67836, false, "2600 SDL"},   {70, 1995, 2020, 68336, false, "AWS-4"},     {72, 461, 466, 68936, false, "PMR 450"},
+        {73, 460, 465, 68986, false, "450 APAC"},     {74, 1475, 1518, 69036, false, "L-band"},    {75, 1432, 1517, 69466, false, "L-band SDL"},
+        {76, 1427, 1432, 70316, false, "L-band SDL-"}, {85, 728, 746, 70366, false, "Lower 700 A"}, {87, 420, 425, 70546, false, "410 MHz"},
+        {88, 422, 427, 70596, false, "410 MHz"},
     };
     return t;
 }

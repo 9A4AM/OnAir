@@ -197,7 +197,8 @@ bool pbchDecode(const float* llr, int pci, int issb, Mib& m, int L) {
 
 // ---------------------------------------------------------------------------------------------------------------- bands and the sync raster
 const std::vector<NrBand>& nrBands() {
-    // 38.104 Table 5.2-1 (downlink) and Table 5.4.3.3-1 (GSCN range per SSB subcarrier spacing)
+    // 38.104 Table 5.2-1 (downlink) and 38.101-1 Table 5.4.3.3-1 (GSCN range per SSB subcarrier spacing); the order is the preference
+    // when a GSCN lies in several bands
     static const std::vector<NrBand> t = {
         {78, 3300, 3800, 30, 7711, 8051, 1, true, "3.5 GHz TDD"},   {77, 3300, 4200, 30, 7711, 8329, 1, true, "C-band TDD"},
         {28, 758, 803, 15, 1901, 2002, 1, false, "APT 700"},        {20, 791, 821, 15, 1982, 2047, 1, false, "EU 800 DD"},
@@ -205,6 +206,13 @@ const std::vector<NrBand>& nrBands() {
         {1, 2110, 2170, 15, 5279, 5419, 1, false, "IMT 2100"},      {7, 2620, 2690, 15, 6554, 6718, 1, false, "IMT-E 2600"},
         {38, 2570, 2620, 15, 6431, 6544, 1, true, "TDD 2600"},      {40, 2300, 2400, 30, 5762, 5989, 1, true, "TDD 2300"},
         {41, 2496, 2690, 30, 6252, 6714, 3, true, "TDD 2500"},      {41, 2496, 2690, 15, 6246, 6717, 3, true, "TDD 2500"},
+        {79, 4400, 5000, 30, 8480, 8880, 16, true, "4.7 GHz TDD"}, {48, 3550, 3700, 30, 7884, 7982, 1, true, "CBRS"},
+        {5, 869, 894, 15, 2177, 2230, 1, false, "CLR 850"},         {5, 869, 894, 30, 2183, 2224, 1, false, "CLR 850"},
+        {2, 1930, 1990, 15, 4829, 4969, 1, false, "PCS 1900"},      {25, 1930, 1995, 15, 4829, 4981, 1, false, "E-PCS 1900"},
+        {12, 729, 746, 15, 1828, 1858, 1, false, "Lower 700"},      {71, 617, 652, 15, 1547, 1624, 1, false, "600 MHz"},
+        {66, 2110, 2200, 15, 5279, 5494, 1, false, "AWS-3"},        {66, 2110, 2200, 30, 5285, 5488, 1, false, "AWS-3"},
+        {34, 2010, 2025, 15, 5030, 5056, 1, true, "TDD 2000"},      {34, 2010, 2025, 30, 5036, 5050, 1, true, "TDD 2000"},
+        {39, 1880, 1920, 15, 4706, 4795, 1, true, "TDD 1900"},      {50, 1432, 1517, 15, 3584, 3787, 1, true, "TDD 1500"},
     };
     return t;
 }

@@ -16,6 +16,22 @@ int main() {
     const ModeTuning mt = cellTuning();
     CHECK(mt.stdMode == 34 && modeTuningById("cell") && modeTuningById("cell")->stdMode == 34, "tuning table");
     CHECK(lteHzToEarfcn(806e6) == 6300 && std::fabs(lteEarfcnToHz(6200) - 796e6) < 1 && lteBandOfEarfcn(3500) == 8, "EARFCN table");
+    {   // the full 36.101 table: EARFCN ranges never overlap, both edges map to the band's downlink edges and back
+        bool ok = true;
+        const auto& t = lteBands();
+        for (size_t i = 0; i < t.size(); i++) {
+            const int span = (int)std::lround((t[i].dlHighMhz - t[i].dlLowMhz) * 10), first = t[i].nOffsDl, last = first + span - 1;
+            if (span <= 0 || std::fabs(lteEarfcnToHz(first) - t[i].dlLowMhz * 1e6) > 1 || std::fabs(lteEarfcnToHz(last) - (t[i].dlHighMhz - 0.1) * 1e6) > 1) ok = false;
+            if (lteBandOfEarfcn(first) != t[i].band || lteBandOfEarfcn(last) != t[i].band) ok = false;
+            if (lteHzToEarfcn(t[i].dlLowMhz * 1e6, t[i].band) != first) ok = false;
+            for (size_t j = 0; j < t.size(); j++)
+                if (j != i && t[j].band == t[i].band) ok = false;
+        }
+        CHECK(ok && t.size() >= 60, "EARFCN ranges consistent");
+        CHECK(std::fabs(lteEarfcnToHz(43590) - 3600e6) < 1 && std::fabs(lteEarfcnToHz(68586) - 617e6) < 1 && std::fabs(lteEarfcnToHz(3800) - 1844.9e6) < 1, "new bands");
+        CHECK(lteHzToEarfcn(3700e6) == 44590 && lteHzToEarfcn(1844.9e6) == 1599 && lteHzToEarfcn(1844.9e6, 9) == 3800 && lteHzToEarfcn(1000e6) == -1, "band preference");
+        CHECK(lteBandOfEarfcn(70600) == 88 && lteBandOfEarfcn(4960) == 0 && lteEarfcnToHz(4960) == 0, "gaps");
+    }
     Engine e;
     DeviceInfo dev;
     TuneSettings t;

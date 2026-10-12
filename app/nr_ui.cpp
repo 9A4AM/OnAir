@@ -15,13 +15,15 @@
 
 namespace {
 
-constexpr int kNb = 11;
-const int kScanBands[kNb] = {78, 77, 28, 20, 8, 3, 1, 7, 38, 40, 41};
+constexpr int kNb = 22;
+const int kScanBands[kNb] = {78, 77, 28, 20, 8, 3, 1, 7, 38, 40, 41, 79, 48, 5, 2, 25, 12, 71, 66, 34, 39, 50};
 
 struct State {
     int view = 0;                 // 0 cells, 1 beams, 2 map, 3 log
     int sel = -1;
-    bool bands[kNb] = {true, false, true, true, false, false, false, false, false, false, false};   // n78, n28, n20
+    bool bands[kNb] = {true, false, true, true};   // n78, n28, n20
+    bool custom = false;          // a custom range instead of (with) the bands
+    float customLo = 3400, customHi = 3800;   // MHz
     bool scanning = false;
     std::vector<double> plan;     // centres, MHz
     size_t step = 0;
@@ -43,25 +45,32 @@ std::string ago(int64_t t) {
     return b;
 }
 
-std::string bandText(const dect2::NrCell& c) { if (!c.band) return "-"; char b[16]; snprintf(b, sizeof b, "n%d", c.band); return b; }
+std::string bandText(const dect2::NrCell& c) { if (!c.band) return "?"; char b[16]; snprintf(b, sizeof b, "n%d", c.band); return b; }
 
 void makePlan(const App& a) {
     S.plan.clear();
     const double fs = a.tune.sampleRate / 1e6;
+    auto add = [&](double lo, double hi, int scs) {   // centres one searched span apart; the receiver tries every GSCN inside each
+        const double span = std::max(0.5, fs * 0.92 - 0.24 * scs - 0.4);   // the part of the sample band whose raster points are searched
+        for (double c = lo + span / 2; c - span / 2 <= hi; c += span) {
+            const double r = std::round(c * 1000) / 1000;
+            bool dup = false;
+            for (double p : S.plan) if (std::fabs(p - r) < span / 2) dup = true;
+            if (!dup) S.plan.push_back(r);
+        }
+    };
     for (int i = 0; i < kNb; i++) {
         if (!S.bands[i]) continue;
         for (const auto& b : dect2::nr::nrBands()) {
             if (b.band != kScanBands[i]) continue;
             if (fs * 1e6 < 256e3 * b.scsKhz * 0.97) continue;   // this rate cannot hold the band's SSB
-            const double lo = dect2::nr::gscnToHz(b.gscnLo) / 1e6, hi = dect2::nr::gscnToHz(b.gscnHi) / 1e6;
-            const double span = std::max(0.5, fs * 0.92 - 0.24 * b.scsKhz - 0.4);   // the part of the sample band whose raster points are searched
-            for (double c = lo + span / 2; c - span / 2 <= hi; c += span) {
-                const double r = std::round(c * 1000) / 1000;
-                bool dup = false;
-                for (double p : S.plan) if (std::fabs(p - r) < span / 2) dup = true;
-                if (!dup) S.plan.push_back(r);
-            }
+            add(dect2::nr::gscnToHz(b.gscnLo) / 1e6, dect2::nr::gscnToHz(b.gscnHi) / 1e6, b.scsKhz);
         }
+    }
+    // a custom range: the GSCN points in it (38.101-1 5.4.3), stepped for the wider 30 kHz SSB so both spacings fit in every step
+    if (S.custom && S.customHi > S.customLo && fs * 1e6 >= 256e3 * 15 * 0.97) {
+        const int g0 = dect2::nr::hzToGscn(S.customLo * 1e6), g1 = dect2::nr::hzToGscn(S.customHi * 1e6);
+        if (g0 > 0 && g1 >= g0) add(dect2::nr::gscnToHz(g0) / 1e6, dect2::nr::gscnToHz(g1) / 1e6, fs * 1e6 >= 256e3 * 30 * 0.97 ? 30 : 15);
     }
 }
 
@@ -74,6 +83,14 @@ void scanBar(App& a) {
         ImGui::Checkbox(l, &S.bands[i]);
         if (ImGui::IsItemHovered()) if (const dect2::nr::NrBand* b = dect2::nr::nrBandInfo(kScanBands[i]))
             ImGui::SetTooltip("n%d: %.0f - %.0f MHz (%s), %d kHz SSB, GSCN %d - %d", b->band, b->dlLowMhz, b->dlHighMhz, b->region, b->scsKhz, b->gscnLo, b->gscnHi);
+    }
+    flowNext(10 * gUi);
+    ImGui::Checkbox("Custom##nbc", &S.custom);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also scan a range of your own, start and end in MHz, over the NR sync raster (GSCN)");
+    if (S.custom) {
+        ImGui::SameLine(); ImGui::SetNextItemWidth(70 * gUi); ImGui::InputFloat("##nblo", &S.customLo, 0, 0, "%.1f");
+        ImGui::SameLine(); ImGui::TextUnformatted("-"); ImGui::SameLine(); ImGui::SetNextItemWidth(70 * gUi); ImGui::InputFloat("MHz##nbhi", &S.customHi, 0, 0, "%.1f");
+        S.customLo = std::clamp(S.customLo, 1.0f, 7250.0f); S.customHi = std::clamp(S.customHi, 1.0f, 7250.0f);
     }
     flowNext(10 * gUi);
     if (!S.scanning) {

@@ -21,11 +21,16 @@
 
 namespace {
 
+constexpr int kNb = 20;
+const int kScanBands[kNb] = {20, 8, 3, 1, 7, 28, 32, 38, 40, 41, 42, 43, 2, 4, 5, 12, 13, 25, 66, 71};
+
 struct Pos { double lat, lon; };
 struct State {
     int view = 0;                 // 0 cells, 1 sites, 2 neighbours, 3 operators, 4 map, 5 log
     int sel = -1;                 // selected cell (index in cells)
-    bool bands[8] = {true, true, true, true, true, false, false, false};
+    bool bands[kNb] = {true, true, true, true, true};   // B20, B8, B3, B1, B7
+    bool custom = false;          // a custom range instead of (with) the bands
+    float customLo = 790, customHi = 830;   // MHz
     bool scanning = false;
     std::vector<double> plan;     // centres, MHz
     size_t step = 0;
@@ -40,7 +45,6 @@ struct State {
     std::unique_ptr<dect2::OcidLookup> ocid;
 };
 State S;
-const int kScanBands[8] = {20, 8, 3, 1, 7, 28, 32, 38};
 
 bool live(const App& a) { return a.engine.running() && a.rx.standard == 33; }
 
@@ -126,22 +130,31 @@ std::string opText(const dect2::CellTower& c) {
 void makePlan(const App& a) {
     S.plan.clear();
     const double span = std::max(1.5, a.tune.sampleRate / 1e6 * 0.75);   // the part of the sample band searched whole
-    for (int i = 0; i < 8; i++) {
+    // centres on the 100 kHz channel raster, one sample band apart
+    auto range = [&](double lo, double hi) { for (double c = lo + span / 2; c - span / 2 < hi; c += span) S.plan.push_back(std::round(c * 10) / 10); };
+    for (int i = 0; i < kNb; i++) {
         if (!S.bands[i]) continue;
-        const dect2::LteBand* b = dect2::lteBandInfo(kScanBands[i]);
-        if (!b) continue;
-        for (double c = b->dlLowMhz + span / 2; c - span / 2 < b->dlHighMhz; c += span) S.plan.push_back(std::round(c * 10) / 10);
+        if (const dect2::LteBand* b = dect2::lteBandInfo(kScanBands[i])) range(b->dlLowMhz, b->dlHighMhz);
     }
+    if (S.custom && S.customHi > S.customLo) range(S.customLo, S.customHi);
 }
 
 void scanBar(App& a) {
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("Bands");
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < kNb; i++) {
         flowNext(6 * gUi);
         char l[16]; snprintf(l, sizeof l, "B%d##cb%d", kScanBands[i], i);
         ImGui::Checkbox(l, &S.bands[i]);
         if (ImGui::IsItemHovered()) if (const dect2::LteBand* b = dect2::lteBandInfo(kScanBands[i])) ImGui::SetTooltip("Band %d: %.0f - %.0f MHz (%s)", b->band, b->dlLowMhz, b->dlHighMhz, b->region);
+    }
+    flowNext(10 * gUi);
+    ImGui::Checkbox("Custom##cbc", &S.custom);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also scan a range of your own, start and end in MHz, on the 100 kHz LTE raster");
+    if (S.custom) {
+        ImGui::SameLine(); ImGui::SetNextItemWidth(70 * gUi); ImGui::InputFloat("##cblo", &S.customLo, 0, 0, "%.1f");
+        ImGui::SameLine(); ImGui::TextUnformatted("-"); ImGui::SameLine(); ImGui::SetNextItemWidth(70 * gUi); ImGui::InputFloat("MHz##cbhi", &S.customHi, 0, 0, "%.1f");
+        S.customLo = std::clamp(S.customLo, 1.0f, 7250.0f); S.customHi = std::clamp(S.customHi, 1.0f, 7250.0f);
     }
     flowNext(10 * gUi);
     if (!S.scanning) {
@@ -174,7 +187,7 @@ void cellTable(App& a) {
         char l[96]; snprintf(l, sizeof l, "%s##c%zu", wide ? opText(c).c_str() : (c.hasSib1 && !c.plmns.empty() ? c.plmns[0].c_str() : "-"), i);
         if (ImGui::Selectable(l, S.sel == (int)i, ImGuiSelectableFlags_SpanAllColumns)) S.sel = (int)i;
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s, %.1f MHz, TAC %u, %.1f MHz wide, RSRQ %.1f dB, seen %s ago", opText(c).c_str(), c.freqHz / 1e6, c.tac, c.nRb * 0.2, c.rsrqDb, ago(c.lastWall).c_str());
-        ImGui::TableNextColumn(); if (c.band) ImGui::Text("B%d", c.band); else ImGui::TextDisabled("-");
+        ImGui::TableNextColumn(); if (c.band) ImGui::Text("B%d", c.band); else ImGui::TextDisabled("?");
         ImGui::TableNextColumn(); if (c.earfcn >= 0) ImGui::Text("%d", c.earfcn); else ImGui::TextDisabled("-");
         if (wide) { ImGui::TableNextColumn(); ImGui::Text("%.1f", c.freqHz / 1e6); }
         ImGui::TableNextColumn(); ImGui::Text("%d", c.pci);
