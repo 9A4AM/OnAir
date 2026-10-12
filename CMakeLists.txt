@@ -145,7 +145,7 @@ if(DECT2_BUILD_APP)
   set(IMGUI_SOURCES
     third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp
     third_party/imgui/backends/imgui_impl_glfw.cpp)
-  set(APP_SOURCES app/main.cpp app/app_state.cpp app/widgets.cpp app/toolbar.cpp app/radio_ui.cpp app/plots.cpp app/analysis_tabs.cpp app/tv.cpp app/scan_outputs.cpp app/antenna.cpp app/dab_ui.cpp app/fm_ui.cpp app/ui2.cpp app/modeui.cpp app/atsc3_ui.cpp app/isdbt_ui.cpp app/update_ui.cpp app/scan_db_ui.cpp app/diag_ui.cpp app/wizard.cpp app/plot.cpp app/gfx_png.cpp app/popout.cpp app/codec_help.cpp app/discord_rpc.cpp app/feeds_ui.cpp)
+  set(APP_SOURCES app/main.cpp app/app_state.cpp app/widgets.cpp app/toolbar.cpp app/radio_ui.cpp app/plots.cpp app/analysis_tabs.cpp app/tv.cpp app/scan_outputs.cpp app/antenna.cpp app/dab_ui.cpp app/fm_ui.cpp app/ui2.cpp app/modeui.cpp app/atsc3_ui.cpp app/isdbt_ui.cpp app/update_ui.cpp app/scan_db_ui.cpp app/diag_ui.cpp app/wizard.cpp app/plot.cpp app/gfx_png.cpp app/popout.cpp app/codec_help.cpp app/discord_rpc.cpp app/passes_ui.cpp app/scanner_ui.cpp)
   foreach(m ${DECT2_MODES})   # app/<mode>_*.cpp: the screens of a mode added after FM
     file(GLOB DECT2_MODE_UI CONFIGURE_DEPENDS app/${m}_*.cpp)
     list(APPEND APP_SOURCES ${DECT2_MODE_UI})
@@ -306,6 +306,8 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_passes tests/test_passes.cpp)
   target_link_libraries(test_passes PRIVATE dect2core)
   add_test(NAME passes COMMAND test_passes)
+  add_executable(test_scanner tests/test_scanner.cpp)
+  add_test(NAME scanner COMMAND test_scanner)
   add_executable(test_iq_correct tests/test_iq_correct.cpp)
   target_link_libraries(test_iq_correct PRIVATE dect2core)
   add_test(NAME iq_correct COMMAND test_iq_correct)

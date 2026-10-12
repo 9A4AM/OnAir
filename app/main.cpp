@@ -275,6 +275,7 @@ void drawUI(App& a, ImVec2 disp) {
     ImGui::End();
     }
     passesWindow(a);
+    scannerWindow(a);
     wizard(a, disp);
     feedsWindow(a);
     if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel
@@ -515,7 +516,8 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
         if (std::string(argv[i]) == "--shotdelay" && i + 1 < argc) shotAfter = atof(argv[++i]);
         if (std::string(argv[i]) == "--fmscan") fmScanAuto = true;
-        if (std::string(argv[i]) == "--passes") app.passesOpen = true;   // dev: open View > Passes
+        if (std::string(argv[i]) == "--passes") app.passesOpen = true;
+        if (std::string(argv[i]) == "--scanner") app.scannerOpen = true;   // dev: open View > Scanner   // dev: open View > Passes
         if (std::string(argv[i]) == "--tle" && i + 1 < argc) passesDevTle(argv[++i]);   // dev: TLEs from a file for the pass planner (no download)
         if (std::string(argv[i]) == "--mute") { app.muted = true; app.volume = 0; }
         if (std::string(argv[i]) == "--identify") gIdentifyDev = true;   // dev: identify the strongest signal once the receiver runs (with --shot)

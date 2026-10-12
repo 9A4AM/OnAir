@@ -183,6 +183,7 @@ struct App {
     // first-run tour (wizard.inc)
     bool wizOpen = false, wizStart = false, wizAcked = false;
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
+    bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     int wizStep = 0;
     double wizStepT = 0;
     float wizX = -1;
@@ -445,6 +446,8 @@ bool receiverLocationSet();                        // the user has set it (else 
 void receiverPositionFields(App& a);               // its two fields and the Locate button
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
+void scannerWindow(App& a);                        // scanner_ui.cpp: the scanner window (a.scannerOpen) and its scan loop, every frame (HIGHLY EXPERIMENTAL)
+void scannerButton(App& a);                        // a button that opens it (the classic interface's Scan tab)
 GLFWmonitor* monitorFor(int x, int y, int w, int h);   // widgets.cpp: the monitor holding most of the rectangle
 // The monitors, kept from the last change GLFW reported (glfwSetMonitorCallback) instead of asked for on each use: a monitor that goes away
 // (display asleep, cable out) is dropped from the list before anything asks for its size or position again.
