@@ -46,11 +46,14 @@
 #include "dstar_rx.h"
 #include "nxdn_rx.h"
 #include "dpmr_rx.h"
+#include "tetra_rx.h"
 #include "mac_rx.h"
 #include "gsmr_rx.h"
 #include "dvbc_rx.h"
 #include "orbcomm_rx.h"
 #include "uplink_rx.h"
+#include "ale_rx.h"
+#include "p25_rx.h"
 #include "ble_rx.h"
 #include "psk_rx.h"
 #include "js8_rx.h"
@@ -211,6 +214,8 @@ public:
     SpecanReceiver& specan() { return rxSpecan_; }   // spectrum analyser: range, resolution, averaging (telemetry through latestRx)
     Js8Receiver& js8() { return rxJs8_; }   // JS8Call: the receiver's own controls and results (the interface reads telemetry through latestRx)
     OrbcommReceiver& orbcomm() { return rxOrb_; }   // Orbcomm: downlinks at once (the interface reads telemetry through latestRx)
+    TetraReceiver& tetra() { return rxTetra_; }   // TETRA network information: the interface reads telemetry through latestRx
+    AleReceiver& ale() { return rxAle_; }   // HF ALE: the receiver's own controls and results (the interface reads telemetry through latestRx)
     P25Receiver& p25() { return rxP25_; }   // P25 Phase 1: sound (the interface reads telemetry through latestRx)
     UplinkReceiver& uplink() { return rxUplink_; }   // Mode S uplink (1030 MHz): telemetry through latestRx
     BleReceiver& ble() { return rxBle_; }   // Bluetooth LE advertising: clear the device table (telemetry through latestRx)
@@ -325,6 +330,7 @@ private:
     DstarReceiver rxDstar_;
     NxdnReceiver rxNxdn_;
     DpmrReceiver rxDpmr_;
+    MacReceiver rxMac_;
     P25Receiver rxP25_;
     GsmrReceiver rxGsmr_;
     PskReceiver rxPsk_;
@@ -336,6 +342,8 @@ private:
     DvbcReceiver rxDvbc_;
     OrbcommReceiver rxOrb_;
     UplinkReceiver rxUplink_;
+    TetraReceiver rxTetra_;
+    AleReceiver rxAle_;
     BleReceiver rxBle_;
     uint64_t modeSeq_[48] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;

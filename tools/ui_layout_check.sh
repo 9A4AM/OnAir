@@ -95,6 +95,8 @@ js8	--mode js8	Overview|JS8Call|Receiver|History
 specx	--mode specx	Overview|Explorer
 specan	--mode specan	Overview|Analyser|Receiver|History
 uplink	--mode uplink	Overview|Uplink|Receiver|History
+ale	--mode ale	Overview|ALE|Receiver|History
+astro	--mode astro	Overview|Astronomy|Receiver|History
 ble	--mode ble	Overview|Devices|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
