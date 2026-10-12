@@ -274,8 +274,10 @@ void applyBandwidth(App& a) {
         if (mt->stdMode == 9) {   // DTMB: the channel width the user picked (6 MHz in Cuba); the test signal follows it
             a.tune.bandwidthMhz = a.dtmbBwMhz; a.tune.basebandFilterHz = a.dtmbBwMhz * 1e6;
             a.tune.synth.modeOpt[7] = a.dtmbBwMhz == 6 ? 1 : 0;
-        } else if (mt->stdMode == 10 && a.atvFm) {   // analog FPV video: a link about 17 MHz wide, the radio's filter at 18 MHz
+        } else if (mt->stdMode == 10 && a.atvFm && !a.atvNbtv) {   // analog FPV video: a link about 17 MHz wide, the radio's filter at 18 MHz
             a.tune.bandwidthMhz = 18; a.tune.sampleRate = 20e6; a.tune.basebandFilterHz = 18e6;
+        } else if (mt->stdMode == 10 && a.atvWide && !a.atvNbtv) {   // system E: a 14 MHz channel
+            a.tune.bandwidthMhz = 14; a.tune.sampleRate = 20e6; a.tune.basebandFilterHz = 16e6;
         } else if (mt->stdMode == 14) {   // GNSS: the rate of the tune (L1 / E1, BeiDou B1I, ...)
             a.tune.sampleRate = gnssAutoRate(a.freqMhz);
             if (a.tune.sampleRate > 2 * mt->basebandHz) a.tune.basebandFilterHz = 0.8 * a.tune.sampleRate;
@@ -356,6 +358,9 @@ void loadPrefs(App& a) {
     if (d.has("dtmbBw")) a.dtmbBwMhz = d.getI("dtmbBw", 8) == 6 ? 6 : 8;
     if (d.has("isdbtBw")) { const int w = (int)d.getI("isdbtBw", 6); a.isdbtBwMhz = w == 0 || w == 7 || w == 8 ? w : 6; }
     if (d.has("atvFm")) a.atvFm = d.getI("atvFm", 0) != 0;
+    if (d.has("atvNbtv")) a.atvNbtv = std::max(0, std::min(2, (int)d.getI("atvNbtv", 0)));
+    if (d.has("atvNbtvLines")) a.atvNbtvLines = std::max(24, std::min(240, (int)d.getI("atvNbtvLines", 32)));
+    if (d.has("atvNbtvFps")) a.atvNbtvFps = std::max(1.f, std::min(60.f, (float)d.getI("atvNbtvFps", 125) / 10.f));
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
     if (d.has("lightUi")) a.lightUi = d.getI("lightUi", 0) != 0;
@@ -428,6 +433,9 @@ void savePrefs(const App& a) {
     d.setI("dtmbBw", a.dtmbBwMhz);
     d.setI("isdbtBw", a.isdbtBwMhz);
     d.setI("atvFm", a.atvFm ? 1 : 0);
+    d.setI("atvNbtv", a.atvNbtv);
+    d.setI("atvNbtvLines", a.atvNbtvLines);
+    d.setI("atvNbtvFps", (int)std::lround(a.atvNbtvFps * 10));
     d.setI("uiVariant", a.uiVariant);
     {   // the stations the FM scan found: mhz|name|type|snr|stereo|rds, one per line
         std::string st;

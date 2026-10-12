@@ -49,13 +49,16 @@ private:
     std::shared_ptr<Fx> fft_;
 };
 
-// ---- FM sound channel: mixer, decimation, discriminator, de-emphasis, 48 kHz out (mono)
+// ---- sound channel: mixer, decimation, discriminator (FM) or envelope (AM: systems A, C, E, L), de-emphasis, 48 kHz out (mono)
 class AtvSound {
 public:
     void configure(double fs);
     void reset();
     void setCarrier(double hz) { carrier_ = hz; }              // from the centre of the input
     void setSystem(double devKhz, double preEmphUs);
+    // AM sound: the envelope of the carrier, `depth` = the modulation depth that is full scale; no de-emphasis. false: FM (the default)
+    void setAm(bool on, double depth = 0.8);
+    bool am() const { return am_; }
     // consumes n samples (DC removed); appends audio at 48 kHz to `out`
     void process(const cf32* x, size_t n, std::vector<float>& out);
     bool present() const { return present_; }
@@ -66,7 +69,8 @@ private:
     struct Impl;
     std::shared_ptr<Impl> p_;
     double fs_ = 0, carrier_ = 0, trim_ = 0;
-    bool present_ = false;
+    bool present_ = false, am_ = false;
+    double amDepth_ = 0.8;
     float devKhz_ = 0, levelDb_ = -120;
 };
 
@@ -81,8 +85,10 @@ public:
     void reset();
     void setCarrier(double hz);                         // vision carrier, from the centre of the input
     double carrierHz() const { return carrier_ + trim_; }
-    // the channel plan: sound carrier spacing (MHz) sets the upper edge of the video band; the vestigial sideband width sets the low-frequency correction
-    void setPlan(double soundSpacingMhz);
+    // the channel plan: sound carrier spacing (MHz) sets the upper edge of the video band; the vestigial sideband width sets the low-frequency
+    // correction (0: by the spacing, 1.25 MHz for 6.0 MHz sound, 0.75 otherwise). A spacing above 8 MHz (system E, 10 MHz of video) keeps the
+    // full input rate for the video when it is below 22 Msps: videoRate() changes, the picture decoder has to be configured again.
+    void setPlan(double soundSpacingMhz, double vestigialMhz = 0);
     void setSyncDetector(bool on) { syncDet_ = on; }
     bool syncDetector() const { return syncDet_; }
     // double sideband correction amount (1 = a flat vestigial region, 0 = the transmitter already has the Nyquist slope)
@@ -104,7 +110,8 @@ private:
     double fs_ = 0, fv_ = 0;
     bool ready_ = false, syncDet_ = false;
     double carrier_ = -2.75e6, trim_ = 0, trimRate_ = 0;
-    double spacing_ = 5.5, upMhz_ = 5.0, vsbMhz_ = 0.75, centreHz_ = 0, nGain_ = 1;
+    double spacing_ = 5.5, upMhz_ = 5.0, vsbMhz_ = 0.75, vsbAsk_ = 0, centreHz_ = 0, nGain_ = 1;
+    bool wide_ = false;
     float dsbAmt_ = 1.f;
     int decim_ = 1;
     double ph1_ = 0;                                    // mixer 1 phase (radians)

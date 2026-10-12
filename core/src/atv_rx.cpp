@@ -7,6 +7,7 @@
 #include "atv_front.h"
 #include "atv_fm.h"
 #include "atv_video.h"
+#include "dect2/atv_nbtv.h"
 #include "dect2/audioout.h"
 #include <algorithm>
 #include <atomic>
@@ -33,7 +34,15 @@ struct AtvReceiver::Impl {
     AtvVideo video;
     AtvSound sound;
     AtvFmDemod fm;                      // FM video (FPV): the frequency of the carrier is the picture
-    std::atomic<int> modulation{0};     // 0 AM, 1 FM, as asked for (setModulation)
+    std::atomic<int> modulation{0};     // 0 AM, 1 FM, 2 NBTV on AM, 3 NBTV on FM, as asked for (setModulation)
+    // NBTV and mechanical television: the video is the audio of an AM or narrow FM signal at the centre of the input
+    AtvNbtvRadio nbtv;
+    std::mutex nbtvMu;
+    NbtvFormat nbtvAsk;                 // what setNbtv asked for (under nbtvMu)
+    double nbtvDevAsk = 5000;
+    std::atomic<bool> nbtvDirty{false};
+    NbtvFormat nbtvFmt;
+    double nbtvDev = 5000;
     int active = 0;                     // the one the receiver is set up for
     bool fmSyncLow = true;
     uint64_t fmFlipAt = 0;
@@ -84,6 +93,7 @@ struct AtvReceiver::Impl {
         front.configure(rate);
         sound.configure(rate);
         video.configure(front.videoRate(), front.colourCapable());
+        videoRateNow = front.videoRate();
         video.setNoiseScale(front.noiseGain() * rate / 5e6);
         video.carrierError = [this](double rad, double trust) { front.carrierError(rad, trust); };
         video.log = [this](const std::string& s) { log(s); };
@@ -103,10 +113,24 @@ struct AtvReceiver::Impl {
     }
 
     // AM and FM share the picture decoder; it takes the video rate of the radio side in use
+    void startNbtv() {
+        {
+            std::lock_guard<std::mutex> lk(nbtvMu);
+            nbtvFmt = nbtvAsk; nbtvDev = nbtvDevAsk;
+        }
+        nbtv.configure(fs, nbtvFmt, active == 3, nbtvDev);
+        nbtv.decoder().frameReady = [this](std::shared_ptr<const AtvFrame> f) { std::lock_guard<std::mutex> lk(mu); latest = std::move(f); };
+        nbtv.decoder().log = [this](const std::string& s) { log(s); };
+        char b[160];
+        snprintf(b, sizeof b, "analog TV: %s from %s, audio at %.1f kHz", nbtvFmt.name().c_str(), active == 3 ? "narrow FM" : "AM", nbtv.audioRate() / 1e3);
+        log(b);
+    }
+
     void switchModulation(int m) {
         if (!ready) return;
         active = m;
-        if (m == 1) {
+        if (m >= 2) startNbtv();
+        else if (m == 1) {
             if (fs < 15.9e6) log("analog TV, FM video: a link is about 17 MHz wide, this input rate is too low (use 20 Msps)");
             fm.configure(fs);
             video.configure(fm.videoRate(), fm.videoRate() >= 9.5e6);
@@ -115,6 +139,7 @@ struct AtvReceiver::Impl {
             applyPrm();
         } else {
             video.configure(front.videoRate(), front.colourCapable());
+            videoRateNow = front.videoRate();
             video.setNoiseScale(front.noiseGain() * fs / 5e6);
             video.setFmVideo(false);
             applyPrm();
@@ -122,12 +147,26 @@ struct AtvReceiver::Impl {
         resetAll();
     }
 
+    // System E needs the full input rate for its 10 MHz of video: the vision channel's output rate follows the plan, the decoder follows it
+    double videoRateNow = 0;
+    void syncVideoRate() {
+        if (active != 0 || front.videoRate() == videoRateNow) return;
+        videoRateNow = front.videoRate();
+        video.configure(front.videoRate(), front.colourCapable());
+        video.setFmVideo(false);
+        applyPrm();
+    }
+
+    // the vestigial sideband that goes with a sound spacing: 1.25 MHz with 6.0 MHz sound (I), 2 MHz with 11.15 (E), 0.75 otherwise
+    static double vsbFor(double spacing) { return spacing > 5.8 && spacing < 6.1 ? 1.25 : spacing > 8 ? 2.0 : 0; }
+
     void resetAll() {
         if (!ready) return;
         search.setMonitor(false);
         searchInv.reset(); inverted = false;
         front.reset();
         front.setPlan(5.5);
+        syncVideoRate();
         video.setNoiseScale(front.noiseGain() * fs / 5e6);
         pending.clear();
         video.reset();
@@ -145,6 +184,7 @@ struct AtvReceiver::Impl {
             latest.reset();
         }
         if (active == 1) startFm();
+        if (active >= 2) { nbtv.reset(); search.setMonitor(true); mode = kRun; }
     }
 
     void startFm() {
@@ -153,6 +193,16 @@ struct AtvReceiver::Impl {
         search.setMonitor(true);          // the spectrum for the display
         video.setSoundSpacing(0);
         mode = kTrial; trialAt = nIn; lostAt = 0; fmFlipAt = nIn;
+    }
+
+    static bool isAmSpacing(double s) { return (s > 3.4 && s < 3.6) || s > 8; }
+
+    // The video band follows the sound spacing, except for SECAM chosen on M or N: its subcarriers reach 4.756 MHz, above the 4.5 MHz of
+    // their sound carrier (which such a signal cannot have): the band of the 5.5 MHz plan then
+    double planSpacing(double spacing) const {
+        const bool secamNarrow = prm.forceColour == kAtvSecam && (prm.forceSys == kAtvM || prm.forceSys == kAtvN || (prm.forceSys < 0 && spacing > 0 && spacing < 5));
+        if (secamNarrow) return 5.5;
+        return spacing > 0 ? spacing : 5.5;
     }
 
     bool isBad(double hz) const {
@@ -198,8 +248,9 @@ struct AtvReceiver::Impl {
     }
     void startCarrier(const AtvCarrier& c, bool weak = false) {
         carrier = c; haveCarrier = true; trialWeak = weak;
+        front.setPlan(planSpacing(c.spacingMhz), vsbFor(c.spacingMhz));
+        syncVideoRate();
         video.setSlicerWidth(weak ? 2.4 : 1.0);
-        front.setPlan(c.spacingMhz > 0 ? c.spacingMhz : 5.5);
         video.setNoiseScale(front.noiseGain() * fs / 5e6);
         search.setMonitor(true);
         front.setCarrier(c.visionHz);
@@ -208,9 +259,12 @@ struct AtvReceiver::Impl {
         video.syncDetectorChanged(false);
         video.reset();
         video.setSoundSpacing(c.spacingMhz);
+        video.setMirrored(inverted);
         soundOff = c.spacingMhz > 0 ? c.spacingMhz * 1e6 : 5.5e6;
         sound.reset();
         sound.setSystem(c.spacingMhz > 0 && c.spacingMhz < 5 ? 25 : 50, c.spacingMhz > 0 && c.spacingMhz < 5 ? 75 : 50);
+        // AM sound with 3.5 MHz (A) and 11.15 MHz (E) spacing; with the others once the picture says the modulation is positive (C, L)
+        sound.setAm(isAmSpacing(c.spacingMhz));
         mode = kTrial; trialAt = nIn; lostAt = 0; goneN = 0; afcHave = false; haveRef = false;
         char b[200];
         snprintf(b, sizeof b, "analog TV: vision carrier at %+.3f MHz (%.0f dB above its surroundings)%s", c.visionHz / 1e6, c.visionDb, c.spacingMhz > 0 ? ", sound carrier found" : "");
@@ -221,9 +275,13 @@ struct AtvReceiver::Impl {
         if (!ready) return;
         {
             std::lock_guard<std::mutex> lk(prmMu);
-            if (prmDirty.exchange(false)) { prm = prmNew; applyPrm(); }
+            if (prmDirty.exchange(false)) {
+                prm = prmNew; applyPrm();
+                if (haveCarrier && active == 0) { front.setPlan(planSpacing(carrier.spacingMhz), vsbFor(carrier.spacingMhz)); syncVideoRate(); }
+            }
         }
         if (modulation.load() != active) switchModulation(modulation.load());
+        else if (active >= 2 && nbtvDirty.exchange(false)) { startNbtv(); resetAll(); }
         // a NaN or infinite sample (a broken file) would stay for good in the DC estimate and the loops: such samples count as silence
         for (size_t k = 0; k < n; k++) {
             if (std::isfinite(x[k].real() + x[k].imag())) continue;
@@ -301,7 +359,17 @@ struct AtvReceiver::Impl {
         if (nIn - lastTelAt >= (uint64_t)(fs * 0.25)) { lastTelAt = nIn; publish(); }
     }
 
+    // NBTV: demodulate the carrier at the centre, the picture decoder works on the audio
+    void blockNbtv(const cf32* x, size_t m) {
+        // no DC removal: the carrier sits at the centre, where the radio's own DC is (a carrier stronger than that spike is needed)
+        nIn += m;
+        search.feed(x, m);
+        nbtv.process(x, m);
+        if (nIn - lastTelAt >= (uint64_t)(fs * 0.25)) { lastTelAt = nIn; publish(); }
+    }
+
     void block(const cf32* x, size_t m) {
+        if (active >= 2) { blockNbtv(x, m); return; }
         if (active == 1) { blockFm(x, m); return; }
         removeDc(x, m);
         nIn += m;
@@ -337,7 +405,11 @@ struct AtvReceiver::Impl {
         // the detector: synchronous once the carrier loop is locked (and the user did not ask for the envelope)
         const bool want = detMode.load() == 0 && video.wantSyncDetector();
         if (want != syncOn) { syncOn = want; front.setSyncDetector(want); video.syncDetectorChanged(want); }
-        // sound
+        // sound: AM with the positive-modulation systems
+        {
+            const bool am = isAmSpacing(carrier.spacingMhz) || (video.lineLocked() && video.positive());
+            if (am != sound.am()) sound.setAm(am);
+        }
         sound.setCarrier(front.carrierHz() + soundOff);
         audioBuf.clear();
         sound.process(xd.data(), m, audioBuf);
@@ -388,7 +460,27 @@ struct AtvReceiver::Impl {
         audio->write(inter.data(), frames);
     }
 
+    void publishNbtv() {
+        AtvTelemetry t;
+        const NbtvStatus s = nbtv.decoder().status();
+        t.system = nbtvFmt.name(); t.colourSystem = "mono"; t.lines = nbtvFmt.lines;
+        t.lineHz = s.lineHz; t.lineErrPpm = s.lineErrPpm; t.fieldHz = s.lineHz / nbtvFmt.lines;
+        t.syncQuality = s.syncQuality; t.lineCount = s.lines; t.frameCount = s.frames; t.fieldCount = s.frames;
+        t.snrDb = s.snrDb; t.lineWave = s.lineWave;
+        t.carrierDbfs = nbtv.carrierDbfs();
+        t.state = s.frameLocked ? 2 : s.lineLocked ? 1 : 0;
+        t.dataValid = t.state == 2;
+        t.blocksOk = s.frames;
+        t.modulation = active;
+        t.specLoMhz = -fs / 2e6 * 0.9; t.specHiMhz = fs / 2e6 * 0.9;
+        search.display(0, t.specLoMhz, t.specHiMhz, 170, t.specDb);
+        std::lock_guard<std::mutex> lk(mu);
+        t.seq = ++telSeq;
+        tel = std::move(t);
+    }
+
     void publish() {
+        if (active >= 2) { publishNbtv(); return; }
         AtvTelemetry t;
         const AtvVideo::Info vi = video.info();
         t.system = vi.system; t.colourSystem = vi.colourSystem; t.lines = vi.lines;
@@ -404,9 +496,14 @@ struct AtvReceiver::Impl {
         t.lineWave = vi.lineWave; t.vbiWave = vi.vbiWave;
         t.soundPresent = sound.present(); t.soundDevKhz = sound.devKhz(); t.soundLevelDb = sound.levelDb();
         if (haveCarrier) {
-            t.visionHz = front.carrierHz();
-            t.soundSpacingMhz = carrier.spacingMhz;
-            t.soundHz = carrier.spacingMhz > 0 ? t.visionHz + carrier.spacingMhz * 1e6 + sound.trimHz() : 0;
+            const AtvFormat vf = video.format();
+            // the systems added with positive modulation (A, C, E, L, L') and H, K': the channel layout of the system that was found
+            const bool newSys = !vi.system.empty() && vf.sys >= kAtvA;
+            // a channel that is turned round by nature (A, L') is read in the mirrored spectrum: the carriers are reported where they are
+            const bool turned = newSys && vf.mirrored && inverted;
+            t.visionHz = turned ? -front.carrierHz() : front.carrierHz();
+            t.soundSpacingMhz = turned ? -carrier.spacingMhz : carrier.spacingMhz;
+            t.soundHz = carrier.spacingMhz > 0 ? (turned ? -(front.carrierHz() + carrier.spacingMhz * 1e6 + sound.trimHz()) : t.visionHz + carrier.spacingMhz * 1e6 + sound.trimHz()) : 0;
             t.carrierDbfs = vi.carrierLevel > 0 ? (float)(20 * std::log10(vi.carrierLevel)) : -120.f;
             t.carrierToNoiseDb = vi.carrierToNoiseDb;
             // The offset from where the standard puts the carrier in the channel (vision carrier 1.25 MHz above the channel's lower edge: -2.75,
@@ -421,8 +518,9 @@ struct AtvReceiver::Impl {
                 const int w = chanWidthMhz.load();
                 best = w == 7 ? kLay[1] : w == 6 ? kLay[2] : kLay[0];
             }
+            if (newSys) best = atvVisionOffsetHz(vf);
             t.cfoHz = t.visionHz - best;
-            search.display(t.visionHz, t.specLoMhz, t.specHiMhz, 170, t.specDb);
+            search.display(front.carrierHz(), t.specLoMhz, t.specHiMhz, 170, t.specDb);
         }
         t.modulation = active; t.fmSyncLow = fmSyncLow;
         if (active == 1) {   // no carrier: the spectrum of the whole input
@@ -472,7 +570,16 @@ void AtvReceiver::setColour(bool on) { auto p = p_->curPrm(); p.colourOn = on; p
 void AtvReceiver::setSaturation(float s) { auto p = p_->curPrm(); p.saturation = s; p_->setPrm(p); }
 void AtvReceiver::setHue(float d) { auto p = p_->curPrm(); p.hueDeg = d; p_->setPrm(p); }
 void AtvReceiver::setDetector(int mode) { p_->detMode = mode; }
-void AtvReceiver::setModulation(int mode) { p_->modulation = mode == 1 ? 1 : 0; }
+void AtvReceiver::setModulation(int mode) { p_->modulation = mode >= 0 && mode <= 3 ? mode : 0; }
+void AtvReceiver::setNbtv(int lines, double frameHz, double devKhz, bool vertical) {
+    NbtvFormat f = lines == 32 && frameHz == 12.5 ? nbtvStandard() : nbtvMechanical(lines, frameHz);
+    f.vertical = vertical;
+    {
+        std::lock_guard<std::mutex> lk(p_->nbtvMu);
+        p_->nbtvAsk = f; p_->nbtvDevAsk = devKhz > 0 ? devKhz * 1e3 : 5000;
+    }
+    p_->nbtvDirty = true;
+}
 void AtvReceiver::setChannelWidth(int mhz) { p_->chanWidthMhz = mhz; }
 
 ModeTuning atvTuning() {

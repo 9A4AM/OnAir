@@ -6,6 +6,7 @@
 //   + FM sound carrier made at the output rate, ghost, noise.
 #include "dect2/atv_gen.h"
 #include "dect2/atv_card.h"
+#include "dect2/atv_nbtv.h"
 #include "atv_dsp.h"
 #include "dect2/dsp_compat.h"
 #include <algorithm>
@@ -16,7 +17,7 @@ namespace dect2 {
 
 namespace {
 using namespace atvdsp;
-constexpr double kFi = AtvGenerator::kInternalRate;
+constexpr double kFi0 = AtvGenerator::kInternalRate;     // the internal rate of every system but E (which needs twice that: 10 MHz video)
 constexpr int kVsbTaps = 57;
 constexpr int kKernTaps = 12, kKernPhases = 512;
 constexpr int kSecamNb = 256, kSecamPad = 16, kSecamGTaps = 33;    // SECAM chrominance is made at 4 Msps (256 samples a line), around 4.286 MHz
@@ -68,6 +69,7 @@ struct AtvGenerator::Impl {
     AtvGenConfig cfg;
     AtvFormat fmt;
     bool ok = false;
+    double kFi = kFi0;               // internal rate: 12 Msps, 24 Msps for system E
     std::unique_ptr<AtvCard> card;
     std::function<void(const float*, size_t)> tap;
 
@@ -115,7 +117,7 @@ struct AtvGenerator::Impl {
     // sound, ghost, noise
     Programme prog;
     double sndPh = 0;                                // the sound carrier phase, radians (a running sum, reduced only where it is used)
-    std::vector<float> sPh;
+    std::vector<float> sPh, sAm;
     std::vector<double> sPhD;
     uint64_t audioBlock = ~0ull;
     double audioA0 = 0, audioA1 = 0, audioDt = 0;
@@ -129,8 +131,17 @@ struct AtvGenerator::Impl {
         if (c.rate < 1e6 || c.rate > 64e6) return;
         if (!c.setup && fmt.setup > 0) fmt.setup = 0;
         if (!c.groupDelay) fmt.chromaDelayNs = 0;
-        // exact line length in internal samples: 64 us * 12 MHz = 768, 286 / 4.5 MHz * 12 MHz = 2288 / 3
-        if (fmt.lines == 625) { hNum = 768; hDen = 1; } else { hNum = 2288; hDen = 3; }
+        if (fmt.sys == kAtvE) kFi = 2 * kFi0;
+        // exact line length in internal samples: 64 us * 12 MHz = 768, 286 / 4.5 MHz * 12 MHz = 2288 / 3; 405 and 819 lines (25 lines a
+        // field pair, 50 Hz): kFi / (25 lines) reduced
+        if (fmt.lines == 625) { hNum = 768; hDen = 1; }
+        else if (fmt.lines == 525) { hNum = 2288; hDen = 3; }
+        else {
+            int64_t num = (int64_t)std::llround(kFi), den = 25 * (int64_t)fmt.lines;
+            int64_t a0 = num, b0 = den;
+            while (b0) { const int64_t t = a0 % b0; a0 = b0; b0 = t; }
+            hNum = num / a0; hDen = den / a0;
+        }
         card = std::make_unique<AtvCard>(fmt, c.pattern);
         picTab.assign((size_t)hDen, PicTab());
         for (int f = 0; f < 2; f++) {
@@ -147,9 +158,11 @@ struct AtvGenerator::Impl {
     }
 
     void designVsb() {
-        const double bv = std::min(fmt.videoBwMhz, 5.4) * 1e6, ro = 0.5e6, vs = fmt.vestigialMhz * 1e6;
+        const double bv = std::min(fmt.videoBwMhz, 0.45 * kFi / 1e6) * 1e6, ro = 0.5e6, vs = fmt.vestigialMhz * 1e6;
         const bool nyq = cfg.nyquistTx;
+        const bool mir = fmt.mirrored;                  // A and L': the main sideband below the carrier
         auto resp = [&](double f) -> std::complex<double> {
+            if (mir) f = -f;
             const double af = std::fabs(f);
             double lp = 1;
             if (af > bv) lp = af >= bv + ro ? 0 : std::pow(std::cos(kPi / 2 * (af - bv) / ro), 2);
@@ -507,11 +520,22 @@ struct AtvGenerator::Impl {
         const float vLo = sL * 1.2f, kAmp = m / (1.f - sL), omc = 1.f - comp;
         float* aOut = &a[base];
         const float* lv = lineV.data();
-        for (int j = 0; j < count; j++) {
-            float v = lv[j];
-            if (v < 0) v *= omc;
-            v = std::min(std::max(v, vLo), 1.3f);
-            aOut[j] = lvl * (1.f - kAmp * (v - sL));
+        if (F.positive) {
+            // positive modulation: sync tip at syncPct, blanking at blankPct, peak white at 100 % of the carrier
+            const float s0 = (float)(F.syncPct / 100.0), kp = (1.f - s0) / (1.f - sL);
+            for (int j = 0; j < count; j++) {
+                float v = lv[j];
+                if (v < 0) v *= omc;
+                v = std::min(std::max(v, sL), 1.3f);
+                aOut[j] = lvl * (s0 + kp * (v - sL));
+            }
+        } else {
+            for (int j = 0; j < count; j++) {
+                float v = lv[j];
+                if (v < 0) v *= omc;
+                v = std::min(std::max(v, vLo), 1.3f);
+                aOut[j] = lvl * (1.f - kAmp * (v - sL));
+            }
         }
         if (hum != 0) {
             // the mains hum: a sine of the line count, by rotation (one sine and cosine a line)
@@ -594,6 +618,34 @@ struct AtvGenerator::Impl {
         constexpr uint64_t B = 32;
         sPh.resize(n); sPhD.resize(n);
         double ph = sndPh;
+        if (fmt.amSound) {
+            // AM sound (A, C, E, L): the carrier's amplitude follows the programme (half of it is half of the full depth), no pre-emphasis
+            sAm.resize(n);
+            size_t i = 0;
+            while (i < n) {
+                const uint64_t k = k0 + i, kb = k / B;
+                if (kb != audioBlock || audioDt != dt) {
+                    if (kb == audioBlock + 1 && audioDt == dt) audioA0 = audioA1; else audioA0 = prog.at((double)(kb * B) * dt);
+                    audioA1 = prog.at((double)((kb + 1) * B) * dt);
+                    audioBlock = kb; audioDt = dt;
+                }
+                const size_t m0 = (size_t)(k % B), cnt = std::min<size_t>(n - i, (size_t)B - m0);
+                const double slope = (audioA1 - audioA0) / (double)B;
+                for (size_t q = 0; q < cnt; q++) { ph += w0; sPhD[i + q] = ph; sAm[i + q] = (float)(1.0 + fmt.amDepth * (audioA0 + slope * (double)(m0 + q))); }
+                i += cnt;
+            }
+            for (size_t q = 0; q < n; q++) sPh[q] = (float)(sPhD[q] - 2 * kPi * std::nearbyint(sPhD[q] * (0.5 / kPi)));
+            sndPh = ph;
+            const bool carrierOnly = cfg.sound == 2;
+            for (size_t q = 0; q < n; q++) {
+                const float x = sPh[q];
+                float y = x + 1.5707963f;
+                if (y > 3.1415927f) y -= 6.2831855f;
+                const float e = amp * (carrierOnly ? 1.f : sAm[q]);
+                out[q] += cf32(sinPi(y) * e, sinPi(x) * e);
+            }
+            return;
+        }
         size_t i = 0;
         while (i < n) {
             const uint64_t k = k0 + i, kb = k / B;
@@ -673,7 +725,7 @@ void AtvGenerator::generate(cf32* out, size_t n) { if (p_->ok) p_->generate(out,
 void AtvGenerator::generate(size_t n, std::vector<cf32>& out) { const size_t o = out.size(); out.resize(o + n); generate(out.data() + o, n); }
 void AtvGenerator::setCompositeTap(std::function<void(const float*, size_t)> tap) { p_->tap = std::move(tap); }
 const AtvCard& AtvGenerator::card() const { return *p_->card; }
-double AtvGenerator::timeSec() const { return p_->cfg.startSec + p_->pos / kFi; }
+double AtvGenerator::timeSec() const { return p_->cfg.startSec + p_->pos / p_->kFi; }
 
 bool AtvGenerator::update(const AtvGenConfig& c) {
     Impl& s = *p_;
@@ -698,12 +750,12 @@ public:
         return gen_.update(c);
     }
     static bool fromSynth(const SynthConfig& s, double rate, AtvGenConfig& c) {
-        static const int kSys[6] = {kAtvG, kAtvB, kAtvI, kAtvDK, kAtvM, kAtvN};
+        static const int kSys[13] = {kAtvG, kAtvB, kAtvI, kAtvDK, kAtvM, kAtvN, kAtvA, kAtvC, kAtvE, kAtvH, kAtvKp, kAtvL, kAtvLp};
         const int so = s.modeOpt[0];
-        if (so < 0 || so > 5) return false;
+        if (so < 0 || so > 12) return false;
         c.sys = kSys[so];
         const int co = s.modeOpt[1];
-        c.colour = co == 0 ? (c.sys == kAtvM ? kAtvNtsc : kAtvPal) : co == 1 ? kAtvPal : co == 2 ? kAtvNtsc : co == 3 ? kAtvSecam : kAtvMono;
+        c.colour = co == 0 ? atvDefaultColour(c.sys) : co == 1 ? kAtvPal : co == 2 ? kAtvNtsc : co == 3 ? kAtvSecam : kAtvMono;
         c.rate = rate;
         c.cnrDb = s.snrDb;
         c.cfoHz = s.cfoHz;
@@ -727,7 +779,39 @@ private:
 };
 } // namespace
 
+namespace {
+// NBTV / mechanical television on an AM or narrow FM carrier at the centre (system options 13 and 14)
+class NbtvSynth : public ModeSynth {
+public:
+    explicit NbtvSynth(const NbtvRfConfig& c) : c_(c), gen_(c) {}
+    double sampleRate() const override { return c_.rate; }
+    void generate(cf32* out, size_t n) override { gen_.generate(out, n); }
+    bool configure(const SynthConfig& s) override {
+        NbtvRfConfig c;
+        if (!fromSynth(s, c_.rate, c)) return false;
+        return c.fm == c_.fm && c.fmt.lines == c_.fmt.lines && c.fmt.frameHz == c_.fmt.frameHz && c.pattern == c_.pattern && c.cfoHz == c_.cfoHz && c.cnrDb == c_.cnrDb;
+    }
+    static bool fromSynth(const SynthConfig& s, double rate, NbtvRfConfig& c) {
+        if (s.modeOpt[0] != 13 && s.modeOpt[0] != 14) return false;
+        c.fm = s.modeOpt[0] == 14;
+        const int lines = s.modeOpt[1] > 0 ? s.modeOpt[1] : 32;
+        const double fps = s.modeVal[0] > 0 ? s.modeVal[0] : 12.5;
+        c.fmt = lines == 32 && fps == 12.5 ? nbtvStandard() : nbtvMechanical(lines, fps);
+        if (!c.fmt.valid()) return false;
+        c.rate = rate; c.cfoHz = s.cfoHz; c.cnrDb = s.snrDb; c.pattern = std::min(2, std::max(0, s.modeOpt[2]));
+        return true;
+    }
+private:
+    NbtvRfConfig c_;
+    AtvNbtvRfGen gen_;
+};
+} // namespace
+
 std::unique_ptr<ModeSynth> makeAtvSynth(const SynthConfig& cfg, double sampleRate) {
+    {
+        NbtvRfConfig n;
+        if (NbtvSynth::fromSynth(cfg, sampleRate, n)) return std::make_unique<NbtvSynth>(n);
+    }
     AtvGenConfig c;
     if (!AtvSynth::fromSynth(cfg, sampleRate, c)) return nullptr;
     auto s = std::make_unique<AtvSynth>(c);

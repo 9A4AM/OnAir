@@ -18,7 +18,8 @@ struct State {
     bool colourOn = true;
     float saturation = 1.f, hue = 0.f;
     int detector = 0;                           // 0 automatic, 1 envelope only
-    int pushedDeint = -1, pushedSys = -2, pushedCol = -2, pushedDet = -1, pushedMod = -1;
+    int pushedDeint = -1, pushedSys = -2, pushedCol = -2, pushedDet = -1, pushedMod = -1, pushedLines = -1;
+    float pushedFps = -1.f;
     bool pushedColourOn = true;
     float pushedSat = -1.f, pushedHue = -999.f;
     float pushedVol = -1.f;
@@ -38,7 +39,8 @@ void loadState() {
 const ImVec4 kDim(0.62f, 0.65f, 0.68f, 1);
 
 // name and colour system hints, in the order of AtvSys and AtvColourKind
-const char* const kSysNames[] = {"B (7 MHz)", "G (8 MHz)", "I", "D/K", "M", "N"};
+const char* const kSysNames[] = {"B (7 MHz)", "G (8 MHz)", "I", "D/K", "M", "N", "A (405 lines)", "C", "E (819 lines)", "H", "K'", "L", "L' (band I)"};
+static_assert(sizeof(kSysNames) / sizeof(kSysNames[0]) == kAtvSysCount, "a name for every system");
 const char* const kColNames[] = {"mono", "PAL", "NTSC", "SECAM"};
 
 void pushControls(App& a) {
@@ -49,7 +51,8 @@ void pushControls(App& a) {
     if (S.pushedSat != S.saturation) { rx.setSaturation(S.saturation); S.pushedSat = S.saturation; }
     if (S.pushedHue != S.hue) { rx.setHue(S.hue); S.pushedHue = S.hue; }
     if (S.pushedDet != S.detector) { rx.setDetector(S.detector); S.pushedDet = S.detector; }
-    const int mod = a.atvFm ? 1 : 0;
+    if (S.pushedLines != a.atvNbtvLines || S.pushedFps != a.atvNbtvFps) { rx.setNbtv(a.atvNbtvLines, a.atvNbtvFps); S.pushedLines = a.atvNbtvLines; S.pushedFps = a.atvNbtvFps; }
+    const int mod = a.atvNbtv ? 1 + a.atvNbtv : a.atvFm ? 1 : 0;
     if (S.pushedMod != mod) { rx.setModulation(mod); S.pushedMod = mod; }
 }
 
@@ -60,6 +63,7 @@ void tick(App& a) {
     if (run) {
         if (!S.wasRunning) {   // a new run: send everything again
             S.pushedDeint = -1; S.pushedSys = -2; S.pushedCol = -2; S.pushedDet = -1; S.pushedMod = -1; S.pushedSat = -1.f; S.pushedHue = -999.f; S.pushedVol = -1.f;
+            S.pushedLines = -1; S.pushedFps = -1.f;
             S.pushedColourOn = !S.colourOn;
         }
         pushControls(a);
@@ -430,17 +434,37 @@ void tuner(App& a, bool&) {
     loadState();
     ImGui::TextDisabled("Modulation"); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(fit(130));
-    if (ImGui::BeginCombo("##atvmod", a.atvFm ? "FM video (FPV)" : "AM (broadcast)")) {
+    static const char* const kModNames[] = {"AM (broadcast)", "FM video (FPV)", "NBTV / mechanical, AM", "NBTV / mechanical, FM"};
+    const int curMod = a.atvNbtv ? 1 + a.atvNbtv : a.atvFm ? 1 : 0;
+    if (ImGui::BeginCombo("##atvmod", kModNames[curMod])) {
         bool chg = false;
-        if (ImGui::Selectable("AM (broadcast)", !a.atvFm) && a.atvFm) { a.atvFm = false; chg = true; }
-        if (ImGui::Selectable("FM video (FPV)", a.atvFm) && !a.atvFm) { a.atvFm = true; chg = true; }
+        for (int m = 0; m < 4; m++)
+            if (ImGui::Selectable(kModNames[m], curMod == m) && curMod != m) {
+                a.atvFm = m == 1; a.atvNbtv = m >= 2 ? m - 1 : 0; chg = true;
+            }
         ImGui::EndCombo();
         if (chg) {   // the radio runs at another rate: open it again
             savePrefs(a);
             if (a.engine.running()) startReceiver(a); else applyBandwidth(a);
         }
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("AM: broadcast TV, a vision carrier with a sound carrier (PAL, SECAM, NTSC).\nFM video: analog FPV and video links (5.8 GHz, 1.2 GHz): the picture is the frequency of the carrier.\nNeeds 20 Msps, 17 MHz of the radio's band; the polarity is found by itself. The sound is not decoded yet.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("AM: broadcast TV, a vision carrier with a sound carrier (PAL, SECAM, NTSC), negative or positive modulation.\nFM video: analog FPV and video links (5.8 GHz, 1.2 GHz): the picture is the frequency of the carrier.\nNeeds 20 Msps, 17 MHz of the radio's band; the polarity is found by itself. The sound is not decoded yet.\nNBTV / mechanical: Narrow Bandwidth Television (32 lines, 12.5 pictures a second) or another mechanical line count,\nsent as the audio of an AM or narrow FM transmitter: tune the transmitter to the centre (within 50 kHz).");
+    if (a.atvNbtv) {
+        nextIf(240);
+        ImGui::TextDisabled("Lines"); ImGui::SameLine(0, 5 * gUi);
+        ImGui::SetNextItemWidth(fit(90));
+        int ln = a.atvNbtvLines;
+        if (ImGui::SliderInt("##nbtvlines", &ln, 24, 240)) { a.atvNbtvLines = ln; savePrefs(a); }
+        nextIf(200);
+        ImGui::TextDisabled("Pictures/s"); ImGui::SameLine(0, 5 * gUi);
+        ImGui::SetNextItemWidth(fit(90));
+        float fp = a.atvNbtvFps;
+        if (ImGui::SliderFloat("##nbtvfps", &fp, 1.f, 30.f, "%.2f")) { a.atvNbtvFps = fp; savePrefs(a); }
+        nextIf(120);
+        if (ImGui::Button("NBTV 32")) { a.atvNbtvLines = 32; a.atvNbtvFps = 12.5f; savePrefs(a); }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The NBTV Association's standard: 32 lines, 12.5 pictures a second, vertical scan, 2:3.");
+        return;
+    }
     nextIf(240);
     ImGui::TextDisabled("System"); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(fit(84));
@@ -448,8 +472,13 @@ void tuner(App& a, bool&) {
         if (ImGui::Selectable("automatic", S.sysHint < 0)) S.sysHint = -1;
         for (int i = 0; i < kAtvSysCount; i++) if (ImGui::Selectable(kSysNames[i], S.sysHint == i)) S.sysHint = i;
         ImGui::EndCombo();
+        const bool wide = S.sysHint == kAtvE;
+        if (wide != a.atvWide) {   // system E: 20 Msps for its 14 MHz channel
+            a.atvWide = wide;
+            if (a.engine.running()) startReceiver(a); else applyBandwidth(a);
+        }
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The television system: it sets the line count, the sound spacing and the channel layout.\nAutomatic finds it from the line rate and the sound carrier.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The television system: it sets the line count, the polarity, the sound spacing and the channel layout.\nAutomatic finds it from the line rate, the polarity (negative, or positive as in A, C, E and L) and the sound carrier.\nH and K' (wider vestigial sideband than B/G and D/K) are found only when chosen. E needs 20 Msps.");
     nextIf(240);
     ImGui::TextDisabled("Colour"); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(fit(84));
@@ -489,10 +518,17 @@ void synth(App& a, bool& changed) {
         }
     };
     ImGui::TextDisabled("system"); ImGui::SameLine(0, 5 * gUi);
-    combo("##tsys", sc.modeOpt[0], {"B/G", "B (7 MHz)", "I", "D/K", "M", "N"}, 90);
+    combo("##tsys", sc.modeOpt[0], {"B/G", "B (7 MHz)", "I", "D/K", "M", "N", "A (405)", "C", "E (819)", "H", "K'", "L", "L'", "NBTV, AM", "NBTV, FM"}, 90);
+    if (sc.modeOpt[0] >= 13) {   // NBTV: the line count of the test signal (0 = 32) instead of the colour
+        nextIf(180);
+        ImGui::TextDisabled("lines"); ImGui::SameLine(0, 5 * gUi); ImGui::SetNextItemWidth(90 * gUi);
+        int ln = sc.modeOpt[1] > 0 ? sc.modeOpt[1] : 32;
+        if (ImGui::SliderInt("##tnl", &ln, 24, 240)) { sc.modeOpt[1] = ln == 32 ? 0 : ln; changed = true; }
+    } else {
     nextIf(180);
     ImGui::TextDisabled("colour"); ImGui::SameLine(0, 5 * gUi);
     combo("##tcol", sc.modeOpt[1], {"by system", "PAL", "NTSC", "SECAM", "none"}, 90);
+    }
     nextIf(190);
     ImGui::TextDisabled("C/N"); ImGui::SameLine(0, 5 * gUi); ImGui::SetNextItemWidth(100 * gUi);
     float cn = (float)std::min(sc.snrDb, 60.0);
@@ -536,7 +572,9 @@ void list(App& a) {
     kv(a, "colour", t.colour ? t.colourSystem : t.colourKiller ? "burst too weak" : "none", 90);
     char b[96];
     snprintf(b, sizeof b, "%.1f dB", t.snrDb); kv(a, "video SNR", b, 90);
-    if (t.soundHz != 0) { snprintf(b, sizeof b, "FM, %.1f kHz dev.", t.soundDevKhz); kv(a, "sound", t.soundPresent ? b : "carrier only", 90); }
+    if (t.modulation >= 2) kv(a, "sound", "none (the audio is the picture)", 90);
+    else if (t.soundHz != 0 && t.soundDevKhz <= 0.01f && t.soundPresent) kv(a, "sound", "AM", 90);
+    else if (t.soundHz != 0) { snprintf(b, sizeof b, "FM, %.1f kHz dev.", t.soundDevKhz); kv(a, "sound", t.soundPresent ? b : "carrier only", 90); }
     else kv(a, "sound", "none found", 90);
     ImGui::Spacing();
     ImGui::PushTextWrapPos(0);

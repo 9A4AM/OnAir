@@ -91,8 +91,7 @@ These receivers are built from the published specifications and checked end to e
 | **DVB-S / DVB-S2** | Satellite TV (through an LNB) | Channels and playback, all DVB-S2 MODCODs |
 | **DTMB** | Digital TV in China, Hong Kong, Macau (8 MHz) and Cuba (6 MHz) | Channels and playback |
 | **DVB-C** | Cable TV, EN 300 429 / J.83 annex A and C, 16 to 256-QAM (needs a cable feed) | Symbol rate and QAM found automatically, channels and playback |
-| **Analog TV** | PAL, SECAM, NTSC | Picture and sound |
-| **MAC** | D2-MAC and D-MAC satellite TV (FM, 27 MHz; 20 Msps sees most of it) | Picture (4:3 / 16:9), channel name, digital sound; EuroCrypt detected, not descrambled |
+| **Analog TV** | PAL, SECAM, NTSC; systems B/G, I, D/K, M, N, H, K', positive-modulation A (405 lines), C, E (819 lines), L, L'; NBTV and mechanical TV | Picture and sound |
 | **DRM** | Digital radio on long, medium and short wave | Audio and station information |
 | **DMR** | Digital two-way radio | Talkgroups, IDs and data (no voice) |
 | **NXDN** | Digital two-way radio, NXDN48 and NXDN96 | Call log with unit IDs and talkgroups, status and short data messages, site information, voice through your mbelib |
