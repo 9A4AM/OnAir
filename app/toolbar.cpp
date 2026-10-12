@@ -966,13 +966,28 @@ void selectMode(App& a, int fam, const char* subId) {
     // receiver automatically instead of making the user press Stop/Start.
     // Closing the old decoder first also prevents two users of the same SDR.
     const bool wasRunning = a.engine.running();
-    if (wasRunning) {
-        a.engine.log("switching mode: restarting receiver automatically");
-        a.engine.stop();
-    }
+    const double oldRate = a.tune.sampleRate;
     setMode(a, fam, sub);
     savePrefs(a);
-    if (wasRunning) startReceiver(a);
+    if (!wasRunning) return;
+
+    // Decoder-only mode switches should not disconnect a remote SDR. A
+    // SpyServer reconnect is expensive and unnecessary at unchanged rate.
+    a.tune.centerHz = a.freqMhz * 1e6;
+    applyBandwidth(a);
+    const bool sameRate = std::fabs(a.tune.sampleRate - oldRate) < 1.0;
+    if (sameRate) {
+        a.engine.log("switching decoder without reconnecting the radio");
+        a.engine.setComputeMode(a.computeMode);
+        a.engine.setStandard(engineStd(a));
+        if (a.engine.retuneReset(a.tune)) {
+            a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
+            return;
+        }
+        a.engine.log("live mode switch failed; reopening receiver");
+    }
+    a.engine.log("switching mode: reopening receiver for new sample rate");
+    startReceiver(a);
 }
 bool modeSelected(const App& a, const ModeDef& m) { return m.family == a.family && (!m.subId || subIndexOf(m.subId) == a.sub); }
 bool modeMatches(const ModeDef& m, const char* q) {
