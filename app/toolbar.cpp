@@ -172,7 +172,7 @@ void setDvbBandwidth(App& a, int idx) {
     savePrefs(a);
 }
 
-// ---- radios on the network (issues #28, #54): a PlutoSDR by IP, an rtl_tcp server, a SoapyRemote server
+// ---- radios on the network (issues #28, #54, #68): a PlutoSDR by IP, an rtl_tcp server, a SoapyRemote server, a SpyServer
 void netRadioWindow(App& a) {
     // a connection test that finished: add the radio and pick it, or say why not
     if (a.netAddProbe && a.netAddProbe->done) {
@@ -195,9 +195,9 @@ void netRadioWindow(App& a) {
     if (!ImGui::Begin(trw("Network radios"), &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
     const bool busy = a.netAddProbe != nullptr;
     ImGui::BeginDisabled(busy);
-    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote"};
+    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer"};
     ImGui::SetNextItemWidth(200 * gUi);
-    if (ImGui::Combo("Type", &a.netAddType, kTypes, 3)) {
+    if (ImGui::Combo("Type", &a.netAddType, kTypes, 4)) {
         const auto t = (NetRadio::Type)a.netAddType;
         a.netAddPort = netRadioDefaultPort(t);
         const std::string h = a.netAddHost;

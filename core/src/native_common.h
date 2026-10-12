@@ -558,6 +558,12 @@ std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d);
 // (not RTL0, or a tuner type outside librtlsdr's 1 to 6). rtlTcpNoteServer remembers that per address (nativeArgs) for the rate limits.
 bool rtlTcpGreeting(const unsigned char* hdr, std::string& magic, bool& other);
 void rtlTcpNoteServer(const std::string& addr, bool other);
+// A SpyServer (source_spyserver.cpp) at host:port. spyServerProbe connects, says HELLO and waits for its DEVICE_INFO (remembered per address for
+// the rate list); spyServerCaps sets d's rates, tuning and gain range from what was seen of the server.
+DeviceInfo spyServerDevice(const std::string& host, int port);
+std::unique_ptr<IqSource> makeSpyServer(const DeviceInfo& d);
+bool spyServerProbe(const std::string& host, int port, int timeoutMs, std::string& err);
+void spyServerCaps(DeviceInfo& d);
 
 } // namespace native
 } // namespace dect2

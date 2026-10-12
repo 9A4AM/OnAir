@@ -255,6 +255,7 @@ std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d) { return std::make_uni
 } // namespace native
 
 void applyRadioOptionCaps(DeviceInfo& d, const TuneSettings& t) {
+    if (d.kind == DeviceInfo::Native && d.board == "spyserver") { native::spyServerCaps(d); return; }   // as the server was last seen
     if (d.kind != DeviceInfo::Native || d.board != "rtltcp") return;
     native::setCaps(d, radioOption(t, "server", "rtl") == "other" || native::noted(d.nativeArgs));
 }
