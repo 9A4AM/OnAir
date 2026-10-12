@@ -1,7 +1,7 @@
 // The satellite pass planner (View > Passes): the next 24 hours of passes of the satellites OnAir's modes receive (weather satellites
 // on 137 MHz, the ISS, Orbcomm, a short editable list of amateur satellites) over the receiver's position, a polar sky plot of the
 // current or chosen pass, and optional tracking: Doppler-corrected retuning about once a second, the right mode started at AOS and
-// an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak only when the user asks, or pasted.
+// an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak or Keplerpass on request, or pasted.
 #include "app.h"
 #include "dect2/passes.h"
 #include <algorithm>
@@ -32,6 +32,7 @@ const Source kSources[] = {
     {"amateur.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle"},
 };
 const char* const kPasted = "pasted.txt";
+const Source kKeplerpass = {"keplerpass.txt", "https://data.keplerpass.com/PU4ELT/tle.txt"};
 
 enum Group { Weather, Iss, Orbcomm, Amateur, NumGroups };
 const char* const kGroupLabel[NumGroups] = {"Weather (137 MHz)", "ISS", "Orbcomm", "Amateur"};
@@ -143,6 +144,7 @@ void buildSats() {
 void loadTles() {
     S.tles.clear();
     for (const Source& s : kSources) for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + s.file))) S.tles[t.norad] = t;
+    for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + kKeplerpass.file))) S.tles[t.norad] = t;
     for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + kPasted))) S.tles[t.norad] = t;
     buildSats();
 }
@@ -157,16 +159,18 @@ void loadState() {
     loadTles();
 }
 
-void startDownload() {
+void startDownload(bool keplerpass = false) {
     if (gDl.load() == 1) return;
     gDl = 1;
     { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = "downloading..."; }
     const std::string dir = tleDir();
-    std::thread([dir] {
+    std::thread([dir, keplerpass] {
         std::error_code ec;
         fs::create_directories(fsPath(dir), ec);
         int ok = 0, n = 0;
-        for (const Source& s : kSources) {
+        const size_t sourceCount = keplerpass ? 1 : sizeof kSources / sizeof kSources[0];
+        for (size_t i = 0; i < sourceCount; ++i) {
+            const Source& s = keplerpass ? kKeplerpass : kSources[i];
             const std::string path = dir + "/" + s.file, part = path + ".part";
             if (plat::fetchUrl(s.url, part, "OnAir/" ONAIR_VERSION " (passes)")) {
                 const size_t got = dect2::parseTleText(readText(part)).size();
@@ -174,8 +178,9 @@ void startDownload() {
             }
             fs::remove(fsPath(part), ec);
         }
-        std::string m = !ok ? "the download failed (no network, or Celestrak refused)" : "downloaded " + std::to_string(n) + " TLEs";
-        if (ok && ok < (int)(sizeof kSources / sizeof kSources[0])) m += "; some lists failed";
+        std::string m = !ok ? (keplerpass ? "Keplerpass download failed (check network or TLE format)" : "the download failed (no network, or Celestrak refused)")
+                            : std::string(keplerpass ? "Keplerpass: downloaded " : "Celestrak: downloaded ") + std::to_string(n) + " TLEs";
+        if (ok && ok < (int)sourceCount) m += "; some lists failed";
         { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = m; }
         gDl = 2;
     }).detach();
@@ -317,7 +322,9 @@ void tleSection(App& a) {
     else if (gDl.load() == 1) { std::lock_guard<std::mutex> lk(gDlMu); S.msg = gDlMsg; }
     if (!ImGui::CollapsingHeader("TLE data", S.tles.empty() ? ImGuiTreeNodeFlags_DefaultOpen : 0)) return;
     ImGui::BeginDisabled(gDl.load() == 1);
-    if (ImGui::Button(gDl.load() == 1 ? "Downloading..." : "Download TLEs from Celestrak")) startDownload();
+    if (ImGui::Button(gDl.load() == 1 ? "Downloading..." : "Download TLEs from Celestrak")) startDownload(false);
+    ImGui::SameLine();
+    if (ImGui::Button("Download TLEs from Keplerpass")) startDownload(true);
     ImGui::EndDisabled();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
         std::string tip = "Downloads only when you click. Fetches:";
@@ -329,7 +336,7 @@ void tleSection(App& a) {
     if (ImGui::Button(S.showPaste ? "Hide paste box" : "Paste TLEs...")) S.showPaste = !S.showPaste;
     if (!S.msg.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", S.msg.c_str()); }
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("From: celestrak.org/NORAD/elements/gp.php?GROUP=weather|stations|orbcomm|amateur&FORMAT=tle");
+    ImGui::TextDisabled("Sources: Celestrak and data.keplerpass.com/PU4ELT/tle.txt");
     ImGui::PopTextWrapPos();
     double oldest = 0;
     for (const Sat& s : S.sats) oldest = std::max(oldest, nowSec() / 86400.0 + 2440587.5 - s.sgp.tle().epochJd);
