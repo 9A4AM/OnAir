@@ -125,6 +125,7 @@ struct RxTelemetry {
     struct Isdbt {               // ISDB-T only: the TMCC parameters and the statistics of the three layers
         bool tmccOk = false;
         int mode = 0, guard = 0, symbolIdx = -1, intShift = 0, switching = 15;
+        int bwMhz = 6;           // channel width the receiver works with (6, 7, 8 MHz)
         bool partial = false, emergency = false;
         double secSinceTmcc = 0;
         struct Lay { int segments = 0, mod = 0, rate = 0, ti = 0; uint64_t packets = 0, rsClean = 0, rsCorrected = 0, rsFailed = 0; double viterbi = 0; bool synced = false; } layer[3];

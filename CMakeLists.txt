@@ -356,6 +356,10 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_isdbt_engine PRIVATE dect2core)
   add_test(NAME isdbt_engine COMMAND test_isdbt_engine)
 
+  add_executable(test_isdbt_bw tests/test_isdbt_bw.cpp)
+  target_link_libraries(test_isdbt_bw PRIVATE dect2core)
+  add_test(NAME isdbt_bw COMMAND test_isdbt_bw)
+
   add_executable(test_updater tests/test_updater.cpp)
   target_link_libraries(test_updater PRIVATE dect2core)
   add_test(NAME updater COMMAND test_updater)

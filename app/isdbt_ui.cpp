@@ -2,6 +2,15 @@
 #include "app.h"
 #include "dect2/isdbt.h"
 
+const char* isdbtWidthLabel(int mhz) { return mhz == 0 ? "Automatic" : mhz == 7 ? "7 MHz" : mhz == 8 ? "8 MHz (Maldives)" : "6 MHz"; }
+
+void setIsdbtBandwidth(App& a, int mhz) {
+    a.isdbtBwMhz = mhz == 0 || mhz == 7 || mhz == 8 ? mhz : 6;
+    applyBandwidth(a);
+    savePrefs(a);
+    if (a.engine.running()) startReceiver(a);   // the receiver takes the width (and the radio its rate) when it starts
+}
+
 static bool telemI(App& a) { return a.engine.running() && a.rx.standard == 5; }
 
 static isdbt::Params paramsOf(const RxTelemetry& t) {
@@ -9,6 +18,7 @@ static isdbt::Params paramsOf(const RxTelemetry& t) {
     p.mode = t.isdbt.mode > 0 ? t.isdbt.mode : 3;
     p.guard = t.giIdx >= 0 ? t.giIdx : 2;
     p.partial = t.isdbt.partial;
+    p.bwMhz = t.isdbt.bwMhz;
     for (int i = 0; i < 3; i++) { p.layer[i].segments = t.isdbt.layer[i].segments; p.layer[i].mod = t.isdbt.layer[i].mod; p.layer[i].rate = t.isdbt.layer[i].rate; p.layer[i].ti = t.isdbt.layer[i].ti; }
     return p;
 }
@@ -50,6 +60,7 @@ void isdbtStatus(App& a) {
     if (live && t.fftN) {
         snprintf(b, sizeof b, "%d", t.isdbt.mode ? t.isdbt.mode : (t.fftN == 2048 ? 1 : t.fftN == 4096 ? 2 : 3)); ro("Mode", b);
         ro("GI", isdbt::guardName(t.giIdx));
+        snprintf(b, sizeof b, "%d MHz", t.isdbt.bwMhz); ro("BW", b);
     }
     flowBreak();
     if (live && t.fftN) {
@@ -86,10 +97,11 @@ void isdbtReceiverTab(App& a) {
         ImGui::TextDisabled("%s", k); ImGui::SameLine(std::min(190 * gUi, ImGui::GetContentRegionAvail().x * 0.45f));
         ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont();
     };
+    row("channel width", "%d MHz%s, IFFT rate %.4f Msps", t.isdbt.bwMhz, a.isdbtBwMhz == 0 ? " (automatic)" : "", isdbt::sampleRateFor(t.isdbt.bwMhz) / 1e6);
     row("synchronisation", "%s", t.isdbt.tmccOk ? "TMCC decoded" : t.fftN ? "signal found, waiting for the TMCC" : "searching for an ISDB-T signal");
     if (t.fftN) {
         const int mode = t.isdbt.mode ? t.isdbt.mode : (t.fftN == 2048 ? 1 : t.fftN == 4096 ? 2 : 3);
-        row("mode", "%d: %d carriers, %.3f kHz spacing, %d-point FFT, guard interval %s", mode, isdbt::totalCarriers(mode), isdbt::kSampleRate / t.fftN / 1e3, t.fftN, isdbt::guardName(t.giIdx));
+        row("mode", "%d: %d carriers, %.3f kHz spacing, %d-point FFT, guard interval %s", mode, isdbt::totalCarriers(mode), (t.nativeRate > 0 ? t.nativeRate : isdbt::kSampleRate) / t.fftN / 1e3, t.fftN, isdbt::guardName(t.giIdx));
         row("frame", "%d symbols, %.1f ms", isdbt::kSymbolsPerFrame, t.frameMs);
     }
     row("carrier offset", "%+.1f Hz", t.cfoHz);

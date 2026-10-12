@@ -23,6 +23,7 @@ struct SynthConfig {
     bool demoTv = false;   // DVB-T / ATSC: carry a looping test-card programme (picture and beep) instead of the small test stream
     bool dvbt = false;     // generate DVB-T (with a small test transport stream) instead of DVB-T2
     int dvbtMode = 1, dvbtGuard = 2, dvbtMod = 2, dvbtRate = 1; // 8K, GI 1/8, 64-QAM, 2/3
+    int isdbtBwMhz = 6;    // ISDB-T test signal: channel width 6, 7 or 8 MHz
     double pace = 1.0;     // 1 = real time; below 1 the signal runs in slow motion (tests on slow machines: the receiver gets 1/pace times the time)
     bool gainModel = false; // scale the level with the LNA/VGA/amp gains (for testing AGC): 62 dB total = the nominal level
     int mode = 0;           // 0: the DVB / ATSC / DAB settings above; 8 and up: the test signal of that engine standard (see mode_synth.h)
@@ -32,6 +33,7 @@ struct SynthConfig {
 
 struct TuneSettings {
     double bandwidthMhz = 8;
+    int isdbtBwMhz = 6;                // ISDB-T channel width: 6 (Japan, the Americas), 7, 8 MHz (the Maldives); 0 = automatic (6, 7 and 8 tried)
     SynthConfig synth;
     double centerHz = 522e6;
     double sampleRate = 18285714.2857; // 2x native rate for an 8 MHz channel

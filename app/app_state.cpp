@@ -290,6 +290,11 @@ void applyBandwidth(App& a) {
         a.tune.bandwidthMhz = 0.25; a.tune.sampleRate = 4e6; a.tune.basebandFilterHz = 2.5e6;
         const DeviceInfo& dv = a.devices[a.devIdx];
         if (dv.isGeneric()) a.tune.sampleRate = linkRateFor(dv, a.tune, a.tune.sampleRate, minSampleRateFor(7, 0.25));
+    } else if (a.isdbtMode) {   // ISDB-T: 6, 7 or 8 MHz (the Maldives) or automatic, which needs the radio open for the widest; the test signal follows a set width
+        const int w = a.isdbtBwMhz;
+        a.tune.bandwidthMhz = w ? w : 8; a.tune.sampleRate = w == 6 ? 8e6 : 10e6;
+        a.tune.isdbtBwMhz = w; a.tune.synth.isdbtBwMhz = w ? w : 6;
+        if (a.devices[a.devIdx].isGeneric()) a.tune.sampleRate = linkRateFor(a.devices[a.devIdx], a.tune, a.tune.sampleRate, minSampleRateFor(6, a.tune.bandwidthMhz));
     } else if (a.atscMode) { a.tune.bandwidthMhz = 6; a.tune.sampleRate = 8e6; if (a.devices[a.devIdx].isGeneric()) a.tune.sampleRate = linkRateFor(a.devices[a.devIdx], a.tune, a.tune.sampleRate, minSampleRateFor(3, 6)); }   // an ATSC channel is always 6 MHz wide
     // the rate chosen for this mode on this radio replaces the mode's own (Auto: nothing changes); one outside this radio's limits or below
     // what the mode needs now (a wider DVB channel) is not used, the control shows Auto
@@ -347,6 +352,7 @@ void loadPrefs(App& a) {
     if (d.has("newUi")) a.newUi = d.getB("newUi", true);
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
     if (d.has("dtmbBw")) a.dtmbBwMhz = d.getI("dtmbBw", 8) == 6 ? 6 : 8;
+    if (d.has("isdbtBw")) { const int w = (int)d.getI("isdbtBw", 6); a.isdbtBwMhz = w == 0 || w == 7 || w == 8 ? w : 6; }
     if (d.has("atvFm")) a.atvFm = d.getI("atvFm", 0) != 0;
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
@@ -417,6 +423,7 @@ void savePrefs(const App& a) {
     d.setI("discordOn", a.discordOn ? 1 : 0);
     d.setI("discordFreq", a.discordFreq ? 1 : 0);
     d.setI("dtmbBw", a.dtmbBwMhz);
+    d.setI("isdbtBw", a.isdbtBwMhz);
     d.setI("atvFm", a.atvFm ? 1 : 0);
     d.setI("uiVariant", a.uiVariant);
     {   // the stations the FM scan found: mhz|name|type|snr|stereo|rds, one per line

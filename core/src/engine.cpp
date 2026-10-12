@@ -185,7 +185,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxA_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });   // runs on the ATSC worker thread
     rxD_.configure(rate_);
     rxD_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });   // DMB video, on the receiver thread
-    rxI_.configure(rate_);
+    rxI_.configure(rate_, tune.isdbtBwMhz);
     rxI_.setPacketCallback([this](const uint8_t* pk, size_t n, double secs) { onTsPackets(pk, n, secs); });
     rxFm_.configure(rate_);
     rxFm_.setStationFinder(lastDev_.kind == DeviceInfo::File || lastDev_.kind == DeviceInfo::Synthetic);   // a live radio stays on the frequency tuned: a weak station is not traded for a strong neighbour
@@ -371,9 +371,10 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         snprintf(m, sizeof m, "sample rate %.2f Msps is too low for an ATSC 3.0 channel (about 6.5 Msps or more is needed) - the receiver cannot lock with this radio", rate_.load() / 1e6);
         log(m);
     }
-    if (stdMode_ == 6 && rate_.load() < 6.0e6) {
+    if (stdMode_ == 6 && rate_.load() < minSampleRateFor(6, tune.isdbtBwMhz ? tune.isdbtBwMhz : 6)) {
         char m[200];
-        snprintf(m, sizeof m, "sample rate %.2f Msps is too low for an ISDB-T channel (about 6 Msps or more is needed) - the receiver cannot lock with this radio", rate_.load() / 1e6);
+        snprintf(m, sizeof m, "sample rate %.2f Msps is too low for a %d MHz ISDB-T channel (about %.0f Msps or more is needed) - the receiver cannot lock with this radio", rate_.load() / 1e6,
+                 tune.isdbtBwMhz ? tune.isdbtBwMhz : 6, minSampleRateFor(6, tune.isdbtBwMhz ? tune.isdbtBwMhz : 6) / 1e6);
         log(m);
     }
     char b[160];

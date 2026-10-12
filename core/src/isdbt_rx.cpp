@@ -27,6 +27,9 @@ std::vector<int> tmccCarriers(int mode, int pos, bool diff) { return tmccCarrier
 struct IsdbtReceiver::Impl {
     // ---- input
     double inRate = 0;
+    int bwSet = 6;                              // the channel width asked for: 6, 7, 8, or 0 automatic
+    std::atomic<int> bw{6};                     // the width in use (automatic: the current guess)
+    double fs = kSampleRate;                    // the IFFT rate of that width
     TrackingResampler resampler;
     bool decimate = false, rateOk = true;
     std::vector<cf32> rsOut, buf;
@@ -120,7 +123,27 @@ struct IsdbtReceiver::Impl {
         buf.clear(); base = 0; resampler.reset(); spec.clear(); searchedSince = 0;
         if (getenv("ISDBT_DEBUG")) fprintf(stderr, "[isdbt] channel guess %zu: %.1f kHz%s\n", candIdx, mixHz / 1e3, mirror ? ", mirrored" : "");
     }
-    void nextCandidate() { if (mixCand.size() > 1) takeCandidate(candIdx + 1); else searchedSince = 0; }
+    void nextCandidate() {
+        // automatic width: once every guess of the channel's place failed with this width, the next width (6 -> 8 -> 7 -> 6)
+        if (bwSet == 0 && (mixCand.size() <= 1 || (candIdx + 1) % mixCand.size() == 0)) {
+            int w = bw;
+            for (int k = 0; k < 3; k++) { w = w == 6 ? 8 : w == 8 ? 7 : 6; if (widthFits(w)) break; }
+            setWidth(widthFits(w) ? w : 6);
+            if (mixCand.size() > 1) takeCandidate(0); else { state = 0; agreeCount = 0; detect = 0; tmccOk = false; symStart = 0; searchedSince = 0; }
+            return;
+        }
+        if (mixCand.size() > 1) takeCandidate(candIdx + 1); else searchedSince = 0;
+    }
+    // the IFFT rate follows the channel width; everything already resampled for the old one is dropped
+    bool widthFits(int w) const { return inRate >= 6.0e6 * w / 6.0 * 0.95; }   // a rate the channel fits in: about 6 Msps per 6 MHz
+    bool setWidth(int w) {
+        bw = w; fs = sampleRateFor(w);
+        rateOk = widthFits(w) && resampler.configure(inRate, fs, false);   // never a plain pass-through: the clock tracking works through the resampler's step
+        decimate = rateOk && !resampler.passthrough();
+        buf.clear(); base = 0; resampler.reset(); spec.clear();
+        if (getenv("ISDBT_DEBUG")) fprintf(stderr, "[isdbt] channel width %d MHz (%.4f Msps)\n", w, fs / 1e6);
+        return rateOk;
+    }
 
     // The ISDB-T signal is a flat block of 13 segments (5.57 MHz): the box of that width with the most power in the averaged spectrum, if
     // its edges stand clearly above what lies outside.
@@ -143,10 +166,33 @@ struct IsdbtReceiver::Impl {
         estBuf.erase(estBuf.begin(), estBuf.begin() + (long)used);
         if (estBlocks < kBlocks) return;
         estDone = true; estBuf.clear(); estBuf.shrink_to_fit();
-        const int W = (int)std::lround(5.572e6 / inRate * F);
-        if (W < 16 || W > F - 2) return;
         std::vector<double> cum(F + 1, 0.0);
         for (int i = 0; i < F; i++) cum[(size_t)i + 1] = cum[(size_t)i] + estPow[(size_t)i];
+        if (bwSet == 0) {
+            // automatic width: the 13 segments fill 5.57 MHz per 6 MHz of channel. A box as wide as the signal is as full as a narrower one;
+            // a wider one takes in the noise beside it (7 MHz in an 8 MHz box: 87 %, 6 MHz in a 7 MHz box: 86 %), and with a neighbouring
+            // channel its edges land on the neighbour instead of the gap between the channels
+            auto box = [&](int W, int& at) { double bs = -1; at = -1; for (int a = 0; a + W <= F; a++) { const double v = cum[(size_t)(a + W)] - cum[(size_t)a]; if (v > bs) { bs = v; at = a; } } return bs / std::max(1, W); };
+            auto clear = [&](int a0, int a1, double inside) { a0 = std::max(0, a0); a1 = std::min(F, a1); return a1 - a0 < 2 || (cum[(size_t)a1] - cum[(size_t)a0]) / (a1 - a0) < 0.25 * inside; };
+            const int W6 = (int)std::lround(5.572e6 / inRate * F);
+            int at6 = -1;
+            const double m6 = W6 >= 16 && W6 <= F - 2 ? box(W6, at6) : 0;
+            int pick = 6;
+            for (int w : {7, 8}) {
+                const int Ww = (int)std::lround(5.572e6 * w / 6.0 / inRate * F);
+                if (m6 <= 0 || Ww > F - 2 || !widthFits(w)) continue;
+                int a = -1;
+                const double m = box(Ww, a);
+                const int e = std::max(2, Ww / 40);
+                if (m >= 0.94 * m6 && clear(a - e - 2, a - 2, m) && clear(a + Ww + 2, a + Ww + e + 2, m)) pick = w;
+            }
+            if (m6 > 0 && pick != bw && !tmccOk) {
+                if (getenv("ISDBT_DEBUG")) fprintf(stderr, "[isdbt] spectrum: %d MHz wide\n", pick);
+                setWidth(pick); state = 0; agreeCount = 0; detect = 0; symStart = 0; searchedSince = 0;
+            }
+        }
+        const int W = (int)std::lround(5.572e6 * bw / 6.0 / inRate * F);
+        if (W < 16 || W > F - 2) return;
         int best = -1; double bs = -1;
         for (int a = 0; a + W <= F; a++) { const double v = cum[(size_t)(a + W)] - cum[(size_t)a]; if (v > bs) { bs = v; best = a; } }
         if (best < 0 || bs <= 0) return;
@@ -262,7 +308,7 @@ struct IsdbtReceiver::Impl {
         back = std::min(G / 4, 24);
         fft = std::make_unique<Fft>(N);
         fbuf.assign((size_t)N, cf32(0, 0));
-        const double spacing = kSampleRate / N;
+        const double spacing = fs / N;
         R = std::max(8, std::min(80, (int)std::ceil(60e3 / spacing)));
         spec.clear(); specBase = 0; huntFails = 0; sinceHunt = 0; tmccOk = false; prevTmcc.clear(); tmccSoft.clear(); tmccFailures = 0;
         absSym = 0;
@@ -468,7 +514,7 @@ struct IsdbtReceiver::Impl {
             if (!tmccCorrect(w, rel)) continue;
             Tmcc t;
             tmccUnpack(w, t);
-            Params q; q.mode = mode; q.guard = gi;
+            Params q; q.mode = mode; q.guard = gi; q.bwMhz = bw;
             if (!paramsFromTmcc(t, q)) continue;
             // every segment carries the same TMCC data: with the right shift the others agree as well (a wrong shift can land one carrier on a
             // TMCC carrier of another segment and look right on its own)
@@ -495,7 +541,7 @@ struct IsdbtReceiver::Impl {
         Y.resize((size_t)K);
         for (int k = 0; k < K; k++) Y[(size_t)k] = fbuf[(size_t)((((k - kc) % N) + N) % N)];
         const int symIdx = (int)((absSym - frameStartAbs) % kSymbolsPerFrame);
-        secSinceTmcc += (double)(N + G) / kSampleRate;
+        secSinceTmcc += (double)(N + G) / fs;
         demod.pushSymbol(Y.data(), symIdx);
         // TMCC bit of this symbol, from the corrected carriers
         const std::vector<cf32>& Yc = demod.corrected();
@@ -513,7 +559,7 @@ struct IsdbtReceiver::Impl {
         if ((int)Yc.size() == K) for (size_t j = 0; j < tmccK.size(); j++) prevTmcc[j] = Yc[(size_t)tmccK[j]];
         if (symIdx == 0) tmccSoft.clear();
         tmccSoft.push_back(soft);
-        streamSecs += (double)(N + G) / kSampleRate;
+        streamSecs += (double)(N + G) / fs;
         pktBuf.clear();
         const size_t n = demod.takeMerged(pktBuf);
         if (n) { packetsOut += n; detect = 3; if (cb) cb(pktBuf.data(), n, streamSecs); streamSecs = 0; }
@@ -538,7 +584,7 @@ struct IsdbtReceiver::Impl {
             }
             if (tmccCorrect(w, rel)) {
                 Tmcc t; tmccUnpack(w, t);
-                Params q; q.mode = mode; q.guard = gi;
+                Params q; q.mode = mode; q.guard = gi; q.bwMhz = bw;
                 if (paramsFromTmcc(t, q)) {
                     ok = true;
                     tmcc = t;
@@ -560,13 +606,13 @@ struct IsdbtReceiver::Impl {
         t.standard = 5;
         t.rateOk = rateOk;
         t.decimating = decimate;
-        t.inputRate = inRate; t.nativeRate = kSampleRate;
+        t.inputRate = inRate; t.nativeRate = fs; t.isdbt.bwMhz = bw;
         t.state = state == 0 ? 0 : tmccOk ? 2 : 1;
         t.fftN = N; t.guard = G; t.giIdx = gi; t.carriers = K;
-        t.cfoHz = (epsFrac + intShift) * kSampleRate / std::max(1, N) + mixHz;
+        t.cfoHz = (epsFrac + intShift) * fs / std::max(1, N) + mixHz;
         t.sroPpm = sroPpm;
         t.symbolsPerFrame = kSymbolsPerFrame;
-        t.frameMs = N ? (double)kSymbolsPerFrame * (N + G) / kSampleRate * 1e3 : 0;
+        t.frameMs = N ? (double)kSymbolsPerFrame * (N + G) / fs * 1e3 : 0;
         t.symbols = symbols;
         t.dataValid = tmccOk;
         t.dataSnrDb = (float)demod.snrDb();
@@ -618,16 +664,16 @@ struct IsdbtReceiver::Impl {
 IsdbtReceiver::IsdbtReceiver() : p_(new Impl) {}
 IsdbtReceiver::~IsdbtReceiver() = default;
 
-void IsdbtReceiver::configure(double inputRateHz) {
+void IsdbtReceiver::configure(double inputRateHz, int bwMhz) {
     Impl& I = *p_;
     I.reset();
     I.inRate = inputRateHz;
-    // never a plain pass-through, not even at the native rate: the clock tracking works through the resampler's step
-    I.rateOk = inputRateHz >= 6.0e6 && I.resampler.configure(inputRateHz, kSampleRate, false);
-    I.decimate = I.rateOk && !I.resampler.passthrough();
+    I.bwSet = bwMhz == 6 || bwMhz == 7 || bwMhz == 8 ? bwMhz : 0;
+    I.setWidth(I.bwSet ? I.bwSet : 6);
 }
 
-void IsdbtReceiver::reset() { Impl& I = *p_; const double r = I.inRate; configure(r); }
+void IsdbtReceiver::reset() { Impl& I = *p_; configure(I.inRate, I.bwSet); }
+int IsdbtReceiver::channelWidth() const { return p_->bw.load(); }
 void IsdbtReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { p_->cb = std::move(cb); }
 int IsdbtReceiver::detectLevel() const { return p_->detect.load(); }
 

@@ -12,7 +12,10 @@ class IsdbtReceiver {
 public:
     IsdbtReceiver();
     ~IsdbtReceiver();
-    void configure(double inputRateHz);
+    // bwMhz: the channel width, 6, 7 or 8 MHz (the IFFT rate scales with it); 0 = automatic: measured in the spectrum, and the widths are
+    // tried in turn while nothing locks
+    void configure(double inputRateHz, int bwMhz = 6);
+    int channelWidth() const;   // the width the receiver works with now (automatic: its current guess)
     void reset();
     void feed(const cf32* x, size_t n);
     bool telemetry(RxTelemetry& out, uint64_t lastSeq);

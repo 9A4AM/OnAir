@@ -5,6 +5,7 @@
 //     rate while receiving, for N seconds, and prints the size; a folder or "auto" (the current folder) gets a name like
 //   dect2cli --standard iridium ... --iridium-bits output.bits   (Iridium: every burst as a gr-iridium "RAW:" line for iridium-toolkit;
 //     then `iridium-parser.py output.bits > output.parsed`. --iridium-parsed is not written by OnAir: use the toolkit's parser)
+//   dect2cli --standard isdbt --isdbt-bw 6|7|8|auto ...   (ISDB-T channel width: 6 MHz Japan / the Americas, 8 MHz the Maldives; auto tries each)
 //   dect2cli --standard orbcomm --freq 137.25 --orbcomm-downlinks 2   (Orbcomm: up to two downlinks in the passband; satellites, Doppler and packets in the status line and the log)
 //     onair_dvb_554.000MHz_10Msps_20261009-071530.cs8, which reopens with the right rate and format)
 #include "dect2/rate_choice.h"
@@ -58,12 +59,15 @@ int main(int argc, char** argv) {
     std::vector<int16_t> wav;
     std::string record, iridiumBits;
     OutputConfig out;
+    int isdbtBw = 6, isdbtSynthBw = 0;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)""; };
         if (a == "--hackrf") haveDev = true;
         else if (a == "--radio") { const std::string kv = next(); const auto eq = kv.find('='); if (eq != std::string::npos) tune.radio[kv.substr(0, eq)] = kv.substr(eq + 1); }   // a setting of the radio, e.g. --radio iqformat=cs8 (PlutoSDR with Tezuka), --radio ppm=-3
         else if (a == "--atv-fm") atvFm = true;
+        else if (a == "--isdbt-bw") { const std::string v = next(); const int b = atoi(v.c_str()); isdbtBw = v == "auto" ? 0 : b == 7 || b == 8 ? b : 6; }   // with --standard isdbt: channel width 6, 7, 8 MHz (the Maldives) or auto
+        else if (a == "--isdbt-synth-bw") { const int b = atoi(next()); isdbtSynthBw = b == 7 || b == 8 ? b : 6; }   // with --synthetic: the width of the ISDB-T test signal (for --isdbt-bw auto)
         else if (a == "--dvbc-sr") dvbcSr = atof(next()) * 1e6;   // with --standard dvbc: a manual symbol rate in Msym/s (default: measured)
         else if (a == "--dvbc-qam") dvbcQam = atoi(next());       // with --standard dvbc: 16, 32, 64, 128 or 256 (default: found from the stream)
         else if (a == "--dpmr-scan") dpmrScan = true;           // with --standard dpmr: scan the 16 PMR446 channels (tune to one of them)
@@ -115,6 +119,11 @@ int main(int argc, char** argv) {
         else if (a == "--no-null") out.dropNull = true;
     }
     if (atvFm) { tune.bandwidthMhz = 18; tune.sampleRate = 20e6; tune.basebandFilterHz = 18e6; }
+    if (standard == 6) {   // ISDB-T: the channel width (the test signal follows it; on auto it is 6 MHz unless --isdbt-synth-bw says otherwise)
+        tune.isdbtBwMhz = isdbtBw;
+        tune.synth.isdbtBwMhz = isdbtSynthBw ? isdbtSynthBw : isdbtBw ? isdbtBw : 6;
+        if (isdbtBw != 6) tune.bandwidthMhz = isdbtBw ? isdbtBw : 8;
+    }
     tune.centerHz = freq * 1e6;
     tune.synth.mode = standard >= 4 ? standard : 0;   // the synthetic source plays that mode's test signal
     if (standard != 7 && standard < 8) tune.sampleRate = tune.bandwidthMhz >= 7 ? 10e6 : 8e6; // HackRF Pro: exact tuning only at <= 10 Msps

@@ -32,7 +32,10 @@ ChanWidth channelWidth(const App& a) {
         const double act = a.engine.running() ? a.engine.activeBandwidth() : 0;
         w.mhz = act > 0 ? act : kBw[a.bwIdx].mhz;
         w.settable = w.hasAuto = true; w.manual = !a.bwAuto;
-    } else if (a.atscMode) w.mhz = 6;   // ATSC 1.0 and 3.0, ISDB-T
+    } else if (a.isdbtMode) {   // ISDB-T: the width set, or on automatic the one the receiver works with
+        w.settable = w.hasAuto = true; w.manual = a.isdbtBwMhz != 0;
+        w.mhz = w.manual ? a.isdbtBwMhz : a.engine.running() && a.rx.standard == 5 ? a.rx.isdbt.bwMhz : 6;
+    } else if (a.atscMode) w.mhz = 6;   // ATSC 1.0 and 3.0
     else if (a.dabMode) w.mhz = 1.536;
     else if (a.fmMode) {
         w.settable = w.hasAuto = true; w.manual = a.fmChanKhz > 0;
@@ -80,6 +83,14 @@ void channelWidthPopup(App& a) {
         ImGui::EndDisabled();
         ImGui::TextDisabled("The receiver's channel filter. Narrower keeps a strong neighbour out (150 kHz copes with one 10 dB stronger 150 kHz away); "
                             "below about 180 kHz loud passages distort a little and RDS suffers first.");
+    } else if (a.isdbtMode) {
+        if (ImGui::RadioButton("Automatic", a.isdbtBwMhz == 0) && a.isdbtBwMhz != 0) setIsdbtBandwidth(a, 0);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The width is measured in the spectrum, and 6, 8 and 7 MHz are tried in turn while nothing locks.");
+        for (int w : {6, 7, 8}) {
+            ImGui::SameLine();
+            if (ImGui::RadioButton(isdbtWidthLabel(w), a.isdbtBwMhz == w) && a.isdbtBwMhz != w) setIsdbtBandwidth(a, w);
+        }
+        ImGui::TextDisabled("6 MHz in Japan and the Americas, 8 MHz in the Maldives (ISDB-T International). The signal is the same, scaled in time by the width.");
     } else if (a.family == 7) {
         if (ImGui::RadioButton("8 MHz", a.dtmbBwMhz != 6) && a.dtmbBwMhz == 6) setDtmbBandwidth(a, 8);
         ImGui::SameLine();

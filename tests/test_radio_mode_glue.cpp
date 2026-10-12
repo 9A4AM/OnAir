@@ -46,7 +46,7 @@ int main() {
         CHECK(minSampleRateFor(sm, 8) == m->minSampleRate, "%s: minSampleRateFor follows the tuning", m->name);
     }
     CHECK(std::fabs(minSampleRateFor(0, 8) - 7.9e6) < 1 && std::fabs(minSampleRateFor(1, 1.7) - 7.9e6 * 1.7 / 8) < 1, "DVB-T2 needs 7.9 Msps per 8 MHz");
-    CHECK(minSampleRateFor(3, 8) == 6.5e6 && minSampleRateFor(6, 8) == 6.0e6 && minSampleRateFor(7, 8) == 500e3 && minSampleRateFor(4, 8) > 1.536e6, "ATSC, ISDB-T, FM, DAB limits");
+    CHECK(minSampleRateFor(3, 8) == 6.5e6 && minSampleRateFor(6, 6) == 6.0e6 && minSampleRateFor(6, 8) == 8.0e6 && minSampleRateFor(7, 8) == 500e3 && minSampleRateFor(4, 8) > 1.536e6, "ATSC, ISDB-T (6 Msps per 6 MHz), FM, DAB limits");
 
     // the engine says it when the radio is too slow, for the standards that had no word for it (DVB-T2 / DVB-T, ATSC, DAB)
     std::string l = startLog(0, 2.56e6, 8);

@@ -22,7 +22,7 @@ static std::string rateWarning(const App& a) {
     if (!d.isRadio()) return "";
     const bool run = a.engine.running();
     const double rate = run ? a.engine.sampleRate() : d.isGeneric() ? d.maxRateHz : 0;
-    const double bw = run && a.family == 0 && a.engine.activeBandwidth() > 0 ? a.engine.activeBandwidth() : kBw[a.bwIdx].mhz;
+    const double bw = a.family == 4 ? (a.isdbtBwMhz ? a.isdbtBwMhz : 6) : run && a.family == 0 && a.engine.activeBandwidth() > 0 ? a.engine.activeBandwidth() : kBw[a.bwIdx].mhz;
     double need = minSampleRateFor(engineStd(a), bw);
     if (a.family == 8 && a.atvFm) need = std::max(need, 16e6);   // FM video: a link is about 17 MHz wide
     // a PlutoSDR on its USB cable run above what the cable carries (linkRateFor): why it may break up, and the fix
@@ -234,11 +234,24 @@ void toolbarParts(App& a, int mask, bool vertical) {
     if (a.dabMode) { if (dabChannelCombo(a)) retune = true; }
     else if (a.fmMode) { if (fmFrequencyCombo(a)) retune = true; }
     else {
-    ImGui::SetNextItemWidth((a.bwAuto ? 125 : 80) * gUi);
+    ImGui::SetNextItemWidth((a.isdbtMode ? 135 : a.bwAuto ? 125 : 80) * gUi);
     {
         char bl[32];
         snprintf(bl, sizeof bl, a.bwAuto ? "%s (auto)" : "%s", kBw[a.bwIdx].label);
         if (a.atscMode) snprintf(bl, sizeof bl, "6 MHz");
+        if (a.isdbtMode) {   // ISDB-T: 6 MHz (Japan, the Americas), 7 or 8 MHz (the Maldives, ISDB-T International), or automatic
+            const RxTelemetry& t = a.rx;
+            if (a.isdbtBwMhz == 0 && a.engine.running() && t.standard == 5) snprintf(bl, sizeof bl, "%d MHz (auto)", t.isdbt.bwMhz);
+            else snprintf(bl, sizeof bl, "%s", isdbtWidthLabel(a.isdbtBwMhz));
+            if (ImGui::BeginCombo("##isdbtbw", bl)) {
+                for (int w : {6, 7, 8}) if (ImGui::Selectable(isdbtWidthLabel(w), a.isdbtBwMhz == w)) setIsdbtBandwidth(a, w);
+                ImGui::Separator();
+                if (ImGui::Selectable("Automatic", a.isdbtBwMhz == 0)) setIsdbtBandwidth(a, 0);
+                ImGui::EndCombo();
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("ISDB-T channel width: 6 MHz in Japan, Brazil and the rest of the Americas, 8 MHz in the Maldives (ISDB-T International).\n"
+                                                          "The same signal, every time scaled by the width. Automatic measures it in the spectrum and tries each width\nwhile nothing locks; it opens the radio at 10 Msps.");
+        } else {
         ImGui::BeginDisabled(a.atscMode);
         if (ImGui::BeginCombo("##bw", bl)) {
             for (int i = 0; i < (int)(sizeof kBw / sizeof *kBw); i++)
@@ -249,6 +262,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
         }
         ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7 or 8 MHz) is set for you.");
+        }
         // a radio too slow for the channel: next to the width as well (rateWarning: the 6 MHz of ATSC, ATSC 3.0 and ISDB-T, not the DVB width left in kBw)
         if (const std::string rw = rateWarning(a); !rw.empty()) {
             ImGui::SameLine(0, 6 * gUi);
@@ -756,7 +770,7 @@ const ModeDef kModes[] = {
     {0, "DVB",        0, IM_COL32(52, 92, 108, 255),  "DVB-T2 / DVB-T, detected automatically",                                    "DVB-T2 and DVB-T, automatic (Europe, Middle East, Africa, Asia, Australia)", "T2 and T, automatic",   ImVec4(0.36f, 0.74f, 0.86f, 1)},
     {1, "ATSC",       0, IM_COL32(150, 100, 30, 255), "ATSC 8-VSB, 6 MHz channel (the DVB-only settings are off)",                 "ATSC 1.0, 8-VSB (US, Canada, Mexico, South Korea)",                           "8-VSB, North America",  ImVec4(0.95f, 0.66f, 0.26f, 1)},
     {3, "ATSC 3.0",   0, IM_COL32(150, 70, 40, 255),  "ATSC 3.0 (NextGen TV), 6 MHz channel, ROUTE services",                      "ATSC 3.0, NextGen TV",                                                        "NextGen TV",            ImVec4(0.95f, 0.50f, 0.36f, 1)},
-    {4, "ISDB-T",     0, IM_COL32(120, 70, 140, 255), "ISDB-T (Japan, Brazil and most of South America), 6 MHz channel, 13 segments", "ISDB-T (Japan, Brazil, South America)",                                  "Japan, Brazil",         ImVec4(0.72f, 0.56f, 0.92f, 1)},
+    {4, "ISDB-T",     0, IM_COL32(120, 70, 140, 255), "ISDB-T (Japan, Brazil and most of South America; 8 MHz channels in the Maldives), 6, 7 or 8 MHz channel, 13 segments", "ISDB-T (Japan, Brazil, South America)",                                  "Japan, Brazil",         ImVec4(0.72f, 0.56f, 0.92f, 1)},
     {6, "DVB-S/S2", 0, IM_COL32(52, 96, 150, 255), "DVB-S, DVB-S2 and DVB-S2X satellite TV (L-band IF through an LNB)", "DVB-S / S2 / S2X satellite television, needs a dish and an LNB", "Satellite", ImVec4(0.42f, 0.64f, 0.96f, 1)},
     {7, "DTMB", 0, IM_COL32(150, 62, 74, 255), "DTMB / DTMB-A digital TV (China, Hong Kong, Cuba), 8 or 6 MHz channel", "DTMB digital terrestrial television (China, Hong Kong, Macau, Cuba, Pakistan)", "China, Hong Kong, Cuba", ImVec4(0.92f, 0.46f, 0.50f, 1)},
     {8, "Analog TV", 0, IM_COL32(100, 102, 112, 255), "Analogue TV: PAL, SECAM and NTSC with FM sound", "Analogue television (PAL, SECAM, NTSC)", "PAL, SECAM, NTSC", ImVec4(0.76f, 0.79f, 0.84f, 1)},

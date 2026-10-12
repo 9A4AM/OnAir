@@ -119,9 +119,11 @@ public:
         p.mode = 3; p.guard = isdbt::kGi8; p.partial = true;
         p.layer[0].segments = 1; p.layer[0].mod = isdbt::kQpsk; p.layer[0].rate = isdbt::kR23; p.layer[0].ti = 2;
         p.layer[1].segments = 12; p.layer[1].mod = isdbt::k64Qam; p.layer[1].rate = isdbt::kR34; p.layer[1].ti = 1;
+        p.bwMhz = c.isdbtBwMhz == 7 || c.isdbtBwMhz == 8 ? c.isdbtBwMhz : 6;
         gen_ = std::make_unique<isdbt::Generator>(p, isdbt::singleLayerSource(1, demoTsSource(isdbt::layerBitrate(p, 1) * 0.9)), 1);
-        poly_ = poly_resampler_.configure(isdbt::kSampleRate, rate);   // 315/256 at 10 Msps: exact integer phases
-        if (!poly_) rs_.configure(isdbt::kSampleRate, rate);
+        const double fs = isdbt::sampleRateFor(p.bwMhz);
+        poly_ = poly_resampler_.configure(fs, rate);   // 6 MHz at 10 Msps: 315/256, exact integer phases
+        if (!poly_) rs_.configure(fs, rate);
     }
     double sampleRate() const override { return rate_; }
     void generate(cf32* out, size_t n) override {
@@ -216,7 +218,7 @@ double minSampleRateFor(int stdMode, double bandwidthMhz) {
     case 3: return 6.5e6;    // ATSC 8-VSB: AtscReceiver (ok = fin >= 6.5 MHz)
     case 4: return 1.6e6;    // DAB: the ensemble is 1.536 MHz wide, the receiver resamples to 2.048 Msps
     case 5: return 6.5e6;    // ATSC 3.0: about 6.5 Msps for the 6 MHz channel
-    case 6: return 6.0e6;    // ISDB-T: IsdbtReceiver (rateOk = rate >= 6 MHz)
+    case 6: return 6.0e6 * std::max(6.0, std::min(8.0, bandwidthMhz)) / 6.0;   // ISDB-T: IsdbtReceiver (rateOk: 6 Msps per 6 MHz of channel)
     case 7: return 500e3;    // FM: FmReceiver (ready from 500 ksps)
     default: return 0;
     }
