@@ -10,7 +10,7 @@ struct SynthConfig;   // source.h
 struct ModeTuning {
     int stdMode = 0;             // the engine standard code (Engine::setStandard): 8 DVB-S/S2, 9 DTMB, 10 analog TV, 11 DMR, 12 DRM, 13 ADS-B, 14 GNSS,
                                  // 15 radiosonde, 16 AIS, 17 marine, 18 ACARS, 19 Inmarsat-C, 20 Inmarsat Aero, 21 Iridium, 22 mesh,
-                                 // 23 HD Radio, 24 CDR, 25 pagers, 26 APRS / packet, 27 HF digital, 28 airband, 29 VDL Mode 2, 30 ISM sensors, 32 VOR / ILS, 33 M17, 34 cell towers, 35 D-STAR, 36 CW, 37 HFDL, 38 PSK31, 39 JS8Call, 40 NXDN, 41 GSM-R, 44 spectrum analyser, 42 DVB-C, 47 dPMR, 46 Orbcomm, 45 Mode S uplink, 48 TETRA, 51 HF ALE, 49 MAC, 50 radio astronomy, 52 P25, 53 Bluetooth LE, 54 ionospheric sounders, 55 QO-100, 56 Wi-Fi networks, 57 general receiver
+                                 // 23 HD Radio, 24 CDR, 25 pagers, 26 APRS / packet, 27 HF digital, 28 airband, 29 VDL Mode 2, 30 ISM sensors, 32 VOR / ILS, 33 M17, 34 cell towers, 35 D-STAR, 36 CW, 37 HFDL, 38 PSK31, 39 JS8Call, 40 NXDN, 41 GSM-R, 44 spectrum analyser, 42 DVB-C, 47 dPMR, 46 Orbcomm, 45 Mode S uplink, 48 TETRA, 51 HF ALE, 49 MAC, 50 radio astronomy, 52 P25, 53 Bluetooth LE, 54 ionospheric sounders, 55 QO-100, 56 Wi-Fi networks, 59 5G NR cells
     const char* id = "";         // short name: dect2cli --standard <id>, and the prefix of the mode's files
     const char* name = "";       // shown in the app
     double minMhz = 1, maxMhz = 6000, defMhz = 100;   // tuning range, and the frequency a fresh start uses

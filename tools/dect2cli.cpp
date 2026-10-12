@@ -276,10 +276,10 @@ int main(int argc, char** argv) {
                 for (const auto& ap : t.wifi.aps)
                     printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
                            wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
-            if (t.standard == 57)   // Drone Remote ID: one line a drone
-                for (const auto& d : t.rid.drones)
-                    printf("  rid: %s %-3s %-20s %10.6f %11.6f h %6.1f m %5.1f m/s op %10.6f %11.6f %s\n", d.mac.c_str(), d.viaBle ? "BLE" : "WiFi",
-                           !d.serial.empty() ? d.serial.c_str() : !d.sessionId.empty() ? d.sessionId.c_str() : d.caaId.c_str(), d.lat, d.lon, d.height, d.speed, d.opLat, d.opLon, d.operatorId.c_str());
+            if (t.standard == 58)   // 5G NR cells: the cell table (broadcast information only)
+                for (const auto& c : t.nr.cells)
+                    printf("  nr: %.2f MHz GSCN %d n%d PCI %4d %2d kHz %s SSB %d/%zu SFN %4d kSSB %2d CORESET0 %2d SS0 %2d %s RSRP %6.1f RSRQ %5.1f SINR %5.1f\n", c.freqHz / 1e6, c.gscn, c.band, c.pci,
+                           c.scsKhz, c.hasMib ? "MIB" : "sync", c.ssbIdx, c.beams.size(), c.sfn, c.kSsb, c.coreset0, c.ss0, c.barred ? "barred" : "-", c.rsrpDb, c.rsrqDb, c.sinrDb);
             continue_t2 = false;
         } else if (t.standard == 2) {
             const AtscTelemetry& a = t.atsc;
