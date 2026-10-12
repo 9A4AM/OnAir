@@ -64,7 +64,7 @@ struct State {
     std::vector<std::string> missing;   // listed satellites without a TLE
     std::vector<Row> rows;
     bool dirty = true;
-    double computedAt = 0, lat = 1e9, lon = 1e9;
+    double computedAt = 0, lat = 1e9, lon = 1e9, altM = 0;   // altM: the observer height (metres) the passes were computed for
     float minEl = 10;
     bool show[NumGroups] = {true, true, true, true};
     std::vector<Cube> cubes;
@@ -185,9 +185,10 @@ void compute(App& a) {
     double lat, lon;
     receiverLocation(lat, lon);
     const double now = nowSec();
-    if (!S.dirty && lat == S.lat && lon == S.lon && now - S.computedAt < 600) return;
-    S.dirty = false; S.lat = lat; S.lon = lon; S.computedAt = now;
-    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon;
+    const double alt = receiverAltitudeM();
+    if (!S.dirty && lat == S.lat && lon == S.lon && alt == S.altM && now - S.computedAt < 600) return;
+    S.dirty = false; S.lat = lat; S.lon = lon; S.altM = alt; S.computedAt = now;
+    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon; o.altKm = alt / 1000;
     S.rows.clear();
     for (int i = 0; i < (int)S.sats.size(); i++)
         for (const dect2::Pass& p : dect2::findPasses(S.sats[i].sgp, o, now - 1800, now + 86400, S.minEl))
@@ -207,7 +208,7 @@ std::string timeText(double t) {
 }
 
 bool lookNow(const Sat& s, double t, dect2::Look& l) {
-    dect2::Observer o; o.latDeg = S.lat; o.lonDeg = S.lon;
+    dect2::Observer o; o.latDeg = S.lat; o.lonDeg = S.lon; o.altKm = S.altM / 1000;
     return dect2::lookAt(s.sgp, o, t, l);
 }
 

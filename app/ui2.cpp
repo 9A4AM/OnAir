@@ -572,10 +572,12 @@ float menuBar(App& a) {
                     ImGui::SetTooltip("%s", tr(have ? "Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running." : "Discord application ID not set in this build"));
             }
             ImGui::Separator();
-            if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
-            ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
-            if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
+            if (ImGui::MenuItem("Passes", nullptr, &a.passesOpen)) {}
+            ImGui::MenuItem("Data feeds...", nullptr, &a.feedsOpen);
+            ImGui::MenuItem("Map", nullptr, &a.mapOpen);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
+            if (ImGui::MenuItem("Scanner (highly experimental)", nullptr, &a.scannerOpen)) {}
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Classic interface"))) { a.newUi = false; savePrefs(a); }
             ImGui::EndMenu();

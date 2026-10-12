@@ -15,6 +15,7 @@ namespace {
 struct State {
     bool loaded = false, wasRunning = false;
     double refLat = 25.25, refLon = 55.36;      // where the antenna is: ranges and local decoding; the default is only a placeholder
+    double refAltM = 0;                         // its height above sea level (metres): the pass planner's look angles
     double pushedLat = 1e9, pushedLon = 1e9;
     uint32_t sel = 0xFFFFFFFFu;                 // the selected aircraft (ICAO address)
     int correction = 1;
@@ -39,6 +40,7 @@ void loadState() {
     plat::Prefs& d = plat::prefs();
     if (d.has("adsbLat")) S.refLat = d.getD("adsbLat", S.refLat);
     if (d.has("adsbLon")) S.refLon = d.getD("adsbLon", S.refLon);
+    S.refAltM = d.getD("rxAltM", 0);
     S.map.zoom = (int)d.getI("adsbZoom", 7);
     S.winds = d.getB("adsbWinds", false);
     S.map.lat = S.refLat; S.map.lon = S.refLon;}
@@ -63,6 +65,14 @@ void positionFields(App& a) {
     ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
     ch |= ImGui::InputDouble("##alon", &lo, 0, 0, "%.4f E");
     if (ch) setReference(a, la, lo);
+    ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));
+    double al = S.refAltM;
+    if (ImGui::InputDouble("##aalt", &al, 0, 0, "%.0f m")) {
+        S.refAltM = std::max(-500.0, std::min(9000.0, al));
+        plat::prefs().setD("rxAltM", S.refAltM); savePrefs(a);
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Height of the antenna above sea level, metres (the pass planner's look angles and Doppler)");
+    ImGui::SameLine(0, 4 * gUi);
     if (ImGui::Button(S.locBusy ? "Locating..." : "Locate (Wi-Fi)") && !S.locBusy) { plat::locateStart(); S.locBusy = 1; S.locMsg = "asking the location service..."; }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Ask the system for this computer's position (Wi-Fi positioning). macOS asks for permission the first time.");
     if (!S.locMsg.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", S.locMsg.c_str()); ImGui::PopTextWrapPos(); }
@@ -631,4 +641,6 @@ bool adsbFullMap(App& a, ImVec2 disp) {
 // The receiver's position, shared by every screen that needs one (ADS-B ranges, the pass planner): the ADS-B antenna position
 void receiverLocation(double& lat, double& lon) { loadState(); lat = S.refLat; lon = S.refLon; }
 bool receiverLocationSet() { return plat::prefs().has("adsbLat") && plat::prefs().has("adsbLon"); }
+double receiverAltitudeM() { loadState(); return S.refAltM; }
+void setReceiverLocation(App& a, double lat, double lon) { loadState(); setReference(a, lat, lon); }
 void receiverPositionFields(App& a) { loadState(); pollLocate(a); positionFields(a); }

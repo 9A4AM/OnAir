@@ -185,6 +185,7 @@ struct App {
     bool wizOpen = false, wizStart = false, wizAcked = false;
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
+    bool mapOpen = false;               // the map window (View > Map): positions and Maidenhead locators
     int wizStep = 0;
     double wizStepT = 0;
     float wizX = -1;
@@ -459,7 +460,10 @@ void toggleFullscreen();
 bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map over the whole window when it is popped out
 void receiverLocation(double& lat, double& lon);  // adsb_ui.cpp: the one receiver position (the ADS-B antenna position)
 bool receiverLocationSet();                        // the user has set it (else it is a placeholder)
-void receiverPositionFields(App& a);               // its two fields and the Locate button
+void receiverPositionFields(App& a);               // its fields (latitude, longitude, altitude) and the Locate button
+double receiverAltitudeM();                         // its height above sea level, metres (0 until set)
+void setReceiverLocation(App& a, double lat, double lon);   // move it (saved), e.g. View > Map's "Use as my location"
+void mapWindow(App& a);                             // map_ui.cpp: View > Map (a.mapOpen): coordinates, Maidenhead locators, distance and bearing
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 void scannerWindow(App& a);                        // scanner_ui.cpp: the scanner window (a.scannerOpen) and its scan loop, every frame (HIGHLY EXPERIMENTAL)
