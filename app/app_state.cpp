@@ -120,6 +120,11 @@ void refreshDevices(App& a) {
     // the radio chosen before stays chosen when it is found again (a radio unplugged or added moves the others in the list)
     const bool hadRadio = a.devIdx >= 2 && a.devIdx < (int)a.devices.size();
     const std::string keep = hadRadio ? a.devices[a.devIdx].name : "";
+    // A radio that is open (the receiver or a channel scan has it) may be missing from a new list: some drivers cannot look at a radio in
+    // use (WinUSB on Windows, the SDRplay service), and the list would then drop the radio being received and move the choice to another
+    // entry. It stays in the list as it was.
+    const bool inUse = hadRadio && a.devices[a.devIdx].isRadio() && (a.engine.running() || a.scanner.progress().running);
+    const DeviceInfo keepDev = inUse ? a.devices[a.devIdx] : DeviceInfo();
     a.devices.clear();
     DeviceInfo s; s.kind = DeviceInfo::Synthetic; s.name = synthLabel(a); a.devices.push_back(s);
     DeviceInfo f; f.kind = DeviceInfo::File; f.name = "IQ recording file…"; a.devices.push_back(f);
@@ -133,6 +138,7 @@ void refreshDevices(App& a) {
     if (hadRadio) {
         int idx = -1;
         for (int i = 2; i < (int)a.devices.size(); i++) if (a.devices[i].name == keep) { idx = i; break; }
+        if (idx < 0 && inUse) { a.devices.push_back(keepDev); idx = (int)a.devices.size() - 1; }
         if (idx < 0) {   // it is gone: another radio must not inherit its antenna power
             a.tune.biasTee = false;
         }

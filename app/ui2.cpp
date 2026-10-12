@@ -242,7 +242,7 @@ void summaryText(App& a, std::string& l1, std::string& l2) {
     const bool run = a.engine.running();
     const ModeDef* cur = &kModes[0];
     for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) cur = &kModes[i];
-    l1 = cur->name; l2 = tr(run ? "starting" : "stopped");
+    l1 = cur->name; l2 = run ? "starting" : a.scanner.progress().running ? "channel scan has the radio" : "stopped";
     char b[96];
     if (run) {
         const RxTelemetry& rx = a.rx;
@@ -459,7 +459,8 @@ void statusLine(App& a) {
     };
     char b[96];
     ImGui::AlignTextToFramePadding();
-    field(tr(run ? "Receiving" : "Stopped"), true, run ? pal::okGreen() : pal::grey());
+    const bool scanning = !run && a.scanner.progress().running;   // the receiver let go of the radio for a channel scan
+    field(run ? "Receiving" : scanning ? "Channel scan" : "Stopped", true, run || scanning ? pal::okGreen() : pal::grey());
     field(cur->name);
     snprintf(b, sizeof b, "%.3f MHz", a.freqMhz); field(b);
     if (run) { snprintf(b, sizeof b, "%.3f Msps", a.engine.sampleRate() / 1e6); field(b); }

@@ -116,7 +116,7 @@ void scanTabCommon(App& a) {
         ImGui::TableHeadersRow();
         for (size_t i = 0; i < res.size(); i++) {
             auto& r = res[i];
-            if (!r.occupied && !r.t2) continue; // hide empty channels
+            if (!r.seen) continue;   // only the channels where the scanned standard was found: not the empty ones, nor signals of another kind
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             char lbl[32]; snprintf(lbl, sizeof lbl, "%.1f##%zu", r.freqMHz, i);
@@ -131,7 +131,7 @@ void scanTabCommon(App& a) {
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Click to tune the receiver to this channel");
             ImGui::TableNextColumn(); ImGui::Text("%.1f dBFS", r.levelDbfs);
             ImGui::TableNextColumn();
-            if (r.t2) ImGui::TextColored(ImVec4(0.4f, 1, 0.5f, 1), "%s", r.standard.c_str()); else ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "other");
+            if (r.t2) ImGui::TextColored(ImVec4(0.4f, 1, 0.5f, 1), "%s", r.standard.c_str()); else ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "too weak");
             ImGui::TableNextColumn(); ImGui::TextUnformatted(r.mode.c_str());
             ImGui::TableNextColumn(); if (r.t2) { if (r.snrDb != 0 || r.standard != "ATSC 3.0") ImGui::Text("%.1f dB", r.snrDb); else ImGui::TextDisabled("-"); }   // the ATSC 3.0 receiver reports no SNR
             ImGui::TableNextColumn(); ImGui::TextUnformatted(r.plpInfo.c_str());

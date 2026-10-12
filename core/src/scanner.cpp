@@ -134,21 +134,49 @@ void Scanner::run() {
         if (dev_.gainMaxDb > dev_.gainMinDb && tune.gainDb < dev_.gainMinDb) tune.gainDb = dev_.gainMinDb;
     }
     FileOptions fo;
-    // The radio was probably in use by the receiver a moment ago: the system may need a short while to let go of it, so a failed open is tried again
-    bool opened = false;
-    for (int attempt = 0; attempt < 3 && !cancel_; attempt++) {
-        if (attempt) { { std::lock_guard<std::mutex> lk(mu_); prog_.phase = "opening the radio again"; } if (!sleepOrCancel(0.5)) break; }
-        if ((opened = e.start(dev_, tune, fo))) break;
-    }
-    if (!opened) {
+    const std::string radioName = dev_.kind == DeviceInfo::HackRF ? "the HackRF" : dev_.name;
+    // whether the radio sends samples: a spectrum frame other than the one there was (a reopened source may count from 0 again) comes
+    // within `sec` seconds
+    auto delivering = [&](double sec) {
+        uint64_t s0 = 0;
+        { SpectrumFrame z; if (e.latestSpectrum(z, 0)) s0 = z.seq; }
+        const auto t = Clock::now();
+        while (!cancel_ && std::chrono::duration<double>(Clock::now() - t).count() < sec) {
+            SpectrumFrame z;
+            if (e.latestSpectrum(z, 0) && z.seq != s0) return true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
+        return false;
+    };
+    // The radio was probably in use by the receiver a moment ago: the system may need a short while to let go of it, so a failed open is
+    // tried again. An open that succeeds is not enough either: a radio opened the moment another handle let go of it can start a stream
+    // that never delivers (the first scan after the receiver ran then went through every channel without seeing anything), so the scan
+    // starts only once samples come, and a silent radio is closed and opened again.
+    bool silent = false;
+    auto openRadio = [&](const TuneSettings& t) {
+        silent = false;
+        for (int attempt = 0; attempt < 3 && !cancel_; attempt++) {
+            if (attempt) { { std::lock_guard<std::mutex> lk(mu_); prog_.phase = "opening the radio again"; } if (!sleepOrCancel(attempt * 0.5)) break; }
+            if (!e.start(dev_, t, fo)) continue;
+            if (delivering(dev_.isRadio() ? 5.0 : 15.0)) return true;   // the test signal of a slow mode on a busy machine may take longer
+            if (cancel_) break;
+            silent = true;
+            e.log("scan: " + radioName + " opened but sends no samples: opening it again");
+            e.stop();
+        }
+        return false;
+    };
+    auto openFailed = [&]() {
         std::string why;   // the engine logged what the radio driver said
         size_t total = 0;
         for (const auto& l : e.logSnapshot(total)) { const size_t p = l.find("source start failed: "); if (p != std::string::npos) why = l.substr(p + 21); }
+        e.stop();
         std::lock_guard<std::mutex> lk(mu_);
         prog_.running = false;
-        prog_.phase = cancel_ ? "stopped" : std::string("could not open ") + (dev_.kind == DeviceInfo::HackRF ? "the HackRF" : dev_.name.c_str()) + (why.empty() ? "" : ": " + why);
-        return;
-    }
+        prog_.phase = cancel_ ? "stopped" : silent ? radioName + " sends no samples (unplugged, or in use by another program?)"
+                                                   : "could not open " + radioName + (why.empty() ? "" : ": " + why);
+    };
+    if (!openRadio(tune)) { openFailed(); return; }
     {   // the rate the radio really runs at (an Airspy Mini lists 10 Msps and may give 6, a SoapySDR radio is only known once opened):
         // too slow for the channels, every one would read "signal present, no DVB-T2" - say why instead
         const int sm = cfg_.atsc ? 3 : cfg_.isdbt ? 6 : cfg_.atsc3 ? 5 : cfg_.dtmb ? 9 : 0;
@@ -167,6 +195,7 @@ void Scanner::run() {
         std::lock_guard<std::mutex> lk(mu_);
         prog_.phase = ph; prog_.index = idx; prog_.currentMHz = f;
     };
+    int silentRetries = 0;   // times the radio was opened again on the current channel because it sent nothing
     for (size_t i = 0; i < freqs.size() && !cancel_; i++) {
         const double f = freqs[i];
         ScanResult r;
@@ -227,6 +256,16 @@ void Scanner::run() {
         }
         if (getenv("DECT2_SCANDEBUG")) fprintf(stderr, "[scan] %.1f frames %d nIn %d floor %zu rate %.0f\n", f, frames, nIn, floorBins.size(), e.sampleRate());
         if (cancel_) break;
+        if (frames == 0) {   // not one spectrum in 5 s: the radio went silent, and every channel from here on would read "empty"
+            if (silentRetries++ < 2) {
+                e.log("scan: " + radioName + " stopped sending samples: opening it again");
+                { std::lock_guard<std::mutex> lk(mu_); prog_.phase = "the radio sends nothing: opening it again"; }
+                if (openRadio(tune)) { i--; continue; }   // open again on this channel, and measure it again
+            }
+            if (!cancel_) { silent = true; openFailed(); return; }
+            break;
+        }
+        silentRetries = 0;
         if (nIn > 0) r.levelDbfs = 10 * std::log10(inb / nIn);
         if (!floorBins.empty()) {
             std::sort(floorBins.begin(), floorBins.end());
@@ -297,6 +336,9 @@ void Scanner::run() {
         if (cancel_) break;
         if (!l1 && !tlock && !alock && !ilock && !a3lock && !dlock) {
             r.note = cfg_.atsc3 ? "signal present, no ATSC 3.0" : cfg_.dtmb ? (t.dtmb.header >= 0 ? "DTMB frames found, system information not decodable (weak?)" : "signal present, no DTMB") : cfg_.isdbt ? "signal present, no ISDB-T" : cfg_.atsc ? "signal present, no ATSC" : t.p1Count > 0 ? "T2 preamble found, L1 not decodable (weak?)" : "signal present, no DVB-T2";
+            // the standard is there but too weak to decode (a T2 preamble, DTMB frame headers): still listed, unlike a signal of another kind
+            r.seen = cfg_.dtmb ? t.dtmb.header >= 0 : !cfg_.atsc3 && !cfg_.isdbt && !cfg_.atsc && t.p1Count > 0 && t.p1.valid;
+            if (cfg_.dtmb) r.standard = "DTMB";
             if (t.p1Count > 0 && t.p1.valid) {
                 const FftMode* fm = fftModeFromS2(t.p1.s2field1);
                 r.mode = std::string(s1Name(t.p1.s1)) + " " + (fm ? fm->name : "?");
@@ -307,6 +349,7 @@ void Scanner::run() {
             continue;
         }
         r.t2 = true;
+        r.seen = true;
         r.l1post = t.l1postOk;
         const bool other = !tlock && !alock && !ilock && !a3lock && !dlock;   // a DVB-T2 lock: the others have their own fields
         if (a3lock) {

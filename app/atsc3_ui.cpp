@@ -50,7 +50,7 @@ void atsc3Status(App& a) {
         flowNext(15 * gUi);
     };
     char b[96];
-    if (!run) ro("State", "stopped", ImVec4(0.6f, 0.64f, 0.68f, 1));
+    if (!run) ro("State", a.scanner.progress().running ? "channel scan has the radio" : "stopped", ImVec4(0.6f, 0.64f, 0.68f, 1));
     else if (a.engine.radioLost()) ro("State", "radio disconnected", ImVec4(0.95f, 0.35f, 0.3f, 1));
     else if (!live) ro("State", "starting", ImVec4(0.6f, 0.64f, 0.68f, 1));
     else if (t.locked) ro("State", "Locked", ImVec4(0.35f, 0.90f, 0.45f, 1));

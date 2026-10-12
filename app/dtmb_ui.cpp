@@ -90,7 +90,7 @@ void status(App& a) {
         flowNext(15 * gUi);
     };
     char b[96];
-    if (!run) ro("State", "stopped", kDim);
+    if (!run) ro("State", a.scanner.progress().running ? "channel scan has the radio" : "stopped", kDim);
     else if (a.engine.radioLost()) ro("State", "radio disconnected", kBad);
     else if (!on) ro("State", "starting", kDim);
     else if (t.tsLock) ro("State", "Locked", kGood);

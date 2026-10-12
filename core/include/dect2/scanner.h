@@ -36,6 +36,8 @@ struct ScanResult {
     double occupancyDb = 0;        // in-band minus out-of-band floor
     bool occupied = false;
     bool t2 = false;               // a DVB-T2 or DVB-T signal was locked (see `standard`)
+    bool seen = false;             // the scanned standard is there: locked (t2), or only its preamble found, too weak to decode
+                                   // (a signal of another kind leaves it false: the scan tab does not list those)
     std::string standard = "DVB-T2"; // "DVB-T2" or "DVB-T"
     bool l1post = false;
     std::string note;

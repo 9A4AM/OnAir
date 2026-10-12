@@ -816,11 +816,11 @@ void statusBar(App& a) {
         flowNext(15 * gUi);
     };
     char b[96];
-    if (!run) ro(N_("State"), tr("stopped"), ImVec4(0.6f, 0.64f, 0.68f, 1));
-    else if (a.engine.radioLost()) ro("State", tr("radio disconnected"), ImVec4(0.95f, 0.35f, 0.3f, 1));
-    else if (rx.state == 2) ro("State", tr("Locked"), ImVec4(0.35f, 0.90f, 0.45f, 1));
-    else if (rx.state == 1) ro("State", tr("syncing"), ImVec4(0.95f, 0.75f, 0.2f, 1));
-    else ro("State", tr("searching"), ImVec4(0.6f, 0.64f, 0.68f, 1));
+    if (!run) ro("State", a.scanner.progress().running ? "channel scan has the radio" : "stopped", ImVec4(0.6f, 0.64f, 0.68f, 1));
+    else if (a.engine.radioLost()) ro("State", "radio disconnected", ImVec4(0.95f, 0.35f, 0.3f, 1));
+    else if (rx.state == 2) ro("State", "Locked", ImVec4(0.35f, 0.90f, 0.45f, 1));
+    else if (rx.state == 1) ro("State", "syncing", ImVec4(0.95f, 0.75f, 0.2f, 1));
+    else ro("State", "searching", ImVec4(0.6f, 0.64f, 0.68f, 1));
     if (run && rx.standard == 2 && rx.state >= 1) {
         ro(N_("Mode"), "ATSC 8-VSB");
         ro(N_("Channel"), "6 MHz");
