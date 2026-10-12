@@ -88,7 +88,7 @@ std::string netRadioDeviceName(const NetRadio& r) {
     switch (r.type) {
     case NetRadio::Pluto: return native::plutoDevice(plutoUri(r)).name;
     case NetRadio::SoapyRemote: return "SoapyRemote " + hostPort(cleanHost(r.host), netRadioPort(r)) + " (network)";
-    case NetRadio::SpyServer: return "SpyServer " + hostPort(cleanHost(r.host), netRadioPort(r)) + " (network)";
+    case NetRadio::SpyServer: return "SpyServer - Andriuxa PNVZ " + hostPort(cleanHost(r.host), netRadioPort(r)) + " (network)";
     default: return native::rtlTcpDevice(cleanHost(r.host), netRadioPort(r)).name;
     }
 }
