@@ -10,6 +10,7 @@
 //   dect2cli --standard tetra --freq 392.5   (TETRA network information: the cells found are listed at the end; receive only, nothing is decrypted)
 //     onair_dvb_554.000MHz_10Msps_20261009-071530.cs8, which reopens with the right rate and format)
 //   dect2cli --standard ble --ble-channel 37|38|39   (Bluetooth LE advertising, receive only: devices and packets in the status line and the log)
+#include "dect2/wifi_proto.h"
 #include "dect2/rate_choice.h"
 #include "dect2/ble_proto.h"
 #include "dect2/engine.h"
@@ -182,6 +183,7 @@ int main(int argc, char** argv) {
     e.astro().setSilent(true);    // radio astronomy: the summary line only
     e.iono().setSilent(true);     // ionospheric sounders: the summary line only
     e.qo100().setSilent(true);    // QO-100: Listen without the sound card
+    e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
     e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
     e.dvbc().setAnnexC(dvbcAnnexC);
@@ -268,6 +270,10 @@ int main(int argc, char** argv) {
             continue_t2 = false;
         } else if (t.standard >= 7) {
             printf("level %6.1f dBFS | %s | dropped %llu\n", sf.stats.rmsDbfs, modeSummary(t).c_str(), (unsigned long long)e.droppedSamples());
+            if (t.standard == 55)   // Wi-Fi networks: the table, as a phone's Wi-Fi list
+                for (const auto& ap : t.wifi.aps)
+                    printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
+                           wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
             continue_t2 = false;
         } else if (t.standard == 2) {
             const AtscTelemetry& a = t.atsc;
