@@ -55,7 +55,16 @@ struct PlayerStats {
     double concealedAudioSec = 0;
     uint64_t repairEvents = 0, repairedFrames = 0;   // damaged pictures replaced by generated ones
     std::string concealBackend;          // how missing pictures are made: "Apple ML" or "motion search"
+    // what of the service the FFmpeg in OnAir cannot show or play (AVS+ / AVS2 / AVS3 video, DRA sound; docs/CODECS.md), one sentence, else empty
+    std::string videoNote, audioNote;
 };
+
+// The profile_id of the first AVS1-P2 / AVS+ sequence header (start code 00 00 01 B0) in p, -1 when there is none
+int avsProfileId(const uint8_t* p, size_t n);
+// Why an AVS family video stream gives no picture: codec as FFmpeg names it ("cavs", "avs2", "avs3"), whether this FFmpeg has a decoder for
+// it, the profile from avsProfileId() (-1 not seen yet). Empty when it can be decoded (or nothing is known yet).
+std::string avsVideoNote(const std::string& codec, bool haveDecoder, int profile);
+extern const char* const kDraAudioNote;   // a service whose sound is DRA only
 
 class Player {
 public:
@@ -101,6 +110,7 @@ private:
     uint64_t pushed_ = 0, consumed_ = 0;
     int lastCc_[8192];
     std::atomic<int> videoPid_{-1};
+    std::atomic<bool> draAudio_{false};   // the selected service carries DRA sound (from the service list)
 };
 
 } // namespace dect2

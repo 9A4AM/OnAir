@@ -16,6 +16,7 @@ restart.
 | P25 Phase 1 | IMBE (7200x4400) | calls, talkgroups, trunking; plays clear voice when mbelib is installed (encrypted calls only reported) | **yes** (mbelib) |
 | HD Radio | HDC | stations, data and pictures; no sound | no |
 | CDR | DRA+ | service list; no sound | no |
+| DTMB (China) | AVS+, AVS2, AVS3 video; DRA sound | services, sound in other formats and the guide; AVS1 JiZhun pictures play; says why AVS+ / AVS2 / AVS3 pictures or DRA sound are missing | no |
 | Inmarsat Aero | AMBE (C channel voice) | P channel data only; voice channels are not tuned | no |
 | Iridium | AMBE variant | counts voice frames; saves `.bits` for iridium-toolkit | no |
 | DAB/DAB+, DRM, TV modes | MP2, AAC, xHE-AAC, MPEG-2, H.264, HEVC, AC-3 | plays (FFmpeg is built into OnAir) | nothing to install |
@@ -151,6 +152,23 @@ use nrsc5 (<https://github.com/theori-io/nrsc5>) with an RTL-SDR or an IQ record
 
 CDR sound uses DRA+, a patented codec that is not openly described. OnAir lists the services but plays no sound. There is no free
 DRA+ decoder to install at this time.
+
+## AVS+, AVS2, AVS3 and DRA (DTMB television in China)
+
+DTMB channels in China send their pictures as AVS+ (stream type 0x42; some as AVS2, 0xD2, or AVS3, 0xD4) and some send their sound as
+DRA. These are Chinese patented codecs, and OnAir ships none of them: it plays what the FFmpeg built into it can decode.
+
+- AVS1 in its JiZhun profile: FFmpeg's `cavs` decoder plays it (the macOS and Windows downloads; the Linux packages carry a smaller
+  FFmpeg without it).
+- AVS+ (the broadcast profile, 0x48): FFmpeg's `cavs` decoder refuses it ("only support JiZhun profile", FFmpeg 8 and 9). OnAir lists
+  the service as TV, plays its sound, and says in the player that there is no picture. There is no free AVS+ decoder to install at this
+  time.
+- AVS2 and AVS3: FFmpeg decodes them only when it is built with libdavs2 or libuavs3d, which the FFmpeg in OnAir is not. Save the stream
+  (Outputs: file or UDP) and play it with an FFmpeg build that has them (ffplay).
+- DRA sound: FFmpeg has no DRA decoder. The player says "DRA audio: no decoder available"; a second sound track in another format plays.
+
+The player panel has a **?** button next to these messages. A channel that signals a CA system (a CA descriptor, free_CA_mode) but sends
+its streams in the clear is not shown as scrambled: OnAir goes by the scrambling bits of the stream packets.
 
 ## AMBE (Inmarsat Aero voice)
 

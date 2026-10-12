@@ -180,7 +180,8 @@ void TsDemux::feed(const uint8_t* p) {
     st.packets++; st.bytesWin += 188;
     if (pid == 0x1FFF) { nulls_++; nullWin_++; return; }
     if (tei) { tei_++; st.tei++; return; }
-    st.scrambled = scr != 0;
+    // (only packets with a payload: the adaptation field is never scrambled, and a PCR-only packet of a scrambled stream may say 00)
+    if (afc & 1) st.scrambled = scr != 0;
     if (afc & 1) {
         if (!st.resync && st.lastCc >= 0 && cc != ((st.lastCc + 1) & 15) && !(cc == st.lastCc && afc == 2)) { st.ccErrors++; ccErr_++; }
         st.lastCc = cc;
@@ -304,6 +305,10 @@ static const char* streamKind(int st, std::string& codec, bool& isVideo, bool& i
     case 0x24: codec = "HEVC"; isVideo = true; break;
     case 0x81: codec = "AC-3"; isAudio = true; break;
     case 0x87: codec = "E-AC-3"; isAudio = true; break;
+    // the Chinese AVS family (GB/T 17975.1, DTMB in China): AVS1-P2 and AVS+, AVS2, AVS3 (docs/CODECS.md)
+    case 0x42: codec = "AVS"; isVideo = true; break;
+    case 0xD2: codec = "AVS2"; isVideo = true; break;
+    case 0xD4: codec = "AVS3"; isVideo = true; break;
     default: break;
     }
     return isVideo ? "video" : isAudio ? "audio" : "data";
@@ -334,6 +339,7 @@ void TsDemux::parsePmt(int pid, const uint8_t* s, int len) {
             const uint8_t* d = s + j + 2;
             switch (tag) {
             case 0x09: ca = true; break;
+            case 0x05: if (l >= 4 && memcmp(d, "DRA1", 4) == 0) { st.codec = "DRA"; st.kind = "audio"; } break;   // registration: DRA sound (GB/T 22726)
             case 0x0A: if (l >= 3) st.lang.assign((const char*)d, 3); break;
             case 0x6A: st.codec = "AC-3"; st.kind = "audio"; break;
             case 0x7A: st.codec = "E-AC-3"; st.kind = "audio"; break;
@@ -544,9 +550,12 @@ TsSnapshot TsDemux::snapshot() const {
     std::map<int, std::string> label;
     for (auto& kv : services_) {
         TsService sv = kv.second;
+        // scrambled: what the streams' packets say, not the CA signalling (a free channel can carry CA descriptors or free_CA_mode)
+        sv.scrambled = false;
         for (auto& st : sv.streams) {
             auto it = pids_.find(st.pid);
             if (it != pids_.end()) { st.kbps = it->second.kbps; st.scrambled = it->second.scrambled; }
+            sv.scrambled = sv.scrambled || st.scrambled;
             label[st.pid] = (sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name) + " " + st.kind + " (" + st.codec + ")";
         }
         label[sv.pmtPid] = "PMT " + (sv.name.empty() ? std::to_string(sv.id) : sv.name);

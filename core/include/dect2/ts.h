@@ -21,7 +21,8 @@ struct TsService {
     std::string name, provider;
     int type = 0;            // DVB service type
     int pmtPid = 0, pcrPid = 0;
-    bool caFlag = false;     // free_CA_mode or CA descriptors present
+    bool caFlag = false;     // free_CA_mode or CA descriptors present (signalling only: many free channels carry them, e.g. on DTMB in China)
+    bool scrambled = false;  // its elementary streams arrive scrambled (transport_scrambling_control of their payload packets): what to show
     bool haveSdt = false, havePmt = false;
     std::vector<TsStream> streams;
     std::string now, next;   // EIT present / following event names

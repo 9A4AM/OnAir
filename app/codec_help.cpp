@@ -130,6 +130,20 @@ Text textOf(CodecHelp c) {
                 "  mkdir build && cd build && cmake .. && make && sudo make install",
 #endif
                 true};
+    case CodecHelp::Avs:
+        return {"AVS+, AVS2 and AVS3 (TV pictures in China)",
+                "DTMB television in China sends its pictures as AVS+ (and some channels as AVS2 or AVS3), Chinese patented video codecs. "
+                "OnAir plays them through the FFmpeg built into it and ships no codec of its own. FFmpeg decodes AVS1 in its JiZhun profile, "
+                "but not AVS+ (the broadcast profile), and AVS2 and AVS3 only when it was built with libdavs2 or libuavs3d, which the FFmpeg in "
+                "OnAir is not. The service list, the sound and the guide work without the picture.",
+                "There is no free AVS+ decoder to install at this time. For AVS2 or AVS3, save the stream (Outputs: file or UDP) and play it "
+                "with an FFmpeg build that includes libdavs2 or libuavs3d (ffplay). Check the patent rules where you live first.",
+                false};
+    case CodecHelp::DraTv:
+        return {"DRA (TV sound in China)",
+                "Some DTMB channels in China send their sound as DRA, a Chinese patented audio codec. FFmpeg has no DRA decoder, so OnAir shows "
+                "the picture without that sound; a second sound track in another format (MPEG audio, AAC, AC-3) plays.",
+                "There is no free DRA decoder to install at this time.", false};
     }
     return {"", "", "", false};
 }
