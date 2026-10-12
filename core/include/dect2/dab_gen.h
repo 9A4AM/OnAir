@@ -76,6 +76,7 @@ struct TxService {
     bool dmb = false;                   // a DMB video service instead of audio (TS 102 428 profile 2: H.264 and AAC; dab_gen_dmb.cpp)
     int sampleRate = 48000;             // DAB+: 48000 or 32000; DAB: 48000
     double leftHz = 1000, rightHz = 3000;   // the tones (periods that divide the frame length)
+    bool slide = false;                 // DAB+: a slide show picture (a small PNG) in the PAD, once per 12 s loop
     bool melody = false;                // a tune instead of the tones (12 s, left: the tune, right: the same an octave higher)
     double amplitude = 0.5;             // peak of every channel, 1.0 = full scale
     int option = 0, level = 2;          // EEP-3A
@@ -93,6 +94,16 @@ struct TxConfig {
     // against the main signal (0 = as strong as a data carrier). Empty: no TII.
     struct Tii { int mainId = 0, subId = 0; double levelDb = 0; };
     std::vector<Tii> tii;
+    // Announcements: every service supports the types `annSupport` (ASu flags) on the cluster `annCluster` (FIG 0/18); while `annActive` is not
+    // 0 the cluster announces those types (ASw flags) on sub-channel `annSubId` (FIG 0/19). annCluster 0: none.
+    int annCluster = 0;
+    unsigned annSupport = 0, annActive = 0;
+    int annSubId = -1;
+    // FIG 0/17: the programme type of every service (-1: none), dynamic when `ptyDynamic`
+    int pty = -1;
+    bool ptyDynamic = false;
+    // Labels as FIG 2 (UTF-8, in segments of at most 8 bytes) instead of FIG 1: the label strings may then hold any text
+    bool utf8Labels = false;
 };
 // 1 "OnAir Tones 1" DAB+ 48 kHz 1 kHz / 3 kHz, 48 kbit/s; 2 "OnAir Tones 2" DAB+ 32 kHz 2 kHz / 500 Hz, 32 kbit/s; 3 "OnAir Melody" DAB+ 48 kHz, 64 kbit/s;
 // 4 "OnAir MP2" DAB 48 kHz 1.5 kHz / 750 Hz, 128 kbit/s (left out when libavcodec has no MP2 encoder)
@@ -101,6 +112,12 @@ std::vector<TxService> defaultServices();
 // (QCIF) at 12.5 pictures per second in H.264, and AAC-LC 32 kHz stereo tones (1 kHz left, 500 Hz right). The app's test signal carries it
 // after the defaultServices().
 TxService dmbService();
+
+// The slide of a service with TxService::slide: a PNG (80 x 60, palette) and its pixels, and the data stream element (PAD) that goes in front of
+// access unit j of the loop, empty when there is none
+std::vector<uint8_t> slidePng();
+void slideImage(int& w, int& h, std::vector<uint8_t>& rgba);
+std::vector<std::vector<uint8_t>> slideDse(size_t nAu);
 
 struct SubLayout { int subId, start, size, bitrate, option, level, uep = -1; };
 
