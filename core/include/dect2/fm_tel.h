@@ -1,6 +1,7 @@
 // FM receiver telemetry, shared by the receiver and the UI.
 #pragma once
 #include "ring.h"
+#include "rds_tmc.h"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -28,6 +29,8 @@ struct FmTelemetry {
     bool trafficAlert = false;  // TA: a traffic announcement is on air
     bool trafficProgram = false;// TP: the station carries traffic announcements
     bool music = false;         // M/S flag: music (true) or speech (false)
+    TmcSystem tmc;              // RDS-TMC announcement (group 3A); tmc.seen = the station carries TMC
+    std::vector<TmcMessage> tmcMessages;   // traffic messages not yet expired, newest first
     int piCode = 0;             // programme identification, 0 = unknown
 
     std::vector<float> mpxDb;   // spectrum of the multiplex, 0 .. mpxMaxHz, dB relative to full deviation

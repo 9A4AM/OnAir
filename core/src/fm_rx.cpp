@@ -7,9 +7,11 @@
 #include "dect2/audioout.h"
 #include "dect2/dsp_compat.h"
 #include "dect2/fftutil.h"
+#include "dect2/rds_tmc.h"
 #include "dect2/resampler.h"
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <complex>
 #include <cstring>
@@ -175,6 +177,7 @@ struct RdsDecoder {
     char rtBuf[65] = {};
     int rtAb = -1;
     int lastSyncBits = 0;
+    TmcDecoder tmc;
 
     void reset() { *this = RdsDecoder(); }
     static int posOf(int offIdx) { return offIdx == 3 ? 2 : offIdx == 4 ? 3 : offIdx; }
@@ -234,6 +237,10 @@ struct RdsDecoder {
             psBuf[seg * 2] = c0; psBuf[seg * 2 + 1] = c1;
             psSeen |= (uint8_t)(1 << seg);
             if (psSeen == 15) { ps.assign(psBuf, 8); psSeen = 0; }
+        } else if (type == 3 && ver == 0 && ok[2]) {
+            tmc.onGroup3A((uint16_t)low, info[2], info[3]);
+        } else if (type == 8 && ver == 0 && ok[2]) {
+            tmc.onGroup8A((uint16_t)low, info[2], info[3], std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count());
         } else if (type == 2) {
             const int ab = (low >> 4) & 1, seg = low & 15;
             if (ab != rtAb) { std::memset(rtBuf, ' ', 64); rtAb = ab; rt.clear(); }
@@ -704,6 +711,8 @@ struct FmReceiver::Impl {
         t.rdsBlockOkPct = rds.okPct;
         t.rdsGroups = rds.groups;
         t.psName = rds.ps; t.radioText = rds.rt; t.ptyText = rds.groups ? kPtyNames[rds.pty & 31] : "";
+        t.tmc = rds.tmc.system();
+        t.tmcMessages = rds.tmc.messages(std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count());
         t.trafficAlert = rds.ta; t.trafficProgram = rds.tp; t.music = rds.ms; t.piCode = rds.groups ? rds.pi : 0;
         // an FM carrier has a constant envelope (spread about 0.2 at 12 dB), noise alone a Rayleigh envelope (0.52)
         double cv = 1;

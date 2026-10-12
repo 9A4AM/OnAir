@@ -3,6 +3,7 @@
 #include "ring.h"
 #include <cstdint>
 #include <random>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,8 @@ struct FmGenConfig {
     int pi = 0x4A21;
     int pty = 10;
     bool tp = true, ta = false, music = true;
+    // extra RDS groups sent round the station groups (blocks B, C, D; B complete with type, TP and PTY); a test can send TMC (3A, 8A) with them
+    std::vector<std::array<uint16_t, 3>> extraGroups;
     double preemphUs = 50;
     uint32_t seed = 1;
 };
@@ -35,6 +38,7 @@ public:
 
 private:
     void nextGroup();
+    size_t extraNo_ = 0;
     FmGenConfig c_;
     std::mt19937 rng_;
     double t_ = 0;                 // seconds

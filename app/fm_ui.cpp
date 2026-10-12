@@ -1,5 +1,6 @@
 // FM broadcast radio panels: tuning, status line, station panel with RDS, diagnostic plots and the band scanner.
 #include "app.h"
+#include <chrono>
 
 static constexpr double kFmLow = 87.5, kFmHigh = 108.0;
 
@@ -242,6 +243,38 @@ void fmRadioPanel(App& a) {
         ImGui::EndTable();
     }
     ImGui::Spacing();
+    if (live && fm.tmc.seen) {   // RDS-TMC traffic messages, only for a station that carries TMC
+        char hd[96];
+        snprintf(hd, sizeof hd, "Traffic (TMC) - %zu", fm.tmcMessages.size());
+        if (ImGui::CollapsingHeader(hd, ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::PushTextWrapPos(0);
+            ImGui::TextDisabled("Table %d%s%s. Locations are shown as codes: the country's location table is not included.", fm.tmc.ltn, fm.tmc.mode == 1 ? ", enhanced mode" : "", "");
+            ImGui::PopTextWrapPos();
+            ImGui::BeginChild("##fmtmc", ImVec2(0, 150 * gUi), ImGuiChildFlags_Borders);
+            if (fm.tmcMessages.empty()) ImGui::TextDisabled("No messages yet.");
+            const double now = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+            for (size_t i = 0; i < fm.tmcMessages.size(); i++) {
+                const TmcMessage& m = fm.tmcMessages[i];
+                ImGui::PushID((int)i);
+                ImGui::PushTextWrapPos(0);
+                ImGui::Text("%s", m.text.c_str());
+                for (const auto& s : m.more) ImGui::TextDisabled("  + %s", s.c_str());
+                char loc[160];
+                int n = snprintf(loc, sizeof loc, "location %d (table %d), %s", m.location, fm.tmc.ltn, m.negative ? "negative direction" : "positive direction");
+                if (m.extent) n += snprintf(loc + n, sizeof loc - (size_t)n, ", +%d locations", m.extent);
+                if (m.diversion) n += snprintf(loc + n, sizeof loc - (size_t)n, ", diversion advised");
+                if (!m.durationText.empty()) n += snprintf(loc + n, sizeof loc - (size_t)n, ", %s", m.durationText.c_str());
+                ImGui::TextDisabled("%s", loc);
+                const int ago = (int)std::max(0.0, (now - m.received) / 60), left = (int)std::max(0.0, (m.expires - now) / 60);
+                ImGui::TextDisabled("received %d min ago, expires in %d min", ago, left);
+                ImGui::PopTextWrapPos();
+                ImGui::Separator();
+                ImGui::PopID();
+            }
+            ImGui::EndChild();
+        }
+        ImGui::Spacing();
+    }
     if (pal::dev()) {   // compact now-playing, then the scanned stations fill the rest of the panel
         ImGui::BeginChild("fmnow", ImVec2(0, 74 * gUi), ImGuiChildFlags_Borders);
         const std::string ps = live ? fmTrim(fm.psName) : "";
