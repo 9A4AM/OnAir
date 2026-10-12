@@ -1,3 +1,4 @@
+#include "ham_listen.h"
 #include "dect2/marine_rx.h"
 #include "dect2/marine_dsc.h"
 #include "dect2/marine_dsp.h"
@@ -53,6 +54,7 @@ struct MarineReceiver::Impl {
     FskSlicer fsk;
     VhfSlicer vhf;
     FaxAudio faxAudio;
+    hfdig::Listen listen;          // "Listen": the fax tones on the sound card (off by default)
     FaxDecoder fax;
     NavtexDecoder nav[2] = {NavtexDecoder(false), NavtexDecoder(true)};
     DscDecoder dsc[2] = {DscDecoder(false, false), DscDecoder(true, false)};
@@ -129,7 +131,7 @@ struct MarineReceiver::Impl {
     }
 
     void resetAll() {
-        front.reset(); spec.reset(); fsk.reset(); vhf.reset(); faxAudio.reset(); fax.reset();
+        front.reset(); spec.reset(); fsk.reset(); vhf.reset(); faxAudio.reset(); fax.reset(); listen.reset();
         for (auto& n : nav) n.reset();
         for (auto& d : dsc) d.reset();
         for (auto& d : dscv) d.reset();
@@ -264,6 +266,7 @@ void MarineReceiver::feed(const cf32* x, size_t n) {
         if (en.fax) {
             s.audio.clear();
             s.faxAudio.process(b, nb, s.audio);
+            if (s.listen.on.load()) s.listen.playBase(b, nb);
             if (!s.audio.empty()) s.fax.push(s.audio.data(), s.audio.size());
         }
     }
@@ -304,5 +307,10 @@ ModeTuning marineTuning() {
     t.tuneOffsetHz = 20000;
     return t;
 }
+
+void MarineReceiver::setListen(bool on) { p_->listen.on = on; }
+void MarineReceiver::setVolume(float v) { p_->listen.volume = std::max(0.f, std::min(1.f, v)); }
+void MarineReceiver::setMuted(bool m) { p_->listen.muted = m; }
+void MarineReceiver::setSilent(bool s) { p_->listen.silent = s; }
 
 } // namespace dect2

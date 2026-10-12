@@ -25,6 +25,7 @@ struct State {
     int lastActive = -1;
     int service = 0;                 // 0 auto, 1 NAVTEX, 2 DSC, 3 fax
     int lpmIdx = 0, iocIdx = 0;      // 0 = detect
+    bool listen = false; int pushedListen = -1; float pushedVol = -1; int pushedMute = -1;   // weather fax: "Listen"
     float slant = 0;
     bool autoSlant = true;
     int pushedService = -1, pushedLpm = -1, pushedIoc = -1;
@@ -60,6 +61,7 @@ void loadState() {
     plat::Prefs& d = plat::prefs();
     S.service = std::max(0, std::min(3, (int)d.getI("marineService", 0)));
     S.lpmIdx = std::max(0, std::min(4, (int)d.getI("marineLpm", 0)));
+    S.listen = d.getB("faxListen", false);
     S.iocIdx = std::max(0, std::min(2, (int)d.getI("marineIoc", 0)));
     S.autoSlant = d.getB("marineAutoSlant", true);
     S.slant = (float)d.getD("marineSlant", 0.0);
@@ -322,6 +324,8 @@ void faxView(App& a) {
     static const char* const iocN[] = {"IOC: start tone", "IOC 576", "IOC 288"};
     ImGui::SetNextItemWidth(110 * gUi);
     if (ImGui::Combo("##mflpm", &S.lpmIdx, lpmN, 5)) plat::prefs().setI("marineLpm", S.lpmIdx);
+    flowNext();
+    listenControls(a, S.listen, "faxListen", "fax", "Play the fax tones (the upper sideband from the dial); decoding is the same either way");
     flowNext(); ImGui::SetNextItemWidth(130 * gUi);   // the controls wrap in a narrow window
     if (ImGui::Combo("##mfioc", &S.iocIdx, iocN, 3)) plat::prefs().setI("marineIoc", S.iocIdx);
     flowNext();
@@ -579,6 +583,8 @@ void tick(App& a) {
     const double fz = k == DeviceInfo::Synthetic || k == DeviceInfo::File ? 0.0 : a.freqMhz * 1e6;
     if (S.pushedFreq != fz) { r.setFrequencyHz(fz); S.pushedFreq = fz; }
     if (S.pushedLpm != S.lpmIdx) { r.setFaxLpm(kLpm[S.lpmIdx]); S.pushedLpm = S.lpmIdx; }
+    if ((int)S.listen != S.pushedListen) { r.setListen(S.listen); S.pushedListen = S.listen; }
+    if (a.volume != S.pushedVol || (int)a.muted != S.pushedMute) { r.setVolume(a.volume); r.setMuted(a.muted); S.pushedVol = a.volume; S.pushedMute = a.muted; }
     if (S.pushedIoc != S.iocIdx) { r.setFaxIoc(kIoc[S.iocIdx]); S.pushedIoc = S.iocIdx; }
     if (S.pushedSlant != S.slant) { r.setFaxSlantPpm(S.slant); S.pushedSlant = S.slant; }
     if (S.pushedAuto != (int)S.autoSlant) { r.setFaxAutoSlant(S.autoSlant); S.pushedAuto = S.autoSlant; }

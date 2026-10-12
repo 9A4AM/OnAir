@@ -32,6 +32,10 @@ public:
     void setFaxIoc(int ioc);                             // 576 or 288; 0 = from the start tone
     void setFaxSlantPpm(double ppm);
     void setFaxAutoSlant(bool on);
+    void setListen(bool on);                             // weather fax: play its tones (the upper sideband) on the sound card (default off)
+    void setVolume(float v);
+    void setMuted(bool m);
+    void setSilent(bool s);                              // decode but never open the sound device
     void clearMessages();                                // empties the NAVTEX and DSC lists
 
     // The fax picture: true and a copy when it changed since `seq` (updated to the new value).
