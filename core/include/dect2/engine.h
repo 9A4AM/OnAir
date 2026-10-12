@@ -46,6 +46,7 @@
 #include "dstar_rx.h"
 #include "nxdn_rx.h"
 #include "dpmr_rx.h"
+#include "tetra_rx.h"
 #include "gsmr_rx.h"
 #include "dvbc_rx.h"
 #include "orbcomm_rx.h"
@@ -206,6 +207,7 @@ public:
     SpecanReceiver& specan() { return rxSpecan_; }   // spectrum analyser: range, resolution, averaging (telemetry through latestRx)
     Js8Receiver& js8() { return rxJs8_; }   // JS8Call: the receiver's own controls and results (the interface reads telemetry through latestRx)
     OrbcommReceiver& orbcomm() { return rxOrb_; }   // Orbcomm: downlinks at once (the interface reads telemetry through latestRx)
+    TetraReceiver& tetra() { return rxTetra_; }   // TETRA network information: the interface reads telemetry through latestRx
     UplinkReceiver& uplink() { return rxUplink_; }   // Mode S uplink (1030 MHz): telemetry through latestRx
     DvbcReceiver& dvbc() { return rxDvbc_; }   // DVB-C: symbol rate, QAM, annex (the interface reads telemetry through latestRx)
     PskReceiver& psk() { return rxPsk_; }   // PSK31: the receiver's own controls and results (the interface reads telemetry through latestRx)
@@ -327,6 +329,7 @@ private:
     DvbcReceiver rxDvbc_;
     OrbcommReceiver rxOrb_;
     UplinkReceiver rxUplink_;
+    TetraReceiver rxTetra_;
     uint64_t modeSeq_[48] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;

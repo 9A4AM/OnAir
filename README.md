@@ -121,6 +121,7 @@ These receivers are built from the published specifications and checked end to e
 | **ISM sensors** | 433.92 / 868 / 915 MHz devices (the rtl_433 idea) | Weather stations, tyre pressure sensors, remotes and energy / water meters (wireless M-Bus header): a device table with history, a live log, unknown signals with their pulses |
 | **Cell towers** | LTE downlink broadcast (MIB, SIB1 - SIB5) | Operator, band, EARFCN, PCI, eNB / sector, TAC, neighbours, band scan; receive only |
 | **GSM-R** | Railway GSM broadcast (BCCH, 921 - 925 MHz) | Base stations: ARFCN, BSIC, cell identity, location area, operator code, channel lists; band scan; receive only |
+| **TETRA** | TETRA base station broadcast (ETSI EN 300 392-2: BSCH, BNCH, AACH, MCCH), 25 kHz channels | Network code, colour code, location area, carriers and duplex spacing, services, neighbour cells, whether encryption is used; scan over a span; receive only, nothing decrypted |
 | **GNSS** | GPS L1 | Satellites, position and time |
 | **Mesh** | Meshtastic and MeshCore (LoRa) | Nodes, map and chat |
 
@@ -147,6 +148,12 @@ Cell towers broadcast who they are (operator, area code, cell id) but not where 
 3. In OnAir, open Cells → Map and paste it into **OpenCelliD API key** (the "?" next to it repeats these steps).
 
 Lookups need internet and run in the background at most once a second; only the cell identity (MCC, MNC, TAC, cell id) and your key are sent. Answers are cached on disk, so the map also works offline afterwards. A CSV downloaded from OpenCelliD still works instead (Load tower file). Tower data © OpenCelliD, CC BY-SA 4.0.
+
+### TETRA network information
+
+The TETRA mode lists the TETRA base stations it hears, with what each one broadcasts in the clear to every terminal: the network code (MCC, MNC), colour code, location area, the main carrier, uplink and duplex spacing, the services the cell offers, its neighbour cells, the network time, and whether the network uses air interface encryption. The same information is shown by open-source tools such as osmo-tetra. **Scan** steps the radio over a span (390 - 395 MHz, 410 - 430, 450 - 470 or your own) and lists every carrier found.
+
+It is receive only and standards based. It does not decrypt anything, does not transmit, does not join or disturb any network, and does not decode or play voice, short data messages or subscriber identities: encrypted signalling is only counted and reported as encrypted, and traffic timeslots are skipped. You are responsible for following your country's rules on receiving radio signals.
 
 ### Channel scanner and shared channel list
 

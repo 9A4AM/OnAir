@@ -7,6 +7,7 @@
 //     then `iridium-parser.py output.bits > output.parsed`. --iridium-parsed is not written by OnAir: use the toolkit's parser)
 //   dect2cli --standard isdbt --isdbt-bw 6|7|8|auto ...   (ISDB-T channel width: 6 MHz Japan / the Americas, 8 MHz the Maldives; auto tries each)
 //   dect2cli --standard orbcomm --freq 137.25 --orbcomm-downlinks 2   (Orbcomm: up to two downlinks in the passband; satellites, Doppler and packets in the status line and the log)
+//   dect2cli --standard tetra --freq 392.5   (TETRA network information: the cells found are listed at the end; receive only, nothing is decrypted)
 //     onair_dvb_554.000MHz_10Msps_20261009-071530.cs8, which reopens with the right rate and format)
 #include "dect2/rate_choice.h"
 #include "dect2/engine.h"
@@ -315,6 +316,11 @@ int main(int argc, char** argv) {
         printf("multipath: %s (%s)\n", multipathName(mr.level), mr.headline.c_str());
         for (auto& x : mr.echoes) printf("   echo %.1f dB at %+.2f us%s\n", x.levelDb, x.delayUs, x.insideGuard ? "" : " (outside guard)");
         for (auto& r : mr.reasons) printf("   - %s\n", r.c_str());
+    }
+    if (t.standard == 47) {   // TETRA: the cells found, with what they broadcast to every terminal
+        for (const auto& c : t.tetra.cells)
+            printf("TETRA %.4f MHz  MCC %d MNC %d  colour code %d  LA %d  encryption %s  neighbours %zu  level %.0f dBFS  SNR %.0f dB\n", c.nominalHz / 1e6, c.mcc, c.mnc,
+                   c.colourCode, c.la, c.encryption() ? "yes" : (c.hasSysinfo ? "no" : "?"), c.neighbours.size(), c.levelDb, c.snrDb);
     }
     if (t.l1preGood) {
         const L1Pre& p = t.l1pre;

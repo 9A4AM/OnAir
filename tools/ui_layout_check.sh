@@ -87,6 +87,7 @@ hfdl	--mode hfdl	Overview|Messages|Receiver|History
 nxdn	--mode nxdn	Overview|NXDN|Receiver|History
 dpmr	--mode dpmr	Overview|dPMR|Receiver|History
 gsmr	--mode gsmr	Overview|Cells|Receiver|History
+tetra	--mode tetra	Overview|TETRA|Receiver|History
 psk	--mode psk	Overview|PSK31|Receiver|History
 js8	--mode js8	Overview|JS8Call|Receiver|History
 specx	--mode specx	Overview|Explorer
