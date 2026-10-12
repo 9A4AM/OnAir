@@ -191,7 +191,10 @@ public:
         try {
             dev_ = SoapySDR::Device::make(args_);
             if (!dev_) { err = "cannot open " + args_; return false; }
-            rememberRanges(key_, dev_);   // for the next listing
+            // SpyServer range queries trigger multiple round trips over the network.
+            // Its device capabilities were already discovered when it was listed.
+            if (args_.find("driver=spyserver") == std::string::npos)
+                rememberRanges(key_, dev_);   // for the next listing
             biasKey_ = biasSetting(dev_);
             bias_ = false;
             reduction_ = gainIsReduction(dev_, 0);
@@ -316,9 +319,10 @@ private:
             // During live retunes, avoid a blocking SpyServer sync/readback. The
             // server can report its earlier frequency even when the IQ stream
             // has already changed; it also introduces a noticeable audio gap.
-            const double actualHz = live ? tuneHz : dev_->getFrequency(SOAPY_SDR_RX, ch, "RF");
-            if (!live) fprintf(stderr, "[SPYSERVER] startup requested %.6f MHz, server reports %.6f MHz\\n",
-                               tuneHz / 1e6, actualHz / 1e6);
+            // SpyServer readback can return an old initial frequency and may wait
+            // for a network sync timeout. Avoid it during start AND live retunes.
+            const double actualHz = tuneHz;
+            if (!live) fprintf(stderr, "[SPYSERVER] startup tune command %.6f MHz sent\\n", tuneHz / 1e6);
             fflush(stderr);
             if (std::fabs(actualHz - tuneHz) > 5000) {
                 char msg[220];
