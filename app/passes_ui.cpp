@@ -147,6 +147,21 @@ void buildSats() {
 
 // Custom source URLs are saved separately from the downloaded TLE files.
 // Use generated local filenames, never remote URL fragments as paths.
+// Local Raspberry Pi TLE feeds may use HTTP; public servers must use HTTPS.
+bool validTleUrl(const std::string& url) {
+    if (url.rfind("https://", 0) == 0) return true;
+    if (url.rfind("http://", 0) != 0) return false;
+    const size_t end = url.find_first_of("/?#", 7);
+    const std::string hostPort = url.substr(7, end == std::string::npos ? end : end - 7);
+    const std::string host = hostPort.substr(0, hostPort.find(':'));
+    if (host == "localhost") return true;
+    unsigned a=0,b=0,c=0,d=0;
+    char extra=0;
+    if (std::sscanf(host.c_str(), "%u.%u.%u.%u%c", &a,&b,&c,&d,&extra) != 4
+        || a>255 || b>255 || c>255 || d>255) return false;
+    return a==10 || a==127 || (a==192 && b==168) || (a==172 && b>=16 && b<=31);
+}
+
 void loadCustomSources() {
     S.customSources.clear();
     std::istringstream in(readText(tleDir() + "/custom_sources.txt"));
@@ -154,7 +169,7 @@ void loadCustomSources() {
     while (std::getline(in, name, '\t') && std::getline(in, url)) {
         if (name.rfind("user_", 0) == 0 && name.size() < 64 &&
             name.find('/') == std::string::npos && name.find('\\') == std::string::npos &&
-            url.rfind("https://", 0) == 0)
+            validTleUrl(url))
             S.customSources.emplace_back(name, url);
     }
 }
@@ -370,15 +385,15 @@ void tleSection(App& a) {
     if (S.showSources) {
         ImGui::TextDisabled("Built-in: Celestrak and Keplerpass (always available)");
         ImGui::SetNextItemWidth(-140.f);
-        ImGui::InputTextWithHint("##addTleUrl", "https://example.com/satellites.tle", S.newSourceUrl, sizeof S.newSourceUrl);
+        ImGui::InputTextWithHint("##addTleUrl", "http://192.168.1.64/tle/active.tle", S.newSourceUrl, sizeof S.newSourceUrl);
         ImGui::SameLine();
         ImGui::BeginDisabled(gDl.load() == 1);
         if (ImGui::Button("Add server")) {
             const std::string url = S.newSourceUrl;
             const bool exists = std::any_of(S.customSources.begin(), S.customSources.end(),
                 [&](const auto& src) { return src.second == url; });
-            if (url.rfind("https://", 0) != 0 || url.find_first_of(" \t\r\n") != std::string::npos)
-                S.msg = "Enter a valid HTTPS URL";
+            if (!validTleUrl(url) || url.find_first_of(" \t\r\n") != std::string::npos)
+                S.msg = "Use HTTPS or HTTP for a local network server";
             else if (exists) S.msg = "Server already listed";
             else {
                 unsigned id = 1;
