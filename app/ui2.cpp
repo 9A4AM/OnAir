@@ -570,6 +570,7 @@ float menuBar(App& a) {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Passes", nullptr, &a.passesOpen)) {}
+            ImGui::MenuItem("Data feeds...", nullptr, &a.feedsOpen);
             if (ImGui::MenuItem("Scanner (highly experimental)", nullptr, &a.scannerOpen)) {}
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
             ImGui::Separator();

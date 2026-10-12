@@ -102,6 +102,9 @@ ble	--mode ble	Overview|Devices|Receiver|History
 iono	--mode iono	Overview|Ionogram|Receiver|History
 qo100	--mode qo100	Overview|QO-100|Receiver|History
 wifi	--mode wifi	Overview|Networks|Receiver|History
+general	--mode general	Overview|Listen|Receiver|History
+time	--mode time	Overview|Time|Receiver|History
+rid	--mode rid	Overview|Drones|Receiver|History
 meteor	--mode meteor	Overview|Picture|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"

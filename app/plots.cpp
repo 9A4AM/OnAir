@@ -150,7 +150,8 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
 void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
     static const char* const kYLabel = "power (dBFS/bin)";
     ImVec2 plotMin, plotSize;
-    bool drawn = false;
+    bool drawn = false, openCtx = false;
+    static double ctxMhz = 0;
     if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0))) {
         drawn = true;
         if (noFreqAxis) plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_NoTickLabels, 0);   // the waterfall under it shows the frequencies
@@ -194,6 +195,7 @@ void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
             }
         }
         clickToTune(a, 0);
+        if (plt::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { ctxMhz = plt::GetPlotMousePos().x; openCtx = true; }
         plt::EndPlot();
     }
     if (drawn) channelWidthButton(a, plotMin, plotSize, kYLabel);
