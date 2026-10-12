@@ -104,7 +104,9 @@ void sampleRateControl(App& a) {
         return;
     }
     if (!run && a.rateCtx != rateContext(a)) applyBandwidth(a);   // another mode, radio or channel width: its own Auto and its own choice
-    const float w = std::max(110.f * gUi, ImGui::GetContentRegionAvail().x > 400 * gUi ? 150.f * gUi : ImGui::GetContentRegionAvail().x);
+    // one width wherever the box lands: sized from the space left on the line, it was wider on a line of its own, so in a wrapping
+    // row it moved between the lines every frame
+    const float w = std::min(150.f * gUi, std::max(110.f * gUi, ImGui::GetWindowWidth() - 2 * ImGui::GetStyle().WindowPadding.x));
     ImGui::SetNextItemWidth(w);
     const bool radio = d.isRadio();
     const RateLimits L = rateLimitsOf(d);
