@@ -256,10 +256,12 @@ Radios on another computer or on the network are added from the source list: pic
 | **PlutoSDR** by IP | `192.168.2.1` (its USB network), or its address on your network | libiio's default |
 | **rtl_tcp** (an RTL-SDR shared by `rtl_tcp -a 0.0.0.0`) | the computer running `rtl_tcp` | 1234 |
 | **SoapyRemote** (any SoapySDR radio shared by `SoapySDRServer --bind`) | the computer running the server | 55132 |
+| **SpyServer** (Airspy SpyServer-compatible remote SDR) | the computer running SpyServer | 5555 |
 
 - A Pluto on a real network (not its USB cable) is offered its full sample rate; how much of it arrives depends on the network.
 - rtl_tcp carries 8-bit samples at up to about 2.5 Msps; when the connection drops, OnAir connects again and counts the samples that were missed.
 - SoapyRemote needs a build with SoapySDR and the SoapyRemote module on both computers.
+- SpyServer needs an OnAir build with SoapySDR and the [SoapySpyServer](https://github.com/pothosware/SoapySpyServer) client plugin installed on the OnAir computer. SpyServer itself runs on the remote computer; do not confuse its port 5555 with the SoapyRemote port 55132. The Connect button checks TCP reachability; actual SpyServer protocol compatibility and IQ reception are verified when the radio starts. If the plugin is missing, the source cannot start.
 
 ## Updates
 
