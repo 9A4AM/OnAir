@@ -138,7 +138,9 @@ void networksView(App& a) {
         ImGui::Text("%4.0f", d.rssi);
         if (d.rssiHist.size() >= 2) {
             ImGui::SameLine(0, 4 * gUi);
+            ImGui::PushID(&d);   // one sparkline per row: each needs its own ID
             ImGui::PlotLines("##h", d.rssiHist.data(), (int)d.rssiHist.size(), 0, nullptr, -110, -10, ImVec2(48 * gUi, ImGui::GetTextLineHeight()));
+            ImGui::PopID();
         }
         ImGui::TableNextColumn(); ImGui::Text(ago < 1 ? "now" : "%.0f s ago", ago);
         ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)d.beacons);
