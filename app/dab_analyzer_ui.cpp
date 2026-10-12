@@ -183,7 +183,11 @@ std::string utcText(int64_t t) {
     if (!t) return "not received";
     const time_t tt = (time_t)t;
     struct tm m;
+#ifdef _WIN32
+    gmtime_s(&m, &tt);
+#else
     gmtime_r(&tt, &m);
+#endif
     char b[48];
     strftime(b, sizeof b, "%Y-%m-%d %H:%M:%S UTC", &m);
     return b;
