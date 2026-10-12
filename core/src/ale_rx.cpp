@@ -60,6 +60,7 @@ struct AleReceiver::Impl {
     bool running = false;
     marine::Front front;
     hfdig::UsbAudio usb;
+    std::atomic<int> demodSet{HfDemodUsb};   // setDemod()
     hfdig::Listen listen;
     std::vector<cf32> base;
     std::vector<float> aud;
@@ -357,6 +358,7 @@ void AleReceiver::feed(const cf32* x, size_t n) {
         for (cf32& v : m.base) if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
         m.aud.clear();
         double pw = 0;
+        if (const int d = hfDemodResolve(m.demodSet.load(), 0); d != m.usb.demod()) m.usb.setDemod(d);
         m.usb.process(m.base.data(), m.base.size(), m.aud, pw);
         m.listen.play(m.aud.data(), m.aud.size());   // a copy to the sound card only while listening
         m.process(m.aud.data(), m.aud.size());
@@ -389,6 +391,8 @@ void AleReceiver::flush() {
     m.report();
 }
 void AleReceiver::setListen(bool on) { p_->listen.on = on; }
+void AleReceiver::setDemod(int d) { p_->demodSet = d; }
+int AleReceiver::demod() const { return p_->demodSet.load(); }
 bool AleReceiver::listening() const { return p_->listen.on.load(); }
 void AleReceiver::setVolume(float v) { p_->listen.volume = std::max(0.f, std::min(1.f, v)); }
 void AleReceiver::setMuted(bool m) { p_->listen.muted = m; }

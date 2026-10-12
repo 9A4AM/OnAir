@@ -31,6 +31,8 @@ struct State {
     bool tapSet = false;
     bool listen = false, listenLoaded = false;   // "Listen": off until switched on
     int pushedListen = -1;
+    std::string demodKey;                // the prefs key of the demodulator choice: one per protocol entry
+    int demod = dect2::HfDemodAuto;
     // the audio spectrum (UI thread): 1024-point frames every 512 samples, four of them averaged into one display row
     std::vector<float> pend;             // audio not yet analysed
     std::vector<float> acc;              // power sum of the frames of the row being built (bins 0 .. 4000 Hz)
@@ -135,6 +137,21 @@ bool live(const App& a) { return a.engine.running() && a.rx.standard == 26; }   
 // all without one
 int decMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 31; }
 
+// the demodulator choice of the selected entry (SSTV, RTTY, ...), loaded when the entry changes
+void loadDemod(const App& a) {
+    const SubMode* sm = curSub(a);
+    std::string k = "hfdigDemod";
+    if (sm) { k += "."; k += sm->id; }
+    if (k == S.demodKey) return;
+    S.demodKey = k;
+    S.demod = hfDemodLoad(k.c_str());
+}
+
+void tuner(App& a, bool&) {
+    loadDemod(a);
+    hfDemodControl(a, S.demod, S.demodKey.c_str(), "hfdig");
+}
+
 void tick(App& a) {
     const bool run = a.engine.running();
     if (run && a.rx.standard == 26 && (!S.wasRunning || a.volume != S.pushedVol || a.muted != S.pushedMute)) {   // the sound controls are shared with the other modes
@@ -144,6 +161,8 @@ void tick(App& a) {
     }
     if (!S.listenLoaded) { S.listenLoaded = true; S.listen = plat::prefs().getB("hfdigListen", false); }
     if (run && (!S.wasRunning || (int)S.listen != S.pushedListen)) { a.engine.hfdig().setListen(S.listen); S.pushedListen = S.listen; }
+    loadDemod(a);
+    if (run) a.engine.hfdig().setDemod(dect2::hfDemodResolve(S.demod, a.freqMhz));   // Auto follows the dial
     if (run && a.rx.standard == 26) {
         if (!S.tapSet) {   // the 8 kHz audio for the spectrum, handed over from the receiver thread
             S.tapSet = true;
@@ -253,7 +272,11 @@ void panels(App& a) {
     const ImVec2 av = ImGui::GetContentRegionAvail();
     if (av.x < 80 || av.y < 80) return;
     const float cap = ImGui::GetTextLineHeightWithSpacing();
-    captionFit(av.x, "Audio 0 to 4000 Hz (upper sideband): the RTTY tones, the SSTV signal and the FT8 / WSPR decodes of the last slot");
+    static const char* const kCap[] = {"upper sideband", "lower sideband", "narrow FM", "AM"};
+    const int dmod = a.engine.hfdig().demod();
+    char capTxt[160];
+    snprintf(capTxt, sizeof capTxt, "Audio 0 to 4000 Hz (%s): the RTTY tones, the SSTV signal and the FT8 / WSPR decodes of the last slot", kCap[dmod >= 0 && dmod < 4 ? dmod : 0]);
+    captionFit(av.x, capTxt);
     const float h1 = std::max(40.f, (av.y - 2 * cap) * 0.45f), h2 = std::max(40.f, av.y - 2 * cap - h1 - 6);
     const ImVec2 p0 = ImGui::GetCursorScreenPos();
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -342,7 +365,10 @@ void receiver(App& a) {
     auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
     kv("state", "%s", dect2::hfdigSummary(t).c_str());
     kv("input", "%.3f Msps, %.1f dBFS", t.inputRate / 1e6, t.levelDb);
-    kv("sideband", "%.1f dBFS (200 - 3800 Hz above the dial frequency)", t.audioDb);
+    const int dm = a.engine.hfdig().demod();
+    static const char* const kBand[] = {"200 - 3800 Hz above the dial frequency", "200 - 3800 Hz below the dial frequency",
+                                        "FM, 12.5 kHz channel, 300 - 3000 Hz audio", "AM, 300 - 3000 Hz audio"};
+    kv("audio", "%.1f dBFS (%s: %s)", t.audioDb, dect2::hfDemodName(dm), kBand[dm >= 0 && dm < 4 ? dm : 0]);
     kv("signal time", "%.1f s", t.timeSec);
 }
 
@@ -385,5 +411,6 @@ const ModeUi kHfdigUi = {
     .panels = panels,
     .status = status,
     .summary = summary,
+    .tuner = tuner,
     .tick = tick,
 };

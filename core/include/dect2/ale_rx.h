@@ -12,6 +12,7 @@
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
 // telemetry() and the setters from the interface thread.
 #pragma once
+#include "hf_demod.h"
 #include "mode_tuning.h"
 #include "ring.h"
 #include <cstddef>
@@ -51,6 +52,8 @@ public:
     void setMuted(bool m);
     void setSilent(bool s);
     void setListenTap(std::function<void(const float* x, size_t n)> cb);
+    void setDemod(int d);                // the front end's demodulator (HfDemod, hf_demod.h): USB (default), LSB, NFM, AM; Auto counts as USB
+    int demod() const;
 
 private:
     struct Impl;

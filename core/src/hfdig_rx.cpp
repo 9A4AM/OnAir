@@ -52,7 +52,8 @@ struct HfdigReceiver::Impl {
     std::unique_ptr<HfdigFtx> ftx = makeFtxDecoder();
     std::unique_ptr<HfdigHamdrm> hamdrm = makeHamdrmDecoder();
     HfdigDecoder* decoders[5] = {rtty.get(), sstv.get(), freedv.get(), ftx.get(), hamdrm.get()};
-    std::atomic<int> decMask{31};          // setDecoders(): which of the five run
+    std::atomic<int> decMask{31};
+    std::atomic<int> demodSet{HfDemodUsb}; // setDemod()          // setDecoders(): which of the five run
     std::function<void(const float*, size_t)> audioTap, speechTap;
     hfdig::Upsample6 up;
     std::vector<float> pcm;
@@ -143,6 +144,7 @@ void HfdigReceiver::feed(const cf32* x, size_t n) {
     m.nPower += (int64_t)n;
     m.nIn += (int64_t)n;
     if (m.running) {
+        if (const int d = hfDemodResolve(m.demodSet.load(), 0); d != m.usb.demod()) m.usb.setDemod(d);
         m.base.clear(); m.audio.clear();
         m.front.process(x, n, m.base);
         m.usb.process(m.base.data(), m.base.size(), m.audio, m.audioPower);
@@ -181,6 +183,8 @@ HfdigRtty& HfdigReceiver::rtty() { return *p_->rtty; }
 void HfdigReceiver::setDecoders(int mask) { p_->decMask = mask & 31; }
 HfdigHamdrm& HfdigReceiver::hamdrm() { return *p_->hamdrm; }
 int HfdigReceiver::decoders() const { return p_->decMask.load(); }
+void HfdigReceiver::setDemod(int d) { p_->demodSet = d; }
+int HfdigReceiver::demod() const { return p_->demodSet.load(); }
 HfdigFtx& HfdigReceiver::ftx() { return *p_->ftx; }
 
 ModeTuning hfdigTuning() {

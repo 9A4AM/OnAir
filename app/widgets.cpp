@@ -404,6 +404,35 @@ void lossTooltip(const SampleLoss& l) {
     ImGui::EndTooltip();
 }
 
+int hfDemodLoad(const char* prefKey) {
+    const long v = plat::prefs().getI(prefKey, dect2::HfDemodAuto);
+    return v >= 0 && v < dect2::HfDemodCount ? (int)v : dect2::HfDemodAuto;
+}
+
+bool hfDemodControl(App& a, int& choice, const char* prefKey, const char* id) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Demod");
+    sameLineIf(100 * gUi, 5 * gUi);
+    char cur[32];
+    if (choice == dect2::HfDemodAuto) snprintf(cur, sizeof cur, "Auto (%s)", dect2::hfDemodName(dect2::hfDemodResolve(choice, a.freqMhz)));
+    else snprintf(cur, sizeof cur, "%s", dect2::hfDemodName(choice));
+    ImGui::PushID(id);
+    ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));
+    bool changed = false;
+    if (ImGui::BeginCombo("##demod", cur)) {
+        static const int kOrder[] = {dect2::HfDemodAuto, dect2::HfDemodUsb, dect2::HfDemodLsb, dect2::HfDemodNfm, dect2::HfDemodAm};
+        for (const int d : kOrder)
+            if (ImGui::Selectable(dect2::hfDemodName(d), choice == d) && choice != d) { choice = d; changed = true; }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("How the signal becomes the audio the decoders hear.\nAuto: USB below 30 MHz, NFM at and above.\n"
+                          "NFM: 12.5 kHz channel, no de-emphasis, 300 - 3000 Hz audio.\nISS SSTV on 145.800 MHz is FM.");
+    ImGui::PopID();
+    if (changed) plat::prefs().setI(prefKey, choice);
+    return changed;
+}
+
 bool listenControls(App& a, bool& on, const char* prefKey, const char* id, const char* tip) {
     char lbl[48];
     snprintf(lbl, sizeof lbl, "Listen##%s", id);

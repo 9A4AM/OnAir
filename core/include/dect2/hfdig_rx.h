@@ -9,6 +9,7 @@
 // telemetry() and the setters from the interface thread. The decoders live on the receiver thread only: their feedAudio(), reset()
 // and telemetry() are never called at the same time, so they need no locks of their own.
 #pragma once
+#include "hf_demod.h"
 #include "mode_tuning.h"
 #include "ring.h"
 #include <cstddef>
@@ -62,7 +63,9 @@ public:
     HfdigRtty& rtty();
     HfdigHamdrm& hamdrm();                               // HamDRM / EasyPal pictures (receiver thread only, or while stopped)
     void setDecoders(int mask);                          // which decoders run: 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM (default 31: all)
-    int decoders() const;                                   // the RTTY decoder's settings (thread safe, see hfdig_rtty.h)
+    int decoders() const;
+    void setDemod(int d);                                // the front end's demodulator (HfDemod, hf_demod.h): USB (default), LSB, NFM, AM; Auto counts as USB
+    int demod() const;                                   // the RTTY decoder's settings (thread safe, see hfdig_rtty.h)
 
 private:
     struct Impl;
