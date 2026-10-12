@@ -1,9 +1,15 @@
-// rtl_tcp client: an RTL-SDR served over the network by rtl_tcp (librtlsdr's server, also SDR# / SDR++ / OpenWebRX servers that speak it).
-// The protocol: on connect the server sends 12 bytes, "RTL0", the tuner type and its number of gains (big endian 32-bit each), then streams
-// unsigned 8-bit IQ without end. Commands are 5 bytes: one command byte and a big-endian 32-bit parameter.
+// rtl_tcp client: an RTL-SDR served over the network by rtl_tcp (librtlsdr's server, also SDR# / SDR++ / OpenWebRX servers that speak it),
+// and the rtl_tcp-compatible servers of other radios (rsp_tcp for SDRplay, airspy_tcp, hackrf_tcp, SDR++'s rtl_tcp server).
+// The protocol: on connect the server sends 12 bytes, "RTL0" (other servers: their own 4 characters), the tuner type and its number of
+// gains (big endian 32-bit each), then streams unsigned 8-bit IQ without end. Commands are 5 bytes: one command byte and a big-endian 32-bit
+// parameter. A real RTL-SDR drops samples above 2.56 Msps, so it is held to that; another radio ("Server radio", or found from the greeting:
+// not RTL0, or a tuner type outside 1 to 6) takes any rate from 0.25 to 20 Msps and its gain in tenths of a dB as asked.
 #include "tcp_client.h"
 #include "native_common.h"
+#include "dect2/netradio.h"
 #include <map>
+#include <mutex>
+#include <set>
 
 namespace dect2 {
 namespace native {
@@ -47,7 +53,32 @@ bool splitHostPort(const std::string& a, std::string& host, int& port) {
 
 uint32_t be32(const unsigned char* p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
 
+constexpr double kOtherMinRate = 0.25e6, kOtherMaxRate = 20e6;
+
+// the servers found serving another radio than an RTL-SDR (by nativeArgs), for the rate limits the app shows
+std::mutex gOtherMu;
+std::set<std::string> gOther;
+bool noted(const std::string& addr) { std::lock_guard<std::mutex> lk(gOtherMu); return gOther.count(addr) > 0; }
+
+void setCaps(DeviceInfo& d, bool other) {
+    if (other) { d.maxRateHz = kOtherMaxRate; d.minRateHz = kOtherMinRate; d.rateRanges.clear(); }
+    else { d.maxRateHz = 2.56e6; d.minRateHz = 0.9e6; d.rateRanges = {{0.225001e6, 0.3e6}, {0.900001e6, 2.56e6}}; }
+}
+
 } // namespace
+
+bool rtlTcpGreeting(const unsigned char* hdr, std::string& magic, bool& other) {
+    for (int i = 0; i < 4; i++) if (hdr[i] < 0x20 || hdr[i] > 0x7e) return false;
+    const uint32_t tuner = be32(hdr + 4), nGains = be32(hdr + 8);
+    if (tuner > 0xffff || nGains > 0xffff) return false;   // not a greeting
+    magic.assign((const char*)hdr, 4);
+    other = magic != "RTL0" || tuner < kE4000 || tuner > kR828D;
+    return true;
+}
+void rtlTcpNoteServer(const std::string& addr, bool other) {
+    std::lock_guard<std::mutex> lk(gOtherMu);
+    if (other) gOther.insert(addr); else gOther.erase(addr);
+}
 
 class RtlTcpSource : public NativeSource {
 public:
@@ -66,12 +97,16 @@ protected:
         sockRecvTimeout(sock_, kConnectMs);
         unsigned char hdr[12];
         if (!sockRecvAll(sock_, hdr, sizeof hdr)) { err = "rtl_tcp: " + addr_ + " connected but sent no greeting (another client may have it)"; return false; }
-        if (memcmp(hdr, "RTL0", 4) != 0) { err = "rtl_tcp: " + addr_ + " is not an rtl_tcp server"; openFailure_ = OpenFailure::Final; return false; }
+        std::string magic;
+        if (!rtlTcpGreeting(hdr, magic, detected_)) { err = "rtl_tcp: " + addr_ + " is not an rtl_tcp server"; openFailure_ = OpenFailure::Final; return false; }
+        rtlTcpNoteServer(addr_, detected_);
         tuner_ = (int)be32(hdr + 4);
         const uint32_t nGains = be32(hdr + 8);
         gains_ = tunerGains(tuner_);
         sockRecvTimeout(sock_, kStallMs);
-        fprintf(stderr, "rtl_tcp: connected to %s (%s, %u gains)\n", addr_.c_str(), tunerName(tuner_), (unsigned)nGains);
+        if (detected_) fprintf(stderr, "rtl_tcp: connected to %s (\"%s\", tuner type %d, %u gains): not an RTL-SDR, any rate up to 20 Msps\n", addr_.c_str(),
+                               magic.c_str(), tuner_, (unsigned)nGains);
+        else fprintf(stderr, "rtl_tcp: connected to %s (%s, %u gains)\n", addr_.c_str(), tunerName(tuner_), (unsigned)nGains);
         fflush(stderr);
         // the samples missed while the connection was down (the receiver sees a gap of that many)
         if (lostAt_.time_since_epoch().count() != 0) {
@@ -92,15 +127,22 @@ protected:
     bool configure(const TuneSettings& s, std::string& err, bool live) override {
         (void)live;
         if (sock_ == kBadSock) return false;
-        if (s.sampleRate > 3.2e6) {
-            char b[160];
-            snprintf(b, sizeof b, "an RTL-SDR (rtl_tcp) gives at most 3.2 Msps; this mode needs about %.0f Msps: use a faster radio", s.sampleRate / 1e6);
+        const bool other = detected_ || radioOption(s, "server", "rtl") == "other";
+        if (s.sampleRate > (other ? kOtherMaxRate : 3.2e6) * 1.0001) {
+            char b[200];
+            if (other) snprintf(b, sizeof b, "an rtl_tcp server gives at most 20 Msps; this mode needs about %.0f Msps: use a faster radio", s.sampleRate / 1e6);
+            else snprintf(b, sizeof b, "an RTL-SDR (rtl_tcp) gives at most 3.2 Msps; this mode needs about %.0f Msps: use a faster radio "
+                                       "(another radio behind rtl_tcp: set its Server radio)", s.sampleRate / 1e6);
             err = b;
             openFailure_ = OpenFailure::Final;
             return false;
         }
-        double want = std::min(s.sampleRate > 0 ? s.sampleRate : 2.048e6, 2.56e6);
-        if (want < 900001 && (want > 300000 || want <= 225000)) want = 900001;
+        double want;
+        if (other) want = std::min(std::max(s.sampleRate > 0 ? s.sampleRate : 2.048e6, kOtherMinRate), kOtherMaxRate);
+        else {
+            want = std::min(s.sampleRate > 0 ? s.sampleRate : 2.048e6, 2.56e6);   // a real RTL-SDR drops samples above 2.56 Msps
+            if (want < 900001 && (want > 300000 || want <= 225000)) want = 900001;
+        }
         const uint32_t rate = (uint32_t)std::lround(want);
         bool ok = true;
         if (rate != sentRate_) { ok = ok && command(kCmdRate, rate); sentRate_ = rate; rate_ = rate; }
@@ -116,10 +158,10 @@ protected:
         const int bias = s.biasTee ? 1 : 0;
         if (bias != sentBias_ && (bias || sentBias_ == 1)) { ok = ok && command(kCmdBiasTee, (uint32_t)bias); }
         sentBias_ = bias;
-        // the closest gain the tuner has
+        // the closest gain the tuner has (another radio's server: the gain as asked, in tenths of a dB)
         const int target = (int)std::lround(s.gainDb * 10);
-        int best = gains_.empty() ? target : gains_[0];
-        for (int g : gains_) if (std::abs(g - target) < std::abs(best - target)) best = g;
+        int best = other || gains_.empty() ? std::max(target, 0) : gains_[0];
+        if (!other) for (int g : gains_) if (std::abs(g - target) < std::abs(best - target)) best = g;
         if (best != sentGain_) { ok = ok && command(kCmdGain, (uint32_t)best); sentGain_ = best; }
         if (!ok) err = "rtl_tcp: the connection to " + addr_ + " dropped";
         return ok;
@@ -173,6 +215,7 @@ private:
     sock_t sock_ = kBadSock;
     std::mutex sendMu_;
     int tuner_ = kTunerUnknown;
+    bool detected_ = false;   // the greeting says another radio than an RTL-SDR
     std::vector<int> gains_;
     uint32_t sentRate_ = 0, sentFreq_ = 0;
     int sentGain_ = -1000, sentPpm_ = -1000, sentDs_ = -1000, sentBias_ = -1000;
@@ -190,11 +233,16 @@ DeviceInfo rtlTcpDevice(const std::string& host, int port) {
     d.nativeArgs = (v6 ? "[" + host + "]" : host) + ":" + std::to_string(port);
     d.serial = d.nativeArgs;
     d.name = "rtl_tcp " + d.nativeArgs + " (network)";
-    d.maxRateHz = 2.56e6; d.minRateHz = 0.9e6;
-    d.rateRanges = {{0.225001e6, 0.3e6}, {0.900001e6, 2.56e6}};
+    setCaps(d, noted(d.nativeArgs));
     d.gainMinDb = 0; d.gainMaxDb = 49.6;
     d.hasBiasTee = true;   // rtl_tcp of the RTL-SDR Blog library (command 0x0e); other servers ignore it
-    d.settings = {ppmSetting(1),
+    d.settings = {choiceSetting("server", "Server radio",
+                                "The radio behind this rtl_tcp server. A real RTL-SDR drops samples above 2.56 Msps, so OnAir holds it there and\n"
+                                "picks its gains from the tuner's list. Other radio: an rtl_tcp-compatible server of another radio (rsp_tcp for\n"
+                                "SDRplay, airspy_tcp, hackrf_tcp, SDR++'s rtl_tcp server): any rate from 0.25 to 20 Msps, the gain as set, still\n"
+                                "8-bit samples. A server that greets as another radio is taken as one by itself.",
+                                {"rtl", "other"}, {"RTL-SDR (up to 2.56 Msps)", "Other radio (up to 20 Msps)"}, "rtl"),
+                  ppmSetting(1),
                   choiceSetting("ds", "Direct sampling (HF)",
                                 "Below 24 MHz the tuner cannot receive: the RTL2832U can sample an HF antenna on one of its inputs directly.\n"
                                 "I / Q: that input below 24 MHz (the RTL-SDR Blog V3 has its HF input on Q). Off: never.",
@@ -205,4 +253,9 @@ DeviceInfo rtlTcpDevice(const std::string& host, int port) {
 std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d) { return std::make_unique<RtlTcpSource>(d.nativeArgs); }
 
 } // namespace native
+
+void applyRadioOptionCaps(DeviceInfo& d, const TuneSettings& t) {
+    if (d.kind != DeviceInfo::Native || d.board != "rtltcp") return;
+    native::setCaps(d, radioOption(t, "server", "rtl") == "other" || native::noted(d.nativeArgs));
+}
 } // namespace dect2

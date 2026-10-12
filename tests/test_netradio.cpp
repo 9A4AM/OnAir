@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -26,6 +27,7 @@ struct FakeServer {
     std::atomic<int> connections{0};
     std::mutex mu;
     std::vector<std::pair<int, uint32_t>> cmds;
+    unsigned char hdr[12] = {'R', 'T', 'L', '0', 0, 0, 0, 5, 0, 0, 0, 29};   // the greeting (another radio's server: its own)
 
     bool start() {
         netInit();
@@ -61,7 +63,6 @@ struct FakeServer {
             sock_t c = accept(ls, nullptr, nullptr);
             if (c == kBadSock) continue;
             connections++;
-            const unsigned char hdr[12] = {'R', 'T', 'L', '0', 0, 0, 0, 5, 0, 0, 0, 29};
             sockSendAll(c, hdr, sizeof hdr);
             std::vector<unsigned char> chunk(4096);
             for (size_t i = 0; i < chunk.size(); i += 2) { chunk[i] = 200; chunk[i + 1] = 50; }
@@ -172,6 +173,55 @@ static void testRtlTcp() {
     fprintf(stderr, "unreachable: %s\n", err.c_str());
 }
 
+// rtl_tcp servers of other radios: set by hand on a real RTL0 server, and found from an rsp_tcp-style greeting
+static void testRtlTcpOther() {
+    for (int found = 0; found < 2; found++) {
+        FakeServer srv;
+        if (found) { const unsigned char h[12] = {'R', 'S', 'P', '0', 0, 0, 0, 0, 0, 0, 0, 0}; memcpy(srv.hdr, h, 12); }
+        CHECK(srv.start());
+        if (!srv.port) return;
+        NetRadio nr; nr.type = NetRadio::RtlTcp; nr.host = "127.0.0.1"; nr.port = srv.port;
+        std::string err;
+        CHECK(probeNetRadio(nr, 2000, err));   // any 4-character magic is a greeting
+        auto devs = netRadioDevices({nr});
+        CHECK(devs.size() == 1);
+        if (devs.empty()) { srv.stop(); return; }
+        DeviceInfo d = devs[0];
+        TuneSettings s;
+        if (!found) {
+            CHECK(d.maxRateHz == 2.56e6 && !d.rateRanges.empty());   // an RTL-SDR until told otherwise
+            s.radio["server"] = "other";
+        }
+        applyRadioOptionCaps(d, s);
+        CHECK(d.maxRateHz == 20e6 && d.minRateHz == 0.25e6 && d.rateRanges.empty());
+        TuneSettings plain;
+        DeviceInfo d2 = devs[0];
+        applyRadioOptionCaps(d2, plain);
+        CHECK((d2.maxRateHz == 20e6) == (found == 1));   // found from the greeting: without the setting too
+        for (int i = 0; i < 100 && srv.connections < 1; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        auto src = makeSource(d);
+        CHECK(src != nullptr);
+        if (!src) { srv.stop(); return; }
+        IqRing ring(1u << 20);
+        s.sampleRate = 10e6;
+        s.centerHz = 433.92e6;
+        s.gainDb = 30;
+        err.clear();
+        CHECK(src->start(s, ring, err));
+        CHECK(srv.waitFor(0x02, 10000000));   // the rate as asked, above an RTL-SDR's
+        CHECK(srv.waitFor(0x04, 300));        // the gain as asked, not an R820T step
+        s.sampleRate = 0.6e6;                 // in the RTL-SDR's rate gap
+        CHECK(src->retune(s, err));
+        CHECK(srv.waitFor(0x02, 600000));
+        s.sampleRate = 25e6;
+        CHECK(!src->retune(s, err) && !err.empty());
+        src->stop();
+        srv.stop();
+    }
+}
+
 static void testPluto() {
     NetRadio p; p.type = NetRadio::Pluto; p.host = "10.1.2.3";
     auto v = netRadioDevices({p});
@@ -218,6 +268,7 @@ int main() {
     testPrefs();
     testPluto();
     testRtlTcp();
+    testRtlTcpOther();
     if (fails) { fprintf(stderr, "%d failure(s)\n", fails); return 1; }
     printf("netradio: all passed\n");
     return 0;

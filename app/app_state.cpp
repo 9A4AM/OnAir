@@ -174,7 +174,10 @@ static std::string radioUnescape(const std::string& s) {
     return r;
 }
 void syncRadioSettings(App& a) {
-    const std::string key = a.devIdx >= 0 && a.devIdx < (int)a.devices.size() ? radioKeyOf(a.devices[a.devIdx]) : std::string();
+    const bool have = a.devIdx >= 0 && a.devIdx < (int)a.devices.size();
+    const std::string key = have ? radioKeyOf(a.devices[a.devIdx]) : std::string();
+    // the rate limits as the settings make them (an rtl_tcp server set to another radio than an RTL-SDR): after a rescan and a change too
+    struct Caps { App& a; bool have; ~Caps() { if (have) applyRadioOptionCaps(a.devices[a.devIdx], a.tune); } } caps{a, have};
     if (key == a.radioKey) return;
     a.radioKey = key;
     a.tune.radio.clear();   // another radio never inherits these (a correction, a notch filter, a gain mode of the one before)

@@ -554,6 +554,10 @@ DeviceInfo plutoDevice(const std::string& uri);
 double plutoLinkRate(const std::string& uri);
 DeviceInfo rtlTcpDevice(const std::string& host, int port);
 std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d);
+// An rtl_tcp greeting (12 bytes): any 4 printable characters ("RTL0", rsp_tcp's, ...), a tuner type and a gain count. other: not an RTL-SDR
+// (not RTL0, or a tuner type outside librtlsdr's 1 to 6). rtlTcpNoteServer remembers that per address (nativeArgs) for the rate limits.
+bool rtlTcpGreeting(const unsigned char* hdr, std::string& magic, bool& other);
+void rtlTcpNoteServer(const std::string& addr, bool other);
 
 } // namespace native
 } // namespace dect2

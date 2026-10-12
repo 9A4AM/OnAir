@@ -35,5 +35,8 @@ std::string netRadioDeviceName(const NetRadio& r);
 // Whether the radio answers within timeoutMs: a TCP connection to it (an rtl_tcp server must also send its "RTL0" header). Blocks: call it
 // on a worker thread. false: err says why, in plain words.
 bool probeNetRadio(const NetRadio& r, int timeoutMs, std::string& err);
+// The rate limits of a radio as its own settings (TuneSettings::radio) make them: an rtl_tcp server set to (or found serving) another
+// radio than an RTL-SDR goes up to 20 Msps without the RTL-SDR's rate gap. Other radios are left as they are.
+void applyRadioOptionCaps(DeviceInfo& d, const TuneSettings& t);
 
 } // namespace dect2

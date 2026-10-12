@@ -116,11 +116,16 @@ bool probeNetRadio(const NetRadio& r, int timeoutMs, std::string& err) {
     const sock_t s = tcpConnect(host, netRadioPort(r), timeoutMs, err);
     if (s == kBadSock) return false;
     bool ok = true;
-    if (r.type == NetRadio::RtlTcp) {   // an rtl_tcp server greets every client with "RTL0" and its tuner
+    if (r.type == NetRadio::RtlTcp) {   // an rtl_tcp server greets every client with "RTL0" (or its own magic) and its tuner
         sockRecvTimeout(s, timeoutMs);
         unsigned char hdr[12];
         if (!sockRecvAll(s, hdr, sizeof hdr)) { err = "the server at " + hostPort(host, netRadioPort(r)) + " sent no rtl_tcp greeting (another client may be connected)"; ok = false; }
-        else if (memcmp(hdr, "RTL0", 4) != 0) { err = hostPort(host, netRadioPort(r)) + " is not an rtl_tcp server"; ok = false; }
+        else {
+            std::string magic;
+            bool other = false;
+            if (!native::rtlTcpGreeting(hdr, magic, other)) { err = hostPort(host, netRadioPort(r)) + " is not an rtl_tcp server"; ok = false; }
+            else native::rtlTcpNoteServer(native::rtlTcpDevice(host, netRadioPort(r)).nativeArgs, other);
+        }
     }
     sockShutdown(s);
     sockClose(s);
