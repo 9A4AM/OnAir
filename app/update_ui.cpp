@@ -1,4 +1,4 @@
-// Updates in the window: a check when the program starts (and once a day), the download in the background, a button in the top bar that tells
+// Updates in the window: a check when the program starts (every start, one retry on failure), the download in the background, a button in the top bar that tells
 // the state, and a small window with the notes of the new version and the settings. The new version is put in place when the program closes,
 // or at once on request.
 #include "app.h"
@@ -31,10 +31,14 @@ void updateTick(App& a) {
         }
     }
     if (startT < 0) startT = ImGui::GetTime();
-    // a check a few seconds after the start, then once a day
-    if (a.updCheck && st.phase == Updater::Phase::Idle && !a.updStarted && ImGui::GetTime() - startT > 6 && !getenv("ONAIR_NO_UPDATE_CHECK")) {
-        a.updStarted = true;
-        if (nowS() - a.updLast > 20 * 3600 || getenv("ONAIR_FORCE_UPDATE_CHECK")) u.check(a.updPre);
+    // a check a few seconds after every start (in the background), and one retry if it fails, e.g. the network was not up yet
+    static int startAttempts = 0;
+    static double failT = -1;
+    if (startAttempts > 0 && startAttempts < 2 && st.phase == Updater::Phase::Failed && failT < 0) failT = ImGui::GetTime();
+    if (st.phase == Updater::Phase::Idle || st.phase == Updater::Phase::Failed) {
+        const int act = startupCheckAction(a.updCheck && !getenv("ONAIR_NO_UPDATE_CHECK"), ImGui::GetTime() - startT, startAttempts,
+                                           failT >= 0 && st.phase == Updater::Phase::Failed, failT >= 0 ? ImGui::GetTime() - failT : 0);
+        if (act) { startAttempts++; a.updStarted = true; u.check(a.updPre); }
     }
     if (st.phase != lastPhase) {
         lastPhase = st.phase;

@@ -24,6 +24,8 @@ static void put(const std::string& p, const std::string& s) { fs::create_directo
 
 int main() {
     CHECK(compareVersions("0.1.3", "0.1.2") > 0 && compareVersions("v0.2.0", "0.1.9") > 0 && compareVersions("0.1.3", "v0.1.3") == 0 && compareVersions("0.1", "0.1.0") == 0 && compareVersions("1.0.0-rc1", "0.9.9") > 0 && compareVersions("0.10.0", "0.9.0") > 0, "version comparison");
+    CHECK(startupCheckAction(true, 3, 0, false, 0) == 1 && startupCheckAction(true, 1, 0, false, 0) == 0 && startupCheckAction(false, 99, 0, false, 0) == 0, "start-up check runs every start unless switched off");
+    CHECK(startupCheckAction(true, 99, 1, true, 30) == 2 && startupCheckAction(true, 99, 1, true, 5) == 0 && startupCheckAction(true, 99, 1, false, 99) == 0 && startupCheckAction(true, 99, 2, true, 99) == 0, "one retry after a failed start-up check");
     CHECK(sha256Bytes("", 0) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "SHA-256 of nothing");
     CHECK(sha256Bytes("abc", 3) == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA-256 of abc");
     const std::string million(1000000, 'a');
