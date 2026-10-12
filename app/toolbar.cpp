@@ -1,6 +1,7 @@
 // the top bar, the source options, the status bar, gain control and the standard switch
 #include "app.h"
 #include "dect2/rate_choice.h"
+#include "dect2/antenna_ports.h"
 #include <cctype>
 #include <memory>
 #include <thread>
@@ -266,6 +267,27 @@ void toolbarParts(App& a, int mask, bool vertical) {
         ImGui::EndCombo();
     }
     if (srcName != a.devices[a.devIdx].name && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", a.devices[a.devIdx].name.c_str());
+    {   // the antenna port of a radio with several (one list entry each): the same switch as choosing the entry above
+        const auto ports = antennaSiblings(a.devices, a.devIdx);
+        if (!ports.empty()) {
+            std::string cur;
+            for (const auto& p : ports) if (p.devIdx == a.devIdx) cur = p.label;
+            ImGui::SameLine(0, 5 * gUi);
+            ImGui::SetNextItemWidth(80 * gUi);
+            ImGui::BeginDisabled(running);
+            if (ImGui::BeginCombo("##antport", cur.c_str())) {
+                for (const auto& p : ports) {
+                    if (ImGui::Selectable(p.label.c_str(), p.devIdx == a.devIdx) && p.devIdx != a.devIdx) { a.devIdx = p.devIdx; a.tune.biasTee = false; }
+                    const std::string h = antennaPortHint(a.devices[(size_t)p.devIdx], p.label);
+                    if (!h.empty() && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", h.c_str());
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::EndDisabled();
+            const std::string h = antennaPortHint(a.devices[(size_t)a.devIdx], cur);
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Antenna port%s%s", h.empty() ? "" : ": ", h.c_str());
+        }
+    }
     ImGui::SameLine();
     // not while a scan has the radio open: a radio in use may not be listed (or its limits not be readable), and the choice would move to another one
     ImGui::BeginDisabled(a.scanner.progress().running);
