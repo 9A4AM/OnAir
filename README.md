@@ -120,6 +120,7 @@ These receivers are built from the published specifications and checked end to e
 | **Inmarsat-C** | Maritime satellite broadcasts | Safety messages (SafetyNET) and system information |
 | **Iridium** | Satellite phone network | Satellites on a map, pager messages, ring alerts |
 | **Orbcomm** | Satellite data downlinks, 137.2 to 137.8 MHz (4800 bit/s SDPSK) | Two downlinks at once with Doppler tracking, satellites on the map from their ephemeris, packet log by type |
+| **QO-100** | Es'hail-2, the geostationary amateur satellite: downlink 10489.5 - 10500 MHz through a Ku LNB (IF 739.5 - 750 MHz with 9750 MHz; 9739, 10000, 10600 or any LO) | Beacon lock: the CW beacons measure the LNB's frequency error and drift (kHz, ppm, history) and correct every frequency shown; the narrowband transponder as a high-resolution spectrum and waterfall with SSB listening (USB, 2.7 kHz); the wideband transponder's DATV carriers with their symbol rates and a hand-over to DVB-S/S2 |
 | **AIS** | Ship transponders | Ships on a map |
 | **Maritime** | NAVTEX, DSC, weather fax | Safety messages, distress and calling, fax pictures |
 | **Radiosondes** | Weather balloons, 400 – 406 MHz | Balloon tracks, altitude and weather data |
