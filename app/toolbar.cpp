@@ -960,11 +960,19 @@ const ImU32 kGroupCols[kNumGroups] = {
 float gSwitchWidth = 420;   // width of the mode selector as drawn (the guided tour points at it)
 
 void selectMode(App& a, int fam, const char* subId) {
-    if (a.engine.running()) { a.engine.log("stop the receiver before switching mode"); return; }
     const int sub = subIndexOf(subId);
     if (fam == a.family && (sub == a.sub || !sub)) return;
+    // A mode can require a different sample rate and decoder. Reconfigure the
+    // receiver automatically instead of making the user press Stop/Start.
+    // Closing the old decoder first also prevents two users of the same SDR.
+    const bool wasRunning = a.engine.running();
+    if (wasRunning) {
+        a.engine.log("switching mode: restarting receiver automatically");
+        a.engine.stop();
+    }
     setMode(a, fam, sub);
     savePrefs(a);
+    if (wasRunning) startReceiver(a);
 }
 bool modeSelected(const App& a, const ModeDef& m) { return m.family == a.family && (!m.subId || subIndexOf(m.subId) == a.sub); }
 bool modeMatches(const ModeDef& m, const char* q) {
