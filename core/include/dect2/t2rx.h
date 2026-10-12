@@ -42,7 +42,7 @@
 #include "dvbc_tel.h"
 #include "orbcomm_tel.h"
 #include "uplink_tel.h"
-#include "p25_tel.h"
+#include "ble_tel.h"
 #include "psk_tel.h"
 #include "js8_tel.h"
 #include "specx_tel.h"
@@ -114,7 +114,7 @@ struct RxTelemetry {
     OrbcommTelemetry orbcomm;   // valid when standard == 45
     DvbcTelemetry dvbc;    // valid when standard == 41
     UplinkTelemetry uplink;   // valid when standard == 44 (Mode S uplink)
-    P25Telemetry p25;         // valid when standard == 51 (P25 Phase 1)
+    BleTelemetry ble;         // valid when standard == 52 (Bluetooth LE advertising)
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34
     NxdnTelemetry nxdn;         // valid when standard == 39

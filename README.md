@@ -125,7 +125,7 @@ These receivers are built from the published specifications and checked end to e
 | **ISM sensors** | 433.92 / 868 / 915 MHz devices (the rtl_433 idea) | Weather stations, tyre pressure sensors, remotes and energy / water meters (wireless M-Bus header): a device table with history, a live log, unknown signals with their pulses |
 | **Cell towers** | LTE downlink broadcast (MIB, SIB1 - SIB5) | Operator, band, EARFCN, PCI, eNB / sector, TAC, neighbours, band scan; receive only |
 | **GSM-R** | Railway GSM broadcast (BCCH, 921 - 925 MHz) | Base stations: ARFCN, BSIC, cell identity, location area, operator code, channel lists; band scan; receive only |
-| **TETRA** | TETRA base station broadcast (ETSI EN 300 392-2: BSCH, BNCH, AACH, MCCH), 25 kHz channels | Network code, colour code, location area, carriers and duplex spacing, services, neighbour cells, whether encryption is used; scan over a span; receive only, nothing decrypted |
+| **Bluetooth LE** | Advertising on channels 37, 38 and 39 (2402 / 2426 / 2480 MHz), one at a time or hopping, 4 Msps | What a scanner app such as nRF Connect shows: a device table with address type, name, level history, vendor, services, iBeacon, Eddystone and exposure notification beacons, and a packet log. Receive only: it never connects, pairs or transmits and does not follow connections; most phones use random addresses that change every few minutes for privacy |
 | **GNSS** | GPS L1 | Satellites, position and time |
 | **Mesh** | Meshtastic and MeshCore (LoRa) | Nodes, map and chat |
 
