@@ -1,4 +1,5 @@
-// DRM receiver: DRM30 (long, medium and short wave) and, as far as it goes, DRM+ (VHF band II) digital radio.
+// DRM receiver: DRM30 (long, medium and short wave, robustness modes A to D) and DRM+ (mode E, 100 kHz, VHF bands I, II and III) digital radio;
+// the mode is found by itself (DRM+ needs an input rate of 100 ksps or more).
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
 // telemetry() and the setters from the interface thread (they must be safe while feed() runs).
 #pragma once

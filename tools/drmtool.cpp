@@ -1,6 +1,6 @@
 // DRM: write the test signal to a file (drmtool gen ...) or run the receiver on a recording (drmtool rx ...).
 //
-//   drmtool gen <file.cs8|file.cf32> [--secs 20] [--rate 2000000] [--mode A|B|C|D] [--occ 0..5] [--qam 16|64] [--prot 0..3] [--short] [--snr 30]
+//   drmtool gen <file.cs8|file.cf32> [--secs 20] [--rate 2000000] [--mode A|B|C|D|E] [--occ 0..5] [--qam 16|64 (E: 4|16)] [--prot 0..3] [--short] [--snr 30]
 //                                    [--cfo 0] [--sro 0] [--channel 0..6] [--audio melody|tone|silence|noise|bytes] [--echo dB --delay samples] [--no-text]
 //   drmtool rx  <file> --rate <Hz> [--format cs8|cu8|cf32|s16] [--shift Hz] [--secs N] [--chunk N] [--verbose] [--wav out.wav] [--dump prefix]
 //
@@ -40,9 +40,9 @@ static int gen(int argc, char** argv) {
     sc.echoDb = atof(arg(argc, argv, "--echo", "0"));
     sc.echoDelay = atoi(arg(argc, argv, "--delay", "300"));
     const char* m = arg(argc, argv, "--mode", "B");
-    sc.modeOpt[0] = (m[0] >= 'A' && m[0] <= 'D') ? m[0] - 'A' + 1 : 2;
+    sc.modeOpt[0] = (m[0] >= 'A' && m[0] <= 'E') ? m[0] - 'A' + 1 : 2;
     if (arg(argc, argv, "--occ")) sc.modeOpt[1] = atoi(arg(argc, argv, "--occ")) + 1;
-    sc.modeOpt[2] = atoi(arg(argc, argv, "--qam", "64")) == 16 ? 1 : 0;
+    sc.modeOpt[2] = m[0] == 'E' ? (atoi(arg(argc, argv, "--qam", "16")) == 4 ? 1 : 0) : (atoi(arg(argc, argv, "--qam", "64")) == 16 ? 1 : 0);
     if (arg(argc, argv, "--prot")) sc.modeOpt[3] = atoi(arg(argc, argv, "--prot")) + 1;
     sc.modeOpt[4] = flag(argc, argv, "--short") ? 1 : 0;
     const std::string au = arg(argc, argv, "--audio", "melody");

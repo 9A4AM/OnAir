@@ -115,27 +115,28 @@ void SroCorrector::process(const cf32* in, size_t n, std::vector<cf32>& out) {
     pos_ -= (double)keepFrom;
 }
 
-bool DrmFront::configure(double inRate) {
-    inRate_ = inRate;
+bool DrmFront::configure(double inRate, double outRate, double minIn) {
+    inRate_ = inRate; outRate_ = outRate;
     ready_ = false; pass_ = false; useRs_ = false;
     stages_.clear();
-    if (inRate < kOutRate * 0.999) return false;
-    dcA_ = (float)(1.0 / (kOutRate * 0.3));
-    if (std::fabs(inRate - kOutRate) < 0.5) { pass_ = true; ready_ = true; reset(); return true; }
-    // integer decimation to a rate of 192 kHz or more, then the exact resampler
-    int D = (int)std::floor(inRate / 192000.0);
+    if (inRate < (minIn > 0 ? minIn : outRate * 0.999)) return false;
+    dcA_ = (float)(1.0 / (outRate * 0.3));
+    if (std::fabs(inRate - outRate) < 0.5) { pass_ = true; ready_ = true; reset(); return true; }
+    // integer decimation to a rate of 4 times the output rate or more, then the exact resampler
+    const double pass = outRate > kOutRate ? 60000.0 : 22000.0;
+    int D = (int)std::floor(inRate / (4 * outRate));
     while (D > 1 && !smooth(D)) D--;
     double r = inRate;
     if (D > 1) {
         for (int d : splitFactors(D)) {
             DecimFir f;
             const double out = r / d;
-            f.design(22000.0, out - 26000.0, r, d);
+            f.design(pass, out - (outRate / 2 + 2000.0), r, d);
             stages_.push_back(std::move(f));
             r = out;
         }
     }
-    if (!rs_.configure(r, kOutRate)) return false;
+    if (!rs_.configure(r, outRate)) return false;
     useRs_ = true;
     ready_ = true;
     reset();

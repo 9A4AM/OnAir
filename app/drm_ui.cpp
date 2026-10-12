@@ -1,5 +1,5 @@
-// DRM screens: the Radio tab (now playing, text message, time, signal summary), the services list, status lamps, the analysis plots (FAC / SDC / MSC cells,
-// channel, SNR), the Receiver tab with all telemetry and the options of the test signal.
+// DRM screens: the Radio tab (the band presets, short wave and the VHF bands of DRM+, now playing, text message, time, signal summary), the services
+// list, status lamps, the analysis plots (FAC / SDC / MSC cells, channel, SNR), the Receiver tab with all telemetry and the options of the test signal.
 #include "app.h"
 #include <cmath>
 #include <deque>
@@ -188,7 +188,44 @@ void signalPanel(App& a, float w, float h) {
     ImGui::EndChild();
 }
 
+// Band presets: DRM30 in the short wave broadcast bands, DRM+ (mode E, 100 kHz channels) in VHF bands I, II and III; in VHF the arrows step by the
+// 100 kHz DRM+ raster. The receiver finds the robustness mode by itself (DRM+ needs a radio rate of 100 ksps or more).
+void presets(App& a) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Bands"); flowNext(6 * gUi);
+    static const struct { const char* name; double mhz; const char* tip; } kP[] = {
+        {"SW 41 m", 7.325, "DRM30, short wave 41 m band (7.2 - 7.45 MHz)"},
+        {"SW 31 m", 9.5, "DRM30, short wave 31 m band (9.4 - 9.9 MHz)"},
+        {"SW 25 m", 11.65, "DRM30, short wave 25 m band (11.6 - 12.1 MHz)"},
+        {"SW 19 m", 15.1, "DRM30, short wave 19 m band (15.1 - 15.8 MHz)"},
+        {"VHF I", 47.1, "DRM+, VHF band I (47 - 68 MHz)"},
+        {"VHF II", 87.6, "DRM+, VHF band II (87.5 - 108 MHz), next to the FM stations"},
+        {"VHF III", 174.1, "DRM+, VHF band III (174 - 240 MHz), between the DAB blocks"},
+    };
+    for (const auto& p : kP) {
+        if (ImGui::Button(p.name)) tuneFreq(a, p.mhz);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s: %.3f MHz", p.tip, p.mhz);
+        flowNext(6 * gUi);
+    }
+    const bool vhf = a.freqMhz >= 30;
+    if (vhf) {
+        if (ImGui::ArrowButton("##drmdn", ImGuiDir_Left)) tuneFreq(a, std::round(a.freqMhz * 10 - 1) / 10);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("100 kHz down (the DRM+ channel raster)");
+        flowNext(4 * gUi);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%.1f MHz", a.freqMhz);
+        flowNext(4 * gUi);
+        if (ImGui::ArrowButton("##drmup", ImGuiDir_Right)) tuneFreq(a, std::round(a.freqMhz * 10 + 1) / 10);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("100 kHz up (the DRM+ channel raster)");
+    } else {
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("%.3f MHz", a.freqMhz);
+    }
+    flowEnd();
+}
+
 void tab(App& a) {
+    presets(a);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     const float gap = 8 * gUi;
     const float sw = std::min(std::max(250.f * gUi, W * 0.34f), W * 0.5f);
@@ -353,7 +390,7 @@ void receiver(App& a) {
     sectionHeader(Ic::Chip, "Receiver");
     kv("state", stateText(t.state));
     kv("status", t.status.empty() ? "-" : t.status);
-    kf("level", "%.1f dBFS in the 48 kHz channel", t.levelDbfs);
+    kf("level", "%.1f dBFS in the %s channel", t.levelDbfs, t.mode == 4 ? "192 kHz" : "48 kHz");
     kf("quality", "%.0f %%", t.quality * 100.0);
     sectionHeader(Ic::Wave, "Signal");
     kv("robustness mode", t.mode >= 0 ? modeText(t.mode) : "-");
@@ -405,8 +442,8 @@ void receiver(App& a) {
     ImGui::PushTextWrapPos(0);
     ImGui::TextDisabled("AAC with SBR or parametric stereo: only the AAC core plays (no SBR for 960-sample frames in the audio library), so the sound is band-limited and mono for PS services.");
     ImGui::TextDisabled("xHE-AAC: the frames are received, but whether sound comes out depends on the audio library's USAC decoder; the state above says what happened.");
-    ImGui::TextDisabled("Data services (Journaline, packet mode), alternative frequencies, hierarchical mappings and DRM+ (robustness mode E) are not decoded.");
-    ImGui::TextDisabled("Below 30 MHz a HackRF needs an upconverter or a long antenna.");
+    ImGui::TextDisabled("Data services (Journaline, packet mode), alternative frequencies and hierarchical mappings are not decoded; DRM+ with unequal error protection is untested.");
+    ImGui::TextDisabled("DRM+ (mode E, 100 kHz) needs a radio rate of at least 100 ksps. Below 30 MHz a HackRF needs an upconverter or a long antenna.");
     ImGui::PopTextWrapPos();
     ImGui::EndChild();
 }
@@ -431,24 +468,29 @@ bool combo(const char* id, float w, const char* const* items, int n, int cur, in
 
 void synth(App& a, bool& changed) {
     SynthConfig& sc = a.tune.synth;
-    static const char* modes[] = {"mode A", "mode B", "mode C", "mode D"};
+    static const char* modes[] = {"mode A", "mode B", "mode C", "mode D", "mode E (DRM+)"};
     static const char* occ[] = {"usual (10 kHz)", "4.5 kHz", "5 kHz", "9 kHz", "10 kHz", "18 kHz", "20 kHz"};
+    static const char* occE[] = {"100 kHz"};
     static const char* qam[] = {"64-QAM", "16-QAM"};
+    static const char* qamE[] = {"16-QAM", "4-QAM"};
     static const char* prot[] = {"usual protection", "protection 0", "protection 1", "protection 2", "protection 3"};
     static const char* il[] = {"long interleaver", "short interleaver"};
     static const char* aud[] = {"melody", "1 kHz tone", "silence", "noise-like", "not AAC"};
     static const char* chn[] = {"no channel", "AWGN", "Rice, delay", "US consortium", "CCIR poor", "channel 5", "channel 6"};
-    const int mode = sc.modeOpt[0] == 0 ? 1 : std::max(0, std::min(3, sc.modeOpt[0] - 1));
+    const int mode = sc.modeOpt[0] == 0 ? 1 : std::max(0, std::min(4, sc.modeOpt[0] - 1));
+    const bool E = mode == 4;
     int v = 0;
     ImGui::TextDisabled("test signal");
     flowNext();
-    if (combo("##dm", 78, modes, 4, mode, v)) { sc.modeOpt[0] = v + 1; if (v >= 2 && sc.modeOpt[1] != 0 && sc.modeOpt[1] != 4 && sc.modeOpt[1] != 6) sc.modeOpt[1] = 0; changed = true; }
+    if (combo("##dm", 78, modes, 5, mode, v)) { sc.modeOpt[0] = v + 1; if (v >= 2 && sc.modeOpt[1] != 0 && sc.modeOpt[1] != 4 && sc.modeOpt[1] != 6) sc.modeOpt[1] = 0; changed = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Modes A to D: DRM30 (below 30 MHz). Mode E: DRM+ (VHF), a 100 kHz channel; the radio needs 100 ksps or more.");
     flowNext(6 * gUi);
     bool dis[7] = {};
     if (mode >= 2) for (int i : {1, 2, 3, 5}) dis[i] = true;   // modes C and D only have 10 and 20 kHz
-    if (combo("##do", 110, occ, 7, sc.modeOpt[1], v, dis)) { sc.modeOpt[1] = v; changed = true; }
+    if (E) { int z = 0; combo("##doE", 110, occE, 1, 0, z); }   // mode E has one occupancy
+    else if (combo("##do", 110, occ, 7, sc.modeOpt[1], v, dis)) { sc.modeOpt[1] = v; changed = true; }
     flowNext(6 * gUi);
-    if (combo("##dq", 76, qam, 2, sc.modeOpt[2], v)) { sc.modeOpt[2] = v; changed = true; }
+    if (combo("##dq", 76, E ? qamE : qam, 2, sc.modeOpt[2], v)) { sc.modeOpt[2] = v; changed = true; }
     flowNext(6 * gUi);
     if (combo("##dp", 120, prot, 5, sc.modeOpt[3], v)) { sc.modeOpt[3] = v; changed = true; }
     flowNext(6 * gUi);
@@ -456,7 +498,9 @@ void synth(App& a, bool& changed) {
     flowNext(6 * gUi);
     if (combo("##da", 100, aud, 5, sc.modeOpt[5], v)) { sc.modeOpt[5] = v; changed = true; }
     flowNext(6 * gUi);
+    if (E) ImGui::BeginDisabled();
     if (combo("##dc", 110, chn, 7, sc.modeOpt[6], v)) { sc.modeOpt[6] = v; changed = true; }
+    if (E) { ImGui::EndDisabled(); if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("The channels of Annex B.1 are short wave channels (DRM30 only)"); }
     flowNext(8 * gUi);
     bool text = sc.modeOpt[7] == 0;
     if (ImGui::Checkbox("text message", &text)) { sc.modeOpt[7] = text ? 0 : 1; changed = true; }

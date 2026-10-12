@@ -1,4 +1,4 @@
-// DRM test signal: DRM30 transmitter (modes A to D), the channels of Annex B.1, and the synthetic source.
+// DRM test signal: DRM30 transmitter (modes A to D), DRM+ (mode E), the channels of Annex B.1, and the synthetic source.
 #include "dect2/drm_gen.h"
 #include "dect2/drm_fec.h"
 #include "dect2/drm_fft.h"
@@ -43,7 +43,11 @@ struct DrmTransmitter::Impl {
     std::unique_ptr<DrmAudioSource> audio;
     std::shared_ptr<const Layout> L;
     bool valid = false;
-    int N = 0, G = 0;                         // useful part and guard in samples at 48 kHz
+    int N = 0, G = 0;                         // useful part and guard in samples at 48 kHz (mode E: 192 kHz)
+    bool modeE = false;
+    int halfBytes = 0;                        // mode E: bytes of the audio super frame in each of its two logical frames
+    std::vector<uint8_t> secondHalf;          // mode E: the second logical frame of the audio super frame in progress
+    uint64_t muxMade = 0;                     // multiplex frames made (mode E: the even ones start an audio super frame)
     std::unique_ptr<MlcCode> mscCode, sdcCode, facCode;
     int levels = 1;
     int lenA = 0, lenB = 0, textBytes = 0, nAudio = 0, hp = 0, hdr = 0, payload = 0;
@@ -63,17 +67,20 @@ struct DrmTransmitter::Impl {
 
     explicit Impl(const DrmTxConfig& c, std::unique_ptr<DrmAudioSource> a) : cfg(c), audio(std::move(a)) {
         const int mode = cfg.mode;
-        if (mode < 0 || mode > 3) return;
+        if (mode < 0 || mode > 4) return;
+        modeE = mode == kModeE;
+        if (modeE) { cfg.occupancy = 0; cfg.partABytes = 0; }   // one occupancy (100 kHz); the test signal has equal error protection
         L = layout(mode, cfg.occupancy);
         if (!L) return;
         const ModeParams& mp = modeParams(mode);
-        N = mp.tu12 * 4; G = mp.tg12 * 4;
+        const int spt = modeE ? 16 : 4;                    // samples per T: 48 kHz, mode E 192 kHz
+        N = mp.tu12 * spt; G = mp.tg12 * spt;
         fft = DrmFft(N);
-        if (cfg.mscQam != 16 && cfg.mscQam != 64) return;
-        const int qb = cfg.mscQam == 64 ? 6 : 4;          // bits per cell
+        if (modeE ? (cfg.mscQam != 4 && cfg.mscQam != 16) : (cfg.mscQam != 16 && cfg.mscQam != 64)) return;
+        const int qb = cfg.mscQam == 64 ? 6 : cfg.mscQam == 16 ? 4 : 2;   // bits per cell
         levels = qb / 2;
         if (mscProtLevels(mode, qb) <= cfg.protB || cfg.protB < 0) return;
-        nAudio = aacNumFrames(false, cfg.audioRateHz);
+        nAudio = aacNumFrames(modeE, cfg.audioRateHz);
         if (!nAudio) return;
         hdr = aacHeaderBytes(nAudio);
         textBytes = cfg.textMessage ? 4 : 0;
@@ -104,17 +111,20 @@ struct DrmTransmitter::Impl {
         lenA = X;
         lenB = capacity - X;
         if (lenA > 4095 || lenB > 4095 || lenB < 40) return;
-        payload = lenA + lenB - textBytes - hdr - nAudio;
+        // mode E: the audio super frame (200 ms) fills two logical frames (100 ms each), half of it in each
+        halfBytes = lenA + lenB - textBytes;
+        payload = (modeE ? 2 * halfBytes : halfBytes) - hdr - nAudio;
         if (payload < nAudio * 8) return;
-        // SDC and FAC codes
+        // SDC and FAC codes (clause 7.5.1, Tables 36 to 38; mode E: 4-QAM, rate 1/2 or 1/4, and the FAC at rate 1/4)
         MlcParams s;
         s.n2 = L->nSdc;
-        if (cfg.sdcMode == 0) { s.levels = 2; s.rxB[0] = 1; s.ryB[0] = 3; s.rxB[1] = 2; s.ryB[1] = 3; }
+        if (modeE) { s.levels = 1; s.rxB[0] = 1; s.ryB[0] = cfg.sdcMode == 0 ? 2 : 4; }
+        else if (cfg.sdcMode == 0) { s.levels = 2; s.rxB[0] = 1; s.ryB[0] = 3; s.rxB[1] = 2; s.ryB[1] = 3; }
         else { s.levels = 1; s.rxB[0] = 1; s.ryB[0] = 2; }
         sdcCode = std::make_unique<MlcCode>(s);
         sdcFieldBytes = sdcDataBytes(mode, cfg.occupancy, cfg.sdcMode);
         MlcParams f;
-        f.levels = 1; f.n2 = L->nFac; f.fac = true; f.rxB[0] = 3; f.ryB[0] = 5;
+        f.levels = 1; f.n2 = L->nFac; f.fac = true; f.rxB[0] = modeE ? 1 : 3; f.ryB[0] = modeE ? 4 : 5;
         facCode = std::make_unique<MlcCode>(f);
         depth = cfg.longInterleave ? mp.depth : 1;
         text.set(cfg.text);
@@ -142,11 +152,24 @@ struct DrmTransmitter::Impl {
     // the cells (before the time interleaver) of the next multiplex frame
     std::vector<cf32> muxCells() {
         const int n = nAudio;
-        std::vector<std::vector<uint8_t>> frames;
-        std::vector<uint8_t> crc;
-        audio->nextSuperFrame(n, payload, frames, crc);
         std::vector<uint8_t> lf;
-        aacSuperFrameBuild(frames, crc, hp, lenA + lenB - textBytes, lf);
+        // the position of this multiplex frame in its super frame: the pre-roll frames come before the first super frame
+        const int pos = (int)(((int64_t)muxMade - (depth - 1)) % L->frames + L->frames) % L->frames;
+        muxMade++;
+        if (!modeE || pos % 2 == 0 || secondHalf.empty()) {
+            std::vector<std::vector<uint8_t>> frames;
+            std::vector<uint8_t> crc;
+            audio->nextSuperFrame(n, payload, frames, crc);
+            aacSuperFrameBuild(frames, crc, hp, modeE ? 2 * halfBytes : halfBytes, lf);
+            if (modeE) {
+                secondHalf.assign(lf.begin() + halfBytes, lf.end());
+                lf.resize((size_t)halfBytes);
+                if (pos % 2 == 1) { lf = secondHalf; secondHalf.clear(); }   // a pre-roll frame that is the second half of its super frame
+            }
+        } else {
+            lf = secondHalf;
+            secondHalf.clear();
+        }
         if (textBytes) {
             uint8_t four[4];
             text.next(four);
@@ -186,7 +209,7 @@ struct DrmTransmitter::Impl {
         mx.stream[0].lenA = lenA; mx.stream[0].lenB = lenB;
         SdcAudio a;
         a.shortId = 0; a.streamId = 0; a.coding = cfg.audioCoding; a.sbr = cfg.audioSbr; a.mode = cfg.audioMode;
-        a.rateCode = cfg.audioRateHz == 12000 ? 1 : 3; a.text = cfg.textMessage;
+        a.rateCode = cfg.audioRateHz == 12000 ? 1 : cfg.audioRateHz == 24000 ? 3 : cfg.audioRateHz == 48000 ? 5 : 3; a.text = cfg.textMessage;
         field.clear();
         sdcPutEntity(field, 0, 0, sdcEntityMux(mx));
         sdcPutEntity(field, 9, 0, sdcEntityAudio(a));
@@ -221,14 +244,16 @@ struct DrmTransmitter::Impl {
         // FAC: one block per transmission frame
         for (int f = 0; f < L->frames; f++) {
             FacInfo fi;
-            fi.identity = f == 0 ? 0 : f == 1 ? 1 : 2;
+            fi.identity = modeE ? f : f == 0 ? 0 : f == 1 ? 1 : 2;   // mode E: four frames, 00 .. 11
+            fi.modeE = modeE;
             fi.occupancy = cfg.occupancy;
             fi.interleaver = cfg.longInterleave ? 0 : 1;
-            fi.mscMode = cfg.mscQam == 64 ? 0 : 3;
+            fi.mscMode = modeE ? (cfg.mscQam == 16 ? 0 : 3) : (cfg.mscQam == 64 ? 0 : 3);
             fi.sdcMode = cfg.sdcMode;
             fi.numServicesCode = 4;                      // one audio service
             fi.svc[0].id = cfg.serviceId; fi.svc[0].shortId = 0; fi.svc[0].language = cfg.language; fi.svc[0].descriptor = cfg.programmeType;
-            std::vector<uint8_t> bits((size_t)facInfoBits(false)), pr(bits.size());
+            fi.svc[1] = fi.svc[0];                       // mode E carries two sets of service parameters: with one service both describe it
+            std::vector<uint8_t> bits((size_t)facInfoBits(modeE)), pr(bits.size());
             facBuild(fi, bits.data());
             prbs(pr.data(), pr.size());
             for (size_t i = 0; i < bits.size(); i++) bits[i] ^= pr[i];
@@ -307,6 +332,7 @@ int DrmTransmitter::audioPayload() const { return p_->payload; }
 int DrmTransmitter::audioFrames() const { return p_->nAudio; }
 int DrmTransmitter::muxCells() const { return p_->L ? p_->L->nMux : 0; }
 int DrmTransmitter::nSuperFrames() const { return (int)p_->sf; }
+int DrmTransmitter::sampleRate() const { return p_->modeE ? 192000 : kRate; }
 int DrmTransmitter::firstDecodableFrame() const { return p_->preroll; }
 double DrmTransmitter::signalPower() const { return 1.0; }
 double DrmTransmitter::noiseBandwidthHz() const { return p_->L ? occupancyKhz(p_->cfg.mode, p_->cfg.occupancy) * 1000.0 : 10000.0; }
@@ -437,11 +463,18 @@ void DrmChannelSim::process(cf32* x, size_t n) {
 DrmTxConfig drmTxConfigFromSynth(const SynthConfig& sc) {
     DrmTxConfig tc;
     const int m = sc.modeOpt[0];
-    tc.mode = m == 0 ? kModeB : std::max(0, std::min(3, m - 1));
+    tc.mode = m == 0 ? kModeB : std::max(0, std::min(4, m - 1));
     const int oc = sc.modeOpt[1];
-    tc.occupancy = oc > 0 ? oc - 1 : 3;
-    tc.mscQam = sc.modeOpt[2] == 1 ? 16 : 64;
-    tc.protB = sc.modeOpt[3] == 0 ? (tc.mscQam == 16 ? 0 : 1) : sc.modeOpt[3] - 1;
+    tc.occupancy = tc.mode == kModeE ? 0 : oc > 0 ? oc - 1 : 3;
+    if (tc.mode == kModeE) {   // DRM+: 16-QAM or 4-QAM, protection level 2 (16-QAM, rate 1/3 and 2/3) or 1 (4-QAM, rate 1/3) by default
+        tc.mscQam = sc.modeOpt[2] == 1 ? 4 : 16;
+        tc.protB = sc.modeOpt[3] == 0 ? (tc.mscQam == 16 ? 2 : 1) : sc.modeOpt[3] - 1;
+        tc.sdcMode = 0;
+        tc.label = "OnAir DRM+";
+    } else {
+        tc.mscQam = sc.modeOpt[2] == 1 ? 16 : 64;
+        tc.protB = sc.modeOpt[3] == 0 ? (tc.mscQam == 16 ? 0 : 1) : sc.modeOpt[3] - 1;
+    }
     tc.longInterleave = sc.modeOpt[4] == 0;
     tc.textMessage = sc.modeOpt[7] == 0;
     return tc;
@@ -463,12 +496,14 @@ public:
         tx_ = std::make_unique<DrmTransmitter>(tc, drmAudioFromSynth(sc, tc));
         if (!tx_->ok()) { tc.occupancy = 3; tc.mode = kModeB; tx_ = std::make_unique<DrmTransmitter>(tc, nullptr); }
         centre_ = tx_->centreOffsetHz();
-        if (sc.modeOpt[6] > 0) chan_ = std::make_unique<DrmChannelSim>(std::min(6, sc.modeOpt[6]), 11);
-        up_.configure(48000.0, 192000.0);
+        br_ = tx_->sampleRate();                 // 48 kHz, mode E 192 kHz
+        // the channels of Annex B.1 are short wave channels (48 kHz): not for DRM+
+        if (sc.modeOpt[6] > 0 && br_ == 48000) chan_ = std::make_unique<DrmChannelSim>(std::min(6, sc.modeOpt[6]), 11);
+        if (br_ != 192000) up_.configure(br_, 192000.0);
         const double snr = std::pow(10.0, sc.snrDb / 10.0);
-        noiseVar_ = sc.snrDb >= 100 ? 0.0 : (48000.0 / tx_->noiseBandwidthHz()) / snr;
+        noiseVar_ = sc.snrDb >= 100 ? 0.0 : (br_ / tx_->noiseBandwidthHz()) / snr;
         echoAmp_ = sc.echoDb > 0 ? (float)std::pow(10.0, -sc.echoDb / 20.0) : 0.f;
-        echoDelay_ = std::max(1, std::min(8000, sc.echoDelay));
+        echoDelay_ = std::max(1, std::min(8000, sc.echoDelay)) * (int)(br_ / 48000);   // echoDelay counts samples at 48 kHz
         echoBuf_.assign((size_t)echoDelay_ + 1, cf32(0, 0));
         // total power: signal 1 (the channel keeps it) + echo + noise; the output has an rms of 0.2
         const double sig = 1.0 + (double)echoAmp_ * echoAmp_;
@@ -512,7 +547,7 @@ private:
         // centre the occupied carriers on 0 Hz
         {
             // by a rotating phasor (renormalised every 1024 samples) instead of a sine and cosine for every sample
-            const double w = -2 * M_PI * centre_ / 48000.0;
+            const double w = -2 * M_PI * centre_ / br_;
             const float wr = (float)std::cos(w), wi = (float)std::sin(w);
             float zr = (float)std::cos(cphase_), zi = (float)std::sin(cphase_);
             for (size_t i = 0; i < s.size(); i++) {
@@ -539,7 +574,8 @@ private:
             for (auto& v : s) v += cf32(nd(rng_), nd(rng_));
         }
         std::vector<cf32> u;
-        up_.process(s.data(), s.size(), u);
+        if (br_ != 192000) up_.process(s.data(), s.size(), u);
+        else u.swap(s);
         // carrier offset at 192 kHz
         if (sc_.cfoHz != 0 || phase_ != 0) {
             const double w = 2 * M_PI * sc_.cfoHz / 192000.0;
@@ -563,7 +599,7 @@ private:
     std::unique_ptr<DrmTransmitter> tx_;
     std::unique_ptr<DrmChannelSim> chan_;
     ExactResampler up_;
-    double centre_ = 0, noiseVar_ = 0, step_ = 1, pos_ = 1, phase_ = 0;
+    double centre_ = 0, noiseVar_ = 0, step_ = 1, pos_ = 1, phase_ = 0, br_ = 48000;
     double cphase_ = 0;
     float echoAmp_ = 0, scale_ = 0.2f;
     int echoDelay_ = 300;
