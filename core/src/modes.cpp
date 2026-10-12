@@ -209,7 +209,7 @@ static const SubMode kSubModes[] = {
     {"flex",       "FLEX",       25, 2, 0,  929.6625, {2, 0, 0}},
     {"navtex",     "NAVTEX",     17, 0, 1,  0.518,   {1, 0, 0}},
     {"dsc",        "DSC",        17, 0, 2,  2.1875,  {2, 0, 0}},
-    {"wefax",      "Weather fax", 17, 0, 3, 7.880,   {3, 0, 0}},
+    {"wefax",      "Weather fax", 17, 0, 3, 7.8781,  {3, 0, 0}},   // DWD Pinneberg 7880 kHz: the USB dial 1.9 kHz below the carrier
     {"vor",        "VOR",        32, 1, 1, 113.000, {0, 0, 0}},   // sel: VorReceiver::setFunction
     {"ils",        "ILS",        32, 2, 2, 110.300, {2, 0, 0}},
 };
@@ -221,6 +221,14 @@ const SubMode* subModeById(const std::string& id) {
 void applySubModeSynth(SynthConfig& sc, const SubMode& s) {
     if (!(s.stdMode == 17 && s.sel == 2 && sc.modeOpt[0] == 4)) sc.modeOpt[0] = s.synth[0];   // DSC keeps VHF channel 70 when chosen
     if (s.stdMode == 22) { sc.modeOpt[1] = s.synth[1]; sc.modeOpt[4] = s.synth[2]; }   // mesh: the band's scene, placed for this network's frequency
+    if (s.stdMode == 17) {   // marine: the slots the marine panel does not show are the defaults, not what another mode left there
+        // (ADS-B "emergency" in modeOpt[3] made the fax 1 lpm, its reference latitude in modeVal[2] the phasing length, GNSS's tune in
+        // modeOpt[5] the picture height, the spectrum analyser's edges in modeVal[0] the mistuning)
+        for (int i = 2; i < 8; i++) sc.modeOpt[i] = 0;
+        if (sc.modeOpt[1] != 1) sc.modeOpt[1] = 0;
+        if (std::fabs(sc.modeVal[0]) > 100) sc.modeVal[0] = 0;
+        for (int i = 1; i < 4; i++) sc.modeVal[i] = 0;
+    }
 }
 
 const ModeTuning* modeTuningById(const std::string& id) {

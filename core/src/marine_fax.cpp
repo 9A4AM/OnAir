@@ -117,6 +117,17 @@ struct FaxDecoder::State {
     double fbUse = kBlackHz, fwUse = kWhiteHz;
     int rowIdx = 0;
 
+    // Joined mid-picture (no start tone, no phasing): the line period is found by correlating the picture with itself one line
+    // later, and refined as the picture comes in by correlating each row with the one kRefK lines above it (the slant).
+    static constexpr int kRefK = 8, kRefR = 8;
+    int64_t freeFrom = 0, freeNext = 0;          // history usable for the search starts at freeFrom (after a stop tone, a reset)
+    int freeHits = 0, freeLpm = 0;
+    bool freeRun = false;
+    int64_t refLag = 0;
+    double refAcc[2 * kRefR + 1] = {};
+    int refRows = 0;
+    bool periodDirty = false;
+
     State() { configure(12000); }
 
     // ---- setup ----
@@ -204,6 +215,11 @@ struct FaxDecoder::State {
         snrAvg = 0;
         rowIdx = 0;
         imgW = 0;
+        freeFrom = freeNext = 0;
+        freeHits = freeLpm = 0;
+        freeRun = false;
+        refRows = 0;
+        periodDirty = false;
         const int ioc = iocSet.load() > 0 ? iocSet.load() : 576;
         st = FaxStatus();
         st.ioc = ioc;
@@ -220,6 +236,7 @@ struct FaxDecoder::State {
     void publishStatus() {
         std::lock_guard<std::mutex> lk(pubMtx);
         pubStatus = st;
+        pubStatus.imageSeq = imgSeq;
     }
 
     // ---- running sums ----
@@ -236,7 +253,7 @@ struct FaxDecoder::State {
     double meanF2(double a, double b) const { return (integ(cum2, b) - integ(cum2, a)) / (b - a); }
 
     void trim() {
-        const int64_t keep = static_cast<int64_t>(4.6 * fs) + 16;
+        const int64_t keep = static_cast<int64_t>(12.0 * fs) + 16;   // the free-running line search looks back 7 lines (7 s at 60 lpm)
         if (static_cast<int64_t>(cum.size()) <= 2 * keep) return;
         const size_t drop = cum.size() - static_cast<size_t>(keep);
         cum.erase(cum.begin(), cum.begin() + static_cast<std::ptrdiff_t>(drop));
@@ -488,6 +505,7 @@ struct FaxDecoder::State {
         if (st.state == 2) truncateRows(onset);
         st.state = 1;
         locked = false;
+        freeFrom = nAud;
         chain.clear();
         pulses.clear();
         fitI.clear();
@@ -499,6 +517,8 @@ struct FaxDecoder::State {
         dTone = std::min(80.0, std::max(-80.0, dMeasured));
         toneSeen = true;
         dHat = dTone;
+        freeRun = false;
+        freeHits = 0;
         const int ioc = iocSet.load() > 0 ? iocSet.load() : (kind == 1 ? 576 : 288);
         st.ioc = ioc;
         st.lpm = lpmSet.load() > 0 ? lpmSet.load() : 120;
@@ -511,6 +531,9 @@ struct FaxDecoder::State {
         locked = false;
         chain.clear();
         pulses.clear();
+        freeRun = false;
+        freeHits = 0;
+        freeFrom = nAud;                         // the picture before the stop tone is not the next one
     }
 
     // A tone (300, 450 or 675 Hz) lies far below the black level, so the discriminator sits at its lower limit for the
@@ -541,6 +564,8 @@ struct FaxDecoder::State {
     void lineStep() {
         if (st.state == 2) imageLines();
         else if (st.state == 1 && locked) phasingLines();
+        if (st.state == 3 && rowIdx > 0 && imgW > 0) applyManual();   // the slant slider also straightens a finished picture
+        if ((st.state == 0 || st.state == 3) && !locked && nAud >= freeNext) freeSearch();
         st.width = imgW;
         st.blackHz = fbAvg;
     }
@@ -613,10 +638,13 @@ struct FaxDecoder::State {
         if (snrAvg < 16.0) {
             // Noise pulls the measured levels towards each other and the black level up: trust the nominal ones, moved by
             // the mistuning measured on the start tone when there was one.
-            fbUse = kBlackHz + (toneSeen ? dTone : 0.0);
+            // Without a start tone the black of the phasing lines still tells the mistuning (its mean over 88 % of each line is
+            // pulled up only a few Hz at 15 dB, where the white pulse is no longer measured well).
+            fbUse = kBlackHz + (toneSeen ? dTone : levelsSeen && std::fabs(fbAvg - kBlackHz) <= 130 ? fbAvg - kBlackHz : 0.0);
             fwUse = fbUse + (kWhiteHz - kBlackHz);
         }
         rowIdx = 0;
+        freeRun = false;
         st.state = 2;
         st.lines = 0;
         st.slantPpm = (Puse / Pnom - 1.0) * 1e6;
@@ -634,8 +662,9 @@ struct FaxDecoder::State {
     // The manual slant changed: move the rows already received (row r shifts by r * dP / samples-per-pixel).
     void applyManual() {
         const double m = manualPpm.load();
-        if (std::fabs(m - appliedManual) < 1e-9) return;
+        if (std::fabs(m - appliedManual) < 1e-9 && !periodDirty) return;
         appliedManual = m;
+        periodDirty = false;
         double ppm = (autoSlant.load() ? estPpm : 0.0) + m;
         const double newP = Pnom * (1.0 + ppm * 1e-6);
         const double dP = newP - Puse;
@@ -688,9 +717,204 @@ struct FaxDecoder::State {
             }
             rowIdx++;
             any = true;
+            if (freeRun) refineRow(s);
         }
         if (any) st.lines = rowIdx;
     }
+
+    // f smoothed over smD samples (the discriminator noise is mostly at the top of its band): n .. n + smD - 1 must be in the history
+    int smD = 8;
+    double fAt(int64_t n) const { return (cum[static_cast<size_t>(n + smD - base)] - cum[static_cast<size_t>(n - base)]) / smD; }
+
+    // Normalised correlation of f over [a, a + len) with f over [a + lag, a + lag + len).
+    double corrAt(int64_t a, int64_t len, int64_t lag) const {
+        double sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
+        for (int64_t n = a; n < a + len; n++) {
+            const double x = fAt(n), y = fAt(n + lag);
+            sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y;
+        }
+        const double N = static_cast<double>(len);
+        const double vx = sxx - sx * sx / N, vy = syy - sy * sy / N;
+        if (vx <= 0 || vy <= 0) return 0;
+        return (sxy - sx * sy / N) / std::sqrt(vx * vy);
+    }
+
+    // No start tone and no phasing: a picture is a signal that repeats almost exactly one line later. Look for that at each
+    // line rate; the shortest period that correlates well is the line (a 120 lpm picture also matches two lines later at 60 lpm).
+    void freeSearch() {
+        freeNext = nAud + static_cast<int64_t>(fs * 0.5);
+        if (chain.size() >= 3) { freeHits = 0; return; }     // a phasing signal is coming in: the pulse chain locks on it
+        const int set = lpmSet.load();
+        const int64_t from = std::max(freeFrom, base);
+        constexpr int kLines = 6;
+        struct Cand { int lpm; double r, P; };
+        std::vector<Cand> cands;
+        double rMax = 0;
+        for (int lpm : {240, 120, 90, 60}) {
+            if (set > 0 && lpm != set) continue;
+            const double Pn = fs * 60.0 / lpm;
+            const int64_t len = static_cast<int64_t>(kLines * Pn);
+            const int64_t L0 = static_cast<int64_t>(std::lround(Pn));
+            const int64_t R = static_cast<int64_t>(std::ceil(Pn * 0.003)) + 1;
+            const int64_t a = nAud - len - L0 - R - 1 - smD;
+            if (a < from) continue;
+            // the picture must have some contrast: a steady carrier, black or a tone is not one
+            const double m = meanF(static_cast<double>(a), static_cast<double>(a + len));
+            const double sd = std::sqrt(std::max(0.0, meanF2(static_cast<double>(a), static_cast<double>(a + len)) - m * m));
+            if (sd < 60) continue;
+            // and lie between black and white: noise, FSK (DSC, NAVTEX dot patterns repeat at every lag) and tones mostly do not
+            int inBand = 0, total = 0;
+            for (int64_t n = a; n + smD <= a + len; n += smD, total++) { const double f = fAt(n); inBand += f > 1350 && f < 2450; }
+            if (inBand < 0.6 * total) continue;
+            std::vector<double> rr(static_cast<size_t>(2 * R + 1));
+            int64_t bi = -R;
+            for (int64_t d = -R; d <= R; d++) {
+                rr[static_cast<size_t>(d + R)] = corrAt(a, len, L0 + d);
+                if (rr[static_cast<size_t>(d + R)] > rr[static_cast<size_t>(bi + R)]) bi = d;
+            }
+            if (bi <= -R || bi >= R) continue;      // the peak at the edge of the search: not this line rate
+            const double l = rr[static_cast<size_t>(bi + R - 1)], c = rr[static_cast<size_t>(bi + R)], h = rr[static_cast<size_t>(bi + R + 1)];
+            double P = static_cast<double>(L0 + bi);
+            const double den = l - 2 * c + h;
+            if (den < 0) P += std::min(0.5, std::max(-0.5, 0.5 * (l - h) / den));
+            const double rOff = corrAt(a, len, static_cast<int64_t>(std::lround(0.37 * Pn)));   // no line structure there
+            if (c - rOff < 0.15) continue;
+            cands.push_back({lpm, c, P});
+            rMax = std::max(rMax, c);
+        }
+        int bestLpm = 0;
+        double bestP = 0;
+        for (const Cand& c : cands)                 // highest line rate first
+            if (c.r >= 0.3 && c.r >= 0.85 * rMax) { bestLpm = c.lpm; bestP = c.P; break; }
+        if (bestLpm == 0) { freeHits = 0; freeLpm = 0; return; }
+        if (bestLpm != freeLpm) { freeLpm = bestLpm; freeHits = 0; }
+        if (++freeHits < 2) return;                 // seen twice, half a second apart
+        startFree(bestLpm, bestP, std::max(from, nAud - static_cast<int64_t>((kLines + 1) * bestP)));
+    }
+
+    void startFree(int lpm, double P0, int64_t histStart) {
+        curLpm = lpm;
+        st.lpm = lpm;
+        Pnom = fs * 60.0 / lpm;
+        if (iocSet.load() > 0) st.ioc = iocSet.load();
+        imgW = faxImageWidth(st.ioc);
+        if (imgW <= 0) imgW = faxImageWidth(576);
+        fitP = P0;
+        fitA = static_cast<double>(histStart);
+        const double m = manualPpm.load();
+        estPpm = autoSlant.load() ? (P0 / Pnom - 1.0) * 1e6 : 0.0;
+        Puse = Pnom * (1.0 + (estPpm + m) * 1e-6);
+        appliedManual = m;
+        // Levels: a chart is mostly white background, so the commonest frequency is the white level; it also gives the mistuning.
+        std::vector<int> hist(131, 0);
+        const int64_t step = 4;
+        for (int64_t n = histStart; n + step < nAud; n += step) {
+            const double f = meanF(static_cast<double>(n), static_cast<double>(n + step));
+            hist[static_cast<size_t>(std::min(130, std::max(0, static_cast<int>((f - 1250.0) / 10.0))))]++;
+        }
+        int bk = 0;
+        for (int k = 1; k < 131; k++) if (hist[static_cast<size_t>(k)] > hist[static_cast<size_t>(bk)]) bk = k;
+        const double mode = 1250.0 + 10.0 * bk + 5.0;
+        const double d = std::fabs(mode - kWhiteHz) <= 130 ? mode - kWhiteHz : 0.0;
+        dHat = d;
+        fbUse = kBlackHz + d;
+        fwUse = kWhiteHz + d;
+        fbAvg = fbUse;
+        imgStart = static_cast<double>(histStart);
+        rowIdx = 0;
+        st.state = 2;
+        st.lines = 0;
+        st.phasingLines = 0;
+        st.slantPpm = estPpm + m;
+        freeRun = true;
+        refLag = static_cast<int64_t>(std::lround(kRefK * P0));
+        std::fill(std::begin(refAcc), std::end(refAcc), 0.0);
+        refRows = 0;
+        {
+            std::lock_guard<std::mutex> lk(pubMtx);
+            pubImage.width = imgW;
+            pubImage.height = 0;
+            pubImage.pix.clear();
+            imgSeq++;
+        }
+        pulses.clear();
+        chain.clear();
+        imageLines();
+    }
+
+    // Free-running picture: where does a line start? A chart is framed: a white margin with a dark frame line on either side runs
+    // down the whole picture at the line boundary. Look for the steady white band flanked by dark columns in the rows so far and
+    // roll the picture (and the line start) to put it at the edges. Nothing moves when no such band stands out.
+    void alignLines() {
+        const int W = imgW, n = std::min(rowIdx, 96);
+        if (W < 64 || n < 16) return;
+        std::vector<double> mean(W, 0.0), sd(W, 0.0);
+        {
+            std::lock_guard<std::mutex> lk(pubMtx);
+            for (int r = rowIdx - n; r < rowIdx; r++) {
+                const uint8_t* row = &pubImage.pix[static_cast<size_t>(r) * W];
+                for (int x = 0; x < W; x++) { mean[x] += row[x]; sd[x] += static_cast<double>(row[x]) * row[x]; }
+            }
+        }
+        for (int x = 0; x < W; x++) { mean[x] /= n; sd[x] = std::sqrt(std::max(0.0, sd[x] / n - mean[x] * mean[x])); }
+        const int w = std::max(4, W / 113);            // 16 px of 1809: about 1 % of the line
+        auto at = [&](const std::vector<double>& v, int x) { x %= W; if (x < 0) x += W; return v[static_cast<size_t>(x)]; };
+        double best = -1e9, bestB = 0, bestS = 0;
+        int bc = -1;
+        for (int c = 0; c < W; c++) {
+            double B = 0, S = 0, L = 1e9, R = 1e9;
+            for (int k = -w / 2; k < w / 2; k++) { B += at(mean, c + k); S += at(sd, c + k); }
+            B /= w; S /= w;
+            for (int k = w / 2; k < w; k++) { L = std::min(L, at(mean, c - k - 1)); R = std::min(R, at(mean, c + k)); }
+            const double score = B - 0.5 * (L + R) - S;
+            if (score > best) { best = score; bc = c; bestB = B; bestS = S; }
+        }
+        if (bc <= 2 || bc >= W - 2 || best < 60 || bestB < 170 || bestS > 45) return;   // in place already (a pixel either way is noise)
+        // roll every row left by bc pixels; later rows start bc pixels later
+        {
+            std::lock_guard<std::mutex> lk(pubMtx);
+            std::vector<uint8_t> tmp(W);
+            for (int r = 0; r < rowIdx; r++) {
+                uint8_t* row = &pubImage.pix[static_cast<size_t>(r) * W];
+                for (int x = 0; x < W; x++) tmp[x] = row[(x + bc) % W];
+                std::memcpy(row, tmp.data(), W);
+            }
+            imgSeq++;
+        }
+        imgStart += bc * (Puse / W);
+    }
+
+    // Free-running picture: correlate the row just decoded with the one kRefK rows above; the lag of the peak, summed over every
+    // row so far, is kRefK line periods. The picture is straightened with each new estimate (the rows already received too).
+    void refineRow(double s) {
+        if (!autoSlant.load()) return;
+        const int64_t s0 = static_cast<int64_t>(std::floor(s));
+        const int64_t len = static_cast<int64_t>(Pnom);
+        if (s0 - refLag - kRefR < base || s0 + len + smD > nAud) return;
+        const double mr = meanF(static_cast<double>(s0), static_cast<double>(s0 + len));
+        for (int d = -kRefR; d <= kRefR; d++) {
+            double acc = 0;
+            const int64_t o = refLag + d;
+            for (int64_t n = s0; n < s0 + len; n++) acc += (fAt(n) - mr) * (fAt(n - o) - mr);
+            refAcc[d + kRefR] += acc;
+        }
+        ++refRows;
+        if (refRows == 24 || refRows == 96) alignLines();
+        if (refRows % 4 != 0) return;
+        int bi = -kRefR;
+        for (int d = -kRefR; d <= kRefR; d++) if (refAcc[d + kRefR] > refAcc[bi + kRefR]) bi = d;
+        if (bi <= -kRefR || bi >= kRefR) return;
+        const double l = refAcc[bi + kRefR - 1], c = refAcc[bi + kRefR], h = refAcc[bi + kRefR + 1];
+        const double den = l - 2 * c + h;
+        if (!(den < 0)) return;
+        const double lag = static_cast<double>(refLag + bi) + std::min(0.5, std::max(-0.5, 0.5 * (l - h) / den));
+        const double P = lag / kRefK;
+        if (std::fabs(P / Pnom - 1.0) > 0.003) return;
+        estPpm = (P / Pnom - 1.0) * 1e6;
+        st.slantPpm = estPpm + manualPpm.load();
+        periodDirty = true;
+    }
+
 };
 
 FaxDecoder::FaxDecoder() : s_(std::make_unique<State>()) {}

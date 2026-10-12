@@ -24,6 +24,7 @@ struct FaxStatus {
     double blackHz = 1500;              // black level measured in the phasing (1500 when nothing measured yet): the mistuning aid
     int phasingLines = 0;               // phasing lines used to lock the line start
     int width = 0;                      // image width in pixels (0 until an image starts)
+    uint64_t imageSeq = 0;              // the picture's change counter (latestImage): a new row, a slant change, a roll into place
 };
 
 // Image width for an index of cooperation: IOC x pi, cut to a whole number as fldigi does (576 -> 1809, 288 -> 904).

@@ -102,7 +102,7 @@ private:
 class FaxSource : public BaseSource {
 public:
     FaxSource(int ioc, int lpm, int lines, uint32_t seed, double phasingSec) : src_(kBase, ioc, lpm, lines, seed) {
-        if (phasingSec > 0) src_.setTiming(5.0, phasingSec, 5.0, 10.0);
+        src_.setTiming(5.0, phasingSec > 0 ? phasingSec : 10.0, 5.0, 10.0);   // a short phasing by default: the picture shows after 15 s
         h_.resize(kN);
         const int m = kN / 2;
         for (int i = 0; i < kN; i++) {
@@ -262,7 +262,12 @@ private:
         const double idle = cfg_.modeVal[1] > 0 ? cfg_.modeVal[1] : 6.0;
         if (svc == 2) src_ = std::make_unique<FskSource>(dscSegments(false), 100.0, 170.0, false);       // M.493: the higher tone is B = 0
         else if (svc == 4) src_ = std::make_unique<VhfSource>(dscSegments(true));
-        else if (svc == 3) src_ = std::make_unique<FaxSource>(cfg_.modeOpt[4] == 288 ? 288 : 576, cfg_.modeOpt[3] > 0 ? cfg_.modeOpt[3] : 120, cfg_.modeOpt[5] > 0 ? cfg_.modeOpt[5] : 800, 5, cfg_.modeVal[2]);
+        else if (svc == 3) {   // only what a station sends: a value another mode left in the slot falls back to the default
+            const int lpm = cfg_.modeOpt[3] == 60 || cfg_.modeOpt[3] == 90 || cfg_.modeOpt[3] == 100 || cfg_.modeOpt[3] == 180 || cfg_.modeOpt[3] == 240 ? cfg_.modeOpt[3] : 120;
+            const int lines = cfg_.modeOpt[5] > 0 && cfg_.modeOpt[5] <= 3000 ? cfg_.modeOpt[5] : 800;
+            const double phasing = cfg_.modeVal[2] >= 3 && cfg_.modeVal[2] <= 120 ? cfg_.modeVal[2] : 0.0;
+            src_ = std::make_unique<FaxSource>(cfg_.modeOpt[4] == 288 ? 288 : 576, lpm, lines, 5, phasing);
+        }
         else src_ = std::make_unique<FskSource>(navtexSegments(idle, cfg_.modeOpt[2]), 100.0, 170.0, true);
         if (cfg_.modeOpt[1] == 1 && svc != 4) fader_ = std::make_unique<Fader>(3);
         double snr = std::pow(10.0, cfg_.snrDb / 10.0);

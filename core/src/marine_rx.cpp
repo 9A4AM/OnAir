@@ -196,8 +196,9 @@ void MarineReceiver::Impl::publish() {
     tel.fax.blackHz = fs.blackHz; tel.fax.phasingLines = fs.phasingLines;
     tel.fax.width = (int)std::floor(fs.ioc * 3.14159265358979 + 1e-9);
     tel.fax.thumbRows = (fs.lines * 256 + tel.fax.width / 2) / std::max(1, tel.fax.width);
-    // a cheap stand-in for the picture's change counter; the viewer asks latestImage() with its own sequence number
-    if (fs.state == 2 || fs.state == 3) tel.fax.imageSeq = (uint64_t)fs.lines + (uint64_t)faxDone * 100000ull;
+    // the decoder's change counter: new rows, and also a slant change or a roll of the rows already received (the line count was
+    // used before, so a picture straightened by the slider, or after it had stopped, never reached the viewer)
+    tel.fax.imageSeq = fs.imageSeq;
 }
 
 MarineReceiver::MarineReceiver() : p_(std::make_unique<Impl>()) {}

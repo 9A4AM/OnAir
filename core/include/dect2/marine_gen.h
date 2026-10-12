@@ -17,7 +17,7 @@
 //   modeOpt[5]  fax picture lines (0 = 800)
 //   modeVal[0]  mistuning in Hz: the signal (all services) is shifted by this much on top of cfoHz
 //   modeVal[1]  NAVTEX idle seconds before each message (0 = 6)
-//   modeVal[2]  fax phasing seconds (0 = 30)
+//   modeVal[2]  fax phasing seconds (0 = 10; stations send about 30)
 #pragma once
 #include "mode_synth.h"
 #include <memory>

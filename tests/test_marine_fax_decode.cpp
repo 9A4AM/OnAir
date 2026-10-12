@@ -97,7 +97,8 @@ int main() {
         FCHECK(im.height == 61 && st.lpm == 120 && q.meanCorr > 0.97, "late join in the phasing: height %d lpm %d corr %.3f", im.height, st.lpm, q.meanCorr);
         const size_t mid = static_cast<size_t>(40 * o.rate);       // in the picture (starts at 25.5 s, ends at 55.5 s)
         const FaxImage im2 = decodeOne(std::vector<float>(a.begin() + mid, a.begin() + static_cast<size_t>(60 * o.rate)), o.rate, 4096, &st);
-        FCHECK(im2.height == 0 && st.state == 3, "joined in the picture: height %d state %d (the stop tone ends it)", im2.height, st.state);
+        // no start tone, no phasing: the picture is found by its lines repeating, and the stop tone ends it (rows 29 .. 59 of the chart)
+        FCHECK(im2.height >= 25 && im2.height <= 32 && st.state == 3, "joined in the picture: height %d state %d (the rest of the picture, then the stop tone)", im2.height, st.state);
     }
 
     // Two transmissions in a row (the source loops): the second replaces the first, the sequence number moves.
