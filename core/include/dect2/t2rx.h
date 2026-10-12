@@ -47,6 +47,7 @@
 #include "js8_tel.h"
 #include "specx_tel.h"
 #include "specan_tel.h"
+#include "astro_tel.h"
 #include "t2.h"
 #include "t2l1.h"
 #include "t2plp.h"
@@ -108,6 +109,7 @@ struct RxTelemetry {
     CwTelemetry cw;             // valid when standard == 35
     SpecxTelemetry specx;  // valid when standard == 42
     Js8Telemetry js8;      // valid when standard == 38
+    AstroTelemetry astro;     // valid when standard == 49 (radio astronomy)
     SpecanTelemetry specan;   // valid when standard == 43 (spectrum analyser)
     OrbcommTelemetry orbcomm;   // valid when standard == 45
     DvbcTelemetry dvbc;    // valid when standard == 41

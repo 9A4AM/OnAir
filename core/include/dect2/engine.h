@@ -56,6 +56,7 @@
 #include "js8_rx.h"
 #include "specx_rx.h"
 #include "specan_rx.h"
+#include "astro_rx.h"
 #include "bbunpack.h"
 #include "ts.h"
 #include "tsout.h"
@@ -206,6 +207,7 @@ public:
     DpmrReceiver& dpmr() { return rxDpmr_; }   // dPMR: scan, sound (the interface reads telemetry through latestRx)
     NxdnReceiver& nxdn() { return rxNxdn_; }   // NXDN: the receiver's own controls and results (the interface reads telemetry through latestRx)
     SpecxReceiver& specx() { return rxSpecx_; }   // spectrum explorer: FFT size and averaging
+    AstroReceiver& astro() { return rxAstro_; }   // radio astronomy (hydrogen line): FFT size, integration, frequency switching
     SpecanReceiver& specan() { return rxSpecan_; }   // spectrum analyser: range, resolution, averaging (telemetry through latestRx)
     Js8Receiver& js8() { return rxJs8_; }   // JS8Call: the receiver's own controls and results (the interface reads telemetry through latestRx)
     OrbcommReceiver& orbcomm() { return rxOrb_; }   // Orbcomm: downlinks at once (the interface reads telemetry through latestRx)
@@ -328,6 +330,7 @@ private:
     Js8Receiver rxJs8_;
     SpecxReceiver rxSpecx_;
     SpecanReceiver rxSpecan_;
+    AstroReceiver rxAstro_;
     bool specanSweep_ = false;   // the HackRF sweeps by itself (spectrum analyser)
     DvbcReceiver rxDvbc_;
     OrbcommReceiver rxOrb_;
