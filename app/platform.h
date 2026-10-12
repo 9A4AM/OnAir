@@ -29,6 +29,9 @@ struct Prefs {
     virtual std::vector<Channel> getChannels() = 0;
     virtual void setChannels(const std::vector<Channel>& c) = 0;
     virtual void flush() {}
+    // Start over with no saved settings (after starts that kept crashing): the old ones are kept aside, not deleted.
+    // Returns where they went (UTF-8), empty when they could not be kept.
+    virtual std::string setAside() = 0;
 };
 Prefs& prefs();
 

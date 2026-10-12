@@ -395,7 +395,8 @@ std::vector<DeviceInfo> listSoapyDevices(std::string& err) {
             d.settings.insert(d.settings.begin(), ppmSetting(0.01));   // the driver's own correction, or OnAir's
             if (driver == "plutosdr") {   // SoapyPlutoSDR on the USB cable (or its USB-gadget address): the same ~4 Msps of 16-bit samples
                 const std::string uri = get("uri");
-                if (uri.empty() || uri.rfind("usb:", 0) == 0 || uri == "ip:192.168.2.1" || uri == "ip:pluto.local") d.steadyRateHz = 4e6;
+                if (uri.empty() || uri.rfind("usb:", 0) == 0) d.steadyRateHz = 4e6;
+                else if (uri == "ip:192.168.2.1" || uri == "ip:pluto.local") d.steadyRateHz = 3e6;   // the USB-gadget network carries less (#59)
             }
             out.push_back(d);
             fprintf(stderr, "SoapySDR: found %s (driver %s)\n", d.name.c_str(), driver.c_str());

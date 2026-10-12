@@ -144,6 +144,16 @@ struct DefaultsPrefs : Prefs {
             [arr addObject:@{@"f": @(c.freqMhz), @"bw": @(c.bwMhz), @"name": nsText(c.name), @"mode": nsText(c.mode), @"snr": @(c.snrDb), @"n": @(c.nServices), @"fav": @(c.favourite)}];
         [d setObject:arr forKey:@"channels"];
     }
+    std::string setAside() override {
+        NSString* domain = NSBundle.mainBundle.bundleIdentifier ?: NSProcessInfo.processInfo.processName;
+        NSDictionary* old = [d persistentDomainForName:domain];
+        NSString* dir = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/OnAir"];
+        [NSFileManager.defaultManager createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+        NSString* file = [dir stringByAppendingPathComponent:@"settings-crashed.plist"];
+        const bool kept = old && [old writeToURL:[NSURL fileURLWithPath:file] error:nil];
+        [d removePersistentDomainForName:domain];
+        return kept ? std::string(file.UTF8String) : "";
+    }
 };
 }
 

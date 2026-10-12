@@ -58,6 +58,8 @@ struct Out {
 char gVersion[32] = ONAIR_VERSION;
 bool gPrevCrashed = false;
 std::string gPrevReport;
+int gFailedStarts = 0;
+std::string gBootMark;   // <dir>/<name>.booting while a start is not yet finished (UTF-8)
 
 #ifdef _WIN32
 
@@ -248,6 +250,19 @@ void install(const char* name, const char* dir) {
         // volumes of the Linux CI among them, is coarser than that)
         if (!e1 && (e2 || ct >= st)) { gPrevCrashed = true; gPrevReport = fromPath(txt); }
     }
+    {   // starts that never reached startupDone(): a crash, a hang or a kill while starting leaves the mark, with the count of such starts
+        const fs::path boot = toPath(d) / (base + ".booting");
+        gBootMark = fromPath(boot);
+        gFailedStarts = 0;
+        if (fs::exists(boot, ec)) {
+            std::ifstream f(boot);
+            int n = 0;
+            if (!(f >> n) || n < 1) n = 1;
+            gFailedStarts = n;
+        }
+        std::ofstream f(boot, std::ios::trunc);
+        f << gFailedStarts + 1 << "\n";
+    }
     {   // mark this start
         std::ofstream f(stamp, std::ios::trunc);
         f << ONAIR_VERSION << "\n";
@@ -268,6 +283,15 @@ void install(const char* name, const char* dir) {
 bool lastRunCrashed(std::string& reportPath) {
     if (gPrevCrashed) reportPath = gPrevReport;
     return gPrevCrashed;
+}
+
+int failedStarts() { return gFailedStarts; }
+
+void startupDone() {
+    if (gBootMark.empty()) return;
+    std::error_code ec;
+    fs::remove(toPath(gBootMark), ec);
+    gFailedStarts = 0;
 }
 
 void rotateLog(const std::string& dir) {

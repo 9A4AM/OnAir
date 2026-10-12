@@ -550,6 +550,8 @@ std::unique_ptr<IqSource> makeUsrp(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeSdrplay(const DeviceInfo& d);
 // network radios the user added (netradio.cpp): a PlutoSDR at a libiio URI ("ip:host"), an rtl_tcp server
 DeviceInfo plutoDevice(const std::string& uri);
+// the steady rate (DeviceInfo::steadyRateHz) of a Pluto found at uri: 4 Msps on USB, 3 on its USB-gadget network address, 0 elsewhere
+double plutoLinkRate(const std::string& uri);
 DeviceInfo rtlTcpDevice(const std::string& host, int port);
 std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d);
 

@@ -238,6 +238,12 @@ struct FilePrefs : Prefs {
         }
         if (replaceFile(tmp, path)) dirty = false;
     }
+    std::string setAside() override {
+        const std::string old = configDir() + "/settings-crashed.conf";
+        const bool kept = replaceFile(path, old);
+        kv.clear(); channels.clear(); dirty = false;
+        return kept ? old : "";
+    }
 };
 
 } // namespace

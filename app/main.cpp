@@ -485,7 +485,28 @@ int main(int argc, char** argv) {
     if (gWayland) ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // see chooseGlfwPlatform()
 
     app.wf.init(gfxBackend);
+    // startup guard: a start that keeps crashing (a saved setting that breaks it, #59) must not repeat forever. After one unfinished
+    // start the other interface is tried (the classic and the new one share little drawing code); after two in a row the saved
+    // settings are set aside and OnAir starts with the defaults
+    // a start with arguments (the dev and test runs: --shot, --hidden ...) is left out: it neither changes the settings nor counts
+    const int failedStarts = argc > 1 ? 0 : dect2::crash::failedStarts();
+    if (argc > 1) dect2::crash::startupDone();
+    std::string guardNote;
+    if (failedStarts >= 2) {
+        const std::string kept = plat::prefs().setAside();
+        guardNote = "OnAir did not finish starting " + std::to_string(failedStarts) + " times in a row, so it starts with the default settings this time. "
+                  + (kept.empty() ? std::string("The old settings could not be kept.") : "The old settings are kept in " + kept + ".");
+    }
     loadPrefs(app);
+    if (failedStarts == 1) {
+        app.newUi = !app.newUi;
+        guardNote = std::string("OnAir did not finish starting last time, so it opens with the ") + (app.newUi ? "new" : "classic")
+                  + " interface this time. The other one is under View (new interface) or the \"New interface\" button (classic).";
+    }
+    if (!guardNote.empty()) {
+        fprintf(stderr, "%s\n", guardNote.c_str());
+        gCrashNote = gCrashNote.empty() ? guardNote : gCrashNote + "\n\n" + guardNote;
+    }
     app.wizOpen = argc == 1 && !plat::prefs().getB("wizardDone", false);   // the tour runs on the very first start only
     if (getenv("DECT2_WIZARD")) app.wizOpen = true;
     app.wizStepT = ImGui::GetTime();
@@ -637,6 +658,7 @@ int main(int argc, char** argv) {
                 if (!(st.WindowMinSize.y >= 1)) st.WindowMinSize.y = 32 * gUi;
             }
             ImGui::NewFrame();
+            if (static bool up = false; !up && ImGui::GetFrameCount() > 120 && glfwGetTime() > 5) { up = true; dect2::crash::startupDone(); }   // started: see the startup guard
             if (autostart) {
                 autostart = false;
                 app.devIdx = 0;
@@ -704,6 +726,7 @@ int main(int argc, char** argv) {
     ImGui::DestroyContext();
     glfwDestroyWindow(window);
     glfwTerminate();
+    dect2::crash::startupDone();   // a quick clean exit (the --shot runs) is not a failed start
     return 0;
 }
 

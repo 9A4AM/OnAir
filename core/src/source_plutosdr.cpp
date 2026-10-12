@@ -96,9 +96,13 @@ std::string mhz(double hz) {
 }
 
 constexpr double kUsbMaxRate = 4e6;   // USB 2: the continuous rate a Pluto keeps up without losing samples (measured)
+constexpr double kUsbNetRate = 3e6;   // the same cable as a USB-gadget network (ip:192.168.2.1, pluto.local): iiod over it keeps up with less
 // The link runs over the Pluto's USB cable: "usb:...", and its default network address ip:192.168.2.1 (pluto.local), which is the USB-gadget
 // Ethernet on the same USB 2 cable and keeps up with even less than libusb does. A Pluto on a real network (another address) may go faster.
 bool overUsbCable(const std::string& uri) { return uri.rfind("usb:", 0) == 0 || uri == "ip:192.168.2.1" || uri == "ip:pluto.local"; }
+// the steady rate of the link at uri (0 = a real network, not limited here): the USB-gadget network carries less than libusb, so a mode that
+// fits in a few Msps (DVB-S/S2 of the 1.5 Msym/s QO-100 beacon, #59) is not run faster than it keeps up with there
+double usbLinkRate(const std::string& uri) { return !overUsbCable(uri) ? 0 : uri.rfind("usb:", 0) == 0 ? kUsbMaxRate : kUsbNetRate; }
 
 // Whether the board at each URI runs Tezuka firmware (known once it was opened or probed): only then the IQ format can be chosen
 std::map<std::string, bool> gTezuka;
@@ -234,7 +238,7 @@ protected:
             // Tezuka: with only the first channel enabled the FPGA sends 8-bit I/Q pairs (half the bytes on the cable, twice the rate); both: 16-bit
             cs8_ = tezuka_ && radioOption(s, "iqformat", "cs16") == "cs8";
             if (overUsbCable(uri_)) {
-                const std::string n = usbLinkNote(want, kUsbMaxRate * (cs8_ ? 2 : 1), tezuka_, cs8_);
+                const std::string n = usbLinkNote(want, usbLinkRate(uri_) * (cs8_ ? 2 : 1), tezuka_, cs8_);
                 if (!n.empty()) { fprintf(stderr, "%s\n", n.c_str()); fflush(stderr); if (err.empty()) err = n; }
             }
             iio().channel_attr_write_longlong(rxCh_, "rf_bandwidth", (long long)std::llround(std::min(56e6, std::max(0.2e6, s.basebandFilterHz > 0 ? s.basebandFilterHz : want * 0.95))));
@@ -354,10 +358,10 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
     d.board = "pluto";
     d.nativeArgs = uri;
     d.name = "PlutoSDR " + (desc.empty() ? uri : "(" + uri + ")") + (probe ? " (native, experimental)" : " (network)");
-    // over USB 2 (and its USB-gadget network address) a Pluto keeps up with about 4 Msps; over a real network the converter's full rate is offered
+    // over USB 2 a Pluto keeps up with about 4 Msps (3 over its USB-gadget network address); over a real network the converter's full rate is offered
     // a mode that needs more still gets it (linkRateFor: some lost samples beat no decode, e.g. DVB-T/T2 at 64/7 Msps)
     d.maxRateHz = 61.44e6; d.minRateHz = 2.1e6;
-    d.steadyRateHz = overUsbCable(uri) ? kUsbMaxRate : 0;
+    d.steadyRateHz = plutoLinkRate(uri);
     d.gainMinDb = 0; d.gainMaxDb = 73;
     d.minFreqHz = 70e6; d.maxFreqHz = 6e9;
     d.settings = {ppmSetting(0.01),
@@ -397,6 +401,7 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
 } // namespace
 
 // a Pluto the user added by address (Add network radio): over a real network, also at 192.168.2.1 (a Pluto+ on Ethernet), so no USB 2 limit
+double plutoLinkRate(const std::string& uri) { return usbLinkRate(uri); }
 DeviceInfo plutoDevice(const std::string& uri) { DeviceInfo d = plutoEntry(uri, "", false); d.steadyRateHz = 0; return d; }
 
 void listPluto(std::vector<DeviceInfo>& out) {
