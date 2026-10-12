@@ -259,6 +259,10 @@ struct IsmReceiver::Impl {
             if (nOn >= 10 && (double)nOn / (double)(last - first + 1) >= 0.9) {
                 std::vector<float> f0(M, 0.f);
                 for (size_t k = 1; k < M; k++) f0[k] = std::arg(y[k] * std::conj(y[k - 1]));
+                {   // median of three: the clicks of the discriminator at low C/N are single samples, far from both tones
+                    const std::vector<float> g = f0;
+                    for (size_t k = 1; k + 1 < M; k++) f0[k] = std::max(std::min(g[k - 1], g[k]), std::min(std::max(g[k - 1], g[k]), g[k + 1]));
+                }
                 // two passes: the first finds the tones and the length of a chip, the second averages the frequency over a third of it
                 std::vector<float> fr;
                 float mid = 0, devHz = 0;

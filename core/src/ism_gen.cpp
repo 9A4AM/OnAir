@@ -90,13 +90,42 @@ double f007F(int k) { return 68.5 + 0.1 * (k % 3); }
 double os3T(int k) { return 19.6 + 0.1 * (k % 2); }
 double os21T(int k) { return 5.2 + 0.1 * (k % 2); }
 
+// Z-Wave (G.9959): preamble 0x55, SOF 0xF0, HomeID Src FC(2) Len Dst payload, then 0xFF^XOR (R1, R2) or CRC-16 (R3)
+IsmTrain zwFrame(int rate, uint32_t home, uint8_t src, uint8_t dst, const std::vector<uint8_t>& payload, int k, bool badCheck = false) {
+    std::vector<uint8_t> m = {(uint8_t)(home >> 24), (uint8_t)(home >> 16), (uint8_t)(home >> 8), (uint8_t)home, src, 0x41, (uint8_t)(k & 0x0F), 0, dst};
+    m.insert(m.end(), payload.begin(), payload.end());
+    m[7] = (uint8_t)(m.size() + (rate == 3 ? 2 : 1));
+    if (rate == 3) {
+        const uint16_t c = ismCrc16(m.data(), (unsigned)m.size(), 0x1021, 0x1D0F);
+        m.push_back((uint8_t)(c >> 8)); m.push_back((uint8_t)c);
+    } else {
+        uint8_t x = 0xFF;
+        for (uint8_t b : m) x ^= b;
+        m.push_back(x);
+    }
+    if (badCheck) m.back() ^= 0x10;
+    Bitv raw;
+    for (int i = 0; i < (rate == 3 ? 10 : 12); i++) putBytes(raw, {0x55});
+    putBytes(raw, {0xF0});
+    put(raw, m.data(), (int)m.size() * 8);
+    putBytes(raw, {0x00});
+    if (rate != 1) return nrz(raw, rate == 2 ? 25.f : 10.f, true, rate == 2 ? 60.f : 40.f);
+    Bitv h;   // Manchester: 1 = high then low
+    for (int b : raw) { h.push_back(b ? 1 : 0); h.push_back(b ? 0 : 1); }
+    return nrz(h, 1e6f / 9600 / 2, true, 200.f);
+}
+
 } // namespace
 
 const char* ismTxName(IsmTx p) {
     static const char* const n[] = {"Nexus", "LaCrosse TX141TH-Bv2", "Acurite tower", "Fine Offset WH1080", "Ambient F007TH", "Oregon THGR810 (v3)",
                                     "Oregon THGR228N (v2.1)", "Schrader TPMS", "EV1527 remote", "Toyota TPMS", "Renault TPMS", "Ford TPMS", "Efergy e2",
-                                    "CurrentCost TX", "Bresser 6-in-1", "Bresser 5-in-1", "LaCrosse TX29-IT", "Fine Offset WH24", "Wireless M-Bus T"};
+                                    "CurrentCost TX", "Bresser 6-in-1", "Bresser 5-in-1", "LaCrosse TX29-IT", "Fine Offset WH24", "Wireless M-Bus T", "Z-Wave R1", "Z-Wave R2", "Z-Wave R3"};
     return (int)p >= 0 && (int)p < (int)IsmTx::Count ? n[(int)p] : "?";
+}
+
+IsmTrain ismEncodeZwave(int rate, uint32_t home, uint8_t src, uint8_t dst, const std::vector<uint8_t>& payload, int k, bool badCheck) {
+    return zwFrame(rate, home, src, dst, payload, k, badCheck);
 }
 
 IsmTrain ismEncode(IsmTx p, int k) {
@@ -316,6 +345,15 @@ IsmTrain ismEncode(IsmTx p, int k) {
         putStr(v, "0101");
         return nrz(v, 10, true, 40);
     }
+    case IsmTx::ZwaveR1: return zwFrame(1, 0xC0FFEE01, 2, 1, {0x25, 0x03, (uint8_t)((k % 2) ? 0xFF : 0x00)}, k);   // Switch Binary report
+    case IsmTx::ZwaveR2: {   // Sensor Multilevel report: temperature, 1 decimal, 2 bytes
+        const int t = 215 + (k % 2);
+        return zwFrame(2, 0xDEADBEEF, 7, 1, {0x31, 0x05, 0x01, 0x22, (uint8_t)(t >> 8), (uint8_t)t}, k);
+    }
+    case IsmTx::ZwaveR3: {   // Meter report: electric, W, 1 decimal, 2 bytes
+        const int w = 12345 + (k % 2);
+        return zwFrame(3, 0x12345678, 9, 1, {0x32, 0x02, 0x01, 0x32, (uint8_t)(w >> 8), (uint8_t)w}, k);
+    }
     default: return IsmTrain();
     }
 }
@@ -341,6 +379,9 @@ IsmTruth ismTruth(IsmTx p, int k) {
     case IsmTx::Tx29: return {"LaCrosse-TX29IT", "43", "Temperature", 21.7 + 0.1 * (k % 2), 0.05};
     case IsmTx::Wh24: return {"Fineoffset-WH24", "191", "Temperature", 11.8 + 0.1 * (k % 2), 0.05};
     case IsmTx::MbusT: return {"Wireless-MBus", "12345678", "Version", 27, 0.01};
+    case IsmTx::ZwaveR1: return {"Z-Wave-R1", "C0FFEE01:2", "Command Class", 0x25, 0.01};
+    case IsmTx::ZwaveR2: return {"Z-Wave-R2", "DEADBEEF:7", "Temperature", 21.5 + 0.1 * (k % 2), 0.05};
+    case IsmTx::ZwaveR3: return {"Z-Wave-R3", "12345678:9", "Power", 1234.5 + 0.1 * (k % 2), 0.05};
     default: return {"", "", "", 0, 0};
     }
 }
@@ -363,6 +404,8 @@ namespace {
 double defaultDev(IsmTx p) {
     switch (p) {
     case IsmTx::MbusT: return 50e3;
+    case IsmTx::ZwaveR1: case IsmTx::ZwaveR2: return 20e3;
+    case IsmTx::ZwaveR3: return 29e3;
     case IsmTx::Bresser6in1: case IsmTx::Bresser5in1: return 40e3;
     case IsmTx::Efergy: case IsmTx::CurrentCost: return 20e3;
     default: return 30e3;
@@ -457,6 +500,12 @@ int IsmGenerator::sent(size_t dev) const { return dev < p_->count.size() ? p_->c
 std::vector<IsmGenDevice> ismTestScene(int scene) {
     std::vector<IsmGenDevice> v;
     auto add = [&](IsmTx p, double off, double phase, double period) { IsmGenDevice d; d.proto = p; d.offsetHz = off; d.phase = phase; d.period = period; v.push_back(d); };
+    if (scene == 2) {   // dial 868.4 MHz: Z-Wave R1 / R2 / R3 on 868.38 / 868.42 / 868.40 (the EU channels are 868.40, 868.42 and 869.85)
+        add(IsmTx::ZwaveR1, -20e3, 0.3, 5);
+        add(IsmTx::ZwaveR2, 20e3, 1.5, 5);
+        add(IsmTx::ZwaveR3, 0, 2.7, 5);
+        return v;
+    }
     if (scene == 1) {   // dial 868.3 MHz
         add(IsmTx::Bresser6in1, 0, 0.3, 5);
         add(IsmTx::Bresser5in1, 20e3, 1.2, 5);
@@ -492,7 +541,7 @@ public:
         c.dialOffsetHz = -ismTuning().tuneOffsetHz;
         c.snrDb = s.snrDb;
         c.cfoHz = s.cfoHz;
-        c.devs = ismTestScene(s.modeOpt[0] == 1 ? 1 : 0);
+        c.devs = ismTestScene(s.modeOpt[0] == 2 ? 2 : s.modeOpt[0] == 1 ? 1 : 0);
         if (s.modeOpt[1] == 1) { c.carrierHz = 300e3; c.carrierDb = 30; }
         gen_ = std::make_unique<IsmGenerator>(c);
     }

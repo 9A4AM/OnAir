@@ -7,7 +7,7 @@
 // SynthConfig (makeIsmSynth):
 //   snrDb       carrier to noise of a 0 dB device, the noise taken in 100 kHz
 //   cfoHz       the radio's tuning error: every device moves by it
-//   modeOpt[0]  scene: 0 the 433.92 MHz scene (ismTestScene(0)), 1 the 868 MHz scene
+//   modeOpt[0]  scene: 0 the 433.92 MHz scene (ismTestScene(0)), 1 the 868 MHz scene, 2 Z-Wave on 868.4 MHz
 //   modeOpt[1]  1: a strong continuous carrier 300 kHz above the dial (30 dB over a 0 dB device)
 #pragma once
 #include "mode_synth.h"
@@ -23,7 +23,7 @@ namespace dect2 {
 // The test devices' protocols (ismEncode's names)
 enum class IsmTx {
     Nexus, Tx141th, AcuriteTower, Wh1080, F007th, OregonV3, OregonV21, Schrader, Ev1527, Toyota, Renault, Ford, Efergy, CurrentCost,
-    Bresser6in1, Bresser5in1, Tx29, Wh24, MbusT, Count
+    Bresser6in1, Bresser5in1, Tx29, Wh24, MbusT, ZwaveR1, ZwaveR2, ZwaveR3, Count
 };
 const char* ismTxName(IsmTx p);
 
@@ -35,6 +35,9 @@ IsmTrain ismEncode(IsmTx p, int k);
 struct IsmTruth { const char* model; const char* id; const char* field; double value; double tol; };
 IsmTruth ismTruth(IsmTx p, int k);
 bool ismTruthMatches(const IsmReading& r, IsmTx* which = nullptr, int* k = nullptr);   // a reading of one of the test devices, with right values
+
+// A Z-Wave frame (rate 1 = R1, 2 = R2, 3 = R3) with any payload; badCheck damages the checksum / CRC
+IsmTrain ismEncodeZwave(int rate, uint32_t home, uint8_t src, uint8_t dst, const std::vector<uint8_t>& payload, int k = 0, bool badCheck = false);
 
 struct IsmGenDevice {
     IsmTx proto = IsmTx::Nexus;

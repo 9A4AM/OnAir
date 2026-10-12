@@ -47,7 +47,7 @@ static Result run(const std::vector<cf32>& x) {
     if (getenv("ISM_RAW"))
         for (const auto& w : r.tel.raws) {
             printf("    raw %.3f s %+.1f kHz %s %s %zu pulses, %.0f/%.0f:", w.sec, w.freqHz / 1e3, w.fsk ? "FSK" : "OOK", w.guess.code.c_str(), w.pulses.size(), w.guess.shortUs, w.guess.longUs);
-            for (size_t i = 0; i < w.pulses.size() && i < 24; i++) printf(" %.0f/%.0f", w.pulses[i].pulseUs, w.pulses[i].gapUs);
+            for (size_t i = 0; i < w.pulses.size() && i < (getenv("ISM_RAWN") ? (size_t)atoi(getenv("ISM_RAWN")) : 24); i++) printf(" %.0f/%.0f", w.pulses[i].pulseUs, w.pulses[i].gapUs);
             printf("\n");
         }
     return r;
@@ -99,6 +99,31 @@ int main() {
         const Result r = run(make(scene(1), 4.6));
         row("clean, 868 MHz scene", r, s1.size());
         CHECK(r.heard.size() == s1.size() && r.wrong == 0, "868 scene: missing %s, %d wrong", missing(r, s1).c_str(), r.wrong);
+    }
+    {   // Z-Wave R1 / R2 / R3 on 868.4 MHz: clean, +-20 kHz offset, 12 dB, noise
+        const auto s2 = ismTestScene(2);
+        auto zc = [&](double snr) { IsmGenConfig c = scene(2, snr); return c; };
+        const Result r = run(make(zc(30), 5.4));
+        row("Z-Wave clean", r, s2.size());
+        CHECK(r.heard.size() == s2.size() && r.wrong == 0, "zwave: missing %s, %d wrong", missing(r, s2).c_str(), r.wrong);
+        for (double off : {20e3, -20e3}) {
+            auto x = make(zc(30), 5.4);
+            impair::shift(x, off, kRate);
+            const Result ro = run(x);
+            char n[64]; snprintf(n, sizeof n, "Z-Wave offset %+.0f kHz", off / 1e3);
+            row(n, ro, s2.size());
+            CHECK(ro.heard.size() == s2.size() && ro.wrong == 0, "%s: missing %s, %d wrong", n, missing(ro, s2).c_str(), ro.wrong);
+        }
+        const Result r16 = run(make(zc(16), 5.4));
+        row("Z-Wave 16 dB C/N", r16, s2.size());
+        CHECK(r16.heard.size() == s2.size() && r16.wrong == 0, "zwave 16 dB: missing %s, %d wrong", missing(r16, s2).c_str(), r16.wrong);
+        const Result r12 = run(make(zc(12), 16.0));
+        row("Z-Wave 12 dB C/N", r12, s2.size());
+        CHECK(r12.heard.size() >= 1 && r12.wrong == 0, "zwave 12 dB (marginal: R1 and R3 need about 16 dB): missing %s, %d wrong", missing(r12, s2).c_str(), r12.wrong);
+        IsmGenConfig nz = zc(20);
+        nz.devs.clear();
+        const Result rn = run(make(nz, 3.0));
+        CHECK(rn.readings == 0, "zwave noise: %d readings", rn.readings);
     }
     for (double off : {50e3, -50e3}) {
         auto x = make(scene(0), 5.4);

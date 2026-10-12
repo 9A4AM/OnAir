@@ -2,6 +2,7 @@
 // frames with a flipped bit and frames with timing errors give the right reading or none, never a wrong one; noise gives nothing.
 #include "dect2/ism_gen.h"
 #include "dect2/ism_proto.h"
+#include "dect2/ism_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -81,6 +82,25 @@ int main() {
     CHECK(ismClassify(ismEncode(IsmTx::Ev1527, 0)).code == "PWM", "ev1527 guess %s", ismClassify(ismEncode(IsmTx::Ev1527, 0)).code.c_str());
     CHECK(ismClassify(ismEncode(IsmTx::Schrader, 0)).code == "Manchester", "schrader guess %s", ismClassify(ismEncode(IsmTx::Schrader, 0)).code.c_str());
     CHECK(ismClassify(ismEncode(IsmTx::Bresser6in1, 0)).code == "NRZ", "bresser guess %s", ismClassify(ismEncode(IsmTx::Bresser6in1, 0)).code.c_str());
+    // Z-Wave: checksum / CRC errors are rejected, command classes are named, S0 / S2 stay encrypted
+    for (int rate = 1; rate <= 3; rate++) {
+        const std::vector<uint8_t> pl = {0x25, 0x03, 0xFF};
+        auto good = ismDecode(ismEncodeZwave(rate, 0xAABBCCDD, 3, 1, pl));
+        CHECK(good.size() == 1 && good[0].id == "AABBCCDD:3", "zwave R%d good frame: %zu readings", rate, good.size());
+        CHECK(ismDecode(ismEncodeZwave(rate, 0xAABBCCDD, 3, 1, pl, 0, true)).empty(), "zwave R%d bad check accepted", rate);
+        const auto s0 = ismDecode(ismEncodeZwave(rate, 0xAABBCCDD, 3, 1, {0x98, 0x81, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+        bool enc = false;
+        for (const auto& r : s0) for (const auto& f : r.fields) enc |= f.name == "Command" && f.text == "encrypted";
+        CHECK(s0.size() == 1 && enc, "zwave R%d S0 not shown as encrypted", rate);
+        const auto s2 = ismDecode(ismEncodeZwave(rate, 0xAABBCCDD, 3, 1, {0x9F, 0x03, 1, 2, 3, 4}));
+        enc = false;
+        for (const auto& r : s2) for (const auto& f : r.fields) enc |= f.name == "Command" && f.text == "encrypted";
+        CHECK(s2.size() == 1 && enc, "zwave R%d S2 not shown as encrypted", rate);
+        const auto bat = ismDecode(ismEncodeZwave(rate, 0xAABBCCDD, 3, 1, {0x80, 0x03, 77}));
+        CHECK(bat.size() == 1 && ismReadingText(bat[0].fields).find("Battery level 77 %") != std::string::npos, "zwave R%d battery: %s", rate, bat.empty() ? "none" : ismReadingText(bat[0].fields).c_str());
+        const auto sw = ismDecode(ismEncodeZwave(rate, 0xAABBCCDD, 3, 1, {0x25, 0x03, 0xFF}));
+        CHECK(sw.size() == 1 && ismReadingText(sw[0].fields).find("Switch Binary") != std::string::npos, "zwave R%d class name", rate);
+    }
     // NaN input
     IsmTrain bad; bad.p.push_back({NAN, 10}); bad.p.push_back({10, 10}); bad.p.push_back({10, 10});
     CHECK(ismDecode(bad).empty(), "NaN train");

@@ -122,7 +122,7 @@ These receivers are built from the published specifications and checked end to e
 | **AIS** | Ship transponders | Ships on a map |
 | **Maritime** | NAVTEX, DSC, weather fax | Safety messages, distress and calling, fax pictures |
 | **Radiosondes** | Weather balloons, 400 – 406 MHz | Balloon tracks, altitude and weather data |
-| **ISM sensors** | 433.92 / 868 / 915 MHz devices (the rtl_433 idea) | Weather stations, tyre pressure sensors, remotes and energy / water meters (wireless M-Bus header): a device table with history, a live log, unknown signals with their pulses |
+| **ISM sensors** | 433.92 / 868 / 915 MHz devices (the rtl_433 idea) | Weather stations, tyre pressure sensors, remotes and energy / water meters (wireless M-Bus header), and Z-Wave R1 / R2 / R3 (ITU-T G.9959: Home IDs, nodes, command classes; passive receive only, S0 and S2 traffic stays encrypted and is never decrypted): a device table with history, a Z-Wave view grouped by Home ID, a live log, unknown signals with their pulses |
 | **Cell towers** | LTE downlink broadcast (MIB, SIB1 - SIB5) | Operator, band, EARFCN, PCI, eNB / sector, TAC, neighbours, band scan; receive only |
 | **GSM-R** | Railway GSM broadcast (BCCH, 921 - 925 MHz) | Base stations: ARFCN, BSIC, cell identity, location area, operator code, channel lists; band scan; receive only |
 | **TETRA** | TETRA base station broadcast (ETSI EN 300 392-2: BSCH, BNCH, AACH, MCCH), 25 kHz channels | Network code, colour code, location area, carriers and duplex spacing, services, neighbour cells, whether encryption is used; scan over a span; receive only, nothing decrypted |

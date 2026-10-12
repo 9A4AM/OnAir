@@ -21,7 +21,7 @@ struct State {
 };
 State S;
 
-const char* const kKinds[] = {"All", "Weather", "TPMS", "Remote", "Energy", "Meter", "Sensor"};
+const char* const kKinds[] = {"All", "Weather", "TPMS", "Remote", "Energy", "Meter", "Sensor", "Z-Wave"};
 
 bool live(const App& a) { return a.engine.running() && a.rx.standard == 29; }   // the engine reports its standard code minus one
 
@@ -72,6 +72,20 @@ void presets(App& a) {
         if (on) ImGui::PopStyleColor();
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", p.tip);
     }
+    flowNext(6 * gUi);
+    ImGui::SetNextItemWidth(120 * gUi);
+    if (ImGui::BeginCombo("##ismzw", "Z-Wave")) {
+        struct Z { const char* name; double mhz; };
+        static const Z zs[] = {{"Europe 868.40 (R1 / R2)", 868.40}, {"Europe 868.42 (R2)", 868.42}, {"Europe 869.85 (R1 / R2)", 869.85},
+                               {"USA / Canada 908.40 (R1 / R2)", 908.40}, {"USA / Canada 908.42 (R2)", 908.42}, {"USA / Canada 916.00 (R3)", 916.00},
+                               {"Australia / NZ 921.40 (R1 / R2)", 921.40}, {"Australia / NZ 919.80 (R2)", 919.80}, {"Hong Kong 919.80", 919.80},
+                               {"Israel 916.00", 916.00}, {"India 865.20", 865.20}, {"Russia 869.00", 869.00}, {"Japan 922.50", 922.50},
+                               {"Korea 920.90", 920.90}, {"China 868.40", 868.40}};
+        for (const auto& z : zs) if (ImGui::Selectable(z.name)) tuneFreq(a, z.mhz);
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Tune to a Z-Wave channel (ITU-T G.9959): R1 9.6 kbit/s, R2 40 kbit/s, R3 100 kbit/s. Passive receive only.");
+    flowNext(6 * gUi);
     ImGui::SetNextItemWidth(110 * gUi);
     ImGui::Combo("##ismkind", &S.kind, kKinds, IM_ARRAYSIZE(kKinds));
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show only one kind of device.");
@@ -83,7 +97,7 @@ void presets(App& a) {
 void privacyNote() {
     ImGui::PushTextWrapPos(0);
     ImGui::TextDisabled("Privacy: these are other people's devices. Only what they broadcast openly is shown (model, the ID it sends, its "
-                        "readings); nothing is looked up, combined or sent anywhere, and meter data is not decrypted. Tyre sensor IDs can "
+                        "readings); nothing is looked up, combined or sent anywhere, and meter and Z-Wave S0 / S2 data is not decrypted. Tyre sensor IDs can "
                         "follow a car: do not record or share them.");
     ImGui::PopTextWrapPos();
 }
@@ -169,6 +183,64 @@ void deviceView(App& a) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("last %s, first %s", hhmmss(d.lastWall).c_str(), hhmmss(d.firstWall).c_str());
         ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)d.count);
         ImGui::TableNextColumn(); ImGui::TextUnformatted(freqText(t, d.freqHz).c_str());
+        ImGui::PopID();
+    }
+    ImGui::EndTable();
+}
+
+// Z-Wave: the devices grouped by Home ID (the first 8 hex digits of the ID), one row per node, with its last command. S0 / S2
+// traffic shows only that it is encrypted.
+void zwaveView(App& a) {
+    const dect2::IsmTelemetry& t = a.rx.ism;
+    std::vector<const dect2::IsmDevice*> v;
+    for (const auto& d : t.devices) if (d.kind == "Z-Wave" && d.id.size() > 9) v.push_back(&d);
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("Z-Wave (ITU-T G.9959) frames, grouped by Home ID. Passive receive only: S0 and S2 traffic stays encrypted and is never decrypted.");
+    ImGui::PopTextWrapPos();
+    if (v.empty()) { ImGui::TextDisabled("no Z-Wave frames yet: tune to a Z-Wave channel with the Z-Wave menu"); return; }
+    std::stable_sort(v.begin(), v.end(), [](const dect2::IsmDevice* x, const dect2::IsmDevice* y) {
+        const int c = x->id.compare(0, 8, y->id, 0, 8);
+        return c != 0 ? c < 0 : atoi(x->id.c_str() + 9) < atoi(y->id.c_str() + 9);
+    });
+    if (!ImGui::BeginTable("##ismzwt", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV,
+                           ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    ImGui::TableSetupScrollFreeze(0, 1);
+    ImGui::TableSetupColumn("Node"); ImGui::TableSetupColumn("PHY"); ImGui::TableSetupColumn("Last seen"); ImGui::TableSetupColumn("RSSI");
+    ImGui::TableSetupColumn("Frames"); ImGui::TableSetupColumn("Last command", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    std::string home;
+    for (size_t i = 0; i < v.size(); i++) {
+        const dect2::IsmDevice& d = *v[i];
+        if (d.id.compare(0, 8, home) != 0) {
+            home = d.id.substr(0, 8);
+            size_t nodes = 0;
+            for (const auto* o : v) nodes += o->id.compare(0, 8, home) == 0;
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::PushFont(a.mono, 0); ImGui::Text("Home %s", home.c_str()); ImGui::PopFont();
+            ImGui::TableNextColumn(); ImGui::TextDisabled("%zu node%s", nodes, nodes == 1 ? "" : "s");
+        }
+        ImGui::PushID((int)i);
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::Text("  node %s", d.id.c_str() + 9); ImGui::PopFont();
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(d.model.c_str() + 7);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("checked by %s", d.mic.c_str());
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(d.lastWall).c_str());
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("last %s, first %s", hhmmss(d.lastWall).c_str(), hhmmss(d.firstWall).c_str());
+        ImGui::TableNextColumn(); ImGui::Text("%.0f dB", d.rssiDb);
+        ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)d.count);
+        ImGui::TableNextColumn();
+        std::string cmd;   // everything from the command class on: class, command and values
+        bool after = false;
+        for (const auto& f : d.fields) {
+            if (f.name == "Command Class") after = true;
+            if (!after) continue;
+            if (!cmd.empty()) cmd += ", ";
+            cmd += dect2::ismReadingText({f});
+        }
+        if (cmd.empty()) cmd = "no payload (acknowledgement or empty frame)";
+        ImGui::TextUnformatted(cmd.c_str());
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", dect2::ismReadingText(d.fields).c_str());
         ImGui::PopID();
     }
     ImGui::EndTable();
@@ -296,7 +368,7 @@ void rawView(App& a) {
 
 void supportedView() {
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("The formats follow rtl_433 (GPL-2.0); each decoder names the rtl_433 device file it was written from. A reading is "
+    ImGui::TextDisabled("The formats follow rtl_433 (GPL-2.0); each decoder names the rtl_433 device file it was written from (Z-Wave: ITU-T G.9959, not from rtl_433). A reading is "
                         "shown only when its CRC or checksum passes (or, for the few without one, when the frame repeats).");
     ImGui::PopTextWrapPos();
     if (!ImGui::BeginTable("##ismsup", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV,
@@ -324,10 +396,10 @@ void tick(App& a) {
 void tab(App& a) {
     presets(a);
     privacyNote();
-    subNav("ismv", S.view, {"Devices", "Log", "Unknown", "Supported"});
+    subNav("ismv", S.view, {"Devices", "Log", "Unknown", "Supported", "Z-Wave"});
     if (S.view == 3) { supportedView(); return; }
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to hear the devices around you"); ImGui::PopTextWrapPos(); return; }
-    if (S.view == 0) deviceView(a); else if (S.view == 1) logView(a); else rawView(a);
+    if (S.view == 0) deviceView(a); else if (S.view == 1) logView(a); else if (S.view == 4) zwaveView(a); else rawView(a);
 }
 
 void list(App& a) {

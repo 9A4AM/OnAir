@@ -1100,6 +1100,176 @@ void decMbus(Bits& B, Out& out) {
     out.push_back(R);
 }
 
+// ---------------------------------------------------------------- Z-Wave (ITU-T G.9959), passive and never decrypted
+// Not an rtl_433 decoder. R1: 9.6 kbit/s Manchester FSK, R2: 40 kbit/s NRZ FSK, R3: 100 kbit/s GFSK (NRZ). A frame is a 0x55 preamble, the
+// start of frame 0xF0, then HomeID(4) Src(1) FC(2) Len(1) Dst(1) payload and the check: 0xFF ^ XOR of the bytes (R1, R2) or CRC-16
+// CCITT, init 0x1D0F (R3). Len counts the whole MPDU. Both line polarities and (R1) both Manchester phases are tried; the check decides.
+
+const char* zwClassName(uint8_t c) {
+    switch (c) {
+    case 0x00: return "No Operation"; case 0x01: return "Z-Wave Protocol"; case 0x20: return "Basic"; case 0x25: return "Switch Binary";
+    case 0x26: return "Switch Multilevel"; case 0x30: return "Sensor Binary"; case 0x31: return "Sensor Multilevel"; case 0x32: return "Meter";
+    case 0x56: return "CRC-16 Encap"; case 0x59: return "Association Group Info"; case 0x5E: return "Z-Wave Plus Info"; case 0x60: return "Multi Channel";
+    case 0x70: return "Configuration"; case 0x71: return "Notification"; case 0x72: return "Manufacturer Specific"; case 0x73: return "Powerlevel";
+    case 0x7A: return "Firmware Update"; case 0x80: return "Battery"; case 0x84: return "Wake Up"; case 0x85: return "Association";
+    case 0x86: return "Version"; case 0x8E: return "Multi Channel Association"; case 0x98: return "Security S0"; case 0x9F: return "Security S2";
+    default: return "";
+    }
+}
+std::string zwCommand(uint8_t c, uint8_t k) {
+    auto pick = [&](std::initializer_list<std::pair<int, const char*>> l) -> std::string { for (auto& e : l) if (e.first == k) return e.second; return ""; };
+    switch (c) {
+    case 0x20: case 0x25: return pick({{1, "Set"}, {2, "Get"}, {3, "Report"}});
+    case 0x26: return pick({{1, "Set"}, {2, "Get"}, {3, "Report"}, {4, "Start Level Change"}, {5, "Stop Level Change"}});
+    case 0x30: return pick({{2, "Get"}, {3, "Report"}});
+    case 0x31: return pick({{1, "Supported Get"}, {2, "Supported Report"}, {4, "Get"}, {5, "Report"}});
+    case 0x32: return pick({{1, "Get"}, {2, "Report"}, {3, "Supported Get"}, {4, "Supported Report"}, {5, "Reset"}});
+    case 0x71: return pick({{4, "Get"}, {5, "Report"}, {7, "Supported Get"}, {8, "Supported Report"}});
+    case 0x80: return pick({{2, "Get"}, {3, "Report"}});
+    case 0x84: return pick({{4, "Interval Set"}, {5, "Notification"}, {6, "Interval Get"}, {7, "Interval Report"}, {8, "No More Information"}});
+    case 0x00: return "NOP";
+    case 0x01: return pick({{1, "Node Info"}, {2, "Request Node Info"}, {4, "Assign IDs"}, {0x0C, "Find Nodes In Range"}, {0x0D, "Get Nodes In Range"}});
+    default: return "";
+    }
+}
+double zwValue(const uint8_t* p, int size, bool& ok) {
+    ok = size == 1 || size == 2 || size == 4;
+    int32_t v = 0;
+    if (!ok) return 0;
+    for (int i = 0; i < size; i++) v = (int32_t)(((uint32_t)v << 8) | p[i]);
+    if (size == 1) v = (int8_t)v; else if (size == 2) v = (int16_t)v;
+    return v;
+}
+void zwField(IsmReading& R, const char* name, int value, const std::string& text) {
+    IsmField f; f.name = name; f.value = value; f.decimals = 0; f.text = text; R.fields.push_back(f);
+}
+void zwPayload(IsmReading& R, const uint8_t* p, unsigned n) {
+    if (n == 0) return;
+    const uint8_t cc = p[0], cmd = n > 1 ? p[1] : 0;
+    const char* cn = zwClassName(cc);
+    zwField(R, "Command Class", cc, *cn ? std::string(cn) : "0x" + hexU(cc, 2));
+    if (cc == 0x98 || cc == 0x9F) { R.addText("Command", "encrypted"); return; }   // S0 / S2: the payload is not shown or decoded
+    if (n < 2) return;
+    const std::string cs = zwCommand(cc, cmd);
+    R.addText("Command", cs.empty() ? "0x" + hexU(cmd, 2) : cs);
+    bool ok = false;
+    if ((cc == 0x20 || cc == 0x25 || cc == 0x26) && (cmd == 1 || cmd == 3) && n >= 3) {
+        if (cc == 0x25) R.addText("Value", p[2] == 0 ? "off" : p[2] == 0xFF ? "on" : decs(p[2]));
+        else R.add("Level", p[2], p[2] <= 99 ? "%" : "", 0);
+    } else if (cc == 0x30 && cmd == 3 && n >= 3) {
+        R.addText("State", p[2] ? "triggered" : "idle");
+    } else if (cc == 0x80 && cmd == 3 && n >= 3) {
+        if (p[2] == 0xFF) R.addText("Battery level", "low"); else R.add("Battery level", p[2], "%", 0);
+    } else if (cc == 0x84 && cmd == 7 && n >= 5) {
+        R.add("Wake up interval", (p[2] << 16) | (p[3] << 8) | p[4], "s", 0);
+    } else if (cc == 0x71 && cmd == 5 && n >= 4) {
+        R.add("Alarm type", p[2], "", 0); R.add("Alarm level", p[3], "", 0);
+    } else if ((cc == 0x31 && cmd == 5 && n >= 4) || (cc == 0x32 && cmd == 2 && n >= 4)) {
+        const bool sensor = cc == 0x31;
+        const uint8_t type = p[2], fmt = p[3];
+        const int size = fmt & 7, scale = (fmt >> 3) & 3, prec = fmt >> 5;
+        const unsigned off = 4;
+        if (n < off + size) return;
+        const double v = zwValue(p + off, size, ok) / std::pow(10.0, prec);
+        if (!ok) return;
+        const char* name = ""; const char* unit = "";
+        if (sensor) {
+            switch (type) {
+            case 1: name = "Temperature"; unit = scale ? "F" : "C"; break;
+            case 2: name = "General"; unit = scale ? "" : "%"; break;
+            case 3: name = "Luminance"; unit = scale ? "lux" : "%"; break;
+            case 4: name = "Power"; unit = scale ? "BTU/h" : "W"; break;
+            case 5: name = "Humidity"; unit = scale ? "g/m3" : "%"; break;
+            case 8: name = "Pressure"; unit = scale ? "inHg" : "kPa"; break;
+            case 0x0F: name = "Voltage"; unit = scale ? "mV" : "V"; break;
+            case 0x10: name = "Current"; unit = scale ? "mA" : "A"; break;
+            case 0x11: name = "CO2"; unit = "ppm"; break;
+            case 0x1B: name = "UV index"; unit = ""; break;
+            default: name = "Sensor"; break;
+            }
+        } else {
+            const int mt = type & 0x1F;
+            static const char* const el[4] = {"kWh", "kVAh", "W", "pulses"};
+            static const char* const gas[4] = {"m3", "ft3", "", "pulses"};
+            static const char* const wat[4] = {"m3", "ft3", "gal", "pulses"};
+            switch (mt) {
+            case 1: name = scale == 2 ? "Power" : "Energy"; unit = el[scale]; break;
+            case 2: name = "Gas"; unit = gas[scale]; break;
+            case 3: name = "Water"; unit = wat[scale]; break;
+            default: name = "Meter"; break;
+            }
+        }
+        R.add(name, v, unit, prec);
+    }
+}
+
+void decZwave(Bits& B, Out& out, int rate) {
+    const bool mc = rate == 1, crc = rate == 3;
+    const size_t n0 = out.size();
+    static const uint8_t pre[2] = {0x55, 0xF0};
+    for (int row = 0; row < B.rows(); row++) {
+        for (int inv = 0; inv < 2; inv++) {
+            for (int ph = 0; ph < (mc ? 2 : 1); ph++) {
+                Bits S;
+                if (mc) {
+                    Bits src = B;
+                    if (inv) src.invert();
+                    manchester(src, row, (unsigned)ph, S, 0);
+                } else {
+                    for (unsigned i = 0; i < B.n[row]; i++) S.addBit(B.bit(row, i) ^ inv);
+                }
+                unsigned pos = 0;
+                while (pos < S.n[0]) {
+                    pos = S.search(0, pos, pre, 16);
+                    if (pos >= S.n[0]) break;
+                    const unsigned start = pos + 16;
+                    pos++;
+                    if (start + 9 * 8 > S.n[0]) continue;
+                    uint8_t h[9];
+                    S.extract(0, start, h, 72);
+                    const unsigned L = h[7];
+                    if (L < (crc ? 11u : 10u) || L > (crc ? 170u : 64u) || start + L * 8 > S.n[0]) continue;
+                    std::vector<uint8_t> m(L);
+                    S.extract(0, start, m.data(), L * 8);
+                    if (crc) {
+                        if (ismCrc16(m.data(), L - 2, 0x1021, 0x1D0F) != (uint16_t)((m[L - 2] << 8) | m[L - 1])) continue;
+                    } else if ((uint8_t)(0xFF ^ xorBytes(m.data(), L - 1)) != m[L - 1]) continue;
+                    const unsigned home = (unsigned)m[0] << 24 | (unsigned)m[1] << 16 | (unsigned)m[2] << 8 | m[3];
+                    const unsigned src = m[4], dst = m[8];
+                    char id[24];
+                    snprintf(id, sizeof id, "%08X:%u", home, src);
+                    IsmReading R = mk(rate == 1 ? "Z-Wave-R1" : rate == 2 ? "Z-Wave-R2" : "Z-Wave-R3", "Z-Wave", id, crc ? "CRC" : "CHECKSUM");
+                    R.addText("Home ID", hexU(home, 8));
+                    zwField(R, "Source", (int)src, "");
+                    zwField(R, "Destination", (int)dst, dst == 0xFF ? "broadcast" : "");
+                    const int ht = m[5] & 0x0F;
+                    R.addText("Frame", ht == 1 ? "Singlecast" : ht == 2 ? "Multicast" : ht == 3 ? "Ack" : ht == 8 ? "Routed" : "Type " + decs(ht));
+                    R.add("Sequence", m[6] & 0x0F, "", 0);
+                    if (m[5] & 0x40) R.addText("Ack requested", "yes");
+                    zwPayload(R, m.data() + 9, L - 9 - (crc ? 2 : 1));
+                    out.push_back(R);
+                    break;
+                }
+                if (out.size() > n0) return;
+            }
+        }
+    }
+}
+
+// Merges every run shorter than minUs into the run before it (the run after it joins that one too): a noise spike of the FSK
+// discriminator inside a chip. A train is a list of mark / space runs.
+IsmTrain despike(const IsmTrain& t, float minUs) {
+    std::vector<float> d;
+    for (const auto& q : t.p) { d.push_back(q.pulseUs); d.push_back(q.gapUs); }
+    for (size_t i = 1; i + 1 < d.size();) {
+        if (d[i] < minUs) { d[i - 1] += d[i] + d[i + 1]; d.erase(d.begin() + (ptrdiff_t)i, d.begin() + (ptrdiff_t)i + 2); }
+        else i++;
+    }
+    IsmTrain o; o.fsk = t.fsk;
+    for (size_t i = 0; i + 1 < d.size(); i += 2) o.p.push_back({d[i], d[i + 1]});
+    return o;
+}
+
 // ---------------------------------------------------------------- the table
 
 thread_local std::vector<uint32_t> tlRemoteSeen;   // the remote codes seen in the current train (ismDecode clears it)
@@ -1109,6 +1279,7 @@ struct Proto {
     Mod mod;
     Timing t;
     std::function<void(Bits&, Out&)> fn;
+    float despikeUs = 0;   // FSK noise: tone runs shorter than this are merged into their neighbours before slicing
 };
 
 const std::vector<Proto>& protos() {
@@ -1140,6 +1311,9 @@ const std::vector<Proto>& protos() {
         {{"Abarth 124 TPMS (VDO TG1C)", "tpms_abarth124.c", "TPMS", true}, FskPcm, {52, 52, 150, 0, 0, 0}, decAbarth},
         {{"Efergy e2 classic", "efergy_e2_classic.c", "Energy", true}, FskPwm, {64, 136, 400, 200, 500, 0}, decEfergy},
         {{"CurrentCost TX / EnviR", "current_cost.c", "Energy", true}, FskPcm, {250, 250, 8000, 0, 0, 0}, decCurrentCost},
+        {{"Z-Wave R1 (9.6 kbit/s)", "G.9959", "Z-Wave", true}, FskPcm, {52, 52, 3000, 0, 0, 0}, [](Bits& b, Out& o) { decZwave(b, o, 1); }, 25},
+        {{"Z-Wave R2 (40 kbit/s)", "G.9959", "Z-Wave", true}, FskPcm, {25, 25, 1000, 0, 0, 0}, [](Bits& b, Out& o) { decZwave(b, o, 2); }, 10},
+        {{"Z-Wave R3 (100 kbit/s)", "G.9959", "Z-Wave", true}, FskPcm, {10, 10, 500, 0, 0, 0}, [](Bits& b, Out& o) { decZwave(b, o, 3); }},
         {{"Wireless M-Bus T / C (header)", "m_bus.c", "Meter", true}, FskPcm, {10, 10, 500, 0, 0, 0}, decMbus},
     };
     return p;
@@ -1161,11 +1335,13 @@ std::vector<IsmReading> ismDecode(const IsmTrain& t) {
     for (const auto& pr : P) {
         if (pr.info.fsk != t.fsk) continue;
         Emit emit = [&](Bits& b) { Bits c = b; pr.fn(c, out); };
+        const IsmTrain clean = pr.despikeUs > 0 ? despike(t, pr.despikeUs) : IsmTrain();
+        const IsmTrain& tt = pr.despikeUs > 0 ? clean : t;
         switch (pr.mod) {
-        case OokPwm: case FskPwm: slicePwm(t, pr.t, emit); break;
-        case OokPpm: slicePpm(t, pr.t, emit); break;
-        case OokPcm: case FskPcm: slicePcm(t, pr.t, emit); break;
-        case OokMcZero: sliceMcZero(t, pr.t, emit); break;
+        case OokPwm: case FskPwm: slicePwm(tt, pr.t, emit); break;
+        case OokPpm: slicePpm(tt, pr.t, emit); break;
+        case OokPcm: case FskPcm: slicePcm(tt, pr.t, emit); break;
+        case OokMcZero: sliceMcZero(tt, pr.t, emit); break;
         }
     }
     // a device repeats its packet within a burst: keep one of each
