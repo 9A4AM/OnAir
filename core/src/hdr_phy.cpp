@@ -545,6 +545,19 @@ namespace {
 constexpr int kCenterAm = kFftAm / 2;
 constexpr int kRefAm = 1, kPidsInner = 27, kPidsOuter = 53, kInnerStart = 2, kMiddleStart = 28, kOuterStart = 57, kMaxAm = 81;
 
+// The cyclic prefix search of MA3. kTapsAm (nrsc5) passes the outer primary sidebands of a hybrid station, 10 to 15 kHz from the carrier,
+// where an all-digital station has nothing: MA3 uses a notch of the carrier instead (a 31-sample average taken from the delayed sample,
+// the same delay as kTapsAm), which keeps every digital subcarrier but the innermost.
+const float* tapsMa3() {
+    static const std::vector<float> t = [] {
+        std::vector<float> v(32, 0.f);
+        for (int i = 0; i < 31; i++) v[(size_t)i] = -1.f / 31;
+        v[(size_t)kFilterDelay] += 1.f;
+        return v;
+    }();
+    return t.data();
+}
+
 // decimation by 16, 744187.5 -> 46511.7 Hz: a windowed sinc (Kaiser), passband 16 kHz, stopband from 30 kHz
 std::vector<float> decimTaps() {
     const int n = 256;
@@ -584,6 +597,8 @@ struct AmRx::Impl {
     int psmi = 1, bc = 0, rdbi = 0;
     int cfoWait = 0;
     unsigned history = 0;
+    bool wideCp = false;             // the cyclic prefix search uses the MA3 filter
+    int cpBlocks = 0;                // blocks searched with this filter
     double drCum = 0, drE0 = 0, ppmOut = 0;    // sample clock measurement (see syncProcess)
     int drBlocks = 0;
     bool drHave = false, ppmNew = false;
@@ -592,7 +607,9 @@ struct AmRx::Impl {
     std::vector<cf32> constel;
     // decoding: soft bits of the frame (8 blocks x 32 rows x 25 columns)
     std::vector<float> pl, pu, ss, tt;   // 6, 6, 4 and 2 per element
+    std::vector<float> ss6, tt6;         // MA3: the secondary and tertiary sidebands are 64-QAM (6 per element)
     std::vector<std::vector<float>> mlHist, muHist;   // the M bits of the last frames (diversity delay)
+    std::vector<std::vector<float>> emlHist, emuHist; // MA3: the same for P3 on the tertiary (lower) and secondary (upper) sidebands
     int frames = 0;
     Viterbi vit;
     std::vector<float> soft, cw;
@@ -616,14 +633,16 @@ struct AmRx::Impl {
         pu.assign(pl.size(), 0.f);
         ss.assign((size_t)8 * 32 * kAmCols * 4, 0.f);
         tt.assign((size_t)8 * 32 * kAmCols * 2, 0.f);
+        ss6.assign(pl.size(), 0.f);
+        tt6.assign(pl.size(), 0.f);
         ring.assign(taps.size() * 2, cf32(0, 0));
         reset();
     }
     void reset() {
         idx = 0; prevAngle = 0; phase = cd(1, 0); keepExtra = 0; cfo = 0; state = 0; slope = 0;
-        sidx = 0; psmi = 1; bc = 0; rdbi = 0; cfoWait = 0; history = 0; samperr = 0;
+        sidx = 0; psmi = 1; bc = 0; rdbi = 0; cfoWait = 0; history = 0; samperr = 0; wideCp = false; cpBlocks = 0;
         drCum = 0; drE0 = 0; drBlocks = 0; drHave = false; ppmNew = false;
-        mlHist.clear(); muHist.clear(); frames = 0; ber = 0; mer = 0; merAcc = 0; merN = 0; badRun = 0; lastBc = -1;
+        mlHist.clear(); muHist.clear(); emlHist.clear(); emuHist.clear(); frames = 0; ber = 0; mer = 0; merAcc = 0; merN = 0; badRun = 0; lastBc = -1;
         std::fill(ring.begin(), ring.end(), cf32(0, 0));
         rpos = 0; dphase = 0;
     }
@@ -656,8 +675,11 @@ struct AmRx::Impl {
             samperr = 0;
             ang = prevAngle;
         } else {
+            // hybrid (MA1) or all-digital (MA3): the two filters take turns, 10 blocks (1.9 s) each, until block sync (which takes about 5 blocks);
+            // the hybrid one first. A station lost and searched for again keeps the filter it was found with.
+            if (++cpBlocks > 10) { cpBlocks = 0; wideCp = !wideCp; }
             cf32 best;
-            se = cps.run(in.data(), kFftAm, kCpAm, kBlk, kTapsAm, shape, best);
+            se = cps.run(in.data(), kFftAm, kCpAm, kBlk, wideCp ? tapsMa3() : kTapsAm, shape, best);
             const float diff = std::arg(best * std::polar(1.f, -prevAngle));
             const float factor = prevAngle != 0 ? 0.25f : 1.f;
             ang = prevAngle + diff * factor;
@@ -755,8 +777,8 @@ struct AmRx::Impl {
             if (b < 0) history = 0;
             else history = (history << 4) | (unsigned)b;
             if ((history & 0xFFFF) == 0x5670) {
-                bc = 0; state = 2; syncs++; history = 0;
-                mlHist.clear(); muHist.clear(); frames = 0; badRun = 0;
+                bc = 0; state = 2; syncs++; history = 0; cpBlocks = 0;
+                mlHist.clear(); muHist.clear(); emlHist.clear(); emuHist.clear(); frames = 0; badRun = 0;
                 sink->blockSync();
             }
         }
@@ -823,6 +845,10 @@ struct AmRx::Impl {
                     const cf32 s = S(kCenterAm + sec + col, n) * sM[col], t = S(kCenterAm + ter + col, n) * tM[col];
                     soft16(s.real(), &ss[el * 4]); soft16(s.imag(), &ss[el * 4 + 2]);
                     tt[el * 2] = t.real(); tt[el * 2 + 1] = t.imag();
+                } else {   // MA3: secondary (upper) and tertiary (lower) are 64-QAM like the primary
+                    const cf32 s = S(kCenterAm + sec + col, n) * sM[col], t = S(kCenterAm - ter - col, n) * tM[col];
+                    soft64(s.real(), &ss6[el * 6]); soft64(s.imag(), &ss6[el * 6 + 3]);
+                    soft64(t.real(), &tt6[el * 6]); soft64(t.imag(), &tt6[el * 6 + 3]);
                 }
             }
         const float m = 10.5f * (float)ne / std::max(1e-6f, e);
@@ -830,6 +856,7 @@ struct AmRx::Impl {
         if (merN == 8) { mer = 10 * std::log10(merAcc / (float)merN); merAcc = 0; merN = 0; }
         const float w = std::min(100.f, m);       // weight: the MER of this block (linear)
         for (int n = 0; n < kBlk * kAmCols * 6; n++) { pl[base * 6 + (size_t)n] *= w; pu[base * 6 + (size_t)n] *= w; }
+        if (ma3) for (int n = 0; n < kBlk * kAmCols * 6; n++) { ss6[base * 6 + (size_t)n] *= w; tt6[base * 6 + (size_t)n] *= w; }
         if (bc == 7) frameDone(ma3);
         bc = (bc + 1) % 8;
     }
@@ -861,8 +888,14 @@ struct AmRx::Impl {
         for (int n = 0; n < 18000; n++) { ml[(size_t)n] = get(pl, 6, M.ml[(size_t)n]); mu[(size_t)n] = get(pu, 6, M.mu[(size_t)n]); }
         mlHist.push_back(ml); muHist.push_back(mu);
         if (mlHist.size() > 4) { mlHist.erase(mlHist.begin()); muHist.erase(muHist.begin()); }
+        if (ma3) {   // nrsc5 interleaver_ma1(), MA3 branch: P3's M bits on the tertiary (lower) and secondary (upper) sidebands, with the same delay
+            std::vector<float> eml(18000), emu(18000);
+            for (int n = 0; n < 18000; n++) { eml[(size_t)n] = get(tt6, 6, M.ml[(size_t)n]); emu[(size_t)n] = get(ss6, 6, M.mu[(size_t)n]); }
+            emlHist.push_back(std::move(eml)); emuHist.push_back(std::move(emu));
+            if (emlHist.size() > 4) { emlHist.erase(emlHist.begin()); emuHist.erase(emuHist.begin()); }
+        } else { emlHist.clear(); emuHist.clear(); }
         frames++;
-        if (mlHist.size() == 4 && !ma3) {
+        if (mlHist.size() == 4) {
             // the code words of this frame: B bits now, M bits from three frames ago
             const std::vector<float>& mlD = mlHist.front();
             const std::vector<float>& muD = muHist.front();
@@ -893,7 +926,28 @@ struct AmRx::Impl {
                 } else badRun = 0;
             }
             ber = cnt ? (double)errs / cnt : 0;
-            if (!rdbi) {
+            if (!rdbi && ma3 && emlHist.size() == 4) {
+                // MA3 P3: code E1 like P1, its B bits in the low bits of the 64-QAM words (the M bits' positions), the M bits three frames back
+                const std::vector<float>& emlD = emlHist.front();
+                const std::vector<float>& emuD = emuHist.front();
+                std::vector<float> p3(72000);
+                for (int i = 0; i < 6000; i++)
+                    for (int j = 0; j < 3; j++) {
+                        const AmBit& bl = M.ml[(size_t)(i * 3 + j)];
+                        const AmBit& bu = M.mu[(size_t)(i * 3 + j)];
+                        p3[(size_t)(i * 12 + kBlDelay[j])] = tt6[(size_t)bl.elem * 6 + (size_t)(bl.bit - 3)];
+                        p3[(size_t)(i * 12 + kMlDelay[j])] = emlD[(size_t)(i * 3 + j)];
+                        p3[(size_t)(i * 12 + kBuDelay[j])] = ss6[(size_t)bu.elem * 6 + (size_t)(bu.bit - 3)];
+                        p3[(size_t)(i * 12 + kMuDelay[j])] = emuD[(size_t)(i * 3 + j)];
+                    }
+                cw.assign((size_t)kP3LenMa3 * 3, 0.f);
+                o = 0;
+                for (size_t i = 0; i < cw.size(); i++) cw[i] = kPunctE1[i % 15] ? p3[o++] : 0.f;
+                bits.resize(kP3LenMa3);
+                vit.decode(kCodeE1, cw.data(), kP3LenMa3, bits.data());
+                scramble(bits.data(), kP3LenMa3);
+                sink->transfer(bits.data(), kP3LenMa3, 1);
+            } else if (!rdbi && !ma3) {
                 // P3 on the secondary (16-QAM) and tertiary (QPSK) sidebands
                 std::vector<float> p3(36000);
                 for (int i = 0; i < 6000; i++) {
@@ -1009,15 +1063,18 @@ cf32 amQpsk(int w) { return cf32((w & 1) ? 0.5f : -0.5f, (w & 2) ? 0.5f : -0.5f)
 
 AmTx::AmTx() : X_(4096), shape_(windowShape(4096, 16 * kCpAm)) {}
 
-// 1012s sections 11 and 12, MA1: the upper sidebands as they are, the lower ones negated and conjugated; the analog carrier is not part of it
-void AmTx::block(const uint8_t* pl, const uint8_t* pu, const uint8_t* s, const uint8_t* t, const uint8_t* pids, int bc, const AmLevels& lv, std::vector<cf32>& out) {
+// 1012s sections 11 and 12, MA1: the upper sidebands as they are, the lower ones negated and conjugated; the analog carrier is not part of it.
+// MA3: no complementary pairs (each lower subcarrier carries its own word, negated and conjugated as the receiver expects), except the
+// reference subcarriers.
+void AmTx::block(const uint8_t* pl, const uint8_t* pu, const uint8_t* s, const uint8_t* t, const uint8_t* pids, int bc, const AmLevels& lv, std::vector<cf32>& out,
+                 bool ma3) {
     thread_local Fft fft(4096);
     constexpr int N = 4096, CP = 16 * kCpAm, off = 16 * ((kFftAm - kCpAm) / 2);
-    // system control data sequence (table 11-1), MA1, no reduced bandwidth
+    // system control data sequence (table 11-1), no reduced bandwidth; service mode 1 (MA1) or 2 (MA3)
     uint8_t r[32];
     const uint8_t sync1[7] = {0, 1, 1, 0, 0, 1, 0};
     for (int i = 0; i < 7; i++) r[i] = sync1[i];
-    const int pli = 0, res4 = 0, hppi = 0, aabi = 0, rdbi = 0, res3 = 0, smi = 1;
+    const int pli = 0, res4 = 0, hppi = 0, aabi = 0, rdbi = 0, res3 = 0, smi = ma3 ? 2 : 1;
     r[7] = (uint8_t)pli; r[8] = (uint8_t)pli; r[9] = 1; r[10] = (uint8_t)res4; r[11] = (uint8_t)hppi; r[12] = (uint8_t)aabi;
     r[13] = (uint8_t)(res4 ^ hppi ^ aabi); r[14] = 0; r[15] = (uint8_t)rdbi; r[16] = (uint8_t)res3;
     for (int i = 0; i < 3; i++) r[17 + i] = (uint8_t)((bc >> (2 - i)) & 1);
@@ -1032,15 +1089,28 @@ void AmTx::block(const uint8_t* pl, const uint8_t* pu, const uint8_t* s, const u
             X_[(size_t)sc] = v;
             X_[(size_t)(N - sc)] = -std::conj(v);
         };
+        auto lower = [&](int sc, cf32 v) { X_[(size_t)(N - sc)] = -std::conj(v); };
         pair(1, cf32(0, r[n] ? 0.5f : -0.5f) * lv.ref);
-        pair(kPidsInner, amQam16(pids[n * 2]) * lv.pids);
-        pair(kPidsOuter, amQam16(pids[n * 2 + 1]) * lv.pids);
+        if (!ma3) {
+            pair(kPidsInner, amQam16(pids[n * 2]) * lv.pids);
+            pair(kPidsOuter, amQam16(pids[n * 2 + 1]) * lv.pids);
+        } else {
+            lower(kPidsInner, amQam16(pids[n * 2]) * lv.pids);
+            X_[(size_t)kPidsInner] = amQam16(pids[n * 2 + 1]) * lv.pids;
+        }
         for (int c = 0; c < kAmCols; c++) {
             const size_t e = (size_t)n * kAmCols + (size_t)c;
-            X_[(size_t)(kOuterStart + c)] = amQam64(pu[e]) * lv.pri;
-            X_[(size_t)(N - kOuterStart - c)] = -std::conj(amQam64(pl[e])) * lv.pri;
-            pair(kMiddleStart + c, amQam16(s[e]) * lv.sec);
-            pair(kInnerStart + c, amQpsk(t[e]) * lv.ter);
+            if (!ma3) {
+                X_[(size_t)(kOuterStart + c)] = amQam64(pu[e]) * lv.pri;
+                lower(kOuterStart + c, amQam64(pl[e]) * lv.pri);
+                pair(kMiddleStart + c, amQam16(s[e]) * lv.sec);
+                pair(kInnerStart + c, amQpsk(t[e]) * lv.ter);
+            } else {
+                X_[(size_t)(kInnerStart + c)] = amQam64(pu[e]) * lv.pri;
+                lower(kInnerStart + c, amQam64(pl[e]) * lv.pri);
+                X_[(size_t)(kMiddleStart + c)] = amQam64(s[e]) * lv.sec;
+                lower(kMiddleStart + c, amQam64(t[e]) * lv.ter);
+            }
         }
         fft.inverse(X_.data());
         for (int j = 0; j < N + CP; j++) out.push_back(shape_[(size_t)j] * X_[(size_t)((j + off) % N)]);

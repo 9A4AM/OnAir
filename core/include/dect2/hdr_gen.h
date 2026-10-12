@@ -8,7 +8,8 @@
 // SynthConfig:
 //   modeOpt[0]  waveform: 0 FM hybrid MP1 (analog FM with a 1 kHz tone, primary main sidebands; P1 and PIDS),
 //               1 AM hybrid MA1 (analog AM with a 1 kHz tone; primary, secondary, tertiary sidebands; P1, P3 and PIDS),
-//               2 FM extended hybrid MP3 (MP1 plus two extended partitions per sideband carrying P3, with a third program HD3)
+//               2 FM extended hybrid MP3 (MP1 plus two extended partitions per sideband carrying P3, with a third program HD3),
+//               3 AM all-digital MA3 (the carrier without audio; primary, secondary and tertiary sidebands all 64-QAM; P1, P3 and PIDS)
 //   snrDb       FM: the SNR of each digital subcarrier (the digital sidebands' power against the noise in their bandwidth);
 //               AM: the same for the primary subcarriers (the secondary, tertiary and PIDS subcarriers are 7 to 14 dB weaker, as on the air)
 //   cfoHz       carrier offset

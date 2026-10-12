@@ -197,15 +197,15 @@ struct Content {
         o.resize((size_t)pduBytes(kP3LenMp3), 0);
         return o;
     }
-    // AM P3: HD1's enhanced stream
-    std::vector<uint8_t> pduAmP3() {
+    // AM P3: HD1's enhanced stream (MA1 24000 bits, MA3 30000)
+    std::vector<uint8_t> pduAmP3(int len) {
         AudioPduSpec s;
         s.codecMode = 1; s.streamId = 1; s.program = 0; s.progType = hdrTestContent().programs[0].type;
         s.seq = p3Seq; s.packetBytes.assign(32, 80); s.psdRoom = 0;
         p3Seq = (p3Seq + 32) % 64;
         std::vector<uint8_t> none;
         std::vector<uint8_t> o = audioPdu(s, none);
-        o.resize((size_t)pduBytes(kP3LenMa1), 0);
+        o.resize((size_t)pduBytes(len), 0);
         return o;
     }
 };
@@ -222,7 +222,8 @@ void pidsL1(Content& c, uint8_t* out) {
 
 class HdrSynth : public ModeSynth {
 public:
-    HdrSynth(const SynthConfig& cfg, double rate) : rate_(rate), am_(cfg.modeOpt[0] == 1), mp3_(cfg.modeOpt[0] == 2), cfoHz_(cfg.cfoHz), c_(mp3_) {
+    HdrSynth(const SynthConfig& cfg, double rate)
+        : rate_(rate), am_(cfg.modeOpt[0] == 1 || cfg.modeOpt[0] == 3), ma3_(cfg.modeOpt[0] == 3), mp3_(cfg.modeOpt[0] == 2), cfoHz_(cfg.cfoHz), c_(mp3_) {
         rs_.configure(kRateFm, rate);
         pxi_.reset(kP3LenMp3);
         if (!am_) {
@@ -230,6 +231,17 @@ public:
             amp_ = ampA_ * std::sqrt(0.01f / (382.f * 2.f));       // the digital sidebands 20 dB below the analog FM
             const double psc = 2.0 * amp_ * amp_;
             sigma2_ = psc * rate / ((kRateFm / kFftFm) * std::pow(10.0, cfg.snrDb / 10));
+        } else if (ma3_) {
+            // MA3 (all-digital): the unmodulated carrier and the digital subcarriers much nearer to it than in MA1. Levels per subcarrier
+            // (approximate, 1012s table 12-?): primary -15 dBc, secondary and tertiary -21 dBc, PIDS -22 dBc, reference -11 dBc
+            ampA_ = 0.25f;
+            const float A2 = ampA_ * ampA_;
+            lv_.pri = std::sqrt(A2 * std::pow(10.f, -1.5f) / 10.5f);
+            lv_.sec = lv_.ter = std::sqrt(A2 * std::pow(10.f, -2.1f) / 10.5f);
+            lv_.pids = std::sqrt(A2 * std::pow(10.f, -2.2f) / 2.5f);
+            lv_.ref = std::sqrt(A2 * std::pow(10.f, -1.1f) / 0.25f);
+            const double psc = 10.5 * lv_.pri * lv_.pri;
+            sigma2_ = psc * rate / ((kRateFm / 4096.0) * std::pow(10.0, cfg.snrDb / 10));
         } else {
             ampA_ = 0.25f;
             const float A2 = ampA_ * ampA_;
@@ -279,9 +291,10 @@ private:
         } else {
             if (blk_ == 0) amFrame();
             const size_t e = (size_t)blk_ * 32 * kAmCols;
-            amTx_.block(&pl_[e], &pu_[e], &s_[e], &t_[e], &pidsW_[(size_t)blk_ * 64], blk_, lv_, base_);
+            amTx_.block(&pl_[e], &pu_[e], &s_[e], &t_[e], &pidsW_[(size_t)blk_ * 64], blk_, lv_, base_, ma3_);
+            const float mod = ma3_ ? 0.f : 0.3f;   // MA3: the carrier without audio
             for (cf32& v : base_) {   // analog AM, a 1 kHz tone at 30 % modulation
-                v += cf32(ampA_ * (1.f + 0.3f * (float)std::sin(tone_)), 0.f);
+                v += cf32(ampA_ * (1.f + mod * (float)std::sin(tone_)), 0.f);
                 tone_ += 2 * M_PI * 1000.0 / kRateFm;
                 if (tone_ > 2 * M_PI) tone_ -= 2 * M_PI;
             }
@@ -354,8 +367,29 @@ private:
             set(pu_, M.bu[(size_t)n], gB[(size_t)((n / 3) * 12 + kBuDelay[n % 3])]);
             set(pu_, M.mu[(size_t)n], gM[(size_t)((n / 3) * 12 + kMuDelay[n % 3])]);
         }
-        {   // P3
-            const std::vector<uint8_t> pdu = c_.pduAmP3();
+        if (ma3_) {   // P3 (MA3): code E1 like P1, on T (lower) and S (upper) as 64-QAM, the M bits three frames ahead of the B bits
+            while (groups3_.size() < 4) {
+                const std::vector<uint8_t> pdu = c_.pduAmP3(kP3LenMa3);
+                std::vector<uint8_t> bits((size_t)kP3LenMa3), enc((size_t)kP3LenMa3 * 3), g;
+                packTransfer(pdu, kPciAudio, kP3LenMa3, bits.data());
+                scramble(bits.data(), bits.size());
+                convEncode(kCodeE1, bits.data(), bits.size(), enc.data());
+                for (size_t i = 0; i < enc.size(); i++) if (kPunctE1[i % 15]) g.push_back(enc[i]);
+                groups3_.push_back(std::move(g));
+            }
+            const std::vector<uint8_t>& hB = groups3_[0];
+            const std::vector<uint8_t>& hM = groups3_[3];
+            for (int n = 0; n < 18000; n++) {
+                const AmBit& ml = M.ml[(size_t)n];
+                const AmBit& mu = M.mu[(size_t)n];
+                set(t_, AmBit{ml.elem, ml.bit - 3}, hB[(size_t)((n / 3) * 12 + kBlDelay[n % 3])]);
+                set(t_, ml, hM[(size_t)((n / 3) * 12 + kMlDelay[n % 3])]);
+                set(s_, AmBit{mu.elem, mu.bit - 3}, hB[(size_t)((n / 3) * 12 + kBuDelay[n % 3])]);
+                set(s_, mu, hM[(size_t)((n / 3) * 12 + kMuDelay[n % 3])]);
+            }
+            groups3_.pop_front();
+        } else {   // P3
+            const std::vector<uint8_t> pdu = c_.pduAmP3(kP3LenMa1);
             std::vector<uint8_t> bits((size_t)kP3LenMa1), enc((size_t)kP3LenMa1 * 3), p3;
             packTransfer(pdu, kPciAudio, kP3LenMa1, bits.data());
             scramble(bits.data(), bits.size());
@@ -368,7 +402,8 @@ private:
             for (int col = 0; col < kAmCols; col++)
                 for (int row : M.trainRow[col]) {
                     const size_t e = ((size_t)b * 32 + (size_t)row) * kAmCols + (size_t)col;
-                    pl_[e] = pu_[e] = 0x25; s_[e] = 0x9; t_[e] = 0x2;
+                    pl_[e] = pu_[e] = 0x25;
+                    if (ma3_) s_[e] = t_[e] = 0x25; else { s_[e] = 0x9; t_[e] = 0x2; }
                 }
         pidsW_.assign((size_t)8 * 64, 0);
         for (int b = 0; b < 8; b++) {
@@ -387,7 +422,7 @@ private:
     }
 
     double rate_;
-    bool am_, mp3_;
+    bool am_, ma3_, mp3_;
     double cfoHz_;
     float ampA_ = 0.25f, amp_ = 0;
     AmLevels lv_;
@@ -399,7 +434,7 @@ private:
     std::vector<uint8_t> pm_, px_;
     PxInterleaver pxi_;
     std::vector<uint8_t> pl_, pu_, s_, t_, pidsW_;
-    std::deque<std::vector<uint8_t>> groups_;
+    std::deque<std::vector<uint8_t>> groups_, groups3_;
     int blk_ = 0;
     std::vector<cf32> base_, pend_;
     size_t pos_ = 0;

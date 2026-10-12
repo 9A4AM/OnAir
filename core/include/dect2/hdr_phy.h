@@ -1,5 +1,5 @@
-// HD Radio (NRSC-5) Layer 1: the OFDM receivers of the FM hybrid (MP1 primary main sidebands: P1 and PIDS) and the AM hybrid (MA1: P1,
-// P3 and PIDS) waveforms, and the matching modulators of the test signal.
+// HD Radio (NRSC-5) Layer 1: the OFDM receivers of the FM hybrid (MP1 primary main sidebands: P1 and PIDS), the AM hybrid (MA1: P1,
+// P3 and PIDS) and the AM all-digital (MA3: P1, P3 and PIDS) waveforms, and the matching modulators of the test signal.
 //
 // The receivers follow nrsc5 (GPL-3.0, github.com/theori-io/nrsc5: src/acquire.c, src/sync.c, src/decode.c): the cyclic prefix
 // correlation for timing and the fractional carrier offset, Costas loops on the reference subcarriers for the integer offset, block sync,
@@ -83,7 +83,10 @@ public:
     AmTx();
     // One AM L1 block of 32 symbols: the words of the PL and PU (6 bits), S (4 bits) and T (2 bits) matrices of this block (32 rows x 25
     // columns, row-major), the PIDS words (32 rows x 2), the block count 0..7. Appends 32 symbols of 4320 samples at 744187.5 Hz.
-    void block(const uint8_t* pl, const uint8_t* pu, const uint8_t* s, const uint8_t* t, const uint8_t* pids, int bc, const AmLevels& lv, std::vector<cf32>& out);
+    // ma3: the all-digital waveform (1012s, MA3): primary PL / PU on the inner subcarriers 2..26 below and above the carrier, secondary S
+    // above and tertiary T below on 28..52, all four 64-QAM (s and t are then 6-bit words too), the PIDS on -27 and +27.
+    void block(const uint8_t* pl, const uint8_t* pu, const uint8_t* s, const uint8_t* t, const uint8_t* pids, int bc, const AmLevels& lv, std::vector<cf32>& out,
+               bool ma3 = false);
 private:
     std::vector<cf32> X_;
     std::vector<float> shape_;

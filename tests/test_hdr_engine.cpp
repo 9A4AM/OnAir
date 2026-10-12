@@ -1,5 +1,5 @@
 // HD Radio through the engine, as the app uses it: the synthetic source plays the test signal (FM hybrid, then AM hybrid) at the rate of
-// the tuning table with 15 dB SNR and a 1 kHz carrier offset; the engine must find the waveform, decode the station information, both
+// the tuning table with 15 dB SNR and a 1 kHz carrier offset, then AM all-digital (MA3) at the 1 Msps the app asks for in the AM band; the engine must find the waveform, decode the station information, both
 // programs, their program data and the picture, report it through latestRx with the mode's standard, and keep up with real time.
 // Real time: about 20 s.
 #include "dect2/engine.h"
@@ -16,7 +16,7 @@ using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
 
-static void run(int am, double cfo, double maxSec) {
+static void run(int am, double cfo, double maxSec, double rate = 0) {
     const ModeTuning mt = hdrTuning();
     const HdrTestContent& tc = hdrTestContent();
     Engine e;
@@ -24,7 +24,7 @@ static void run(int am, double cfo, double maxSec) {
     TuneSettings t;
     t.centerHz = (am ? 1.03 : mt.defMhz) * 1e6;
     t.bandwidthMhz = mt.bandwidthMhz;
-    t.sampleRate = mt.sampleRate;
+    t.sampleRate = rate > 0 ? rate : mt.sampleRate;
     t.synth.mode = 23;
     t.synth.modeOpt[0] = am;
     t.synth.snrDb = 15;
@@ -61,7 +61,7 @@ static void run(int am, double cfo, double maxSec) {
     e.stop();
     const HdrTelemetry& h = rx.hdr;
     printf("%s through the engine: %s after %.1f s, %d reports, %s, MER %.1f dB, CFO %+.1f Hz, P1 %llu ok %llu bad, call sign %s, %zu programs, receiver load %.1f%% of real time\n",
-           am ? "AM" : "FM", doneAt > 0 ? "everything decoded" : "INCOMPLETE", doneAt, reports, hdrSummary(h).c_str(), h.snrDb, h.cfoHz,
+           am == 3 ? "AM MA3" : am ? "AM" : "FM", doneAt > 0 ? "everything decoded" : "INCOMPLETE", doneAt, reports, hdrSummary(h).c_str(), h.snrDb, h.cfoHz,
            (unsigned long long)h.blocksOk, (unsigned long long)h.blocksBad, h.callSign.c_str(), h.programs.size(), load);
     CHECK(doneAt > 0, "not everything decoded within %.0f s", maxSec);
     CHECK(wrong == 0 && !back, "%d reports with another standard, sequence back %d", wrong, (int)back);
@@ -80,6 +80,8 @@ int main() {
     CHECK(mt.stdMode == 23 && modeTuningById("hdr") && modeTuningById("hdr")->stdMode == 23, "tuning table");
     run(0, 1000, 16);
     run(1, -1000, 20);
+    CHECK(hdrSampleRate(1.03) == 1e6 && hdrMinSampleRate(1.03) < 1e6 && hdrMinSampleRate(98.5) == hdrTuning().minSampleRate, "AM rates");
+    run(3, -60, 20, hdrSampleRate(1.03));
     printf("hdr engine: %s\n", fails ? "FAILED" : "ok");
     return fails ? 1 : 0;
 }

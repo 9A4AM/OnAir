@@ -54,6 +54,7 @@ struct HdrReceiver::Impl {
     hdr::FmRx fm{&fmSink};
     hdr::AmRx am{&amSink};
     int band = 0;                          // 0 both receivers search, 1 FM, 2 AM
+    bool fmOk = true;                      // the input rate carries an FM station's digital sidebands
     bool mirror = false;                   // the input is conjugated (I and Q swapped)
     // While no band has been found, a second AM receiver looks at the conjugated input (AM runs at 46.5 kHz: cheap): a mirrored AM station
     // never reaches block sync in the first one. FM reaches block sync either way (its reference subcarriers are symmetric), so a mirrored
@@ -90,6 +91,7 @@ struct HdrReceiver::Impl {
         tel.seq = s;
         tel.inputRate = curRate;
         if (curRate > 0) rs.configure(curRate, hdr::kRateFm);
+        fmOk = curRate >= 500000 - 1;             // slower: AM only (the FM sidebands reach 198 kHz from the centre; kHdrFmMinRate leaves room for the filters)
         rs.reset();
         l2.reset();
         l2.setLog(cb);
@@ -168,12 +170,12 @@ struct HdrReceiver::Impl {
         bb.clear();
         rs.process(x, n, bb);
         // FM or AM: until one of them has block sync, both search
-        if (band != 2) fm.feed(bb.data(), bb.size());
+        if (band != 2 && fmOk) fm.feed(bb.data(), bb.size());
         if (band != 1) am.feed(bb.data(), bb.size());
         const double dt = (double)n / curRate;
         if (band == 0) {
             if (fm.state() == 2) { band = 1; am.reset(); fmSink.badP1 = 0; say("HD Radio: FM hybrid signal found"); }
-            else if (am.state() == 2) { band = 2; fm.reset(); say("HD Radio: AM hybrid signal found"); }
+            else if (am.state() == 2) { band = 2; fm.reset(); say(am.stats().mode == 2 ? "HD Radio: AM all-digital (MA3) signal found" : "HD Radio: AM hybrid signal found"); }
         } else {
             const int st = band == 1 ? fm.state() : am.state();
             lostFor = st == 2 ? 0 : lostFor + dt;
@@ -223,7 +225,7 @@ void HdrReceiver::configure(double inputRateHz) {
 }
 bool HdrReceiver::ready() const {
     std::lock_guard<std::mutex> lk(p_->mu);
-    return p_->rate >= hdrTuning().minSampleRate - 1;
+    return p_->rate >= kHdrAmMinRate - 1;
 }
 void HdrReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
@@ -268,9 +270,13 @@ ModeTuning hdrTuning() {
     t.sampleRate = 2000000;
     t.basebandHz = 1750000;
     t.bandwidthMhz = 0.4;
-    t.minSampleRate = 1500000;
+    t.minSampleRate = kHdrFmMinRate;
     t.tuneOffsetHz = 0;                  // no offset: the digital sidebands sit 129 to 198 kHz either side of an FM station (AM hybrid: within 15 kHz), the DC spike between them
     return t;
 }
+
+bool hdrIsAmBand(double mhz) { return mhz > 0 && mhz < 30; }
+double hdrSampleRate(double mhz) { return hdrIsAmBand(mhz) ? 1000000 : hdrTuning().sampleRate; }
+double hdrMinSampleRate(double mhz) { return hdrIsAmBand(mhz) ? kHdrAmMinRate : kHdrFmMinRate; }
 
 } // namespace dect2

@@ -4,6 +4,7 @@
 // patented codec that OnAir does not decode.
 #include "app.h"
 #include "dect2/hdr_l2.h"
+#include "dect2/hdr_rx.h"
 #include "dect2/hdr_tel.h"
 #include "dect2/png.h"
 #include <algorithm>
@@ -33,6 +34,9 @@ struct State {
     std::deque<float> mer, p1;          // a point per report
     uint64_t prevP1Ok = 0, prevP1Bad = 0, prevPidsOk = 0, prevPidsBad = 0;
     double p1OkAt = -1e9, p1BadAt = -1e9, pidsOkAt = -1e9, pidsBadAt = -1e9;
+    bool bandInit = false;
+    bool raster9 = false;             // AM channels 9 kHz apart (Europe, Africa, Asia, Oceania) instead of the Americas' 10 kHz
+    double lastFm = 98.5, lastAm = 1.03;   // MHz: where the FM and AM buttons go back to
 };
 State S;
 
@@ -291,8 +295,64 @@ void nowPlaying(App& a, const HdrProgram& p) {
     }
 }
 
+// ---------------------------------------------------------------- band, channel raster, stepping
+
+// the channel nearest to mhz on the band's raster: FM 87.9 .. 107.9 MHz on odd tenths (200 kHz), AM 530 .. 1700 kHz in 10 kHz steps or
+// 531 .. 1710 kHz in 9 kHz steps
+double snapChannel(double mhz, bool am, bool r9) {
+    if (!am) { const double n = std::round((mhz - 87.9) / 0.2); return 87.9 + 0.2 * std::max(0.0, std::min(100.0, n)); }
+    const double k0 = r9 ? 531 : 530, st = r9 ? 9 : 10, kmax = r9 ? 1710 : 1700;
+    const double n = std::round((mhz * 1000 - k0) / st);
+    return (k0 + st * std::max(0.0, std::min((kmax - k0) / st, n))) / 1000.0;
+}
+
+void bandBar(App& a) {
+    if (!S.bandInit) {
+        S.bandInit = true;
+        S.raster9 = plat::prefs().getB("hdrAm9k", false);
+        S.lastFm = plat::prefs().getD("hdrLastFm", 98.5);
+        S.lastAm = plat::prefs().getD("hdrLastAm", 1.03);
+    }
+    const bool am = dect2::hdrIsAmBand(a.freqMhz);
+    if (am) S.lastAm = a.freqMhz; else S.lastFm = a.freqMhz;
+    auto go = [&](double mhz) {
+        tuneFreq(a, mhz);
+        plat::prefs().setD(dect2::hdrIsAmBand(mhz) ? "hdrLastAm" : "hdrLastFm", mhz);
+    };
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Band"); flowNext(6 * gUi);
+    if (ImGui::RadioButton("FM##hdrb", !am) && am) go(snapChannel(S.lastFm, false, S.raster9));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("FM hybrid stations, 88 to 108 MHz (200 kHz raster)");
+    flowNext(6 * gUi);
+    if (ImGui::RadioButton("AM##hdrb", am) && !am) go(snapChannel(S.lastAm, true, S.raster9));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("AM hybrid (MA1) and all-digital (MA3) stations, 530 to 1710 kHz. Needs a radio that reaches medium wave (an HF radio, an RTL-SDR in direct sampling, an upconverter); 1 Msps is plenty.");
+    flowNext(10 * gUi);
+    const double step = am ? (S.raster9 ? 0.009 : 0.010) : 0.2;
+    if (ImGui::ArrowButton("##hdrdn", ImGuiDir_Left)) go(snapChannel(snapChannel(a.freqMhz, am, S.raster9) - step, am, S.raster9));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("the channel below");
+    flowNext(4 * gUi);
+    ImGui::AlignTextToFramePadding();
+    if (am) ImGui::Text("%.0f kHz", a.freqMhz * 1000); else ImGui::Text("%.1f MHz", a.freqMhz);
+    flowNext(4 * gUi);
+    if (ImGui::ArrowButton("##hdrup", ImGuiDir_Right)) go(snapChannel(snapChannel(a.freqMhz, am, S.raster9) + step, am, S.raster9));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("the channel above");
+    if (am) {
+        flowNext(10 * gUi);
+        static const char* const items[] = {"10 kHz raster (the Americas)", "9 kHz raster (elsewhere)"};
+        int cur = S.raster9 ? 1 : 0;
+        float tw = 0;
+        for (const char* it : items) tw = std::max(tw, ImGui::CalcTextSize(it).x);
+        ImGui::SetNextItemWidth(tw + ImGui::GetFrameHeight() + 2 * ImGui::GetStyle().FramePadding.x);
+        if (ImGui::Combo("##hdrr", &cur, items, 2)) { S.raster9 = cur == 1; plat::prefs().setB("hdrAm9k", S.raster9); }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("AM channels are 10 kHz apart in North and South America (where HD Radio AM is on the air), 9 kHz elsewhere");
+    }
+    flowEnd();
+}
+
 void stationTab(App& a) {
     const HdrTelemetry& t = a.rx.hdr;
+    bandBar(a);
+    ImGui::Spacing();
     if (!locked(a)) {
         ImGui::PushFont(a.ui, 22.f);
         ImGui::PushTextWrapPos(0);
@@ -300,7 +360,7 @@ void stationTab(App& a) {
         ImGui::PopTextWrapPos();
         ImGui::PopFont();
         ImGui::PushTextWrapPos(0);
-        ImGui::TextDisabled("%s", a.engine.running() ? "Tune to an HD Radio station: FM 88 to 108 MHz or AM 530 to 1710 kHz; FM or AM is found by itself."
+        ImGui::TextDisabled("%s", a.engine.running() ? "Tune to an HD Radio station: FM 88 to 108 MHz or AM 530 to 1710 kHz (hybrid or all-digital); the waveform is found by itself."
                                                    : "Start the receiver. Test signal: pick the synthetic source.");
         ImGui::PopTextWrapPos();
         hdcNote();
@@ -442,7 +502,8 @@ void signalRows(App& a) {
     const bool on = live(a);
     sectionHeader(Ic::Chip, "Receiver");
     kvRow(a, "state", on ? stateText(t.state) : a.engine.running() ? "starting" : "stopped", 150);
-    kvRow(a, "waveform", !on || t.band == 0 ? "-" : t.band == 1 ? "FM hybrid (analog FM with digital sidebands)" : "AM hybrid (analog AM with digital sidebands)", 150);
+    kvRow(a, "waveform", !on || t.band == 0 ? "-" : t.band == 1 ? "FM hybrid (analog FM with digital sidebands)"
+                         : t.serviceMode == 2 ? "AM all-digital (the carrier and digital sidebands, no analog audio)" : "AM hybrid (analog AM with digital sidebands)", 150);
     kvRow(a, "service mode", on && !t.modeName.empty() ? t.modeName : "-", 150);
     kf("input", "%.3f Msps, %.1f dBFS", t.inputRate / 1e6, t.levelDb);
     kf("signal time", "%.1f s", t.timeSec);
@@ -515,6 +576,8 @@ void tab(App& a) {
 
 void receiver(App& a) {
     ImGui::BeginChild("##hdr_rcv", ImVec2(0, 0));
+    bandBar(a);
+    ImGui::Spacing();
     signalRows(a);
     ImGui::EndChild();
 }
@@ -582,15 +645,15 @@ void meters(const App& a, std::vector<ModeMeter>& out) {
 
 void synth(App& a, bool& changed) {
     SynthConfig& sc = a.tune.synth;
-    static const char* items[] = {"FM hybrid (MP1)", "AM hybrid (MA1)", "FM extended hybrid (MP3)"};
+    static const char* items[] = {"FM hybrid (MP1)", "AM hybrid (MA1)", "FM extended hybrid (MP3)", "AM all-digital (MA3)"};
     ImGui::TextDisabled("test signal");
     flowNext();
-    const int cur = sc.modeOpt[0] >= 0 && sc.modeOpt[0] <= 2 ? sc.modeOpt[0] : 0;
+    const int cur = sc.modeOpt[0] >= 0 && sc.modeOpt[0] <= 3 ? sc.modeOpt[0] : 0;
     float tw = 0;
     for (const char* s : items) tw = std::max(tw, ImGui::CalcTextSize(s).x);
     ImGui::SetNextItemWidth(tw + ImGui::GetFrameHeight() + 2 * ImGui::GetStyle().FramePadding.x);
     if (ImGui::BeginCombo("##hdrw", items[cur])) {
-        for (int i = 0; i < 3; i++) if (ImGui::Selectable(items[i], cur == i)) { sc.modeOpt[0] = i; changed = true; }
+        for (int i = 0; i < 4; i++) if (ImGui::Selectable(items[i], cur == i)) { sc.modeOpt[0] = i; changed = true; }
         ImGui::EndCombo();
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Station WONR with two programs (three in MP3), program data and a picture. The audio packets are filler: HDC sound is not decoded.");

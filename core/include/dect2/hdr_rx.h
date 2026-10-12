@@ -1,7 +1,8 @@
-// HD Radio (NRSC-5, USA): the digital sidebands of hybrid FM (MP1) and AM (MA1) stations. Decodes everything but the sound: station
+// HD Radio (NRSC-5, USA): the digital sidebands of hybrid FM (MP1, MP3) and AM (MA1) stations, and all-digital AM (MA3). Decodes everything but the sound: station
 // information (SIS), the program list, program service data (ID3), the station information guide and the large objects (pictures).
 // The audio is HDC, a patented codec that OnAir does not decode: its packets are counted only.
-// FM or AM is found by itself: both receivers search until one of them has block sync.
+// FM or AM is found by itself: both receivers search until one of them has block sync. Below 500 ksps only AM is searched for (an AM
+// station is 30 kHz wide: the HF radios' slower rates, such as an Airspy HF+ at 912 or 768 ksps, are plenty).
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
 // telemetry() and the other getters from the interface thread.
 #pragma once
@@ -36,6 +37,11 @@ private:
     std::unique_ptr<Impl> p_;
 };
 
-ModeTuning hdrTuning();
+ModeTuning hdrTuning();                      // FM (the default); AM below 30 MHz takes the rates of hdrSampleRate()
+constexpr double kHdrFmMinRate = 1500000;   // the FM receiver needs the 400 kHz of both digital sidebands and room for the filters
+constexpr double kHdrAmMinRate = 200000;    // the AM receiver needs +-15 kHz; the resampler takes any rate from here
+double hdrSampleRate(double mhz);           // the rate to ask the radio for: AM (below 30 MHz) 1 Msps, FM the tuning table's 2 Msps
+double hdrMinSampleRate(double mhz);        // the least rate that works there (AM kHdrAmMinRate, FM kHdrFmMinRate)
+bool hdrIsAmBand(double mhz);               // below 30 MHz: the medium wave band (530 to 1710 kHz) and the HF radios that reach it
 
 } // namespace dect2

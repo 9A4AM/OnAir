@@ -24,6 +24,7 @@ constexpr int kPidsLen = 80;
 constexpr int kPidsEncFm = kPidsLen * 5 / 2;
 constexpr int kP1LenAm = 3750;                                          // P1 bits per AM L1 block (8 per frame)
 constexpr int kP3LenMa1 = 24000;                                        // P3 bits per AM L1 frame in MA1
+constexpr int kP3LenMa3 = 30000;                                        // P3 bits per AM L1 frame in MA3 (code E1, on the secondary and tertiary sidebands)
 constexpr int kPmBlock = 32 * 720;                                      // soft bits of the primary main sidebands per FM L1 block
 constexpr int kAmCols = 25;                                             // subcarriers per AM partition
 constexpr int kDiversityAm = 18000 * 3;                                 // MA1: the M bits of the primary lead the B bits by 3 frames

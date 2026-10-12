@@ -1,7 +1,7 @@
 // the top bar, the source options, the status bar, gain control and the standard switch
 #include "app.h"
 #include "dect2/rate_choice.h"
-#include "dect2/antenna_ports.h"
+#include "dect2/hdr_rx.h"
 #include <cctype>
 #include <memory>
 #include <thread>
@@ -27,6 +27,7 @@ static std::string rateWarning(const App& a) {
     const double rate = run ? a.engine.sampleRate() : d.isGeneric() ? d.maxRateHz : 0;
     const double bw = a.family == 4 ? (a.isdbtBwMhz ? a.isdbtBwMhz : 6) : run && a.family == 0 && a.engine.activeBandwidth() > 0 ? a.engine.activeBandwidth() : kBw[a.bwIdx].mhz;
     double need = minSampleRateFor(engineStd(a), bw);
+    if (engineStd(a) == 23) need = hdrMinSampleRate(a.freqMhz);   // HD Radio AM works from 200 ksps
     if (a.family == 8 && (a.atvFm || a.atvWide) && !a.atvNbtv) need = std::max(need, 16e6);   // FM video: a link is about 17 MHz wide; system E 14 MHz
     // a PlutoSDR on its USB cable run above what the cable carries (linkRateFor): why it may break up, and the fix
     if (run && d.steadyRateHz > 0 && rate >= need - 1) return linkNote(d, a.tune, rate);

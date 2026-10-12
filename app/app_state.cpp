@@ -3,6 +3,7 @@
 #include <cstring>
 #include "dect2/usb_diag.h"
 #include "dect2/rate_choice.h"
+#include "dect2/hdr_rx.h"
 
 // the name of the built-in test signal in the source list: it follows the mode
 static std::string synthLabel(const App& a) {
@@ -240,7 +241,10 @@ void saveBiasTee(const App& a) {
     plat::prefs().setI(k.c_str(), a.tune.biasTee ? 1 : 0);
     plat::prefs().flush();
 }
-double modeMinSampleRate(const App& a) { return minSampleRateFor(engineStd(a), a.tune.bandwidthMhz > 0 ? a.tune.bandwidthMhz : kBw[a.bwIdx].mhz); }
+double modeMinSampleRate(const App& a) {
+    if (engineStd(a) == 23) return hdrMinSampleRate(a.freqMhz);   // HD Radio: AM needs far less than FM
+    return minSampleRateFor(engineStd(a), a.tune.bandwidthMhz > 0 ? a.tune.bandwidthMhz : kBw[a.bwIdx].mhz);
+}
 
 void applyBandwidth(App& a) {
     syncRadioSettings(a);   // the selected radio's own settings go with every start
@@ -281,9 +285,11 @@ void applyBandwidth(App& a) {
         } else if (mt->stdMode == 14) {   // GNSS: the rate of the tune (L1 / E1, BeiDou B1I, ...)
             a.tune.sampleRate = gnssAutoRate(a.freqMhz);
             if (a.tune.sampleRate > 2 * mt->basebandHz) a.tune.basebandFilterHz = 0.8 * a.tune.sampleRate;
+        } else if (mt->stdMode == 23 && hdrIsAmBand(a.freqMhz)) {   // HD Radio AM: a 30 kHz station; 1 Msps suits the HF radios (an HF+ gives 912 ksps)
+            a.tune.sampleRate = hdrSampleRate(a.freqMhz); a.tune.basebandFilterHz = 0;
         }
         const DeviceInfo& dv = a.devices[a.devIdx];
-        if (dv.isGeneric()) a.tune.sampleRate = linkRateFor(dv, a.tune, a.tune.sampleRate, mt->minSampleRate);
+        if (dv.isGeneric()) a.tune.sampleRate = linkRateFor(dv, a.tune, a.tune.sampleRate, mt->stdMode == 23 ? hdrMinSampleRate(a.freqMhz) : mt->minSampleRate);
         if (const SubMode* sm = curSub(a)) { applySubModeSynth(a.tune.synth, *sm); applySubMode(a.engine, sm); }   // one protocol: only its decoder, only its test signal
     } else if (a.dabMode) {   // a DAB ensemble is 1.536 MHz wide: 2.048 Msps is the natural rate (RTL-SDR dongles do it too)
         a.tune.bandwidthMhz = 1.7; a.tune.sampleRate = 2.048e6; a.tune.basebandFilterHz = 1.75e6;
