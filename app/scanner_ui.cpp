@@ -299,7 +299,13 @@ void logTable() {
         for (int i = (int)S.log.size() - 1; i >= 0; i--) {
             const Hit& h = S.log[i];
             ImGui::TableNextRow();
-            char tb[16]; struct tm tmv; localtime_r(&h.wall, &tmv); strftime(tb, sizeof tb, "%H:%M:%S", &tmv);
+            char tb[16]; struct tm tmv;
+#ifdef _WIN32
+            localtime_s(&tmv, &h.wall);
+#else
+            localtime_r(&h.wall, &tmv);
+#endif
+            strftime(tb, sizeof tb, "%H:%M:%S", &tmv);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(tb);
             ImGui::TableNextColumn(); ImGui::Text("%.4f", h.mhz);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(h.name.empty() ? modeName(h.mode) : (std::string(modeName(h.mode)) + " " + h.name).c_str());
