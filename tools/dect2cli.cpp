@@ -171,6 +171,7 @@ int main(int argc, char** argv) {
     e.cw().setSilent(!listen);    // CW sidetone only with --listen as well
     e.psk().setListen(listen);    // PSK31, JS8Call, HF digital (RTTY, SSTV, FT8 ...): the sideband audio only with --listen
     e.js8().setListen(listen);
+    e.ale().setListen(listen);    // HF ALE as well
     e.hfdig().setListen(listen);
     e.specx().setSilent(true);  // spectrum explorer: the summary line only
     e.uplink().setSilent(true);   // Mode S uplink: no sound

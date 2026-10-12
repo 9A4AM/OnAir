@@ -92,7 +92,8 @@ psk	--mode psk	Overview|PSK31|Receiver|History
 js8	--mode js8	Overview|JS8Call|Receiver|History
 specx	--mode specx	Overview|Explorer
 specan	--mode specan	Overview|Analyser|Receiver|History
-uplink	--mode uplink	Overview|Uplink|Receiver|History"
+uplink	--mode uplink	Overview|Uplink|Receiver|History
+ale	--mode ale	Overview|ALE|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"
