@@ -8,17 +8,18 @@
 namespace dect2 {
 
 struct NetRadio {
-    enum Type { Pluto = 0, RtlTcp = 1, SoapyRemote = 2 } type = RtlTcp;
+    enum Type { Pluto = 0, RtlTcp = 1, SoapyRemote = 2, SpyServer = 3 } type = RtlTcp;
     std::string host;   // name or address ("ip:" in front of a Pluto's is accepted and dropped)
     int port = 0;       // 0 = the type's default (a Pluto: libiio's own, 30431)
     bool operator==(const NetRadio& o) const { return type == o.type && host == o.host && port == o.port; }
 };
 
-const char* netRadioTypeName(NetRadio::Type t);       // "PlutoSDR", "rtl_tcp", "SoapyRemote"
+const char* netRadioTypeName(NetRadio::Type t);       // "PlutoSDR", "rtl_tcp", "SoapyRemote", "SpyServer"
 int netRadioDefaultPort(NetRadio::Type t);            // 0 (Pluto), 1234, 55132
 const char* netRadioDefaultHost(NetRadio::Type t);    // "192.168.2.1" for a Pluto, "" otherwise
 int netRadioPort(const NetRadio& r);                  // the port connected to (a Pluto without one: 30431, its iiod)
 
+// SpyServer requires the optional SoapySpyServer module on the OnAir computer.
 // The list as the settings keep it: "rtltcp,host,port;pluto,host,0;soapyremote,host,port" (and back; bad items are skipped)
 std::string netRadiosToString(const std::vector<NetRadio>& v);
 std::vector<NetRadio> netRadiosFromString(const std::string& s);
