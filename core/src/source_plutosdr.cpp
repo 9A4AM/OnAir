@@ -396,7 +396,8 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
 }
 } // namespace
 
-DeviceInfo plutoDevice(const std::string& uri) { return plutoEntry(uri, "", false); }
+// a Pluto the user added by address (Add network radio): over a real network, also at 192.168.2.1 (a Pluto+ on Ethernet), so no USB 2 limit
+DeviceInfo plutoDevice(const std::string& uri) { DeviceInfo d = plutoEntry(uri, "", false); d.steadyRateHz = 0; return d; }
 
 void listPluto(std::vector<DeviceInfo>& out) {
     if (!iio().ok && !iio().v1) return;
