@@ -9,6 +9,8 @@
 // tone at -r tau; a boxcar decimation and an FFT over 20 kHz of sweep give the delay profile, accumulated per 50 kHz column of the
 // sounder's ionogram (delay 0 .. 10 ms in 0.05 ms bins; group range c tau). Once the period is known the next sweeps are expected and
 // dechirped from the moment they enter the span.
+// Scaling: at the end of each sweep, the columns it crossed replace those of the sounder's "newest" ionogram, which is scaled
+// (iono_scale.h): the traces, the values (IonoSounder::scale) and a history point per sweep that gave echo traces.
 #pragma once
 #include "iono_tel.h"
 #include "ring.h"
@@ -43,6 +45,7 @@ public:
     void setCenterHz(double hz);         // after a retune (the coverage follows)
     void setLocked(bool on);             // sweep starts on whole seconds (default on)
     void setSelected(int index);         // the sounder whose ionogram fill() hands out (-1: the latest one heard)
+    void setObserver(bool have, double lat, double lon);   // the receiver location (distances of known sounders, iono_scale.h)
     void clear();                        // forget the sounders, ionograms and coverage
     void feed(const cf32* x, size_t n);
     void fill(IonoTelemetry& t) const;   // everything but seq

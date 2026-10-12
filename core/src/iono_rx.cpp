@@ -16,6 +16,8 @@ struct IonoReceiver::Impl {
     std::atomic<double> centerReq{0}, originReq{0};
     std::atomic<bool> resetReq{false}, lockReq{true};
     std::atomic<int> selReq{-1};
+    std::atomic<bool> obsHave{false};
+    std::atomic<double> obsLat{0}, obsLon{0};
     iono::Processor proc;
     bool started = false;
     uint64_t inSamples = 0, nextPub = 0;
@@ -61,6 +63,7 @@ void IonoReceiver::reset() { p_->resetReq = true; }
 void IonoReceiver::setLogCallback(std::function<void(const std::string&)> cb) { p_->cb = std::move(cb); }
 void IonoReceiver::setLocked(bool on) { p_->lockReq = on; }
 void IonoReceiver::setSelected(int i) { p_->selReq = i; }
+void IonoReceiver::setObserver(bool have, double lat, double lon) { p_->obsLat = lat; p_->obsLon = lon; p_->obsHave = have; }
 
 void IonoReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
@@ -72,6 +75,7 @@ void IonoReceiver::feed(const cf32* x, size_t n) {
     m.proc.setCenterHz(m.centerReq.load());
     m.proc.setLocked(m.lockReq.load());
     m.proc.setSelected(m.selReq.load());
+    m.proc.setObserver(m.obsHave.load(), m.obsLat.load(), m.obsLon.load());
     m.proc.feed(x, n);
     m.inSamples += n;
     if (m.inSamples >= m.nextPub) { m.nextPub = m.inSamples + (uint64_t)(m.rate / 4); m.publish(); }

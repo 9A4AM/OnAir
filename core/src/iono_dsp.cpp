@@ -1,5 +1,6 @@
 #include "dect2/iono_dsp.h"
 #include "dect2/fftutil.h"
+#include "dect2/iono_scale.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>
@@ -28,6 +29,10 @@ struct SounderAcc {
     std::vector<double> ion;            // kRows x kCols power sums
     std::vector<uint32_t> cnt;          // kCols blocks per column
     double armedFor = -1e300;           // the predicted start a sweep was opened for
+    std::vector<double> recent;         // kRows x kCols: each column as the newest sweep through it left it (mean power), the scaling input
+    std::vector<uint8_t> recentHave;
+    std::vector<IonoTrace> traces;      // of the latest scaling
+    std::vector<IonoHistPt> history;
 };
 
 struct Sweep {
@@ -45,6 +50,7 @@ struct Sweep {
     uint64_t blockG = 0;
     std::vector<cf32> blk;
     std::map<int, std::vector<double>> temp;   // predicted and not yet confirmed: column -> kRows sums and the block count
+    std::map<int, std::vector<double>> own;    // everything of this sweep: column -> kRows sums and the block count (the scaling)
 };
 
 } // namespace
@@ -53,6 +59,7 @@ struct Processor::Impl {
     double fs = 0, fc = 0, origin = 0;
     bool locked = true;
     int selReq = -1;
+    Observer obs;
     uint64_t g = 0;                     // samples fed
     int N = 0;
     std::unique_ptr<Fft> fft, fftM;
@@ -143,6 +150,8 @@ struct Processor::Impl {
         s.info.fLoHz = 1e300; s.info.fHiHz = -1e300;
         s.ion.assign((size_t)kRows * kCols, 0.0);
         s.cnt.assign(kCols, 0);
+        s.recent.assign((size_t)kRows * kCols, 0.0);
+        s.recentHave.assign(kCols, 0);
         sounders.push_back(std::move(s));
         return (int)sounders.size() - 1;
     }
@@ -184,6 +193,12 @@ struct Processor::Impl {
             rows[j] = std::norm(tmpM[(size_t)(((kk % kM) + kM) % kM)]);
         }
         s.fLo = std::min(s.fLo, fmid); s.fHi = std::max(s.fHi, fmid);
+        {
+            auto& v = s.own[col];
+            if (v.empty()) v.assign(kRows + 1, 0.0);
+            for (int j = 0; j < kRows; j++) v[(size_t)j] += rows[j];
+            v[kRows] += 1;
+        }
         if (s.confirmed && s.sounder >= 0) addColumn(sounders[(size_t)s.sounder], col, rows, 1);
         else {
             auto& v = s.temp[col];
@@ -240,6 +255,48 @@ struct Processor::Impl {
         so.snrDb = e.snrDb;
         timeline.push_back(e);
         if (timeline.size() > 300) timeline.erase(timeline.begin());
+        scaleSweep(sounders[(size_t)s.sounder], s);
+    }
+
+    // the newest columns of the sounder's ionogram, in dB over each column's median (as fill hands the accumulated one out)
+    static void columnsDb(const std::vector<double>& pw, const std::vector<uint8_t>& have, std::vector<float>& db) {
+        db.assign((size_t)kRows * kCols, NAN);
+        std::vector<double> v(kRows), srt;
+        for (int c = 0; c < kCols; c++) {
+            if (!have[(size_t)c]) continue;
+            for (int j = 0; j < kRows; j++) v[(size_t)j] = pw[(size_t)j * kCols + (size_t)c];
+            srt = v;
+            std::nth_element(srt.begin(), srt.begin() + kRows / 2, srt.end());
+            const double med = std::max(1e-30, srt[kRows / 2]);
+            for (int j = 0; j < kRows; j++) db[(size_t)j * kCols + (size_t)c] = (float)(10 * std::log10(std::max(1e-30, v[(size_t)j]) / med));
+        }
+    }
+
+    void scaleSweep(SounderAcc& so, const Sweep& s) {
+        if (s.own.empty()) return;
+        for (const auto& kv : s.own) {
+            const int c = kv.first;
+            if (c < 0 || c >= kCols || kv.second[kRows] <= 0) continue;
+            for (int j = 0; j < kRows; j++) so.recent[(size_t)j * kCols + (size_t)c] = kv.second[(size_t)j] / kv.second[kRows];
+            so.recentHave[(size_t)c] = 1;
+        }
+        std::vector<float> db;
+        columnsDb(so.recent, so.recentHave, db);
+        ScaleOptions o;
+        o.locked = locked; o.obs = obs;
+        std::vector<IonoTrace> tr;
+        IonoScaling sc = scaleIonogram(db, so.info, o, &tr);
+        sc.t = tAbs(s.t0);
+        if (sc.geometry == 0) return;   // no echo traces: the last values stay
+        so.info.scale = sc;
+        so.traces = std::move(tr);
+        IonoHistPt h;
+        h.t = sc.t; h.geometry = sc.geometry;
+        h.foE = (float)sc.foE; h.foF1 = (float)sc.foF1; h.foF2 = sc.foF2Above ? NAN : (float)sc.foF2; h.hE = (float)sc.hE; h.hF = (float)sc.hF;
+        h.m3000 = (float)sc.m3000; h.muf3000 = (float)sc.muf3000; h.pathMuf = sc.pathMufAbove ? NAN : (float)sc.pathMuf; h.distKm = (float)sc.distKm;
+        if (sc.foEAbove) h.foE = NAN;
+        so.history.push_back(h);
+        if (so.history.size() > 2000) so.history.erase(so.history.begin());
     }
 
     // ---- detector
@@ -390,6 +447,7 @@ void Processor::configure(double fs, double centerHz, double originSec) {
 void Processor::setCenterHz(double hz) { if (hz != p_->fc) { p_->fc = hz; p_->retuned = true; } }
 void Processor::setLocked(bool on) { p_->locked = on; }
 void Processor::setSelected(int i) { p_->selReq = i; }
+void Processor::setObserver(bool have, double lat, double lon) { p_->obs.have = have; p_->obs.lat = lat; p_->obs.lon = lon; }
 void Processor::clear() { p_->clear(); }
 void Processor::feed(const cf32* x, size_t n) { p_->feed(x, n); }
 double Processor::now() const { return p_->fs > 0 ? p_->origin + p_->g / p_->fs : 0; }
@@ -417,9 +475,12 @@ void Processor::fill(IonoTelemetry& t) const {
         for (size_t k = 0; k < m.sounders.size(); k++) if (m.sounders[k].info.lastSeen > best) { best = m.sounders[k].info.lastSeen; sel = (int)k; }
     }
     t.sel = sel;
-    t.ionoDb.clear(); t.swept.clear();
+    t.ionoDb.clear(); t.swept.clear(); t.traces.clear(); t.history.clear();
+    t.haveObserver = m.obs.have; t.obsLat = m.obs.lat; t.obsLon = m.obs.lon;
     if (sel >= 0) {
         const SounderAcc& so = m.sounders[(size_t)sel];
+        t.traces = so.traces;
+        t.history = so.history;
         t.ionoDb.assign((size_t)kRows * kCols, NAN);
         t.swept.assign(kCols, 0);
         std::vector<double> v(kRows);

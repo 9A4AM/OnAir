@@ -34,6 +34,7 @@ public:
 
     void setLocked(bool on);             // sweeps start on whole seconds (GPS-timed sounders); off: delays relative to the first echo
     void setSelected(int index);         // the sounder whose ionogram the telemetry carries (-1: the latest heard)
+    void setObserver(bool have, double lat, double lon);   // the receiver location (the distance to a known sounder)
 
 private:
     struct Impl;
