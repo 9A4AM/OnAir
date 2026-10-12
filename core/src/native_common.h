@@ -548,6 +548,10 @@ std::unique_ptr<IqSource> makeLime(const DeviceInfo& d);
 std::unique_ptr<IqSource> makePluto(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeUsrp(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeSdrplay(const DeviceInfo& d);
+// network radios the user added (netradio.cpp): a PlutoSDR at a libiio URI ("ip:host"), an rtl_tcp server
+DeviceInfo plutoDevice(const std::string& uri);
+DeviceInfo rtlTcpDevice(const std::string& host, int port);
+std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d);
 
 } // namespace native
 } // namespace dect2

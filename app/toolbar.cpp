@@ -2,6 +2,8 @@
 #include "app.h"
 #include "dect2/rate_choice.h"
 #include <cctype>
+#include <memory>
+#include <thread>
 
 // The converter resolution at the rate in use, for the ADC level advice and the AGC (gain.h): the 8-bit HackRF and RTL-SDR, the 12-bit
 // Airspy, LimeSDR, PlutoSDR, bladeRF and USRP, the 16-bit HF+ path; the SDRplay ADC gives up bits as its rate rises (API specification:
@@ -165,6 +167,82 @@ void setDvbBandwidth(App& a, int idx) {
     savePrefs(a);
 }
 
+// ---- radios on the network (issues #28, #54): a PlutoSDR by IP, an rtl_tcp server, a SoapyRemote server
+void netRadioWindow(App& a) {
+    // a connection test that finished: add the radio and pick it, or say why not
+    if (a.netAddProbe && a.netAddProbe->done) {
+        auto pr = a.netAddProbe;
+        a.netAddProbe.reset();
+        if (pr->ok) {
+            if (std::find(a.netRadios.begin(), a.netRadios.end(), pr->radio) == a.netRadios.end()) a.netRadios.push_back(pr->radio);
+            savePrefs(a);
+            if (!a.engine.running()) {
+                refreshDevices(a);
+                const std::string name = netRadioDeviceName(pr->radio);
+                for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].name == name) { a.devIdx = i; a.tune.biasTee = false; break; }
+            }
+            a.netAddErr.clear();
+            a.netAddOpen = false;
+        } else a.netAddErr = pr->err;
+    }
+    if (!a.netAddOpen) return;
+    ImGui::SetNextWindowSize(ImVec2(420 * gUi, 0), ImGuiCond_Appearing);
+    if (!ImGui::Begin("Network radios", &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
+    const bool busy = a.netAddProbe != nullptr;
+    ImGui::BeginDisabled(busy);
+    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote"};
+    ImGui::SetNextItemWidth(200 * gUi);
+    if (ImGui::Combo("Type", &a.netAddType, kTypes, 3)) {
+        const auto t = (NetRadio::Type)a.netAddType;
+        a.netAddPort = netRadioDefaultPort(t);
+        const std::string h = a.netAddHost;
+        if (h.empty() || h == netRadioDefaultHost(NetRadio::Pluto)) snprintf(a.netAddHost, sizeof a.netAddHost, "%s", netRadioDefaultHost(t));
+        a.netAddErr.clear();
+    }
+    ImGui::SetNextItemWidth(200 * gUi);
+    ImGui::InputTextWithHint("Address", a.netAddType == NetRadio::Pluto ? "192.168.2.1" : "192.168.1.20 or raspberrypi.local", a.netAddHost, sizeof a.netAddHost);
+    ImGui::SetNextItemWidth(120 * gUi);
+    ImGui::InputInt("Port", &a.netAddPort, 0, 0);
+    a.netAddPort = std::max(0, std::min(65535, a.netAddPort));
+    if (a.netAddType == NetRadio::Pluto) { ImGui::SameLine(); ImGui::TextDisabled("0 = libiio's default"); }
+    if (a.netAddType == NetRadio::SoapyRemote && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "This build has no SoapySDR, which SoapyRemote needs.");
+    if (ImGui::Button("Connect")) {
+        NetRadio r;
+        r.type = (NetRadio::Type)a.netAddType;
+        r.host = a.netAddHost;
+        r.port = a.netAddPort;
+        auto pr = std::make_shared<App::NetProbe>();
+        pr->radio = r;
+        a.netAddProbe = pr;
+        a.netAddErr.clear();
+        std::thread([pr] { std::string e; pr->ok = probeNetRadio(pr->radio, 3000, e); pr->err = e; pr->done = true; }).detach();   // never blocks the UI
+    }
+    ImGui::EndDisabled();
+    if (busy) { ImGui::SameLine(); ImGui::TextDisabled("connecting…"); }
+    if (!a.netAddErr.empty()) { ImGui::PushTextWrapPos(400 * gUi); ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), "Cannot connect: %s", a.netAddErr.c_str()); ImGui::PopTextWrapPos(); }
+    if (!a.netRadios.empty()) {
+        ImGui::Separator();
+        ImGui::TextDisabled("Added radios (listed with the others)");
+        int drop = -1;
+        ImGui::BeginDisabled(a.engine.running());
+        for (int i = 0; i < (int)a.netRadios.size(); i++) {
+            ImGui::PushID(i);
+            if (ImGui::SmallButton("Remove")) drop = i;
+            ImGui::SameLine();
+            ImGui::TextUnformatted(netRadioDeviceName(a.netRadios[i]).c_str());
+            ImGui::PopID();
+        }
+        ImGui::EndDisabled();
+        if (drop >= 0) {
+            a.netRadios.erase(a.netRadios.begin() + drop);
+            savePrefs(a);
+            refreshDevices(a);
+            a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
+        }
+    }
+    ImGui::End();
+}
+
 void toolbarParts(App& a, int mask, bool vertical) {
     bool running = a.engine.running();
     bool retune = false;
@@ -183,6 +261,8 @@ void toolbarParts(App& a, int mask, bool vertical) {
                 a.devIdx = i;
                 a.tune.biasTee = false;   // antenna power set for another radio (and its antenna) is never carried over
             }
+        ImGui::Separator();
+        if (ImGui::Selectable("Add network radio…")) a.netAddOpen = true;
         ImGui::EndCombo();
     }
     if (srcName != a.devices[a.devIdx].name && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", a.devices[a.devIdx].name.c_str());
@@ -192,6 +272,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
     if (iconFlat(Ic::Refresh, "Rescan for devices")) refreshDevices(a), a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
     ImGui::EndDisabled();
     ImGui::EndDisabled();
+    netRadioWindow(a);
     radioMessagesUi(a, vertical);
     {   // a radio too slow for the mode: said here for every mode (the engine's log line was all there was)
         const std::string rw = rateWarning(a);

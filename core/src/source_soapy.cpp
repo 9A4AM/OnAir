@@ -418,6 +418,27 @@ std::vector<DeviceInfo> listSoapyDevices(std::string& err) {
     return out;
 }
 
+// A SoapySDR device given by its arguments that is not enumerated (a SoapyRemote server the user added): its ranges once it was started
+DeviceInfo soapyDeviceFor(const std::string& args, const std::string& board, const std::string& name) {
+    DeviceInfo d;
+    d.kind = DeviceInfo::Soapy;
+    d.board = board;
+    d.soapyArgs = args;
+    d.name = name;
+    {
+        std::lock_guard<std::mutex> lk(gRangesMu);
+        const auto it = gRanges.find(rangesKey(d.serial, d.soapyArgs));
+        if (it != gRanges.end()) {
+            const SoapyRanges& r = it->second;
+            d.minRateHz = r.minRate; d.maxRateHz = r.maxRate; d.rateRanges = r.rates; d.gainMinDb = r.gainMin; d.gainMaxDb = r.gainMax; d.minFreqHz = r.minFreq; d.maxFreqHz = r.maxFreq;
+            d.hasBiasTee = !r.biasKey.empty();
+            d.settings = r.settings;
+        }
+    }
+    d.settings.insert(d.settings.begin(), ppmSetting(0.01));
+    return d;
+}
+
 std::unique_ptr<IqSource> makeSoapySource(const DeviceInfo& d) { return std::make_unique<SoapySource>(d.soapyArgs, rangesKey(d.serial, deviceArgs(d.soapyArgs))); }
 
 } // namespace dect2

@@ -32,7 +32,7 @@ It is built for people who want a receiver that is both easy to use and honest a
 - [Quick start](#quick-start)
 - [What it receives](#what-it-receives)
 - [Features](#features)
-- [Supported radios](#supported-radios)
+- [Supported radios](#supported-radios) (and [network radios](#network-radios))
 - [Updates](#updates)
 - [Good to know](#good-to-know)
 - [Build from source](#build-from-source)
@@ -225,6 +225,20 @@ OnAir supports the **HackRF One and HackRF Pro** natively, and drives these radi
 - The libraries these radios need are included in the downloads, except as noted above.
 - A TV channel needs a radio that samples fast enough: roughly 1 million samples per second per MHz of channel width. If a radio cannot reach the rate or frequency a mode needs, OnAir says so next to the source.
 - The radios other than the HackRF have had less real-world testing. Notes for specific radios are in **[DEVICES.md](DEVICES.md)**.
+
+### Network radios
+
+Radios on another computer or on the network are added from the source list: pick **Add network radio…**, choose the type, type its address and press **Connect**. OnAir tries the connection for a few seconds and says why when it gets no answer; the radios added are remembered and listed with the others (remove them in the same window).
+
+| Type | Address | Port |
+|---|---|---|
+| **PlutoSDR** by IP | `192.168.2.1` (its USB network), or its address on your network | libiio's default |
+| **rtl_tcp** (an RTL-SDR shared by `rtl_tcp -a 0.0.0.0`) | the computer running `rtl_tcp` | 1234 |
+| **SoapyRemote** (any SoapySDR radio shared by `SoapySDRServer --bind`) | the computer running the server | 55132 |
+
+- A Pluto on a real network (not its USB cable) is offered its full sample rate; how much of it arrives depends on the network.
+- rtl_tcp carries 8-bit samples at up to about 2.5 Msps; when the connection drops, OnAir connects again and counts the samples that were missed.
+- SoapyRemote needs a build with SoapySDR and the SoapyRemote module on both computers.
 
 ## Updates
 

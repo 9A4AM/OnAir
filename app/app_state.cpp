@@ -123,6 +123,7 @@ void refreshDevices(App& a) {
     DeviceInfo s; s.kind = DeviceInfo::Synthetic; s.name = synthLabel(a); a.devices.push_back(s);
     DeviceInfo f; f.kind = DeviceInfo::File; f.name = "IQ recording file…"; a.devices.push_back(f);
     std::string err;
+    setNetworkRadios(a.netRadios);   // the ones the user added by address come after the ones found
     // HackRF, the radios with a native driver (RTL-SDR, Airspy, BladeRF, LimeSDR, PlutoSDR, USRP) and the rest through SoapySDR
     for (auto& d : listRadios(err)) a.devices.push_back(d);
     a.hackrfErr = err;
@@ -316,6 +317,7 @@ std::string saveFileDialog(const char* name) { return plat::saveFileDialog(name)
 
 void loadPrefs(App& a) {
     plat::Prefs& d = plat::prefs();
+    a.netRadios = netRadiosFromString(d.getS("netRadios", ""));
     if (d.has("freqMhz")) a.freqMhz = d.getD("freqMhz", a.freqMhz);
     if (d.has("lna")) a.tune.lnaDb = (int)d.getI("lna", a.tune.lnaDb);
     if (d.has("vga")) a.tune.vgaDb = (int)d.getI("vga", a.tune.vgaDb);
@@ -397,6 +399,7 @@ void loadPrefs(App& a) {
 
 void savePrefs(const App& a) {
     plat::Prefs& d = plat::prefs();
+    d.setS("netRadios", netRadiosToString(a.netRadios));
     d.setD("freqMhz", a.freqMhz);
     d.setI("lna", a.tune.lnaDb);
     d.setI("vga", a.tune.vgaDb);

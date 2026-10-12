@@ -19,6 +19,7 @@
 #include "dect2/gpu_ldpc.h"
 #include "dect2/t2rx.h"
 #include "dect2/nettuner.h"
+#include "dect2/netradio.h"
 #include "airplay.h"
 #include "dect2/timecompat.h"
 #include "dect2/platform.h"
@@ -190,6 +191,15 @@ struct App {
     int playReq = -1;
     int dabStation = -1;      // --station: DAB sub-channel to play on start (testing)
     std::vector<DeviceInfo> devices; // [0]=synthetic, [1]=file, then HackRFs
+    // radios on the network the user added (prefs "netRadios"; listed by refreshDevices) and the "Add network radio" window
+    std::vector<NetRadio> netRadios;
+    struct NetProbe { std::atomic<bool> done{false}; bool ok = false; std::string err; NetRadio radio; };
+    std::shared_ptr<NetProbe> netAddProbe;   // a connection test running on a worker thread
+    bool netAddOpen = false;
+    int netAddType = NetRadio::RtlTcp;
+    char netAddHost[128] = "";
+    int netAddPort = 1234;
+    std::string netAddErr;
     int devIdx = 0;
     TuneSettings tune;
     FileOptions file;
@@ -475,6 +485,7 @@ int subIndexOf(const char* id);                // 1 .. kNumSubModes, 0 when not 
 int modeSlot(const App& a);                    // index of famFreq / famGain for the current entry
 int engineStd(const App& a);
 void refreshDevices(App& a);
+void netRadioWindow(App& a);   // the "Add network radio" window (toolbar.cpp)
 void applyBandwidth(App& a);
 // The sample rate chosen per mode and per radio (prefs "rate.<mode id>.<radioKeyOf>", in Hz; absent or 0 = Auto, the mode's own rate)
 std::string rateModeId(const App& a);

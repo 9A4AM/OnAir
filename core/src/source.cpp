@@ -1,5 +1,6 @@
 #include "dect2/mode_synth.h"
 #include "dect2/source.h"
+#include "dect2/netradio.h"
 #include "dect2/gen_util.h"
 #include "dect2/demo_ts.h"
 #include "dect2/dvbt_gen.h"
@@ -571,6 +572,12 @@ std::vector<DeviceInfo> listRadios(std::string& err) {
         if (!dup) out.push_back(d);
     }
     if (err.empty()) err = e2;
+    // the radios on the network the user added (netradio.h), unless the scan found the same one
+    for (auto& d : netRadioDevices(networkRadios())) {
+        bool dup = false;
+        for (const auto& o : out) if (o.kind == d.kind && o.board == d.board && o.nativeArgs == d.nativeArgs && o.soapyArgs == d.soapyArgs) dup = true;
+        if (!dup) out.push_back(d);
+    }
     return out;
 }
 

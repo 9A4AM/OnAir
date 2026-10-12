@@ -345,54 +345,64 @@ private:
     bool cs8_ = false;                // streaming 8-bit samples (Tezuka only)
 };
 
+namespace {
+// The entry of the Pluto at uri. probe: a board on the network is asked which firmware it runs (not for one the user typed in: an address
+// that does not answer would hold up the listing; its firmware is learnt when it is opened)
+DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool probe) {
+    DeviceInfo d;
+    d.kind = DeviceInfo::Native;
+    d.board = "pluto";
+    d.nativeArgs = uri;
+    d.name = "PlutoSDR " + (desc.empty() ? uri : "(" + uri + ")") + (probe ? " (native, experimental)" : " (network)");
+    // over USB 2 (and its USB-gadget network address) a Pluto keeps up with about 4 Msps; over a real network the converter's full rate is offered
+    // a mode that needs more still gets it (linkRateFor: some lost samples beat no decode, e.g. DVB-T/T2 at 64/7 Msps)
+    d.maxRateHz = 61.44e6; d.minRateHz = 2.1e6;
+    d.steadyRateHz = overUsbCable(uri) ? kUsbMaxRate : 0;
+    d.gainMinDb = 0; d.gainMaxDb = 73;
+    d.minFreqHz = 70e6; d.maxFreqHz = 6e9;
+    d.settings = {ppmSetting(0.01),
+                  choiceSetting("gainmode", "Gain mode",
+                                "Manual: the gain slider (and OnAir's AGC) set the AD9361's gain (the default).\n"
+                                "Slow / fast attack: the AD9361's own AGC sets it (fast attack for bursts); the gain slider then has no effect.",
+                                {"manual", "slow_attack", "fast_attack"}, {"Manual", "Radio AGC, slow attack", "Radio AGC, fast attack"}, "manual")};
+    bool tez = false, known = false;
+    {
+        std::lock_guard<std::mutex> lk(gRangeMu);
+        auto t = gTezuka.find(uri);
+        if (t != gTezuka.end()) { tez = t->second; known = true; }
+    }
+    // a board on the network can be asked which firmware it runs without taking anything from a receiver (a USB one is learnt when opened)
+    if (probe && !known && uri.rfind("ip:", 0) == 0 && iio().context_get_attr_value && !iio().v1) {
+        if (IioApi::iio_context* c = iio().create_context_from_uri(uri.c_str())) {
+            tez = isTezukaFw(iio().context_get_attr_value(c, "fw_version"));
+            iio().context_destroy(c);
+            std::lock_guard<std::mutex> lk(gRangeMu);
+            gTezuka[uri] = tez;
+        }
+    }
+    if (tez)
+        d.settings.push_back(choiceSetting("iqformat", "IQ format",
+                                           "Tezuka firmware only. CS16: 16-bit samples (the 12-bit converter, the default).\n"
+                                           "CS8: 8-bit samples, half the data on the cable, so a higher sample rate over USB or a slow network; less dynamic range.",
+                                           {"cs16", "cs8"}, {"CS16", "CS8"}, "cs16", true));
+    {
+        std::lock_guard<std::mutex> lk(gRangeMu);
+        auto it = gRange.find(uri);
+        if (it != gRange.end()) { d.minFreqHz = it->second.first; d.maxFreqHz = it->second.second; }
+        const std::string sn = serialIn(desc);
+        if (!sn.empty()) gSerial[uri] = sn;
+    }
+    return d;
+}
+} // namespace
+
+DeviceInfo plutoDevice(const std::string& uri) { return plutoEntry(uri, "", false); }
+
 void listPluto(std::vector<DeviceInfo>& out) {
     if (!iio().ok && !iio().v1) return;
     auto add = [&](const std::string& uri, const std::string& desc) {
         for (const auto& d : out) if (d.board == "pluto" && d.nativeArgs == uri) return;
-        DeviceInfo d;
-        d.kind = DeviceInfo::Native;
-        d.board = "pluto";
-        d.nativeArgs = uri;
-        d.name = "PlutoSDR " + (desc.empty() ? uri : "(" + uri + ")") + " (native, experimental)";
-        // over USB 2 (and its USB-gadget network address) a Pluto keeps up with about 4 Msps; over a real network the converter's full rate is offered
-        // a mode that needs more still gets it (linkRateFor: some lost samples beat no decode, e.g. DVB-T/T2 at 64/7 Msps)
-        d.maxRateHz = 61.44e6; d.minRateHz = 2.1e6;
-        d.steadyRateHz = overUsbCable(uri) ? kUsbMaxRate : 0;
-        d.gainMinDb = 0; d.gainMaxDb = 73;
-        d.minFreqHz = 70e6; d.maxFreqHz = 6e9;
-        d.settings = {ppmSetting(0.01),
-                      choiceSetting("gainmode", "Gain mode",
-                                    "Manual: the gain slider (and OnAir's AGC) set the AD9361's gain (the default).\n"
-                                    "Slow / fast attack: the AD9361's own AGC sets it (fast attack for bursts); the gain slider then has no effect.",
-                                    {"manual", "slow_attack", "fast_attack"}, {"Manual", "Radio AGC, slow attack", "Radio AGC, fast attack"}, "manual")};
-        bool tez = false, known = false;
-        {
-            std::lock_guard<std::mutex> lk(gRangeMu);
-            auto t = gTezuka.find(uri);
-            if (t != gTezuka.end()) { tez = t->second; known = true; }
-        }
-        // a board on the network can be asked which firmware it runs without taking anything from a receiver (a USB one is learnt when opened)
-        if (!known && uri.rfind("ip:", 0) == 0 && iio().context_get_attr_value && !iio().v1) {
-            if (IioApi::iio_context* c = iio().create_context_from_uri(uri.c_str())) {
-                tez = isTezukaFw(iio().context_get_attr_value(c, "fw_version"));
-                iio().context_destroy(c);
-                std::lock_guard<std::mutex> lk(gRangeMu);
-                gTezuka[uri] = tez;
-            }
-        }
-        if (tez)
-            d.settings.push_back(choiceSetting("iqformat", "IQ format",
-                                               "Tezuka firmware only. CS16: 16-bit samples (the 12-bit converter, the default).\n"
-                                               "CS8: 8-bit samples, half the data on the cable, so a higher sample rate over USB or a slow network; less dynamic range.",
-                                               {"cs16", "cs8"}, {"CS16", "CS8"}, "cs16", true));
-        {
-            std::lock_guard<std::mutex> lk(gRangeMu);
-            auto it = gRange.find(uri);
-            if (it != gRange.end()) { d.minFreqHz = it->second.first; d.maxFreqHz = it->second.second; }
-            const std::string sn = serialIn(desc);
-            if (!sn.empty()) gSerial[uri] = sn;
-        }
-        out.push_back(d);
+        out.push_back(plutoEntry(uri, desc, true));
     };
     // USB, plus the boards that announce themselves on the network (mDNS). A libiio built without DNS-SD fails the whole "usb:ip" scan, and
     // libiio 0.19 knows only one backend per scan: then USB alone

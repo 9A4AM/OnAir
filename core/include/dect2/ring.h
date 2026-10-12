@@ -83,6 +83,8 @@ public:
 
     size_t available() const { return w_.load(std::memory_order_acquire) - r_.load(std::memory_order_acquire); }
     uint64_t dropped() const { return dropped_.load(std::memory_order_relaxed); }
+    // samples the producer never got (a network radio's connection was down): counted as dropped
+    void noteLost(uint64_t n) { dropped_.fetch_add(n, std::memory_order_relaxed); }
     void clear() { r_.store(w_.load(std::memory_order_acquire), std::memory_order_release); }
     void resetDropped() { dropped_.store(0, std::memory_order_relaxed); }
 
