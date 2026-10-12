@@ -8,6 +8,7 @@
 #include "dect2/mode_synth.h"
 #include "dect2/source.h"
 #include <algorithm>
+#include <complex>
 #include <cstdlib>
 #include <cstdio>
 #include <atomic>
@@ -27,6 +28,8 @@ constexpr int kPhases = 256;
 constexpr size_t kAcqN = 65536, kAcqBlocks = 4;
 constexpr uint64_t kCmaSyms = 400000, kDdSyms = 60000;
 constexpr size_t kSyncBlocks = 20;
+constexpr size_t kPhBlock = 256, kPhMargin = 16;   // phase smoothing: symbols per block, and the overlap on each side
+constexpr int kPhHalf = 5;
 
 const std::vector<uint8_t>& prbsKeys() {
     static const std::vector<uint8_t> ks = [] {
@@ -98,6 +101,8 @@ struct DvbcReceiver::Impl {
     std::vector<float> psd;
     // front end
     double ncoPh = 0, ncoStep = 0;
+    std::complex<double> dcI{0, 0};      // the radio's DC offset (a HackRF's LO leak sits in the middle of a centred channel)
+    static constexpr double dcA = 1e-4;   // a one-pole DC blocker: 320 Hz at 20 Msps, well inside the carrier's flat top
     std::vector<cf32> hb;                  // mixed input history
     double tau = 0;                        // next output time, in hb samples
     double sps = 1.44;
@@ -284,7 +289,7 @@ struct DvbcReceiver::Impl {
         upos = 0;
         for (auto& x : w) x = 0;
         w[kMain] = 1;
-        syms = 0; zbuf.clear();
+        syms = 0; zbuf.clear(); phBuf.clear();
         theta = nu = 0;
     }
 
@@ -320,7 +325,44 @@ struct DvbcReceiver::Impl {
         theta += nu + 0.01 * ph;
         nu += 1e-5 * ph;
         if (theta > kPi) theta -= 2 * kPi; else if (theta < -kPi) theta += 2 * kPi;
-        errP = 0.999 * errP + 0.001 * std::norm(err);
+        phBuf.push_back(zr);
+        if (phBuf.size() >= kPhBlock + 2 * kPhMargin) smoothPhase();
+    }
+
+    // The loop above follows the carrier only as fast as its decisions allow; a HackRF's synthesiser leaves phase noise out to a few hundred kHz
+    // (a bump near 100 kHz), which on 256-QAM costs 2 dB of MER. Here the phase of every symbol is measured again from its neighbours'
+    // decisions (both sides, the symbol itself left out), a few times over, before the symbols are decided for the outer decoder.
+    std::vector<cf32> phBuf, phOut;
+    std::vector<cf32> phG;
+    void smoothPhase() {
+        const dvbc::Constellation& c = dvbc::constellation(qam);
+        const size_t n = phBuf.size();
+        phOut.assign(phBuf.begin(), phBuf.end());
+        phG.resize(n);
+        static const float kw[kPhHalf] = {0.97f, 0.88f, 0.75f, 0.59f, 0.41f};   // a Hann window, the centre left out
+        for (int it = 0; it < 3; it++) {
+            for (size_t i = 0; i < n; i++) { const cf32 d = c.pts[(size_t)c.decide(phOut[i])]; phG[i] = phBuf[i] * std::conj(d); }
+            for (size_t i = 0; i < n; i++) {
+                cf32 acc(0, 0);
+                for (int k = 1; k <= kPhHalf; k++) {
+                    if (i >= (size_t)k) acc += kw[k - 1] * phG[i - (size_t)k];
+                    if (i + (size_t)k < n) acc += kw[k - 1] * phG[i + (size_t)k];
+                }
+                const float a = std::abs(acc);
+                phOut[i] = a > 0 ? phBuf[i] * std::conj(acc) / a : phBuf[i];
+            }
+        }
+        for (size_t i = kPhMargin; i < kPhMargin + kPhBlock; i++) decided(phOut[i]);
+        if (stage == Acq || phBuf.empty()) return;   // decided() may have restarted the trial
+        phBuf.erase(phBuf.begin(), phBuf.begin() + (std::ptrdiff_t)kPhBlock);
+    }
+
+    void decided(cf32 zr) {
+        if (phBuf.empty()) return;   // a stage change dropped the block
+        const dvbc::Constellation& c = dvbc::constellation(qam);
+        const int sym = c.decide(zr);
+        const cf32 d = c.pts[(size_t)sym];
+        errP = 0.999 * errP + 0.001 * std::norm(zr - d);
         sigP = 0.999 * sigP + 0.001 * std::norm(d);
         if (cells.size() < 2048) cells.push_back(zr); else { cells[cellPos] = zr; cellPos = (cellPos + 1) % 2048; }
         if (stage == Trial) {
@@ -331,7 +373,7 @@ struct DvbcReceiver::Impl {
             }
             return;
         }
-        dm[0].push(inv ? c.decide(std::conj(zr)) : sym, bits);
+        if (stage == Locked) dm[0].push(inv ? c.decide(std::conj(zr)) : sym, bits);
     }
 
     void estimateFreq() {
@@ -359,7 +401,7 @@ struct DvbcReceiver::Impl {
         // move the estimate into the mixer, so that the loops start on a carrier near zero (an echo pulls the spectrum centroid off by tens of kHz).
         // The samples already mixed but not yet filtered get the change too.
         {
-            const double dHz = nu0 * rs * (1 + tnu) / (2 * kPi);
+            const double dHz = nu0 * rs / (1 + tnu) / (2 * kPi);
             const double dw = -2 * kPi * dHz / fs;
             const size_t n0 = (size_t)std::max(0.0, std::floor(tau));
             for (size_t k = n0; k < hb.size(); k++) hb[k] *= std::polar(1.f, (float)(dw * (double)(k - n0)));
@@ -384,7 +426,7 @@ struct DvbcReceiver::Impl {
         theta = theta0; nu = nu0;
         dm[0].setQam(qam); dm[1].setQam(qam);
         tb[0].clear(); tb[1].clear();
-        errP = 0; sigP = 1;
+        errP = 0; sigP = 1; phBuf.clear();
         stage = Trial; stageSyms = 0;
     }
 
@@ -400,15 +442,15 @@ struct DvbcReceiver::Impl {
             warm = 12; haveGroup = false; after.clear(); consecBad = 0;
             stage = Locked; lockedAt = processed; failCycles = 0;
             char m[160];
-            snprintf(m, sizeof m, "%s locked%s, %.4f Msym/s, MER %.1f dB", dvbc::qamName(qam), inv ? " (spectrum inverted)" : "", rs * (1 + tnu) / 1e6, mer());
+            snprintf(m, sizeof m, "%s locked%s, %.4f Msym/s, MER %.1f dB", dvbc::qamName(qam), inv ? " (spectrum inverted)" : "", rs / (1 + tnu) / 1e6, mer());
             log(m);
             return;
         }
-        { char m[160]; snprintf(m, sizeof m, "no sync as %s: MER %.1f dB, clock %+.0f ppm, carrier %+.0f Hz", dvbc::qamName(qam), mer(), tnu * 1e6, nu * rs / (2 * kPi)); log(m); }
+        { char m[160]; snprintf(m, sizeof m, "no sync as %s: MER %.1f dB, clock %+.0f ppm, carrier %+.0f Hz", dvbc::qamName(qam), mer(), -tnu * 1e6, nu * rs / (2 * kPi)); log(m); }
         if (++trialIdx < trialOrders.size()) { startTrial(); return; }
         // nothing fitted: measure again
         failCycles++; reacq++;
-        stage = Acq; acq.clear();
+        stage = Acq; acq.clear(); phBuf.clear();
     }
 
     float mer() const { return errP > 0 ? (float)(10 * std::log10(sigP / errP)) : 0.f; }
@@ -448,7 +490,7 @@ struct DvbcReceiver::Impl {
                 log("lost the stream, searching again");
                 reacq++;
                 bits.clear(); after.clear(); haveGroup = false;
-                stage = Cma; stageSyms = 0;
+                stage = Cma; stageSyms = 0; phBuf.clear();
                 return;
             }
         }
@@ -470,7 +512,10 @@ struct DvbcReceiver::Impl {
             // mix and filter a chunk
             const size_t take = std::min<size_t>(n - i, 16384);
             for (size_t k = 0; k < take; k++) {
-                hb.push_back(x[i + k] * cf32((float)std::cos(ncoPh), (float)std::sin(ncoPh)));
+                const std::complex<double> xi(x[i + k].real(), x[i + k].imag());
+                dcI += dcA * (xi - dcI);
+                const std::complex<double> xd = xi - dcI;
+                hb.push_back(cf32((float)xd.real(), (float)xd.imag()) * cf32((float)std::cos(ncoPh), (float)std::sin(ncoPh)));
                 ncoPh += ncoStep;
                 if (ncoPh > kPi) ncoPh -= 2 * kPi; else if (ncoPh < -kPi) ncoPh += 2 * kPi;
             }
@@ -518,7 +563,7 @@ struct DvbcReceiver::Impl {
     void publish() {
         DvbcTelemetry t;
         t.state = stage == Locked ? 2 : stage == Acq ? 0 : 1;
-        const double rsNow = rs * (1 + tnu);
+        const double rsNow = rs / (1 + tnu);
         t.cfoHz = cfoCoarse + (stage >= Trial ? nu * rsNow / (2 * kPi) : 0);
         t.merDb = stage >= Trial ? mer() : 0;
         t.snrDb = t.merDb;

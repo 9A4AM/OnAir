@@ -1,5 +1,6 @@
 // DVB-C receiver against the test transmitter with impairments: every QAM order, carrier offset, clock offset, an echo, noise near the threshold,
-// a signal off the centre, a wrong manual symbol rate, spectral inversion, annex C. The transport stream must come out clean, with the PAT.
+// a signal off the centre, a wrong manual symbol rate, spectral inversion, annex C, and a HackRF's front end (its DC offset in the middle of
+// the centred channel, and its synthesiser's phase noise out to a few hundred kHz). The transport stream must come out clean, with the PAT.
 #include "dect2/dvbc.h"
 #include "dect2/dvbc_rx.h"
 #include <cmath>
@@ -22,6 +23,8 @@ struct Case {
     double manualRs;
     int expectQam;     // receiver setting: -1 automatic
     double seconds;
+    double dcRel = 0;  // a DC offset, amplitude relative to the signal's rms
+    double pnRad = 0;  // phase noise rms (radians), low-passed at 150 kHz
 };
 
 static void run(const Case& c) {
@@ -54,7 +57,21 @@ static void run(const Case& c) {
     (void)firstAt;
     std::vector<cf32> buf(100000);
     const size_t total = (size_t)(c.seconds * 10e6);
-    for (size_t done = 0; done < total; done += buf.size()) { sig.generate(buf.data(), buf.size()); rx.feed(buf.data(), buf.size()); }
+    double rms = 0, ph = 0;
+    uint32_t seed = 12345;
+    auto gauss = [&] {   // Box-Muller from a small LCG
+        seed = seed * 1664525u + 1013904223u; const double u1 = (seed + 1.0) / 4294967297.0;
+        seed = seed * 1664525u + 1013904223u; const double u2 = (seed + 1.0) / 4294967297.0;
+        return std::sqrt(-2 * std::log(u1)) * std::cos(2 * 3.14159265358979 * u2);
+    };
+    const double pa = std::exp(-2 * 3.14159265358979 * 150e3 / 10e6), pb = c.pnRad * std::sqrt(1 - pa * pa);
+    for (size_t done = 0; done < total; done += buf.size()) {
+        sig.generate(buf.data(), buf.size());
+        if (rms == 0) { for (auto& z : buf) rms += std::norm(z); rms = std::sqrt(rms / (double)buf.size()); }
+        if (c.pnRad > 0) for (auto& z : buf) { ph = pa * ph + pb * gauss(); z *= cf32((float)std::cos(ph), (float)std::sin(ph)); }
+        if (c.dcRel > 0) for (auto& z : buf) z += cf32((float)(0.8 * c.dcRel * rms), (float)(-0.6 * c.dcRel * rms));
+        rx.feed(buf.data(), buf.size());
+    }
     rx.flush();
     DvbcTelemetry t;
     rx.telemetry(t, 0);
@@ -120,6 +137,8 @@ int main(int argc, char** argv) {
         {"64-QAM manual QAM + rate", 2, 6.900e6, 32, 0, 0, 0, false, false, 6.900e6, 2, 1.2},
         {"64-QAM inverted", 2, 6.952e6, 32, 15e3, 0, 0, true, false, 0, -1, 1.5},
         {"256-QAM annex C 5.361", 4, 5.361e6, 36, 0, 0, 0, false, true, 0, -1, 1.5},
+        {"256-QAM DC in the middle", 4, 6.875e6, 36, 1.5e3, -80, 0, false, false, 6.875e6, -1, 1.5, 0.5, 0},
+        {"256-QAM HackRF phase noise", 4, 6.875e6, 36, 1.5e3, -80, 0, false, false, 6.875e6, -1, 1.5, 0, 0.035},
     };
     for (const auto& c : cases) if (argc < 2 || strstr(c.name, argv[1])) run(c);
     printf(fails ? "dvbc rx: %d FAILED\n" : "dvbc rx: all passed\n", fails);
