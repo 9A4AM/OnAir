@@ -8,6 +8,7 @@
 #
 #   tools/ci_local.sh                 the fast tests (the "slow" label is skipped)
 #   tools/ci_local.sh --full          every test
+#   tools/ci_local.sh --build-only    the three builds, no tests (before every push)
 #   tools/ci_local.sh mac linux       only the named platforms (mac, linux, windows)
 #   tools/ci_local.sh --no-bars       plain output (for logs)
 #
@@ -18,12 +19,14 @@ LOGS="$ROOT/build/ci-logs"
 LABEL=(-LE slow)
 PLATFORMS=()
 BARS=1
+BUILD_ONLY=0
 for a in "$@"; do
     case "$a" in
         --full) LABEL=() ;;
         --no-bars) BARS=0 ;;
+        --build-only) BUILD_ONLY=1 ;;   # the three builds only, no tests: before every push, so that a build from source works
         mac|linux|windows) PLATFORMS+=("$a") ;;
-        *) echo "unknown argument: $a (use --full, --no-bars, mac, linux, windows)"; exit 2 ;;
+        *) echo "unknown argument: $a (use --full, --build-only, --no-bars, mac, linux, windows)"; exit 2 ;;
     esac
 done
 [ ${#PLATFORMS[@]} -eq 0 ] && PLATFORMS=(mac linux windows)
@@ -46,6 +49,7 @@ step() {   # step <name> <log> <command...>: runs it, writes "<ok|FAIL> <seconds
 mac() {
     step "macOS build" "$LOGS/mac-build.log" \
         bash -c "cmake -S '$ROOT' -B '$ROOT/build' -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON && cmake --build '$ROOT/build' -j $MAC_JOBS" &&
+    [ $BUILD_ONLY = 0 ] || return 0
     step "macOS tests" "$LOGS/mac-test.log" \
         env CI=true ctest --test-dir "$ROOT/build" -j $MAC_JOBS ${LABEL[@]+"${LABEL[@]}"} --output-on-failure --timeout 1500
 }
@@ -56,6 +60,7 @@ linux() {
     step "Linux arm64 build" "$LOGS/linux-build.log" \
         docker run --rm -v "$ROOT":/src:ro -v onair-build-ci:/b onair-linux-dev bash -c \
         "cmake -S /src -B /b -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=OFF && cmake --build /b -j $LINUX_JOBS" &&
+    [ $BUILD_ONLY = 0 ] || return 0
     step "Linux arm64 tests" "$LOGS/linux-test.log" \
         docker run --rm -e CI=true -v "$ROOT":/src:ro -v onair-build-ci:/b onair-linux-dev \
         ctest --test-dir /b -j $LINUX_JOBS ${LABEL[@]+"${LABEL[@]}"} -E '^updater$' --output-on-failure --timeout 1500
@@ -67,6 +72,7 @@ windows() {
     step "Windows build (MinGW)" "$LOGS/windows-build.log" \
         bash -c "cmake -S '$ROOT' -B '$ROOT/build-windows' -DCMAKE_TOOLCHAIN_FILE='$ROOT/packaging/windows/mingw-toolchain.cmake' -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON $emu && cmake --build '$ROOT/build-windows' -j $WIN_JOBS" || return
     # updater is left out as on Linux (it fetches from GitHub); the GPU decoder needs Direct3D 11, which Wine on a Mac does not give
+    [ $BUILD_ONLY = 0 ] || return 0
     [ $wine = 1 ] && step "Windows tests (Wine)" "$LOGS/windows-test.log" \
         env CI=true ctest --test-dir "$ROOT/build-windows" -j $WIN_JOBS ${LABEL[@]+"${LABEL[@]}"} -E '^updater$' --output-on-failure --timeout 1500
 }
