@@ -512,7 +512,7 @@ bool Demod::Impl::sfd(const ChanBuf& b) {
     chipS = rho * (1 + drift / N);
     perS = N * chipS;
     // the data start 2.25 symbols after the first down-chirp (and the clock error of 2.25 symbols later)
-    posS = origin + (s + 2.25 * (N + drift)) * rho;
+    posS = origin + (s + (2.25 + sfdExtraSymbols(sf)) * (N + drift)) * rho;
     frameStart = origin + (s - (2.0 + p.preamble) * N) * rho;   // the first up-chirp of the preamble (of the configured length)
     loopInt = 0;
     posS0 = posS; retried = 0;

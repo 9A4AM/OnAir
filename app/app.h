@@ -590,6 +590,7 @@ void toolbarParts(App& a, int mask, bool vertical);   // pieces of the top bar, 
 void receiverGlance(App& a, float w, float h);       // analysis_tabs.cpp: a few key/value lines about the receiver
 void tuneFreq(App& a, double mhz);                     // set the frequency now (resets the FM receiver)
 void uplinkNoteAdsb(const dect2::AdsbTelemetry& t);   // uplink_ui.cpp: callsigns heard by the ADS-B mode in this session
+double meshSampleRate(App& a);                  // mesh_ui.cpp: the radio rate the selected LoRa bandwidth needs (2 Msps; 4 above 500 kHz)
 void dvbsSetSymbolRate(App& a, double msym);   // dvbs_ui.cpp: the DVB-S/S2 symbol rate, set from elsewhere (the spectrum explorer)
 void mainTabs(App& a);          // the tab bar with the tabs that fit the current mode (main.cpp)
 void drawShell2(App& a, ImVec2 disp);   // ui2.cpp: the new interface

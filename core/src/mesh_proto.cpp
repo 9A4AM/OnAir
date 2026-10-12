@@ -183,7 +183,7 @@ const PresetRow kPresets[] = {
     {"MediumFast", 9, 250, 5},  {"MediumSlow", 10, 250, 5}, {"LongTurbo", 11, 500, 8},
     {"LongFast", 11, 250, 5},   {"LongModerate", 11, 125, 8}, {"LongSlow", 12, 125, 8},
 };
-struct Region { const char* name; double startMHz, endMHz; };
+struct Region { const char* name; double startMHz, endMHz; bool wide = false; };
 // RadioInterface.cpp regions[] (freqStart, freqEnd; the spacing is 0 in all of them)
 const Region kRegions[] = {
     {"US", 902.0, 928.0},      {"EU_433", 433.0, 434.0},    {"EU_868", 869.4, 869.65},  {"CN", 470.0, 510.0},
@@ -192,8 +192,15 @@ const Region kRegions[] = {
     {"TH", 920.0, 925.0},      {"UA_433", 433.0, 434.7},    {"UA_868", 868.0, 868.6},   {"MY_433", 433.0, 435.0},
     {"MY_919", 919.0, 924.0},  {"SG_923", 917.0, 925.0},    {"PH_433", 433.0, 434.7},   {"PH_868", 868.0, 869.4},
     {"PH_915", 915.0, 918.0},  {"KZ_433", 433.075, 434.775}, {"KZ_863", 863.0, 868.0},  {"NP_865", 865.0, 868.0},
-    {"BR_902", 902.0, 907.5},
+    {"BR_902", 902.0, 907.5},  {"LORA_24", 2400.0, 2483.5, true},
 };
+const Region* findRegion(const std::string& name) {
+    const std::string r = lower(name);                  // lower() drops '_' so "EU868" and "EU_868" both match
+    for (const Region& g : kRegions) if (lower(g.name) == r) return &g;
+    return nullptr;
+}
+// MeshRadio.h modemPresetToParams, wide_lora (2.4 GHz SX128x): 1625 kHz for the 500 kHz presets, 406.25 for 125, else 812.5
+double presetBwKHz(double bwKHz, bool wide) { return !wide ? bwKHz : bwKHz >= 500 ? 1625.0 : bwKHz <= 125 ? 406.25 : 812.5; }
 const PresetRow* findPreset(const std::string& n) {
     const std::string k = lower(n);
     for (const PresetRow& p : kPresets) if (lower(p.name) == k) return &p;
@@ -226,18 +233,41 @@ bool meshtasticPreset(const std::string& preset, MeshLoraSettings& out) {
 // numChannels = floor((end - start) / (spacing + bw)); slot = hash(name) % numChannels; f = start + bw/2 + slot*bw
 double meshtasticSlotHz(const std::string& region, const std::string& preset) {
     const PresetRow* p = findPreset(preset);
-    if (!p) return 0;
-    std::string r = lower(region);
-    for (const Region& g : kRegions) {
-        if (lower(g.name) != r) continue;                   // lower() drops '_' so "EU868" and "EU_868" both match
-        const double bw = p->bwKHz / 1000.0;
-        if (g.endMHz - g.startMHz < bw) return 0;           // the firmware would fall back to LongFast here
-        const uint32_t n = (uint32_t)std::floor((g.endMHz - g.startMHz) / bw + 1e-9);
-        if (n == 0) return 0;
-        const uint32_t slot = djb2(p->name) % n;
-        return std::round((g.startMHz + bw / 2 + slot * bw) * 1e6);
-    }
-    return 0;
+    const Region* g = findRegion(region);
+    if (!p || !g) return 0;
+    const double bw = presetBwKHz(p->bwKHz, g->wide) / 1000.0;
+    if (g->endMHz - g->startMHz < bw) return 0;            // the firmware would fall back to LongFast here
+    const uint32_t n = (uint32_t)std::floor((g->endMHz - g->startMHz) / bw + 1e-9);
+    if (n == 0) return 0;
+    const uint32_t slot = djb2(p->name) % n;
+    return std::round((g->startMHz + bw / 2 + slot * bw) * 1e6);
+}
+
+bool meshtasticRegionPreset(const std::string& region, const std::string& preset, MeshLoraSettings& out) {
+    const Region* g = findRegion(region);
+    if (!g || !meshtasticPreset(preset, out)) return false;
+    out.bwHz = presetBwKHz(out.bwHz / 1000.0, g->wide) * 1000.0;
+    out.ldro = meshLoraLdro(out.sf, out.bwHz);
+    out.freqHz = meshtasticSlotHz(region, preset);
+    return out.freqHz > 0;
+}
+
+std::vector<std::string> meshtasticRegions() {
+    std::vector<std::string> v;
+    for (const Region& g : kRegions) v.push_back(g.name);
+    return v;
+}
+
+std::vector<std::string> meshtasticPresetNames() {
+    // the firmware's enum order after LongFast (the default)
+    return {"LongFast", "LongSlow", "MediumSlow", "MediumFast", "ShortSlow", "ShortFast", "LongModerate", "ShortTurbo", "LongTurbo"};
+}
+
+bool meshtasticRegionRange(const std::string& region, double& startHz, double& endHz) {
+    const Region* g = findRegion(region);
+    if (!g) return false;
+    startHz = g->startMHz * 1e6; endHz = g->endMHz * 1e6;
+    return true;
 }
 
 // MeshCore: the community presets (api.meshcore.nz/api/v1/config, 2026-10). The sync word is RADIOLIB_SX126X_SYNC_WORD_PRIVATE

@@ -138,6 +138,12 @@ struct MeshLoraSettings {
 bool meshtasticPreset(const std::string& preset, MeshLoraSettings& out);                 // "LongFast", "MediumFast", ...; false if unknown
 double meshtasticSlotHz(const std::string& region, const std::string& preset);          // region "EU_868", "US", ...; 0 = unknown
 MeshLoraSettings meshcoreDefaults(const std::string& region);                            // region "EU", "US"
+// every Meshtastic region of the firmware (RadioInterface.cpp regions[]: "US", "EU_433", "EU_868", ..., "LORA_24") and the modem presets
+std::vector<std::string> meshtasticRegions();
+std::vector<std::string> meshtasticPresetNames();                                        // "LongFast", "LongSlow", ... (firmware order)
+bool meshtasticRegionRange(const std::string& region, double& startHz, double& endHz);
+// a preset in a region: its slot frequency and, in LORA_24 (wide LoRa), the 2.4 GHz bandwidths (812.5 / 1625 / 406.25 kHz)
+bool meshtasticRegionPreset(const std::string& region, const std::string& preset, MeshLoraSettings& out);
 
 // Packet builders for the test signal: the bytes the firmware puts on air (header + encrypted payload, without the LoRa CRC)
 struct MeshtasticNode {

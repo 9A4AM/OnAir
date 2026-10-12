@@ -5,6 +5,7 @@
 #pragma once
 #include "mode_tuning.h"
 #include "mesh_tel.h"
+#include "mesh_proto.h"
 #include "ring.h"
 #include <functional>
 #include <memory>
@@ -30,6 +31,12 @@ public:
     void setRegion(int region);                          // 0 EU (default), 1 US (also LoRaWAN EU868 / US915)
     void setProtocols(int mask);                         // 1 Meshtastic, 2 MeshCore, 4 LoRa APRS, 8 MeshCom, 16 LoRaWAN (default 15: all but LoRaWAN)
     void setPresetSearch(bool all);                      // also the other Meshtastic presets of the region (more CPU)
+    // Meshtastic channel plan: a firmware region ("EU_433", "ANZ", "LORA_24", ...; "" = EU_868 / US from setRegion) and the primary
+    // modem preset ("LongFast" default; the preset search adds the others of the region)
+    void setMeshtasticPlan(const std::string& region, const std::string& preset);
+    // Custom LoRa setting: only this one is searched while on (freqHz 0 = the tuned frequency; bwHz any, sf 5..12, cr 5..8). The frame
+    // is offered to the protocols of the sync word: 0x2B Meshtastic / MeshCom, 0x12 MeshCore / LoRa APRS, 0x34 LoRaWAN, other: all.
+    void setCustom(bool on, const MeshLoraSettings& s);
     bool addMeshtasticChannel(const std::string& name, const std::string& base64Psk);   // false: bad key
     bool addMeshCoreChannel(const std::string& name, const std::string& secret);        // hex or base64; false: bad key
     void clearUserChannels();

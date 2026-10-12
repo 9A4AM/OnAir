@@ -15,7 +15,7 @@ namespace dect2 {
 namespace lora {
 
 struct Params {
-    int sf = 11;                 // 7..12
+    int sf = 11;                 // 5..12 (SF5/6 as on the SX126x: two more symbols after the SFD, a full-rate header block)
     double bwHz = 250000;        // 62.5, 125, 250, 500 kHz (any value works)
     int cr = 5;                  // 5..8 for 4/5..4/8
     int preamble = 16;           // up-chirps before the sync word
@@ -27,6 +27,10 @@ struct Params {
 // RadioLib turns the low data rate optimisation on when a symbol lasts 16 ms or more (SX126x::setSpreadingFactor, autoLDRO)
 bool autoLdro(int sf, double bwHz);
 double symbolSeconds(int sf, double bwHz);
+// SF5 and SF6 (SX1261/2 datasheet 6.1.4: Npreamble + 6.25 + 8 + ...): two more symbols between the SFD and the data, and the header
+// block carries sf codewords at the full rate instead of sf - 2 at the reduced rate. Not checked against a real radio.
+inline int sfdExtraSymbols(int sf) { return sf < 7 ? 2 : 0; }
+inline int headerSfApp(int sf) { return sf < 7 ? sf : sf - 2; }
 // FFT bin (0 .. 2^sf - 1) of sync word symbol 0 (high nibble) or 1 (low nibble). The radios send nibble << 3 as a signed 7-bit value:
 // Meshtastic's 0x2B is 16 and -40 (2^sf - 40), which equals 88 only at SF7 (measured on an SX1262 at SF11, 2026-10-09).
 int syncSymbol(uint8_t syncWord, int index, int sf);

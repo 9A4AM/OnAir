@@ -91,14 +91,15 @@ uint32_t grayDecode(uint32_t g) {
 int dataSymbols(const Params& p, size_t len) {
     // SX1261/2 datasheet 6.1.4, explicit header
     const int de = p.ldro ? 1 : 0, crc = p.crc ? 1 : 0;
-    const int num = 8 * (int)len - 4 * p.sf + 28 + 16 * crc;
+    // SF5/6 (SX126x): the header block holds sf codewords, not sf - 2, so 8 bits fewer are left for the later blocks
+    const int num = 8 * (int)len - 4 * p.sf + (p.sf < 7 ? 20 : 28) + 16 * crc;
     const int den = 4 * (p.sf - 2 * de);
     const int blocks = num > 0 ? (num + den - 1) / den : 0;
     return 8 + blocks * p.cr;
 }
 
 double airSeconds(const Params& p, size_t len) {
-    return (p.preamble + 4.25 + dataSymbols(p, len)) * symbolSeconds(p.sf, p.bwHz);
+    return (p.preamble + 4.25 + sfdExtraSymbols(p.sf) + dataSymbols(p, len)) * symbolSeconds(p.sf, p.bwHz);
 }
 
 namespace {
@@ -135,11 +136,11 @@ std::vector<uint16_t> encode(const Params& p, const uint8_t* payload, size_t n) 
     std::vector<uint16_t> out;
     size_t k = 0;
     uint8_t cw[12];
-    // header block: sf - 2 codewords at 4/8, sent at the reduced rate
+    // header block: sf - 2 codewords at 4/8, sent at the reduced rate (SF5/6: sf codewords at the full rate, SX1261/2 6.1.4)
     {
-        const int sfApp = p.sf - 2;
+        const int sfApp = headerSfApp(p.sf);
         for (int r = 0; r < sfApp; r++) cw[r] = hammingEncode(k < nib.size() ? nib[k++] : 0, 8);
-        interleave(cw, 8, p.sf, sfApp, true, out);
+        interleave(cw, 8, p.sf, sfApp, p.sf >= 7, out);
     }
     const int sfApp = p.ldro ? p.sf - 2 : p.sf;
     while (k < nib.size()) {
@@ -177,7 +178,7 @@ void FrameDecoder::push(uint16_t bin) {
     bins_.push_back(bin);
     n_++;
     if (n_ == 8) {
-        block(bins_.data(), 8, sf_ - 2, true);
+        block(bins_.data(), 8, headerSfApp(sf_), sf_ >= 7);
         const uint8_t n0 = nib_[0], n1 = nib_[1], n2 = nib_[2], n3 = nib_[3], n4 = nib_[4];
         hdr_.len = n0 << 4 | n1;
         hdr_.crc = n2 & 1;
@@ -210,7 +211,7 @@ bool FrameDecoder::finish(std::vector<uint8_t>& payload, bool& crcOk, int& corre
 }
 
 double TxFrame::endSec() const {
-    return startSec + (p.preamble + 4.25 + (double)data.size()) * symbolSeconds(p.sf, p.bwHz) * (1 + sroPpm * 1e-6);
+    return startSec + (p.preamble + 4.25 + sfdExtraSymbols(p.sf) + (double)data.size()) * symbolSeconds(p.sf, p.bwHz) * (1 + sroPpm * 1e-6);
 }
 
 namespace {
@@ -232,7 +233,8 @@ void TxFrame::render(cf32* out, size_t n, double t0, double rate) const {
     const int N = 1 << p.sf;
     const double chipRate = p.bwHz / (1 + sroPpm * 1e-6);
     const double P = p.preamble;
-    const double dataStart = (P + 4.25) * N;
+    const double sfdEnd = (P + 4.25) * N;
+    const double dataStart = sfdEnd + sfdExtraSymbols(p.sf) * N;
     const double total = dataStart + (double)data.size() * N;
     const int sw1 = syncSymbol(p.syncWord, 0, p.sf), sw2 = syncSymbol(p.syncWord, 1, p.sf);
     // the first sample inside the frame
@@ -254,7 +256,10 @@ void TxFrame::render(cf32* out, size_t n, double t0, double rate) const {
             return ph;
         };
         auto down = [&](double x) { return (N / 2.0 * x - 0.5 * x * x) / N; };
-        if (u < dataStart) {
+        if (u >= sfdEnd && u < dataStart) {
+            const double ue = u - sfdEnd;              // SF5/6: the two extra symbols after the SFD (sent here as plain up-chirps)
+            c = up(0, ue - std::floor(ue / N) * N);
+        } else if (u < dataStart) {
             const int s = (int)(u / N);
             const double x = u - (double)s * N;
             if (s < (int)P) c = up(0, x);

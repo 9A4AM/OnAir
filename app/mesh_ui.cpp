@@ -3,10 +3,12 @@
 #include "app.h"
 #include "adsb_map.h"
 #include "dect2/packet_aprs.h"
+#include "dect2/mesh_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <deque>
+#include <map>
 
 namespace {
 
@@ -25,6 +27,11 @@ struct State {
     std::vector<Key> keys;
     bool keysPushed = false;
     int pushedRegion = -1, pushedProtocols = -1, pushedPresets = -1;
+    // Meshtastic region / modem preset ("" = from the band plan) and the custom LoRa setting of each entry (prefs "meshCustom<mask>")
+    std::string mtRegion, mtPreset = "LongFast", pushedMt = "-", pushedCustom = "-";
+    struct Custom { bool on = false; double mhz = 869.525, bwHz = 125000; int sf = 9, cr = 5, sync = 0x2B, preamble = 16; };
+    std::map<int, Custom> custom;                // by entry (subMask)
+    int customEntry = -1;                        // the entry whose custom frequency was last applied
     double pushedTuned = 0;
     char keyName[40] = "", keySecret[96] = "";
     int keyProto = 0;
@@ -117,6 +124,8 @@ void loadState() {
     S.region = std::max(0, std::min(kNumPlans - 1, (int)d.getI("meshRegion", 0)));
     S.protocols = (int)d.getI("meshProtocols", 15);
     S.allPresets = d.getB("meshPresets", false);
+    S.mtRegion = d.getS("meshMtRegion", "");
+    S.mtPreset = d.getS("meshMtPreset", "LongFast");
     const std::string s = d.getS("meshKeys", "");
     size_t pos = 0;
     while (pos < s.size()) {
@@ -164,9 +173,76 @@ void applyRegion(App& a, int region) {
     a.tune.synth.modeOpt[1] = kPlans[region].synthRegion;
 }
 
+// ---------------------------------------------------------------- custom LoRa setting, Meshtastic region
+
+// the standard LoRa bandwidths (SX126x), then the 2.4 GHz ones (SX128x, Meshtastic LORA_24)
+const double kBws[] = {7812.5, 10416.667, 15625, 20833.333, 31250, 41666.667, 62500, 125000, 250000, 500000, 812500, 1625000};
+const char* kBwNames[] = {"7.8 kHz", "10.4 kHz", "15.6 kHz", "20.8 kHz", "31.25 kHz", "41.7 kHz", "62.5 kHz", "125 kHz", "250 kHz", "500 kHz",
+                          "812.5 kHz (2.4 GHz)", "1625 kHz (2.4 GHz)"};
+constexpr int kNumBws = (int)(sizeof(kBws) / sizeof(kBws[0]));
+
+State::Custom& customOf(const App& a) {
+    const int m = subMask(a);
+    auto it = S.custom.find(m);
+    if (it != S.custom.end()) return it->second;
+    State::Custom c;
+    const std::string v = plat::prefs().getS(("meshCustom" + std::to_string(m)).c_str(), "");
+    int on = 0;
+    if (!v.empty() && sscanf(v.c_str(), "%d %lf %lf %d %d %d %d", &on, &c.mhz, &c.bwHz, &c.sf, &c.cr, &c.sync, &c.preamble) == 7) c.on = on != 0;
+    else {   // the entry's usual network as the starting point
+        if (m == 2) { c.mhz = 869.618; c.bwHz = 62500; c.sf = 8; c.cr = 8; c.sync = 0x12; c.preamble = 32; }
+        else if (m == 4) { c.mhz = 433.775; c.bwHz = 125000; c.sf = 12; c.cr = 5; c.sync = 0x12; c.preamble = 8; }
+        else if (m == 8) { c.mhz = 433.175; c.bwHz = 250000; c.sf = 11; c.cr = 6; c.sync = 0x2B; c.preamble = 8; }
+    }
+    c.sf = std::max(5, std::min(12, c.sf)); c.cr = std::max(5, std::min(8, c.cr)); c.sync &= 0xFF; c.preamble = std::max(6, std::min(65535, c.preamble));
+    return S.custom[m] = c;
+}
+void saveCustom(const App& a) {
+    const State::Custom& c = customOf(a);
+    char b[128];
+    snprintf(b, sizeof b, "%d %.6f %.3f %d %d %d %d", c.on ? 1 : 0, c.mhz, c.bwHz, c.sf, c.cr, c.sync, c.preamble);
+    plat::prefs().setS(("meshCustom" + std::to_string(subMask(a))).c_str(), b);
+}
+bool customActive(const App& a) { return !lorawanEntry(a) && customOf(a).on; }
+bool meshtasticShown(const App& a) { const int m = subMask(a); return !m || m == 1; }
+
+} // namespace
+
+double meshSampleRate(App& a) {
+    double bw = 0;
+    if (customActive(a)) bw = customOf(a).bwHz;
+    else if (meshtasticShown(a) && !S.mtRegion.empty()) {
+        dect2::MeshLoraSettings s;
+        if (dect2::meshtasticRegionPreset(S.mtRegion, S.mtPreset, s)) bw = s.bwHz;
+    }
+    return bw > 500e3 ? 4e6 : 2e6;
+}
+
+namespace {
+
 void tick(App& a) {
     loadState();
     dect2::MeshReceiver& r = a.engine.mesh();
+    {
+        const std::string mreg = meshtasticShown(a) ? S.mtRegion : "";
+        const std::string k = mreg + "|" + S.mtPreset;
+        if (k != S.pushedMt) { r.setMeshtasticPlan(mreg, S.mtPreset); S.pushedMt = k; }
+        const State::Custom& c = customOf(a);
+        const bool on = customActive(a);
+        if (S.customEntry != subMask(a)) {   // an entry with its custom setting on starts on its custom frequency
+            S.customEntry = subMask(a);
+            if (on) a.freqMhz = c.mhz;
+        }
+        char b[128];
+        snprintf(b, sizeof b, "%d %.3f %d %d %d %d", on ? 1 : 0, c.bwHz, c.sf, c.cr, c.sync, c.preamble);
+        if (b != S.pushedCustom) {
+            dect2::MeshLoraSettings s;
+            s.name = "Custom"; s.freqHz = 0;          // the tuned frequency (the custom frequency is put in the frequency box)
+            s.sf = c.sf; s.bwHz = c.bwHz; s.cr = c.cr; s.syncWord = (uint8_t)c.sync; s.preamble = c.preamble; s.ldro = dect2::meshLoraLdro(c.sf, c.bwHz);
+            r.setCustom(on, s);
+            S.pushedCustom = b;
+        }
+    }
     if (!S.keysPushed) { pushKeys(a); S.keysPushed = true; }
     if (S.pushedRegion != effRegion(a)) { S.pushedRegion = effRegion(a); r.setRegion(kPlans[S.pushedRegion].rxRegion); }
     if (S.pushedProtocols != effProtocols(a)) { S.pushedProtocols = effProtocols(a); r.setProtocols(S.pushedProtocols); }   // a protocol entry: only its own network
@@ -749,6 +825,94 @@ void chatView(const App& a) {
 // ---------------------------------------------------------------- settings
 
 
+// the LoRa setting: the band plan's presets (with the Meshtastic region and modem preset) or a custom one, remembered per entry
+void loraSettings(App& a) {
+    State::Custom& c = customOf(a);
+    ImGui::TextDisabled("LoRa setting");
+    int mode = c.on ? 1 : 0;
+    ImGui::SetNextItemWidth(220 * gUi);
+    static const char* modes[] = {"Presets of the band plan", "Custom"};
+    if (ImGui::Combo("##mlmode", &mode, modes, 2)) {
+        c.on = mode == 1;
+        if (c.on) a.freqMhz = c.mhz;
+        else applyRegion(a, effRegion(a));
+        saveCustom(a);
+        if (a.engine.running()) startReceiver(a);
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Custom: one LoRa setting of your own (bandwidth, spreading factor, coding rate, sync word, preamble) on the\nfrequency below, for networks that do not use the usual presets. Only that setting is searched. Kept for each mode entry.");
+    if (!c.on) {
+        if (!meshtasticShown(a)) return;
+        // Meshtastic: any firmware region and modem preset; the frequency box goes to the preset's slot
+        const auto regions = dect2::meshtasticRegions();
+        const auto presets = dect2::meshtasticPresetNames();
+        bool ch = false;
+        ImGui::SetNextItemWidth(220 * gUi);
+        if (ImGui::BeginCombo("Meshtastic region##mtreg", S.mtRegion.empty() ? "from the band plan" : S.mtRegion.c_str())) {
+            if (ImGui::Selectable("from the band plan", S.mtRegion.empty())) { S.mtRegion.clear(); ch = true; }
+            for (const auto& r : regions) if (ImGui::Selectable(r.c_str(), r == S.mtRegion)) { S.mtRegion = r; ch = true; }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The region set in the Meshtastic app (Config > LoRa > Region). The channel slot follows from the region,\nthe modem preset and the channel name, as the firmware computes it. LORA_24 is 2.4 GHz LoRa (812.5 kHz and wider).");
+        ImGui::SetNextItemWidth(220 * gUi);
+        if (ImGui::BeginCombo("Modem preset##mtpre", S.mtPreset.c_str())) {
+            for (const auto& p : presets) if (ImGui::Selectable(p.c_str(), p == S.mtPreset)) { S.mtPreset = p; ch = true; }
+            ImGui::EndCombo();
+        }
+        if (ch) {
+            plat::prefs().setS("meshMtRegion", S.mtRegion);
+            plat::prefs().setS("meshMtPreset", S.mtPreset);
+            dect2::MeshLoraSettings s;
+            if (!S.mtRegion.empty() && dect2::meshtasticRegionPreset(S.mtRegion, S.mtPreset, s)) a.freqMhz = s.freqHz / 1e6;
+            else if (S.mtRegion.empty()) applyRegion(a, effRegion(a));
+            if (a.engine.running()) startReceiver(a);
+        }
+        dect2::MeshLoraSettings s;
+        const std::string reg = !S.mtRegion.empty() ? S.mtRegion : kPlans[effRegion(a)].rxRegion == 1 ? "US" : "EU_868";
+        if (dect2::meshtasticRegionPreset(reg, S.mtPreset, s))
+            ImGui::TextDisabled("%s %s: %.4f MHz, SF%d, %g kHz, 4/%d", reg.c_str(), S.mtPreset.c_str(), s.freqHz / 1e6, s.sf, s.bwHz / 1e3, s.cr);
+        else ImGui::TextDisabled("%s has no slot for %s (the region is narrower than the preset)", reg.c_str(), S.mtPreset.c_str());
+        return;
+    }
+    bool ch = false, retune = false;
+    ImGui::SetNextItemWidth(220 * gUi);
+    double mhz = a.freqMhz;
+    if (ImGui::InputDouble("Frequency (MHz)##mcf", &mhz, 0.025, 1.0, "%.4f", ImGuiInputTextFlags_EnterReturnsTrue) && mhz >= 400 && mhz <= 2500) {
+        a.freqMhz = mhz; retune = true;
+    }
+    if (S.customEntry == subMask(a) && std::fabs(c.mhz - a.freqMhz) > 1e-7) { c.mhz = a.freqMhz; ch = true; }   // the frequency box is the custom frequency
+    int bi = 7;
+    for (int i = 0; i < kNumBws; i++) if (std::fabs(kBws[i] - c.bwHz) < 1) bi = i;
+    ImGui::SetNextItemWidth(220 * gUi);
+    if (ImGui::Combo("Bandwidth##mcb", &bi, kBwNames, kNumBws)) {
+        const bool rateChange = (kBws[bi] > 500e3) != (c.bwHz > 500e3);
+        c.bwHz = kBws[bi]; ch = true; retune |= rateChange;
+    }
+    ImGui::SetNextItemWidth(220 * gUi);
+    if (ImGui::SliderInt("Spreading factor##mcs", &c.sf, 5, 12, "SF%d")) { c.sf = std::max(5, std::min(12, c.sf)); ch = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("SF5 and SF6 follow the SX126x frame layout (two more symbols after the sync word); they are not checked against a real radio yet.");
+    int ci = c.cr - 5;
+    static const char* crs[] = {"4/5", "4/6", "4/7", "4/8"};
+    ImGui::SetNextItemWidth(220 * gUi);
+    if (ImGui::Combo("Coding rate##mcc", &ci, crs, 4)) { c.cr = ci + 5; ch = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Each frame's header carries its coding rate: frames at any rate decode.");
+    char sw[8];
+    snprintf(sw, sizeof sw, "%02X", c.sync);
+    ImGui::SetNextItemWidth(60 * gUi);
+    if (ImGui::InputText("##mcw", sw, sizeof sw, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) { c.sync = (int)strtol(sw, nullptr, 16) & 0xFF; ch = true; }
+    ImGui::SameLine(0, 6 * gUi); ImGui::TextUnformatted("Sync word (hex)");
+    if (ImGui::SmallButton("0x2B Meshtastic / MeshCom")) { c.sync = 0x2B; ch = true; }
+    ImGui::SameLine(0, 6 * gUi);
+    if (ImGui::SmallButton("0x12 MeshCore / LoRa APRS")) { c.sync = 0x12; ch = true; }
+    ImGui::SameLine(0, 6 * gUi);
+    if (ImGui::SmallButton("0x34 LoRaWAN")) { c.sync = 0x34; ch = true; }
+    ImGui::SetNextItemWidth(220 * gUi);
+    if (ImGui::InputInt("Preamble (symbols)##mcp", &c.preamble, 1, 4)) { c.preamble = std::max(6, std::min(65535, c.preamble)); ch = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Meshtastic 16, MeshCore 32 (SF8 and below) or 16, LoRa APRS and LoRaWAN 8.");
+    ImGui::TextDisabled("Low data rate optimisation: %s (on when a symbol lasts 16 ms or more)", dect2::meshLoraLdro(c.sf, c.bwHz) ? "on" : "off");
+    if (ch) saveCustom(a);
+    if (retune && a.engine.running()) startReceiver(a);
+}
+
 void settingsView(App& a) {
     loadState();
     ImGui::TextDisabled("Band plan");
@@ -789,6 +953,8 @@ void settingsView(App& a) {
     }
     if (!subMask(a) || subMask(a) == 1)    if (ImGui::Checkbox("Search every Meshtastic preset of the region", &S.allPresets)) plat::prefs().setB("meshPresets", S.allPresets);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Off: LongFast only (the default of every new node). On: also MediumFast, MediumSlow, ShortFast, ShortSlow, LongModerate\nand LongSlow, each on its own channel slot. Uses more CPU, and only the slots inside the captured band are searched.");
+    ImGui::Spacing();
+    loraSettings(a);
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
@@ -893,7 +1059,8 @@ void receiver(App& a) {
     const dect2::MeshTelemetry& t = a.rx.mesh;
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
-    kv("tuned", "%.4f MHz, %.3f Msps, %s plan", t.tunedHz / 1e6, t.inputRate / 1e6, t.region == 0 ? "EU" : "US");
+    if (t.custom) kv("tuned", "%.4f MHz, %.3f Msps, custom LoRa setting", t.tunedHz / 1e6, t.inputRate / 1e6);
+    else kv("tuned", "%.4f MHz, %.3f Msps, %s plan, Meshtastic %s", t.tunedHz / 1e6, t.inputRate / 1e6, t.region == 0 ? "EU" : "US", t.mtRegion.c_str());
     kv("frames", "%llu good, %llu CRC errors, %llu bad headers", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad, (unsigned long long)t.headerBad);
     kv("preambles", "%llu", (unsigned long long)t.preambles);
     kv("signal time", "%s", clock(t.timeSec).c_str());
@@ -1035,6 +1202,12 @@ void tuner(App& a, bool& retune) {
 
 void decoder(App& a, bool&) {
     loadState();
+    if (customActive(a)) {
+        const State::Custom& c = customOf(a);
+        ImGui::TextDisabled("custom: SF%d %g kHz 4/%d, sync 0x%02X", c.sf, c.bwHz / 1e3, c.cr, c.sync);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("A custom LoRa setting is on (Settings tab of the mode).");
+        return;
+    }
     if (const int m = subMask(a)) {   // a protocol entry decodes only its own network
         if (m == 1) { if (ImGui::Checkbox("all presets", &S.allPresets)) plat::prefs().setB("meshPresets", S.allPresets); if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also search MediumFast, MediumSlow, ShortFast, ShortSlow, LongModerate and LongSlow. Uses more CPU."); }
         else ImGui::TextDisabled("%s only", curSub(a)->name);
