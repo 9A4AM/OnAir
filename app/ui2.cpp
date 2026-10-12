@@ -242,7 +242,7 @@ void summaryText(App& a, std::string& l1, std::string& l2) {
     const bool run = a.engine.running();
     const ModeDef* cur = &kModes[0];
     for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) cur = &kModes[i];
-    l1 = cur->name; l2 = run ? "starting" : a.scanner.progress().running ? "channel scan has the radio" : "stopped";
+    l1 = cur->name; l2 = tr(run ? "starting" : a.scanner.progress().running ? "channel scan has the radio" : "stopped");
     char b[96];
     if (run) {
         const RxTelemetry& rx = a.rx;
@@ -460,7 +460,7 @@ void statusLine(App& a) {
     char b[96];
     ImGui::AlignTextToFramePadding();
     const bool scanning = !run && a.scanner.progress().running;   // the receiver let go of the radio for a channel scan
-    field(run ? "Receiving" : scanning ? "Channel scan" : "Stopped", true, run || scanning ? pal::okGreen() : pal::grey());
+    field(tr(run ? "Receiving" : scanning ? "Channel scan" : "Stopped"), true, run || scanning ? pal::okGreen() : pal::grey());
     field(cur->name);
     snprintf(b, sizeof b, "%.3f MHz", a.freqMhz); field(b);
     if (run) { snprintf(b, sizeof b, "%.3f Msps", a.engine.sampleRate() / 1e6); field(b); }
@@ -573,12 +573,12 @@ float menuBar(App& a) {
                     ImGui::SetTooltip("%s", tr(have ? "Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running." : "Discord application ID not set in this build"));
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Passes", nullptr, &a.passesOpen)) {}
-            ImGui::MenuItem("Data feeds...", nullptr, &a.feedsOpen);
-            ImGui::MenuItem("Map", nullptr, &a.mapOpen);
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
-            if (ImGui::MenuItem("Scanner (highly experimental)", nullptr, &a.scannerOpen)) {}
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
+            if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
+            ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
+            ImGui::MenuItem(tr("Map"), nullptr, &a.mapOpen);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
+            if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Classic interface"))) { a.newUi = false; savePrefs(a); }
             ImGui::EndMenu();

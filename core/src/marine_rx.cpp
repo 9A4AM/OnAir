@@ -139,7 +139,7 @@ struct MarineReceiver::Impl {
 
     void resetAll() {
         { std::lock_guard<std::mutex> lk(telMu); shiftTimes(-lastNow); lastNow = 0; }
-        front.reset(); spec.reset(); fsk.reset(); vhf.reset(); faxAudio.reset(); fax.reset();
+        front.reset(); spec.reset(); fsk.reset(); vhf.reset(); faxAudio.reset(); fax.reset(); listen.reset();
         for (auto& n : nav) n.reset();
         for (auto& d : dsc) d.reset();
         for (auto& d : dscv) d.reset();
