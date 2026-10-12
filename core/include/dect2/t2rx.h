@@ -46,6 +46,7 @@
 #include "ale_tel.h"
 #include "p25_tel.h"
 #include "ble_tel.h"
+#include "iono_tel.h"
 #include "psk_tel.h"
 #include "js8_tel.h"
 #include "specx_tel.h"
@@ -120,6 +121,7 @@ struct RxTelemetry {
     AleTelemetry ale;         // valid when standard == 50 (HF ALE)
     P25Telemetry p25;         // valid when standard == 51 (P25 Phase 1)
     BleTelemetry ble;         // valid when standard == 52 (Bluetooth LE advertising)
+    IonoTelemetry iono;       // valid when standard == 53 (ionospheric sounders)
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34
     NxdnTelemetry nxdn;         // valid when standard == 39

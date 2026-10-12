@@ -180,6 +180,7 @@ int main(int argc, char** argv) {
     e.uplink().setSilent(true);   // Mode S uplink: no sound
     e.specan().setSilent(true);   // spectrum analyser: no sound
     e.astro().setSilent(true);    // radio astronomy: the summary line only
+    e.iono().setSilent(true);     // ionospheric sounders: the summary line only
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
     e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
     e.dvbc().setAnnexC(dvbcAnnexC);

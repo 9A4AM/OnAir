@@ -98,7 +98,8 @@ specan	--mode specan	Overview|Analyser|Receiver|History
 uplink	--mode uplink	Overview|Uplink|Receiver|History
 ale	--mode ale	Overview|ALE|Receiver|History
 astro	--mode astro	Overview|Astronomy|Receiver|History
-ble	--mode ble	Overview|Devices|Receiver|History"
+ble	--mode ble	Overview|Devices|Receiver|History
+iono	--mode iono	Overview|Ionogram|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"

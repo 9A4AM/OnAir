@@ -95,6 +95,9 @@
 #include "dect2/p25_gen.h"
 #include "dect2/ble_rx.h"
 #include "dect2/ble_gen.h"
+#include "dect2/iono_rx.h"
+#include "dect2/iono_tel.h"
+#include "dect2/iono_gen.h"
 #include "dect2/modes.h"
 #include "dect2/demo_ts.h"
 #include "dect2/exact_resampler.h"
@@ -178,7 +181,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning()};
     return t;
 }
 
@@ -289,6 +292,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 43: return makeSpecxSynth(cfg, sampleRate);
     case 44: return makeSpecanSynth(cfg, sampleRate);
     case 50: return makeAstroSynth(cfg, sampleRate);
+    case 54: return makeIonoSynth(cfg, sampleRate);
     default: return nullptr;
     }
 }
@@ -340,6 +344,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 42: return specxSummary(t.specx);
     case 43: return specanSummary(t.specan);
     case 49: return astroSummary(t.astro);
+    case 53: return ionoSummary(t.iono);
     default: return "";
     }
 }
