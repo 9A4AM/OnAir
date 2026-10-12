@@ -200,7 +200,7 @@ void finishSetup() {
     C.hovered = hov; C.held = held;
     const bool movable[2] = {!(C.ax[0].haveLimits && C.ax[0].cond == Cond_Always), !(C.ax[1].haveLimits && C.ax[1].cond == Cond_Always)};
     ImGuiIO& io = ImGui::GetIO();
-    if (!(C.flags & Flags_Equal) && (movable[0] || movable[1])) {
+    if (!(C.flags & (Flags_Equal | Flags_NoPan)) && (movable[0] || movable[1])) {
         if (held && (io.MouseDelta.x != 0 || io.MouseDelta.y != 0)) {
             if (movable[0] && C.ax[0].scale == Scale_Linear) { const double d = -io.MouseDelta.x / C.plot.GetWidth() * (C.hi[0] - C.lo[0]); C.st->lim[0][0] += d; C.st->lim[0][1] += d; }
             if (movable[1] && C.ax[1].scale == Scale_Linear) { const double d = io.MouseDelta.y / C.plot.GetHeight() * (C.hi[1] - C.lo[1]); C.st->lim[1][0] += d; C.st->lim[1][1] += d; }

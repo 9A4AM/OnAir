@@ -1,0 +1,561 @@
+// General receiver (see general_rx.h): one channel of the band mixed down, filtered, demodulated (NFM, WFM, AM, USB, LSB, CW),
+// squelched against the noise beside it and played; optionally recorded to WAV.
+#include "dect2/general_rx.h"
+#include "dect2/general_tel.h"
+#include "dect2/audioout.h"
+#include "dect2/exact_resampler.h"
+#include "dect2/fftutil.h"
+#include "dect2/qo100_dsp.h"
+#include "hfdig_usb.h"
+#include <algorithm>
+#include <cerrno>
+#include <atomic>
+#include <cmath>
+#include <complex>
+#include <cstdio>
+#include <cstring>
+#include <mutex>
+#include <string>
+#include <vector>
+
+namespace dect2 {
+
+namespace {
+
+constexpr double kPi = 3.14159265358979323846;
+constexpr double kOutLevel = 0.5;          // full deviation / full AM depth / an SSB tone under the AGC: this peak
+constexpr double kBlockSec = 0.01;         // squelch decisions
+constexpr double kHangSec = 0.15;
+constexpr int kNoiseN = 512;               // noise spectrum of the decimated stream
+constexpr int kNoiseAvg = 8;
+constexpr double kMedianToMean = 0.959;    // median / mean of an average of 8 exponential bins (chi-square, 16 degrees)
+
+const double kNfmW[] = {6250, 12500, 25000};
+const double kWfmW[] = {150000, 180000, 200000};
+const double kAmW[] = {4000, 6000, 9000, 12000};
+const double kSsbW[] = {1800, 2400, 2700, 3000};
+const double kCwW[] = {100, 250, 500, 1000};
+
+// Real FIR with a doubled history (the window never wraps), output every `decim` inputs
+class RealFir {
+public:
+    void design(int n, double fc, int decim) {
+        const auto lp = hfdig::lowpass(n, fc, 7.0);
+        taps_.assign(lp.begin(), lp.end());
+        hist_.assign(2 * (size_t)n, 0.f);
+        decim_ = std::max(1, decim);
+        reset();
+    }
+    void reset() { std::fill(hist_.begin(), hist_.end(), 0.f); pos_ = 0; ph_ = 0; }
+    bool push(float x, float& y) {
+        const int T = (int)taps_.size();
+        hist_[(size_t)pos_] = x; hist_[(size_t)(pos_ + T)] = x;
+        if (++pos_ >= T) pos_ = 0;
+        if (++ph_ < decim_) return false;
+        ph_ = 0;
+        const float* w = &hist_[(size_t)pos_];
+        float s = 0;
+        for (int k = 0; k < T; k++) s += taps_[(size_t)k] * w[k];   // symmetric taps: the order does not matter
+        y = s;
+        return true;
+    }
+private:
+    std::vector<float> taps_, hist_;
+    int pos_ = 0, ph_ = 0, decim_ = 1;
+};
+
+struct Cfg {
+    double chanOff = 0;
+    int demod = GenNfm;
+    double width = 12500;
+    bool sqOn = true, sqAuto = true;
+    float sqDb = -60;
+    bool agc = true;
+    float gainDb = 20;
+    double deemphUs = 0;
+    double pitch = 700;
+};
+
+void put16(FILE* f, uint16_t v) { uint8_t b[2] = {(uint8_t)v, (uint8_t)(v >> 8)}; fwrite(b, 1, 2, f); }
+void put32(FILE* f, uint32_t v) { uint8_t b[4] = {(uint8_t)v, (uint8_t)(v >> 8), (uint8_t)(v >> 16), (uint8_t)(v >> 24)}; fwrite(b, 1, 4, f); }
+void wavHeader(FILE* f, uint32_t frames) {
+    const uint32_t data = frames * 2;
+    fwrite("RIFF", 1, 4, f); put32(f, 36 + data); fwrite("WAVE", 1, 4, f);
+    fwrite("fmt ", 1, 4, f); put32(f, 16); put16(f, 1); put16(f, 1); put32(f, (uint32_t)kGeneralAudioRate); put32(f, (uint32_t)kGeneralAudioRate * 2);
+    put16(f, 2); put16(f, 16);
+    fwrite("data", 1, 4, f); put32(f, data);
+}
+
+} // namespace
+
+const char* generalDemodName(int d) {
+    static const char* const k[] = {"NFM", "WFM", "AM", "USB", "LSB", "CW"};
+    return d >= 0 && d < GenDemodCount ? k[d] : "?";
+}
+
+const double* generalWidthPresets(int d, int& count) {
+    switch (d) {
+    case GenWfm: count = 3; return kWfmW;
+    case GenAm: count = 4; return kAmW;
+    case GenUsb: case GenLsb: count = 4; return kSsbW;
+    case GenCw: count = 4; return kCwW;
+    default: count = 3; return kNfmW;
+    }
+}
+
+double generalDefaultWidth(int d) {
+    switch (d) {
+    case GenWfm: return 180000;
+    case GenAm: return 9000;
+    case GenUsb: case GenLsb: return 2700;
+    case GenCw: return 500;
+    default: return 12500;
+    }
+}
+
+void generalWidthRange(int d, double& lo, double& hi) {
+    switch (d) {
+    case GenWfm: lo = 50000; hi = 220000; break;
+    case GenAm: lo = 1000; hi = 20000; break;
+    case GenUsb: case GenLsb: lo = 500; hi = 6000; break;
+    case GenCw: lo = 50; hi = 3000; break;
+    default: lo = 2000; hi = 30000; break;
+    }
+}
+
+double generalClampWidth(int d, double hz) {
+    double lo, hi;
+    generalWidthRange(d, lo, hi);
+    return std::clamp(std::isfinite(hz) ? hz : generalDefaultWidth(d), lo, hi);
+}
+
+void generalFilterEdges(int d, double w, double& lo, double& hi) {
+    w = generalClampWidth(d, w);
+    if (d == GenUsb) { lo = kGeneralSsbLowCutHz; hi = kGeneralSsbLowCutHz + w; }
+    else if (d == GenLsb) { lo = -kGeneralSsbLowCutHz - w; hi = -kGeneralSsbLowCutHz; }
+    else { lo = -w / 2; hi = w / 2; }
+}
+
+double generalDefaultDeemphUs(int d) { return d == GenWfm ? 50 : 0; }
+
+struct GeneralReceiver::Impl {
+    std::mutex mu;
+    Cfg cfgSet, cfg;
+    std::atomic<bool> cfgDirty{true}, resetReq{false};
+    std::atomic<double> sigOff{0};
+    double rate = 0;
+    std::atomic<float> volume{1.f};
+    std::atomic<bool> muted{false}, silent{false};
+    std::function<void(const float*, size_t)> tapSet, tap;
+    std::atomic<bool> tapReq{false};
+    std::function<void(const std::string&)> logCb;
+
+    // the chain
+    double curRate = 0;
+    bool wide = false, built = false;
+    double mixHz = 1e300;
+    qo100::Nco nco;
+    qo100::Decimator dec;
+    ExactResampler rs;
+    double decRate = 0, demodRate = kGeneralAudioRate;
+    std::vector<cf32> clean, decd, base;
+    // channel filter
+    std::vector<cf32> taps, hist;
+    int hpos = 0;
+    double fLo = 0, fHi = 0;
+    // noise beside the channel
+    std::unique_ptr<Fft> fft;
+    std::vector<cf32> fbuf;
+    std::vector<float> win;
+    double wsum2 = 1;
+    std::vector<double> acc;
+    int accN = 0;
+    double noisePsd = -1;      // per Hz; < 0 not measured yet
+    bool noiseImpossible = false;
+    // demodulators
+    cf32 prev{0, 0};
+    double gLin = 10, relEnv = 0, carK = 0;
+    float deAl = 1;
+    double car = 0, env = 0, bfoPh = 0;
+    bool carInit = false;
+    float dcX = 0, dcY = 0, deY = 0;
+    RealFir audLp;
+    // squelch
+    double blkPow = 0, lvl = -1;
+    int blkN = 0, blkLen = 480;
+    bool open = false;
+    double hang = 0;
+    float ramp = 0;
+    double fmSum = 0; uint64_t fmN = 0; double cfo = 0;
+    uint64_t blkOpen = 0, blkShut = 0;
+    double audPow = 0; uint64_t audN = 0;
+    // sound
+    std::vector<float> aud, pcm;
+    std::unique_ptr<AudioOut> out;
+    // WAV
+    std::mutex wavMu;
+    FILE* wav = nullptr;
+    uint32_t wavFrames = 0;
+    std::string wavPath, wavErr;
+    std::vector<int16_t> wbuf;
+    // telemetry
+    GeneralTelemetry pub;
+    double pubAcc = 0;
+
+    void log(const std::string& s) { std::function<void(const std::string&)> cb; { std::lock_guard<std::mutex> lk(mu); cb = logCb; } if (cb) cb(s); }
+
+    void build() {
+        built = false;
+        if (curRate <= 0) return;
+        wide = cfg.demod == GenWfm;
+        demodRate = wide ? kGeneralWideRate : kGeneralAudioRate;
+        const double pass = wide ? 115000.0 : 26000.0;
+        dec.configure(curRate, pass, demodRate * (wide ? 1.0 : 2.0));
+        decRate = dec.outRate();
+        if (!rs.configure(decRate, demodRate)) return;
+        blkLen = (int)std::lround(demodRate * kBlockSec);
+        carK = 1 - std::exp(-1.0 / (0.05 * demodRate));
+        relEnv = 1 - std::exp(-1.0 / (0.5 * demodRate));
+        fft = std::make_unique<Fft>(kNoiseN);
+        win.resize(kNoiseN); wsum2 = 0;
+        for (int i = 0; i < kNoiseN; i++) { win[(size_t)i] = (float)(0.5 - 0.5 * std::cos(2 * kPi * (i + 0.5) / kNoiseN)); wsum2 += (double)win[(size_t)i] * win[(size_t)i]; }
+        if (wide) audLp.design(121, 15000.0 / demodRate, (int)std::lround(demodRate / kGeneralAudioRate));
+        else audLp.design(63, 4000.0 / demodRate, 1);
+        design();
+        mixHz = 1e300;
+        built = true;
+        clearState();
+    }
+
+    void design() {
+        generalFilterEdges(cfg.demod, cfg.width, fLo, fHi);
+        const double w = fHi - fLo;
+        const int T = wide ? 63 : w < 1500 ? 511 : 255;
+        const auto lp = hfdig::lowpass(T, 0.5 * w / demodRate, 7.0);
+        const double w0 = 2 * kPi * 0.5 * (fLo + fHi) / demodRate, c = (T - 1) * 0.5;
+        taps.assign((size_t)T, cf32(0, 0));
+        for (int k = 0; k < T; k++) {
+            const cf32 h((float)(lp[(size_t)k] * std::cos(w0 * (k - c))), (float)(lp[(size_t)k] * std::sin(w0 * (k - c))));
+            taps[(size_t)(T - 1 - k)] = h;   // reversed: the history is kept oldest first
+        }
+        hist.assign(2 * (size_t)T, cf32(0, 0));
+        hpos = 0;
+        acc.assign(kNoiseN, 0.0); accN = 0; fbuf.clear(); noisePsd = -1;   // the bins beside the channel moved
+    }
+
+    void clearState() {
+        nco.reset(); dec.reset(); rs.reset();
+        std::fill(hist.begin(), hist.end(), cf32(0, 0)); hpos = 0;
+        acc.assign(kNoiseN, 0.0); accN = 0; fbuf.clear(); noisePsd = -1;
+        prev = cf32(0, 0); car = 0; env = 0; carInit = false; bfoPh = 0;
+        dcX = dcY = deY = 0; audLp.reset();
+        blkPow = 0; blkN = 0; lvl = -1; open = false; hang = 0; ramp = 0;
+        fmSum = 0; fmN = 0; cfo = 0;
+        if (out) out->flush();
+    }
+
+    void noiseFeed(const cf32* x, size_t n) {
+        if (!fft) return;
+        for (size_t i = 0; i < n; i++) {
+            fbuf.push_back(x[i]);
+            if ((int)fbuf.size() < kNoiseN) continue;
+            for (int k = 0; k < kNoiseN; k++) fbuf[(size_t)k] *= win[(size_t)k];
+            fft->forward(fbuf.data());
+            for (int k = 0; k < kNoiseN; k++) acc[(size_t)k] += std::norm(fbuf[(size_t)k]);
+            fbuf.clear();
+            if (++accN < kNoiseAvg) continue;
+            // the bins inside +-0.4 of the rate, away from the channel filter (and a guard either side)
+            const double bin = decRate / kNoiseN, guard = std::max(2 * bin, 0.15 * (fHi - fLo));
+            std::vector<double> v;
+            for (int k = 0; k < kNoiseN; k++) {
+                const double f = (k < kNoiseN / 2 ? k : k - kNoiseN) * bin;
+                if (std::fabs(f) > 0.4 * decRate || (f > fLo - guard && f < fHi + guard)) continue;
+                v.push_back(acc[(size_t)k] / accN);
+            }
+            acc.assign(kNoiseN, 0.0); accN = 0;
+            noiseImpossible = v.size() < 16;
+            if (noiseImpossible) { noisePsd = -1; continue; }
+            std::nth_element(v.begin(), v.begin() + v.size() / 2, v.end());
+            const double psd = v[v.size() / 2] / kMedianToMean / wsum2 / decRate;
+            noisePsd = noisePsd < 0 ? psd : 0.7 * noisePsd + 0.3 * psd;
+        }
+    }
+
+    void squelchBlock() {
+        const double p = blkPow / std::max(1, blkN);
+        blkPow = 0; blkN = 0;
+        const double b = 1 - std::exp(-kBlockSec / 0.06);
+        lvl = lvl < 0 ? p : lvl + b * (p - lvl);
+        const double noiseCh = noisePsd > 0 ? noisePsd * (fHi - fLo) : -1;
+        bool want;
+        if (!cfg.sqOn) want = true;
+        else if (cfg.sqAuto) {
+            if (noiseCh <= 0) want = noiseImpossible;   // no band beside the channel to compare with: the squelch stays open
+            else want = lvl > noiseCh * (open ? 2.5 : 4.0);   // opens 6 dB over the noise, closes under 4 dB
+        } else {
+            const double thr = std::pow(10.0, cfg.sqDb / 10.0);
+            want = lvl >= (open ? thr / 1.26 : thr);
+        }
+        if (want) { open = true; hang = kHangSec; }
+        else if (open) { hang -= kBlockSec; if (hang <= 0) open = false; }
+        (open ? blkOpen : blkShut)++;
+    }
+
+    // one channel sample at demodRate: the filtered z gives 0 or 1 audio samples
+    void demod(cf32 z) {
+        float a = 0;
+        bool have = true;
+        const double g = gLin;
+        switch (cfg.demod) {
+        case GenNfm: case GenWfm: {
+            const cf32 d = z * std::conj(prev);
+            prev = z;
+            const double f = std::atan2((double)d.imag(), (double)d.real()) * demodRate / (2 * kPi);
+            if (std::norm(z) > 0) { fmSum += f; fmN++; }
+            const float s = (float)(f / (cfg.demod == GenNfm ? 5000.0 : 75000.0) * kOutLevel);
+            float y;
+            have = audLp.push(s, y);
+            if (!have) break;
+            // DC (a station off the channel), then the de-emphasis
+            const float hp = y - dcX + (float)(1 - 2 * kPi * 20 / kGeneralAudioRate) * dcY;
+            dcX = y; dcY = hp;
+            if (cfg.deemphUs > 0) { deY += deAl * (hp - deY); a = deY; }
+            else a = hp;
+            break;
+        }
+        case GenAm: {
+            const double e = std::abs(z);
+            if (!carInit) { car = e; carInit = true; }
+            car += carK * (e - car);
+            a = (float)(cfg.agc ? (e - car) / std::max(car, 1e-9) * kOutLevel : (e - car) * g);
+            break;
+        }
+        default: {   // USB, LSB, CW: the real part (CW: moved up by the pitch)
+            cf32 v = z;
+            if (cfg.demod == GenCw) {
+                v *= cf32((float)std::cos(bfoPh), (float)std::sin(bfoPh));
+                bfoPh += 2 * kPi * cfg.pitch / demodRate;
+                if (bfoPh > 2 * kPi) bfoPh -= 2 * kPi;
+            }
+            const double m = std::abs(z);
+            env += (m > env ? 0.05 : relEnv) * (m - env);
+            a = (float)(cfg.agc ? v.real() * kOutLevel / (env + 1e-9) : v.real() * g);
+            break;
+        }
+        }
+        if (!have) return;
+        const float target = open ? 1.f : 0.f;
+        ramp += std::clamp(target - ramp, -1.f / 240, 1.f / 240);   // 5 ms
+        a = std::clamp(a * ramp, -1.f, 1.f);
+        aud.push_back(a);
+    }
+
+    void play() {
+        if (aud.empty()) return;
+        for (float v : aud) audPow += (double)v * v;
+        audN += aud.size();
+        if (tapReq.exchange(false)) { std::lock_guard<std::mutex> lk(mu); tap = tapSet; }
+        if (tap) tap(aud.data(), aud.size());
+        {
+            std::lock_guard<std::mutex> lk(wavMu);
+            if (wav) {
+                wbuf.resize(aud.size());
+                for (size_t i = 0; i < aud.size(); i++) wbuf[i] = (int16_t)std::lround(std::clamp(aud[i], -1.f, 1.f) * 32767.f);
+                fwrite(wbuf.data(), 2, wbuf.size(), wav);   // little-endian hosts (macOS, Windows, Linux on x86 / ARM)
+                wavFrames += (uint32_t)wbuf.size();
+            }
+        }
+        if (silent.load()) return;
+        pcm.clear();
+        for (float v : aud) { pcm.push_back(v); pcm.push_back(v); }
+        if (!out) { out = std::make_unique<AudioOut>(); out->start((int)kGeneralAudioRate); out->setStartThreshold((int)kGeneralAudioRate / 10); }
+        out->setVolume(volume.load()); out->setMuted(muted.load());
+        if (out->bufferedFrames() > (int)kGeneralAudioRate / 2) out->flush();   // the radio's clock runs ahead of the sound card: catch up
+        if (!out->playing()) out->setStartThreshold((int)kGeneralAudioRate / 10);
+        out->write(pcm.data(), (int)(pcm.size() / 2));
+    }
+
+    void publish() {
+        GeneralTelemetry t;
+        t.seq = pub.seq + 1;
+        t.demod = cfg.demod; t.rate = curRate; t.demodRate = demodRate;
+        t.chanOffsetHz = cfg.chanOff; t.filterLoHz = fLo; t.filterHiHz = fHi;
+        const double noiseCh = noisePsd > 0 ? noisePsd * (fHi - fLo) : -1;
+        t.levelDb = lvl > 0 ? (float)(10 * std::log10(lvl)) : -200;
+        t.noiseDb = noiseCh > 0 ? (float)(10 * std::log10(noiseCh)) : -200;
+        t.dataValid = noiseCh > 0 && lvl > 0;
+        t.snrDb = t.dataValid ? t.levelDb - t.noiseDb : 0;
+        t.squelchOpen = open;
+        t.squelchDb = !cfg.sqOn ? -200 : cfg.sqAuto ? (noiseCh > 0 ? t.noiseDb + 6 : -200) : cfg.sqDb;
+        t.state = !built || lvl < 0 ? 0 : open ? 2 : 1;
+        if (fmN) { cfo = fmSum / fmN; fmSum = 0; fmN = 0; }
+        t.cfoHz = (cfg.demod == GenNfm || cfg.demod == GenWfm) && open ? cfo : 0;
+        t.blocksOk = blkOpen; t.blocksBad = blkShut;
+        t.audioDb = audN ? (float)(10 * std::log10(audPow / audN + 1e-20)) : -200;
+        audPow = 0; audN = 0;
+        {
+            std::lock_guard<std::mutex> lk(wavMu);
+            t.recording = wav != nullptr; t.recordSec = wavFrames / kGeneralAudioRate; t.recordPath = wavPath; t.recordError = wavErr;
+        }
+        std::lock_guard<std::mutex> lk(mu);
+        pub = std::move(t);
+    }
+
+    void closeWav() {   // with wavMu held
+        if (!wav) return;
+        fflush(wav);
+        fseek(wav, 0, SEEK_SET);
+        wavHeader(wav, wavFrames);
+        fclose(wav);
+        wav = nullptr;
+    }
+};
+
+GeneralReceiver::GeneralReceiver() : p_(std::make_unique<Impl>()) {}
+GeneralReceiver::~GeneralReceiver() { std::lock_guard<std::mutex> lk(p_->wavMu); p_->closeWav(); }
+
+void GeneralReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rate = r; p_->cfgDirty = true; p_->resetReq = true; }
+void GeneralReceiver::setSignalOffset(double hz) { p_->sigOff = hz; }
+bool GeneralReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rate >= generalTuning().minSampleRate - 1; }
+void GeneralReceiver::reset() { p_->resetReq = true; }
+void GeneralReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->logCb = std::move(cb); }
+
+void GeneralReceiver::feed(const cf32* x, size_t n) {
+    Impl& m = *p_;
+    if (m.cfgDirty.exchange(false)) {
+        Cfg c; double r;
+        { std::lock_guard<std::mutex> lk(m.mu); c = m.cfgSet; r = m.rate; }
+        const bool rebuild = !m.built || r != m.curRate || (c.demod == GenWfm) != (m.cfg.demod == GenWfm);
+        const bool refilter = c.demod != m.cfg.demod || c.width != m.cfg.width;
+        const bool retuned = c.chanOff != m.cfg.chanOff;
+        m.cfg = c; m.curRate = r;
+        m.gLin = std::pow(10.0, c.gainDb / 20.0);
+        m.deAl = c.deemphUs > 0 ? (float)(1 - std::exp(-1.0 / (kGeneralAudioRate * c.deemphUs * 1e-6))) : 1.f;
+        if (rebuild) m.build();
+        else if (refilter) { m.design(); m.prev = cf32(0, 0); m.carInit = false; m.env = 0; m.deY = 0; }
+        if (retuned && !rebuild) { m.acc.assign(kNoiseN, 0.0); m.accN = 0; m.fbuf.clear(); m.noisePsd = -1; m.lvl = -1; }
+    }
+    if (m.resetReq.exchange(false) && m.built) m.clearState();
+    if (!m.built || n == 0) return;
+    const double f = m.sigOff.load() + m.cfg.chanOff;
+    if (f != m.mixHz) { m.mixHz = f; m.nco.set(f, m.curRate); }
+    m.clean.resize(n);
+    for (size_t i = 0; i < n; i++) {
+        float re = x[i].real(), im = x[i].imag();
+        if (!std::isfinite(re) || !std::isfinite(im)) re = im = 0;
+        m.clean[i] = m.nco.mix(cf32(std::clamp(re, -2.f, 2.f), std::clamp(im, -2.f, 2.f)));
+    }
+    m.decd.clear();
+    m.dec.process(m.clean.data(), n, m.decd);
+    m.noiseFeed(m.decd.data(), m.decd.size());
+    m.base.clear();
+    m.rs.process(m.decd.data(), m.decd.size(), m.base);
+    m.aud.clear();
+    const int T = (int)m.taps.size();
+    for (const cf32 v : m.base) {
+        m.hist[(size_t)m.hpos] = v; m.hist[(size_t)(m.hpos + T)] = v;
+        if (++m.hpos >= T) m.hpos = 0;
+        const cf32* w = &m.hist[(size_t)m.hpos];
+        float ar = 0, ai = 0;
+        for (int k = 0; k < T; k++) {
+            const cf32 h = m.taps[(size_t)k], s = w[k];
+            ar += h.real() * s.real() - h.imag() * s.imag();
+            ai += h.real() * s.imag() + h.imag() * s.real();
+        }
+        const cf32 z(ar, ai);
+        m.blkPow += std::norm(z);
+        if (++m.blkN >= m.blkLen) m.squelchBlock();
+        m.demod(z);
+    }
+    m.play();
+    m.pubAcc += n / m.curRate;
+    if (m.pubAcc >= 0.1) { m.pubAcc = 0; m.publish(); }
+}
+
+bool GeneralReceiver::telemetry(GeneralTelemetry& out, uint64_t lastSeq) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (p_->pub.seq == lastSeq) return false;
+    out = p_->pub;
+    return true;
+}
+
+void GeneralReceiver::setChannelOffsetHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->cfgSet.chanOff != hz) { p_->cfgSet.chanOff = hz; p_->cfgDirty = true; } }
+void GeneralReceiver::setDemod(int d) {
+    if (d < 0 || d >= GenDemodCount) return;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (p_->cfgSet.demod != d) { p_->cfgSet.demod = d; p_->cfgSet.width = generalClampWidth(d, p_->cfgSet.width); p_->cfgDirty = true; }
+}
+void GeneralReceiver::setWidthHz(double hz) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const double w = generalClampWidth(p_->cfgSet.demod, hz);
+    if (p_->cfgSet.width != w) { p_->cfgSet.width = w; p_->cfgDirty = true; }
+}
+void GeneralReceiver::setSquelch(bool on, bool autoMode, float db) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Cfg& c = p_->cfgSet;
+    if (c.sqOn != on || c.sqAuto != autoMode || c.sqDb != db) { c.sqOn = on; c.sqAuto = autoMode; c.sqDb = db; p_->cfgDirty = true; }
+}
+void GeneralReceiver::setAgc(bool on, float g) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (p_->cfgSet.agc != on || p_->cfgSet.gainDb != g) { p_->cfgSet.agc = on; p_->cfgSet.gainDb = g; p_->cfgDirty = true; }
+}
+void GeneralReceiver::setDeemphUs(double us) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->cfgSet.deemphUs != us) { p_->cfgSet.deemphUs = std::max(0.0, us); p_->cfgDirty = true; } }
+void GeneralReceiver::setCwPitchHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); hz = std::clamp(hz, 200.0, 1500.0); if (p_->cfgSet.pitch != hz) { p_->cfgSet.pitch = hz; p_->cfgDirty = true; } }
+void GeneralReceiver::setVolume(float v) { p_->volume = std::clamp(v, 0.f, 1.f); }
+void GeneralReceiver::setMuted(bool m) { p_->muted = m; }
+void GeneralReceiver::setSilent(bool s) { p_->silent = s; }
+void GeneralReceiver::setAudioTap(std::function<void(const float*, size_t)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->tapSet = std::move(cb); p_->tapReq = true; }
+
+bool GeneralReceiver::startRecording(const std::string& path) {
+    std::string msg;
+    bool ok;
+    {
+        std::lock_guard<std::mutex> lk(p_->wavMu);
+        p_->closeWav();
+        p_->wav = fopen(path.c_str(), "wb");
+        p_->wavFrames = 0;
+        p_->wavPath = path;
+        ok = p_->wav != nullptr;
+        if (ok) { wavHeader(p_->wav, 0); p_->wavErr.clear(); msg = "General receiver: recording audio to " + path; }
+        else { p_->wavErr = std::string("cannot write ") + path + ": " + std::strerror(errno); msg = "General receiver: " + p_->wavErr; }
+    }
+    p_->log(msg);
+    return ok;
+}
+
+void GeneralReceiver::stopRecording() {
+    std::string msg;
+    {
+        std::lock_guard<std::mutex> lk(p_->wavMu);
+        if (!p_->wav) return;
+        char b[64]; snprintf(b, sizeof b, " (%.1f s)", p_->wavFrames / kGeneralAudioRate);
+        msg = "General receiver: recording stopped, " + p_->wavPath + b;
+        p_->closeWav();
+    }
+    p_->log(msg);
+}
+
+bool GeneralReceiver::recording() const { std::lock_guard<std::mutex> lk(p_->wavMu); return p_->wav != nullptr; }
+
+std::string generalSummary(const GeneralTelemetry& t) {
+    char b[160];
+    const double w = t.filterHiHz - t.filterLoHz;
+    if (t.state == 0) { snprintf(b, sizeof b, "%s %.4g kHz, no signal yet", generalDemodName(t.demod), w / 1e3); return b; }
+    if (t.dataValid) snprintf(b, sizeof b, "%s %.4g kHz, %.1f dBFS, SNR %.1f dB, squelch %s%s", generalDemodName(t.demod), w / 1e3, t.levelDb, t.snrDb, t.squelchOpen ? "open" : "closed", t.recording ? ", recording" : "");
+    else snprintf(b, sizeof b, "%s %.4g kHz, %.1f dBFS, squelch %s%s", generalDemodName(t.demod), w / 1e3, t.levelDb, t.squelchOpen ? "open" : "closed", t.recording ? ", recording" : "");
+    return b;
+}
+
+ModeTuning generalTuning() {
+    ModeTuning t;
+    t.stdMode = 57; t.id = "general"; t.name = "General receiver";
+    t.minMhz = 1; t.maxMhz = 6000; t.defMhz = 145.500;
+    t.sampleRate = 2000000;
+    t.basebandHz = 1750000;
+    t.bandwidthMhz = 1.6;
+    t.minSampleRate = 250000;
+    t.tuneOffsetHz = 250000;      // the radio sits above the dial: the DC spike stays out of a channel up to WFM width
+    return t;
+}
+
+} // namespace dect2

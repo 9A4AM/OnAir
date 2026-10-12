@@ -183,6 +183,7 @@ int main(int argc, char** argv) {
     e.astro().setSilent(true);    // radio astronomy: the summary line only
     e.iono().setSilent(true);     // ionospheric sounders: the summary line only
     e.qo100().setSilent(true);    // QO-100: Listen without the sound card
+    e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
     e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);

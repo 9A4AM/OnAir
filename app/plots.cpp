@@ -2,7 +2,8 @@
 #include "app.h"
 
 // Click on the spectrum or the waterfall to tune to that frequency (a drag still pans). The grid follows the mode: FM 0.1 MHz, DMR 12.5 kHz, else 1 kHz.
-static void clickToTune(App& a) {
+static void clickToTune(App& a, int plotId) {
+    if (a.family == 55) { generalPlotMouse(a, plotId); return; }   // the general receiver: its channel marker, without retuning the radio
     if (!plt::IsPlotHovered() || a.fmScan.running) return;
     double mhz = plt::GetPlotMousePos().x;
     double lo = 0.1, hi = 6000;
@@ -43,6 +44,7 @@ ChanWidth channelWidth(const App& a) {
     } else if (a.family == 7) { w.mhz = a.dtmbBwMhz; w.settable = w.manual = true; }
     else if (a.family == 40 && a.engine.running() && a.rx.standard == 41 && a.rx.dvbc.symbolRate > 0) w.mhz = a.rx.dvbc.symbolRate * (1 + a.rx.dvbc.rollOff) / 1e6;
     else if (a.family == 6 && a.engine.running() && a.rx.standard == 7 && a.rx.dvbs.symbolRate > 0) w.mhz = a.rx.dvbs.symbolRate * (1 + a.rx.dvbs.rollOff) / 1e6;
+    else if (a.family == 55) w.mhz = generalChannelWidthMhz(a);
     else if (const ModeTuning* mt = modeTuning(a.family + 2)) w.mhz = mt->bandwidthMhz;
     return w;
 }
@@ -110,6 +112,7 @@ void channelWidthPopup(App& a) {
 
 // The channel band behind the trace (spectrum: a light fill and its edges) or on top of the picture (waterfall: the edges only)
 static void channelBand(const App& a, bool fill) {
+    if (a.family == 55) { generalChannelBand(a, fill); return; }
     const ChanWidth cw = channelWidth(a);
     if (cw.mhz <= 0) return;
     const double x0 = a.freqMhz - cw.mhz / 2, x1 = a.freqMhz + cw.mhz / 2;
@@ -147,9 +150,8 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
 void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
     static const char* const kYLabel = "power (dBFS/bin)";
     ImVec2 plotMin, plotSize;
-    bool drawn = false, openCtx = false;
-    static double ctxMhz = 0;
-    if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay)) {
+    bool drawn = false;
+    if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0))) {
         drawn = true;
         if (noFreqAxis) plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_NoTickLabels, 0);   // the waterfall under it shows the frequencies
         else plt::SetupAxes("frequency (MHz)", kYLabel);
@@ -191,8 +193,7 @@ void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
                 }
             }
         }
-        clickToTune(a);
-        if (plt::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { ctxMhz = plt::GetPlotMousePos().x; openCtx = true; }
+        clickToTune(a, 0);
         plt::EndPlot();
     }
     if (drawn) channelWidthButton(a, plotMin, plotSize, kYLabel);
@@ -226,7 +227,7 @@ void waterfallPlot(App& a, ImVec2 size) {
             sc.pos.push_back(-s / sc.dt); sc.lab.push_back(b);
         }
     }
-    if (plt::BeginPlot("##wf", size, plt::Flags_NoLegend | plt::Flags_NoTitle)) {
+    if (plt::BeginPlot("##wf", size, plt::Flags_NoLegend | plt::Flags_NoTitle | (a.family == 55 && generalDragging(1) ? plt::Flags_NoPan : 0))) {
         plt::SetupAxes("frequency (MHz)", "seconds ago");
         double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
         const double rc = radioCenterMhz(a);
@@ -253,7 +254,7 @@ void waterfallPlot(App& a, ImVec2 size) {
         const float vNew = (w + 0.5f) / H;   // the gap above: the newest row, stretched
         if (frac > 0) plt::PlotImage("top", tex, plt::Point(x0, -frac), plt::Point(x1, 0), ImVec2(0, vNew), ImVec2(1, vNew));
         channelBand(a, false);
-        clickToTune(a);
+        clickToTune(a, 1);
         plt::EndPlot();
     }
 }
