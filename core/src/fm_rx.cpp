@@ -226,14 +226,14 @@ struct RdsDecoder {
         if (type == 0) {
             ta = (low >> 4) & 1; ms = (low >> 3) & 1;
             const int seg = low & 3;
-            // the four segments must arrive in order, or two versions of a changing name would be mixed
-            if (seg == 0) psSeen = 1;
-            else if (psSeen == (1 << seg) - 1) psSeen |= (uint8_t)(1 << seg);
-            else psSeen = 0;
-            if (psSeen) {
-                psBuf[seg * 2] = rdsChar(info[3] >> 8); psBuf[seg * 2 + 1] = rdsChar(info[3] & 0xFF);
-                if (psSeen == 15) { ps.assign(psBuf, 8); psSeen = 0; }
-            }
+            // each segment is kept as it comes (a group lost to noise no longer throws the others away, #46); a segment that comes again
+            // with other characters means the name is changing (a scrolling name), and the collection starts over from it, so two
+            // versions of the name are never mixed
+            const char c0 = rdsChar(info[3] >> 8), c1 = rdsChar(info[3] & 0xFF);
+            if ((psSeen >> seg & 1) && (psBuf[seg * 2] != c0 || psBuf[seg * 2 + 1] != c1)) psSeen = 0;
+            psBuf[seg * 2] = c0; psBuf[seg * 2 + 1] = c1;
+            psSeen |= (uint8_t)(1 << seg);
+            if (psSeen == 15) { ps.assign(psBuf, 8); psSeen = 0; }
         } else if (type == 2) {
             const int ab = (low >> 4) & 1, seg = low & 15;
             if (ab != rtAb) { std::memset(rtBuf, ' ', 64); rtAb = ab; rt.clear(); }
