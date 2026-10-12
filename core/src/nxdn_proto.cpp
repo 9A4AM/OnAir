@@ -63,7 +63,7 @@ void convEncode(const uint8_t* in, int n, uint8_t* out) {   // n bits (tail incl
     for (int i = 0; i < n; i++) {
         const int b = in[i] & 1;
         out[2 * i] = (uint8_t)(b ^ ((s >> 2) & 1) ^ ((s >> 3) & 1));
-        out[2 * i + 1] = (uint8_t)(b ^ (s & 1) ^ ((s >> 2) & 1) ^ ((s >> 3) & 1));
+        out[2 * i + 1] = (uint8_t)(b ^ (s & 1) ^ ((s >> 1) & 1) ^ ((s >> 3) & 1));
         s = ((s << 1) | b) & 15;
     }
 }
@@ -80,7 +80,7 @@ void viterbi(const float* soft, int n, uint8_t* out) {   // 2n soft values, ends
             float best = -2e9f; int bp = 0;
             for (int hi = 0; hi < 2; hi++) {
                 const int s = (ns >> 1) | (hi << 3);
-                const int g1 = bit ^ ((s >> 2) & 1) ^ ((s >> 3) & 1), g2 = bit ^ (s & 1) ^ ((s >> 2) & 1) ^ ((s >> 3) & 1);
+                const int g1 = bit ^ ((s >> 2) & 1) ^ ((s >> 3) & 1), g2 = bit ^ (s & 1) ^ ((s >> 1) & 1) ^ ((s >> 3) & 1);
                 const float m = pm[s] + (g1 ? a : -a) + (g2 ? b : -b);
                 if (m > best) { best = m; bp = hi; }
             }

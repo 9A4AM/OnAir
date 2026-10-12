@@ -4,7 +4,7 @@
 // seed 0xE4; a 1 inverts the symbol): the 8-symbol LICH (link information, one bit per symbol, even parity) and 174 symbols of channels.
 // NXDN48 sends 2400 symbols/s (80 ms frames, +-1050 Hz outer deviation), NXDN96 4800 symbols/s (40 ms, +-2400 Hz).
 //
-// The channels are protected by the K=5 convolutional code (G1 = 1 + D^3 + D^4, G2 = 1 + D + D^3 + D^4), punctured and block interleaved:
+// The channels are protected by the K=5 convolutional code (G1 = 1 + D^3 + D^4, G2 = 1 + D + D^2 + D^4), punctured and block interleaved:
 //   SACCH   26 bits (+ CRC-6)  -> 72 coded -> 60 on air (12 x 5 interleaver); 4 in a superframe carry one 72-bit message
 //   FACCH1  80 bits (+ CRC-12) -> 192      -> 144       (16 x 9)
 //   CAC    155 bits (+ CRC-16) -> 350      -> 300       (12 x 25)
