@@ -406,6 +406,7 @@ void loadPrefs(App& a) {
     a.popTop = d.getB("popTop", true);
     a.updCheck = d.getB("updCheck", true); a.updAuto = d.getB("updAuto", true); a.updPre = d.getB("updPre", true);
     a.updLast = d.getD("updLast", 0); a.updSkip = d.getS("updSkip", "");
+    loadFeedPrefs(a);
     a.channels = d.getChannels();
 }
 
@@ -473,6 +474,7 @@ void savePrefs(const App& a) {
     d.setB("popTop", a.popTop);
     d.setB("updCheck", a.updCheck); d.setB("updAuto", a.updAuto); d.setB("updPre", a.updPre);
     d.setD("updLast", a.updLast); d.setS("updSkip", a.updSkip);
+    saveFeedPrefs(a);
     d.flush();
 }
 

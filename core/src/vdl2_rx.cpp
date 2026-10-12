@@ -1,5 +1,6 @@
 // VDL Mode 2 receiver: see vdl2_rx.h.
 #include "dect2/vdl2_rx.h"
+#include "dect2/feeds.h"
 #include "dect2/vdl2_proto.h"
 #include <algorithm>
 #include <cmath>
@@ -455,6 +456,7 @@ struct Vdl2Receiver::Impl {
             tel.stations.insert(tel.stations.begin(), std::move(g));
             if (tel.stations.size() > 64) tel.stations.pop_back();
         }
+        if (Feeds::get().wantVdl2()) Feeds::get().vdl2(m);   // the data feed out (feeds.h)
         tel.messages.insert(tel.messages.begin(), std::move(m));
         if (tel.messages.size() > kVdl2MsgMax) tel.messages.pop_back();
         seq++;

@@ -1,5 +1,6 @@
 // ADS-B frame validation and the aircraft table.
 #include "dect2/adsb_track.h"
+#include "dect2/feeds.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -184,8 +185,18 @@ void AdsbTracker::apply(const AdsbFrame& f) {
     const bool nonIcao = f.df == 18 && (m.ca == 1 || m.ca == 5);
     const uint32_t key = f.icao | (nonIcao ? 0x1000000u : 0u);
     Rec& r = touch(key, f.timeSec);
+    const double posBefore = r.lastPos;
     if (f.bits == 112 ? (f.df == 17 || f.df == 18 || f.df == 19) : f.df == 11) r.lastTrusted = f.timeSec;
     applyMsg(r, f);
+    if (Feeds::get().wantAdsb()) {   // the data feeds out (feeds.h), off unless the user turned them on
+        FeedAdsbFrame ff;
+        memcpy(ff.bytes, f.bytes, sizeof ff.bytes);
+        ff.bits = f.bits; ff.timeSec = f.timeSec; ff.levelDbfs = f.levelDbfs;
+        ff.icao = f.icao; ff.nonIcao = nonIcao; ff.msg = m;
+        ff.hasPos = r.lastPos != posBefore && r.a.hasPos;
+        ff.lat = r.a.lat; ff.lon = r.a.lon;
+        Feeds::get().adsb(ff);
+    }
 
     good_++;
     window_++;

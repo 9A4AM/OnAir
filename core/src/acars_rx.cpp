@@ -1,4 +1,5 @@
 #include "dect2/acars_rx.h"
+#include "dect2/feeds.h"
 #include "dect2/acars_proto.h"
 #include "dect2/aero_pos.h"
 #include "dect2/fftutil.h"
@@ -306,6 +307,7 @@ struct AcarsReceiver::Impl {
                 aircraft.erase(old);
             }
         }
+        if (Feeds::get().wantAcars()) Feeds::get().acars(m);   // the data feed out (feeds.h), off unless the user turned it on
         msgs.push_front(std::move(m));
         if (msgs.size() > 200) msgs.pop_back();
     }

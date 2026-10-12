@@ -5,6 +5,7 @@
 // 9600 baud: two slicers with different filters, a clock loop, the G3RUH descrambler (x^17 + x^12 + 1) and NRZI.
 // The frame layer is packet_ax25.*, the APRS layer packet_aprs.*.
 #include "dect2/packet_rx.h"
+#include "dect2/feeds.h"
 #include "dect2/dmr_dsp.h"
 #include "dect2/exact_resampler.h"
 #include "dect2/packet_aprs.h"
@@ -337,6 +338,7 @@ struct PacketReceiver::Impl {
             pf.type = f.typeName();
             pf.summary = "AX.25 " + f.typeName() + (f.info.empty() ? "" : ": " + f.info);
         }
+        if (Feeds::get().wantAprs()) Feeds::get().aprs(dat, pf.from, pf.to, pf.path, f.info, f.isUi() && f.pid == 0xF0);   // the data feeds out (feeds.h)
         frames.push_back(pf);
         while (frames.size() > kMaxFrames) frames.pop_front();
         touchStation(pf.from, isAprs ? &a : nullptr, false, "", tnow);
