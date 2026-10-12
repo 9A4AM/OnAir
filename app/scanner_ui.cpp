@@ -165,7 +165,7 @@ void tick(App& a) {
         const uint64_t n = d.blocks >= S.blocks0 ? d.blocks - S.blocks0 : 0;
         if (d.valid && n) snprintf(b, sizeof b, "%s (%llu)", d.what, (unsigned long long)n);
         else if (d.valid) snprintf(b, sizeof b, "%s", d.what);
-        else snprintf(b, sizeof b, "signal only");
+        else snprintf(b, sizeof b, "%s", tr("signal only"));
         S.what = b;
     }
     const bool active = S.level >= S.thrDb || d.valid;
@@ -187,13 +187,13 @@ void tick(App& a) {
         h.endT = now;
     }
     if (retune) { closeHit(now); tuneTo(a, S.m.target()); }
-    else if (!S.m.running()) { closeHit(now); S.msg = "nothing left to scan"; }
+    else if (!S.m.running()) { closeHit(now); S.msg = tr("nothing left to scan"); }
 }
 
 void startScan(App& a) {
     if (a.scanner.progress().running) { S.msg = "a channel scan is using the radio: stop it first"; return; }
     if (S.m.start(glfwGetTime())) { S.msg.clear(); tuneTo(a, S.m.target()); }
-    else S.msg = S.m.useBand ? "the band has no steps (check start, stop and step)" : "the list has nothing to scan (empty, or every entry locked out)";
+    else S.msg = tr(S.m.useBand ? "the band has no steps (check start, stop and step)" : "the list has nothing to scan (empty, or every entry locked out)");
 }
 
 // ---------------------------------------------------------------- window
@@ -203,13 +203,13 @@ void listTable(App& a) {
     const ImGuiTableFlags tf = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit;
     if (ImGui::BeginTable("##scanlist", 7, tf, ImVec2(0, 190 * gUi))) {
         ImGui::TableSetupScrollFreeze(0, 1);
-        ImGui::TableSetupColumn("MHz", 0, 110 * gUi);
-        ImGui::TableSetupColumn("Mode", 0, 150 * gUi);
-        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Dwell s", 0, 60 * gUi);
-        ImGui::TableSetupColumn("Priority", 0, 56 * gUi);
-        ImGui::TableSetupColumn("Lockout", 0, 56 * gUi);
-        ImGui::TableSetupColumn("", 0, 24 * gUi);
+        ImGui::TableSetupColumn(tr("MHz"), 0, 110 * gUi);
+        ImGui::TableSetupColumn(tr("Mode"), 0, 150 * gUi);
+        ImGui::TableSetupColumn(tr("Name"), ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(tr("Dwell s"), 0, 60 * gUi);
+        ImGui::TableSetupColumn(tr("Priority"), 0, 56 * gUi);
+        ImGui::TableSetupColumn(tr("Lockout"), 0, 56 * gUi);
+        ImGui::TableSetupColumn(tr(""), 0, 24 * gUi);
         ImGui::TableHeadersRow();
         for (int i = 0; i < (int)S.m.list.size(); i++) {
             Entry& e = S.m.list[i];
@@ -227,7 +227,7 @@ void listTable(App& a) {
             if (ImGui::InputDouble("##d", &e.dwellSec, 0, 0, "%.1f")) { e.dwellSec = std::max(0.5, e.dwellSec); S.dirty = true; }
             ImGui::TableNextColumn();
             if (ImGui::Checkbox("##p", &e.priority)) { if (e.priority) for (int k = 0; k < (int)S.m.list.size(); k++) if (k != i) S.m.list[k].priority = false; S.dirty = true; }
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Checked every %.0f s, also while another channel holds (one priority entry)", S.m.prioritySec);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("Checked every %.0f s, also while another channel holds (one priority entry)"), S.m.prioritySec);
             ImGui::TableNextColumn();
             if (ImGui::Checkbox("##l", &e.lockout)) S.dirty = true;
             ImGui::TableNextColumn();
@@ -239,13 +239,13 @@ void listTable(App& a) {
         ImGui::EndTable();
     }
     if (del >= 0) { S.m.list.erase(S.m.list.begin() + del); S.dirty = true; }
-    if (ImGui::Button("Add current")) {
+    if (ImGui::Button(tr("Add current"))) {
         Entry e; e.mhz = a.freqMhz; const int mi = currentModeIndex(a); e.mode = mi >= 0 ? modeKey(kModes[mi]) : "fm";
         S.m.list.push_back(e); S.dirty = true;
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Adds the frequency and mode the receiver is on now");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Adds the frequency and mode the receiver is on now"));
     ImGui::SameLine();
-    if (ImGui::Button("Import CSV...")) {
+    if (ImGui::Button(tr("Import CSV..."))) {
         const std::string p = openFileDialog();
         if (!p.empty()) {
             std::ifstream f(p, std::ios::binary); std::stringstream ss; ss << f.rdbuf();
@@ -253,48 +253,48 @@ void listTable(App& a) {
             int unknown = 0;
             for (const Entry& e : v) if (modeIndex(e.mode) < 0) unknown++;
             S.m.list.insert(S.m.list.end(), v.begin(), v.end()); S.dirty = true;
-            char b[120]; snprintf(b, sizeof b, "imported %d entries%s", (int)v.size(), unknown ? " (some with a mode OnAir does not know)" : "");
+            char b[120]; snprintf(b, sizeof b, tr("imported %d entries%s"), (int)v.size(), unknown ? tr(" (some with a mode OnAir does not know)") : "");
             S.msg = b;
         }
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Columns: frequency_mhz, mode, name, dwell_s, lockout, priority.\nmode is a mode id: fm, dab, airband, dmr, pocsag, ft8 ...");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Columns: frequency_mhz, mode, name, dwell_s, lockout, priority.\nmode is a mode id: fm, dab, airband, dmr, pocsag, ft8 ..."));
     ImGui::SameLine();
-    if (ImGui::Button("Export CSV...")) {
+    if (ImGui::Button(tr("Export CSV..."))) {
         const std::string p = saveFileDialog("scanlist.csv");
-        if (!p.empty()) { std::ofstream f(p, std::ios::binary); f << scanlist::toCsv(S.m.list); S.msg = f ? "exported " + p : "could not write " + p; }
+        if (!p.empty()) { std::ofstream f(p, std::ios::binary); f << scanlist::toCsv(S.m.list); S.msg = std::string(tr(f ? "exported" : "could not write")) + " " + p; }
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(run || S.m.list.empty());
-    if (ImGui::Button("Clear lockouts")) { for (Entry& e : S.m.list) e.lockout = false; S.dirty = true; }
+    if (ImGui::Button(tr("Clear lockouts"))) { for (Entry& e : S.m.list) e.lockout = false; S.dirty = true; }
     ImGui::EndDisabled();
 }
 
 void bandFields() {
     scanlist::Band& b = S.m.band;
-    ImGui::SetNextItemWidth(110 * gUi); if (ImGui::InputDouble("start MHz", &b.startMhz, 0, 0, "%.4f")) S.dirty = true;
-    ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi); if (ImGui::InputDouble("stop MHz", &b.stopMhz, 0, 0, "%.4f")) S.dirty = true;
-    ImGui::SameLine(); ImGui::SetNextItemWidth(80 * gUi); if (ImGui::InputDouble("step kHz", &b.stepKhz, 0, 0, "%.3f")) { b.stepKhz = std::max(0.1, b.stepKhz); S.dirty = true; }
-    ImGui::SetNextItemWidth(60 * gUi); if (ImGui::InputDouble("dwell s", &b.dwellSec, 0, 0, "%.1f")) { b.dwellSec = std::max(0.5, b.dwellSec); S.dirty = true; }
+    ImGui::SetNextItemWidth(110 * gUi); if (ImGui::InputDouble(tr("start MHz"), &b.startMhz, 0, 0, "%.4f")) S.dirty = true;
+    ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi); if (ImGui::InputDouble(tr("stop MHz"), &b.stopMhz, 0, 0, "%.4f")) S.dirty = true;
+    ImGui::SameLine(); ImGui::SetNextItemWidth(80 * gUi); if (ImGui::InputDouble(tr("step kHz"), &b.stepKhz, 0, 0, "%.3f")) { b.stepKhz = std::max(0.1, b.stepKhz); S.dirty = true; }
+    ImGui::SetNextItemWidth(60 * gUi); if (ImGui::InputDouble(tr("dwell s"), &b.dwellSec, 0, 0, "%.1f")) { b.dwellSec = std::max(0.5, b.dwellSec); S.dirty = true; }
     ImGui::SameLine();
     if (modeCombo("mode##band", b.mode, 180 * gUi)) S.dirty = true;
     ImGui::SameLine();
-    ImGui::TextDisabled("%d steps, %d locked out", S.m.bandSteps(), (int)S.m.bandLockouts.size());
-    if (!S.m.bandLockouts.empty()) { ImGui::SameLine(); if (ImGui::SmallButton("clear")) S.m.bandLockouts.clear(); }
+    ImGui::TextDisabled(tr("%d steps, %d locked out"), S.m.bandSteps(), (int)S.m.bandLockouts.size());
+    if (!S.m.bandLockouts.empty()) { ImGui::SameLine(); if (ImGui::SmallButton(tr("clear"))) S.m.bandLockouts.clear(); }
 }
 
 void logTable() {
-    ImGui::TextDisabled("Hits");
+    ImGui::TextDisabled("%s", tr("Hits"));
     ImGui::SameLine();
-    if (ImGui::SmallButton("Clear##log")) { S.log.clear(); S.logging = false; }
+    if (ImGui::SmallButton(tr("Clear##log"))) { S.log.clear(); S.logging = false; }
     const ImGuiTableFlags tf = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit;
     if (ImGui::BeginTable("##scanlog", 6, tf, ImVec2(0, std::max(120.f * gUi, ImGui::GetContentRegionAvail().y)))) {
         ImGui::TableSetupScrollFreeze(0, 1);
-        ImGui::TableSetupColumn("Time", 0, 70 * gUi);
-        ImGui::TableSetupColumn("MHz", 0, 90 * gUi);
-        ImGui::TableSetupColumn("Mode", 0, 120 * gUi);
-        ImGui::TableSetupColumn("Level", 0, 60 * gUi);
-        ImGui::TableSetupColumn("For", 0, 50 * gUi);
-        ImGui::TableSetupColumn("Decoded", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(tr("Time"), 0, 70 * gUi);
+        ImGui::TableSetupColumn(tr("MHz"), 0, 90 * gUi);
+        ImGui::TableSetupColumn(tr("Mode"), 0, 120 * gUi);
+        ImGui::TableSetupColumn(tr("Level"), 0, 60 * gUi);
+        ImGui::TableSetupColumn(tr("For"), 0, 50 * gUi);
+        ImGui::TableSetupColumn(tr("Decoded"), ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
         for (int i = (int)S.log.size() - 1; i >= 0; i--) {
             const Hit& h = S.log[i];
@@ -309,7 +309,7 @@ void logTable() {
             ImGui::TableNextColumn(); ImGui::TextUnformatted(tb);
             ImGui::TableNextColumn(); ImGui::Text("%.4f", h.mhz);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(h.name.empty() ? modeName(h.mode) : (std::string(modeName(h.mode)) + " " + h.name).c_str());
-            ImGui::TableNextColumn(); ImGui::Text("%.1f dB", h.levelDb);
+            ImGui::TableNextColumn(); ImGui::Text(tr("%.1f dB"), h.levelDb);
             ImGui::TableNextColumn(); ImGui::Text("%.0f s", h.endT - h.startT);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(h.what.c_str());
         }
@@ -319,44 +319,44 @@ void logTable() {
 
 void window(App& a) {
     ImGui::SetNextWindowSize(ImVec2(760 * gUi, 620 * gUi), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Scanner (highly experimental)", &a.scannerOpen)) { ImGui::End(); return; }
-    ImGui::TextColored(pal::warnAmber(), "HIGHLY EXPERIMENTAL");
+    if (!ImGui::Begin(trw("Scanner (highly experimental)"), &a.scannerOpen)) { ImGui::End(); return; }
+    ImGui::TextColored(pal::warnAmber(), "%s", tr("HIGHLY EXPERIMENTAL"));
     ImGui::SameLine();
-    ImGui::TextDisabled("Steps through the list or a band, stops on activity. A mode change restarts the receiver.");
+    ImGui::TextDisabled("%s", tr("Steps through the list or a band, stops on activity. A mode change restarts the receiver."));
     const bool run = S.m.running();
     {   // controls
-        if (ImGui::Button(run ? "Stop scan" : "Start scan")) { if (run) { S.m.stop(); closeHit(glfwGetTime()); } else startScan(a); }
+        if (ImGui::Button(tr(run ? "Stop scan" : "Start scan"))) { if (run) { S.m.stop(); closeHit(glfwGetTime()); } else startScan(a); }
         ImGui::SameLine();
         ImGui::BeginDisabled(!run);
-        if (ImGui::Button("Skip")) { closeHit(glfwGetTime()); if (S.m.skip(glfwGetTime())) tuneTo(a, S.m.target()); }
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Move on to the next channel now");
+        if (ImGui::Button(tr("Skip"))) { closeHit(glfwGetTime()); if (S.m.skip(glfwGetTime())) tuneTo(a, S.m.target()); }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Move on to the next channel now"));
         ImGui::SameLine();
-        if (ImGui::Button("Lockout")) { closeHit(glfwGetTime()); if (S.m.lockout(glfwGetTime())) tuneTo(a, S.m.target()); S.dirty = true; }
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Skip this channel from now on");
+        if (ImGui::Button(tr("Lockout"))) { closeHit(glfwGetTime()); if (S.m.lockout(glfwGetTime())) tuneTo(a, S.m.target()); S.dirty = true; }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Skip this channel from now on"));
         ImGui::EndDisabled();
         ImGui::SameLine();
         if (run) {
-            static const char* const kSt[4] = {"idle", "listening", "ACTIVE", "hang"};
+            static const char* const kSt[4] = {N_("idle"), N_("listening"), N_("ACTIVE"), N_("hang")};
             const scanlist::Target& t = S.m.target();
             const ImVec4 col = S.m.state() == Machine::Hold ? pal::okGreen() : S.m.state() == Machine::Hang ? pal::warnAmber() : pal::grey();
-            ImGui::TextColored(col, "%s  %.4f MHz  %s%s%s%s  %.1f dB  %s", kSt[S.m.state()], t.mhz, modeName(t.mode), t.name.empty() ? "" : "  ", t.name.c_str(),
-                               t.priority ? "  (priority)" : "", S.level, S.decodeKnown ? S.what.c_str() : "");
+            ImGui::TextColored(col, tr("%s  %.4f MHz  %s%s%s%s  %.1f dB  %s"), tr(kSt[S.m.state()]), t.mhz, modeName(t.mode), t.name.empty() ? "" : "  ", t.name.c_str(),
+                               t.priority ? tr("  (priority)") : "", S.level, S.decodeKnown ? S.what.c_str() : "");
         } else if (!S.msg.empty()) ImGui::TextDisabled("%s", S.msg.c_str());
     }
     {   // settings
         float hang = (float)S.m.hangSec, prio = (float)S.m.prioritySec;
         ImGui::SetNextItemWidth(130 * gUi);
-        if (ImGui::SliderFloat("##thr", &S.thrDb, 2, 30, "squelch %.0f dB")) S.dirty = true;
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Channel power over the noise (in the mode's bandwidth) that counts as activity.\nA mode that reports it decodes (sync, frames, data) stops the scan too.");
+        if (ImGui::SliderFloat("##thr", &S.thrDb, 2, 30, tr("squelch %.0f dB"))) S.dirty = true;
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Channel power over the noise (in the mode's bandwidth) that counts as activity.\nA mode that reports it decodes (sync, frames, data) stops the scan too."));
         ImGui::SameLine(); ImGui::SetNextItemWidth(120 * gUi);
-        if (ImGui::SliderFloat("##hang", &hang, 0, 20, "hang %.1f s")) { S.m.hangSec = hang; S.dirty = true; }
+        if (ImGui::SliderFloat("##hang", &hang, 0, 20, tr("hang %.1f s"))) { S.m.hangSec = hang; S.dirty = true; }
         ImGui::SameLine(); ImGui::SetNextItemWidth(140 * gUi);
-        if (ImGui::SliderFloat("##prio", &prio, 0, 60, prio > 0 ? "priority every %.0f s" : "priority off")) { S.m.prioritySec = prio; S.dirty = true; }
+        if (ImGui::SliderFloat("##prio", &prio, 0, 60, tr(prio > 0 ? "priority every %.0f s" : "priority off"))) { S.m.prioritySec = prio; S.dirty = true; }
         ImGui::SameLine();
         ImGui::BeginDisabled(run);
-        if (ImGui::RadioButton("List", !S.m.useBand)) { S.m.useBand = false; S.dirty = true; }
+        if (ImGui::RadioButton(tr("List"), !S.m.useBand)) { S.m.useBand = false; S.dirty = true; }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Band", S.m.useBand)) { S.m.useBand = true; S.dirty = true; }
+        if (ImGui::RadioButton(tr("Band"), S.m.useBand)) { S.m.useBand = true; S.dirty = true; }
         ImGui::EndDisabled();
     }
     ImGui::Separator();
@@ -376,6 +376,6 @@ void scannerWindow(App& a) {
 }
 
 void scannerButton(App& a) {
-    if (ImGui::SmallButton("Scanner (highly experimental)...")) a.scannerOpen = true;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
+    if (ImGui::SmallButton(tr("Scanner (highly experimental)..."))) a.scannerOpen = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
 }

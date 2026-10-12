@@ -15,7 +15,7 @@ void apply(App& a) {
 bool portField(const char* label, int& port) {
     ImGui::SetNextItemWidth(90 * gUi);
     int p = port;
-    ImGui::InputInt(label, &p, 0, 0);
+    ImGui::InputInt(tr(label), &p, 0, 0);
     port = std::max(1, std::min(65535, p));
     return ImGui::IsItemDeactivatedAfterEdit();
 }
@@ -24,18 +24,18 @@ bool textField(const char* label, std::string& s, ImGuiInputTextFlags fl = 0, fl
     char b[128];
     snprintf(b, sizeof b, "%s", s.c_str());
     ImGui::SetNextItemWidth(w * gUi);
-    if (ImGui::InputText(label, b, sizeof b, fl)) s = b;
+    if (ImGui::InputText(tr(label), b, sizeof b, fl)) s = b;
     return ImGui::IsItemDeactivatedAfterEdit();
 }
 
 void statusLine(int id, bool server) {
     const dect2::FeedStatus s = dect2::Feeds::get().status(id);
     ImGui::Indent();
-    if (s.state == "off") ImGui::TextDisabled("off");
+    if (s.state == "off") ImGui::TextDisabled("%s", tr("off"));
     else {
         const ImVec4 col = !s.lastError.empty() ? pal::warnAmber() : s.active ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled);
-        if (server) ImGui::TextColored(col, "%s, %d client%s, %llu sent, %llu dropped", s.state.c_str(), s.clients, s.clients == 1 ? "" : "s", (unsigned long long)s.sent, (unsigned long long)s.dropped);
-        else ImGui::TextColored(col, "%s, %llu sent, %llu dropped", s.state.c_str(), (unsigned long long)s.sent, (unsigned long long)s.dropped);
+        if (server) ImGui::TextColored(col, tr("%s, %d client%s, %llu sent, %llu dropped"), s.state.c_str(), s.clients, s.clients == 1 ? "" : "s", (unsigned long long)s.sent, (unsigned long long)s.dropped);
+        else ImGui::TextColored(col, tr("%s, %llu sent, %llu dropped"), s.state.c_str(), (unsigned long long)s.sent, (unsigned long long)s.dropped);
         if (!s.lastError.empty()) { ImGui::PushTextWrapPos(460 * gUi); ImGui::TextColored(pal::badRed(), "%s", s.lastError.c_str()); ImGui::PopTextWrapPos(); }
     }
     ImGui::Unindent();
@@ -77,65 +77,65 @@ void saveFeedPrefs(const App& a) {
 void feedsWindow(App& a) {
     if (!a.feedsOpen) return;
     ImGui::SetNextWindowSize(ImVec2(480 * gUi, 0), ImGuiCond_Appearing);
-    if (!ImGui::Begin("Data feeds", &a.feedsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
+    if (!ImGui::Begin(trw("Data feeds"), &a.feedsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
     dect2::FeedConfig& c = a.feeds;
     bool changed = false;
     ImGui::PushTextWrapPos(460 * gUi);
-    ImGui::TextDisabled("Sends decoded data to other programs while the mode runs. Every feed is off until you turn it on.");
+    ImGui::TextDisabled("%s", tr("Sends decoded data to other programs while the mode runs. Every feed is off until you turn it on."));
     ImGui::PopTextWrapPos();
 
-    changed |= ImGui::Checkbox("Let other computers connect to the TCP feeds (LAN)", &c.lan);
-    ImGui::SeparatorText("ADS-B");
+    changed |= ImGui::Checkbox(tr("Let other computers connect to the TCP feeds (LAN)"), &c.lan);
+    ImGui::SeparatorText(tr("ADS-B"));
     ImGui::PushID("sbs");
-    changed |= ImGui::Checkbox("SBS-1 BaseStation (TCP server)", &c.on[dect2::kFeedSbs]);
-    ImGui::SameLine(); changed |= portField("Port", c.sbsPort);
+    changed |= ImGui::Checkbox(tr("SBS-1 BaseStation (TCP server)"), &c.on[dect2::kFeedSbs]);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.sbsPort);
     statusLine(dect2::kFeedSbs, true);
     ImGui::PopID();
     ImGui::PushID("beast");
-    changed |= ImGui::Checkbox("Beast binary (TCP server)", &c.on[dect2::kFeedBeast]);
-    ImGui::SameLine(); changed |= portField("Port", c.beastPort);
+    changed |= ImGui::Checkbox(tr("Beast binary (TCP server)"), &c.on[dect2::kFeedBeast]);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.beastPort);
     statusLine(dect2::kFeedBeast, true);
     ImGui::PopID();
 
-    ImGui::SeparatorText("AIS");
+    ImGui::SeparatorText(tr("AIS"));
     ImGui::PushID("ais");
-    changed |= ImGui::Checkbox("NMEA !AIVDM (UDP)", &c.on[dect2::kFeedAis]);
+    changed |= ImGui::Checkbox(tr("NMEA !AIVDM (UDP)"), &c.on[dect2::kFeedAis]);
     ImGui::SameLine(); changed |= textField("##host", c.aisHost, 0, 120);
-    ImGui::SameLine(); changed |= portField("Port", c.aisPort);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.aisPort);
     statusLine(dect2::kFeedAis, false);
     ImGui::PopID();
 
-    ImGui::SeparatorText("APRS");
+    ImGui::SeparatorText(tr("APRS"));
     ImGui::PushID("aprsis");
-    changed |= ImGui::Checkbox("APRS-IS (receive-only igate)", &c.on[dect2::kFeedAprsIs]);
+    changed |= ImGui::Checkbox(tr("APRS-IS (receive-only igate)"), &c.on[dect2::kFeedAprsIs]);
     ImGui::Indent();
-    changed |= textField("Callsign", c.aprsCall, ImGuiInputTextFlags_CharsUppercase, 120);
-    changed |= textField("Passcode", c.aprsPass, ImGuiInputTextFlags_Password | ImGuiInputTextFlags_CharsDecimal, 120);
+    changed |= textField(N_("Callsign"), c.aprsCall, ImGuiInputTextFlags_CharsUppercase, 120);
+    changed |= textField(N_("Passcode"), c.aprsPass, ImGuiInputTextFlags_Password | ImGuiInputTextFlags_CharsDecimal, 120);
     changed |= textField("##server", c.aprsServer, 0, 160);
-    ImGui::SameLine(); changed |= portField("Server", c.aprsServerPort);
+    ImGui::SameLine(); changed |= portField(N_("Server"), c.aprsServerPort);
     ImGui::Unindent();
     statusLine(dect2::kFeedAprsIs, false);
     ImGui::PopID();
     ImGui::PushID("kiss");
-    changed |= ImGui::Checkbox("KISS (TCP server)", &c.on[dect2::kFeedKiss]);
-    ImGui::SameLine(); changed |= portField("Port", c.kissPort);
+    changed |= ImGui::Checkbox(tr("KISS (TCP server)"), &c.on[dect2::kFeedKiss]);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.kissPort);
     statusLine(dect2::kFeedKiss, true);
     ImGui::PopID();
 
-    ImGui::SeparatorText("ACARS and VDL2 (JSON)");
+    ImGui::SeparatorText(tr("ACARS and VDL2 (JSON)"));
     ImGui::PushID("acars");
-    changed |= ImGui::Checkbox("ACARS, acarsdec format (UDP)", &c.on[dect2::kFeedAcars]);
+    changed |= ImGui::Checkbox(tr("ACARS, acarsdec format (UDP)"), &c.on[dect2::kFeedAcars]);
     ImGui::SameLine(); changed |= textField("##host", c.acarsHost, 0, 120);
-    ImGui::SameLine(); changed |= portField("Port", c.acarsPort);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.acarsPort);
     statusLine(dect2::kFeedAcars, false);
     ImGui::PopID();
     ImGui::PushID("vdl2");
-    changed |= ImGui::Checkbox("VDL2, dumpvdl2 format (UDP)", &c.on[dect2::kFeedVdl2]);
+    changed |= ImGui::Checkbox(tr("VDL2, dumpvdl2 format (UDP)"), &c.on[dect2::kFeedVdl2]);
     ImGui::SameLine(); changed |= textField("##host", c.vdl2Host, 0, 120);
-    ImGui::SameLine(); changed |= portField("Port", c.vdl2Port);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.vdl2Port);
     statusLine(dect2::kFeedVdl2, false);
     ImGui::PopID();
-    changed |= textField("Station ID", c.stationId, 0, 120);
+    changed |= textField(N_("Station ID"), c.stationId, 0, 120);
 
     if (changed) apply(a);
     ImGui::End();

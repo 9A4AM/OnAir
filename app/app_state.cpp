@@ -373,6 +373,8 @@ void loadPrefs(App& a) {
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
     if (d.has("lightUi")) a.lightUi = d.getI("lightUi", 0) != 0;
+    a.uiLang = d.getS("uiLang", "");
+    i18n::set(a.uiLang.empty() ? plat::uiLanguage() : a.uiLang);
     if (d.has("uiTheme")) a.uiTheme = std::max(0, std::min(2, (int)d.getI("uiTheme", 1)));
     if (d.has("fmStations")) {
         std::string st = d.getS("fmStations", ""), line;
@@ -437,6 +439,7 @@ void savePrefs(const App& a) {
     }
     for (int f = 6; f < kNumSlots; f++) if (a.famFreq[f] > 0 || (f == curSlot && a.family >= 6)) d.setD(("fFreq" + slotKey(f)).c_str(), f == curSlot ? a.freqMhz : a.famFreq[f]);
     d.setI("uiTheme", a.uiTheme);
+    d.setS("uiLang", a.uiLang);
     d.setI("lightUi", a.lightUi ? 1 : 0);
     d.setI("discordOn", a.discordOn ? 1 : 0);
     d.setI("discordFreq", a.discordFreq ? 1 : 0);

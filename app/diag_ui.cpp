@@ -157,7 +157,7 @@ void recordUi(App& a) {
         ImGui::BeginDisabled(!can);
         const ImVec2 p0 = ImGui::GetCursorScreenPos();
         const float sp = ImGui::CalcTextSize(" ").x;
-        if (ImGui::SmallButton("    Record IQ")) {
+        if (ImGui::SmallButton((std::string("    ") + tr("Record IQ")).c_str())) {
             const FileFormat f = a.recFormat == 1 ? FileFormat::CF32 : FileFormat::CS8;
             const std::string path = plat::dataDir() + "/recordings/" + a.engine.recordingName(f);
             std::string err;
@@ -167,7 +167,7 @@ void recordUi(App& a) {
         ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(p0.x + ImGui::GetStyle().FramePadding.x + 2.2f * sp, p0.y + ImGui::GetItemRectSize().y * 0.5f), 3.2f * gUi, can ? ImGui::GetColorU32(pal::badRed()) : IM_COL32(120, 80, 78, 255));
         ImGui::EndDisabled();
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-            ImGui::SetTooltip("%s", isFile ? "Recordings of a file are not needed" : !can ? "Start the radio first" : "Saves the radio's raw samples to a file, for a bug report");
+            ImGui::SetTooltip("%s", tr(isFile ? "Recordings of a file are not needed" : !can ? "Start the radio first" : "Saves the radio's raw samples to a file, for a bug report"));
     }
     flowNext(6 * gUi);
     ImGui::BeginDisabled(rs.active);
@@ -302,11 +302,11 @@ void radioMessagesUi(App& a, bool vertical) {
         ImGui::PopID();
     }
     const bool copied = ImGui::GetTime() - a.diagCopiedAt < 2.0;
-    if (ImGui::SmallButton(copied ? "Copied" : "Copy diagnostics")) {
+    if (ImGui::SmallButton(tr(copied ? "Copied" : "Copy diagnostics"))) {
         ImGui::SetClipboardText(diagnosticsText(a).c_str());
         a.diagCopiedAt = ImGui::GetTime();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Copies the version, system, radios, messages and radio log lines, for a bug report");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Copies the version, system, radios, messages and radio log lines, for a bug report"));
     flowNext(6 * gUi);
     recordUi(a);
 }

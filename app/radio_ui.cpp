@@ -79,14 +79,14 @@ void radioSettingsUi(App& a, bool vertical) {
     int changedN = 0;
     for (const auto& r : d.settings) if (a.tune.radio.count(r.key)) changedN++;
     char title[64];
-    snprintf(title, sizeof title, changedN ? "Radio settings (%d changed)###radioset" : "Radio settings###radioset", changedN);
+    snprintf(title, sizeof title, changedN ? tr("Radio settings (%d changed)###radioset") : tr("Radio settings###radioset"), changedN);
     bool open = false;
     if (vertical) {
         ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
         open = ImGui::TreeNodeEx(title, ImGuiTreeNodeFlags_SpanAvailWidth);
     } else {   // a one-line bar: a button with the settings in a popup (the caller places it)
-        if (ImGui::SmallButton(changedN ? "Radio settings*" : "Radio settings")) ImGui::OpenPopup("##radiosetpop");
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s: frequency correction and the other settings of this radio", title);
+        if (ImGui::SmallButton(tr(changedN ? "Radio settings*" : "Radio settings"))) ImGui::OpenPopup("##radiosetpop");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("%s: frequency correction and the other settings of this radio"), title);
         open = ImGui::BeginPopup("##radiosetpop");
     }
     if (!open) return;
@@ -99,7 +99,7 @@ void radioSettingsUi(App& a, bool vertical) {
         saveRadioSettings(a);
         if (r.restart) restart = true; else retune = true;
     }
-    if (d.kind == DeviceInfo::Soapy && d.settings.size() <= 1) ImGui::TextDisabled("The driver's own settings show up here\nonce this radio has been started.");
+    if (d.kind == DeviceInfo::Soapy && d.settings.size() <= 1) ImGui::TextDisabled("%s", tr("The driver's own settings show up here\nonce this radio has been started."));
     if (vertical) ImGui::TreePop(); else ImGui::EndPopup();
     if (!a.engine.running()) return;   // the next start takes them
     if (restart) { a.engine.log("radio setting changed: restarting the radio"); startReceiver(a); }

@@ -15,23 +15,23 @@ struct WizStep {
 };
 
 static const WizStep kWiz[] = {
-    {"Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.",
+    {N_("Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet."),
      TgNone, mascot::Excited, true, nullptr, nullptr},
-    {"Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.",
+    {N_("Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place."),
      TgSwitch, mascot::Happy, false, nullptr, nullptr},
-    {"Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.",
-     TgToolbar, mascot::Excited, false, "Start the demo signal", nullptr},
-    {"See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.",
+    {N_("Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in."),
+     TgToolbar, mascot::Excited, false, N_("Start the demo signal"), nullptr},
+    {N_("See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time."),
      TgMain, mascot::Happy, false, nullptr, "Overview"},
-    {"And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!",
+    {N_("And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!"),
      TgConst, mascot::Happy, false, nullptr, nullptr},
-    {"Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.",
+    {N_("Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching."),
      TgRight, mascot::Happy, false, nullptr, nullptr},
-    {"Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.",
-     TgToolbar, mascot::Thinking, false, "Stop the demo and look for my radio", nullptr},
-    {"Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!",
+    {N_("Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you."),
+     TgToolbar, mascot::Thinking, false, N_("Stop the demo and look for my radio"), nullptr},
+    {N_("Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!"),
      TgMain, mascot::Happy, false, nullptr, "Scan"},
-    {"That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!",
+    {N_("That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!"),
      TgNone, mascot::Excited, true, nullptr, nullptr},
 };
 static const int kWizSteps = (int)(sizeof kWiz / sizeof *kWiz);
@@ -99,16 +99,21 @@ void wizard(App& a, ImVec2 disp) {
         ? [&] {
               std::string n;
               for (auto& d : a.devices) if (d.isRadio()) { n = d.name; break; }
-              return n.empty() ? std::string(st.text) + " (I can't see a radio right now. Plug it in and press the button again."
+              if (!n.empty()) {
+                  std::string g = tr("Good news: I can see \"%s\"!");
+                  const size_t at = g.find("%s");
+                  if (at != std::string::npos) g.replace(at, 2, n);
+                  return std::string(tr(st.text)) + " " + g;
+              }
+              return std::string(tr(st.text)) + " " + tr("(I can't see a radio right now. Plug it in and press the button again.)")
 #ifdef _WIN32
-                                                    " On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.)"
-#else
-                                                    ")"
+                     + " " + tr("On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.")
 #endif
-                               : std::string(st.text) + " Good news: I can see \"" + n + "\"!";
+                  ;
           }()
-        : std::string(st.text);
-    const size_t shown = std::min(text.size(), (size_t)((now - a.wizStepT) * 75.0));
+        : std::string(tr(st.text));
+    size_t shown = std::min(text.size(), (size_t)((now - a.wizStepT) * 75.0));
+    while (shown < text.size() && ((unsigned char)text[shown] & 0xC0) == 0x80) shown++;   // never half a UTF-8 character
     const bool talking = shown < text.size();
 
     ImGui::SetNextWindowPos(pos);
@@ -145,20 +150,20 @@ void wizard(App& a, ImVec2 disp) {
         }
     }
     ImGui::SetCursorPos(ImVec2(tx, H - 44 * u));
-    if (a.wizStep > 0 && ImGui::Button("Back", ImVec2(70 * gUi, 0))) { wizEnter(a, a.wizStep - 1); }
+    if (a.wizStep > 0 && ImGui::Button(tr("Back"), ImVec2(70 * gUi, 0))) { wizEnter(a, a.wizStep - 1); }
     if (a.wizStep > 0) ImGui::SameLine();
     if (st.action) {
-        if (ImGui::Button(st.action)) { wizAction(a, a.wizStep); a.wizAcked = true; }
+        if (ImGui::Button(tr(st.action))) { wizAction(a, a.wizStep); a.wizAcked = true; }
         ImGui::SameLine();
     }
     const bool last = a.wizStep == kWizSteps - 1;
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.34f, 0.40f, 1)); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.27f, 0.45f, 0.53f, 1));
-    if (ImGui::Button(last ? "Finish" : "Next", ImVec2(80 * gUi, 0))) { if (last) wizFinish(a); else wizEnter(a, a.wizStep + 1); }
+    if (ImGui::Button(tr(last ? "Finish" : "Next"), ImVec2(80 * gUi, 0))) { if (last) wizFinish(a); else wizEnter(a, a.wizStep + 1); }
     ImGui::PopStyleColor(2);
     if (!last) {
         ImGui::SameLine(0, 18 * gUi);
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-        if (ImGui::Button("Skip tour")) wizFinish(a);
+        if (ImGui::Button(tr("Skip tour"))) wizFinish(a);
         ImGui::PopStyleColor();
     }
     ImGui::End();

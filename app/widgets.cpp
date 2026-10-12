@@ -2,13 +2,39 @@
 #include "app.h"
 
 bool gTightTabs = false;
+void setUiLanguage(App& a, const std::string& code) {
+    a.uiLang = code;
+    i18n::set(code.empty() ? plat::uiLanguage() : code);
+    savePrefs(a);
+}
+
+void languageMenuItems(App& a) {
+    if (ImGui::MenuItem(tr("Same as the system"), nullptr, a.uiLang.empty())) setUiLanguage(a, "");
+    ImGui::Separator();
+    int n = 0;
+    const i18n::Language* L = i18n::languages(n);
+    for (int i = 0; i < n; i++) if (ImGui::MenuItem(L[i].name, nullptr, !a.uiLang.empty() && a.uiLang == L[i].code)) setUiLanguage(a, L[i].code);
+}
+
+void languageButton(App& a) {
+    int n = 0;
+    const i18n::Language* L = i18n::languages(n);
+    const char* cur = L[0].name;
+    for (int i = 0; i < n; i++) if (!strcmp(i18n::current(), L[i].code)) cur = L[i].name;
+    char lbl[64];
+    snprintf(lbl, sizeof lbl, "%s##lang", cur);
+    if (ImGui::SmallButton(lbl)) ImGui::OpenPopup("##langpop");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Interface language"));
+    if (ImGui::BeginPopup("##langpop")) { languageMenuItems(a); ImGui::EndPopup(); }
+}
+
 bool tabItem(const char* name, Ic icon) {
     ImGuiTabItemFlags fl = 0;
     if (!gForceTab.empty() && gForceTab == name) { fl = ImGuiTabItemFlags_SetSelected; gForceTab.clear(); }
     // the label is padded with spaces to leave room for the icon, which is drawn over that gap
     const float gap = pal::dev() ? 0.f : iconSize() + 5.f;
     const int nSp = (int)std::ceil(gap / ImGui::CalcTextSize(" ").x);
-    const std::string label = std::string(nSp, ' ') + name + "###" + name;
+    const std::string label = std::string(nSp, ' ') + tr(name) + "###" + name;
     // a narrow pane (gTightTabs, set by mainTabs() for its tab bar): less padding, so that every tab keeps its whole name in view
     if (gTightTabs) ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3 * gUi, ImGui::GetStyle().FramePadding.y));
     const bool open = ImGui::BeginTabItem(label.c_str(), nullptr, fl);
@@ -257,33 +283,33 @@ void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/, int ico
     ImGui::Dummy(ImVec2(sq + 5, ImGui::GetTextLineHeight()));
     }
     ImGui::SameLine(0, 0);
-    ImGui::TextDisabled("%s", label);
+    ImGui::TextDisabled("%s", tr(label));
     static const struct { const char* k; const char* tip; } kTips[] = {
-        {"IQ", "Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping."},
-        {"P1", "DVB-T2: the P1 preamble symbol (frame start and mode) is being found."},
-        {"GI", "Guard interval and symbol timing are locked."},
-        {"L1-pre", "DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC."},
-        {"L1-post", "DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC."},
-        {"Frame", "A full T2 frame is being received and equalised."},
-        {"LDPC", "Forward error correction, inner code: share of blocks that decode."},
-        {"BCH", "Forward error correction, outer code: share of blocks that decode."},
-        {"TS", "Transport stream: services found, continuity errors counted."},
-        {"Video", "The player is decoding and showing pictures."},
-        {"Audio", "The player has audio buffered and playing."},
-        {"Sync", "DVB-T: OFDM symbol sync from the cyclic prefix."},
-        {"TPS", "DVB-T: the transmission parameter signalling bits are decoded."},
-        {"Chan", "Channel estimate from the pilots is valid."},
-        {"Viterbi", "DVB-T: the convolutional decoder found the packet sync."},
-        {"RS", "Reed-Solomon outer code: share of packets that are clean."},
-        {"Pilot", "ATSC: the 8-VSB pilot carrier is locked."},
-        {"Seg", "ATSC: data segment sync found."},
-        {"Field", "ATSC: field sync found."},
-        {"Eq", "ATSC: the equaliser is trained."},
-        {"Trellis", "ATSC: the trellis decoder produces a valid transport stream."}};
+        {"IQ", N_("Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping.")},
+        {"P1", N_("DVB-T2: the P1 preamble symbol (frame start and mode) is being found.")},
+        {"GI", N_("Guard interval and symbol timing are locked.")},
+        {"L1-pre", N_("DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC.")},
+        {"L1-post", N_("DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC.")},
+        {"Frame", N_("A full T2 frame is being received and equalised.")},
+        {"LDPC", N_("Forward error correction, inner code: share of blocks that decode.")},
+        {"BCH", N_("Forward error correction, outer code: share of blocks that decode.")},
+        {"TS", N_("Transport stream: services found, continuity errors counted.")},
+        {"Video", N_("The player is decoding and showing pictures.")},
+        {"Audio", N_("The player has audio buffered and playing.")},
+        {"Sync", N_("DVB-T: OFDM symbol sync from the cyclic prefix.")},
+        {"TPS", N_("DVB-T: the transmission parameter signalling bits are decoded.")},
+        {"Chan", N_("Channel estimate from the pilots is valid.")},
+        {"Viterbi", N_("DVB-T: the convolutional decoder found the packet sync.")},
+        {"RS", N_("Reed-Solomon outer code: share of packets that are clean.")},
+        {"Pilot", N_("ATSC: the 8-VSB pilot carrier is locked.")},
+        {"Seg", N_("ATSC: data segment sync found.")},
+        {"Field", N_("ATSC: field sync found.")},
+        {"Eq", N_("ATSC: the equaliser is trained.")},
+        {"Trellis", N_("ATSC: the trellis decoder produces a valid transport stream.")}};
     {
         const ImVec2 mx = ImGui::GetItemRectMax();
         if (ImGui::IsMouseHoveringRect(p, ImVec2(mx.x, p.y + ImGui::GetTextLineHeight()))) {
-            for (auto& e : kTips) if (!strcmp(e.k, label)) { ImGui::SetTooltip("%s", e.tip); break; }
+            for (auto& e : kTips) if (!strcmp(e.k, label)) { ImGui::SetTooltip("%s", tr(e.tip)); break; }
         }
     }
 }
@@ -345,23 +371,23 @@ void qualityBar(App& a, float width) {
     if (pct > 0) dl->AddRectFilled(p, ImVec2(p.x + width * t, p.y + h), ImGui::ColorConvertFloat4ToU32(col), pal::rnd(3.f));
     dl->AddRect(p, ImVec2(p.x + width, p.y + h), pal::dev() ? IM_COL32(44, 44, 42, 255) : IM_COL32(70, 76, 84, 255), pal::rnd(3.f));
     char txt[96];
-    if (!run || !q.valid) snprintf(txt, sizeof txt, "signal quality: %s", run ? "no lock" : "-");
-    else snprintf(txt, sizeof txt, "signal quality %.0f%%  %s", q.percent, q.label.c_str());
+    if (!run || !q.valid) snprintf(txt, sizeof txt, tr("signal quality: %s"), run ? tr("no lock") : "-");
+    else snprintf(txt, sizeof txt, tr("signal quality %.0f%%  %s"), q.percent, q.label.c_str());
     ImVec2 ts = ImGui::CalcTextSize(txt);
     dl->AddText(ImVec2(p.x + (width - ts.x) * 0.5f, p.y + (h - ts.y) * 0.5f), IM_COL32(235, 238, 242, 255), txt);
     ImGui::Dummy(ImVec2(width, h));
     if (ImGui::IsItemHovered() && run && q.valid) {
         ImGui::BeginTooltip();
         if (a3) {
-            ImGui::Text("FEC blocks decoded in the last frame: %.1f%%", q.fecOk * 100);
-            ImGui::TextDisabled("ATSC 3.0 does not report a signal-to-noise ratio yet; this bar shows how much of the data decodes.");
+            ImGui::Text(tr("FEC blocks decoded in the last frame: %.1f%%"), q.fecOk * 100);
+            ImGui::TextDisabled("%s", tr("ATSC 3.0 does not report a signal-to-noise ratio yet; this bar shows how much of the data decodes."));
         } else if (q.requiredDb <= 0) {   // the modes with no table of required SNR
-            ImGui::Text("data SNR %.1f dB, data decoded %.1f%% (last frames)", q.snrDb, q.fecOk * 100);
-            ImGui::TextDisabled("This bar shows how much of the recent data decodes.");
+            ImGui::Text(tr("data SNR %.1f dB, data decoded %.1f%% (last frames)"), q.snrDb, q.fecOk * 100);
+            ImGui::TextDisabled("%s", tr("This bar shows how much of the recent data decodes."));
         } else {
-            ImGui::Text("data SNR %.1f dB, needed for this modulation/code rate about %.1f dB", q.snrDb, q.requiredDb);
-            ImGui::Text("margin %+.1f dB, FEC blocks decoded %.1f%% (last frames)", q.marginDb, q.fecOk * 100);
-            ImGui::TextDisabled("0 dB margin is the edge of reception (25%%); +6 dB or more is comfortable.");
+            ImGui::Text(tr("data SNR %.1f dB, needed for this modulation/code rate about %.1f dB"), q.snrDb, q.requiredDb);
+            ImGui::Text(tr("margin %+.1f dB, FEC blocks decoded %.1f%% (last frames)"), q.marginDb, q.fecOk * 100);
+            ImGui::TextDisabled("%s", tr("0 dB margin is the edge of reception (25%); +6 dB or more is comfortable."));
         }
         ImGui::EndTooltip();
     }
@@ -388,17 +414,17 @@ void lossTooltip(const SampleLoss& l) {
     if (!ImGui::IsItemHovered()) return;
     ImGui::BeginTooltip();
     ImGui::PushTextWrapPos(ImGui::GetFontSize() * 28);
-    auto ago = [](double s) { char b[48]; if (s < 0) return std::string("never"); if (s < 120) snprintf(b, sizeof b, "%.0f s ago", s); else snprintf(b, sizeof b, "%.0f min ago", s / 60); return std::string(b); };
-    if (!l.live) ImGui::TextUnformatted("Files and the test signal never lose samples: they wait for the receiver.");
+    auto ago = [](double s) { char b[48]; if (s < 0) return std::string(tr("never")); if (s < 120) snprintf(b, sizeof b, tr("%.0f s ago"), s); else snprintf(b, sizeof b, tr("%.0f min ago"), s / 60); return std::string(b); };
+    if (!l.live) ImGui::TextUnformatted(tr("Files and the test signal never lose samples: they wait for the receiver."));
     else {
-        ImGui::Text("Radio side: %.2f s lost in %llu gaps, last %s", l.radioSec, (unsigned long long)l.radioEvents, ago(l.sinceRadioSec).c_str());
-        ImGui::TextDisabled("Samples that never arrived from the radio: its USB connection or driver could not keep up. Try a USB port directly on the computer (no hub), a shorter cable, or a lower sample rate.");
+        ImGui::Text(tr("Radio side: %.2f s lost in %llu gaps, last %s"), l.radioSec, (unsigned long long)l.radioEvents, ago(l.sinceRadioSec).c_str());
+        ImGui::TextDisabled("%s", tr("Samples that never arrived from the radio: its USB connection or driver could not keep up. Try a USB port directly on the computer (no hub), a shorter cable, or a lower sample rate."));
         ImGui::Spacing();
-        ImGui::Text("CPU side: %.2f s skipped %llu times, last %s", l.cpuSec, (unsigned long long)l.cpuEvents, ago(l.sinceCpuSec).c_str());
-        ImGui::TextDisabled("Signal OnAir had to skip because the receiver could not keep up with the sample rate. Close other programs, or pick a lower sample rate or a narrower channel.");
+        ImGui::Text(tr("CPU side: %.2f s skipped %llu times, last %s"), l.cpuSec, (unsigned long long)l.cpuEvents, ago(l.sinceCpuSec).c_str());
+        ImGui::TextDisabled("%s", tr("Signal OnAir had to skip because the receiver could not keep up with the sample rate. Close other programs, or pick a lower sample rate or a narrower channel."));
         ImGui::Spacing();
-        ImGui::Text("Receiver load: %.0f%% of real time", l.loadPct);
-        ImGui::TextDisabled("The receiver's time on the sample thread per second of signal. Near or above 100%%, signal is skipped.");
+        ImGui::Text(tr("Receiver load: %.0f%% of real time"), l.loadPct);
+        ImGui::TextDisabled("%s", tr("The receiver's time on the sample thread per second of signal. Near or above 100%, signal is skipped."));
     }
     ImGui::PopTextWrapPos();
     ImGui::EndTooltip();
@@ -411,10 +437,10 @@ int hfDemodLoad(const char* prefKey) {
 
 bool hfDemodControl(App& a, int& choice, const char* prefKey, const char* id) {
     ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Demod");
+    ImGui::TextDisabled("%s", tr("Demod"));
     sameLineIf(100 * gUi, 5 * gUi);
     char cur[32];
-    if (choice == dect2::HfDemodAuto) snprintf(cur, sizeof cur, "Auto (%s)", dect2::hfDemodName(dect2::hfDemodResolve(choice, a.freqMhz)));
+    if (choice == dect2::HfDemodAuto) snprintf(cur, sizeof cur, tr("Auto (%s)"), dect2::hfDemodName(dect2::hfDemodResolve(choice, a.freqMhz)));
     else snprintf(cur, sizeof cur, "%s", dect2::hfDemodName(choice));
     ImGui::PushID(id);
     ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));
@@ -426,8 +452,8 @@ bool hfDemodControl(App& a, int& choice, const char* prefKey, const char* id) {
         ImGui::EndCombo();
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("How the signal becomes the audio the decoders hear.\nAuto: USB below 30 MHz, NFM at and above.\n"
-                          "NFM: 12.5 kHz channel, no de-emphasis, 300 - 3000 Hz audio.\nISS SSTV on 145.800 MHz is FM.");
+        ImGui::SetTooltip("%s", tr("How the signal becomes the audio the decoders hear.\nAuto: USB below 30 MHz, NFM at and above.\n"
+                          "NFM: 12.5 kHz channel, no de-emphasis, 300 - 3000 Hz audio.\nISS SSTV on 145.800 MHz is FM."));
     ImGui::PopID();
     if (changed) plat::prefs().setI(prefKey, choice);
     return changed;
@@ -435,19 +461,19 @@ bool hfDemodControl(App& a, int& choice, const char* prefKey, const char* id) {
 
 bool listenControls(App& a, bool& on, const char* prefKey, const char* id, const char* tip) {
     char lbl[48];
-    snprintf(lbl, sizeof lbl, "Listen##%s", id);
+    snprintf(lbl, sizeof lbl, "%s##%s", tr("Listen"), id);
     const bool changed = ImGui::Checkbox(lbl, &on);
     if (changed) plat::prefs().setB(prefKey, on);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tip);
     if (!on) return changed;
     flowNext(6 * gUi);
     ImGui::PushID(id);
-    if (iconFlat(a.muted ? Ic::Mute : Ic::Speaker, a.muted ? "Unmute" : "Mute")) a.muted = !a.muted;
+    if (iconFlat(a.muted ? Ic::Mute : Ic::Speaker, tr(a.muted ? "Unmute" : "Mute"))) a.muted = !a.muted;
     ImGui::SameLine(0, 4 * gUi);
     ImGui::SetNextItemWidth(90 * gUi);
     float vol = a.volume * 100.f;
     if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) a.volume = vol / 100.f;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Volume (shared with the other modes)");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Volume (shared with the other modes)"));
     ImGui::PopID();
     return changed;
 }

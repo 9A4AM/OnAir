@@ -43,7 +43,7 @@ void openMode(App& a, const si::Candidate& c, double radioHz) {
 }
 
 void row(const char* k, const std::string& v) {
-    ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", k);
+    ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", tr(k));
     ImGui::TableNextColumn(); ImGui::TextUnformatted(v.c_str());
 }
 } // namespace
@@ -76,16 +76,16 @@ void identifyWindow(App& a) {
     const ImVec2 disp = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(disp.x * 0.5f, disp.y * 0.4f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSizeConstraints(ImVec2(420 * gUi, 0), ImVec2(620 * gUi, disp.y * 0.9f));
-    if (ImGui::Begin("Identify signal", &I.open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse)) {
-        if (I.widthHz > 0) ImGui::TextDisabled("Region %s, %s wide", fq(I.rfHz + I.offHz).c_str(), fq(I.widthHz).c_str());
-        else ImGui::TextDisabled("The strongest signal around %s", fq(I.rfHz).c_str());
+    if (ImGui::Begin(trw("Identify signal"), &I.open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse)) {
+        if (I.widthHz > 0) ImGui::TextDisabled(tr("Region %s, %s wide"), fq(I.rfHz + I.offHz).c_str(), fq(I.widthHz).c_str());
+        else ImGui::TextDisabled(tr("The strongest signal around %s"), fq(I.rfHz).c_str());
         const int st = cap.state();
-        if (!a.engine.running() && st != 3) ImGui::TextUnformatted("Start the receiver to identify a signal.");
-        else if (st == 1) ImGui::ProgressBar((float)cap.progress(), ImVec2(-1, 0), "collecting samples");
-        else if (st == 2) ImGui::TextUnformatted("Working it out...");
+        if (!a.engine.running() && st != 3) ImGui::TextUnformatted(tr("Start the receiver to identify a signal."));
+        else if (st == 1) ImGui::ProgressBar((float)cap.progress(), ImVec2(-1, 0), tr("collecting samples"));
+        else if (st == 2) ImGui::TextUnformatted(tr("Working it out..."));
         if (I.have) {
             const si::Features& f = I.res.f;
-            if (!f.valid) ImGui::TextWrapped("%s", f.why.empty() ? "Nothing to identify here." : f.why.c_str());
+            if (!f.valid) ImGui::TextWrapped("%s", f.why.empty() ? tr("Nothing to identify here.") : f.why.c_str());
             else {
                 ImGui::Separator();
                 ImGui::TextWrapped("%s", I.res.summary.c_str());
@@ -93,29 +93,29 @@ void identifyWindow(App& a) {
                 const si::Candidate* top = !I.res.cands.empty() && I.res.cands[0].score >= 45 ? &I.res.cands[0] : nullptr;
                 if (top) {
                     char b[160];
-                    if (top->syncHits > 0) snprintf(b, sizeof b, "Looks like: %s (frame sync found %dx)", top->name.c_str(), top->syncHits);
-                    else snprintf(b, sizeof b, "Looks like: %s", top->name.c_str());
+                    if (top->syncHits > 0) snprintf(b, sizeof b, tr("Looks like: %s (frame sync found %dx)"), top->name.c_str(), top->syncHits);
+                    else snprintf(b, sizeof b, tr("Looks like: %s"), top->name.c_str());
                     ImGui::TextUnformatted(b);
                     if (familyOf(top->modeId) >= 0) {
-                        snprintf(b, sizeof b, "Open %s on this frequency", top->name.c_str());
+                        snprintf(b, sizeof b, tr("Open %s on this frequency"), top->name.c_str());
                         if (ImGui::Button(b)) openMode(a, *top, radio);
-                        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Switch to %s and tune to %s", top->name.c_str(), fq(radio).c_str());
+                        if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("Switch to %s and tune to %s"), top->name.c_str(), fq(radio).c_str());
                     }
-                } else ImGui::TextDisabled("No mode fits well.");
+                } else ImGui::TextDisabled("%s", tr("No mode fits well."));
                 if (ImGui::BeginTable("##sidf", 2, ImGuiTableFlags_SizingFixedFit)) {
                     char b[128];
-                    row("Centre", fq(f.rfHz));
-                    snprintf(b, sizeof b, "%s / %s / %s", fq(f.bw3Hz).c_str(), fq(f.bw20Hz).c_str(), fq(f.bw26Hz).c_str()); row("Width -3 / -20 / -26 dB", b);
-                    row("Occupied (99 %)", fq(f.obwHz));
+                    row(N_("Centre"), fq(f.rfHz));
+                    snprintf(b, sizeof b, "%s / %s / %s", fq(f.bw3Hz).c_str(), fq(f.bw20Hz).c_str(), fq(f.bw26Hz).c_str()); row(N_("Width -3 / -20 / -26 dB"), b);
+                    row(N_("Occupied (99 %)"), fq(f.obwHz));
                     snprintf(b, sizeof b, "%.1f dB", f.snrDb); row("SNR", b);
-                    if (f.duty < 0.97) snprintf(b, sizeof b, "bursts, %.0f %% on, %d of about %.3g ms", f.duty * 100, f.bursts, f.burstMs);
-                    else snprintf(b, sizeof b, "continuous");
-                    row("On the air", b);
-                    row("Modulation", si::modName(f.mod));
-                    snprintf(b, sizeof b, "%.2f (1 constant, 2 noise-like)", f.envKurt); row("Envelope", b);
+                    if (f.duty < 0.97) snprintf(b, sizeof b, tr("bursts, %.0f %% on, %d of about %.3g ms"), f.duty * 100, f.bursts, f.burstMs);
+                    else snprintf(b, sizeof b, "%s", tr("continuous"));
+                    row(N_("On the air"), b);
+                    row(N_("Modulation"), si::modName(f.mod));
+                    snprintf(b, sizeof b, tr("%.2f (1 constant, 2 noise-like)"), f.envKurt); row(N_("Envelope"), b);
                     if (f.symRate > 0) {
                         static const char* const kSrc[] = {"", "|x|^2 line", "FM discriminator line", "x^n lines", "chirp length", "OFDM symbol"};
-                        snprintf(b, sizeof b, "%.1f Bd (%s, %.0f dB)", f.symRate, kSrc[f.symSrc < 6 ? f.symSrc : 0], f.symLineDb); row("Symbol rate", b);
+                        snprintf(b, sizeof b, "%.1f Bd (%s, %.0f dB)", f.symRate, kSrc[f.symSrc < 6 ? f.symSrc : 0], f.symLineDb); row(N_("Symbol rate"), b);
                     }
                     if (f.fskLevels == 4) { snprintf(b, sizeof b, "%+.0f / %+.0f / %+.0f / %+.0f Hz", f.devHz[0], f.devHz[1], f.devHz[2], f.devHz[3]); row("FSK levels", b); }
                     if (f.fskLevels == 2) { snprintf(b, sizeof b, "%+.0f / %+.0f Hz", f.devHz[0], f.devHz[1]); row("FSK levels", b); }
@@ -125,26 +125,26 @@ void identifyWindow(App& a) {
                 }
                 if (!I.res.cands.empty()) {
                     ImGui::Separator();
-                    ImGui::TextDisabled("Candidates");
+                    ImGui::TextDisabled("%s", tr("Candidates"));
                     for (size_t i = 0; i < I.res.cands.size(); i++) {
                         const si::Candidate& c = I.res.cands[i];
                         ImGui::PushID((int)i);
                         ImGui::Text("%3.0f  %s", c.score, c.name.c_str());
-                        if (c.syncTried) { ImGui::SameLine(); ImGui::TextDisabled(c.syncHits ? "(sync %dx)" : "(no sync)", c.syncHits); }
+                        if (c.syncTried) { ImGui::SameLine(); ImGui::TextDisabled(tr(c.syncHits ? "(sync %dx)" : "(no sync)"), c.syncHits); }
                         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", c.why.c_str());
-                        if (i > 0 && familyOf(c.modeId) >= 0) { ImGui::SameLine(); if (ImGui::SmallButton("Open")) openMode(a, c, radio); }
+                        if (i > 0 && familyOf(c.modeId) >= 0) { ImGui::SameLine(); if (ImGui::SmallButton(tr("Open"))) openMode(a, c, radio); }
                         ImGui::PopID();
                     }
                 }
             }
         }
         ImGui::Separator();
-        if (ImGui::Button("Again") && a.engine.running()) {
+        if (ImGui::Button(tr("Again")) && a.engine.running()) {
             const double c = I.centreRadioHz, o = I.offHz, w = I.widthHz, rf = I.rfHz;
             identifyStart(a, c, o, w, rf);
         }
         ImGui::SameLine();
-        if (ImGui::Button("Close")) I.open = false;
+        if (ImGui::Button(tr("Close"))) I.open = false;
     }
     ImGui::End();
     if (!I.open && a.engine.sigid().state() != 0) a.engine.sigid().cancel();

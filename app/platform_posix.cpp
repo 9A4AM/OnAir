@@ -295,4 +295,21 @@ std::vector<std::string> monoFontCandidates() {
             "/usr/share/fonts/liberation/LiberationMono-Regular.ttf", "C:/Windows/Fonts/consola.ttf"};
 }
 
+
+std::string uiLanguage() {
+#ifdef _WIN32
+    switch (PRIMARYLANGID(GetUserDefaultUILanguage())) {
+        case LANG_GERMAN: return "de";
+        case LANG_FRENCH: return "fr";
+        case LANG_SPANISH: return "es";
+        case LANG_CHINESE: return "zh";
+        case LANG_LITHUANIAN: return "lt";
+        default: return "en";
+    }
+#else
+    for (const char* k : {"LC_ALL", "LC_MESSAGES", "LANG"}) if (const char* v = getenv(k)) if (*v && strcmp(v, "C") && strcmp(v, "POSIX")) return v;
+    return "en";
+#endif
+}
+
 }

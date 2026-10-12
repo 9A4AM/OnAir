@@ -47,11 +47,11 @@ int64_t utcNowOf(const App& a) { return a.ts.utcNow ? a.ts.utcNow : (int64_t)tim
 
 void overviewTab(App& a) {
     if (!pal::dev()) {   // the new interface has these in its sidebar (Display)
-    ImGui::Checkbox("peak hold", &a.peakHold);
+    ImGui::Checkbox(tr("peak hold"), &a.peakHold);
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
-    ImGui::DragFloatRange2("spectrum dB", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
+    ImGui::DragFloatRange2(tr("spectrum dB##specdb"), &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
-    ImGui::DragFloatRange2("waterfall dB", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
+    ImGui::DragFloatRange2(tr("waterfall dB##wfdb"), &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
     }
     const float h = ImGui::GetContentRegionAvail().y;
     if (pal::dev()) {   // a divider you can drag, as in SDR++
@@ -78,7 +78,7 @@ void receiverTab(App& a) {
     if (a.isdbtMode) { isdbtReceiverTab(a); return; }
     if (a.rx.standard == 2 || a.atscMode) {
         const AtscTelemetry& at = a.rx.atsc;
-        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("ATSC 8-VSB receiver: matched filter, pilot loop, symbol clock, field sync, per-field equaliser, trellis, Reed-Solomon"); ImGui::PopTextWrapPos(); }
+        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", tr("ATSC 8-VSB receiver: matched filter, pilot loop, symbol clock, field sync, per-field equaliser, trellis, Reed-Solomon")); ImGui::PopTextWrapPos(); }
         ImGui::Spacing();
         auto row = [&](const char* k, const char* fmt, auto... v) {   // a long value wraps under itself in a narrow tab
         ImGui::TextDisabled("%s", k); ImGui::SameLine(std::min(190 * gUi, ImGui::GetContentRegionAvail().x * 0.45f));
@@ -143,30 +143,28 @@ void mainTabs(App& a) {
     const bool bar = ImGui::BeginTabBar("tabs", pal::dev() ? ImGuiTabBarFlags_DrawSelectedOverline : 0);
     if (gTightTabs) ImGui::PopStyleVar();
     if (bar) {
-        if (tabItem("Overview", Ic::Grid)) { overviewTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("Overview"), Ic::Grid)) { overviewTab(a); ImGui::EndTabItem(); }
         if (const ModeUi* mu = modeUi(a.family)) {   // a mode added after FM: its own tabs
             if (mu->tab && tabItem(mu->tabName ? mu->tabName : "Mode", mu->tabIcon)) { mu->tab(a); ImGui::EndTabItem(); }
-            else if (!mu->tab && mu->stream && tabItem("TV", Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
-            if (mu->receiver && tabItem("Receiver", Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
-            if (mu->stream && tabItem("Stream", Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
-            if (mu->scan && tabItem("Scan", Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
-            if (tabItem("History", Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
-            secondModeTabs(a);
+            else if (!mu->tab && mu->stream && tabItem(N_("TV"), Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
+            if (mu->receiver && tabItem(N_("Receiver"), Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
+            if (mu->stream && tabItem(N_("Stream"), Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
+            if (mu->scan && tabItem(N_("Scan"), Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
+            if (tabItem(N_("History"), Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
             ImGui::EndTabBar();
             return;
         }
-        if (a.dabMode) { if (tabItem("Radio", Ic::Radio)) { dabRadioTab(a); ImGui::EndTabItem(); } }
-        else if (a.fmMode) { if (tabItem("Radio", Ic::Radio)) { fmRadioTab(a); ImGui::EndTabItem(); } }
-        else if (tabItem("TV", Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
-        if (!a.fmMode && tabItem(a.dabMode ? "Ensemble" : "Receiver", Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem("Map", Ic::Compass)) { dabTransmittersTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem("Analyzer", Ic::Grid)) { dabAnalyzerTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem("FIC", Ic::Doc)) { dabFicTab(a); ImGui::EndTabItem(); }
-        if (!a.dabMode && !a.fmMode && tabItem("Stream", Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Scan", Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
-        if (!a.fmMode && tabItem("Antenna", Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
-        if (tabItem("History", Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
-        secondModeTabs(a);
+        if (a.dabMode) { if (tabItem(N_("Radio"), Ic::Radio)) { dabRadioTab(a); ImGui::EndTabItem(); } }
+        else if (a.fmMode) { if (tabItem(N_("Radio"), Ic::Radio)) { fmRadioTab(a); ImGui::EndTabItem(); } }
+        else if (tabItem(N_("TV"), Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
+        if (!a.fmMode && tabItem(a.dabMode ? N_("Ensemble") : N_("Receiver"), Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("Map"), Ic::Compass)) { dabTransmittersTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("Analyzer"), Ic::Grid)) { dabAnalyzerTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("FIC"), Ic::Doc)) { dabFicTab(a); ImGui::EndTabItem(); }
+        if (!a.dabMode && !a.fmMode && tabItem(N_("Stream"), Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("Scan"), Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
+        if (!a.fmMode && tabItem(N_("Antenna"), Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("History"), Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
 }
@@ -222,7 +220,7 @@ void drawUI(App& a, ImVec2 disp) {
         ImGui::SetNextWindowSize(disp);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
         ImGui::Begin("##vonly", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-        if (a.video.has()) a.video.draw(disp); else { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("no picture - press Esc"); ImGui::PopTextWrapPos(); }
+        if (a.video.has()) a.video.draw(disp); else { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", tr("no picture - press Esc")); ImGui::PopTextWrapPos(); }
         if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
         ImGui::End();
         ImGui::PopStyleColor();
@@ -245,12 +243,22 @@ void drawUI(App& a, ImVec2 disp) {
     if (a.devices[a.devIdx].isRadio() && !a.devices[a.devIdx].settings.empty()) { ImGui::SameLine(disp.x - 64 - 410 * gUi); radioSettingsUi(a, false); }   // the top bar is full
     ImGui::SameLine(disp.x - 64 - 290 * gUi);
     updateButton(a);
-    ImGui::SameLine(disp.x - 64 - 100 * gUi);
-    if (ImGui::SmallButton("New interface")) { a.newUi = true; savePrefs(a); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Try the new interface. You can switch back at any time.");
-    ImGui::SameLine(disp.x - 64);
-    if (ImGui::SmallButton("Tour")) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Take the guided tour with Onny");
+    {   // the language, the new interface and the tour, right-aligned (their width changes with the language)
+        int nl = 0;
+        const i18n::Language* L = i18n::languages(nl);
+        const char* langName = L[0].name;
+        for (int i = 0; i < nl; i++) if (!strcmp(i18n::current(), L[i].code)) langName = L[i].name;
+        const float pad = ImGui::GetStyle().FramePadding.x * 2, sp = ImGui::GetStyle().ItemSpacing.x;
+        const float w = ImGui::CalcTextSize(langName).x + ImGui::CalcTextSize(tr("New interface")).x + ImGui::CalcTextSize(tr("Tour")).x + 3 * pad + 2 * sp;
+        ImGui::SameLine(std::max(ImGui::GetCursorPosX(), disp.x - 12 * gUi - w));
+    }
+    languageButton(a);
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("New interface"))) { a.newUi = true; savePrefs(a); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Try the new interface. You can switch back at any time."));
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Take the guided tour with Onny"));
     a.tgMin[TgSwitch] = ImVec2(sw0.x - 2, sw0.y - 2); a.tgMax[TgSwitch] = ImVec2(sw0.x + gSwitchWidth + 20, ImGui::GetCursorScreenPos().y);
     ImGui::Separator();
     statusBar(a);
@@ -285,14 +293,14 @@ void drawUI(App& a, ImVec2 disp) {
     feedsWindow(a);
     if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel
         static bool opened = false;
-        if (!opened) { ImGui::OpenPopup("OnAir crashed"); opened = true; }
+        if (!opened) { ImGui::OpenPopup(trw("OnAir crashed")); opened = true; }
         ImGui::SetNextWindowPos(ImVec2(disp.x * 0.5f, disp.y * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSizeConstraints(ImVec2(420 * gUi, 0), ImVec2(560 * gUi, 400 * gUi));
-        if (ImGui::BeginPopupModal("OnAir crashed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::BeginPopupModal(trw("OnAir crashed"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::PushTextWrapPos(520 * gUi);
             ImGui::TextUnformatted(gCrashNote.c_str());
             ImGui::PopTextWrapPos();
-            if (ImGui::Button("OK")) { gCrashNote.clear(); ImGui::CloseCurrentPopup(); }
+            if (ImGui::Button(tr("OK"))) { gCrashNote.clear(); ImGui::CloseCurrentPopup(); }
             ImGui::EndPopup();
         }
     }
@@ -300,8 +308,8 @@ void drawUI(App& a, ImVec2 disp) {
         ImGui::SetNextWindowSize(ImVec2(640 * gUi, 380 * gUi), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImVec2(200, 160), ImGuiCond_FirstUseEver);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
-        if (ImGui::Begin("Video", &a.popOut)) {
-            if (a.video.has()) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("no picture");
+        if (ImGui::Begin(trw("Video"), &a.popOut)) {
+            if (a.video.has()) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("%s", tr("no picture"));
             if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
         }
         ImGui::End();
@@ -578,6 +586,7 @@ int main(int argc, char** argv) {
             if (pick >= 0) selectMode(app, kModes[pick].family, kModes[pick].subId);
         }
         if (std::string(argv[i]) == "--ui2") app.newUi = true;
+        if (std::string(argv[i]) == "--lang" && i + 1 < argc) i18n::set(argv[++i]);   // dev: the interface in this language (not saved)
         if (std::string(argv[i]) == "--theme" && i + 1 < argc) app.uiTheme = atoi(argv[++i]);
         if (std::string(argv[i]) == "--light") app.lightUi = true;   // dev: View > Light
         if (std::string(argv[i]) == "--variant" && i + 1 < argc) app.uiVariant = std::max(0, std::min(7, atoi(argv[++i])));
