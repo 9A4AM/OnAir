@@ -153,7 +153,7 @@ void loadCustomSources() {
     std::string name, url;
     while (std::getline(in, name, '\t') && std::getline(in, url)) {
         if (name.rfind("user_", 0) == 0 && name.size() < 64 &&
-            name.find('/') == std::string::npos && name.find('\\\\') == std::string::npos &&
+            name.find('/') == std::string::npos && name.find('\\') == std::string::npos &&
             url.rfind("https://", 0) == 0)
             S.customSources.emplace_back(name, url);
     }
