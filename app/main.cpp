@@ -427,7 +427,7 @@ int main(int argc, char** argv) {
 #endif
     gfx::windowHints();
     for (int i = 1; i < argc; i++) if (std::string(argv[i]) == "--hidden") { glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); gNoOsWindows = true; }   // dev: with --shot, render without showing the window
-    GLFWwindow* window = glfwCreateWindow(1500, 900, "OnAir", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1500, 900, "Andriuxa Pnvz", nullptr, nullptr);
     if (!window) return 1;
 #ifndef __APPLE__
     {   // the default size is in pixels: make the window as large (in points) as on a 96 dpi display, but never larger than the screen
