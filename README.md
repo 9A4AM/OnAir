@@ -11,6 +11,7 @@ Free and open source, for macOS, Windows and Linux.</p>
   <img src="https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="Platforms">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-orange" alt="License: GPL-3.0"></a>
   <a href="https://discord.gg/Kky9c6atm"><img src="https://img.shields.io/badge/chat-Discord-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://ko-fi.com/adswill"><img src="https://img.shields.io/badge/%E2%9D%A4-Donate-FF5E5B" alt="Donate"></a>
 </p>
 
 <p align="center">
