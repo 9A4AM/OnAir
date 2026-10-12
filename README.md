@@ -37,6 +37,7 @@ It is built for people who want a receiver that is both easy to use and honest a
 - [Good to know](#good-to-know)
 - [Build from source](#build-from-source)
 - [Support and community](#support-and-community)
+- [Supporting OnAir](#supporting-onair)
 - [License](#license)
 
 ## Install
@@ -356,6 +357,10 @@ Useful options: `DECT2_UI_BACKEND` (Metal or OpenGL3), `DECT2_WITH_SOAPY`, and `
 - **[GitHub Issues](https://github.com/adswill/OnAir/issues)**: bug reports.
   Attach an IQ recording of the problem: press **Record IQ** in the Source panel (or run `onair-cli --record auto --secs 10`); files go to the `recordings` folder of the app data folder, and **Show recording** opens it.
 - **[Pull requests](https://github.com/adswill/OnAir/pulls)** are welcome.
+
+## Supporting OnAir
+
+I'm a bit embarrassed to ask this, but here goes. OnAir is free and always will be. I build it in my spare time, along with the radios, antennas and test equipment it needs. If it's useful to you and you'd like to help, a small tip on **[Ko-fi](https://ko-fi.com/adswill)** really does help and keeps new modes coming. If you'd rather not, that's completely fine: bug reports, recordings and kind words help just as much. Thank you!
 
 ## License
 
