@@ -434,6 +434,7 @@ struct App {
 bool tabItem(const char* name, Ic icon);
 extern bool gTightTabs;   // the tabs of mainTabs() get less padding (a narrow pane)
 void toggleFullscreen();
+bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map over the whole window when it is popped out
 GLFWmonitor* monitorFor(int x, int y, int w, int h);   // widgets.cpp: the monitor holding most of the rectangle
 // The monitors, kept from the last change GLFW reported (glfwSetMonitorCallback) instead of asked for on each use: a monitor that goes away
 // (display asleep, cable out) is dropped from the list before anything asks for its size or position again.

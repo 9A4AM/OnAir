@@ -224,6 +224,7 @@ void drawUI(App& a, ImVec2 disp) {
         return;
     }
     applyUiTheme(a);
+    if (adsbFullMap(a, disp)) return;   // the ADS-B map popped out over the whole window
     if (a.newUi) drawShell2(a, disp);
     else {
     ImGui::SetNextWindowPos(ImVec2(0, 0));

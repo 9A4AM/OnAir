@@ -16,6 +16,7 @@ struct View {
 // the pointer is over the map. The projection below works after this call.
 bool draw(View& v, ImVec2 size);
 ImVec2 project(double lat, double lon);        // screen position
+void unproject(ImVec2 p, double& lat, double& lon);   // the other way: where on Earth a screen position is
 bool clickedAt(ImVec2& p);                     // the map was clicked (not dragged); where
 bool tilesAvailable();                         // at least one tile is on screen
 void legend(float mapWidth, const char* fmt, ...);   // TextDisabled() along the bottom left of the map (the cursor put there): cut short before the credit

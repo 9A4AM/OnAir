@@ -278,6 +278,12 @@ ImVec2 project(double lat, double lon) {
     return ImVec2(gOrigin.x + gSize.x * 0.5f + (float)dx, gOrigin.y + gSize.y * 0.5f + (float)(mercY(lat, gZoom) - gCy));
 }
 
+void unproject(ImVec2 p, double& lat, double& lon) {
+    lon = lonOf(gCx + (p.x - (gOrigin.x + gSize.x * 0.5f)), gZoom);
+    lon = std::fmod(std::fmod(lon + 180.0, 360.0) + 360.0, 360.0) - 180.0;   // back on the globe when the map was panned round it
+    lat = std::max(-85.0, std::min(85.0, latOf(gCy + (p.y - (gOrigin.y + gSize.y * 0.5f)), gZoom)));
+}
+
 bool clickedAt(ImVec2& p) { if (gClicked) p = gClickPos; return gClicked; }
 bool tilesAvailable() { return gAny; }
 

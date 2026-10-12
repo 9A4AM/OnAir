@@ -24,6 +24,8 @@ struct State {
     adsbmap::View map;
     bool mapHome = true;                        // the map follows the antenna position until the user drags it
     bool winds = false;                         // "winds aloft": wind arrows at the aircraft (from Comm-B)
+    bool full = false;                          // the map fills the whole window (Esc or the same button to leave)
+    double ctxLat = 0, ctxLon = 0;              // where the map was right-clicked
     std::string locMsg;
     int locBusy = 0;
 };
@@ -39,8 +41,7 @@ void loadState() {
     if (d.has("adsbLon")) S.refLon = d.getD("adsbLon", S.refLon);
     S.map.zoom = (int)d.getI("adsbZoom", 7);
     S.winds = d.getB("adsbWinds", false);
-    S.map.lat = S.refLat; S.map.lon = S.refLon;
-}
+    S.map.lat = S.refLat; S.map.lon = S.refLon;}
 
 const ImVec4 kDim(0.62f, 0.65f, 0.68f, 1), kGood(0.40f, 0.85f, 0.50f, 1), kWarn(0.95f, 0.60f, 0.25f, 1);
 
@@ -51,6 +52,20 @@ void setReference(App& a, double lat, double lon) {
     plat::prefs().setD("adsbLat", S.refLat); plat::prefs().setD("adsbLon", S.refLon);
     S.map.lat = S.refLat; S.map.lon = S.refLon;
     savePrefs(a);
+}
+
+// the antenna position as two numbers and the Locate button: in the Tuner section and in the map's "position" menu
+void positionFields(App& a) {
+    ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
+    double la = S.refLat, lo = S.refLon;
+    bool ch = ImGui::InputDouble("##alat", &la, 0, 0, "%.4f N");
+    ImGui::SameLine(0, 4 * gUi);
+    ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
+    ch |= ImGui::InputDouble("##alon", &lo, 0, 0, "%.4f E");
+    if (ch) setReference(a, la, lo);
+    if (ImGui::Button(S.locBusy ? "Locating..." : "Locate (Wi-Fi)") && !S.locBusy) { plat::locateStart(); S.locBusy = 1; S.locMsg = "asking the location service..."; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Ask the system for this computer's position (Wi-Fi positioning). macOS asks for permission the first time.");
+    if (!S.locMsg.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", S.locMsg.c_str()); ImGui::PopTextWrapPos(); }
 }
 
 void tick(App& a) {
@@ -219,7 +234,8 @@ void mapView(App& a, ImVec2 size) {
     const bool wrongRef = on && positionLooksWrong(t, areaLat, areaLon, nearest);
     if (wrongRef && S.mapHome) { S.map.lat = areaLat; S.map.lon = areaLon; }   // show the aircraft, not an empty map around the wrong antenna
     const double homeLat = S.map.lat, homeLon = S.map.lon;
-    adsbmap::draw(S.map, size);
+    const bool hov = adsbmap::draw(S.map, size);
+    if (hov && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { adsbmap::unproject(ImGui::GetIO().MousePos, S.ctxLat, S.ctxLon); ImGui::OpenPopup("##adsbmapctx"); }
     if (S.map.lat != homeLat || S.map.lon != homeLon) S.mapHome = false;
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->PushClipRect(p0, ImVec2(p0.x + size.x, p0.y + size.y), true);
@@ -291,6 +307,13 @@ void mapView(App& a, ImVec2 size) {
     if (ImGui::Button("-", ImVec2(26 * gUi, 0))) S.map.zoom = std::max(adsbmap::kMinZoom, S.map.zoom - 1);
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Button("antenna")) { S.map.lat = S.refLat; S.map.lon = S.refLon; S.mapHome = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Centre the map on the antenna");
+    ImGui::SameLine(0, 2 * gUi);
+    if (ImGui::Button("position")) ImGui::OpenPopup("##adsbpos");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set where the antenna is: for ranges, the radar rings and decoding positions locally. You can also right-click the map.");
+    ImGui::SameLine(0, 6 * gUi);
+    if (ImGui::Button(S.full ? "exit full screen" : "full screen")) S.full = !S.full;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip(S.full ? "Back to the normal layout (Esc)" : "The map fills the whole window (Esc to leave)");
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Checkbox("winds aloft", &S.winds)) { plat::prefs().setB("adsbWinds", S.winds); plat::prefs().flush(); }
@@ -308,6 +331,18 @@ void mapView(App& a, ImVec2 size) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Puts the antenna in the middle of the aircraft received (within about 100 nm). For exact ranges type your position in the Tuner section.");
         ImGui::EndChild();
         ImGui::PopStyleColor();
+    }
+    if (ImGui::BeginPopup("##adsbpos")) {
+        ImGui::TextDisabled("Antenna position");
+        positionFields(a);
+        ImGui::TextDisabled("or right-click the map to put it there");
+        ImGui::EndPopup();
+    }
+    if (ImGui::BeginPopup("##adsbmapctx")) {
+        ImGui::TextDisabled("%.4f  %.4f", S.ctxLat, S.ctxLon);
+        if (ImGui::MenuItem("Put the antenna here")) { setReference(a, S.ctxLat, S.ctxLon); S.mapHome = true; S.locMsg.clear(); }
+        if (ImGui::MenuItem("Centre the map here")) { S.map.lat = S.ctxLat; S.map.lon = S.ctxLon; S.mapHome = false; }
+        ImGui::EndPopup();
     }
     plat::prefs().setI("adsbZoom", S.map.zoom);
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
@@ -507,16 +542,7 @@ void tuner(App& a, bool& retune) {
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Europe, the US and the rest of the world all send ADS-B on 1090 MHz (1090ES). The US has a second system, UAT on 978 MHz, which is not decoded yet.");
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Antenna position (for ranges and the map)"); ImGui::PopTextWrapPos(); }
-    ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
-    double la = S.refLat, lo = S.refLon;
-    bool ch = ImGui::InputDouble("##alat", &la, 0, 0, "%.4f N");
-    ImGui::SameLine(0, 4 * gUi);
-    ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
-    ch |= ImGui::InputDouble("##alon", &lo, 0, 0, "%.4f E");
-    if (ch) setReference(a, la, lo);
-    if (ImGui::Button(S.locBusy ? "Locating..." : "Locate (Wi-Fi)") && !S.locBusy) { plat::locateStart(); S.locBusy = 1; S.locMsg = "asking the location service..."; }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Ask the system for this computer's position (Wi-Fi positioning). macOS asks for permission the first time.");
-    if (!S.locMsg.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", S.locMsg.c_str()); ImGui::PopTextWrapPos(); }
+    positionFields(a);
     double areaLat, areaLon, nearest;
     if (live(a) && positionLooksWrong(a.rx.adsb, areaLat, areaLon, nearest)) {
         ImGui::PushTextWrapPos(0);
@@ -581,3 +607,19 @@ const ModeUi kAdsbUi = {
     .tick = tick,
     .meters = meters,
 };
+
+// main.cpp: the map over the whole window while it is popped out (the "full screen" button on the map); false when it is not
+bool adsbFullMap(App& a, ImVec2 disp) {
+    if (!S.full) return false;
+    if (modeUi(a.family) != &kAdsbUi) { S.full = false; return false; }
+    if (!ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { S.full = false; return false; }
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(disp);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin("##adsbfull", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar();
+    mapView(a, ImGui::GetContentRegionAvail());
+    ImGui::Dummy(ImVec2(0, 0));   // mapView leaves the cursor at the bottom edge: an item there so ImGui does not take it as growing the window
+    ImGui::End();
+    return true;
+}
