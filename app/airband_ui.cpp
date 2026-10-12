@@ -63,6 +63,14 @@ std::vector<dect2::AirbandChannel> decode(const std::string& s) {
     return v;
 }
 
+// the dial onto a channel outside the span taken in (the dial stays on the 25 kHz raster, where the receiver puts the DC spike between channels)
+void tuneDialTo(App& a, double hz) {
+    a.freqMhz = std::round(hz / 25e3) * 25e3 / 1e6;
+    a.tune.centerHz = a.freqMhz * 1e6;
+    if (a.engine.running()) { a.engine.retuneReset(a.tune); a.peak.clear(); }
+    savePrefs(a);
+}
+
 void save() {
     plat::Prefs& d = plat::prefs();
     d.setS("airChans", encode(S.chans));
@@ -205,7 +213,13 @@ void channelView(App& a) {
         }
         ImGui::TableNextColumn();
         if (!s) ImGui::TextDisabled("-");
-        else if (!s->inBand) ImGui::TextColored(pal::warnAmber(), "out of band");
+        else if (!s->inBand) {   // outside the span the radio takes in around the dial (#52): one click moves the dial there
+            ImGui::PushID((int)i);
+            if (ImGui::SmallButton("tune here")) tuneDialTo(a, c.freqHz);
+            ImGui::PopID();
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Out of band: the radio takes in %.1f MHz around the dial (the sample rate), and this channel is outside it.\n"
+                                                         "Click to move the dial to it, or raise the sample rate (Tuner) to take in more of 118 - 137 MHz at once.", a.engine.sampleRate() / 1e6);
+        }
         else if (s->open) ImGui::TextColored(s->heterodyne ? pal::warnAmber() : pal::okGreen(), "%s%s", s->heterodyne ? "OPEN 2 stn" : "OPEN", s->playing ? " >" : "");
         else ImGui::TextDisabled("closed");
         ImGui::TableNextColumn();
@@ -328,7 +342,13 @@ void list(App& a) {
         ImGui::TableNextColumn();
         const std::string lb = c.label.empty() ? std::string("") : c.label + "  ";
         if (s && s->open) ImGui::TextColored(pal::okGreen(), "%sOPEN", lb.c_str());
-        else ImGui::TextDisabled("%s%s", lb.c_str(), s && !s->inBand ? "out of band" : "");
+        else if (s && !s->inBand) {
+            ImGui::TextDisabled("%s", lb.c_str()); ImGui::SameLine(0, 0);
+            ImGui::PushID((int)i);
+            if (ImGui::SmallButton("tune here")) tuneDialTo(a, c.freqHz);
+            ImGui::PopID();
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Out of band: outside the span the radio takes in around the dial. Click to move the dial to it.");
+        } else ImGui::TextDisabled("%s", lb.c_str());
     }
     ImGui::EndTable();
 }
