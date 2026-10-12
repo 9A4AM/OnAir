@@ -194,7 +194,15 @@ struct AcarsReceiver::Impl {
                     deactivate(*c, "no ACARS data");
                     nAct--;
                 }
-            } else if (c->ratio >= on && wr >= c->coolUntil && nAct < kMaxActive) {
+            } else if (c->ratio >= on && wr >= c->coolUntil) {
+                if (nAct >= kMaxActive) {   // every decoder busy: take the one on the weakest carrier that has not started a frame, if this one is 3 dB stronger
+                    Cand* weak = nullptr;
+                    for (auto& o : cands)
+                        if (o.active && pool[(size_t)o.slot]->framesStarted() == o.framesAtStart && (!weak || o.ratio < weak->ratio)) weak = &o;
+                    if (!weak || c->ratio < 2.0 * weak->ratio) continue;
+                    deactivate(*weak, "a stronger carrier needs the decoder");
+                    nAct--;
+                }
                 activate(*c);
                 nAct++;
             }
