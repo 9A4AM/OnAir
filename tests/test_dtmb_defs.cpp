@@ -42,9 +42,12 @@ int main() {
         "ABDE0EBA16959060BE1BD4B9EDAA88E44D953B15C5DA03FB3F1884F38EEF"
         "AC28708B1F728DBFE64B35AFD34F939B8103504A634524CC3D1E24674865"
         "E5B00AB757BC1D742D2B20C17C37A973DB5511C89B2A762B8BB407F678");
+    // PN595 as it is on the air (issue #58, two single carrier transmitters): the vector dtmb-sdr quotes ("004934D7...") moved one chip
+    // later, a 1 in front. With that vector the header fit still works (594 of 595 chips agree) but the body is taken one symbol late and
+    // the system information never decodes.
     checkVector(Header::Pn595,
-        "004934D7CC7C8EFC380FFC713B2BBD47A5417FAABD0E9196B3D633F2A9994FA708D914DEEAE67773"
-        "A9D07B70C4A59A22D2E98B0292FBC63761E4E5886FE71A94212DF5C5C87DAA2F673E0");
+        "80249A6BE63E477E1C07FE389D95DEA3D2A0BFD55E8748CB59EB19F954CCA7D3846C8A6F75733BB9"
+        "D4E83DB86252CD116974C581497DE31BB0F272C437F38D4A1096FAE2E43ED517B39F0");
 
     // PN420 seeds of the phase table (Table 2 in the standard, as quoted by the same project): first eight chips of the header of frame n
     {
@@ -79,7 +82,7 @@ int main() {
         CHECK(periodic, "%s is not periodic", headerInfo(h).name);
     }
     {   // PN595: x^10 + x^3 + 1 has period 1023; the header is its first 595 chips
-        std::vector<int> b = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+        std::vector<int> b = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         int period = 0;
         std::vector<int> s = b;
         for (int i = 1; i <= 2000; i++) {
