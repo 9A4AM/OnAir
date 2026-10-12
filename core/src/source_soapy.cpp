@@ -319,10 +319,13 @@ private:
             fflush(stderr);
             if (std::fabs(actualHz - tuneHz) > 5000) {
                 char msg[220];
-                snprintf(msg, sizeof msg, "SpyServer did not tune: requested %.6f MHz, server reports %.6f MHz (check remote control permission)",
+                snprintf(msg, sizeof msg, "SpyServer frequency not confirmed: requested %.6f MHz, server reports %.6f MHz (continuing reception)",
                          tuneHz / 1e6, actualHz / 1e6);
-                err = msg;
-                return false;
+                fprintf(stderr, "[SPYSERVER] WARNING: %s\\n", msg);
+                fflush(stderr);
+                // The plugin's client-sync state can lag behind successful tuning.
+                // Do not block IQ reception solely on a mismatched readback.
+                // Keep this diagnostic visible without treating it as a fatal error.
             }
         } else {
             dev_->setFrequency(SOAPY_SDR_RX, ch, tuneHz);
