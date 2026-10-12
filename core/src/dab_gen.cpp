@@ -1,7 +1,9 @@
 // DAB test transmitter (see dab_gen.h): the ensemble, the FIC, the CIF multiplex, the OFDM frame and the synthetic source around it.
 #include "dect2/dab_gen.h"
+#include "dect2/dab.h"
 #include "dect2/fftutil.h"
 #include "dect2/gen_util.h"
+#include "dect2/dab_tii.h"
 #include "dect2/isdbt_resample.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -12,6 +14,9 @@ extern "C" {
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <iterator>
+#include <map>
+#include <memory>
 #include <numeric>
 
 namespace dect2 {
@@ -123,6 +128,9 @@ struct Transmitter::Impl {
         std::vector<std::vector<uint8_t>> aus, mp2;
         std::vector<std::vector<uint8_t>> frames;     // the logical frames of the loop (bytes)
         std::vector<uint8_t> coded;                   // loopLen * bitsPerFrame bits, one per byte
+        // DMB: the transport stream's time stamps run on from loop to loop, so the coded frames are made when needed (a pure function of the frame)
+        std::shared_ptr<dmb::Source> dmb;
+        std::shared_ptr<std::map<int64_t, std::vector<uint8_t>>> dmbCoded;
     };
     std::vector<Sub> subs;
     uint64_t frame = 0;
@@ -133,20 +141,50 @@ struct Transmitter::Impl {
     // ---- audio -> logical frames
     static void bytesToBits(const uint8_t* b, int n, uint8_t* bits) { for (int i = 0; i < n; i++) for (int k = 0; k < 8; k++) bits[i * 8 + k] = (b[i] >> (7 - k)) & 1; }
 
-    void codeFrames(Sub& s) {
-        s.loopLen = (int)s.frames.size();
-        s.frameBytes = s.svc.bitrate * 3;
-        const int size = eepSize(s.svc.bitrate, s.svc.option, s.svc.level);
-        s.bitsPerFrame = size * 64;
-        s.coded.assign((size_t)s.loopLen * (size_t)s.bitsPerFrame, 0);
+    // CUs of a sub-channel: EEP from the bitrate and profile, UEP from table 6 (0 when the bitrate is not the table's)
+    static int subSize(const TxService& sv) {
+        if (sv.uepIndex < 0) return eepSize(sv.bitrate, sv.option, sv.level);
+        int size, br, lv, info;
+        return dab::uepGeometry(sv.uepIndex, size, br, lv, info) && br == sv.bitrate ? size : 0;
+    }
+
+    static void codeFrame(const Sub& s, const uint8_t* bytes, uint8_t* out) {
         const int info = s.frameBytes * 8;
         std::vector<uint8_t> bits((size_t)info), mother((size_t)(4 * (info + 6)));
-        for (int f = 0; f < s.loopLen; f++) {
-            bytesToBits(s.frames[(size_t)f].data(), s.frameBytes, bits.data());
-            scramble(bits.data(), info);
-            convEncode(bits.data(), info, mother.data());
-            punctureEep(mother.data(), s.svc.bitrate, s.svc.option, s.svc.level, &s.coded[(size_t)f * (size_t)s.bitsPerFrame]);
-        }
+        bytesToBits(bytes, s.frameBytes, bits.data());
+        scramble(bits.data(), info);
+        convEncode(bits.data(), info, mother.data());
+        if (s.svc.uepIndex >= 0) dab::uepPuncture(mother.data(), s.svc.uepIndex, out);
+        else punctureEep(mother.data(), s.svc.bitrate, s.svc.option, s.svc.level, out);
+    }
+
+    void codeFrames(Sub& s) {
+        s.loopLen = s.dmb ? kLoopSeconds * 1000 / 24 : (int)s.frames.size();
+        s.frameBytes = s.svc.bitrate * 3;
+        const int size = subSize(s.svc);
+        s.bitsPerFrame = size * 64;
+        if (s.dmb) { s.dmbCoded = std::make_shared<std::map<int64_t, std::vector<uint8_t>>>(); return; }
+        s.coded.assign((size_t)s.loopLen * (size_t)s.bitsPerFrame, 0);
+        for (int f = 0; f < s.loopLen; f++) codeFrame(s, s.frames[(size_t)f].data(), &s.coded[(size_t)f * (size_t)s.bitsPerFrame]);
+    }
+
+    // the logical frame f of a service (bytes) and its coded bits
+    static void frameBytesOf(const Sub& s, int64_t f, std::vector<uint8_t>& out) {
+        if (s.dmb) s.dmb->logicalFrame(f, out);
+        else out = s.frames[(size_t)floorMod(f, s.loopLen)];
+    }
+    static const uint8_t* codedOf(const Sub& s, int64_t f) {
+        if (!s.dmb) return &s.coded[(size_t)floorMod(f, s.loopLen) * (size_t)s.bitsPerFrame];
+        auto& m = *s.dmbCoded;
+        auto it = m.find(f);
+        if (it != m.end()) return it->second.data();
+        if (m.size() >= 48) m.erase(m.begin()->first < f ? m.begin() : std::prev(m.end()));
+        std::vector<uint8_t> bytes;
+        s.dmb->logicalFrame(f, bytes);
+        std::vector<uint8_t>& c = m[f];
+        c.resize((size_t)s.bitsPerFrame);
+        codeFrame(s, bytes.data(), c.data());
+        return c.data();
     }
 
     static int toneFrames(const TxService& sv, int frameLen) {
@@ -174,13 +212,16 @@ struct Transmitter::Impl {
         std::vector<float> pcm(960 * 2);
         auto block = [&](int64_t j) { for (int i = 0; i < 960; i++) for (int c = 0; c < 2; c++) pcm[(size_t)i * 2 + (size_t)c] = testSound(sv, c, floorMod(j, K) * 960 + i); };
         std::vector<uint8_t> raw;
+        const std::vector<std::vector<uint8_t>> dse = sv.slide ? slideDse((size_t)Kp) : std::vector<std::vector<uint8_t>>();
         block(Kp - 1);                                    // the block before the loop starts (the loop is periodic)
         enc.encode(pcm.data(), len[0] - 2, raw);
         s.aus.clear();
         for (int j = 0; j < Kp; j++) {
             block(j);
             const int budget = len[(size_t)(j % s.nAu)] - 2;
-            enc.encode(pcm.data(), budget, raw);
+            const size_t pad = (size_t)j < dse.size() ? dse[(size_t)j].size() : 0;       // the PAD takes its bytes from the audio
+            enc.encode(pcm.data(), budget - (int)pad, raw);
+            if (pad) raw.insert(raw.begin(), dse[(size_t)j].begin(), dse[(size_t)j].end());
             const uint16_t crc = crc16(raw.data(), budget);
             raw.push_back((uint8_t)(crc >> 8)); raw.push_back((uint8_t)crc);
             s.aus.push_back(raw);
@@ -246,12 +287,13 @@ struct Transmitter::Impl {
         for (const TxService& sv : cfg.services) {
             Sub s;
             s.svc = sv;
-            const int size = eepSize(sv.bitrate, sv.option, sv.level);
+            const int size = subSize(sv);
             if (!size || start + size > kCifCu) continue;
-            if (sv.dabPlus) { if (sv.sampleRate != 48000 && sv.sampleRate != 32000) continue; buildAac(s); }
+            if (sv.dmb) { s.dmb = std::make_shared<dmb::Source>(sv.bitrate); if (!s.dmb->ok()) continue; }
+            else if (sv.dabPlus) { if (sv.sampleRate != 48000 && sv.sampleRate != 32000) continue; buildAac(s); }
             else if (!buildMp2(s)) continue;
             codeFrames(s);
-            lay.push_back({sv.subId, start, size, sv.bitrate, sv.option, sv.level});
+            lay.push_back({sv.subId, start, size, sv.bitrate, sv.option, sv.level, sv.uepIndex});
             start += size;
             kept.push_back(sv);
             subs.push_back(std::move(s));
@@ -302,7 +344,8 @@ struct Transmitter::Impl {
             for (size_t k = i; k < std::min(lay.size(), i + 7); k++) {
                 const SubLayout& l = lay[k];
                 b.push_back((uint8_t)((l.subId << 2) | (l.start >> 8))); b.push_back((uint8_t)l.start);
-                b.push_back((uint8_t)(0x80 | (l.option << 4) | (l.level << 2) | (l.size >> 8))); b.push_back((uint8_t)l.size);
+                if (l.uep >= 0) b.push_back((uint8_t)l.uep);   // short form, table switch 0
+                else { b.push_back((uint8_t)(0x80 | (l.option << 4) | (l.level << 2) | (l.size >> 8))); b.push_back((uint8_t)l.size); }
             }
             out.push_back(fig(0, b));
         }
@@ -310,10 +353,12 @@ struct Transmitter::Impl {
     }
     std::vector<std::vector<uint8_t>> fig02() const {       // service organisation, one audio stream component per service, 5 per FIG
         std::vector<std::vector<uint8_t>> out;
-        for (size_t i = 0; i < subs.size(); i += 5) {
+        std::vector<const TxService*> audio;
+        for (const Sub& s : subs) if (!s.dmb) audio.push_back(&s.svc);
+        for (size_t i = 0; i < audio.size(); i += 5) {
             std::vector<uint8_t> b{0x02};
-            for (size_t k = i; k < std::min(subs.size(), i + 5); k++) {
-                const TxService& sv = subs[k].svc;
+            for (size_t k = i; k < std::min(audio.size(), i + 5); k++) {
+                const TxService& sv = *audio[k];
                 put16(b, sv.sid);
                 b.push_back(0x01);                                                  // local flag 0, 1 service component
                 b.push_back((uint8_t)(sv.dabPlus ? 63 : 0));                        // TMID 0 (MSC stream audio), ASCTy
@@ -321,13 +366,81 @@ struct Transmitter::Impl {
             }
             out.push_back(fig(0, b));
         }
+        // DMB television: a data service (P/D 1, 32-bit SId, TS 102 428 clause 7.2) with one stream data component, DSCTy 24 (MPEG-2 TS)
+        for (const Sub& s : subs) {
+            if (!s.dmb) continue;
+            std::vector<uint8_t> b{0x22};
+            put16(b, s.svc.sid >> 16); put16(b, s.svc.sid & 0xFFFF);
+            b.push_back(0x01);
+            b.push_back((uint8_t)(0x40 | 24));                                      // TMID 1 (MSC stream data), DSCTy 24
+            b.push_back((uint8_t)((s.svc.subId << 2) | 0x02));
+            out.push_back(fig(0, b));
+        }
+        return out;
+    }
+    std::vector<std::vector<uint8_t>> fig013() const {      // user application of the DMB services: DMB (0x009), video service profile 2 (TS 102 428 clause 7.1)
+        std::vector<std::vector<uint8_t>> out;
+        for (const Sub& s : subs) {
+            if (!s.dmb) continue;
+            std::vector<uint8_t> b{0x2D};                                           // P/D 1, extension 13
+            put16(b, s.svc.sid >> 16); put16(b, s.svc.sid & 0xFFFF);
+            b.push_back(0x01);                                                      // SCIdS 0, one user application
+            put16(b, (0x009u << 5) | 1);                                            // user application type, data length 1
+            b.push_back(0x02);                                                      // VideoServiceObjectProfileId: profile 2 (HE-AAC v2 family, H.264)
+            out.push_back(fig(0, b));
+        }
         return out;
     }
     std::vector<uint8_t> figLabel(size_t idx) const {       // 0: the ensemble, 1..: the services
         std::vector<uint8_t> b;
         if (idx == 0) { b.push_back(0x00); put16(b, cfg.eid); labelBytes(b, cfg.ensembleLabel); }
+        else if (subs[idx - 1].dmb) { b.push_back(0x05); put16(b, subs[idx - 1].svc.sid >> 16); put16(b, subs[idx - 1].svc.sid & 0xFFFF); labelBytes(b, subs[idx - 1].svc.label); }   // FIG 1/5: data service label
         else { b.push_back(0x01); put16(b, subs[idx - 1].svc.sid); labelBytes(b, subs[idx - 1].svc.label); }
         return fig(1, b);
+    }
+
+    // FIG 2 label of idx (0: the ensemble, 1..: the services), UTF-8, in segments that end at a character boundary
+    std::vector<uint8_t> figLabel2(size_t idx, int toggle) const {
+        std::string text = idx == 0 ? cfg.ensembleLabel : subs[idx - 1].svc.label;
+        std::vector<uint8_t> id;
+        int ext = 1;
+        if (idx == 0) { ext = 0; put16(id, cfg.eid); }
+        else if (subs[idx - 1].dmb) { ext = 5; put16(id, subs[idx - 1].svc.sid >> 16); put16(id, subs[idx - 1].svc.sid & 0xFFFF); }
+        else put16(id, subs[idx - 1].svc.sid);
+        std::vector<std::string> parts;
+        for (size_t i = 0; i < text.size();) {
+            size_t n = std::min<size_t>(8, text.size() - i);
+            while (i + n < text.size() && ((uint8_t)text[i + n] & 0xC0) == 0x80) n--;   // do not cut a character
+            parts.push_back(text.substr(i, n));
+            i += n;
+        }
+        std::vector<uint8_t> all;
+        for (size_t s = 0; s < parts.size(); s++) {
+            std::vector<uint8_t> b = {(uint8_t)((toggle << 7) | (int)(s << 4) | ext)};
+            b.insert(b.end(), id.begin(), id.end());
+            if (s == 0) { b.push_back((uint8_t)((parts.size() - 1) << 4)); b.push_back(0); b.push_back(0); }   // UTF-8, segments, character flag field
+            b.insert(b.end(), parts[s].begin(), parts[s].end());
+            const std::vector<uint8_t> f = fig(2, b);
+            all.insert(all.end(), f.begin(), f.end());
+        }
+        return all;
+    }
+
+    std::vector<uint8_t> fig017() const {                  // programme type of the audio services, English
+        std::vector<uint8_t> b{0x11};
+        for (const auto& sb : subs) if (!sb.dmb) { put16(b, sb.svc.sid); b.push_back((uint8_t)((cfg.ptyDynamic ? 0x80 : 0) | 0x20)); b.push_back(9); b.push_back((uint8_t)cfg.pty); }
+        return fig(0, b);
+    }
+    std::vector<uint8_t> fig018() const {                  // announcement support of the audio services
+        std::vector<uint8_t> b{0x12};
+        for (const auto& sb : subs) if (!sb.dmb) { put16(b, sb.svc.sid); put16(b, cfg.annSupport); b.push_back(1); b.push_back((uint8_t)cfg.annCluster); }
+        return fig(0, b);
+    }
+    std::vector<uint8_t> fig019() const {                  // announcement switching
+        std::vector<uint8_t> b{0x13, (uint8_t)cfg.annCluster};
+        put16(b, cfg.annActive);
+        b.push_back((uint8_t)(0x80 | (cfg.annSubId & 0x3F)));
+        return fig(0, b);
     }
 
     void makeFibs(uint64_t m, uint8_t out[12][32]) const {
@@ -341,8 +454,18 @@ struct Transmitter::Impl {
         place(0, fig010(m));
         for (const auto& f : fig01()) place(1, f);
         for (const auto& f : fig02()) place(1, f);
+        for (const auto& f : fig013()) place(1, f);
+        if (cfg.pty >= 0 && subs.size() <= 8) place(1, fig017());
+        if (cfg.annCluster > 0 && subs.size() <= 6) { place(1, fig018()); if (cfg.annActive) place(0, fig019()); }
         const size_t nl = subs.size() + 1;
-        for (size_t k = 0; k < 3; k++) place(1, figLabel((size_t)((m * 3 + k) % nl)));
+        for (size_t k = 0; k < 3; k++) {
+            const size_t idx = (size_t)((m * 3 + k) % nl);
+            if (!cfg.utf8Labels) place(1, figLabel(idx));
+            else {   // the segments of a label travel together, in one FIB
+                const std::vector<uint8_t> f = figLabel2(idx, 0);
+                if (f.size() <= 30) place(1, f);
+            }
+        }
         for (int i = 0; i < 12; i++) {
             std::memset(out[i], 0, 32);
             std::memcpy(out[i], fib[i].data(), fib[i].size());
@@ -376,10 +499,9 @@ struct Transmitter::Impl {
             for (size_t si = 0; si < subs.size(); si++) {
                 const Sub& s = subs[si];
                 uint8_t* dst = cif + (size_t)lay[si].start * 64;
-                for (int i = 0; i < s.bitsPerFrame; i++) {
-                    const int64_t f = floorMod(n - delay[i & 15], s.loopLen);
-                    dst[i] = s.coded[(size_t)f * (size_t)s.bitsPerFrame + (size_t)i];
-                }
+                const uint8_t* src[16];                                         // logical frames n - 0 .. n - 15
+                for (int d = 0; d < 16; d++) src[d] = codedOf(s, n - d);
+                for (int i = 0; i < s.bitsPerFrame; i++) dst[i] = src[delay[i & 15]][i];
             }
         }
         // DQPSK: the phase reference symbol, then every symbol is the one before times the QPSK symbol of its bits
@@ -405,6 +527,21 @@ struct Transmitter::Impl {
         makeSymbols(frame, z);
         out.assign((size_t)kFrame, cf32(0, 0));
         std::vector<cf32> t((size_t)kTu);
+        // TII in the null symbol of the frames whose CIFs count 0 - 3 modulo 8 (frame m holds CIFs 4m .. 4m+3: the even frames). Every
+        // active carrier takes the phase of the phase reference at that carrier, as strong as a data carrier times the transmitter's level;
+        // over the null symbol the carrier runs as exp(j 2 pi k (t - T_null) / T_u), so its last T_u samples are one period like a symbol
+        if (!cfg.tii.empty() && frame % 2 == 0) {
+            std::fill(t.begin(), t.end(), cf32(0, 0));
+            std::vector<int> ks;
+            for (const auto& x : cfg.tii) {
+                const float g = (float)std::pow(10.0, x.levelDb / 20.0);
+                dabtii::pairCarriers(x.mainId, x.subId, ks);
+                for (int k0 : ks)
+                    for (int k = k0; k <= k0 + 1; k++) { const size_t b = (size_t)((k + kTu) % kTu); t[b] += z[b] * g; }   // z[0 .. kTu): the phase reference
+            }
+            fft.inverse(t.data());
+            for (int n = 0; n < kTnull; n++) out[(size_t)n] = t[(size_t)(((n - kTnull) % kTu + kTu) % kTu)] * scale;
+        }
         for (int l = 0; l < kSymbols; l++) {
             std::copy(z.begin() + (long)l * kTu, z.begin() + (long)(l + 1) * kTu, t.begin());
             fft.inverse(t.data());
@@ -424,15 +561,11 @@ const TxConfig& Transmitter::config() const { return p_->cfg; }
 const std::vector<SubLayout>& Transmitter::layout() const { return p_->lay; }
 void Transmitter::fibs(uint64_t m, uint8_t out[12][32]) const { p_->makeFibs(m, out); }
 void Transmitter::logicalFrame(int service, int64_t f, std::vector<uint8_t>& out) const {
-    const Impl::Sub& s = p_->subs[(size_t)service];
-    out = s.frames[(size_t)floorMod(f, s.loopLen)];
+    Impl::frameBytesOf(p_->subs[(size_t)service], f, out);
 }
 const std::vector<std::vector<uint8_t>>& Transmitter::accessUnits(int service) const { return p_->subs[(size_t)service].aus; }
 const std::vector<std::vector<uint8_t>>& Transmitter::mp2Frames(int service) const { return p_->subs[(size_t)service].mp2; }
-const uint8_t* Transmitter::codedBits(int service, int64_t f) const {
-    const Impl::Sub& s = p_->subs[(size_t)service];
-    return &s.coded[(size_t)floorMod(f, s.loopLen) * (size_t)s.bitsPerFrame];
-}
+const uint8_t* Transmitter::codedBits(int service, int64_t f) const { return Impl::codedOf(p_->subs[(size_t)service], f); }
 void Transmitter::symbols(uint64_t m, std::vector<cf32>& z) const { p_->makeSymbols(m, z); }
 
 } // namespace dabgen
@@ -545,6 +678,17 @@ std::unique_ptr<ModeSynth> makeDabSynth(const dabgen::TxConfig& tx, const SynthC
     return std::make_unique<DabSynth>(tx, cfg, sampleRate);
 }
 
-std::unique_ptr<ModeSynth> makeDabSynth(const SynthConfig& cfg, double sampleRate) { return makeDabSynth(dabgen::TxConfig(), cfg, sampleRate); }
+// the built-in test signal of the app: the ensemble with its DMB television service as three transmitters of one network would be heard (TII 1/1,
+// 1/3 and 1/7, 0, -5 and -11 dB), so the Transmitters tab has something to show without a radio
+dabgen::TxConfig dabDemoConfig() {
+    dabgen::TxConfig tc;
+    tc.services = dabgen::defaultServices();
+    tc.services.push_back(dabgen::dmbService());
+    tc.services[2].slide = true;   // "OnAir Melody" sends a picture
+    tc.tii = {{1, 1, 0.0}, {1, 3, -5.0}, {1, 7, -11.0}};
+    return tc;
+}
+
+std::unique_ptr<ModeSynth> makeDabSynth(const SynthConfig& cfg, double sampleRate) { return makeDabSynth(dabDemoConfig(), cfg, sampleRate); }
 
 } // namespace dect2

@@ -1,13 +1,19 @@
 // DAB receiver, transmission mode I: null-symbol and phase-reference synchronisation, carrier and timing tracking, DQPSK
 // demodulation, fast information channel (ensemble, services, labels) and the main service channel of the selected sub-channel.
+#include "dect2/text_charset.h"
 #include "dect2/dab.h"
 #include "dect2/fftutil.h"
+#include "dect2/dab_tii.h"
+#include "dect2/dab_fig.h"
 #include "dect2/resampler.h"
+#include "dect2/channel_find.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>
 #include <cstring>
 #include <mutex>
+#include <set>
+#include <unordered_map>
 
 namespace dect2 {
 
@@ -15,19 +21,12 @@ namespace {
 using namespace dab;
 using cd = std::complex<double>;
 constexpr double kPi = 3.14159265358979323846;
+constexpr int kMaxShift = 80;      // integer carrier offset searched at the start: +-80 kHz covers 50 ppm at L band (1.49 GHz, 75 kHz)
 constexpr int kBackoff = 16;        // demodulation windows start this many samples before the useful part (inside the guard interval)
 
-// EBU Latin-based charset (the part that matters for labels) to UTF-8
-std::string labelText(const uint8_t* d, int n) {
-    std::string s;
-    for (int i = 0; i < n; i++) {
-        const unsigned c = d[i];
-        if (c < 0x20) continue;
-        if (c < 0x80) s += (char)c;
-        else { s += (char)(0xC0 | (c >> 6)); s += (char)(0x80 | (c & 0x3F)); }
-    }
-    while (!s.empty() && s.back() == ' ') s.pop_back();
-    return s;
+// A 16-byte label in the charset FIG 1 names (EN 300 401 5.2.2.2.1; EBU Latin unless it says otherwise) to clean UTF-8
+std::string labelText(int charset, const uint8_t* d, int n) {
+    return text::clean(text::dabCharset(charset, d, (size_t)n));
 }
 
 uint32_t getBits(const uint8_t* d, int pos, int n) {
@@ -42,6 +41,8 @@ struct DabReceiver::Impl {
     double inRate = kRate;
     RationalResampler rs;
     bool resample = false;
+    ChannelCentre cc;           // moves an ensemble that is far from the middle of the sample band there
+    std::vector<cf32> cin;
     std::vector<cf32> buf, rsOut;
     uint64_t base = 0;        // absolute index of buf[0]
     Fft fft{kTu};
@@ -50,6 +51,7 @@ struct DabReceiver::Impl {
 
     // ---- synchronisation
     int state = 0;            // 0 search, 2 locked
+    bool mirror = false;      // the input is conjugated (a mirrored spectrum)
     uint64_t nextU = 0;       // predicted useful start of the next phase reference symbol (absolute)
     double cfo = 0;           // carrier offset in bins (1 kHz each)
     bool fresh = false;       // just found: no refinement needed for the first frame
@@ -58,6 +60,7 @@ struct DabReceiver::Impl {
     uint64_t syncSample = 0, endSample = 0;
     float cirPeak = 0;
     std::vector<float> cirKeep;
+    dabtii::Detector tii;     // transmitter identification from the null symbols
 
     // ---- decoding state
     mutable std::mutex mu;
@@ -66,6 +69,21 @@ struct DabReceiver::Impl {
     uint64_t telSeq = 0;
     uint64_t fibOk = 0, fibBad = 0;
     int ficRecent = 0;
+    // ---- FIC analysis: every distinct FIG as received, counted (the FIG 0/0 and 0/10 change all the time: only the last one is kept)
+    std::unordered_map<std::string, DabFigRecord> figs;
+    std::map<std::pair<int, int>, DabFicStat> figStat;
+    uint64_t ficFill = 0, ficFibs = 0, ficBadN = 0, ficFrames = 0;   // the analysis's own counts, from the last reset (read under mu)
+    int lastFill[12] = {};
+    uint64_t ficSeq = 0;
+    // programme types and languages (FIG 0/17), announcement support (0/18) and switching (0/19)
+    struct PtyInfo { int pty = -1; bool dyn = false; int lang = -1; };
+    std::map<uint32_t, PtyInfo> ptyInfo;
+    std::map<uint32_t, DabAnnSupport> annSup;
+    // extended labels (FIG 2, UTF-8 or UCS-2 in segments): the segments of each label heard, and the labels complete (those replace the FIG 1 ones)
+    struct LabelSegs { int toggle = -1, total = 0; bool ucs2 = false; std::map<int, std::vector<uint8_t>> segs; };
+    std::map<std::string, LabelSegs> fig2Segs;
+    std::set<std::string> fig2Done;
+    std::map<int, std::pair<DabAnnSwitch, uint64_t>> annSw;   // cluster -> the last switching FIG and the FIC frame it came in
     double snrDb = 0;
     std::vector<cf32> constel;
 
@@ -77,6 +95,10 @@ struct DabReceiver::Impl {
     uint64_t cifCount = 0;
     DabAudio audio;
     std::function<void(int, const uint8_t*, int)> tap;
+    // a DMB video sub-channel (TS 102 427 / 102 428): its transport stream for the player
+    bool selDmb = false;
+    DmbDecoder dmb;
+    std::function<void(const uint8_t*, size_t, double)> pktCb;
 
     Impl() : bin(kCarriers), prsConj(kTu) {
         const auto& tab = freqInterleaver();
@@ -87,6 +109,7 @@ struct DabReceiver::Impl {
         mscSoft.resize((size_t)(kSymbols - 1 - kFicSymbols) * 2 * kCarriers);
         hist.assign(16, {});
         audio.select(-1, false, 0);
+        dmb.setPacketSink([this](const uint8_t* pk, size_t n) { if (pktCb) pktCb(pk, n, 0.024); });
     }
 
     // ------------------------------------------------------------ helpers
@@ -110,6 +133,20 @@ struct DabReceiver::Impl {
 
     // Correlates a spectrum (already derotated, or shifted by `shift` bins) with the phase reference; returns the peak / median ratio
     // and the peak position (a signed offset in samples: the window starts `idx` samples before the true useful start when idx < 0)
+    // The same search without the median: the peak against the mean power of the impulse response, for ranking many (position, shift) pairs cheaply;
+    // the candidates it picks are then measured with cirOf
+    float cirFast(const std::vector<cf32>& R, int shift, std::vector<cf32>& tmp) {
+        tmp.resize(kTu);
+        const int s = ((shift % kTu) + kTu) % kTu;
+        const int first = kTu - s;   // k + s wraps at k = first
+        for (int k = 0; k < first; k++) tmp[(size_t)k] = R[(size_t)(k + s)] * prsConj[(size_t)k];
+        for (int k = first; k < kTu; k++) tmp[(size_t)k] = R[(size_t)(k + s - kTu)] * prsConj[(size_t)k];
+        fft.inverse(tmp.data());
+        float pk = 0, sum = 0;
+        for (int i = 0; i < kTu; i++) { const float n = std::norm(tmp[(size_t)i]); sum += n; if (n > pk) pk = n; }
+        return pk / (sum * (1.f / (float)kTu) + 1e-18f);
+    }
+
     float cirOf(const std::vector<cf32>& R, int shift, int& idx, std::vector<cf32>& tmp, std::vector<float>* mag = nullptr) {
         tmp.assign(kTu, cf32(0, 0));
         for (int k = 0; k < kTu; k++) tmp[(size_t)k] = R[(size_t)((k + shift + kTu) % kTu)] * prsConj[(size_t)k];
@@ -134,9 +171,15 @@ struct DabReceiver::Impl {
     }
 
     // ------------------------------------------------------------ search
+    uint64_t searchNext = 0;   // no phase reference search before the samples have reached this absolute index
+    int searchFails = 0;       // searches that found a null but no phase reference, since the last lock
+
     bool searchSync() {
         const size_t need = (size_t)kFrame + kTnull + 4096 + kTs;
         if (buf.size() < need) return false;
+        // After a false null the next search waits a while: on a channel with no DAB the power varies (other services, bursts, gain changes) and the
+        // phase reference search, the costly part, would otherwise run on every block of samples that comes in
+        if (base + buf.size() < searchNext) { trim(base + buf.size() - need); return false; }
         // energy in windows of 2048 samples (stride 128) over one frame: the minimum lies in the null symbol
         const int win = 2048, stride = 128;
         std::vector<double> pw(buf.size() / 64 + 1, 0.0);   // block powers
@@ -152,27 +195,48 @@ struct DabReceiver::Impl {
         double mean = 0; size_t cnt = 0;
         for (size_t b = 0; b < (size_t)kFrame / 64; b++) { mean += pw[b]; cnt++; }
         mean /= (double)cnt * 64.0;
-        if (best / (double)win > 0.6 * mean) { trim(base + buf.size() - (size_t)kFrame); return false; }   // no null: not a DAB frame (yet)
+        if (mean <= 1e-12 || best / (double)win > 0.6 * mean) { trim(base + buf.size() - (size_t)kFrame); return false; }   // no null: not a DAB frame (yet)
         // the PRS useful part starts about 1832 samples after the centre of the quietest window; search around it
         const long nominal = (long)bestPos + win / 2 + 1832;
         float bestPk = 0; long bestP = 0; int bestShift = 0, bestIdx = 0;
         std::vector<cf32> R, tmp;
+        struct Cand { float fast; long p; int sh; };
+        Cand top[3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
         for (long p = nominal - 1400; p <= nominal + 1000; p += 128) {
             if (p < 0 || p + kTu > (long)buf.size()) continue;
             windowFft(base + (uint64_t)p, 0.0, R);
-            for (int sh = -12; sh <= 12; sh++) {
-                int idx;
-                const float pk = cirOf(R, sh, idx, tmp);
-                if (pk > bestPk) { bestPk = pk; bestP = p; bestShift = sh; bestIdx = idx; }
+            for (int sh = -kMaxShift; sh <= kMaxShift; sh++) {
+                const float f = cirFast(R, sh, tmp);
+                if (f > top[2].fast) {
+                    top[2] = {f, p, sh};
+                    std::sort(top, top + 3, [](const Cand& a, const Cand& b) { return a.fast > b.fast; });
+                }
             }
         }
-        if (bestPk < 25.f) { trim(base + buf.size() - (size_t)kFrame); return false; }
+        for (const Cand& c : top) {   // the best few by the fast measure, measured as before
+            if (c.fast <= 0) continue;
+            windowFft(base + (uint64_t)c.p, 0.0, R);
+            int idx;
+            const float pk = cirOf(R, c.sh, idx, tmp);
+            if (pk > bestPk) { bestPk = pk; bestP = c.p; bestShift = c.sh; bestIdx = idx; }
+        }
+        if (bestPk < 25.f) {
+            // no phase reference: the next attempt looks at the mirrored spectrum (I and Q swapped by the radio or the file format)
+            mirror = !mirror;
+            for (auto& v : buf) v = std::conj(v);
+            trim(base + buf.size() - (size_t)kFrame);
+            searchFails++;
+            searchNext = base + buf.size() + (uint64_t)(kFrame / 2) * (uint64_t)std::min(searchFails, 6);   // half a frame, up to three
+            return false;
+        }
         const uint64_t U = base + (uint64_t)(bestP + bestIdx);
         cfo = bestShift;
         nextU = U;
         fresh = true;
         missed = 0;
         state = 2;
+        searchFails = 0; searchNext = 0;
+        tii.reset();   // a new lock: which frames carry TII may have changed sides
         cirPeak = bestPk;
         syncSample = U;
         trim(U > 2 * kTs ? U - 2 * kTs : 0);
@@ -230,6 +294,13 @@ struct DabReceiver::Impl {
                 nc = bestC;
             }
             cfo = nc;
+        }
+        // TII: the spectrum of the null symbol of this frame. A window of T_u in its middle stays clear of the end of the frame before and
+        // of the echoes that run into the phase reference's guard interval (the null symbol is 608 samples longer than T_u)
+        {
+            std::vector<cf32> N;
+            windowFft(U - (uint64_t)kTg - (uint64_t)kTnull + (uint64_t)(kTnull - kTu) / 2, cfo, N);
+            tii.addNull(N, framesDone);
         }
         // demodulate all symbols
         std::vector<cf32> prev, cur;
@@ -302,15 +373,54 @@ struct DabReceiver::Impl {
             for (int i = 0; i < 96; i++) { uint8_t v = 0; for (int b = 0; b < 8; b++) v = (uint8_t)((v << 1) | bits[i * 8 + b]); by[i] = v; }
             for (int f = 0; f < 3; f++) {
                 const uint8_t* fib = by + f * 32;
-                if (crc16(fib, 30) == (uint16_t)((fib[30] << 8) | fib[31])) { ok++; fibOk++; parseFib(fib); }
-                else fibBad++;
+                if (crc16(fib, 30) == (uint16_t)((fib[30] << 8) | fib[31])) { ok++; fibOk++; parseFib(fib, cw * 3 + f); }
+                else { fibBad++; ficBadN++; lastFill[cw * 3 + f] = -1; }
             }
         }
+        ficSeq++;
+        ficFrames++;
+        if (framesDone % 64 == 0) pruneFigs();
         ficRecent = ok;
         ens.valid = ens.eid != 0 && !ens.services.empty();
     }
 
-    void parseFib(const uint8_t* fib) {
+    // The FIG with this header and payload, seen once more
+    void recordFig(int type, const uint8_t* d, int len, int slot) {
+        DabFigRecord r;
+        r.type = type;
+        r.data.assign(d, d + len);
+        if (type == 0) { r.cn = d[0] >> 7; r.oe = (d[0] >> 6) & 1; r.pd = (d[0] >> 5) & 1; r.ext = d[0] & 31; }
+        else if (type == 1) { r.oe = (d[0] >> 3) & 1; r.ext = d[0] & 7; }
+        else if (type == 2 || type == 5) r.ext = d[0] & 7;
+        std::string key;
+        key += (char)type;
+        if (type == 0 && (r.ext == 0 || r.ext == 10)) key += (char)r.ext;   // the CIF count / the clock: the latest only
+        else key.append((const char*)d, (size_t)len);
+        DabFicStat& st = figStat[{type, r.ext}];
+        st.type = type; st.ext = r.ext;
+        if (!st.count) st.firstFrame = framesDone;
+        st.count++; st.bytes += (uint64_t)len + 1; st.lastFrame = framesDone;
+        auto it = figs.find(key);
+        if (it == figs.end()) {
+            r.count = 1; r.firstFrame = r.lastFrame = framesDone; r.lastFib = slot;
+            if (figs.size() < 4000) figs.emplace(std::move(key), std::move(r));
+            return;
+        }
+        DabFigRecord& e = it->second;
+        e.count++; e.lastFrame = framesDone; e.lastFib = slot;
+        e.data = std::move(r.data);
+    }
+
+    // Instances not heard for 5 minutes are gone (a reconfiguration, an ensemble that changed)
+    void pruneFigs() {
+        const uint64_t keep = 3125;   // frames of 96 ms
+        for (auto it = figs.begin(); it != figs.end();) {
+            if (framesDone > it->second.lastFrame + keep) it = figs.erase(it);
+            else ++it;
+        }
+    }
+
+    void parseFib(const uint8_t* fib, int slot) {
         int i = 0;
         while (i < 30 && fib[i] != 0xFF) {
             const int type = fib[i] >> 5, len = fib[i] & 31;
@@ -318,15 +428,23 @@ struct DabReceiver::Impl {
             const uint8_t* d = fib + i + 1;
             i += 1 + len;
             if (len < 1) continue;
+            recordFig(type, d, len, slot);
             if (type == 0) parseFig0(d, len);
             else if (type == 1) parseFig1(d, len);
+            else if (type == 2) parseFig2(d, len);
         }
+        lastFill[slot] = std::min(i, 30);
+        ficFill += (uint64_t)std::min(i, 30);
+        ficFibs++;
     }
 
     void parseFig0(const uint8_t* d, int len) {
         const int ext = d[0] & 31, pd = (d[0] >> 5) & 1;
         const uint8_t* b = d + 1;
         const int n = len - 1;
+        // C/N = 1 in the sub-channel and service organisation: the configuration after an announced reconfiguration. Only the current one is
+        // followed (the new one arrives with C/N = 0 once it is in force).
+        if ((d[0] & 0x80) && (ext == 1 || ext == 2)) return;
         if (ext == 0 && n >= 2) ens.eid = (uint16_t)((b[0] << 8) | b[1]);
         else if (ext == 1) {
             int p = 0;
@@ -346,6 +464,9 @@ struct DabReceiver::Impl {
                 } else {
                     s.eep = false;
                     s.uepIndex = b[p + 2] & 0x3F;
+                    int lv, info;
+                    if (!(b[p + 2] & 0x40) && uepGeometry(s.uepIndex, s.size, s.bitrate, lv, info)) s.level = lv - 1;
+                    else { s.size = 0; s.bitrate = 0; }   // table switch 1 is not defined
                     p += 3;
                 }
                 ens.subs[s.id] = s;
@@ -370,6 +491,62 @@ struct DabReceiver::Impl {
                 }
                 sv.comps = comps;
             }
+        } else if (ext == 13) {   // user applications (TS 101 756 table 16): which sub-channel carries DMB video
+            int p = 0;
+            while (p + (pd ? 5 : 3) <= n) {
+                uint32_t sid;
+                if (pd == 0) { sid = (uint32_t)((b[p] << 8) | b[p + 1]); p += 2; }
+                else { sid = ((uint32_t)b[p] << 24) | ((uint32_t)b[p + 1] << 16) | ((uint32_t)b[p + 2] << 8) | b[p + 3]; p += 4; }
+                const int scids = b[p] >> 4, nua = b[p] & 15;
+                p++;
+                for (int u = 0; u < nua && p + 2 <= n; u++) {
+                    const int type = (b[p] << 3) | (b[p + 1] >> 5), len = b[p + 1] & 31;
+                    p += 2;
+                    if (p + len > n) break;
+                    if (scids == 0 && u == 0) {   // the primary component's first application (PAD applications of a DMB radio service follow it)
+                        DabService& sv = ens.services[sid];
+                        sv.sid = sid;
+                        sv.userApp = type;
+                        if (type == 0x009 && len >= 1) sv.dmbProfile = b[p];
+                    }
+                    p += len;
+                }
+            }
+        } else if (ext == 17) {   // programme type: S/D flag, P/S flag, language, programme type, complementary type
+            int p = 0;
+            while (p + 3 <= n) {
+                const uint32_t sid = (uint32_t)((b[p] << 8) | b[p + 1]);
+                const bool sd = b[p + 2] & 0x80, primary = !(b[p + 2] & 0x40), l = b[p + 2] & 0x20, cc = b[p + 2] & 0x10;
+                p += 3;
+                PtyInfo pi;
+                if (l && p < n) { pi.lang = b[p]; p++; }
+                if (p < n) { pi.pty = b[p] & 0x1F; p++; }
+                if (cc) p++;
+                if (primary && pi.pty >= 0) { PtyInfo& e = ptyInfo[sid]; if (pi.lang < 0) pi.lang = e.lang; pi.dyn = sd; e = pi; }
+            }
+        } else if (ext == 18) {   // announcement support: SId, ASu flags, clusters
+            int p = 0;
+            while (p + 5 <= n) {
+                const uint32_t sid = (uint32_t)((b[p] << 8) | b[p + 1]);
+                DabAnnSupport as;
+                as.asu = (unsigned)((b[p + 2] << 8) | b[p + 3]);
+                const int nc = b[p + 4] & 0x1F;
+                p += 5;
+                for (int c = 0; c < nc && p < n; c++, p++) as.clusters.push_back(b[p]);
+                annSup[sid] = as;
+            }
+        } else if (ext == 19) {   // announcement switching: cluster, ASw flags, new flag, region flag, sub-channel
+            int p = 0;
+            while (p + 4 <= n) {
+                DabAnnSwitch sw;
+                sw.cluster = b[p];
+                sw.asw = (unsigned)((b[p + 1] << 8) | b[p + 2]);
+                sw.newFlag = b[p + 3] & 0x80;
+                sw.region = b[p + 3] & 0x40;
+                sw.subId = b[p + 3] & 0x3F;
+                p += 4 + (sw.region ? 1 : 0);
+                annSw[sw.cluster] = {sw, ficFrames};
+            }
         } else if (ext == 10 && n >= 4) {
             const uint32_t mjd = getBits(b, 1, 17);
             const int flag = (int)getBits(b, 20, 1);
@@ -381,43 +558,124 @@ struct DabReceiver::Impl {
     }
 
     void parseFig1(const uint8_t* d, int len) {
-        const int ext = d[0] & 7;
+        const int ext = d[0] & 7, cs = d[0] >> 4;
         const uint8_t* b = d + 1;
         const int n = len - 1;
-        if (ext == 0 && n >= 18) ens.label = labelText(b + 2, 16);
+        auto done = [&](int e, uint32_t id) { return fig2Done.count(std::to_string(e) + ":" + std::to_string(id)) > 0; };   // a FIG 2 label of it is known: that one is kept
+        if (ext == 0 && n >= 18) { if (!done(0, 0)) ens.label = labelText(cs, b + 2, 16); }
         else if (ext == 1 && n >= 18) {
             const uint32_t sid = (uint32_t)((b[0] << 8) | b[1]);
             DabService& sv = ens.services[sid];
             sv.sid = sid;
-            sv.label = labelText(b + 2, 16);
+            if (!done(1, sid)) sv.label = labelText(cs, b + 2, 16);
+        } else if (ext == 5 && n >= 20) {   // data service label (32-bit SId), e.g. DMB television
+            const uint32_t sid = ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
+            DabService& sv = ens.services[sid];
+            sv.sid = sid;
+            if (!done(5, sid)) sv.label = labelText(cs, b + 4, 16);
+        } else if (ext == 4 && n >= 20) {   // service component label: P/D, SCIdS, SId, label
+            const bool pd = b[0] & 0x80;
+            const int scids = b[0] & 0x0F, il = pd ? 4 : 2;
+            if (n < 1 + il + 18) return;
+            const uint32_t sid = pd ? (((uint32_t)b[1] << 24) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 8) | b[4]) : (uint32_t)((b[1] << 8) | b[2]);
+            const auto it = ens.services.find(sid);
+            if (it != ens.services.end() && !fig2Done.count("4:" + std::to_string(sid) + ":" + std::to_string(scids))) it->second.compLabels[scids] = labelText(cs, b + 1 + il, 16);
         }
+    }
+
+    // FIG 2: labels in UTF-8 or UCS-2 of up to 8 segments (EN 300 401 8.1.13, TS 103 176)
+    void parseFig2(const uint8_t* d, int len) {
+        const int toggle = d[0] >> 7, seg = (d[0] >> 4) & 7, rfu = (d[0] >> 3) & 1, ext = d[0] & 7;
+        int idl = 0;
+        switch (ext) {
+            case 0: case 1: idl = 2; break;
+            case 4: idl = (len > 1 && (d[1] & 0x80)) ? 5 : 3; break;
+            case 5: idl = 4; break;
+            default: return;
+        }
+        if (len <= 1 + idl) return;
+        uint32_t sid = 0;
+        int scids = 0;
+        std::string key = std::to_string(ext) + ":";
+        if (ext == 0) key += "0";
+        else if (ext == 1) { sid = (uint32_t)((d[1] << 8) | d[2]); key += std::to_string(sid); }
+        else if (ext == 5) { sid = ((uint32_t)d[1] << 24) | ((uint32_t)d[2] << 16) | ((uint32_t)d[3] << 8) | d[4]; key += std::to_string(sid); }
+        else {
+            scids = d[1] & 0x0F;
+            sid = idl == 5 ? (((uint32_t)d[2] << 24) | ((uint32_t)d[3] << 16) | ((uint32_t)d[4] << 8) | d[5]) : (uint32_t)((d[2] << 8) | d[3]);
+            key += std::to_string(sid) + ":" + std::to_string(scids);
+        }
+        LabelSegs& L = fig2Segs[key];
+        if (L.toggle != toggle) { L = LabelSegs(); L.toggle = toggle; }
+        const uint8_t* p = d + 1 + idl;
+        int n = len - 1 - idl;
+        if (seg == 0) {
+            L.ucs2 = p[0] >> 7;
+            L.total = ((p[0] >> 4) & 7) + 1;
+            const int skip = rfu ? 1 : 3;   // text control, or Rfa and the character flag field
+            if (n <= skip) return;
+            p += skip; n -= skip;
+        }
+        L.segs[seg].assign(p, p + n);
+        if (!L.total || (int)L.segs.size() != L.total) return;
+        std::vector<uint8_t> all;
+        for (int i = 0; i < L.total; i++) {
+            const auto it = L.segs.find(i);
+            if (it == L.segs.end()) return;
+            all.insert(all.end(), it->second.begin(), it->second.end());
+        }
+        const std::string text = text::clean(L.ucs2 ? text::ucs2be(all.data(), all.size()) : std::string(all.begin(), all.end()));
+        if (text.empty()) return;
+        if (ext == 0) ens.label = text;
+        else if (ext == 1 || ext == 5) { DabService& sv = ens.services[sid]; sv.sid = sid; sv.label = text; }
+        else { const auto it = ens.services.find(sid); if (it == ens.services.end()) return; it->second.compLabels[scids] = text; }
+        fig2Done.insert(key);
     }
 
     // ------------------------------------------------------------ MSC
     void applySelection() {
         // (ens is locked by the caller)
         if (selReq == sel) return;
-        if (selReq < 0) { sel = -1; audio.select(-1, false, 0); hist.assign(16, {}); cifCount = 0; return; }
+        if (selReq < 0) { sel = -1; selDmb = false; audio.select(-1, false, 0); dmb.reset(); hist.assign(16, {}); cifCount = 0; return; }
         auto it = ens.subs.find(selReq);
         if (it == ens.subs.end()) return;   // wait until the ensemble tells us about it
         selSub = it->second;
-        bool plus = true;
-        for (const auto& kv : ens.services) for (const auto& c : kv.second.comps) if (c.tmid == 0 && c.subId == selReq) plus = c.ascty == 63;
+        bool plus = true, isDmb = false;
+        for (const auto& kv : ens.services) {
+            for (const auto& c : kv.second.comps) if (c.tmid == 0 && c.subId == selReq) plus = c.ascty == 63;
+            const DabComponent* d = kv.second.dmb();
+            if (d && d->subId == selReq) isDmb = true;
+        }
         sel = selReq;
+        selDmb = isDmb;
         hist.assign(16, {});
         cifCount = 0;
-        audio.select(sel, plus, selSub.bitrate);
+        dmb.reset();
+        if (isDmb) audio.select(-1, false, 0);
+        else audio.select(sel, plus, selSub.bitrate);
     }
 
     void decodeMsc() {
         {
             std::lock_guard<std::mutex> lk(mu);
             applySelection();
+            // a reconfiguration may move or resize the selected sub-channel: follow it (the 16 CIFs of interleaving restart)
+            if (sel >= 0) {
+                auto it = ens.subs.find(sel);
+                if (it != ens.subs.end()) {
+                    const DabSubchannel& n = it->second;
+                    if (n.start != selSub.start || n.size != selSub.size || n.eep != selSub.eep || n.option != selSub.option || n.level != selSub.level || n.uepIndex != selSub.uepIndex) {
+                        selSub = n;
+                        hist.assign(16, {});
+                        cifCount = 0;
+                    }
+                }
+            }
         }
         if (sel < 0) return;
-        if (!selSub.eep || selSub.size <= 0 || selSub.start + selSub.size > kCifCu) return;   // UEP is not supported yet
-        int n, br, info;
-        if (!eepGeometry(selSub.size, selSub.option, selSub.level, n, br, info)) return;
+        if (selSub.size <= 0 || selSub.start + selSub.size > kCifCu) return;
+        int n, br, info, sz, lv;
+        if (selSub.eep ? !eepGeometry(selSub.size, selSub.option, selSub.level, n, br, info) : !uepGeometry(selSub.uepIndex, sz, br, lv, info)) return;
         const int bits = selSub.size * kCuBits;
         std::vector<int8_t> mother((size_t)(4 * (info + 6))), one((size_t)bits);
         std::vector<uint8_t> dec((size_t)info), bytes((size_t)info / 8);
@@ -431,12 +689,13 @@ struct DabReceiver::Impl {
                 const uint64_t t = cifCount - 1 - (uint64_t)(15 - kMap[i & 15]);
                 one[(size_t)i] = hist[t % 16][(size_t)i];
             }
-            if (!eepDepuncture(one.data(), selSub.size, selSub.option, selSub.level, mother.data())) return;
+            if (selSub.eep ? !eepDepuncture(one.data(), selSub.size, selSub.option, selSub.level, mother.data()) : !uepDepuncture(one.data(), selSub.uepIndex, mother.data())) return;
             viterbiDecode(mother.data(), info, dec.data());
             descramble(dec.data(), info);
             for (int i = 0; i < info / 8; i++) { uint8_t v = 0; for (int b = 0; b < 8; b++) v = (uint8_t)((v << 1) | dec[(size_t)i * 8 + (size_t)b]); bytes[(size_t)i] = v; }
             if (tap) tap(sel, bytes.data(), (int)bytes.size());
-            audio.push(bytes.data(), (int)bytes.size());
+            if (selDmb) dmb.push(bytes.data(), (int)bytes.size());
+            else audio.push(bytes.data(), (int)bytes.size());
         }
     }
 
@@ -447,7 +706,7 @@ struct DabReceiver::Impl {
         t.state = state;
         t.sync = state == 2 && missed == 0;
         t.cirPeak = cirPeak;
-        t.cfoHz = cfo * 1000.0;
+        t.cfoHz = cfo * 1000.0 + (mirror ? -1 : 1) * cc.offsetHz();
         t.snrDb = snrDb;
         t.frames = framesDone;
         t.fibOk = fibOk; t.fibBad = fibBad; t.ficRecentOk = ficRecent;
@@ -457,17 +716,26 @@ struct DabReceiver::Impl {
         t.constellation = constel;
         t.cir = cirKeep;
         t.audio = audio.stats();
+        t.dmb = dmb.stats();
+        t.dmb.active = selDmb;
+        t.dmb.sub = selDmb ? sel : -1;
+        for (const auto& f : tii.found()) t.tii.push_back({f.mainId, f.subId, f.levelDb, f.marginDb});
+        t.tiiFrames = tii.framesSeen();
         t.seq = ++telSeq;
         tel = std::move(t);
     }
 
     void reset() {
-        buf.clear(); base = 0; state = 0; cfo = 0; missed = 0; framesDone = 0; rs.reset();
+        buf.clear(); base = 0; state = 0; mirror = false; cfo = 0; searchNext = 0; searchFails = 0; cc.reset(); missed = 0; framesDone = 0; rs.reset(); tii.reset();
         std::lock_guard<std::mutex> lk(mu);
         telSeq++;
         tel = DabTelemetry(); tel.seq = telSeq;
         hist.assign(16, {}); cifCount = 0;
+        ptyInfo.clear(); annSup.clear(); annSw.clear(); fig2Segs.clear(); fig2Done.clear();
+        figs.clear(); figStat.clear(); ficFill = 0; ficFibs = 0; ficBadN = 0; ficFrames = 0; ficSeq++;
+        for (int& v : lastFill) v = 0;
         audio.flushSync();
+        dmb.reset();
     }
 
     void run() {
@@ -485,7 +753,8 @@ void DabReceiver::configure(double inputRateHz) {
     Impl& I = *p_;
     I.inRate = inputRateHz;
     I.resample = std::fabs(inputRateHz - kRate) > 1.0;
-    if (I.resample) I.rs.configure(inputRateHz, kRate);
+    if (I.resample) I.rs.configure(inputRateHz, kRate, nullptr, 1.6e6);
+    I.cc.configure(inputRateHz, 1.536e6, 60e3, 1.5);
     I.reset();
 }
 
@@ -493,8 +762,15 @@ void DabReceiver::reset() { p_->reset(); }
 
 void DabReceiver::feed(const cf32* x, size_t n) {
     Impl& I = *p_;
+    // a channel away from the middle of the sample band (beyond the +-80 kHz of the search) is moved there first
+    I.cin.assign(x, x + n);
+    I.cc.process(I.cin.data(), n, I.state == 2 && I.fibOk > 0);
+    if (I.cc.takeChanged()) { I.buf.clear(); I.base = 0; I.state = 0; I.searchNext = 0; I.searchFails = 0; I.rs.reset(); }
+    x = I.cin.data();
+    const size_t from = I.buf.size();
     if (I.resample) { I.rsOut.clear(); I.rs.process(x, n, I.rsOut); I.buf.insert(I.buf.end(), I.rsOut.begin(), I.rsOut.end()); }
     else I.buf.insert(I.buf.end(), x, x + n);
+    if (I.mirror) for (size_t i = from; i < I.buf.size(); i++) I.buf[i] = std::conj(I.buf[i]);
     I.run();
 }
 
@@ -507,8 +783,43 @@ bool DabReceiver::telemetry(DabTelemetry& out, uint64_t lastSeq) {
 }
 
 DabEnsemble DabReceiver::ensemble() const {
+    const int sub = p_->audio.stats().sub;
+    const std::string dls = sub >= 0 ? p_->audio.dynamicLabel() : std::string();
+    bool running = false;
+    const std::vector<DabDlpTag> dlp = sub >= 0 ? p_->audio.dlPlus(&running) : std::vector<DabDlpTag>();
     std::lock_guard<std::mutex> lk(p_->mu);
-    return p_->ens;
+    DabEnsemble e = p_->ens;
+    if (!dls.empty()) for (auto& kv : e.services) { const DabComponent* c = kv.second.playable(); if (c && c->subId == sub) { kv.second.dls = dls; kv.second.dlPlus = dlp; kv.second.dlpRunning = running; } }
+    for (auto& kv : e.services) {
+        const auto it = p_->ptyInfo.find(kv.first);
+        if (it != p_->ptyInfo.end()) { kv.second.pty = it->second.pty; kv.second.ptyDynamic = it->second.dyn; kv.second.language = it->second.lang; }
+    }
+    e.annSupport = p_->annSup;
+    for (const auto& kv : p_->annSw)   // an announcement is on while its FIG keeps coming (they repeat about every second) and says so
+        if (kv.second.first.asw != 0 && p_->ficFrames <= kv.second.second + 40) e.annActive.push_back(kv.second.first);
+    return e;
+}
+
+DabFicAnalysis DabReceiver::ficAnalysis() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    DabFicAnalysis a;
+    a.seq = p_->ficSeq;
+    a.frames = p_->ficFrames;
+    a.fibOk = p_->ficFibs; a.fibBad = p_->ficBadN;
+    a.fillBytes = p_->ficFill; a.fibCount = p_->ficFibs;
+    for (int i = 0; i < 12; i++) a.lastFill[i] = p_->lastFill[i];
+    a.figs.reserve(p_->figs.size());
+    for (const auto& kv : p_->figs) a.figs.push_back(kv.second);
+    std::sort(a.figs.begin(), a.figs.end(), [](const DabFigRecord& x, const DabFigRecord& y) {
+        if (x.type != y.type) return x.type < y.type;
+        if (x.ext != y.ext) return x.ext < y.ext;
+        if (x.cn != y.cn) return x.cn < y.cn;
+        if (x.oe != y.oe) return x.oe < y.oe;
+        if (x.pd != y.pd) return x.pd < y.pd;
+        return x.data < y.data;
+    });
+    for (const auto& kv : p_->figStat) a.stats.push_back(kv.second);
+    return a;
 }
 
 void DabReceiver::select(int subId) {
@@ -518,6 +829,8 @@ void DabReceiver::select(int subId) {
 }
 int DabReceiver::selected() const { return p_->selReq; }
 DabAudio& DabReceiver::audio() { return p_->audio; }
+DmbDecoder& DabReceiver::dmb() { return p_->dmb; }
+void DabReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { p_->pktCb = std::move(cb); }
 void DabReceiver::setFrameTap(std::function<void(int, const uint8_t*, int)> cb) { p_->tap = std::move(cb); }
 
 } // namespace dect2

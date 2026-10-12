@@ -1,5 +1,5 @@
-// DRM screens: the Radio tab (now playing, text message, time, signal summary), the services list, status lamps, the analysis plots (FAC / SDC / MSC cells,
-// channel, SNR), the Receiver tab with all telemetry and the options of the test signal.
+// DRM screens: the Radio tab (the band presets, short wave and the VHF bands of DRM+, now playing, text message, time, signal summary), the services
+// list, status lamps, the analysis plots (FAC / SDC / MSC cells, channel, SNR), the Receiver tab with all telemetry and the options of the test signal.
 #include "app.h"
 #include <cmath>
 #include <deque>
@@ -113,8 +113,8 @@ void tick(App& a) {
 // ---------------------------------------------------------------- the Radio tab
 
 void kvRow(const App& a, const char* k, const std::string& v, float x = 110.f) {
-    ImGui::TextDisabled("%s", k); ImGui::SameLine(x * gUi);
-    ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(v.c_str()); ImGui::PopFont();
+    ImGui::TextDisabled("%s", k); kvColumn(x * gUi);   // a narrow pane: the column moves left and the value wraps
+    ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont();
 }
 
 void nowPlaying(App& a, float w, float h) {
@@ -124,16 +124,16 @@ void nowPlaying(App& a, float w, float h) {
     ImGui::BeginChild("##drm_now", ImVec2(w, h), ImGuiChildFlags_Borders);
     if (!on || !s) {
         ImGui::PushFont(a.ui, 22.f);
-        ImGui::TextUnformatted(!a.engine.running() ? "stopped" : t.mode >= 0 ? "reading the multiplex" : "searching for a DRM signal");
+        { ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(!a.engine.running() ? "stopped" : t.mode >= 0 ? "reading the multiplex" : "searching for a DRM signal"); ImGui::PopTextWrapPos(); }
         ImGui::PopFont();
-        ImGui::TextDisabled("%s", a.engine.running() ? (t.status.empty() ? "" : t.status.c_str()) : "Start the receiver. Test signal: pick the synthetic source.");
+        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? (t.status.empty() ? "" : t.status.c_str()) : "Start the receiver. Test signal: pick the synthetic source."); ImGui::PopTextWrapPos(); }
         ImGui::EndChild();
         return;
     }
     ImGui::PushFont(a.ui, 26.f);
     ImGui::TextColored(pal::dev() ? pal::accent() : ImVec4(0.55f, 0.80f, 1.f, 1), "%s", serviceName(*s).c_str());
     ImGui::PopFont();
-    ImGui::TextDisabled("%s", s->audio ? "audio service" : "data service (not decoded)");
+    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", s->audio ? "audio service" : "data service (not decoded)"); ImGui::PopTextWrapPos(); }
     ImGui::Spacing();
     kvRow(a, "programme", s->programmeName.empty() ? "-" : s->programmeName);
     kvRow(a, "language", s->languageName.empty() ? "-" : s->languageName);
@@ -143,9 +143,9 @@ void nowPlaying(App& a, float w, float h) {
     kvRow(a, "service id", b);
     kvRow(a, "audio", s->codecText.empty() ? "-" : s->codecText);
     if (s->bitrateBps > 0) { snprintf(b, sizeof b, "%.1f kbit/s", s->bitrateBps / 1000.0); kvRow(a, "stream rate", b); }
-    ImGui::TextDisabled("state"); ImGui::SameLine(110 * gUi);
+    ImGui::TextDisabled("state"); kvColumn(110 * gUi);
     const ImVec4 col = t.audioState == 2 ? kGood : t.audioState == 1 ? kWarn : ImVec4(0.62f, 0.65f, 0.68f, 1);
-    ImGui::TextColored(col, "%s", t.audioState == 2 ? "playing" : t.audioState == 1 ? "frames received, cannot decode" : s->audio ? "waiting for audio" : "no audio");
+    { ImGui::PushTextWrapPos(0); ImGui::TextColored(col, "%s", t.audioState == 2 ? "playing" : t.audioState == 1 ? "frames received, cannot decode" : s->audio ? "waiting for audio" : "no audio"); ImGui::PopTextWrapPos(); }
     ImGui::PushTextWrapPos(0);
     if (!t.audioInfo.empty() && t.audioState != 0 && t.audioInfo != s->codecText) ImGui::TextDisabled("%s", t.audioInfo.c_str());
     if (t.hierarchicalUnsupported) ImGui::TextColored(kWarn, "The signal uses a hierarchical mapping, which this receiver does not decode.");
@@ -188,7 +188,44 @@ void signalPanel(App& a, float w, float h) {
     ImGui::EndChild();
 }
 
+// Band presets: DRM30 in the short wave broadcast bands, DRM+ (mode E, 100 kHz channels) in VHF bands I, II and III; in VHF the arrows step by the
+// 100 kHz DRM+ raster. The receiver finds the robustness mode by itself (DRM+ needs a radio rate of 100 ksps or more).
+void presets(App& a) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Bands"); flowNext(6 * gUi);
+    static const struct { const char* name; double mhz; const char* tip; } kP[] = {
+        {"SW 41 m", 7.325, "DRM30, short wave 41 m band (7.2 - 7.45 MHz)"},
+        {"SW 31 m", 9.5, "DRM30, short wave 31 m band (9.4 - 9.9 MHz)"},
+        {"SW 25 m", 11.65, "DRM30, short wave 25 m band (11.6 - 12.1 MHz)"},
+        {"SW 19 m", 15.1, "DRM30, short wave 19 m band (15.1 - 15.8 MHz)"},
+        {"VHF I", 47.1, "DRM+, VHF band I (47 - 68 MHz)"},
+        {"VHF II", 87.6, "DRM+, VHF band II (87.5 - 108 MHz), next to the FM stations"},
+        {"VHF III", 174.1, "DRM+, VHF band III (174 - 240 MHz), between the DAB blocks"},
+    };
+    for (const auto& p : kP) {
+        if (ImGui::Button(p.name)) tuneFreq(a, p.mhz);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s: %.3f MHz", p.tip, p.mhz);
+        flowNext(6 * gUi);
+    }
+    const bool vhf = a.freqMhz >= 30;
+    if (vhf) {
+        if (ImGui::ArrowButton("##drmdn", ImGuiDir_Left)) tuneFreq(a, std::round(a.freqMhz * 10 - 1) / 10);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("100 kHz down (the DRM+ channel raster)");
+        flowNext(4 * gUi);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("%.1f MHz", a.freqMhz);
+        flowNext(4 * gUi);
+        if (ImGui::ArrowButton("##drmup", ImGuiDir_Right)) tuneFreq(a, std::round(a.freqMhz * 10 + 1) / 10);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("100 kHz up (the DRM+ channel raster)");
+    } else {
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled("%.3f MHz", a.freqMhz);
+    }
+    flowEnd();
+}
+
 void tab(App& a) {
+    presets(a);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     const float gap = 8 * gUi;
     const float sw = std::min(std::max(250.f * gUi, W * 0.34f), W * 0.5f);
@@ -201,9 +238,9 @@ void tab(App& a) {
 
 void list(App& a) {
     const DrmTelemetry& t = a.rx.drm;
-    if (!live(a)) { ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see services"); return; }
-    if (t.services.empty()) { ImGui::TextDisabled(t.mode >= 0 ? "reading the multiplex" : "searching for a DRM signal"); return; }
-    ImGui::TextDisabled("%zu service%s, click to play", t.services.size(), t.services.size() == 1 ? "" : "s");
+    if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see services"); ImGui::PopTextWrapPos(); } return; }
+    if (t.services.empty()) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(t.mode >= 0 ? "reading the multiplex" : "searching for a DRM signal"); ImGui::PopTextWrapPos(); } return; }
+    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu service%s, click to play", t.services.size(), t.services.size() == 1 ? "" : "s"); ImGui::PopTextWrapPos(); }
     const DrmService* cur = playing(t);
     for (const auto& s : t.services) {
         ImGui::PushID(s.shortId);
@@ -226,7 +263,7 @@ void list(App& a) {
 
 void squarePlot(const char* title, const char* id, const std::vector<cf32>& pts, float side, double lim) {
     ImGui::BeginGroup();
-    ImGui::TextDisabled("%s (%zu)", title, pts.size());
+    captionFit(side, "%s (%zu)", title, pts.size());   // never wider than the plot: the row keeps to the pane
     scatter(id, pts, ImVec2(side, side), lim, pal::accent(0.7f));
     ImGui::EndGroup();
 }
@@ -249,7 +286,7 @@ void panels(App& a) {
     squarePlot("MSC cells", "##drm_msc", on ? t.mscConst : none, side, t.mscQam == 64 ? 1.6 : 1.8);
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Channel response (kHz)");
+    captionFit(colW, "Channel response (kHz)");
     if (plt::BeginPlot("##drm_tf", ImVec2(colW, plotH), plt::Flags_NoLegend | plt::Flags_NoTitle)) {
         plt::SetupAxes(nullptr, nullptr, 0, 0);
         const bool have = on && !t.chanDb.empty() && t.chanSpacingHz > 0;
@@ -270,7 +307,7 @@ void panels(App& a) {
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Impulse response (ms)");
+    captionFit(colW, "Impulse response (ms)");
     if (plt::BeginPlot("##drm_ir", ImVec2(colW, plotH), plt::Flags_NoLegend | plt::Flags_NoTitle)) {
         plt::SetupAxes(nullptr, nullptr, 0, 0);
         if (on && !t.cirDb.empty() && t.cirStepMs > 0) {
@@ -289,12 +326,12 @@ void panels(App& a) {
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("SNR (dB)");
+    captionFit(colW * 0.8f, "SNR (dB)");
     historyPlot("##drm_snr", "dB", S.snr, ImVec2(colW * 0.8f, plotH));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Audio frames ok (%%)");
+    captionFit(colW * 0.8f, "Audio frames ok (%%)");
     historyPlot("##drm_aud", "%", S.audio, ImVec2(colW * 0.8f, plotH));
     ImGui::EndGroup();
 }
@@ -307,23 +344,19 @@ void status(App& a) {
     const SignalStats& st = a.spec.stats;
     const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
     const double now = ImGui::GetTime();
-    {
-        const ImVec2 p = ImGui::GetCursorScreenPos();
-        const float h = ImGui::GetFrameHeight() * 2.f + ImGui::GetStyle().ItemSpacing.y * 2.f;
-        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(p.x - 4, p.y - 2), ImVec2(p.x + ImGui::GetContentRegionAvail().x + 4, p.y + h), IM_COL32(22, 23, 25, 255), 3.f);
-    }
-    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); ImGui::SameLine(0, 12 * gUi);
-    lamp("Signal", !on ? 0 : t.mode >= 0 ? 1 : 0); ImGui::SameLine(0, 12 * gUi);
-    lamp("Frame", !on ? 0 : t.state >= 1 ? 1 : t.mode >= 0 ? 2 : 0); ImGui::SameLine(0, 12 * gUi);
-    lamp("FAC", !on ? 0 : blockLamp(S.facOkAt, S.facBadAt, 3.0, now)); ImGui::SameLine(0, 12 * gUi);
-    lamp("SDC", !on ? 0 : blockLamp(S.sdcOkAt, S.sdcBadAt, 6.0, now)); ImGui::SameLine(0, 12 * gUi);
-    lamp("Audio", !on ? 0 : t.audioState == 2 ? blockLamp(S.audOkAt, S.audBadAt, 3.0, now) : t.audioState == 1 ? 2 : 0); ImGui::SameLine(0, 10 * gUi);
-    ImGui::TextDisabled("|"); ImGui::SameLine(0, 10 * gUi);
+    StatusPanel panel;   // a tinted panel behind the status lines (they wrap in a narrow window)
+    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(12 * gUi);
+    lamp("Signal", !on ? 0 : t.mode >= 0 ? 1 : 0); flowNext(12 * gUi);
+    lamp("Frame", !on ? 0 : t.state >= 1 ? 1 : t.mode >= 0 ? 2 : 0); flowNext(12 * gUi);
+    lamp("FAC", !on ? 0 : blockLamp(S.facOkAt, S.facBadAt, 3.0, now)); flowNext(12 * gUi);
+    lamp("SDC", !on ? 0 : blockLamp(S.sdcOkAt, S.sdcBadAt, 6.0, now)); flowNext(12 * gUi);
+    lamp("Audio", !on ? 0 : t.audioState == 2 ? blockLamp(S.audOkAt, S.audBadAt, 3.0, now) : t.audioState == 1 ? 2 : 0); flowNext(10 * gUi);
+    ImGui::TextDisabled("|"); flowNext(10 * gUi);
     auto ro = [&](const char* label, const std::string& val) {
         ImGui::AlignTextToFramePadding();
         ImGui::TextDisabled("%s", label); ImGui::SameLine(0, 5 * gUi);
         ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(val.c_str()); ImGui::PopFont();
-        ImGui::SameLine(0, 15 * gUi);
+        flowNext(15 * gUi);
     };
     char b[80];
     if (!on) { ro("State", run ? "starting" : "stopped"); return; }
@@ -357,7 +390,7 @@ void receiver(App& a) {
     sectionHeader(Ic::Chip, "Receiver");
     kv("state", stateText(t.state));
     kv("status", t.status.empty() ? "-" : t.status);
-    kf("level", "%.1f dBFS in the 48 kHz channel", t.levelDbfs);
+    kf("level", "%.1f dBFS in the %s channel", t.levelDbfs, t.mode == 4 ? "192 kHz" : "48 kHz");
     kf("quality", "%.0f %%", t.quality * 100.0);
     sectionHeader(Ic::Wave, "Signal");
     kv("robustness mode", t.mode >= 0 ? modeText(t.mode) : "-");
@@ -399,15 +432,18 @@ void receiver(App& a) {
         snprintf(b, sizeof b, "%d  %s", s.shortId + 1, serviceName(s).c_str());
         ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(b); ImGui::PopFont();
         ImGui::SameLine(0, 10 * gUi);
+        // the facts wrap in a narrow pane (they ran 15 px past it at 150 %)
+        ImGui::PushTextWrapPos(0);
         ImGui::TextDisabled("%06X  %s%s%s", s.id & 0xFFFFFF, serviceFacts(s).c_str(), s.codecText.empty() ? "" : ", ", s.codecText.c_str());
+        ImGui::PopTextWrapPos();
         if (s.conditionalAccess) { ImGui::SameLine(0, 6 * gUi); ImGui::TextColored(kWarn, "CA"); }
     }
     sectionHeader(Ic::Warning, "Not supported");
     ImGui::PushTextWrapPos(0);
     ImGui::TextDisabled("AAC with SBR or parametric stereo: only the AAC core plays (no SBR for 960-sample frames in the audio library), so the sound is band-limited and mono for PS services.");
     ImGui::TextDisabled("xHE-AAC: the frames are received, but whether sound comes out depends on the audio library's USAC decoder; the state above says what happened.");
-    ImGui::TextDisabled("Data services (Journaline, packet mode), alternative frequencies, hierarchical mappings and DRM+ (robustness mode E) are not decoded.");
-    ImGui::TextDisabled("Below 30 MHz a HackRF needs an upconverter or a long antenna.");
+    ImGui::TextDisabled("Data services (Journaline, packet mode), alternative frequencies and hierarchical mappings are not decoded; DRM+ with unequal error protection is untested.");
+    ImGui::TextDisabled("DRM+ (mode E, 100 kHz) needs a radio rate of at least 100 ksps. Below 30 MHz a HackRF needs an upconverter or a long antenna.");
     ImGui::PopTextWrapPos();
     ImGui::EndChild();
 }
@@ -416,7 +452,9 @@ void receiver(App& a) {
 
 bool combo(const char* id, float w, const char* const* items, int n, int cur, int& out, const bool* disabled = nullptr) {
     bool ch = false;
-    ImGui::SetNextItemWidth(w * gUi);
+    float tw = 0;   // never narrower than its longest choice (at 125 or 150 % the text grows faster than the box)
+    for (int i = 0; i < n; i++) tw = std::max(tw, ImGui::CalcTextSize(items[i]).x);
+    ImGui::SetNextItemWidth(std::max(w * gUi, tw + ImGui::GetFrameHeight() + 2 * ImGui::GetStyle().FramePadding.x));
     if (ImGui::BeginCombo(id, items[std::max(0, std::min(n - 1, cur))])) {
         for (int i = 0; i < n; i++) {
             if (disabled && disabled[i]) ImGui::BeginDisabled();
@@ -430,33 +468,40 @@ bool combo(const char* id, float w, const char* const* items, int n, int cur, in
 
 void synth(App& a, bool& changed) {
     SynthConfig& sc = a.tune.synth;
-    static const char* modes[] = {"mode A", "mode B", "mode C", "mode D"};
+    static const char* modes[] = {"mode A", "mode B", "mode C", "mode D", "mode E (DRM+)"};
     static const char* occ[] = {"usual (10 kHz)", "4.5 kHz", "5 kHz", "9 kHz", "10 kHz", "18 kHz", "20 kHz"};
+    static const char* occE[] = {"100 kHz"};
     static const char* qam[] = {"64-QAM", "16-QAM"};
+    static const char* qamE[] = {"16-QAM", "4-QAM"};
     static const char* prot[] = {"usual protection", "protection 0", "protection 1", "protection 2", "protection 3"};
     static const char* il[] = {"long interleaver", "short interleaver"};
     static const char* aud[] = {"melody", "1 kHz tone", "silence", "noise-like", "not AAC"};
     static const char* chn[] = {"no channel", "AWGN", "Rice, delay", "US consortium", "CCIR poor", "channel 5", "channel 6"};
-    const int mode = sc.modeOpt[0] == 0 ? 1 : std::max(0, std::min(3, sc.modeOpt[0] - 1));
+    const int mode = sc.modeOpt[0] == 0 ? 1 : std::max(0, std::min(4, sc.modeOpt[0] - 1));
+    const bool E = mode == 4;
     int v = 0;
     ImGui::TextDisabled("test signal");
-    ImGui::SameLine();
-    if (combo("##dm", 78, modes, 4, mode, v)) { sc.modeOpt[0] = v + 1; if (v >= 2 && sc.modeOpt[1] != 0 && sc.modeOpt[1] != 4 && sc.modeOpt[1] != 6) sc.modeOpt[1] = 0; changed = true; }
-    ImGui::SameLine(0, 6 * gUi);
+    flowNext();
+    if (combo("##dm", 78, modes, 5, mode, v)) { sc.modeOpt[0] = v + 1; if (v >= 2 && sc.modeOpt[1] != 0 && sc.modeOpt[1] != 4 && sc.modeOpt[1] != 6) sc.modeOpt[1] = 0; changed = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Modes A to D: DRM30 (below 30 MHz). Mode E: DRM+ (VHF), a 100 kHz channel; the radio needs 100 ksps or more.");
+    flowNext(6 * gUi);
     bool dis[7] = {};
     if (mode >= 2) for (int i : {1, 2, 3, 5}) dis[i] = true;   // modes C and D only have 10 and 20 kHz
-    if (combo("##do", 110, occ, 7, sc.modeOpt[1], v, dis)) { sc.modeOpt[1] = v; changed = true; }
-    ImGui::SameLine(0, 6 * gUi);
-    if (combo("##dq", 76, qam, 2, sc.modeOpt[2], v)) { sc.modeOpt[2] = v; changed = true; }
-    ImGui::SameLine(0, 6 * gUi);
+    if (E) { int z = 0; combo("##doE", 110, occE, 1, 0, z); }   // mode E has one occupancy
+    else if (combo("##do", 110, occ, 7, sc.modeOpt[1], v, dis)) { sc.modeOpt[1] = v; changed = true; }
+    flowNext(6 * gUi);
+    if (combo("##dq", 76, E ? qamE : qam, 2, sc.modeOpt[2], v)) { sc.modeOpt[2] = v; changed = true; }
+    flowNext(6 * gUi);
     if (combo("##dp", 120, prot, 5, sc.modeOpt[3], v)) { sc.modeOpt[3] = v; changed = true; }
-    ImGui::SameLine(0, 6 * gUi);
+    flowNext(6 * gUi);
     if (combo("##di", 130, il, 2, sc.modeOpt[4], v)) { sc.modeOpt[4] = v; changed = true; }
-    ImGui::SameLine(0, 6 * gUi);
+    flowNext(6 * gUi);
     if (combo("##da", 100, aud, 5, sc.modeOpt[5], v)) { sc.modeOpt[5] = v; changed = true; }
-    ImGui::SameLine(0, 6 * gUi);
+    flowNext(6 * gUi);
+    if (E) ImGui::BeginDisabled();
     if (combo("##dc", 110, chn, 7, sc.modeOpt[6], v)) { sc.modeOpt[6] = v; changed = true; }
-    ImGui::SameLine(0, 8 * gUi);
+    if (E) { ImGui::EndDisabled(); if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("The channels of Annex B.1 are short wave channels (DRM30 only)"); }
+    flowNext(8 * gUi);
     bool text = sc.modeOpt[7] == 0;
     if (ImGui::Checkbox("text message", &text)) { sc.modeOpt[7] = text ? 0 : 1; changed = true; }
 }

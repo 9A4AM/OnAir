@@ -121,7 +121,8 @@ void AtvCard::buildStatic() {
         const int mx0 = X(0.53), mx1 = X(0.94);
         mbRow0_ = Y(0.33); mbRow1_ = Y(0.47);
         c.rect(mx0, mbRow0_, mx1, mbRow1_, fromRgb(0.5f, 0.5f, 0.5f));
-        const double mhz[6] = {0.5, 1.0, 2.0, 3.0, f_.ntsc || f_.sys == kAtvM || f_.sys == kAtvN ? 3.58 : 4.0, f_.sys == kAtvM || f_.sys == kAtvN ? 4.2 : 4.8};
+        double mhz[6] = {0.5, 1.0, 2.0, 3.0, f_.ntsc || f_.sys == kAtvM || f_.sys == kAtvN ? 3.58 : 4.0, f_.sys == kAtvM || f_.sys == kAtvN ? 4.2 : 4.8};
+        if (f_.videoBwMhz < 4) { const double a[6] = {0.25, 0.5, 1.0, 1.5, 2.0, 2.75}; for (int i = 0; i < 6; i++) mhz[i] = a[i]; }   // system A: 3 MHz video
         const double uPerPx = f_.activeUs / W;
         for (int i = 0; i < 6; i++) {
             const int a = mx0 + (mx1 - mx0) * i / 6, b = mx0 + (mx1 - mx0) * (i + 1) / 6;
@@ -151,7 +152,7 @@ void AtvCard::buildStatic() {
         c.disk(cx, cyc, R - 4, fromRgb(0.3f, 0.3f, 0.3f));
         c.rect((int)(cx - R - 8), (int)cyc - 1, (int)(cx + R + 8), (int)cyc + 1, white);
         c.rect((int)cx - 1, (int)(cyc - R - 8), (int)cx + 1, (int)(cyc + R + 8), white);
-        std::string l1 = f_.colourName + " " + f_.sysName, l2 = std::to_string(f_.lines) + "/" + (f_.lines == 625 ? "50" : "60");
+        std::string l1 = f_.colourName + " " + f_.sysName, l2 = std::to_string(f_.lines) + "/" + (f_.lines == 525 ? "60" : "50");
         if (f_.colour == kAtvMono) l1 = f_.sysName;
         c.rect((int)(cx - R + 8), (int)(cyc - 18), (int)(cx + R - 8), (int)(cyc + 18), fromRgb(0.3f, 0.3f, 0.3f));
         c.text((int)(cx - textWidth((int)l1.size(), 2) / 2.0), (int)cyc - 15, 2, l1, white);

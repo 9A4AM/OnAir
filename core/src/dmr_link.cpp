@@ -67,6 +67,12 @@ Link::Link() {
 
 void Link::reset() {
     uint64_t seq = tel_.seq;
+    const double t0 = nowSec();          // the clock starts again: the kept calls and messages move back by the time it had reached
+    std::vector<DmrCall> calls = std::move(tel_.callLog);
+    std::vector<DmrMessage> msgs = std::move(tel_.messages);
+    const uint64_t nCalls = tel_.calls;
+    for (auto& c : calls) { c.startSec -= t0; c.endSec -= t0; c.active = false; }
+    for (auto& m : msgs) m.sec -= t0;
     memset(ring_, 0, sizeof ring_);
     n_ = 0;
     memset(rho_, 0, sizeof rho_);
@@ -74,8 +80,10 @@ void Link::reset() {
     globalCal_ = Cal();
     ncoDelta_ = 0;
     nco_ = 0;
+    centre_ = 0;
     tel_ = DmrTelemetry();
     tel_.seq = seq;
+    setLogs(std::move(calls), std::move(msgs), nCalls);
     eye_.clear();
     cc_ = -1;
     linkFamily_ = -1;
@@ -105,6 +113,16 @@ double Link::cfoResidualHz() const {
 bool Link::locked() const {
     for (const Track& t : tr_) if (t.used && t.confirmed) return true;
     return false;
+}
+
+void Link::forgetCalibration() {
+    for (Track& t : tr_) if (!t.confirmed) t = Track();
+    globalCal_ = Cal();
+}
+
+void Link::dropTracks() {
+    for (Track& t : tr_) t = Track();
+    globalCal_ = Cal();
 }
 
 void Link::shiftOffset(double hz) {
@@ -189,7 +207,8 @@ void Link::onCandidate(const Cand& c) {
         if (dbg) fprintf(stderr, "[%.3f] candidate %s rho %.2f REJECTED (A %.0f diff %d)\n", c.pos / 48000.0, syncName(sync), c.rho, A, diff);
         return;
     }
-    if (std::fabs(nco_ + b) > kMaxOffsetHz) return;
+    // around the carrier the front end found; never on the 12.5 kHz raster of the tuned frequency, which is the neighbouring channel
+    if (std::fabs(nco_ + b - centre_) > kMaxOffsetHz || std::fabs(std::fabs(nco_ + b) - 12500.0) < 1500.0) return;
     if (dbg) fprintf(stderr, "[%.3f] sync %s rho %.2f A %.0f b %.0f diff %d\n", c.pos / 48000.0, syncName(sync), c.rho, A, b, diff);
     const double t0 = c.pos - 230.0 - 540.0;       // the burst starts 77 symbols before the last sync symbol
     const int fam = familyOf(sync);

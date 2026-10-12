@@ -1,18 +1,21 @@
-// DRM test signal: a DRM30 transmitter (robustness modes A to D) as complex baseband. The synthetic source plays it, drmtool writes it to a file.
+// DRM test signal: a DRM30 transmitter (robustness modes A to D) and a DRM+ one (mode E, 100 kHz) as complex baseband. The synthetic source plays it,
+// drmtool writes it to a file.
 // Nothing is transmitted: the samples only exist in memory or in a file.
 //
 // Options of the synthetic source (SynthConfig::modeOpt / modeVal, all 0 = the default shown):
-//   modeOpt[0]  robustness mode: 0 B (default), 1 A, 2 B, 3 C, 4 D
-//   modeOpt[1]  spectrum occupancy: 0 the usual one of the mode (10 kHz), 1 .. 6 = occupancy code 0 .. 5 (4.5, 5, 9, 10, 18, 20 kHz; modes C and D only have 10 and 20 kHz)
-//   modeOpt[2]  MSC constellation: 0 64-QAM, 1 16-QAM
-//   modeOpt[3]  MSC protection level of part B: 0 the second one (rate about 0.6 for 64-QAM), 1 .. 4 = level 0 .. 3
+//   modeOpt[0]  robustness mode: 0 B (default), 1 A, 2 B, 3 C, 4 D, 5 E (DRM+: 100 kHz at 192 kHz, label "OnAir DRM+")
+//   modeOpt[1]  spectrum occupancy: 0 the usual one of the mode (10 kHz), 1 .. 6 = occupancy code 0 .. 5 (4.5, 5, 9, 10, 18, 20 kHz; modes C and D only have 10 and 20 kHz;
+//               mode E only has 100 kHz)
+//   modeOpt[2]  MSC constellation: 0 64-QAM (mode E 16-QAM), 1 16-QAM (mode E 4-QAM)
+//   modeOpt[3]  MSC protection level of part B: 0 the second one (rate about 0.6 for 64-QAM; mode E level 2 for 16-QAM, 1 for 4-QAM), 1 .. 4 = level 0 .. 3
 //   modeOpt[4]  time interleaving: 0 long (2 s), 1 short (400 ms)
 //   modeOpt[5]  audio (AAC-LC, 24 kHz mono, coded by our own encoder, drm_aacenc.h): 0 a short melody, 1 a steady 1 kHz tone, 2 silence, 3 noise-like test sound (no two frames alike,
 //               for tests of the channel coding), 4 frames of random bytes that are not AAC (the receiver counts them as damaged)
-//   modeOpt[6]  channel: 0 none (only the noise), 1 .. 6 = the channels of Annex B.1 (1 AWGN, 2 Rice with delay, 3 US consortium, 4 CCIR poor, 5, 6 the worst of them)
+//   modeOpt[6]  channel: 0 none (only the noise), 1 .. 6 = the channels of Annex B.1 (1 AWGN, 2 Rice with delay, 3 US consortium, 4 CCIR poor, 5, 6 the worst of them;
+//               short wave channels, not applied in mode E)
 //   modeOpt[7]  text message: 0 on, 1 off
 // SynthConfig::snrDb is the carrier to noise ratio in the nominal channel width (signal power including pilots and guard interval, as in Annex A of the
-// standard); noise is limited to +-24 kHz around the signal like after a receiver's channel filter. cfoHz, sroPpm: carrier and sample clock offset. echoDb and
+// standard); noise is limited to +-24 kHz around the signal like after a receiver's channel filter (mode E: +-96 kHz). cfoHz, sroPpm: carrier and sample clock offset. echoDb and
 // echoDelay add one echo (delay in samples of 48 kHz) on top of the channel.
 #pragma once
 #include "dect2/drm_defs.h"
@@ -25,9 +28,9 @@
 namespace dect2 {
 
 struct DrmTxConfig {
-    int mode = drm::kModeB;      // 0 A, 1 B, 2 C, 3 D (mode E is not generated)
-    int occupancy = 3;           // Table 48: 0 4.5 kHz, 1 5, 2 9, 3 10, 4 18, 5 20 kHz
-    int mscQam = 64;             // 16 or 64
+    int mode = drm::kModeB;      // 0 A, 1 B, 2 C, 3 D, 4 E (DRM+)
+    int occupancy = 3;           // Table 48: 0 4.5 kHz, 1 5, 2 9, 3 10, 4 18, 5 20 kHz (mode E: 0, 100 kHz)
+    int mscQam = 64;             // 16 or 64; mode E 4 or 16
     int protA = 0;               // protection level of the higher protected part (only used with partABytes > 0)
     int protB = 1;               // protection level of the lower protected part
     int partABytes = 0;          // bytes of the audio stream in part A (0: equal error protection)
@@ -41,7 +44,8 @@ struct DrmTxConfig {
     int audioCoding = 0;         // 0 AAC (the only coding that is generated)
     int audioSbr = 0;
     int audioMode = 0;           // 0 mono
-    int audioRateHz = 24000;     // 12000 or 24000 (the core sampling rate of the AAC stream): 5 or 10 audio frames per super frame
+    int audioRateHz = 24000;     // 12000 or 24000 (the core sampling rate of the AAC stream): 5 or 10 audio frames per super frame (mode E: 24000, 5 frames
+                                 // in an audio super frame of 200 ms that two logical frames carry)
     bool textMessage = true;
     std::string text = "OnAir DRM test signal";
     int year = 2026, month = 10, day = 6, hour = 12, minute = 0;   // the clock that SDC type 8 reports (advances with the signal)
@@ -82,8 +86,9 @@ public:
     ~DrmTransmitter();
     bool ok() const;                              // the configuration is valid
     const DrmTxConfig& config() const;
-    static constexpr int kRate = 48000;           // sample rate of the baseband that superFrame() delivers
-    int superFrameSamples() const;                // samples of one transmission super frame (3 frames = 1.2 s)
+    static constexpr int kRate = 48000;           // sample rate of the baseband that superFrame() delivers (modes A to D)
+    int sampleRate() const;                       // kRate, mode E 192000
+    int superFrameSamples() const;                // samples of one transmission super frame (3 frames = 1.2 s; mode E 4 frames = 400 ms)
     int frameSamples() const;
     void superFrame(std::vector<cf32>& out);      // appends one transmission super frame
     // the layout, for tests

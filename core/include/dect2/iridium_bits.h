@@ -1,0 +1,44 @@
+// Iridium bursts as gr-iridium's iridium-extractor writes them (".bits" files, one "RAW:" line a burst), so iridium-toolkit's
+// iridium-parser.py reads our files unchanged: `iridium-parser.py output.bits > output.parsed`. OnAir writes bits only; whatever the
+// toolkit does with them afterwards (voice included) happens outside OnAir.
+//
+// Line format (gr-iridium lib/iridium_frame_printer_impl.cc):
+//   RAW: <file_info> <ms %012.4f> <Hz %010d> N:<magnitude dB %05.2f><noise dB %+06.2f> I:<id %011d> <confidence %3d>% <level %.5f>
+//        <data symbols %3d> <bits: unique word + data, '0'/'1'>
+//   file_info = "i-<unix second of the first burst>-t1", ms = milliseconds since that second, data symbols = symbols after the
+//   12-symbol unique word. No header line. iridium-toolkit bitsparser.py reads it with
+//   (RAW|RWA|NC1): ([^ ]*) (-?[\d.]+) (\d+) (?:N:([+-]?\d+(?:\.\d+)?)([+-]\d+(?:\.\d+)?)|A:(\w+)) [IL]:(\w+) +(\d+)% ([\d.]+|inf|nan) +(\d+) ([\[\]<> 01]+)(.*)
+#pragma once
+#include "iridium_frame.h"
+#include <cstdint>
+#include <cstdio>
+#include <mutex>
+#include <string>
+
+namespace dect2 {
+
+// One RAW line (no newline). unixTime: when the burst's unique word started; t0: whole unix second of file_info.
+std::string iridiumRawLine(const IridiumBurstBits& b, long long t0, double unixTime, uint64_t id);
+
+// The regex above as a std::regex ECMAScript string (tests).
+extern const char* const kIridiumRawRegex;
+
+class IridiumBitsWriter {
+public:
+    ~IridiumBitsWriter();
+    bool open(const std::string& path, std::string* err = nullptr);   // truncates
+    void close();
+    bool isOpen() const;
+    // unixTime of the burst: the caller maps its sample clock to the wall clock (or the recording's start time)
+    void write(const IridiumBurstBits& b, double unixTime);
+    uint64_t lines() const;
+    std::string path() const;
+private:
+    mutable std::mutex mu_;
+    FILE* f_ = nullptr;
+    std::string path_;
+    long long t0_ = -1;
+    uint64_t lines_ = 0;
+};
+
+} // namespace dect2

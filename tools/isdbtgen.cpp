@@ -3,7 +3,7 @@
 // (carrier offset, echo, noise, sample-rate error) and written as 8-bit I/Q like a HackRF would record it. Use it to try the ISDB-T receiver.
 //
 //   isdbtgen --out sample.cs8 [--seconds 12] [--rate 10e6] [--mode 3] [--guard 1/8] [--partial] [--layer A:1:qpsk:2/3:2] [--layer B:12:64qam:3/4:1]
-//            [--cfo 2500] [--ppm 0] [--snr 28] [--echo-us 2] [--echo-db 12] [--format cs8|cf32]
+//            [--cfo 2500] [--ppm 0] [--snr 28] [--echo-us 2] [--echo-db 12] [--format cs8|cf32] [--bw 6|7|8]
 //
 // A layer is name:segments:modulation:rate:interleaving (0..3). Without --layer: a one-segment layer A (QPSK 2/3, the picture phones use) and a
 // twelve-segment layer B (64QAM 3/4) that carries the programme. The programme goes into the last layer given, the others carry null packets.
@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
         else if (a == "--mode") p.mode = atoi(next().c_str());
         else if (a == "--guard") { const std::string g = next(); p.guard = g == "1/4" ? kGi4 : g == "1/8" ? kGi8 : g == "1/16" ? kGi16 : kGi32; }
         else if (a == "--partial") p.partial = true;
+        else if (a == "--bw") { const int b = atoi(next().c_str()); p.bwMhz = b == 7 || b == 8 ? b : 6; }   // channel width: 7 / 8 MHz scale the IFFT rate
         else if (a == "--cfo") cfo = atof(next().c_str());
         else if (a == "--ppm") ppm = atof(next().c_str());
         else if (a == "--snr") snr = atof(next().c_str());
@@ -72,19 +73,19 @@ int main(int argc, char** argv) {
     printf("mode %d, guard %s, %d segments%s\n", p.mode, guardName(p.guard), p.totalSegments(), p.partial ? ", one-segment layer A" : "");
     for (int i = 0; i < 3; i++) if (p.layer[i].used()) printf("  layer %c: %d segment%s %s %s, interleaving %d, %.2f Mbit/s%s\n", 'A' + i, p.layer[i].segments, p.layer[i].segments == 1 ? "" : "s", modName(p.layer[i].mod), rateName(p.layer[i].rate), interleavingLength(p.mode, p.layer[i].ti), layerBitrate(p, i) / 1e6, i == main_ ? " (the programme)" : "");
     Generator gen(p, singleLayerSource(main_, demoTsSource(layerBitrate(p, main_) * 0.9)), 1);
-    const int frames = std::max(2, (int)std::ceil(seconds / frameSeconds(p.mode, p.guard)));
+    const int frames = std::max(2, (int)std::ceil(seconds / frameSeconds(p.mode, p.guard, p.bwMhz)));
     std::vector<cf32> sig, frame;
     for (int f = 0; f < frames; f++) { gen.nextFrame(frame); sig.insert(sig.end(), frame.begin(), frame.end()); }
     // channel: echo (in the signal's own sample rate), carrier offset, sample-rate error, noise
     if (echoUs > 0) {
-        const size_t d = (size_t)std::llround(echoUs * 1e-6 * kSampleRate);
+        const size_t d = (size_t)std::llround(echoUs * 1e-6 * sampleRateFor(p.bwMhz));
         const float g = (float)std::pow(10.0, -echoDb / 20.0);
         std::vector<cf32> e(sig.size());
         for (size_t i = 0; i < sig.size(); i++) e[i] = sig[i] + (i >= d ? g * sig[i - d] * cf32(0.6f, 0.8f) : cf32(0, 0));
         sig.swap(e);
     }
     ExactResampler rs;
-    rs.configure(kSampleRate, rate * (1.0 + ppm * 1e-6));
+    rs.configure(sampleRateFor(p.bwMhz), rate * (1.0 + ppm * 1e-6));
     std::vector<cf32> radio;
     rs.process(sig.data(), sig.size(), radio);
     std::mt19937 rng(7);

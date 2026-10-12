@@ -167,28 +167,51 @@ std::vector<AtvCarrier> AtvCarrierSearch::candidates() const {
         r.visionDb = c.prom;
         // the sound carrier: an FM carrier at one of the standard spacings, a bump above its surroundings
         double bestProm = 0;
+        bool soundOfTurned = false;                                          // a stronger carrier sits a sound spacing away: this is a sound carrier
         for (int s = 0; s < kAtvSpacingCount; s++) {
             const double fsnd = r.visionHz + atvSpacingMhz(s) * 1e6;
             if (std::fabs(fsnd) > fs_ / 2 - 150e3) continue;
             const int kc = bin(fsnd < 0 ? fsnd + fs_ : fsnd);
-            double peak = -200;
+            double peak = -200, line = -200;
             for (int d = -bin(30e3); d <= bin(30e3); d++) {                  // the carrier moves a little with the modulation
                 double sm = 0;
                 for (int e = -3; e <= 3; e++) sm += pw(kc + d + e);
                 peak = std::max(peak, 10 * std::log10(sm / 7));
+                line = std::max(line, (double)at(kc + d));
             }
             double fl = 0; int cnt = 0;
             for (int d = bin(150e3); d <= bin(320e3); d += 3) { fl += pw(kc + d) + pw(kc - d); cnt += 2; }
             const double prom = peak - 10 * std::log10(fl / cnt);
-            if (prom > bestProm) { bestProm = prom; r.spacingMhz = atvSpacingMhz(s); r.soundHz = fsnd; r.soundDb = prom; r.soundRelDb = peak - at(c.k); }
+            // a line there stronger than the one taken for the vision carrier: that one is the sound carrier of a channel turned round (A, L')
+            // and this is its vision carrier, not a sound carrier
+            if (prom > bestProm && line <= at(c.k)) { bestProm = prom; r.spacingMhz = atvSpacingMhz(s); r.soundHz = fsnd; r.soundDb = prom; r.soundRelDb = peak - at(c.k); }
         }
+        // A line a sound spacing above or below that is about as strong and has the picture around it: this one is the sound carrier (an AM
+        // sound carrier is a line as clean as a vision carrier, and with nothing but its audio around it stands out more), of a channel the
+        // right way round (vision below) or turned round (vision above, systems A and L')
+        auto around = [&](int k) {                          // the mean power 0.25 to 0.9 MHz either side: the video of a vision carrier
+            double sm = 0; int cn = 0;
+            for (int d = bin(0.25e6); d <= bin(0.9e6); d += 2) { sm += pw(k + d) + pw(k - d); cn += 2; }
+            return 10 * std::log10(std::max(sm / cn, 1e-30));
+        };
+        const double myAround = around(c.k);
+        for (int s = 0; s < kAtvSpacingCount && !soundOfTurned; s++)
+            for (int sg = -1; sg <= 1; sg += 2) {
+                const double f2 = r.visionHz + sg * atvSpacingMhz(s) * 1e6;
+                if (std::fabs(f2) > fs_ / 2 - 150e3) continue;
+                const int k2 = bin(f2 < 0 ? f2 + fs_ : f2);
+                double line = -200;
+                int kl = k2;
+                for (int d = -bin(30e3); d <= bin(30e3); d++) if (at(k2 + d) > line) { line = at(k2 + d); kl = k2 + d; }
+                if (line > at(c.k) - 6 && around(kl) > myAround + 8) { soundOfTurned = true; break; }
+            }
         // The FM carrier is a strong line (40 dB above its surroundings; the line of the colour subcarrier is 10 to 15 dB, and well below the vision carrier)
         if (bestProm < 16 || r.soundRelDb < -30) { r.spacingMhz = 0; r.soundHz = 0; r.soundDb = 0; r.soundRelDb = -99; }
         // flat double sideband or Nyquist slope
         double lo = 0, hi = 0;
         for (int d = bin(0.3e6); d <= bin(0.6e6); d++) { lo += pw(c.k - d); hi += pw(c.k + d); }
         r.dsbDb = 10 * std::log10(std::max(lo, 1e-20) / std::max(hi, 1e-20));
-        r.score = std::min(r.visionDb, 40.0) + (r.spacingMhz > 0 ? 10 : 0);        // a bare carrier stands out more than a modulated one: do not let that win
+        r.score = std::min(r.visionDb, 40.0) + (r.spacingMhz > 0 ? 10 : 0) - (soundOfTurned ? 15 : 0);   // a bare carrier stands out more than a modulated one: do not let that win
         out.push_back(r);
     }
     std::sort(out.begin(), out.end(), [](const AtvCarrier& a, const AtvCarrier& b) { return a.score > b.score; });
@@ -230,7 +253,8 @@ struct AtvSound::Impl {
     cf32 prev = cf32(1, 0);
     double deemY = 0, deemA = 0;
     // statistics
-    double envSum = 0, envSq = 0, devMax = 0, audSq = 0, meanSum = 0; size_t statN = 0, audN = 0, meanN = 0;
+    double envSum = 0, envSq = 0, devMax = 0, audSq = 0, meanSum = 0, fSq = 0; size_t statN = 0, audN = 0, meanN = 0;
+    double envEma = 0;                       // AM: the carrier level the envelope is divided by
     float gain = 0;                          // fade in and out with the carrier
     std::vector<float> t1i, t1q, t2i, t2q, t3i, t3q, aud, disc, zero, mi, mq;
     double deemX1 = 0;
@@ -254,6 +278,12 @@ void AtvSound::configure(double fs) {
     reset();
 }
 
+void AtvSound::setAm(bool on, double depth) {
+    if (on == am_ && depth == amDepth_) return;
+    am_ = on; amDepth_ = depth > 0.05 ? depth : 0.8;
+    if (p_) p_->envEma = 0;
+}
+
 void AtvSound::setSystem(double devKhz, double preEmphUs) {
     if (!p_) return;
     p_->devHz = devKhz * 1e3; p_->tauUs = preEmphUs;
@@ -267,7 +297,8 @@ void AtvSound::reset() {
     s.s1.reset(); s.s2.reset(); s.s3.reset();
     if (s.rsOk) s.rs.reset();
     s.ph = 0; s.prev = cf32(1, 0); s.deemY = 0; s.deemX1 = 0;
-    s.envSum = s.envSq = s.devMax = s.audSq = s.meanSum = 0; s.statN = s.audN = s.meanN = 0;
+    s.envSum = s.envSq = s.devMax = s.audSq = s.meanSum = s.fSq = 0; s.statN = s.audN = s.meanN = 0;
+    s.envEma = 0;
     s.gain = 0;
     present_ = false; devKhz_ = 0; levelDb_ = -120; trim_ = 0;
     setSystem(s.devHz / 1e3, s.tauUs);
@@ -325,27 +356,37 @@ void AtvSound::process(const cf32* x, size_t n, std::vector<float>& out) {
         const cf32 pr = z * std::conj(s.prev);
         s.prev = z;
         const double f = std::atan2((double)pr.imag(), (double)pr.real()) * s.fs2 / (2 * kPi);
-        disc[j] = (float)f;
         const double a = std::abs(z);
+        if (am_) {
+            // AM: the envelope against the carrier level (a slow mean), full depth = 1
+            s.envEma = s.envEma > 0 ? s.envEma + (a - s.envEma) * 2e-4 : a;
+            disc[j] = s.envEma > 1e-12 ? (float)((a / s.envEma - 1.0) / amDepth_ * s.devHz) : 0.f;
+        } else disc[j] = (float)f;
         s.envSum += a; s.envSq += a * a; s.statN++;
-        s.meanSum += f; s.meanN++;
+        s.meanSum += f; s.meanN++; s.fSq += f * f;
         s.devMax = std::max(s.devMax, std::fabs(f));
     }
     // carrier present? a constant envelope; and where the carrier really is
     if (s.statN >= (size_t)(0.02 * s.fs2)) {
         const double m = s.envSum / s.statN, var = std::max(0.0, s.envSq / s.statN - m * m);
         const double cv = m > 1e-9 ? std::sqrt(var) / m : 1.0;
-        present_ = cv < (present_ ? 0.45 : 0.35);
         const double mean = s.meanSum / s.meanN;
+        if (am_) {
+            // an AM carrier stays on one frequency: the discriminator hardly moves (noise alone sends it all over the band)
+            const double fr = std::sqrt(std::max(0.0, s.fSq / s.meanN - mean * mean));
+            present_ = fr < (present_ ? 12e3 : 8e3);
+        } else present_ = cv < (present_ ? 0.45 : 0.35);
         if (present_) trim_ = std::max(-20e3, std::min(20e3, trim_ + 0.3 * mean));
-        devKhz_ = (float)(s.devMax / 1e3);
-        s.envSum = s.envSq = s.devMax = s.meanSum = 0; s.statN = s.meanN = 0;
+        devKhz_ = am_ ? 0.f : (float)(s.devMax / 1e3);
+        s.envSum = s.envSq = s.devMax = s.meanSum = s.fSq = 0; s.statN = s.meanN = 0;
     }
     // de-emphasis (one pole, unity gain at DC), then the 15 kHz low-pass and the rate change to 48 kHz
     // bilinear transform of 1 / (1 + s tau) with k = 2 fs tau: y = (x + x1) / (1 + k) - a y1, a = (1 - k) / (1 + k), so 1 / (1 + k) = (1 + a) / 2
     const double kk = (1 + s.deemA) / 2;
+    const bool deem = !am_ && s.tauUs > 0;
     for (size_t j = 0; j < n2; j++) {
         const double xin = disc[j] / s.devHz;
+        if (!deem) { s.aud[j] = (float)xin; continue; }
         s.deemY = kk * (xin + s.deemX1) - s.deemA * s.deemY;
         s.deemX1 = xin;
         s.aud[j] = (float)s.deemY;
@@ -374,6 +415,7 @@ void AtvFront::configure(double fs) {
     fs_ = fs;
     ready_ = false;
     if (fs < 7.9e6) return;
+    wide_ = false; spacing_ = 5.5; vsbAsk_ = 0;
     decim_ = std::max(1, (int)std::floor(fs / 10e6 + 1e-9));
     fv_ = fs / decim_;
     di_ = std::make_shared<Dec>();
@@ -383,9 +425,15 @@ void AtvFront::configure(double fs) {
     reset();
 }
 
-void AtvFront::setPlan(double soundSpacingMhz) {
-    if (!ready_ || std::fabs(soundSpacingMhz - spacing_) < 0.01) return;
-    spacing_ = soundSpacingMhz;
+void AtvFront::setPlan(double soundSpacingMhz, double vestigialMhz) {
+    if (!ready_ || (std::fabs(soundSpacingMhz - spacing_) < 0.01 && std::fabs(vestigialMhz - vsbAsk_) < 0.01)) return;
+    spacing_ = soundSpacingMhz; vsbAsk_ = vestigialMhz;
+    const bool wide = spacing_ > 8;
+    if (wide != wide_) {
+        wide_ = wide;
+        decim_ = std::max(1, (int)std::floor(fs_ / (wide ? 22e6 : 10e6) + 1e-9));
+        fv_ = fs_ / decim_;
+    }
     design();
     reset();
 }
@@ -395,7 +443,8 @@ void AtvFront::design() {
     // and not above what the sample rate holds. A low-pass around the middle of that band, a mixer, and the carrier ends up at 0 Hz.
     const double nyq = 0.5 * fv_ / 1e6;
     upMhz_ = std::min(spacing_ - 0.55, nyq - 0.1);
-    const double lowMhz = 1.25;
+    vsbMhz_ = vsbAsk_ > 0 ? vsbAsk_ : spacing_ > 5.8 && spacing_ < 6.1 ? 1.25 : 0.75;
+    const double lowMhz = vsbMhz_ > 1.3 ? vsbMhz_ + 0.5 : 1.25;           // 1.25 MHz below the carrier, more for the 2 MHz vestige of E
     centreHz_ = 0.5 * (upMhz_ - lowMhz) * 1e6;
     const double hwPass = 0.5 * (upMhz_ + lowMhz) * 1e6, hwStop = hwPass + 0.4e6;
     const std::vector<float> lp = lowpass(hwPass, hwStop, fs_, 42, 481);
@@ -403,7 +452,6 @@ void AtvFront::design() {
     dq_->design(lp, decim_);
     nGain_ = 0;
     for (float t : lp) nGain_ += (double)t * t;                        // white noise in: this much of its power comes out
-    vsbMhz_ = spacing_ > 5.8 && spacing_ < 6.1 ? 1.25 : 0.75;
     // the correction for the double-sideband part: gain 0.5 at low frequencies, 1 above the vestigial region, 1 / (1 + skirt)
     const double vs = vsbMhz_ * 1e6, ro = 0.5e6, fvv = fv_;
     const float amt = 1.f;

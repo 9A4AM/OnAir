@@ -1,0 +1,578 @@
+# OnAir interface in Spanish. One text per line: the English text as in the source, a tab, the translation.
+# \n is a line break. Keep the printf conversions (%s, %d, %.1f ...) in the same order. tests/test_i18n.cpp checks this file.
+#  menus, status words, common buttons
+File	Archivo
+Mode	Modo
+View	Ver
+Help	Ayuda
+Language	Idioma
+Interface language	Idioma de la interfaz
+Same as the system	Igual que el sistema
+Start receiver	Iniciar el receptor
+Stop receiver	Detener el receptor
+Start the receiver	Iniciar el receptor
+Stop the receiver	Detener el receptor
+%s (space)	%s (espacio)
+Start the receiver first	Primero inicie el receptor
+Stop the receiver to switch mode	Detenga el receptor para cambiar de modo
+Start	Iniciar
+Stop	Detener
+Receiving	Recibiendo
+Stopped	Detenido
+starting	iniciando
+stopped	detenido
+searching	buscando
+syncing	sincronizando
+locked	enganchado
+Locked	Enganchado
+weak	débil
+stereo	estéreo
+mono	mono
+radio disconnected	radio desconectada
+yes	sí
+no lock	sin enganche
+never	nunca
+%.0f s ago	hace %.0f s
+%.0f min ago	hace %.0f min
+State	Estado
+Channel	Canal
+Delay	Retardo
+dropped	perdidas
+level %.1f dBFS	nivel %.1f dBFS
+load %.0f%%	carga %.0f%%
+FM: no station	FM: sin emisora
+%s  SNR %.0f dB  %d services	%s  SNR %.0f dB  %d servicios
+OK	Aceptar
+Close	Cerrar
+Clear	Borrar
+clear	borrar
+Add	Añadir
+Remove	Quitar
+Connect	Conectar
+connecting…	conectando…
+Open	Abrir
+Open…	Abrir…
+Use	Usar
+Tune	Sintonizar
+Back	Atrás
+Next	Siguiente
+Finish	Terminar
+Skip	Omitir
+Skip tour	Omitir el recorrido
+Dismiss	Descartar
+Again	Otra vez
+Auto	Auto
+Auto (%s)	Auto (%s)
+Automatic	Automático
+Automatic (220 kHz)	Automático (220 kHz)
+Manual	Manual
+Manual…	Manual…
+off	apagado
+now	ahora
+Listen	Escuchar
+Mute	Silenciar
+Unmute	Activar sonido
+Volume (shared with the other modes)	Volumen (compartido con los demás modos)
+#  the new interface: menus and layout
+Light (dark on white)	Claro (oscuro sobre blanco)
+Sidebar	Barra lateral
+Scope	Osciloscopio
+Tiles	Mosaico
+Faceplate	Panel frontal
+Scope: Cinema	Osciloscopio: cine
+Scope: Meters	Osciloscopio: medidores
+Scope: Dock	Osciloscopio: dock
+Panel	Panel
+Terminal palette	Paleta terminal
+Instrument palette	Paleta instrumento
+Mono palette	Paleta mono
+Show in Discord	Mostrar en Discord
+Show the frequency	Mostrar la frecuencia
+Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running.	Muestra en su perfil de Discord que usa OnAir, el modo y la frecuencia. Necesita la aplicación de escritorio de Discord abierta.
+Discord application ID not set in this build	Esta versión no tiene ID de aplicación de Discord
+Passes	Pasos
+Data feeds...	Flujos de datos...
+Data feeds	Flujos de datos
+Scanner (highly experimental)	Escáner (muy experimental)
+Scanner (highly experimental)...	Escáner (muy experimental)...
+HIGHLY EXPERIMENTAL	MUY EXPERIMENTAL
+HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity	MUY EXPERIMENTAL: recorre una lista de frecuencias y modos, o una banda, y se detiene al detectar actividad
+Classic interface	Interfaz clásica
+New interface	Nueva interfaz
+Try the new interface. You can switch back at any time.	Pruebe la nueva interfaz. Puede volver en cualquier momento.
+Guided tour	Recorrido guiado
+Tour	Recorrido
+Take the guided tour with Onny	Hacer el recorrido guiado con Onny
+by: Kristijonas Adomaitis, made with help from the community	por Kristijonas Adomaitis, con ayuda de la comunidad
+Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Gracias a todos los que informaron de errores, enviaron grabaciones y abrieron pull requests.
+Source	Fuente
+source	fuente
+Tuner	Sintonizador
+Tuner (FM)	Sintonizador (FM)
+Tuner (DAB)	Sintonizador (DAB)
+tuner	sintonizador
+Gain	Ganancia
+gain	ganancia
+GAIN	GANANCIA
+Display	Pantalla
+Decoder	Decodificador
+decoder	decodificador
+Log	Registro
+mode	modo
+MODE	MODO
+Peak hold	Retener picos
+peak hold	retener picos
+Spectrum	Espectro
+Waterfall	Cascada
+Set the waterfall range from the noise floor and the strongest signal	Ajustar el rango de la cascada según el ruido de fondo y la señal más fuerte
+search modes (FT8, LoRa, APRS...)	buscar modos (FT8, LoRa, APRS...)
+search (FT8, LoRa, APRS...)	buscar (FT8, LoRa, APRS...)
+no mode matches "%s"	ningún modo coincide con «%s»
+Controls  ▴	Controles  ▴
+Controls  ▾	Controles  ▾
+INSTRUMENTS	INSTRUMENTOS
+Analysis	Análisis
+ANALYSIS	ANÁLISIS
+Receiver	Receptor
+CONTROLS	CONTROLES
+LOG	REGISTRO
+DISPLAY	PANTALLA
+SPECTRUM	ESPECTRO
+SPECTRUM / WATERFALL	ESPECTRO / CASCADA
+SOURCE / GAIN	FUENTE / GANANCIA
+MODE / TUNER	MODO / SINTONIZADOR
+STATUS	ESTADO
+CONSTELLATIONS	CONSTELACIONES
+ADC level	Nivel del ADC
+DMR voice audio is not decoded: AMBE+2 is proprietary, so there is no sound.	La voz DMR no se decodifica: AMBE+2 es propietario, así que no hay sonido.
+no stations yet: run the scan	aún no hay emisoras: ejecute la búsqueda
+no saved channels yet: run the scan	aún no hay canales guardados: ejecute la búsqueda
+Hz	Hz
+Frequency in MHz (%.3f to %.3f)	Frecuencia en MHz (%.3f a %.3f)
+OnAir crashed	OnAir se cerró inesperadamente
+no picture - press Esc	sin imagen - pulse Esc
+no picture	sin imagen
+Video	Vídeo
+#  the mode list: group names
+TV	TV
+BROADCAST RADIO	RADIODIFUSIÓN
+AVIATION	AVIACIÓN
+MARITIME	MARÍTIMO
+SATELLITE & NAVIGATION	SATÉLITE Y NAVEGACIÓN
+TWO-WAY RADIO	RADIO BIDIRECCIONAL
+CELLULAR & RAIL	TELEFONÍA MÓVIL Y FERROCARRIL
+PAGERS	BUSCAPERSONAS
+IoT & SENSORS	IoT Y SENSORES
+WEATHER & SCIENCE	METEOROLOGÍA Y CIENCIA
+AMATEUR - DIGITAL	RADIOAFICIONADOS - DIGITAL
+AMATEUR - VOICE & PACKET	RADIOAFICIONADOS - VOZ Y PAQUETES
+HF UTILITY	SERVICIOS HF
+GENERAL & TOOLS	GENERAL Y HERRAMIENTAS
+#  the mode list: short descriptions (the mode names stay protocol names)
+T2 and T, automatic	T2 y T, automático
+8-VSB, North America	8-VSB, Norteamérica
+NextGen TV	NextGen TV
+Japan, Brazil	Japón, Brasil
+China, Hong Kong, Cuba	China, Hong Kong, Cuba
+Cable	Cable
+PAL, SECAM, NTSC	PAL, SECAM, NTSC
+D2-MAC, D-MAC satellite	D2-MAC, D-MAC satélite
+Digital radio	Radio digital
+Stereo and RDS	Estéreo y RDS
+SW, MW, VHF	OC, OM, VHF
+USA, FM and AM	EE. UU., FM y AM
+China digital radio	Radio digital china
+Aircraft, 1090 MHz	Aeronaves, 1090 MHz
+Interrogations, 1030 MHz	Interrogaciones, 1030 MHz
+Aircraft messages, VHF	Mensajes de aeronaves, VHF
+Data link, 136.9 MHz	Enlace de datos, 136.9 MHz
+Data link, 8.9 MHz	Enlace de datos, 8.9 MHz
+AM voice, 118-137 MHz	Voz AM, 118-137 MHz
+Radial, 108-118 MHz	Radial, 108-118 MHz
+Localizer and glide slope	Localizador y senda de planeo
+Drones, 2.4 GHz	Drones, 2.4 GHz
+Ships, 162 MHz	Barcos, 162 MHz
+Ship warnings, 518 kHz	Avisos a barcos, 518 kHz
+Ship calls, 2187.5 kHz	Llamadas de barcos, 2187.5 kHz
+Weather charts, HF	Mapas del tiempo, HF
+GPS, GLONASS, BeiDou	GPS, GLONASS, BeiDou
+Satellites, 1622 MHz	Satélites, 1622 MHz
+Satellites, 137 MHz	Satélites, 137 MHz
+Weather pictures, 137 MHz	Imágenes meteorológicas, 137 MHz
+Weather images, 1694 MHz	Imágenes meteorológicas, 1694 MHz
+Satellites, 2 m / 70 cm	Satélites, 2 m / 70 cm
+Digital voice	Voz digital
+Digital voice, 6.25 / 12.5 kHz	Voz digital, 6.25 / 12.5 kHz
+Digital voice, 12.5 kHz	Voz digital, 12.5 kHz
+Digital voice, 6.25 kHz	Voz digital, 6.25 kHz
+Digital voice, 14.236 MHz	Voz digital, 14.236 MHz
+Digital voice, 433.475 MHz	Voz digital, 433.475 MHz
+Digital voice, 145.375 MHz	Voz digital, 145.375 MHz
+Network info, 380 - 470 MHz	Información de red, 380 - 470 MHz
+LTE, band scan	LTE, barrido de banda
+5G NR, GSCN scan	5G NR, barrido GSCN
+Railway, 921 - 925 MHz	Ferrocarril, 921 - 925 MHz
+Pagers, 512-2400 bd	Buscapersonas, 512-2400 bd
+Pagers, 1600-6400	Buscapersonas, 1600-6400
+Sensors, 433 / 868 MHz	Sensores, 433 / 868 MHz
+IoT, 868.1 MHz	IoT, 868.1 MHz
+LoRa mesh, 869.525 MHz	Malla LoRa, 869.525 MHz
+LoRa mesh, 869.618 MHz	Malla LoRa, 869.618 MHz
+Advertising, 2.4 GHz	Anuncios, 2.4 GHz
+Beacons, 2.4 GHz	Balizas, 2.4 GHz
+Balloons, 403 MHz	Globos, 403 MHz
+LF and HF time codes	Códigos horarios LF y HF
+Chirp sweeps, 0 - 30 MHz	Barridos chirp, 0 - 30 MHz
+Hydrogen line, 1420 MHz	Línea del hidrógeno, 1420 MHz
+Beacons, 14.0956 MHz	Balizas, 14.0956 MHz
+Keyboard chat, 14.070 MHz	Chat por teclado, 14.070 MHz
+Messaging, 14.078 MHz	Mensajería, 14.078 MHz
+Teletype, 14.080 MHz	Teletipo, 14.080 MHz
+Morse, 14.020 MHz	Morse, 14.020 MHz
+Pictures, 14.230 MHz	Imágenes, 14.230 MHz
+Digital SSTV, 14.233 MHz	SSTV digital, 14.233 MHz
+Link establishment, 14.109 MHz	Establecimiento de enlace, 14.109 MHz
+NFM / AM / SSB / CW	NFM / AM / BLU / CW
+Spectrum, waterfall, sweep	Espectro, cascada, barrido
+Sweep, 1 - 6000 MHz	Barrido, 1 - 6000 MHz
+Aero, L-band	Aero, banda L
+EGC, L-band	EGC, banda L
+#  source, tuner, gain, sample rate
+SRC	FUENTE
+FREQ	FREC
+RATE	TASA
+STD	NORMA
+COMPUTE	CÁLCULO
+Centre frequency	Frecuencia central
+DAB channel	Canal DAB
+FM station	Emisora FM
+Channel bandwidth	Ancho de canal
+Rescan for devices	Buscar dispositivos de nuevo
+Add network radio…	Añadir radio en red…
+Network radios	Radios en red
+Address	Dirección
+Port	Puerto
+Cannot connect: %s	No se puede conectar: %s
+Added radios (listed with the others)	Radios añadidas (en la lista con las demás)
+This build has no SoapySDR, which SoapyRemote needs.	Esta versión no incluye SoapySDR, que SoapyRemote necesita.
+Antenna port%s%s	Puerto de antena%s%s
+Sample rate of the radio for this mode	Frecuencia de muestreo de la radio para este modo
+Sample rate of the radio for this mode, remembered for this radio. Auto is the mode's own rate.	Frecuencia de muestreo de la radio para este modo, recordada para esta radio. Auto es la frecuencia propia del modo.
+Sample rate (Msps)	Frecuencia de muestreo (Msps)
+The test signal is made at the mode's own rate (%s).	La señal de prueba se genera a la frecuencia propia del modo (%s).
+This mode needs at least %s.	Este modo necesita al menos %s.
+This radio: %s to %s.	Esta radio: %s a %s.
+The radio runs at %s.	La radio funciona a %s.
+runs at %s	funciona a %s
+The radio gave %s instead of the %s asked for.	La radio da %s en lugar de los %s pedidos.
+A higher rate shows more spectrum but needs more USB bandwidth and processor time: when the status bar reports samples lost on the radio side, choose a lower rate.	Una frecuencia mayor muestra más espectro pero necesita más ancho de banda USB y tiempo de procesador: si la barra de estado indica muestras perdidas en la radio, elija una frecuencia menor.
+A recording plays at the rate it was made at: set it with the file.	Una grabación se reproduce a la frecuencia con que se hizo: ajústela junto al archivo.
+A scan is using the radio and sets its own rate.	Una búsqueda está usando la radio y fija su propia frecuencia.
+DVB-T2 and DVB-T channels sit on this raster; a running radio may be opened again at another sample rate.	Los canales DVB-T2 y DVB-T siguen esta trama; una radio en marcha puede reabrirse con otra frecuencia de muestreo.
+Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7 or 8 MHz) is set for you.	Automático: el ancho de la señal se mide en el espectro y el ancho de canal (5, 6, 7 u 8 MHz) se ajusta solo.
+ISDB-T channel width: 6 MHz in Japan, Brazil and the rest of the Americas, 8 MHz in the Maldives (ISDB-T International).\nThe same signal, every time scaled by the width. Automatic measures it in the spectrum and tries each width\nwhile nothing locks; it opens the radio at 10 Msps.	Ancho de canal ISDB-T: 6 MHz en Japón, Brasil y el resto de América, 8 MHz en Maldivas (ISDB-T International).\nLa misma señal, escalada en el tiempo según el ancho. Automático lo mide en el espectro y prueba cada ancho\nmientras nada engancha; abre la radio a 10 Msps.
+Amp	Amp
+LNA	LNA
+VGA	VGA
+AGC	CAG
+Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Mantiene el nivel del ADC en una franja sana (unos -16 dBFS rms, sin recorte) ajustando LNA, VGA y amplificador.\nTocar un control de ganancia la desactiva.
+Auto-tune	Ajuste automático
+Stop tune	Detener el ajuste
+Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Asistente de ganancia: prueba combinaciones de LNA/VGA/amplificador durante unos 40 s y se queda con la de mejor SNR sin recorte.\nNecesita una señal en la que el receptor pueda engancharse.
+Gain controls apply to radios only (not to a recording or the synthetic signal)	Los controles de ganancia solo afectan a radios (no a una grabación ni a la señal sintética)
+gain helper %d/%d ...	asistente de ganancia %d/%d ...
+ADC OVERLOAD - %s	SOBRECARGA DEL ADC - %s
+AGC is lowering the gain	el CAG está bajando la ganancia
+reduce the gain (or enable AGC)	reduzca la ganancia (o active el CAG)
+ADC level high	Nivel del ADC alto
+ADC level low - raise the gain	Nivel del ADC bajo - suba la ganancia
+ADC sees almost nothing - antenna / gain?	El ADC casi no ve nada - ¿antena / ganancia?
+ADC level (rms). %s\npeak %.2f   clip %.3f%%   DC %+.3f / %+.3f	Nivel del ADC (rms). %s\npico %.2f   recorte %.3f%%   DC %+.3f / %+.3f
+Bias-tee (antenna power)	Bias-tee (alimentación de antena)
+Sends DC power up the antenna cable for an active antenna or LNA (e.g. a GNSS patch antenna). Leave it off with a passive antenna, and never with a DC short in the antenna path (some antennas, splitters or filters): it can damage the radio.	Envía corriente continua por el cable de antena para una antena activa o un LNA (p. ej., una antena de parche GNSS). Déjelo apagado con una antena pasiva, y nunca con un cortocircuito de CC en el camino de la antena (algunas antenas, divisores o filtros): puede dañar la radio.
+Most GNSS antennas are active and need this on.	La mayoría de las antenas GNSS son activas y lo necesitan.
+IQ correction	Corrección IQ
+Corrects I/Q gain and phase imbalance, which puts a faint mirror image of every signal on the other side of the centre.\nMeasured from the signal itself; now %.2f dB, %.1f degrees. Not applied in DTMB and analog TV (their signals fool the measurement).	Corrige el desequilibrio de ganancia y fase I/Q, que pone una débil imagen espejo de cada señal al otro lado del centro.\nMedido sobre la propia señal; ahora %.2f dB, %.1f grados. No se aplica en DTMB ni en TV analógica (sus señales engañan a la medida).
+The spike in the middle of the spectrum is the radio's own oscillator leaking in (strong on the HackRF and RTL-SDR).\nRemove: filtered out of the samples (not in FM: a station tuned to the centre has its carrier there).\nTune beside it: the radio is tuned just beside the channel, so the spike falls outside it, and the channel is moved\nback digitally. Needs a higher sample rate (DAB about 3.5 Msps); a radio too slow for it removes the spike instead.\nA line that stays at a round frequency (e.g. 650.000 MHz) when you retune is interference from the radio's clock, not the DC spike.	El pico en el centro del espectro es el propio oscilador de la radio que se filtra (fuerte en HackRF y RTL-SDR).\nQuitar: se filtra de las muestras (no en FM: una emisora sintonizada en el centro tiene ahí su portadora).\nSintonizar al lado: la radio se sintoniza justo al lado del canal, el pico queda fuera, y el canal se desplaza\ndigitalmente de vuelta. Necesita más frecuencia de muestreo (DAB unos 3.5 Msps); una radio demasiado lenta quita el pico en su lugar.\nUna línea que se queda en una frecuencia redonda (p. ej., 650.000 MHz) al resintonizar es interferencia del reloj de la radio, no el pico de CC.
+%+.2f MHz	%+.2f MHz
+Which broadcast standard to decode.\nAuto alternates between DVB-T2 and DVB-T until one locks.	Qué norma de difusión decodificar.\nAuto alterna entre DVB-T2 y DVB-T hasta que una engancha.
+synthetic	sintético
+%s test signal	señal de prueba %s
+echo	eco
+file	archivo
+rate	tasa
+loop	bucle
+ext	ext.
+#  status bar and quality
+Level	Nivel
+Quality	Calidad
+signal quality: %s	calidad de señal: %s
+signal quality %.0f%%  %s	calidad de señal %.0f%%  %s
+data SNR %.1f dB, needed about %.1f dB (margin %+.1f dB)\nFEC blocks decoded %.1f%%	SNR de datos %.1f dB, necesario unos %.1f dB (margen %+.1f dB)\nbloques FEC decodificados %.1f%%
+data SNR %.1f dB, needed for this modulation/code rate about %.1f dB	SNR de datos %.1f dB, necesario para esta modulación/tasa de código unos %.1f dB
+data SNR %.1f dB, data decoded %.1f%% (last frames)	SNR de datos %.1f dB, datos decodificados %.1f%% (últimas tramas)
+margin %+.1f dB, FEC blocks decoded %.1f%% (last frames)	margen %+.1f dB, bloques FEC decodificados %.1f%% (últimas tramas)
+FEC blocks decoded in the last frame: %.1f%%	Bloques FEC decodificados en la última trama: %.1f%%
+0 dB margin is the edge of reception (25%); +6 dB or more is comfortable.	Un margen de 0 dB es el límite de recepción (25%); +6 dB o más es cómodo.
+ATSC 3.0 does not report a signal-to-noise ratio yet; this bar shows how much of the data decodes.	ATSC 3.0 aún no informa de la relación señal/ruido; esta barra muestra cuántos datos se decodifican.
+This bar shows how much of the recent data decodes.	Esta barra muestra cuántos de los datos recientes se decodifican.
+multipath: %s	multitrayecto: %s
+Files and the test signal never lose samples: they wait for the receiver.	Los archivos y la señal de prueba nunca pierden muestras: esperan al receptor.
+Radio side: %.2f s lost in %llu gaps, last %s	Lado de la radio: %.2f s perdidos en %llu huecos, último %s
+Samples that never arrived from the radio: its USB connection or driver could not keep up. Try a USB port directly on the computer (no hub), a shorter cable, or a lower sample rate.	Muestras que nunca llegaron de la radio: su conexión USB o su controlador no daban abasto. Pruebe un puerto USB directo del ordenador (sin hub), un cable más corto o una frecuencia de muestreo menor.
+CPU side: %.2f s skipped %llu times, last %s	Lado de la CPU: %.2f s saltados %llu veces, último %s
+Signal OnAir had to skip because the receiver could not keep up with the sample rate. Close other programs, or pick a lower sample rate or a narrower channel.	Señal que OnAir tuvo que saltar porque el receptor no seguía la frecuencia de muestreo. Cierre otros programas o elija una frecuencia de muestreo menor o un canal más estrecho.
+Receiver load: %.0f%% of real time	Carga del receptor: %.0f%% del tiempo real
+The receiver's time on the sample thread per second of signal. Near or above 100%, signal is skipped.	El tiempo del receptor en el hilo de muestras por segundo de señal. Cerca o por encima del 100%, se salta señal.
+Demod	Demod.
+How the signal becomes the audio the decoders hear.\nAuto: USB below 30 MHz, NFM at and above.\nNFM: 12.5 kHz channel, no de-emphasis, 300 - 3000 Hz audio.\nISS SSTV on 145.800 MHz is FM.	Cómo se convierte la señal en el audio que oyen los decodificadores.\nAuto: USB por debajo de 30 MHz, NFM desde 30 MHz.\nNFM: canal de 12.5 kHz, sin deénfasis, audio de 300 - 3000 Hz.\nLa SSTV de la ISS en 145.800 MHz es FM.
+#  the lamps
+Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping.	Flujo de muestras. Verde: nivel del ADC en un rango sano. Ámbar: demasiado bajo o alto. Rojo: recorte.
+DVB-T2: the P1 preamble symbol (frame start and mode) is being found.	DVB-T2: se encuentra el símbolo de preámbulo P1 (inicio de trama y modo).
+Guard interval and symbol timing are locked.	El intervalo de guarda y la temporización de símbolo están enganchados.
+DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC.	DVB-T2: el bloque de presenalización L1 (estructura de trama) se decodifica con CRC correcto.
+DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC.	DVB-T2: el bloque de postseñalización L1 (lista de PLP, modulación) se decodifica con CRC correcto.
+A full T2 frame is being received and equalised.	Se recibe y ecualiza una trama T2 completa.
+Forward error correction, inner code: share of blocks that decode.	Corrección de errores, código interno: proporción de bloques que se decodifican.
+Forward error correction, outer code: share of blocks that decode.	Corrección de errores, código externo: proporción de bloques que se decodifican.
+Transport stream: services found, continuity errors counted.	Flujo de transporte: servicios encontrados, errores de continuidad contados.
+The player is decoding and showing pictures.	El reproductor está decodificando y mostrando imágenes.
+The player has audio buffered and playing.	El reproductor tiene audio en búfer y reproduciéndose.
+DVB-T: OFDM symbol sync from the cyclic prefix.	DVB-T: sincronización de símbolo OFDM por el prefijo cíclico.
+DVB-T: the transmission parameter signalling bits are decoded.	DVB-T: los bits de señalización de parámetros de transmisión están decodificados.
+Channel estimate from the pilots is valid.	La estimación del canal a partir de los pilotos es válida.
+DVB-T: the convolutional decoder found the packet sync.	DVB-T: el decodificador convolucional encontró la sincronización de paquetes.
+Reed-Solomon outer code: share of packets that are clean.	Código externo Reed-Solomon: proporción de paquetes limpios.
+ATSC: the 8-VSB pilot carrier is locked.	ATSC: la portadora piloto 8-VSB está enganchada.
+ATSC: data segment sync found.	ATSC: sincronización de segmento de datos encontrada.
+ATSC: field sync found.	ATSC: sincronización de campo encontrada.
+ATSC: the equaliser is trained.	ATSC: el ecualizador está entrenado.
+ATSC: the trellis decoder produces a valid transport stream.	ATSC: el decodificador trellis produce un flujo de transporte válido.
+#  spectrum and channel width
+click to tune to %.4f MHz	clic para sintonizar %.4f MHz
+Channel width: %s	Ancho de canal: %s
+The width of the signal is measured in the spectrum and the receiver switches between 1.7, 5, 6, 7 and 8 MHz by itself.	El ancho de la señal se mide en el espectro y el receptor cambia solo entre 1.7, 5, 6, 7 y 8 MHz.
+The receiver's channel filter. Narrower keeps a strong neighbour out (150 kHz copes with one 10 dB stronger 150 kHz away); below about 180 kHz loud passages distort a little and RDS suffers first.	El filtro de canal del receptor. Más estrecho deja fuera un vecino fuerte (150 kHz soporta uno 10 dB más fuerte a 150 kHz); por debajo de unos 180 kHz los pasajes fuertes se distorsionan un poco y el RDS sufre primero.
+The width is measured in the spectrum, and 6, 8 and 7 MHz are tried in turn while nothing locks.	El ancho se mide en el espectro y se prueban 6, 8 y 7 MHz por turnos mientras nada engancha.
+6 MHz in Japan and the Americas, 8 MHz in the Maldives (ISDB-T International). The signal is the same, scaled in time by the width.	6 MHz en Japón y América, 8 MHz en Maldivas (ISDB-T International). La señal es la misma, escalada en el tiempo según el ancho.
+Set by the country: there is nothing to measure it from. A receiver set to the wrong width finds nothing.	La fija el país: no hay nada de donde medirla. Un receptor con el ancho equivocado no encuentra nada.
+Follows the symbol rate: symbol rate x (1 + roll-off).	Sigue la tasa de símbolos: tasa de símbolos x (1 + roll-off).
+Choose automatic or a manual symbol rate in the tuner to change it.	Elija una tasa de símbolos automática o manual en el sintonizador para cambiarlo.
+This mode	Este modo
+%s: fixed for this mode.	%s: fijo para este modo.
+The receiver's filters are made for the signal (or for the group of channels it watches), so a manual width would only make reception worse.	Los filtros del receptor están hechos para la señal (o para el grupo de canales que vigila), así que un ancho manual solo empeoraría la recepción.
+Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width.	Ancho de canal: la banda con la que trabaja el receptor (la banda clara).\nHaga clic para elegir ancho automático o manual.
+Channel width: the band the receiver works with (the light band), set by the standard.	Ancho de canal: la banda con la que trabaja el receptor (la banda clara), fijada por la norma.
+power (dBFS/bin)	potencia (dBFS/bin)
+frequency (MHz)	frecuencia (MHz)
+seconds ago	segundos atrás
+Identify this signal	Identificar esta señal
+#  radio settings
+Radio settings	Ajustes de la radio
+Radio settings*	Ajustes de la radio*
+Radio settings (%d changed)	Ajustes de la radio (%d cambiados)
+%s: frequency correction and the other settings of this radio	%s: corrección de frecuencia y los demás ajustes de esta radio
+The driver's own settings show up here\nonce this radio has been started.	Los ajustes propios del controlador aparecen aquí\nuna vez iniciada esta radio.
+0 = libiio's default	0 = valor por defecto de libiio
+#  the guided tour
+Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	¡Hola, soy Onny! Soy una pequeña tele que vive en OnAir. ¿Un recorrido rápido? Dura un minuto y te lo enseño todo con una señal de demostración, así que aún no necesitas hardware.
+Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Aquí arriba eliges qué tipo de emisión quieres: DVB para la mayoría de la TV digital del mundo, ATSC para Norteamérica y DAB para la radio digital. OnAir tiene los tres en un solo sitio.
+Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	¡Veámoslo en acción! Voy a iniciar una señal de mentira. Es un transmisor de prueba que funciona dentro de la aplicación, así que no hay que conectar nada.
+Start the demo signal	Iniciar la señal de demostración
+See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	¿Ves la línea ondulada? Es el espectro: lo fuerte que es todo lo que hay en el aire, de izquierda a derecha. La joroba alta del centro es nuestro canal. Debajo, la cascada muestra lo mismo desplazándose despacio en el tiempo.
+And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	Y estos cuatro recuadros muestran los puntos que ve el receptor. Con buena señal, los puntos se agrupan en racimos ordenados. Puntos desordenados significan una señal ruidosa. Ahora es una demo limpia, ¡así que deberían verse bien!
+Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Aquí encontrarás los canales cuando el receptor se enganche. Haz clic en uno para verlo. También hay un reproductor con imagen y sonido, un reloj y opciones para grabar o retransmitir lo que estás viendo.
+Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Ahora lo de verdad. Elige aquí tu radio, una frecuencia y ajusta la ganancia. La ganancia es cuánto amplifica tu radio la señal: poca y se pierde, mucha y se distorsiona. El botón Ajuste automático encuentra un buen valor por ti.
+Stop the demo and look for my radio	Detener la demo y buscar mi radio
+Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	¿No sabes dónde están los canales? La pestaña Búsqueda los busca por ti. Una buena antena, alta y cerca de una ventana, marca más diferencia que cualquier otra cosa. ¡Te lo prometo!
+That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	¡Ese es todo el recorrido! Puedes compartir tus canales con otros dispositivos desde la pestaña Flujo (Salidas), y llamarme cuando quieras con el botón Recorrido arriba a la derecha. ¡Feliz visionado!
+Good news: I can see "%s"!	¡Buenas noticias: veo «%s»!
+(I can't see a radio right now. Plug it in and press the button again.)	(Ahora mismo no veo ninguna radio. Conéctala y pulsa el botón otra vez.)
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	En Windows, un HackRF necesita una vez su controlador WinUSB: instálalo con Zadig, en zadig.akeo.ie.
+#  passes
+Weather (137 MHz)	Meteorología (137 MHz)
+Amateur	Aficionados
+Amateur satellites	Satélites de aficionados
+downloading...	descargando...
+Downloading...	Descargando...
+the download failed (no network, or Celestrak refused)	la descarga falló (sin red, o Celestrak la rechazó)
+downloaded	descargado
+Download TLEs from Celestrak	Descargar TLE de Celestrak
+Downloads only when you click. Fetches:	Solo descarga al hacer clic. Obtiene:
+Paste TLEs...	Pegar TLE...
+Hide paste box	Ocultar el cuadro de pegado
+Use pasted TLEs	Usar los TLE pegados
+Forget pasted TLEs	Olvidar los TLE pegados
+No TLE for:	Sin TLE para:
+no valid TLE in the pasted text (two lines per satellite, checksums must match)	ningún TLE válido en el texto pegado (dos líneas por satélite, las sumas de control deben coincidir)
+pasted TLEs added:	TLE pegados añadidos:
+No TLEs yet: download them or paste some.	Aún no hay TLE: descárguelos o pegue algunos.
+No TLEs: open TLE data above.	Sin TLE: abra Datos TLE arriba.
+No passes in the next 24 hours.	No hay pasos en las próximas 24 horas.
+TLE data	Datos TLE
+From: celestrak.org/NORAD/elements/gp.php?GROUP=weather|stations|orbcomm|amateur&FORMAT=tle	De: celestrak.org/NORAD/elements/gp.php?GROUP=weather|stations|orbcomm|amateur&FORMAT=tle
+%d TLEs, %d satellites listed	%d TLE, %d satélites en la lista
+the oldest is %.0f days old: download again	el más antiguo tiene %.0f días: descargue de nuevo
+NORAD catalogue number	Número de catálogo NORAD
+Receiver position	Posición del receptor
+The same position as the ADS-B antenna position	La misma posición que la de la antena ADS-B
+not set: the times are for a placeholder position	no definida: las horas son para una posición provisional
+Satellite	Satélite
+AOS	AOS
+LOS	LOS
+Max el	Elev. máx
+Duration	Duración
+Frequency	Frecuencia
+AOS in %d:%02d:%02d	AOS en %d:%02d:%02d
+%s - %s, max %.0f deg	%s - %s, máx %.0f grados
+no pass	sin paso
+az %.0f  el %.0f  %.0f km\nDoppler %+.0f Hz	az %.0f  el %.0f  %.0f km\nDoppler %+.0f Hz
+Track	Seguir
+Track (choose a pass)	Seguir (elija un paso)
+During each pass of this satellite, retune about once a second for the Doppler shift	Durante cada paso de este satélite, resintonizar aproximadamente una vez por segundo por el efecto Doppler
+Auto start at AOS, stop at LOS	Inicio automático en AOS, parada en LOS
+Switches to the satellite's mode and starts the receiver at AOS (when it is stopped), and stops it at LOS	Cambia al modo del satélite e inicia el receptor en AOS (si está detenido), y lo detiene en LOS
+Auto record IQ	Grabar IQ automáticamente
+Records the radio's IQ during the pass, as Record IQ does (format from the Record IQ setting), into %s/recordings	Graba la IQ de la radio durante el paso, como Grabar IQ (formato según ese ajuste), en %s/recordings
+OnAir has no decoder for this: auto start opens the Spectrum explorer, and Auto record keeps the IQ	OnAir no tiene decodificador para esto: el inicio automático abre el Spectrum explorer y la grabación automática guarda la IQ
+tracking%s	siguiendo%s
+, recording	, grabando
+#  data feeds
+Sends decoded data to other programs while the mode runs. Every feed is off until you turn it on.	Envía los datos decodificados a otros programas mientras el modo funciona. Cada flujo está apagado hasta que lo active.
+Let other computers connect to the TCP feeds (LAN)	Permitir que otros ordenadores se conecten a los flujos TCP (red local)
+SBS-1 BaseStation (TCP server)	SBS-1 BaseStation (servidor TCP)
+Beast binary (TCP server)	Beast binario (servidor TCP)
+NMEA !AIVDM (UDP)	NMEA !AIVDM (UDP)
+APRS-IS (receive-only igate)	APRS-IS (igate solo de recepción)
+KISS (TCP server)	KISS (servidor TCP)
+ACARS, acarsdec format (UDP)	ACARS, formato acarsdec (UDP)
+VDL2, dumpvdl2 format (UDP)	VDL2, formato dumpvdl2 (UDP)
+ACARS and VDL2 (JSON)	ACARS y VDL2 (JSON)
+Callsign	Indicativo
+Passcode	Código de acceso
+Server	Servidor
+Station ID	ID de estación
+%s, %llu sent, %llu dropped	%s, %llu enviados, %llu descartados
+#  scanner
+Steps through the list or a band, stops on activity. A mode change restarts the receiver.	Recorre la lista o una banda y se detiene al detectar actividad. Un cambio de modo reinicia el receptor.
+Start scan	Iniciar barrido
+Stop scan	Detener barrido
+List	Lista
+Band	Banda
+Name	Nombre
+name	nombre
+Dwell s	Espera s
+dwell s	espera s
+Priority	Prioridad
+Lockout	Excluir
+Add current	Añadir el actual
+Adds the frequency and mode the receiver is on now	Añade la frecuencia y el modo en que está ahora el receptor
+Clear lockouts	Quitar exclusiones
+Import CSV...	Importar CSV...
+Export CSV...	Exportar CSV...
+Columns: frequency_mhz, mode, name, dwell_s, lockout, priority.\nmode is a mode id: fm, dab, airband, dmr, pocsag, ft8 ...	Columnas: frequency_mhz, mode, name, dwell_s, lockout, priority.\nmode es un id de modo: fm, dab, airband, dmr, pocsag, ft8 ...
+imported %d entries%s	%d entradas importadas%s
+ (some with a mode OnAir does not know)	 (algunas con un modo que OnAir no conoce)
+exported	exportado
+could not write	no se pudo escribir
+start MHz	inicio MHz
+stop MHz	fin MHz
+step kHz	paso kHz
+%d steps, %d locked out	%d pasos, %d excluidos
+Time	Hora
+For	Duración
+Decoded	Decodificado
+Hits	Detecciones
+Move on to the next channel now	Pasar ahora al siguiente canal
+Skip this channel from now on	Omitir este canal a partir de ahora
+Channel power over the noise (in the mode's bandwidth) that counts as activity.\nA mode that reports it decodes (sync, frames, data) stops the scan too.	Potencia del canal sobre el ruido (en el ancho de banda del modo) que cuenta como actividad.\nUn modo que indica que decodifica (sincronía, tramas, datos) también detiene el barrido.
+Checked every %.0f s, also while another channel holds (one priority entry)	Se comprueba cada %.0f s, también mientras otro canal está retenido (una entrada prioritaria)
+squelch %.0f dB	silenciador %.0f dB
+hang %.1f s	retención %.1f s
+priority every %.0f s	prioridad cada %.0f s
+priority off	prioridad desactivada
+idle	inactivo
+listening	escuchando
+ACTIVE	ACTIVO
+hang	retención
+  (priority)	  (prioridad)
+signal only	solo señal
+nothing left to scan	no queda nada por barrer
+the band has no steps (check start, stop and step)	la banda no tiene pasos (revise inicio, fin y paso)
+the list has nothing to scan (empty, or every entry locked out)	la lista no tiene nada que barrer (vacía, o todas las entradas excluidas)
+#  identify
+Identify signal	Identificar señal
+Start the receiver to identify a signal.	Inicie el receptor para identificar una señal.
+The strongest signal around %s	La señal más fuerte cerca de %s
+Region %s, %s wide	Zona %s, %s de ancho
+collecting samples	recogiendo muestras
+Working it out...	Analizando...
+Nothing to identify here.	Aquí no hay nada que identificar.
+Looks like: %s	Parece: %s
+Looks like: %s (frame sync found %dx)	Parece: %s (sincronía de trama encontrada %dx)
+No mode fits well.	Ningún modo encaja bien.
+Open %s on this frequency	Abrir %s en esta frecuencia
+Switch to %s and tune to %s	Cambiar a %s y sintonizar %s
+Candidates	Candidatos
+(sync %dx)	(sincronía %dx)
+(no sync)	(sin sincronía)
+Centre	Centro
+Width -3 / -20 / -26 dB	Ancho -3 / -20 / -26 dB
+Occupied (99 %)	Ocupado (99 %)
+On the air	En el aire
+bursts, %.0f %% on, %d of about %.3g ms	ráfagas, %.0f %% activas, %d de unos %.3g ms
+continuous	continuo
+Modulation	Modulación
+Envelope	Envolvente
+%.2f (1 constant, 2 noise-like)	%.2f (1 constante, 2 tipo ruido)
+Symbol rate	Tasa de símbolos
+#  updates
+Updates	Actualizaciones
+Check for updates automatically	Buscar actualizaciones automáticamente
+Include pre-releases	Incluir versiones preliminares
+Check now	Comprobar ahora
+Not checked yet.	Aún no comprobado.
+Asking GitHub for the newest version…	Preguntando a GitHub por la versión más reciente…
+You have the newest version.	Tiene la versión más reciente.
+Version %s is available%s.	La versión %s está disponible%s.
+ (pre-release)	 (versión preliminar)
+Download and install	Descargar e instalar
+Download and install them by themselves	Descargarlas e instalarlas solas
+Skip this version	Omitir esta versión
+Release page	Página de la versión
+Download page	Página de descarga
+Checking and preparing the new version…	Comprobando y preparando la nueva versión…
+Downloaded and checked. It is installed when you close OnAir.	Descargada y comprobada. Se instala al cerrar OnAir.
+Restart now and update	Reiniciar ahora y actualizar
+Windows asks for permission to run the installer.	Windows pide permiso para ejecutar el instalador.
+The system asks for your password to install the package.	El sistema pide su contraseña para instalar el paquete.
+This copy of OnAir cannot replace itself.	Esta copia de OnAir no puede reemplazarse a sí misma.
+The update to v%s did not install (setup exit code %d).	La actualización a v%s no se instaló (código de salida %d).
+Only github.com is contacted. Downloads are checked against the SHA-256 GitHub lists for the file.	Solo se contacta con github.com. Las descargas se comprueban con el SHA-256 que GitHub indica para el archivo.
+checking…	comprobando…
+update %s	actualización %s
+downloading %.0f%%	descargando %.0f%%
+preparing…	preparando…
+restart to update	reiniciar para actualizar
+6 MHz (Cuba)	6 MHz (Cuba)
+DAB ensemble, transmission mode I	Múltiplex DAB, modo de transmisión I
+ATSC 8-VSB receiver: matched filter, pilot loop, symbol clock, field sync, per-field equaliser, trellis, Reed-Solomon	Receptor ATSC 8-VSB: filtro adaptado, lazo de piloto, reloj de símbolo, sincronía de campo, ecualizador por campo, trellis, Reed-Solomon
+#  the classic interface's tabs, the diagnostics buttons
+Overview	Resumen
+Stream	Flujo
+Scan	Búsqueda
+Antenna	Antena
+History	Historial
+Radio	Radio
+Ensemble	Múltiplex
+Map	Mapa
+Analyzer	Analizador
+Record IQ	Grabar IQ
+Recordings of a file are not needed	No hace falta grabar un archivo
+Start the radio first	Primero inicie la radio
+Saves the radio's raw samples to a file, for a bug report	Guarda las muestras en bruto de la radio en un archivo, para un informe de errores
+Copy diagnostics	Copiar diagnóstico
+Copied	Copiado
+Copies the version, system, radios, messages and radio log lines, for a bug report	Copia la versión, el sistema, las radios, los mensajes y las líneas del registro de la radio, para un informe de errores
+spectrum dB	espectro dB
+waterfall dB	cascada dB

@@ -1,6 +1,7 @@
 #include "dect2/t2rx.h"
 #include "dect2/t2ofdm.h"
 #include "dect2/resampler.h"
+#include "dect2/clock_correct.h"
 #include "dect2/platform.h"
 #include "dect2/t2pilots.h"
 #include "dect2/t2l1.h"
@@ -51,14 +52,24 @@ namespace t2rxi {
 
 constexpr double kP1Threshold = 0.30; // C-A-B correlation needed to try decoding
 constexpr double kP1MinConf = 0.40;   // decoded S1/S2 sequence correlation needed to accept
+constexpr int kP1CfoBins = 64;        // frequency offset P1 is searched over: +-64 P1 carriers (+-571 kHz at 8 MHz, +-115 kHz at 1.7 MHz)
 constexpr int kPeakHalfWidth = 700;
 inline bool trackDisabled() { static const bool v = getenv("DECT2_NOTRACK") != nullptr; return v; }   // switch the windowed P1 search off
 constexpr int kTrackWindow = 1200;    // half width of the window around the expected P1 once locked (samples at the native rate)
+constexpr int kCoarseBlk = 32;        // grid of the cheap first stage of a full P1 search (start positions, and the block the products are summed over)
+constexpr double kP1PreThreshold = 0.20;   // cheap-stage metric that sends a stretch to the exact metric (a P1 at kP1Threshold reads about 0.28 there)
 
 struct Frame {
     int64_t anchor;      // absolute index of the first symbol after P1
     int next = 0;        // next symbol index to process
     int maxSyms = 0;
+    double sro = 0;      // clock error left in its samples when it started: the placement of its symbols must not change half-way through
+    // Samples lost inside the frame (a USB stall): from symbol lostAt on (the first whose cyclic prefix no longer matched) the symbols sit
+    // `lost` samples earlier, known exactly from where the next P1 turned up. Those that overlap the gap are erased; the rest decode.
+    int lostAt = -1;
+    bool lostKnown = false, intactAgain = false;
+    int64_t lost = 0;
+    int64_t lostFrom = 0;   // where the first mismatching symbol would have started: the gap lies after it
 };
 
 } // namespace t2rxi
@@ -71,6 +82,20 @@ struct T2Receiver::Impl {
     bool decimate = false, rateOk = true;
     RationalResampler resampler;
     std::vector<cf32> rsOut;
+    // ---- sample-clock correction: a fine resampler at the native rate, steered by the P1 spacing (onFrameSpacing). Off (samples copied
+    // straight through) until a clock error is measured; then every sample goes through it, so that the 32K carriers stay orthogonal.
+    ClockCorrector sroRs;
+    bool sroOn = false;
+    double sroCorr = 0;          // relative clock error removed by sroRs (its step is 1 + sroCorr)
+    int sroN = 0;                // frame spacings the loop has taken in (its gain falls with them)
+    std::vector<cf32> sroOut;
+    std::vector<cf32> dcIn;       // input with the DC offset removed (append)
+    double dcRe = 0, dcIm = 0;    // the DC offset followed so far
+    void append(const cf32* x, size_t n);
+    void sroReset();
+    // sets the correction (clamped to +-200 ppm), switching sroRs in if it is off; then the buffered samples from absolute index `from` on
+    // (if they are still there) go through it too, so that a whole frame is corrected from its first symbol
+    void steerSro(double corr, int64_t from = -1);
 
     // ---- optional resampler stage on its own thread (live radios): input chunks go in, resampled chunks come back in the same order
     struct Stage {
@@ -138,6 +163,14 @@ struct T2Receiver::Impl {
     std::vector<double> pe;
     std::vector<float> m;
     std::array<cd, 1024> phiTab; // exp(-j 2 pi g / 1024)
+    // cheap first stage of a full search: its metric on the kCoarseBlk grid (from coarseFrom on, relative to the pass's lo), and scratch
+    std::vector<float> coarse;
+    int64_t coarseFrom = 0;
+    std::vector<cd> cbC, cbB;   // prefix sums over blocks of the turned C-A and A-B products
+    std::vector<double> cbE;    // and of the energy
+    std::array<cd, 1024> phiBlk; // exp(-j 2 pi (g + (kCoarseBlk - 1) / 2) / 1024): the phase at the centre of a block that starts at g
+    bool gateOff = false;       // DECT2_NOP1GATE: search everything with the exact metric (tests compare the two)
+    uint64_t p1Evaluated = 0, p1Rescans = 0;
     int64_t lastP1Abs = INT64_MIN / 2;
     double rejectedPos = 0;
     bool haveRejected = false;
@@ -205,6 +238,9 @@ struct T2Receiver::Impl {
     float l1N0 = 0;
     // data stage
     std::vector<std::vector<cf32>> frameCells;
+    std::vector<uint8_t> symErased;   // per symbol of the current frame: lost with the samples (no pilots, no data)
+    double cpRhoAt(int64_t s) const;
+    void eraseSymbol(int k);
     bool dataValid = false;
     float dataSnr = 0;
     int dataDx = 0, dataDy = 0, dataPp = 0;
@@ -238,6 +274,7 @@ struct T2Receiver::Impl {
 
     Impl() {
         for (int i = 0; i < 1024; i++) phiTab[i] = std::polar(1.0, -kTwoPi * i / 1024.0);
+        for (int i = 0; i < 1024; i++) phiBlk[i] = std::polar(1.0, -kTwoPi * (i + 0.5 * (kCoarseBlk - 1)) / 1024.0);
     }
 
     void resetAll();
@@ -249,6 +286,12 @@ struct T2Receiver::Impl {
 
     // Picks the P1 candidates among d in [dA, dB] (relative to lo) out of m[] and hands them on; true if one was accepted.
     bool p1Detect(int64_t lo, int64_t lastD, int64_t dA, int64_t dB);
+
+    // The cheap first stage: the metric on the grid dA + k kCoarseBlk (k up to the first point at or past dB), into coarse[].
+    void p1Coarse(int64_t lo, int64_t dA, int64_t dB);
+
+    // Searches every start position in [dA, dB]: the cheap stage first, the exact metric only where it fires.
+    void p1Search(int64_t lo, int64_t len, int64_t lastD, int64_t dA, int64_t dB);
 
     void scanP1();
 

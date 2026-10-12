@@ -50,7 +50,7 @@ int main() {
         AtvFormat pn; atvMakeFormat(kAtvN, kAtvPal, pn);
         CHECK(near(pn.fscHz, 3582056.25, 1e-6), "PAL-N (Argentina) subcarrier 3 582 056.25 Hz, got %.4f", pn.fscHz);
         AtvFormat bad;
-        CHECK(!atvMakeFormat(kAtvG, kAtvNtsc, bad) && !atvMakeFormat(kAtvM, kAtvSecam, bad) && !atvMakeFormat(kAtvN, kAtvSecam, bad), "impossible combinations are refused");
+        CHECK(!atvMakeFormat(kAtvL, kAtvNtsc, bad) && !atvMakeFormat(kAtvA, kAtvPal, bad) && !atvMakeFormat(kAtvE, kAtvSecam, bad), "impossible combinations are refused");
         CHECK(atvMakeFormat(kAtvDK, kAtvSecam, bad) && bad.secam, "SECAM exists on D/K");
         CHECK(near(kSecamF0R, 282 * 15625.0, 1e-6) && near(kSecamF0B, 272 * 15625.0, 1e-6), "SECAM rest frequencies 282 fH and 272 fH");
     }

@@ -38,7 +38,10 @@ void FmGenerator::nextGroup() {
     uint16_t b[4];
     b[0] = (uint16_t)c_.pi;
     uint16_t common = (uint16_t)((c_.tp ? 1 : 0) << 10 | (c_.pty & 31) << 5);
-    if (!rtGroup) {   // group 0A: station name, two characters per group
+    if (!c_.extraGroups.empty() && k % 6 == 5) {   // a group of the test's own
+        const auto& g = c_.extraGroups[extraNo_++ % c_.extraGroups.size()];
+        b[1] = g[0]; b[2] = g[1]; b[3] = g[2];
+    } else if (!rtGroup) {   // group 0A: station name, two characters per group
         const int seg = k % 5;
         b[1] = (uint16_t)(0x0000 | common | (c_.ta ? 16 : 0) | (c_.music ? 8 : 0) | 4 | seg);
         b[2] = 0xCDCD;

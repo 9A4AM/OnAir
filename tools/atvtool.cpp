@@ -1,6 +1,7 @@
 // Analog TV: write the test signal to a file (atvtool gen ...) or run the receiver on a recording (atvtool rx ...).
 #include "dect2/atv_card.h"
 #include "dect2/atv_gen.h"
+#include "dect2/atv_nbtv.h"
 #include "dect2/atv_rx.h"
 #include "dect2/atv_testkit.h"
 #include <cmath>
@@ -12,11 +13,16 @@
 
 using namespace dect2;
 
+static int atvSysByName(const std::string& v) {
+    return v == "b" ? kAtvB : v == "i" ? kAtvI : v == "dk" ? kAtvDK : v == "m" ? kAtvM : v == "n" ? kAtvN : v == "a" ? kAtvA : v == "c" ? kAtvC : v == "e" ? kAtvE
+         : v == "h" ? kAtvH : v == "kp" ? kAtvKp : v == "l" ? kAtvL : v == "lp" ? kAtvLp : kAtvG;
+}
+
 static void usage() {
     printf("atvtool gen <file.cs8|.cu8|.cf32> [options]     write the test signal\n"
            "  --secs N        length in seconds (default 2)\n"
            "  --rate MSPS     sample rate in Msps (default 10)\n"
-           "  --system S      g (B/G 8 MHz, default), b (B/G 7 MHz), i, dk, m, n\n"
+           "  --system S      g (B/G 8 MHz, default), b (B/G 7 MHz), i, dk, m, n, a (405 lines), c, e (819 lines, 20 Msps), h, kp (K'), l, lp (L')\n"
            "  --colour C      default, pal, ntsc, secam, none\n"
            "  --pattern P     card (default), bars, ramp\n"
            "  --snr DB        carrier-to-noise ratio in 5 MHz (default 40, 100 = none)\n"
@@ -27,8 +33,10 @@ static void usage() {
            "  --sound M       beeps (default), melody, carrier, none, tone\n"
            "  --no-groupdelay --nyquist-tx --no-setup\n"
            "  --frame-png F   also write the reference test card of the first frame as a PPM file\n"
-           "atvtool rx <file> --rate MSPS [--format cs8|cu8|cf32] [options]   run the receiver\n"
-           "atvtool sweep [name-filter] [--secs N]   run the receiver over a list of impaired signals and print one line each\n");
+           "atvtool rx <file> --rate MSPS [--format cs8|cu8|cf32] [--fm] [options]   run the receiver (--fm: FM video of an analog FPV link, 20 Msps)\n"
+           "atvtool sweep [name-filter] [--secs N]   run the receiver over a list of impaired signals and print one line each\n"
+           "atvtool nbtv-gen <file.wav> [--lines N] [--fps F] [--secs S] [--rate HZ] [--pattern card|bars|ramp] [--horizontal]   NBTV / mechanical TV as sound\n"
+           "atvtool nbtv <file.wav> [--lines N] [--fps F] [--horizontal] [--ppm out.ppm]   decode NBTV / mechanical TV from a sound file\n");
 }
 
 
@@ -144,7 +152,117 @@ int sweepMain(int argc, char** argv) {
 }
 } // namespace
 
+// ---- NBTV / mechanical television as a sound file
+namespace {
+// a mono or stereo WAV file, 16-bit PCM or 32-bit float: the first channel, -1 .. +1
+bool readWav(const std::string& path, std::vector<float>& out, double& rate) {
+    FILE* f = fopen(path.c_str(), "rb");
+    if (!f) return false;
+    std::vector<uint8_t> d;
+    uint8_t buf[65536];
+    size_t got;
+    while ((got = fread(buf, 1, sizeof buf, f)) > 0) d.insert(d.end(), buf, buf + got);
+    fclose(f);
+    if (d.size() < 12 || memcmp(d.data(), "RIFF", 4) || memcmp(d.data() + 8, "WAVE", 4)) return false;
+    int fmtTag = 0, ch = 0, bits = 0;
+    uint32_t sr = 0;
+    for (size_t p = 12; p + 8 <= d.size();) {
+        uint32_t len; memcpy(&len, &d[p + 4], 4);
+        const size_t body = p + 8;
+        if (!memcmp(&d[p], "fmt ", 4) && len >= 16 && body + 16 <= d.size()) {
+            uint16_t t16; memcpy(&t16, &d[body], 2); fmtTag = t16;
+            memcpy(&t16, &d[body + 2], 2); ch = t16;
+            memcpy(&sr, &d[body + 4], 4);
+            memcpy(&t16, &d[body + 14], 2); bits = t16;
+            if (fmtTag == 0xFFFE && len >= 26) { memcpy(&t16, &d[body + 24], 2); fmtTag = t16; }   // WAVE_FORMAT_EXTENSIBLE: the sub-format
+        } else if (!memcmp(&d[p], "data", 4) && ch > 0) {
+            const size_t n = std::min<size_t>(len, d.size() - body);
+            const int bps = bits / 8, frame = bps * ch;
+            if (frame <= 0) return false;
+            for (size_t k = 0; k + (size_t)frame <= n; k += (size_t)frame) {
+                const uint8_t* s = &d[body + k];
+                if (fmtTag == 3 && bits == 32) { float v; memcpy(&v, s, 4); out.push_back(v); }
+                else if (fmtTag == 1 && bits == 16) { int16_t v; memcpy(&v, s, 2); out.push_back(v / 32768.f); }
+                else if (fmtTag == 1 && bits == 24) { const int32_t v = (int32_t)((uint32_t)s[0] << 8 | (uint32_t)s[1] << 16 | (uint32_t)s[2] << 24) >> 8; out.push_back(v / 8388608.f); }
+                else if (fmtTag == 1 && bits == 8) out.push_back((s[0] - 128) / 128.f);
+                else return false;
+            }
+            rate = sr;
+            return !out.empty();
+        }
+        p = body + len + (len & 1);
+    }
+    return false;
+}
+
+void writeWav16(const std::string& path, const std::vector<float>& x, uint32_t rate) {
+    FILE* w = fopen(path.c_str(), "wb");
+    if (!w) return;
+    const uint32_t n = (uint32_t)x.size(), dataBytes = n * 2, byteRate = rate * 2;
+    const uint16_t one = 1, bits = 16, align = 2, pcm = 1;
+    fwrite("RIFF", 1, 4, w); const uint32_t riff = 36 + dataBytes; fwrite(&riff, 4, 1, w); fwrite("WAVEfmt ", 1, 8, w);
+    const uint32_t fmtLen = 16; fwrite(&fmtLen, 4, 1, w); fwrite(&pcm, 2, 1, w); fwrite(&one, 2, 1, w); fwrite(&rate, 4, 1, w); fwrite(&byteRate, 4, 1, w);
+    fwrite(&align, 2, 1, w); fwrite(&bits, 2, 1, w); fwrite("data", 1, 4, w); fwrite(&dataBytes, 4, 1, w);
+    for (float v : x) { const int16_t s16 = (int16_t)std::lround(std::max(-1.f, std::min(1.f, v)) * 32767); fwrite(&s16, 2, 1, w); }
+    fclose(w);
+}
+
+int nbtvMain(int argc, char** argv) {
+    const std::string cmd = argv[1], path = argv[2];
+    int lines = 32, pattern = 0;
+    double fps = 12.5, secs = 4, rate = 48000;
+    bool horizontal = false;
+    std::string ppm;
+    for (int i = 3; i < argc; i++) {
+        const std::string a = argv[i];
+        auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)"0"; };
+        if (a == "--lines") lines = atoi(next());
+        else if (a == "--fps") fps = atof(next());
+        else if (a == "--secs") secs = atof(next());
+        else if (a == "--rate") rate = atof(next());
+        else if (a == "--pattern") { const std::string v = next(); pattern = v == "bars" ? 1 : v == "ramp" ? 2 : 0; }
+        else if (a == "--horizontal") horizontal = true;
+        else if (a == "--ppm") ppm = next();
+    }
+    NbtvFormat f = lines == 32 && fps == 12.5 ? nbtvStandard() : nbtvMechanical(lines, fps);
+    f.vertical = !horizontal;
+    if (!f.valid()) { fprintf(stderr, "lines 24 to 240, 1 to 60 pictures a second\n"); return 1; }
+    if (cmd == "nbtv-gen") {
+        AtvNbtvGen g(f, rate, pattern);
+        std::vector<float> x((size_t)(secs * rate));
+        g.generate(x.data(), x.size());
+        for (auto& v : x) v = 1.6f * v - 0.8f;          // sync -0.8, white +0.8
+        writeWav16(path, x, (uint32_t)rate);
+        printf("%s: %.1f s of %s at %.0f Hz\n", path.c_str(), secs, f.name().c_str(), rate);
+        return 0;
+    }
+    std::vector<float> x;
+    double fr = 0;
+    if (!readWav(path, x, fr)) { fprintf(stderr, "%s: not a WAV file this reads (PCM 8/16/24 bit or 32-bit float)\n", path.c_str()); return 1; }
+    AtvNbtvDecoder d;
+    d.configure(fr, f);
+    d.log = [](const std::string& m) { printf("log: %s\n", m.c_str()); };
+    std::shared_ptr<const AtvFrame> last;
+    d.frameReady = [&](std::shared_ptr<const AtvFrame> p) { last = p; };
+    for (size_t k = 0; k < x.size(); k += 4800) d.process(x.data() + k, std::min<size_t>(4800, x.size() - k));
+    const NbtvStatus s = d.status();
+    printf("%s: %.1f s at %.0f Hz, %s: line sync %s, picture sync %s, line %.3f Hz (%+.0f ppm), %llu pictures, SNR %.1f dB\n", path.c_str(), x.size() / fr, fr,
+           f.name().c_str(), s.lineLocked ? "yes" : "no", s.frameLocked ? "yes" : "no", s.lineHz, s.lineErrPpm, (unsigned long long)s.frames, s.snrDb);
+    if (!ppm.empty() && last) {
+        FILE* p = fopen(ppm.c_str(), "wb");
+        if (p) {
+            fprintf(p, "P6\n%d %d\n255\n", last->width, last->height);
+            for (size_t i = 0; i < last->rgba.size(); i += 4) fwrite(&last->rgba[i], 1, 3, p);
+            fclose(p);
+            printf("last picture: %s (%dx%d)\n", ppm.c_str(), last->width, last->height);
+        }
+    }
+    return 0;
+}
+} // namespace
+
 int main(int argc, char** argv) {
+    if (argc >= 3 && (std::string(argv[1]) == "nbtv" || std::string(argv[1]) == "nbtv-gen")) return nbtvMain(argc, argv);
     if (argc >= 2 && std::string(argv[1]) == "sweep") return sweepMain(argc, argv);
     if (argc < 3) { usage(); return 1; }
     const std::string cmd = argv[1];
@@ -159,7 +277,7 @@ int main(int argc, char** argv) {
             auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)"0"; };
             if (a == "--secs") secs = atof(next());
             else if (a == "--rate") c.rate = atof(next()) * 1e6;
-            else if (a == "--system") { const std::string v = next(); sysSel = v == "b" ? kAtvB : v == "i" ? kAtvI : v == "dk" ? kAtvDK : v == "m" ? kAtvM : v == "n" ? kAtvN : kAtvG; }
+            else if (a == "--system") { const std::string v = next(); sysSel = atvSysByName(v); }
             else if (a == "--colour") { const std::string v = next(); colSel = v == "pal" ? kAtvPal : v == "ntsc" ? kAtvNtsc : v == "secam" ? kAtvSecam : v == "none" ? kAtvMono : -1; }
             else if (a == "--pattern") { const std::string v = next(); c.pattern = v == "bars" ? 1 : v == "ramp" ? 2 : 0; }
             else if (a == "--snr") c.cnrDb = atof(next());
@@ -178,7 +296,7 @@ int main(int argc, char** argv) {
             else if (a == "--frame-png") refPpm = next();
         }
         c.sys = sysSel;
-        c.colour = colSel >= 0 ? colSel : (sysSel == kAtvM ? kAtvNtsc : kAtvPal);
+        c.colour = colSel >= 0 ? colSel : atvDefaultColour(sysSel);
         AtvGenerator gen(c);
         if (!gen.ok()) { fprintf(stderr, "that combination of system and colour does not exist (or is not supported yet)\n"); return 1; }
         FILE* f = fopen(path.c_str(), "wb");
@@ -223,7 +341,7 @@ int main(int argc, char** argv) {
         double rate = 10e6;
         std::string fmtName, ppm, wav;
         double ppmEvery = 0;
-        bool envelope = false, verbose = false, bob = false;
+        bool envelope = false, verbose = false, bob = false, fm = false;
         int sysSel = -1, colSel = -1;
         double secs = 0;
         for (int i = 3; i < argc; i++) {
@@ -235,10 +353,11 @@ int main(int argc, char** argv) {
             else if (a == "--ppm-every") ppmEvery = atof(next());
             else if (a == "--wav") wav = next();
             else if (a == "--envelope") envelope = true;
+            else if (a == "--fm") fm = true;
             else if (a == "--bob") bob = true;
             else if (a == "--verbose") verbose = true;
             else if (a == "--secs") secs = atof(next());
-            else if (a == "--system") { const std::string v = next(); sysSel = v == "b" ? kAtvB : v == "i" ? kAtvI : v == "dk" ? kAtvDK : v == "m" ? kAtvM : v == "n" ? kAtvN : kAtvG; }
+            else if (a == "--system") { const std::string v = next(); sysSel = atvSysByName(v); }
             else if (a == "--colour") { const std::string v = next(); colSel = v == "pal" ? kAtvPal : v == "ntsc" ? kAtvNtsc : v == "secam" ? kAtvSecam : v == "none" ? kAtvMono : -1; }
         }
         const bool cf32f = fmtName == "cf32" || (fmtName.empty() && path.size() > 5 && path.substr(path.size() - 5) == ".cf32");
@@ -250,6 +369,7 @@ int main(int argc, char** argv) {
         std::vector<float> audio;
         rx.setAudioTap([&](const float* l, const float*, size_t n) { audio.insert(audio.end(), l, l + n); });
         rx.setLogCallback([&](const std::string& m) { printf("log: %s\n", m.c_str()); });
+        if (fm) rx.setModulation(1);
         rx.configure(rate);
         if (!rx.ready()) { fprintf(stderr, "the sample rate is too low for analog TV (8 Msps at least)\n"); return 1; }
         if (envelope) rx.setDetector(1);

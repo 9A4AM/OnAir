@@ -23,7 +23,8 @@ struct TxParams {
     bool tr = false;     // tone-reservation PAPR (reserved carriers left empty)
     int dataSymbols = 0; // symbols per frame after P1 (incl. P2); 0 = auto (~60 ms)
     int l1Mod = 1;       // L1-post modulation: 0 BPSK 1 QPSK 2 16QAM 3 64QAM
-    bool l1Scrambled = true;
+    bool l1Scrambled = true; // L1_POST_SCRAMBLED bit; the L1-post is only scrambled when t2Version >= 2 (EN 302 755 cl. 7.2.2)
+    int t2Version = 2;       // T2_VERSION: 0 = V1.1.1, 1 = V1.2.1, 2 = V1.3.1
     // Carry a real transport stream in PLP 0 (baseband framing, BCH, LDPC, bit/cell/time interleaving, mapping) instead of random cells.
     bool payload = false;
     bool plpShort = false;   // 16200-bit FEC frames (T2-Lite uses these, with the extra code rates 1/3 and 2/5)
@@ -66,6 +67,7 @@ private:
     int plpBlocks_ = 0;
     std::vector<std::vector<uint8_t>> lastBb_;
     int n_, g_, k_, symbols_, nP2_;
+    int s2sig_ = 0;   // the S2 field 1 that P1 and L1-pre signal (6 or 7 for 8K or 32K with GI 1/128, 19/256, 19/128)
 };
 
 } // namespace dect2

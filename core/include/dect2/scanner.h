@@ -3,6 +3,7 @@
 #pragma once
 #include "engine.h"
 #include <atomic>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -16,12 +17,17 @@ struct ScanConfig {
     double bwMhz = 8;
     bool atsc = false;             // scan for ATSC 8-VSB (6 MHz channels, centre frequencies of the US/Korea raster)
     bool isdbt = false;            // scan for ISDB-T (6 MHz channels, 13 segments)
+    bool atsc3 = false;            // scan for ATSC 3.0 (6 MHz channels on the same raster as ATSC; locks when the bootstrap and L1 decode)
+    bool dtmb = false;             // scan for DTMB (8 MHz channels; locks when the frame header is tracked and the system information decoded)
     bool autoBandwidth = true;     // measure the width of each signal found and decode it with the matching channel bandwidth
     bool identifyServices = true;
     double occupancyDb = 5.0;      // in-band power must exceed the out-of-band floor by this much
     double lockTimeoutSec = 5.0;   // time allowed to lock (the receiver alternates DVB-T2 and DVB-T searches)
     double serviceTimeoutSec = 9;  // time allowed to read the service list (identify = true)
     TuneSettings tune;             // gain / amp / filter settings
+    // Tests only: with this set, the built-in test signal stands in for the radio. It is called before every channel with the
+    // centre frequency (MHz) and may change tune.synth, so that one channel carries a signal and the others stay empty.
+    std::function<void(double, TuneSettings&)> testTune;
 };
 
 struct ScanResult {
@@ -30,6 +36,8 @@ struct ScanResult {
     double occupancyDb = 0;        // in-band minus out-of-band floor
     bool occupied = false;
     bool t2 = false;               // a DVB-T2 or DVB-T signal was locked (see `standard`)
+    bool seen = false;             // the scanned standard is there: locked (t2), or only its preamble found, too weak to decode
+                                   // (a signal of another kind leaves it false: the scan tab does not list those)
     std::string standard = "DVB-T2"; // "DVB-T2" or "DVB-T"
     bool l1post = false;
     std::string note;

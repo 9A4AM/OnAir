@@ -1,0 +1,159 @@
+// Bluetooth LE advertising test signal (see ble_gen.h).
+#include "dect2/ble_gen.h"
+#include "dect2/ble_proto.h"
+#include "dect2/ble_rx.h"
+#include "dect2/gen_util.h"
+#include "dect2/source.h"
+#include <cmath>
+#include <deque>
+
+namespace dect2 {
+
+namespace {
+constexpr double kPi = 3.14159265358979323846;
+
+// the frequency pulse of one bit: a rectangle through the Gaussian filter (BT 0.5), in bit units
+double gfskPulse(double tau) {
+    const double sigma = std::sqrt(std::log(2.0)) / (2 * kPi * 0.5);
+    const double k = 1 / (std::sqrt(2.0) * sigma);
+    return 0.5 * (std::erf((tau + 0.5) * k) - std::erf((tau - 0.5) * k));
+}
+} // namespace
+
+struct BleGenerator::Impl {
+    BleGenConfig cfg;
+    genutil::NoiseSource noise;
+    float sigma = 0;
+    std::deque<cf32> q;
+    size_t idx = 0;
+    bool done = false;
+    double ph = 0;
+
+    explicit Impl(const BleGenConfig& c) : cfg(c), noise(c.seed) {}
+
+    void silence(double sec) { const size_t n = (size_t)std::llround(sec * cfg.rate); for (size_t i = 0; i < n; i++) q.push_back(cf32(0.f, 0.f)); }
+
+    void refill() {
+        if (done || cfg.pkts.empty()) { silence(0.001); return; }
+        const BleGenPacket& p = cfg.pkts[idx];
+        std::vector<uint8_t> bits;
+        ble::packetBits(p.pdu, cfg.channel ? cfg.channel : p.channel, bits);
+        if (p.badCrc) bits.back() ^= 1;
+        const int nb = (int)bits.size();
+        const double pad = 3;                      // bits of plain carrier before and after
+        const double bitsPerSample = 1e6 * (1 + cfg.clockPpm * 1e-6) / cfg.rate;
+        const size_t ns = (size_t)std::ceil((nb + 2 * pad) / bitsPerSample);
+        const double off = cfg.dialOffsetHz + cfg.cfoHz + p.cfoHz;
+        const double amp = cfg.amp * p.ampScale;
+        for (size_t i = 0; i < ns; i++) {
+            const double u = i * bitsPerSample - pad;   // bit time from the first bit's start
+            double f = 0;
+            const int k0 = (int)std::floor(u);
+            for (int k = k0 - 2; k <= k0 + 2; k++) {
+                if (k < 0 || k >= nb) continue;
+                f += (bits[(size_t)k] ? 1.0 : -1.0) * gfskPulse(u - k - 0.5);
+            }
+            ph = std::remainder(ph + 2 * kPi * (f * ble::kDevHz + off) / cfg.rate, 2 * kPi);
+            q.push_back(cf32((float)(amp * std::cos(ph)), (float)(amp * std::sin(ph))));
+        }
+        silence(p.gapSec);
+        if (++idx >= cfg.pkts.size()) { idx = 0; if (!cfg.loop) done = true; }
+    }
+};
+
+double BleGenerator::noiseSigma(const BleGenConfig& c) {
+    if (c.snrDb >= 99) return 0;
+    const double nb = c.amp * c.amp / std::pow(10.0, c.snrDb / 10);   // noise power in 1 MHz
+    return std::sqrt(nb * c.rate / 1e6 / 2);
+}
+
+BleGenerator::BleGenerator(const BleGenConfig& c) : p_(std::make_unique<Impl>(c)) {
+    p_->sigma = (float)noiseSigma(c);
+    p_->silence(c.leadSec);
+}
+BleGenerator::~BleGenerator() = default;
+
+void BleGenerator::generate(cf32* out, size_t n) {
+    Impl& m = *p_;
+    for (size_t i = 0; i < n; i++) {
+        if (m.q.empty()) m.refill();
+        out[i] = m.q.front();
+        m.q.pop_front();
+    }
+    if (m.sigma > 0) m.noise.add(out, n, m.sigma);
+}
+
+std::vector<BleGenPacket> bleTestSchedule(int channel) {
+    using namespace ble;
+    std::vector<BleGenPacket> v;
+    int rr = 0;
+    auto add = [&](std::vector<uint8_t> pdu, double gap, double cfo = 0) {
+        BleGenPacket p;
+        p.pdu = std::move(pdu);
+        p.channel = channel ? channel : 37 + (rr++ % 3);
+        p.gapSec = gap;
+        p.cfoHz = cfo;
+        v.push_back(std::move(p));
+    };
+    const uint8_t phone[6] = {0x56, 0x34, 0x12, 0xEE, 0xFF, 0xC0};      // C0:FF:EE:12:34:56, random static
+    const uint8_t beacon[6] = {0x01, 0x00, 0x5E, 0xA1, 0x0B, 0x00};     // public
+    const uint8_t eddy[6] = {0x02, 0x22, 0x33, 0x44, 0x55, 0x3A};       // non-resolvable private
+    const uint8_t rpa[6] = {0x9A, 0x78, 0x56, 0x34, 0x12, 0x5B};        // resolvable private
+    const uint8_t scanner[6] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66};    // resolvable private (0x66 >> 6 = 1)
+    const uint8_t uuid[16] = {0xE2, 0xC5, 0x6D, 0xB5, 0xDF, 0xFB, 0x48, 0xD2, 0xB0, 0x60, 0xD0, 0xF5, 0xA7, 0x10, 0x96, 0xE0};
+    const uint8_t ns[10] = {0xED, 0xD1, 0xEB, 0xEA, 0xC0, 0x4E, 0x5D, 0xEF, 0xA0, 0x17};
+    const uint8_t inst[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+    const uint8_t rpi[16] = {0x3C, 0x1A, 0x09, 0x77, 0x5E, 0x42, 0x81, 0x0D, 0xC6, 0x2B, 0x94, 0xF0, 0x6E, 0x13, 0xA5, 0x58};
+    const uint8_t meta[4] = {0x40, 0x08, 0x00, 0x00};
+
+    add(makePdu(AdvInd, true, advPayload(phone, AdBuilder().flags(0x06).name("OnAir").txPower(4).uuid16({0x180F, 0x180D}).mfr(0xFFFF, {0x01, 0x02, 0x03, 0x04}).b)), 0.003);
+    add(makePdu(AdvNonconnInd, false, advPayload(beacon, AdBuilder().flags(0x04).ibeacon(uuid, 100, 7, -59).b)), 0.004, 20e3);
+    add(makePdu(ScanReq, true, [&] { std::vector<uint8_t> p(scanner, scanner + 6); p.insert(p.end(), phone, phone + 6); return p; }(), true), 0.0002, -15e3);
+    add(makePdu(ScanRsp, true, advPayload(phone, AdBuilder().name("OnAir test phone").b)), 0.003);
+    add(makePdu(AdvNonconnInd, true, advPayload(eddy, AdBuilder().flags(0x06).eddystoneUrl(-20, 3, "example\x07").b)), 0.003, -30e3);
+    add(makePdu(AdvNonconnInd, true, advPayload(eddy, AdBuilder().eddystoneTlm(3000, 21.5, 1234, 56789).b)), 0.003, -30e3);
+    add(makePdu(AdvNonconnInd, true, advPayload(eddy, AdBuilder().eddystoneUid(-20, ns, inst).b)), 0.003, -30e3);
+    add(makePdu(AdvNonconnInd, true, advPayload(rpa, AdBuilder().exposure(rpi, meta).b)), 0.004, 10e3);
+    add(makePdu(AdvScanInd, true, advPayload(rpa, AdBuilder().flags(0x1A).mfr(0x004C, {0x10, 0x05, 0x01, 0x18, 0x44, 0x22, 0x11}).b)), 0.003, 10e3);
+    {   // CONNECT_IND: InitA, AdvA, LLData (access address, CRC init, window, interval, latency, timeout, channel map, hop)
+        std::vector<uint8_t> p(scanner, scanner + 6);
+        p.insert(p.end(), phone, phone + 6);
+        const uint8_t ll[22] = {0x71, 0x2A, 0x3B, 0x50, 0x12, 0x34, 0x56, 0x02, 0x00, 0x00, 0x18, 0x00, 0x00, 0x00, 0x48, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x1F, 0x05};
+        p.insert(p.end(), ll, ll + 22);
+        add(makePdu(ConnectInd, true, p, true), 0.004, -15e3);
+    }
+    {   // ADV_EXT_IND: ADI and an AuxPtr to a secondary channel (not followed)
+        const uint16_t adi = (uint16_t)(2 << 12 | 0x123), aux = (uint16_t)(100 | 1 << 13);
+        std::vector<uint8_t> p = {6, 0x18, (uint8_t)adi, (uint8_t)(adi >> 8), 12, (uint8_t)aux, (uint8_t)(aux >> 8)};
+        add(makePdu(AdvExtInd, false, p), 0.005);
+    }
+    return v;
+}
+
+namespace {
+class BleSynth : public ModeSynth {
+public:
+    BleSynth(const SynthConfig& s, double rate) : rate_(rate) {
+        BleGenConfig c;
+        c.rate = rate;
+        c.dialOffsetHz = -bleTuning().tuneOffsetHz;
+        c.snrDb = s.snrDb;
+        c.cfoHz = s.cfoHz;
+        const int o = s.modeOpt[0];
+        c.pkts = bleTestSchedule(o >= 1 && o <= 3 ? 36 + o : 0);
+        gen_ = std::make_unique<BleGenerator>(c);
+    }
+    double sampleRate() const override { return rate_; }
+    void generate(cf32* out, size_t n) override { gen_->generate(out, n); }
+private:
+    double rate_;
+    std::unique_ptr<BleGenerator> gen_;
+};
+} // namespace
+
+std::unique_ptr<ModeSynth> makeBleSynth(const SynthConfig& cfg, double sampleRate) {
+    if (sampleRate <= 0) return nullptr;
+    return std::make_unique<BleSynth>(cfg, sampleRate);
+}
+
+} // namespace dect2

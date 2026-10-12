@@ -9,9 +9,26 @@ void T2Receiver::Impl::processFrames() {
         bool stalled = false;
         while (!frames.empty() && frames.front().next < frames.front().maxSyms) {
             Frame& f = frames.front();
-            if (f.next == 0) { gridOff += pendingGridOff; pendingGridOff = 0; }
-            int64_t s = f.anchor + gridOff + (int64_t)std::llround((double)f.next * (N + G) * (1.0 + sro));
+            if (f.next == 0) { gridOff += pendingGridOff; pendingGridOff = 0; symErased.assign((size_t)std::max(0, f.maxSyms), 0); }
+            int64_t s = f.anchor + gridOff + (int64_t)std::llround((double)f.next * (N + G) * (1.0 + f.sro));
+            if (f.lostAt >= 0 && f.lostKnown) s -= f.lost;
             if (s + N + G + 40 > end()) { stalled = true; break; }
+            // A symbol whose cyclic prefix has stopped matching, right after one that matched: samples were lost here and every symbol after
+            // sits earlier by that many. Hold the frame until the next P1 says exactly how many (or give up after two frames and go on as before).
+            if (f.lostAt < 0 && f.next > 0 && frameLen > 0 && cpCorrAvg > 0.3 && cpRhoAt(s) < 0.3 * cpCorrAvg) {
+                f.lostAt = f.next; f.lostFrom = s;
+                if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] symbol %d of the frame lost its cyclic prefix: samples lost?\n", f.next);
+                if (f.lostKnown) continue;   // the next P1 has already told how many
+            }
+            if (f.lostAt >= 0 && !f.lostKnown) {
+                if (end() > s + 2 * (int64_t)frameLen + 4 * (N + G)) { f.lostKnown = true; f.lost = 0; f.intactAgain = true; if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] no P1 to say how many samples were lost (end %lld)\n", (long long)end()); }
+                else { stalled = true; break; }
+            }
+            if (f.lostAt >= 0 && f.lostKnown && !f.intactAgain && f.next >= f.lostAt) {
+                // the symbols whose samples straddle the gap or went with it: erased, until the first one entirely after the gap
+                if (s < f.lostFrom || cpRhoAt(s) < 0.5 * cpCorrAvg) { eraseSymbol(f.next++); continue; }
+                f.intactAgain = true;
+            }
             int idx = f.next++;
             { StageClock sc(3); processSymbol(s, idx); } // may clear `frames` (loss of lock / guard-interval correction)
         }
@@ -55,6 +72,30 @@ void T2Receiver::Impl::fftCells(int64_t s, std::vector<cf32>& cells, int K) {
         int b = (f + N) % N;
         cells[kk] = cf32(fr[b], fi[b]);
     }
+}
+
+double T2Receiver::Impl::cpRhoAt(int64_t s) const {
+    const int N = fftN, G = guard;
+    cd c = 0; double e = 0;
+    for (int i = 0; i < G; i++) {
+        const cf32 a = at(s + i), b = at(s + i + N);
+        c += cd(a.real(), a.imag()) * std::conj(cd(b.real(), b.imag()));
+        e += 0.5 * ((double)std::norm(a) + (double)std::norm(b));
+    }
+    return e > 0 ? std::abs(c) / e : 0.0;
+}
+
+// a symbol that went with lost samples: no cells (the data stage leaves it out of the channel estimate and gives its cells no weight)
+void T2Receiver::Impl::eraseSymbol(int k) {
+    if (k < (int)symErased.size()) symErased[(size_t)k] = 1;
+    if (k < nP2) return;   // the P2 symbols carry L1: that frame cannot be decoded
+    if (l1preOk && frameSyms > 0 && k < frameSyms) {
+        if ((int)frameCells.size() != frameSyms) frameCells.assign(frameSyms, {});
+        frameCells[k].assign(kMax, cf32(0, 0));
+        if (k == frameSyms - 1) runDataStage();
+    }
+    symbols++;
+    symCounter++;
 }
 
 void T2Receiver::Impl::processSymbol(int64_t s, int k) {

@@ -80,22 +80,25 @@ T2Generator::T2Generator(const TxParams& p) : i_(new Impl), p_(p) {
         symbols_ = std::max(m->nP2 + 2, (int)std::lround(0.060 / tsym));
         symbols_ = std::min(symbols_, 400);
     }
-    buildP1(*i_, p.s1, (p.s2field1 << 1) | (p.mixed ? 1 : 0));
+    // what P1 and L1-pre signal: 8K and 32K with the guard intervals 1/128, 19/128 and 19/256 have codes of their own (6 and 7, EN 302 755
+    // table 18); the tables above take the FFT size only (1 and 5)
+    s2sig_ = (p.giIdx >= 4 && m->code == 5) ? 7 : (p.giIdx >= 4 && m->code == 1) ? 6 : m->code;
+    buildP1(*i_, p.s1, (s2sig_ << 1) | (p.mixed ? 1 : 0));
 
     // L1 signalling for this configuration
     pre_.type = 0;
     pre_.bwtExt = pc.ext ? 1 : 0;
     pre_.s1 = p.s1;
-    pre_.s2 = (p.s2field1 << 1) | (p.mixed ? 1 : 0);
+    pre_.s2 = (s2sig_ << 1) | (p.mixed ? 1 : 0);
     pre_.guardInterval = p.giIdx;
     pre_.papr = p.tr ? 2 : 0;
     pre_.l1Mod = p.l1Mod;
     pre_.pilotPattern = p_.pp;
     pre_.cellId = p.cellId; pre_.networkId = p.networkId; pre_.systemId = p.systemId;
-    pre_.numFrames = 2;
+    pre_.numFrames = 255;   // NUM_T2_FRAMES: FRAME_IDX counts 0..254, so tests can key frames by FRAME_IDX
     pre_.numDataSyms = symbols_ - nP2_;
     pre_.numRf = 1;
-    pre_.version = 2;
+    pre_.version = p.t2Version;
     pre_.postScrambled = p.l1Scrambled ? 1 : 0;
     post_.rf.resize(1);
     post_.rf[0].freq = 522000000;
@@ -144,7 +147,7 @@ void T2Generator::nextFrame(std::vector<cf32>& out) {
     const float norm = 5.0f / std::sqrt(27.0f * (float)k_);
     std::vector<uint8_t> types;
     // ---- P2 payload: L1-pre, L1-post, then filler, distributed over the P2 symbols and frequency interleaved
-    post_.frameIdx = frameNo_ & 0xff;
+    post_.frameIdx = (int)(frameNo_ % (uint64_t)pre_.numFrames);   // clause 7.2.3.1: FRAME_IDX < NUM_T2_FRAMES
     L1Pre pre = pre_;
     auto postCells = encodeL1Post(pre, post_, nP2_, false);
     auto preCells = encodeL1Pre(pre);

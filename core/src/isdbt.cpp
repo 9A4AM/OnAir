@@ -43,7 +43,7 @@ int packetsPerFrame(int mode, const Layer& l) {
 }
 
 double layerBitrate(const Params& p, int i) {
-    return (double)packetsPerFrame(p.mode, p.layer[i]) * 188 * 8 / frameSeconds(p.mode, p.guard);
+    return (double)packetsPerFrame(p.mode, p.layer[i]) * 188 * 8 / frameSeconds(p.mode, p.guard, p.bwMhz);
 }
 double totalBitrate(const Params& p) { return layerBitrate(p, 0) + layerBitrate(p, 1) + layerBitrate(p, 2); }
 

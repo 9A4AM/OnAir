@@ -334,14 +334,14 @@ int main() {
     }
     { AtvGenConfig c; c.sys = kAtvM; c.colour = kAtvPal; AtvGenerator g(c); CHECK(g.ok(), "PAL-M"); if (g.ok()) { const auto v = compositeOf(c, 0.072); checkTiming(g.format(), v, "PAL-M"); checkColour(g.format(), v, g.card(), "PAL-M"); } }
     { AtvGenConfig c; c.sys = kAtvG; c.colour = kAtvMono; AtvGenerator g(c); CHECK(g.ok(), "monochrome"); }
-    { AtvGenConfig c; c.sys = kAtvG; c.colour = kAtvNtsc; AtvGenerator g(c); CHECK(!g.ok(), "NTSC on a 625-line system is refused"); }
+    { AtvGenConfig c; c.sys = kAtvL; c.colour = kAtvNtsc; AtvGenerator g(c); CHECK(!g.ok(), "NTSC on a positive-modulation system is refused"); }
 
     // ---- SECAM
     checkSecam(kAtvG, 0, "SECAM B/G");
     checkSecam(kAtvDK, 0, "SECAM D/K");
     checkSecam(kAtvG, 1, "SECAM lines only");
     checkSecam(kAtvG, 2, "SECAM field only");
-    { AtvGenConfig c; c.sys = kAtvM; c.colour = kAtvSecam; AtvGenerator g(c); CHECK(!g.ok(), "SECAM on M is refused"); }
+    { AtvGenConfig c; c.sys = kAtvA; c.colour = kAtvPal; AtvGenerator g(c); CHECK(!g.ok(), "colour on 405 lines is refused"); }
 
     // ---- the radio signal: modulation depth, vestigial sideband, sound, noise, offsets
     {
@@ -493,7 +493,7 @@ int main() {
             s.modeOpt[0] = 4;
             CHECK(!m->configure(s), "a change of system needs a new generator");
         }
-        s.modeOpt[0] = 9;
+        s.modeOpt[0] = 99;
         CHECK(makeAtvSynth(s, 10e6) == nullptr, "an invalid system gives no signal");
         AtvGenConfig a1, a2; a1.cnrDb = 20; a1.rate = 10e6; a2 = a1;
         AtvGenerator g1(a1), g2(a2);

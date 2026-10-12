@@ -8,7 +8,9 @@
 //   cfoHz      the whole signal is shifted by this much (the receiver has to find the carrier)
 //   sroPpm     sample clock error of the "radio"
 //   echoDb     0 = no ghost, otherwise a ghost this many dB below the signal; delay modeVal[2] us (default 1.5), carrier phase modeVal[3] degrees
-//   modeOpt[0] system: 0 B/G (8 MHz channel), 1 B (7 MHz), 2 I, 3 D/K, 4 M, 5 N
+//   modeOpt[0] system: 0 B/G (8 MHz channel), 1 B (7 MHz), 2 I, 3 D/K, 4 M, 5 N, 6 A (405 lines), 7 C, 8 E (819 lines: 20 Msps), 9 H, 10 K', 11 L,
+//              12 L'; 13 NBTV / mechanical television on AM, 14 the same on narrow FM (atv_nbtv.h): then modeOpt[1] is the line count (0 = 32),
+//              modeVal[0] the pictures a second (0 = 12.5), modeOpt[2] the picture; the carrier is at the centre plus cfoHz
 //   modeOpt[1] colour: 0 the usual one for the system (PAL, NTSC for M), 1 PAL, 2 NTSC, 3 SECAM, 4 none (monochrome)
 //   modeOpt[2] picture: 0 test card, 1 colour bars, 2 grey ramp
 //   modeOpt[3] sound: 0 1 kHz tone with short interruptions, 1 melody, 2 unmodulated carrier, 3 no sound carrier, 4 continuous 1 kHz tone

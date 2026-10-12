@@ -2,6 +2,7 @@
 #include "atsc3_data_tables.h"
 #include "atsc3_ldpc.h"
 #include "dect2/atsc3_l1.h"
+#include "dect2/simd.h"
 #include "dect2/t2fec.h"
 #include <algorithm>
 #include <cmath>
@@ -13,6 +14,8 @@ namespace dect2 {
 namespace atsc3 {
 
 namespace {
+
+constexpr float kLlrLimit = 20.f;
 
 // Table 6.8 and 6.9: block interleaver type (0 = A, 1 = B), rates 2/15 .. 13/15
 const char* kTypes64[6] = {"AAAAAAAAAAAA", "AAABAABBAAAA", "AAAAABABBAAB", "AAABBBBABBAB", "AAABABABBBAA", "AAAAABAAAAAA"};
@@ -66,6 +69,77 @@ std::vector<int> parityMap(const Ldpc& c) {   // u(K + 360 t + s) = lambda(K + Q
     return m;
 }
 
+
+// Max-log LLRs of the cells of a block for constellations up to 256 points: the squared distance to every point, then the nearest point with
+// the bit at 0 and at 1 for each bit. Written so that the compiler vectorises the distance and the minimum loops.
+DECT2_MULTIVERSION void llrCells(const float* pr, const float* pi, int eta, const cf32* cells, int nc, float invNv, const int* perm, float* llr) {
+    const int M = 1 << eta;
+    float d[256];
+    for (int s = 0; s < nc; s++) {
+        const float cr = cells[s].real(), ci = cells[s].imag();
+        for (int m = 0; m < M; m++) { const float a = cr - pr[m], b = ci - pi[m]; d[m] = a * a + b * b; }
+        for (int k = 0; k < eta; k++) {
+            const int blk = M >> (k + 1);   // labels with bit k at 0 and at 1 alternate in runs of this length
+            float m0 = 1e30f, m1 = 1e30f;
+            if (blk >= 8) {
+                float v0[8], v1[8];
+                for (int j = 0; j < 8; j++) v0[j] = v1[j] = 1e30f;
+                for (int base = 0; base < M; base += 2 * blk) {
+                    for (int i = 0; i < blk; i += 8)
+                        for (int j = 0; j < 8; j++) { v0[j] = std::min(v0[j], d[base + i + j]); v1[j] = std::min(v1[j], d[base + blk + i + j]); }
+                }
+                for (int j = 0; j < 8; j++) { m0 = std::min(m0, v0[j]); m1 = std::min(m1, v1[j]); }
+            } else {
+                for (int base = 0; base < M; base += 2 * blk)
+                    for (int i = 0; i < blk; i++) { m0 = std::min(m0, d[base + i]); m1 = std::min(m1, d[base + blk + i]); }
+            }
+            llr[perm[s * eta + k]] = (m1 - m0) * invNv;
+        }
+    }
+}
+
+// The same for constellations built from one quadrant (labels: the two top bits say which quadrant, the rest which point of it, w -> -conj(w) ->
+// conj(w) -> -w): the cell is folded into the first quadrant and only the 2^(eta-2) points of that quadrant are measured. The bits of the point
+// come from the nearest points of the bit's two classes inside the quadrant; the two quadrant bits (sign of the imaginary and of the real part)
+// from the nearest point of the quadrant and of its mirror image across the axis in question. Points of the quadrant across both axes are
+// ignored: they are never nearer than the mirror image across one axis.
+DECT2_MULTIVERSION void llrCellsQuad(const float* qa, const float* qb, int eta, const cf32* cells, int nc, float invNv, const int* perm, float* llr) {
+    const int B = 1 << (eta - 2);
+    float d0[64], d1[64], d2[64];
+    for (int s = 0; s < nc; s++) {
+        const float cr = cells[s].real(), ci = cells[s].imag();
+        const float ar = cr < 0 ? -cr : cr, ai = ci < 0 ? -ci : ci;
+        for (int i = 0; i < B; i++) {
+            const float dr = ar - qa[i], dR = ar + qa[i], di = ai - qb[i], dI = ai + qb[i];
+            d0[i] = dr * dr + di * di;
+            d1[i] = dR * dR + di * di;   // mirror image across the imaginary axis (real part flipped)
+            d2[i] = dr * dr + dI * dI;   // across the real axis
+        }
+        float own = 1e30f, flipRe = 1e30f, flipIm = 1e30f;
+        for (int i = 0; i < B; i++) { own = std::min(own, d0[i]); flipRe = std::min(flipRe, d1[i]); flipIm = std::min(flipIm, d2[i]); }
+        // y0: sign of the imaginary part (1 = negative), y1: of the real part
+        const float l0 = ci < 0 ? (own - flipIm) : (flipIm - own), l1 = cr < 0 ? (own - flipRe) : (flipRe - own);
+        llr[perm[s * eta + 0]] = l0 * invNv;
+        llr[perm[s * eta + 1]] = l1 * invNv;
+        for (int k = 2; k < eta; k++) {
+            const int blk = B >> (k - 1);   // points whose bit k is 0 and 1 alternate in runs of this length
+            float m0 = 1e30f, m1 = 1e30f;
+            if (blk >= 8) {
+                float v0[8], v1[8];
+                for (int j = 0; j < 8; j++) v0[j] = v1[j] = 1e30f;
+                for (int base = 0; base < B; base += 2 * blk)
+                    for (int i = 0; i < blk; i += 8)
+                        for (int j = 0; j < 8; j++) { v0[j] = std::min(v0[j], d0[base + i + j]); v1[j] = std::min(v1[j], d0[base + blk + i + j]); }
+                for (int j = 0; j < 8; j++) { m0 = std::min(m0, v0[j]); m1 = std::min(m1, v1[j]); }
+            } else {
+                for (int base = 0; base < B; base += 2 * blk)
+                    for (int i = 0; i < blk; i++) { m0 = std::min(m0, d0[base + i]); m1 = std::min(m1, d0[base + blk + i]); }
+            }
+            llr[perm[s * eta + k]] = (m1 - m0) * invNv;
+        }
+    }
+}
+
 } // namespace
 
 int blockInterleaverType(int n, int eta, int rate15) {
@@ -111,6 +185,15 @@ Bicm::Bicm(const BicmConfig& c) : cfg_(c) {
     kPayload_ = kLdpc_ - mouter;
     points_ = buildPoints(eta, c.rate15);
     if (points_.empty()) return;
+    if (eta >= 2 && eta <= 8) {   // one quadrant and its reflections?
+        const int B = 1 << (eta - 2);
+        bool q = true;
+        for (int i = 0; i < B && q; i++) {
+            const cf32 w = points_[(size_t)i];
+            q = w.real() > 0 && w.imag() > 0 && std::abs(points_[(size_t)(B + i)] - (-std::conj(w))) < 1e-6f && std::abs(points_[(size_t)(2 * B + i)] - std::conj(w)) < 1e-6f && std::abs(points_[(size_t)(3 * B + i)] + w) < 1e-6f;
+        }
+        if (q) { quad_ = true; for (int i = 0; i < B; i++) { qa_.push_back(points_[(size_t)i].real()); qb_.push_back(points_[(size_t)i].imag()); } }
+    }
     int type = blockInterleaverType(n, eta, c.rate15);
     const unsigned short* pi = groupPermutation(n, eta, c.rate15);
     if (type < 0 || !pi) return;
@@ -147,23 +230,15 @@ std::vector<cf32> Bicm::encode(const std::vector<uint8_t>& payload) const {
     return out;
 }
 
-bool Bicm::decode(const cf32* cells, float noiseVar, std::vector<uint8_t>& payload, int* iters) const {
-    if (!ok_) return false;
+void Bicm::llrs(const cf32* cells, float noiseVar, std::vector<float>& llr) const {
     const int eta = cfg_.bitsPerCell, nc = this->cells(), M = 1 << eta;
     const float nv = std::max(noiseVar, 1e-5f);
-    std::vector<float> llr(cfg_.nInner, 0.f);
+    llr.assign((size_t)cfg_.nInner, 0.f);
     if (eta <= 8) {
-        for (int s = 0; s < nc; s++) {
-            float best0[8], best1[8];
-            for (int k = 0; k < eta; k++) best0[k] = best1[k] = 1e30f;
-            for (int lab = 0; lab < M; lab++) {
-                float d = std::norm(cells[s] - points_[lab]);
-                for (int k = 0; k < eta; k++) {
-                    if ((lab >> (eta - 1 - k)) & 1) best1[k] = std::min(best1[k], d); else best0[k] = std::min(best0[k], d);
-                }
-            }
-            for (int k = 0; k < eta; k++) llr[perm_[s * eta + k]] = (best1[k] - best0[k]) / nv;
-        }
+        std::vector<float> pr((size_t)M), pi((size_t)M);
+        for (int m = 0; m < M; m++) { pr[(size_t)m] = points_[(size_t)m].real(); pi[(size_t)m] = points_[(size_t)m].imag(); }
+        if (quad_) llrCellsQuad(qa_.data(), qb_.data(), eta, cells, nc, 1.f / nv, perm_.data(), llr.data());
+        else llrCells(pr.data(), pi.data(), eta, cells, nc, 1.f / nv, perm_.data(), llr.data());
     } else {
         // separable: one dimension at a time over the 2^(eta/2) levels of that dimension
         const int half = eta / 2, L = 1 << half;
@@ -199,8 +274,12 @@ bool Bicm::decode(const cf32* cells, float noiseVar, std::vector<uint8_t>& paylo
             }
         }
     }
-    std::vector<uint8_t> hard;
-    if (!ldpcCode(cfg_.nInner, cfg_.rate15).decode(llr, 60, hard, iters)) return false;
+    // a few confidently wrong values (a cell the equaliser got wrong, noise the estimate left out) are as strong as many right ones for the min-sum
+    // decoder and keep it from converging although the rest is clean: no value counts for more than this
+    for (auto& v : llr) v = std::max(-kLlrLimit, std::min(kLlrLimit, v));
+}
+
+bool Bicm::finish(const std::vector<uint8_t>& hard, std::vector<uint8_t>& payload) const {
     std::vector<uint8_t> bits(hard.begin(), hard.begin() + kLdpc_);
     if (cfg_.outer == 0) {
         const BchCode bch(cfg_.nInner == 16200, 12);
@@ -214,6 +293,49 @@ bool Bicm::decode(const cf32* cells, float noiseVar, std::vector<uint8_t>& paylo
     }
     payload.swap(bits);
     return true;
+}
+
+bool Bicm::decode(const cf32* cells, float noiseVar, std::vector<uint8_t>& payload, int* iters) const {
+    if (!ok_) return false;
+    std::vector<float> llr;
+    llrs(cells, noiseVar, llr);
+    std::vector<uint8_t> hard;
+    if (!ldpcCode(cfg_.nInner, cfg_.rate15).decode(llr, 60, hard, iters)) return false;
+    return finish(hard, payload);
+}
+
+void Bicm::decodeBatch(const std::vector<const cf32*>& cells, float noiseVar, std::vector<std::vector<uint8_t>>& payload, std::vector<char>& ok) const {
+    const int nb = (int)cells.size();
+    payload.assign((size_t)nb, std::vector<uint8_t>());
+    ok.assign((size_t)nb, 0);
+    if (!ok_ || nb == 0 || nb > Ldpc::kBatch) return;
+    std::vector<std::vector<int8_t>> q((size_t)nb);
+    std::vector<const int8_t*> ptr((size_t)nb);
+    std::vector<float> llr;
+    for (int b = 0; b < nb; b++) {
+        llrs(cells[(size_t)b], noiseVar, llr);
+        q[(size_t)b].resize(llr.size());
+        for (size_t i = 0; i < llr.size(); i++) q[(size_t)b][i] = (int8_t)std::lround(llr[i]);
+        ptr[(size_t)b] = q[(size_t)b].data();
+    }
+    std::vector<std::vector<uint8_t>> hard;
+    std::vector<char> good;
+    const Ldpc& code = ldpcCode(cfg_.nInner, cfg_.rate15);
+    // the values are the limited LLRs rounded to integers (+-20): with the 8-bit range filled to +-31 the decoder failed on 1.5% of the blocks, which
+    // the float decoder then had to take over
+    code.decodeBatch(ptr, 20, hard, good);
+    // A block the 8-bit decoder gave up on may still decode with the float one (60 iterations). When most blocks of the batch fail it is a damaged
+    // frame (a gap in the samples): the float decoder would spend about 150 ms on each and keep the whole receiver waiting for many seconds.
+    int failed = 0;
+    for (int b = 0; b < nb; b++) failed += !good[(size_t)b];
+    const bool retry = failed * 4 <= nb;
+    for (int b = 0; b < nb; b++) {
+        if (!good[(size_t)b] && retry) {   // the 8-bit decoder gave up: the float one has the whole 60 iterations
+            llrs(cells[(size_t)b], noiseVar, llr);
+            good[(size_t)b] = code.decode(llr, 60, hard[(size_t)b]);
+        }
+        ok[(size_t)b] = good[(size_t)b] && finish(hard[(size_t)b], payload[(size_t)b]);
+    }
 }
 
 } // namespace atsc3

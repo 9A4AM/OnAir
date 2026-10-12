@@ -102,6 +102,38 @@ int main(int argc, char** argv) {
         CHECK(r.wrong == 0 && r.lastGoodSec > 2.3, "recovery after 100 ms of zeros");
         CHECK(r.missing < 16000 * 0.5, "100 ms of zeros cost %llu packets (the stream is about 14400 packets per second)", (unsigned long long)r.missing);
     }
+    // ---- a radio whose buffers overflow now and then (USB, Ethernet): runs of samples lost at random times, as many as 40 a second. The lock must
+    // hold (the frame grid found again at once, lost frames counted from the PN phase), and what the gaps did not take must decode.
+    CASE("random drops") {
+        struct D { const char* name; Header h; Mapping m; Rate rt; bool mode2; double perSec; int lo, hi; double cfo, ppm; bool echo; double minFrac; bool bw6 = false; };
+        const D cases[] = {
+            {"PN945 16QAM 0.6, 20/s of 0.1 .. 3k samples", Header::Pn945, Mapping::Qam16, Rate::R06, false, 20, 100, 3000, 0, 0, false, 0.80},
+            {"PN945 16QAM 0.8 mode 2, echo, cfo, ppm", Header::Pn945, Mapping::Qam16, Rate::R08, true, 20, 100, 3000, 3200, 20, true, 0.45},
+            {"PN945 64QAM 0.6, drops of 1 .. 9 frames", Header::Pn945, Mapping::Qam64, Rate::R06, false, 8, 7000, 55000, -800, -5, false, 0.55},
+            {"PN420 4QAM 0.4, 40/s", Header::Pn420, Mapping::Qam4, Rate::R04, false, 40, 100, 5000, 1500, 10, true, 0.75},
+            {"PN595 32QAM 0.8, 20/s", Header::Pn595, Mapping::Qam32, Rate::R08, false, 20, 100, 3000, 0, 0, false, 0.70},
+            {"PN595 4QAM-NR 0.8, drops into the header", Header::Pn595, Mapping::Qam4Nr, Rate::R08, false, 30, 300, 1200, -2500, 0, false, 0.70},
+            {"6 MHz PN945 16QAM 0.6 fixed phase, 20/s", Header::Pn945, Mapping::Qam16, Rate::R06, false, 20, 100, 3000, 900, -15, true, 0.70, true},
+        };
+        for (const D& c : cases) {
+            Scenario o = base(c.h, 10e6, 28, 3.0);
+            o.sc = makeSignal(c.h, c.m, c.rt, c.mode2, 10e6, 28);
+            o.sc.cfoHz = c.cfo; o.sc.sroPpm = c.ppm;
+            if (c.bw6) { o.sc.symbolRate = symbolRateFor(6); o.sc.tx.phaseRotate = false; }
+            if (c.echo) o.sc.echoes.push_back({-4.0, 37.0});
+            o.dropsPerSec = c.perSec; o.dropMin = c.lo; o.dropMax = c.hi;
+            const Result r = run(o);
+            int lost = 0;
+            for (const std::string& l : r.log) if (l.find("lock lost") != std::string::npos || l.find("frames found") != std::string::npos) lost++;
+            printf("  %-48s %llu samples lost; %llu good, %llu wrong, %llu missing, last packet %.2f s, lock found %d time(s)\n", c.name, (unsigned long long)r.dropped,
+                   (unsigned long long)r.good, (unsigned long long)r.wrong, (unsigned long long)r.missing, r.lastGoodSec, lost);
+            if (getenv("DTMB_LOG")) for (const std::string& l : r.log) printf("      %s\n", l.c_str());
+            CHECK(r.wrong == 0, "%s: wrong packets", c.name);
+            CHECK(lost == 1, "%s: the lock was found %d times", c.name, lost);
+            CHECK(r.lastGoodSec > 2.6, "%s: last packet at %.2f s", c.name, r.lastGoodSec);
+            CHECK(r.good >= c.minFrac * (r.good + r.missing), "%s: %.2f of the packets", c.name, (double)r.good / std::max<uint64_t>(1, r.good + r.missing));
+        }
+    }
     CASE("reset") {
         Scenario o = base(); o.seconds = 2.0; o.resetAt = 0.8;
         const Result r = run(o);

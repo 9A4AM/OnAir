@@ -9,11 +9,13 @@ namespace dect2 {
 
 static double bessel0(double x) { double s = 1, t = 1; for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; } return s; }
 
-bool RationalResampler::configure(double inRate, double outRate, double* relError) {
+bool RationalResampler::configure(double inRate, double outRate, double* relError, double occupiedHz) {
     double target = outRate / inRate;
     int bestL = 0, bestM = 0;
     double bestErr = 1e9;
-    for (int L = 1; L <= 128; L++) {
+    // up to 1024 phases: the radios' own rates need it to be exact (2.5 -> 2.048 Msps for DAB on an Airspy R2 is 512/625; with at most 128
+    // the nearest fraction was 100 ppm off, which cost DAB 13 dB of SNR). One phase is 2*H taps, so 1024 phases are 64k floats.
+    for (int L = 1; L <= 1024; L++) {
         int M = (int)std::lround(L / target);
         if (M < 1) continue;
         double err = std::fabs((double)L / M - target) / target;
@@ -25,8 +27,21 @@ bool RationalResampler::configure(double inRate, double outRate, double* relErro
     int g = std::gcd(bestL, bestM);
     L_ = bestL / g; M_ = bestM / g;
     // kernel: lowpass at the lower of the two Nyquist rates, normalised to the input rate
-    const double fc = 0.5 * std::min(1.0, target) * 0.985;
+    double fc = 0.5 * std::min(1.0, target) * 0.985;
     H_ = target < 0.99 ? 32 : 16;
+    double beta = 7.0;
+    if (occupiedHz > 0 && target < 0.99 && occupiedHz < outRate) {
+        // The signal only fills occupiedHz of the output band, so only what folds into it has to be stopped: the transition band can run from
+        // the signal edge to where the first alias reaches the signal edge, a much wider one than the generic design assumes. Kaiser's estimate
+        // of the length for 65 dB: far fewer taps per output sample (the cost of the resampler is the taps), with the same alias rejection.
+        const double fp = 0.5 * occupiedHz, fs = outRate - fp;
+        const double dw = (fs - fp) / inRate;
+        const double atten = 65.0;
+        const int taps = (int)std::ceil((atten - 7.95) / (2.285 * 2 * M_PI * dw)) + 1;
+        H_ = std::max(8, std::min(H_, ((taps + 1) / 2 + 3) / 4 * 4));   // a whole number of 8 tap blocks: desamp finishes a remainder with scalar code
+        fc = 0.5 * (fp + fs) / inRate;
+        beta = 0.1102 * (atten - 8.7);
+    }
     T_ = 2 * H_;
     taps_.assign(L_, std::vector<float>(T_));
     base_.assign(L_, 0);
@@ -34,7 +49,6 @@ bool RationalResampler::configure(double inRate, double outRate, double* relErro
     // n_p such that (n_p * M) mod L = p
     std::vector<int> nOf(L_);
     for (int n = 0; n < L_; n++) nOf[(int)(((long long)n * M_) % L_)] = n;
-    const double beta = 7.0;
     for (int p = 0; p < L_; p++) {
         int np = nOf[p];
         long long num = (long long)np * M_;

@@ -23,17 +23,31 @@ void FecDecoder::reset() {
     llrQueue_.clear(); carry_.clear(); bits_.clear(); bytes_.clear(); after_.clear(); out_.clear();
     bitsDropped_ = 0; bitOffset_ = -1; syncBytePos_ = -1;
     deint_ = ConvInterleaver(true);
-    groupIdx_ = 0; haveGroup_ = false; warm_ = 0; blocksSinceSync_ = 0; syncMisses_ = 0;
+    groupIdx_ = 0; haveGroup_ = false; warm_ = 0; blocksSinceSync_ = 0; syncMisses_ = 0; syncSearches_ = 0;
 }
 
 void FecDecoder::pushSymbol(const cf32* cells, const float* n0, int symIdx) {
-    const int N = dataCarriers(p_.mode), m = bitsPerCell(p_.mod);
+    const int N = dataCarriers(p_.mode), v = bitsPerCell(p_.mod);
+    // Hierarchical modulation: the high-priority stream is the first two bits of every cell (y0, y1: the quadrant), bit-interleaved by
+    // branches I0 and I1 exactly like QPSK, and coded at the HP rate. The LP stream is the other v - 2 bits (branches I2..), at the LP rate.
+    const int m = p_.hier ? (lp_ ? v - 2 : 2) : v;
     static thread_local std::vector<cf32> c2;
     static thread_local std::vector<float> n2, llr, llr2;
     c2.resize(N); n2.resize(N); llr.resize((size_t)N * m); llr2.resize((size_t)N * m);
     symbolDeinterleave(p_.mode, symIdx, cells, n0, c2.data(), n2.data());
-    demap(c2.data(), n2.data(), N, p_.mod, p_.hier, llr.data());
-    bitDeinterleave(llr.data(), p_.mod, N, llr2.data());
+    if (p_.hier) {
+        static thread_local std::vector<float> full;
+        full.resize((size_t)N * v);
+        demap(c2.data(), n2.data(), N, p_.mod, p_.hier, full.data());
+        if (lp_) bitDeinterleaveLp(full.data(), p_.mod, N, llr2.data());
+        else {
+            for (int i = 0; i < N; i++) { llr[(size_t)i * 2] = full[(size_t)i * v]; llr[(size_t)i * 2 + 1] = full[(size_t)i * v + 1]; }
+            bitDeinterleave(llr.data(), kQpsk, N, llr2.data());
+        }
+    } else {
+        demap(c2.data(), n2.data(), N, p_.mod, p_.hier, llr.data());
+        bitDeinterleave(llr.data(), p_.mod, N, llr2.data());
+    }
     llrQueue_.insert(llrQueue_.end(), llr2.begin(), llr2.end());
     st_.symbols++;
     // decode in blocks of 16 symbols (the carry gives the trellis its history)
@@ -41,7 +55,7 @@ void FecDecoder::pushSymbol(const cf32* cells, const float* n0, int symIdx) {
 }
 
 void FecDecoder::process(bool) {
-    const int rate = p_.crHp;
+    const int rate = p_.hier && lp_ ? p_.crLp : p_.crHp;
     const int k = kRateK[rate];
     if (llrQueue_.empty()) return;
     // normalise the soft values: the demapper's LLRs scale with 1/noise, the Viterbi works on small integers
@@ -112,11 +126,19 @@ void FecDecoder::process(bool) {
                 const size_t dropBits = (size_t)bestOff + 8 * (size_t)bestPos;
                 bits_.erase(bits_.begin(), bits_.begin() + dropBits);
                 st_.syncLocked = true;
+                syncSearches_ = 0;
                 deint_ = ConvInterleaver(true);
                 warm_ = 12;
                 after_.clear();
             } else if (bits_.size() > 8 * 204 * 40) {
-                bits_.erase(bits_.begin(), bits_.begin() + 8 * 204 * 20); // nothing found: look further on
+                // Nothing found: look further on, keeping only the newest bits. One decoding block brings far more than 20 packets (267 at
+                // 64-QAM 3/4 in 8K), so dropping a fixed 20 let the backlog grow without end while the signal could not be decoded: every
+                // search scanned all of it (the receiver fell behind the radio within seconds), and the bad bits at the start held the
+                // 3-in-4 test back for seconds after the signal had become fine.
+                bits_.erase(bits_.begin(), bits_.end() - 8 * 204 * 20);
+                // the puncturing phase was picked on the first block, which may have been noise: pick it again about every half second
+                // (the pick decodes the block once per phase, so not much more often)
+                if (++syncSearches_ >= 32) { syncSearches_ = 0; st_.phaseLocked = false; carry_.clear(); }
             }
         }
         if (bitOffset_ < 0) return;

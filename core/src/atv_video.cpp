@@ -80,6 +80,44 @@ struct AtvVideo::Impl {
     double noiseVar = 0;
     bool gainValid = false;
     double carrierAmp = 0, cnVar = 0, noiseScale = 1;
+    bool fmVideo = false;                       // FM video (analog FPV): the levels follow the baseline of an AC coupled transmitter
+    // ---- polarity and raster
+    int pol = 1;                                // 1 negative modulation (sync = most carrier), -1 positive (A, C, E, L): the input is negated
+    bool mirroredHint = false;                  // the receiver found the channel turned round (A, L')
+    double TrMeas = 0;                          // positive modulation: the measured sync tip (Tr itself is derived from blanking)
+    // The line rasters the decoder can lock to; the 625 and 525-line ones share a group (the same sync pulse, line periods 0.7 % apart)
+    struct Raster { double lineUs, syncUs, wMin, wMax, spMin, spMax, medMin, medMax, pMin, pMax, nMin, nMax, bMin, bMax; };
+    static const Raster& raster(int g) {
+        static const Raster r[3] = {
+            {64.0, 4.7, 3.9, 5.6, 62.5, 65.5, 63.2, 64.4, 62.8, 64.9, 3.3, 6.4, 15, 40},          // 625 and 525 lines
+            {98.765, 9.0, 7.4, 10.8, 96.0, 101.5, 97.5, 100.0, 97.0, 100.5, 6.5, 12.5, 25, 46},  // 405 lines (A)
+            {48.840, 2.5, 1.9, 3.2, 47.3, 50.3, 48.2, 49.5, 48.0, 49.7, 1.6, 3.6, 12, 23}};      // 819 lines (E)
+        return r[g < 0 ? 0 : g > 2 ? 2 : g];
+    }
+    static int rasterOf(int lines) { return lines == 405 ? 1 : lines == 819 ? 2 : 0; }
+    int rast = 0;                               // the raster group of the line loop
+    // the polarity the forced system asks for (0: free, found by trial)
+    int forcedPol() const { return fmVideo ? 1 : prm.forceSys >= 0 ? (atvSysPositive(prm.forceSys) ? -1 : 1) : 0; }   // FM video: the receiver tries the polarity
+    // the decoder's input changes sign: everything it holds of the signal does too (all of it is linear in the input)
+    void flipPolarity() {
+        pol = -pol;
+        for (size_t k = 0; k < kRing; k++) { rv[k] = -rv[k]; ri[k] = -ri[k]; rq[k] = -rq[k]; vsr[k] = -vsr[k]; m1r[k] = -m1r[k]; }
+        sum1 = -sum1; sum2 = -sum2; prevVs = -prevVs;
+        for (float& a : acq) a = -a;
+    }
+    // where the levels are measured on a line (us from 0H): the sync tip, the back porch and the front porch (fpB < fpA: none)
+    void porches(double& tA, double& tB, double& bpA, double& bpB, double& fpA, double& fpB) const {
+        const AtvFormat& F = fmt;
+        if (F.lines == 625 || F.lines == 525) {
+            tA = 1.4; tB = F.syncUs - 0.7;
+            bpA = F.lines == 625 ? 8.3 : 8.1; bpB = F.lines == 625 ? 10.0 : 9.1;
+            fpA = -1.15; fpB = -0.35;
+        } else {
+            tA = 0.3 * F.syncUs; tB = 0.8 * F.syncUs;
+            bpA = F.syncUs + 0.45 * (F.blankEndUs - F.syncUs); bpB = F.blankEndUs - 0.4;
+            if (F.frontPorchUs >= 1.2) { fpA = -(F.frontPorchUs - 0.4); fpB = -0.35; } else { fpA = 0; fpB = -1; }
+        }
+    }
     double phErr2 = 1;
     int phGood = 0;
     bool phaseLockedFlag = false;
@@ -163,6 +201,7 @@ struct AtvVideo::Impl {
     void fullReset() {
         std::fill(rv.begin(), rv.end(), 0.f); std::fill(ri.begin(), ri.end(), 0.f); std::fill(rq.begin(), rq.end(), 0.f); std::fill(vsr.begin(), vsr.end(), 0.f); std::fill(m1r.begin(), m1r.end(), 0.f);
         nAbs = 0;
+        pol = forcedPol() < 0 ? -1 : 1;
         sum1 = sum2 = 0; smoothCount = 0;
         resetSync();
         counters_reset();
@@ -178,7 +217,7 @@ struct AtvVideo::Impl {
         acq.clear(); acqStart = 0;
         levelsValid = false; loopRunning = false;
         pState = 0; prevVs = 0;
-        P = Pslow = 64e-6 * fv; tNext = 0; goodRun = missRun = oogRun = 0; syncQ = 0;
+        P = Pslow = raster(rast).lineUs * 1e-6 * fv; tNext = 0; goodRun = missRun = oogRun = 0; syncQ = 0;
         lineQ.clear();
         bCount = 0; haveVsync = false; vsyncMiss = 0; vbiPending = false;
         gainValid = false; Bline = 0; noiseVar = 0;
@@ -192,20 +231,29 @@ struct AtvVideo::Impl {
     }
 
     // ------------------------------------------------------------------------------ the standard
+    // The system from what is known: the line count, the polarity, the sound carrier spacing and whether the channel is turned round.
+    // H and K' differ from B/G and D/K only in the width of the vestigial sideband: they are found only when chosen.
     int sysFromHints(int lines) const {
         if (prm.forceSys >= 0) return prm.forceSys;
         if (lines == 525) return kAtvM;
+        if (lines == 405) return kAtvA;
+        if (lines == 819) return kAtvE;
+        if (pol < 0) {
+            if (mirroredHint) return kAtvLp;
+            if (soundSpacing > 5.4 && soundSpacing < 5.6) return kAtvC;
+            return kAtvL;
+        }
         if (soundSpacing > 5.9 && soundSpacing < 6.1) return kAtvI;
-        if (soundSpacing > 6.4) return kAtvDK;
+        if (soundSpacing > 6.4 && soundSpacing < 6.6) return kAtvDK;
         if (soundSpacing > 4.4 && soundSpacing < 4.6) return kAtvN;
         return kAtvG;
     }
 
     void makeFormat(int lines) {
+        if (lines == 405 || lines == 819) colourKind = kAtvMono;     // the 405 and 819-line systems had no colour
         int col = colourKind >= 0 ? colourKind : kAtvMono;
         int sys = sysFromHints(lines);
-        if (lines == 525) sys = kAtvM;
-        if (lines == 625 && sys == kAtvM) sys = kAtvG;
+        if (atvSysLines(sys) != lines) sys = lines == 525 ? kAtvM : lines == 405 ? kAtvA : lines == 819 ? kAtvE : pol < 0 ? kAtvL : kAtvG;
         AtvFormat f;
         if (!atvMakeFormat(sys, col, f)) { if (!atvMakeFormat(sys, kAtvMono, f)) atvMakeFormat(kAtvG, kAtvMono, f); }
         if (prm.setupMode == 0) f.setup = 0;
@@ -239,9 +287,14 @@ struct AtvVideo::Impl {
                 size_t done = 0;
                 while (done < m) {
                     const size_t idx = (size_t)((n0 + done) & kMask), c = std::min(m - done, kRing - idx);
-                    std::memcpy(&rv[idx], v + k0 + done, c * sizeof(float));
-                    std::memcpy(&ri[idx], i + k0 + done, c * sizeof(float));
-                    std::memcpy(&rq[idx], q + k0 + done, c * sizeof(float));
+                    if (pol > 0) {
+                        std::memcpy(&rv[idx], v + k0 + done, c * sizeof(float));
+                        std::memcpy(&ri[idx], i + k0 + done, c * sizeof(float));
+                        std::memcpy(&rq[idx], q + k0 + done, c * sizeof(float));
+                    } else {
+                        // positive modulation: the decoder works on the negated signal, so that the sync tip is the largest value here too
+                        for (size_t t = 0; t < c; t++) { rv[idx + t] = -v[k0 + done + t]; ri[idx + t] = -i[k0 + done + t]; rq[idx + t] = -q[k0 + done + t]; }
+                    }
                     done += c;
                 }
             }
@@ -335,8 +388,9 @@ struct AtvVideo::Impl {
 
     void onPulse(double t0, double t1) {
         const double w = (t1 - t0) / spu;
-        if (w >= 3.3 && w <= 6.4) normalPulse(t0, t1);
-        else if (w > 15 && w < 40) broadPulse(t0);
+        const Raster& R = raster(rast);
+        if (w >= R.nMin && w <= R.nMax) normalPulse(t0, t1);
+        else if (w > R.bMin && w < R.bMax) broadPulse(t0);
     }
 
     void normalPulse(double t0, double t1) {
@@ -346,7 +400,7 @@ struct AtvVideo::Impl {
             const double alpha = goodRun < 8 ? 0.4 : 0.12, beta = goodRun < 8 ? 0.02 : 0.004;
             const double tg = tNext + alpha * e;
             P += beta * e;
-            P = std::min(std::max(P, 62.8e-6 * fv), 64.9e-6 * fv);
+            P = std::min(std::max(P, raster(rast).pMin * 1e-6 * fv), raster(rast).pMax * 1e-6 * fv);
             Pslow += (P - Pslow) * (1.0 / 2048);
             lineQ.push_back({tg, true, ++lineNo});
             tNext = tg + P;
@@ -391,7 +445,7 @@ struct AtvVideo::Impl {
         const double half = 0.5 * P;
         if (bCount > 0 && std::fabs((t0 - bLast) - half) < 0.18 * P) { bCount++; bLast = t0; }
         else { bCount = 1; bFirst = bLast = t0; }
-        const int need = fmt.lines == 525 ? 6 : 5;
+        const int need = fmt.broadPulses;
         if (fmtKnown && bCount == need) vsync(bFirst);
     }
 
@@ -436,48 +490,72 @@ struct AtvVideo::Impl {
     }
     void scan(double th, double hy, std::vector<Cr>& out) const { scanArr(acq.data(), acq.size(), th, hy, out); }
 
-    bool acquire() {
-        const size_t n = acq.size();
+    // What one look at a stretch of slicer signal found (analyse() has no side effects; commit() starts the loop with it)
+    struct Acq {
+        int group = 0, lines = 625;
+        double th = 0, hy = 0, T = 0, B = 0, Pm = 0, lastT = 0;   // lastT: the start of the last line on the fit, in samples of the stretch
+        double nin = 0, expect = 0;                                // pulses on the fit, and lines in the stretch
+    };
+
+    bool analyse(const std::vector<float>& a, Acq& r) const {
+        const size_t n = a.size();
         std::vector<float> sub;
-        for (size_t k = 0; k < n; k += 5) sub.push_back(acq[k]);
+        for (size_t k = 0; k < n; k += 5) sub.push_back(a[k]);
         std::sort(sub.begin(), sub.end());
         const double lo = sub[(size_t)(sub.size() * 0.02)], hi = sub[(size_t)(sub.size() * 0.997)];
         if (hi - lo < 1e-9) return false;
+        // the rasters to look for: all of them, or the one of the system the user chose
+        int g0 = 0, g1 = 2;
+        if (prm.forceSys >= 0) g0 = g1 = rasterOf(atvSysLines(prm.forceSys));
         // the threshold that gives the most pulses of the width of a line sync
-        int bestCount = 0;
-        std::vector<std::pair<double, int>> counts;
+        int bestCount[3] = {0, 0, 0};
+        std::vector<std::pair<double, int>> counts[3];
         std::vector<Cr> pl;
         // the search over thresholds runs on a copy with every 4th sample (means of four): widths of 4 us stay clear of the limits, and a failed
         // attempt, which is what a weak or no signal gives every 25 ms, costs a quarter
         std::vector<float> dec(n / 4);
-        for (size_t k = 0; k < dec.size(); k++) dec[k] = 0.25f * (acq[4 * k] + acq[4 * k + 1] + acq[4 * k + 2] + acq[4 * k + 3]);
+        for (size_t k = 0; k < dec.size(); k++) dec[k] = 0.25f * (a[4 * k] + a[4 * k + 1] + a[4 * k + 2] + a[4 * k + 3]);
         for (int s = 1; s <= 28; s++) {
             const double f = 0.03 + 0.02 * s;
             const double th = hi - f * (hi - lo);
             scanArr(dec.data(), dec.size(), th, 0.03 * (hi - lo), pl);
-            int c = 0;
-            for (const auto& p : pl) { const double w = 4 * (p.t1 - p.t0) / spu; if (w >= 3.9 && w <= 5.6) c++; }
-            counts.push_back({th, c});
-            bestCount = std::max(bestCount, c);
+            for (int g = g0; g <= g1; g++) {
+                const Raster& R = raster(g);
+                int c = 0;
+                for (const auto& p : pl) { const double w = 4 * (p.t1 - p.t0) / spu; if (w >= R.wMin && w <= R.wMax) c++; }
+                counts[g].push_back({th, c});
+                bestCount[g] = std::max(bestCount[g], c);
+            }
         }
         const double secs = (double)n / fv;
-        if (bestCount < 0.4 * secs * 15625 * 0.9) return false;
+        // the raster with the largest share of its lines found; more pulses than it has lines means the pulses are something else (the blanking
+        // of a faster raster, cut at a low threshold, is as wide as the sync pulse of a slower one)
+        int grp = -1;
+        double bestFrac = 0;
+        for (int g = g0; g <= g1; g++) {
+            const double fr = bestCount[g] * raster(g).lineUs * 1e-6 / secs;
+            if (fr > bestFrac && fr < 1.06) { bestFrac = fr; grp = g; }
+        }
+        if (grp < 0) return false;
+        const Raster& R = raster(grp);
+        const double lineRate = 1e6 / R.lineUs;
+        if (bestCount[grp] < 0.4 * secs * lineRate * 0.9) return false;
         // the middle of the thresholds that are nearly as good
         std::vector<double> good;
-        for (auto& c : counts) if (c.second >= 0.92 * bestCount) good.push_back(c.first);
+        for (auto& c : counts[grp]) if (c.second >= 0.92 * bestCount[grp]) good.push_back(c.first);
         const double th = good[good.size() / 2];
-        scan(th, 0.03 * (hi - lo), pl);
+        scanArr(a.data(), a.size(), th, 0.03 * (hi - lo), pl);
         std::vector<Cr> np;
-        for (const auto& p : pl) { const double w = (p.t1 - p.t0) / spu; if (w >= 3.9 && w <= 5.6) np.push_back(p); }
+        for (const auto& p : pl) { const double w = (p.t1 - p.t0) / spu; if (w >= R.wMin && w <= R.wMax) np.push_back(p); }
         // The line period: the neighbouring pulses give it roughly, then every pulse gets the number of its line (from the spacing to the one before)
         // and a straight line through (number, time) is fitted, throwing away the pulses that are not on it. With noise the edges jitter, but
         // hundreds of pulses fix the period to a few ppm.
         std::vector<double> sp;
-        for (size_t k = 1; k < np.size(); k++) { const double d = (np[k].t0 - np[k - 1].t0) / spu; if (d > 62.5 && d < 65.5) sp.push_back(d); }
+        for (size_t k = 1; k < np.size(); k++) { const double d = (np[k].t0 - np[k - 1].t0) / spu; if (d > R.spMin && d < R.spMax) sp.push_back(d); }
         if (sp.size() < 40) return false;
         std::sort(sp.begin(), sp.end());
         const double med = sp[sp.size() / 2];
-        if (med < 63.2 || med > 64.4) return false;
+        if (med < R.medMin || med > R.medMax) return false;
         std::vector<double> ks(np.size(), 0.0);
         for (size_t k = 1; k < np.size(); k++) ks[k] = ks[k - 1] + std::round((np[k].t0 - np[k - 1].t0) / (med * spu));
         std::vector<char> in(np.size(), 1);
@@ -496,20 +574,30 @@ struct AtvVideo::Impl {
             nin = 0;
             for (size_t k = 0; k < np.size(); k++) { in[k] = std::fabs(np[k].t0 - (T0 + ks[k] * Pm)) < tol; if (in[k]) nin++; }
         }
-        if ((double)nin < 0.4 * secs * 15625 || Pm / spu < 63.2 || Pm / spu > 64.4) return false;
+        if ((double)nin < 0.4 * secs * lineRate || Pm / spu < R.medMin || Pm / spu > R.medMax) return false;
         size_t lastIn = 0;
         for (size_t k = 0; k < np.size(); k++) if (in[k]) lastIn = k;
-        const int lines = (std::fabs(Pm / spu - 64.0) < std::fabs(Pm / spu - 63.5556)) ? 625 : 525;
+        r.group = grp;
+        r.lines = grp == 1 ? 405 : grp == 2 ? 819 : (std::fabs(Pm / spu - 64.0) < std::fabs(Pm / spu - 63.5556)) ? 625 : 525;
         // levels
         double tipS = 0;
         int tn = 0;
-        for (size_t k = 0; k < np.size(); k++) { if (!in[k]) continue; const size_t c = (size_t)(0.5 * (np[k].t0 + np[k].t1)); if (c < acq.size()) { tipS += acq[c]; tn++; } }
-        const double T = tipS / std::max(1, tn), B = 2 * th - T;
-        Tr = T; Br = B; thr = th; hyst = 0.18 * (T - B);
-        if (!(T > B)) return false;
-        P = Pslow = Pm;
+        for (size_t k = 0; k < np.size(); k++) { if (!in[k]) continue; const size_t c = (size_t)(0.5 * (np[k].t0 + np[k].t1)); if (c < a.size()) { tipS += a[c]; tn++; } }
+        r.T = tipS / std::max(1, tn); r.B = 2 * th - r.T;
+        if (!(r.T > r.B)) return false;
+        r.th = th; r.hy = 0.18 * (r.T - r.B);
+        r.Pm = Pm; r.lastT = T0 + ks[lastIn] * Pm;
+        r.nin = (double)nin; r.expect = secs * lineRate;
+        return true;
+    }
+
+    void commit(const Acq& r) {
+        Tr = r.T; Br = r.B; thr = r.th; hyst = r.hy;
+        TrMeas = Tr;
+        rast = r.group;
+        P = Pslow = r.Pm;
         // the next line start after the data we hold
-        const double last = (double)acqStart + (T0 + ks[lastIn] * Pm) - dVs;
+        const double last = (double)acqStart + r.lastT - dVs;
         double tn0 = last + P;
         while (tn0 < (double)nAbs - 3 * P) tn0 += P;
         while (tn0 - P > (double)nAbs - 3 * P) tn0 -= P;
@@ -518,12 +606,44 @@ struct AtvVideo::Impl {
         lineQ.clear();
         acq.clear();
         pState = 0;
-        makeFormat(lines);
+        makeFormat(r.lines);
+        if (pol < 0) positiveLevels();
         {
-            char b[160];
-            snprintf(b, sizeof b, "analog TV: line sync found, %d lines, line period %.3f us", lines, P / spu);
+            char b[200];
+            snprintf(b, sizeof b, "analog TV: line sync found, %d lines, line period %.3f us, %s modulation", r.lines, P / spu, pol < 0 ? "positive" : "negative");
             doLog(b);
         }
+    }
+
+    // Positive modulation: the sync tip is the carrier at its lowest, where noise (and an envelope detector) say least about the level. The
+    // reference is the blanking level instead, with the sync tip where the standard puts it against blanking (0 % of the carrier: zero).
+    void positiveLevels() {
+        const double k = fmt.blankPct > 0 ? fmt.syncPct / fmt.blankPct : 0;
+        Tr = Br * k;
+        hyst = std::max(0.1 * (Tr - Br), 1e-9);
+        thr = 0.5 * (Tr + Br);
+    }
+
+    // The line sync in the stretch held: with the polarity in use, and when that finds no clear line structure (and the system is not forced),
+    // with the other one. The polarity that finds more lines wins: a negatively modulated signal turned over has no sync pulses, and the other way.
+    bool acquire() {
+        const int fp = forcedPol();
+        if (fp != 0 && fp != pol) flipPolarity();
+        Acq r1;
+        const bool ok1 = analyse(acq, r1);
+        if (fp == 0 && (!ok1 || r1.nin < 0.8 * r1.expect)) {
+            std::vector<float> neg(acq.size());
+            for (size_t k = 0; k < acq.size(); k++) neg[k] = -acq[k];
+            Acq r2;
+            const bool ok2 = analyse(neg, r2);
+            if (ok2 && (!ok1 || r2.nin > 1.15 * r1.nin)) {
+                flipPolarity();
+                commit(r2);
+                return true;
+            }
+        }
+        if (!ok1) return false;
+        commit(r1);
         return true;
     }
 
@@ -556,44 +676,91 @@ struct AtvVideo::Impl {
         return s / (double)(ib - ia + 1);
     }
 
+    // FM video (analog FPV): the transmitter is AC coupled, so the long broad pulses of the field sync shift the whole baseline and it creeps back
+    // over the next lines. The threshold of the slicer follows the levels of the lines whose pulse was found; once the baseline moved by half the
+    // sync height no pulse is found any more and the levels would stay where they were: the decoder gave up after 40 lines. The levels of a missed
+    // line are measured where its pulse is due instead, and used when they look like a sync pulse (about the height known).
+    void trackLevelsOnMiss(double tL) {
+        const double d0 = Tr - Br;
+        if (d0 <= 0) return;
+        double tA, tB, bpA, bpB, fpA, fpB;
+        porches(tA, tB, bpA, bpB, fpA, fpB);
+        const double tip = meanRaw(tL + tA * spu, tL + tB * spu);
+        const double bl = blankingAt(tL, bpA, bpB, fpA, fpB);
+        const double depth = tip - bl;
+        if (depth < 0.6 * d0 || depth > 1.5 * d0) return;
+        const double a = 1.0 / 8;
+        Tr += (tip - Tr) * a; Br += (bl - Br) * a;
+        hyst = std::max(0.1 * (Tr - Br), 1e-9);
+        thr = 0.5 * (Tr + Br);
+    }
+
+    // the blanking level of a line: the back porch and the front porch, weighted by their lengths
+    double blankingAt(double tL, double bpA, double bpB, double fpA, double fpB) const {
+        const double b1m = meanRaw(tL + bpA * spu, tL + bpB * spu);
+        if (fpB <= fpA) return b1m;
+        const double b2m = meanRaw(tL + fpA * spu, tL + fpB * spu);
+        const double n1 = (bpB - bpA) * spu, n2 = (fpB - fpA) * spu;
+        return (b1m * n1 + b2m * n2) / (n1 + n2);
+    }
+
     void processLine(const LineRec& r) {
         const double tL = r.tL;
         curNo = r.no;
         lineCount++;
         const AtvFormat& F = fmt;
+        if (!r.hadPulse && fmVideo && levelsValid && loopRunning) trackLevelsOnMiss(tL);
         // ---- levels from this line's sync pulse and porches
         double tip = 0, bl = 0;
         if (r.hadPulse) {
-            tip = meanRaw(tL + 1.4 * spu, tL + (F.syncUs - 0.7) * spu);
-            double bpA = F.lines == 625 ? 8.3 : 8.1, bpB = F.lines == 625 ? 10.0 : 9.1;
-            const double b1m = meanRaw(tL + bpA * spu, tL + bpB * spu), b2m = meanRaw(tL - 1.15 * spu, tL - 0.35 * spu);
-            const double n1 = (bpB - bpA) * spu, n2 = 0.8 * spu;
-            bl = (b1m * n1 + b2m * n2) / (n1 + n2);
+            double tA, tB, bpA, bpB, fpA, fpB;
+            porches(tA, tB, bpA, bpB, fpA, fpB);
+            tip = meanRaw(tL + tA * spu, tL + tB * spu);
+            const double b1m = meanRaw(tL + bpA * spu, tL + bpB * spu);
+            bl = blankingAt(tL, bpA, bpB, fpA, fpB);
             // noise on the porches (variance about the mean)
             // (SECAM has the subcarrier on the back porch: the sync tip serves there)
-            if (colourKind == kAtvSecam) { bpA = 1.4; bpB = F.syncUs - 0.7; }
+            if (colourKind == kAtvSecam) { bpA = tA; bpB = tB; }
             const double nm = colourKind == kAtvSecam ? tip : b1m;
             double v1 = 0; int c1 = 0;
             for (uint64_t n = (uint64_t)std::ceil(tL + bpA * spu); n <= (uint64_t)std::floor(tL + bpB * spu); n++) { const double d = rvAt(n) - nm; v1 += d * d; c1++; }
             if (c1 > 3) { const double var = v1 / (c1 - 1); noiseVar += (var - noiseVar) * 0.03; if (noiseVar <= 0) noiseVar = var; }
             const double a = 1.0 / 16;
-            if (levelsRestart > 0) { Tr = tip; Br = bl; levelsRestart--; }
-            else { Tr += (tip - Tr) * a; Br += (bl - Br) * a; }
-            hyst = std::max(0.1 * (Tr - Br), 1e-9);
-            thr = 0.5 * (Tr + Br);
+            const bool posMod = pol < 0;
+            double& tipEma = posMod ? TrMeas : Tr;     // positive modulation: the measured tip is only reported, the gain comes from blanking
+            if (levelsRestart > 0) { tipEma = tip; Br = bl; levelsRestart--; }
+            else { tipEma += (tip - tipEma) * a; Br += (bl - Br) * a; }
+            if (posMod) positiveLevels();
+            else {
+                hyst = std::max(0.1 * (Tr - Br), 1e-9);
+                thr = 0.5 * (Tr + Br);
+            }
             if (Bline == 0) Bline = bl; else Bline += (bl - Bline) * 0.4;
             gainValid = Tr > Br;
-            // carrier phase at the sync tip, for the radio side
+            // The carrier phase for the radio side: at the sync tip (negative modulation, the carrier is largest there), or on blanking (positive
+            // modulation: there is no carrier at the sync tip). The rings hold the negated signal then: the phase is measured on it turned back.
             double si = 0, sq = 0, vi = 0, vq = 0; int cn = 0;
-            const uint64_t ta = (uint64_t)std::ceil(tL + 1.4 * spu), tb = (uint64_t)std::floor(tL + (F.syncUs - 0.7) * spu);
-            for (uint64_t n = ta; n <= tb; n++) { const float a1 = ri[n & kMask], b1v = rq[n & kMask]; si += a1; sq += b1v; vi += (double)a1 * a1; vq += (double)b1v * b1v; cn++; }
+            auto acc = [&](double ua, double ub) {
+                const uint64_t ta = (uint64_t)std::ceil(tL + ua * spu), tb = (uint64_t)std::floor(tL + ub * spu);
+                for (uint64_t n = ta; n <= tb; n++) { const float a1 = ri[n & kMask], b1v = rq[n & kMask]; si += a1; sq += b1v; vi += (double)a1 * a1; vq += (double)b1v * b1v; cn++; }
+            };
+            if (!posMod) acc(tA, tB);
+            else {
+                // the porches before the colour (burst or SECAM lead-in from 5.6 us) in 625 and 525 lines, all of the back porch in 405 and 819
+                const double ea = F.syncUs + 0.3, eb = (F.lines == 625 || F.lines == 525) ? 5.45 : bpB;
+                if (eb > ea) acc(ea, eb);
+                if (fpB > fpA) acc(fpA, fpB);
+            }
             if (cn > 3 && haveCarrierErr()) {
                 si /= cn; sq /= cn;
+                if (posMod) { si = -si; sq = -sq; }
                 const double amp = std::hypot(si, sq);
                 const double var = std::max(1e-12, (vi + vq) / cn - si * si - sq * sq);
                 const double snr = amp * amp / var;
                 const double ph = std::atan2(sq, si);
-                carrierAmp += (amp - carrierAmp) * 0.05;
+                // the peak carrier: the sync tip, or (positive) white, from the blanking level
+                const double peak = posMod && F.blankPct > 0 ? amp * 100.0 / F.blankPct : amp;
+                carrierAmp += (peak - carrierAmp) * 0.05;
                 cnVar = cnVar > 0 ? cnVar + (var - cnVar) * 0.03 : var;
                 if (syncQ > 0.5f) doCarrierErr(ph, std::min(1.0, snr / 12.0));
                 phErr2 += (ph * ph - phErr2) * 0.03;
@@ -624,8 +791,8 @@ struct AtvVideo::Impl {
             inVbi = x < 10.5 || x > half - 5.0;
         }
         secamLineOk = false;
-        if (F.lines == 625 && wantColour && r.hadPulse && gainValid && haveVsync && (colourKind < 0 || colourKind == kAtvSecam)) secamLine(tL, havePicture);
-        if (wantColour && r.hadPulse && gainValid && !inVbi) burstAndColour(tL, havePicture);
+        if ((F.lines == 625 || F.lines == 525) && wantColour && r.hadPulse && gainValid && haveVsync && (colourKind < 0 || colourKind == kAtvSecam)) secamLine(tL, havePicture);
+        if (wantColour && r.hadPulse && gainValid && !inVbi && (F.lines == 625 || F.lines == 525)) burstAndColour(tL, havePicture);
         if (havePicture) {
             extractPicture(tL, row, field);
             fieldLines++;
@@ -771,13 +938,19 @@ struct AtvVideo::Impl {
         const AtvFormat& F = fmt;
         if (colourKind < 0) {                      // still deciding what the colour is: every candidate gets a loop of its own
             if (cands.empty()) {
-                if (fmt.lines == 625) { cands.resize(2); cands[0].reset(4433618.75); cands[1].reset(3582056.25); }
-                else { cands.resize(2); cands[0].reset(455.0 / 2 * (4.5e6 / 286)); cands[1].reset(909.0 / 4 * (4.5e6 / 286)); }
+                // 625 lines: PAL at 4.43 and 3.58 MHz (PAL-N), and NTSC at the same two (NTSC 4.43, NTSC-N; not with positive modulation);
+                // 525 lines: NTSC and PAL-M
+                candKind.clear();
+                if (fmt.lines == 625) {
+                    const int nc = pol < 0 ? 2 : 4;
+                    cands.resize((size_t)nc);
+                    cands[0].reset(4433618.75); cands[1].reset(3582056.25); candKind = {kAtvPal, kAtvPal};
+                    if (nc == 4) { cands[2].reset(4433618.75); cands[3].reset(3582056.25); candKind.push_back(kAtvNtsc); candKind.push_back(kAtvNtsc); }
+                } else { cands.resize(2); cands[0].reset(455.0 / 2 * (4.5e6 / 286)); cands[1].reset(909.0 / 4 * (4.5e6 / 286)); candKind = {kAtvNtsc, kAtvPal}; }
                 candLines = 0;
             }
-            const bool pal625 = fmt.lines == 625;
             for (size_t k = 0; k < cands.size(); k++) {
-                const bool pal = pal625 ? true : (k == 1);
+                const bool pal = candKind[k] == kAtvPal;
                 const double nom = fmt.lines == 625 ? 3.0 / 14 : 0.2;
                 const bool fast = cands[k].lines < 40;
                 // a candidate that is neither a good tone nor locking is not worth the time: the loops are cheap, so all run
@@ -787,7 +960,7 @@ struct AtvVideo::Impl {
             return;
         }
         if (colourKind == kAtvSecam) return;                  // secamLine() does it
-        if (colourKind == kAtvMono) { colourLocked = false; return; }
+        if (colourKind == kAtvMono || fmt.fscHz <= 0) { colourLocked = false; return; }
         if (!mainLock.init) { mainLock.reset(F.fscHz); }
         const bool fast = mainLock.lines < 40;
         if (!stepLock(mainLock, tL, F.pal, F.burstAmp, fast ? 0.5 : 0.1, fast ? 0.04 : 0.004)) return;
@@ -811,6 +984,7 @@ struct AtvVideo::Impl {
         colourLocked = mainLock.lines > 30 && !killer;
     }
     int candLines = 0;
+    std::vector<int> candKind;                  // the colour system each candidate loop stands for
 
     void decideColour() {
         const int lines = fmt.lines;
@@ -819,24 +993,31 @@ struct AtvVideo::Impl {
         for (size_t k = 0; k < cands.size(); k++) {
             const Lock& c = cands[k];
             if (c.amp < 0.5 || c.lines < 50 || c.err2 > 0.4) continue;      // 0.4 rad^2: about 36 degrees rms; a loop that follows noise has more than 3
+            // A PAL loop also locks to an NTSC burst (the sum of two bursts at the same phase points anywhere it is turned to): PAL needs the
+            // burst to swing to either side of the U axis on alternate lines, by about 0.7 of its size.
+            if (candKind[k] == kAtvPal) {
+                const double nom = lines == 525 ? 0.2 : 3.0 / 14;
+                if (!(c.vacc[0] * c.vacc[1] < 0 && std::min(std::fabs(c.vacc[0]), std::fabs(c.vacc[1])) > 0.3 * nom * std::min(1.0, c.amp))) continue;
+            }
             if (c.err2 < bestErr) { bestErr = c.err2; best = (int)k; }
         }
         int kind = kAtvMono;
-        if (best >= 0) kind = lines == 625 ? kAtvPal : kAtvNtsc;
+        if (best >= 0) kind = candKind[(size_t)best];
         // SECAM: the subcarrier at the rest frequency of the line on the back porch, alternating line by line, or the identification lines of the
         // field blanking. A signal without either may still have them in a field or two: keep looking for a while before it counts as monochrome.
         bool secamFound = false;
-        if (best < 0 && lines == 625 && secamReady) {
+        if (best < 0 && (lines == 625 || lines == 525) && secamReady) {
             const bool viaLines = sLead >= 30 && sPairs >= 20 && sAlt >= 0.85 * sPairs;
             const bool viaField = sBottle >= 6;
             secamFound = viaLines || viaField;
             if (!secamFound && candLines < 700) return;
             if (secamFound) { kind = kAtvSecam; secamHow = viaLines ? (viaField ? 3 : 1) : 2; }
         }
-        // PAL-M is the second candidate of the 525-line systems
+        // PAL-M is the second candidate of the 525-line systems; PAL-N and NTSC-N use the 3.58 MHz subcarrier on 625 lines
         bool palM = best == 1 && lines == 525;
         bool palN = best == 1 && lines == 625;
-        if (kind == kAtvNtsc && palM) kind = kAtvPal;
+        const bool ntscN = best == 3 && lines == 625;
+        const bool ntsc443 = best == 2 && lines == 625;
         char b[400];
         {
             std::string d;
@@ -844,14 +1025,14 @@ struct AtvVideo::Impl {
             doLog(("analog TV: colour search:" + d).c_str());
         }
         if (secamFound) snprintf(b, sizeof b, "analog TV: colour search: SECAM (%s; lead-in found on %d lines, %d of %d pairs alternate, %d identification line pairs)", secamHow == 3 ? "lead-in on the lines and identification lines" : secamHow == 1 ? "lead-in on the lines" : "identification lines of the field blanking", sLead, sAlt, sPairs, sBottle);
-        else snprintf(b, sizeof b, "analog TV: colour search: %s", best < 0 ? "no colour subcarrier (monochrome)" : lines == 625 ? (palN ? "PAL-N burst" : "PAL burst") : (palM ? "PAL-M burst" : "NTSC burst"));
+        else snprintf(b, sizeof b, "analog TV: colour search: %s", best < 0 ? "no colour subcarrier (monochrome)" : lines == 625 ? (palN ? "PAL-N burst" : ntscN ? "NTSC-N burst (3.58 MHz)" : ntsc443 ? "NTSC 4.43 burst" : "PAL burst") : (palM ? "PAL-M burst" : "NTSC burst"));
         doLog(b);
         colourKind = prm.forceColour >= 0 ? prm.forceColour : kind;
         // PAL on N means the Argentine system, whose sound is at +4.5 MHz: the subcarrier decides here
-        if (palN) soundSpacing = 4.5;
+        if (palN || ntscN) soundSpacing = 4.5;
         makeFormat(lines);
         mainLock.reset(fmt.fscHz);
-        if (best >= 0 && colourKind == (lines == 625 ? kAtvPal : (palM ? kAtvPal : kAtvNtsc))) { mainLock = cands[(size_t)best]; }
+        if (best >= 0 && colourKind == candKind[(size_t)best]) { mainLock = cands[(size_t)best]; }
         cands.clear();
         burstEma = 1; killCount = 0; killer = false;
         if (colourKind == kAtvSecam) { colourLocked = true; secAmpEma = 1; secKill = 0; }
@@ -873,7 +1054,7 @@ struct AtvVideo::Impl {
     // The lead-in: the subcarrier at the rest frequency of the line from 5.6 us after 0H. 1 = D'R, 0 = D'B, -1 = nothing usable.
     // fHz and amp are what was measured (amp 0: nothing). The hard decision needs the frequency within 45 kHz of a rest frequency.
     int secamLead(double tL, double g, const std::vector<AtvSecam::cx>& bb, long sa, double& amp, double* fHz = nullptr) {
-        const double a = secamOut(tL + 6.6 * spu, sa), b = secamOut(tL + 9.9 * spu, sa);
+        const double a = secamOut(tL + 6.6 * spu, sa), b = secamOut(tL + std::min(9.9, fmt.blankEndUs - 0.4) * spu, sa);
         amp = 0;
         if (a < 0 || b >= (double)bb.size()) return -1;
         double f, am;
@@ -913,10 +1094,10 @@ struct AtvVideo::Impl {
         const double g = lineGain();
         if (!secamReady || g <= 0) return;
         const long hr = std::lround((tL - vsyncT) * 2.0 / P);
-        long H = ((long)F.broadStart[vsyncField] + hr) % 1250;
-        if (H < 0) H += 1250;
+        long H = ((long)F.broadStart[vsyncField] + hr) % F.halfLines;
+        if (H < 0) H += F.halfLines;
         const long L = (H >> 1) + 1;                                // the line number of the standard
-        if ((vsyncField == 0 && L >= 7 && L <= 15) || (vsyncField == 1 && L >= 320 && L <= 328)) { secamBottle(tL, g, L); return; }
+        if (F.lines == 625 && ((vsyncField == 0 && L >= 7 && L <= 15) || (vsyncField == 1 && L >= 320 && L <= 328))) { secamBottle(tL, g, L); return; }
         if (!havePicture) return;
         if (colourKind < 0) {                                       // colour search: does the lead-in alternate between the two rest frequencies?
             const long sa = secamSpan(tL + 1 * spu, tL + 14 * spu);
@@ -1298,6 +1479,8 @@ struct AtvVideo::Impl {
         if (gainValid && fmtKnown) {
             const double g = lineGain();
             i.syncTip = Tr > 0 ? (float)(100.0 * (Tr - Br) / Tr) : 0.f;       // sync height in percent of the peak carrier (nominal 26 / 25)
+            // positive modulation: blanking against the measured sync tip, in percent of the peak (white) carrier (nominal 30, or 25 in E)
+            if (pol < 0) i.syncTip = Br < 0 ? (float)(fmt.blankPct * (TrMeas - Br) / -Br) : 0.f;
             const double sig = std::sqrt(std::max(noiseVar, 1e-30)) / std::max(1e-9, g);
             i.snrDb = (float)std::min(60.0, std::max(0.0, 20 * std::log10(1.0 / std::max(sig, 1e-6))));
         }
@@ -1324,14 +1507,24 @@ void AtvVideo::setParams(const AtvVideoParams& p) {
     Impl& s = *p_;
     const bool re = p.forceSys != s.prm.forceSys || p.forceColour != s.prm.forceColour || p.setupMode != s.prm.setupMode || p.chromaDelayNs != s.prm.chromaDelayNs;
     s.prm = p;
+    // a forced system with the other polarity or another line count: the line search starts again
+    const int fp = s.forcedPol();
+    if ((fp != 0 && fp != s.pol) || (p.forceSys >= 0 && s.fmtKnown && atvSysLines(p.forceSys) != s.fmt.lines)) {
+        if (fp != 0 && fp != s.pol) s.flipPolarity();
+        s.resetSync();
+        return;
+    }
     if (re && s.fmtKnown) {
         if (p.forceColour >= 0 || !s.colourCapable) s.colourKind = s.startColour();
         s.makeFormat(s.fmt.lines);
     }
 }
 void AtvVideo::setSoundSpacing(double mhz) { p_->soundSpacing = mhz; }
+void AtvVideo::setMirrored(bool on) { p_->mirroredHint = on; }
+bool AtvVideo::positive() const { return p_->pol < 0; }
 void AtvVideo::setSlicerWidth(double us) { p_->setSlicerWidth(us); p_->fullReset(); }
 void AtvVideo::setNoiseScale(double s) { p_->noiseScale = s; }
+void AtvVideo::setFmVideo(bool on) { p_->fmVideo = on; }
 void AtvVideo::process(const float* v, const float* i, const float* q, size_t n) { p_->process(v, i, q, n); }
 bool AtvVideo::wantSyncDetector() const { return p_->phaseLockedFlag && p_->loopRunning; }
 void AtvVideo::syncDetectorChanged(bool on) {

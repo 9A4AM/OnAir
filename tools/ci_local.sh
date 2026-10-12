@@ -2,71 +2,109 @@
 # The CI checks, run on this Mac instead of GitHub:
 #   macOS    build (app, tools, tests) and run the tests
 #   Linux    the same in the onair-linux-dev Docker image (arm64, Colima)
-#   Windows  cross-build of the app, tools and tests with MinGW (no Wine here, so the Windows tests do not run)
+#   Windows  cross-build of the app, tools and tests with MinGW, and the tests run through Wine when it is installed (tools/wine_test.sh)
+# The three run at the same time (the Colima VM has 6 of the 10 cores, so one after the other left the Mac half idle), with progress
+# bars while they run (tools/ci_progress.sh draws them; it also works on its own in another window).
 #
 #   tools/ci_local.sh                 the fast tests (the "slow" label is skipped)
 #   tools/ci_local.sh --full          every test
+#   tools/ci_local.sh --build-only    the three builds, no tests (before every push)
 #   tools/ci_local.sh mac linux       only the named platforms (mac, linux, windows)
+#   tools/ci_local.sh --no-bars       plain output (for logs)
 #
 # Logs go to build/ci-logs/. The exit status is 0 only when every step passed.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOGS="$ROOT/build/ci-logs"
-JOBS=$(sysctl -n hw.ncpu 2>/dev/null || echo 8)
 LABEL=(-LE slow)
 PLATFORMS=()
+BARS=1
+BUILD_ONLY=0
 for a in "$@"; do
     case "$a" in
         --full) LABEL=() ;;
+        --no-bars) BARS=0 ;;
+        --build-only) BUILD_ONLY=1 ;;   # the three builds only, no tests: before every push, so that a build from source works
         mac|linux|windows) PLATFORMS+=("$a") ;;
-        *) echo "unknown argument: $a (use --full, mac, linux, windows)"; exit 2 ;;
+        *) echo "unknown argument: $a (use --full, --build-only, --no-bars, mac, linux, windows)"; exit 2 ;;
     esac
 done
 [ ${#PLATFORMS[@]} -eq 0 ] && PLATFORMS=(mac linux windows)
 mkdir -p "$LOGS"
+rm -f "$LOGS"/*.result
+touch "$LOGS/.start"   # ci_progress.sh ignores logs older than this
 
-RESULTS=()
-step() {   # step <name> <log> <command...>
+# Cores: the Mac tests and the two builds share the Mac's 10, the Linux stage has the VM's 6. CI=true everywhere: with everything
+# running at once the machines are busy, so the speed and real-time checks only print instead of failing (as on GitHub).
+MAC_JOBS=6; WIN_JOBS=4; LINUX_JOBS=6
+
+step() {   # step <name> <log> <command...>: runs it, writes "<ok|FAIL> <seconds> <name>" to <log>.result
     local name=$1 log=$2; shift 2
-    local t0=$SECONDS
-    printf '%-28s ' "$name"
-    if "$@" > "$log" 2>&1; then
-        printf 'ok      %4ds\n' $((SECONDS - t0)); RESULTS+=("ok    $name")
-    else
-        printf 'FAILED  %4ds  (%s)\n' $((SECONDS - t0)) "$log"; RESULTS+=("FAIL  $name")
-        grep -E '\*\*\*Failed|\*\*\*Timeout|^FAIL|error:' "$log" | head -15 | sed 's/^/    /'
-    fi
+    local t0=$SECONDS st=FAIL
+    if "$@" > "$log" 2>&1; then st=ok; fi
+    echo "$st $((SECONDS - t0)) $name" > "$log.result"
+    [ $st = ok ]
 }
 
-for p in "${PLATFORMS[@]}"; do
-    case "$p" in
-    mac)
-        step "macOS build" "$LOGS/mac-build.log" \
-            bash -c "cmake -S '$ROOT' -B '$ROOT/build' -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON && cmake --build '$ROOT/build' -j $JOBS"
-        # 4 at a time: the real-time tests need the cores
-        step "macOS tests" "$LOGS/mac-test.log" \
-            ctest --test-dir "$ROOT/build" -j 4 ${LABEL[@]+"${LABEL[@]}"} --output-on-failure --timeout 1500
-        ;;
-    linux)
-        if ! docker info > /dev/null 2>&1; then colima start > "$LOGS/colima.log" 2>&1; fi
-        # sources read-only, the build in a Docker volume so that it is incremental
-        step "Linux arm64 build" "$LOGS/linux-build.log" \
-            docker run --rm -v "$ROOT":/src:ro -v onair-build-ci:/b onair-linux-dev bash -c \
-            "cmake -S /src -B /b -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=OFF && cmake --build /b -j $JOBS"
-        # CI=true: the Colima VM is slower than the Mac, so the speed checks only print (as on GitHub);
-        # updater is left out: the image has no curl and the container no network
-        step "Linux arm64 tests" "$LOGS/linux-test.log" \
-            docker run --rm -e CI=true -v "$ROOT":/src:ro -v onair-build-ci:/b onair-linux-dev \
-            ctest --test-dir /b -j 4 ${LABEL[@]+"${LABEL[@]}"} -E '^updater$' --output-on-failure --timeout 1500
-        ;;
-    windows)
-        step "Windows build (MinGW)" "$LOGS/windows-build.log" \
-            bash -c "cmake -S '$ROOT' -B '$ROOT/build-windows' -DCMAKE_TOOLCHAIN_FILE='$ROOT/packaging/windows/mingw-toolchain.cmake' -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON && cmake --build '$ROOT/build-windows' -j $JOBS"
-        ;;
-    esac
-done
+mac() {
+    step "macOS build" "$LOGS/mac-build.log" \
+        bash -c "cmake -S '$ROOT' -B '$ROOT/build' -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON && cmake --build '$ROOT/build' -j $MAC_JOBS" &&
+    [ $BUILD_ONLY = 0 ] || return 0
+    step "macOS tests" "$LOGS/mac-test.log" \
+        env CI=true ctest --test-dir "$ROOT/build" -j $MAC_JOBS ${LABEL[@]+"${LABEL[@]}"} --output-on-failure --timeout 1500
+}
+linux() {
+    if ! docker info > /dev/null 2>&1; then colima start > "$LOGS/colima.log" 2>&1; fi
+    # sources read-only, the build in a Docker volume so that it is incremental; updater is left out: the image has no curl and the
+    # container no network
+    step "Linux arm64 build" "$LOGS/linux-build.log" \
+        docker run --rm -v "$ROOT":/src:ro -v onair-build-ci:/b onair-linux-dev bash -c \
+        "cmake -S /src -B /b -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=OFF && cmake --build /b -j $LINUX_JOBS" &&
+    [ $BUILD_ONLY = 0 ] || return 0
+    step "Linux arm64 tests" "$LOGS/linux-test.log" \
+        docker run --rm -e CI=true -v "$ROOT":/src:ro -v onair-build-ci:/b onair-linux-dev \
+        ctest --test-dir /b -j $LINUX_JOBS ${LABEL[@]+"${LABEL[@]}"} -E '^updater$' --output-on-failure --timeout 1500
+}
+windows() {
+    # the tests run through Wine when it is there (tools/wine_test.sh): ctest starts each test program with it
+    local emu="-DCMAKE_CROSSCOMPILING_EMULATOR=" wine=0   # (the path has a space: quoted inside the bash -c below)
+    if "$ROOT/tools/wine_test.sh" --version > /dev/null 2>&1; then wine=1; emu="-DCMAKE_CROSSCOMPILING_EMULATOR='$ROOT/tools/wine_test.sh'"; fi
+    step "Windows build (MinGW)" "$LOGS/windows-build.log" \
+        bash -c "cmake -S '$ROOT' -B '$ROOT/build-windows' -DCMAKE_TOOLCHAIN_FILE='$ROOT/packaging/windows/mingw-toolchain.cmake' -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON $emu && cmake --build '$ROOT/build-windows' -j $WIN_JOBS" || return
+    # updater is left out as on Linux (it fetches from GitHub); the GPU decoder needs Direct3D 11, which Wine on a Mac does not give
+    [ $BUILD_ONLY = 0 ] || return 0
+    [ $wine = 1 ] && step "Windows tests (Wine)" "$LOGS/windows-test.log" \
+        env CI=true ctest --test-dir "$ROOT/build-windows" -j $WIN_JOBS ${LABEL[@]+"${LABEL[@]}"} -E '^updater$' --output-on-failure --timeout 1500
+}
+
+T0=$SECONDS
+PIDS=()
+for p in "${PLATFORMS[@]}"; do "$p" & PIDS+=($!); done
+trap 'kill "${PIDS[@]}" 2>/dev/null; exit 130' INT TERM
+
+running() { for pid in "${PIDS[@]}"; do kill -0 "$pid" 2>/dev/null && return 0; done; return 1; }
+if [ $BARS = 1 ] && [ -t 1 ]; then
+    clear
+    while running; do
+        printf '\033[H'; echo "OnAir local CI  $(date +%H:%M:%S)  ($(( (SECONDS - T0) / 60 )) min $(( (SECONDS - T0) % 60 )) s)"
+        "$ROOT/tools/ci_progress.sh" --once
+        sleep 2
+    done
+    printf '\033[H'; echo "OnAir local CI  done in $(( (SECONDS - T0) / 60 )) min $(( (SECONDS - T0) % 60 )) s"
+    "$ROOT/tools/ci_progress.sh" --once
+fi
+wait
 
 echo
-printf '%s\n' "${RESULTS[@]}"
-for r in "${RESULTS[@]}"; do [[ $r == FAIL* ]] && exit 1; done
-exit 0
+fail=0
+for r in "$LOGS"/*.result; do
+    [ -f "$r" ] || continue
+    read -r st secs name < "$r"
+    printf '%-24s %-6s %5ds\n' "$name" "$st" "$secs"
+    if [ "$st" != ok ]; then
+        fail=1
+        grep -E '\*\*\*Failed|\*\*\*Timeout|^FAIL|error:' "${r%.result}" | head -15 | sed 's/^/    /'
+    fi
+done
+echo "total $(( (SECONDS - T0) / 60 )) min $(( (SECONDS - T0) % 60 )) s"
+exit $fail

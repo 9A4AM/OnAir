@@ -1,8 +1,20 @@
 // Headless receiver: prints sync / L1 telemetry once per second. Useful for bring-up and logs.
 //   dect2cli --hackrf [--freq MHz] [--lna dB] [--vga dB] [--amp] [--bw MHz] [--secs N]
 //   dect2cli --file path.cs8 --rate Msps [--format cs8|cu8|cf32] [--bw MHz] [--secs N]
-//   dect2cli --record out.cs8 --secs N   (HackRF only; raw IQ capture at the 2x native rate)
+//   dect2cli ... --record out.cs8|out.cf32|folder|auto --secs N   (any radio or --synthetic, not --file: saves the radio's raw samples at its own
+//     rate while receiving, for N seconds, and prints the size; a folder or "auto" (the current folder) gets a name like
+//   dect2cli --standard iridium ... --iridium-bits output.bits   (Iridium: every burst as a gr-iridium "RAW:" line for iridium-toolkit;
+//     then `iridium-parser.py output.bits > output.parsed`. --iridium-parsed is not written by OnAir: use the toolkit's parser)
+//   dect2cli --standard isdbt --isdbt-bw 6|7|8|auto ...   (ISDB-T channel width: 6 MHz Japan / the Americas, 8 MHz the Maldives; auto tries each)
+//   dect2cli --standard orbcomm --freq 137.25 --orbcomm-downlinks 2   (Orbcomm: up to two downlinks in the passband; satellites, Doppler and packets in the status line and the log)
+//   dect2cli --standard tetra --freq 392.5   (TETRA network information: the cells found are listed at the end; receive only, nothing is decrypted)
+//     onair_dvb_554.000MHz_10Msps_20261009-071530.cs8, which reopens with the right rate and format)
+//   dect2cli --standard ble --ble-channel 37|38|39   (Bluetooth LE advertising, receive only: devices and packets in the status line and the log)
+#include "dect2/wifi_proto.h"
+#include "dect2/rate_choice.h"
+#include "dect2/ble_proto.h"
 #include "dect2/engine.h"
+#include "dect2/crash_report.h"
 #include "dect2/modes.h"
 #include "dect2/dvbt.h"
 #include "dect2/channel.h"
@@ -16,6 +28,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <thread>
 #include <cstdint>
@@ -27,6 +40,7 @@ static const auto gT0 = std::chrono::steady_clock::now();
 static double secsSinceStart() { return std::chrono::duration<double>(std::chrono::steady_clock::now() - gT0).count(); }
 
 int main(int argc, char** argv) {
+    dect2::crash::install("crash-cli");   // a crash leaves crash-cli.txt next to the log
     if (!dect2::cpuSupportsBuild()) { fprintf(stderr, "this build needs a processor with AVX2 and FMA\n"); return 1; }
     Engine e;
     bool autoBw = false;
@@ -40,15 +54,30 @@ int main(int argc, char** argv) {
     bool continue_t2 = true;
     MultipathDetector mpd;
     QualityMeter qm;
-    bool useFile = false, haveDev = false, synthetic = false, listen = false;
+    bool useFile = false, haveDev = false, synthetic = false, listen = false, atvFm = false;
+    bool dpmrScan = false;
+    double dvbcSr = 0; int dvbcQam = 0; bool dvbcAnnexC = false;
+    int orbcommMax = 2;
+    const SubMode* subMode = nullptr;   // --standard named one protocol of a shared receiver
     std::string wavPath;
     std::vector<int16_t> wav;
-    std::string record;
+    std::string record, iridiumBits;
     OutputConfig out;
+    int isdbtBw = 6, isdbtSynthBw = 0;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)""; };
         if (a == "--hackrf") haveDev = true;
+        else if (a == "--radio") { const std::string kv = next(); const auto eq = kv.find('='); if (eq != std::string::npos) tune.radio[kv.substr(0, eq)] = kv.substr(eq + 1); }   // a setting of the radio, e.g. --radio iqformat=cs8 (PlutoSDR with Tezuka), --radio ppm=-3
+        else if (a == "--atv-fm") atvFm = true;
+        else if (a == "--isdbt-bw") { const std::string v = next(); const int b = atoi(v.c_str()); isdbtBw = v == "auto" ? 0 : b == 7 || b == 8 ? b : 6; }   // with --standard isdbt: channel width 6, 7, 8 MHz (the Maldives) or auto
+        else if (a == "--isdbt-synth-bw") { const int b = atoi(next()); isdbtSynthBw = b == 7 || b == 8 ? b : 6; }   // with --synthetic: the width of the ISDB-T test signal (for --isdbt-bw auto)
+        else if (a == "--ble-channel") { freq = dect2::ble::channelMhz(atoi(next())); freqSet = true; }   // with --standard ble: advertising channel 37, 38 or 39
+        else if (a == "--dvbc-sr") dvbcSr = atof(next()) * 1e6;   // with --standard dvbc: a manual symbol rate in Msym/s (default: measured)
+        else if (a == "--dvbc-qam") dvbcQam = atoi(next());       // with --standard dvbc: 16, 32, 64, 128 or 256 (default: found from the stream)
+        else if (a == "--dpmr-scan") dpmrScan = true;           // with --standard dpmr: scan the 16 PMR446 channels (tune to one of them)
+        else if (a == "--orbcomm-downlinks") orbcommMax = atoi(next());   // with --standard orbcomm: 1 or 2 downlinks decoded at once (default 2)
+        else if (a == "--dvbc-annexc") dvbcAnnexC = true;          // with --standard dvbc: J.83 annex C (roll-off 0.13)   // with --standard atv: FM video (analog FPV links), 20 Msps
         else if (a == "--freq") { freq = atof(next()); freqSet = true; }
         else if (a == "--lna") tune.lnaDb = atoi(next());
         else if (a == "--vga") tune.vgaDb = atoi(next());
@@ -61,7 +90,7 @@ int main(int argc, char** argv) {
         else if (a == "--lan") serveLan = true;
         else if (a == "--synthetic") synthetic = true;
         else if (a == "--wav") wavPath = next();   // FM: write the sound to a 48 kHz stereo WAV file
-        else if (a == "--listen") listen = true;   // FM: play the sound (the command line is silent otherwise)
+        else if (a == "--listen") listen = true;   // FM, voice, CW and ham modes: play the sound (the command line is silent otherwise)
         else if (a == "--demo") tune.synth.demoTv = true;   // synthetic DVB-T / ATSC carries the test-card programme
         else if (a == "--atsc") { tune.synth.atsc = true; tune.bandwidthMhz = 6; tune.sampleRate = 8e6; standard = 3; }   // ATSC 8-VSB (synthetic, or with --file at 8 Msps)
         else if (a == "--dvbt") { tune.synth.dvbt = true; synthetic = true; }                 // synthetic source generates DVB-T
@@ -73,15 +102,20 @@ int main(int argc, char** argv) {
         else if (a == "--sopt") { const int k = atoi(next()); const int v = atoi(next()); if (k >= 0 && k < 8) tune.synth.modeOpt[k] = v; }       // option k of the mode's test signal (see its <mode>_gen.h)
         else if (a == "--sval") { const int k = atoi(next()); const double v = atof(next()); if (k >= 0 && k < 4) tune.synth.modeVal[k] = v; }   // value k of the mode's test signal
         else if (a == "--standard") { std::string v = next(); standard = v == "t2" ? 1 : v == "t" || v == "dvbt" ? 2 : v == "atsc" ? 3 : v == "dab" ? 4 : v == "atsc3" ? 5 : v == "isdbt" ? 6 : v == "fm" ? 7 : 0; if (standard == 7) { tune.bandwidthMhz = 0.25; tune.sampleRate = 4e6; tune.basebandFilterHz = 2.5e6; }
-            if (const ModeTuning* mt = modeTuningById(v)) {   // dvbs, dtmb, atv, dmr, drm, adsb: the tuning table of the mode says how to set the radio up
+            const SubMode* sm = subModeById(v);   // rtty, ft8, meshtastic, pocsag, navtex ...: one protocol of a shared receiver
+            subMode = sm;
+            if (sm) tune.synth.mode = sm->stdMode, applySubModeSynth(tune.synth, *sm);
+            if (const ModeTuning* mt = sm ? modeTuning(sm->stdMode) : modeTuningById(v)) {   // dvbs, dtmb, atv, dmr, drm, adsb: the tuning table of the mode says how to set the radio up
                 standard = mt->stdMode; tune.bandwidthMhz = mt->bandwidthMhz; tune.sampleRate = mt->sampleRate; tune.basebandFilterHz = mt->basebandHz;
-                if (!freqSet) freq = mt->defMhz;
+                if (!freqSet) freq = sm ? sm->defMhz : mt->defMhz;
             } }
         else if (a == "--compute") { std::string v = next(); computeMode = v == "cpu" ? 0 : v == "gpu" ? 1 : 2; }
         else if (a == "--file") { useFile = true; file.path = next(); file.format = guessFormat(file.path); }
         else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
         else if (a == "--format") { std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
         else if (a == "--record") record = next();
+        else if (a == "--iridium-bits") iridiumBits = next();
+        else if (a == "--iridium-parsed") { fprintf(stderr, "--iridium-parsed: OnAir writes .bits only; run iridium-toolkit's iridium-parser.py on an --iridium-bits file for output.parsed\n"); return 1; }
         else if (a == "--ts") out.file = true, out.path = next();
         else if (a == "--udp") { std::string hp = next(); auto c = hp.find(':'); out.udp = true; out.host = hp.substr(0, c); if (c != std::string::npos) out.port = atoi(hp.c_str() + c + 1); }
         else if (a == "--gain") { tune.gainDb = atof(next()); }
@@ -89,9 +123,16 @@ int main(int argc, char** argv) {
         else if (a == "--service") out.serviceId = atoi(next());
         else if (a == "--no-null") out.dropNull = true;
     }
+    if (atvFm) { tune.bandwidthMhz = 18; tune.sampleRate = 20e6; tune.basebandFilterHz = 18e6; }
+    if (standard == 6) {   // ISDB-T: the channel width (the test signal follows it; on auto it is 6 MHz unless --isdbt-synth-bw says otherwise)
+        tune.isdbtBwMhz = isdbtBw;
+        tune.synth.isdbtBwMhz = isdbtSynthBw ? isdbtSynthBw : isdbtBw ? isdbtBw : 6;
+        if (isdbtBw != 6) tune.bandwidthMhz = isdbtBw ? isdbtBw : 8;
+    }
     tune.centerHz = freq * 1e6;
     tune.synth.mode = standard >= 4 ? standard : 0;   // the synthetic source plays that mode's test signal
     if (standard != 7 && standard < 8) tune.sampleRate = tune.bandwidthMhz >= 7 ? 10e6 : 8e6; // HackRF Pro: exact tuning only at <= 10 Msps
+    if (useFile && !record.empty()) { fprintf(stderr, "--record does not work with --file: the samples are already in that file\n"); return 1; }
     if (useFile) { dev.kind = DeviceInfo::File; dev.name = file.path; file.loop = false; }
     else if (synthetic) { dev.kind = DeviceInfo::Synthetic; dev.name = "synthetic"; }
     else {
@@ -101,7 +142,11 @@ int main(int argc, char** argv) {
         dev = list[0];
         printf("device: %s\n", dev.name.c_str());
         if (dev.isGeneric()) {
-            if (dev.maxRateHz > 0) tune.sampleRate = std::min(tune.sampleRate, dev.maxRateHz);
+            // DVB-T/T2 is natively 64/7 Msps per 8 MHz: a PlutoSDR can run exactly that, which saves the receiver its resampler; on its USB
+            // cable above the 4 Msps the cable carries when the channel needs it (linkRateFor), with the note why
+            if (dev.kind == DeviceInfo::Native && dev.board == "pluto" && standard <= 2 && tune.bandwidthMhz >= 5) tune.sampleRate = dvbNativeRate(tune.bandwidthMhz);
+            tune.sampleRate = linkRateFor(dev, tune, tune.sampleRate, minSampleRateFor(standard, tune.bandwidthMhz));
+            if (const std::string n = linkNote(dev, tune, tune.sampleRate); !n.empty()) printf("note: %s\n", n.c_str());
             if (tune.gainDb == 30) tune.gainDb = std::max(dev.gainMinDb, dev.gainMaxDb * 0.6);   // a sensible start; --gain overrides
             printf("radio: up to %.2f Msps, gain %.0f..%.0f dB, using %.2f Msps / %.0f dB\n", dev.maxRateHz / 1e6, dev.gainMinDb, dev.gainMaxDb, tune.sampleRate / 1e6, tune.gainDb);
         }
@@ -125,15 +170,58 @@ int main(int argc, char** argv) {
     }
     e.setComputeMode(computeMode);
     e.fm().setSilent(!listen);
+    e.vor().setSilent(!listen);   // VOR / ILS: the voice only with --listen
+    e.m17().setSilent(!listen);   // M17 voice only with --listen as well
+    e.cw().setSilent(!listen);    // CW sidetone only with --listen as well
+    e.psk().setListen(listen);    // PSK31, JS8Call, HF digital (RTTY, SSTV, FT8 ...): the sideband audio only with --listen
+    e.js8().setListen(listen);
+    e.ale().setListen(listen);    // HF ALE as well
+    e.hfdig().setListen(listen);
+    e.specx().setSilent(true);  // spectrum explorer: the summary line only
+    e.uplink().setSilent(true);   // Mode S uplink: no sound
+    e.specan().setSilent(true);   // spectrum analyser: no sound
+    e.astro().setSilent(true);    // radio astronomy: the summary line only
+    e.iono().setSilent(true);     // ionospheric sounders: the summary line only
+    e.qo100().setSilent(true);    // QO-100: Listen without the sound card
+    e.general().setSilent(true);  // general receiver: no sound from the command line
+    e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
+    e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
+    e.rid().clearDrones();        // Drone Remote ID: the drone table is printed with each line
+    e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
+    e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
+    e.dvbc().setAnnexC(dvbcAnnexC);
+    e.orbcomm().setMaxChannels(orbcommMax);   // Orbcomm: no sound; satellites and packets go to the log
+    e.dstar().setSilent(!listen); // D-STAR voice (mbelib) too
+    e.nxdn().setSilent(!listen);  // NXDN voice (mbelib) too
+    e.dpmr().setSilent(!listen);  // dPMR voice (mbelib) too
+    e.p25().setSilent(!listen);   // P25 voice (mbelib IMBE) too
+    e.dpmr().setScan(dpmrScan);   // --dpmr-scan: step through the 16 PMR446 channels
+    e.mac().setSilent(!listen);   // MAC television sound (--listen plays it)
     if (!wavPath.empty()) e.fm().setAudioTap([&wav](const float* l, const float* r, size_t n) {
         for (size_t i = 0; i < n; i++) { wav.push_back((int16_t)std::lround(std::max(-1.f, std::min(1.f, l[i])) * 32767)); wav.push_back((int16_t)std::lround(std::max(-1.f, std::min(1.f, r[i])) * 32767)); }
     });
     e.setStandard(standard);
+    applySubMode(e, subMode);
+    if (standard == 22) e.mesh().setTunedHz(freq * 1e6);   // mesh places its channels from the tuned frequency
+    if (atvFm) e.atv().setModulation(1);
     e.setBandwidthAuto(autoBw);
     e.setSpectrumEnabled(autoBw);   // cli doesn't show the spectrum
     if (!e.start(dev, tune, file)) {
         size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
         return 1;
+    }
+    if (!record.empty()) {
+        std::string rpath = record, rerr;
+        FileFormat rfmt = guessFormat(record);
+        const bool folder = record == "auto" || record.back() == '/' || record.back() == '\\' || std::filesystem::is_directory(std::filesystem::u8path(record));
+        if (folder) { rfmt = FileFormat::CS8; rpath = (record == "auto" ? std::string(".") : record) + "/" + e.recordingName(rfmt); }
+        if (!e.startRecording(rpath, rfmt, rerr)) { fprintf(stderr, "recording: %s\n", rerr.c_str()); e.stop(); return 1; }
+        printf("recording the radio's samples to %s\n", rpath.c_str());
+    }
+    if (!iridiumBits.empty()) {
+        std::string ierr;
+        if (!e.iridium().startBitsFile(iridiumBits, &ierr)) { fprintf(stderr, "iridium bits: %s\n", ierr.c_str()); e.stop(); return 1; }
+        printf("writing Iridium bursts for iridium-toolkit to %s\n", iridiumBits.c_str());
     }
     size_t shown = 0;
     double lastPic = 0, freezeSecs = 0; int freezes = 0, pics = 0;
@@ -185,6 +273,24 @@ int main(int argc, char** argv) {
             continue_t2 = false;
         } else if (t.standard >= 7) {
             printf("level %6.1f dBFS | %s | dropped %llu\n", sf.stats.rmsDbfs, modeSummary(t).c_str(), (unsigned long long)e.droppedSamples());
+            if (t.standard == 55)   // Wi-Fi networks: the table, as a phone's Wi-Fi list
+                for (const auto& ap : t.wifi.aps)
+                    printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
+                           wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
+            if (t.standard == 62)   // CubeSat telemetry: the newest frames
+                for (size_t i = 0; i < t.cube.frames.size() && i < 3; i++) {
+                    const CubeFrame& f = t.cube.frames[i];
+                    printf("  cubesat: %8.1f s %-9s %5d %-20s %-24s %3zu bytes rs %d %s\n", f.timeSec, cubesat::framingShort(f.framing), f.baud, f.sat.c_str(),
+                           (f.from.empty() ? std::string("-") : f.from + ">" + f.to).c_str(), f.data.size(), f.rsErrors, cubesat::asciiOf(f.payload).substr(0, 60).c_str());
+                }
+            if (t.standard == 57)   // Drone Remote ID: one line a drone
+                for (const auto& d : t.rid.drones)
+                    printf("  rid: %s %-3s %-20s %10.6f %11.6f h %6.1f m %5.1f m/s op %10.6f %11.6f %s\n", d.mac.c_str(), d.viaBle ? "BLE" : "WiFi",
+                           !d.serial.empty() ? d.serial.c_str() : !d.sessionId.empty() ? d.sessionId.c_str() : d.caaId.c_str(), d.lat, d.lon, d.height, d.speed, d.opLat, d.opLon, d.operatorId.c_str());
+            if (t.standard == 58)   // 5G NR cells: the cell table (broadcast information only)
+                for (const auto& c : t.nr.cells)
+                    printf("  nr: %.2f MHz GSCN %d n%d PCI %4d %2d kHz %s SSB %d/%zu SFN %4d kSSB %2d CORESET0 %2d SS0 %2d %s RSRP %6.1f RSRQ %5.1f SINR %5.1f\n", c.freqHz / 1e6, c.gscn, c.band, c.pci,
+                           c.scsKhz, c.hasMib ? "MIB" : "sync", c.ssbIdx, c.beams.size(), c.sfn, c.kSsb, c.coreset0, c.ss0, c.barred ? "barred" : "-", c.rsrpDb, c.rsrqDb, c.sinrDb);
             continue_t2 = false;
         } else if (t.standard == 2) {
             const AtscTelemetry& a = t.atsc;
@@ -204,6 +310,16 @@ int main(int argc, char** argv) {
                sf.stats.rmsDbfs, sf.stats.clipFraction * 100, t.state, (unsigned long long)t.p1Count, t.p1.s1, t.fftN,
                t.giIdx >= 0 ? guardName(t.giIdx) : "-", t.cfoHz, t.cpCorr, (unsigned long long)t.l1preGood, (unsigned long long)(t.l1preGood + t.l1preBad),
                (unsigned long long)t.l1postGood, (unsigned long long)(t.l1postGood + t.l1postBad), t.dataValid, t.dataSnrDb, (unsigned long long)t.symbols, t.secSinceP1, (unsigned long long)t.plpFrames, (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad, t.plpMerDb, t.plpPreBer, t.plpIters, t.plpDecodeMs, t.plpOnGpu ? "GPU" : "CPU", (unsigned long long)t.plpFramesDropped, (unsigned long long)e.droppedSamples());
+    }
+    if (!record.empty()) {
+        const RecordingStats rs = e.recordingStats();
+        e.stopRecording();
+        printf("recorded %.1f s (%.1f MB) to %s%s\n", rs.seconds, rs.bytes / 1e6, rs.path.c_str(), rs.droppedSamples ? ": SOME SAMPLES WERE DROPPED, the disk was too slow" : "");
+        if (!rs.error.empty()) printf("recording stopped early: %s\n", rs.error.c_str());
+    }
+    if (!iridiumBits.empty()) {
+        e.iridium().stopBitsFile();
+        printf("iridium bits: %llu lines in %s (iridium-parser.py %s > output.parsed)\n", (unsigned long long)e.iridium().bitsLines(), iridiumBits.c_str(), iridiumBits.c_str());
     }
     { const QualityReport& q = qm.report(); printf("quality: %.0f%% %s (SNR %.1f dB, needs %.1f, margin %+.1f dB, FEC %.1f%%)\n", q.percent, q.label.c_str(), q.snrDb, q.requiredDb, q.marginDb, q.fecOk * 100); }
     {
@@ -232,6 +348,11 @@ int main(int argc, char** argv) {
         printf("multipath: %s (%s)\n", multipathName(mr.level), mr.headline.c_str());
         for (auto& x : mr.echoes) printf("   echo %.1f dB at %+.2f us%s\n", x.levelDb, x.delayUs, x.insideGuard ? "" : " (outside guard)");
         for (auto& r : mr.reasons) printf("   - %s\n", r.c_str());
+    }
+    if (t.standard == 47) {   // TETRA: the cells found, with what they broadcast to every terminal
+        for (const auto& c : t.tetra.cells)
+            printf("TETRA %.4f MHz  MCC %d MNC %d  colour code %d  LA %d  encryption %s  neighbours %zu  level %.0f dBFS  SNR %.0f dB\n", c.nominalHz / 1e6, c.mcc, c.mnc,
+                   c.colourCode, c.la, c.encryption() ? "yes" : (c.hasSysinfo ? "no" : "?"), c.neighbours.size(), c.levelDb, c.snrDb);
     }
     if (t.l1preGood) {
         const L1Pre& p = t.l1pre;

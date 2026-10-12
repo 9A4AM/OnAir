@@ -29,14 +29,22 @@ struct Prefs {
     virtual std::vector<Channel> getChannels() = 0;
     virtual void setChannels(const std::vector<Channel>& c) = 0;
     virtual void flush() {}
+    // Start over with no saved settings (after starts that kept crashing): the old ones are kept aside, not deleted.
+    // Returns where they went (UTF-8), empty when they could not be kept.
+    virtual std::string setAside() = 0;
 };
 Prefs& prefs();
 
 // Pictures and position (the ADS-B map).
-// Decode a PNG or JPEG file into RGBA8 (0xAABBGGRR, row by row). False when the file cannot be read or the system has no decoder.
+// Decode a picture file into RGBA8 (0xAABBGGRR, row by row): PNG everywhere, on macOS also what the system reads. False when it cannot be read.
 bool decodeImage(const std::string& path, int& w, int& h, std::vector<uint32_t>& rgba);
-// A folder for downloaded files (map tiles), created on demand.
+// A folder for downloaded files that may be thrown away (map tiles of this session only), created on demand. UTF-8.
 std::string cacheDir();
+// A folder for downloaded files the user keeps (map tiles kept until deleted): system cleaners leave it alone. Created on demand. UTF-8.
+std::string dataDir();
+// Downloads url into file (UTF-8 path) with the curl program, which Windows 10 and later, macOS and nearly every Linux have (no TLS library
+// is linked). On Windows it runs without a console window. Gives up after about 15 s. False when the download did not work.
+bool fetchUrl(const std::string& url, const std::string& file, const std::string& userAgent);
 // The position from the system's location service (on macOS this is Wi-Fi positioning and needs the user's permission).
 // locateStart() begins a request; locateState() says how it went: 0 nothing asked, 1 working, 2 done (lat, lon, accuracy in metres), 3 failed (msg says why).
 void locateStart();
@@ -44,6 +52,10 @@ int locateState(double& lat, double& lon, double& accuracyM, std::string& msg);
 
 // Paths of fonts to try, best first (proportional UI font, monospaced font)
 std::vector<std::string> uiFontCandidates();
+std::vector<std::string> cjkFontCandidates();   // system CJK font merged into the UI fonts for Chinese/Japanese/Korean service names
 std::vector<std::string> monoFontCandidates();
+
+// The language the user reads the system in, as a code such as "de", "zh-Hans" or "lt_LT.UTF-8" (i18n::set() takes the first letters)
+std::string uiLanguage();
 
 }

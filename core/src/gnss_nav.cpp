@@ -213,7 +213,7 @@ static double solveKepler(double M, double e) {
 
 void gpsEphemerisState(const GpsEphemeris& e, double t, double pos[3], double* clockS, double* eccAnom) {
     const double A = e.sqrtA * e.sqrtA;
-    const double n0 = std::sqrt(kGpsMu / (A * A * A));
+    const double n0 = std::sqrt((e.galileo || e.beidou ? kGalMu : kGpsMu) / (A * A * A));
     const double tk = gpsWrap(t - e.toe);
     const double n = n0 + e.dn;
     const double Mk = e.m0 + n * tk;
@@ -229,14 +229,26 @@ void gpsEphemerisState(const GpsEphemeris& e, double t, double pos[3], double* c
     const double r = A * (1.0 - e.e * cE) + dr;
     const double inc = e.i0 + di + e.idot * tk;
     const double xp = r * std::cos(u), yp = r * std::sin(u);
-    const double Om = e.omega0 + (e.omegaDot - kEarthRate) * tk - kEarthRate * e.toe;
+    // BeiDou (ICD Table 5-11): the CGCS2000 earth rotation rate; a GEO satellite is first placed in a frame that does not turn with the earth,
+    // then turned by -5 degrees about X and by the earth's rotation since toe about Z
+    const double we = e.beidou ? 7.2921150e-5 : kEarthRate;
+    const double Om = e.geo ? e.omega0 + e.omegaDot * tk - we * e.toe : e.omega0 + (e.omegaDot - we) * tk - we * e.toe;
     const double cO = std::cos(Om), sO = std::sin(Om), ci = std::cos(inc), si = std::sin(inc);
     pos[0] = xp * cO - yp * ci * sO;
     pos[1] = xp * sO + yp * ci * cO;
     pos[2] = yp * si;
+    if (e.geo) {
+        const double f = -5.0 * kPi / 180.0, cf = std::cos(f), sf = std::sin(f);
+        // Rx(f) = [1 0 0; 0 cos sin; 0 -sin cos], Rz(a) = [cos sin 0; -sin cos 0; 0 0 1], a = we tk
+        const double x = pos[0], y = cf * pos[1] + sf * pos[2], z = -sf * pos[1] + cf * pos[2];
+        const double a = we * tk, ca = std::cos(a), sa = std::sin(a);
+        pos[0] = ca * x + sa * y;
+        pos[1] = -sa * x + ca * y;
+        pos[2] = z;
+    }
     if (clockS) {
         const double dtc = gpsWrap(t - e.toc);
-        *clockS = e.af0 + e.af1 * dtc + e.af2 * dtc * dtc + kRelF * e.e * e.sqrtA * sE;
+        *clockS = e.af0 + e.af1 * dtc + e.af2 * dtc * dtc + (e.galileo || e.beidou ? kGalRelF : kRelF) * e.e * e.sqrtA * sE;
     }
     if (eccAnom) *eccAnom = Ek;
 }

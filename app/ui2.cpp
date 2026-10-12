@@ -1,6 +1,8 @@
 // The new interface, in a plain developer-tool style: flat, dense and monochrome. A text list of modes with keyboard shortcuts on the left,
 // square bordered panes and hairlines instead of cards, one muted accent. It reuses every panel of the classic interface (main.cpp).
+#include "discord_rpc.h"
 #include "app.h"
+#include "imgui_internal.h"   // RenderArrow for the folding mode groups
 
 namespace {
 // set the waterfall range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor)
@@ -67,15 +69,39 @@ void loadTheme(int n) {
 ImU32 u32(ImVec4 c) { return ImGui::ColorConvertFloat4ToU32(c); }
 
 // A bordered pane with square corners. autoH: grow with the contents.
+// A pane with autoH is as tall as its contents. ImGui sizes it from the last frame, so a status line whose values change width (and so
+// wrap onto one line more or less) made it flick between heights, a line cut off every other frame: the height it needs is kept here
+// and it shrinks only after a second without the extra line.
+struct PaneH { ImGuiID key; bool autoH; };
+std::vector<PaneH> gPanes;
+constexpr int kPaneHold = 60;   // frames
 void beginPane(const char* id, ImVec2 size, bool autoH = false) {
     ImGui::PushStyleColor(ImGuiCol_Border, kEdge);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 1);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(7 * gUi, 4 * gUi));
-    ImGui::BeginChild(id, size, ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding | (autoH ? ImGuiChildFlags_AutoResizeY : 0));
+    const ImGuiID key = ImGui::GetID(id);
+    const float held = autoH ? ImGui::GetStateStorage()->GetFloat(key, 0.f) : 0.f;
+    if (held > 0) size.y = held;
+    gPanes.push_back({key, autoH});
+    ImGui::BeginChild(id, size, ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding | (autoH && held <= 0 ? ImGuiChildFlags_AutoResizeY : 0));
 }
 void endPane() {
+    const PaneH p = gPanes.back();
+    gPanes.pop_back();
+    // the height of what was drawn: down to the last line, and the padding below it
+    const float need = p.autoH ? ImGui::GetCursorPosY() - ImGui::GetStyle().ItemSpacing.y + ImGui::GetStyle().WindowPadding.y : 0.f;
     ImGui::EndChild();
+    if (p.autoH) {
+        ImGuiStorage* st = ImGui::GetStateStorage();
+        const ImGuiID ageKey = p.key + 1;
+        const float held = st->GetFloat(p.key, 0.f);
+        const int age = st->GetInt(ageKey, 0);
+        if (need > held + 0.5f || held <= 0) { st->SetFloat(p.key, need); st->SetInt(ageKey, 0); }   // grows at once
+        else if (need < held - 0.5f) {                                                             // shrinks after a while
+            if (age >= kPaneHold) { st->SetFloat(p.key, need); st->SetInt(ageKey, 0); } else st->SetInt(ageKey, age + 1);
+        } else st->SetInt(ageKey, 0);
+    }
     ImGui::PopStyleVar(3);
     ImGui::PopStyleColor();
 }
@@ -106,14 +132,22 @@ bool textLink(const char* label) {
     return clicked;
 }
 
-// ---- the SDR++ style frequency readout: digits you can click (upper half up, lower half down) or scroll
+// ---- the SDR++ style frequency readout: digits you can click (upper half up, lower half down) or scroll. With the mouse over it, typing a
+// number sets the digit under the mouse and moves on to the next one, the arrow keys step the digit (up/down) or pick another (left/right),
+// and a double click opens a box to type the whole frequency.
+bool gFreqHovered = false;   // last frame: the mouse was over the digits (the 1-9 mode keys stay off then)
 float freqDigits(App& a, float fontSize = 30.f) {
+    static int kbIdx = -1;               // the digit the keyboard works on after typing or left/right (-1: the one under the mouse)
+    static ImVec2 kbMouse;               // where the mouse was then: moving it gives the digit back to the mouse
+    static double preClickMhz = 0;       // the frequency before the first click of a double click, which the double click undoes
+    static char typed[32] = "";
     const bool fm = a.fmMode, dab = a.dabMode;
     const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
-    const double lo = mt ? mt->minMhz : fm ? 87.5 : dab ? 174.0 : 1.0, hi = mt ? mt->maxMhz : fm ? 108.0 : dab ? 240.0 : 2000.0;
+    const double lo = mt ? mt->minMhz : 0.001, hi = 1e12;   // up to a trillion MHz, for fun: the radio is the real limit
     long long hz = (long long)std::llround(a.freqMhz * 1e6);
-    char buf[16];
-    snprintf(buf, sizeof buf, "%010lld", hz);   // ten digits: L-band (DVB-S, ADS-B) is above 1 GHz
+    constexpr int kD = 19;   // nineteen digits: a trillion MHz (10^18 Hz)
+    char buf[24];
+    snprintf(buf, sizeof buf, "%019lld", hz);
     ImGui::PushFont(a.mono, fontSize);
     const ImVec2 cs = ImGui::CalcTextSize("0");
     const float cw = cs.x + 1 * gUi, ch = cs.y;
@@ -121,9 +155,12 @@ float freqDigits(App& a, float fontSize = 30.f) {
     const ImVec2 o = ImGui::GetCursorScreenPos();
     float x = o.x;
     long long delta = 0;
-    bool leading = true;
-    for (int i = 0; i < 10; i++) {
-        const long long place = (long long)std::llround(std::pow(10.0, 9 - i));
+    bool leading = true, dbl = false;
+    int hovIdx = -1;
+    float digitX[kD];
+    for (int i = 0; i < kD; i++) {
+        digitX[i] = x;
+        const long long place = (long long)std::llround(std::pow(10.0, kD - 1 - i));
         ImGui::SetCursorScreenPos(ImVec2(x, o.y));
         ImGui::PushID(i);
         ImGui::InvisibleButton("##d", ImVec2(cw, ch));
@@ -131,7 +168,9 @@ float freqDigits(App& a, float fontSize = 30.f) {
         const bool hov = ImGui::IsItemHovered();
         const ImVec2 p0 = ImGui::GetItemRectMin();
         const bool upper = ImGui::GetIO().MousePos.y < p0.y + ch * 0.5f;
-        if (ImGui::IsItemClicked(0)) delta = upper ? place : -place;
+        if (hov) hovIdx = i;
+        if (hov && ImGui::IsMouseDoubleClicked(0)) dbl = true;
+        else if (ImGui::IsItemClicked(0)) { preClickMhz = a.freqMhz; delta = upper ? place : -place; }
         if (hov && ImGui::GetIO().MouseWheel != 0) { delta = ImGui::GetIO().MouseWheel > 0 ? place : -place; ImGui::GetIO().MouseWheel = 0; }
         if (hov) {
             dl->AddRectFilled(p0, ImVec2(p0.x + cw, p0.y + ch), IM_COL32(255, 255, 255, 18));
@@ -139,17 +178,58 @@ float freqDigits(App& a, float fontSize = 30.f) {
             dl->AddTriangleFilled(ImVec2(p0.x + cw * 0.5f - 3 * gUi, upper ? my + 4 * gUi : my - 4 * gUi), ImVec2(p0.x + cw * 0.5f + 3 * gUi, upper ? my + 4 * gUi : my - 4 * gUi), ImVec2(p0.x + cw * 0.5f, my), u32(T.dim));
         }
         if (buf[i] != '0') leading = false;
-        const bool dim = leading && i < 7;   // leading zeros are shown dim, like SDR++
+        const bool dim = leading && i < kD - 3;   // leading zeros are shown dim, like SDR++
         char c[2] = {buf[i], 0};
         dl->AddText(ImVec2(x + (cw - cs.x) * 0.5f, o.y), u32(dim ? ImVec4(T.dim.x * 0.8f, T.dim.y * 0.8f, T.dim.z * 0.8f, 1) : T.bright), c);
         x += cw;
-        if (i == 0 || i == 3 || i == 6) { dl->AddText(ImVec2(x, o.y), u32(T.dim), "."); x += cs.x * 0.45f; }
+        if (i < kD - 1 && (kD - 1 - i) % 3 == 0) { dl->AddText(ImVec2(x - cs.x * 0.275f, o.y), u32(T.dim), "."); x += cs.x * 0.45f; }   // the dot centred in the gap
     }
     ImGui::SetCursorScreenPos(ImVec2(x + 8 * gUi, o.y + ch * 0.5f - ImGui::GetTextLineHeight() * 0.35f));
     ImGui::PopFont();
     ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("Hz");
+    ImGui::TextDisabled("%s", tr("Hz"));
     const float endX = ImGui::GetItemRectMax().x;
+    ImGuiIO& io = ImGui::GetIO();
+    gFreqHovered = hovIdx >= 0 || (kbIdx >= 0 && io.MousePos.x == kbMouse.x && io.MousePos.y == kbMouse.y);
+    if (kbIdx >= 0 && (io.MousePos.x != kbMouse.x || io.MousePos.y != kbMouse.y)) kbIdx = -1;
+    const int cur = kbIdx >= 0 ? kbIdx : hovIdx;
+    if (cur >= 0 && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !io.KeySuper) {
+        const long long place = (long long)std::llround(std::pow(10.0, kD - 1 - cur));
+        for (int k = 0; k < 10; k++)
+            if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_0 + k), false) || ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_Keypad0 + k), false)) {
+                const int old = (int)((hz / place) % 10);
+                delta = (long long)(k - old) * place;
+                kbIdx = std::min(kD - 1, cur + 1); kbMouse = io.MousePos;
+            }
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) delta = place;
+        if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) delta = -place;
+        if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) { kbIdx = std::max(0, cur - 1); kbMouse = io.MousePos; }
+        if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) { kbIdx = std::min(kD - 1, cur + 1); kbMouse = io.MousePos; }
+        if (kbIdx >= 0 && kbIdx != hovIdx) {   // show where the keyboard is when it is not under the mouse
+            const float kx = digitX[kbIdx];
+            dl->AddRect(ImVec2(kx, o.y), ImVec2(kx + cw, o.y + ch), u32(T.dim), 2.f);
+        }
+    }
+    if (dbl) {
+        if (std::fabs(preClickMhz - a.freqMhz) > 1e-9 && preClickMhz > 0) tuneFreq(a, preClickMhz);   // undo the first click's step
+        snprintf(typed, sizeof typed, "%.6f", preClickMhz > 0 ? preClickMhz : a.freqMhz);
+        ImGui::OpenPopup("##freqtype");
+    }
+    if (ImGui::BeginPopup("##freqtype")) {
+        ImGui::TextDisabled(tr("Frequency in MHz (%.3f to %.3f)"), lo, hi);
+        if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
+        ImGui::SetNextItemWidth(170 * gUi);
+        const bool enter = ImGui::InputText("##ftext", typed, sizeof typed, ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        ImGui::SameLine();
+        if (enter || ImGui::Button(tr("Tune"))) {
+            char* e = nullptr;
+            const double v = strtod(typed, &e);
+            if (e != typed && v > 0) tuneFreq(a, std::min(hi, std::max(lo, v)));
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
     if (delta) {
         const double mhz = std::min(hi, std::max(lo, (double)(hz + delta) / 1e6));
         if (std::fabs(mhz - a.freqMhz) > 1e-9) tuneFreq(a, mhz);
@@ -158,12 +238,11 @@ float freqDigits(App& a, float fontSize = 30.f) {
 }
 
 // two lines about what is being received, in the top bar: the station or ensemble, the state and the main numbers
-void summary(App& a, float x, float y, float scale = 1.f) {
-    ImDrawList* dl = ImGui::GetWindowDrawList();
+void summaryText(App& a, std::string& l1, std::string& l2) {
     const bool run = a.engine.running();
     const ModeDef* cur = &kModes[0];
-    for (int i = 0; i < kNumModes; i++) if (kModes[i].family == a.family) cur = &kModes[i];
-    std::string l1 = cur->name, l2 = run ? "starting" : "stopped";
+    for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) cur = &kModes[i];
+    l1 = cur->name; l2 = tr(run ? "starting" : a.scanner.progress().running ? "channel scan has the radio" : "stopped");
     char b[96];
     if (run) {
         const RxTelemetry& rx = a.rx;
@@ -175,20 +254,33 @@ void summary(App& a, float x, float y, float scale = 1.f) {
             std::string ps = f.psName;
             while (!ps.empty() && (ps.back() == ' ' || ps.back() == '-')) ps.pop_back();
             while (!ps.empty() && (ps.front() == ' ' || ps.front() == '-')) ps.erase(ps.begin());
-            l1 = f.carrier ? (ps.empty() ? "FM" : ps) : "FM: no station";
-            snprintf(b, sizeof b, "%s  %s  SNR %.0f dB", f.state == 2 ? "locked" : f.state == 1 ? "weak" : "searching", f.stereo ? "stereo" : "mono", f.snrDb);
-            l2 = f.carrier ? b : "searching";
+            l1 = f.carrier ? (ps.empty() ? "FM" : ps) : tr("FM: no station");
+            snprintf(b, sizeof b, "%s  %s  SNR %.0f dB", tr(f.state == 2 ? "locked" : f.state == 1 ? "weak" : "searching"), tr(f.stereo ? "stereo" : "mono"), f.snrDb);
+            l2 = f.carrier ? b : tr("searching");
         } else if (a.dabMode && rx.standard == 3) {
             l1 = rx.dab.ensembleLabel.empty() ? "DAB" : rx.dab.ensembleLabel;
-            snprintf(b, sizeof b, "%s  SNR %.0f dB  %d services", rx.dab.state == 2 ? "locked" : "searching", rx.dab.snrDb, rx.dab.services);
+            snprintf(b, sizeof b, tr("%s  SNR %.0f dB  %d services"), tr(rx.dab.state == 2 ? "locked" : "searching"), rx.dab.snrDb, rx.dab.services);
             l2 = b;
         } else {
-            snprintf(b, sizeof b, "%s  SNR %.1f dB  CFO %+.0f Hz", rx.state == 2 ? "locked" : "searching", rx.dataSnrDb, rx.cfoHz);
+            snprintf(b, sizeof b, "%s  SNR %.1f dB  CFO %+.0f Hz", tr(rx.state == 2 ? "locked" : "searching"), rx.dataSnrDb, rx.cfoHz);
             l2 = b;
         }
     }
-    dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * scale, ImVec2(x, y), u32(T.bright), l1.c_str());
-    dl->AddText(ImGui::GetFont(), ImGui::GetFontSize() * (scale > 1 ? 1.15f : 1.f), ImVec2(x, y + ImGui::GetFontSize() * scale + 3 * gUi), u32(T.dim), l2.c_str());
+}
+float summaryWidth(App& a, float scale = 1.f) {
+    std::string l1, l2;
+    summaryText(a, l1, l2);
+    return std::max(ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize() * scale, FLT_MAX, 0, l1.c_str()).x,
+                    ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize() * (scale > 1 ? 1.15f : 1.f), FLT_MAX, 0, l2.c_str()).x);
+}
+// maxW: the lines are cut short with "..." rather than run into what is to their right
+void summary(App& a, float x, float y, float scale = 1.f, float maxW = FLT_MAX) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    std::string l1, l2;
+    summaryText(a, l1, l2);
+    const float s1 = ImGui::GetFontSize() * scale, s2 = ImGui::GetFontSize() * (scale > 1 ? 1.15f : 1.f);
+    dl->AddText(ImGui::GetFont(), s1, ImVec2(x, y), u32(T.bright), ellipsize(l1, maxW, s1).c_str());
+    dl->AddText(ImGui::GetFont(), s2, ImVec2(x, y + s1 + 3 * gUi), u32(T.dim), ellipsize(l2, maxW, s2).c_str());
 }
 
 // a start / stop button drawn as a play triangle or a stop square
@@ -202,16 +294,25 @@ bool runButton(bool running, float size) {
     const float m = size * 0.28f;
     if (running) dl->AddRectFilled(ImVec2(p0.x + m, p0.y + m), ImVec2(p1.x - m, p1.y - m), u32(pal::badRed()));
     else dl->AddTriangleFilled(ImVec2(p0.x + m + 2 * gUi, p0.y + m), ImVec2(p0.x + m + 2 * gUi, p1.y - m), ImVec2(p1.x - m + 1 * gUi, (p0.y + p1.y) * 0.5f), u32(pal::okGreen()));
-    if (hov) ImGui::SetTooltip("%s (space)", running ? "Stop the receiver" : "Start the receiver");
+    if (hov) ImGui::SetTooltip(tr("%s (space)"), tr(running ? "Stop the receiver" : "Start the receiver"));
     return clicked;
 }
 
 // a collapsible sidebar section; returns whether it is open
 bool section(const char* title) {
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(1, 1, 1, 0.045f));
-    const bool open = ImGui::CollapsingHeader(title, ImGuiTreeNodeFlags_DefaultOpen);
+    const bool open = ImGui::CollapsingHeader(trw(title), ImGuiTreeNodeFlags_DefaultOpen);
     ImGui::PopStyleColor();
     return open;
+}
+
+// the fold state of the mode list groups, kept in the prefs by group name (never by number, so regrouping cannot open the wrong ones)
+static bool groupOpen(const App& a, int g) { return ("|" + a.modeGroupsOpen + "|").find("|" + std::string(kGroupNames[g]) + "|") != std::string::npos; }
+static void setGroupOpen(App& a, int g, bool on) {
+    std::string out;
+    for (int k = 0; k < kNumGroups; k++) if (k == g ? on : groupOpen(a, k)) { if (!out.empty()) out += "|"; out += kGroupNames[k]; }
+    a.modeGroupsOpen = out;
+    savePrefs(a);
 }
 
 // the modes as a plain radio list, grouped like the menu
@@ -219,73 +320,116 @@ void modeList(App& a) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const bool running = a.engine.running();
     const ImVec2 first = ImGui::GetCursorScreenPos();
-    for (int g = 0; g < 3; g++) {
-        ImGui::TextDisabled("%s", kGroupNames[g]);
+    static char q[32] = "";
+    ImGui::SetNextItemWidth(-1);
+    ImGui::InputTextWithHint("##modeside", tr("search modes (FT8, LoRa, APRS...)"), q, sizeof q);
+    if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) q[0] = 0;
+    const bool searching = q[0] != 0;
+    int shown = 0;
+    for (int g = 0; g < kNumGroups; g++) {
+        int matches = 0, members = 0;
+        const ModeDef* cur = nullptr;
+        for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g) {
+            members++;
+            if (modeMatches(kModes[i], q)) matches++;
+            if (modeSelected(a, kModes[i])) cur = &kModes[i];
+        }
+        if (!members || (searching && !matches)) continue;
+        if (shown++) ImGui::Dummy(ImVec2(0, 1 * gUi));   // the same small gap above every heading but the first
+        // the group header: a thin accent in the group's colour, a fold arrow, the name, the member count, and the selected mode when folded
+        const float hh = ImGui::GetFrameHeight() - 4 * gUi, hw = ImGui::GetContentRegionAvail().x;
+        ImGui::PushID(1000 + g);
+        if (ImGui::InvisibleButton("##grp", ImVec2(hw, hh)) && !searching) setGroupOpen(a, g, !groupOpen(a, g));
+        ImGui::PopID();
+        const bool unfolded = searching || groupOpen(a, g);
+        const ImVec2 g0 = ImGui::GetItemRectMin();
+        if (ImGui::IsItemHovered()) dl->AddRectFilled(g0, ImVec2(g0.x + hw, g0.y + hh), IM_COL32(255, 255, 255, 10));
+        dl->AddRectFilled(ImVec2(g0.x, g0.y + 3 * gUi), ImVec2(g0.x + 2.5f * gUi, g0.y + hh - 3 * gUi), kGroupCols[g], 1.f);
+        const float ty = g0.y + (hh - ImGui::GetTextLineHeight()) * 0.5f;
+        ImGui::RenderArrow(dl, ImVec2(g0.x + 7 * gUi, ty), u32(T.dim), unfolded ? ImGuiDir_Down : ImGuiDir_Right, 0.7f);
+        const float nx = g0.x + 22 * gUi;
+        dl->AddText(ImVec2(nx, ty), u32(T.dim), tr(kGroupNames[g]));
+        char cnt[16];
+        if (searching) snprintf(cnt, sizeof cnt, "%d/%d", matches, members); else snprintf(cnt, sizeof cnt, "%d", members);
+        const float cx = nx + ImGui::CalcTextSize(tr(kGroupNames[g])).x + 7 * gUi;
+        const ImVec2 cs0 = ImGui::CalcTextSize(cnt);
+        dl->AddRectFilled(ImVec2(cx - 3 * gUi, ty), ImVec2(cx + cs0.x + 3 * gUi, ty + cs0.y), IM_COL32(255, 255, 255, 14), 3 * gUi);
+        dl->AddText(ImVec2(cx, ty), (kGroupCols[g] & 0x00FFFFFF) | 0xC0000000, cnt);
+        if (!unfolded && cur) {
+            const ImVec2 cs = ImGui::CalcTextSize(cur->name);
+            if (cx + cs0.x + 12 * gUi < g0.x + hw - cs.x - 6 * gUi) dl->AddText(ImVec2(g0.x + hw - cs.x - 6 * gUi, ty), u32(T.accent), cur->name);
+        }
+        if (!unfolded) continue;
         for (int i = 0; i < kNumModes; i++) {
             const ModeDef& m = kModes[i];
-            if (m.group != g) continue;
+            if (m.group != g || !modeMatches(m, q)) continue;
             const float h = ImGui::GetFrameHeight() - 2 * gUi, w = ImGui::GetContentRegionAvail().x;
             ImGui::PushID(i);
             const bool clicked = ImGui::InvisibleButton("##mode", ImVec2(w, h));
             ImGui::PopID();
             const bool hov = ImGui::IsItemHovered();
             const ImVec2 p0 = ImGui::GetItemRectMin();
-            const bool sel = m.family == a.family;
+            const bool sel = modeSelected(a, m);
             if (hov) dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), IM_COL32(255, 255, 255, 12));
-            const ImVec2 c(p0.x + 9 * gUi, p0.y + h * 0.5f);
+            const ImVec2 c(p0.x + 14 * gUi, p0.y + h * 0.5f);   // under the heading's arrow, the name under the heading's name
             dl->AddCircle(c, 5 * gUi, u32(sel ? T.bright : T.dim), 0, 1.f);
             if (sel) dl->AddCircleFilled(c, 2.6f * gUi, u32(T.accent));
-            dl->AddText(ImVec2(p0.x + 24 * gUi, p0.y + (h - ImGui::GetTextLineHeight()) * 0.5f), u32(sel ? T.bright : (running ? T.dim : T.text)), m.name);
-            const ImVec2 ss = ImGui::CalcTextSize(m.sub);
-            dl->AddText(ImVec2(p0.x + w - ss.x - 6 * gUi, p0.y + (h - ss.y) * 0.5f), u32(T.dim), m.sub);
-            if (clicked) selectMode(a, m.family);
-            if (hov && running && !sel) ImGui::SetTooltip("Stop the receiver to switch mode");
+            dl->AddText(ImVec2(p0.x + 28 * gUi, p0.y + (h - ImGui::GetTextLineHeight()) * 0.5f), u32(sel ? T.bright : (running ? T.dim : T.text)), m.name);
+            const char* sub = tr(m.sub);
+            const ImVec2 ss = ImGui::CalcTextSize(sub);
+            if (p0.x + 28 * gUi + ImGui::CalcTextSize(m.name).x + 10 * gUi < p0.x + w - ss.x - 6 * gUi)   // no room: the name alone, not both on top of each other
+                dl->AddText(ImVec2(p0.x + w - ss.x - 6 * gUi, p0.y + (h - ss.y) * 0.5f), u32(T.dim), sub);
+            if (clicked) selectMode(a, m.family, m.subId);
+            if (hov && running && !sel) ImGui::SetTooltip("%s", tr("Stop the receiver to switch mode"));
         }
     }
+    if (!shown) ImGui::TextDisabled(tr("no mode matches \"%s\""), q);
     a.tgMin[TgSwitch] = first; a.tgMax[TgSwitch] = ImVec2(first.x + ImGui::GetContentRegionAvail().x, ImGui::GetCursorScreenPos().y);
 }
 
 void sidebar(App& a) {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * gUi, 4 * gUi));
-    if (section("Source")) {
+    if (section(N_("Source"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbSource, true);
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
-    if (section("Mode")) { ImGui::Indent(6 * gUi); modeList(a); ImGui::Unindent(6 * gUi); ImGui::Spacing(); }
-    if (section(a.fmMode ? "Tuner (FM)" : a.dabMode ? "Tuner (DAB)" : "Tuner")) {
+    if (section(N_("Mode"))) { ImGui::Indent(6 * gUi); modeList(a); ImGui::Unindent(6 * gUi); ImGui::Spacing(); }
+    if (section(a.fmMode ? N_("Tuner (FM)###Tuner") : a.dabMode ? N_("Tuner (DAB)###Tuner") : N_("Tuner"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbTuner, true);
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
-    if (section("Gain")) {
+    if (section(N_("Gain"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbGain, true);
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
-    if (section("Display")) {
+    if (section(N_("Display"))) {
         ImGui::Indent(6 * gUi);
-        ImGui::Checkbox("Peak hold", &a.peakHold);
-        ImGui::TextDisabled("Spectrum"); ImGui::SameLine(72 * gUi); ImGui::SetNextItemWidth(150 * gUi);
+        ImGui::Checkbox(tr("Peak hold"), &a.peakHold);
+        const float col = ImGui::GetCursorPosX() + ImGui::CalcTextSize(tr("Waterfall")).x + 8 * gUi;   // the controls line up after the longer label
+        const float autoW = ImGui::CalcTextSize(tr("Auto")).x + ImGui::GetStyle().FramePadding.x * 2 + 4 * gUi;
+        ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("Spectrum")); ImGui::SameLine(col); ImGui::SetNextItemWidth(std::min(150.f * gUi, ImGui::GetContentRegionAvail().x));
         ImGui::DragFloatRange2("##specdb", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
-        ImGui::TextDisabled("Waterfall"); ImGui::SameLine(72 * gUi);
-        ImGui::SetNextItemWidth(104 * gUi);
+        ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("Waterfall")); ImGui::SameLine(col);
+        ImGui::SetNextItemWidth(std::min(104.f * gUi, ImGui::GetContentRegionAvail().x - autoW));
         ImGui::DragFloatRange2("##wfdb", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
         ImGui::SameLine(0, 4 * gUi);
-        if (ImGui::SmallButton("Auto")) autoRange(a);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set the waterfall range from the noise floor and the strongest signal");
+        if (ImGui::SmallButton(tr("Auto"))) autoRange(a);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Set the waterfall range from the noise floor and the strongest signal"));
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
-    if ((a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) && section("Decoder")) {
+    if ((a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) && section(N_("Decoder"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbDecoder, true);
         ImGui::Unindent(6 * gUi);
     }
-    if (section("Log")) {
+    if (section(N_("Log"))) {
         ImGui::BeginChild("##logc", ImVec2(0, std::max(40.f * gUi, ImGui::GetContentRegionAvail().y - 4 * gUi)), ImGuiChildFlags_Borders);
         size_t n = 0;
         const std::vector<std::string> lines = a.engine.logSnapshot(n);
@@ -301,29 +445,35 @@ void statusLine(App& a) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const bool run = a.engine.running();
     const ModeDef* cur = &kModes[0];
-    for (int i = 0; i < kNumModes; i++) if (kModes[i].family == a.family) cur = &kModes[i];
+    for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) cur = &kModes[i];
     const float lh = ImGui::GetTextLineHeight();
-    auto field = [&](const char* text, bool first = false, ImVec4 col = ImVec4(-1, 0, 0, 0)) {
+    auto field = [&](const char* text, bool first = false, ImVec4 col = ImVec4(-1, 0, 0, 0), bool fit = false) {
         if (!first) {
-            ImGui::SameLine(0, 8 * gUi);
+            if (!sameLineIf(16 * gUi + (fit ? 40 * gUi : ImGui::CalcTextSize(text).x), 8 * gUi)) return;   // no room left on the bar
             const ImVec2 p = ImGui::GetCursorScreenPos();
             dl->AddLine(ImVec2(p.x, p.y + 1), ImVec2(p.x, p.y + lh - 1), u32(T.dim));
             ImGui::SameLine(0, 8 * gUi);
         }
-        if (col.x < 0) ImGui::TextUnformatted(text); else ImGui::TextColored(col, "%s", text);
+        const std::string t = fit ? ellipsize(text, ImGui::GetContentRegionAvail().x, ImGui::GetFontSize()) : text;   // the log line: as much as fits
+        if (col.x < 0) ImGui::TextUnformatted(t.c_str()); else ImGui::TextColored(col, "%s", t.c_str());
     };
     char b[96];
     ImGui::AlignTextToFramePadding();
-    field(run ? "Receiving" : "Stopped", true, run ? pal::okGreen() : pal::grey());
+    const bool scanning = !run && a.scanner.progress().running;   // the receiver let go of the radio for a channel scan
+    field(tr(run ? "Receiving" : scanning ? "Channel scan" : "Stopped"), true, run || scanning ? pal::okGreen() : pal::grey());
     field(cur->name);
     snprintf(b, sizeof b, "%.3f MHz", a.freqMhz); field(b);
     if (run) { snprintf(b, sizeof b, "%.3f Msps", a.engine.sampleRate() / 1e6); field(b); }
-    if (run) { snprintf(b, sizeof b, "level %.1f dBFS", a.spec.stats.rmsDbfs); field(b); }
-    if (run && a.engine.droppedSamples()) { snprintf(b, sizeof b, "dropped %llu", (unsigned long long)a.engine.droppedSamples()); field(b, false, pal::warnAmber()); }
+    if (run) { snprintf(b, sizeof b, tr("level %.1f dBFS"), a.spec.stats.rmsDbfs); field(b); }
+    if (run) {
+        const SampleLoss l = a.engine.sampleLoss();
+        if (l.live) { snprintf(b, sizeof b, tr("load %.0f%%"), l.loadPct); field(b, false, l.loadPct > 90 ? pal::warnAmber() : ImVec4(-1, 0, 0, 0)); lossTooltip(l); }
+        if (l.radioEvents || l.cpuEvents) { field((std::string(tr("dropped")) + " " + lossText(l)).c_str(), false, lossColour(l)); lossTooltip(l); }
+    }
     {
         size_t n = 0;
         const std::vector<std::string> lines = a.engine.logSnapshot(n);
-        if (!lines.empty()) field(lines.back().c_str());
+        if (!lines.empty()) field(lines.back().c_str(), false, ImVec4(-1, 0, 0, 0), true);
     }
 }
 } // namespace
@@ -336,7 +486,11 @@ void applyUiTheme(App& a) {
     static ImVec4 classicAccent;
     static bool have = false;
     static int key = -1;
-    if (!have) { classic = ImGui::GetStyle(); classicPlot = plt::GetStyle(); classicAccent = pal::accentRef(); have = true; }
+    static float scale = 0;
+    if (!have) { classic = ImGui::GetStyle(); classicPlot = plt::GetStyle(); classicAccent = pal::accentRef(); have = true; scale = gUi; }
+    // the window went to a monitor with another display scale: main.cpp has just reset the style to the classic one at that scale
+    // (taken again as the classic style), and the chosen theme is applied again with its sizes at the new scale
+    if (gUi != scale) { classic = ImGui::GetStyle(); classicPlot.Scale = gUi; scale = gUi; key = -1; }
     const int want = a.newUi ? 1 + a.uiTheme : 0;
     if (want == key) return;
     key = want;
@@ -375,40 +529,80 @@ void applyUiTheme(App& a) {
 }
 
 namespace {
-const char* kVariantNames[8] = {"Sidebar", "Scope", "Tiles", "Faceplate", "Scope: Cinema", "Scope: Meters", "Scope: Dock", "Panel"};
+const char* kVariantNames[8] = {N_("Sidebar"), N_("Scope"), N_("Tiles"), N_("Faceplate"), N_("Scope: Cinema"), N_("Scope: Meters"), N_("Scope: Dock"), N_("Panel")};
 
 float menuBar(App& a) {
     float menuH = 0;
     if (ImGui::BeginMainMenuBar()) {
         menuH = ImGui::GetWindowHeight();
         const bool running = a.engine.running();
-        if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem(running ? "Stop receiver" : "Start receiver", "Space")) { if (running) a.engine.stop(); else startReceiver(a); }
+        if (ImGui::BeginMenu(tr("File"))) {
+            if (ImGui::MenuItem(tr(running ? "Stop receiver" : "Start receiver"), "Space")) { if (running) a.engine.stop(); else startReceiver(a); }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Mode")) {
+        if (ImGui::BeginMenu(tr("Mode"))) {
             int key = 0;
-            for (int g = 0; g < 3; g++) {
+            for (int g = 0; g < kNumGroups; g++) {
                 if (g) ImGui::Separator();
                 for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g) {
                     char k[4]; snprintf(k, sizeof k, "%d", ++key);
-                    if (ImGui::MenuItem(kModes[i].name, k, kModes[i].family == a.family)) selectMode(a, kModes[i].family);
+                    if (ImGui::MenuItem(kModes[i].name, key <= 9 ? k : nullptr, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);   // only 1-9 are keys
                 }
             }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("View")) {
-            for (int v = 0; v < 8; v++) if (ImGui::MenuItem(kVariantNames[v], nullptr, a.uiVariant == v)) { a.uiVariant = v; savePrefs(a); }
+        if (ImGui::BeginMenu(tr("View"))) {
+            for (int v = 0; v < 8; v++) if (ImGui::MenuItem(tr(kVariantNames[v]), nullptr, a.uiVariant == v)) { a.uiVariant = v; savePrefs(a); }
             ImGui::Separator();
-            static const char* names[3] = {"Terminal palette", "Instrument palette", "Mono palette"};
-            for (int t = 0; t < 3; t++) if (ImGui::MenuItem(names[t], nullptr, a.uiTheme == t)) { a.uiTheme = t; savePrefs(a); }
+            static const char* names[3] = {N_("Terminal palette"), N_("Instrument palette"), N_("Mono palette")};
+            for (int t = 0; t < 3; t++) if (ImGui::MenuItem(tr(names[t]), nullptr, a.uiTheme == t)) { a.uiTheme = t; savePrefs(a); }
+            if (ImGui::MenuItem(tr("Light (dark on white)"), nullptr, &a.lightUi)) savePrefs(a);
+            if (ImGui::BeginMenu(tr("Language"))) { languageMenuItems(a); ImGui::EndMenu(); }
             ImGui::Separator();
-            if (ImGui::MenuItem("Classic interface")) { a.newUi = false; savePrefs(a); }
+            {   // opt-in Discord Rich Presence
+                const bool have = *discord::appId() != 0;
+                ImGui::BeginDisabled(!have);
+                if (ImGui::MenuItem(tr("Show in Discord"), nullptr, &a.discordOn)) savePrefs(a);
+                ImGui::BeginDisabled(!a.discordOn);
+                if (ImGui::MenuItem(tr("Show the frequency"), nullptr, &a.discordFreq)) savePrefs(a);
+                ImGui::EndDisabled();
+                ImGui::EndDisabled();
+                ImGui::SameLine();
+                ImGui::TextDisabled("(?)");
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                    ImGui::SetTooltip("%s", tr(have ? "Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running." : "Discord application ID not set in this build"));
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
+            ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
+            ImGui::MenuItem(tr("Map"), nullptr, &a.mapOpen);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
+            if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
+            ImGui::Separator();
+            if (ImGui::MenuItem(tr("Classic interface"))) { a.newUi = false; savePrefs(a); }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Help")) {
-            if (ImGui::MenuItem("Guided tour")) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
+        if (ImGui::BeginMenu(tr("Help"))) {
+            if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
             ImGui::EndMenu();
+        }
+        {   // the credit, in a quiet box left of the version
+            const char* credit = tr("by: Kristijonas Adomaitis, made with help from the community");
+            const float cw = ImGui::CalcTextSize(credit).x + 2 * ImGui::GetStyle().FramePadding.x;
+            const float x = ImGui::GetWindowWidth() - 150 * gUi - cw - 10 * gUi;
+            if (x > ImGui::GetCursorPosX() + 20 * gUi) {   // only when the menu bar has room for it
+                ImGui::SameLine(x);
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 1, 1, 0.04f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.08f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.08f));
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.62f, 0.68f, 0.75f, 1));
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+                ImGui::SmallButton(credit);
+                ImGui::PopStyleVar();
+                ImGui::PopStyleColor(4);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Thank you to everyone who reported bugs, sent recordings and opened pull requests."));
+            }
         }
         ImGui::SameLine(ImGui::GetWindowWidth() - 150 * gUi);
         updateButton(a);
@@ -424,9 +618,11 @@ void levelMeter(App& a, float x, float y, float w) {
     const float db = running ? a.spec.stats.rmsDbfs : -120.f;
     const int n = 26, lit = (int)std::lround(std::min(1.f, std::max(0.f, (db + 60.f) / 60.f)) * n);
     const float sw = (w - (n - 1) * 2 * gUi) / n, sy = y + 20 * gUi, sh = 12 * gUi;
-    dl->AddText(ImVec2(x, y), u32(T.dim), "ADC level");
     char lv[32]; snprintf(lv, sizeof lv, running ? "%.1f dBFS" : "-", db);
-    dl->AddText(ImVec2(x + w - ImGui::CalcTextSize(lv).x, y), u32(T.text), lv);
+    const float lw = ImGui::CalcTextSize(lv).x, room = w - lw - 8 * gUi;   // a narrow meter: a shorter caption, or none
+    const char* cap = ImGui::CalcTextSize(tr("ADC level")).x <= room ? tr("ADC level") : ImGui::CalcTextSize("ADC").x <= room ? "ADC" : "";
+    dl->AddText(ImVec2(x, y), u32(T.dim), cap);
+    dl->AddText(ImVec2(x + w - lw, y), u32(T.text), lv);
     for (int k = 0; k < n; k++) {
         const bool on = k < lit, hot = k >= n - 2;
         const ImU32 col = on ? (hot ? u32(pal::badRed()) : k >= n - 5 ? u32(pal::warnAmber()) : u32(ImVec4(0.62f, 0.70f, 0.64f, 1))) : u32(ImVec4(0.25f, 0.26f, 0.27f, 1));
@@ -435,7 +631,7 @@ void levelMeter(App& a, float x, float y, float w) {
 }
 
 void volumeControl(App& a, float w) {
-    if (iconFlat(a.muted ? Ic::Mute : Ic::Speaker, a.muted ? "Unmute" : "Mute")) {
+    if (iconFlat(a.muted ? Ic::Mute : Ic::Speaker, tr(a.muted ? "Unmute" : "Mute"))) {
         a.muted = !a.muted;
         a.engine.player().setMuted(a.muted); a.engine.dabAudio().setMuted(a.muted);
     }
@@ -443,7 +639,7 @@ void volumeControl(App& a, float w) {
     ImGui::SetNextItemWidth(w - 34 * gUi);
     float vol = a.volume * 100.f;
     if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) { a.volume = vol / 100.f; a.engine.player().setVolume(a.volume); a.engine.dabAudio().setVolume(a.volume); }
-    if (ImGui::IsItemHovered() && a.family == 9) ImGui::SetTooltip("DMR voice audio is not decoded: AMBE+2 is proprietary, so there is no sound.");
+    if (ImGui::IsItemHovered() && a.family == 9) ImGui::SetTooltip("%s", tr("DMR voice audio is not decoded: AMBE+2 is proprietary, so there is no sound."));
 }
 
 void topBar(App& a, ImVec2 disp) {
@@ -456,12 +652,22 @@ void topBar(App& a, ImVec2 disp) {
         const bool running = a.engine.running();
         const ImVec2 o = ImGui::GetCursorScreenPos();
         if (runButton(running, 40 * gUi) || (!running && a.wizStart)) { if (running) a.engine.stop(); else startReceiver(a); a.wizStart = false; }
+        const float W = ImGui::GetContentRegionAvail().x;
         ImGui::SetCursorScreenPos(ImVec2(o.x + 58 * gUi, o.y));
         const float digitsEnd = freqDigits(a);
-        summary(a, digitsEnd + 34 * gUi, o.y + 6 * gUi);
-        const float vw = 230 * gUi, mw = 260 * gUi;
-        levelMeter(a, o.x + ImGui::GetContentRegionAvail().x - vw - mw - 20 * gUi, o.y, mw);
-        ImGui::SetCursorScreenPos(ImVec2(o.x + ImGui::GetContentRegionAvail().x - vw + 4 * gUi, o.y + 8 * gUi));
+        // a narrow window: the level meter and the volume give up width (the meter goes last), then the summary is cut short
+        const float sumX = digitsEnd + 34 * gUi;
+        float vw = 230 * gUi, mw = 260 * gUi;
+        const float spare = o.x + W - sumX - summaryWidth(a) - 40 * gUi;
+        if (spare < vw + mw) {
+            const float k = std::max(0.f, spare) / (vw + mw);
+            vw = std::max(150.f * gUi, vw * k); mw = std::max(130.f * gUi, mw * k);
+            if (o.x + W - vw - mw - 20 * gUi < sumX + 120 * gUi) mw = 0;
+        }
+        const float meterX = o.x + W - vw - mw - 20 * gUi;
+        summary(a, sumX, o.y + 6 * gUi, 1.f, (mw > 0 ? meterX : o.x + W - vw) - 16 * gUi - sumX);
+        if (mw > 0) levelMeter(a, meterX, o.y, mw);
+        ImGui::SetCursorScreenPos(ImVec2(o.x + W - vw + 4 * gUi, o.y + 8 * gUi));
         volumeControl(a, vw);
     }
     ImGui::EndChild();
@@ -493,34 +699,44 @@ void logConsole(App& a, float h) {
 
 void modeCombo(App& a, float w) {
     const ModeDef* cur = &kModes[0];
-    for (int i = 0; i < kNumModes; i++) if (kModes[i].family == a.family) cur = &kModes[i];
+    for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) cur = &kModes[i];
     ImGui::SetNextItemWidth(w);
     if (ImGui::BeginCombo("##modec", cur->name)) {
-        for (int g = 0; g < 3; g++) {
-            if (g) ImGui::Separator();
-            ImGui::TextDisabled("%s", kGroupNames[g]);
-            for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && ImGui::Selectable(kModes[i].name, kModes[i].family == a.family)) selectMode(a, kModes[i].family);
+        const char* q = modeSearchBox();
+        for (int g = 0; g < kNumGroups; g++) {
+            bool any = false;
+            for (int i = 0; i < kNumModes; i++) any |= kModes[i].group == g && modeMatches(kModes[i], q);
+            if (!any) continue;
+            ImGui::Separator();
+            ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(kGroupCols[g]), "%s", tr(kGroupNames[g]));
+            for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && modeMatches(kModes[i], q)) {
+                ImGui::PushID(i);
+                if (ImGui::Selectable(kModes[i].name, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kModes[i].tip);
+                ImGui::PopID();
+            }
         }
         ImGui::EndCombo();
     }
 }
 
 void displayControls(App& a, bool wide) {
-    ImGui::Checkbox("Peak hold", &a.peakHold);
-    ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("Spectrum"); ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth((wide ? 130 : 104) * gUi);
+    ImGui::Checkbox(tr("Peak hold"), &a.peakHold);
+    ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("%s", tr("Spectrum")); ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth((wide ? 130 : 104) * gUi);
     ImGui::DragFloatRange2("##specdb", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
-    ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("Waterfall"); ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth((wide ? 130 : 104) * gUi);
+    ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("%s", tr("Waterfall")); ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth((wide ? 130 : 104) * gUi);
     ImGui::DragFloatRange2("##wfdb", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
     ImGui::SameLine(0, 4 * gUi);
-    if (ImGui::SmallButton("Auto")) autoRange(a);
+    if (ImGui::SmallButton(tr("Auto"))) autoRange(a);
 }
 
 // ---------------------------------------------------------------- variant 0: sidebar (the parent)
 void bodyParent(App& a, float bodyH, ImVec2 disp) {
-    (void)disp;
+    // a narrow window (a laptop at 125 or 150 %): the side panel and the list on the right give up width before the spectrum does
+    const float sideW = std::floor(std::max(244.f * gUi, std::min(296.f * gUi, disp.x * 0.24f)));
     ImGui::PushStyleColor(ImGuiCol_ChildBg, kRail);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8 * gUi, 6 * gUi));
-    ImGui::BeginChild("##side", ImVec2(296 * gUi, bodyH), ImGuiChildFlags_AlwaysUseWindowPadding);
+    ImGui::BeginChild("##side", ImVec2(sideW, bodyH), ImGuiChildFlags_AlwaysUseWindowPadding);
     ImGui::PopStyleVar();
     sidebar(a);
     ImGui::EndChild();
@@ -531,7 +747,8 @@ void bodyParent(App& a, float bodyH, ImVec2 disp) {
     }
     ImGui::SameLine(0, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4 * gUi, 4 * gUi));
-    ImGui::BeginChild("##content", ImVec2(0, bodyH), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    // scrolls only when even the smallest panes do not fit (a 1366 x 768 screen at 150 %)
+    ImGui::BeginChild("##content", ImVec2(0, bodyH), ImGuiChildFlags_AlwaysUseWindowPadding);
     ImGui::PopStyleVar();
     const float gap = 4 * gUi;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(gap, gap));
@@ -543,8 +760,11 @@ void bodyParent(App& a, float bodyH, ImVec2 disp) {
     beginPane("##status", ImVec2(0, 0), true);
     statusBar(a);
     endPane();
-    const float logH = (a.atsc3Mode ? 0 : 215) * gUi, rightW = 330 * gUi;
-    const float mainH = ImGui::GetContentRegionAvail().y - (logH > 0 ? logH + gap : 0);
+    // the analysis row gives up height (down to 150) before the tabs above it go below 240; the list on the right narrows with the window
+    const float availH = ImGui::GetContentRegionAvail().y;
+    const float logH = a.atsc3Mode ? 0 : std::max(144.f * gUi, std::min(215.f * gUi, availH - gap - 240.f * gUi));
+    const float rightW = std::floor(std::max(236.f * gUi, std::min(330.f * gUi, ImGui::GetContentRegionAvail().x * 0.30f)));
+    const float mainH = std::max(186.f * gUi, availH - (logH > 0 ? logH + gap : 0));
     const float mainW = ImGui::GetContentRegionAvail().x - rightW - gap;
     beginPane("##main2", ImVec2(mainW, mainH));
     tgRect(a, TgMain);
@@ -556,7 +776,7 @@ void bodyParent(App& a, float bodyH, ImVec2 disp) {
     rightPanel(a);
     endPane();
     if (!a.atsc3Mode) {
-        beginPane("##const2", ImVec2(0, 0));
+        beginPane("##const2", ImVec2(0, std::max(logH, ImGui::GetContentRegionAvail().y)));
         tgRect(a, TgConst);
         constellationsTab(a);
         endPane();
@@ -568,11 +788,12 @@ void bodyParent(App& a, float bodyH, ImVec2 disp) {
 void ribbonPane(App& a) {
     beginPane("##ribbon", ImVec2(0, 0), true);
     a.tgMin[TgSwitch] = ImGui::GetCursorScreenPos();
-    ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("MODE"); ImGui::SameLine(0, 6 * gUi); modeCombo(a, 130 * gUi);
+    ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("MODE")); ImGui::SameLine(0, 6 * gUi); modeCombo(a, 130 * gUi);
     a.tgMax[TgSwitch] = ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y);
     ImGui::SameLine(0, 18 * gUi);
     displayControls(a, false);
     toolbarParts(a, TbSource | TbTuner | TbGain | TbDecoder, false);
+    if (a.devices[a.devIdx].isRadio() && !a.devices[a.devIdx].settings.empty()) { ImGui::SameLine(0, 14 * gUi); radioSettingsUi(a, false); }
     if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) sourceOptions(a);
     endPane();
 }
@@ -613,7 +834,7 @@ void bodyScope(App& a, float bodyH, ImVec2 disp) {
 // ---------------------------------------------------------------- variant 2: tiles (no tabs in the way: everything on screen at once, in titled tiles)
 void beginTile(const char* id, const char* title, ImVec2 size) {
     beginPane(id, size);
-    ImGui::TextDisabled("%s", title);
+    ImGui::TextDisabled("%s", tr(title));
     ImGui::Separator();
 }
 
@@ -635,7 +856,7 @@ void bodyTiles(App& a, float bodyH, ImVec2 disp) {
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     const float row1 = std::floor(H * 0.60f) - gap;
     const float wA = std::floor(W * 0.46f), wB = std::floor(W * 0.24f), wC = W - wA - wB - 2 * gap;
-    beginTile("##t_scope", "SPECTRUM / WATERFALL", ImVec2(wA, row1));
+    beginTile("##t_scope", N_("SPECTRUM / WATERFALL"), ImVec2(wA, row1));
     tgRect(a, TgMain);
     mainTabs(a);
     endPane();
@@ -645,28 +866,28 @@ void bodyTiles(App& a, float bodyH, ImVec2 disp) {
     rightPanel(a);
     endPane();
     ImGui::SameLine();
-    beginTile("##t_ctl", "CONTROLS", ImVec2(wC, row1));
+    beginTile("##t_ctl", N_("CONTROLS"), ImVec2(wC, row1));
     tgRect(a, TgToolbar);
-    ImGui::TextDisabled("source"); toolbarParts(a, TbSource, true);
+    ImGui::TextDisabled("%s", tr("source")); toolbarParts(a, TbSource, true);
     ImGui::Spacing();
     a.tgMin[TgSwitch] = ImGui::GetCursorScreenPos();
-    ImGui::TextDisabled("mode"); modeList(a);
+    ImGui::TextDisabled("%s", tr("mode")); modeList(a);
     ImGui::Spacing();
-    ImGui::TextDisabled("tuner"); toolbarParts(a, TbTuner, true);
+    ImGui::TextDisabled("%s", tr("tuner")); toolbarParts(a, TbTuner, true);
     ImGui::Spacing();
-    ImGui::TextDisabled("gain"); toolbarParts(a, TbGain, true);
-    if (a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) { ImGui::Spacing(); ImGui::TextDisabled("decoder"); toolbarParts(a, TbDecoder, true); }
+    ImGui::TextDisabled("%s", tr("gain")); toolbarParts(a, TbGain, true);
+    if (a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) { ImGui::Spacing(); ImGui::TextDisabled("%s", tr("decoder")); toolbarParts(a, TbDecoder, true); }
     endPane();
     const float row2 = ImGui::GetContentRegionAvail().y;
     const float wD = std::floor(W * 0.70f);
     if (!a.atsc3Mode) {
-        beginTile("##t_plots", "ANALYSIS", ImVec2(wD, row2));
+        beginTile("##t_plots", N_("ANALYSIS"), ImVec2(wD, row2));
         tgRect(a, TgConst);
         constellationsTab(a);
         endPane();
         ImGui::SameLine();
     } else a.tgMin[TgConst] = a.tgMax[TgConst] = ImVec2(0, 0);
-    beginTile("##t_log", "LOG", ImVec2(0, row2));
+    beginTile("##t_log", N_("LOG"), ImVec2(0, row2));
     ImGui::BeginChild("##logc", ImVec2(0, 0));
     size_t n = 0;
     const std::vector<std::string> lines = a.engine.logSnapshot(n);
@@ -682,6 +903,7 @@ void bodyTiles(App& a, float bodyH, ImVec2 disp) {
 const ImVec4 kChassis(0.705f, 0.712f, 0.720f, 1), kSilk(0.20f, 0.21f, 0.22f, 1);
 
 void beginModule(const char* id, const char* label, ImVec2 size) {
+    label = tr(label);
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const ImVec2 p = ImGui::GetCursorScreenPos();
     dl->AddText(ImVec2(p.x + 2 * gUi, p.y), u32(kSilk), label);
@@ -713,7 +935,7 @@ void bodyFace(App& a, float bodyH, ImVec2 disp) {
     ImGui::BeginGroup();
     {   // the display: run, frequency, what is being received
         const float dispH = 142 * gUi;
-        beginModule("##f_disp", "DISPLAY", ImVec2(leftW, dispH));
+        beginModule("##f_disp", N_("DISPLAY"), ImVec2(leftW, dispH));
         tgRect(a, TgToolbar);
         const ImVec2 o = ImGui::GetCursorScreenPos();
         const bool running = a.engine.running();
@@ -721,7 +943,7 @@ void bodyFace(App& a, float bodyH, ImVec2 disp) {
         ImGui::SetCursorScreenPos(ImVec2(o.x + 72 * gUi, o.y - 2 * gUi));
         const float end = freqDigits(a, 52.f);
         (void)end;
-        summary(a, o.x + 74 * gUi, o.y + 66 * gUi, 1.5f);
+        summary(a, o.x + 74 * gUi, o.y + 66 * gUi, 1.5f, ImGui::GetContentRegionAvail().x - 74 * gUi);
         const float mw = 250 * gUi;
         levelMeter(a, o.x + ImGui::GetContentRegionAvail().x - mw, o.y, mw);
         ImGui::SetCursorScreenPos(ImVec2(o.x + ImGui::GetContentRegionAvail().x - mw, o.y + 44 * gUi));
@@ -729,7 +951,7 @@ void bodyFace(App& a, float bodyH, ImVec2 disp) {
         endModule();
     }
     {
-        beginModule("##f_scope", "SPECTRUM", ImVec2(leftW, topH - 142 * gUi - 3 * gUi));
+        beginModule("##f_scope", N_("SPECTRUM"), ImVec2(leftW, topH - 142 * gUi - 3 * gUi));
         tgRect(a, TgMain);
         mainTabs(a);
         endModule();
@@ -739,12 +961,12 @@ void bodyFace(App& a, float bodyH, ImVec2 disp) {
     ImGui::BeginGroup();
     {
         const float cH = 188 * gUi;
-        beginModule("##f_src", "SOURCE / GAIN", ImVec2(rightW, cH + 38 * gUi));
+        beginModule("##f_src", N_("SOURCE / GAIN"), ImVec2(rightW, cH + 38 * gUi));
         toolbarParts(a, TbSource, true);
         toolbarParts(a, TbGain, true);
         endModule();
         const float modeModH = (kNumModes * 22 + 3 * 20 + 50) * gUi;   // twelve modes in three groups, then the tuner
-        beginModule("##f_mode", "MODE / TUNER", ImVec2(rightW, modeModH));
+        beginModule("##f_mode", N_("MODE / TUNER"), ImVec2(rightW, modeModH));
         a.tgMin[TgSwitch] = ImGui::GetCursorScreenPos();
         modeList(a);
         toolbarParts(a, TbTuner, true);
@@ -756,13 +978,13 @@ void bodyFace(App& a, float bodyH, ImVec2 disp) {
         tgRect(a, TgRight);
         rightPanel(a);
         endModule();
-        beginModule("##f_log", "LOG", ImVec2(rightW, logH));
+        beginModule("##f_log", N_("LOG"), ImVec2(rightW, logH));
         logConsole(a, 0);
         endModule();
     }
     ImGui::EndGroup();
     if (anaH > 0) {
-        beginModule("##f_ana", "ANALYSIS", ImVec2(W, anaH));
+        beginModule("##f_ana", N_("ANALYSIS"), ImVec2(W, anaH));
         tgRect(a, TgConst);
         constellationsTab(a);
         endModule();
@@ -814,9 +1036,9 @@ void bodyCinema(App& a, float bodyH, ImVec2 disp) {
     } else if (!a.dabMode && a.family < 6) {
         for (const auto& c : a.channels) { char b[64]; snprintf(b, sizeof b, "%.0f %s", c.freqMhz, c.name.empty() ? "mux" : c.name.c_str()); drawChip(b, c.freqMhz, false); }
     }
-    if (!any) { ImGui::AlignTextToFramePadding(); ImGui::TextDisabled(a.fmMode ? "no stations yet: run the scan" : a.dabMode || a.family >= 6 ? "" : "no saved channels yet: run the scan"); ImGui::SameLine(); }
+    if (!any) { ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr(a.fmMode ? "no stations yet: run the scan" : a.dabMode || a.family >= 6 ? "" : "no saved channels yet: run the scan")); ImGui::SameLine(); }
     ImGui::SetCursorScreenPos(ImVec2(right + 8 * gUi, ImGui::GetItemRectMin().y));
-    if (ImGui::SmallButton(open ? "Controls  \xe2\x96\xb4" : "Controls  \xe2\x96\xbe")) open = !open;
+    if (ImGui::SmallButton(tr(open ? "Controls  \xe2\x96\xb4" : "Controls  \xe2\x96\xbe"))) open = !open;
     endPane();
     if (open) ribbonPane(a);
     const float botH = (a.atsc3Mode ? 0 : 118) * gUi;
@@ -908,7 +1130,7 @@ void bodyMeters(App& a, float bodyH, ImVec2 disp) {
     ImGui::SameLine();
     beginPane("##right2", ImVec2(0, mainH));
     tgRect(a, TgRight);
-    ImGui::TextDisabled("INSTRUMENTS");
+    ImGui::TextDisabled("%s", tr("INSTRUMENTS"));
     ImGui::Separator();
     meterBank(a, ImGui::GetContentRegionAvail().x - 4 * gUi);
     ImGui::Separator();
@@ -943,10 +1165,10 @@ void bodyDock(App& a, float bodyH, ImVec2 disp) {
     beginPane("##dock", ImVec2(0, 0));
     tgRect(a, TgConst);
     if (ImGui::BeginTabBar("##docktabs", ImGuiTabBarFlags_DrawSelectedOverline)) {
-        if (!a.atsc3Mode && ImGui::BeginTabItem("Analysis")) { constellationsTab(a); ImGui::EndTabItem(); }
+        if (!a.atsc3Mode && ImGui::BeginTabItem(trw("Analysis"))) { constellationsTab(a); ImGui::EndTabItem(); }
         if (ImGui::BeginTabItem(listTitle(a, false))) { tgRect(a, TgRight); rightPanel(a); ImGui::EndTabItem(); }
-        if (ImGui::BeginTabItem("Receiver")) { statusBar(a); ImGui::Spacing(); receiverGlance(a, ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y); ImGui::EndTabItem(); }
-        if (ImGui::BeginTabItem("Log")) { logConsole(a, 0); ImGui::EndTabItem(); }
+        if (ImGui::BeginTabItem(trw("Receiver"))) { statusBar(a); ImGui::Spacing(); receiverGlance(a, ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y); ImGui::EndTabItem(); }
+        if (ImGui::BeginTabItem(trw("Log"))) { logConsole(a, 0); ImGui::EndTabItem(); }
         ImGui::EndTabBar();
     }
     endPane();
@@ -962,8 +1184,8 @@ void modeKeys(App& a) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const bool running = a.engine.running();
     const ImVec2 first = ImGui::GetCursorScreenPos();
-    for (int g = 0; g < 3; g++) {
-        ImGui::TextDisabled("%s", kGroupNames[g]);
+    for (int g = 0; g < kNumGroups; g++) {
+        ImGui::TextDisabled("%s", tr(kGroupNames[g]));
         for (int i = 0; i < kNumModes; i++) {
             const ModeDef& m = kModes[i];
             if (m.group != g) continue;
@@ -972,7 +1194,7 @@ void modeKeys(App& a) {
             const bool clicked = ImGui::InvisibleButton("##key", ImVec2(w, h));
             ImGui::PopID();
             const bool hov = ImGui::IsItemHovered();
-            const bool sel = m.family == a.family;
+            const bool sel = modeSelected(a, m);
             const ImVec2 p0 = ImGui::GetItemRectMin(), p1 = ImGui::GetItemRectMax();
             const ImU32 plate = sel ? IM_COL32(18, 19, 20, 255) : hov ? IM_COL32(58, 59, 60, 255) : IM_COL32(48, 49, 50, 255);
             dl->AddRectFilled(p0, p1, plate, 2.f);
@@ -992,12 +1214,13 @@ void modeKeys(App& a) {
                 dl->AddCircleFilled(ImVec2(c.x - 1.4f * gUi, c.y - 1.6f * gUi), 1.5f * gUi, IM_COL32(255, 255, 255, 120));
             } else dl->AddCircleFilled(c, 4.4f * gUi, IM_COL32(30, 31, 31, 255));
             const float fs = ImGui::GetFontSize();
-            const ImVec2 ns = ImGui::CalcTextSize(m.name), ss = ImGui::CalcTextSize(m.sub);
+            const char* sub = tr(m.sub);
+            const ImVec2 ns = ImGui::CalcTextSize(m.name), ss = ImGui::CalcTextSize(sub);
             dl->AddText(ImVec2(p0.x + 30 * gUi, p0.y + (h - ns.y) * 0.5f), u32(sel ? T.bright : (running ? T.dim : T.text)), m.name);
             const float sw = ss.x * 0.84f;
-            if (p0.x + 30 * gUi + ns.x + 14 * gUi < p1.x - sw - 8 * gUi) dl->AddText(ImGui::GetFont(), fs * 0.84f, ImVec2(p1.x - sw - 8 * gUi, p0.y + (h - ss.y * 0.84f) * 0.5f), u32(T.dim), m.sub);
-            if (clicked) selectMode(a, m.family);
-            if (hov) ImGui::SetTooltip("%s", running && !sel ? "Stop the receiver to switch mode" : m.tip);
+            if (p0.x + 30 * gUi + ns.x + 14 * gUi < p1.x - sw - 8 * gUi) dl->AddText(ImGui::GetFont(), fs * 0.84f, ImVec2(p1.x - sw - 8 * gUi, p0.y + (h - ss.y * 0.84f) * 0.5f), u32(T.dim), sub);
+            if (clicked) selectMode(a, m.family, m.subId);
+            if (hov) ImGui::SetTooltip("%s", running && !sel ? tr("Stop the receiver to switch mode") : m.tip);
         }
         ImGui::Dummy(ImVec2(1, 2 * gUi));
     }
@@ -1018,36 +1241,37 @@ void bodyPanel(App& a, float bodyH, ImVec2 disp) {
     const float wfH = H - sdrH - ledH - anaH - (anaH > 0 ? 3 : 2) * vgap;
     ImGui::BeginGroup();
     {   // SDR settings: run, frequency, what is received, level and volume; then the source, tuner and gain controls
-        beginModule("##p_sdr", "SDR", ImVec2(leftW, sdrH));
+        beginModule("##p_sdr", N_("SDR"), ImVec2(leftW, sdrH));
         tgRect(a, TgToolbar);
         const ImVec2 o = ImGui::GetCursorScreenPos();
         const bool running = a.engine.running();
         if (runButton(running, 44 * gUi) || (!running && a.wizStart)) { if (running) a.engine.stop(); else startReceiver(a); a.wizStart = false; }
         ImGui::SetCursorScreenPos(ImVec2(o.x + 62 * gUi, o.y - 1 * gUi));
         const float digitsEnd = freqDigits(a, 38.f);
-        summary(a, digitsEnd + 30 * gUi, o.y + 5 * gUi);
         const float vw = 210 * gUi, mw = 250 * gUi;
+        summary(a, digitsEnd + 30 * gUi, o.y + 5 * gUi, 1.f, o.x + ImGui::GetContentRegionAvail().x - vw - mw - 36 * gUi - (digitsEnd + 30 * gUi));
         levelMeter(a, o.x + ImGui::GetContentRegionAvail().x - vw - mw - 20 * gUi, o.y, mw);
         ImGui::SetCursorScreenPos(ImVec2(o.x + ImGui::GetContentRegionAvail().x - vw + 4 * gUi, o.y + 8 * gUi));
         volumeControl(a, vw);
         ImGui::SetCursorScreenPos(ImVec2(o.x, o.y + 52 * gUi));
         toolbarParts(a, TbSource | TbTuner | TbGain | TbDecoder, false);
+        if (a.devices[a.devIdx].isRadio() && !a.devices[a.devIdx].settings.empty()) { ImGui::SameLine(0, 14 * gUi); radioSettingsUi(a, false); }
         if (synth) sourceOptions(a);
         endModule();
     }
     {   // the picture
-        beginModule("##p_wf", "SPECTRUM / WATERFALL", ImVec2(leftW, wfH));
+        beginModule("##p_wf", N_("SPECTRUM / WATERFALL"), ImVec2(leftW, wfH));
         tgRect(a, TgMain);
         mainTabs(a);
         endModule();
     }
     {   // the LEDs
-        beginModule("##p_led", "STATUS", ImVec2(leftW, ledH));
+        beginModule("##p_led", N_("STATUS"), ImVec2(leftW, ledH));
         statusBar(a);
         endModule();
     }
     if (anaH > 0) {
-        beginModule("##p_ana", "CONSTELLATIONS", ImVec2(leftW, anaH));
+        beginModule("##p_ana", N_("CONSTELLATIONS"), ImVec2(leftW, anaH));
         tgRect(a, TgConst);
         constellationsTab(a);
         endModule();
@@ -1057,7 +1281,7 @@ void bodyPanel(App& a, float bodyH, ImVec2 disp) {
     ImGui::BeginGroup();
     {
         const float modeH = (kNumModes * 30 + 3 * 26 + 14) * gUi;
-        beginModule("##p_mode", "MODE", ImVec2(rightW, modeH));
+        beginModule("##p_mode", N_("MODE"), ImVec2(rightW, modeH));
         modeKeys(a);
         endModule();
         beginModule("##p_list", listTitle(a, true), ImVec2(rightW, H - modeH - vgap));
@@ -1075,9 +1299,9 @@ void drawShell2(App& a, ImVec2 disp) {
     {   // keyboard: 1-9 pick a mode, space starts and stops (not while typing)
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantTextInput && !ImGui::IsAnyItemActive() && !io.KeyCtrl && !io.KeyAlt && !io.KeySuper) {
-            for (int k = 0; k < 9; k++) if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_1 + k), false)) {
+            if (!gFreqHovered) for (int k = 0; k < 9; k++) if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_1 + k), false)) {
                 int n = 0;
-                for (int g = 0; g < 3; g++) for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && n++ == k) selectMode(a, kModes[i].family);
+                for (int g = 0; g < kNumGroups; g++) for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && n++ == k) selectMode(a, kModes[i].family, kModes[i].subId);
             }
             if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) { if (a.engine.running()) a.engine.stop(); else startReceiver(a); }
         }

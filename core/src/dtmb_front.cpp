@@ -19,10 +19,10 @@ double besselI0(double x) {
 
 }
 
-bool SrrcResampler::configure(double inRate) {
-    if (inRate < 7.95e6) return false;
+bool SrrcResampler::configure(double inRate, double symRate) {
+    if (inRate < symRate * 1.0516) return false;   // 7.95 Msps for the 8 MHz channel: the roll-off of 0.05 has to fit
     inRate_ = inRate;
-    ratio_ = inRate / kSymbolRate;
+    ratio_ = inRate / symRate;
     half_ = (int)std::ceil(kSpan * ratio_);
     taps_ = 2 * half_;
     stride_ = (taps_ + 7) & ~7;
@@ -96,7 +96,7 @@ size_t SrrcResampler::pull(std::vector<cf32>& out, size_t maxOut) {
         pos_ += step_;
     }
     // drop what is no longer needed
-    const long keepFrom = (long)(pos_ >> 32) - (half_ - 1) - 1;
+    const long keepFrom = (long)(pos_ >> 32) - (half_ - 1) - 1 - kHistory;
     if (keepFrom > 16384) {
         const size_t d = (size_t)keepFrom;
         std::memmove(re_.data(), re_.data() + d, (fill_ - d) * sizeof(float));

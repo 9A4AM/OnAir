@@ -1,4 +1,6 @@
 #include "platform.h"
+#include <cstdlib>
+#include <filesystem>
 #import <Cocoa/Cocoa.h>
 #import <CoreLocation/CoreLocation.h>
 #import <ImageIO/ImageIO.h>
@@ -57,6 +59,20 @@ std::string cacheDir() {
     return d.UTF8String;
 }
 
+std::string dataDir() {
+    // DECT2_DATA_DIR: another folder for everything OnAir writes (test runs keep away from the user's own data)
+    if (const char* o = getenv("DECT2_DATA_DIR"); o && *o) {
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>(o)), ec);
+        return o;
+    }
+    NSArray* a = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+    if (!a.count) return cacheDir();
+    NSString* d = [a[0] stringByAppendingPathComponent:@"OnAir"];
+    [[NSFileManager defaultManager] createDirectoryAtPath:d withIntermediateDirectories:YES attributes:nil error:nil];
+    return d.UTF8String;
+}
+
 bool decodeImage(const std::string& path, int& w, int& h, std::vector<uint32_t>& rgba) {
     @autoreleasepool {
         NSURL* u = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path.c_str()]];
@@ -79,6 +95,12 @@ bool decodeImage(const std::string& path, int& w, int& h, std::vector<uint32_t>&
     }
 }
 
+bool fetchUrl(const std::string& url, const std::string& file, const std::string& userAgent) {
+    auto q = [](const std::string& s) { std::string o = "'"; for (char c : s) { if (c == '\'') o += "'\\''"; else o += c; } return o + "'"; };
+    const std::string cmd = "curl -fsSL --max-time 12 -A " + q(userAgent) + " -o " + q(file) + " " + q(url) + " 2>/dev/null";
+    return system(cmd.c_str()) == 0;
+}
+
 std::string openFileDialog() {
     NSOpenPanel* p = [NSOpenPanel openPanel];
     p.canChooseFiles = YES; p.canChooseDirectories = NO; p.allowsMultipleSelection = NO;
@@ -94,6 +116,13 @@ std::string saveFileDialog(const char* name) {
 }
 
 namespace {
+// Never nil: stringWithUTF8String gives nil for bytes that are not UTF-8 (a service name damaged by bit errors), and nil in the dictionary
+// literal of setChannels() throws. Such bytes are kept as Latin-1.
+NSString* nsText(const std::string& s) {
+    if (NSString* u = [NSString stringWithUTF8String:s.c_str()]) return u;
+    return [[NSString alloc] initWithBytes:s.data() length:s.size() encoding:NSISOLatin1StringEncoding] ?: @"";
+}
+
 struct DefaultsPrefs : Prefs {
     NSUserDefaults* d = NSUserDefaults.standardUserDefaults;
     NSString* k(const char* key) { return [NSString stringWithUTF8String:key]; }
@@ -105,7 +134,7 @@ struct DefaultsPrefs : Prefs {
     void setD(const char* key, double v) override { [d setDouble:v forKey:k(key)]; }
     void setI(const char* key, long v) override { [d setInteger:v forKey:k(key)]; }
     void setB(const char* key, bool v) override { [d setBool:v forKey:k(key)]; }
-    void setS(const char* key, const std::string& v) override { [d setObject:[NSString stringWithUTF8String:v.c_str()] forKey:k(key)]; }
+    void setS(const char* key, const std::string& v) override { [d setObject:nsText(v) forKey:k(key)]; }
     std::vector<Channel> getChannels() override {
         std::vector<Channel> out;
         for (NSDictionary* c in [d arrayForKey:@"channels"]) {
@@ -120,17 +149,46 @@ struct DefaultsPrefs : Prefs {
     void setChannels(const std::vector<Channel>& ch) override {
         NSMutableArray* arr = [NSMutableArray array];
         for (auto& c : ch)
-            [arr addObject:@{@"f": @(c.freqMhz), @"bw": @(c.bwMhz), @"name": [NSString stringWithUTF8String:c.name.c_str()], @"mode": [NSString stringWithUTF8String:c.mode.c_str()], @"snr": @(c.snrDb), @"n": @(c.nServices), @"fav": @(c.favourite)}];
+            [arr addObject:@{@"f": @(c.freqMhz), @"bw": @(c.bwMhz), @"name": nsText(c.name), @"mode": nsText(c.mode), @"snr": @(c.snrDb), @"n": @(c.nServices), @"fav": @(c.favourite)}];
         [d setObject:arr forKey:@"channels"];
+    }
+    std::string setAside() override {
+        NSString* domain = NSBundle.mainBundle.bundleIdentifier ?: NSProcessInfo.processInfo.processName;
+        NSDictionary* old = [d persistentDomainForName:domain];
+        NSString* dir = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/OnAir"];
+        [NSFileManager.defaultManager createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+        NSString* file = [dir stringByAppendingPathComponent:@"settings-crashed.plist"];
+        const bool kept = old && [old writeToURL:[NSURL fileURLWithPath:file] error:nil];
+        [d removePersistentDomainForName:domain];
+        return kept ? std::string(file.UTF8String) : "";
     }
 };
 }
 
-void showFatalError(const char* title, const char* text) { fprintf(stderr, "%s: %s\n", title, text); }
+// also as an alert: started from the Finder, a message on stderr is never seen and the app just disappears. May run before main()
+// (the processor check in main.cpp), so it makes the application object itself.
+void showFatalError(const char* title, const char* text) {
+    fprintf(stderr, "%s: %s\n", title, text);
+    @autoreleasepool {
+        [NSApplication sharedApplication];
+        [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+        [NSApp activateIgnoringOtherApps:YES];
+        NSAlert* a = [[NSAlert alloc] init];
+        a.alertStyle = NSAlertStyleCritical;
+        a.messageText = [NSString stringWithUTF8String:title];
+        a.informativeText = [NSString stringWithUTF8String:text];
+        [a runModal];
+    }
+}
 
 Prefs& prefs() { static DefaultsPrefs p; return p; }
 
 std::vector<std::string> uiFontCandidates() { return {"/System/Library/Fonts/Helvetica.ttc"}; }
+std::vector<std::string> cjkFontCandidates() { return {"/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/STHeiti Medium.ttc", "/System/Library/Fonts/STHeiti Light.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc"}; }
 std::vector<std::string> monoFontCandidates() { return {"/System/Library/Fonts/Menlo.ttc"}; }
+std::string uiLanguage() {
+    NSArray<NSString*>* l = [NSLocale preferredLanguages];   // the order of System Settings > Language & Region
+    return l.count ? std::string([l[0] UTF8String]) : std::string("en");
+}
 
 }

@@ -1,0 +1,80 @@
+// TETRA network information receiver: the TETRA base stations around you, from what every base station broadcasts in the clear to all
+// terminals on its downlink (ETSI EN 300 392-2): the synchronisation channel (BSCH: colour code, MCC, MNC, frame numbers, sharing mode),
+// the broadcast network channel (BNCH SYSINFO: main carrier, band, duplex spacing, location area, cell services and security
+// parameters), the access assignment channel (what each timeslot carries) and the neighbour cell broadcasts on the main control channel.
+// Receive only. Nothing is decrypted and nothing addressed to a terminal is decoded: no voice, no short data, no subscriber identities.
+// Signalling sent with air interface encryption is reported as encrypted and counted, never read. The user is responsible for following
+// the rules on receiving radio signals that apply where they are.
+//
+// The input is taken in blocks of 2.3 s (more than two multiframes, so every carrier's synchronisation burst is in it twice). Each block's
+// spectrum is searched for 25 kHz carriers; each one is brought to 4 samples per symbol, matched filtered (root raised cosine 0.35),
+// frequency corrected (fourth power of the differential symbols), slot synchronised on the training sequences, and its broadcast
+// channels decoded. A block is captured only while the previous one is not being searched, so a slow computer just searches less often.
+//
+// Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
+// telemetry() and the setters from the interface thread.
+#pragma once
+#include "mode_tuning.h"
+#include "ring.h"
+#include "tetra_pdu.h"
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
+
+namespace dect2 {
+
+struct TetraTelemetry;   // tetra_tel.h
+
+class TetraReceiver {
+public:
+    TetraReceiver();
+    ~TetraReceiver();
+
+    void configure(double inputRateHz);
+    void setSignalOffset(double hz);   // where the user's (dial) frequency sits relative to 0 Hz in the input
+    void setCenterHz(double hz);       // the radio's centre frequency (0: unknown, for files)
+    bool ready() const;                // false when the input rate is too low for this mode
+    void reset();                      // after a retune: drop the block being captured (the cell table is kept)
+    void clearCells();                 // the user's Clear button
+    void feed(const cf32* x, size_t n);
+    bool telemetry(TetraTelemetry& out, uint64_t lastSeq);
+    // The cell table and the event log stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
+    void setLogCallback(std::function<void(const std::string&)> cb);
+    bool busy() const;                 // a block is captured or being searched (tools: feed a file only as fast as it is searched)
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> p_;
+};
+
+ModeTuning tetraTuning();
+
+namespace tetra {
+
+// One carrier brought to 72 kHz (4 samples per symbol): x at fs mixed down by shiftHz and filtered to the TETRA channel
+std::vector<cf32> channelize(const cf32* x, size_t n, double fs, double shiftHz);
+
+// What one carrier's capture held
+struct CarrierDecode {
+    bool tetra = false;        // slot synchronised on the training sequences
+    bool synced = false;       // a synchronisation burst (BSCH) decoded
+    Sync sync;                 // the last one
+    int syncs = 0;
+    uint32_t scrambler = 0;    // the cell's scrambling code used for the other channels (0: unknown)
+    double cfoHz = 0;          // the frequency error found, relative to the carrier's assumed centre
+    float snrDb = -99;
+    int slots = 0, trafficSlots = 0, blocksOk = 0, blocksBad = 0;
+    std::vector<MacBlock> macs;
+    int tsUsage[4] = {-1, -1, -1, -1};
+};
+// knownMcc etc.: the identity of a cell already heard on this carrier, used when this capture has no synchronisation burst (-1: none)
+CarrierDecode decodeCarrier(const cf32* x72k, size_t n, int knownMcc = -1, int knownMnc = -1, int knownCc = -1);
+
+} // namespace tetra
+
+} // namespace dect2

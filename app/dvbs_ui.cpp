@@ -42,16 +42,11 @@ const char* stdName(int s) { return s == 1 ? "DVB-S" : s == 2 ? "DVB-S2" : s == 
 std::string fmt(const char* f, double v) { char b[48]; snprintf(b, sizeof b, f, v); return b; }
 std::string cnt(uint64_t v) { return std::to_string((unsigned long long)v); }
 
-// The index of a code rate text in the DVB-S2 table (the order of s2RateName), -1 when it is not one of those
-int s2RateIndex(const std::string& s) {
-    for (int i = 0; i < dvbs::kS2Rates; i++) if (s == dvbs::s2RateName(i)) return i;
-    return -1;
-}
-
-// How far the Es/N0 is above the quasi error free point of table 13 of EN 302 307-1 (DVB-S2 only). False when it cannot be said.
+// How far the Es/N0 is above the quasi error free point of table 13 of EN 302 307-1 (DVB-S2) or tables 20a and 20c of EN 302 307-2 (DVB-S2X).
+// False when it cannot be said.
 bool margin(const DvbsTelemetry& t, double& m) {
     if (t.standard < 2 || t.modulation < 0 || !t.lockCarrier) return false;
-    const int r = s2RateIndex(t.codeRate);
+    const int r = dvbs::s2RateFromName(t.modulation, t.codeRate.c_str(), t.frameSize == 2);
     if (r < 0) return false;
     const double q = dvbs::s2QefEsN0(t.modulation, r, t.frameSize == 2);
     if (q >= 90) return false;
@@ -113,25 +108,21 @@ void status(App& a) {
     const DvbsTelemetry& t = a.rx.dvbs;
     const SignalStats& st = a.spec.stats;
     const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
-    {
-        const ImVec2 p = ImGui::GetCursorScreenPos();
-        const float h = ImGui::GetFrameHeight() * 2.f + ImGui::GetStyle().ItemSpacing.y * 2.f;
-        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(p.x - 4, p.y - 2), ImVec2(p.x + ImGui::GetContentRegionAvail().x + 4, p.y + h), IM_COL32(22, 23, 25, 255), 3.f);
-    }
+    StatusPanel panel;   // a tinted panel behind the status lines (they wrap in a narrow window)
     const Stages s = stages(a);
     const float gap = 12 * gUi;
-    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); ImGui::SameLine(0, gap);
-    lampTip("Carrier", s.carrier, kTipCarrier); ImGui::SameLine(0, gap);
-    lampTip("Timing", s.timing, kTipTiming); ImGui::SameLine(0, gap);
-    lampTip("Framing", s.frame, kTipFrame); ImGui::SameLine(0, gap);
-    lampTip("FEC", s.fec, kTipFec); ImGui::SameLine(0, gap);
-    lampTip("TS lock", s.ts, kTipTs); ImGui::SameLine(0, 10 * gUi);
-    ImGui::TextDisabled("|"); ImGui::SameLine(0, 10 * gUi);
+    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(gap);
+    lampTip("Carrier", s.carrier, kTipCarrier); flowNext(gap);
+    lampTip("Timing", s.timing, kTipTiming); flowNext(gap);
+    lampTip("Framing", s.frame, kTipFrame); flowNext(gap);
+    lampTip("FEC", s.fec, kTipFec); flowNext(gap);
+    lampTip("TS lock", s.ts, kTipTs); flowNext(10 * gUi);
+    ImGui::TextDisabled("|"); flowNext(10 * gUi);
     auto ro = [&](const char* label, const std::string& val, ImVec4 col = ImVec4(0.93f, 0.95f, 0.97f, 1)) {
         ImGui::AlignTextToFramePadding();
         ImGui::TextDisabled("%s", label); ImGui::SameLine(0, 5 * gUi);
         ImGui::PushFont(a.mono, 0); ImGui::TextColored(col, "%s", val.c_str()); ImGui::PopFont();
-        ImGui::SameLine(0, 15 * gUi);
+        flowNext(15 * gUi);
     };
     if (!on) { ro("State", run ? "starting" : "stopped", kDim); return; }
     if (t.tsLock) ro("State", "Locked", pal::okGreen());
@@ -146,7 +137,7 @@ void status(App& a) {
         if (t.vcm) m += " VCM";
         ro("Mode", m);
     }
-    ImGui::NewLine();
+    flowBreak();
     if (t.lockCarrier) {
         ro("Es/N0", fmt("%.1f dB", t.snrDb));
         double m;
@@ -160,7 +151,7 @@ void status(App& a) {
     }
     if (t.packets) ro("Packets", cnt(t.packets));
     if (t.netBitrate > 0) ro("TS", fmt("%.2f Mbit/s", t.netBitrate / 1e6));
-    if (run) ro("dropped", cnt(a.engine.droppedSamples()), a.engine.droppedSamples() ? ImVec4(0.95f, 0.45f, 0.3f, 1) : ImVec4(0.93f, 0.95f, 0.97f, 1));
+    if (run) { const SampleLoss l = a.engine.sampleLoss(); ro("dropped", lossText(l), lossColour(l)); lossTooltip(l); }
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
@@ -216,18 +207,18 @@ void panels(App& a) {
     const float colW = std::max(100.f, (availW - (nPlots + 2) * gap - sqW - readW) / nPlots);
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + gap * 0.5f);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Symbols (%zu)", on ? t.cells.size() : (size_t)0);
+    captionFit(sqW, "Symbols (%zu)", on ? t.cells.size() : (size_t)0);
     scatter("##dvbscst", on ? t.cells : std::vector<cf32>(), ImVec2(sqW, plotH), 1.6, pal::accent(0.45f));
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Es/N0 (dB), last minute");
+    captionFit(colW, "Es/N0 (dB), last minute");
     linePlot("##dvbssnr", std::vector<float>(S.snr.begin(), S.snr.end()), ImVec2(colW, plotH), "reports (~4/s)", "dB", (int)kHist);
     ImGui::EndGroup();
     if (wide) {
         ImGui::SameLine(0, gap);
         ImGui::BeginGroup();
-        ImGui::TextDisabled("MER per frame (dB)");
+        captionFit(colW, "MER per frame (dB)");
         const int xs = (int)std::max<size_t>(60, t.merHistory.size());
         std::vector<float> mer;   // the first entries, before the carrier loop has settled, are zero
         if (on) for (float m : t.merHistory) if (m > 0 || !mer.empty()) mer.push_back(m);
@@ -236,18 +227,20 @@ void panels(App& a) {
     }
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Lock stages and counters");
-    ImGui::BeginChild("##dvbsrd", ImVec2(readW, plotH + ImGui::GetFrameHeight() * 0.5f), 0, ImGuiWindowFlags_NoScrollbar);
+    captionFit(readW, "Lock stages and counters");
+    ImGui::BeginChild("##dvbsrd", ImVec2(readW, plotH + ImGui::GetFrameHeight() * 0.5f));   // scrolls when the row is short
     const Stages s = stages(a);
     const float g2 = 8 * gUi;
-    lampTip("Carrier", s.carrier, kTipCarrier); ImGui::SameLine(0, g2);
-    lampTip("Timing", s.timing, kTipTiming); ImGui::SameLine(0, g2);
+    lampTip("Carrier", s.carrier, kTipCarrier); flowNext(g2);   // the lamps wrap in a narrow readout
+    lampTip("Timing", s.timing, kTipTiming); flowNext(g2);
     lampTip("Framing", s.frame, kTipFrame);
-    lampTip("FEC", s.fec, kTipFec); ImGui::SameLine(0, g2);
+    flowEnd();
+    lampTip("FEC", s.fec, kTipFec); flowNext(g2);
     lampTip("TS lock", s.ts, kTipTs);
+    flowEnd();
     auto kv = [&](const char* k, const std::string& v) {
-        ImGui::TextDisabled("%s", k); ImGui::SameLine(84 * gUi);
-        ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(v.c_str()); ImGui::PopFont();
+        ImGui::TextDisabled("%s", k); kvColumn(84 * gUi);
+        ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont();
     };
     if (on) {
         if (t.standard >= 2) {
@@ -357,7 +350,7 @@ void receiver(App& a) {
             if (i < v.size() && v[i].v == "#") { ImGui::TextColored(pal::accent(), "%s", v[i].k.c_str()); ImGui::TableNextColumn(); return; }
             if (i < v.size()) ImGui::TextDisabled("%s", v[i].k.c_str());
             ImGui::TableNextColumn();
-            if (i < v.size() && !v[i].v.empty()) { ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(v[i].v.c_str()); ImGui::PopFont(); }
+            if (i < v.size() && !v[i].v.empty()) { ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v[i].v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont(); }   // wraps in a narrow column
         };
         for (size_t i = 0; i < rows; i++) { ImGui::TableNextRow(); cell(L, i); cell(R, i); }
         ImGui::EndTable();
@@ -366,9 +359,9 @@ void receiver(App& a) {
     ImGui::TextColored(pal::accent(), "NOTES");
     ImGui::PushTextWrapPos(0);
     if (!t.signalNote.empty()) ImGui::TextUnformatted(t.signalNote.c_str());
-    ImGui::TextDisabled("DVB-S2X: its signalling is reported when it is seen; S2X-only modes (more MODCODs, wide carriers, bundled channels) are not decoded yet.");
-    if (t.standard == 3) ImGui::TextUnformatted("An S2X signal was recognised. Only the DVB-S2 compatible part can be decoded.");
-    ImGui::TextDisabled("Margin is measured against the ideal-demodulator Es/N0 of EN 302 307-1 table 13 (50 LDPC iterations): a real receiver needs a little more.");
+    ImGui::TextDisabled("DVB-S2X: the MODCODs of EN 302 307-2 table 17a are decoded; VL-SNR frames, superframes and bundled channels are only followed, not decoded.");
+    if (t.standard == 3) ImGui::TextUnformatted("A DVB-S2X signal was recognised.");
+    ImGui::TextDisabled("Margin is measured against the ideal-demodulator Es/N0 of EN 302 307-1 table 13 (DVB-S2X: EN 302 307-2 tables 20a and 20c, 50 LDPC iterations): a real receiver needs a little more.");
     ImGui::PopTextWrapPos();
     ImGui::EndChild();
 }
@@ -387,7 +380,7 @@ void tuner(App& a, bool& retune) {
                           "A HackRF sees about 17 MHz of band at most (20 Msps), which is a carrier of up to about %.1f Msym/s.\n"
                           "At %.0f Msps the limit is %.1f Msym/s. Wide transponders (27.5 Msym/s and more) do not fit: use a recording or a wider radio.",
                           dvbsMaxSymbolRate(20e6) / 1e6, fs / 1e6, dvbsMaxSymbolRate(fs) / 1e6);
-    ImGui::SameLine(0, 6 * gUi);
+    sameLineIf(ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x + ImGui::CalcTextSize("Auto").x, 6 * gUi);
     bool autoSr = S.srMsym <= 0;
     if (ImGui::Checkbox("Auto##dvbssr", &autoSr)) {
         if (autoSr) S.srMsym = 0;
@@ -397,9 +390,9 @@ void tuner(App& a, bool& retune) {
         }
         ch = true;
     }
-    ImGui::SameLine(0, 6 * gUi);
+    sameLineIf(104 * gUi, 6 * gUi);
     ImGui::BeginDisabled(autoSr);
-    ImGui::SetNextItemWidth(104 * gUi);
+    ImGui::SetNextItemWidth(std::min(104 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
     double v = autoSr ? (live(a) ? a.rx.dvbs.symbolRate / 1e6 : 0.0) : S.srMsym;
     if (ImGui::InputDouble("##dvbssrv", &v, 0, 0, autoSr ? "%.3f Msym/s" : "%.3f Msym/s")) {
         if (!autoSr) { S.srMsym = std::max(0.05, std::min(maxMsym, v)); ch = true; }
@@ -408,7 +401,7 @@ void tuner(App& a, bool& retune) {
     ImGui::TextDisabled("Standard");
     ImGui::SameLine(0, 6 * gUi);
     static const char* names[] = {"Auto", "DVB-S only", "DVB-S2 only"};
-    ImGui::SetNextItemWidth(120 * gUi);
+    ImGui::SetNextItemWidth(std::min(120 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
     if (ImGui::BeginCombo("##dvbsstd", names[S.stdHint])) {
         for (int i = 0; i < 3; i++) if (ImGui::Selectable(names[i], S.stdHint == i)) { S.stdHint = i; ch = true; }
         ImGui::EndCombo();
@@ -419,21 +412,36 @@ void tuner(App& a, bool& retune) {
 
 // ---------------------------------------------------------------------------------------------- test signal
 
-// Rates the combination offers, in the generator's numbering (S2: index into s2RateName; S: 0..4 = 1/2 2/3 3/4 5/6 7/8)
+// Rates the combination offers, in the generator's numbering (S2: index into s2RateName; S: 0..4 = 1/2 2/3 3/4 5/6 7/8; S2X: the position among
+// the MODCODs of the modulation and frame size, dvbs_gen.h)
 const char* kS1Rates[] = {"1/2", "2/3", "3/4", "5/6", "7/8"};
 const char* kRoll[] = {"0.35", "0.25", "0.20", "0.15", "0.10", "0.05"};
 
+bool isS2x(const SynthConfig& sc) { return sc.modeOpt[0] == 2; }
+int s2xMod(const SynthConfig& sc) { return std::max(0, std::min(dvbs::kS2Mods - 1, sc.modeOpt[1])); }
+// the frame size the generator sends for S2X: 64APSK and up have normal frames only
+bool s2xShort(const SynthConfig& sc) { return sc.modeOpt[4] != 0 && dvbs::s2xRateCount(s2xMod(sc), true) > 0; }
+// S2X: the rate combo item of a MODCOD, its code rate and "8APSK" where the modulation is not the one of the combo
+std::string s2xRateLabel(int rate) {
+    std::string l = dvbs::s2RateName(rate);
+    for (int m = 0; m < dvbs::kS2Mods; m++)
+        if (dvbs::s2Modcod(m, rate) >= 0 && std::string(dvbs::s2ModNameFor(m, rate)) != dvbs::s2ModName(m)) l += std::string(" ") + dvbs::s2ModNameFor(m, rate);
+    return l;
+}
+
 bool rateOk(const SynthConfig& sc, int rate) {
     if (sc.modeOpt[0] == 1) return rate >= 0 && rate <= 4;
+    if (isS2x(sc)) return rate >= 0 && rate < dvbs::s2xRateCount(s2xMod(sc), s2xShort(sc));
     return dvbs::s2Dims(std::max(0, std::min(3, sc.modeOpt[1])), rate, sc.modeOpt[4] != 0).ok;
 }
-int curRate(const SynthConfig& sc) { return sc.modeOpt[2] ? sc.modeOpt[2] - 1 : (sc.modeOpt[0] == 1 ? 1 : 5); }
+int curRate(const SynthConfig& sc) { return sc.modeOpt[2] ? sc.modeOpt[2] - 1 : (sc.modeOpt[0] == 1 ? 1 : isS2x(sc) ? 0 : 5); }
 
 // Some combinations do not exist (32APSK 1/2, short 9/10 ...): move to the nearest rate that does, so the generator never gets one
 void fixRate(SynthConfig& sc) {
+    if (!isS2x(sc)) sc.modeOpt[1] = std::max(0, std::min(3, sc.modeOpt[1]));     // 64APSK and up are S2X only
     int r = curRate(sc);
     if (rateOk(sc, r)) return;
-    const int n = sc.modeOpt[0] == 1 ? 5 : dvbs::kS2Rates;
+    const int n = sc.modeOpt[0] == 1 ? 5 : isS2x(sc) ? dvbs::s2xRateCount(s2xMod(sc), s2xShort(sc)) : dvbs::kS2Rates;
     for (int d = 1; d < n; d++) {
         if (r + d < n && rateOk(sc, r + d)) { r += d; break; }
         if (r - d >= 0 && rateOk(sc, r - d)) { r -= d; break; }
@@ -441,48 +449,52 @@ void fixRate(SynthConfig& sc) {
     sc.modeOpt[2] = r + 1;
 }
 
-// Start the next control on the same line when it fits, else on a new one
-void fit(float w) {
-    if (ImGui::GetContentRegionAvail().x > w + ImGui::GetStyle().ItemSpacing.x) ImGui::SameLine(0, 10 * gUi);
-}
-
+// the options wrap onto more lines in a narrow window (flowNext() between them)
 void synth(App& a, bool& changed) {
     SynthConfig& sc = a.tune.synth;
     const bool s1 = sc.modeOpt[0] == 1;
     ImGui::SetNextItemWidth(78 * gUi);
     {
-        static const char* nm[] = {"DVB-S2", "DVB-S"};
-        if (ImGui::BeginCombo("##dvstd", nm[s1 ? 1 : 0])) {
-            for (int i = 0; i < 2; i++) if (ImGui::Selectable(nm[i], (i == 1) == s1)) { sc.modeOpt[0] = i; fixRate(sc); changed = true; }
+        static const char* nm[] = {"DVB-S2", "DVB-S", "DVB-S2X"};
+        const int sd = std::max(0, std::min(2, sc.modeOpt[0]));
+        if (ImGui::BeginCombo("##dvstd", nm[sd])) {
+            for (int i = 0; i < 3; i++) if (ImGui::Selectable(nm[i], i == sd)) { sc.modeOpt[0] = i; fixRate(sc); changed = true; }
             ImGui::EndCombo();
         }
     }
-    fit(96 * gUi);
+    flowNext(10 * gUi);
     ImGui::BeginDisabled(s1);
     ImGui::SetNextItemWidth(74 * gUi);
     {
-        const int m = s1 ? 0 : std::max(0, std::min(3, sc.modeOpt[1]));
+        const int nMod = isS2x(sc) ? dvbs::kS2Mods : 4;
+        const int m = s1 ? 0 : std::max(0, std::min(nMod - 1, sc.modeOpt[1]));
         if (ImGui::BeginCombo("##dvmod", dvbs::s2ModName(m))) {
-            for (int i = 0; i < 4; i++) if (ImGui::Selectable(dvbs::s2ModName(i), i == m)) { sc.modeOpt[1] = i; fixRate(sc); changed = true; }
+            for (int i = 0; i < nMod; i++) if (ImGui::Selectable(dvbs::s2ModName(i), i == m)) { sc.modeOpt[1] = i; fixRate(sc); changed = true; }
             ImGui::EndCombo();
         }
     }
     ImGui::EndDisabled();
-    fit(70 * gUi);
+    flowNext(10 * gUi);
     ImGui::SetNextItemWidth(62 * gUi);
     {
         const int r = curRate(sc);
-        if (ImGui::BeginCombo("##dvrate", s1 ? kS1Rates[std::max(0, std::min(4, r))] : dvbs::s2RateName(std::max(0, std::min(10, r))))) {
-            const int n = s1 ? 5 : dvbs::kS2Rates;
+        const bool x = isS2x(sc);
+        auto label = [&](int i) -> std::string {
+            if (s1) return kS1Rates[std::max(0, std::min(4, i))];
+            if (x) return s2xRateLabel(dvbs::s2xRate(s2xMod(sc), s2xShort(sc), i));
+            return dvbs::s2RateName(std::max(0, std::min(10, i)));
+        };
+        if (ImGui::BeginCombo("##dvrate", label(r).c_str())) {
+            const int n = s1 ? 5 : x ? dvbs::s2xRateCount(s2xMod(sc), s2xShort(sc)) : dvbs::kS2Rates;
             for (int i = 0; i < n; i++) {
                 if (!rateOk(sc, i)) continue;
-                if (ImGui::Selectable(s1 ? kS1Rates[i] : dvbs::s2RateName(i), i == r)) { sc.modeOpt[2] = i + 1; changed = true; }
+                if (ImGui::Selectable(label(i).c_str(), i == r)) { sc.modeOpt[2] = i + 1; changed = true; }
             }
             ImGui::EndCombo();
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Code rate. Only the combinations the standard defines are listed.");
     }
-    fit(130 * gUi);
+    flowNext(10 * gUi);
     ImGui::TextDisabled("Rs");
     ImGui::SameLine(0, 4 * gUi);
     ImGui::SetNextItemWidth(98 * gUi);
@@ -496,7 +508,7 @@ void synth(App& a, bool& changed) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Symbol rate of the test signal. Press Enter to apply. The limit is set by the sample rate (%.1f Msym/s at %.0f Msps).",
                                                       dvbsMaxSymbolRate(dvbsTuning().sampleRate) / 1e6, dvbsTuning().sampleRate / 1e6);
     }
-    fit(95 * gUi);
+    flowNext(10 * gUi);
     ImGui::TextDisabled("RO");
     ImGui::SameLine(0, 4 * gUi);
     ImGui::SetNextItemWidth(60 * gUi);
@@ -507,7 +519,7 @@ void synth(App& a, bool& changed) {
             ImGui::EndCombo();
         }
     }
-    fit(60 * gUi);
+    flowNext(10 * gUi);
     ImGui::BeginDisabled(s1);
     {
         bool sh = !s1 && sc.modeOpt[4] != 0;
@@ -518,13 +530,13 @@ void synth(App& a, bool& changed) {
         if (ImGui::Checkbox("pilots", &pl)) { sc.modeOpt[5] = pl ? 1 : 0; changed = true; }
     }
     ImGui::EndDisabled();
-    fit(70 * gUi);
+    flowNext(10 * gUi);
     {
         bool inv = sc.modeOpt[6] != 0;
         if (ImGui::Checkbox("inverted", &inv)) { sc.modeOpt[6] = inv ? 1 : 0; changed = true; }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Turn the spectrum around, as an LNB with a high-side oscillator does.");
     }
-    fit(128 * gUi);
+    flowNext(10 * gUi);
     ImGui::BeginDisabled(s1);
     ImGui::SetNextItemWidth(118 * gUi);
     {
@@ -537,11 +549,11 @@ void synth(App& a, bool& changed) {
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("VCM demo: the MODCOD changes from frame to frame.\nLNB noise: oscillator phase noise of EN 302 307-1 annex H.8 (DVB-S2 only).");
     }
     ImGui::EndDisabled();
-    fit(115 * gUi);
+    flowNext(10 * gUi);
     ImGui::TextDisabled("Es/N0");
     ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth(70 * gUi);
     { float snr = (float)sc.snrDb; if (ImGui::SliderFloat("##dvsnr", &snr, 0, 30, "%.0f dB")) { sc.snrDb = snr; changed = true; } }
-    fit(130 * gUi);
+    flowNext(10 * gUi);
     ImGui::TextDisabled("CFO");
     ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth(92 * gUi);
     { float cfo = (float)(sc.cfoHz / 1e3); if (ImGui::SliderFloat("##dvcfo", &cfo, -2000, 2000, "%.0f kHz")) { sc.cfoHz = cfo * 1e3; changed = true; } }
@@ -560,6 +572,13 @@ void meters(const App& a, std::vector<ModeMeter>& out) {
 }
 
 } // namespace
+
+// The spectrum explorer hands a carrier over: its symbol rate (Msym/s, 0 = automatic) becomes the manual setting
+void dvbsSetSymbolRate(App& a, double msym) {
+    loadState();
+    S.srMsym = std::max(0.0, msym);
+    saveState(a);
+}
 
 extern const ModeUi kDvbsUi;
 const ModeUi kDvbsUi = {

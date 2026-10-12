@@ -1,4 +1,4 @@
-// DRM receiver front end: any input rate to the 48 kHz complex baseband the OFDM receiver works on. Private to the DRM receiver.
+// DRM receiver front end: any input rate to the 48 kHz complex baseband the OFDM receiver works on (DRM+, mode E: 192 kHz). Private to the DRM receiver.
 #pragma once
 #include "dect2/exact_resampler.h"
 #include "dect2/ring.h"
@@ -38,20 +38,22 @@ private:
 class DrmFront {
 public:
     static constexpr double kOutRate = 48000.0;
-    bool configure(double inRate);        // false: the rate is below 48 kHz
+    // false: the rate is below minIn (default: the output rate). outRate 48 kHz keeps +-22 kHz, 192 kHz (DRM+) +-60 kHz.
+    bool configure(double inRate, double outRate = kOutRate, double minIn = 0);
+    double outRate() const { return outRate_; }
     bool ready() const { return ready_; }
     void reset();
-    // Appends the 48 kHz samples of the n input samples (DC removed) to out
+    // Appends the output samples of the n input samples (DC removed) to out
     void process(const cf32* in, size_t n, std::vector<cf32>& out);
     double levelDbfs() const;             // mean power of the 48 kHz stream since the last call, in dB re full scale
     void resetLevel() { pw_ = 0; pn_ = 0; }
 private:
-    double inRate_ = 0;
+    double inRate_ = 0, outRate_ = kOutRate;
     bool ready_ = false, pass_ = false;
     std::vector<DecimFir> stages_;
     ExactResampler rs_;
     bool useRs_ = false;
-    std::vector<cf32> a_, b_, c_;
+    std::vector<cf32> a_, b_, c_, clean_;
     cf32 dc_ = cf32(0, 0);
     float dcA_ = 0;
     double pw_ = 0; uint64_t pn_ = 0;

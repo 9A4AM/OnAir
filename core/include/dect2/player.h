@@ -15,9 +15,19 @@
 
 namespace dect2 {
 
+// Display aspect ratio (width / height) of a picture of w x h stored pixels whose pixels have the sample aspect ratio sarN:sarD.
+// An unknown or invalid SAR (0/0, a zero or negative part) means square pixels. Never returns less than a tiny positive value.
+inline double displayAspect(int w, int h, int sarN, int sarD) {
+    if (w <= 0 || h <= 0) return 1.0;
+    double sar = (sarN > 0 && sarD > 0) ? (double)sarN / sarD : 1.0;
+    if (sar < 0.05 || sar > 20.0) sar = 1.0;     // nonsense in the stream: treat as square
+    return (double)w * sar / h;
+}
+
 struct VideoFrame {
     double pts = 0;
     int w = 0, h = 0;
+    double dar = 0;                      // display aspect ratio (width / height) of the picture; 0 = unknown, draw w / h
     std::vector<uint8_t> rgba;           // RGBA8, only when a subtitle was burnt in; otherwise empty
     std::vector<uint8_t> y, uv;          // NV12 planes (w*h and w*(h/2) bytes, tightly packed); converted to RGB on the GPU
     bool bt709 = true, fullRange = false, interlaced = false;
@@ -45,7 +55,16 @@ struct PlayerStats {
     double concealedAudioSec = 0;
     uint64_t repairEvents = 0, repairedFrames = 0;   // damaged pictures replaced by generated ones
     std::string concealBackend;          // how missing pictures are made: "Apple ML" or "motion search"
+    // what of the service the FFmpeg in OnAir cannot show or play (AVS+ / AVS2 / AVS3 video, DRA sound; docs/CODECS.md), one sentence, else empty
+    std::string videoNote, audioNote;
 };
+
+// The profile_id of the first AVS1-P2 / AVS+ sequence header (start code 00 00 01 B0) in p, -1 when there is none
+int avsProfileId(const uint8_t* p, size_t n);
+// Why an AVS family video stream gives no picture: codec as FFmpeg names it ("cavs", "avs2", "avs3"), whether this FFmpeg has a decoder for
+// it, the profile from avsProfileId() (-1 not seen yet). Empty when it can be decoded (or nothing is known yet).
+std::string avsVideoNote(const std::string& codec, bool haveDecoder, int profile);
+extern const char* const kDraAudioNote;   // a service whose sound is DRA only
 
 class Player {
 public:
@@ -80,7 +99,7 @@ private:
     std::thread th_;
     std::atomic<bool> stop_{false}, restart_{false};
     std::atomic<bool> subsOn_{true}, subsAvail_{false};
-    std::atomic<bool> conceal_{true};
+    std::atomic<bool> conceal_{false};   // off by default: interpolating pictures costs CPU that slower computers need for decoding
     std::atomic<bool> hwAllowed_{true};
     ServiceFilter filter_;
     std::mutex mu_;
@@ -91,6 +110,7 @@ private:
     uint64_t pushed_ = 0, consumed_ = 0;
     int lastCc_[8192];
     std::atomic<int> videoPid_{-1};
+    std::atomic<bool> draAudio_{false};   // the selected service carries DRA sound (from the service list)
 };
 
 } // namespace dect2

@@ -30,8 +30,11 @@ public:
     void configure(double videoRate, bool colourCapable);
     void reset();                                    // forget the signal; counters keep running
     void setParams(const AtvVideoParams& p);
-    void setSoundSpacing(double mhz);                // from the carrier search: tells B/G from I, D/K and N
+    void setSoundSpacing(double mhz);                // from the carrier search: tells B/G from I, D/K and N (and C from L)
+    void setMirrored(bool on);                       // the channel was found turned round (sound below the vision carrier): L' rather than L
+    bool positive() const;                           // the line sync was found with positive modulation (A, C, E, L): the input is negated inside
     void setSlicerWidth(double us);                  // 1.0 normally, 2.4 for a weak signal; restarts the line search
+    void setFmVideo(bool on);                        // FM video (FPV): follow the baseline wander of an AC coupled transmitter
     void setNoiseScale(double s);                    // C/N in 5 MHz = carrier power * s / noise power measured in the video-rate baseband: s = filter noise gain * input rate / 5 MHz
     void process(const float* v, const float* i, const float* q, size_t n);
 

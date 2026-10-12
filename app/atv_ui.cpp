@@ -18,7 +18,8 @@ struct State {
     bool colourOn = true;
     float saturation = 1.f, hue = 0.f;
     int detector = 0;                           // 0 automatic, 1 envelope only
-    int pushedDeint = -1, pushedSys = -2, pushedCol = -2, pushedDet = -1;
+    int pushedDeint = -1, pushedSys = -2, pushedCol = -2, pushedDet = -1, pushedMod = -1, pushedLines = -1;
+    float pushedFps = -1.f;
     bool pushedColourOn = true;
     float pushedSat = -1.f, pushedHue = -999.f;
     float pushedVol = -1.f;
@@ -38,7 +39,8 @@ void loadState() {
 const ImVec4 kDim(0.62f, 0.65f, 0.68f, 1);
 
 // name and colour system hints, in the order of AtvSys and AtvColourKind
-const char* const kSysNames[] = {"B (7 MHz)", "G (8 MHz)", "I", "D/K", "M", "N"};
+const char* const kSysNames[] = {"B (7 MHz)", "G (8 MHz)", "I", "D/K", "M", "N", "A (405 lines)", "C", "E (819 lines)", "H", "K'", "L", "L' (band I)"};
+static_assert(sizeof(kSysNames) / sizeof(kSysNames[0]) == kAtvSysCount, "a name for every system");
 const char* const kColNames[] = {"mono", "PAL", "NTSC", "SECAM"};
 
 void pushControls(App& a) {
@@ -49,6 +51,9 @@ void pushControls(App& a) {
     if (S.pushedSat != S.saturation) { rx.setSaturation(S.saturation); S.pushedSat = S.saturation; }
     if (S.pushedHue != S.hue) { rx.setHue(S.hue); S.pushedHue = S.hue; }
     if (S.pushedDet != S.detector) { rx.setDetector(S.detector); S.pushedDet = S.detector; }
+    if (S.pushedLines != a.atvNbtvLines || S.pushedFps != a.atvNbtvFps) { rx.setNbtv(a.atvNbtvLines, a.atvNbtvFps); S.pushedLines = a.atvNbtvLines; S.pushedFps = a.atvNbtvFps; }
+    const int mod = a.atvNbtv ? 1 + a.atvNbtv : a.atvFm ? 1 : 0;
+    if (S.pushedMod != mod) { rx.setModulation(mod); S.pushedMod = mod; }
 }
 
 // the sound controls are shared with the other modes: push them to the receiver when they change or it starts
@@ -57,7 +62,8 @@ void tick(App& a) {
     const bool run = a.engine.running();
     if (run) {
         if (!S.wasRunning) {   // a new run: send everything again
-            S.pushedDeint = -1; S.pushedSys = -2; S.pushedCol = -2; S.pushedDet = -1; S.pushedSat = -1.f; S.pushedHue = -999.f; S.pushedVol = -1.f;
+            S.pushedDeint = -1; S.pushedSys = -2; S.pushedCol = -2; S.pushedDet = -1; S.pushedMod = -1; S.pushedSat = -1.f; S.pushedHue = -999.f; S.pushedVol = -1.f;
+            S.pushedLines = -1; S.pushedFps = -1.f;
             S.pushedColourOn = !S.colourOn;
         }
         pushControls(a);
@@ -75,8 +81,8 @@ void tick(App& a) {
 std::string num(bool has, const char* fmt, double v) { if (!has) return "-"; char b[40]; snprintf(b, sizeof b, fmt, v); return b; }
 
 void kv(const App& a, const char* k, const std::string& v, float col = 130) {
-    ImGui::TextDisabled("%s", k); ImGui::SameLine(col * gUi);
-    ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(v.c_str()); ImGui::PopFont();
+    ImGui::TextDisabled("%s", k); kvColumn(col * gUi);   // a narrow pane: the column moves left and the value wraps
+    ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont();
 }
 
 struct Grid { float v; const char* label; };
@@ -89,21 +95,29 @@ void scope(const char* id, ImVec2 size, const std::vector<float>& w, float lo, f
     ImGui::InvisibleButton(id, size);
     const ImVec2 p1(p0.x + size.x, p0.y + size.y);
     dl->AddRectFilled(p0, p1, IM_COL32(8, 9, 10, 255));
-    const float labW = 34 * gUi, labH = ImGui::GetTextLineHeight() + 2;
+    float labW = 34 * gUi;   // room for the widest level label
+    for (const Grid& g : hLines) labW = std::max(labW, ImGui::CalcTextSize(g.label).x + 6 * gUi);
+    const float labH = ImGui::GetTextLineHeight() + 2;
     const ImVec2 a0(p0.x + labW, p0.y + 4 * gUi), a1(p1.x - 6 * gUi, p1.y - labH);   // the area of the trace
     if (a1.x - a0.x < 20 || a1.y - a0.y < 20) return;
     auto Y = [&](float v) { return a1.y - (v - lo) / (hi - lo) * (a1.y - a0.y); };
     const ImU32 grid = IM_COL32(48, 52, 54, 255), txt = IM_COL32(120, 124, 128, 255);
+    float lastY = -FLT_MAX;   // a small scope: a label that would touch the one before it is left out (the grid line stays)
     for (const Grid& g : hLines) {
         const float y = Y(g.v);
         dl->AddLine(ImVec2(a0.x, y), ImVec2(a1.x, y), grid);
+        if (std::fabs(y - lastY) < ImGui::GetTextLineHeight()) continue;
         dl->AddText(ImVec2(p0.x + 3 * gUi, y - ImGui::GetTextLineHeight() * 0.5f), txt, g.label);
+        lastY = y;
     }
+    float lastX = -FLT_MAX;
     for (const Grid& g : xTicks) {
         const float x = a0.x + g.v * (a1.x - a0.x);
         dl->AddLine(ImVec2(x, a0.y), ImVec2(x, a1.y), grid);
-        const float tw = ImGui::CalcTextSize(g.label).x;
-        dl->AddText(ImVec2(std::min(x - tw * 0.5f, a1.x - tw), a1.y + 1), txt, g.label);
+        const float tw = ImGui::CalcTextSize(g.label).x, lx = std::min(x - tw * 0.5f, a1.x - tw);
+        if (lx < lastX + 4 * gUi) continue;
+        dl->AddText(ImVec2(lx, a1.y + 1), txt, g.label);
+        lastX = lx + tw;
     }
     if (w.size() < 2) return;
     dl->PushClipRect(a0, a1, true);
@@ -147,16 +161,22 @@ void spectrumScope(const App& a, ImVec2 size, bool on) {
     if (on && !t.specDb.empty()) { float mx = -200; for (float v : t.specDb) mx = std::max(mx, v); top = std::ceil(mx / 10.f) * 10.f; bot = top - 70.f; }
     auto X = [&](double mhz) { return a0.x + (float)((mhz - f0) / (f1 - f0)) * (a1.x - a0.x); };
     auto Y = [&](float v) { return a1.y - (v - bot) / (top - bot) * (a1.y - a0.y); };
+    float lastY = FLT_MAX, lastX = -FLT_MAX;   // a small plot: labels that would touch the one before are left out (the grid lines stay)
     for (float d = bot; d <= top + 0.1f; d += 10.f) {
         dl->AddLine(ImVec2(a0.x, Y(d)), ImVec2(a1.x, Y(d)), grid);
+        if (lastY - Y(d) < ImGui::GetTextLineHeight()) continue;
         char b[16]; snprintf(b, sizeof b, "%.0f", d);
         dl->AddText(ImVec2(p0.x + 3 * gUi, Y(d) - ImGui::GetTextLineHeight() * 0.5f), txt, b);
+        lastY = Y(d);
     }
     for (int m = (int)std::ceil(f0); m <= (int)std::floor(f1); m++) {
         const float x = X(m);
         dl->AddLine(ImVec2(x, a0.y), ImVec2(x, a1.y), grid);
         char b[16]; snprintf(b, sizeof b, "%+d", m);
-        dl->AddText(ImVec2(x - ImGui::CalcTextSize(b).x * 0.5f, a1.y + 1), txt, b);
+        const float tw = ImGui::CalcTextSize(b).x;
+        if (x - tw * 0.5f < lastX + 4 * gUi) continue;
+        dl->AddText(ImVec2(x - tw * 0.5f, a1.y + 1), txt, b);
+        lastX = x + tw * 0.5f;
     }
     if (!on || t.specDb.size() < 2) return;
     dl->PushClipRect(a0, a1, true);
@@ -232,7 +252,14 @@ void tab(App& a) {
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     // caption row: what it is, and the field mode
     ImGui::AlignTextToFramePadding();
-    ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(caption(a).c_str()); ImGui::PopFont();
+    {   // the caption gives way to the two buttons on the right: cut short with "..." in a narrow tab (whole on hover)
+        const float pillsX = W - 150 * gUi, x0 = ImGui::GetCursorPosX();
+        ImGui::PushFont(a.mono, 0);
+        const std::string cap = caption(a), shown = ellipsize(cap, std::max(40 * gUi, pillsX - x0 - 12 * gUi));
+        ImGui::TextUnformatted(shown.c_str());
+        ImGui::PopFont();
+        if (shown != cap && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", cap.c_str());
+    }
     ImGui::SameLine(std::max(ImGui::GetCursorPosX() + 20 * gUi, W - 150 * gUi));
     if (pillButton("Weave", S.deint == 0)) { S.deint = 0; plat::prefs().setI("atvDeint", 0); savePrefs(a); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Both fields woven into one picture: sharp, but moving edges show combing.");
@@ -269,23 +296,19 @@ void status(App& a) {
     const AtvTelemetry& t = a.rx.atv;
     const SignalStats& st = a.spec.stats;
     const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
-    {
-        const ImVec2 p = ImGui::GetCursorScreenPos();
-        const float h = ImGui::GetFrameHeight() * 2.f + ImGui::GetStyle().ItemSpacing.y * 2.f;
-        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(p.x - 4, p.y - 2), ImVec2(p.x + ImGui::GetContentRegionAvail().x + 4, p.y + h), IM_COL32(22, 23, 25, 255), 3.f);
-    }
-    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); ImGui::SameLine(0, 12 * gUi);
-    lamp("Vision carrier", !on ? 0 : t.state >= 1 ? 1 : 0); ImGui::SameLine(0, 12 * gUi);
-    lamp("Line sync", !on ? 0 : (t.state >= 1 && t.syncQuality > 0.8f) ? 1 : (t.state >= 1 && t.syncQuality > 0.2f) ? 2 : 0); ImGui::SameLine(0, 12 * gUi);
-    lamp("Field sync", !on ? 0 : t.state == 2 ? 1 : t.state == 1 ? 2 : 0); ImGui::SameLine(0, 12 * gUi);
-    lamp("Colour", !on ? 0 : t.colour ? 1 : t.colourKiller ? 2 : 0); ImGui::SameLine(0, 12 * gUi);
-    lamp("Sound", !on ? 0 : t.soundPresent ? 1 : t.state >= 1 ? 2 : 0); ImGui::SameLine(0, 10 * gUi);
-    ImGui::TextDisabled("|"); ImGui::SameLine(0, 10 * gUi);
+    StatusPanel panel;   // a tinted panel behind the status lines (they wrap in a narrow window)
+    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(12 * gUi);
+    lamp("Vision carrier", !on ? 0 : t.state >= 1 ? 1 : 0); flowNext(12 * gUi);
+    lamp("Line sync", !on ? 0 : (t.state >= 1 && t.syncQuality > 0.8f) ? 1 : (t.state >= 1 && t.syncQuality > 0.2f) ? 2 : 0); flowNext(12 * gUi);
+    lamp("Field sync", !on ? 0 : t.state == 2 ? 1 : t.state == 1 ? 2 : 0); flowNext(12 * gUi);
+    lamp("Colour", !on ? 0 : t.colour ? 1 : t.colourKiller ? 2 : 0); flowNext(12 * gUi);
+    lamp("Sound", !on ? 0 : t.soundPresent ? 1 : t.state >= 1 ? 2 : 0); flowNext(10 * gUi);
+    ImGui::TextDisabled("|"); flowNext(10 * gUi);
     auto ro = [&](const char* label, const std::string& val) {
         ImGui::AlignTextToFramePadding();
         ImGui::TextDisabled("%s", label); ImGui::SameLine(0, 5 * gUi);
         ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(val.c_str()); ImGui::PopFont();
-        ImGui::SameLine(0, 15 * gUi);
+        flowNext(15 * gUi);
     };
     char b[96];
     if (!on) { ro("State", run ? "starting" : "stopped"); return; }
@@ -315,17 +338,17 @@ void panels(App& a) {
     const float colW = std::max(120.f, (W - 3 * gap) / 3.f);
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + gap * 0.5f);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Line (composite)");
+    captionFit(colW, "Line (composite)");
     lineScope(a, ImVec2(colW, plotH), on);
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Vertical interval (field sync)");
+    captionFit(colW, "Vertical interval (field sync)");
     vbiScope(a, ImVec2(colW, plotH), on);
     ImGui::EndGroup();
     ImGui::SameLine(0, gap);
     ImGui::BeginGroup();
-    ImGui::TextDisabled("Levels");
+    captionFit(colW, "Levels");
     kv(a, "sync depth", on ? num(true, "%.0f %%", t.syncDepthPct) : "-", 130);
     kv(a, "compression", on ? num(true, "%.0f %%", t.syncCompressionPct) : "-", 130);
     kv(a, "white peak", on ? num(true, "%.2f", t.whitePeak) : "-", 130);
@@ -341,7 +364,8 @@ void receiver(App& a) {
     if (!on) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const AtvTelemetry& t = a.rx.atv;
     const float W = ImGui::GetContentRegionAvail().x;
-    ImGui::TextDisabled("Spectrum around the vision carrier (dB, MHz from the carrier)");
+    const bool fmv = t.modulation == 1;   // FM video: no vision carrier; the whole input is the signal
+    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(fmv ? "Spectrum of the input (dB, MHz from the centre)" : "Spectrum around the vision carrier (dB, MHz from the carrier)"); ImGui::PopTextWrapPos(); }
     spectrumScope(a, ImVec2(W, std::min(170.f * gUi, ImGui::GetContentRegionAvail().y * 0.35f)), on);
     ImGui::Spacing();
     char b[160];
@@ -349,10 +373,20 @@ void receiver(App& a) {
     if (ImGui::BeginTable("##atvkv", 2, ImGuiTableFlags_SizingStretchSame)) {
         ImGui::TableNextColumn();
         ImGui::TextDisabled("Standard");
-        kv(a, "state", t.state == 2 ? "locked, decoding" : t.state == 1 ? "carrier and line sync" : "searching");
+        kv(a, "state", t.state == 2 ? "locked, decoding" : t.state == 1 ? (fmv ? "line sync" : "carrier and line sync") : (fmv ? "looking for lines" : "searching"));
         kv(a, "system", t.system.empty() ? "-" : t.system);
         kv(a, "colour system", t.colourSystem.empty() ? "-" : t.colourSystem + (t.colour ? "" : t.colourKiller ? " (burst too weak)" : ""));
         snprintf(b, sizeof b, "%d lines, %.3f fields/s", t.lines, t.fieldHz); kv(a, "raster", t.lines ? b : "-");
+        if (fmv) {
+            kv(a, "detector", "FM discriminator");
+            ImGui::Spacing();
+            ImGui::TextDisabled("FM video");
+            kv(a, "sync tip", t.state == 0 ? "trying" : t.fmSyncLow ? "lowest frequency" : "highest frequency");
+            snprintf(b, sizeof b, "%.1f dB", t.snrDb); kv(a, "video SNR", b);
+            ImGui::Spacing();
+            ImGui::TextDisabled("Sound");
+            kv(a, "audio", "not decoded");
+        } else {
         kv(a, "detector", t.syncDetector ? "synchronous" : "envelope");
         ImGui::Spacing();
         ImGui::TextDisabled("Carriers");
@@ -368,9 +402,10 @@ void receiver(App& a) {
         kv(a, "carrier", t.soundPresent ? "present" : "none");
         snprintf(b, sizeof b, "%.1f kHz", t.soundDevKhz); kv(a, "deviation", b);
         snprintf(b, sizeof b, "%.1f dBFS", t.soundLevelDb); kv(a, "audio level", b);
+        }
 
         ImGui::TableNextColumn();
-        ImGui::TextDisabled("Line and field sync");
+        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Line and field sync"); ImGui::PopTextWrapPos(); }
         snprintf(b, sizeof b, "%.2f Hz  (%+.1f ppm)", t.lineHz, t.lineErrPpm); kv(a, "line rate", t.lineHz > 0 ? b : "-");
         snprintf(b, sizeof b, "%.0f %%", t.syncQuality * 100); kv(a, "sync found", b);
         snprintf(b, sizeof b, "%llu", (unsigned long long)t.lineCount); kv(a, "lines", b);
@@ -391,20 +426,59 @@ void receiver(App& a) {
 }
 
 // Put the next control on the same line if it fits (the toolbar), else on the next one (the sidebar).
-void nextIf(float w) { if (ImGui::GetContentRegionAvail().x > w * gUi) ImGui::SameLine(0, 8 * gUi); }
+void nextIf(float w) { sameLineIf(w * gUi, 8 * gUi); }   // (it tested the room on the next line, so it never wrapped)
 // the width of a control that follows a label: wanted, but never wider than what is left
 float fit(float want) { return std::max(40.f * gUi, std::min(want * gUi, ImGui::GetContentRegionAvail().x - 6 * gUi)); }
 
-void tuner(App&, bool&) {
+void tuner(App& a, bool&) {
     loadState();
+    ImGui::TextDisabled("Modulation"); ImGui::SameLine(0, 5 * gUi);
+    ImGui::SetNextItemWidth(fit(130));
+    static const char* const kModNames[] = {"AM (broadcast)", "FM video (FPV)", "NBTV / mechanical, AM", "NBTV / mechanical, FM"};
+    const int curMod = a.atvNbtv ? 1 + a.atvNbtv : a.atvFm ? 1 : 0;
+    if (ImGui::BeginCombo("##atvmod", kModNames[curMod])) {
+        bool chg = false;
+        for (int m = 0; m < 4; m++)
+            if (ImGui::Selectable(kModNames[m], curMod == m) && curMod != m) {
+                a.atvFm = m == 1; a.atvNbtv = m >= 2 ? m - 1 : 0; chg = true;
+            }
+        ImGui::EndCombo();
+        if (chg) {   // the radio runs at another rate: open it again
+            savePrefs(a);
+            if (a.engine.running()) startReceiver(a); else applyBandwidth(a);
+        }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("AM: broadcast TV, a vision carrier with a sound carrier (PAL, SECAM, NTSC), negative or positive modulation.\nFM video: analog FPV and video links (5.8 GHz, 1.2 GHz): the picture is the frequency of the carrier.\nNeeds 20 Msps, 17 MHz of the radio's band; the polarity is found by itself. The sound is not decoded yet.\nNBTV / mechanical: Narrow Bandwidth Television (32 lines, 12.5 pictures a second) or another mechanical line count,\nsent as the audio of an AM or narrow FM transmitter: tune the transmitter to the centre (within 50 kHz).");
+    if (a.atvNbtv) {
+        nextIf(240);
+        ImGui::TextDisabled("Lines"); ImGui::SameLine(0, 5 * gUi);
+        ImGui::SetNextItemWidth(fit(90));
+        int ln = a.atvNbtvLines;
+        if (ImGui::SliderInt("##nbtvlines", &ln, 24, 240)) { a.atvNbtvLines = ln; savePrefs(a); }
+        nextIf(200);
+        ImGui::TextDisabled("Pictures/s"); ImGui::SameLine(0, 5 * gUi);
+        ImGui::SetNextItemWidth(fit(90));
+        float fp = a.atvNbtvFps;
+        if (ImGui::SliderFloat("##nbtvfps", &fp, 1.f, 30.f, "%.2f")) { a.atvNbtvFps = fp; savePrefs(a); }
+        nextIf(120);
+        if (ImGui::Button("NBTV 32")) { a.atvNbtvLines = 32; a.atvNbtvFps = 12.5f; savePrefs(a); }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The NBTV Association's standard: 32 lines, 12.5 pictures a second, vertical scan, 2:3.");
+        return;
+    }
+    nextIf(240);
     ImGui::TextDisabled("System"); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(fit(84));
     if (ImGui::BeginCombo("##atvsys", S.sysHint < 0 ? "automatic" : kSysNames[S.sysHint])) {
         if (ImGui::Selectable("automatic", S.sysHint < 0)) S.sysHint = -1;
         for (int i = 0; i < kAtvSysCount; i++) if (ImGui::Selectable(kSysNames[i], S.sysHint == i)) S.sysHint = i;
         ImGui::EndCombo();
+        const bool wide = S.sysHint == kAtvE;
+        if (wide != a.atvWide) {   // system E: 20 Msps for its 14 MHz channel
+            a.atvWide = wide;
+            if (a.engine.running()) startReceiver(a); else applyBandwidth(a);
+        }
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The television system: it sets the line count, the sound spacing and the channel layout.\nAutomatic finds it from the line rate and the sound carrier.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The television system: it sets the line count, the polarity, the sound spacing and the channel layout.\nAutomatic finds it from the line rate, the polarity (negative, or positive as in A, C, E and L) and the sound carrier.\nH and K' (wider vestigial sideband than B/G and D/K) are found only when chosen. E needs 20 Msps.");
     nextIf(240);
     ImGui::TextDisabled("Colour"); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(fit(84));
@@ -444,10 +518,17 @@ void synth(App& a, bool& changed) {
         }
     };
     ImGui::TextDisabled("system"); ImGui::SameLine(0, 5 * gUi);
-    combo("##tsys", sc.modeOpt[0], {"B/G", "B (7 MHz)", "I", "D/K", "M", "N"}, 90);
+    combo("##tsys", sc.modeOpt[0], {"B/G", "B (7 MHz)", "I", "D/K", "M", "N", "A (405)", "C", "E (819)", "H", "K'", "L", "L'", "NBTV, AM", "NBTV, FM"}, 90);
+    if (sc.modeOpt[0] >= 13) {   // NBTV: the line count of the test signal (0 = 32) instead of the colour
+        nextIf(180);
+        ImGui::TextDisabled("lines"); ImGui::SameLine(0, 5 * gUi); ImGui::SetNextItemWidth(90 * gUi);
+        int ln = sc.modeOpt[1] > 0 ? sc.modeOpt[1] : 32;
+        if (ImGui::SliderInt("##tnl", &ln, 24, 240)) { sc.modeOpt[1] = ln == 32 ? 0 : ln; changed = true; }
+    } else {
     nextIf(180);
     ImGui::TextDisabled("colour"); ImGui::SameLine(0, 5 * gUi);
     combo("##tcol", sc.modeOpt[1], {"by system", "PAL", "NTSC", "SECAM", "none"}, 90);
+    }
     nextIf(190);
     ImGui::TextDisabled("C/N"); ImGui::SameLine(0, 5 * gUi); ImGui::SetNextItemWidth(100 * gUi);
     float cn = (float)std::min(sc.snrDb, 60.0);
@@ -485,13 +566,15 @@ void synth(App& a, bool& changed) {
 // the right-hand list: there is one channel
 void list(App& a) {
     const AtvTelemetry& t = a.rx.atv;
-    if (!live(a)) { ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see the channel"); return; }
-    if (t.system.empty()) { ImGui::TextDisabled(t.state == 0 ? "searching for a vision carrier" : "carrier found, identifying the system"); return; }
+    if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see the channel"); ImGui::PopTextWrapPos(); } return; }
+    if (t.system.empty()) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(t.state == 0 ? "searching for a vision carrier" : "carrier found, identifying the system"); ImGui::PopTextWrapPos(); } return; }
     kv(a, "system", t.system, 90);
     kv(a, "colour", t.colour ? t.colourSystem : t.colourKiller ? "burst too weak" : "none", 90);
     char b[96];
     snprintf(b, sizeof b, "%.1f dB", t.snrDb); kv(a, "video SNR", b, 90);
-    if (t.soundHz != 0) { snprintf(b, sizeof b, "FM, %.1f kHz dev.", t.soundDevKhz); kv(a, "sound", t.soundPresent ? b : "carrier only", 90); }
+    if (t.modulation >= 2) kv(a, "sound", "none (the audio is the picture)", 90);
+    else if (t.soundHz != 0 && t.soundDevKhz <= 0.01f && t.soundPresent) kv(a, "sound", "AM", 90);
+    else if (t.soundHz != 0) { snprintf(b, sizeof b, "FM, %.1f kHz dev.", t.soundDevKhz); kv(a, "sound", t.soundPresent ? b : "carrier only", 90); }
     else kv(a, "sound", "none found", 90);
     ImGui::Spacing();
     ImGui::PushTextWrapPos(0);

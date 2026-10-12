@@ -17,7 +17,7 @@ namespace dect2 {
 namespace dvbt {
 
 Generator::Generator(const Params& p, PacketSource src, unsigned seed)
-    : p_(p), N_(::dect2::dvbt::fftN(p.mode)), G_(guardSamples(p.mode, p.guard)), K_(carriersK(p.mode)), src_(std::move(src)), rng_(seed), enc_(p.crHp) {
+    : p_(p), N_(::dect2::dvbt::fftN(p.mode)), G_(guardSamples(p.mode, p.guard)), K_(carriersK(p.mode)), src_(std::move(src)), rng_(seed), enc_(p.crHp), encLp_(p.crLp > 4 ? 0 : p.crLp) {
     if (!src_) {
         src_ = [this, n = 0u](uint8_t* pkt) mutable {
             pkt[0] = 0x47;
@@ -80,17 +80,40 @@ std::function<void(uint8_t*)> testTsSource(unsigned seed) {
     };
 }
 
-void Generator::refill() {
-    const int m = bitsPerCell(p_.mod);
+void Generator::codeGroup(PacketSource& src, ConvInterleaver& ci, InnerEncoder& enc, std::vector<uint8_t>& q) {
     uint8_t ts[8 * 188], sc[8 * 188], rs[8 * 204], il[8 * 204];
-    for (int i = 0; i < 8; i++) { src_(ts + i * 188); ts[i * 188] = 0x47; }
+    for (int i = 0; i < 8; i++) {
+        if (src) src(ts + i * 188);
+        else { memset(ts + i * 188, 0xFF, 188); ts[i * 188 + 1] = 0x1F; ts[i * 188 + 2] = 0xFF; ts[i * 188 + 3] = 0x10; }
+        ts[i * 188] = 0x47;
+    }
     scramble(ts, 8, sc);
     for (int i = 0; i < 8; i++) rsEncode(sc + i * 188, rs + i * 204);
-    ci_.process(rs, il, sizeof il);
+    ci.process(rs, il, sizeof il);
     std::vector<uint8_t> bits(sizeof il * 8), coded;
     for (size_t i = 0; i < sizeof il; i++) for (int j = 0; j < 8; j++) bits[i * 8 + j] = (il[i] >> (7 - j)) & 1;
-    enc_.encode(bits, coded);
-    codedQ_.insert(codedQ_.end(), coded.begin(), coded.end());
+    enc.encode(bits, coded);
+    q.insert(q.end(), coded.begin(), coded.end());
+}
+
+void Generator::refill() {
+    const int m = bitsPerCell(p_.mod);
+    if (p_.hier) {
+        // two independent streams: HP (2 bits a cell, its own rate) and LP (the other v - 2 bits, at the LP rate)
+        const size_t u = (size_t)m - 2;
+        if (codedQ_.size() < 252) codeGroup(src_, ci_, enc_, codedQ_);
+        if (codedLpQ_.size() < 126 * u) codeGroup(srcLp_, ciLp_, encLp_, codedLpQ_);
+        const size_t blocks = std::min(codedQ_.size() / 252, codedLpQ_.size() / (126 * u));
+        if (blocks) {
+            std::vector<uint8_t> words;
+            bitInterleaveHier(codedQ_, codedLpQ_, p_.mod, words);
+            wordsQ_.insert(wordsQ_.end(), words.begin(), words.end());
+            codedQ_.erase(codedQ_.begin(), codedQ_.begin() + (long)(blocks * 252));
+            codedLpQ_.erase(codedLpQ_.begin(), codedLpQ_.begin() + (long)(blocks * 126 * u));
+        }
+        return;
+    }
+    codeGroup(src_, ci_, enc_, codedQ_);
     const size_t blk = (size_t)126 * m;
     const size_t use = codedQ_.size() / blk * blk;
     if (use) {

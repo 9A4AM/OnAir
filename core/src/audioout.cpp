@@ -2,8 +2,19 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdint>
+#include <cstdlib>
+#include <cstdio>
+#include <string>
+#ifdef __linux__
+#include <unistd.h>
+#include <sys/stat.h>
+#endif
 
 namespace dect2 {
+
+// DECT2_MUTE=1: everything plays silence (the device still runs, so the timing that tests and the player rely on is unchanged). The tests
+// set it (CMakeLists.txt): the engine tests of FM, DAB, DRM, ATSC and the others otherwise played their test signals out loud.
+static const bool kForceMute = [] { const char* e = getenv("DECT2_MUTE"); return e && *e && *e != '0'; }();
 
 void AudioOut::Impl::render(float* out, uint32_t nFrames) {
     if (flushReq.exchange(false)) { r.store(w.load()); playing = false; }
@@ -15,7 +26,7 @@ void AudioOut::Impl::render(float* out, uint32_t nFrames) {
     uint32_t n = 0;
     if (playing) {
         n = (uint32_t)std::min<uint64_t>(avail, nFrames);
-        const float vol = muted.load() ? 0.f : volume.load();
+        const float vol = muted.load() || kForceMute ? 0.f : volume.load();
         const size_t mask = frames - 1;
         for (uint32_t i = 0; i < n; i++) {
             const size_t k = (size_t)((rd + i) & mask) * 2;
@@ -38,6 +49,20 @@ AudioOut::~AudioOut() { stop(); }
 bool AudioOut::start(int rate) {
     if (running_) return true;
     rate_ = rate;
+#ifdef __linux__
+    // run with sudo, the sound server of the user who ran sudo is not found (issue #67): point PulseAudio/PipeWire at it
+    if (geteuid() == 0 && !getenv("PULSE_SERVER") && !getenv("XDG_RUNTIME_DIR")) {
+        if (const char* uid = getenv("SUDO_UID"); uid && *uid) {
+            const std::string dir = std::string("/run/user/") + uid, sock = dir + "/pulse/native";
+            struct stat st{};
+            if (stat(sock.c_str(), &st) == 0) {
+                setenv("PULSE_SERVER", ("unix:" + sock).c_str(), 0);
+                setenv("XDG_RUNTIME_DIR", dir.c_str(), 0);
+                fprintf(stderr, "audio: running as root, using the sound server of user %s (%s)\n", uid, sock.c_str());
+            }
+        }
+    }
+#endif
     if (!audioBackendStart(p_.get(), rate)) return false;
     running_ = true;
     return true;

@@ -24,12 +24,13 @@ struct CellGrid {
     float wAt(int s, int k) const { return w[(size_t)s * (size_t)width() + (size_t)(k - kmin)]; }
 };
 
-struct LogicalFrame {          // the data of one stream for 400 ms: part A then part B
+struct LogicalFrame {          // the data of one stream for 400 ms (mode E 100 ms): part A then part B
     int stream = 0;
     int lenA = 0, lenB = 0;
     const uint8_t* data = nullptr;
     uint64_t index = 0;        // multiplex frames decoded so far
     bool afterGap = false;     // frames were lost (or the signal was lost) since the previous logical frame: whatever the stream carries across frames is broken
+    int position = 0;          // of the multiplex frame in its transmission super frame (0 .. frames - 1); mode E: an audio super frame starts at the even ones
 };
 
 class DrmBackend {
@@ -67,7 +68,7 @@ private:
     void decodeFac(const CellGrid& g);
     void decodeSdc();
     void buildMscCode();
-    void decodeMux();
+    void decodeMux(int txPos);
     void dropData();
     int mode_ = -1, occ_ = -1;
     std::shared_ptr<const Layout> layout_;

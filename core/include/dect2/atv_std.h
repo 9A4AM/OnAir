@@ -1,6 +1,7 @@
-// Analog TV: the systems (B/G, I, D/K, M, N), their timing and levels, and the colour encodings (PAL, NTSC, SECAM).
-// Shared by the receiver, the test-signal generator and the tests. Every number comes from ITU-R BT.470-6 (Tables 1 to 3, Figs 1 and 2)
-// unless a comment says otherwise. Times are in microseconds measured from the datum 0H (the 50 % point of the leading edge of the line
+// Analog TV: the systems (B/G, I, D/K, M, N, and the positive-modulation systems A, C, E, L, L' with AM sound, plus H and K'), their timing and
+// levels, and the colour encodings (PAL, NTSC, SECAM). Shared by the receiver, the test-signal generator and the tests. Every number comes from
+// ITU-R BT.470-6 (Tables 1 to 3, Figs 1 and 2) and ITU-R BT.1700 unless a comment says otherwise. Systems A, C and E were withdrawn from later
+// editions of BT.470; their numbers are those of BT.470-6 Table 1 and of the CCIR Report 624 tables it was built from. Times are in microseconds measured from the datum 0H (the 50 % point of the leading edge of the line
 // synchronising pulse). Levels are normalised: blanking = 0, peak white = 1 (0.7 V in the 625-line systems, 100 IRE in 525).
 #pragma once
 #include <complex>
@@ -8,31 +9,46 @@
 
 namespace dect2 {
 
-enum AtvSys { kAtvB = 0, kAtvG, kAtvI, kAtvDK, kAtvM, kAtvN, kAtvSysCount };
+// The order is the order of the lists in the interface and the test signal's options: new systems go at the end.
+//   A   405 lines / 50 Hz, 5 MHz channel, 3 MHz video, sound 3.5 MHz BELOW the vision carrier, positive, AM sound (UK, until 1985)
+//   C   625 / 50, 7 MHz, 5 MHz video, sound +5.5 MHz, positive, AM sound (Belgium, Luxembourg)
+//   E   819 / 50, 14 MHz, 10 MHz video, sound +-11.15 MHz, vestigial sideband 2 MHz, positive, AM sound (France, until 1984)
+//   H   625 / 50, 8 MHz, 5 MHz video, sound +5.5 MHz, vestigial sideband 1.25 MHz, negative, FM sound (Belgium UHF)
+//   K'  625 / 50, 8 MHz, 6 MHz video, sound +6.5 MHz, vestigial sideband 1.25 MHz, negative, FM sound (French overseas territories)
+//   L   625 / 50, 8 MHz, 6 MHz video, sound +6.5 MHz, vestigial sideband 1.25 MHz, positive, AM sound (France)
+//   L'  the same in band I: the channel is turned round, the sound 6.5 MHz below the vision carrier
+enum AtvSys { kAtvB = 0, kAtvG, kAtvI, kAtvDK, kAtvM, kAtvN, kAtvA, kAtvC, kAtvE, kAtvH, kAtvKp, kAtvL, kAtvLp, kAtvSysCount };
 enum AtvColourKind { kAtvMono = 0, kAtvPal, kAtvNtsc, kAtvSecam };
 
 struct AtvFormat {
     int sys = kAtvG;
     int colour = kAtvPal;
     bool pal = false, ntsc = false, secam = false;
-    std::string sysName;          // "B/G", "I", "D/K", "M", "N"
-    std::string colourName;       // "PAL", "NTSC", "SECAM", "mono", "PAL-M", "PAL-N"
+    std::string sysName;          // "B/G", "I", "D/K", "M", "N", "A", "C", "E", "H", "K'", "L", "L'"
+    std::string colourName;       // "PAL", "NTSC", "SECAM", "mono", "PAL-M", "PAL-N", "NTSC-N", "NTSC 4.43"
     std::string name;             // "PAL B/G 625/50"
 
     // raster
-    int lines = 625;              // lines per frame
+    int lines = 625;              // lines per frame: 625, 525, 405 (A) or 819 (E)
     double fieldHz = 50;          // 50 or 60/1.001
-    double lineHz = 15625;        // 15625, or 4.5 MHz / 286
+    double lineHz = 15625;        // 15625, 4.5 MHz / 286, 10125 (A) or 20475 (E)
     double lineUs = 64;           // 1e6 / lineHz
     int halfLines = 1250;         // half-lines per frame (the vertical interval is built from them)
 
     // radio frequency layout
     double chanMhz = 8;           // nominal channel width (B 7, G/I/D/K 8, M/N 6)
     double visionOffMhz = 1.25;   // vision carrier above the lower edge of the channel
-    double soundSpacingMhz = 5.5; // sound carrier above the vision carrier
+    double soundSpacingMhz = 5.5; // sound carrier above the vision carrier (negative: below it, systems A and L')
     double videoBwMhz = 5.0;      // nominal video bandwidth
     double vestigialMhz = 0.75;   // width of the vestigial sideband (the transmitted spectrum is flat down to this offset below the carrier)
-    double whitePct = 12.5;       // carrier amplitude at peak white, in percent of the peak carrier (sync tip = 100 %)
+    double whitePct = 12.5;       // carrier amplitude at peak white, in percent of the peak carrier (sync tip = 100 %; positive modulation: 100)
+    // Positive modulation (A, C, E, L, L'): more video = more carrier. The sync tip is the lowest carrier level, peak white the highest (100 %),
+    // blanking sits at blankPct (BT.470-6 Table 1 item 2.11: 30 % in A, C and L, 25 % in E; the sync tip is at 0, L allows up to 5 %).
+    bool positive = false;
+    double syncPct = 0, blankPct = 30;
+    bool amSound = false;         // the sound carrier is amplitude modulated (A, C, E, L, L'); FM otherwise
+    double amDepth = 0.8;         // AM sound: modulation depth at full level
+    bool mirrored = false;        // the channel is turned round: the main sideband and the sound are below the vision carrier (A, L')
     double soundDevKhz = 50;      // peak deviation of the FM sound
     double preEmphUs = 50;        // sound pre-emphasis
     double soundRelDb = -13;      // sound carrier power relative to the peak vision carrier (typical: 20/1 to 10/1)
@@ -46,7 +62,8 @@ struct AtvFormat {
     double blankRiseUs = 0.3;     // 10 to 90 % build-up time of blanking edges
     double eqUs = 2.35;           // equalising pulse
     double broadUs = 27.3;        // field-synchronising (broad) pulse
-    int eqPulses = 5;             // per sequence: 5 in 625 lines, 6 in 525
+    int eqPulses = 5;             // per sequence: 5 in 625 lines, 6 in 525, none in 405 and 819 lines
+    int broadPulses = 5;          // field-synchronising pulses: 5 in 625 lines, 6 in 525, 8 in 405 and 819
 
     // levels (normalised)
     double syncLevel = -3.0 / 7;  // sync tip: -0.3 V / 0.7 V, or -40 IRE
@@ -80,9 +97,15 @@ struct AtvFormat {
     int visibleStartH(int field) const { return 2 * (firstLine[field] - 1); }
 };
 
-// Fills `f` for a system and a colour encoding. Returns false when the combination does not exist (SECAM with M or N, NTSC with 625 lines, ...).
-// colour: kAtvMono, kAtvPal, kAtvNtsc, kAtvSecam; PAL on M is PAL-M, PAL on N is the Argentine PAL-N (3.58205625 MHz)
+// Fills `f` for a system and a colour encoding. Returns false when the combination does not exist (colour on A or E, NTSC on a positive system).
+// colour: kAtvMono, kAtvPal, kAtvNtsc, kAtvSecam; PAL on M is PAL-M, PAL on N is the Argentine PAL-N (3.58205625 MHz), NTSC on N is NTSC-N
+// (the same 3.58205625 MHz subcarrier on 625 lines), NTSC on the other 625-line systems is "NTSC 4.43" (4.43361875 MHz, as VCRs and some
+// closed systems made it), SECAM on M and N keeps the SECAM subcarriers of 625 lines (they overlap the 4.5 MHz sound carrier of M and N:
+// such a signal has no sound carrier, and its video band is 5 MHz).
 bool atvMakeFormat(int sys, int colour, AtvFormat& f);
+bool atvSysPositive(int sys);                 // A, C, E, L, L'
+int atvSysLines(int sys);                     // 625, 525 (M), 405 (A), 819 (E)
+int atvDefaultColour(int sys);                // what the system was broadcast with: NTSC (M), SECAM (L, L', K'), mono (A, C, E), PAL otherwise
 
 // Baseband position of the carriers for a channel centred at 0: vision = -(chanMhz/2 - visionOffMhz), sound = vision + spacing
 inline double atvVisionOffsetHz(const AtvFormat& f) { return -(f.chanMhz / 2 - f.visionOffMhz) * 1e6; }
@@ -119,8 +142,9 @@ std::complex<double> atvSecamHfPreEmph(double fHz);
 // EBU colour bars 100/0/75/0 (EBU Tech 3213, ITU-R BT.471-1): white, yellow, cyan, green, magenta, red, blue, black as R'G'B' in 0..1
 void atvEbuBar(int i, float rgb[3]);
 
-// The sound carrier spacings a receiver looks for (BT.470-6 Table 3 item 2): 5.5, 6.0 (5.9996), 6.5 (D/K), 4.5 (M, N)
-constexpr int kAtvSpacingCount = 4;
+// The sound carrier spacings a receiver looks for (BT.470-6 Table 3 item 2): 5.5, 6.0 (5.9996), 6.5 (D/K, L), 4.5 (M, N), 3.5 (A: below the
+// vision carrier, found in the mirrored spectrum), 11.15 (E)
+constexpr int kAtvSpacingCount = 6;
 double atvSpacingMhz(int i);
 
 } // namespace dect2

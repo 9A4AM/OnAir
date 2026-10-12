@@ -123,8 +123,9 @@ bool tpsDecode(const uint8_t bits[68], Params& p, int& frameIdx, bool& odd, int 
     }
     if (!ok) return false;
     auto get = [&](int a, int b) { unsigned v = 0; for (int i = a; i <= b; i++) v = (v << 1) | s[i]; return (int)v; };
+    // The length indicator is 0x17, or 0x1F with the cell id (and the DVB-H bits); it says nothing the receiver needs, and the BCH code has
+    // already vouched for the block, so another value is taken as it comes
     const int len = get(17, 22);
-    if (len != 0x17 && len != 0x1F) return false;
     p.cellIdLength = len == 0x1F;
     frameIdx = get(23, 24);
     if (odd != ((frameIdx & 1) != 0)) return false;
@@ -134,6 +135,9 @@ bool tpsDecode(const uint8_t bits[68], Params& p, int& frameIdx, bool& odd, int 
     p.crLp = get(33, 35);
     p.guard = get(36, 37);
     p.mode = get(38, 39);
+    // Without hierarchy there is no LP stream, and its code rate field may hold anything (some transmitters leave it at a reserved value):
+    // read it as the HP rate, or one strange field would hide a multiplex that decodes perfectly well
+    if (p.hier == 0 && p.crLp > 4) p.crLp = p.crHp;
     if (p.mod > 2 || p.hier > 3 || p.crHp > 4 || p.crLp > 4 || p.mode > 1) return false;
     return true;
 }
@@ -609,6 +613,39 @@ void bitDeinterleave(const float* in, int mod, int words, float* out) {
         float* dst = out + (size_t)b * v;
         for (int j = 0; j < blockLen; j++) dst[j] = src[P[j]];
     }
+}
+
+namespace {
+const int kBranchOff[6] = {0, 63, 105, 42, 21, 84};   // H_e(w) = (w + off_e) mod 126
+int lpBranch(int j, int v) { const int u = v - 2; return (j % u) / (u / 2) + 2 * (j % (u / 2)) + 2; }
+}
+
+void bitInterleaveHier(const std::vector<uint8_t>& hp, const std::vector<uint8_t>& lp, int mod, std::vector<uint8_t>& words) {
+    const int v = bitsPerCell(mod), u = v - 2;
+    const size_t blocks = std::min(hp.size() / 252, lp.size() / ((size_t)126 * u));
+    words.assign(blocks * 126, 0);
+    uint8_t br[6][126];
+    for (size_t b = 0; b < blocks; b++) {
+        for (int i = 0; i < 126; i++) {
+            for (int k = 0; k < 2; k++) br[k][i] = hp[(b * 126 + i) * 2 + k];
+            for (int j = 0; j < u; j++) br[lpBranch(j, v)][i] = lp[(b * 126 + i) * u + j];
+        }
+        for (int w = 0; w < 126; w++) {
+            unsigned val = 0;
+            for (int e = 0; e < v; e++) val = (val << 1) | br[e][(w + kBranchOff[e]) % 126];
+            words[b * 126 + w] = (uint8_t)val;
+        }
+    }
+}
+
+void bitDeinterleaveLp(const float* in, int mod, int words, float* out) {
+    const int v = bitsPerCell(mod), u = v - 2;
+    for (int b = 0; b + 126 <= words; b += 126)
+        for (int i = 0; i < 126; i++)
+            for (int j = 0; j < u; j++) {
+                const int e = lpBranch(j, v);
+                out[(size_t)(b + i) * u + j] = in[(size_t)(b + (i - kBranchOff[e] + 126) % 126) * v + e];
+            }
 }
 
 // llr * scale, rounded to nearest and limited to +-127

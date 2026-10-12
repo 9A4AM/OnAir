@@ -1,6 +1,7 @@
 // DAB channel coding: tables, CRCs, energy dispersal, the rate 1/4 convolutional code with puncturing (FIC and EEP sub-channels),
 // and the Reed-Solomon code of DAB+. Conventions verified against a live Band III ensemble.
 #include "dect2/dab.h"
+#include "dect2/simd.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -153,38 +154,65 @@ bool eepBlocks(int option, int level, int n, std::vector<Block>& out) {
 
 } // namespace
 
-void viterbiDecode(const int8_t* mother, int nbits, uint8_t* bits) {
-    const Trellis& T = trellis();
-    const int steps = nbits + 6;
-    static thread_local std::vector<uint64_t> dec;
-    dec.assign((size_t)steps, 0);
-    int32_t pm[64], nm[64];
-    for (int s = 0; s < 64; s++) pm[s] = -100000000;
-    pm[0] = 0;
-    // predecessor patterns of each next state
-    uint8_t pat0[64], pat1[64];
-    for (int ns = 0; ns < 64; ns++) {
-        const int b = ns >> 5, ps0 = (ns & 31) << 1;
-        pat0[ns] = T.out[ps0][b];
-        pat1[ns] = T.out[ps0 | 1][b];
-    }
-    for (int t = 0; t < steps; t++) {
-        const int s0 = mother[4 * t], s1 = mother[4 * t + 1], s2 = mother[4 * t + 2], s3 = mother[4 * t + 3];
-        int bm[16];
-        for (int p = 0; p < 16; p++) bm[p] = ((p & 1) ? s0 : -s0) + ((p & 2) ? s1 : -s1) + ((p & 4) ? s2 : -s2) + ((p & 8) ? s3 : -s3);
-        uint64_t d = 0;
+namespace {
+// Branch metric of a next state as a sum of the four soft bits, each weighted +1 or -1 by the code bit of the branch: sg[branch][bit][next state].
+// That replaces a 16 entry table looked up per state, which the compiler cannot vectorise.
+struct VitSigns { int16_t sg[2][4][64]; };
+
+const VitSigns& vitSigns() {
+    static const VitSigns v = [] {
+        VitSigns t{};
+        const Trellis& T = trellis();
         for (int ns = 0; ns < 64; ns++) {
-            const int ps0 = (ns & 31) << 1;
-            const int a = pm[ps0] + bm[pat0[ns]], b = pm[ps0 | 1] + bm[pat1[ns]];
-            if (b > a) { nm[ns] = b; d |= 1ull << ns; } else nm[ns] = a;
+            const int b = ns >> 5, ps0 = (ns & 31) << 1;
+            for (int br = 0; br < 2; br++) {
+                const int pat = T.out[ps0 | br][b];
+                for (int i = 0; i < 4; i++) t.sg[br][i][ns] = (pat >> i) & 1 ? 1 : -1;
+            }
         }
-        dec[(size_t)t] = d;
-        std::memcpy(pm, nm, sizeof pm);
+        return t;
+    }();
+    return v;
+}
+
+// The add-compare-select over all the steps, in 16 bit lanes (the vectoriser turns the 64 states into a few NEON / SSE / AVX2 vectors). Path metrics
+// of the even and odd predecessors are kept apart (pe, po), so the two candidates of a next state are read without a gather. The spread of the metrics
+// is at most 6 steps of 2 * 4 * 127, so renormalising every 16 steps keeps them inside 16 bits.
+DECT2_MULTIVERSION void vitForward(const int8_t* mother, int steps, const VitSigns& v, uint8_t* dec) {
+    alignas(32) int16_t pe[32], po[32], nm[64];
+    for (int j = 0; j < 32; j++) pe[j] = po[j] = -8000;
+    pe[0] = 0;   // the encoder starts in state 0
+    for (int t = 0; t < steps; t++) {
+        const int16_t s0 = mother[4 * t], s1 = mother[4 * t + 1], s2 = mother[4 * t + 2], s3 = mother[4 * t + 3];
+        uint8_t* d = dec + (size_t)t * 64;
+        for (int h = 0; h < 2; h++) {
+            const int16_t* a0 = v.sg[0][0] + 32 * h; const int16_t* a1 = v.sg[0][1] + 32 * h; const int16_t* a2 = v.sg[0][2] + 32 * h; const int16_t* a3 = v.sg[0][3] + 32 * h;
+            const int16_t* b0 = v.sg[1][0] + 32 * h; const int16_t* b1 = v.sg[1][1] + 32 * h; const int16_t* b2 = v.sg[1][2] + 32 * h; const int16_t* b3 = v.sg[1][3] + 32 * h;
+            for (int j = 0; j < 32; j++) {
+                const int16_t a = (int16_t)(pe[j] + a0[j] * s0 + a1[j] * s1 + a2[j] * s2 + a3[j] * s3);
+                const int16_t b = (int16_t)(po[j] + b0[j] * s0 + b1[j] * s1 + b2[j] * s2 + b3[j] * s3);
+                nm[32 * h + j] = b > a ? b : a;
+                d[32 * h + j] = b > a;
+            }
+        }
+        for (int j = 0; j < 32; j++) { pe[j] = nm[2 * j]; po[j] = nm[2 * j + 1]; }
+        if ((t & 15) == 15) {
+            const int16_t r = pe[0];
+            for (int j = 0; j < 32; j++) { pe[j] = (int16_t)(pe[j] - r); po[j] = (int16_t)(po[j] - r); }
+        }
     }
+}
+} // namespace
+
+void viterbiDecode(const int8_t* mother, int nbits, uint8_t* bits) {
+    const int steps = nbits + 6;
+    static thread_local std::vector<uint8_t> dec;
+    dec.resize((size_t)steps * 64);
+    vitForward(mother, steps, vitSigns(), dec.data());
     int state = 0;   // the tail forces the encoder back to state 0
     for (int t = steps - 1; t >= 0; t--) {
         if (t < nbits) bits[t] = (uint8_t)(state >> 5);
-        state = ((state & 31) << 1) | (int)((dec[(size_t)t] >> state) & 1);
+        state = ((state & 31) << 1) | (int)dec[(size_t)t * 64 + (size_t)state];
     }
 }
 
@@ -242,6 +270,72 @@ bool eepPuncture(const uint8_t* mother, int size, int option, int level, uint8_t
     int k = 0;
     forEachKept(blocks, 4 * (info + 6), [&](int pos) { out[k++] = mother[pos]; return true; });
     return k == size * kCuBits;
+}
+
+// UEP (short form, EN 300 401 table 6): index -> sub-channel size in CUs, bitrate, protection level, L1..L4 and PI1..PI4. Every row
+// satisfies 32 * (L1 + .. + L4) = 24 * bitrate and fits its size with fewer than 64 padding bits (checked by test_dab_realworld).
+namespace {
+struct UepRow { short size, bitrate, level, L[4], PI[4]; };
+const UepRow kUep[64] = {
+    {16, 32, 5, {3, 4, 17, 0}, {5, 3, 2, 0}}, {21, 32, 4, {3, 3, 18, 0}, {11, 6, 5, 0}}, {24, 32, 3, {3, 4, 14, 3}, {15, 9, 6, 8}},
+    {29, 32, 2, {3, 4, 14, 3}, {22, 13, 8, 13}}, {35, 32, 1, {3, 5, 13, 3}, {24, 17, 12, 17}},
+    {24, 48, 5, {4, 3, 26, 3}, {5, 4, 2, 3}}, {29, 48, 4, {3, 4, 26, 3}, {9, 6, 4, 6}}, {35, 48, 3, {3, 4, 26, 3}, {15, 10, 6, 9}},
+    {42, 48, 2, {3, 4, 26, 3}, {24, 14, 8, 15}}, {52, 48, 1, {3, 5, 25, 3}, {24, 18, 13, 18}},
+    {29, 56, 5, {6, 10, 23, 3}, {5, 4, 2, 3}}, {35, 56, 4, {6, 10, 23, 3}, {9, 6, 4, 5}}, {42, 56, 3, {6, 12, 21, 3}, {16, 7, 6, 9}},
+    {52, 56, 2, {6, 10, 23, 3}, {23, 13, 8, 13}},
+    {32, 64, 5, {6, 9, 31, 2}, {5, 3, 2, 3}}, {42, 64, 4, {6, 9, 33, 0}, {11, 6, 5, 0}}, {48, 64, 3, {6, 12, 27, 3}, {16, 8, 6, 9}},
+    {58, 64, 2, {6, 10, 29, 3}, {23, 13, 8, 13}}, {70, 64, 1, {6, 11, 28, 3}, {24, 18, 12, 18}},
+    {40, 80, 5, {6, 10, 41, 3}, {6, 3, 2, 3}}, {52, 80, 4, {6, 10, 41, 3}, {11, 6, 5, 6}}, {58, 80, 3, {6, 11, 40, 3}, {16, 8, 6, 7}},
+    {70, 80, 2, {6, 10, 41, 3}, {23, 13, 8, 13}}, {84, 80, 1, {6, 10, 41, 3}, {24, 17, 12, 18}},
+    {48, 96, 5, {7, 9, 53, 3}, {5, 4, 2, 4}}, {58, 96, 4, {7, 10, 52, 3}, {9, 6, 4, 6}}, {70, 96, 3, {6, 12, 51, 3}, {16, 9, 6, 10}},
+    {84, 96, 2, {6, 10, 53, 3}, {22, 12, 9, 12}}, {104, 96, 1, {6, 13, 50, 3}, {24, 18, 13, 19}},
+    {58, 112, 5, {14, 17, 50, 3}, {5, 4, 2, 5}}, {70, 112, 4, {11, 21, 49, 3}, {9, 6, 4, 8}}, {84, 112, 3, {11, 23, 47, 3}, {16, 8, 6, 9}},
+    {104, 112, 2, {11, 21, 49, 3}, {23, 12, 9, 14}},
+    {64, 128, 5, {12, 19, 62, 3}, {5, 3, 2, 4}}, {84, 128, 4, {11, 21, 61, 3}, {11, 6, 5, 7}}, {96, 128, 3, {11, 22, 60, 3}, {16, 9, 6, 10}},
+    {116, 128, 2, {11, 21, 61, 3}, {22, 12, 9, 14}}, {140, 128, 1, {11, 20, 62, 3}, {24, 17, 13, 19}},
+    {80, 160, 5, {11, 19, 87, 3}, {5, 4, 2, 4}}, {104, 160, 4, {11, 23, 83, 3}, {11, 6, 5, 9}}, {116, 160, 3, {11, 24, 82, 3}, {16, 8, 6, 11}},
+    {140, 160, 2, {11, 21, 85, 3}, {22, 11, 9, 13}}, {168, 160, 1, {11, 22, 84, 3}, {24, 18, 12, 19}},
+    {96, 192, 5, {11, 20, 110, 3}, {6, 4, 2, 5}}, {116, 192, 4, {11, 22, 108, 3}, {10, 6, 4, 9}}, {140, 192, 3, {11, 24, 106, 3}, {16, 10, 6, 11}},
+    {168, 192, 2, {11, 20, 110, 3}, {22, 13, 9, 13}}, {208, 192, 1, {11, 21, 109, 3}, {24, 20, 13, 24}},
+    {116, 224, 5, {12, 22, 131, 3}, {8, 6, 2, 6}}, {140, 224, 4, {12, 26, 127, 3}, {12, 8, 4, 11}}, {168, 224, 3, {11, 20, 134, 3}, {16, 10, 7, 9}},
+    {208, 224, 2, {11, 22, 132, 3}, {24, 16, 10, 15}}, {232, 224, 1, {11, 24, 130, 3}, {24, 20, 12, 20}},
+    {128, 256, 5, {11, 24, 154, 3}, {6, 5, 2, 5}}, {168, 256, 4, {11, 24, 154, 3}, {12, 9, 5, 10}}, {192, 256, 3, {11, 27, 151, 3}, {16, 10, 7, 10}},
+    {232, 256, 2, {11, 22, 156, 3}, {24, 14, 10, 13}}, {280, 256, 1, {11, 26, 152, 3}, {24, 19, 14, 18}},
+    {160, 320, 5, {11, 26, 200, 3}, {8, 5, 2, 6}}, {208, 320, 4, {11, 25, 201, 3}, {13, 9, 5, 10}}, {280, 320, 2, {11, 26, 200, 3}, {24, 17, 9, 17}},
+    {192, 384, 5, {11, 27, 247, 3}, {8, 6, 2, 7}}, {280, 384, 3, {11, 24, 250, 3}, {16, 9, 7, 10}}, {416, 384, 1, {12, 28, 245, 3}, {24, 20, 14, 23}},
+};
+std::vector<Block> uepBlocks(const UepRow& r) {
+    std::vector<Block> b;
+    for (int i = 0; i < 4; i++) if (r.L[i] > 0) b.push_back({r.L[i], r.PI[i]});
+    return b;
+}
+} // namespace
+
+bool uepGeometry(int index, int& size, int& bitrate, int& level, int& infoBits) {
+    if (index < 0 || index >= 64) return false;
+    const UepRow& r = kUep[index];
+    size = r.size; bitrate = r.bitrate; level = r.level; infoBits = r.bitrate * 24;
+    return true;
+}
+
+bool uepDepuncture(const int8_t* rx, int index, int8_t* mother) {
+    int size, br, lv, info;
+    if (!uepGeometry(index, size, br, lv, info)) return false;
+    const int len = 4 * (info + 6), have = size * kCuBits;
+    std::memset(mother, 0, (size_t)len);
+    int k = 0;
+    const bool ok = forEachKept(uepBlocks(kUep[index]), len, [&](int pos) { if (k >= have) return false; mother[pos] = rx[k++]; return true; });
+    return ok && have - k >= 0 && have - k < 64;   // the rest of the sub-channel is padding
+}
+
+bool uepPuncture(const uint8_t* mother, int index, uint8_t* out) {
+    int size, br, lv, info;
+    if (!uepGeometry(index, size, br, lv, info)) return false;
+    const int have = size * kCuBits;
+    int k = 0;
+    const bool ok = forEachKept(uepBlocks(kUep[index]), 4 * (info + 6), [&](int pos) { if (k >= have) return false; out[k++] = mother[pos]; return true; });
+    for (int i = k; i < have; i++) out[i] = 0;
+    return ok && have - k < 64;
 }
 
 // ------------------------------------------------------------------ Reed-Solomon (120,110) over GF(256), generator roots alpha^0 .. alpha^9

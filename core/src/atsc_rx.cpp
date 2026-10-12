@@ -80,6 +80,8 @@ constexpr int kSegSamples = 2 * kSegSyms;               // 1664 samples at 2 per
 constexpr int kNF = 24;                                 // equaliser taps after the cursor (future samples)
 constexpr int kNP = 103;                                // taps before the cursor
 constexpr int kL = kNF + kNP + 1;                       // 128
+constexpr int kMaxPre = 100;                            // the earliest path (symbols before the strongest) the pre-echo canceller handles
+constexpr int kPreTail = 640;                           // symbols kept after a field (the next field sync segment has completed)
 constexpr int kInterpJ = 8;                             // symbol interpolator half length
 constexpr int kInterpPh = 64;
 
@@ -212,8 +214,107 @@ struct Core {
             }
             for (int j = 0; j < 2 * kInterpJ; j++) interp[(size_t)p * 2 * kInterpJ + j] /= (float)sum;
         }
+        resetAcq();
         reset();
         startWorker();
+    }
+
+    // ---------------------------------------------------------------- stage 0: where is the pilot?
+    // The pilot loop only pulls in a few tens of kHz and needs a pilot strong enough for its wide acquisition filter. Before it starts,
+    // the pilot line is looked for in an averaged spectrum of the whole sample band: a channel that is not centred (a recording made
+    // beside the channel) is then mixed to the centre, and a weak pilot (an echo that notches the band edge) is found to a fraction of a
+    // kHz, so the loop can start narrow. Repeated while nothing locks (a retune, a signal that appears later).
+    bool acqDone = false, acqPilot = false, mirrorIq = false;
+    std::vector<cf32> acqBuf;
+    double shiftHz = 0, acqLevel = 0;   // mixer frequency (the channel's offset from the centre), pilot amplitude relative to the signal
+    uint64_t mixN = 0, noLockSamples = 0;
+    float weakScale = 1.f;
+    void resetAcq() { weakScale = 1.f; acqDone = false; acqPilot = false; mirrorIq = false; acqBuf.clear(); shiftHz = 0; acqLevel = 0; mixN = 0; noLockSamples = 0; }
+    int acqLog2() const { int lg = 8; while ((double)(1 << lg) < fin / 1000.0) lg++; return lg; }
+    size_t acqNeed() const { return ((size_t)1 << acqLog2()) * 48; }
+    void acquirePilot() {
+        const int lg = acqLog2(), N = 1 << lg, M = (int)(acqBuf.size() / (size_t)N);
+        std::vector<double> P((size_t)N, 0.0);
+        std::vector<float> re((size_t)N), im((size_t)N), win((size_t)N);
+        for (int i = 0; i < N; i++) win[(size_t)i] = (float)(0.5 - 0.5 * std::cos(2 * kPi * (i + 0.5) / N));
+        for (int m = 0; m < M; m++) {
+            bool finite = true;
+            for (int i = 0; i < N; i++) {
+                const cf32 v = acqBuf[(size_t)m * N + i];
+                re[(size_t)i] = v.real() * win[(size_t)i]; im[(size_t)i] = v.imag() * win[(size_t)i];
+                if (!std::isfinite(re[(size_t)i]) || !std::isfinite(im[(size_t)i])) finite = false;
+            }
+            if (!finite) continue;
+            fftSplit(re.data(), im.data(), lg, false);
+            for (int k = 0; k < N; k++) P[(size_t)((k + N / 2) % N)] += (double)re[(size_t)k] * re[(size_t)k] + (double)im[(size_t)k] * im[(size_t)k];
+        }
+        // the spectrum as it is, and mirrored (I and Q swapped by the radio or the file format: the pilot is then at the upper edge)
+        std::vector<double> Pm((size_t)N);
+        for (int i = 0; i < N; i++) Pm[(size_t)i] = P[(size_t)((N - i) % N)];
+        const double bin = fin / N;
+        std::vector<double> cum((size_t)N + 1, 0.0);
+        double bestScore = 0;
+        int best = -1;
+        bool bestMirror = false;
+        std::vector<double> nb;
+        for (int mirror = 0; mirror < 2; mirror++) {
+        const std::vector<double>& Q = mirror ? Pm : P;
+        for (int i = 0; i < N; i++) cum[(size_t)i + 1] = cum[(size_t)i] + Q[(size_t)i];
+        auto idx = [&](double f) { return (int)std::lround(f / bin) + N / 2; };
+        auto meanP = [&](int a, int b) { a = std::max(a, 0); b = std::min(b, N); return b > a ? (cum[(size_t)b] - cum[(size_t)a]) / (b - a) : -1.0; };
+        // the whole channel (pilot - 0.1 MHz to pilot + 5.45 MHz) must be inside the band
+        const int lo = std::max(idx(-fin / 2 + 0.1e6), 3), hi = std::min(idx(fin / 2 - 5.45e6), N - 45);
+        for (int i = lo; i <= hi; i++) {
+            if (std::abs(i - N / 2) <= 3) continue;   // a DC spike is a line too
+            if (Q[(size_t)i] < Q[(size_t)i - 1] || Q[(size_t)i] < Q[(size_t)i + 1]) continue;
+            nb.assign(Q.begin() + i + 6, Q.begin() + i + 41);   // the data just above the pilot
+            std::nth_element(nb.begin(), nb.begin() + nb.size() / 2, nb.end());
+            const double med = nb[nb.size() / 2];
+            if (med <= 0) continue;
+            const double score = Q[(size_t)i] / med;
+            if (score < 4.0 || score <= bestScore) continue;
+            // the shape of a VSB channel: data above the pilot, (nearly) nothing just below it
+            const double inside = meanP(idx((i - N / 2) * bin + 0.5e6), idx((i - N / 2) * bin + 5.0e6));
+            const double below = meanP(idx((i - N / 2) * bin - 0.6e6), idx((i - N / 2) * bin - 0.35e6));
+            if (inside <= 0 || (below >= 0 && inside < 2.0 * below) || Q[(size_t)i] < 3.0 * inside) continue;   // and a line well above the data
+            bestScore = score; best = i; bestMirror = mirror != 0;
+        }
+        }
+        if (bestMirror) P.swap(Pm);
+        for (int i = 0; i < N; i++) cum[(size_t)i + 1] = cum[(size_t)i] + P[(size_t)i];
+        acqDone = true;
+        if (best < 0) { if (dbg) fprintf(stderr, "[atsc] pilot search: no pilot line in the band\n"); return; }
+        const double a = std::log(P[(size_t)best - 1]), b = std::log(P[(size_t)best]), c = std::log(P[(size_t)best + 1]);
+        const double den = a - 2 * b + c, delta = den < 0 ? std::max(-0.5, std::min(0.5, 0.5 * (a - c) / den)) : 0.0;
+        const double fp = ((double)(best - N / 2) + delta) * bin;
+        double line = 0;
+        for (int k = -2; k <= 2; k++) line += P[(size_t)(best + k)];
+        nb.assign(P.begin() + best + 6, P.begin() + best + 41);
+        std::nth_element(nb.begin(), nb.begin() + nb.size() / 2, nb.end());
+        line -= 5 * nb[nb.size() / 2];
+        acqLevel = std::sqrt(std::max(0.0, line) / std::max(cum[(size_t)N], 1e-30));
+        const double newShift = fp - kPilotHz;
+        if (dbg) fprintf(stderr, "[atsc] pilot search: line at %.0f Hz (score %.1f, level %.3f), channel offset %.0f Hz\n", fp, bestScore, acqLevel, newShift);
+        // a weak pilot has less signal to noise ratio in the loop: the narrow loop is narrowed further, by its power below normal (0.25)
+        weakScale = (float)std::max(0.08, std::min(1.0, std::pow(acqLevel / 0.25, 2)));
+        const bool restart = !acqPilot || std::fabs(newShift - shiftHz) > 1000.0 || bestMirror != mirrorIq;
+        if (bestMirror && dbg) fprintf(stderr, "[atsc] pilot search: the spectrum is mirrored (I and Q swapped)\n");
+        acqPilot = true;
+        if (restart) {
+            shiftHz = newShift; mixN = 0; mirrorIq = bestMirror;
+            reset();
+            tracking = true;   // the frequency is known to a fraction of a kHz: start with the narrow loop
+        }
+    }
+    void mixIn(std::vector<cf32>& in) {
+        const double w = -2.0 * kPi * shiftHz / fin;
+        for (size_t i0 = 0; i0 < in.size(); i0 += 1024) {
+            const size_t e = std::min(in.size(), i0 + 1024);
+            cf32 c = expj(std::fmod(w * (double)mixN, 2.0 * kPi));
+            const cf32 r = expj(w);
+            for (size_t i = i0; i < e; i++) { in[i] *= c; c *= r; }
+            mixN += e - i0;
+        }
     }
 
     void reset() {
@@ -238,6 +339,17 @@ struct Core {
     static double now() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
     void processInput(std::vector<cf32>& in, size_t n_) {
         (void)n_;
+        if (!acqDone) {
+            acqBuf.insert(acqBuf.end(), in.begin(), in.end());
+            if (acqBuf.size() < acqNeed()) return;
+            acquirePilot();
+            in.swap(acqBuf);
+            std::vector<cf32>().swap(acqBuf);
+        }
+        if (fieldLock || pilotLock) noLockSamples = 0;
+        else if ((noLockSamples += in.size()) > (uint64_t)(0.5 * fin)) { noLockSamples = 0; acqDone = false; }   // look again on the next block
+        if (mirrorIq) for (auto& v : in) v = std::conj(v);
+        if (shiftHz != 0) mixIn(in);
         const double tA = now();
         for (const cf32& v : in) { inRe.push_back(v.real()); inIm.push_back(v.imag()); }
         std::vector<float> dchunk;
@@ -266,7 +378,7 @@ struct Core {
             float e = fastAtan2(pf.imag(), pf.real());
             e = std::max(-1.2f, std::min(1.2f, e));
             static const float kPa = getenv("ATSC_PA") ? (float)atof(getenv("ATSC_PA")) : 0.0035f;
-            const float alpha = tracking ? kPa : 0.035f, beta = alpha * alpha / 4.0f / (tracking ? 1.0f : 4.0f);
+            const float alpha = tracking ? kPa * weakScale : 0.035f, beta = alpha * alpha / 4.0f / (tracking ? 1.0f : 4.0f);
             const float xa = kPllScale * alpha * e;       // phase correction, at most about 0.17 rad: a small-angle rotation is exact enough (renormalised below)
             ph *= cf32(1.f - 0.5f * xa * xa, -xa);
             const float xb = kPllScale * beta * e;
@@ -347,11 +459,11 @@ struct Core {
         {
             const double lvl = std::sqrt(std::max(pw, 1e-12));
             pilotRel = (float)(pf.real() / lvl);
-            const bool good = std::fabs(pf.imag()) < (tracking ? 0.35 : 0.5) * std::fabs(pf.real()) && pf.real() > 0.06 * lvl;
+            const bool good = std::fabs(pf.imag()) < (tracking ? 0.35 : 0.5) * std::fabs(pf.real()) && pf.real() > 0.06 * std::sqrt(weakScale) * lvl;
             const int nUpd = (int)(dchunk.size() / 4);
             if (good) { goodRun += nUpd; badRun = 0; } else { badRun += nUpd; goodRun = 0; }
             if (!tracking && goodRun > 60000) { tracking = true; }          // ~11 ms of a steady pilot
-            if (tracking && badRun > 120000) { tracking = false; }
+            if (tracking && badRun > 120000 && !acqPilot) { tracking = false; }   // a weak pilot found by the search never locks the wide loop
             pilotLock = tracking && goodRun > 20000;
         }
         d.insert(d.end(), dchunk.begin(), dchunk.end());
@@ -600,7 +712,7 @@ struct Core {
             jspace.notify_all();
             if (doReset) {
                 dec.reset();
-                eqLast = Taps(); snrAvg = 0; dataSnrAvg = 0; segErr = 0; cleanFields = 0; havePrev = false;
+                eqLast = Taps(); preD = 0; snrAvg = 0; dataSnrAvg = 0; segErr = 0; cleanFields = 0; havePrev = false;
                 tsFlow = 0;
             }
             if (!j.s.empty()) runJob(j);
@@ -613,7 +725,7 @@ struct Core {
         j.f0 = startSeg * kSegSyms;
         j.parity = fieldParity;
         j.base = j.f0 - kNP - 4;
-        const int64_t end = j.f0 + kFieldSyms + kNF + 4;
+        const int64_t end = j.f0 + kFieldSyms + kPreTail;   // the symbols after the field: the pre-echo canceller runs backwards from there
         j.s.resize((size_t)(end - j.base));
         for (size_t k = 0; k < j.s.size(); k++) j.s[k] = rawAt(j.base + (int64_t)k);
         {
@@ -647,6 +759,7 @@ struct Core {
     int64_t prevBase = 0, prevF0 = 0;
     bool havePrev = false;
     double eqSnrNow = 0;
+    int preD = 0;   // a pre-echo canceller for an earlier path this many symbols before the strongest is in use
 
     static float dotf(const float* a, const float* b, int n) {
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
@@ -696,6 +809,71 @@ struct Core {
         const std::vector<float>* s; int64_t base, f0;
         float at(int64_t idx) const { const int64_t k = idx - base; return (k < 0 || k >= (int64_t)s->size()) ? 0.f : (*s)[(size_t)k]; }
     };
+
+    // The earliest path at least 0.4 times as strong as the one the symbol clock follows (the strongest), from the field sync's PN511,
+    // in symbols before it; 0: none further than 6 symbols.
+    static int earliestPath(const View& v, const float* fsLv) {
+        auto corr = [&](int l) { double c = 0; for (int i = 4; i < 515; i++) c += (double)v.at(v.f0 + i + l) * fsLv[i]; return std::fabs(c); };
+        const double c0 = std::max({corr(-1), corr(0), corr(1)});
+        if (c0 <= 0) return 0;
+        for (int l = -kMaxPre; l <= -6; l++) {
+            const double c = corr(l);
+            if (c > 0.4 * c0 && c >= corr(l - 1) && c >= corr(l + 1)) return -l;
+        }
+        return 0;
+    }
+
+    // A ghost stronger than the direct path: the symbol clock follows the ghost, so the direct path is a long pre-echo D symbols early
+    // that a linear equaliser with a few future taps cannot undo (and a decision feedback equaliser on the direct path is unstable, the
+    // later path being the stronger). With r = u + sum_j k_j u[n + D + j] (u: the signal of the strongest path and what is after it),
+    // u is recovered running backwards in time, stable because the earlier path is the weaker. k comes from a least squares fit of the
+    // field sync. The result goes to the usual equalisers.
+    static bool cancelPre(const View& v, const float* fsLv, int D, std::vector<float>& u) {
+        constexpr int H = 12, M = 6;   // half lengths of the earlier path's kernel and of the strongest path's
+        // 1. both paths from the field sync: r[i] = sum m_j s[i + j] + sum c_j s[i + D + j] + bias
+        const int i0 = 4 + M, i1 = 728 - D - H - M;   // every symbol used below is a known field sync symbol
+        if (i1 - i0 < 200) return false;
+        const int n1 = 2 * M + 2 * H + 3;
+        std::vector<float> X, tgt;
+        for (int i = i0; i < 728 - D - H; i++) {
+            const size_t o = X.size(); X.resize(o + n1);
+            float* x = &X[o];
+            for (int j = -M; j <= M; j++) x[j + M] = fsLv[i + j];
+            for (int j = -H; j <= H; j++) x[2 * M + 1 + j + H] = fsLv[i + D + j];
+            x[n1 - 1] = 1.f;
+            tgt.push_back(v.at(v.f0 + i));
+        }
+        std::vector<double> sol;
+        if (!solveLs(X, tgt, n1, 1e-6, sol)) return false;
+        // 2. the strongest path alone (u) where it is known, and the earlier path as a filter of u: r[i] - u[i] = sum k_j u[i + D + j]
+        auto uh = [&](int i) { double y = 0; for (int j = -M; j <= M; j++) y += sol[(size_t)(j + M)] * fsLv[i + j]; return (float)y; };
+        const int n2 = 2 * H + 1;
+        X.clear(); tgt.clear();
+        for (int i = i0; i < i1; i++) {
+            const size_t o = X.size(); X.resize(o + n2);
+            for (int j = -H; j <= H; j++) X[o + (size_t)(j + H)] = uh(i + D + j);
+            tgt.push_back(v.at(v.f0 + i) - uh(i) - (float)sol[(size_t)n1 - 1]);
+        }
+        std::vector<double> kk;
+        if (!solveLs(X, tgt, n2, 1e-4, kk)) return false;
+        float k[2 * H + 1];
+        double e = 0;
+        for (int j = 0; j < n2; j++) { k[j] = (float)kk[(size_t)j]; e += (double)k[j] * k[j]; }
+        if (!(e < 0.81)) return false;   // the backward recursion needs the earlier path to be the weaker one
+        const std::vector<float>& r = *v.s;
+        u = r;
+        for (int64_t m = (int64_t)u.size() - 1; m >= 0; m--) {
+            float acc = 0;
+            for (int j = 0; j < n2; j++) {
+                const int64_t q = m + D + (j - H);
+                if (q < (int64_t)u.size()) acc += k[j] * u[(size_t)q];
+            }
+            u[(size_t)m] = r[(size_t)m] - acc;
+        }
+        float pr = 0, pu = 0;   // a kernel that is not minimum phase makes the recursion grow: refuse it
+        for (size_t m = 0; m < u.size(); m++) { pr = std::max(pr, std::fabs(r[m])); pu = std::max(pu, std::fabs(u[m])); }
+        return std::isfinite(pu) && pu < 4.f * pr;
+    }
 
     // Plain feed-forward taps from the field sync and the segment syncs
     bool trainFF(const View& v, const float* fsLv, Taps& tp) {
@@ -802,12 +980,14 @@ struct Core {
         const double tD0 = now();
         struct Timer { double& acc; double t0; ~Timer() { acc += now() - t0; } } timer{tDec, tD0};
         const int64_t f0 = job.f0;
-        const View view{&job.s, job.base, f0};
+        View view{&job.s, job.base, f0};
+        std::vector<float> uPre;   // the field with the pre-echo removed
         uint8_t prev12[12] = {};
         uint8_t fsSym[kSegSyms];
         fieldSyncSymbols(job.parity == 2, prev12, fsSym);
         float fsLv[kSegSyms];
         for (int i = 0; i < kSegSyms; i++) fsLv[i] = levelOf(fsSym[i]);
+        if (preD > 0 && cancelPre(view, fsLv, preD, uPre)) view.s = &uPre;
         const double tM0 = now();
         static const bool noDfe = getenv("ATSC_NODFE") != nullptr;   // test: the plain equaliser only
         const bool usePrev = havePrev && cleanFields >= 2 && !noDfe;
@@ -832,6 +1012,25 @@ struct Core {
                 if (!trained || s2 > snr) { tp = tf; lv = std::move(lv2); hv = std::move(hv2); snr = s2; trained = true; }
             }
         }
+        if (!trained || snr < 9.0) {   // still nothing: is the strongest path not the first one?
+            const View orig{&job.s, job.base, f0};
+            const int pre = earliestPath(orig, fsLv);
+            std::vector<float> u2;
+            if (pre > 0 && cancelPre(orig, fsLv, pre, u2)) {
+                const View v2{&u2, job.base, f0};
+                Taps t2;
+                std::vector<float> lv2, hv2;
+                if (trainFF(v2, fsLv, t2)) {
+                    const double s2 = equalize(v2, fsLv, t2, nullptr, lv2, hv2);
+                    if (dbg) fprintf(stderr, "[atsc] earlier path %d symbols before the strongest: equaliser SNR %.1f dB after the pre-echo canceller\n", pre, s2);
+                    if (!trained || s2 > snr) {
+                        tp = t2; lv = std::move(lv2); hv = std::move(hv2); snr = s2; trained = true;
+                        preD = pre; uPre = std::move(u2); view.s = &uPre; havePrev = false; cleanFields = 0;
+                    }
+                }
+            }
+        }
+        if (view.s == &job.s && trained && snr >= 9.0) preD = 0;
         eqSnrNow = snr;
         snrAvg = snrAvg == 0 ? snr : snrAvg + 0.3 * (snr - snrAvg);
         std::vector<float> levelsOut;
@@ -860,7 +1059,7 @@ struct Core {
             decOut.levels = levelsOut;
             decOut.seq++;
         };
-        if (!trained || snr < 9.0) {   // no usable channel estimate: do not feed the decoder garbage
+        if (!trained || !(snr >= 9.0)) {   // no usable channel estimate: do not feed the decoder garbage
             if (dbg) fprintf(stderr, "[atsc] field start %lld: equaliser SNR %.1f dB (solved %d), not decoded\n", (long long)(f0 / kSegSyms), snr, (int)trained);
             dec.reset();
             tsFlow = 0;
@@ -944,7 +1143,7 @@ struct Core {
         // a field whose decisions are good enough (not necessarily perfect: the trellis path is right far more often than Reed-Solomon) trains the next one
         if (st.segments == kDataSegs && pathMse < 1.6) cleanFields++; else cleanFields = 0;
         {   // this field's decisions train the next field
-            prevS = job.s; prevBase = job.base; prevF0 = f0; prevY = lv;
+            prevS = *view.s; prevBase = job.base; prevF0 = f0; prevY = lv;
             levelsFromPath(fsLv, psym, hv, tp.B, prevLv);
             havePrev = true;
         }
@@ -969,7 +1168,7 @@ struct Core {
         nt.fieldSync = fieldLock;
         nt.tsOk = tsFlow > 0;
         nt.fieldParity = parity;
-        nt.cfoHz = (omega - omega0) * fs2 / (2.0 * kPi);
+        nt.cfoHz = (omega - omega0) * fs2 / (2.0 * kPi) + shiftHz;
         nt.sroPpm = rr / 2.0 * 1e6;
         nt.pilotDb = pilotRel > 0 ? 20.0 * std::log10(pilotRel) : -99;
         nt.syncQuality = syncQ;
@@ -991,7 +1190,7 @@ struct AtscReceiver::Impl {
 AtscReceiver::AtscReceiver() : p_(new Impl) {}
 AtscReceiver::~AtscReceiver() = default;
 void AtscReceiver::configure(double inputRateHz) { p_->c.configure(inputRateHz); }
-void AtscReceiver::reset() { if (p_->c.ok) p_->c.reset(); }
+void AtscReceiver::reset() { if (p_->c.ok) { p_->c.resetAcq(); p_->c.reset(); } }
 void AtscReceiver::flush() { p_->c.flush(); }
 void AtscReceiver::setBlocking(bool b) { p_->c.blocking = b; }
 bool AtscReceiver::rateOk() const { return p_->c.ok; }
@@ -1000,6 +1199,7 @@ void AtscReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, 
 void AtscReceiver::feed(const cf32* x, size_t n) {
     if (!p_->c.ok || !n) return;
     std::vector<cf32> v(x, x + n);
+    for (auto& s : v) if (!std::isfinite(s.real()) || !std::isfinite(s.imag())) s = cf32(0, 0);   // one bad sample would poison every loop for good
     p_->c.processInput(v, n);
     static long cnt = 0;
     if (getenv("ATSC_PROF") && ++cnt % 195 == 0) fprintf(stderr, "[atsc] time: pfb+pll %.2f s, symbol clock+fields %.2f s, field decode %.2f s (LS fit %.2f, equalise %.2f, trellis+RS %.2f)\n", p_->c.tPfb, p_->c.tCd, p_->c.tDec, p_->c.tLs, p_->c.tEq, p_->c.tVit);

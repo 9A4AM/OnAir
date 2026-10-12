@@ -2,6 +2,7 @@
 // Examples: "The 1090 Megahertz Riddle" (Junzi Sun, https://mode-s.org/1090mhz, chapters ADS-B 1-8 and Mode S 2, 3, 6, 7) unless a comment says otherwise.
 // The expected numbers below are the ones printed there; a hex string that does not give a zero CRC would show up as a failure here first.
 #include "dect2/adsb_msg.h"
+#include "dect2/adsb_encode.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -270,12 +271,15 @@ static void testComplexMessages() {
     }
     {   // random data is not mistaken for a Comm-B format (only a few random fields pass the status and reserved bit checks)
         std::mt19937 rng(3);
-        int hits = 0;
+        int hits = 0, hitsAlt = 0;
         for (int i = 0; i < 1000000; i++) {
             uint8_t mb[7];
             for (auto& x : mb) x = (uint8_t)rng();
             if (inferCommB(mb).bds) hits++;
+            if (inferCommB(mb, 35000).bds) hitsAlt++;
         }
+        printf("random fields taken for Comm-B: %d (with an altitude %d) of 1000000\n", hits, hitsAlt);
+        CHECK(hitsAlt < 600, "%d of 1000000 random fields with an altitude were taken for a Comm-B format", hitsAlt);
         CHECK(hits < 600, "%d of 1000000 random fields were taken for a Comm-B format", hits);   // measured 0.05 %; it was 0.17 % before the checks were tightened
     }
 }
@@ -310,6 +314,101 @@ static void testGeo() {
     CHECK(std::fabs(bearingDeg(0, 0, 0, 1) - 90.0) < 1e-9 && std::fabs(bearingDeg(0, 0, 1, 0)) < 1e-9 && std::fabs(bearingDeg(1, 0, 0, 0) - 180.0) < 1e-9 && std::fabs(bearingDeg(0, 1, 0, 0) - 270.0) < 1e-9, "bearings");
 }
 
+static void testCommBWeather() {
+    uint8_t mb[7];
+    Msg m;
+    auto dec = [&](const uint8_t* f, int alt = 36000) { Frame fr = encodeCommB(0x4CA123, false, 0, alt, f); return decodeMsg(fr.b, fr.bits, m) && m.df == 20 ? m.commb : CommB(); };
+    // 4,4: wind 280/45 kt, SAT -52.25 C, 227 hPa, light turbulence, 30 % humidity
+    mbMetRoutine(mb, 1, 45, 280.0, -52.25, 227, 1, 30.0);
+    CommB c = dec(mb);
+    CHECK(c.bds == 0x44 && c.fom == 1 && c.windKt == 45 && std::fabs(c.windDirDeg - 280.0) < 0.71 && std::fabs(c.satC + 52.25) < 1e-9 && c.hasPressure && c.pressureHpa == 227 &&
+          c.turbulence == 1 && c.hasHumidity && std::fabs(c.humidityPct - 30.0) < 0.8, "BDS 4,4: bds %02X wind %d/%.1f sat %.2f p %d", c.bds, c.windKt, c.windDirDeg, c.satC, c.pressureHpa);
+    mbMetRoutine(mb, 2, 120, 45.0, -61.5, -1, -1, -1);   // only wind and temperature (the optional fields' status bits are 0)
+    c = dec(mb);
+    CHECK(c.bds == 0x44 && c.windKt == 120 && !c.hasPressure && !c.hasHumidity && c.turbulence == -1, "BDS 4,4 without optional fields: bds %02X", c.bds);
+    // 4,5 at 4000 ft: moderate turbulence, light icing, SAT +2.5 C, 875 hPa, radio height 1600 ft
+    mbMetHazard(mb, 2, -1, -1, 1, -1, 2.5, 875, 1600);
+    c = dec(mb, 4000);
+    CHECK(c.bds == 0x45 && c.turbulence == 2 && c.icing == 1 && c.windShear == -1 && std::fabs(c.satC - 2.5) < 1e-9 && c.pressureHpa == 875 && c.hasRadioHeight && c.radioHeightFt == 1600,
+          "BDS 4,5: bds %02X turb %d icing %d sat %.2f rh %d", c.bds, c.turbulence, c.icing, c.satC, c.radioHeightFt);
+    // 3,0: climb RA (one threat, corrective), threat 0x896123
+    mbResolutionAdvisory(mb, 0x2000 | 0x1000, 0, false, false, 0x896123);
+    c = dec(mb);
+    CHECK(c.bds == 0x30 && c.tti == 1 && c.threatIcao == 0x896123 && raText(c.ara, c.rac, c.raTerminated) == "climb, corrective", "BDS 3,0: bds %02X threat %06X '%s'", c.bds, c.threatIcao, raText(c.ara, c.rac, c.raTerminated).c_str());
+    // 1,0 and 1,7
+    mbDataLinkCap(mb, 3, true);
+    c = dec(mb);
+    CHECK(c.bds == 0x10 && c.subnetVersion == 3 && c.acasOperating, "BDS 1,0: bds %02X version %d", c.bds, c.subnetVersion);
+    mbGicbCap(mb, 0x02A101);   // 2,0 (bit 7 must be set), 4,4, 5,0, 6,0
+    c = dec(mb);
+    CHECK(c.bds == 0x17 && c.gicbMask == 0x02A101u, "BDS 1,7: bds %02X mask %06X", c.bds, c.gicbMask);
+
+    // impairments: wrong-register look-alikes are refused
+    mbMetRoutine(mb, 1, 45, 280.0, -52.25, 227, 1, 30.0); setBits(mb, 6, 9, 300);   // 300 kt wind
+    CHECK(inferCommB(mb, 36000).bds != 0x44, "4,4 with a 300 kt wind accepted");
+    mbMetRoutine(mb, 1, 45, 280.0, -52.25, -1, -1, -1); setBits(mb, 36, 11, 250);   // a pressure value without its status bit
+    CHECK(inferCommB(mb, 36000).bds != 0x44, "4,4 with a pressure but no status bit accepted");
+    mbMetRoutine(mb, 6, 45, 280.0, -52.25, -1, -1, -1);                            // figure of merit 6 does not exist
+    CHECK(inferCommB(mb, 36000).bds != 0x44, "4,4 with FOM 6 accepted");
+    mbMetHazard(mb, 2, -1, -1, 1, -1, 2.5, 875, -1);
+    CHECK(inferCommB(mb, 4000).bds == 0x45 && inferCommB(mb).bds != 0x45, "4,5 needs the altitude of the reply");
+    CHECK(inferCommB(mb, 30000).bds != 0x45, "4,5 with a ground-level pressure and temperature accepted at 30000 ft");
+    setBits(mb, 54, 1, 1);                                                          // a reserved bit
+    CHECK(inferCommB(mb, 4000).bds != 0x45, "4,5 with a reserved bit accepted");
+    mbMetHazard(mb, 2, -1, -1, -1, -1, NAN, 875, -1);                             // no temperature status
+    CHECK(inferCommB(mb, 4000).bds != 0x45, "4,5 without the SAT accepted");
+    mbMetRoutine(mb, 1, 45, 280.0, 10.0, 227, -1, -1);                             // +10 C at FL360
+    CHECK(inferCommB(mb, 36000).bds != 0x44, "4,4 with +10 C at 36000 ft accepted");
+    mbResolutionAdvisory(mb, 0x3000, 0, false, false, 0x896123); setBits(mb, 29, 2, 3);
+    CHECK(inferCommB(mb).bds != 0x30, "3,0 with TTI 3 accepted");
+    mbDataLinkCap(mb, 3, true); setBits(mb, 11, 1, 1);
+    CHECK(inferCommB(mb).bds != 0x10, "1,0 with a reserved bit accepted");
+
+    // the older registers keep their own frames: random plausible 4,0 / 5,0 / 6,0 are never taken for a new register
+    std::mt19937 rng(11);
+    auto U = [&](double a, double b) { return std::uniform_real_distribution<double>(a, b)(rng); };
+    auto isNew = [](int b) { return b == 0x10 || b == 0x17 || b == 0x30 || b == 0x44 || b == 0x45; };
+    int stolen = 0, own[3] = {};
+    const int n = 3000;
+    for (int i = 0; i < n; i++) {
+        mbSelectedVertical(mb, (int)U(1000, 45000) / 16 * 16, (int)U(1000, 45000) / 16 * 16, U(980, 1040));
+        int b = inferCommB(mb).bds; own[0] += b == 0x40; stolen += isNew(b);
+        const double tas = U(200, 500);
+        mbTrackAndTurn(mb, U(-3, 3), U(0, 360), tas + U(-80, 80), 0.0, tas);
+        b = inferCommB(mb).bds; own[1] += b == 0x50; stolen += isNew(b);
+        const double mach = U(0.45, 0.85);
+        mbHeadingAndSpeed(mb, U(0, 360), mach * U(330, 450), mach, (int)U(-2000, 2000) / 32 * 32, (int)U(-2000, 2000) / 32 * 32);
+        b = inferCommB(mb).bds; own[2] += b == 0x60; stolen += isNew(b);
+        b = inferCommB(mb, (int)U(5000, 41000) / 25 * 25).bds; stolen += isNew(b);   // with the altitude of a DF20 as well
+    }
+    printf("older registers: own 4,0 %d 5,0 %d 6,0 %d of %d, %d taken by a new register\n", own[0], own[1], own[2], n, stolen);
+    CHECK(stolen == 0 && own[0] > n * 0.95 && own[1] > n * 0.85 && own[2] > n * 0.95, "older registers: %d stolen, own 4,0 %d 5,0 %d 6,0 %d of %d", stolen, own[0], own[1], own[2], n);
+    // and plausible 4,4 / 4,5 come through most of the time (the rest look like 5,0 / 6,0 too and are left undecoded)
+    int got44 = 0, got45 = 0;
+    for (int i = 0; i < n; i++) {
+        const int alt = (int)U(2000, 41000) / 25 * 25;
+        mbMetRoutine(mb, (int)U(1, 4.99), U(0, 200), U(0, 360), isaTempC(alt) + U(-20, 20), isaPressureHpa(alt) + U(-3, 3), -1, -1);
+        got44 += inferCommB(mb, alt).bds == 0x44;
+        mbMetHazard(mb, (int)U(0, 3.99), -1, -1, (int)U(0, 3.99), -1, isaTempC(alt) + U(-20, 20), isaPressureHpa(alt) + U(-3, 3), -1);
+        got45 += inferCommB(mb, alt).bds == 0x45;
+    }
+    printf("plausible 4,4 decoded %d / %d, 4,5 %d / %d\n", got44, n, got45, n);
+    CHECK(got44 > n * 0.5 && got45 > n * 0.5, "4,4 %d 4,5 %d of %d", got44, got45, n);
+
+    // wind triangle and temperature
+    double from, kt;
+    windTriangle(7.125, 403.1, 0.0, 400.0, from, kt);   // heading north at 400 kt, wind from the west at 50 kt
+    CHECK(std::fabs(from - 270.0) < 0.5 && std::fabs(kt - 50.0) < 0.5, "wind %.1f/%.1f", from, kt);
+    CHECK(std::fabs(satFromTasMach(661.47, 1.0) - 15.0) < 1e-6 && std::fabs(satFromTasMach(400.0, 0.687) + 50.0) < 1.0, "SAT %.2f", satFromTasMach(400.0, 0.687));
+    // declination (WMM 2025): Vilnius about +8, San Francisco +13, New York -13, London +1; the degree 3 model is good to a few degrees there
+    struct P { double lat, lon, d; } pts[] = {{54.69, 25.28, 8.0}, {37.77, -122.42, 13.0}, {40.71, -74.0, -12.8}, {51.5, -0.1, 1.0}};
+    for (auto& p : pts) {
+        const double d = magDeclinationDeg(p.lat, p.lon);
+        printf("declination %.1f %.1f: %.1f (expected %.1f)\n", p.lat, p.lon, d, p.d);
+        CHECK(std::fabs(d - p.d) < 6.0, "declination at %.1f %.1f: %.1f", p.lat, p.lon, d);
+    }
+}
+
 int main() {
     testCrc();
     testSyndromes();
@@ -322,6 +421,7 @@ int main() {
     testSurveillanceReplies();
     testGillham();
     testComplexMessages();
+    testCommBWeather();
     testExtendedStatus();
     testNoPosition();
     testGeo();

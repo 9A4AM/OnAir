@@ -1,26 +1,107 @@
 // small reusable widgets: pill buttons, lamps, gauges, scatter and history plots, formatting helpers
 #include "app.h"
 
+bool gTightTabs = false;
+void setUiLanguage(App& a, const std::string& code) {
+    a.uiLang = code;
+    i18n::set(code.empty() ? plat::uiLanguage() : code);
+    savePrefs(a);
+}
+
+void languageMenuItems(App& a) {
+    if (ImGui::MenuItem(tr("Same as the system"), nullptr, a.uiLang.empty())) setUiLanguage(a, "");
+    ImGui::Separator();
+    int n = 0;
+    const i18n::Language* L = i18n::languages(n);
+    for (int i = 0; i < n; i++) if (ImGui::MenuItem(L[i].name, nullptr, !a.uiLang.empty() && a.uiLang == L[i].code)) setUiLanguage(a, L[i].code);
+}
+
+void languageButton(App& a) {
+    int n = 0;
+    const i18n::Language* L = i18n::languages(n);
+    const char* cur = L[0].name;
+    for (int i = 0; i < n; i++) if (!strcmp(i18n::current(), L[i].code)) cur = L[i].name;
+    char lbl[64];
+    snprintf(lbl, sizeof lbl, "%s##lang", cur);
+    if (ImGui::SmallButton(lbl)) ImGui::OpenPopup("##langpop");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Interface language"));
+    if (ImGui::BeginPopup("##langpop")) { languageMenuItems(a); ImGui::EndPopup(); }
+}
+
 bool tabItem(const char* name, Ic icon) {
     ImGuiTabItemFlags fl = 0;
     if (!gForceTab.empty() && gForceTab == name) { fl = ImGuiTabItemFlags_SetSelected; gForceTab.clear(); }
     // the label is padded with spaces to leave room for the icon, which is drawn over that gap
     const float gap = pal::dev() ? 0.f : iconSize() + 5.f;
     const int nSp = (int)std::ceil(gap / ImGui::CalcTextSize(" ").x);
-    const std::string label = std::string(nSp, ' ') + name + "###" + name;
+    const std::string label = std::string(nSp, ' ') + tr(name) + "###" + name;
+    // a narrow pane (gTightTabs, set by mainTabs() for its tab bar): less padding, so that every tab keeps its whole name in view
+    if (gTightTabs) ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3 * gUi, ImGui::GetStyle().FramePadding.y));
     const bool open = ImGui::BeginTabItem(label.c_str(), nullptr, fl);
+    if (gTightTabs) ImGui::PopStyleVar();
     const ImVec2 r0 = ImGui::GetItemRectMin(), r1 = ImGui::GetItemRectMax();
     if (!pal::dev()) icons::draw(icon, ImVec2(r0.x + ImGui::GetStyle().FramePadding.x + iconSize() * 0.5f + 1.f, (r0.y + r1.y) * 0.5f), iconSize() * 0.92f,
                 open ? IM_COL32(255, 255, 255, 255) : IM_COL32(140, 154, 170, 255));
     return open;
 }
 
+namespace {
+std::vector<GLFWmonitor*> gMons;
+GLFWmonitor* gPrimaryMon = nullptr;
+bool gMonsStale = true;
+GLFWmonitorfun gPrevMonitorCb = nullptr;
+void onMonitor(GLFWmonitor* m, int event) {
+    gMonsStale = true;   // read again at the next use
+    if (gPrevMonitorCb) gPrevMonitorCb(m, event);
+}
+}   // namespace
+
+void watchMonitors() {
+    gPrevMonitorCb = glfwSetMonitorCallback(onMonitor);
+    gMonsStale = true;
+}
+const std::vector<GLFWmonitor*>& monitors() {
+    if (gMonsStale) {
+        gMonsStale = false;
+        gMons.clear();
+        int count = 0;
+        if (GLFWmonitor** m = glfwGetMonitors(&count)) gMons.assign(m, m + std::max(count, 0));
+        gPrimaryMon = gMons.empty() ? nullptr : glfwGetPrimaryMonitor();
+    }
+    return gMons;
+}
+GLFWmonitor* primaryMonitor() { monitors(); return gPrimaryMon; }
+
+// The monitor holding most of the rectangle (screen coordinates), the primary one when it is on none. On Wayland a window's position is not
+// known (glfwGetWindowPos does not work there): the primary one.
+GLFWmonitor* monitorFor(int x, int y, int w, int h) {
+    const auto& mons = monitors();
+    GLFWmonitor* m = primaryMonitor();
+    if (gWayland) return m;
+    long best = 0;
+    for (size_t i = 0; i < mons.size(); i++) {
+        int mx = 0, my = 0;
+        glfwGetMonitorPos(mons[i], &mx, &my);
+        const GLFWvidmode* mv = glfwGetVideoMode(mons[i]);
+        if (!mv) continue;
+        const long ox = std::max(0, std::min(x + w, mx + mv->width) - std::max(x, mx));
+        const long oy = std::max(0, std::min(y + h, my + mv->height) - std::max(y, my));
+        if (ox * oy > best) { best = ox * oy; m = mons[i]; }
+    }
+    return m;
+}
+
 void toggleFullscreen() {
     if (!gWindow) return;
     if (glfwGetWindowMonitor(gWindow)) { glfwSetWindowMonitor(gWindow, nullptr, gWinX, gWinY, gWinW, gWinH, 0); return; }
-    glfwGetWindowPos(gWindow, &gWinX, &gWinY); glfwGetWindowSize(gWindow, &gWinW, &gWinH);
-    GLFWmonitor* m = glfwGetPrimaryMonitor();
+    if (!gWayland) glfwGetWindowPos(gWindow, &gWinX, &gWinY);
+    glfwGetWindowSize(gWindow, &gWinW, &gWinH);
+    // Full screen on the monitor the window is on (the one holding most of it), not always the primary one: someone who drags OnAir to a
+    // TV on the second output wants the picture there (issue #29).
+    GLFWmonitor* m = monitorFor(gWinX, gWinY, gWinW, gWinH);
+    if (!m) return;
     const GLFWvidmode* vm = glfwGetVideoMode(m);
+    if (!vm) return;
     glfwSetWindowMonitor(gWindow, m, 0, 0, vm->width, vm->height, vm->refreshRate);
 }
 
@@ -43,10 +124,116 @@ bool pillButton(const char* label, bool selected, float padX) {
 int subNav(const char* id, int& cur, std::initializer_list<const char*> names) {
     ImGui::PushID(id);
     int i = 0;
-    for (const char* n : names) { if (i) ImGui::SameLine(0, 6 * gUi); if (pillButton(n, cur == i)) cur = i; i++; }
+    for (const char* n : names) { if (i) sameLineIf(ImGui::CalcTextSize(n).x + 22, 6 * gUi); if (pillButton(n, cur == i)) cur = i; i++; }   // wraps in a narrow tab
     ImGui::PopID();
     ImGui::Spacing();
     return cur;
+}
+
+// Rows that wrap. The groups of a row are counted per window and frame; each one's width is kept in the window's storage for the next frame.
+namespace {
+struct FlowKeys { ImGuiID frame, n, x, y, same; };
+FlowKeys flowKeys() { return {ImGui::GetID("##flowF"), ImGui::GetID("##flowN"), ImGui::GetID("##flowX"), ImGui::GetID("##flowY"), ImGui::GetID("##flowS")}; }
+ImGuiID flowWidthKey(int k) { ImGui::PushID(k); const ImGuiID id = ImGui::GetID("##flowW"); ImGui::PopID(); return id; }
+// keeps the width of the group that has just ended; returns its number
+int flowMeasure(ImGuiStorage* st, const FlowKeys& k) {
+    const int frame = ImGui::GetFrameCount();
+    if (st->GetInt(k.frame, -1) != frame) { st->SetInt(k.frame, frame); st->SetInt(k.n, 0); st->SetFloat(k.y, -FLT_MAX); }
+    const ImVec2 i0 = ImGui::GetItemRectMin(), i1 = ImGui::GetItemRectMax();
+    const int n = st->GetInt(k.n, 0);
+    const float gy = st->GetFloat(k.y, -FLT_MAX);
+    const float gx = gy <= i0.y + 1 && gy >= i0.y - ImGui::GetFrameHeight() ? st->GetFloat(k.x, i0.x) : ImGui::GetCursorScreenPos().x;   // else a new row: from the line start
+    st->SetFloat(flowWidthKey(n), i1.x - gx);
+    return n;
+}
+bool flowFresh(ImGuiStorage* st, const FlowKeys& k) {   // nothing drawn since the last flowNext()
+    return st->GetInt(k.frame, -1) == ImGui::GetFrameCount() && st->GetFloat(k.x, 0) == ImGui::GetCursorScreenPos().x && st->GetFloat(k.y, 0) == ImGui::GetCursorScreenPos().y;
+}
+}
+
+bool flowNext(float spacing) {
+    const float sp = spacing < 0 ? ImGui::GetStyle().ItemSpacing.x : spacing;
+    ImGuiStorage* st = ImGui::GetStateStorage();
+    const FlowKeys k = flowKeys();
+    const int n = flowMeasure(st, k);
+    const float need = st->GetFloat(flowWidthKey(n + 1), 0.f);
+    const float right = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
+    // a few pixels to spare: the width is last frame's, and a live value can grow by a digit since (the FM status line ran 9 px over)
+    const float slack = 0.6f * ImGui::GetFontSize();
+    const bool same = ImGui::GetItemRectMax().x + sp + need + slack <= right + 0.5f || need <= 0.f;
+    if (same) ImGui::SameLine(0, sp);
+    st->SetInt(k.n, n + 1);
+    st->SetFloat(k.x, ImGui::GetCursorScreenPos().x);
+    st->SetFloat(k.y, ImGui::GetCursorScreenPos().y);
+    st->SetBool(k.same, same);
+    return same;
+}
+
+void flowEnd() {
+    ImGuiStorage* st = ImGui::GetStateStorage();
+    const FlowKeys k = flowKeys();
+    if (st->GetInt(k.frame, -1) != ImGui::GetFrameCount() || flowFresh(st, k)) return;
+    // the next row in this window numbers its groups on from here: else its first group took this one's number and width
+    // (the DVB-S lamps: "FEC" stood in for "Framing", which then did not wrap and ran past the edge)
+    st->SetInt(k.n, flowMeasure(st, k) + 1);
+}
+
+void flowBreak() {
+    ImGuiStorage* st = ImGui::GetStateStorage();
+    const FlowKeys k = flowKeys();
+    if (!flowFresh(st, k)) { flowEnd(); ImGui::NewLine(); }
+    else if (st->GetBool(k.same, false)) ImGui::NewLine();
+}
+
+bool sameLineIf(float w, float spacing) {
+    const float sp = spacing < 0 ? ImGui::GetStyle().ItemSpacing.x : spacing;
+    const float right = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
+    if (ImGui::GetItemRectMax().x + sp + w > right + 0.5f) return false;
+    ImGui::SameLine(0, sp);
+    return true;
+}
+
+StatusPanel::StatusPanel() {
+    p = ImGui::GetCursorScreenPos();
+    id = ImGui::GetID("##statuspanel");
+    const float h = std::max(ImGui::GetFrameHeight() * 2.f + ImGui::GetStyle().ItemSpacing.y * 2.f, ImGui::GetStateStorage()->GetFloat(id, 0.f));
+    ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(p.x - 4, p.y - 2), ImVec2(p.x + ImGui::GetContentRegionAvail().x + 4, p.y + h), IM_COL32(22, 23, 25, 255), 3.f);
+}
+StatusPanel::~StatusPanel() { ImGui::GetStateStorage()->SetFloat(id, ImGui::GetItemRectMax().y - p.y + ImGui::GetStyle().ItemSpacing.y); }
+
+std::string ellipsize(std::string s, float w, float size) {
+    ImFont* f = ImGui::GetFont();
+    if (size <= 0) size = ImGui::GetFontSize();
+    if (f->CalcTextSizeA(size, FLT_MAX, 0, s.c_str()).x <= w) return s;
+    while (!s.empty() && f->CalcTextSizeA(size, FLT_MAX, 0, (s + "...").c_str()).x > w) {
+        s.pop_back();
+        while (!s.empty() && ((unsigned char)s.back() & 0xC0) == 0x80) s.pop_back();   // not in the middle of a UTF-8 character
+        if (!s.empty() && (unsigned char)s.back() >= 0xC0) s.pop_back();
+    }
+    return s.empty() ? s : s + "...";
+}
+
+std::string fitCaption(const std::string& s, float w) {
+    if (ImGui::CalcTextSize(s.c_str()).x <= w) return s;
+    const size_t k = s.find(" (");
+    if (k != std::string::npos && ImGui::CalcTextSize(s.substr(0, k).c_str()).x <= w) return s.substr(0, k);
+    return ellipsize(s, w);
+}
+
+void captionFit(float w, const char* fmt, ...) {
+    char b[256];
+    va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof b, fmt, ap); va_end(ap);
+    const std::string c = fitCaption(b, w);
+    ImGui::TextDisabled("%s", c.c_str());
+    if (c != b && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", b);
+}
+
+void kvColumn(float col) {
+    // in screen space: after the key the cursor is at the start of the next line (the left of the window, the indent or the group)
+    const float lineStart = ImGui::GetCursorScreenPos().x, keyEnd = ImGui::GetItemRectMax().x;
+    const float want = lineStart + col - ImGui::GetCursorStartPos().x;   // where SameLine(col) put it
+    const float x = std::max(keyEnd + 8 * gUi, std::min(want, lineStart + ImGui::GetContentRegionAvail().x * 0.5f));
+    ImGui::SameLine(0, x - keyEnd);
 }
 
 // Small rounded label drawn at an absolute position; returns its width.
@@ -59,6 +246,7 @@ float tagAt(ImDrawList* dl, ImVec2 pos, const char* text, ImU32 bg, ImU32 fg) {
 }
 
 void gaugePill(float width, float frac, ImU32 fill, const char* text) {
+    width = std::max(width, ImGui::CalcTextSize(text).x + 10 * gUi);   // never narrower than its text (a large display scale)
     const float h = ImGui::GetFrameHeight() - 2;
     ImVec2 p = ImGui::GetCursorScreenPos();
     p.y += 1;
@@ -95,33 +283,33 @@ void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/, int ico
     ImGui::Dummy(ImVec2(sq + 5, ImGui::GetTextLineHeight()));
     }
     ImGui::SameLine(0, 0);
-    ImGui::TextDisabled("%s", label);
+    ImGui::TextDisabled("%s", tr(label));
     static const struct { const char* k; const char* tip; } kTips[] = {
-        {"IQ", "Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping."},
-        {"P1", "DVB-T2: the P1 preamble symbol (frame start and mode) is being found."},
-        {"GI", "Guard interval and symbol timing are locked."},
-        {"L1-pre", "DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC."},
-        {"L1-post", "DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC."},
-        {"Frame", "A full T2 frame is being received and equalised."},
-        {"LDPC", "Forward error correction, inner code: share of blocks that decode."},
-        {"BCH", "Forward error correction, outer code: share of blocks that decode."},
-        {"TS", "Transport stream: services found, continuity errors counted."},
-        {"Video", "The player is decoding and showing pictures."},
-        {"Audio", "The player has audio buffered and playing."},
-        {"Sync", "DVB-T: OFDM symbol sync from the cyclic prefix."},
-        {"TPS", "DVB-T: the transmission parameter signalling bits are decoded."},
-        {"Chan", "Channel estimate from the pilots is valid."},
-        {"Viterbi", "DVB-T: the convolutional decoder found the packet sync."},
-        {"RS", "Reed-Solomon outer code: share of packets that are clean."},
-        {"Pilot", "ATSC: the 8-VSB pilot carrier is locked."},
-        {"Seg", "ATSC: data segment sync found."},
-        {"Field", "ATSC: field sync found."},
-        {"Eq", "ATSC: the equaliser is trained."},
-        {"Trellis", "ATSC: the trellis decoder produces a valid transport stream."}};
+        {"IQ", N_("Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping.")},
+        {"P1", N_("DVB-T2: the P1 preamble symbol (frame start and mode) is being found.")},
+        {"GI", N_("Guard interval and symbol timing are locked.")},
+        {"L1-pre", N_("DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC.")},
+        {"L1-post", N_("DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC.")},
+        {"Frame", N_("A full T2 frame is being received and equalised.")},
+        {"LDPC", N_("Forward error correction, inner code: share of blocks that decode.")},
+        {"BCH", N_("Forward error correction, outer code: share of blocks that decode.")},
+        {"TS", N_("Transport stream: services found, continuity errors counted.")},
+        {"Video", N_("The player is decoding and showing pictures.")},
+        {"Audio", N_("The player has audio buffered and playing.")},
+        {"Sync", N_("DVB-T: OFDM symbol sync from the cyclic prefix.")},
+        {"TPS", N_("DVB-T: the transmission parameter signalling bits are decoded.")},
+        {"Chan", N_("Channel estimate from the pilots is valid.")},
+        {"Viterbi", N_("DVB-T: the convolutional decoder found the packet sync.")},
+        {"RS", N_("Reed-Solomon outer code: share of packets that are clean.")},
+        {"Pilot", N_("ATSC: the 8-VSB pilot carrier is locked.")},
+        {"Seg", N_("ATSC: data segment sync found.")},
+        {"Field", N_("ATSC: field sync found.")},
+        {"Eq", N_("ATSC: the equaliser is trained.")},
+        {"Trellis", N_("ATSC: the trellis decoder produces a valid transport stream.")}};
     {
         const ImVec2 mx = ImGui::GetItemRectMax();
         if (ImGui::IsMouseHoveringRect(p, ImVec2(mx.x, p.y + ImGui::GetTextLineHeight()))) {
-            for (auto& e : kTips) if (!strcmp(e.k, label)) { ImGui::SetTooltip("%s", e.tip); break; }
+            for (auto& e : kTips) if (!strcmp(e.k, label)) { ImGui::SetTooltip("%s", tr(e.tip)); break; }
         }
     }
 }
@@ -183,25 +371,109 @@ void qualityBar(App& a, float width) {
     if (pct > 0) dl->AddRectFilled(p, ImVec2(p.x + width * t, p.y + h), ImGui::ColorConvertFloat4ToU32(col), pal::rnd(3.f));
     dl->AddRect(p, ImVec2(p.x + width, p.y + h), pal::dev() ? IM_COL32(44, 44, 42, 255) : IM_COL32(70, 76, 84, 255), pal::rnd(3.f));
     char txt[96];
-    if (!run || !q.valid) snprintf(txt, sizeof txt, "signal quality: %s", run ? "no lock" : "-");
-    else snprintf(txt, sizeof txt, "signal quality %.0f%%  %s", q.percent, q.label.c_str());
+    if (!run || !q.valid) snprintf(txt, sizeof txt, tr("signal quality: %s"), run ? tr("no lock") : "-");
+    else snprintf(txt, sizeof txt, tr("signal quality %.0f%%  %s"), q.percent, q.label.c_str());
     ImVec2 ts = ImGui::CalcTextSize(txt);
     dl->AddText(ImVec2(p.x + (width - ts.x) * 0.5f, p.y + (h - ts.y) * 0.5f), IM_COL32(235, 238, 242, 255), txt);
     ImGui::Dummy(ImVec2(width, h));
     if (ImGui::IsItemHovered() && run && q.valid) {
         ImGui::BeginTooltip();
         if (a3) {
-            ImGui::Text("FEC blocks decoded in the last frame: %.1f%%", q.fecOk * 100);
-            ImGui::TextDisabled("ATSC 3.0 does not report a signal-to-noise ratio yet; this bar shows how much of the data decodes.");
+            ImGui::Text(tr("FEC blocks decoded in the last frame: %.1f%%"), q.fecOk * 100);
+            ImGui::TextDisabled("%s", tr("ATSC 3.0 does not report a signal-to-noise ratio yet; this bar shows how much of the data decodes."));
         } else if (q.requiredDb <= 0) {   // the modes with no table of required SNR
-            ImGui::Text("data SNR %.1f dB, data decoded %.1f%% (last frames)", q.snrDb, q.fecOk * 100);
-            ImGui::TextDisabled("This bar shows how much of the recent data decodes.");
+            ImGui::Text(tr("data SNR %.1f dB, data decoded %.1f%% (last frames)"), q.snrDb, q.fecOk * 100);
+            ImGui::TextDisabled("%s", tr("This bar shows how much of the recent data decodes."));
         } else {
-            ImGui::Text("data SNR %.1f dB, needed for this modulation/code rate about %.1f dB", q.snrDb, q.requiredDb);
-            ImGui::Text("margin %+.1f dB, FEC blocks decoded %.1f%% (last frames)", q.marginDb, q.fecOk * 100);
-            ImGui::TextDisabled("0 dB margin is the edge of reception (25%%); +6 dB or more is comfortable.");
+            ImGui::Text(tr("data SNR %.1f dB, needed for this modulation/code rate about %.1f dB"), q.snrDb, q.requiredDb);
+            ImGui::Text(tr("margin %+.1f dB, FEC blocks decoded %.1f%% (last frames)"), q.marginDb, q.fecOk * 100);
+            ImGui::TextDisabled("%s", tr("0 dB margin is the edge of reception (25%); +6 dB or more is comfortable."));
         }
         ImGui::EndTooltip();
     }
 }
 
+
+std::string lossText(const SampleLoss& l) {
+    if (l.radioEvents == 0 && l.cpuEvents == 0) return "0";
+    auto dur = [](double s) { char b[32]; if (s < 1) snprintf(b, sizeof b, "%.0f ms", s * 1000); else snprintf(b, sizeof b, "%.1f s", s); return std::string(b); };
+    std::string t;
+    if (l.radioEvents) t = dur(l.radioSec) + " radio";
+    if (l.cpuEvents) t += (t.empty() ? "" : ", ") + dur(l.cpuSec) + " CPU";
+    return t;
+}
+
+ImVec4 lossColour(const SampleLoss& l, ImVec4 normal) {
+    double since = -1;
+    for (double s : {l.sinceRadioSec, l.sinceCpuSec}) if (s >= 0 && (since < 0 || s < since)) since = s;
+    if (since < 0) return normal;
+    return since < 30 ? pal::badRed() : pal::warnAmber();
+}
+
+void lossTooltip(const SampleLoss& l) {
+    if (!ImGui::IsItemHovered()) return;
+    ImGui::BeginTooltip();
+    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 28);
+    auto ago = [](double s) { char b[48]; if (s < 0) return std::string(tr("never")); if (s < 120) snprintf(b, sizeof b, tr("%.0f s ago"), s); else snprintf(b, sizeof b, tr("%.0f min ago"), s / 60); return std::string(b); };
+    if (!l.live) ImGui::TextUnformatted(tr("Files and the test signal never lose samples: they wait for the receiver."));
+    else {
+        ImGui::Text(tr("Radio side: %.2f s lost in %llu gaps, last %s"), l.radioSec, (unsigned long long)l.radioEvents, ago(l.sinceRadioSec).c_str());
+        ImGui::TextDisabled("%s", tr("Samples that never arrived from the radio: its USB connection or driver could not keep up. Try a USB port directly on the computer (no hub), a shorter cable, or a lower sample rate."));
+        ImGui::Spacing();
+        ImGui::Text(tr("CPU side: %.2f s skipped %llu times, last %s"), l.cpuSec, (unsigned long long)l.cpuEvents, ago(l.sinceCpuSec).c_str());
+        ImGui::TextDisabled("%s", tr("Signal OnAir had to skip because the receiver could not keep up with the sample rate. Close other programs, or pick a lower sample rate or a narrower channel."));
+        ImGui::Spacing();
+        ImGui::Text(tr("Receiver load: %.0f%% of real time"), l.loadPct);
+        ImGui::TextDisabled("%s", tr("The receiver's time on the sample thread per second of signal. Near or above 100%, signal is skipped."));
+    }
+    ImGui::PopTextWrapPos();
+    ImGui::EndTooltip();
+}
+
+int hfDemodLoad(const char* prefKey) {
+    const long v = plat::prefs().getI(prefKey, dect2::HfDemodAuto);
+    return v >= 0 && v < dect2::HfDemodCount ? (int)v : dect2::HfDemodAuto;
+}
+
+bool hfDemodControl(App& a, int& choice, const char* prefKey, const char* id) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("%s", tr("Demod"));
+    sameLineIf(100 * gUi, 5 * gUi);
+    char cur[32];
+    if (choice == dect2::HfDemodAuto) snprintf(cur, sizeof cur, tr("Auto (%s)"), dect2::hfDemodName(dect2::hfDemodResolve(choice, a.freqMhz)));
+    else snprintf(cur, sizeof cur, "%s", dect2::hfDemodName(choice));
+    ImGui::PushID(id);
+    ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));
+    bool changed = false;
+    if (ImGui::BeginCombo("##demod", cur)) {
+        static const int kOrder[] = {dect2::HfDemodAuto, dect2::HfDemodUsb, dect2::HfDemodLsb, dect2::HfDemodNfm, dect2::HfDemodAm};
+        for (const int d : kOrder)
+            if (ImGui::Selectable(dect2::hfDemodName(d), choice == d) && choice != d) { choice = d; changed = true; }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("%s", tr("How the signal becomes the audio the decoders hear.\nAuto: USB below 30 MHz, NFM at and above.\n"
+                          "NFM: 12.5 kHz channel, no de-emphasis, 300 - 3000 Hz audio.\nISS SSTV on 145.800 MHz is FM."));
+    ImGui::PopID();
+    if (changed) plat::prefs().setI(prefKey, choice);
+    return changed;
+}
+
+bool listenControls(App& a, bool& on, const char* prefKey, const char* id, const char* tip) {
+    char lbl[48];
+    snprintf(lbl, sizeof lbl, "%s##%s", tr("Listen"), id);
+    const bool changed = ImGui::Checkbox(lbl, &on);
+    if (changed) plat::prefs().setB(prefKey, on);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tip);
+    if (!on) return changed;
+    flowNext(6 * gUi);
+    ImGui::PushID(id);
+    if (iconFlat(a.muted ? Ic::Mute : Ic::Speaker, tr(a.muted ? "Unmute" : "Mute"))) a.muted = !a.muted;
+    ImGui::SameLine(0, 4 * gUi);
+    ImGui::SetNextItemWidth(90 * gUi);
+    float vol = a.volume * 100.f;
+    if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) a.volume = vol / 100.f;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Volume (shared with the other modes)"));
+    ImGui::PopID();
+    return changed;
+}

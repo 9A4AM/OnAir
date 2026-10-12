@@ -2,6 +2,7 @@
 // The transmit-side stages are used by the signal generator and the tests; the receiver uses the same tables and the inverse stages.
 #pragma once
 #include <array>
+#include <cmath>
 #include <complex>
 #include <cstdint>
 #include <string>
@@ -18,7 +19,11 @@ enum Rate { kR12 = 0, kR23 = 1, kR34 = 2, kR56 = 3, kR78 = 4 }; // convolutional
 
 constexpr int kSegments = 13;
 constexpr int kSymbolsPerFrame = 204;
-constexpr double kSampleRate = 512e6 / 63.0;      // IFFT sampling frequency, 8.126984 MHz
+constexpr double kSampleRate = 512e6 / 63.0;      // IFFT sampling frequency of a 6 MHz channel, 8.126984 MHz
+// 7 and 8 MHz channels (ABNT NBR 15601, ISDB-T International: the Maldives, parts of Africa) carry the same signal with every time
+// quantity scaled by the channel width / 6: carriers, pilots, TMCC, interleaving and coding are the same, carrier spacing and rate scale.
+inline double sampleRateFor(int bwMhz) { return kSampleRate * (bwMhz == 7 || bwMhz == 8 ? bwMhz : 6) / 6.0; }
+inline int channelWidthOfRate(double fs) { return (int)std::lround(fs / kSampleRate * 6.0); }
 constexpr float kPilotAmp = 4.f / 3.f;
 
 // One hierarchical layer: how many of the 13 segments it uses and how they are coded. segments == 0: the layer is not used.
@@ -36,6 +41,7 @@ struct Params {
     int guard = kGi8;
     bool partial = false;         // segment 0 is a partial-reception (one-segment) layer: it is layer A and has one segment
     Layer layer[3];               // A, B, C: consecutive segment numbers, ascending
+    int bwMhz = 6;                // channel width 6, 7 or 8 MHz: scales only the rates and durations (not compared, not signalled)
     int totalSegments() const { return layer[0].segments + layer[1].segments + layer[2].segments; }
     bool operator==(const Params& o) const { return mode == o.mode && guard == o.guard && partial == o.partial && layer[0] == o.layer[0] && layer[1] == o.layer[1] && layer[2] == o.layer[2]; }
     bool valid(std::string* why = nullptr) const;
@@ -49,7 +55,7 @@ inline int totalCarriers(int mode) { return kSegments * carriersPerSegment(mode)
 inline int centerCarrier(int mode) { return (totalCarriers(mode) - 1) / 2; }
 inline int guardSamples(int mode, int guard) { return fftN(mode) >> (5 - guard); }
 inline int symbolSamples(int mode, int guard) { return fftN(mode) + guardSamples(mode, guard); }
-inline double frameSeconds(int mode, int guard) { return (double)symbolSamples(mode, guard) * kSymbolsPerFrame / kSampleRate; }
+inline double frameSeconds(int mode, int guard, int bwMhz = 6) { return (double)symbolSamples(mode, guard) * kSymbolsPerFrame / sampleRateFor(bwMhz); }
 inline int bitsPerCell(int mod) { return mod == k64Qam ? 6 : mod == k16Qam ? 4 : 2; }
 int interleavingLength(int mode, int ti);                      // I of the time interleaver
 // Delay of the time interleaver and the delay adjustment before it (Table 3-12) add up to a whole number of frames; in symbols

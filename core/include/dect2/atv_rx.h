@@ -47,6 +47,14 @@ public:
     void setHue(float degrees);                          // NTSC tint
     void setChannelWidth(int mhz);                       // 6, 7 or 8 (default 8): the channel the user tuned; only matters for the carrier offset of 5.5 MHz sound (B/G)
     void setDetector(int mode);                          // 0 automatic (synchronous when the carrier is locked), 1 envelope detector only
+    // 0 broadcast TV (amplitude modulated vision carrier, found by a search), 1 FM video as analog FPV links send it (the channel is the centre of
+    // the input; the polarity is found by trial). FM needs 16 Msps or more (a 17 MHz wide signal); the picture decoder is the same.
+    // 2 NBTV / mechanical television on an AM carrier, 3 the same on narrow FM: the carrier at the centre of the input (within +-50 kHz), its
+    // audio is the video (atv_nbtv.h); the line count and rate come from setNbtv.
+    void setModulation(int mode);
+    // NBTV and mechanical television: lines (24 .. 240; 32 at 12.5 pictures a second is the NBTVA standard), pictures a second, the FM
+    // deviation (kHz) and the scan direction (vertical: lines run top to bottom)
+    void setNbtv(int lines, double frameHz, double devKhz = 5, bool vertical = true);
 
 private:
     struct Impl;

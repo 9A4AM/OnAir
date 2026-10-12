@@ -13,6 +13,54 @@
 #include "drm_tel.h"
 #include "adsb_tel.h"
 #include "gnss_tel.h"
+#include "sonde_tel.h"
+#include "ais_tel.h"
+#include "marine_tel.h"
+#include "acars_tel.h"
+#include "inmc_tel.h"
+#include "aero_tel.h"
+#include "iridium_tel.h"
+#include "mesh_tel.h"
+#include "hdr_tel.h"
+#include "cdr_tel.h"
+#include "pager_tel.h"
+#include "packet_tel.h"
+#include "hfdig_tel.h"
+#include "airband_tel.h"
+#include "vdl2_tel.h"
+#include "ism_tel.h"
+#include "vor_tel.h"
+#include "m17_tel.h"
+#include "hfdl_tel.h"
+#include "cell_tel.h"
+#include "cw_tel.h"
+#include "dstar_tel.h"
+#include "nxdn_tel.h"
+#include "dpmr_tel.h"
+#include "tetra_tel.h"
+#include "mac_tel.h"
+#include "gsmr_tel.h"
+#include "dvbc_tel.h"
+#include "orbcomm_tel.h"
+#include "uplink_tel.h"
+#include "ale_tel.h"
+#include "p25_tel.h"
+#include "ble_tel.h"
+#include "iono_tel.h"
+#include "psk_tel.h"
+#include "js8_tel.h"
+#include "specx_tel.h"
+#include "specan_tel.h"
+#include "astro_tel.h"
+#include "qo100_tel.h"
+#include "wifi_tel.h"
+#include "general_tel.h"
+#include "time_tel.h"
+#include "cubesat_tel.h"
+#include "rid_tel.h"
+#include "meteor_tel.h"
+#include "nr_tel.h"
+#include "goes_tel.h"
 #include "t2.h"
 #include "t2l1.h"
 #include "t2plp.h"
@@ -49,8 +97,56 @@ struct RxTelemetry {
     DrmTelemetry drm;     // valid when standard == 11
     AdsbTelemetry adsb;    // valid when standard == 12
     GnssTelemetry gnss;      // valid when standard == 13
+    SondeTelemetry sonde;      // valid when standard == 14
+    AisTelemetry ais;      // valid when standard == 15
+    MarineTelemetry marine;      // valid when standard == 16
+    AcarsTelemetry acars;      // valid when standard == 17
+    InmcTelemetry inmc;      // valid when standard == 18
+    AeroTelemetry aero;      // valid when standard == 19
+    IridiumTelemetry iridium;      // valid when standard == 20
+    MeshTelemetry mesh;      // valid when standard == 21
+    HdrTelemetry hdr;        // valid when standard == 22
+    CdrTelemetry cdr;        // valid when standard == 23
+    PagerTelemetry pager;    // valid when standard == 24
+    PacketTelemetry packet;  // valid when standard == 25
+    HfdigTelemetry hfdig;    // valid when standard == 26
+    AirbandTelemetry airband;   // valid when standard == 27
+    Vdl2Telemetry vdl2;         // valid when standard == 28
     uint64_t seq = 0;
-    int standard = 0;            // 0 DVB-T2, 1 DVB-T, 2 ATSC, 3 DAB, 4 ATSC 3.0 (details: Engine::atsc3Telemetry), 5 ISDB-T, 6 FM, 7 DVB-S/S2, 8 DTMB, 9 analog TV, 10 DMR, 11 DRM, 12 ADS-B
+    int standard = 0;            // 0 DVB-T2, 1 DVB-T, 2 ATSC, 3 DAB, 4 ATSC 3.0 (details: Engine::atsc3Telemetry), 5 ISDB-T, 6 FM, 7 DVB-S/S2, 8 DTMB, 9 analog TV, 10 DMR, 11 DRM, 12 ADS-B, 13 GNSS, 14 radiosonde, 15 AIS, 16 marine, 17 ACARS, 18 Inmarsat-C, 19 Inmarsat Aero, 20 Iridium, 21 mesh, 22 HD Radio, 23 CDR, 24 pagers, 25 APRS / packet, 26 HF digital, 27 airband, 28 VDL Mode 2, 29 ISM sensors, 31 VOR / ILS, 32 M17, 34 D-STAR, 35 CW, 36 HFDL, 37 PSK31, 38 JS8Call, 41 DVB-C, 45 Orbcomm, 47 TETRA, 39 NXDN, 39 NXDN, 50 HF ALE, 48 MAC, 51 P25
+    IsmTelemetry ism;           // valid when standard == 29
+    VorTelemetry vor;           // valid when standard == 31
+    HfdlTelemetry hfdl;         // valid when standard == 36
+    M17Telemetry m17;           // valid when standard == 32
+    CellTelemetry cell;         // valid when standard == 33
+    CwTelemetry cw;             // valid when standard == 35
+    SpecxTelemetry specx;  // valid when standard == 42
+    Js8Telemetry js8;      // valid when standard == 38
+    AstroTelemetry astro;     // valid when standard == 49 (radio astronomy)
+    SpecanTelemetry specan;   // valid when standard == 43 (spectrum analyser)
+    OrbcommTelemetry orbcomm;   // valid when standard == 45
+    DvbcTelemetry dvbc;    // valid when standard == 41
+    UplinkTelemetry uplink;   // valid when standard == 44 (Mode S uplink)
+    AleTelemetry ale;         // valid when standard == 50 (HF ALE)
+    P25Telemetry p25;         // valid when standard == 51 (P25 Phase 1)
+    BleTelemetry ble;         // valid when standard == 52 (Bluetooth LE advertising)
+    IonoTelemetry iono;       // valid when standard == 53 (ionospheric sounders)
+    Qo100Telemetry qo100;     // valid when standard == 54 (QO-100)
+    WifiTelemetry wifi;       // valid when standard == 55 (Wi-Fi networks)
+    GeneralTelemetry general; // valid when standard == 56 (general receiver)
+    TimeTelemetry timesig;    // valid when standard == 59 (time signals)
+    CubeTelemetry cube;       // valid when standard == 62 (CubeSat telemetry)
+    RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)
+    MeteorTelemetry meteor;   // valid when standard == 60 (Meteor-M LRPT)
+    NrTelemetry nr;           // valid when standard == 58 (5G NR cells)
+    GoesTelemetry goes;       // valid when standard == 61 (GOES HRIT)
+    PskTelemetry psk;      // valid when standard == 37
+    DstarTelemetry dstar;       // valid when standard == 34
+    NxdnTelemetry nxdn;         // valid when standard == 39
+    DpmrTelemetry dpmr;         // valid when standard == 46
+    TetraTelemetry tetra;       // valid when standard == 47
+    MacTelemetry mac;           // valid when standard == 48
+    GsmrTelemetry gsmr;         // valid when standard == 40
     struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics
         bool tpsOk = false, fecSync = false;
         int mode = 0, guard = 0, mod = 0, hier = 0, crHp = 0, crLp = 0, cellId = 0, frameIdx = 0, punctPhase = 0;
@@ -61,6 +157,7 @@ struct RxTelemetry {
     struct Isdbt {               // ISDB-T only: the TMCC parameters and the statistics of the three layers
         bool tmccOk = false;
         int mode = 0, guard = 0, symbolIdx = -1, intShift = 0, switching = 15;
+        int bwMhz = 6;           // channel width the receiver works with (6, 7, 8 MHz)
         bool partial = false, emergency = false;
         double secSinceTmcc = 0;
         struct Lay { int segments = 0, mod = 0, rate = 0, ti = 0; uint64_t packets = 0, rsClean = 0, rsCorrected = 0, rsFailed = 0; double viterbi = 0; bool synced = false; } layer[3];
@@ -71,6 +168,8 @@ struct RxTelemetry {
     int state = 0; // 0 searching P1, 1 waiting for GI, 2 locked
     P1Info p1;
     uint64_t p1Count = 0;
+    uint64_t p1Evaluated = 0;     // start positions the exact P1 metric was computed for (the windowed search and the cheap first stage keep it a small part of the samples)
+    uint64_t p1Rescans = 0;       // times the windowed P1 search found nothing where the frame cadence put it and searched everything again
     double secSinceP1 = 0;
     double frameMs = 0;
     int symbolsPerFrame = 0;

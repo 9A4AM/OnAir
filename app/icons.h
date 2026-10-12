@@ -8,7 +8,7 @@
 enum class Ic {
     Logo, Antenna, Play, Stop, Refresh, Chip, Gauge, Wave, Clock, Signal, Tv, Radio, Speaker, Mute, Scan, Compass, Grid, Layers, Chart,
     Lock, Warning, Check, Cross, File, Folder, Usb, Record, Sliders, Fullscreen, Popout, Info, Search, Star, Target, Echo, Bolt, Globe, Pulse,
-    Book, Doc, Cpu, Down, Right, Gear, Subtitles, Link, Camera
+    Book, Doc, Cpu, Down, Right, Gear, Subtitles, Link, Camera, Save
 };
 
 namespace icons {
@@ -111,6 +111,10 @@ inline void draw(Ic id, ImVec2 centre, float size, ImU32 col, ImDrawList* dl = n
     case Ic::File: case Ic::Doc: {
         const float pts[] = {-0.6f, -0.9f, 0.25f, -0.9f, 0.65f, -0.45f, 0.65f, 0.9f, -0.6f, 0.9f};
         p.poly(pts, 5, true); p.line(-0.3f, 0.1f, 0.35f, 0.1f); p.line(-0.3f, 0.45f, 0.35f, 0.45f);
+        break; }
+    case Ic::Save: {   // a floppy disk: the body with a cut corner, the shutter on top and the label below
+        const float pts[] = {-0.85f, -0.85f, 0.55f, -0.85f, 0.85f, -0.55f, 0.85f, 0.85f, -0.85f, 0.85f};
+        p.poly(pts, 5, true); p.rect(-0.45f, -0.85f, 0.35f, -0.3f); p.rect(-0.5f, 0.2f, 0.5f, 0.85f);
         break; }
     case Ic::Folder: {
         const float pts[] = {-0.9f, -0.6f, -0.3f, -0.6f, -0.05f, -0.3f, 0.9f, -0.3f, 0.9f, 0.7f, -0.9f, 0.7f};
@@ -240,12 +244,13 @@ inline void sectionHeader(Ic id, const char* text) {
     ImGui::Dummy(ImVec2(w, lh));
 }
 
-// Thin vertical divider between groups of controls on one line
+bool flowNext(float spacing);   // widgets.cpp
+// Thin vertical divider between groups of controls on one line; a new line instead when the group after it does not fit (a narrow window)
 inline void vSeparator() {
-    ImGui::SameLine(0, 9 * gUi);
+    const bool same = flowNext(9 * gUi);
     const ImVec2 p = ImGui::GetCursorScreenPos();
     const float h = ImGui::GetFrameHeight();
-    ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, p.y + 3), ImVec2(p.x, p.y + h - 3), IM_COL32(52, 60, 72, 255));
-    ImGui::Dummy(ImVec2(1, h));
+    if (same) ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, p.y + 3), ImVec2(p.x, p.y + h - 3), IM_COL32(52, 60, 72, 255));
+    ImGui::Dummy(ImVec2(1, h));   // also at the start of a line: the group keeps its width from frame to frame
     ImGui::SameLine(0, 9 * gUi);
 }

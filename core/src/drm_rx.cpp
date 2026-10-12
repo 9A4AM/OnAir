@@ -2,6 +2,10 @@
 //
 //   input -> channel filter, 48 kHz (drm_front) -> guard interval correlation (mode, symbol timing, carrier offset modulo the carrier spacing)
 //         -> frequency reference triplet (whole carrier spacings) -> OFDM demodulation, one FFT per symbol
+//   DRM+ (mode E, 100 kHz) has a lane of its own at 192 kHz, searched alongside while the input rate allows (100 ksps and up): guard interval
+//         correlation, then the whole carrier spacings from the pattern of the gain references and the band edges (mode E has no frequency
+//         references); the carrier offset is tracked on the gain references (the same carriers every 4 symbols). The lane that finds a
+//         signal becomes the one the tracker works on.
 //         -> frame start from the time reference cells -> gain reference cells: channel estimate (time, then frequency interpolation)
 //         -> equalised cells of a frame -> DrmBackend
 //
@@ -13,6 +17,7 @@
 #include "dect2/drm_dec.h"
 #include "dect2/drm_fft.h"
 #include "drm_front.h"
+#include "dect2/channel_find.h"
 #include "drm_internal.h"
 #include <algorithm>
 #include <atomic>
@@ -29,9 +34,11 @@ constexpr double kFs = 48000.0;
 constexpr double kPi = 3.14159265358979323846;
 
 // part of the band that every spectrum occupancy of the mode shares and where no gain reference is boosted: used until the FAC says which occupancy it is
-const int kSafe[4][2] = {{8, 96}, {5, 87}, {-63, 63}, {-40, 40}};
+const int kSafe[5][2] = {{8, 96}, {5, 87}, {-63, 63}, {-40, 40}, {-100, 100}};
 // widest carrier range of the mode (union over the occupancies)
-const int kWide[4][2] = {{-114, 350}, {-103, 311}, {-69, 213}, {-44, 135}};
+const int kWide[5][2] = {{-114, 350}, {-103, 311}, {-69, 213}, {-44, 135}, {-106, 106}};
+constexpr double kFsE = 192000.0;          // the DRM+ lane
+constexpr double kMinRateE = 100000.0;     // the least input rate the DRM+ lane runs at (the 100 kHz channel must fit)
 
 int posMod(int a, int m) { int r = a % m; return r < 0 ? r + m : r; }
 int floorDiv(int a, int b) { int q = a / b; return (a % b != 0 && ((a < 0) != (b < 0))) ? q - 1 : q; }
@@ -42,7 +49,7 @@ double besselI0(double x) { double s = 1, t = 1; for (int k = 1; k < 50; k++) { 
 ModeTuning drmTuning() {
     ModeTuning t;
     t.stdMode = 12; t.id = "drm"; t.name = "DRM";
-    t.minMhz = 1; t.maxMhz = 110; t.defMhz = 9.5;
+    t.minMhz = 0.1; t.maxMhz = 240; t.defMhz = 9.5;   // DRM30 below 30 MHz, DRM+ in VHF bands I (47 - 68 MHz), II (87.5 - 108) and III (174 - 240)
     t.sampleRate = 2000000.0; t.basebandHz = 1750000.0; t.bandwidthMhz = 0.02;
     t.minSampleRate = 48000.0;
     return t;
@@ -71,12 +78,29 @@ struct DrmReceiver::Impl {
     std::vector<cf32> tmp, tmp2;
     SroCorrector corr;               // takes the sample clock offset out of the 48 kHz stream; the offset is measured on its output (what is left)
     double corrPpm = 0;
+    double fs = kFs;                 // the rate of the lane the tracker works on (48 kHz, DRM+ 192 kHz)
+    // The other lane: the DRM+ one while the tracker is on the 48 kHz one, and the other way round. The members above (front, corr, corrPpm, buf,
+    // base, total, fs) are always the active lane; swapLanes() exchanges them.
+    struct Lane { DrmFront front; SroCorrector corr; double corrPpm = 0; std::vector<cf32> buf; uint64_t base = 0, total = 0; double fs = kFsE; };
+    Lane other;
+    bool eLane = false;              // the active lane is the DRM+ one
+    bool eOk = false;                // the input rate carries the DRM+ lane
+    uint64_t lastSearchE = 0;        // the DRM+ lane's samples at its last search
+    uint64_t inCount = 0;            // input samples since configure(): the clock of blockedUntil
+    // DRM+ audio: the audio super frame (200 ms) comes in two logical frames
+    std::vector<uint8_t> pendE;
+    uint64_t pendIdx = 0;
+    bool pendHave = false;
+    std::vector<uint8_t> joinE;
 
     enum Phase { kSearch, kTrack } phase = kSearch;
     uint64_t lastSearch = 0;
-    uint64_t blockedUntil = 0;       // after a false alarm: no new lock on the same (mode, shift) before this sample
+    uint64_t blockedUntil = 0;       // after a false alarm: no new lock on the same (mode, shift) before this input sample (inCount)
     int blockedMode = -1, blockedShift = 0, trackShift = 0;
-    double lastRho[4] = {};
+    bool mirror = false;                      // the input is conjugated (a mirrored spectrum)
+    ChannelCentre cc;                         // moves a channel far from the middle of the sample band there
+    std::vector<cf32> cin;
+    double lastRho[5] = {};
 
     // ---------------------------------------------------------------- tracker
     int mode = -1;
@@ -170,16 +194,37 @@ struct DrmReceiver::Impl {
 
     // ---------------------------------------------------------------- setup
     void configure(double rate) {
+        if (eLane) swapLanes();
         inRate = rate;
         ready = front.configure(rate);
+        eOk = other.front.configure(rate, kFsE, kMinRateE);
+        other.fs = kFsE; fs = kFs;
+        cc.configure(rate, 10000, 12000, 4.0);
         corr.reset(); corrPpm = 0; corr.setPpm(0);
+        other.corr.reset(); other.corrPpm = 0; other.corr.setPpm(0);
+        inCount = 0;
         resetAll(false);
     }
 
+    void swapLanes() {
+        std::swap(front, other.front); std::swap(corr, other.corr); std::swap(corrPpm, other.corrPpm);
+        std::swap(buf, other.buf); std::swap(base, other.base); std::swap(total, other.total); std::swap(fs, other.fs);
+        eLane = !eLane;
+    }
+    // the lane that is not active starts afresh when it is next fed (its samples are old)
+    void clearOther() {
+        other.buf.clear(); other.base = other.total;
+        other.front.reset(); other.corr.reset();
+    }
+
     void resetAll(bool bumpSeq) {
+        if (eLane) swapLanes();
         front.reset();
         buf.clear(); base = 0; total = 0; lastSearch = 0;
+        other.front.reset(); other.buf.clear(); other.base = 0; other.total = 0; lastSearchE = 0;
+        pendE.clear(); pendHave = false;
         phase = kSearch;
+        mirror = false;
         blockedMode = -1; blockedUntil = 0;
         be.reset();
         be.log = [this](const std::string& s) { log(s); };
@@ -211,9 +256,9 @@ struct DrmReceiver::Impl {
     };
 
     // guard interval correlation of one mode over z[0, W): folded over the symbol period
-    void guardCorr(const cf32* z, size_t W, int m, double& rho, size_t& tau, cf32& peak, int& nsym) {
+    void guardCorr(const cf32* z, size_t W, int m, double& rho, size_t& tau, cf32& peak, int& nsym, int spt = 4) {
         const ModeParams& mp = modeParams(m);
-        const int Tu = mp.tu12 * 4, Tg = mp.tg12 * 4, Tsym = Tu + Tg;
+        const int Tu = mp.tu12 * spt, Tg = mp.tg12 * spt, Tsym = Tu + Tg;
         rho = 0; tau = 0; peak = cf32(0, 0); nsym = 0;
         if ((int)W < 4 * Tsym) return;
         const size_t nmax = W - (size_t)Tu - (size_t)Tg;          // window starts 0 .. nmax
@@ -305,7 +350,7 @@ struct DrmReceiver::Impl {
         auto pw = [&](int k) { return P[(size_t)posMod(k, Tu)]; };
         double bestScore = -1e9; int bestShift = 0;
         std::complex<double> bestC = 0;
-        const bool blockedNow = mB == blockedMode && total < blockedUntil;
+        const bool blockedNow = mB == blockedMode && inCount < blockedUntil;
         // how the reference of each tone changes from symbol to symbol (mode D flips the sign of two of them)
         cf32 adv[3];
         for (int i = 0; i < 3; i++) {
@@ -338,7 +383,7 @@ struct DrmReceiver::Impl {
         // (a carrier d bins from the centre advances by 2 pi d Tsym / Tu from symbol to symbol on top of that)
         const double dPh = 2 * kPi * std::fmod((double)bestShift * (double)Tsym / (double)Tu, 1.0);
         const double fErr = std::arg(bestC * std::polar(1.0, -dPh)) / (2 * kPi * (double)Tsym / kFs);
-        if (bestScore < 0.5) return res;
+        if (bestScore < 0.5) { toggleMirror(); return res; }
         res.ok = true;
         res.mode = mB; res.rho = rhoB; res.score = bestScore;
         res.symStart = absStart + tauB;
@@ -347,12 +392,110 @@ struct DrmReceiver::Impl {
         return res;
     }
 
+    // DRM+ (mode E) on the 192 kHz lane z[0, W): guard interval correlation for the timing and the offset within a carrier spacing, then the whole
+    // spacings. Mode E has no frequency references; the power of the gain references (twice that of a data cell, four times at the boosted edge
+    // carriers) in their pattern (every 16 carriers, moved by 4 from symbol to symbol) and the edges of the 213 carriers show where the
+    // carriers are. A zero mean template of the expected power per carrier is correlated with the measured power for every shift and every
+    // phase of the 4 symbol pattern.
+    Acq acquireE(const cf32* z, size_t W, uint64_t absStart) {
+        Acq res;
+        double rho; size_t tau; cf32 pk; int nsym;
+        guardCorr(z, W, kModeE, rho, tau, pk, nsym, 16);
+        lastRho[4] = rho;
+        if (rho < 0.3 || nsym < 24) return res;
+        const ModeParams& mp = modeParams(kModeE);
+        const int Tu = mp.tu12 * 16, Tg = mp.tg12 * 16, Tsym = Tu + Tg;
+        const double fFrac = -std::arg(pk) / (2 * kPi * (double)Tu / kFsE);
+        const int nsy = std::min(64, nsym - 2);
+        DrmFft f(Tu);
+        std::vector<cf32> bins((size_t)Tu);
+        std::vector<std::vector<float>> P((size_t)nsy, std::vector<float>((size_t)Tu, 0.f));
+        for (int j = 0; j < nsy; j++) {
+            const size_t st = tau + (size_t)j * (size_t)Tsym + (size_t)(Tg - Tg / 2);
+            const cf32 step = std::polar(1.0f, (float)(-2 * kPi * fFrac / kFsE));
+            cf32 r = std::polar(1.0f, (float)std::fmod(-2 * kPi * fFrac * (double)st / kFsE, 2 * kPi));
+            for (int i = 0; i < Tu; i++) { bins[(size_t)i] = z[st + (size_t)i] * r; r *= step; }
+            f.forward(bins.data());
+            for (int i = 0; i < Tu; i++) P[(size_t)j][(size_t)i] = std::norm(bins[(size_t)i]);
+        }
+        // the template over -130 .. 130: 0 outside the carriers, 1 for a data cell, |ref|^2 for a gain reference (symbols 4 .. 7 of a frame: no time references)
+        const int K = 130, nK = 2 * K + 1;
+        const int dMax = 28;               // +-12.4 kHz: 50 ppm at 240 MHz
+        // a strong carrier (a tone, a neighbour's pilot) must not stand in for the pattern: every bin is clipped at 8 times the median power
+        {
+            std::vector<float> all;
+            all.reserve((size_t)nsy * (size_t)(2 * (K + dMax) + 1));
+            for (int j = 0; j < nsy; j++) for (int k = -K - dMax; k <= K + dMax; k++) all.push_back(P[(size_t)j][(size_t)posMod(k, Tu)]);
+            std::nth_element(all.begin(), all.begin() + (ptrdiff_t)(all.size() / 2), all.end());
+            const float cap = 8.f * all[all.size() / 2];
+            for (auto& Pj : P) for (auto& v : Pj) v = std::min(v, cap);
+        }
+        // Two templates per symbol of the 4 symbol pattern. Tp: the gain references against the data cells, zero mean over the 213 carriers and 0
+        // outside: the pattern itself, which no other signal has (it repeats every 4 carriers of shift with the symbol phase). Tb: the expected
+        // power over -130 .. 130 with zero mean (0 outside the carriers): the band edges, which tell the shifts 4 carriers apart.
+        std::vector<float> Tp((size_t)4 * nK, 0.f), Tb((size_t)4 * nK, 0.f);
+        for (int n = 0; n < 4; n++) {
+            double meanB = 0, meanP = 0;
+            int inBand = 0;
+            for (int k = -K; k <= K; k++) {
+                float v = 0;
+                cf32 ref;
+                if (k >= kWide[kModeE][0] && k <= kWide[kModeE][1] && !carrierUnused(kModeE, k)) {
+                    v = pilotRef(kModeE, 0, 4 + n, k, ref) ? std::norm(ref) : 1.f;
+                    meanP += v; inBand++;
+                }
+                Tb[(size_t)(n * nK + k + K)] = v;
+                meanB += v;
+            }
+            meanB /= nK; meanP /= std::max(1, inBand);
+            for (int k = -K; k <= K; k++) {
+                float& b = Tb[(size_t)(n * nK + k + K)];
+                if (b > 0) Tp[(size_t)(n * nK + k + K)] = b - (float)meanP;
+                b -= (float)meanB;
+            }
+        }
+        auto score = [&](const std::vector<float>& T, int d, int q) {
+            double acc = 0, pw = 0;
+            for (int j = 0; j < nsy; j++) {
+                const float* t = &T[(size_t)(((j + q) % 4) * nK)];
+                const std::vector<float>& Pj = P[(size_t)j];
+                for (int k = -K; k <= K; k++) {
+                    const float p = Pj[(size_t)posMod(k + d, Tu)];
+                    acc += t[k + K] * p; pw += p;
+                }
+            }
+            return acc / (pw + 1e-30);
+        };
+        double bestP = -1e30; int d0 = 0;
+        for (int d = -dMax; d <= dMax; d++)
+            for (int q = 0; q < 4; q++) { const double sc = score(Tp, d, q); if (sc > bestP) { bestP = sc; d0 = d; } }
+        // the shifts with the same pattern: the band edges decide
+        double best = -1e30; int bestD = d0;
+        const bool blockedNow = blockedMode == kModeE && inCount < blockedUntil;
+        for (int d = d0 - 4 * (dMax / 4 + 1); d <= dMax; d += 4) {
+            if (d < -dMax || (blockedNow && d == blockedShift)) continue;
+            for (int q = 0; q < 4; q++) { const double sc = score(Tb, d, q); if (sc > best) { best = sc; bestD = d; } }
+        }
+        lastScoreE = bestP;
+        // a clean DRM+ signal scores about 0.055 on the pattern (less with noise: 0.04 at 3 dB); anything else stays near 0 (+-0.005)
+        if (bestP < kMinScoreE || best < 0.05) return res;
+        res.ok = true;
+        res.mode = kModeE; res.rho = rho; res.score = best;
+        res.symStart = absStart + tau;
+        res.fTotal = fFrac + bestD * kFsE / (double)Tu;
+        res.shift = bestD;
+        return res;
+    }
+    double lastScoreE = 0;
+    static constexpr double kMinScoreE = 0.025;
+
     // ---------------------------------------------------------------- tracker set-up
     void startTracking(const Acq& a) {
         mode = a.mode;
         trackShift = a.shift;
         const ModeParams& mp = modeParams(mode);
-        N = mp.tu12 * 4; G = mp.tg12 * 4; Ts = N + G; ns = mp.ns; gx = mp.gx; gy = mp.gy; gk0 = mp.gk0;
+        const int spt = (int)std::lround(fs / 12000.0);   // samples per T: 4 at 48 kHz, 16 on the DRM+ lane
+        N = mp.tu12 * spt; G = mp.tg12 * spt; Ts = N + G; ns = mp.ns; gx = mp.gx; gy = mp.gy; gk0 = mp.gk0;
         back = G / 2;
         fftN = DrmFft(N);
         nS = (int64_t)a.symStart;
@@ -393,7 +536,7 @@ struct DrmReceiver::Impl {
         setupLattice();
         phase = kTrack;
         char b[160];
-        snprintf(b, sizeof b, "DRM: signal found: mode %c, carrier offset %+.1f Hz, guard correlation %.2f", mp.name, fHz, a.rho);
+        snprintf(b, sizeof b, "DRM: signal found: mode %c%s, carrier offset %+.1f Hz, guard correlation %.2f", mp.name, mode == kModeE ? " (DRM+)" : "", fHz, a.rho);
         log(b);
     }
 
@@ -471,9 +614,9 @@ struct DrmReceiver::Impl {
         // rotate by the carrier offset and transform
         work.resize((size_t)N);
         {
-            const double ph0 = phRef + 2 * kPi * fHz * ((double)ws - nRef) / kFs;
+            const double ph0 = phRef + 2 * kPi * fHz * ((double)ws - nRef) / fs;
             cf32 r = std::polar(1.0f, (float)(-std::fmod(ph0, 2 * kPi)));
-            const cf32 st = std::polar(1.0f, (float)(-2 * kPi * fHz / kFs));
+            const cf32 st = std::polar(1.0f, (float)(-2 * kPi * fHz / fs));
             for (int i = 0; i < N; i++) { work[(size_t)i] = x[i] * r; r *= st; }
         }
         fftN.forward(work.data());
@@ -564,9 +707,25 @@ struct DrmReceiver::Impl {
         R.haveHr = true;
     }
 
-    // carrier offset from the phase of the frequency reference tones from symbol to symbol
+    // carrier offset from the phase of the frequency reference tones from symbol to symbol (mode E: of the gain references from one symbol to the
+    // one 4 later, which has them on the same carriers)
     void freqLoop(int64_t t) {
-        if (mode > 3 || t < 1) return;
+        if (mode == kModeE) {
+            if (t < gy) return;
+            const SymRec* A = recIf(t - gy);
+            const SymRec* B = recIf(t);
+            if (!A || !B) return;
+            cf32 acc(0, 0);
+            for (int j = 0; j < nGridW; j++) {
+                const cf32 a = A->Hr[(size_t)j], b = B->Hr[(size_t)j];
+                if (a == cf32(0, 0) || b == cf32(0, 0)) continue;
+                acc += b * std::conj(a);
+            }
+            if (std::abs(acc) < 1e-12) return;
+            steerFreq(t, std::arg(acc) / (2 * kPi * (double)gy * Ts / fs));
+            return;
+        }
+        if (t < 1) return;
         const SymRec& A = rec(t - 1);
         const SymRec& B = rec(t);
         if (A.idx != t - 1 || B.idx != t) return;
@@ -581,12 +740,14 @@ struct DrmReceiver::Impl {
             acc += yb * std::conj(ya);
         }
         if (std::abs(acc) < 1e-12) return;
-        const double eps = std::arg(acc) / (2 * kPi * (double)Ts / kFs);   // Hz
+        steerFreq(t, std::arg(acc) / (2 * kPi * (double)Ts / fs));   // Hz
+    }
+    void steerFreq(int64_t t, double eps) {
         freqErr += (eps - freqErr) * 0.15;
         // move the correction in smoothly; the rotation phase stays continuous
         if (t % 4 == 0 && std::fabs(freqErr) > 0.005) {
             const double nNow = (double)nS;
-            phRef += 2 * kPi * fHz * (nNow - nRef) / kFs;
+            phRef += 2 * kPi * fHz * (nNow - nRef) / fs;
             nRef = nNow;
             fHz += 0.5 * freqErr;
             freqErr *= 0.5;
@@ -643,7 +804,7 @@ struct DrmReceiver::Impl {
             accRr += (sumRe / cntD - accRr) * 0.05; accRi += (sumIm / cntD - accRi) * 0.05; accP += (sumP / cntD - accP) * 0.05;
             const double pw = std::max(accP - sigma2, 1e-12);
             const double rho = std::min(1.0, std::hypot(accRr, accRi) / pw);
-            const double tauY = (double)gy * Ts / kFs;
+            const double tauY = (double)gy * Ts / fs;
             dopplerSm = rho < 0.999 ? std::sqrt(std::max(0.0, -std::log(std::max(rho, 1e-3)))) / (kPi * tauY) : 0;
             if (rho < 0.999) dopplerSm = std::min(dopplerSm, 20.0);
         }
@@ -731,20 +892,33 @@ struct DrmReceiver::Impl {
         else if (be.facBad != badBefore) facBadRun++;
         auto L = be.layout();
         if ((L ? L->occ : -1) != gridOcc) setupLattice();
-        if (facOkSince == 0 && framesSync >= 14) restartSearch("the FAC cannot be decoded");
-        else if (facBadRun >= 12) restartSearch("the FAC is lost");
+        const int k = mode == kModeE ? 3 : 1;           // mode E frames are 100 ms
+        if (facOkSince == 0 && framesSync >= 14 * k) restartSearch("the FAC cannot be decoded");
+        else if (facBadRun >= 12 * k) restartSearch("the FAC is lost");
+    }
+
+    // No frequency pilots, or a lock whose FAC never decodes: the next search looks at the mirrored spectrum (I and Q swapped by the radio or
+    // the file format). The stream is conjugated from here on until the next toggle.
+    void toggleMirror() {
+        mirror = !mirror;
+        for (auto& v : buf) v = std::conj(v);
+        for (auto& v : other.buf) v = std::conj(v);
     }
 
     void restartSearch(const char* why) {
         char b[200];
         snprintf(b, sizeof b, "DRM: signal lost (%s)", why);
         log(b);
-        if (facOkSince == 0) { blockedMode = mode; blockedShift = trackShift; blockedUntil = total + (uint64_t)(kFs * 6); }
+        if (facOkSince == 0) { blockedMode = mode; blockedShift = trackShift; blockedUntil = inCount + (uint64_t)(inRate * 6); toggleMirror(); }
         phase = kSearch;
         frameSync = false;
         be.frameLost();
-        lastSearch = total;
         eqNext = -1;
+        pendHave = false;
+        // both lanes search again, the 48 kHz one active; the lane that was idle has old samples
+        if (eLane) swapLanes();
+        clearOther();
+        lastSearch = total; lastSearchE = other.total;
     }
 
     // ---------------------------------------------------------------- audio and messages
@@ -771,20 +945,31 @@ struct DrmReceiver::Impl {
         const int len = f.lenA + f.lenB;
         int audioLen = len;
         if (au->text && len > 4) { audioLen = len - 4; if (textDec.feed(f.data + len - 4)) textMsg = textDec.text(); }
+        const bool E = be.mode() == kModeE;
         // the decoder follows the audio description of the SDC
-        const size_t key = audioKey(*au);
+        const size_t key = audioKey(*au) ^ (E ? (size_t)0x5bd1e995u : (size_t)0);
         if (key != adecKey) {
             adecKey = key; adecShort = au->shortId;
-            adec.configure(*au, false);
+            adec.configure(*au, E);
             adecOkSeen = adecBadSeen = 0;
             audioInfoText = adec.info();
             char b[200];
             snprintf(b, sizeof b, "DRM: audio: %s", audioInfoText.c_str());
             log(b);
         }
-        if (f.afterGap) adec.reset();
+        if (f.afterGap) { adec.reset(); pendHave = false; }
         pcm.clear();
-        adec.superFrame(f.data, audioLen, f.lenA, pcm);
+        if (E) {
+            // DRM+: the audio super frame is the first half (the logical frame at an even position of the super frame) and the second
+            if (f.position % 2 == 0) { pendE.assign(f.data, f.data + audioLen); pendIdx = f.index; pendHave = true; return; }
+            if (!pendHave || f.index != pendIdx + 1) { pendHave = false; return; }
+            pendHave = false;
+            joinE = pendE;
+            joinE.insert(joinE.end(), f.data, f.data + audioLen);
+            adec.superFrame(joinE.data(), (int)joinE.size(), 2 * f.lenA, pcm);
+        } else {
+            adec.superFrame(f.data, audioLen, f.lenA, pcm);
+        }
         audioOk += adec.framesOk() - adecOkSeen; audioBad += adec.framesBad() - adecBadSeen;
         adecOkSeen = adec.framesOk(); adecBadSeen = adec.framesBad();
         audioInfoText = adec.info();
@@ -836,8 +1021,8 @@ struct DrmReceiver::Impl {
         for (int i = 0; i < M; i++) cirDb[(size_t)i] = (float)(10 * std::log10(std::max(pw[(size_t)i] / mx, 1e-9)));
         const double spanSamples = (double)N / gx;
         const double dStep = spanSamples / M;
-        cirStepMs = (float)(dStep / kFs * 1000.0);
-        cirStartMs = (float)((-0.5 * spanSamples + tauC - back) / kFs * 1000.0);
+        cirStepMs = (float)(dStep / fs * 1000.0);
+        cirStartMs = (float)((-0.5 * spanSamples + tauC - back) / fs * 1000.0);
         // the support: the points more than 20 dB below the peak or near the noise floor do not count; its middle is where the window belongs
         std::vector<double> sorted(pw);
         std::nth_element(sorted.begin(), sorted.begin() + M / 2, sorted.end());
@@ -860,38 +1045,76 @@ struct DrmReceiver::Impl {
     }
 
     // ---------------------------------------------------------------- feed and telemetry
+    // one lane: front end, clock corrector, the mirror, into the lane's buffer
+    void push(DrmFront& fr, SroCorrector& co, const cf32* x, size_t n, std::vector<cf32>& b, uint64_t& tot) {
+        tmp.clear();
+        fr.process(x, n, tmp);
+        tmp2.clear();
+        co.process(tmp.data(), tmp.size(), tmp2);
+        if (mirror) for (auto& v : tmp2) v = std::conj(v);
+        b.insert(b.end(), tmp2.begin(), tmp2.end());
+        tot += tmp2.size();
+    }
+
     void feed(const cf32* x, size_t n) {
         if (!ready || n == 0) return;
-        tmp.clear();
-        front.process(x, n, tmp);
-        tmp2.clear();
-        corr.process(tmp.data(), tmp.size(), tmp2);
-        buf.insert(buf.end(), tmp2.begin(), tmp2.end());
-        total += tmp2.size();
-        inSamples += n; sincePub += n;
+        if (!eLane) {
+            // a channel away from the middle of the sample band (beyond the +-24 kHz the front end keeps) is moved there first
+            cin.assign(x, x + n);
+            cc.process(cin.data(), n, phase == kTrack && be.sdcOk > 0 && be.mscOk > 0);   // FAC alone also comes through an alias of a strong channel far out
+            if (cc.takeChanged()) resetAll(false);
+            push(front, corr, cin.data(), n, buf, total);
+            // the DRM+ lane takes the input as it is (a 100 kHz channel is not moved), while nothing has been found
+            if (eOk && phase == kSearch) push(other.front, other.corr, x, n, other.buf, other.total);
+        } else {
+            push(front, corr, x, n, buf, total);
+        }
+        inSamples += n; sincePub += n; inCount += n;
         run();
         // keep the stream bounded
-        const uint64_t keepSearch = 120000;
+        const double sc = fs / kFs;
+        const uint64_t keepSearch = (uint64_t)(120000 * sc);
         uint64_t keepFrom = total > keepSearch ? total - keepSearch : 0;
         if (phase == kTrack) {
             const int64_t need = nS + Dacc - 2 * Ts;
             keepFrom = std::min<uint64_t>(keepFrom, need > 0 ? (uint64_t)need : 0);
-            if (total > 400000) keepFrom = std::max<uint64_t>(keepFrom, total - 400000);
+            if (total > (uint64_t)(400000 * sc)) keepFrom = std::max<uint64_t>(keepFrom, total - (uint64_t)(400000 * sc));
         }
-        if (keepFrom > base + 65536) {
+        if (keepFrom > base + (uint64_t)(65536 * sc)) {
             buf.erase(buf.begin(), buf.begin() + (ptrdiff_t)(keepFrom - base));
             base = keepFrom;
+        }
+        if (!eLane) {
+            const uint64_t keepE = 2 * kWindowE;
+            if (other.total - other.base > keepE + 65536) {
+                const uint64_t from = other.total - keepE;
+                other.buf.erase(other.buf.begin(), other.buf.begin() + (ptrdiff_t)(from - other.base));
+                other.base = from;
+            }
         }
         if (sincePub >= (uint64_t)(inRate * 0.25)) publish();
     }
 
+    static constexpr uint64_t kWindowE = 96000;   // 0.5 s of the DRM+ lane: 200 symbols
+
     void run() {
-        if (phase == kSearch) {
+        if (phase == kSearch && !eLane) {
             if (total - lastSearch >= 19200 && total - base >= 72000) {
                 lastSearch = total;
                 statSearchRuns++;
                 const Acq a = acquire();
                 if (a.ok) startTracking(a);
+            }
+            // DRM+ every 0.4 s
+            if (phase == kSearch && eOk && other.total - lastSearchE >= 76800 && other.total - other.base >= kWindowE) {
+                lastSearchE = other.total;
+                const uint64_t absStart = other.total - kWindowE;
+                const Acq a = acquireE(other.buf.data() + (absStart - other.base), kWindowE, absStart);
+                if (a.ok) {
+                    swapLanes();
+                    clearOther();
+                    startTracking(a);
+                }
             }
         }
         if (phase == kTrack) { int guard = 0; while (phase == kTrack && trackStep() && ++guard < 4000) {} }
@@ -905,21 +1128,21 @@ struct DrmReceiver::Impl {
         t.mode = phase == kTrack ? mode : (be.facValid() ? be.mode() : -1);
         if (t.mode >= 0) { t.modeName = modeParams(t.mode).name; }
         const bool tracking = phase == kTrack && frameSync;
-        t.cfoHz = fHz;
+        t.cfoHz = fHz + cc.offsetHz();
         t.snrDb = tracking && sigma2 > 0 ? (float)std::max(0.0, std::min(60.0, snrSm)) : 0.f;
         t.correlation = (float)cpRho;
         t.sroPpm = (float)sroPpm;
         t.dopplerHz = (float)dopplerSm;
         t.delaySpreadMs = (float)delaySpreadMs;
-        t.timingMs = (float)((tauRef + tauMidRel - back) / kFs * 1000.0);
+        t.timingMs = (float)((tauRef + tauMidRel - back) / fs * 1000.0);
         // multiplex description
         if (be.facValid()) {
             const FacInfo& f = be.fac();
             t.occupancy = f.occupancy;
             t.bandwidthKhz = (float)occupancyKhz(be.mode(), f.occupancy);
             t.longInterleave = f.interleaver == 0 ? 1 : 0;
-            t.mscQam = f.mscMode == 0 ? 64 : f.mscMode == 3 ? 16 : 0;
-            t.sdcQam = f.sdcMode == 0 ? 16 : 4;
+            if (be.mode() == kModeE) { t.mscQam = f.mscMode == 0 ? 16 : f.mscMode == 3 ? 4 : 0; t.sdcQam = 4; }
+            else { t.mscQam = f.mscMode == 0 ? 64 : f.mscMode == 3 ? 16 : 0; t.sdcQam = f.sdcMode == 0 ? 16 : 4; }
             t.identity = f.identity;
             t.reconfiguration = f.reconfig;
             t.hierarchicalUnsupported = be.hierarchical();
@@ -948,7 +1171,8 @@ struct DrmReceiver::Impl {
                 const SdcAudio& a = sd.audio[i];
                 s.audio = true;
                 s.audioCoding = a.coding; s.sbr = a.sbr != 0; s.audioMode = a.mode; s.audioRateHz = a.rateHz(); s.textMessage = a.text; s.streamId = a.streamId;
-                if (a.streamId < sd.mux.nStreams) s.bitrateBps = (int)((sd.mux.stream[a.streamId].lenA + sd.mux.stream[a.streamId].lenB) * 8 / 0.4);
+                if (a.streamId < sd.mux.nStreams)
+                    s.bitrateBps = (int)((sd.mux.stream[a.streamId].lenA + sd.mux.stream[a.streamId].lenB) * 8 / (modeParams(be.mode() >= 0 ? be.mode() : 1).frameMs() / 1000.0));
                 char cb[100];
                 snprintf(cb, sizeof cb, "%s%s%s, %.0f kHz %s", a.coding == 3 ? "xHE-AAC" : "AAC", a.sbr ? " + SBR" : "", a.coding == 0 && a.mode == 1 ? " + PS" : "",
                          a.rateHz() / 1000.0, a.mode == 0 ? "mono" : a.mode == 2 ? "stereo" : "mono core");
@@ -968,7 +1192,7 @@ struct DrmReceiver::Impl {
         t.textMessage = textMsg;
         t.textSegmentsOk = textDec.segmentsOk(); t.textSegmentsBad = textDec.segmentsBad();
         // state
-        const uint64_t recent = (uint64_t)(kFs * 2.0);
+        const uint64_t recent = (uint64_t)(fs * 2.0);
         const bool facRecent = tracking && be.facValid() && total - lastOkSamples < recent * 2;
         const bool mscFlowing = be.mscOk != lastMscOk;
         if (mscFlowing) { sinceMsc = 0; lastMscOk = be.mscOk; } else sinceMsc += 1;
@@ -992,7 +1216,8 @@ struct DrmReceiver::Impl {
         t.serviceAudioSelected = adecShort;
         {
             char b[200];
-            if (t.mode < 0) snprintf(b, sizeof b, "searching (guard correlation A %.2f B %.2f C %.2f D %.2f)", lastRho[0], lastRho[1], lastRho[2], lastRho[3]);
+            if (t.mode < 0 && eOk) snprintf(b, sizeof b, "searching (guard correlation A %.2f B %.2f C %.2f D %.2f E %.2f)", lastRho[0], lastRho[1], lastRho[2], lastRho[3], lastRho[4]);
+            else if (t.mode < 0) snprintf(b, sizeof b, "searching (guard correlation A %.2f B %.2f C %.2f D %.2f)", lastRho[0], lastRho[1], lastRho[2], lastRho[3]);
             else if (!tracking) snprintf(b, sizeof b, "mode %c found, looking for the frame start", t.modeName);
             else snprintf(b, sizeof b, "mode %c, %s", t.modeName, t.state == 2 ? "decoding" : t.state == 1 ? "FAC read" : "no FAC yet");
             t.status = b;
@@ -1008,7 +1233,7 @@ DrmReceiver::~DrmReceiver() = default;
 
 void DrmReceiver::configure(double inputRateHz) { p_->configure(inputRateHz); }
 bool DrmReceiver::ready() const { return p_->ready; }
-void DrmReceiver::reset() { if (p_->ready) p_->resetAll(true); }
+void DrmReceiver::reset() { if (p_->ready) { p_->cc.reset(); p_->resetAll(true); } }
 void DrmReceiver::feed(const cf32* x, size_t n) { p_->feed(x, n); }
 bool DrmReceiver::telemetry(DrmTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);

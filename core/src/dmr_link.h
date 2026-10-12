@@ -28,7 +28,12 @@ public:
     uint64_t samples() const { return n_; }
     double cfoResidualHz() const;                   // offset the slicer still corrects for
     bool locked() const;                            // at least one slot is being followed (a track has decoded bursts)
+    void setCentre(double hz) { centre_ = hz; }   // the front end found the carrier this far from the tuned frequency (radio error), syncs are accepted around it
+    void forgetCalibration();
+    void dropTracks();                             // the front end changed the polarity: every track and calibration is wrong                      // the front end moved a long way: level calibrations from syncs seen before are not trusted
     void shiftOffset(double hz);                    // the front end moved its oscillator by this much (up): the symbol levels move down by it
+    // the call log and the messages stay through reset() (their times move back as the clock starts again); Clear and a loaded file set them
+    void setLogs(std::vector<DmrCall> calls, std::vector<DmrMessage> msgs, uint64_t calls0) { tel_.callLog = std::move(calls); tel_.messages = std::move(msgs); tel_.calls = calls0; }
 
 private:
     static constexpr int kRingBits = 14;
@@ -128,6 +133,7 @@ private:
     Cal globalCal_;
     double ncoDelta_ = 0;
     double nco_ = 0;                                // where the front end's oscillator is (the sum of what it was told), for the acceptance limit
+    double centre_ = 0;                             // where the channel is believed to be (setCentre): the acceptance limit is around it
     std::function<void(const std::string&)> log_;
     DmrTelemetry tel_;                              // counters and logs accumulate here
     std::vector<float> eye_;
