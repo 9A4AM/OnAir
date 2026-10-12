@@ -139,7 +139,26 @@ Measure measure(const SpecView& v, double loHz, double hiHz, const Floor* fl) {
     double lv26 = ref - 26;
     if (lv26 < r.floorDb + 3) { lv26 = r.floorDb + 3; r.bw26AtFloor = true; }
     r.bw26Hz = (edge(lv26, +1) - edge(lv26, -1)) * v.binHz;
+    double lv20 = ref - 20;
+    if (lv20 < r.floorDb + 3) { lv20 = r.floorDb + 3; r.bw20AtFloor = true; }
+    r.bw20Hz = (edge(lv20, +1) - edge(lv20, -1)) * v.binHz;
     r.snrDb = r.topDb - r.floorDb;
+    {   // 99 % occupied bandwidth: 0.5 % of the power over the floor on each side
+        std::vector<double> cum((size_t)n + 1, 0.0);
+        for (int k = 0; k < n; k++) cum[(size_t)k + 1] = cum[(size_t)k] + std::max(0.0, lin(sm[(size_t)k]) - lin(F.at(i0 + k)));
+        const double tot = cum[(size_t)n];
+        if (tot > 0) {
+            auto at = [&](double q) {
+                int k = 0;
+                while (k < n && cum[(size_t)k + 1] < q * tot) k++;
+                const double a = cum[(size_t)k], b = cum[(size_t)std::min(n, k + 1)];
+                return k + (b > a ? (q * tot - a) / (b - a) : 0.0);
+            };
+            const double lo = at(0.005), hi = at(0.995);
+            r.obwHz = (hi - lo) * v.binHz;
+            r.obwCentreHz = v.freq(i0 + (lo + hi) / 2 - 0.5);
+        } else r.obwCentreHz = r.centreHz;
+    }
     // flat top: the inner 70 % of the -3 dB band stays within 2 dB of its mean (and is wide enough to tell)
     const double span3 = h3 - l3;
     if (span3 >= 8 && r.snrDb > 3) {

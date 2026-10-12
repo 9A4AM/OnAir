@@ -59,6 +59,7 @@
 #include "psk_rx.h"
 #include "js8_rx.h"
 #include "specx_rx.h"
+#include "sig_ident.h"
 #include "specan_rx.h"
 #include "astro_rx.h"
 #include "qo100_rx.h"
@@ -213,6 +214,7 @@ public:
     DpmrReceiver& dpmr() { return rxDpmr_; }   // dPMR: scan, sound (the interface reads telemetry through latestRx)
     NxdnReceiver& nxdn() { return rxNxdn_; }   // NXDN: the receiver's own controls and results (the interface reads telemetry through latestRx)
     SpecxReceiver& specx() { return rxSpecx_; }   // spectrum explorer: FFT size and averaging
+    sigid::Capture& sigid() { return sigid_; }   // signal identifier: start() a capture of a region of what the receivers see, in any mode
     AstroReceiver& astro() { return rxAstro_; }   // radio astronomy (hydrogen line): FFT size, integration, frequency switching
     SpecanReceiver& specan() { return rxSpecan_; }   // spectrum analyser: range, resolution, averaging (telemetry through latestRx)
     Js8Receiver& js8() { return rxJs8_; }   // JS8Call: the receiver's own controls and results (the interface reads telemetry through latestRx)
@@ -342,6 +344,7 @@ private:
     PskReceiver rxPsk_;
     Js8Receiver rxJs8_;
     SpecxReceiver rxSpecx_;
+    sigid::Capture sigid_;
     SpecanReceiver rxSpecan_;
     AstroReceiver rxAstro_;
     bool specanSweep_ = false;   // the HackRF sweeps by itself (spectrum analyser)

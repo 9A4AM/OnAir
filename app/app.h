@@ -594,6 +594,11 @@ ChanWidth channelWidth(const App& a);
 std::string widthText(double mhz);   // "7 MHz", "1.536 MHz", "12.5 kHz"
 void channelWidthPopup(App& a);      // automatic or manual, where the mode allows it; otherwise what fixes the width
 void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis = false);
+// specx_ident.cpp: "Identify this signal" (dect2/sig_ident.h). The region is [offHz -+ widthHz / 2] from the samples' centre, which the radio
+// has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)
+void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widthHz, double rfOfCentreHz);
+void identifyAt(App& a, double clickMhz);
+void identifyWindow(App& a);   // every frame: the window while it is open
 void waterfallPlot(App& a, ImVec2 size);
 void histogramPlot(App& a, ImVec2 size);
 void constDensityPlot(App& a, ImVec2 sz);

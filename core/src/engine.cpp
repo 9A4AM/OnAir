@@ -68,6 +68,7 @@ void Engine::ingest(cf32* x, size_t n) {
     lastSamples_ = a0;   // the radio is alive, whether or not the resampler gives a sample out of this block
     if (offResample_) { offBuf_.clear(); offRs_.process(x, n, offBuf_); x = offBuf_.data(); n = offBuf_.size(); }
     if (!n) return;
+    if (sigid_.armed()) sigid_.push(x, n);
     feedSpectrum(x, n);
     feedRx(x, n);
     tRx_ += std::chrono::duration<double>(std::chrono::steady_clock::now() - a0).count();

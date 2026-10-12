@@ -147,7 +147,8 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
 void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
     static const char* const kYLabel = "power (dBFS/bin)";
     ImVec2 plotMin, plotSize;
-    bool drawn = false;
+    bool drawn = false, openCtx = false;
+    static double ctxMhz = 0;
     if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay)) {
         drawn = true;
         if (noFreqAxis) plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_NoTickLabels, 0);   // the waterfall under it shows the frequencies
@@ -191,9 +192,17 @@ void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
             }
         }
         clickToTune(a);
+        if (plt::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { ctxMhz = plt::GetPlotMousePos().x; openCtx = true; }
         plt::EndPlot();
     }
     if (drawn) channelWidthButton(a, plotMin, plotSize, kYLabel);
+    // right-click: what is this signal?
+    if (openCtx) ImGui::OpenPopup("##specctx");
+    if (ImGui::BeginPopup("##specctx")) {
+        if (ImGui::MenuItem("Identify this signal", nullptr, false, a.engine.running())) identifyAt(a, ctxMhz);
+        if (!a.engine.running() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Start the receiver first");
+        ImGui::EndPopup();
+    }
 }
 
 void waterfallPlot(App& a, ImVec2 size) {

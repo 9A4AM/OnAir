@@ -78,6 +78,7 @@ struct State {
     ImVec2 dragStart;
     double dragF0 = 0, dragView0 = 0, dragView1 = 0;
     bool dragMoved = false;
+    double ctxRf = 0;                // a right-click without a drag: where (RF Hz)
     char freqBuf[48] = "";
     std::string freqErr;
     std::vector<Bookmark> marks;
@@ -172,6 +173,20 @@ void openInDvbs(App& a, const sx::Measure& m) {
     startReceiver(a);
 }
 
+// the signal identifier on a region (radio Hz) of the spectrum
+void identifyRegion(App& a, double loRadio, double hiRadio) {
+    const double c = centreRadio(a);
+    identifyStart(a, c, (loRadio + hiRadio) / 2 - c, std::fabs(hiRadio - loRadio), S.lnb.inverted() ? 0.0 : toRf(c));   // inverted: no band check
+}
+
+// the signal under a right-click: the run of the spectrum over the floor around it, or 25 kHz
+void identifyRfAt(App& a, double rfHz) {
+    const double r = toRadio(rfHz);
+    double lo = r - 12.5e3, hi = r + 12.5e3;
+    if (live(a)) for (const auto& m : sx::detect(view(a), 6, 3)) if (r >= m.loHz && r <= m.hiHz) { lo = m.loHz; hi = m.hiHz; break; }
+    identifyRegion(a, lo, hi);
+}
+
 void measurePanel(App& a, const sx::Measure& m, bool canHand) {
     auto row = [](const char* k, const std::string& v, const char* t) {
         ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::TextDisabled("%s", k); tip(t);
@@ -183,6 +198,8 @@ void measurePanel(App& a, const sx::Measure& m, bool canHand) {
     snprintf(b, sizeof b, "%s", sx::freqText(m.bw3Hz).c_str()); row("Bandwidth -3 dB", b, "Width where the signal is half its top power");
     snprintf(b, sizeof b, "%s%s", m.bw26AtFloor ? "> " : "", sx::freqText(m.bw26Hz).c_str());
     row("Bandwidth -26 dB", b, "Occupied width 26 dB down (\"> \": the signal meets the floor first; this is where)");
+    snprintf(b, sizeof b, "%s%s", m.bw20AtFloor ? "> " : "", sx::freqText(m.bw20Hz).c_str()); row("Bandwidth -20 dB", b, "Width 20 dB down");
+    row("Occupied (99 %)", sx::freqText(m.obwHz), "The width that holds 99 % of the signal's power over the floor");
     snprintf(b, sizeof b, "%.1f dBFS", m.powerDb); row("Channel power", b, "All the power in the selected region");
     snprintf(b, sizeof b, "%.1f dBFS at %s", m.peakDb, sx::freqText(toRf(m.peakHz)).c_str()); row("Peak", b, "The strongest bin");
     snprintf(b, sizeof b, "%.1f dB (floor %.1f dBFS)", m.snrDb, m.floorDb); row("SNR", b, "Top of the signal over the noise floor (per bin)");
@@ -196,6 +213,11 @@ void measurePanel(App& a, const sx::Measure& m, bool canHand) {
         }
     }
     ImGui::EndTable();
+    if (canHand) {
+        if (ImGui::Button("Identify this signal")) identifyRegion(a, m.loHz, m.hiHz);
+        tip("Record a moment of this region and work out the modulation, symbol rate and the mode it could be");
+        if (m.looksDvbs) ImGui::SameLine();
+    }
     if (m.looksDvbs && canHand) {
         if (ImGui::Button("Open in DVB-S/S2")) openInDvbs(a, m);
         tip("Switch to DVB-S/S2 with this carrier's frequency and symbol rate filled in");
@@ -239,12 +261,17 @@ void gestures(App& a, float l, float r, bool hovered, float top, float bot) {
         }
         if (!ImGui::IsMouseDown(btn)) {
             if (S.dragKind == 1 && !S.dragMoved && S.markers.size() < 8) S.markers.push_back(S.dragF0);
+            if (S.dragKind == 2 && !S.dragMoved && ImGui::IsMouseReleased(1)) { S.ctxRf = S.dragF0; ImGui::OpenPopup("##sxctx"); }   // a right-click, not a drag
             if (S.dragKind == 1 && S.dragMoved) {
                 double bl, bh; bandRf(a, bl, bh);
                 if (S.viewLo < bl || S.viewHi > bh) tuneRf(a, (S.viewLo + S.viewHi) / 2);   // left the band: follow
             }
             S.dragKind = 0;
         }
+    }
+    if (ImGui::BeginPopup("##sxctx")) {
+        if (ImGui::MenuItem("Identify this signal", nullptr, false, live(a))) identifyRfAt(a, S.ctxRf);
+        ImGui::EndPopup();
     }
 }
 

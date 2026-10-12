@@ -44,6 +44,9 @@ struct Measure {
     double centreHz = 0;                 // middle of the -3 dB band
     double bw3Hz = 0, bw26Hz = 0;        // occupied bandwidth at -3 and -26 dB below the top
     bool bw26AtFloor = false;            // -26 dB lies under the floor: bw26Hz is where the signal meets the floor (+3 dB)
+    double bw20Hz = 0;                   // the same at -20 dB
+    bool bw20AtFloor = false;
+    double obwHz = 0, obwCentreHz = 0;   // 99 % of the power over the floor lies in this width, centred here (balanced for two-humped FSK)
     double powerDb = -200;               // channel power of the region, dBFS
     double peakDb = -200, peakHz = 0;    // the strongest bin
     double topDb = -200;                 // mean level across the -3 dB band
