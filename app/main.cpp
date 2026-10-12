@@ -272,6 +272,7 @@ void drawUI(App& a, ImVec2 disp) {
     } else a.tgMin[TgConst] = a.tgMax[TgConst] = ImVec2(0, 0);
     ImGui::End();
     }
+    passesWindow(a);
     wizard(a, disp);
     if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel
         static bool opened = false;
@@ -511,6 +512,8 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--shot" && i + 1 < argc) shotPath = argv[++i];
         if (std::string(argv[i]) == "--shotdelay" && i + 1 < argc) shotAfter = atof(argv[++i]);
         if (std::string(argv[i]) == "--fmscan") fmScanAuto = true;
+        if (std::string(argv[i]) == "--passes") app.passesOpen = true;   // dev: open View > Passes
+        if (std::string(argv[i]) == "--tle" && i + 1 < argc) passesDevTle(argv[++i]);   // dev: TLEs from a file for the pass planner (no download)
         if (std::string(argv[i]) == "--mute") { app.muted = true; app.volume = 0; }
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
         if (std::string(argv[i]) == "--dvb") setFamily(app, 0);

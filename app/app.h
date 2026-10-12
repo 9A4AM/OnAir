@@ -181,6 +181,7 @@ struct App {
     char netKey[32] = "";
     // first-run tour (wizard.inc)
     bool wizOpen = false, wizStart = false, wizAcked = false;
+    bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     int wizStep = 0;
     double wizStepT = 0;
     float wizX = -1;
@@ -436,6 +437,11 @@ bool tabItem(const char* name, Ic icon);
 extern bool gTightTabs;   // the tabs of mainTabs() get less padding (a narrow pane)
 void toggleFullscreen();
 bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map over the whole window when it is popped out
+void receiverLocation(double& lat, double& lon);  // adsb_ui.cpp: the one receiver position (the ADS-B antenna position)
+bool receiverLocationSet();                        // the user has set it (else it is a placeholder)
+void receiverPositionFields(App& a);               // its two fields and the Locate button
+void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
+void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 GLFWmonitor* monitorFor(int x, int y, int w, int h);   // widgets.cpp: the monitor holding most of the rectangle
 // The monitors, kept from the last change GLFW reported (glfwSetMonitorCallback) instead of asked for on each use: a monitor that goes away
 // (display asleep, cable out) is dropped from the list before anything asks for its size or position again.

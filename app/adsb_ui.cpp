@@ -68,14 +68,18 @@ void positionFields(App& a) {
     if (!S.locMsg.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", S.locMsg.c_str()); ImGui::PopTextWrapPos(); }
 }
 
-void tick(App& a) {
-    loadState();
+void pollLocate(App& a) {
     if (S.locBusy) {   // the location request of the Locate button
         double la = 0, lo = 0, acc = 0; std::string msg;
         const int st = plat::locateState(la, lo, acc, msg);
         if (st == 2) { setReference(a, la, lo); char b[96]; snprintf(b, sizeof b, "position found (about %.0f m)", acc); S.locMsg = b; S.locBusy = 0; }
         else if (st == 3) { S.locMsg = msg; S.locBusy = 0; }
     }
+}
+
+void tick(App& a) {
+    loadState();
+    pollLocate(a);
     a.tune.synth.modeVal[2] = S.refLat; a.tune.synth.modeVal[3] = S.refLon;   // the simulated traffic flies around the reference point
     const bool run = a.engine.running();
     if (run && (!S.wasRunning || S.pushedLat != S.refLat || S.pushedLon != S.refLon)) {
@@ -623,3 +627,8 @@ bool adsbFullMap(App& a, ImVec2 disp) {
     ImGui::End();
     return true;
 }
+
+// The receiver's position, shared by every screen that needs one (ADS-B ranges, the pass planner): the ADS-B antenna position
+void receiverLocation(double& lat, double& lon) { loadState(); lat = S.refLat; lon = S.refLon; }
+bool receiverLocationSet() { return plat::prefs().has("adsbLat") && plat::prefs().has("adsbLon"); }
+void receiverPositionFields(App& a) { loadState(); pollLocate(a); positionFields(a); }

@@ -569,6 +569,8 @@ float menuBar(App& a) {
                     ImGui::SetTooltip("%s", have ? "Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running." : "Discord application ID not set in this build");
             }
             ImGui::Separator();
+            if (ImGui::MenuItem("Passes", nullptr, &a.passesOpen)) {}
+            ImGui::Separator();
             if (ImGui::MenuItem("Classic interface")) { a.newUi = false; savePrefs(a); }
             ImGui::EndMenu();
         }
