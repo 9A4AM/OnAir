@@ -8,7 +8,7 @@
 enum class Ic {
     Logo, Antenna, Play, Stop, Refresh, Chip, Gauge, Wave, Clock, Signal, Tv, Radio, Speaker, Mute, Scan, Compass, Grid, Layers, Chart,
     Lock, Warning, Check, Cross, File, Folder, Usb, Record, Sliders, Fullscreen, Popout, Info, Search, Star, Target, Echo, Bolt, Globe, Pulse,
-    Book, Doc, Cpu, Down, Right, Gear, Subtitles, Link, Camera
+    Book, Doc, Cpu, Down, Right, Gear, Subtitles, Link, Camera, Save
 };
 
 namespace icons {
@@ -111,6 +111,10 @@ inline void draw(Ic id, ImVec2 centre, float size, ImU32 col, ImDrawList* dl = n
     case Ic::File: case Ic::Doc: {
         const float pts[] = {-0.6f, -0.9f, 0.25f, -0.9f, 0.65f, -0.45f, 0.65f, 0.9f, -0.6f, 0.9f};
         p.poly(pts, 5, true); p.line(-0.3f, 0.1f, 0.35f, 0.1f); p.line(-0.3f, 0.45f, 0.35f, 0.45f);
+        break; }
+    case Ic::Save: {   // a floppy disk: the body with a cut corner, the shutter on top and the label below
+        const float pts[] = {-0.85f, -0.85f, 0.55f, -0.85f, 0.85f, -0.55f, 0.85f, 0.85f, -0.85f, 0.85f};
+        p.poly(pts, 5, true); p.rect(-0.45f, -0.85f, 0.35f, -0.3f); p.rect(-0.5f, 0.2f, 0.5f, 0.85f);
         break; }
     case Ic::Folder: {
         const float pts[] = {-0.9f, -0.6f, -0.3f, -0.6f, -0.05f, -0.3f, 0.9f, -0.3f, 0.9f, 0.7f, -0.9f, 0.7f};
