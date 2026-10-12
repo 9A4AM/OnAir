@@ -305,41 +305,58 @@ bool section(const char* title) {
     return open;
 }
 
+// the fold state of the mode list groups, kept in the prefs by group name (never by number, so regrouping cannot open the wrong ones)
+static bool groupOpen(const App& a, int g) { return ("|" + a.modeGroupsOpen + "|").find("|" + std::string(kGroupNames[g]) + "|") != std::string::npos; }
+static void setGroupOpen(App& a, int g, bool on) {
+    std::string out;
+    for (int k = 0; k < kNumGroups; k++) if (k == g ? on : groupOpen(a, k)) { if (!out.empty()) out += "|"; out += kGroupNames[k]; }
+    a.modeGroupsOpen = out;
+    savePrefs(a);
+}
+
 // the modes as a plain radio list, grouped like the menu
 void modeList(App& a) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const bool running = a.engine.running();
     const ImVec2 first = ImGui::GetCursorScreenPos();
     static char q[32] = "";
-    static bool open[kNumGroups] = {};   // every group starts folded; a search opens the groups that match
     ImGui::SetNextItemWidth(-1);
     ImGui::InputTextWithHint("##modeside", "search modes (FT8, LoRa, APRS...)", q, sizeof q);
     if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) q[0] = 0;
     const bool searching = q[0] != 0;
     int shown = 0;
     for (int g = 0; g < kNumGroups; g++) {
-        int matches = 0;
+        int matches = 0, members = 0;
         const ModeDef* cur = nullptr;
         for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g) {
+            members++;
             if (modeMatches(kModes[i], q)) matches++;
             if (modeSelected(a, kModes[i])) cur = &kModes[i];
         }
-        if (searching && !matches) continue;
-        shown++;
-        // the group header: a fold arrow, the name, and the selected mode when the group is folded
+        if (!members || (searching && !matches)) continue;
+        if (shown++) ImGui::Dummy(ImVec2(0, 1 * gUi));   // the same small gap above every heading but the first
+        // the group header: a thin accent in the group's colour, a fold arrow, the name, the member count, and the selected mode when folded
         const float hh = ImGui::GetFrameHeight() - 4 * gUi, hw = ImGui::GetContentRegionAvail().x;
         ImGui::PushID(1000 + g);
-        if (ImGui::InvisibleButton("##grp", ImVec2(hw, hh)) && !searching) open[g] = !open[g];
+        if (ImGui::InvisibleButton("##grp", ImVec2(hw, hh)) && !searching) setGroupOpen(a, g, !groupOpen(a, g));
         ImGui::PopID();
-        const bool unfolded = searching || open[g];
+        const bool unfolded = searching || groupOpen(a, g);
         const ImVec2 g0 = ImGui::GetItemRectMin();
         if (ImGui::IsItemHovered()) dl->AddRectFilled(g0, ImVec2(g0.x + hw, g0.y + hh), IM_COL32(255, 255, 255, 10));
+        dl->AddRectFilled(ImVec2(g0.x, g0.y + 3 * gUi), ImVec2(g0.x + 2.5f * gUi, g0.y + hh - 3 * gUi), kGroupCols[g], 1.f);
         const float ty = g0.y + (hh - ImGui::GetTextLineHeight()) * 0.5f;
-        ImGui::RenderArrow(dl, ImVec2(g0.x + 2 * gUi, ty), u32(T.dim), unfolded ? ImGuiDir_Down : ImGuiDir_Right, 0.7f);
-        dl->AddText(ImVec2(g0.x + 18 * gUi, ty), u32(T.dim), kGroupNames[g]);
+        ImGui::RenderArrow(dl, ImVec2(g0.x + 7 * gUi, ty), u32(T.dim), unfolded ? ImGuiDir_Down : ImGuiDir_Right, 0.7f);
+        const float nx = g0.x + 22 * gUi;
+        dl->AddText(ImVec2(nx, ty), u32(T.dim), kGroupNames[g]);
+        char cnt[16];
+        if (searching) snprintf(cnt, sizeof cnt, "%d/%d", matches, members); else snprintf(cnt, sizeof cnt, "%d", members);
+        const float cx = nx + ImGui::CalcTextSize(kGroupNames[g]).x + 7 * gUi;
+        const ImVec2 cs0 = ImGui::CalcTextSize(cnt);
+        dl->AddRectFilled(ImVec2(cx - 3 * gUi, ty), ImVec2(cx + cs0.x + 3 * gUi, ty + cs0.y), IM_COL32(255, 255, 255, 14), 3 * gUi);
+        dl->AddText(ImVec2(cx, ty), (kGroupCols[g] & 0x00FFFFFF) | 0xC0000000, cnt);
         if (!unfolded && cur) {
             const ImVec2 cs = ImGui::CalcTextSize(cur->name);
-            dl->AddText(ImVec2(g0.x + hw - cs.x - 6 * gUi, ty), u32(T.accent), cur->name);
+            if (cx + cs0.x + 12 * gUi < g0.x + hw - cs.x - 6 * gUi) dl->AddText(ImVec2(g0.x + hw - cs.x - 6 * gUi, ty), u32(T.accent), cur->name);
         }
         if (!unfolded) continue;
         for (int i = 0; i < kNumModes; i++) {
@@ -353,12 +370,12 @@ void modeList(App& a) {
             const ImVec2 p0 = ImGui::GetItemRectMin();
             const bool sel = modeSelected(a, m);
             if (hov) dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), IM_COL32(255, 255, 255, 12));
-            const ImVec2 c(p0.x + 9 * gUi, p0.y + h * 0.5f);
+            const ImVec2 c(p0.x + 14 * gUi, p0.y + h * 0.5f);   // under the heading's arrow, the name under the heading's name
             dl->AddCircle(c, 5 * gUi, u32(sel ? T.bright : T.dim), 0, 1.f);
             if (sel) dl->AddCircleFilled(c, 2.6f * gUi, u32(T.accent));
-            dl->AddText(ImVec2(p0.x + 24 * gUi, p0.y + (h - ImGui::GetTextLineHeight()) * 0.5f), u32(sel ? T.bright : (running ? T.dim : T.text)), m.name);
+            dl->AddText(ImVec2(p0.x + 28 * gUi, p0.y + (h - ImGui::GetTextLineHeight()) * 0.5f), u32(sel ? T.bright : (running ? T.dim : T.text)), m.name);
             const ImVec2 ss = ImGui::CalcTextSize(m.sub);
-            if (p0.x + 24 * gUi + ImGui::CalcTextSize(m.name).x + 10 * gUi < p0.x + w - ss.x - 6 * gUi)   // no room: the name alone, not both on top of each other
+            if (p0.x + 28 * gUi + ImGui::CalcTextSize(m.name).x + 10 * gUi < p0.x + w - ss.x - 6 * gUi)   // no room: the name alone, not both on top of each other
                 dl->AddText(ImVec2(p0.x + w - ss.x - 6 * gUi, p0.y + (h - ss.y) * 0.5f), u32(T.dim), m.sub);
             if (clicked) selectMode(a, m.family, m.subId);
             if (hov && running && !sel) ImGui::SetTooltip("Stop the receiver to switch mode");
@@ -680,7 +697,7 @@ void modeCombo(App& a, float w) {
             for (int i = 0; i < kNumModes; i++) any |= kModes[i].group == g && modeMatches(kModes[i], q);
             if (!any) continue;
             ImGui::Separator();
-            ImGui::TextDisabled("%s", kGroupNames[g]);
+            ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(kGroupCols[g]), "%s", kGroupNames[g]);
             for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && modeMatches(kModes[i], q)) {
                 ImGui::PushID(i);
                 if (ImGui::Selectable(kModes[i].name, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);

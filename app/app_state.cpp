@@ -360,6 +360,7 @@ void loadPrefs(App& a) {
         if (mt && !(a.freqMhz >= mt->minMhz && a.freqMhz <= mt->maxMhz && fr > 0)) a.freqMhz = fr >= mt->minMhz && fr <= mt->maxMhz ? fr : sm->defMhz;
     }
     if (d.has("newUi")) a.newUi = d.getB("newUi", true);
+    a.modeGroupsOpen = d.getS("modeGroupsOpen", "");
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
     if (d.has("dtmbBw")) a.dtmbBwMhz = d.getI("dtmbBw", 8) == 6 ? 6 : 8;
     if (d.has("isdbtBw")) { const int w = (int)d.getI("isdbtBw", 6); a.isdbtBwMhz = w == 0 || w == 7 || w == 8 ? w : 6; }
@@ -443,6 +444,7 @@ void savePrefs(const App& a) {
     d.setI("atvNbtvLines", a.atvNbtvLines);
     d.setI("atvNbtvFps", (int)std::lround(a.atvNbtvFps * 10));
     d.setI("uiVariant", a.uiVariant);
+    d.setS("modeGroupsOpen", a.modeGroupsOpen);
     {   // the stations the FM scan found: mhz|name|type|snr|stereo|rds, one per line
         std::string st;
         for (const auto& r : a.fmScan.results) {
