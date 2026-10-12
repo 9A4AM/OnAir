@@ -313,9 +313,12 @@ private:
         // rather than assuming that setFrequency succeeded (some sessions are read-only).
         if (args_.find("driver=spyserver") != std::string::npos) {
             dev_->setFrequency(SOAPY_SDR_RX, ch, "RF", tuneHz);
-            const double actualHz = dev_->getFrequency(SOAPY_SDR_RX, ch, "RF");
-            fprintf(stderr, "[SPYSERVER] requested %.6f MHz, server reports %.6f MHz\\n",
-                    tuneHz / 1e6, actualHz / 1e6);
+            // During live retunes, avoid a blocking SpyServer sync/readback. The
+            // server can report its earlier frequency even when the IQ stream
+            // has already changed; it also introduces a noticeable audio gap.
+            const double actualHz = live ? tuneHz : dev_->getFrequency(SOAPY_SDR_RX, ch, "RF");
+            if (!live) fprintf(stderr, "[SPYSERVER] startup requested %.6f MHz, server reports %.6f MHz\\n",
+                               tuneHz / 1e6, actualHz / 1e6);
             fflush(stderr);
             if (std::fabs(actualHz - tuneHz) > 5000) {
                 char msg[220];
@@ -330,10 +333,17 @@ private:
         } else {
             dev_->setFrequency(SOAPY_SDR_RX, ch, tuneHz);
         }
-        try { if (dev_->hasGainMode(SOAPY_SDR_RX, ch)) dev_->setGainMode(SOAPY_SDR_RX, ch, false); } catch (...) {}   // we run our own AGC
-        const auto gr = dev_->getGainRange(SOAPY_SDR_RX, ch);
-        const double g = std::min(std::max(s.gainDb, gr.minimum()), gr.maximum());
-        dev_->setGain(SOAPY_SDR_RX, ch, reduction_ ? gr.maximum() - (g - gr.minimum()) : g);   // a gain-reduction driver: turned around
+        // SpyServer setting/getting gain synchronizes over the network.
+        // On frequency-only retunes, preserve the existing gain rather than
+        // repeating several slow remote calls unnecessarily.
+        if (!live || !gainSet_ || std::fabs(s.gainDb - lastGainDb_) > 0.01) {
+            try { if (dev_->hasGainMode(SOAPY_SDR_RX, ch)) dev_->setGainMode(SOAPY_SDR_RX, ch, false); } catch (...) {}   // we run our own AGC
+            const auto gr = dev_->getGainRange(SOAPY_SDR_RX, ch);
+            const double g = std::min(std::max(s.gainDb, gr.minimum()), gr.maximum());
+            dev_->setGain(SOAPY_SDR_RX, ch, reduction_ ? gr.maximum() - (g - gr.minimum()) : g);
+            lastGainDb_ = s.gainDb;
+            gainSet_ = true;
+        }
         if (!biasKey_.empty() && s.biasTee != bias_) {
             try { dev_->writeSetting(biasKey_, s.biasTee ? "true" : "false"); bias_ = s.biasTee; } catch (...) {}
         }
@@ -365,6 +375,8 @@ private:
     bool reduction_ = false;   // the driver's gains are gain reductions (gainIsReduction)
     bool hasCorr_ = false;     // the driver has a frequency correction
     double ppm_ = 0;           // the correction set in the driver
+    double lastGainDb_ = 0;
+    bool gainSet_ = false;
     std::map<std::string, std::string> current_;   // "soapy.<key>" -> the value the radio has
     std::vector<std::string> boolKeys_;            // the ones of them that are BOOL
     SoapySDR::Device* dev_ = nullptr;
