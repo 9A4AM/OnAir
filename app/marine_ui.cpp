@@ -4,6 +4,7 @@
 #include "adsb_map.h"
 #include "dect2/marine_tel.h"
 #include "dect2/marine_navtex_save.h"
+#include "dect2/marine_wefax_stations.h"
 #include "dect2/updater.h"
 #include <algorithm>
 #include <cmath>
@@ -18,7 +19,8 @@ using dect2::NavtexMessage;
 
 struct State {
     bool loaded = false;
-    int view = 0;                    // 0 NAVTEX, 1 DSC, 2 fax, 3 tuning
+    int view = 0;                    // 0 NAVTEX, 1 DSC, 2 fax, 3 tuning, 4 fax stations
+    int region = 0;                  // fax stations: the region shown (0 all)
     bool follow = true;              // show the service the receiver hears until the user picks a view
     int lastActive = -1;
     int service = 0;                 // 0 auto, 1 NAVTEX, 2 DSC, 3 fax
@@ -352,7 +354,9 @@ void faxView(App& a) {
     ImGui::InvisibleButton("##faxpic", box);
     const bool hov = ImGui::IsItemHovered();
     if (!S.img || S.imgW <= 0) {
-        const char* msg = !live(a) ? "start the receiver" : f.state == 0 ? "waiting for a fax start tone (300 Hz for IOC 576, 675 Hz for IOC 288)" : "phasing: the picture starts after the phasing lines";
+        const char* msg = !live(a) ? "start the receiver, or pick a station under Stations"
+                        : f.state == 1 ? "phasing: the picture starts after the phasing lines"
+                        : "listening: a picture starts by itself on the start tone, the phasing, or a picture already under way";
         const ImVec2 ts = ImGui::CalcTextSize(msg);
         dl->AddText(ImVec2(p0.x + (box.x - ts.x) * 0.5f, p0.y + box.y * 0.5f), IM_COL32(150, 154, 158, 255), msg);
         return;
@@ -385,6 +389,72 @@ void faxView(App& a) {
     char b[48];
     snprintf(b, sizeof b, "%dx%d  %.0f %%", S.imgW, S.imgH, z * 100);
     dl->AddText(ImVec2(p0.x + 6 * gUi, p0.y + box.y - ImGui::GetTextLineHeight() - 4 * gUi), IM_COL32(200, 60, 60, 255), b);
+}
+
+// ---------------------------------------------------------------- fax stations: directory and schedule
+
+void tuneStation(App& a, double carrierKhz) {
+    tuneFreq(a, dect2::wefaxDialKhz(carrierKhz) / 1000.0);   // USB dial 1.9 kHz below the carrier
+    if (!a.engine.running()) startReceiver(a);
+}
+
+void stationsView(App& a) {
+    using namespace dect2;
+    static const char* const regions[] = {"all regions", "Europe", "North America", "Asia", "Oceania", "South America", "Africa"};
+    ImGui::SetNextItemWidth(140 * gUi);
+    ImGui::Combo("##wfreg", &S.region, regions, 7);
+    const std::string reg = S.region > 0 ? regions[S.region] : "";
+    ImGui::SameLine();
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("Frequencies are the carriers; a click tunes the USB dial 1.9 kHz lower. Times (UTC) marked ~ are approximate: "
+                        "schedules change, check the NOAA Worldwide Marine Radiofacsimile Broadcast Schedules or the station.");
+    ImGui::PopTextWrapPos();
+    const float H = ImGui::GetContentRegionAvail().y, W = ImGui::GetContentRegionAvail().x;
+    const long long now = (long long)time(nullptr);
+    ImGui::BeginChild("##wfnext", ImVec2(std::min(460.f * gUi, W * 0.5f), H), ImGuiChildFlags_Borders);
+    ImGui::TextColored(pal::heading(), "Next broadcasts");
+    if (ImGui::BeginTable("##wfnt", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit)) {
+        for (const WefaxNext& n : wefaxNext(now, 40, reg)) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            const long long d = n.startUtc - now;
+            char t[32];
+            if (d <= 0) snprintf(t, sizeof t, "on now");
+            else snprintf(t, sizeof t, "in %lld:%02lld", d / 3600, d / 60 % 60);
+            ImGui::Text("%s%02d:%02d %s", n.b->approximate ? "~" : " ", n.b->utcMin / 60, n.b->utcMin % 60, t);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(n.s->callsign);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(n.b->product);
+            ImGui::TableNextColumn();
+            char b[48]; snprintf(b, sizeof b, "%.1f##wfn%p", n.s->carrierKhz.empty() ? 0.0 : n.s->carrierKhz[0], (const void*)n.b);
+            if (!n.s->carrierKhz.empty() && ImGui::SmallButton(b)) tuneStation(a, n.s->carrierKhz[0]);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s, %s: tune the dial to %.1f kHz USB (the station's first frequency; the directory has the others)", n.s->name, n.s->country, wefaxDialKhz(n.s->carrierKhz[0]));
+        }
+        ImGui::EndTable();
+    }
+    ImGui::EndChild();
+    ImGui::SameLine();
+    ImGui::BeginChild("##wfdir", ImVec2(0, H), ImGuiChildFlags_Borders);
+    ImGui::TextColored(pal::heading(), "Stations");
+    const char* country = "";
+    for (const WefaxStation& s : wefaxStations()) {
+        if (!reg.empty() && reg != s.region) continue;
+        if (strcmp(country, s.country) != 0) { country = s.country; ImGui::Spacing(); ImGui::TextDisabled("%s", country); }
+        ImGui::Text("  %s  %s", s.callsign, s.name);
+        ImGui::Indent(14 * gUi);
+        bool first = true;
+        for (double k : s.carrierKhz) {
+            if (!first) ImGui::SameLine();
+            first = false;
+            const bool here = std::fabs(a.freqMhz * 1000.0 - wefaxDialKhz(k)) < 0.05;
+            if (here) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.45f));
+            char b[48]; snprintf(b, sizeof b, "%.1f##wf%s%.1f", k, s.id, k);
+            if (ImGui::SmallButton(b)) tuneStation(a, k);
+            if (here) ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("carrier %.1f kHz: dial %.1f kHz USB", k, wefaxDialKhz(k));
+        }
+        ImGui::Unindent(14 * gUi);
+    }
+    ImGui::EndChild();
 }
 
 // ---------------------------------------------------------------- tuning aid
@@ -519,15 +589,21 @@ void tab(App& a) {
     loadState();
     if (const int svc = subService(a)) {   // a protocol entry: its own view and the tuning view
         static const char* const names[] = {"", "NAVTEX", "DSC", "Fax"};
+        if (svc == 3) {   // weather fax: the picture, the stations and their schedule, the tuning aid
+            int k = S.view == 4 ? 1 : S.view == 3 ? 2 : 0;
+            subNav("marv3", k, {"Fax", "Stations", "Tuning"});
+            S.view = k == 1 ? 4 : k == 2 ? 3 : 2;
+        } else {
         int k = S.view == 3 ? 1 : 0;
         subNav("marv1", k, {names[svc], "Tuning"});
         S.view = k == 1 ? 3 : svc - 1;
+        }
     } else {
     const int act = live(a) ? a.rx.marine.serviceActive : 0;
     if (S.follow && act != S.lastActive && act != 0) S.view = act == 1 ? 0 : act == 3 ? 2 : 1;
     S.lastActive = act;
     const int before = S.view;
-    subNav("marv", S.view, {"NAVTEX", "DSC", "Fax", "Tuning"});
+    subNav("marv", S.view, {"NAVTEX", "DSC", "Fax", "Tuning", "Fax stations"});
     if (S.view != before) S.follow = false;
     ImGui::SameLine(0, 20 * gUi);
     ImGui::TextDisabled("Service"); ImGui::SameLine();
@@ -555,6 +631,7 @@ void tab(App& a) {
     case 0: navtexView(a); break;
     case 1: dscView(a); break;
     case 2: faxView(a); break;
+    case 4: stationsView(a); break;
     default: tuningPanel(a); break;
     }
 }
