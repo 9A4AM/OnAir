@@ -412,6 +412,10 @@ void Feeds::aprs(const std::vector<uint8_t>& ax25, const std::string& from, cons
     }
 }
 
+void Feeds::kiss(const uint8_t* d, size_t n) {
+    if (wantKiss() && n) push(kFeedKiss, feedfmt::kissFrame(d, n));
+}
+
 void Feeds::acars(const AcarsMessage& m) {
     if (!wantAcars()) return;
     std::string st;

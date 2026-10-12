@@ -10,6 +10,7 @@
 #include "dect2/exact_resampler.h"
 #include "dect2/packet_aprs.h"
 #include "dect2/packet_ax25.h"
+#include "dect2/packet_demod.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>
@@ -21,136 +22,11 @@ namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
-constexpr double kMidRate = 96000.0;
-constexpr double kAudioRate = 48000.0;
-constexpr size_t kBlock = 1920;                // power blocks of 20 ms at 96 kHz
-constexpr size_t kNoiseBlocks = 250;           // the noise floor is a low percentile of the last 5 s
+using pktdemod::kMidRate;
 constexpr size_t kMaxFrames = 200, kMaxStations = 300;
 constexpr int64_t kDupWindow = (int64_t)(0.03 * kMidRate);   // the same bytes this close together are one transmission
-constexpr double kAfcMaxHz = 12000.0;         // how far the AFC follows a carrier (50 ppm at 222 MHz)
-constexpr float kClipHz = 8000.f;              // FM clicks of a weak signal are cut to this many Hz of deviation
-
-int pickDecimation(double fs) {
-    const int hi = std::max(1, (int)std::floor(fs / kMidRate));
-    const int lo = std::max(1, (int)std::floor(fs / 130000.0));
-    auto largestPrime = [](int v) {
-        int lp = 1;
-        for (int p = 2; p <= v; p++) while (v % p == 0) { lp = p; v /= p; }
-        return lp;
-    };
-    int best = hi, bestPrime = largestPrime(hi);
-    for (int d = hi; d >= lo; d--) {
-        const int lp = largestPrime(d);
-        if (lp <= 7) { best = d; bestPrime = lp; break; }
-        if (lp < bestPrime) { best = d; bestPrime = lp; }
-    }
-    return best;
-}
-
-std::vector<int> splitFactors(int d) {
-    std::vector<int> primes;
-    for (int p = 2; d > 1;) {
-        if (d % p == 0) { primes.push_back(p); d /= p; }
-        else p++;
-    }
-    std::sort(primes.rbegin(), primes.rend());
-    std::vector<int> stages;
-    for (int p : primes) {
-        if (!stages.empty() && stages.back() * p <= 8) stages.back() *= p;
-        else stages.push_back(p);
-    }
-    return stages;
-}
-
-typedef std::function<void(const std::vector<uint8_t>&, bool, int64_t)> FrameSink;    // bytes, FCS ok, time in 96 kHz samples
-
-// 1200 baud demodulator: correlate the audio with the mark and space tones over a window of about one bit; the stronger tone is the level;
-// a clock loop picks the level once per bit; the levels go to the HDLC layer (which does NRZI, so the polarity does not matter).
-struct Afsk1200 {
-    int len = 40;
-    float gain = 1.f, inertia = 0.75f, inertiaLocked = 0.85f;
-    std::vector<float> mr, mi, sr, si;      // tap arrays, oldest sample first
-    std::vector<float> ext;
-    float ph = -0.5f;
-    bool lev = false, prevLev = false;
-    ax25::HdlcRx hdlc;
-    int64_t pos = 0;
-
-    void init(int L, bool hann, float g, float inert, float inertLocked) {
-        len = L; gain = g; inertia = inert; inertiaLocked = inertLocked;
-        mr.assign((size_t)L, 0.f); mi = mr; sr = mr; si = mr;
-        for (int t = 0; t < L; t++) {
-            const int k = L - 1 - t;
-            const double w = hann ? 0.5 - 0.5 * std::cos(2 * kPi * (k + 0.5) / L) : 1.0;
-            mr[(size_t)t] = (float)(w * std::cos(2 * kPi * 1200.0 * k / kAudioRate));
-            mi[(size_t)t] = (float)(w * std::sin(2 * kPi * 1200.0 * k / kAudioRate));
-            sr[(size_t)t] = (float)(w * std::cos(2 * kPi * 2200.0 * k / kAudioRate));
-            si[(size_t)t] = (float)(w * std::sin(2 * kPi * 2200.0 * k / kAudioRate));
-        }
-        reset();
-    }
-    void reset() {
-        ext.assign((size_t)len - 1, 0.f);
-        ph = -0.5f; lev = prevLev = false; pos = 0;
-        hdlc.reset();
-    }
-    void process(const float* x, size_t n) {
-        const size_t h = (size_t)len - 1;
-        ext.resize(h + n);
-        std::copy(x, x + n, ext.begin() + (ptrdiff_t)h);
-        const float step = (float)(1200.0 / kAudioRate);
-        for (size_t i = 0; i < n; i++) {
-            const float* p = &ext[i];
-            float a = 0, b = 0, c = 0, d = 0;
-            for (int t = 0; t < len; t++) {
-                const float v = p[t];
-                a += v * mr[(size_t)t]; b += v * mi[(size_t)t];
-                c += v * sr[(size_t)t]; d += v * si[(size_t)t];
-            }
-            lev = (a * a + b * b) > gain * gain * (c * c + d * d);
-            if (lev != prevLev) ph *= hdlc.flagSeen() ? inertiaLocked : inertia;
-            prevLev = lev;
-            ph += step;
-            if (ph >= 0.5f) { ph -= 1.f; hdlc.bit(lev ? 1 : 0); }
-            pos++;
-        }
-        std::copy(ext.end() - (ptrdiff_t)h, ext.end(), ext.begin());
-        ext.resize(h);
-    }
-};
-
-// 9600 baud: direct FSK on the discriminator output. Slicer threshold from tracked peaks, clock loop, descrambler, NRZI/HDLC.
-struct Fsk9600 {
-    float inertia = 0.7f, inertiaLocked = 0.8f;
-    float hi = 0, lo = 0, ph = -0.5f;
-    bool lev = false, prevLev = false;
-    uint32_t sr = 0;
-    ax25::HdlcRx hdlc;
-    int64_t pos = 0;
-    void init(float inert, float inertLocked) { inertia = inert; inertiaLocked = inertLocked; reset(); }
-    void reset() { hi = lo = 0; ph = -0.5f; lev = prevLev = false; sr = 0; pos = 0; hdlc.reset(); }
-    void process(const float* x, size_t n) {
-        const float step = (float)(9600.0 / kMidRate);
-        for (size_t i = 0; i < n; i++) {
-            const float v = x[i];
-            if (v > hi) hi += 0.25f * (v - hi); else hi += 0.0015f * (v - hi);
-            if (v < lo) lo += 0.25f * (v - lo); else lo += 0.0015f * (v - lo);
-            lev = v > 0.5f * (hi + lo);
-            if (lev != prevLev) ph *= hdlc.flagSeen() ? inertiaLocked : inertia;
-            prevLev = lev;
-            ph += step;
-            if (ph >= 0.5f) {
-                ph -= 1.f;
-                const uint32_t raw = lev ? 1u : 0u;
-                const uint32_t d = raw ^ ((sr >> 11) & 1u) ^ ((sr >> 16) & 1u);     // the descrambler
-                sr = ((sr << 1) | raw) & 0x1FFFFu;
-                hdlc.bit((int)d);
-            }
-            pos++;
-        }
-    }
-};
+using pktdemod::Afsk1200;
+typedef pktdemod::FskSlicer Fsk9600;
 
 uint64_t hashBytes(const std::vector<uint8_t>& d) {
     uint64_t h = 1469598103934665603ULL;
@@ -166,35 +42,16 @@ struct PacketReceiver::Impl {
     std::mutex procMu, telMu;
     std::function<void(const std::string&)> log;
 
-    double fs = 0, offsetHz = 0;
+    double fs = 0;
     bool isReady = false;
-    std::vector<dmr::Fir<cf32>> stages;
-    ExactResampler rs;
-    bool rsPass = true;
-    double offPhase = 0;
-    dmr::Fir<cf32> chan;
+    pktdemod::FmFront fe;
     dmr::Fir<float> audio48;               // 96 -> 48 kHz low-pass for the 1200 baud path
     dmr::Fir<float> lp9600[2];
     Afsk1200 afsk[3];
     Fsk9600 fsk[2];
-    std::vector<cf32> bufA, bufB, mixBuf, o2, ch, clean;
-    std::vector<float> disc, a48, f9[2];
-    cf32 prevY = cf32(1.f, 0.f);
+    std::vector<float> a48, f9[2];
 
-    // IF level: 20 ms blocks
-    double blkSum = 0, blkDisc = 0; size_t blkN = 0;
-    std::deque<double> blocks;
-    double nf = 0; bool nfKnown = false;
-    bool carrier = false;
-    int64_t lastCarrier = -(int64_t)1e12, carrierSince = 0;     // the last block with a carrier; where the present carrier began
-    double snrEma = 0, cfoEma = 0; bool haveSnr = false;
-    // AFC: the carrier error measured on the discriminator (mean over 20 ms blocks with a carrier) is mixed out before the channel filter, so
-    // a radio 50 ppm off at 144 MHz (7 kHz) keeps the signal inside the filter and the clipper; cfoEma is then the error left over
-    double afcHz = 0, afcEst = 0, afcPhase = 0, lastBlkCfo = 0;   // afcHz: mixed out, afcEst: the carrier error
-    std::vector<cf32> afcBuf;
-    double inPower = 0; int64_t inN = 0;       // whole-input level over a report
-
-    int64_t n96 = 0, nextReport = 0;
+    int64_t nextReport = 0;
     uint64_t seq = 0;
 
     // results
@@ -208,27 +65,13 @@ struct PacketReceiver::Impl {
     int lastState = 0;
     PacketTelemetry pub;
 
-    double now() const { return (double)n96 / kMidRate; }
+    double now() const { return (double)fe.n96 / kMidRate; }
     void say(const std::string& s) { if (log) log(s); }
 
     void configure(double rate) {
         fs = rate;
         isReady = false;
-        stages.clear();
-        if (fs < packetTuning().minSampleRate - 1) return;
-        const int d = pickDecimation(fs);
-        const std::vector<int> f = splitFactors(d);
-        double r = fs;
-        stages.assign(f.size(), dmr::Fir<cf32>());
-        for (size_t i = 0; i < f.size(); i++) {
-            const double out = r / f[i];
-            const double pass = 38000.0, stop = std::max(pass + 4000.0, out - pass);
-            stages[i].design(dmr::lowpassTaps(pass, std::min(stop, r * 0.5), r, 60, 9), f[i]);
-            r = out;
-        }
-        rsPass = std::fabs(r - kMidRate) < 0.01;
-        if (!rsPass && !rs.configure(r, kMidRate)) return;
-        chan.design(dmr::lowpassTaps(9000.0, 17000.0, kMidRate, 60, 9), 1);
+        if (!fe.configure(fs, packetTuning().minSampleRate)) return;
         audio48.design(dmr::lowpassTaps(3300.0, 8000.0, kMidRate, 50, 9), 2);
         lp9600[0].design(dmr::lowpassTaps(5200.0, 11000.0, kMidRate, 40, 9), 1);
         lp9600[1].design(dmr::lowpassTaps(4000.0, 9000.0, kMidRate, 40, 9), 1);
@@ -244,16 +87,12 @@ struct PacketReceiver::Impl {
     }
 
     void resetState() {
-        for (auto& s : stages) s.reset();
-        if (!rsPass) rs.reset();
-        chan.reset(); audio48.reset(); lp9600[0].reset(); lp9600[1].reset();
+        const double off = fe.offsetHz;
+        fe.reset(); fe.offsetHz = off;
+        audio48.reset(); lp9600[0].reset(); lp9600[1].reset();
         for (auto& a : afsk) a.reset();
         for (auto& a : fsk) a.reset();
-        offPhase = 0; prevY = cf32(1.f, 0.f);
-        blkSum = blkDisc = 0; blkN = 0; blocks.clear(); nf = 0; nfKnown = false; carrier = false;
-        lastCarrier = -(int64_t)1e12; snrEma = cfoEma = 0; haveSnr = false; afcHz = afcEst = afcPhase = lastBlkCfo = 0;
-        inPower = 0; inN = 0;
-        n96 = 0; nextReport = 0;
+        nextReport = 0;
         recent.clear(); fails.clear(); frames.clear(); stations.clear();
         const uint64_t s = seq;
         t = PacketTelemetry();
@@ -272,7 +111,7 @@ struct PacketReceiver::Impl {
     // ---- frames
     void onRaw(int baud, int variant, const std::vector<uint8_t>& dat, bool ok, int64_t tt) {
         if (!ok) {
-            if (variant == 0) fails.push_back({baud, tt, (carrier || n96 - lastCarrier < (int64_t)(0.2 * kMidRate)) && tt - carrierSince > (int64_t)(0.05 * kMidRate)});         // one demodulator counts the failures; another one may still get the frame
+            if (variant == 0) fails.push_back({baud, tt, fe.carrierRecent(0.2) && tt - fe.carrierSince > (int64_t)(0.05 * kMidRate)});         // one demodulator counts the failures; another one may still get the frame
             return;
         }
         const uint64_t h = hashBytes(dat);
@@ -283,7 +122,7 @@ struct PacketReceiver::Impl {
     }
 
     void flushFails(bool all) {
-        while (!fails.empty() && (all || fails.front().t < n96 - (int64_t)(1.3 * kMidRate))) {
+        while (!fails.empty() && (all || fails.front().t < fe.n96 - (int64_t)(1.3 * kMidRate))) {
             const Fail f = fails.front();
             fails.pop_front();
             if (!f.carrier) continue;                              // no carrier then: random bits of noise
@@ -352,48 +191,16 @@ struct PacketReceiver::Impl {
         }
     }
 
-    // ---- IF level and carrier
-    void blockEnd() {
-        const double mean = blkSum / (double)blkN;
-        blocks.push_back(mean);
-        if (blocks.size() > kNoiseBlocks) blocks.pop_front();
-        if (blocks.size() >= 3) {
-            std::vector<double> s(blocks.begin(), blocks.end());
-            std::sort(s.begin(), s.end());
-            nf = std::max(s[s.size() / 10] * 1.05, 1e-12);
-            nfKnown = true;
-        }
-        const bool was = carrier;
-        carrier = nfKnown && mean > 2.0 * nf;
-        if (carrier && !was) carrierSince = n96 - (int64_t)kBlock;
-        if (carrier) {
-            lastCarrier = n96;
-            const double snr = 10 * std::log10((mean - nf) / nf);
-            snrEma = haveSnr ? 0.9 * snrEma + 0.1 * snr : snr;
-            const double cfo = blkDisc / (double)blkN;
-            cfoEma = haveSnr ? 0.9 * cfoEma + 0.1 * cfo : cfo;
-            // fast while far off (two blocks in a row agree), slowly once close, so FM clicks of a weak signal do not move it. Only an error
-            // of more than 1.5 kHz is mixed out (released below 1 kHz): a small one does no harm to the demodulators
-            const bool far = std::fabs(cfo) > 1500 && std::fabs(lastBlkCfo) > 1500 && cfo * lastBlkCfo > 0;
-            afcEst = std::max(-kAfcMaxHz, std::min(kAfcMaxHz, afcEst + (far ? 0.6 : 0.03) * (afcHz + cfo - afcEst)));
-            if (std::fabs(afcEst) > 1500) afcHz = afcEst; else if (std::fabs(afcEst) < 1000) afcHz = 0;
-            lastBlkCfo = cfo;
-            haveSnr = true;
-        }
-        blkSum = blkDisc = 0; blkN = 0;
-    }
-
     void publish() {
         flushFails(false);
         const double tnow = now();
         t.timeSec = tnow;
-        t.carrier = carrier || (n96 - lastCarrier) < (int64_t)(0.2 * kMidRate);
+        t.carrier = fe.carrierRecent(0.2);
         t.dataValid = tnow - std::max(t.last1200Sec, t.last9600Sec) < 15.0;
-        t.state = t.dataValid ? 2 : (t.carrier || (n96 - lastCarrier) < (int64_t)(5 * kMidRate) ? 1 : 0);
-        t.cfoHz = afcHz + cfoEma;
-        t.snrDb = (float)snrEma;
-        t.levelDb = inN ? (float)(10 * std::log10(inPower / (double)inN + 1e-20)) : -200.f;
-        inPower = 0; inN = 0;
+        t.state = t.dataValid ? 2 : (t.carrier || fe.carrierRecent(5) ? 1 : 0);
+        t.cfoHz = fe.cfoHz();
+        t.snrDb = (float)fe.snrEma;
+        t.levelDb = fe.takeLevelDb();
         if (t.state != lastState) {
             say(t.state == 2 ? "APRS: decoding frames" : t.state == 1 ? "APRS: signal, no good frame lately" : "APRS: no signal");
             lastState = t.state;
@@ -411,70 +218,7 @@ struct PacketReceiver::Impl {
 
     void feed(const cf32* x, size_t n) {
         if (!isReady || n == 0) return;
-        bool bad = false;
-        for (size_t i = 0; i < n; i++) {
-            const float re = x[i].real(), im = x[i].imag();
-            if (!(std::fabs(re) < 1e4f && std::fabs(im) < 1e4f)) { bad = true; break; }
-        }
-        if (bad) {
-            clean.assign(x, x + n);
-            for (auto& v : clean) if (!(std::fabs(v.real()) < 1e4f && std::fabs(v.imag()) < 1e4f)) v = cf32(0, 0);
-            x = clean.data();
-        }
-        for (size_t i = 0; i < n; i++) inPower += (double)std::norm(x[i]);
-        inN += (int64_t)n;
-        const cf32* cur = x;
-        size_t cn = n;
-        if (offsetHz != 0) {
-            mixBuf.resize(n);
-            const double w = -2 * kPi * offsetHz / fs;
-            const cf32 stp((float)std::cos(w), (float)std::sin(w));
-            cf32 ph((float)std::cos(offPhase), (float)std::sin(offPhase));
-            for (size_t i = 0; i < n; i++) {
-                mixBuf[i] = x[i] * ph;
-                ph *= stp;
-                if ((i & 1023) == 1023) ph /= std::abs(ph);
-            }
-            offPhase = std::fmod(offPhase + w * (double)n, 2 * kPi);
-            cur = mixBuf.data();
-        }
-        for (size_t s = 0; s < stages.size(); s++) {
-            std::vector<cf32>& dst = (s & 1) ? bufB : bufA;
-            dst.clear();
-            stages[s].process(cur, cn, dst);
-            cur = dst.data(); cn = dst.size();
-        }
-        if (!rsPass) {
-            o2.clear();
-            rs.process(cur, cn, o2);
-            cur = o2.data(); cn = o2.size();
-        }
-        if (afcHz != 0) {
-            afcBuf.resize(cn);
-            const double w = -2 * kPi * afcHz / kMidRate;
-            for (size_t i = 0; i < cn; i++) {
-                afcBuf[i] = cur[i] * cf32((float)std::cos(afcPhase), (float)std::sin(afcPhase));
-                afcPhase += w;
-                if (afcPhase > kPi) afcPhase -= 2 * kPi; else if (afcPhase < -kPi) afcPhase += 2 * kPi;
-            }
-            cur = afcBuf.data();
-        }
-        ch.clear();
-        chan.process(cur, cn, ch);
-        // discriminator, in Hz, and the IF level blocks
-        disc.resize(ch.size());
-        const float k = (float)(kMidRate / (2 * kPi));
-        for (size_t i = 0; i < ch.size(); i++) {
-            const cf32 y = ch[i];
-            const cf32 z = y * std::conj(prevY);
-            float d = (z.real() == 0.f && z.imag() == 0.f) ? 0.f : std::atan2(z.imag(), z.real()) * k;
-            blkDisc += std::max(-14000.f, std::min(14000.f, d));   // the carrier error from a wider clip: kClipHz would hide most of a large one
-            d = std::max(-kClipHz, std::min(kClipHz, d));
-            prevY = y;
-            disc[i] = d;
-            blkSum += (double)std::norm(y);
-            if (++blkN == kBlock) blockEnd();
-        }
+        const std::vector<float>& disc = fe.process(x, n);
         a48.clear();
         audio48.process(disc.data(), disc.size(), a48);
         if (!a48.empty()) for (auto& a : afsk) a.process(a48.data(), a48.size());
@@ -483,8 +227,8 @@ struct PacketReceiver::Impl {
             lp9600[i].process(disc.data(), disc.size(), f9[i]);
             if (!f9[i].empty()) fsk[i].process(f9[i].data(), f9[i].size());
         }
-        n96 += (int64_t)ch.size();
-        while (n96 >= nextReport) {
+        fe.commit();
+        while (fe.n96 >= nextReport) {
             nextReport += (int64_t)(0.25 * kMidRate);
             publish();
         }
@@ -500,8 +244,7 @@ void PacketReceiver::configure(double inputRateHz) {
 }
 void PacketReceiver::setSignalOffset(double hz) {
     std::lock_guard<std::mutex> lk(p_->procMu);
-    p_->offsetHz = hz;
-    p_->offPhase = 0;
+    p_->fe.setOffset(hz);
 }
 bool PacketReceiver::ready() const {
     std::lock_guard<std::mutex> lk(p_->procMu);

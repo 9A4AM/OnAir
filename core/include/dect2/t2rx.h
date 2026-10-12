@@ -54,7 +54,10 @@
 #include "astro_tel.h"
 #include "qo100_tel.h"
 #include "wifi_tel.h"
-#include "nr_tel.h"
+#include "general_tel.h"
+#include "time_tel.h"
+#include "cubesat_tel.h"
+#include "rid_tel.h"
 #include "t2.h"
 #include "t2l1.h"
 #include "t2plp.h"
@@ -127,7 +130,10 @@ struct RxTelemetry {
     IonoTelemetry iono;       // valid when standard == 53 (ionospheric sounders)
     Qo100Telemetry qo100;     // valid when standard == 54 (QO-100)
     WifiTelemetry wifi;       // valid when standard == 55 (Wi-Fi networks)
-    NrTelemetry nr;           // valid when standard == 58 (5G NR cells)
+    GeneralTelemetry general; // valid when standard == 56 (general receiver)
+    TimeTelemetry timesig;    // valid when standard == 59 (time signals)
+    CubeTelemetry cube;       // valid when standard == 62 (CubeSat telemetry)
+    RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34
     NxdnTelemetry nxdn;         // valid when standard == 39

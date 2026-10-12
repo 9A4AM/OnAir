@@ -87,11 +87,13 @@ public:
     bool wantAdsb() const { return want_[kFeedSbs].load(std::memory_order_relaxed) || want_[kFeedBeast].load(std::memory_order_relaxed); }
     bool wantAis() const { return want_[kFeedAis].load(std::memory_order_relaxed); }
     bool wantAprs() const { return want_[kFeedAprsIs].load(std::memory_order_relaxed) || want_[kFeedKiss].load(std::memory_order_relaxed); }
+    bool wantKiss() const { return want_[kFeedKiss].load(std::memory_order_relaxed); }
     bool wantAcars() const { return want_[kFeedAcars].load(std::memory_order_relaxed); }
     bool wantVdl2() const { return want_[kFeedVdl2].load(std::memory_order_relaxed); }
     void adsb(const FeedAdsbFrame& f);
     void ais(const std::vector<std::string>& sentences);
     void aprs(const std::vector<uint8_t>& ax25NoFcs, const std::string& from, const std::string& to, const std::string& path, const std::string& info, bool uiF0);
+    void kiss(const uint8_t* d, size_t n);   // a frame for the KISS server only (CubeSat telemetry: AX.25 without FCS, or a CSP packet)
     void acars(const AcarsMessage& m);
     void vdl2(const Vdl2Message& m);
 

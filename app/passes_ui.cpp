@@ -22,7 +22,7 @@ namespace {
 namespace fs = std::filesystem;
 fs::path fsPath(const std::string& p) { return fs::path(reinterpret_cast<const char8_t*>(p.c_str())); }
 
-constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kMeteor = 59;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, Meteor-M LRPT
+constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kCubesat = 61;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, CubeSat telemetry
 
 struct Source { const char* file; const char* url; };
 const Source kSources[] = {
@@ -133,7 +133,7 @@ void buildSats() {
     const ModeTuning* ot = modeTuning(46);
     for (const auto& [no, t] : S.tles)
         if (t.name.rfind("ORBCOMM", 0) == 0) add(t.name, no, ot ? ot->defMhz : 137.25, "Orbcomm", kOrbcomm, Orbcomm);
-    for (const Cube& c : S.cubes) add(c.name, c.norad, c.mhz, c.aprs ? "APRS" : "FM / telemetry", c.aprs ? kAprs : kSpecx, Amateur);
+    for (const Cube& c : S.cubes) add(c.name, c.norad, c.mhz, c.aprs ? "APRS" : "CubeSat telemetry", c.aprs ? kAprs : kCubesat, Amateur);
     S.selSat = -1;
     for (int i = 0; i < (int)S.sats.size(); i++) if (!S.selName.empty() && S.sats[i].name == S.selName) S.selSat = i;
     S.rows.clear();
@@ -231,6 +231,7 @@ void endPass(App& a, bool los) {
     if (S.weRecord) { a.engine.stopRecording(); S.weRecord = false; }
     if (S.weStarted && a.engine.running()) a.engine.stop();
     S.weStarted = false;
+    a.engine.cubesat().setTracked(0, "");
     retuneTo(a, S.nominalMhz);
 }
 
@@ -247,6 +248,7 @@ void trackTick(App& a) {
     if (active && !S.inPass) {   // AOS
         S.inPass = true; S.passLos = r->p.los; S.passName = sat.name; S.weStarted = false; S.weRecord = false; S.recTried = false; S.nominalMhz = sat.mhz; S.lastTune = 0;
         a.engine.log("pass of " + sat.name + " begins (AOS)");
+        if (sat.family == kCubesat) a.engine.cubesat().setTracked(sat.norad, sat.name);   // names the frames of the pass
         if (S.autoStart && !a.engine.running()) {
             if (a.family != sat.family) selectMode(a, sat.family);
             a.freqMhz = sat.mhz;

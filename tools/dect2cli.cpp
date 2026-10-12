@@ -185,6 +185,7 @@ int main(int argc, char** argv) {
     e.qo100().setSilent(true);    // QO-100: Listen without the sound card
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
+    e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
     e.rid().clearDrones();        // Drone Remote ID: the drone table is printed with each line
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
     e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
@@ -276,10 +277,16 @@ int main(int argc, char** argv) {
                 for (const auto& ap : t.wifi.aps)
                     printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
                            wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
-            if (t.standard == 58)   // 5G NR cells: the cell table (broadcast information only)
-                for (const auto& c : t.nr.cells)
-                    printf("  nr: %.2f MHz GSCN %d n%d PCI %4d %2d kHz %s SSB %d/%zu SFN %4d kSSB %2d CORESET0 %2d SS0 %2d %s RSRP %6.1f RSRQ %5.1f SINR %5.1f\n", c.freqHz / 1e6, c.gscn, c.band, c.pci,
-                           c.scsKhz, c.hasMib ? "MIB" : "sync", c.ssbIdx, c.beams.size(), c.sfn, c.kSsb, c.coreset0, c.ss0, c.barred ? "barred" : "-", c.rsrpDb, c.rsrqDb, c.sinrDb);
+            if (t.standard == 62)   // CubeSat telemetry: the newest frames
+                for (size_t i = 0; i < t.cube.frames.size() && i < 3; i++) {
+                    const CubeFrame& f = t.cube.frames[i];
+                    printf("  cubesat: %8.1f s %-9s %5d %-20s %-24s %3zu bytes rs %d %s\n", f.timeSec, cubesat::framingShort(f.framing), f.baud, f.sat.c_str(),
+                           (f.from.empty() ? std::string("-") : f.from + ">" + f.to).c_str(), f.data.size(), f.rsErrors, cubesat::asciiOf(f.payload).substr(0, 60).c_str());
+                }
+            if (t.standard == 57)   // Drone Remote ID: one line a drone
+                for (const auto& d : t.rid.drones)
+                    printf("  rid: %s %-3s %-20s %10.6f %11.6f h %6.1f m %5.1f m/s op %10.6f %11.6f %s\n", d.mac.c_str(), d.viaBle ? "BLE" : "WiFi",
+                           !d.serial.empty() ? d.serial.c_str() : !d.sessionId.empty() ? d.sessionId.c_str() : d.caaId.c_str(), d.lat, d.lon, d.height, d.speed, d.opLat, d.opLon, d.operatorId.c_str());
             continue_t2 = false;
         } else if (t.standard == 2) {
             const AtscTelemetry& a = t.atsc;
