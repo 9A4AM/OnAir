@@ -160,6 +160,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
+    if (resultsClearButton("uplink")) a.engine.uplink().clearResults();
     const dect2::UplinkTelemetry& t = a.rx.uplink;
     if (!ImGui::BeginTable("##upr", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupColumn("Interrogator"); ImGui::TableSetupColumn("Rotation", ImGuiTableColumnFlags_WidthStretch);

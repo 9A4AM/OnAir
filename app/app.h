@@ -557,6 +557,12 @@ double radioCenterMhz(const App& a);   // where the radio is tuned: the frequenc
 void applyOutputs(App& a);
 std::string channelLabel(const SavedChannel& c);
 void harvestScan(App& a);
+// The result lists the screens keep themselves (results_ui.cpp; the receivers' own are Engine::setResultsDir): load at start, save every
+// 30 s (now: at once, at exit), each into <data folder>/results/app-<name>.bin
+void appResultsLoad(App& a);
+void appResultsSave(App& a, bool now = false);
+// The Clear of a mode's decoded lists, at the top of its list (results_ui.cpp): true when pressed
+bool resultsClearButton(const char* id);
 void scanDbTick(App& a);   // scan_db_ui.cpp: asks to share a finished scan
 void tuneToChannel(App& a, const SavedChannel& c);
 void followBandwidth(App& a);

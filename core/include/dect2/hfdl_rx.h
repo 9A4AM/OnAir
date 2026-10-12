@@ -33,9 +33,13 @@ public:
     void setSignalOffset(double hz);                     // where the dial frequency sits relative to 0 Hz in the input (0 for this mode)
     void setCenterHz(double hz);                         // the radio's centre frequency (0: a file, whose centre is taken as 8.9 MHz)
     bool ready() const;
-    void reset();
+    void reset();                                        // after a retune (the decoded lists stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(HfdlTelemetry& out, uint64_t lastSeq);
+    // The messages, aircraft and ground stations stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     void setChannels(const std::vector<double>& dialHz); // empty: every frequency of the station table inside the band

@@ -137,7 +137,7 @@ public:
     // 8 = DVB-S/S2, 9 = DTMB, 10 = analog TV, 11 = DMR, 12 = DRM, 13 = ADS-B, 14 = GNSS,
     // 15 = radiosonde, 16 = AIS, 17 = marine, 18 = ACARS, 19 = Inmarsat-C, 20 = Inmarsat Aero, 21 = Iridium, 22 = mesh,
     // 23 = HD Radio, 24 = CDR, 25 = pagers, 26 = APRS / packet, 27 = HF digital, 28 = airband, 29 = VDL Mode 2, 30 = ISM sensors, 32 = VOR / ILS, 33 = M17, 34 = cell towers, 35 = D-STAR, 36 = CW, 37 = HFDL, 38 = PSK31, 39 = JS8Call, 42 = DVB-C, 46 = Orbcomm, 40 = NXDN, 41 = GSM-R, 45 = Mode S uplink, 47 = dPMR, 51 = HF ALE, 48 = TETRA, 49 = MAC, 50 = radio astronomy, 51 = HF ALE, 52 = P25, 53 = Bluetooth LE, 54 = ionospheric sounders
-    void setStandard(int m) { stdMode_ = m; stdReq_ = true; }
+    void setStandard(int m) { stdMode_ = m; stdReq_ = true; refreshIdle(); }
     int standardMode() const { return stdMode_.load(); }
     int activeStandard() const { return activeStd_.load(); }  // 0 = DVB-T2, 1 = DVB-T, 2 = ATSC, 3 = DAB, 4 = ATSC 3.0, 5 = ISDB-T, 6 = FM, 7 = DVB-S/S2, 8 = DTMB, 9 = analog TV, 10 = DMR, 11 = DRM, 12 = ADS-B, 13 = GNSS, 14 to 27 = radiosonde, AIS, marine, ACARS, Inmarsat-C, Inmarsat Aero, Iridium, mesh, HD Radio, CDR, pagers, APRS / packet, HF digital, airband, VDL Mode 2, ISM sensors, VOR / ILS, M17, 34 = D-STAR, 35 = CW, 36 = HFDL, 37 = PSK31, 38 = JS8Call, 41 = DVB-C, 44 = Mode S uplink, 45 = Orbcomm, 46 = dPMR, 39 = NXDN, 47 = TETRA, 48 = MAC, 49 = radio astronomy, 50 = HF ALE, 51 = P25, 52 = Bluetooth LE, 53 = ionospheric sounders , 54 = QO-100, 55 = Wi-Fi networks, 56 = general receiver (always the standard code minus one)
     double sampleRate() const { return rate_; }
@@ -277,12 +277,40 @@ public:
     bool atsc3Telemetry(Atsc3Telemetry& t) const { std::lock_guard<std::mutex> lk(atsc3Mu_); t = atsc3Tel_; return atsc3Tel_.seq != 0; }
     void atsc3Select(int serviceId) { rxA3_.selectService(serviceId); }
 
+    // Decoded results: the lists every mode keeps (messages, aircraft, vessels, cells, pictures...) live through mode switches, retunes
+    // and restarts of the receiver, and are saved to a folder (one file per receiver) so the next run starts with them. Only a mode's
+    // Clear empties them. Any thread.
+    void clearResults(int stdMode);                      // the Clear of a mode's screen: every list of its receiver
+    int loadResults(const std::string& dir);             // the lists of the last run (a file of another build is discarded); the receivers restored
+    int saveResults(const std::string& dir);             // the receivers whose lists changed since the last save (or load); the files written
+    void setResultsDir(const std::string& dir);          // load from dir now, then save to it every 30 s on a thread of its own (empty: stop)
+    void flushResults();                                 // save now (at exit; also done by the destructor) and stop the 30 s saver
+    std::vector<std::string> resultNames() const;        // the file names (without .bin) of the receivers that keep results
+    // With no radio running: the active mode's report again, so its kept lists show (after a load, a Clear or a change of mode)
+    void refreshIdle();
+
     // Log
     void log(const std::string& line);
     std::vector<std::string> logSnapshot(size_t& total);
     void clearLog();
 
 private:
+    struct ResultSlot {
+        const char* name;                                // file name: results/<name>.bin
+        int act;                                         // the receiver's active standard (activeStandard())
+        std::function<std::string()> save;
+        std::function<bool(const std::string&)> load;
+        std::function<void()> clear;
+    };
+    std::vector<ResultSlot> resultSlots();
+    std::mutex resIoMu_;                                 // one save or load at a time; resHash_
+    std::mutex resMu_;                                   // the saver thread: resDir_, resStop_
+    std::string resDir_;
+    std::map<std::string, uint64_t> resHash_;            // what each file holds now (fnv1a of the blob)
+    std::thread resTh_;
+    std::condition_variable resCv_;
+    bool resStop_ = false;
+    void stopResultsSaver();
     void analysisLoop();
     // the spectrum is computed on its own thread, so that it never holds up the receiver (it takes a seventh of a slow core)
     void spectrumLoop();

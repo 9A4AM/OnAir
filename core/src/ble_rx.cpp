@@ -1,5 +1,6 @@
 // Bluetooth LE advertising monitor (see ble_rx.h).
 #include "dect2/ble_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/ble_tel.h"
 #include "dect2/ble_proto.h"
 #include "dect2/gen_util.h"
@@ -102,12 +103,33 @@ struct BleReceiver::Impl {
         cands.clear();
     }
 
+    // The device table and the packet log stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool resClear = false, resLoad = false;
+    BleTelemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(BleTelemetry& to, BleTelemetry& from) {
+        to.devices = std::move(from.devices); to.log = std::move(from.log);
+        from.devices.clear(); from.log.clear();
+    }
+    static void shiftTimes(BleTelemetry& t, double dt) {
+        for (auto& d : t.devices) { d.firstSec += dt; d.lastSec += dt; }
+        for (auto& p : t.log) p.sec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (!resClear && !resLoad) return;
+        if (resClear) { BleTelemetry e; moveLists(tel, e); resClear = false; }
+        if (resLoad) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); resLoad = false; }
+        reindex();
+    }
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         initFront();
         resetDemod();
         power = 0; nPower = 0; nextReport = 0.25 * rate; lastGood = -100;
         tel.inputRate = rate;
+        shiftTimes(tel, -tel.timeSec);    // the lists stay (clearResults): the clock starts again
         tel.timeSec = 0;
     }
 
@@ -421,12 +443,23 @@ void BleReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_
 void BleReceiver::setCenterHz(double hz) { p_->centerHz = hz; }
 bool BleReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= bleTuning().minSampleRate - 1; }
 void BleReceiver::reset() { p_->resetReq = true; }
-void BleReceiver::clearDevices() { p_->clearReq = true; }
+void BleReceiver::clearDevices() {
+    {
+        std::lock_guard<std::mutex> lk(p_->mu);   // the report at once; the feed thread's lists (and counters) on its next block
+        BleTelemetry e;
+        Impl::moveLists(p_->pub, e);
+        p_->resLoad = false;
+        p_->pub.seq++;
+    }
+    p_->clearReq = true;
+}
+void BleReceiver::clearResults() { clearDevices(); }
 
 void BleReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
     if (m.clearReq.exchange(false)) m.clearAll();
+    m.takeRequests();
     if (m.rate < bleTuning().minSampleRate - 1 || n == 0) {
         if (m.rate > 0) { m.nIn += (int64_t)n; if ((double)m.nIn >= m.nextReport) { m.nextReport += 0.25 * m.rate; m.report(); } }
         return;
@@ -443,6 +476,24 @@ void BleReceiver::feed(const cf32* x, size_t n) {
     m.process();
 }
 
+std::string BleReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.devices, p_->pub.log);
+}
+bool BleReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    BleTelemetry l;
+    if (!results::unpack(blob, t0, l.devices, l.log)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    BleTelemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->resLoad = true;
+    p_->pub.seq++;
+    return true;
+}
 bool BleReceiver::telemetry(BleTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

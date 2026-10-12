@@ -235,6 +235,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
+    if (resultsClearButton("dstar")) a.engine.dstar().clearResults();
     const auto& log = a.rx.dstar.log;
     if (!ImGui::BeginTable("##dstarl", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupColumn("Station"); ImGui::TableSetupColumn("Heard", ImGuiTableColumnFlags_WidthStretch);

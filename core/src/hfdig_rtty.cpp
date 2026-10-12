@@ -107,7 +107,9 @@ struct HfdigRtty::Impl {
     }
 
     void resetAll() {
-        tel = HfdigRttyTelemetry();
+        HfdigRttyTelemetry t;            // the text stays (clearText)
+        t.text = std::move(tel.text); t.chars = tel.chars;
+        tel = std::move(t);
         pos = 0; lastCharAt = 0;
         std::fill(ring.begin(), ring.end(), 0.f);
         std::fill(pw.begin(), pw.end(), 0.f);
@@ -334,6 +336,7 @@ void HfdigRtty::setShiftIndex(int i) { p_->shiftIdx = std::clamp(i, 0, kRttyShif
 void HfdigRtty::setReverse(bool r) { p_->reverse = r; p_->cfgGen++; }
 void HfdigRtty::setUnshiftOnSpace(bool u) { p_->unshift = u; p_->cfgGen++; }
 void HfdigRtty::clearText() { p_->clearReq = true; }
+void HfdigRtty::setText(const std::string& text, uint64_t chars) { p_->tel.text = text; p_->tel.chars = chars; }
 int HfdigRtty::baudIndex() const { return p_->baudIdx.load(); }
 int HfdigRtty::shiftIndex() const { return p_->shiftIdx.load(); }
 bool HfdigRtty::reverse() const { return p_->reverse.load(); }

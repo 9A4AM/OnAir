@@ -1,6 +1,7 @@
 // Marine screens: the NAVTEX messages grouped by station with the text panel, the DSC calls (distress in red, the position on a small
 // map), the weather fax picture (zoom, pan, slant, save as PNG) and a tuning aid (the audio spectrum with the tones each service expects).
 #include "app.h"
+#include "dect2/results_io.h"
 #include "adsb_map.h"
 #include "dect2/marine_tel.h"
 #include "dect2/marine_navtex_save.h"
@@ -11,6 +12,8 @@
 #include <cstring>
 #include <filesystem>
 #include <ctime>
+
+void marineFaxTexture();   // below: the texture of a picture loaded from the results file
 
 namespace {
 
@@ -605,6 +608,7 @@ void tick(App& a) {
     if (S.pushedIoc != S.iocIdx) { r.setFaxIoc(kIoc[S.iocIdx]); S.pushedIoc = S.iocIdx; }
     if (S.pushedSlant != S.slant) { r.setFaxSlantPpm(S.slant); S.pushedSlant = S.slant; }
     if (S.pushedAuto != (int)S.autoSlant) { r.setFaxAutoSlant(S.autoSlant); S.pushedAuto = S.autoSlant; }
+    marineFaxTexture();
     if (live(a)) uploadFax(a);
     // a picture that ended (the stop tone, or the signal went): keep it for the list on the right
     const int fs = a.rx.marine.fax.state;
@@ -811,3 +815,25 @@ const ModeUi kMarineUi = {
     .tick = tick,
     .meters = meters,
 };
+
+// the last weather fax picture for the results file (results_ui.cpp): shown again until a new one comes in
+std::string marineFaxSave() { return dect2::results::pack(S.last); }
+bool marineFaxLoad(const std::string& blob) {
+    dect2::FaxImage im;
+    if (!dect2::results::unpack(blob, im)) return false;
+    if (im.width <= 0 || im.height <= 0 || im.pix.size() < (size_t)im.width * im.height) return true;
+    S.last = std::move(im);
+    S.texW = 0;                                         // the texture is made on the next frame (marineFaxTexture)
+    return true;
+}
+void marineFaxTexture() {
+    if (!gGfx || S.last.width <= 0 || S.img) return;
+    const int th = std::max(1500, S.last.height);
+    S.img = gGfx->createImage(S.last.width, th, 0xFFFFFFFFu);
+    if (!S.img) return;
+    S.texW = S.last.width; S.texH = th;
+    std::vector<uint32_t> px((size_t)S.last.width * S.last.height);
+    for (size_t i = 0; i < px.size(); i++) { const uint32_t g = S.last.pix[i]; px[i] = 0xFF000000u | (g << 16) | (g << 8) | g; }
+    S.img->update(0, 0, S.last.width, S.last.height, px.data());
+    S.imgW = S.last.width; S.imgH = S.last.height;
+}

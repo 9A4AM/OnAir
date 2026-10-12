@@ -3,6 +3,7 @@
 #include "dect2/marine_dsc.h"
 #include "dect2/marine_dsp.h"
 #include "dect2/marine_navtex.h"
+#include "dect2/results_io.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -46,7 +47,6 @@ struct MarineReceiver::Impl {
     std::atomic<double> faxSlant{0};
     std::atomic<bool> faxAuto{true};
     std::atomic<bool> faxDirty{true};
-    std::atomic<bool> clearReq{false};
     std::function<void(const std::string&)> log;
 
     Front front;
@@ -70,6 +70,7 @@ struct MarineReceiver::Impl {
     int prevFaxState = 0;
     bool dscVhfSeen = false;
     MarineTelemetry tel;           // the report in progress (guarded by telMu)
+    double lastNow = 0;            // signal time of the last report (telMu): the kept messages move back by it when the clock starts again
     double fskNoise = 0;
 
     Impl() {
@@ -130,8 +131,15 @@ struct MarineReceiver::Impl {
         say("DSC " + c.text);
     }
 
+    // telMu held: the sample count starts again, the kept messages stay in the past of the new clock
+    void shiftTimes(double dt) {
+        for (auto& m : tel.navtex) m.rxSec += dt;
+        for (auto& c : tel.dsc) c.rxSec += dt;
+    }
+
     void resetAll() {
-        front.reset(); spec.reset(); fsk.reset(); vhf.reset(); faxAudio.reset(); fax.reset(); listen.reset();
+        { std::lock_guard<std::mutex> lk(telMu); shiftTimes(-lastNow); lastNow = 0; }
+        front.reset(); spec.reset(); fsk.reset(); vhf.reset(); faxAudio.reset(); fax.reset();
         for (auto& n : nav) n.reset();
         for (auto& d : dsc) d.reset();
         for (auto& d : dscv) d.reset();
@@ -157,7 +165,7 @@ void MarineReceiver::Impl::publish() {
     const FaxStatus fs = fax.status();
     const Enabled en = chooseServices(service.load(), freqHz.load());
     std::lock_guard<std::mutex> lk(telMu);
-    if (clearReq.exchange(false)) { tel.navtex.clear(); tel.dsc.clear(); }
+    lastNow = now;
     tel.seq++;
     tel.serviceSetting = service.load();
     const bool navLock = nav[0].locked() || nav[1].locked();
@@ -232,10 +240,11 @@ void MarineReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->resetAll();
     std::lock_guard<std::mutex> lt(p_->telMu);
-    const uint64_t s = p_->tel.seq;      // the report number never restarts
-    const int svc = p_->tel.serviceSetting;
-    p_->tel = MarineTelemetry();
-    p_->tel.seq = s; p_->tel.serviceSetting = svc;
+    MarineTelemetry t;                   // the report number never restarts; the messages stay (clearResults)
+    t.seq = p_->tel.seq + 1; t.serviceSetting = p_->tel.serviceSetting;
+    t.navtex = std::move(p_->tel.navtex); t.dsc = std::move(p_->tel.dsc);
+    t.navtexCount = p_->tel.navtexCount; t.dscCount = p_->tel.dscCount;
+    p_->tel = std::move(t);
 }
 
 void MarineReceiver::feed(const cf32* x, size_t n) {
@@ -292,7 +301,29 @@ void MarineReceiver::setFaxLpm(int v) { p_->faxLpm = v; p_->faxDirty = true; }
 void MarineReceiver::setFaxIoc(int v) { p_->faxIoc = v; p_->faxDirty = true; }
 void MarineReceiver::setFaxSlantPpm(double v) { p_->faxSlant = v; p_->faxDirty = true; }
 void MarineReceiver::setFaxAutoSlant(bool on) { p_->faxAuto = on; p_->faxDirty = true; }
-void MarineReceiver::clearMessages() { p_->clearReq = true; }
+void MarineReceiver::clearMessages() {
+    std::lock_guard<std::mutex> lk(p_->telMu);
+    p_->tel.navtex.clear(); p_->tel.dsc.clear();
+    p_->tel.seq++;
+}
+void MarineReceiver::clearResults() { clearMessages(); }
+std::string MarineReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->telMu);
+    return results::pack(p_->lastNow, p_->tel.navtex, p_->tel.dsc, p_->tel.navtexCount, p_->tel.dscCount);
+}
+bool MarineReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::vector<NavtexMessage> nav;
+    std::vector<DscCall> dsc;
+    uint64_t nn = 0, nd = 0;
+    if (!results::unpack(blob, t0, nav, dsc, nn, nd)) return false;
+    std::lock_guard<std::mutex> lk(p_->telMu);
+    p_->tel.navtex = std::move(nav); p_->tel.dsc = std::move(dsc);
+    p_->tel.navtexCount = nn; p_->tel.dscCount = nd;
+    p_->shiftTimes(p_->lastNow - t0);
+    p_->tel.seq++;
+    return true;
+}
 bool MarineReceiver::latestImage(FaxImage& out, uint64_t& seq) const { return p_->fax.latestImage(out, seq); }
 FaxStatus MarineReceiver::faxStatus() const { return p_->fax.status(); }
 

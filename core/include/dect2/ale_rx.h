@@ -38,6 +38,10 @@ public:
     void reset();                        // after a retune: keeps the log and the stations
     void feed(const cf32* x, size_t n);
     bool telemetry(AleTelemetry& out, uint64_t lastSeq);
+    // The word log, events and stations stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     void setStartTime(double utc);       // the clock of the first sample (< 0: the system clock, the default)

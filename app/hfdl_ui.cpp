@@ -402,6 +402,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see aircraft"); ImGui::PopTextWrapPos(); return; }
+    if (resultsClearButton("hfdl")) a.engine.hfdl().clearResults();
     const dect2::HfdlTelemetry& t = a.rx.hfdl;
     int heard = 0; for (const auto& g : t.stations) heard += g.heardDirect;
     ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu aircraft, %d ground stations heard", t.aircraft.size(), heard); ImGui::PopTextWrapPos();

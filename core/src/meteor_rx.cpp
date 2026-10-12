@@ -1,5 +1,6 @@
 // Meteor-M LRPT receiver (see meteor_rx.h).
 #include "dect2/meteor_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/meteor_tel.h"
 #include "dect2/meteor_proto.h"
 #include "dect2/dsp_compat.h"
@@ -131,6 +132,8 @@ struct MeteorReceiver::Impl {
     // packets and picture
     meteor::PacketDemux demux[64];
     MeteorImage img;
+    bool imgLoad = false;                // a loaded picture (mu): the feed thread takes it as the picture in progress
+    std::shared_ptr<const MeteorImage> imgIn;
     bool imgDirty = false;
     uint64_t imgId = 0;
     int curRow = -1, lastPos[6] = {-1, -1, -1, -1, -1, -1};
@@ -632,18 +635,38 @@ struct MeteorReceiver::Impl {
 MeteorReceiver::MeteorReceiver() : p_(std::make_unique<Impl>()) {}
 MeteorReceiver::~MeteorReceiver() = default;
 
-void MeteorReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rateSet = r; p_->resetReq = true; p_->clearReq = true; }
+void MeteorReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rateSet = r; p_->resetReq = true; }   // the picture stays (clearImage)
 void MeteorReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (hz != p_->offsetSet) { p_->offsetSet = hz; p_->resetReq = true; } }
 void MeteorReceiver::setModulation(int m) { m = std::clamp(m, 0, 3); if (p_->modSet.exchange(m) != m) p_->resetReq = true; }
 int MeteorReceiver::modulation() const { return p_->modSet.load(); }
 bool MeteorReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= meteorTuning().minSampleRate - 1; }
 void MeteorReceiver::reset() { p_->resetReq = true; }
-void MeteorReceiver::clearImage() { p_->clearReq = true; }
+void MeteorReceiver::clearImage() {
+    { std::lock_guard<std::mutex> lk(p_->mu); p_->imgLoad = false; p_->imgIn.reset(); p_->pub.image.reset(); p_->pub.imageSeq++; p_->pub.seq++; }
+    p_->clearReq = true;
+}
+void MeteorReceiver::clearResults() { clearImage(); }
+std::string MeteorReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.image);
+}
+bool MeteorReceiver::loadResults(const std::string& blob) {
+    std::shared_ptr<const MeteorImage> im;
+    if (!results::unpack(blob, im)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->pub.image = im; p_->pub.imageSeq++; p_->pub.seq++;
+    p_->imgIn = std::move(im); p_->imgLoad = p_->imgIn != nullptr;
+    return true;
+}
 
 void MeteorReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
     if (m.clearReq.exchange(false)) m.newImage();
+    {
+        std::lock_guard<std::mutex> lk(m.mu);
+        if (m.imgLoad) { m.img = *m.imgIn; m.imgId = std::max(m.imgId, m.img.id); m.imgIn.reset(); m.imgLoad = false; m.imgDirty = true; }
+    }
     if (m.rate < meteorTuning().minSampleRate - 1 || n == 0) {
         if (m.rate > 0) { m.nIn += (int64_t)n; if ((double)m.nIn >= m.nextReport) { m.nextReport += kPubSec * m.rate; m.report(); } }
         return;

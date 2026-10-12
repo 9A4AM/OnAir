@@ -2,6 +2,7 @@
 // ring of input samples (no copy per burst on the feed side; a burst whose samples were overwritten before the worker got to it is
 // dropped and counted).
 #include "dect2/iridium_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/iridium_bits.h"
 #include <chrono>
 #include "dect2/iridium_frame.h"
@@ -343,11 +344,39 @@ struct IridiumReceiver::Impl {
     uint64_t burstsFound = 0;   // (mu)
     double lastReportAt = 0;    // (mu)
 
-    void clearResults() {        // mu held
-        const uint64_t s = tel.seq;
-        tel = IridiumTelemetry();
-        tel.seq = s;
-        sats.clear(); dots.clear();
+    static void moveLists(IridiumTelemetry& to, IridiumTelemetry& from) {
+        to.ringAlerts = std::move(from.ringAlerts); to.ibc = std::move(from.ibc); to.messages = std::move(from.messages);
+        to.positions = std::move(from.positions); to.acars = std::move(from.acars);
+        to.pagedTotal = from.pagedTotal; to.sbdPackets = from.sbdPackets;
+        from.ringAlerts.clear(); from.ibc.clear(); from.messages.clear(); from.positions.clear(); from.acars.clear();
+    }
+    void shiftTimes(IridiumTelemetry& t, double dt) {
+        for (auto& r : t.ringAlerts) r.time += dt;
+        for (auto& b : t.ibc) b.time += dt;
+        for (auto& m : t.messages) m.time += dt;
+        for (auto& p : t.positions) p.time += dt;
+        for (auto& a : t.acars) a.time += dt;
+        for (auto& kv : sats) kv.second.lastHeard += dt;
+        t.sats.clear();
+        for (const auto& kv : sats) t.sats.push_back(kv.second);
+    }
+    void clearLists() {          // mu held: the user's Clear
+        IridiumTelemetry e;
+        moveLists(e, tel);
+        tel.pagedTotal = tel.sbdPackets = 0;
+        sats.clear(); tel.sats.clear();
+        tel.seq++;
+    }
+
+    // mu held: the satellites, ring alerts, time broadcasts, messages, positions and ACARS stay through it (clearLists): the sample clock
+    // starts again, so their times move back by the time it had reached
+    void clearResults() {
+        IridiumTelemetry t;
+        t.seq = tel.seq + 1;
+        moveLists(t, tel);
+        shiftTimes(t, -tel.timeSec);
+        tel = std::move(t);
+        dots.clear();
         lastBursts = lastDemod = lastUw = lastFrames = framesTotal = 0;
         snrSum = confSum = 0; snrN = 0;
         lastOkTime = lastUwTime = -1e9;
@@ -472,6 +501,24 @@ bool IridiumReceiver::telemetry(IridiumTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->tel.seq <= lastSeq) return false;
     out = p_->tel;
+    return true;
+}
+void IridiumReceiver::clearResults() { std::lock_guard<std::mutex> lk(p_->mu); p_->clearLists(); }
+std::string IridiumReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const IridiumTelemetry& t = p_->tel;
+    return results::pack(t.timeSec, p_->sats, t.ringAlerts, t.ibc, t.messages, t.positions, t.acars, t.pagedTotal, t.sbdPackets);
+}
+bool IridiumReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::map<int, IridiumSatInfo> sats;
+    IridiumTelemetry l;
+    if (!results::unpack(blob, t0, sats, l.ringAlerts, l.ibc, l.messages, l.positions, l.acars, l.pagedTotal, l.sbdPackets)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->sats = std::move(sats);
+    Impl::moveLists(p_->tel, l);
+    p_->shiftTimes(p_->tel, p_->tel.timeSec - t0);
+    p_->tel.seq++;
     return true;
 }
 void IridiumReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }

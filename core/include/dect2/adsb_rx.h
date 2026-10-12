@@ -20,7 +20,7 @@ public:
 
     void configure(double inputRateHz);
     bool ready() const;                                  // false when the input rate is too low for this mode
-    void reset();                                        // after a retune: forget the signal, drop queued output
+    void reset();                                        // after a retune: forget the signal, drop queued output (the aircraft stay)
     void feed(const cf32* x, size_t n);
     bool telemetry(AdsbTelemetry& out, uint64_t lastSeq);
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
@@ -31,6 +31,11 @@ public:
     void setCorrection(int bits);                        // error correction of DF11 / 17 / 18: 0 off, 1 one bit (default), 2 two bits
     void setExpiry(double seconds);                      // an aircraft that has been silent this long leaves the table (default 60)
     void clearAircraft();                                // empty the table and the statistics
+    // The aircraft table and the message list stay through reset(), configure() and retunes (an aircraft still leaves it after the
+    // expiry time of signal without a message): only clearResults() empties them at once
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     // Tests and tools: every good message, called from feed() (not under the receiver's lock)
     void setFrameCallback(std::function<void(const AdsbFrame&)> cb);
     void setThresholds(float pulseOverNoise, float pulseOverGap);   // preamble test, normally 3.0 and 2.0

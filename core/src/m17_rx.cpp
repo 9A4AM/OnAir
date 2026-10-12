@@ -1,5 +1,6 @@
 // M17 receiver (see m17_rx.h).
 #include "dect2/m17_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/m17_tel.h"
 #include "dect2/m17_proto.h"
 #include "dect2/m17_codec2.h"
@@ -347,6 +348,23 @@ struct M17Receiver::Impl {
 
     double sigSec() const { return paths[0].sigSec(); }
 
+    // The transmission log, messages and positions stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool clearReq = false, loadReq = false;
+    M17Telemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(M17Telemetry& to, M17Telemetry& from) {
+        to.log = std::move(from.log); to.messages = std::move(from.messages); to.positions = std::move(from.positions);
+        from.log.clear(); from.messages.clear(); from.positions.clear();
+    }
+    static void shiftTimes(M17Telemetry& t, double dt) {
+        for (auto& c : t.log) c.startSec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (clearReq) { M17Telemetry e; moveLists(tel, e); clearReq = false; }
+        if (loadReq) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); loadReq = false; }
+    }
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         for (int k = 0; k < 2; k++) { paths[k].m = this; paths[k].mirror = k == 1; paths[k].init(rate, offset); }
@@ -354,7 +372,11 @@ struct M17Receiver::Impl {
         lastAny = -10;
         if (txOn) endTx();
         const uint64_t seq = tel.seq;
+        M17Telemetry keep;                          // the lists stay (clearResults): the clock starts again, they move back by the time it had reached
+        moveLists(keep, tel);
+        shiftTimes(keep, -tel.timeSec);
         tel = M17Telemetry(); tel.seq = seq;
+        moveLists(tel, keep);
         tel.inputRate = rate;
         tel.codec2 = m17Codec2Available(&tel.codec2Path);
     }
@@ -581,6 +603,7 @@ void M17Receiver::reset() { p_->resetReq = true; }
 void M17Receiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
+    m.takeRequests();
     if (m.rate <= 0 || n == 0) return;
     const double inv = 1.0 / ((double)m.paths[0].D * m.paths[0].D * m.paths[0].D);
     for (size_t i = 0; i < n; i++) {
@@ -596,6 +619,31 @@ void M17Receiver::feed(const cf32* x, size_t n) {
     m.nPower += (int64_t)n;
 }
 
+void M17Receiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    M17Telemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->pub.seq++;
+}
+std::string M17Receiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.log, p_->pub.messages, p_->pub.positions);
+}
+bool M17Receiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    M17Telemetry l;
+    if (!results::unpack(blob, t0, l.log, l.messages, l.positions)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    M17Telemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
+}
 bool M17Receiver::telemetry(M17Telemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

@@ -36,6 +36,10 @@ public:
     void clearProducts();
     void feed(const cf32* x, size_t n);
     bool telemetry(GoesTelemetry& out, uint64_t lastSeq);
+    // The products (pictures, text, files) stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     // every whole LRIT file (headers and data) as it is completed, from the analysis thread
     void setFileCallback(std::function<void(const std::vector<uint8_t>&, int vcid, int apid)> cb);

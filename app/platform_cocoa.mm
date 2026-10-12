@@ -1,4 +1,6 @@
 #include "platform.h"
+#include <cstdlib>
+#include <filesystem>
 #import <Cocoa/Cocoa.h>
 #import <CoreLocation/CoreLocation.h>
 #import <ImageIO/ImageIO.h>
@@ -58,6 +60,12 @@ std::string cacheDir() {
 }
 
 std::string dataDir() {
+    // DECT2_DATA_DIR: another folder for everything OnAir writes (test runs keep away from the user's own data)
+    if (const char* o = getenv("DECT2_DATA_DIR"); o && *o) {
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>(o)), ec);
+        return o;
+    }
     NSArray* a = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
     if (!a.count) return cacheDir();
     NSString* d = [a[0] stringByAppendingPathComponent:@"OnAir"];

@@ -77,7 +77,7 @@ void Engine::ingest(cf32* x, size_t n) {
 }
 
 Engine::Engine() : t0_(std::chrono::steady_clock::now()) {}
-Engine::~Engine() { stop(); }
+Engine::~Engine() { stop(); flushResults(); }
 
 void Engine::log(const std::string& line) {
     double t = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0_).count();

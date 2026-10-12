@@ -1,5 +1,6 @@
 // CW (Morse) skimmer (see cw_rx.h).
 #include "dect2/cw_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/cw_tel.h"
 #include "dect2/cw_morse.h"
 #include "dect2/marine_dsp.h"
@@ -109,12 +110,54 @@ struct CwReceiver::Impl {
         for (int j = 0; j < kTri; j++) triW[j] = (float)((kR - std::abs(j - (kR - 1))) / (double)(kR * kR));
     }
 
+    // signals that are gone (silent too long, a change of mode, a reset) keep their text until Clear: listed with the live ones (not
+    // decoding), and a new signal found where one of them was carries its text on. Feed thread; Clear and a loaded file reach them through
+    // these requests (mu)
+    std::vector<CwSignal> kept;       // oldest first, at most kKeptMax
+    static constexpr size_t kKeptMax = 2 * kCwMaxSignals;
+    bool keptClear = false, keptLoad = false;
+    std::vector<CwSignal> keptIn;
+    double keptInAt = 0;
+    static void shiftSig(CwSignal& s, double dt) { s.lastActiveSec += dt; s.firstSec += dt; }
+    void retire(const Chan& c) {
+        if (c.chars == 0) return;
+        CwSignal s;
+        s.id = c.id; s.offsetHz = c.f;
+        s.lastActiveSec = c.lastActive; s.firstSec = c.firstSec;
+        s.chars = c.chars; s.text = c.text; s.calls = c.calls;
+        kept.push_back(std::move(s));
+        if (kept.size() > kKeptMax) kept.erase(kept.begin());
+    }
+    void seed(Chan& c, double hz) {   // a new signal where a gone one was: its text goes on
+        for (size_t i = 0; i < kept.size(); i++) {
+            const CwSignal& k = kept[i];
+            if (std::fabs(k.offsetHz - hz) > 60) continue;
+            c.id = k.id; c.text = k.text; c.calls = k.calls; c.chars = k.chars; c.firstSec = k.firstSec;
+            kept.erase(kept.begin() + (long)i);
+            return;
+        }
+    }
+    void takeKept() {
+        std::lock_guard<std::mutex> lk(mu);
+        if (keptClear) { kept.clear(); keptClear = false; }
+        if (keptLoad) {
+            kept = std::move(keptIn); keptIn.clear();
+            for (auto& s : kept) { shiftSig(s, tel.timeSec - keptInAt); nextId = std::max(nextId, s.id + 1); }
+            keptLoad = false;
+        }
+    }
     double sigSec() const { return (double)nBase / kBase; }
 
     void resetState() {
         std::function<void(const std::string&)> cb;
         double off;
         { std::lock_guard<std::mutex> lk(mu); curRate = rate; off = offsetHz; cb = log; }
+        {   // the clock starts again: the signals heard so far stay (kept), moved back by the time it had reached
+            const double t0 = sigSec();
+            for (const Chan& c : chans) retire(c);
+            chans.clear(); focusId = -1;
+            for (auto& k : kept) shiftSig(k, -t0);
+        }
         const uint64_t s = tel.seq, ss = tel.specSeq;
         tel = CwTelemetry();
         tel.seq = s; tel.specSeq = ss;
@@ -143,6 +186,7 @@ struct CwReceiver::Impl {
         c.manual = manual;
         c.setFreq(hz);
         c.firstSec = c.lastActive = c.lastPeak = sigSec();
+        seed(c, hz);
         chans.push_back(c);
         return chans.back();
     }
@@ -193,6 +237,7 @@ struct CwReceiver::Impl {
             }
         }
         // signals silent for 30 s are dropped (not the focus); two that drifted onto each other become one
+        for (const Chan& c : chans) if (c.id != focusId && now - std::max(c.lastActive, c.lastPeak) > 30) retire(c);
         chans.erase(std::remove_if(chans.begin(), chans.end(), [&](const Chan& c) {
             return c.id != focusId && now - std::max(c.lastActive, c.lastPeak) > 30; }), chans.end());
         for (size_t i = 0; i < chans.size(); i++)
@@ -317,6 +362,7 @@ struct CwReceiver::Impl {
             if (c.id == focusId || (focusId < 0 && s.snrDb > best)) { tel.snrDb = s.snrDb; best = s.snrDb; }
             tel.signals.push_back(std::move(s));
         }
+        for (const CwSignal& k : kept) tel.signals.push_back(k);
         std::sort(tel.signals.begin(), tel.signals.end(), [](const CwSignal& a, const CwSignal& b) { return a.offsetHz < b.offsetHz; });
         tel.blocksOk = std::max(tel.blocksOk, ok); tel.blocksBad = std::max(tel.blocksBad, bad);
         tel.focusId = focusId;
@@ -337,8 +383,10 @@ void CwReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->resetReq = true;
     const uint64_t s = p_->pub.seq;
+    std::vector<CwSignal> sig = std::move(p_->pub.signals);   // the text stays (clearResults)
     p_->pub = CwTelemetry();
     p_->pub.seq = s;
+    p_->pub.signals = std::move(sig);
 }
 
 void CwReceiver::feed(const cf32* x, size_t n) {
@@ -346,7 +394,8 @@ void CwReceiver::feed(const cf32* x, size_t n) {
     if (m.tapReq.exchange(false)) { std::lock_guard<std::mutex> lk(m.mu); m.tap = m.tapSet; }
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
     if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
-    if (m.clearReq.exchange(false)) { m.chans.clear(); m.focusId = -1; }
+    if (m.clearReq.exchange(false)) { m.chans.clear(); m.focusId = -1; m.kept.clear(); }
+    m.takeKept();
     {
         std::lock_guard<std::mutex> lk(m.mu);
         if (m.focusReq) {
@@ -377,6 +426,32 @@ void CwReceiver::feed(const cf32* x, size_t n) {
     }
 }
 
+std::string CwReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.signals);
+}
+bool CwReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::vector<CwSignal> sig;
+    if (!results::unpack(blob, t0, sig)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    std::vector<CwSignal> in;
+    for (auto& s : sig) {
+        if (s.chars == 0) continue;
+        CwSignal k;
+        k.id = s.id; k.offsetHz = s.offsetHz; k.lastActiveSec = s.lastActiveSec; k.firstSec = s.firstSec;
+        k.chars = s.chars; k.text = s.text; k.calls = s.calls;
+        Impl::shiftSig(k, p_->pub.timeSec - t0);
+        in.push_back(std::move(k));
+    }
+    if (in.size() > Impl::kKeptMax) in.erase(in.begin(), in.end() - (long)Impl::kKeptMax);
+    p_->pub.signals = in;
+    p_->keptIn = std::move(in); p_->keptInAt = p_->pub.timeSec;
+    p_->keptLoad = true; p_->keptClear = false;
+    p_->pub.seq++;
+    return true;
+}
+void CwReceiver::clearResults() { clearSignals(); }
 bool CwReceiver::telemetry(CwTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;
@@ -385,7 +460,10 @@ bool CwReceiver::telemetry(CwTelemetry& out, uint64_t lastSeq) {
 }
 void CwReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void CwReceiver::setFocusHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->focusReq = true; p_->focusHz = hz; }
-void CwReceiver::clearSignals() { p_->clearReq = true; }
+void CwReceiver::clearSignals() {
+    { std::lock_guard<std::mutex> lk(p_->mu); p_->pub.signals.clear(); p_->keptLoad = false; p_->keptIn.clear(); p_->pub.seq++; }
+    p_->clearReq = true;
+}
 void CwReceiver::setThresholdDb(float db) { p_->thrDb = std::max(4.f, std::min(30.f, db)); }
 void CwReceiver::setSidetone(bool on) { p_->sidetone = on; }
 void CwReceiver::setSidetoneHz(float hz) { p_->toneHz = std::max(300.f, std::min(1200.f, hz)); }

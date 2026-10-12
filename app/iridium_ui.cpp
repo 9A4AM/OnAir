@@ -474,6 +474,7 @@ void tab(App& a) {
 void list(App& a) {
     loadState();
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see satellites"); ImGui::PopTextWrapPos(); } return; }
+    if (resultsClearButton("iridium")) a.engine.iridium().clearResults();
     ImGui::TextDisabled("%zu satellites", a.rx.iridium.sats.size());
     satTable(a, true);
 }

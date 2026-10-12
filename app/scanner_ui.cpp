@@ -3,6 +3,7 @@
 // power over the noise in the mode's bandwidth, or the mode's own telemetry saying it decodes), holds while active plus a hang time, then
 // moves on. Skip, lockout, a priority entry checked every N seconds, and a log of the hits. The state machine is app/scan_list.h.
 #include "app.h"
+#include "dect2/results_io.h"
 #include "scan_list.h"
 #include <cstring>
 #include <ctime>
@@ -378,4 +379,14 @@ void scannerWindow(App& a) {
 void scannerButton(App& a) {
     if (ImGui::SmallButton(tr("Scanner (highly experimental)..."))) a.scannerOpen = true;
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
+}
+
+// the hit log for the results file (results_ui.cpp): kept until its Clear
+std::string scannerResultsSave() { return dect2::results::pack(S.log); }
+bool scannerResultsLoad(const std::string& blob) {
+    std::vector<Hit> log;
+    if (!dect2::results::unpack(blob, log)) return false;
+    S.log = std::move(log);
+    S.logging = false;
+    return true;
 }

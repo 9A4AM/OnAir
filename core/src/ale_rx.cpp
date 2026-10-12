@@ -1,5 +1,6 @@
 // HF ALE receiver (see ale_rx.h).
 #include "dect2/ale_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/ale_tel.h"
 #include "dect2/ale_proto.h"
 #include "dect2/marine_dsp.h"
@@ -89,6 +90,8 @@ struct AleReceiver::Impl {
     std::vector<AleStation> stations;
     std::vector<AleWordLog> words;
     std::vector<std::string> learnedNets;
+    bool listLoad = false;               // a loaded file (mu): the feed thread takes it into the lists above
+    AleTelemetry listIn;
     uint64_t wordsOk = 0, wordsMissed = 0;
     float lastSnr = 0, lastBer = 0;
     double lastWordUtc = -1e9;
@@ -344,6 +347,13 @@ void AleReceiver::feed(const cf32* x, size_t n) {
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
     if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
     if (m.clearReq.exchange(false)) { m.events.clear(); m.stations.clear(); m.words.clear(); m.learnedNets.clear(); m.changed = true; }
+    {
+        std::lock_guard<std::mutex> lk(m.mu);
+        if (m.listLoad) {
+            m.events = std::move(m.listIn.events); m.stations = std::move(m.listIn.stations); m.words = std::move(m.listIn.words);
+            m.listIn = AleTelemetry(); m.listLoad = false; m.changed = true;
+        }
+    }
     if (m.curRate <= 0) return;
     for (size_t i = 0; i < n; i++) {
         float re = x[i].real(), im = x[i].imag();
@@ -381,8 +391,24 @@ void AleReceiver::setNetAddresses(const std::vector<std::string>& nets) { std::l
 void AleReceiver::clearLog() {
     p_->clearReq = true;
     std::lock_guard<std::mutex> lk(p_->mu);
+    p_->listLoad = false;
     p_->pub.events.clear(); p_->pub.stations.clear(); p_->pub.words.clear();
     p_->pub.seq++;
+}
+// the words, events and stations already stay through reset() (their times are UTC): only Clear empties them
+void AleReceiver::clearResults() { clearLog(); }
+std::string AleReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.words, p_->pub.events, p_->pub.stations);
+}
+bool AleReceiver::loadResults(const std::string& blob) {
+    AleTelemetry l;
+    if (!results::unpack(blob, l.words, l.events, l.stations)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->pub.words = l.words; p_->pub.events = l.events; p_->pub.stations = l.stations;
+    p_->listIn = std::move(l); p_->listLoad = true;
+    p_->pub.seq++;
+    return true;
 }
 void AleReceiver::flush() {
     Impl& m = *p_;

@@ -5,6 +5,7 @@
 // ILS: a course deviation indicator with the localizer and glide slope needles, the marker lamps, the paired frequencies and a hop
 // between localizer and glide slope.
 #include "app.h"
+#include "dect2/results_io.h"
 #include "adsb_map.h"
 #include "dect2/ils.h"
 #include "dect2/vor_db.h"
@@ -576,3 +577,15 @@ const ModeUi kVorUi = {
     .synth = synth,
     .tick = tick,
 };
+
+// the two fix stations' radials for the results file (results_ui.cpp): kept until they are measured again
+std::string vorResultsSave() { return dect2::results::pack(S.fix[0], S.fix[1]); }
+bool vorResultsLoad(const std::string& blob) {
+    Slot a, b;
+    if (!dect2::results::unpack(blob, a, b)) return false;
+    a.when = b.when = 0;                                // the times were of the last run's clock
+    a.freqMhz = S.fix[0].freqMhz; b.freqMhz = S.fix[1].freqMhz;   // the stations chosen are the settings' (prefs)
+    if (a.valid) S.fix[0] = a;
+    if (b.valid) S.fix[1] = b;
+    return true;
+}

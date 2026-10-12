@@ -6,6 +6,7 @@
 // their 128 unique word symbols (spread over the whole frame, every 162 symbols), which also gives the polarity; then deinterleave, soft Viterbi,
 // descramble, packets (inmc_pkt.cpp). Everything runs in feed(): at 2 Msps the cost is a few multiplications per input sample.
 #include "dect2/inmc_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/fftutil.h"
 #include "dect2/inmc_code.h"
 #include "dect2/inmc_pkt.h"
@@ -607,8 +608,21 @@ struct InmcReceiver::Impl {
     std::vector<Black> black;
 
     static constexpr int kMaxExtra = 3;
+    // the messages of the channels before the last reset (the channels start again with empty parsers): they stay until Clear
+    std::vector<InmcMessage> kept;
+    uint32_t keptCount = 0;
+
+    // the messages of the report: every channel's and the kept ones (a message heard again replaces its kept copy), newest first
+    void mergeKept(std::vector<InmcMessage>& all) const {
+        for (const auto& k : kept) {
+            bool dup = false;
+            for (const auto& m : all) if (m.id == k.id && m.serviceCode == k.serviceCode && m.text == k.text) { dup = true; break; }
+            if (!dup) all.push_back(k);
+        }
+    }
 
     void design() {
+        if (!tel.messages.empty()) { kept = tel.messages; keptCount = tel.messageCount; }   // the report's list already holds the kept ones
         ch.clear(); ids.clear(); nextId = 1;
         black.clear();
         ws.config(rate);
@@ -616,6 +630,8 @@ struct InmcReceiver::Impl {
         ids.push_back(0);
         now = 0; sinceReport = 0; ch0MovedAt = -1e9;
         tel = InmcTelemetry();
+        tel.messages = kept;
+        tel.messageCount = keptCount;
     }
 
     std::unique_ptr<Chan> makeChan(double off, int id) {
@@ -750,10 +766,11 @@ struct InmcReceiver::Impl {
                 count += c.tel.messageCount;
             }
         }
-        if (ch.size() > 1) {
+        if (ch.size() > 1 || !kept.empty()) {
+            mergeKept(all);
             inmc::trimMessages(all, 150, 70000);
             tel.messages = std::move(all);
-            tel.messageCount = count;
+            tel.messageCount = count + keptCount;
         }
     }
 };
@@ -799,6 +816,27 @@ bool InmcReceiver::telemetry(InmcTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->tel.seq <= lastSeq) return false;
     out = p_->tel;
+    return true;
+}
+void InmcReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->kept.clear(); p_->keptCount = 0;
+    for (auto& c : p_->ch) { c->parser.clearMessages(); c->tel.messages.clear(); c->tel.messageCount = 0; }
+    p_->tel.messages.clear(); p_->tel.messageCount = 0;
+    p_->tel.seq = ++p_->seq;
+}
+std::string InmcReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->tel.messages, p_->tel.messageCount);
+}
+bool InmcReceiver::loadResults(const std::string& blob) {
+    std::vector<InmcMessage> msgs;
+    uint32_t count = 0;
+    if (!results::unpack(blob, msgs, count)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->kept = std::move(msgs); p_->keptCount = count;
+    p_->tel.messages = p_->kept; p_->tel.messageCount = count;
+    p_->tel.seq = ++p_->seq;
     return true;
 }
 void InmcReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }

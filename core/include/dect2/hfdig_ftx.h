@@ -80,6 +80,7 @@ public:
     void setMirrored(bool on);                       // also look for upside-down signals (default on)
     bool mirrored() const;
     void clearDecodes();
+    void setDecodes(std::vector<FtxDecode> d);       // a loaded results file (any thread; reset() keeps the decodes)
     // The UTC time of the first sample fed after the next reset (a recording with a known start); NaN: the system clock (default).
     void setStartTime(double utc);
     // The start time is unknown: find the slots from the signals (the first decodes set the clock).

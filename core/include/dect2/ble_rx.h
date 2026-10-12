@@ -39,6 +39,10 @@ public:
     void clearDevices();
     void feed(const cf32* x, size_t n);
     bool telemetry(BleTelemetry& out, uint64_t lastSeq);
+    // The device table and the packet log stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     // Every good packet (CRC passed), on the feeding thread: for a mode built on this demodulator (Drone Remote ID). Set before feeding.
     void setPacketCallback(std::function<void(const ble::Adv&, int channel, float rssiDbfs)> cb);

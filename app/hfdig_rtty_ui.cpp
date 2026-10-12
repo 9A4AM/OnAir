@@ -56,7 +56,7 @@ void hfdigRttyTab(App& a, const dect2::HfdigTelemetry& t) {
     if (ImGui::Checkbox("Unshift on space", &uns)) dec.setUnshiftOnSpace(uns);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("A space switches the figures back to letters.");
     flowNext(12 * gUi);
-    if (ImGui::Button("Clear")) dec.clearText();
+    if (ImGui::Button("Clear")) a.engine.hfdig().clearResults(1);   // the text the receiver keeps (also in the results file)
     flowNext(6 * gUi);
     if (ImGui::Button("Copy")) ImGui::SetClipboardText(r.text.c_str());
     flowEnd();

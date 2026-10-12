@@ -81,7 +81,8 @@ int main() {
         Impair rs; rs.resetAtS = 5.0;
         Result rr = run(cfg1(), 8e6, 10, rs);
         const SondeInfo* sr = find(rr.tel, "N4750123");
-        CHECK(sr && sr->framesOk >= 3 && sr->framesOk <= 5, "after reset: %llu frames", sr ? (unsigned long long)sr->framesOk : 0ull);
+        // the sonde stays through reset() with its count (only clearResults() empties the list): about a frame lost at the reset
+        CHECK(sr && sr->framesOk >= 8 && sr->framesOk <= 10, "after reset: %llu frames", sr ? (unsigned long long)sr->framesOk : 0ull);
         CHECK(rr.tel.seq > 0, "seq");
     }
     // SNR in 10 kHz: where frames fail

@@ -43,6 +43,9 @@ class AdsbTracker {
 public:
     AdsbTracker();
     void reset();                                        // forget aircraft, statistics and the frame list (the reference position stays)
+    void shiftTime(double dt);                           // the signal clock starts again: every stored time moves by dt (aircraft stay)
+    std::string saveResults() const;                     // the aircraft and the frame list (results_io.h), with the clock they are on
+    bool loadResults(const std::string& blob, double now);   // put them back on the clock now (false: another build's format)
     void setReference(double lat, double lon);
     void clearReference();
     void setOptions(const AdsbOptions& o) { opt_ = o; }

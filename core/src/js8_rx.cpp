@@ -1,5 +1,6 @@
 // JS8Call receiver (see js8_rx.h).
 #include "dect2/js8_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/js8_tel.h"
 #include "dect2/js8_proto.h"
 #include "dect2/marine_dsp.h"
@@ -649,6 +650,21 @@ void Js8Receiver::clearDecodes() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->pub.decodes.clear(); p_->pub.messages.clear(); p_->pub.stations.clear(); p_->open.clear();
     p_->pub.seq++;
+}
+// the decodes, messages and stations already stay through reset() (their times are the slot clock): only Clear empties them
+void Js8Receiver::clearResults() { clearDecodes(); }
+std::string Js8Receiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.decodes, p_->pub.messages, p_->pub.stations);
+}
+bool Js8Receiver::loadResults(const std::string& blob) {
+    Js8Telemetry l;
+    if (!results::unpack(blob, l.decodes, l.messages, l.stations)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->pub.decodes = std::move(l.decodes); p_->pub.messages = std::move(l.messages); p_->pub.stations = std::move(l.stations);
+    p_->open.clear();
+    p_->pub.seq++;
+    return true;
 }
 void Js8Receiver::waitIdle() {
     std::unique_lock<std::mutex> lk(p_->qmu);

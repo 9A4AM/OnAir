@@ -480,6 +480,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see aircraft"); ImGui::PopTextWrapPos(); } return; }
+    if (resultsClearButton("acars")) a.engine.acars().clearResults();
     const dect2::AcarsTelemetry& t = a.rx.acars;
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu aircraft, %zu messages", t.aircraft.size(), t.messages.size()); ImGui::PopTextWrapPos(); }
     if (!ImGui::BeginTable("##acl_s", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;

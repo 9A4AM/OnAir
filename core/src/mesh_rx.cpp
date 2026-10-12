@@ -1,6 +1,7 @@
 // Mesh (LoRa) receiver: the channel plan of the region, one channel filter per frequency and bandwidth, one LoRa demodulator per
 // setting, the packet layer on every good frame, and the tables of MeshTelemetry.
 #include "dect2/mesh_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/mesh_lora.h"
 #include "dect2/mesh_proto.h"
 #include <algorithm>
@@ -114,6 +115,10 @@ struct MeshReceiver::Impl {
     std::function<void(const std::string&)> log;
     MeshTelemetry pub;                     // the published report
     MeshProto proto;                       // locks internally
+    // the decoded lists (packets, nodes, messages, stations, devices) stay through resets: Clear and a loaded file reach the feed
+    // thread's copy through these requests (mu), and pub at once
+    bool clearReq = false, loadReq = false;
+    MeshTelemetry loaded;
 
     // processing state (feed thread only)
     struct Dec {
@@ -495,12 +500,44 @@ struct MeshReceiver::Impl {
         pub = tel;
     }
 
+    static void moveLists(MeshTelemetry& to, MeshTelemetry& from) {
+        to.packets = std::move(from.packets); to.nodes = std::move(from.nodes); to.messages = std::move(from.messages);
+        to.counts = std::move(from.counts); to.aprsStations = std::move(from.aprsStations); to.lorawanDevices = std::move(from.lorawanDevices);
+        from.packets.clear(); from.nodes.clear(); from.messages.clear(); from.counts.clear(); from.aprsStations.clear(); from.lorawanDevices.clear();
+    }
+    static void shiftTimes(MeshTelemetry& t, double dt) {
+        for (auto& p : t.packets) p.timeSec += dt;
+        for (auto& m : t.messages) m.timeSec += dt;
+        for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.posSec >= 0) n.posSec += dt; }
+        for (auto& a : t.aprsStations) a.st.lastHeardSec += dt;
+        for (auto& d : t.lorawanDevices) if (d.lastHeard >= 0) d.lastHeard += dt;
+    }
+    void reindex() {
+        nodeIdx.clear(); aprsIdx.clear(); lwIdx.clear();
+        for (size_t i = 0; i < tel.nodes.size(); i++) nodeIdx[std::to_string(tel.nodes[i].protocol) + "|" + tel.nodes[i].id] = i;
+        for (size_t i = 0; i < tel.aprsStations.size(); i++) aprsIdx[std::to_string(tel.aprsStations[i].protocol) + "|" + tel.aprsStations[i].st.call] = i;
+        for (size_t i = 0; i < tel.lorawanDevices.size(); i++) lwIdx[tel.lorawanDevices[i].id] = i;
+    }
+    // feed thread: a Clear or a loaded file asked for from another thread
+    void takeRequests() {
+        std::lock_guard<std::mutex> lk(mu);
+        if (!clearReq && !loadReq) return;
+        if (clearReq) { MeshTelemetry e; moveLists(tel, e); msgSeen.clear(); clearReq = false; }
+        if (loadReq) { moveLists(tel, loaded); msgSeen.clear(); loadReq = false; }
+        reindex();
+    }
+
     void resetState() {
-        // forget everything decoded; the report number goes on
+        // forget the signal; the decoded lists stay (clearResults) and the report number goes on
         const uint64_t s = tel.seq;
+        const double t0 = tel.timeSec;     // the clock starts again: the kept lists move back by the time it had reached
+        MeshTelemetry keep;
+        moveLists(keep, tel);
         tel = MeshTelemetry();
         tel.seq = s;
-        nodeIdx.clear(); aprsIdx.clear(); lwIdx.clear(); msgSeen.clear();
+        moveLists(tel, keep);
+        shiftTimes(tel, -t0);
+        reindex();
         pend.clear();
         nIn = nProc = 0;
         nextReport = 0;
@@ -532,13 +569,44 @@ void MeshReceiver::reset() {
     p_->resetReq = true;
     const uint64_t s = p_->pub.seq;
     const double tu = p_->pub.tunedHz;
-    p_->pub = MeshTelemetry();
+    MeshTelemetry t;
+    Impl::moveLists(t, p_->pub);         // the lists stay (clearResults)
+    Impl::shiftTimes(t, -p_->pub.timeSec);
+    p_->pub = std::move(t);
     p_->pub.seq = s; p_->pub.tunedHz = tu;
+}
+
+void MeshReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    MeshTelemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->pub.seq++;
+}
+std::string MeshReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const MeshTelemetry& t = p_->pub;
+    return results::pack(t.timeSec, t.packets, t.nodes, t.messages, t.counts, t.aprsStations, t.lorawanDevices);
+}
+bool MeshReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    MeshTelemetry l;
+    if (!results::unpack(blob, t0, l.packets, l.nodes, l.messages, l.counts, l.aprsStations, l.lorawanDevices)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    MeshTelemetry copy;
+    copy.packets = l.packets; copy.nodes = l.nodes; copy.messages = l.messages; copy.counts = l.counts; copy.aprsStations = l.aprsStations; copy.lorawanDevices = l.lorawanDevices;
+    Impl::moveLists(p_->pub, copy);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
 }
 
 void MeshReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
+    m.takeRequests();
     if (m.dirty.load()) m.rebuild();
     if (m.curRate <= 0) return;
     m.nIn += (int64_t)n;

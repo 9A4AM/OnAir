@@ -430,6 +430,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see aircraft"); ImGui::PopTextWrapPos(); } return; }
+    if (resultsClearButton("adsb")) a.engine.adsb().clearResults();
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%u aircraft, %u with position", a.rx.adsb.aircraftCount, a.rx.adsb.withPosition); ImGui::PopTextWrapPos(); }
     aircraftTable(a, true);
 }

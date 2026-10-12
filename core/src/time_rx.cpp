@@ -1,5 +1,6 @@
 // Time signal receiver (see time_rx.h).
 #include "dect2/time_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/time_tel.h"
 #include "dect2/time_proto.h"
 #include <algorithm>
@@ -118,6 +119,8 @@ struct TimeReceiver::Impl {
     std::deque<double> resid;
     uint64_t okN = 0, badN = 0;
     std::deque<TimeFrameLog> flog;
+    bool logLoad = false;                // a loaded file for flog (mu): the feed thread takes it
+    std::deque<TimeFrameLog> logIn;
     double nextReport = 0;
     TimeTelemetry pub;
     uint64_t seq = 0;
@@ -600,12 +603,32 @@ void TimeReceiver::setReceiverLocation(double lat, double lon, bool userSet) { p
 bool TimeReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= timeTuning().minSampleRate - 1; }
 int TimeReceiver::station() const { return p_->stationNow.load(); }
 void TimeReceiver::reset() { p_->resetReq = true; }
-void TimeReceiver::clearLog() { p_->clearReq = true; }
+void TimeReceiver::clearLog() {
+    { std::lock_guard<std::mutex> lk(p_->mu); p_->pub.log.clear(); p_->logLoad = false; p_->logIn.clear(); p_->pub.seq++; }
+    p_->clearReq = true;
+}
+// the decoded minutes already stay through reset() (they carry the computer's clock): only Clear empties them
+void TimeReceiver::clearResults() { clearLog(); }
+std::string TimeReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.log);
+}
+bool TimeReceiver::loadResults(const std::string& blob) {
+    std::vector<TimeFrameLog> l;
+    if (!results::unpack(blob, l)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->logIn.assign(l.begin(), l.end());
+    p_->pub.log = std::move(l);
+    p_->logLoad = true;
+    p_->pub.seq++;
+    return true;
+}
 
 void TimeReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
     if (m.clearReq.exchange(false)) { m.flog.clear(); m.okN = m.badN = 0; }
+    { std::lock_guard<std::mutex> lk(m.mu); if (m.logLoad) { m.flog = std::move(m.logIn); m.logIn.clear(); m.logLoad = false; } }
     if (m.rate < timeTuning().minSampleRate - 1 || n == 0) return;
     const double r = m.rate;
     for (size_t i = 0; i < n; i++) {

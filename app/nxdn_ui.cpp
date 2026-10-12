@@ -153,6 +153,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
+    if (resultsClearButton("nxdn")) a.engine.nxdn().clearResults();
     const auto& log = a.rx.nxdn.log;
     if (!ImGui::BeginTable("##nxdnl", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupColumn("Unit"); ImGui::TableSetupColumn("Heard", ImGuiTableColumnFlags_WidthStretch);

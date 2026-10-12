@@ -66,7 +66,7 @@ static void run(double rate, double secs) {
     CHECK(a.noiseDbfs[0] < -30 && a.noiseDbfs[0] > -100, "noise floor %.1f dBFS", a.noiseDbfs[0]);
     CHECK(e.droppedSamples() == 0, "dropped %llu samples", (unsigned long long)e.droppedSamples());
     CHECK(rx.rateOk, "the engine says the rate is too low");
-    // a retune empties the table, and the report numbers go on growing
+    // a retune keeps the table (only the Clear empties it), and the report numbers go on growing
     TuneSettings t2 = t;
     t2.centerHz = 162.01e6;
     const uint64_t before = rx.seq;
@@ -74,7 +74,7 @@ static void run(double rate, double secs) {
     e.retuneReset(t2);
     waitFor(5.0, [&] { e.latestRx(rx, 0); return rx.seq > before; });
     CHECK(rx.seq > before, "report numbers after the retune: %llu after %llu", (unsigned long long)rx.seq, (unsigned long long)before);
-    CHECK(rx.ais.vesselCount < stationsBefore, "the table starts again after a retune (%u after %u)", rx.ais.vesselCount, stationsBefore);
+    CHECK(rx.ais.vesselCount >= stationsBefore, "the table stays through a retune (%u after %u)", rx.ais.vesselCount, stationsBefore);
     e.stop();
 }
 

@@ -1,5 +1,6 @@
 // Cell towers receiver (cell_rx.h): blocks of input, carriers found in the spectrum, cells searched and their broadcast decoded.
 #include "dect2/cell_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/cell_asn.h"
 #include "dect2/cell_dsp.h"
 #include "dect2/cell_lte.h"
@@ -429,6 +430,24 @@ void CellReceiver::setLogCallback(std::function<void(const std::string&)> cb) { 
 
 bool CellReceiver::busy() const { std::lock_guard<std::mutex> lk(p_->mu); return !p_->idle.load() || p_->jobReady; }
 
+// the cells and the event log already stay through reset() and configure() (the sample clock runs on): only the user's Clear empties them
+void CellReceiver::clearResults() { clearCells(); }
+std::string CellReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->tel.timeSec, p_->tel.cells, p_->tel.events);
+}
+bool CellReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    CellTelemetry l;
+    if (!results::unpack(blob, t0, l.cells, l.events)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const double dt = p_->tel.timeSec - t0;    // onto this run's clock
+    for (auto& c : l.cells) c.lastSec += dt;
+    for (auto& e : l.events) e.sec += dt;
+    p_->tel.cells = std::move(l.cells); p_->tel.events = std::move(l.events);
+    p_->publish();
+    return true;
+}
 bool CellReceiver::telemetry(CellTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

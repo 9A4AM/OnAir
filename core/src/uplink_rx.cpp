@@ -1,4 +1,5 @@
 #include "dect2/uplink_rx.h"
+#include "dect2/results_io.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -51,6 +52,22 @@ struct UplinkReceiver::Impl {
     std::deque<UplinkLogLine> log;
     double lastDecode = -1e9, lastPulse = -1e9, cfoAcc = 0;
     uint64_t cfoN = 0;
+
+    // mu held: the clock starts again (configure), the kept tables move back with it
+    void shiftTimes(double dt) {
+        for (auto& kv : ints) {
+            IntState& st = kv.second;
+            st.pub.lastSec += dt; st.pub.lastBurstSec += dt;
+            for (auto& v : st.recent) v += dt;
+            for (auto& v : st.burst) v += dt;
+            for (auto& v : st.centres) v += dt;
+        }
+        for (auto& kv : acs) { kv.second.pub.firstSec += dt; kv.second.pub.lastSec += dt; }
+        for (auto& t : tcas) t.sec += dt;
+        for (auto& l : log) l.sec += dt;
+        lastDecode += dt; lastPulse += dt;
+        tel.timeSec += dt;
+    }
 
     double us(double samples) const { return samples / rate * 1e6; }
     double smp(double micro) const { return micro * 1e-6 * rate; }
@@ -361,8 +378,10 @@ UplinkReceiver::~UplinkReceiver() = default;
 void UplinkReceiver::configure(double inputRateHz) {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->rate = inputRateHz;
+    p_->shiftTimes(-p_->tel.timeSec);   // the tables stay (clearResults): the clock starts again at 0
     p_->buf.clear(); p_->base = 0; p_->used.clear(); p_->noiseRms = 0;
     p_->tel.inputRate = inputRateHz;
+    p_->tel.seq++;
 }
 bool UplinkReceiver::ready() const { return p_->rate >= uplinkTuning().minSampleRate - 1; }
 void UplinkReceiver::reset() {
@@ -422,6 +441,30 @@ void UplinkReceiver::clear() {
     p.tel = UplinkTelemetry();
     p.tel.seq = s + 1; p.tel.inputRate = r; p.tel.timeSec = ts;
     p.cfoAcc = 0; p.cfoN = 0;
+}
+
+void UplinkReceiver::clearResults() { clear(); }
+std::string UplinkReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->tel.timeSec, p_->ints, p_->acs, p_->tcas, p_->log);
+}
+bool UplinkReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::map<int, IntState> ints;
+    std::map<uint32_t, AcState> acs;
+    std::deque<UplinkTcas> tcas;
+    std::deque<UplinkLogLine> log;
+    if (!results::unpack(blob, t0, ints, acs, tcas, log)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& p = *p_;
+    p.ints = std::move(ints); p.acs = std::move(acs); p.tcas = std::move(tcas); p.log = std::move(log);
+    const double now = p.tel.timeSec;
+    p.tel.timeSec = t0;
+    const double ld = p.lastDecode, lp = p.lastPulse;
+    p.shiftTimes(now - t0);
+    p.lastDecode = ld; p.lastPulse = lp;
+    p.tel.seq++;
+    return true;
 }
 
 ModeTuning uplinkTuning() {

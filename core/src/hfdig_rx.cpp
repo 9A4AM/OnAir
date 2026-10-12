@@ -1,6 +1,7 @@
 // HF digital receiver (see hfdig_rx.h): the channel to 24 kHz complex, the upper sideband to 8 kHz audio, the three decoders on that
 // audio, and FreeDV's speech to the sound card. The decoders themselves are in hfdig_rtty.cpp, hfdig_sstv.cpp and hfdig_freedv.cpp.
 #include "dect2/hfdig_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/hfdig_tel.h"
 #include "dect2/hfdig_rtty.h"
 #include "dect2/hfdig_sstv.h"
@@ -60,6 +61,28 @@ struct HfdigReceiver::Impl {
     std::unique_ptr<AudioOut> audioOut;
 
     Impl() { freedv->setSpeechOut([this](const float* x, size_t n) { playSpeech(x, n); }); }
+
+    // the decoded results stay through resets (each decoder keeps its own); Clear and a loaded file reach the decoders through these
+    // requests (mu), the published report at once
+    int clearMask = 0;
+    bool loadReq = false;
+    HfdigTelemetry loaded;
+    void takeRequests() {        // the receiver thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (clearMask & 1) rtty->clearText();
+        if (clearMask & 2) sstv->setHistory({});
+        if (clearMask & 8) ftx->clearDecodes();
+        if (clearMask & 16) hamdrm->setHistory({});
+        clearMask = 0;
+        if (loadReq) {
+            rtty->setText(loaded.rtty.text, loaded.rtty.chars);
+            sstv->setHistory(loaded.sstv.history);
+            ftx->setDecodes(loaded.ftx.decodes);
+            hamdrm->setHistory(loaded.hamdrm.history);
+            loaded = HfdigTelemetry();
+            loadReq = false;
+        }
+    }
 
     void resetState() {
         std::function<void(const std::string&)> cb;
@@ -130,14 +153,49 @@ void HfdigReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->resetReq = true;
     const uint64_t s = p_->pub.seq;
-    p_->pub = HfdigTelemetry();
+    HfdigTelemetry t;                    // the decoded results stay (clearResults)
+    t.rtty.text = std::move(p_->pub.rtty.text); t.rtty.chars = p_->pub.rtty.chars;
+    t.sstv.history = std::move(p_->pub.sstv.history);
+    t.ftx.decodes = std::move(p_->pub.ftx.decodes);
+    t.hamdrm.history = std::move(p_->pub.hamdrm.history);
+    p_->pub = std::move(t);
     p_->pub.seq = s;
+}
+
+void HfdigReceiver::clearResults(int mask) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& m = *p_;
+    m.clearMask |= mask;
+    if (mask & 1) { m.pub.rtty.text.clear(); m.pub.rtty.chars = 0; m.loaded.rtty.text.clear(); m.loaded.rtty.chars = 0; }
+    if (mask & 2) { m.pub.sstv.history.clear(); m.loaded.sstv.history.clear(); }
+    if (mask & 8) { m.pub.ftx.decodes.clear(); m.loaded.ftx.decodes.clear(); }
+    if (mask & 16) { m.pub.hamdrm.history.clear(); m.loaded.hamdrm.history.clear(); }
+    if (mask & 8) m.ftx->clearDecodes();   // thread safe: at once, also when the receiver is not running
+    m.pub.seq++;
+}
+std::string HfdigReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const HfdigTelemetry& t = p_->pub;
+    return results::pack(t.rtty.text, t.rtty.chars, t.sstv.history, t.ftx.decodes, t.hamdrm.history);
+}
+bool HfdigReceiver::loadResults(const std::string& blob) {
+    HfdigTelemetry l;
+    if (!results::unpack(blob, l.rtty.text, l.rtty.chars, l.sstv.history, l.ftx.decodes, l.hamdrm.history)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& m = *p_;
+    m.pub.rtty.text = l.rtty.text; m.pub.rtty.chars = l.rtty.chars;
+    m.pub.sstv.history = l.sstv.history; m.pub.ftx.decodes = l.ftx.decodes; m.pub.hamdrm.history = l.hamdrm.history;
+    m.ftx->setDecodes(l.ftx.decodes);   // thread safe: the FT8 screen reads the decoder itself
+    m.loaded = std::move(l); m.loadReq = true;
+    m.pub.seq++;
+    return true;
 }
 
 void HfdigReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.tapsReq.exchange(false)) { std::lock_guard<std::mutex> lk(m.mu); m.audioTap = m.audioTapSet; m.speechTap = m.speechTapSet; }
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
+    m.takeRequests();
     if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
     if (m.curRate <= 0) return;
     for (size_t i = 0; i < n; i++) m.power += (double)std::norm(x[i]);

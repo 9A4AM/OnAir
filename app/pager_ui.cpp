@@ -260,6 +260,7 @@ void tab(App& a) {
 void list(App& a) {
     loadRead();
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to see pages"); ImGui::PopTextWrapPos(); return; }
+    if (resultsClearButton("pager")) a.engine.pager().clearResults();
     const dect2::PagerTelemetry& t = a.rx.pager;
     const std::vector<dect2::PagerMessage>& all = messagesOf(t);
     ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%llu pages", (unsigned long long)t.messagesTotal); ImGui::PopTextWrapPos();

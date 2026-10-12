@@ -35,9 +35,13 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);
     bool ready() const;
-    void reset();
+    void reset();                                        // after a retune (the logs stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(DstarTelemetry& out, uint64_t lastSeq);
+    // The call log, messages and positions stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     void setVolume(float v);

@@ -438,6 +438,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see aircraft"); ImGui::PopTextWrapPos(); return; }
+    if (resultsClearButton("vdl2")) a.engine.vdl2().clearResults();
     const dect2::Vdl2Telemetry& t = a.rx.vdl2;
     ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu aircraft, %zu ground stations", t.aircraft.size(), t.stations.size()); ImGui::PopTextWrapPos();
     if (!ImGui::BeginTable("##vdl_s", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;

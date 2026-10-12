@@ -551,6 +551,9 @@ int main(int argc, char** argv) {
 #endif
     }
     if (getenv("DECT2_DEMO")) { wizAction(app, 2); }   // test: start the demo programme straight away
+    // the decoded results of the last run (each mode's lists, until its Clear), then saved every 30 s and at exit
+    app.engine.setResultsDir(plat::dataDir() + "/results");
+    appResultsLoad(app);
 
     bool autostart = false, hackrfStart = false, fileStart = false, stress = false;
     int stressFrame = 0, stressStep = 0;
@@ -628,6 +631,7 @@ int main(int argc, char** argv) {
     double last = glfwGetTime();
     double frameNext = 0, lastInputT = 0;
     while (!glfwWindowShouldClose(window)) {
+        appResultsSave(app);   // every 30 s: the lists the screens keep themselves (the engine saves its own on a thread)
         discordTick(app);
         {
             {   // frame pacing: the screen is only redrawn as often as it can change, otherwise the loop would run at the refresh rate of the display (120 Hz on
@@ -751,6 +755,8 @@ int main(int argc, char** argv) {
     }
     delete gDiscord;   // clears the status and joins its thread
     app.engine.stop();
+    app.engine.flushResults();
+    appResultsSave(app, true);
     updateOnExit(app);   // a downloaded update replaces this program once it has ended
     popOutShutdown();   // its window and surface go before the back end
     gfxBackend->shutdown();

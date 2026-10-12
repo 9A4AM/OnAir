@@ -1,5 +1,6 @@
 // P25 Phase 1 receiver (see p25_rx.h).
 #include "dect2/p25_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/p25_tel.h"
 #include "dect2/p25_proto.h"
 #include "dect2/p25_imbe.h"
@@ -636,6 +637,23 @@ struct P25Receiver::Impl {
         aud8.clear();
     }
 
+    // The call log, talkgroups, control messages and the site with its neighbours stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool clearReq = false, loadReq = false;
+    P25Telemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(P25Telemetry& to, P25Telemetry& from) {
+        to.adjacent = std::move(from.adjacent); to.talkgroups = std::move(from.talkgroups); to.log = std::move(from.log); to.events = std::move(from.events); to.site = from.site;
+        from.adjacent.clear(); from.talkgroups.clear(); from.log.clear(); from.events.clear();
+    }
+    static void shiftTimes(P25Telemetry& t, double dt) {
+        for (auto& c : t.log) c.startSec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (clearReq) { P25Telemetry e; moveLists(tel, e); clearReq = false; }
+        if (loadReq) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); loadReq = false; }
+    }
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         if (tel.now.active) endCall(false);
@@ -647,7 +665,11 @@ struct P25Receiver::Impl {
         lastGood = lastTsbk = lastVoice = -10; berErr = berBits = 0; snrAvg = 0;
         grants.clear();
         const uint64_t seq = tel.seq;
+        P25Telemetry keep;                          // the lists stay (clearResults): the clock starts again, they move back by the time it had reached
+        moveLists(keep, tel);
+        shiftTimes(keep, -tel.timeSec);
         tel = P25Telemetry(); tel.seq = seq;
+        moveLists(tel, keep);
         tel.inputRate = rate;
         tel.imbe = p25ImbeAvailable(&tel.imbePath);
     }
@@ -682,6 +704,7 @@ void P25Receiver::reset() { p_->resetReq = true; }
 void P25Receiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
+    m.takeRequests();
     if (m.tapReq.load()) { std::lock_guard<std::mutex> lk(m.mu); m.tap = m.tapSet; m.vtap = m.vtapSet; m.tapReq = false; }
     if (m.rate <= 0 || n == 0) return;
     for (size_t i = 0; i < n; i++) {
@@ -695,6 +718,31 @@ void P25Receiver::feed(const cf32* x, size_t n) {
     m.nPower += (int64_t)n;
 }
 
+void P25Receiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    P25Telemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->pub.seq++;
+}
+std::string P25Receiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.adjacent, p_->pub.talkgroups, p_->pub.log, p_->pub.events, p_->pub.site);
+}
+bool P25Receiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    P25Telemetry l;
+    if (!results::unpack(blob, t0, l.adjacent, l.talkgroups, l.log, l.events, l.site)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    P25Telemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
+}
 bool P25Receiver::telemetry(P25Telemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

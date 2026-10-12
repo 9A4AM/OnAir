@@ -1,5 +1,6 @@
 // PSK31 / PSK63 multi-signal receiver (see psk_rx.h).
 #include "dect2/psk_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/psk_tel.h"
 #include "dect2/psk_varicode.h"
 #include "dect2/cw_morse.h"
@@ -97,6 +98,42 @@ struct PskReceiver::Impl {
         for (int j = 0; j < kTri; j++) triW[j] = (float)((kR - std::abs(j - (kR - 1))) / (double)(kR * kR));
     }
 
+    // signals that are gone (silent too long, a change of mode, a reset) keep their text until Clear: listed with the live ones (not
+    // decoding), and a new signal found where one of them was carries its text on. Feed thread; Clear and a loaded file reach them through
+    // these requests (mu)
+    std::vector<PskSignal> kept;       // oldest first, at most kKeptMax
+    static constexpr size_t kKeptMax = 2 * kPskMaxSignals;
+    bool keptClear = false, keptLoad = false;
+    std::vector<PskSignal> keptIn;
+    double keptInAt = 0;
+    static void shiftSig(PskSignal& s, double dt) { s.lastActiveSec += dt; s.firstSec += dt; for (auto& l : s.lines) l.timeSec += dt; }
+    void retire(const Chan& c) {
+        if (c.chars == 0) return;
+        PskSignal s;
+        s.id = c.id; s.offsetHz = c.f;
+        s.lastActiveSec = c.lastActive; s.firstSec = c.firstSec;
+        s.chars = c.chars; s.text = c.text; s.calls = c.calls; s.lines = c.lines;
+        kept.push_back(std::move(s));
+        if (kept.size() > kKeptMax) kept.erase(kept.begin());
+    }
+    void seed(Chan& c, double hz) {   // a new signal where a gone one was: its text goes on
+        for (size_t i = 0; i < kept.size(); i++) {
+            const PskSignal& k = kept[i];
+            if (std::fabs(k.offsetHz - hz) > 1.4 * baud()) continue;
+            c.id = k.id; c.text = k.text; c.calls = k.calls; c.chars = k.chars; c.firstSec = k.firstSec; c.lines = k.lines;
+            kept.erase(kept.begin() + (long)i);
+            return;
+        }
+    }
+    void takeKept() {
+        std::lock_guard<std::mutex> lk(mu);
+        if (keptClear) { kept.clear(); keptClear = false; }
+        if (keptLoad) {
+            kept = std::move(keptIn); keptIn.clear();
+            for (auto& s : kept) { shiftSig(s, tel.timeSec - keptInAt); nextId = std::max(nextId, s.id + 1); }
+            keptLoad = false;
+        }
+    }
     double sigSec() const { return (double)nBase / kBase; }
     double baud() const { return pskBaud(mode); }
 
@@ -108,6 +145,7 @@ struct PskReceiver::Impl {
         double s = 0;
         for (int i = 0; i < L; i++) { h[(size_t)i] = (float)(0.5 - 0.5 * std::cos(2 * kPi * (i + 0.5) / L)); s += h[(size_t)i]; }
         for (float& v : h) v = (float)(v / s);
+        for (const Chan& c : chans) retire(c);
         chans.clear(); focusId = -1;
         tel.mode = mode;
     }
@@ -116,6 +154,12 @@ struct PskReceiver::Impl {
         std::function<void(const std::string&)> cb;
         double off;
         { std::lock_guard<std::mutex> lk(mu); curRate = rate; off = offsetHz; cb = log; }
+        {   // the clock starts again: the signals heard so far stay (kept), moved back by the time it had reached
+            const double t0 = sigSec();
+            for (const Chan& c : chans) retire(c);
+            chans.clear(); focusId = -1;
+            for (auto& k : kept) shiftSig(k, -t0);
+        }
         const uint64_t s = tel.seq, ss = tel.specSeq;
         tel = PskTelemetry();
         tel.seq = s; tel.specSeq = ss;
@@ -149,6 +193,7 @@ struct PskReceiver::Impl {
         c.bins.assign((size_t)sps, 0.f);
         c.yh.assign((size_t)sps, cf32(0, 0));
         c.firstSec = c.lastActive = c.lastPeak = sigSec();
+        seed(c, hz);
         chans.push_back(std::move(c));
         return chans.back();
     }
@@ -203,6 +248,7 @@ struct PskReceiver::Impl {
                 add(hz, false);
             }
         }
+        for (const Chan& c : chans) if (c.id != focusId && now - std::max(c.lastActive, c.lastPeak) > 40) retire(c);
         chans.erase(std::remove_if(chans.begin(), chans.end(), [&](const Chan& c) {
             return c.id != focusId && now - std::max(c.lastActive, c.lastPeak) > 40; }), chans.end());
         for (size_t i = 0; i < chans.size(); i++)
@@ -382,6 +428,7 @@ struct PskReceiver::Impl {
             if (c.id == focusId || (focusId < 0 && s.snrDb > best)) { tel.snrDb = s.snrDb; best = s.snrDb; if (c.id == focusId) tel.cfoHz = s.afcHz; }
             tel.signals.push_back(std::move(s));
         }
+        for (const PskSignal& k : kept) tel.signals.push_back(k);
         std::sort(tel.signals.begin(), tel.signals.end(), [](const PskSignal& a, const PskSignal& b) { return a.offsetHz < b.offsetHz; });
         tel.blocksOk = std::max(tel.blocksOk, ok); tel.blocksBad = std::max(tel.blocksBad, bad);
         tel.focusId = focusId;
@@ -402,15 +449,18 @@ void PskReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->resetReq = true;
     const uint64_t s = p_->pub.seq;
+    std::vector<PskSignal> sig = std::move(p_->pub.signals);   // the text stays (clearResults)
     p_->pub = PskTelemetry();
     p_->pub.seq = s;
+    p_->pub.signals = std::move(sig);
 }
 
 void PskReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
     if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
-    if (m.clearReq.exchange(false)) { m.chans.clear(); m.focusId = -1; }
+    if (m.clearReq.exchange(false)) { m.chans.clear(); m.focusId = -1; m.kept.clear(); }
+    m.takeKept();
     if (m.modeReq.load() != m.mode) m.setupMode(m.modeReq.load());
     {
         std::lock_guard<std::mutex> lk(m.mu);
@@ -443,6 +493,32 @@ void PskReceiver::feed(const cf32* x, size_t n) {
     }
 }
 
+std::string PskReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.signals);
+}
+bool PskReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::vector<PskSignal> sig;
+    if (!results::unpack(blob, t0, sig)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    std::vector<PskSignal> in;
+    for (auto& s : sig) {
+        if (s.chars == 0) continue;
+        PskSignal k;
+        k.id = s.id; k.offsetHz = s.offsetHz; k.lastActiveSec = s.lastActiveSec; k.firstSec = s.firstSec;
+        k.chars = s.chars; k.text = s.text; k.calls = s.calls; k.lines = s.lines;
+        Impl::shiftSig(k, p_->pub.timeSec - t0);
+        in.push_back(std::move(k));
+    }
+    if (in.size() > Impl::kKeptMax) in.erase(in.begin(), in.end() - (long)Impl::kKeptMax);
+    p_->pub.signals = in;
+    p_->keptIn = std::move(in); p_->keptInAt = p_->pub.timeSec;
+    p_->keptLoad = true; p_->keptClear = false;
+    p_->pub.seq++;
+    return true;
+}
+void PskReceiver::clearResults() { clearSignals(); }
 bool PskReceiver::telemetry(PskTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;
@@ -458,7 +534,10 @@ void PskReceiver::setListenTap(std::function<void(const float* x, size_t n)> cb)
 void PskReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void PskReceiver::setMode(int m) { p_->modeReq = std::max(0, std::min(kPskModes - 1, m)); }
 void PskReceiver::setFocusHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->focusReq = true; p_->focusHz = hz; }
-void PskReceiver::clearSignals() { p_->clearReq = true; }
+void PskReceiver::clearSignals() {
+    { std::lock_guard<std::mutex> lk(p_->mu); p_->pub.signals.clear(); p_->keptLoad = false; p_->keptIn.clear(); p_->pub.seq++; }
+    p_->clearReq = true;
+}
 void PskReceiver::setThresholdDb(float db) { p_->thrDb = std::max(4.f, std::min(30.f, db)); }
 
 ModeTuning pskTuning() {

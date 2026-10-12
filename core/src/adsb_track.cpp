@@ -1,5 +1,6 @@
 // ADS-B frame validation and the aircraft table.
 #include "dect2/adsb_track.h"
+#include "dect2/results_io.h"
 #include "dect2/feeds.h"
 #include <algorithm>
 #include <cmath>
@@ -31,6 +32,33 @@ void AdsbTracker::reset() {
     maxRange_ = 0;
     now_ = 0;
     snrEma_ = levelEma_ = 0; snrInit_ = false;
+}
+
+void AdsbTracker::shiftTime(double dt) {
+    for (auto& kv : rec_) {
+        Rec& r = kv.second;
+        for (double* t : {&r.firstSeen, &r.lastSeen, &r.lastTrusted, &r.lastPos, &r.lastTrack, &r.lastVel, &r.altTime, &r.baroAltTime, &r.pendingTime,
+                          &r.t50, &r.t60, &r.tWind, &r.tSat, &r.tWindRep, &r.tSatRep, &r.tRa, &r.tMet}) *t += dt;
+        for (int i = 0; i < 2; i++) { r.cpr[i].t += dt; r.scpr[i].t += dt; }
+    }
+    for (auto& f : frames_) f.timeSec += dt;
+    now_ += dt;
+}
+
+std::string AdsbTracker::saveResults() const { return results::pack(now_, rec_, frames_); }
+
+bool AdsbTracker::loadResults(const std::string& blob, double now) {
+    double t0 = 0;
+    std::unordered_map<uint32_t, Rec> rec;
+    std::deque<AdsbFrameInfo> frames;
+    if (!results::unpack(blob, t0, rec, frames)) return false;
+    rec_ = std::move(rec);
+    frames_ = std::move(frames);
+    const double keep = now_;
+    now_ = t0;
+    shiftTime(now - t0);
+    now_ = std::max(keep, now);
+    return true;
 }
 
 void AdsbTracker::setReference(double lat, double lon) { refLat_ = lat; refLon_ = lon; refValid_ = true; }

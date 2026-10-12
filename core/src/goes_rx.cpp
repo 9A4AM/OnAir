@@ -1,5 +1,6 @@
 // GOES HRIT receiver (goes_rx.h).
 #include "dect2/goes_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/fftutil.h"
 #include "dect2/goes_proto.h"
 #include "dect2/goes_tel.h"
@@ -69,6 +70,8 @@ struct GoesReceiver::Impl {
     std::function<void(const std::string&)> logCb;
     std::function<void(const std::vector<uint8_t>&, int, int)> fileCb;
     std::atomic<bool> resetReq{false}, clearReq{false};
+    bool loadReq = false;                // loaded products (mu): the feed thread hands them to the assembler
+    std::vector<std::shared_ptr<goes::Product>> loadIn;
     std::atomic<double> offset{0};
     double rateSet = 0;
 
@@ -479,11 +482,77 @@ void GoesReceiver::configure(double r) {
 void GoesReceiver::setSignalOffset(double hz) { p_->offset = hz; }
 bool GoesReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= goesTuning().minSampleRate - 1; }
 void GoesReceiver::reset() { p_->resetReq = true; }
-void GoesReceiver::clearProducts() { p_->clearReq = true; }
+void GoesReceiver::clearProducts() {
+    { std::lock_guard<std::mutex> lk(p_->mu); p_->pub.products.clear(); p_->pub.log.clear(); p_->loadReq = false; p_->loadIn.clear(); p_->pub.seq++; }
+    p_->clearReq = true;
+}
+
+namespace {
+// a product as the results file holds it (Product itself carries a mutex)
+struct GoesProductRec {
+    uint64_t id = 0;
+    int kind = 0, vcid = 0, apid = 0;
+    goes::Headers hdr;
+    std::string name;
+    double startSec = 0;
+    int w = 0, h = 0;
+    std::vector<uint8_t> pix, rowDone;
+    int rowsDone = 0, segsDone = 0, segsTotal = 0;
+    std::vector<uint8_t> data;
+    std::string text, innerName;
+    bool complete = false, errors = false;
+    uint64_t version = 0, bytes = 0;
+};
+constexpr size_t kGoesSaveBytes = 48u << 20;   // the newest products up to this many bytes of pictures and data go into the file
+} // namespace
+
+// the products already stay through reset() and configure(): only Clear empties them
+void GoesReceiver::clearResults() { clearProducts(); }
+std::string GoesReceiver::saveResults() const {
+    std::vector<std::shared_ptr<goes::Product>> list;
+    { std::lock_guard<std::mutex> lk(p_->mu); list = p_->loadReq ? p_->loadIn : p_->pub.products; }
+    std::vector<GoesProductRec> v;
+    size_t total = 0;
+    for (const auto& q : list) {
+        if (!q) continue;
+        GoesProductRec r;
+        r.id = q->id; r.kind = q->kind; r.vcid = q->vcid; r.apid = q->apid; r.hdr = q->hdr; r.name = q->name; r.startSec = q->startSec;
+        {
+            std::lock_guard<std::mutex> pl(q->mu);
+            r.w = q->w; r.h = q->h; r.pix = q->pix; r.rowDone = q->rowDone; r.rowsDone = q->rowsDone; r.segsDone = q->segsDone; r.segsTotal = q->segsTotal;
+            r.data = q->data; r.text = q->text; r.innerName = q->innerName; r.complete = q->complete; r.errors = q->errors; r.version = q->version; r.bytes = q->bytes;
+        }
+        total += r.pix.size() + r.data.size() + r.text.size();
+        if (total > kGoesSaveBytes && !v.empty()) break;
+        v.push_back(std::move(r));
+    }
+    return results::pack(v);
+}
+bool GoesReceiver::loadResults(const std::string& blob) {
+    std::vector<GoesProductRec> v;
+    if (!results::unpack(blob, v)) return false;
+    std::vector<std::shared_ptr<goes::Product>> list;
+    for (auto& r : v) {
+        auto q = std::make_shared<goes::Product>();
+        q->id = r.id; q->kind = r.kind; q->vcid = r.vcid; q->apid = r.apid; q->hdr = r.hdr; q->name = r.name; q->startSec = r.startSec;
+        q->w = r.w; q->h = r.h; q->pix = std::move(r.pix); q->rowDone = std::move(r.rowDone); q->rowsDone = r.rowsDone; q->segsDone = r.segsDone; q->segsTotal = r.segsTotal;
+        q->data = std::move(r.data); q->text = std::move(r.text); q->innerName = std::move(r.innerName); q->complete = r.complete; q->errors = r.errors; q->version = r.version; q->bytes = r.bytes;
+        list.push_back(std::move(q));
+    }
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->pub.products = list;
+    p_->loadIn = std::move(list); p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
+}
 
 void GoesReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false) && m.rate > 0) m.resetState();
+    {
+        std::lock_guard<std::mutex> lk(m.mu);
+        if (m.loadReq) { m.asmb.adopt(std::move(m.loadIn)); m.loadIn.clear(); m.loadReq = false; }
+    }
     if (m.clearReq.exchange(false)) {
         m.asmb.clear(); m.logLines.clear();
         m.frames = m.ok = m.bad = m.corrected = 0; m.lastFrames = m.lastCorr = m.lastOk = 0;

@@ -416,6 +416,7 @@ void tab(App& a) {
 void list(App& a) {
     loadState();
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see vessels"); ImGui::PopTextWrapPos(); } return; }
+    if (resultsClearButton("ais")) a.engine.ais().clearResults();
     ImGui::TextDisabled("%u stations", a.rx.ais.vesselCount);
     vesselTable(a, true);
 }

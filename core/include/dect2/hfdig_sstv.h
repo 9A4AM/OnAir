@@ -72,6 +72,8 @@ public:
     void reset() override;                           // the picture being received is dropped; the finished ones stay
     void feedAudio(const float* x, size_t n) override;
     void telemetry(HfdigSstvTelemetry& out) const;   // the receiver thread, between feedAudio() calls
+    // the receiver thread: the finished pictures from a results file, or none (the user's Clear)
+    void setHistory(std::vector<std::shared_ptr<const HfdigSstvImage>> h);
 
 private:
     struct Impl;

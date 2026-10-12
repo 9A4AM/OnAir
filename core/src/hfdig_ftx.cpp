@@ -948,6 +948,11 @@ void HfdigFtx::clearDecodes() {
     t.audioSamples = old.audioSamples; t.timeMode = old.timeMode; t.nowUtc = old.nowUtc;
     p_->tel = t;
 }
+void HfdigFtx::setDecodes(std::vector<FtxDecode> d) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (d.size() > kFtxKeep) d.erase(d.begin(), d.end() - (long)kFtxKeep);
+    p_->tel.decodes = std::move(d);
+}
 void HfdigFtx::setStartTime(double utc) { std::lock_guard<std::mutex> lk(p_->setMu); p_->startTime = utc; }
 void HfdigFtx::setSlotSearch(bool on) { std::lock_guard<std::mutex> lk(p_->setMu); p_->slotSearch = on; }
 void HfdigFtx::setWallClock(std::function<double()> fn) { std::lock_guard<std::mutex> lk(p_->setMu); p_->wall = std::move(fn); }

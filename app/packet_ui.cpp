@@ -284,6 +284,7 @@ void tab(App& a) {
 void list(App& a) {
     loadState();
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see stations"); ImGui::PopTextWrapPos(); return; }
+    if (resultsClearButton("packet")) a.engine.packet().clearResults();
     ImGui::TextDisabled("%zu stations", a.rx.packet.stations.size());
     stationTable(a, true);
 }

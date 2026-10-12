@@ -226,7 +226,7 @@ void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
     }
     ImGui::Checkbox("CQ only", &S.cqOnly);
     flowNext(10 * gUi);
-    if (ImGui::Button("Clear")) dec.clearDecodes();
+    if (ImGui::Button("Clear")) a.engine.hfdig().clearResults(8);   // the decodes the receiver keeps (also in the results file)
     flowEnd();
     bandButtons(a, only >= 0 ? only : 0);
     // the clock

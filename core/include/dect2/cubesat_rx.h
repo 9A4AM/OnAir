@@ -40,6 +40,10 @@ public:
     void clearFrames();
     void feed(const cf32* x, size_t n);
     bool telemetry(CubeTelemetry& out, uint64_t lastSeq);
+    // The frame list stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 private:
     struct Impl;

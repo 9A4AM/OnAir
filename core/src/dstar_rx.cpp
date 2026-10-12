@@ -1,5 +1,6 @@
 // D-STAR receiver (see dstar_rx.h).
 #include "dect2/dstar_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/dstar_tel.h"
 #include "dect2/dstar_proto.h"
 #include "dect2/dstar_ambe.h"
@@ -565,6 +566,23 @@ struct DstarReceiver::Impl {
         aud8.clear();
     }
 
+    // The call log, messages and positions stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool clearReq = false, loadReq = false;
+    DstarTelemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(DstarTelemetry& to, DstarTelemetry& from) {
+        to.log = std::move(from.log); to.messages = std::move(from.messages); to.positions = std::move(from.positions);
+        from.log.clear(); from.messages.clear(); from.positions.clear();
+    }
+    static void shiftTimes(DstarTelemetry& t, double dt) {
+        for (auto& c : t.log) c.startSec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (clearReq) { DstarTelemetry e; moveLists(tel, e); clearReq = false; }
+        if (loadReq) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); loadReq = false; }
+    }
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         if (txOn) endTx(false);
@@ -573,7 +591,11 @@ struct DstarReceiver::Impl {
         power = 0; nPower = 0; nIn = 0; nextReport = 0.25 * rate;
         lastAny = -10; snrAvg = 0; berAvg = 0;
         const uint64_t seq = tel.seq;
+        DstarTelemetry keep;                          // the lists stay (clearResults): the clock starts again, they move back by the time it had reached
+        moveLists(keep, tel);
+        shiftTimes(keep, -tel.timeSec);
         tel = DstarTelemetry(); tel.seq = seq;
+        moveLists(tel, keep);
         tel.inputRate = rate;
         tel.ambe = dstarAmbeAvailable(&tel.ambePath);
     }
@@ -603,6 +625,7 @@ void DstarReceiver::reset() { p_->resetReq = true; }
 void DstarReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
+    m.takeRequests();
     if (m.tapReq.load()) { std::lock_guard<std::mutex> lk(m.mu); m.tap = m.tapSet; m.vtap = m.vtapSet; m.tapReq = false; }
     if (m.rate <= 0 || n == 0) return;
     const double inv = 1.0 / ((double)m.fr[0].D * m.fr[0].D * m.fr[0].D);
@@ -618,6 +641,31 @@ void DstarReceiver::feed(const cf32* x, size_t n) {
     m.nPower += (int64_t)n;
 }
 
+void DstarReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    DstarTelemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->pub.seq++;
+}
+std::string DstarReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.log, p_->pub.messages, p_->pub.positions);
+}
+bool DstarReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    DstarTelemetry l;
+    if (!results::unpack(blob, t0, l.log, l.messages, l.positions)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    DstarTelemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
+}
 bool DstarReceiver::telemetry(DstarTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

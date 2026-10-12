@@ -20,7 +20,7 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);                     // where the wanted channel sits relative to 0 Hz in the input
     bool ready() const;                                  // false when the input rate is too low for this mode
-    void reset();                                        // after a retune: forget the signal and the decoded state
+    void reset();                                        // after a retune: forget the signal (the NAVTEX and DSC lists stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(MarineTelemetry& out, uint64_t lastSeq);
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
@@ -37,6 +37,10 @@ public:
     void setMuted(bool m);
     void setSilent(bool s);                              // decode but never open the sound device
     void clearMessages();                                // empties the NAVTEX and DSC lists
+    // The NAVTEX and DSC lists stay through reset(), configure() and retunes: only clearResults() (clearMessages()) empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
 
     // The fax picture: true and a copy when it changed since `seq` (updated to the new value).
     bool latestImage(FaxImage& out, uint64_t& seq) const;

@@ -1,4 +1,5 @@
 #include "dect2/iono_dsp.h"
+#include "dect2/results_io.h"
 #include "dect2/fftutil.h"
 #include "dect2/iono_scale.h"
 #include <algorithm>
@@ -104,7 +105,8 @@ struct Processor::Impl {
         }
         covered.assign(kCols, 0);
         g = 0; frames = 0; hits = 0;
-        clear();
+        for (auto& a : acc) a.clear();   // the sounders, their history and the timeline stay (clear())
+        sweeps.clear();
     }
 
     void clear() {
@@ -449,6 +451,32 @@ void Processor::setLocked(bool on) { p_->locked = on; }
 void Processor::setSelected(int i) { p_->selReq = i; }
 void Processor::setObserver(bool have, double lat, double lon) { p_->obs.have = have; p_->obs.lat = lat; p_->obs.lon = lon; }
 void Processor::clear() { p_->clear(); }
+std::string Processor::saveResults() const {
+    std::vector<std::pair<IonoSounder, std::vector<IonoHistPt>>> so;
+    for (const auto& a : p_->sounders) so.emplace_back(a.info, a.history);
+    return results::pack(so, p_->timeline);
+}
+bool Processor::loadResults(const std::string& blob) {
+    std::vector<std::pair<IonoSounder, std::vector<IonoHistPt>>> so;
+    std::vector<IonoEvent> tl;
+    if (!results::unpack(blob, so, tl)) return false;
+    p_->sounders.clear();
+    for (auto& [info, hist] : so) {
+        SounderAcc s;
+        int ri = 0;
+        for (int i = 1; i < kNumRates; i++) if (std::fabs(kRates[i] - info.rateHz) < std::fabs(kRates[ri] - info.rateHz)) ri = i;
+        s.rateIdx = ri;
+        s.info = info;
+        s.ion.assign((size_t)kRows * kCols, 0.0);
+        s.cnt.assign(kCols, 0);
+        s.recent.assign((size_t)kRows * kCols, 0.0);
+        s.recentHave.assign(kCols, 0);
+        s.history = std::move(hist);
+        p_->sounders.push_back(std::move(s));
+    }
+    p_->timeline = std::move(tl);
+    return true;
+}
 void Processor::feed(const cf32* x, size_t n) { p_->feed(x, n); }
 double Processor::now() const { return p_->fs > 0 ? p_->origin + p_->g / p_->fs : 0; }
 int Processor::detectorFft() const { return p_->N; }

@@ -256,6 +256,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see calls"); ImGui::PopTextWrapPos(); } return; }
+    if (resultsClearButton("dmr")) a.engine.dmr().clearResults();
     const DmrTelemetry& t = a.rx.dmr;
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%llu calls and messages", (unsigned long long)t.calls); ImGui::PopTextWrapPos(); }
     if (!ImGui::BeginTable("##dmrlist", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;

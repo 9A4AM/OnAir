@@ -85,6 +85,12 @@ std::string cacheDir() {
 // Windows: %LOCALAPPDATA%\OnAir; Linux: $XDG_DATA_HOME/onair or ~/.local/share/onair. Paths are UTF-8.
 std::string dataDir() {
     std::string d;
+    // DECT2_DATA_DIR: another folder for everything OnAir writes (test runs keep away from the user's own data)
+    if (const char* o = getenv("DECT2_DATA_DIR"); o && *o) {
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>(o)), ec);
+        return o;
+    }
 #ifdef _WIN32
     if (const wchar_t* la = _wgetenv(L"LOCALAPPDATA")) d = utf8(la) + "\\OnAir";
     else return cacheDir();

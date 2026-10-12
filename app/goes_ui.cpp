@@ -233,7 +233,7 @@ void tab(App& a) {
     if (ImGui::Checkbox("Save automatically", &S.autoSave)) { plat::prefs().setB("goesAutoSave", S.autoSave); plat::prefs().flush(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Every product once it is complete, into <data folder>/goes/");
     flowNext(5 * gUi);
-    if (ImGui::Button("Clear") && a.engine.running()) { a.engine.goes().clearProducts(); S.msg.clear(); S.selId = 0; S.follow = true; }
+    if (ImGui::Button("Clear")) { a.engine.goes().clearProducts(); S.msg.clear(); S.selId = 0; S.follow = true; }
     flowEnd();
     if (!S.msg.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", S.msg.c_str()); ImGui::PopTextWrapPos(); }
     if (!sel) {

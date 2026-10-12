@@ -169,7 +169,7 @@ void picture(dect2::HfdigSstvTelemetry const& t, bool running, ImVec2 size) {
     ImGui::PopTextWrapPos();
 }
 
-void side(float width, bool wrap) {
+void side(App& a, float width, bool wrap) {
     const dect2::HfdigSstvImage* cur = nullptr;
     if (S.sel >= 0 && S.sel < (int)S.items.size()) cur = S.items[(size_t)S.sel].im.get();
     const bool canSave = cur != nullptr;
@@ -179,6 +179,7 @@ void side(float width, bool wrap) {
     if (!canSave && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Click a picture below, then save it. Finished pictures are saved\nby themselves when \"Save every picture\" is on.");
     if (wrap) flowNext(8 * gUi); else ImGui::SameLine();
     if (ImGui::Button("Clear")) {
+        a.engine.hfdig().clearResults(2);   // the pictures the receiver keeps (also in the results file)
         for (Item& it : S.items) dropItem(it);
         S.items.clear(); S.sel = -1;
         S.hideId = ~0ull;                               // set below from the telemetry shown
@@ -277,14 +278,14 @@ void hfdigSstvTab(App& a, const dect2::HfdigTelemetry& t) {
         ImGui::EndChild();
         ImGui::SameLine(0, 10 * gUi);
         ImGui::BeginChild("##sstvside", ImVec2(sideW, avail.y), false);
-        side(sideW, false);
+        side(a, sideW, false);
         ImGui::EndChild();
     } else {
         ImGui::BeginChild("##sstvpic", ImVec2(avail.x, std::max(160 * gUi, avail.y * 0.62f)), false, ImGuiWindowFlags_NoScrollbar);
         picture(s, run, ImGui::GetContentRegionAvail());
         ImGui::EndChild();
         ImGui::BeginChild("##sstvside", ImVec2(avail.x, 0), false);
-        side(avail.x, true);
+        side(a, avail.x, true);
         ImGui::EndChild();
     }
 }

@@ -32,7 +32,7 @@ constexpr double kHfdigAudioRate = 8000.0;   // the audio every decoder gets, an
 class HfdigDecoder {
 public:
     virtual ~HfdigDecoder() = default;
-    virtual void reset() = 0;                                  // after a retune: forget the signal and the decoded state
+    virtual void reset() = 0;                                  // after a retune: forget the signal (what was decoded stays)
     virtual void feedAudio(const float* x, size_t n) = 0;      // 8000 Hz, about -1 .. 1
 };
 
@@ -44,9 +44,14 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);                     // where the user's (dial) frequency sits relative to 0 Hz in the input
     bool ready() const;                                  // false when the input rate is too low for this mode
-    void reset();                                        // after a retune: forget the signal and the decoded state
+    void reset();                                        // after a retune: forget the signal (the decoded results stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(HfdigTelemetry& out, uint64_t lastSeq);
+    // The RTTY text, SSTV pictures, FT8 / FT4 / FT2 / WSPR decodes and HamDRM files stay through reset(), configure() and retunes:
+    // only clearResults() empties them (mask as setDecoders(): 1 RTTY, 2 SSTV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM)
+    void clearResults(int mask = 31);
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
     // Sound (volume, mute) as in FmReceiver; the app pushes its shared controls here. FreeDV plays its speech; the other decoders are

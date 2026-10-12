@@ -1,5 +1,6 @@
 // NXDN receiver (see nxdn_rx.h).
 #include "dect2/nxdn_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/nxdn_tel.h"
 #include "dect2/nxdn_proto.h"
 #include "dect2/nxdn_ambe.h"
@@ -488,6 +489,23 @@ struct NxdnReceiver::Impl {
         aud8.clear();
     }
 
+    // The call log, the control messages and the site stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool clearReq = false, loadReq = false;
+    NxdnTelemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(NxdnTelemetry& to, NxdnTelemetry& from) {
+        to.log = std::move(from.log); to.events = std::move(from.events); to.siteInfo = from.siteInfo;
+        from.log.clear(); from.events.clear();
+    }
+    static void shiftTimes(NxdnTelemetry& t, double dt) {
+        for (auto& c : t.log) c.startSec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (clearReq) { NxdnTelemetry e; moveLists(tel, e); clearReq = false; }
+        if (loadReq) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); loadReq = false; }
+    }
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         if (tel.now.active) endCall(false);
@@ -497,7 +515,11 @@ struct NxdnReceiver::Impl {
         lastGood = -10; berErr = berBits = 0; snrAvg = 0; haveLich = false; sdOn = false; statKey = -1;
         for (bool& o : sfOk) o = false;
         const uint64_t seq = tel.seq;
+        NxdnTelemetry keep;                // the lists stay (clearResults): the clock starts again, they move back by the time it had reached
+        moveLists(keep, tel);
+        shiftTimes(keep, -tel.timeSec);
         tel = NxdnTelemetry(); tel.seq = seq;
+        moveLists(tel, keep);
         tel.inputRate = rate;
         tel.ambe = nxdnAmbeAvailable(&tel.ambePath);
     }
@@ -529,6 +551,7 @@ void NxdnReceiver::reset() { p_->resetReq = true; }
 void NxdnReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
+    m.takeRequests();
     if (m.tapReq.load()) { std::lock_guard<std::mutex> lk(m.mu); m.tap = m.tapSet; m.vtap = m.vtapSet; m.tapReq = false; }
     if (m.rate <= 0 || n == 0) return;
     for (size_t i = 0; i < n; i++) {
@@ -542,6 +565,31 @@ void NxdnReceiver::feed(const cf32* x, size_t n) {
     m.nPower += (int64_t)n;
 }
 
+void NxdnReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    NxdnTelemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->pub.seq++;
+}
+std::string NxdnReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.log, p_->pub.events, p_->pub.siteInfo);
+}
+bool NxdnReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    NxdnTelemetry l;
+    if (!results::unpack(blob, t0, l.log, l.events, l.siteInfo)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    NxdnTelemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
+}
 bool NxdnReceiver::telemetry(NxdnTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

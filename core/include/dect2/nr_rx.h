@@ -35,6 +35,10 @@ public:
     void clearCells();                 // the user's Clear button
     void feed(const cf32* x, size_t n);
     bool telemetry(NrTelemetry& out, uint64_t lastSeq);
+    // The cell table and the event log stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     bool busy() const;                 // a block is captured or being searched
 

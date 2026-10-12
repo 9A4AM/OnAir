@@ -32,9 +32,13 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);     // where the dial frequency sits relative to 0 Hz in the input
     bool ready() const;
-    void reset();                        // after a retune
+    void reset();                                        // after a retune (the signals' text stays: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(PskTelemetry& out, uint64_t lastSeq);
+    // The signals and their text (also of signals gone quiet) stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     void setMode(int m);                 // kPskModes: BPSK31 (default), BPSK63, QPSK31, QPSK63; forgets the signals

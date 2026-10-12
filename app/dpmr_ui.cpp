@@ -176,6 +176,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
+    if (resultsClearButton("dpmr")) a.engine.dpmr().clearResults();
     const auto& log = a.rx.dpmr.log;
     if (!ImGui::BeginTable("##dpmrl", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupColumn("Radio"); ImGui::TableSetupColumn("Heard", ImGuiTableColumnFlags_WidthStretch);

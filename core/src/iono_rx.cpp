@@ -1,4 +1,5 @@
 #include "dect2/iono_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/iono_tel.h"
 #include "dect2/iono_dsp.h"
 #include "dect2/iono_gen.h"
@@ -23,6 +24,12 @@ struct IonoReceiver::Impl {
     uint64_t inSamples = 0, nextPub = 0;
     size_t seenEvents = 0;
     IonoTelemetry pub;
+    // the results file: a copy of the processor's sounders and timeline, taken by the feed thread every 10 s of signal (mu); Clear and
+    // a loaded file reach the processor through these requests
+    std::string snap;
+    uint64_t nextSnap = 0;
+    bool clearReq = false, loadReq = false;
+    std::string loadBlob;
 
     void publish() {
         IonoTelemetry t;
@@ -48,7 +55,13 @@ IonoReceiver::IonoReceiver() : p_(new Impl) {}
 IonoReceiver::~IonoReceiver() = default;
 
 void IonoReceiver::configure(double r) {
-    { std::lock_guard<std::mutex> lk(p_->mu); p_->rate = r; const uint64_t s = p_->pub.seq; p_->pub = IonoTelemetry(); p_->pub.seq = s; }
+    {
+        std::lock_guard<std::mutex> lk(p_->mu);
+        p_->rate = r;
+        IonoTelemetry t;                 // the sounders and the timeline stay (clearResults)
+        t.seq = p_->pub.seq; t.sounders = std::move(p_->pub.sounders); t.timeline = std::move(p_->pub.timeline);
+        p_->pub = std::move(t);
+    }
     p_->resetReq = true;
     if (p_->cb && r > 0) {
         char b[128];
@@ -70,15 +83,51 @@ void IonoReceiver::feed(const cf32* x, size_t n) {
     if (m.rate <= 0) return;
     if (m.resetReq.exchange(false) || !m.started) {
         m.proc.configure(m.rate, m.centerReq.load(), m.originReq.load());
-        m.started = true; m.inSamples = 0; m.nextPub = 0; m.seenEvents = 0;
+        m.started = true; m.inSamples = 0; m.nextPub = 0; m.seenEvents = 0; m.nextSnap = 0;
     }
     m.proc.setCenterHz(m.centerReq.load());
     m.proc.setLocked(m.lockReq.load());
     m.proc.setSelected(m.selReq.load());
     m.proc.setObserver(m.obsHave.load(), m.obsLat.load(), m.obsLon.load());
+    {
+        std::lock_guard<std::mutex> lk(m.mu);
+        if (m.clearReq) { m.proc.clear(); m.clearReq = false; m.snap = m.proc.saveResults(); }
+        if (m.loadReq) { m.proc.loadResults(m.loadBlob); m.loadBlob.clear(); m.loadReq = false; }
+    }
     m.proc.feed(x, n);
     m.inSamples += n;
+    if (m.inSamples >= m.nextSnap) {
+        m.nextSnap = m.inSamples + (uint64_t)(m.rate * 10);
+        std::string b = m.proc.saveResults();
+        std::lock_guard<std::mutex> lk(m.mu);
+        m.snap = std::move(b);
+    }
     if (m.inSamples >= m.nextPub) { m.nextPub = m.inSamples + (uint64_t)(m.rate / 4); m.publish(); }
+}
+
+void IonoReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->clearReq = true; p_->loadReq = false; p_->loadBlob.clear();
+    p_->snap.clear();
+    p_->pub.sounders.clear(); p_->pub.timeline.clear(); p_->pub.history.clear(); p_->pub.traces.clear(); p_->pub.ionoDb.clear();
+    p_->pub.seq++;
+}
+std::string IonoReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (p_->snap.empty()) { iono::Processor empty; return empty.saveResults(); }
+    return p_->snap;
+}
+bool IonoReceiver::loadResults(const std::string& blob) {
+    iono::Processor probe;
+    if (!probe.loadResults(blob)) return false;
+    IonoTelemetry t;
+    probe.fill(t);
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->loadBlob = blob; p_->loadReq = true; p_->clearReq = false;
+    p_->snap = blob;
+    p_->pub.sounders = t.sounders; p_->pub.timeline = t.timeline;
+    p_->pub.seq++;
+    return true;
 }
 
 bool IonoReceiver::telemetry(IonoTelemetry& out, uint64_t lastSeq) {

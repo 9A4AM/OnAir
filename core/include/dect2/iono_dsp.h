@@ -47,6 +47,10 @@ public:
     void setSelected(int index);         // the sounder whose ionogram fill() hands out (-1: the latest one heard)
     void setObserver(bool have, double lat, double lon);   // the receiver location (distances of known sounders, iono_scale.h)
     void clear();                        // forget the sounders, ionograms and coverage
+    // configure() keeps the sounders heard, their history and the sweep timeline (only clear() forgets them). The results file holds the
+    // sounders with their history and the timeline (not the ionogram sums: a loaded sounder starts a fresh ionogram).
+    std::string saveResults() const;
+    bool loadResults(const std::string& blob);
     void feed(const cf32* x, size_t n);
     void fill(IonoTelemetry& t) const;   // everything but seq
     double now() const;

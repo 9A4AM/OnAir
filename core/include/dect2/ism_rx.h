@@ -33,10 +33,14 @@ public:
     void setSignalOffset(double hz);   // where the user's (dial) frequency sits relative to 0 Hz in the input
     void setCenterHz(double hz);       // the radio's centre frequency (0: unknown, for files)
     bool ready() const;                // false when the input rate is too low for this mode
-    void reset();                      // after a retune: forget the devices and the logs
+    void reset();                                        // after a retune: forget the signal (the devices and the logs stay: clearResults)
     void clearDevices();               // the user's Clear button
     void feed(const cf32* x, size_t n);
     bool telemetry(IsmTelemetry& out, uint64_t lastSeq);
+    // The device table, the log and the unknown bursts stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     void setThresholdDb(float db);     // burst detection over the floor, per bin, 8 .. 25 dB (default 13)
     void setReadingTap(std::function<void(const IsmReading&, double freqHz)> cb);   // tests: every reading (repeats too), from the receiver thread

@@ -53,6 +53,7 @@ public:
     void setReverse(bool r);
     void setUnshiftOnSpace(bool u);    // a space returns the figures shift to letters
     void clearText();
+    void setText(const std::string& text, uint64_t chars);   // the receiver thread: a loaded results file (reset() keeps the text)
     int baudIndex() const;
     int shiftIndex() const;
     bool reverse() const;
