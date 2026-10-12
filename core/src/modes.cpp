@@ -104,9 +104,9 @@
 #include "dect2/wifi_rx.h"
 #include "dect2/wifi_tel.h"
 #include "dect2/wifi_gen.h"
-#include "dect2/time_rx.h"
-#include "dect2/time_tel.h"
-#include "dect2/time_gen.h"
+#include "dect2/rid_rx.h"
+#include "dect2/rid_tel.h"
+#include "dect2/rid_gen.h"
 #include "dect2/modes.h"
 #include "dect2/demo_ts.h"
 #include "dect2/exact_resampler.h"
@@ -190,7 +190,7 @@ private:
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = {dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), timeTuning()};
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), ridTuning()};
     return t;
 }
 
@@ -307,7 +307,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 53: return makeBleSynth(cfg, sampleRate);
     case 55: return makeQo100Synth(cfg, sampleRate);
     case 56: return makeWifiSynth(cfg, sampleRate);
-    case 60: return makeTimeSynth(cfg, sampleRate);
+    case 58: return makeRidSynth(cfg, sampleRate);
     case 38: return makePskSynth(cfg, sampleRate);
     case 39: return makeJs8Synth(cfg, sampleRate);
     case 43: return makeSpecxSynth(cfg, sampleRate);
@@ -362,7 +362,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 52: return bleSummary(t.ble);
     case 54: return qo100Summary(t.qo100);
     case 55: return wifiSummary(t.wifi);
-    case 59: return timeSummary(t.timesig);
+    case 57: return ridSummary(t.rid);
     case 37: return pskSummary(t.psk);
     case 38: return js8Summary(t.js8);
     case 42: return specxSummary(t.specx);

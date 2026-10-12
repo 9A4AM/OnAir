@@ -37,6 +37,7 @@ const uint16_t kSfdPat = sfdPattern();
 struct WifiReceiver::Impl {
     std::mutex mu;
     std::function<void(const std::string&)> log;
+    std::function<void(const uint8_t*, size_t, float)> onFrame;
     double rateSet = 0, offsetSet = 0;
     std::atomic<bool> resetReq{true}, clearReq{false};
     std::atomic<double> centerHz{0};
@@ -275,6 +276,7 @@ struct WifiReceiver::Impl {
     void accept(const uint8_t* p, size_t n, int len, float rssi, double sec) {
         tel.blocksOk++;
         lastGood = sigSec();
+        if (onFrame) onFrame(p, n, rssi);
         wifi::Frame f;
         if (!wifi::parseFrame(p, n, f)) return;
         if (f.type >= 0 && f.type < 3) tel.perType[f.type]++;
@@ -376,6 +378,7 @@ bool WifiReceiver::telemetry(WifiTelemetry& out, uint64_t lastSeq) {
     return true;
 }
 void WifiReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
+void WifiReceiver::setFrameCallback(std::function<void(const uint8_t*, size_t, float)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->onFrame = std::move(cb); }
 
 ModeTuning wifiTuning() {
     ModeTuning t;

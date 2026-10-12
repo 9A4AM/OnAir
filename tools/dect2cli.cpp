@@ -185,6 +185,7 @@ int main(int argc, char** argv) {
     e.qo100().setSilent(true);    // QO-100: Listen without the sound card
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
+    e.rid().clearDrones();        // Drone Remote ID: the drone table is printed with each line
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
     e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
     e.dvbc().setAnnexC(dvbcAnnexC);
@@ -275,6 +276,10 @@ int main(int argc, char** argv) {
                 for (const auto& ap : t.wifi.aps)
                     printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
                            wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
+            if (t.standard == 57)   // Drone Remote ID: one line a drone
+                for (const auto& d : t.rid.drones)
+                    printf("  rid: %s %-3s %-20s %10.6f %11.6f h %6.1f m %5.1f m/s op %10.6f %11.6f %s\n", d.mac.c_str(), d.viaBle ? "BLE" : "WiFi",
+                           !d.serial.empty() ? d.serial.c_str() : !d.sessionId.empty() ? d.sessionId.c_str() : d.caaId.c_str(), d.lat, d.lon, d.height, d.speed, d.opLat, d.opLon, d.operatorId.c_str());
             continue_t2 = false;
         } else if (t.standard == 2) {
             const AtscTelemetry& a = t.atsc;

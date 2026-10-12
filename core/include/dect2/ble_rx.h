@@ -24,6 +24,7 @@
 namespace dect2 {
 
 struct BleTelemetry;   // ble_tel.h
+namespace ble { struct Adv; }   // ble_proto.h
 
 class BleReceiver {
 public:
@@ -39,6 +40,8 @@ public:
     void feed(const cf32* x, size_t n);
     bool telemetry(BleTelemetry& out, uint64_t lastSeq);
     void setLogCallback(std::function<void(const std::string&)> cb);
+    // Every good packet (CRC passed), on the feeding thread: for a mode built on this demodulator (Drone Remote ID). Set before feeding.
+    void setPacketCallback(std::function<void(const ble::Adv&, int channel, float rssiDbfs)> cb);
 
 private:
     struct Impl;

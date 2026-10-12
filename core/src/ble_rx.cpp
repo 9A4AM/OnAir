@@ -32,6 +32,7 @@ int popc(uint32_t v) { int n = 0; while (v) { v &= v - 1; n++; } return n; }
 struct BleReceiver::Impl {
     std::mutex mu;
     std::function<void(const std::string&)> log;
+    std::function<void(const ble::Adv&, int, float)> onPacket;
     double rateSet = 0, offsetSet = 0, centerSet = 0;
     std::atomic<bool> resetReq{true}, clearReq{false};
     std::atomic<double> centerHz{0};
@@ -314,6 +315,7 @@ struct BleReceiver::Impl {
 
     void accept(const ble::Adv& a, int ch, float rssi, double sec) {
         tel.blocksOk++;
+        if (onPacket) onPacket(a, ch, rssi);
         if (a.type >= 0 && a.type < 8) tel.perType[a.type]++;
         tel.perChannel[ch - 37]++;
         tel.lastChannel = ch;
@@ -448,6 +450,7 @@ bool BleReceiver::telemetry(BleTelemetry& out, uint64_t lastSeq) {
     return true;
 }
 void BleReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
+void BleReceiver::setPacketCallback(std::function<void(const ble::Adv&, int, float)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->onPacket = std::move(cb); }
 
 ModeTuning bleTuning() {
     ModeTuning t;

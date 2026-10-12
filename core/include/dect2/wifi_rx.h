@@ -38,6 +38,8 @@ public:
     void feed(const cf32* x, size_t n);
     bool telemetry(WifiTelemetry& out, uint64_t lastSeq);
     void setLogCallback(std::function<void(const std::string&)> cb);
+    // Every good frame (FCS passed; n without the FCS), on the feeding thread: for a mode built on this demodulator (Drone Remote ID). Set before feeding.
+    void setFrameCallback(std::function<void(const uint8_t* mpdu, size_t n, float rssiDbfs)> cb);
 
 private:
     struct Impl;
