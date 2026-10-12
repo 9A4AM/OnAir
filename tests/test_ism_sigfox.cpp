@@ -4,9 +4,9 @@
 #include "dect2/ism_rx.h"
 #include "dect2/ism_sigfox.h"
 #include "dect2/ism_tel.h"
+#include "dect2/portable_rng.h"
 #include <cmath>
 #include <cstdio>
-#include <random>
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
@@ -14,8 +14,7 @@ static int fails = 0;
 static std::string hex(const std::vector<uint8_t>& v) { std::string s; char b[4]; for (uint8_t x : v) { snprintf(b, sizeof b, "%02X", x); s += b; } return s; }
 
 static std::vector<SigfoxTx> scene(uint32_t seed, std::vector<std::vector<uint8_t>>* payloads = nullptr) {
-    std::mt19937 rng(seed);
-    std::uniform_real_distribution<double> fr(-90e3, 90e3);
+    PortableRng rng(seed);   // the same scene on every platform
     std::vector<SigfoxTx> v;
     const size_t lens[3] = {0, 4, 12};
     for (int m = 0; m < 3; m++) {
@@ -25,8 +24,10 @@ static std::vector<SigfoxTx> scene(uint32_t seed, std::vector<std::vector<uint8_
         const uint32_t id = 0x003A0000u + (uint32_t)(rng() & 0xFFFF), seq = (uint32_t)(rng() & 0xFFF);
         for (int r = 0; r < 3; r++) {
             SigfoxTx t;
-            t.offsetHz = fr(rng);
             t.startSec = 0.3 + m * 0.7 + r * 2.8;   // the three messages overlap in time, on different frequencies
+            // (at least 2 kHz apart while on the air together: two carriers on one frequency are a collision, not what is tested here)
+            auto clash = [&] { for (const auto& o : v) if (std::fabs(o.startSec - t.startSec) < 2.7 && std::fabs(o.offsetHz - t.offsetHz) < 2e3) return true; return false; };
+            do t.offsetHz = rng.uniform(-90e3, 90e3); while (clash());
             t.id = id; t.seq = seq; t.payload = pl;
             v.push_back(t);
         }

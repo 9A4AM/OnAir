@@ -2,10 +2,10 @@
 // +-100 / +-200 Hz, a sample clock off by +-100 ppm, timing offsets, noise, a two-path HF channel with delay and Doppler spread, several channels at once, and noise alone.
 #include "dect2/hfdl_gen.h"
 #include "dect2/hfdl_rx.h"
+#include "dect2/portable_rng.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
-#include <random>
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
@@ -34,12 +34,11 @@ static HfdlTelemetry play(const std::vector<Tx>& txs, double snrDb, const std::v
         waves.push_back(std::move(w));
     }
     const double sigma = snrDb >= 99 ? 0 : std::sqrt(amp * amp / std::pow(10.0, snrDb / 10) * (kRate / kHfdlBaud) / 2);
-    std::mt19937 rng(seed);
-    std::normal_distribution<float> g(0.f, (float)sigma);
+    PortableRng rng(seed);   // the same noise on every platform
     const size_t N = 4096;
     std::vector<cf32> buf(N);
     for (int64_t pos = 0; pos < (int64_t)(secs * kRate); pos += (int64_t)N) {
-        for (auto& v : buf) v = sigma > 0 ? cf32(g(rng), g(rng)) : cf32(0, 0);
+        for (auto& v : buf) v = sigma > 0 ? cf32((float)rng.gauss(sigma), (float)rng.gauss(sigma)) : cf32(0, 0);
         for (const auto& w : waves) hfdlRender(w, buf.data(), pos, N, fsEff);
         rx.feed(buf.data(), N);
     }
@@ -111,7 +110,8 @@ int main() {
     caseRate("2 paths static 1 ms -3 dB, 20 dB", 3, 20, 70, 0, {{0, 0, 0, 0}, {0.001, -3, 0, 0}});
     caseRate("2 paths static 2.5 ms -1 dB, 20 dB", 2, 20, -70, 0, {{0, 0, 0, 0}, {0.0025, -1, 0, 0}});
     for (int m = 0; m < 8; m++) caseFading("CCIR good (0.5 ms, 0.1 Hz), 25 dB", m, 25, 60, good, 4, 3);
-    for (int m = 0; m < 8; m++) caseFading("CCIR moderate (1 ms, 0.5 Hz), 25 dB", m, 25, -60, mod, 8, m % 4 == 3 ? 4 : 6);
+    // over 40 bursts: 300 bit/s 98-100 %, 600 and 1200 bit/s 72-92 %, 1800 bit/s 58-60 % (the noise and fading are the same on every platform)
+    for (int m = 0; m < 8; m++) caseFading("CCIR moderate (1 ms, 0.5 Hz), 25 dB", m, 25, -60, mod, 8, m % 4 == 3 ? 4 : m % 4 == 0 ? 7 : 5);
     for (int m : {0, 1, 2, 5}) caseFading("2 ms, 1 Hz, 25 dB", m, 25, 100, poor, 8, m == 5 ? 3 : 4);   // 4.2 s at 1 Hz spread: about half get through
     {   // three channels at once, bursts overlapping in time, different levels
         std::vector<Tx> tx;

@@ -152,6 +152,7 @@ int main() {
         report("clock +150 ppm", r);
         const OrbcommChannel* ch = chanOfSat(r.t, 23);
         CHECK(ch && ch->state == 3 && r.t.blocksOk + 200 >= r.sent[0] && r.t.blocksBad == 0, "clock: %llu of %llu", (unsigned long long)r.t.blocksOk, (unsigned long long)r.sent[0]);
+        if (ch) printf("  clock measured %.0f ppm\n", ch->clockPpm);
         if (ch) CHECK(std::fabs(ch->clockPpm - 150) < 60, "clock: %.0f ppm", ch->clockPpm);
     }
     {   // 10 % of the packets with a broken checksum: counted bad, never decoded

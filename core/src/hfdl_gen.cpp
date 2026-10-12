@@ -1,5 +1,6 @@
 // HFDL test signal (hfdl_gen.h)
 #include "dect2/hfdl_gen.h"
+#include "dect2/portable_rng.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -60,15 +61,13 @@ HfdlWave hfdlMakeWave(int m1, const std::vector<uint8_t>& pdu, const std::vector
     HfdlWave w;
     if (paths.empty()) { w.bb = std::move(x); return w; }
     w.bb.assign(x.size(), cf32(0, 0));
-    std::mt19937 rng(seed * 7919u + 13);
-    std::uniform_real_distribution<double> U(0, 1);
+    PortableRng rng(seed * 7919u + 13);   // the same fading on every platform
     const double fsb = kHfdlBaud * kSps;
     for (const auto& p : paths) {
         // fading: a sum of 12 sinusoids with Gaussian Doppler frequencies of the given two-sided spread
         constexpr int K = 12;
         double fd[K], ph[K];
-        std::normal_distribution<double> G(0, std::max(1e-9, p.spreadHz / 2));
-        for (int k = 0; k < K; k++) { fd[k] = p.spreadHz > 0 ? G(rng) : 0; ph[k] = U(rng) * 2 * M_PI; }
+        for (int k = 0; k < K; k++) { fd[k] = p.spreadHz > 0 ? rng.gauss(p.spreadHz / 2) : 0; ph[k] = rng.uniform() * 2 * M_PI; }
         const double g = std::pow(10.0, p.gainDb / 20);
         const double dS = p.delaySec * fsb;
         for (size_t i = 0; i < w.bb.size(); i++) {

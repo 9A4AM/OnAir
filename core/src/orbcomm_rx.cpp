@@ -83,7 +83,7 @@ struct OrbcommReceiver::Impl {
         float pw = 1e-6f, symPw = 1;
         cf32 hist[kHist];
         int64_t nS = 0;
-        double tNext = 0, spsAdj = 0;
+        double tNext = 0, spsAdj = 0, spsAvg = 0;   // spsAvg: the loop integrator smoothed for the clock read-out
         cf32 yPrev{0, 0};
         bool havePrev = false;
         double thAvg = 0, var = 1;
@@ -485,6 +485,7 @@ struct OrbcommReceiver::Impl {
         const double kp = 0.02 * sps, ki = 2e-4 * sps;
         d.spsAdj = std::clamp(d.spsAdj - ki * e, -0.01 * sps, 0.01 * sps);
         d.tNext += sps + d.spsAdj - kp * e;
+        d.spsAvg += 0.002 * (d.spsAdj - d.spsAvg);   // the raw integrator wanders with the noise by tens of ppm
         const cf32 z = y * std::conj(d.yPrev);
         d.yPrev = y;
         const float az = std::abs(z);
@@ -592,7 +593,7 @@ struct OrbcommReceiver::Impl {
             c.snrDb = d.state >= 2 ? (float)(10 * std::log10(1 / std::max(1e-4, d.var))) : 0.f;
             c.levelDb = d.levelDb;
             c.sat = d.sat;
-            c.clockPpm = d.spsAdj / sps * -1e6;
+            c.clockPpm = d.spsAvg / sps * -1e6;
             c.frames = d.frames; c.pktOk = d.pktOk; c.pktBad = d.pktBad; c.syncLost = d.syncLost;
             c.constel.assign(d.constel.begin(), d.constel.end());
             c.eyeLen = d.eye.empty() ? 0 : (int)d.eye.front().size();
