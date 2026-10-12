@@ -675,7 +675,22 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
         src.reset();
         set("airspy.mini", 1);   // a Mini: its own rates, and 1.7 GHz at most
         const DeviceInfo m = first("airspy");
-        CHECK(m.maxRateHz == 6e6 && m.minRateHz == 3e6 && m.maxFreqHz == 1.7e9, "Airspy Mini listed %.0f-%.0f sps to %.0f Hz", m.minRateHz, m.maxRateHz, m.maxFreqHz);
+        // 10 Msps is listed too, used only with the "10 Msps (unofficial)" setting (#49)
+        CHECK(m.maxRateHz == 10e6 && m.minRateHz == 3e6 && m.maxFreqHz == 1.7e9, "Airspy Mini listed %.0f-%.0f sps to %.0f Hz", m.minRateHz, m.maxRateHz, m.maxFreqHz);
+        CHECK(hasSetting(m, "mini10"), "Airspy Mini offers the unofficial 10 Msps");
+        {
+            TuneSettings t;
+            t.centerHz = 522e6; t.sampleRate = 10e6; t.gainDb = 10; t.bandwidthMhz = 8;
+            for (int on = 0; on < 2; on++) {
+                if (on) t.radio["mini10"] = "1";
+                auto ms = makeSource(m);
+                e.clear();
+                if (ms->start(t, ring, e)) {
+                    CHECK(st("airspy.rate") == (on ? 10e6 : 6e6), "Airspy Mini rate %.0f with mini10 %s", st("airspy.rate"), on ? "on" : "off");
+                    ms->stop();
+                } else CHECK(false, "Airspy Mini start: %s", e.c_str());
+            }
+        }
         set("airspy.mini", 0);
         (void)first("airspy");
     }

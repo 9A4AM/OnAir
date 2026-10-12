@@ -1,5 +1,6 @@
 // Native driver for the Airspy R2 / Mini: the radio's own library is loaded at run time when it is installed. See native_common.h.
 #include "native_common.h"
+#include <algorithm>
 #include <map>
 
 namespace dect2 {
@@ -138,6 +139,10 @@ protected:
             std::vector<uint32_t> rates(std::min<uint32_t>(count, 16));
             if (!rates.empty()) airspy().get_samplerates(dev_, rates.data(), (uint32_t)rates.size());
             std::sort(rates.begin(), rates.end());
+            bool mini = false;
+            { std::lock_guard<std::mutex> lk(gDevMu); const auto it = gModels.find(serial_); mini = it != gModels.end() && it->second.mini; }
+            // a Mini also runs at 10 Msps, which its firmware takes but does not list (SDR#'s "debug" rate; the radio runs warm): only when asked
+            if (mini && radioOption(s, "mini10", "0") == "1" && std::find(rates.begin(), rates.end(), 10000000u) == rates.end()) rates.push_back(10000000u);
             double pick = rates.empty() ? 10e6 : rates.back();
             for (uint32_t r : rates) if (r >= s.sampleRate * 0.999) { pick = r; break; }
             airspy().set_samplerate(dev_, (uint32_t)pick);
@@ -304,11 +309,22 @@ void listAirspy(std::vector<DeviceInfo>& out) {
             const auto it = gModels.find(sn);
             if (it != gModels.end()) {
                 if (it->second.maxRate > 0) { d.minRateHz = it->second.minRate; d.maxRateHz = it->second.maxRate; d.rateRanges = it->second.rates; }
-                if (it->second.mini) d.maxFreqHz = 1.7e9;
+                if (it->second.mini) {
+                    d.maxFreqHz = 1.7e9;
+                    if (d.maxRateHz < 10e6) { d.rateRanges.emplace_back(10e6, 10e6); d.maxRateHz = 10e6; }   // with "10 Msps (unofficial)" on, see configure
+                }
             }
         }
         d.hasBiasTee = airspy().set_rf_bias != nullptr;
         d.settings = {ppmSetting(0.1)};
+        {   std::lock_guard<std::mutex> lk(gDevMu);
+            const auto it = gModels.find(sn);
+            if (it != gModels.end() && it->second.mini)
+                d.settings.push_back(boolSetting("mini10", "10 Msps (unofficial)",
+                    "The Airspy Mini also runs at 10 Msps, as SDR#'s debug mode offers: enough for an 8 MHz DVB-T/T2 channel.\n"
+                    "Airspy does not list it: the radio runs warm and may drop samples, so use it for short sessions. Without it a Mini runs at 6 Msps at most.",
+                    false, true));
+        }
         if (airspy().set_sensitivity_gain)
             d.settings.push_back(choiceSetting("gainmode", "Gain mode",
                                                "How the gain steps share out over the LNA, mixer and IF amplifiers (libairspy's two tables).\n"
