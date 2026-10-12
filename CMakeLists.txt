@@ -12,8 +12,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-ffile-prefix-map=${CMAKE_SOURCE_DIR}=onair)   # no build-machine paths inside the programs
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-  set(CMAKE_OBJCXX_FLAGS_RELEASE "-O3")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")     # NDEBUG as CMake's own Release flags have it: without it the release builds kept
+  set(CMAKE_OBJCXX_FLAGS_RELEASE "-O3 -DNDEBUG")  # the debug assertions, and an ImGui sanity check stopped the app for users (#53)
 endif()
 
 option(DECT2_BUILD_APP "Build the GUI application" ${APPLE})

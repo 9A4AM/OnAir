@@ -619,6 +619,11 @@ int main(int argc, char** argv) {
                     plt::GetStyle().Scale = s;
                 }
             }
+            {   // a style ImGui refuses (#53: WindowMinSize below 1 on a Windows 11 PC) is put back instead of stopping the app
+                ImGuiStyle& st = ImGui::GetStyle();
+                if (!(st.WindowMinSize.x >= 1)) st.WindowMinSize.x = 32 * gUi;
+                if (!(st.WindowMinSize.y >= 1)) st.WindowMinSize.y = 32 * gUi;
+            }
             ImGui::NewFrame();
             if (autostart) {
                 autostart = false;
