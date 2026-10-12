@@ -193,9 +193,9 @@ void netRadioWindow(App& a) {
     if (!ImGui::Begin("Network radios", &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
     const bool busy = a.netAddProbe != nullptr;
     ImGui::BeginDisabled(busy);
-    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote"};
+    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer"};
     ImGui::SetNextItemWidth(200 * gUi);
-    if (ImGui::Combo("Type", &a.netAddType, kTypes, 3)) {
+    if (ImGui::Combo("Type", &a.netAddType, kTypes, 4)) {
         const auto t = (NetRadio::Type)a.netAddType;
         a.netAddPort = netRadioDefaultPort(t);
         const std::string h = a.netAddHost;
@@ -208,7 +208,7 @@ void netRadioWindow(App& a) {
     ImGui::InputInt("Port", &a.netAddPort, 0, 0);
     a.netAddPort = std::max(0, std::min(65535, a.netAddPort));
     if (a.netAddType == NetRadio::Pluto) { ImGui::SameLine(); ImGui::TextDisabled("0 = libiio's default"); }
-    if (a.netAddType == NetRadio::SoapyRemote && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "This build has no SoapySDR, which SoapyRemote needs.");
+    if ((a.netAddType == NetRadio::SoapyRemote || a.netAddType == NetRadio::SpyServer) && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "This build has no SoapySDR, which this network radio needs.");
     if (ImGui::Button("Connect")) {
         NetRadio r;
         r.type = (NetRadio::Type)a.netAddType;
