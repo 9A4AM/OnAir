@@ -1,5 +1,6 @@
 // GNSS receiver: orchestrates the bands, the acquisition, the tracking channels, the navigation data base and the position solution.
 #include "dect2/gnss_rx.h"
+#include "dect2/gnss_interf.h"
 #include "dect2/gnss_acq.h"
 #include "dect2/gnss_bds.h"
 #include "dect2/gnss_codes.h"
@@ -106,6 +107,7 @@ struct GnssReceiver::Impl {
     bool dcInit = false;
     double clipFrac = 0;
     int64_t inSamples = 0;
+    GnssInterfMonitor interf;        // interference and spoofing monitor on the raw input
     std::vector<cf32> blk;
     std::vector<cf32> pend;          // input waiting for a full block
     // GPS band
@@ -479,6 +481,8 @@ struct GnssReceiver::Impl {
     void resetState() {
         pend.clear();
         dcI = dcQ = 0; gain = 1; dcInit = false; levelRms = 0; clipFrac = 0; inSamples = 0;
+        interf.configure(rate);
+        interf.setLogCallback([this](const std::string& s) { logf(s); });
         gpsBand.reset();
         gpsAcq.reset();
         auxAcq.reset();
@@ -1584,6 +1588,23 @@ struct GnssReceiver::Impl {
         char b[120];
         snprintf(b, sizeof b, "%d tracked, %d with ephemeris, %s", t.nTracked, (int)(std::count_if(sat + 1, sat + kCaPrns, [](const SatNav& s) { return s.hasEph; }) + std::count_if(gsat + 1, gsat + kGalPrns, [](const SatNav& s) { return s.hasEph; }) + std::count_if(bsat + 1, bsat + kBdsPrns, [](const SatNav& s) { return s.hasEph; }) + std::count_if(gloSat, gloSat + kGloSlots, [](const SatNav& s) { return s.hasEph; })), fix.valid ? fix.type.c_str() : "no fix");
         t.status = b;
+        // the interference monitor: the ephemeris of each GPS satellite against its almanac, then the report
+        {
+            double worst = -1;
+            int worstPrn = 0;
+            if (fix.valid) {
+                for (int p = 1; p <= 32; p++) {
+                    if (!sat[p].hasEph || !sat[p].alm.valid) continue;
+                    double pe[3], pa[3], clk;
+                    gpsEphemerisState(sat[p].eph, fix.gpsTow, pe, &clk);
+                    gpsAlmanacPos(sat[p].alm, fix.gpsTow, pa);
+                    const double d = std::sqrt((pe[0] - pa[0]) * (pe[0] - pa[0]) + (pe[1] - pa[1]) * (pe[1] - pa[1]) + (pe[2] - pa[2]) * (pe[2] - pa[2])) / 1e3;
+                    if (d > worst) { worst = d; worstPrn = p; }
+                }
+            }
+            interf.update(t, worst, worstPrn);
+            t.interf = interf.report();
+        }
         std::lock_guard<std::mutex> lk(telMu);
         tel = std::move(t);
         telReady = true;
@@ -1591,6 +1612,7 @@ struct GnssReceiver::Impl {
 
     // ------------------------------------------------------------------ one block of input
     void processBlock(const cf32* x, size_t m) {
+        interf.process(x, m, dcI, dcQ);
         // One pass: remove the DC and scale with the estimates of the blocks before, and measure this block for the next one
         blk.resize(m);
         const float dr = (float)dcI, di = (float)dcQ, gf = (float)gain;

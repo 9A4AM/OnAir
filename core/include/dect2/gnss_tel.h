@@ -124,6 +124,87 @@ struct GnssFix {
     bool hasVelocity = false;
 };
 
+// ---------------------------------------------------------------- interference and spoofing monitor (gnss_interf.h makes these)
+// Receive-only: what is in the band besides the satellites, and whether the solution looks like it is being fed false signals.
+enum GnssInterfStatus { GnssInterfClear = 0, GnssInterfRaised = 1, GnssInterfAlarm = 2 };
+inline const char* gnssInterfStatusName(int s) {
+    static const char* n[] = {"clear", "raised noise", "interference"};
+    return s >= 0 && s <= 2 ? n[s] : "?";
+}
+// what kind of signal is in the band (bits of GnssInterference::kinds)
+enum GnssInterfKind { GnssKindCw = 1, GnssKindChirp = 2, GnssKindPulsed = 4, GnssKindWideband = 8 };
+inline std::string gnssInterfKindNames(unsigned k) {
+    std::string s;
+    if (k & GnssKindCw) s += "narrowband";
+    if (k & GnssKindChirp) s += std::string(s.empty() ? "" : ", ") + "swept (chirp)";
+    if (k & GnssKindPulsed) s += std::string(s.empty() ? "" : ", ") + "pulsed";
+    if (k & GnssKindWideband) s += std::string(s.empty() ? "" : ", ") + "wideband";
+    return s.empty() ? "none" : s;
+}
+// one narrowband line in the averaged spectrum
+struct GnssInterfSpike {
+    double offsetHz = 0;         // from the tuned centre
+    float aboveDb = 0;           // peak above the noise floor
+    float widthHz = 0;
+    bool known = false;          // it was already there while the monitor learned the band (the radio's own spur, usually)
+};
+// one point of the history; the points are one second apart at first and get coarser (pairs merged) as the run grows
+struct GnssInterfPoint {
+    double t = 0;                // signal seconds (the end of the interval)
+    double unixS = 0;            // the computer's clock, seconds since 1970
+    float noiseDb = 0;           // noise floor, dBFS/Hz
+    float powerDb = 0;           // total power in the band, dBFS (full-scale complex sine = 0)
+    float cn0 = 0;               // mean C/N0 of the tracked satellites, 0 with none
+    float flatness = 0;
+    uint8_t tracked = 0;
+    uint8_t status = 0;          // GnssInterfStatus (the worst in the interval)
+    uint8_t spoof = 0;           // a spoofing indicator was raised in the interval
+};
+struct GnssInterfEvent {
+    double t = 0, unixS = 0;
+    int level = 0;               // 0 information, 1 warning, 2 alarm
+    std::string text;
+};
+struct GnssInterference {
+    bool valid = false;          // a first second has been measured
+    bool learning = true;        // the first seconds: the baseline of the noise floor is being learned
+    int status = GnssInterfClear;
+    std::string reason;          // why the status is what it is ("" when clear)
+    unsigned kinds = 0;          // GnssInterfKind bits seen in the last second
+    // levels of the last second
+    float noiseDb = 0;           // noise floor (median of the spectrum), dBFS/Hz
+    float baselineDb = 0;        // what the floor was without interference
+    float riseDb = 0;            // noiseDb - baselineDb
+    float powerDb = 0;           // total power, dBFS
+    float flatness = 0;          // spectral flatness (geometric / arithmetic mean of the band's spectrum): 1 white noise, near 0 a few lines
+    // detectors
+    float chirpScore = 0;        // fraction of strong short-time spectra whose peak moves steadily from one to the next
+    float chirpRateHzPerUs = 0;  // the sweep rate when swept
+    float pulseRateHz = 0;       // pulses per second found in the band
+    float pulseDuty = 0;         // fraction of time inside a pulse
+    float pulseAboveDb = 0;      // mean pulse power above the band's median power
+    // the satellites
+    float cn0Avg = 0, cn0Ref = 0, cn0DropDb = 0, cn0Spread = 0;   // mean C/N0 of the tracked, its clean-sky reference, the drop, the standard deviation
+    int cn0N = 0;
+    // spectrum of the band, averaged over the last second (dBFS/Hz, lowest frequency first)
+    std::vector<float> spectrum;
+    double spanHz = 0;           // the spectrum covers centre +- spanHz / 2
+    std::vector<GnssInterfSpike> spikes;   // strongest first, at most 16
+    // spoofing indicators from the receiver's own solution
+    bool spoofing = false;
+    std::string spoofReason;
+    bool cn0Uniform = false;     // five or more satellites within 1 dB of each other (a real sky spreads them by elevation)
+    bool posJump = false;        // the position jumped between two fixes (held for a minute)
+    bool clockJump = false;      // the receiver clock jumped
+    bool farFromAverage = false; // the fix is far from the long-term average position
+    bool almanacMismatch = false;   // a satellite's broadcast ephemeris puts it far from where the almanac does
+    float lastJumpM = 0, lastClockJumpM = 0, distFromAvgM = 0, almMismatchKm = 0;
+    int avgFixes = 0;            // fixes in the long-term average
+    std::vector<GnssInterfPoint> history;    // at most 900
+    double historyStepS = 1;
+    std::vector<GnssInterfEvent> events;     // the last 200, oldest first
+};
+
 struct GnssTelemetry {
     // The first members are copied into RxTelemetry (history plot, top bar): keep them and their meaning.
     uint64_t seq = 0;            // grows with every report
@@ -186,6 +267,8 @@ struct GnssTelemetry {
     float clipPercent = 0;       // samples at full scale
     float dcI = 0, dcQ = 0;      // the DC offset that is being removed (the radio's spike), full scale = 1
     std::string status;          // one line for the log pane
+
+    GnssInterference interf;     // the interference and spoofing monitor
 };
 
 inline std::string gnssSummary(const GnssTelemetry& t) {

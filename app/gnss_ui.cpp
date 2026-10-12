@@ -2,9 +2,11 @@
 // the correlator plots and the options of the test signal.
 #include "app.h"
 #include "adsb_map.h"
+#include "dect2/gnss_interf.h"
 #include "dect2/rate_choice.h"
 #include <cctype>
 #include <cmath>
+#include <ctime>
 #include <deque>
 
 namespace {
@@ -13,7 +15,8 @@ struct FixPoint { double lat, lon, h; };
 
 struct State {
     bool loaded = false;
-    int viewMode = 0;                            // 0 sky, 1 map, 2 channels
+    int viewMode = 0;                            // 0 sky, 1 map, 2 channels, 3 interference
+    std::string interfNote;                      // the result of the last CSV export
     adsbmap::View map;
     bool mapFollow = true;                       // the map follows the fix until the user drags it
     std::deque<FixPoint> fixes;                  // the last fixes, one per report with a new fix (map trail and scatter)
@@ -439,14 +442,214 @@ void fixScatter(ImVec2 size) {
     dl->AddText(ImVec2(p0.x + 4 * gUi, p0.y + 2 * gUi), IM_COL32(150, 154, 158, 255), b);
 }
 
+// ---------------------------------------------------------------- interference and spoofing monitor
+
+ImVec4 interfColour(int status) { return status == GnssInterfAlarm ? pal::badRed() : status == GnssInterfRaised ? pal::warnAmber() : pal::okGreen(); }
+
+// the noise floor and the total power (left scale, dB) and the mean C/N0 of the tracked satellites (right scale, dB-Hz) over the run,
+// with a strip of the status underneath and a red tick where a spoofing indicator was up
+void interfHistory(const GnssInterference& r, bool on, ImVec2 size) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImGui::InvisibleButton("##ihist", size);
+    dl->AddRectFilled(p0, ImVec2(p0.x + size.x, p0.y + size.y), IM_COL32(8, 9, 10, 255));
+    const auto& h = r.history;
+    const float lh = ImGui::GetTextLineHeight(), stripH = 5 * gUi;
+    const float l = p0.x + 4 * gUi, rgt = p0.x + size.x - 4 * gUi, top = p0.y + lh + 4 * gUi, bot = p0.y + size.y - stripH - lh - 4 * gUi;
+    if (!on || h.size() < 2 || bot - top < 10) {
+        dl->AddText(ImVec2(p0.x + 6 * gUi, p0.y + 4 * gUi), IM_COL32(120, 124, 128, 255), on ? "collecting..." : "start the receiver");
+        return;
+    }
+    // the floor in dBFS/MHz (dBFS/Hz + 60) shares the scale with the total power
+    float lo = 1e9f, hi = -1e9f;
+    for (const auto& p : h) { lo = std::min(lo, std::min(p.noiseDb + 60.f, p.powerDb)); hi = std::max(hi, std::max(p.noiseDb + 60.f, p.powerDb)); }
+    lo = std::floor(lo - 2); hi = std::ceil(hi + 2);
+    const double t0 = h.front().t, t1 = std::max(h.back().t, t0 + 1);
+    auto X = [&](double t) { return l + (float)((t - t0) / (t1 - t0)) * (rgt - l); };
+    auto Y = [&](float v) { return bot - (v - lo) / (hi - lo) * (bot - top); };
+    auto Yc = [&](float c) { return bot - std::max(0.f, std::min(1.f, (c - 20.f) / 35.f)) * (bot - top); };
+    for (int g = 1; g < 4; g++) { const float y = top + (bot - top) * g / 4.f; dl->AddLine(ImVec2(l, y), ImVec2(rgt, y), IM_COL32(32, 35, 37, 255)); }
+    const ImU32 green = ImGui::ColorConvertFloat4ToU32(pal::okGreen());
+    std::vector<ImVec2> nf, pw, cn;
+    for (const auto& p : h) {
+        nf.push_back(ImVec2(X(p.t), Y(p.noiseDb + 60.f)));
+        pw.push_back(ImVec2(X(p.t), Y(p.powerDb)));
+        if (p.cn0 > 0) cn.push_back(ImVec2(X(p.t), Yc(p.cn0)));
+        else { if (cn.size() > 1) dl->AddPolyline(cn.data(), (int)cn.size(), green, 0, 1.4f); cn.clear(); }
+    }
+    dl->AddPolyline(pw.data(), (int)pw.size(), IM_COL32(150, 154, 158, 255), 0, 1.2f);
+    dl->AddPolyline(nf.data(), (int)nf.size(), ImGui::ColorConvertFloat4ToU32(pal::accent()), 0, 1.6f);
+    if (cn.size() > 1) dl->AddPolyline(cn.data(), (int)cn.size(), green, 0, 1.4f);
+    // status strip and spoofing ticks
+    for (size_t i = 0; i < h.size(); i++) {
+        const float xa = i == 0 ? l : X(h[i - 1].t), xb = X(h[i].t);
+        const ImVec4 c = interfColour(h[i].status);
+        dl->AddRectFilled(ImVec2(xa, bot + 2 * gUi), ImVec2(std::max(xb, xa + 1), bot + 2 * gUi + stripH), ImGui::ColorConvertFloat4ToU32(ImVec4(c.x, c.y, c.z, 0.85f)));
+        if (h[i].spoof) dl->AddLine(ImVec2(xb, top), ImVec2(xb, top + 6 * gUi), ImGui::ColorConvertFloat4ToU32(pal::badRed()), 2.f);
+    }
+    char b[160];
+    snprintf(b, sizeof b, "floor dBFS/MHz (blue), power dBFS (grey): %.0f..%.0f dB;  C/N0 (green): 20..55 dB-Hz", lo, hi);
+    dl->AddText(ImVec2(p0.x + 4 * gUi, p0.y + 2 * gUi), IM_COL32(150, 154, 158, 255), ellipsize(b, size.x - 8 * gUi).c_str());
+    const double span = t1 - t0;
+    if (span >= 120) snprintf(b, sizeof b, "last %.0f min, a point every %.0f s", span / 60, r.historyStepS);
+    else snprintf(b, sizeof b, "last %.0f s", span);
+    dl->AddText(ImVec2(p0.x + 4 * gUi, bot + stripH + 3 * gUi), IM_COL32(120, 124, 128, 255), b);
+}
+
+// the band's averaged spectrum, the noise floor and its baseline, the narrowband lines marked
+void interfSpectrum(const GnssInterference& r, bool on, ImVec2 size) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImGui::InvisibleButton("##ispec", size);
+    dl->AddRectFilled(p0, ImVec2(p0.x + size.x, p0.y + size.y), IM_COL32(8, 9, 10, 255));
+    const auto& s = r.spectrum;
+    const float lh = ImGui::GetTextLineHeight();
+    const float l = p0.x + 4 * gUi, rgt = p0.x + size.x - 4 * gUi, top = p0.y + 2 * lh + 4 * gUi, bot = p0.y + size.y - lh - 4 * gUi;
+    if (!on || s.size() < 8 || bot - top < 10) return;
+    float hi = r.noiseDb + 10;
+    for (float v : s) hi = std::max(hi, v);
+    const float lo = r.noiseDb - 8;
+    hi += 3;
+    const size_t n = s.size();
+    auto X = [&](double i) { return l + (float)(i / (double)(n - 1)) * (rgt - l); };
+    auto Y = [&](float v) { return bot - std::max(0.f, std::min(1.f, (v - lo) / (hi - lo))) * (bot - top); };
+    std::vector<ImVec2> pts(n);
+    for (size_t i = 0; i < n; i++) pts[i] = ImVec2(X((double)i), Y(s[i]));
+    dl->AddPolyline(pts.data(), (int)n, ImGui::ColorConvertFloat4ToU32(pal::accent()), 0, 1.0f);
+    dl->AddLine(ImVec2(l, Y(r.noiseDb)), ImVec2(rgt, Y(r.noiseDb)), IM_COL32(220, 220, 220, 120));
+    const ImVec4 g = pal::okGreen();
+    if (!r.learning) dl->AddLine(ImVec2(l, Y(r.baselineDb)), ImVec2(rgt, Y(r.baselineDb)), ImGui::ColorConvertFloat4ToU32(ImVec4(g.x, g.y, g.z, 0.5f)));
+    const double binHz = r.spanHz / (double)n;
+    float lastLabel = -1e9f;
+    int labelled = 0;
+    for (const auto& sp : r.spikes) {
+        const float x = X(sp.offsetHz / binHz + (double)n / 2), y = Y(r.noiseDb + sp.aboveDb);
+        const ImU32 c = ImGui::ColorConvertFloat4ToU32(sp.known ? ImVec4(0.6f, 0.6f, 0.6f, 1) : sp.aboveDb >= 10 ? pal::badRed() : pal::warnAmber());
+        dl->AddTriangleFilled(ImVec2(x, y - 2), ImVec2(x - 4 * gUi, y - 9 * gUi), ImVec2(x + 4 * gUi, y - 9 * gUi), c);
+        if (std::fabs(x - lastLabel) > 90 * gUi && labelled < 6) {
+            char b[48]; snprintf(b, sizeof b, "%+.1f kHz %.0f dB", sp.offsetHz / 1e3, sp.aboveDb);
+            const float tw = ImGui::CalcTextSize(b).x;
+            dl->AddText(ImVec2(std::max(l, std::min(x - tw / 2, rgt - tw)), std::max(p0.y + lh + 2 * gUi, y - 9 * gUi - lh)), c, b);
+            lastLabel = x; labelled++;
+        }
+    }
+    char b[160];
+    snprintf(b, sizeof b, "%.1f MHz span, floor %.1f dBFS/Hz (grey), baseline (green), lines 8 dB above the floor marked", r.spanHz / 1e6, r.noiseDb);
+    dl->AddText(ImVec2(p0.x + 4 * gUi, p0.y + 2 * gUi), IM_COL32(150, 154, 158, 255), ellipsize(b, size.x - 8 * gUi).c_str());
+    snprintf(b, sizeof b, "%+.1f MHz", -r.spanHz / 2e6);
+    dl->AddText(ImVec2(l, bot + 2 * gUi), IM_COL32(120, 124, 128, 255), b);
+    snprintf(b, sizeof b, "%+.1f MHz", r.spanHz / 2e6);
+    dl->AddText(ImVec2(rgt - ImGui::CalcTextSize(b).x, bot + 2 * gUi), IM_COL32(120, 124, 128, 255), b);
+    const char* c0 = "centre";
+    dl->AddText(ImVec2((l + rgt) / 2 - ImGui::CalcTextSize(c0).x / 2, bot + 2 * gUi), IM_COL32(120, 124, 128, 255), c0);
+}
+
+void interfExport(const GnssInterference& r) {
+    char nm[64];
+    const std::time_t now = std::time(nullptr);
+    std::strftime(nm, sizeof nm, "gnss_interference_%Y%m%d_%H%M%S.csv", std::localtime(&now));
+    const std::string path = saveFileDialog(nm);
+    if (path.empty()) return;
+    const std::string csv = gnssInterfCsv(r);
+    FILE* f = fopen(path.c_str(), "wb");
+    S.interfNote = f && fwrite(csv.data(), 1, csv.size(), f) == csv.size() ? "saved " + path : "could not write " + path;
+    if (f) fclose(f);
+}
+
+void interfView(App& a) {
+    const GnssInterference& r = a.rx.gnss.interf;
+    const bool on = live(a) && r.valid;
+    // status line
+    ImGui::AlignTextToFramePadding();
+    if (!on) ImGui::TextDisabled("%s", live(a) ? "measuring the band..." : "start the receiver to monitor the band");
+    else if (r.learning) ImGui::TextColored(pal::accent(), "learning the band (the first %.0f s)", GnssInterfMonitor::kLearnSecs);
+    else {
+        ImGui::TextColored(interfColour(r.status), "%s", r.status == GnssInterfClear ? "CLEAR" : r.status == GnssInterfRaised ? "RAISED NOISE" : "INTERFERENCE");
+        if (!r.reason.empty()) { ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(r.reason.c_str()); ImGui::PopTextWrapPos(); }
+    }
+    if (on && r.spoofing) { ImGui::TextColored(pal::badRed(), "SPOOFING INDICATOR"); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(r.spoofReason.c_str()); ImGui::PopTextWrapPos(); }
+    ImGui::BeginDisabled(!on || r.history.empty());
+    if (ImGui::SmallButton("Export CSV")) interfExport(r);
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("The history (noise floor, power, C/N0, status) and the event log as a CSV file");
+    if (!S.interfNote.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", ellipsize(S.interfNote, ImGui::GetContentRegionAvail().x).c_str()); }
+    const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
+    const float cw = std::min(360.f * gUi, W * 0.38f);
+    ImGui::BeginChild("##ginterf_l", ImVec2(W - cw - 8 * gUi, H));
+    {
+        const float avail = ImGui::GetContentRegionAvail().y, w = ImGui::GetContentRegionAvail().x;
+        interfHistory(r, on, ImVec2(w, std::max(60.f, avail * 0.5f - 3 * gUi)));
+        interfSpectrum(r, on, ImVec2(w, std::max(60.f, ImGui::GetContentRegionAvail().y)));
+    }
+    ImGui::EndChild();
+    ImGui::SameLine();
+    ImGui::BeginChild("##ginterf_r", ImVec2(0, H));
+    auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(110 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
+    auto flag = [&](const char* k, bool up, const char* detail) {
+        ImGui::TextColored(up ? pal::badRed() : pal::okGreen(), "%s", up ? "!" : "ok"); ImGui::SameLine(26 * gUi);
+        ImGui::PushTextWrapPos(0);
+        if (detail[0]) ImGui::Text("%s  (%s)", k, detail); else ImGui::TextUnformatted(k);
+        ImGui::PopTextWrapPos();
+    };
+    if (on) {
+        ImGui::TextDisabled("Band");
+        kv("noise floor", "%.1f dBFS/Hz, %+.1f dB", r.noiseDb, r.riseDb);
+        kv("total power", "%.1f dBFS", r.powerDb);
+        kv("flatness", "%.2f", r.flatness);
+        kv("signal type", "%s", gnssInterfKindNames(r.kinds).c_str());
+        if (r.kinds & GnssKindChirp) kv("swept tone", "%.0f %%, %.3f MHz/us", r.chirpScore * 100, r.chirpRateHzPerUs / 1e6);
+        else kv("swept tone", "%.0f %%", r.chirpScore * 100);
+        kv("pulses", "%.0f /s, duty %.2f %%", r.pulseRateHz, r.pulseDuty * 100);
+        if (r.cn0N) kv("C/N0", "%.1f dB-Hz, %d sats (ref %.1f)", r.cn0Avg, r.cn0N, r.cn0Ref);
+        else kv("C/N0", "%s", "no satellite tracked");
+        ImGui::Spacing();
+        ImGui::TextDisabled("Spoofing indicators");
+        char b[96];
+        snprintf(b, sizeof b, "spread %.1f dB", r.cn0Spread); flag("C/N0 alike on all satellites", r.cn0Uniform, r.cn0N >= 5 ? b : "");
+        snprintf(b, sizeof b, "%.0f m", r.lastJumpM); flag("Position jump", r.posJump, r.posJump ? b : "");
+        snprintf(b, sizeof b, "%.2f us", r.lastClockJumpM / 299.792458); flag("Clock jump", r.clockJump, r.clockJump ? b : "");
+        snprintf(b, sizeof b, "%.0f m, %d fixes", r.distFromAvgM, r.avgFixes); flag("Far from the long-term position", r.farFromAverage, r.avgFixes >= 30 ? b : "averaging");
+        snprintf(b, sizeof b, "%.1f km", r.almMismatchKm); flag("Ephemeris against almanac", r.almanacMismatch, r.almMismatchKm > 0 ? b : "");
+        ImGui::Spacing();
+        if (!r.spikes.empty() && ImGui::BeginTable("##gspk", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit)) {
+            ImGui::TableSetupColumn("Line kHz"); ImGui::TableSetupColumn("dB"); ImGui::TableSetupColumn("");
+            ImGui::TableHeadersRow();
+            for (const auto& sp : r.spikes) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("%+.1f", sp.offsetHz / 1e3);
+                ImGui::TableNextColumn(); ImGui::Text("%.0f", sp.aboveDb);
+                ImGui::TableNextColumn(); ImGui::TextDisabled("%s", sp.known ? "known (at the start)" : "");
+            }
+            ImGui::EndTable();
+        }
+    }
+    ImGui::Spacing();
+    ImGui::TextDisabled("Log");
+    ImGui::BeginChild("##gilog", ImVec2(0, 0), ImGuiChildFlags_Borders);
+    for (const auto& e : r.events) {
+        char ts[16];
+        const std::time_t tt = (std::time_t)e.unixS;
+        std::strftime(ts, sizeof ts, "%H:%M:%S", std::localtime(&tt));
+        ImGui::TextDisabled("%s", ts); ImGui::SameLine();
+        ImGui::PushTextWrapPos(0);
+        if (e.level == 0) ImGui::TextUnformatted(e.text.c_str());
+        else ImGui::TextColored(e.level == 2 ? pal::badRed() : pal::warnAmber(), "%s", e.text.c_str());
+        ImGui::PopTextWrapPos();
+    }
+    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 4) ImGui::SetScrollHereY(1.0f);
+    ImGui::EndChild();
+    ImGui::EndChild();
+}
+
 // ---------------------------------------------------------------- the hooks
 
 void tab(App& a) {
-    subNav("gnssv", S.viewMode, {"Sky", "Map", "Channels"});
+    subNav("gnssv", S.viewMode, {"Sky", "Map", "Channels", "Interference"});
     const GnssTelemetry& t = a.rx.gnss;
     const bool on = live(a);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     if (S.viewMode == 2) { channelTable(a, false); return; }
+    if (S.viewMode == 3) { interfView(a); return; }
     const float cw = std::min(300.f * gUi, W * 0.32f);
     ImGui::BeginChild("##gnss_l", ImVec2(W - cw - 8 * gUi, H));
     if (S.viewMode == 0) {
