@@ -52,6 +52,8 @@ private:
     void resync();
     std::vector<Ev> cur_;                // the elements of the character being received
     std::vector<Ev> backlog_;            // before the speed is known
+    bool replaying_ = false;             // inside replay() or resync(): they feed push() again, and must not start another one (that recursion
+                                         // ran a Windows thread's stack out on a noisy band)
     std::vector<double> marks_;          // the last marks (for the clusters)
     double dot_ = 0, dash_ = 0;
     std::vector<double> gaps_;           // the last key-ups that ended a character or a word

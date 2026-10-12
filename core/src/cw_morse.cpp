@@ -210,6 +210,7 @@ void Timing::estimate() {
 
 // a character far too long: the speed went up (the gaps inside it are the new character gaps). Its own marks give the new speed.
 void Timing::resync() {
+    if (replaying_) return;
     std::vector<double> mk;
     for (const Ev& v : cur_) if (v.on && v.ms >= 10) mk.push_back(v.ms);
     const double was = dot_;
@@ -221,14 +222,19 @@ void Timing::resync() {
     std::vector<Ev> e;
     e.swap(cur_);
     charOpen_ = false;
+    replaying_ = true;
     for (const Ev& v : e) push(v.on, v.ms);
+    replaying_ = false;
 }
 
 void Timing::replay() {
+    if (replaying_) return;
     std::vector<Ev> b;
     b.swap(backlog_);
     marks_.clear();
+    replaying_ = true;
     for (const Ev& v : b) push(v.on, v.ms);
+    replaying_ = false;
 }
 
 void Keyer::sample(bool raw, Timing& tm_) {

@@ -7,6 +7,10 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <thread>
+#ifndef _WIN32
+#include <pthread.h>
+#endif
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
@@ -103,6 +107,33 @@ int main() {
         for (char v : ms) { k.sample(v != 0, tm); got += tm.take(); }
         got = trim(got);
         CHECK(got == msg + " " + msg, "glitches %.0f WPM: \"%s\"", wpm, got.c_str());
+    }
+    {   // noise from a busy band (key-downs and -ups of every length) on a thread with a small stack: replay and resync fed push() again,
+        // which could start another replay, and that recursion ran a Windows thread (1 MB stack) out after a few seconds on 40 m
+        auto noise = [] {
+            std::mt19937 rng(7);
+            std::uniform_real_distribution<double> d(1, 400);
+            for (int run = 0; run < 40; run++) {
+                cw::Timing tm;
+                for (int i = 0; i < 20000; i++) {
+                    const double ms = d(rng) * (rng() % 7 == 0 ? 6 : 1);
+                    if (i & 1) tm.space(ms); else tm.mark(ms);
+                    if (i % 97 == 0) tm.idle(d(rng) * 3);
+                    if (i % 500 == 0) (void)tm.take();
+                }
+            }
+        };
+#ifndef _WIN32
+        pthread_attr_t at; pthread_attr_init(&at); pthread_attr_setstacksize(&at, 256 * 1024);
+        pthread_t th;
+        auto fn = [](void* f) -> void* { (*(decltype(noise)*)f)(); return nullptr; };
+        CHECK(pthread_create(&th, &at, fn, &noise) == 0, "thread");
+        pthread_join(th, nullptr);
+        pthread_attr_destroy(&at);
+#else
+        std::thread(noise).join();
+#endif
+        CHECK(true, "noise on a 256 kB stack");
     }
     printf(fails ? "cw morse: %d FAILED\n" : "cw morse: all passed\n", fails);
     return fails ? 1 : 0;
