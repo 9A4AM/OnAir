@@ -9,7 +9,7 @@
 
 namespace dect2 {
 
-enum class MeshProtocol { Meshtastic = 1, MeshCore = 2, LoraAprs = 3, MeshCom = 4 };
+enum class MeshProtocol { Meshtastic = 1, MeshCore = 2, LoraAprs = 3, MeshCom = 4, LoraWan = 5 };
 
 // what the LoRa layer knows about a received payload
 struct MeshRadioInfo {
@@ -77,6 +77,34 @@ struct MeshDecodeResult {
     aprs::Info aprs;                    // aprs::parse() of aprsInfo (type "" when it did not parse)
     int batteryPct = -1;                // MeshCom position "/B=" (battery, percent)
     std::string raw;                    // the payload as printable text (other bytes as \xNN)
+    // added later: LoRaWAN (meshDecodeLorawan)
+    bool hasLorawan = false;
+    struct Lorawan {
+        int mtype = -1;                 // MHDR MType: 0 join request, 1 join accept, 2 / 3 unconfirmed up / down, 4 / 5 confirmed up / down, 6 rejoin request, 7 proprietary
+        int major = 0;
+        bool uplink = true, confirmed = false;
+        // data frames (FHDR)
+        uint32_t devAddr = 0;
+        int netIdType = -1;             // DevAddr type 0..7 (the prefix of leading ones); -1 no DevAddr
+        uint32_t nwkId = 0;             // NwkID bits of the DevAddr (= the NetID's low bits)
+        uint32_t netId = 0;             // types 0 - 2 only: the whole NetID (higher types keep part of it out of the DevAddr)
+        std::string network;            // "The Things Network", "Helium", ...; "NetID 0x000005" when not in the table; "" no DevAddr
+        bool adr = false, adrAckReq = false, ack = false, fpending = false, classB = false;
+        int foptsLen = 0;
+        uint16_t fcnt = 0;
+        std::vector<std::string> macCommands;   // names of the MAC commands in FOpts ("LinkCheckReq", "DevStatusAns", ...)
+        std::string macDetail;          // their values when short ("battery 79 %, margin 7 dB")
+        int devStatusBattery = -1, devStatusMargin = 0;   // DevStatusAns (battery byte; -1 not in this frame)
+        int fport = -1;                 // -1 no FPort (no FRMPayload)
+        size_t frmLen = 0;              // encrypted FRMPayload bytes (never decrypted)
+        uint32_t mic = 0;               // the 4 bytes in the order sent (first byte in the high bits), not checked: it needs the device's key
+        // join request / rejoin request
+        uint64_t joinEui = 0, devEui = 0;
+        uint16_t devNonce = 0;          // rejoin: RJcount
+        int rejoinType = -1;
+        uint32_t rejoinNetId = 0;
+        std::string vendor;             // DevEUI's OUI when in the short table
+    } lorawan;
 };
 
 // Thread safety: decode* are const and may run while add* is called from another thread (the class locks internally).
@@ -195,5 +223,34 @@ struct MeshComFrame {
     char subVersion = 'a';
 };
 std::vector<uint8_t> meshcomBuild(const MeshComFrame& f);
+
+// ---- LoRaWAN (LoRa Alliance TS001 1.0.4 / 1.1, regional parameters RP002) ----
+// Only the headers every gateway receives in the clear: MHDR, FHDR (DevAddr, FCtrl, FCnt, FOpts of 1.0.x), FPort, the length of the
+// encrypted FRMPayload, the MIC; join requests: JoinEUI, DevEUI, DevNonce. Payloads are never decrypted (they need the device's keys).
+// ok = false: not a LoRaWAN PHY payload (bad length, RFU bits set, unknown major version).
+MeshDecodeResult meshDecodeLorawan(const uint8_t* payload, size_t n);
+const char* lorawanMTypeName(int mtype);                                 // "Join request", "Unconfirmed up", ...
+std::string lorawanMacName(uint8_t cid, bool uplink);                    // "LinkCheckReq"; "CID 0x42" if unknown; "proprietary 0x80"
+std::string lorawanNetwork(uint32_t devAddr, int* type = nullptr, uint32_t* nwkId = nullptr, uint32_t* netId = nullptr);
+const char* lorawanVendor(uint64_t eui);                                 // OUI of an EUI-64 (short table); "" if not in it
+std::string lorawanEui(uint64_t eui);                                    // "70B3D57ED0012345" (most significant byte first)
+std::string meshHexString(const uint8_t* p, size_t n);                   // "40 2B 1A 01 26"
+// The channels the receiver searches: EU868 (region 0): 868.1, 868.3, 868.5 and 867.1 - 867.9 MHz; US915 (region 1): the 64 125 kHz
+// uplink channels 902.3 + 0.2 n MHz; SF7 - SF12 (US: SF7 - SF10) at 125 kHz, 4/5, preamble 8, public sync word 0x34, LDRO from SF11.
+std::vector<MeshLoraSettings> lorawanPresets(int region);
+
+// builder for the test signal (any MIC: it is not checked)
+struct LorawanTx {
+    int mtype = 2;                      // 2 unconfirmed up, 4 confirmed up, 3 / 5 down, 7 proprietary
+    uint32_t devAddr = 0;
+    bool adr = false, adrAckReq = false, ack = false, fpending = false;
+    uint16_t fcnt = 0;
+    std::vector<uint8_t> fopts;         // MAC commands, at most 15 bytes
+    int fport = -1;                     // -1: no FPort / FRMPayload
+    std::vector<uint8_t> frm;           // stands for the encrypted payload
+    uint32_t mic = 0;                   // first byte sent in the high bits
+};
+std::vector<uint8_t> lorawanBuild(const LorawanTx& t);
+std::vector<uint8_t> lorawanJoinRequest(uint64_t joinEui, uint64_t devEui, uint16_t devNonce, uint32_t mic);
 
 } // namespace dect2

@@ -13,7 +13,7 @@ namespace dect2 {
 
 // One LoRa setting the receiver searches
 struct MeshDecoderInfo {
-    int protocol = 1;            // 1 Meshtastic, 2 MeshCore, 3 LoRa APRS, 4 MeshCom
+    int protocol = 1;            // 1 Meshtastic, 2 MeshCore, 3 LoRa APRS, 4 MeshCom, 5 LoRaWAN
     std::string preset;          // "LongFast", "MediumFast", ..., "MeshCore EU"
     double freqHz = 0;           // channel centre
     double offsetHz = 0;         // from the tuned frequency
@@ -52,7 +52,33 @@ struct MeshPacket {
     std::string note;            // why not decrypted ("encrypted (direct)", "unknown channel 0x1f", "CRC error")
     std::string detail;          // one short line about the content
     std::string path;            // MeshCore path hashes; LoRa APRS / MeshCom: the digipeaters or relays
-    std::string raw;             // LoRa APRS / MeshCom: the payload as printable text (other bytes as \xNN)
+    std::string raw;             // LoRa APRS / MeshCom: the payload as printable text (other bytes as \xNN); LoRaWAN: the bytes in hex
+    // LoRaWAN (protocol 5): type = MType name, from = DevAddr or DevEUI, to = JoinEUI, packetId = FCnt
+    std::string network;         // from the DevAddr's NetID ("The Things Network", "NetID 0x000005")
+    int mtype = -1;              // MHDR MType (0 join request ... 7 proprietary)
+    int fport = -1;              // -1 none
+    int frmLen = -1;             // encrypted FRMPayload bytes
+    std::string flags;           // "ADR, ACK", ...
+    std::string mac;             // FOpts MAC command names, comma separated
+    uint32_t mic = 0;
+};
+
+// A LoRaWAN end device: by DevAddr (data frames) or, until it has one, by the DevEUI of its join requests
+struct MeshLorawanDevice {
+    std::string id;              // "26011A2B" (DevAddr) or "DevEUI A84041..."
+    std::string devAddr, devEui, joinEui, vendor, network;
+    double lastHeard = -1;
+    double freqHz = 0;           // of the last frame
+    float lastSnrDb = 0, lastLevelDb = 0;
+    int sf = 0;
+    long fcnt = -1;              // last frame counter (-1 none)
+    uint32_t packets = 0, uplinks = 0, downlinks = 0, joins = 0, confirmed = 0;
+    uint32_t missed = 0;         // gaps in the frame counter (frames sent but not heard)
+    int lastFport = -1;
+    bool adr = false;
+    std::string lastType, lastMac;
+    int battery = -1;            // DevStatusAns battery byte: 0 external power, 1 - 254 level, 255 unknown; -1 never sent
+    int marginDb = 0;            // DevStatusAns link margin
 };
 
 // A LoRa APRS or MeshCom station (the packet mode's station record, plus what the LoRa layer knows)
@@ -116,7 +142,7 @@ struct MeshTelemetry {
     double inputRate = 0;
     double tunedHz = 0;
     int region = 0;              // 0 EU, 1 US
-    int protocols = 15;          // 1 Meshtastic, 2 MeshCore, 4 LoRa APRS, 8 MeshCom
+    int protocols = 15;          // 1 Meshtastic, 2 MeshCore, 4 LoRa APRS, 8 MeshCom, 16 LoRaWAN
     bool presetSearch = false;   // all Meshtastic presets of the region, not only LongFast
     std::vector<MeshDecoderInfo> decoders;
     // tables (oldest first; at most 100 packets, 150 nodes, 100 messages: the oldest leave first, the node heard longest ago)
@@ -127,6 +153,7 @@ struct MeshTelemetry {
     uint64_t preambles = 0, headerBad = 0;
     std::vector<std::string> userChannels;   // "Meshtastic: name", "MeshCore: name"
     std::vector<MeshAprsStation> aprsStations;   // LoRa APRS and MeshCom stations and objects (at most 150; the one heard longest ago leaves)
+    std::vector<MeshLorawanDevice> lorawanDevices; // LoRaWAN end devices (at most 200; the one heard longest ago leaves)
 };
 
 inline std::string meshSummary(const MeshTelemetry& t) {
@@ -134,7 +161,10 @@ inline std::string meshSummary(const MeshTelemetry& t) {
     if (t.state == 0) return "Mesh (LoRa): searching";
     int mt = 0, mc = 0;
     for (const auto& n : t.nodes) (n.protocol == 1 ? mt : mc)++;
-    if (!t.aprsStations.empty())
+    if (!t.lorawanDevices.empty() && t.nodes.empty() && t.aprsStations.empty())
+        snprintf(b, sizeof b, "Mesh (LoRa): %s, %llu frames, %zu LoRaWAN devices, SNR %.1f dB", t.state == 2 ? "decoding" : "signal", (unsigned long long)t.blocksOk,
+                 t.lorawanDevices.size(), t.snrDb);
+    else if (!t.aprsStations.empty())
         snprintf(b, sizeof b, "Mesh (LoRa): %s, %llu frames, %d Meshtastic / %d MeshCore nodes, %zu APRS stations, %zu messages, SNR %.1f dB",
                  t.state == 2 ? "decoding" : "signal", (unsigned long long)t.blocksOk, mt, mc, t.aprsStations.size(), t.messages.size(), t.snrDb);
     else

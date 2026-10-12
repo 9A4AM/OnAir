@@ -16,7 +16,7 @@ namespace {
 
 constexpr size_t kBlock = 4096;          // input is processed in blocks of this size (the result does not depend on the chunking)
 // rows kept: the report stays under about 100 kB (a packet row is about 270 bytes, a node 280, a message 150 plus its text)
-constexpr size_t kPacketCap = 100, kMessageCap = 100, kNodeCap = 150, kAprsCap = 150;
+constexpr size_t kPacketCap = 100, kMessageCap = 100, kNodeCap = 150, kAprsCap = 150, kLorawanCap = 200;
 
 struct PlanEntry {
     int protocol = 1;
@@ -68,10 +68,12 @@ std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets) {
     // LoRa APRS and MeshCom: every known frequency (only those inside the captured band get a demodulator)
     if (protocols & 4) for (const auto& s : loraAprsPresets()) addEntry(v, 3, s);
     if (protocols & 8) for (const auto& s : meshcomPresets()) addEntry(v, 4, s);
+    // LoRaWAN: the region's uplink channels, every spreading factor (one demodulator each)
+    if (protocols & 16) for (const auto& s : lorawanPresets(region)) addEntry(v, 5, s);
     return v;
 }
 
-const char* protoName(int p) { return p == 1 ? "Meshtastic" : p == 2 ? "MeshCore" : p == 3 ? "LoRa APRS" : "MeshCom"; }
+const char* protoName(int p) { return p == 1 ? "Meshtastic" : p == 2 ? "MeshCore" : p == 3 ? "LoRa APRS" : p == 4 ? "MeshCom" : "LoRaWAN"; }
 
 template <class T> void capPush(std::vector<T>& v, T&& x, size_t cap) {
     if (v.size() >= cap) v.erase(v.begin());
@@ -113,7 +115,7 @@ struct MeshReceiver::Impl {
     double nextReport = 0;
     double curRate = 0, curOffset = 0, curTuned = 0;
     MeshTelemetry tel;
-    std::map<std::string, size_t> nodeIdx, aprsIdx;
+    std::map<std::string, size_t> nodeIdx, aprsIdx, lwIdx;
     std::set<std::string> msgSeen;
     std::vector<lora::RxFrame> frames;
     double lastGood = -1e9, lastPreamble = -1e9;
@@ -147,6 +149,7 @@ struct MeshReceiver::Impl {
             d.sf = e.p.sf; d.bwHz = e.p.bwHz; d.cr = e.p.cr; d.syncWord = e.p.syncWord; d.preamble = e.p.preamble; d.ldro = e.p.ldro;
             const double inOff = d.offsetHz + off;        // where it sits in the input
             d.inBand = std::fabs(inOff) + 0.5 * e.p.bwHz + 25e3 < 0.45 * rt && rt >= 2.2 * e.p.bwHz;
+            if (!d.inBand && e.protocol == 5) continue;   // the US plan has 264 settings: only the ones in the capture are listed
             tel.decoders.push_back(d);
             if (!d.inBand) continue;
             Chan* c = nullptr;
@@ -170,7 +173,10 @@ struct MeshReceiver::Impl {
             for (int q : e.also) if (q < 3) dc.protos.push_back(q);
             c->decs.push_back(std::move(dc));
             char b[96];
-            snprintf(b, sizeof b, "%s%s %.3f MHz SF%d", inBand.empty() ? "" : ", ", e.preset.c_str(), e.freqHz / 1e6, e.p.sf);
+            if (e.protocol == 5 && e.p.bwHz < 130e3 && e.p.sf != 7) continue;   // LoRaWAN: one line per 125 kHz channel, not per SF
+            const std::string sfs = e.protocol == 5 && e.p.bwHz < 130e3 ? std::string(reg == 1 ? "SF7-10" : "SF7-12")
+                                  : "SF" + std::to_string(e.p.sf) + (e.protocol == 5 ? " " + std::to_string((int)(e.p.bwHz / 1e3)) + " kHz" : "");
+            snprintf(b, sizeof b, "%s%s %.3f MHz %s", inBand.empty() ? "" : ", ", e.preset.c_str(), e.freqHz / 1e6, sfs.c_str());
             inBand += b;
         }
         logf("Mesh: listening to " + (inBand.empty() ? std::string("nothing (no channel of the region in the captured band)") : inBand));
@@ -254,17 +260,20 @@ struct MeshReceiver::Impl {
         for (int q : d.protos) {
             const uint8_t* pl = f.payload.data();
             const size_t pn = f.payload.size();
-            r = q == 1 ? proto.decodeMeshtastic(pl, pn, ri) : q == 2 ? proto.decodeMeshCore(pl, pn, ri) : q == 3 ? meshDecodeLoraAprs(pl, pn) : meshDecodeMeshCom(pl, pn);
+            r = q == 1 ? proto.decodeMeshtastic(pl, pn, ri) : q == 2 ? proto.decodeMeshCore(pl, pn, ri) : q == 3 ? meshDecodeLoraAprs(pl, pn)
+              : q == 4 ? meshDecodeMeshCom(pl, pn) : meshDecodeLorawan(pl, pn);
             if (r.ok) { proto_ = q; break; }
         }
         row.protocol = proto_;
-        if (proto_ >= 3 || !r.ok) row.raw = meshPrintable(f.payload.data(), std::min<size_t>(f.payload.size(), 255));
+        if (proto_ == 5) row.raw = meshHexString(f.payload.data(), std::min<size_t>(f.payload.size(), 255));
+        else if (proto_ >= 3 || !r.ok) row.raw = meshPrintable(f.payload.data(), std::min<size_t>(f.payload.size(), 255));
         if (!r.ok) {
             row.note = r.packet.note.empty() ? "not a " + std::string(protoName(di.protocol)) + " packet" : r.packet.note;
             count(di.protocol, "unknown");
             capPush(tel.packets, std::move(row), kPacketCap);
             return;
         }
+        if (proto_ == 5) { onLorawan(c, t, f, r, std::move(row)); return; }
         if (proto_ >= 3) { onAprs(proto_, t, f, r, std::move(row)); return; }
         const MeshPacketInfo& pk = r.packet;
         row.parsed = true;
@@ -387,6 +396,66 @@ struct MeshReceiver::Impl {
         capPush(tel.packets, std::move(row), kPacketCap);
     }
 
+    // LoRaWAN: the device table (by DevAddr; join requests by DevEUI) and the packet row. Nothing is decrypted.
+    void onLorawan(const Chan& c, double t, const lora::RxFrame& f, const MeshDecodeResult& r, MeshPacket&& row) {
+        const MeshPacketInfo& pk = r.packet;
+        const MeshDecodeResult::Lorawan& w = r.lorawan;
+        row.parsed = true;
+        row.type = pk.type; row.from = pk.from; row.to = pk.to; row.packetId = pk.packetId;
+        row.decrypted = false; row.note = pk.note; row.detail = pk.detail;
+        row.network = w.network; row.mtype = w.mtype; row.fport = w.fport; row.frmLen = w.fport >= 0 || w.mtype == 1 ? (int)w.frmLen : -1; row.mic = w.mic;
+        std::string fl;
+        auto add = [](std::string& s, const std::string& x) { s += (s.empty() ? "" : ", ") + x; };
+        if (w.adr) add(fl, "ADR");
+        if (w.adrAckReq) add(fl, "ADRACKReq");
+        if (w.ack) add(fl, "ACK");
+        if (w.fpending) add(fl, "FPending");
+        if (w.classB) add(fl, "class B");
+        row.flags = fl;
+        for (const auto& m : w.macCommands) add(row.mac, m);
+        count(5, pk.type);
+        std::string id;
+        if (w.mtype == 0 || w.mtype == 6) id = "DevEUI " + lorawanEui(w.devEui);
+        else if (w.mtype >= 2 && w.mtype <= 5) id = pk.from;
+        if (!id.empty()) {
+            auto it = lwIdx.find(id);
+            if (it == lwIdx.end()) {
+                if (tel.lorawanDevices.size() >= kLorawanCap) {
+                    size_t old = 0;
+                    for (size_t i = 1; i < tel.lorawanDevices.size(); i++) if (tel.lorawanDevices[i].lastHeard < tel.lorawanDevices[old].lastHeard) old = i;
+                    tel.lorawanDevices.erase(tel.lorawanDevices.begin() + (long)old);
+                    lwIdx.clear();
+                    for (size_t i = 0; i < tel.lorawanDevices.size(); i++) lwIdx[tel.lorawanDevices[i].id] = i;
+                }
+                MeshLorawanDevice d;
+                d.id = id;
+                tel.lorawanDevices.push_back(d);
+                it = lwIdx.emplace(id, tel.lorawanDevices.size() - 1).first;
+                logf("LoRaWAN: new device " + id + (w.network.empty() ? "" : " (" + w.network + ")") + (w.vendor.empty() ? "" : " (" + w.vendor + ")"));
+            }
+            MeshLorawanDevice& d = tel.lorawanDevices[it->second];
+            d.lastHeard = t; d.freqHz = row.freqHz; d.lastSnrDb = (float)f.snrDb; d.lastLevelDb = (float)f.levelDb; d.sf = row.sf;
+            d.packets++; d.lastType = pk.type;
+            if (w.mtype == 0 || w.mtype == 6) {
+                d.joins++;
+                d.devEui = lorawanEui(w.devEui); d.vendor = w.vendor;
+                if (w.joinEui || w.mtype == 0) d.joinEui = lorawanEui(w.joinEui);
+            } else {
+                d.devAddr = pk.from; d.network = w.network; d.adr = w.adr;
+                if (w.uplink) d.uplinks++; else d.downlinks++;
+                if (w.confirmed) d.confirmed++;
+                // a gap in the 16 counter bits that the radio sends: frames this receiver did not hear (a restart from 0 is not one)
+                if (w.uplink && d.fcnt >= 0 && w.fcnt > (uint16_t)d.fcnt && w.fcnt - (uint16_t)d.fcnt < 1000) d.missed += (uint32_t)(w.fcnt - (uint16_t)d.fcnt - 1);
+                if (w.uplink) d.fcnt = w.fcnt;
+                d.lastFport = w.fport;
+                if (!w.macCommands.empty()) d.lastMac = row.mac;
+                if (w.devStatusBattery >= 0) { d.battery = w.devStatusBattery; d.marginDb = w.devStatusMargin; }
+            }
+        }
+        (void)c;
+        capPush(tel.packets, std::move(row), kPacketCap);
+    }
+
     void report() {
         tel.seq++;
         tel.timeSec = now();
@@ -408,7 +477,7 @@ struct MeshReceiver::Impl {
         const uint64_t s = tel.seq;
         tel = MeshTelemetry();
         tel.seq = s;
-        nodeIdx.clear(); aprsIdx.clear(); msgSeen.clear();
+        nodeIdx.clear(); aprsIdx.clear(); lwIdx.clear(); msgSeen.clear();
         pend.clear();
         nIn = nProc = 0;
         nextReport = 0;
@@ -478,7 +547,7 @@ bool MeshReceiver::telemetry(MeshTelemetry& out, uint64_t lastSeq) {
 void MeshReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void MeshReceiver::setTunedHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->tunedHz = hz; p_->dirty = true; }
 void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r == 1 ? 1 : 0; p_->dirty = true; }
-void MeshReceiver::setProtocols(int mask) { std::lock_guard<std::mutex> lk(p_->mu); p_->protocols = mask & 15; p_->dirty = true; }
+void MeshReceiver::setProtocols(int mask) { std::lock_guard<std::mutex> lk(p_->mu); p_->protocols = mask & 31; p_->dirty = true; }
 void MeshReceiver::setPresetSearch(bool all) { std::lock_guard<std::mutex> lk(p_->mu); p_->presetSearch = all; p_->dirty = true; }
 bool MeshReceiver::addMeshtasticChannel(const std::string& name, const std::string& psk) { return p_->proto.addMeshtasticChannel(name, psk); }
 bool MeshReceiver::addMeshCoreChannel(const std::string& name, const std::string& secret) { return p_->proto.addMeshCoreChannel(name, secret); }

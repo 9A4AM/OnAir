@@ -129,6 +129,7 @@ These receivers are built from the published specifications and checked end to e
 | **Bluetooth LE** | Advertising on channels 37, 38 and 39 (2402 / 2426 / 2480 MHz), one at a time or hopping, 4 Msps | What a scanner app such as nRF Connect shows: a device table with address type, name, level history, vendor, services, iBeacon, Eddystone and exposure notification beacons, and a packet log. Receive only: it never connects, pairs or transmits and does not follow connections; most phones use random addresses that change every few minutes for privacy |
 | **GNSS** | GPS L1 | Satellites, position and time |
 | **Mesh** | Meshtastic and MeshCore (LoRa) | Nodes, map and chat |
+| **LoRaWAN** | EU868 (868.1 / 868.3 / 868.5 MHz and 867.x) or US915, SF7 - SF12 at once | A device table (DevAddr or DevEUI, network from the NetID, last heard, level, SNR, frame counter, SF) and a frame log with filters: message type, FCtrl, FCnt, MAC commands, port, encrypted length, MIC, join requests; only the clear headers, payloads stay encrypted |
 
 In development (the mode is in the app, but nothing is decoded yet): **HD Radio**, **CDR** (China Digital Radio), **Pagers** (POCSAG, FLEX), **APRS / Packet** (AX.25) and **HF digital** (RTTY, SSTV, FreeDV).
 
@@ -159,6 +160,12 @@ Lookups need internet and run in the background at most once a second; only the 
 The TETRA mode lists the TETRA base stations it hears, with what each one broadcasts in the clear to every terminal: the network code (MCC, MNC), colour code, location area, the main carrier, uplink and duplex spacing, the services the cell offers, its neighbour cells, the network time, and whether the network uses air interface encryption. The same information is shown by open-source tools such as osmo-tetra. **Scan** steps the radio over a span (390 - 395 MHz, 410 - 430, 450 - 470 or your own) and lists every carrier found.
 
 It is receive only and standards based. It does not decrypt anything, does not transmit, does not join or disturb any network, and does not decode or play voice, short data messages or subscriber identities: encrypted signalling is only counted and reported as encrypted, and traffic timeslots are skipped. You are responsible for following your country's rules on receiving radio signals.
+
+### LoRaWAN monitor
+
+The LoRaWAN entry (in the Mesh family) shows what every LoRaWAN gateway in range receives in the clear: the message type (join request, (un)confirmed uplink or downlink, proprietary), the DevAddr with the network its NetID belongs to (The Things Network, Helium, Orange, ...), the FCtrl flags, the frame counter, the MAC commands of LoRaWAN 1.0 FOpts, the port, the length of the encrypted payload and the MIC; for join requests the JoinEUI, the DevEUI (with its maker when the OUI is in a short table) and the DevNonce. All spreading factors of every channel in the capture are searched at once.
+
+It is receive only. The application payloads and join accepts are encrypted with the devices' own keys and stay encrypted: OnAir never decrypts them, never checks a MIC and never transmits. These are other people's devices; you are responsible for following your country's rules on receiving radio signals.
 
 ### Channel scanner and shared channel list
 

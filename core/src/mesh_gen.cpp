@@ -86,6 +86,24 @@ const McomEv kMcom[] = {
     {30.0, 1, ':', "A61MC-2", "262", "Group 262 check-in"},
 };
 
+// LoRaWAN scene (regions 3 EU868, 4 US915): end devices of a few networks on three uplink channels (made-up addresses and EUIs)
+enum LwKind { LwUp, LwConfUp, LwLinkCheck, LwJoin };
+struct LwDevDef { uint32_t devAddr; uint64_t devEui, joinEui; int chan, sfEu, sfUs, fport, len; bool adr; uint16_t fcnt0; };
+const LwDevDef kLwDevs[] = {
+    {0x260B1A2Cu, 0, 0, 0, 7, 7, 1, 10, true, 1200},                                   // The Things Network, temperature sensor
+    {0x48000A31u, 0, 0, 1, 9, 9, 2, 11, true, 52},                                     // Helium, tracker
+    {0x22A1B2C3u, 0, 0, 2, 12, 10, 3, 6, false, 7001},                                 // Orange, water meter (confirmed, DevStatusAns)
+    {0, 0xA84041000181C61Aull, 0xA840410000000101ull, 1, 10, 10, -1, 0, false, 0},       // Dragino, join request
+    {0x01ABCDEFu, 0, 0, 0, 8, 8, -1, 0, false, 33},                                    // a private network: LinkCheckReq, no payload
+    {0, 0x24E124136B502217ull, 0x24E124C0002A0001ull, 2, 7, 7, -1, 0, false, 0},        // Milesight, join request
+};
+struct LwEv { double t; int dev; LwKind kind; };
+const LwEv kLw[] = {
+    {0.5, 0, LwUp}, {2.0, 3, LwJoin}, {4.0, 1, LwUp}, {6.0, 2, LwConfUp}, {10.0, 0, LwUp}, {12.0, 4, LwLinkCheck}, {16.0, 5, LwJoin},
+    {20.0, 0, LwUp}, {24.0, 1, LwUp}, {30.0, 0, LwUp}, {36.0, 2, LwConfUp}, {40.0, 0, LwUp}, {46.0, 1, LwUp}, {50.0, 0, LwUp},
+};
+const double kLwEu[3] = {868.1e6, 868.3e6, 868.5e6}, kLwUs[3] = {903.9e6, 904.1e6, 904.3e6};
+
 struct MtNodeDef { const char* longName; const char* shortName; const char* hw; double lat, lon, alt; int role; };
 const MtNodeDef kMtNodes[6] = {
     {"Dubai Marina Base", "DMB1", "TBEAM", 25.0805, 55.1403, 12, 0},
@@ -114,11 +132,11 @@ struct Net {
 class MeshSynth : public ModeSynth {
 public:
     MeshSynth(const SynthConfig& cfg, double rate) : rate_(rate), cfg_(cfg), noise_((uint32_t)(cfg.modeOpt[2] ? cfg.modeOpt[2] : 1) * 7919u + 22u) {
-        const int prot = cfg.modeOpt[0] ? (cfg.modeOpt[0] & 15) : 15;
-        region_ = cfg.modeOpt[1] == 1 ? 1 : cfg.modeOpt[1] == 2 ? 2 : 0;
+        const int prot = cfg.modeOpt[0] ? (cfg.modeOpt[0] & 31) : 31;
+        region_ = cfg.modeOpt[1] >= 1 && cfg.modeOpt[1] <= 4 ? cfg.modeOpt[1] : 0;
         rng_.seed((uint32_t)(cfg.modeOpt[2] ? cfg.modeOpt[2] : 1));
         const double tuneOffset = meshTuning().tuneOffsetHz;
-        const double lf = region_ == 2 ? 0 : meshtasticSlotHz(region_ == 1 ? "US" : "EU_868", "LongFast");
+        const double lf = region_ >= 2 ? 0 : meshtasticSlotHz(region_ == 1 ? "US" : "EU_868", "LongFast");
         MeshLoraSettings s;
         if ((prot & 1) && meshtasticPreset("LongFast", s) && lf > 0) {
             mt_.on = true;
@@ -149,12 +167,23 @@ public:
                 if (std::fabs(off) + x.bwHz < 0.45 * rate) { ap_.on = true; ap_.p = toParams(x); ap_.offsetHz = off; ap_.bwHz = x.bwHz; }
             }
         }
+        if (region_ >= 3 && (prot & 16)) {
+            // placed for a receiver tuned to the first channel (868.1 / 903.9 MHz): it at -tuneOffsetHz, the others 200 and 400 kHz above
+            const double* fr = region_ == 3 ? kLwEu : kLwUs;
+            for (int c = 0; c < 3; c++) {
+                lwFreeAt_[c] = 0;
+                lwOff_[c] = fr[c] - fr[0] - tuneOffset;
+                lwOn_[c] = std::fabs(lwOff_[c]) + 125e3 < 0.45 * rate;
+            }
+            for (int i = 0; i < 6; i++) lwFcnt_[i] = kLwDevs[i].fcnt0;
+        }
         // node SNRs: evenly from the strongest (snrDb) to the weakest
         const double strong = cfg.snrDb, weak = cfg.modeVal[0] != 0 ? std::min(cfg.modeVal[0], cfg.snrDb) : cfg.snrDb - 20;
         for (int i = 0; i < 6; i++) mtSnr_[i] = strong - (strong - weak) * i / 5.0;
         for (int i = 0; i < 3; i++) mcSnr_[i] = strong - (strong - weak) * (i + 0.5) / 3.0;
         for (int i = 0; i < 3; i++) apSnr_[i] = strong - (strong - weak) * i / 2.0;
         for (int i = 0; i < 2; i++) mcmSnr_[i] = strong - (strong - weak) * i;
+        for (int i = 0; i < 6; i++) lwSnr_[i] = strong - (strong - weak) * i / 5.0;
         // the noise: the strongest LongFast node at an amplitude of 0.35
         noiseRms_ = 0.35 / std::sqrt(std::pow(10.0, strong / 10) * 250e3 / rate);
         std::uniform_real_distribution<double> u(-1500, 1500);
@@ -162,6 +191,7 @@ public:
         for (int i = 0; i < 3; i++) mcCfo_[i] = u(rng_);
         for (int i = 0; i < 3; i++) apCfo_[i] = u(rng_);
         for (int i = 0; i < 2; i++) mcmCfo_[i] = u(rng_);
+        if (region_ >= 3) for (int i = 0; i < 6; i++) lwCfo_[i] = u(rng_);   // only then: the other scenes keep their random draws
         for (int i = 0; i < 6; i++) {
             mtNodes_[i].num = 0x2a000000u + (rng_() & 0x00ffffffu);
             mtNodes_[i].longName = kMtNodes[i].longName;
@@ -180,7 +210,7 @@ public:
         if (meshcoreNodeKeys(mcNodes_[1], sd, pub)) repeaterHash_ = pub[0];
         nextId_ = 0x10000000u + (rng_() & 0x0fffffffu);
         if (cfg.modeOpt[3] == 2) jitter_ = 0;
-        if (cfg.modeOpt[3] == 1) { mt_.nextFree = 1.0; mc_.nextFree = 1.0; ap_.nextFree = 1.0; mcm_.nextFree = 1.0; }
+        if (cfg.modeOpt[3] == 1) { mt_.nextFree = 1.0; mc_.nextFree = 1.0; ap_.nextFree = 1.0; mcm_.nextFree = 1.0; for (double& x : lwFreeAt_) x = 1.0; }
     }
 
     double sampleRate() const override { return rate_; }
@@ -191,6 +221,7 @@ public:
         schedule(mc_, false, t1 + 1);
         schedule70(ap_, true, t1 + 1);
         schedule70(mcm_, false, t1 + 1);
+        scheduleLw(t1 + 1);
         for (size_t i = 0; i < n; i++) out[i] = cf32(0, 0);
         for (const auto& f : active_) f.render(out, n, t0, rate_);
         noise_.add(out, n, (float)(noiseRms_ / std::sqrt(2.0)));
@@ -266,6 +297,46 @@ private:
         }
     }
 
+    // LoRaWAN: the table above every cycle, frame counters going on; frames on one channel never overlap
+    void scheduleLw(double until) {
+        if (region_ < 3 || !(lwOn_[0] || lwOn_[1] || lwOn_[2])) return;
+        const int nev = (int)(sizeof(kLw) / sizeof(kLw[0]));
+        for (;;) {
+            const LwEv& e = kLw[lwNext_];
+            const LwDevDef& d = kLwDevs[e.dev];
+            const double start = std::max(lwCycle_ * kCycle + e.t, lwFreeAt_[d.chan]);
+            if (start > until) return;
+            if (++lwNext_ >= nev) { lwNext_ = 0; lwCycle_++; }
+            if (!lwOn_[d.chan]) continue;
+            const uint32_t mic = newId();
+            std::vector<uint8_t> bytes;
+            if (e.kind == LwJoin) bytes = lorawanJoinRequest(d.joinEui, d.devEui, (uint16_t)(newId() & 0xFFFF), mic);
+            else {
+                LorawanTx t;
+                t.mtype = e.kind == LwConfUp ? 4 : 2;
+                t.devAddr = d.devAddr; t.adr = d.adr; t.fcnt = lwFcnt_[e.dev]++; t.mic = mic;
+                if (e.kind == LwLinkCheck) t.fopts = {0x02};
+                if (e.kind == LwConfUp) t.fopts = {0x06, 0xC8, 0x07};   // DevStatusAns: battery 200 / 254, margin 7 dB
+                t.fport = d.fport;
+                if (d.fport >= 0) for (int k = 0; k < d.len; k++) t.frm.push_back((uint8_t)newId());
+                bytes = lorawanBuild(t);
+            }
+            lora::Params p;
+            p.sf = region_ == 3 ? d.sfEu : d.sfUs; p.bwHz = 125e3; p.cr = 5; p.preamble = 8; p.syncWord = 0x34; p.ldro = meshLoraLdro(p.sf, p.bwHz); p.crc = true;
+            lora::TxFrame f;
+            f.p = p;
+            f.data = lora::encode(p, bytes.data(), bytes.size());
+            f.startSec = start;
+            f.sroPpm = cfg_.sroPpm;
+            const double snr = lwSnr_[e.dev] + std::uniform_real_distribution<double>(-1.5, 1.5)(rng_) * jitter_;
+            f.amp = (float)std::sqrt(std::pow(10.0, snr / 10) * noiseRms_ * noiseRms_ * p.bwHz / rate_);
+            f.freqHz = lwOff_[d.chan] + cfg_.cfoHz + lwCfo_[e.dev];
+            f.phase0 = std::uniform_real_distribution<double>(0, 1)(rng_);
+            active_.push_back(f);
+            lwFreeAt_[d.chan] = f.endSec() + std::uniform_real_distribution<double>(0.3, 0.9)(rng_);
+        }
+    }
+
     uint32_t newId() { nextId_ = nextId_ * 1103515245u + 12345u; return nextId_ | 1u; }
 
     std::vector<uint8_t> build(const Ev& e, int cycle, double t) {
@@ -318,6 +389,10 @@ private:
     int region_ = 0;
     Net mt_, mc_, ap_, mcm_;
     double apSnr_[3] = {}, mcmSnr_[2] = {}, apCfo_[3] = {}, mcmCfo_[2] = {};
+    bool lwOn_[3] = {};
+    double lwOff_[3] = {}, lwFreeAt_[3] = {}, lwSnr_[6] = {}, lwCfo_[6] = {};
+    uint16_t lwFcnt_[6] = {};
+    int lwNext_ = 0, lwCycle_ = 0;
     double jitter_ = 1.0;     // the +-1.5 dB packet-to-packet SNR variation (0 when modeOpt[3] == 2: exact SNR for the tests)
     double noiseRms_ = 0.01;
     double mtSnr_[6] = {}, mcSnr_[3] = {}, mtCfo_[6] = {}, mcCfo_[3] = {};

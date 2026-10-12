@@ -63,6 +63,7 @@ meshtastic	--mode meshtastic	Overview|Mesh|Receiver|History
 meshcore	--mode meshcore	Overview|Mesh|Receiver|History
 loraaprs	--mode loraaprs	Overview|Mesh|Receiver|History
 meshcom	--mode meshcom	Overview|Mesh|Receiver|History
+lorawan	--mode lorawan	Overview|Mesh|Receiver|History
 hdr	--mode hdr	Overview|Radio|Receiver|History
 cdr	--mode cdr	Overview|Radio|Receiver|History
 pocsag	--mode pocsag	Overview|Messages|Receiver|History

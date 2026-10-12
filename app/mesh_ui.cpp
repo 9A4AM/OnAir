@@ -1,5 +1,5 @@
 // Mesh (LoRa) screens: node table, APRS station table (LoRa APRS, MeshCom), map of node and station positions, chat per channel,
-// packet log with the raw payload, settings (band plan, protocols, presets, channel keys).
+// packet log with the raw payload, settings (band plan, protocols, presets, channel keys); LoRaWAN device table and frame log with filters.
 #include "app.h"
 #include "adsb_map.h"
 #include "dect2/packet_aprs.h"
@@ -14,7 +14,7 @@ struct Key { int proto; std::string name, secret; };
 
 struct State {
     bool loaded = false;
-    int view = 0;                                // 0 nodes, 1 map, 2 chat, 3 packets, 4 settings, 5 APRS stations
+    int view = 0;                                // 0 nodes, 1 map, 2 chat, 3 packets, 4 settings, 5 APRS stations, 6 LoRaWAN devices, 7 LoRaWAN frames
     bool rawView = false;                        // packets: the raw payload instead of the detail line
     adsbmap::View map;
     bool mapFit = true;                          // centre on the nodes until the user drags the map
@@ -31,6 +31,12 @@ struct State {
     std::string keyMsg;
     uint64_t lastSeq = 0;
     std::deque<float> snr;                       // SNR of the last good frame per report, for the history plot
+    // LoRaWAN filters
+    char lwFilter[48] = "";                      // DevAddr, EUI, network or vendor (any part, any case)
+    std::string lwNet;                           // one network only ("" all)
+    int lwType = 0;                              // frames: 0 all, 1 uplinks, 2 downlinks, 3 joins, 4 proprietary
+    bool lwJoins = true;                         // devices: also the ones heard only by their join requests
+    bool lwRaw = false;
 };
 State S;
 
@@ -41,11 +47,12 @@ ImVec4 protoColour(int proto) {
     case 1: return ImVec4(0.46f, 0.84f, 0.70f, 1);
     case 2: return ImVec4(0.96f, 0.68f, 0.34f, 1);
     case 3: return ImVec4(0.55f, 0.70f, 0.98f, 1);
+    case 5: return ImVec4(0.96f, 0.84f, 0.40f, 1);
     default: return ImVec4(0.86f, 0.58f, 0.92f, 1);
     }
 }
-const char* protoName(int proto) { return proto == 1 ? "Meshtastic" : proto == 2 ? "MeshCore" : proto == 3 ? "LoRa APRS" : "MeshCom"; }
-const char* protoTag(int proto) { return proto == 1 ? "Mt" : proto == 2 ? "Mc" : proto == 3 ? "APRS" : "MCom"; }
+const char* protoName(int proto) { return proto == 1 ? "Meshtastic" : proto == 2 ? "MeshCore" : proto == 3 ? "LoRa APRS" : proto == 4 ? "MeshCom" : "LoRaWAN"; }
+const char* protoTag(int proto) { return proto == 1 ? "Mt" : proto == 2 ? "Mc" : proto == 3 ? "APRS" : proto == 4 ? "MCom" : "LWAN"; }
 
 // band plans: the receiver's region (Meshtastic / MeshCore channel plan), the frequency to tune and the test signal's scene
 struct Plan { const char* name; const char* shortName; double mhz; int rxRegion, synthRegion; };
@@ -56,6 +63,8 @@ const Plan kPlans[] = {
     {"LoRa APRS PL  434.855 MHz  SF9", "APRS PL  434.855 MHz", 434.855, 0, 2},
     {"LoRa APRS UK  439.9125 MHz  SF12", "APRS UK  439.9125 MHz", 439.9125, 0, 2},
     {"MeshCom EU  433.175 MHz (+ LoRa APRS 433.775)", "MeshCom EU  433.175 MHz", 433.175, 0, 2},
+    {"LoRaWAN EU868  868.1 / 868.3 / 868.5 MHz (+ 867.x in a wide capture)", "LoRaWAN EU868  868.1 MHz", 868.1, 0, 3},
+    {"LoRaWAN US915  903.9 MHz (sub-band 2)", "LoRaWAN US915  903.9 MHz", 903.9, 1, 4},
 };
 constexpr int kNumPlans = (int)(sizeof(kPlans) / sizeof(kPlans[0]));
 
@@ -126,15 +135,16 @@ void loadState() {
 int subMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 0; }
 bool planFits(const App& a, int i) {
     const int m = subMask(a);
-    return !m || ((m & 3) ? i <= 1 : m == 4 ? (i >= 2 && i <= 4) : i == 5);
+    return !m || ((m & 3) ? i <= 1 : m == 4 ? (i >= 2 && i <= 4) : m == 8 ? i == 5 : (i == 6 || i == 7));
 }
 int effRegion(const App& a) {   // the selected plan, or the entry's first when the selected one does not carry it
     if (planFits(a, S.region)) return S.region;
     for (int i = 0; i < kNumPlans; i++) if (planFits(a, i)) return i;
     return 0;
 }
-// a node's or station's protocol (1 Meshtastic, 2 MeshCore, 3 LoRa APRS, 4 MeshCom) shown in this entry: a protocol entry shows only its own
-bool shows(const App& a, int proto) { const int m = subMask(a); return !m || (m & (proto == 1 ? 1 : proto == 2 ? 2 : proto == 3 ? 4 : 8)); }
+// a node's or station's protocol (1 Meshtastic, 2 MeshCore, 3 LoRa APRS, 4 MeshCom, 5 LoRaWAN) shown in this entry: a protocol entry shows only its own
+bool shows(const App& a, int proto) { const int m = subMask(a); return !m || (m & (1 << (proto - 1))); }
+bool lorawanEntry(const App& a) { return subMask(a) == 16; }
 bool stationEntry(const App& a) { const int m = subMask(a); return m == 4 || m == 8; }   // LoRa APRS, MeshCom: stations, not nodes
 int effProtocols(const App& a) { const int m = subMask(a); return m ? m : S.protocols; }
 bool planCombo(App& a, const char* id, int& r, bool shortNames) {   // the band plans this entry can use
@@ -356,6 +366,199 @@ void aprsTable(const App& a, bool compact = false) {
     if (!on || sortedStations(a).empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", none); ImGui::PopTextWrapPos(); }
 }
 
+// ---------------------------------------------------------------- LoRaWAN
+
+void lorawanPrivacyNote() {
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("Receive only: the frame headers every LoRaWAN gateway in range receives in the clear (message type, DevAddr, frame counter, "
+                        "MAC commands, port, MIC; DevEUI and JoinEUI of join requests). The payloads are encrypted with the devices' own keys and "
+                        "stay encrypted: OnAir never decrypts them, never checks a MIC and never transmits. These are other people's devices.");
+    ImGui::PopTextWrapPos();
+}
+
+bool lwMatch(const std::string& hay, const char* needle) {
+    if (!needle[0]) return true;
+    std::string h = hay, n = needle;
+    for (auto& c : h) c = (char)std::tolower((unsigned char)c);
+    for (auto& c : n) c = (char)std::tolower((unsigned char)c);
+    return h.find(n) != std::string::npos;
+}
+
+void lwNetworkCombo(const App& a, const char* id) {
+    std::vector<std::string> nets;
+    for (const auto& d : a.rx.mesh.lorawanDevices) if (!d.network.empty() && std::find(nets.begin(), nets.end(), d.network) == nets.end()) nets.push_back(d.network);
+    std::sort(nets.begin(), nets.end());
+    ImGui::SetNextItemWidth(std::min(190 * gUi, ImGui::GetContentRegionAvail().x));
+    if (ImGui::BeginCombo(id, S.lwNet.empty() ? "all networks" : S.lwNet.c_str())) {
+        if (ImGui::Selectable("all networks", S.lwNet.empty())) S.lwNet.clear();
+        for (const auto& n : nets) if (ImGui::Selectable(n.c_str(), S.lwNet == n)) S.lwNet = n;
+        ImGui::EndCombo();
+    }
+}
+
+void lwFilters(const App& a, bool frames) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Filter"); ImGui::SameLine(0, 5 * gUi);
+    ImGui::SetNextItemWidth(std::min(190 * gUi, ImGui::GetContentRegionAvail().x));
+    ImGui::InputTextWithHint("##lwf", "DevAddr, EUI, network, vendor", S.lwFilter, sizeof S.lwFilter);
+    flowNext(10 * gUi);
+    lwNetworkCombo(a, "##lwn");
+    flowNext(10 * gUi);
+    if (frames) {
+        static const char* types[] = {"all frames", "uplinks", "downlinks", "joins", "proprietary"};
+        ImGui::SetNextItemWidth(std::min(130 * gUi, ImGui::GetContentRegionAvail().x));
+        ImGui::Combo("##lwt", &S.lwType, types, 5);
+        flowNext(10 * gUi);
+        ImGui::Checkbox("hex", &S.lwRaw);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The frame's bytes in hex in the last column (hover a row to see them either way)");
+    } else {
+        ImGui::Checkbox("join-only devices", &S.lwJoins);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also list devices heard only by their join requests (by DevEUI): after joining they use a DevAddr\nthe network assigns, which cannot be linked to the DevEUI without the network's keys.");
+    }
+    flowBreak();
+}
+
+bool lwDeviceShown(const dect2::MeshLorawanDevice& d) {
+    if (!S.lwJoins && d.devAddr.empty()) return false;
+    if (!S.lwNet.empty() && d.network != S.lwNet) return false;
+    return lwMatch(d.id + " " + d.devEui + " " + d.joinEui + " " + d.network + " " + d.vendor, S.lwFilter);
+}
+
+std::vector<const dect2::MeshLorawanDevice*> sortedDevices(const App& a, bool filtered) {
+    std::vector<const dect2::MeshLorawanDevice*> v;
+    for (const auto& d : a.rx.mesh.lorawanDevices) if (!filtered || lwDeviceShown(d)) v.push_back(&d);
+    std::sort(v.begin(), v.end(), [](const dect2::MeshLorawanDevice* x, const dect2::MeshLorawanDevice* y) { return x->lastHeard > y->lastHeard; });
+    return v;
+}
+
+std::string lwBattery(const dect2::MeshLorawanDevice& d) {
+    if (d.battery < 0) return "";
+    char b[48];
+    if (d.battery == 0) snprintf(b, sizeof b, "external power, margin %d dB", d.marginDb);
+    else if (d.battery == 255) snprintf(b, sizeof b, "battery ?, margin %d dB", d.marginDb);
+    else snprintf(b, sizeof b, "battery %.0f %%, margin %d dB", d.battery * 100.0 / 254, d.marginDb);
+    return b;
+}
+
+void lorawanDevices(const App& a, bool compact) {
+    const dect2::MeshTelemetry& t = a.rx.mesh;
+    const bool on = live(a);
+    const char* none = !on ? "start the receiver to see devices" : "no LoRaWAN frame heard yet: devices send every few minutes to hours, on 868.1 / 868.3 / 868.5 MHz in Europe";
+    if (compact) {
+        if (ImGui::BeginTable("##lwd_s", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableSetupColumn("Device", ImGuiTableColumnFlags_WidthStretch); ImGui::TableSetupColumn("Heard"); ImGui::TableSetupColumn("SNR");
+            ImGui::TableHeadersRow();
+            if (on) for (const auto* d : sortedDevices(a, false)) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::TextColored(protoColour(5), "%s", d->id.c_str());
+                if (ImGui::IsItemHovered() && !d->network.empty()) ImGui::SetTooltip("%s", d->network.c_str());
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(t.timeSec, d->lastHeard).c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%.1f", d->lastSnrDb);
+            }
+            ImGui::EndTable();
+        }
+        if (!on || t.lorawanDevices.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", none); ImGui::PopTextWrapPos(); }
+        return;
+    }
+    lorawanPrivacyNote();
+    lwFilters(a, false);
+    const auto devs = sortedDevices(a, true);
+    if (on) ImGui::TextDisabled("%zu of %zu devices", devs.size(), t.lorawanDevices.size());
+    if (!ImGui::BeginTable("##lwd", 14, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable,
+                           ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    ImGui::TableSetupScrollFreeze(1, 1);
+    ImGui::TableSetupColumn("DevAddr / DevEUI", ImGuiTableColumnFlags_WidthFixed, hdrW("DevAddr / DevEUI", "DevEUI A84041000181C61A"));
+    ImGui::TableSetupColumn("Network", ImGuiTableColumnFlags_WidthFixed, hdrW("Network", "The Things Network"));
+    ImGui::TableSetupColumn("Vendor / JoinEUI", ImGuiTableColumnFlags_WidthFixed, hdrW("Vendor / JoinEUI", "A840410000000101"));
+    ImGui::TableSetupColumn("Heard"); ImGui::TableSetupColumn("Level dBFS", ImGuiTableColumnFlags_WidthFixed, hdrW("Level dBFS", "-100.0"));
+    ImGui::TableSetupColumn("SNR dB", ImGuiTableColumnFlags_WidthFixed, hdrW("SNR dB", "-12.5")); ImGui::TableSetupColumn("FCnt", ImGuiTableColumnFlags_WidthFixed, hdrW("FCnt", "65535"));
+    ImGui::TableSetupColumn("Missed", ImGuiTableColumnFlags_WidthFixed, hdrW("Missed", "999")); ImGui::TableSetupColumn("SF"); ImGui::TableSetupColumn("MHz", ImGuiTableColumnFlags_WidthFixed, hdrW("MHz", "868.500"));
+    ImGui::TableSetupColumn("Packets", ImGuiTableColumnFlags_WidthFixed, hdrW("Packets", "999 / 99 / 9"));
+    ImGui::TableSetupColumn("Last", ImGuiTableColumnFlags_WidthFixed, hdrW("Last", "Unconfirmed down")); ImGui::TableSetupColumn("Port"); ImGui::TableSetupColumn("MAC / status", ImGuiTableColumnFlags_WidthFixed, 260 * gUi);
+    ImGui::TableHeadersRow();
+    if (on) {
+        for (const auto* d : devs) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextColored(protoColour(5), "%s", d->id.c_str()); ImGui::PopFont();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(d->network.empty() ? "-" : d->network.c_str());
+            ImGui::TableNextColumn();
+            if (!d->vendor.empty()) ImGui::TextUnformatted(d->vendor.c_str()); else if (!d->joinEui.empty()) ImGui::TextUnformatted(d->joinEui.c_str()); else ImGui::TextDisabled("-");
+            if (ImGui::IsItemHovered() && !d->joinEui.empty()) ImGui::SetTooltip("JoinEUI %s", d->joinEui.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(t.timeSec, d->lastHeard).c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", d->lastLevelDb);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", d->lastSnrDb);
+            ImGui::TableNextColumn(); if (d->fcnt >= 0) ImGui::Text("%ld", d->fcnt); else ImGui::TextDisabled("-");
+            ImGui::TableNextColumn(); if (d->missed) ImGui::TextColored(pal::warnAmber(), "%u", d->missed); else ImGui::TextDisabled("0");
+            ImGui::TableNextColumn(); ImGui::Text("%d", d->sf);
+            ImGui::TableNextColumn(); ImGui::Text("%.3f", d->freqHz / 1e6);
+            ImGui::TableNextColumn(); ImGui::Text("%u / %u / %u", d->uplinks, d->downlinks, d->joins);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("uplinks / downlinks / join requests (%u confirmed)", d->confirmed);
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(d->lastType.c_str());
+            ImGui::TableNextColumn(); if (d->lastFport >= 0) ImGui::Text("%d", d->lastFport); else ImGui::TextDisabled("-");
+            ImGui::TableNextColumn();
+            const std::string st = lwBattery(*d);
+            ImGui::TextUnformatted((d->lastMac + (d->lastMac.empty() || st.empty() ? "" : "; ") + st).c_str());
+        }
+    }
+    ImGui::EndTable();
+    if (!on || t.lorawanDevices.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", none); ImGui::PopTextWrapPos(); }
+}
+
+void lorawanFrames(const App& a) {
+    const dect2::MeshTelemetry& t = a.rx.mesh;
+    const bool on = live(a);
+    lwFilters(a, true);
+    if (!ImGui::BeginTable("##lwp", 14, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable,
+                           ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    ImGui::TableSetupScrollFreeze(0, 1);
+    ImGui::TableSetupColumn("Time"); ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, hdrW("Type", "Unconfirmed down"));
+    ImGui::TableSetupColumn("DevAddr / DevEUI", ImGuiTableColumnFlags_WidthFixed, hdrW("DevAddr / DevEUI", "A84041000181C61A"));
+    ImGui::TableSetupColumn("Network", ImGuiTableColumnFlags_WidthFixed, hdrW("Network", "The Things Network"));
+    ImGui::TableSetupColumn("FCnt", ImGuiTableColumnFlags_WidthFixed, hdrW("FCnt", "65535")); ImGui::TableSetupColumn("Port");
+    ImGui::TableSetupColumn("Payload", ImGuiTableColumnFlags_WidthFixed, hdrW("Payload", "222 B encrypted")); ImGui::TableSetupColumn("FCtrl");
+    ImGui::TableSetupColumn("MAC commands", ImGuiTableColumnFlags_WidthFixed, 180 * gUi); ImGui::TableSetupColumn("MIC", ImGuiTableColumnFlags_WidthFixed, hdrW("MIC", "DEADBEEF"));
+    ImGui::TableSetupColumn("SF"); ImGui::TableSetupColumn("SNR dB", ImGuiTableColumnFlags_WidthFixed, hdrW("SNR dB", "-12.5"));
+    ImGui::TableSetupColumn("MHz", ImGuiTableColumnFlags_WidthFixed, hdrW("MHz", "868.500")); ImGui::TableSetupColumn("Detail", ImGuiTableColumnFlags_WidthFixed, 380 * gUi);
+    ImGui::TableHeadersRow();
+    size_t shown = 0;
+    if (on) {
+        for (size_t i = t.packets.size(); i-- > 0;) {
+            const dect2::MeshPacket& p = t.packets[i];
+            if (p.protocol != 5) continue;
+            const int ty = !p.crcOk || !p.parsed ? -1 : p.mtype == 0 || p.mtype == 1 || p.mtype == 6 ? 3 : p.mtype == 7 ? 4 : (p.mtype == 2 || p.mtype == 4) ? 1 : 2;
+            if (S.lwType && ty != S.lwType) continue;
+            if (!S.lwNet.empty() && p.network != S.lwNet) continue;
+            if (!lwMatch(p.from + " " + p.to + " " + p.network, S.lwFilter)) continue;
+            shown++;
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(p.timeSec).c_str());
+            ImGui::TableNextColumn();
+            if (!p.crcOk) ImGui::TextColored(pal::badRed(), "CRC error");
+            else if (!p.parsed) ImGui::TextColored(pal::warnAmber(), "not LoRaWAN");
+            else ImGui::TextUnformatted(p.type.c_str());
+            ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextColored(protoColour(5), "%s", p.from.c_str()); ImGui::PopFont();
+            if (!p.to.empty() && ImGui::IsItemHovered()) ImGui::SetTooltip("JoinEUI %s", p.to.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(p.network.c_str());
+            ImGui::TableNextColumn(); if (p.parsed && p.mtype >= 2 && p.mtype <= 5) ImGui::Text("%u", p.packetId); else ImGui::TextDisabled("-");
+            ImGui::TableNextColumn(); if (p.fport >= 0) ImGui::Text("%d", p.fport); else ImGui::TextDisabled("-");
+            ImGui::TableNextColumn(); if (p.frmLen >= 0) ImGui::TextColored(pal::warnAmber(), "%d B encrypted", p.frmLen); else ImGui::TextDisabled("-");
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(p.flags.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(p.mac.c_str());
+            ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); if (p.parsed && p.mtype != 7) ImGui::Text("%08X", p.mic); else ImGui::TextDisabled("-"); ImGui::PopFont();
+            ImGui::TableNextColumn(); ImGui::Text("%d", p.sf);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", p.snrDb);
+            ImGui::TableNextColumn(); ImGui::Text("%.3f", p.freqHz / 1e6);
+            ImGui::TableNextColumn();
+            if (S.lwRaw && !p.raw.empty()) { ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(p.raw.c_str()); ImGui::PopFont(); }
+            else ImGui::TextUnformatted(p.parsed ? p.detail.c_str() : p.note.c_str());
+            if (!p.raw.empty() && ImGui::IsItemHovered()) { ImGui::BeginTooltip(); ImGui::PushTextWrapPos(560 * gUi); ImGui::TextUnformatted(p.raw.c_str()); ImGui::PopTextWrapPos(); ImGui::EndTooltip(); }
+        }
+    }
+    ImGui::EndTable();
+    if (!on || !shown) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", !on ? "start the receiver to see frames" : "no LoRaWAN frame (that the filters let through) yet"); ImGui::PopTextWrapPos(); }
+}
+
 // ---------------------------------------------------------------- map
 
 void mapView(App& a, ImVec2 size) {
@@ -557,9 +760,19 @@ void settingsView(App& a) {
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Sets the tuning frequency (and the Meshtastic / MeshCore channel plan). Meshtastic and MeshCore use different\nfrequencies in each region; the US pair is 3.65 MHz apart and needs a radio rate of about 8 Msps or more.\nLoRa APRS and MeshCom are on 70 cm: every known LoRa APRS and MeshCom channel inside the captured band is searched.");
     ImGui::Spacing();
+    if (lorawanEntry(a)) {
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextDisabled("EU868: 868.1, 868.3 and 868.5 MHz (every network), and 867.1 - 867.9 MHz when the capture is wide enough, at SF7 - SF12, 125 kHz, "
+                            "and SF7 250 kHz on 868.3 MHz. US915: the 125 kHz uplink channels (902.3 + 0.2 n MHz, SF7 - SF10) and the 500 kHz ones inside the capture. "
+                            "Sync word 0x34 (public networks). Every spreading factor of each channel is searched at once. Downlinks (inverted chirps) are not received.");
+        ImGui::PopTextWrapPos();
+        ImGui::Spacing();
+        lorawanPrivacyNote();
+        return;
+    }
     if (!subMask(a)) {
     ImGui::TextDisabled("Networks");
-    bool mt = (S.protocols & 1) != 0, mc = (S.protocols & 2) != 0, la = (S.protocols & 4) != 0, mm = (S.protocols & 8) != 0, ch = false;
+    bool mt = (S.protocols & 1) != 0, mc = (S.protocols & 2) != 0, la = (S.protocols & 4) != 0, mm = (S.protocols & 8) != 0, lw = (S.protocols & 16) != 0, ch = false;
     if (ImGui::Checkbox("Meshtastic", &mt)) ch = true;
     ImGui::SameLine(0, 14 * gUi);
     if (ImGui::Checkbox("MeshCore", &mc)) ch = true;
@@ -569,7 +782,10 @@ void settingsView(App& a) {
     ImGui::SameLine(0, 14 * gUi);
     if (ImGui::Checkbox("MeshCom", &mm)) ch = true;
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("MeshCom 4 (icssw.org): sync word 0x2B, 4/6; 433.175 MHz SF11 250 kHz (EU) and the firmware's other country profiles.");
-    if (ch) { S.protocols = (mt ? 1 : 0) | (mc ? 2 : 0) | (la ? 4 : 0) | (mm ? 8 : 0); plat::prefs().setI("meshProtocols", S.protocols); }
+    ImGui::SameLine(0, 14 * gUi);
+    if (ImGui::Checkbox("LoRaWAN", &lw)) ch = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("LoRaWAN headers (EU868 / US915, SF7 - SF12): one demodulator per channel and spreading factor, so it uses much more CPU.\nOnly the clear headers are shown; payloads stay encrypted.");
+    if (ch) { S.protocols = (mt ? 1 : 0) | (mc ? 2 : 0) | (la ? 4 : 0) | (mm ? 8 : 0) | (lw ? 16 : 0); plat::prefs().setI("meshProtocols", S.protocols); }
     }
     if (!subMask(a) || subMask(a) == 1)    if (ImGui::Checkbox("Search every Meshtastic preset of the region", &S.allPresets)) plat::prefs().setB("meshPresets", S.allPresets);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Off: LongFast only (the default of every new node). On: also MediumFast, MediumSlow, ShortFast, ShortSlow, LongModerate\nand LongSlow, each on its own channel slot. Uses more CPU, and only the slots inside the captured band are searched.");
@@ -622,18 +838,22 @@ void settingsView(App& a) {
 
 void tab(App& a) {
     loadState();
-    if (const int m = subMask(a)) {   // a protocol entry: only its own views (LoRa APRS: stations instead of nodes and chat; MeshCom: stations and chat)
-        static const int aprsIds[] = {5, 1, 3, 4}, comIds[] = {5, 1, 2, 3, 4}, meshIds[] = {0, 1, 2, 3, 4};
-        const bool ap = m == 4, com = m == 8;
-        const int* ids = ap ? aprsIds : com ? comIds : meshIds;
-        const int n = ap ? 4 : 5;
+    if (const int m = subMask(a)) {   // a protocol entry: only its own views (LoRa APRS: stations instead of nodes and chat; MeshCom: stations and chat; LoRaWAN: devices and frames)
+        static const int aprsIds[] = {5, 1, 3, 4}, comIds[] = {5, 1, 2, 3, 4}, meshIds[] = {0, 1, 2, 3, 4}, lwIds[] = {6, 7, 4};
+        const bool ap = m == 4, com = m == 8, lw = m == 16;
+        const int* ids = ap ? aprsIds : com ? comIds : lw ? lwIds : meshIds;
+        const int n = ap ? 4 : lw ? 3 : 5;
         int k = 0;
         for (int i = 0; i < n; i++) if (ids[i] == S.view) k = i;
         if (ap) subNav("meshva", k, {"Stations", "Map", "Packets", "Settings"});
         else if (com) subNav("meshvc", k, {"Stations", "Map", "Chat", "Packets", "Settings"});
+        else if (lw) subNav("meshvl", k, {"Devices", "Frames", "Settings"});
         else subNav("meshvm", k, {"Nodes", "Map", "Chat", "Packets", "Settings"});
         S.view = ids[k];
-    } else subNav("meshv", S.view, {"Nodes", "Map", "Chat", "Packets", "Settings", "APRS"});
+    } else {
+        if (S.view == 7) S.view = 3;
+        subNav("meshv", S.view, {"Nodes", "Map", "Chat", "Packets", "Settings", "APRS", "LoRaWAN"});
+    }
     plat::prefs().setI("meshView", S.view);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     if (S.view == 0) { nodeTable(a, false); return; }
@@ -641,6 +861,8 @@ void tab(App& a) {
     if (S.view == 3) { packetTable(a); return; }
     if (S.view == 4) { settingsView(a); return; }
     if (S.view == 5) { aprsTable(a); return; }
+    if (S.view == 6) { lorawanDevices(a, false); return; }
+    if (S.view == 7) { lorawanFrames(a); return; }
     const float cw = std::min(300.f * gUi, W * 0.32f);
     ImGui::BeginChild("##mesh_l", ImVec2(W - cw - 8 * gUi, H));
     mapView(a, ImGui::GetContentRegionAvail());
@@ -657,11 +879,13 @@ void list(App& a) {
     size_t msgs = 0;
     for (const auto& m : t.messages) msgs += shows(a, m.protocol) ? 1 : 0;
     ImGui::PushTextWrapPos(0);
-    if (stationEntry(a)) ImGui::TextDisabled("%zu stations, %zu messages", sortedStations(a).size(), msgs);
+    if (lorawanEntry(a)) ImGui::TextDisabled("%zu LoRaWAN devices", t.lorawanDevices.size());
+    else if (stationEntry(a)) ImGui::TextDisabled("%zu stations, %zu messages", sortedStations(a).size(), msgs);
     else if (subMask(a)) ImGui::TextDisabled("%zu nodes, %zu messages", sortedNodes(a).size(), msgs);
     else ImGui::TextDisabled("%zu nodes, %zu APRS stations, %zu messages", t.nodes.size(), t.aprsStations.size(), t.messages.size());
     ImGui::PopTextWrapPos();
-    if (stationEntry(a)) aprsTable(a, true);
+    if (lorawanEntry(a)) lorawanDevices(a, true);
+    else if (stationEntry(a)) aprsTable(a, true);
     else nodeTable(a, true);
 }
 
@@ -787,8 +1011,9 @@ void status(App& a) {
     snprintf(b, sizeof b, "%llu / %llu", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad); ro("Frames ok / bad", b);
     int mt = 0, mc = 0;
     for (const auto& n : t.nodes) (n.protocol == 1 ? mt : mc)++;
-    snprintf(b, sizeof b, "%d / %d", mt, mc); ro("Nodes Mt / Mc", b);
+    if (!lorawanEntry(a)) { snprintf(b, sizeof b, "%d / %d", mt, mc); ro("Nodes Mt / Mc", b); }
     if (!t.aprsStations.empty()) { snprintf(b, sizeof b, "%zu", t.aprsStations.size()); ro("APRS stations", b); }
+    if (!t.lorawanDevices.empty() || lorawanEntry(a)) { snprintf(b, sizeof b, "%zu", t.lorawanDevices.size()); ro("LoRaWAN devices", b); }
     snprintf(b, sizeof b, "%zu", t.messages.size()); ro("Messages", b);
     snprintf(b, sizeof b, "%.1f dB", t.snrDb); ro("SNR", b);
 }
@@ -813,6 +1038,8 @@ void decoder(App& a, bool&) {
     if (const int m = subMask(a)) {   // a protocol entry decodes only its own network
         if (m == 1) { if (ImGui::Checkbox("all presets", &S.allPresets)) plat::prefs().setB("meshPresets", S.allPresets); if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also search MediumFast, MediumSlow, ShortFast, ShortSlow, LongModerate and LongSlow. Uses more CPU."); }
         else ImGui::TextDisabled("%s only", curSub(a)->name);
+        if (m == 16 && ImGui::IsItemHovered())
+            ImGui::SetTooltip("Every spreading factor (SF7 - SF12) of every channel in the capture at once.\nOnly the headers every gateway receives in the clear; payloads stay encrypted, nothing is decrypted.");
         return;
     }
     bool mt = (S.protocols & 1) != 0, mc = (S.protocols & 2) != 0, la = (S.protocols & 4) != 0, mm = (S.protocols & 8) != 0, ch = false;
@@ -824,7 +1051,11 @@ void decoder(App& a, bool&) {
     if (ImGui::Checkbox("LoRa APRS", &la)) ch = true;
     sameLineIf(boxW("MeshCom"), 8 * gUi);
     if (ImGui::Checkbox("MeshCom", &mm)) ch = true;
-    if (ch) { S.protocols = (mt ? 1 : 0) | (mc ? 2 : 0) | (la ? 4 : 0) | (mm ? 8 : 0); plat::prefs().setI("meshProtocols", S.protocols); }
+    bool lw = (S.protocols & 16) != 0;
+    sameLineIf(boxW("LoRaWAN"), 8 * gUi);
+    if (ImGui::Checkbox("LoRaWAN", &lw)) ch = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("LoRaWAN headers: one demodulator per channel and spreading factor (much more CPU). Payloads stay encrypted.");
+    if (ch) { S.protocols = (mt ? 1 : 0) | (mc ? 2 : 0) | (la ? 4 : 0) | (mm ? 8 : 0) | (lw ? 16 : 0); plat::prefs().setI("meshProtocols", S.protocols); }
     sameLineIf(boxW("all presets"), 8 * gUi);
     if (ImGui::Checkbox("all presets", &S.allPresets)) plat::prefs().setB("meshPresets", S.allPresets);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also search MediumFast, MediumSlow, ShortFast, ShortSlow, LongModerate and LongSlow. Uses more CPU.");
@@ -867,7 +1098,8 @@ void synth(App& a, bool& changed) {
 
 void meters(const App& a, std::vector<ModeMeter>& out) {
     const dect2::MeshTelemetry& t = a.rx.mesh;
-    out.push_back({"NODES", "%.0f", (double)t.nodes.size(), 0, 20, t.nodes.empty() ? 0 : 1});
+    if (lorawanEntry(a)) out.push_back({"DEVICES", "%.0f", (double)t.lorawanDevices.size(), 0, 50, t.lorawanDevices.empty() ? 0 : 1});
+    else out.push_back({"NODES", "%.0f", (double)t.nodes.size(), 0, 20, t.nodes.empty() ? 0 : 1});
     out.push_back({"FRAMES OK", "%.0f", (double)t.blocksOk, 0, 100, t.blocksOk ? 1 : 0});
     out.push_back({"SNR  dB", "%.1f", (double)t.snrDb, -20, 20, t.snrDb >= 0 ? 1 : t.snrDb >= -10 ? 2 : 3});
 }

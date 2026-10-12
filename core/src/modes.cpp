@@ -187,7 +187,7 @@ const ModeTuning* modeTuning(int stdMode) {
     return nullptr;
 }
 
-// the protocols listed as modes of their own (mode_tuning.h): RTTY, SSTV, FreeDV and the WSJT modes of HF digital, the four LoRa networks
+// the protocols listed as modes of their own (mode_tuning.h): RTTY, SSTV, FreeDV and the WSJT modes of HF digital, the five LoRa networks
 // of mesh, POCSAG and FLEX, the three marine services, and VOR and ILS
 static const SubMode kSubModes[] = {
     {"rtty",       "RTTY",       27, 1, -1, 14.080,  {0, 0, 0}},
@@ -201,6 +201,7 @@ static const SubMode kSubModes[] = {
     {"meshcore",   "MeshCore",   22, 2, 0,  869.618, {2, 0, 1}},
     {"loraaprs",   "LoRa APRS",  22, 4, 0,  433.775, {4, 2, 1}},
     {"meshcom",    "MeshCom",    22, 8, 0,  433.175, {8, 2, 0}},
+    {"lorawan",    "LoRaWAN",    22, 16, 0, 868.1,   {16, 3, 0}},
     {"pocsag",     "POCSAG",     25, 1, 0,  466.075, {1, 0, 0}},
     {"flex",       "FLEX",       25, 2, 0,  929.6625, {2, 0, 0}},
     {"navtex",     "NAVTEX",     17, 0, 1,  0.518,   {1, 0, 0}},

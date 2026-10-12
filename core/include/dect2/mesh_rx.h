@@ -27,8 +27,8 @@ public:
 
     // settings (any thread; they take effect at the next feed())
     void setTunedHz(double hz);                          // the user's frequency (default: meshTuning().defMhz); places the channels
-    void setRegion(int region);                          // 0 EU (default), 1 US
-    void setProtocols(int mask);                         // 1 Meshtastic, 2 MeshCore, 4 LoRa APRS, 8 MeshCom (default 15: all)
+    void setRegion(int region);                          // 0 EU (default), 1 US (also LoRaWAN EU868 / US915)
+    void setProtocols(int mask);                         // 1 Meshtastic, 2 MeshCore, 4 LoRa APRS, 8 MeshCom, 16 LoRaWAN (default 15: all but LoRaWAN)
     void setPresetSearch(bool all);                      // also the other Meshtastic presets of the region (more CPU)
     bool addMeshtasticChannel(const std::string& name, const std::string& base64Psk);   // false: bad key
     bool addMeshCoreChannel(const std::string& name, const std::string& secret);        // hex or base64; false: bad key
