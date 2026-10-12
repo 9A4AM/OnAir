@@ -1,6 +1,7 @@
 // ISM sensors receiver. See ism_rx.h.
 #include "dect2/ism_rx.h"
 #include "dect2/ism_tel.h"
+#include "dect2/ism_sigfox.h"
 #include "dect2/fftutil.h"
 #include <algorithm>
 #include <atomic>
@@ -49,6 +50,7 @@ struct IsmReceiver::Impl {
     uint64_t maxBurst = 0;
     double levelAcc = 0; size_t levelN = 0;
     IsmTelemetry tel, pub;
+    SigfoxRx sfx;
     double lastPubSec = -1;
     bool changed = false;
 
@@ -91,6 +93,7 @@ struct IsmReceiver::Impl {
         tel.seq = s0;
         tel.inputRate = rate; tel.centerHz = center; tel.dialOffsetHz = offset;
         tel.state = 0;
+        sfx.configure(rate, offset, center > 0 ? center + offset : 0);
         changed = true;
     }
 
@@ -462,6 +465,7 @@ struct IsmReceiver::Impl {
         double nf = 0;
         for (int k = 2; k < N - 1; k++) nf += floorP[k];
         tel.noiseDb = (float)(10 * std::log10(std::max(1e-30, nf / (N - 3)) / ((double)N * N * 0.375)));
+        tel.sigfox = sfx.telemetry();
         tel.seq++;
         std::lock_guard<std::mutex> lk(mu);
         pub = tel;
@@ -496,7 +500,8 @@ void IsmReceiver::feed(const cf32* x, size_t n) {
     { std::lock_guard<std::mutex> lk(m.mu); rs = m.resetReq; }
     if (rs) { m.setup(); if (m.rate > 0) m.init(); }
     if (m.rate < ismTuning().minSampleRate - 1 || !m.fft) return;
-    if (m.clearReq.exchange(false)) { m.tel.devices.clear(); m.tel.events.clear(); m.tel.raws.clear(); m.tel.blocksOk = m.tel.blocksBad = 0; m.changed = true; }
+    if (m.clearReq.exchange(false)) { m.tel.devices.clear(); m.tel.events.clear(); m.tel.raws.clear(); m.tel.blocksOk = m.tel.blocksBad = 0; m.sfx.clear(); m.changed = true; }
+    m.sfx.feed(x, n);
     for (size_t i = 0; i < n; i++) {
         cf32 v = x[i];
         if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);

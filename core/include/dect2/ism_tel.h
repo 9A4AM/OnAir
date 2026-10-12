@@ -2,6 +2,7 @@
 // The first members are copied into RxTelemetry (history plot, top bar): keep them and their meaning.
 #pragma once
 #include "ism_proto.h"
+#include "ism_sigfox.h"
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -67,6 +68,7 @@ struct IsmTelemetry {
     std::vector<IsmDevice> devices;   // most recently heard first
     std::vector<IsmEvent> events;     // newest first, at most kIsmLogMax
     std::vector<IsmRaw> raws;         // newest first, at most kIsmRawMax
+    SigfoxTelemetry sigfox;           // Sigfox uplinks and the 192 kHz waterfall (active when the dial is on a Sigfox band)
 };
 
 constexpr size_t kIsmHistMax = 64;
@@ -90,6 +92,11 @@ inline std::string ismReadingText(const std::vector<IsmField>& f) {
 inline std::string ismSummary(const IsmTelemetry& t) {
     char b[160];
     if (t.state == 0) return "waiting for samples";
+    if (t.sigfox.active && t.sigfox.frames) {
+        snprintf(b, sizeof b, "%zu device%s, %llu packets, %zu Sigfox message%s", t.devices.size(), t.devices.size() == 1 ? "" : "s",
+                 (unsigned long long)t.blocksOk, t.sigfox.messages.size(), t.sigfox.messages.size() == 1 ? "" : "s");
+        return b;
+    }
     snprintf(b, sizeof b, "%zu device%s, %llu packets, %llu unknown", t.devices.size(), t.devices.size() == 1 ? "" : "s",
              (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
     return b;

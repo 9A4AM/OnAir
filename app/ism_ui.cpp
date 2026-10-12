@@ -86,6 +86,14 @@ void presets(App& a) {
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Tune to a Z-Wave channel (ITU-T G.9959): R1 9.6 kbit/s, R2 40 kbit/s, R3 100 kbit/s. Passive receive only.");
     flowNext(6 * gUi);
+    ImGui::SetNextItemWidth(100 * gUi);
+    if (ImGui::BeginCombo("##ismsfx", "Sigfox")) {
+        static const struct { const char* n; double mhz; } sx[] = {{"RC1 Europe 868.130", 868.130}, {"RC2 USA 902.200", 902.200}, {"RC3 / RC4 920.800", 920.800}};
+        for (const auto& z : sx) if (ImGui::Selectable(z.n)) { tuneFreq(a, z.mhz); S.view = 5; }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Tune to a Sigfox uplink band: 192 kHz around the dial. Passive receive only.");
+    flowNext(6 * gUi);
     ImGui::SetNextItemWidth(110 * gUi);
     ImGui::Combo("##ismkind", &S.kind, kKinds, IM_ARRAYSIZE(kKinds));
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show only one kind of device.");
@@ -246,6 +254,55 @@ void zwaveView(App& a) {
     ImGui::EndTable();
 }
 
+// Sigfox: uplinks merged over their repetitions, and the 192 kHz waterfall of the UNB bursts.
+void sigfoxView(App& a) {
+    const dect2::IsmTelemetry& t = a.rx.ism;
+    const dect2::SigfoxTelemetry& sf = t.sigfox;
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("Sigfox uplinks (ultra-narrowband DBPSK, 100 bit/s) within 192 kHz of the dial. Passive receive only: payloads are often encrypted by the "
+                        "application, and the authentication code and CRC are shown as received, not checked (the key is secret).");
+    ImGui::PopTextWrapPos();
+    if (!sf.active) { ImGui::TextDisabled("the dial is not on a Sigfox band: use the Sigfox menu (868.130 / 902.200 / 920.800 MHz)"); return; }
+    const float h = 110 * gUi, w = ImGui::GetContentRegionAvail().x;
+    const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), IM_COL32(8, 12, 20, 255));
+    if (sf.cols > 0) {
+        const size_t nr = sf.rows.size() / (size_t)sf.cols;
+        const float cw = w / (float)sf.cols, rh = h / (float)dect2::kSigfoxRowsMax;
+        for (size_t r = 0; r < nr; r++)
+            for (int c = 0; c < sf.cols; c++) {
+                const int v = sf.rows[r * (size_t)sf.cols + (size_t)c];
+                if (v < 40) continue;
+                const float y = p0.y + h - (float)(nr - r) * rh;
+                dl->AddRectFilled(ImVec2(p0.x + c * cw, y), ImVec2(p0.x + (c + 1) * cw + 0.5f, y + rh + 0.5f), IM_COL32(40 + v * 3 / 4, 80 + v / 2, 255 - v / 2, 255));
+            }
+    }
+    ImGui::Dummy(ImVec2(w, h));
+    ImGui::TextDisabled("-96 kHz"); ImGui::SameLine(w / 2 - 20 * gUi); ImGui::TextDisabled("dial"); ImGui::SameLine(w - 50 * gUi); ImGui::TextDisabled("+96 kHz");
+    if (sf.messages.empty()) { ImGui::TextDisabled("no Sigfox messages yet"); return; }
+    if (!ImGui::BeginTable("##ismsfx", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV,
+                           ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    ImGui::TableSetupScrollFreeze(0, 1);
+    ImGui::TableSetupColumn("Time"); ImGui::TableSetupColumn("Device ID"); ImGui::TableSetupColumn("Seq"); ImGui::TableSetupColumn("Payload", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Frequency"); ImGui::TableSetupColumn("Level"); ImGui::TableSetupColumn("Reps"); ImGui::TableSetupColumn("MAC / CRC");
+    ImGui::TableHeadersRow();
+    for (const auto& m : sf.messages) {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(hhmmss(m.wallTime).c_str());
+        ImGui::PushFont(a.mono, 0);
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(m.id.c_str());
+        ImGui::TableNextColumn(); ImGui::Text("%u", m.seq);
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(m.payload.empty() ? "(empty)" : m.payload.c_str());
+        ImGui::PopFont();
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(freqText(t, m.freqs.empty() ? 0 : m.freqs[0]).c_str());
+        ImGui::TableNextColumn(); ImGui::Text("%.0f dB", m.levelDb);
+        ImGui::TableNextColumn(); ImGui::Text("%d", m.reps);
+        ImGui::TableNextColumn(); ImGui::TextDisabled("%s / %s", m.mac.c_str(), m.crc.c_str());
+    }
+    ImGui::EndTable();
+}
+
 void logView(App& a) {
     const dect2::IsmTelemetry& t = a.rx.ism;
     if (ImGui::SmallButton("Copy")) {
@@ -396,10 +453,10 @@ void tick(App& a) {
 void tab(App& a) {
     presets(a);
     privacyNote();
-    subNav("ismv", S.view, {"Devices", "Log", "Unknown", "Supported", "Z-Wave"});
+    subNav("ismv", S.view, {"Devices", "Log", "Unknown", "Supported", "Z-Wave", "Sigfox"});
     if (S.view == 3) { supportedView(); return; }
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to hear the devices around you"); ImGui::PopTextWrapPos(); return; }
-    if (S.view == 0) deviceView(a); else if (S.view == 1) logView(a); else if (S.view == 4) zwaveView(a); else rawView(a);
+    if (S.view == 0) deviceView(a); else if (S.view == 1) logView(a); else if (S.view == 4) zwaveView(a); else if (S.view == 5) sigfoxView(a); else rawView(a);
 }
 
 void list(App& a) {
