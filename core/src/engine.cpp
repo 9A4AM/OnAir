@@ -1951,6 +1951,22 @@ void Engine::analysisLoop() {
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
                 }
+            } else if (activeStd_.load() == 56) {
+                GeneralTelemetry mt;
+                if (rxGeneral_.telemetry(mt, modeSeq_[50])) {
+                    modeSeq_[50] = mt.seq;
+                    t.standard = 56;
+                    t.seq = mt.seq;
+                    t.state = mt.state;
+                    t.cfoHz = mt.cfoHz;
+                    t.dataValid = mt.dataValid;
+                    t.dataSnrDb = mt.snrDb;
+                    t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
+                    t.rateOk = rxGeneral_.ready();
+                    t.general = std::move(mt);
+                    std::lock_guard<std::mutex> lk(rxMu_);
+                    publishRx(std::move(t));
+                }
             } else if (activeStd_.load() == 57) {
                 RidTelemetry mt;
                 if (rxRid_.telemetry(mt, modeSeq_[51])) {
@@ -1964,6 +1980,22 @@ void Engine::analysisLoop() {
                     t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
                     t.rateOk = rxRid_.ready();
                     t.rid = std::move(mt);
+                    std::lock_guard<std::mutex> lk(rxMu_);
+                    publishRx(std::move(t));
+                }
+            } else if (activeStd_.load() == 59) {
+                TimeTelemetry mt;
+                if (rxTime_.telemetry(mt, modeSeq_[53])) {
+                    modeSeq_[53] = mt.seq;
+                    t.standard = 59;
+                    t.seq = mt.seq;
+                    t.state = mt.state;
+                    t.cfoHz = mt.cfoHz;
+                    t.dataValid = mt.dataValid;
+                    t.dataSnrDb = mt.snrDb;
+                    t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
+                    t.rateOk = rxTime_.ready();
+                    t.timesig = std::move(mt);
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
                 }
