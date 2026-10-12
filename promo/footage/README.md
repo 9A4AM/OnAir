@@ -25,3 +25,10 @@ The speed scene shows receiver CPU from `dect2cli`'s own load meter (% of real t
 | DAB (`dabtool gen` recording) | – | 9 % | 8–9 % |
 
 The video shows DVB-T against 0.1.0 (3x less; the gain shipped in 0.1.5) and ISDB-T against 0.1.5 (19 % less), each bar labelled with its version. Whole-app CPU under Xvfb (software rendering) was the same for 0.1.5 and 0.2.0, so the screen pacing is described, not quantified.
+
+## v0.2.4 footage and the rock cut
+The 0.2.4 film (`v024.html` / `v024.js`) describes what changed since the 0.2.0 video, cut to a rock song you supply (the song and the finished video are never committed: `OnAir_promo_v0.2.4*.mp4` is in `.gitignore`).
+- Footage: the unmodified `main` build (`DECT2_WINSIZE=1920x1080`), every mode on its built-in test signal, captured with `cap4.sh` (Xvfb + x11grab); `clicktab.py` finds the active tab's top line in a screenshot and opens the mode's own tab; `capture_024.sh` is the full list; `extract.sh` writes `/tmp/clips4/<name>/` and `c4n.js`.
+- Mode groups and counts: `groups024.js`, generated from `app/toolbar.cpp` on main (76 mode-list entries in 14 groups; with DVB-T2 and DVB-T counted apart, as the 0.2.0 film did, 14 modes then and 77 now).
+- Soundtrack: `song_edit_024.py <song> <dir>` tracks the beats, joins three parts of the song on downbeats and writes `song_edit.wav` and `beatmap024.js`; the film's cuts follow that beat map.
+- Render: `PAGE=v024.html FDIR=<dir> node render.cjs render 3`, then mux with the edited song (`loudnorm=I=-14`).
