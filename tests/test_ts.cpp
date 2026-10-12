@@ -151,6 +151,13 @@ int main() {
     // text decoding
     const uint8_t arabic[] = {0x02, 0xE5, 0xD1, 0xCD, 0xC8, 0xC7}; // ISO-8859-6: "مرحبا"
     CHECK(dvbText(arabic, 6) == "\xD9\x85\xD8\xB1\xD8\xAD\xD8\xA8\xD8\xA7", "ISO-8859-6 decode");
+    const uint8_t gb[] = {0x13, 0xD6, 0xD0, 0xD1, 0xEB, 0xB5, 0xE7, 0xCA, 0xD3, 0xCC, 0xA8}; // GB-2312: "中央电视台"
+    const char* cctv = "\xE4\xB8\xAD\xE5\xA4\xAE\xE7\x94\xB5\xE8\xA7\x86\xE5\x8F\xB0";
+    CHECK(dvbText(gb, 11) == cctv, "GB2312 decode");
+    CHECK(dvbText(gb + 1, 10, true) == cctv, "unprefixed GB2312 decode (DTMB)");
+    CHECK(dvbText(gb + 1, 10) != cctv, "unprefixed high bytes stay ISO 6937 outside DTMB");
+    const uint8_t ks[] = {0x12, 0xC7, 0xD1, 0xB1, 0xB9}; // KS X 1001: "한국"
+    CHECK(dvbText(ks, 5) == "\xED\x95\x9C\xEA\xB5\xAD", "KS X 1001 decode");
     printf("%s\n", fails ? "FAILED" : "all passed");
     // EIT: two events with times, short + extended descriptions and a genre
     {

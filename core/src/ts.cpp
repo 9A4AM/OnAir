@@ -50,6 +50,8 @@ static std::string convert(const char* charset, const uint8_t* p, int n) {
             if ((v >= 1 && v <= 9) || v == 13 || v == 15) cp = 28590 + v;
             else if (v == 11) cp = 874;   // Thai
         } else if (!strcmp(charset, "BIG5")) cp = 950;
+        else if (!strcmp(charset, "GB2312")) cp = 936;
+        else if (!strcmp(charset, "EUC-KR")) cp = 949;
         const int wn = MultiByteToWideChar(cp, 0, (const char*)p, n, nullptr, 0);
         if (wn <= 0) return std::string((const char*)p, n);
         w.resize((size_t)wn);
@@ -76,7 +78,19 @@ static std::string convert(const char* charset, const uint8_t* p, int n) {
 }
 #endif
 
-std::string dvbText(const uint8_t* p, int n) {
+// Unprefixed text that is a run of valid GB 2312 (EUC-CN) pairs, as some Chinese DTMB muxes send.
+static bool looksGb2312(const uint8_t* p, int n) {
+    if (n < 2 || p[0] < 0xA1) return false;
+    int pairs = 0;
+    for (int i = 0; i < n;) {
+        if (p[i] < 0x80) { i++; continue; }
+        if (i + 1 >= n || p[i] < 0xA1 || p[i] > 0xF7 || p[i + 1] < 0xA1 || p[i + 1] > 0xFE) return false;
+        i += 2; pairs++;
+    }
+    return pairs > 0;
+}
+
+std::string dvbText(const uint8_t* p, int n, bool gbDefault) {
     if (n <= 0) return {};
     std::string s;
     auto clean = [](std::string t) {
@@ -90,7 +104,8 @@ std::string dvbText(const uint8_t* p, int n) {
         return r;
     };
     unsigned first = p[0];
-    if (first >= 0x20) s = text::iso6937(p, (size_t)n);                         // default table: ISO/IEC 6937 (EN 300 468 Annex A)
+    if (gbDefault && looksGb2312(p, n)) s = convert("GB2312", p, n);
+    else if (first >= 0x20) s = text::iso6937(p, (size_t)n);                         // default table: ISO/IEC 6937 (EN 300 468 Annex A)
     else if (first >= 0x01 && first <= 0x0B && first != 0x0 && n > 1) {
         static const char* cs[] = {"", "ISO-8859-5", "ISO-8859-6", "ISO-8859-7", "ISO-8859-8", "ISO-8859-9", "ISO-8859-10", "ISO-8859-11", "", "ISO-8859-13", "ISO-8859-14", "ISO-8859-15"};
         s = convert(cs[first], p + 1, n - 1);
@@ -100,6 +115,8 @@ std::string dvbText(const uint8_t* p, int n) {
     } else if (first == 0x11 && n > 1) s = convert("UCS-2BE", p + 1, n - 1);
     else if (first == 0x15 && n > 1) s = std::string((const char*)p + 1, n - 1);
     else if (first == 0x14 && n > 1) s = convert("BIG5", p + 1, n - 1);
+    else if (first == 0x13 && n > 1) s = convert("GB2312", p + 1, n - 1);   // GB-2312-1980 (EUC-CN form)
+    else if (first == 0x12 && n > 1) s = convert("EUC-KR", p + 1, n - 1);   // KS X 1001-2004
     else s = text::iso6937(p + 1, (size_t)(n - 1));   // reserved selector: the default table
     return text::clean(clean(s));
 }
@@ -358,9 +375,9 @@ void TsDemux::parseSdt(const uint8_t* s, int len) {
                 sv.type = d[0];
                 int pl = d[1];
                 if (2 + pl + 1 <= l) {
-                    sv.provider = dvbText(d + 2, pl);
+                    sv.provider = dvbText(d + 2, pl, gbText_);
                     int nl = d[2 + pl];
-                    if (3 + pl + nl <= l) sv.name = dvbText(d + 3 + pl, nl);
+                    if (3 + pl + nl <= l) sv.name = dvbText(d + 3 + pl, nl, gbText_);
                 }
             }
             j += 2 + l;
@@ -373,7 +390,7 @@ void TsDemux::parseNit(const uint8_t* s, int len) {
     int ndl = ((s[8] & 0x0F) << 8) | s[9];
     for (int j = 10; j + 2 <= 10 + ndl && j + 2 <= len; ) {
         int tag = s[j], l = s[j + 1];
-        if (tag == 0x40) network_ = dvbText(s + j + 2, l);
+        if (tag == 0x40) network_ = dvbText(s + j + 2, l, gbText_);
         j += 2 + l;
     }
     // transport stream loop: logical channel numbers (descriptor 0x83 in private data, e.g. EACEM / UK)
@@ -414,7 +431,7 @@ void TsDemux::parseEit(const uint8_t* s, int len) {
                 if (tag == 0x4D && l >= 5) {
                     const uint8_t* d = s + j + 2;
                     int nl = d[3];
-                    if (4 + nl <= l) nameOut = dvbText(d + 4, nl);
+                    if (4 + nl <= l) nameOut = dvbText(d + 4, nl, gbText_);
                 }
                 j += 2 + l;
             }
@@ -447,16 +464,16 @@ void TsDemux::parseEit(const uint8_t* s, int len) {
                 ev.lang.assign((const char*)d, 3);
                 const int nl = d[3];
                 if (4 + nl < l) {
-                    ev.title = dvbText(d + 4, nl);
+                    ev.title = dvbText(d + 4, nl, gbText_);
                     const int tl = d[4 + nl];
-                    if (5 + nl + tl <= l) ev.text = dvbText(d + 5 + nl, tl);
+                    if (5 + nl + tl <= l) ev.text = dvbText(d + 5 + nl, tl, gbText_);
                 }
             } else if (tag == 0x4E && l >= 6) {       // extended event descriptor (several pieces, in order)
                 const int num = d[0] >> 4;
                 const int itemsLen = d[4];
                 if (5 + itemsLen < l) {
                     const int tl = d[5 + itemsLen];
-                    if (6 + itemsLen + tl <= l) ext[num] = dvbText(d + 6 + itemsLen, tl);
+                    if (6 + itemsLen + tl <= l) ext[num] = dvbText(d + 6 + itemsLen, tl, gbText_);
                 }
             } else if (tag == 0x54 && l >= 2) {       // content descriptor
                 ev.genre = d[0] >> 4;
