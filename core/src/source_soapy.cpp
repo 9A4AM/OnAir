@@ -309,7 +309,24 @@ private:
             }
             if (ppm != ppm_) tuneHz = ppmCorrectedHz(s.centerHz, ppm);
         } else tuneHz = ppmCorrectedHz(s.centerHz, ppm);
-        dev_->setFrequency(SOAPY_SDR_RX, ch, tuneHz);
+        // SpyServer exposes a named RF frequency. Check the server's reported tuning
+        // rather than assuming that setFrequency succeeded (some sessions are read-only).
+        if (args_.find("driver=spyserver") != std::string::npos) {
+            dev_->setFrequency(SOAPY_SDR_RX, ch, "RF", tuneHz);
+            const double actualHz = dev_->getFrequency(SOAPY_SDR_RX, ch, "RF");
+            fprintf(stderr, "[SPYSERVER] requested %.6f MHz, server reports %.6f MHz\\n",
+                    tuneHz / 1e6, actualHz / 1e6);
+            fflush(stderr);
+            if (std::fabs(actualHz - tuneHz) > 5000) {
+                char msg[220];
+                snprintf(msg, sizeof msg, "SpyServer did not tune: requested %.6f MHz, server reports %.6f MHz (check remote control permission)",
+                         tuneHz / 1e6, actualHz / 1e6);
+                err = msg;
+                return false;
+            }
+        } else {
+            dev_->setFrequency(SOAPY_SDR_RX, ch, tuneHz);
+        }
         try { if (dev_->hasGainMode(SOAPY_SDR_RX, ch)) dev_->setGainMode(SOAPY_SDR_RX, ch, false); } catch (...) {}   // we run our own AGC
         const auto gr = dev_->getGainRange(SOAPY_SDR_RX, ch);
         const double g = std::min(std::max(s.gainDb, gr.minimum()), gr.maximum());
