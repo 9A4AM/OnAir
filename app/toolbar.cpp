@@ -190,12 +190,12 @@ void netRadioWindow(App& a) {
     }
     if (!a.netAddOpen) return;
     ImGui::SetNextWindowSize(ImVec2(420 * gUi, 0), ImGuiCond_Appearing);
-    if (!ImGui::Begin("Network radios - Andriux Pnvz", &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
+    if (!ImGui::Begin("Tinklo imtuvai - Andriux Pnvz", &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
     const bool busy = a.netAddProbe != nullptr;
     ImGui::BeginDisabled(busy);
-    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer"};
+    static const char* kTypes[] = {"PlutoSDR (per IP)", "rtl_tcp", "SoapyRemote", "SpyServer"};
     ImGui::SetNextItemWidth(200 * gUi);
-    if (ImGui::Combo("Type", &a.netAddType, kTypes, 4)) {
+    if (ImGui::Combo("Tipas", &a.netAddType, kTypes, 4)) {
         const auto t = (NetRadio::Type)a.netAddType;
         a.netAddPort = netRadioDefaultPort(t);
         const std::string h = a.netAddHost;
@@ -203,13 +203,13 @@ void netRadioWindow(App& a) {
         a.netAddErr.clear();
     }
     ImGui::SetNextItemWidth(200 * gUi);
-    ImGui::InputTextWithHint("Address", a.netAddType == NetRadio::Pluto ? "192.168.2.1" : "192.168.1.20 or raspberrypi.local", a.netAddHost, sizeof a.netAddHost);
+    ImGui::InputTextWithHint("IP adresas", a.netAddType == NetRadio::Pluto ? "192.168.2.1" : "192.168.1.20 arba raspberrypi.local", a.netAddHost, sizeof a.netAddHost);
     ImGui::SetNextItemWidth(120 * gUi);
-    ImGui::InputInt("Port", &a.netAddPort, 0, 0);
+    ImGui::InputInt("Prievadas", &a.netAddPort, 0, 0);
     a.netAddPort = std::max(0, std::min(65535, a.netAddPort));
-    if (a.netAddType == NetRadio::Pluto) { ImGui::SameLine(); ImGui::TextDisabled("0 = libiio's default"); }
-    if ((a.netAddType == NetRadio::SoapyRemote || a.netAddType == NetRadio::SpyServer) && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "This build has no SoapySDR, which this network radio needs.");
-    if (ImGui::Button("Connect")) {
+    if (a.netAddType == NetRadio::Pluto) { ImGui::SameLine(); ImGui::TextDisabled("0 = numatytasis libiio"); }
+    if ((a.netAddType == NetRadio::SoapyRemote || a.netAddType == NetRadio::SpyServer) && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "Sioje versijoje nera SoapySDR, reikalingo siam tinklo imtuvui.");
+    if (ImGui::Button("Prisijungti")) {
         NetRadio r;
         r.type = (NetRadio::Type)a.netAddType;
         r.host = a.netAddHost;
@@ -221,16 +221,16 @@ void netRadioWindow(App& a) {
         std::thread([pr] { std::string e; pr->ok = probeNetRadio(pr->radio, 3000, e); pr->err = e; pr->done = true; }).detach();   // never blocks the UI
     }
     ImGui::EndDisabled();
-    if (busy) { ImGui::SameLine(); ImGui::TextDisabled("connecting…"); }
-    if (!a.netAddErr.empty()) { ImGui::PushTextWrapPos(400 * gUi); ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), "Cannot connect: %s", a.netAddErr.c_str()); ImGui::PopTextWrapPos(); }
+    if (busy) { ImGui::SameLine(); ImGui::TextDisabled("Jungiamasi..."); }
+    if (!a.netAddErr.empty()) { ImGui::PushTextWrapPos(400 * gUi); ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), "Nepavyko prisijungti: %s", a.netAddErr.c_str()); ImGui::PopTextWrapPos(); }
     if (!a.netRadios.empty()) {
         ImGui::Separator();
-        ImGui::TextDisabled("Added radios (listed with the others)");
+        ImGui::TextDisabled("Prideti imtuvai (rodomi bendrame sarase)");
         int drop = -1;
         ImGui::BeginDisabled(a.engine.running());
         for (int i = 0; i < (int)a.netRadios.size(); i++) {
             ImGui::PushID(i);
-            if (ImGui::SmallButton("Remove")) drop = i;
+            if (ImGui::SmallButton("Pasalinti")) drop = i;
             ImGui::SameLine();
             ImGui::TextUnformatted(netRadioDeviceName(a.netRadios[i]).c_str());
             ImGui::PopID();
@@ -265,7 +265,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
                 a.tune.biasTee = false;   // antenna power set for another radio (and its antenna) is never carried over
             }
         ImGui::Separator();
-        if (ImGui::Selectable("Add network radio…")) a.netAddOpen = true;
+        if (ImGui::Selectable("Prideti tinklo imtuva...")) a.netAddOpen = true;
         ImGui::EndCombo();
     }
     if (srcName != a.devices[a.devIdx].name && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", a.devices[a.devIdx].name.c_str());
