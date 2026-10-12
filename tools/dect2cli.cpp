@@ -184,6 +184,7 @@ int main(int argc, char** argv) {
     e.dstar().setSilent(!listen); // D-STAR voice (mbelib) too
     e.nxdn().setSilent(!listen);  // NXDN voice (mbelib) too
     e.dpmr().setSilent(!listen);  // dPMR voice (mbelib) too
+    e.p25().setSilent(!listen);   // P25 voice (mbelib IMBE) too
     e.dpmr().setScan(dpmrScan);   // --dpmr-scan: step through the 16 PMR446 channels
     e.mac().setSilent(!listen);   // MAC television sound (--listen plays it)
     if (!wavPath.empty()) e.fm().setAudioTap([&wav](const float* l, const float* r, size_t n) {

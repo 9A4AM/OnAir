@@ -4,6 +4,7 @@
 #include "dect2/hfdig_freedv.h"
 #include "dect2/dstar_ambe.h"
 #include "dect2/nxdn_ambe.h"
+#include "dect2/p25_imbe.h"
 #include "dect2/updater.h"
 #include <string>
 #include <vector>
@@ -112,6 +113,23 @@ Text textOf(CodecHelp c) {
                 "  mkdir build && cd build && cmake .. && make && sudo make install",
 #endif
                 true};
+    case CodecHelp::P25Imbe:
+        return {"mbelib (P25 IMBE voice)",
+                "P25 Phase 1 voice uses IMBE, a patented vocoder. OnAir does not ship it: calls, unit IDs, talkgroups and the trunking system are shown "
+                "without it. The open mbelib library decodes IMBE; when you install it yourself, OnAir loads it and plays clear P25 voice. Encrypted "
+                "calls are only reported as encrypted: OnAir never decrypts. mbelib's own notice says that using it may need a patent licence, and "
+                "listening to radio services is regulated in many countries: check the rules where you live first.",
+#if defined(__APPLE__)
+                "Homebrew has no formula; build it from github.com/szechyjs/mbelib:\n  brew install cmake\n  (clone the repository)\n"
+                "  mkdir build && cd build && cmake .. && make\nthen copy libmbe.dylib into an OnAir codecs folder below.",
+#elif defined(_WIN32)
+                "Build mbelib (github.com/szechyjs/mbelib) with CMake and Visual Studio, or take mbe.dll / libmbe.dll from a Windows build of "
+                "DSD-FME, and copy it into an OnAir codecs folder below. Use the same kind of Windows (x86_64 or ARM) as OnAir.",
+#else
+                "Most distributions do not package it; build it from github.com/szechyjs/mbelib (needs cmake and a C compiler):\n"
+                "  mkdir build && cd build && cmake .. && make && sudo make install",
+#endif
+                true};
     }
     return {"", "", "", false};
 }
@@ -129,8 +147,8 @@ void codecHelpButton(CodecHelp c) {
         ImGui::Separator();
         if (t.loadable) {
             std::string path, ver;
-            const bool mbe = c == CodecHelp::DstarAmbe || c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe;
-            const bool found = c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe ? dect2::nxdnAmbeAvailable(&path) : mbe ? dect2::dstarAmbeAvailable(&path) : dect2::hfdigFreedvLibrary(&path, &ver);
+            const bool mbe = c == CodecHelp::DstarAmbe || c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe || c == CodecHelp::P25Imbe;
+            const bool found = c == CodecHelp::P25Imbe ? dect2::p25ImbeAvailable(&path) : c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe ? dect2::nxdnAmbeAvailable(&path) : mbe ? dect2::dstarAmbeAvailable(&path) : dect2::hfdigFreedvLibrary(&path, &ver);
             if (found) ImGui::TextColored(pal::okGreen(), "%s found: %s", mbe ? "mbelib" : "codec2", path.c_str());
             else ImGui::TextColored(pal::warnAmber(), "%s not found%s", mbe ? "mbelib" : "codec2", mbe ? ": calls and data are shown, without sound" : "");
         } else {
@@ -151,7 +169,7 @@ void codecHelpButton(CodecHelp c) {
 #endif
             for (const auto& d : dect2::codecFolderList()) ImGui::BulletText("%s", d.c_str());
             ImGui::Spacing();
-            if (ImGui::Button("Look again")) { if (c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe) dect2::nxdnAmbeRescan(); else if (c == CodecHelp::DstarAmbe) dect2::dstarAmbeRescan(); else dect2::hfdigFreedvRescan(); }
+            if (ImGui::Button("Look again")) { if (c == CodecHelp::P25Imbe) dect2::p25ImbeRescan(); else if (c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe) dect2::nxdnAmbeRescan(); else if (c == CodecHelp::DstarAmbe) dect2::dstarAmbeRescan(); else dect2::hfdigFreedvRescan(); }
             ImGui::SameLine();
         }
         if (ImGui::Button("Full instructions")) dect2::openUrl(kDocUrl);

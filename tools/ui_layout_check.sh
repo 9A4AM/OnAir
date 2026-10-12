@@ -87,6 +87,7 @@ dstar	--mode dstar	Overview|D-STAR|Receiver|History
 hfdl	--mode hfdl	Overview|Messages|Receiver|History
 nxdn	--mode nxdn	Overview|NXDN|Receiver|History
 dpmr	--mode dpmr	Overview|dPMR|Receiver|History
+p25	--mode p25	Overview|P25|Receiver|History
 gsmr	--mode gsmr	Overview|Cells|Receiver|History
 tetra	--mode tetra	Overview|TETRA|Receiver|History
 psk	--mode psk	Overview|PSK31|Receiver|History

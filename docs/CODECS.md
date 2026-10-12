@@ -13,6 +13,7 @@ restart.
 | HF digital, FreeDV | codec2 | plays speech when codec2 is installed | **yes** |
 | DMR | AMBE+2 | finds, counts and logs voice calls; no sound | no |
 | D-STAR | AMBE (3600x2400) | call log, messages, positions; plays voice when mbelib is installed | **yes** (mbelib) |
+| P25 Phase 1 | IMBE (7200x4400) | calls, talkgroups, trunking; plays clear voice when mbelib is installed (encrypted calls only reported) | **yes** (mbelib) |
 | HD Radio | HDC | stations, data and pictures; no sound | no |
 | CDR | DRA+ | service list; no sound | no |
 | Inmarsat Aero | AMBE (C channel voice) | P channel data only; voice channels are not tuned | no |
@@ -128,6 +129,18 @@ rules where you live first.
 
 It is the same library as for D-STAR and NXDN: build and install it as described there, with the same file names. Open dPMR: the **?**
 next to the voice says `mbelib found: <path>`; **Look again** searches again without a restart.
+
+## IMBE (P25 Phase 1 voice) through mbelib
+
+P25 Phase 1 voice uses IMBE (the 7200x4400 variant), which is patented. Without a codec OnAir shows every call (unit IDs,
+talkgroups, emergency, encryption algorithm and key ID), the trunking system (sites, channel identifiers, voice grants) and the voice
+frame count, but plays no sound. If you install the open mbelib library (<https://github.com/szechyjs/mbelib>, ISC licence) yourself,
+OnAir loads it at run time and plays clear P25 voice. Encrypted calls are only reported as encrypted: OnAir never decrypts anything.
+OnAir only receives. mbelib's own notice says that using it may need a patent licence, and listening to radio services is regulated
+in many countries; check the rules where you live first.
+
+It is the same library as for D-STAR, NXDN and dPMR: build and install it as described there, with the same file names. Open P25:
+the **?** next to the voice says `mbelib found: <path>`; **Look again** searches again without a restart.
 
 ## HDC (HD Radio sound)
 
