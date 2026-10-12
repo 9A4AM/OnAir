@@ -184,6 +184,7 @@ int main(int argc, char** argv) {
     e.nxdn().setSilent(!listen);  // NXDN voice (mbelib) too
     e.dpmr().setSilent(!listen);  // dPMR voice (mbelib) too
     e.dpmr().setScan(dpmrScan);   // --dpmr-scan: step through the 16 PMR446 channels
+    e.mac().setSilent(!listen);   // MAC television sound (--listen plays it)
     if (!wavPath.empty()) e.fm().setAudioTap([&wav](const float* l, const float* r, size_t n) {
         for (size_t i = 0; i < n; i++) { wav.push_back((int16_t)std::lround(std::max(-1.f, std::min(1.f, l[i])) * 32767)); wav.push_back((int16_t)std::lround(std::max(-1.f, std::min(1.f, r[i])) * 32767)); }
     });

@@ -44,6 +44,7 @@ dvbs	--mode dvbs	Overview|TV|Receiver|Stream|TS|History
 dtmb	--mode dtmb	Overview|TV|Receiver|Stream|TS|Scan|History
 dvbc	--mode dvbc	Overview|TV|Receiver|Stream|TS|History
 atv	--mode atv	Overview|Video|Receiver|History
+mac	--mode mac	Overview|Video|Receiver|History
 dmr	--mode dmr	Overview|Calls|Receiver|History
 drm	--mode drm	Overview|Radio|Receiver|History
 adsb	--mode adsb	Overview|Aircraft|Receiver|History
