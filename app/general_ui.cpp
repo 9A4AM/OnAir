@@ -371,10 +371,10 @@ void generalPlotMouse(App& a, int plotId) {
     const double el = f + lo / 1e6, eh = f + hi / 1e6;
     // which edges can be held: both for the symmetric filters, only the outer one for USB / LSB (the inner sits 300 Hz from the dial)
     const bool canLo = S.demod != dect2::GenUsb, canHi = S.demod != dect2::GenLsb;
-    int near = -1;
+    int edgeNear = -1;
     const float grab = 5 * gUi;
-    if (canLo && std::fabs(mx - px(el)) < grab) near = 0;
-    if (canHi && std::fabs(mx - px(eh)) < grab && (near < 0 || std::fabs(mx - px(eh)) < std::fabs(mx - px(el)))) near = 1;
+    if (canLo && std::fabs(mx - px(el)) < grab) edgeNear = 0;
+    if (canHi && std::fabs(mx - px(eh)) < grab && (edgeNear < 0 || std::fabs(mx - px(eh)) < std::fabs(mx - px(el)))) edgeNear = 1;
     if (S.drag >= 0 && S.dragPlot == plotId) {
         ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
         if (ImGui::IsMouseDown(0)) {
@@ -389,9 +389,9 @@ void generalPlotMouse(App& a, int plotId) {
         return;
     }
     if (!hov) return;
-    if (near >= 0) {
+    if (edgeNear >= 0) {
         ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-        if (ImGui::IsMouseClicked(0)) { S.drag = near; S.dragPlot = plotId; return; }
+        if (ImGui::IsMouseClicked(0)) { S.drag = edgeNear; S.dragPlot = plotId; return; }
         ImGui::SetTooltip("drag to change the filter (%.4g kHz)", S.width[S.demod] / 1e3);
         return;
     }
