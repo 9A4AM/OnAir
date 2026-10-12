@@ -3,6 +3,12 @@
 #include <cstring>
 #include <cstdint>
 #include <cstdlib>
+#include <cstdio>
+#include <string>
+#ifdef __linux__
+#include <unistd.h>
+#include <sys/stat.h>
+#endif
 
 namespace dect2 {
 
@@ -43,6 +49,20 @@ AudioOut::~AudioOut() { stop(); }
 bool AudioOut::start(int rate) {
     if (running_) return true;
     rate_ = rate;
+#ifdef __linux__
+    // run with sudo, the sound server of the user who ran sudo is not found (issue #67): point PulseAudio/PipeWire at it
+    if (geteuid() == 0 && !getenv("PULSE_SERVER") && !getenv("XDG_RUNTIME_DIR")) {
+        if (const char* uid = getenv("SUDO_UID"); uid && *uid) {
+            const std::string dir = std::string("/run/user/") + uid, sock = dir + "/pulse/native";
+            struct stat st{};
+            if (stat(sock.c_str(), &st) == 0) {
+                setenv("PULSE_SERVER", ("unix:" + sock).c_str(), 0);
+                setenv("XDG_RUNTIME_DIR", dir.c_str(), 0);
+                fprintf(stderr, "audio: running as root, using the sound server of user %s (%s)\n", uid, sock.c_str());
+            }
+        }
+    }
+#endif
     if (!audioBackendStart(p_.get(), rate)) return false;
     running_ = true;
     return true;

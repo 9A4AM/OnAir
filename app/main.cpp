@@ -1,3 +1,6 @@
+#ifdef __linux__
+#include <unistd.h>
+#endif
 // OnAir: window, main loop and the layout of the panels.
 #include "app.h"
 #include "dect2/crash_report.h"
@@ -408,6 +411,9 @@ static void discordTick(const App& a) {   // posts the wanted Rich Presence; the
 
 int main(int argc, char** argv) {
     dect2::crash::install();   // first: a crash from here on leaves a report
+#ifdef __linux__
+    if (geteuid() == 0) fprintf(stderr, "OnAir: running as root is not needed; see docs for udev rules\n");
+#endif
 #ifdef _WIN32
     dect2::crash::startLog();   // the program has no console window: keep its messages in a log file next to the settings (the old one is kept as onair-prev.log)
 #endif

@@ -125,7 +125,23 @@ public:
 
 protected:
     bool openDevice(const TuneSettings& s, std::string& err) override {
-        if (uhd().make(&dev_, args_.c_str()) != 0 || !dev_) {
+        otw_ = radioOption(s, "wire", "sc16") == "sc8" ? "sc8" : "sc16";
+        // a network USRP (USRP2, N2xx, X3xx, N3xx) drops samples with the small default socket buffers: ask for the ones UHD's docs recommend
+        // unless the user set them in the device arguments (issues #61/#62)
+        std::string dargs = args_;
+        const bool net = contains(args_, "addr") || contains(args_, "type=usrp2") || contains(args_, "type=x300") || contains(args_, "type=n3xx");
+        if (net) {
+#ifdef __linux__
+            if (!contains(dargs, "recv_buff_size")) dargs += std::string(dargs.empty() ? "" : ",") + "recv_buff_size=50000000";
+            if (FILE* f = fopen("/proc/sys/net/core/rmem_max", "r")) {
+                long v = 0;
+                if (fscanf(f, "%ld", &v) == 1 && v < 50000000) fprintf(stderr, "USRP: the socket receive buffer limit is small (%ld); to avoid dropped samples run: sudo sysctl -w net.core.rmem_max=50000000\n", v);
+                fclose(f);
+            }
+#endif
+            if (!contains(dargs, "num_recv_frames")) dargs += std::string(dargs.empty() ? "" : ",") + "num_recv_frames=512";
+        }
+        if (uhd().make(&dev_, dargs.c_str()) != 0 || !dev_) {
             if (dev_) uhd().free_(&dev_);
             dev_ = nullptr;
             const std::string t = uhd().text(nullptr);
@@ -240,7 +256,10 @@ private:
     static constexpr int kStallS = 5;
     bool startReceiving(std::string& err) {
         size_t chan = ch_;
-        char cpu[] = "fc32", otw[] = "sc16", none[] = "";
+        // fc32 out of UHD: it converts sc8 (half the Ethernet load, 8-bit samples) and sc16 on the wire itself
+        char cpu[] = "fc32", none[] = "";
+        char otw[8];
+        snprintf(otw, sizeof otw, "%s", otw_.c_str());
         UhdApi::stream_args_t sa{cpu, otw, none, &chan, 1};
         if (uhd().rx_streamer_make(&streamer_) != 0 || uhd().rx_metadata_make(&md_) != 0 || uhd().get_rx_stream(dev_, &sa, streamer_) != 0) { err = "USRP: cannot set up the sample stream: " + uhd().text(dev_); stopReceiving(); return false; }
         UhdApi::stream_cmd_t cmd{UhdApi::kStartContinuous, 0, true, 0, 0.0};
@@ -269,6 +288,7 @@ private:
         std::lock_guard<std::mutex> lk(gRangeMu);
         gInputs[args_] = in;
     }
+    std::string otw_ = "sc16";   // the wire format ("wire" setting)
     std::string args_, antenna_;   // antenna_: the input the user picked ("" = UHD's default)
     size_t ch_ = 0;                // the receive channel (the B210's RF A = 0, RF B = 1)
     UhdApi::usrp_t* dev_ = nullptr;
@@ -323,7 +343,11 @@ void listUsrp(std::vector<DeviceInfo>& out) {
                           choiceSetting("clock", "Reference clock",
                                         "The 10 MHz reference the USRP locks to. Default: UHD's choice (the internal oscillator; a B2xx with a GPSDO fitted\n"
                                         "uses the GPSDO). External: a 10 MHz reference on the REF input. Takes effect when the radio is started.",
-                                        {"default", "internal", "external", "gpsdo"}, {"Default", "Internal", "External 10 MHz", "GPSDO"}, "default", true)};
+                                        {"default", "internal", "external", "gpsdo"}, {"Default", "Internal", "External 10 MHz", "GPSDO"}, "default", true),
+                          choiceSetting("wire", "Wire format",
+                                        "The sample format between the USRP and the computer. sc16: 16-bit samples (default). sc8: 8-bit samples, half the\n"
+                                        "Ethernet/USB load: use it when a network USRP drops samples at high rates. Takes effect when the radio is started.",
+                                        {"sc16", "sc8"}, {"sc16 (16-bit)", "sc8 (8-bit, half the load)"}, "sc16", true)};
             {
                 std::lock_guard<std::mutex> lk(gRangeMu);
                 auto it = gRange.find(args);
