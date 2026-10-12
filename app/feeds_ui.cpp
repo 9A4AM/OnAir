@@ -47,6 +47,7 @@ void loadFeedPrefs(App& a) {
     dect2::FeedConfig& c = a.feeds;
     for (int i = 0; i < dect2::kNumFeeds; i++) c.on[i] = d.getB(kKeys[i], false);
     c.sbsPort = (int)d.getI("feedSbsPort", c.sbsPort);
+    c.lan = d.getI("feedLan", 0) != 0;
     c.beastPort = (int)d.getI("feedBeastPort", c.beastPort);
     c.kissPort = (int)d.getI("feedKissPort", c.kissPort);
     c.aisHost = d.getS("feedAisHost", c.aisHost); c.aisPort = (int)d.getI("feedAisPort", c.aisPort);
@@ -64,7 +65,7 @@ void saveFeedPrefs(const App& a) {
     plat::Prefs& d = plat::prefs();
     const dect2::FeedConfig& c = a.feeds;
     for (int i = 0; i < dect2::kNumFeeds; i++) d.setB(kKeys[i], c.on[i]);
-    d.setI("feedSbsPort", c.sbsPort); d.setI("feedBeastPort", c.beastPort); d.setI("feedKissPort", c.kissPort);
+    d.setI("feedLan", c.lan ? 1 : 0); d.setI("feedSbsPort", c.sbsPort); d.setI("feedBeastPort", c.beastPort); d.setI("feedKissPort", c.kissPort);
     d.setS("feedAisHost", c.aisHost); d.setI("feedAisPort", c.aisPort);
     d.setS("feedAcarsHost", c.acarsHost); d.setI("feedAcarsPort", c.acarsPort);
     d.setS("feedVdl2Host", c.vdl2Host); d.setI("feedVdl2Port", c.vdl2Port);
@@ -83,6 +84,7 @@ void feedsWindow(App& a) {
     ImGui::TextDisabled("Sends decoded data to other programs while the mode runs. Every feed is off until you turn it on.");
     ImGui::PopTextWrapPos();
 
+    changed |= ImGui::Checkbox("Let other computers connect to the TCP feeds (LAN)", &c.lan);
     ImGui::SeparatorText("ADS-B");
     ImGui::PushID("sbs");
     changed |= ImGui::Checkbox("SBS-1 BaseStation (TCP server)", &c.on[dect2::kFeedSbs]);

@@ -75,7 +75,7 @@ constexpr size_t kMaxPending = 512 * 1024;  // bytes waiting for one TCP client
 struct Feeds::Impl {
     struct Item { int id; std::string data; };
     struct Client { sock_t s = kBadSock; std::string pending; };
-    struct Server { sock_t ls = kBadSock; int port = 0; double retryAt = 0; std::vector<Client> clients; };
+    struct Server { sock_t ls = kBadSock; int port = 0; bool lan = false; double retryAt = 0; std::vector<Client> clients; };
     struct Udp { sock_t s = kBadSock; sockaddr_in to{}; std::string host; int port = 0; };
 
     // shared with the decoders and the UI (under mu)
@@ -112,7 +112,7 @@ struct Feeds::Impl {
     void openServer(int id, double now) {
         Server& s = srv[id];
         const int port = serverPort(id);
-        if (s.ls != kBadSock && s.port == port) return;
+        if (s.ls != kBadSock && s.port == port && s.lan == live.lan) return;
         if (s.ls != kBadSock) closeServer(id);
         if (now < s.retryAt) return;
         s.retryAt = now + 5;
@@ -123,7 +123,7 @@ struct Feeds::Impl {
 #endif
         sockaddr_in a{};
         a.sin_family = AF_INET;
-        a.sin_addr.s_addr = htonl(INADDR_ANY);
+        a.sin_addr.s_addr = htonl(live.lan ? INADDR_ANY : INADDR_LOOPBACK);
         a.sin_port = htons((uint16_t)port);
         if (port <= 0 || port > 65535 || bind(ls, (sockaddr*)&a, sizeof a) != 0 || listen(ls, 8) != 0) {
             st[id].lastError = "cannot listen on TCP port " + std::to_string(port) + " (in use by another program?)";
@@ -131,7 +131,7 @@ struct Feeds::Impl {
             return;
         }
         sockSetNonBlocking(ls, true);
-        s.ls = ls; s.port = port;
+        s.ls = ls; s.port = port; s.lan = live.lan;
         st[id].lastError.clear();
     }
     void openUdp(int id) {

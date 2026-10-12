@@ -22,7 +22,8 @@ enum FeedId { kFeedSbs, kFeedBeast, kFeedAis, kFeedAprsIs, kFeedKiss, kFeedAcars
 
 struct FeedConfig {
     bool on[kNumFeeds] = {};
-    int sbsPort = 30003, beastPort = 30005, kissPort = 8001;   // TCP servers (all interfaces)
+    int sbsPort = 30003, beastPort = 30005, kissPort = 8001;   // TCP servers
+    bool lan = false;                                          // the TCP servers also accept other computers (else this one only)
     std::string aisHost = "127.0.0.1"; int aisPort = 10110;    // UDP
     std::string acarsHost = "127.0.0.1"; int acarsPort = 5550; // UDP, acarsdec JSON (acarshub's ACARS port)
     std::string vdl2Host = "127.0.0.1"; int vdl2Port = 5555;   // UDP, dumpvdl2 JSON (acarshub's VDLM2 port)
