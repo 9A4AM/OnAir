@@ -146,6 +146,16 @@ void loadDemod(const App& a) {
     S.demodKey = k;
     S.demod = hfDemodLoad(k.c_str());
 }
+} // namespace
+
+// the SSTV band buttons pick the sideband with the frequency (80 and 40 m SSTV is on lower sideband)
+void hfdigSetDemod(const App& a, int d) {
+    loadDemod(a);
+    S.demod = d;
+    plat::prefs().setI(S.demodKey.c_str(), d);
+}
+
+namespace {
 
 void tuner(App& a, bool&) {
     loadDemod(a);

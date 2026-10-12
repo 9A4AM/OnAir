@@ -6,7 +6,9 @@
 #include "icons.h"
 #include "platform.h"
 #include "dect2/hfdig_tel.h"
+#include "dect2/hf_demod.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <ctime>
 #include <filesystem>
@@ -227,11 +229,38 @@ void side(float width, bool wrap) {
 
 } // namespace
 
+void hfdigSetDemod(const App& a, int d);   // hfdig_ui.cpp
+
+// where SSTV is usually heard: lower sideband on 80 and 40 m, upper sideband above, FM on 2 m and from the ISS
+struct SstvBand { const char* name; double mhz; int demod; const char* note; };
+const SstvBand kSstvBands[] = {{"80m", 3.730, dect2::HfDemodLsb, "Europe (3.845 in America)"}, {"40m", 7.171, dect2::HfDemodLsb, ""},
+                               {"20m", 14.230, dect2::HfDemodUsb, "the busiest"}, {"15m", 21.340, dect2::HfDemodUsb, ""},
+                               {"10m", 28.680, dect2::HfDemodUsb, ""}, {"2m", 145.500, dect2::HfDemodNfm, "FM calling frequency (Europe)"},
+                               {"ISS", 145.800, dect2::HfDemodNfm, "the ISS's SSTV events, FM"}};
+
+void sstvBandButtons(App& a) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Band"); flowNext(6 * gUi);
+    for (int i = 0; i < IM_ARRAYSIZE(kSstvBands); i++) {
+        const SstvBand& b = kSstvBands[i];
+        const bool here = std::fabs(a.freqMhz - b.mhz) < 0.002;
+        if (here) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.45f));
+        ImGui::PushID(i);
+        if (ImGui::SmallButton(b.name)) { hfdigSetDemod(a, b.demod); tuneFreq(a, b.mhz); }
+        ImGui::PopID();
+        if (here) ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("SSTV on %s: %.3f MHz, %s%s%s", b.name, b.mhz, dect2::hfDemodName(b.demod), b.note[0] ? "; " : "", b.note);
+        flowNext(4 * gUi);
+    }
+    flowEnd();
+}
+
 void hfdigSstvTab(App& a, const dect2::HfdigTelemetry& t) {
     const dect2::HfdigSstvTelemetry& s = t.sstv;
     update(s);
     const bool run = a.engine.running();
     if (S.hideId == ~0ull) S.hideId = s.image ? s.image->id : 0;      // Clear: the live picture stays hidden until the next one starts
+    sstvBandButtons(a);
     lamp("SSTV", !run ? 0 : (s.state == 1 ? 1 : 2));
     flowNext(10 * gUi);
     ImGui::AlignTextToFramePadding();
