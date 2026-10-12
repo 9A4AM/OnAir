@@ -22,7 +22,7 @@ namespace {
 namespace fs = std::filesystem;
 fs::path fsPath(const std::string& p) { return fs::path(reinterpret_cast<const char8_t*>(p.c_str())); }
 
-constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kCubesat = 61;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, CubeSat telemetry
+constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kMeteor = 59, kCubesat = 61;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, Meteor-M LRPT, CubeSat telemetry
 
 struct Source { const char* file; const char* url; };
 const Source kSources[] = {

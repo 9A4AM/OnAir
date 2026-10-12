@@ -106,6 +106,8 @@ general	--mode general	Overview|Listen|Receiver|History
 time	--mode time	Overview|Time|Receiver|History
 rid	--mode rid	Overview|Drones|Receiver|History
 meteor	--mode meteor	Overview|Picture|Receiver|History
+nr	--mode nr	Overview|NR cells|Receiver|History
+cubesat	--mode cubesat	Overview|Frames|Receiver|History
 goes	--mode goes	Overview|Products|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
