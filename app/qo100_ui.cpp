@@ -347,7 +347,15 @@ void tick(App& a) {
 
 void tab(App& a) {
     load();
+    // the strip wraps to another line and back as its texts change width: keep the tallest it has been at this width, so the
+    // plots under it do not jump
+    static float stripH = 0, stripW = 0;
+    const float y0 = ImGui::GetCursorPosY(), w0 = ImGui::GetContentRegionAvail().x;
+    if (w0 != stripW) { stripW = w0; stripH = 0; }
     strip(a);
+    const float used = ImGui::GetCursorPosY() - y0;
+    stripH = std::max(stripH, used);
+    if (used + ImGui::GetStyle().ItemSpacing.y < stripH) ImGui::Dummy(ImVec2(1, stripH - used - ImGui::GetStyle().ItemSpacing.y));
     // a fixed two-line height: the line wraps as its numbers change width, which would move the plots under it every frame
     ImGui::BeginChild("##lock", ImVec2(0, 2 * ImGui::GetTextLineHeightWithSpacing() + 2 * gUi), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     lockLine(a);
