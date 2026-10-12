@@ -143,10 +143,11 @@ float freqDigits(App& a, float fontSize = 30.f) {
     static char typed[32] = "";
     const bool fm = a.fmMode, dab = a.dabMode;
     const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
-    const double lo = mt ? mt->minMhz : 0.001, hi = mt ? mt->maxMhz : 100000.0;   // any frequency: the radio is the limit
+    const double lo = mt ? mt->minMhz : 0.001, hi = 1e12;   // up to a trillion MHz, for fun: the radio is the real limit
     long long hz = (long long)std::llround(a.freqMhz * 1e6);
-    char buf[16];
-    snprintf(buf, sizeof buf, "%010lld", hz);   // ten digits: L-band (DVB-S, ADS-B) is above 1 GHz
+    constexpr int kD = 19;   // nineteen digits: a trillion MHz (10^18 Hz)
+    char buf[24];
+    snprintf(buf, sizeof buf, "%019lld", hz);
     ImGui::PushFont(a.mono, fontSize);
     const ImVec2 cs = ImGui::CalcTextSize("0");
     const float cw = cs.x + 1 * gUi, ch = cs.y;
@@ -156,10 +157,10 @@ float freqDigits(App& a, float fontSize = 30.f) {
     long long delta = 0;
     bool leading = true, dbl = false;
     int hovIdx = -1;
-    float digitX[10];
-    for (int i = 0; i < 10; i++) {
+    float digitX[kD];
+    for (int i = 0; i < kD; i++) {
         digitX[i] = x;
-        const long long place = (long long)std::llround(std::pow(10.0, 9 - i));
+        const long long place = (long long)std::llround(std::pow(10.0, kD - 1 - i));
         ImGui::SetCursorScreenPos(ImVec2(x, o.y));
         ImGui::PushID(i);
         ImGui::InvisibleButton("##d", ImVec2(cw, ch));
@@ -177,11 +178,11 @@ float freqDigits(App& a, float fontSize = 30.f) {
             dl->AddTriangleFilled(ImVec2(p0.x + cw * 0.5f - 3 * gUi, upper ? my + 4 * gUi : my - 4 * gUi), ImVec2(p0.x + cw * 0.5f + 3 * gUi, upper ? my + 4 * gUi : my - 4 * gUi), ImVec2(p0.x + cw * 0.5f, my), u32(T.dim));
         }
         if (buf[i] != '0') leading = false;
-        const bool dim = leading && i < 7;   // leading zeros are shown dim, like SDR++
+        const bool dim = leading && i < kD - 3;   // leading zeros are shown dim, like SDR++
         char c[2] = {buf[i], 0};
         dl->AddText(ImVec2(x + (cw - cs.x) * 0.5f, o.y), u32(dim ? ImVec4(T.dim.x * 0.8f, T.dim.y * 0.8f, T.dim.z * 0.8f, 1) : T.bright), c);
         x += cw;
-        if (i == 0 || i == 3 || i == 6) { dl->AddText(ImVec2(x - cs.x * 0.275f, o.y), u32(T.dim), "."); x += cs.x * 0.45f; }   // the dot centred in the gap
+        if (i < kD - 1 && (kD - 1 - i) % 3 == 0) { dl->AddText(ImVec2(x - cs.x * 0.275f, o.y), u32(T.dim), "."); x += cs.x * 0.45f; }   // the dot centred in the gap
     }
     ImGui::SetCursorScreenPos(ImVec2(x + 8 * gUi, o.y + ch * 0.5f - ImGui::GetTextLineHeight() * 0.35f));
     ImGui::PopFont();
@@ -193,17 +194,17 @@ float freqDigits(App& a, float fontSize = 30.f) {
     if (kbIdx >= 0 && (io.MousePos.x != kbMouse.x || io.MousePos.y != kbMouse.y)) kbIdx = -1;
     const int cur = kbIdx >= 0 ? kbIdx : hovIdx;
     if (cur >= 0 && !io.WantTextInput && !io.KeyCtrl && !io.KeyAlt && !io.KeySuper) {
-        const long long place = (long long)std::llround(std::pow(10.0, 9 - cur));
+        const long long place = (long long)std::llround(std::pow(10.0, kD - 1 - cur));
         for (int k = 0; k < 10; k++)
             if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_0 + k), false) || ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_Keypad0 + k), false)) {
                 const int old = (int)((hz / place) % 10);
                 delta = (long long)(k - old) * place;
-                kbIdx = std::min(9, cur + 1); kbMouse = io.MousePos;
+                kbIdx = std::min(kD - 1, cur + 1); kbMouse = io.MousePos;
             }
         if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) delta = place;
         if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) delta = -place;
         if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) { kbIdx = std::max(0, cur - 1); kbMouse = io.MousePos; }
-        if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) { kbIdx = std::min(9, cur + 1); kbMouse = io.MousePos; }
+        if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) { kbIdx = std::min(kD - 1, cur + 1); kbMouse = io.MousePos; }
         if (kbIdx >= 0 && kbIdx != hovIdx) {   // show where the keyboard is when it is not under the mouse
             const float kx = digitX[kbIdx];
             dl->AddRect(ImVec2(kx, o.y), ImVec2(kx + cw, o.y + ch), u32(T.dim), 2.f);

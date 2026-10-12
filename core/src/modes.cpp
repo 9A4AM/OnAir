@@ -208,7 +208,7 @@ private:
 
 // No mode limits where it can be tuned (SSTV from the ISS on 145.800, DMR on any band, ...): the radio's own range is the only limit
 static std::vector<ModeTuning> anyFrequency(std::vector<ModeTuning> t) {
-    for (auto& m : t) { m.minMhz = 0.001; m.maxMhz = 100000; }
+    for (auto& m : t) { m.minMhz = 0.001; m.maxMhz = 1e12; }
     return t;
 }
 
