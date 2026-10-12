@@ -182,9 +182,9 @@ static void testPluto() {
         CHECK(v[0].steadyRateHz == 0);            // a real network: the converter's full rate is offered
         CHECK(v[0].maxRateHz > 60e6);
     }
-    p.host = "ip:192.168.2.1";                    // the USB-gadget address: the same ~4 Msps as the cable
+    p.host = "ip:192.168.2.1";                    // typed by hand: a Pluto+ on Ethernet often has the USB-gadget address too (#54), so no USB limit
     v = netRadioDevices({p});
-    CHECK(v.size() == 1 && v[0].nativeArgs == "ip:192.168.2.1" && v[0].steadyRateHz > 0 && v[0].steadyRateHz < 5e6);
+    CHECK(v.size() == 1 && v[0].nativeArgs == "ip:192.168.2.1" && v[0].steadyRateHz == 0);
     p.host = "pluto.lan"; p.port = 30432;
     v = netRadioDevices({p});
     CHECK(v.size() == 1 && v[0].nativeArgs == "ip:pluto.lan:30432");
