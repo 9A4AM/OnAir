@@ -202,6 +202,8 @@ int main(int argc, char** argv) {
     e.wb().clearResults();
     e.datawell().clearResults();
     e.codar().clearResults();     // CODAR radars: the table is printed with each line
+    e.same().clearResults();      // SAME alerts: the newest are printed with each line
+    e.same().setSilent(true);     // weather radio: no sound from the command line
     e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
     e.globalstar().clearResults();   // Globalstar: the events are printed with each line
@@ -330,6 +332,14 @@ int main(int argc, char** argv) {
                 if (d.periodBits) printf("  datawell: period %d bits (z %.0f) sync %s CRC attempt %s (%d / %d) unverified\n", d.periodBits, d.periodZ, d.syncHex.empty() ? "-" : d.syncHex.c_str(), d.crcName.empty() ? "none" : d.crcName.c_str(), d.crcPass, d.crcTotal);
                 for (size_t i = 0; i < d.frames.size() && i < 3; i++) printf("  datawell: frame %s%s\n", d.frames[i].hex.c_str(), d.frames[i].crcOk ? " crc-attempt-ok" : "");
             }
+            if (t.standard == 77)   // NOAA weather radio SAME: the newest messages
+                for (size_t i = 0; i < t.same.alerts.size() && i < 3; i++) {
+                    const auto& al = t.same.alerts[i];
+                    if (al.valid && !al.eom) {
+                        printf("  same: %s (%s) from %s, valid %s, %zu location(s), %d of %d repeats agree%s\n", al.msg.eventName.empty() ? "unknown event" : al.msg.eventName.c_str(), al.msg.event.c_str(), al.msg.org.c_str(),
+                               dect2::same::purgeText(al.msg.purgeMin).c_str(), al.msg.locs.size(), al.agreeing, al.bursts, al.toneSec > 0 ? ", 1050 Hz tone" : "");
+                        for (const auto& l : al.msg.locs) printf("  same:   %s  %s\n", l.code.c_str(), l.text.c_str());
+                    } else printf("  same: %s%s%s\n", al.eom ? "end of message" : "damaged: ", al.eom ? "" : al.raw.c_str(), al.eom ? "" : (" (" + al.err + ")").c_str());
             if (t.standard == 71)   // Wi-Fi HaLow networks: the table
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,

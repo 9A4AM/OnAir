@@ -79,6 +79,7 @@
 #include "codar_rx.h"
 #include "wb_rx.h"
 #include "datawell_rx.h"
+#include "same_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -293,6 +294,7 @@ public:
     WbReceiver& wb() { return rxWb_; }   // Signal workbench: nothing to clear (the tool works on files)
     DatawellReceiver& datawell() { return rxDw_; }   // Datawell buoy HF link: clear the frames, force the format (telemetry through latestRx)
     CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
+    SameReceiver& same() { return rxSame_; }   // NOAA weather radio SAME: the alert list, country, Listen (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
     TimeReceiver& timesig() { return rxTime_; }   // time signals: station, receiver position (telemetry through latestRx)
@@ -486,6 +488,7 @@ private:
     CodarReceiver rxCd_;
     WbReceiver rxWb_;
     DatawellReceiver rxDw_;
+    SameReceiver rxSame_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
@@ -556,7 +559,7 @@ private:
     std::atomic<double> secShift_{0};   // how far its frequency lies above the centre of the capture
     std::atomic<bool> secFlush_{false};
     std::atomic<uint64_t> secDropped_{0};
-    uint64_t modeSeq2_[64] = {};
+    uint64_t modeSeq2_[72] = {};
     std::mutex rx2Mu_;
     RxTelemetry rxTel2_;
     uint64_t rx2Pub_ = 0;

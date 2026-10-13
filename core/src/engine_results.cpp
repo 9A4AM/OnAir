@@ -98,6 +98,7 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("nbiot", 70, rxNb_),
         DECT2_RESULT_SLOT("halow", 71, rxHl_),
         DECT2_RESULT_SLOT("codar", 73, rxCd_),
+        DECT2_RESULT_SLOT("same", 77, rxSame_),
     };
 }
 
