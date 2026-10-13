@@ -207,7 +207,7 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
     // right-click: what is this signal?
     if (openCtx) ImGui::OpenPopup("##specctx");
     if (ImGui::BeginPopup("##specctx")) {
-        if (ImGui::MenuItem(tr("Identify this signal"), nullptr, false, a.engine.running())) identifyAt(a, ctxMhz);
+        if (ImGui::MenuItem(trw("Identify this signal"), nullptr, false, a.engine.running())) identifyAt(a, ctxMhz);
         if (!a.engine.running() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Start the receiver first"));
         ImGui::EndPopup();
     }

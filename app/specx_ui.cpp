@@ -214,7 +214,7 @@ void measurePanel(App& a, const sx::Measure& m, bool canHand) {
     }
     ImGui::EndTable();
     if (canHand) {
-        if (ImGui::Button("Identify this signal")) identifyRegion(a, m.loHz, m.hiHz);
+        if (ImGui::Button("Identify this signal##region")) identifyRegion(a, m.loHz, m.hiHz);
         tip("Record a moment of this region and work out the modulation, symbol rate and the mode it could be");
         if (m.looksDvbs) ImGui::SameLine();
     }
@@ -270,7 +270,7 @@ void gestures(App& a, float l, float r, bool hovered, float top, float bot) {
         }
     }
     if (ImGui::BeginPopup("##sxctx")) {
-        if (ImGui::MenuItem("Identify this signal", nullptr, false, live(a))) identifyRfAt(a, S.ctxRf);
+        if (ImGui::MenuItem("Identify this signal##rf", nullptr, false, live(a))) identifyRfAt(a, S.ctxRf);
         ImGui::EndPopup();
     }
 }
