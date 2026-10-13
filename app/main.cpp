@@ -3,6 +3,7 @@
 #endif
 // OnAir: window, main loop and the layout of the panels.
 #include "app.h"
+#include "gallery.h"
 #include "dect2/crash_report.h"
 #include "discord_rpc.h"
 #include <chrono>
@@ -277,6 +278,7 @@ void drawUI(App& a, ImVec2 disp) {
     ImGui::End();
     }
     passesWindow(a);
+    galleryWindow(a);
     scannerWindow(a);
     setupWizard(a, disp);
     wizard(a, disp);
@@ -560,6 +562,7 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--shotdelay" && i + 1 < argc) shotAfter = atof(argv[++i]);
         if (std::string(argv[i]) == "--fmscan") fmScanAuto = true;
         if (std::string(argv[i]) == "--passes") app.passesOpen = true;
+        if (std::string(argv[i]) == "--images") app.galleryOpen = true;   // dev: open View > Images
         if (std::string(argv[i]) == "--map") app.mapOpen = true;   // dev: open View > Map
         if (std::string(argv[i]) == "--scanner") app.scannerOpen = true;   // dev: open View > Scanner   // dev: open View > Passes
         if (std::string(argv[i]) == "--tle" && i + 1 < argc) passesDevTle(argv[++i]);   // dev: TLEs from a file for the pass planner (no download)

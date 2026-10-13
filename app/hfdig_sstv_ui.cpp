@@ -2,6 +2,7 @@
 // progress bar and the mode and slant under it; beside it (under it in a narrow pane) the last finished pictures as thumbnails to click,
 // Save (PNG) and Clear, and "Save every picture" (PNG files in <data folder>/sstv/, named by the time and the mode).
 #include "app.h"
+#include "gallery.h"
 #include "gfx.h"
 #include "icons.h"
 #include "platform.h"
@@ -109,6 +110,10 @@ void update(const dect2::HfdigSstvTelemetry& t) {
         S.items.insert(S.items.begin(), it);
         if (S.sel >= 0) S.sel++;
         if (S.autoSave) savePng(*h);
+        if (h->width > 0 && h->rgb.size() >= (size_t)h->width * h->height * 3) {
+            gallery::Meta gm; gm.detail = h->mode + (h->complete ? "" : " (incomplete)");
+            gallery::publishRgb("sstv-" + std::to_string((long long)h->unixTime) + "-" + std::to_string(h->id), "SSTV", (double)h->unixTime, h->width, h->height, h->rgb.data(), gm);
+        }
         while (S.items.size() > (size_t)dect2::kSstvHistory) { dropItem(S.items.back()); S.items.pop_back(); if (S.sel >= (int)S.items.size()) S.sel = -1; }
     }
     if (t.image && t.imageSeq != S.liveSeq && gGfx) {

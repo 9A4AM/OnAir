@@ -3,6 +3,7 @@
 // current or chosen pass, and optional tracking: Doppler-corrected retuning about once a second, the right mode started at AOS and
 // an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak only when the user asks, or pasted.
 #include "app.h"
+#include "gallery.h"
 #include "dect2/passes.h"
 #include <algorithm>
 #include <atomic>
@@ -506,6 +507,24 @@ void passesDevTle(const std::string& path) {
     loadState();
     for (const dect2::Tle& t : dect2::parseTleText(readText(path))) S.tles[t.norad] = t;
     buildSats();
+}
+
+const dect2::Sgp4* passesFindSat(const std::string& part, double unixSec, std::string* name) {
+    loadState();
+    double lat, lon;
+    receiverLocation(lat, lon);
+    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon; o.altKm = receiverAltitudeM() / 1000;
+    const Sat* best = nullptr;
+    double bestEl = -1e9;
+    for (const Sat& s : S.sats) {
+        if (s.name.find(part) == std::string::npos) continue;
+        dect2::Look l;
+        const double el = dect2::lookAt(s.sgp, o, unixSec, l) ? l.elDeg : -90;
+        if (!best || el > bestEl) { best = &s; bestEl = el; }
+    }
+    if (!best) return nullptr;
+    if (name) *name = best->name;
+    return &best->sgp;
 }
 
 void passesWindow(App& a) {

@@ -184,6 +184,7 @@ struct App {
     char netKey[32] = "";
     // first-run tour (wizard.inc)
     bool wizOpen = false, wizStart = false, wizAcked = false;
+    bool galleryOpen = false;           // the picture gallery (View > Images)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool mapOpen = false;               // the map window (View > Map): positions and Maidenhead locators

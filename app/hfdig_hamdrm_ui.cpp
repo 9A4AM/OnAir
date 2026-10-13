@@ -2,6 +2,7 @@
 // of the segments (and the ones still missing), the last finished picture (scaled to fit), the finished files as a list to click, Save, and
 // "Save every picture" (the files as sent, in <data folder>/hamdrm/, named by the time and the sender's file name).
 #include "app.h"
+#include "gallery.h"
 #include "gfx.h"
 #include "platform.h"
 #include "dect2/hfdig_tel.h"
@@ -99,6 +100,10 @@ void update(const dect2::HfdigHamdrmTelemetry& t) {
         S.items.insert(S.items.begin(), it);
         S.sel = 0;
         if (S.autoSave) save(*h);
+        if (h->mime.rfind("image/", 0) == 0) {
+            gallery::Meta gm; gm.detail = h->callsign.empty() ? h->name : h->callsign + " " + h->name;
+            gallery::publishFile("hamdrm-" + std::to_string((long long)h->unixTime) + "-" + std::to_string(h->id), "HamDRM", (double)h->unixTime, h->data, gm);
+        }
         while (S.items.size() > (size_t)dect2::kHamdrmHistory) { delete S.items.back().tex; S.items.pop_back(); }
     }
 }

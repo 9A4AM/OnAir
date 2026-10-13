@@ -1,6 +1,7 @@
 // Marine screens: the NAVTEX messages grouped by station with the text panel, the DSC calls (distress in red, the position on a small
 // map), the weather fax picture (zoom, pan, slant, save as PNG) and a tuning aid (the audio spectrum with the tones each service expects).
 #include "app.h"
+#include "gallery.h"
 #include "dect2/results_io.h"
 #include "adsb_map.h"
 #include "dect2/marine_tel.h"
@@ -614,6 +615,10 @@ void tick(App& a) {
     const int fs = a.rx.marine.fax.state;
     if (live(a) && S.prevFaxState == 2 && fs != 2 && S.last.height >= 50) {
         S.faxes.insert(S.faxes.begin(), State::Fax{(int64_t)time(nullptr), a.freqMhz * 1e3, S.last});
+        {
+            gallery::Meta gm; gm.detail = std::to_string((int)std::lround(a.freqMhz * 1e3)) + " kHz, IOC " + std::to_string(a.rx.marine.fax.ioc) + ", " + std::to_string(a.rx.marine.fax.lpm) + " lpm";
+            gallery::publishGray("fax-" + std::to_string((long long)time(nullptr)), "Weather fax", (double)time(nullptr), S.last.width, S.last.height, S.last.pix.data(), gm);
+        }
         if (S.faxes.size() > 30) S.faxes.pop_back();
     }
     S.prevFaxState = fs;

@@ -615,6 +615,7 @@ float menuBar(App& a) {
             }
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
+            ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
             ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
             ImGui::MenuItem(tr("Map"), nullptr, &a.mapOpen);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
