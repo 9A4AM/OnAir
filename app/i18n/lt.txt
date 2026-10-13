@@ -124,7 +124,6 @@ Peak hold	Smailių laikymas
 peak hold	smailių laikymas
 Spectrum	Spektras
 Waterfall	Krioklys
-Set the waterfall range from the noise floor and the strongest signal	Nustatyti krioklio ribas pagal triukšmo lygį ir stipriausią signalą
 search modes (FT8, LoRa, APRS...)	ieškoti režimų (FT8, LoRa, APRS...)
 search (FT8, LoRa, APRS...)	ieškoti (FT8, LoRa, APRS...)
 no mode matches "%s"	„%s“ neatitinka joks režimas

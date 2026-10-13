@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
 
     int n = 0;
     const i18n::Language* langs = i18n::languages(n);
-    CHECK(n == 6 && !std::strcmp(langs[0].code, "en"), "the language list");
+    CHECK(n == 7 && !std::strcmp(langs[0].code, "en"), "the language list");
     for (int li = 1; li < n; li++) {
         const char* text = i18n::catalogText(langs[li].code);
         CHECK(text != nullptr, "no catalog compiled in for %s", langs[li].code);

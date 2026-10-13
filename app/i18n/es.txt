@@ -124,7 +124,6 @@ Peak hold	Retener picos
 peak hold	retener picos
 Spectrum	Espectro
 Waterfall	Cascada
-Set the waterfall range from the noise floor and the strongest signal	Ajustar el rango de la cascada según el ruido de fondo y la señal más fuerte
 search modes (FT8, LoRa, APRS...)	buscar modos (FT8, LoRa, APRS...)
 search (FT8, LoRa, APRS...)	buscar (FT8, LoRa, APRS...)
 no mode matches "%s"	ningún modo coincide con «%s»

@@ -124,7 +124,6 @@ Peak hold	峰值保持
 peak hold	峰值保持
 Spectrum	频谱
 Waterfall	瀑布图
-Set the waterfall range from the noise floor and the strongest signal	根据底噪和最强信号设置瀑布图范围
 search modes (FT8, LoRa, APRS...)	搜索模式（FT8、LoRa、APRS...）
 search (FT8, LoRa, APRS...)	搜索（FT8、LoRa、APRS...）
 no mode matches "%s"	没有与“%s”匹配的模式

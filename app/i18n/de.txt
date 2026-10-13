@@ -124,7 +124,6 @@ Peak hold	Spitzenwert halten
 peak hold	Spitzenwert halten
 Spectrum	Spektrum
 Waterfall	Wasserfall
-Set the waterfall range from the noise floor and the strongest signal	Den Wasserfallbereich aus Rauschpegel und stärkstem Signal setzen
 search modes (FT8, LoRa, APRS...)	Betriebsarten suchen (FT8, LoRa, APRS...)
 search (FT8, LoRa, APRS...)	suchen (FT8, LoRa, APRS...)
 no mode matches "%s"	keine Betriebsart passt zu „%s“

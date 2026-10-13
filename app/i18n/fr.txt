@@ -124,7 +124,6 @@ Peak hold	Maintien des crêtes
 peak hold	maintien des crêtes
 Spectrum	Spectre
 Waterfall	Cascade
-Set the waterfall range from the noise floor and the strongest signal	Régler la plage de la cascade d'après le bruit de fond et le signal le plus fort
 search modes (FT8, LoRa, APRS...)	chercher un mode (FT8, LoRa, APRS...)
 search (FT8, LoRa, APRS...)	chercher (FT8, LoRa, APRS...)
 no mode matches "%s"	aucun mode ne correspond à « %s »
