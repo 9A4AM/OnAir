@@ -80,7 +80,7 @@ const Api* scan() {
     [](Api& r) {
         std::vector<std::string> names;
         if (const char* e = getenv("DECT2_CODEC2_PATH")) if (*e) names.push_back(e);
-        if (names.empty()) names = native::codecLibNames("codec2", {".1.2", ".1.1", ".1.0", ".1", ".0.9"}, {"codec2.dll", "libcodec2.dll"});
+        if (names.empty()) names = native::codecLibNames(DECT2_CODEC2_STEM, DECT2_CODEC2_SO, DECT2_CODEC2_WIN);
         if (!r.lib.open(names)) return;
         native::DynLib& l = r.lib;
         const bool ok = l.get(r.open, "freedv_open") && l.get(r.close, "freedv_close") && l.get(r.nin, "freedv_nin") && l.get(r.rx, "freedv_rx") &&
@@ -128,6 +128,25 @@ bool hfdigFreedvLibrary(std::string* path, std::string* version) {
     return a.ok;
 }
 std::vector<std::string> codecFolderList() { return native::codecFolders(); }
+std::vector<std::string> codecFileNameList(bool codec2) {
+    return codec2 ? native::codecFileNames(DECT2_CODEC2_STEM, DECT2_CODEC2_SO, DECT2_CODEC2_WIN) : native::codecFileNames(DECT2_MBE_STEM, DECT2_MBE_SO, DECT2_MBE_WIN);
+}
+std::vector<std::string> codecSearchPlaces() {
+    std::vector<std::string> v = native::codecFolders();
+#if defined(_WIN32)
+    char path[MAX_PATH * 2] = {0};
+    if (GetModuleFileNameA(nullptr, path, (DWORD)sizeof path - 1)) { std::string d = path; const size_t c = d.find_last_of("\\/"); if (c != std::string::npos) v.push_back(d.substr(0, c + 1)); }
+    v.push_back("the PATH (Windows' own search order)");
+#elif defined(__APPLE__)
+    v.push_back("OnAir.app/Contents/Frameworks/"); v.push_back("/opt/homebrew/lib/"); v.push_back("/usr/local/lib/"); v.push_back("/opt/local/lib/");
+#else
+    v.push_back("the system library folders (/usr/local/lib, /usr/lib, /usr/lib64, the multiarch folder)");
+#endif
+    return v;
+}
+std::vector<std::string> codecCandidatePaths(bool codec2) {
+    return codec2 ? native::codecLibNames(DECT2_CODEC2_STEM, DECT2_CODEC2_SO, DECT2_CODEC2_WIN) : native::codecLibNames(DECT2_MBE_STEM, DECT2_MBE_SO, DECT2_MBE_WIN);
+}
 bool hfdigFreedvRescan() {
     api();
     std::lock_guard<std::mutex> lk(gApiMu);

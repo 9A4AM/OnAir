@@ -27,7 +27,7 @@ const Api& api() {
         Api r;
         std::vector<std::string> names;
         if (const char* e = getenv("DECT2_CODEC2_PATH")) if (*e) names.push_back(e);
-        if (names.empty()) names = native::libNames("codec2", {".1.2", ".1.1", ".1.0", ".1", ".0.9"}, {"codec2.dll", "libcodec2.dll"});
+        if (names.empty()) names = native::codecLibNames(DECT2_CODEC2_STEM, DECT2_CODEC2_SO, DECT2_CODEC2_WIN);
         if (!r.lib.open(names)) return r;
         native::DynLib& l = r.lib;
         r.ok = l.get(r.create, "codec2_create") && l.get(r.destroy, "codec2_destroy") && l.get(r.encode, "codec2_encode") &&

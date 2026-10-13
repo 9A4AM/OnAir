@@ -51,6 +51,12 @@ bool hfdigFreedvLibrary(std::string* path = nullptr, std::string* version = null
 bool hfdigFreedvRescan();
 // The OnAir "codecs" folders, searched before the system's places, for any codec library the user installs (docs/CODECS.md)
 std::vector<std::string> codecFolderList();
+// The file names accepted for the mbelib (codec2 = false) or codec2 library on this platform, in the order tried, without a folder
+std::vector<std::string> codecFileNameList(bool codec2);
+// Where OnAir looks, in order: the codecs folders (full paths), the program's folder, then the system's places (text on Linux/macOS/PATH)
+std::vector<std::string> codecSearchPlaces();
+// Every full path / bare name tried, in order
+std::vector<std::string> codecCandidatePaths(bool codec2);
 
 class HfdigFreedv : public HfdigDecoder {
 public:

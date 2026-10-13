@@ -64,7 +64,7 @@ void presets(App& a) {
     }
     ImGui::AlignTextToFramePadding();
     const bool mbe = dect2::dstarAmbeAvailable();
-    ImGui::TextColored(mbe ? pal::okGreen() : pal::warnAmber(), "%s", mbe ? "voice: mbelib" : "voice: needs mbelib");
+    ImGui::TextColored(mbe ? pal::okGreen() : pal::warnAmber(), "%s", mbe ? "voice: mbelib" : codecNeedMbe());
     ImGui::SameLine(0, 4 * gUi);
     codecHelpButton(CodecHelp::DstarAmbe);
     flowEnd();
@@ -266,7 +266,7 @@ void receiver(App& a) {
           (unsigned long long)t.slowHeaders, (unsigned long long)t.lateEntries);
     kvRow(a, "voice frames", "%llu received, %llu data syncs missed, %llu end patterns", (unsigned long long)t.voiceFrames, (unsigned long long)t.blocksBad, (unsigned long long)t.endPatterns);
     kvRow(a, "GPS", "%llu lines, %llu damaged", (unsigned long long)t.gpsLines, (unsigned long long)t.gpsBad);
-    kvRow(a, "voice", "%llu AMBE frames decoded%s", (unsigned long long)t.voiceDecoded, t.ambe ? "" : " (mbelib not found)");
+    kvRow(a, "voice", "%llu AMBE frames decoded%s", (unsigned long long)t.voiceDecoded, t.ambe ? "" : " (mbelib not found: click ? for the file names and folders)");
     if (t.ambe) kvRow(a, "mbelib", "%s", t.ambePath.c_str());
     kvRow(a, "input", "%.3f Msps, %.1f dBFS", t.inputRate / 1e6, t.levelDb);
     kvRow(a, "signal time", "%.1f s", t.timeSec);
