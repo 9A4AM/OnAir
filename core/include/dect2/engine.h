@@ -80,6 +80,7 @@
 #include "wb_rx.h"
 #include "datawell_rx.h"
 #include "same_rx.h"
+#include "ant_rx.h"
 #include "multitone_rx.h"
 #include "loraraw_rx.h"
 #include "rid_rx.h"
@@ -313,6 +314,7 @@ public:
     DatawellReceiver& datawell() { return rxDw_; }   // Datawell buoy HF link: clear the frames, force the format (telemetry through latestRx)
     MultitoneReceiver& multitone() { return rxMt_; }   // Multitone paging: clear the transmission list (telemetry through latestRx)
     CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
+    AntReceiver& ant() { return rxAnt_; }   // ANT+ sensors: the sensor table and frame log (telemetry through latestRx)
     SameReceiver& same() { return rxSame_; }   // NOAA weather radio SAME: the alert list, country, Listen (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
@@ -521,6 +523,7 @@ private:
     WbReceiver rxWb_;
     DatawellReceiver rxDw_;
     SameReceiver rxSame_;
+    AntReceiver rxAnt_;
     MultitoneReceiver rxMt_;
     LoraRawReceiver rxLr_;
     RidReceiver rxRid_;

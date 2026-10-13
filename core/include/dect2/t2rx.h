@@ -71,6 +71,7 @@
 #include "wb_tel.h"
 #include "datawell_tel.h"
 #include "same_tel.h"
+#include "ant_tel.h"
 #include "multitone_tel.h"
 #include "loraraw_tel.h"
 #include "rid_tel.h"
@@ -167,6 +168,7 @@ struct RxTelemetry {
     DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)
     CodarTelemetry codar;     // valid when standard == 73 (CODAR / HF ocean radar)
     SameTelemetry same;       // valid when standard == 77 (NOAA weather radio SAME)
+    AntTelemetry ant;         // valid when standard == 78 (ANT+ sensors)
     MultitoneTelemetry multitone;   // valid when standard == 76 (Multitone paging)
     HalowTelemetry halow;     // valid when standard == 71 (Wi-Fi HaLow / 802.11ah)
     RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)

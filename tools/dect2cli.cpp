@@ -204,6 +204,7 @@ int main(int argc, char** argv) {
     e.multitone().clearResults(); // Multitone paging: the transmissions are printed with each line
     e.codar().clearResults();     // CODAR radars: the table is printed with each line
     e.same().clearResults();      // SAME alerts: the newest are printed with each line
+    e.ant().clearResults();       // ANT+ sensors: the sensors are printed with each line
     e.same().setSilent(true);     // weather radio: no sound from the command line
     e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
@@ -333,6 +334,10 @@ int main(int argc, char** argv) {
                 if (d.periodBits) printf("  datawell: period %d bits (z %.0f) sync %s CRC attempt %s (%d / %d) unverified\n", d.periodBits, d.periodZ, d.syncHex.empty() ? "-" : d.syncHex.c_str(), d.crcName.empty() ? "none" : d.crcName.c_str(), d.crcPass, d.crcTotal);
                 for (size_t i = 0; i < d.frames.size() && i < 3; i++) printf("  datawell: frame %s%s\n", d.frames[i].hex.c_str(), d.frames[i].crcOk ? " crc-attempt-ok" : "");
             }
+            if (t.standard == 78)   // ANT+ sensors: one line a sensor
+                for (const auto& d : t.ant.devices)
+                    printf("  ant: %u %s%s trans %u  %s: %s  %.1f dBFS, %llu frames\n", d.deviceNumber, d.typeName.c_str(), d.marker == 0xA6C5 ? "" : " (other network)", d.transType,
+                           d.lastPage.c_str(), d.lastText.c_str(), d.rssi, (unsigned long long)d.frames);
             if (t.standard == 77)   // NOAA weather radio SAME: the newest messages
                 for (size_t i = 0; i < t.same.alerts.size() && i < 3; i++) {
                     const auto& al = t.same.alerts[i];
