@@ -236,6 +236,7 @@ To try it without a signal, `isdbtgen --out sample.cs8` (built with the tools) m
 - **Record** to a file, or send the stream out over UDP.
 
 **Comfortable to use**
+- **Mouse wheel on any slider:** hover a volume, gain, squelch or bandwidth slider and scroll to change it by one step (Shift = fine, Ctrl = coarse); the window does not scroll meanwhile.
 - **Light mode** (View → Light) next to the dark palettes; the layout adapts to small windows and 125 % / 150 % display scaling.
 - **Fast:** error correction runs on the GPU where available, and with optimised vector code on the CPU everywhere else.
 
