@@ -6,7 +6,9 @@
 #include <condition_variable>
 #include <cstring>
 #include <mutex>
+#ifndef _WIN32
 #include <netdb.h>
+#endif
 #include <random>
 #include <thread>
 
