@@ -14,6 +14,8 @@
 #include "dect2/rate_choice.h"
 #include "dect2/ble_proto.h"
 #include "dect2/engine.h"
+#include "dect2/flarm_proto.h"
+#include "dect2/iq_file.h"
 #include "dect2/crash_report.h"
 #include "dect2/modes.h"
 #include "dect2/dvbt.h"
@@ -48,7 +50,7 @@ int main(int argc, char** argv) {
     TuneSettings tune;
     FileOptions file;
     double freq = 522, secs = 10;
-    bool freqSet = false;
+    bool freqSet = false, rateSet = false, fmtSet = false;
     int computeMode = 2, playSid = -1, standard = 0, servePort = 0; bool serveLan = false;
     uint64_t vseq = 0;
     bool continue_t2 = true;
@@ -111,8 +113,8 @@ int main(int argc, char** argv) {
             } }
         else if (a == "--compute") { std::string v = next(); computeMode = v == "cpu" ? 0 : v == "gpu" ? 1 : 2; }
         else if (a == "--file") { useFile = true; file.path = next(); file.format = guessFormat(file.path); }
-        else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
-        else if (a == "--format") { std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
+        else if (a == "--rate") { file.sampleRate = atof(next()) * 1e6; rateSet = true; }
+        else if (a == "--format") { fmtSet = true; std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
         else if (a == "--record") record = next();
         else if (a == "--iridium-bits") iridiumBits = next();
         else if (a == "--iridium-parsed") { fprintf(stderr, "--iridium-parsed: OnAir writes .bits only; run iridium-toolkit's iridium-parser.py on an --iridium-bits file for output.parsed\n"); return 1; }
@@ -122,6 +124,15 @@ int main(int argc, char** argv) {
         else if (a == "--rtp") out.rtp = true;
         else if (a == "--service") out.serviceId = atoi(next());
         else if (a == "--no-null") out.dropNull = true;
+    }
+    if (useFile) {   // .sigmf-meta / .sigmf-data / two-channel .wav: the file says its rate, frequency and format (the flags still win)
+        IqFileInfo info; std::string perr;
+        if (probeIqFile(file.path, info, perr)) {
+            file.path = info.dataPath; file.offsetBytes = info.offsetBytes; file.endBytes = info.endBytes; file.bigEndian = info.bigEndian;
+            if (!fmtSet) file.format = info.format;
+            if (!rateSet && info.sampleRate > 0) file.sampleRate = info.sampleRate;
+            if (!freqSet && info.centerHz > 0) freq = info.centerHz / 1e6;
+        } else if (!perr.empty()) { fprintf(stderr, "%s\n", perr.c_str()); return 1; }
     }
     if (atvFm) { tune.bandwidthMhz = 18; tune.sampleRate = 20e6; tune.basebandFilterHz = 18e6; }
     if (standard == 6) {   // ISDB-T: the channel width (the test signal follows it; on auto it is 6 MHz unless --isdbt-synth-bw says otherwise)
@@ -185,7 +196,19 @@ int main(int argc, char** argv) {
     e.qo100().setSilent(true);    // QO-100: Listen without the sound card
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
+    e.flarm().clearResults();
+    e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
+    e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
+    e.wb().clearResults();
+    e.datawell().clearResults();
+    e.multitone().clearResults(); // Multitone paging: the transmissions are printed with each line
+    e.codar().clearResults();     // CODAR radars: the table is printed with each line
+    e.same().clearResults();      // SAME alerts: the newest are printed with each line
+    e.same().setSilent(true);     // weather radio: no sound from the command line
+    e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
+    e.globalstar().clearResults();   // Globalstar: the events are printed with each line
+    e.vdes().clearResults();      // VDES: the ASM frames and bursts are printed with each line
     e.rid().clearDrones();        // Drone Remote ID: the drone table is printed with each line
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
     e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
@@ -277,12 +300,91 @@ int main(int argc, char** argv) {
                 for (const auto& ap : t.wifi.aps)
                     printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
                            wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
+            if (t.standard == 67)   // FLARM: the aircraft heard (flagged aircraft are only counted)
+                for (size_t i = 0; i < t.flarm.aircraft.size() && i < 3; i++) {
+                    const FlarmAircraft& a = t.flarm.aircraft[i];
+                    printf("  flarm: %06X %-16s %5d m %5.0f km/h %4.0f deg %+5.1f m/s %s\n", a.id, dect2::flarm::aircraftTypeName(a.acType), a.altM, a.speedKmh, a.trackDeg, a.climbMs,
+                           a.hasRange ? (std::to_string((int)(a.distKm * 10) / 10.0).substr(0, 5) + " km").c_str() : "-");
+                }
+            if (t.standard == 68) {   // HF beacons: the ones heard now (the built-in list)
+                static const std::vector<hfb::Beacon> kList = hfb::defaultBeacons();
+                for (size_t i = 0; i < t.hfb.beacons.size() && i < kList.size(); i++)
+                    if (t.hfb.beacons[i].heard)
+                        printf("  hfbeacon: %-34s %9.1f kHz %+6.1f dB conf %d %s\n", kList[i].name.c_str(), kList[i].khz, (double)t.hfb.beacons[i].snr, t.hfb.beacons[i].conf, t.hfb.beacons[i].note.c_str());
+            }
+            if (t.standard == 69) {   // DJI drones: the DroneID packets and what the shape detector sees
+                for (const DjiDrone& d : t.dji.drones)
+                    printf("  dji: DroneID %-16s %llu packets  %.5f,%.5f  home %.5f,%.5f  alt %.1f m  %s\n", d.serial.c_str(), (unsigned long long)d.packets, d.last.lat(), d.last.lon(), d.last.homeLat(), d.last.homeLon(), d.last.altitudeM(), d.last.crc16Ok ? "" : "(packet CRC-16 differs)");
+                for (const DjiTrack& k : t.dji.tracks)
+                    printf("  dji: %-24s %6.2f MHz wide at %+7.2f MHz  %d bursts  period %.2f ms  duty %.0f%%  OFDM %.2f  confidence %.0f%%\n", djiClassName(k.cls).c_str(), k.bwMhz, k.offsetHz / 1e6, k.bursts, k.periodMs, k.duty * 100, k.ofdm, k.conf * 100);
+            }
+            if (t.standard == 73)   // CODAR / HF ocean radar: the radars heard
+                for (const auto& s : t.codar.stations)
+                    printf("  codar: #%d %9.4f MHz %6.1f kHz %s %7.1f kHz/s period %.2f s %5.1f dB %llu sweeps %s%s\n", s.id, s.centreMhz, s.bwKhz, s.dir > 0 ? "up  " : "down", s.rateKhzS, s.periodSec, s.snrDb,
+                           (unsigned long long)s.sweeps, s.callsign.empty() ? "" : "ID ", s.callsign.empty() ? "" : (s.callsign + " (unverified)").c_str());
+            if (t.standard == 75) {   // Datawell buoy HF link: the carrier, the bits and the frames found
+                const auto& d = t.datawell;
+                printf("  datawell: %s %.1f Hz wide at %+.1f Hz  %.2f baud (%+.0f ppm)  step %.1f Hz  symbol error %.2f  %.1f dB  %s\n", d.format.empty() ? "-" : d.format.c_str(), d.bwHz, d.offsetHz, d.baud, d.clockPpm, d.stepHz, d.symErr, d.snrDb, d.channel.c_str());
+                if (d.hxvLocked) {
+                    printf("  datawell: HXV %llu vectors (%llu clean, %llu repaired, %llu lost) %llu blocks%s\n", (unsigned long long)d.hxvVectors, (unsigned long long)d.hxvClean, (unsigned long long)d.hxvRepaired, (unsigned long long)d.hxvLost, (unsigned long long)d.hxvBlocks, d.hxvInverted ? " inverted" : "");
+                    if (!d.disp.empty()) printf("  datawell: last vector heave %d north %d west %d cm%s\n", d.disp.back().h, d.disp.back().n, d.disp.back().w, d.disp.back().wrsg ? " (WR-SG)" : "");
+                    if (d.sys.have[1]) printf("  datawell: Hs %.2f m  Tz %.1f s  water %.1f C  spectrum points %d\n", d.sys.hs, d.sys.tz, d.sys.tw, d.specCount);
+                }
+                if (d.periodBits) printf("  datawell: period %d bits (z %.0f) sync %s CRC attempt %s (%d / %d) unverified\n", d.periodBits, d.periodZ, d.syncHex.empty() ? "-" : d.syncHex.c_str(), d.crcName.empty() ? "none" : d.crcName.c_str(), d.crcPass, d.crcTotal);
+                for (size_t i = 0; i < d.frames.size() && i < 3; i++) printf("  datawell: frame %s%s\n", d.frames[i].hex.c_str(), d.frames[i].crcOk ? " crc-attempt-ok" : "");
+            }
+            if (t.standard == 77)   // NOAA weather radio SAME: the newest messages
+                for (size_t i = 0; i < t.same.alerts.size() && i < 3; i++) {
+                    const auto& al = t.same.alerts[i];
+                    if (al.valid && !al.eom) {
+                        printf("  same: %s (%s) from %s, valid %s, %zu location(s), %d of %d repeats agree%s\n", al.msg.eventName.empty() ? "unknown event" : al.msg.eventName.c_str(), al.msg.event.c_str(), al.msg.org.c_str(),
+                               dect2::same::purgeText(al.msg.purgeMin).c_str(), al.msg.locs.size(), al.agreeing, al.bursts, al.toneSec > 0 ? ", 1050 Hz tone" : "");
+                        for (const auto& l : al.msg.locs) printf("  same:   %s  %s\n", l.code.c_str(), l.text.c_str());
+                    } else printf("  same: %s%s%s\n", al.eom ? "end of message" : "damaged: ", al.eom ? "" : al.raw.c_str(), al.eom ? "" : (" (" + al.err + ")").c_str());
+                }
+            if (t.standard == 76) {   // Multitone paging: what was measured in the last transmissions (never decoded text)
+                for (const auto& x : t.multitone.tx) {
+                    printf("  multitone: tx %llu %.1f s %.1f dB dev %.0f Hz  %s", (unsigned long long)x.id, x.durSec, x.snrDb, x.devHz, x.kind.c_str());
+                    if (!x.tones.empty()) printf("  tones: %s", x.tones.c_str());
+                    if (x.periodMs > 0) printf("  repeats %.0f ms (%.2f)", x.periodMs, x.periodStrength);
+                    if (!x.lineHz.empty()) { printf("  lines:"); for (size_t i = 0; i < x.lineHz.size() && i < 4; i++) printf(" %.0f", x.lineHz[i]); printf(" Hz"); }
+                    printf("\n");
+                }
+                for (const auto& b : t.multitone.bursts) {
+                    printf("  multitone: fsk %.1f baud%s%s coh %.2f %d bits, BCH-valid words %d of %d (run %d, offset %d)%s\n    %s\n    bits %s\n", b.baud, b.nearestStd.empty() ? "" : " ~", b.nearestStd.c_str(), b.coherence,
+                           b.nBits, b.validWords, b.totalWords, b.bestRun, b.align, b.syncFound ? " POCSAG-sync" : "", b.verdict.c_str(), b.bitsHex.c_str());
+                    if (b.syncCount > 0) printf("    0x605A x%d, words after: %s\n", b.syncCount, b.afterSync.c_str());
+                    for (size_t i = 0; i < b.words.size() && i < 16; i++) printf("    %08X %s\n", b.words[i], b.wordOk[i] ? "bch-ok" : "-");
+                }
+            }
+            if (t.standard == 71)   // Wi-Fi HaLow networks: the table
+                for (const auto& n : t.halow.nets)
+                    printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
+                           n.seenWidthMhz, n.mcs, n.security.c_str(), n.rssi, n.vendor.c_str());
+            if (t.standard == 72)   // LoRa (raw): the newest frames
+                for (size_t i = 0; i < t.loraraw.log.size() && i < 4; i++) {
+                    const LrFrame& f = t.loraraw.log[i];
+                    printf("  lora: %8.2f s SF%-2d %3.0f kHz 4/%d %s%s %3d bytes %5.1f dB SNR %6.1f dBFS %+7.0f Hz | %s | %s\n", f.sec, f.sf, f.bwHz / 1e3, f.cr - 4, f.hasCrc ? (f.crcOk ? "crc ok " : "crc BAD") : "no crc ",
+                           f.implicit ? " impl" : "", f.len, f.snrDb, f.levelDb, f.cfoHz, f.hex.substr(0, 48).c_str(), f.ascii.substr(0, 40).c_str());
+                }
             if (t.standard == 62)   // CubeSat telemetry: the newest frames
                 for (size_t i = 0; i < t.cube.frames.size() && i < 3; i++) {
                     const CubeFrame& f = t.cube.frames[i];
                     printf("  cubesat: %8.1f s %-9s %5d %-20s %-24s %3zu bytes rs %d %s\n", f.timeSec, cubesat::framingShort(f.framing), f.baud, f.sat.c_str(),
                            (f.from.empty() ? std::string("-") : f.from + ">" + f.to).c_str(), f.data.size(), f.rsErrors, cubesat::asciiOf(f.payload).substr(0, 60).c_str());
                 }
+            if (t.standard == 63) {   // Globalstar: the active channels
+                for (const GsChannel& c : t.globalstar.chan)
+                    if (c.active) printf("  globalstar: channel %2d %.2f MHz  SNR %5.1f dB  Doppler %+8.0f Hz  occupancy %.2f\n", c.index + 1, c.centreMhz, c.snrDb, c.dopplerHz, c.occupancy);
+            }
+            if (t.standard == 64) {   // VDES: the newest ASM frames and VDE-TER bursts
+                for (size_t i = 0; i < t.vdes.asms.size() && i < 3; i++)
+                    printf("  vdes asm %c: %8.1f s %3d bits %s\n", t.vdes.asms[i].channel, t.vdes.asms[i].timeSec, t.vdes.asms[i].bits, t.vdes.asms[i].hex.substr(0, 48).c_str());
+                for (size_t i = 0; i < t.vdes.bursts.size() && i < 3; i++) {
+                    const VdeBurst& b = t.vdes.bursts[i];
+                    printf("  vde-ter: %8.1f s %.4f MHz %3d kHz %-9s %6.1f dBFS SNR %5.1f dB %5.1f ms\n", b.timeSec, b.centreMhz, b.bwKhz, vdeModName(b.mod), b.rssiDb, b.snrDb, b.durMs);
+                }
+            }
             if (t.standard == 57)   // Drone Remote ID: one line a drone
                 for (const auto& d : t.rid.drones)
                     printf("  rid: %s %-3s %-20s %10.6f %11.6f h %6.1f m %5.1f m/s op %10.6f %11.6f %s\n", d.mac.c_str(), d.viaBle ? "BLE" : "WiFi",

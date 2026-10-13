@@ -28,6 +28,8 @@ struct S2Stats {
     double merDb = 0;                          // modulation error ratio of the known symbols (header, pilots), smoothed
     double snrDb = 0;
     double ldpcIterAvg = 0;
+    bool ldpcOnGpu = false;                    // the last frame went through the GPU LDPC decoder
+    uint64_t ldpcGpuFrames = 0;                // frames the GPU decoded
     double berPre = -1;                        // bit error rate before the LDPC decoder, from the frames that decoded
     double carrierRadPerSym = 0;               // carrier offset still tracked by the loop
     int modcod = -1, mod = -1, rate = -1;
@@ -48,6 +50,7 @@ public:
     void setPlCode(int n) { plCode_ = n; }
     void setIsi(int isi) { isiSel_ = isi; }
     void setBlocking(bool b) { blocking_ = b; }
+    void setComputeMode(int m);                    // 0 CPU, 1 GPU, 2 auto: where the LDPC decoder runs
     void setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb);
     void setLogCallback(std::function<void(const std::string&)> cb);
     // Starts at the header the hunt found in `win` (n symbols; copied). The frame work runs on a thread of its own: start() and push() only queue symbols

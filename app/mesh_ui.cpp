@@ -47,7 +47,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 21; }
+bool live(const App& a) { return a.rx.standard == 21; }
 
 ImVec4 protoColour(int proto) {
     switch (proto) {

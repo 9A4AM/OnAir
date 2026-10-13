@@ -3,6 +3,7 @@
 // spectrum over a waterfall (a click puts the SSB dial there) with Listen, the wideband transponder with its DATV carriers and a
 // hand-over to DVB-S/S2, and the drift history. Every frequency shown is the corrected downlink frequency once the beacons are locked.
 #include "app.h"
+#include "results_export.h"
 #include "gfx.h"
 #include "plot.h"
 #include "dect2/qo100_dsp.h"
@@ -65,7 +66,7 @@ struct State {
 State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 54; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 54; }   // the engine reports its standard code minus one
 const dect2::Qo100Telemetry& T(const App& a) { return a.rx.qo100; }
 
 double loHz() {
@@ -278,6 +279,14 @@ void wideView(App& a, float h) {
             ImGui::PopID();
         }
         ImGui::EndTable();
+    }
+    if (on && !t.datv.empty()) {
+        static std::string note;
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "beacon", "symbol_rate_sps", "snr_db", "bandwidth_3db_hz", "dvbs_like"};
+        const std::string now = resexp::stamp();
+        for (const auto& d : t.datv) x.add({now, resexp::num(d.rfHz, 0), "QO-100", d.beacon ? "yes" : "no", resexp::num(d.symRate, 0), resexp::num(d.snrDb, 1), resexp::num(d.bw3Hz, 0), d.looksDvbs ? "yes" : "no"});
+        resexp::saveButton(x, "qo100", note, "svqo");
+        if (!note.empty()) ImGui::TextDisabled("%s", note.c_str());
     }
     ImGui::EndChild();
 }

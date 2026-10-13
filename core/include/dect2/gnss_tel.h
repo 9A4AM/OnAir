@@ -111,6 +111,8 @@ struct GnssFix {
     int gpsWeek = -1;
     double gpsTow = 0;                               // GPS time of week of the fix, seconds
     int leapSeconds = -1;                            // GPS minus UTC, -1 until the message has said
+    double unixAtSignal = 0;                         // UTC (epoch seconds) at signal time signalS, from the satellites; 0 until the time is known
+    double signalS = 0;                              // the signal time of the measurement that gave this fix
     int nSats = 0;                                   // satellites in the solution
     int nSatsPerSystem[GnssSystems] = {};
     float hdop = 0, vdop = 0, pdop = 0, tdop = 0;
@@ -236,6 +238,13 @@ struct GnssTelemetry {
     bool ionoValid = false;      // the ionosphere (Klobuchar) parameters are known
     bool utcValid = false;       // UTC parameters (leap seconds) are known
     int leapSeconds = -1;
+    bool leapPending = false;    // the message announces another leap second: GPS - UTC becomes leapNext after day leapDn of week (mod 256) leapWn
+    int leapNext = -1, leapWn = -1, leapDn = -1;
+    // The computer clock against the satellites' UTC (GnssReceiver::setClockCompare): the computer's clock when each sample arrived, earliest arrival of the
+    // last minute, minus the UTC of that sample from the fix. Includes the radio's USB / driver buffering (a few ms to tens of ms).
+    bool clockValid = false;
+    double clockOffsetMs = 0, clockOffsetAvgMs = 0;      // positive: the computer is ahead
+    std::vector<float> levelHist, snrHist, offsetHist;   // one a second, the last 120 (oldest first): input level dBFS, best C/N0, clock offset ms (NaN when none)
     int almanacGps = 0;          // GPS satellites with an almanac entry (of 32)
     uint64_t sbasMessages = 0;   // SBAS messages with a good CRC, all satellites
     float ionoAlpha[4] = {0, 0, 0, 0}, ionoBeta[4] = {0, 0, 0, 0};

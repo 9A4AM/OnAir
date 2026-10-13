@@ -1,6 +1,7 @@
 // DAB / DAB+ receiver (ETSI EN 300 401, TS 102 563), transmission mode I (Band III, 1.536 MHz, 1536 carriers).
 #pragma once
 #include "dab_dmb.h"
+#include "dab_journaline.h"
 #include "dab_fig.h"
 #include "dab_pad.h"
 #include "dab_tel.h"
@@ -83,6 +84,10 @@ public:
     int selected() const;
     DabAudio& audio();
     DmbDecoder& dmb();
+    // Journaline (TS 102 979): decode and play (PAD, packetAddress < 0) or decode only (packet mode: the packets of that address) the sub-channel,
+    // the objects collect in journaline(). select() ends it.
+    void selectJournaline(int subId, int packetAddress, int extHeader);
+    JournalineDecoder& journaline();
     void setPacketCallback(std::function<void(const uint8_t* pk, size_t n, double secs)> cb);
     // Called with every logical frame of the selected sub-channel (after Viterbi and descrambling), for tests
     void setFrameTap(std::function<void(int sub, const uint8_t* bytes, int n)> cb);
@@ -104,6 +109,10 @@ public:
     DabAudioStats stats() const;
     // The slide show picture last received in the PAD of the selected DAB+ service (empty after select()). false when its seq is lastSeq.
     bool slide(DabSlide& out, uint64_t lastSeq) const;
+    // The station logos heard in the PAD of the selected DAB+ service (SPI service information of the whole ensemble, logos sent as slide show pictures
+    // of the category "logo" with sid 0 = the selected service). false when logoSeq() is lastSeq.
+    bool logos(std::vector<DabLogo>& out, uint64_t lastSeq) const;
+    uint64_t logoSeq() const;
     // DL Plus tags of the label of the selected DAB+ service (empty when it sends none); `running`: the item is running
     std::vector<DabDlpTag> dlPlus(bool* running = nullptr) const;
     // Starts writing the audio of the selected service to base + the extension of the format (".wav", ".m4a", ".mp2"); with `dlLog` the dynamic
@@ -120,6 +129,7 @@ public:
     void setVolume(float v);
     void setMuted(bool m);
     // Tests: receives every access unit with a good CRC (raw AAC frame) and its superframe header
+    void setDataGroupSink(std::function<void(const uint8_t* g, size_t n)> cb);   // the MSC data groups of types 0 and 6 heard in the PAD (Journaline)
     void setAuTap(std::function<void(const uint8_t* au, int n, uint8_t header)> cb);
     void setSilent(bool s);                               // decode but do not open the audio device (tests)
 

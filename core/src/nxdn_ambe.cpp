@@ -23,7 +23,7 @@ const Api* scan() {
     Api* r = new Api;   // kept for the life of the program: decoders hold the one they started with
     std::vector<std::string> names;
     if (const char* e = getenv("DECT2_MBELIB_PATH")) if (*e) names.push_back(e);
-    if (names.empty()) names = native::codecLibNames("mbe", {".1.3", ".1"}, {"mbe.dll", "libmbe.dll", "mbelib.dll"});
+    if (names.empty()) names = native::codecLibNames(DECT2_MBE_STEM, DECT2_MBE_SO, DECT2_MBE_WIN);
     if (r->lib.open(names)) r->ok = r->lib.get(r->init, "mbe_initMbeParms") && r->lib.get(r->frame, "mbe_processAmbe3600x2450Frame");
     return r;
 }

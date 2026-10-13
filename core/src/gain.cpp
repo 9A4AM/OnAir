@@ -103,9 +103,14 @@ bool AutoGain::update(double now, const SignalStats& st, GainSetting& g) {
 }
 
 // ------------------------------------------------------------------ sweep
-void GainSweep::start(double now, int genericMaxDb) {
+void GainSweep::start(double now, int genericMaxDb, int rfMax) {
     e_.clear();
-    if (genericMaxDb > 0) {
+    bestRf_ = -1;
+    if (genericMaxDb > 0 && rfMax > 0) {   // RF states from the most gain down, each with IF gains: less RF gain wants more IF
+        const int stepRf = std::max(1, (rfMax + 2) / 3);
+        for (int rf = 0; rf <= rfMax; rf += stepRf)
+            for (int pct : {40, 60, 80}) { Entry e; e.g = genericGain(genericMaxDb * pct / 100, genericMaxDb); e.rf = rf; e_.push_back(e); }
+    } else if (genericMaxDb > 0) {
         for (int pct : {20, 32, 44, 56, 68, 80}) { Entry e; e.g = genericGain(genericMaxDb * pct / 100, genericMaxDb); e_.push_back(e); }
     } else {
     for (int lna : {24, 32, 40})
@@ -129,7 +134,7 @@ void GainSweep::finish(GainSetting& g) {
         double s = x.n > 0 ? x.snrDb : -50 - std::fabs(x.rms + 16);
         if (s > bs) { bs = s; bi = (int)i; }
     }
-    if (bi >= 0) { best_ = e_[bi].g; g = best_; }
+    if (bi >= 0) { best_ = e_[bi].g; bestRf_ = e_[bi].rf; g = best_; }
     active_ = false;
 }
 

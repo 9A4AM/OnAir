@@ -1,60 +1,40 @@
 # Voice and audio codecs
 
-OnAir does not ship some voice and audio codecs: either they are patented, or they cannot be bundled. You can install the ones that
-exist as free software yourself, and OnAir will use them. For the others, this page says what OnAir does and which separate program
-you can use.
+OnAir never ships a patented codec. You install the ones you are allowed to use yourself, and OnAir loads them. **Whether you may
+install or use them is your own responsibility: follow the patent and radio-listening law where you live.**
 
-In OnAir, each mode that needs such a codec has a small **?** button next to its sound or voice controls. It shows whether the codec
-was found (and where), how to install it on your computer, where to put it, and a **Look again** button that searches again without a
-restart.
+Every mode that needs a codec has a small **?** button. It shows whether the library was found and where, the exact file names OnAir
+looks for, the exact folders it searches, an **Open codecs folder** button (it makes the folder if it is missing) and **Look again**
+(searches again, no restart).
 
-| Mode | Codec | What OnAir does | Can OnAir load it? |
+## Which mode needs which codec
+
+| Mode | Codec | Library you provide |
+|---|---|---|
+| DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (DMR: calls are shown, voice is not decoded in this version) |
+| D-STAR | AMBE (patented) | **mbelib** |
+| FreeDV (HF digital), M17 | codec2 (open) | **codec2** |
+| TETRA | its own speech codec | nothing from you: it is not mbelib and not codec2 |
+| DAB, DRM, TV, FM | MP2, AAC, H.264 ... | nothing (FFmpeg is inside OnAir) |
+
+**codec2 does not help DMR, P25, NXDN or dPMR.** Putting `codec2.dll` or `libcodec2.dll` in the codecs folder only matters for FreeDV
+and M17. If a digital-voice mode says "mbelib not found", you need **mbelib**, a different library.
+
+## File names and search order (the same on every mode)
+
+OnAir tries these file names. Folders are searched in this order; inside each folder every name is tried before the next folder.
+
+1. The `DECT2_MBELIB_PATH` / `DECT2_CODEC2_PATH` environment variable (a full path), if set.
+2. The OnAir **codecs folders** (below).
+3. The program's own folder (Windows: next to `OnAir.exe`; macOS: inside the app, `Contents/Frameworks`).
+4. The system: Windows `PATH`; macOS `/opt/homebrew/lib`, `/usr/local/lib`, `/opt/local/lib`; Linux `/usr/local/lib`, `/usr/lib`, `/usr/lib64`, the multiarch folder.
+
+| Library | Windows | macOS | Linux |
 |---|---|---|---|
-| HF digital, FreeDV | codec2 | plays speech when codec2 is installed | **yes** |
-| DMR | AMBE+2 | finds, counts and logs voice calls; no sound | no |
-| D-STAR | AMBE (3600x2400) | call log, messages, positions; plays voice when mbelib is installed | **yes** (mbelib) |
-| P25 Phase 1 | IMBE (7200x4400) | calls, talkgroups, trunking; plays clear voice when mbelib is installed (encrypted calls only reported) | **yes** (mbelib) |
-| HD Radio | HDC | stations, data and pictures; no sound | no |
-| CDR | DRA+ | service list; no sound | no |
-| DTMB (China) | AVS+, AVS2, AVS3 video; DRA sound | services, sound in other formats and the guide; AVS1 JiZhun pictures play; says why AVS+ / AVS2 / AVS3 pictures or DRA sound are missing | no |
-| Inmarsat Aero | AMBE (C channel voice) | P channel data only; voice channels are not tuned | no |
-| Iridium | AMBE variant | counts voice frames; saves `.bits` for iridium-toolkit | no |
-| DAB/DAB+, DRM, TV modes | MP2, AAC, xHE-AAC, MPEG-2, H.264, HEVC, AC-3 | plays (FFmpeg is built into OnAir) | nothing to install |
-
-## codec2 (FreeDV)
-
-codec2 is the open voice codec of FreeDV (LGPL-2.1). It is free software; OnAir simply does not ship it yet.
-
-### macOS (Homebrew)
-
-1. Install Homebrew: <https://brew.sh>
-2. In Terminal: `brew install codec2` (formula page: <https://formulae.brew.sh/formula/codec2>)
-
-Homebrew puts it in `/opt/homebrew/lib` (Apple silicon) or `/usr/local/lib` (Intel). OnAir looks there; nothing to copy.
-
-### Linux
-
-- Debian / Ubuntu: `sudo apt install libcodec2-1.2` (Ubuntu 22.04: `libcodec2-1.0`).
-  Package list: <https://packages.ubuntu.com/search?keywords=libcodec2>
-- Fedora: `sudo dnf install codec2`. Package page: <https://packages.fedoraproject.org/pkgs/codec2/codec2/>
-
-The package puts it in the system library folder; OnAir looks there. A portable OnAir also finds it there.
-
-### Windows
-
-The codec2 project (<https://github.com/drowe67/codec2>) has no ready-made Windows download, but the FreeDV program carries it:
-
-1. Download and install FreeDV from <https://freedv.org/download/> (`FreeDV-<version>-windows-x86_64.exe` for most PCs,
-   `...-aarch64.exe` for Windows on ARM).
-2. Open its `bin` folder (for example `C:\Program Files\FreeDV <version>\bin`) and copy `libcodec2.dll`.
-3. Paste it into an OnAir codecs folder (below). Make the folder if it is not there.
-
-If OnAir still says "not found", the DLL may need another DLL from the same `bin` folder; copy that too. The DLL must be for the same
-kind of Windows as OnAir (x86_64).
+| mbelib | `mbelib.dll`, `libmbe.dll`, `libmbe-1.dll`, `mbe.dll` | `libmbe.1.3.dylib`, `libmbe.1.dylib`, `libmbe.dylib` | `libmbe.so.1.3`, `libmbe.so.1`, `libmbe.so` |
+| codec2 | `codec2.dll`, `libcodec2.dll` | `libcodec2.1.2.dylib` ... `libcodec2.dylib` | `libcodec2.so.1.2` ... `libcodec2.so` (any `libcodec2.so.*`) |
 
 ### The OnAir codecs folders
-
-OnAir looks in these folders first, then in the system's usual places:
 
 | OS | Next to the program | In your user folder |
 |---|---|---|
@@ -62,86 +42,60 @@ OnAir looks in these folders first, then in the system's usual places:
 | macOS | `codecs/` next to `OnAir.app` | `~/Library/Application Support/OnAir/codecs/` |
 | Linux | `codecs/` next to the `dect2` program | `~/.local/share/onair/codecs/` (or `$XDG_DATA_HOME/onair/codecs/`) |
 
-File names: `libcodec2.dll` or `codec2.dll` (Windows), `libcodec2.dylib` or `libcodec2.1.2.dylib` (macOS), `libcodec2.so` or
-`libcodec2.so.1.2` (Linux).
+The **?** popup prints the full paths on your computer. A DLL must match OnAir: 64-bit with 64-bit. If it needs other DLLs
+(for example `libgcc_s_seh-1.dll`, `libwinpthread-1.dll`), put them in the same folder.
 
-### Check that OnAir found it
+## mbelib (DMR, P25, NXDN, dPMR, D-STAR voice): build it yourself
 
-Open the HF digital mode and pick FreeDV. The **Library** lamp turns green, and the **?** button says
-`codec2 found: <path>`. If you installed it while OnAir was open, press **Look again** in that window; no restart is needed.
+mbelib decodes AMBE/IMBE, which are patented in some countries (the project's own notice says so). OnAir does not ship, download or
+link to binaries of it. Source: <https://github.com/lwvmobile/mbelib>. Check your local law first.
 
-## AMBE+2 (DMR voice)
+**Windows (MSYS2 / MinGW).** Install MSYS2 (msys2.org), open the "MSYS2 MINGW64" shell, paste:
 
-DMR voice uses the AMBE+2 vocoder (DVSI), which is patented. OnAir finds, counts and logs voice calls but plays no sound, and it cannot
-load an AMBE library. The open mbelib library (<https://github.com/szechyjs/mbelib>) implements these vocoders; its own notice says
-that using it may need a patent licence. Wiring it into OnAir's DMR receiver is not a small change, so it is not done.
+```
+pacman -S --needed git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make
+git clone https://github.com/lwvmobile/mbelib
+cd mbelib && mkdir build && cd build
+cmake .. -G "MSYS Makefiles" -DBUILD_SHARED_LIBS=ON && make
+```
 
-To hear DMR voice, use a separate program such as DSD-FME (<https://github.com/lwvmobile/dsd-fme>).
+Copy the resulting `libmbe.dll` (look in the `build` folder) and, if OnAir says it does not load, `libgcc_s_seh-1.dll` and
+`libwinpthread-1.dll` from `C:\msys64\mingw64\bin`, into `%LOCALAPPDATA%\OnAir\codecs\`. Press **Look again**.
 
-## AMBE (D-STAR voice) through mbelib
+**macOS.**
 
-D-STAR voice uses AMBE (the 3600x2400 variant), which is patented. Without a codec OnAir shows every call (callsigns, repeaters,
-flags), the slow data message, the GPS and D-PRS positions and the voice frame count, but plays no sound. If you install the open
-mbelib library (<https://github.com/szechyjs/mbelib>, ISC licence) yourself, OnAir loads it at run time and plays D-STAR voice. mbelib's
-own notice says that using it may need a patent licence; check the rules where you live first.
+```
+brew install cmake git
+git clone https://github.com/lwvmobile/mbelib
+cd mbelib && mkdir build && cd build
+cmake .. && make
+mkdir -p "$HOME/Library/Application Support/OnAir/codecs"
+cp libmbe*.dylib "$HOME/Library/Application Support/OnAir/codecs/"
+```
 
-mbelib has no ready-made downloads, so it is built from source (it needs CMake and a C compiler):
+**Linux.**
 
-### macOS
+```
+sudo apt install git cmake build-essential     # or your distribution's equivalent
+git clone https://github.com/lwvmobile/mbelib
+cd mbelib && mkdir build && cd build
+cmake .. && make && sudo make install && sudo ldconfig
+```
 
-1. Install Homebrew (<https://brew.sh>), then `brew install cmake`.
-2. `git clone https://github.com/szechyjs/mbelib`, then `cd mbelib && mkdir build && cd build && cmake .. && make`.
-3. Copy `libmbe.dylib` (or `libmbe.1.3.dylib`) into an OnAir codecs folder (above), or run `sudo make install` (`/usr/local/lib`).
+(or copy `libmbe.so*` into `~/.local/share/onair/codecs/`). If the build gives a static library only, add `-DBUILD_SHARED_LIBS=ON`.
 
-### Linux
+Then open the mode and look at its **?** button: it says `mbelib found: <path>`. Encrypted P25/NXDN/DMR calls are only reported as
+encrypted; OnAir never decrypts. DMR voice is not decoded in this version of OnAir, even with mbelib installed.
 
-1. Install `git`, `cmake` and a compiler (Debian / Ubuntu: `sudo apt install git cmake build-essential`; Fedora:
-   `sudo dnf install git cmake gcc`).
-2. `git clone https://github.com/szechyjs/mbelib`, then `cd mbelib && mkdir build && cd build && cmake .. && make && sudo make install`
-   (then `sudo ldconfig`), or copy `libmbe.so*` into an OnAir codecs folder.
+## codec2 (FreeDV, M17)
 
-### Windows
+codec2 is open software (LGPL), but OnAir does not bundle it. It is only for FreeDV and M17.
 
-Build mbelib with CMake and Visual Studio (x64), or take `mbe.dll` / `libmbe.dll` from a Windows build of DSD-FME
-(<https://github.com/lwvmobile/dsd-fme>), and put it into an OnAir codecs folder (above).
+- **macOS:** `brew install codec2`.
+- **Linux:** `sudo apt install libcodec2-1.2` (Ubuntu 22.04: `libcodec2-1.0`), or `sudo dnf install codec2`.
+- **Windows:** put `codec2.dll` or `libcodec2.dll` in the codecs folder. FreeDV's installer does not always place it in its `bin` folder: search the FreeDV install folder for `*codec2*.dll`, or in MSYS2 run `pacman -S mingw-w64-x86_64-codec2` and take `libcodec2.dll` from `C:\msys64\mingw64\bin` (with the DLLs it needs).
 
-File names OnAir looks for: `mbe.dll`, `libmbe.dll` or `mbelib.dll` (Windows), `libmbe.dylib` or `libmbe.1.3.dylib` (macOS),
-`libmbe.so`, `libmbe.so.1` or `libmbe.so.1.3` (Linux). Open D-STAR: the **?** next to the voice says `mbelib found: <path>`;
-**Look again** searches again without a restart.
-
-## AMBE+2 (NXDN voice) through mbelib
-
-NXDN voice (NXDN48 and NXDN96) uses AMBE+2 (the 3600x2450 variant), which is patented. Without a codec OnAir shows every call (unit
-IDs, talkgroups, call type, encryption), status and short data messages, the site information and the voice frame count, but plays
-no sound. If you install the open mbelib library (<https://github.com/szechyjs/mbelib>, ISC licence) yourself, OnAir loads it at run
-time and plays NXDN voice; encrypted calls stay silent. mbelib's own notice says that using it may need a patent licence; check the
-rules where you live first.
-
-It is the same library as for D-STAR: build and install it as described there (macOS, Linux, Windows), with the same file names. Open
-NXDN: the **?** next to the voice says `mbelib found: <path>`; **Look again** searches again without a restart.
-
-## AMBE+2 (dPMR voice) through mbelib
-
-dPMR voice (ETSI TS 102 490, PMR446 digital and the licensed bands) uses AMBE+2 (the 3600x2450 variant), which is patented. Without a
-codec OnAir shows every call (own and called IDs, call type, colour code, emergency), status messages, short messages, packet data and
-the voice frame count, but plays no sound. If you install the open mbelib library (<https://github.com/szechyjs/mbelib>, ISC licence)
-yourself, OnAir loads it at run time and plays dPMR voice. mbelib's own notice says that using it may need a patent licence; check the
-rules where you live first.
-
-It is the same library as for D-STAR and NXDN: build and install it as described there, with the same file names. Open dPMR: the **?**
-next to the voice says `mbelib found: <path>`; **Look again** searches again without a restart.
-
-## IMBE (P25 Phase 1 voice) through mbelib
-
-P25 Phase 1 voice uses IMBE (the 7200x4400 variant), which is patented. Without a codec OnAir shows every call (unit IDs,
-talkgroups, emergency, encryption algorithm and key ID), the trunking system (sites, channel identifiers, voice grants) and the voice
-frame count, but plays no sound. If you install the open mbelib library (<https://github.com/szechyjs/mbelib>, ISC licence) yourself,
-OnAir loads it at run time and plays clear P25 voice. Encrypted calls are only reported as encrypted: OnAir never decrypts anything.
-OnAir only receives. mbelib's own notice says that using it may need a patent licence, and listening to radio services is regulated
-in many countries; check the rules where you live first.
-
-It is the same library as for D-STAR, NXDN and dPMR: build and install it as described there, with the same file names. Open P25:
-the **?** next to the voice says `mbelib found: <path>`; **Look again** searches again without a restart.
+Open HF digital and pick FreeDV (or M17): the **?** button says `codec2 found: <path>`.
 
 ## HDC (HD Radio sound)
 
@@ -151,7 +105,7 @@ use nrsc5 (<https://github.com/theori-io/nrsc5>) with an RTL-SDR or an IQ record
 ## DRA+ (CDR sound)
 
 CDR sound uses DRA+, a patented codec that is not openly described. OnAir lists the services but plays no sound. There is no free
-DRA+ decoder to install at this time.
+DRA+ decoder to install at this time. You can save the raw sound with **Save stream** and play it in an FFmpeg built with a DRA patch (see the README, "Saving DRA sound").
 
 ## AVS+, AVS2, AVS3 and DRA (DTMB television in China)
 

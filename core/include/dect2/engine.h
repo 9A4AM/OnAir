@@ -18,6 +18,7 @@
 #include "dtmb_rx.h"
 #include "atv_rx.h"
 #include "dmr_rx.h"
+#include "wide_modes.h"
 #include "drm_rx.h"
 #include "adsb_rx.h"
 #include "gnss_rx.h"
@@ -67,10 +68,25 @@
 #include "general_rx.h"
 #include "time_rx.h"
 #include "cubesat_rx.h"
+#include "globalstar_rx.h"
+#include "vdes_rx.h"
+#include "zigbee_rx.h"
+#include "flarm_rx.h"
+#include "hfbeacon_rx.h"
+#include "dji_rx.h"
+#include "nbiot_rx.h"
+#include "halow_rx.h"
+#include "codar_rx.h"
+#include "wb_rx.h"
+#include "datawell_rx.h"
+#include "same_rx.h"
+#include "multitone_rx.h"
+#include "loraraw_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
 #include "goes_rx.h"
+#include "hrpt_rx.h"
 #include "bbunpack.h"
 #include "ts.h"
 #include "tsout.h"
@@ -101,6 +117,8 @@ struct FileOptions {
     FileFormat format = FileFormat::CS8;
     double sampleRate = 18285714.2857;
     bool loop = true;
+    uint64_t offsetBytes = 0, endBytes = 0;   // SigMF / WAV: where the samples start and end in the file
+    bool bigEndian = false;
 };
 
 // Where samples were lost since the radio was started. The radio side: samples that never came out of the radio (its USB link or driver
@@ -115,11 +133,15 @@ struct SampleLoss {
 };
 
 class Engine {
+    int receiverId_ = 1;
 public:
     Engine();
     ~Engine();
 
     bool start(const DeviceInfo& dev, const TuneSettings& tune, const FileOptions& file);
+    // The number of this receiver (RX 1, RX 2 ...): the radio it opens is claimed for it (device_claims.h), another receiver cannot open it too
+    void setReceiverId(int id) { receiverId_ = id; }
+    int receiverId() const { return receiverId_; }
     void stop();
     bool retune(const TuneSettings& tune);
     // Retune and flush every stage (receiver, spectrum, transport stream) - used by the channel scanner.
@@ -131,7 +153,7 @@ public:
     std::string sourceNote() const { std::lock_guard<std::mutex> lk(noteMu_); return retuneNote_.empty() ? note_ : retuneNote_; }
     // A live radio that has stopped delivering samples (unplugged, or its USB connection broke). A HackRF is reopened when it comes back.
     bool radioLost() const { return radioLost_; }
-    void setComputeMode(int m) { rx_.setComputeMode(m); }
+    void setComputeMode(int m) { rx_.setComputeMode(m); rxDvbs_.setComputeMode(m); }
     void selectPlp(int id) { rx_.selectPlp(id); }
     // Which standard to decode: 0 = automatic (alternates between DVB-T2 and DVB-T until one locks), 1 = DVB-T2, 2 = DVB-T, 3 = ATSC, 4 = DAB, 5 = ATSC 3.0, 6 = ISDB-T, 7 = FM,
     // 8 = DVB-S/S2, 9 = DTMB, 10 = analog TV, 11 = DMR, 12 = DRM, 13 = ADS-B, 14 = GNSS,
@@ -151,6 +173,7 @@ public:
     // Record the radio's raw samples (as they leave the ring, before any clean-up) at the radio's own rate. Not for a file source.
     bool startRecording(const std::string& path, FileFormat fmt, std::string& err);
     void stopRecording() { rec_.stop(); }
+    void setRecordSigmf(bool on) { recSigmf_ = on; }   // SigMF metadata beside the recordings (default on)
     RecordingStats recordingStats() const { return rec_.stats(); }
     // A file name for a recording of what the radio is tuned to right now (see recordingFileName())
     std::string recordingName(FileFormat fmt) const;
@@ -214,6 +237,8 @@ public:
     DabFicAnalysis dabFic() const { return rxD_.ficAnalysis(); }
     void dabSelect(int subId) { rxD_.select(subId); }
     int dabSelected() const { return rxD_.selected(); }
+    void dabSelectJournaline(int sub, int packetAddress, int ext) { rxD_.selectJournaline(sub, packetAddress, ext); }
+    dect2::JournalineDecoder& dabJournaline() { return rxD_.journaline(); }
     DabAudio& dabAudio() { return rxD_.audio(); }
     FmReceiver& fm() { return rxFm_; }   // volume, mute and de-emphasis of the FM receiver
     DvbsReceiver& dvbs() { return rxDvbs_; }   // DVB-S/S2: the receiver's own controls and results (the interface reads telemetry through latestRx)
@@ -240,6 +265,10 @@ public:
     GsmrReceiver& gsmr() { return rxGsmr_; }   // GSM-R: the receiver's own controls and results (the interface reads telemetry through latestRx)
     CellReceiver& cell() { return rxCell_; }   // Cell towers: the receiver's own controls and results (the interface reads telemetry through latestRx)
     IsmReceiver& ism() { return rxIsm_; }   // ISM sensors: the receiver's own controls and results (the interface reads telemetry through latestRx)
+    // Whole-span decoding (the "wide decode" switch): the narrowband HF modes (CW, PSK, HF digital: FT8 / FT4 / WSPR slots and RTTY) decode
+    // the visible span (up to 250 kHz around the dial frequency) instead of the tuned transmission (widespan.h). Off by default.
+    void setWideDecode(bool on, double spanHz = 250000);
+    bool wideDecode() const { return wideDecode_.load(); }
     CwReceiver& cw() { return rxCw_; }   // CW: the receiver's own controls and results (the interface reads telemetry through latestRx)
     MacReceiver& mac() { return rxMac_; }   // MAC television: pictures, sound (the interface reads telemetry through latestRx)
     DpmrReceiver& dpmr() { return rxDpmr_; }   // dPMR: scan, sound (the interface reads telemetry through latestRx)
@@ -257,9 +286,24 @@ public:
     BleReceiver& ble() { return rxBle_; }   // Bluetooth LE advertising: clear the device table (telemetry through latestRx)
     IonoReceiver& iono() { return rxIono_; }   // ionospheric sounders: timing lock, the sounder shown (telemetry through latestRx)
     GeneralReceiver& general() { return rxGeneral_; }   // general receiver: demodulator, filter, squelch, sound and recording (telemetry through latestRx)
+    GlobalstarReceiver& globalstar() { return rxGs_; }   // Globalstar activity monitor: clear the event log (telemetry through latestRx)
+    VdesReceiver& vdes() { return rxVdes_; }   // VDES: clear the ASM and burst lists (telemetry through latestRx)
+    NbiotReceiver& nbiot() { return rxNb_; }   // NB-IoT cells: clear the cell table (telemetry through latestRx)
+    ZigbeeReceiver& zigbee() { return rxZb_; }   // Zigbee / 802.15.4: clear the PAN and device tables (telemetry through latestRx)
+    FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
+    LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
+    HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
+    DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
+    WbReceiver& wb() { return rxWb_; }   // Signal workbench: nothing to clear (the tool works on files)
+    DatawellReceiver& datawell() { return rxDw_; }   // Datawell buoy HF link: clear the frames, force the format (telemetry through latestRx)
+    MultitoneReceiver& multitone() { return rxMt_; }   // Multitone paging: clear the transmission list (telemetry through latestRx)
+    CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
+    SameReceiver& same() { return rxSame_; }   // NOAA weather radio SAME: the alert list, country, Listen (telemetry through latestRx)
+    HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
     TimeReceiver& timesig() { return rxTime_; }   // time signals: station, receiver position (telemetry through latestRx)
     RidReceiver& rid() { return rxRid_; }   // Drone Remote ID: clear the drone table (telemetry through latestRx)
+    HrptReceiver& hrpt() { return rxHrpt_; }   // HRPT / AHRPT: variant, new picture (telemetry through latestRx)
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
     MeteorReceiver& meteor() { return rxMeteor_; }   // Meteor-M LRPT: modulation, a new picture (telemetry through latestRx)
     NrReceiver& nr() { return rxNr_; }         // 5G NR cells: clear the cell table (telemetry through latestRx)
@@ -280,6 +324,13 @@ public:
     // Decoded results: the lists every mode keeps (messages, aircraft, vessels, cells, pictures...) live through mode switches, retunes
     // and restarts of the receiver, and are saved to a folder (one file per receiver) so the next run starts with them. Only a mode's
     // Clear empties them. Any thread.
+    // Whole-span decoding (DMR, M17, D-STAR, NXDN, dPMR, P25): one decoder per carrier found in the captured span instead of the tuned channel only.
+    // Takes effect at once; the single-channel receiver is untouched while it is on. Needs a restart-free toggle: the carriers appear within a second.
+    void setWideVoice(bool on) { wideOn_.store(on); for (auto& v : wideSeq_) v = 0; }
+    bool wideVoice() const { return wideOn_.load(); }
+    void setWideMuted(bool m) { wide_.setMuted(m); }
+    void setWideSelected(int carrierId) { wide_.setSelected(carrierId); }   // the carrier whose sound plays and whose detail shows (0: the best locked)
+    static bool wideSupported(int analysisMode) { return WideModes::supports(analysisMode); }
     void clearResults(int stdMode);                      // the Clear of a mode's screen: every list of its receiver
     int loadResults(const std::string& dir);             // the lists of the last run (a file of another build is discarded); the receivers restored
     int saveResults(const std::string& dir);             // the receivers whose lists changed since the last save (or load); the files written
@@ -364,8 +415,9 @@ private:
     std::vector<std::string> log_;
     std::chrono::steady_clock::time_point t0_;
     IqRecorder rec_;
+    bool recSigmf_ = true;
     std::unique_ptr<IqSource> src_;
-    SpectrumAnalyzer analyzer_{4096};
+    SpectrumAnalyzer analyzer_{8192};
     T2Receiver rx_;
     DvbtReceiver rxT_;
     AtscReceiver rxA_;
@@ -377,6 +429,9 @@ private:
     DtmbReceiver rxDtmb_;
     AtvReceiver rxAtv_;
     DmrReceiver rxDmr_;
+    WideModes wide_;
+    std::atomic<bool> wideOn_{false};
+    uint64_t wideSeq_[64] = {};
     DrmReceiver rxDrm_;
     AdsbReceiver rxAdsb_;
     GnssReceiver rxGnss_;
@@ -401,6 +456,7 @@ private:
     HfdlReceiver rxHfdl_;
     CellReceiver rxCell_;
     CwReceiver rxCw_;
+    std::atomic<bool> wideDecode_{false};
     DstarReceiver rxDstar_;
     NxdnReceiver rxNxdn_;
     DpmrReceiver rxDpmr_;
@@ -426,11 +482,26 @@ private:
     GeneralReceiver rxGeneral_;
     TimeReceiver rxTime_;
     CubesatReceiver rxCube_;
+    GlobalstarReceiver rxGs_;
+    VdesReceiver rxVdes_;
+    ZigbeeReceiver rxZb_;
+    HfbReceiver rxHfb_;
+    DjiReceiver rxDji_;
+    NbiotReceiver rxNb_;
+    HalowReceiver rxHl_;
+    CodarReceiver rxCd_;
+    WbReceiver rxWb_;
+    DatawellReceiver rxDw_;
+    SameReceiver rxSame_;
+    MultitoneReceiver rxMt_;
+    LoraRawReceiver rxLr_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
-    uint64_t modeSeq_[64] = {};      // the last report taken from each of the modes added after FM (same order as above)
+    HrptReceiver rxHrpt_;
+    FlarmReceiver rxFlarm_;
+    uint64_t modeSeq_[80] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;
     uint64_t atsc3Seq_ = 0;
@@ -494,7 +565,7 @@ private:
     std::atomic<double> secShift_{0};   // how far its frequency lies above the centre of the capture
     std::atomic<bool> secFlush_{false};
     std::atomic<uint64_t> secDropped_{0};
-    uint64_t modeSeq2_[64] = {};
+    uint64_t modeSeq2_[80] = {};
     std::mutex rx2Mu_;
     RxTelemetry rxTel2_;
     uint64_t rx2Pub_ = 0;
@@ -516,7 +587,9 @@ private:
     std::atomic<bool> running_{false}, stopReq_{false};
     void watchRadio();
     std::atomic<bool> radioLost_{false};
-    TuneSettings radioTune(const TuneSettings& t) const;   // what the radio is tuned to: the user's frequency plus the mode's tuneOffsetHz
+    TuneSettings hwTune(const TuneSettings& t) const;      // radioTune() through the converter (converter.h): what the radio itself is tuned to
+    mutable std::atomic<bool> convSwap_{false};            // the converter mirrors the spectrum: ingest() swaps I and Q
+    TuneSettings radioTune(const TuneSettings& t) const;  // what the radio is tuned to: the user's frequency plus the mode's tuneOffsetHz
     mutable std::mutex tuneMu_;                 // lastDev_ / lastTune_: what to reopen the radio with
     DeviceInfo lastDev_;
     TuneSettings lastTune_;

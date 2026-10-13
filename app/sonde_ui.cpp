@@ -23,7 +23,7 @@ struct State {
 State S;
 
 // standard 14 is the engine's activeStandard for radiosondes
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 14; }
+bool live(const App& a) { return a.rx.standard == 14; }
 
 void loadState() {
     if (S.loaded) return;

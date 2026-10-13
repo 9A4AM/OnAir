@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -19,9 +20,19 @@ struct DabSlide {
     std::string name;                // the MOT ContentName, when sent
 };
 
+// A station logo: from the service information (SPI, ETSI TS 102 818) media description, or a slide show picture in the category "logo".
+struct DabLogo {
+    uint32_t sid = 0;                // the service it belongs to; 0 = the service whose PAD carried it (category "logo")
+    std::string type;                // the SPI multimedia type ("logo_colour_square" ...), empty for a slide show logo
+    std::string name;                // the MOT ContentName of the picture
+    int w = 0, h = 0;
+    std::vector<uint8_t> rgba;       // w * h pixels, R G B A
+};
+
 class DabPadDecoder {
 public:
     void reset();
+    void setDataGroupSink(std::function<void(const uint8_t*, size_t)> cb) { sink_ = std::move(cb); }   // survives reset()
     // One DAB+ access unit (raw AAC data block, CRC removed). Looks for the data stream element that carries the PAD.
     // The PAD bytes in the element are in the order of EN 300 401 figure 29 (as at the end of an MP2 frame): the two F-PAD bytes last, the X-PAD
     // before them with the byte sent first right next to the F-PAD.
@@ -37,6 +48,10 @@ public:
     // DL Plus (TS 102 980): the tagged parts of the current label, [] when the station sends none for it
     const std::vector<DabDlpTag>& dlPlus() const { return dlp_; }
     bool dlPlusRunning() const { return dlpRunning_; }
+    // The logos known so far (SPI service information in a MOT object, with the pictures it points to, and slide show pictures of the category
+    // "logo"); logoSeq() counts the changes.
+    uint64_t logoSeq() const { return logoSeq_; }
+    const std::vector<DabLogo>& logos() const { return logos_; }
 
 private:
     struct Obj {
@@ -44,6 +59,7 @@ private:
         int headLast = -1, bodyLast = -1;
         bool done = false;
     };
+    std::function<void(const uint8_t*, size_t)> sink_;
     void subfield(int type, const uint8_t* d, int n);
     void dataGroup(const uint8_t* d, int n);
     void segment(uint16_t tid, int type, int segNo, bool last, const uint8_t* d, int n);
@@ -51,6 +67,9 @@ private:
     void labelSegment(const uint8_t* d, int n);
     void dlPlusCommand(int toggle, const uint8_t* d, int n);
     void resolveDlPlus();
+    void spi(const std::string& xml);
+    void resolveLogos();
+    bool isLogoName(const std::string& name) const;
 
     int lastCont_ = 0;                   // MP2: length of the last data subfield, for the X-PAD without indicators that follows
     int lastType_ = 0;                   // application type of the last content indicator, for X-PAD without one
@@ -72,6 +91,12 @@ private:
     std::map<uint16_t, Obj> objs_;
     std::deque<uint16_t> order_;
     DabSlide slide_;
+    struct SpiLogo { uint32_t sid; std::string type, url; int w, h; };
+    std::vector<SpiLogo> spiLogos_;          // the logo entries of the service information
+    std::map<std::string, DabSlide> images_; // the named pictures, to match later service information
+    std::deque<std::string> imageOrder_;
+    std::vector<DabLogo> logos_;
+    uint64_t logoSeq_ = 0;
 };
 
 // DL Plus content type names ("Title", "Artist" ...), TS 102 980 table 2

@@ -1,6 +1,7 @@
 // Marine screens: the NAVTEX messages grouped by station with the text panel, the DSC calls (distress in red, the position on a small
 // map), the weather fax picture (zoom, pan, slant, save as PNG) and a tuning aid (the audio spectrum with the tones each service expects).
 #include "app.h"
+#include "gallery.h"
 #include "dect2/results_io.h"
 #include "adsb_map.h"
 #include "dect2/marine_tel.h"
@@ -60,7 +61,7 @@ State S;
 const int kLpm[] = {0, 60, 90, 120, 240};
 const int kIoc[] = {0, 576, 288};
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 16; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 16; }   // the engine reports its standard code minus one
 
 void loadState() {
     if (S.loaded) return;
@@ -614,6 +615,10 @@ void tick(App& a) {
     const int fs = a.rx.marine.fax.state;
     if (live(a) && S.prevFaxState == 2 && fs != 2 && S.last.height >= 50) {
         S.faxes.insert(S.faxes.begin(), State::Fax{(int64_t)time(nullptr), a.freqMhz * 1e3, S.last});
+        {
+            gallery::Meta gm; gm.detail = std::to_string((int)std::lround(a.freqMhz * 1e3)) + " kHz, IOC " + std::to_string(a.rx.marine.fax.ioc) + ", " + std::to_string(a.rx.marine.fax.lpm) + " lpm";
+            gallery::publishGray("fax-" + std::to_string((long long)time(nullptr)), "Weather fax", (double)time(nullptr), S.last.width, S.last.height, S.last.pix.data(), gm);
+        }
         if (S.faxes.size() > 30) S.faxes.pop_back();
     }
     S.prevFaxState = fs;
@@ -648,6 +653,10 @@ void tab(App& a) {
     }
     ImGui::SameLine();
     if (ImGui::SmallButton("clear")) a.engine.marine().clearMessages();
+    if (S.view == 0 || S.view == 1) {   // NAVTEX and DSC: hear the FSK tones (fax has its own control in its view)
+        ImGui::SameLine(0, 14 * gUi);
+        listenControls(a, S.listen, "faxListen", "marfsk", "Play the sideband from the dial up on the sound card (the FSK tones); decoding is the same either way");
+    }
     if (subService(a) == 0 || subService(a) == 1) {   // saving is for NAVTEX messages
     sameLineIf(ImGui::GetFrameHeight() + ImGui::CalcTextSize("Save messages").x + 100 * gUi, 20 * gUi);
     if (ImGui::Checkbox("Save messages", &S.saveNav)) { plat::prefs().setB("marineSaveNavtex", S.saveNav); S.saver.clearError(); S.saveErr.clear(); }

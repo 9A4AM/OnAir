@@ -29,6 +29,13 @@ public:
     std::string saveResults() const;                     // for the results file (results_io.h)
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
+    // "Listen": the FM-demodulated audio (the AFSK tones, 1200 / 2200 Hz) at 8 kHz on the sound card; off by default
+    void setListen(bool on);
+    bool listening() const;
+    void setVolume(float v);
+    void setMuted(bool m);
+    void setSilent(bool s);                              // decode but do not open the sound device
+    void setListenTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz audio (also when silent)
 
 private:
     struct Impl;

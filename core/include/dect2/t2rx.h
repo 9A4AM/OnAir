@@ -1,6 +1,7 @@
 // DVB-T2 receiver front-end (phase 1): P1 detection and S1/S2 decoding, guard-interval detection,
 // symbol synchronisation, CFO / timing tracking and raw OFDM cell extraction.
 #pragma once
+#include "wide_bank.h"
 #include <string>
 #include "ring.h"
 #include "atsc_tel.h"
@@ -57,10 +58,25 @@
 #include "general_tel.h"
 #include "time_tel.h"
 #include "cubesat_tel.h"
+#include "globalstar_tel.h"
+#include "vdes_tel.h"
+#include "zigbee_tel.h"
+#include "flarm_tel.h"
+#include "hfbeacon_tel.h"
+#include "dji_tel.h"
+#include "nbiot_tel.h"
+#include "halow_tel.h"
+#include "codar_tel.h"
+#include "wb_tel.h"
+#include "datawell_tel.h"
+#include "same_tel.h"
+#include "multitone_tel.h"
+#include "loraraw_tel.h"
 #include "rid_tel.h"
 #include "meteor_tel.h"
 #include "nr_tel.h"
 #include "goes_tel.h"
+#include "hrpt_tel.h"
 #include "t2.h"
 #include "t2l1.h"
 #include "t2plp.h"
@@ -87,6 +103,7 @@ struct P1Info {
 };
 
 struct RxTelemetry {
+    std::vector<WideCarrier> wide;   // whole-span decoding: the carriers table (empty otherwise)
     AtscTelemetry atsc;          // valid when standard == 2
     DabTelemetry dab;            // valid when standard == 3
     FmTelemetry fm;              // valid when standard == 6
@@ -135,11 +152,26 @@ struct RxTelemetry {
     WifiTelemetry wifi;       // valid when standard == 55 (Wi-Fi networks)
     GeneralTelemetry general; // valid when standard == 56 (general receiver)
     TimeTelemetry timesig;    // valid when standard == 59 (time signals)
+    FlarmTelemetry flarm;     // valid when standard == 67 (FLARM)
+    DjiTelemetry dji;         // valid when standard == 69 (DJI drones)
     CubeTelemetry cube;       // valid when standard == 62 (CubeSat telemetry)
+    GlobalstarTelemetry globalstar;   // valid when standard == 63 (Globalstar activity monitor)
+    VdesTelemetry vdes;       // valid when standard == 64 (VDES)
+    NbiotTelemetry nbiot;     // valid when standard == 70 (NB-IoT cells)
+    ZigbeeTelemetry zigbee;   // valid when standard == 66 (Zigbee / 802.15.4)
+    LoraRawTelemetry loraraw; // valid when standard == 72 (LoRa raw)
+    HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
+    WbTelemetry wb;           // valid when standard == 74 (Signal workbench)
+    DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)
+    CodarTelemetry codar;     // valid when standard == 73 (CODAR / HF ocean radar)
+    SameTelemetry same;       // valid when standard == 77 (NOAA weather radio SAME)
+    MultitoneTelemetry multitone;   // valid when standard == 76 (Multitone paging)
+    HalowTelemetry halow;     // valid when standard == 71 (Wi-Fi HaLow / 802.11ah)
     RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)
     MeteorTelemetry meteor;   // valid when standard == 60 (Meteor-M LRPT)
     NrTelemetry nr;           // valid when standard == 58 (5G NR cells)
     GoesTelemetry goes;       // valid when standard == 61 (GOES HRIT)
+    HrptTelemetry hrpt;       // valid when standard == 65 (HRPT / AHRPT)
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34
     NxdnTelemetry nxdn;         // valid when standard == 39

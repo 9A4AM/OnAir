@@ -45,6 +45,9 @@ struct DvbsTelemetry {
     float merDb = 0;                 // modulation error ratio of the symbols
     float preFecBer = -1;            // bit error rate before the error correction (estimate), -1 not known
     float ldpcIterAvg = 0;           // DVB-S2: average LDPC iterations per frame (recent)
+    int computeMode = 2;             // the choice that is set: 0 CPU, 1 GPU, 2 auto
+    bool gpuAvailable = false;       // a graphics processor that the error correction can use
+    bool onGpu = false;              // the last frames (DVB-S2 LDPC) or windows (DVB-S Viterbi) were decoded on it
     uint64_t bchOk = 0, bchBad = 0;                 // DVB-S2 BCH decoder: frames fixed or clean / not decodable
     uint64_t rsClean = 0, rsCorrected = 0, rsFailed = 0;   // DVB-S Reed-Solomon (204,188) packets
     uint64_t packets = 0;            // transport stream packets delivered

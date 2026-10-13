@@ -113,7 +113,7 @@ void setMode(App& a, int f, int sub) {
     nameSynth(a);
 }
 
-// what to tell the engine: 0 auto, 1 DVB-T2, 2 DVB-T, 3 ATSC, 4 DAB, 5 ATSC 3.0, 6 ISDB-T, 7 FM, 8 DVB-S/S2, 9 DTMB, 10 analog TV, 11 DMR, 12 DRM, 13 ADS-B, 14 GNSS, 15 radiosonde, 16 AIS, 17 marine, 18 ACARS, 19 Inmarsat-C, 20 Inmarsat Aero, 21 Iridium, 22 mesh, 23 HD Radio, 24 CDR, 25 pagers, 26 APRS / packet, 27 HF digital, 28 airband, 29 VDL Mode 2, 30 ISM sensors, 32 VOR / ILS, 33 M17, 35 D-STAR, 36 CW, 37 HFDL, 38 PSK31, 39 JS8Call, 44 spectrum analyser, 40 NXDN, 42 DVB-C, 47 dPMR, 46 Orbcomm, 45 Mode S uplink, 48 TETRA, 51 HF ALE, 49 MAC, 50 radio astronomy, 52 P25, 53 Bluetooth LE, 54 ionospheric sounders, 55 QO-100, 56 Wi-Fi networks, 57 general receiver, 63 CubeSat telemetry (Engine::start maps these to activeStandard())
+// what to tell the engine: 0 auto, 1 DVB-T2, 2 DVB-T, 3 ATSC, 4 DAB, 5 ATSC 3.0, 6 ISDB-T, 7 FM, 8 DVB-S/S2, 9 DTMB, 10 analog TV, 11 DMR, 12 DRM, 13 ADS-B, 14 GNSS, 15 radiosonde, 16 AIS, 17 marine, 18 ACARS, 19 Inmarsat-C, 20 Inmarsat Aero, 21 Iridium, 22 mesh, 23 HD Radio, 24 CDR, 25 pagers, 26 APRS / packet, 27 HF digital, 28 airband, 29 VDL Mode 2, 30 ISM sensors, 32 VOR / ILS, 33 M17, 35 D-STAR, 36 CW, 37 HFDL, 38 PSK31, 39 JS8Call, 44 spectrum analyser, 40 NXDN, 42 DVB-C, 47 dPMR, 46 Orbcomm, 45 Mode S uplink, 48 TETRA, 51 HF ALE, 49 MAC, 50 radio astronomy, 52 P25, 53 Bluetooth LE, 54 ionospheric sounders, 55 QO-100, 56 Wi-Fi networks, 57 general receiver, 63 CubeSat telemetry, 69 HF beacons (Engine::start maps these to activeStandard())
 int engineStd(const App& a) { return a.family >= 6 ? a.family + 2 : a.family == 1 ? 3 : a.family == 2 ? 4 : a.family == 3 ? 5 : a.family == 4 ? 6 : a.family == 5 ? 7 : a.stdMode; }
 
 void refreshDevices(App& a) {
@@ -132,6 +132,13 @@ void refreshDevices(App& a) {
     setNetworkRadios(a.netRadios);   // the ones the user added by address come after the ones found
     // HackRF, the radios with a native driver (RTL-SDR, Airspy, BladeRF, LimeSDR, PlutoSDR, USRP) and the rest through SoapySDR
     for (auto& d : listRadios(err)) a.devices.push_back(d);
+    for (App* o : receiversAll()) {   // a radio another receiver has open may be missing from the list (drivers cannot look at a radio in use): it stays, as "in use by RX n"
+        if (o == &a || !o->engine.running() || o->devIdx < 2 || o->devIdx >= (int)o->devices.size() || !o->devices[o->devIdx].isRadio()) continue;
+        const DeviceInfo& h = o->devices[o->devIdx];
+        bool have = false;
+        for (const auto& d : a.devices) have |= deviceClaimKey(d) == deviceClaimKey(h);
+        if (!have) a.devices.push_back(h);
+    }
     a.hackrfErr = err;
     a.hackrfErrHidden = false;
     a.usbHints = a.devices.size() == 2 ? usbRadioHints() : std::vector<std::string>();   // reads sysfs: only here, not every frame
@@ -344,6 +351,8 @@ void loadPrefs(App& a) {
     a.gainDev = d.getS("gainDev", "");
     a.tune.ampOn = d.getB("amp", false);
     a.recFormat = d.getI("recFormat", 0) == 1 ? 1 : 0;
+    a.recSigmf = d.getB("recSigmf", true);
+    a.engine.setRecordSigmf(a.recSigmf);
     if (d.has("family")) {
         const int f = std::max(0, std::min(kNumFamilies - 1, (int)d.getI("family", 0)));
         // the protocol entry; settings from before the split (HF digital, Mesh, Pagers, Marine as one entry) open the family's first
@@ -370,6 +379,9 @@ void loadPrefs(App& a) {
         const double fr = a.famFreq[modeSlot(a)];
         if (mt && !(a.freqMhz >= mt->minMhz && a.freqMhz <= mt->maxMhz && fr > 0)) a.freqMhz = fr >= mt->minMhz && fr <= mt->maxMhz ? fr : sm->defMhz;
     }
+    if (d.has("uiTextScale")) a.uiTextScale = std::max(0.8f, std::min(2.f, (float)d.getI("uiTextScale", 100) / 100.f));
+    a.splitSide = (float)d.getI("splitSide", 0); a.splitRight = (float)d.getI("splitRight", 0); a.splitBottom = (float)d.getI("splitBottom", 0);
+    a.splitDock = (float)d.getI("splitDock", 0); a.splitBot2 = (float)d.getI("splitBot2", 0);
     if (d.has("newUi")) a.newUi = d.getB("newUi", true);
     a.modeGroupsOpen = d.getS("modeGroupsOpen", "");
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
@@ -379,6 +391,8 @@ void loadPrefs(App& a) {
     if (d.has("atvNbtv")) a.atvNbtv = std::max(0, std::min(2, (int)d.getI("atvNbtv", 0)));
     if (d.has("atvNbtvLines")) a.atvNbtvLines = std::max(24, std::min(240, (int)d.getI("atvNbtvLines", 32)));
     if (d.has("atvNbtvFps")) a.atvNbtvFps = std::max(1.f, std::min(60.f, (float)d.getI("atvNbtvFps", 125) / 10.f));
+    if (d.has("wideMaskLo")) a.wideFamMask = (uint64_t)(uint32_t)d.getI("wideMaskLo", 0) | ((uint64_t)(uint32_t)d.getI("wideMaskHi", 0) << 32);
+    if (d.has("reduceCpuHidden")) a.reduceCpuHidden = d.getI("reduceCpuHidden", 1) != 0;
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
     if (d.has("lightUi")) a.lightUi = d.getI("lightUi", 0) != 0;
@@ -419,13 +433,14 @@ void loadPrefs(App& a) {
     a.popTop = d.getB("popTop", true);
     a.updCheck = d.getB("updCheck", true); a.updAuto = d.getB("updAuto", true); a.updPre = d.getB("updPre", true);
     a.updLast = d.getD("updLast", 0); a.updSkip = d.getS("updSkip", "");
-    loadFeedPrefs(a);
+    if (a.rxId == 1) loadFeedPrefs(a);   // the feeds are shared by all receivers: RX 1 owns their settings
     a.channels = d.getChannels();
 }
 
 void savePrefs(const App& a) {
     plat::Prefs& d = plat::prefs();
-    d.setS("netRadios", netRadiosToString(a.netRadios));
+    if (a.rxId == 1) d.setS("netRadios", netRadiosToString(a.netRadios));
+    d.setS("devName", a.devIdx >= 2 && a.devIdx < (int)a.devices.size() ? a.devices[a.devIdx].name : std::string());   // the radio of this receiver, found again at the next start
     d.setD("freqMhz", a.freqMhz);
     d.setI("lna", a.tune.lnaDb);
     d.setI("vga", a.tune.vgaDb);
@@ -436,7 +451,7 @@ void savePrefs(const App& a) {
     { const SubMode* sm = curSub(a); d.setS("subMode", sm ? sm->id : ""); }
     d.setI("fmDeemph", a.fmDeemph);
     d.setI("fmChanKhz", a.fmChanKhz);
-    d.setB("newUi", a.newUi);
+    if (a.rxId == 1) d.setB("newUi", a.newUi);
     const int curSlot = modeSlot(a);
     for (int f = 0; f < kNumSlots; f++) {   // gains per mode (the current mode from the live settings)
         const bool cur = f == curSlot;
@@ -447,18 +462,28 @@ void savePrefs(const App& a) {
         d.setB(("gAmp" + k).c_str(), cur ? a.tune.ampOn : a.famGain[f].amp);
     }
     for (int f = 6; f < kNumSlots; f++) if (a.famFreq[f] > 0 || (f == curSlot && a.family >= 6)) d.setD(("fFreq" + slotKey(f)).c_str(), f == curSlot ? a.freqMhz : a.famFreq[f]);
+    if (a.rxId > 1) {   // a further receiver keeps only its own radio, mode, frequency and gains: everything else is shared and written by RX 1
+        d.setI("standard", a.stdMode); d.setI("bw", a.bwIdx);
+        d.flush();
+        return;
+    }
     d.setI("uiTheme", a.uiTheme);
     d.setS("uiLang", a.uiLang);
     d.setI("lightUi", a.lightUi ? 1 : 0);
+    d.setI("reduceCpuHidden", a.reduceCpuHidden ? 1 : 0);
     d.setI("discordOn", a.discordOn ? 1 : 0);
     d.setI("discordFreq", a.discordFreq ? 1 : 0);
     d.setI("dtmbBw", a.dtmbBwMhz);
     d.setI("isdbtBw", a.isdbtBwMhz);
     d.setI("atvFm", a.atvFm ? 1 : 0);
+    d.setI("wideMaskLo", (int)(uint32_t)(a.wideFamMask & 0xffffffffu)); d.setI("wideMaskHi", (int)(uint32_t)(a.wideFamMask >> 32));
     d.setI("atvNbtv", a.atvNbtv);
     d.setI("atvNbtvLines", a.atvNbtvLines);
     d.setI("atvNbtvFps", (int)std::lround(a.atvNbtvFps * 10));
     d.setI("uiVariant", a.uiVariant);
+    d.setI("uiTextScale", (int)std::lround(a.uiTextScale * 100));
+    d.setI("splitSide", (int)std::lround(a.splitSide)); d.setI("splitRight", (int)std::lround(a.splitRight)); d.setI("splitBottom", (int)std::lround(a.splitBottom));
+    d.setI("splitDock", (int)std::lround(a.splitDock)); d.setI("splitBot2", (int)std::lround(a.splitBot2));
     d.setS("modeGroupsOpen", a.modeGroupsOpen);
     {   // the stations the FM scan found: mhz|name|type|snr|stereo|rds, one per line
         std::string st;

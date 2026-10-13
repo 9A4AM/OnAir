@@ -33,7 +33,7 @@ struct Band { const char* name; double mhz; };
 const Band kBands[] = {{"5.5 MHz (5.45 - 5.72)", 5.58}, {"6.6 MHz (6.53 - 6.71)", 6.62}, {"8.9 MHz (8.82 - 8.98)", 8.90}, {"10.06 MHz (10.03 - 10.09)", 10.06},
                        {"11.3 MHz (11.18 - 11.39)", 11.29}, {"13.3 MHz (13.26 - 13.36)", 13.31}, {"17.94 MHz (17.90 - 17.99)", 17.945}, {"21.96 MHz (21.93 - 22.00)", 21.963}};
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 36; }
+bool live(const App& a) { return a.rx.standard == 36; }
 
 void loadState() {
     if (S.loaded) return;

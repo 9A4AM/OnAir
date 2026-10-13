@@ -1,7 +1,11 @@
 // Radio problems where the user looks: the listing error, a failed start, a frequency the radio cannot tune and the USB hints, all under the
 // radio picker, plus a "Copy diagnostics" button that puts what a bug report needs on the clipboard.
 #include "app.h"
+#include "dect2/converter.h"
 #include "dect2/updater.h"
+#include "dect2/hfdig_freedv.h"
+#include "fixit.h"
+#include <filesystem>
 #include <cctype>
 #include <thread>
 #ifdef __APPLE__
@@ -179,6 +183,11 @@ void recordUi(App& a) {
     }
     ImGui::EndDisabled();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("8-bit: 2 bytes per sample, small. Float: 8 bytes per sample, exact.");
+    flowNext(6 * gUi);
+    ImGui::BeginDisabled(rs.active);
+    if (ImGui::Checkbox("SigMF", &a.recSigmf)) { plat::prefs().setB("recSigmf", a.recSigmf); a.engine.setRecordSigmf(a.recSigmf); }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Writes a .sigmf-meta file (sample rate, data type, centre frequency, time) next to the recording, and the same data under a .sigmf-data name, so the recording opens in IQEngine (iqengine.org) and other SigMF tools.");
     if (!a.recDonePath.empty() && !rs.active) {
         flowNext(6 * gUi);
         if (ImGui::SmallButton("Show recording")) dect2::openUrl(a.recDonePath.substr(0, a.recDonePath.find_last_of("/\\")));
@@ -189,9 +198,15 @@ void recordUi(App& a) {
 
 } // namespace
 
-std::string radioRangeWarning(const DeviceInfo& d, double freqMhz) {
+std::string radioRangeWarning(const DeviceInfo& d, double freqMhz, const std::map<std::string, std::string>* radio) {
     if (!d.isRadio() || d.minFreqHz <= 0 || d.maxFreqHz <= 0) return "";
-    const double hz = freqMhz * 1e6;
+    double hz = freqMhz * 1e6;
+    const dect2::Converter c = radio ? dect2::converterFromRadio(*radio) : dect2::Converter();
+    if (c.active) {   // the radio is tuned to the converter's output
+        hz = c.rfToIf(hz);
+        if (hz >= d.minFreqHz && hz <= d.maxFreqHz) return "";
+        return fmt("%.3f MHz at the antenna is %.3f MHz at the radio, outside its range (%.6g-%.6g MHz)", freqMhz, hz / 1e6, d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
+    }
     if (hz >= d.minFreqHz && hz <= d.maxFreqHz) return "";
     return fmt("%.3f MHz is outside this radio's range (%.6g-%.6g MHz)", freqMhz, d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
 }
@@ -205,7 +220,7 @@ std::vector<RadioMsg> radioMessages(const App& a) {
         if (!n.empty()) m.push_back({2, n});
     }
     if (a.devIdx >= 0 && a.devIdx < (int)a.devices.size()) {
-        const std::string w = radioRangeWarning(a.devices[a.devIdx], a.freqMhz);
+        const std::string w = radioRangeWarning(a.devices[a.devIdx], a.freqMhz, &a.tune.radio);
         if (!w.empty()) m.push_back({2, w});
     }
     if (a.devices.size() <= 2) for (auto& h : a.usbHints) m.push_back({3, h});
@@ -275,6 +290,47 @@ static void pollStartError(App& a) {
     }
 }
 
+// The small "How to fix" button and its popup: what it means, numbered steps for this OS, and the buttons that help (fixit.h)
+void fixitUi(App& a, const fixit::Entry* e, const char* idKey) {
+    if (!e) return;
+    ImGui::PushID(idKey);
+    if (ImGui::SmallButton(tr("How to fix"))) ImGui::OpenPopup("##fixit");
+    ImGui::SetNextWindowSizeConstraints(ImVec2(340 * gUi, 0), ImVec2(520 * gUi, 600 * gUi));
+    if (ImGui::BeginPopup("##fixit")) {
+        ImGui::PushTextWrapPos(500 * gUi);
+        ImGui::TextColored(pal::accent(), "%s", tr(e->title));
+        ImGui::Spacing();
+        ImGui::TextUnformatted(tr(e->why));
+        ImGui::Spacing();
+        int n = 1;
+        for (const char* st : fixit::stepsFor(*e, fixit::currentOs())) { ImGui::Text("%d.", n++); ImGui::SameLine(); ImGui::TextUnformatted(tr(st)); }
+        ImGui::Spacing();
+        bool first = true;
+        for (int b = 0; b < 3 && e->buttons[b].label; b++) {
+            const fixit::Button& bt = e->buttons[b];
+            if (!(bt.os & fixit::currentOs())) continue;
+            if (!first) ImGui::SameLine();
+            first = false;
+            if (ImGui::Button(tr(bt.label))) {
+                switch (bt.act) {
+                case fixit::Act::OpenUrl: dect2::openUrl(bt.arg); break;
+                case fixit::Act::CopyText: ImGui::SetClipboardText(bt.arg); break;
+                case fixit::Act::OpenDiagnostics: ImGui::SetClipboardText(diagnosticsText(a).c_str()); a.diagCopiedAt = ImGui::GetTime(); break;
+                case fixit::Act::OpenCodecs: {
+                    const auto d = dect2::codecFolderList();
+                    if (!d.empty()) { std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(d[0]), ec); dect2::openUrl(d[0]); }
+                    break;
+                }
+                }
+            }
+            if (bt.act == fixit::Act::CopyText && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", bt.arg);
+        }
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
+    }
+    ImGui::PopID();
+}
+
 void radioMessagesUi(App& a, bool vertical) {
     pollStartError(a);
     const auto msgs = radioMessages(a);
@@ -299,7 +355,13 @@ void radioMessagesUi(App& a, bool vertical) {
         ImGui::TextUnformatted(m.text.c_str());
         ImGui::PopTextWrapPos();
         ImGui::PopStyleColor();
+        fixitUi(a, fixit::lookup(m.text), "fix");
         ImGui::PopID();
+    }
+    if (a.devices.size() <= 2) {   // nothing listed: say so and say what helps
+        ImGui::TextDisabled("%s", tr("No radio found"));
+        ImGui::SameLine();
+        fixitUi(a, fixit::byId("no_radio"), "fixnone");
     }
     const bool copied = ImGui::GetTime() - a.diagCopiedAt < 2.0;
     if (ImGui::SmallButton(tr(copied ? "Copied" : "Copy diagnostics"))) {

@@ -3,6 +3,7 @@
 // zoom, pan, region), the region's measurements (with a hand-over to DVB-S/S2), and a sweep across a range that stitches a panorama
 // with its own waterfall and a table of the signals found. No decoder.
 #include "app.h"
+#include "results_export.h"
 #include "gfx.h"
 #include "plot.h"
 #include "dect2/specx_measure.h"
@@ -92,7 +93,7 @@ struct State {
 State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 42 && !a.rx.specx.spectrum.empty(); }
+bool live(const App& a) { return a.rx.standard == 42 && !a.rx.specx.spectrum.empty(); }
 double centreRadio(const App& a) { return a.tune.centerHz; }
 double rateOf(const App& a) { return a.rx.specx.rate > 0 ? a.rx.specx.rate : a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate; }
 double toRf(double radioHz) { return S.lnb.rfHz(radioHz); }
@@ -214,7 +215,7 @@ void measurePanel(App& a, const sx::Measure& m, bool canHand) {
     }
     ImGui::EndTable();
     if (canHand) {
-        if (ImGui::Button("Identify this signal")) identifyRegion(a, m.loHz, m.hiHz);
+        if (ImGui::Button("Identify this signal##region")) identifyRegion(a, m.loHz, m.hiHz);
         tip("Record a moment of this region and work out the modulation, symbol rate and the mode it could be");
         if (m.looksDvbs) ImGui::SameLine();
     }
@@ -270,7 +271,7 @@ void gestures(App& a, float l, float r, bool hovered, float top, float bot) {
         }
     }
     if (ImGui::BeginPopup("##sxctx")) {
-        if (ImGui::MenuItem("Identify this signal", nullptr, false, live(a))) identifyRfAt(a, S.ctxRf);
+        if (ImGui::MenuItem("Identify this signal##rf", nullptr, false, live(a))) identifyRfAt(a, S.ctxRf);
         ImGui::EndPopup();
     }
 }
@@ -555,6 +556,14 @@ void sweepPanel(App& a, float h) {
             if (m.flatTop) ImGui::Text("%.3f Ms/s", m.symRateBest / 1e6); else ImGui::TextDisabled("-");
         }
         ImGui::EndTable();
+    }
+    {
+        static std::string note;
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "bandwidth_3db_hz", "level_db", "symbol_rate_sps"};
+        const std::string now = resexp::stamp();
+        for (const auto& m : w.found) x.add({now, resexp::num(toRf(m.centreHz), 0), "spectrum explorer", resexp::num(m.bw3Hz, 0), resexp::num(m.snrDb, 1), m.flatTop ? resexp::num(m.symRateBest, 0) : ""});
+        resexp::saveButton(x, "explorer", note, "svsx");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
 }
 

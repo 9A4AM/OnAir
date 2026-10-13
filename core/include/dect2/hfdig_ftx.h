@@ -27,10 +27,10 @@
 
 namespace dect2 {
 
-constexpr int kFtxModes = 4;                 // 0 FT8, 1 FT4, 2 FT2, 3 WSPR
+constexpr int kFtxModes = 10;                // 0 FT8, 1 FT4, 2 FT2, 3 WSPR, 4 JT65, 5 JT9, 6 Q65, 7 FST4, 8 MSK144, 9 FST4W
 constexpr size_t kFtxKeep = 1000;            // decodes kept in the telemetry
-const char* ftxModeName(int mode);           // "FT8", "FT4", "FT2", "WSPR"
-double ftxPeriod(int mode);                  // 15, 7.5, 3.75, 120 s
+const char* ftxModeName(int mode);           // "FT8", "FT4", "FT2", "WSPR", "JT65", "JT9", "Q65", "FST4", "MSK144", "FST4W"
+double ftxPeriod(int mode);                  // 15, 7.5, 3.75, 120 s, 60, 60, 60 (Q65 default), 60 (FST4), 15 (MSK144), 120 (FST4W)
 
 struct FtxDecode {
     double slotUtc = 0;      // the start of the slot (UTC seconds since 1970; with a given start time, its clock)
@@ -44,6 +44,7 @@ struct FtxDecode {
     std::string call, grid;  // the calling station and its locator when the message has them
     int dbm = -1;            // WSPR: the power sent
     int pass = 0;            // 0 first pass, 1 .. after subtracting the stronger signals
+    double dialHz = 0;       // the dial frequency of the slot it was heard on (whole-span decoding: several slots at once); 0: not known
 };
 
 struct HfdigFtxTelemetry {
@@ -55,7 +56,9 @@ struct HfdigFtxTelemetry {
     int lastSlotCount[kFtxModes] = {};        // decodes in the last slot
     double lastSlotUtc[kFtxModes] = {};
     float decodeMs[kFtxModes] = {};           // time the last slot took to decode
-    bool enabled[kFtxModes] = {true, true, true, true};
+    bool enabled[kFtxModes] = {true, true, true, true, true, true, true, true, true, true};
+    int sub[kFtxModes] = {};                  // JT65 0 A 1 B 2 C; Q65 0 A .. 4 E
+    double period[kFtxModes] = {};            // T/R period in use, s
     int timeMode = 0;                         // 0 system clock, 1 the given start time, 2 slot search: looking, 3 slot search: found
     double nowUtc = 0;                        // the time of the newest audio (the slot clock)
     float clockErr = 0;                       // median DT of the recent decodes, s
@@ -77,6 +80,9 @@ public:
     // settings: any thread
     void setEnabled(int mode, bool on);
     bool enabled(int mode) const;
+    // JT65 sub-mode (0 A, 1 B, 2 C), Q65 sub-mode (0 A .. 4 E) and the T/R period of Q65 (15 / 30 / 60 / 120 / 300 s), FST4 and FST4W
+    // (15 / 30 / 60 / 120 / 300 / 900 / 1800 s) and MSK144 (15 / 30 s); the others have one (any thread; sub < 0 or period <= 0 keep the old)
+    void setModeOption(int mode, int sub, double periodSec);
     void setMirrored(bool on);                       // also look for upside-down signals (default on)
     bool mirrored() const;
     void clearDecodes();
@@ -91,6 +97,13 @@ public:
     // tests: decode the slots already complete in the audio fed so far, with what is there
     void flushSlots();
 
+    // whole-span decoding (hfdig_wide.cpp): one decoder per dial slot; the decodes of the slot decoders go to the main one
+    void setDialHz(double hz);                       // stamped on every decode (FtxDecode::dialHz)
+    void setSpotShiftHz(double hz);                  // added to the audio frequency of a PSK Reporter spot (the slot's dial minus the radio's)
+    void setForwardTo(HfdigFtx* main);               // every decoded slot is also added to main (addForeign), which is the one that lists it
+    void addForeign(const std::vector<FtxDecode>& d, int mode, double slotUtc, float decodeMs);
+    void copyClockFrom(HfdigFtx& o);                 // the same time source (start time, slot search, wall clock)
+
 private:
     struct Impl;
     std::unique_ptr<Impl> p_;
@@ -104,6 +117,9 @@ std::vector<FtxTestStation> ftxTestStations(int mode);
 // One transmission of a mode as audio (rate Hz): adds msg at audio frequency hz, amplitude amp, starting `startSec` into out
 // (the nominal start of the slot plus DT). False when the message cannot be sent.
 bool ftxGridToLatLon(const std::string& grid, double& lat, double& lon);   // the middle of a 4- or 6-character locator
+// With the sub-mode (JT65 A B C, Q65 A .. E) and period of Q65 / FST4 / FST4W / MSK144 (0: the defaults); mirrored is not supported by those modes
+bool ftxAddTransmissionEx(int mode, const std::string& msg, double hz, double amp, double rate, double startSec, bool mirrored, int sub, double period,
+                          std::vector<float>& out);
 bool ftxAddTransmission(int mode, const std::string& msg, double hz, double amp, double rate, double startSec, bool mirrored,
                         std::vector<float>& out);
 

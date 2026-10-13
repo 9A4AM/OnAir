@@ -1,0 +1,110 @@
+// IEEE 802.15.4 / Zigbee frame layers, receive only (no decryption, no keys): CRC-16, the 2.4 GHz spreading table, the MAC header (frame
+// type, security bit, PAN ID, short and extended addresses, sequence number, frame version), MAC commands, the Zigbee beacon payload, the
+// Zigbee NWK header and the APS header where the NWK payload is not encrypted, and the vendor of an extended address (a small OUI table).
+#pragma once
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace dect2 {
+namespace zigbee {
+
+// Channels 11 - 26: 2405 + 5 (k - 11) MHz, 2 MHz wide
+constexpr int kFirstChannel = 11, kLastChannel = 26;
+inline double channelMhz(int ch) { return 2405.0 + 5.0 * (ch - 11); }
+inline int channelOf(double mhz) {   // the channel whose centre lies within 2.5 MHz, 0 when none
+    const int k = (int)((mhz - 2405.0) / 5.0 + (mhz >= 2405.0 ? 0.5 : -0.5));
+    const int ch = 11 + k;
+    return ch >= kFirstChannel && ch <= kLastChannel && std::fabs(mhz - channelMhz(ch)) < 2.5 ? ch : 0;
+}
+
+// FCS: ITU-T CRC-16 (x^16 + x^12 + x^5 + 1), initial value 0, bits least significant first (the "Kermit" CRC: "123456789" gives 0x2189)
+uint16_t crc16(const uint8_t* d, size_t n);
+
+// The 16 near-orthogonal 32-chip sequences of the 2.4 GHz O-QPSK PHY (IEEE 802.15.4-2006 table 24): chip c0 is the most significant bit
+extern const uint32_t kChipTable[16];
+
+// MAC frame types
+enum FrameType { Beacon = 0, Data = 1, Ack = 2, Command = 3, Multipurpose = 5, Fragment = 6, Extended = 7 };
+const char* frameTypeName(int t);
+
+struct Frame {
+    bool ok = false;                  // the header could be read
+    int type = 0;
+    bool secured = false, pending = false, ackReq = false, panCompress = false, seqSuppressed = false, ieList = false;
+    int destMode = 0, srcMode = 0;    // 0 none, 2 short, 3 extended
+    int version = 0;                  // 0 and 1: 2003 / 2006, 2: 2015
+    int seq = -1;
+    bool hasDestPan = false, hasSrcPan = false;
+    uint16_t destPan = 0, srcPan = 0;
+    uint16_t destShort = 0, srcShort = 0;
+    uint64_t destExt = 0, srcExt = 0;   // as the usual EUI-64 (the air carries it little endian)
+    size_t payloadAt = 0, payloadLen = 0;   // within the PSDU, FCS excluded
+    // MAC command
+    int command = -1;
+    // beacon
+    bool superframe = false, panCoordinator = false, assocPermit = false, coordinator = false;
+    int beaconOrder = 15, superframeOrder = 15;
+    bool zbBeacon = false;
+    int protocolId = -1, stackProfile = 0, nwkVersion = 0;
+    bool routerCapacity = false, endDeviceCapacity = false;
+    int depth = 0, nwkUpdateId = 0;
+    uint64_t extPanId = 0;
+    // Zigbee NWK
+    bool hasNwk = false, nwkSecured = false;
+    int nwkType = 0, nwkProtocol = 0, nwkRadius = 0, nwkSeq = 0, nwkCommand = -1;
+    bool nwkRoute = false, nwkMulticast = false, nwkSourceRoute = false;
+    uint16_t nwkDest = 0, nwkSrc = 0;
+    bool nwkHasDestExt = false, nwkHasSrcExt = false;
+    uint64_t nwkDestExt = 0, nwkSrcExt = 0;
+    // Zigbee APS (only when the NWK payload is in the clear)
+    bool hasAps = false, apsSecured = false;
+    int apsType = 0, apsDelivery = 0, apsDestEp = -1, apsSrcEp = -1, apsCounter = -1;
+    int apsCluster = -1, apsProfile = -1;
+    bool encrypted = false;           // the payload is encrypted (MAC or NWK or APS security): shown as such, never decoded
+    std::string info;                 // one line: what the frame is
+};
+
+// Reads a PSDU (FCS included; fcs says whether it matched). The header is decoded as far as it goes.
+Frame parse(const uint8_t* psdu, size_t n);
+std::string addrText(uint64_t ext);          // "00:12:4B:00:01:02:03:04"
+std::string shortText(uint16_t a);           // "0x1A2B"
+const char* macCommandName(int c);
+const char* nwkCommandName(int c);
+const char* clusterName(int cluster, int profile);
+const char* profileName(int profile);
+const char* vendorOfExt(uint64_t ext);       // "" when the OUI is not in the table
+// "src > dst" in the frame log: the addresses as the frame carries them ("-" none)
+std::string srcText(const Frame& f);
+std::string dstText(const Frame& f);
+
+// Builds frames (for the test signal and the tests): the MAC header and payload, FCS added
+struct MacBuild {
+    int type = Data;
+    int version = 0;
+    bool secured = false, ackReq = false, pending = false, panCompress = true;
+    int destMode = 2, srcMode = 2;
+    uint8_t seq = 0;
+    uint16_t destPan = 0x1A62, srcPan = 0x1A62;
+    uint16_t destShort = 0, srcShort = 0;
+    uint64_t destExt = 0, srcExt = 0;
+    std::vector<uint8_t> payload;
+};
+std::vector<uint8_t> buildMac(const MacBuild& b);
+// A Zigbee beacon payload (15 bytes)
+std::vector<uint8_t> zbBeaconPayload(int stackProfile, int nwkVersion, bool router, bool endDevice, int depth, uint64_t extPan, int updateId);
+// A Zigbee NWK frame (header, optional extended addresses) in front of a payload
+struct NwkBuild {
+    int type = 0, protocol = 2, radius = 30, seq = 0;
+    bool secured = false, route = true;
+    uint16_t dest = 0, src = 0;
+    bool destExt = false, srcExt = false;
+    uint64_t destExtAddr = 0, srcExtAddr = 0;
+    std::vector<uint8_t> payload;
+};
+std::vector<uint8_t> buildNwk(const NwkBuild& b);
+
+} // namespace zigbee
+} // namespace dect2

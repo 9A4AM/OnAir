@@ -1,5 +1,7 @@
 // DAB / DAB+ digital radio panels.
 #include "app.h"
+#include "journaline_view.h"
+#include "results_export.h"
 #include "dect2/dab_announce.h"
 #include "dect2/dab_fig.h"
 #include <ctime>
@@ -333,6 +335,47 @@ void dabSelectStation(App& a, int sub, bool play) {
     else a.engine.dabSelect(-1);
 }
 
+// Station logos (SPI service information and slide show pictures of the category "logo"), kept as textures per ensemble id for the session
+static struct DabLogoCache {
+    struct Tex { gfx::Image* img = nullptr; int w = 0, h = 0; };
+    std::map<uint16_t, std::map<uint32_t, Tex>> byEns;
+    uint64_t seq = 0;
+    int lastSub = -2;
+} gDabLogos;
+static void dabLogoUpdate(App& a, const DabEnsemble& ens) {
+    if (!gGfx || !ens.valid) return;
+    DabAudio& au = a.engine.dabAudio();
+    const int cur = a.engine.dabSelected();
+    if (cur != gDabLogos.lastSub) { gDabLogos.lastSub = cur; gDabLogos.seq = 0; }   // the receiver's counter restarts with another service
+    std::vector<DabLogo> v;
+    const uint64_t seq = au.logoSeq();
+    if (seq == gDabLogos.seq || !au.logos(v, UINT64_MAX)) return;
+    gDabLogos.seq = seq;
+    uint32_t curSid = 0;
+    for (const auto& kv : ens.services) { const DabComponent* c = kv.second.playable(); if (c && c->subId == cur) curSid = kv.first; }
+    for (const DabLogo& l : v) {
+        const uint32_t sid = l.sid ? l.sid : curSid;
+        if (!sid || l.w <= 0 || l.h <= 0 || l.rgba.size() < (size_t)l.w * (size_t)l.h * 4) continue;
+        DabLogoCache::Tex& t = gDabLogos.byEns[ens.eid][sid];
+        delete t.img;
+        t.img = gGfx->createImage(l.w, l.h, 0xFF000000u);
+        t.img->update(0, 0, l.w, l.h, reinterpret_cast<const uint32_t*>(l.rgba.data()));
+        t.w = l.w; t.h = l.h;
+    }
+}
+// The logo of a service in a box `h` high (square at most 1.4 times as wide); false when none is known
+bool dabLogoImage(App& a, const DabEnsemble& ens, uint32_t sid, float h) {
+    dabLogoUpdate(a, ens);
+    auto e = gDabLogos.byEns.find(ens.eid);
+    if (e == gDabLogos.byEns.end()) return false;
+    auto t = e->second.find(sid);
+    if (t == e->second.end()) t = e->second.find(sid & 0xFFFF);
+    if (t == e->second.end() || !t->second.img) return false;
+    const float sc = std::min(h / (float)t->second.h, 1.4f * h / (float)t->second.w);
+    ImGui::Image(t->second.img->texture(), ImVec2((float)t->second.w * sc, (float)t->second.h * sc));
+    return true;
+}
+
 // The slide show picture the selected DAB+ service sends in its PAD: kept as a texture while the picture lasts
 static struct DabSlideView {
     uint64_t seq = 0;
@@ -654,7 +697,9 @@ void dabRadioTab(App& a) {
             }
             ImGui::PopID();
             ImGui::PushTextWrapPos(0);   // the cells wrap in a narrow tab
-            ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(sv.label.empty() ? "-" : sv.label.c_str());
+            ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+            if (dabLogoImage(a, ens, sv.sid, 22 * gUi)) ImGui::SameLine(0, 5 * gUi);
+            ImGui::TextUnformatted(sv.label.empty() ? "-" : sv.label.c_str());
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", ac ? (ac->dmb() ? "DMB (video)" : sv.dabPlus() ? "DAB+ (HE-AAC)" : "DAB (MP2)") : "data");
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", ac ? dabSubText(ens, ac->subId).c_str() : "");
             ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextDisabled("%04X", sv.sid); ImGui::PopFont();
@@ -723,6 +768,14 @@ void dabScanTab(App& a) {
         ImGui::ProgressBar((float)(std::max(0, s.idx)) / kNumDabCh, ImVec2(220, ImGui::GetFrameHeight() - 6));
     }
     ImGui::Spacing();
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "channel", "ensemble", "snr_db", "stations"};
+        const std::string now = resexp::stamp();
+        for (const auto& r : s.results) if (r.found) t.add({now, resexp::num(r.mhz * 1e6, 0), "DAB", r.name, r.label, resexp::num(r.snr, 1), r.stations});
+        resexp::saveButton(t, "dab", note, "svdab");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     if (ImGui::BeginTable("dscan", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("Channel", ImGuiTableColumnFlags_WidthFixed, 90); ImGui::TableSetupColumn("MHz", ImGuiTableColumnFlags_WidthFixed, 80);
         ImGui::TableSetupColumn("Ensemble"); ImGui::TableSetupColumn("SNR", ImGuiTableColumnFlags_WidthFixed, 70); ImGui::TableSetupColumn("Stations");
@@ -787,3 +840,57 @@ void dabScanStep(App& a) {
     else tuneTo(s.idx + 1);
 }
 
+
+// ------------------------------------------------------------------ Journaline (ETSI TS 102 979)
+// The services that signal the Journaline user application (FIG 0/13, type 0x44a): in the PAD of an audio component (the audio keeps playing)
+// or in a packet mode component (FIG 0/3 gives its sub-channel and packet address).
+static bool dabJournalineSource(const DabEnsemble& ens, const DabService& sv, int& sub, int& addr) {
+    if (!sv.journaline || sv.jlScIdS < 0 || sv.jlScIdS >= (int)sv.comps.size()) return false;
+    const DabComponent& c = sv.comps[(size_t)sv.jlScIdS];
+    if (c.tmid == 0) { sub = c.subId; addr = -1; return true; }   // the PAD of the audio
+    if (c.tmid == 3) {
+        auto it = ens.packet.find(c.scid);
+        if (it == ens.packet.end() || it->second.subId < 0) return false;
+        sub = it->second.subId; addr = it->second.address;
+        return true;
+    }
+    return false;
+}
+
+bool dabHasJournaline(const DabEnsemble& ens) {
+    for (const auto& kv : ens.services) if (kv.second.journaline) return true;
+    return false;
+}
+
+void dabJournalineTab(App& a) {
+    const DabEnsemble ens = a.engine.dabEnsemble();
+    static uint32_t chosen = 0;
+    static bool have = false;
+    static JlViewState jv;
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("Journaline: text and menus ('news and information'), ETSI TS 102 979. Pick a service; the pages arrive in a carousel, so a page can take a while to show up. Packet mode services need no audio; for a station with Journaline in its PAD the audio plays as well.");
+    ImGui::PopTextWrapPos();
+    int shown = 0;
+    for (const auto& kv : ens.services) {
+        const DabService& sv = kv.second;
+        int sub, addr;
+        if (!sv.journaline || !dabJournalineSource(ens, sv, sub, addr)) continue;
+        const bool on = have && chosen == sv.sid && a.engine.dabSelected() == sub;
+        ImGui::PushID((int)sv.sid);
+        char l[160]; snprintf(l, sizeof l, "%s%s  (%04X, %s)", on ? "[open] " : "", sv.label.empty() ? "service" : sv.label.c_str(), sv.sid, addr < 0 ? "PAD" : "packet mode");
+        if (ImGui::Selectable(l, on) && !on) {
+            chosen = sv.sid; have = true;
+            a.dabUserSub = addr < 0 ? sub : -1;
+            a.engine.dabSelectJournaline(sub, addr, sv.jlExt);
+            if (addr < 0) { a.engine.dabAudio().setVolume(a.volume); a.engine.dabAudio().setMuted(a.muted); }
+            jv.reset(sv.jlEntry);
+        }
+        ImGui::PopID();
+        shown++;
+    }
+    if (!shown) { ImGui::TextDisabled("No service of this ensemble has a Journaline component that can be decoded yet."); return; }
+    if (have) {
+        auto it = ens.services.find(chosen);
+        if (it != ens.services.end() && a.engine.dabSelected() >= 0) { ImGui::Separator(); journalineView("dabjl", a.engine.dabJournaline(), jv, it->second.jlEntry); }
+    }
+}

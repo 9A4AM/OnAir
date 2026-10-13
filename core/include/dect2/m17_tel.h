@@ -27,6 +27,7 @@ struct M17Message {
 
 // One transmission (stream or packet), for the activity log and the "now" panel
 struct M17Transmission {
+    int carrierId = 0; double carrierHz = 0;   // whole-span decoding: the carrier it came from (id 0: single channel), its frequency relative to the span centre
     int64_t wallTime = 0;        // Unix time of its start
     double startSec = 0;         // signal seconds
     double durSec = 0;

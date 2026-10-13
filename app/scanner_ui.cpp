@@ -3,7 +3,9 @@
 // power over the noise in the mode's bandwidth, or the mode's own telemetry saying it decodes), holds while active plus a hang time, then
 // moves on. Skip, lockout, a priority entry checked every N seconds, and a log of the hits. The state machine is app/scan_list.h.
 #include "app.h"
+#include "results_export.h"
 #include "dect2/results_io.h"
+#include "dect2/timecompat.h"
 #include "scan_list.h"
 #include <cstring>
 #include <ctime>
@@ -287,6 +289,17 @@ void logTable() {
     ImGui::TextDisabled("%s", tr("Hits"));
     ImGui::SameLine();
     if (ImGui::SmallButton(tr("Clear##log"))) { S.log.clear(); S.logging = false; }
+    ImGui::SameLine();
+    {
+        static std::string note;
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "name", "what", "level_db", "duration_s"};
+        for (const Hit& h : S.log) {
+            char tb[32]; std::tm tmv{}; dect2::localTime(h.wall, &tmv); std::strftime(tb, sizeof tb, "%Y-%m-%d %H:%M:%S", &tmv);
+            x.add({tb, resexp::num(h.mhz * 1e6, 0), h.mode, h.name, h.what, resexp::num(h.levelDb, 1), h.endT > h.startT ? resexp::num(h.endT - h.startT, 1) : ""});
+        }
+        resexp::saveButton(x, "scanner", note, "svscanner");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     const ImGuiTableFlags tf = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit;
     if (ImGui::BeginTable("##scanlog", 6, tf, ImVec2(0, std::max(120.f * gUi, ImGui::GetContentRegionAvail().y)))) {
         ImGui::TableSetupScrollFreeze(0, 1);
@@ -304,7 +317,7 @@ void logTable() {
 #ifdef _WIN32
             localtime_s(&tmv, &h.wall);
 #else
-            localtime_r(&h.wall, &tmv);
+            dect2::localTime(h.wall, &tmv);
 #endif
             strftime(tb, sizeof tb, "%H:%M:%S", &tmv);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(tb);

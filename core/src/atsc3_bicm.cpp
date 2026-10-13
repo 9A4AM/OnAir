@@ -72,7 +72,7 @@ std::vector<int> parityMap(const Ldpc& c) {   // u(K + 360 t + s) = lambda(K + Q
 
 // Max-log LLRs of the cells of a block for constellations up to 256 points: the squared distance to every point, then the nearest point with
 // the bit at 0 and at 1 for each bit. Written so that the compiler vectorises the distance and the minimum loops.
-DECT2_MULTIVERSION void llrCells(const float* pr, const float* pi, int eta, const cf32* cells, int nc, float invNv, const int* perm, float* llr) {
+DECT2_SIMD_BODY void llrCellsBody(const float* pr, const float* pi, int eta, const cf32* cells, int nc, float invNv, const int* perm, float* llr) {
     const int M = 1 << eta;
     float d[256];
     for (int s = 0; s < nc; s++) {
@@ -97,13 +97,14 @@ DECT2_MULTIVERSION void llrCells(const float* pr, const float* pi, int eta, cons
         }
     }
 }
+DECT2_AVX2_DISPATCH(void, llrCells, (const float* pr, const float* pi, int eta, const cf32* cells, int nc, float invNv, const int* perm, float* llr), (pr, pi, eta, cells, nc, invNv, perm, llr))
 
 // The same for constellations built from one quadrant (labels: the two top bits say which quadrant, the rest which point of it, w -> -conj(w) ->
 // conj(w) -> -w): the cell is folded into the first quadrant and only the 2^(eta-2) points of that quadrant are measured. The bits of the point
 // come from the nearest points of the bit's two classes inside the quadrant; the two quadrant bits (sign of the imaginary and of the real part)
 // from the nearest point of the quadrant and of its mirror image across the axis in question. Points of the quadrant across both axes are
 // ignored: they are never nearer than the mirror image across one axis.
-DECT2_MULTIVERSION void llrCellsQuad(const float* qa, const float* qb, int eta, const cf32* cells, int nc, float invNv, const int* perm, float* llr) {
+DECT2_SIMD_BODY void llrCellsQuadBody(const float* qa, const float* qb, int eta, const cf32* cells, int nc, float invNv, const int* perm, float* llr) {
     const int B = 1 << (eta - 2);
     float d0[64], d1[64], d2[64];
     for (int s = 0; s < nc; s++) {
@@ -139,6 +140,7 @@ DECT2_MULTIVERSION void llrCellsQuad(const float* qa, const float* qb, int eta, 
         }
     }
 }
+DECT2_AVX2_DISPATCH(void, llrCellsQuad, (const float* qa, const float* qb, int eta, const cf32* cells, int nc, float invNv, const int* perm, float* llr), (qa, qb, eta, cells, nc, invNv, perm, llr))
 
 } // namespace
 

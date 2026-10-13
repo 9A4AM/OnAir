@@ -24,6 +24,19 @@ std::vector<FtxTestStation> ftxTestStations(int mode) {
     case ftx::kWspr:
         return {{"K1ABC FN42 37", 1450, 0, 0.0},  {"G4XYZ IO91 23", 1480, -6, 0.5},     {"PJ4/K1ABC 30", 1520, -10, -0.5},
                 {"DL1XYZ/P 10", 1550, -4, 1.0},   {"<K1ABC> FN42AX 37", 1580, -8, 0.2}};
+    case ftx::kJt65:
+        return {{"CQ K1ABC FN42", 600, 0, 0.0}, {"K1ABC W9XYZ -12", 1000, -4, 0.3}, {"W9XYZ K1ABC R-05", 1400, -8, -0.4}, {"CQ DX G4ABC IO91", 1800, -3, 0.1},
+                {"TNX BOB 73 GL", 2200, -10, 0.6}};
+    case ftx::kJt9:
+        return {{"CQ K1ABC FN42", 600, 0, 0.0}, {"K1ABC W9XYZ -12", 1000, -4, 0.3}, {"W9XYZ K1ABC R-05", 1400, -8, -0.4}, {"CQ DX G4ABC IO91", 1800, -3, 0.1},
+                {"TNX BOB 73 GL", 2200, -10, 0.6}};
+    case ftx::kQ65:
+        return {{"CQ K1ABC FN42", 700, 0, 0.0}, {"K1ABC W9XYZ -12", 1200, -4, 0.3}, {"W9XYZ K1ABC RRR", 1700, -8, -0.4}, {"CQ DX G4ABC IO91", 2200, -3, 0.1}};
+    case ftx::kFst4:
+        return {{"CQ K1ABC FN42", 700, 0, 0.0}, {"K1ABC W9XYZ -12", 1100, -4, 0.3}, {"W9XYZ K1ABC RRR", 1500, -8, -0.4}, {"CQ DX G4ABC IO91", 2000, -3, 0.1},
+                {"TNX BOB 73 GL", 2500, -6, 0.2}};
+    case ftx::kMsk144:
+        return {{"CQ K1ABC FN42", 1500, 0, 0.0}};
     default: return {};
     }
 }
@@ -60,7 +73,7 @@ private:
 
 std::unique_ptr<HfdigTestAudio> makeFtxTestAudio(const SynthConfig& cfg) {
     const int which = cfg.modeOpt[0];
-    const int mode = which == 3 ? ftx::kFt8 : which == 4 ? ftx::kFt4 : which == 5 ? ftx::kWspr : which == 6 ? ftx::kFt2 : -1;
+    const int mode = which == 3 ? ftx::kFt8 : which == 4 ? ftx::kFt4 : which == 5 ? ftx::kWspr : which == 6 ? ftx::kFt2 : which >= 21 && which <= 25 ? ftx::kJt65 + (which - 21) : -1;
     if (mode < 0) return nullptr;
     return std::make_unique<FtxTestAudio>(mode, cfg);
 }

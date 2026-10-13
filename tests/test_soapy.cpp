@@ -132,6 +132,25 @@ int main(int argc, char** argv) {
             if (src) src->stop();
         }
     }
+    {   // the RF stage (RFGR) is a setting of its own; picked by hand, the gain slider drives the IF gain alone
+        DeviceInfo g;
+        for (auto& x : listSoapyDevices(err)) if (x.board == "onairtestgr") g = x;
+        const RadioSetting* rf = nullptr;
+        for (const auto& r : g.settings) if (r.key == "rfgr") rf = &r;
+        CHECK(rf && rf->type == RadioSetting::Choice && rf->def == "auto" && rf->values.size() == 11 && rf->values[1] == "0", "RF gain setting missing or wrong");
+        CHECK(rf && rf->label.find("LNA state") != std::string::npos && rf->help.find("MOST gain") != std::string::npos, "RF gain label/help");
+        IqRing ring(1 << 20);
+        TuneSettings t3 = t;
+        t3.gainDb = 48;
+        t3.radio["rfgr"] = "6";
+        auto src = makeSource(g);
+        std::string e3;
+        const bool ok = src && src->start(t3, ring, e3);
+        const char* ifgr = getenv("ONAIR_TEST_IFGR");
+        const char* rfgr = getenv("ONAIR_TEST_RFGR");
+        CHECK(ok && ifgr && rfgr && atoi(ifgr) == 20 && atoi(rfgr) == 6, "manual RF state 6, gain 48: IFGR %s RFGR %s (%s)", ifgr ? ifgr : "-", rfgr ? rfgr : "-", e3.c_str());
+        if (src) src->stop();
+    }
     {   // offset tuning on a radio: an 8 MHz channel needs more than this radio's 9.14 Msps, so it falls back to the DC removal and says so;
         // a 1.7 MHz channel fits, and the radio is tuned that far below the channel
         DeviceInfo r;

@@ -18,6 +18,27 @@ int main() {
         SaGrid w = saMakeGrid(1e6, 6000e6, 1e3, 200000);
         CHECK(w.bins <= 200001 && w.binHz > 1e3, "bin widened %.0f", w.binHz);
     }
+    {   // CSV carries every bin at the chosen resolution (no 30 kHz cap on 1 MHz .. 6 GHz at 5 kHz)
+        SaGrid g = saMakeGrid(1e6, 6000e6, 5e3);
+        CHECK(g.binHz == 5e3 && g.bins == 1199800, "5k grid %.0f %zu", g.binHz, g.bins);
+        SaGrid f = saMakeGrid(1e6, 6000e6, 2.8e3);
+        CHECK(f.binHz == 2.8e3 && f.bins > 2000000, "2.8k grid %.0f %zu", f.binHz, f.bins);
+        std::vector<float> v(g.bins, -50.f);
+        size_t rows = 0, bytes = 0;
+        double first = 0, second = 0;
+        std::string head;
+        saCsvStream(g, v, v, v, [&](const char* p, size_t n) { if (head.size() < 400) head.append(p, std::min<size_t>(n, 400)); bytes += n; for (size_t i = 0; i < n; i++) rows += p[i] == '\n'; return true; });
+        CHECK(rows == g.bins + 1, "csv rows %zu", rows);
+        size_t nl = head.find('\n');
+        sscanf(head.c_str() + nl + 1, "%lf", &first);
+        size_t nl2 = head.find('\n', nl + 1);
+        sscanf(head.c_str() + nl2 + 1, "%lf", &second);
+        CHECK(std::fabs((second - first) - 5e3) < 1, "csv step %.1f", second - first);
+        CHECK(bytes < saCsvEstimateBytes(g.bins), "estimate %zu vs %zu", bytes, saCsvEstimateBytes(g.bins));
+        SaGrid sm = saMakeGrid(100e6, 101e6, 1e4);
+        std::vector<float> w(sm.bins, -40.f);
+        CHECK(saCsv(sm, w, w, w).size() > 100 && saCsv(sm, w, w, w).find("frequency_hz") == 0, "saCsv");
+    }
     {   // stitching: two steps of 10 MHz at 10 Msps, flat spectra at different levels, the edge between them
         SaGrid g = saMakeGrid(100e6, 116e6, 1e5);
         SaStitcher st; st.setGrid(g);

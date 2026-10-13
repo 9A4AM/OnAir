@@ -35,7 +35,7 @@ const Sat kSats[] = {
 };
 constexpr int kNumSats = (int)(sizeof kSats / sizeof kSats[0]);
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 18; }
+bool live(const App& a) { return a.rx.standard == 18; }
 
 void loadState() {
     if (S.loaded) return;

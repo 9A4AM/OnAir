@@ -10,6 +10,7 @@ namespace dect2 {
 
 // One entry of the call log: a voice call heard on this channel, a voice grant seen on a control channel, or a data packet
 struct P25Call {
+    int carrierId = 0; double carrierHz = 0;   // whole-span decoding: the carrier it came from (id 0: single channel), its frequency relative to the span centre
     int64_t wallTime = 0;        // Unix time of its start
     double startSec = 0, durSec = 0;
     bool active = false;

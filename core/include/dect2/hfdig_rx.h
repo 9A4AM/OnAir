@@ -24,6 +24,7 @@ struct HfdigTelemetry;   // hfdig_tel.h
 class HfdigRtty;         // hfdig_rtty.h
 class HfdigFtx;          // hfdig_ftx.h
 class HfdigHamdrm;       // hfdig_hamdrm.h
+class HfdigKbd;          // hfdig_kbd.h
 
 constexpr double kHfdigAudioRate = 8000.0;   // the audio every decoder gets, and the rate of FreeDV's speech
 
@@ -66,10 +67,17 @@ public:
     void setSpeechTap(std::function<void(const float* x, size_t n)> cb);   // tests: FreeDV's 8 kHz speech, called from feed()
     HfdigFtx& ftx();                                     // FT8 / FT4 / FT2 / WSPR: settings and the slot clock (thread safe, hfdig_ftx.h)
     HfdigRtty& rtty();
+    HfdigKbd& kbd();                                     // Olivia, Contestia, MFSK, THOR, DominoEX, Hell (thread safe, hfdig_kbd.h)
     HfdigHamdrm& hamdrm();                               // HamDRM / EasyPal pictures (receiver thread only, or while stopped)
-    void setDecoders(int mask);                          // which decoders run: 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM (default 31: all)
+    void setDecoders(int mask);                          // which decoders run: 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM, 32 the keyboard modes (default 31: all but the keyboard modes)
     int decoders() const;
     void setDemod(int d);                                // the front end's demodulator (HfDemod, hf_demod.h): USB (default), LSB, NFM, AM; Auto counts as USB
+    // Whole span (the "wide decode" switch, hfdig_wide.h): FT8 / FT4 / WSPR on every standard dial slot in the span, RTTY on every pair of
+    // tones in up to 100 kHz of it; the main decoders still work on the dial frequency. dialHz: the radio's tuned frequency (the slots are
+    // found from it; 0: only RTTY). Any thread; taken up by the next feed().
+    void setWide(bool on, double spanHz = 250000);
+    bool wide() const;
+    void setDialHz(double hz);
     int demod() const;                                   // the RTTY decoder's settings (thread safe, see hfdig_rtty.h)
 
 private:

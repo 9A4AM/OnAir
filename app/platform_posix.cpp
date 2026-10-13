@@ -254,7 +254,7 @@ struct FilePrefs : Prefs {
 
 } // namespace
 
-Prefs& prefs() { static FilePrefs p; return p; }
+Prefs& basePrefs() { static FilePrefs p; return p; }
 
 void showFatalError(const char* title, const char* text) {
 #ifdef _WIN32

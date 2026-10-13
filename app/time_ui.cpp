@@ -3,6 +3,7 @@
 // minute log, level / SNR / tick / offset histories, and the station and frequency pickers. LF stations need a radio that tunes below
 // 1 MHz: a note says so when the radio chosen cannot.
 #include "app.h"
+#include "clocksync_ui.h"
 #include "dect2/time_proto.h"
 #include "dect2/time_rx.h"
 #include "dect2/time_tel.h"
@@ -18,10 +19,13 @@ namespace {
 using namespace dect2::timesig;
 
 struct State {
-    int view = 0;                 // 0 time, 1 log
+    int view = 0;                 // 0 time, 1 log, 2 clock
     bool loaded = false;
     int station = -1;             // -1: from the frequency
     int pref60 = Msf;
+    bool listen = false; int pushedListen = -1; float pushedVol = -1; int pushedMute = -1;
+    bool audio = false; int tone = 500; float clockPct = 0;   // a recording of the demodulated audio, the BPC tone in it, the recorder's clock error
+    int pushedAudio = -1, pushedTone = -1; float pushedScale = -1;
 };
 State S;
 
@@ -31,10 +35,18 @@ void loadState() {
     S.station = std::max(-1, std::min((int)kNumStations - 1, (int)plat::prefs().getI("timeStation", -1)));
     S.pref60 = (int)plat::prefs().getI("timePref60", Msf);
     if (S.pref60 != Msf && S.pref60 != Wwvb && S.pref60 != Jjy60) S.pref60 = Msf;
+    S.listen = plat::prefs().getB("timeListen", false);
+    S.audio = plat::prefs().getB("timeAudio", false);
+    S.tone = (int)std::max(50L, std::min(20000L, (long)plat::prefs().getI("timeTone", 500)));
+    S.clockPct = (float)std::max(-10.0, std::min(10.0, (double)plat::prefs().getI("timeClockPermille", 0) / 10.0));
 }
-void saveState() { plat::prefs().setI("timeStation", S.station); plat::prefs().setI("timePref60", S.pref60); plat::prefs().flush(); }
+void saveState() {
+    plat::prefs().setI("timeStation", S.station); plat::prefs().setI("timePref60", S.pref60);
+    plat::prefs().setB("timeAudio", S.audio); plat::prefs().setI("timeTone", S.tone); plat::prefs().setI("timeClockPermille", (long)std::lround(S.clockPct * 10));
+    plat::prefs().flush();
+}
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 59; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 59; }   // the engine reports its standard code minus one
 
 void kvRow(const App& a, const char* k, const char* fmt, ...) {
     ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);
@@ -63,10 +75,11 @@ std::string rangeNote(const App& a) {
     const DeviceInfo& d = a.devices[(size_t)a.devIdx];
     if (!d.isRadio() || d.minFreqHz <= 0) return "";
     if (a.freqMhz * 1e6 >= d.minFreqHz) return "";
-    char b[400];
+    char b[640];
     snprintf(b, sizeof b, "This radio tunes from %.6g MHz, so it cannot receive %.4g kHz. The LF stations (DCF77, MSF, WWVB, JJY) need a radio that "
              "tunes below 1 MHz: an SDRplay, an Airspy HF+, or an RTL-SDR in direct sampling mode, with an LF antenna (a ferrite rod or a long wire). "
-             "WWV / WWVH and CHU are on HF and work with any radio that reaches 2.5 - 15 MHz.", d.minFreqHz / 1e6, a.freqMhz * 1e3);
+             "BPC (68.5 kHz) is below the HackRF and most HF radios too: it needs an LF-capable radio or an upconverter in front of the radio. "
+         "WWV / WWVH, CHU, BPM and HLA are on HF and work with any radio that reaches 2.5 - 15 MHz.", d.minFreqHz / 1e6, a.freqMhz * 1e3);
     return b;
 }
 
@@ -128,6 +141,14 @@ void timeView(App& a) {
         kvRow(a, "summer time", "%s%s", dstText(f, t.station), f.dstAnnounce ? ", the change is announced for the end of this hour" : "");
         kvRow(a, "leap second", "%s", f.leapAnnounce ? (f.leapSign < 0 ? "one is to be removed" : "one is announced") : t.station == Msf ? "not sent (DUT1 only)" : "none announced");
         if (f.dut1 != 99) kvRow(a, "DUT1", "%+.1f s (UT1 - UTC)", f.dut1 / 10.0);
+        if (t.station == BpmC) {
+            if (f.hasDut1Ms) kvRow(a, "DUT1", "%+.*f ms (UT1 - UTC)%s", f.dut1Tenth >= 0 ? 1 : 0, f.dut1Ms, f.dut1Tenth >= 0 ? "" : ", the 0.1 ms digit comes with the next minute frame");
+            kvRow(a, "TAI - UTC", f.leapCount >= 0 ? "%d s" : "not read yet (comes with the minute frame)", f.leapCount);
+            kvRow(a, "parity", "PC1 - PC7 of the second frame%s pass", f.leapCount >= 0 ? ", PC8 - PC10 of the minute frame" : "");
+        }
+        if (t.station == Bpc) kvRow(a, "frame", "%d of 3 in the minute (starts at second %d); parity P3 and P4 pass; AM / PM from P3", f.frameIndex + 1, f.second);
+        if (t.station == Hla) kvRow(a, "checks", "marker positions, the unused seconds and the ranges (HLA sends no parity); the year is not sent: this year is assumed");
+        if (t.station == Bpm) kvRow(a, "BPM seconds", "%s", f.ut1 ? "UT1 (the ticks of this minute follow UT1; the offset allows for DUT1)" : "UTC");
         if (f.callBit) kvRow(a, "call bit", "set: DCF77 runs on its reserve antenna");
         kvRow(a, "last minute", "%.0f s ago, %llu decoded, %llu rejected", t.secsSinceFrame, (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
     }
@@ -200,9 +221,14 @@ void pushSettings(App& a) {
     double lat, lon;
     receiverLocation(lat, lon);
     a.engine.timesig().setReceiverLocation(lat, lon, receiverLocationSet());
+    const float scale = 1.f + S.clockPct / 100.f;
+    if ((int)S.audio != S.pushedAudio || S.tone != S.pushedTone) { a.engine.timesig().setAudioInput(S.audio, S.tone); S.pushedAudio = S.audio; S.pushedTone = S.tone; }
+    if (scale != S.pushedScale) { a.engine.timesig().setClockScale(scale); S.pushedScale = scale; }
+    if ((int)S.listen != S.pushedListen) { a.engine.timesig().setListen(S.listen); S.pushedListen = S.listen; }
+    if (a.volume != S.pushedVol || (int)a.muted != S.pushedMute) { a.engine.timesig().setVolume(a.volume); a.engine.timesig().setMuted(a.muted); S.pushedVol = a.volume; S.pushedMute = a.muted; }
 }
 
-void tick(App& a) { loadState(); pushSettings(a); }
+void tick(App& a) { loadState(); pushSettings(a); clockPublishStation(a); }
 
 void tuner(App& a, bool& retune) {
     loadState();
@@ -225,15 +251,15 @@ void tuner(App& a, bool& retune) {
         }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("DCF77 Germany, MSF UK, WWVB and WWV USA, WWVH Hawaii, JJY Japan, CHU Canada.\nIn Europe DCF77 and MSF are heard across the continent at night and in the day.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("DCF77 Germany, MSF UK, WWVB and WWV USA, WWVH Hawaii, JJY Japan, CHU Canada, BPM China (ticks, and the coded signal), BPC China (68.5 kHz, needs an LF radio or an upconverter), HLA Korea.\nIn Europe DCF77 and MSF are heard across the continent at night and in the day.");
     const int st = S.station >= 0 ? S.station : stationForKhz(a.freqMhz * 1e3, S.pref60);
-    if (st == Wwv || st == Chu) {
+    if (st == Wwv || st == Chu || st == Bpm || st == BpmC || st == Hla) {
         ImGui::SameLine(0, 8 * gUi);
         ImGui::SetNextItemWidth(std::min(100 * gUi, ImGui::GetContentRegionAvail().x));
         char lb[32];
         snprintf(lb, sizeof lb, "%.3g MHz", a.freqMhz);
         if (ImGui::BeginCombo("##tmfq", lb)) {
-            const std::vector<double> fs = st == Wwv ? std::vector<double>{2.5, 5, 10, 15, 20} : std::vector<double>{3.33, 7.85, 14.67};
+            const std::vector<double> fs = st == Wwv ? std::vector<double>{2.5, 5, 10, 15, 20} : st == Bpm ? std::vector<double>{2.5, 5, 10, 15} : st == BpmC ? std::vector<double>{2.5, 5} : st == Hla ? std::vector<double>{5} : std::vector<double>{3.33, 7.85, 14.67};
             for (double f : fs) {
                 char b[24];
                 snprintf(b, sizeof b, "%g MHz", f);
@@ -241,9 +267,11 @@ void tuner(App& a, bool& retune) {
             }
             ImGui::EndCombo();
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", st == Wwv ? "WWV and WWVH share 2.5, 5, 10 and 15 MHz (WWV also 20 MHz); the 1000 / 1200 Hz ticks tell them apart" : "CHU: 3330, 7850 and 14670 kHz");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", st == Wwv ? "WWV and WWVH share 2.5, 5, 10 and 15 MHz (WWV also 20 MHz); the 1000 / 1200 Hz ticks tell them apart" : st == Bpm ? "BPM (China, Pucheng) shares 2.5, 5, 10 and 15 MHz with WWV: choose the station by hand, the frequency cannot tell them apart" : st == BpmC ? "BPM's coded time signal (2.5 and 5 MHz, in the 5 minute pure carrier slots of every half hour)" : st == Hla ? "HLA (Korea) 5 MHz" : "CHU: 3330, 7850 and 14670 kHz");
     }
     if (st < 0) { ImGui::SameLine(0, 8 * gUi); ImGui::TextColored(pal::warnAmber(), "no station at this frequency"); }
+    ImGui::SameLine(0, 8 * gUi);
+    listenControls(a, S.listen, "timeListen", "time", "Hear the station: the AM audio (ticks, voice) of WWV / CHU, a tone keyed by the carrier for the LF stations (DCF77, MSF, WWVB, JJY); decoding is the same either way");
 }
 
 void synth(App& a, bool& changed) {
@@ -265,8 +293,10 @@ void synth(App& a, bool& changed) {
 }
 
 void tab(App& a) {
-    subNav("tmv", S.view, {"Time", "Minutes"});
-    if (S.view == 0) timeView(a); else logView(a);
+    subNav("tmv", S.view, {"Time", "Minutes", "Clock"});
+    if (S.view == 0) timeView(a);
+    else if (S.view == 1) logView(a);
+    else { notes(a); if (!live(a)) ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to measure the computer clock"); ImGui::BeginChild("##tmclk", ImVec2(0, 0)); clockSyncPanel(a); ImGui::EndChild(); }
 }
 
 void list(App& a) {
@@ -291,6 +321,17 @@ void receiver(App& a) {
     kvRow(a, "seconds tick", "%.3f ms, jitter %.2f ms rms", t.secPhaseMs, t.tickJitterMs);
     kvRow(a, "minutes", "%llu decoded, %llu rejected", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
     kvRow(a, "input", "%.3f Msps", t.inputRate / 1e6);
+    ImGui::Spacing();
+    ImGui::TextDisabled("Recording of demodulated audio");
+    if (ImGui::Checkbox("Audio, not IQ", &S.audio)) saveState();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The file holds the station's audio (a WAV with the audio on the left channel and silence on the right): HLA, BPM and the other HF stations as heard, BPC as the tone its carrier became");
+    if (S.audio && !stationIsHf(t.station)) {
+        ImGui::SetNextItemWidth(110 * gUi);
+        if (ImGui::InputInt("tone Hz", &S.tone, 10, 100)) { S.tone = std::max(50, std::min(20000, S.tone)); saveState(); }
+    }
+    ImGui::SetNextItemWidth(110 * gUi);
+    if (ImGui::InputFloat("recorder clock error %", &S.clockPct, 0.1f, 1.0f, "%.2f")) { S.clockPct = std::max(-10.f, std::min(10.f, S.clockPct)); saveState(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("A recording whose sample clock ran slow shows the 1 kHz of BPM at 975 Hz and the seconds 1.0255 s long: enter 2.55. 0 for a good recording or a radio");
     kvRow(a, "signal time", "%.1f s", t.timeSec);
     ImGui::Spacing();
     ImGui::PushTextWrapPos(0);

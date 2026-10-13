@@ -20,6 +20,7 @@ void hfdigSstvTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigFreedvTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigHamdrmTab(App& a, const dect2::HfdigTelemetry& t);
+void hfdigKbdTab(App& a, const dect2::HfdigTelemetry& t);
 
 namespace {
 
@@ -131,7 +132,7 @@ void follow(const dect2::HfdigTelemetry& t) {
     }
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 26; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 26; }   // the engine reports its standard code minus one
 
 // the decoders of the selected entry (RTTY, SSTV, FreeDV, one WSJT mode or HamDRM): 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM;
 // all without one
@@ -198,6 +199,7 @@ void tab(App& a) {
         else if (m == 2) hfdigSstvTab(a, t);
         else if (m == 4) hfdigFreedvTab(a, t);
         else if (m == 16) hfdigHamdrmTab(a, t);
+        else if (m == 32) hfdigKbdTab(a, t);
         else hfdigFtxTab(a, t);
         return;
     }
@@ -396,6 +398,7 @@ void status(App& a) {
     if (dm & 4) { lamp("FreeDV", on && t.freedv.mode >= 0 ? 1 : 0); flowNext(10 * gUi); }
     if (dm & 8) { lamp(dm == 8 && sm ? sm->name : "FT8/WSPR", on && t.ftx.total > 0 ? (t.ftx.clockWarn ? 2 : 1) : 0); flowNext(10 * gUi); }
     if (dm & 16) { lamp("HamDRM", on && t.hamdrm.state == 1 ? 1 : 0); flowNext(10 * gUi); }
+    if (dm & 32) { lamp(sm ? sm->name : "Keyboard", on && t.kbd.state == 1 ? 1 : 0); flowNext(10 * gUi); }
     ImGui::TextDisabled("|"); flowNext(10 * gUi);
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("State"); ImGui::SameLine(0, 5 * gUi);

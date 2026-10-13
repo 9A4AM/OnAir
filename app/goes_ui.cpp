@@ -3,6 +3,7 @@
 // its text (EMWIN ZIP files unpacked); Save, and Save automatically into <data folder>/goes/. The receiver's state and the constellation.
 // A dish (about 1 m, or a grid) with an LNA at the feed is needed: a note says so while nothing is received.
 #include "app.h"
+#include "gallery.h"
 #include "gfx.h"
 #include "platform.h"
 #include "dect2/goes_proto.h"
@@ -53,7 +54,7 @@ void loadState() {
     S.filter = std::clamp((int)plat::prefs().getI("goesFilter", 0), 0, 2);
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 61; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 61; }   // the engine reports its standard code minus one
 
 double nowSec() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 
@@ -337,9 +338,28 @@ void summary(const App& a, std::string& l1, std::string& l2) {
     if (live(a)) l2 = dect2::goesSummary(a.rx.goes);
 }
 
+// finished pictures go to the gallery (View > Images): images as grey, JPEG / GIF as they came
+void galleryPublish(const GoesTelemetry& t) {
+    static std::set<uint64_t> done;
+    for (const auto& p : t.products) {
+        if (done.count(p->id)) continue;
+        bool fin;
+        { std::lock_guard<std::mutex> lk(p->mu); fin = p->complete; }
+        if (!fin) continue;
+        done.insert(p->id);
+        gallery::Meta m;
+        m.detail = p->name;
+        std::lock_guard<std::mutex> lk(p->mu);
+        const std::string key = "goes-" + std::to_string((long long)time(nullptr)) + "-" + std::to_string(p->id);
+        if (p->w > 0 && p->h > 0 && p->pix.size() >= (size_t)p->w * p->h) gallery::publishGray(key, "GOES HRIT", (double)time(nullptr), p->w, p->h, p->pix.data(), m);
+        else if (p->hdr.hasNoaa && (p->hdr.noaaCompression == 2 || p->hdr.noaaCompression == 5)) gallery::publishFile(key, "GOES HRIT", (double)time(nullptr), p->data, m);
+    }
+}
+
 void tick(App& a) {
     loadState();
     if (live(a)) autoSave(a.rx.goes);
+    if (live(a)) galleryPublish(a.rx.goes);
 }
 
 void tuner(App& a, bool& retune) {

@@ -456,9 +456,71 @@ static void testAudio() {
     CHECK(au.slide(s, seq1) && s.seq > seq1 && s.w == 0 && s.rgba.empty(), "slide kept after select()");
 }
 
+// a MOT header with a ContentName (and a slide show CategoryTitle when given), content type `ctype`, subtype `sub`
+static std::vector<uint8_t> motHeaderNamed(size_t bodySize, int ctype, int sub, const std::string& name, const std::string& cat = "") {
+    std::vector<uint8_t> ext;
+    auto param = [&](int id, const std::vector<uint8_t>& v) { ext.push_back((uint8_t)(0xC0 | id)); ext.push_back((uint8_t)v.size()); ext.insert(ext.end(), v.begin(), v.end()); };
+    std::vector<uint8_t> nm = {0x0F};
+    nm.insert(nm.end(), name.begin(), name.end());
+    param(0x0C, nm);
+    if (!cat.empty()) param(0x26, std::vector<uint8_t>(cat.begin(), cat.end()));
+    const size_t hs = 7 + ext.size();
+    std::vector<uint8_t> h = {(uint8_t)(bodySize >> 20), (uint8_t)(bodySize >> 12), (uint8_t)(bodySize >> 4), (uint8_t)((bodySize << 4) | (hs >> 9)),
+                              (uint8_t)(hs >> 1), (uint8_t)(((hs & 1) << 7) | (ctype << 1) | (sub >> 8)), (uint8_t)sub};
+    h.insert(h.end(), ext.begin(), ext.end());
+    return h;
+}
+static void sendObject(DabPadDecoder& pd, const std::vector<uint8_t>& head, const std::vector<uint8_t>& body) {
+    send(pd, group(3, head), 0);
+    send(pd, group(4, body), 0);
+}
+static const DabLogo* logoOf(const DabPadDecoder& pd, uint32_t sid) {
+    for (const DabLogo& l : pd.logos()) if (l.sid == sid) return &l;
+    return nullptr;
+}
+// Station logos: SPI service information (XML in a MOT object) naming a logo per service, the pictures in MOT objects, in either order; a
+// slide show picture of the category "logo"; nothing from references that are never broadcast.
+static void testSpiLogos() {
+    const std::vector<uint8_t> png = dabgen::slidePng();
+    const std::string xml =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><serviceInformation version=\"1\"><services>"
+        "<service><serviceID id=\"dab:e1.ce15.c224.0\"/>"
+        "<mediaDescription><multimedia type=\"logo_unrestricted\" url=\"http://example.invalid/logos/rect.png\" width=\"320\" height=\"240\"/>"
+        "<multimedia type=\"logo_colour_square\" url=\"http://example.invalid/logos/square.png\" width=\"32\" height=\"32\"/></mediaDescription></service>"
+        "<service><bearer id=\"dab:e1.ce15.c225.0\"/>"
+        "<mediaDescription><multimedia type=\"logo_colour_square\" url=\"http://example.invalid/logos/never.png\" width=\"32\" height=\"32\"/></mediaDescription></service>"
+        "</services></serviceInformation>";
+    const std::vector<uint8_t> xb(xml.begin(), xml.end());
+    for (int order = 0; order < 2; order++) {      // 0: service information first, 1: the picture first
+        DabPadDecoder pd;
+        auto spi = [&] { sendObject(pd, motHeaderNamed(xb.size(), 5, 0, "si.xml"), xb); };
+        auto pic = [&] { sendObject(pd, motHeaderNamed(png.size(), 2, 3, "square.png"), png); };
+        if (order == 0) { spi(); pic(); } else { pic(); spi(); }
+        const DabLogo* l = logoOf(pd, 0xC224);
+        CHECK(l && l->type == "logo_colour_square" && l->name == "square.png", "SPI logo missing (order %d)", order);
+        if (l) { DabSlide s; s.w = l->w; s.h = l->h; s.rgba = l->rgba; CHECK(sameImage(s), "SPI logo pixels differ (order %d)", order); }
+        CHECK(!logoOf(pd, 0xC225), "logo for an unbroadcast picture");
+        CHECK(pd.logoSeq() >= 1, "logoSeq");
+        if (order == 0) CHECK(pd.seq() == 0, "a logo shown as slide show picture (seq %llu)", (unsigned long long)pd.seq());
+    }
+    {   // a slide show picture of the category "logo" belongs to the service that carries it
+        DabPadDecoder pd;
+        sendObject(pd, motHeaderNamed(png.size(), 2, 3, "mylogo.png", "Station Logo"), png);
+        const DabLogo* l = logoOf(pd, 0);
+        CHECK(l && l->name == "mylogo.png" && pd.seq() == 0, "category logo");
+    }
+    {   // service information without any logo: nothing
+        DabPadDecoder pd;
+        const std::string x2 = "<serviceInformation><services><service><serviceID id=\"dab:e1.ce15.c224.0\"/></service></services></serviceInformation>";
+        sendObject(pd, motHeaderNamed(x2.size(), 5, 0, "si.xml"), std::vector<uint8_t>(x2.begin(), x2.end()));
+        CHECK(pd.logos().empty() && pd.logoSeq() == 0, "logo from service information without one");
+    }
+}
+
 int main() {
     testDirect();
     testForms();
+    testSpiLogos();
     testLabel();
     testAudio();
     testDlPlus();

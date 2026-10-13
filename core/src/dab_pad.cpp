@@ -8,6 +8,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 #include <algorithm>
+#include <cctype>
 #include <cstring>
 
 namespace dect2 {
@@ -67,6 +68,7 @@ void DabPadDecoder::reset() {
     labelChars_.clear(); dlpRaw_.clear(); dlpToggle_ = -1; dlpRunning_ = false; dlp_.clear();
     objs_.clear(); order_.clear();
     slide_ = DabSlide();
+    spiLogos_.clear(); images_.clear(); imageOrder_.clear(); logos_.clear(); logoSeq_ = 0;
 }
 
 void DabPadDecoder::accessUnit(const uint8_t* au, int n) {
@@ -251,6 +253,7 @@ void DabPadDecoder::dataGroup(const uint8_t* d, int n) {
     if (n < 3) return;
     const bool ext = d[0] & 0x80, crc = d[0] & 0x40, seg = d[0] & 0x20, ua = d[0] & 0x10;
     const int type = d[0] & 0x0F;
+    if (sink_ && (type == 0 || type == 6)) sink_(d, (size_t)n);
     if (crc) {
         if (n < 5 || dab::crc16(d, n - 2) != (uint16_t)((d[n - 2] << 8) | d[n - 1])) return;
         n -= 2;
@@ -315,8 +318,8 @@ void DabPadDecoder::tryComplete(Obj& o) {
     const size_t headSize = (((size_t)h[3] & 0x0F) << 9) | ((size_t)h[4] << 1) | (h[5] >> 7);
     const int ctype = (h[5] >> 1) & 0x3F;
     const int subtype = ((h[5] & 1) << 8) | h[6];
-    if (ctype != 2 || (bodySize && bodySize != b.size())) return;     // not a picture, or the body is not what the header says
-    std::string name;
+    if (bodySize && bodySize != b.size()) return;                      // the body is not what the header says
+    std::string name, category;
     for (size_t p = 7; p < std::min(headSize, h.size());) {            // the header extension: parameters with a 2 bit length class
         const int pli = h[p] >> 6, id = h[p] & 0x3F;
         p++;
@@ -328,13 +331,145 @@ void DabPadDecoder::tryComplete(Obj& o) {
         }
         if (p + len > h.size()) break;
         if (id == 0x0C && len >= 1) name.assign((const char*)&h[p + 1], len - 1);   // ContentName: character set byte, then the text
+        if (id == 0x26 && len >= 1) category.assign((const char*)&h[p], len);        // slide show CategoryTitle
         p += len;
+    }
+    if (ctype != 2) {                                                   // not a picture: the SPI service information is XML
+        if (b.size() < 20) return;
+        const std::string xml((const char*)b.data(), b.size());
+        if (xml.find("<service") != std::string::npos && xml.find("multimedia") != std::string::npos) spi(xml);
+        return;
     }
     DabSlide s;
     if (!decodeSlideImage(b.data(), b.size(), subtype, s.w, s.h, s.rgba)) return;
     s.name = name;
+    std::string cat = category;
+    for (char& c : cat) c = (char)std::tolower((unsigned char)c);
+    const bool catLogo = cat.find("logo") != std::string::npos;
+    if (!name.empty()) {
+        auto it = images_.find(name);
+        if (it == images_.end()) {
+            if (imageOrder_.size() >= 24) { images_.erase(imageOrder_.front()); imageOrder_.pop_front(); }
+            imageOrder_.push_back(name);
+        }
+        images_[name] = s;
+    }
+    if (catLogo) {                                                      // a logo sent through the slide show: of the service that carries it
+        bool same = false;
+        for (DabLogo& l : logos_) if (l.sid == 0 && l.name == name) { same = l.rgba == s.rgba; l.w = s.w; l.h = s.h; l.rgba = s.rgba; }
+        if (!same) {
+            if (std::none_of(logos_.begin(), logos_.end(), [&](const DabLogo& l) { return l.sid == 0 && l.name == name; })) {
+                DabLogo l; l.sid = 0; l.name = name; l.w = s.w; l.h = s.h; l.rgba = s.rgba; logos_.push_back(std::move(l));
+            }
+            logoSeq_++;
+        }
+        return;
+    }
+    if (isLogoName(name)) { resolveLogos(); return; }
     s.seq = slide_.seq + 1;
     slide_ = std::move(s);
+}
+
+bool DabPadDecoder::isLogoName(const std::string& name) const {
+    if (name.empty()) return false;
+    for (const SpiLogo& l : spiLogos_) if (l.url == name || (l.url.size() > name.size() && l.url.compare(l.url.size() - name.size(), name.size(), name) == 0 && l.url[l.url.size() - name.size() - 1] == '/')) return true;
+    return false;
+}
+
+namespace {
+// the value of attribute `key` in the tag text (between < and >), "" when absent
+std::string attr(const std::string& tag, const char* key) {
+    const std::string k = std::string(key) + "=";
+    for (size_t p = tag.find(k); p != std::string::npos; p = tag.find(k, p + 1)) {
+        if (p > 0 && !std::isspace((unsigned char)tag[p - 1])) continue;
+        const size_t q = p + k.size();
+        if (q >= tag.size() || (tag[q] != '"' && tag[q] != '\'')) continue;
+        const size_t e = tag.find(tag[q], q + 1);
+        if (e == std::string::npos) return "";
+        return tag.substr(q + 1, e - q - 1);
+    }
+    return "";
+}
+// the 16 bit service id of a SPI bearer / service id such as "dab:e1.ce15.c224.0" or "e1.ce15.c224.0"; 0 when not parsable
+uint32_t spiSid(std::string id) {
+    if (id.compare(0, 4, "dab:") == 0) id.erase(0, 4);
+    int seg = 0;
+    size_t start = 0;
+    for (size_t i = 0; i <= id.size(); i++) {
+        if (i == id.size() || id[i] == '.') {
+            if (seg == 2) {
+                std::string h = id.substr(start, i - start);
+                if (h.empty() || h.size() > 8) return 0;
+                char* end = nullptr;
+                const unsigned long v = std::strtoul(h.c_str(), &end, 16);
+                return end && *end == 0 ? (uint32_t)v : 0;
+            }
+            seg++; start = i + 1;
+        }
+    }
+    return 0;
+}
+}
+
+// SPI service information (TS 102 818): per <service> the bearer / serviceID with the service id and the <multimedia type="logo_*" url width height>
+void DabPadDecoder::spi(const std::string& xml) {
+    std::vector<SpiLogo> found;
+    size_t pos = 0;
+    uint32_t sid = 0;
+    bool inService = false;
+    while ((pos = xml.find('<', pos)) != std::string::npos) {
+        const size_t e = xml.find('>', pos);
+        if (e == std::string::npos) break;
+        const std::string tag = xml.substr(pos + 1, e - pos - 1);
+        pos = e + 1;
+        if (tag.compare(0, 8, "service ") == 0 || tag == "service" || tag.compare(0, 8, "service>") == 0) { inService = true; sid = 0; }
+        else if (tag.compare(0, 8, "/service") == 0 && (tag.size() == 8 || !std::isalnum((unsigned char)tag[8]))) { inService = false; sid = 0; }
+        else if (inService && (tag.compare(0, 7, "bearer ") == 0 || tag.compare(0, 10, "serviceID ") == 0) && sid == 0) sid = spiSid(attr(tag, "id"));
+        else if (inService && tag.compare(0, 11, "multimedia ") == 0) {
+            const std::string type = attr(tag, "type"), url = attr(tag, "url");
+            if (sid && !url.empty() && type.compare(0, 4, "logo") == 0)
+                found.push_back({sid, type, url, std::atoi(attr(tag, "width").c_str()), std::atoi(attr(tag, "height").c_str())});
+        }
+    }
+    if (found.empty()) return;
+    for (const SpiLogo& f : found) {
+        if (std::none_of(spiLogos_.begin(), spiLogos_.end(), [&](const SpiLogo& l) { return l.sid == f.sid && l.type == f.type && l.url == f.url; })) spiLogos_.push_back(f);
+    }
+    if (spiLogos_.size() > 400) spiLogos_.erase(spiLogos_.begin(), spiLogos_.end() - 400);
+    resolveLogos();
+}
+
+// Matches the logo entries with the pictures heard: one picture per service, the colour square one first
+void DabPadDecoder::resolveLogos() {
+    auto rank = [](const std::string& t) {
+        if (t == "logo_colour_square") return 0;
+        if (t == "logo_unrestricted") return 1;
+        if (t == "logo_colour_rectangle") return 2;
+        return 3;
+    };
+    std::map<uint32_t, const SpiLogo*> best;
+    std::map<uint32_t, const DabSlide*> img;
+    for (const SpiLogo& l : spiLogos_) {
+        const DabSlide* pic = nullptr;
+        for (const auto& kv : images_) {
+            const std::string& n = kv.first;
+            if (l.url == n || (l.url.size() > n.size() && l.url.compare(l.url.size() - n.size(), n.size(), n) == 0 && l.url[l.url.size() - n.size() - 1] == '/')) { pic = &kv.second; break; }
+        }
+        if (!pic) continue;
+        auto it = best.find(l.sid);
+        if (it == best.end() || rank(l.type) < rank(it->second->type)) { best[l.sid] = &l; img[l.sid] = pic; }
+    }
+    bool changed = false;
+    for (const auto& kv : best) {
+        const DabSlide& pic = *img[kv.first];
+        DabLogo* cur = nullptr;
+        for (DabLogo& l : logos_) if (l.sid == kv.first) cur = &l;
+        if (cur && cur->name == pic.name && cur->rgba == pic.rgba) continue;
+        if (!cur) { logos_.emplace_back(); cur = &logos_.back(); cur->sid = kv.first; }
+        cur->type = kv.second->type; cur->name = pic.name; cur->w = pic.w; cur->h = pic.h; cur->rgba = pic.rgba;
+        changed = true;
+    }
+    if (changed) logoSeq_++;
 }
 
 } // namespace dect2

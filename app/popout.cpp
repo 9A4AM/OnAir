@@ -30,6 +30,12 @@ void onKey(GLFWwindow*, int key, int, int action, int) {
     if (key == GLFW_KEY_F) gToggleFs = true;   // as F in the main window
 }
 
+// A fullscreen pop-out that gets minimised anyway (a compositor or driver that ignores GLFW_AUTO_ICONIFY=false) is restored at once: clicking
+// another window or monitor must not take the picture away (#71).
+void onIconify(GLFWwindow* w, int iconified) {
+    if (iconified && glfwGetWindowMonitor(w)) glfwRestoreWindow(w);
+}
+
 void saveGeometry() {
     if (!gPop) return;
     int x = gWx, y = gWy, w = gWw, h = gWh;
@@ -53,6 +59,7 @@ void setFullscreen(bool on) {
     glfwGetWindowSize(gPop, &gWw, &gWh);
     GLFWmonitor* m = monitorFor(gWx, gWy, gWw, gWh);   // the monitor the window is on
     const GLFWvidmode* vm = m ? glfwGetVideoMode(m) : nullptr;
+    glfwSetWindowAttrib(gPop, GLFW_AUTO_ICONIFY, GLFW_FALSE);  // stay up when focus moves (#71)
     if (vm) glfwSetWindowMonitor(gPop, m, 0, 0, vm->width, vm->height, vm->refreshRate);
 }
 
@@ -74,6 +81,7 @@ bool openWindow(const App& a) {
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);       // placed first, then shown
     glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);  // the main window keeps the keyboard
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);   // it becomes fullscreen later; a focus change must never minimise it (#71)
     glfwWindowHint(GLFW_FLOATING, a.popTop ? GLFW_TRUE : GLFW_FALSE);
     gPop = glfwCreateWindow(w, h, "OnAir video", nullptr, gGfx->shareWindow());
     glfwDefaultWindowHints();
@@ -105,6 +113,7 @@ bool openWindow(const App& a) {
     }
     glfwSetMouseButtonCallback(gPop, onMouse);
     glfwSetKeyCallback(gPop, onKey);
+    glfwSetWindowIconifyCallback(gPop, onIconify);
     gSurf = gGfx->createSurface(gPop);
     if (!gSurf) { glfwDestroyWindow(gPop); gPop = nullptr; return false; }
     glfwShowWindow(gPop);

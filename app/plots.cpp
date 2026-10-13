@@ -20,6 +20,20 @@ static void clickToTune(App& a, int plotId) {
     }
     if (std::fabs(mhz - a.freqMhz) > 1e-6) {
         const plt::Rect lim = plt::GetPlotLimits();   // a red line where a click would tune to
+        if (!ImGui::IsMouseDown(0)) {   // the ghost of the channel box: where it will sit after the click, so the whole signal can be put inside it
+            const ChanWidth cw = channelWidth(a);
+            if (cw.mhz > 0) {
+                const double g0 = mhz - cw.mhz / 2, g1 = mhz + cw.mhz / 2;
+                if (plotId == 0) { plt::Spec gb; gb.FillColor = ImVec4(0.7f, 0.7f, 0.7f, 0.10f); plt::PlotVBand("##ghost", g0, g1, gb); }
+                const double ge[2] = {g0, g1};
+                plt::Spec es; es.LineColor = ImVec4(0.8f, 0.8f, 0.8f, 0.45f); es.LineWeight = 1.f;
+                plt::PlotInfLines("##ghostedges", ge, 2, es);
+                if (plotId == 0) {
+                    char lb[48]; snprintf(lb, sizeof lb, "%.4f MHz  (%s)", mhz, widthText(cw.mhz).c_str());
+                    plt::PlotText(lb, mhz, lim.Y.Max, ImVec2(0, 14 * gUi));
+                }
+            }
+        }
         const double lx[2] = {mhz, mhz}, ly[2] = {lim.Y.Min, lim.Y.Max};
         plt::Spec ls; ls.LineColor = ImVec4(0.95f, 0.25f, 0.25f, 0.9f); ls.LineWeight = 1.2f;
         plt::PlotLine("##tunehere", lx, ly, 2, ls);
@@ -124,7 +138,9 @@ static void channelBand(const App& a, bool fill) {
 
 // "BW 7 MHz auto" in the top right corner of the spectrum: the width the band shows, and a click opens channelWidthPopup().
 // Left out when it would cover yLabel, which the plot draws in its top left corner.
+static float gBwBtnW = 0;   // width of the BW button as drawn this frame (0: none), for the switch beside it
 static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const char* yLabel) {
+    gBwBtnW = 0;
     const ChanWidth cw = channelWidth(a);
     if (cw.mhz <= 0) return;
     char b[64];
@@ -132,6 +148,7 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
     const ImVec2 sz = ImGui::CalcTextSize(b, nullptr, true);
     const float w = sz.x + 2 * ImGui::GetStyle().FramePadding.x, m = 4 * gUi;
     if (plotSize.x < w + 2 * m + ImGui::CalcTextSize(yLabel).x + 12 * gUi || plotSize.y < sz.y + 2 * m) return;   // no room
+    gBwBtnW = w + m;
     const ImVec2 keep = ImGui::GetCursorScreenPos();
     ImGui::SetCursorScreenPos(ImVec2(plotMin.x + plotSize.x - w - m, plotMin.y + m));
     ImVec4 bg = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg); bg.w = 0.85f;
@@ -140,43 +157,146 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
     if (ImGui::SmallButton(b)) ImGui::OpenPopup("##bwpop");
     ImGui::PopStyleColor(2);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", tr(cw.settable ? "Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width."
-                                      : "Channel width: the band the receiver works with (the light band), set by the standard."));
+        ImGui::SetTooltip("%s\n\n%s", tr(cw.settable ? "Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width."
+                                      : "Channel width: the band the receiver works with (the light band), set by the standard."),
+                          tr("Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset."));
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y + 2 * gUi), ImGuiCond_Appearing, ImVec2(1, 0));   // under the button, right-aligned
     if (ImGui::BeginPopup("##bwpop")) { channelWidthPopup(a); ImGui::EndPopup(); }
     ImGui::SetCursorScreenPos(keep);
 }
 
-void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
+// "Whole span" switch left of the BW button, for the modes that declare support (modeSupportsWide): decode every signal in the span
+static void wideSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
+    if (!modeSupportsWide(a.family)) return;
+    const char* lb = a.wideDecode ? "Whole span: on###widebtn" : "Whole span###widebtn";
+    const ImVec2 sz = ImGui::CalcTextSize(lb, nullptr, true);
+    const float w = sz.x + 2 * ImGui::GetStyle().FramePadding.x, m = 4 * gUi;
+    const float x = plotMin.x + plotSize.x - gBwBtnW - w - m;
+    if (x < plotMin.x + 40 * gUi || plotSize.y < sz.y + 2 * m) return;   // no room
+    const ImVec2 keep = ImGui::GetCursorScreenPos();
+    ImGui::SetCursorScreenPos(ImVec2(x, plotMin.y + m));
+    ImVec4 bg = a.wideDecode ? pal::accent(0.55f) : ImGui::GetStyleColorVec4(ImGuiCol_FrameBg); if (!a.wideDecode) bg.w = 0.85f;
+    ImGui::PushStyleColor(ImGuiCol_Button, bg);
+    if (ImGui::SmallButton(lb)) {
+        a.wideDecode = !a.wideDecode;
+        if (a.family >= 0 && a.family < 64) { if (a.wideDecode) a.wideFamMask |= 1ull << a.family; else a.wideFamMask &= ~(1ull << a.family); }
+        savePrefs(a);
+    }
+    ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("decode every signal in the visible span, not just the tuned one"));
+    ImGui::SetCursorScreenPos(keep);
+}
+
+// The carriers the whole-span decoder follows: a thin line and the frequency on the spectrum
+static void wideMarkers(App& a) {
+    if (!wideActive(a)) return;
+    const double c = radioCenterMhz(a);
+    int k = 0;
+    for (const WideCarrier& w : a.rx.wide) {
+        const double f = c + w.hz / 1e6, xx[2] = {f, f}, yy[2] = {a.yMin, a.yMax};
+        plt::Spec s; s.LineColor = w.selected ? pal::accent(0.9f) : ImVec4(0.55f, 0.85f, 0.55f, w.active ? 0.6f : 0.3f); s.LineWeight = w.selected ? 1.5f : 1.f;
+        char id[24]; snprintf(id, sizeof id, "##wc%d", k++);
+        plt::PlotLine(id, xx, yy, 2, s);
+    }
+}
+
+// The spectrum and the waterfall share one frequency axis: panning or zooming either moves both, and a retune brings both back to the band.
+static double gXLo = 0, gXHi = 0;
+static void setupFreqAxis(const App& a) {
+    const double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
+    static double lastC = 0, lastFs = 0;
+    const double rc = radioCenterMhz(a);   // the axis shows the radio's real centre, so a signal sits at its true frequency
+    if (lastC != rc || lastFs != fs || !(gXHi > gXLo)) { gXLo = rc - fs / 2; gXHi = rc + fs / 2; }   // follow a retune (otherwise keep the user's own zoom)
+    lastC = rc; lastFs = fs;
+    plt::SetupAxisLimits(plt::X1, rc - fs / 2, rc + fs / 2, plt::Cond_Once);
+    plt::SetupAxisLinks(plt::X1, &gXLo, &gXHi);
+    plt::SetupAxisFormat(plt::X1, "%.2f");
+}
+
+// The trace at the full panel width: only the visible bins, and where they are denser than the pixels, the lowest and the highest of
+// each pixel column (an envelope), so no peak is lost to a coarse picture.
+static void envelope(const std::vector<double>& x, const std::vector<float>& y, double lo, double hi, int px, std::vector<double>& ox, std::vector<double>& oy) {
+    ox.clear(); oy.clear();
+    const size_t n = std::min(x.size(), y.size());
+    if (n < 2 || !(hi > lo)) return;
+    const double dx = (x[n - 1] - x[0]) / (double)(n - 1);
+    if (!(dx > 0)) return;
+    size_t i0 = (size_t)std::max(0.0, std::floor((lo - x[0]) / dx) - 1), i1 = (size_t)std::min((double)n - 1, std::ceil((hi - x[0]) / dx) + 1);
+    if (i0 >= n) i0 = n - 1;
+    if (i1 <= i0) { i1 = std::min(n - 1, i0 + 1); }
+    const size_t cnt = i1 - i0 + 1;
+    if (px < 1 || cnt <= (size_t)px * 2) { for (size_t i = i0; i <= i1; i++) { ox.push_back(x[i]); oy.push_back(y[i]); } return; }
+    for (int c = 0; c < px; c++) {
+        const size_t a0 = i0 + cnt * c / px, a1 = std::max(a0 + 1, i0 + cnt * (c + 1) / px);
+        size_t imn = a0, imx = a0;
+        for (size_t i = a0; i < a1 && i < n; i++) { if (y[i] < y[imn]) imn = i; if (y[i] > y[imx]) imx = i; }
+        const size_t f = std::min(imn, imx), g = std::max(imn, imx);
+        ox.push_back(x[f]); oy.push_back(y[f]);
+        if (g != f) { ox.push_back(x[g]); oy.push_back(y[g]); }
+    }
+}
+
+// Ctrl+Up / Ctrl+Down move the dB range of the spectrum by 5 dB, Ctrl+Shift+Up / Down widen or narrow it, Ctrl+Home puts it back
+// to the default. Only while the spectrum is hovered, like the frequency keys below (#91).
+static bool dbRangeKeys(App& a) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (!io.KeyCtrl || io.WantTextInput) return false;
+    const float step = 5;
+    float lo = a.yMin, hi = a.yMax;
+    if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true)) { if (io.KeyShift) { lo -= step; hi += step; } else { lo += step; hi += step; } }
+    else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true)) { if (io.KeyShift) { lo += step; hi -= step; } else { lo -= step; hi -= step; } }
+    else if (ImGui::IsKeyPressed(ImGuiKey_Home)) { lo = -110; hi = -30; }
+    else return false;
+    lo = std::max(-160.f, std::min(20.f, lo)); hi = std::max(-160.f, std::min(20.f, hi));
+    if (hi - lo < 10) return false;
+    a.yMin = lo; a.yMax = hi;
+    return true;
+}
+
+// Ctrl+PageUp / Ctrl+PageDown: the view steps up or down in frequency by its own width
+static void freqPageKeys() {
+    ImGuiIO& io = ImGui::GetIO();
+    if (!io.KeyCtrl || io.WantTextInput || !(gXHi > gXLo)) return;
+    const double span = gXHi - gXLo;
+    if (ImGui::IsKeyPressed(ImGuiKey_PageUp, true)) { gXLo += span; gXHi += span; }
+    if (ImGui::IsKeyPressed(ImGuiKey_PageDown, true)) { gXLo -= span; gXHi -= span; }
+}
+
+static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
     const char* const kYLabel = tr("power (dBFS/bin)");
     ImVec2 plotMin, plotSize;
     bool drawn = false, openCtx = false;
     static double ctxMhz = 0;
-    if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0))) {
+    if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | extraFlags | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0))) {
         drawn = true;
-        if (noFreqAxis) plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_NoTickLabels, 0);   // the waterfall under it shows the frequencies
-        else plt::SetupAxes(tr("frequency (MHz)"), kYLabel);
-        double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
-        // follow a retune: when the centre or the span changes, bring the view back to the new band (otherwise it keeps the user's own zoom)
-        static double lastC = 0, lastFs = 0;
-        const double rc = radioCenterMhz(a);   // the axis shows the radio's real centre, so a signal sits at its true frequency
-        const bool moved = lastC != rc || lastFs != fs;
-        lastC = rc; lastFs = fs;
-        plt::SetupAxisLimits(plt::X1, rc - fs / 2, rc + fs / 2, moved ? plt::Cond_Always : plt::Cond_Once);
-        plt::SetupAxisLimits(plt::Y1, a.yMin, a.yMax, plt::Cond_Once);
-        plt::SetupAxisFormat(plt::X1, "%.2f");
+        plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_Inside, plt::AxisFlags_Inside);   // the frequencies along the bottom edge, inside, as in SDR++
+        setupFreqAxis(a);
+        // The dB range follows the spectrum dB fields and the keys: a change there sets the axis at once (the plot otherwise keeps the
+        // range the mouse dragged or zoomed to, and that range is written back into the fields, so the two never disagree) (#91)
+        static float setMin = 1, setMax = 0;
+        const bool rangeEdited = a.yMin != setMin || a.yMax != setMax;
+        plt::SetupAxisLimits(plt::Y1, a.yMin, a.yMax, rangeEdited ? plt::Cond_Always : plt::Cond_Once);
+        if (rangeEdited) { setMin = a.yMin; setMax = a.yMax; }
         channelBand(a, true);
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
+        if (!rangeEdited) {
+            const plt::Rect lim = plt::GetPlotLimits();
+            if (std::fabs(lim.Y.Min - a.yMin) > 0.01 || std::fabs(lim.Y.Max - a.yMax) > 0.01) { a.yMin = setMin = (float)lim.Y.Min; a.yMax = setMax = (float)lim.Y.Max; }
+        }
+        if (plt::IsPlotHovered() && dbRangeKeys(a)) savePrefs(a);
         if (!a.smooth.empty()) {
-            auto x = xs(a);
+            const auto x = xs(a);
+            const plt::Rect vis = plt::GetPlotLimits();
+            const int wpx = std::max(1, (int)plotSize.x);
+            static std::vector<double> ex, ey;
             if (a.peakHold) {
                 plt::Spec ps; ps.LineColor = pal::grey(0.40f); ps.LineWeight = 1.0f;
-                std::vector<double> yp(a.peak.begin(), a.peak.end());
-                plt::PlotLine("peak", x.data(), yp.data(), (int)std::min(x.size(), yp.size()), ps);
+                envelope(x, a.peak, vis.X.Min, vis.X.Max, wpx, ex, ey);
+                plt::PlotLine("peak", ex.data(), ey.data(), (int)ex.size(), ps);
             }
             plt::Spec ss; ss.LineColor = pal::accent(); ss.LineWeight = 1.3f;
-            std::vector<double> ysm(a.smooth.begin(), a.smooth.end());
-            plt::PlotLine("spectrum", x.data(), ysm.data(), (int)std::min(x.size(), ysm.size()), ss);
+            envelope(x, a.smooth, vis.X.Min, vis.X.Max, wpx, ex, ey);
+            plt::PlotLine("spectrum", ex.data(), ey.data(), (int)ex.size(), ss);
             double cx[2] = {a.freqMhz, a.freqMhz}, cy[2] = {a.yMin, a.yMax};
             plt::Spec cs; cs.LineColor = pal::grey(0.35f);
             plt::PlotLine("centre", cx, cy, 2, cs);
@@ -194,21 +314,23 @@ void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
                 }
             }
         }
+        wideMarkers(a);
         clickToTune(a, 0);
+        if (plt::IsPlotHovered() && !ImGui::IsMouseDown(0) && !ImGui::IsMouseDown(1) && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && false) {}
         if (plt::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { ctxMhz = plt::GetPlotMousePos().x; openCtx = true; }
         plt::EndPlot();
     }
-    if (drawn) channelWidthButton(a, plotMin, plotSize, kYLabel);
+    if (drawn) { channelWidthButton(a, plotMin, plotSize, kYLabel); wideSwitch(a, plotMin, plotSize); }
     // right-click: what is this signal?
     if (openCtx) ImGui::OpenPopup("##specctx");
     if (ImGui::BeginPopup("##specctx")) {
-        if (ImGui::MenuItem(tr("Identify this signal"), nullptr, false, a.engine.running())) identifyAt(a, ctxMhz);
+        if (ImGui::MenuItem(trw("Identify this signal"), nullptr, false, a.engine.running())) identifyAt(a, ctxMhz);
         if (!a.engine.running() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Start the receiver first"));
         ImGui::EndPopup();
     }
 }
 
-void waterfallPlot(App& a, ImVec2 size) {
+static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
     const int H = Waterfall::H;
     // The time scale is worked out once and kept until the plot changes size (or the first real measure of the row time is in),
     // so the labels never move while the picture scrolls under them.
@@ -229,22 +351,18 @@ void waterfallPlot(App& a, ImVec2 size) {
             sc.pos.push_back(-s / sc.dt); sc.lab.push_back(b);
         }
     }
-    if (plt::BeginPlot("##wf", size, plt::Flags_NoLegend | plt::Flags_NoTitle | (a.family == 55 && generalDragging(1) ? plt::Flags_NoPan : 0))) {
-        plt::SetupAxes(tr("frequency (MHz)"), tr("seconds ago"));
+    if (plt::BeginPlot("##wf", size, plt::Flags_NoLegend | plt::Flags_NoTitle | extraFlags | (a.family == 55 && generalDragging(1) ? plt::Flags_NoPan : 0))) {
+        plt::SetupAxes(nullptr, tr("seconds ago"), plt::AxisFlags_NoTickLabels, plt::AxisFlags_Inside);   // the spectrum above shows the frequencies
         double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
         const double rc = radioCenterMhz(a);
         double x0 = rc - fs / 2, x1 = rc + fs / 2;
-        static double lastC = 0, lastFs = 0;
-        const bool moved = lastC != rc || lastFs != fs;
-        lastC = rc; lastFs = fs;
-        plt::SetupAxisLimits(plt::X1, x0, x1, moved ? plt::Cond_Always : plt::Cond_Once);
+        setupFreqAxis(a);
         // y is in rows, so the picture keeps its size while the measured row time wanders; the labels are the fixed scale above
         plt::SetupAxisLimits(plt::Y1, -H, 0, plt::Cond_Always);
         plt::SetupAxisUnit(plt::Y1, sc.dt);
         std::vector<const char*> labs;
         for (auto& s : sc.lab) labs.push_back(s.c_str());
         plt::SetupAxisTicks(plt::Y1, sc.pos.data(), (int)sc.pos.size(), labs.data());
-        plt::SetupAxisFormat(plt::X1, "%.2f");
         // rows arrive at the engine's ~30 Hz, the screen draws faster: slide down by the part of a row that is due since the last one,
         // so the picture moves at an even speed instead of jumping a row at a time
         const double frac = a.wf.pushT > 0 ? std::min(1.0, std::max(0.0, (glfwGetTime() - a.wf.pushT) / a.wf.rowDt)) : 0;
@@ -259,6 +377,30 @@ void waterfallPlot(App& a, ImVec2 size) {
         clickToTune(a, 1);
         plt::EndPlot();
     }
+}
+
+// The spectrum on top of the waterfall as one panel (as in SDR++): no gap, the same edges and frequency axis.
+// frac: the spectrum's share of the height; with drag set, the boundary line is a handle that changes it.
+void spectrumWaterfall(App& a, float& frac, bool drag) {
+    const ImVec2 p = ImGui::GetCursorScreenPos();
+    const ImVec2 avail = ImGui::GetContentRegionAvail();
+    const float w = std::max(60.f, avail.x), h = avail.y;
+    const float hs = std::floor(std::min(std::max(60.f, h * frac), std::max(60.f, h - 60.f)));
+    const float y = p.y + hs;
+    bool hot = false;
+    if (drag) {   // first, so the handle takes the mouse before the plots under it
+        ImGui::SetCursorScreenPos(ImVec2(p.x, y - 3 * gUi));
+        ImGui::InvisibleButton("##split", ImVec2(w, 6 * gUi));
+        hot = ImGui::IsItemHovered() || ImGui::IsItemActive();
+        if (hot) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+        if (ImGui::IsItemActive()) frac = std::min(0.8f, std::max(0.2f, frac + ImGui::GetIO().MouseDelta.y / std::max(1.f, h)));
+        ImGui::SetCursorScreenPos(p);
+    }
+    freqPageKeys();
+    spectrumPlot(a, ImVec2(w, hs), plt::Flags_Flush | plt::Flags_OpenBottom);
+    ImGui::SetCursorScreenPos(ImVec2(p.x, y));
+    waterfallPlot(a, ImVec2(w, std::max(60.f, h - hs)), plt::Flags_Flush | plt::Flags_OpenTop);
+    ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, y), ImVec2(p.x + w, y), hot ? IM_COL32(200, 200, 200, 160) : IM_COL32(110, 110, 110, 110), hot ? 2.f : 1.f);
 }
 
 void histogramPlot(App& a, ImVec2 size) {

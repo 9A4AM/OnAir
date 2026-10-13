@@ -55,6 +55,22 @@ static void run(const char* name, int mode, double snrDb, double cfoHz, double r
 }
 
 int main() {
+    {   // "Listen": 8000 audio samples a second when on, none when off, the same frames either way
+        size_t heard[2] = {0, 0}; PacketTelemetry t[2];
+        for (int on = 0; on < 2; on++) {
+            SynthConfig cfg; cfg.snrDb = 15; cfg.modeOpt[0] = 1;
+            auto syn = makePacketSynth(cfg, 2000000);
+            PacketReceiver rx;
+            rx.configure(2000000); rx.setSignalOffset(-packetTuning().tuneOffsetHz);
+            rx.setSilent(true); rx.setListen(on != 0);
+            rx.setListenTap([&heard, on](const float*, size_t n) { heard[on] += n; });
+            std::vector<cf32> buf(65536);
+            for (size_t done = 0; done < 6 * 2000000; done += buf.size()) { syn->generate(buf.data(), buf.size()); rx.feed(buf.data(), buf.size()); }
+            rx.telemetry(t[on], 0);
+        }
+        CHECK(heard[0] == 0 && std::fabs((double)heard[1] - 6 * 8000) < 800, "packet listen: off %zu, on %zu samples", heard[0], heard[1]);
+        CHECK(t[0].blocksOk == t[1].blocksOk, "packet listen changes decoding: %llu vs %llu", (unsigned long long)t[0].blocksOk, (unsigned long long)t[1].blocksOk);
+    }
     run("1200 baud", 1, 12.0, 700.0, 2000000);
     run("9600 baud", 2, 18.0, -900.0, 2000000);
     run("both", 0, 18.0, 300.0, 2000000);

@@ -22,6 +22,8 @@ struct Params {
     uint8_t syncWord = 0x2B;
     bool ldro = false;           // low data rate optimisation
     bool crc = true;
+    bool implicitHdr = false;    // no header: the length (implicitLen), coding rate (cr) and CRC (crc) are agreed beforehand (plain LoRa links)
+    int implicitLen = 0;
 };
 
 // RadioLib turns the low data rate optimisation on when a symbol lasts 16 ms or more (SX126x::setSpreadingFactor, autoLDRO)
@@ -58,6 +60,7 @@ struct Header {
 class FrameDecoder {
 public:
     void start(int sf, bool ldro);
+    void startImplicit(int sf, bool ldro, int len, int cr, bool crc);   // implicit header: no header nibbles, the settings are known
     void push(uint16_t bin);
     int pushed() const { return n_; }
     bool headerDone() const { return n_ >= 8; }
@@ -68,8 +71,8 @@ public:
     bool finish(std::vector<uint8_t>& payload, bool& crcOk, int& corrected);
 private:
     void block(const uint16_t* bins, int cwLen, int sfApp, bool reduced);
-    int sf_ = 11, n_ = 0, need_ = 8, corrected_ = 0;
-    bool ldro_ = false;
+    int sf_ = 11, n_ = 0, need_ = 8, corrected_ = 0, hn_ = 5;   // hn_: header nibbles in front of the payload (5, or 0 implicit)
+    bool ldro_ = false, implicit_ = false;
     Header hdr_;
     std::vector<uint16_t> bins_;
     std::vector<uint8_t> nib_;

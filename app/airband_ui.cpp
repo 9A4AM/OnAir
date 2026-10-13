@@ -31,7 +31,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 27; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 27; }   // the engine reports its standard code minus one
 
 std::string encode(const std::vector<dect2::AirbandChannel>& v) {
     std::string s;

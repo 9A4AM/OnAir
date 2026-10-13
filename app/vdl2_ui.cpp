@@ -48,7 +48,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 28; }
+bool live(const App& a) { return a.rx.standard == 28; }
 
 void loadState() {
     if (S.loaded) return;

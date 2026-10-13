@@ -158,7 +158,7 @@ inline V vabsv(V x) { const V s = x >> 7; return (x ^ s) - s; }
 inline V vclamp(V x, int8_t lim) { const V hi = {lim, lim, lim, lim, lim, lim, lim, lim, lim, lim, lim, lim, lim, lim, lim, lim}; const V lo = -hi; x = vsel(x > hi, hi, x); return vsel(x < lo, lo, x); }
 
 // One iteration over all checks. tot: values of the variables, msg: the messages of the edges.
-DECT2_MULTIVERSION void layeredPass(const int* chkStart, const int* chkVar, int m, V* tot, V* msg) {
+DECT2_SIMD_BODY void layeredPassBody(const int* chkStart, const int* chkVar, int m, V* tot, V* msg) {
     V v[64];
     const V one = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, big = {127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127}, zero = {};
     for (int c = 0; c < m; c++) {
@@ -187,9 +187,10 @@ DECT2_MULTIVERSION void layeredPass(const int* chkStart, const int* chkVar, int 
         }
     }
 }
+DECT2_AVX2_DISPATCH(void, layeredPass, (const int* chkStart, const int* chkVar, int m, V* tot, V* msg), (chkStart, chkVar, m, tot, msg))
 
 // lanes with a check that fails: bad[l] != 0
-DECT2_MULTIVERSION V syndromes(const int* chkStart, const int* chkVar, int m, const V* tot) {
+DECT2_SIMD_BODY V syndromesBody(const int* chkStart, const int* chkVar, int m, const V* tot) {
     V bad = {};
     for (int c = 0; c < m; c++) {
         V x = {};
@@ -198,6 +199,7 @@ DECT2_MULTIVERSION V syndromes(const int* chkStart, const int* chkVar, int m, co
     }
     return bad;
 }
+DECT2_AVX2_DISPATCH(V, syndromes, (const int* chkStart, const int* chkVar, int m, const V* tot), (chkStart, chkVar, m, tot))
 
 } // namespace
 

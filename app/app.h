@@ -33,6 +33,9 @@
 #include "dect2/direction.h"
 #include "dect2/teletext.h"
 #include "dect2/feeds.h"
+#include "dect2/pskreporter.h"
+#include "dect2/passes.h"
+#include "dect2/maplayers.h"
 #include "theme.h"
 #include "gfx.h"
 #include "icons.h"
@@ -54,7 +57,7 @@ using namespace dect2;
 // ------------------------------------------------------------------ waterfall texture
 
 struct Waterfall {
-    static constexpr int W = 1024, H = 512;
+    static constexpr int W = 4096, H = 512;
     gfx::Image* img = nullptr;
     std::vector<uint32_t> lut;
     int writeRow = 0; // newest row; older rows follow at writeRow+1 ... wrapping
@@ -171,22 +174,29 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 62;   // App::family runs from 0 to kNumFamilies - 1
-constexpr int kNumSubModes = 20;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
+constexpr int kNumFamilies = 77;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumSubModes = 31;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
 struct App {
     Engine engine;
+    int rxId = 1;                 // receiver number: RX 1 is the first (receivers.h)
+    bool rxForcedMute = false, rxSavedMuted = false;   // only the receiver that plays gets sound: the others are muted
     NetTuner net{engine};      // network tuner (declared after the engine so that it stops first)
     bool netOn = false, netLan = false;
     int netPort = 8089;
     char netKey[32] = "";
     // first-run tour (wizard.inc)
     bool wizOpen = false, wizStart = false, wizAcked = false;
+    bool galleryOpen = false;           // the picture gallery (View > Images)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool mapOpen = false;               // the map window (View > Map): positions and Maidenhead locators
     int wizStep = 0;
+    bool setupOpen = false;             // the setup wizard (language, radio, location, goals); Help > Setup wizard
+    int setupStep = 0, setupRegion = 0;
+    unsigned setupGoals = 0;            // bit per goal in wizard.cpp
+    char setupLoc[48] = "";             // a Maidenhead locator or coordinates
     double wizStepT = 0;
     float wizX = -1;
     ImVec2 tgMin[8], tgMax[8];   // screen rectangles of the parts of the window the tour points at
@@ -204,7 +214,13 @@ struct App {
     int netAddType = NetRadio::RtlTcp;
     char netAddHost[128] = "";
     int netAddPort = 1234;
+    char netAddRemote[128] = "";   // SoapyRemote: the server radio to ask for ("mirisdr", "driver=sdrplay,serial=1")
     std::string netAddErr;
+    // a search for Hermes Lite 2 radios (a discovery broadcast) running on a worker thread, and what the last one found
+    struct NetDiscovery { std::atomic<bool> done{false}; std::vector<FoundNetRadio> found; };
+    std::shared_ptr<NetDiscovery> netDiscovery;
+    std::vector<FoundNetRadio> netFound;
+    bool netSearched = false;
     int devIdx = 0;
     TuneSettings tune;
     FileOptions file;
@@ -227,6 +243,8 @@ struct App {
     double famFreq[kNumSlots] = {};  // the frequency each of the modes added after FM was last tuned to (0 = never)
     std::string modeGroupsOpen;   // the mode list groups left unfolded, by name, separated by |
     int uiVariant = 0;        // layout of the new interface: 0 sidebar (the default), 1 scope, 2 tiles, 3 faceplate, 4-6 scope children, 7 panel
+    float uiTextScale = 1.f;  // View > Text size: 0.8 .. 2.0, on top of the display scale (Ctrl +, Ctrl -, Ctrl 0)
+    float splitSide = 0, splitRight = 0, splitBottom = 0, splitDock = 0, splitBot2 = 0;   // dragged panel sizes in unscaled points (0 = automatic): sidebar, instruments, lower row; scope layout: instruments, lower row
     int uiTheme = 1;          // its palette: 0 terminal, 1 instrument, 2 mono
     std::string uiLang;       // the interface language chosen in View > Language ("de", "lt" ...), empty: the system's
     int dtmbBwMhz = 8;        // DTMB channel width: 8 MHz (China, Hong Kong), 6 MHz (Cuba)
@@ -235,12 +253,17 @@ struct App {
     int atvNbtv = 0;          // analog TV: 0 television, 1 NBTV / mechanical TV on AM, 2 the same on narrow FM (the audio is the picture)
     int atvNbtvLines = 32;    // NBTV / mechanical: lines (24 .. 240) and pictures a second; 32 at 12.5 is the NBTVA standard
     float atvNbtvFps = 12.5f;
+    bool wideDecode = false;  // "Whole span": decode every carrier in the visible span, not only the tuned one (only for modes that opt in: modeSupportsWide)
+    uint64_t wideFamMask = 0; // the switch per mode family (bit = family); wideDecode is the current mode's bit
+    int wideSel = 0;          // the carrier the sound and the detail follow (0: the best locked one)
     bool atvWide = false;     // analog TV: system E chosen (14 MHz channel, 10 MHz of video): the radio runs at 20 Msps
+    bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
+    dect2::PskReporterConfig pskr;   // PSK Reporter spots (off by default; feeds_ui.cpp), saved with the preferences
     bool lightUi = false;     // View > Light: every colour drawn with its lightness turned over (dark on white), hues kept (main.cpp)
-    int family = 0;           // 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 42 spectrum analyser, 38 NXDN, 40 DVB-C, 45 dPMR, 44 Orbcomm, 43 Mode S uplink, 46 TETRA, 49 HF ALE, 47 MAC, 48 radio astronomy, 50 P25, 51 Bluetooth LE, 52 ionospheric sounders, 53 QO-100, 54 Wi-Fi networks, 55 general receiver, 61 CubeSat telemetry (6 and up: see ModeUi; engine standard code = family + 2)
+    int family = 68;           // 68 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.68, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 168 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 268 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 368 VOR / ILS, 31 M17, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 42 spectrum analyser, 38 NXDN, 468 DVB-C, 45 dPMR, 44 Orbcomm, 43 Mode S uplink, 46 TETRA, 49 HF ALE, 47 MAC, 48 radio astronomy, 568 P25, 51 Bluetooth LE, 52 ionospheric sounders, 53 QO-16868, 54 Wi-Fi networks, 55 general receiver, 61 CubeSat telemetry, 64 HRPT / AHRPT (6 and up: see ModeUi; engine standard code = family + 2)
     int sub = 0;              // 1 .. kNumSubModes: the protocol entry (dect2::subModes() index + 1) of HF digital, mesh, pagers, marine or VOR / ILS; 0 none
     std::deque<float> dabSnrH, dabFicH, dabCfoH, dabCirH;
     std::deque<float> dabBufH, dabRsH, dabAuH;   // of the selected service: they restart when another one is selected
@@ -295,6 +318,7 @@ struct App {
     std::vector<std::string> usbHints;  // why a plugged-in radio is not listed (Linux), refreshed with the radio list
     double diagCopiedAt = -10, diagPollAt = -10;
     bool diagWasRunning = false;
+    bool recSigmf = true;               // write SigMF metadata beside IQ recordings (pref "recSigmf", default on)
     int recFormat = 0;                  // IQ recording format: 0 = 8-bit, 1 = float (pref "recFormat")
     bool recWasActive = false;          // a recording was running at the last frame (to log it once when it ends)
     std::string recDonePath;            // the last finished recording, for "Show recording"
@@ -463,8 +487,13 @@ bool receiverLocationSet();                        // the user has set it (else 
 void receiverPositionFields(App& a);               // its fields (latitude, longitude, altitude) and the Locate button
 double receiverAltitudeM();                         // its height above sea level, metres (0 until set)
 void setReceiverLocation(App& a, double lat, double lon);   // move it (saved), e.g. View > Map's "Use as my location"
+struct MapSatRef { std::string name; int norad = 0; const dect2::Sgp4* sgp = nullptr; };
+void passesMapSatellites(std::vector<MapSatRef>& out);   // passes_ui.cpp: the listed satellites with a TLE (for the live map)
+struct MapCellTower { double lat = 0, lon = 0; int rangeM = 0; std::string label; unsigned colour = 0; };
+void cellMapTowers(const dect2::CellTelemetry& t, std::vector<MapCellTower>& out);   // cell_ui.cpp: the towers placed (OpenCelliD / CSV)
 void mapWindow(App& a);                             // map_ui.cpp: View > Map (a.mapOpen): coordinates, Maidenhead locators, distance and bearing
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
+std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 void scannerWindow(App& a);                        // scanner_ui.cpp: the scanner window (a.scannerOpen) and its scan loop, every frame (HIGHLY EXPERIMENTAL)
 void scannerButton(App& a);                        // a button that opens it (the classic interface's Scan tab)
@@ -495,6 +524,10 @@ void lossTooltip(const SampleLoss& l);
 // what it is, how to install it here, where to put it, a link to the full page and "Look again"
 enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe, P25Imbe, Avs, DraTv };
 void codecHelpButton(CodecHelp c);
+// A new file path in the "audio-streams" folder of the user data folder, without extension: "<stem>_<date>_<time>" (the stem cleaned for a file name)
+std::string streamSavePath(const std::string& stem);
+// "voice: needs mbelib (libmbe.dll, ...)": the exact file names tried, for the status line of the mbelib modes
+const char* codecNeedMbe();
 // "Listen" for a decoder mode that is silent by default (HF digital, PSK, JS8Call): the switch, remembered under prefKey, then the shared
 // mute and volume, in a flow row (widgets.cpp). True when the switch changed.
 bool listenControls(App& a, bool& on, const char* prefKey, const char* id, const char* tip);
@@ -553,6 +586,13 @@ int adcBitsFor(const DeviceInfo& d, double rateHz);
 void ingestSpectrum(App& a);
 void ingestRx(App& a);
 std::vector<double> xs(const App& a);
+// Whole-span decoding (modeui.cpp). A mode opts in with registerWideMode(family); the switch is drawn by the spectrum (plots.cpp) for those only.
+bool modeSupportsWide(int family);
+void registerWideMode(int family);
+bool wideActive(const App& a);                          // the switch is on for this mode and the engine runs it
+void wideSync(App& a);                                  // once a frame: pushes the switch, the selected carrier and the mute to the engine
+void wideCarrierCell(const App& a, int carrierId, double relHz);   // a table cell with the carrier's frequency (MHz); "-" for a single channel
+void wideCarriersTable(App& a, float h);                // the carriers table: click selects (sound, detail), double click tunes
 double radioCenterMhz(const App& a);   // where the radio is tuned: the frequency plus the mode's tuneOffsetHz (a file source: the frequency as typed)
 void applyOutputs(App& a);
 std::string channelLabel(const SavedChannel& c);
@@ -606,6 +646,8 @@ struct ModeUi {
     void (*tick)(App&) = nullptr;                       // every frame while the mode is selected: push volume and mute to the receiver, run scans, collect histories
     void (*meters)(const App&, std::vector<ModeMeter>& out) = nullptr;   // the meter bank of the Scope: Meters layout
 };
+bool modeSupportsWideHf(int family);                    // modeui.cpp: the HF families that decode the visible span inside the receiver (CW, PSK, HF digital)
+bool modeSupportsWide(int family);                      // modeui.cpp: the families that can decode the whole visible span (CW, PSK, HF digital)
 const ModeUi* modeUi(int family);                       // modeui.cpp: nullptr for the original families (0 to 5)
 const char* listTitle(const App& a, bool upper);        // "STATIONS", "SERVICES" or the mode's own, for the list on the right
 // Second mode (modeui.cpp): run kModes[modeIdx] at mhz beside the first mode (-1: off); false and the engine's note when refused
@@ -625,6 +667,12 @@ void tuneFreq(App& a, double mhz);                     // set the frequency now 
 void uplinkNoteAdsb(const dect2::AdsbTelemetry& t);   // uplink_ui.cpp: callsigns heard by the ADS-B mode in this session
 double meshSampleRate(App& a);                  // mesh_ui.cpp: the radio rate the selected LoRa bandwidth needs (2 Msps; 4 above 500 kHz)
 void dvbsSetSymbolRate(App& a, double msym);   // dvbs_ui.cpp: the DVB-S/S2 symbol rate, set from elsewhere (the spectrum explorer)
+// wb_ui.cpp: the Signal workbench. A file dropped on the window opens in it (the mode is selected); the dev flags open and drive it for --shot runs
+void wbQueueDrop(const char* path);
+void wbDropTick(App& a);
+void wbDevOpen(const std::string& path, double rate, int tab);
+void wbDevSelect(double t0Sec, double t1Sec, double f0Hz, double f1Hz);
+void wbDevDemod(int kind, double baud, bool runMeasure, bool runDemod);
 void mainTabs(App& a);          // the tab bar with the tabs that fit the current mode (main.cpp)
 void drawShell2(App& a, ImVec2 disp);   // ui2.cpp: the new interface
 void applyUiTheme(App& a);              // ui2.cpp: classic or new colours and shapes
@@ -636,7 +684,7 @@ struct ChanWidth { double mhz = 0; bool settable = false, hasAuto = false, manua
 ChanWidth channelWidth(const App& a);
 std::string widthText(double mhz);   // "7 MHz", "1.536 MHz", "12.5 kHz"
 void channelWidthPopup(App& a);      // automatic or manual, where the mode allows it; otherwise what fixes the width
-void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis = false);
+void spectrumWaterfall(App& a, float& frac, bool drag);   // the spectrum on top of the waterfall, one panel
 // specx_ident.cpp: "Identify this signal" (dect2/sig_ident.h). The region is [offHz -+ widthHz / 2] from the samples' centre, which the radio
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)
 void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widthHz, double rfOfCentreHz);
@@ -648,7 +696,6 @@ void generalPlotMouse(App& a, int plotId);
 void generalChannelBand(const App& a, bool fill);
 bool generalDragging(int plotId);
 double generalChannelWidthMhz(const App& a);
-void waterfallPlot(App& a, ImVec2 size);
 void histogramPlot(App& a, ImVec2 size);
 void constDensityPlot(App& a, ImVec2 sz);
 void constClusterPlot(App& a, ImVec2 sz);
@@ -676,7 +723,9 @@ void logPanel(App& a);
 void historyLogTab(App& a);
 // diag_ui.cpp: radio problems shown under the radio picker, and the diagnostics text
 struct RadioMsg { int kind; std::string text; };   // kind: 0 radio listing error, 1 failed start/retune, 2 frequency outside the radio's range, 3 USB hint
-std::string radioRangeWarning(const DeviceInfo& d, double freqMhz);   // empty when the frequency is fine or the range is unknown
+std::string radioRangeWarning(const DeviceInfo& d, double freqMhz, const std::map<std::string, std::string>* radio = nullptr);   // empty when the frequency is fine or the range is unknown
+namespace fixit { struct Entry; }
+void fixitUi(App& a, const fixit::Entry* e, const char* idKey);   // diag_ui.cpp: the "How to fix" button + popup of a fixit.h entry (nothing for nullptr)
 std::vector<RadioMsg> radioMessages(const App& a);                    // what is shown right now (dismissed ones left out)
 struct DiagInput {
     std::string version, os, cpu, gpu;
@@ -712,7 +761,7 @@ void receiverTab(App& a);
 void streamTab(App& a);
 void routeTab(App& a, const std::string& name);
 ImU32 scoreColour(double sc);
-void drawUI(App& a, ImVec2 disp);
+void drawUI(App& a, ImVec2 disp, bool draw = true);   // draw = false: only the work that must go on for a receiver whose tab is not shown
 // dab_ui.cpp
 const char* dabChannelName(double mhz);
 bool dabChannelCombo(App& a);
@@ -725,8 +774,11 @@ void dabStations(App& a);
 void dabRadioTab(App& a);
 void dabEnsembleTab(App& a);
 void dabTuneMhz(App& a, double mhz);   // dab_ui.cpp: tunes the running receiver to a DAB frequency
+bool dabLogoImage(App& a, const DabEnsemble& ens, uint32_t sid, float h);   // dab_ui.cpp: the station logo (SPI / slide show) of a service
 void dabSlidePanel(App& a, const DabEnsemble& ens, float maxH);   // dab_ui.cpp: the latest slide show picture with its name
 void dabAnalyzerTab(App& a);       // dab_analyzer_ui.cpp: the ensemble as a tree with details and the MSC allocation
+void dabJournalineTab(App& a);     // dab_ui.cpp: Journaline pages (ETSI TS 102 979)
+bool dabHasJournaline(const DabEnsemble& ens);
 void dabFicTab(App& a);            // dab_fic_ui.cpp: the FIC, FIG by FIG, as a tree
 void dabTransmittersTab(App& a);   // dab_tii_ui.cpp: the TII transmitters, on a map with a transmitter list
 void dabScanTab(App& a);
@@ -746,3 +798,7 @@ void wizEnter(App& a, int step);
 void wizAction(App& a, int step);
 void wizFinish(App& a);
 void wizard(App& a, ImVec2 disp);
+void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
+void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
+#include "dect2/device_claims.h"
+#include "receivers.h"

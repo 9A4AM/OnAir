@@ -37,7 +37,7 @@ const char* kHelp =
     "data messages or subscriber identities. Encrypted signalling is only reported as encrypted.\n\n"
     "You are responsible for following your country's rules on receiving radio signals.";
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 47; }
+bool live(const App& a) { return a.rx.standard == 47; }
 
 std::string ago(int64_t t) {
     if (t <= 0) return "-";

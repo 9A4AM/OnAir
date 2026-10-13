@@ -1,8 +1,9 @@
 // Meteor-M LRPT, the layers above the demodulator (both directions, so the test signal is built with the same code it is checked by).
 //
-// Downlink: CCSDS-like. Soft bits -> (N2-x 80k: marker removal and convolutional deinterleaver, 36 branches x 2048) -> (N2-x: per-rail
-// differential decoding) -> Viterbi K=7 r=1/2 (polynomials 0x4F / 0x6D, the encoder runs on without resets) -> 1024-byte CADU found
-// by its sync word 0x1ACFFC1D -> derandomise (CCSDS PN, x^8+x^7+x^5+x^3+1) -> Reed-Solomon (255,223) in dual basis, interleave 4 ->
+// Downlink: CCSDS-like. Soft bits -> (N2-x 80k: marker removal and convolutional deinterleaver, 36 branches x 2048) -> Viterbi K=7
+// r=1/2 (polynomials 0x4F / 0x6D, no inverted output, the encoder runs on without resets) -> (N2-x: NRZ-M decoding of the bits) ->
+// 1024-byte CADU found by its sync word 0x1ACFFC1D -> derandomise (CCSDS PN, x^8+x^7+x^5+x^3+1) -> Reed-Solomon (255,223) in the
+// conventional basis (not the CCSDS dual basis), interleave 4 ->
 // VCDU (892 bytes) -> M_PDU (882 bytes, first header pointer) -> CCSDS space packets -> MSU-MR packets of APID 64 - 69 (channels 1 - 6):
 // an 8-byte time stamp, the MCU number, a scan and a segment header (quality factor), then 14 8x8 blocks coded as baseline JPEG
 // (the standard luminance Huffman tables, the DC predictor restarting in each packet, the standard quantisation table scaled by the
@@ -55,16 +56,21 @@ private:
     size_t steps_ = 0;
 };
 
-// --- Reed-Solomon (255,223) CCSDS, dual basis --------------------------------------------------------------------------------------
-void rsEncode(const uint8_t data[223], uint8_t parity[32]);           // dual-basis symbols in and out
-int rsDecode(uint8_t cw[255]);                                        // in place; errors corrected, -1 when it cannot
+// --- Reed-Solomon (255,223) CCSDS ----------------------------------------------------------------------------------------------------
+// dual: symbols in the CCSDS dual (Berlekamp) basis, as GOES LRIT / HRIT send them. Meteor-M LRPT does not: its codewords are in the
+// conventional basis (SatDump and meteor_decode decode them with the conversion off), so the Meteor code passes dual = false.
+void rsEncode(const uint8_t data[223], uint8_t parity[32], bool dual = true);
+int rsDecode(uint8_t cw[255], bool dual = true);                      // in place; errors corrected, -1 when it cannot
 
 // --- frame ----------------------------------------------------------------------------------------------------------------------------
 void pnXor(uint8_t* p, size_t n);                                     // the CCSDS sequence from 0xFF, 0x48, 0x0E, 0xC0 ...
 // The 1020 bytes after the ASM: derandomise, deinterleave, correct. vcdu gets the 892 data bytes. Returns the errors corrected (sum
 // of the four codewords) or -1 when one codeword could not be corrected.
-int decodeCadu(const uint8_t coded[kCodedBytes], uint8_t vcdu[kVcduBytes]);
-void encodeCadu(const uint8_t vcdu[kVcduBytes], uint8_t cadu[kCaduBytes]);   // ASM, RS, randomised
+int decodeCadu(const uint8_t coded[kCodedBytes], uint8_t vcdu[kVcduBytes], bool dual = true);
+void encodeCadu(const uint8_t vcdu[kVcduBytes], uint8_t cadu[kCaduBytes], bool dual = true);   // ASM, RS, randomised
+// NRZ-M (the N2-x differential code, on the bits before the convolutional encoder): out = in ^ previous in / out = in ^ previous out
+struct NrzmDecoder { uint8_t prev = 0; uint8_t push(uint8_t b) { const uint8_t o = (uint8_t)(b ^ prev); prev = b; return o; } };
+struct NrzmEncoder { uint8_t prev = 0; uint8_t push(uint8_t b) { prev = (uint8_t)(b ^ prev); return prev; } };
 
 // --- VCDU / M_PDU / packets -------------------------------------------------------------------------------------------------------
 struct Vcdu {

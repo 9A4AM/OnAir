@@ -3,6 +3,7 @@
 // saved per radio (app_state.cpp: syncRadioSettings / saveRadioSettings) and reach a running radio at once (a retune); one that takes
 // effect when the radio is opened restarts a running receiver. A value set back to its default is dropped, so the driver does what it always did.
 #include "app.h"
+#include "dect2/converter.h"
 #include <cmath>
 #include <map>
 
@@ -69,15 +70,76 @@ bool settingRow(const RadioSetting& r, std::string& v, bool vertical) {
     return changed;
 }
 
+// The converter in front of the radio (converter.h): up-converter or LNB. The app then works with the frequency at the antenna; the radio
+// is tuned to the IF. Stored in a.tune.radio under the conv.* keys, so it is saved per radio with the other settings. True when it changed.
+bool converterUi(App& a, bool vertical) {
+    (void)vertical;
+    using namespace dect2;
+    bool changed = false;
+    auto& R = a.tune.radio;
+    auto get = [&](const char* k, const char* def) { auto it = R.find(k); return it != R.end() ? it->second : std::string(def); };
+    auto put = [&](const char* k, const std::string& v, const char* def) { if (v.empty() || v == def) R.erase(k); else R[k] = v; changed = true; };
+    ImGui::Separator();
+    ImGui::TextUnformatted(tr("Converter (up-converter / LNB)"));
+    const std::string id = get(convKeyPreset(), "none");
+    const ConverterPreset* cur = findConverterPreset(id);
+    if (!cur) cur = &converterPresets()[0];
+    ImGui::SetNextItemWidth(260 * gUi);
+    if (ImGui::BeginCombo("##convpreset", tr(cur->name))) {
+        for (const auto& p : converterPresets()) {
+            if (ImGui::Selectable(tr(p.name), &p == cur)) {
+                put(convKeyPreset(), p.id, "none");
+                R.erase(convKeyLo()); R.erase(convKeyMode()); R.erase(convKeyPpm());
+                if (p.custom) { R[convKeyLo()] = "125"; R[convKeyMode()] = "add"; }
+            }
+        }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs."));
+    if (cur->custom) {
+        double lo = atof(get(convKeyLo(), "125").c_str());
+        ImGui::SetNextItemWidth(120 * gUi);
+        if (ImGui::InputDouble(tr("LO (MHz)"), &lo, 0, 0, "%.6f") && lo >= 0) put(convKeyLo(), numText(lo), "");
+        const std::string m = get(convKeyMode(), "add");
+        int mi = m == "sub" ? 1 : m == "high" ? 2 : 0;
+        const char* names[3] = {tr("Up: radio = RF + LO"), tr("Down, LO below: radio = RF - LO"), tr("Down, LO above: radio = LO - RF (mirrored)")};
+        ImGui::SetNextItemWidth(300 * gUi);
+        if (ImGui::Combo("##convmode", &mi, names, 3)) put(convKeyMode(), mi == 1 ? "sub" : mi == 2 ? "high" : "add", "");
+    }
+    if (cur->hasPpm) {
+        double ppm = atof(get(convKeyPpm(), "0").c_str());
+        ImGui::SetNextItemWidth(120 * gUi);
+        if (ImGui::InputDouble(tr("LO correction (ppm)"), &ppm, 0, 0, "%.3f")) put(convKeyPpm(), numText(ppm), "0");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("How far the converter's oscillator runs fast (positive) or slow. The LO used is LO x (1 + ppm / 1e6)."));
+    }
+    if (std::string(cur->id) != "none") {
+        bool inv = get(convKeyInvert(), "0") == "1";
+        if (ImGui::Checkbox(tr("Mirror the spectrum (swap I and Q)"), &inv)) put(convKeyInvert(), inv ? "1" : "", "");
+        const Converter c = converterFromRadio(R);
+        const double rf = a.freqMhz * 1e6;
+        char b[256];
+        if (c.active) {
+            snprintf(b, sizeof b, tr("antenna %.6g MHz -> %s LO %.6g -> radio %.6g MHz%s"), rf / 1e6, c.mode == Converter::Add ? tr("up-converter") : tr("LNB"),
+                     c.effLoHz() / 1e6, c.rfToIf(rf) / 1e6, c.inverts() ? tr("  (mirrored: I/Q swapped)") : "");
+            ImGui::PushTextWrapPos(0);
+            ImGui::TextColored(ImVec4(0.55f, 0.85f, 1.0f, 1.0f), "%s", b);
+            if (!c.reachable(rf)) ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1.0f), "%s", tr("This frequency is not reachable through the converter."));
+            ImGui::PopTextWrapPos();
+        } else ImGui::TextDisabled("%s", tr("Set the LO above 0 MHz."));
+    }
+    return changed;
+}
+
 }   // namespace
 
 void radioSettingsUi(App& a, bool vertical) {
     if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return;
     const DeviceInfo& d = a.devices[a.devIdx];
-    if (!d.isRadio() || d.settings.empty()) return;
+    if (!d.isRadio()) return;
     syncRadioSettings(a);
     int changedN = 0;
     for (const auto& r : d.settings) if (a.tune.radio.count(r.key)) changedN++;
+    if (a.tune.radio.count(dect2::convKeyPreset())) changedN++;
     char title[64];
     snprintf(title, sizeof title, changedN ? tr("Radio settings (%d changed)###radioset") : tr("Radio settings###radioset"), changedN);
     bool open = false;
@@ -99,6 +161,7 @@ void radioSettingsUi(App& a, bool vertical) {
         saveRadioSettings(a);
         if (r.restart) restart = true; else retune = true;
     }
+    if (converterUi(a, vertical)) { saveRadioSettings(a); retune = true; }
     if (d.kind == DeviceInfo::Soapy && d.settings.size() <= 1) ImGui::TextDisabled("%s", tr("The driver's own settings show up here\nonce this radio has been started."));
     if (vertical) ImGui::TreePop(); else ImGui::EndPopup();
     if (!a.engine.running()) return;   // the next start takes them

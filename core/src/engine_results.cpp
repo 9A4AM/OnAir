@@ -88,6 +88,19 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("meteor", 60, rxMeteor_),
         DECT2_RESULT_SLOT("goes", 61, rxGoes_),
         DECT2_RESULT_SLOT("cubesat", 62, rxCube_),
+        DECT2_RESULT_SLOT("globalstar", 63, rxGs_),
+        DECT2_RESULT_SLOT("vdes", 64, rxVdes_),
+        DECT2_RESULT_SLOT("hrpt", 65, rxHrpt_),
+        DECT2_RESULT_SLOT("zigbee", 66, rxZb_),
+        DECT2_RESULT_SLOT("flarm", 67, rxFlarm_),
+        DECT2_RESULT_SLOT("hfbeacon", 68, rxHfb_),
+        DECT2_RESULT_SLOT("dji", 69, rxDji_),
+        DECT2_RESULT_SLOT("nbiot", 70, rxNb_),
+        DECT2_RESULT_SLOT("halow", 71, rxHl_),
+        DECT2_RESULT_SLOT("codar", 73, rxCd_),
+        DECT2_RESULT_SLOT("multitone", 76, rxMt_),
+        DECT2_RESULT_SLOT("same", 77, rxSame_),
+        DECT2_RESULT_SLOT("loraraw", 72, rxLr_),
     };
 }
 
@@ -102,6 +115,7 @@ std::vector<std::string> Engine::resultNames() const {
 void Engine::clearResults(int stdMode) {
     const int a = stdMode >= 2 ? stdMode - 1 : 0;
     for (const ResultSlot& s : resultSlots()) if (s.act == a) s.clear();
+    if (WideModes::supports(a)) wide_.clearResults();
     refreshIdle();
 }
 

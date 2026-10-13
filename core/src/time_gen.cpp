@@ -26,6 +26,8 @@ struct TimeGenerator::Impl {
     std::map<int64_t, std::vector<uint8_t>> minutes;
     int64_t chuSec = INT64_MIN;
     std::vector<uint8_t> chuBits;        // the FSK bits of the current CHU second
+    int64_t mcSec = INT64_MIN;
+    std::vector<uint8_t> mcEl;           // BPM coded: the code elements of the current second
 
     explicit Impl(const TimeGenConfig& cfg) : c(cfg), noise(cfg.seed) {
         if (c.startUtc <= 0) c.startUtc = nowUtc();
@@ -53,6 +55,7 @@ struct TimeGenerator::Impl {
             if (f < 0.3) return s & 2 ? 0 : 1;
             return 1;
         case Wwvb: return f < (s == SMark ? 0.8 : s & 1 ? 0.5 : 0.2) ? 0.141 : 1;
+        case Bpc: return s == SNone ? 1 : f < 0.1 * ((s & 3) + 1) ? 0.1 : 1;   // low for 0.1 - 0.4 s, none in the frame's first second
         default: return f < (s == SMark ? 0.2 : s & 1 ? 0.5 : 0.8) ? 1 : 0.1;   // JJY
         }
     }
@@ -94,6 +97,42 @@ struct TimeGenerator::Impl {
             if (f < 0.03 || f > 0.99) lvl = 0;
             a += 0.4 * lvl * std::sin(2 * kPi * 100 * f);
             return a;
+        }
+        if (c.station == Bpm) {
+            // UT1 minutes: the seconds follow UT1 = UTC + dut1 / 10 (the code is the same, the seconds are early by dut1 tenths)
+            const double tu = c.opts.ut1 ? t + c.opts.dut1 * 0.1 : t;
+            const double suf = std::floor(tu);
+            const int64_t su = (int64_t)suf;
+            const double fu = tu - suf;
+            const int64_t Mu = su - (((su % 60) + 60) % 60);
+            const int iu = (int)(su - Mu);
+            if (fu < 0.01) a += 0.5 * std::sin(2 * kPi * 1000 * fu);
+            const uint8_t s = minute(Mu)[(size_t)iu];
+            const double w = s == SMark ? 0.3 : s & 1 ? 0.2 : 0.1;
+            if (fu >= 0.1 && fu < 0.1 + w) a += 0.5 * std::sin(2 * kPi * 1000 * fu);
+            return a;
+        }
+        if (c.station == Hla) {
+            const uint8_t s = minute(M)[(size_t)i];
+            const double tf = 1800;
+            if ((i == 0 && f < 0.768) || (i == 59 && f >= 0.968)) return 0.4 * std::sin(2 * kPi * tf * f);   // the vacant bit 0: a 0.8 s tone from the tick
+            if (f >= 0.968 && f < 0.974) a += 0.5 * std::sin(2 * kPi * tf * f);
+            if (s != SNone) {
+                const double w = s == SMark ? 0.77 : s & 1 ? 0.47 : 0.17;
+                if (f < w) a += 0.4 * std::sin(2 * kPi * 100 * f);
+            }
+            return a;
+        }
+        if (c.station == BpmC) {
+            if (sec != mcSec) {
+                mcSec = sec;
+                if (i == 0) mcEl = encodeBpmcMinute((int)std::lround(std::fabs(c.opts.dut1Ms) * 10) % 10, c.opts.leapCount, c.opts.leapAtMonthEnd);
+                else mcEl = encodeBpmcSecond(sec, c.opts.dut1Ms);
+            }
+            if (i == 0 && f < 0.3) return 0.5 * std::sin(2 * kPi * 1000 * f);
+            const int k = (int)(f * 100);
+            if (k >= 0 && (size_t)k < mcEl.size() && (i != 0 || k >= 32) && mcEl[(size_t)k] && f - k * 0.01 < 0.005) return 0.5 * std::sin(2 * kPi * 1000 * f);
+            return 0;
         }
         // CHU
         double tl = 0.3;

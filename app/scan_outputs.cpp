@@ -1,5 +1,6 @@
 // the Scan tab and the Outputs tab (network tuner, files, UDP)
 #include "app.h"
+#include "results_export.h"
 #include <random>
 
 void scanTabCommon(App& a);
@@ -102,6 +103,20 @@ void scanTabCommon(App& a) {
         ImGui::ProgressBar(pr.total ? (float)pr.index / pr.total : 0, ImVec2(260 * gUi, 0));
         ImGui::SameLine();
         ImGui::Text("%.1f MHz - %s", pr.currentMHz, pr.phase.c_str());
+    }
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "bandwidth_mhz", "level_dbfs", "result", "detail", "snr_db", "plp", "services"};
+        const std::string now = resexp::stamp();
+        for (const auto& r : res) {
+            if (!r.seen) continue;
+            std::string sv; for (auto& x : r.services) { if (!sv.empty()) sv += "; "; sv += x; }
+            if (sv.empty() && !r.t2) sv = r.note;
+            t.add({now, resexp::num(r.freqMHz * 1e6, 0), r.standard.empty() ? "scan" : r.standard, resexp::num(r.bwMhz, 1), resexp::num(r.levelDbfs, 1), r.t2 ? r.standard : "too weak", r.mode,
+                   r.t2 && (r.snrDb != 0 || r.standard != "ATSC 3.0") ? resexp::num(r.snrDb, 1) : "", r.plpInfo, sv});
+        }
+        resexp::saveButton(t, "tv", note, "svtv");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
     ImGui::Separator();
     if (ImGui::BeginTable("scan", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {

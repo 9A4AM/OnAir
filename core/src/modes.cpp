@@ -113,6 +113,47 @@
 #include "dect2/cubesat_rx.h"
 #include "dect2/cubesat_tel.h"
 #include "dect2/cubesat_gen.h"
+#include "dect2/globalstar_rx.h"
+#include "dect2/globalstar_tel.h"
+#include "dect2/globalstar_gen.h"
+#include "dect2/vdes_rx.h"
+#include "dect2/vdes_tel.h"
+#include "dect2/vdes_gen.h"
+#include "dect2/zigbee_rx.h"
+#include "dect2/zigbee_tel.h"
+#include "dect2/zigbee_gen.h"
+#include "dect2/flarm_rx.h"
+#include "dect2/flarm_tel.h"
+#include "dect2/flarm_gen.h"
+#include "dect2/hfbeacon_rx.h"
+#include "dect2/hfbeacon_tel.h"
+#include "dect2/hfbeacon_gen.h"
+#include "dect2/dji_rx.h"
+#include "dect2/dji_tel.h"
+#include "dect2/dji_gen.h"
+#include "dect2/nbiot_rx.h"
+#include "dect2/nbiot_tel.h"
+#include "dect2/nbiot_gen.h"
+#include "dect2/halow_rx.h"
+#include "dect2/halow_tel.h"
+#include "dect2/halow_gen.h"
+#include "dect2/codar_rx.h"
+#include "dect2/codar_tel.h"
+#include "dect2/codar_gen.h"
+#include "dect2/wb_rx.h"
+#include "dect2/wb_tel.h"
+#include "dect2/datawell_rx.h"
+#include "dect2/datawell_tel.h"
+#include "dect2/datawell_gen.h"
+#include "dect2/same_rx.h"
+#include "dect2/same_tel.h"
+#include "dect2/same_gen.h"
+#include "dect2/multitone_rx.h"
+#include "dect2/multitone_tel.h"
+#include "dect2/multitone_gen.h"
+#include "dect2/loraraw_rx.h"
+#include "dect2/loraraw_tel.h"
+#include "dect2/loraraw_gen.h"
 #include "dect2/rid_rx.h"
 #include "dect2/rid_tel.h"
 #include "dect2/rid_gen.h"
@@ -125,6 +166,9 @@
 #include "dect2/goes_rx.h"
 #include "dect2/goes_tel.h"
 #include "dect2/goes_gen.h"
+#include "dect2/hrpt_rx.h"
+#include "dect2/hrpt_tel.h"
+#include "dect2/hrpt_gen.h"
 #include "dect2/modes.h"
 #include "dect2/demo_ts.h"
 #include "dect2/exact_resampler.h"
@@ -214,7 +258,7 @@ static std::vector<ModeTuning> anyFrequency(std::vector<ModeTuning> t) {
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = anyFrequency({dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), generalTuning(), timeTuning(), ridTuning(), meteorTuning(), nrTuning(), cubesatTuning(), goesTuning()});
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), generalTuning(), timeTuning(), ridTuning(), meteorTuning(), nrTuning(), cubesatTuning(), goesTuning(), globalstarTuning(), vdesTuning(), hrptTuning(), zigbeeTuning(), flarmTuning(), hfbeaconTuning(), djiTuning(), nbiotTuning(), halowTuning(), codarTuning(), wbTuning(), datawellTuning(), multitoneTuning(), sameTuning(), loraRawTuning()});
     return t;
 }
 
@@ -223,7 +267,7 @@ const ModeTuning* modeTuning(int stdMode) {
     return nullptr;
 }
 
-// the protocols listed as modes of their own (mode_tuning.h): RTTY, SSTV, FreeDV, the WSJT modes and HamDRM of HF digital, the five LoRa networks
+// the protocols listed as modes of their own (mode_tuning.h): RTTY, SSTV, FreeDV, the WSJT modes (FT8 .. MSK144) and HamDRM of HF digital, the five LoRa networks
 // of mesh, POCSAG and FLEX, the three marine services, and VOR and ILS
 static const SubMode kSubModes[] = {
     {"rtty",       "RTTY",       27, 1, -1, 14.080,  {0, 0, 0}},
@@ -246,6 +290,19 @@ static const SubMode kSubModes[] = {
     {"wefax",      "Weather fax", 17, 0, 3, 7.8781,  {3, 0, 0}},   // DWD Pinneberg 7880 kHz: the USB dial 1.9 kHz below the carrier
     {"vor",        "VOR",        32, 1, 1, 113.000, {0, 0, 0}},   // sel: VorReceiver::setFunction
     {"ils",        "ILS",        32, 2, 2, 110.300, {2, 0, 0}},
+    // more of the WSJT-X family (HF digital, the FT8 / WSPR decoders): JT65, JT9, Q65, FST4 (also FST4W) and MSK144
+    {"jt65",       "JT65",       27, 8, 4,  14.076,  {21, 0, 0}},
+    {"jt9",        "JT9",        27, 8, 5,  14.078,  {22, 0, 0}},
+    {"q65",        "Q65",        27, 8, 6,  14.1,    {23, 0, 0}},
+    {"fst4",       "FST4",       27, 8, 7,  1.8366,  {24, 0, 0}},
+    {"msk144",     "MSK144",     27, 8, 8,  28.145,  {25, 0, 0}},
+    // the fldigi keyboard modes of HF digital (hfdig_kbd.h): decoder bit 32, sel = the family (KbdFamily)
+    {"olivia",     "Olivia",     27, 32, 0, 14.1065, {26, 0, 0}},
+    {"contestia",  "Contestia",  27, 32, 1, 14.1095, {27, 0, 0}},
+    {"mfsk",       "MFSK",       27, 32, 2, 14.0785, {28, 0, 0}},
+    {"thor",       "THOR",       27, 32, 3, 14.0770, {29, 0, 0}},
+    {"dominoex",   "DominoEX",   27, 32, 4, 14.0715, {30, 0, 0}},
+    {"hell",       "Hellschreiber", 27, 32, 5, 14.0630, {31, 0, 0}},
 };
 const SubMode* subModes(int& count) { count = (int)(sizeof kSubModes / sizeof *kSubModes); return kSubModes; }
 const SubMode* subModeById(const std::string& id) {
@@ -334,10 +391,24 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 57: return makeGeneralSynth(cfg, sampleRate);
     case 60: return makeTimeSynth(cfg, sampleRate);
     case 63: return makeCubesatSynth(cfg, sampleRate);
+    case 64: return makeGlobalstarSynth(cfg, sampleRate);
+    case 65: return makeVdesSynth(cfg, sampleRate);
+    case 67: return makeZigbeeSynth(cfg, sampleRate);
+    case 68: return makeFlarmSynth(cfg, sampleRate);
+    case 69: return makeHfbeaconSynth(cfg, sampleRate);
+    case 70: return makeDjiSynth(cfg, sampleRate);
+    case 71: return makeNbiotSynth(cfg, sampleRate);
+    case 72: return makeHalowSynth(cfg, sampleRate);
+    case 74: return makeCodarSynth(cfg, sampleRate);
+    case 76: return makeDatawellSynth(cfg, sampleRate);
+    case 78: return makeSameSynth(cfg, sampleRate);
+    case 77: return makeMultitoneSynth(cfg, sampleRate);
+    case 73: return makeLoraRawSynth(cfg, sampleRate);
     case 58: return makeRidSynth(cfg, sampleRate);
     case 61: return makeMeteorSynth(cfg, sampleRate);
     case 59: return makeNrSynth(cfg, sampleRate);
     case 62: return makeGoesSynth(cfg, sampleRate);
+    case 66: return makeHrptSynth(cfg, sampleRate);
     case 38: return makePskSynth(cfg, sampleRate);
     case 39: return makeJs8Synth(cfg, sampleRate);
     case 43: return makeSpecxSynth(cfg, sampleRate);
@@ -395,10 +466,25 @@ std::string modeSummary(const RxTelemetry& t) {
     case 56: return generalSummary(t.general);
     case 59: return timeSummary(t.timesig);
     case 62: return cubesatSummary(t.cube);
+    case 63: return globalstarSummary(t.globalstar);
+    case 64: return vdesSummary(t.vdes);
+    case 66: return zigbeeSummary(t.zigbee);
+    case 67: return flarmSummary(t.flarm);
+    case 68: return hfbeaconSummary(t.hfb);
+    case 69: return djiSummary(t.dji);
+    case 70: return nbiotSummary(t.nbiot);
+    case 71: return halowSummary(t.halow);
+    case 73: return codarSummary(t.codar);
+    case 74: return wbSummary(t.wb);
+    case 75: return datawellSummary(t.datawell);
+    case 77: return sameSummary(t.same);
+    case 76: return multitoneSummary(t.multitone);
+    case 72: return loraRawSummary(t.loraraw);
     case 57: return ridSummary(t.rid);
     case 60: return meteorSummary(t.meteor);
     case 58: return nrSummary(t.nr);
     case 61: return goesSummary(t.goes);
+    case 65: return hrptSummary(t.hrpt);
     case 37: return pskSummary(t.psk);
     case 38: return js8Summary(t.js8);
     case 42: return specxSummary(t.specx);

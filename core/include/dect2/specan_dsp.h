@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -17,7 +18,7 @@ struct SaGrid {
     double centre(size_t k) const { return loHz + (k + 0.5) * binHz; }
     long index(double hz) const { return hz < loHz ? -1 : (long)((hz - loHz) / binHz); }   // may be >= bins
 };
-SaGrid saMakeGrid(double loHz, double hiHz, double binHz, size_t maxBins = 200000);   // binHz is widened when the range needs more bins
+SaGrid saMakeGrid(double loHz, double hiHz, double binHz, size_t maxBins = 4000000);   // binHz is widened only when the range needs more than maxBins (6 GHz at 2.8 kHz = 2.1 M)
 
 // Puts the power spectra of the tuning steps together into one sweep.
 class SaStitcher {
@@ -56,6 +57,11 @@ private:
 
 // CSV: "frequency_hz,live_dbfs,peak_dbfs,average_dbfs" then one row per bin (empty columns when a trace is off / missing)
 std::string saCsv(const SaGrid& g, const std::vector<float>& live, const std::vector<float>& peak, const std::vector<float>& avg);
+// The same CSV streamed in chunks through sink (no giant string); returns the rows written (= g.bins)
+size_t saCsvStream(const SaGrid& g, const std::vector<float>& live, const std::vector<float>& peak, const std::vector<float>& avg,
+                   const std::function<bool(const char*, size_t)>& sink);
+bool saCsvWriteFile(const std::string& path, const SaGrid& g, const std::vector<float>& live, const std::vector<float>& peak, const std::vector<float>& avg);
+size_t saCsvEstimateBytes(size_t bins);   // about what the file will take
 
 struct SaBand { double loMhz, hiMhz; const char* name; const char* use; };
 const SaBand* saAllocations(int& count);          // EU allocations (ECA / ERC Rec 70-03 summary), sorted by loMhz

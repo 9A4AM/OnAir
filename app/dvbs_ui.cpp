@@ -20,7 +20,7 @@ State S;
 
 constexpr size_t kHist = 240;           // reports kept: about a minute
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 7; }
+bool live(const App& a) { return a.rx.standard == 7; }
 
 void loadState() {
     if (S.loaded) return;
@@ -407,6 +407,37 @@ void tuner(App& a, bool& retune) {
         ImGui::EndCombo();
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Auto tries DVB-S2 and DVB-S. Choose one to skip the other search on a weak signal.");
+    {   // where the error correction runs (the same choice as the DVB-T2 decoder has): LDPC for DVB-S2, Viterbi for DVB-S
+        static const char* modes[] = {"CPU", "GPU", "Auto"};
+        const DvbsTelemetry& t = a.rx.dvbs;
+        const bool gpuOk = GpuLdpc::instance().available();
+        char lbl[48];
+        snprintf(lbl, sizeof lbl, "%s", a.computeMode == 2 ? (live(a) && t.onGpu ? "Auto (GPU)" : "Auto (CPU)") : modes[a.computeMode]);
+        ImGui::TextDisabled("Compute");
+        ImGui::SameLine(0, 6 * gUi);
+        ImGui::SetNextItemWidth(std::min(120 * gUi, ImGui::GetContentRegionAvail().x));
+        if (ImGui::BeginCombo("##dvbscompute", lbl)) {
+            for (int i = 0; i < 3; i++) {
+                const bool dis = i == 1 && !gpuOk;
+                if (dis) ImGui::BeginDisabled();
+                if (ImGui::Selectable(modes[i], a.computeMode == i)) { a.computeMode = i; a.engine.setComputeMode(i); savePrefs(a); }
+                if (dis) ImGui::EndDisabled();
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Where the error correction runs: the LDPC decoder of DVB-S2 and the Viterbi decoder of DVB-S.\n"
+                              "The decoded stream is the same on either.\n"
+                              "CPU: all cores. GPU: %s.\n"
+                              "Auto: the GPU when there is one and it is faster, measured while it runs; otherwise the CPU.\n"
+                              "Graphics: %s",
+#ifdef __APPLE__
+                              "Metal compute",
+#else
+                              "Direct3D 11 compute (Windows)",
+#endif
+                              gpuOk ? GpuLdpc::instance().deviceName() : "none usable");
+    }
     if (ch) saveState(a);
 }
 

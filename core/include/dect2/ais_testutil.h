@@ -12,12 +12,15 @@
 namespace dect2 {
 namespace aistest {
 
+// a ship MMSI inside an assigned MID range (201-279 ... 701-779) from one random draw
+inline uint32_t randomMmsi(uint32_t r) { return ((2 + r % 6) * 100 + 1 + (r / 6) % 79) * 1000000u + (r / 474) % 1000000u; }
+
 // a class A position report (type 1) with random fields
 inline ais::Bits randomPosition(std::mt19937& rng, uint32_t mmsi = 0) {
     using namespace ais;
     Bits b;
     putU(b, 0, 6, 1);
-    putU(b, 8, 30, mmsi ? mmsi : 200000000u + rng() % 500000000u);
+    putU(b, 8, 30, mmsi ? mmsi : randomMmsi(rng()));
     putU(b, 38, 4, rng() % 9);
     putS(b, 42, 8, (int)(rng() % 200) - 100);
     putU(b, 50, 10, rng() % 300);

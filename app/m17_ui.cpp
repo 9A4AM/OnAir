@@ -27,7 +27,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 32; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 32; }   // the engine reports its standard code minus one
 
 void load() {
     if (S.loaded) return;
@@ -136,13 +136,14 @@ void activityView(App& a) {
         }
         ImGui::SetClipboardText(txt.c_str());
     }
-    if (!ImGui::BeginTable("##m17log", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    if (!ImGui::BeginTable("##m17log", 7 + (wideActive(a) ? 1 : 0), ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
-    ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("From"); ImGui::TableSetupColumn("To"); ImGui::TableSetupColumn("Type");
+    if (wideActive(a)) ImGui::TableSetupColumn("Carrier"); ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("From"); ImGui::TableSetupColumn("To"); ImGui::TableSetupColumn("Type");
     ImGui::TableSetupColumn("CAN"); ImGui::TableSetupColumn("Length"); ImGui::TableSetupColumn("Notes", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     for (const auto& e : log) {
         ImGui::TableNextRow();
+        if (wideActive(a)) { ImGui::TableNextColumn(); wideCarrierCell(a, e.carrierId, e.carrierHz); }
         ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(e.wallTime).c_str());
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(e.src.empty() ? "?" : e.src.c_str()); ImGui::PopFont();
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(e.dst.empty() ? "?" : e.dst.c_str()); ImGui::PopFont();
@@ -272,6 +273,7 @@ void list(App& a) {
 }
 
 void receiver(App& a) {
+    wideCarriersTable(a, 0);
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const dect2::M17Telemetry& t = a.rx.m17;
     kvRow(a, "state", "%s", dect2::m17Summary(t).c_str());

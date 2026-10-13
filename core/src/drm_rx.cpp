@@ -63,6 +63,31 @@ struct DrmReceiver::Impl {
     DrmBackend be;
     std::function<void(const std::string&)> logCb;
     std::function<void(int, const uint8_t*, int, int, const DrmTelemetry&)> streamCb;
+    // Journaline data service (TS 102 979 clause 8.2): packet mode stream, DAB domain, user application 0x44a
+    JournalineDecoder jl;
+    DrmPacketDemux jlDemux;
+    std::atomic<int> jlStream{-1};
+    int jlKey = -1;
+    void journaline(const LogicalFrame& f, const SdcInfo& sd) {
+        int found = -1;
+        for (int i = 0; i < 4; i++) {
+            const SdcApp& a = sd.app[i];
+            if (a.present && a.packet && a.dataUnit && a.packetLen > 0 && a.dabUserApp() == 0x44a) { found = i; break; }
+        }
+        if (found < 0) { jlStream = -1; return; }
+        const SdcApp& a = sd.app[found];
+        const int key = (a.streamId << 20) | (a.packetId << 16) | a.packetLen;
+        if (key != jlKey) {
+            jlKey = key;
+            jl.reset();
+            int v = 0, x = 0, en = -1;
+            if (a.appData.size() > 2) jlUserAppData(a.appData.data() + 2, a.appData.size() - 2, v, x, en);
+            jl.setExtHeader(x);
+            jlDemux.configure(a.packetLen, a.packetId);
+        }
+        jlStream = a.streamId;
+        if (a.streamId == f.stream) jlDemux.feed(f.data, (size_t)(f.lenA + f.lenB), [this](const uint8_t* g, size_t n) { jl.feedDataGroup(g, n); });
+    }
     std::function<void(const float*, const float*, size_t)> tap;
     std::atomic<float> volume{1.f};
     std::atomic<bool> muted{false}, silent{false};
@@ -940,6 +965,7 @@ struct DrmReceiver::Impl {
     void onLogical(const LogicalFrame& f) {
         const SdcInfo& sd = be.sdc();
         if (streamCb) streamCb(f.stream, f.data, f.lenA + f.lenB, f.lenA, tel);
+        journaline(f, sd);
         const SdcAudio* au = chooseAudio(sd);
         if (!au || au->streamId != f.stream) return;
         const int len = f.lenA + f.lenB;
@@ -1247,6 +1273,8 @@ void DrmReceiver::setMuted(bool m) { p_->muted = m; }
 void DrmReceiver::setSilent(bool s) { p_->silent = s; }
 void DrmReceiver::setAudioTap(std::function<void(const float*, const float*, size_t)> cb) { p_->tap = std::move(cb); }
 void DrmReceiver::selectService(int shortId) { p_->selected = shortId; }
+JournalineDecoder& DrmReceiver::journaline() { return p_->jl; }
+bool DrmReceiver::hasJournaline() const { return p_->jlStream.load() >= 0; }
 void DrmReceiver::setStreamCallback(std::function<void(int, const uint8_t*, int, int, const DrmTelemetry&)> cb) { p_->streamCb = std::move(cb); }
 
 } // namespace dect2

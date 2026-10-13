@@ -364,7 +364,6 @@ The receiver's filters are made for the signal (or for the group of channels it 
 Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width.	Kanalo plotis: juosta, su kuria dirba imtuvas (šviesi juosta).\nSpustelėkite ir pasirinkite automatinį ar rankinį plotį.
 Channel width: the band the receiver works with (the light band), set by the standard.	Kanalo plotis: juosta, su kuria dirba imtuvas (šviesi juosta), nustatyta standarto.
 power (dBFS/bin)	galia (dBFS/dažnio langelis)
-frequency (MHz)	dažnis (MHz)
 seconds ago	prieš sekundes
 Identify this signal	Atpažinti šį signalą
 #  radio settings

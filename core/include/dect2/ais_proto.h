@@ -31,6 +31,10 @@ Bits nrziDecode(const Bits& line, int prevLevel = 1);
 // The bits a transmitter puts on the air for one message: 24 bits of training sequence (alternating 0 and 1), start flag, stuffed payload + FCS,
 // end flag, 8 bits while the transmitter ramps down. The training sequence alternates on the line; everything after it is NRZI coded. 'payload' is the message without FCS.
 Bits burstLineBits(const Bits& payload);
+// HDLC sends every octet least significant bit first, so on the air the bits of each octet of the message come in the reverse of the order the
+// message tables number them (type 1 = 000001 is on the air as 00100000). 'payload' and everything above the HDLC layer (decodeMessage, !AIVDM)
+// are in table order: hdlcFrames() and burstLineBits() turn between the two with this. A last group of fewer than 8 bits is reversed on its own.
+void reverseOctets(Bits& bits);
 
 // Frames found in a bit stream that is already NRZI decoded: every stretch between two flags that is long enough, destuffed.
 // A frame is reported good when its FCS is right. 'bad' counts stretches of plausible length whose FCS failed.
@@ -90,6 +94,11 @@ bool parseNmea(const std::string& sentence, std::string& chars, int& fillBits, i
 double rateOfTurn(int raw);                                         // degrees per minute from the 8-bit field (127 = more than 720), NaN when not available
 const char* shipTypeText(int t);
 int classOfMmsi(uint32_t mmsi, int type);
+// A frame whose FCS is good can still be something else on the channel (a data transmitter, interference with a lucky checksum): only a message of
+// a known type and length from a plausible MMSI (ITU-R M.585: a ship, group, coast station, SAR aircraft, aid to navigation or SART with an assigned
+// maritime identification digit range) is taken for AIS.
+bool mmsiPlausible(uint32_t mmsi);
+bool acceptableAis(const AisMsg& m, bool decoded);
 
 } // namespace ais
 } // namespace dect2

@@ -3,6 +3,7 @@
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
 // telemetry() and the setters from the interface thread (they must be safe while feed() runs).
 #pragma once
+#include "dab_journaline.h"
 #include "drm_tel.h"
 #include "mode_tuning.h"
 #include "ring.h"
@@ -33,6 +34,10 @@ public:
     void selectService(int shortId);
     // Tests and tools: every logical frame of every stream as it comes out of the channel decoder (part A then part B), called from feed()
     void setStreamCallback(std::function<void(int stream, const uint8_t* bytes, int len, int lenA, const DrmTelemetry& state)> cb);
+
+    // The Journaline data service of the multiplex (SDC application information, packet mode, DAB domain user application 0x44a)
+    JournalineDecoder& journaline();
+    bool hasJournaline() const;
 
 private:
     struct Impl;

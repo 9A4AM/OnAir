@@ -77,9 +77,13 @@ namespace {
 //   while libusb still lists them, and the next walk of that list writes into freed memory.
 // - opening, closing and listing go through the computer's USB stack (libusb_init / libusb_exit), and a listing that opens the radio that
 //   is streaming in this program fails on Windows (one WinUSB handle per device) and races its context.
-// So: every open, start, stop, close and listing takes turns on gHfMu; the stream is stopped once, by this driver; the cancelled transfers
-// are collected before the close (each control transfer of the library runs libusb's event handling); a radio this program has open is not
-// opened again by a listing, which reports what it read before.
+// - (issue #78, 0.2.4: the same crash with an HF+ Discovery) the transfers were "collected" by setting the frequency again, but
+//   airspyhf_set_freq() goes to the radio only when the frequency changes: nothing reached USB, so the close still met them in flight.
+// - airspyhf_list_devices() opens every HF+ on the bus in a context of its own, the one that streams here included.
+// So: every open, start, stop, close and listing takes turns on gHfMu; the stream is stopped once, by this driver, and the library is
+// asked until it says it has stopped; the samples callback does nothing once a stop is under way; the cancelled transfers are collected
+// before the close or the next start with control transfers that always reach the radio (the attenuator as it is); while a radio is
+// open here no listing goes to USB at all: it reports what the last one read.
 std::mutex gHfMu;
 std::set<uint64_t> gHfOpen;                 // serials open in this program
 std::map<uint64_t, DeviceInfo> gHfKnown;    // what the last listing read, per serial
@@ -109,7 +113,9 @@ protected:
         hasBias_ = airspyhf().set_bias_tee && airspyhf().get_bias_tee_count && airspyhf().get_bias_tee_count(dev_, &nb) == 0 && nb > 0;
         gHfOpen.insert(serial_);
         freq_ = 0;
+        att_ = -1;
         streaming_ = streamed_ = false;
+        stopping_ = true;
         return configureLocked(s, err, false);
     }
     bool configure(const TuneSettings& s, std::string& err, bool live) override {
@@ -167,7 +173,8 @@ protected:
         // the gain slider (0..48 dB, more is louder) -> attenuation in 6 dB steps; the preamp (+6 dB) in the top 6 dB of the slider, or always
         // on / off (TuneSettings "preamp")
         const double g = std::min(std::max(s.gainDb, 0.0), kGainMaxDb);
-        api.set_hf_att(dev_, (uint8_t)std::lround((kGainMaxDb - g) / kAttStepDb));
+        att_ = (int)std::lround((kGainMaxDb - g) / kAttStepDb);
+        api.set_hf_att(dev_, (uint8_t)att_);
         const std::string pre = radioOption(s, "preamp", "auto");
         if (api.set_hf_lna) api.set_hf_lna(dev_, pre == "on" ? 1 : pre == "off" ? 0 : g > kGainMaxDb - kAttStepDb ? 1 : 0);
         if (hasBias_ && (!live || s.biasTee != bias_)) {
@@ -196,6 +203,7 @@ protected:
             if (!dev_ || !run_) return;
             if (streamed_) collectTransfers();   // a restart for another rate: the transfers of the last stream first
             streaming_ = streamed_ = true;       // also when the start fails half way: the library may have threads running, stop() joins them
+            stopping_ = false;
             if (airspyhf().start(dev_, &AirspyHfSource::callback, this) != 0) { stopLocked(); return; }
         }
         while (run_ && airspyhf().is_streaming(dev_)) std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -205,24 +213,26 @@ protected:
     }
 
 private:
-    void stopLocked() {   // (under api_) the library's stop, once per start
+    void stopLocked() {   // (under api_) the library's stop, once per start; returns when the library says the stream is over (at most 1 s)
+        stopping_ = true;   // the callback lets go at once
         if (!dev_ || !streaming_) return;
         streaming_ = false;
         airspyhf().stop(dev_);
+        for (int i = 0; i < 200 && airspyhf().is_streaming(dev_); i++) std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     // The cancelled USB transfers of a stream that was stopped come back only while libusb handles events, which each control transfer of
-    // the library does: a few harmless ones (the frequency as it is) collect them before the next start or the close. A radio that was
+    // the library does: a few harmless ones (the attenuator as it is) collect them before the next start or the close. A radio that was
     // unplugged answers these at once with an error.
     void collectTransfers() {
         if (!dev_ || !streamed_) return;
         for (int i = 0; i < 3; i++) {
-            if (freq_) airspyhf().set_freq(dev_, freq_);
+            if (att_ >= 0) airspyhf().set_hf_att(dev_, (uint8_t)att_);   // (set_freq of the same frequency does not reach the radio)
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
     static int DECT2_CALL callback(AirspyHfApi::transfer_t* t) {
         auto* self = static_cast<AirspyHfSource*>(t->ctx);
-        if (!self->run_ || !t->samples || t->sample_count <= 0) return 0;
+        if (self->stopping_ || !self->run_ || !t->samples || t->sample_count <= 0) return 0;
         self->push(t->samples, (size_t)t->sample_count);
         return 0;
     }
@@ -230,6 +240,8 @@ private:
     AirspyHfApi::airspyhf_device* dev_ = nullptr;
     std::mutex api_;               // the library is entered by one thread at a time for this radio (retune, the stream thread, stop)
     uint32_t freq_ = 0;            // the frequency the radio is set to
+    int att_ = -1;                 // the attenuator step the radio is set to (-1: not yet)
+    std::atomic<bool> stopping_{true};   // a stop is under way (or no stream): the samples callback returns at once
     bool streaming_ = false;       // started and not yet stopped
     bool streamed_ = false;        // has streamed since it was opened
     std::string agc_ = "off";      // the radio's AGC as set
@@ -242,6 +254,10 @@ private:
 void listAirspyHf(std::vector<DeviceInfo>& out) {
     if (!airspyhf().ok) return;
     std::lock_guard<std::mutex> g(gHfMu);
+    if (!gHfOpen.empty()) {   // a radio is open here: the library's listing would open it (and the others) again; what the last one read
+        for (const auto& k : gHfKnown) out.push_back(k.second);
+        return;
+    }
     uint64_t sn[16] = {0};
     const int n = std::min(airspyhf().list_devices(sn, 16), 16);
     std::set<uint64_t> listed;

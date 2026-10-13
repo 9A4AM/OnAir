@@ -99,6 +99,13 @@ uplink	--mode uplink	Overview|Uplink|Receiver|History
 ale	--mode ale	Overview|ALE|Receiver|History
 astro	--mode astro	Overview|Astronomy|Receiver|History
 ble	--mode ble	Overview|Devices|Receiver|History
+zigbee	--mode zigbee	Overview|Zigbee|Receiver|History
+nbiot	--mode nbiot	Overview|NB-IoT|Receiver|History
+codar	--mode codar	Overview|Radar|Receiver|History
+wb	--mode wb	Overview|Workbench|Receiver|History
+datawell	--mode datawell	Overview|Buoy|Receiver|History
+same	--mode same	Overview|Alerts|Receiver|History
+multitone	--mode multitone	Overview|Multitone|Receiver|History
 iono	--mode iono	Overview|Ionogram|Receiver|History
 qo100	--mode qo100	Overview|QO-100|Receiver|History
 wifi	--mode wifi	Overview|Networks|Receiver|History
@@ -108,7 +115,14 @@ rid	--mode rid	Overview|Drones|Receiver|History
 meteor	--mode meteor	Overview|Picture|Receiver|History
 nr	--mode nr	Overview|NR cells|Receiver|History
 cubesat	--mode cubesat	Overview|Frames|Receiver|History
-goes	--mode goes	Overview|Products|Receiver|History"
+globalstar	--mode globalstar	Overview|Activity|Receiver|History
+vdes	--mode vdes	Overview|Messages|Receiver|History
+flarm	--mode flarm	Overview|Aircraft|Receiver|History
+hfbeacon	--mode hfbeacon	Overview|Beacons|Receiver|History
+dji	--mode dji	Overview|Signals|Receiver|History
+loraraw	--mode loraraw	Overview|LoRa|Receiver|History
+goes	--mode goes	Overview|Products|Receiver|History
+hrpt	--mode hrpt	Overview|Picture|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"

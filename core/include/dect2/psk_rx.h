@@ -52,6 +52,11 @@ public:
     void setVolume(float v);             // 0 .. 1
     void setMuted(bool m);
     void setSilent(bool s);              // listen without opening the sound device (tests, command line)
+    // Whole span (the "wide decode" switch): decode the PSK signals of the visible span (up to 250 kHz around the dial frequency), not only dial + 100 Hz
+    // .. 3.9 kHz: the span is cut by a WideDecimator (widespan.h) and tiled by one receiver per 3.7 kHz slice; offsets are from the dial.
+    void setWide(bool on, double spanHz = 250000);
+    bool wide() const;
+    void setSpotShiftHz(double hz);      // internal (slice receivers): added to a signal's offset for the PSK Reporter spot
     void setListenTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz audio Listen plays, called from feed()
 
 private:

@@ -5,7 +5,9 @@
 #include "dect2/psk_varicode.h"
 #include "dect2/cw_morse.h"
 #include "dect2/marine_dsp.h"
+#include "dect2/widespan.h"
 #include "ham_listen.h"
+#include "dect2/pskreporter.h"
 #include "dect2/fftutil.h"
 #include <algorithm>
 #include <atomic>
@@ -20,6 +22,7 @@ namespace dect2 {
 namespace {
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kBase = marine::kBaseRate;      // 24 kHz complex
+constexpr double kWideSpanMaxPsk = 100000;       // whole span: a receiver per 3.4 kHz of it (about 20 % of a core at 100 kHz)
 constexpr int kN = 4096, kHop = 2048;            // window spectrum
 constexpr double kBinHz = kBase / kN;
 constexpr double kLoHz = 100, kHiHz = 3900;      // the audio passband searched
@@ -91,6 +94,44 @@ struct PskReceiver::Impl {
     float triW[kTri] = {};
     std::vector<Chan> chans;
     int nextId = 1, focusId = -1;
+    // whole span
+    std::atomic<bool> wideReq{false}, wideChanged{false};
+    std::atomic<double> wideSpanReq{250000};
+    std::atomic<double> spotShift{0};
+    struct Wide {
+        WideDecimator dec;
+        std::vector<std::unique_ptr<PskReceiver>> subs;
+        std::vector<double> centre;      // the dial of each slice, from the real dial
+        std::vector<cf32> buf;
+        int focusSlice = -1;
+    };
+    std::unique_ptr<Wide> wide;
+    static constexpr double kSliceLo = 300, kSliceHi = 3700, kSliceStep = kSliceHi - kSliceLo;   // the part of a slice's 100 .. 3900 Hz that counts: 200 Hz from its edges
+    void reportWide();
+    void buildWide() {
+        wide.reset();
+        if (!wideReq.load() || !running) return;
+        auto w = std::make_unique<Wide>();
+        double off;
+        { std::lock_guard<std::mutex> lk(mu); off = offsetHz; }
+        w->dec.configure(curRate, std::min(wideSpanReq.load(), kWideSpanMaxPsk));
+        w->dec.setOffsetHz(off);
+        const double half = w->dec.spanHz() / 2;
+        const int k0 = (int)std::floor((-half - kSliceLo) / kSliceStep), k1 = (int)std::ceil((half - kSliceLo) / kSliceStep);
+        for (int k = k0; k <= k1; k++) {
+            auto r = std::make_unique<PskReceiver>();
+            const double c = k * kSliceStep;
+            r->setSilent(true);
+            r->setSpotShiftHz(c);
+            r->setThresholdDb(thrDb.load());
+            r->setMode(modeReq.load());
+            r->configure(w->dec.outRate());
+            r->setSignalOffset(c);
+            w->centre.push_back(c);
+            w->subs.push_back(std::move(r));
+        }
+        wide = std::move(w);
+    }
 
     Impl() {
         win.resize(kN);
@@ -173,7 +214,9 @@ struct PskReceiver::Impl {
         const int W = kHiBin - kLoBin + 1;
         held.assign((size_t)W, 0.f); acc.assign((size_t)W, 0.f); accN = 0; frames = 0; floorLin = 0;
         setupMode(modeReq.load());
-        if (cb && curRate > 0) cb(running ? std::string("PSK: looking for ") + pskModeName(mode) + " signals from dial + 100 Hz to dial + 3.9 kHz"
+        buildWide();
+        if (cb && curRate > 0 && wide) cb("PSK: decoding the whole span (" + std::to_string((int)(wide->dec.spanHz() / 1000)) + " kHz)");
+        else if (cb && curRate > 0) cb(running ? std::string("PSK: looking for ") + pskModeName(mode) + " signals from dial + 100 Hz to dial + 3.9 kHz"
                                           : "PSK: the sample rate is too low (250 kHz at least)");
     }
 
@@ -282,7 +325,12 @@ struct PskReceiver::Impl {
         if (ch == ' ' || ch == '\r' || ch == '\n') {
             std::string flat = c.text;
             std::replace(flat.begin(), flat.end(), '\n', ' ');
-            c.calls = cw::callsigns(flat);
+            const std::vector<std::string> now = cw::callsigns(flat);
+            if (PskReporter::get().want())
+                for (const std::string& k : now)
+                    if (std::find(c.calls.begin(), c.calls.end(), k) == c.calls.end() && pskr::sendsInText(flat, k))
+                        PskReporter::get().spot(mode == 0 ? "PSK31" : mode == 1 ? "PSK63" : "PSK", c.f + spotShift.load(), (float)std::max(-5.0, std::min(40.0, 10 * std::log10(1.0 / std::max(1e-4f, c.errVar)))), k);
+            c.calls = now;
         }
     }
 
@@ -457,17 +505,36 @@ void PskReceiver::reset() {
 
 void PskReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
+    if (m.wideChanged.exchange(false)) m.resetReq = true;
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
-    if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
-    if (m.clearReq.exchange(false)) { m.chans.clear(); m.focusId = -1; m.kept.clear(); }
+    if (m.offsetReq.exchange(false) && m.running) {
+        std::lock_guard<std::mutex> lk(m.mu);
+        m.front.setOffsetHz(m.offsetHz);
+        if (m.wide) m.wide->dec.setOffsetHz(m.offsetHz);
+    }
+    if (m.clearReq.exchange(false)) {
+        m.chans.clear(); m.focusId = -1; m.kept.clear();
+        if (m.wide) for (auto& r : m.wide->subs) r->clearSignals();
+    }
     m.takeKept();
-    if (m.modeReq.load() != m.mode) m.setupMode(m.modeReq.load());
+    if (m.modeReq.load() != m.mode) {
+        m.setupMode(m.modeReq.load());
+        if (m.wide) for (auto& r : m.wide->subs) r->setMode(m.modeReq.load());
+    }
     {
         std::lock_guard<std::mutex> lk(m.mu);
         if (m.focusReq) {
             m.focusReq = false;
-            Chan* c = m.find(m.focusHz, 0.8 * m.baud());
-            if (!c && (int)m.chans.size() < kPskMaxSignals + 4) c = &m.add(m.focusHz, true);
+            if (m.wide) {
+                int best = 0;
+                const double wantC = m.focusHz - Impl::kSliceLo - 0.5 * Impl::kSliceStep;
+                for (size_t i = 0; i < m.wide->centre.size(); i++)
+                    if (std::fabs(m.wide->centre[i] - wantC) < std::fabs(m.wide->centre[(size_t)best] - wantC)) best = (int)i;
+                m.wide->focusSlice = best;
+                m.wide->subs[(size_t)best]->setFocusHz(m.focusHz - m.wide->centre[(size_t)best]);
+            }
+            Chan* c = m.wide ? nullptr : m.find(m.focusHz, 0.8 * m.baud());
+            if (!c && !m.wide && (int)m.chans.size() < kPskMaxSignals + 4) c = &m.add(m.focusHz, true);
             if (c) m.focusId = c->id;
             for (Chan& o : m.chans) if (o.manual && o.id != m.focusId && o.chars == 0) o.manual = false;
         }
@@ -480,7 +547,12 @@ void PskReceiver::feed(const cf32* x, size_t n) {
     }
     m.nPower += (int64_t)n;
     m.nIn += (int64_t)n;
-    if (m.running) {
+    if (m.running && m.wide) {
+        m.wide->buf.clear();
+        m.wide->dec.process(x, n, m.wide->buf);
+        for (cf32& v : m.wide->buf) if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
+        for (auto& r : m.wide->subs) r->feed(m.wide->buf.data(), m.wide->buf.size());
+    } else if (m.running) {
         m.base.clear();
         m.front.process(x, n, m.base);
         for (cf32& v : m.base) if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
@@ -489,7 +561,7 @@ void PskReceiver::feed(const cf32* x, size_t n) {
     }
     while ((double)m.nIn >= m.nextReport) {
         m.nextReport += 0.25 * m.curRate;
-        m.report();
+        if (m.wide) m.reportWide(); else m.report();
     }
 }
 
@@ -553,9 +625,72 @@ ModeTuning pskTuning() {
 }
 
 const PskPreset* pskPresets(int& count) {
-    static const PskPreset kP[] = {{"80 m", 3.580}, {"40 m", 7.040}, {"20 m", 14.070}, {"15 m", 21.070}, {"10 m", 28.120}};
+    static const PskPreset kP[] = {{"80 m", 3.580}, {"40 m", 7.040}, {"40 m", 7.070}, {"30 m", 10.142}, {"20 m", 14.070}, {"17 m", 18.100}, {"15 m", 21.070}, {"10 m", 28.120}};
     count = (int)(sizeof kP / sizeof *kP);
     return kP;
 }
+
+} // namespace dect2
+
+namespace dect2 {
+
+void PskReceiver::Impl::reportWide() {
+    Impl& m = *this;
+    auto& W = *m.wide;
+    m.tel.seq++;
+    m.tel.timeSec = m.curRate > 0 ? (double)m.nIn / m.curRate : 0;
+    m.tel.levelDb = m.nPower ? (float)(10 * std::log10(m.power / (double)m.nPower + 1e-20)) : -200.f;
+    m.power = 0; m.nPower = 0;
+    m.tel.inputRate = m.curRate;
+    m.tel.mode = m.mode;
+    m.tel.signals.clear();
+    std::vector<float> spec;
+    uint64_t ok = 0, bad = 0;
+    int decoding = 0;
+    float floorSum = 0; int nFloor = 0;
+    m.tel.focusId = -1; m.tel.cfoHz = 0;
+    for (size_t i = 0; i < W.subs.size(); i++) {
+        PskTelemetry t;
+        if (!W.subs[i]->telemetry(t, 0)) continue;
+        for (PskSignal& s : t.signals) {
+            if (s.offsetHz < kSliceLo || s.offsetHz >= kSliceHi) continue;
+            s.id += (int)i * 100000;
+            s.offsetHz += W.centre[i];
+            ok += s.chars;
+            if (s.dcd) decoding++;
+            m.tel.signals.push_back(std::move(s));
+        }
+        bad += t.blocksBad;
+        if (t.floorDb > -190) { floorSum += t.floorDb; nFloor++; }
+        if ((int)i == W.focusSlice && t.focusId >= 0) { m.tel.focusId = t.focusId + (int)i * 100000; m.tel.cfoHz = t.cfoHz; }
+        const size_t b0 = (size_t)std::max(0.0, (kSliceLo - t.loHz) / kBinHz), b1 = (size_t)std::max(0.0, (kSliceHi - t.loHz) / kBinHz);
+        for (size_t b = b0; b < b1 && b < t.spectrum.size(); b++) spec.push_back(t.spectrum[b]);
+    }
+    if (!spec.empty()) {
+        const size_t P = (spec.size() + 3999) / 4000;
+        m.tel.spectrum.assign((spec.size() + P - 1) / P, -200.f);
+        for (size_t b = 0; b < spec.size(); b++) m.tel.spectrum[b / P] = std::max(m.tel.spectrum[b / P], spec[b]);
+        m.tel.specSeq++;
+    }
+    m.tel.loHz = W.centre.front() + kSliceLo; m.tel.hiHz = W.centre.back() + kSliceHi;
+    m.tel.floorDb = nFloor ? floorSum / (float)nFloor : -200.f;
+    m.tel.snrDb = -100;
+    for (const PskSignal& s : m.tel.signals) if (s.id == m.tel.focusId || (m.tel.focusId < 0 && s.snrDb > m.tel.snrDb)) m.tel.snrDb = s.snrDb;
+    if (m.tel.signals.empty()) m.tel.snrDb = 0;
+    for (const PskSignal& k : m.kept) m.tel.signals.push_back(k);
+    std::sort(m.tel.signals.begin(), m.tel.signals.end(), [](const PskSignal& a, const PskSignal& b) { return a.offsetHz < b.offsetHz; });
+    m.tel.blocksOk = std::max(m.tel.blocksOk, ok); m.tel.blocksBad = std::max(m.tel.blocksBad, bad);
+    m.tel.state = decoding ? 2 : m.tel.signals.empty() ? 0 : 1;
+    m.tel.dataValid = decoding > 0;
+    std::lock_guard<std::mutex> lk(m.mu);
+    m.pub = m.tel;
+}
+
+void PskReceiver::setWide(bool on, double spanHz) {
+    p_->wideSpanReq = std::max(1000.0, std::min(kWideMaxSpanHz, spanHz));
+    if (p_->wideReq.exchange(on) != on) p_->wideChanged = true;
+}
+bool PskReceiver::wide() const { return p_->wideReq.load(); }
+void PskReceiver::setSpotShiftHz(double hz) { p_->spotShift = hz; }
 
 } // namespace dect2

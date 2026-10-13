@@ -364,7 +364,6 @@ The receiver's filters are made for the signal (or for the group of channels it 
 Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width.	Kanalbreite: das Band, mit dem der Empfänger arbeitet (das helle Band).\nKlicken, um automatische oder manuelle Breite zu wählen.
 Channel width: the band the receiver works with (the light band), set by the standard.	Kanalbreite: das Band, mit dem der Empfänger arbeitet (das helle Band), von der Norm vorgegeben.
 power (dBFS/bin)	Leistung (dBFS/Bin)
-frequency (MHz)	Frequenz (MHz)
 seconds ago	Sekunden zuvor
 Identify this signal	Dieses Signal identifizieren
 #  radio settings

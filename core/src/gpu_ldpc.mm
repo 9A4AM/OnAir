@@ -178,7 +178,7 @@ GpuLdpc& GpuLdpc::instance() { static GpuLdpc g; return g; }
 bool GpuLdpc::available() const { return p_->pso != nil; }
 const char* GpuLdpc::deviceName() const { return p_->dev ? p_->dev.name.UTF8String : "none"; }
 
-bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter, uint8_t* hard, uint8_t* ok, int* iters) {
+bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter, uint8_t* hard, uint8_t* ok, int* iters, float alpha) {
     if (!available() || code.q() * 360 != code.n() - code.k()) return false;
     std::lock_guard<std::mutex> lk(p_->mu);
     @autoreleasepool {
@@ -197,7 +197,7 @@ bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter
                 s.cap = cnt;
             }
             memcpy(s.llr.contents, llr + (size_t)b0 * n, (size_t)cnt * n * 4);
-            struct { int k, n, q, G, maxIter; float alpha; uint32_t msgPer, postPer; } P = {code.k(), n, code.q(), code.groups(), maxIter, 0.78f, s.msgPer, s.postPer};
+            struct { int k, n, q, G, maxIter; float alpha; uint32_t msgPer, postPer; } P = {code.k(), n, code.q(), code.groups(), maxIter, alpha, s.msgPer, s.postPer};
             id<MTLCommandBuffer> cb = [d.queue commandBuffer];
             id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
             [enc setComputePipelineState:d.pso];

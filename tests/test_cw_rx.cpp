@@ -17,7 +17,7 @@ constexpr double kOff = -20000;   // the dial sits 20 kHz below the centre, as w
 
 struct Run { CwTelemetry t; double toneRms = 0; };
 
-static Run run(const std::vector<CwGenSignal>& sigs, double secs, double cfo = 0, double focusHz = 1e9, bool tone = false) {
+static Run run(const std::vector<CwGenSignal>& sigs, double secs, double cfo = 0, double focusHz = 1e9, bool tone = false, bool toneOn = true) {
     CwGenConfig c;
     c.rate = kRate; c.dialOffsetHz = kOff; c.cfoHz = cfo; c.signals = sigs; c.seed = 11;
     CwGenerator g(c);
@@ -27,7 +27,7 @@ static Run run(const std::vector<CwGenSignal>& sigs, double secs, double cfo = 0
     r.setSignalOffset(kOff);
     Run res;
     double e = 0; size_t ne = 0;
-    if (tone) { r.setSidetone(true); r.setSidetoneTap([&](const float* x, size_t n) { for (size_t i = 0; i < 2 * n; i++) e += (double)x[i] * x[i]; ne += 2 * n; }); }
+    if (tone) { r.setSidetone(toneOn); r.setSidetoneTap([&](const float* x, size_t n) { for (size_t i = 0; i < n; i++) e += (double)x[i] * x[i]; ne += n; }); }
     std::vector<cf32> x(25000);
     uint64_t seq = 0;
     for (double t = 0; t < secs; t += 0.1) {
@@ -125,6 +125,8 @@ int main() {
         const CwSignal* f = cwFocus(r.t);
         CHECK(f && std::fabs(f->offsetHz - 1200) < 30, "focus %+.0f", f ? f->offsetHz : 0.0);
         CHECK(r.toneRms > 0.02, "sidetone rms %.3f", r.toneRms);
+        const Run q = run({sig(1200, 25, "TEST DL1XYZ", 25)}, 8, 0, 1210, true, false);
+        CHECK(q.toneRms == 0, "sidetone off: audio rms %.3f", q.toneRms);
     }
     printf(fails ? "cw rx: %d FAILED\n" : "cw rx: all passed\n", fails);
     return fails ? 1 : 0;

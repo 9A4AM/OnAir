@@ -278,6 +278,32 @@ inline std::vector<std::string> codecFolders() {
     return v;
 }
 
+// The file names OnAir accepts for the two codec libraries (docs/CODECS.md), per platform. Linux also takes any lib<stem>.so.<version>.
+#define DECT2_MBE_STEM "mbe"
+#define DECT2_MBE_SO {".1.3", ".1"}
+#define DECT2_MBE_WIN {"mbelib.dll", "libmbe.dll", "libmbe-1.dll", "mbe.dll"}
+#define DECT2_CODEC2_STEM "codec2"
+#define DECT2_CODEC2_SO {".1.2", ".1.1", ".1.0", ".1", ".0.9"}
+#define DECT2_CODEC2_WIN {"codec2.dll", "libcodec2.dll"}
+
+// The file names alone (no folder), in the order they are tried
+inline std::vector<std::string> codecFileNames(const char* stem, std::initializer_list<const char*> soVersions, std::initializer_list<const char*> winNames) {
+    std::vector<std::string> v;
+#if defined(_WIN32)
+    (void)stem; (void)soVersions;
+    for (const char* w : winNames) v.push_back(w);
+#elif defined(__APPLE__)
+    (void)winNames;
+    for (const char* ver : soVersions) v.push_back(std::string("lib") + stem + ver + ".dylib");
+    v.push_back(std::string("lib") + stem + ".dylib");
+#else
+    (void)winNames;
+    for (const char* ver : soVersions) v.push_back(std::string("lib") + stem + ".so" + ver);
+    v.push_back(std::string("lib") + stem + ".so");
+#endif
+    return v;
+}
+
 // A codec library: the copies in the OnAir codecs folders first (any of the usual file names), then the system's places (libNames)
 inline std::vector<std::string> codecLibNames(const char* stem, std::initializer_list<const char*> soVersions, std::initializer_list<const char*> winNames) {
     std::vector<std::string> v;
@@ -564,6 +590,11 @@ DeviceInfo spyServerDevice(const std::string& host, int port);
 std::unique_ptr<IqSource> makeSpyServer(const DeviceInfo& d);
 bool spyServerProbe(const std::string& host, int port, int timeoutMs, std::string& err);
 void spyServerCaps(DeviceInfo& d);
+// A Hermes Lite 2 (source_hermeslite2.cpp) at an IPv4 host and UDP port (1024). hermesLite2Probe sends it a discovery packet and waits for
+// its answer.
+DeviceInfo hermesLite2Device(const std::string& host, int port);
+std::unique_ptr<IqSource> makeHermesLite2(const DeviceInfo& d);
+bool hermesLite2Probe(const std::string& host, int port, int timeoutMs, std::string& err);
 
 } // namespace native
 } // namespace dect2

@@ -45,7 +45,7 @@ inline void setThreadPriority(ThreadPriority p) {
 #endif
 }
 
-// The Windows build is compiled for AVX2 (no runtime dispatch there): false on a processor that cannot run it.
+// Builds made with DECT2_WIN_AVX2=ON are compiled for AVX2 throughout: false on a processor that cannot run them (the default build runs anywhere).
 inline bool cpuSupportsBuild() {
 #if defined(DECT2_REQUIRES_AVX2) && defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
     return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
