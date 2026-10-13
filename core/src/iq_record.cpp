@@ -93,7 +93,7 @@ void IqRecorder::writeSigmf(bool final) {
 
 bool IqRecorder::start(const std::string& path, FileFormat fmt, double rateHz, std::string& err) {
     stop();
-    if (fmt == FileFormat::CU8) { err = "only 8-bit signed and float files can be recorded"; return false; }
+    if (fmt != FileFormat::CS8 && fmt != FileFormat::CF32) { err = "only 8-bit signed and float files can be recorded"; return false; }
     if (rateHz <= 0) { err = "the radio has no sample rate yet"; return false; }
     try {
         const std::filesystem::path p = std::filesystem::u8path(path);

@@ -326,8 +326,8 @@ protected:
 
 class FileSource : public PacedSource {
 public:
-    FileSource(std::string path, FileFormat fmt, double rate, bool loop)
-        : path_(std::move(path)), fmt_(fmt), fileRate_(rate), loop_(loop) {}
+    FileSource(std::string path, FileFormat fmt, double rate, bool loop, uint64_t off, uint64_t end, bool be)
+        : path_(std::move(path)), fmt_(fmt), fileRate_(rate), loop_(loop), off_(off), end_(end), be_(be) {}
     ~FileSource() override { stop(); if (f_) fclose(f_); }
 
 protected:
@@ -344,18 +344,37 @@ protected:
         f_ = fopen(path_.c_str(), "rb");
 #endif
         if (!f_) { err = "cannot open " + path_ + ": " + strerror(errno); return false; }
+        if (off_ && fseek(f_, (long)off_, SEEK_SET) != 0) { err = "cannot seek in " + path_; return false; }
+        pos_ = off_;
         return true;
     }
     size_t produce(cf32* dst, size_t maxN) override {
-        size_t bps = fmt_ == FileFormat::CF32 ? 8 : 2;
+        const size_t bps = fmt_ == FileFormat::CF32 ? 8 : (fmt_ == FileFormat::CI16 || fmt_ == FileFormat::CU16) ? 4 : 2;
         raw_.resize(maxN * bps);
-        size_t got = fread(raw_.data(), bps, maxN, f_);
-        if (got == 0 && loop_) { rewind(f_); got = fread(raw_.data(), bps, maxN, f_); }
+        auto rd = [&]() -> size_t {
+            size_t want = maxN;
+            if (end_) want = (size_t)std::min<uint64_t>(want, pos_ < end_ ? (end_ - pos_) / bps : 0);
+            const size_t g = want ? fread(raw_.data(), bps, want, f_) : 0;
+            pos_ += (uint64_t)g * bps;
+            return g;
+        };
+        size_t got = rd();
+        if (got == 0 && loop_) { fseek(f_, (long)off_, SEEK_SET); pos_ = off_; got = rd(); }
         for (size_t i = 0; i < got; i++) {
             switch (fmt_) {
             case FileFormat::CS8: dst[i] = cf32((int8_t)raw_[2*i] / 128.0f, (int8_t)raw_[2*i+1] / 128.0f); break;
             case FileFormat::CU8: dst[i] = cf32((raw_[2*i] - 127.5f) / 127.5f, (raw_[2*i+1] - 127.5f) / 127.5f); break;
-            case FileFormat::CF32: { float v[2]; memcpy(v, &raw_[8*i], 8); dst[i] = cf32(v[0], v[1]); } break;
+            case FileFormat::CF32: {
+                uint32_t u[2]; memcpy(u, &raw_[8*i], 8);
+                if (be_) for (auto& x : u) x = ((x >> 24) | ((x >> 8) & 0xFF00u) | ((x << 8) & 0xFF0000u) | (x << 24));
+                float v[2]; memcpy(v, u, 8); dst[i] = cf32(v[0], v[1]);
+            } break;
+            case FileFormat::CI16: case FileFormat::CU16: {
+                uint16_t u[2]; memcpy(u, &raw_[4*i], 4);
+                if (be_) for (auto& x : u) x = (uint16_t)((x >> 8) | (x << 8));
+                if (fmt_ == FileFormat::CI16) dst[i] = cf32((int16_t)u[0] / 32768.0f, (int16_t)u[1] / 32768.0f);
+                else dst[i] = cf32((u[0] - 32767.5f) / 32767.5f, (u[1] - 32767.5f) / 32767.5f);
+            } break;
             }
         }
         return got;
@@ -366,6 +385,8 @@ private:
     FileFormat fmt_;
     double fileRate_;
     bool loop_;
+    uint64_t off_ = 0, end_ = 0, pos_ = 0;
+    bool be_ = false;
     FILE* f_ = nullptr;
     std::vector<uint8_t> raw_;
 };
@@ -612,8 +633,8 @@ double guessSampleRate(const std::string& path) {
     return v >= 0.5 && v <= 100 ? v * 1e6 : 0;
 }
 
-std::unique_ptr<IqSource> makeFileSource(const std::string& path, FileFormat fmt, double sampleRate, bool loop) {
-    return std::make_unique<FileSource>(path, fmt, sampleRate, loop);
+std::unique_ptr<IqSource> makeFileSource(const std::string& path, FileFormat fmt, double sampleRate, bool loop, uint64_t off, uint64_t end, bool be) {
+    return std::make_unique<FileSource>(path, fmt, sampleRate, loop, off, end, be);
 }
 
 } // namespace dect2

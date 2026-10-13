@@ -110,6 +110,8 @@ struct FileOptions {
     FileFormat format = FileFormat::CS8;
     double sampleRate = 18285714.2857;
     bool loop = true;
+    uint64_t offsetBytes = 0, endBytes = 0;   // SigMF / WAV: where the samples start and end in the file
+    bool bigEndian = false;
 };
 
 // Where samples were lost since the radio was started. The radio side: samples that never came out of the radio (its USB link or driver

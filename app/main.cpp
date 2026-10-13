@@ -3,6 +3,7 @@
 #endif
 // OnAir: window, main loop and the layout of the panels.
 #include "app.h"
+#include "dect2/iq_file.h"
 #include "gallery.h"
 #include "dect2/crash_report.h"
 #include "discord_rpc.h"
@@ -618,7 +619,11 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--pp" && i + 1 < argc) app.tune.synth.tx.pp = atoi(argv[++i]);
         if (std::string(argv[i]) == "--ext") app.tune.synth.tx.ext = true;
         if (std::string(argv[i]) == "--hackrf") hackrfStart = true;
-        if (std::string(argv[i]) == "--file" && i + 1 < argc) { app.file.path = argv[++i]; app.file.sampleRate = 10e6; app.file.format = FileFormat::CS8; fileStart = true; hackrfStart = true; autostart = true; }
+        if (std::string(argv[i]) == "--file" && i + 1 < argc) { app.file.path = argv[++i]; app.file.sampleRate = 10e6; app.file.format = FileFormat::CS8;
+            { IqFileInfo info; std::string perr;
+              if (probeIqFile(app.file.path, info, perr)) { app.file.path = info.dataPath; app.file.format = info.format; app.file.bigEndian = info.bigEndian; app.file.offsetBytes = info.offsetBytes; app.file.endBytes = info.endBytes; if (info.sampleRate > 0) app.file.sampleRate = info.sampleRate; if (info.centerHz > 0) app.freqMhz = info.centerHz / 1e6; }
+              else if (!perr.empty()) fprintf(stderr, "%s\n", perr.c_str()); }
+            fileStart = true; hackrfStart = true; autostart = true; }
         if (std::string(argv[i]) == "--play" && i + 1 < argc) app.playReq = atoi(argv[++i]);
         if (std::string(argv[i]) == "--lna" && i + 1 < argc) app.tune.lnaDb = atoi(argv[++i]);
         if (std::string(argv[i]) == "--vga" && i + 1 < argc) app.tune.vgaDb = atoi(argv[++i]);

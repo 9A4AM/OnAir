@@ -3,6 +3,7 @@
 #include "dect2/rate_choice.h"
 #include "dect2/antenna_ports.h"
 #include "dect2/hdr_rx.h"
+#include "dect2/iq_file.h"
 #include <algorithm>
 #include <cctype>
 #include <memory>
@@ -22,6 +23,18 @@ int adcBitsFor(const DeviceInfo& d, double rateHz) {
 // The selected radio's sample rate - the one in use while it runs, else the most it lists - when it is below what the mode's receiver works
 // with (minSampleRateFor, the limit the engine logs at start, which only reached the log). Empty when the rate is fine or not known: a HackRF
 // gives every rate the modes ask for, a SoapySDR radio lists its rates once it has been opened.
+// A .sigmf-meta / .sigmf-data / two-channel .wav says its own rate, centre frequency, sample format and where the samples start.
+static void applyIqFileInfo(App& a, const std::string& path) {
+    a.file.offsetBytes = 0; a.file.endBytes = 0; a.file.bigEndian = false;
+    IqFileInfo info; std::string err;
+    if (!probeIqFile(path, info, err)) { if (!err.empty()) { a.engine.log(err); a.file.path.clear(); } return; }
+    a.file.path = info.dataPath; a.file.format = info.format; a.file.bigEndian = info.bigEndian;
+    a.file.offsetBytes = info.offsetBytes; a.file.endBytes = info.endBytes;
+    if (info.sampleRate > 0) a.file.sampleRate = info.sampleRate;
+    if (info.centerHz > 0) a.freqMhz = info.centerHz / 1e6;
+    a.engine.log("IQ file: " + std::to_string(info.sampleRate / 1e6) + " Msps, " + std::to_string(info.centerHz / 1e6) + " MHz" + (info.description.empty() ? "" : ", " + info.description));
+}
+
 static std::string rateWarning(const App& a) {
     const DeviceInfo& d = a.devices[a.devIdx];
     if (!d.isRadio()) return "";
@@ -50,7 +63,7 @@ void startReceiver(App& a) {
     const bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
     a.tune.centerHz = a.freqMhz * 1e6;
     applyBandwidth(a);
-    if (isFile) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate
+    if (isFile && a.file.offsetBytes == 0) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate (a SigMF / WAV file says it itself)
     if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
     else {
         a.engine.setComputeMode(a.computeMode); a.engine.setStandard(engineStd(a));
@@ -771,7 +784,7 @@ void sourceOptions(App& a) {
     if (isFile && !running) {
         ImGui::TextDisabled("%s", tr("file"));
         ImGui::SameLine();
-        if (ImGui::SmallButton(tr("Open…"))) { auto p = openFileDialog(); if (!p.empty()) { a.file.path = p; a.file.format = guessFormat(p); const double r = guessSampleRate(p); if (r > 0) a.file.sampleRate = r; } }
+        if (ImGui::SmallButton(tr("Open…"))) { auto p = openFileDialog(); if (!p.empty()) { a.file.path = p; a.file.format = guessFormat(p); const double r = guessSampleRate(p); if (r > 0) a.file.sampleRate = r; applyIqFileInfo(a, p); } }
         ImGui::SameLine();
         {   // a long path keeps its end (the file name) in a narrow window; the whole of it on hover
             std::string shown = a.file.path.empty() ? "(none)" : a.file.path;
@@ -782,9 +795,9 @@ void sourceOptions(App& a) {
         }
         flowNext();
         ImGui::SetNextItemWidth(70 * gUi);
-        const char* fm[] = {"cs8", "cu8", "cf32"};
+        const char* fm[] = {"cs8", "cu8", "cf32", "ci16", "cu16"};
         int fi = (int)a.file.format;
-        if (ImGui::Combo("##ff", &fi, fm, 3)) a.file.format = (FileFormat)fi;
+        if (ImGui::Combo("##ff", &fi, fm, 5)) a.file.format = (FileFormat)fi;
         flowNext();
         ImGui::TextDisabled("%s", tr("rate"));
         ImGui::SameLine();

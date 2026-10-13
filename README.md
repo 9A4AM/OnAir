@@ -339,6 +339,8 @@ The app is `build/dect2`. You can also work without a radio: record an IQ file w
 build/dect2cli --file capture.cs8 --rate 10 --format cs8 --play <service id>
 ```
 
+SigMF recordings (IQEngine, public captures) and two-channel WAV IQ files open the same way: choose the `.sigmf-meta` (or `.sigmf-data`) or the `.wav`, and OnAir reads the sample rate, centre frequency, sample format (cf32, ci16, cu16, ci8, cu8, little or big endian) and start offset from the file, so it plays in any mode; `dect2cli --file x.sigmf-meta` does the same, and `--rate`, `--format` and `--freq` still override.
+
 **Windows** (10 or 11, 64-bit), step by step:
 
 1. Install [MSYS2](https://www.msys2.org) with its default settings.

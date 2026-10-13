@@ -15,6 +15,7 @@
 #include "dect2/ble_proto.h"
 #include "dect2/engine.h"
 #include "dect2/flarm_proto.h"
+#include "dect2/iq_file.h"
 #include "dect2/crash_report.h"
 #include "dect2/modes.h"
 #include "dect2/dvbt.h"
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
     TuneSettings tune;
     FileOptions file;
     double freq = 522, secs = 10;
-    bool freqSet = false;
+    bool freqSet = false, rateSet = false, fmtSet = false;
     int computeMode = 2, playSid = -1, standard = 0, servePort = 0; bool serveLan = false;
     uint64_t vseq = 0;
     bool continue_t2 = true;
@@ -112,8 +113,8 @@ int main(int argc, char** argv) {
             } }
         else if (a == "--compute") { std::string v = next(); computeMode = v == "cpu" ? 0 : v == "gpu" ? 1 : 2; }
         else if (a == "--file") { useFile = true; file.path = next(); file.format = guessFormat(file.path); }
-        else if (a == "--rate") file.sampleRate = atof(next()) * 1e6;
-        else if (a == "--format") { std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
+        else if (a == "--rate") { file.sampleRate = atof(next()) * 1e6; rateSet = true; }
+        else if (a == "--format") { fmtSet = true; std::string f = next(); file.format = f == "cu8" ? FileFormat::CU8 : f == "cf32" ? FileFormat::CF32 : FileFormat::CS8; }
         else if (a == "--record") record = next();
         else if (a == "--iridium-bits") iridiumBits = next();
         else if (a == "--iridium-parsed") { fprintf(stderr, "--iridium-parsed: OnAir writes .bits only; run iridium-toolkit's iridium-parser.py on an --iridium-bits file for output.parsed\n"); return 1; }
@@ -123,6 +124,15 @@ int main(int argc, char** argv) {
         else if (a == "--rtp") out.rtp = true;
         else if (a == "--service") out.serviceId = atoi(next());
         else if (a == "--no-null") out.dropNull = true;
+    }
+    if (useFile) {   // .sigmf-meta / .sigmf-data / two-channel .wav: the file says its rate, frequency and format (the flags still win)
+        IqFileInfo info; std::string perr;
+        if (probeIqFile(file.path, info, perr)) {
+            file.path = info.dataPath; file.offsetBytes = info.offsetBytes; file.endBytes = info.endBytes; file.bigEndian = info.bigEndian;
+            if (!fmtSet) file.format = info.format;
+            if (!rateSet && info.sampleRate > 0) file.sampleRate = info.sampleRate;
+            if (!freqSet && info.centerHz > 0) freq = info.centerHz / 1e6;
+        } else if (!perr.empty()) { fprintf(stderr, "%s\n", perr.c_str()); return 1; }
     }
     if (atvFm) { tune.bandwidthMhz = 18; tune.sampleRate = 20e6; tune.basebandFilterHz = 18e6; }
     if (standard == 6) {   // ISDB-T: the channel width (the test signal follows it; on auto it is 6 MHz unless --isdbt-synth-bw says otherwise)
