@@ -64,6 +64,7 @@ OnAir - DVB-T2 / DVB-T / ATSC / DAB receiver (Windows 10 or 11, 64-bit)
 Start OnAir.exe. Nothing to install.
 HackRF, RTL-SDR and Airspy radios: install the WinUSB driver once with Zadig (https://zadig.akeo.ie): choose the radio in the list, driver "WinUSB", Install.
 Airspy HF+ radios: the same, WinUSB with Zadig.
+Fobos SDR (agile firmware): copy RigExpert's 64-bit fobos_sdr.dll (libfobos-sdr-agile) next to OnAir.exe; the radio needs the WinUSB driver.
 SDRplay RSP radios: install the SDRplay API from sdrplay.com first (it brings the driver; no Zadig).
 BladeRF radios: the library is included; the radio needs a WinUSB (or libusbK) driver: the installer from nuand.com brings one, or use Zadig.
 USRP radios (Ettus): install UHD from Ettus (files.ettus.com) with its firmware and FPGA images (uhd_images_downloader); OnAir uses that UHD. USB models (B200/B210) also need the driver from the UHD installer.

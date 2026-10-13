@@ -10,13 +10,14 @@
 #include <thread>
 
 // The converter resolution at the rate in use, for the ADC level advice and the AGC (gain.h): the 8-bit HackRF and RTL-SDR, the 12-bit
-// Airspy, LimeSDR, PlutoSDR, bladeRF and USRP, the 16-bit HF+ path; the SDRplay ADC gives up bits as its rate rises (API specification:
+// Airspy, LimeSDR, PlutoSDR, bladeRF and USRP, the 14-bit Fobos SDR, the 16-bit HF+ path; the SDRplay ADC gives up bits as its rate rises (API specification:
 // 14 bits to 6.048 MHz, 12 to 8.064, 10 to 9.216, 8 above). Unknown radios, files and the test signal count as 8 bits (as before).
 int adcBitsFor(const DeviceInfo& d, double rateHz) {
     if (d.kind != DeviceInfo::Native) return 8;
     if (d.board == "sdrplay") return rateHz <= 6.048e6 ? 14 : rateHz <= 8.064e6 ? 12 : rateHz <= 9.216e6 ? 10 : 8;
     if (d.board == "airspy" || d.board == "lime" || d.board == "pluto" || d.board == "bladerf" || d.board == "usrp") return 12;
     if (d.board == "airspyhf") return 16;
+    if (d.board == "fobos") return 14;   // (the driver scales its samples to full scale 1.0)
     return 8;   // rtlsdr and anything new
 }
 
