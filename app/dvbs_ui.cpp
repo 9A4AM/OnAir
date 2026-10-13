@@ -20,7 +20,7 @@ State S;
 
 constexpr size_t kHist = 240;           // reports kept: about a minute
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 7; }
+bool live(const App& a) { return a.rx.standard == 7; }
 
 void loadState() {
     if (S.loaded) return;

@@ -19,7 +19,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == kStd; }
+bool live(const App& a) { return a.rx.standard == kStd; }
 
 const ImVec4 kGood(0.40f, 0.85f, 0.50f, 1), kWarn(0.95f, 0.60f, 0.25f, 1);
 const char* kDraNote = "DRA+ sound, not decoded (the codec is patented and not openly specified)";

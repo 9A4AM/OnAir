@@ -292,7 +292,10 @@ void playerTab(App& a) {
 }
 
 void rightPanel(App& a) {
-    if (const ModeUi* mu = modeUi(a.family)) if (mu->list) { mu->list(a); return; }
+    if (const ModeUi* mu = modeUi(a.family)) if (mu->list) {
+        if (!a.engine.running() && a.rx.standard > 0) ImGui::TextDisabled("stopped - showing saved results");
+        mu->list(a); return;
+    }
     const bool run = a.engine.running();
     ImDrawList* dl = ImGui::GetWindowDrawList();
     // ---- clock: broadcast time (TDT) when the stream has one, otherwise this computer's clock

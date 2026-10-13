@@ -15,7 +15,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 10; }
+bool live(const App& a) { return a.rx.standard == 10; }
 
 const ImVec4 kDim(0.62f, 0.65f, 0.68f, 1);
 

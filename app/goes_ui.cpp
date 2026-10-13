@@ -53,7 +53,7 @@ void loadState() {
     S.filter = std::clamp((int)plat::prefs().getI("goesFilter", 0), 0, 2);
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 61; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 61; }   // the engine reports its standard code minus one
 
 double nowSec() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 

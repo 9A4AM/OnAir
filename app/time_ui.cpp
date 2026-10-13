@@ -34,7 +34,7 @@ void loadState() {
 }
 void saveState() { plat::prefs().setI("timeStation", S.station); plat::prefs().setI("timePref60", S.pref60); plat::prefs().flush(); }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 59; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 59; }   // the engine reports its standard code minus one
 
 void kvRow(const App& a, const char* k, const char* fmt, ...) {
     ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);

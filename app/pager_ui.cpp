@@ -64,7 +64,7 @@ std::string typeText(const dect2::PagerMessage& m) {
 
 constexpr size_t kShown = 400;           // rows drawn at most: the list wraps its text, so every row has its own height
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 24; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 24; }   // the engine reports its standard code minus one
 
 std::string lower(std::string s) { for (auto& c : s) c = (char)std::tolower((unsigned char)c); return s; }
 

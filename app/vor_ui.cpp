@@ -63,7 +63,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 31; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 31; }   // the engine reports its standard code minus one
 bool isIls(const App& a) { const dect2::SubMode* sm = curSub(a); return sm && sm->sel == 2; }
 
 bool loadDb(const std::string& path) {

@@ -65,7 +65,7 @@ struct State {
 State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 54; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 54; }   // the engine reports its standard code minus one
 const dect2::Qo100Telemetry& T(const App& a) { return a.rx.qo100; }
 
 double loHz() {

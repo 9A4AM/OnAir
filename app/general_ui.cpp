@@ -43,7 +43,7 @@ struct State {
 State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 56; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 56; }   // the engine reports its standard code minus one
 const dect2::GeneralTelemetry& T(const App& a) { return a.rx.general; }
 
 const int kDefStep[dect2::GenDemodCount] = {9, 11, 2, 1, 1, 1};   // 12.5 kHz NFM, 50 kHz WFM, 1 kHz AM, 100 Hz SSB / CW

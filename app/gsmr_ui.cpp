@@ -26,7 +26,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 40; }
+bool live(const App& a) { return a.rx.standard == 40; }
 
 std::string ago(int64_t t) {
     if (t <= 0) return "-";

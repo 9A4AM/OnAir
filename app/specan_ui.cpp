@@ -37,7 +37,7 @@ State S;
 const double kRbw[] = {5e3, 10e3, 25e3, 100e3, 250e3, 500e3, 1e6};
 const char* const kRbwName[] = {"5 kHz", "10 kHz", "25 kHz", "100 kHz", "250 kHz", "500 kHz", "1 MHz"};
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 43 && !a.rx.specan.live.empty(); }
+bool live(const App& a) { return a.rx.standard == 43 && !a.rx.specan.live.empty(); }
 
 void pushSettings(App& a, bool rangeChanged) {
     auto& r = a.engine.specan();

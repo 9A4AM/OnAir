@@ -92,7 +92,7 @@ struct State {
 State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 42 && !a.rx.specx.spectrum.empty(); }
+bool live(const App& a) { return a.rx.standard == 42 && !a.rx.specx.spectrum.empty(); }
 double centreRadio(const App& a) { return a.tune.centerHz; }
 double rateOf(const App& a) { return a.rx.specx.rate > 0 ? a.rx.specx.rate : a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate; }
 double toRf(double radioHz) { return S.lnb.rfHz(radioHz); }

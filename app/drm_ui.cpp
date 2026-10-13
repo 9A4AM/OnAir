@@ -21,7 +21,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == kStd; }
+bool live(const App& a) { return a.rx.standard == kStd; }
 
 void push(std::deque<float>& d, float v) { d.push_back(v); if (d.size() > 600) d.pop_front(); }
 

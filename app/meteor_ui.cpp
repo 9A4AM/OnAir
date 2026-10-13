@@ -49,7 +49,7 @@ void loadState() {
     S.mod = std::clamp((int)plat::prefs().getI("meteorMod", 0), 0, 3);
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 60; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 60; }   // the engine reports its standard code minus one
 
 void kvRow(const App& a, const char* k, const char* fmt, ...) {
     ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);

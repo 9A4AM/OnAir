@@ -60,7 +60,7 @@ State S;
 const int kLpm[] = {0, 60, 90, 120, 240};
 const int kIoc[] = {0, 576, 288};
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 16; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 16; }   // the engine reports its standard code minus one
 
 void loadState() {
     if (S.loaded) return;

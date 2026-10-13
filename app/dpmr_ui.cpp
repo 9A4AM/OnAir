@@ -29,7 +29,7 @@ void loadState() {
     S.scan = plat::prefs().getB("dpmrScan", false);
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 46; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 46; }   // the engine reports its standard code minus one
 
 std::string clock(int64_t t) {
     if (t <= 0) return "-";

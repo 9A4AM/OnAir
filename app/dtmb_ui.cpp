@@ -17,7 +17,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 8; }
+bool live(const App& a) { return a.rx.standard == 8; }
 
 const char* kHeader[3] = {"PN420", "PN595", "PN945"};
 const char* kMap[5] = {"4QAM-NR", "4QAM", "16QAM", "32QAM", "64QAM"};

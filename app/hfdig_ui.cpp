@@ -131,7 +131,7 @@ void follow(const dect2::HfdigTelemetry& t) {
     }
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 26; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 26; }   // the engine reports its standard code minus one
 
 // the decoders of the selected entry (RTTY, SSTV, FreeDV, one WSJT mode or HamDRM): 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM;
 // all without one

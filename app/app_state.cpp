@@ -379,6 +379,7 @@ void loadPrefs(App& a) {
     if (d.has("atvNbtv")) a.atvNbtv = std::max(0, std::min(2, (int)d.getI("atvNbtv", 0)));
     if (d.has("atvNbtvLines")) a.atvNbtvLines = std::max(24, std::min(240, (int)d.getI("atvNbtvLines", 32)));
     if (d.has("atvNbtvFps")) a.atvNbtvFps = std::max(1.f, std::min(60.f, (float)d.getI("atvNbtvFps", 125) / 10.f));
+    if (d.has("reduceCpuHidden")) a.reduceCpuHidden = d.getI("reduceCpuHidden", 1) != 0;
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
     if (d.has("lightUi")) a.lightUi = d.getI("lightUi", 0) != 0;
@@ -450,6 +451,7 @@ void savePrefs(const App& a) {
     d.setI("uiTheme", a.uiTheme);
     d.setS("uiLang", a.uiLang);
     d.setI("lightUi", a.lightUi ? 1 : 0);
+    d.setI("reduceCpuHidden", a.reduceCpuHidden ? 1 : 0);
     d.setI("discordOn", a.discordOn ? 1 : 0);
     d.setI("discordFreq", a.discordFreq ? 1 : 0);
     d.setI("dtmbBw", a.dtmbBwMhz);

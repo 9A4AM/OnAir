@@ -42,7 +42,7 @@ State S;
 
 const ImVec4 kGood(0.40f, 0.85f, 0.50f, 1), kWarn(0.95f, 0.60f, 0.25f, 1), kBad(0.95f, 0.40f, 0.35f, 1);
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == kStd; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == kStd; }   // the engine reports its standard code minus one
 bool locked(const App& a) { return live(a) && a.rx.hdr.state >= 2; }
 
 int blockLamp(double okAt, double badAt, double window, double now) {

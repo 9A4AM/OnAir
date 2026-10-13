@@ -54,7 +54,7 @@ State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 49 && !a.rx.astro.avg.empty(); }
+bool live(const App& a) { return a.rx.standard == 49 && !a.rx.astro.avg.empty(); }
 
 double restHz() {
     int n = 0;

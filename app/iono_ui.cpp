@@ -39,7 +39,7 @@ struct State {
 State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 53 && a.rx.iono.state == 1; }
+bool live(const App& a) { return a.rx.standard == 53 && a.rx.iono.state == 1; }
 ImU32 sounderCol(int id) { return kSounderCol[(size_t)((id - 1) % 6 + 6) % 6]; }
 
 void load() {

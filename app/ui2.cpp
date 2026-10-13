@@ -1,5 +1,11 @@
 // The new interface, in a plain developer-tool style: flat, dense and monochrome. A text list of modes with keyboard shortcuts on the left,
 // square bordered panes and hairlines instead of cards, one muted accent. It reuses every panel of the classic interface (main.cpp).
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#else
+#include <sys/resource.h>
+#endif
 #include "discord_rpc.h"
 #include "app.h"
 #include "imgui_internal.h"   // RenderArrow for the folding mode groups
@@ -440,6 +446,20 @@ void sidebar(App& a) {
     ImGui::PopStyleVar();
 }
 
+#ifdef _WIN32
+static double processCpuSeconds() {
+    FILETIME c, e, k, u;
+    if (!GetProcessTimes(GetCurrentProcess(), &c, &e, &k, &u)) return 0;
+    return (((uint64_t)k.dwHighDateTime << 32 | k.dwLowDateTime) + ((uint64_t)u.dwHighDateTime << 32 | u.dwLowDateTime)) * 1e-7;
+}
+#else
+static double processCpuSeconds() {
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &ru);
+    return ru.ru_utime.tv_sec + ru.ru_stime.tv_sec + (ru.ru_utime.tv_usec + ru.ru_stime.tv_usec) * 1e-6;
+}
+#endif
+
 // WSJT-X style status bar: fields separated by rules
 void statusLine(App& a) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -469,6 +489,26 @@ void statusLine(App& a) {
         const SampleLoss l = a.engine.sampleLoss();
         if (l.live) { snprintf(b, sizeof b, tr("load %.0f%%"), l.loadPct); field(b, false, l.loadPct > 90 ? pal::warnAmber() : ImVec4(-1, 0, 0, 0)); lossTooltip(l); }
         if (l.radioEvents || l.cpuEvents) { field((std::string(tr("dropped")) + " " + lossText(l)).c_str(), false, lossColour(l)); lossTooltip(l); }
+    }
+    {   // CPU load meter: this process's CPU (100 = one core) and, while receiving, the receiver's DSP load
+        static double cpuT = 0, cpuPct = 0, lastCpu = 0, lastWall = 0;
+        const double wall = ImGui::GetTime();
+        if (wall - lastWall >= 1.0) {
+            const double cpu = processCpuSeconds();
+            if (lastWall > 0) cpuPct = (cpu - lastCpu) / (wall - lastWall) * 100;
+            lastCpu = cpu; lastWall = wall; cpuT = wall;
+        }
+        const SampleLoss l = a.engine.sampleLoss();
+        snprintf(b, sizeof b, "CPU %.0f%%", cpuPct);
+        field(b, false, cpuPct > 250 ? pal::warnAmber() : ImVec4(-1, 0, 0, 0));
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::Text("Process CPU: %.0f%% (100%% = one core)", cpuPct);
+            if (run && l.live) ImGui::Text("DSP load: %.0f%% of real time on the sample thread", l.loadPct);
+            ImGui::TextDisabled("Drawing is slowed when nothing moves and paused while hidden.");
+            ImGui::EndTooltip();
+        }
+        (void)cpuT;
     }
     {
         size_t n = 0;
@@ -559,6 +599,7 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Light (dark on white)"), nullptr, &a.lightUi)) savePrefs(a);
             if (ImGui::BeginMenu(tr("Language"))) { languageMenuItems(a); ImGui::EndMenu(); }
             ImGui::Separator();
+            if (ImGui::MenuItem(tr("Reduce CPU when hidden"), nullptr, &a.reduceCpuHidden)) savePrefs(a);
             {   // opt-in Discord Rich Presence
                 const bool have = *discord::appId() != 0;
                 ImGui::BeginDisabled(!have);

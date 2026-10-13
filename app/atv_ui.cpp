@@ -28,7 +28,7 @@ struct State {
 State S;
 
 // engine standard 9 is analog TV
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 9; }
+bool live(const App& a) { return a.rx.standard == 9; }
 
 void loadState() {
     if (S.loaded) return;

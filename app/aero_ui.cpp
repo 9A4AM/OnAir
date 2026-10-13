@@ -56,7 +56,7 @@ void loadState() {
     if (const char* e = getenv("DECT2_AERO_VIEW")) if (!strcmp(e, "map")) S.viewMode = 1;   // dev: open on the map (screenshots)
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 19; }
+bool live(const App& a) { return a.rx.standard == 19; }
 
 const char* kNotDecoded = "Decoded: the P channels (ground to aircraft) at 600, 1200 and 10500 bit/s, rate found on its own.\n"
                           "Not decoded: C channel voice (not supported by design). R and T channels (aircraft to ground) are not started.";

@@ -630,10 +630,10 @@ int main(int argc, char** argv) {
                 const bool focused = glfwGetWindowAttrib(window, GLFW_FOCUSED) != 0;
                 double interval = 0;
                 if (!shotPath) {
-                    if (!shown && !popOutShown()) interval = 0.25;                                                  // the pop-out window keeps playing
+                    if (!shown && !popOutShown() && !gNoOsWindows) interval = app.reduceCpuHidden ? 0.1 : 0.25;                                                  // the pop-out window keeps playing
                     else if (t - lastInputT < 1.0 || app.engine.player().selected() >= 0) interval = 1.0 / 60;      // typing, dragging, video
                     else if (app.engine.running()) interval = focused ? 1.0 / 30 : 1.0 / 15;                          // spectrum and waterfall
-                    else interval = focused ? 0.1 : 0.25;                                                            // nothing is moving
+                    else interval = focused ? 0.1 : 0.25;                                                          // nothing is moving
                 }
                 if (interval > 0 && frameNext > t) {
                     glfwWaitEventsTimeout(frameNext - t);
@@ -645,7 +645,8 @@ int main(int argc, char** argv) {
             updateTick(app);
             int w, h;
             glfwGetFramebufferSize(window, &w, &h);
-            if (w == 0 || h == 0 || glfwGetWindowAttrib(window, GLFW_ICONIFIED)) {
+            const bool skipDraw = !shotPath && !gNoOsWindows && app.reduceCpuHidden && !glfwGetWindowAttrib(window, GLFW_VISIBLE);
+            if (skipDraw || w == 0 || h == 0 || glfwGetWindowAttrib(window, GLFW_ICONIFIED)) {
                 // minimised: nothing to draw in the main window, but the pop-out video window stays and keeps playing
                 if (!popOutShown()) { glfwWaitEventsTimeout(0.1); continue; }
                 ImGui_ImplGlfw_NewFrame();
