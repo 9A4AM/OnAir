@@ -237,6 +237,7 @@ To try it without a signal, `isdbtgen --out sample.cs8` (built with the tools) m
 
 **Comfortable to use**
 - **Mouse wheel on any slider:** hover a volume, gain, squelch or bandwidth slider and scroll to change it by one step (Shift = fine, Ctrl = coarse); the window does not scroll meanwhile.
+- **Logbook export:** "Save results..." writes CSV or JSON, an ADIF logbook (call, grid, band, mode, RST / SNR, UTC) for the ham modes, and KML or GPX for anything with positions (ADS-B, AIS, APRS, FLARM, sondes); pick the format and "since start" or "all".
 - **Light mode** (View → Light) next to the dark palettes; the layout adapts to small windows and 125 % / 150 % display scaling.
 - **Fast:** error correction runs on the GPU where available, and with optimised vector code on the CPU everywhere else.
 

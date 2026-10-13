@@ -28,6 +28,40 @@ int main() {
     CHECK(resexp::num(-0.0001, 2) == "0");
     CHECK(resexp::num(100.0, 3) == "100");
     CHECK(resexp::stamp().size() == 13);
+    {   // ADIF
+        resexp::Table h;
+        h.cols = {"call", "grid", "frequency_hz", "mode", "snr"};
+        h.add({"K1ABC", "FN42", "14074000", "FT8", "-12"}, 1760000000);   // 2025-10-09 08:53:20 UTC
+        h.add({"", "JO55", "14074000", "FT8", "-3"}, 1760000000);
+        const std::string a = resexp::toAdif(h);
+        CHECK(a.find("<EOH>") != std::string::npos);
+        CHECK(a.find("<CALL:5>K1ABC") != std::string::npos);
+        CHECK(a.find("<QSO_DATE:8>20251009") != std::string::npos);
+        CHECK(a.find("<TIME_ON:6>085320") != std::string::npos);
+        CHECK(a.find("<BAND:3>20m") != std::string::npos);
+        CHECK(a.find("<FREQ:6>14.074") != std::string::npos);
+        CHECK(a.find("<GRIDSQUARE:4>FN42") != std::string::npos);
+        CHECK(a.find("<RST_RCVD:3>-12") != std::string::npos);
+        size_t n = 0; for (size_t p = 0; (p = a.find("<EOR>", p)) != std::string::npos; p++) n++;
+        CHECK(n == 1);   // the row without a call is skipped
+        CHECK(resexp::fmtFromPath("x.ADI") == resexp::Fmt::Adif);
+    }
+    {   // KML / GPX
+        resexp::Table g;
+        g.cols = {"icao", "mode", "alt_ft", "lat", "lon"};
+        g.add({"4CA<1>&", "ADS-B", "35000", "53.5", "-6.25"}, 1760000000);
+        g.add({"NOPOS", "ADS-B", "", "", ""}, 1760000000);
+        const std::string k = resexp::toKml(g), x = resexp::toGpx(g);
+        CHECK(k.find("<coordinates>-6.25,53.5,10668</coordinates>") != std::string::npos);
+        CHECK(k.find("4CA&lt;1&gt;&amp;") != std::string::npos);
+        CHECK(k.find("NOPOS") == std::string::npos);
+        CHECK(k.find("</kml>") != std::string::npos);
+        CHECK(x.find("<wpt lat=\"53.5\" lon=\"-6.25\">") != std::string::npos);
+        CHECK(x.find("<time>2025-10-09T08:53:20Z</time>") != std::string::npos);
+        CHECK(x.find("</gpx>") != std::string::npos);
+        CHECK(resexp::since(g, 1770000000).rows.empty());
+        CHECK(resexp::since(g, 1750000000).rows.size() == 2);
+    }
     printf(fails ? "FAILED\n" : "ok\n");
     return fails;
 }
