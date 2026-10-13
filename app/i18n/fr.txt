@@ -364,7 +364,6 @@ The receiver's filters are made for the signal (or for the group of channels it 
 Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width.	Largeur du canal : la bande avec laquelle travaille le récepteur (la bande claire).\nCliquez pour choisir une largeur automatique ou manuelle.
 Channel width: the band the receiver works with (the light band), set by the standard.	Largeur du canal : la bande avec laquelle travaille le récepteur (la bande claire), fixée par la norme.
 power (dBFS/bin)	puissance (dBFS/case)
-frequency (MHz)	fréquence (MHz)
 seconds ago	secondes écoulées
 Identify this signal	Identifier ce signal
 #  radio settings

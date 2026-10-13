@@ -364,7 +364,6 @@ The receiver's filters are made for the signal (or for the group of channels it 
 Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width.	信道宽度：接收机处理的频带（浅色带）。\n点击选择自动或手动宽度。
 Channel width: the band the receiver works with (the light band), set by the standard.	信道宽度：接收机处理的频带（浅色带），由制式决定。
 power (dBFS/bin)	功率（dBFS/频点）
-frequency (MHz)	频率（MHz）
 seconds ago	秒前
 Identify this signal	识别此信号
 #  radio settings
