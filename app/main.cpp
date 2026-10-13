@@ -504,6 +504,7 @@ int main(int argc, char** argv) {
     if (!app.mono) app.mono = ui;
 
     ImGui_ImplGlfw_InitForOther(window, true);
+    glfwSetDropCallback(window, [](GLFWwindow*, int n, const char** paths) { if (n > 0) wbQueueDrop(paths[0]); });   // a recording dropped on the window: the Signal workbench opens it
     watchMonitors();
     if (gWayland) ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // see chooseGlfwPlatform()
 
@@ -575,6 +576,16 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--tle" && i + 1 < argc) passesDevTle(argv[++i]);   // dev: TLEs from a file for the pass planner (no download)
         if (std::string(argv[i]) == "--rx2") addReceiver();   // dev: a second receiver at once (no warning dialog)
         if (std::string(argv[i]) == "--mute") { app.muted = true; app.volume = 0; }
+        if (std::string(argv[i]) == "--wbfile" && i + 1 < argc) {   // dev: the Signal workbench opens this recording (--wbrate for a raw file, --wbtab, --wbsel, --wbkind, --wbbaud, --wbrun)
+            double rate = 0; int tab = 0;
+            for (int k = 1; k + 1 < argc; k++) { if (std::string(argv[k]) == "--wbrate") rate = atof(argv[k + 1]); if (std::string(argv[k]) == "--wbtab") tab = atoi(argv[k + 1]); }
+            wbDevOpen(argv[i + 1], rate, tab);
+            setFamily(app, 73);
+            routeTab(app, "Workbench");
+            i++;
+        }
+        if (std::string(argv[i]) == "--wbsel" && i + 4 < argc) { wbDevSelect(atof(argv[i + 1]), atof(argv[i + 2]), atof(argv[i + 3]), atof(argv[i + 4])); i += 4; }   // dev: time range (s) and band (Hz from the centre; 0 0: none)
+        if (std::string(argv[i]) == "--wbdemod" && i + 3 < argc) { const std::string r = argv[i + 3]; wbDevDemod(atoi(argv[i + 1]), atof(argv[i + 2]), r.find('m') != std::string::npos, r.find('d') != std::string::npos); i += 3; }   // dev: demodulator number, baud, "m" measure and / or "d" demodulate
         if (std::string(argv[i]) == "--identify") gIdentifyDev = true;   // dev: identify the strongest signal once the receiver runs (with --shot)
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
         if (std::string(argv[i]) == "--second" && i + 2 < argc) {   // dev: a second mode (the mode-list row named so) at a frequency in MHz
@@ -660,6 +671,7 @@ int main(int argc, char** argv) {
                 frameNext = glfwGetTime() + interval;
             }
             glfwPollEvents();
+            wbDropTick(app);
             updateTick(app);
             int w, h;
             glfwGetFramebufferSize(window, &w, &h);

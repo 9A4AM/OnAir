@@ -174,7 +174,7 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 73;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumFamilies = 74;   // App::family runs from 0 to kNumFamilies - 1
 constexpr int kNumSubModes = 31;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
@@ -665,6 +665,12 @@ void tuneFreq(App& a, double mhz);                     // set the frequency now 
 void uplinkNoteAdsb(const dect2::AdsbTelemetry& t);   // uplink_ui.cpp: callsigns heard by the ADS-B mode in this session
 double meshSampleRate(App& a);                  // mesh_ui.cpp: the radio rate the selected LoRa bandwidth needs (2 Msps; 4 above 500 kHz)
 void dvbsSetSymbolRate(App& a, double msym);   // dvbs_ui.cpp: the DVB-S/S2 symbol rate, set from elsewhere (the spectrum explorer)
+// wb_ui.cpp: the Signal workbench. A file dropped on the window opens in it (the mode is selected); the dev flags open and drive it for --shot runs
+void wbQueueDrop(const char* path);
+void wbDropTick(App& a);
+void wbDevOpen(const std::string& path, double rate, int tab);
+void wbDevSelect(double t0Sec, double t1Sec, double f0Hz, double f1Hz);
+void wbDevDemod(int kind, double baud, bool runMeasure, bool runDemod);
 void mainTabs(App& a);          // the tab bar with the tabs that fit the current mode (main.cpp)
 void drawShell2(App& a, ImVec2 disp);   // ui2.cpp: the new interface
 void applyUiTheme(App& a);              // ui2.cpp: classic or new colours and shapes

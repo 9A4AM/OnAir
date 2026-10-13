@@ -199,6 +199,7 @@ int main(int argc, char** argv) {
     e.flarm().clearResults();
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
     e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
+    e.wb().clearResults();
     e.codar().clearResults();     // CODAR radars: the table is printed with each line
     e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
