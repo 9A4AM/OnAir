@@ -559,7 +559,7 @@ ModeTuning pskTuning() {
 }
 
 const PskPreset* pskPresets(int& count) {
-    static const PskPreset kP[] = {{"80 m", 3.580}, {"40 m", 7.040}, {"20 m", 14.070}, {"15 m", 21.070}, {"10 m", 28.120}};
+    static const PskPreset kP[] = {{"80 m", 3.580}, {"40 m", 7.040}, {"40 m", 7.070}, {"30 m", 10.142}, {"20 m", 14.070}, {"17 m", 18.100}, {"15 m", 21.070}, {"10 m", 28.120}};
     count = (int)(sizeof kP / sizeof *kP);
     return kP;
 }
