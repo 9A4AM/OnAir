@@ -200,6 +200,7 @@ int main(int argc, char** argv) {
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
     e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
     e.wb().clearResults();
+    e.datawell().clearResults();
     e.codar().clearResults();     // CODAR radars: the table is printed with each line
     e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
@@ -318,6 +319,17 @@ int main(int argc, char** argv) {
                 for (const auto& s : t.codar.stations)
                     printf("  codar: #%d %9.4f MHz %6.1f kHz %s %7.1f kHz/s period %.2f s %5.1f dB %llu sweeps %s%s\n", s.id, s.centreMhz, s.bwKhz, s.dir > 0 ? "up  " : "down", s.rateKhzS, s.periodSec, s.snrDb,
                            (unsigned long long)s.sweeps, s.callsign.empty() ? "" : "ID ", s.callsign.empty() ? "" : (s.callsign + " (unverified)").c_str());
+            if (t.standard == 75) {   // Datawell buoy HF link: the carrier, the bits and the frames found
+                const auto& d = t.datawell;
+                printf("  datawell: %s %.1f Hz wide at %+.1f Hz  %.2f baud (%+.0f ppm)  step %.1f Hz  symbol error %.2f  %.1f dB  %s\n", d.format.empty() ? "-" : d.format.c_str(), d.bwHz, d.offsetHz, d.baud, d.clockPpm, d.stepHz, d.symErr, d.snrDb, d.channel.c_str());
+                if (d.hxvLocked) {
+                    printf("  datawell: HXV %llu vectors (%llu clean, %llu repaired, %llu lost) %llu blocks%s\n", (unsigned long long)d.hxvVectors, (unsigned long long)d.hxvClean, (unsigned long long)d.hxvRepaired, (unsigned long long)d.hxvLost, (unsigned long long)d.hxvBlocks, d.hxvInverted ? " inverted" : "");
+                    if (!d.disp.empty()) printf("  datawell: last vector heave %d north %d west %d cm%s\n", d.disp.back().h, d.disp.back().n, d.disp.back().w, d.disp.back().wrsg ? " (WR-SG)" : "");
+                    if (d.sys.have[1]) printf("  datawell: Hs %.2f m  Tz %.1f s  water %.1f C  spectrum points %d\n", d.sys.hs, d.sys.tz, d.sys.tw, d.specCount);
+                }
+                if (d.periodBits) printf("  datawell: period %d bits (z %.0f) sync %s CRC attempt %s (%d / %d) unverified\n", d.periodBits, d.periodZ, d.syncHex.empty() ? "-" : d.syncHex.c_str(), d.crcName.empty() ? "none" : d.crcName.c_str(), d.crcPass, d.crcTotal);
+                for (size_t i = 0; i < d.frames.size() && i < 3; i++) printf("  datawell: frame %s%s\n", d.frames[i].hex.c_str(), d.frames[i].crcOk ? " crc-attempt-ok" : "");
+            }
             if (t.standard == 71)   // Wi-Fi HaLow networks: the table
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,

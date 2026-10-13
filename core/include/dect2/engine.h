@@ -78,6 +78,7 @@
 #include "halow_rx.h"
 #include "codar_rx.h"
 #include "wb_rx.h"
+#include "datawell_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -290,6 +291,7 @@ public:
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
     DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
     WbReceiver& wb() { return rxWb_; }   // Signal workbench: nothing to clear (the tool works on files)
+    DatawellReceiver& datawell() { return rxDw_; }   // Datawell buoy HF link: clear the frames, force the format (telemetry through latestRx)
     CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
@@ -483,6 +485,7 @@ private:
     HalowReceiver rxHl_;
     CodarReceiver rxCd_;
     WbReceiver rxWb_;
+    DatawellReceiver rxDw_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
