@@ -250,7 +250,7 @@ const ModeTuning* modeTuning(int stdMode) {
     return nullptr;
 }
 
-// the protocols listed as modes of their own (mode_tuning.h): RTTY, SSTV, FreeDV, the WSJT modes and HamDRM of HF digital, the five LoRa networks
+// the protocols listed as modes of their own (mode_tuning.h): RTTY, SSTV, FreeDV, the WSJT modes (FT8 .. MSK144) and HamDRM of HF digital, the five LoRa networks
 // of mesh, POCSAG and FLEX, the three marine services, and VOR and ILS
 static const SubMode kSubModes[] = {
     {"rtty",       "RTTY",       27, 1, -1, 14.080,  {0, 0, 0}},
@@ -273,6 +273,12 @@ static const SubMode kSubModes[] = {
     {"wefax",      "Weather fax", 17, 0, 3, 7.8781,  {3, 0, 0}},   // DWD Pinneberg 7880 kHz: the USB dial 1.9 kHz below the carrier
     {"vor",        "VOR",        32, 1, 1, 113.000, {0, 0, 0}},   // sel: VorReceiver::setFunction
     {"ils",        "ILS",        32, 2, 2, 110.300, {2, 0, 0}},
+    // more of the WSJT-X family (HF digital, the FT8 / WSPR decoders): JT65, JT9, Q65, FST4 (also FST4W) and MSK144
+    {"jt65",       "JT65",       27, 8, 4,  14.076,  {21, 0, 0}},
+    {"jt9",        "JT9",        27, 8, 5,  14.078,  {22, 0, 0}},
+    {"q65",        "Q65",        27, 8, 6,  14.1,    {23, 0, 0}},
+    {"fst4",       "FST4",       27, 8, 7,  1.8366,  {24, 0, 0}},
+    {"msk144",     "MSK144",     27, 8, 8,  28.145,  {25, 0, 0}},
 };
 const SubMode* subModes(int& count) { count = (int)(sizeof kSubModes / sizeof *kSubModes); return kSubModes; }
 const SubMode* subModeById(const std::string& id) {

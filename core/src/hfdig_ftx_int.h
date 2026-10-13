@@ -65,7 +65,7 @@ void callAndGrid(const std::string& msg, std::string& call, std::string& grid);
 bool gridToLatLon(const std::string& grid, double& lat, double& lon);
 
 // ---------------------------------------------------------------- the waveforms
-enum Mode { kFt8 = 0, kFt4 = 1, kFt2 = 2, kWspr = 3, kModes = 4 };
+enum Mode { kFt8 = 0, kFt4 = 1, kFt2 = 2, kWspr = 3, kJt65 = 4, kJt9 = 5, kQ65 = 6, kFst4 = 7, kMsk144 = 8, kFst4w = 9, kModes = 10 };
 struct Spec {
     const char* name;
     double period;      // slot, s
@@ -77,6 +77,10 @@ struct Spec {
     double bt;          // GFSK bandwidth-time product (0 = plain FSK)
 };
 const Spec& spec(int mode);
+// The timing of the modes with a choice of sub-mode or period (JT65 A B C, Q65 A .. E and its period, FST4 / FST4W and MSK144 periods)
+Spec specCfg(int mode, int sub, double period);
+double dtRange(int mode, double period);   // the largest start offset searched, s
+double dtLow(int mode, double period);     // the earliest, as a positive number of seconds before the nominal start
 // FT8 79 tones, FT4 / FT2 103 tones (without the ramp symbols) from 77 message bits
 std::vector<int> ftxTones(int mode, const uint8_t* bits77);
 // Adds a transmission to out (rate Hz, starting at sample `start`, may be negative or past the end): tone 0 at f0 Hz, amplitude amp.

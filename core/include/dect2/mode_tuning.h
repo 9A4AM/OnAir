@@ -41,7 +41,7 @@ struct SubMode {
     const char* name;
     int stdMode;             // the shared engine standard
     int decoders;            // HF digital: HfdigReceiver::setDecoders mask; mesh: setProtocols mask; pagers: setProtocols mask; marine: 0
-    int sel;                 // HF digital: the FT8 / FT4 / FT2 / WSPR mode (kFtxModes index, -1 none); marine: MarineReceiver::setService
+    int sel;                 // HF digital: the FT8 / FT4 / FT2 / WSPR / JT65 / JT9 / Q65 / FST4 / MSK144 mode (kFtxModes index, -1 none); marine: MarineReceiver::setService
     double defMhz;           // the frequency a fresh start uses
     int synth[3];            // the test signal: SynthConfig::modeOpt[0], and for mesh [1] and [4] (see the receiver's <mode>_gen.h)
 };

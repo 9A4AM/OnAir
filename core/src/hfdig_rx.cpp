@@ -101,7 +101,7 @@ struct HfdigReceiver::Impl {
         hamdrm->setLogCallback(cb);
         if (audioOut) audioOut->flush();
         listen.reset();
-        if (cb && curRate > 0) cb("HF digital: listening to the sideband audio for RTTY, SSTV, FreeDV, FT8, FT4, FT2, WSPR and HamDRM");
+        if (cb && curRate > 0) cb("HF digital: listening to the sideband audio for RTTY, SSTV, FreeDV, FT8, FT4, FT2, WSPR, JT65, JT9, Q65, FST4, MSK144 and HamDRM");
     }
 
     void playSpeech(const float* x, size_t n) {

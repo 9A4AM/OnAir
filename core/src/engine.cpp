@@ -2740,7 +2740,7 @@ void applySubMode(Engine& e, const SubMode* s) {
     switch (s->stdMode) {
     case 27:
         e.hfdig().setDecoders(s->decoders);
-        if (s->sel >= 0) for (int m = 0; m < kFtxModes; m++) e.hfdig().ftx().setEnabled(m, m == s->sel);
+        if (s->sel >= 0) for (int m = 0; m < kFtxModes; m++) e.hfdig().ftx().setEnabled(m, m == s->sel || (s->sel == 7 && m == 9));   // FST4 also listens for FST4W
         break;
     case 22: e.mesh().setProtocols(s->decoders); break;
     case 32: e.vor().setFunction(s->sel); break;
