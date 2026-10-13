@@ -1,5 +1,6 @@
 // ADS-B screens: the aircraft table, a radar plot around the receiver, the message monitor, statistics and the options of the test signal.
 #include "app.h"
+#include "results_export.h"
 #include "adsb_map.h"
 #include "dect2/adsb_msg.h"
 #include <cstring>
@@ -114,6 +115,17 @@ void aircraftTable(App& a, bool compact) {
     const AdsbTelemetry& t = a.rx.adsb;
     const bool on = live(a);
     const int cols = compact ? 5 : 11;
+    if (!compact) {
+        static std::string note;
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "icao", "callsign", "alt_ft", "speed_kt", "heading_deg", "vrate_fpm", "lat", "lon", "dist_nm", "squawk", "messages", "age_s", "level_dbfs"};
+        const std::string now = resexp::stamp();
+        if (on) for (const auto& ac : t.aircraft)
+            x.add({now, "1090000000", "ADS-B", icaoText(ac.icao), ac.callsign, ac.hasAlt ? resexp::num(ac.altFt, 0) : "", ac.hasSpeed ? resexp::num(ac.speedKt, 0) : "", ac.hasHeading ? resexp::num(ac.headingDeg, 0) : "",
+                   ac.hasVrate ? resexp::num(ac.vrateFpm, 0) : "", ac.hasPos ? resexp::num(ac.lat, 6) : "", ac.hasPos ? resexp::num(ac.lon, 6) : "", ac.hasRange ? resexp::num(ac.distNm, 1) : "",
+                   ac.hasSquawk ? std::to_string(ac.squawk) : "", std::to_string(ac.messages), resexp::num(ac.ageSec, 0), resexp::num(ac.levelDbfs, 0)});
+        resexp::saveButton(x, "adsb", note, "svadsb");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     if (!ImGui::BeginTable(compact ? "##acs" : "##acf", cols, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("ICAO", ImGuiTableColumnFlags_WidthFixed, 62 * gUi); ImGui::TableSetupColumn("Callsign", ImGuiTableColumnFlags_WidthFixed, 72 * gUi);

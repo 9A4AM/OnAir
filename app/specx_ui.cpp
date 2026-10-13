@@ -3,6 +3,7 @@
 // zoom, pan, region), the region's measurements (with a hand-over to DVB-S/S2), and a sweep across a range that stitches a panorama
 // with its own waterfall and a table of the signals found. No decoder.
 #include "app.h"
+#include "results_export.h"
 #include "gfx.h"
 #include "plot.h"
 #include "dect2/specx_measure.h"
@@ -555,6 +556,14 @@ void sweepPanel(App& a, float h) {
             if (m.flatTop) ImGui::Text("%.3f Ms/s", m.symRateBest / 1e6); else ImGui::TextDisabled("-");
         }
         ImGui::EndTable();
+    }
+    {
+        static std::string note;
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "bandwidth_3db_hz", "level_db", "symbol_rate_sps"};
+        const std::string now = resexp::stamp();
+        for (const auto& m : w.found) x.add({now, resexp::num(toRf(m.centreHz), 0), "spectrum explorer", resexp::num(m.bw3Hz, 0), resexp::num(m.snrDb, 1), m.flatTop ? resexp::num(m.symRateBest, 0) : ""});
+        resexp::saveButton(x, "explorer", note, "svsx");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
 }
 

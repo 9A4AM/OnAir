@@ -1,6 +1,7 @@
 // ACARS screens: the message list with a detail pane, the aircraft table and the channel bars.
 #include "adsb_map.h"
 #include "app.h"
+#include "results_export.h"
 #include "dect2/acars_tel.h"
 #include <algorithm>
 #include <cctype>
@@ -166,6 +167,16 @@ void messageView(App& a) {
     const dect2::AcarsTelemetry& t = a.rx.acars;
     const bool on = live(a);
     filterRow();
+    {
+        static std::string note;
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "direction", "registration", "flight", "label", "meaning", "text"};
+        if (on) for (const auto& m : t.messages) {
+            if (!passes(m)) continue;
+            x.add({clock(m.wallTime), resexp::num(m.freqHz, 0), "ACARS", m.downlink ? "down" : "up", m.reg, m.downlink ? m.flightId : "", m.label, m.labelText, m.text});
+        }
+        resexp::saveButton(x, "acars", note, "svacars");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     const float H = ImGui::GetContentRegionAvail().y;
     const float listH = std::max(120.f * gUi, H * 0.58f);
     if (ImGui::BeginTable("##acmsg", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, listH))) {
