@@ -33,6 +33,7 @@
 #include "dect2/direction.h"
 #include "dect2/teletext.h"
 #include "dect2/feeds.h"
+#include "dect2/pskreporter.h"
 #include "dect2/passes.h"
 #include "dect2/maplayers.h"
 #include "theme.h"
