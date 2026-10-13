@@ -80,6 +80,7 @@
 #include "wb_rx.h"
 #include "datawell_rx.h"
 #include "same_rx.h"
+#include "multitone_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -293,6 +294,7 @@ public:
     DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
     WbReceiver& wb() { return rxWb_; }   // Signal workbench: nothing to clear (the tool works on files)
     DatawellReceiver& datawell() { return rxDw_; }   // Datawell buoy HF link: clear the frames, force the format (telemetry through latestRx)
+    MultitoneReceiver& multitone() { return rxMt_; }   // Multitone paging: clear the transmission list (telemetry through latestRx)
     CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
     SameReceiver& same() { return rxSame_; }   // NOAA weather radio SAME: the alert list, country, Listen (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
@@ -489,6 +491,7 @@ private:
     WbReceiver rxWb_;
     DatawellReceiver rxDw_;
     SameReceiver rxSame_;
+    MultitoneReceiver rxMt_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;

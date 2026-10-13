@@ -201,6 +201,7 @@ int main(int argc, char** argv) {
     e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
     e.wb().clearResults();
     e.datawell().clearResults();
+    e.multitone().clearResults(); // Multitone paging: the transmissions are printed with each line
     e.codar().clearResults();     // CODAR radars: the table is printed with each line
     e.same().clearResults();      // SAME alerts: the newest are printed with each line
     e.same().setSilent(true);     // weather radio: no sound from the command line
@@ -340,6 +341,22 @@ int main(int argc, char** argv) {
                                dect2::same::purgeText(al.msg.purgeMin).c_str(), al.msg.locs.size(), al.agreeing, al.bursts, al.toneSec > 0 ? ", 1050 Hz tone" : "");
                         for (const auto& l : al.msg.locs) printf("  same:   %s  %s\n", l.code.c_str(), l.text.c_str());
                     } else printf("  same: %s%s%s\n", al.eom ? "end of message" : "damaged: ", al.eom ? "" : al.raw.c_str(), al.eom ? "" : (" (" + al.err + ")").c_str());
+                }
+            if (t.standard == 76) {   // Multitone paging: what was measured in the last transmissions (never decoded text)
+                for (const auto& x : t.multitone.tx) {
+                    printf("  multitone: tx %llu %.1f s %.1f dB dev %.0f Hz  %s", (unsigned long long)x.id, x.durSec, x.snrDb, x.devHz, x.kind.c_str());
+                    if (!x.tones.empty()) printf("  tones: %s", x.tones.c_str());
+                    if (x.periodMs > 0) printf("  repeats %.0f ms (%.2f)", x.periodMs, x.periodStrength);
+                    if (!x.lineHz.empty()) { printf("  lines:"); for (size_t i = 0; i < x.lineHz.size() && i < 4; i++) printf(" %.0f", x.lineHz[i]); printf(" Hz"); }
+                    printf("\n");
+                }
+                for (const auto& b : t.multitone.bursts) {
+                    printf("  multitone: fsk %.1f baud%s%s coh %.2f %d bits, BCH-valid words %d of %d (run %d, offset %d)%s\n    %s\n    bits %s\n", b.baud, b.nearestStd.empty() ? "" : " ~", b.nearestStd.c_str(), b.coherence,
+                           b.nBits, b.validWords, b.totalWords, b.bestRun, b.align, b.syncFound ? " POCSAG-sync" : "", b.verdict.c_str(), b.bitsHex.c_str());
+                    if (b.syncCount > 0) printf("    0x605A x%d, words after: %s\n", b.syncCount, b.afterSync.c_str());
+                    for (size_t i = 0; i < b.words.size() && i < 16; i++) printf("    %08X %s\n", b.words[i], b.wordOk[i] ? "bch-ok" : "-");
+                }
+            }
             if (t.standard == 71)   // Wi-Fi HaLow networks: the table
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
