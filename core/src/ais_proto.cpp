@@ -1,5 +1,6 @@
 #include "dect2/ais_proto.h"
 #include "dect2/ais_tel.h"
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -110,8 +111,13 @@ Bits nrziDecode(const Bits& line, int prevLevel) {
 
 static const uint8_t kFlag[8] = {0, 1, 1, 1, 1, 1, 1, 0};
 
+void reverseOctets(Bits& b) {
+    for (size_t i = 0; i < b.size(); i += 8) std::reverse(b.begin() + (std::ptrdiff_t)i, b.begin() + (std::ptrdiff_t)std::min(i + 8, b.size()));
+}
+
 Bits burstLineBits(const Bits& payload) {
     Bits fr = payload;
+    reverseOctets(fr);           // the order on the air (#87); the FCS is computed over the bits as sent
     appendFcs(fr);
     Bits d;
     d.insert(d.end(), kFlag, kFlag + 8);
@@ -148,6 +154,7 @@ HdlcResult hdlcFrames(const Bits& d) {
         for (size_t k = 1; k <= 12 && k <= s; k++) if (!d[s - k]) zeros++;
         if (destuff(raw, fr) && fcsOk(fr)) {
             fr.resize(fr.size() - 16);
+            reverseOctets(fr);       // from the order on the air to the order of the message tables (#87)
             r.good.push_back(std::move(fr));
         } else if (alt >= 9 || zeros >= 11) r.bad++;
     }

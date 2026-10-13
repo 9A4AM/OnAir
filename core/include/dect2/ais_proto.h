@@ -31,6 +31,10 @@ Bits nrziDecode(const Bits& line, int prevLevel = 1);
 // The bits a transmitter puts on the air for one message: 24 bits of training sequence (alternating 0 and 1), start flag, stuffed payload + FCS,
 // end flag, 8 bits while the transmitter ramps down. The training sequence alternates on the line; everything after it is NRZI coded. 'payload' is the message without FCS.
 Bits burstLineBits(const Bits& payload);
+// HDLC sends every octet least significant bit first, so on the air the bits of each octet of the message come in the reverse of the order the
+// message tables number them (type 1 = 000001 is on the air as 00100000). 'payload' and everything above the HDLC layer (decodeMessage, !AIVDM)
+// are in table order: hdlcFrames() and burstLineBits() turn between the two with this. A last group of fewer than 8 bits is reversed on its own.
+void reverseOctets(Bits& bits);
 
 // Frames found in a bit stream that is already NRZI decoded: every stretch between two flags that is long enough, destuffed.
 // A frame is reported good when its FCS is right. 'bad' counts stretches of plausible length whose FCS failed.
