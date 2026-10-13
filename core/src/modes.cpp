@@ -122,6 +122,9 @@
 #include "dect2/zigbee_rx.h"
 #include "dect2/zigbee_tel.h"
 #include "dect2/zigbee_gen.h"
+#include "dect2/flarm_rx.h"
+#include "dect2/flarm_tel.h"
+#include "dect2/flarm_gen.h"
 #include "dect2/rid_rx.h"
 #include "dect2/rid_tel.h"
 #include "dect2/rid_gen.h"
@@ -226,7 +229,7 @@ static std::vector<ModeTuning> anyFrequency(std::vector<ModeTuning> t) {
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = anyFrequency({dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), generalTuning(), timeTuning(), ridTuning(), meteorTuning(), nrTuning(), cubesatTuning(), goesTuning(), globalstarTuning(), vdesTuning(), hrptTuning(), zigbeeTuning()});
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), generalTuning(), timeTuning(), ridTuning(), meteorTuning(), nrTuning(), cubesatTuning(), goesTuning(), globalstarTuning(), vdesTuning(), hrptTuning(), zigbeeTuning(), flarmTuning()});
     return t;
 }
 
@@ -349,6 +352,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 64: return makeGlobalstarSynth(cfg, sampleRate);
     case 65: return makeVdesSynth(cfg, sampleRate);
     case 67: return makeZigbeeSynth(cfg, sampleRate);
+    case 68: return makeFlarmSynth(cfg, sampleRate);
     case 58: return makeRidSynth(cfg, sampleRate);
     case 61: return makeMeteorSynth(cfg, sampleRate);
     case 59: return makeNrSynth(cfg, sampleRate);
@@ -414,6 +418,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 63: return globalstarSummary(t.globalstar);
     case 64: return vdesSummary(t.vdes);
     case 66: return zigbeeSummary(t.zigbee);
+    case 67: return flarmSummary(t.flarm);
     case 57: return ridSummary(t.rid);
     case 60: return meteorSummary(t.meteor);
     case 58: return nrSummary(t.nr);

@@ -70,6 +70,7 @@
 #include "globalstar_rx.h"
 #include "vdes_rx.h"
 #include "zigbee_rx.h"
+#include "flarm_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -266,6 +267,7 @@ public:
     GlobalstarReceiver& globalstar() { return rxGs_; }   // Globalstar activity monitor: clear the event log (telemetry through latestRx)
     VdesReceiver& vdes() { return rxVdes_; }   // VDES: clear the ASM and burst lists (telemetry through latestRx)
     ZigbeeReceiver& zigbee() { return rxZb_; }   // Zigbee / 802.15.4: clear the PAN and device tables (telemetry through latestRx)
+    FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
     TimeReceiver& timesig() { return rxTime_; }   // time signals: station, receiver position (telemetry through latestRx)
     RidReceiver& rid() { return rxRid_; }   // Drone Remote ID: clear the drone table (telemetry through latestRx)
@@ -444,6 +446,7 @@ private:
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
     HrptReceiver rxHrpt_;
+    FlarmReceiver rxFlarm_;
     uint64_t modeSeq_[64] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;

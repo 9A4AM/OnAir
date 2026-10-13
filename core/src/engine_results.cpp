@@ -92,6 +92,7 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("vdes", 64, rxVdes_),
         DECT2_RESULT_SLOT("hrpt", 65, rxHrpt_),
         DECT2_RESULT_SLOT("zigbee", 66, rxZb_),
+        DECT2_RESULT_SLOT("flarm", 67, rxFlarm_),
     };
 }
 

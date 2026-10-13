@@ -14,6 +14,7 @@
 #include "dect2/rate_choice.h"
 #include "dect2/ble_proto.h"
 #include "dect2/engine.h"
+#include "dect2/flarm_proto.h"
 #include "dect2/crash_report.h"
 #include "dect2/modes.h"
 #include "dect2/dvbt.h"
@@ -185,6 +186,7 @@ int main(int argc, char** argv) {
     e.qo100().setSilent(true);    // QO-100: Listen without the sound card
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
+    e.flarm().clearResults();
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
     e.globalstar().clearResults();   // Globalstar: the events are printed with each line
     e.vdes().clearResults();      // VDES: the ASM frames and bursts are printed with each line
@@ -279,6 +281,12 @@ int main(int argc, char** argv) {
                 for (const auto& ap : t.wifi.aps)
                     printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
                            wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
+            if (t.standard == 67)   // FLARM: the aircraft heard (flagged aircraft are only counted)
+                for (size_t i = 0; i < t.flarm.aircraft.size() && i < 3; i++) {
+                    const FlarmAircraft& a = t.flarm.aircraft[i];
+                    printf("  flarm: %06X %-16s %5d m %5.0f km/h %4.0f deg %+5.1f m/s %s\n", a.id, dect2::flarm::aircraftTypeName(a.acType), a.altM, a.speedKmh, a.trackDeg, a.climbMs,
+                           a.hasRange ? (std::to_string((int)(a.distKm * 10) / 10.0).substr(0, 5) + " km").c_str() : "-");
+                }
             if (t.standard == 62)   // CubeSat telemetry: the newest frames
                 for (size_t i = 0; i < t.cube.frames.size() && i < 3; i++) {
                     const CubeFrame& f = t.cube.frames[i];
