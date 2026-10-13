@@ -10,6 +10,8 @@
 #include "dect2/hfdig_hamdrm.h"
 #include "dect2/hfdig_kbd.h"
 #include "dect2/marine_dsp.h"
+#include "dect2/hfdig_wide.h"
+#include "dect2/widespan.h"
 #include "dect2/audioout.h"
 #include "ham_listen.h"
 #include <algorithm>
@@ -58,6 +60,9 @@ struct HfdigReceiver::Impl {
     std::atomic<int> decMask{31};
     std::atomic<int> demodSet{HfDemodUsb}; // setDemod()          // setDecoders(): which of the six run
     std::function<void(const float*, size_t)> audioTap, speechTap;
+    std::atomic<bool> wideReq{false}, wideChanged{false};
+    std::atomic<double> wideSpan{250000}, dialHz{0};
+    std::unique_ptr<HfdigWide> wide;
     hfdig::Upsample6 up;
     std::vector<float> pcm;
     std::unique_ptr<AudioOut> audioOut;
@@ -71,7 +76,7 @@ struct HfdigReceiver::Impl {
     HfdigTelemetry loaded;
     void takeRequests() {        // the receiver thread
         std::lock_guard<std::mutex> lk(mu);
-        if (clearMask & 1) rtty->clearText();
+        if (clearMask & 1) { rtty->clearText(); if (wide) wide->clearRtty(); }
         if (clearMask & 2) sstv->setHistory({});
         if (clearMask & 8) ftx->clearDecodes();
         if (clearMask & 16) hamdrm->setHistory({});
@@ -104,6 +109,15 @@ struct HfdigReceiver::Impl {
         kbd->setLogCallback(cb);
         if (audioOut) audioOut->flush();
         listen.reset();
+        wide.reset();
+        ftx->setForwardTo(nullptr);
+        ftx->setDialHz(dialHz.load());
+        if (running && wideReq.load()) {
+            wide = std::make_unique<HfdigWide>(*ftx);
+            const int dm = decMask.load();
+            wide->configure(curRate, wideSpan.load(), dialHz.load(), off, (dm & 8) != 0, (dm & 1) != 0);
+            if (cb) cb("HF digital: whole span, " + std::to_string(wide->ftxChannels()) + " FT8 / FT4 / WSPR slots and " + std::to_string(wide->rttyChannels()) + " RTTY channels");
+        }
         if (cb && curRate > 0) cb("HF digital: listening to the sideband audio for RTTY, SSTV, FreeDV, FT8, FT4, FT2, WSPR, JT65, JT9, Q65, FST4, MSK144 and HamDRM");
     }
 
@@ -134,6 +148,7 @@ struct HfdigReceiver::Impl {
         ftx->telemetry(tel.ftx);
         hamdrm->telemetry(tel.hamdrm);
         kbd->telemetry(tel.kbd);
+        if (wide) wide->rttyTelemetry(tel.rttyWide); else tel.rttyWide.clear();
         std::lock_guard<std::mutex> lk(mu);
         pub = tel;
     }
@@ -200,11 +215,13 @@ void HfdigReceiver::feed(const cf32* x, size_t n) {
     if (m.tapsReq.exchange(false)) { std::lock_guard<std::mutex> lk(m.mu); m.audioTap = m.audioTapSet; m.speechTap = m.speechTapSet; }
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
     m.takeRequests();
-    if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
+    if (m.wideChanged.exchange(false)) m.resetState();
+    if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); if (m.wide) m.wide->setOffsetHz(m.offsetHz); }
     if (m.curRate <= 0) return;
     for (size_t i = 0; i < n; i++) m.power += (double)std::norm(x[i]);
     m.nPower += (int64_t)n;
     m.nIn += (int64_t)n;
+    if (m.running && m.wide) m.wide->feed(x, n);
     if (m.running) {
         if (const int d = hfDemodResolve(m.demodSet.load(), 0); d != m.usb.demod()) m.usb.setDemod(d);
         m.base.clear(); m.audio.clear();
@@ -241,6 +258,12 @@ void HfdigReceiver::setListenTap(std::function<void(const float* x, size_t n)> c
 void HfdigReceiver::setAudioTap(std::function<void(const float* x, size_t n)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->audioTapSet = std::move(cb); p_->tapsReq = true; }
 void HfdigReceiver::setSpeechTap(std::function<void(const float* x, size_t n)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->speechTapSet = std::move(cb); p_->tapsReq = true; }
 
+void HfdigReceiver::setWide(bool on, double spanHz) {
+    p_->wideSpan = std::max(1000.0, std::min(kWideMaxSpanHz, spanHz));
+    if (p_->wideReq.exchange(on) != on) p_->wideChanged = true;
+}
+bool HfdigReceiver::wide() const { return p_->wideReq.load(); }
+void HfdigReceiver::setDialHz(double hz) { if (p_->dialHz.exchange(hz) != hz) p_->wideChanged = true; }
 HfdigRtty& HfdigReceiver::rtty() { return *p_->rtty; }
 void HfdigReceiver::setDecoders(int mask) { p_->decMask = mask & 63; }
 HfdigKbd& HfdigReceiver::kbd() { return *p_->kbd; }

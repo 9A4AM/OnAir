@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <vector>
 
 namespace dect2 {
 
@@ -29,6 +30,7 @@ struct HfdigTelemetry {
     float audioDb = -200;        // power of the upper sideband (200 .. 3800 Hz) before the AGC, dBFS
     // the decoders
     HfdigRttyTelemetry rtty;
+    std::vector<RttyWideSignal> rttyWide;   // whole-span decoding: every RTTY signal of the span (empty when it is off)
     HfdigSstvTelemetry sstv;
     HfdigFreedvTelemetry freedv;
     HfdigFtxTelemetry ftx;

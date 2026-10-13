@@ -67,6 +67,9 @@ extern const ModeUi kNrUi;
 extern const ModeUi kGoesUi;
 extern const ModeUi kHrptUi;
 
+// ---- whole-span decoding ("wide decode"): the families whose receivers can decode everything in the visible span (widespan.h) ----
+bool modeSupportsWideHf(int family) { return family == 25 || family == 34 || family == 36; }   // HF digital, CW, PSK: widespan.h inside the receiver
+
 const ModeUi* modeUi(int family) {
     switch (family) {
     case 6: return &kDvbsUi;
@@ -220,7 +223,7 @@ static std::set<int>& wideFamilies() {
     static std::set<int> s = {9, 31, 33, 38, 45, 50};   // DMR, M17, D-STAR, NXDN, dPMR, P25: one decoder per carrier (core/wide_modes.h)
     return s;
 }
-bool modeSupportsWide(int family) { return wideFamilies().count(family) > 0; }
+bool modeSupportsWide(int family) { return modeSupportsWideHf(family) || wideFamilies().count(family) > 0; }
 void registerWideMode(int family) { wideFamilies().insert(family); }
 bool wideActive(const App& a) { return a.wideDecode && modeSupportsWide(a.family) && a.engine.running() && Engine::wideSupported(a.family + 1) && a.rx.standard == a.family + 1; }
 
@@ -232,7 +235,7 @@ void wideSync(App& a) {
         a.wideSel = 0; lastSel = -1;
     }
     const bool on = a.wideDecode && modeSupportsWide(a.family) && Engine::wideSupported(a.family + 1);
-    if (on != lastOn) { a.engine.setWideDecode(on); lastOn = on; a.wideSel = 0; lastSel = -1; }
+    if (on != lastOn) { a.engine.setWideVoice(on); lastOn = on; a.wideSel = 0; lastSel = -1; }
     if (!on) return;
     if (a.wideSel != lastSel) { a.engine.setWideSelected(a.wideSel); lastSel = a.wideSel; }
     if (a.muted != lastMuted) { a.engine.setWideMuted(a.muted); lastMuted = a.muted; }

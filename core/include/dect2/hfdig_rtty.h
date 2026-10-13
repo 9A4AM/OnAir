@@ -39,6 +39,19 @@ struct HfdigRttyTelemetry {
     float quality = 0;               // 0 .. 1: how clean the signal is
 };
 
+// One RTTY signal found by whole-span decoding (hfdig_wide.h): its own pair of tones, speed and text
+struct RttyWideSignal {
+    double lowHz = 0;                // the lower tone, Hz above the dial frequency of the radio (the whole span, not only the passband)
+    double shiftHz = 0, baud = 0;
+    bool reverse = false;            // the mark is the upper tone
+    bool active = false;             // still on the air (else: gone, its text stays)
+    bool resolved = false;           // the speed and polarity are settled (else: the best of several guesses is shown)
+    uint64_t chars = 0, framingErrors = 0;
+    float quality = 0;
+    double lastSec = 0;              // receiver seconds of the last character
+    std::string text;
+};
+
 class HfdigRtty : public HfdigDecoder {
 public:
     HfdigRtty();
@@ -50,6 +63,7 @@ public:
     // settings: any thread, taken up by the next feedAudio()
     void setBaudIndex(int i);          // kRttyBaudTable
     void setShiftIndex(int i);         // kRttyShiftTable
+    void setFixedPair(double lowToneHz);   // whole-span decoding: the pair is given (lower tone, Hz), the decoder does not search (0: it does)
     void setReverse(bool r);
     void setUnshiftOnSpace(bool u);    // a space returns the figures shift to letters
     void clearText();

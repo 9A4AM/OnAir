@@ -2531,6 +2531,13 @@ void Engine::setSecondarySound(bool on) {
     if (secTh_.joinable()) muteReceiver(activeStdFor(secStd_.load()), !on);
 }
 
+void Engine::setWideDecode(bool on, double spanHz) {
+    wideDecode_ = on;
+    rxCw_.setWide(on, spanHz);
+    rxPsk_.setWide(on, spanHz);
+    rxHfdig_.setWide(on, spanHz);
+}
+
 // Where the receiver of active standard a finds its channel: as start() does for the first mode, one receiver at a time
 void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, double chanHz) {
     switch (a) {
@@ -2543,7 +2550,7 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 21: rxMesh_.setSignalOffset(o); break;
     case 24: rxPager_.setSignalOffset(o); break;
     case 25: rxPacket_.setSignalOffset(o); break;
-    case 26: rxHfdig_.setSignalOffset(o); break;
+    case 26: rxHfdig_.setSignalOffset(o); rxHfdig_.setDialHz(dialHz); break;
     case 27: rxAirband_.setSignalOffset(o); rxAirband_.setCenterHz(centreHz); break;
     case 28: rxVdl2_.setSignalOffset(o); rxVdl2_.setCenterHz(centreHz); break;
     case 29: rxIsm_.setSignalOffset(o); rxIsm_.setCenterHz(centreHz); break;

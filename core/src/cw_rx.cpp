@@ -6,6 +6,7 @@
 #include "dect2/pskreporter.h"
 #include "dect2/marine_dsp.h"
 #include "dect2/fftutil.h"
+#include "dect2/widespan.h"
 #include "ham_listen.h"
 #include <algorithm>
 #include <atomic>
@@ -101,6 +102,39 @@ struct CwReceiver::Impl {
     int nextId = 1, focusId = -1;
     std::vector<float> toneBuf;
     double tonePh = 0;
+    // whole span
+    std::atomic<bool> wideReq{false}, wideChanged{false};
+    std::atomic<double> wideSpanReq{250000};
+    std::atomic<double> spotShift{0};
+    struct Wide {
+        WideDecimator dec;
+        std::vector<std::unique_ptr<CwReceiver>> subs;
+        std::vector<double> centre;
+        std::vector<cf32> buf;
+        int focusSlice = -1;
+    };
+    std::unique_ptr<Wide> wide;
+    static constexpr double kSlice = 12000;
+    void buildWide() {
+        wide.reset();
+        if (!wideReq.load() || !running) return;
+        auto w = std::make_unique<Wide>();
+        w->dec.configure(curRate, wideSpanReq.load());
+        w->dec.setOffsetHz(offsetNow());
+        const int half = (int)std::ceil((w->dec.spanHz() / 2 - kSlice / 2) / kSlice);
+        for (int k = -half; k <= half; k++) {
+            auto r = std::make_unique<CwReceiver>();
+            r->setSilent(true);
+            r->setSpotShiftHz(k * kSlice);
+            r->setThresholdDb(thrDb.load());
+            r->configure(w->dec.outRate());
+            r->setSignalOffset(k * kSlice);
+            w->centre.push_back(k * kSlice);
+            w->subs.push_back(std::move(r));
+        }
+        wide = std::move(w);
+    }
+    double offsetNow() { std::lock_guard<std::mutex> lk(mu); return offsetHz; }
 
     Impl() {
         win.resize(kN);
@@ -144,6 +178,7 @@ struct CwReceiver::Impl {
             keptLoad = false;
         }
     }
+    void reportWide();
     double sigSec() const { return (double)nBase / kBase; }
 
     void resetState() {
@@ -168,7 +203,9 @@ struct CwReceiver::Impl {
         held.assign(2 * kHalf + 1, 0.f); acc.assign(2 * kHalf + 1, 0.f); accN = 0; frames = 0; floorLin = 0;
         chans.clear(); focusId = -1;
         listen.reset(); toneBuf.clear();
-        if (cb && curRate > 0) cb(running ? "CW: skimming +-7 kHz around the dial frequency" : "CW: the sample rate is too low (250 kHz at least)");
+        buildWide();
+        if (cb && curRate > 0 && wide) cb("CW: skimming the whole span (" + std::to_string((int)(wide->dec.spanHz() / 1000)) + " kHz)");
+        else if (cb && curRate > 0) cb(running ? "CW: skimming +-7 kHz around the dial frequency" : "CW: the sample rate is too low (250 kHz at least)");
     }
 
     Chan* find(double hz, double tol) {
@@ -268,7 +305,7 @@ struct CwReceiver::Impl {
             if (PskReporter::get().want())
                 for (const std::string& k : now)
                     if (std::find(c.calls.begin(), c.calls.end(), k) == c.calls.end() && pskr::sendsInText(c.text, k))
-                        PskReporter::get().spot("CW", c.f, c.lo > 0 ? (float)(20 * std::log10(std::max(1e-6f, c.hi) / c.lo)) : 0.f, k);
+                        PskReporter::get().spot("CW", c.f + spotShift.load(), c.lo > 0 ? (float)(20 * std::log10(std::max(1e-6f, c.hi) / c.lo)) : 0.f, k);
             c.calls = now;
         }
     }
@@ -369,6 +406,7 @@ struct CwReceiver::Impl {
     }
 };
 
+
 CwReceiver::CwReceiver() : p_(std::make_unique<Impl>()) {}
 CwReceiver::~CwReceiver() = default;
 
@@ -387,16 +425,32 @@ void CwReceiver::reset() {
 
 void CwReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
+    if (m.wideChanged.exchange(false)) m.resetReq = true;
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
-    if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
-    if (m.clearReq.exchange(false)) { m.chans.clear(); m.focusId = -1; m.kept.clear(); }
+    if (m.offsetReq.exchange(false) && m.running) {
+        std::lock_guard<std::mutex> lk(m.mu);
+        m.front.setOffsetHz(m.offsetHz);
+        if (m.wide) m.wide->dec.setOffsetHz(m.offsetHz);
+    }
+    if (m.clearReq.exchange(false)) {
+        m.chans.clear(); m.focusId = -1; m.kept.clear();
+        if (m.wide) for (auto& r : m.wide->subs) r->clearSignals();
+    }
     m.takeKept();
     {
         std::lock_guard<std::mutex> lk(m.mu);
         if (m.focusReq) {
             m.focusReq = false;
-            Chan* c = m.find(m.focusHz, 60);
-            if (!c && (int)m.chans.size() < kCwMaxSignals + 4) c = &m.add(m.focusHz, true);
+            if (m.wide) {
+                int best = 0;
+                for (size_t i = 0; i < m.wide->centre.size(); i++)
+                    if (std::fabs(m.wide->centre[i] - m.focusHz) < std::fabs(m.wide->centre[(size_t)best] - m.focusHz)) best = (int)i;
+                m.wide->focusSlice = best;
+                m.wide->subs[(size_t)best]->setFocusHz(m.focusHz - m.wide->centre[(size_t)best]);
+                m.focusReq = false;
+            }
+            Chan* c = m.wide ? nullptr : m.find(m.focusHz, 60);
+            if (!c && !m.wide && (int)m.chans.size() < kCwMaxSignals + 4) c = &m.add(m.focusHz, true);
             if (c) m.focusId = c->id;
             for (Chan& o : m.chans) if (o.manual && o.id != m.focusId && o.chars == 0) o.manual = false;
         }
@@ -409,7 +463,12 @@ void CwReceiver::feed(const cf32* x, size_t n) {
     }
     m.nPower += (int64_t)n;
     m.nIn += (int64_t)n;
-    if (m.running) {
+    if (m.running && m.wide) {
+        m.wide->buf.clear();
+        m.wide->dec.process(x, n, m.wide->buf);
+        for (cf32& v : m.wide->buf) if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
+        for (auto& r : m.wide->subs) r->feed(m.wide->buf.data(), m.wide->buf.size());
+    } else if (m.running) {
         m.base.clear();
         m.front.process(x, n, m.base);
         for (cf32& v : m.base) if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
@@ -417,7 +476,7 @@ void CwReceiver::feed(const cf32* x, size_t n) {
     }
     while ((double)m.nIn >= m.nextReport) {
         m.nextReport += 0.25 * m.curRate;
-        m.report();
+        if (m.wide) m.reportWide(); else m.report();
     }
 }
 
@@ -488,5 +547,72 @@ const CwBand* cwBands(int& count) {
     count = (int)(sizeof kB / sizeof *kB);
     return kB;
 }
+
+} // namespace dect2
+
+namespace dect2 {
+
+void CwReceiver::Impl::reportWide() {
+    Impl& m = *this;
+    auto& W = *m.wide;
+    m.tel.seq++;
+    m.tel.timeSec = m.curRate > 0 ? (double)m.nIn / m.curRate : 0;
+    m.tel.levelDb = m.nPower ? (float)(10 * std::log10(m.power / (double)m.nPower + 1e-20)) : -200.f;
+    m.power = 0; m.nPower = 0;
+    m.tel.inputRate = m.curRate;
+    m.tel.windowHz = W.dec.spanHz() / 2;
+    m.tel.signals.clear();
+    std::vector<float> spec;
+    uint64_t ok = 0, bad = 0;
+    int decoding = 0;
+    float floorSum = 0; int nFloor = 0;
+    m.tel.focusId = -1;
+    for (size_t i = 0; i < W.subs.size(); i++) {
+        CwTelemetry t;
+        if (!W.subs[i]->telemetry(t, 0)) continue;
+        for (CwSignal& s : t.signals) {
+            if (std::fabs(s.offsetHz) > kSlice / 2 + (i == 0 || i + 1 == W.subs.size() ? 1000 : 0)) continue;
+            s.id += (int)i * 100000;
+            s.offsetHz += W.centre[i];
+            ok += s.chars;
+            if (s.locked && t.timeSec - s.lastActiveSec < 5) decoding++;
+            m.tel.signals.push_back(std::move(s));
+        }
+        bad += t.blocksBad;
+        if (t.floorDb > -190) { floorSum += t.floorDb; nFloor++; }
+        if ((int)i == W.focusSlice && t.focusId >= 0) m.tel.focusId = t.focusId + (int)i * 100000;
+        // the slice's middle 12 kHz of its spectrum, in the order of the slices
+        const size_t nb = t.spectrum.size();
+        if (nb) {
+            const size_t mid = nb / 2, hw = (size_t)(kSlice / 2 / kBinHz);
+            for (size_t b = mid - hw; b < mid + hw && b < nb; b++) spec.push_back(t.spectrum[b]);
+        }
+    }
+    if (!spec.empty()) {
+        const size_t P = (spec.size() + 3999) / 4000;
+        m.tel.spectrum.assign((spec.size() + P - 1) / P, -200.f);
+        for (size_t b = 0; b < spec.size(); b++) m.tel.spectrum[b / P] = std::max(m.tel.spectrum[b / P], spec[b]);
+        m.tel.specSeq++;
+    }
+    m.tel.floorDb = nFloor ? floorSum / (float)nFloor : -200.f;
+    m.tel.snrDb = 0;
+    for (const CwSignal& s : m.tel.signals) {
+        if (s.id == m.tel.focusId || (m.tel.focusId < 0 && s.snrDb > m.tel.snrDb)) m.tel.snrDb = s.snrDb;
+    }
+    for (const CwSignal& k : m.kept) m.tel.signals.push_back(k);
+    std::sort(m.tel.signals.begin(), m.tel.signals.end(), [](const CwSignal& a, const CwSignal& b) { return a.offsetHz < b.offsetHz; });
+    m.tel.blocksOk = std::max(m.tel.blocksOk, ok); m.tel.blocksBad = std::max(m.tel.blocksBad, bad);
+    m.tel.state = decoding ? 2 : m.tel.signals.empty() ? 0 : 1;
+    m.tel.dataValid = decoding > 0;
+    std::lock_guard<std::mutex> lk(m.mu);
+    m.pub = m.tel;
+}
+
+void CwReceiver::setWide(bool on, double spanHz) {
+    p_->wideSpanReq = std::max(1000.0, std::min(kWideMaxSpanHz, spanHz));
+    if (p_->wideReq.exchange(on) != on) p_->wideChanged = true;
+}
+bool CwReceiver::wide() const { return p_->wideReq.load(); }
+void CwReceiver::setSpotShiftHz(double hz) { p_->spotShift = hz; }
 
 } // namespace dect2

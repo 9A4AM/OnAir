@@ -44,6 +44,7 @@ struct FtxDecode {
     std::string call, grid;  // the calling station and its locator when the message has them
     int dbm = -1;            // WSPR: the power sent
     int pass = 0;            // 0 first pass, 1 .. after subtracting the stronger signals
+    double dialHz = 0;       // the dial frequency of the slot it was heard on (whole-span decoding: several slots at once); 0: not known
 };
 
 struct HfdigFtxTelemetry {
@@ -95,6 +96,13 @@ public:
     void waitIdle();
     // tests: decode the slots already complete in the audio fed so far, with what is there
     void flushSlots();
+
+    // whole-span decoding (hfdig_wide.cpp): one decoder per dial slot; the decodes of the slot decoders go to the main one
+    void setDialHz(double hz);                       // stamped on every decode (FtxDecode::dialHz)
+    void setSpotShiftHz(double hz);                  // added to the audio frequency of a PSK Reporter spot (the slot's dial minus the radio's)
+    void setForwardTo(HfdigFtx* main);               // every decoded slot is also added to main (addForeign), which is the one that lists it
+    void addForeign(const std::vector<FtxDecode>& d, int mode, double slotUtc, float decodeMs);
+    void copyClockFrom(HfdigFtx& o);                 // the same time source (start time, slot search, wall clock)
 
 private:
     struct Impl;

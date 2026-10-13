@@ -798,6 +798,8 @@ struct HfdigFtx::Impl {
     CallHash hash;
     std::map<uint32_t, std::string> wsprHash;
     std::thread th;
+    std::atomic<double> dialHz{0}, spotShift{0};
+    std::atomic<HfdigFtx*> fwd{nullptr};
 
     Impl() {
         for (auto& e : enabled) e = true;
@@ -986,16 +988,17 @@ struct HfdigFtx::Impl {
                 }
             }
             const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
-            std::lock_guard<std::mutex> lk(mu);
+            std::unique_lock<std::mutex> lk(mu);
             const int m = j.mode;
             tel.slots[m]++;
             tel.lastSlotCount[m] = (int)dec.size();
             tel.lastSlotUtc[m] = j.slotUtc;
             tel.decodeMs[m] = (float)ms;
             std::sort(dec.begin(), dec.end(), [](const FtxDecode& a, const FtxDecode& b) { return a.snrDb > b.snrDb; });
-            for (const auto& d : dec) {
+            for (auto& d : dec) {
+                d.dialHz = dialHz.load();
                 tel.decodes.push_back(d);
-                if (!d.call.empty() && PskReporter::get().want()) PskReporter::get().spot(ftxModeName(m), d.hz, d.snrDb, d.call, d.grid);
+                if (!d.call.empty() && PskReporter::get().want()) PskReporter::get().spot(ftxModeName(m), d.hz + spotShift.load(), d.snrDb, d.call, d.grid);
                 tel.total++;
                 tel.perMode[m]++;
             }
@@ -1009,6 +1012,7 @@ struct HfdigFtx::Impl {
                 searchShift = at - std::round(at / P) * P;
             }
             clockStats();
+            if (HfdigFtx* f = fwd.load()) { lk.unlock(); f->addForeign(dec, m, j.slotUtc, (float)ms); }
         }
     }
 
@@ -1071,6 +1075,25 @@ void HfdigFtx::setDecodes(std::vector<FtxDecode> d) {
 void HfdigFtx::setStartTime(double utc) { std::lock_guard<std::mutex> lk(p_->setMu); p_->startTime = utc; }
 void HfdigFtx::setSlotSearch(bool on) { std::lock_guard<std::mutex> lk(p_->setMu); p_->slotSearch = on; }
 void HfdigFtx::setWallClock(std::function<double()> fn) { std::lock_guard<std::mutex> lk(p_->setMu); p_->wall = std::move(fn); }
+void HfdigFtx::setDialHz(double hz) { p_->dialHz = hz; }
+void HfdigFtx::setSpotShiftHz(double hz) { p_->spotShift = hz; }
+void HfdigFtx::setForwardTo(HfdigFtx* main) { p_->fwd = main; }
+void HfdigFtx::addForeign(const std::vector<FtxDecode>& d, int m, double slotUtc, float ms) {
+    if (m < 0 || m >= kFtxModes) return;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->tel.slots[m]++;
+    p_->tel.lastSlotCount[m] = (int)d.size();
+    p_->tel.lastSlotUtc[m] = slotUtc;
+    p_->tel.decodeMs[m] = ms;
+    for (const auto& x : d) { p_->tel.decodes.push_back(x); p_->tel.total++; p_->tel.perMode[m]++; }
+    if (p_->tel.decodes.size() > kFtxKeep) p_->tel.decodes.erase(p_->tel.decodes.begin(), p_->tel.decodes.end() - (long)kFtxKeep);
+}
+void HfdigFtx::copyClockFrom(HfdigFtx& o) {
+    double st; bool ss; std::function<double()> w;
+    { std::lock_guard<std::mutex> lk(o.p_->setMu); st = o.p_->startTime; ss = o.p_->slotSearch; w = o.p_->wall; }
+    std::lock_guard<std::mutex> lk(p_->setMu);
+    p_->startTime = st; p_->slotSearch = ss; p_->wall = std::move(w);
+}
 void HfdigFtx::waitIdle() {
     std::unique_lock<std::mutex> lk(p_->mu);
     p_->idleCv.wait(lk, [&] { return p_->jobs.empty() && !p_->busy; });

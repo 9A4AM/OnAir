@@ -256,6 +256,10 @@ public:
     GsmrReceiver& gsmr() { return rxGsmr_; }   // GSM-R: the receiver's own controls and results (the interface reads telemetry through latestRx)
     CellReceiver& cell() { return rxCell_; }   // Cell towers: the receiver's own controls and results (the interface reads telemetry through latestRx)
     IsmReceiver& ism() { return rxIsm_; }   // ISM sensors: the receiver's own controls and results (the interface reads telemetry through latestRx)
+    // Whole-span decoding (the "wide decode" switch): the narrowband HF modes (CW, PSK, HF digital: FT8 / FT4 / WSPR slots and RTTY) decode
+    // the visible span (up to 250 kHz around the dial frequency) instead of the tuned transmission (widespan.h). Off by default.
+    void setWideDecode(bool on, double spanHz = 250000);
+    bool wideDecode() const { return wideDecode_.load(); }
     CwReceiver& cw() { return rxCw_; }   // CW: the receiver's own controls and results (the interface reads telemetry through latestRx)
     MacReceiver& mac() { return rxMac_; }   // MAC television: pictures, sound (the interface reads telemetry through latestRx)
     DpmrReceiver& dpmr() { return rxDpmr_; }   // dPMR: scan, sound (the interface reads telemetry through latestRx)
@@ -308,8 +312,8 @@ public:
     // Clear empties them. Any thread.
     // Whole-span decoding (DMR, M17, D-STAR, NXDN, dPMR, P25): one decoder per carrier found in the captured span instead of the tuned channel only.
     // Takes effect at once; the single-channel receiver is untouched while it is on. Needs a restart-free toggle: the carriers appear within a second.
-    void setWideDecode(bool on) { wideOn_.store(on); for (auto& v : wideSeq_) v = 0; }
-    bool wideDecode() const { return wideOn_.load(); }
+    void setWideVoice(bool on) { wideOn_.store(on); for (auto& v : wideSeq_) v = 0; }
+    bool wideVoice() const { return wideOn_.load(); }
     void setWideMuted(bool m) { wide_.setMuted(m); }
     void setWideSelected(int carrierId) { wide_.setSelected(carrierId); }   // the carrier whose sound plays and whose detail shows (0: the best locked)
     static bool wideSupported(int analysisMode) { return WideModes::supports(analysisMode); }
@@ -438,6 +442,7 @@ private:
     HfdlReceiver rxHfdl_;
     CellReceiver rxCell_;
     CwReceiver rxCw_;
+    std::atomic<bool> wideDecode_{false};
     DstarReceiver rxDstar_;
     NxdnReceiver rxNxdn_;
     DpmrReceiver rxDpmr_;

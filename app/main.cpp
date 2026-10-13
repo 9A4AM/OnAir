@@ -288,6 +288,7 @@ void drawUI(App& a, ImVec2 disp) {
     if (gIdentifyDev && a.engine.running() && ImGui::GetFrameCount() > 120) { gIdentifyDev = false; identifyStart(a, radioCenterMhz(a) * 1e6, 0, 0, radioCenterMhz(a) * 1e6); }
     identifyWindow(a);
     dect2::PskReporter::get().setDialHz(a.freqMhz * 1e6);
+    a.engine.setWideDecode(a.wideDecode && modeSupportsWideHf(a.family));
     feedsWindow(a);
     mapWindow(a);
     if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel

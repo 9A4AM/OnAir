@@ -50,6 +50,11 @@ public:
     void setVolume(float v);
     void setMuted(bool m);
     void setSilent(bool s);              // decode but do not open the sound device
+    // Whole span (the "wide decode" switch): skim the visible span (up to 250 kHz around the dial frequency) instead of +-7 kHz. The span is
+    // cut by a WideDecimator (widespan.h) and tiled by one skimmer per 12 kHz slice; the signals are listed with their offset from the dial.
+    void setWide(bool on, double spanHz = 250000);
+    bool wide() const;
+    void setSpotShiftHz(double hz);      // internal (slice skimmers): added to a signal's offset for the PSK Reporter spot
     void setSidetoneTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz sidetone (mono)
 
 private:
