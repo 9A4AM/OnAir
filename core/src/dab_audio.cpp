@@ -94,6 +94,7 @@ struct DabAudio::Impl {
     bool silent = false, outStarted = false;
     DabAudioStats st;
     DabPadDecoder pad;
+    uint64_t logoEpoch = 0;
     uint64_t slideEpoch = 0;     // pictures of the services selected before, so that the sequence number never goes back
     std::function<void(const uint8_t*, int, uint8_t)> auTap;
     float volume = 1.f; bool muted = false;
@@ -465,6 +466,7 @@ void DabAudio::select(int sub, bool dabPlus, int bitrate) {
     I.st = DabAudioStats();
     { std::lock_guard<std::mutex> pl(I.pmu); I.ringTotal = 0; }
     I.slideEpoch += I.pad.seq() + 1;
+    I.logoEpoch += I.pad.logoSeq() + 1;
     I.pad.reset();
     I.st.sub = sub; I.st.dabPlus = dabPlus; I.st.bitrate = bitrate;
     if (!dabPlus && sub >= 0) I.openMp2();
@@ -535,6 +537,18 @@ bool DabAudio::slide(DabSlide& out, uint64_t lastSeq) const {
     out = p_->pad.slide();
     out.seq = seq;
     return true;
+}
+bool DabAudio::logos(std::vector<DabLogo>& out, uint64_t lastSeq) const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const uint64_t seq = p_->logoEpoch + p_->pad.logoSeq();
+    if (seq == lastSeq) return false;
+    out = p_->pad.logos();
+    lastSeq = seq;
+    return true;
+}
+uint64_t DabAudio::logoSeq() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return p_->logoEpoch + p_->pad.logoSeq();
 }
 std::vector<DabDlpTag> DabAudio::dlPlus(bool* running) const {
     std::lock_guard<std::mutex> lk(p_->mu);

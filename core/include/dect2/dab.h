@@ -109,6 +109,10 @@ public:
     DabAudioStats stats() const;
     // The slide show picture last received in the PAD of the selected DAB+ service (empty after select()). false when its seq is lastSeq.
     bool slide(DabSlide& out, uint64_t lastSeq) const;
+    // The station logos heard in the PAD of the selected DAB+ service (SPI service information of the whole ensemble, logos sent as slide show pictures
+    // of the category "logo" with sid 0 = the selected service). false when logoSeq() is lastSeq.
+    bool logos(std::vector<DabLogo>& out, uint64_t lastSeq) const;
+    uint64_t logoSeq() const;
     // DL Plus tags of the label of the selected DAB+ service (empty when it sends none); `running`: the item is running
     std::vector<DabDlpTag> dlPlus(bool* running = nullptr) const;
     // Starts writing the audio of the selected service to base + the extension of the format (".wav", ".m4a", ".mp2"); with `dlLog` the dynamic

@@ -335,6 +335,47 @@ void dabSelectStation(App& a, int sub, bool play) {
     else a.engine.dabSelect(-1);
 }
 
+// Station logos (SPI service information and slide show pictures of the category "logo"), kept as textures per ensemble id for the session
+static struct DabLogoCache {
+    struct Tex { gfx::Image* img = nullptr; int w = 0, h = 0; };
+    std::map<uint16_t, std::map<uint32_t, Tex>> byEns;
+    uint64_t seq = 0;
+    int lastSub = -2;
+} gDabLogos;
+static void dabLogoUpdate(App& a, const DabEnsemble& ens) {
+    if (!gGfx || !ens.valid) return;
+    DabAudio& au = a.engine.dabAudio();
+    const int cur = a.engine.dabSelected();
+    if (cur != gDabLogos.lastSub) { gDabLogos.lastSub = cur; gDabLogos.seq = 0; }   // the receiver's counter restarts with another service
+    std::vector<DabLogo> v;
+    const uint64_t seq = au.logoSeq();
+    if (seq == gDabLogos.seq || !au.logos(v, UINT64_MAX)) return;
+    gDabLogos.seq = seq;
+    uint32_t curSid = 0;
+    for (const auto& kv : ens.services) { const DabComponent* c = kv.second.playable(); if (c && c->subId == cur) curSid = kv.first; }
+    for (const DabLogo& l : v) {
+        const uint32_t sid = l.sid ? l.sid : curSid;
+        if (!sid || l.w <= 0 || l.h <= 0 || l.rgba.size() < (size_t)l.w * (size_t)l.h * 4) continue;
+        DabLogoCache::Tex& t = gDabLogos.byEns[ens.eid][sid];
+        delete t.img;
+        t.img = gGfx->createImage(l.w, l.h, 0xFF000000u);
+        t.img->update(0, 0, l.w, l.h, reinterpret_cast<const uint32_t*>(l.rgba.data()));
+        t.w = l.w; t.h = l.h;
+    }
+}
+// The logo of a service in a box `h` high (square at most 1.4 times as wide); false when none is known
+bool dabLogoImage(App& a, const DabEnsemble& ens, uint32_t sid, float h) {
+    dabLogoUpdate(a, ens);
+    auto e = gDabLogos.byEns.find(ens.eid);
+    if (e == gDabLogos.byEns.end()) return false;
+    auto t = e->second.find(sid);
+    if (t == e->second.end()) t = e->second.find(sid & 0xFFFF);
+    if (t == e->second.end() || !t->second.img) return false;
+    const float sc = std::min(h / (float)t->second.h, 1.4f * h / (float)t->second.w);
+    ImGui::Image(t->second.img->texture(), ImVec2((float)t->second.w * sc, (float)t->second.h * sc));
+    return true;
+}
+
 // The slide show picture the selected DAB+ service sends in its PAD: kept as a texture while the picture lasts
 static struct DabSlideView {
     uint64_t seq = 0;
@@ -656,7 +697,9 @@ void dabRadioTab(App& a) {
             }
             ImGui::PopID();
             ImGui::PushTextWrapPos(0);   // the cells wrap in a narrow tab
-            ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(sv.label.empty() ? "-" : sv.label.c_str());
+            ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+            if (dabLogoImage(a, ens, sv.sid, 22 * gUi)) ImGui::SameLine(0, 5 * gUi);
+            ImGui::TextUnformatted(sv.label.empty() ? "-" : sv.label.c_str());
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", ac ? (ac->dmb() ? "DMB (video)" : sv.dabPlus() ? "DAB+ (HE-AAC)" : "DAB (MP2)") : "data");
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", ac ? dabSubText(ens, ac->subId).c_str() : "");
             ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextDisabled("%04X", sv.sid); ImGui::PopFont();
