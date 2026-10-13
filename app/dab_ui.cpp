@@ -1,5 +1,6 @@
 // DAB / DAB+ digital radio panels.
 #include "app.h"
+#include "journaline_view.h"
 #include "results_export.h"
 #include "dect2/dab_announce.h"
 #include "dect2/dab_fig.h"
@@ -796,3 +797,57 @@ void dabScanStep(App& a) {
     else tuneTo(s.idx + 1);
 }
 
+
+// ------------------------------------------------------------------ Journaline (ETSI TS 102 979)
+// The services that signal the Journaline user application (FIG 0/13, type 0x44a): in the PAD of an audio component (the audio keeps playing)
+// or in a packet mode component (FIG 0/3 gives its sub-channel and packet address).
+static bool dabJournalineSource(const DabEnsemble& ens, const DabService& sv, int& sub, int& addr) {
+    if (!sv.journaline || sv.jlScIdS < 0 || sv.jlScIdS >= (int)sv.comps.size()) return false;
+    const DabComponent& c = sv.comps[(size_t)sv.jlScIdS];
+    if (c.tmid == 0) { sub = c.subId; addr = -1; return true; }   // the PAD of the audio
+    if (c.tmid == 3) {
+        auto it = ens.packet.find(c.scid);
+        if (it == ens.packet.end() || it->second.subId < 0) return false;
+        sub = it->second.subId; addr = it->second.address;
+        return true;
+    }
+    return false;
+}
+
+bool dabHasJournaline(const DabEnsemble& ens) {
+    for (const auto& kv : ens.services) if (kv.second.journaline) return true;
+    return false;
+}
+
+void dabJournalineTab(App& a) {
+    const DabEnsemble ens = a.engine.dabEnsemble();
+    static uint32_t chosen = 0;
+    static bool have = false;
+    static JlViewState jv;
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("Journaline: text and menus ('news and information'), ETSI TS 102 979. Pick a service; the pages arrive in a carousel, so a page can take a while to show up. Packet mode services need no audio; for a station with Journaline in its PAD the audio plays as well.");
+    ImGui::PopTextWrapPos();
+    int shown = 0;
+    for (const auto& kv : ens.services) {
+        const DabService& sv = kv.second;
+        int sub, addr;
+        if (!sv.journaline || !dabJournalineSource(ens, sv, sub, addr)) continue;
+        const bool on = have && chosen == sv.sid && a.engine.dabSelected() == sub;
+        ImGui::PushID((int)sv.sid);
+        char l[160]; snprintf(l, sizeof l, "%s%s  (%04X, %s)", on ? "[open] " : "", sv.label.empty() ? "service" : sv.label.c_str(), sv.sid, addr < 0 ? "PAD" : "packet mode");
+        if (ImGui::Selectable(l, on) && !on) {
+            chosen = sv.sid; have = true;
+            a.dabUserSub = addr < 0 ? sub : -1;
+            a.engine.dabSelectJournaline(sub, addr, sv.jlExt);
+            if (addr < 0) { a.engine.dabAudio().setVolume(a.volume); a.engine.dabAudio().setMuted(a.muted); }
+            jv.reset(sv.jlEntry);
+        }
+        ImGui::PopID();
+        shown++;
+    }
+    if (!shown) { ImGui::TextDisabled("No service of this ensemble has a Journaline component that can be decoded yet."); return; }
+    if (have) {
+        auto it = ens.services.find(chosen);
+        if (it != ens.services.end() && a.engine.dabSelected() >= 0) { ImGui::Separator(); journalineView("dabjl", a.engine.dabJournaline(), jv, it->second.jlEntry); }
+    }
+}
