@@ -178,7 +178,7 @@ const VitSigns& vitSigns() {
 // The add-compare-select over all the steps, in 16 bit lanes (the vectoriser turns the 64 states into a few NEON / SSE / AVX2 vectors). Path metrics
 // of the even and odd predecessors are kept apart (pe, po), so the two candidates of a next state are read without a gather. The spread of the metrics
 // is at most 6 steps of 2 * 4 * 127, so renormalising every 16 steps keeps them inside 16 bits.
-DECT2_MULTIVERSION void vitForward(const int8_t* mother, int steps, const VitSigns& v, uint8_t* dec) {
+DECT2_SIMD_BODY void vitForwardBody(const int8_t* mother, int steps, const VitSigns& v, uint8_t* dec) {
     alignas(32) int16_t pe[32], po[32], nm[64];
     for (int j = 0; j < 32; j++) pe[j] = po[j] = -8000;
     pe[0] = 0;   // the encoder starts in state 0
@@ -202,6 +202,7 @@ DECT2_MULTIVERSION void vitForward(const int8_t* mother, int steps, const VitSig
         }
     }
 }
+DECT2_AVX2_DISPATCH(void, vitForward, (const int8_t* mother, int steps, const VitSigns& v, uint8_t* dec), (mother, steps, v, dec))
 } // namespace
 
 void viterbiDecode(const int8_t* mother, int nbits, uint8_t* bits) {

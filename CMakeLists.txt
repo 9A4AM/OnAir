@@ -30,7 +30,7 @@ option(DECT2_UI_LAYOUT_CHECK "Developer build of the app that reports overlappin
 option(DECT2_PORTABLE "Use the portable DSP kernels instead of Accelerate (macOS)" OFF)
 option(DECT2_WITH_SOAPY "Support generic radios (Airspy, SDRplay, RTL-SDR, PlutoSDR, LimeSDR, ...) through SoapySDR when it is installed" ON)
 option(DECT2_NO_SIMD "Disable the SIMD intrinsics and use the plain C++ code" OFF)
-option(DECT2_WIN_AVX2 "Windows and macOS on x86-64: build the receiver for AVX2 (all CPUs since 2013); these systems have no runtime dispatch like Linux" ON)
+option(DECT2_WIN_AVX2 "Windows and macOS on x86-64: build the whole receiver for AVX2 + FMA (the program then refuses to start on older CPUs). Off: baseline x86-64 with the hot loops dispatched to AVX2 at run time (dect2/simd.h); releases must keep it off (issue #74)" OFF)
 option(DECT2_COPY_RUNTIME_DLLS "Windows (MinGW): after each build, copy the DLLs the programs need next to them so they start from the build folder (off by default: the CI and release builds package their own DLLs)" OFF)
 set(DECT2_EXTRA_RUNTIME_DLLS "" CACHE STRING "Windows: more DLLs to copy next to the programs, such as a radio library (LimeSuite.dll, rtlsdr.dll ...), separated by semicolons")
 
@@ -106,7 +106,7 @@ if(APPLE)
   target_sources(dect2core PRIVATE core/src/gpu_ldpc.mm core/src/audioout_coreaudio.mm core/src/conceal_apple.mm)
   set_source_files_properties(core/src/gpu_ldpc.mm core/src/conceal_apple.mm PROPERTIES COMPILE_OPTIONS -fobjc-arc)
   if(DECT2_WIN_AVX2 AND (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" OR CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64"))
-    # Intel Mac: no runtime dispatch like on Linux, so the whole receiver is built for AVX2 (the program checks for it at start and says so if missing)
+    # Intel Mac, opt-in: the whole receiver built for AVX2 (the program checks for it at start and says so if missing); off by default, see dect2/simd.h
     target_compile_options(dect2core PRIVATE -mavx2 -mfma)
     target_compile_definitions(dect2core PUBLIC DECT2_REQUIRES_AVX2)
   endif()
@@ -127,7 +127,7 @@ else()
     target_link_libraries(dect2core PUBLIC ws2_32 iphlpapi shell32)
     target_link_libraries(dect2core PUBLIC dbghelp)   # minidump for the crash report
     if(DECT2_WIN_AVX2 AND CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64|x86_64|x64" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-      # no runtime dispatch on Windows: the whole receiver is built for AVX2 (the program checks for it at start and says so if missing)
+      # Windows, opt-in: the whole receiver built for AVX2 (the program checks for it at start and says so if missing); off by default, see dect2/simd.h
       target_compile_options(dect2core PRIVATE -mavx2 -mfma)
       target_compile_definitions(dect2core PUBLIC DECT2_REQUIRES_AVX2)
     endif()

@@ -14,7 +14,7 @@ namespace dect2 {
 #if !(defined(__ARM_NEON) && !defined(DECT2_NO_SIMD))
 namespace {
 // Branch-free min-sum kernels over one connection (Z checks at a time); the compiler vectorises them (AVX2 clone on x86-64).
-DECT2_MULTIVERSION void minSumAccumulate(const float* __restrict Lj, float* __restrict min1, float* __restrict min2,
+DECT2_SIMD_BODY void minSumAccumulateBody(const float* __restrict Lj, float* __restrict min1, float* __restrict min2,
                                          int* __restrict idx1, uint32_t* __restrict sg, int j, int Z) {
     for (int m = 0; m < Z; m++) {
         const float x = Lj[m], a = std::fabs(x);
@@ -27,7 +27,7 @@ DECT2_MULTIVERSION void minSumAccumulate(const float* __restrict Lj, float* __re
         min1[m] = lt ? a : m1;
     }
 }
-DECT2_MULTIVERSION void minSumApply(float* __restrict Lj, float* __restrict mj, const float* __restrict min1, const float* __restrict min2,
+DECT2_SIMD_BODY void minSumApplyBody(float* __restrict Lj, float* __restrict mj, const float* __restrict min1, const float* __restrict min2,
                                     const int* __restrict idx1, const uint32_t* __restrict sg, int j, int Z, float alpha) {
     for (int m = 0; m < Z; m++) {
         const float mag = (idx1[m] == j ? min2[m] : min1[m]) * alpha;
@@ -126,7 +126,7 @@ bool LdpcCode::decode(const std::vector<float>& llr, int maxIter, std::vector<ui
     return ok;
 }
 
-DECT2_MULTIVERSION bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const {
+DECT2_SIMD_MEMBER_BODY bool LdpcCode::decodeFastBody(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const {
     constexpr int Z = 360;
     constexpr float kBig = 1e4f;
     const int q = q_, G = groups_;
@@ -186,7 +186,7 @@ DECT2_MULTIVERSION bool LdpcCode::decodeFast(const std::vector<float>& llr, int 
                     vst1q_u32(&sg[m], veorq_u32(vld1q_u32(&sg[m]), vandq_u32(vreinterpretq_u32_f32(x), vdupq_n_u32(0x80000000u))));
                 }
 #else
-                minSumAccumulate(Lj, min1.data(), min2.data(), idx1.data(), sg.data(), j, Z);
+                minSumAccumulateBody(Lj, min1.data(), min2.data(), idx1.data(), sg.data(), j, Z);
 #endif
             }
             for (int j = 0; j < nc; j++) {
@@ -206,7 +206,7 @@ DECT2_MULTIVERSION bool LdpcCode::decodeFast(const std::vector<float>& llr, int 
                     vst1q_f32(Lj + m, vsubq_f32(nm, old)); // posterior increment (a variable can appear twice in a layer)
                 }
 #else
-                minSumApply(Lj, mj, min1.data(), min2.data(), idx1.data(), sg.data(), j, Z, alpha);
+                minSumApplyBody(Lj, mj, min1.data(), min2.data(), idx1.data(), sg.data(), j, Z, alpha);
 #endif
                 if (j < (int)cn.size()) {
                     float* dst = inf.data() + (size_t)cn[j].group * Z;
@@ -240,6 +240,19 @@ DECT2_MULTIVERSION bool LdpcCode::decodeFast(const std::vector<float>& llr, int 
     for (int r = 0; r < q; r++) for (int m = 0; m < Z; m++) hard[k_ + r + q * m] = P(r)[m] < 0;
     if (iters) *iters = it;
     return ok;
+}
+
+#if defined(DECT2_X86_DISPATCH)
+DECT2_AVX2_TARGET bool LdpcCode::decodeFastAvx2(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const {
+    return decodeFastBody(llr, maxIter, hard, iters, alpha);
+}
+#endif
+
+bool LdpcCode::decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const {
+#if defined(DECT2_X86_DISPATCH)
+    if (cpuHasAvx2()) return decodeFastAvx2(llr, maxIter, hard, iters, alpha);
+#endif
+    return decodeFastBody(llr, maxIter, hard, iters, alpha);
 }
 
 } // namespace dect2

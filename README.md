@@ -337,7 +337,7 @@ build/dect2cli --file capture.cs8 --rate 10 --format cs8 --play <service id>
 7. Run it from the same shell, so Windows finds the DLLs: `./build/dect2.exe`. Run the tests with `ctest --test-dir build`.
 8. To get a folder that runs on any PC, with all DLLs next to `OnAir.exe`, run `tools/package/make_windows.sh`. The result is a portable zip in `build-windows/`. If NSIS is installed, you also get a setup .exe.
 
-The build needs a CPU with AVX2. To use a HackRF, RTL-SDR or Airspy, install the WinUSB driver once with [Zadig](https://zadig.akeo.ie). From macOS or Linux, `tools/package/make_windows_cross.sh` builds the same Windows package with a cross-compiler.
+To use a HackRF, RTL-SDR or Airspy, install the WinUSB driver once with [Zadig](https://zadig.akeo.ie). From macOS or Linux, `tools/package/make_windows_cross.sh` builds the same Windows package with a cross-compiler.
 
 Useful options: `DECT2_UI_BACKEND` (Metal or OpenGL3), `DECT2_WITH_SOAPY`, and `DECT2_PORTABLE` / `DECT2_NO_SIMD` for plain C++ code paths on unusual CPUs.
 

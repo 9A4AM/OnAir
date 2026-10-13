@@ -31,6 +31,9 @@ public:
     bool decodeFast(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters = nullptr, float alpha = 0.78f) const;
 
 private:
+    // decodeFast compiled for the baseline and for AVX2 + FMA (picked at run time, dect2/simd.h)
+    bool decodeFastBody(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const;
+    bool decodeFastAvx2(const std::vector<float>& llr, int maxIter, std::vector<uint8_t>& hard, int* iters, float alpha) const;
     int k_, n_, m_;
     // check -> variable adjacency (CSR)
     std::vector<int> chkStart_, chkVar_;
