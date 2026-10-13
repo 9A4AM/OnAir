@@ -77,24 +77,32 @@ size_t SrrcResampler::available() const {
     return (size_t)((lastPos - pos_) / step_) + 1;
 }
 
+namespace {
+// The polyphase filter over n outputs; compiled twice on x86-64 (baseline and AVX2 + FMA, see dect2/simd.h)
+DECT2_SIMD_BODY void filterLoopBody(const float* re, const float* im, const float* bank, int stride, int half, int64_t& pos, int64_t step, size_t n, cf32* o) {
+    const int shift = 32 - 9;   // 512 phases
+    for (size_t k = 0; k < n; k++) {
+        int64_t i0 = pos >> 32;
+        // nearest of the 512 phases; a carry moves to the next input sample
+        uint32_t ph = (uint32_t)(((uint64_t)(pos & 0xFFFFFFFFll) + (1ull << (shift - 1))) >> shift);
+        if (ph >= 512) { ph = 0; i0++; }
+        const long base = (long)i0 - (half - 1);
+        float vr, vi;
+        dotRI(re + base, im + base, bank + (size_t)ph * (size_t)stride, stride, vr, vi);
+        o[k] = cf32(vr, vi);
+        pos += step;
+    }
+}
+DECT2_AVX2_DISPATCH(void, filterLoop, (const float* re, const float* im, const float* bank, int stride, int half, int64_t& pos, int64_t step, size_t n, cf32* o), (re, im, bank, stride, half, pos, step, n, o))
+}
+
 size_t SrrcResampler::pull(std::vector<cf32>& out, size_t maxOut) {
     if (taps_ == 0) return 0;
     size_t n = std::min(available(), maxOut);
     const size_t at = out.size();
     out.resize(at + n);
     cf32* o = out.data() + at;
-    const int shift = 32 - 9;   // 512 phases
-    for (size_t k = 0; k < n; k++) {
-        int64_t i0 = pos_ >> 32;
-        // nearest of the 512 phases; a carry moves to the next input sample
-        uint32_t ph = (uint32_t)(((uint64_t)(pos_ & 0xFFFFFFFFll) + (1ull << (shift - 1))) >> shift);
-        if (ph >= 512) { ph = 0; i0++; }
-        const long base = (long)i0 - (half_ - 1);
-        float vr, vi;
-        dotRI(&re_[(size_t)base], &im_[(size_t)base], &bank_[(size_t)ph * (size_t)stride_], stride_, vr, vi);
-        o[k] = cf32(vr, vi);
-        pos_ += step_;
-    }
+    filterLoop(re_.data(), im_.data(), bank_.data(), stride_, half_, pos_, step_, n, o);
     // drop what is no longer needed
     const long keepFrom = (long)(pos_ >> 32) - (half_ - 1) - 1 - kHistory;
     if (keepFrom > 16384) {

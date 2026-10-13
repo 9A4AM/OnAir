@@ -2,6 +2,7 @@
 // in[q + s (r p + k)] for k < r, multiplies by exp(-j 2 pi p k / n), takes the r point DFT and writes out[q + s (p + m j)]. The levels are
 // applied from the one with the largest stride (the first radix to be computed) to the one with stride 1, which produces the natural order.
 #include "dect2/dtmb_fft.h"
+#include "dect2/simd.h"
 #include <cmath>
 #include <stdexcept>
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
@@ -20,7 +21,7 @@ struct Dft;
 
 template <>
 struct Dft<2> {
-    static inline void run(const float* xr, const float* xi, float* yr, float* yi) {
+    DECT2_SIMD_BODY void run(const float* xr, const float* xi, float* yr, float* yi) {
         yr[0] = xr[0] + xr[1]; yi[0] = xi[0] + xi[1];
         yr[1] = xr[0] - xr[1]; yi[1] = xi[0] - xi[1];
     }
@@ -28,7 +29,7 @@ struct Dft<2> {
 
 template <>
 struct Dft<4> {
-    static inline void run(const float* xr, const float* xi, float* yr, float* yi) {
+    DECT2_SIMD_BODY void run(const float* xr, const float* xi, float* yr, float* yi) {
         const float s0r = xr[0] + xr[2], s0i = xi[0] + xi[2], s1r = xr[0] - xr[2], s1i = xi[0] - xi[2];
         const float s2r = xr[1] + xr[3], s2i = xi[1] + xi[3], dr = xr[1] - xr[3], di = xi[1] - xi[3];
         yr[0] = s0r + s2r; yi[0] = s0i + s2i;
@@ -55,7 +56,7 @@ inline const OddCoef<R>& coef() { static const OddCoef<R> c; return c; }
 // odd radix (3, 5, 7): out[m] = x0 + sum_k (x_k + x_{R-k}) cos(2 pi k m / R) - j sum_k (x_k - x_{R-k}) sin(2 pi k m / R)
 template <int R>
 struct DftOdd {
-    static inline void run(const float* xr, const float* xi, float* yr, float* yi, const OddCoef<R>& t) {
+    DECT2_SIMD_BODY void run(const float* xr, const float* xi, float* yr, float* yi, const OddCoef<R>& t) {
         constexpr int H = R / 2;
         float sr[H + 1], si[H + 1], dr[H + 1], di[H + 1];
         float tr = xr[0], ti = xi[0];
@@ -78,7 +79,7 @@ struct DftOdd {
 };
 
 template <int R>
-inline void butterfly(const float* xr, const float* xi, float* yr, float* yi) {
+DECT2_SIMD_BODY void butterfly(const float* xr, const float* xi, float* yr, float* yi) {
     if constexpr (R == 2) Dft<2>::run(xr, xi, yr, yi);
     else if constexpr (R == 4) Dft<4>::run(xr, xi, yr, yi);
     else DftOdd<R>::run(xr, xi, yr, yi, coef<R>());
@@ -86,7 +87,7 @@ inline void butterfly(const float* xr, const float* xi, float* yr, float* yi) {
 
 // One level: p < m, q < s
 template <int R>
-void level(const float* inr, const float* ini, float* outr, float* outi, int m, int s, const float* twr, const float* twi) {
+DECT2_SIMD_BODY void level(const float* inr, const float* ini, float* outr, float* outi, int m, int s, const float* twr, const float* twi) {
     for (int p = 0; p < m; p++) {
         float wr[R], wi[R];
         wr[0] = 1.f; wi[0] = 0.f;
@@ -113,7 +114,7 @@ void level(const float* inr, const float* ini, float* outr, float* outi, int m, 
     }
 }
 
-void applyLevel(int r, const float* inr, const float* ini, float* outr, float* outi, int m, int s, const float* twr, const float* twi) {
+DECT2_SIMD_BODY void applyLevel(int r, const float* inr, const float* ini, float* outr, float* outi, int m, int s, const float* twr, const float* twi) {
     switch (r) {
     case 2: level<2>(inr, ini, outr, outi, m, s, twr, twi); break;
     case 3: level<3>(inr, ini, outr, outi, m, s, twr, twi); break;
@@ -130,7 +131,7 @@ MixedFft::MixedFft(int n) : n_(n) {
     // radices from the top level (stride 1) down: a 4 first so that the last pass is the cheapest and runs over p, then the rest
     std::vector<int> top;
     int rest = n;
-    while (rest % 4 == 0) { top.push_back(4); rest /= 4; break; }
+    while (rest % 4 == 0) { top.push_back(4); rest /= 4; }   // (4096 = six radix 4 passes; one radix 4 and ten radix 2 passes took twice as long)
     while (rest % 2 == 0) { top.push_back(2); rest /= 2; }
     while (rest % 3 == 0) { top.push_back(3); rest /= 3; }
     while (rest % 5 == 0) { top.push_back(5); rest /= 5; }
@@ -156,7 +157,7 @@ MixedFft::MixedFft(int n) : n_(n) {
 
 namespace {
 // The last level (radix 4, stride 1) writes interleaved complex values straight into x. sg = -1 conjugates (inverse transform).
-void lastLevel4(const float* inr, const float* ini, cf32* x, int m, const float* twr, const float* twi, float sg) {
+DECT2_SIMD_BODY void lastLevel4(const float* inr, const float* ini, cf32* x, int m, const float* twr, const float* twi, float sg) {
     float* xf = reinterpret_cast<float*>(x);
     int p = 0;
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
@@ -196,7 +197,7 @@ void lastLevel4(const float* inr, const float* ini, cf32* x, int m, const float*
 }
 } // namespace
 
-void MixedFft::run(cf32* x, bool inv) {
+DECT2_SIMD_MEMBER_BODY void MixedFft::runBody(cf32* x, bool inv) {
     const int N = n_;
     // split the input (the inverse transform is the forward one of the conjugate)
     const float sg = inv ? -1.f : 1.f;
@@ -225,4 +226,14 @@ void MixedFft::run(cf32* x, bool inv) {
     for (int i = 0; i < N; i++) x[i] = cf32(ir[i], sg * ii[i]);
 }
 
+} // namespace dect2::dtmb
+
+namespace dect2::dtmb {
+DECT2_AVX2_TARGET void MixedFft::runAvx2(cf32* x, bool inv) { runBody(x, inv); }
+void MixedFft::run(cf32* x, bool inv) {
+#ifdef DECT2_X86_DISPATCH
+    if (cpuHasAvx2()) { runAvx2(x, inv); return; }
+#endif
+    runBody(x, inv);
+}
 } // namespace dect2::dtmb

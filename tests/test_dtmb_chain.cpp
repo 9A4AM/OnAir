@@ -14,6 +14,33 @@ using namespace dect2::dtmb;
 static int failures = 0;
 #define CHECK(c, ...) do { if (!(c)) { failures++; printf("FAIL line %d: %s  ", __LINE__, #c); printf(__VA_ARGS__); printf("\n"); } } while (0)
 
+// The byte stream a chain delivers for a fixed noisy signal (the same noise every time), with the given number of decoder threads
+static std::vector<uint8_t> streamOf(Header h, const Profile& p, double snrDb, int frames, int workers) {
+    TxConfig tc; tc.header = h; tc.profile = p;
+    FrameTx tx(tc, testPacketSource(3));
+    FecChain chain(p, h, workers);
+    std::vector<cf32> fr((size_t)tx.frameLength()), bins((size_t)kBody), si(36), data((size_t)kDataSymbols);
+    std::vector<float> var((size_t)kDataSymbols, (float)std::pow(10.0, -snrDb / 10.0));
+    MixedFft fft(kBody);
+    std::mt19937 rng(21);
+    std::normal_distribution<float> nd;
+    const float sd = (float)std::sqrt(std::pow(10.0, -snrDb / 10.0) / 2.0);
+    std::vector<uint8_t> out;
+    auto cb = [&](const uint8_t* pk, size_t n, double) { out.insert(out.end(), pk, pk + n * 188); };
+    for (int f = 0; f < frames; f++) {
+        tx.nextFrame(fr.data());
+        std::copy(fr.begin() + headerInfo(h).length, fr.end(), bins.begin());
+        fft.forward(bins.data());
+        for (auto& b : bins) b *= 1.f / std::sqrt((float)kBody);
+        splitBody(bins.data(), si.data(), data.data());
+        for (auto& d : data) d += cf32(sd * nd(rng), sd * nd(rng));
+        chain.pushFrame(data.data(), var.data());
+        chain.poll(cb);
+    }
+    chain.flush(cb);
+    return out;
+}
+
 struct Outcome { uint64_t good = 0, wrong = 0, cwOk = 0, cwBad = 0; uint32_t firstNumber = 0xFFFFFFFF, last = 0; bool inOrder = true; bool aligned = false; double iter = 0; };
 
 // Runs `frames` frames through transmitter -> noise -> chain and checks the packets against the numbered sequence
@@ -76,6 +103,15 @@ int main() {
         CHECK(o.cwBad == 0, "SI %d: %llu bad codewords", si, (unsigned long long)o.cwBad);
         CHECK((int)o.good >= expectPk - 2 * packetsPerFrame(p) - 8, "SI %d: only %llu packets of about %d", si, (unsigned long long)o.good, expectPk);
         CHECK(o.inOrder, "SI %d: packets out of order", si);
+    }
+    // the decoder threads must not change a single byte of the output (clean signal and a noisy one, where the LDPC works for several iterations)
+    for (const double snr : {40.0, 11.0}) {
+        Profile p;
+        profileFromSi(10, p);   // 4QAM at the highest rate: the one of the recording of issue #88
+        const int frames = (int)((51L * 52 * interleaverDelay(p) + kDataSymbols - 1) / kDataSymbols) + 60;
+        const std::vector<uint8_t> a = streamOf(Header::Pn595, p, snr, frames, 0), b = streamOf(Header::Pn595, p, snr, frames, 3);
+        printf("  threads against none at %.0f dB: %zu and %zu bytes\n", snr, a.size(), b.size());
+        CHECK(!a.empty() && a == b, "the output with decoder threads differs from the output without (%zu and %zu bytes)", a.size(), b.size());
     }
     printf(failures ? "dtmb_chain: %d FAILED\n" : "dtmb_chain: all passed\n", failures);
     return failures ? 1 : 0;

@@ -12,7 +12,10 @@
 #include <array>
 #include <atomic>
 #include <cmath>
+#include <chrono>
+#include <ctime>
 #include <cstdio>
+#include <cstdlib>
 #include <limits>
 #include <mutex>
 #include <thread>
@@ -28,6 +31,23 @@ constexpr int kLostFrames = 12;            // frames without a usable header bef
 }
 
 namespace {
+
+// DTMB_PROFILE=1 in the environment: time per stage, printed to stderr when the receiver is destroyed
+#ifndef _WIN32
+inline double threadSeconds() { timespec ts; clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts); return (double)ts.tv_sec + 1e-9 * (double)ts.tv_nsec; }   // CPU time of the thread: a busy machine does not inflate it
+#else
+inline double threadSeconds() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+#endif
+struct Prof {
+    bool on = std::getenv("DTMB_PROFILE") != nullptr;
+    double sec[16] = {};
+    static constexpr const char* kName[16] = {"front end (matched filter + resample)", "header estimates", "equaliser", "system information", "pushFrame (de-interleave + LLR)", "pollChain", "feed() total", "displays (cells, impulse response)", "front end pull + carrier derotation", "buffer trimming", "input level, mixer, channel search", "frame search after lost samples", "first search for the signal", "rest of the frame loop", "window adaptation (wide header estimate)", "normalise + decision error"};
+    struct Scope {
+        Prof& p; int k; double t0 = 0;
+        Scope(Prof& pr, int kk) : p(pr), k(kk) { if (p.on) t0 = threadSeconds(); }
+        ~Scope() { if (p.on) p.sec[k] += threadSeconds() - t0; }
+    };
+};
 
 // System information of one hypothesis of the carrier mode: the correlation of the 36 symbols with the 22 words, accumulated over frames
 struct SiTracker {
@@ -146,6 +166,8 @@ struct DtmbReceiver::Impl {
     bool mirror = false, flipReq = false;
     int flips = 0;
     std::mutex mu;
+    Prof prof;
+    double inSamples = 0;
     DtmbTelemetry tel;
     uint64_t seq = 0;
     std::vector<cf32> cells;
@@ -163,6 +185,7 @@ struct DtmbReceiver::Impl {
     long produced() const { return base + (long)buf.size(); }
 
     size_t pullMore(size_t want) {
+        Prof::Scope pp(prof, 8);
         tmp.clear();
         const size_t n = front.pull(tmp, want);
         if (!n) return 0;
@@ -171,10 +194,24 @@ struct DtmbReceiver::Impl {
         cf32 rot((float)std::cos(derotPhase), (float)std::sin(derotPhase));
         const size_t at = buf.size();
         buf.resize(at + n);
-        for (size_t i = 0; i < n; i++) {
-            buf[at + i] = tmp[i] * rot;
-            rot *= step;
-            if ((i & 1023) == 1023) rot /= std::abs(rot);
+        // Four rotators, so that the multiplications do not wait for each other. (Written out: std::complex multiplication checks for NaN and
+        // calls a library routine unless the compiler is allowed to ignore them.)
+        auto mul = [](cf32 a, cf32 b) { return cf32(a.real() * b.real() - a.imag() * b.imag(), a.real() * b.imag() + a.imag() * b.real()); };
+        cf32 r4[4];
+        {
+            cf32 r = rot;
+            for (int k = 0; k < 4; k++) { r4[k] = r; r = mul(r, step); }
+        }
+        const cf32 step2 = mul(step, step), step4 = mul(step2, step2);
+        size_t i = 0;
+        for (; i + 4 <= n; i += 4) {
+            for (int k = 0; k < 4; k++) { buf[at + i + (size_t)k] = mul(tmp[i + (size_t)k], r4[k]); r4[k] = mul(r4[k], step4); }
+            if ((i & 1023) == 1020) for (int k = 0; k < 4; k++) r4[k] /= std::abs(r4[k]);
+        }
+        rot = r4[0];
+        for (; i < n; i++) {
+            buf[at + i] = mul(tmp[i], rot);
+            rot = mul(rot, step);
         }
         derotPhase = std::fmod(derotPhase + dph * (double)n, 2.0 * kPi);
         return n;
@@ -192,6 +229,7 @@ struct DtmbReceiver::Impl {
 
     void dropBefore(long idx) {
         if (idx - base > 8192) {
+            Prof::Scope pt(prof, 9);
             const size_t d = (size_t)(idx - base);
             buf.erase(buf.begin(), buf.begin() + (long)d);
             base += (long)d;
@@ -328,6 +366,7 @@ struct DtmbReceiver::Impl {
     int phaseOf(int f) const { return rotates ? pnPhase(hdr, f % headerInfo(hdr).framesPerSuper) : 0; }
 
     void estimateAt(long s, int phase, Taps& raw, Taps& clean) {
+        Prof::Scope ps(prof, 1);
         est->estimate(at(s), phase, raw);
         clean = raw;
         HeaderEstimator::clean(clean, raw.tapVar, 12.f);
@@ -335,6 +374,7 @@ struct DtmbReceiver::Impl {
 
     // The channel's extent from an estimate over the widest window: the narrow window follows it (cheaper, and a better fit)
     void adaptWindow(long s, int phase) {
+        Prof::Scope pw(prof, 14);
         estWide->estimate(at(s), phase, rawW);
         cleanW = rawW;
         HeaderEstimator::clean(cleanW, rawW.tapVar, 12.f);
@@ -344,8 +384,9 @@ struct DtmbReceiver::Impl {
         int first = 1 << 20, last = -(1 << 20);
         for (int i = 0; i < (int)cleanW.v.size(); i++) if (std::norm(cleanW.v[(size_t)i]) > lim) { first = std::min(first, i - cleanW.pre); last = std::max(last, i - cleanW.pre); }
         if (first > last) return;
-        const int pre = std::max(8, std::min(wideMaxPre, -first + 8));
-        const int post = std::max(32, std::min(widePost, last + 24));
+        // (in steps of 8 and 16 taps: a window that has been used before has its matrix already, see HeaderEstimator::setWindow)
+        const int pre = std::max(8, std::min(wideMaxPre, (-first + 8 + 7) / 8 * 8));
+        const int post = std::max(32, std::min(widePost, (last + 24 + 15) / 16 * 16));
         // follow growth at once, shrinking only when the change is worth a new matrix
         if (pre > windowPre || post > windowPost || windowPre - pre >= 8 || windowPost - post >= 16) {
             windowPre = pre; windowPost = post;
@@ -367,7 +408,7 @@ struct DtmbReceiver::Impl {
         const bool goodB = cleanB.peakPower > kPeakNoiseRatio * rawB.tapVar;
         lossAvg = 0.95 * lossAvg + 0.05 * ((goodA && goodB) ? 0.0 : 1.0);
         frames++;
-        if (!goodB && relock(S2)) { lostRun = 0; return true; }
+        if (!goodB) { Prof::Scope pr(prof, 11); if (relock(S2)) { lostRun = 0; return true; } }
         if (!goodB) {
             // no header where it should be: coast on the old timing
             lostRun++;
@@ -386,7 +427,7 @@ struct DtmbReceiver::Impl {
         if (goodA && std::abs(cleanB.peakIndex - cleanA.peakIndex) >= 4) {
             double off = 0, off0 = 0;
             const int sh = cleanB.peakIndex - cleanA.peakIndex;
-            if (shapeOffset(cleanA, cleanB, sh, off) > 0.8 && std::fabs(off) < 1.0 && shapeOffset(cleanA, cleanB, 0, off0, 0) < 0.5 && relock(S2)) return true;
+            if (shapeOffset(cleanA, cleanB, sh, off) > 0.8 && std::fabs(off) < 1.0 && shapeOffset(cleanA, cleanB, 0, off0, 0) < 0.5) { Prof::Scope pr(prof, 11); if (relock(S2)) return true; }
         }
         // ---- timing: the reference path of the frame grid. Normally the strongest tap. With two paths of similar strength (a single-frequency network,
         // a strong echo) the strongest one changes from frame to frame as the sampling phase drifts and splits a path over two taps, and a grid that
@@ -435,6 +476,7 @@ struct DtmbReceiver::Impl {
         const bool tryOfdm = hdr != Header::Pn595 || !siOk || carriers == 3780;
         const bool trySingle = hdr == Header::Pn595 && (!siOk || carriers == 1);
         if (tryOfdm) {
+            Prof::Scope pe(prof, 2);
             eq.run(at(S + Lh), ha, ca, cleanB, cb, Lh, hAmp, bins.data(), var.data());
             Body& b = body[0];
             const int16_t* sb = siBins(); const int16_t* db = dataBins();
@@ -443,6 +485,7 @@ struct DtmbReceiver::Impl {
             normalise(b);
         }
         if (trySingle) {
+            Prof::Scope pe(prof, 2);
             eq1.run(at(S + Lh), ha, ca, cleanB, cb, Lh, hAmp, sym1.data(), var1.data());
             Body& b = body[1];
             for (int i = 0; i < kSiSymbols; i++) { b.si[(size_t)i] = sym1[(size_t)i]; b.sivar[(size_t)i] = var1[(size_t)i]; }
@@ -471,7 +514,7 @@ struct DtmbReceiver::Impl {
             const double cn = noise > 0 ? 10.0 * std::log10(std::max(1e-6, chanEnergy / noise)) : 99.0;
             if (!snrInit) { snrPn = cn; snrInit = true; } else snrPn += 0.2 * (cn - snrPn);
         }
-        updateSi(tryOfdm, trySingle);
+        { Prof::Scope pi(prof, 3); updateSi(tryOfdm, trySingle); }
         // a lock that never produces system information: too weak to use, or the header fit is wrong (a bad carrier offset); look again
         if (!siOk && frames >= 200 && snrPn < -15.0) { loseLock("signal too weak"); return true; }
         // (a lock with a good header fit stays, whatever the body is: a signal this receiver does not know shows its constellation and C/N)
@@ -484,10 +527,9 @@ struct DtmbReceiver::Impl {
             if (!chain) makeChain();
             // a frame whose grid is several symbols off and waiting to move (the body taken at the wrong place) is erased, not decoded as garbage
             if (timeJumpRun > 0 && pendingJump == 0) chain->skipFrame();
-            else chain->pushFrame(act.data.data(), act.dvar.data());
+            else { Prof::Scope pp(prof, 4); chain->pushFrame(act.data.data(), act.dvar.data()); }
         }
-        updateCells();
-        updateCir();
+        { Prof::Scope pd(prof, 7); updateCells(); updateCir(); }
         // ---- carrier offset: the phase of the channel from one header to the next (only when the two estimates agree in shape: a header that an
         // impulse or a level step hit gives a random phase)
         {
@@ -667,6 +709,7 @@ struct DtmbReceiver::Impl {
     // ------------------------------------------------------------------ system information
     // The gain of the body against the header, taken out of the symbols and their variances; the symbols have unit power afterwards
     void normalise(Body& b) {
+        Prof::Scope pn(prof, 15);
         double pData = 0, nvData = 0;
         for (int i = 0; i < kDataSymbols; i++) { pData += std::norm(b.data[(size_t)i]); nvData += std::min(b.dvar[(size_t)i], 4.f); }
         pData /= kDataSymbols; nvData /= kDataSymbols;
@@ -744,9 +787,9 @@ struct DtmbReceiver::Impl {
     // ------------------------------------------------------------------ the loop
     void run() {
         for (;;) {
-            if (state == 0) { search(); if (state == 0) return; }
+            if (state == 0) { { Prof::Scope ps(prof, 12); search(); } if (state == 0) return; }
             else {
-                if (!processFrame()) { report(); return; }
+                { Prof::Scope pw(prof, 13); if (!processFrame()) { report(); return; } }
                 pollChain();
                 report();
             }
@@ -810,7 +853,18 @@ DtmbReceiver::DtmbReceiver() : p_(std::make_unique<Impl>()) {
     p_->sym1.resize((size_t)kBody); p_->var1.resize((size_t)kBody);
     for (auto& b : p_->body) { b.data.resize((size_t)kDataSymbols); b.dvar.resize((size_t)kDataSymbols); b.si.resize(kSiSymbols); b.sivar.resize(kSiSymbols); }
 }
-DtmbReceiver::~DtmbReceiver() = default;
+DtmbReceiver::~DtmbReceiver() {
+    Impl& s = *p_;
+    if (!s.prof.on) return;
+    const double real = s.inRate > 0 ? s.inSamples / s.inRate : 0;
+    fprintf(stderr, "DTMB_PROFILE: %.2f s of signal, feed() %.2f s (%.0f%% of real time)\n", real, s.prof.sec[6], real > 0 ? 100 * s.prof.sec[6] / real : 0);
+    for (int i : {0, 8, 1, 14, 2, 15, 3, 4, 5, 7, 9, 10, 11, 12, 13}) fprintf(stderr, "  %-38s %7.3f s  %5.1f%% of real time\n", Prof::kName[i], s.prof.sec[i], real > 0 ? 100 * s.prof.sec[i] / real : 0);
+    if (s.chain) {
+        const ChainStats st = s.chain->stats();
+        fprintf(stderr, "  FEC workers (LDPC %.3f s, BCH+descramble+TS %.3f s, summed over threads) %5.1f%% of real time; %.2f iterations/codeword, %llu codewords, slowest good word %llu, %llu iterations on failed words\n", st.ldpcSec, st.tsSec,
+                real > 0 ? 100 * (st.ldpcSec + st.tsSec) / real : 0, st.cwOk + st.cwBad ? (double)st.iterSum / (double)(st.cwOk + st.cwBad) : 0.0, (unsigned long long)(st.cwOk + st.cwBad), (unsigned long long)st.okIterMax, (unsigned long long)st.badIterSum);
+    }
+}
 
 void DtmbReceiver::configure(double inputRateHz, double bwMhz) {
     Impl& s = *p_;
@@ -834,6 +888,7 @@ void DtmbReceiver::feed(const cf32* x, size_t n) {
     if (s.resetReq.exchange(false)) s.doReset();
     // input level
     {
+        Prof::Scope pl(s.prof, 10);
         double a = 0;
         for (size_t i = 0; i < n; i++) a += std::norm(x[i]);
         if (!std::isfinite(a)) {
@@ -860,10 +915,12 @@ void DtmbReceiver::feed(const cf32* x, size_t n) {
         s.levelAcc += a; s.levelN += n;
         if (s.levelN >= (uint64_t)(s.inRate * 0.25)) { s.levelDb = (float)(10.0 * std::log10(std::max(1e-12, s.levelAcc / (double)s.levelN))); s.levelAcc = 0; s.levelN = 0; }
     }
-    s.front.push(x, n);
+    Prof::Scope pf(s.prof, 6);
+    s.inSamples += (double)n;
+    { Prof::Scope pg(s.prof, 0); s.front.push(x, n); }
     s.run();
     if (s.flipReq) { s.flipReq = false; s.mirror = !s.mirror; s.flips++; s.log(s.mirror ? "trying I and Q swapped" : "trying I and Q as they come"); s.doReset(); }
-    s.pollChain();
+    { Prof::Scope pc(s.prof, 5); s.pollChain(); }
     // The system information survives a mirrored spectrum (its words are the same conjugated), the data does not: decoded but nothing comes
     // out of the LDPC after a good many codewords, try the other orientation
     if (s.chain && s.siOk) {

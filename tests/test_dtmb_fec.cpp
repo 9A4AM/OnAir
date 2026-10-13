@@ -96,6 +96,33 @@ int main() {
         for (int i = 0; i < kLdpcSent; i++) llr[(size_t)i] = sent[(size_t)i] ? -6.f : 6.f;
         const auto res = dec.decode(llr.data(), out.data(), 20);
         CHECK(res.ok && res.iterations == 1 && out == info, "clean decode: ok %d iterations %d", (int)res.ok, res.iterations);
+        // Early termination gives the same word as the iterations: a clean word is accepted before the first iteration, and the same word with one
+        // weak LLR turned the wrong way needs the iterations to repair it and must come out with the same information bits
+        {
+            std::vector<uint8_t> out2(4572);
+            std::vector<float> weak = llr;
+            weak[100] = -weak[100] * 0.01f;
+            weak[3000] = -weak[3000] * 0.01f;
+            const auto fixed = dec.decode(weak.data(), out2.data(), 20);
+            CHECK(fixed.ok && fixed.iterations >= 1 && out2 == info, "repaired decode: ok %d iterations %d", (int)fixed.ok, fixed.iterations);
+            // the same for every rate and a spread of noise levels: the information bits of an accepted word are always the sent ones, and the
+            // iteration count never exceeds what the cap allows
+            for (int r = 0; r < 3; r++) {
+                const LdpcCode& code = ldpcCode((Rate)r);
+                LdpcCode::Decoder d2(code);
+                std::vector<uint8_t> inf((size_t)code.infoBits()), snt(kLdpcSent), o3((size_t)code.infoBits());
+                std::vector<float> l2(kLdpcSent);
+                for (int t = 0; t < 30; t++) {
+                    for (auto& x : inf) x = (uint8_t)(rng() & 1);
+                    code.encode(inf.data(), snt.data());
+                    const float sg = 0.25f + 0.02f * (float)t;   // from far above to just below the threshold
+                    for (int i = 0; i < kLdpcSent; i++) l2[(size_t)i] = 2.f * ((snt[(size_t)i] ? -1.f : 1.f) + sg * nd(rng)) / (sg * sg);
+                    const auto rs = d2.decode(l2.data(), o3.data(), 60);
+                    CHECK(!rs.ok || o3 == inf, "rate %d noise %.2f: accepted word differs from the sent one", r, sg);
+                    CHECK(rs.iterations <= 60, "iterations %d", rs.iterations);
+                }
+            }
+        }
         // a word of random LLRs must not be reported as decoded
         for (auto& x : llr) x = nd(rng);
         const auto bad = dec.decode(llr.data(), out.data(), 20);

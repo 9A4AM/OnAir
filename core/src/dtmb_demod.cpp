@@ -36,6 +36,8 @@ void HeaderEstimator::setWindow(int pre, int post) {
     } else {
         t0_ = post - 1;
         rows_ = hi.length - pre - t0_;
+        const auto cached = minvCache_.find({pre_, post_});
+        if (cached != minvCache_.end()) { minv_ = cached->second; return; }
         // normal matrix of the fixed sequence over these rows
         const auto& c = pnChips(h_);
         std::vector<double> a((size_t)L * (size_t)L, 0.0);
@@ -58,6 +60,8 @@ void HeaderEstimator::setWindow(int pre, int post) {
                 for (int j = 0; j < L; j++) { a[(size_t)r * (size_t)L + (size_t)j] -= f * a[(size_t)col * (size_t)L + (size_t)j]; minv_[(size_t)r * (size_t)L + (size_t)j] -= f * minv_[(size_t)col * (size_t)L + (size_t)j]; }
             }
         }
+        if (minvCache_.size() >= 24) minvCache_.clear();
+        minvCache_[{pre_, post_}] = minv_;
     }
 }
 

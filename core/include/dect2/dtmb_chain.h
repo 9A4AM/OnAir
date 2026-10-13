@@ -21,6 +21,8 @@ struct ChainStats {
     uint64_t iterSum = 0;                          // LDPC iterations of the codewords counted in cwOk + cwBad
     uint64_t bchCorrected = 0;                     // BCH blocks with one bit corrected
     double lastIterAvg = 0;
+    uint64_t okIterMax = 0, badIterSum = 0;        // slowest word that decoded, iterations spent on words that did not (DTMB_PROFILE)
+    double ldpcSec = 0, tsSec = 0;                 // time spent in the LDPC iterations and in BCH, descrambling and packet assembly (DTMB_PROFILE)
 };
 
 class FecChain {
@@ -49,7 +51,7 @@ public:
 
 private:
     struct Job { uint64_t seq; std::vector<float> llr; int groupIndex; };
-    struct Result { bool ok = false, dropped = false, skipped = false; int iterations = 0, bchCorrected = 0; std::vector<uint8_t> packets; };
+    struct Result { bool ok = false, dropped = false, skipped = false; int iterations = 0, bchCorrected = 0; double ldpcSec = 0, tsSec = 0; std::vector<uint8_t> packets; };
     void llrFrame(const cf32* sym, const float* var, std::vector<float>& out);
     void trySearch();
     void dispatch();

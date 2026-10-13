@@ -41,6 +41,8 @@ public:
         // A word that is plainly hopeless (many erased LLRs, or still over a third of the checks unsatisfied after 12 iterations) is given up early.
         Result decode(const float* llr, uint8_t* info, int maxIter, float alpha = 0.6f);
     private:
+        Result decodeBody(const float* llr, uint8_t* info, int maxIter, float alpha);
+        Result decodeAvx2(const float* llr, uint8_t* info, int maxIter, float alpha);
         const LdpcCode& code_;
         std::vector<float> lv_, r_, q_;
         std::vector<uint64_t> hard_;

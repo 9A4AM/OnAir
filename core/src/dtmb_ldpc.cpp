@@ -1,5 +1,6 @@
 // DTMB LDPC codes, BCH, 4QAM-NR decoding (see dtmb_ldpc.h).
 #include "dect2/dtmb_ldpc.h"
+#include "dect2/simd.h"
 #include <array>
 #include <bit>
 #include <cmath>
@@ -198,7 +199,9 @@ LdpcCode::Decoder::Decoder(const LdpcCode& code) : code_(code) {
     hard_.assign(59 * 2, 0);
 }
 
-LdpcCode::Result LdpcCode::Decoder::decode(const float* llr, uint8_t* info, int maxIter, float alpha) {
+// The decoder body is compiled twice on x86-64 (baseline and AVX2 + FMA, picked at run time, see dect2/simd.h): the planar 128 lane loops below
+// are written to be vectorised by the compiler.
+DECT2_SIMD_MEMBER_BODY LdpcCode::Result LdpcCode::Decoder::decodeBody(const float* llr, uint8_t* info, int maxIter, float alpha) {
     const int c = code_.c_, e = code_.e_;
     constexpr int Z = kLdpcZ;
     // The a posteriori values are clipped far above their useful range. A tight clip (40 was tried) breaks the layered update, which subtracts
@@ -230,6 +233,40 @@ LdpcCode::Result LdpcCode::Decoder::decode(const float* llr, uint8_t* info, int 
             res.iterations = 1;
             return res;
         }
+    }
+    // Hard decisions (a column is packed when a check first needs it) and the parity checks: the number of unsatisfied block rows; with
+    // stopAtFirst the count stops at the first one (only whether all checks hold matters)
+    uint64_t have = 0;
+    auto hardOf = [&](int col) {
+        if (!((have >> col) & 1)) {
+            const float* u = &lv_[(size_t)col * 128];
+            uint64_t w[2] = {0, 0};
+            for (int g = 0; g < 16; g++) {
+                uint32_t byte = 0;
+                for (int k = 0; k < 8; k++) byte |= (uint32_t)(u[g * 8 + k] < 0.f) << k;
+                w[g >> 3] |= (uint64_t)byte << (8 * (g & 7));
+            }
+            hard_[(size_t)col * 2] = w[0]; hard_[(size_t)col * 2 + 1] = w[1] & kMaskHi;   // bit 127 is the padding slot
+            have |= 1ull << col;
+        }
+        return Bits{hard_[(size_t)col * 2], hard_[(size_t)col * 2 + 1]};
+    };
+    auto checks = [&](bool stopAtFirst) {
+        have = 0;
+        int bad = 0;
+        for (int row = 0; row < c; row++) {
+            Bits acc;
+            for (const Edge& ed : code_.rows_[(size_t)row]) acc = acc ^ rotr(hardOf(ed.col), ed.shift);
+            if (!zero(acc)) { bad++; if (stopAtFirst) break; }
+        }
+        return bad;
+    };
+    // A word whose hard decisions already satisfy every check (a clean signal) needs no iteration at all
+    if (checks(true) == 0) {
+        res.ok = true;
+        res.iterations = 1;
+        emitInfo();
+        return res;
     }
     float min1[128], min2[128];
     uint32_t sg[128];
@@ -293,42 +330,33 @@ LdpcCode::Result LdpcCode::Decoder::decode(const float* llr, uint8_t* info, int 
             };
             if (iter == 1) pass2(std::true_type{}); else pass2(std::false_type{});
         }
-        // hard decisions (a column is packed when a check first needs it) and the parity checks
-        uint64_t have = 0;
-        auto hardOf = [&](int col) {
-            if (!((have >> col) & 1)) {
-                const float* u = &lv_[(size_t)col * 128];
-                uint64_t w[2] = {0, 0};
-                for (int g = 0; g < 16; g++) {
-                    uint32_t byte = 0;
-                    for (int k = 0; k < 8; k++) byte |= (uint32_t)(u[g * 8 + k] < 0.f) << k;
-                    w[g >> 3] |= (uint64_t)byte << (8 * (g & 7));
-                }
-                hard_[(size_t)col * 2] = w[0]; hard_[(size_t)col * 2 + 1] = w[1] & kMaskHi;   // bit 127 is the padding slot
-                have |= 1ull << col;
-            }
-            return Bits{hard_[(size_t)col * 2], hard_[(size_t)col * 2 + 1]};
-        };
-        int badRows = 0;
-        for (int row = 0; row < c; row++) {
-            Bits acc;
-            for (const Edge& ed : code_.rows_[(size_t)row]) acc = acc ^ rotr(hardOf(ed.col), ed.shift);
-            if (!zero(acc)) { badRows++; if (iter < 12) break; }   // before iteration 12 only whether all checks hold matters
-        }
+        // hard decisions and the parity checks
+        const int badRows = checks(iter != 4 && iter != 12 && iter < 12);
         res.iterations = iter;
         if (badRows == 0) { res.ok = true; break; }
-        if (iter == 12) {
+        // Words that are plainly not converging are given up early. The unsatisfied checks (as a share of all c * 127) of the words that go on to
+        // decode, measured on a real recording: at most 0.18 after 4 iterations and 0.15 after 12; the words that do not decode are at 0.33 median.
+        if (iter == 4 || iter == 12) {
             int weight = 0;
             for (int row = 0; row < c; row++) {
                 Bits acc;
                 for (const Edge& ed : code_.rows_[(size_t)row]) acc = acc ^ rotr(hardOf(ed.col), ed.shift);
                 weight += std::popcount(acc.lo) + std::popcount(acc.hi);
             }
-            if (weight > code_.c_ * Z / 3) break;
+            if (weight > (iter == 4 ? code_.c_ * Z / 4 : code_.c_ * Z / 5)) break;
         }
     }
     emitInfo();
     return res;
+}
+
+DECT2_AVX2_TARGET LdpcCode::Result LdpcCode::Decoder::decodeAvx2(const float* llr, uint8_t* info, int maxIter, float alpha) { return decodeBody(llr, info, maxIter, alpha); }
+
+LdpcCode::Result LdpcCode::Decoder::decode(const float* llr, uint8_t* info, int maxIter, float alpha) {
+#ifdef DECT2_X86_DISPATCH
+    if (cpuHasAvx2()) return decodeAvx2(llr, info, maxIter, alpha);
+#endif
+    return decodeBody(llr, info, maxIter, alpha);
 }
 
 const LdpcCode& ldpcCode(Rate r) {

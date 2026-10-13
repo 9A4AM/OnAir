@@ -2,10 +2,21 @@
 #include "dect2/dtmb_chain.h"
 #include "dect2/dtmb_map.h"
 #include <algorithm>
+#include <chrono>
+#include <ctime>
 #include <cmath>
 #include <cstring>
 
 namespace dect2::dtmb {
+
+namespace {
+// CPU time of the calling thread, for the DTMB_PROFILE figures (a busy machine does not inflate it)
+#ifndef _WIN32
+double nowSec() { timespec ts; clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts); return (double)ts.tv_sec + 1e-9 * (double)ts.tv_nsec; }
+#else
+double nowSec() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+#endif
+}
 
 namespace {
 constexpr size_t kQueueLimit = 256;   // codewords waiting for a worker before old ones are dropped (about 50 ms of the fastest modes, 8 MB)
@@ -163,7 +174,9 @@ void FecChain::dispatch() {
 void FecChain::submit(Job&& j) {
     if (nWorkers_ == 0) {
         j.seq = nextSeq_++;
+        const double t0 = nowSec();
         Result r = decode(j, syncDec_, kMaxIter);
+        r.tsSec = nowSec() - t0 - r.ldpcSec;
         std::lock_guard<std::mutex> lk(mu_);
         done_[j.seq] = std::move(r);
         return;
@@ -183,8 +196,11 @@ void FecChain::submit(Job&& j) {
 FecChain::Result FecChain::decode(const Job& j, LdpcCode::Decoder& dec, int maxIter) const {
     Result r;
     std::vector<uint8_t> info((size_t)code_.infoBits());
+    const double t0 = nowSec();
     const LdpcCode::Result lr = dec.decode(j.llr.data(), info.data(), maxIter);
     r.iterations = lr.iterations;
+    const double t1 = nowSec();
+    r.ldpcSec = t1 - t0;
     if (!lr.ok) return r;
     const int nb = bchBlocks(prof_.rate);
     std::vector<uint8_t> bits((size_t)nb * kBchK);
@@ -224,7 +240,9 @@ void FecChain::workerLoop() {
             gen = generation_;
             running_++;
         }
+        const double t0 = nowSec();
         Result r = decode(j, dec, kMaxIter);
+        r.tsSec = nowSec() - t0 - r.ldpcSec;
         {
             std::lock_guard<std::mutex> lk(mu_);
             running_--;
@@ -247,9 +265,10 @@ void FecChain::collect(const PacketCb& cb, bool wait) {
             nextOut_++;
             if (r.dropped) st_.cwDropped++;
             else if (r.skipped) st_.cwSkipped++;
-            else if (r.ok) { st_.cwOk++; st_.packets += (uint64_t)pkCw_; st_.iterSum += (uint64_t)r.iterations; failRun_ = 0; }
-            else { st_.cwBad++; st_.iterSum += (uint64_t)r.iterations; failRun_++; }
+            else if (r.ok) { st_.cwOk++; st_.packets += (uint64_t)pkCw_; st_.iterSum += (uint64_t)r.iterations; st_.okIterMax = std::max<uint64_t>(st_.okIterMax, (uint64_t)r.iterations); failRun_ = 0; }
+            else { st_.cwBad++; st_.iterSum += (uint64_t)r.iterations; st_.badIterSum += (uint64_t)r.iterations; failRun_++; }
             st_.bchCorrected += (uint64_t)r.bchCorrected;
+            st_.ldpcSec += r.ldpcSec; st_.tsSec += r.tsSec;
             if (!r.dropped && !r.skipped) st_.lastIterAvg = 0.9 * st_.lastIterAvg + 0.1 * r.iterations;
         }
         pendingSecs_ += secsPerCw_;

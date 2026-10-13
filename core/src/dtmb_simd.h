@@ -1,6 +1,7 @@
 // Small vector kernels of the DTMB code: dot products of a real filter with a planar complex signal. NEON where it exists, else plain loops
 // with independent accumulators that the compiler can vectorise (float sums are not reassociated by default, so one accumulator would be serial).
 #pragma once
+#include "dect2/simd.h"
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
 #endif
@@ -8,7 +9,7 @@
 namespace dect2::dtmb {
 
 // sr = sum_t re[t] h[t], si = sum_t im[t] h[t] for t < n; n is a multiple of 8 or the arrays carry zeros up to the next multiple of 8
-inline void dotRI(const float* re, const float* im, const float* h, int n, float& sr, float& si) {
+DECT2_SIMD_BODY void dotRI(const float* re, const float* im, const float* h, int n, float& sr, float& si) {
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
     float32x4_t a0 = vdupq_n_f32(0), a1 = a0, b0 = a0, b1 = a0;
     for (int t = 0; t < n; t += 8) {
