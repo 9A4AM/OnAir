@@ -30,6 +30,11 @@ public:
     void setSignalOffset(double hz);
     void setDialHz(double hz);                  // the user's frequency: picks the station when none is set (0: unknown, a file)
     void setStation(int s);                     // timesig::Station, -1 from the dial frequency
+    // A recording: setClockScale(k): the recorder's clock ran slow by k (samples per signal second = rate * k; BPC and BPM files of a
+    // 2.55 % slow recorder need 1.0255); setAudioInput(true, tone): the samples are real, already demodulated audio (HF stations: the AM
+    // envelope with the carrier removed; BPC: the carrier is a tone at toneHz, in signal time)
+    void setClockScale(double k);
+    void setAudioInput(bool on, double toneHz = 0);
     void setPref60(int s);                      // which station 60 kHz means with the station from the dial
     // 0: no clock to compare (a file); 1: the computer clock as the samples arrive (a radio, the test signal);
     // 2: sample 0 was taken at UTC epoch originSec (tests)

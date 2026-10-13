@@ -74,24 +74,42 @@ bool doyOk(int doy, int hundreds) {   // BCD hundreds digit of a day of year
     return doy >= 1 && doy <= 366 && hundreds <= 3;
 }
 
+
+// ---- BPC / HLA / BPM coded helpers
+int bitsOf(const int* b, int from, int n) {   // LSB first
+    int v = 0;
+    for (int i = 0; i < n; i++) if (b[from + i]) v |= 1 << i;
+    return v;
+}
+void putBits(int* b, int from, int n, int v) { for (int i = 0; i < n; i++) b[from + i] = v >> i & 1; }
+int oddPc(const int* b, int from, int n) {   // the odd parity bit: the ones with it are odd
+    int p = 0;
+    for (int i = 0; i < n; i++) p ^= b[from + i];
+    return p ^ 1;
+}
+// BPC: the quaternary digits of a frame as two bits each, MSB first
+int bpcV(const uint8_t* s, int i) { return s[i] & 3; }
+int bpcOnes(const uint8_t* s, int a, int b) { int n = 0; for (int i = a; i <= b; i++) n += (bpcV(s, i) & 1) + (bpcV(s, i) >> 1); return n; }
+
 } // namespace
 
 const char* stationName(int s) {
-    static const char* n[] = {"DCF77", "MSF", "WWVB", "JJY 40 kHz", "JJY 60 kHz", "WWV / WWVH", "CHU", "BPM"};
+    static const char* n[] = {"DCF77", "MSF", "WWVB", "JJY 40 kHz", "JJY 60 kHz", "WWV / WWVH", "CHU", "BPM", "BPC", "HLA", "BPM coded"};
     return s >= 0 && s < kNumStations ? n[s] : "?";
 }
 double stationKhz(int s) {
-    static const double f[] = {77.5, 60, 60, 40, 60, 10000, 7850, 5000};
+    static const double f[] = {77.5, 60, 60, 40, 60, 10000, 7850, 5000, 68.5, 5000, 5000};
     return s >= 0 && s < kNumStations ? f[s] : 0;
 }
-bool stationIsHf(int s) { return s == Wwv || s == Chu || s == Bpm; }
+bool stationIsHf(int s) { return s == Wwv || s == Chu || s == Bpm || s == Hla || s == BpmC; }
 const char* stationTimeZone(int s) {
-    switch (s) { case Dcf77: return "CET / CEST"; case Msf: return "UK (GMT / BST)"; case Jjy40: case Jjy60: return "JST"; case Bpm: return "UTC / UT1"; default: return "UTC"; }
+    switch (s) { case Dcf77: return "CET / CEST"; case Msf: return "UK (GMT / BST)"; case Jjy40: case Jjy60: return "JST"; case Bpm: return "UTC / UT1"; case Bpc: return "CST (UTC+8)"; case Hla: return "KST (UTC+9)"; default: return "UTC"; }
 }
 int stationForKhz(double khz, int pref60) {
     auto near = [&](double f, double tol) { return std::fabs(khz - f) <= tol; };
     if (near(77.5, 1.5)) return Dcf77;
     if (near(40, 1.5)) return Jjy40;
+    if (near(68.5, 1.5)) return Bpc;
     if (near(60, 1.5)) return pref60 == Msf || pref60 == Wwvb || pref60 == Jjy60 ? pref60 : Msf;
     for (double f : {2500.0, 5000.0, 10000.0, 15000.0, 20000.0}) if (near(f, 8)) return Wwv;
     for (double f : {3330.0, 7850.0, 14670.0}) if (near(f, 8)) return Chu;
@@ -224,10 +242,124 @@ std::vector<uint8_t> encodeMinute(int st, int64_t M, const EncodeOpts& o) {
         s[0] = SNone;
         return s;
     }
+    if (st == Bpc) {
+        std::vector<uint8_t> s;
+        for (int i = 0; i < 3; i++) { const std::vector<uint8_t> f = encodeBpcFrame(M + 20 * i); s.insert(s.end(), f.begin(), f.end()); }
+        return s;
+    }
+    if (st == Hla) {
+        const Civil c = civil(M + 9 * 3600);
+        const Field mi[] = {{17, 40}, {16, 20}, {15, 10}, {13, 8}, {12, 4}, {11, 2}, {10, 1}};
+        const Field hr[] = {{26, 20}, {25, 10}, {23, 8}, {22, 4}, {21, 2}, {20, 1}};
+        const Field dy[] = {{41, 200}, {40, 100}, {38, 80}, {37, 40}, {36, 20}, {35, 10}, {33, 8}, {32, 4}, {31, 2}, {30, 1}};
+        put(a, mi, 7, c.mi); put(a, hr, 6, c.h); put(a, dy, 10, c.doy);
+        std::vector<uint8_t> s = syms(a, nullptr);
+        for (int m = 9; m < 60; m += 10) s[(size_t)m] = SMark;
+        s[0] = SNone;
+        return s;
+    }
     return std::vector<uint8_t>(60, SUnknown);
 }
 
+std::vector<uint8_t> encodeBpcFrame(int64_t t) {
+    const int64_t M = t - (((t % 60) + 60) % 60);
+    const int idx = (int)((t - M) / 20);
+    const Civil c = civil(t + 8 * 3600);
+    std::vector<uint8_t> s(20, 0);
+    const int h12 = c.h % 12, pm = c.h >= 12, yy = c.y % 100;
+    s[0] = SNone;
+    s[1] = (uint8_t)idx;
+    s[3] = (uint8_t)(h12 >> 2); s[4] = (uint8_t)(h12 & 3);
+    s[5] = (uint8_t)(c.mi >> 4); s[6] = (uint8_t)(c.mi >> 2 & 3); s[7] = (uint8_t)(c.mi & 3);
+    s[8] = (uint8_t)(c.wd >> 2); s[9] = (uint8_t)(c.wd & 3);
+    s[10] = (uint8_t)(pm << 1 | (bpcOnes(s.data(), 1, 9) & 1));
+    s[11] = (uint8_t)(c.d >> 4); s[12] = (uint8_t)(c.d >> 2 & 3); s[13] = (uint8_t)(c.d & 3);
+    s[14] = (uint8_t)(c.mo >> 2); s[15] = (uint8_t)(c.mo & 3);
+    s[16] = (uint8_t)(yy >> 4 & 3); s[17] = (uint8_t)(yy >> 2 & 3); s[18] = (uint8_t)(yy & 3);
+    s[19] = (uint8_t)((yy >> 6 & 1) << 1 | (bpcOnes(s.data(), 11, 18) & 1));
+    return s;
+}
+
+std::vector<uint8_t> encodeBpmcSecond(int64_t u, double dut1Ms) {
+    const Civil c = civil(u);
+    const int sec = (int)(((u % 60) + 60) % 60);
+    int b[52] = {};
+    b[0] = 1;
+    putBits(b, 2, 6, sec); b[8] = oddPc(b, 2, 6);
+    putBits(b, 9, 6, c.mi); b[15] = oddPc(b, 9, 6);
+    putBits(b, 16, 5, c.h); b[21] = oddPc(b, 16, 5);
+    putBits(b, 22, 5, c.d); b[27] = oddPc(b, 22, 5);
+    putBits(b, 28, 4, c.mo); b[32] = oddPc(b, 28, 4);
+    putBits(b, 33, 6, c.y % 100); b[39] = oddPc(b, 33, 6);
+    const int mag = std::min(1023, (int)std::floor(std::fabs(dut1Ms)));
+    putBits(b, 40, 10, mag); b[50] = dut1Ms >= 0; b[51] = oddPc(b, 40, 11);
+    return std::vector<uint8_t>(b, b + 52);
+}
+std::vector<uint8_t> encodeBpmcMinute(int dut1Tenth, int leapCount, bool ls) {
+    int b[46] = {};
+    for (int i = 0; i < 30; i++) b[i] = 1;
+    putBits(b, 32, 4, dut1Tenth); b[36] = oddPc(b, 32, 4);
+    putBits(b, 37, 6, leapCount); b[43] = oddPc(b, 37, 6);
+    b[44] = ls; b[45] = oddPc(b, 44, 1);
+    return std::vector<uint8_t>(b, b + 46);
+}
+
+bool decodeBpmcSecond(const uint8_t* e, Fields& f, int yearHint) {
+    f = Fields();
+    int b[52];
+    for (int i = 0; i < 52; i++) b[i] = e[i] ? 1 : 0;
+    if (!b[0] || b[1]) return false;
+    if (oddPc(b, 2, 6) != b[8] || oddPc(b, 9, 6) != b[15] || oddPc(b, 16, 5) != b[21] || oddPc(b, 22, 5) != b[27] || oddPc(b, 28, 4) != b[32] ||
+        oddPc(b, 33, 6) != b[39] || oddPc(b, 40, 11) != b[51]) return false;
+    const int sec = bitsOf(b, 2, 6), mi = bitsOf(b, 9, 6), h = bitsOf(b, 16, 5), d = bitsOf(b, 22, 5), mo = bitsOf(b, 28, 4), yy = bitsOf(b, 33, 6);
+    const int mag = bitsOf(b, 40, 10);
+    if (sec > 59 || mi > 59 || h > 23 || mo < 1 || mo > 12) return false;
+    f.year = fullYear(yy, yearHint);
+    if (d < 1 || d > daysInMonth(f.year, mo)) return false;
+    f.month = mo; f.day = d; f.hour = h; f.minute = mi; f.second = sec;
+    f.doy = (int)(daysFromCivil(f.year, mo, d) - daysFromCivil(f.year, 1, 1)) + 1;
+    f.weekday = weekdayOf(daysFromCivil(f.year, mo, d));
+    f.dut1Ms = b[50] ? mag : -mag;
+    f.dut1Neg = !b[50];
+    f.hasDut1Ms = true;
+    f.utcMinute = daysFromCivil(f.year, mo, d) * 86400 + h * 3600 + mi * 60;
+    return true;
+}
+bool decodeBpmcMinute(const uint8_t* e, int& dut1Tenth, int& leapCount, bool& ls) {
+    int b[46];
+    for (int i = 0; i < 46; i++) b[i] = e[i] ? 1 : 0;
+    for (int i = 0; i < 30; i++) if (!b[i]) return false;
+    if (b[30] || b[31]) return false;
+    if (oddPc(b, 32, 4) != b[36] || oddPc(b, 37, 6) != b[43] || oddPc(b, 44, 1) != b[45]) return false;
+    dut1Tenth = bitsOf(b, 32, 4); leapCount = bitsOf(b, 37, 6); ls = b[44] != 0;
+    return dut1Tenth <= 9;
+}
+
+static bool decodeBpc(const uint8_t* sym, Fields& f, int yearHint) {
+    f = Fields();
+        if (sym[0] != SNone) return false;
+        for (int i = 1; i < 20; i++) if (sym[i] > 3) return false;
+        const int idx = sym[1], ones19 = bpcOnes(sym, 1, 9), ones1118 = bpcOnes(sym, 11, 18);
+        if (idx > 2) return false;
+        if ((ones19 & 1) != (sym[10] & 1) || (ones1118 & 1) != (sym[19] & 1)) return false;
+        const int h12 = sym[3] * 4 + sym[4], mi = sym[5] * 16 + sym[6] * 4 + sym[7], wd = sym[8] * 4 + sym[9];
+        const int d = sym[11] * 16 + sym[12] * 4 + sym[13], mo = sym[14] * 4 + sym[15];
+        const int yy = (sym[19] >> 1) * 64 + sym[16] * 16 + sym[17] * 4 + sym[18];
+        if (h12 > 11 || mi > 59 || wd < 1 || wd > 7 || mo < 1 || mo > 12 || yy > 99) return false;
+        f.year = fullYear(yy, yearHint);
+        if (d < 1 || d > daysInMonth(f.year, mo)) return false;
+        f.month = mo; f.day = d; f.minute = mi; f.weekday = wd;
+        f.hour = h12 + ((sym[10] >> 1) ? 12 : 0);
+        if (weekdayOf(daysFromCivil(f.year, mo, d)) != wd) return false;
+        f.doy = (int)(daysFromCivil(f.year, mo, d) - daysFromCivil(f.year, 1, 1)) + 1;
+        f.utcOffsetMin = 8 * 60;
+        f.frameIndex = idx; f.second = idx * 20;
+        f.utcMinute = daysFromCivil(f.year, mo, d) * 86400 + f.hour * 3600 + mi * 60 - f.utcOffsetMin * 60 + idx * 20;
+        return true;
+}
+
 bool decodeMinute(int st, const uint8_t* sym, Fields& f, int yearHint) {
+    if (st == Bpc) return decodeBpc(sym, f, yearHint);
     f = Fields();
     int a[60] = {}, bb[60] = {};
     for (int i = 0; i < 60; i++) {
@@ -358,19 +490,47 @@ bool decodeMinute(int st, const uint8_t* sym, Fields& f, int yearHint) {
         f.utcMinute = days * 86400 + f.hour * 3600 + f.minute * 60 - f.utcOffsetMin * 60;
         return true;
     }
+    if (st == Hla) {
+        if (sym[0] != SNone) return false;
+        for (int i = 1; i < 60; i++) {
+            const bool m = i % 10 == 9;
+            if (m != isMark(i) || sym[i] == SNone) return false;
+        }
+        for (int i = 1; i <= 8; i++) if (a[i]) return false;
+        for (int i : {14, 18, 24, 27, 28, 34, 42, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 56, 57, 58}) if (a[i]) return false;
+        const Field mi[] = {{17, 40}, {16, 20}, {15, 10}, {13, 8}, {12, 4}, {11, 2}, {10, 1}};
+        const Field hr[] = {{26, 20}, {25, 10}, {23, 8}, {22, 4}, {21, 2}, {20, 1}};
+        const Field dy[] = {{41, 200}, {40, 100}, {38, 80}, {37, 40}, {36, 20}, {35, 10}, {33, 8}, {32, 4}, {31, 2}, {30, 1}};
+        int doy;
+        if (!get(a, mi, 7, f.minute) || !get(a, hr, 6, f.hour) || !get(a, dy, 10, doy)) return false;
+        f.year = yearHint > 0 ? yearHint : curYear();
+        if (f.minute > 59 || f.hour > 23 || !doyOk(doy, doy / 100) || doy > (isLeap(f.year) ? 366 : 365)) return false;
+        f.doy = doy;
+        const int64_t days = daysFromCivil(f.year, 1, 1) + doy - 1;
+        civilFromDays(days, f.year, f.month, f.day);
+        f.weekday = weekdayOf(days);
+        f.utcOffsetMin = 9 * 60;
+        f.utcMinute = days * 86400 + f.hour * 3600 + f.minute * 60 - f.utcOffsetMin * 60;
+        return true;
+    }
     return false;
 }
 
 std::string fieldsText(const Fields& f, int st) {
-    char b[96];
-    const int64_t u = f.utcMinute + ((st == Dcf77 || st == Msf) ? 60 : 0);   // the minute the frame names
+    char b[112];
+    const int64_t u = f.utcMinute + ((st == Dcf77 || st == Msf) ? 60 : 0) + (st == BpmC && f.second > 0 ? f.second : 0);   // the minute the frame names
     const Civil c = civil(u);
-    int n = snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d UTC", c.y, c.mo, c.d, c.h, c.mi);
+    const bool secs = st == Bpc || st == BpmC;
+    int n = secs ? snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d:%02d UTC", c.y, c.mo, c.d, c.h, c.mi, (int)(((u % 60) + 60) % 60))
+                 : snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d UTC", c.y, c.mo, c.d, c.h, c.mi);
     if (f.utcOffsetMin) {
-        const char* z = st == Dcf77 ? (f.dst ? "CEST" : "CET") : st == Msf ? (f.dst ? "BST" : "GMT") : "JST";
-        snprintf(b + n, sizeof b - (size_t)n, " (%02d:%02d %s)", f.hour, f.minute, z);
+        const char* z = st == Dcf77 ? (f.dst ? "CEST" : "CET") : st == Msf ? (f.dst ? "BST" : "GMT") : st == Bpc ? "CST" : st == Hla ? "KST" : "JST";
+        if (secs) snprintf(b + n, sizeof b - (size_t)n, " (%02d:%02d:%02d %s)", f.hour, f.minute, f.second >= 0 ? f.second : 0, z);
+        else snprintf(b + n, sizeof b - (size_t)n, " (%02d:%02d %s)", f.hour, f.minute, z);
     } else if (st == Msf) {
         snprintf(b + n, sizeof b - (size_t)n, " (GMT)");
+    } else if (st == BpmC && f.hasDut1Ms) {
+        snprintf(b + n, sizeof b - (size_t)n, ", DUT1 %+.1f ms", f.dut1Ms);
     }
     return b;
 }
@@ -410,7 +570,9 @@ void stationSite(int s, double& lat, double& lon, bool hawaii) {
     case Jjy60: lat = 33.4653; lon = 130.1756; break;    // Hagane-yama
     case Wwv: if (hawaii) { lat = 21.9878; lon = -159.7650; } else { lat = 40.6798; lon = -105.0418; } break;   // Kauai / Fort Collins
     case Chu: lat = 45.2950; lon = -75.7536; break;      // Ottawa
-    case Bpm: lat = 34.949; lon = 109.543; break;        // Pucheng
+    case Bpm: case BpmC: lat = 34.949; lon = 109.543; break;   // Pucheng
+    case Bpc: lat = 34.457; lon = 115.837; break;        // Shangqiu
+    case Hla: lat = 36.387; lon = 127.368; break;        // Daejeon
     default: lat = lon = 0; break;
     }
 }

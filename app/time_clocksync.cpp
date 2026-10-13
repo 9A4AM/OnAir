@@ -69,7 +69,7 @@ void wrapped(const ImVec4* col, const char* fmt, ...) {
 const char* stationTag(int s) {
     switch (s) {
     case timesig::Dcf77: return "DCF77"; case timesig::Msf: return "MSF"; case timesig::Wwvb: return "WWVB"; case timesig::Jjy40: case timesig::Jjy60: return "JJY";
-    case timesig::Wwv: return "WWV"; case timesig::Chu: return "CHU"; case timesig::Bpm: return "BPM"; default: return "TIME";
+    case timesig::Wwv: return "WWV"; case timesig::Chu: return "CHU"; case timesig::Bpm: case timesig::BpmC: return "BPM"; case timesig::Bpc: return "BPC"; case timesig::Hla: return "HLA"; default: return "TIME";
     }
 }
 
@@ -132,7 +132,7 @@ void clockSyncPanel(App& a) {
         if (ImGui::RadioButton(sourceName(s), S.source == s)) { S.source = s; plat::prefs().setI("clockSyncSource", s); plat::prefs().flush(); }
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("GPS: the satellites' UTC, read in the GNSS mode.\nTime station: DCF77, MSF, WWVB, JJY, WWV, CHU or BPM, read in the Time signals mode.\nThe radio runs one mode at a time: switch to the mode of the source and wait for it to lock.");
+        ImGui::SetTooltip("GPS: the satellites' UTC, read in the GNSS mode.\nTime station: DCF77, MSF, WWVB, JJY, WWV, CHU, BPM, BPC or HLA, read in the Time signals mode.\nThe radio runs one mode at a time: switch to the mode of the source and wait for it to lock.");
     ClockMeasurement m;
     const bool have = cd.latest(S.source, m, 30);
     if (have) {
