@@ -383,6 +383,19 @@ void loadPrefs(App& a) {
     a.splitSide = (float)d.getI("splitSide", 0); a.splitRight = (float)d.getI("splitRight", 0); a.splitBottom = (float)d.getI("splitBottom", 0);
     a.splitDock = (float)d.getI("splitDock", 0); a.splitBot2 = (float)d.getI("splitBot2", 0);
     if (d.has("newUi")) a.newUi = d.getB("newUi", true);
+    // the spectrum and the waterfall (plots.cpp): every choice is kept
+    if (d.has("wfMap")) a.wf.map = std::max(-1, std::min((int)Waterfall::NumMaps - 1, (int)d.getI("wfMap", -1)));
+    a.wf.autoTrack = d.getB("wfAuto", false);
+    if (d.has("wfMin") && d.has("wfMax")) { a.wf.minDb = (float)d.getD("wfMin", a.wf.minDb); a.wf.maxDb = (float)d.getD("wfMax", a.wf.maxDb); }
+    a.wf.setRate((float)d.getD("wfRate", 0.0));
+    if (d.has("specMin") && d.has("specMax")) { a.yMin = (float)d.getD("specMin", a.yMin); a.yMax = (float)d.getD("specMax", a.yMax); }
+    if (!(a.yMax - a.yMin >= 10)) { a.yMin = -110; a.yMax = -30; }
+    if (!(a.wf.maxDb - a.wf.minDb >= 3)) { a.wf.minDb = -100; a.wf.maxDb = -32; }
+    a.peakHold = d.getB("specHold", a.peakHold);
+    a.holdDecay = std::max(0.f, std::min(60.f, (float)d.getD("holdDecay", a.holdDecay)));
+    a.specAvgSec = std::max(0.f, std::min(5.f, (float)d.getD("specAvg", a.specAvgSec)));
+    a.specFill = d.getB("specFill", a.specFill); a.specGrid = d.getB("specGrid", a.specGrid); a.specPeaks = d.getB("specPeaks", a.specPeaks);
+    a.specReadout = d.getB("specReadout", a.specReadout); a.specDbm = d.getB("specDbm", a.specDbm);
     a.modeGroupsOpen = d.getS("modeGroupsOpen", "");
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
     if (d.has("dtmbBw")) a.dtmbBwMhz = d.getI("dtmbBw", 8) == 6 ? 6 : 8;
@@ -452,6 +465,10 @@ void savePrefs(const App& a) {
     d.setI("fmDeemph", a.fmDeemph);
     d.setI("fmChanKhz", a.fmChanKhz);
     if (a.rxId == 1) d.setB("newUi", a.newUi);
+    d.setI("wfMap", a.wf.map); d.setB("wfAuto", a.wf.autoTrack); d.setD("wfMin", a.wf.minDb); d.setD("wfMax", a.wf.maxDb); d.setD("wfRate", a.wf.rowsPerSec);
+    d.setD("specMin", a.yMin); d.setD("specMax", a.yMax);
+    d.setB("specHold", a.peakHold); d.setD("holdDecay", a.holdDecay); d.setD("specAvg", a.specAvgSec);
+    d.setB("specFill", a.specFill); d.setB("specGrid", a.specGrid); d.setB("specPeaks", a.specPeaks); d.setB("specReadout", a.specReadout); d.setB("specDbm", a.specDbm);
     const int curSlot = modeSlot(a);
     for (int f = 0; f < kNumSlots; f++) {   // gains per mode (the current mode from the live settings)
         const bool cur = f == curSlot;
@@ -518,18 +535,38 @@ void savePrefs(const App& a) {
 }
 
 void ingestSpectrum(App& a) {
-    SpectrumFrame f;
-    if (!a.engine.latestSpectrum(f, a.lastSeq)) return;
+    if (!a.engine.latestSpectrum(a.spec, a.lastSeq)) return;   // straight into the kept frame: no copy that allocates, 30 times a second
+    const SpectrumFrame& f = a.spec;
     a.lastSeq = f.seq;
-    a.spec = f;
+    const double now = glfwGetTime();
+    const float dt = a.specLastT > 0 ? (float)std::min(0.5, std::max(0.001, now - a.specLastT)) : 1.f / 30;
+    a.specLastT = now;
     size_t n = f.dbfs.size();
     if (a.smooth.size() != n || a.peak.size() != n) { a.smooth = f.dbfs; a.peak = f.dbfs; }   // both lines always have the frame size (a retune clears the peak line)
+    const float alpha = a.specAvgSec <= 0.001f ? 1.f : 1.f - std::exp(-dt / a.specAvgSec);   // a time constant, so the look does not depend on the frame rate
+    const float fall = a.holdDecay * dt;
+    float* sm = a.smooth.data(); float* pk = a.peak.data(); const float* in = f.dbfs.data();
     for (size_t i = 0; i < n; i++) {
-        a.smooth[i] += 0.35f * (f.dbfs[i] - a.smooth[i]);
-        a.peak[i] = std::max(a.peak[i] - 0.15f, f.dbfs[i]);
+        sm[i] += alpha * (in[i] - sm[i]);
+        pk[i] = a.holdDecay > 0 ? std::max(pk[i] - fall, in[i]) : std::max(pk[i], in[i]);
     }
-    a.wf.push(f.dbfs);
-    a.wf.stamp(glfwGetTime());
+    if (a.wf.offer(f.dbfs, now)) a.wf.stamp(now);
+    if (a.wf.autoTrack && !a.wf.paused && now - a.wf.trackT > 0.25) { a.wf.trackT = now; a.wf.fitRange(a.smooth, false); }
+}
+
+// The level offset to dBm of the selected radio (what the antenna feeds in for a full-scale sample: found with a signal generator), kept per radio by name
+static std::string gDbmKey; static float gDbmVal = 0;
+float dbmOffset(const App& a) {
+    if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return 0;
+    const std::string k = "dbmOff_" + a.devices[a.devIdx].name;
+    if (k != gDbmKey) { gDbmKey = k; gDbmVal = (float)plat::prefs().getD(k.c_str(), 0.0); }
+    return gDbmVal;
+}
+void setDbmOffset(const App& a, float db) {
+    if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return;
+    gDbmKey = "dbmOff_" + a.devices[a.devIdx].name; gDbmVal = db;
+    plat::prefs().setD(gDbmKey.c_str(), db);
+    plat::prefs().flush();
 }
 
 void ingestRx(App& a) {

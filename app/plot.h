@@ -20,7 +20,8 @@ enum Cond { Cond_Always, Cond_Once };
 
 enum Flags { Flags_None = 0, Flags_NoTitle = 1, Flags_NoLegend = 2, Flags_Equal = 4, Flags_NoMouseText = 8,
              Flags_Overlay = 16, Flags_NoPan = 32,
-             Flags_Flush = 64, Flags_OpenTop = 128, Flags_OpenBottom = 256 };   // Flush: no margin around the plot area (axes Inside or without labels); OpenTop/OpenBottom: no border on that edge (two plots stacked into one panel)   // Overlay: controls drawn over the plot after EndPlot() get the mouse (a button in a corner); NoPan: no drag or wheel (something in the plot holds the mouse)
+             Flags_Flush = 64, Flags_OpenTop = 128, Flags_OpenBottom = 256,
+             Flags_SmoothZoom = 512 };   // SmoothZoom: the wheel eases the view towards its new range over a few frames   // Flush: no margin around the plot area (axes Inside or without labels); OpenTop/OpenBottom: no border on that edge (two plots stacked into one panel)   // Overlay: controls drawn over the plot after EndPlot() get the mouse (a button in a corner); NoPan: no drag or wheel (something in the plot holds the mouse)
 enum AxisFlags { AxisFlags_None = 0, AxisFlags_NoTickLabels = 1, AxisFlags_NoGridLines = 2, AxisFlags_AutoFit = 4,
                  AxisFlags_Inside = 8 };   // Inside: small, faint tick labels inside the plot area (x along the bottom, y on the left) instead of a margin
 enum Scale { Scale_Linear, Scale_Log10 };
@@ -67,6 +68,7 @@ void EndSubplots();
 
 void SetupAxes(const char* xLabel, const char* yLabel, int xFlags = 0, int yFlags = 0);
 void SetupAxisLimits(Axis axis, double min, double max, Cond cond = Cond_Once);
+void SetupAxisConstraints(Axis axis, double min, double max);   // pan and zoom (drag, wheel) stay inside min..max
 void SetupAxisFormat(Axis axis, const char* fmt);
 void SetupAxisUnit(Axis axis, double unit);   // data in one unit, tick labels in another: a label shows value * unit
 void SetupAxisScale(Axis axis, Scale scale);

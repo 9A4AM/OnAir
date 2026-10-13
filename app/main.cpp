@@ -52,11 +52,12 @@ int64_t utcNowOf(const App& a) { return a.ts.utcNow ? a.ts.utcNow : (int64_t)tim
 
 void overviewTab(App& a) {
     if (!pal::dev()) {   // the new interface has these in its sidebar (Display)
-    ImGui::Checkbox(tr("peak hold"), &a.peakHold);
+    if (ImGui::Checkbox(tr("peak hold"), &a.peakHold)) savePrefs(a);
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
     ImGui::DragFloatRange2(tr("spectrum dB##specdb"), &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
-    ImGui::DragFloatRange2(tr("waterfall dB##wfdb"), &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
+    if (ImGui::DragFloatRange2(tr("waterfall dB##wfdb"), &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;
+    ImGui::SameLine(0, 4 * gUi); wfAutoButton(a);
     }
     static float frac = 0.5f;
     spectrumWaterfall(a, frac, pal::dev());   // the new interface: the boundary is a divider you can drag, as in SDR++

@@ -12,17 +12,7 @@
 
 namespace {
 // set the waterfall range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor)
-void autoRange(App& a) {
-    if (a.smooth.size() < 64) return;
-    std::vector<float> v(a.smooth.begin(), a.smooth.end());
-    const size_t k = v.size() / 5;
-    std::nth_element(v.begin(), v.begin() + (long)k, v.end());
-    const float floorDb = v[k];
-    const float top = *std::max_element(a.smooth.begin(), a.smooth.end());
-    a.wf.minDb = std::floor(floorDb - 6.f);
-    a.wf.maxDb = std::ceil(std::min(top + 2.f, floorDb + 45.f));
-    if (a.wf.maxDb < a.wf.minDb + 12.f) a.wf.maxDb = a.wf.minDb + 12.f;
-}
+void autoRange(App& a) { a.wf.fitRange(a.smooth, true); }
 // Palettes. 0: "terminal" (warm greys, amber, lower-case labels, key hints, log line); 1: "instrument" (mid greys, yellow trace, plain labels);
 // 2: "mono" (neutral greys, white trace, no accent at all, plain labels).
 struct UiTheme {
@@ -424,17 +414,22 @@ void sidebar(App& a) {
     }
     if (section(N_("Display"))) {
         ImGui::Indent(6 * gUi);
-        ImGui::Checkbox(tr("Peak hold"), &a.peakHold);
+        if (ImGui::Checkbox(tr("Peak hold"), &a.peakHold)) savePrefs(a);
         const float col = ImGui::GetCursorPosX() + ImGui::CalcTextSize(tr("Waterfall")).x + 8 * gUi;   // the controls line up after the longer label
         const float autoW = ImGui::CalcTextSize(tr("Auto")).x + ImGui::GetStyle().FramePadding.x * 2 + 4 * gUi;
         ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("Spectrum")); ImGui::SameLine(col); ImGui::SetNextItemWidth(std::min(150.f * gUi, ImGui::GetContentRegionAvail().x));
         ImGui::DragFloatRange2("##specdb", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
         ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("Waterfall")); ImGui::SameLine(col);
         ImGui::SetNextItemWidth(std::min(104.f * gUi, ImGui::GetContentRegionAvail().x - autoW));
-        ImGui::DragFloatRange2("##wfdb", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
+        if (ImGui::DragFloatRange2("##wfdb", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;
         ImGui::SameLine(0, 4 * gUi);
-        if (ImGui::SmallButton(tr("Auto"))) autoRange(a);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Set the waterfall range from the noise floor and the strongest signal"));
+        wfAutoButton(a);
+        ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("Colours")); ImGui::SameLine(col); ImGui::SetNextItemWidth(std::min(150.f * gUi, ImGui::GetContentRegionAvail().x));
+        if (ImGui::BeginCombo("##wfmap", tr(Waterfall::mapName(a.wf.effMap())))) {   // also in the Waterfall popup on the plot
+            for (int i = 0; i < Waterfall::NumMaps; i++)
+                if (ImGui::Selectable(tr(Waterfall::mapName(i)), a.wf.effMap() == i)) { a.wf.map = i; a.wf.palette(); savePrefs(a); }
+            ImGui::EndCombo();
+        }
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
@@ -795,13 +790,13 @@ void modeCombo(App& a, float w) {
 }
 
 void displayControls(App& a, bool wide) {
-    ImGui::Checkbox(tr("Peak hold"), &a.peakHold);
+    if (ImGui::Checkbox(tr("Peak hold"), &a.peakHold)) savePrefs(a);
     ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("%s", tr("Spectrum")); ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth((wide ? 130 : 104) * gUi);
     ImGui::DragFloatRange2("##specdb", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
     ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("%s", tr("Waterfall")); ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth((wide ? 130 : 104) * gUi);
-    ImGui::DragFloatRange2("##wfdb", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
+    if (ImGui::DragFloatRange2("##wfdb", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;
     ImGui::SameLine(0, 4 * gUi);
-    if (ImGui::SmallButton(tr("Auto"))) autoRange(a);
+    wfAutoButton(a);
 }
 
 // ---- draggable splitters between the fixed panels: sizes are kept in unscaled points (0 = automatic), a double click puts the automatic size back

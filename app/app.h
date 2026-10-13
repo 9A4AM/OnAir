@@ -59,14 +59,30 @@ using namespace dect2;
 
 struct Waterfall {
     static constexpr int W = 4096, H = 512;
+    enum Map { Classic, Viridis, Inferno, Grey, Turbo, NumMaps };
+    static const char* mapName(int m) {
+        static const char* const n[NumMaps] = {"Classic", "Viridis", "Inferno", "Grey", "Turbo"};
+        return n[m < 0 || m >= NumMaps ? 0 : m];
+    }
     gfx::Image* img = nullptr;
-    std::vector<uint32_t> lut;
+    uint32_t lut[256] = {};
+    int builtMap = -1;
+    std::vector<uint32_t> row;      // scratch for the row being written (kept: no allocation per frame)
+    std::vector<float> acc, floorScratch;   // the highest level per bin since the last row; the samples of the noise floor estimate
+    bool accEmpty = true;
     int writeRow = 0; // newest row; older rows follow at writeRow+1 ... wrapping
     int filled = 0;
     double pushT = 0; // when the newest row came in (glfwGetTime)
     double rowDt = 1.0 / 30; // steady seconds per row, for the time labels and the scrolling
     double stamps[128] = {};
     int nStamps = 0;
+    float minDb = -100, maxDb = -32;
+    int map = -1;            // the colour map (Map); -1: the one that goes with the interface theme
+    bool autoTrack = false;  // the intensity range follows the noise floor
+    float rowsPerSec = 0;    // 0: one row per spectrum frame (about 30 a second); else this many rows a second, each the highest level of the frames in between
+    bool paused = false;     // no new rows: the picture stays and can be scrolled back
+    double nextRowT = 0;
+    double trackT = 0;
 
     // average over the last 128 rows, and move only when that drifts by more than 2%: the labels stay put
     void stamp(double t) {
@@ -79,17 +95,29 @@ struct Waterfall {
         nStamps++;
         pushT = t;
     }
-    float minDb = -100, maxDb = -32;
+    bool slow() const { return rowsPerSec > 0.5f && rowsPerSec < 28.f; }   // rows come at a set, slower pace
+    bool timeKnown() const { return nStamps >= 128 || slow(); }
+    void setRate(float r) { rowsPerSec = r; nStamps = 0; nextRowT = 0; accEmpty = true; rowDt = slow() ? 1.0 / r : 1.0 / 30; }
 
-    void palette() { if (lut.size() == 256) for (int i = 0; i < 256; i++) lut[i] = jet(i / 255.0f); }   // after the interface palette changed
+    int effMap() const { return map >= 0 && map < NumMaps ? map : pal::wfMode() == 2 ? Turbo : pal::wfMode() == 1 ? Grey : Classic; }
+    static int& curMap() { static int m = 0; return m; }   // the map in use, for the other waterfalls (modes with their own picture) that colour with jet()
+    static uint32_t jet(float v) { return color(curMap(), v); }
+    void palette() { builtMap = effMap(); curMap() = builtMap; for (int i = 0; i < 256; i++) lut[i] = color(builtMap, i / 255.0f); }   // after the map or the interface palette changed
     void init(gfx::Backend* gfx) {
         img = gfx->createImage(W, H, 0xFF000000u);
-        lut.resize(256);
-        for (int i = 0; i < 256; i++) lut[i] = jet(i / 255.0f);
+        row.assign(W, 0);
+        palette();
     }
-    static uint32_t jet(float v) {
+    static uint32_t stopsColor(const float (*s)[3], int n, float v) {   // n colour stops (0..255 per channel), blended linearly
+        v *= (float)(n - 1);
+        const int i = std::min(n - 2, (int)v);
+        const float f = v - i;
+        auto ch = [&](int k) { return (uint32_t)(s[i][k] + (s[i + 1][k] - s[i][k]) * f + 0.5f); };
+        return 0xFF000000u | (ch(2) << 16) | (ch(1) << 8) | ch(0);
+    }
+    static uint32_t color(int map, float v) {
         v = std::min(1.f, std::max(0.f, v));
-        if (pal::wfMode() == 2) {   // Turbo (Google's colour map), with the noise floor fading to black
+        if (map == Turbo) {   // Turbo (Google's colour map), with the noise floor fading to black
             const float t = 0.12f + 0.84f * v;
             auto poly = [&](float a0, float a1, float a2, float a3, float a4, float a5) { return std::min(1.f, std::max(0.f, a0 + t * (a1 + t * (a2 + t * (a3 + t * (a4 + t * a5)))))); };
             const float r = poly(0.13572138f, 4.61539260f, -42.66032258f, 132.13108234f, -152.94239396f, 59.28637943f);
@@ -98,28 +126,66 @@ struct Waterfall {
             const float f = std::min(1.f, v / 0.22f), k = f * f * (3 - 2 * f);   // smoothstep: black at the bottom
             return 0xFF000000u | ((uint32_t)(b * k * 255 + 0.5f) << 16) | ((uint32_t)(g * k * 255 + 0.5f) << 8) | (uint32_t)(r * k * 255 + 0.5f);
         }
-        static const float cool[5][3] = {{6, 10, 20}, {16, 38, 70}, {30, 100, 140}, {110, 190, 205}, {240, 250, 250}};
+        static const float cool[5][3] = {{6, 10, 20}, {16, 38, 70}, {30, 100, 140}, {110, 190, 205}, {240, 250, 250}};   // Classic: dark blue, teal, near white
         static const float grey[5][3] = {{0, 0, 0}, {34, 34, 33}, {96, 95, 92}, {170, 168, 162}, {244, 242, 236}};
-        const float (*stops)[3] = pal::wfMode() == 1 ? grey : cool;
-        v *= 4.f;
-        const int i = std::min(3, (int)v);
-        const float f = v - i;
-        auto ch = [&](int k) { return (uint32_t)(stops[i][k] + (stops[i + 1][k] - stops[i][k]) * f + 0.5f); };
-        return 0xFF000000u | (ch(2) << 16) | (ch(1) << 8) | ch(0);
+        static const float viridis[9][3] = {{68, 1, 84}, {71, 44, 122}, {59, 81, 139}, {44, 113, 142}, {33, 144, 141}, {39, 173, 129}, {92, 200, 99}, {170, 220, 50}, {253, 231, 37}};
+        static const float inferno[9][3] = {{0, 0, 4}, {31, 12, 72}, {85, 15, 109}, {136, 34, 106}, {186, 54, 85}, {227, 89, 51}, {249, 140, 10}, {249, 201, 50}, {252, 255, 164}};
+        switch (map) {
+        case Viridis: return stopsColor(viridis, 9, v);
+        case Inferno: return stopsColor(inferno, 9, v);
+        case Grey: return stopsColor(grey, 5, v);
+        default: return stopsColor(cool, 5, v);
+        }
     }
-    void push(const std::vector<float>& dbfs) {
-        std::vector<uint32_t> row(W);
-        size_t n = dbfs.size();
+
+    // One spectrum frame arrives: it becomes a row of the texture, now or (rows at a set pace) when the next row is due. True when a row was written.
+    bool offer(const std::vector<float>& dbfs, double now) {
+        if (paused || dbfs.empty()) return false;
+        if (effMap() != builtMap) palette();
+        const float* d = dbfs.data();
+        if (slow()) {   // the highest level of every bin since the last row, so a short burst is not missed
+            if (acc.size() != dbfs.size() || accEmpty) { acc = dbfs; accEmpty = false; }
+            else for (size_t i = 0; i < dbfs.size(); i++) acc[i] = std::max(acc[i], dbfs[i]);
+            if (now < nextRowT) return false;
+            const double dt = 1.0 / rowsPerSec;
+            nextRowT = now - nextRowT > dt ? now + dt : nextRowT + dt;
+            accEmpty = true;
+            d = acc.data();
+        }
+        writeFrom(d, dbfs.size());
+        return true;
+    }
+    // the bins of the frame onto the 4096 columns (the highest of those that share a column), the levels onto the colour table: one row uploaded
+    void writeFrom(const float* d, size_t n) {
+        const float inv = 255.f / std::max(1.f, maxDb - minDb);
+        uint32_t* r = row.data();
         for (int x = 0; x < W; x++) {
-            size_t a = (size_t)x * n / W, b = std::max(a + 1, (size_t)(x + 1) * n / W);
-            float m = -200;
-            for (size_t k = a; k < b; k++) m = std::max(m, dbfs[k]);
-            float v = (m - minDb) / (maxDb - minDb);
-            row[x] = lut[(int)(std::min(1.f, std::max(0.f, v)) * 255)];
+            const size_t a = (size_t)x * n / W, b = std::max(a + 1, (size_t)(x + 1) * n / W);
+            float m = d[a];
+            for (size_t k = a + 1; k < b; k++) m = std::max(m, d[k]);
+            const float v = (m - minDb) * inv;
+            r[x] = lut[v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v];
         }
         writeRow = (writeRow + H - 1) % H;
-        img->update(0, writeRow, W, 1, row.data());
+        img->update(0, writeRow, W, 1, r);
         filled = std::min(H, filled + 1);
+    }
+    // the range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor).
+    // instant: set it at once; else move a part of the way (called a few times a second, so the colours do not jump)
+    void fitRange(const std::vector<float>& s, bool instant) {
+        const size_t n = s.size();
+        if (n < 64) return;
+        const size_t step = std::max<size_t>(1, n / 1024);
+        floorScratch.clear();
+        float top = -300;
+        for (size_t i = 0; i < n; i += step) { floorScratch.push_back(s[i]); top = std::max(top, s[i]); }
+        const size_t k = floorScratch.size() / 5;
+        std::nth_element(floorScratch.begin(), floorScratch.begin() + (long)k, floorScratch.end());
+        const float fl = floorScratch[k];
+        const float lo = std::floor(fl - 6.f);
+        float hi = std::ceil(std::min(top + 2.f, fl + 45.f));
+        if (hi < lo + 12.f) hi = lo + 12.f;
+        if (instant) { minDb = lo; maxDb = hi; } else { minDb += (lo - minDb) * 0.25f; maxDb += (hi - maxDb) * 0.25f; }
     }
 };
 
@@ -311,7 +377,11 @@ struct App {
     uint64_t lastSeq = 0;
     Waterfall wf;
     float yMin = -110, yMax = -30;
-    bool peakHold = true;
+    bool peakHold = true;               // the max-hold line
+    float holdDecay = 4.5f;             // dB a second the max-hold line falls (0: it stays until it is reset)
+    float specAvgSec = 0.08f;           // time constant of the averaged trace in seconds (0: the raw frames)
+    bool specFill = false, specGrid = true, specPeaks = false, specReadout = true, specDbm = false;   // fill under the line, grid, peak markers, level at the cursor, dBm instead of dBFS
+    double specLastT = 0;               // when the last spectrum frame came in
     ImFont* mono = nullptr;
     ImFont* ui = nullptr;
     std::string hackrfErr;
@@ -589,6 +659,11 @@ int adcBitsFor(const DeviceInfo& d, double rateHz);
 void ingestSpectrum(App& a);
 void ingestRx(App& a);
 std::vector<double> xs(const App& a);
+float dbmOffset(const App& a);                 // dB to add to a level in dBFS to get dBm, set for the selected radio (0 until it is)
+void setDbmOffset(const App& a, float db);
+void wfAutoButton(App& a);                     // plots.cpp: "Auto", on while the waterfall range follows the noise floor
+void wfDisplayPopup(App& a);                   // plots.cpp: colour map, intensity range, speed and pause of the waterfall
+void specDisplayPopup(App& a);                 // plots.cpp: the spectrum's averaging, max hold, markers, grid, fill and unit
 // Whole-span decoding (modeui.cpp). A mode opts in with registerWideMode(family); the switch is drawn by the spectrum (plots.cpp) for those only.
 bool modeSupportsWide(int family);
 void registerWideMode(int family);
