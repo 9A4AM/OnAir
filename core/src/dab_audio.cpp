@@ -526,6 +526,7 @@ void DabAudio::setAacBackend(int mode) { gAacBackend = mode; }
 
 void DabAudio::setVolume(float v) { p_->volume = v; if (p_->outStarted) p_->out.setVolume(v); }
 void DabAudio::setMuted(bool m) { p_->muted = m; if (p_->outStarted) p_->out.setMuted(m); }
+void DabAudio::setDataGroupSink(std::function<void(const uint8_t*, size_t)> cb) { p_->pad.setDataGroupSink(std::move(cb)); }
 void DabAudio::setAuTap(std::function<void(const uint8_t*, int, uint8_t)> cb) { p_->auTap = std::move(cb); }
 bool DabAudio::slide(DabSlide& out, uint64_t lastSeq) const {
     std::lock_guard<std::mutex> lk(p_->mu);

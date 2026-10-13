@@ -251,6 +251,7 @@ void DabPadDecoder::dataGroup(const uint8_t* d, int n) {
     if (n < 3) return;
     const bool ext = d[0] & 0x80, crc = d[0] & 0x40, seg = d[0] & 0x20, ua = d[0] & 0x10;
     const int type = d[0] & 0x0F;
+    if (sink_ && (type == 0 || type == 6)) sink_(d, (size_t)n);
     if (crc) {
         if (n < 5 || dab::crc16(d, n - 2) != (uint16_t)((d[n - 2] << 8) | d[n - 1])) return;
         n -= 2;

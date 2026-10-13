@@ -24,6 +24,7 @@ struct DabComponent {
     int ascty = -1;       // audio service component type: 0 = MPEG-1/2 Layer II (DAB), 63 = HE-AAC (DAB+)
     int dscty = -1;       // data service component type: 24 = MPEG-2 transport stream (TS 102 427), the carrier of DMB video
     int subId = -1;
+    int scid = -1;        // packet mode (tmid 3): the service component identifier (FIG 0/2), -1 otherwise
     bool primary = true;
     bool dmb() const { return tmid == 1 && dscty == 24; }
 };
@@ -47,6 +48,11 @@ struct DabService {
     std::map<int, std::string> compLabels;   // service component labels by SCIdS (FIG 1/4, 2/4)
     // FIG 0/13 user applications of the primary component (TS 101 756 table 16: 0x009 = DMB), -1 = none signalled
     int userApp = -1;
+    // Journaline (user application 0x44a, TS 102 979): carried in the PAD of the audio component or in a packet mode component
+    bool journaline = false;
+    int jlScIdS = 0;      // the service component (index into comps) FIG 0/13 signals it for
+    int jlExt = 0;        // its extended header length
+    int jlEntry = -1;     // point of entry object ID, -1 = the root 0x0000
     int dmbProfile = 0;   // DMB: the VideoServiceObjectProfileId (TS 102 428 table 8: 1 = BSAC audio, 2 = HE-AAC v2 audio)
     // The first audio stream component, or null
     const DabComponent* audio() const {
@@ -84,6 +90,8 @@ struct DabEnsemble {
     std::string label;
     int64_t utc = 0;              // broadcast time (seconds since 1970), 0 = not received
     std::map<int, DabSubchannel> subs;
+    struct PacketComp { int subId = -1, address = -1, dscty = -1; bool dg = false; };
+    std::map<int, PacketComp> packet;   // FIG 0/3: SCId -> sub-channel and packet address
     std::map<uint32_t, DabService> services;
     std::map<uint32_t, DabAnnSupport> annSupport;   // service id -> announcement support
     std::vector<DabAnnSwitch> annActive;            // announcements heard in the last few seconds

@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -22,6 +23,7 @@ struct DabSlide {
 class DabPadDecoder {
 public:
     void reset();
+    void setDataGroupSink(std::function<void(const uint8_t*, size_t)> cb) { sink_ = std::move(cb); }   // survives reset()
     // One DAB+ access unit (raw AAC data block, CRC removed). Looks for the data stream element that carries the PAD.
     // The PAD bytes in the element are in the order of EN 300 401 figure 29 (as at the end of an MP2 frame): the two F-PAD bytes last, the X-PAD
     // before them with the byte sent first right next to the F-PAD.
@@ -44,6 +46,7 @@ private:
         int headLast = -1, bodyLast = -1;
         bool done = false;
     };
+    std::function<void(const uint8_t*, size_t)> sink_;
     void subfield(int type, const uint8_t* d, int n);
     void dataGroup(const uint8_t* d, int n);
     void segment(uint16_t tid, int type, int segNo, bool last, const uint8_t* d, int n);

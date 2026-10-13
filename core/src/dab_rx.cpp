@@ -2,6 +2,7 @@
 // demodulation, fast information channel (ensemble, services, labels) and the main service channel of the selected sub-channel.
 #include "dect2/text_charset.h"
 #include "dect2/dab.h"
+#include "dect2/dab_journaline.h"
 #include "dect2/fftutil.h"
 #include "dect2/dab_tii.h"
 #include "dect2/dab_fig.h"
@@ -99,6 +100,11 @@ struct DabReceiver::Impl {
     bool selDmb = false;
     DmbDecoder dmb;
     std::function<void(const uint8_t*, size_t, double)> pktCb;
+    // Journaline: the data groups of a packet mode component (selPktAddr >= 0) or of the PAD of the selected audio service
+    JournalineDecoder jl;
+    DabPacketDemux demux;
+    int selPktAddr = -1, selJlExt = 0;
+    bool selJlPad = false;
 
     Impl() : bin(kCarriers), prsConj(kTu) {
         const auto& tab = freqInterleaver();
@@ -109,6 +115,7 @@ struct DabReceiver::Impl {
         mscSoft.resize((size_t)(kSymbols - 1 - kFicSymbols) * 2 * kCarriers);
         hist.assign(16, {});
         audio.select(-1, false, 0);
+        audio.setDataGroupSink([this](const uint8_t* g, size_t n) { if (selJlPad) jl.feedDataGroup(g, n); });
         dmb.setPacketSink([this](const uint8_t* pk, size_t n) { if (pktCb) pktCb(pk, n, 0.024); });
     }
 
@@ -471,6 +478,19 @@ struct DabReceiver::Impl {
                 }
                 ens.subs[s.id] = s;
             }
+        } else if (ext == 3) {   // packet mode service components: SCId -> sub-channel, address (EN 300 401 clause 6.3.2)
+            int p = 0;
+            while (p + 5 <= n) {
+                const int scid = (b[p] << 4) | (b[p + 1] >> 4);
+                DabEnsemble::PacketComp pc;
+                pc.dg = !(b[p + 2] & 0x80);   // the DG flag set means NO data groups are used
+                pc.dscty = b[p + 2] & 0x3F;
+                pc.subId = b[p + 3] >> 2;
+                pc.address = ((b[p + 3] & 3) << 8) | b[p + 4];
+                const bool ca = b[p + 1] & 1;
+                ens.packet[scid] = pc;
+                p += 5 + (ca ? 2 : 0);
+            }
         } else if (ext == 2) {
             int p = 0;
             while (p + 3 <= n) {
@@ -486,6 +506,7 @@ struct DabReceiver::Impl {
                     DabComponent dc;
                     dc.tmid = b[p] >> 6;
                     if (dc.tmid == 0) { dc.ascty = b[p] & 63; dc.subId = b[p + 1] >> 2; dc.primary = (b[p + 1] >> 1) & 1; }
+                    else if (dc.tmid == 3) { dc.scid = ((b[p] & 0x3F) << 6) | (b[p + 1] >> 2); dc.primary = (b[p + 1] >> 1) & 1; }
                     else if (dc.tmid == 1) { dc.dscty = b[p] & 63; dc.subId = b[p + 1] >> 2; dc.primary = (b[p + 1] >> 1) & 1; }
                     comps.push_back(dc);
                 }
@@ -503,6 +524,12 @@ struct DabReceiver::Impl {
                     const int type = (b[p] << 3) | (b[p + 1] >> 5), len = b[p + 1] & 31;
                     p += 2;
                     if (p + len > n) break;
+                    if (type == 0x44a) {   // Journaline: its user application data (version, extended header length, point of entry)
+                        DabService& sv = ens.services[sid];
+                        sv.sid = sid;
+                        int v, x, en;
+                        if (jlUserAppData(b + p, (size_t)len, v, x, en)) { sv.journaline = true; sv.jlScIdS = scids; sv.jlExt = x; sv.jlEntry = en; }
+                    }
                     if (scids == 0 && u == 0) {   // the primary component's first application (PAD applications of a DMB radio service follow it)
                         DabService& sv = ens.services[sid];
                         sv.sid = sid;
@@ -651,7 +678,8 @@ struct DabReceiver::Impl {
         hist.assign(16, {});
         cifCount = 0;
         dmb.reset();
-        if (isDmb) audio.select(-1, false, 0);
+        demux.setAddress(selPktAddr);
+        if (isDmb || selPktAddr >= 0) audio.select(-1, false, 0);
         else audio.select(sel, plus, selSub.bitrate);
     }
 
@@ -694,7 +722,8 @@ struct DabReceiver::Impl {
             descramble(dec.data(), info);
             for (int i = 0; i < info / 8; i++) { uint8_t v = 0; for (int b = 0; b < 8; b++) v = (uint8_t)((v << 1) | dec[(size_t)i * 8 + (size_t)b]); bytes[(size_t)i] = v; }
             if (tap) tap(sel, bytes.data(), (int)bytes.size());
-            if (selDmb) dmb.push(bytes.data(), (int)bytes.size());
+            if (selPktAddr >= 0) demux.feed(bytes.data(), bytes.size(), [this](const uint8_t* g, size_t n) { jl.feedDataGroup(g, n); });
+            else if (selDmb) dmb.push(bytes.data(), (int)bytes.size());
             else audio.push(bytes.data(), (int)bytes.size());
         }
     }
@@ -824,12 +853,23 @@ DabFicAnalysis DabReceiver::ficAnalysis() const {
 
 void DabReceiver::select(int subId) {
     std::lock_guard<std::mutex> lk(p_->mu);
+    p_->selPktAddr = -1; p_->selJlPad = false;
     p_->selReq = subId;
     if (subId < 0) p_->applySelection();
 }
 int DabReceiver::selected() const { return p_->selReq; }
 DabAudio& DabReceiver::audio() { return p_->audio; }
 DmbDecoder& DabReceiver::dmb() { return p_->dmb; }
+JournalineDecoder& DabReceiver::journaline() { return p_->jl; }
+void DabReceiver::selectJournaline(int subId, int packetAddress, int extHeader) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->jl.reset();
+    p_->jl.setExtHeader(extHeader);
+    p_->selPktAddr = packetAddress;
+    p_->selJlPad = packetAddress < 0;
+    p_->selReq = subId;
+    p_->sel = -1;   // restart the sub-channel decoding for the new use
+}
 void DabReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { p_->pktCb = std::move(cb); }
 void DabReceiver::setFrameTap(std::function<void(int, const uint8_t*, int)> cb) { p_->tap = std::move(cb); }
 
