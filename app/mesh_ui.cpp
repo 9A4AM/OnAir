@@ -4,10 +4,14 @@
 #include "adsb_map.h"
 #include "dect2/packet_aprs.h"
 #include "dect2/mesh_proto.h"
+#include "dect2/mesh_presets.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <atomic>
+#include <cstdio>
 #include <deque>
+#include <thread>
 #include <map>
 
 namespace {
@@ -33,6 +37,12 @@ struct State {
     std::map<int, Custom> custom;                // by entry (subMask)
     int customEntry = -1;                        // the entry whose custom frequency was last applied
     double pushedTuned = 0;
+    // MeshCore radio presets (meshcore.nz): the title chosen ("" = custom), the list in use, and the optional refresh from the internet
+    std::string mcPreset;
+    std::vector<dect2::MeshCorePresetEntry> mcList;
+    bool mcFromFile = false, mcListed = false;
+    std::atomic<int> mcFetch{0};                 // 0 idle, 1 working, 2 done, 3 failed
+    std::thread mcThread;
     char keyName[40] = "", keySecret[96] = "";
     int keyProto = 0;
     std::string keyMsg;
@@ -126,6 +136,7 @@ void loadState() {
     S.allPresets = d.getB("meshPresets", false);
     S.mtRegion = d.getS("meshMtRegion", "");
     S.mtPreset = d.getS("meshMtPreset", "LongFast");
+    S.mcPreset = d.getS("meshCorePreset", "");
     const std::string s = d.getS("meshKeys", "");
     size_t pos = 0;
     while (pos < s.size()) {
@@ -205,6 +216,35 @@ void saveCustom(const App& a) {
 }
 bool customActive(const App& a) { return !lorawanEntry(a) && customOf(a).on; }
 bool meshtasticShown(const App& a) { const int m = subMask(a); return !m || m == 1; }
+
+// ---------------------------------------------------------------- MeshCore radio presets
+
+std::string mcFile() { return plat::dataDir() + "/meshcore-presets.json"; }
+void mcLoad() { S.mcList = dect2::meshCorePresets(mcFile(), &S.mcFromFile); S.mcListed = true; }
+
+// the refresh runs on its own thread, only after a click; the file replaces the saved one only when it parses
+void mcRefresh() {
+    if (S.mcFetch == 1) return;
+    if (S.mcThread.joinable()) S.mcThread.join();
+    S.mcFetch = 1;
+    S.mcThread = std::thread([] {
+        const std::string tmp = mcFile() + ".part";
+        std::vector<dect2::MeshCorePresetEntry> v;
+        bool ok = plat::fetchUrl("https://api.meshcore.nz/api/v1/config", tmp, std::string("OnAir/") + ONAIR_VERSION) && dect2::loadMeshCorePresetFile(tmp, v);
+        if (ok) { std::remove(mcFile().c_str()); ok = std::rename(tmp.c_str(), mcFile().c_str()) == 0; }
+        if (!ok) std::remove(tmp.c_str());
+        S.mcFetch = ok ? 2 : 3;
+    });
+}
+
+// a preset sets the custom LoRa setting (MeshCore sync word and preamble) and the tuning frequency
+void mcApply(App& a, const dect2::MeshCorePresetEntry& p) {
+    State::Custom& c = customOf(a);
+    const dect2::MeshLoraSettings l = dect2::meshCorePresetToLora(p);
+    c.on = true; c.mhz = p.mhz; c.bwHz = l.bwHz; c.sf = l.sf; c.cr = l.cr; c.sync = l.syncWord; c.preamble = l.preamble;
+    a.freqMhz = p.mhz;
+    saveCustom(a);
+}
 
 } // namespace
 
@@ -828,12 +868,47 @@ void chatView(const App& a) {
 // the LoRa setting: the band plan's presets (with the Meshtastic region and modem preset) or a custom one, remembered per entry
 void loraSettings(App& a) {
     State::Custom& c = customOf(a);
+    if (subMask(a) == 2) {   // MeshCore: the community's regional radio presets (meshcore.nz), or custom entry
+        if (!S.mcListed) mcLoad();
+        if (S.mcFetch == 2 || S.mcFetch == 3) { if (S.mcThread.joinable()) S.mcThread.join(); if (S.mcFetch == 2) mcLoad(); S.mcFetch = S.mcFetch == 2 ? 4 : 5; }
+        const dect2::MeshCorePresetEntry* cur = nullptr;
+        for (const auto& p : S.mcList) if (p.title == S.mcPreset) cur = &p;
+        ImGui::TextDisabled("MeshCore radio preset");
+        ImGui::SetNextItemWidth(340 * gUi);
+        if (ImGui::BeginCombo("##mcpre", cur ? cur->title.c_str() : "Custom")) {
+            if (ImGui::Selectable("Custom", !cur)) { S.mcPreset.clear(); plat::prefs().setS("meshCorePreset", ""); }
+            for (const auto& reg : dect2::meshCoreRegions(S.mcList)) {
+                ImGui::TextDisabled("%s", reg.c_str());
+                for (const auto& p : S.mcList) {
+                    if (p.region != reg) continue;
+                    const std::string lab = p.title + "   " + dect2::meshCorePresetSummary(p) + "##mcp" + p.title;
+                    if (ImGui::Selectable(lab.c_str(), cur && cur->title == p.title)) {
+                        S.mcPreset = p.title; plat::prefs().setS("meshCorePreset", p.title);
+                        mcApply(a, p);
+                        if (a.engine.running()) startReceiver(a);
+                    }
+                }
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The radio settings the MeshCore app suggests for each region (frequency, bandwidth, spreading factor, coding rate). A preset fills in the\ncustom LoRa setting and tunes to its frequency. Custom keeps the values you enter below. %s", S.mcFromFile ? "The list is the one you refreshed from meshcore.nz." : "The list is the one built into this version.");
+        if (cur) ImGui::TextDisabled("%s", dect2::meshCorePresetSummary(*cur).c_str());
+        ImGui::BeginDisabled(S.mcFetch == 1);
+        if (ImGui::SmallButton("Refresh from meshcore.nz")) mcRefresh();
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Contacts the internet (api.meshcore.nz), only when you click, and nothing about you is sent. Saves the list of presets and uses it instead of the built-in one.");
+        if (S.mcFetch == 1) { ImGui::SameLine(); ImGui::TextDisabled("fetching..."); }
+        else if (S.mcFetch == 4) { ImGui::SameLine(); ImGui::TextDisabled("%zu presets loaded", S.mcList.size()); }
+        else if (S.mcFetch == 5) { ImGui::SameLine(); ImGui::TextDisabled("could not fetch (the previous list stays)"); }
+        ImGui::Spacing();
+    }
     ImGui::TextDisabled("LoRa setting");
     int mode = c.on ? 1 : 0;
     ImGui::SetNextItemWidth(220 * gUi);
     static const char* modes[] = {"Presets of the band plan", "Custom"};
     if (ImGui::Combo("##mlmode", &mode, modes, 2)) {
         c.on = mode == 1;
+        if (!c.on) { S.mcPreset.clear(); plat::prefs().setS("meshCorePreset", ""); }
         if (c.on) a.freqMhz = c.mhz;
         else applyRegion(a, effRegion(a));
         saveCustom(a);
@@ -909,7 +984,7 @@ void loraSettings(App& a) {
     if (ImGui::InputInt("Preamble (symbols)##mcp", &c.preamble, 1, 4)) { c.preamble = std::max(6, std::min(65535, c.preamble)); ch = true; }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Meshtastic 16, MeshCore 32 (SF8 and below) or 16, LoRa APRS and LoRaWAN 8.");
     ImGui::TextDisabled("Low data rate optimisation: %s (on when a symbol lasts 16 ms or more)", dect2::meshLoraLdro(c.sf, c.bwHz) ? "on" : "off");
-    if (ch) saveCustom(a);
+    if (ch) { saveCustom(a); if (!S.mcPreset.empty()) { S.mcPreset.clear(); plat::prefs().setS("meshCorePreset", ""); } }
     if (retune && a.engine.running()) startReceiver(a);
 }
 

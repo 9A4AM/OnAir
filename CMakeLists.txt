@@ -698,6 +698,10 @@ if(DECT2_BUILD_TESTS)
     endif()
   endforeach()
 
+  if(TEST mesh_presets_meshcore)
+    set_tests_properties(mesh_presets_meshcore PROPERTIES ENVIRONMENT "ONAIR_TEST_DATA=${CMAKE_SOURCE_DIR}/tests/data")
+  endif()
+
   # Long-running tests (30 s and more): the quick CI on every push skips them (ctest -LE slow),
   # the full CI runs them nightly and on release tags.
   foreach(t gain overload channel t2_payload dvbt_rx dab_rx atsc3_synth_options
