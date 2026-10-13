@@ -700,7 +700,7 @@ void logPanel(App& a);
 void historyLogTab(App& a);
 // diag_ui.cpp: radio problems shown under the radio picker, and the diagnostics text
 struct RadioMsg { int kind; std::string text; };   // kind: 0 radio listing error, 1 failed start/retune, 2 frequency outside the radio's range, 3 USB hint
-std::string radioRangeWarning(const DeviceInfo& d, double freqMhz);   // empty when the frequency is fine or the range is unknown
+std::string radioRangeWarning(const DeviceInfo& d, double freqMhz, const std::map<std::string, std::string>* radio = nullptr);   // empty when the frequency is fine or the range is unknown
 namespace fixit { struct Entry; }
 void fixitUi(App& a, const fixit::Entry* e, const char* idKey);   // diag_ui.cpp: the "How to fix" button + popup of a fixit.h entry (nothing for nullptr)
 std::vector<RadioMsg> radioMessages(const App& a);                    // what is shown right now (dismissed ones left out)

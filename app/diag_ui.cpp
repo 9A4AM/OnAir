@@ -1,6 +1,7 @@
 // Radio problems where the user looks: the listing error, a failed start, a frequency the radio cannot tune and the USB hints, all under the
 // radio picker, plus a "Copy diagnostics" button that puts what a bug report needs on the clipboard.
 #include "app.h"
+#include "dect2/converter.h"
 #include "dect2/updater.h"
 #include "dect2/hfdig_freedv.h"
 #include "fixit.h"
@@ -197,9 +198,15 @@ void recordUi(App& a) {
 
 } // namespace
 
-std::string radioRangeWarning(const DeviceInfo& d, double freqMhz) {
+std::string radioRangeWarning(const DeviceInfo& d, double freqMhz, const std::map<std::string, std::string>* radio) {
     if (!d.isRadio() || d.minFreqHz <= 0 || d.maxFreqHz <= 0) return "";
-    const double hz = freqMhz * 1e6;
+    double hz = freqMhz * 1e6;
+    const dect2::Converter c = radio ? dect2::converterFromRadio(*radio) : dect2::Converter();
+    if (c.active) {   // the radio is tuned to the converter's output
+        hz = c.rfToIf(hz);
+        if (hz >= d.minFreqHz && hz <= d.maxFreqHz) return "";
+        return fmt("%.3f MHz at the antenna is %.3f MHz at the radio, outside its range (%.6g-%.6g MHz)", freqMhz, hz / 1e6, d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
+    }
     if (hz >= d.minFreqHz && hz <= d.maxFreqHz) return "";
     return fmt("%.3f MHz is outside this radio's range (%.6g-%.6g MHz)", freqMhz, d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
 }
@@ -213,7 +220,7 @@ std::vector<RadioMsg> radioMessages(const App& a) {
         if (!n.empty()) m.push_back({2, n});
     }
     if (a.devIdx >= 0 && a.devIdx < (int)a.devices.size()) {
-        const std::string w = radioRangeWarning(a.devices[a.devIdx], a.freqMhz);
+        const std::string w = radioRangeWarning(a.devices[a.devIdx], a.freqMhz, &a.tune.radio);
         if (!w.empty()) m.push_back({2, w});
     }
     if (a.devices.size() <= 2) for (auto& h : a.usbHints) m.push_back({3, h});

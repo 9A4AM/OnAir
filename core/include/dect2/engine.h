@@ -541,7 +541,9 @@ private:
     std::atomic<bool> running_{false}, stopReq_{false};
     void watchRadio();
     std::atomic<bool> radioLost_{false};
-    TuneSettings radioTune(const TuneSettings& t) const;   // what the radio is tuned to: the user's frequency plus the mode's tuneOffsetHz
+    TuneSettings hwTune(const TuneSettings& t) const;      // radioTune() through the converter (converter.h): what the radio itself is tuned to
+    mutable std::atomic<bool> convSwap_{false};            // the converter mirrors the spectrum: ingest() swaps I and Q
+    TuneSettings radioTune(const TuneSettings& t) const;  // what the radio is tuned to: the user's frequency plus the mode's tuneOffsetHz
     mutable std::mutex tuneMu_;                 // lastDev_ / lastTune_: what to reopen the radio with
     DeviceInfo lastDev_;
     TuneSettings lastTune_;

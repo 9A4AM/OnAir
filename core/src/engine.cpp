@@ -1,4 +1,5 @@
 #include "dect2/engine.h"
+#include "dect2/converter.h"
 #include "dect2/hfdig_ftx.h"
 #include "dect2/rate_choice.h"
 #include "dect2/dvbt.h"
@@ -61,6 +62,7 @@ bool Engine::offsetAllowed() const {
 }
 
 void Engine::ingest(cf32* x, size_t n) {
+    if (convSwap_.load(std::memory_order_relaxed)) swapIq(x, n);   // a converter that mirrors the spectrum: the signal reads the right way round from here on
     rec_.push(x, n);   // the raw samples, before anything touches them
     dropNonFinite(x, n);
     cleanSamples(iqFix_, offMix_, offsetDc_.load(), x, n, activeStd_.load());
@@ -132,7 +134,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     }
     // the spectrum analyser on a HackRF: the radio's own sweep (DECT2_SPECAN_STEPPED=1 steps it like any other radio)
     specanSweep_ = stdMode_.load() == 44 && dev.kind == DeviceInfo::HackRF && !getenv("DECT2_SPECAN_STEPPED");
-    if (!src_->start(radioTune(tune), ring_, err)) {
+    if (!src_->start(hwTune(tune), ring_, err)) {
         log("source start failed: " + err);
         src_.reset();
         return false;
@@ -142,7 +144,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         offNote = "offset tuning not possible (the radio runs at " + std::to_string(src_->sampleRate() / 1e6).substr(0, 5) + " Msps): removing the DC spike instead";
         offHz_ = 0; offRate_ = 0; offsetDc_ = true;
         std::string e2;
-        if (!src_->retune(radioTune(tune), e2)) log("retune failed: " + e2);
+        if (!src_->retune(hwTune(tune), e2)) log("retune failed: " + e2);
     }
     { std::lock_guard<std::mutex> lk(noteMu_); note_.clear(); retuneNote_.clear(); }
     setNote(offNote.empty() ? err : err.empty() ? offNote : err + "; " + offNote, false);
@@ -355,7 +357,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
             TuneSettings t; { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; }
             t.centerHz = hz;
             std::string err;
-            return src_->retune(radioTune(t), err);
+            return src_->retune(hwTune(t), err);
         });
     else rxSpecan_.setRetuneCallback(nullptr);
     rxAstro_.configure(rate_);
@@ -367,7 +369,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
             TuneSettings t; { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; }
             t.centerHz += offsetHz;
             std::string err;
-            return src_->retune(radioTune(t), err);
+            return src_->retune(hwTune(t), err);
         });
     else rxAstro_.setRetuneCallback(nullptr);
     rxDvbc_.configure(rate_);
@@ -560,11 +562,22 @@ TuneSettings Engine::radioTune(const TuneSettings& t) const {
     return r;
 }
 
+// The converter (converter.h): the user's frequency is the one at the antenna, the radio goes to what comes out of the converter.
+// Not for a file or the synthetic signal (they have no radio), nor the HackRF sweep (its range is the radio's own).
+TuneSettings Engine::hwTune(const TuneSettings& t) const {
+    TuneSettings r = radioTune(t);
+    const Converter c = converterFromRadio(t.radio);
+    const bool live = c.active && !specanSweep_ && src_ && src_->realtimeHardware();
+    convSwap_.store(live && c.inverts());
+    if (live && c.reachable(r.centerHz)) r.centerHz = c.rfToIf(r.centerHz);
+    return r;
+}
+
 bool Engine::retune(const TuneSettings& tune) {
     if (!src_) return false;
     std::string err;
     holdDelivery(300);
-    if (!src_->retune(radioTune(tune), err)) { log("retune failed: " + err); return false; }
+    if (!src_->retune(hwTune(tune), err)) { log("retune failed: " + err); return false; }
     setNote(err, true);
     if (restartIfRateChanged(tune)) return running_;
     double oldCentre = 0;
@@ -611,7 +624,7 @@ bool Engine::retuneReset(const TuneSettings& tune) {
     if (!src_) return false;
     std::string err;
     holdDelivery(300);
-    if (!src_->retune(radioTune(tune), err)) { log("retune failed: " + err); return false; }
+    if (!src_->retune(hwTune(tune), err)) { log("retune failed: " + err); return false; }
     setNote(err, true);
     if (restartIfRateChanged(tune)) return running_;
     double oldCentre = 0;
@@ -1106,7 +1119,7 @@ void Engine::watchRadio() {
     { std::lock_guard<std::mutex> lk(tuneMu_); tune = lastTune_; }
     src_->stop();
     std::string err;
-    if (src_->start(radioTune(tune), ring_, err)) {
+    if (src_->start(hwTune(tune), ring_, err)) {
         radioLost_ = false;
         lastSamples_ = steady_clock::now();
         reconnectErr_.clear();

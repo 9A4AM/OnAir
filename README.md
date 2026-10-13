@@ -228,6 +228,7 @@ To try it without a signal, `isdbtgen --out sample.cs8` (built with the tools) m
 **Get the best reception**
 - A **channel scanner**, **automatic gain tuning**, and a **direction finder** that helps you aim the antenna.
 - **Your radio, set up properly:** every antenna input is its own entry in the source list, and **Radio settings** offers what the radio has: frequency correction (ppm), notch filters, gain modes, direct sampling for HF and more.
+- **Up-converters and LNBs:** pick Ham It Up, SpyVerter, a QO-100 / Bullseye TCXO / Ku LNB or a custom LO (with ppm and spectrum inversion) in **Radio settings**; the whole app then shows and takes the frequency at the antenna (7.074 MHz, 10489.55 MHz) while the radio is tuned to the IF, with I/Q swapped when the converter mirrors the spectrum.
 - **DC spike handling:** leave the radio's centre spike alone, remove it, or keep it off the channel by tuning just beside it. Optional **IQ imbalance correction**.
 
 **Share it**

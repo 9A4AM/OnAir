@@ -836,7 +836,7 @@ void ribbonPane(App& a) {
     ImGui::SameLine(0, 18 * gUi);
     displayControls(a, false);
     toolbarParts(a, TbSource | TbTuner | TbGain | TbDecoder, false);
-    if (a.devices[a.devIdx].isRadio() && !a.devices[a.devIdx].settings.empty()) { ImGui::SameLine(0, 14 * gUi); radioSettingsUi(a, false); }
+    if (a.devices[a.devIdx].isRadio()) { ImGui::SameLine(0, 14 * gUi); radioSettingsUi(a, false); }
     if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) sourceOptions(a);
     endPane();
 }
@@ -1298,7 +1298,7 @@ void bodyPanel(App& a, float bodyH, ImVec2 disp) {
         volumeControl(a, vw);
         ImGui::SetCursorScreenPos(ImVec2(o.x, o.y + 52 * gUi));
         toolbarParts(a, TbSource | TbTuner | TbGain | TbDecoder, false);
-        if (a.devices[a.devIdx].isRadio() && !a.devices[a.devIdx].settings.empty()) { ImGui::SameLine(0, 14 * gUi); radioSettingsUi(a, false); }
+        if (a.devices[a.devIdx].isRadio()) { ImGui::SameLine(0, 14 * gUi); radioSettingsUi(a, false); }
         if (synth) sourceOptions(a);
         endModule();
     }
