@@ -699,6 +699,7 @@ int main(int argc, char** argv) {
                 s = std::max(1.f, std::max(xs, ys));
 #endif
                 if (const char* e = getenv("DECT2_UISCALE")) s = std::max(0.5f, (float)atof(e));
+                s *= app.uiTextScale;   // View > Text size
                 if (s != gUi) {
                     gUi = s;
                     ImGuiStyle& st = ImGui::GetStyle();
@@ -714,6 +715,16 @@ int main(int argc, char** argv) {
                 if (!(st.WindowMinSize.y >= 1)) st.WindowMinSize.y = 32 * gUi;
             }
             ImGui::NewFrame();
+            {   // text size: Ctrl +, Ctrl - and Ctrl 0 (Cmd on a Mac), in either interface
+                ImGuiIO& kio = ImGui::GetIO();
+                if ((kio.KeyCtrl || kio.KeySuper) && !kio.WantTextInput) {
+                    float t = app.uiTextScale;
+                    if (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)) t = std::min(2.f, std::round(t * 10 + 1) / 10.f);
+                    if (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract)) t = std::max(0.8f, std::round(t * 10 - 1) / 10.f);
+                    if (ImGui::IsKeyPressed(ImGuiKey_0, false) || ImGui::IsKeyPressed(ImGuiKey_Keypad0, false)) t = 1.f;
+                    if (t != app.uiTextScale) { app.uiTextScale = t; savePrefs(app); }
+                }
+            }
             if (static bool up = false; !up && ImGui::GetFrameCount() > 120 && glfwGetTime() > 5) { up = true; dect2::crash::startupDone(); }   // started: see the startup guard
             if (autostart) {
                 autostart = false;

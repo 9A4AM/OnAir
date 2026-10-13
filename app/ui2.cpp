@@ -285,8 +285,16 @@ void summary(App& a, float x, float y, float scale = 1.f, float maxW = FLT_MAX) 
     std::string l1, l2;
     summaryText(a, l1, l2);
     const float s1 = ImGui::GetFontSize() * scale, s2 = ImGui::GetFontSize() * (scale > 1 ? 1.15f : 1.f);
-    dl->AddText(ImGui::GetFont(), s1, ImVec2(x, y), u32(T.bright), ellipsize(l1, maxW, s1).c_str());
-    dl->AddText(ImGui::GetFont(), s2, ImVec2(x, y + s1 + 3 * gUi), u32(T.dim), ellipsize(l2, maxW, s2).c_str());
+    // primary: the mode / station, semibold (drawn twice, a fraction of a pixel apart); secondary: the state, green when locked, amber while searching
+    const std::string e1 = ellipsize(l1, maxW, s1);
+    dl->AddText(ImGui::GetFont(), s1, ImVec2(x, y), u32(T.bright), e1.c_str());
+    dl->AddText(ImGui::GetFont(), s1, ImVec2(x + 0.6f * gUi, y), u32(T.bright), e1.c_str());
+    ImU32 c2 = u32(T.dim);
+    if (a.engine.running()) {
+        if (l2.find(tr("locked")) != std::string::npos) c2 = u32(pal::okGreen());
+        else if (l2.find(tr("searching")) != std::string::npos || l2.find(tr("weak")) != std::string::npos) c2 = IM_COL32(230, 180, 70, 255);
+    }
+    dl->AddText(ImGui::GetFont(), s2, ImVec2(x, y + s1 + 3 * gUi), c2, ellipsize(l2, maxW, s2).c_str());
 }
 
 // a start / stop button drawn as a play triangle or a stop square
@@ -595,6 +603,19 @@ float menuBar(App& a) {
         if (ImGui::BeginMenu(tr("View"))) {
             for (int v = 0; v < 8; v++) if (ImGui::MenuItem(tr(kVariantNames[v]), nullptr, a.uiVariant == v)) { a.uiVariant = v; savePrefs(a); }
             ImGui::Separator();
+            if (ImGui::BeginMenu(tr("Text size"))) {
+                int pct = (int)std::lround(a.uiTextScale * 100);
+                ImGui::SetNextItemWidth(160 * gUi);
+                if (ImGui::SliderInt("##txtsz", &pct, 80, 200, "%d%%")) a.uiTextScale = std::max(0.8f, std::min(2.f, pct / 100.f));
+                if (ImGui::IsItemDeactivatedAfterEdit()) savePrefs(a);
+                for (int p : {80, 100, 125, 150, 200}) { char l[16]; snprintf(l, sizeof l, "%d%%", p); if (ImGui::MenuItem(l, nullptr, pct == p)) { a.uiTextScale = p / 100.f; savePrefs(a); } }
+                ImGui::Separator();
+                ImGui::TextDisabled("%s", tr("Ctrl + / Ctrl - / Ctrl 0"));
+                ImGui::EndMenu();
+            }
+            if (ImGui::MenuItem(tr("Reset layout"))) { a.splitSide = a.splitRight = a.splitBottom = a.splitDock = a.splitBot2 = 0; savePrefs(a); }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Put the panels back to their automatic sizes (drag the bars between panels to resize them)"));
+            ImGui::Separator();
             static const char* names[3] = {N_("Terminal palette"), N_("Instrument palette"), N_("Mono palette")};
             for (int t = 0; t < 3; t++) if (ImGui::MenuItem(tr(names[t]), nullptr, a.uiTheme == t)) { a.uiTheme = t; savePrefs(a); }
             if (ImGui::MenuItem(tr("Light (dark on white)"), nullptr, &a.lightUi)) savePrefs(a);
@@ -709,6 +730,15 @@ void topBar(App& a, ImVec2 disp) {
             if (o.x + W - vw - mw - 20 * gUi < sumX + 120 * gUi) mw = 0;
         }
         const float meterX = o.x + W - vw - mw - 20 * gUi;
+        {   // subtle separators between the groups: run | frequency | state | meter | volume
+            ImDrawList* sd = ImGui::GetWindowDrawList();
+            const ImU32 sc = IM_COL32(255, 255, 255, 28);
+            const float y0 = o.y + 4 * gUi, y1 = o.y + 38 * gUi;
+            sd->AddLine(ImVec2(o.x + 49 * gUi, y0), ImVec2(o.x + 49 * gUi, y1), sc);
+            sd->AddLine(ImVec2(sumX - 17 * gUi, y0), ImVec2(sumX - 17 * gUi, y1), sc);
+            if (mw > 0) sd->AddLine(ImVec2(meterX - 9 * gUi, y0), ImVec2(meterX - 9 * gUi, y1), sc);
+            sd->AddLine(ImVec2(o.x + W - vw - 4 * gUi, y0), ImVec2(o.x + W - vw - 4 * gUi, y1), sc);
+        }
         summary(a, sumX, o.y + 6 * gUi, 1.f, (mw > 0 ? meterX : o.x + W - vw) - 16 * gUi - sumX);
         if (mw > 0) levelMeter(a, meterX, o.y, mw);
         ImGui::SetCursorScreenPos(ImVec2(o.x + W - vw + 4 * gUi, o.y + 8 * gUi));
@@ -774,10 +804,34 @@ void displayControls(App& a, bool wide) {
     if (ImGui::SmallButton(tr("Auto"))) autoRange(a);
 }
 
+// ---- draggable splitters between the fixed panels: sizes are kept in unscaled points (0 = automatic), a double click puts the automatic size back
+// sign -1: the value is the size of the panel to the right of / below the bar
+bool splitter(const char* id, bool vertical, float thick, float len, float& val, float curPx, float minPx, float maxPx, float sign, App& a) {
+    ImGui::InvisibleButton(id, vertical ? ImVec2(thick, len) : ImVec2(len, thick));
+    const bool hov = ImGui::IsItemHovered(), act = ImGui::IsItemActive();
+    if (hov || act) ImGui::SetMouseCursor(vertical ? ImGuiMouseCursor_ResizeEW : ImGuiMouseCursor_ResizeNS);
+    const ImVec2 p0 = ImGui::GetItemRectMin(), p1 = ImGui::GetItemRectMax();
+    if (hov || act) {
+        const float m = vertical ? (p0.x + p1.x) * 0.5f : (p0.y + p1.y) * 0.5f;
+        ImGui::GetWindowDrawList()->AddRectFilled(vertical ? ImVec2(m - 1 * gUi, p0.y) : ImVec2(p0.x, m - 1 * gUi), vertical ? ImVec2(m + 1 * gUi, p1.y) : ImVec2(p1.x, m + 1 * gUi), u32(act ? kBright : kDim));
+        if (hov && !act) ImGui::SetTooltip("%s", tr("Drag to resize, double click for the automatic size"));
+    }
+    bool changed = false;
+    if (hov && ImGui::IsMouseDoubleClicked(0)) { if (val != 0) { val = 0; changed = true; } }
+    else if (act && ImGui::IsMouseDragging(0, 0)) {
+        const float d = vertical ? ImGui::GetIO().MouseDelta.x : ImGui::GetIO().MouseDelta.y;
+        if (d != 0) { val = std::max(minPx, std::min(std::max(minPx, maxPx), curPx + sign * d)) / gUi; changed = true; }
+    }
+    if (ImGui::IsItemDeactivated() || changed) savePrefs(a);
+    return changed;
+}
+float clampPx(float v, float lo, float hi) { return std::max(lo, std::min(std::max(lo, hi), v)); }
+
 // ---------------------------------------------------------------- variant 0: sidebar (the parent)
 void bodyParent(App& a, float bodyH, ImVec2 disp) {
     // a narrow window (a laptop at 125 or 150 %): the side panel and the list on the right give up width before the spectrum does
-    const float sideW = std::floor(std::max(244.f * gUi, std::min(296.f * gUi, disp.x * 0.24f)));
+    float sideW = std::floor(std::max(244.f * gUi, std::min(296.f * gUi, disp.x * 0.24f)));
+    if (a.splitSide > 0) sideW = std::floor(clampPx(a.splitSide * gUi, 170 * gUi, disp.x * 0.5f));
     ImGui::PushStyleColor(ImGuiCol_ChildBg, kRail);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8 * gUi, 6 * gUi));
     ImGui::BeginChild("##side", ImVec2(sideW, bodyH), ImGuiChildFlags_AlwaysUseWindowPadding);
@@ -789,6 +843,8 @@ void bodyParent(App& a, float bodyH, ImVec2 disp) {
         const ImVec2 p = ImGui::GetItemRectMax();
         ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, p.y - bodyH), ImVec2(p.x, p.y), u32(kEdge));
     }
+    ImGui::SameLine(0, 0);
+    splitter("##splitSide", true, 5 * gUi, bodyH, a.splitSide, sideW, 170 * gUi, disp.x * 0.5f, 1, a);
     ImGui::SameLine(0, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4 * gUi, 4 * gUi));
     // scrolls only when even the smallest panes do not fit (a 1366 x 768 screen at 150 %)
@@ -806,20 +862,30 @@ void bodyParent(App& a, float bodyH, ImVec2 disp) {
     endPane();
     // the analysis row gives up height (down to 150) before the tabs above it go below 240; the list on the right narrows with the window
     const float availH = ImGui::GetContentRegionAvail().y;
-    const float logH = a.atsc3Mode ? 0 : std::max(144.f * gUi, std::min(215.f * gUi, availH - gap - 240.f * gUi));
-    const float rightW = std::floor(std::max(236.f * gUi, std::min(330.f * gUi, ImGui::GetContentRegionAvail().x * 0.30f)));
+    float logH = a.atsc3Mode ? 0 : std::max(144.f * gUi, std::min(215.f * gUi, availH - gap - 240.f * gUi));
+    if (!a.atsc3Mode && a.splitBottom > 0) logH = clampPx(a.splitBottom * gUi, 90 * gUi, availH - gap - 150 * gUi);
+    float rightW = std::floor(std::max(236.f * gUi, std::min(330.f * gUi, ImGui::GetContentRegionAvail().x * 0.30f)));
+    if (a.splitRight > 0) rightW = std::floor(clampPx(a.splitRight * gUi, 150 * gUi, ImGui::GetContentRegionAvail().x - gap - 260 * gUi));
     const float mainH = std::max(186.f * gUi, availH - (logH > 0 ? logH + gap : 0));
     const float mainW = ImGui::GetContentRegionAvail().x - rightW - gap;
     beginPane("##main2", ImVec2(mainW, mainH));
     tgRect(a, TgMain);
     mainTabs(a);
     endPane();
-    ImGui::SameLine();
+    ImGui::SameLine(0, 0);
+    splitter("##splitRight", true, gap, mainH, a.splitRight, rightW, 150 * gUi, mainW + rightW - 260 * gUi, -1, a);
+    ImGui::SameLine(0, 0);
     beginPane("##right2", ImVec2(0, mainH));
     tgRect(a, TgRight);
     rightPanel(a);
     endPane();
     if (!a.atsc3Mode) {
+        {   // the bar between the row above and the lower row, in the gap that is there anyway
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() - gap);
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(gap, 0));
+            splitter("##splitBottom", false, gap, ImGui::GetContentRegionAvail().x, a.splitBottom, logH, 90 * gUi, availH - gap - 150 * gUi, -1, a);
+            ImGui::PopStyleVar();
+        }
         beginPane("##const2", ImVec2(0, std::max(logH, ImGui::GetContentRegionAvail().y)));
         tgRect(a, TgConst);
         constellationsTab(a);
@@ -854,18 +920,28 @@ void bodyScope(App& a, float bodyH, ImVec2 disp) {
     beginPane("##status", ImVec2(0, 0), true);
     statusBar(a);
     endPane();
-    const float botH = (a.atsc3Mode ? 0 : 150) * gUi, dockW = 310 * gUi;
-    const float mainH = ImGui::GetContentRegionAvail().y - (botH > 0 ? botH + gap : 0);
-    beginPane("##main2", ImVec2(ImGui::GetContentRegionAvail().x - dockW - gap, mainH));
+    const float availH = ImGui::GetContentRegionAvail().y, availW = ImGui::GetContentRegionAvail().x;
+    float botH = (a.atsc3Mode ? 0 : 150) * gUi, dockW = 310 * gUi;
+    if (!a.atsc3Mode && a.splitBot2 > 0) botH = clampPx(a.splitBot2 * gUi, 90 * gUi, availH - gap - 150 * gUi);
+    if (a.splitDock > 0) dockW = clampPx(a.splitDock * gUi, 150 * gUi, availW - gap - 260 * gUi);
+    const float mainH = availH - (botH > 0 ? botH + gap : 0);
+    const float mainW = availW - dockW - gap;
+    beginPane("##main2", ImVec2(mainW, mainH));
     tgRect(a, TgMain);
     mainTabs(a);
     endPane();
-    ImGui::SameLine();
+    ImGui::SameLine(0, 0);
+    splitter("##splitDock", true, gap, mainH, a.splitDock, dockW, 150 * gUi, mainW + dockW - 260 * gUi, -1, a);
+    ImGui::SameLine(0, 0);
     beginPane("##right2", ImVec2(0, mainH));
     tgRect(a, TgRight);
     rightPanel(a);
     endPane();
     if (!a.atsc3Mode) {
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - gap);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(gap, 0));
+        splitter("##splitBot2", false, gap, availW, a.splitBot2, botH, 90 * gUi, availH - gap - 150 * gUi, -1, a);
+        ImGui::PopStyleVar();
         beginPane("##const2", ImVec2(0, 0));
         tgRect(a, TgConst);
         constellationsTab(a);

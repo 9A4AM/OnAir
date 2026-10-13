@@ -379,6 +379,9 @@ void loadPrefs(App& a) {
         const double fr = a.famFreq[modeSlot(a)];
         if (mt && !(a.freqMhz >= mt->minMhz && a.freqMhz <= mt->maxMhz && fr > 0)) a.freqMhz = fr >= mt->minMhz && fr <= mt->maxMhz ? fr : sm->defMhz;
     }
+    if (d.has("uiTextScale")) a.uiTextScale = std::max(0.8f, std::min(2.f, (float)d.getI("uiTextScale", 100) / 100.f));
+    a.splitSide = (float)d.getI("splitSide", 0); a.splitRight = (float)d.getI("splitRight", 0); a.splitBottom = (float)d.getI("splitBottom", 0);
+    a.splitDock = (float)d.getI("splitDock", 0); a.splitBot2 = (float)d.getI("splitBot2", 0);
     if (d.has("newUi")) a.newUi = d.getB("newUi", true);
     a.modeGroupsOpen = d.getS("modeGroupsOpen", "");
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
@@ -478,6 +481,9 @@ void savePrefs(const App& a) {
     d.setI("atvNbtvLines", a.atvNbtvLines);
     d.setI("atvNbtvFps", (int)std::lround(a.atvNbtvFps * 10));
     d.setI("uiVariant", a.uiVariant);
+    d.setI("uiTextScale", (int)std::lround(a.uiTextScale * 100));
+    d.setI("splitSide", (int)std::lround(a.splitSide)); d.setI("splitRight", (int)std::lround(a.splitRight)); d.setI("splitBottom", (int)std::lround(a.splitBottom));
+    d.setI("splitDock", (int)std::lround(a.splitDock)); d.setI("splitBot2", (int)std::lround(a.splitBot2));
     d.setS("modeGroupsOpen", a.modeGroupsOpen);
     {   // the stations the FM scan found: mhz|name|type|snr|stereo|rds, one per line
         std::string st;

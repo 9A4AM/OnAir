@@ -243,6 +243,8 @@ struct App {
     double famFreq[kNumSlots] = {};  // the frequency each of the modes added after FM was last tuned to (0 = never)
     std::string modeGroupsOpen;   // the mode list groups left unfolded, by name, separated by |
     int uiVariant = 0;        // layout of the new interface: 0 sidebar (the default), 1 scope, 2 tiles, 3 faceplate, 4-6 scope children, 7 panel
+    float uiTextScale = 1.f;  // View > Text size: 0.8 .. 2.0, on top of the display scale (Ctrl +, Ctrl -, Ctrl 0)
+    float splitSide = 0, splitRight = 0, splitBottom = 0, splitDock = 0, splitBot2 = 0;   // dragged panel sizes in unscaled points (0 = automatic): sidebar, instruments, lower row; scope layout: instruments, lower row
     int uiTheme = 1;          // its palette: 0 terminal, 1 instrument, 2 mono
     std::string uiLang;       // the interface language chosen in View > Language ("de", "lt" ...), empty: the system's
     int dtmbBwMhz = 8;        // DTMB channel width: 8 MHz (China, Hong Kong), 6 MHz (Cuba)
