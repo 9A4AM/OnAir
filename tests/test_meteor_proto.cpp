@@ -41,36 +41,56 @@ int main() {
         CHECK(v.out().size() == in.size() && raw > 300 && err < 10, "viterbi %zu bits, %d errors", v.out().size(), err);
     }
     // RS
+    // independent vector: the CCSDS 131.0-B generator polynomial g(x) (conventional basis), coefficients G0..G16 as powers of alpha
+    // (x^8+x^7+x^2+x+1), symmetric; x^32 mod g(x) = g(x) - x^32, which is what the parity of the data 0, ..., 0, 1 is.
+    {
+        static const int G[17] = {0, 249, 59, 66, 4, 43, 126, 251, 97, 30, 3, 213, 50, 66, 170, 5, 24};
+        uint8_t ex[255]; int x = 1;
+        for (int i = 0; i < 255; i++) { ex[i] = (uint8_t)x; x <<= 1; if (x & 0x100) x ^= 0x187; }
+        uint8_t d[223] = {}, par[32];
+        d[222] = 1;
+        rsEncode(d, par, false);
+        bool ok = true;
+        for (int j = 0; j < 32; j++) { const int k = 31 - j; if (par[j] != ex[G[k <= 16 ? k : 32 - k]]) ok = false; }
+        CHECK(ok, "RS generator matches CCSDS 131.0-B");
+    }
+    // the CCSDS sync marker and randomiser (131.0-B Annex): sequence 0xFF 0x48 0x0E 0xC0 0x9A 0x0D 0x70 0xBC 0x8E 0x2C 0x93 0xAD
+    {
+        uint8_t z[12] = {};
+        pnXor(z, 12);
+        static const uint8_t e[12] = {0xFF, 0x48, 0x0E, 0xC0, 0x9A, 0x0D, 0x70, 0xBC, 0x8E, 0x2C, 0x93, 0xAD};
+        CHECK(!std::memcmp(z, e, 12), "PN sequence");
+    }
     {
         int okAll = 1;
         for (int trial = 0; trial < 50; trial++) {
             uint8_t d[223], cw[255];
             for (auto& x : d) x = (uint8_t)rng();
             std::memcpy(cw, d, 223);
-            rsEncode(d, cw + 223);
+            rsEncode(d, cw + 223, false);
             uint8_t good[255];
             std::memcpy(good, cw, 255);
-            CHECK(rsDecode(cw) == 0, "clean codeword");
+            CHECK(rsDecode(cw, false) == 0, "clean codeword");
             const int ne = trial % 17;
             for (int k = 0; k < ne; k++) cw[rng() % 255] ^= (uint8_t)(1 + rng() % 255);
-            const int r = rsDecode(cw);
+            const int r = rsDecode(cw, false);
             if (ne <= 16 && (r < 0 || std::memcmp(cw, good, 255))) okAll = 0;
         }
         CHECK(okAll, "RS corrects up to 16 errors");
         uint8_t d[223], cw[255];
         for (auto& x : d) x = (uint8_t)rng();
-        std::memcpy(cw, d, 223); rsEncode(d, cw + 223);
+        std::memcpy(cw, d, 223); rsEncode(d, cw + 223, false);
         for (int k = 0; k < 40; k++) cw[(k * 6) % 255] ^= 0x5A;
-        CHECK(rsDecode(cw) < 0, "40 errors reported as failure");
+        CHECK(rsDecode(cw, false) < 0, "40 errors reported as failure");
     }
     // CADU with errors
     {
         uint8_t v[kVcduBytes], cadu[kCaduBytes], out[kVcduBytes];
         for (auto& x : v) x = (uint8_t)rng();
-        encodeCadu(v, cadu);
+        encodeCadu(v, cadu, false);
         CHECK(cadu[0] == 0x1A && cadu[3] == 0x1D, "ASM");
         for (int k = 0; k < 50; k++) cadu[4 + rng() % kCodedBytes] ^= 0xFF;
-        CHECK(decodeCadu(cadu + 4, out) > 0 && !std::memcmp(out, v, sizeof v), "CADU round trip with 50 byte errors");
+        CHECK(decodeCadu(cadu + 4, out, false) > 0 && !std::memcmp(out, v, sizeof v), "CADU round trip with 50 byte errors");
     }
     // packets across VCDUs, one VCDU lost
     {

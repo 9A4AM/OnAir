@@ -111,8 +111,18 @@ int main(int argc, char** argv) {
         const Result r = run("QPSK 72k found by automatic", g, 18, 0);
         CHECK(r.t.blocksOk > 20 && r.t.modulation == 2 && r.rowsWrong == 0, "automatic finds QPSK (running %d)", r.t.modulation);
     }
+    if (want()) {   // Doppler at both ends of a pass, 10 dB
+        for (double off : {5000.0, -5000.0}) {
+            MeteorGenConfig g; g.modulation = 1; g.snrDb = 10; g.cfoHz = off;
+            const Result r = run("OQPSK 72k, +-5 kHz, 10 dB", g, 26, 1, 0);
+            CHECK(r.t.blocksOk > 20 && r.rowsWrong == 0 && std::fabs(r.t.cfoHz - off) < 100, "OQPSK 72k at %+.0f Hz, 10 dB: %llu frames, cfo %.0f", off, (unsigned long long)r.t.blocksOk, r.t.cfoHz);
+            MeteorGenConfig q; q.modulation = 2; q.snrDb = 10; q.cfoHz = off;
+            const Result r2 = run("QPSK 72k, +-5 kHz, 10 dB", q, 26, 2, 0);
+            CHECK(r2.t.blocksOk > 20 && r2.rowsWrong == 0, "QPSK 72k at %+.0f Hz, 10 dB: %llu frames", off, (unsigned long long)r2.t.blocksOk);
+        }
+    }
     if (want()) {
-        MeteorGenConfig g; g.modulation = 3; g.snrDb = 16; g.cfoHz = 1200; g.rate = 400e3;
+        MeteorGenConfig g; g.modulation = 3; g.snrDb = 22; g.cfoHz = 1200; g.rate = 400e3;
         const Result r = run("OQPSK 80k interleaved, 400 ksps", g, 26, 3);
         CHECK(r.t.blocksOk > 20 && r.rowsChecked >= 10 && r.rowsWrong == 0, "OQPSK 80k interleaved");
     }
