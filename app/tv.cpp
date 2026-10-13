@@ -416,6 +416,24 @@ void rightPanel(App& a) {
         if (pl.selected() >= 0) {
             if (!ps.videoNote.empty()) { codecHelpButton(CodecHelp::Avs); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos(); }
             if (!ps.audioNote.empty()) { codecHelpButton(CodecHelp::DraTv); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", ps.audioNote.c_str()); ImGui::PopTextWrapPos(); }
+            if (pl.hasSavableAudio()) {   // the raw DRA (else MPEG audio) stream to a file FFmpeg can play
+                static std::string savedTo, saveErr;
+                Player& mp = a.engine.player();
+                if (mp.savingAudioStream()) {
+                    if (ImGui::Button("Stop saving")) mp.stopSaveAudioStream();
+                    ImGui::SameLine(); ImGui::TextDisabled("%.1f kB written", mp.savedAudioBytes() / 1024.0);
+                } else {
+                    if (ImGui::Button("Save stream")) {
+                        std::string nm = "service";
+                        for (const auto& sv : a.ts.services) if (sv.id == pl.selected() && !sv.name.empty()) nm = sv.name;
+                        savedTo = mp.saveAudioStream(streamSavePath(nm));
+                        saveErr = savedTo.empty() ? "cannot save: no DRA or MPEG audio stream, or the file cannot be written" : "";
+                    }
+                    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Write the raw audio stream of this service (DRA, else MPEG audio) to a file you can play with FFmpeg (see the README).");
+                }
+                if (!saveErr.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", saveErr.c_str()); ImGui::PopTextWrapPos(); }
+                else if (!savedTo.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", savedTo.c_str()); ImGui::PopTextWrapPos(); }
+            }
         }
     }
     ImGui::Spacing();

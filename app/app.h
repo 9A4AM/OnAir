@@ -516,6 +516,8 @@ void lossTooltip(const SampleLoss& l);
 // what it is, how to install it here, where to put it, a link to the full page and "Look again"
 enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe, P25Imbe, Avs, DraTv };
 void codecHelpButton(CodecHelp c);
+// A new file path in the "audio-streams" folder of the user data folder, without extension: "<stem>_<date>_<time>" (the stem cleaned for a file name)
+std::string streamSavePath(const std::string& stem);
 // "voice: needs mbelib (libmbe.dll, ...)": the exact file names tried, for the status line of the mbelib modes
 const char* codecNeedMbe();
 // "Listen" for a decoder mode that is silent by default (HF digital, PSK, JS8Call): the switch, remembered under prefKey, then the shared

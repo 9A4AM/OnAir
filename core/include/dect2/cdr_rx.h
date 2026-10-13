@@ -6,6 +6,7 @@
 #include "mode_tuning.h"
 #include "cdr_tel.h"
 #include "ring.h"
+#include "es_save.h"
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -24,6 +25,11 @@ public:
     void reset();                                        // after a retune: forget the signal and the decoded state
     void feed(const cf32* x, size_t n);
     bool telemetry(CdrTelemetry& out, uint64_t lastSeq);
+    // Write the raw DRA+ audio units of one service to a file (the units as received, one after the other: a DRA elementary stream FFmpeg can read).
+    bool saveAudioStream(uint16_t serviceId, const std::string& path);
+    void stopSaveAudioStream();
+    bool savingAudioStream() const;
+    uint64_t savedAudioBytes() const;
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
 private:

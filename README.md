@@ -293,6 +293,12 @@ The official builds ship with the Application ID of the OnAir Discord applicatio
 
 - Encrypted (scrambled) services cannot be decoded.
 - Some voice and audio codecs are not shipped with OnAir (codec2 for FreeDV; AMBE, HDC and DRA+ are patented). **[docs/CODECS.md](docs/CODECS.md)** says how to install the ones you can, and what to use for the others. The **?** button next to the sound of each such mode says the same.
+- **Saving DRA sound.** OnAir cannot decode DRA, but it can save it. In the CDR *Radio* tab, and in the *Player* section of the TV tab for a DTMB service whose sound is DRA (or any service with MPEG audio), press **Save stream**. The raw audio elementary stream goes to `audio-streams/<name>_<date>_<time>.dra` (`.mp2` for MPEG audio) in OnAir's data folder, and the path is shown under the button. Press **Stop saving** (or pick another service) to close the file. Play it with an FFmpeg that has DRA support; user YZYMC reported a build of FFmpeg 7.1.2 with a DRA patch. The commands, assuming such a build:
+  ```sh
+  ffplay stream.dra                 # listen
+  ffmpeg -i stream.dra stream.wav   # convert to WAV
+  ```
+  If FFmpeg does not recognise the file, name the format: `ffplay -f dra stream.dra`. A normal FFmpeg cannot read `.dra`; `.mp2` files play in any FFmpeg (`ffplay stream.mp2`).
 - Reception depends heavily on your antenna and location. A weak or echo-filled signal is the usual cause of a broken picture; the quality score and echo detector are there to help you improve it.
 - Receiving broadcasts is legal in most places, but laws differ. Check the rules where you live.
 
@@ -314,6 +320,14 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON
 cmake --build build -j "$(getconf _NPROCESSORS_ONLN)"   # one job per core (a bare -j starts hundreds and can run out of memory)
 ctest --test-dir build          # run the test suite
 ```
+
+**Tuning for your own CPU.** The release programs are built for the baseline 64-bit PC, so they start on any computer; the hot loops pick AVX2 at run time when the processor has it. A binary you build yourself can be lighter on the processor, because the compiler may use everything your CPU offers. These are the real switches in `CMakeLists.txt`:
+
+- `-DDECT2_WIN_AVX2=ON` (x86-64 on Windows and Intel Macs): build the whole receiver for AVX2 + FMA. The program then refuses to start on older CPUs, so use it only on your own machine.
+- `-DCMAKE_CXX_FLAGS="-march=native"` (any GCC or Clang build): CMake has no OnAir-specific option for this, but it does not override `CMAKE_CXX_FLAGS`, so the standard variable works. The result runs only on CPUs like yours; it is not what the release uses.
+- `-DDECT2_PORTABLE=ON` (macOS, plain C++ instead of Accelerate) and `-DDECT2_NO_SIMD=ON` go the other way: they are for unusual CPUs, and slower.
+
+Configure with a clean `build` folder after changing these. `-DCMAKE_BUILD_TYPE=Release` is already the default (`-O3`).
 
 The app is `build/dect2`. You can also work without a radio: record an IQ file with your radio's tools and open it in OnAir through the *IQ recording file* source, or run the command-line receiver on it:
 
@@ -349,7 +363,7 @@ build/dect2cli --file capture.cs8 --rate 10 --format cs8 --play <service id>
 
 To use a HackRF, RTL-SDR or Airspy, install the WinUSB driver once with [Zadig](https://zadig.akeo.ie). From macOS or Linux, `tools/package/make_windows_cross.sh` builds the same Windows package with a cross-compiler.
 
-Useful options: `DECT2_UI_BACKEND` (Metal or OpenGL3), `DECT2_WITH_SOAPY`, and `DECT2_PORTABLE` / `DECT2_NO_SIMD` for plain C++ code paths on unusual CPUs.
+Useful options (all in `CMakeLists.txt`): `DECT2_UI_BACKEND` (Metal or OpenGL3), `DECT2_WITH_SOAPY`, and `DECT2_PORTABLE` / `DECT2_NO_SIMD` for plain C++ code paths on unusual CPUs.
 
 **macOS app and disk image:** run `tools/package/make_dmg.sh`. It targets macOS 15.0 by default and uses the same minimum version in the executable and the app metadata; override it with `MACOSX_DEPLOYMENT_TARGET` if needed. Every bundled library must also support that version: setting a lower deployment target does not rebuild Homebrew libraries, and packaging stops if any executable or library requires a newer macOS. Build releases on macOS 15 with compatible Homebrew dependencies, as in the release workflow, or rebuild the dependencies for the intended target.
 

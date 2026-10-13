@@ -105,7 +105,7 @@ use nrsc5 (<https://github.com/theori-io/nrsc5>) with an RTL-SDR or an IQ record
 ## DRA+ (CDR sound)
 
 CDR sound uses DRA+, a patented codec that is not openly described. OnAir lists the services but plays no sound. There is no free
-DRA+ decoder to install at this time.
+DRA+ decoder to install at this time. You can save the raw sound with **Save stream** and play it in an FFmpeg built with a DRA patch (see the README, "Saving DRA sound").
 
 ## AVS+, AVS2, AVS3 and DRA (DTMB television in China)
 

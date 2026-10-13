@@ -4,7 +4,10 @@
 #include "dect2/cdr_defs.h"
 #include "dect2/cdr_mux.h"
 #include "dect2/cdr_tel.h"
+#include <cctype>
+#include <ctime>
 #include <deque>
+#include <filesystem>
 
 namespace {
 
@@ -15,9 +18,22 @@ struct State {
     uint64_t lastSeq = 0;
     std::deque<float> snr;
     uint64_t prevSiOk = 0, prevSiBad = 0, prevSdcOk = 0, prevSdcBad = 0, prevOk = 0, prevBad = 0;
+    std::string savedPath, saveErr;
     double siOkAt = -1e9, siBadAt = -1e9, sdcOkAt = -1e9, sdcBadAt = -1e9, okAt = -1e9, badAt = -1e9;
 };
 State S;
+
+std::string streamSavePathImpl(const std::string& stem) {
+    std::string name = stem.empty() ? "stream" : stem;
+    for (char& c : name) if (!(std::isalnum((unsigned char)c) || c == '-' || c == '_' || (unsigned char)c >= 0x80)) c = '_';
+    const std::time_t now = std::time(nullptr);
+    char ts[32];
+    std::strftime(ts, sizeof ts, "%Y%m%d_%H%M%S", std::localtime(&now));
+    std::error_code ec;
+    const std::string dir = plat::dataDir() + "/audio-streams";
+    std::filesystem::create_directories(dir, ec);
+    return dir + "/" + name + "_" + ts;
+}
 
 bool live(const App& a) { return a.rx.standard == kStd; }
 
@@ -108,6 +124,18 @@ void details(App& a, float w, float h) {
         snprintf(b, sizeof b, "%d units, %d bytes per logical frame", s->audioUnits, s->audioBytes); kvRow(a, "received", b);
         ImGui::TextDisabled("sound"); kvColumn(110 * gUi);
         { codecHelpButton(CodecHelp::Dra); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(kWarn, "%s", kDraNote); ImGui::PopTextWrapPos(); }
+        if (a.engine.cdr().savingAudioStream()) {
+            if (ImGui::Button("Stop saving")) a.engine.cdr().stopSaveAudioStream();
+            ImGui::SameLine(); ImGui::TextDisabled("%.1f kB written", a.engine.cdr().savedAudioBytes() / 1024.0);
+        } else {
+            if (ImGui::Button("Save stream")) {
+                S.savedPath = streamSavePathImpl(serviceName(*s)) + ".dra";
+                if (!a.engine.cdr().saveAudioStream(s->id, S.savedPath)) { S.saveErr = "cannot write " + S.savedPath; S.savedPath.clear(); } else S.saveErr.clear();
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Write the raw DRA+ sound of this service to a .dra file you can play with FFmpeg (see the README).\nOnAir itself cannot decode it.");
+        }
+        if (!S.saveErr.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextColored(kWarn, "%s", S.saveErr.c_str()); ImGui::PopTextWrapPos(); }
+        else if (!S.savedPath.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", S.savedPath.c_str()); ImGui::PopTextWrapPos(); }
     }
     if (s->data) {
         std::string ty;
@@ -386,6 +414,8 @@ void meters(const App& a, std::vector<ModeMeter>& out) {
 }
 
 } // namespace
+
+std::string streamSavePath(const std::string& stem) { return streamSavePathImpl(stem); }
 
 extern const ModeUi kCdrUi;
 const ModeUi kCdrUi = {

@@ -119,6 +119,7 @@ void Player::select(int sid) {
     {
         std::lock_guard<std::mutex> lk(mu_);
         if (sid == sid_) return;
+        saveSink_.close();
         sid_ = sid;
         filter_.select(sid);
         in_.clear();
@@ -141,7 +142,10 @@ void Player::select(int sid) {
 void Player::push(const uint8_t* pk, size_t n, const TsSnapshot& snap) {
     if (sid_ < 0) return;
     std::lock_guard<std::mutex> lk(mu_);
-    for (const TsService& sv : snap.services) if (sv.id == sid_) { bool d = false; for (const TsStream& st : sv.streams) d = d || st.codec == "DRA"; draAudio_ = d; }
+    for (const TsService& sv : snap.services) if (sv.id == sid_) { bool d = false; for (const TsStream& st : sv.streams) d = d || st.codec == "DRA"; draAudio_ = d;
+        esPid_ = -1;   // the stream "Save stream" writes: DRA, else MPEG audio
+        for (const TsStream& st : sv.streams) if (st.codec == "DRA" && !st.scrambled) { esPid_ = st.pid; esCodec_ = st.codec; break; }
+        if (esPid_ < 0) for (const TsStream& st : sv.streams) if ((st.codec == "MPEG audio" || st.codec == "MPEG-1 audio") && !st.scrambled) { esPid_ = st.pid; esCodec_ = st.codec; break; } }
     static uint64_t calls = 0, passed = 0;
     uint8_t out[188];
     for (size_t i = 0; i < n; i++)
@@ -152,12 +156,24 @@ void Player::push(const uint8_t* pk, size_t n, const TsSnapshot& snap) {
                 if (lastCc_[pid] >= 0 && cc != ((lastCc_[pid] + 1) & 0x0F) && cc != lastCc_[pid]) lossMarks_.push_back(pushed_);
                 lastCc_[pid] = cc;
             }
+            if (saveSink_.isOpen()) saveEs_.feed(out, saveSink_);
             in_.insert(in_.end(), out, out + 188); passed++; pushed_ += 188;
         }
     calls++;
     if (getenv("DECT2_PLAYDEBUG") && calls % 8 == 0) fprintf(stderr, "[play] push #%llu: %zu pkts in, %llu passed total, queue %zu\n", (unsigned long long)calls, n, (unsigned long long)passed, in_.size());
     if (in_.size() > 12u * 1024 * 1024) in_.erase(in_.begin(), in_.begin() + (in_.size() - 8u * 1024 * 1024)); // never fall far behind
     cv_.notify_all();
+}
+
+std::string Player::saveAudioStream(const std::string& pathNoExt) {
+    saveSink_.close();
+    if (sid_ < 0) return {};
+    std::lock_guard<std::mutex> lk(mu_);
+    if (esPid_ < 0) return {};
+    const std::string path = pathNoExt + "." + esExtension(esCodec_);
+    if (!saveSink_.open(path)) return {};
+    saveEs_.setPid(esPid_);
+    return path;
 }
 
 void Player::setAudioTrack(int i) { p_->trackChange = i; }
