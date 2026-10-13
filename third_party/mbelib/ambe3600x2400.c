@@ -20,6 +20,11 @@
 #include <math.h>
 
 #include "mbelib.h"
+#ifndef MBE_TONE_DEBUG
+#define MBE_TONE_LOG(...) ((void)0)   /* OnAir: the tone frame dump on stderr is off */
+#else
+#define MBE_TONE_LOG(...) fprintf(stderr, __VA_ARGS__)
+#endif
 #include "ambe3600x2400_const.h"
 
 void
@@ -213,29 +218,29 @@ mbe_decodeAmbe2400Parms (char *ambe_d, mbe_parms * cur_mp, mbe_parms * prev_mp)
     b2 |= ambe_d[17];      //v0 1   a guess based on data
     // the order of the last 3 bits may really be 17,44,45 not 44,45,17 as above
 
-    fprintf(stderr,"Tone volume: %d; ", b2);
+    MBE_TONE_LOG("Tone volume: %d; ", b2);
     if (b1 < 5)
     {
-      fprintf(stderr, "index: %d, was <5, invalid!\n", b1);
+      MBE_TONE_LOG( "index: %d, was <5, invalid!\n", b1);
       silence = 1;
     }
     else if ((b1 >= 5) && (b1 <= 122))
     {
-      fprintf(stderr, "index: %d, Single tone hz: %f\n", b1, (float)b1*31.25);
+      MBE_TONE_LOG( "index: %d, Single tone hz: %f\n", b1, (float)b1*31.25);
     }
     else if ((b1 > 122) && (b1 < 128))
     {
-      fprintf(stderr, "index: %d, was >122 and <128, invalid!\n", b1);
+      MBE_TONE_LOG( "index: %d, was >122 and <128, invalid!\n", b1);
       silence = 1;
     }
     else if ((b1 >= 128) && (b1 <= 163))
     {
-      fprintf(stderr, "index: %d, Dual tone\n", b1);
+      MBE_TONE_LOG( "index: %d, Dual tone\n", b1);
 	  // note: dual tone index is different on ambe(dstar) and ambe2+
     }
     else
     {
-      fprintf(stderr, "index: %d, was >163, invalid!\n", b1);
+      MBE_TONE_LOG( "index: %d, was >163, invalid!\n", b1);
       silence = 1;
     }
 
