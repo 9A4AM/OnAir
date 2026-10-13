@@ -169,6 +169,7 @@ struct GlobalstarReceiver::Impl {
                 C.evPeak = std::max(C.evPeak, (float)snr);
                 // the centroid of the spectrum above the floor against the channel centre
                 const double nb = C.nf / (double)C.pBins.size() / per;   // the floor per bin in accumulator units
+                if (snr < kOnDb) { C.occ += (kSlotSec / kOccTau) * (1.0 - C.occ); continue; }   // the hold-off after the end: no centroid (the neighbour leaks in)
                 double sw = 0, sx = 0;
                 for (size_t i = 0; i < C.cBins.size(); i++) {
                     const double v = acc[(size_t)C.cBins[i]] - nb;

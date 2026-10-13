@@ -211,7 +211,20 @@ struct VdesReceiver::Impl {
         }
         (void)delay;
         // use the middle of the burst: the matched filter output is full only away from the edges
-        const size_t lo = (size_t)(2 * sps), hi = y.size() > (size_t)(2 * sps) ? y.size() - (size_t)(2 * sps) : 0;
+        size_t lo = (size_t)(2 * sps), hi = y.size() > (size_t)(2 * sps) ? y.size() - (size_t)(2 * sps) : 0;
+        {   // the window holds up to a frame of quiet either side of the burst: keep the part where the power is within 3 dB of its peak
+            const size_t w = (size_t)(4 * sps);
+            if (y.size() > 3 * w) {
+                std::vector<double> sm(y.size() - w + 1);
+                double acc = 0, pk = 0;
+                for (size_t i = 0; i < w; i++) acc += std::norm(y[i]);
+                for (size_t i = 0; i < sm.size(); i++) { sm[i] = acc; pk = std::max(pk, acc); if (i + w < y.size()) acc += std::norm(y[i + w]) - std::norm(y[i]); }
+                size_t f = 0, l = sm.size() - 1;
+                while (f < l && sm[f] < 0.5 * pk) f++;
+                while (l > f && sm[l] < 0.5 * pk) l--;
+                lo = std::max(lo, f + w); hi = std::min(hi, l);
+            }
+        }
         if (hi <= lo + (size_t)(30 * sps)) return;
         std::complex<double> e(0, 0);
         for (size_t i = lo; i < hi; i++) {
@@ -219,13 +232,16 @@ struct VdesReceiver::Impl {
             e += p * std::complex<double>(std::cos(2 * kPi * (double)i / sps), -std::sin(2 * kPi * (double)i / sps));
         }
         const double th = std::arg(e);                          // |y|^2 peaks at i = th / (2 pi) * sps (mod sps)
-        double first = th / (2 * kPi) * sps;
+        double first = -th / (2 * kPi) * sps;   // |y|^2 peaks at i = -arg(e) / (2 pi) * sps (mod sps)
+        while (first < 0) first += sps;
         while (first < (double)lo) first += sps;
         std::vector<cf32> s;
-        for (double pos = first; pos + 1 < (double)hi; pos += sps) {
+        for (double pos = first; pos + 2 < (double)hi; pos += sps) {   // cubic (Catmull-Rom) interpolation between the matched filter's samples
             const size_t i0 = (size_t)pos;
-            const float fr = (float)(pos - (double)i0);
-            s.push_back(y[i0] * (1.f - fr) + y[i0 + 1] * fr);
+            if (i0 < 1) continue;
+            const float u = (float)(pos - (double)i0);
+            const cf32 p0 = y[i0 - 1], p1 = y[i0], p2 = y[i0 + 1], p3 = y[i0 + 2];
+            s.push_back(p1 + 0.5f * u * ((p2 - p0) + u * ((2.f * p0 - 5.f * p1 + 4.f * p2 - p3) + u * (3.f * (p1 - p2) + p3 - p0))));
         }
         if (s.size() < 24) return;
         double mean = 0;
@@ -239,7 +255,7 @@ struct VdesReceiver::Impl {
         for (size_t k = 1; k < s.size(); k++) psi += std::cos(4 * std::arg(s[k] * std::conj(s[k - 1])));
         psi /= (double)(s.size() - 1);
         out.cv = (float)cv; out.psi = (float)psi; out.nSym = (int)s.size();
-        if (cv > 0.2) out.mod = VdeMod16Qam;
+        if (cv > 0.18) out.mod = VdeMod16Qam;
         else if (psi < -0.55) out.mod = VdeModPi4Qpsk;
         else if (std::fabs(psi) < 0.45) out.mod = VdeMod8Psk;
         else out.mod = VdeModUnknown;
@@ -382,7 +398,6 @@ struct VdesReceiver::Impl {
             for (int c = 0; c < 2; c++) { o.asmLevelDb[c] = at.levelDbfs[c]; o.asmNoiseDb[c] = at.noiseDbfs[c]; o.asmBad[c] = at.channelBad[c]; }
             o.blocksBad = at.blocksBad;
             if (at.blocksBad > aisBadSeen) { lastEnergy = now; aisBadSeen = at.blocksBad; }
-            if (at.bursts > 0 && at.blocksOk == 0) lastEnergy = std::max(lastEnergy, now - 1);
         }
         o.dataValid = now - lastAsm < 30;
         o.state = o.dataValid ? 2 : (now - lastEnergy < 30 ? 1 : 0);
