@@ -189,6 +189,7 @@ int main(int argc, char** argv) {
     e.flarm().clearResults();
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
     e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
+    e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
     e.globalstar().clearResults();   // Globalstar: the events are printed with each line
     e.vdes().clearResults();      // VDES: the ASM frames and bursts are printed with each line
@@ -301,6 +302,10 @@ int main(int argc, char** argv) {
                 for (const DjiTrack& k : t.dji.tracks)
                     printf("  dji: %-24s %6.2f MHz wide at %+7.2f MHz  %d bursts  period %.2f ms  duty %.0f%%  OFDM %.2f  confidence %.0f%%\n", djiClassName(k.cls).c_str(), k.bwMhz, k.offsetHz / 1e6, k.bursts, k.periodMs, k.duty * 100, k.ofdm, k.conf * 100);
             }
+            if (t.standard == 71)   // Wi-Fi HaLow networks: the table
+                for (const auto& n : t.halow.nets)
+                    printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
+                           n.seenWidthMhz, n.mcs, n.security.c_str(), n.rssi, n.vendor.c_str());
             if (t.standard == 62)   // CubeSat telemetry: the newest frames
                 for (size_t i = 0; i < t.cube.frames.size() && i < 3; i++) {
                     const CubeFrame& f = t.cube.frames[i];

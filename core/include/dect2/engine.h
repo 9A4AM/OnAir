@@ -74,6 +74,7 @@
 #include "hfbeacon_rx.h"
 #include "dji_rx.h"
 #include "nbiot_rx.h"
+#include "halow_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -275,6 +276,7 @@ public:
     FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
     DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
+    HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
     TimeReceiver& timesig() { return rxTime_; }   // time signals: station, receiver position (telemetry through latestRx)
     RidReceiver& rid() { return rxRid_; }   // Drone Remote ID: clear the drone table (telemetry through latestRx)
@@ -452,13 +454,14 @@ private:
     HfbReceiver rxHfb_;
     DjiReceiver rxDji_;
     NbiotReceiver rxNb_;
+    HalowReceiver rxHl_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
     HrptReceiver rxHrpt_;
     FlarmReceiver rxFlarm_;
-    uint64_t modeSeq_[80] = {};      // the last report taken from each of the modes added after FM (same order as above)
+    uint64_t modeSeq_[72] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;
     uint64_t atsc3Seq_ = 0;
