@@ -251,6 +251,40 @@ int main() {
         dm2.feed(p3.data(), p3.size(), [&](const uint8_t* d, size_t l) { dec2.feedDataGroup(d, l); });
         CHECK(dec2.stats().cached == 0 && dm2.badPackets >= 1, "damaged packet");
     }
+    // ---- LOOPBACK: DRM packet mode (ES 201 980 clause 6.6.1): 8 bit header, PPI padding, CRC-16, data units over several packets, a lost packet
+    {
+        const int len = 20, pid = 2;
+        Bytes g1 = group(0, menu(0, "Root", {{1, "A"}}));
+        Bytes g2 = group(0, textObj(1, "A", std::string(150, 'x')));
+        Bytes stream;
+        int ci = 0;
+        auto pk = [&](const Bytes& g, bool skipMiddle) {
+            size_t off = 0, k = 0;
+            while (off < g.size()) {
+                const size_t n = std::min<size_t>((size_t)len - 1, g.size() - off);   // PPI = 1 costs one byte of the data field
+                const bool first = off == 0, last = off + n >= g.size();
+                Bytes p(len + 3, 0);
+                p[0] = (uint8_t)((first ? 0x80 : 0) | (last ? 0x40 : 0) | (pid << 4) | 8 | (ci & 7));
+                p[1] = (uint8_t)n;
+                memcpy(&p[2], &g[off], n);
+                const uint16_t c = crcRef(p.data(), p.size() - 2);   // G16, ones preset, inverted: the same CRC as DAB
+                p[p.size() - 2] = (uint8_t)(c >> 8); p[p.size() - 1] = (uint8_t)c;
+                ci++; k++;
+                if (!(skipMiddle && k == 2)) stream.insert(stream.end(), p.begin(), p.end());
+                off += n;
+            }
+        };
+        pk(g1, false); pk(g2, true); pk(g1, false);
+        DrmPacketDemux dm; dm.configure(len, pid);
+        JournalineDecoder dec;
+        int units = 0;
+        for (size_t off = 0; off < stream.size(); off += (size_t)(len + 3) * 3) {
+            const size_t n = std::min<size_t>(stream.size() - off, (size_t)(len + 3) * 3);
+            dm.feed(&stream[off], n - n % (size_t)(len + 3), [&](const uint8_t* d, size_t l) { units++; dec.feedDataGroup(d, l); });
+        }
+        JlObject j;
+        CHECK(units == 2 && dec.get(0, j) && !dec.get(1, j), "drm: %d data units, the damaged one dropped", units);
+    }
     // ---- robustness: random bytes, truncations of every valid group, every single-byte corruption of an object
     {
         srand(7);

@@ -79,7 +79,7 @@ Fixes and new features land on the `main` branch first, before they go into a re
 | **ATSC 1.0** | North America, South Korea | Digital TV |
 | **ATSC 3.0** (NextGen TV), *experimental* | North America, South Korea | Digital TV |
 | **ISDB-T**, *experimental* | Japan, Brazil and most of South America, Philippines | Digital TV and one-segment mobile TV |
-| **DAB / DAB+** | Europe, Australia and more | Digital radio |
+| **DAB / DAB+** | Europe, Australia and more | Digital radio; Journaline text and menu pages (PAD or packet mode, ETSI TS 102 979) |
 | **FM radio** (87.5 – 108 MHz) | Worldwide | Analogue radio: stereo and RDS (station name, radio text, programme type, traffic flags) |
 
 The DVB standard is detected automatically.
@@ -95,7 +95,7 @@ These receivers are built from the published specifications and checked end to e
 | **DVB-C** | Cable TV, EN 300 429 / J.83 annex A and C, 16 to 256-QAM (needs a cable feed) | Symbol rate and QAM found automatically, channels and playback |
 | **Analog TV** | PAL, SECAM, NTSC; systems B/G, I, D/K, M, N, H, K', positive-modulation A (405 lines), C, E (819 lines), L, L'; NBTV and mechanical TV | Picture and sound |
 | **MAC** | D2-MAC and D-MAC satellite TV (FM, 27 MHz; 20 Msps sees most of it) | Picture (4:3 / 16:9), channel name, digital sound; EuroCrypt detected, not descrambled |
-| **DRM** | Digital radio on long, medium and short wave | Audio and station information |
+| **DRM** | Digital radio on long, medium and short wave | Audio and station information; Journaline pages (packet mode data service) |
 | **DMR** | Digital two-way radio | Talkgroups, IDs and data (no voice) |
 | **NXDN** | Digital two-way radio, NXDN48 and NXDN96 | Call log with unit IDs and talkgroups, status and short data messages, site information, voice through your mbelib |
 | **P25** | APCO Project 25 Phase 1 (TIA-102), C4FM, 12.5 kHz, conventional and trunked | Calls with talkgroups, unit IDs and emergency flags; trunking: WACN, system, NAC, RFSS / site, adjacent sites, channel identifiers, voice grants, talkgroup activity; voice through your mbelib. Receive only: encrypted calls are only reported as encrypted, nothing is decrypted. Follow the rules on receiving radio where you live |
@@ -143,7 +143,7 @@ These receivers are built from the published specifications and checked end to e
 | **Mesh** | Meshtastic and MeshCore (LoRa) | Nodes, map and chat |
 | **LoRaWAN** | EU868 (868.1 / 868.3 / 868.5 MHz and 867.x) or US915, SF7 - SF12 at once | A device table (DevAddr or DevEUI, network from the NetID, last heard, level, SNR, frame counter, SF) and a frame log with filters: message type, FCtrl, FCnt, MAC commands, port, encrypted length, MIC, join requests; only the clear headers, payloads stay encrypted |
 
-In development (the mode is in the app, but nothing is decoded yet): **HD Radio**, **CDR** (China Digital Radio), **Pagers** (POCSAG, FLEX), **APRS / Packet** (AX.25) and **HF digital** (RTTY, SSTV, FreeDV).
+Experimental (the receivers exist and pass the synthetic, loopback and impairment tests in `tests/`, but they have had little or no checking against live broadcasts): **HD Radio** (FM and AM, `hdr_*`), **CDR** (China Digital Radio, `cdr_*`), **Pagers** (POCSAG, FLEX), **APRS / Packet** (AX.25) and **HF digital** (RTTY, SSTV, FreeDV).
 
 <details>
 <summary><b>Iridium bursts for iridium-toolkit</b></summary>
