@@ -57,6 +57,8 @@ const std::vector<LteBand>& lteBands();
 const LteBand* lteBandInfo(int band);
 double lteEarfcnToHz(int earfcn);              // 0 when not in the table
 int lteBandOfEarfcn(int earfcn);               // 0 when not in the table
+int lteNearestEarfcn(double hz, int preferBand = 0);   // the channel nearest to hz (within 50 kHz), -1 outside every band
+std::vector<int> lteBandsOfHz(double hz);      // every band holding hz, most common (European) first
 int lteHzToEarfcn(double hz, int preferBand = 0);   // -1 when no band holds it (the 100 kHz raster)
 // The operator of an MCC-MNC, from a short built-in list of public network codes ("" unknown); the country of the MCC
 const char* lteOperatorName(int mcc, int mnc);

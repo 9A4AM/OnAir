@@ -201,6 +201,11 @@ void cellTable(App& a) {
         if (ImGui::Selectable(l, S.sel == (int)i, ImGuiSelectableFlags_SpanAllColumns)) S.sel = (int)i;
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s, %.1f MHz, TAC %u, %.1f MHz wide, RSRQ %.1f dB, seen %s ago", opText(c).c_str(), c.freqHz / 1e6, c.tac, c.nRb * 0.2, c.rsrqDb, ago(c.lastWall).c_str());
         ImGui::TableNextColumn(); if (c.band) ImGui::Text("B%d", c.band); else ImGui::TextDisabled("?");
+        if (c.freqHz > 0 && ImGui::IsItemHovered()) {   // a frequency can lie in several bands; the EARFCN follows from the band
+            std::string o;
+            for (int b : dect2::lteBandsOfHz(c.freqHz)) o += (o.empty() ? "" : ", ") + std::string("B") + std::to_string(b) + " EARFCN " + std::to_string(dect2::lteNearestEarfcn(c.freqHz, b));
+            if (!o.empty()) ImGui::SetTooltip("%.1f MHz lies in: %s", c.freqHz / 1e6, o.c_str());
+        }
         ImGui::TableNextColumn(); if (c.earfcn >= 0) ImGui::Text("%d", c.earfcn); else ImGui::TextDisabled("-");
         if (wide) { ImGui::TableNextColumn(); ImGui::Text("%.1f", c.freqHz / 1e6); }
         ImGui::TableNextColumn(); ImGui::Text("%d", c.pci);

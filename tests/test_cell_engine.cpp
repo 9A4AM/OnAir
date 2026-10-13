@@ -16,6 +16,21 @@ int main() {
     const ModeTuning mt = cellTuning();
     CHECK(mt.stdMode == 34 && modeTuningById("cell") && modeTuningById("cell")->stdMode == 34, "tuning table");
     CHECK(lteHzToEarfcn(806e6) == 6300 && std::fabs(lteEarfcnToHz(6200) - 796e6) < 1 && lteBandOfEarfcn(3500) == 8, "EARFCN table");
+    {   // frequency -> EARFCN / band for known channels (36.101: N = Noffs + 10 (F - Flow)), and back
+        struct K { double mhz; int earfcn, band; };
+        const K k[] = {{1845, 1600, 3}, {1842.5, 1575, 3}, {791, 6150, 20}, {806, 6300, 20}, {2630, 2850, 7}, {943, 3630, 8}, {2120, 100, 1},
+                       {2140, 300, 1}, {1960, 900, 2}, {3500, 42590, 42}, {2600, 37750 + 300, 38}};
+        bool ok = true;
+        for (const auto& x : k) {
+            const int e = lteNearestEarfcn(x.mhz * 1e6), b = lteBandOfEarfcn(e);
+            if (e != x.earfcn || b != x.band || std::fabs(lteEarfcnToHz(x.earfcn) - x.mhz * 1e6) > 1) { ok = false; printf("  %.1f MHz -> %d B%d (want %d B%d)\n", x.mhz, e, b, x.earfcn, x.band); }
+        }
+        CHECK(ok, "frequency <-> EARFCN known values");
+        const auto both = lteBandsOfHz(2120e6);
+        CHECK(both.size() >= 3 && both[0] == 1, "several bands hold 2120 MHz, B1 first (%zu)", both.size());
+        CHECK(lteNearestEarfcn(1000e6) == -1 && lteBandsOfHz(1000e6).empty(), "outside every band");
+        CHECK(lteNearestEarfcn(1845.02e6) == 1600 && lteNearestEarfcn(1844.96e6) == 1600, "off-raster by under 50 kHz rounds to the channel");
+    }
     {   // the full 36.101 table: EARFCN ranges never overlap, both edges map to the band's downlink edges and back
         bool ok = true;
         const auto& t = lteBands();

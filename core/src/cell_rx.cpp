@@ -78,6 +78,28 @@ int lteHzToEarfcn(double hz, int prefer) {
     return -1;
 }
 
+int lteNearestEarfcn(double hz, int prefer) {
+    const double mhz = hz / 1e6;
+    auto of = [&](const LteBand& b) -> int {
+        const long k = std::lround((mhz - b.dlLowMhz) * 10);
+        if (k < 0 || k >= bandSpan(b)) return -1;
+        return b.nOffsDl + (int)k;
+    };
+    if (const LteBand* p = lteBandInfo(prefer)) { const int e = of(*p); if (e >= 0) return e; }
+    for (const auto& b : lteBands()) { const int e = of(b); if (e >= 0) return e; }
+    return -1;
+}
+
+std::vector<int> lteBandsOfHz(double hz) {
+    std::vector<int> v;
+    const double mhz = hz / 1e6;
+    for (const auto& b : lteBands()) {
+        const long k = std::lround((mhz - b.dlLowMhz) * 10);
+        if (k >= 0 && k < bandSpan(b)) v.push_back(b.band);
+    }
+    return v;
+}
+
 const char* lteOperatorName(int mcc, int mnc) {
     struct O { int mcc, mnc; const char* name; };
     static const O t[] = {
@@ -314,8 +336,9 @@ struct CellReceiver::Impl {
 
     void merge(const Cand& cd, const cell::LteCellResult& r, double center, double sec) {
         const double actual = (center > 0 ? center : 0.0) + cd.off + r.found.cfoHz;
-        const double nominal = center > 0 ? std::round(actual / 100e3) * 100e3 : cd.off;
-        const int ear = center > 0 ? lteHzToEarfcn(nominal) : -1;
+        // the nearest channel of the band table (bands whose edge is on a 50 kHz point have a raster of their own), else the 100 kHz grid
+        const int ear = center > 0 ? lteNearestEarfcn(actual) : -1;
+        const double nominal = center > 0 ? (ear >= 0 ? lteEarfcnToHz(ear) : std::round(actual / 100e3) * 100e3) : cd.off;
         if (center > 0 && ear < 0 && !r.mib.ok) return;   // off every LTE band raster and without a MIB: not a cell
         CellTower* t = nullptr;
         for (auto& c : tel.cells) if (c.pci == r.found.pci && std::fabs(c.freqHz - nominal) < 60e3) { t = &c; break; }
@@ -361,7 +384,7 @@ struct CellReceiver::Impl {
                 t->barred = s.barred; t->qRxLevMinDbm = s.qRxLevMinDbm; t->pMaxDbm = s.pMax;
                 if (s.band > 0) {
                     t->band = s.band;
-                    if (center > 0) { const int e = lteHzToEarfcn(t->freqHz, s.band); if (e >= 0) t->earfcn = e; }
+                    if (center > 0) { const int e = lteNearestEarfcn(t->freqHz, s.band); if (e >= 0) t->earfcn = e; }
                 }
                 t->sched.clear();
                 for (const auto& e : s.sched) { CellSched cs; cs.periodRf = e.periodRf; cs.sibs = e.sibs; t->sched.push_back(cs); }
