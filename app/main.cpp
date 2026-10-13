@@ -292,6 +292,7 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     dect2::PskReporter::get().setDialHz(a.freqMhz * 1e6);
     a.engine.setWideDecode(a.wideDecode && modeSupportsWideHf(a.family));
     feedsWindow(a);
+    shareTick(a);
     mapWindow(a);
     if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel
         static bool opened = false;

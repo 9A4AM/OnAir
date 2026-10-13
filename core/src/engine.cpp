@@ -1,5 +1,6 @@
 #include "dect2/engine.h"
 #include "dect2/converter.h"
+#include "dect2/share.h"
 #include "dect2/device_claims.h"
 #include "dect2/hfdig_ftx.h"
 #include "dect2/hfdig_kbd.h"
@@ -66,6 +67,8 @@ bool Engine::offsetAllowed() const {
 void Engine::ingest(cf32* x, size_t n) {
     if (convSwap_.load(std::memory_order_relaxed)) swapIq(x, n);   // a converter that mirrors the spectrum: the signal reads the right way round from here on
     rec_.push(x, n);   // the raw samples, before anything touches them
+    ShareServer::get().offer(x, n);   // "Share my radio": the same samples to the rtl_tcp clients (nothing while sharing is off)
+    ShareServer::get().offer(x, n);   // "Share my radio": the same samples to the rtl_tcp clients (nothing while sharing is off)
     dropNonFinite(x, n);
     cleanSamples(iqFix_, offMix_, offsetDc_.load(), x, n, activeStd_.load());
     const auto a0 = std::chrono::steady_clock::now();

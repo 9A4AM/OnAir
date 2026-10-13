@@ -63,6 +63,21 @@ void loadFeedPrefs(App& a) {
     bool any = false;
     for (bool o : c.on) any = any || o;
     if (any) dect2::Feeds::get().configure(c);
+    dect2::ShareConfig& sc = a.share;
+    sc.on = d.getB("shareOn", false); sc.port = (int)d.getI("sharePort", sc.port); sc.lan = d.getI("shareLan", 0) != 0; sc.allowControl = d.getI("shareControl", 0) != 0;
+    if (sc.on) dect2::ShareServer::get().configure(sc);
+}
+
+// Remote control from the clients of "Share my radio": their frequency and gain commands (only arrive when the box is ticked)
+void shareTick(App& a) {
+    if (a.rxId != 1 || !a.share.on || !a.share.allowControl) return;
+    bool retune = false;
+    for (const dect2::ShareCommand& m : dect2::ShareServer::get().takeCommands()) {
+        if (m.cmd == 0x01 && m.value > 0) { a.freqMhz = m.value / 1e6; a.tune.centerHz = a.freqMhz * 1e6; retune = true; }
+        else if (m.cmd == 0x04 && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[a.devIdx].isGeneric()) { a.tune.gainDb = m.value / 10.0; retune = true; }
+        else if (m.cmd == 0x0e) { a.tune.biasTee = m.value != 0; retune = true; }
+    }
+    if (retune && a.engine.running()) { a.engine.retune(a.tune); a.peak.clear(); }
 }
 
 void saveFeedPrefs(const App& a) {
@@ -76,6 +91,7 @@ void saveFeedPrefs(const App& a) {
     d.setS("feedAprsCall", c.aprsCall); d.setS("feedAprsPass", c.aprsPass);
     d.setS("feedAprsServer", c.aprsServer); d.setI("feedAprsServerPort", c.aprsServerPort);
     d.setS("feedStationId", c.stationId);
+    d.setB("shareOn", a.share.on); d.setI("sharePort", a.share.port); d.setI("shareLan", a.share.lan ? 1 : 0); d.setI("shareControl", a.share.allowControl ? 1 : 0);
     d.setB("pskrOn", a.pskr.on); d.setS("pskrCall", a.pskr.call); d.setS("pskrLocator", a.pskr.locator); d.setS("pskrAntenna", a.pskr.antenna);
 }
 
@@ -181,6 +197,31 @@ void feedsWindow(App& a) {
         ImGui::Unindent();
     }
     if (pc) { dect2::PskReporter::get().configure(r); savePrefs(a); }
+
+    ImGui::SeparatorText(tr("Share my radio (rtl_tcp server)"));
+    {
+        dect2::ShareConfig& sc = a.share;
+        bool sch = false;
+        sch |= ImGui::Checkbox(tr("Share the radio's samples as an rtl_tcp server"), &sc.on);
+        ImGui::SameLine(); sch |= portField(N_("Port"), sc.port);
+        ImGui::Indent();
+        sch |= ImGui::Checkbox(tr("Let other computers connect (LAN)"), &sc.lan);
+        sch |= ImGui::Checkbox(tr("Allow remote control (frequency and gain)"), &sc.allowControl);
+        const dect2::ShareStatus ss = dect2::ShareServer::get().status();
+        if (!sc.on) ImGui::TextDisabled("%s", tr("off"));
+        else if (!ss.listening) ImGui::TextColored(pal::badRed(), "%s", ss.lastError.empty() ? tr("starting") : ss.lastError.c_str());
+        else {
+            ImGui::TextColored(pal::okGreen(), tr("listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped"), sc.lan ? "all addresses" : "127.0.0.1", sc.port,
+                               (int)ss.clients.size(), (double)ss.sentBytes / 1e6, (double)ss.droppedBytes / 1e6);
+            for (const std::string& c : ss.clients) ImGui::BulletText("%s", c.c_str());
+        }
+        ImGui::PushTextWrapPos(460 * gUi);
+        ImGui::TextDisabled("%s", tr("A second OnAir (Add network radio, rtl_tcp), SDR# or SDR++ connects to this computer's address and the port. Samples are sent as 8-bit IQ at the rate the radio runs at. "
+                                     "Without 'allow remote control' the clients cannot change the frequency or gain."));
+        ImGui::PopTextWrapPos();
+        ImGui::Unindent();
+        if (sch) { dect2::ShareServer::get().configure(sc); savePrefs(a); }
+    }
 
     if (changed) apply(a);
     ImGui::End();

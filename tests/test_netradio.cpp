@@ -1,7 +1,9 @@
 // Network radios (netradio.h): the rtl_tcp, SpyServer and Hermes Lite 2 clients against fake servers on localhost, a user-added Pluto
 // address, the saved list.
 #include "../core/src/tcp_client.h"
+#include "../core/src/native_common.h"
 #include "dect2/netradio.h"
+#include "dect2/share.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -333,6 +335,107 @@ static bool readIq(IqRing& ring, std::vector<cf32>& buf) {
     return got == buf.size();
 }
 
+// SpyServer messages from hand-written bytes (no socket)
+static void testSpyServerBytes() {
+    // HELLO: type 0, body = protocol version 2.0.1700 (0x020006a4 little endian) and "OnAir"
+    const std::vector<unsigned char> hello = {0xa4, 0x06, 0x00, 0x02, 'O', 'n', 'A', 'i', 'r'};
+    const std::vector<unsigned char> want = {0, 0, 0, 0, 9, 0, 0, 0, 0xa4, 0x06, 0x00, 0x02, 'O', 'n', 'A', 'i', 'r'};
+    CHECK(native::spyServerEncodeCommand(0, hello) == want);
+    // SET_SETTING (2): setting 101 (IQ frequency) = 100 MHz = 0x05f5e100
+    const std::vector<unsigned char> setf = {101, 0, 0, 0, 0x00, 0xe1, 0xf5, 0x05};
+    const std::vector<unsigned char> wantF = {2, 0, 0, 0, 8, 0, 0, 0, 101, 0, 0, 0, 0x00, 0xe1, 0xf5, 0x05};
+    CHECK(native::spyServerEncodeCommand(2, setf) == wantF);
+    CHECK(native::spyServerEncodeCommand(2, {}).size() == 8);
+    // a server header: version, type 100 (uint8 IQ) with flags 0x0001, stream type, sequence, body size 65536
+    const unsigned char h[20] = {0xa4, 0x06, 0, 2, 100, 0, 1, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 1, 0};
+    uint32_t type = 0, flags = 0, size = 0;
+    CHECK(native::spyServerDecodeHeader(h, type, flags, size));
+    CHECK(type == 100 && flags == 1 && size == 65536);
+    const unsigned char big[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x20, 0};   // 2 MB: refused
+    CHECK(!native::spyServerDecodeHeader(big, type, flags, size));
+    // DEVICE_INFO: Airspy HF+ (2), serial 7, max rate 768000, max bandwidth 600000, 6 decimation stages, 3 gain stages, max gain 3, ...
+    const uint32_t words[12] = {2, 7, 768000, 600000, 6, 3, 3, 100000, 31000000, 16, 1, 0};
+    unsigned char body[48];
+    for (int i = 0; i < 12; i++) for (int k = 0; k < 4; k++) body[4 * i + k] = (unsigned char)(words[i] >> (8 * k));
+    uint32_t dev = 0, rate = 0, dec = 0, gain = 0;
+    CHECK(native::spyServerDecodeDeviceInfo(body, sizeof body, dev, rate, dec, gain));
+    CHECK(dev == 2 && rate == 768000 && dec == 6 && gain == 3);
+    CHECK(!native::spyServerDecodeDeviceInfo(body, 20, dev, rate, dec, gain));
+}
+
+// "Share my radio": the rtl_tcp server of OnAir against a raw socket and OnAir's own rtl_tcp client on localhost
+static void testShare() {
+    ShareServer& sh = ShareServer::get();
+    ShareConfig c; c.on = true; c.port = 0; c.lan = false; c.allowControl = false;
+    sh.configure(c);
+    CHECK(sh.status().listening);
+    const int port = sh.config().port;
+    CHECK(port > 0);
+    if (!sh.status().listening || port <= 0) { c.on = false; sh.configure(c); return; }
+
+    // a raw client: the 12-byte greeting, then the samples exactly as offered
+    netInit();
+    std::string err;
+    sock_t k = tcpConnect("127.0.0.1", port, 2000, err);
+    CHECK(k != kBadSock);
+    if (k == kBadSock) { c.on = false; sh.configure(c); return; }
+    sockRecvTimeout(k, 2000);
+    unsigned char hdr[12];
+    CHECK(sockRecvAll(k, hdr, sizeof hdr));
+    CHECK(memcmp(hdr, "RTL0", 4) == 0);
+    for (int i = 0; i < 100 && sh.status().clients.empty(); i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    CHECK(sh.status().clients.size() == 1);
+    std::vector<cf32> iq(5000);
+    for (size_t i = 0; i < iq.size(); i++) iq[i] = cf32(((int)(i % 200) + 28 - 127.4f) / 128.f, ((int)(i % 150) + 40 - 127.4f) / 128.f);
+    sh.offer(iq.data(), iq.size());
+    std::vector<unsigned char> got(iq.size() * 2);
+    CHECK(sockRecvAll(k, got.data(), got.size()));
+    bool same = true;
+    for (size_t i = 0; i < iq.size(); i++) if (got[2 * i] != (i % 200) + 28 || got[2 * i + 1] != (i % 150) + 40) same = false;
+    CHECK(same);
+    // commands are not carried out while "allow remote control" is off
+    const unsigned char setF[5] = {0x01, 0x05, 0xf5, 0xe1, 0x00};
+    CHECK(sockSendAll(k, setF, 5));
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    CHECK(sh.takeCommands().empty());
+    sockClose(k);
+
+    // OnAir's own client: its frequency and gain commands arrive once control is allowed; the samples come back as sent
+    c.port = port;
+    c.allowControl = true;
+    sh.configure(c);   // only the control flag changed: the server keeps running
+    CHECK(sh.config().port == port);
+    NetRadio nr; nr.type = NetRadio::RtlTcp; nr.host = "127.0.0.1"; nr.port = port;
+    const auto devs = netRadioDevices({nr});
+    CHECK(devs.size() == 1);
+    if (!devs.empty()) {
+        auto src = makeSource(devs[0]);
+        IqRing ring(1u << 20);
+        TuneSettings s; s.sampleRate = 2.048e6; s.centerHz = 100e6; s.gainDb = 30;
+        err.clear();
+        CHECK(src->start(s, ring, err));
+        bool freq = false, gain = false;
+        for (int i = 0; i < 200 && !(freq && gain); i++) {
+            for (const ShareCommand& m : sh.takeCommands()) { if (m.cmd == 0x01 && m.value == 100000000u) freq = true; if (m.cmd == 0x04) gain = true; }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        CHECK(freq && gain);
+        for (int round = 0; round < 20; round++) { sh.offer(iq.data(), iq.size()); std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
+        std::vector<cf32> buf(4000);
+        CHECK(readIq(ring, buf));
+        bool okv = true;   // every pair is one of ours
+        for (const cf32& v : buf) {
+            const int ii = (int)std::lround(v.real() * 128.f + 127.4f), qq = (int)std::lround(v.imag() * 128.f + 127.4f);
+            if (ii < 28 || ii >= 228 || qq < 40 || qq >= 190) okv = false;
+        }
+        CHECK(okv);
+        src->stop();
+    }
+    c.on = false;
+    sh.configure(c);
+    CHECK(!sh.status().listening);
+}
+
 static void testSpyServer() {
     FakeSpy srv;
     CHECK(srv.start());
@@ -660,6 +763,8 @@ int main() {
     testRtlTcp();
     testRtlTcpOther();
     testSpyServer();
+    testSpyServerBytes();
+    testShare();
     testHermesLite2();
     if (fails) { fprintf(stderr, "%d failure(s)\n", fails); return 1; }
     printf("netradio: all passed\n");

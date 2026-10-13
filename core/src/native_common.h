@@ -590,6 +590,11 @@ DeviceInfo spyServerDevice(const std::string& host, int port);
 std::unique_ptr<IqSource> makeSpyServer(const DeviceInfo& d);
 bool spyServerProbe(const std::string& host, int port, int timeoutMs, std::string& err);
 void spyServerCaps(DeviceInfo& d);
+// The message formats without a socket (unit test): the bytes of a client command; the type, flags and body size of a server message header
+// (20 bytes); the fields of a DEVICE_INFO body (12 little-endian 32-bit words)
+std::vector<unsigned char> spyServerEncodeCommand(uint32_t type, const std::vector<unsigned char>& body);
+bool spyServerDecodeHeader(const unsigned char* h, uint32_t& type, uint32_t& flags, uint32_t& size);
+bool spyServerDecodeDeviceInfo(const unsigned char* b, uint32_t n, uint32_t& devType, uint32_t& maxRate, uint32_t& decStages, uint32_t& maxGainIndex);
 // A Hermes Lite 2 (source_hermeslite2.cpp) at an IPv4 host and UDP port (1024). hermesLite2Probe sends it a discovery packet and waits for
 // its answer.
 DeviceInfo hermesLite2Device(const std::string& host, int port);
