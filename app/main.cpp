@@ -278,6 +278,7 @@ void drawUI(App& a, ImVec2 disp) {
     }
     passesWindow(a);
     scannerWindow(a);
+    setupWizard(a, disp);
     wizard(a, disp);
     if (gIdentifyDev && a.engine.running() && ImGui::GetFrameCount() > 120) { gIdentifyDev = false; identifyStart(a, radioCenterMhz(a) * 1e6, 0, 0, radioCenterMhz(a) * 1e6); }
     identifyWindow(a);
@@ -522,7 +523,9 @@ int main(int argc, char** argv) {
         gCrashNote = gCrashNote.empty() ? guardNote : gCrashNote + "\n\n" + guardNote;
     }
     app.wizOpen = argc == 1 && !plat::prefs().getB("wizardDone", false);   // the tour runs on the very first start only
+    if (argc == 1 && !plat::prefs().getB("setupDone", false)) { app.wizOpen = false; setupWizardOpen(app); }   // the setup comes first; the tour follows it
     if (getenv("DECT2_WIZARD")) app.wizOpen = true;
+    if (getenv("DECT2_SETUP")) { app.wizOpen = false; setupWizardOpen(app); if (const char* ss = getenv("DECT2_SETUPSTEP")) app.setupStep = atoi(ss); }
     app.wizStepT = ImGui::GetTime();
     app.engine.player().setHardwareDecode(plat::prefs().getB("hwVideo", true));
     app.tune.synth.demoTv = true;   // the synthetic DVB-T / ATSC signal carries a test-card programme

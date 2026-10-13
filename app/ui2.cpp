@@ -625,6 +625,7 @@ float menuBar(App& a) {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(tr("Help"))) {
+            if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
             if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
             ImGui::EndMenu();
         }

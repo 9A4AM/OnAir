@@ -188,6 +188,10 @@ struct App {
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool mapOpen = false;               // the map window (View > Map): positions and Maidenhead locators
     int wizStep = 0;
+    bool setupOpen = false;             // the setup wizard (language, radio, location, goals); Help > Setup wizard
+    int setupStep = 0, setupRegion = 0;
+    unsigned setupGoals = 0;            // bit per goal in wizard.cpp
+    char setupLoc[48] = "";             // a Maidenhead locator or coordinates
     double wizStepT = 0;
     float wizX = -1;
     ImVec2 tgMin[8], tgMax[8];   // screen rectangles of the parts of the window the tour points at
@@ -686,6 +690,8 @@ void historyLogTab(App& a);
 // diag_ui.cpp: radio problems shown under the radio picker, and the diagnostics text
 struct RadioMsg { int kind; std::string text; };   // kind: 0 radio listing error, 1 failed start/retune, 2 frequency outside the radio's range, 3 USB hint
 std::string radioRangeWarning(const DeviceInfo& d, double freqMhz);   // empty when the frequency is fine or the range is unknown
+namespace fixit { struct Entry; }
+void fixitUi(App& a, const fixit::Entry* e, const char* idKey);   // diag_ui.cpp: the "How to fix" button + popup of a fixit.h entry (nothing for nullptr)
 std::vector<RadioMsg> radioMessages(const App& a);                    // what is shown right now (dismissed ones left out)
 struct DiagInput {
     std::string version, os, cpu, gpu;
@@ -755,3 +761,5 @@ void wizEnter(App& a, int step);
 void wizAction(App& a, int step);
 void wizFinish(App& a);
 void wizard(App& a, ImVec2 disp);
+void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
+void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
