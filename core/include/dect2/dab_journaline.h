@@ -108,4 +108,25 @@ private:
     int lastCi_ = -1;
 };
 
+// DRM packet mode (ES 201 980 clause 6.6): packets of `dataLen` + 3 bytes (8 bit header, data field, CRC-16) of one Packet Id; the data units
+// (first to last packet) are MSC data groups for Journaline (TS 102 979 clause 8.2). Feed it whole logical frames of the stream.
+class DrmPacketDemux {
+public:
+    void configure(int dataLen, int packetId);
+    void reset() { asm_.clear(); on_ = false; lastCi_ = -1; }
+    template <class F> void feed(const uint8_t* d, size_t n, F onUnit) {
+        std::vector<uint8_t> out;
+        const size_t sz = (size_t)len_ + 3;
+        if (len_ <= 0) return;
+        for (size_t p = 0; p + sz <= n; p += sz) if (packet(d + p, sz, out)) { onUnit(out.data(), out.size()); out.clear(); }
+    }
+    uint64_t packets = 0, badPackets = 0;
+private:
+    bool packet(const uint8_t* p, size_t sz, std::vector<uint8_t>& out);   // true: `out` holds a complete data unit
+    int len_ = 0, id_ = 0;
+    std::vector<uint8_t> asm_;
+    bool on_ = false;
+    int lastCi_ = -1;
+};
+
 } // namespace dect2
