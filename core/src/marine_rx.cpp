@@ -54,7 +54,7 @@ struct MarineReceiver::Impl {
     FskSlicer fsk;
     VhfSlicer vhf;
     FaxAudio faxAudio;
-    hfdig::Listen listen;          // "Listen": the fax tones on the sound card (off by default)
+    hfdig::Listen listen;          // "Listen": the fax / NAVTEX / DSC tones on the sound card (off by default)
     FaxDecoder fax;
     NavtexDecoder nav[2] = {NavtexDecoder(false), NavtexDecoder(true)};
     DscDecoder dsc[2] = {DscDecoder(false, false), DscDecoder(true, false)};
@@ -275,9 +275,9 @@ void MarineReceiver::feed(const cf32* x, size_t n) {
         if (en.fax) {
             s.audio.clear();
             s.faxAudio.process(b, nb, s.audio);
-            if (s.listen.on.load()) s.listen.playBase(b, nb);
             if (!s.audio.empty()) s.fax.push(s.audio.data(), s.audio.size());
         }
+        if (s.listen.on.load()) s.listen.playBase(b, nb);   // fax tones, or the NAVTEX / DSC FSK tones
     }
     s.sinceReport += (double)n;
     const double per = 0.25 * s.rate;

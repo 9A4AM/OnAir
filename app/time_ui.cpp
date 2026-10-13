@@ -22,6 +22,7 @@ struct State {
     bool loaded = false;
     int station = -1;             // -1: from the frequency
     int pref60 = Msf;
+    bool listen = false; int pushedListen = -1; float pushedVol = -1; int pushedMute = -1;
 };
 State S;
 
@@ -31,6 +32,7 @@ void loadState() {
     S.station = std::max(-1, std::min((int)kNumStations - 1, (int)plat::prefs().getI("timeStation", -1)));
     S.pref60 = (int)plat::prefs().getI("timePref60", Msf);
     if (S.pref60 != Msf && S.pref60 != Wwvb && S.pref60 != Jjy60) S.pref60 = Msf;
+    S.listen = plat::prefs().getB("timeListen", false);
 }
 void saveState() { plat::prefs().setI("timeStation", S.station); plat::prefs().setI("timePref60", S.pref60); plat::prefs().flush(); }
 
@@ -200,6 +202,8 @@ void pushSettings(App& a) {
     double lat, lon;
     receiverLocation(lat, lon);
     a.engine.timesig().setReceiverLocation(lat, lon, receiverLocationSet());
+    if ((int)S.listen != S.pushedListen) { a.engine.timesig().setListen(S.listen); S.pushedListen = S.listen; }
+    if (a.volume != S.pushedVol || (int)a.muted != S.pushedMute) { a.engine.timesig().setVolume(a.volume); a.engine.timesig().setMuted(a.muted); S.pushedVol = a.volume; S.pushedMute = a.muted; }
 }
 
 void tick(App& a) { loadState(); pushSettings(a); }
@@ -244,6 +248,8 @@ void tuner(App& a, bool& retune) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", st == Wwv ? "WWV and WWVH share 2.5, 5, 10 and 15 MHz (WWV also 20 MHz); the 1000 / 1200 Hz ticks tell them apart" : "CHU: 3330, 7850 and 14670 kHz");
     }
     if (st < 0) { ImGui::SameLine(0, 8 * gUi); ImGui::TextColored(pal::warnAmber(), "no station at this frequency"); }
+    ImGui::SameLine(0, 8 * gUi);
+    listenControls(a, S.listen, "timeListen", "time", "Hear the station: the AM audio (ticks, voice) of WWV / CHU, a tone keyed by the carrier for the LF stations (DCF77, MSF, WWVB, JJY); decoding is the same either way");
 }
 
 void synth(App& a, bool& changed) {

@@ -18,7 +18,7 @@ static const double kLat = 54.687, kLon = 25.280;   // Vilnius
 
 struct Run { TimeTelemetry first, last; double firstAt = -1; };
 
-static Run run(TimeGenConfig c, double secs, bool noiseOnly = false) {
+static Run run(TimeGenConfig c, double secs, bool noiseOnly = false, int listen = -1, size_t* heard = nullptr) {
     c.dialOffsetHz = -timeTuning().tuneOffsetHz;
     double la, lo;
     stationSite(c.station, la, lo, c.wwvh);
@@ -30,6 +30,7 @@ static Run run(TimeGenConfig c, double secs, bool noiseOnly = false) {
     r.setStation(c.station);
     r.setClockMode(2, c.startUtc);
     r.setReceiverLocation(kLat, kLon, true);
+    if (listen >= 0) { r.setSilent(true); r.setListen(listen != 0); r.setListenTap([heard](const float*, size_t n) { *heard += n; }); }
     genutil::NoiseSource ns(7);
     std::vector<cf32> buf(8192);
     Run out;
@@ -84,6 +85,12 @@ static void station(int st, bool wwvh, double rate, double snr, double cfo, doub
 }
 
 int main() {
+    for (int st : {Dcf77, Wwv}) {   // "Listen": 8000 audio samples a second when on, none when off
+        TimeGenConfig c; c.station = st; c.rate = 64000; c.snrDb = 40; c.startUtc = 1.7e9;
+        size_t on = 0, off = 0;
+        run(c, 6, false, 1, &on); run(c, 6, false, 0, &off);
+        CHECK(std::fabs((double)on - 6 * 8000) < 800 && off == 0, "time listen station %d: on %zu, off %zu samples", st, on, off);
+    }
     station(Dcf77, false, 64000, 40, 0, 0, "clean");
     station(Msf, false, 64000, 40, 0, 0, "clean");
     station(Wwvb, false, 64000, 40, 0, 0, "clean");

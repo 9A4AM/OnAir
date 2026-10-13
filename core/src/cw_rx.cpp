@@ -6,7 +6,7 @@
 #include "dect2/pskreporter.h"
 #include "dect2/marine_dsp.h"
 #include "dect2/fftutil.h"
-#include "dect2/audioout.h"
+#include "ham_listen.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -27,7 +27,7 @@ constexpr int kHalf = (int)(kWindowHz / kBinHz);
 constexpr int kR = 24;                           // 24 kHz -> 1 kHz
 constexpr int kTri = 2 * kR - 1;                 // triangular (CIC of order 2) decimation filter
 constexpr int kFir = 65;                         // +-50 Hz low-pass at 1 kHz
-constexpr int kToneRate = 48000;
+constexpr int kToneRate = 8000;   // the sidetone goes through hfdig::Listen (8 kHz in)
 
 std::vector<float> lowpass1k() {
     std::vector<float> h(kFir);
@@ -75,13 +75,12 @@ struct Chan {
 struct CwReceiver::Impl {
     std::mutex mu;
     std::function<void(const std::string&)> log;
-    std::function<void(const float*, size_t)> tapSet;
     double rate = 0, offsetHz = 0;
     CwTelemetry pub;
-    std::atomic<bool> resetReq{true}, offsetReq{false}, tapReq{false}, clearReq{false};
+    std::atomic<bool> resetReq{true}, offsetReq{false}, clearReq{false};
     bool focusReq = false; double focusHz = 0;   // under mu
-    std::atomic<float> thrDb{10.f}, volume{1.f}, toneHz{700.f};
-    std::atomic<bool> muted{false}, silent{false}, sidetone{false};
+    std::atomic<float> thrDb{10.f}, toneHz{700.f};
+    hfdig::Listen listen;          // the sidetone (the focused signal keying a tone) on the sound card: "Listen"
     // receiver thread
     CwTelemetry tel;
     double curRate = 0;
@@ -100,8 +99,6 @@ struct CwReceiver::Impl {
     float triW[kTri] = {};
     std::vector<Chan> chans;
     int nextId = 1, focusId = -1;
-    std::function<void(const float*, size_t)> tap;
-    std::unique_ptr<AudioOut> audioOut;
     std::vector<float> toneBuf;
     double tonePh = 0;
 
@@ -170,7 +167,7 @@ struct CwReceiver::Impl {
         base.clear(); fftIn.clear();
         held.assign(2 * kHalf + 1, 0.f); acc.assign(2 * kHalf + 1, 0.f); accN = 0; frames = 0; floorLin = 0;
         chans.clear(); focusId = -1;
-        if (audioOut) audioOut->flush();
+        listen.reset(); toneBuf.clear();
         if (cb && curRate > 0) cb(running ? "CW: skimming +-7 kHz around the dial frequency" : "CW: the sample rate is too low (250 kHz at least)");
     }
 
@@ -283,21 +280,14 @@ struct CwReceiver::Impl {
             tone += (target > tone ? 1.f : -1.f) * std::min(std::fabs(target - tone), 1.f / 240);   // 5 ms edges
             tonePh = std::remainder(tonePh + w, 2 * kPi);
             const float v = 0.3f * tone * (float)std::sin(tonePh);
-            toneBuf.push_back(v); toneBuf.push_back(v);
+            toneBuf.push_back(v);
         }
     }
     float tone = 0;
 
     void flushTone() {
         if (toneBuf.empty()) return;
-        if (tap) tap(toneBuf.data(), toneBuf.size() / 2);
-        if (!silent.load()) {
-            if (!audioOut) { audioOut = std::make_unique<AudioOut>(); audioOut->start(kToneRate); audioOut->setStartThreshold(kToneRate / 20); }
-            audioOut->setVolume(volume.load()); audioOut->setMuted(muted.load());
-            if (audioOut->bufferedFrames() > kToneRate / 2) audioOut->flush();
-            if (!audioOut->playing()) audioOut->setStartThreshold(kToneRate / 20);   // after an underrun: the default 0.8 s restart level is above the 0.5 s kept here
-            audioOut->write(toneBuf.data(), (int)(toneBuf.size() / 2));
-        }
+        listen.play(toneBuf.data(), toneBuf.size());
         toneBuf.clear();
     }
 
@@ -306,7 +296,7 @@ struct CwReceiver::Impl {
             fftIn.push_back(x[i]);
             if (fftIn.size() >= (size_t)kN) { spectrumFrame(); fftIn.erase(fftIn.begin(), fftIn.begin() + kHop); }
         }
-        const bool st = sidetone.load();
+        const bool st = listen.on.load();
         for (size_t i = 0; i < n; i++) {
             const cf32 v = x[i];
             nBase++;
@@ -397,7 +387,6 @@ void CwReceiver::reset() {
 
 void CwReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
-    if (m.tapReq.exchange(false)) { std::lock_guard<std::mutex> lk(m.mu); m.tap = m.tapSet; }
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
     if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
     if (m.clearReq.exchange(false)) { m.chans.clear(); m.focusId = -1; m.kept.clear(); }
@@ -471,12 +460,12 @@ void CwReceiver::clearSignals() {
     p_->clearReq = true;
 }
 void CwReceiver::setThresholdDb(float db) { p_->thrDb = std::max(4.f, std::min(30.f, db)); }
-void CwReceiver::setSidetone(bool on) { p_->sidetone = on; }
-void CwReceiver::setSidetoneHz(float hz) { p_->toneHz = std::max(300.f, std::min(1200.f, hz)); }
-void CwReceiver::setVolume(float v) { p_->volume = std::max(0.f, std::min(1.f, v)); }
-void CwReceiver::setMuted(bool m) { p_->muted = m; }
-void CwReceiver::setSilent(bool s) { p_->silent = s; }
-void CwReceiver::setSidetoneTap(std::function<void(const float*, size_t)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->tapSet = std::move(cb); p_->tapReq = true; }
+void CwReceiver::setSidetone(bool on) { p_->listen.on = on; }
+void CwReceiver::setSidetoneHz(float hz) { p_->toneHz = std::max(400.f, std::min(1000.f, hz)); }
+void CwReceiver::setVolume(float v) { p_->listen.volume = std::max(0.f, std::min(1.f, v)); }
+void CwReceiver::setMuted(bool m) { p_->listen.muted = m; }
+void CwReceiver::setSilent(bool s) { p_->listen.silent = s; }
+void CwReceiver::setSidetoneTap(std::function<void(const float*, size_t)> cb) { p_->listen.setTap(std::move(cb)); }
 
 ModeTuning cwTuning() {
     ModeTuning t;

@@ -3,6 +3,7 @@
 #include "dect2/results_io.h"
 #include "dect2/time_tel.h"
 #include "dect2/time_proto.h"
+#include "ham_listen.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -84,6 +85,9 @@ struct TimeReceiver::Impl {
     Box car, sub100, t0, t1, fm, fs;
     Tone m100, m1000, m1200, m2025, m2225;
     double dc = 0;
+    hfdig::Listen listen;                // "Listen": the AM audio (HF) or a tone keyed by the carrier (LF) on the sound card
+    std::vector<float> aud;
+    double lfRef = 0, audPh = 0;
     int tickL = 40;
     // 1 kHz rings
     std::vector<float> env, env100;
@@ -143,7 +147,7 @@ struct TimeReceiver::Impl {
         tickL = st == Chu ? 80 : 40;
         car.init(kCar); sub100.init(kCar); t0.init(tickL); t1.init(tickL); fm.init(kFsk); fs.init(kFsk);
         m100.init(100, 80); m1000.init(1000, 8); m1200.init(1200, 20); m2025.init(2025, 320); m2225.init(2225, 320);
-        dc = 0;
+        dc = 0; listen.reset(); aud.clear(); lfRef = 0; audPh = 0;
         env.assign(kR1, 0.f); env100.assign(kR1, 0.f); zc.assign(kR1, cd(0, 0)); n1k = 0;
         tk0.assign(kR8, 0.f); tk1.assign(kR8, 0.f); fsk.assign(kR8, 0.f);
         prof.assign(1000, 0.f); prof100.assign(1000, 0.f); pT0.assign(8000, 0.f); pT1.assign(8000, 0.f); profSecs = 0;
@@ -166,6 +170,7 @@ struct TimeReceiver::Impl {
             const double am = std::abs(x);
             dc += (am - dc) * (j < 800 ? 0.01 : 1.0 / 4000);
             const double au = am - dc;
+            if (listen.on.load()) aud.push_back((float)std::max(-1.0, std::min(1.0, au / std::max(dc, 1e-9) * 0.8)));
             const cd s1 = sub100.push(au * m100.next());
             const float a0 = (float)(std::abs(t0.push(au * m1000.next())) / tickL);
             const float a1 = (float)(std::abs(t1.push(au * m1200.next())) / tickL);
@@ -177,6 +182,13 @@ struct TimeReceiver::Impl {
                 put(fsk, j, (float)(mk - sp));
             }
             if (j % 8 == 7) put(env100, n1k, (float)(std::abs(s1) / kCar));
+        }
+        if (!hf && listen.on.load()) {   // the carrier keyed down for 100 / 200 ms: an 800 Hz tone while it is down
+            const double am = std::abs(x);
+            lfRef += (am > lfRef ? 0.01 : 1.0 / 16000) * (am - lfRef);
+            const double red = lfRef > 1e-9 ? std::max(0.0, std::min(1.0, (1 - am / lfRef) / 0.5)) : 0;
+            audPh = std::remainder(audPh + 2 * kPi * 800 / kW, 2 * kPi);
+            aud.push_back((float)(0.4 * red * std::sin(audPh)));
         }
         if (j % 8 == 7) {
             const float e = (float)(std::abs(c) / kCar);
@@ -596,6 +608,12 @@ void TimeReceiver::setDialHz(double hz) {
     p_->dialHz = hz;
     if (p_->stationReq.load() < 0) p_->resetReq = true;
 }
+void TimeReceiver::setListen(bool on) { p_->listen.on = on; }
+bool TimeReceiver::listening() const { return p_->listen.on.load(); }
+void TimeReceiver::setVolume(float v) { p_->listen.volume = std::max(0.f, std::min(1.f, v)); }
+void TimeReceiver::setMuted(bool m) { p_->listen.muted = m; }
+void TimeReceiver::setSilent(bool s) { p_->listen.silent = s; }
+void TimeReceiver::setListenTap(std::function<void(const float* x, size_t n)> cb) { p_->listen.setTap(std::move(cb)); }
 void TimeReceiver::setStation(int s) { if (s != p_->stationReq.exchange(s)) p_->resetReq = true; }
 void TimeReceiver::setPref60(int s) { if (s != p_->pref60.exchange(s) && p_->stationReq.load() < 0) p_->resetReq = true; }
 void TimeReceiver::setClockMode(int mode, double originSec) { p_->clockOrigin = originSec; p_->clockMode = mode; }
@@ -646,6 +664,7 @@ void TimeReceiver::feed(const cf32* x, size_t n) {
         }
         if (m.tNow() >= m.nextReport) { m.nextReport += 0.25; m.report(); }
     }
+    if (!m.aud.empty()) { m.listen.play(m.aud.data(), m.aud.size()); m.aud.clear(); }
     if (m.clockMode.load() == 1) {   // the earliest arrival over the last half minute stands for sample 0's time
         const double w = wallNow();
         const double v = w - (double)m.nIn / r;

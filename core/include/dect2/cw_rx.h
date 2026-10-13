@@ -7,7 +7,7 @@
 // level, with hysteresis. The key-down / key-up durations go to the timing decoder (cw_morse.h): speed 5 - 50 WPM followed from the
 // dot / dash clusters, Farnsworth spacing, prosigns. A signal that stays silent for 30 s is dropped (unless it is the focus).
 //
-// The focus (setFocusHz, a click on the waterfall) is the signal of the big text view; it can have a sidetone: a 700 Hz tone keyed by its
+// The focus (setFocusHz, a click on the waterfall) is the signal of the big text view; it can have a sidetone: a tone (400 - 1000 Hz, 700 default) keyed by its
 // decoder, off by default (setSidetone).
 //
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
@@ -50,7 +50,7 @@ public:
     void setVolume(float v);
     void setMuted(bool m);
     void setSilent(bool s);              // decode but do not open the sound device
-    void setSidetoneTap(std::function<void(const float* stereo, size_t frames)> cb);   // tests: the 48 kHz sidetone
+    void setSidetoneTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz sidetone (mono)
 
 private:
     struct Impl;

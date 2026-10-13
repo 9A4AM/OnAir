@@ -46,6 +46,13 @@ public:
     std::string saveResults() const;                     // for the results file (results_io.h)
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
+    // "Listen": HF stations (WWV, CHU...) play their AM audio (ticks, voice); LF stations (DCF77...) a 800 Hz tone keyed by the carrier. Off by default
+    void setListen(bool on);
+    bool listening() const;
+    void setVolume(float v);
+    void setMuted(bool m);
+    void setSilent(bool s);                              // decode but do not open the sound device
+    void setListenTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz audio (also when silent)
 
 private:
     struct Impl;

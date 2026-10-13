@@ -648,6 +648,10 @@ void tab(App& a) {
     }
     ImGui::SameLine();
     if (ImGui::SmallButton("clear")) a.engine.marine().clearMessages();
+    if (S.view == 0 || S.view == 1) {   // NAVTEX and DSC: hear the FSK tones (fax has its own control in its view)
+        ImGui::SameLine(0, 14 * gUi);
+        listenControls(a, S.listen, "faxListen", "marfsk", "Play the sideband from the dial up on the sound card (the FSK tones); decoding is the same either way");
+    }
     if (subService(a) == 0 || subService(a) == 1) {   // saving is for NAVTEX messages
     sameLineIf(ImGui::GetFrameHeight() + ImGui::CalcTextSize("Save messages").x + 100 * gUi, 20 * gUi);
     if (ImGui::Checkbox("Save messages", &S.saveNav)) { plat::prefs().setB("marineSaveNavtex", S.saveNav); S.saver.clearError(); S.saveErr.clear(); }
