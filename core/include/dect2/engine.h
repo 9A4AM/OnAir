@@ -18,6 +18,7 @@
 #include "dtmb_rx.h"
 #include "atv_rx.h"
 #include "dmr_rx.h"
+#include "wide_modes.h"
 #include "drm_rx.h"
 #include "adsb_rx.h"
 #include "gnss_rx.h"
@@ -305,6 +306,13 @@ public:
     // Decoded results: the lists every mode keeps (messages, aircraft, vessels, cells, pictures...) live through mode switches, retunes
     // and restarts of the receiver, and are saved to a folder (one file per receiver) so the next run starts with them. Only a mode's
     // Clear empties them. Any thread.
+    // Whole-span decoding (DMR, M17, D-STAR, NXDN, dPMR, P25): one decoder per carrier found in the captured span instead of the tuned channel only.
+    // Takes effect at once; the single-channel receiver is untouched while it is on. Needs a restart-free toggle: the carriers appear within a second.
+    void setWideDecode(bool on) { wideOn_.store(on); for (auto& v : wideSeq_) v = 0; }
+    bool wideDecode() const { return wideOn_.load(); }
+    void setWideMuted(bool m) { wide_.setMuted(m); }
+    void setWideSelected(int carrierId) { wide_.setSelected(carrierId); }   // the carrier whose sound plays and whose detail shows (0: the best locked)
+    static bool wideSupported(int analysisMode) { return WideModes::supports(analysisMode); }
     void clearResults(int stdMode);                      // the Clear of a mode's screen: every list of its receiver
     int loadResults(const std::string& dir);             // the lists of the last run (a file of another build is discarded); the receivers restored
     int saveResults(const std::string& dir);             // the receivers whose lists changed since the last save (or load); the files written
@@ -403,6 +411,9 @@ private:
     DtmbReceiver rxDtmb_;
     AtvReceiver rxAtv_;
     DmrReceiver rxDmr_;
+    WideModes wide_;
+    std::atomic<bool> wideOn_{false};
+    uint64_t wideSeq_[64] = {};
     DrmReceiver rxDrm_;
     AdsbReceiver rxAdsb_;
     GnssReceiver rxGnss_;

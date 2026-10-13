@@ -249,6 +249,9 @@ struct App {
     int atvNbtv = 0;          // analog TV: 0 television, 1 NBTV / mechanical TV on AM, 2 the same on narrow FM (the audio is the picture)
     int atvNbtvLines = 32;    // NBTV / mechanical: lines (24 .. 240) and pictures a second; 32 at 12.5 is the NBTVA standard
     float atvNbtvFps = 12.5f;
+    bool wideDecode = false;  // "Whole span": decode every carrier in the visible span, not only the tuned one (only for modes that opt in: modeSupportsWide)
+    uint64_t wideFamMask = 0; // the switch per mode family (bit = family); wideDecode is the current mode's bit
+    int wideSel = 0;          // the carrier the sound and the detail follow (0: the best locked one)
     bool atvWide = false;     // analog TV: system E chosen (14 MHz channel, 10 MHz of video): the radio runs at 20 Msps
     bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
@@ -579,6 +582,13 @@ int adcBitsFor(const DeviceInfo& d, double rateHz);
 void ingestSpectrum(App& a);
 void ingestRx(App& a);
 std::vector<double> xs(const App& a);
+// Whole-span decoding (modeui.cpp). A mode opts in with registerWideMode(family); the switch is drawn by the spectrum (plots.cpp) for those only.
+bool modeSupportsWide(int family);
+void registerWideMode(int family);
+bool wideActive(const App& a);                          // the switch is on for this mode and the engine runs it
+void wideSync(App& a);                                  // once a frame: pushes the switch, the selected carrier and the mute to the engine
+void wideCarrierCell(const App& a, int carrierId, double relHz);   // a table cell with the carrier's frequency (MHz); "-" for a single channel
+void wideCarriersTable(App& a, float h);                // the carriers table: click selects (sound, detail), double click tunes
 double radioCenterMhz(const App& a);   // where the radio is tuned: the frequency plus the mode's tuneOffsetHz (a file source: the frequency as typed)
 void applyOutputs(App& a);
 std::string channelLabel(const SavedChannel& c);

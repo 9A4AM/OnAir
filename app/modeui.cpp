@@ -213,3 +213,58 @@ void secondModeTabs(App& a) {
     if (mu && mu->tab) { SecondScope s(a); mu->tab(a); }
     ImGui::EndTabItem();
 }
+
+// ---------------------------------------------------------------- whole-span decoding
+#include <set>
+static std::set<int>& wideFamilies() {
+    static std::set<int> s = {9, 31, 33, 38, 45, 50};   // DMR, M17, D-STAR, NXDN, dPMR, P25: one decoder per carrier (core/wide_modes.h)
+    return s;
+}
+bool modeSupportsWide(int family) { return wideFamilies().count(family) > 0; }
+void registerWideMode(int family) { wideFamilies().insert(family); }
+bool wideActive(const App& a) { return a.wideDecode && modeSupportsWide(a.family) && a.engine.running() && Engine::wideSupported(a.family + 1) && a.rx.standard == a.family + 1; }
+
+void wideSync(App& a) {
+    static int lastFam = -1; static bool lastOn = false, lastMuted = false; static int lastSel = -1;
+    if (a.family != lastFam) {   // the switch is kept per mode
+        lastFam = a.family;
+        a.wideDecode = a.family >= 0 && a.family < 64 && ((a.wideFamMask >> a.family) & 1);
+        a.wideSel = 0; lastSel = -1;
+    }
+    const bool on = a.wideDecode && modeSupportsWide(a.family) && Engine::wideSupported(a.family + 1);
+    if (on != lastOn) { a.engine.setWideDecode(on); lastOn = on; a.wideSel = 0; lastSel = -1; }
+    if (!on) return;
+    if (a.wideSel != lastSel) { a.engine.setWideSelected(a.wideSel); lastSel = a.wideSel; }
+    if (a.muted != lastMuted) { a.engine.setWideMuted(a.muted); lastMuted = a.muted; }
+}
+
+void wideCarrierCell(const App& a, int carrierId, double relHz) {
+    if (carrierId <= 0) { ImGui::TextDisabled("-"); return; }
+    ImGui::Text("%.4f", radioCenterMhz(a) + relHz / 1e6);
+}
+
+void wideCarriersTable(App& a, float h) {
+    if (!wideActive(a)) return;
+    ImGui::TextDisabled("%s", tr("Carriers in the span (click: listen and show; double click: tune to it)"));
+    if (!ImGui::BeginTable("##widecars", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, h > 0 ? h : 140 * gUi))) return;
+    ImGui::TableSetupScrollFreeze(0, 1);
+    ImGui::TableSetupColumn(tr("Carrier MHz")); ImGui::TableSetupColumn(tr("Level dB")); ImGui::TableSetupColumn(tr("SNR dB"));
+    ImGui::TableSetupColumn(tr("State")); ImGui::TableSetupColumn(tr("Seen")); ImGui::TableSetupColumn(tr("Details"), ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    static const char* kState[3] = {"searching", "partial", "locked"};
+    for (const WideCarrier& c : a.rx.wide) {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        char b[48]; snprintf(b, sizeof b, "%.4f##wc%d", radioCenterMhz(a) + c.hz / 1e6, c.id);
+        if (ImGui::Selectable(b, c.selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick)) {
+            a.wideSel = c.id;
+            if (ImGui::IsMouseDoubleClicked(0)) tuneFreq(a, radioCenterMhz(a) + c.hz / 1e6);
+        }
+        ImGui::TableNextColumn(); ImGui::Text("%.1f", c.levelDb);
+        ImGui::TableNextColumn(); ImGui::Text("%.1f", c.snrDb);
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(tr(kState[std::max(0, std::min(2, c.state))]));
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(c.active ? tr("on air") : tr("held"));
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(c.info.c_str());
+    }
+    ImGui::EndTable();
+}

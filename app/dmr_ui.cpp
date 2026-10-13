@@ -158,8 +158,9 @@ void slotCard(const App& a, int idx, float w, float h) {
 void callTable(App& a, float h) {
     const DmrTelemetry& t = a.rx.dmr;
     const bool on = live(a);
-    if (!ImGui::BeginTable("##dmrcalls", 10, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0, h))) return;
+    if (!ImGui::BeginTable("##dmrcalls", 10 + (wideActive(a) ? 1 : 0), ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0, h))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
+    if (wideActive(a)) ImGui::TableSetupColumn("Carrier", ImGuiTableColumnFlags_WidthFixed, 66 * gUi);
     ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 48 * gUi);
     ImGui::TableSetupColumn("Slot", ImGuiTableColumnFlags_WidthFixed, 34 * gUi);
     ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 96 * gUi);
@@ -177,6 +178,7 @@ void callTable(App& a, float h) {
             ImGui::TableNextRow();
             if (c.active) ImGui::PushStyleColor(ImGuiCol_Text, pal::okGreen());
             else if (c.emergency) ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
+            if (wideActive(a)) { ImGui::TableNextColumn(); wideCarrierCell(a, c.carrierId, c.carrierHz); }
             ImGui::TableNextColumn(); ImGui::TextUnformatted(clockText(c.startSec).c_str());
             ImGui::TableNextColumn(); if (c.slot) ImGui::Text("%d", c.slot); else ImGui::TextUnformatted("-");
             ImGui::TableNextColumn(); ImGui::TextUnformatted(kindName(c.kind));
@@ -196,8 +198,9 @@ void callTable(App& a, float h) {
 void messageTable(App& a, float h) {
     const DmrTelemetry& t = a.rx.dmr;
     const bool on = live(a);
-    if (!ImGui::BeginTable("##dmrmsg", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0, h))) return;
+    if (!ImGui::BeginTable("##dmrmsg", 7 + (wideActive(a) ? 1 : 0), ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0, h))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
+    if (wideActive(a)) ImGui::TableSetupColumn("Carrier", ImGuiTableColumnFlags_WidthFixed, 66 * gUi);
     ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 48 * gUi);
     ImGui::TableSetupColumn("Slot", ImGuiTableColumnFlags_WidthFixed, 34 * gUi);
     ImGui::TableSetupColumn("From", ImGuiTableColumnFlags_WidthFixed, 74 * gUi);
@@ -210,6 +213,7 @@ void messageTable(App& a, float h) {
         for (size_t i = t.messages.size(); i-- > 0;) {
             const DmrMessage& m = t.messages[i];
             ImGui::TableNextRow();
+            if (wideActive(a)) { ImGui::TableNextColumn(); wideCarrierCell(a, m.carrierId, m.carrierHz); }
             ImGui::TableNextColumn(); ImGui::TextUnformatted(clockText(m.sec).c_str());
             ImGui::TableNextColumn(); if (m.slot) ImGui::Text("%d", m.slot); else ImGui::TextUnformatted("-");
             ImGui::TableNextColumn(); ImGui::TextUnformatted(idText(m.src, true).c_str());
@@ -400,6 +404,7 @@ void spectrumPlotDmr(const DmrTelemetry& t, bool on, ImVec2 sz) {
 }
 
 void receiver(App& a) {
+    wideCarriersTable(a, 0);
     const DmrTelemetry& t = a.rx.dmr;
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;

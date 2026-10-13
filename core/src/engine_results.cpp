@@ -112,6 +112,7 @@ std::vector<std::string> Engine::resultNames() const {
 void Engine::clearResults(int stdMode) {
     const int a = stdMode >= 2 ? stdMode - 1 : 0;
     for (const ResultSlot& s : resultSlots()) if (s.act == a) s.clear();
+    if (WideModes::supports(a)) wide_.clearResults();
     refreshIdle();
 }
 

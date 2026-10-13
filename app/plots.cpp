@@ -138,7 +138,9 @@ static void channelBand(const App& a, bool fill) {
 
 // "BW 7 MHz auto" in the top right corner of the spectrum: the width the band shows, and a click opens channelWidthPopup().
 // Left out when it would cover yLabel, which the plot draws in its top left corner.
+static float gBwBtnW = 0;   // width of the BW button as drawn this frame (0: none), for the switch beside it
 static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const char* yLabel) {
+    gBwBtnW = 0;
     const ChanWidth cw = channelWidth(a);
     if (cw.mhz <= 0) return;
     char b[64];
@@ -146,6 +148,7 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
     const ImVec2 sz = ImGui::CalcTextSize(b, nullptr, true);
     const float w = sz.x + 2 * ImGui::GetStyle().FramePadding.x, m = 4 * gUi;
     if (plotSize.x < w + 2 * m + ImGui::CalcTextSize(yLabel).x + 12 * gUi || plotSize.y < sz.y + 2 * m) return;   // no room
+    gBwBtnW = w + m;
     const ImVec2 keep = ImGui::GetCursorScreenPos();
     ImGui::SetCursorScreenPos(ImVec2(plotMin.x + plotSize.x - w - m, plotMin.y + m));
     ImVec4 bg = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg); bg.w = 0.85f;
@@ -160,6 +163,41 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y + 2 * gUi), ImGuiCond_Appearing, ImVec2(1, 0));   // under the button, right-aligned
     if (ImGui::BeginPopup("##bwpop")) { channelWidthPopup(a); ImGui::EndPopup(); }
     ImGui::SetCursorScreenPos(keep);
+}
+
+// "Whole span" switch left of the BW button, for the modes that declare support (modeSupportsWide): decode every signal in the span
+static void wideSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
+    if (!modeSupportsWide(a.family)) return;
+    const char* lb = a.wideDecode ? "Whole span: on###widebtn" : "Whole span###widebtn";
+    const ImVec2 sz = ImGui::CalcTextSize(lb, nullptr, true);
+    const float w = sz.x + 2 * ImGui::GetStyle().FramePadding.x, m = 4 * gUi;
+    const float x = plotMin.x + plotSize.x - gBwBtnW - w - m;
+    if (x < plotMin.x + 40 * gUi || plotSize.y < sz.y + 2 * m) return;   // no room
+    const ImVec2 keep = ImGui::GetCursorScreenPos();
+    ImGui::SetCursorScreenPos(ImVec2(x, plotMin.y + m));
+    ImVec4 bg = a.wideDecode ? pal::accent(0.55f) : ImGui::GetStyleColorVec4(ImGuiCol_FrameBg); if (!a.wideDecode) bg.w = 0.85f;
+    ImGui::PushStyleColor(ImGuiCol_Button, bg);
+    if (ImGui::SmallButton(lb)) {
+        a.wideDecode = !a.wideDecode;
+        if (a.family >= 0 && a.family < 64) { if (a.wideDecode) a.wideFamMask |= 1ull << a.family; else a.wideFamMask &= ~(1ull << a.family); }
+        savePrefs(a);
+    }
+    ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("decode every signal in the visible span, not just the tuned one"));
+    ImGui::SetCursorScreenPos(keep);
+}
+
+// The carriers the whole-span decoder follows: a thin line and the frequency on the spectrum
+static void wideMarkers(App& a) {
+    if (!wideActive(a)) return;
+    const double c = radioCenterMhz(a);
+    int k = 0;
+    for (const WideCarrier& w : a.rx.wide) {
+        const double f = c + w.hz / 1e6, xx[2] = {f, f}, yy[2] = {a.yMin, a.yMax};
+        plt::Spec s; s.LineColor = w.selected ? pal::accent(0.9f) : ImVec4(0.55f, 0.85f, 0.55f, w.active ? 0.6f : 0.3f); s.LineWeight = w.selected ? 1.5f : 1.f;
+        char id[24]; snprintf(id, sizeof id, "##wc%d", k++);
+        plt::PlotLine(id, xx, yy, 2, s);
+    }
 }
 
 // The spectrum and the waterfall share one frequency axis: panning or zooming either moves both, and a retune brings both back to the band.
@@ -249,12 +287,13 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
                 }
             }
         }
+        wideMarkers(a);
         clickToTune(a, 0);
         if (plt::IsPlotHovered() && !ImGui::IsMouseDown(0) && !ImGui::IsMouseDown(1) && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && false) {}
         if (plt::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { ctxMhz = plt::GetPlotMousePos().x; openCtx = true; }
         plt::EndPlot();
     }
-    if (drawn) channelWidthButton(a, plotMin, plotSize, kYLabel);
+    if (drawn) { channelWidthButton(a, plotMin, plotSize, kYLabel); wideSwitch(a, plotMin, plotSize); }
     // right-click: what is this signal?
     if (openCtx) ImGui::OpenPopup("##specctx");
     if (ImGui::BeginPopup("##specctx")) {

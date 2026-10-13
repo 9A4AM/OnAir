@@ -171,6 +171,7 @@ void drawUI(App& a, ImVec2 disp) {
     dabHistory(a);
     fmHistory(a);
     if (const ModeUi* mu = modeUi(a.family)) if (mu->tick) mu->tick(a);
+    wideSync(a);
     secondModeTick(a);
     dabScanStep(a);
     fmScanStep(a);

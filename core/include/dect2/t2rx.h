@@ -1,6 +1,7 @@
 // DVB-T2 receiver front-end (phase 1): P1 detection and S1/S2 decoding, guard-interval detection,
 // symbol synchronisation, CFO / timing tracking and raw OFDM cell extraction.
 #pragma once
+#include "wide_bank.h"
 #include <string>
 #include "ring.h"
 #include "atsc_tel.h"
@@ -97,6 +98,7 @@ struct P1Info {
 };
 
 struct RxTelemetry {
+    std::vector<WideCarrier> wide;   // whole-span decoding: the carriers table (empty otherwise)
     AtscTelemetry atsc;          // valid when standard == 2
     DabTelemetry dab;            // valid when standard == 3
     FmTelemetry fm;              // valid when standard == 6

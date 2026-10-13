@@ -212,9 +212,11 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxGnss_.configure(rate_);
     rxGnss_.setLogCallback([this](const std::string& s) { log(s); });
     rxGnss_.setClockCompare(dev.isRadio());   // the satellites' UTC against the computer's clock: a radio only (a file or the simulator keeps its own date)
+    wide_.setLogCallback([this](const std::string& s) { log(s); });
     {   // a narrow channel sits tuneOffsetHz away from the radio's centre (a file holds the channel as recorded: no offset)
         const ModeTuning* mto = modeTuning(stdMode_.load());
         const double o = mto && dev.kind != DeviceInfo::File ? -mto->tuneOffsetHz : 0.0;
+        for (int wm : {10, 32, 34, 39, 46, 51}) wide_.configure(wm, rate_, o);
         rxSonde_.setSignalOffset(o);
         rxAis_.setSignalOffset(o);
         rxMarine_.setSignalOffset(o);
@@ -789,6 +791,7 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
 void Engine::feedRx(const cf32* x, size_t n) { feedReceiver(activeStd_.load(), x, n); }
 
 void Engine::feedReceiver(int a, const cf32* x, size_t n) {
+    if (wideOn_.load(std::memory_order_relaxed) && WideModes::supports(a)) { wide_.feed(a, x, n); return; }   // whole-span decoding: one decoder per carrier
     if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else if (a == 33) rxCell_.feed(x, n); else if (a == 35) rxCw_.feed(x, n); else if (a == 34) rxDstar_.feed(x, n); else if (a == 36) rxHfdl_.feed(x, n); else if (a == 39) rxNxdn_.feed(x, n); else if (a == 46) rxDpmr_.feed(x, n); else if (a == 40) rxGsmr_.feed(x, n); else if (a == 37) rxPsk_.feed(x, n); else if (a == 38) rxJs8_.feed(x, n); else if (a == 42) rxSpecx_.feed(x, n); else if (a == 43) rxSpecan_.feed(x, n); else if (a == 41) rxDvbc_.feed(x, n); else if (a == 45) rxOrb_.feed(x, n); else if (a == 44) rxUplink_.feed(x, n); else if (a == 47) rxTetra_.feed(x, n); else if (a == 50) rxAle_.feed(x, n); else if (a == 48) rxMac_.feed(x, n); else if (a == 49) rxAstro_.feed(x, n); else if (a == 51) rxP25_.feed(x, n); else if (a == 52) rxBle_.feed(x, n); else if (a == 53) rxIono_.feed(x, n); else if (a == 54) rxQo100_.feed(x, n); else if (a == 55) rxWifi_.feed(x, n); else if (a == 56) rxGeneral_.feed(x, n); else if (a == 59) rxTime_.feed(x, n); else if (a == 57) rxRid_.feed(x, n); else if (a == 60) rxMeteor_.feed(x, n); else if (a == 58) rxNr_.feed(x, n); else if (a == 61) rxGoes_.feed(x, n); else if (a == 62) rxCube_.feed(x, n); else if (a == 63) rxGs_.feed(x, n); else if (a == 64) rxVdes_.feed(x, n); else if (a == 65) rxHrpt_.feed(x, n); else if (a == 66) rxZb_.feed(x, n); else if (a == 67) rxFlarm_.feed(x, n); else if (a == 68) rxHfb_.feed(x, n); else if (a == 69) rxDji_.feed(x, n); else if (a == 70) rxNb_.feed(x, n); else if (a == 71) rxHl_.feed(x, n); else if (a == 73) rxCd_.feed(x, n); else rx_.feed(x, n);
 }
 
@@ -827,6 +830,7 @@ void Engine::bandwidthStep(const SpectrumFrame& f, const RxTelemetry& t, bool tL
 
 // A fresh start of the receiver of active standard a (the first mode switching to it, the second mode starting)
 void Engine::resetReceiver(int a) {
+    if (WideModes::supports(a)) wide_.reset();
     switch (a) {
     case 0: rx_.reset(); break;
     case 1: rxT_.reset(); break;
@@ -1249,6 +1253,8 @@ void Engine::spectrumLoop() {
 // The report of the receivers from DVB-S on (the first mode and the second, each with its own report numbers): 1 = a new one in t,
 // 0 = none new, -1 = a is not one of them
 int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
+    if (wideOn_.load(std::memory_order_relaxed) && WideModes::supports(a)) return wide_.telemetry(a, t, wideSeq_[a & 63]) ? 1 : 0;
+    t.wide.clear();
     if (a == 7) {
         DvbsTelemetry mt;
         if (rxDvbs_.telemetry(mt, seqs[0])) {
@@ -2499,6 +2505,7 @@ void Engine::configureReceiver(int a, double r) {
 }
 
 void Engine::muteReceiver(int a, bool m) {
+    if (WideModes::supports(a)) wide_.setMuted(m);
     switch (a) {
     case 10: rxDmr_.setMuted(m); break;
     case 26: rxHfdig_.setMuted(m); break;

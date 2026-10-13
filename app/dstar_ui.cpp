@@ -115,13 +115,14 @@ void callsView(App& a) {
         }
         ImGui::SetClipboardText(txt.c_str());
     }
-    if (!ImGui::BeginTable("##dstarlog", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    if (!ImGui::BeginTable("##dstarlog", 8 + (wideActive(a) ? 1 : 0), ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
-    ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("MY"); ImGui::TableSetupColumn("UR"); ImGui::TableSetupColumn("RPT1");
+    if (wideActive(a)) ImGui::TableSetupColumn("Carrier"); ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("MY"); ImGui::TableSetupColumn("UR"); ImGui::TableSetupColumn("RPT1");
     ImGui::TableSetupColumn("RPT2"); ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch); ImGui::TableSetupColumn("Length"); ImGui::TableSetupColumn("BER");
     ImGui::TableHeadersRow();
     auto row = [&](const dect2::DstarCall& e, bool on) {
         ImGui::TableNextRow();
+        if (wideActive(a)) { ImGui::TableNextColumn(); wideCarrierCell(a, e.carrierId, e.carrierHz); }
         const ImVec4 c = on ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_Text);
         ImGui::TableNextColumn(); ImGui::TextColored(c, "%s", on ? "on air" : clock(e.wallTime).c_str());
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextColored(c, "%s", myOf(e).c_str()); ImGui::PopFont();
@@ -257,6 +258,7 @@ void list(App& a) {
 }
 
 void receiver(App& a) {
+    wideCarriersTable(a, 0);
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const dect2::DstarTelemetry& t = a.rx.dstar;
     kvRow(a, "state", "%s", dect2::dstarSummary(t).c_str());
