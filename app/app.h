@@ -33,6 +33,7 @@
 #include "dect2/direction.h"
 #include "dect2/teletext.h"
 #include "dect2/feeds.h"
+#include "dect2/pskreporter.h"
 #include "theme.h"
 #include "gfx.h"
 #include "icons.h"
@@ -244,6 +245,7 @@ struct App {
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
+    dect2::PskReporterConfig pskr;   // PSK Reporter spots (off by default; feeds_ui.cpp), saved with the preferences
     bool lightUi = false;     // View > Light: every colour drawn with its lightness turned over (dark on white), hues kept (main.cpp)
     int family = 0;           // 0 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.0, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 10 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 20 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 30 VOR / ILS, 31 M17, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 42 spectrum analyser, 38 NXDN, 40 DVB-C, 45 dPMR, 44 Orbcomm, 43 Mode S uplink, 46 TETRA, 49 HF ALE, 47 MAC, 48 radio astronomy, 50 P25, 51 Bluetooth LE, 52 ionospheric sounders, 53 QO-100, 54 Wi-Fi networks, 55 general receiver, 61 CubeSat telemetry (6 and up: see ModeUi; engine standard code = family + 2)
     int sub = 0;              // 1 .. kNumSubModes: the protocol entry (dect2::subModes() index + 1) of HF digital, mesh, pagers, marine or VOR / ILS; 0 none

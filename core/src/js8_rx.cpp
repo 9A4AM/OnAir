@@ -1,5 +1,6 @@
 // JS8Call receiver (see js8_rx.h).
 #include "dect2/js8_rx.h"
+#include "dect2/pskreporter.h"
 #include "dect2/results_io.h"
 #include "dect2/js8_tel.h"
 #include "dect2/js8_proto.h"
@@ -581,6 +582,7 @@ struct Js8Receiver::Impl {
         std::sort(order.begin(), order.end(), [&](size_t a, size_t b) { return out[a].hz < out[b].hz; });
         for (size_t i : order) {
             pub.decodes.push_back(out[i]);
+            if (!out[i].from.empty() && PskReporter::get().want()) PskReporter::get().spot("JS8", out[i].hz, out[i].snrDb, out[i].from, out[i].grid);
             station(out[i], fr[i]);
             assemble(out[i], fr[i], j.slot);
         }

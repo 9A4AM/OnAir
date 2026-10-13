@@ -6,6 +6,7 @@
 #include "dect2/cw_morse.h"
 #include "dect2/marine_dsp.h"
 #include "ham_listen.h"
+#include "dect2/pskreporter.h"
 #include "dect2/fftutil.h"
 #include <algorithm>
 #include <atomic>
@@ -282,7 +283,12 @@ struct PskReceiver::Impl {
         if (ch == ' ' || ch == '\r' || ch == '\n') {
             std::string flat = c.text;
             std::replace(flat.begin(), flat.end(), '\n', ' ');
-            c.calls = cw::callsigns(flat);
+            const std::vector<std::string> now = cw::callsigns(flat);
+            if (PskReporter::get().want())
+                for (const std::string& k : now)
+                    if (std::find(c.calls.begin(), c.calls.end(), k) == c.calls.end() && pskr::sendsInText(flat, k))
+                        PskReporter::get().spot(mode == 0 ? "PSK31" : mode == 1 ? "PSK63" : "PSK", c.f, (float)std::max(-5.0, std::min(40.0, 10 * std::log10(1.0 / std::max(1e-4f, c.errVar)))), k);
+            c.calls = now;
         }
     }
 

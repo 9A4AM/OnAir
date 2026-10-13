@@ -6,6 +6,7 @@
 // (non-coherent likelihoods) -> LDPC / CRC (FT) or deinterleaving and Fano (WSPR) -> the message; each decoded signal is rebuilt and
 // subtracted from the slot, and the search runs again on what is left.
 #include "dect2/hfdig_ftx.h"
+#include "dect2/pskreporter.h"
 #include "dect2/fftutil.h"
 #include "hfdig_ftx_int.h"
 #include "hfdig_usb.h"
@@ -886,6 +887,7 @@ struct HfdigFtx::Impl {
             std::sort(dec.begin(), dec.end(), [](const FtxDecode& a, const FtxDecode& b) { return a.snrDb > b.snrDb; });
             for (const auto& d : dec) {
                 tel.decodes.push_back(d);
+                if (!d.call.empty() && PskReporter::get().want()) PskReporter::get().spot(ftxModeName(m), d.hz, d.snrDb, d.call, d.grid);
                 tel.total++;
                 tel.perMode[m]++;
             }

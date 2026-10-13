@@ -2,6 +2,7 @@
 // Every feed is off until the user turns it on; the network work is in core (feeds.cpp).
 #include "app.h"
 #include <cstdio>
+#include <ctime>
 
 namespace {
 const char* kKeys[dect2::kNumFeeds] = {"feedSbs", "feedBeast", "feedAis", "feedAprsIs", "feedKiss", "feedAcars", "feedVdl2"};
@@ -56,6 +57,9 @@ void loadFeedPrefs(App& a) {
     c.aprsCall = d.getS("feedAprsCall", ""); c.aprsPass = d.getS("feedAprsPass", "");
     c.aprsServer = d.getS("feedAprsServer", c.aprsServer); c.aprsServerPort = (int)d.getI("feedAprsServerPort", c.aprsServerPort);
     c.stationId = d.getS("feedStationId", c.stationId);
+    dect2::PskReporterConfig& r = a.pskr;
+    r.on = d.getB("pskrOn", false); r.call = d.getS("pskrCall", ""); r.locator = d.getS("pskrLocator", ""); r.antenna = d.getS("pskrAntenna", "");
+    if (r.on) dect2::PskReporter::get().configure(r);
     bool any = false;
     for (bool o : c.on) any = any || o;
     if (any) dect2::Feeds::get().configure(c);
@@ -72,6 +76,7 @@ void saveFeedPrefs(const App& a) {
     d.setS("feedAprsCall", c.aprsCall); d.setS("feedAprsPass", c.aprsPass);
     d.setS("feedAprsServer", c.aprsServer); d.setI("feedAprsServerPort", c.aprsServerPort);
     d.setS("feedStationId", c.stationId);
+    d.setB("pskrOn", a.pskr.on); d.setS("pskrCall", a.pskr.call); d.setS("pskrLocator", a.pskr.locator); d.setS("pskrAntenna", a.pskr.antenna);
 }
 
 void feedsWindow(App& a) {
@@ -136,6 +141,42 @@ void feedsWindow(App& a) {
     statusLine(dect2::kFeedVdl2, false);
     ImGui::PopID();
     changed |= textField(N_("Station ID"), c.stationId, 0, 120);
+
+    ImGui::SeparatorText(tr("PSK Reporter"));
+    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(380 * gUi);
+        ImGui::TextUnformatted(tr("Sends the FT8, FT4, FT2, WSPR, JS8Call, PSK31 and CW stations you decode to pskreporter.info, so they show on its public map and statistics. "
+            "A report is: the sender's callsign, frequency, SNR, mode, its locator when the message has one, and when it was heard; with your callsign, locator, antenna text and 'OnAir'. "
+            "Reports are batched and sent every 5 minutes; the same station on the same band is sent once per 10 minutes. Nothing is sent until you tick the box. "
+            "Spots are public: use your own valid amateur radio callsign. CW and PSK31 are only reported when the text says 'DE callsign'."));
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+    dect2::PskReporterConfig& r = a.pskr;
+    bool pc = false;
+    pc |= ImGui::Checkbox(tr("Send spots to PSK Reporter (pskreporter.info)"), &r.on);
+    ImGui::Indent();
+    pc |= textField(N_("Your callsign"), r.call, ImGuiInputTextFlags_CharsUppercase, 120);
+    pc |= textField(N_("Your locator"), r.locator, ImGuiInputTextFlags_CharsUppercase, 90);
+    pc |= textField(N_("Antenna"), r.antenna, 0, 200);
+    ImGui::Unindent();
+    {
+        const dect2::PskReporterStatus s = dect2::PskReporter::get().status();
+        ImGui::Indent();
+        if (!r.on) ImGui::TextDisabled("%s", tr("off"));
+        else {
+            ImGui::TextColored(s.active ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), tr("%s, %llu spots sent in %llu packets, %llu duplicates skipped"), s.state.c_str(), (unsigned long long)s.spotsSent, (unsigned long long)s.packets, (unsigned long long)s.duplicates);
+            if (s.lastSend) { char b[32]; const time_t t = (time_t)s.lastSend; strftime(b, sizeof b, "%H:%M:%S", localtime(&t)); ImGui::Text(tr("last send %s"), b); }
+            if (!s.lastError.empty()) ImGui::TextColored(pal::badRed(), "%s", s.lastError.c_str());
+        }
+        ImGui::PushTextWrapPos(460 * gUi);
+        ImGui::TextDisabled("%s", tr("Spots are public. A valid amateur radio callsign is required; the dial frequency is the tuned frequency."));
+        ImGui::PopTextWrapPos();
+        ImGui::Unindent();
+    }
+    if (pc) { dect2::PskReporter::get().configure(r); savePrefs(a); }
 
     if (changed) apply(a);
     ImGui::End();

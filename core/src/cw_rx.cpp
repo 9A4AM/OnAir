@@ -3,6 +3,7 @@
 #include "dect2/results_io.h"
 #include "dect2/cw_tel.h"
 #include "dect2/cw_morse.h"
+#include "dect2/pskreporter.h"
 #include "dect2/marine_dsp.h"
 #include "dect2/fftutil.h"
 #include "dect2/audioout.h"
@@ -266,7 +267,12 @@ struct CwReceiver::Impl {
             for (char ch : s) { if (ch == '*') c.bad++; if (ch != ' ') c.chars++; }
             c.text += s;
             if (c.text.size() > kCwTextMax) c.text.erase(0, c.text.size() - kCwTextMax);
-            c.calls = cw::callsigns(c.text);
+            const std::vector<std::string> now = cw::callsigns(c.text);
+            if (PskReporter::get().want())
+                for (const std::string& k : now)
+                    if (std::find(c.calls.begin(), c.calls.end(), k) == c.calls.end() && pskr::sendsInText(c.text, k))
+                        PskReporter::get().spot("CW", c.f, c.lo > 0 ? (float)(20 * std::log10(std::max(1e-6f, c.hi) / c.lo)) : 0.f, k);
+            c.calls = now;
         }
     }
 
