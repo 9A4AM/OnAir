@@ -1,6 +1,124 @@
 // the TV side: player, service list, programme guide, teletext
 #include "app.h"
 
+#include <cctype>
+#include <ctime>
+#include <filesystem>
+
+namespace {
+// <recordings folder>/<service>_<date>.ts
+std::string tvRecordingPath(const std::string& service) {
+    std::string name = service.empty() ? "service" : service;
+    for (char& c : name) if (!(std::isalnum((unsigned char)c) || c == '-' || c == '_' || (unsigned char)c >= 0x80)) c = '_';
+    const std::time_t now = std::time(nullptr);
+    char ts[32];
+    std::strftime(ts, sizeof ts, "%Y%m%d_%H%M%S", std::localtime(&now));
+    std::error_code ec;
+    const std::string dir = plat::dataDir() + "/recordings";
+    std::filesystem::create_directories(dir, ec);
+    return dir + "/" + name + "_" + ts + ".ts";
+}
+
+std::string clockText(double s) { char b[24]; const int t = (int)s; if (t >= 3600) snprintf(b, sizeof b, "%d:%02d:%02d", t / 3600, t / 60 % 60, t % 60); else snprintf(b, sizeof b, "%d:%02d", t / 60, t % 60); return b; }
+
+void tvRecordStart(App& a) {
+    Player& pl = a.engine.player();
+    if (pl.selected() < 0) return;
+    std::string nm = "service";
+    for (const auto& sv : a.ts.services) if (sv.id == pl.selected() && !sv.name.empty()) nm = sv.name;
+    int64_t at = 0;
+    if (a.tvRecAtOn) {   // the next time the clock shows HH:MM
+        std::time_t now = std::time(nullptr); std::tm tmv = *std::localtime(&now);
+        tmv.tm_hour = a.tvRecAtH; tmv.tm_min = a.tvRecAtM; tmv.tm_sec = 0; tmv.tm_isdst = -1;
+        std::time_t t = std::mktime(&tmv);
+        if (t <= now) t += 24 * 3600;
+        at = (int64_t)t;
+    }
+    const std::string path = tvRecordingPath(nm);
+    if (pl.startRecording(path, a.tvRecMin > 0 ? a.tvRecMin * 60.0 : 0.0, at)) { a.tvRecDonePath.clear(); a.tvRecErr.clear(); }
+    else a.tvRecErr = "cannot record: the file cannot be written (" + path + ")";
+}
+
+// Record, timer, pause / live buffer
+void tvRecordRow(App& a) {
+    Player& pl = a.engine.player();
+    const Player::RecStats rs = pl.recording();
+    if (rs.active) a.tvRecWasActive = true;
+    else if (a.tvRecWasActive) {
+        a.tvRecWasActive = false; a.tvRecDonePath = rs.path;
+        char b[96]; snprintf(b, sizeof b, "recorded %s (%.1f MB) to ", clockText(rs.seconds).c_str(), rs.bytes / 1e6);
+        a.engine.log(std::string(b) + rs.path);
+        if (rs.failed) a.engine.log("recording stopped: disk error");
+        if (rs.droppedPackets) a.engine.log("the disk was too slow: " + std::to_string(rs.droppedPackets) + " packets are missing from the recording");
+    }
+    if (rs.active) {
+        char b[96]; snprintf(b, sizeof b, "Stop  %s  %.1f MB##tvrec", clockText(rs.seconds).c_str(), rs.bytes / 1e6);
+        ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
+        if (ImGui::Button(b)) pl.stopRecording();
+        ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stops the recording (R)");
+        if (rs.droppedPackets) { flowNext(4 * gUi); ImGui::TextColored(pal::warnAmber(), "dropped %llu", (unsigned long long)rs.droppedPackets); if (ImGui::IsItemHovered()) ImGui::SetTooltip("The disk was too slow: some packets are missing from the recording."); }
+    } else {
+        ImGui::BeginDisabled(pl.selected() < 0);
+        const ImVec2 p0 = ImGui::GetCursorScreenPos();
+        const float sp = ImGui::CalcTextSize(" ").x;
+        if (ImGui::Button("    Record##tvrec")) tvRecordStart(a);
+        ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(p0.x + ImGui::GetStyle().FramePadding.x + 2.2f * sp, p0.y + ImGui::GetItemRectSize().y * 0.5f), 3.2f * gUi, pl.selected() >= 0 ? ImGui::GetColorU32(pal::badRed()) : IM_COL32(120, 80, 78, 255));
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", pl.selected() < 0 ? "Play a service first" : "Saves this service (its video, audio and subtitles only) as a .ts file in the recordings folder (R)");
+    }
+    flowNext(6 * gUi);
+    ImGui::BeginDisabled(rs.active);
+    ImGui::SetNextItemWidth(70 * gUi);
+    if (ImGui::InputInt("min##tvrecmin", &a.tvRecMin, 0, 0)) { a.tvRecMin = std::max(0, std::min(24 * 60, a.tvRecMin)); plat::prefs().setI("tvRecMin", a.tvRecMin); }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Stop the recording after this many minutes (0 = no limit)");
+    flowNext(6 * gUi);
+    if (ImGui::Checkbox("at##tvrecat", &a.tvRecAtOn)) plat::prefs().setB("tvRecAtOn", a.tvRecAtOn);
+    ImGui::SameLine(0, 4 * gUi);
+    ImGui::SetNextItemWidth(44 * gUi);
+    if (ImGui::InputInt("##tvrech", &a.tvRecAtH, 0, 0)) { a.tvRecAtH = std::max(0, std::min(23, a.tvRecAtH)); plat::prefs().setI("tvRecAtH", a.tvRecAtH); }
+    ImGui::SameLine(0, 2 * gUi); ImGui::TextUnformatted(":"); ImGui::SameLine(0, 2 * gUi);
+    ImGui::SetNextItemWidth(44 * gUi);
+    if (ImGui::InputInt("##tvrecm", &a.tvRecAtM, 0, 0)) { a.tvRecAtM = std::max(0, std::min(59, a.tvRecAtM)); plat::prefs().setI("tvRecAtM", a.tvRecAtM); }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Stop the recording at this clock time (the next time it shows it)");
+    if (!a.tvRecDonePath.empty() && !rs.active) {
+        flowNext(6 * gUi);
+        if (ImGui::SmallButton("Show recording")) dect2::openUrl(a.tvRecDonePath.substr(0, a.tvRecDonePath.find_last_of("/\\")));
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", a.tvRecDonePath.c_str());
+    }
+    flowBreak();
+    // pause / live buffer
+    const Player::ShiftStats ss = pl.shift();
+    ImGui::BeginDisabled(pl.selected() < 0);
+    if (ImGui::Button(ss.paused ? "Play##tvps" : "Pause##tvps")) { if (ss.paused) pl.play(); else pl.pause(); }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Freeze the picture; the service keeps filling the buffer. Play resumes from here (Space)");
+    flowNext(6 * gUi);
+    static float drag = 0; static bool dragging = false;
+    const float maxS = (float)std::max(1.0, ss.bufferedSec);
+    float v = dragging ? drag : (float)std::max(0.0, ss.bufferedSec - ss.behindSec);
+    ImGui::SetNextItemWidth(std::max(120.f * gUi, std::min(360.f * gUi, ImGui::GetContentRegionAvail().x - 260 * gUi)));
+    char lab[48]; snprintf(lab, sizeof lab, ss.behind ? "-%s behind" : "live", clockText(dragging ? maxS - v : ss.behindSec).c_str());
+    if (ImGui::SliderFloat("##tvseek", &v, 0, maxS, lab)) { drag = v; dragging = true; }
+    if (ImGui::IsItemDeactivated()) { if (dragging) pl.seekBehind(v >= maxS - 0.5f ? 0 : maxS - v); dragging = false; }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("How far behind live the picture is. Drag to go back (up to %s) or forward.", clockText(ss.bufferedSec).c_str());
+    flowNext(6 * gUi);
+    ImGui::BeginDisabled(!ss.behind);
+    if (ImGui::Button("Jump to live##tvlive")) pl.goLive();
+    ImGui::EndDisabled();
+    flowNext(6 * gUi);
+    ImGui::SetNextItemWidth(84 * gUi);
+    char cur[24]; snprintf(cur, sizeof cur, "%d MB", pl.bufferMB());
+    if (ImGui::BeginCombo("buffer##tvbuf", cur)) {
+        for (int mb : {64, 128, 256, 512, 1024, 2048}) { char l[24]; snprintf(l, sizeof l, "%d MB", mb); if (ImGui::Selectable(l, mb == pl.bufferMB())) { pl.setBufferMB(mb); a.tvBufMb = mb; plat::prefs().setI("tvBufMb", mb); } }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Memory for the live buffer (filled %.0f MB). When it is full the oldest part is dropped.", ss.bufferBytes / 1e6);
+    ImGui::EndDisabled();
+    if (!a.tvRecErr.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", a.tvRecErr.c_str()); ImGui::PopTextWrapPos(); }
+}
+} // namespace
+
 void teletextTab(App& a) {
     TeletextDecoder& tx = a.engine.teletext();
     const Player& pl = a.engine.player();
@@ -234,7 +352,12 @@ void playerTab(App& a) {
     else if (!ps.videoNote.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos(); }
     else if (!a.video.has()) ImGui::TextDisabled("%s", ps.hasAudio && !ps.hasVideo ? "audio only" : ps.status.c_str());
     else a.video.draw(ImGui::GetContentRegionAvail());
+    const bool vboxKeys = (ImGui::IsWindowFocused() || ImGui::IsWindowHovered()) && !ImGui::GetIO().WantTextInput;   // Space and R act on the video panel
     ImGui::EndChild();
+    if (vboxKeys && pl.selected() >= 0) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) { if (pl.shift().paused) pl.play(); else pl.pause(); }
+        if (ImGui::IsKeyPressed(ImGuiKey_R, false)) { if (pl.recording().active) pl.stopRecording(); else tvRecordStart(a); }
+    }
     const float ctlY = ImGui::GetCursorPosY();
     if (ImGui::Button(pl.selected() >= 0 ? "Stop" : "Play")) { if (pl.selected() >= 0) pl.select(-1); else if (a.playReq < 0 && !a.ts.services.empty()) { int sid = a.ts.services[0].id; pl.select(sid); pl.setVolume(a.volume); } }
     flowNext();
@@ -270,6 +393,8 @@ void playerTab(App& a) {
         flowNext();
     }
     if (pl.subtitlesAvailable()) { if (ImGui::Checkbox("subtitles", &a.subsOn)) pl.setSubtitles(a.subsOn); }
+    flowBreak();
+    tvRecordRow(a);
     flowBreak();
     if (pl.selected() >= 0) {   // what is on now, and what comes next
         const EpgEvent* nx = nullptr;

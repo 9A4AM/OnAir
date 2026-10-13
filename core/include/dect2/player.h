@@ -4,7 +4,9 @@
 #include "audioout.h"
 #include "ts.h"
 #include "es_save.h"
+#include "ts_record.h"
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <deque>
 #include <memory>
@@ -95,6 +97,23 @@ public:
     bool savingAudioStream() const { return saveSink_.isOpen(); }
     uint64_t savedAudioBytes() const { return saveSink_.bytes(); }
 
+    // ---- record the selected service to a .ts file: only its own PIDs (PAT/PMT single-program, video, audio, subtitles, teletext).
+    // The disk is written on its own thread; when it is too slow packets are dropped and counted. stopAfterSec > 0 or stopAtUnix > 0 end it by themselves.
+    struct RecStats { bool active = false; double seconds = 0; uint64_t bytes = 0, droppedPackets = 0; bool failed = false; std::string path; };
+    bool startRecording(const std::string& path, double stopAfterSec = 0, int64_t stopAtUnix = 0);
+    void stopRecording();
+    RecStats recording() const;
+    // ---- pause / live buffer: the service's packets always fill a ring; Pause freezes the picture, Play resumes from that point paced by
+    // the stream's PCR (the broadcaster's clock), so sound and picture stay in step. Overflow drops the oldest.
+    struct ShiftStats { bool paused = false, behind = false; double behindSec = 0, bufferedSec = 0; uint64_t bufferBytes = 0, capacityBytes = 0; };
+    void setBufferMB(int mb);
+    int bufferMB() const { return bufMb_; }
+    void pause();
+    void play();                       // resume after Pause (stays behind live)
+    void seekBehind(double seconds);   // play from this far behind live (0 = live)
+    void goLive() { seekBehind(0); }
+    ShiftStats shift() const;
+
 private:
     struct Impl;
     friend struct Impl;
@@ -117,6 +136,25 @@ private:
     uint64_t pushed_ = 0, consumed_ = 0;
     int lastCc_[8192];
     std::atomic<int> videoPid_{-1};
+    // recording and live buffer, guarded by mu_
+    TsWriter recWriter_;
+    ServiceFilter recFilter_;
+    std::chrono::steady_clock::time_point recStart_;
+    double recStopAfter_ = 0; int64_t recStopAt_ = 0;
+    bool recDue() const;
+    void feedLocked(const uint8_t* out);
+    void pumpLocked();
+    void goLiveLocked();
+    TsRing ring_;
+    int bufMb_ = 256;
+    int pcrPid_ = -1;
+    struct PcrMark { uint64_t idx; double pcr; };
+    std::deque<PcrMark> pcrIdx_;
+    bool shifted_ = false, paused_ = false, anchorPending_ = true;
+    uint64_t cursor_ = 0;
+    double anchorPcr_ = 0;
+    std::chrono::steady_clock::time_point anchorWall_;
+    double pcrAt(uint64_t idx) const;
     EsSink saveSink_;
     TsEsExtractor saveEs_;   // guarded by mu_
     int esPid_ = -1;         // the selected service's DRA / MPEG audio stream, guarded by mu_

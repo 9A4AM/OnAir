@@ -352,6 +352,11 @@ void loadPrefs(App& a) {
     a.tune.ampOn = d.getB("amp", false);
     a.recFormat = d.getI("recFormat", 0) == 1 ? 1 : 0;
     a.recSigmf = d.getB("recSigmf", true);
+    a.tvBufMb = (int)d.getI("tvBufMb", 256); a.engine.player().setBufferMB(a.tvBufMb); a.tvBufMb = a.engine.player().bufferMB();
+    a.tvRecMin = std::max(0, (int)d.getI("tvRecMin", 0));
+    a.tvRecAtOn = d.getB("tvRecAtOn", false);
+    a.tvRecAtH = std::max(0, std::min(23, (int)d.getI("tvRecAtH", 0)));
+    a.tvRecAtM = std::max(0, std::min(59, (int)d.getI("tvRecAtM", 0)));
     a.engine.setRecordSigmf(a.recSigmf);
     if (d.has("family")) {
         const int f = std::max(0, std::min(kNumFamilies - 1, (int)d.getI("family", 0)));

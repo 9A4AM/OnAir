@@ -86,7 +86,8 @@ struct Player::Impl {
         Player* p = I->owner;
         std::unique_lock<std::mutex> lk(p->mu_);
         int waits = 0;
-        while (p->in_.empty() && !p->stop_ && !p->restart_) { p->cv_.wait_for(lk, std::chrono::milliseconds(100)); if (getenv("DECT2_PLAYDEBUG") && ++waits % 10 == 0) fprintf(stderr, "[play] readCb waiting for data (%d s) sid=%d\n", waits / 10, p->sid_.load()); }
+        if (p->shifted_ && p->in_.size() < 65536) p->pumpLocked();
+        while (p->in_.empty() && !p->stop_ && !p->restart_) { p->cv_.wait_for(lk, std::chrono::milliseconds(p->shifted_ && !p->paused_ ? 20 : 100)); if (p->shifted_ && p->in_.empty()) p->pumpLocked(); if (getenv("DECT2_PLAYDEBUG") && ++waits % 10 == 0) fprintf(stderr, "[play] readCb waiting for data (%d s) sid=%d\n", waits / 10, p->sid_.load()); }
         if (p->stop_ || p->restart_) return AVERROR_EOF;
         int n = (int)std::min<size_t>((size_t)size, p->in_.size());
         for (int i = 0; i < n; i++) { buf[i] = p->in_.front(); p->in_.pop_front(); }
@@ -104,6 +105,8 @@ struct Player::Impl {
 
 Player::Player() : p_(new Impl) {
     for (int& c : lastCc_) c = -1;
+    recFilter_.setStrict(true);
+    ring_.setCapacityPackets((size_t)bufMb_ * 1024 * 1024 / 188);
     p_->owner = this;
     th_ = std::thread([this] { threadMain(); });
 }
@@ -120,6 +123,9 @@ void Player::select(int sid) {
         std::lock_guard<std::mutex> lk(mu_);
         if (sid == sid_) return;
         saveSink_.close();
+        recWriter_.close();
+        recFilter_.select(sid);
+        ring_.clear(); pcrIdx_.clear(); cursor_ = 0; shifted_ = paused_ = false; pcrPid_ = -1;
         sid_ = sid;
         filter_.select(sid);
         in_.clear();
@@ -148,21 +154,162 @@ void Player::push(const uint8_t* pk, size_t n, const TsSnapshot& snap) {
         if (esPid_ < 0) for (const TsStream& st : sv.streams) if ((st.codec == "MPEG audio" || st.codec == "MPEG-1 audio") && !st.scrambled) { esPid_ = st.pid; esCodec_ = st.codec; break; } }
     static uint64_t calls = 0, passed = 0;
     uint8_t out[188];
-    for (size_t i = 0; i < n; i++)
+    for (const TsService& sv : snap.services) if (sv.id == sid_) pcrPid_ = sv.pcrPid;
+    const bool rec = recWriter_.isOpen();
+    std::vector<uint8_t> recBuf;
+    for (size_t i = 0; i < n; i++) {
+        if (rec && recFilter_.process(pk + i * 188, &snap, out)) recBuf.insert(recBuf.end(), out, out + 188);
         if (filter_.process(pk + i * 188, &snap, out)) {
+            double pcr;
             const int pid = ((out[1] & 0x1F) << 8) | out[2];
-            if (pid == videoPid_.load() && (out[3] & 0x10)) {   // a payload packet of the video stream: its continuity counter must follow the last one
-                const int cc = out[3] & 0x0F;
-                if (lastCc_[pid] >= 0 && cc != ((lastCc_[pid] + 1) & 0x0F) && cc != lastCc_[pid]) lossMarks_.push_back(pushed_);
-                lastCc_[pid] = cc;
+            if (pid == pcrPid_ && tsPcrSeconds(out, pcr)) {
+                pcrIdx_.push_back({ring_.head(), pcr});
+                while (!pcrIdx_.empty() && pcrIdx_.front().idx < ring_.oldest()) pcrIdx_.pop_front();
             }
-            if (saveSink_.isOpen()) saveEs_.feed(out, saveSink_);
-            in_.insert(in_.end(), out, out + 188); passed++; pushed_ += 188;
+            ring_.push(out);
+            if (!shifted_) { feedLocked(out); cursor_ = ring_.head(); }
+            passed++;
         }
+    }
+    if (!recBuf.empty()) recWriter_.write(recBuf.data(), recBuf.size());
+    if (rec && recDue()) recWriter_.close();
+    if (shifted_) pumpLocked();
     calls++;
     if (getenv("DECT2_PLAYDEBUG") && calls % 8 == 0) fprintf(stderr, "[play] push #%llu: %zu pkts in, %llu passed total, queue %zu\n", (unsigned long long)calls, n, (unsigned long long)passed, in_.size());
     if (in_.size() > 12u * 1024 * 1024) in_.erase(in_.begin(), in_.begin() + (in_.size() - 8u * 1024 * 1024)); // never fall far behind
     cv_.notify_all();
+}
+
+void Player::feedLocked(const uint8_t* out) {
+    const int pid = ((out[1] & 0x1F) << 8) | out[2];
+    if (pid == videoPid_.load() && (out[3] & 0x10)) {   // a payload packet of the video stream: its continuity counter must follow the last one
+        const int cc = out[3] & 0x0F;
+        if (lastCc_[pid] >= 0 && cc != ((lastCc_[pid] + 1) & 0x0F) && cc != lastCc_[pid]) lossMarks_.push_back(pushed_);
+        lastCc_[pid] = cc;
+    }
+    if (saveSink_.isOpen()) saveEs_.feed(out, saveSink_);
+    in_.insert(in_.end(), out, out + 188); pushed_ += 188;
+}
+
+double Player::pcrAt(uint64_t idx) const {   // the PCR at or before packet idx (the first one if there is none before)
+    if (pcrIdx_.empty()) return 0;
+    size_t lo = 0, hi = pcrIdx_.size();
+    while (lo < hi) { const size_t m = (lo + hi) / 2; if (pcrIdx_[m].idx <= idx) lo = m + 1; else hi = m; }
+    return pcrIdx_[lo ? lo - 1 : 0].pcr;
+}
+
+void Player::goLiveLocked() {
+    shifted_ = paused_ = false;
+    cursor_ = ring_.head();
+    in_.clear();
+    lossMarks_.push_back(pushed_);   // a jump in the stream: let the repair logic treat it like a loss
+    for (int& c : lastCc_) c = -1;
+}
+
+// Feeds the player from the ring at the stream's own pace: a packet leaves the ring when the PCR distance from the resume point has passed in real time.
+void Player::pumpLocked() {
+    if (!shifted_ || paused_) return;
+    if (cursor_ < ring_.oldest()) cursor_ = ring_.oldest();            // the buffer overflowed under the play point
+    const double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - anchorWall_).count();
+    uint8_t pk[188];
+    int fed = 0;
+    while (cursor_ < ring_.head() && fed < 4096) {
+        if (!ring_.read(cursor_, pk)) { cursor_++; continue; }
+        double pcr;
+        const int pid = ((pk[1] & 0x1F) << 8) | pk[2];
+        if (pid == pcrPid_ && tsPcrSeconds(pk, pcr)) {
+            if (anchorPending_ || pcr < anchorPcr_ || pcr - anchorPcr_ > elapsed + 3600) { anchorPcr_ = pcr; anchorWall_ = std::chrono::steady_clock::now(); anchorPending_ = false; }
+            else if (pcr - anchorPcr_ > elapsed + 0.2) break;      // not due yet (a 0.2 s lead keeps the decoder fed)
+        }
+        feedLocked(pk);
+        cursor_++; fed++;
+    }
+    if (fed) cv_.notify_all();
+    if (cursor_ >= ring_.head()) goLiveLocked();                 // caught up with the live edge
+}
+
+void Player::setBufferMB(int mb) {
+    mb = std::max(16, std::min(4096, mb));
+    std::lock_guard<std::mutex> lk(mu_);
+    if (mb == bufMb_) return;
+    bufMb_ = mb;
+    if (shifted_) goLiveLocked();
+    ring_.setCapacityPackets((size_t)mb * 1024 * 1024 / 188);
+    pcrIdx_.clear(); cursor_ = 0;
+}
+
+void Player::pause() {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (sid_ < 0 || paused_) return;
+    if (!shifted_) cursor_ = ring_.head();
+    shifted_ = paused_ = true;
+    audio_.flush();   // silence at once; the rest of the picture queue freezes with the stream
+}
+
+void Player::play() {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (!paused_) return;
+    paused_ = false;
+    anchorPending_ = true;
+    pumpLocked();
+}
+
+void Player::seekBehind(double sec) {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (sid_ < 0) return;
+    if (sec <= 0.05 || pcrIdx_.empty()) { if (shifted_) goLiveLocked(); return; }
+    const double target = pcrIdx_.back().pcr - sec;
+    size_t k = 0;
+    while (k + 1 < pcrIdx_.size() && pcrIdx_[k + 1].pcr <= target) k++;    // the PCR mark at or before the target
+    cursor_ = std::max(pcrIdx_[k].idx, ring_.oldest());
+    in_.clear();
+    lossMarks_.push_back(pushed_);
+    for (int& c : lastCc_) c = -1;
+    shifted_ = true; paused_ = false; anchorPending_ = true;
+    pumpLocked();
+}
+
+Player::ShiftStats Player::shift() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    ShiftStats s;
+    s.paused = paused_; s.behind = shifted_;
+    s.capacityBytes = (uint64_t)ring_.capacity() * 188;
+    s.bufferBytes = (ring_.head() - ring_.oldest()) * 188;
+    if (!pcrIdx_.empty()) {
+        s.bufferedSec = pcrIdx_.back().pcr - pcrAt(std::max(ring_.oldest(), pcrIdx_.front().idx));
+        if (shifted_) s.behindSec = std::max(0.0, pcrIdx_.back().pcr - pcrAt(cursor_));
+    }
+    return s;
+}
+
+bool Player::recDue() const {
+    if (recStopAfter_ > 0 && std::chrono::duration<double>(std::chrono::steady_clock::now() - recStart_).count() >= recStopAfter_) return true;
+    return recStopAt_ > 0 && (int64_t)time(nullptr) >= recStopAt_;
+}
+
+bool Player::startRecording(const std::string& path, double stopAfterSec, int64_t stopAtUnix) {
+    std::lock_guard<std::mutex> lk(mu_);
+    recWriter_.close();
+    if (sid_ < 0) return false;
+    recFilter_.select(sid_);
+    if (!recWriter_.open(path)) return false;
+    recStart_ = std::chrono::steady_clock::now(); recStopAfter_ = stopAfterSec; recStopAt_ = stopAtUnix;
+    return true;
+}
+
+void Player::stopRecording() { std::lock_guard<std::mutex> lk(mu_); recWriter_.close(); }
+
+Player::RecStats Player::recording() const {
+    std::lock_guard<std::mutex> lk(mu_);
+    RecStats s;
+    s.path = recWriter_.path();
+    s.active = recWriter_.isOpen();
+    s.bytes = recWriter_.bytes(); s.droppedPackets = recWriter_.droppedPackets(); s.failed = recWriter_.failed();
+    if (s.active) {
+        s.seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - recStart_).count();
+        if (recDue() || s.failed) { const_cast<TsWriter&>(recWriter_).close(); s.active = false; s.bytes = recWriter_.bytes(); s.droppedPackets = recWriter_.droppedPackets(); }
+    }
+    return s;
 }
 
 std::string Player::saveAudioStream(const std::string& pathNoExt) {

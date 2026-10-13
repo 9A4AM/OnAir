@@ -396,6 +396,10 @@ struct App {
     bool diagWasRunning = false;
     bool recSigmf = true;               // write SigMF metadata beside IQ recordings (pref "recSigmf", default on)
     int recFormat = 0;                  // IQ recording format: 0 = 8-bit, 1 = float (pref "recFormat")
+    int tvBufMb = 256;                  // TV live buffer for Pause (pref "tvBufMb")
+    int tvRecMin = 0, tvRecAtH = 0, tvRecAtM = 0;   // TV recording timer: stop after N minutes (0 = off), at a clock time
+    bool tvRecAtOn = false, tvRecWasActive = false;
+    std::string tvRecDonePath, tvRecErr;   // the last finished TV recording; why one could not start
     bool recWasActive = false;          // a recording was running at the last frame (to log it once when it ends)
     std::string recDonePath;            // the last finished recording, for "Show recording"
     RxTelemetry rx;

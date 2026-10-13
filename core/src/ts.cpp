@@ -150,7 +150,8 @@ bool ServiceFilter::process(const uint8_t* in, const TsSnapshot* snap, uint8_t* 
     if (sid_ < 0) { memcpy(out, in, 188); return true; }
     if (snap && (patSid_ != sid_ || pass_.empty())) {
         for (auto& sv : snap->services) if (sv.id == sid_ && sv.havePmt) {
-            pass_ = {0x11, 0x12, 0x14, sv.pmtPid, sv.pcrPid};
+            pass_ = {sv.pmtPid, sv.pcrPid};
+            if (!strict_) { pass_.push_back(0x11); pass_.push_back(0x12); pass_.push_back(0x14); }
             for (auto& st : sv.streams) pass_.push_back(st.pid);
             patSid_ = sv.id; patPmt_ = sv.pmtPid; patTsid_ = snap->tsid;
         }

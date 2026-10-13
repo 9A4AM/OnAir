@@ -100,6 +100,7 @@ private:
 class ServiceFilter {
 public:
     void select(int serviceId) { sid_ = serviceId; pass_.clear(); patSid_ = -1; }
+    void setStrict(bool on) { strict_ = on; pass_.clear(); patSid_ = -1; }   // on: only the service's own PIDs (PAT, PMT, PCR, streams), no SDT/NIT/EIT (for recordings)
     int selected() const { return sid_; }
     // Returns true if the packet should be forwarded; `out` receives the (possibly rewritten) packet.
     bool process(const uint8_t* in, const TsSnapshot* snap, uint8_t* out);
@@ -107,6 +108,7 @@ public:
 private:
     int sid_ = -1;
     std::vector<int> pass_;
+    bool strict_ = false;
     int patCc_ = 0, patSid_ = -1, patPmt_ = 0, patTsid_ = 0;
 };
 
