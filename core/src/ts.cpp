@@ -346,8 +346,24 @@ void TsDemux::parsePmt(int pid, const uint8_t* s, int len) {
             case 0x7A: st.codec = "E-AC-3"; st.kind = "audio"; break;
             case 0x7B: st.codec = "DTS"; st.kind = "audio"; break;
             case 0x7C: st.codec = "AAC"; st.kind = "audio"; break;
-            case 0x59: st.codec = "DVB subtitles"; st.kind = "subtitles"; if (l >= 3) st.lang.assign((const char*)d, 3); break;
-            case 0x56: st.codec = "Teletext"; st.kind = "teletext"; if (l >= 3) st.lang.assign((const char*)d, 3); break;
+            case 0x59:
+                st.codec = "DVB subtitles"; st.kind = "subtitles"; if (l >= 3) st.lang.assign((const char*)d, 3);
+                for (int k = 0; k + 8 <= l; k += 8) {
+                    TsSubEntry e; e.lang.assign((const char*)d + k, 3); e.type = d[k + 3];
+                    e.page = (d[k + 4] << 8) | d[k + 5]; e.ancPage = (d[k + 6] << 8) | d[k + 7];
+                    st.subs.push_back(e);
+                }
+                break;
+            case 0x56:
+                st.codec = "Teletext"; st.kind = "teletext"; if (l >= 3) st.lang.assign((const char*)d, 3);
+                for (int k = 0; k + 5 <= l; k += 5) {
+                    TsSubEntry e; e.teletext = true; e.lang.assign((const char*)d + k, 3); e.type = d[k + 3] >> 3;
+                    const int mag = (d[k + 3] & 7) ? (d[k + 3] & 7) : 8, bcd = d[k + 4];
+                    if ((bcd >> 4) > 9 || (bcd & 15) > 9) continue;
+                    e.page = mag * 100 + (bcd >> 4) * 10 + (bcd & 15);
+                    st.subs.push_back(e);
+                }
+                break;
             case 0x46: st.codec = "VBI teletext"; st.kind = "teletext"; break;
             default: break;
             }

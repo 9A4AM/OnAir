@@ -102,6 +102,7 @@
 #include "tsout.h"
 #include "player.h"
 #include "teletext.h"
+#include "dvbsub.h"
 #include "bandwidth.h"
 #include <atomic>
 #include <condition_variable>
@@ -374,6 +375,7 @@ public:
     VorReceiver& vor() { return rxVor_; }   // VOR / ILS: the receiver's own controls and results (the interface reads telemetry through latestRx)
     NdbReceiver& ndb() { return rxNdb_; }   // NDB: long-wave non-directional beacons, the Morse ident (telemetry through latestRx)
     TeletextDecoder& teletext() { return ttx_; }
+    DvbSubDecoder& dvbSubtitles() { return dvbsub_; }
     // ATSC 3.0: the service list and statistics, and which service to receive (-1 = the first video service)
     bool atsc3Telemetry(Atsc3Telemetry& t) const { std::lock_guard<std::mutex> lk(atsc3Mu_); t = atsc3Tel_; return atsc3Tel_.seq != 0; }
     void atsc3Select(int serviceId) { rxA3_.selectService(serviceId); }
@@ -471,6 +473,7 @@ private:
     // the radio's samples into the receivers: clean-up, offset shift and resampling, spectrum, receiver, accounting
     void ingest(cf32* x, size_t n);
     TeletextDecoder ttx_;
+    DvbSubDecoder dvbsub_;
     int lastT2Frame_ = -1;
     std::atomic<bool> resetReq_{false};
     std::atomic<uint64_t> resets_{0};

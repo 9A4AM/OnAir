@@ -486,6 +486,7 @@ void loadPrefs(App& a) {
     a.out.rtp = d.getB("udpRtp", false);
     a.out.dropNull = d.getB("dropNull", false);
     a.popTop = d.getB("popTop", true);
+    a.subsOn = d.getB("subsOn", true); a.subsPick = d.getS("subsPick", ""); a.ttxPage = std::max(100, std::min(899, (int)d.getI("ttxPage", 100)));
     a.updCheck = d.getB("updCheck", true); a.updAuto = d.getB("updAuto", true); a.updPre = d.getB("updBeta", false);
     a.updLast = d.getD("updLast", 0); a.updSkip = d.getS("updSkip", "");
     if (a.rxId == 1) loadFeedPrefs(a);   // the feeds are shared by all receivers: RX 1 owns their settings
@@ -589,6 +590,7 @@ void savePrefs(const App& a) {
     d.setB("udpRtp", a.out.rtp);
     d.setB("dropNull", a.out.dropNull);
     d.setB("popTop", a.popTop);
+    d.setB("subsOn", a.subsOn); d.setS("subsPick", a.subsPick); d.setI("ttxPage", a.ttxPage);
     d.setB("updCheck", a.updCheck); d.setB("updAuto", a.updAuto); d.setB("updBeta", a.updPre);
     d.setD("updLast", a.updLast); d.setS("updSkip", a.updSkip);
     saveFeedPrefs(a);

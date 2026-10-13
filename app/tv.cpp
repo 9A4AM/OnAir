@@ -176,13 +176,31 @@ void teletextTab(App& a) {
         { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(pl.selected() < 0 ? "Play a service (Player tab) - teletext is read from the playing service." : "The playing service has no teletext stream."); ImGui::PopTextWrapPos(); }
         return;
     }
+    ImGuiIO& io = ImGui::GetIO();
+    auto goPage = [&](int p) { a.ttxPage = std::max(100, std::min(899, p)); a.ttxSub = -1; a.ttxHold = false; a.ttxEntry = 0; savePrefs(a); };
+    // keyboard: three digits (1..8 first) go to that page, Esc drops a half-typed number
+    if (!io.WantTextInput) {
+        for (int d = 0; d < 10; d++)
+            if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_0 + d), false) || ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_Keypad0 + d), false)) {
+                if (a.ttxEntry == 0) { if (d < 1 || d > 8) continue; a.ttxEntryVal = d; a.ttxEntry = 1; }
+                else { a.ttxEntryVal = a.ttxEntryVal * 10 + d; if (++a.ttxEntry == 3) { goPage(a.ttxEntryVal); a.ttxEntry = 0; } }
+            }
+        if (a.ttxEntry && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) a.ttxEntry = 0;
+    }
     ImGui::SetNextItemWidth(80 * gUi);
-    ImGui::InputInt("page", &a.ttxPage, 0, 0);
-    a.ttxPage = std::max(100, std::min(899, a.ttxPage));
-    ImGui::SameLine(); if (ImGui::SmallButton("<")) a.ttxPage = std::max(100, a.ttxPage - 1);
-    ImGui::SameLine(); if (ImGui::SmallButton(">")) a.ttxPage = std::min(899, a.ttxPage + 1);
-    ImGui::SameLine(); if (ImGui::SmallButton("100")) a.ttxPage = 100;
+    int pageIn = a.ttxPage;
+    if (ImGui::InputInt("page", &pageIn, 0, 0) && pageIn != a.ttxPage) goPage(pageIn);
+    ImGui::SameLine(); if (ImGui::SmallButton("<")) goPage(a.ttxPage - 1);
+    ImGui::SameLine(); if (ImGui::SmallButton(">")) goPage(a.ttxPage + 1);
+    ImGui::SameLine(); if (ImGui::SmallButton("100")) goPage(100);
     ImGui::SameLine();
+    if (ImGui::Checkbox("hold", &a.ttxHold)) { TtxPage cur; if (a.ttxHold && tx.page(a.ttxPage, cur, a.ttxSub)) a.ttxHeld = cur; else a.ttxHold = false; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Freeze the page (it keeps updating in the background)");
+    ImGui::SameLine();
+    ImGui::Checkbox("reveal", &a.ttxReveal);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show concealed text (quiz answers)");
+    if (a.ttxEntry) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.95f, 0.85f, 0.4f, 1), "P%d%s", a.ttxEntryVal, a.ttxEntry == 1 ? "--" : "-"); }
+    else { ImGui::SameLine(); ImGui::TextDisabled("type a page number"); }
     {
         auto pages = tx.pages();
         { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu pages received, %llu packets", pages.size(), (unsigned long long)tx.packets()); ImGui::PopTextWrapPos(); }
@@ -195,7 +213,39 @@ void teletextTab(App& a) {
         }
     }
     TtxPage pg;
-    if (!tx.page(a.ttxPage, pg)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("page %d has not been received yet (pages repeat every few seconds)", a.ttxPage); ImGui::PopTextWrapPos(); } return; }
+    if (a.ttxHold) pg = a.ttxHeld;
+    else if (!tx.page(a.ttxPage, pg, a.ttxSub)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("page %d has not been received yet (pages repeat every few seconds)", a.ttxPage); ImGui::PopTextWrapPos(); } return; }
+    // subpages: the newest by default, or step through the ones held
+    {
+        const std::vector<int> subs = tx.subpages(a.ttxPage);
+        if (subs.size() > 1) {
+            int at = 0;
+            for (int i = 0; i < (int)subs.size(); i++) if (subs[i] == pg.subcode) at = i;
+            if (ImGui::SmallButton("<##sp")) { a.ttxSub = subs[(at + (int)subs.size() - 1) % (int)subs.size()]; a.ttxHold = false; }
+            ImGui::SameLine(); ImGui::Text("subpage %d/%d", at + 1, (int)subs.size());
+            ImGui::SameLine(); if (ImGui::SmallButton(">##sp")) { a.ttxSub = subs[(at + 1) % (int)subs.size()]; a.ttxHold = false; }
+            ImGui::SameLine(); if (ImGui::SmallButton("newest")) a.ttxSub = -1;
+        }
+    }
+    // Fastext: the four coloured keys and the index key, from packet 27
+    {
+        static const ImVec4 col[4] = {ImVec4(0.8f, 0.15f, 0.15f, 1), ImVec4(0.15f, 0.65f, 0.2f, 1), ImVec4(0.8f, 0.7f, 0.1f, 1), ImVec4(0.15f, 0.65f, 0.75f, 1)};
+        static const char* name[4] = {"red", "green", "yellow", "cyan"};
+        for (int i = 0; i < 5; i++) {
+            const int link = pg.fastext[i];
+            char lab[24];
+            snprintf(lab, sizeof lab, link ? "%d##fx%d" : "-##fx%d", link, i);
+            ImGui::BeginDisabled(!link);
+            if (i < 4) { ImGui::PushStyleColor(ImGuiCol_Button, col[i]); ImGui::PushStyleColor(ImGuiCol_ButtonHovered, col[i]); }
+            const bool hit = ImGui::SmallButton(lab);
+            if (i < 4) ImGui::PopStyleColor(2);
+            ImGui::EndDisabled();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", i < 4 ? name[i] : "index");
+            if (hit) goPage(link);
+            ImGui::SameLine();
+        }
+        ImGui::TextDisabled(pg.fastext[0] || pg.fastext[1] || pg.fastext[2] || pg.fastext[3] ? "Fastext" : "no Fastext links on this page");
+    }
     TtxGrid grid;
     ttxRender(pg, grid);
     ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -205,35 +255,9 @@ void teletextTab(App& a) {
     ImVec2 o = ImGui::GetCursorScreenPos();
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->AddRectFilled(o, ImVec2(o.x + cw * 40, o.y + ch * 25), IM_COL32(0, 0, 0, 255));
-    const bool flashOn = std::fmod(ImGui::GetTime(), 1.0) < 0.6;
-    for (int r = 0; r < 25; r++)
-        for (int c = 0; c < 40; c++) {
-            const TtxCell& cell = grid[r][c];
-            const ImVec2 p0(o.x + c * cw, o.y + r * ch), p1(p0.x + cw, p0.y + ch);
-            if (cell.bg) dl->AddRectFilled(p0, p1, ttxColour(cell.bg));
-            if (cell.flash && !flashOn) continue;
-            if (cell.mosaic) {
-                const float gx = cell.separated ? 1.f : 0.f;
-                for (int k = 0; k < 6; k++) {
-                    if (!(cell.sextants & (1 << k))) continue;
-                    const int cx = k & 1, cy = k >> 1;
-                    dl->AddRectFilled(ImVec2(p0.x + cx * cw / 2 + gx, p0.y + cy * ch / 3 + gx), ImVec2(p0.x + (cx + 1) * cw / 2 - gx, p0.y + (cy + 1) * ch / 3 - gx), ttxColour(cell.fg));
-                }
-            } else if (cell.ch > ' ') {
-                char buf[5] = {0};
-                uint32_t u = cell.ch;
-                if (u < 0x80) buf[0] = (char)u;
-                else if (u < 0x800) { buf[0] = (char)(0xC0 | (u >> 6)); buf[1] = (char)(0x80 | (u & 0x3F)); }
-                else { buf[0] = (char)(0xE0 | (u >> 12)); buf[1] = (char)(0x80 | ((u >> 6) & 0x3F)); buf[2] = (char)(0x80 | (u & 0x3F)); }
-                ImFont* f = a.mono;
-                const float fs = cell.dh ? ch * 2.0f * 0.8f : ch * 0.8f;
-                if (cell.dh == 1) { dl->PushClipRect(p0, p1, true); dl->AddText(f, fs, ImVec2(p0.x, p0.y), ttxColour(cell.fg), buf); dl->PopClipRect(); }
-                else if (cell.dh == 2) { dl->PushClipRect(p0, p1, true); dl->AddText(f, fs, ImVec2(p0.x, p0.y - ch), ttxColour(cell.fg), buf); dl->PopClipRect(); }
-                else dl->AddText(f, fs, ImVec2(p0.x, p0.y), ttxColour(cell.fg), buf);
-            }
-        }
+    drawTtxGrid(dl, a.mono, o, cw, ch, grid, false, a.ttxReveal);
     char title[64];
-    snprintf(title, sizeof title, "P%d%s", pg.number, pg.subtitle ? "  (subtitle page)" : "");
+    snprintf(title, sizeof title, "P%d%s%s", pg.number, pg.subtitle ? "  (subtitle page)" : "", a.ttxHold ? "  HOLD" : "");
     dl->AddText(ImVec2(o.x + 2, o.y + 1), IM_COL32(255, 255, 255, 255), title);
     ImGui::Dummy(ImVec2(cw * 40, ch * 25));
 }
@@ -451,7 +475,7 @@ void playerTab(App& a) {
         }
         flowNext();
     }
-    if (pl.subtitlesAvailable()) { if (ImGui::Checkbox("subtitles", &a.subsOn)) pl.setSubtitles(a.subsOn); }
+    subsControls(a);
     flowBreak();
     tvRecordRow(a);
     flowBreak();

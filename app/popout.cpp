@@ -16,6 +16,7 @@ bool gTop = true;                        // the floating state the window has no
 int gWx = 0, gWy = 0, gWw = 0, gWh = 0;  // the windowed place while it is full screen
 double gLastClick = -1;
 bool gToggleFs = false, gLeaveFs = false;
+int gSubKey = 0;                         // S = subtitles on/off (1), L = next subtitle language (2)
 
 void onMouse(GLFWwindow*, int button, int action, int) {
     if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS) return;
@@ -28,6 +29,8 @@ void onKey(GLFWwindow*, int key, int, int action, int) {
     if (action != GLFW_PRESS) return;
     if (key == GLFW_KEY_ESCAPE) gLeaveFs = true;
     if (key == GLFW_KEY_F) gToggleFs = true;   // as F in the main window
+    if (key == GLFW_KEY_S) gSubKey = 1;
+    if (key == GLFW_KEY_L) gSubKey = 2;
 }
 
 // A fullscreen pop-out that gets minimised anyway (a compositor or driver that ignores GLFW_AUTO_ICONIFY=false) is restored at once: clicking
@@ -132,6 +135,7 @@ void popOutFrame(App& a) {
     if (gToggleFs) setFullscreen(!fs);
     else if (gLeaveFs) setFullscreen(false);
     gToggleFs = gLeaveFs = false;
+    if (gSubKey) { subsKey(a, gSubKey); gSubKey = 0; }
 
     int ww = 0, wh = 0, fw = 0, fh = 0;
     glfwGetWindowSize(gPop, &ww, &wh);
@@ -149,6 +153,7 @@ void popOutFrame(App& a) {
         if (sw / sh > ar) sw = sh * ar; else sh = sw / ar;
         const ImVec2 p0(((float)ww - sw) * 0.5f, ((float)wh - sh) * 0.5f);
         gDl->AddImage(v.tex->texture(), p0, ImVec2(p0.x + sw, p0.y + sh));
+        if (v.overlayFn) v.overlayFn(v.overlayCtx, gDl, p0, ImVec2(sw, sh));   // subtitles
     } else {
         const char* t = "no picture";
         const ImVec2 ts = ImGui::CalcTextSize(t);

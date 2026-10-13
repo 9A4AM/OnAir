@@ -7,8 +7,18 @@
 
 namespace dect2 {
 
+// One language/page entry of a DVB subtitling descriptor (0x59) or teletext descriptor (0x56)
+struct TsSubEntry {
+    bool teletext = false;
+    std::string lang;
+    int type = 0;            // subtitling_type (EN 300 468 table 26), or the teletext_type (2 subtitle page, 5 hearing impaired subtitles)
+    int page = 0;            // DVB: composition_page_id; teletext: page number 100..899
+    int ancPage = 0;         // DVB: ancillary_page_id
+};
+
 struct TsStream {
     int pid = 0, streamType = 0;
+    std::vector<TsSubEntry> subs;
     std::string codec;     // "H.264", "HEVC", "AAC", "AC-3", ...
     std::string kind;      // "video", "audio", "subtitles", "teletext", "data"
     std::string lang;

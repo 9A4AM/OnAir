@@ -533,7 +533,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         unpack_ = BbUnpacker();
         tsSnap_ = TsSnapshot();
         lastT2Frame_ = -1;
-        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); dvbsub_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
     }
     rx_.setPlpCallback([this](const PlpResult& r) { if (plpDump_) plpDump_(r); onPlp(r); });
     {   // DVB-T2 / DVB-T, ATSC and DAB at a rate their receiver cannot use (the telemetry test that stood here never fired: the receiver
@@ -849,7 +849,7 @@ void Engine::applyReset() {
         std::lock_guard<std::mutex> lk(tsMu_);
         demux_.reset();
         unpack_ = BbUnpacker();
-        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
+        unpack_.setSink([this](const uint8_t* pkt) { demux_.feed(pkt); ttx_.feedTs(pkt); dvbsub_.feedTs(pkt); frameBuf_.insert(frameBuf_.end(), pkt, pkt + 188); });
         tsSnap_ = TsSnapshot();
         lastT2Frame_ = -1;
         frameBuf_.clear();
@@ -873,6 +873,7 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
         const uint8_t* q = pk + i * 188;
         demux_.feed(q);
         ttx_.feedTs(q);
+        dvbsub_.feedTs(q);
     }
     demux_.advance(secs);
     tsSnap_ = demux_.snapshot();

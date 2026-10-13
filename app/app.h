@@ -210,8 +210,24 @@ extern gfx::Backend* gGfx;
 extern GLFWwindow* gWindow;
 extern int gWinX, gWinY, gWinW, gWinH;
 
+// One subtitle service of the playing programme: a DVB subtitling stream (EN 300 743) or a teletext subtitle page (EN 300 706)
+struct SubOpt {
+    bool ttx = false;
+    int pid = 0, comp = 0, anc = 0;   // DVB: composition / ancillary page id; teletext: comp = page number
+    std::string lang, key, label;
+    bool fallback = false;            // teletext without a subtitling entry: page 888, else 777
+};
+
 struct VideoTex {
     gfx::Video* tex = nullptr;
+    double pts = 0;          // presentation time (seconds, as in the stream) of the newest picture: subtitles are timed against it
+    // subtitle overlay (subs_ui.cpp): the DVB subtitle bitmap as a texture over the picture, and a hook that draws any overlay on it
+    gfx::Video* sub = nullptr;
+    int subW = 0, subH = 0;
+    uint64_t subSeq = 0;
+    bool subShow = false;
+    void (*overlayFn)(void* ctx, ImDrawList* dl, ImVec2 p0, ImVec2 size) = nullptr;
+    void* overlayCtx = nullptr;
     int w = 0, h = 0;
     double dar = 0;          // display aspect of the newest picture (0 = use w / h); it can change between programmes
     uint64_t seq = 0;
@@ -221,6 +237,7 @@ struct VideoTex {
         auto f = pl.videoFrame(seq);
         if (!f || f->w <= 0) return;
         dar = f->dar;
+        pts = f->pts;
         const bool yuv = f->rgba.empty();
         if (!tex || w != f->w || h != f->h) {
             delete tex;
@@ -239,6 +256,7 @@ struct VideoTex {
         ImVec2 p = ImGui::GetCursorPos();
         ImGui::SetCursorPos(ImVec2(p.x + (box.x - sz.x) * 0.5f, p.y + (box.y - sz.y) * 0.5f));
         ImGui::Image(tex->texture(), sz);
+        if (overlayFn) overlayFn(overlayCtx, ImGui::GetWindowDrawList(), ImGui::GetItemRectMin(), sz);
         ImGui::SetCursorPos(p);
     }
 };
@@ -470,6 +488,13 @@ struct App {
     bool popTop = true;      // the pop-out video window stays above other windows
     int histWindow = 60;
     int ttxPage = 100;
+    int ttxSub = -1;                // teletext subpage shown in the tab: -1 = the newest
+    int ttxEntry = 0, ttxEntryVal = 0;   // digits typed so far for a page number
+    bool ttxHold = false, ttxReveal = false;
+    TtxPage ttxHeld;                // the page frozen by "hold"
+    std::vector<SubOpt> subOpts;    // subtitle services of the playing programme (DVB subtitles, teletext subtitle pages)
+    int subIdx = -1;                // the one chosen
+    std::string subsPick;           // its key, remembered between runs
     int plpSel = -1; // -1 = automatic
     int subTv = 0, subRx = 0, subStream = 0; // sub-view of the TV / Receiver / Stream tabs
     std::map<int, std::vector<EpgEvent>> epg;
@@ -924,6 +949,11 @@ void radioMessagesUi(App& a, bool vertical);
 // radio_ui.cpp: the "Radio settings" of the selected radio (only the ones it has): a collapsible section in a side panel (vertical), a
 // button with a popup in a one-line bar. A change reaches a running radio at once (a retune, or a restart for one that takes effect at open)
 void radioSettingsUi(App& a, bool vertical);
+// subs_ui.cpp: DVB subtitles and teletext subtitle pages over the picture, the language choice, the teletext page drawing
+void subsUpdate(App& a);                  // every frame: the subtitle services of the playing programme, decoder PIDs, the overlay bitmap
+void subsControls(App& a);                // on/off checkbox and language choice (the TV panel)
+void subsKey(App& a, int what);           // 1 = on/off, 2 = next language (the pop-out window's keys)
+void drawTtxGrid(ImDrawList* dl, ImFont* f, ImVec2 o, float cw, float ch, const TtxGrid& g, bool overlay, bool reveal);
 // tv.cpp
 void teletextTab(App& a);
 const EpgEvent* epgCurrent(const App& a, int sid, const EpgEvent** next = nullptr);

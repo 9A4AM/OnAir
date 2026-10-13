@@ -198,13 +198,8 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     gainControl(a);
     followBandwidth(a);
     feedDirection(a);
-    {
-        int pid = -1;
-        const int sid = a.engine.player().selected();
-        if (sid >= 0) for (auto& sv : a.ts.services) if (sv.id == sid) for (auto& st : sv.streams) if (st.kind == "teletext") { pid = st.pid; break; }
-        a.engine.teletext().setPid(pid);
-    }
     a.video.update(a.engine.player());
+    subsUpdate(a);   // subtitle services, the teletext / subtitle decoders' PIDs, the overlay
     if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }
     if (!draw) return;   // a receiver whose tab is not shown: ticked above, not drawn
     {
