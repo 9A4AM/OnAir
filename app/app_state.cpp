@@ -344,6 +344,8 @@ void loadPrefs(App& a) {
     a.gainDev = d.getS("gainDev", "");
     a.tune.ampOn = d.getB("amp", false);
     a.recFormat = d.getI("recFormat", 0) == 1 ? 1 : 0;
+    a.recSigmf = d.getB("recSigmf", true);
+    a.engine.setRecordSigmf(a.recSigmf);
     if (d.has("family")) {
         const int f = std::max(0, std::min(kNumFamilies - 1, (int)d.getI("family", 0)));
         // the protocol entry; settings from before the split (HF digital, Mesh, Pagers, Marine as one entry) open the family's first

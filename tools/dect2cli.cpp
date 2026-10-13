@@ -188,6 +188,7 @@ int main(int argc, char** argv) {
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.flarm().clearResults();
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
+    e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
     e.globalstar().clearResults();   // Globalstar: the events are printed with each line
     e.vdes().clearResults();      // VDES: the ASM frames and bursts are printed with each line
@@ -293,6 +294,12 @@ int main(int argc, char** argv) {
                 for (size_t i = 0; i < t.hfb.beacons.size() && i < kList.size(); i++)
                     if (t.hfb.beacons[i].heard)
                         printf("  hfbeacon: %-34s %9.1f kHz %+6.1f dB conf %d %s\n", kList[i].name.c_str(), kList[i].khz, (double)t.hfb.beacons[i].snr, t.hfb.beacons[i].conf, t.hfb.beacons[i].note.c_str());
+            }
+            if (t.standard == 69) {   // DJI drones: the DroneID packets and what the shape detector sees
+                for (const DjiDrone& d : t.dji.drones)
+                    printf("  dji: DroneID %-16s %llu packets  %.5f,%.5f  home %.5f,%.5f  alt %.1f m  %s\n", d.serial.c_str(), (unsigned long long)d.packets, d.last.lat(), d.last.lon(), d.last.homeLat(), d.last.homeLon(), d.last.altitudeM(), d.last.crc16Ok ? "" : "(packet CRC-16 differs)");
+                for (const DjiTrack& k : t.dji.tracks)
+                    printf("  dji: %-24s %6.2f MHz wide at %+7.2f MHz  %d bursts  period %.2f ms  duty %.0f%%  OFDM %.2f  confidence %.0f%%\n", djiClassName(k.cls).c_str(), k.bwMhz, k.offsetHz / 1e6, k.bursts, k.periodMs, k.duty * 100, k.ofdm, k.conf * 100);
             }
             if (t.standard == 62)   // CubeSat telemetry: the newest frames
                 for (size_t i = 0; i < t.cube.frames.size() && i < 3; i++) {

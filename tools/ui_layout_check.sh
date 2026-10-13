@@ -113,6 +113,7 @@ globalstar	--mode globalstar	Overview|Activity|Receiver|History
 vdes	--mode vdes	Overview|Messages|Receiver|History
 flarm	--mode flarm	Overview|Aircraft|Receiver|History
 hfbeacon	--mode hfbeacon	Overview|Beacons|Receiver|History
+dji	--mode dji	Overview|Signals|Receiver|History
 goes	--mode goes	Overview|Products|Receiver|History
 hrpt	--mode hrpt	Overview|Picture|Receiver|History"
 

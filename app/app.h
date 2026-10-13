@@ -174,7 +174,7 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 68;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumFamilies = 69;   // App::family runs from 0 to kNumFamilies - 1
 constexpr int kNumSubModes = 20;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
@@ -310,6 +310,7 @@ struct App {
     std::vector<std::string> usbHints;  // why a plugged-in radio is not listed (Linux), refreshed with the radio list
     double diagCopiedAt = -10, diagPollAt = -10;
     bool diagWasRunning = false;
+    bool recSigmf = true;               // write SigMF metadata beside IQ recordings (pref "recSigmf", default on)
     int recFormat = 0;                  // IQ recording format: 0 = 8-bit, 1 = float (pref "recFormat")
     bool recWasActive = false;          // a recording was running at the last frame (to log it once when it ends)
     std::string recDonePath;            // the last finished recording, for "Show recording"

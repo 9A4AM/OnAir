@@ -182,6 +182,11 @@ void recordUi(App& a) {
     }
     ImGui::EndDisabled();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("8-bit: 2 bytes per sample, small. Float: 8 bytes per sample, exact.");
+    flowNext(6 * gUi);
+    ImGui::BeginDisabled(rs.active);
+    if (ImGui::Checkbox("SigMF", &a.recSigmf)) { plat::prefs().setB("recSigmf", a.recSigmf); a.engine.setRecordSigmf(a.recSigmf); }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Writes a .sigmf-meta file (sample rate, data type, centre frequency, time) next to the recording, and the same data under a .sigmf-data name, so the recording opens in IQEngine (iqengine.org) and other SigMF tools.");
     if (!a.recDonePath.empty() && !rs.active) {
         flowNext(6 * gUi);
         if (ImGui::SmallButton("Show recording")) dect2::openUrl(a.recDonePath.substr(0, a.recDonePath.find_last_of("/\\")));

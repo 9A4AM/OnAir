@@ -72,6 +72,7 @@
 #include "zigbee_rx.h"
 #include "flarm_rx.h"
 #include "hfbeacon_rx.h"
+#include "dji_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -157,6 +158,7 @@ public:
     // Record the radio's raw samples (as they leave the ring, before any clean-up) at the radio's own rate. Not for a file source.
     bool startRecording(const std::string& path, FileFormat fmt, std::string& err);
     void stopRecording() { rec_.stop(); }
+    void setRecordSigmf(bool on) { recSigmf_ = on; }   // SigMF metadata beside the recordings (default on)
     RecordingStats recordingStats() const { return rec_.stats(); }
     // A file name for a recording of what the radio is tuned to right now (see recordingFileName())
     std::string recordingName(FileFormat fmt) const;
@@ -270,6 +272,7 @@ public:
     ZigbeeReceiver& zigbee() { return rxZb_; }   // Zigbee / 802.15.4: clear the PAN and device tables (telemetry through latestRx)
     FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
+    DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
     TimeReceiver& timesig() { return rxTime_; }   // time signals: station, receiver position (telemetry through latestRx)
     RidReceiver& rid() { return rxRid_; }   // Drone Remote ID: clear the drone table (telemetry through latestRx)
@@ -378,6 +381,7 @@ private:
     std::vector<std::string> log_;
     std::chrono::steady_clock::time_point t0_;
     IqRecorder rec_;
+    bool recSigmf_ = true;
     std::unique_ptr<IqSource> src_;
     SpectrumAnalyzer analyzer_{8192};
     T2Receiver rx_;
@@ -444,6 +448,7 @@ private:
     VdesReceiver rxVdes_;
     ZigbeeReceiver rxZb_;
     HfbReceiver rxHfb_;
+    DjiReceiver rxDji_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
