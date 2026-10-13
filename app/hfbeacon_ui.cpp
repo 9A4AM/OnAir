@@ -3,6 +3,7 @@
 // summary (10 / 12 / 15 / 17 / 20 m and the others: the beacons of the band heard now and the farthest); a great-circle map from the receiver to
 // every beacon heard, coloured by SNR; the 24 hour history of the selected beacon; and the settings (the list file, frequency error, clock
 // offset, stepping through bands when the capture is narrower than the list). Clicking a row tunes and listens (Listen).
+#include "dect2/timecompat.h"
 #include "app.h"
 #include "adsb_map.h"
 #include "dect2/hfbeacon_list.h"
@@ -122,7 +123,7 @@ std::string utcText(const HfbTelemetry& t, double v) {
 #ifdef _WIN32
     gmtime_s(&g, &tt);
 #else
-    gmtime_r(&tt, &g);
+    dect2::gmTime(tt, &g);
 #endif
     snprintf(b, sizeof b, "%02d:%02d:%02d", g.tm_hour, g.tm_min, g.tm_sec);
     return b;
@@ -206,13 +207,11 @@ void beaconsView(App& a) {
     if (on && t.clockValid && std::fabs(t.clockOffsetSec) < 1e-9) {
         // the NCDXF slots are 10 s long and follow the computer clock
         const time_t now = time(nullptr);
-        struct tm lt;
-#ifdef _WIN32
-        localtime_s(&lt, &now);
-#else
-        localtime_r(&now, &lt);
-#endif
-        const long off = (long)lt.tm_gmtoff;
+        struct tm lt, gm;
+        dect2::localTime(now, &lt);
+        dect2::gmTime(now, &gm);
+        gm.tm_isdst = lt.tm_isdst;
+        const long off = (long)difftime(mktime(&lt), mktime(&gm));   // seconds east of UTC, without tm_gmtoff (not on Windows)
         ImGui::TextDisabled("Times are UTC (your clock is UTC%+ld:%02ld). The NCDXF/IARU slots are told from the computer clock: keep it within about a second of true time, or set the offset in Settings.",
                             off / 3600, std::labs(off % 3600) / 60);
     }
