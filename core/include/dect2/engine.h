@@ -75,6 +75,7 @@
 #include "dji_rx.h"
 #include "nbiot_rx.h"
 #include "halow_rx.h"
+#include "codar_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -278,6 +279,7 @@ public:
     FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
     DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
+    CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
     TimeReceiver& timesig() { return rxTime_; }   // time signals: station, receiver position (telemetry through latestRx)
@@ -457,6 +459,7 @@ private:
     DjiReceiver rxDji_;
     NbiotReceiver rxNb_;
     HalowReceiver rxHl_;
+    CodarReceiver rxCd_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;

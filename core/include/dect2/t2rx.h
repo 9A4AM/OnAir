@@ -65,6 +65,7 @@
 #include "dji_tel.h"
 #include "nbiot_tel.h"
 #include "halow_tel.h"
+#include "codar_tel.h"
 #include "rid_tel.h"
 #include "meteor_tel.h"
 #include "nr_tel.h"
@@ -152,6 +153,7 @@ struct RxTelemetry {
     NbiotTelemetry nbiot;     // valid when standard == 70 (NB-IoT cells)
     ZigbeeTelemetry zigbee;   // valid when standard == 66 (Zigbee / 802.15.4)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
+    CodarTelemetry codar;     // valid when standard == 73 (CODAR / HF ocean radar)
     HalowTelemetry halow;     // valid when standard == 71 (Wi-Fi HaLow / 802.11ah)
     RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)
     MeteorTelemetry meteor;   // valid when standard == 60 (Meteor-M LRPT)

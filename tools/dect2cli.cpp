@@ -199,6 +199,7 @@ int main(int argc, char** argv) {
     e.flarm().clearResults();
     e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
     e.dji().clearResults();       // DJI drones: the drones and signals are printed with each line
+    e.codar().clearResults();     // CODAR radars: the table is printed with each line
     e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
     e.globalstar().clearResults();   // Globalstar: the events are printed with each line
@@ -312,6 +313,10 @@ int main(int argc, char** argv) {
                 for (const DjiTrack& k : t.dji.tracks)
                     printf("  dji: %-24s %6.2f MHz wide at %+7.2f MHz  %d bursts  period %.2f ms  duty %.0f%%  OFDM %.2f  confidence %.0f%%\n", djiClassName(k.cls).c_str(), k.bwMhz, k.offsetHz / 1e6, k.bursts, k.periodMs, k.duty * 100, k.ofdm, k.conf * 100);
             }
+            if (t.standard == 73)   // CODAR / HF ocean radar: the radars heard
+                for (const auto& s : t.codar.stations)
+                    printf("  codar: #%d %9.4f MHz %6.1f kHz %s %7.1f kHz/s period %.2f s %5.1f dB %llu sweeps %s%s\n", s.id, s.centreMhz, s.bwKhz, s.dir > 0 ? "up  " : "down", s.rateKhzS, s.periodSec, s.snrDb,
+                           (unsigned long long)s.sweeps, s.callsign.empty() ? "" : "ID ", s.callsign.empty() ? "" : (s.callsign + " (unverified)").c_str());
             if (t.standard == 71)   // Wi-Fi HaLow networks: the table
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
