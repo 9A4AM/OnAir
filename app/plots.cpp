@@ -154,9 +154,9 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
     if (ImGui::SmallButton(b)) ImGui::OpenPopup("##bwpop");
     ImGui::PopStyleColor(2);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", tr(cw.settable ? "Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width."
-                                      : "Channel width: the band the receiver works with (the light band), set by the standard.")
-                    + std::string("\n\n") + tr("Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.")).c_str();
+        ImGui::SetTooltip("%s\n\n%s", tr(cw.settable ? "Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width."
+                                      : "Channel width: the band the receiver works with (the light band), set by the standard."),
+                          tr("Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset."));
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y + 2 * gUi), ImGuiCond_Appearing, ImVec2(1, 0));   // under the button, right-aligned
     if (ImGui::BeginPopup("##bwpop")) { channelWidthPopup(a); ImGui::EndPopup(); }
     ImGui::SetCursorScreenPos(keep);
