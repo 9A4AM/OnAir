@@ -108,9 +108,8 @@ rid	--mode rid	Overview|Drones|Receiver|History
 meteor	--mode meteor	Overview|Picture|Receiver|History
 nr	--mode nr	Overview|NR cells|Receiver|History
 cubesat	--mode cubesat	Overview|Frames|Receiver|History
-globalstar	--mode globalstar	Overview|Activity|Receiver|History
-vdes	--mode vdes	Overview|Messages|Receiver|History
-goes	--mode goes	Overview|Products|Receiver|History"
+goes	--mode goes	Overview|Products|Receiver|History
+hrpt	--mode hrpt	Overview|Picture|Receiver|History"
 
 JOBLIST="$OUT/jobs.txt"
 : > "$JOBLIST"
