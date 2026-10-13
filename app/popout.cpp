@@ -53,6 +53,7 @@ void setFullscreen(bool on) {
     glfwGetWindowSize(gPop, &gWw, &gWh);
     GLFWmonitor* m = monitorFor(gWx, gWy, gWw, gWh);   // the monitor the window is on
     const GLFWvidmode* vm = m ? glfwGetVideoMode(m) : nullptr;
+    glfwSetWindowAttrib(gPop, GLFW_AUTO_ICONIFY, GLFW_FALSE);  // stay up when focus moves (#71)
     if (vm) glfwSetWindowMonitor(gPop, m, 0, 0, vm->width, vm->height, vm->refreshRate);
 }
 

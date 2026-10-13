@@ -102,6 +102,7 @@ void toggleFullscreen() {
     if (!m) return;
     const GLFWvidmode* vm = glfwGetVideoMode(m);
     if (!vm) return;
+    glfwSetWindowAttrib(gWindow, GLFW_AUTO_ICONIFY, GLFW_FALSE);  // stay up when focus moves (#71)
     glfwSetWindowMonitor(gWindow, m, 0, 0, vm->width, vm->height, vm->refreshRate);
 }
 
