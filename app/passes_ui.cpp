@@ -23,7 +23,7 @@ namespace {
 namespace fs = std::filesystem;
 fs::path fsPath(const std::string& p) { return fs::path(reinterpret_cast<const char8_t*>(p.c_str())); }
 
-constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kMeteor = 59, kCubesat = 61;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, Meteor-M LRPT, CubeSat telemetry
+constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kMeteor = 59, kCubesat = 61, kGlobalstar = 62;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, Meteor-M LRPT, CubeSat telemetry
 
 struct Source { const char* file; const char* url; };
 const Source kSources[] = {
@@ -31,11 +31,12 @@ const Source kSources[] = {
     {"stations.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"},
     {"orbcomm.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=orbcomm&FORMAT=tle"},
     {"amateur.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle"},
+    {"globalstar.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=globalstar&FORMAT=tle"},
 };
 const char* const kPasted = "pasted.txt";
 
-enum Group { Weather, Iss, Orbcomm, Amateur, NumGroups };
-const char* const kGroupLabel[NumGroups] = {N_("Weather (137 MHz)"), "ISS", "Orbcomm", N_("Amateur")};
+enum Group { Weather, Iss, Orbcomm, Amateur, GlobalstarGrp, NumGroups };
+const char* const kGroupLabel[NumGroups] = {N_("Weather (137 MHz)"), "ISS", "Orbcomm", N_("Amateur"), "Globalstar"};
 
 struct Known { const char* name; int norad; double mhz; const char* mode; int family; int group; };
 const Known kKnown[] = {
@@ -67,7 +68,7 @@ struct State {
     bool dirty = true;
     double computedAt = 0, lat = 1e9, lon = 1e9, altM = 0;   // altM: the observer height (metres) the passes were computed for
     float minEl = 10;
-    bool show[NumGroups] = {true, true, true, true};
+    bool show[NumGroups] = {true, true, true, true, true};
     std::vector<Cube> cubes;
     // the chosen pass (a row): its satellite is the one tracked
     int selSat = -1; double selAos = 0;
@@ -134,6 +135,8 @@ void buildSats() {
     const ModeTuning* ot = modeTuning(46);
     for (const auto& [no, t] : S.tles)
         if (t.name.rfind("ORBCOMM", 0) == 0) add(t.name, no, ot ? ot->defMhz : 137.25, "Orbcomm", kOrbcomm, Orbcomm);
+    for (const auto& [no, t] : S.tles)
+        if (t.name.rfind("GLOBALSTAR", 0) == 0) add(t.name, no, 1618.25, "Globalstar", kGlobalstar, GlobalstarGrp);
     for (const Cube& c : S.cubes) add(c.name, c.norad, c.mhz, c.aprs ? "APRS" : "CubeSat telemetry", c.aprs ? kAprs : kCubesat, Amateur);
     S.selSat = -1;
     for (int i = 0; i < (int)S.sats.size(); i++) if (!S.selName.empty() && S.sats[i].name == S.selName) S.selSat = i;
@@ -519,4 +522,21 @@ void passesWindow(App& a) {
     if (!S.sats.empty() && (S.track || a.passesOpen)) compute(a);
     trackTick(a);
     if (a.passesOpen) window(a);
+}
+
+// The Globalstar activity monitor's overlay: every Globalstar satellite above the horizon at this time with the Doppler shift its downlink would have
+// at freqHz for the receiver's position (names and Doppler, empty without TLEs).
+std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz) {
+    loadState();
+    std::vector<std::pair<std::string, double>> out;
+    if (!receiverLocationSet()) return out;
+    double lat, lon;
+    receiverLocation(lat, lon);
+    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon; o.altKm = receiverAltitudeM() / 1000;
+    for (const Sat& s : S.sats) {
+        if (s.family != kGlobalstar) continue;
+        dect2::Look l;
+        if (dect2::lookAt(s.sgp, o, unixSec, l) && l.elDeg > 0) out.push_back({s.name, dect2::dopplerHz(freqHz, l.rangeRateKmS)});
+    }
+    return out;
 }

@@ -186,6 +186,8 @@ int main(int argc, char** argv) {
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
+    e.globalstar().clearResults();   // Globalstar: the events are printed with each line
+    e.vdes().clearResults();      // VDES: the ASM frames and bursts are printed with each line
     e.rid().clearDrones();        // Drone Remote ID: the drone table is printed with each line
     e.dvbc().setSymbolRate(dvbcSr);   // DVB-C: no sound of its own; the transport stream goes to the player and outputs
     e.dvbc().setQam(dvbcQam == 16 ? 0 : dvbcQam == 32 ? 1 : dvbcQam == 64 ? 2 : dvbcQam == 128 ? 3 : dvbcQam == 256 ? 4 : -1);
@@ -283,6 +285,18 @@ int main(int argc, char** argv) {
                     printf("  cubesat: %8.1f s %-9s %5d %-20s %-24s %3zu bytes rs %d %s\n", f.timeSec, cubesat::framingShort(f.framing), f.baud, f.sat.c_str(),
                            (f.from.empty() ? std::string("-") : f.from + ">" + f.to).c_str(), f.data.size(), f.rsErrors, cubesat::asciiOf(f.payload).substr(0, 60).c_str());
                 }
+            if (t.standard == 63) {   // Globalstar: the active channels
+                for (const GsChannel& c : t.globalstar.chan)
+                    if (c.active) printf("  globalstar: channel %2d %.2f MHz  SNR %5.1f dB  Doppler %+8.0f Hz  occupancy %.2f\n", c.index + 1, c.centreMhz, c.snrDb, c.dopplerHz, c.occupancy);
+            }
+            if (t.standard == 64) {   // VDES: the newest ASM frames and VDE-TER bursts
+                for (size_t i = 0; i < t.vdes.asms.size() && i < 3; i++)
+                    printf("  vdes asm %c: %8.1f s %3d bits %s\n", t.vdes.asms[i].channel, t.vdes.asms[i].timeSec, t.vdes.asms[i].bits, t.vdes.asms[i].hex.substr(0, 48).c_str());
+                for (size_t i = 0; i < t.vdes.bursts.size() && i < 3; i++) {
+                    const VdeBurst& b = t.vdes.bursts[i];
+                    printf("  vde-ter: %8.1f s %.4f MHz %3d kHz %-9s %6.1f dBFS SNR %5.1f dB %5.1f ms\n", b.timeSec, b.centreMhz, b.bwKhz, vdeModName(b.mod), b.rssiDb, b.snrDb, b.durMs);
+                }
+            }
             if (t.standard == 57)   // Drone Remote ID: one line a drone
                 for (const auto& d : t.rid.drones)
                     printf("  rid: %s %-3s %-20s %10.6f %11.6f h %6.1f m %5.1f m/s op %10.6f %11.6f %s\n", d.mac.c_str(), d.viaBle ? "BLE" : "WiFi",
