@@ -275,8 +275,13 @@ void netRadioWindow(App& a) {
     a.netAddPort = std::max(0, std::min(65535, a.netAddPort));
     if (a.netAddType == NetRadio::Pluto) { ImGui::SameLine(); ImGui::TextDisabled("%s", tr("0 = libiio's default")); }
     if (a.netAddType == NetRadio::SoapyRemote && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", tr("This build has no SoapySDR, which SoapyRemote needs."));
+    if (a.netAddType == NetRadio::SoapyRemote) {
+        ImGui::InputTextWithHint(tr("Remote driver"), "mirisdr  (empty: list what the server offers)", a.netAddRemote, sizeof a.netAddRemote);
+        ImGui::TextDisabled("%s", tr("The radio's SoapySDR driver on the server, or a key=value list: driver=sdrplay,serial=1."));
+    }
     if (ImGui::Button(tr("Connect"))) {
         NetRadio r;
+        if (a.netAddType == NetRadio::SoapyRemote) r.remote = a.netAddRemote;
         r.type = (NetRadio::Type)a.netAddType;
         r.host = a.netAddHost;
         r.port = a.netAddPort;

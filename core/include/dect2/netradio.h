@@ -3,6 +3,7 @@
 // They are listed with the other radios (listRadios) once setNetworkRadios() has them.
 #pragma once
 #include "source.h"
+#include <map>
 #include <string>
 #include <vector>
 
@@ -12,8 +13,24 @@ struct NetRadio {
     enum Type { Pluto = 0, RtlTcp = 1, SoapyRemote = 2, SpyServer = 3, HermesLite2 = 4 } type = RtlTcp;
     std::string host;   // name or address ("ip:" in front of a Pluto's is accepted and dropped)
     int port = 0;       // 0 = the type's default (a Pluto: libiio's own, 30431)
-    bool operator==(const NetRadio& o) const { return type == o.type && host == o.host && port == o.port; }
+    std::string remote; // SoapyRemote only: which of the server's radios to ask for, "mirisdr" or "driver=mirisdr,serial=1" (empty: the ones it lists)
+    bool operator==(const NetRadio& o) const { return type == o.type && host == o.host && port == o.port && remote == o.remote; }
 };
+
+// SoapyRemote: one radio a server offers (the keys of its enumeration, "remote:" prefix dropped)
+struct RemoteSoapyDevice { std::string driver, serial, label; };
+// The SoapySDR arguments of a SoapyRemote radio: "driver=remote,remote=tcp://host:port" plus every key=value of r.remote as "remote:key=value"
+// ("mirisdr" alone means driver=mirisdr)
+std::string soapyRemoteArgs(const NetRadio& r);
+// What the enumeration of a server (one kwargs map per radio) offers, without sound-card drivers (audio) unless includeAudio
+std::vector<RemoteSoapyDevice> soapyRemoteOffers(const std::vector<std::map<std::string, std::string>>& kwargs, bool includeAudio = false);
+// The enumeration used for a SoapyRemote server's radios: given the SoapySDR arguments, one kwargs map per radio found. Tests replace it.
+using SoapyEnumerateFn = std::vector<std::map<std::string, std::string>> (*)(const std::string& args);
+void setSoapyEnumerator(SoapyEnumerateFn fn);   // nullptr: SoapySDR's own; also forgets what was remembered
+// The radios the server of r offers (asks it, then remembers the answer for a minute). Blocks while it asks: not for the UI thread.
+std::vector<RemoteSoapyDevice> soapyRemoteList(const NetRadio& r, bool includeAudio = false);
+// The plain-language reason a SoapyRemote radio could not be opened: what the server offers and what to type in "Remote driver". "" for other args.
+std::string soapyRemoteFailureHelp(const std::string& soapyArgs);
 
 const char* netRadioTypeName(NetRadio::Type t);       // "PlutoSDR", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2"
 int netRadioDefaultPort(NetRadio::Type t);            // 0 (Pluto), 1234, 55132, 5555, 1024

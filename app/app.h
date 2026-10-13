@@ -212,6 +212,7 @@ struct App {
     int netAddType = NetRadio::RtlTcp;
     char netAddHost[128] = "";
     int netAddPort = 1234;
+    char netAddRemote[128] = "";   // SoapyRemote: the server radio to ask for ("mirisdr", "driver=sdrplay,serial=1")
     std::string netAddErr;
     // a search for Hermes Lite 2 radios (a discovery broadcast) running on a worker thread, and what the last one found
     struct NetDiscovery { std::atomic<bool> done{false}; std::vector<FoundNetRadio> found; };

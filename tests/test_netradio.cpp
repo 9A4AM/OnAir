@@ -592,6 +592,42 @@ static void testPluto() {
     setNetworkRadios({});
 }
 
+// A fake SoapyRemote server: a sound card first, then a Mirics stick (the case of issue #84)
+static std::vector<std::map<std::string, std::string>> fakeEnumerate(const std::string&) {
+    return {{{"driver", "remote"}, {"remote:driver", "audio"}, {"remote:label", "HDA Intel"}},
+            {{"driver", "remote"}, {"remote:driver", "mirisdr"}, {"remote:label", "Mirics MSi2500"}, {"remote:serial", "1"}}};
+}
+static void testSoapyRemote() {
+    NetRadio r; r.type = NetRadio::SoapyRemote; r.host = "tcp://192.168.0.13"; r.port = 55133;
+    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133");
+    r.remote = "mirisdr";
+    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133,remote:driver=mirisdr");
+    r.remote = "driver=sdrplay, serial=7";
+    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133,remote:driver=sdrplay,remote:serial=7");
+    const auto back = netRadiosFromString(netRadiosToString({r}));
+    CHECK(back.size() == 1 && back[0].remote == "driver=sdrplay, serial=7" && back[0].port == 55133);
+    NetRadio plain = r; plain.remote.clear();
+    CHECK(!(plain == r));
+    const auto kw = fakeEnumerate("");
+    const auto off = soapyRemoteOffers(kw);
+    CHECK(off.size() == 1 && off[0].driver == "mirisdr" && off[0].serial == "1" && off[0].label == "Mirics MSi2500");
+    CHECK(soapyRemoteOffers(kw, true).size() == 2);
+    setSoapyEnumerator(fakeEnumerate);
+    const auto l = soapyRemoteList(plain);
+    CHECK(l.size() == 1 && l[0].driver == "mirisdr");
+    const std::string help = soapyRemoteFailureHelp(soapyRemoteArgs(plain));
+    CHECK(help.find("mirisdr") != std::string::npos && help.find("audio") != std::string::npos && help.find("Remote driver") != std::string::npos);
+    CHECK(soapyRemoteFailureHelp("driver=rtlsdr").empty());
+#ifdef DECT2_HAVE_SOAPY
+    const auto v = netRadioDevices({plain});
+    CHECK(v.size() == 1 && v[0].soapyArgs == "driver=remote,remote=tcp://192.168.0.13:55133,remote:driver=mirisdr,remote:serial=1");
+    CHECK(v[0].name.find("mirisdr") != std::string::npos && v[0].name.find("192.168.0.13:55133") != std::string::npos);
+    const auto v2 = netRadioDevices({r});
+    CHECK(v2.size() == 1 && v2[0].soapyArgs == soapyRemoteArgs(r));
+#endif
+    setSoapyEnumerator(nullptr);
+}
+
 static void testPrefs() {
     NetRadio a; a.type = NetRadio::Pluto; a.host = "192.168.2.1";
     NetRadio b; b.type = NetRadio::RtlTcp; b.host = "raspberrypi.local"; b.port = 1234;
@@ -605,8 +641,10 @@ static void testPrefs() {
     CHECK(netRadiosFromString("junk;rtltcp,,1;bogus,h,1").empty());
     CHECK(netRadioDefaultPort(NetRadio::RtlTcp) == 1234 && netRadioDefaultPort(NetRadio::SoapyRemote) == 55132 && netRadioDefaultPort(NetRadio::Pluto) == 0);
 #ifdef DECT2_HAVE_SOAPY
+    setSoapyEnumerator([](const std::string&) { return std::vector<std::map<std::string, std::string>>(); });   // a server that lists nothing: the plain entry
     const auto v = netRadioDevices({c});
     CHECK(v.size() == 1 && v[0].kind == DeviceInfo::Soapy && v[0].soapyArgs == "driver=remote,remote=tcp://10.0.0.7:55132");
+    setSoapyEnumerator(nullptr);
 #else
     CHECK(netRadioDevices({c}).empty());
 #endif
@@ -617,6 +655,7 @@ int main() {
     signal(SIGPIPE, SIG_IGN);   // the fake server writes to clients that went away
 #endif
     testPrefs();
+    testSoapyRemote();
     testPluto();
     testRtlTcp();
     testRtlTcpOther();

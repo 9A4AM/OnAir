@@ -2,6 +2,7 @@
 // The HackRF keeps its own native source (source.cpp); a "hackrf" Soapy entry is hidden so a radio is listed once.
 #include "dect2/rate_choice.h"
 #include "dect2/source.h"
+#include "dect2/netradio.h"
 #include "dect2/ring.h"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Errors.h>
@@ -212,7 +213,7 @@ public:
         ring_ = &ring;
         try {
             dev_ = SoapySDR::Device::make(args_);
-            if (!dev_) { err = "cannot open " + args_; return false; }
+            if (!dev_) { err = "cannot open " + args_; const std::string h = soapyRemoteFailureHelp(args_); if (!h.empty()) err = h; return false; }
             rememberRanges(key_, dev_);   // for the next listing
             biasKey_ = biasSetting(dev_);
             bias_ = false;
@@ -232,6 +233,8 @@ public:
             if (dev_->activateStream(stream_) != 0) { err = "activateStream failed"; close(); return false; }
         } catch (const std::exception& e) {
             err = std::string("SoapySDR: ") + e.what();
+            const std::string h = soapyRemoteFailureHelp(args_);
+            if (!h.empty()) err = h + " (" + e.what() + ")";
             close();
             return false;
         }

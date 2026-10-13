@@ -277,7 +277,7 @@ Radios on another computer or on the network are added from the source list: pic
 
 - A Pluto on a real network (not its USB cable) is offered its full sample rate; how much of it arrives depends on the network.
 - rtl_tcp carries 8-bit samples at up to about 2.5 Msps; when the connection drops, OnAir connects again and counts the samples that were missed.
-- SoapyRemote needs a build with SoapySDR and the SoapyRemote module on both computers.
+- SoapyRemote needs a build with SoapySDR and the SoapyRemote module on both computers. OnAir asks the server which radios it has and lists each one (sound cards are hidden); if it picks the wrong one or lists none, type the radio's driver (for example `mirisdr`) in "Remote driver".
 - Choosing **Hermes Lite 2** searches this computer's networks for one (openHPSDR discovery) and fills in its address; **Search** looks again. It receives up to 38.4 MHz at 48 to 384 ksps, so only HF and narrow modes fit; the N2ADR filter board's band filters are switched with the frequency (a setting of the radio turns that off).
 
 ## Updates
