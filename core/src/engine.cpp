@@ -245,7 +245,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         rxVor_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // VOR, localizer, glide slope or marker by the frequency
         rxM17_.setSignalOffset(o);
         rxHfdl_.setSignalOffset(o);
-        rxHfdl_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // the channels are placed from it
+        rxHfdl_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : (tune.centerHz >= 2e6 && tune.centerHz <= 30e6 ? tune.centerHz : 0.0));   // the channels are placed from it; a recording: the frequency entered for it (HFDL is HF), else 8.9 MHz
         rxCell_.setSignalOffset(o);
         rxCell_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // the cells' EARFCNs
         rxCw_.setSignalOffset(o);
