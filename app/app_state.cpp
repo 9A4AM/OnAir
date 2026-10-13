@@ -132,6 +132,13 @@ void refreshDevices(App& a) {
     setNetworkRadios(a.netRadios);   // the ones the user added by address come after the ones found
     // HackRF, the radios with a native driver (RTL-SDR, Airspy, BladeRF, LimeSDR, PlutoSDR, USRP) and the rest through SoapySDR
     for (auto& d : listRadios(err)) a.devices.push_back(d);
+    for (App* o : receiversAll()) {   // a radio another receiver has open may be missing from the list (drivers cannot look at a radio in use): it stays, as "in use by RX n"
+        if (o == &a || !o->engine.running() || o->devIdx < 2 || o->devIdx >= (int)o->devices.size() || !o->devices[o->devIdx].isRadio()) continue;
+        const DeviceInfo& h = o->devices[o->devIdx];
+        bool have = false;
+        for (const auto& d : a.devices) have |= deviceClaimKey(d) == deviceClaimKey(h);
+        if (!have) a.devices.push_back(h);
+    }
     a.hackrfErr = err;
     a.hackrfErrHidden = false;
     a.usbHints = a.devices.size() == 2 ? usbRadioHints() : std::vector<std::string>();   // reads sysfs: only here, not every frame
@@ -423,13 +430,14 @@ void loadPrefs(App& a) {
     a.popTop = d.getB("popTop", true);
     a.updCheck = d.getB("updCheck", true); a.updAuto = d.getB("updAuto", true); a.updPre = d.getB("updPre", true);
     a.updLast = d.getD("updLast", 0); a.updSkip = d.getS("updSkip", "");
-    loadFeedPrefs(a);
+    if (a.rxId == 1) loadFeedPrefs(a);   // the feeds are shared by all receivers: RX 1 owns their settings
     a.channels = d.getChannels();
 }
 
 void savePrefs(const App& a) {
     plat::Prefs& d = plat::prefs();
-    d.setS("netRadios", netRadiosToString(a.netRadios));
+    if (a.rxId == 1) d.setS("netRadios", netRadiosToString(a.netRadios));
+    d.setS("devName", a.devIdx >= 2 && a.devIdx < (int)a.devices.size() ? a.devices[a.devIdx].name : std::string());   // the radio of this receiver, found again at the next start
     d.setD("freqMhz", a.freqMhz);
     d.setI("lna", a.tune.lnaDb);
     d.setI("vga", a.tune.vgaDb);
@@ -440,7 +448,7 @@ void savePrefs(const App& a) {
     { const SubMode* sm = curSub(a); d.setS("subMode", sm ? sm->id : ""); }
     d.setI("fmDeemph", a.fmDeemph);
     d.setI("fmChanKhz", a.fmChanKhz);
-    d.setB("newUi", a.newUi);
+    if (a.rxId == 1) d.setB("newUi", a.newUi);
     const int curSlot = modeSlot(a);
     for (int f = 0; f < kNumSlots; f++) {   // gains per mode (the current mode from the live settings)
         const bool cur = f == curSlot;
@@ -451,6 +459,11 @@ void savePrefs(const App& a) {
         d.setB(("gAmp" + k).c_str(), cur ? a.tune.ampOn : a.famGain[f].amp);
     }
     for (int f = 6; f < kNumSlots; f++) if (a.famFreq[f] > 0 || (f == curSlot && a.family >= 6)) d.setD(("fFreq" + slotKey(f)).c_str(), f == curSlot ? a.freqMhz : a.famFreq[f]);
+    if (a.rxId > 1) {   // a further receiver keeps only its own radio, mode, frequency and gains: everything else is shared and written by RX 1
+        d.setI("standard", a.stdMode); d.setI("bw", a.bwIdx);
+        d.flush();
+        return;
+    }
     d.setI("uiTheme", a.uiTheme);
     d.setS("uiLang", a.uiLang);
     d.setI("lightUi", a.lightUi ? 1 : 0);

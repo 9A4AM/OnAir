@@ -163,9 +163,10 @@ void mainTabs(App& a) {
     }
 }
 
+static bool anyRunning() { for (App* r : receiversAll()) if (r->engine.running()) return true; return false; }
 static bool gIdentifyDev = false;   // --identify
 
-void drawUI(App& a, ImVec2 disp) {
+void drawUI(App& a, ImVec2 disp, bool draw) {
     ingestSpectrum(a);
     ingestRx(a);
     dabHistory(a);
@@ -202,6 +203,7 @@ void drawUI(App& a, ImVec2 disp) {
     }
     a.video.update(a.engine.player());
     if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }
+    if (!draw) return;   // a receiver whose tab is not shown: ticked above, not drawn
     {
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
@@ -552,6 +554,7 @@ int main(int argc, char** argv) {
     // the decoded results of the last run (each mode's lists, until its Clear), then saved every 30 s and at exit
     app.engine.setResultsDir(plat::dataDir() + "/results");
     appResultsLoad(app);
+    receiversInit(app);   // RX 2 ... that were open at the last exit
 
     bool autostart = false, hackrfStart = false, fileStart = false, stress = false;
     int stressFrame = 0, stressStep = 0;
@@ -570,6 +573,7 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--map") app.mapOpen = true;   // dev: open View > Map
         if (std::string(argv[i]) == "--scanner") app.scannerOpen = true;   // dev: open View > Scanner   // dev: open View > Passes
         if (std::string(argv[i]) == "--tle" && i + 1 < argc) passesDevTle(argv[++i]);   // dev: TLEs from a file for the pass planner (no download)
+        if (std::string(argv[i]) == "--rx2") addReceiver();   // dev: a second receiver at once (no warning dialog)
         if (std::string(argv[i]) == "--mute") { app.muted = true; app.volume = 0; }
         if (std::string(argv[i]) == "--identify") gIdentifyDev = true;   // dev: identify the strongest signal once the receiver runs (with --shot)
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
@@ -646,7 +650,7 @@ int main(int argc, char** argv) {
                 if (!shotPath) {
                     if (!shown && !popOutShown() && !gNoOsWindows) interval = app.reduceCpuHidden ? 0.1 : 0.25;                                                  // the pop-out window keeps playing
                     else if (t - lastInputT < 1.0 || app.engine.player().selected() >= 0) interval = 1.0 / 60;      // typing, dragging, video
-                    else if (app.engine.running()) interval = focused ? 1.0 / 30 : 1.0 / 15;                          // spectrum and waterfall
+                    else if (anyRunning()) interval = focused ? 1.0 / 30 : 1.0 / 15;                          // spectrum and waterfall
                     else interval = focused ? 0.1 : 0.25;                                                          // nothing is moving
                 }
                 if (interval > 0 && frameNext > t) {
@@ -724,7 +728,7 @@ int main(int argc, char** argv) {
             double now = glfwGetTime();
             last = now;
             const double tUi0 = glfwGetTime();
-            drawUI(app, io.DisplaySize);
+            receiversFrame(app, io.DisplaySize);
             popOutFrame(app);
             ImGui::Render();
             if (app.lightUi) lightenDrawData(ImGui::GetDrawData());
@@ -758,6 +762,7 @@ int main(int argc, char** argv) {
         }
     }
     delete gDiscord;   // clears the status and joins its thread
+    receiversShutdown(app);
     app.engine.stop();
     app.engine.flushResults();
     appResultsSave(app, true);

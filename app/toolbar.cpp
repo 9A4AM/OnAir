@@ -58,6 +58,7 @@ static std::string rateWarning(const App& a) {
 }
 
 void startReceiver(App& a) {
+    if (std::string why; receiverModeBusy(a, &why)) { a.engine.log(why); return; }   // two receivers in one mode share screen state (docs/multi-sdr.md)
     // a running scan has the radio: the receiver opening it too would take it away from the scan (SDRplay) or fail
     if (a.scanner.progress().running && a.devices[a.devIdx].isRadio()) { a.engine.log("a scan is using the radio: stop the scan first"); return; }
     const bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
@@ -331,10 +332,17 @@ void toolbarParts(App& a, int mask, bool vertical) {
     ImGui::BeginDisabled(running);
     if (ImGui::BeginCombo("##src", srcName.c_str())) {
         for (int i = 0; i < (int)a.devices.size(); i++)
-            if (ImGui::Selectable(a.devices[i].name.c_str(), i == a.devIdx) && i != a.devIdx) {
+        {
+            const int held = deviceHolder(a.devices[i]);   // a radio another receiver has open cannot be picked here
+            const bool other = held != 0 && held != a.rxId;
+            const std::string nm = a.devices[i].name + (other ? " (in use by RX " + std::to_string(held) + ")" : std::string());
+            ImGui::BeginDisabled(other);
+            if (ImGui::Selectable(nm.c_str(), i == a.devIdx) && i != a.devIdx) {
                 a.devIdx = i;
                 a.tune.biasTee = false;   // antenna power set for another radio (and its antenna) is never carried over
             }
+            ImGui::EndDisabled();
+        }
         ImGui::Separator();
         if (ImGui::Selectable(tr("Add network radio…"))) a.netAddOpen = true;
         ImGui::EndCombo();

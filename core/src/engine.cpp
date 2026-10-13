@@ -1,5 +1,6 @@
 #include "dect2/engine.h"
 #include "dect2/converter.h"
+#include "dect2/device_claims.h"
 #include "dect2/hfdig_ftx.h"
 #include "dect2/hfdig_kbd.h"
 #include "dect2/rate_choice.h"
@@ -116,11 +117,12 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     lastRadioMissNs_ = 0; lastCpuDropNs_ = 0; loadPct_ = 0; loadT_ = 0;
     holdDelivery(1000);   // a radio often stutters while its stream starts
     std::string err;
+    if (int holder = 0; !claimDevice(dev, receiverId_, &holder)) { log("this radio is in use by RX " + std::to_string(holder)); return false; }
     if (dev.kind == DeviceInfo::File)
         src_ = makeFileSource(file.path, file.format, file.sampleRate, file.loop);
     else
         src_ = makeSource(dev);
-    if (!src_) { log("no source"); return false; }
+    if (!src_) { log("no source"); releaseDevice(receiverId_); return false; }
     offHz_ = 0; offRate_ = 0; offsetDc_ = false;
     std::string offNote;
     if (autoOffset_ && dev.isRadio() && offsetAllowed()) {
@@ -138,6 +140,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     if (!src_->start(hwTune(tune), ring_, err)) {
         log("source start failed: " + err);
         src_.reset();
+        releaseDevice(receiverId_);
         return false;
     }
     if (offHz_ > 0 && src_->sampleRate() / 2 < offHz_ + tune.bandwidthMhz * 0.5e6) {
@@ -545,6 +548,7 @@ void Engine::stop() {
     }
     rxA3_.stop();
     running_ = false;
+    releaseDevice(receiverId_);
 }
 
 bool Engine::startRecording(const std::string& path, FileFormat fmt, std::string& err) {

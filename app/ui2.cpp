@@ -498,6 +498,7 @@ void statusLine(App& a) {
             if (lastWall > 0) cpuPct = (cpu - lastCpu) / (wall - lastWall) * 100;
             lastCpu = cpu; lastWall = wall; cpuT = wall;
         }
+        gCpuPct = (float)cpuPct;
         const SampleLoss l = a.engine.sampleLoss();
         snprintf(b, sizeof b, "CPU %.0f%%", cpuPct);
         field(b, false, cpuPct > 250 ? pal::warnAmber() : ImVec4(-1, 0, 0, 0));

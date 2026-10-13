@@ -128,11 +128,15 @@ struct SampleLoss {
 };
 
 class Engine {
+    int receiverId_ = 1;
 public:
     Engine();
     ~Engine();
 
     bool start(const DeviceInfo& dev, const TuneSettings& tune, const FileOptions& file);
+    // The number of this receiver (RX 1, RX 2 ...): the radio it opens is claimed for it (device_claims.h), another receiver cannot open it too
+    void setReceiverId(int id) { receiverId_ = id; }
+    int receiverId() const { return receiverId_; }
     void stop();
     bool retune(const TuneSettings& tune);
     // Retune and flush every stage (receiver, spectrum, transport stream) - used by the channel scanner.

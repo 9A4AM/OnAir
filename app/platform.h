@@ -33,7 +33,9 @@ struct Prefs {
     // Returns where they went (UTF-8), empty when they could not be kept.
     virtual std::string setAside() = 0;
 };
-Prefs& prefs();
+Prefs& prefs();       // what the app reads and writes: the keys of one receiver get its prefix (rx_prefs.cpp)
+Prefs& basePrefs();   // the platform's store itself
+extern int gPrefRx;   // the receiver whose settings prefs() reads and writes (1 = the first: no prefix)
 
 // Pictures and position (the ADS-B map).
 // Decode a picture file into RGBA8 (0xAABBGGRR, row by row): PNG everywhere, on macOS also what the system reads. False when it cannot be read.

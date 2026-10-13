@@ -80,6 +80,10 @@ void saveFeedPrefs(const App& a) {
 }
 
 void feedsWindow(App& a) {
+    if (a.rxId != 1) {   // the feeds and PSK Reporter are shared by all receivers (they send what every receiver decodes): one window, RX 1's settings
+        if (App* f = receiverById(1)) { f->feedsOpen = a.feedsOpen; feedsWindow(*f); a.feedsOpen = f->feedsOpen; }
+        return;
+    }
     if (!a.feedsOpen) return;
     ImGui::SetNextWindowSize(ImVec2(480 * gUi, 0), ImGuiCond_Appearing);
     if (!ImGui::Begin(trw("Data feeds"), &a.feedsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }

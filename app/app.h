@@ -180,6 +180,8 @@ constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own f
 
 struct App {
     Engine engine;
+    int rxId = 1;                 // receiver number: RX 1 is the first (receivers.h)
+    bool rxForcedMute = false, rxSavedMuted = false;   // only the receiver that plays gets sound: the others are muted
     NetTuner net{engine};      // network tuner (declared after the engine so that it stops first)
     bool netOn = false, netLan = false;
     int netPort = 8089;
@@ -751,7 +753,7 @@ void receiverTab(App& a);
 void streamTab(App& a);
 void routeTab(App& a, const std::string& name);
 ImU32 scoreColour(double sc);
-void drawUI(App& a, ImVec2 disp);
+void drawUI(App& a, ImVec2 disp, bool draw = true);   // draw = false: only the work that must go on for a receiver whose tab is not shown
 // dab_ui.cpp
 const char* dabChannelName(double mhz);
 bool dabChannelCombo(App& a);
@@ -790,3 +792,5 @@ void wizFinish(App& a);
 void wizard(App& a, ImVec2 disp);
 void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
 void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
+#include "dect2/device_claims.h"
+#include "receivers.h"
