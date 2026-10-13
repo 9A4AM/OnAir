@@ -26,6 +26,9 @@ public:
     std::string saveResults() const;                     // for the results file (results_io.h)
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setPhyConfig(const AisPhyConfig& c);               // before configure(); the defaults are the tuned values
+    // every frame with a good FCS: channel 'A' / 'B', the payload bits, signal time, SNR in 48 kHz, carrier offset (VDES ASM listens through it)
+    void setFrameCallback(std::function<void(char, const ais::Bits&, double, double, double)> cb);
+    void setForwardFeeds(bool on);                          // the data feeds' AIS output (default on)
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
 private:

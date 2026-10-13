@@ -88,6 +88,8 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("meteor", 60, rxMeteor_),
         DECT2_RESULT_SLOT("goes", 61, rxGoes_),
         DECT2_RESULT_SLOT("cubesat", 62, rxCube_),
+        DECT2_RESULT_SLOT("globalstar", 63, rxGs_),
+        DECT2_RESULT_SLOT("vdes", 64, rxVdes_),
     };
 }
 

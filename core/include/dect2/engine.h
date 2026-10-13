@@ -67,6 +67,8 @@
 #include "general_rx.h"
 #include "time_rx.h"
 #include "cubesat_rx.h"
+#include "globalstar_rx.h"
+#include "vdes_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -259,6 +261,8 @@ public:
     BleReceiver& ble() { return rxBle_; }   // Bluetooth LE advertising: clear the device table (telemetry through latestRx)
     IonoReceiver& iono() { return rxIono_; }   // ionospheric sounders: timing lock, the sounder shown (telemetry through latestRx)
     GeneralReceiver& general() { return rxGeneral_; }   // general receiver: demodulator, filter, squelch, sound and recording (telemetry through latestRx)
+    GlobalstarReceiver& globalstar() { return rxGs_; }   // Globalstar activity monitor: clear the event log (telemetry through latestRx)
+    VdesReceiver& vdes() { return rxVdes_; }   // VDES: clear the ASM and burst lists (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
     TimeReceiver& timesig() { return rxTime_; }   // time signals: station, receiver position (telemetry through latestRx)
     RidReceiver& rid() { return rxRid_; }   // Drone Remote ID: clear the drone table (telemetry through latestRx)
@@ -428,6 +432,8 @@ private:
     GeneralReceiver rxGeneral_;
     TimeReceiver rxTime_;
     CubesatReceiver rxCube_;
+    GlobalstarReceiver rxGs_;
+    VdesReceiver rxVdes_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;

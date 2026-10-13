@@ -266,7 +266,7 @@ GlobalstarReceiver::~GlobalstarReceiver() = default;
 
 void GlobalstarReceiver::configure(double inputRateHz) { std::lock_guard<std::mutex> lk(p_->procMu); p_->configure(inputRateHz); }
 void GlobalstarReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_->procMu); p_->offsetHz = hz; if (p_->isReady) { p_->plan(); } }
-void GlobalstarReceiver::setDialHz(double hz) { std::lock_guard<std::mutex> lk(p_->procMu); p_->dialHz = hz; if (p_->isReady) { p_->plan(); p_->resetState(); } }
+void GlobalstarReceiver::setDialHz(double hz) { std::lock_guard<std::mutex> lk(p_->procMu); if (hz == p_->dialHz) return; p_->dialHz = hz; if (p_->isReady) { p_->plan(); p_->resetState(); } }
 void GlobalstarReceiver::setWallClock(bool on) { std::lock_guard<std::mutex> lk(p_->procMu); p_->wallClock = on; }
 bool GlobalstarReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->procMu); return p_->isReady; }
 void GlobalstarReceiver::reset() { std::lock_guard<std::mutex> lk(p_->procMu); if (p_->isReady) p_->resetState(); }

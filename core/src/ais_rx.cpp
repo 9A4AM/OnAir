@@ -132,6 +132,8 @@ struct AisReceiver::Impl {
     double lastNow = 0;         // signal time of the last report: the kept stations move back by it when the clock starts again
 
     AisPhyConfig phy;
+    std::function<void(char, const ais::Bits&, double, double, double)> frameCb;   // every frame with a good FCS (VDES ASM listens through it)
+    bool forwardFeeds = true;
 
     void logLine(const std::string& s) { if (log) log(s); }
     double now() const { return (double)ch[0].total / kAisWorkRate; }
@@ -284,8 +286,9 @@ struct AisReceiver::Impl {
         cfoEma = haveSnr ? 0.85 * cfoEma + 0.15 * cfoHz : cfoHz;
         snrEma = haveSnr ? 0.85 * snrEma + 0.15 * snrDb : snrDb;
         haveSnr = true;
+        if (frameCb) frameCb(chn, bits, tnow, snrDb, cfoHz);
         const std::vector<std::string> sentences = ais::toNmea(bits, chn, nmeaSeq);
-        if (Feeds::get().wantAis()) Feeds::get().ais(sentences);   // the data feed out (feeds.h), off unless the user turned it on
+        if (forwardFeeds && Feeds::get().wantAis()) Feeds::get().ais(sentences);   // the data feed out (feeds.h), off unless the user turned it on
         for (const std::string& s : sentences) nmea.push_back(s);
         if (bits.size() > 6 * 60) nmeaSeq = (nmeaSeq + 1) % 10;
         while (nmea.size() > kNmeaCap) nmea.pop_front();
@@ -511,6 +514,14 @@ bool AisReceiver::loadResults(const std::string& blob) {
 void AisReceiver::setPhyConfig(const AisPhyConfig& c) {
     std::lock_guard<std::mutex> lk(p_->procMu);
     p_->phy = c;
+}
+void AisReceiver::setFrameCallback(std::function<void(char, const ais::Bits&, double, double, double)> cb) {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    p_->frameCb = std::move(cb);
+}
+void AisReceiver::setForwardFeeds(bool on) {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    p_->forwardFeeds = on;
 }
 void AisReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
     std::lock_guard<std::mutex> lk(p_->procMu);
