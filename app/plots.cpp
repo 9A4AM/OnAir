@@ -236,6 +236,23 @@ static void envelope(const std::vector<double>& x, const std::vector<float>& y, 
     }
 }
 
+// Ctrl+Up / Ctrl+Down move the dB range of the spectrum by 5 dB, Ctrl+Shift+Up / Down widen or narrow it, Ctrl+Home puts it back
+// to the default. Only while the spectrum is hovered, like the frequency keys below (#91).
+static bool dbRangeKeys(App& a) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (!io.KeyCtrl || io.WantTextInput) return false;
+    const float step = 5;
+    float lo = a.yMin, hi = a.yMax;
+    if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true)) { if (io.KeyShift) { lo -= step; hi += step; } else { lo += step; hi += step; } }
+    else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true)) { if (io.KeyShift) { lo += step; hi -= step; } else { lo -= step; hi -= step; } }
+    else if (ImGui::IsKeyPressed(ImGuiKey_Home)) { lo = -110; hi = -30; }
+    else return false;
+    lo = std::max(-160.f, std::min(20.f, lo)); hi = std::max(-160.f, std::min(20.f, hi));
+    if (hi - lo < 10) return false;
+    a.yMin = lo; a.yMax = hi;
+    return true;
+}
+
 // Ctrl+PageUp / Ctrl+PageDown: the view steps up or down in frequency by its own width
 static void freqPageKeys() {
     ImGuiIO& io = ImGui::GetIO();
@@ -254,9 +271,19 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
         drawn = true;
         plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_Inside, plt::AxisFlags_Inside);   // the frequencies along the bottom edge, inside, as in SDR++
         setupFreqAxis(a);
-        plt::SetupAxisLimits(plt::Y1, a.yMin, a.yMax, plt::Cond_Once);
+        // The dB range follows the spectrum dB fields and the keys: a change there sets the axis at once (the plot otherwise keeps the
+        // range the mouse dragged or zoomed to, and that range is written back into the fields, so the two never disagree) (#91)
+        static float setMin = 1, setMax = 0;
+        const bool rangeEdited = a.yMin != setMin || a.yMax != setMax;
+        plt::SetupAxisLimits(plt::Y1, a.yMin, a.yMax, rangeEdited ? plt::Cond_Always : plt::Cond_Once);
+        if (rangeEdited) { setMin = a.yMin; setMax = a.yMax; }
         channelBand(a, true);
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
+        if (!rangeEdited) {
+            const plt::Rect lim = plt::GetPlotLimits();
+            if (std::fabs(lim.Y.Min - a.yMin) > 0.01 || std::fabs(lim.Y.Max - a.yMax) > 0.01) { a.yMin = setMin = (float)lim.Y.Min; a.yMax = setMax = (float)lim.Y.Max; }
+        }
+        if (plt::IsPlotHovered() && dbRangeKeys(a)) savePrefs(a);
         if (!a.smooth.empty()) {
             const auto x = xs(a);
             const plt::Rect vis = plt::GetPlotLimits();
