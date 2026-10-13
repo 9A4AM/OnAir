@@ -187,6 +187,7 @@ int main(int argc, char** argv) {
     e.general().setSilent(true);  // general receiver: no sound from the command line
     e.wifi().clearNetworks();     // Wi-Fi networks: no sound; the network table is printed with each line
     e.flarm().clearResults();
+    e.hfbeacon().setSilent(true);   // HF beacons: no sound in the command line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
     e.globalstar().clearResults();   // Globalstar: the events are printed with each line
     e.vdes().clearResults();      // VDES: the ASM frames and bursts are printed with each line
@@ -287,6 +288,12 @@ int main(int argc, char** argv) {
                     printf("  flarm: %06X %-16s %5d m %5.0f km/h %4.0f deg %+5.1f m/s %s\n", a.id, dect2::flarm::aircraftTypeName(a.acType), a.altM, a.speedKmh, a.trackDeg, a.climbMs,
                            a.hasRange ? (std::to_string((int)(a.distKm * 10) / 10.0).substr(0, 5) + " km").c_str() : "-");
                 }
+            if (t.standard == 68) {   // HF beacons: the ones heard now (the built-in list)
+                static const std::vector<hfb::Beacon> kList = hfb::defaultBeacons();
+                for (size_t i = 0; i < t.hfb.beacons.size() && i < kList.size(); i++)
+                    if (t.hfb.beacons[i].heard)
+                        printf("  hfbeacon: %-34s %9.1f kHz %+6.1f dB conf %d %s\n", kList[i].name.c_str(), kList[i].khz, (double)t.hfb.beacons[i].snr, t.hfb.beacons[i].conf, t.hfb.beacons[i].note.c_str());
+            }
             if (t.standard == 62)   // CubeSat telemetry: the newest frames
                 for (size_t i = 0; i < t.cube.frames.size() && i < 3; i++) {
                     const CubeFrame& f = t.cube.frames[i];
