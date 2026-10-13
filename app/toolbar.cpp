@@ -472,7 +472,9 @@ void toolbarParts(App& a, int mask, bool vertical) {
     if (a.sweep.active()) {
         if (ImGui::Button(tr("Stop tune"))) { a.sweep = GainSweep(); }
     } else if (ImGui::Button(tr("Auto-tune")) && running) {
-        a.sweep.start(ImGui::GetTime(), generic ? (int)curDev.gainMaxDb : 0);
+        int rfMax = 0;   // a radio with an RF gain stage (SDRplay RFGR): the sweep covers its states too
+        if (generic) for (const auto& rs : curDev.settings) if (rs.key == "rfgr" && rs.values.size() > 2) rfMax = atoi(rs.values.back().c_str());
+        a.sweep.start(ImGui::GetTime(), generic ? (int)curDev.gainMaxDb : 0, rfMax);
         a.agcOn = false;
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to."));
@@ -970,7 +972,8 @@ void gainControl(App& a) {
         sm.locked = a.rx.dataValid; sm.snrDb = a.rx.dataSnrDb;
         sm.clip = a.spec.stats.clipFraction; sm.rms = a.spec.stats.rmsDbfs; sm.peak = a.spec.stats.peak;
         changed = a.sweep.update(now, sm, g);
-        if (!a.sweep.active()) a.engine.log("gain helper: " + a.sweep.summary());
+        if (changed && a.sweep.rf() >= 0) a.tune.radio["rfgr"] = std::to_string(a.sweep.rf());
+        if (!a.sweep.active()) a.engine.log("gain helper: " + a.sweep.summary() + (a.sweep.rf() >= 0 ? ", RF state " + std::to_string(a.sweep.rf()) : std::string()));
     } else if (a.agcOn && a.dir.state() != DirectionFinder::State::Measuring) {   // the gain must stay put while a direction is measured
         changed = a.agc.update(now, a.spec.stats, g);
     }

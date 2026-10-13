@@ -147,6 +147,27 @@ bool gainIsReduction(SoapySDR::Device* dev, int ch) {
     } catch (...) { return false; }
 }
 
+// The RF gain stage of a gain-reduction driver (SoapySDRPlay3: the gain element "RFGR", the LNA state 0-9, 0 = most gain): offered as a
+// setting of its own ("rfgr": auto = the overall gain slider drives it as before, or a state), so the ADC can be kept from saturating
+// with the IF gain (IFGR) left to the slider. Not offered when the driver has no such element.
+const char kRfKey[] = "rfgr";
+bool hasGainElement(SoapySDR::Device* dev, const char* want) {
+    try { for (const auto& n : dev->listGains(SOAPY_SDR_RX, 0)) if (n == want) return true; } catch (...) {}
+    return false;
+}
+bool rfStage(SoapySDR::Device* dev) { return gainIsReduction(dev, 0) && hasGainElement(dev, "RFGR") && hasGainElement(dev, "IFGR"); }
+RadioSetting rfSetting(SoapySDR::Device* dev) {
+    RadioSetting r;
+    r.type = RadioSetting::Choice; r.key = kRfKey; r.label = "RF gain (LNA state)";
+    r.help = "The radio's RF gain stage. 0 is the MOST gain, higher states reduce it: raise it when the ADC saturates on a strong signal. Auto leaves it to the gain slider, which then sets both stages; any state makes the slider drive the IF gain only.";
+    r.values = {"auto"}; r.names = {"Auto (with the gain slider)"};
+    int lo = 0, hi = 9;
+    try { const auto g = dev->getGainRange(SOAPY_SDR_RX, 0, "RFGR"); lo = (int)std::lround(g.minimum()); hi = (int)std::lround(g.maximum()); } catch (...) {}
+    for (int i = lo; i <= hi; i++) { r.values.push_back(std::to_string(i)); r.names.push_back(std::to_string(i) + (i == lo ? " (maximum gain)" : i == hi ? " (least gain)" : "")); }
+    r.def = "auto";
+    return r;
+}
+
 std::string rangesKey(const std::string& serial, const std::string& args) { return serial.empty() ? args : "serial=" + serial; }
 
 // An entry for one antenna input carries its name after the device arguments (listSoapyDevices): "<args>#antenna=<name>"
@@ -177,6 +198,7 @@ void rememberRanges(const std::string& key, SoapySDR::Device* dev) {
     r.biasKey = biasSetting(dev);
     try { r.antennas = dev->listAntennas(SOAPY_SDR_RX, 0); } catch (...) {}
     r.settings = soapySettings(dev, r.biasKey);
+    if (rfStage(dev)) r.settings.insert(r.settings.begin(), rfSetting(dev));
     std::lock_guard<std::mutex> lk(gRangesMu);
     gRanges[key] = r;
 }
@@ -312,6 +334,15 @@ private:
         try { if (dev_->hasGainMode(SOAPY_SDR_RX, ch)) dev_->setGainMode(SOAPY_SDR_RX, ch, false); } catch (...) {}   // we run our own AGC
         const auto gr = dev_->getGainRange(SOAPY_SDR_RX, ch);
         const double g = std::min(std::max(s.gainDb, gr.minimum()), gr.maximum());
+        const std::string rfv = radioOption(s, kRfKey, "auto");
+        if (reduction_ && rfv != "auto" && !rfv.empty() && rfStage(dev_)) {
+            // the RF stage picked by hand: the slider drives the IF gain alone (its top is the least reduction)
+            const auto rr = dev_->getGainRange(SOAPY_SDR_RX, ch, "RFGR"), ir = dev_->getGainRange(SOAPY_SDR_RX, ch, "IFGR");
+            const double rf = std::min(std::max(atof(rfv.c_str()), rr.minimum()), rr.maximum());
+            const double ifg = std::min(std::max(ir.maximum() - (g - gr.minimum()), ir.minimum()), ir.maximum());
+            dev_->setGain(SOAPY_SDR_RX, ch, "RFGR", rf);
+            dev_->setGain(SOAPY_SDR_RX, ch, "IFGR", ifg);
+        } else
         dev_->setGain(SOAPY_SDR_RX, ch, reduction_ ? gr.maximum() - (g - gr.minimum()) : g);   // a gain-reduction driver: turned around
         if (!biasKey_.empty() && s.biasTee != bias_) {
             try { dev_->writeSetting(biasKey_, s.biasTee ? "true" : "false"); bias_ = s.biasTee; } catch (...) {}
