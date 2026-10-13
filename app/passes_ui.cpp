@@ -509,22 +509,9 @@ void passesDevTle(const std::string& path) {
     buildSats();
 }
 
-const dect2::Sgp4* passesFindSat(const std::string& part, double unixSec, std::string* name) {
+void passesMapSatellites(std::vector<MapSatRef>& out) {
     loadState();
-    double lat, lon;
-    receiverLocation(lat, lon);
-    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon; o.altKm = receiverAltitudeM() / 1000;
-    const Sat* best = nullptr;
-    double bestEl = -1e9;
-    for (const Sat& s : S.sats) {
-        if (s.name.find(part) == std::string::npos) continue;
-        dect2::Look l;
-        const double el = dect2::lookAt(s.sgp, o, unixSec, l) ? l.elDeg : -90;
-        if (!best || el > bestEl) { best = &s; bestEl = el; }
-    }
-    if (!best) return nullptr;
-    if (name) *name = best->name;
-    return &best->sgp;
+    for (const Sat& s : S.sats) out.push_back({s.name, s.norad, &s.sgp});
 }
 
 void passesWindow(App& a) {

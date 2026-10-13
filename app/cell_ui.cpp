@@ -456,3 +456,12 @@ const ModeUi kCellUi = {
     .summary = summary,
     .tick = tick,
 };
+
+void cellMapTowers(const dect2::CellTelemetry& t, std::vector<MapCellTower>& out) {
+    for (const auto& c : t.cells) {
+        const Loc l = towerOf(c);
+        if (!l.src) continue;
+        char b[96]; snprintf(b, sizeof b, "%s eNB %u/%d PCI %d", c.op.empty() ? (c.plmns.empty() ? "?" : c.plmns[0].c_str()) : c.op.c_str(), c.enb, c.sector, c.pci);
+        out.push_back({l.p.lat, l.p.lon, l.range, b, opColour(c, 255)});
+    }
+}

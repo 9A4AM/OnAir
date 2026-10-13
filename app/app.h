@@ -33,7 +33,8 @@
 #include "dect2/direction.h"
 #include "dect2/teletext.h"
 #include "dect2/feeds.h"
-#include "dect2/pskreporter.h"
+#include "dect2/passes.h"
+#include "dect2/maplayers.h"
 #include "theme.h"
 #include "gfx.h"
 #include "icons.h"
@@ -476,6 +477,10 @@ bool receiverLocationSet();                        // the user has set it (else 
 void receiverPositionFields(App& a);               // its fields (latitude, longitude, altitude) and the Locate button
 double receiverAltitudeM();                         // its height above sea level, metres (0 until set)
 void setReceiverLocation(App& a, double lat, double lon);   // move it (saved), e.g. View > Map's "Use as my location"
+struct MapSatRef { std::string name; int norad = 0; const dect2::Sgp4* sgp = nullptr; };
+void passesMapSatellites(std::vector<MapSatRef>& out);   // passes_ui.cpp: the listed satellites with a TLE (for the live map)
+struct MapCellTower { double lat = 0, lon = 0; int rangeM = 0; std::string label; unsigned colour = 0; };
+void cellMapTowers(const dect2::CellTelemetry& t, std::vector<MapCellTower>& out);   // cell_ui.cpp: the towers placed (OpenCelliD / CSV)
 void mapWindow(App& a);                             // map_ui.cpp: View > Map (a.mapOpen): coordinates, Maidenhead locators, distance and bearing
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame

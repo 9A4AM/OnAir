@@ -1,8 +1,10 @@
 #include "adsb_map.h"
 #include "app.h"
+#include "dect2/tilecache.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <chrono>
 #include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
@@ -97,7 +99,16 @@ void setKeep(bool k) {
     plat::prefs().flush();
 }
 
+uint64_t capBytes() {
+    long mb = (long)plat::prefs().getI("mapCapMb", (int)dect2::kDefaultTileCapMb);
+    if (mb < 20) mb = 20;
+    return (uint64_t)mb * 1024 * 1024;
+}
+void enforceCaps() { dect2::enforceCap(kept, capBytes()); dect2::enforceCap(temp, capBytes()); }
+
 void run() {
+    enforceCaps();   // at start (the cache may have grown under an older or larger setting)
+    int fetches = 0;
     for (;;) {
         uint64_t k;
         {
@@ -122,7 +133,8 @@ void run() {
                 ok = !ec && exists(path);
             }
             if (!ok) fs::remove(fsPath(part), ec);
-        }
+            else if (++fetches % 50 == 0) enforceCaps();   // and every 50 downloads
+        } else dect2::touchTile(found(z, x, y));
         std::lock_guard<std::mutex> lk(mu);
         tiles[k].state = ok ? 2 : 4;
         tiles[k].failedAt = glfwGetTime();
@@ -193,6 +205,7 @@ ImTextureID tileTexture(int z, int x, int y, bool online, bool& failed) {
         std::vector<uint32_t> px;
         const std::string path = found(z, x, y);
         if (!path.empty() && plat::decodeImage(path, w, h, px) && w == 256 && h == 256 && gGfx) {
+            dect2::touchTile(path);   // used: the size cap evicts the least recently used first
             t.img = gGfx->createImage(256, 256, 0xFF000000u);
             t.img->update(0, 0, 256, 256, px.data());
             t.state = 3;
@@ -370,6 +383,84 @@ bool online() { init(); return onlineMap; }
 
 namespace {
 
+// ---------------------------------------------------------------- "download this area for offline use"
+// One thread, one tile every 0.4 s, at most dect2::kMaxDownloadTiles tiles per download, tiles already on disk skipped, stoppable.
+// The OpenStreetMap tile usage policy forbids bulk downloading: this is for the area you look at, never the world.
+std::thread dlThread;
+std::atomic<bool> dlStop{false}, dlRunning{false};
+std::atomic<int> dlDone{0}, dlTotal{0}, dlFailed{0};
+
+void dlJoin() { if (dlThread.joinable()) dlThread.join(); }
+
+void dlStart(std::vector<dect2::TileKey> list) {
+    dlJoin();
+    dlStop = false; dlDone = 0; dlFailed = 0; dlTotal = (int)list.size(); dlRunning = true;
+    const std::string root = kept;
+    dlThread = std::thread([list = std::move(list), root] {
+        int consecutive = 0, fetched = 0;
+        for (const dect2::TileKey& t : list) {
+            if (dlStop) break;
+            const std::string path = dect2::tilePath(root, t.z, t.x, t.y);
+            if (exists(path) || exists(dect2::tilePath(temp, t.z, t.x, t.y))) { dlDone++; continue; }
+            std::error_code ec;
+            fs::create_directories(fsPath(path).parent_path(), ec);
+            char url[128];
+            snprintf(url, sizeof url, "https://tile.openstreetmap.org/%d/%d/%d.png", t.z, t.x, t.y);
+            const std::string part = path + ".part";
+            bool ok = false;
+            if (!ec && plat::fetchUrl(url, part, std::string("OnAir/") + ONAIR_VERSION + " (offline area)")) {
+                fs::rename(fsPath(part), fsPath(path), ec);
+                ok = !ec && exists(path);
+            }
+            if (!ok) { fs::remove(fsPath(part), ec); dlFailed++; }
+            consecutive = ok ? 0 : consecutive + 1;
+            dlDone++;
+            if (ok && ++fetched % 50 == 0) enforceCaps();
+            if (consecutive >= 5) break;   // the server says no (or there is no network): do not hammer it
+            for (int i = 0; i < 8 && !dlStop; i++) std::this_thread::sleep_for(std::chrono::milliseconds(50));   // 0.4 s per tile
+        }
+        enforceCaps();
+        dlRunning = false;
+    });
+}
+
+void areaDownload() {
+    static int toZoom = 0, lastZoom = -1;
+    ImGui::TextUnformatted("Download this area for offline use");
+    if (dlRunning) {
+        ImGui::ProgressBar(dlTotal > 0 ? (float)dlDone / (float)dlTotal : 0.f, ImVec2(220 * gUi, 0));
+        ImGui::SameLine();
+        ImGui::Text("%d / %d", dlDone.load(), dlTotal.load());
+        if (dlFailed) { ImGui::SameLine(); ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.4f, 1), "%d failed", dlFailed.load()); }
+        if (ImGui::Button("Stop")) dlStop = true;
+        return;
+    }
+    dlJoin();
+    ImVec2 a = gOrigin, b(gOrigin.x + gSize.x, gOrigin.y + gSize.y);
+    double n1, w1, s1, e1;
+    unproject(a, n1, w1); unproject(b, s1, e1);
+    const bool wide = gSize.x >= worldSize(gZoom) * 0.95;   // the whole width of the globe on screen
+    const int z0 = gZoom;
+    if (lastZoom != z0 || toZoom < z0) { toZoom = std::min(kMaxZoom - 2, std::max(z0, dect2::deepestZoomFitting(s1, w1, n1, e1, z0, std::min(z0 + 3, 16)))); lastZoom = z0; }
+    ImGui::SetNextItemWidth(90 * gUi);
+    ImGui::InputInt("deepest zoom", &toZoom, 1, 1);
+    toZoom = std::max(z0, std::min(16, toZoom));
+    const dect2::AreaPlan plan = wide ? dect2::planArea(-85, -180, 85, 180, z0, toZoom) : dect2::planArea(s1, w1, n1, e1, z0, toZoom);
+    if (plan.tooMany) {
+        ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.4f, 1), "Too many tiles (over %d): zoom in or lower the deepest zoom.", dect2::kMaxDownloadTiles);
+    } else {
+        ImGui::Text("Zoom %d to %d: %ld tiles, about %s. Tiles you already have are skipped.", z0, toZoom, plan.count, sizeText(plan.estBytes).c_str());
+        const bool can = onlineMap && plan.count > 0;
+        if (!can) ImGui::BeginDisabled();
+        if (ImGui::Button("Download")) dlStart(plan.tiles);
+        if (!can) ImGui::EndDisabled();
+        if (!onlineMap && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Switch on \"online map\" first.");
+        ImGui::SameLine();
+        ImGui::TextDisabled("one tile every 0.4 s, at most %d per download", dect2::kMaxDownloadTiles);
+    }
+    if (dlTotal > 0 && dlDone > 0) ImGui::TextDisabled("Last download: %d of %d tiles done, %d failed.", dlDone.load(), dlTotal.load(), dlFailed.load());
+}
+
 void tilesMenu(ImVec4 buttonColour) {
     static Usage uk, ut;   // kept, this session's
     static double countedAt = -1e9;   // counted again every 2 s while the menu is open: tiles keep arriving
@@ -434,6 +525,18 @@ void tilesMenu(ImVec4 buttonColour) {
         }
     }
     ImGui::Spacing();
+    {
+        int mb = (int)plat::prefs().getI("mapCapMb", (int)dect2::kDefaultTileCapMb);
+        ImGui::SetNextItemWidth(110 * gUi);
+        if (ImGui::InputInt("size limit (MB)", &mb, 50, 100, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::IsItemDeactivatedAfterEdit()) {
+            mb = std::max(20, std::min(100000, mb));
+            plat::prefs().setI("mapCapMb", mb); plat::prefs().flush();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("When the tiles take more room than this, the ones used longest ago are deleted (checked at start and every 50 downloads). Default 500 MB.");
+    }
+    ImGui::Separator();
+    areaDownload();
+    ImGui::Separator();
     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + wrap);
     ImGui::TextDisabled("Kept in %s", kept.c_str());
     ImGui::PopTextWrapPos();
@@ -465,6 +568,8 @@ void tileControls(const char* privacy) {
 }
 
 void shutdown() {
+    dlStop = true;
+    dlJoin();
     if (started) {
         stopping = true;
         cv.notify_all();
