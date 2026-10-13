@@ -90,6 +90,11 @@ bool parseNmea(const std::string& sentence, std::string& chars, int& fillBits, i
 double rateOfTurn(int raw);                                         // degrees per minute from the 8-bit field (127 = more than 720), NaN when not available
 const char* shipTypeText(int t);
 int classOfMmsi(uint32_t mmsi, int type);
+// A frame whose FCS is good can still be something else on the channel (a data transmitter, interference with a lucky checksum): only a message of
+// a known type and length from a plausible MMSI (ITU-R M.585: a ship, group, coast station, SAR aircraft, aid to navigation or SART with an assigned
+// maritime identification digit range) is taken for AIS.
+bool mmsiPlausible(uint32_t mmsi);
+bool acceptableAis(const AisMsg& m, bool decoded);
 
 } // namespace ais
 } // namespace dect2

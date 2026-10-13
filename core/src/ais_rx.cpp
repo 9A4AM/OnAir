@@ -277,7 +277,8 @@ struct AisReceiver::Impl {
         const double tnow = now();
         if (bits.size() < 38) { t.blocksBad++; t.channelBad[c]++; return; }
         ais::AisMsg m;
-        ais::decodeMessage(bits, m);
+        const bool decoded = ais::decodeMessage(bits, m);
+        if (!ais::acceptableAis(m, decoded)) { if (frameCb) frameCb(c ? 'B' : 'A', bits, tnow, snrDb, cfoHz); t.blocksBad++; t.channelBad[c]++; return; }   // a good FCS on something that is not an AIS message (#87)
         const char chn = c ? 'B' : 'A';
         t.blocksOk++; t.channelOk[c]++;
         t.typeCount[c][m.type >= 1 && m.type <= 27 ? m.type : 0]++;
