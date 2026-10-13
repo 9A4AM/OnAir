@@ -81,6 +81,7 @@
 #include "datawell_rx.h"
 #include "same_rx.h"
 #include "multitone_rx.h"
+#include "loraraw_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -290,6 +291,7 @@ public:
     NbiotReceiver& nbiot() { return rxNb_; }   // NB-IoT cells: clear the cell table (telemetry through latestRx)
     ZigbeeReceiver& zigbee() { return rxZb_; }   // Zigbee / 802.15.4: clear the PAN and device tables (telemetry through latestRx)
     FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
+    LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
     DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
     WbReceiver& wb() { return rxWb_; }   // Signal workbench: nothing to clear (the tool works on files)
@@ -492,13 +494,14 @@ private:
     DatawellReceiver rxDw_;
     SameReceiver rxSame_;
     MultitoneReceiver rxMt_;
+    LoraRawReceiver rxLr_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
     HrptReceiver rxHrpt_;
     FlarmReceiver rxFlarm_;
-    uint64_t modeSeq_[72] = {};      // the last report taken from each of the modes added after FM (same order as above)
+    uint64_t modeSeq_[80] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;
     uint64_t atsc3Seq_ = 0;
@@ -562,7 +565,7 @@ private:
     std::atomic<double> secShift_{0};   // how far its frequency lies above the centre of the capture
     std::atomic<bool> secFlush_{false};
     std::atomic<uint64_t> secDropped_{0};
-    uint64_t modeSeq2_[72] = {};
+    uint64_t modeSeq2_[80] = {};
     std::mutex rx2Mu_;
     RxTelemetry rxTel2_;
     uint64_t rx2Pub_ = 0;

@@ -165,6 +165,7 @@ struct Demod::Impl {
     double frameStart = 0;
     uint8_t syncSeen = 0;
     FrameDecoder fd;
+    void startFd() { if (p.implicitHdr) fd.startImplicit(sf, p.ldro, p.implicitLen, p.cr, p.crc); else fd.start(sf, p.ldro); }
 
     Impl(const Params& pp, double fsChan) : p(pp), sf(pp.sf), N(1 << pp.sf), fs(fsChan), rho(fsChan / pp.bwHz) {
         dnRe.resize(N); dnIm.resize(N);
@@ -516,7 +517,7 @@ bool Demod::Impl::sfd(const ChanBuf& b) {
     frameStart = origin + (s - (2.0 + p.preamble) * N) * rho;   // the first up-chirp of the preamble (of the configured length)
     loopInt = 0;
     posS0 = posS; retried = 0;
-    fd.start(sf, p.ldro);
+    startFd();
     state = Data;
     return true;
 }
@@ -568,7 +569,7 @@ void Demod::Impl::dataSymbol(const ChanBuf& b, std::vector<RxFrame>& out) {
             posS0 += 1.75 * dd * rho;
             posS = posS0;           // the start was placed 2.25 symbols past the down-chirp, less half the slope
             loopInt = 0;
-            fd.start(sf, p.ldro);
+            startFd();
             return;
         }
         f.hdr = fd.header();

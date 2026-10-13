@@ -361,6 +361,12 @@ int main(int argc, char** argv) {
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
                            n.seenWidthMhz, n.mcs, n.security.c_str(), n.rssi, n.vendor.c_str());
+            if (t.standard == 72)   // LoRa (raw): the newest frames
+                for (size_t i = 0; i < t.loraraw.log.size() && i < 4; i++) {
+                    const LrFrame& f = t.loraraw.log[i];
+                    printf("  lora: %8.2f s SF%-2d %3.0f kHz 4/%d %s%s %3d bytes %5.1f dB SNR %6.1f dBFS %+7.0f Hz | %s | %s\n", f.sec, f.sf, f.bwHz / 1e3, f.cr - 4, f.hasCrc ? (f.crcOk ? "crc ok " : "crc BAD") : "no crc ",
+                           f.implicit ? " impl" : "", f.len, f.snrDb, f.levelDb, f.cfoHz, f.hex.substr(0, 48).c_str(), f.ascii.substr(0, 40).c_str());
+                }
             if (t.standard == 62)   // CubeSat telemetry: the newest frames
                 for (size_t i = 0; i < t.cube.frames.size() && i < 3; i++) {
                     const CubeFrame& f = t.cube.frames[i];

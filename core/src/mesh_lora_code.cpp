@@ -92,7 +92,7 @@ int dataSymbols(const Params& p, size_t len) {
     // SX1261/2 datasheet 6.1.4, explicit header
     const int de = p.ldro ? 1 : 0, crc = p.crc ? 1 : 0;
     // SF5/6 (SX126x): the header block holds sf codewords, not sf - 2, so 8 bits fewer are left for the later blocks
-    const int num = 8 * (int)len - 4 * p.sf + (p.sf < 7 ? 20 : 28) + 16 * crc;
+    const int num = 8 * (int)len - 4 * p.sf + (p.sf < 7 ? 20 : 28) + 16 * crc - (p.implicitHdr ? 20 : 0);
     const int den = 4 * (p.sf - 2 * de);
     const int blocks = num > 0 ? (num + den - 1) / den : 0;
     return 8 + blocks * p.cr;
@@ -123,7 +123,7 @@ std::vector<uint16_t> encode(const Params& p, const uint8_t* payload, size_t n) 
     std::vector<uint8_t> nib;
     const uint8_t n0 = (uint8_t)((n >> 4) & 0xF), n1 = (uint8_t)(n & 0xF), n2 = (uint8_t)(((p.cr - 4) << 1) | (p.crc ? 1 : 0));
     const uint8_t chk = headerChecksum(n0, n1, n2);
-    nib.insert(nib.end(), {n0, n1, n2, (uint8_t)(chk >> 4), (uint8_t)(chk & 0xF)});
+    if (!p.implicitHdr) nib.insert(nib.end(), {n0, n1, n2, (uint8_t)(chk >> 4), (uint8_t)(chk & 0xF)});
     for (size_t i = 0; i < n; i++) {
         const uint8_t w = payload[i] ^ whitening(i);
         nib.push_back(w & 0xF);
@@ -151,9 +151,20 @@ std::vector<uint16_t> encode(const Params& p, const uint8_t* payload, size_t n) 
 }
 
 void FrameDecoder::start(int sf, bool ldro) {
-    sf_ = sf; ldro_ = ldro; n_ = 0; need_ = 8; corrected_ = 0;
+    sf_ = sf; ldro_ = ldro; n_ = 0; need_ = 8; corrected_ = 0; hn_ = 5; implicit_ = false;
     hdr_ = Header();
     bins_.clear(); nib_.clear();
+}
+
+void FrameDecoder::startImplicit(int sf, bool ldro, int len, int cr, bool crc) {
+    start(sf, ldro);
+    implicit_ = true; hn_ = 0;
+    hdr_.len = len; hdr_.cr = cr; hdr_.crc = crc; hdr_.ok = len > 0 && cr >= 5 && cr <= 8;
+    if (hdr_.ok) {
+        Params p;
+        p.sf = sf; p.cr = cr; p.ldro = ldro; p.crc = crc; p.implicitHdr = true;
+        need_ = dataSymbols(p, (size_t)len);
+    }
 }
 
 void FrameDecoder::block(const uint16_t* bins, int cwLen, int sfApp, bool reduced) {
@@ -177,7 +188,8 @@ void FrameDecoder::block(const uint16_t* bins, int cwLen, int sfApp, bool reduce
 void FrameDecoder::push(uint16_t bin) {
     bins_.push_back(bin);
     n_++;
-    if (n_ == 8) {
+    if (n_ == 8 && implicit_) block(bins_.data(), 8, headerSfApp(sf_), sf_ >= 7);
+    else if (n_ == 8) {
         block(bins_.data(), 8, headerSfApp(sf_), sf_ >= 7);
         const uint8_t n0 = nib_[0], n1 = nib_[1], n2 = nib_[2], n3 = nib_[3], n4 = nib_[4];
         hdr_.len = n0 << 4 | n1;
@@ -198,11 +210,11 @@ bool FrameDecoder::finish(std::vector<uint8_t>& payload, bool& crcOk, int& corre
     const int sfApp = ldro_ ? sf_ - 2 : sf_;
     for (int at = 8; at + hdr_.cr <= n_; at += hdr_.cr) block(bins_.data() + at, hdr_.cr, sfApp, ldro_);
     const size_t len = (size_t)hdr_.len;
-    if (nib_.size() < 5 + 2 * len + (hdr_.crc ? 4 : 0)) return false;
+    if (nib_.size() < (size_t)hn_ + 2 * len + (hdr_.crc ? 4 : 0)) return false;
     payload.resize(len);
-    for (size_t i = 0; i < len; i++) payload[i] = (uint8_t)((nib_[5 + 2 * i] | nib_[6 + 2 * i] << 4) ^ whitening(i));
+    for (size_t i = 0; i < len; i++) payload[i] = (uint8_t)((nib_[(size_t)hn_ + 2 * i] | nib_[(size_t)hn_ + 1 + 2 * i] << 4) ^ whitening(i));
     if (hdr_.crc) {
-        const size_t c = 5 + 2 * len;
+        const size_t c = (size_t)hn_ + 2 * len;
         const uint16_t got = (uint16_t)(nib_[c] | nib_[c + 1] << 4 | nib_[c + 2] << 8 | nib_[c + 3] << 12);
         crcOk = got == payloadCrc(payload.data(), len);
     }
