@@ -55,7 +55,7 @@ using namespace dect2;
 // ------------------------------------------------------------------ waterfall texture
 
 struct Waterfall {
-    static constexpr int W = 1024, H = 512;
+    static constexpr int W = 4096, H = 512;
     gfx::Image* img = nullptr;
     std::vector<uint32_t> lut;
     int writeRow = 0; // newest row; older rows follow at writeRow+1 ... wrapping

@@ -20,6 +20,20 @@ static void clickToTune(App& a, int plotId) {
     }
     if (std::fabs(mhz - a.freqMhz) > 1e-6) {
         const plt::Rect lim = plt::GetPlotLimits();   // a red line where a click would tune to
+        if (!ImGui::IsMouseDown(0)) {   // the ghost of the channel box: where it will sit after the click, so the whole signal can be put inside it
+            const ChanWidth cw = channelWidth(a);
+            if (cw.mhz > 0) {
+                const double g0 = mhz - cw.mhz / 2, g1 = mhz + cw.mhz / 2;
+                if (plotId == 0) { plt::Spec gb; gb.FillColor = ImVec4(0.7f, 0.7f, 0.7f, 0.10f); plt::PlotVBand("##ghost", g0, g1, gb); }
+                const double ge[2] = {g0, g1};
+                plt::Spec es; es.LineColor = ImVec4(0.8f, 0.8f, 0.8f, 0.45f); es.LineWeight = 1.f;
+                plt::PlotInfLines("##ghostedges", ge, 2, es);
+                if (plotId == 0) {
+                    char lb[48]; snprintf(lb, sizeof lb, "%.4f MHz  (%s)", mhz, widthText(cw.mhz).c_str());
+                    plt::PlotText(lb, mhz, lim.Y.Max, ImVec2(0, 14 * gUi));
+                }
+            }
+        }
         const double lx[2] = {mhz, mhz}, ly[2] = {lim.Y.Min, lim.Y.Max};
         plt::Spec ls; ls.LineColor = ImVec4(0.95f, 0.25f, 0.25f, 0.9f); ls.LineWeight = 1.2f;
         plt::PlotLine("##tunehere", lx, ly, 2, ls);
@@ -141,7 +155,8 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
     ImGui::PopStyleColor(2);
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("%s", tr(cw.settable ? "Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width."
-                                      : "Channel width: the band the receiver works with (the light band), set by the standard."));
+                                      : "Channel width: the band the receiver works with (the light band), set by the standard.")
+                    + std::string("\n\n") + tr("Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.")).c_str();
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y + 2 * gUi), ImGuiCond_Appearing, ImVec2(1, 0));   // under the button, right-aligned
     if (ImGui::BeginPopup("##bwpop")) { channelWidthPopup(a); ImGui::EndPopup(); }
     ImGui::SetCursorScreenPos(keep);
@@ -160,6 +175,38 @@ static void setupFreqAxis(const App& a) {
     plt::SetupAxisFormat(plt::X1, "%.2f");
 }
 
+// The trace at the full panel width: only the visible bins, and where they are denser than the pixels, the lowest and the highest of
+// each pixel column (an envelope), so no peak is lost to a coarse picture.
+static void envelope(const std::vector<double>& x, const std::vector<float>& y, double lo, double hi, int px, std::vector<double>& ox, std::vector<double>& oy) {
+    ox.clear(); oy.clear();
+    const size_t n = std::min(x.size(), y.size());
+    if (n < 2 || !(hi > lo)) return;
+    const double dx = (x[n - 1] - x[0]) / (double)(n - 1);
+    if (!(dx > 0)) return;
+    size_t i0 = (size_t)std::max(0.0, std::floor((lo - x[0]) / dx) - 1), i1 = (size_t)std::min((double)n - 1, std::ceil((hi - x[0]) / dx) + 1);
+    if (i0 >= n) i0 = n - 1;
+    if (i1 <= i0) { i1 = std::min(n - 1, i0 + 1); }
+    const size_t cnt = i1 - i0 + 1;
+    if (px < 1 || cnt <= (size_t)px * 2) { for (size_t i = i0; i <= i1; i++) { ox.push_back(x[i]); oy.push_back(y[i]); } return; }
+    for (int c = 0; c < px; c++) {
+        const size_t a0 = i0 + cnt * c / px, a1 = std::max(a0 + 1, i0 + cnt * (c + 1) / px);
+        size_t imn = a0, imx = a0;
+        for (size_t i = a0; i < a1 && i < n; i++) { if (y[i] < y[imn]) imn = i; if (y[i] > y[imx]) imx = i; }
+        const size_t f = std::min(imn, imx), g = std::max(imn, imx);
+        ox.push_back(x[f]); oy.push_back(y[f]);
+        if (g != f) { ox.push_back(x[g]); oy.push_back(y[g]); }
+    }
+}
+
+// Ctrl+PageUp / Ctrl+PageDown: the view steps up or down in frequency by its own width
+static void freqPageKeys() {
+    ImGuiIO& io = ImGui::GetIO();
+    if (!io.KeyCtrl || io.WantTextInput || !(gXHi > gXLo)) return;
+    const double span = gXHi - gXLo;
+    if (ImGui::IsKeyPressed(ImGuiKey_PageUp, true)) { gXLo += span; gXHi += span; }
+    if (ImGui::IsKeyPressed(ImGuiKey_PageDown, true)) { gXLo -= span; gXHi -= span; }
+}
+
 static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
     const char* const kYLabel = tr("power (dBFS/bin)");
     ImVec2 plotMin, plotSize;
@@ -173,15 +220,18 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
         channelBand(a, true);
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
         if (!a.smooth.empty()) {
-            auto x = xs(a);
+            const auto x = xs(a);
+            const plt::Rect vis = plt::GetPlotLimits();
+            const int wpx = std::max(1, (int)plotSize.x);
+            static std::vector<double> ex, ey;
             if (a.peakHold) {
                 plt::Spec ps; ps.LineColor = pal::grey(0.40f); ps.LineWeight = 1.0f;
-                std::vector<double> yp(a.peak.begin(), a.peak.end());
-                plt::PlotLine("peak", x.data(), yp.data(), (int)std::min(x.size(), yp.size()), ps);
+                envelope(x, a.peak, vis.X.Min, vis.X.Max, wpx, ex, ey);
+                plt::PlotLine("peak", ex.data(), ey.data(), (int)ex.size(), ps);
             }
             plt::Spec ss; ss.LineColor = pal::accent(); ss.LineWeight = 1.3f;
-            std::vector<double> ysm(a.smooth.begin(), a.smooth.end());
-            plt::PlotLine("spectrum", x.data(), ysm.data(), (int)std::min(x.size(), ysm.size()), ss);
+            envelope(x, a.smooth, vis.X.Min, vis.X.Max, wpx, ex, ey);
+            plt::PlotLine("spectrum", ex.data(), ey.data(), (int)ex.size(), ss);
             double cx[2] = {a.freqMhz, a.freqMhz}, cy[2] = {a.yMin, a.yMax};
             plt::Spec cs; cs.LineColor = pal::grey(0.35f);
             plt::PlotLine("centre", cx, cy, 2, cs);
@@ -200,6 +250,7 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
             }
         }
         clickToTune(a, 0);
+        if (plt::IsPlotHovered() && !ImGui::IsMouseDown(0) && !ImGui::IsMouseDown(1) && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && false) {}
         if (plt::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { ctxMhz = plt::GetPlotMousePos().x; openCtx = true; }
         plt::EndPlot();
     }
@@ -279,6 +330,7 @@ void spectrumWaterfall(App& a, float& frac, bool drag) {
         if (ImGui::IsItemActive()) frac = std::min(0.8f, std::max(0.2f, frac + ImGui::GetIO().MouseDelta.y / std::max(1.f, h)));
         ImGui::SetCursorScreenPos(p);
     }
+    freqPageKeys();
     spectrumPlot(a, ImVec2(w, hs), plt::Flags_Flush | plt::Flags_OpenBottom);
     ImGui::SetCursorScreenPos(ImVec2(p.x, y));
     waterfallPlot(a, ImVec2(w, std::max(60.f, h - hs)), plt::Flags_Flush | plt::Flags_OpenTop);

@@ -365,7 +365,7 @@ private:
     std::chrono::steady_clock::time_point t0_;
     IqRecorder rec_;
     std::unique_ptr<IqSource> src_;
-    SpectrumAnalyzer analyzer_{4096};
+    SpectrumAnalyzer analyzer_{8192};
     T2Receiver rx_;
     DvbtReceiver rxT_;
     AtscReceiver rxA_;

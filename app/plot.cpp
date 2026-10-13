@@ -211,20 +211,27 @@ void finishSetup() {
             if (movable[0] && C.ax[0].scale == Scale_Linear) { const double d = -io.MouseDelta.x / C.plot.GetWidth() * (C.hi[0] - C.lo[0]); C.st->lim[0][0] += d; C.st->lim[0][1] += d; }
             if (movable[1] && C.ax[1].scale == Scale_Linear) { const double d = io.MouseDelta.y / C.plot.GetHeight() * (C.hi[1] - C.lo[1]); C.st->lim[1][0] += d; C.st->lim[1][1] += d; }
         }
-        if (hov && io.MouseWheel != 0) {
-            ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
-            const double f = std::pow(0.9, io.MouseWheel);
+        // wheel: both axes; Ctrl = frequency (x) only; Shift = amplitude (y) only (macOS turns Shift+wheel into a sideways wheel)
+        const float wheel = io.MouseWheel != 0 ? io.MouseWheel : (io.KeyShift ? io.MouseWheelH : 0.f);
+        const bool zx = !io.KeyShift || io.KeyCtrl, zy = !io.KeyCtrl || io.KeyShift;
+        if (hov && wheel != 0) {
+            ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY); ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
+            const double f = std::pow(0.9, wheel);
             const double mx = (io.MousePos.x - C.plot.Min.x) / C.plot.GetWidth(), my = 1.0 - (io.MousePos.y - C.plot.Min.y) / C.plot.GetHeight();
-            if (movable[0] && C.ax[0].scale == Scale_Linear) {
+            if (zx && movable[0] && C.ax[0].scale == Scale_Linear) {
                 const double r = C.hi[0] - C.lo[0], p = C.lo[0] + mx * r;
                 C.st->lim[0][0] = p - mx * r * f; C.st->lim[0][1] = p + (1 - mx) * r * f;
             }
-            if (movable[1] && C.ax[1].scale == Scale_Linear) {
+            if (zy && movable[1] && C.ax[1].scale == Scale_Linear) {
                 const double r = C.hi[1] - C.lo[1], p = C.lo[1] + my * r;
                 C.st->lim[1][0] = p - my * r * f; C.st->lim[1][1] = p + (1 - my) * r * f;
             }
         }
         if (hov && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) C.st->init = false;
+        // draw this frame with the new limits (a plot sharing the axis reads them at once, so both must show the same range)
+        for (int a = 0; a < 2; a++) if (movable[a] && C.ax[a].scale == Scale_Linear && C.st->init && C.st->lim[a][1] > C.st->lim[a][0]) {
+            C.lo[a] = C.tlo[a] = C.st->lim[a][0]; C.hi[a] = C.thi[a] = C.st->lim[a][1];
+        }
     }
     for (int a = 0; a < 2; a++) {   // a linked axis: the pan or zoom shows at once, so the plots that share it stay in step this frame
         const AxisSetup& A = C.ax[a];
