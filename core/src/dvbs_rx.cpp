@@ -4,6 +4,7 @@
 #include "dvbs_carrier.h"
 #include "dvbs_front.h"
 #include "dvbs_s1.h"
+#include "dvbs_compute.h"
 #include "dvbs_s2hunt.h"
 #include "dvbs_s2rx.h"
 #include "dvbs_spec.h"
@@ -101,7 +102,9 @@ struct DvbsReceiver::Impl {
 
     // ---- settings from other threads
     std::atomic<double> manualRs{0}, rollHint{0};
-    std::atomic<int> stdHint{0}, isiSel{-1}, plCode{-1};
+    std::atomic<int> stdHint{0}, isiSel{-1}, plCode{-1}, computeMode{2};
+    ComputeChoice s1Compute{&ComputeChoice::viterbiUsable, false};                  // DVB-S: where the Viterbi decoder runs
+    std::atomic<bool> s1OnGpu{false};
     std::atomic<bool> blocking{false};
     std::atomic<bool> resetReq{false}, restartReq{false};
     std::mutex cbMu;
@@ -343,6 +346,8 @@ struct DvbsReceiver::Impl {
         const S1Hypothesis h = s1Search(yy.data() + 16384, kHuntWindow - 16384);
         if (!h.ok) return false;
         pll = p;
+        s1.setCompute(&s1Compute);
+        s1Compute.autoAllowed = front.symbolRateNow() >= 8e6;      // 8 Msym/s and up: a window of a million steps is under a tenth of a second
         s1.start(h, kHuntWindow - 16384);
         s1Symbols = 0; s1Mark = 0; s1Lost = false;
         snapS1();
@@ -364,6 +369,7 @@ struct DvbsReceiver::Impl {
         s1Symbols += n;
         if (s1.started()) {
             s1.push(s1y.data(), n);
+            s1OnGpu = s1.lastOnGpu();
             s1pk.clear();
             s1.takePackets(s1pk);
             deliver();
@@ -415,6 +421,7 @@ struct DvbsReceiver::Impl {
     // ------------------------------------------------------------------------ telemetry
     void publish() {
         DvbsTelemetry t;
+        t.computeMode = computeMode.load(); t.gpuAvailable = ComputeChoice::gpuUsable() || ComputeChoice::viterbiUsable();
         const double nowSec = (double)inputCount / fs;
         t.standard = mode == kS1 ? 1 : mode == kS2 ? 2 : 0;
         t.symbolRate = mode == kSearch ? (specRes.valid ? specRes.rateHz : 0) : front.symbolRateNow();
@@ -444,6 +451,7 @@ struct DvbsReceiver::Impl {
             t.cfoHz = front.config().centerHz + q.freq * front.symbolRateNow();
             t.lockFrame = q.synced;
             t.rsClean = q.rsClean; t.rsCorrected = q.rsCorrected; t.rsFailed = q.rsFailed;
+            t.onGpu = s1OnGpu;
             t.blocksOk = q.rsClean + q.rsCorrected; t.blocksBad = q.rsFailed;
             t.lockFec = q.synced && q.consecutiveBad < 8;
             // bit error rate after the Viterbi decoder, from the bytes Reed-Solomon had to change (about 1.5 bit errors in a byte it changes); too low when blocks fail
@@ -465,6 +473,7 @@ struct DvbsReceiver::Impl {
             t.blocksOk = s.fecOk; t.blocksBad = s.fecBad;
             t.bchOk = s.fecOk; t.bchBad = s.bchBad;
             t.ldpcIterAvg = (float)s.ldpcIterAvg;
+            t.onGpu = s.ldpcOnGpu;
             t.preFecBer = (float)s.berPre;
             t.framesSeen = s.framesSeen; t.framesDummy = s.framesDummy; t.crcErrors = s.crcErrors; t.gseFrames = s.gseFrames;
             t.framesUnsupported = s.framesUnsupported;
@@ -537,10 +546,14 @@ void DvbsReceiver::setStandardHint(int s) { if (s != p_->stdHint.load()) { p_->s
 void DvbsReceiver::setRollOff(double r) { if (r != p_->rollHint.load()) { p_->rollHint = r; p_->restartReq = true; } }
 void DvbsReceiver::setIsi(int isi) { p_->isiSel = isi; }
 void DvbsReceiver::setPlScrambling(int n) { p_->plCode = n; }
+void DvbsReceiver::setComputeMode(int m) { p_->computeMode = m; p_->s2.setComputeMode(m); p_->s1Compute.mode = m; }
 void DvbsReceiver::setBlocking(bool b) { p_->blocking = b; }
 void DvbsReceiver::flush() {
     Impl& I = *p_;
-    if (I.mode == Impl::kS1) I.s1th.sync();
+    if (I.mode == Impl::kS1) {
+        I.s1th.post([&I] { if (I.s1.started()) { I.s1.flushPending(); I.s1pk.clear(); I.s1.takePackets(I.s1pk); I.deliver(); } });
+        I.s1th.sync();
+    }
     else if (I.mode == Impl::kS2) I.s2.drain();
     I.publish();
 }

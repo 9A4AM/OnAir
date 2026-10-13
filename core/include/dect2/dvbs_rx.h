@@ -33,6 +33,7 @@ public:
     void setRollOff(double rollOff);                     // 0 = automatic: the spectrum, then the stream's own signalling
     void setIsi(int isi);                                // DVB-S2 multiple input streams: the stream to decode, -1 the first one seen
     void setPlScrambling(int n);                         // DVB-S2 physical layer scrambling code, -1 = 0 (the default for broadcast)
+    void setComputeMode(int mode);                       // 0 CPU, 1 GPU, 2 auto: where LDPC (DVB-S2) and Viterbi (DVB-S) run; the output is the same
     void setBlocking(bool blocking);                     // recordings: wait for the decoder threads instead of dropping frames when behind
     void flush();                                        // waits until everything fed so far is decoded and delivered (recordings, tests; not for the engine)
 

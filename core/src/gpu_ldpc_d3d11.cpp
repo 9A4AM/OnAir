@@ -503,7 +503,7 @@ bool GpuLdpc::available() const { return p_->ready; }
 const char* GpuLdpc::deviceName() const { return p_->name.c_str(); }
 size_t GpuLdpc::dedicatedMemoryMb() const { return p_->dedicatedMb; }
 
-bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter, uint8_t* hard, uint8_t* ok, int* iters) {
+bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter, uint8_t* hard, uint8_t* ok, int* iters, float alpha) {
     if (!available() || code.q() * 360 != code.n() - code.k()) return false;
     std::lock_guard<std::mutex> lk(p_->mu);
     Impl& d = *p_;
@@ -513,7 +513,7 @@ bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter
     const int n = code.n();
     CBuf cb{};
     cb.k = (uint32_t)code.k(); cb.n = (uint32_t)n; cb.q = (uint32_t)code.q(); cb.G = (uint32_t)code.groups();
-    cb.alpha = 0.78f; cb.msgPer = s.msgPer; cb.postPer = s.postPer; cb.nWords = s.nWords;
+    cb.alpha = alpha; cb.msgPer = s.msgPer; cb.postPer = s.postPer; cb.nWords = s.nWords;
     for (size_t i = 0; i < s.layerR.size() && i < 256; i++) cb.layerR[i] = s.layerR[i];
 
     for (int b0 = 0; b0 < nb; b0 += kChunkBlocks) {

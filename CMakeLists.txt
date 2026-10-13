@@ -103,8 +103,8 @@ target_link_directories(dect2core PUBLIC ${LIBUSB_LIBRARY_DIRS})
 target_link_libraries(dect2core PUBLIC ${HACKRF_LIBRARIES} ${LIBUSB_LIBRARIES} PkgConfig::FFMPEG)
 if(APPLE)
   # Metal LDPC decoder and CoreAudio output
-  target_sources(dect2core PRIVATE core/src/gpu_ldpc.mm core/src/audioout_coreaudio.mm core/src/conceal_apple.mm)
-  set_source_files_properties(core/src/gpu_ldpc.mm core/src/conceal_apple.mm PROPERTIES COMPILE_OPTIONS -fobjc-arc)
+  target_sources(dect2core PRIVATE core/src/gpu_ldpc.mm core/src/gpu_viterbi.mm core/src/audioout_coreaudio.mm core/src/conceal_apple.mm)
+  set_source_files_properties(core/src/gpu_ldpc.mm core/src/gpu_viterbi.mm core/src/conceal_apple.mm PROPERTIES COMPILE_OPTIONS -fobjc-arc)
   if(DECT2_WIN_AVX2 AND (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64" OR CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64"))
     # Intel Mac, opt-in: the whole receiver built for AVX2 (the program checks for it at start and says so if missing); off by default, see dect2/simd.h
     target_compile_options(dect2core PRIVATE -mavx2 -mfma)
@@ -114,9 +114,9 @@ if(APPLE)
 else()
   # no GPU decoder yet (stub), audio through miniaudio
   if(WIN32)
-    target_sources(dect2core PRIVATE core/src/gpu_ldpc_d3d11.cpp core/src/conceal_d3d11.cpp core/src/audioout_native.cpp core/src/audioout_miniaudio.cpp)   # Direct3D 11 compute
+    target_sources(dect2core PRIVATE core/src/gpu_ldpc_d3d11.cpp core/src/gpu_viterbi_stub.cpp core/src/conceal_d3d11.cpp core/src/audioout_native.cpp core/src/audioout_miniaudio.cpp)   # Direct3D 11 compute
   else()
-    target_sources(dect2core PRIVATE core/src/gpu_ldpc_stub.cpp core/src/audioout_native.cpp core/src/audioout_miniaudio.cpp)
+    target_sources(dect2core PRIVATE core/src/gpu_ldpc_stub.cpp core/src/gpu_viterbi_stub.cpp core/src/audioout_native.cpp core/src/audioout_miniaudio.cpp)
   endif()
   target_include_directories(dect2core PRIVATE third_party/miniaudio)
   find_package(Threads REQUIRED)

@@ -2,6 +2,7 @@
 #include "dvbs_s2rx.h"
 #include "dvbs_s2refine.h"
 #include "dvbs_symthread.h"
+#include "dvbs_compute.h"
 #include "dect2/ldpc.h"
 #include <algorithm>
 #include <chrono>
@@ -95,7 +96,7 @@ struct Result {
     uint32_t frameSyms = 0;
     bool dummy = false, dropped = false, ok = false;
     int iters = 0, bchFixed = 0, mod = 0, rate = 0;
-    bool sh = false;
+    bool sh = false, gpu = false;
     double berPre = -1;
     std::vector<uint8_t> bb;      // descrambled BBFRAME bits when ok
 };
@@ -817,51 +818,100 @@ struct S2Rx::Impl {
         qCv.notify_one();
     }
 
+    ComputeChoice compute;
+
+    // The front half of a frame's work: phase refinement, demapper, bit deinterleaver. dl receives the LDPC input (nldpc values).
+    static bool prepareFrame(Job& j, const S2Dims& d, std::vector<float>& llr, float* dl) {
+        if ((int)j.syms.size() != d.xfecSymbols) return false;
+        llr.resize((size_t)d.xfecSymbols * (size_t)d.bitsPerSym);
+        {
+            // the phase error the carrier loop left, measured in blocks against decisions (block length from the noise level)
+            const float es = 1.f / (2.f * std::max(j.sigma2, 1e-3f));
+            const int W = std::max(8, std::min(512, (int)(83.f / es)));
+            s2RefinePhase(j.syms.data(), d.xfecSymbols, j.mod, j.rate, j.sigma2, W, std::vector<PhaseMark>());
+        }
+        s2Demap(j.syms.data(), d.xfecSymbols, j.mod, j.rate, j.sigma2, llr.data());
+        s2BitDeinterleaveLlr(llr.data(), d.nldpc, j.mod, j.rate, dl);
+        return true;
+    }
+
+    // The back half: BCH, BBHEADER descrambling and the bit error estimate from a decoded code word
+    static void finishFrame(const Job& j, const S2Dims& d, const float* dl, const uint8_t* hard, bool ldpcOk, int iters, bool gpu, std::vector<uint8_t>& bb, Result& r) {
+        r.iters = iters; r.gpu = gpu;
+        if (!ldpcOk) return;
+        const int fixed = s2BchDecode(hard, j.rate, j.sh, bb);
+        if (fixed < 0) return;
+        s2BbScramble(bb.data(), d.kbch);
+        r.ok = true; r.bchFixed = fixed; r.bb = bb;
+        // bit errors before the LDPC decoder: hard decisions on the input against the decoded code word
+        size_t diff = 0;
+        for (int i = 0; i < d.nldpc; i++) diff += (dl[(size_t)i] < 0) != (hard[(size_t)i] != 0);
+        r.berPre = (double)diff / d.nldpc;
+    }
+
     void workerLoop() {
-        std::vector<float> llr, dl;
-        std::vector<uint8_t> hard, bb;
+        std::vector<float> llr, dlAll;
+        std::vector<uint8_t> hard, bb, hardAll, okAll;
+        std::vector<int> itAll;
+        constexpr size_t kBatch = 8;
         for (;;) {
-            Job j;
+            std::vector<Job> jobs;
+            bool gpu = false, probe = false;
             {
                 std::unique_lock<std::mutex> lk(qMu);
                 qCv.wait(lk, [&] { return !queue.empty() || stopFlag; });
                 if (stopFlag && queue.empty()) return;
-                j = std::move(queue.front());
+                jobs.push_back(std::move(queue.front()));
                 queue.pop_front();
-            }
-            spaceCv.notify_one();
-            Result r;
-            r.seq = j.seq; r.frameSyms = j.frameSyms; r.mod = j.mod; r.rate = j.rate; r.sh = j.sh;
-            const S2Dims d = s2Dims(j.mod, j.rate, j.sh);
-            if ((int)j.syms.size() == d.xfecSymbols) {
-                llr.resize((size_t)d.xfecSymbols * (size_t)d.bitsPerSym); dl.resize((size_t)d.nldpc);
-                {
-                    // the phase error the carrier loop left, measured in blocks against decisions (block length from the noise level)
-                    const float es = 1.f / (2.f * std::max(j.sigma2, 1e-3f));
-                    const int W = std::max(8, std::min(512, (int)(83.f / es)));
-                    s2RefinePhase(j.syms.data(), d.xfecSymbols, j.mod, j.rate, j.sigma2, W, std::vector<PhaseMark>());
+                gpu = compute.pickGpu(&probe);
+                // frames of the same MODCOD that are already waiting go to the GPU together: one call decodes them all
+                while (gpu && jobs.size() < kBatch && !queue.empty() && queue.front().mod == jobs[0].mod && queue.front().rate == jobs[0].rate && queue.front().sh == jobs[0].sh) {
+                    jobs.push_back(std::move(queue.front()));
+                    queue.pop_front();
                 }
-                s2Demap(j.syms.data(), d.xfecSymbols, j.mod, j.rate, j.sigma2, llr.data());
-                s2BitDeinterleaveLlr(llr.data(), d.nldpc, j.mod, j.rate, dl.data());
+            }
+            spaceCv.notify_all();
+            const Job& j0 = jobs[0];
+            const S2Dims d = s2Dims(j0.mod, j0.rate, j0.sh);
+            const size_t nb = jobs.size();
+            std::vector<Result> res(nb);
+            std::vector<char> usable(nb, 0);
+            dlAll.resize(nb * (size_t)d.nldpc);
+            for (size_t i = 0; i < nb; i++) {
+                res[i].seq = jobs[i].seq; res[i].frameSyms = jobs[i].frameSyms; res[i].mod = jobs[i].mod; res[i].rate = jobs[i].rate; res[i].sh = jobs[i].sh;
+                usable[i] = prepareFrame(jobs[i], d, llr, dlAll.data() + i * (size_t)d.nldpc) ? 1 : 0;
+            }
+            const LdpcCode& code = s2Ldpc(j0.rate, j0.sh);
+            const float alpha = s2LdpcAlpha(j0.rate);
+            bool gpuDone = false;
+            if (gpu) {
+                // unusable frames (wrong symbol count) are decoded as zeros and ignored
+                hardAll.resize(nb * (size_t)d.nldpc); okAll.assign(nb, 0); itAll.assign(nb, 0);
+                const auto t0 = std::chrono::steady_clock::now();
+                gpuDone = GpuLdpc::instance().decode(code, dlAll.data(), (int)nb, 50, hardAll.data(), okAll.data(), itAll.data(), alpha);
+                if (gpuDone) compute.report(true, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() / (double)nb);
+            }
+            for (size_t i = 0; i < nb; i++) {
+                if (!usable[i]) { deposit(std::move(res[i])); continue; }
+                const float* dl = dlAll.data() + i * (size_t)d.nldpc;
+                std::vector<float> dlv;
                 int iters = 0;
-                // the high code rates converge in a few iterations, where the 8-bit decoder is about twice as fast; the low rates need as many iterations
-                // again with it, so they keep the float one
-                const LdpcCode& code = s2Ldpc(j.rate, j.sh);
-                const bool ldpcOk = s2RateValue(j.rate) >= 0.7 ? code.decodeFast8(dl, 50, hard, &iters) : code.decodeFast(dl, 50, hard, &iters, s2LdpcAlpha(j.rate));
-                r.iters = iters;
-                if (ldpcOk) {
-                    const int fixed = s2BchDecode(hard.data(), j.rate, j.sh, bb);
-                    if (fixed >= 0) {
-                        s2BbScramble(bb.data(), d.kbch);
-                        r.ok = true; r.bchFixed = fixed; r.bb = bb;
-                        // bit errors before the LDPC decoder: hard decisions on the input against the decoded code word
-                        size_t diff = 0;
-                        for (int i = 0; i < d.nldpc; i++) diff += (dl[(size_t)i] < 0) != (hard[(size_t)i] != 0);
-                        r.berPre = (double)diff / d.nldpc;
-                    }
+                bool ok = false, onGpu = false;
+                const uint8_t* hp = nullptr;
+                if (gpuDone && okAll[i]) { ok = true; onGpu = true; iters = itAll[i]; hp = hardAll.data() + i * (size_t)d.nldpc; }
+                else {
+                    // the CPU decoder: the chosen path, or the answer for a frame the GPU could not decode (it uses the same code with the right scaling)
+                    dlv.assign(dl, dl + d.nldpc);
+                    const auto t0 = std::chrono::steady_clock::now();
+                    // the high code rates converge in a few iterations, where the 8-bit decoder is about twice as fast; the low rates need as many iterations
+                    // again with it, so they keep the float one
+                    ok = s2RateValue(j0.rate) >= 0.7 ? code.decodeFast8(dlv, 50, hard, &iters) : code.decodeFast(dlv, 50, hard, &iters, alpha);
+                    if (!gpuDone) compute.report(false, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+                    hp = hard.data();
                 }
+                finishFrame(jobs[i], d, dl, hp, ok, iters, onGpu, bb, res[i]);
+                deposit(std::move(res[i]));
             }
-            deposit(std::move(r));
         }
     }
 
@@ -907,6 +957,7 @@ struct S2Rx::Impl {
             else if (r.ok) {
                 st.fecOk++; st.consecutiveBad = 0;
                 st.ldpcIterAvg = st.ldpcIterAvg == 0 ? r.iters : 0.9 * st.ldpcIterAvg + 0.1 * r.iters;
+                st.ldpcOnGpu = r.gpu; if (r.gpu) st.ldpcGpuFrames++;
                 st.berPre = st.berPre < 0 ? r.berPre : 0.9 * st.berPre + 0.1 * r.berPre;
             } else { st.fecBad++; st.consecutiveBad++; st.bchBad++; }
         }
@@ -1036,6 +1087,8 @@ void S2Rx::stop() {
     }
     tracking_ = false;
 }
+
+void S2Rx::setComputeMode(int m) { p_->compute.mode = m; }
 
 S2Stats S2Rx::stats() const { std::lock_guard<std::mutex> lk(p_->statMu); return p_->st; }
 void S2Rx::cells(std::vector<cf32>& out) const { std::lock_guard<std::mutex> lk(p_->statMu); out = p_->cellSnap; }

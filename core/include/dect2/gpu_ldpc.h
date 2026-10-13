@@ -17,7 +17,7 @@ public:
 #endif
     // Decodes `nb` blocks of n LLRs each (llr > 0 means bit 0). hard receives nb*n bits (one per byte),
     // ok[b] = all parity checks satisfied, iters[b] = iterations used. Blocks the caller until the GPU is done.
-    bool decode(const LdpcCode& code, const float* llr, int nb, int maxIter, uint8_t* hard, uint8_t* ok, int* iters);
+    bool decode(const LdpcCode& code, const float* llr, int nb, int maxIter, uint8_t* hard, uint8_t* ok, int* iters, float alpha = 0.78f);
 
 private:
     bool selfTest();   // (Direct3D 11 build) decodes known blocks; the GPU decoder disables itself if the result is wrong
