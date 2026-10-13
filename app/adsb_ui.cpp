@@ -1,5 +1,6 @@
 // ADS-B screens: the aircraft table, a radar plot around the receiver, the message monitor, statistics and the options of the test signal.
 #include "app.h"
+#include "dect2/adsb_units.h"
 #include "results_export.h"
 #include "adsb_map.h"
 #include "dect2/adsb_msg.h"
@@ -25,6 +26,7 @@ struct State {
     int viewMode = 0;                           // 0 map, 1 table, 2 radar
     adsbmap::View map;
     bool mapHome = true;                        // the map follows the antenna position until the user drags it
+    dect2::adsbu::Units units;                  // display units (prefs adsbUnits, adsbSpeedUnit)
     bool winds = false;                         // "winds aloft": wind arrows at the aircraft (from Comm-B)
     bool full = false;                          // the map fills the whole window (Esc or the same button to leave)
     double ctxLat = 0, ctxLon = 0;              // where the map was right-clicked
@@ -44,6 +46,8 @@ void loadState() {
     S.refAltM = d.getD("rxAltM", 0);
     S.map.zoom = (int)d.getI("adsbZoom", 7);
     S.winds = d.getB("adsbWinds", false);
+    S.units.sys = d.getI("adsbUnits", 0) == 1 ? dect2::adsbu::System::Metric : dect2::adsbu::System::Aviation;
+    S.units.spd = d.getI("adsbSpeedUnit", 0) == 1 ? dect2::adsbu::Speed::MS : dect2::adsbu::Speed::KmH;
     S.map.lat = S.refLat; S.map.lon = S.refLon;}
 
 const ImVec4 kDim(0.62f, 0.65f, 0.68f, 1), kGood(0.40f, 0.85f, 0.50f, 1), kWarn(0.95f, 0.60f, 0.25f, 1);
@@ -111,26 +115,54 @@ void tick(App& a) {
 // one number or a dash
 std::string num(bool has, const char* fmt, double v) { if (!has) return "-"; char b[32]; snprintf(b, sizeof b, fmt, v); return b; }
 
+namespace au = dect2::adsbu;
+std::string uAlt(double ft) { return au::fmt(au::altOut(S.units, ft), 0); }
+std::string uSpd(double kt) { return au::fmt(au::speedOut(S.units, kt), au::speedDecimals(S.units)); }
+std::string uDist(double nm, int dec = 1) { return au::fmt(au::distOut(S.units, nm), dec); }
+std::string uVr(double fpm) { return au::fmt(au::vrateOut(S.units, fpm), au::vrateDecimals(S.units), true); }
+std::string dash(bool has, const std::string& v) { return has ? v : "-"; }
+
+// the units toggle (aviation / metric, and km/h or m/s), saved in the prefs
+void unitsControls() {
+    bool ch = false;
+    ImGui::TextDisabled("Units");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(130 * gUi);
+    int sys = S.units.metric() ? 1 : 0;
+    if (ImGui::Combo("##adsbunits", &sys, "Aviation (kt, ft, nm)\0Metric\0")) { S.units.sys = sys ? au::System::Metric : au::System::Aviation; ch = true; }
+    if (S.units.metric()) {
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(70 * gUi);
+        int sp = S.units.spd == au::Speed::MS ? 1 : 0;
+        if (ImGui::Combo("##adsbspd", &sp, "km/h\0m/s\0")) { S.units.spd = sp ? au::Speed::MS : au::Speed::KmH; ch = true; }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Aviation: knots, feet, nautical miles, ft/min. Metric: km/h or m/s, metres, km, m/s. Only what is shown and exported changes; SBS and the feeds stay in aviation units.");
+    if (ch) { plat::prefs().setI("adsbUnits", S.units.metric() ? 1 : 0); plat::prefs().setI("adsbSpeedUnit", S.units.spd == au::Speed::MS ? 1 : 0); plat::prefs().flush(); }
+}
+
 void aircraftTable(App& a, bool compact) {
     const AdsbTelemetry& t = a.rx.adsb;
     const bool on = live(a);
     const int cols = compact ? 5 : 11;
     if (!compact) {
         static std::string note;
-        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "icao", "callsign", "alt_ft", "speed_kt", "heading_deg", "vrate_fpm", "lat", "lon", "dist_nm", "squawk", "messages", "age_s", "level_dbfs"};
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "icao", "callsign", au::altCol(S.units), au::speedCol(S.units), "heading_deg", au::vrateCol(S.units), "lat", "lon", au::distCol(S.units), "squawk", "messages", "age_s", "level_dbfs"};
         const std::string now = resexp::stamp();
         if (on) for (const auto& ac : t.aircraft)
-            x.add({now, "1090000000", "ADS-B", icaoText(ac.icao), ac.callsign, ac.hasAlt ? resexp::num(ac.altFt, 0) : "", ac.hasSpeed ? resexp::num(ac.speedKt, 0) : "", ac.hasHeading ? resexp::num(ac.headingDeg, 0) : "",
-                   ac.hasVrate ? resexp::num(ac.vrateFpm, 0) : "", ac.hasPos ? resexp::num(ac.lat, 6) : "", ac.hasPos ? resexp::num(ac.lon, 6) : "", ac.hasRange ? resexp::num(ac.distNm, 1) : "",
+            x.add({now, "1090000000", "ADS-B", icaoText(ac.icao), ac.callsign, ac.hasAlt ? uAlt(ac.altFt) : "", ac.hasSpeed ? uSpd(ac.speedKt) : "", ac.hasHeading ? resexp::num(ac.headingDeg, 0) : "",
+                   ac.hasVrate ? au::fmt(au::vrateOut(S.units, ac.vrateFpm), au::vrateDecimals(S.units)) : "", ac.hasPos ? resexp::num(ac.lat, 6) : "", ac.hasPos ? resexp::num(ac.lon, 6) : "", ac.hasRange ? uDist(ac.distNm) : "",
                    ac.hasSquawk ? std::to_string(ac.squawk) : "", std::to_string(ac.messages), resexp::num(ac.ageSec, 0), resexp::num(ac.levelDbfs, 0)});
         resexp::saveButton(x, "adsb", note, "svadsb");
+        ImGui::SameLine();
+        unitsControls();
         if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
     if (!ImGui::BeginTable(compact ? "##acs" : "##acf", cols, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("ICAO", ImGuiTableColumnFlags_WidthFixed, 62 * gUi); ImGui::TableSetupColumn("Callsign", ImGuiTableColumnFlags_WidthFixed, 72 * gUi);
-    ImGui::TableSetupColumn("Alt ft"); if (!compact) { ImGui::TableSetupColumn("Spd kt"); ImGui::TableSetupColumn("Hdg"); ImGui::TableSetupColumn("V/S"); }
-    ImGui::TableSetupColumn("Dist nm");
+    const std::string hAlt = std::string("Alt ") + au::altUnit(S.units), hSpd = std::string("Spd ") + au::speedUnit(S.units), hVs = std::string("V/S ") + au::vrateUnit(S.units), hDist = std::string("Dist ") + au::distUnit(S.units);
+    ImGui::TableSetupColumn(hAlt.c_str()); if (!compact) { ImGui::TableSetupColumn(hSpd.c_str()); ImGui::TableSetupColumn("Hdg"); ImGui::TableSetupColumn(hVs.c_str()); }
+    ImGui::TableSetupColumn(hDist.c_str());
     if (!compact) { ImGui::TableSetupColumn("Sqk"); ImGui::TableSetupColumn("Msgs"); ImGui::TableSetupColumn("Age s"); ImGui::TableSetupColumn("dBFS"); }
     ImGui::TableHeadersRow();
     std::vector<const AdsbAircraft*> rows;   // by address, not by last heard: the rows do not move about
@@ -145,13 +177,13 @@ void aircraftTable(App& a, bool compact) {
         char id[24]; snprintf(id, sizeof id, "%s##%u", icaoText(ac.icao).c_str(), ac.icao);
         if (ImGui::Selectable(id, S.sel == ac.icao, ImGuiSelectableFlags_SpanAllColumns)) S.sel = ac.icao;
         ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.callsign.empty() ? "-" : ac.callsign.c_str());
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.ground ? "ground" : num(ac.hasAlt, "%.0f", ac.altFt).c_str());
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.ground ? "ground" : dash(ac.hasAlt, uAlt(ac.altFt)).c_str());
         if (!compact) {
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(num(ac.hasSpeed, "%.0f", ac.speedKt).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(dash(ac.hasSpeed, uSpd(ac.speedKt)).c_str());
             ImGui::TableNextColumn(); ImGui::TextUnformatted(num(ac.hasHeading, "%.0f", ac.headingDeg).c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(num(ac.hasVrate, "%+.0f", ac.vrateFpm).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(dash(ac.hasVrate, uVr(ac.vrateFpm)).c_str());
         }
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(num(ac.hasRange, "%.1f", ac.distNm).c_str());
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(dash(ac.hasRange, uDist(ac.distNm)).c_str());
         if (!compact) {
             ImGui::TableNextColumn(); if (ac.hasSquawk) ImGui::Text("%04d", ac.squawk); else ImGui::TextUnformatted("-");
             ImGui::TableNextColumn(); ImGui::Text("%u", ac.messages);
@@ -182,7 +214,7 @@ void radar(App& a, ImVec2 size) {
     const ImU32 grid = IM_COL32(60, 64, 66, 255);
     for (int i = 1; i <= rings; i++) {
         dl->AddCircle(c, R * i / rings, grid, 64);
-        char b[24]; snprintf(b, sizeof b, "%.0f nm", scale * i / rings);
+        char b[24]; snprintf(b, sizeof b, "%.0f %s", au::distOut(S.units, scale * i / rings), au::distUnit(S.units));
         dl->AddText(ImVec2(c.x + 3 * gUi, c.y - R * i / rings), IM_COL32(110, 114, 118, 255), b);
     }
     dl->AddLine(ImVec2(c.x - R, c.y), ImVec2(c.x + R, c.y), grid); dl->AddLine(ImVec2(c.x, c.y - R), ImVec2(c.x, c.y + R), grid);
@@ -300,7 +332,7 @@ void mapView(App& a, ImVec2 size) {
                 const ImVec2 m(q.x + dx * (len * 0.12f * k + 4 * gUi), q.y + dy * (len * 0.12f * k + 4 * gUi));
                 dl->AddLine(ImVec2(m.x - dy * 4 * gUi, m.y + dx * 4 * gUi), ImVec2(m.x + dy * 4 * gUi, m.y - dx * 4 * gUi), col, 1.5f * gUi);
             }
-            if (S.map.zoom >= 7) { char b[16]; snprintf(b, sizeof b, "%.0f", kt); dl->AddText(ImVec2(e.x + 4 * gUi, e.y - 6 * gUi), col, b); }
+            if (S.map.zoom >= 7) { char b[16]; snprintf(b, sizeof b, "%s", uSpd(kt).c_str()); dl->AddText(ImVec2(e.x + 4 * gUi, e.y - 6 * gUi), col, b); }
         }
         for (const auto& ac : t.aircraft) {
             if (!ac.hasPos) continue;
@@ -310,7 +342,7 @@ void mapView(App& a, ImVec2 size) {
             drawPlane(dl, q, ac.hasHeading ? (float)ac.headingDeg : 0.f, (sel ? 14.f : 12.f) * gUi, altColour(ac), sel);
             if (S.map.zoom >= 6 || sel) {
                 char b[48]; snprintf(b, sizeof b, "%s", ac.callsign.empty() ? icaoText(ac.icao).c_str() : ac.callsign.c_str());
-                char b2[24] = ""; if (ac.hasAlt && !ac.ground) snprintf(b2, sizeof b2, "FL%03d", (ac.altFt + 50) / 100);
+                char b2[24] = ""; if (ac.hasAlt && !ac.ground) { if (S.units.metric()) snprintf(b2, sizeof b2, "%s m", uAlt(ac.altFt).c_str()); else snprintf(b2, sizeof b2, "FL%03d", (ac.altFt + 50) / 100); }
                 const ImVec2 ts = ImGui::CalcTextSize(b), ts2 = ImGui::CalcTextSize(b2);
                 const float w = std::max(ts.x, ts2.x) + 8 * gUi, hh = ts.y + (b2[0] ? ts2.y : 0) + 4 * gUi;
                 const ImVec2 lp(q.x + 12 * gUi, q.y - hh * 0.5f);
@@ -341,6 +373,8 @@ void mapView(App& a, ImVec2 size) {
     if (ImGui::Button(S.full ? "exit full screen" : "full screen")) S.full = !S.full;
     if (ImGui::IsItemHovered()) ImGui::SetTooltip(S.full ? "Back to the normal layout (Esc)" : "The map fills the whole window (Esc to leave)");
     ImGui::PopStyleColor();
+    ImGui::SameLine(0, 6 * gUi);
+    unitsControls();
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Checkbox("winds aloft", &S.winds)) { plat::prefs().setB("adsbWinds", S.winds); plat::prefs().flush(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Wind arrows (downwind) at the aircraft, coloured by altitude: derived from Comm-B 5,0 + 6,0 replies, or reported in 4,4.");
@@ -391,21 +425,21 @@ void detail(const App& a) {
     if (ac->hasPos) snprintf(b, sizeof b, "%.4f  %.4f", ac->lat, ac->lon); else snprintf(b, sizeof b, "-");
     kv("position", b);
     kv("fix", ac->hasPos ? (ac->posKind == 2 ? "global" : ac->posKind == 3 ? "local, confirmed" : "local") : "-");
-    if (ac->hasRange) snprintf(b, sizeof b, "%.1f nm at %.0f deg", ac->distNm, ac->bearingDeg); else snprintf(b, sizeof b, "-");
+    if (ac->hasRange) snprintf(b, sizeof b, "%s %s at %.0f deg", uDist(ac->distNm).c_str(), au::distUnit(S.units), ac->bearingDeg); else snprintf(b, sizeof b, "-");
     kv("range", b);
-    kv("altitude", ac->ground ? "on the ground" : ac->hasAlt ? num(true, "%.0f ft", ac->altFt) : "-");
-    kv("GNSS height", ac->hasGeoAlt ? num(true, "%.0f ft", ac->geoAltFt) : "-");
-    kv("speed", ac->hasSpeed ? num(true, "%.0f kt", ac->speedKt) + (ac->speedKind == 0 ? " ground" : ac->speedKind == 1 ? " ias" : " tas") : "-");
+    kv("altitude", ac->ground ? "on the ground" : ac->hasAlt ? uAlt(ac->altFt) + " " + au::altUnit(S.units) : "-");
+    kv("GNSS height", ac->hasGeoAlt ? uAlt(ac->geoAltFt) + " " + au::altUnit(S.units) : "-");
+    kv("speed", ac->hasSpeed ? uSpd(ac->speedKt) + " " + au::speedUnit(S.units) + (ac->speedKind == 0 ? " ground" : ac->speedKind == 1 ? " ias" : " tas") : "-");
     kv(ac->headingIsTrack ? "track" : "heading", ac->hasHeading ? num(true, "%.0f deg", ac->headingDeg) : "-");
-    kv("vertical", ac->hasVrate ? num(true, "%+.0f ft/min", ac->vrateFpm) : "-");
+    kv("vertical", ac->hasVrate ? uVr(ac->vrateFpm) + " " + au::vrateUnit(S.units) : "-");
     if (ac->hasSquawk) snprintf(b, sizeof b, "%04d", ac->squawk); else snprintf(b, sizeof b, "-");
     kv("squawk", b);
-    kv("selected alt", ac->hasSelAlt ? num(true, "%.0f ft", ac->selAltFt) : "-");
+    kv("selected alt", ac->hasSelAlt ? uAlt(ac->selAltFt) + " " + au::altUnit(S.units) : "-");
     kv("mach", ac->hasMach ? num(true, "%.2f", ac->mach) : "-");
-    if (ac->hasWindDer) snprintf(b, sizeof b, "%03.0f/%.0f kt derived", ac->windDerDir, ac->windDerKt);
-    else if (ac->hasWindRep) snprintf(b, sizeof b, "%03.0f/%.0f kt reported", ac->windRepDir, ac->windRepKt);
+    if (ac->hasWindDer) snprintf(b, sizeof b, "%03.0f/%s %s derived", ac->windDerDir, uSpd(ac->windDerKt).c_str(), au::speedUnit(S.units));
+    else if (ac->hasWindRep) snprintf(b, sizeof b, "%03.0f/%s %s reported", ac->windRepDir, uSpd(ac->windRepKt).c_str(), au::speedUnit(S.units));
     else snprintf(b, sizeof b, "-");
-    if (ac->hasWindDer && ac->hasWindRep) { char r[48]; snprintf(r, sizeof r, "\n%03.0f/%.0f kt reported", ac->windRepDir, ac->windRepKt); strncat(b, r, sizeof b - strlen(b) - 1); }
+    if (ac->hasWindDer && ac->hasWindRep) { char r[48]; snprintf(r, sizeof r, "\n%03.0f/%s %s reported", ac->windRepDir, uSpd(ac->windRepKt).c_str(), au::speedUnit(S.units)); strncat(b, r, sizeof b - strlen(b) - 1); }
     kv("wind", b);
     if (ac->hasSat) snprintf(b, sizeof b, "%+.0f C %s", ac->satC, ac->satDerived ? "derived" : "reported"); else snprintf(b, sizeof b, "-");
     kv("SAT", b);
@@ -456,7 +490,7 @@ void receiver(App& a) {
     kv("repaired", "%llu", (unsigned long long)t.corrected);
     kv("signal", "%.1f dBFS, noise %.1f dBFS, SNR %.1f dB", t.levelDbfs, t.noiseDbfs, t.snrDb);
     kv("aircraft", "%u (%u with position)", t.aircraftCount, t.withPosition);
-    if (t.refValid) kv("farthest", "%.0f nm", t.maxRangeNm);
+    if (t.refValid) kv("farthest", "%s %s", uDist(t.maxRangeNm, 0).c_str(), au::distUnit(S.units));
     ImGui::Spacing();
     ImGui::TextDisabled("Last messages");
     if (ImGui::BeginTable("##mon", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
@@ -542,7 +576,7 @@ void status(App& a) {
     snprintf(b, sizeof b, "%u (%u)", t.aircraftCount, t.withPosition); ro("Aircraft", b);
     snprintf(b, sizeof b, "%.1f dB", t.snrDb); ro("SNR", b);
     snprintf(b, sizeof b, "%.1f dBFS", t.noiseDbfs); ro("Noise", b);
-    if (t.refValid && t.maxRangeNm > 0) { snprintf(b, sizeof b, "%.0f nm", t.maxRangeNm); ro("Farthest", b); }
+    if (t.refValid && t.maxRangeNm > 0) { snprintf(b, sizeof b, "%s %s", uDist(t.maxRangeNm, 0).c_str(), au::distUnit(S.units)); ro("Farthest", b); }
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
