@@ -1,5 +1,6 @@
 // FM broadcast radio panels: tuning, status line, station panel with RDS, diagnostic plots and the band scanner.
 #include "app.h"
+#include "results_export.h"
 #include <chrono>
 
 static constexpr double kFmLow = 87.5, kFmHigh = 108.0;
@@ -436,6 +437,14 @@ void fmScanTab(App& a) {
         ImGui::ProgressBar(frac, ImVec2(220, ImGui::GetFrameHeight() - 6));
     }
     ImGui::Spacing();
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "station", "type", "snr_db", "sound", "rds"};
+        const std::string now = resexp::stamp();
+        for (const auto& r : s.results) if (r.found) t.add({now, resexp::num(r.mhz * 1e6, 0), "FM", r.name, r.pty, resexp::num(r.snr, 0), r.stereo ? "stereo" : "mono", r.rds ? "yes" : "no"});
+        resexp::saveButton(t, "fm", note, "svfm");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     if (ImGui::BeginTable("fmscan", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("MHz", ImGuiTableColumnFlags_WidthFixed, 80); ImGui::TableSetupColumn("Station"); ImGui::TableSetupColumn("Type");
         ImGui::TableSetupColumn("SNR", ImGuiTableColumnFlags_WidthFixed, 70); ImGui::TableSetupColumn("Sound", ImGuiTableColumnFlags_WidthFixed, 70);

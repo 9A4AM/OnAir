@@ -2,6 +2,7 @@
 // each cell (SSB index and RSRP), a band scan over the NR sync raster, the map (the receiver; tower positions need the cell identity of
 // SIB1, which is not decoded) and the log. Only what cells broadcast to every phone is shown.
 #include "app.h"
+#include "results_export.h"
 #include "adsb_map.h"
 #include "dect2/nr_phy.h"
 #include "dect2/nr_rx.h"
@@ -102,6 +103,18 @@ void scanBar(App& a) {
     }
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Clear")) a.engine.nr().clearCells();
+    flowNext(10 * gUi);
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "band", "gscn", "pci", "ssb_khz", "beams", "sfn", "sib1_scheduled", "rsrp_db", "rsrq_db", "sinr_db"};
+        const std::string now = resexp::stamp();
+        for (const auto& c : a.rx.nr.cells)
+            t.add({now, resexp::num(c.freqHz, 0), "5G NR", bandText(c), c.gscn > 0 ? std::to_string(c.gscn) : "", std::to_string(c.pci), std::to_string(c.scsKhz),
+                   c.hasMib ? std::to_string(c.beams.size()) : "", c.hasMib ? std::to_string(c.sfn) : "", c.hasMib ? (c.sib1Scheduled ? "yes" : "no") : "",
+                   resexp::num(c.rsrpDb, 1), resexp::num(c.rsrqDb, 1), resexp::num(c.sinrDb, 1)});
+        resexp::saveButton(t, "nr", note, "svnr");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     flowEnd();
 }
 

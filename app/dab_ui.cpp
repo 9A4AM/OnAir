@@ -1,5 +1,6 @@
 // DAB / DAB+ digital radio panels.
 #include "app.h"
+#include "results_export.h"
 #include "dect2/dab_announce.h"
 #include "dect2/dab_fig.h"
 #include <ctime>
@@ -723,6 +724,14 @@ void dabScanTab(App& a) {
         ImGui::ProgressBar((float)(std::max(0, s.idx)) / kNumDabCh, ImVec2(220, ImGui::GetFrameHeight() - 6));
     }
     ImGui::Spacing();
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "channel", "ensemble", "snr_db", "stations"};
+        const std::string now = resexp::stamp();
+        for (const auto& r : s.results) if (r.found) t.add({now, resexp::num(r.mhz * 1e6, 0), "DAB", r.name, r.label, resexp::num(r.snr, 1), r.stations});
+        resexp::saveButton(t, "dab", note, "svdab");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     if (ImGui::BeginTable("dscan", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("Channel", ImGuiTableColumnFlags_WidthFixed, 90); ImGui::TableSetupColumn("MHz", ImGuiTableColumnFlags_WidthFixed, 80);
         ImGui::TableSetupColumn("Ensemble"); ImGui::TableSetupColumn("SNR", ImGuiTableColumnFlags_WidthFixed, 70); ImGui::TableSetupColumn("Stations");

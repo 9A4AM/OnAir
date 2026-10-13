@@ -4,6 +4,7 @@
 // from a tower position file the user downloads (OpenCelliD CSV: radio,mcc,net,area,cell,unit,lon,lat,...). Data (c) OpenCelliD, CC BY-SA
 // 4.0; nothing is bundled. Only what cells broadcast to every phone is shown.
 #include "app.h"
+#include "results_export.h"
 #include "adsb_map.h"
 #include "dect2/cell_ocid.h"
 #include "dect2/cell_rx.h"
@@ -166,6 +167,18 @@ void scanBar(App& a) {
     }
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Clear")) a.engine.cell().clearCells();
+    flowNext(10 * gUi);
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "operator", "band", "earfcn", "pci", "enb", "sector", "tac", "width_mhz", "rsrp_db", "rsrq_db"};
+        const std::string now = resexp::stamp();
+        for (const auto& c : a.rx.cell.cells)
+            t.add({now, resexp::num(c.freqHz, 0), "LTE", opText(c), c.band ? std::to_string(c.band) : "", c.earfcn >= 0 ? std::to_string(c.earfcn) : "", std::to_string(c.pci),
+                   c.hasSib1 ? std::to_string(c.enb) : "", c.hasSib1 ? std::to_string(c.sector) : "", c.hasSib1 ? std::to_string(c.tac) : "",
+                   c.hasMib ? resexp::num(c.nRb * 0.2, 1) : "", resexp::num(c.rsrpDb, 1), resexp::num(c.rsrqDb, 1)});
+        resexp::saveButton(t, "lte", note, "svcell");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     flowEnd();
 }
 
