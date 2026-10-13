@@ -36,7 +36,7 @@ touch "$LOGS/.start"   # ci_progress.sh ignores logs older than this
 
 # Cores: the Mac tests and the two builds share the Mac's 10, the Linux stage has the VM's 6. CI=true everywhere: with everything
 # running at once the machines are busy, so the speed and real-time checks only print instead of failing (as on GitHub).
-MAC_JOBS=6; WIN_JOBS=4; LINUX_JOBS=6
+MAC_JOBS=8; WIN_JOBS=4; LINUX_JOBS=8
 
 step() {   # step <name> <log> <command...>: runs it, writes "<ok|FAIL> <seconds> <name>" to <log>.result
     local name=$1 log=$2; shift 2
