@@ -149,6 +149,9 @@ protected:
             rate_ = pick;
             requested_ = s.sampleRate;
             checkRate(s.sampleRate, err);
+            // this Mini can run at 10 Msps, but only with the unofficial rate switched on in the radio settings
+            if (!err.empty() && mini && radioOption(s, "mini10", "0") != "1" && s.sampleRate > rate_ && s.sampleRate <= 10.0e6 * 1.001)
+                err += ". This Airspy Mini can run at 10 Msps: turn on \"10 Msps (unofficial)\" in the radio settings";
         }
         // libairspy has no frequency correction (the R2 and Mini have a 0.5 ppm TCXO): a correction the user set is taken out of the frequency
         freq_ = (uint32_t)std::llround(std::min(std::max(ppmCorrectedHz(s.centerHz, radioPpm(s)), 0.0), 4.29e9));
