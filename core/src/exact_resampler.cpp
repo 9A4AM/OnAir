@@ -16,7 +16,7 @@ double besselI0(double x) {
 }
 }
 
-bool ExactResampler::configure(double inRate, double outRate) {
+bool ExactResampler::configure(double inRate, double outRate, int lobes) {
     if (inRate <= 0 || outRate <= 0 || outRate > 4 * inRate) return false;
     const double ratio = outRate / inRate;
     step_ = inRate / outRate;
@@ -24,7 +24,7 @@ bool ExactResampler::configure(double inRate, double outRate) {
     if (pass_) { reset(); return true; }
     const double down = std::min(1.0, ratio);
     const double fc = 0.5 * down * 0.97;
-    half_ = (int)std::ceil(16.0 / down);
+    half_ = (int)std::ceil((double)lobes / down);
     taps_ = 2 * half_;
     stride_ = (taps_ + 7) & ~7;   // a multiple of the vector width of the dot product below
     bank_.assign((size_t)(phases_ + 1) * (size_t)stride_, 0.f);

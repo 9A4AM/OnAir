@@ -14,7 +14,7 @@ size_t resampleLoop(const float* R, const float* M, const float* B, int stride, 
 class ExactResampler {
 public:
     // Returns false for ratios the filter cannot do (the output rate must not exceed about 4 times the input rate).
-    bool configure(double inRate, double outRate);
+    bool configure(double inRate, double outRate, int lobes = 16);   // lobes: half the filter length in input samples at equal rates (16: about 90 dB, 8: about 55 dB and half the cost)
     bool passthrough() const { return pass_; }
     void reset();
     // Lets the output run slower (factor > 1: every output sample advances that much further in the input) or faster; for tracking a clock error.

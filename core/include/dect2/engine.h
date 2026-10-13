@@ -88,6 +88,7 @@
 #include "goes_rx.h"
 #include "hrpt_rx.h"
 #include "bbunpack.h"
+#include "multitv.h"
 #include "ts.h"
 #include "tsout.h"
 #include "player.h"
@@ -213,6 +214,20 @@ public:
 
     void setPlpDump(std::function<void(const PlpResult&)> cb) { plpDump_ = std::move(cb); }
 
+    // Multi-channel TV (DVB-T / DVB-T2, multitv.h): when the capture is wide enough for more than one channel of the chosen width, one receiver runs for
+    // every occupied channel of the raster (up to maxChannels), each with its own telemetry and service list; one channel plays at a time while the others
+    // keep decoding. grid: 0 finds out whether the capture is centred on a channel or between two, 1 on a channel, 2 between two. Off: the single receiver as before.
+    void setMultiChannel(bool on, int maxChannels = 0, int grid = 0);
+    bool multiChannel() const { return mtvOn_.load(); }                  // asked for
+    bool multiChannelActive() const { return mtvActive_.load(); }        // running now (the mode, the span and the width allow it)
+    static bool multiChannelSupported(int stdMode) { return stdMode == 1 || stdMode == 2; }   // DVB-T2, DVB-T
+    static int defaultMaxChannels();                                      // 2 on a laptop, 3 on a desktop
+    static int slotsInSpan(double spanRate, double widthMhz, int grid);   // channels of the raster that fit the capture
+    void selectTvChannel(int slot);                                       // the channel that plays and shows in detail
+    int selectedTvChannel() const { auto m = mtvGet(); return m ? m->selected() : 0; }
+    std::vector<TvChannelRow> tvChannels();
+    std::vector<MultiService> multiServices();                            // every service of every channel, with the channel it comes from
+    std::string multiChannelNote() const { std::lock_guard<std::mutex> lk(mtvNoteMu_); return mtvNote_; }
     // Transport stream (phase 4)
     TsSnapshot tsSnapshot();
     BbStats bbStats();
@@ -375,6 +390,19 @@ private:
     void logRxEvents(const RxTelemetry& t);
     std::function<void(const PlpResult&)> plpDump_;
     void onPlp(const PlpResult& r);
+    // multi-channel TV (setMultiChannel)
+    std::shared_ptr<MultiTv> mtv_;
+    mutable std::mutex mtvMu_;               // mtv_ (the analysis thread replaces it, the interface reads it)
+    std::shared_ptr<MultiTv> mtvGet() const { std::lock_guard<std::mutex> lk(mtvMu_); return mtv_; }
+    std::atomic<bool> mtvOn_{false}, mtvActive_{false};
+    std::atomic<int> mtvMax_{0}, mtvGrid_{0};
+    double mtvKeyRate_ = -1, mtvKeyBw_ = 0;
+    int mtvKeyStd_ = -1, mtvKeyMax_ = -1, mtvKeyGrid_ = -1;
+    bool mtvKeyOn_ = false;
+    mutable std::mutex mtvNoteMu_;
+    std::string mtvNote_;
+    void syncMultiTv();                       // the analysis thread: starts, changes or stops the multi-channel receivers when the settings or the capture changed
+    void onMultiPackets(const uint8_t* pk, size_t n, double secs, const TsSnapshot& snap);
     std::mutex tsMu_;
     BbUnpacker unpack_;
     TsDemux demux_;

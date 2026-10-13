@@ -292,6 +292,7 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     identifyWindow(a);
     dect2::PskReporter::get().setDialHz(a.freqMhz * 1e6);
     a.engine.setWideDecode(a.wideDecode && modeSupportsWideHf(a.family));
+    a.engine.setMultiChannel(a.mtvOn && a.family == 0, a.mtvMax, a.mtvGrid);
     feedsWindow(a);
     shareTick(a);
     mapWindow(a);

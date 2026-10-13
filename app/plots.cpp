@@ -189,6 +189,68 @@ static void wideSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
     ImGui::SetCursorScreenPos(keep);
 }
 
+// "Multi-channel" switch (DVB-T2 / DVB-T): when the capture holds more than one channel of the chosen width, decode every occupied channel of it, one
+// receiver each. Same place as "Whole span" (the TV modes do not have that one). Right click: how many at once, and where the channel raster sits.
+static bool multiAvailable(const App& a) {
+    if (a.family != 0) return false;
+    const double rate = a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate;
+    return Engine::slotsInSpan(rate, channelWidth(a).mhz, 0) >= 2;
+}
+static void multiSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
+    if (!multiAvailable(a)) return;
+    const bool run = a.engine.multiChannelActive();
+    const char* lb = a.mtvOn ? "Multi-channel: on###mtvbtn" : "Multi-channel###mtvbtn";
+    const ImVec2 sz = ImGui::CalcTextSize(lb, nullptr, true);
+    const float w = sz.x + 2 * ImGui::GetStyle().FramePadding.x, m = 4 * gUi;
+    const float x = plotMin.x + plotSize.x - gBwBtnW - w - m;
+    if (x < plotMin.x + 40 * gUi || plotSize.y < sz.y + 2 * m) return;   // no room
+    const ImVec2 keep = ImGui::GetCursorScreenPos();
+    ImGui::SetCursorScreenPos(ImVec2(x, plotMin.y + m));
+    ImVec4 bg = a.mtvOn ? pal::accent(0.55f) : ImGui::GetStyleColorVec4(ImGuiCol_FrameBg); if (!a.mtvOn) bg.w = 0.85f;
+    ImGui::PushStyleColor(ImGuiCol_Button, bg);
+    if (ImGui::SmallButton(lb)) { a.mtvOn = !a.mtvOn; savePrefs(a); }
+    ImGui::PopStyleColor();
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup("##mtvpop");
+    if (ImGui::IsItemHovered()) {
+        const std::string note = a.engine.multiChannelNote();
+        ImGui::SetTooltip("%s%s%s", tr("decode every channel in the span: a receiver for each occupied channel, one plays, the others keep decoding\n(right click: how many at once, where the channels sit)"),
+                          a.mtvOn && !run && !note.empty() ? "\n\n" : "", a.mtvOn && !run ? note.c_str() : "");
+    }
+    if (ImGui::BeginPopup("##mtvpop")) {
+        int mx = a.mtvMax > 0 ? a.mtvMax : Engine::defaultMaxChannels();
+        ImGui::SetNextItemWidth(120 * gUi);
+        if (ImGui::SliderInt(tr("Receivers at once"), &mx, 1, 4)) { a.mtvMax = mx; savePrefs(a); }
+        static const char* kGrid[3] = {"find out", "capture centred on a channel", "capture between two channels"};
+        ImGui::SetNextItemWidth(220 * gUi);
+        if (ImGui::BeginCombo(tr("Channel raster"), tr(kGrid[a.mtvGrid]))) {
+            for (int i = 0; i < 3; i++) if (ImGui::Selectable(tr(kGrid[i]), a.mtvGrid == i)) { a.mtvGrid = i; savePrefs(a); }
+            ImGui::EndCombo();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::SetCursorScreenPos(keep);
+}
+
+// The channels of multi-channel TV: the channel edges and the centre of each on the spectrum (the playing one in the accent colour)
+static void multiMarkers(App& a) {
+    if (!a.engine.multiChannelActive()) return;
+    const double c = radioCenterMhz(a), halfW = channelWidth(a).mhz * 0.5;
+    int k = 0;
+    for (const TvChannelRow& r : a.rx.tvChannels) {
+        if (!r.occupied && !r.running) continue;
+        const double f = c + r.offsetHz / 1e6;
+        const ImVec4 col = r.selected ? pal::accent(0.9f) : r.locked ? ImVec4(0.55f, 0.85f, 0.55f, 0.6f) : ImVec4(0.85f, 0.75f, 0.45f, 0.5f);
+        for (int e = -1; e <= 1; e += 2) {
+            const double xx[2] = {f + e * halfW, f + e * halfW}, yy[2] = {a.yMin, a.yMax};
+            plt::Spec s; s.LineColor = col; s.LineWeight = r.selected ? 1.5f : 1.f;
+            char id[24]; snprintf(id, sizeof id, "##mc%d", k++);
+            plt::PlotLine(id, xx, yy, 2, s);
+        }
+        char lb[48]; snprintf(lb, sizeof lb, "%.3f", f);
+        plt::PlotText(lb, f, a.yMax, ImVec2(0, 10));
+    }
+}
+
 // The carriers the whole-span decoder follows: a thin line and the frequency on the spectrum
 static void wideMarkers(App& a) {
     if (!wideActive(a)) return;
@@ -484,12 +546,13 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
             }
         }
         wideMarkers(a);
+        multiMarkers(a);
         clickToTune(a, 0);
         if (plt::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { ctxMhz = plt::GetPlotMousePos().x; openCtx = true; }
         plt::EndPlot();
     }
     if (drawn) {
-        channelWidthButton(a, plotMin, plotSize, kYLabel); wideSwitch(a, plotMin, plotSize);
+        channelWidthButton(a, plotMin, plotSize, kYLabel); wideSwitch(a, plotMin, plotSize); multiSwitch(a, plotMin, plotSize);
         gSpecBtnW = cornerPopup(a, "Spectrum###specbtn", "##specpop", plotMin, plotSize, gBwBtnW + gWideBtnW, ImGui::CalcTextSize(kYLabel).x + 24 * gUi, 0, false,
                                 tr("Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)"), specDisplayPopup);
     }

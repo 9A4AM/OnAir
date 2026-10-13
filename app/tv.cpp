@@ -291,6 +291,31 @@ void playerTab(App& a) {
     stor->SetFloat(ctlKey, ImGui::GetCursorPosY() - ctlY);
 }
 
+// Multi-channel TV: the channels of the span, one receiver each (click: this channel plays and shows in detail, the others keep decoding)
+static void multiChannelTable(App& a) {
+    const std::vector<TvChannelRow>& rows = a.rx.tvChannels;
+    sectionHeader(Ic::Radio, "Channels in the span");
+    if (rows.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("looking for channels in the capture..."); ImGui::PopTextWrapPos(); return; }
+    if (!ImGui::BeginTable("##mtvchans", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) return;
+    ImGui::TableSetupColumn(tr("Channel MHz")); ImGui::TableSetupColumn(tr("State")); ImGui::TableSetupColumn(tr("Services")); ImGui::TableSetupColumn(tr("SNR dB"));
+    ImGui::TableSetupColumn(tr("Load")); ImGui::TableSetupColumn(tr("Network"), ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    for (const TvChannelRow& r : rows) {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        char b[48]; snprintf(b, sizeof b, "%.3f##tc%d", radioCenterMhz(a) + r.offsetHz / 1e6, r.slot);
+        if (!r.occupied && !r.running) { ImGui::BeginDisabled(); ImGui::Selectable(b, false, ImGuiSelectableFlags_SpanAllColumns); ImGui::EndDisabled(); }
+        else if (ImGui::Selectable(b, r.selected, ImGuiSelectableFlags_SpanAllColumns) && r.running) a.engine.selectTvChannel(r.slot);
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(!r.occupied && !r.running ? tr("empty") : !r.running ? tr("waiting") : r.locked ? tr("locked") : r.state > 0 ? tr("partial") : tr("searching"));
+        ImGui::TableNextColumn(); if (r.running) ImGui::Text("%d", r.services); else ImGui::TextDisabled("-");
+        ImGui::TableNextColumn(); if (r.running && r.locked) ImGui::Text("%.1f", r.snrDb); else ImGui::TextDisabled("-");
+        ImGui::TableNextColumn(); if (r.running) ImGui::Text("%.0f %%", r.cpuPct); else ImGui::TextDisabled("-");
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(r.network.c_str());
+    }
+    ImGui::EndTable();
+    ImGui::Spacing();
+}
+
 void rightPanel(App& a) {
     if (const ModeUi* mu = modeUi(a.family)) if (mu->list) {
         if (!a.engine.running() && a.rx.standard > 0) ImGui::TextDisabled("stopped - showing saved results");
@@ -330,24 +355,39 @@ void rightPanel(App& a) {
     ImGui::Spacing();
     if (a.dabMode) { dabStations(a); return; }
     if (a.fmMode) { fmRadioPanel(a); return; }
+    if (a.engine.multiChannelActive()) multiChannelTable(a);
     sectionHeader(Ic::Tv, "Services");
     // ---- service cards
     const float cardH = 68 * gUi;
     ImGui::BeginChild("svcs", ImVec2(0, std::max(140.f * gUi, ImGui::GetContentRegionAvail().y * 0.40f)));
     dl = ImGui::GetWindowDrawList(); // draw into the child so the cards are clipped and scroll with it
-    if (a.ts.services.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(run ? "waiting for PAT / SDT..." : "start the receiver to see services"); ImGui::PopTextWrapPos(); }
-    for (auto& sv : a.ts.services) {
+    // multi-channel TV: the services of every channel of the span, each with its channel; else the one multiplex's
+    const bool multi = a.engine.multiChannelActive() && !a.mtvSvc.empty();
+    struct SvRow { const TsService* sv; int slot; double offHz; };
+    std::vector<SvRow> svRows;
+    if (multi) for (const MultiService& m : a.mtvSvc) svRows.push_back({&m.svc, m.slot, m.offsetHz});
+    else for (const TsService& s : a.ts.services) svRows.push_back({&s, 0, 0});
+    const int playSlot = multi ? a.engine.selectedTvChannel() : 0;
+    if (svRows.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(run ? "waiting for PAT / SDT..." : "start the receiver to see services"); ImGui::PopTextWrapPos(); }
+    for (const SvRow& rw : svRows) {
+        const TsService& sv = *rw.sv;
         std::string vc, ac;
         double kb = 0;
         bool hasVideo = false;
         for (auto& st : sv.streams) { kb += st.kbps; if (st.kind == "video") { hasVideo = true; if (vc.empty()) vc = st.codec; } if (st.kind == "audio" && ac.empty()) ac = st.codec; }
-        const bool sel = sv.id == a.engine.player().selected();
-        ImGui::PushID(sv.id);
+        const bool sel = sv.id == a.engine.player().selected() && rw.slot == playSlot;
+        ImGui::PushID(rw.slot * 100000 + sv.id);
         const float w = ImGui::GetContentRegionAvail().x;
         const ImVec2 p = ImGui::GetCursorScreenPos();
         const bool clicked = ImGui::InvisibleButton("##card", ImVec2(w, cardH));
         const bool hov = ImGui::IsItemHovered();
-        if (clicked) { if (sel) a.engine.player().select(-1); else { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); } }
+        if (clicked) {
+            if (sel) a.engine.player().select(-1);
+            else {
+                if (multi && rw.slot != playSlot) a.engine.selectTvChannel(rw.slot);   // another channel of the span plays from now on, the others keep decoding
+                a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume);
+            }
+        }
         dl->AddRectFilled(p, ImVec2(p.x + w, p.y + cardH - 4), sel ? IM_COL32(30, 36, 40, 255) : hov ? IM_COL32(26, 27, 29, 255) : IM_COL32(16, 17, 19, 255), pal::rnd(4.f));
         dl->AddRect(p, ImVec2(p.x + w, p.y + cardH - 4), sel ? pal::remap(IM_COL32(115, 184, 209, 255)) : IM_COL32(48, 50, 52, 255), 4.f, 0, sel ? 1.6f : 1.f);
         // name and bit rate
@@ -366,6 +406,7 @@ void rightPanel(App& a) {
         if (!vc.empty()) x += tagAt(dl, ImVec2(x, ty), vc.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
         if (!ac.empty()) x += tagAt(dl, ImVec2(x, ty), ac.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
         if (sv.scrambled) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(112, 52, 50, 255)) + 4;
+        if (multi) { char cb[40]; snprintf(cb, sizeof cb, "channel %.3f MHz", radioCenterMhz(a) + rw.offHz / 1e6); x += tagAt(dl, ImVec2(x, ty), cb, IM_COL32(58, 74, 44, 255)) + 4; }
         // what is on
         const EpgEvent* cur = epgCurrent(a, sv.id);
         std::string line;

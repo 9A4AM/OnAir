@@ -2,6 +2,7 @@
 // symbol synchronisation, CFO / timing tracking and raw OFDM cell extraction.
 #pragma once
 #include "wide_bank.h"
+#include "tvchan.h"
 #include <string>
 #include "ring.h"
 #include "atsc_tel.h"
@@ -104,6 +105,7 @@ struct P1Info {
 
 struct RxTelemetry {
     std::vector<WideCarrier> wide;   // whole-span decoding: the carriers table (empty otherwise)
+    std::vector<TvChannelRow> tvChannels;   // multi-channel TV (DVB-T / DVB-T2): the channels of the span (empty otherwise)
     AtscTelemetry atsc;          // valid when standard == 2
     DabTelemetry dab;            // valid when standard == 3
     FmTelemetry fm;              // valid when standard == 6

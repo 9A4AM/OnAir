@@ -6,6 +6,7 @@
 #include "t2.h"
 #include "t2pilots.h"
 #include "t2l1.h"
+#include <functional>
 #include <memory>
 #include <random>
 #include <vector>
@@ -33,7 +34,10 @@ struct TxParams {
     bool plpRot = true;      // rotated constellation
     int plpTi = 3;           // time-interleaver blocks per frame (0 = none)
     int cellId = 0x1001, networkId = 0x3085, systemId = 0x8001;
+    int plpId = 0;           // PLP_ID of the data PLP
     uint32_t seed = 1;
+    // With payload: a source of 188-byte transport packets for PLP 0 instead of random bytes (set: the packet's sync byte is replaced by the CRC-8 as usual)
+    std::function<void(uint8_t*)> tsSource;
 };
 
 class T2Generator {

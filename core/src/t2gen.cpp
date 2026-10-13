@@ -103,7 +103,7 @@ T2Generator::T2Generator(const TxParams& p) : i_(new Impl), p_(p) {
     post_.rf.resize(1);
     post_.rf[0].freq = 522000000;
     post_.plps.resize(1);
-    post_.plps[0].id = 0; post_.plps[0].type = 1; post_.plps[0].mod = 2; post_.plps[0].cod = 2; post_.plps[0].fecType = 1;
+    post_.plps[0].id = p.plpId; post_.plps[0].type = 1; post_.plps[0].mod = 2; post_.plps[0].cod = 2; post_.plps[0].fecType = 1;
     post_.plps[0].numBlocksMax = 100; post_.plps[0].groupId = 1; post_.plps[0].timeIlLength = 3; post_.plps[0].plpMode = 1;
     post_.dyn.resize(1);
     post_.dyn[0].numBlocks = 100;
@@ -177,7 +177,8 @@ void T2Generator::nextFrame(std::vector<cf32>& out) {
             uint8_t prevCrc = 0;
             for (int k = 0; k < npk; k++) {
                 uint8_t pay[187];
-                for (int j = 0; j < 187; j++) pay[j] = (uint8_t)(I.rng() >> 11);
+                if (p_.tsSource) { uint8_t pk[188]; p_.tsSource(pk); memcpy(pay, pk + 1, 187); }
+                else for (int j = 0; j < 187; j++) pay[j] = (uint8_t)(I.rng() >> 11);
                 size_t o = 80 + (size_t)k * 1504;
                 auto putByte = [&](size_t at, uint8_t v) { for (int q = 0; q < 8; q++) bits[at + q] = (v >> (7 - q)) & 1; };
                 putByte(o, prevCrc);

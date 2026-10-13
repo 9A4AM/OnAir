@@ -547,6 +547,9 @@ void Engine::stop() {
     if (!running_ && !src_) return;
     stopReq_ = true;
     if (th_.joinable()) th_.join();
+    mtvActive_ = false;
+    { std::shared_ptr<MultiTv> m; { std::lock_guard<std::mutex> lk(mtvMu_); m.swap(mtv_); } }   // the channels' receivers stop with the radio
+    mtvKeyRate_ = -1;
     rec_.stop();   // a recording ends with the radio (the analysis thread is gone, nothing pushes any more)
     {
         std::lock_guard<std::mutex> lk(specQMu_);
@@ -698,6 +701,7 @@ void Engine::applyReset() {
     secFlush_ = true;
     ring_.clear();
     holdDelivery(300);
+    if (auto m = mtvGet()) m->reset();   // multi-channel TV: the channels are found again
     rx_.reset();
     rxT_.reset();
     rxA_.reset();
@@ -819,6 +823,7 @@ void Engine::onTsPackets(const uint8_t* pk, size_t n, double secs) {
 void Engine::feedRx(const cf32* x, size_t n) { feedReceiver(activeStd_.load(), x, n); }
 
 void Engine::feedReceiver(int a, const cf32* x, size_t n) {
+    if (a <= 1 && mtvActive_.load(std::memory_order_relaxed)) { if (auto m = mtvGet()) { m->feed(x, n); return; } }   // multi-channel TV: one receiver per channel of the span
     if (wideOn_.load(std::memory_order_relaxed) && WideModes::supports(a)) { wide_.feed(a, x, n); return; }   // whole-span decoding: one decoder per carrier
     if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else if (a == 33) rxCell_.feed(x, n); else if (a == 35) rxCw_.feed(x, n); else if (a == 34) rxDstar_.feed(x, n); else if (a == 36) rxHfdl_.feed(x, n); else if (a == 39) rxNxdn_.feed(x, n); else if (a == 46) rxDpmr_.feed(x, n); else if (a == 40) rxGsmr_.feed(x, n); else if (a == 37) rxPsk_.feed(x, n); else if (a == 38) rxJs8_.feed(x, n); else if (a == 42) rxSpecx_.feed(x, n); else if (a == 43) rxSpecan_.feed(x, n); else if (a == 41) rxDvbc_.feed(x, n); else if (a == 45) rxOrb_.feed(x, n); else if (a == 44) rxUplink_.feed(x, n); else if (a == 47) rxTetra_.feed(x, n); else if (a == 50) rxAle_.feed(x, n); else if (a == 48) rxMac_.feed(x, n); else if (a == 49) rxAstro_.feed(x, n); else if (a == 51) rxP25_.feed(x, n); else if (a == 52) rxBle_.feed(x, n); else if (a == 53) rxIono_.feed(x, n); else if (a == 54) rxQo100_.feed(x, n); else if (a == 55) rxWifi_.feed(x, n); else if (a == 56) rxGeneral_.feed(x, n); else if (a == 59) rxTime_.feed(x, n); else if (a == 57) rxRid_.feed(x, n); else if (a == 60) rxMeteor_.feed(x, n); else if (a == 58) rxNr_.feed(x, n); else if (a == 61) rxGoes_.feed(x, n); else if (a == 62) rxCube_.feed(x, n); else if (a == 63) rxGs_.feed(x, n); else if (a == 64) rxVdes_.feed(x, n); else if (a == 65) rxHrpt_.feed(x, n); else if (a == 66) rxZb_.feed(x, n); else if (a == 67) rxFlarm_.feed(x, n); else if (a == 68) rxHfb_.feed(x, n); else if (a == 69) rxDji_.feed(x, n); else if (a == 70) rxNb_.feed(x, n); else if (a == 71) rxHl_.feed(x, n); else if (a == 73) rxCd_.feed(x, n); else if (a == 74) rxWb_.feed(x, n); else if (a == 75) rxDw_.feed(x, n); else if (a == 77) rxSame_.feed(x, n); else if (a == 76) rxMt_.feed(x, n); else if (a == 72) rxLr_.feed(x, n); else rx_.feed(x, n);
 }
@@ -839,7 +844,7 @@ void Engine::bandwidthStep(const SpectrumFrame& f, const RxTelemetry& t, bool tL
     const double now = nSamp_ / std::max(1.0, rate_.load());
     if (bwReset_.exchange(false)) { bwDet_.reset(); bwMark_ = now; bwVote_ = 0; }
     if (bwReq_.exchange(false)) { changeBandwidth(bwReqVal_); bwDet_.reset(); bwMark_ = now; }
-    if (!bwAuto_ || activeStd_ >= 2) return;   // an ATSC channel is always 6 MHz, a DAB ensemble 1.536 MHz
+    if (!bwAuto_ || activeStd_ >= 2 || mtvActive_.load()) return;   // an ATSC channel is always 6 MHz, a DAB ensemble 1.536 MHz
     const bool locked = activeStd_ == 0 ? t.state == 2 : tLocked;
     if (locked) { bwDet_.reset(); bwMark_ = now; bwVote_ = 0; return; }
     bwDet_.add(f.dbfs, rate_ / 1e6);
@@ -1109,11 +1114,16 @@ void Engine::onPlp(const PlpResult& r) {
 void Engine::setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*)> f) { std::lock_guard<std::mutex> lk(tsMu_); tap_ = std::move(f); }
 TsSnapshot Engine::tsSnapshot() { std::lock_guard<std::mutex> lk(tsMu_); return tsSnap_; }
 std::map<int, std::vector<EpgEvent>> Engine::epg() {
+    if (mtvActive_.load()) { if (auto m = mtvGet()) return m->epg(m->selected()); }
     std::lock_guard<std::mutex> lk(tsMu_);
     return demux_.epg();
 }
 
-BbStats Engine::bbStats() { std::lock_guard<std::mutex> lk(tsMu_); return unpack_.stats(); }
+BbStats Engine::bbStats() {
+    if (mtvActive_.load()) { if (auto m = mtvGet()) return m->bbStats(m->selected()); }
+    std::lock_guard<std::mutex> lk(tsMu_);
+    return unpack_.stats();
+}
 
 bool Engine::latestRx(RxTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(rxMu_);
@@ -2337,6 +2347,7 @@ void Engine::analysisLoop() {
         next += std::chrono::milliseconds(33);
         watchRadio();
         checkDelivery();
+        syncMultiTv();
         if (const uint64_t d = ring_.dropped(); d != ringDroppedSeen_.load()) { ringDroppedSeen_ = d; cpuDropEvents_++; lastCpuDropNs_ = steadyNs(); }
         {   // the receiver's load: its time on this thread against the signal time it handled, over about two seconds
             const double now = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
@@ -2434,6 +2445,15 @@ void Engine::analysisLoop() {
                     t.fm = std::move(ft);
                     std::lock_guard<std::mutex> lk(rxMu_);
                     publishRx(std::move(t));
+                }
+            } else if (mtvActive_.load() && activeStd_.load() <= 1) {
+                if (auto m = mtvGet()) {
+                    RxTelemetry mt;
+                    if (m->poll(mt)) {
+                        mt.tvChannels = m->channels();
+                        std::lock_guard<std::mutex> lk(rxMu_);
+                        publishRx(std::move(mt));
+                    }
                 }
             } else if (const int pm = pollMode(activeStd_.load(), t, modeSeq_); pm >= 0) {
                 if (pm == 1) { std::lock_guard<std::mutex> lk(rxMu_); publishRx(std::move(t)); }

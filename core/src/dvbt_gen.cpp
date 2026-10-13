@@ -44,19 +44,22 @@ void putSection(uint8_t* pkt, int pid, const std::vector<uint8_t>& sec, int cc) 
 }
 }
 
-std::function<void(uint8_t*)> testTsSource(unsigned seed) {
+std::function<void(uint8_t*)> testTsSource(unsigned seed) { return testTsSourceNamed(seed, 1, "Test service"); }
+
+std::function<void(uint8_t*)> testTsSourceNamed(unsigned seed, int serviceId, const std::string& name) {
     // PAT: program 1 -> PMT 0x100
     std::vector<uint8_t> pat = {0x00, 0xB0, 0x0D, 0x00, 0x01, 0xC1, 0x00, 0x00, 0x00, 0x01, 0xE1, 0x00};
     // PMT: PCR 0x101, one private-data stream on 0x101
     std::vector<uint8_t> pmt = {0x02, 0xB0, 0x12, 0x00, 0x01, 0xC1, 0x00, 0x00, 0xE1, 0x01, 0xF0, 0x00, 0x06, 0xE1, 0x01, 0xF0, 0x00};
     // SDT actual: service 1 "Test service" by "DecT2"
-    const std::string prov = "OnAir", name = "Test service";
+    const std::string prov = "OnAir";
     std::vector<uint8_t> desc = {0x48, (uint8_t)(3 + prov.size() + name.size()), 0x01, (uint8_t)prov.size()};
     desc.insert(desc.end(), prov.begin(), prov.end());
     desc.push_back((uint8_t)name.size());
     desc.insert(desc.end(), name.begin(), name.end());
     std::vector<uint8_t> sdt = {0x42, 0xF0, 0x00, 0x00, 0x01, 0xC1, 0x00, 0x00, 0x23, 0x10, 0xFF, 0x00, 0x01, 0xFC, (uint8_t)(0x80 | (desc.size() >> 8)), (uint8_t)(desc.size() & 0xFF)};
     sdt.insert(sdt.end(), desc.begin(), desc.end());
+    pat[8] = (uint8_t)(serviceId >> 8); pat[9] = (uint8_t)serviceId; pmt[3] = (uint8_t)(serviceId >> 8); pmt[4] = (uint8_t)serviceId; sdt[11] = (uint8_t)(serviceId >> 8); sdt[12] = (uint8_t)serviceId;
     pat[2] = (uint8_t)(pat.size() - 3 + 4);
     pmt[2] = (uint8_t)(pmt.size() - 3 + 4);
     sdt[2] = (uint8_t)(sdt.size() - 3 + 4);

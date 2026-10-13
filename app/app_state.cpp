@@ -405,6 +405,9 @@ void loadPrefs(App& a) {
     if (d.has("atvNbtvLines")) a.atvNbtvLines = std::max(24, std::min(240, (int)d.getI("atvNbtvLines", 32)));
     if (d.has("atvNbtvFps")) a.atvNbtvFps = std::max(1.f, std::min(60.f, (float)d.getI("atvNbtvFps", 125) / 10.f));
     if (d.has("wideMaskLo")) a.wideFamMask = (uint64_t)(uint32_t)d.getI("wideMaskLo", 0) | ((uint64_t)(uint32_t)d.getI("wideMaskHi", 0) << 32);
+    if (d.has("mtvOn")) a.mtvOn = d.getI("mtvOn", 0) != 0;
+    if (d.has("mtvMax")) a.mtvMax = std::max(0, std::min(8, (int)d.getI("mtvMax", 0)));
+    if (d.has("mtvGrid")) a.mtvGrid = std::max(0, std::min(2, (int)d.getI("mtvGrid", 0)));
     if (d.has("reduceCpuHidden")) a.reduceCpuHidden = d.getI("reduceCpuHidden", 1) != 0;
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
@@ -494,6 +497,7 @@ void savePrefs(const App& a) {
     d.setI("isdbtBw", a.isdbtBwMhz);
     d.setI("atvFm", a.atvFm ? 1 : 0);
     d.setI("wideMaskLo", (int)(uint32_t)(a.wideFamMask & 0xffffffffu)); d.setI("wideMaskHi", (int)(uint32_t)(a.wideFamMask >> 32));
+    d.setI("mtvOn", a.mtvOn ? 1 : 0); d.setI("mtvMax", a.mtvMax); d.setI("mtvGrid", a.mtvGrid);
     d.setI("atvNbtv", a.atvNbtv);
     d.setI("atvNbtvLines", a.atvNbtvLines);
     d.setI("atvNbtvFps", (int)std::lround(a.atvNbtvFps * 10));
@@ -571,7 +575,10 @@ void setDbmOffset(const App& a, float db) {
 
 void ingestRx(App& a) {
     double now = glfwGetTime();
-    if (a.engine.running() && now - a.tsT > 0.25) { a.ts = a.engine.tsSnapshot(); a.bb = a.engine.bbStats(); a.tsT = now; }
+    if (a.engine.running() && now - a.tsT > 0.25) {
+        a.ts = a.engine.tsSnapshot(); a.bb = a.engine.bbStats(); a.tsT = now;
+        if (a.engine.multiChannelActive()) a.mtvSvc = a.engine.multiServices(); else a.mtvSvc.clear();
+    }
     RxTelemetry t;
     if (!a.engine.latestRx(t, a.rxSeq)) return;
     a.rxSeq = t.seq;

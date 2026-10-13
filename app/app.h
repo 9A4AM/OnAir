@@ -323,6 +323,10 @@ struct App {
     bool wideDecode = false;  // "Whole span": decode every carrier in the visible span, not only the tuned one (only for modes that opt in: modeSupportsWide)
     uint64_t wideFamMask = 0; // the switch per mode family (bit = family); wideDecode is the current mode's bit
     int wideSel = 0;          // the carrier the sound and the detail follow (0: the best locked one)
+    bool mtvOn = false;       // "Multi-channel": decode two or three adjacent TV channels of a wide capture (DVB-T2 / DVB-T)
+    int mtvMax = 0;           // receivers at once (0: 2 on a laptop, 3 on a desktop)
+    int mtvGrid = 0;          // 0 find out, 1 the capture is centred on a channel, 2 between two channels
+    std::vector<MultiService> mtvSvc;   // every service of every channel (refreshed with ts)
     bool atvWide = false;     // analog TV: system E chosen (14 MHz channel, 10 MHz of video): the radio runs at 20 Msps
     bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
