@@ -147,24 +147,29 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
     ImGui::SetCursorScreenPos(keep);
 }
 
-void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
+// The spectrum and the waterfall share one frequency axis: panning or zooming either moves both, and a retune brings both back to the band.
+static double gXLo = 0, gXHi = 0;
+static void setupFreqAxis(const App& a) {
+    const double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
+    static double lastC = 0, lastFs = 0;
+    const double rc = radioCenterMhz(a);   // the axis shows the radio's real centre, so a signal sits at its true frequency
+    if (lastC != rc || lastFs != fs || !(gXHi > gXLo)) { gXLo = rc - fs / 2; gXHi = rc + fs / 2; }   // follow a retune (otherwise keep the user's own zoom)
+    lastC = rc; lastFs = fs;
+    plt::SetupAxisLimits(plt::X1, rc - fs / 2, rc + fs / 2, plt::Cond_Once);
+    plt::SetupAxisLinks(plt::X1, &gXLo, &gXHi);
+    plt::SetupAxisFormat(plt::X1, "%.2f");
+}
+
+static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
     const char* const kYLabel = tr("power (dBFS/bin)");
     ImVec2 plotMin, plotSize;
     bool drawn = false, openCtx = false;
     static double ctxMhz = 0;
-    if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0))) {
+    if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | extraFlags | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0))) {
         drawn = true;
-        if (noFreqAxis) plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_NoTickLabels, 0);   // the waterfall under it shows the frequencies
-        else plt::SetupAxes(tr("frequency (MHz)"), kYLabel);
-        double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
-        // follow a retune: when the centre or the span changes, bring the view back to the new band (otherwise it keeps the user's own zoom)
-        static double lastC = 0, lastFs = 0;
-        const double rc = radioCenterMhz(a);   // the axis shows the radio's real centre, so a signal sits at its true frequency
-        const bool moved = lastC != rc || lastFs != fs;
-        lastC = rc; lastFs = fs;
-        plt::SetupAxisLimits(plt::X1, rc - fs / 2, rc + fs / 2, moved ? plt::Cond_Always : plt::Cond_Once);
+        plt::SetupAxes(nullptr, kYLabel, plt::AxisFlags_Inside, plt::AxisFlags_Inside);   // the frequencies along the bottom edge, inside, as in SDR++
+        setupFreqAxis(a);
         plt::SetupAxisLimits(plt::Y1, a.yMin, a.yMax, plt::Cond_Once);
-        plt::SetupAxisFormat(plt::X1, "%.2f");
         channelBand(a, true);
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
         if (!a.smooth.empty()) {
@@ -208,7 +213,7 @@ void spectrumPlot(App& a, ImVec2 size, bool noFreqAxis) {
     }
 }
 
-void waterfallPlot(App& a, ImVec2 size) {
+static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
     const int H = Waterfall::H;
     // The time scale is worked out once and kept until the plot changes size (or the first real measure of the row time is in),
     // so the labels never move while the picture scrolls under them.
@@ -229,22 +234,18 @@ void waterfallPlot(App& a, ImVec2 size) {
             sc.pos.push_back(-s / sc.dt); sc.lab.push_back(b);
         }
     }
-    if (plt::BeginPlot("##wf", size, plt::Flags_NoLegend | plt::Flags_NoTitle | (a.family == 55 && generalDragging(1) ? plt::Flags_NoPan : 0))) {
-        plt::SetupAxes(tr("frequency (MHz)"), tr("seconds ago"));
+    if (plt::BeginPlot("##wf", size, plt::Flags_NoLegend | plt::Flags_NoTitle | extraFlags | (a.family == 55 && generalDragging(1) ? plt::Flags_NoPan : 0))) {
+        plt::SetupAxes(nullptr, tr("seconds ago"), plt::AxisFlags_NoTickLabels, plt::AxisFlags_Inside);   // the spectrum above shows the frequencies
         double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
         const double rc = radioCenterMhz(a);
         double x0 = rc - fs / 2, x1 = rc + fs / 2;
-        static double lastC = 0, lastFs = 0;
-        const bool moved = lastC != rc || lastFs != fs;
-        lastC = rc; lastFs = fs;
-        plt::SetupAxisLimits(plt::X1, x0, x1, moved ? plt::Cond_Always : plt::Cond_Once);
+        setupFreqAxis(a);
         // y is in rows, so the picture keeps its size while the measured row time wanders; the labels are the fixed scale above
         plt::SetupAxisLimits(plt::Y1, -H, 0, plt::Cond_Always);
         plt::SetupAxisUnit(plt::Y1, sc.dt);
         std::vector<const char*> labs;
         for (auto& s : sc.lab) labs.push_back(s.c_str());
         plt::SetupAxisTicks(plt::Y1, sc.pos.data(), (int)sc.pos.size(), labs.data());
-        plt::SetupAxisFormat(plt::X1, "%.2f");
         // rows arrive at the engine's ~30 Hz, the screen draws faster: slide down by the part of a row that is due since the last one,
         // so the picture moves at an even speed instead of jumping a row at a time
         const double frac = a.wf.pushT > 0 ? std::min(1.0, std::max(0.0, (glfwGetTime() - a.wf.pushT) / a.wf.rowDt)) : 0;
@@ -259,6 +260,29 @@ void waterfallPlot(App& a, ImVec2 size) {
         clickToTune(a, 1);
         plt::EndPlot();
     }
+}
+
+// The spectrum on top of the waterfall as one panel (as in SDR++): no gap, the same edges and frequency axis.
+// frac: the spectrum's share of the height; with drag set, the boundary line is a handle that changes it.
+void spectrumWaterfall(App& a, float& frac, bool drag) {
+    const ImVec2 p = ImGui::GetCursorScreenPos();
+    const ImVec2 avail = ImGui::GetContentRegionAvail();
+    const float w = std::max(60.f, avail.x), h = avail.y;
+    const float hs = std::floor(std::min(std::max(60.f, h * frac), std::max(60.f, h - 60.f)));
+    const float y = p.y + hs;
+    bool hot = false;
+    if (drag) {   // first, so the handle takes the mouse before the plots under it
+        ImGui::SetCursorScreenPos(ImVec2(p.x, y - 3 * gUi));
+        ImGui::InvisibleButton("##split", ImVec2(w, 6 * gUi));
+        hot = ImGui::IsItemHovered() || ImGui::IsItemActive();
+        if (hot) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+        if (ImGui::IsItemActive()) frac = std::min(0.8f, std::max(0.2f, frac + ImGui::GetIO().MouseDelta.y / std::max(1.f, h)));
+        ImGui::SetCursorScreenPos(p);
+    }
+    spectrumPlot(a, ImVec2(w, hs), plt::Flags_Flush | plt::Flags_OpenBottom);
+    ImGui::SetCursorScreenPos(ImVec2(p.x, y));
+    waterfallPlot(a, ImVec2(w, std::max(60.f, h - hs)), plt::Flags_Flush | plt::Flags_OpenTop);
+    ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, y), ImVec2(p.x + w, y), hot ? IM_COL32(200, 200, 200, 160) : IM_COL32(110, 110, 110, 110), hot ? 2.f : 1.f);
 }
 
 void histogramPlot(App& a, ImVec2 size) {

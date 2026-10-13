@@ -19,8 +19,10 @@ enum Axis { X1 = 0, Y1 = 1 };
 enum Cond { Cond_Always, Cond_Once };
 
 enum Flags { Flags_None = 0, Flags_NoTitle = 1, Flags_NoLegend = 2, Flags_Equal = 4, Flags_NoMouseText = 8,
-             Flags_Overlay = 16, Flags_NoPan = 32 };   // Overlay: controls drawn over the plot after EndPlot() get the mouse (a button in a corner); NoPan: no drag or wheel (something in the plot holds the mouse)
-enum AxisFlags { AxisFlags_None = 0, AxisFlags_NoTickLabels = 1, AxisFlags_NoGridLines = 2, AxisFlags_AutoFit = 4 };
+             Flags_Overlay = 16, Flags_NoPan = 32,
+             Flags_Flush = 64, Flags_OpenTop = 128, Flags_OpenBottom = 256 };   // Flush: no margin around the plot area (axes Inside or without labels); OpenTop/OpenBottom: no border on that edge (two plots stacked into one panel)   // Overlay: controls drawn over the plot after EndPlot() get the mouse (a button in a corner); NoPan: no drag or wheel (something in the plot holds the mouse)
+enum AxisFlags { AxisFlags_None = 0, AxisFlags_NoTickLabels = 1, AxisFlags_NoGridLines = 2, AxisFlags_AutoFit = 4,
+                 AxisFlags_Inside = 8 };   // Inside: small, faint tick labels inside the plot area (x along the bottom, y on the left) instead of a margin
 enum Scale { Scale_Linear, Scale_Log10 };
 enum MarkerType { Marker_None, Marker_Circle, Marker_Cross };
 enum LineFlags { InfLines_Vertical = 0, InfLines_Horizontal = 1 };
@@ -69,6 +71,7 @@ void SetupAxisFormat(Axis axis, const char* fmt);
 void SetupAxisUnit(Axis axis, double unit);   // data in one unit, tick labels in another: a label shows value * unit
 void SetupAxisScale(Axis axis, Scale scale);
 void SetupAxisTicks(Axis axis, const double* values, int n, const char* const* labels);
+void SetupAxisLinks(Axis axis, double* min, double* max);   // plots that share *min, *max pan and zoom together (a double click resets them to the setup limits)
 
 // Data given as arrays of float or double (Spec::Stride for interleaved data).
 template <class T> void PlotLine(const char* label, const T* xs, const T* ys, int n, const Spec& s = Spec());

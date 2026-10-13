@@ -56,22 +56,8 @@ void overviewTab(App& a) {
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
     ImGui::DragFloatRange2(tr("waterfall dB##wfdb"), &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
     }
-    const float h = ImGui::GetContentRegionAvail().y;
-    if (pal::dev()) {   // a divider you can drag, as in SDR++
-        static float frac = 0.5f;
-        spectrumPlot(a, ImVec2(-1, std::max(60.f, h * frac - 3)), h < 300 * gUi);   // a short tab: the frequency axis only once, under the waterfall
-        const ImVec2 p = ImGui::GetCursorScreenPos();
-        const float w = ImGui::GetContentRegionAvail().x;
-        ImGui::InvisibleButton("##split", ImVec2(w, 7 * gUi));
-        const bool hot = ImGui::IsItemHovered() || ImGui::IsItemActive();
-        if (hot) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
-        if (ImGui::IsItemActive()) frac = std::min(0.8f, std::max(0.2f, frac + ImGui::GetIO().MouseDelta.y / std::max(1.f, h)));
-        ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, p.y + 3 * gUi), ImVec2(p.x + w, p.y + 3 * gUi), hot ? IM_COL32(200, 200, 200, 160) : IM_COL32(110, 110, 110, 110), hot ? 2.f : 1.f);
-        waterfallPlot(a, ImVec2(-1, -1));
-    } else {
-    spectrumPlot(a, ImVec2(-1, h * 0.5f - 2));
-    waterfallPlot(a, ImVec2(-1, -1));
-    }
+    static float frac = 0.5f;
+    spectrumWaterfall(a, frac, pal::dev());   // the new interface: the boundary is a divider you can drag, as in SDR++
 }
 
 void receiverTab(App& a) {

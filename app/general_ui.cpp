@@ -277,9 +277,8 @@ void tick(App& a) {
 
 void tab(App& a) {
     controls(a);
-    const float h = ImGui::GetContentRegionAvail().y;
-    spectrumPlot(a, ImVec2(-1, std::max(60.f, h * 0.45f - 2)), h < 300 * gUi);
-    waterfallPlot(a, ImVec2(-1, -1));
+    static float frac = 0.45f;
+    spectrumWaterfall(a, frac, false);
 }
 
 void receiver(App& a) {

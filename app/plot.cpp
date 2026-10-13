@@ -23,6 +23,7 @@ struct AxisSetup {
     Scale scale = Scale_Linear;
     std::vector<double> tickPos;
     std::vector<std::string> tickLab;
+    double* linkMin = nullptr; double* linkMax = nullptr;
     double fitMin = std::numeric_limits<double>::infinity(), fitMax = -std::numeric_limits<double>::infinity();
 };
 
@@ -144,6 +145,10 @@ void setLimitsFromSetup() {
         if (A.haveLimits && (A.cond == Cond_Always || !C.st->init)) { l[0] = A.min; l[1] = A.max; }
         else if (!A.haveLimits && !C.st->init) { l[0] = 0; l[1] = 1; }
         if (fit && C.st->fitValid[a] && !(A.haveLimits && A.cond == Cond_Always)) { l[0] = C.st->fit[a][0]; l[1] = C.st->fit[a][1]; }
+        if (A.linkMin && A.linkMax) {
+            if (!C.st->init && A.haveLimits) { *A.linkMin = A.min; *A.linkMax = A.max; }   // first frame or a double click: back to the setup limits
+            if (*A.linkMax > *A.linkMin) { l[0] = *A.linkMin; l[1] = *A.linkMax; }
+        }
         if (!(l[1] > l[0])) l[1] = l[0] + 1;
     }
     C.st->init = true;
@@ -163,8 +168,9 @@ void finishSetup() {
     }
 
     // margins: the room for the tick labels and the x label
-    const bool xLab = !(C.ax[0].flags & AxisFlags_NoTickLabels), yLab = !(C.ax[1].flags & AxisFlags_NoTickLabels);
-    float bottom = pad, left = pad, right = pad, top = pad;
+    const bool xLab = !(C.ax[0].flags & (AxisFlags_NoTickLabels | AxisFlags_Inside)), yLab = !(C.ax[1].flags & (AxisFlags_NoTickLabels | AxisFlags_Inside));
+    const float edge = (C.flags & Flags_Flush) ? 0.f : pad;
+    float bottom = edge, left = edge, right = edge, top = edge;
     if (xLab) bottom += th + tickLen * 0.5f;
     if (!C.ax[0].label.empty()) bottom += th + pad * 0.5f;
     if (!C.ax[0].label.empty() && (C.frame.GetHeight() - bottom - top < 3.5f * th || ImGui::CalcTextSize(C.ax[0].label.c_str()).x > C.frame.GetWidth())) { bottom -= th + pad * 0.5f; C.noXLabel = true; }   // a short (or narrow) plot keeps its room for the trace
@@ -175,7 +181,7 @@ void finishSetup() {
         for (const auto& t : ticks) w = std::max(w, ImGui::CalcTextSize(t.label.c_str()).x);
         left += w + tickLen * 0.5f + pad;
     }
-    if (yLab && C.frame.GetWidth() - left - right - (xLab ? 12 * sc : 0) < 4.f * th) { left = pad; C.noYTicks = true; }   // a narrow plot keeps its room for the trace
+    if (yLab && C.frame.GetWidth() - left - right - (xLab ? 12 * sc : 0) < 4.f * th) { left = edge; C.noYTicks = true; }   // a narrow plot keeps its room for the trace
     if (xLab) right += 12 * sc;   // the last x label sticks out to the right
     C.plot = ImRect(ImVec2(C.frame.Min.x + left, C.frame.Min.y + top), ImVec2(C.frame.Max.x - right, C.frame.Max.y - bottom));
     if (C.plot.GetWidth() < 20) C.plot.Max.x = C.plot.Min.x + 20;
@@ -219,6 +225,12 @@ void finishSetup() {
             }
         }
         if (hov && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) C.st->init = false;
+    }
+    for (int a = 0; a < 2; a++) {   // a linked axis: the pan or zoom shows at once, so the plots that share it stay in step this frame
+        const AxisSetup& A = C.ax[a];
+        if (!A.linkMin || !A.linkMax) continue;
+        *A.linkMin = C.st->lim[a][0]; *A.linkMax = C.st->lim[a][1];
+        if (C.st->init && A.scale == Scale_Linear) { C.lo[a] = C.tlo[a] = C.st->lim[a][0]; C.hi[a] = C.thi[a] = C.st->lim[a][1]; }
     }
     if (hov) C.hovered = true;
 
@@ -301,6 +313,7 @@ void SetupAxisLimits(Axis a, double mn, double mx, Cond cond) {
 void SetupAxisFormat(Axis a, const char* fmt) { if (C.active) C.ax[a].fmt = fmt ? fmt : ""; }
 void SetupAxisUnit(Axis a, double unit) { if (C.active && unit > 0 && std::isfinite(unit)) C.ax[a].unit = unit; }
 void SetupAxisScale(Axis a, Scale s) { if (C.active) C.ax[a].scale = s; }
+void SetupAxisLinks(Axis a, double* mn, double* mx) { if (C.active) { C.ax[a].linkMin = mn; C.ax[a].linkMax = mx; } }
 void SetupAxisTicks(Axis a, const double* v, int n, const char* const* labels) {
     if (!C.active) return;
     C.ax[a].tickPos.assign(v, v + n);
@@ -500,20 +513,56 @@ void EndPlot() {
             }
         }
     }
+    // tick labels inside the plot: small and faint, x along the bottom edge, y on the left (clear of the y label and the x labels)
+    if ((C.ax[0].flags | C.ax[1].flags) & AxisFlags_Inside) {
+        ImFont* font = ImGui::GetFont();
+        const float fs = ImGui::GetFontSize() * 0.85f, lh = fs, m = 4 * sc;
+        const ImU32 faint = ImGui::ColorConvertFloat4ToU32(ImVec4(gStyle.Text.x, gStyle.Text.y, gStyle.Text.z, 0.65f));
+        const bool xIn = (C.ax[0].flags & AxisFlags_Inside) && !(C.ax[0].flags & AxisFlags_NoTickLabels);
+        if (xIn) {
+            float lastEnd = C.plot.Min.x;
+            for (const auto& t : makeTicks(0, C.plot.GetWidth(), 70 * sc)) {
+                const float x = px(t.v);
+                const ImVec2 s = font->CalcTextSizeA(fs, FLT_MAX, 0, t.label.c_str());
+                if (x - s.x * 0.5f < lastEnd + m || x + s.x * 0.5f > C.plot.Max.x - m) continue;
+                lastEnd = x + s.x * 0.5f;
+                C.dl->AddText(font, fs, ImVec2(x - s.x * 0.5f, C.plot.Max.y - lh - 2 * sc), faint, t.label.c_str());
+            }
+        }
+        if ((C.ax[1].flags & AxisFlags_Inside) && !(C.ax[1].flags & AxisFlags_NoTickLabels)) {
+            const float top = C.plot.Min.y + (C.ax[1].label.empty() ? 0 : th + 3 * sc), bot = C.plot.Max.y - (xIn ? lh + 2 * sc : 0);
+            for (const auto& t : makeTicks(1, C.plot.GetHeight(), th * 3.0)) {
+                const float y = py(t.v);
+                if (y - lh * 0.5f < top + 1 || y + lh * 0.5f > bot - 1) continue;
+                C.dl->AddText(font, fs, ImVec2(C.plot.Min.x + m, y - lh * 0.5f), faint, t.label.c_str());
+            }
+        }
+    }
     if (!C.ax[0].label.empty() && !C.noXLabel) {
         const ImVec2 s = ImGui::CalcTextSize(C.ax[0].label.c_str());
         C.dl->AddText(ImVec2(C.plot.Min.x + (C.plot.GetWidth() - s.x) * 0.5f, C.frame.Max.y - th - pad * 0.5f), txt, C.ax[0].label.c_str());
     }
     // the y label sits inside the plot, in the top left corner: no rotated text needed
     if (!C.ax[1].label.empty() && C.plot.GetHeight() >= 2.5f * th && C.plot.GetWidth() >= ImGui::CalcTextSize(C.ax[1].label.c_str()).x + 12 * sc) C.dl->AddText(ImVec2(C.plot.Min.x + 6 * sc, C.plot.Min.y + 3 * sc), ImGui::ColorConvertFloat4ToU32(ImVec4(gStyle.Text.x, gStyle.Text.y, gStyle.Text.z, 0.8f)), C.ax[1].label.c_str());
-    C.dl->AddRect(C.plot.Min, C.plot.Max, ImGui::ColorConvertFloat4ToU32(gStyle.Border));
+    {
+        const ImU32 bc = ImGui::ColorConvertFloat4ToU32(gStyle.Border);
+        if (!(C.flags & (Flags_OpenTop | Flags_OpenBottom))) C.dl->AddRect(C.plot.Min, C.plot.Max, bc);
+        else {   // a plot stacked on another: no line on the shared edge
+            const ImVec2 a(C.plot.Min.x + 0.5f, C.plot.Min.y + 0.5f), b(C.plot.Max.x - 0.5f, C.plot.Max.y - 0.5f);
+            C.dl->AddLine(ImVec2(a.x, a.y), ImVec2(a.x, b.y + 0.5f), bc);
+            C.dl->AddLine(ImVec2(b.x, a.y), ImVec2(b.x, b.y + 0.5f), bc);
+            if (!(C.flags & Flags_OpenTop)) C.dl->AddLine(ImVec2(a.x, a.y), ImVec2(b.x + 0.5f, a.y), bc);
+            if (!(C.flags & Flags_OpenBottom)) C.dl->AddLine(ImVec2(a.x, b.y), ImVec2(b.x + 0.5f, b.y), bc);
+        }
+    }
     // the position of the mouse
     if (C.hovered && !(C.flags & Flags_NoMouseText)) {
         const Point m = GetPlotMousePos();
         char b[64];
         snprintf(b, sizeof b, "%.4g, %.4g", m.x * C.ax[0].unit, m.y * C.ax[1].unit);
         const ImVec2 s = ImGui::CalcTextSize(b);
-        C.dl->AddText(ImVec2(C.plot.Max.x - s.x - 5 * sc, C.plot.Max.y - s.y - 3 * sc), txt, b);
+        const float lift = (C.ax[0].flags & AxisFlags_Inside) ? th : 0.f;   // above the inside x labels
+        C.dl->AddText(ImVec2(C.plot.Max.x - s.x - 5 * sc, C.plot.Max.y - s.y - 3 * sc - lift), txt, b);
     }
     // what was plotted decides the limits of an automatically fitted axis, from the next frame on
     for (int a = 0; a < 2; a++) {
