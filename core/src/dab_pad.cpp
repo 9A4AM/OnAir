@@ -399,7 +399,6 @@ uint32_t spiSid(std::string id) {
         if (i == id.size() || id[i] == '.') {
             if (seg == 2) {
                 std::string h = id.substr(start, i - start);
-                if (!h.empty() && (h[0] == 'c' || h[0] == 'C') && h.size() > 1) h.erase(0, 1);
                 if (h.empty() || h.size() > 8) return 0;
                 char* end = nullptr;
                 const unsigned long v = std::strtoul(h.c_str(), &end, 16);
