@@ -5,6 +5,7 @@
 #include "app.h"
 #include "results_export.h"
 #include "dect2/results_io.h"
+#include "dect2/timecompat.h"
 #include "scan_list.h"
 #include <cstring>
 #include <ctime>
@@ -293,7 +294,7 @@ void logTable() {
         static std::string note;
         resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "name", "what", "level_db", "duration_s"};
         for (const Hit& h : S.log) {
-            char tb[32]; std::tm tmv{}; localtime_r(&h.wall, &tmv); std::strftime(tb, sizeof tb, "%Y-%m-%d %H:%M:%S", &tmv);
+            char tb[32]; std::tm tmv{}; dect2::localTime(h.wall, &tmv); std::strftime(tb, sizeof tb, "%Y-%m-%d %H:%M:%S", &tmv);
             x.add({tb, resexp::num(h.mhz * 1e6, 0), h.mode, h.name, h.what, resexp::num(h.levelDb, 1), h.endT > h.startT ? resexp::num(h.endT - h.startT, 1) : ""});
         }
         resexp::saveButton(x, "scanner", note, "svscanner");
@@ -316,7 +317,7 @@ void logTable() {
 #ifdef _WIN32
             localtime_s(&tmv, &h.wall);
 #else
-            localtime_r(&h.wall, &tmv);
+            dect2::localTime(h.wall, &tmv);
 #endif
             strftime(tb, sizeof tb, "%H:%M:%S", &tmv);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(tb);
