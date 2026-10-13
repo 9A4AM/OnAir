@@ -32,7 +32,8 @@ std::unique_ptr<HfdigTestAudio> makeSstvTestAudio(const SynthConfig& cfg);
 std::unique_ptr<HfdigTestAudio> makeFreedvTestAudio(const SynthConfig& cfg);
 std::unique_ptr<HfdigTestAudio> makeFtxTestAudio(const SynthConfig& cfg);
 std::unique_ptr<HfdigTestAudio> makeHamdrmTestAudio(const SynthConfig& cfg);   // hfdig_hamdrm_gen.cpp: modeOpt[0] 7   // hfdig_ftx_gen.cpp: modeOpt[0] 3 FT8, 4 FT4, 5 WSPR, 6 FT2
-// The one modeOpt[0] picks (0 RTTY, 1 SSTV, 2 FreeDV, 3 FT8, 4 FT4, 5 WSPR, 6 FT2, 7 HamDRM, 21 .. 25 JT65, JT9, Q65, FST4, MSK144; anything else: nullptr)
+std::unique_ptr<HfdigTestAudio> makeKbdTestAudio(const SynthConfig& cfg);       // hfdig_kbd.cpp: modeOpt[0] 26 .. 31 (hfdig_kbd.h)
+// The one modeOpt[0] picks (0 RTTY, 1 SSTV, 2 FreeDV, 3 FT8, 4 FT4, 5 WSPR, 6 FT2, 7 HamDRM, 21 .. 25 JT65, JT9, Q65, FST4, MSK144, 26 .. 31 the fldigi keyboard modes; anything else: nullptr)
 std::unique_ptr<HfdigTestAudio> makeHfdigTestAudio(int which, const SynthConfig& cfg);
 
 } // namespace dect2

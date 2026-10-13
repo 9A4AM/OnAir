@@ -1,6 +1,7 @@
 #include "dect2/engine.h"
 #include "dect2/converter.h"
 #include "dect2/hfdig_ftx.h"
+#include "dect2/hfdig_kbd.h"
 #include "dect2/rate_choice.h"
 #include "dect2/dvbt.h"
 #include "dect2/isdbt.h"
@@ -2740,7 +2741,8 @@ void applySubMode(Engine& e, const SubMode* s) {
     switch (s->stdMode) {
     case 27:
         e.hfdig().setDecoders(s->decoders);
-        if (s->sel >= 0) for (int m = 0; m < kFtxModes; m++) e.hfdig().ftx().setEnabled(m, m == s->sel || (s->sel == 7 && m == 9));   // FST4 also listens for FST4W
+        if (s->decoders == 32) { KbdConfig k = e.hfdig().kbd().config(); k.family = s->sel; e.hfdig().kbd().setConfig(k); }
+        else if (s->sel >= 0) for (int m = 0; m < kFtxModes; m++) e.hfdig().ftx().setEnabled(m, m == s->sel || (s->sel == 7 && m == 9));   // FST4 also listens for FST4W
         break;
     case 22: e.mesh().setProtocols(s->decoders); break;
     case 32: e.vor().setFunction(s->sel); break;

@@ -279,6 +279,13 @@ static const SubMode kSubModes[] = {
     {"q65",        "Q65",        27, 8, 6,  14.1,    {23, 0, 0}},
     {"fst4",       "FST4",       27, 8, 7,  1.8366,  {24, 0, 0}},
     {"msk144",     "MSK144",     27, 8, 8,  28.145,  {25, 0, 0}},
+    // the fldigi keyboard modes of HF digital (hfdig_kbd.h): decoder bit 32, sel = the family (KbdFamily)
+    {"olivia",     "Olivia",     27, 32, 0, 14.1065, {26, 0, 0}},
+    {"contestia",  "Contestia",  27, 32, 1, 14.1095, {27, 0, 0}},
+    {"mfsk",       "MFSK",       27, 32, 2, 14.0785, {28, 0, 0}},
+    {"thor",       "THOR",       27, 32, 3, 14.0770, {29, 0, 0}},
+    {"dominoex",   "DominoEX",   27, 32, 4, 14.0715, {30, 0, 0}},
+    {"hell",       "Hellschreiber", 27, 32, 5, 14.0630, {31, 0, 0}},
 };
 const SubMode* subModes(int& count) { count = (int)(sizeof kSubModes / sizeof *kSubModes); return kSubModes; }
 const SubMode* subModeById(const std::string& id) {

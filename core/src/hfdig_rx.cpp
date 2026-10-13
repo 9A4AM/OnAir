@@ -8,6 +8,7 @@
 #include "dect2/hfdig_freedv.h"
 #include "dect2/hfdig_ftx.h"
 #include "dect2/hfdig_hamdrm.h"
+#include "dect2/hfdig_kbd.h"
 #include "dect2/marine_dsp.h"
 #include "dect2/audioout.h"
 #include "ham_listen.h"
@@ -52,9 +53,10 @@ struct HfdigReceiver::Impl {
     std::unique_ptr<HfdigFreedv> freedv = makeFreedvDecoder();
     std::unique_ptr<HfdigFtx> ftx = makeFtxDecoder();
     std::unique_ptr<HfdigHamdrm> hamdrm = makeHamdrmDecoder();
-    HfdigDecoder* decoders[5] = {rtty.get(), sstv.get(), freedv.get(), ftx.get(), hamdrm.get()};
+    std::unique_ptr<HfdigKbd> kbd = makeKbdDecoder();
+    HfdigDecoder* decoders[6] = {rtty.get(), sstv.get(), freedv.get(), ftx.get(), hamdrm.get(), kbd.get()};
     std::atomic<int> decMask{31};
-    std::atomic<int> demodSet{HfDemodUsb}; // setDemod()          // setDecoders(): which of the five run
+    std::atomic<int> demodSet{HfDemodUsb}; // setDemod()          // setDecoders(): which of the six run
     std::function<void(const float*, size_t)> audioTap, speechTap;
     hfdig::Upsample6 up;
     std::vector<float> pcm;
@@ -99,6 +101,7 @@ struct HfdigReceiver::Impl {
         base.clear(); audio.clear(); pcm.clear();
         for (HfdigDecoder* d : decoders) d->reset();
         hamdrm->setLogCallback(cb);
+        kbd->setLogCallback(cb);
         if (audioOut) audioOut->flush();
         listen.reset();
         if (cb && curRate > 0) cb("HF digital: listening to the sideband audio for RTTY, SSTV, FreeDV, FT8, FT4, FT2, WSPR, JT65, JT9, Q65, FST4, MSK144 and HamDRM");
@@ -130,6 +133,7 @@ struct HfdigReceiver::Impl {
         freedv->telemetry(tel.freedv);
         ftx->telemetry(tel.ftx);
         hamdrm->telemetry(tel.hamdrm);
+        kbd->telemetry(tel.kbd);
         std::lock_guard<std::mutex> lk(mu);
         pub = tel;
     }
@@ -210,7 +214,7 @@ void HfdigReceiver::feed(const cf32* x, size_t n) {
         if (!m.audio.empty()) {
             if (m.audioTap) m.audioTap(m.audio.data(), m.audio.size());
             const int dm = m.decMask.load();
-            for (int k = 0; k < 5; k++) if (dm & (1 << k)) m.decoders[k]->feedAudio(m.audio.data(), m.audio.size());
+            for (int k = 0; k < 6; k++) if (dm & (1 << k)) m.decoders[k]->feedAudio(m.audio.data(), m.audio.size());
             if (dm != 4) m.listen.play(m.audio.data(), m.audio.size());   // FreeDV alone plays its speech instead
         }
     }
@@ -238,7 +242,8 @@ void HfdigReceiver::setAudioTap(std::function<void(const float* x, size_t n)> cb
 void HfdigReceiver::setSpeechTap(std::function<void(const float* x, size_t n)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->speechTapSet = std::move(cb); p_->tapsReq = true; }
 
 HfdigRtty& HfdigReceiver::rtty() { return *p_->rtty; }
-void HfdigReceiver::setDecoders(int mask) { p_->decMask = mask & 31; }
+void HfdigReceiver::setDecoders(int mask) { p_->decMask = mask & 63; }
+HfdigKbd& HfdigReceiver::kbd() { return *p_->kbd; }
 HfdigHamdrm& HfdigReceiver::hamdrm() { return *p_->hamdrm; }
 int HfdigReceiver::decoders() const { return p_->decMask.load(); }
 void HfdigReceiver::setDemod(int d) { p_->demodSet = d; }
