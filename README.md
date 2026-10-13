@@ -20,6 +20,7 @@ Free and open source, for macOS, Windows and Linux.</p>
   <a href="https://github.com/adswill/OnAir/releases/latest"><b>Download</b></a> &nbsp;·&nbsp;
   <a href="https://github.com/adswill/OnAir/releases/download/v0.2.0/OnAir_promo_v0.2.0.mp4"><b>Overview video</b></a> &nbsp;·&nbsp;
   <a href="https://discord.gg/Kky9c6atm"><b>Discord</b></a> &nbsp;·&nbsp;
+  <a href="https://files.on-air.dev"><b>Signal samples</b></a> &nbsp;·&nbsp;
   <a href="https://github.com/adswill/OnAir-channels"><b>Channel list</b></a>
 </p>
 
@@ -88,7 +89,7 @@ The DVB standard is detected automatically.
 
 ### Also receives (experimental)
 
-These receivers are built from the published specifications and checked end to end on simulated signals, but have had little or no testing on real transmissions yet. Reports and recordings on [Discord](https://discord.gg/Kky9c6atm) help a lot.
+These receivers are built from the published specifications and checked end to end on simulated signals, but have had little or no testing on real transmissions yet. Reports and recordings on [Discord](https://discord.gg/Kky9c6atm) help a lot, and you can upload a recording to the [signal sample library](https://files.on-air.dev).
 
 | Mode | What it is | What you see |
 |---|---|---|
@@ -407,6 +408,7 @@ Useful options (all in `CMakeLists.txt`): `DECT2_UI_BACKEND` (Metal or OpenGL3),
 - **[Discord](https://discord.gg/Kky9c6atm)**: support, feature requests, questions, and sharing what you receive.
 - **[GitHub Issues](https://github.com/adswill/OnAir/issues)**: bug reports.
   Attach an IQ recording of the problem: press **Record IQ** in the Source panel (or run `onair-cli --record auto --secs 10`); files go to the `recordings` folder of the app data folder, and **Show recording** opens it. With **SigMF** ticked (the default) every recording also gets a `.sigmf-meta` file (sample rate, data type, centre frequency, time) and the same data under a `.sigmf-data` name (a hard link, no second copy), so it opens directly in [IQEngine](https://iqengine.org) and other SigMF tools.
+- **[Signal sample library](https://files.on-air.dev)**: IQ and audio recordings of real signals, shared by users and tagged by mode (for example `#dvb-t2`). Upload your own: every file is checked and reviewed before it appears, and recordings of modes marked experimental are the most useful.
 - **[Pull requests](https://github.com/adswill/OnAir/pulls)** are welcome.
 
 ## Supporting OnAir
