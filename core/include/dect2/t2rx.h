@@ -63,6 +63,7 @@
 #include "flarm_tel.h"
 #include "hfbeacon_tel.h"
 #include "dji_tel.h"
+#include "nbiot_tel.h"
 #include "rid_tel.h"
 #include "meteor_tel.h"
 #include "nr_tel.h"
@@ -147,6 +148,7 @@ struct RxTelemetry {
     CubeTelemetry cube;       // valid when standard == 62 (CubeSat telemetry)
     GlobalstarTelemetry globalstar;   // valid when standard == 63 (Globalstar activity monitor)
     VdesTelemetry vdes;       // valid when standard == 64 (VDES)
+    NbiotTelemetry nbiot;     // valid when standard == 70 (NB-IoT cells)
     ZigbeeTelemetry zigbee;   // valid when standard == 66 (Zigbee / 802.15.4)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
     RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)

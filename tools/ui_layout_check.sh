@@ -100,6 +100,7 @@ ale	--mode ale	Overview|ALE|Receiver|History
 astro	--mode astro	Overview|Astronomy|Receiver|History
 ble	--mode ble	Overview|Devices|Receiver|History
 zigbee	--mode zigbee	Overview|Zigbee|Receiver|History
+nbiot	--mode nbiot	Overview|NB-IoT|Receiver|History
 iono	--mode iono	Overview|Ionogram|Receiver|History
 qo100	--mode qo100	Overview|QO-100|Receiver|History
 wifi	--mode wifi	Overview|Networks|Receiver|History

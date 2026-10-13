@@ -73,6 +73,7 @@
 #include "flarm_rx.h"
 #include "hfbeacon_rx.h"
 #include "dji_rx.h"
+#include "nbiot_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -269,6 +270,7 @@ public:
     GeneralReceiver& general() { return rxGeneral_; }   // general receiver: demodulator, filter, squelch, sound and recording (telemetry through latestRx)
     GlobalstarReceiver& globalstar() { return rxGs_; }   // Globalstar activity monitor: clear the event log (telemetry through latestRx)
     VdesReceiver& vdes() { return rxVdes_; }   // VDES: clear the ASM and burst lists (telemetry through latestRx)
+    NbiotReceiver& nbiot() { return rxNb_; }   // NB-IoT cells: clear the cell table (telemetry through latestRx)
     ZigbeeReceiver& zigbee() { return rxZb_; }   // Zigbee / 802.15.4: clear the PAN and device tables (telemetry through latestRx)
     FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
@@ -449,13 +451,14 @@ private:
     ZigbeeReceiver rxZb_;
     HfbReceiver rxHfb_;
     DjiReceiver rxDji_;
+    NbiotReceiver rxNb_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
     HrptReceiver rxHrpt_;
     FlarmReceiver rxFlarm_;
-    uint64_t modeSeq_[64] = {};      // the last report taken from each of the modes added after FM (same order as above)
+    uint64_t modeSeq_[80] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;
     uint64_t atsc3Seq_ = 0;
