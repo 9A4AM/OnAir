@@ -77,16 +77,16 @@ bool doyOk(int doy, int hundreds) {   // BCD hundreds digit of a day of year
 } // namespace
 
 const char* stationName(int s) {
-    static const char* n[] = {"DCF77", "MSF", "WWVB", "JJY 40 kHz", "JJY 60 kHz", "WWV / WWVH", "CHU"};
+    static const char* n[] = {"DCF77", "MSF", "WWVB", "JJY 40 kHz", "JJY 60 kHz", "WWV / WWVH", "CHU", "BPM"};
     return s >= 0 && s < kNumStations ? n[s] : "?";
 }
 double stationKhz(int s) {
-    static const double f[] = {77.5, 60, 60, 40, 60, 10000, 7850};
+    static const double f[] = {77.5, 60, 60, 40, 60, 10000, 7850, 5000};
     return s >= 0 && s < kNumStations ? f[s] : 0;
 }
-bool stationIsHf(int s) { return s == Wwv || s == Chu; }
+bool stationIsHf(int s) { return s == Wwv || s == Chu || s == Bpm; }
 const char* stationTimeZone(int s) {
-    switch (s) { case Dcf77: return "CET / CEST"; case Msf: return "UK (GMT / BST)"; case Jjy40: case Jjy60: return "JST"; default: return "UTC"; }
+    switch (s) { case Dcf77: return "CET / CEST"; case Msf: return "UK (GMT / BST)"; case Jjy40: case Jjy60: return "JST"; case Bpm: return "UTC / UT1"; default: return "UTC"; }
 }
 int stationForKhz(double khz, int pref60) {
     auto near = [&](double f, double tol) { return std::fabs(khz - f) <= tol; };
@@ -179,9 +179,9 @@ std::vector<uint8_t> encodeMinute(int st, int64_t M, const EncodeOpts& o) {
         return s;
     }
     const Civil c = civil(M + (st == Jjy40 || st == Jjy60 ? 9 * 3600 : 0));
-    if (st == Wwvb || st == Jjy40 || st == Jjy60) {
+    if (st == Wwvb || st == Jjy40 || st == Jjy60 || st == Bpm) {
         put(a, kWMin, 7, c.mi); put(a, kWHour, 6, c.h); put(a, kWDoy, 10, c.doy);
-        if (st == Wwvb) {
+        if (st == Wwvb || st == Bpm) {
             const int d = o.dut1;
             if (d >= 0) { a[36] = 1; a[38] = 1; } else a[37] = 1;
             const Field du[] = {{40, 8}, {41, 4}, {42, 2}, {43, 1}};
@@ -191,7 +191,8 @@ std::vector<uint8_t> encodeMinute(int st, int64_t M, const EncodeOpts& o) {
             a[55] = isLeap(c.y); a[56] = o.leapAnnounce;
             int py, pm, pd;
             civilFromDays(daysFromCivil(c.y, c.mo, c.d) - 1, py, pm, pd);
-            a[57] = usDstOnDate(c.y, c.mo, c.d); a[58] = usDstOnDate(py, pm, pd);
+            if (st == Bpm) { a[57] = o.ut1; a[58] = 0; }
+            else { a[57] = usDstOnDate(c.y, c.mo, c.d); a[58] = usDstOnDate(py, pm, pd); }
         } else {
             a[36] = parity(a, 12, 18); a[37] = parity(a, 1, 8);
             const Field yr[] = {{41, 80}, {42, 40}, {43, 20}, {44, 10}, {45, 8}, {46, 4}, {47, 2}, {48, 1}};
@@ -289,7 +290,7 @@ bool decodeMinute(int st, const uint8_t* sym, Fields& f, int yearHint) {
         f.utcMinute = daysFromCivil(f.year, f.month, f.day) * 86400 + f.hour * 3600 + f.minute * 60 - f.utcOffsetMin * 60 - 60;
         return true;
     }
-    if (st == Wwvb || st == Jjy40 || st == Jjy60 || st == Wwv) {
+    if (st == Wwvb || st == Jjy40 || st == Jjy60 || st == Wwv || st == Bpm) {
         for (int i = 0; i < 60; i++) {
             bool m = false;
             for (int k : kMarks) if (k == i) m = true;
@@ -313,7 +314,7 @@ bool decodeMinute(int st, const uint8_t* sym, Fields& f, int yearHint) {
             const int du = a[56] + 2 * a[57] + 4 * a[58];
             f.dut1 = a[50] ? du : -du;
         } else {
-            const bool jjy = st != Wwvb;
+            const bool jjy = st != Wwvb && st != Bpm;
             for (int i : {4, 10, 11, 14, 20, 21, 24, 34, 35}) if (a[i]) return false;
             if (!get(a, kWMin, 7, f.minute) || !get(a, kWHour, 6, f.hour) || !get(a, kWDoy, 10, doy)) return false;
             if (jjy) {
@@ -344,7 +345,7 @@ bool decodeMinute(int st, const uint8_t* sym, Fields& f, int yearHint) {
                 f.leapYear = a[55];
                 if (f.leapYear != isLeap(f.year)) return false;
                 f.leapAnnounce = a[56];
-                f.dstCode = a[57] << 1 | a[58];
+                if (st == Bpm) f.ut1 = a[57] != 0; else f.dstCode = a[57] << 1 | a[58];
             }
         }
         if (f.minute > 59 || f.hour > 23 || !doyOk(doy, doy / 100) || doy > (isLeap(f.year) ? 366 : 365)) return false;
@@ -409,6 +410,7 @@ void stationSite(int s, double& lat, double& lon, bool hawaii) {
     case Jjy60: lat = 33.4653; lon = 130.1756; break;    // Hagane-yama
     case Wwv: if (hawaii) { lat = 21.9878; lon = -159.7650; } else { lat = 40.6798; lon = -105.0418; } break;   // Kauai / Fort Collins
     case Chu: lat = 45.2950; lon = -75.7536; break;      // Ottawa
+    case Bpm: lat = 34.949; lon = 109.543; break;        // Pucheng
     default: lat = lon = 0; break;
     }
 }

@@ -95,6 +95,20 @@ struct TimeGenerator::Impl {
             a += 0.4 * lvl * std::sin(2 * kPi * 100 * f);
             return a;
         }
+        if (c.station == Bpm) {
+            // UT1 minutes: the seconds follow UT1 = UTC + dut1 / 10 (the code is the same, the seconds are early by dut1 tenths)
+            const double tu = c.opts.ut1 ? t + c.opts.dut1 * 0.1 : t;
+            const double suf = std::floor(tu);
+            const int64_t su = (int64_t)suf;
+            const double fu = tu - suf;
+            const int64_t Mu = su - (((su % 60) + 60) % 60);
+            const int iu = (int)(su - Mu);
+            if (fu < 0.01) a += 0.5 * std::sin(2 * kPi * 1000 * fu);
+            const uint8_t s = minute(Mu)[(size_t)iu];
+            const double w = s == SMark ? 0.3 : s & 1 ? 0.2 : 0.1;
+            if (fu >= 0.1 && fu < 0.1 + w) a += 0.5 * std::sin(2 * kPi * 1000 * fu);
+            return a;
+        }
         // CHU
         double tl = 0.3;
         if (i == 0) tl = 0.5; else if (i == 29) tl = 0; else if ((i >= 31 && i <= 39) || i >= 51) tl = 0.01;

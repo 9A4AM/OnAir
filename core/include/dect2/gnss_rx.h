@@ -49,6 +49,8 @@ public:
     void setFrequencyHint(double hz, bool valid);
     void setAcquisitionRate(int fftsPerMs);              // work given to the search per millisecond of signal (default 10)
     void setApproxPosition(double latDeg, double lonDeg, bool valid);   // a position hint: only used to choose which satellites to search first
+    // Compare the computer's clock with the satellites' UTC (a radio or the test signal, not a file): GnssTelemetry::clockOffsetMs
+    void setClockCompare(bool on);
     void setElevationMask(double deg);                   // satellites below this elevation are not used in the fix (default 5)
     // The navigation data base, for tests and tools (copies; false when the data is not complete yet)
     bool getEphemeris(int prn, GpsEphemeris& e, int* week = nullptr) const;               // GPS

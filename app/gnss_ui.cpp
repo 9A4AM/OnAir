@@ -1,6 +1,7 @@
 // GNSS screens: the sky plot, the signal strength of every satellite, the position (card and map), the channel table, the search,
 // the correlator plots and the options of the test signal.
 #include "app.h"
+#include "clocksync_ui.h"
 #include "adsb_map.h"
 #include "dect2/gnss_interf.h"
 #include "dect2/rate_choice.h"
@@ -15,7 +16,7 @@ struct FixPoint { double lat, lon, h; };
 
 struct State {
     bool loaded = false;
-    int viewMode = 0;                            // 0 sky, 1 map, 2 channels, 3 interference
+    int viewMode = 0;                            // 0 sky, 1 map, 2 channels, 3 interference, 4 clock
     std::string interfNote;                      // the result of the last CSV export
     adsbmap::View map;
     bool mapFollow = true;                       // the map follows the fix until the user drags it
@@ -80,6 +81,7 @@ std::string satNameK(int sys, int prn, int fcn) {
 
 void tick(App& a) {
     loadState();
+    clockPublishGps(a);
     a.tune.synth.modeOpt[5] = (int)std::lround(a.freqMhz * 1000.0);    // the test signal renders the sky as the tune sees it
     if (a.engine.running()) {
         GnssReceiver& r = a.engine.gnss();
@@ -641,15 +643,72 @@ void interfView(App& a) {
     ImGui::EndChild();
 }
 
+// ---------------------------------------------------------------- the clock: UTC from the satellites, the computer clock against it
+
+std::string gnssUtcText(const GnssFix& f) {
+    char b[64];
+    snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d:%06.3f", f.year, f.month, f.day, f.hour, f.minute, f.second);
+    return b;
+}
+
+void clockView(App& a) {
+    const GnssTelemetry& t = a.rx.gnss;
+    if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to read the time from the satellites"); return; }
+    const GnssFix& f = t.fix;
+    ImGui::BeginChild("##gnssclk", ImVec2(0, 0));
+    auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
+    ImGui::PushFont(a.mono, 30 * gUi);
+    if (f.valid && f.timeValid) ImGui::TextColored(t.utcValid ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_Text), "%.19s UTC", gnssUtcText(f).c_str());
+    else ImGui::TextDisabled("----.--.-- --:--:-- UTC");
+    ImGui::PopFont();
+    if (f.valid && f.timeValid) {
+        kv("GPS time", "week %d, %.3f s of the week (GPS - UTC %d s%s)", f.gpsWeek, f.gpsTow, t.utcValid ? t.leapSeconds : 18, t.utcValid ? "" : ", assumed until the message says");
+        if (t.utcValid) {
+            if (t.leapPending) kv("leap second", "announced: GPS - UTC becomes %d s after day %d of GPS week %d (mod 256)", t.leapNext, t.leapDn, t.leapWn);
+            else kv("leap second", "none announced (GPS - UTC = %d s)", t.leapSeconds);
+        } else kv("leap second", "not yet: the UTC parameters come with subframe 4, page 18 (up to 12.5 minutes)");
+        kv("UT1 - UTC", "not in the L1 C/A message (GPS sends UT1 only on the newer L2C / L5 civil signals); a time station sends DUT1");
+        kv("receiver clock", "%+.1f m (%+.1f ns) from GPS time, drift %+.2f m/s", f.clockBiasM[GnssGps], f.clockBiasM[GnssGps] / 0.299792458, f.clockDriftMps);
+    }
+    ImGui::Spacing();
+    if (t.clockValid) {
+        const double o = t.clockOffsetAvgMs;
+        const ImVec4 c = std::fabs(o) < 50 ? pal::okGreen() : std::fabs(o) < 1000 ? pal::warnAmber() : pal::badRed();
+        ImGui::TextDisabled("computer clock"); kvColumn(130 * gUi);
+        ImGui::PushFont(a.mono, 0);
+        ImGui::TextColored(c, "%+.1f ms %s", o, o >= 0 ? "ahead" : "behind");
+        ImGui::PopFont();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("The computer's clock when each sample arrived, minus the satellites' UTC for that sample, averaged over the last minute.\nIt includes the radio's USB buffering (the earliest arrival is used), typically 5 - 30 ms.");
+        kv("last fix", "%+.1f ms", t.clockOffsetMs);
+        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Accuracy: limited by the USB and driver latency of the radio, not by GPS (which is good to nanoseconds). Read the offset as +- 5 - 30 ms."); ImGui::PopTextWrapPos(); }
+    } else {
+        kv("computer clock", "%s", f.valid ? "nothing to compare (a recording or the simulator)" : "once there is a fix with the date known");
+    }
+    ImGui::Spacing();
+    float lo, hi;
+    clockMinMax(t.offsetHist, lo, hi, 1);
+    clockPlot("##gco", "clock offset", t.offsetHist, lo, hi, "ms");
+    clockPlot("##gcs", "best C/N0", t.snrHist, 0, 60, "dB-Hz");
+    clockMinMax(t.levelHist, lo, hi, 3);
+    clockPlot("##gcl", "level", t.levelHist, lo, hi, "dBFS");
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    clockSyncPanel(a);
+    ImGui::EndChild();
+}
+
 // ---------------------------------------------------------------- the hooks
 
 void tab(App& a) {
-    subNav("gnssv", S.viewMode, {"Sky", "Map", "Channels", "Interference"});
+    subNav("gnssv", S.viewMode, {"Sky", "Map", "Channels", "Interference", "Clock"});
     const GnssTelemetry& t = a.rx.gnss;
     const bool on = live(a);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     if (S.viewMode == 2) { channelTable(a, false); return; }
     if (S.viewMode == 3) { interfView(a); return; }
+    if (S.viewMode == 4) { clockView(a); return; }
     const float cw = std::min(300.f * gUi, W * 0.32f);
     ImGui::BeginChild("##gnss_l", ImVec2(W - cw - 8 * gUi, H));
     if (S.viewMode == 0) {

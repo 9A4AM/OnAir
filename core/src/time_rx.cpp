@@ -144,7 +144,7 @@ struct TimeReceiver::Impl {
         stationNow = st;
         nIn = 0; lo = 1; loStep = rate > 0 ? std::polar(1.0, -2 * kPi * offset / rate) : cd(1, 0); loCount = 0;
         acc = 0; accN = 0; k8 = 0; binEnd = rate / kW;
-        tickL = st == Chu ? 80 : 40;
+        tickL = st == Chu || st == Bpm ? 80 : 40;
         car.init(kCar); sub100.init(kCar); t0.init(tickL); t1.init(tickL); fm.init(kFsk); fs.init(kFsk);
         m100.init(100, 80); m1000.init(1000, 8); m1200.init(1200, 20); m2025.init(2025, 320); m2225.init(2225, 320);
         dc = 0; listen.reset(); aud.clear(); lfRef = 0; audPh = 0;
@@ -173,6 +173,7 @@ struct TimeReceiver::Impl {
             if (listen.on.load()) aud.push_back((float)std::max(-1.0, std::min(1.0, au / std::max(dc, 1e-9) * 0.8)));
             const cd s1 = sub100.push(au * m100.next());
             const float a0 = (float)(std::abs(t0.push(au * m1000.next())) / tickL);
+            if (st == Bpm && j % 8 == 7) put(env100, n1k, a0);   // BPM: the 1 kHz pulse widths, 1 ms steps
             const float a1 = (float)(std::abs(t1.push(au * m1200.next())) / tickL);
             put(tk0, j, a0); put(tk1, j, a1);
             const size_t b = (size_t)(j % 8000);
@@ -181,7 +182,7 @@ struct TimeReceiver::Impl {
                 const double mk = std::abs(fm.push(au * m2225.next())), sp = std::abs(fs.push(au * m2025.next()));
                 put(fsk, j, (float)(mk - sp));
             }
-            if (j % 8 == 7) put(env100, n1k, (float)(std::abs(s1) / kCar));
+            if (st != Bpm && j % 8 == 7) put(env100, n1k, (float)(std::abs(s1) / kCar));
         }
         if (!hf && listen.on.load()) {   // the carrier keyed down for 100 / 200 ms: an 800 Hz tone while it is down
             const double am = std::abs(x);
@@ -262,6 +263,10 @@ struct TimeReceiver::Impl {
             const double d = pc(p, b + L / 2) - pc(p, b - L / 2);
             if (d > bd) { bd = d; best = b; }
         }
+        if (st == Bpm && bd > 0) {   // the pulse after the tick rises as fast: the tick is the edge 100 ms before it
+            const int b0 = ((best - 800) % 8000 + 8000) % 8000;
+            if (pc(p, b0 + L / 2) - pc(p, b0 - L / 2) > 0.6 * bd) best = b0;
+        }
         tp = 0;
         for (int k = best; k <= best + L + 8; k++) tp = std::max(tp, (double)pc(p, k));
         bs = circMean(p, best - L - 240, best - L - 40);
@@ -334,10 +339,13 @@ struct TimeReceiver::Impl {
 
     uint8_t classify(double S, float& snrOut) {
         double u[10];
-        const bool hf = st == Wwv;
+        const bool hf = st == Wwv || st == Bpm;
         const std::vector<float>& r = hf ? env100 : env;
         double H = hi, Lo = lo2;
-        if (hf) { H = circMean(prof100, (int)std::llround(phase * 1000) + kEnvLag + 40, (int)std::llround(phase * 1000) + kEnvLag + 190);
+        if (st == Bpm) {   // the pulse after the tick: always there 100 - 200 ms, quiet in the last part of the second
+            H = circMean(prof100, (int)std::llround(phase * 1000) + kEnvLag + 120, (int)std::llround(phase * 1000) + kEnvLag + 190);
+            Lo = circMean(prof100, (int)std::llround(phase * 1000) + kEnvLag + 910, (int)std::llround(phase * 1000) + kEnvLag + 985);
+        } else if (hf) { H = circMean(prof100, (int)std::llround(phase * 1000) + kEnvLag + 40, (int)std::llround(phase * 1000) + kEnvLag + 190);
                   Lo = circMean(prof100, (int)std::llround(phase * 1000) + kEnvLag + 910, (int)std::llround(phase * 1000) + kEnvLag + 985); }
         const double span = H - Lo;
         if (std::fabs(span) < 1e-12) return SUnknown;
@@ -365,6 +373,10 @@ struct TimeReceiver::Impl {
             if (u[0] > 0.5) return SUnknown;
             if (avg(5, 7) < 0.5) return SMark;
             return avg(2, 4) < 0.5 ? S1 : S0;
+        case Bpm:
+            if (u[1] < 0.5) return SUnknown;
+            if (u[3] >= 0.5) return SMark;
+            return u[2] >= 0.5 ? S1 : S0;
         case Wwv:
             if (u[0] < 0.5) return SNone;
             if (avg(5, 7) >= 0.5) return SMark;
@@ -533,7 +545,8 @@ struct TimeReceiver::Impl {
             const double utc = (double)(anchorUtc + (c - anchorCount));
             const double w = wallOf(S);
             if (!std::isnan(w)) {
-                const double off = (w - utc - propMs() * 1e-3) * 1000;
+                const double ut1Adv = st == Bpm && fields.ut1 && fields.dut1 != 99 ? fields.dut1 * 0.1 : 0;   // BPM UT1 minutes: the ticks come early by DUT1
+                const double off = (w - utc + ut1Adv - propMs() * 1e-3) * 1000;
                 offs.push_back((float)off);
                 while (offs.size() > 60) offs.pop_front();
                 offH.push_back((float)off);

@@ -3,6 +3,7 @@
 // minute log, level / SNR / tick / offset histories, and the station and frequency pickers. LF stations need a radio that tunes below
 // 1 MHz: a note says so when the radio chosen cannot.
 #include "app.h"
+#include "clocksync_ui.h"
 #include "dect2/time_proto.h"
 #include "dect2/time_rx.h"
 #include "dect2/time_tel.h"
@@ -18,7 +19,7 @@ namespace {
 using namespace dect2::timesig;
 
 struct State {
-    int view = 0;                 // 0 time, 1 log
+    int view = 0;                 // 0 time, 1 log, 2 clock
     bool loaded = false;
     int station = -1;             // -1: from the frequency
     int pref60 = Msf;
@@ -68,7 +69,7 @@ std::string rangeNote(const App& a) {
     char b[400];
     snprintf(b, sizeof b, "This radio tunes from %.6g MHz, so it cannot receive %.4g kHz. The LF stations (DCF77, MSF, WWVB, JJY) need a radio that "
              "tunes below 1 MHz: an SDRplay, an Airspy HF+, or an RTL-SDR in direct sampling mode, with an LF antenna (a ferrite rod or a long wire). "
-             "WWV / WWVH and CHU are on HF and work with any radio that reaches 2.5 - 15 MHz.", d.minFreqHz / 1e6, a.freqMhz * 1e3);
+             "WWV / WWVH, CHU and BPM are on HF and work with any radio that reaches 2.5 - 15 MHz.", d.minFreqHz / 1e6, a.freqMhz * 1e3);
     return b;
 }
 
@@ -130,6 +131,7 @@ void timeView(App& a) {
         kvRow(a, "summer time", "%s%s", dstText(f, t.station), f.dstAnnounce ? ", the change is announced for the end of this hour" : "");
         kvRow(a, "leap second", "%s", f.leapAnnounce ? (f.leapSign < 0 ? "one is to be removed" : "one is announced") : t.station == Msf ? "not sent (DUT1 only)" : "none announced");
         if (f.dut1 != 99) kvRow(a, "DUT1", "%+.1f s (UT1 - UTC)", f.dut1 / 10.0);
+        if (t.station == Bpm) kvRow(a, "BPM seconds", "%s", f.ut1 ? "UT1 (the ticks of this minute follow UT1; the offset allows for DUT1)" : "UTC");
         if (f.callBit) kvRow(a, "call bit", "set: DCF77 runs on its reserve antenna");
         kvRow(a, "last minute", "%.0f s ago, %llu decoded, %llu rejected", t.secsSinceFrame, (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
     }
@@ -206,7 +208,7 @@ void pushSettings(App& a) {
     if (a.volume != S.pushedVol || (int)a.muted != S.pushedMute) { a.engine.timesig().setVolume(a.volume); a.engine.timesig().setMuted(a.muted); S.pushedVol = a.volume; S.pushedMute = a.muted; }
 }
 
-void tick(App& a) { loadState(); pushSettings(a); }
+void tick(App& a) { loadState(); pushSettings(a); clockPublishStation(a); }
 
 void tuner(App& a, bool& retune) {
     loadState();
@@ -229,15 +231,15 @@ void tuner(App& a, bool& retune) {
         }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("DCF77 Germany, MSF UK, WWVB and WWV USA, WWVH Hawaii, JJY Japan, CHU Canada.\nIn Europe DCF77 and MSF are heard across the continent at night and in the day.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("DCF77 Germany, MSF UK, WWVB and WWV USA, WWVH Hawaii, JJY Japan, CHU Canada, BPM China.\nIn Europe DCF77 and MSF are heard across the continent at night and in the day.");
     const int st = S.station >= 0 ? S.station : stationForKhz(a.freqMhz * 1e3, S.pref60);
-    if (st == Wwv || st == Chu) {
+    if (st == Wwv || st == Chu || st == Bpm) {
         ImGui::SameLine(0, 8 * gUi);
         ImGui::SetNextItemWidth(std::min(100 * gUi, ImGui::GetContentRegionAvail().x));
         char lb[32];
         snprintf(lb, sizeof lb, "%.3g MHz", a.freqMhz);
         if (ImGui::BeginCombo("##tmfq", lb)) {
-            const std::vector<double> fs = st == Wwv ? std::vector<double>{2.5, 5, 10, 15, 20} : std::vector<double>{3.33, 7.85, 14.67};
+            const std::vector<double> fs = st == Wwv ? std::vector<double>{2.5, 5, 10, 15, 20} : st == Bpm ? std::vector<double>{2.5, 5, 10, 15} : std::vector<double>{3.33, 7.85, 14.67};
             for (double f : fs) {
                 char b[24];
                 snprintf(b, sizeof b, "%g MHz", f);
@@ -245,7 +247,7 @@ void tuner(App& a, bool& retune) {
             }
             ImGui::EndCombo();
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", st == Wwv ? "WWV and WWVH share 2.5, 5, 10 and 15 MHz (WWV also 20 MHz); the 1000 / 1200 Hz ticks tell them apart" : "CHU: 3330, 7850 and 14670 kHz");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", st == Wwv ? "WWV and WWVH share 2.5, 5, 10 and 15 MHz (WWV also 20 MHz); the 1000 / 1200 Hz ticks tell them apart" : st == Bpm ? "BPM (China, Pucheng) shares 2.5, 5, 10 and 15 MHz with WWV: choose the station by hand, the frequency cannot tell them apart" : "CHU: 3330, 7850 and 14670 kHz");
     }
     if (st < 0) { ImGui::SameLine(0, 8 * gUi); ImGui::TextColored(pal::warnAmber(), "no station at this frequency"); }
     ImGui::SameLine(0, 8 * gUi);
@@ -271,8 +273,10 @@ void synth(App& a, bool& changed) {
 }
 
 void tab(App& a) {
-    subNav("tmv", S.view, {"Time", "Minutes"});
-    if (S.view == 0) timeView(a); else logView(a);
+    subNav("tmv", S.view, {"Time", "Minutes", "Clock"});
+    if (S.view == 0) timeView(a);
+    else if (S.view == 1) logView(a);
+    else { notes(a); if (!live(a)) ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to measure the computer clock"); ImGui::BeginChild("##tmclk", ImVec2(0, 0)); clockSyncPanel(a); ImGui::EndChild(); }
 }
 
 void list(App& a) {

@@ -49,12 +49,15 @@ static Run run(TimeGenConfig c, double secs, bool noiseOnly = false, int listen 
     return out;
 }
 
+static bool g_ut1 = false;   // BPM: the ticks follow UT1
+
 static void station(int st, bool wwvh, double rate, double snr, double cfo, double ppm, const char* what) {
     TimeGenConfig c;
     c.station = st; c.wwvh = wwvh; c.rate = rate; c.snrDb = snr; c.cfoHz = cfo; c.clockPpm = ppm;
     // 2026-10-12 14:02:37 UTC: 23 s of a minute, then whole minutes
     c.startUtc = (double)(daysFromCivil(2026, 10, 12) * 86400 + 14 * 3600 + 2 * 60 + 37);
     c.opts.dut1 = -2;
+    c.opts.ut1 = g_ut1;
     const double secs = st == Chu ? 75 : 175;
     const Run R = run(c, secs);
     const TimeTelemetry& t = R.last;
@@ -80,6 +83,7 @@ static void station(int st, bool wwvh, double rate, double snr, double cfo, doub
     case Jjy40: case Jjy60: CHECK(f.utcOffsetMin == 540 && f.hour == 23 && f.weekday == 1, "JJY fields"); break;
     case Wwv: CHECK(f.dstCode == 3 && f.dut1 == -2 && f.doy == 285, "WWV fields"); CHECK(t.hawaii == wwvh, "WWV / WWVH told apart"); break;
     case Chu: CHECK(f.doy == 285 && f.hour == 14, "CHU fields"); break;
+    case Bpm: CHECK(f.dut1 == -2 && f.doy == 285 && f.hour == 14 && f.ut1 == g_ut1, "BPM fields"); break;
     }
     CHECK(t.confirmed || st == Chu, "%s: not confirmed", stationName(st));
 }
@@ -99,6 +103,11 @@ int main() {
     station(Wwv, false, 64000, 40, 0, 0, "clean");
     station(Wwv, true, 64000, 40, 0, 0, "WWVH");
     station(Chu, false, 64000, 45, 0, 0, "clean");
+    station(Bpm, false, 64000, 40, 0, 0, "clean");
+    station(Bpm, false, 64000, 25, 15, 10, "25 dB, 15 Hz, 10 ppm");
+    g_ut1 = true;   // the ticks 0.2 s late (DUT1 = -0.2 s): the offset allows for it
+    station(Bpm, false, 64000, 40, 0, 0, "UT1 minutes");
+    g_ut1 = false;
     station(Dcf77, false, 256000, 40, 0, 0, "256 ksps");
     station(Dcf77, false, 64000, 12, 4, 30, "12 dB, 4 Hz, 30 ppm");
     station(Msf, false, 64000, 12, -3, -20, "12 dB, -3 Hz, -20 ppm");

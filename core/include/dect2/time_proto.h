@@ -17,12 +17,15 @@
 namespace dect2 {
 namespace timesig {
 
-enum Station { Dcf77 = 0, Msf, Wwvb, Jjy40, Jjy60, Wwv, Chu, kNumStations };
-const char* stationName(int s);      // "DCF77", "MSF", "WWVB", "JJY 40 kHz", "JJY 60 kHz", "WWV / WWVH", "CHU"
-double stationKhz(int s);            // the usual frequency (WWV: 10 MHz, CHU: 7.85 MHz)
-bool stationIsHf(int s);             // WWV / WWVH and CHU: AM voice stations with an audio time code
+enum Station { Dcf77 = 0, Msf, Wwvb, Jjy40, Jjy60, Wwv, Chu, Bpm, kNumStations };
+const char* stationName(int s);      // "DCF77", "MSF", "WWVB", "JJY 40 kHz", "JJY 60 kHz", "WWV / WWVH", "CHU", "BPM"
+double stationKhz(int s);            // the usual frequency (WWV: 10 MHz, CHU: 7.85 MHz, BPM: 5 MHz)
+bool stationIsHf(int s);             // WWV / WWVH, CHU and BPM: AM voice stations with an audio time code
 int stationForKhz(double khz, int pref60);   // the station of a frequency (pref60: which of MSF / WWVB / JJY 60 at 60 kHz), -1 none
 const char* stationTimeZone(int s);  // the time the frame carries: "CET / CEST", "UK", "UTC", "JST"
+// BPM (Pucheng, China; 2.5 / 5 / 10 / 15 MHz, the same frequencies as WWV): 1 kHz ticks of 10 ms, a pulse-width coded second after each tick
+// (100 ms 0, 200 ms 1, 300 ms marker; the long tone of the minute is the marker of second 0), the WWVB frame layout, UTC. In the minutes the
+// station sends UT1 the ticks follow UT1 (Fields::ut1). Its frequencies are WWV's: pick the station by hand.
 
 // Symbols, one a second. bit 0 is the bit (MSF: bit A), bit 1 MSF bit B.
 enum Sym : uint8_t { S0 = 0, S1 = 1, SB = 2, SAB = 3, SMark = 4, SNone = 5, SUnknown = 6 };
@@ -39,11 +42,12 @@ struct Fields {
     int dut1 = 99;                  // UT1 - UTC in 0.1 s (99 not sent)
     bool callBit = false;           // DCF77 R: the transmitter runs on its reserve antenna
     bool leapYear = false;          // WWVB
+    bool ut1 = false;               // BPM: the ticks of this minute follow UT1, not UTC
     int64_t utcMinute = 0;          // UTC epoch second of the minute the symbols were received in
 };
 
 // Encode the minute that starts at UTC epoch second utcMinute (a multiple of 60): the symbols of its seconds 0 - 59.
-struct EncodeOpts { bool leapAnnounce = false; int leapSign = 1; int dut1 = 0; bool callBit = false; };
+struct EncodeOpts { bool leapAnnounce = false; int leapSign = 1; int dut1 = 0; bool callBit = false; bool ut1 = false; };
 std::vector<uint8_t> encodeMinute(int station, int64_t utcMinute, const EncodeOpts& o = {});
 // Decode the 60 symbols of a received minute (second 0 first). False when a fixed bit, a parity, a range or a marker is wrong.
 // yearHint: the year two-digit years are placed near (0: the computer's), and JJY's at minutes 15 and 45 (no year sent)

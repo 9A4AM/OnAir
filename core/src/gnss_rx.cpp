@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstring>
 #include <ctime>
+#include <deque>
 #include <mutex>
 
 namespace dect2 {
@@ -196,6 +197,13 @@ struct GnssReceiver::Impl {
     double lastFixSignal = -1;
     bool clockSet = false;
     double clockOffset = 0;
+    // the computer's clock against the fix: the earliest arrival over two half minutes stands for sample 0's time
+    std::atomic<bool> clockCompare{false};
+    double wallMinCur = 1e300, wallMinPrev = 1e300, wallWin = 0;
+    std::deque<float> offWin, offHist, levHist, snrHist;
+    float offNow = NAN;
+    bool clkValid = false;
+    double clkOff = 0, clkAvg = 0, histNext = 0;
     uint64_t sbasTotal = 0;
     double cfoEst = 0, driftEst = 0;
     bool cfoValid = false;
@@ -481,6 +489,7 @@ struct GnssReceiver::Impl {
     void resetState() {
         pend.clear();
         dcI = dcQ = 0; gain = 1; dcInit = false; levelRms = 0; clipFrac = 0; inSamples = 0;
+        wallMinCur = wallMinPrev = 1e300; wallWin = 0; offWin.clear(); offHist.clear(); levHist.clear(); snrHist.clear(); offNow = NAN; clkValid = false; histNext = 0;
         interf.configure(rate);
         interf.setLogCallback([this](const std::string& s) { logf(s); });
         gpsBand.reset();
@@ -1277,6 +1286,22 @@ struct GnssReceiver::Impl {
             if (tow >= 604800.0) { tow -= 604800.0; week++; }
             fix.gpsWeek = week; fix.gpsTow = tow;
             fix.leapSeconds = utc.valid ? utc.dtls : -1;
+            if (week > 0 && clockCompare.load()) {
+                const double wall0 = std::min(wallMinCur, wallMinPrev);
+                const double towAtS = tow + ((S + clockOffset) - tr0);
+                fix.signalS = S;
+                fix.unixAtSignal = 315964800.0 + (double)week * 604800.0 + towAtS - (utc.valid ? utc.dtls : 18);
+                if (wall0 < 1e299) {
+                    offNow = (float)((wall0 + S - fix.unixAtSignal) * 1000.0);
+                    if (std::isfinite(offNow) && std::fabs(offNow) < 1e7) {
+                        offWin.push_back(offNow);
+                        while (offWin.size() > 60) offWin.pop_front();
+                        double sm = 0;
+                        for (float o : offWin) sm += o;
+                        clkOff = offNow; clkAvg = sm / (double)offWin.size(); clkValid = true;
+                    } else offNow = NAN;
+                }
+            }
             fix.timeValid = week > 0;
             if (fix.timeValid) gpsTimeToCalendar(week, tow, utc.valid ? utc.dtls : 18, &fix.year, &fix.month, &fix.day, &fix.hour, &fix.minute, &fix.second);
             fix.fixCount = (uint32_t)(++fixCount);
@@ -1463,6 +1488,17 @@ struct GnssReceiver::Impl {
         t.cfoHz = cfoEst;
         t.fix.clockDriftMps = driftEst;
         t.ionoValid = iono.valid; t.utcValid = utc.valid; t.leapSeconds = utc.valid ? utc.dtls : -1;
+        if (utc.valid && utc.dtlsf != utc.dtls) { t.leapPending = true; t.leapNext = utc.dtlsf; t.leapWn = utc.wnlsf; t.leapDn = utc.dn; }
+        t.clockValid = clkValid && fix.valid && clockCompare.load();
+        t.clockOffsetMs = clkOff; t.clockOffsetAvgMs = clkAvg;
+        if (signalNow >= histNext) {   // one point a second
+            histNext = signalNow + 1.0;
+            levHist.push_back((float)(20 * std::log10(std::max(levelRms, 1e-6))));
+            snrHist.push_back(best);
+            offHist.push_back(fix.valid && clkValid ? offNow : NAN);
+            for (auto* h : {&levHist, &snrHist, &offHist}) while (h->size() > 120) h->pop_front();
+        }
+        t.levelHist.assign(levHist.begin(), levHist.end()); t.snrHist.assign(snrHist.begin(), snrHist.end()); t.offsetHist.assign(offHist.begin(), offHist.end());
         for (int i = 0; i < 4; i++) { t.ionoAlpha[i] = (float)iono.alpha[i]; t.ionoBeta[i] = (float)iono.beta[i]; }
         int na = 0;
         for (int p = 1; p <= 32; p++) if (sat[p].alm.valid) na++;
@@ -1705,6 +1741,8 @@ void GnssReceiver::reset() {
     if (p_->rate > 0) p_->replan();
 }
 
+void GnssReceiver::setClockCompare(bool on) { p_->clockCompare = on; }
+
 void GnssReceiver::feed(const cf32* x, size_t n) {
     Impl& p = *p_;
     std::lock_guard<std::mutex> lk(p.procMu);
@@ -1720,6 +1758,13 @@ void GnssReceiver::feed(const cf32* x, size_t n) {
     }
     while (n - i >= kBlock) { p.processBlock(x + i, kBlock); i += kBlock; }
     if (i < n) p.pend.insert(p.pend.end(), x + i, x + n);
+    if (p.clockCompare.load()) {   // when the last sample arrived, less its place in the stream: the earliest of the last minute is the least delayed
+        const double w = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+        const double v = w - (double)(p.inSamples + (int64_t)p.pend.size()) / p.rate;
+        if (p.wallWin == 0) p.wallWin = w;
+        if (w - p.wallWin > 30) { p.wallMinPrev = p.wallMinCur; p.wallMinCur = 1e300; p.wallWin = w; }
+        p.wallMinCur = std::min(p.wallMinCur, v);
+    }
 }
 
 bool GnssReceiver::telemetry(GnssTelemetry& out, uint64_t lastSeq) {

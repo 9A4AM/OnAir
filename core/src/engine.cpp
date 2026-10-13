@@ -210,6 +210,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxAdsb_.setLogCallback([this](const std::string& s) { log(s); });
     rxGnss_.configure(rate_);
     rxGnss_.setLogCallback([this](const std::string& s) { log(s); });
+    rxGnss_.setClockCompare(dev.isRadio());   // the satellites' UTC against the computer's clock: a radio only (a file or the simulator keeps its own date)
     {   // a narrow channel sits tuneOffsetHz away from the radio's centre (a file holds the channel as recorded: no offset)
         const ModeTuning* mto = modeTuning(stdMode_.load());
         const double o = mto && dev.kind != DeviceInfo::File ? -mto->tuneOffsetHz : 0.0;
