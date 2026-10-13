@@ -2,7 +2,7 @@
 
 <h1 align="center">OnAir</h1>
 
-<p align="center"><b>Watch digital TV and listen to digital radio with a software-defined radio.</b><br>
+<p align="center"><b>Receive TV, radio, aircraft, ships, satellites, two-way radio, pagers, time signals and more: 83 kinds of signal with one software-defined radio.</b><br>
 Free and open source, for macOS, Windows and Linux.</p>
 
 <p align="center">
@@ -26,7 +26,7 @@ Free and open source, for macOS, Windows and Linux.</p>
 
 ---
 
-OnAir turns a low-cost SDR (a HackRF, and many other radios) into a complete digital broadcast receiver. Plug in an antenna, pick a channel, and watch live TV or listen to digital radio, while seeing exactly what the receiver is doing: the spectrum, the signal quality, the constellations and the echoes in your reception.
+OnAir turns a low-cost SDR (a HackRF, an RTL-SDR, an Airspy and many other radios) into a receiver for most of what is on the air: digital TV (DVB-T/T2, ATSC, ISDB-T, DTMB, DVB-S/S2, DVB-C), digital and analogue radio (DAB+, DRM, HD Radio, FM with RDS), aircraft and ships (ADS-B, ACARS, VDL2, HFDL, AIS), satellites (weather images from NOAA, Meteor and GOES, Inmarsat, Iridium, Orbcomm, GNSS), two-way radio (DMR, D-STAR, NXDN, dPMR, P25, M17, TETRA), pagers, HF data modes (FT8, WSPR, RTTY, PSK, SSTV, weather fax, NAVTEX), IoT (LoRa, Meshtastic, Zigbee, Bluetooth LE, Wi-Fi), time stations, cell towers and more. Every mode is receive-only. Plug in an antenna, pick a mode, and watch what happens inside: the spectrum, the sync, the error correction and the decoded data.
 
 It is built for people who want a receiver that is both easy to use and honest about what is happening inside it.
 
