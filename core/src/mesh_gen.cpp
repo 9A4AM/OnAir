@@ -133,10 +133,11 @@ class MeshSynth : public ModeSynth {
 public:
     MeshSynth(const SynthConfig& cfg, double rate) : rate_(rate), cfg_(cfg), noise_((uint32_t)(cfg.modeOpt[2] ? cfg.modeOpt[2] : 1) * 7919u + 22u) {
         const int prot = cfg.modeOpt[0] ? (cfg.modeOpt[0] & 31) : 31;
-        region_ = cfg.modeOpt[1] >= 1 && cfg.modeOpt[1] <= 4 ? cfg.modeOpt[1] : 0;
+        region_ = cfg.modeOpt[1] >= 1 && cfg.modeOpt[1] <= 5 ? cfg.modeOpt[1] : 0;
         rng_.seed((uint32_t)(cfg.modeOpt[2] ? cfg.modeOpt[2] : 1));
         const double tuneOffset = meshTuning().tuneOffsetHz;
-        const double lf = region_ >= 2 ? 0 : meshtasticSlotHz(region_ == 1 ? "US" : "EU_868", "LongFast");
+        const bool anz = region_ == 5;
+        const double lf = region_ >= 2 && !anz ? 0 : meshtasticSlotHz(region_ == 1 ? "US" : anz ? "ANZ" : "EU_868", "LongFast");
         MeshLoraSettings s;
         if ((prot & 1) && meshtasticPreset("LongFast", s) && lf > 0) {
             mt_.on = true;
@@ -144,7 +145,7 @@ public:
             mt_.offsetHz = -tuneOffset;
             mt_.bwHz = s.bwHz;
         }
-        const MeshLoraSettings c = meshcoreDefaults(region_ == 1 ? "US" : "EU");
+        const MeshLoraSettings c = meshcoreDefaults(region_ == 1 ? "US" : anz ? "AU" : "EU");
         if ((prot & 2) && c.freqHz > 0 && lf > 0) {
             const double off = cfg.modeOpt[4] == 1 ? -tuneOffset : c.freqHz - lf - tuneOffset;   // modeOpt[4] 1: tuned to MeshCore itself
             if (std::fabs(off) + c.bwHz < 0.45 * rate) {
@@ -167,7 +168,7 @@ public:
                 if (std::fabs(off) + x.bwHz < 0.45 * rate) { ap_.on = true; ap_.p = toParams(x); ap_.offsetHz = off; ap_.bwHz = x.bwHz; }
             }
         }
-        if (region_ >= 3 && (prot & 16)) {
+        if (lorawan() && (prot & 16)) {
             // placed for a receiver tuned to the first channel (868.1 / 903.9 MHz): it at -tuneOffsetHz, the others 200 and 400 kHz above
             const double* fr = region_ == 3 ? kLwEu : kLwUs;
             for (int c = 0; c < 3; c++) {
@@ -191,7 +192,7 @@ public:
         for (int i = 0; i < 3; i++) mcCfo_[i] = u(rng_);
         for (int i = 0; i < 3; i++) apCfo_[i] = u(rng_);
         for (int i = 0; i < 2; i++) mcmCfo_[i] = u(rng_);
-        if (region_ >= 3) for (int i = 0; i < 6; i++) lwCfo_[i] = u(rng_);   // only then: the other scenes keep their random draws
+        if (lorawan()) for (int i = 0; i < 6; i++) lwCfo_[i] = u(rng_);   // only then: the other scenes keep their random draws
         for (int i = 0; i < 6; i++) {
             mtNodes_[i].num = 0x2a000000u + (rng_() & 0x00ffffffu);
             mtNodes_[i].longName = kMtNodes[i].longName;
@@ -299,7 +300,7 @@ private:
 
     // LoRaWAN: the table above every cycle, frame counters going on; frames on one channel never overlap
     void scheduleLw(double until) {
-        if (region_ < 3 || !(lwOn_[0] || lwOn_[1] || lwOn_[2])) return;
+        if (!lorawan() || !(lwOn_[0] || lwOn_[1] || lwOn_[2])) return;
         const int nev = (int)(sizeof(kLw) / sizeof(kLw[0]));
         for (;;) {
             const LwEv& e = kLw[lwNext_];
@@ -387,6 +388,7 @@ private:
     genutil::NoiseSource noise_;
     std::mt19937 rng_;
     int region_ = 0;
+    bool lorawan() const { return region_ == 3 || region_ == 4; }
     Net mt_, mc_, ap_, mcm_;
     double apSnr_[3] = {}, mcmSnr_[2] = {}, apCfo_[3] = {}, mcmCfo_[2] = {};
     bool lwOn_[3] = {};

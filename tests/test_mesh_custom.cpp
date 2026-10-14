@@ -132,6 +132,26 @@ int main() {
         CHECK(got && t.mtRegion == "ANZ" && !t.custom, "ANZ MediumSlow");
     }
 
+    // the ANZ band plan (setRegion 2, no Meshtastic region set): LongFast on 919.875 MHz, MeshCore AU (915.8 MHz) in the plan, no LoRaWAN
+    {
+        MeshLoraSettings lf;
+        CHECK(meshtasticRegionPreset("ANZ", "LongFast", lf), "ANZ LongFast");
+        lora::Params p;
+        p.sf = lf.sf; p.bwHz = lf.bwHz; p.cr = lf.cr; p.preamble = lf.preamble; p.syncWord = lf.syncWord; p.ldro = lf.ldro;
+        const auto data = meshtasticData(1, std::vector<uint8_t>({'s', 'c'}));
+        const auto pkt = meshtasticRaw(0x2a0000abu, 0xFFFFFFFFu, 0x9a, 3, 3, false, "LongFast", key, data);
+        MeshReceiver rx;
+        rx.setProtocols(1 | 2 | 16);
+        rx.setRegion(2);
+        const MeshTelemetry t = run(rx, p, pkt, lf.freqHz, lf.freqHz, 2e6, 300, 8);
+        bool got = false, mc = false, lw = false;
+        for (const auto& m : t.messages) got |= m.text == "sc";
+        for (const auto& d : t.decoders) { mc |= d.protocol == 2 && d.preset == "MeshCore AU" && std::fabs(d.freqHz - 915.8e6) < 1; lw |= d.protocol == 5; }
+        printf("ANZ plan LongFast %.4f MHz: %s, plan %s, MeshCore AU %s\n", lf.freqHz / 1e6, got ? "decoded" : "MISSING", t.mtRegion.c_str(), mc ? "planned" : "MISSING");
+        CHECK(got && t.region == 2 && t.mtRegion == "ANZ" && !t.custom, "ANZ plan LongFast");
+        CHECK(mc && !lw, "ANZ plan: MeshCore AU, no LoRaWAN");
+    }
+
     if (fails) { printf("%d failures\n", fails); return 1; }
     printf("ok\n");
     return 0;
