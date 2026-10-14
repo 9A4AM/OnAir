@@ -40,6 +40,11 @@ struct State {
     std::vector<std::array<const MeteorStrip*, 3>> drawn;
     bool follow = true;
     std::string msg;
+    int enh = 0;                          // 0 as received, 1 contrast stretch, 2 stretch + thermal colours (one channel), 3 stretch + brighten
+    bool autoSave = false;
+    uint8_t lut[6][256];
+    int lutRows = -1; int lutEnh = -1;
+    int lastRows = 0; double lastGrow = 0; uint64_t savedId = 0;
 };
 State S;
 
@@ -48,6 +53,9 @@ void loadState() {
     S.loaded = true;
     S.view = std::clamp((int)plat::prefs().getI("meteorView", 0), 0, kNumViews - 1);
     S.mod = std::clamp((int)plat::prefs().getI("meteorMod", 0), 0, 3);
+    S.enh = std::clamp((int)plat::prefs().getI("meteorEnh", 0), 0, 3);
+    S.autoSave = plat::prefs().getB("meteorAutoSave", false);
+    for (auto& l : S.lut) for (int i = 0; i < 256; i++) l[i] = (uint8_t)i;
 }
 
 bool live(const App& a) { return a.rx.standard == 60; }   // the engine reports its standard code minus one
@@ -78,11 +86,46 @@ const MeteorStrip* stripOf(const MeteorImage& im, int c, int row) {
     return row < (int)v.size() ? v[(size_t)row].get() : nullptr;
 }
 
+// Enhancement: per channel a stretch of the 2 % .. 98 % range of its own grey levels to the full range (the satellite's channels
+// sit in a narrow band), optionally brightened; recomputed as the picture grows
+void computeLut(const MeteorImage& im) {
+    if (S.lutRows == im.rows && S.lutEnh == S.enh) return;
+    if (S.lutRows >= 0 && S.lutEnh == S.enh && im.rows - S.lutRows < 24 && im.rows >= S.lutRows) return;
+    S.lutRows = im.rows; S.lutEnh = S.enh;
+    for (int c = 0; c < 6; c++) {
+        uint8_t* l = S.lut[c];
+        if (S.enh == 0) { for (int i = 0; i < 256; i++) l[i] = (uint8_t)i; continue; }
+        uint64_t hist[256] = {}, n = 0;
+        for (const auto& st : im.ch[(size_t)c]) if (st) for (uint8_t v : st->px) if (v) { hist[v]++; n++; }
+        if (n < 2000) { for (int i = 0; i < 256; i++) l[i] = (uint8_t)i; continue; }
+        int lo = 1, hi = 255;
+        uint64_t acc = 0;
+        for (int i = 1; i < 256; i++) { acc += hist[i]; if (acc >= n / 50) { lo = i; break; } }
+        acc = 0;
+        for (int i = 255; i >= 1; i--) { acc += hist[i]; if (acc >= n / 50) { hi = i; break; } }
+        if (hi - lo < 8) { lo = std::max(1, lo - 4); hi = std::min(255, hi + 4); }
+        for (int i = 0; i < 256; i++) {
+            double v = i == 0 ? 0 : std::clamp((i - lo) / (double)(hi - lo), 0.0, 1.0);
+            if (S.enh == 3) v = std::pow(v, 0.7);
+            l[i] = (uint8_t)std::lround(v * 255);
+        }
+    }
+}
+
+// grey level -> colour: cold (bright in the infrared) white, then red, yellow, green, cyan, blue for the warm ground
+uint32_t thermal(uint8_t g) {
+    const double t = 1.0 - g / 255.0;   // 0 cold .. 1 warm (inverted grey: the infrared channel shows cold clouds bright)
+    static const double st[6][3] = {{255, 255, 255}, {200, 40, 40}, {240, 220, 40}, {60, 200, 80}, {40, 200, 220}, {20, 40, 140}};
+    const double x = t * 5; const int i = std::min(4, (int)x); const double f = x - i;
+    const uint32_t r = (uint32_t)(st[i][0] + (st[i + 1][0] - st[i][0]) * f), gg = (uint32_t)(st[i][1] + (st[i + 1][1] - st[i][1]) * f), b = (uint32_t)(st[i][2] + (st[i + 1][2] - st[i][2]) * f);
+    return 0xFF000000u | b << 16 | gg << 8 | r;
+}
+
 void composeRow(const MeteorImage& im, const std::array<int, 3>& ch, int row, uint32_t* px) {
     const MeteorStrip* s[3] = {stripOf(im, ch[0], row), stripOf(im, ch[1], row), stripOf(im, ch[2], row)};
     for (int i = 0; i < 8 * kMeteorWidth; i++) {
-        const uint32_t r = s[0] ? s[0]->px[(size_t)i] : 0, g = s[1] ? s[1]->px[(size_t)i] : 0, b = s[2] ? s[2]->px[(size_t)i] : 0;
-        px[i] = 0xFF000000u | b << 16 | g << 8 | r;
+        const uint32_t r = s[0] ? S.lut[ch[0]][s[0]->px[(size_t)i]] : 0, g = s[1] ? S.lut[ch[1]][s[1]->px[(size_t)i]] : 0, b = s[2] ? S.lut[ch[2]][s[2]->px[(size_t)i]] : 0;
+        px[i] = (S.enh == 2 && ch[0] == ch[1] && ch[1] == ch[2] && s[0] && s[0]->px[(size_t)i]) ? thermal((uint8_t)r) : (0xFF000000u | b << 16 | g << 8 | r);
     }
 }
 
@@ -91,7 +134,9 @@ void update(const MeteorTelemetry& t) {
     const MeteorImage* im = t.image.get();
     if (!im || !gGfx) return;
     const std::array<int, 3> ch = channelsFor(im, S.view);
-    const bool fresh = im->id != S.imgId || S.shownView != S.view || ch != S.shownCh;
+    const int lr = S.lutRows, le = S.lutEnh;
+    computeLut(*im);
+    const bool fresh = im->id != S.imgId || S.shownView != S.view || ch != S.shownCh || lr != S.lutRows || le != S.lutEnh;
     if (fresh) { S.imgId = im->id; S.shownView = S.view; S.shownCh = ch; S.drawn.clear(); }
     if (im->rows > S.texRows || !S.tex) {
         const int cap = std::max(64, (im->rows + 127) / 128 * 128);
@@ -116,6 +161,7 @@ void savePng(const MeteorTelemetry& t) {
     const MeteorImage* im = t.image.get();
     if (!im || im->rows <= 0) { S.msg = "nothing to save yet"; return; }
     const std::array<int, 3> ch = channelsFor(im, S.view);
+    S.lutRows = -1; computeLut(*im);
     const int h = im->rows * 8;
     std::vector<uint32_t> px((size_t)h * kMeteorWidth);
     for (int r = 0; r < im->rows; r++) composeRow(*im, ch, r, &px[(size_t)r * 8 * kMeteorWidth]);
@@ -145,15 +191,27 @@ void tab(App& a) {
     const MeteorTelemetry& t = a.rx.meteor;
     const bool on = live(a);
     if (on) update(t);
+    if (on && t.image) {   // auto-save: the picture stopped growing
+        const double now = ImGui::GetTime();
+        if (t.image->rows != S.lastRows) { S.lastRows = t.image->rows; S.lastGrow = now; }
+        if (S.autoSave && t.image->rows >= 16 && t.image->id != S.savedId && now - S.lastGrow > 90) { savePng(t); S.savedId = t.image->id; }
+    }
     ImGui::SetNextItemWidth(std::min(170 * gUi, ImGui::GetContentRegionAvail().x));
     if (ImGui::Combo("##metview", &S.view, kViews, kNumViews)) { plat::prefs().setI("meteorView", S.view); plat::prefs().flush(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Colour: channels 1, 2 and 3 as red, green and blue by day, 1, 2 and 5 (infrared) at night;\n"
                                                   "automatic picks from the channels the satellite sends. A channel alone is shown in grey.");
+    flowNext(6 * gUi);
+    ImGui::SetNextItemWidth(130 * gUi);
+    if (ImGui::Combo("##metenh", &S.enh, "As received\0Contrast stretch\0Thermal colours\0Stretch + brighten\0")) { plat::prefs().setI("meteorEnh", S.enh); plat::prefs().flush(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enhancement of the picture (saved PNGs too). Contrast stretch: each channel's own 2-98 %% range to the full range.\nThermal colours colour a single (infrared) channel by temperature; pick a Channel view for it.");
     flowNext(8 * gUi);
     if (ImGui::Button("Save PNG")) savePng(t);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("The picture as shown, at full size, in <data folder>/meteor/");
     flowNext(5 * gUi);
     if (ImGui::Button("New picture") && a.engine.running()) { a.engine.meteor().clearImage(); S.msg.clear(); }
+    flowNext(8 * gUi);
+    if (ImGui::Checkbox("Auto-save", &S.autoSave)) { plat::prefs().setB("meteorAutoSave", S.autoSave); plat::prefs().flush(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Save the picture as a PNG when no new lines have come for 90 seconds (the pass is over)");
     flowNext(8 * gUi);
     ImGui::Checkbox("Follow", &S.follow);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Keep the newest lines in view while the picture grows");
