@@ -40,6 +40,14 @@ struct State {
     bool dragged = false;
     std::string recErr;
     bool txRec = false;
+    // more channels from the same capture (Engine::generalExtra): each is silent, has its own demodulator and, if wanted, its own recordings
+    int nExtra = 0;
+    double exOff[3] = {100e3, -100e3, 200e3};       // relative to the dial
+    int exDemod[3] = {dect2::GenNfm, dect2::GenNfm, dect2::GenNfm};
+    bool exRec[3] = {false, false, false};
+    int exDrag = -1;
+    dect2::GeneralTelemetry exTel[3];
+    uint64_t exSeq[3] = {0, 0, 0};
 };
 State S;
 
@@ -144,6 +152,7 @@ void sMeter(const App& a) {
     } else ImGui::TextDisabled("%s", a.engine.running() ? "no level yet" : "stopped");
 }
 
+void extraChannelsUi(App& a);
 void controls(App& a) {
     load();
     // the listening frequency and the step
@@ -275,6 +284,68 @@ void controls(App& a) {
     }
     const std::string& err = S.recErr.empty() && live(a) ? T(a).recordError : S.recErr;
     if (!err.empty()) { ImGui::SameLine(0, 8 * gUi); ImGui::TextColored(pal::warnAmber(), "%s", err.c_str()); }
+    extraChannelsUi(a);
+}
+
+// ---- more channels from the same capture
+void extraChannelsUi(App& a) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted("Channels");
+    ImGui::SameLine();
+    ImGui::BeginDisabled(S.nExtra <= 0);
+    if (ImGui::SmallButton("-##exn")) { S.nExtra--; }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    ImGui::Text("%d", S.nExtra + 1);
+    ImGui::SameLine();
+    ImGui::BeginDisabled(S.nExtra >= dect2::Engine::kGeneralExtra);
+    if (ImGui::SmallButton("+##exn")) {
+        S.exDemod[S.nExtra] = S.demod;
+        S.exOff[S.nExtra] = S.chanOff + (S.nExtra % 2 ? -1 : 1) * 100e3 * (1 + S.nExtra / 2);
+        S.nExtra++;
+    }
+    ImGui::EndDisabled();
+    tip("Listen to more than one channel of the capture at once. Each extra channel is another demodulator and costs CPU time; drag the amber lines on the spectrum onto the signals. You hear the first channel; the others show their level and can record each transmission to a file.");
+    if (S.nExtra > 0) {
+        ImGui::SameLine();
+        ImGui::TextColored(pal::warnAmber(), "Each channel adds CPU load: use a lower sample rate when the computer struggles.");
+    }
+    for (int i = 0; i < S.nExtra && i < dect2::Engine::kGeneralExtra; i++) {
+        ImGui::PushID(i);
+        const auto& t = S.exTel[i];
+        ImGui::Text("Ch %d  %.4f MHz", i + 2, (a.freqMhz * 1e6 + S.exOff[i]) / 1e6);
+        ImGui::SameLine(0, 8 * gUi);
+        ImGui::SetNextItemWidth(70 * gUi);
+        if (ImGui::BeginCombo("##exd", dect2::generalDemodName(S.exDemod[i]))) {
+            for (int d = 0; d < dect2::GenDemodCount; d++) if (ImGui::Selectable(dect2::generalDemodName(d), d == S.exDemod[i])) S.exDemod[i] = d;
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine(0, 8 * gUi);
+        if (live(a) && t.levelDb > -199) ImGui::TextColored(t.squelchOpen ? ImVec4(0.45f, 0.85f, 0.55f, 1) : ImVec4(0.6f, 0.6f, 0.6f, 1), "%.1f dBFS %s", t.levelDb, t.squelchOpen ? "open" : "closed");
+        else ImGui::TextDisabled("no level yet");
+        ImGui::SameLine(0, 8 * gUi);
+        if (ImGui::SmallButton("Listen")) {   // swap with the channel that is heard
+            std::swap(S.exOff[i], S.chanOff);
+            std::swap(S.exDemod[i], S.demod);
+            save();
+        }
+        tip("Hear this channel (it swaps places with the first one)");
+        ImGui::SameLine(0, 8 * gUi);
+        if (ImGui::Checkbox("Rec", &S.exRec[i])) {
+            std::error_code ec;
+            const std::string dir = plat::dataDir() + "/audio-recordings";
+            std::filesystem::create_directories(dir, ec);
+            const std::time_t now = std::time(nullptr);
+            char ts[32];
+            std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
+            char pre[112];
+            snprintf(pre, sizeof pre, "onair_ch%d_%.4fMHz_%s", i + 2, (a.freqMhz * 1e6 + S.exOff[i]) / 1e6, ts);
+            a.engine.generalExtra(i).setTransmissionRecording(S.exRec[i], dir, pre);
+        }
+        tip("Record each transmission on this channel to its own WAV file (audio-recordings folder)");
+        if (S.exRec[i]) { ImGui::SameLine(0, 6 * gUi); ImGui::TextDisabled("%d saved", a.engine.generalExtra(i).transmissionFiles()); }
+        ImGui::PopID();
+    }
 }
 
 void tick(App& a) {
@@ -290,6 +361,20 @@ void tick(App& a) {
     r.setDeemphUs(S.demod == dect2::GenNfm ? kDeemph[S.deNfm] : S.demod == dect2::GenWfm ? kDeemph[S.deWfm] : 0);
     r.setCwPitchHz(S.pitch);
     r.setVolume(a.volume); r.setMuted(a.muted);
+    a.engine.setGeneralExtraCount(S.nExtra);
+    for (int i = 0; i < S.nExtra && i < dect2::Engine::kGeneralExtra; i++) {   // the other channels: the squelch and gain of the main one, their own offset and demodulator
+        auto& x = a.engine.generalExtra(i);
+        x.setSilent(true);
+        x.setDemod(S.exDemod[i]);
+        x.setWidthHz(S.width[S.exDemod[i]]);
+        x.setChannelOffsetHz(S.exOff[i]);
+        x.setSquelch(S.sqOn, S.sqAuto, S.sqDb);
+        x.setAgc(S.agc, S.gainDb);
+        x.setDeemphUs(S.exDemod[i] == dect2::GenNfm ? kDeemph[S.deNfm] : S.exDemod[i] == dect2::GenWfm ? kDeemph[S.deWfm] : 0);
+        x.setCwPitchHz(S.pitch);
+        dect2::GeneralTelemetry g;
+        if (x.telemetry(g, S.exSeq[i])) { S.exSeq[i] = g.seq; S.exTel[i] = g; }
+    }
 }
 
 void tab(App& a) {
@@ -368,6 +453,17 @@ void generalChannelBand(const App& a, bool fill) {
     const double c[1] = {f};
     plt::Spec cs; cs.LineColor = ImVec4(0.95f, 0.35f, 0.30f, 0.85f); cs.LineWeight = 1.2f;
     plt::PlotInfLines("channel", c, 1, cs);
+    for (int i = 0; i < S.nExtra && i < 3; i++) {   // the other channels: a band in another colour, its centre can be dragged
+        double elo, ehi;
+        dect2::generalFilterEdges(S.exDemod[i], S.width[S.exDemod[i]], elo, ehi);
+        const double fx = (a.freqMhz * 1e6 + S.exOff[i]) / 1e6;
+        char id[24];
+        if (fill) { plt::Spec b; b.FillColor = ImVec4(0.95f, 0.75f, 0.25f, 0.16f); snprintf(id, sizeof id, "exband%d", i); plt::PlotVBand(id, fx + elo / 1e6, fx + ehi / 1e6, b); }
+        const double cx[1] = {fx};
+        plt::Spec xs; xs.LineColor = ImVec4(0.95f, 0.75f, 0.25f, S.exDrag == i ? 1.f : 0.85f); xs.LineWeight = S.exDrag == i ? 2.f : 1.2f;
+        snprintf(id, sizeof id, "exch%d", i);
+        plt::PlotInfLines(id, cx, 1, xs);
+    }
 }
 
 bool generalDragging(int plotId) { return S.drag >= 0 && S.dragPlot == plotId; }
@@ -375,12 +471,28 @@ bool generalDragging(int plotId) { return S.drag >= 0 && S.dragPlot == plotId; }
 void generalPlotMouse(App& a, int plotId) {
     load();
     const bool hov = plt::IsPlotHovered();
-    if (!hov && !(S.drag >= 0 && S.dragPlot == plotId)) return;
+    if (!hov && !(S.drag >= 0 && S.dragPlot == plotId) && S.exDrag < 0) return;
     const plt::Rect lim = plt::GetPlotLimits();
     const ImVec2 pp = plt::GetPlotPos(), ps = plt::GetPlotSize();
     const double span = std::max(1e-9, lim.X.Max - lim.X.Min);
     auto px = [&](double mhz) { return pp.x + (float)((mhz - lim.X.Min) / span * ps.x); };
     const double mhz = plt::GetPlotMousePos().x, mx = ImGui::GetIO().MousePos.x;
+    if (S.exDrag >= 0) {   // an extra channel's centre is held
+        ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+        if (ImGui::IsMouseDown(0)) {
+            S.exOff[S.exDrag] = snap(mhz * 1e6) - a.freqMhz * 1e6;
+            ImGui::SetTooltip("channel %d: %.4f MHz", S.exDrag + 2, (a.freqMhz * 1e6 + S.exOff[S.exDrag]) / 1e6);
+        } else S.exDrag = -1;
+        return;
+    }
+    if (hov) for (int i = 0; i < S.nExtra && i < 3; i++) {
+        if (std::fabs(mx - px((a.freqMhz * 1e6 + S.exOff[i]) / 1e6)) < 6 * gUi) {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+            ImGui::SetTooltip("drag to move channel %d (%.4f MHz)", i + 2, (a.freqMhz * 1e6 + S.exOff[i]) / 1e6);
+            if (ImGui::IsMouseClicked(0)) S.exDrag = i;
+            return;
+        }
+    }
     double lo, hi;
     edges(lo, hi);
     const double f = listenHz(a) / 1e6;

@@ -301,6 +301,12 @@ public:
     UplinkReceiver& uplink() { return rxUplink_; }   // Mode S uplink (1030 MHz): telemetry through latestRx
     BleReceiver& ble() { return rxBle_; }   // Bluetooth LE advertising: clear the device table (telemetry through latestRx)
     IonoReceiver& iono() { return rxIono_; }   // ionospheric sounders: timing lock, the sounder shown (telemetry through latestRx)
+    // More channels for the general receiver: up to kGeneralExtra further receivers on the same capture, each with its own channel offset,
+    // demodulator, squelch and recording. They are silent (the one that is listened to is general()); n = how many run (0 .. kGeneralExtra).
+    static constexpr int kGeneralExtra = 3;
+    GeneralReceiver& generalExtra(int i) { return extraGeneral_[(size_t)i]; }
+    int generalExtraCount() const { return extraGeneralN_.load(); }
+    void setGeneralExtraCount(int n) { extraGeneralN_ = n < 0 ? 0 : n > kGeneralExtra ? kGeneralExtra : n; }
     GeneralReceiver& general() { return rxGeneral_; }   // general receiver: demodulator, filter, squelch, sound and recording (telemetry through latestRx)
     GlobalstarReceiver& globalstar() { return rxGs_; }   // Globalstar activity monitor: clear the event log (telemetry through latestRx)
     VdesReceiver& vdes() { return rxVdes_; }   // VDES: clear the ASM and burst lists (telemetry through latestRx)
@@ -510,6 +516,8 @@ private:
     Qo100Receiver rxQo100_;
     WifiReceiver rxWifi_;
     GeneralReceiver rxGeneral_;
+    GeneralReceiver extraGeneral_[3];
+    std::atomic<int> extraGeneralN_{0};
     TimeReceiver rxTime_;
     CubesatReceiver rxCube_;
     GlobalstarReceiver rxGs_;
