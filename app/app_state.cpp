@@ -366,7 +366,7 @@ void loadPrefs(App& a) {
         a.family = f;
         if (!curSub(a)) a.sub = firstSubOf(f);
         setFamilyFlags(a, f);
-        if (a.fmMode && !(a.freqMhz >= 87.5 && a.freqMhz <= 108)) a.freqMhz = 100.0;
+        if (a.fmMode && !(a.freqMhz > 0)) a.freqMhz = 100.0;   // a saved FM frequency outside the broadcast band is kept
     }
     for (int f = 0; f < kNumSlots; f++) {   // as many as savePrefs writes
         const std::string k = slotKey(f);
@@ -418,6 +418,7 @@ void loadPrefs(App& a) {
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
     if (d.has("lightUi")) a.lightUi = d.getI("lightUi", 0) != 0;
+    if (d.has("highContrast")) a.highContrast = d.getI("highContrast", 0) != 0;
     a.uiLang = d.getS("uiLang", "");
     i18n::set(a.uiLang.empty() ? plat::uiLanguage() : a.uiLang);
     if (d.has("uiTheme")) a.uiTheme = std::max(0, std::min(2, (int)d.getI("uiTheme", 1)));
@@ -496,6 +497,7 @@ void savePrefs(const App& a) {
     d.setI("uiTheme", a.uiTheme);
     d.setS("uiLang", a.uiLang);
     d.setI("lightUi", a.lightUi ? 1 : 0);
+    d.setI("highContrast", a.highContrast ? 1 : 0);
     d.setI("reduceCpuHidden", a.reduceCpuHidden ? 1 : 0);
     d.setI("discordOn", a.discordOn ? 1 : 0);
     d.setI("discordFreq", a.discordFreq ? 1 : 0);

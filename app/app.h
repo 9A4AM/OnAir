@@ -27,6 +27,7 @@
 #include "dect2/scanner.h"
 #include "dect2/updater.h"
 #include "dect2/gain.h"
+#include "dect2/gain_opt.h"
 #include "dect2/channel.h"
 #include "dect2/dvbt.h"
 #include "dect2/quality.h"
@@ -336,6 +337,7 @@ struct App {
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
     dect2::ShareConfig share; // "Share my radio": the rtl_tcp server (off by default; feeds_ui.cpp), saved with the preferences
     dect2::PskReporterConfig pskr;   // PSK Reporter spots (off by default; feeds_ui.cpp), saved with the preferences
+    bool highContrast = false; // View > Theme > High contrast: black, white and yellow, thick outlines, dim text lifted to 7:1 (ui2.cpp, main.cpp); wins over lightUi
     bool lightUi = false;     // View > Light: every colour drawn with its lightness turned over (dark on white), hues kept (main.cpp)
     int family = 68;           // 68 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.68, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 168 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 268 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 368 VOR / ILS, 31 M17, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 42 spectrum analyser, 38 NXDN, 468 DVB-C, 45 dPMR, 44 Orbcomm, 43 Mode S uplink, 46 TETRA, 49 HF ALE, 47 MAC, 48 radio astronomy, 568 P25, 51 Bluetooth LE, 52 ionospheric sounders, 53 QO-16868, 54 Wi-Fi networks, 55 general receiver, 61 CubeSat telemetry, 64 HRPT / AHRPT (6 and up: see ModeUi; engine standard code = family + 2)
     int sub = 0;              // 1 .. kNumSubModes: the protocol entry (dect2::subModes() index + 1) of HF digital, mesh, pagers, marine or VOR / ILS; 0 none
@@ -456,6 +458,7 @@ struct App {
     std::string radioKey;  // the radio a.tune.radio (its own settings, DeviceInfo::settings) was loaded for (radioKeyOf); "" = none
     AutoGain agc;
     GainSweep sweep;
+    GainOptSession gopt;   // "Optimise gain" (gain_opt_ui.cpp): a sweep of the radio's gain range for the best quality that does not overload
     bool sweepRetune = false;
     Scanner scanner;
     ScanConfig scanCfg;
@@ -604,7 +607,7 @@ ImVec4 lossColour(const SampleLoss& l, ImVec4 normal = ImVec4(0.93f, 0.95f, 0.97
 void lossTooltip(const SampleLoss& l);
 // The "?" button next to the sound of a mode whose voice needs a codec OnAir does not ship (codec_help.cpp, docs/CODECS.md): found or not,
 // what it is, how to install it here, where to put it, a link to the full page and "Look again"
-enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe, P25Imbe, Avs, DraTv };
+enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe, P25Imbe, Avs, DraTv, Ac4 };
 void codecHelpButton(CodecHelp c);
 // A new file path in the "audio-streams" folder of the user data folder, without extension: "<stem>_<date>_<time>" (the stem cleaned for a file name)
 std::string streamSavePath(const std::string& stem);
@@ -662,6 +665,13 @@ std::string saveFileDialog(const char* name);
 void loadPrefs(App& a);
 void loadFeedPrefs(App& a);         // feeds_ui.cpp: the data feed settings, and starts the ones that are on
 void saveFeedPrefs(const App& a);
+void gainOptButtons(App& a, bool running);   // gain_opt_ui.cpp: "Optimise gain" / "Cancel" and "Undo gain" on the gain row
+void gainOptTick(App& a);                      // every frame (gainControl): runs the sweep
+bool gainOptStatus(App& a);                    // the progress / result line; true when it drew something
+void remoteApiLoadPrefs(App& a);    // remote_api_app.cpp: the remote-control API (HTTP + WebSocket), off by default: its settings, started when on
+void remoteApiSavePrefs(const App& a);
+void remoteApiTick(App& a);          // every frame: runs the commands the API queued for the main thread, publishes the telemetry
+void remoteApiSection(App& a);       // the settings panel (in the Data feeds window)
 void shareTick(App& a);             // feeds_ui.cpp: carries out the frequency / gain commands of the clients of "Share my radio" (when allowed)
 void feedsWindow(App& a);          // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
 void savePrefs(const App& a);
@@ -801,6 +811,7 @@ void isdbtStatus(App& a);
 void isdbtReceiverTab(App& a);
 void updateTick(App& a);
 void updateButton(App& a);
+void clearAllButton(App& a);   // top bar, next to the version: empties every decoded list, after an "are you sure"
 bool updateOnExit(App& a);
 void constellationsTab(App& a);
 void channelTab(App& a);

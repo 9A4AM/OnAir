@@ -65,7 +65,7 @@ App* create(int id) {
         PrefScope ps(id);
         loadPrefs(a);
     }
-    a.newUi = first.newUi; a.lightUi = first.lightUi; a.uiTheme = first.uiTheme; a.uiVariant = first.uiVariant;   // one look for the whole window
+    a.newUi = first.newUi; a.lightUi = first.lightUi; a.highContrast = first.highContrast; a.uiTheme = first.uiTheme; a.uiVariant = first.uiVariant;   // one look for the whole window
     a.volume = first.volume; a.muted = first.rxForcedMute ? first.rxSavedMuted : first.muted;
     a.engine.setResultsDir(plat::dataDir() + "/results_rx" + std::to_string(id));
     a.engine.log("receiver RX " + std::to_string(id));

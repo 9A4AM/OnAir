@@ -11,6 +11,7 @@
 #include "imgui_internal.h"   // RenderArrow for the folding mode groups
 
 static void accentMenu();   // below, with the theme
+static void themeChoice(App& a, bool menu);   // below: the Dark / Light / High contrast choice
 namespace {
 // set the waterfall range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor)
 void autoRange(App& a) { a.wf.fitRange(a.smooth, true); }
@@ -451,7 +452,7 @@ void sidebar(App& a) {
         tool("Map", a.mapOpen, "A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
         tool("Scanner (highly experimental)", a.scannerOpen, "HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
         ImGui::Separator();
-        if (ImGui::Checkbox(tr("Light (dark on white)"), &a.lightUi)) savePrefs(a);
+        themeChoice(a, false);
         accentMenu();
         int pct = (int)std::lround(a.uiTextScale * 100);
         ImGui::SetNextItemWidth(-1);
@@ -569,9 +570,47 @@ static void accentMenu() {
     if (ImGui::ColorEdit3("##useraccent", gUserAccent.c, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) saveUserAccent();
     ImGui::EndDisabled();
 }
+// View > Theme: Dark (the palettes), Light (every colour's lightness turned over, main.cpp), High contrast (below)
+static void themeChoice(App& a, bool menu) {
+    static const char* names[3] = {N_("Dark"), N_("Light (dark on white)"), N_("High contrast (black, white, yellow)")};
+    const int cur = a.highContrast ? 2 : a.lightUi ? 1 : 0;
+    for (int i = 0; i < 3; i++) {
+        const bool hit = menu ? ImGui::MenuItem(tr(names[i]), nullptr, cur == i) : ImGui::RadioButton(tr(names[i]), cur == i);
+        if (hit && i != cur) { a.lightUi = i == 1; a.highContrast = i == 2; savePrefs(a); }
+    }
+}
+// High contrast: black panes, white text and rules, yellow for what is selected or focused, 2 px outlines on everything, a 3 px tab
+// overline. Dim text drawn from hard-coded greys is lifted to 7:1 on black when the frame is drawn (main.cpp, contrast.h).
+static void applyHighContrast() {
+    const ImVec4 black(0, 0, 0, 1), white(1, 1, 1, 1), yellow(1.f, 0.90f, 0.f, 1), grey(0.07f, 0.07f, 0.07f, 1), hov(0.22f, 0.22f, 0.22f, 1), act(0.05f, 0.05f, 0.55f, 1);
+    ImGuiStyle& s = ImGui::GetStyle();
+    s.WindowBorderSize = s.FrameBorderSize = s.ChildBorderSize = s.PopupBorderSize = s.TabBarBorderSize = std::max(2.f, 2.f * gUi);
+    s.TabBarOverlineSize = std::max(3.f, 3.f * gUi);
+    ImVec4* c = s.Colors;
+    c[ImGuiCol_WindowBg] = black; c[ImGuiCol_ChildBg] = ImVec4(0, 0, 0, 0); c[ImGuiCol_PopupBg] = black; c[ImGuiCol_MenuBarBg] = black;
+    c[ImGuiCol_Border] = white; c[ImGuiCol_Separator] = white; c[ImGuiCol_SeparatorHovered] = yellow; c[ImGuiCol_SeparatorActive] = yellow;
+    c[ImGuiCol_FrameBg] = grey; c[ImGuiCol_FrameBgHovered] = hov; c[ImGuiCol_FrameBgActive] = act;
+    c[ImGuiCol_Button] = grey; c[ImGuiCol_ButtonHovered] = hov; c[ImGuiCol_ButtonActive] = act;
+    c[ImGuiCol_Header] = ImVec4(0.14f, 0.14f, 0.14f, 1); c[ImGuiCol_HeaderHovered] = hov; c[ImGuiCol_HeaderActive] = act;
+    c[ImGuiCol_Tab] = black; c[ImGuiCol_TabHovered] = hov; c[ImGuiCol_TabSelected] = ImVec4(0.16f, 0.16f, 0.16f, 1);
+    c[ImGuiCol_TabDimmed] = black; c[ImGuiCol_TabDimmedSelected] = ImVec4(0.12f, 0.12f, 0.12f, 1); c[ImGuiCol_TabSelectedOverline] = yellow; c[ImGuiCol_TabDimmedSelectedOverline] = white;
+    c[ImGuiCol_SliderGrab] = yellow; c[ImGuiCol_SliderGrabActive] = white; c[ImGuiCol_CheckMark] = yellow;
+    c[ImGuiCol_ScrollbarBg] = black; c[ImGuiCol_ScrollbarGrab] = ImVec4(0.8f, 0.8f, 0.8f, 1); c[ImGuiCol_ScrollbarGrabHovered] = yellow; c[ImGuiCol_ScrollbarGrabActive] = white;
+    c[ImGuiCol_ResizeGrip] = ImVec4(1.f, 0.90f, 0.f, 0.6f); c[ImGuiCol_ResizeGripHovered] = yellow; c[ImGuiCol_ResizeGripActive] = white;
+    c[ImGuiCol_Text] = white; c[ImGuiCol_TextDisabled] = ImVec4(0.78f, 0.78f, 0.78f, 1); c[ImGuiCol_TextSelectedBg] = ImVec4(0.05f, 0.05f, 0.55f, 1);
+    c[ImGuiCol_TableHeaderBg] = ImVec4(0.14f, 0.14f, 0.14f, 1); c[ImGuiCol_TableBorderStrong] = white; c[ImGuiCol_TableBorderLight] = ImVec4(0.6f, 0.6f, 0.6f, 1);
+    c[ImGuiCol_TableRowBgAlt] = ImVec4(1, 1, 1, 0.08f);
+    c[ImGuiCol_NavCursor] = yellow; c[ImGuiCol_NavWindowingHighlight] = yellow;
+    pal::accentRef() = yellow;
+    plt::Style& p = plt::GetStyle();
+    const ImVec4 ser[8] = {yellow, ImVec4(0.f, 0.9f, 1.f, 1), ImVec4(1.f, 0.45f, 0.45f, 1), ImVec4(0.4f, 1.f, 0.4f, 1), ImVec4(1.f, 0.5f, 1.f, 1), white, ImVec4(1.f, 0.65f, 0.f, 1), ImVec4(0.6f, 0.75f, 1.f, 1)};
+    for (int i = 0; i < 8; i++) p.AutoColors[i] = ser[i];
+    p.PlotBg = black; p.Border = white; p.Grid = ImVec4(0.8f, 0.8f, 0.8f, 0.40f); p.Text = white;
+}
 void applyUiTheme(App& a) {
     applyUiThemeBase(a);
     loadUserAccent();
+    if (a.highContrast) { applyHighContrast(); return; }   // its yellow, not the user's accent
     if (!gUserAccent.on) return;
     const ImVec4 ac(gUserAccent.c[0], gUserAccent.c[1], gUserAccent.c[2], 1.f);
     pal::accentRef() = ac;
@@ -593,7 +632,7 @@ static void applyUiThemeBase(App& a) {
     // (taken again as the classic style), and the chosen theme is applied again with its sizes at the new scale
     if (gUi != scale) { classic = ImGui::GetStyle(); classicPlot.Scale = gUi; scale = gUi; key = -1; }
     if (gAccentDirty) { key = -1; gAccentDirty = false; }
-    const int want = a.newUi ? 1 + a.uiTheme : 0;
+    const int want = (a.newUi ? 1 + a.uiTheme : 0) + (a.highContrast ? 8 : 0);   // High contrast: its own key so leaving it restores the palette
     if (want == key) return;
     key = want;
     ImGui::GetStyle() = classic;
@@ -671,7 +710,7 @@ float menuBar(App& a) {
             ImGui::Separator();
             static const char* names[3] = {N_("Terminal palette"), N_("Instrument palette"), N_("Mono palette")};
             for (int t = 0; t < 3; t++) if (ImGui::MenuItem(tr(names[t]), nullptr, a.uiTheme == t)) { a.uiTheme = t; savePrefs(a); }
-            if (ImGui::MenuItem(tr("Light (dark on white)"), nullptr, &a.lightUi)) savePrefs(a);
+            themeChoice(a, true);
             accentMenu();
             if (ImGui::BeginMenu(tr("Language"))) { languageMenuItems(a); ImGui::EndMenu(); }
             ImGui::Separator();
@@ -725,6 +764,7 @@ float menuBar(App& a) {
         }
         ImGui::SameLine(ImGui::GetWindowWidth() - 150 * gUi);
         updateButton(a);
+        clearAllButton(a);
         ImGui::EndMainMenuBar();
     }
     return menuH;
@@ -1498,6 +1538,8 @@ void drawShell2(App& a, ImVec2 disp) {
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
     if (face) ImGui::PopStyleColor();
     ImGui::PopStyleVar();
+    ImGui::SetCursorPos(ImVec2(6 * gUi, 4 * gUi));
+    ImGui::SetCursorPosX(0);
     const float sbH = ImGui::GetFrameHeight() + 8 * gUi;
     if (!face) topBar(a, disp);
     const float bodyH = ImGui::GetContentRegionAvail().y - sbH;

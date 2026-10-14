@@ -138,6 +138,8 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         if (linkCapHz(dev, tune) > 0) maxRate = std::max(tune.sampleRate, linkCapHz(dev, tune));
         OffsetPlan p = planOffset(tune.bandwidthMhz * 1e6, tune.sampleRate, maxRate, dev.minRateHz);
         if (p.ok && dev.kind == DeviceInfo::HackRF && p.rateHz > 10e6) p.rateHz = 20e6;
+        // the only frequency test here: a radio cannot be tuned below 0 Hz, so a channel closer to 0 than the offset keeps the DC removal instead
+        if (p.ok && tune.centerHz - p.offsetHz < 0) { p.ok = false; p.why = "the channel is too close to 0 Hz"; }
         if (p.ok) { offHz_ = p.offsetHz; offRate_ = p.rateHz; }
         else { offsetDc_ = true; offNote = "offset tuning not possible (" + p.why + "): removing the DC spike instead"; }
     }

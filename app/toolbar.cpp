@@ -18,6 +18,7 @@ int adcBitsFor(const DeviceInfo& d, double rateHz) {
     if (d.board == "airspy" || d.board == "lime" || d.board == "pluto" || d.board == "bladerf" || d.board == "usrp") return 12;
     if (d.board == "airspyhf") return 16;
     if (d.board == "fobos") return 14;   // (the driver scales its samples to full scale 1.0)
+    if (d.board == "rx888") return 16;   // the RX888 MkII's converter (the driver scales to full scale 1.0)
     return 8;   // rtlsdr and anything new
 }
 
@@ -279,7 +280,10 @@ void netRadioWindow(App& a) {
     ImGui::SetNextItemWidth(120 * gUi);
     ImGui::InputInt(tr("Port"), &a.netAddPort, 0, 0);
     a.netAddPort = std::max(0, std::min(65535, a.netAddPort));
-    if (a.netAddType == NetRadio::Pluto) { ImGui::SameLine(); ImGui::TextDisabled("%s", tr("0 = libiio's default")); }
+    if (a.netAddType == NetRadio::Pluto) {
+        ImGui::SameLine(); ImGui::TextDisabled("%s", tr("0 = libiio's default"));
+        ImGui::TextDisabled("%s", tr("Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list."));
+    }
     if (a.netAddType == NetRadio::SoapyRemote && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", tr("This build has no SoapySDR, which SoapyRemote needs."));
     if (a.netAddType == NetRadio::SoapyRemote) {
         ImGui::InputTextWithHint(tr("Remote driver"), "mirisdr  (empty: list what the server offers)", a.netAddRemote, sizeof a.netAddRemote);
@@ -406,6 +410,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
     ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(110 * gUi);
     ImGui::InputDouble("##freq", &a.freqMhz, 0, 0, "%.3f MHz");
+    if (!std::isfinite(a.freqMhz) || a.freqMhz < 0) a.freqMhz = 0;   // the only guard: no radio takes a negative frequency (any other value is passed on as typed)
     if (ImGui::IsItemDeactivatedAfterEdit()) retune = true;
     if (vertical) sampleRateControl(a); else { ImGui::SameLine(0, 10 * gUi); sampleRateControl(a); }   // the sample rate, next to the frequency
     }
@@ -509,6 +514,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
         a.agcOn = false;
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to."));
+    gainOptButtons(a, running);
     ImGui::EndDisabled();
     if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain controls apply to radios only (not to a recording or the synthetic signal)"));
     if (isHw) {   // sample clean-up for zero-IF radios; applied as the samples come in, so it works while running
@@ -986,6 +992,7 @@ void statusBar(App& a) {
     if (run && a.devices[a.devIdx].kind != DeviceInfo::File) {
         ImGui::AlignTextToFramePadding();
         if (a.sweep.active()) ImGui::TextColored(pal::heading(), tr("gain helper %d/%d ..."), std::max(0, a.sweep.current()) + 1, (int)a.sweep.entries().size());
+        else if (gainOptStatus(a)) {}
         else if (adc == AdcStatus::Overload) ImGui::TextColored(ImVec4(0.95f, 0.35f, 0.25f, 1), tr("ADC OVERLOAD - %s"), tr(a.agcOn ? "AGC is lowering the gain" : "reduce the gain (or enable AGC)"));
         else if (adc == AdcStatus::High) ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), "%s", tr("ADC level high"));
         else if (adc == AdcStatus::Low) ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), "%s", tr("ADC level low - raise the gain"));
@@ -996,6 +1003,7 @@ void statusBar(App& a) {
 }
 
 void gainControl(App& a) {
+    gainOptTick(a);
     if (!a.engine.running() || a.devices[a.devIdx].kind == DeviceInfo::File) { a.sweep = GainSweep(); return; }
     const DeviceInfo& cd = a.devices[a.devIdx];
     const bool generic = cd.isGeneric();

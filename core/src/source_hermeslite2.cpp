@@ -262,15 +262,16 @@ protected:
         int speed = 3;
         rate_ = rateFor(s.sampleRate > 0 ? s.sampleRate : kRates[3], speed);
         requested_ = s.sampleRate;
-        const double f = std::min(std::max(ppmCorrectedHz(s.centerHz, radioPpm(s)), 0.0), p_.maxHz);
+        // asked as is: the frequency word of the protocol is 32-bit Hz, which is all that is held to (4.29 GHz)
+        const double f = std::min(std::max(ppmCorrectedHz(s.centerHz, radioPpm(s)), 0.0), 4.29e9);
         freqHz_ = (uint32_t)std::llround(f);
         speed_ = speed;
         lna_ = (int)std::lround(std::min(std::max(s.gainDb, -12.0), 48.0)) + 12;
         oc_ = p_.filters && radioFlag(s, "filters", true) ? filterBits(f) : 0;
         swapIq_ = radioFlag(s, "swapiq", false);
         if (s.centerHz > p_.maxHz + 1) {
-            char b[160];
-            snprintf(b, sizeof b, "the %s receives up to %.1f MHz: %.3f MHz is out of its range", p_.name, p_.maxHz / 1e6, s.centerHz / 1e6);
+            char b[200];
+            snprintf(b, sizeof b, "the %s is specified for up to %.1f MHz; the driver may not reach %.3f MHz or the signal may be weak or absent", p_.name, p_.maxHz / 1e6, s.centerHz / 1e6);
             err = b;
         } else checkRate(s.sampleRate, err);
         return true;
