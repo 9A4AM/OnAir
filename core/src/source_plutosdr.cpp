@@ -274,7 +274,10 @@ protected:
             if (cs8_) iio().channel_disable(q_); else iio().channel_enable(q_);
             // 8 kernel buffers (as SDR++ does) to ride out a late reader, on every firmware (libiio 0.x has the call, 1.x does not)
             if (iio().device_set_kernel_buffers_count) iio().device_set_kernel_buffers_count(rx_, kKernelBuffers);
-            buf_ = iio().device_create_buffer(rx_, kBlock, false);
+            // over a network every refill is a round trip to iiod: a buffer of ~25 ms keeps 16 Msps and more flowing (#114); USB keeps 64k
+            block_ = uri_.rfind("ip:", 0) == 0 ? netBlock(rate_) : kBlock;
+            buf_ = iio().device_create_buffer(rx_, block_, false);
+            if (!buf_ && block_ > kBlock) buf_ = iio().device_create_buffer(rx_, block_ = kBlock, false);   // the radio's DMA memory is short
             if (!buf_) { err = "PlutoSDR: cannot allocate the sample buffer"; return false; }
         }
         // the gain control: manual, with OnAir's gain (the default), or the AD9361's own AGC (TuneSettings "gainmode": slow_attack, fast_attack)
@@ -348,7 +351,7 @@ protected:
         ctx_ = nullptr; phy_ = rx_ = nullptr; rxCh_ = lo_ = i_ = q_ = nullptr;
     }
     void streamLoop() override {
-        conv_.resize(kBlock);
+        conv_.resize(block_);
         int failures = 0;
         while (run_) {
             const auto got = iio().buffer_refill(buf_);
@@ -357,11 +360,11 @@ protected:
             size_t n;
             if (cs8_) {
                 const int8_t* p = static_cast<const int8_t*>(iio().buffer_start(buf_));
-                n = std::min<size_t>((size_t)got / 2, kBlock);   // 2 bytes per I/Q sample
+                n = std::min<size_t>((size_t)got / 2, block_);   // 2 bytes per I/Q sample
                 for (size_t k = 0; k < n; k++) conv_[k] = cf32(p[2 * k] / 128.f, p[2 * k + 1] / 128.f);
             } else {
                 const int16_t* p = static_cast<const int16_t*>(iio().buffer_start(buf_));
-                n = std::min<size_t>((size_t)got / 4, kBlock);   // 4 bytes per I/Q sample
+                n = std::min<size_t>((size_t)got / 4, block_);   // 4 bytes per I/Q sample
                 for (size_t k = 0; k < n; k++) conv_[k] = cf32(p[2 * k] / 2048.f, p[2 * k + 1] / 2048.f);   // 12-bit samples in 16 bits
             }
             push(conv_.data(), n);
@@ -372,6 +375,9 @@ protected:
 private:
     static constexpr size_t kBlock = 1 << 16;
     static constexpr unsigned kKernelBuffers = 8;
+    // the power of two of samples that holds ~25 ms at rate, 64k to 1M
+    static size_t netBlock(double rate) { size_t b = kBlock; while (b < ((size_t)1 << 20) && (double)b < rate * 0.025) b <<= 1; return b; }
+    size_t block_ = kBlock;           // the samples per buffer in use
     std::string uri_;
     std::string serial_;   // USB: finds the radio again when its URI changed
     IioApi::iio_context* ctx_ = nullptr;
