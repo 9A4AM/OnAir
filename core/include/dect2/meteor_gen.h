@@ -20,6 +20,7 @@ struct MeteorGenConfig {
     int modulation = 1;          // 1 OQPSK 72k, 2 QPSK 72k, 3 OQPSK 80k interleaved
     double snrDb = 30;           // in the symbol rate; >= 99: no noise
     double cfoHz = 0;
+    double cfoDriftHzPerSec = 0; // Doppler: the carrier moves by this much every second
     double clockPpm = 0;
     double amp = 0.25;
     std::vector<int> apids = {64, 65, 66};

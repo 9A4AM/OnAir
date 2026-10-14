@@ -54,7 +54,7 @@ struct MeteorGenerator::Impl {
     double scale = 1, sigma = 0;
     std::mt19937 rng;
     std::normal_distribution<float> nd{0.f, 1.f};
-    std::complex<double> rot{1, 0}, rstep{1, 0};
+    std::complex<double> rot{1, 0}, rstep{1, 0}, dstep{1, 0};
 
     explicit Impl(const MeteorGenConfig& cfg) : c(cfg), rng(cfg.seed) {
         rs = c.modulation == 3 ? 80000 : 72000;
@@ -74,6 +74,7 @@ struct MeteorGenerator::Impl {
         scale = c.amp / std::sqrt(2 * e);
         if (c.snrDb < 99) { const double n0 = c.amp * c.amp / (std::pow(10.0, c.snrDb / 10) * rs); sigma = std::sqrt(n0 * c.rate / 2); }
         rstep = std::polar(1.0, 2 * kPi * c.cfoHz / c.rate);
+        dstep = std::polar(1.0, 2 * kPi * c.cfoDriftHzPerSec / (c.rate * c.rate));
         I.assign(64, 0); Q.assign(64, 0);
     }
 
@@ -154,7 +155,8 @@ struct MeteorGenerator::Impl {
             std::complex<double> s((double)re * scale, (double)im * scale);
             s *= rot;
             rot *= rstep;
-            if ((outN & 4095) == 0) rot /= std::abs(rot);
+            rstep *= dstep;
+            if ((outN & 4095) == 0) { rot /= std::abs(rot); rstep /= std::abs(rstep); }
             if (sigma > 0) s += std::complex<double>(sigma * nd(rng), sigma * nd(rng));
             out[i] = cf32((float)s.real(), (float)s.imag());
         }

@@ -567,6 +567,7 @@ void listLime(std::vector<DeviceInfo>& out);
 void listPluto(std::vector<DeviceInfo>& out);
 void listUsrp(std::vector<DeviceInfo>& out);
 void listSdrplay(std::vector<DeviceInfo>& out);
+bool sdrplayApiInstalled();   // the SDRplay API library (sdrplay_api.dll / libsdrplay_api) was found
 std::unique_ptr<IqSource> makeRtl(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeAirspy(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeBlade(const DeviceInfo& d);

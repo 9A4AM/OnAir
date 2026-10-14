@@ -16,6 +16,11 @@ constexpr const char* kUdevCmd = "sudo ./install-udev-rules.sh   # in the OnAir 
 
 const Entry kTable[] = {
     // more specific patterns first: lookup() takes the first that occurs
+    {"sdrplay_missing", "SDRplay API is not installed", N_("Install the SDRplay API"),
+     N_("An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download."),
+     {N_("Download the SDRplay API for this computer from sdrplay.com/api and run the installer."), N_("Restart OnAir (the installer starts SDRplay's background service)."), N_("Press the refresh button next to the radio list."), nullptr},
+     NONE, NONE, NONE,
+     {{Act::OpenUrl, N_("Open the SDRplay API page"), "https://www.sdrplay.com/api/", OsAll}, {Act::OpenDiagnostics, nullptr, "", 0}}},
     {"sdrplay_service", "SDRplay API service", N_("The SDRplay service is not running"),
      N_("OnAir found the SDRplay software, but its background service does not answer, so the RSP cannot be opened."),
      NONE,

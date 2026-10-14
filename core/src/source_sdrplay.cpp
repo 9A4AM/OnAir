@@ -543,6 +543,8 @@ private:
     std::atomic<bool> removed_{false};
 };
 
+bool sdrplayApiInstalled() { return sdrplayApi().ok; }
+
 void listSdrplay(std::vector<DeviceInfo>& out) {
     SdrplayApi& api = sdrplayApi();
     if (!api.ok || !api.ensureOpen()) return;

@@ -364,6 +364,22 @@ private:
 
 std::unique_ptr<IqSource> makeUsbHackrfSource(const std::string& serial) { return std::make_unique<UsbHackrf>(serial); }
 
+// Is a USB device of this vendor plugged in (a radio whose own driver is missing is still on the bus)?
+bool usbVendorPresent(uint16_t vid) {
+    std::string err;
+    libusb_context* ctx = acquireContext(err);
+    if (!ctx) return false;
+    libusb_device** list = nullptr;
+    const ssize_t n = libusb_get_device_list(ctx, &list);
+    bool found = false;
+    for (ssize_t i = 0; i < n && !found; i++) {
+        libusb_device_descriptor d{};
+        if (libusb_get_device_descriptor(list[i], &d) == 0 && d.idVendor == vid) found = true;
+    }
+    if (n >= 0) libusb_free_device_list(list, 1);
+    return found;
+}
+
 std::vector<DeviceInfo> listUsbHackrfDevices(std::string& err) {
     std::vector<DeviceInfo> out;
     libusb_context* ctx = acquireContext(err);

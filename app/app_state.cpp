@@ -141,7 +141,8 @@ void refreshDevices(App& a) {
     }
     a.hackrfErr = err;
     a.hackrfErrHidden = false;
-    a.usbHints = a.devices.size() == 2 ? usbRadioHints() : std::vector<std::string>();   // reads sysfs: only here, not every frame
+    a.usbHints = std::vector<std::string>();
+    if (a.devices.size() == 2) { a.usbHints = usbRadioHints(); for (auto& h : sdrplayApiHints()) a.usbHints.push_back(h); }   // reads sysfs: only here, not every frame
     if (hadRadio) {
         int idx = -1;
         for (int i = 2; i < (int)a.devices.size(); i++) if (a.devices[i].name == keep) { idx = i; break; }
