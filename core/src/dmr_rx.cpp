@@ -2,6 +2,8 @@
 #include "dect2/dmr_rx.h"
 #include "dect2/results_io.h"
 #include "dect2/dmr_dsp.h"
+#include "dect2/dmr_ambe.h"
+#include "dect2/audioout.h"
 #include "dect2/exact_resampler.h"
 #include "dect2/fftutil.h"
 #include "dmr_link.h"
@@ -139,14 +141,60 @@ struct DmrReceiver::Impl {
     std::mutex mu;
     DmrTelemetry tel;
     uint64_t telSeq = 0;
-    // Controls and callbacks are set from the interface thread while feed() runs: atomics, and a mutex for the callbacks. There is no vocoder,
-    // so volume, mute and the audio tap have no effect; they are here so that the app can drive this receiver like the others.
+    // Controls and callbacks are set from the interface thread while feed() runs: atomics, and a mutex for the callbacks.
     std::atomic<float> volume{1.f};
     std::atomic<bool> muted{false}, silent{false};
     std::mutex cbMu;
     std::function<void(const float*, const float*, size_t)> tap;
     std::function<void(int, int, const uint8_t*)> voiceCb;
     std::function<void(const std::string&)> logCb;
+
+    // Voice: one vocoder state per time slot; only one slot is played at a time (the one whose voice came first, until it has been quiet for a while).
+    std::unique_ptr<DmrAmbe> ambe[2];
+    bool ambeOk = false;
+    std::string ambePath;
+    uint64_t voiceDecoded = 0, voiceTick = 0, lastTick[2] = {0, 0};
+    int audioSlot = -1;                      // 0 or 1
+    std::vector<float> aud8;                 // 8 kHz mono, not yet played
+    std::vector<float> pcmOut, tapL;
+    float upPrev = 0;
+    std::unique_ptr<AudioOut> audioOut;
+
+    void voiceBurstAudio(int slot, const Bits& vs) {
+        const int s = slot == 2 ? 1 : 0;
+        voiceTick++;
+        // a slot is dead after 8 voice bursts of either slot (about 240 ms: each slot sends one burst per 60 ms) without one of its own
+        if (audioSlot >= 0 && audioSlot != s && voiceTick - lastTick[audioSlot] > 8) audioSlot = -1;
+        lastTick[s] = voiceTick;
+        if (audioSlot < 0) audioSlot = s;
+        if (audioSlot != s) return;
+        if (!ambeOk) { ambeOk = dmrAmbeAvailable(&ambePath); if (!ambeOk) return; }
+        if (!ambe[s]) ambe[s] = std::make_unique<DmrAmbe>();
+        if (!ambe[s]->ok()) return;
+        int16_t pcm[480];
+        ambe[s]->decodeBurst(vs, pcm);
+        for (int16_t v : pcm) aud8.push_back(v / 32768.f);
+        voiceDecoded++;
+    }
+
+    // 8 kHz mono -> 48 kHz stereo (linear interpolation), to the tap and the sound device
+    void flushAudio() {
+        if (aud8.empty()) return;
+        pcmOut.clear(); tapL.clear();
+        for (float v : aud8) {
+            for (int k = 1; k <= 6; k++) { const float o = upPrev + (v - upPrev) * k / 6.f; tapL.push_back(o); pcmOut.push_back(o); pcmOut.push_back(o); }
+            upPrev = v;
+        }
+        aud8.clear();
+        std::function<void(const float*, const float*, size_t)> t;
+        { std::lock_guard<std::mutex> lk(cbMu); t = tap; }
+        if (t) t(tapL.data(), tapL.data(), tapL.size());
+        if (silent.load()) return;
+        if (!audioOut) { audioOut = std::make_unique<AudioOut>(); audioOut->start(48000); audioOut->setStartThreshold(48000 / 5); }
+        audioOut->setVolume(volume.load()); audioOut->setMuted(muted.load());
+        if (audioOut->bufferedFrames() > 48000 * 3 / 2) audioOut->flush();
+        audioOut->write(pcmOut.data(), (int)(pcmOut.size() / 2));
+    }
 
     Impl() {
         win.resize(kSpecN);
@@ -158,6 +206,7 @@ struct DmrReceiver::Impl {
         chan.design(lowpassTaps(kChanPass, kChanStop, kWorkRate, 55, 31));
         mf.design(rrcTaps(kSps, 6));
         link.onVoiceBurst = [this](int slot, int pos, const Bits& vs) {
+            voiceBurstAudio(slot, vs);
             std::function<void(int, int, const uint8_t*)> cb;
             { std::lock_guard<std::mutex> lk(cbMu); cb = voiceCb; }
             if (!cb) return;
@@ -204,6 +253,7 @@ struct DmrReceiver::Impl {
         chan.reset(); mf.reset();
         prevB = cf32(1, 0);
         link.reset();
+        ambe[0].reset(); ambe[1].reset(); audioSlot = -1; aud8.clear(); upPrev = 0;
         powAcc = 0; powN = 0; levelDb = -120;
         specBuf.clear();
         std::fill(specPow.begin(), specPow.end(), 0.0);
@@ -280,6 +330,7 @@ struct DmrReceiver::Impl {
             cur = xa.data(); cn = xa.size();
         }
         for (size_t i = 0; i < cn; i++) sample48(cur[i]);
+        flushAudio();
     }
 
     void sample48(cf32 xin) {
@@ -443,6 +494,8 @@ struct DmrReceiver::Impl {
             for (int b = 0; b < 128; b++) t.spectrumDb[b] = (float)(10 * std::log10(std::max(sp[b] / mx, 1e-10)));
         }
         t.cfoHz = coarseHz + ncoHz + link.cfoResidualHz();
+        t.voiceDecoded = voiceDecoded; t.audioSlot = audioSlot + 1;
+        t.ambe = ambeOk || dmrAmbeAvailable(&ambePath); ambeOk = t.ambe; t.ambePath = ambePath;
         std::lock_guard<std::mutex> lk(mu);
         lastNow = link.nowSec();
         t.seq = ++telSeq;

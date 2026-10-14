@@ -82,6 +82,10 @@ struct DmrTelemetry {
     uint64_t trellisOk = 0, trellisFail = 0;
     uint64_t embOk = 0, embFail = 0, embLcOk = 0, embLcFail = 0;
     uint64_t calls = 0;          // calls and messages seen
+    bool ambe = false;           // the AMBE+2 vocoder is available (built in or installed)
+    std::string ambePath;
+    uint64_t voiceDecoded = 0;   // voice bursts (3 vocoder frames each) of the followed time slot that went through the vocoder
+    int audioSlot = 0;           // time slot (1 or 2) being played, 0 none
     std::string cachInfo;        // short LC from the CACH of a base station, e.g. "activity: slot 1 group voice, slot 2 none"
     // symbols: the last 800 decided symbol values scaled so that the nominal levels are -3, -1, +1, +3, and their histogram (bins of 0.25 from -5 to +5)
     std::vector<float> eye;
