@@ -110,7 +110,8 @@ struct Qo100Receiver::Impl {
     double power = 0; uint64_t nPower = 0;
 
     double tSec() const { return rate > 0 ? (double)inSamples / rate : 0; }
-    double corr() const { return corrValid ? lnbErr : 0.0; }
+    std::atomic<bool> autoCorr{true};   // off: the beacons are still measured (shown) but no frequency is corrected (a GPS-locked LNB)
+    double corr() const { return corrValid && autoCorr.load() ? lnbErr : 0.0; }
 
     void log(const char* s) { if (cb) cb(s); }
 
@@ -285,6 +286,7 @@ struct Qo100Receiver::Impl {
         const double c = corr();
         t.state = state; t.rate = rate; t.centreIfHz = centreIf; t.loHz = lo; t.inverted = inv; t.nbOk = nbOk;
         t.wbOk = std::min(rc + 0.45 * rate, kWbHiHz) - std::max(rc - 0.45 * rate, kWbLoHz) >= 2e6;   // at least 2 MHz of the wideband transponder
+        t.corrApplied = autoCorr.load();
         t.corrValid = corrValid; t.lnbErrHz = lnbErr; t.lnbErrPpm = lnbErr / lo * 1e6;
         t.lockSec = state == 2 ? tSec() - lockStart : 0;
         t.measurements = meas;
@@ -427,6 +429,7 @@ void Qo100Receiver::setLogCallback(std::function<void(const std::string&)> cb) {
 void Qo100Receiver::setLo(double hz) { if (hz > 0 && hz != p_->loReq.load()) { p_->loReq = hz; p_->resetReq = true; } }
 void Qo100Receiver::setSearchHz(double hz) { p_->searchReq = std::clamp(hz, 5e3, 2e6); }
 void Qo100Receiver::setDialHz(double hz) { p_->dialReq = hz; }
+void Qo100Receiver::setAutoCorrection(bool on) { p_->autoCorr = on; }
 void Qo100Receiver::setListen(bool on) { p_->listen.on = on; }
 bool Qo100Receiver::listening() const { return p_->listen.on.load(); }
 void Qo100Receiver::setVolume(float v) { p_->listen.volume = std::clamp(v, 0.f, 1.f); }

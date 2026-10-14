@@ -50,6 +50,7 @@ struct State {
     bool loaded = false;
     int loPreset = 0;               // loPresets index, or the count = custom
     double customLoMhz = 9750;
+    bool autoCorr = true;           // correct the frequencies by the LNB error measured on the beacons
     double dialHz = 10489.600e6;
     bool listen = false;
     int view = 0;                   // 0 narrowband, 1 wideband, 2 drift
@@ -89,12 +90,14 @@ void load() {
     S.loPreset = (int)std::clamp(p.getI("qo100LoPreset", 0), 0L, (long)n);
     S.customLoMhz = p.getD("qo100LoCustom", 9750);
     S.dialHz = p.getD("qo100Dial", 10489.600e6);
+    S.autoCorr = p.getB("qo100AutoCorr", true);
     S.listen = p.getB("qo100Listen", false);
     S.view = (int)std::clamp(p.getI("qo100View", 0), 0L, 2L);
 }
 void save() {
     auto& p = plat::prefs();
     p.setI("qo100LoPreset", S.loPreset); p.setD("qo100LoCustom", S.customLoMhz); p.setD("qo100Dial", S.dialHz); p.setI("qo100View", S.view);
+    p.setB("qo100AutoCorr", S.autoCorr);
 }
 
 void setDial(double hz) { S.dialHz = std::round(hz / 10) * 10; save(); }
@@ -139,6 +142,9 @@ void strip(App& a) {
         if (ImGui::InputDouble("##qolocus", &S.customLoMhz, 0, 0, "%.3f MHz", ImGuiInputTextFlags_EnterReturnsTrue)) { S.customLoMhz = std::clamp(S.customLoMhz, 1.0, 20000.0); save(); }
         tip("The oscillator frequency of your LNB or converter");
     }
+    flowNext(10 * gUi);
+    if (ImGui::Checkbox("Auto frequency correction", &S.autoCorr)) save();
+    tip("On: the LNB's frequency error is measured on the CW beacons and every frequency shown is corrected by it.\nOff: no correction (for a GPS-locked LNB). The beacons are still measured and the error is shown.");
     const double lo = loHz();
     double i0 = q::ifOf(q::kDownLoHz, lo), i1 = q::ifOf(q::kDownHiHz, lo);
     if (i0 > i1) std::swap(i0, i1);
@@ -166,7 +172,7 @@ void lockLine(const App& a) {
     else if (st == 0) ImGui::TextColored(pal::warnAmber(), "the narrowband transponder is outside the radio's band: tune to it (Narrowband only) or raise the sample rate");
     else if (!t.corrValid) ImGui::TextDisabled("searching for the CW beacons (10489.500 and 10490.000 MHz)");
     else {
-        ImGui::Text("LNB error %+.3f kHz (%+.3f ppm)", t.lnbErrHz / 1e3, t.lnbErrPpm);
+        ImGui::Text("LNB error %+.3f kHz (%+.3f ppm)%s", t.lnbErrHz / 1e3, t.lnbErrPpm, t.corrApplied ? "" : ", not applied");
         tip("The LNB's oscillator is this far from nominal (and the radio's own error with it): measured on the CW beacons, every frequency here is corrected by it");
         flowNext(10 * gUi);
         if (t.driftValid) ImGui::Text("drift %+.0f Hz/min", t.driftHzPerMin); else ImGui::TextDisabled("drift: measuring");
@@ -429,6 +435,7 @@ void tick(App& a) {
     load();
     auto& r = a.engine.qo100();
     r.setLo(loHz());
+    r.setAutoCorrection(S.autoCorr);
     r.setDialHz(S.dialHz);
     r.setListen(S.listen);
     r.setVolume(a.volume); r.setMuted(a.muted);

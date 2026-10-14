@@ -22,10 +22,11 @@ struct Run {
     double audioPow = 0;
 };
 
-static Run run(const SynthConfig& sc, double fs, double centreRf, double lo, double secs, bool listen = false, double dial = 0) {
+static Run run(const SynthConfig& sc, double fs, double centreRf, double lo, double secs, bool listen = false, double dial = 0, bool autoCorr = true) {
     Run r;
     Qo100Receiver rx;
     rx.configure(fs);
+    rx.setAutoCorrection(autoCorr);
     rx.setLo(lo);
     rx.setCenterHz(qo100::ifOf(centreRf, lo));
     if (listen) {
@@ -80,6 +81,16 @@ int main() {
         CHECK(qo100Tuning().stdMode == 55 && std::fabs(qo100Tuning().defMhz - 744.0) < 1e-9, "tuning");
     }
     const double lo = 9750e6;
+    // 0: automatic frequency correction off (a GPS-locked LNB): the error is still measured, but the frequencies are not moved by it
+    {
+        SynthConfig sc;
+        Run on = run(sc, 2e6, qo100::kNarrowCentreHz, lo, 12), off = run(sc, 2e6, qo100::kNarrowCentreHz, lo, 12, false, 0, false);
+        CHECK(on.last.corrApplied && !off.last.corrApplied, "corrApplied %d %d", on.last.corrApplied, off.last.corrApplied);
+        CHECK(off.last.corrValid && std::fabs(off.last.lnbErrHz - on.last.lnbErrHz) < 100, "error still measured: %.1f vs %.1f Hz", off.last.lnbErrHz, on.last.lnbErrHz);
+        const Qo100Signal* a = nearest(on.last, kQo100SsbDialsHz[0]);
+        const Qo100Signal* b = nearest(off.last, kQo100SsbDialsHz[0]);
+        CHECK(a && b && std::fabs((a->rfHz - b->rfHz) - on.last.lnbErrHz) < 3000, "station moved by %.1f Hz, the error is %.1f Hz", a && b ? a->rfHz - b->rfHz : 0.0, on.last.lnbErrHz);
+    }
     // 1: the narrowband transponder at 2 Msps, +27 kHz drifting 120 Hz/min, listening on the first SSB station
     {
         SynthConfig sc;
