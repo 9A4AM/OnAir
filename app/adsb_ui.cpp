@@ -136,7 +136,7 @@ void unitsControls() {
         int sp = S.units.spd == au::Speed::MS ? 1 : 0;
         if (ImGui::Combo("##adsbspd", &sp, "km/h\0m/s\0")) { S.units.spd = sp ? au::Speed::MS : au::Speed::KmH; ch = true; }
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Aviation: knots, feet, nautical miles, ft/min. Metric: km/h or m/s, metres, km, m/s. Only what is shown and exported changes; SBS and the feeds stay in aviation units.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Aviation: knots, feet, nautical miles, ft/min. Metric: km/h or m/s, metres, km, m/min. Only what is shown and exported changes; SBS and the feeds stay in aviation units.");
     if (ch) { plat::prefs().setI("adsbUnits", S.units.metric() ? 1 : 0); plat::prefs().setI("adsbSpeedUnit", S.units.spd == au::Speed::MS ? 1 : 0); plat::prefs().flush(); }
 }
 

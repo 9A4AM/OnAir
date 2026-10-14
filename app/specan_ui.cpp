@@ -22,7 +22,7 @@ namespace {
 struct State {
     float loMhz = 1, hiMhz = 6000;
     int preset = 0;
-    int rbw = 3;                  // index in kRbw
+    int rbw = 4;                  // index in kRbw
     int avgN = 8;
     bool showLive = true, showPeak = true, showAvg = false, persist = false, bands = true, spurs = true;
     float refDb = 0, rangeDb = 100;
@@ -51,8 +51,8 @@ struct State {
 };
 State S;
 std::mutex& autoMu() { static std::mutex m; return m; }
-const double kRbw[] = {5e3, 10e3, 25e3, 100e3, 250e3, 500e3, 1e6};
-const char* const kRbwName[] = {"5 kHz", "10 kHz", "25 kHz", "100 kHz", "250 kHz", "500 kHz", "1 MHz"};
+const double kRbw[] = {2.8e3, 5e3, 10e3, 25e3, 100e3, 250e3, 500e3, 1e6};
+const char* const kRbwName[] = {"2.8 kHz", "5 kHz", "10 kHz", "25 kHz", "100 kHz", "250 kHz", "500 kHz", "1 MHz"};
 
 std::string sizeText(size_t b) {
     char t[32];
@@ -184,8 +184,8 @@ void controls(App& a) {
     flowNext(10 * gUi);
     ImGui::TextDisabled("RBW"); ImGui::SameLine();
     ImGui::SetNextItemWidth(90 * gUi);
-    if (ImGui::Combo("##sarbw", &S.rbw, kRbwName, 7)) other = true;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Resolution: the FFT bin width (the HackRF sweep goes no finer than about 5 kHz)");
+    if (ImGui::Combo("##sarbw", &S.rbw, kRbwName, 8)) other = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Resolution: the FFT bin width (the HackRF sweep goes no finer than about 2.8 kHz; the finest bins are slow over a wide range)");
     flowNext(10 * gUi);
     ImGui::TextDisabled("Avg"); ImGui::SameLine();
     ImGui::SetNextItemWidth(80 * gUi);
