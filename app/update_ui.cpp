@@ -3,6 +3,7 @@
 // or at once on request.
 #include "app.h"
 #include "dect2/updater.h"
+#include "receivers.h"
 #include <ctime>
 
 namespace {
@@ -153,6 +154,31 @@ void updateButton(App& a) {
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
         ImGui::TextWrapped("%s", tr("Only github.com is contacted. Downloads are checked against the SHA-256 GitHub lists for the file."));
         ImGui::PopStyleColor();
+        ImGui::EndPopup();
+    }
+}
+
+// "Clear all" next to the version: empties the decoded lists of every mode, on every open receiver, after a question
+void clearAllButton(App& a) {
+    ImGui::SameLine(0, 6 * gUi);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.6f, 0.45f, 1));
+    if (ImGui::SmallButton(tr("Clear all##clearall"))) ImGui::OpenPopup("##clearallask");
+    ImGui::PopStyleColor();
+    const ImVec2 bmax = ImGui::GetItemRectMax();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too."));
+    ImGui::SetNextWindowPos(ImVec2(bmax.x, bmax.y + 4), ImGuiCond_Appearing, ImVec2(1, 0));
+    if (ImGui::BeginPopup("##clearallask")) {
+        ImGui::PushTextWrapPos(340 * gUi);
+        ImGui::TextUnformatted(tr("Are you sure? This clears all previous data and cannot be undone."));
+        ImGui::PopTextWrapPos();
+        if (ImGui::Button(tr("Yes, clear all"))) {
+            a.engine.clearAllResults();
+            for (App* r : receiversAll()) if (r != &a) r->engine.clearAllResults();
+            a.engine.log("results: all previous data cleared");
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(tr("Cancel"))) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
 }

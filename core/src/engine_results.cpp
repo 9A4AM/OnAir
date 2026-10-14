@@ -113,6 +113,12 @@ std::vector<std::string> Engine::resultNames() const {
     return r;
 }
 
+void Engine::clearAllResults() {
+    for (const ResultSlot& s : resultSlots()) s.clear();
+    wide_.clearResults();
+    refreshIdle();
+}
+
 void Engine::clearResults(int stdMode) {
     const int a = stdMode >= 2 ? stdMode - 1 : 0;
     for (const ResultSlot& s : resultSlots()) if (s.act == a) s.clear();

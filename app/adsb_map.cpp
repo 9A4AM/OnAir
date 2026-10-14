@@ -658,8 +658,9 @@ void tileControls(const char* privacy) {
     const ImGuiStyle& st = ImGui::GetStyle();
     const float need = ImGui::CalcTextSize("tiles").x + 2 * st.FramePadding.x + 10 * gUi + ImGui::GetFrameHeight() + st.ItemInnerSpacing.x + ImGui::CalcTextSize("online map").x;
     if (ImGui::GetCursorScreenPos().x + need > gOrigin.x + gSize.x - 8 * gUi) ImGui::SetCursorScreenPos(ImVec2(gOrigin.x + 8 * gUi, ImGui::GetItemRectMax().y + 4 * gUi));
+    const ImVec2 at = ImGui::GetCursorScreenPos();   // where "tiles" goes: the checkbox is placed from this, not from the last item
     tilesMenu(ImVec4(0.06f, 0.07f, 0.08f, 0.85f));   // the colour of the buttons on the maps
-    ImGui::SameLine(0, 10 * gUi);
+    ImGui::SetCursorScreenPos(ImVec2(at.x + ImGui::CalcTextSize("tiles").x + 2 * st.FramePadding.x + 10 * gUi, at.y));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.82f, 0.84f, 1));
     if (ImGui::Checkbox("online map", &onlineMap)) { plat::prefs().setB("adsbMap", onlineMap); plat::prefs().flush(); }
     ImGui::PopStyleColor();

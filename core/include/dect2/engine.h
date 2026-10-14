@@ -364,6 +364,7 @@ public:
     void setWideMuted(bool m) { wide_.setMuted(m); }
     void setWideSelected(int carrierId) { wide_.setSelected(carrierId); }   // the carrier whose sound plays and whose detail shows (0: the best locked)
     static bool wideSupported(int analysisMode) { return WideModes::supports(analysisMode); }
+    void clearAllResults();                              // the lists of every mode at once (the top bar's Clear all)
     void clearResults(int stdMode);                      // the Clear of a mode's screen: every list of its receiver
     int loadResults(const std::string& dir);             // the lists of the last run (a file of another build is discarded); the receivers restored
     int saveResults(const std::string& dir);             // the receivers whose lists changed since the last save (or load); the files written
