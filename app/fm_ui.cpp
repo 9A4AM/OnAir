@@ -392,6 +392,55 @@ void fmRadioTab(App& a) {
 // Phase 1 reads the live spectrum in 2 MHz steps and picks the 100 kHz channels that stand out; phase 2 tunes to each of them,
 // checks that a real FM carrier is there and waits for its RDS name.
 static constexpr int kSurveyHops = 11;
+// The text of a scrolling name from the 8-character windows the station sent, in order: a window that is the previous one moved on by
+// 1 - 7 characters adds only its new characters ("NOSTALGI", "OSTALGIA" -> "NOSTALGIA"), any other window is a new word. cyclic: the
+// windows are one round of the name, so where the last one runs on into the first, the start is not repeated
+static size_t fmScrollShift(const std::string& p, const std::string& w) {   // how far w is p moved on, 0 = not a move
+    if (p.size() != 8 || w.size() != 8) return 0;
+    for (size_t k = 1; k < 8; k++) if (p.compare(k, 8 - k, w, 0, 8 - k) == 0) return k;
+    return 0;
+}
+static std::string fmJoinScroll(const std::vector<std::string>& seq, bool cyclic) {
+    std::string text;
+    for (size_t i = 0; i < seq.size(); i++) {
+        const size_t shift = i ? fmScrollShift(seq[i - 1], seq[i]) : 0;
+        text += shift ? seq[i].substr(8 - shift) : (i ? " " : "") + seq[i];
+    }
+    if (cyclic && seq.size() >= 2) {
+        if (const size_t k = fmScrollShift(seq.back(), seq.front())) text.resize(text.size() - (8 - k));
+        else text += ' ';
+        // one round has no start of its own: begin after the longest gap, which stations leave between two rounds of the text
+        const size_t n = text.size();
+        size_t best = 0, bestLen = 0;
+        for (size_t i = 0; i < n; i++) {
+            if (text[i] != ' ' || text[(i + n - 1) % n] == ' ') continue;   // the first space of a run
+            size_t len = 0;
+            while (len < n && text[(i + len) % n] == ' ') len++;
+            if (len > bestLen) { bestLen = len; best = (i + len) % n; }
+        }
+        if (bestLen && bestLen < n) std::rotate(text.begin(), text.begin() + (long)best, text.end());
+    }
+    std::string out;   // spaces collapsed and trimmed
+    for (char c : text) if (c != ' ' || (!out.empty() && out.back() != ' ')) out += c;
+    while (!out.empty() && out.back() == ' ') out.pop_back();
+    return out;
+}
+
+// A name that came round: the newest window was also sent p windows before (p >= 2) with no repeat in between. Returns those p windows
+// in the order they came, starting with the one seen first, or none
+static std::vector<std::string> fmScrollCycle(const std::vector<std::string>& seq) {
+    const size_t n = seq.size();
+    if (n < 3) return {};
+    for (size_t p = 2; p < n; p++) {
+        const size_t i = n - 1 - p;
+        if (seq[i] != seq.back()) continue;
+        std::vector<std::string> c(seq.begin() + (long)i, seq.end() - 1);
+        for (size_t k = 0; k < c.size(); k++) if (c[k] == seq.front()) { std::rotate(c.begin(), c.begin() + (long)k, c.end()); break; }
+        return c;
+    }
+    return {};
+}
+
 // full RDS: the scan stays on each station until its name, radio text and PI are complete (up to 12 s), instead of leaving at the first name
 static bool fmScanFullRds() { return plat::prefs().getB("fmScanFullRds", false); }
 static double fmSurveyCentre(int hop) { return 88.5 + 2.0 * hop; }
@@ -422,7 +471,7 @@ void fmScanTab(App& a) {
         ImGui::BeginDisabled(s.running);
         if (ImGui::Checkbox("full RDS", &full)) { plat::prefs().setB("fmScanFullRds", full); plat::prefs().flush(); }
         ImGui::EndDisabled();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stay on each station until its whole name (also a scrolling one), the radio text and the PI code are in,\nup to 12 s per station instead of about 2 s. A scan of a busy band then takes several minutes.");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stay on each station until its whole name (also a scrolling one), the radio text and the PI code are in,\nup to 12 s per station instead of about 2 s (30 s while a scrolling name has not come round). A scan of a busy band then takes several minutes.");
     }
     ImGui::Spacing();
     if (!s.running) {
@@ -541,17 +590,20 @@ void fmScanStep(App& a) {
     bool done = !station ? dwell > 1.4 : (nameKnown && dwell > 1.6) || dwell > 5.0;
     if (station && fmScanFullRds()) {
         // full RDS: stay while the station sends RDS, until the name has come round (a scrolling name: back to the first one; a fixed
-        // name: unchanged for 4 s), the radio text is whole (or none came in 6 s) and the PI is known; never longer than 12 s
-        const std::string ps = fmTrim(fm.psName);
-        if (!ps.empty() && (s.psSeq.empty() || ps != s.psSeq.back())) {
-            if (s.psSeq.size() < 2 || ps != s.psSeq.front()) { if (s.psSeq.size() < 16) s.psSeq.push_back(ps); s.psT = now; }
-            else s.psSeq.push_back(ps);   // the first name again: the cycle is complete
+        // name: unchanged for 4 s), the radio text is whole (or none came in 6 s) and the PI is known; never longer than 12 s, or 30 s
+        // while a scrolling name has not come round yet (a name scrolled a letter at a time takes one window per letter)
+        std::string ps = fm.psName;   // the whole 8-character window: the spaces tell how far a scrolling name moved
+        ps.resize(8, ' ');
+        if (!fmTrim(ps).empty() && (s.psSeq.empty() || ps != s.psSeq.back()) && fmScrollCycle(s.psSeq).empty() && s.psSeq.size() < 64) {
+            s.psSeq.push_back(ps);   // until a window comes again: then the cycle is complete
+            s.psT = now;
         }
-        const bool cycled = s.psSeq.size() >= 3 && s.psSeq.back() == s.psSeq.front();
+        const bool cycled = !fmScrollCycle(s.psSeq).empty();
+        const bool scrolling = s.psSeq.size() >= 2 && !cycled;
         const bool nameDone = cycled || (s.psSeq.size() == 1 && now - s.psT > 4.0);
         const bool rtDone = fm.radioTextComplete || (fm.radioText.empty() && dwell > 6.0);
         const bool rdsDone = nameDone && rtDone && fm.piCode != 0;
-        done = (!fm.rdsSync && dwell > 2.5) || (fm.rdsSync && rdsDone) || dwell > 12.0;
+        done = (!fm.rdsSync && dwell > 2.5) || (fm.rdsSync && rdsDone) || dwell > (scrolling && fm.rdsSync ? 30.0 : 12.0);
     }
     if (!done) return;
     App::FmScan::Res r;
@@ -560,10 +612,13 @@ void fmScanStep(App& a) {
     if (station) {
         r.snr = fm.snrDb; r.stereo = fm.stereo; r.rds = fm.rdsSync; r.name = fmTrim(fm.psName); r.pty = fm.ptyText == "None" ? "" : fm.ptyText;
         r.pi = fm.piCode; r.tp = fm.trafficProgram; r.rt = fmTrim(fm.radioText);
-        if (s.psSeq.size() >= 2) {   // a scrolling name: its parts once, in order; the station's name is the first part seen
-            const size_t n = s.psSeq.back() == s.psSeq.front() ? s.psSeq.size() - 1 : s.psSeq.size();
-            for (size_t k = 0; k < n; k++) r.psText += (k ? " " : "") + s.psSeq[k];
-            r.name = s.psSeq.front();
+        if (s.psSeq.size() >= 2) {   // a scrolling name: its whole text once is the station's name; the windows as sent in psText
+            std::vector<std::string> seq = fmScrollCycle(s.psSeq);
+            const bool round = !seq.empty();
+            if (!round) seq = s.psSeq;   // did not come round in time
+            r.name = fmJoinScroll(seq, round);
+            for (const auto& w : seq) r.psText += (r.psText.empty() ? "'" : " '") + w + "'";
+            a.engine.log("FM scan: " + fmStationLabel(r) + " scrolling name, windows " + r.psText);
         }
         a.engine.log("FM scan: " + fmStationLabel(r) + " SNR " + std::to_string((int)r.snr) + " dB" + (r.stereo ? " stereo" : ""));
     }
