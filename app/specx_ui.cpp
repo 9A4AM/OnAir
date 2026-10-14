@@ -2,6 +2,7 @@
 // rate, LNB / converter offset, bookmarks, help), a big spectrum over a waterfall that answer the mouse (crosshair, markers, centre,
 // zoom, pan, region), the region's measurements (with a hand-over to DVB-S/S2), and a sweep across a range that stitches a panorama
 // with its own waterfall and a table of the signals found. No decoder.
+#include <fstream>
 #include "app.h"
 #include "results_export.h"
 #include "gfx.h"
@@ -20,7 +21,7 @@ namespace {
 
 namespace sx = dect2::specx;
 
-struct Bookmark { std::string name; double rfHz; };
+struct Bookmark { std::string name; double rfHz; uint32_t rgb = 0x4FA3E0; };   // rgb: 0xRRGGBB
 
 struct WfImage {
     gfx::Image* img = nullptr;
@@ -84,6 +85,7 @@ struct State {
     std::string freqErr;
     std::vector<Bookmark> marks;
     char markName[48] = "";
+    float markCol[3] = {0.31f, 0.64f, 0.88f};
     uint64_t lastSeq = 0;
     WfImage wf;
     Sweep sw;
@@ -101,7 +103,7 @@ double toRadio(double rfHz) { return S.lnb.radioHz(rfHz); }
 
 void saveMarks() {
     std::string s;
-    for (auto& b : S.marks) { char v[40]; snprintf(v, sizeof v, "\t%.0f\n", b.rfHz); s += b.name + v; }
+    for (auto& b : S.marks) { char v[56]; snprintf(v, sizeof v, "\t%.0f\t%06X\n", b.rfHz, b.rgb & 0xFFFFFF); s += b.name + v; }
     plat::prefs().setS("specxBookmarks", s);
 }
 void saveLnb() {
@@ -125,7 +127,10 @@ void loadState() {
     while (std::getline(in, line)) {
         const size_t t = line.find('\t');
         if (t == std::string::npos) continue;
-        S.marks.push_back({line.substr(0, t), std::atof(line.c_str() + t + 1)});
+        Bookmark b{line.substr(0, t), std::atof(line.c_str() + t + 1)};
+        const size_t t2 = line.find('\t', t + 1);
+        if (t2 != std::string::npos) b.rgb = (uint32_t)strtoul(line.c_str() + t2 + 1, nullptr, 16) & 0xFFFFFF;
+        S.marks.push_back(b);
     }
 }
 
@@ -405,8 +410,12 @@ void strip(App& a) {
         ImGui::SetNextItemWidth(160 * gUi);
         const bool ent = ImGui::InputTextWithHint("##sxbmn", "name", S.markName, sizeof S.markName, ImGuiInputTextFlags_EnterReturnsTrue);
         ImGui::SameLine();
+        ImGui::ColorEdit3("##sxbmc", S.markCol, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+        tip("Colour of this bookmark");
+        ImGui::SameLine();
         if (ImGui::Button("Save") || ent) {
-            S.marks.push_back({S.markName[0] ? S.markName : sx::freqText(toRf(centreRadio(a))), toRf(centreRadio(a))});
+            const uint32_t rgb = ((uint32_t)(S.markCol[0] * 255 + 0.5f) << 16) | ((uint32_t)(S.markCol[1] * 255 + 0.5f) << 8) | (uint32_t)(S.markCol[2] * 255 + 0.5f);
+            S.marks.push_back({S.markName[0] ? S.markName : sx::freqText(toRf(centreRadio(a))), toRf(centreRadio(a)), rgb});
             S.markName[0] = 0; saveMarks(); ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -610,11 +619,55 @@ void list(App& a) {
         if (ImGui::SmallButton("x")) { S.marks.erase(S.marks.begin() + (long)i); saveMarks(); ImGui::PopID(); break; }
         tip("Forget this bookmark");
         ImGui::SameLine();
+        {   // the colour chip; click it to change the colour
+            const uint32_t c = S.marks[i].rgb;
+            float col[3] = {((c >> 16) & 255) / 255.f, ((c >> 8) & 255) / 255.f, (c & 255) / 255.f};
+            if (ImGui::ColorEdit3("##sxc", col, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
+                S.marks[i].rgb = ((uint32_t)(col[0] * 255 + 0.5f) << 16) | ((uint32_t)(col[1] * 255 + 0.5f) << 8) | (uint32_t)(col[2] * 255 + 0.5f);
+                saveMarks();
+            }
+            ImGui::SameLine();
+        }
         char b[96]; snprintf(b, sizeof b, "%s  %s", S.marks[i].name.c_str(), sx::freqText(S.marks[i].rfHz).c_str());
         if (ImGui::Selectable(b)) tuneRf(a, S.marks[i].rfHz);
         tip("Tune there");
         ImGui::PopID();
     }
+    if (ImGui::SmallButton("Export")) {
+        const std::string path = plat::saveFileDialog("bookmarks.csv");
+        if (!path.empty()) {
+            std::ofstream o(path);
+            o << "name,frequency_hz,colour\n";
+            for (auto& m : S.marks) {
+                std::string n = m.name; for (char& ch : n) if (ch == ',' || ch == '\n' || ch == '\r') ch = ' ';
+                char v[48]; snprintf(v, sizeof v, ",%.0f,#%06X\n", m.rfHz, m.rgb & 0xFFFFFF);
+                o << n << v;
+            }
+        }
+    }
+    tip("Save the bookmarks to a CSV file: name, frequency in Hz, colour");
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Import")) {
+        const std::string path = plat::openFileDialog();
+        if (!path.empty()) {
+            std::ifstream in(path);
+            std::string line;
+            while (std::getline(in, line)) {
+                if (!line.empty() && line.back() == '\r') line.pop_back();
+                const size_t c2 = line.rfind(','), c1 = c2 == std::string::npos || c2 == 0 ? std::string::npos : line.rfind(',', c2 - 1);
+                if (c1 == std::string::npos) continue;
+                const double hz = std::atof(line.c_str() + c1 + 1);
+                if (hz <= 0) continue;   // the header line
+                Bookmark m{line.substr(0, c1), hz};
+                const char* cs = line.c_str() + c2 + 1;
+                if (*cs == '#') cs++;
+                if (*cs) m.rgb = (uint32_t)strtoul(cs, nullptr, 16) & 0xFFFFFF;
+                S.marks.push_back(m);
+            }
+            saveMarks();
+        }
+    }
+    tip("Add the bookmarks from a CSV file written by Export");
     if (!S.markers.empty()) {
         ImGui::Separator();
         ImGui::TextDisabled("Markers");
