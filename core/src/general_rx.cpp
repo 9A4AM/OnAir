@@ -87,6 +87,23 @@ void wavHeader(FILE* f, uint32_t frames) {
     fwrite("data", 1, 4, f); put32(f, data);
 }
 
+// RBJ biquads for the audio filters (high-pass, low-pass, notch) at 48 kHz
+struct Biquad {
+    double b0 = 1, b1 = 0, b2 = 0, a1 = 0, a2 = 0, z1 = 0, z2 = 0;
+    bool on = false;
+    void set(int kind, double f0, double q) {   // kind 0 high-pass, 1 low-pass, 2 notch; f0 <= 0: off
+        z1 = z2 = 0;
+        on = f0 > 20 && f0 < kGeneralAudioRate / 2 - 100;
+        if (!on) return;
+        const double w = 2 * 3.14159265358979323846 * f0 / kGeneralAudioRate, c = std::cos(w), al = std::sin(w) / (2 * q), a0 = 1 + al;
+        if (kind == 0) { b0 = (1 + c) / 2; b1 = -(1 + c); b2 = (1 + c) / 2; }
+        else if (kind == 1) { b0 = (1 - c) / 2; b1 = 1 - c; b2 = (1 - c) / 2; }
+        else { b0 = 1; b1 = -2 * c; b2 = 1; }
+        a1 = -2 * c / a0; a2 = (1 - al) / a0; b0 /= a0; b1 /= a0; b2 /= a0;
+    }
+    float run(float x) { if (!on) return x; const double y = b0 * x + z1; z1 = b1 * x - a1 * y + z2; z2 = b2 * x - a2 * y; return (float)y; }
+};
+
 } // namespace
 
 const char* generalDemodName(int d) {
@@ -196,6 +213,17 @@ struct GeneralReceiver::Impl {
     // WAV
     std::mutex wavMu;
     FILE* wav = nullptr;
+    // audio filters: high-pass, low-pass and a notch on the demodulated audio (before the sound and the recordings)
+    std::atomic<float> afHp{0}, afLp{0}, afNotch{0}; float curHp = -1, curLp = -1, curNotch = -1;
+    Biquad bqHp, bqLp, bqNotch;
+    void applyAudioFilters(std::vector<float>& a) {
+        const float hp = afHp, lp = afLp, nt = afNotch;
+        if (hp != curHp) { curHp = hp; bqHp.set(0, hp, 0.707); }
+        if (lp != curLp) { curLp = lp; bqLp.set(1, lp, 0.707); }
+        if (nt != curNotch) { curNotch = nt; bqNotch.set(2, nt, 12.0); }
+        if (!bqHp.on && !bqLp.on && !bqNotch.on) return;
+        for (float& v : a) v = bqNotch.run(bqLp.run(bqHp.run(v)));
+    }
     FlacEnc flac; bool flacOn = false;   // the open file is FLAC, not WAV
     bool recFlac = false; std::vector<std::string> recTags;   // format and tags of the per-transmission files
     void openFile(const std::string& path, bool asFlac) {   // with wavMu held; wav is null when it failed
@@ -364,6 +392,7 @@ struct GeneralReceiver::Impl {
 
     void play() {
         if (aud.empty()) return;
+        applyAudioFilters(aud);
         for (float v : aud) audPow += (double)v * v;
         audN += aud.size();
         if (tapReq.exchange(false)) { std::lock_guard<std::mutex> lk(mu); tap = tapSet; }
@@ -531,6 +560,7 @@ void GeneralReceiver::setAgc(bool on, float g) {
 void GeneralReceiver::setDeemphUs(double us) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->cfgSet.deemphUs != us) { p_->cfgSet.deemphUs = std::max(0.0, us); p_->cfgDirty = true; } }
 void GeneralReceiver::setCwPitchHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); hz = std::clamp(hz, 200.0, 1500.0); if (p_->cfgSet.pitch != hz) { p_->cfgSet.pitch = hz; p_->cfgDirty = true; } }
 void GeneralReceiver::setVolume(float v) { p_->volume = std::clamp(v, 0.f, 1.f); }
+void GeneralReceiver::setAudioFilters(double hpHz, double lpHz, double notchHz) { p_->afHp = (float)hpHz; p_->afLp = (float)lpHz; p_->afNotch = (float)notchHz; }
 void GeneralReceiver::setMuted(bool m) { p_->muted = m; }
 void GeneralReceiver::setSilent(bool s) { p_->silent = s; }
 void GeneralReceiver::setAudioTap(std::function<void(const float*, size_t)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->tapSet = std::move(cb); p_->tapReq = true; }

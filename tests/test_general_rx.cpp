@@ -200,6 +200,26 @@ int main() {
         CHECK(files == 1 && magic && total > 90000 && sz < (long)total * 2, "flac recording");
     }
 
+    // audio filters: a 100 Hz low-pass takes most of the power out of the tone / speech the synthesiser sends
+    {
+        SynthConfig on; on.mode = 57; on.snrDb = 30;
+        auto power = [&](double lp) {
+            auto syn = makeGeneralSynth(on, kRate);
+            GeneralReceiver r;
+            r.configure(kRate); r.setSignalOffset(-generalTuning().tuneOffsetHz); r.setSilent(true);
+            r.setSquelch(false, false, -60);
+            r.setAudioFilters(0, lp, 0);
+            double sum = 0; size_t cnt = 0;
+            r.setAudioTap([&](const float* x, size_t n) { for (size_t i = 0; i < n; i++) sum += (double)x[i] * x[i]; cnt += n; });
+            std::vector<cf32> buf(20000);
+            for (double t = 0; t < 3.0; t += buf.size() / kRate) { syn->generate(buf.data(), buf.size()); r.feed(buf.data(), buf.size()); }
+            return cnt ? sum / cnt : 0.0;
+        };
+        const double pOff = power(0), pLp = power(100);
+        printf("  audio power: filters off %.5f, 100 Hz low-pass %.5f\n", pOff, pLp);
+        CHECK(pOff > 1e-6 && pLp < 0.5 * pOff, "low-pass reduces the audio power");
+    }
+
     printf(fails ? "general rx: %d FAILED\n" : "general rx: all passed\n", fails);
     return fails ? 1 : 0;
 }

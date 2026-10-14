@@ -40,6 +40,7 @@ struct State {
     bool dragged = false;
     std::string recErr;
     bool txRec = false;
+    float afHp = 0, afLp = 0, afNotch = 0;   // audio filters in Hz, 0 = off
     bool flac = false;           // recordings as FLAC (lossless, smaller, with tags) instead of WAV
     // more channels from the same capture (Engine::generalExtra): each is silent, has its own demodulator and, if wanted, its own recordings
     int nExtra = 0;
@@ -69,6 +70,7 @@ void load() {
         snprintf(k, sizeof k, "genStep%d", d); S.step[d] = (int)std::clamp(p.getI(k, kDefStep[d]), 0L, (long)kNumSteps - 1);
     }
     S.flac = p.getB("genFlac", false);
+    S.afHp = (float)p.getD("genAfHp", 0); S.afLp = (float)p.getD("genAfLp", 0); S.afNotch = (float)p.getD("genAfNotch", 0);
     S.sqOn = p.getB("genSqOn", true); S.sqAuto = p.getB("genSqAuto", true); S.sqDb = (float)p.getD("genSqDb", -60);
     S.agc = p.getB("genAgc", true); S.gainDb = (float)p.getD("genGain", 20);
     S.deNfm = (int)std::clamp(p.getI("genDeNfm", 0), 0L, 3L); S.deWfm = (int)std::clamp(p.getI("genDeWfm", 1), 0L, 3L);
@@ -166,6 +168,7 @@ void sMeter(const App& a) {
 }
 
 void extraChannelsUi(App& a);
+void audioFiltersUi(App& a);
 void controls(App& a) {
     load();
     // the listening frequency and the step
@@ -301,7 +304,28 @@ void controls(App& a) {
     }
     const std::string& err = S.recErr.empty() && live(a) ? T(a).recordError : S.recErr;
     if (!err.empty()) { ImGui::SameLine(0, 8 * gUi); ImGui::TextColored(pal::warnAmber(), "%s", err.c_str()); }
+    audioFiltersUi(a);
     extraChannelsUi(a);
+}
+
+// ---- audio filters: high-pass, low-pass and a notch for a whistle (they apply to what is heard and recorded)
+void audioFiltersUi(App& a) {
+    (void)a;
+    bool ch = false;
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted("Audio filters");
+    auto one = [&](const char* id, const char* lab, float* v, float lo, float hi, const char* tipText) {
+        ImGui::SameLine(0, 8 * gUi);
+        ImGui::TextDisabled("%s", lab);
+        ImGui::SameLine(0, 3 * gUi);
+        ImGui::SetNextItemWidth(62 * gUi);
+        if (ImGui::DragFloat(id, v, 10.f, 0.f, hi, *v > 0 ? "%.0f Hz" : "off")) { if (*v > 0 && *v < lo) *v = lo; ch = true; }
+        tip(tipText);
+    };
+    one("##afhp", "high-pass", &S.afHp, 50.f, 3000.f, "Cut the low rumble below this frequency (drag; 0 = off)");
+    one("##aflp", "low-pass", &S.afLp, 500.f, 12000.f, "Cut the hiss above this frequency (drag; 0 = off). 3000 Hz is typical for voice");
+    one("##afnt", "notch", &S.afNotch, 100.f, 12000.f, "Remove one steady whistle (carrier, heterodyne) at this audio frequency (drag; 0 = off)");
+    if (ch) { auto& p = plat::prefs(); p.setD("genAfHp", S.afHp); p.setD("genAfLp", S.afLp); p.setD("genAfNotch", S.afNotch); }
 }
 
 // ---- more channels from the same capture
@@ -379,6 +403,7 @@ void tick(App& a) {
     r.setDeemphUs(S.demod == dect2::GenNfm ? kDeemph[S.deNfm] : S.demod == dect2::GenWfm ? kDeemph[S.deWfm] : 0);
     r.setCwPitchHz(S.pitch);
     r.setVolume(a.volume); r.setMuted(a.muted);
+    r.setAudioFilters(S.afHp, S.afLp, S.afNotch);
     a.engine.setGeneralExtraCount(S.nExtra);
     for (int i = 0; i < S.nExtra && i < dect2::Engine::kGeneralExtra; i++) {   // the other channels: the squelch and gain of the main one, their own offset and demodulator
         auto& x = a.engine.generalExtra(i);
@@ -390,6 +415,7 @@ void tick(App& a) {
         x.setAgc(S.agc, S.gainDb);
         x.setDeemphUs(S.exDemod[i] == dect2::GenNfm ? kDeemph[S.deNfm] : S.exDemod[i] == dect2::GenWfm ? kDeemph[S.deWfm] : 0);
         x.setCwPitchHz(S.pitch);
+        x.setAudioFilters(S.afHp, S.afLp, S.afNotch);
         dect2::GeneralTelemetry g;
         if (x.telemetry(g, S.exSeq[i])) { S.exSeq[i] = g.seq; S.exTel[i] = g; }
     }

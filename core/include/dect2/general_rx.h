@@ -68,6 +68,7 @@ public:
 
     void setVolume(float v);                         // 0 .. 1
     void setMuted(bool m);
+    void setAudioFilters(double hpHz, double lpHz, double notchHz);   // on the audio: high-pass, low-pass, notch (Hz; 0 = off)
     void setSilent(bool s);                          // demodulate but never open the sound device (tests, command line)
     void setAudioTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 48 kHz audio after the squelch
 
