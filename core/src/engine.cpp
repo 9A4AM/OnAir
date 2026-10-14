@@ -68,7 +68,6 @@ void Engine::ingest(cf32* x, size_t n) {
     if (convSwap_.load(std::memory_order_relaxed)) swapIq(x, n);   // a converter that mirrors the spectrum: the signal reads the right way round from here on
     rec_.push(x, n);   // the raw samples, before anything touches them
     ShareServer::get().offer(x, n);   // "Share my radio": the same samples to the rtl_tcp clients (nothing while sharing is off)
-    ShareServer::get().offer(x, n);   // "Share my radio": the same samples to the rtl_tcp clients (nothing while sharing is off)
     dropNonFinite(x, n);
     cleanSamples(iqFix_, offMix_, offsetDc_.load(), x, n, activeStd_.load());
     const auto a0 = std::chrono::steady_clock::now();
@@ -128,7 +127,11 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     if (!src_) { log("no source"); releaseDevice(receiverId_); return false; }
     offHz_ = 0; offRate_ = 0; offsetDc_ = false;
     std::string offNote;
-    if (autoOffset_ && dev.isRadio() && offsetAllowed()) {
+    if (autoOffset_ && dev.isRadio() && offsetAllowed() && mtvOn_.load() && multiChannelSupported(stdMode_.load()) && slotsInSpan(tune.sampleRate, tune.bandwidthMhz, 0) >= 2) {
+        // a wide capture for multi-channel TV: the DC spike is inside the span whatever the offset (it would sit in a neighbouring channel), and
+        // shifting 60 Msps back by the offset costs a double-precision mixer pass over every sample: the spike is removed instead
+        offsetDc_ = true;
+    } else if (autoOffset_ && dev.isRadio() && offsetAllowed()) {
         // a HackRF has no listed maximum (20 Msps); the HackRF Pro tunes exactly only at up to 10 Msps and at 20, so it gets 20 above 10
         double maxRate = dev.maxRateHz > 0 ? dev.maxRateHz : dev.kind == DeviceInfo::HackRF ? 20e6 : 0;
         // a link slower than the converter (a PlutoSDR on its USB cable): no faster than it carries, or than the mode already runs above it
@@ -2574,6 +2577,8 @@ bool Engine::secondaryAllowed(int m) {
     case 11: case 13: case 15: case 16: case 17: case 18: case 19: case 20: case 22: case 25: case 26: case 27: case 28: case 29: case 30:
     case 32: case 33: case 35: case 36: case 37: case 38: case 39: case 40: case 45: case 47: case 48: case 51: case 52: case 57: case 60:
     case 61: case 63:
+    // the narrow-channel modes added later (each has its configureReceiver / placeReceiver / pollMode case and a test signal that decodes beside another mode)
+    case 65: case 67: case 68: case 71: case 72: case 73: case 74: case 76: case 77: case 78: case 79: case 80:
         return true;
     default:
         return false;
@@ -2591,11 +2596,11 @@ std::string Engine::secondaryCheck(int pri, int sec, double centreHz, double rat
         switch (sec) {
         case 8:
             why = "its transport stream and picture belong to the first mode, except beside QO-100"; break;
-        case 14: case 34: case 41: case 43: case 44: case 50: case 53: case 54: case 59:
+        case 14: case 34: case 41: case 43: case 44: case 50: case 53: case 54: case 59: case 69:
             why = "it tunes the radio, scans or takes the whole capture by itself"; break;
         case 7: case 12: case 23: case 24:
             why = "its station list and sound belong to the first mode"; break;
-        case 21: case 46: case 55: case 56: case 58:
+        case 21: case 46: case 55: case 56: case 58: case 64: case 70: case 75:
             why = "it needs the radio's whole band for itself"; break;
         default:
             why = "it makes a transport stream or a picture, which only the first mode can show"; break;
@@ -2702,6 +2707,7 @@ void Engine::muteReceiver(int a, bool m) {
     case 46: rxDpmr_.setMuted(m); break;
     case 50: rxAle_.setMuted(m); break;
     case 51: rxP25_.setMuted(m); break;
+    case 77: rxSame_.setMuted(m); break;   // NOAA SAME: "Listen"
     case 56: rxGeneral_.setMuted(m); break;
     default: break;   // no sound
     }

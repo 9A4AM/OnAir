@@ -226,7 +226,7 @@ static void multiSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
     if (ImGui::BeginPopup("##mtvpop")) {
         int mx = a.mtvMax > 0 ? a.mtvMax : Engine::defaultMaxChannels();
         ImGui::SetNextItemWidth(120 * gUi);
-        if (ImGui::SliderInt(tr("Receivers at once"), &mx, 1, 4)) { a.mtvMax = mx; savePrefs(a); }
+        if (ImGui::SliderInt(tr("Receivers at once"), &mx, 1, 8)) { a.mtvMax = mx; savePrefs(a); }
         static const char* kGrid[3] = {"find out", "capture centred on a channel", "capture between two channels"};
         ImGui::SetNextItemWidth(220 * gUi);
         if (ImGui::BeginCombo(tr("Channel raster"), tr(kGrid[a.mtvGrid]))) {

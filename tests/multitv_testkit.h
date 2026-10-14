@@ -31,7 +31,10 @@ class ChanSource {
 public:
     explicit ChanSource(const ChanSpec& s, double outRate) : s_(s), outRate_(outRate) {
         native_ = nativeRateHz(s.bwMhz);
-        rs_.configure(native_, outRate);
+        // the resampler goes up by at most 4: a wide capture (61.44 Msps from 9.14) takes two stages
+        two_ = outRate > 3.9 * native_;
+        if (two_) { rs_.configure(native_, native_ * 4); rs2_.configure(native_ * 4, outRate); }
+        else rs_.configure(native_, outRate);
         if (s.dvbt) {
             dvbt::Params p; p.mode = dvbt::k8K; p.guard = dvbt::kGi8; p.mod = dvbt::k64Qam; p.crHp = p.crLp = dvbt::kR23; p.cellId = s.cellId & 0xffff;
             g_.reset(new dvbt::Generator(p, dvbt::testTsSourceNamed(s.seed, s.serviceId, s.name), s.seed));
@@ -55,27 +58,37 @@ public:
             const float k = (float)(1.0 / std::sqrt(std::max(pw / f.size(), 1e-12)));
             if (rms_ == 0) rms_ = k;
             for (auto& v : f) v *= rms_;
-            rs_.process(f.data(), f.size(), ready_);
+            if (two_) { mid_.clear(); rs_.process(f.data(), f.size(), mid_); rs2_.process(mid_.data(), mid_.size(), ready_); }
+            else rs_.process(f.data(), f.size(), ready_);
         }
         out.assign(ready_.begin(), ready_.begin() + (long)n);
         ready_.erase(ready_.begin(), ready_.begin() + (long)n);
+        // the shift is a phasor turned by a fixed step (a cos / sin per sample is too slow at 60 Msps); renormalised every block
         const double w = 2 * M_PI * s_.offsetHz / outRate_;
+        if (!phInit_) { ph_ = std::polar(1.0, w * (double)pos_); phInit_ = true; }
+        const std::complex<double> step = std::polar(1.0, w);
+        std::complex<double> ph = ph_;
         for (size_t i = 0; i < n; i++) {
-            const double a = w * (double)(pos_ + i);
-            out[i] *= gain_ * cf32((float)std::cos(a), (float)std::sin(a));
+            out[i] *= gain_ * cf32((float)ph.real(), (float)ph.imag());
+            ph *= step;
         }
+        ph_ = ph / std::abs(ph);
         pos_ += n;
     }
 
 private:
     ChanSpec s_;
     double outRate_, native_ = 0;
-    ExactResampler rs_;
+    ExactResampler rs_, rs2_;
+    bool two_ = false;
+    std::vector<cf32> mid_;
     std::unique_ptr<T2Generator> t2_;
     std::unique_ptr<dvbt::Generator> g_;
     std::vector<cf32> ready_;
     float gain_ = 1, rms_ = 0;
     uint64_t pos_ = 0;
+    std::complex<double> ph_{1, 0};
+    bool phInit_ = false;
 };
 
 // The sum of the channels plus white noise; snrDb: signal to noise inside one channel (7.6 MHz)

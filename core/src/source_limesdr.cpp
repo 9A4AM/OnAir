@@ -153,7 +153,11 @@ protected:
             lime().calibrate(dev_, false, 0, std::max(2.5e6, rate_ * 0.9), 0);   // DC offset and I/Q balance (takes a moment)
             calLo_ = f;
             stream_ = LimeApi::stream_t{};
-            stream_.channel = 0; stream_.isTx = false; stream_.fifoSize = 1024 * 1024; stream_.throughputVsLatency = 1.0f;
+            // the library's FIFO between the USB thread and ours: 1 Msample is 17 ms at 61.44 Msps, a hiccup of ours longer than that loses samples
+            // inside the library (invisible to the ring's counters); about 0.1 s, a power of two, at most 8 Msamples (about 32 MB)
+            uint32_t fifo = 1024 * 1024;
+            while (fifo < 8u * 1024 * 1024 && (double)fifo < rate_ * 0.1) fifo *= 2;
+            stream_.channel = 0; stream_.isTx = false; stream_.fifoSize = fifo; stream_.throughputVsLatency = 1.0f;
             stream_.dataFmt = 0;   // 32-bit float, full scale +-1
             if (lime().setup_stream(dev_, &stream_) != 0) { err = "LimeSDR: cannot set up the sample stream" + lime().text(); return false; }
             if (lime().start_stream(&stream_) != 0) { lime().destroy_stream(dev_, &stream_); err = "LimeSDR: cannot start the sample stream" + lime().text(); return false; }
@@ -180,7 +184,7 @@ protected:
         dev_ = nullptr;
     }
     void streamLoop() override {
-        const size_t N = 16384;
+        const size_t N = rate_ > 20e6 ? 65536 : 16384;   // a wide capture: fewer calls (and ring writes) per second
         conv_.resize(N);
         int failures = 0, empty = 0;
         LimeApi::meta_t meta{};

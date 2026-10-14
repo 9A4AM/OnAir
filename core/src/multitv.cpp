@@ -11,7 +11,8 @@ namespace dect2 {
 
 namespace {
 constexpr int kNone = INT_MIN / 2;
-constexpr size_t kQueueMax = 8;           // blocks waiting for a receiver
+constexpr double kQueueSec = 0.2;         // signal time that may wait for a receiver (a count of blocks was 9 ms at 60 Msps: any hiccup of a receiver lost samples)
+constexpr size_t kQueueMin = 1u << 19;    // samples, at least
 constexpr int kAbsentEvals = 8;           // evaluations (a quarter second each) without a signal before an idle receiver is dropped
 inline uint64_t nowNs() { return (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 }
@@ -36,6 +37,7 @@ struct MultiTv::Slot {
     std::mutex qMu;
     std::condition_variable qCv;
     std::deque<Block> q;
+    size_t qN = 0;   // samples in q
     bool stop = false, busy = false;
     std::thread th;
     std::atomic<uint64_t> busyNs{0}, dropped{0}, sigSamples{0};
@@ -88,7 +90,7 @@ struct MultiTv::Slot {
                 std::unique_lock<std::mutex> lk(qMu);
                 qCv.wait(lk, [&] { return stop || !q.empty(); });
                 if (stop) return;
-                b = std::move(q.front()); q.pop_front();
+                b = std::move(q.front()); q.pop_front(); qN -= b->size();
                 busy = true;
             }
             qCv.notify_all();
@@ -121,6 +123,7 @@ bool MultiTv::configure(const MultiTvOptions& o) {
     gridOff_ = o.gridOffsetHz; gridFixed_ = !o.autoGrid;
     slots_ = spanSlots(o.spanRate, o.widthMhz * 1e6, gridOff_);
     scan_.configure(o.spanRate);
+    queueLimit_ = std::max(kQueueMin, (size_t)(o.spanRate * kQueueSec));
     sel_ = kNone;
     return !slots_.empty() || o.autoGrid;
 }
@@ -247,9 +250,10 @@ void MultiTv::feed(const cf32* x, size_t n) {
     for (Slot* s : v) {
         s->sigSamples += n;
         std::unique_lock<std::mutex> lk(s->qMu);
-        if (o_.blocking) s->qCv.wait(lk, [&] { return s->q.size() < kQueueMax || s->stop; });
-        else if (s->q.size() >= kQueueMax) { s->dropped += n; continue; }
+        if (o_.blocking) s->qCv.wait(lk, [&] { return s->qN < queueLimit_ || s->stop; });
+        else if (s->qN >= queueLimit_) { s->dropped += n; continue; }
         s->q.push_back(blk);
+        s->qN += blk->size();
         lk.unlock();
         s->qCv.notify_all();
     }

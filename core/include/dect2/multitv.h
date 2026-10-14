@@ -90,6 +90,7 @@ private:
     std::vector<ChannelSlotPos> slots_;
     std::vector<SlotPower> measured_;
     size_t sinceEval_ = 0;
+    size_t queueLimit_ = 1u << 19;   // samples that may wait for one receiver
     std::mutex mu_;
     std::vector<std::unique_ptr<Slot>> live_;
     std::atomic<int> sel_{INT_MIN / 2};
