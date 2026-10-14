@@ -48,6 +48,13 @@ LdpcCode::LdpcCode(Rate r) : rate_(r) {
     for (const LdpcBlock& k : blocks_) rows_[k.row].push_back(Edge{k.col, k.shift});
     edgeBase_.assign((size_t)c_ + 1, 0);
     for (int i = 0; i < c_; i++) edgeBase_[(size_t)i + 1] = edgeBase_[(size_t)i] + (int)rows_[(size_t)i].size();
+    qc_.z = kLdpcZ; qc_.blockRows = c_; qc_.blockCols = 59; qc_.punctured = 5; qc_.clip = 1000.f;
+    qc_.giveUpIter[0] = 4; qc_.giveUpDiv[0] = 4; qc_.giveUpIter[1] = 12; qc_.giveUpDiv[1] = 5;   // as in Decoder::decodeBody
+    qc_.rowStart.assign(1, 0);
+    for (const auto& row : rows_) {
+        for (const Edge& e : row) { qc_.col.push_back(e.col); qc_.shift.push_back(e.shift); }
+        qc_.rowStart.push_back((int)qc_.col.size());
+    }
     planEncoder();
 }
 

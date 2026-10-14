@@ -1,6 +1,7 @@
 // DTMB forward error correction: the LDPC codes, BCH(762,752), the scrambler, the 4QAM-NR inner code and the convolutional interleaver.
 #pragma once
 #include "dtmb_defs.h"
+#include "qc_ldpc.h"
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -31,6 +32,10 @@ public:
     // Edges of the parity check matrix: (block row, variable) pairs, for tests and statistics
     int edgeCount() const { return (int)blocks_.size() * kLdpcZ; }
 
+    // The parity check matrix as a table for the generic GPU kernel (GpuLdpc::decodeQc); input = the 7488 sent bits, output = the information bits.
+    // Its schedule and arithmetic are those of Decoder::decode below, with the same early give-up rules.
+    const QcLdpc& qcTable() const { return qc_; }
+
     struct Result { bool ok = false; int iterations = 0; };
     // Layered normalised min-sum decoder; one per thread.
     class Decoder {
@@ -57,6 +62,7 @@ private:
     std::vector<LdpcBlock> blocks_;
     std::vector<std::vector<Edge>> rows_;       // per block row, all edges
     std::vector<int> edgeBase_;                 // first edge number of every block row
+    QcLdpc qc_;
     // encoder plan
     std::vector<int> gap_;
     std::vector<std::pair<int, int>> order_;    // (row used as pivot, unknown block solved)

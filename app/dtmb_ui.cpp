@@ -1,6 +1,7 @@
 // DTMB screens: status bar, the analysis row (constellation, channel impulse response from the PN header, C/N and MER history, codeword loss),
 // the Receiver tab, the decoder option and the options of the test signal. The TV tab, services and the player are the shared ones.
 #include "app.h"
+#include "dect2/gpu_ldpc.h"
 #include <cmath>
 #include <deque>
 #include <utility>
@@ -251,6 +252,7 @@ void receiver(App& a) {
     ImGui::Spacing();
     kv("LDPC codewords", "%llu ok, %llu bad", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
     kv("LDPC iterations", "%.1f per codeword (recent mean)", t.ldpcIter);
+    kv("LDPC decoder", "%s", t.onGpu ? "GPU" : "CPU");
     kv("BCH corrections", "%llu codewords with one bit corrected", (unsigned long long)t.bchCorrected);
     kv("dropped codewords", "%llu (decoder behind)", (unsigned long long)t.cwDropped);
     kv("skipped codewords", "%llu (not tried after a run of failures)", (unsigned long long)t.cwSkipped);
@@ -285,6 +287,36 @@ void decoder(App& a, bool&) {
         ImGui::EndCombo();
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Threads of the LDPC decoder. Auto uses about half of the cores, at most 4. Takes effect at the next lock.");
+    {   // where the LDPC decoder runs (the same choice as DVB-T2 and DVB-S have; it applies to all of them)
+        static const char* modes[] = {"CPU", "GPU", "Auto"};
+        const DtmbTelemetry& t = a.rx.dtmb;
+        const bool gpuOk = GpuLdpc::instance().qcAvailable();
+        char lbl[48];
+        snprintf(lbl, sizeof lbl, "%s", a.computeMode == 2 ? (live(a) && t.onGpu ? "Auto (GPU)" : "Auto (CPU)") : (a.computeMode == 1 && live(a) && !t.onGpu && t.state == 2 ? "GPU (CPU now)" : modes[a.computeMode]));
+        ImGui::TextDisabled("Compute"); ImGui::SameLine(0, 6 * gUi);
+        ImGui::SetNextItemWidth(std::min(120 * gUi, ImGui::GetContentRegionAvail().x));
+        if (ImGui::BeginCombo("##dtmbcompute", lbl)) {
+            for (int i = 0; i < 3; i++) {
+                const bool dis = i == 1 && !gpuOk;
+                if (dis) ImGui::BeginDisabled();
+                if (ImGui::Selectable(modes[i], a.computeMode == i)) { a.computeMode = i; a.engine.setComputeMode(i); savePrefs(a); }
+                if (dis) ImGui::EndDisabled();
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Where the LDPC decoder of DTMB runs. The decoded stream is the same on either.\n"
+                              "CPU: the LDPC threads above. GPU: %s, several codewords at once.\n"
+                              "Auto: the GPU when there is one and it is faster, measured while it runs; otherwise the CPU.\n"
+                              "Graphics: %s",
+#ifdef __APPLE__
+                              "Metal compute",
+#else
+                              "not available for DTMB on this platform yet (Metal on macOS only); the CPU decodes",
+#endif
+                              gpuOk ? GpuLdpc::instance().deviceName() : "none usable for DTMB");
+        if (gpuOk && live(a) && t.gpuWords) { ImGui::TextDisabled("%llu codewords decoded on the GPU", (unsigned long long)t.gpuWords); }
+    }
 }
 
 template <size_t N> bool combo(const char* id, float w, int& v, const char* const (&names)[N]) {

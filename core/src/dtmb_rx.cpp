@@ -152,6 +152,7 @@ struct DtmbReceiver::Impl {
     // ---- channel decoder
     std::unique_ptr<FecChain> chain;
     std::atomic<int> decThreads{std::max(1, std::min(4, (int)std::thread::hardware_concurrency() / 2))};   // set from the interface thread
+    std::atomic<int> computeMode{2};                      // 0 CPU, 1 GPU, 2 auto
     uint64_t pktTotal = 0;
     ChainStats lastStats;
     long lastGoodAt = (std::numeric_limits<long>::min() / 2);
@@ -754,6 +755,7 @@ struct DtmbReceiver::Impl {
 
     void makeChain() {
         chain = std::make_unique<FecChain>(profile, hdr, decThreads.load(), symRate);
+        chain->setComputeMode(computeMode.load());
         lastStats = ChainStats();
     }
 
@@ -798,6 +800,7 @@ struct DtmbReceiver::Impl {
 
     void pollChain() {
         if (!chain) return;
+        chain->setComputeMode(computeMode.load());
         chain->poll([this](const uint8_t* p, size_t n, double secs) {
             pktTotal += n;
             lastGoodAt = produced();
@@ -831,6 +834,7 @@ struct DtmbReceiver::Impl {
             t.blocksOk = st.cwOk; t.blocksBad = st.cwBad;
             t.ldpcIter = (float)st.lastIterAvg;
             t.packets = st.packets;
+            t.onGpu = st.onGpu; t.gpuWords = st.gpuWords;
             t.cwDropped = st.cwDropped; t.cwSkipped = st.cwSkipped; t.bchCorrected = st.bchCorrected;
             t.tsLock = produced() - lastGoodAt < (long)(symRate * 0.7);
             t.dataValid = t.tsLock;
@@ -839,6 +843,7 @@ struct DtmbReceiver::Impl {
             t.blocksOk = statsKeep.cwOk; t.blocksBad = statsKeep.cwBad; t.packets = statsKeep.packets;
         }
         t.rateOk = rateOk;
+        t.computeMode = computeMode.load(); t.gpuAvailable = FecChain::gpuUsable();
         std::lock_guard<std::mutex> lk(mu);
         t.seq = ++seq;
         tel = std::move(t);
@@ -940,6 +945,9 @@ bool DtmbReceiver::telemetry(DtmbTelemetry& out, uint64_t lastSeq) {
 
 void DtmbReceiver::setLogCallback(std::function<void(const std::string&)> cb) { p_->logCb = std::move(cb); }
 void DtmbReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { p_->pktCb = std::move(cb); }
+void DtmbReceiver::setComputeMode(int mode) {
+    p_->computeMode = std::max(0, std::min(2, mode));   // the receiver thread hands it to the running chain at its next poll
+}
 void DtmbReceiver::setDecoderThreads(int n) { p_->decThreads = std::max(0, std::min(16, n)); }
 
 void DtmbReceiver::flush() {

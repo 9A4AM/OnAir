@@ -5,12 +5,15 @@
 #include "dtmb_defs.h"
 #include "dtmb_ldpc.h"
 #include "ring.h"
+#include <atomic>
 #include <condition_variable>
 #include <deque>
 #include <functional>
 #include <map>
 #include <mutex>
 #include <thread>
+
+namespace dect2::dvbs { class ComputeChoice; }
 
 namespace dect2::dtmb {
 
@@ -23,6 +26,8 @@ struct ChainStats {
     double lastIterAvg = 0;
     uint64_t okIterMax = 0, badIterSum = 0;        // slowest word that decoded, iterations spent on words that did not (DTMB_PROFILE)
     double ldpcSec = 0, tsSec = 0;                 // time spent in the LDPC iterations and in BCH, descrambling and packet assembly (DTMB_PROFILE)
+    uint64_t gpuWords = 0;                         // codewords whose LDPC ran on the GPU
+    bool onGpu = false;                            // the last codewords were decoded on the GPU
 };
 
 class FecChain {
@@ -30,6 +35,10 @@ public:
     // workers: threads for the LDPC decoder; 0 decodes inside pushFrame (tests)
     FecChain(const Profile& p, Header h, int workers, double symRate = kSymbolRate);
     ~FecChain();
+    // Where the LDPC decoding of the worker threads runs: 0 CPU, 1 GPU, 2 auto (the GPU when there is one and it is faster, measured while it runs).
+    // The GPU takes several codewords at once. Without workers (tests) the decoding is always on the CPU. The decoded stream is the same on either.
+    void setComputeMode(int mode);
+    static bool gpuUsable();    // the GPU has a kernel for these codes
     FecChain(const FecChain&) = delete;
     FecChain& operator=(const FecChain&) = delete;
     // Forget the stream: the interleaver, the alignment and the queue (jobs already running finish and are discarded)
@@ -57,6 +66,8 @@ private:
     void dispatch();
     void submit(Job&& j);
     Result decode(const Job& j, LdpcCode::Decoder& dec, int maxIter) const;
+    Result afterLdpc(const Job& j, uint8_t* info, Result r) const;   // BCH, descrambler and packet assembly of a word whose LDPC decoding succeeded
+    void decodeBatch(std::vector<Job>& jobs, std::vector<Result>& out, LdpcCode::Decoder& dec, bool gpu);
     void workerLoop();
     void collect(const PacketCb& cb, bool wait);
 
@@ -78,6 +89,9 @@ private:
     LdpcCode::Decoder syncDec_;                  // used by the alignment search and the synchronous mode
 
     // worker pool
+    std::unique_ptr<dvbs::ComputeChoice> compute_;
+    std::atomic<bool> gpuBad_{false};            // a GPU call failed: the CPU decodes from then on
+    std::atomic<uint64_t> gpuWords_{0};
     int nWorkers_;
     std::vector<std::thread> threads_;
     mutable std::mutex mu_;

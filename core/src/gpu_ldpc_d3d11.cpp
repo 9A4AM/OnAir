@@ -586,4 +586,8 @@ bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter
     return true;
 }
 
+// The table-driven quasi-cyclic kernel (DTMB) exists for Metal only so far: Windows decodes those codes on the CPU.
+bool GpuLdpc::qcAvailable() const { return false; }
+bool GpuLdpc::decodeQc(const QcLdpc&, const float*, int, int, uint8_t*, uint8_t*, int*, float) { return false; }
+
 } // namespace dect2

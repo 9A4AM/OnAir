@@ -1,6 +1,7 @@
 // DTMB channel decoder (see dtmb_chain.h).
 #include "dect2/dtmb_chain.h"
 #include "dect2/dtmb_map.h"
+#include "dvbs_compute.h"
 #include <algorithm>
 #include <chrono>
 #include <ctime>
@@ -16,6 +17,8 @@ double nowSec() { timespec ts; clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts); retu
 #else
 double nowSec() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 #endif
+double wallSec() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+constexpr size_t kGpuBatch = 32;      // codewords the GPU takes at once
 }
 
 namespace {
@@ -35,13 +38,18 @@ FecChain::FecChain(const Profile& p, Header h, int workers, double symRate)
     Scrambler s;
     descr_.resize((size_t)perFrame_ * kTsBits);
     for (auto& b : descr_) b = s.next();
+    compute_.reset(new dvbs::ComputeChoice(&FecChain::gpuUsable));
     primed_ = (symDe_.totalDelay() + kDataSymbols - 1) / kDataSymbols;
     out_.reserve(16 * 188);
     for (int i = 0; i < nWorkers_; i++) threads_.emplace_back([this] { workerLoop(); });
     reset();
 }
 
-FecChain::~FecChain() {
+bool FecChain::gpuUsable() { return GpuLdpc::instance().qcAvailable(); }
+
+void FecChain::setComputeMode(int mode) { compute_->mode = std::max(0, std::min(2, mode)); }
+
+FecChain::~FecChain() {   // (defined here: ComputeChoice is an internal type)
     {
         std::lock_guard<std::mutex> lk(mu_);
         stop_ = true;
@@ -71,7 +79,10 @@ void FecChain::reset() {
 
 ChainStats FecChain::stats() const {
     std::lock_guard<std::mutex> lk(mu_);
-    return st_;
+    ChainStats s = st_;
+    s.gpuWords = gpuWords_.load();
+    s.onGpu = compute_->lastOnGpu.load();
+    return s;
 }
 
 // ---------------------------------------------------------------- symbols -> LLRs of the stream
@@ -199,9 +210,12 @@ FecChain::Result FecChain::decode(const Job& j, LdpcCode::Decoder& dec, int maxI
     const double t0 = nowSec();
     const LdpcCode::Result lr = dec.decode(j.llr.data(), info.data(), maxIter);
     r.iterations = lr.iterations;
-    const double t1 = nowSec();
-    r.ldpcSec = t1 - t0;
+    r.ldpcSec = nowSec() - t0;
     if (!lr.ok) return r;
+    return afterLdpc(j, info.data(), std::move(r));
+}
+
+FecChain::Result FecChain::afterLdpc(const Job& j, uint8_t* info, Result r) const {
     const int nb = bchBlocks(prof_.rate);
     std::vector<uint8_t> bits((size_t)nb * kBchK);
     for (int b = 0; b < nb; b++) {
@@ -226,27 +240,85 @@ FecChain::Result FecChain::decode(const Job& j, LdpcCode::Decoder& dec, int maxI
     return r;
 }
 
+// Decodes the words of `jobs` into `out`: on the GPU in one batch (words that are mostly erased and need no iterations, and every word if the GPU call
+// fails, go to the CPU decoder), or one by one on the CPU. Reports the time per word to the compute choice.
+void FecChain::decodeBatch(std::vector<Job>& jobs, std::vector<Result>& out, LdpcCode::Decoder& dec, bool gpu) {
+    const size_t n = jobs.size();
+    out.assign(n, Result());
+    std::vector<size_t> onGpu;
+    if (gpu) {
+        for (size_t i = 0; i < n; i++) {
+            int zeros = 0;
+            for (int k = 0; k < kLdpcSent; k++) zeros += jobs[i].llr[(size_t)k] == 0.f;
+            if (zeros <= kLdpcSent / 3) onGpu.push_back(i);   // (a mostly erased word is given up by the CPU decoder at once)
+        }
+    }
+    std::vector<char> done(n, 0);
+    if (!onGpu.empty()) {
+        const size_t m = onGpu.size(), infoN = (size_t)code_.infoBits();
+        std::vector<float> llr(m * (size_t)kLdpcSent);
+        for (size_t i = 0; i < m; i++) std::memcpy(&llr[i * kLdpcSent], jobs[onGpu[i]].llr.data(), (size_t)kLdpcSent * sizeof(float));
+        std::vector<uint8_t> info(m * infoN), ok(m);
+        std::vector<int> iters(m);
+        const double t0 = wallSec();
+        if (GpuLdpc::instance().decodeQc(code_.qcTable(), llr.data(), (int)m, kMaxIter, info.data(), ok.data(), iters.data(), 0.6f)) {
+            const double dt = wallSec() - t0;
+            for (size_t i = 0; i < m; i++) {
+                Result r;
+                r.iterations = iters[i];
+                r.ldpcSec = dt / (double)m;
+                if (ok[i]) r = afterLdpc(jobs[onGpu[i]], &info[i * infoN], std::move(r));
+                out[onGpu[i]] = std::move(r);
+                done[onGpu[i]] = 1;
+            }
+            gpuWords_ += m;
+            compute_->report(true, 1e3 * dt / (double)m);
+        } else {
+            gpuBad_ = true;   // no usable GPU kernel (or it failed): from now on the CPU
+        }
+    }
+    const double t1 = wallSec();
+    size_t cpu = 0;
+    for (size_t i = 0; i < n; i++) {
+        if (done[i]) continue;
+        out[i] = decode(jobs[i], dec, kMaxIter);
+        cpu++;
+    }
+    if (cpu && !gpu) compute_->report(false, 1e3 * (wallSec() - t1) / (double)cpu / (double)std::max(1, nWorkers_));   // throughput of the worker pool, comparable with the GPU's
+    else if (cpu) compute_->lastOnGpu = false;
+}
+
 void FecChain::workerLoop() {
     LdpcCode::Decoder dec(code_);
+    std::vector<Job> batch;
+    std::vector<Result> res;
     for (;;) {
-        Job j;
+        batch.clear();
         uint64_t gen;
+        bool gpu = false;
         {
             std::unique_lock<std::mutex> lk(mu_);
             cv_.wait(lk, [this] { return stop_ || !queue_.empty(); });
             if (stop_) return;
-            j = std::move(queue_.front());
-            queue_.pop_front();
+            gpu = !gpuBad_.load() && compute_->pickGpu();
+            const size_t take = gpu ? std::min(queue_.size(), kGpuBatch) : 1;
+            for (size_t i = 0; i < take; i++) { batch.push_back(std::move(queue_.front())); queue_.pop_front(); }
             gen = generation_;
-            running_++;
+            running_ += (int)take;
         }
         const double t0 = nowSec();
-        Result r = decode(j, dec, kMaxIter);
-        r.tsSec = nowSec() - t0 - r.ldpcSec;
+        decodeBatch(batch, res, dec, gpu);
+        {   // the time not spent in the LDPC iterations (BCH, descrambling, packets), shared over the words
+            double ldpc = 0;
+            for (const Result& r : res) ldpc += gpu ? 0.0 : r.ldpcSec;
+            const double rest = std::max(0.0, nowSec() - t0 - ldpc) / (double)res.size();
+            for (Result& r : res) r.tsSec = rest;
+        }
         {
             std::lock_guard<std::mutex> lk(mu_);
-            running_--;
-            if (gen == generation_) done_[j.seq] = std::move(r);
+            running_ -= (int)batch.size();
+            if (gen == generation_)
+                for (size_t i = 0; i < batch.size(); i++) done_[batch[i].seq] = std::move(res[i]);
         }
         doneCv_.notify_all();
     }
