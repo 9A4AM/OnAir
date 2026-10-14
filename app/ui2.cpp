@@ -10,6 +10,7 @@
 #include "app.h"
 #include "imgui_internal.h"   // RenderArrow for the folding mode groups
 
+static void accentMenu();   // below, with the theme
 namespace {
 // set the waterfall range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor)
 void autoRange(App& a) { a.wf.fitRange(a.smooth, true); }
@@ -303,9 +304,9 @@ bool runButton(bool running, float size) {
 }
 
 // a collapsible sidebar section; returns whether it is open
-bool section(const char* title) {
+bool section(const char* title, bool openByDefault = true) {
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(1, 1, 1, 0.045f));
-    const bool open = ImGui::CollapsingHeader(trw(title), ImGuiTreeNodeFlags_DefaultOpen);
+    const bool open = ImGui::CollapsingHeader(trw(title), openByDefault ? ImGuiTreeNodeFlags_DefaultOpen : 0);
     ImGui::PopStyleColor();
     return open;
 }
@@ -437,6 +438,27 @@ void sidebar(App& a) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbDecoder, true);
         ImGui::Unindent(6 * gUi);
+    }
+    if (section(N_("Tools"), false)) {   // what used to be only in the View menu; folded until it is wanted
+        ImGui::Indent(6 * gUi);
+        auto tool = [&](const char* label, bool& on, const char* tipText) {
+            if (ImGui::Checkbox(tr(label), &on)) savePrefs(a);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr(tipText));
+        };
+        tool("Passes", a.passesOpen, "Satellite passes and automatic tuning");
+        tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
+        tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
+        tool("Map", a.mapOpen, "A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
+        tool("Scanner (highly experimental)", a.scannerOpen, "HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
+        ImGui::Separator();
+        if (ImGui::Checkbox(tr("Light (dark on white)"), &a.lightUi)) savePrefs(a);
+        accentMenu();
+        int pct = (int)std::lround(a.uiTextScale * 100);
+        ImGui::SetNextItemWidth(-1);
+        if (ImGui::SliderInt("##sidetxt", &pct, 80, 200, tr("Text size %d%%"))) a.uiTextScale = std::max(0.8f, std::min(2.f, pct / 100.f));
+        if (ImGui::IsItemDeactivatedAfterEdit()) savePrefs(a);
+        ImGui::Unindent(6 * gUi);
+        ImGui::Spacing();
     }
     if (section(N_("Log"))) {
         ImGui::BeginChild("##logc", ImVec2(0, std::max(40.f * gUi, ImGui::GetContentRegionAvail().y - 4 * gUi)), ImGuiChildFlags_Borders);
