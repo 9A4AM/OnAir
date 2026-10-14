@@ -4,9 +4,11 @@
 #include "adsb_map.h"
 #include "dect2/packet_aprs.h"
 #include "dect2/mesh_proto.h"
+#include "results_export.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <ctime>
 #include <deque>
 #include <map>
 
@@ -276,9 +278,36 @@ std::vector<const dect2::MeshNode*> sortedNodes(const App& a) {
 // only, and cut its header short)
 float hdrW(const char* header, const char* sample) { return std::max(ImGui::CalcTextSize(header).x, ImGui::CalcTextSize(sample).x); }
 
+// the clock time of a signal time (seconds since the receiver started): the export's time column
+double meshEpoch(const dect2::MeshTelemetry& t, double sec, double now) { return sec < 0 ? 0 : now - (t.timeSec - sec); }
+std::string meshTime(double epoch) {
+    if (epoch <= 0) return "";
+    const std::time_t tt = (std::time_t)epoch;
+    char b[24];
+    std::strftime(b, sizeof b, "%Y-%m-%d %H:%M:%S", std::localtime(&tt));
+    return b;
+}
+
 void nodeTable(const App& a, bool compact) {
     const dect2::MeshTelemetry& t = a.rx.mesh;
     const bool on = live(a);
+    if (!compact) {
+        static std::string note;
+        resexp::Table x;
+        x.cols = {"time", "frequency_hz", "mode", "name", "short_name", "id", "hardware", "role", "lat", "lon", "alt_m", "snr_db", "hops", "battery_pct",
+                  "voltage", "temp_c", "humidity_pct", "pressure_hpa", "heard_s_ago", "packets"};
+        const double now = (double)std::time(nullptr);
+        for (const dect2::MeshNode* n : sortedNodes(a)) {
+            const double ep = meshEpoch(t, n->lastHeard, now);
+            x.add({meshTime(ep), resexp::num(a.freqMhz * 1e6, 0), protoName(n->protocol), n->longName, n->shortName, n->id, n->hwModel, n->role,
+                   n->hasPosition ? resexp::num(n->lat, 6) : "", n->hasPosition ? resexp::num(n->lon, 6) : "", n->hasPosition ? resexp::num(n->altM, 0) : "",
+                   resexp::num(n->lastSnrDb, 1), n->hopsAway >= 0 ? std::to_string(n->hopsAway) : "", n->batteryPct >= 0 ? resexp::num(n->batteryPct, 0) : "",
+                   n->voltage >= 0 ? resexp::num(n->voltage, 2) : "", n->hasEnv ? resexp::num(n->tempC, 1) : "", n->hasEnv ? resexp::num(n->humidity, 0) : "",
+                   n->hasEnv ? resexp::num(n->pressureHpa, 1) : "", n->lastHeard >= 0 ? resexp::num(t.timeSec - n->lastHeard, 0) : "", std::to_string(n->packets)}, ep);
+        }
+        resexp::saveButton(x, "mesh-nodes", note, "svmn");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     const int cols = compact ? 3 : 11;
     if (!ImGui::BeginTable(compact ? "##mn_s" : "##mn_f", cols, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | (compact ? 0 : ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX),
                            ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
@@ -329,6 +358,21 @@ void nodeTable(const App& a, bool compact) {
 void packetTable(const App& a) {
     const dect2::MeshTelemetry& t = a.rx.mesh;
     const bool on = live(a);
+    {
+        static std::string note;
+        resexp::Table x;
+        x.cols = {"time", "frequency_hz", "mode", "type", "from", "to", "channel", "bytes", "decrypted", "hop_limit", "hop_start", "snr_db", "level_dbfs", "sf", "bw_hz",
+                  "detail", "raw"};
+        const double now = (double)std::time(nullptr);
+        for (const dect2::MeshPacket& p : t.packets) {
+            const double ep = meshEpoch(t, p.timeSec, now);
+            x.add({meshTime(ep), resexp::num(p.freqHz, 0), protoName(p.protocol), p.crcOk ? p.type : "CRC error", p.from, p.to, p.channel, std::to_string(p.size),
+                   p.decrypted ? "yes" : "no", p.hopLimit >= 0 ? std::to_string(p.hopLimit) : "", p.hopStart >= 0 ? std::to_string(p.hopStart) : "",
+                   resexp::num(p.snrDb, 1), resexp::num(p.levelDb, 1), std::to_string(p.sf), resexp::num(p.bwHz, 0), p.detail.empty() ? p.note : p.detail, p.raw}, ep);
+        }
+        resexp::saveButton(x, "mesh-packets", note, "svmp");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     ImGui::Checkbox("raw payload", &S.rawView);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show the frame's bytes as text (other bytes as \\xNN) in the last column, for LoRa APRS, MeshCom\nand frames that did not parse. Hover a row's last column to see it either way.");
     if (!ImGui::BeginTable("##mp", 11, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
