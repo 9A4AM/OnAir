@@ -149,6 +149,7 @@ bool Ldpc::decode(const std::vector<float>& llr, int maxIter, std::vector<uint8_
 namespace {
 
 constexpr int L = Ldpc::kBatch;
+constexpr int kMaxCheckDegree = 96;   // Type A 64800 rate 7/15 has checks of degree 86
 typedef int8_t V __attribute__((vector_size(16)));   // GCC / Clang vector: SSE on x86-64, NEON on ARM
 static_assert(L == 16, "one block per byte of a 16 byte vector");
 
@@ -159,7 +160,7 @@ inline V vclamp(V x, int8_t lim) { const V hi = {lim, lim, lim, lim, lim, lim, l
 
 // One iteration over all checks. tot: values of the variables, msg: the messages of the edges.
 DECT2_SIMD_BODY void layeredPassBody(const int* chkStart, const int* chkVar, int m, V* tot, V* msg) {
-    V v[64];
+    V v[kMaxCheckDegree];
     const V one = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, big = {127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127, 127}, zero = {};
     for (int c = 0; c < m; c++) {
         const int s = chkStart[c], d = chkStart[c + 1] - s;
@@ -208,7 +209,7 @@ void Ldpc::decodeBatch(const std::vector<const int8_t*>& llr, int maxIter, std::
     hard.assign((size_t)nb, std::vector<uint8_t>());
     ok.assign((size_t)nb, 0);
     if (nb == 0 || nb > L) return;
-    for (size_t c = 0; c + 1 < chkStart_.size(); c++) if (chkStart_[c + 1] - chkStart_[c] > 64) return;
+    for (size_t c = 0; c + 1 < chkStart_.size(); c++) if (chkStart_[c + 1] - chkStart_[c] > kMaxCheckDegree) return;
     const V init = {31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31};   // unused lanes: the all-zero code word, satisfied from the start
     std::vector<V> tot((size_t)n_, init), msg(chkVar_.size(), V{});
     for (int b = 0; b < nb; b++)

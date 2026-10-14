@@ -64,9 +64,14 @@ int main(int argc, char** argv) {
     printf("read %.2f s of signal in %.1f s (%.1fx real time)\n", total / rate, secs, total / rate / std::max(1e-9, secs));
     printf("synchronisation: %ld bootstraps, %ld frames decoded, carrier offset %.1f Hz\n", ss.bootstraps, ss.frames, ss.cfoHz);
     printf("CPU time: bootstrap search %.1f s, frame cut and resampling %.1f s (includes the decode below), frame decoding %.1f s\n", ss.secSearch, ss.secCut, ss.secDecode);
+    auto fi = rx.frameInfo();
+    if (fi.valid) {
+        printf("last frame: FFT %d, guard %d, %d symbols, %d preamble symbols\n", fi.fftSize, fi.guard, fi.symbols, fi.preambleSymbols);
+        for (auto& p : fi.plps) printf("  PLP %d: %d bits/cell, rate %d/15, %d-bit LDPC, blocks %d ok %d\n", p.id, p.bitsPerCell, p.rate15, p.nInner, p.blocks, p.blocksOk);
+    }
     printf("physical layer: %ld baseband packets (%ld bad), %ld frames failed\n", rs.bbPackets, rs.bbBad, rs.framesFailed);
-    printf("link layer: %ld ALP packets (%ld IP, %ld signaling, %ld compressed IP), %ld UDP datagrams, %ld service list tables, %ld ROUTE objects\n",
-           rs.alpPackets, rs.alpIp, rs.alpSignaling, rs.alpCompressedIp, rs.udp, rs.llsTables, rs.routeObjects);
+    printf("link layer: %ld ALP packets (%ld IP, %ld signaling, %ld compressed IP, %ld TS), %ld UDP datagrams, %ld service list tables, %ld ROUTE objects\n",
+           rs.alpPackets, rs.alpIp, rs.alpSignaling, rs.alpCompressedIp, rs.alpTs, rs.udp, rs.llsTables, rs.routeObjects);
     for (auto& s : rx.services())
         printf("service %d: %d.%d  %s  category %d  %s\n", s.serviceId, s.majorChannel, s.minorChannel, s.shortName.c_str(), s.category, s.slsProtocol == 1 ? "ROUTE" : "MMTP (not supported)");
     printf("transport stream: %zu bytes\n", ts.size());
