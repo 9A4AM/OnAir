@@ -51,6 +51,15 @@ int main() {
         CHECK(a && a->frames >= 80, "frames %llu", a ? (unsigned long long)a->frames : 0ull);
         CHECK(std::fabs(t.cfoHz - 60e3) < 10e3, "cfo %.0f", t.cfoHz);
     }
+    {   // sensitivity does not depend on the input rate: 12 dB in-band SNR (the generator's deviation is +-288 kHz at every rate)
+        const double rates[3] = {4.608e6, 8e6, 10e6};
+        for (double r : rates) {
+            DectGenConfig c; c.rate = r; c.snrDb = 12; c.dialOffsetHz = -1e6; c.bases = dectTestBases(1);
+            const DectTelemetry t = run(c, 1.0);
+            printf("  12 dB, %.3f Msps: %llu good of 100\n", r / 1e6, (unsigned long long)t.blocksOk);
+            CHECK(t.blocksOk >= 90, "%.3f Msps: %llu fields", r / 1e6, (unsigned long long)t.blocksOk);
+        }
+    }
     {   // wrong CRC: counted bad, no base station listed
         DectGenConfig c; c.rate = 5e6; c.snrDb = 30; c.dialOffsetHz = -1e6; c.bases = dectTestBases(1); c.bases[0].badCrc = true;
         const DectTelemetry t = run(c, 1.0);
