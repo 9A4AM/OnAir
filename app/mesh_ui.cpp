@@ -371,6 +371,60 @@ void nodeTable(const App& a, bool compact) {
     if (!on || sortedNodes(a).empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", !on ? "start the receiver to see nodes" : subMask(a) == 2 ? "no node heard yet: a MeshCore node advertises itself now and then" : "no node heard yet: a Meshtastic node announces itself every few minutes"); ImGui::PopTextWrapPos(); }
 }
 
+// every telemetry and position report, newest first: the history behind the battery, sensor and position values of the node table
+void telemetryTable(const App& a) {
+    const dect2::MeshTelemetry& t = a.rx.mesh;
+    const bool on = live(a);
+    std::map<std::string, std::string> names;
+    for (const auto& n : t.nodes) names[std::to_string(n.protocol) + n.id] = nodeLabel(n);
+    auto nameOf = [&](const dect2::MeshReading& r) { auto it = names.find(std::to_string(r.protocol) + r.id); return it == names.end() ? r.id : it->second; };
+    auto opt = [](double v, int dec) { return v >= 0 ? resexp::num(v, dec) : std::string(); };
+    {
+        static std::string note;
+        resexp::Table x;
+        x.cols = {"time", "frequency_hz", "mode", "name", "id", "battery_pct", "voltage", "channel_util_pct", "air_util_tx_pct", "uptime_s", "temp_c", "humidity_pct",
+                  "pressure_hpa", "lat", "lon", "alt_m"};
+        const double now = (double)std::time(nullptr);
+        for (const auto& r : t.readings) {
+            const double ep = meshEpoch(t, r.timeSec, now);
+            x.add({meshTime(ep), resexp::num(a.freqMhz * 1e6, 0), protoName(r.protocol), nameOf(r), r.id, opt(r.batteryPct, 0), opt(r.voltage, 2), opt(r.channelUtilPct, 1),
+                   opt(r.airUtilTxPct, 1), r.uptimeS >= 0 ? std::to_string(r.uptimeS) : "", r.hasEnv ? resexp::num(r.tempC, 1) : "", r.hasEnv ? resexp::num(r.humidity, 0) : "",
+                   r.hasEnv ? resexp::num(r.pressureHpa, 1) : "", r.hasPosition ? resexp::num(r.lat, 6) : "", r.hasPosition ? resexp::num(r.lon, 6) : "",
+                   r.hasPosition ? resexp::num(r.altM, 0) : ""}, ep);
+        }
+        resexp::saveButton(x, "mesh-telemetry", note, "svmt");
+        ImGui::SameLine();
+        ImGui::TextDisabled("%zu reports (the last %d kept); KML / GPX: one point per position", t.readings.size(), 2000);
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
+    if (!ImGui::BeginTable("##mt", 10, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    ImGui::TableSetupScrollFreeze(0, 1);
+    ImGui::TableSetupColumn("Time"); ImGui::TableSetupColumn("Node", ImGuiTableColumnFlags_WidthFixed, 180 * gUi); ImGui::TableSetupColumn("Battery");
+    ImGui::TableSetupColumn("Voltage"); ImGui::TableSetupColumn("Ch util"); ImGui::TableSetupColumn("Air tx"); ImGui::TableSetupColumn("Temp");
+    ImGui::TableSetupColumn("Humidity"); ImGui::TableSetupColumn("Pressure"); ImGui::TableSetupColumn("Position", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+    if (on) {
+        ImGuiListClipper clip;   // up to 2000 rows: draw only the visible ones
+        clip.Begin((int)t.readings.size());
+        while (clip.Step())
+            for (int row = clip.DisplayStart; row < clip.DisplayEnd; row++) {
+                const dect2::MeshReading& r = t.readings[t.readings.size() - 1 - (size_t)row];
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(r.timeSec).c_str());
+                ImGui::TableNextColumn(); ImGui::TextColored(protoColour(r.protocol), "%s", nameOf(r).c_str());
+                ImGui::TableNextColumn(); if (r.batteryPct > 100) ImGui::TextUnformatted("powered"); else if (r.batteryPct >= 0) ImGui::Text("%.0f %%", r.batteryPct);
+                ImGui::TableNextColumn(); if (r.voltage >= 0) ImGui::Text("%.2f V", r.voltage);
+                ImGui::TableNextColumn(); if (r.channelUtilPct >= 0) ImGui::Text("%.1f %%", r.channelUtilPct);
+                ImGui::TableNextColumn(); if (r.airUtilTxPct >= 0) ImGui::Text("%.1f %%", r.airUtilTxPct);
+                ImGui::TableNextColumn(); if (r.hasEnv) ImGui::Text("%.1f C", r.tempC);
+                ImGui::TableNextColumn(); if (r.hasEnv) ImGui::Text("%.0f %%", r.humidity);
+                ImGui::TableNextColumn(); if (r.hasEnv) ImGui::Text("%.1f hPa", r.pressureHpa);
+                ImGui::TableNextColumn(); if (r.hasPosition) ImGui::Text("%.5f, %.5f  %.0f m", r.lat, r.lon, r.altM);
+            }
+    }
+    ImGui::EndTable();
+}
+
 void packetTable(const App& a) {
     const dect2::MeshTelemetry& t = a.rx.mesh;
     const bool on = live(a);
@@ -1067,26 +1121,31 @@ void settingsView(App& a) {
 void tab(App& a) {
     loadState();
     if (const int m = subMask(a)) {   // a protocol entry: only its own views (LoRa APRS: stations instead of nodes and chat; MeshCom: stations and chat; LoRaWAN: devices and frames)
-        static const int aprsIds[] = {5, 1, 3, 4}, comIds[] = {5, 1, 2, 3, 4}, meshIds[] = {0, 1, 2, 3, 4}, lwIds[] = {6, 7, 4};
+        static const int aprsIds[] = {5, 1, 3, 4}, comIds[] = {5, 1, 2, 3, 4}, meshIds[] = {0, 1, 2, 3, 8, 4}, lwIds[] = {6, 7, 4};
         const bool ap = m == 4, com = m == 8, lw = m == 16;
         const int* ids = ap ? aprsIds : com ? comIds : lw ? lwIds : meshIds;
-        const int n = ap ? 4 : lw ? 3 : 5;
+        const int n = ap ? 4 : lw ? 3 : com ? 5 : 6;
         int k = 0;
         for (int i = 0; i < n; i++) if (ids[i] == S.view) k = i;
         if (ap) subNav("meshva", k, {"Stations", "Map", "Packets", "Settings"});
         else if (com) subNav("meshvc", k, {"Stations", "Map", "Chat", "Packets", "Settings"});
         else if (lw) subNav("meshvl", k, {"Devices", "Frames", "Settings"});
-        else subNav("meshvm", k, {"Nodes", "Map", "Chat", "Packets", "Settings"});
+        else subNav("meshvm", k, {"Nodes", "Map", "Chat", "Packets", "Telemetry", "Settings"});
         S.view = ids[k];
     } else {
         if (S.view == 7) S.view = 3;
-        subNav("meshv", S.view, {"Nodes", "Map", "Chat", "Packets", "Settings", "APRS", "LoRaWAN"});
+        static const int ids[] = {0, 1, 2, 3, 8, 4, 5, 6};   // the views in the order of the tabs (7, the LoRaWAN frames, has no tab here)
+        int k = 0;
+        for (int i = 0; i < 8; i++) if (ids[i] == S.view) k = i;
+        subNav("meshv", k, {"Nodes", "Map", "Chat", "Packets", "Telemetry", "Settings", "APRS", "LoRaWAN"});
+        S.view = ids[k];
     }
     plat::prefs().setI("meshView", S.view);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     if (S.view == 0) { nodeTable(a, false); return; }
     if (S.view == 2) { chatView(a); return; }
     if (S.view == 3) { packetTable(a); return; }
+    if (S.view == 8) { telemetryTable(a); return; }
     if (S.view == 4) { settingsView(a); return; }
     if (S.view == 5) { aprsTable(a); return; }
     if (S.view == 6) { lorawanDevices(a, false); return; }

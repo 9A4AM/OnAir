@@ -17,6 +17,7 @@ namespace {
 
 constexpr size_t kBlock = 4096;          // input is processed in blocks of this size (the result does not depend on the chunking)
 // rows kept: the report stays under about 100 kB (a packet row is about 270 bytes, a node 280, a message 150 plus its text)
+constexpr size_t kReadingCap = 2000;
 constexpr size_t kPacketCap = 100, kMessageCap = 100, kNodeCap = 150, kAprsCap = 150, kLorawanCap = 200;
 
 struct PlanEntry {
@@ -350,6 +351,14 @@ struct MeshReceiver::Impl {
             if (u.channelUtilPct >= 0) n.channelUtilPct = u.channelUtilPct;
             if (u.airUtilTxPct >= 0) n.airUtilTxPct = u.airUtilTxPct;
             if (u.uptimeS >= 0) n.uptimeS = u.uptimeS;
+            if (u.batteryPct >= 0 || u.voltage >= 0 || u.hasEnv || u.hasPosition) {   // a telemetry or position report: kept with its time
+                MeshReading rd;
+                rd.timeSec = t; rd.protocol = pr; rd.id = u.nodeId;
+                rd.batteryPct = u.batteryPct; rd.voltage = u.voltage; rd.channelUtilPct = u.channelUtilPct; rd.airUtilTxPct = u.airUtilTxPct;
+                rd.uptimeS = u.uptimeS; rd.hasEnv = u.hasEnv; rd.tempC = u.tempC; rd.humidity = u.humidity; rd.pressureHpa = u.pressureHpa;
+                rd.hasPosition = u.hasPosition; rd.lat = u.lat; rd.lon = u.lon; rd.altM = u.altM;
+                capPush(tel.readings, std::move(rd), kReadingCap);
+            }
             if (u.batteryPct >= 0 || u.voltage >= 0) n.devSec = t;
             if (u.hasEnv) { n.envSec = t; n.hasEnv = true; n.tempC = u.tempC; n.humidity = u.humidity; n.pressureHpa = u.pressureHpa; }
             if (fresh || (!u.longName.empty() && u.longName != n.longName))
@@ -516,11 +525,14 @@ struct MeshReceiver::Impl {
     static void moveLists(MeshTelemetry& to, MeshTelemetry& from) {
         to.packets = std::move(from.packets); to.nodes = std::move(from.nodes); to.messages = std::move(from.messages);
         to.counts = std::move(from.counts); to.aprsStations = std::move(from.aprsStations); to.lorawanDevices = std::move(from.lorawanDevices);
+        to.readings = std::move(from.readings);
         from.packets.clear(); from.nodes.clear(); from.messages.clear(); from.counts.clear(); from.aprsStations.clear(); from.lorawanDevices.clear();
+        from.readings.clear();
     }
     static void shiftTimes(MeshTelemetry& t, double dt) {
         for (auto& p : t.packets) p.timeSec += dt;
         for (auto& m : t.messages) m.timeSec += dt;
+        for (auto& r : t.readings) r.timeSec += dt;
         for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.firstHeard >= 0) n.firstHeard += dt; if (n.envSec >= 0) n.envSec += dt; if (n.devSec >= 0) n.devSec += dt; if (n.posSec >= 0) n.posSec += dt; }
         for (auto& a : t.aprsStations) a.st.lastHeardSec += dt;
         for (auto& d : t.lorawanDevices) if (d.lastHeard >= 0) d.lastHeard += dt;
@@ -599,16 +611,16 @@ void MeshReceiver::clearResults() {
 std::string MeshReceiver::saveResults() const {
     std::lock_guard<std::mutex> lk(p_->mu);
     const MeshTelemetry& t = p_->pub;
-    return results::pack(t.timeSec, t.packets, t.nodes, t.messages, t.counts, t.aprsStations, t.lorawanDevices);
+    return results::pack(t.timeSec, t.packets, t.nodes, t.messages, t.counts, t.aprsStations, t.lorawanDevices, t.readings);
 }
 bool MeshReceiver::loadResults(const std::string& blob) {
     double t0 = 0;
     MeshTelemetry l;
-    if (!results::unpack(blob, t0, l.packets, l.nodes, l.messages, l.counts, l.aprsStations, l.lorawanDevices)) return false;
+    if (!results::unpack(blob, t0, l.packets, l.nodes, l.messages, l.counts, l.aprsStations, l.lorawanDevices, l.readings)) return false;
     std::lock_guard<std::mutex> lk(p_->mu);
     Impl::shiftTimes(l, p_->pub.timeSec - t0);
     MeshTelemetry copy;
-    copy.packets = l.packets; copy.nodes = l.nodes; copy.messages = l.messages; copy.counts = l.counts; copy.aprsStations = l.aprsStations; copy.lorawanDevices = l.lorawanDevices;
+    copy.packets = l.packets; copy.nodes = l.nodes; copy.messages = l.messages; copy.counts = l.counts; copy.aprsStations = l.aprsStations; copy.lorawanDevices = l.lorawanDevices; copy.readings = l.readings;
     Impl::moveLists(p_->pub, copy);
     Impl::moveLists(p_->loaded, l);
     p_->loadReq = true;

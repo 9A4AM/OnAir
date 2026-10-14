@@ -153,6 +153,20 @@ int main() {
         const MeshNode* nd = t.nodes.empty() ? nullptr : &t.nodes[0];
         CHECK(nd && nd->packets == 1 && nd->firstHeard >= 0 && nd->firstHeard == nd->lastHeard && nd->snrMin == nd->snrMax && std::abs(nd->snrSum - nd->snrMin) < 1e-3 &&
               nd->encrypted == 0, "node statistics after one packet");
+        // a device telemetry report: the node's last values, and one reading in the history with its time
+        MeshtasticNode tn; tn.num = 0x2a0000ab;
+        const auto tp = meshtasticTelemetry(tn, 0x9b, 3, 3, 87, 4.05, 3.5, 0.4, 3600);
+        const MeshTelemetry t2 = run(rx, p, tp, lf.freqHz, lf.freqHz, 2e6, 300, 8);
+        const MeshReading* rd = t2.readings.empty() ? nullptr : &t2.readings.back();
+        CHECK(t2.readings.size() == 1 && rd && rd->id == "!2a0000ab" && std::abs(rd->batteryPct - 87) < 0.5 && std::abs(rd->voltage - 4.05) < 0.01 &&
+              rd->uptimeS == 3600 && !rd->hasEnv, "telemetry reading kept (%zu)", t2.readings.size());
+        bool dev = false;
+        for (const auto& n : t2.nodes) dev |= n.id == "!2a0000ab" && n.devSec >= 0 && std::abs(n.batteryPct - 87) < 0.5;
+        CHECK(dev, "node battery with its time");
+        tn.lat = -27.6; tn.lon = -48.62; tn.altM = 12;
+        const MeshTelemetry t3 = run(rx, p, meshtasticPosition(tn, 0x9c, 3, 3, 1790000000u), lf.freqHz, lf.freqHz, 2e6, 300, 8);
+        CHECK(t3.readings.size() == 2 && t3.readings.back().hasPosition && std::abs(t3.readings.back().lat + 27.6) < 1e-5 &&
+              std::abs(t3.readings.back().lon + 48.62) < 1e-5 && t3.readings.back().batteryPct < 0, "position kept in the history");
     }
 
     if (fails) { printf("%d failures\n", fails); return 1; }
