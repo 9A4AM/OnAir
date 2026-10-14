@@ -145,7 +145,7 @@ DAB/DAB+ (MP2, AAC), DRM (AAC, xHE-AAC) and the TV modes decode with FFmpeg, whi
 Nothing to install, with one exception: the SBR and parametric stereo of DAB+ HE-AAC (HE-AAC and HE-AAC v2 stations). FFmpeg cannot apply
 them to the 960-sample frames of DAB+ ("SBR with 960 frame length"), so without help those stations play the core only: band-limited, and
 HE-AAC v2 in mono. OnAir uses faad2 for them when it is installed (Linux: the `libfaad2` package; macOS: `brew install faad2`; Windows: a
-`libfaad2.dll` beside the program). It is found at run time and not shipped; the DAB player panel says which decoder is working and whether SBR
+`libfaad.dll`, `libfaad2.dll` or `libfaad-2.dll` beside the program, for example the one that ships with QT-DAB). It is found at run time and not shipped; the DAB player panel says which decoder is working and whether SBR
 and PS are applied. Some xHE-AAC tools (harmonic SBR, PVC, inter-TES, MPEG Surround 212) are not in FFmpeg yet; DRM stations that use
 them stay silent and the DRM view says so.
 

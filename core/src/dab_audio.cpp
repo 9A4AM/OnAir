@@ -50,7 +50,7 @@ struct Faad {
     bool ok = false;
     Faad() {
 #ifdef _WIN32
-        for (const char* n : {"libfaad2.dll", "faad2.dll", "libfaad.dll"}) { if ((h = (void*)LoadLibraryA(n))) break; }
+        for (const char* n : {"libfaad.dll", "libfaad2.dll", "libfaad-2.dll", "libfaad2-2.dll", "faad2.dll", "faad.dll"}) { if ((h = (void*)LoadLibraryA(n))) break; }
         auto sym = [&](const char* s) { return h ? (void*)GetProcAddress((HMODULE)h, s) : nullptr; };
 #else
         for (const char* n : {"libfaad.so.2", "libfaad.so", "libfaad.2.dylib", "libfaad.dylib", "/opt/homebrew/lib/libfaad.dylib", "/usr/local/lib/libfaad.dylib"}) { if ((h = dlopen(n, RTLD_NOW | RTLD_LOCAL))) break; }
