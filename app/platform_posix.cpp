@@ -291,6 +291,7 @@ std::vector<std::string> uiFontCandidates() {
 }
 std::vector<std::string> cjkFontCandidates() {
     return {"C:/Windows/Fonts/msyh.ttc", "C:/Windows/Fonts/simsun.ttc", "C:/Windows/Fonts/malgun.ttf",
+            "C:/Windows/Fonts/YuGothM.ttc", "C:/Windows/Fonts/meiryo.ttc",   // kana and kanji for Japanese if the Chinese fonts are missing
             "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
             "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc", "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
             "/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc"};
@@ -311,6 +312,12 @@ std::string uiLanguage() {
         case LANG_CHINESE: return "zh";
         case LANG_LITHUANIAN: return "lt";
         case LANG_HUNGARIAN: return "hu";
+        case LANG_JAPANESE: return "ja";
+        case LANG_POLISH: return "pl";
+        case LANG_DUTCH: return "nl";
+        case LANG_PORTUGUESE: return "pt";
+        case LANG_ITALIAN: return "it";
+        case LANG_RUSSIAN: return "ru";
         default: return "en";
     }
 #else

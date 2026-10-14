@@ -778,7 +778,7 @@ The USRP software is installed, but the firmware images it loads are missing.	�
 The address of the network radio must look like host:port, for example 192.168.1.20:1234.	网络电台的地址必须形如 主机:端口，例如 192.168.1.20:1234。
 The file could not be opened	无法打开该文件
 The firmware inside the HackRF is older than the software talking to it.	HackRF 内的固件比与其通信的软件旧。
-The frequency is below or above what this radio can receive.	该频率低于或高于这台电台能接收的范围。
+OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.	OnAir 仍会向电台请求该频率,但电台或其驱动程序可能无法达到该频率,信号也可能很弱或没有。
 The most receivers are open	已打开的接收器数量达到上限
 The network radio (rtl_tcp) does not answer	网络电台 (rtl_tcp) 没有响应
 The picture holds the last %.0f s.	画面保留最近 %.0f 秒。
@@ -796,7 +796,7 @@ The text and data are shown, but speech needs the codec2 library. It comes with 
 The voice codec (mbelib) is not installed	未安装语音编解码器 (mbelib)
 This frequency is not reachable through the converter.	通过该变频器无法到达此频率。
 This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	这是 Linux 的问题。请在此系统上拔下电台，重新插入，然后点击刷新按钮。
-This radio cannot tune that frequency	这台电台无法调谐到该频率
+This frequency is outside what this radio is specified for	该频率超出了这台电台的规格范围
 This user may not open the radio	此用户无权打开电台
 Time constant of the averaged line: longer is calmer	平均曲线的时间常数：越长越平稳
 Tools	工具
@@ -894,3 +894,95 @@ BW	BW
 CH	CH
 Channel scan	频道扫描
 FM	FM
+# RX888 MkII
+The RX888 needs its firmware file	RX888 需要它的固件文件
+The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	RX888 MkII 的 USB 芯片本身没有程序：每次插入电台时由电脑加载。这个文件 SDDC_FX3.img 属于 SDDC 项目并有自己的许可证，因此 OnAir 不包含它。
+Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below).	请从 SDDC_Driver 项目的 Releases 页面下载 SDDC_FX3.img（下方按钮）。
+Put the file in OnAir's codecs folder (button below).	把文件放入 OnAir 编解码器文件夹（下方按钮）。
+The RX888 is on a USB 2 port	RX888 连接在 USB 2 端口上
+The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	RX888 MkII 每秒最多发送 256 MB 数据。它需要 USB 3（SuperSpeed）端口和 USB 3 数据线；在 USB 2 端口上无法传输数据流。
+Plug the radio into a USB 3 port directly on the computer, not through a USB 2 hub.	请把电台直接插到电脑的 USB 3 端口上，不要通过 USB 2 集线器。
+Use a USB 3 cable (the one that came with the radio).	请使用 USB 3 数据线（电台附带的那根）。
+Downloads when you click, and by itself once a day. Fetches:	点击时下载，并每天自动下载一次。获取：
+Automatic update	自动更新
+Downloads the TLEs again once a day, only while this window is open or a pass is tracked. Without a network the saved lists are used.	每天重新下载一次 TLE，仅在此窗口打开或正在跟踪过境时进行。没有网络时使用已保存的列表。
+last downloaded %s	上次下载：%s
+Pass of %s in %d:%02d (max %.0f deg): the receiver starts by itself	%s 将在 %d:%02d 后过境（最大 %.0f 度）：接收机将自动启动
+Pass of %s in %d:%02d (max %.0f deg)	%s 将在 %d:%02d 后过境（最大 %.0f 度）
+remind %.0f min before	提前 %.0f 分钟提醒
+A line at the top of the window and a log entry before the tracked pass rises (0: off)	在被跟踪的过境开始前，窗口顶部显示一行提示并写入日志（0：关闭）
+Record this pass	录制此次过境
+Cancel recording this pass	取消录制此次过境
+Arms this pass only: at AOS the receiver starts in the satellite's mode and frequency (when it is stopped), Doppler is followed and the IQ is recorded; at LOS it stops and tracking switches off again	仅对此次过境有效：在 AOS 时，接收机（若已停止）以卫星的模式和频率启动，跟随多普勒并录制 IQ；在 LOS 时停止，跟踪随之关闭
+armed: %s at %s	已就绪：%s，%s
+Save PNG...	保存 PNG...
+Save CSV...	保存 CSV...
+saved	已保存
+All time	全部时间
+Last 24 hours	最近 24 小时
+Last hour	最近 1 小时
+Rolling window: a sector's furthest position counts only for this long	滑动窗口：每个扇区的最远位置只在这段时间内有效
+Set the receiver position first: ranges are measured from it.	请先设置接收机位置：距离从该位置起算。
+Nothing heard yet: the plot fills in as positions arrive.	尚未收到任何信号：收到位置后图表会逐步填充。
+Longest range: %.0f %s at %.0f deg (%llu reports)	最大距离：%.0f %s，方位 %.0f 度（%llu 条报告）
+Range	范围
+Dark	深色
+High contrast (black, white, yellow)	高对比度（黑、白、黄）
+Remote control API (HTTP and WebSocket)	远程控制 API（HTTP 和 WebSocket）
+Let scripts and other programs control this receiver	允许脚本和其他程序控制此接收机
+Let other computers connect (LAN, needs the token)	允许其他计算机连接（局域网，需要令牌）
+Token	令牌
+New token	新令牌
+Copy token	复制令牌
+listening on %s port %d, %d HTTP and %d WebSocket client(s), %d requests, %d refused	正在监听 %s，端口 %d，%d 个 HTTP 和 %d 个 WebSocket 客户端，%d 个请求，%d 个被拒绝
+Programs on this computer need no token; any other address must send it as 'Authorization: Bearer <token>'. The API lists the radios, starts and stops the receiver, sets mode, frequency, sample rate and gain, and gives the telemetry and the spectrum as JSON, also as a WebSocket stream. Endpoints: see README.md.	本机上的程序无需令牌；其他任何地址都必须以 'Authorization: Bearer <令牌>' 发送令牌。该 API 可列出无线电设备、启动和停止接收机、设置模式、频率、采样率和增益，并以 JSON（也可通过 WebSocket 流）提供遥测数据和频谱。端点：见 README.md。
+Stop optimising	停止优化
+Optimise gain	优化增益
+Optimise gain: steps through the radio's gain range and measures the reception quality at each step (the mode's SNR while it is locked, else the signal-to-noise ratio of the spectrum around the channel, else the ADC level), then sets the lowest gain that is within 0.5 dB of the best quality and does not overload the ADC. Takes about 40 s and needs a signal. The AGC is paused and stays off.	优化增益：逐步扫描无线电设备的增益范围，并在每一步测量接收质量（模式锁定时用其 SNR，否则用信道周围频谱的信噪比，再否则用 ADC 电平），然后设置与最佳质量相差不超过 0.5 dB 且不使 ADC 过载的最低增益。约需 40 秒，并且需要有信号。AGC 会暂停并保持关闭。
+Undo gain	撤销增益
+Go back to the gain (and the AGC setting) from before the last optimisation	恢复到上次优化之前的增益（和 AGC 设置）
+Optimising gain %d/%d: %d dB ...	正在优化增益 %d/%d：%d dB ...
+Every gain step overloaded the ADC: the lowest gain was kept	每个增益步进都使 ADC 过载：保留了最低增益
+Gain optimised: %d dB (was %d dB)	增益已优化：%d dB（原为 %d dB）
+judged by the mode's SNR	依据模式的 SNR 判定
+judged by the SNR in the spectrum	依据频谱中的 SNR 判定
+judged by the ADC level	依据 ADC 电平判定
+
+#  transmit (View > Transmit)
+Transmit...	发射...
+Transmit	发射
+Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission.	通过支持发射的无线电发送此模式自身的信号。在您启动之前保持关闭；需要许可证或许可。
+TRANSMITTING	正在发射
+Sends this mode's own signal through a radio that can transmit. Transmitting needs a licence or permission: you are responsible for what you send. Connect an antenna, an attenuator or a dummy load before you start.	通过支持发射的无线电发送此模式自身的信号。发射需要许可证或许可：您对所发送的内容负责。开始前请连接天线、衰减器或假负载。
+Channel width	信道带宽
+Frequency (MHz)	频率 (MHz)
+any value is passed to the radio as typed	任何数值都将按输入原样传给无线电
+TX gain (dB)	发射增益 (dB)
++14 dB amplifier	+14 dB 放大器
+Repeat until stopped	重复直到停止
+seconds	秒
+STOP TRANSMITTING	停止发射
+START TRANSMITTING	开始发射
+This radio has no transmit driver in OnAir.	此无线电在 OnAir 中没有发射驱动。
+Before you transmit	发射之前
+Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	在您所在的地方发射需要许可证或许可。您对所发射的内容以及不干扰他人（包括人们依赖其保障安全的服务）负责。开始前请将天线、衰减器或假负载连接到无线电。OnAir 不限制频率或功率：只有无线电自身的限制。
+I understand	我已了解
+GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	不发射 GNSS：其生成器是卫星信号模拟器（欺骗）
+cellular signals are not transmitted: the generators model a network cell for testing the decoder	不发射蜂窝信号：这些生成器模拟网络小区，用于测试解码器
+this is an analysis mode: there is nothing to transmit	这是分析模式：没有可发射的内容
+pagers are not offered: in the round trip through the receiver only the 512 baud POCSAG pages came back, not the 1200 / 2400 baud and FLEX ones	不提供寻呼机：经接收机环回时只有 512 波特的 POCSAG 页面返回，1200 / 2400 波特和 FLEX 的没有
+this mode has no transmit generator that is verified to decode in OnAir's own receiver (see core/include/dect2/tx.h)	此模式没有经验证能被 OnAir 自己的接收机解码的发射生成器（见 core/include/dect2/tx.h）
+TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA 0 至 47 dB；+14 dB 放大器有独立开关
+the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	AD9361 的发射衰减以增益显示：-89.75 dB（最小功率）至 0 dB（最大）
+the driver's own TX gain scale (known after the radio has been opened once)	驱动程序自身的发射增益范围（无线电打开过一次后可知）
+RX	RX
+TX	TX
+Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	在接收机 (RX) 与发射机 (TX) 之间切换。发射机有自己的无线电，所以您发射时接收机可以继续接收。
+Transmit radio	发射用无线电
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	未找到可发射的无线电。请接入一台（HackRF、PlutoSDR 或带发射器的 SoapySDR 无线电）并刷新无线电列表。
+Choose a radio to transmit with.	请选择用于发射的无线电。
+%s (in use by RX %d)	%s（被 RX %d 使用）
+%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s 正被 RX %d 使用，而这台无线电不能同时接收和发射。请选择另一台无线电来发射，或先停止该接收机。
+Warning: ADS-B at 1090 MHz simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna: false aircraft on 1090 MHz can confuse real receivers, which is a safety risk and illegal in most places.	警告：1090 MHz 的 ADS-B 模拟飞机。只能送入假负载或屏蔽装置，绝不能送到天线：1090 MHz 上的虚假飞机会迷惑真实接收机，这是安全风险，并且在大多数地方是非法的。
+Modes that cannot transmit	无法发射的模式
+Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list.	输入 PlutoSDR 的 IP（USB gadget 192.168.2.1，或其以太网地址）并 Connect。之后它会出现在 Radio 列表中。

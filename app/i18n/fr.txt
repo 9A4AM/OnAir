@@ -778,7 +778,7 @@ The USRP software is installed, but the firmware images it loads are missing.	Le
 The address of the network radio must look like host:port, for example 192.168.1.20:1234.	L'adresse de la radio réseau doit avoir la forme hôte:port, par exemple 192.168.1.20:1234.
 The file could not be opened	Le fichier n'a pas pu être ouvert
 The firmware inside the HackRF is older than the software talking to it.	Le firmware du HackRF est plus ancien que le logiciel qui lui parle.
-The frequency is below or above what this radio can receive.	La fréquence est en dessous ou au-dessus de ce que cette radio peut recevoir.
+OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.	OnAir la demande quand même à la radio, mais la radio ou son pilote peut ne pas l'atteindre, ou le signal peut être faible ou absent.
 The most receivers are open	Le maximum de récepteurs est ouvert
 The network radio (rtl_tcp) does not answer	La radio réseau (rtl_tcp) ne répond pas
 The picture holds the last %.0f s.	L'image contient les %.0f dernières secondes.
@@ -796,7 +796,7 @@ The text and data are shown, but speech needs the codec2 library. It comes with 
 The voice codec (mbelib) is not installed	Le codec vocal (mbelib) n'est pas installé
 This frequency is not reachable through the converter.	Cette fréquence n'est pas accessible via le convertisseur.
 This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	C'est un problème Linux. Sur ce système, débranchez la radio, rebranchez-la et appuyez sur le bouton d'actualisation.
-This radio cannot tune that frequency	Cette radio ne peut pas s'accorder sur cette fréquence
+This frequency is outside what this radio is specified for	Cette fréquence est en dehors de ce pour quoi cette radio est spécifiée
 This user may not open the radio	Cet utilisateur n'a pas le droit d'ouvrir la radio
 Time constant of the averaged line: longer is calmer	Constante de temps de la ligne moyennée : plus long, plus calme
 Tools	Outils
@@ -894,3 +894,95 @@ BW	BW
 CH	CH
 Channel scan	Recherche de canaux
 FM	FM
+# RX888 MkII
+The RX888 needs its firmware file	La RX888 a besoin de son fichier de firmware
+The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	La puce USB de la RX888 MkII n'a pas de programme propre : l'ordinateur le charge à chaque branchement de la radio. Ce fichier, SDDC_FX3.img, appartient au projet SDDC et a sa propre licence ; OnAir ne l'inclut donc pas.
+Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below).	Téléchargez SDDC_FX3.img depuis la page Releases du projet SDDC_Driver (bouton ci-dessous).
+Put the file in OnAir's codecs folder (button below).	Placez le fichier dans le dossier des codecs d'OnAir (bouton ci-dessous).
+The RX888 is on a USB 2 port	La RX888 est sur un port USB 2
+The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	La RX888 MkII envoie jusqu'à 256 Mo par seconde. Elle a besoin d'un port USB 3 (SuperSpeed) et d'un câble USB 3 ; sur un port USB 2, elle ne peut pas diffuser.
+Plug the radio into a USB 3 port directly on the computer, not through a USB 2 hub.	Branchez la radio sur un port USB 3 directement sur l'ordinateur, pas via un concentrateur USB 2.
+Use a USB 3 cable (the one that came with the radio).	Utilisez un câble USB 3 (celui fourni avec la radio).
+Downloads when you click, and by itself once a day. Fetches:	Télécharge au clic, et seul une fois par jour. Récupère :
+Automatic update	Mise à jour automatique
+Downloads the TLEs again once a day, only while this window is open or a pass is tracked. Without a network the saved lists are used.	Retélécharge les TLE une fois par jour, seulement tant que cette fenêtre est ouverte ou qu'un passage est suivi. Sans réseau, les listes enregistrées sont utilisées.
+last downloaded %s	dernier téléchargement : %s
+Pass of %s in %d:%02d (max %.0f deg): the receiver starts by itself	Passage de %s dans %d:%02d (max %.0f deg) : le récepteur démarre seul
+Pass of %s in %d:%02d (max %.0f deg)	Passage de %s dans %d:%02d (max %.0f deg)
+remind %.0f min before	rappel %.0f min avant
+A line at the top of the window and a log entry before the tracked pass rises (0: off)	Une ligne en haut de la fenêtre et une entrée du journal avant le lever du passage suivi (0 : désactivé)
+Record this pass	Enregistrer ce passage
+Cancel recording this pass	Annuler l'enregistrement de ce passage
+Arms this pass only: at AOS the receiver starts in the satellite's mode and frequency (when it is stopped), Doppler is followed and the IQ is recorded; at LOS it stops and tracking switches off again	Ne vaut que pour ce passage : à l'AOS, le récepteur démarre (s'il est arrêté) dans le mode et sur la fréquence du satellite, le Doppler est suivi et l'IQ enregistré ; à la LOS, il s'arrête et le suivi se désactive
+armed: %s at %s	armé : %s à %s
+Save PNG...	Enregistrer en PNG...
+Save CSV...	Enregistrer en CSV...
+saved	enregistré
+All time	Depuis toujours
+Last 24 hours	Dernières 24 heures
+Last hour	Dernière heure
+Rolling window: a sector's furthest position counts only for this long	Fenêtre glissante : la position la plus lointaine d'un secteur ne compte que pendant cette durée
+Set the receiver position first: ranges are measured from it.	Définissez d'abord la position du récepteur : les portées sont mesurées depuis celle-ci.
+Nothing heard yet: the plot fills in as positions arrive.	Rien reçu pour l'instant : le diagramme se remplit à mesure que des positions arrivent.
+Longest range: %.0f %s at %.0f deg (%llu reports)	Portée maximale : %.0f %s à %.0f deg (%llu rapports)
+Range	Portée
+Dark	Sombre
+High contrast (black, white, yellow)	Contraste élevé (noir, blanc, jaune)
+Remote control API (HTTP and WebSocket)	API de télécommande (HTTP et WebSocket)
+Let scripts and other programs control this receiver	Laisser des scripts et d'autres programmes piloter ce récepteur
+Let other computers connect (LAN, needs the token)	Laisser d'autres ordinateurs se connecter (réseau local, jeton requis)
+Token	Jeton
+New token	Nouveau jeton
+Copy token	Copier le jeton
+listening on %s port %d, %d HTTP and %d WebSocket client(s), %d requests, %d refused	à l'écoute sur %s, port %d, %d client(s) HTTP et %d WebSocket, %d requêtes, %d refusées
+Programs on this computer need no token; any other address must send it as 'Authorization: Bearer <token>'. The API lists the radios, starts and stops the receiver, sets mode, frequency, sample rate and gain, and gives the telemetry and the spectrum as JSON, also as a WebSocket stream. Endpoints: see README.md.	Les programmes de cet ordinateur n'ont pas besoin de jeton ; toute autre adresse doit l'envoyer sous la forme 'Authorization: Bearer <jeton>'. L'API liste les radios, démarre et arrête le récepteur, règle le mode, la fréquence, la fréquence d'échantillonnage et le gain, et fournit la télémétrie et le spectre en JSON, aussi en flux WebSocket. Points d'accès : voir README.md.
+Stop optimising	Arrêter l'optimisation
+Optimise gain	Optimiser le gain
+Optimise gain: steps through the radio's gain range and measures the reception quality at each step (the mode's SNR while it is locked, else the signal-to-noise ratio of the spectrum around the channel, else the ADC level), then sets the lowest gain that is within 0.5 dB of the best quality and does not overload the ADC. Takes about 40 s and needs a signal. The AGC is paused and stays off.	Optimiser le gain : parcourt la plage de gain de la radio et mesure la qualité de réception à chaque pas (le SNR du mode tant qu'il est accroché, sinon le rapport signal/bruit du spectre autour du canal, sinon le niveau de l'ADC), puis règle le gain le plus bas qui reste à moins de 0,5 dB de la meilleure qualité sans saturer l'ADC. Dure environ 40 s et demande un signal. Le CAG est mis en pause et reste désactivé.
+Undo gain	Annuler le gain
+Go back to the gain (and the AGC setting) from before the last optimisation	Revenir au gain (et au réglage du CAG) d'avant la dernière optimisation
+Optimising gain %d/%d: %d dB ...	Optimisation du gain %d/%d : %d dB ...
+Every gain step overloaded the ADC: the lowest gain was kept	Chaque pas de gain a saturé l'ADC : le gain le plus bas a été conservé
+Gain optimised: %d dB (was %d dB)	Gain optimisé : %d dB (était %d dB)
+judged by the mode's SNR	jugé d'après le SNR du mode
+judged by the SNR in the spectrum	jugé d'après le SNR du spectre
+judged by the ADC level	jugé d'après le niveau de l'ADC
+
+#  transmit (View > Transmit)
+Transmit...	Émettre...
+Transmit	Émettre
+Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission.	Envoie le signal propre à ce mode par une radio capable d'émettre. Désactivé tant que vous ne le lancez pas ; nécessite une licence ou une autorisation.
+TRANSMITTING	ÉMISSION
+Sends this mode's own signal through a radio that can transmit. Transmitting needs a licence or permission: you are responsible for what you send. Connect an antenna, an attenuator or a dummy load before you start.	Envoie le signal propre à ce mode par une radio capable d'émettre. Émettre nécessite une licence ou une autorisation : vous êtes responsable de ce que vous envoyez. Branchez une antenne, un atténuateur ou une charge fictive avant de commencer.
+Channel width	Largeur de canal
+Frequency (MHz)	Fréquence (MHz)
+any value is passed to the radio as typed	toute valeur est transmise à la radio telle que saisie
+TX gain (dB)	Gain d'émission (dB)
++14 dB amplifier	Amplificateur +14 dB
+Repeat until stopped	Répéter jusqu'à l'arrêt
+seconds	secondes
+STOP TRANSMITTING	ARRÊTER L'ÉMISSION
+START TRANSMITTING	DÉMARRER L'ÉMISSION
+This radio has no transmit driver in OnAir.	Cette radio n'a pas de pilote d'émission dans OnAir.
+Before you transmit	Avant d'émettre
+Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	Émettre nécessite une licence ou une autorisation là où vous êtes. Vous êtes responsable de ce que vous émettez et de ne pas gêner les autres (y compris les services dont des personnes dépendent pour leur sécurité). Branchez une antenne, un atténuateur ou une charge fictive sur la radio avant de commencer. OnAir ne limite ni la fréquence ni la puissance : seules les limites de la radio s'appliquent.
+I understand	Je comprends
+GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	Le GNSS n'est pas émis : son générateur est un simulateur de signal satellite (usurpation)
+cellular signals are not transmitted: the generators model a network cell for testing the decoder	les signaux cellulaires ne sont pas émis : les générateurs modélisent une cellule de réseau pour tester le décodeur
+this is an analysis mode: there is nothing to transmit	ceci est un mode d'analyse : il n'y a rien à émettre
+pagers are not offered: in the round trip through the receiver only the 512 baud POCSAG pages came back, not the 1200 / 2400 baud and FLEX ones	les pagers ne sont pas proposés : dans l'aller-retour par le récepteur, seules les pages POCSAG à 512 bauds sont revenues, pas celles à 1200 / 2400 bauds ni FLEX
+this mode has no transmit generator that is verified to decode in OnAir's own receiver (see core/include/dect2/tx.h)	ce mode n'a pas de générateur d'émission vérifié comme décodable par le récepteur d'OnAir (voir core/include/dect2/tx.h)
+TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA de 0 à 47 dB ; l'amplificateur +14 dB a son propre interrupteur
+the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	l'atténuation TX de l'AD9361 présentée comme un gain : -89,75 dB (puissance minimale) à 0 dB (maximale)
+the driver's own TX gain scale (known after the radio has been opened once)	l'échelle de gain TX propre au pilote (connue une fois la radio ouverte)
+RX	RX
+TX	TX
+Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	Basculer entre le récepteur (RX) et l'émetteur (TX). L'émetteur a sa propre radio : un récepteur peut continuer à recevoir pendant que vous émettez.
+Transmit radio	Radio d'émission
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	Aucune radio capable d'émettre n'a été trouvée. Branchez-en une (HackRF, PlutoSDR ou une radio SoapySDR avec émetteur) et actualisez la liste des radios.
+Choose a radio to transmit with.	Choisissez une radio pour émettre.
+%s (in use by RX %d)	%s (utilisée par RX %d)
+%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s est utilisée par RX %d, et cette radio ne peut pas recevoir et émettre en même temps. Choisissez une autre radio pour émettre, ou arrêtez d'abord ce récepteur.
+Warning: ADS-B at 1090 MHz simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna: false aircraft on 1090 MHz can confuse real receivers, which is a safety risk and illegal in most places.	Attention : l'ADS-B sur 1090 MHz simule des avions. Ne l'envoyez que dans une charge fictive ou un montage blindé, jamais vers une antenne : de faux avions sur 1090 MHz peuvent perturber de vrais récepteurs, ce qui est un risque pour la sécurité et illégal presque partout.
+Modes that cannot transmit	Modes qui ne peuvent pas émettre
+Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list.	Saisissez l'IP du PlutoSDR (gadget USB 192.168.2.1, ou son adresse Ethernet) et Connect. Il apparait alors dans la liste Radio.

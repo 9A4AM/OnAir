@@ -778,7 +778,7 @@ The USRP software is installed, but the firmware images it loads are missing.	US
 The address of the network radio must look like host:port, for example 192.168.1.20:1234.	Tinklo radijo adresas turi atrodyti kaip kompiuteris:prievadas, pavyzdžiui, 192.168.1.20:1234.
 The file could not be opened	Nepavyko atidaryti failo
 The firmware inside the HackRF is older than the software talking to it.	HackRF programinė įranga senesnė nei su juo bendraujanti programa.
-The frequency is below or above what this radio can receive.	Dažnis yra žemiau arba aukščiau nei šis radijas gali priimti.
+OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.	OnAir vis tiek jo paprašo radijo, bet radijas ar jo tvarkyklė gali nepasiekti šio dažnio, o signalas gali būti silpnas arba jo gali nebūti.
 The most receivers are open	Atidaryta daugiausia imtuvų
 The network radio (rtl_tcp) does not answer	Tinklo radijas (rtl_tcp) neatsako
 The picture holds the last %.0f s.	Paveikslėlyje yra paskutinės %.0f s.
@@ -796,7 +796,7 @@ The text and data are shown, but speech needs the codec2 library. It comes with 
 The voice codec (mbelib) is not installed	Balso kodekas (mbelib) neįdiegtas
 This frequency is not reachable through the converter.	Šio dažnio per keitiklį pasiekti negalima.
 This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	Tai „Linux“ problema. Šioje sistemoje atjunkite radiją, vėl prijunkite ir paspauskite atnaujinimo mygtuką.
-This radio cannot tune that frequency	Šis radijas negali derintis į tą dažnį
+This frequency is outside what this radio is specified for	Šis dažnis yra už ribų, kurioms šis radijas yra skirtas
 This user may not open the radio	Šis naudotojas negali atidaryti radijo
 Time constant of the averaged line: longer is calmer	Vidurkintos linijos laiko pastovioji: ilgesnė – ramesnė
 Tools	Įrankiai
@@ -894,3 +894,95 @@ BW	BW
 CH	CH
 Channel scan	Kanalų paieška
 FM	FM
+# RX888 MkII
+The RX888 needs its firmware file	RX888 reikia programinės įrangos failo
+The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	RX888 MkII USB lustas neturi savo programos: kompiuteris ją įkelia kaskart prijungus radiją. Šis failas, SDDC_FX3.img, priklauso SDDC projektui ir turi savo licenciją, todėl OnAir jo neįtraukia.
+Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below).	Atsisiųskite SDDC_FX3.img iš SDDC_Driver projekto Releases puslapio (mygtukas žemiau).
+Put the file in OnAir's codecs folder (button below).	Įdėkite failą į OnAir kodekų aplanką (mygtukas žemiau).
+The RX888 is on a USB 2 port	RX888 prijungtas prie USB 2 prievado
+The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	RX888 MkII siunčia iki 256 MB per sekundę. Jam reikia USB 3 (SuperSpeed) prievado ir USB 3 laido; per USB 2 prievadą jis negali transliuoti.
+Plug the radio into a USB 3 port directly on the computer, not through a USB 2 hub.	Prijunkite radiją prie USB 3 prievado tiesiai kompiuteryje, ne per USB 2 šakotuvą.
+Use a USB 3 cable (the one that came with the radio).	Naudokite USB 3 laidą (tą, kuris buvo komplekte su radiju).
+Downloads when you click, and by itself once a day. Fetches:	Atsisiunčia paspaudus ir pats kartą per dieną. Gauna:
+Automatic update	Automatinis atnaujinimas
+Downloads the TLEs again once a day, only while this window is open or a pass is tracked. Without a network the saved lists are used.	Kartą per dieną vėl atsisiunčia TLE, tik kol šis langas atidarytas arba sekamas praskridimas. Be tinklo naudojami išsaugoti sąrašai.
+last downloaded %s	paskutinį kartą atsisiųsta: %s
+Pass of %s in %d:%02d (max %.0f deg): the receiver starts by itself	%s praskris po %d:%02d (maks. %.0f laipsnių): imtuvas pasileis pats
+Pass of %s in %d:%02d (max %.0f deg)	%s praskris po %d:%02d (maks. %.0f laipsnių)
+remind %.0f min before	priminti prieš %.0f min.
+A line at the top of the window and a log entry before the tracked pass rises (0: off)	Eilutė lango viršuje ir žurnalo įrašas prieš sekamo praskridimo pradžią (0: išjungta)
+Record this pass	Įrašyti šį praskridimą
+Cancel recording this pass	Atšaukti šio praskridimo įrašymą
+Arms this pass only: at AOS the receiver starts in the satellite's mode and frequency (when it is stopped), Doppler is followed and the IQ is recorded; at LOS it stops and tracking switches off again	Tik šiam praskridimui: AOS metu imtuvas (jei sustabdytas) pasileidžia palydovo režimu ir dažniu, sekamas Doplerio poslinkis ir įrašomas IQ; LOS metu sustoja, o sekimas vėl išsijungia
+armed: %s at %s	paruošta: %s, %s
+Save PNG...	Įrašyti PNG...
+Save CSV...	Įrašyti CSV...
+saved	įrašyta
+All time	Visas laikas
+Last 24 hours	Paskutinės 24 valandos
+Last hour	Paskutinė valanda
+Rolling window: a sector's furthest position counts only for this long	Slenkantis langas: sektoriaus tolimiausia padėtis skaičiuojama tik tiek laiko
+Set the receiver position first: ranges are measured from it.	Pirmiausia nustatykite imtuvo vietą: nuotoliai matuojami nuo jos.
+Nothing heard yet: the plot fills in as positions arrive.	Dar nieko negirdėti: diagrama užsipildys gavus padėtis.
+Longest range: %.0f %s at %.0f deg (%llu reports)	Didžiausias nuotolis: %.0f %s kryptimi %.0f laipsnių (%llu pranešimų)
+Range	Nuotolis
+Dark	Tamsi
+High contrast (black, white, yellow)	Didelis kontrastas (juoda, balta, geltona)
+Remote control API (HTTP and WebSocket)	Nuotolinio valdymo API (HTTP ir WebSocket)
+Let scripts and other programs control this receiver	Leisti scenarijams ir kitoms programoms valdyti šį imtuvą
+Let other computers connect (LAN, needs the token)	Leisti jungtis kitiems kompiuteriams (LAN, reikia prieigos rakto)
+Token	Prieigos raktas
+New token	Naujas raktas
+Copy token	Kopijuoti raktą
+listening on %s port %d, %d HTTP and %d WebSocket client(s), %d requests, %d refused	klausoma %s, prievadas %d, %d HTTP ir %d WebSocket klientai, %d užklausų, %d atmesta
+Programs on this computer need no token; any other address must send it as 'Authorization: Bearer <token>'. The API lists the radios, starts and stops the receiver, sets mode, frequency, sample rate and gain, and gives the telemetry and the spectrum as JSON, also as a WebSocket stream. Endpoints: see README.md.	Šio kompiuterio programoms rakto nereikia; bet kuris kitas adresas jį turi siųsti kaip 'Authorization: Bearer <raktas>'. API išvardija radijus, paleidžia ir sustabdo imtuvą, nustato režimą, dažnį, atrankos dažnį ir stiprinimą bei pateikia telemetriją ir spektrą JSON formatu, taip pat WebSocket srautu. Galiniai taškai: žr. README.md.
+Stop optimising	Nutraukti optimizavimą
+Optimise gain	Optimizuoti stiprinimą
+Optimise gain: steps through the radio's gain range and measures the reception quality at each step (the mode's SNR while it is locked, else the signal-to-noise ratio of the spectrum around the channel, else the ADC level), then sets the lowest gain that is within 0.5 dB of the best quality and does not overload the ADC. Takes about 40 s and needs a signal. The AGC is paused and stays off.	Optimizuoti stiprinimą: pereina radijo stiprinimo ribas ir kiekviename žingsnyje matuoja priėmimo kokybę (režimo SNR, kol jis užfiksuotas, kitaip spektro signalo ir triukšmo santykį aplink kanalą, kitaip ADC lygį), tada nustato mažiausią stiprinimą, kuris nuo geriausios kokybės skiriasi ne daugiau kaip 0,5 dB ir neperkrauna ADC. Trunka apie 40 s ir reikalingas signalas. AGC sustabdomas ir lieka išjungtas.
+Undo gain	Atšaukti stiprinimą
+Go back to the gain (and the AGC setting) from before the last optimisation	Grįžti prie stiprinimo (ir AGC nustatymo) prieš paskutinį optimizavimą
+Optimising gain %d/%d: %d dB ...	Optimizuojamas stiprinimas %d/%d: %d dB ...
+Every gain step overloaded the ADC: the lowest gain was kept	Kiekvienas stiprinimo žingsnis perkrovė ADC: palikta mažiausia stiprinimo reikšmė
+Gain optimised: %d dB (was %d dB)	Stiprinimas optimizuotas: %d dB (buvo %d dB)
+judged by the mode's SNR	vertinta pagal režimo SNR
+judged by the SNR in the spectrum	vertinta pagal SNR spektre
+judged by the ADC level	vertinta pagal ADC lygį
+
+#  transmit (View > Transmit)
+Transmit...	Siųsti...
+Transmit	Siųsti
+Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission.	Siunčia šio režimo savo signalą per radiją, kuris gali siųsti. Išjungta, kol jos nepaleisite; reikia licencijos ar leidimo.
+TRANSMITTING	SIUNČIA
+Sends this mode's own signal through a radio that can transmit. Transmitting needs a licence or permission: you are responsible for what you send. Connect an antenna, an attenuator or a dummy load before you start.	Siunčia šio režimo savo signalą per radiją, kuris gali siųsti. Siųsti reikia licencijos ar leidimo: atsakote už tai, ką siunčiate. Prieš pradėdami prijunkite anteną, slopintuvą arba netikrą apkrovą.
+Channel width	Kanalo plotis
+Frequency (MHz)	Dažnis (MHz)
+any value is passed to the radio as typed	bet kokia reikšmė perduodama radijui taip, kaip įvesta
+TX gain (dB)	Siuntimo stiprinimas (dB)
++14 dB amplifier	+14 dB stiprintuvas
+Repeat until stopped	Kartoti, kol sustabdysite
+seconds	sekundės
+STOP TRANSMITTING	SUSTABDYTI SIUNTIMĄ
+START TRANSMITTING	PRADĖTI SIŲSTI
+This radio has no transmit driver in OnAir.	Šis radijas neturi siuntimo tvarkyklės OnAir.
+Before you transmit	Prieš siunčiant
+Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	Siųsti reikia licencijos ar leidimo ten, kur esate. Atsakote už tai, ką skleidžiate, ir už tai, kad netrukdytumėte kitiems (įskaitant tarnybas, kuriomis žmonės pasitiki saugumo sumetimais). Prieš pradėdami prijunkite prie radijo anteną, slopintuvą arba netikrą apkrovą. OnAir neriboja nei dažnio, nei galios: galioja tik paties radijo ribos.
+I understand	Suprantu
+GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	GNSS nesiunčiamas: jo generatorius yra palydovo signalo simuliatorius (apgaulė)
+cellular signals are not transmitted: the generators model a network cell for testing the decoder	mobiliojo ryšio signalai nesiunčiami: generatoriai modeliuoja tinklo ląstelę dekoderiui tikrinti
+this is an analysis mode: there is nothing to transmit	tai analizės režimas: nėra ko siųsti
+pagers are not offered: in the round trip through the receiver only the 512 baud POCSAG pages came back, not the 1200 / 2400 baud and FLEX ones	peidžeriai nesiūlomi: grįžtamajame kelyje per imtuvą grįžo tik 512 baudų POCSAG puslapiai, o 1200 / 2400 baudų ir FLEX negrįžo
+this mode has no transmit generator that is verified to decode in OnAir's own receiver (see core/include/dect2/tx.h)	šis režimas neturi siuntimo generatoriaus, patikrinto, kad jį dekoduoja pats OnAir imtuvas (žr. core/include/dect2/tx.h)
+TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA nuo 0 iki 47 dB; +14 dB stiprintuvas turi savo jungiklį
+the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	AD9361 TX slopinimas rodomas kaip stiprinimas: -89,75 dB (mažiausia galia) iki 0 dB (didžiausia)
+the driver's own TX gain scale (known after the radio has been opened once)	paties tvarkyklės TX stiprinimo skalė (žinoma, kai radijas kartą atidarytas)
+RX	RX
+TX	TX
+Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	Perjungti tarp imtuvo (RX) ir siųstuvo (TX). Siųstuvas turi savo radiją, todėl imtuvas gali toliau priimti, kol siunčiate.
+Transmit radio	Siuntimo radijas
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	Nerasta radijo, galinčio siųsti. Prijunkite vieną (HackRF, PlutoSDR arba SoapySDR radiją su siųstuvu) ir atnaujinkite radijų sąrašą.
+Choose a radio to transmit with.	Pasirinkite radiją siuntimui.
+%s (in use by RX %d)	%s (naudoja RX %d)
+%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s naudoja RX %d, o šis radijas negali vienu metu priimti ir siųsti. Pasirinkite kitą radiją siuntimui arba pirmiausia sustabdykite tą imtuvą.
+Warning: ADS-B at 1090 MHz simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna: false aircraft on 1090 MHz can confuse real receivers, which is a safety risk and illegal in most places.	Įspėjimas: ADS-B 1090 MHz dažniu imituoja orlaivius. Siųskite jį tik į netikrą apkrovą ar ekranuotą stendą, niekada į anteną: netikri orlaiviai 1090 MHz dažniu gali supainioti tikrus imtuvus, tai pavojus saugumui ir daugelyje vietų neteisėta.
+Modes that cannot transmit	Režimai, kurie negali siųsti
+Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list.	Iveskite PlutoSDR IP (USB gadget 192.168.2.1 arba Ethernet adresa) ir Connect. Tada jis bus Radio sarase.

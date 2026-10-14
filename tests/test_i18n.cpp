@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
 
     int n = 0;
     const i18n::Language* langs = i18n::languages(n);
-    CHECK(n == 7 && !std::strcmp(langs[0].code, "en"), "the language list");
+    CHECK(n >= 7 && !std::strcmp(langs[0].code, "en"), "the language list");
     for (int li = 1; li < n; li++) {
         const char* text = i18n::catalogText(langs[li].code);
         CHECK(text != nullptr, "no catalog compiled in for %s", langs[li].code);
@@ -155,7 +155,8 @@ int main(int argc, char** argv) {
     CHECK(!std::strcmp(i18n::set("de-AT"), "de"), "de-AT -> de");
     CHECK(!std::strcmp(i18n::set("zh_CN.UTF-8"), "zh"), "zh_CN.UTF-8 -> zh");
     CHECK(!std::strcmp(i18n::set("zh-Hans-CN"), "zh"), "zh-Hans-CN -> zh");
-    CHECK(!std::strcmp(i18n::set("pt-BR"), "en"), "an unknown language -> en");
+    CHECK(!std::strcmp(i18n::set("pt-BR"), "pt") && !std::strcmp(i18n::set("ru_RU.UTF-8"), "ru") && !std::strcmp(i18n::set("it-IT"), "it"), "pt-BR -> pt, ru_RU.UTF-8 -> ru, it-IT -> it");
+    CHECK(!std::strcmp(i18n::set("xx-YY"), "en"), "an unknown language -> en");
     CHECK(!std::strcmp(tr("Peak hold"), "Peak hold"), "English is the key itself");
     CHECK(!std::strcmp(trw("Passes"), "Passes###Passes"), "trw in English: %s", trw("Passes"));
     i18n::set("lt");
