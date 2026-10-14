@@ -69,14 +69,14 @@ std::string utcText(double u, bool date = true) {
 
 std::string clock(int64_t t) { return utcText((double)t, false); }
 
-// the radio cannot tune this station (a HackRF starts at 1 MHz); "" when it can or the range is not known
+// a station below what the radio is specified for (a HackRF starts at 1 MHz): a note, nothing is blocked; "" when it can or the range is not known
 std::string rangeNote(const App& a) {
     if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return "";
     const DeviceInfo& d = a.devices[(size_t)a.devIdx];
     if (!d.isRadio() || d.minFreqHz <= 0) return "";
     if (a.freqMhz * 1e6 >= d.minFreqHz) return "";
     char b[640];
-    snprintf(b, sizeof b, "This radio tunes from %.6g MHz, so it cannot receive %.4g kHz. The LF stations (DCF77, MSF, WWVB, JJY) need a radio that "
+    snprintf(b, sizeof b, "This radio is specified from %.6g MHz: OnAir still tries %.4g kHz, but the driver may not reach it or the signal may be weak or absent. The LF stations (DCF77, MSF, WWVB, JJY) need a radio that "
              "tunes below 1 MHz: an SDRplay, an Airspy HF+, or an RTL-SDR in direct sampling mode, with an LF antenna (a ferrite rod or a long wire). "
              "BPC (68.5 kHz) is below the HackRF and most HF radios too: it needs an LF-capable radio or an upconverter in front of the radio. "
          "WWV / WWVH, CHU, BPM and HLA are on HF and work with any radio that reaches 2.5 - 15 MHz.", d.minFreqHz / 1e6, a.freqMhz * 1e3);

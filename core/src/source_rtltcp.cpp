@@ -160,8 +160,14 @@ protected:
         if (rate != sentRate_) { ok = ok && command(kCmdRate, rate); sentRate_ = rate; rate_ = rate; }
         requested_ = s.sampleRate;
         const double f = std::max(s.centerHz, 0.0);
-        const std::string mode = radioOption(s, "ds", "off");
+        // Auto: nothing is sent, the server's own library picks the way down (an RTL-SDR Blog V4 server upconverts HF itself; a direct-sampling
+        // request would break it, and the server does not say which dongle it is). OnAir does not refuse the frequency: a V3 or modified
+        // dongle behind the server takes the I or Q input below. The server's tuner is only told so far, hence the note.
+        const std::string mode = radioOption(s, "ds", "auto");
         const int ds = (mode == "i" || mode == "q") && f < 24e6 ? (mode == "i" ? 1 : 2) : 0;
+        if (!other && mode == "auto" && f < 24e6 && (tuner_ == 5 || tuner_ == 6))
+            addNote(err, "below 24 MHz the tuner of this server cannot receive on its own: a Blog V4 server upconverts HF itself, otherwise pick the I or Q input in the radio settings (a V3 has its HF input on Q); the signal may be weak or absent");
+        if (f > 4.29e9) addNote(err, "the rtl_tcp protocol takes the frequency as 32-bit Hz (at most 4.29 GHz): it was cut to that");
         if (ds != sentDs_) { ok = ok && command(kCmdDirect, (uint32_t)ds); sentDs_ = ds; }
         const int ppm = (int)std::lround(radioPpm(s));
         if (ppm != sentPpm_) { ok = ok && command(kCmdPpm, (uint32_t)ppm); sentPpm_ = ppm; }
@@ -260,8 +266,9 @@ DeviceInfo rtlTcpDevice(const std::string& host, int port) {
                   ppmSetting(1),
                   choiceSetting("ds", "Direct sampling (HF)",
                                 "Below 24 MHz the tuner cannot receive: the RTL2832U can sample an HF antenna on one of its inputs directly.\n"
+                                "Auto: nothing is sent, the server's own library decides (an RTL-SDR Blog V4 upconverts HF itself).\n"
                                 "I / Q: that input below 24 MHz (the RTL-SDR Blog V3 has its HF input on Q). Off: never.",
-                                {"off", "i", "q"}, {"Off", "I input", "Q input"}, "off")};
+                                {"auto", "off", "i", "q"}, {"Auto", "Off", "I input", "Q input"}, "auto")};
     return d;
 }
 

@@ -205,10 +205,10 @@ protected:
         }
         const double f = std::max(s.centerHz, 0.0);
         const std::string range = hi_ > 0 ? " (range " + mhz(lo_) + "-" + mhz(hi_) + " MHz)" : std::string();
-        if (hi_ > 0 && (f < lo_ || f > hi_)) { err = "bladeRF could not tune to " + mhz(f) + " MHz" + range; openFailure_ = OpenFailure::Final; return false; }
+        addNote(err, freqSpecNote("bladeRF", f, lo_, hi_));   // outside what it is specified for: asked all the same, the library says if it cannot
         // libbladeRF has no frequency correction in Hz (only the VCTCXO trim DAC): a correction the user set is taken out of the frequency
         const double tuneHz = std::max(ppmCorrectedHz(f, radioPpm(s)), 0.0);
-        if (const int r = blade().set_frequency(dev_, ch, (uint64_t)std::llround(tuneHz)); r != 0) { err = "bladeRF could not tune to " + mhz(f) + " MHz" + range + ": " + blade().text(r); openFailure_ = OpenFailure::Final; return false; }
+        if (const int r = blade().set_frequency(dev_, ch, (uint64_t)std::llround(tuneHz)); r != 0) { err = "bladeRF: the library refused " + mhz(f) + " MHz" + range + ": " + blade().text(r); openFailure_ = OpenFailure::Final; return false; }
         if (const int gm = gainModeOf(s); gm != gainMode_ && blade().set_gain_mode(dev_, ch, gm) == 0) gainMode_ = gm;
         double gmin = -15, gmax = 60;
         const BladeApi::range_t* r = nullptr;

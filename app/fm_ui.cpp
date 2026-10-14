@@ -5,7 +5,8 @@
 
 static constexpr double kFmLow = 87.5, kFmHigh = 108.0;
 
-static double fmRound(double mhz) { return std::round(std::min(kFmHigh, std::max(kFmLow, mhz)) * 10.0) / 10.0; }
+// the dial steps and rounds to 0.1 MHz; the broadcast band is the slider's span only, a frequency outside it (typed, or stepped to) is kept
+static double fmRound(double mhz) { return std::round(std::max(0.0, mhz) * 10.0) / 10.0; }
 
 // Tune now (or at the next start, when the receiver is stopped).
 void fmTune(App& a, double mhz) {

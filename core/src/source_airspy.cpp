@@ -154,8 +154,10 @@ protected:
                 err += ". This Airspy Mini can run at 10 Msps: turn on \"10 Msps (unofficial)\" in the radio settings";
         }
         // libairspy has no frequency correction (the R2 and Mini have a 0.5 ppm TCXO): a correction the user set is taken out of the frequency
+        // asked as is (the library takes 32-bit Hz: only a value beyond 4.29 GHz is cut to what the call can hold)
         freq_ = (uint32_t)std::llround(std::min(std::max(ppmCorrectedHz(s.centerHz, radioPpm(s)), 0.0), 4.29e9));
-        airspy().set_freq(dev_, freq_);
+        addNote(err, freqSpecNote("Airspy", s.centerHz, 24e6, 1.8e9));
+        if (airspy().set_freq(dev_, freq_) != 0) { err = "Airspy: the library refused " + std::to_string((long long)std::llround(s.centerHz / 1e3)) + " kHz"; openFailure_ = OpenFailure::Final; return false; }
         // the 0..21 gain steps of the library's linearity table (the default), or of its sensitivity table (TuneSettings "gainmode")
         const uint8_t g = (uint8_t)std::min(21.0, std::max(0.0, std::round(s.gainDb)));
         if (radioOption(s, "gainmode", "linearity") == "sensitivity" && airspy().set_sensitivity_gain) airspy().set_sensitivity_gain(dev_, g);

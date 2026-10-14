@@ -247,18 +247,17 @@ protected:
         if (dec != sentDec_) { ok = ok && setting(kSetIqDecimation, dec); sentDec_ = dec; }
         rate_ = (double)i.maxRate / (double)(1u << dec);
         requested_ = s.sampleRate;
-        // the frequency within the radio's tuning range; read only: within the band the server's radio receives now
+        // the frequency as asked (outside the server radio's specified range with a note); a read-only client is told what the server gives
         double f = std::max(s.centerHz, 0.0);
-        if (i.maxFreq > i.minFreq) f = std::min(std::max(f, (double)i.minFreq), (double)i.maxFreq);
         std::string warn;
+        if (i.maxFreq > i.minFreq) addNote(warn, freqSpecNote("SpyServer radio", f, (double)i.minFreq, (double)i.maxFreq));
         if (!i.canControl && i.synced && i.maxIqCenter >= i.minIqCenter && i.maxIqCenter > 0) {
             const double lo = i.minIqCenter, hi = i.maxIqCenter;
             if (f < lo || f > hi) {
                 char b[240];
                 snprintf(b, sizeof b, "the SpyServer at %s is read only (another client controls it): it is tuned to %.3f MHz and gives %.3f to %.3f MHz",
                          addr_.c_str(), i.devCenter / 1e6, lo / 1e6, hi / 1e6);
-                warn = b;
-                f = std::min(std::max(f, lo), hi);
+                addNote(warn, b);
             }
         }
         const uint32_t hz = (uint32_t)std::llround(std::min(f, 4.29e9));

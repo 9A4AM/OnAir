@@ -13,7 +13,7 @@ struct ModeTuning {
                                  // 23 HD Radio, 24 CDR, 25 pagers, 26 APRS / packet, 27 HF digital, 28 airband, 29 VDL Mode 2, 30 ISM sensors, 32 VOR / ILS, 33 M17, 34 cell towers, 35 D-STAR, 36 CW, 37 HFDL, 38 PSK31, 39 JS8Call, 40 NXDN, 41 GSM-R, 44 spectrum analyser, 42 DVB-C, 47 dPMR, 46 Orbcomm, 45 Mode S uplink, 48 TETRA, 51 HF ALE, 49 MAC, 50 radio astronomy, 52 P25, 53 Bluetooth LE, 54 ionospheric sounders, 55 QO-100, 56 Wi-Fi networks, 57 general receiver, 63 CubeSat telemetry, 66 HRPT / AHRPT, 67 Zigbee, 71 NB-IoT cells, 72 Wi-Fi HaLow, 73 LoRa (raw), 74 CODAR / HF ocean radar, 76 Datawell buoy HF link
     const char* id = "";         // short name: dect2cli --standard <id>, and the prefix of the mode's files
     const char* name = "";       // shown in the app
-    double minMhz = 1, maxMhz = 6000, defMhz = 100;   // tuning range, and the frequency a fresh start uses
+    double minMhz = 1, maxMhz = 6000, defMhz = 100;   // the usual band (modeTuning() opens it to any frequency, see modes.cpp), and the frequency a fresh start uses
     double sampleRate = 2e6;     // the radio sample rate the app asks for (a radio that cannot reach it runs as fast as it can)
     double basebandHz = 0;       // the radio's analogue baseband filter (0 = automatic)
     double bandwidthMhz = 1;     // channel width handed to the engine (TuneSettings::bandwidthMhz)

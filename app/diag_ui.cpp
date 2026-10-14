@@ -209,22 +209,24 @@ std::string radioRangeWarning(const DeviceInfo& d, double freqMhz, const std::ma
     if (c.active) {   // the radio is tuned to the converter's output
         hz = c.rfToIf(hz);
         if (hz >= d.minFreqHz && hz <= d.maxFreqHz) return "";
-        return fmt("%.3f MHz at the antenna is %.3f MHz at the radio, outside its range (%.6g-%.6g MHz)", freqMhz, hz / 1e6, d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
+        return fmt("%.3f MHz at the antenna is %.3f MHz at the radio, outside what this radio is specified for (%.6g-%.6g MHz); OnAir still asks for it, but the driver may not reach it or the signal may be weak or absent", freqMhz, hz / 1e6, d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
     }
     if (hz >= d.minFreqHz && hz <= d.maxFreqHz) return "";
-    return fmt("%.3f MHz is outside this radio's range (%.6g-%.6g MHz)", freqMhz, d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
+    return fmt("%.3f MHz is outside what this radio is specified for (%.6g-%.6g MHz); OnAir still asks for it, but the driver may not reach it or the signal may be weak or absent", freqMhz, d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
 }
 
 std::vector<RadioMsg> radioMessages(const App& a) {
     std::vector<RadioMsg> m;
     if (!a.hackrfErr.empty() && !a.hackrfErrHidden) m.push_back({0, a.hackrfErr});
     if (!a.startErr.empty()) m.push_back({1, a.startErr});
+    bool srcNoted = false;
     if (a.engine.running()) {   // what the radio's driver noted at the start or the last retune (a lower rate, a frequency it does not cover, ...)
         const std::string n = a.engine.sourceNote();
         if (!n.empty()) m.push_back({2, n});
+        srcNoted = n.find("weak or absent") != std::string::npos;   // the driver already said so: not twice
     }
     if (a.devIdx >= 0 && a.devIdx < (int)a.devices.size()) {
-        const std::string w = radioRangeWarning(a.devices[a.devIdx], a.freqMhz, &a.tune.radio);
+        const std::string w = srcNoted ? std::string() : radioRangeWarning(a.devices[a.devIdx], a.freqMhz, &a.tune.radio);
         if (!w.empty()) m.push_back({2, w});
     }
     if (a.devices.size() <= 2) for (auto& h : a.usbHints) m.push_back({3, h});

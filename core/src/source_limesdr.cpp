@@ -141,11 +141,11 @@ protected:
             requested_ = s.sampleRate;
             checkRate(s.sampleRate, err);
         }
-        const double f = hi_ > 0 ? s.centerHz : std::max(s.centerHz, 1e6);
+        const double f = std::max(s.centerHz, 0.0);
         const std::string range = hi_ > 0 ? " (range " + mhz(lo_) + "-" + mhz(hi_) + " MHz)" : std::string();
-        if (hi_ > 0 && (f < lo_ || f > hi_)) { err = "LimeSDR could not tune to " + mhz(f) + " MHz" + range; openFailure_ = OpenFailure::Final; return false; }
+        addNote(err, freqSpecNote("LimeSDR", f, lo_, hi_));   // outside what it is specified for: asked all the same
         // LimeSuite has no frequency correction in Hz (only the VCTCXO trim DAC): a correction the user set is taken out of the frequency
-        if (lime().set_lo_frequency(dev_, false, 0, ppmCorrectedHz(f, radioPpm(s))) != 0) { err = "LimeSDR could not tune to " + mhz(f) + " MHz" + range + lime().text(); openFailure_ = OpenFailure::Final; return false; }
+        if (lime().set_lo_frequency(dev_, false, 0, ppmCorrectedHz(f, radioPpm(s))) != 0) { err = "LimeSDR: the library refused " + mhz(f) + " MHz" + range + ": " + lime().text(); openFailure_ = OpenFailure::Final; return false; }
         selectAntenna(f);
         lime().set_lpf_bw(dev_, false, 0, std::max(1.5e6, s.basebandFilterHz > 0 ? s.basebandFilterHz : rate_ * 0.95));
         lime().set_gain_db(dev_, false, 0, (unsigned)std::min(73.0, std::max(0.0, std::round(s.gainDb))));

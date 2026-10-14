@@ -493,9 +493,9 @@ static void testSpyServer() {
     okVals = true;
     for (size_t i = buf.size() / 2; i < buf.size(); i++) if (std::fabs(buf[i].real() - 0.5f) > 1e-5f || std::fabs(buf[i].imag() + 0.25f) > 1e-5f) okVals = false;
     CHECK(okVals);
-    s.centerHz = 3e9;   // beyond the radio's range: its top
+    s.centerHz = 3e9;   // beyond the radio's specified range: sent as asked
     CHECK(src->retune(s, err));
-    CHECK(srv.waitFor(101, 1800000000));
+    CHECK(srv.waitFor(101, 3000000000u));
 
     // the server drops the connection: the source connects again and sends its settings again
     { std::lock_guard<std::mutex> lk(srv.mu); srv.sets.clear(); }
@@ -516,7 +516,7 @@ static void testSpyServer() {
     err.clear();
     CHECK(ro->start(s, ring, err));
     CHECK(err.find("read only") != std::string::npos);
-    CHECK(srv.waitFor(101, 101000000));
+    CHECK(srv.waitFor(101, 200000000));   // as asked: the read-only server decides, the note says so
     CHECK(srv.waitFor(1, 1));
     CHECK(!srv.hasId(2));
     s.centerHz = 99.5e6;
@@ -686,10 +686,10 @@ static void testRedPitaya() {
     okVals = true;
     for (auto& v : buf) if (std::fabs(v.real() + 0.25f) > 1e-6f || std::fabs(v.imag() - 0.5f) > 1e-6f) okVals = false;
     CHECK(okVals);
-    s.centerHz = 70e6;   // beyond its range: said, and its top
+    s.centerHz = 70e6;   // beyond its specified range: said, and sent as asked
     err.clear();
     CHECK(src->retune(s, err) && !err.empty());
-    CHECK(rp.waitFor(0x02, 61440000));
+    CHECK(rp.waitFor(0x02, 70000000));
     src->stop();
     for (int i = 0; i < 100 && rp.stops < 1; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
     CHECK(rp.stops >= 1 && !rp.streaming);
@@ -742,10 +742,10 @@ static void testHermesLite2() {
     CHECK(hl.waitFor(0x02, 14200000));
     CHECK(hl.waitFor(0x0a, 0x40 | 60));    // its top, +48 dB
     CHECK(std::fabs(src->sampleRate() - 384e3) < 1);
-    s.centerHz = 100e6;                    // beyond its range: said, and its top
+    s.centerHz = 100e6;                    // beyond its specified range: said, and sent as asked
     err.clear();
     CHECK(src->retune(s, err) && !err.empty());
-    CHECK(hl.waitFor(0x02, 38400000));
+    CHECK(hl.waitFor(0x02, 100000000));
     src->stop();
     for (int i = 0; i < 100 && hl.stops < 1; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
     CHECK(hl.stops >= 1 && !hl.streaming);

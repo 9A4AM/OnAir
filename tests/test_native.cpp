@@ -319,8 +319,19 @@ static void radiosChecks(const char* dir, const char* ext) {
             t.centerHz = 7e6; t.sampleRate = 2.048e6; t.gainDb = 30; t.bandwidthMhz = 0.2;
             std::string e;
             const double calls = std::max(0.0, st("rtl.dsCalls"));
-            CHECK(!src->start(t, ring, e) && has(e, "RTL-SDR could not tune to 7 MHz (range 24-1766 MHz)") && std::max(0.0, st("rtl.dsCalls")) == calls, "generic dongle at 7 MHz: %s", e.c_str());
+            // no frequency is refused: a generic dongle at 7 MHz is asked as it is, through the Q input (Auto), with a note that it has no HF input
+            const bool g7 = src->start(t, ring, e);
+            CHECK(g7 && st("rtl.ds") == 2 && st("rtl.freq") == 7e6 && has(e, "weak or absent") && std::max(0.0, st("rtl.dsCalls")) == calls + 1, "generic dongle at 7 MHz: %s (ds %.0f)", e.c_str(), st("rtl.ds"));
+            if (g7) src->stop();
             src.reset();
+            // Off: never direct sampling, the tuner is asked all the same (the driver decides), with the range note
+            t.radio["ds"] = "off";
+            auto off = makeSource(g);
+            e.clear();
+            const bool o7 = off->start(t, ring, e);
+            CHECK(o7 && std::max(0.0, st("rtl.dsCalls")) == calls + 1 && st("rtl.freq") == 7e6 && has(e, "specified for 24 to 1766 MHz") && has(e, "weak or absent"), "generic dongle, direct sampling off, 7 MHz: %s", e.c_str());
+            if (o7) off->stop();
+            t.radio.erase("ds");
             // a dongle modified for HF: the Q input picked in the radio settings
             t.radio["ds"] = "q";
             auto q = makeSource(g);
@@ -348,8 +359,8 @@ static void radiosChecks(const char* dir, const char* ext) {
             CHECK(src->retune(t, e) && st("rtl.ds") == 2 && st("rtl.freq") == 14e6, "back to 14 MHz: direct sampling %.0f", st("rtl.ds"));
             t.centerHz = 2000e6;
             e.clear();
-            CHECK(!src->retune(t, e) && has(e, "RTL-SDR could not tune to 2000 MHz (range 0.5-1766 MHz)"), "out of range: %s", e.c_str());
-            CHECK(drain(ring, 100, mean) > 1000, "the stream stopped after a refused retune");
+            CHECK(src->retune(t, e) && st("rtl.freq") == 2000e6 && st("rtl.ds") == 0 && has(e, "specified for 0.5 to 1766 MHz") && has(e, "weak or absent"), "above the range: passed on with a note: %s", e.c_str());
+            CHECK(drain(ring, 100, mean) > 1000, "the stream stopped after an out-of-range retune");
             src->stop();
         }
         src.reset();
@@ -366,10 +377,19 @@ static void radiosChecks(const char* dir, const char* ext) {
         t.centerHz = 7e6; t.sampleRate = 2.048e6; t.bandwidthMhz = 0.2;
         e.clear();
         CHECK(v4->start(t, ring, e), "V4 at 7 MHz: %s", e.c_str());
-        CHECK(std::max(0.0, st("rtl.dsCalls")) == calls && st("rtl.freq") == 7e6, "V4: direct sampling switched (%.0f calls)", st("rtl.dsCalls") - calls);
+        CHECK(std::max(0.0, st("rtl.dsCalls")) == calls && st("rtl.freq") == 7e6 && e.empty(), "V4: direct sampling switched (%.0f calls), note '%s'", st("rtl.dsCalls") - calls, e.c_str());
+        // a V4 goes down to 9 MHz (and below) and up through the same call: nothing is refused, direct sampling is never asked for
+        for (double fq : {9e6, 100e3, 1e9, 2e9}) {
+            t.centerHz = fq; e.clear();
+            CHECK(v4->retune(t, e) && st("rtl.freq") == fq && std::max(0.0, st("rtl.dsCalls")) == calls, "V4 at %.0f Hz: freq %.0f, direct sampling calls %.0f, %s", fq, st("rtl.freq"), st("rtl.dsCalls") - calls, e.c_str());
+        }
+        // above what a 32-bit Hz value holds: cut to that, and said
+        t.centerHz = 6e9; e.clear();
+        CHECK(v4->retune(t, e) && st("rtl.freq") == 4.29e9 && has(e, "4.29 GHz"), "V4 at 6 GHz: freq %.0f, %s", st("rtl.freq"), e.c_str());
         v4->stop();
         v4.reset();
         set("rtl.v4", 0);
+        t.centerHz = 7e6;
         // the V4 Lite (an R820T, USB product "Blog V4L") upconverts HF in its library as well: no direct sampling, listed from 0.5 MHz
         set("rtl.v3", 0); set("rtl.v4l", 1);
         const DeviceInfo dl = find("rtlsdr");
@@ -378,6 +398,8 @@ static void radiosChecks(const char* dir, const char* ext) {
         e.clear();
         CHECK(v4l->start(t, ring, e), "V4 Lite at 7 MHz: %s", e.c_str());
         CHECK(std::max(0.0, st("rtl.dsCalls")) == calls && st("rtl.freq") == 7e6, "V4 Lite: direct sampling switched (%.0f calls)", st("rtl.dsCalls") - calls);
+        t.centerHz = 9e6; e.clear();
+        CHECK(v4l->retune(t, e) && st("rtl.freq") == 9e6 && std::max(0.0, st("rtl.dsCalls")) == calls, "V4 Lite at 9 MHz: %.0f, %s", st("rtl.freq"), e.c_str());
         v4l->stop();
         v4l.reset();
         set("rtl.v4l", 0);
@@ -439,7 +461,7 @@ static void radiosChecks(const char* dir, const char* ext) {
         if (ok1) {
             t.centerHz = 100e6;
             e.clear();
-            CHECK(!src->retune(t, e) && has(e, "bladeRF could not tune to 100 MHz (range 237.5-3800 MHz)"), "bladeRF 1 at 100 MHz: %s", e.c_str());
+            CHECK(src->retune(t, e) && st("blade.freq") == 100e6 && has(e, "specified for 237.5 to 3800 MHz") && has(e, "weak or absent"), "bladeRF 1 at 100 MHz is passed on with a note: %s", e.c_str());
             src->stop();
         }
         src.reset();
@@ -486,7 +508,7 @@ static void radiosChecks(const char* dir, const char* ext) {
             CHECK(src->retune(t, e) && st("lime.calibrations") == c0 + 1, "a 2 %% retune recalibrated");
             t.centerHz = 5000e6;
             e.clear();
-            CHECK(!src->retune(t, e) && has(e, "LimeSDR could not tune to 5000 MHz (range 30-3800 MHz)"), "LimeSDR at 5 GHz: %s", e.c_str());
+            CHECK(src->retune(t, e) && st("lime.freq") == 5000e6 && has(e, "specified for 30 to 3800 MHz") && has(e, "weak or absent"), "LimeSDR at 5 GHz is passed on with a note: %s", e.c_str());
             src->stop();
         }
     }
@@ -499,7 +521,8 @@ static void radiosChecks(const char* dir, const char* ext) {
         TuneSettings t;
         t.centerHz = 100e6; t.sampleRate = 4e6; t.gainDb = 30;
         std::string e;
-        CHECK(!src->start(t, ring, e) && has(e, "PlutoSDR could not tune to 100 MHz (range 325-3800 MHz)") && has(e, "AD9364"), "Pluto at 100 MHz: %s", e.c_str());
+        CHECK(src->start(t, ring, e) && st("pluto.phy:altvoltage0.frequency") == 100e6 && has(e, "specified for 325 to 3800 MHz") && has(e, "weak or absent"), "Pluto at 100 MHz is passed on with a note: %s", e.c_str());
+        src->stop();
     }
 
     if (use("uhd")) {
@@ -510,7 +533,9 @@ static void radiosChecks(const char* dir, const char* ext) {
         TuneSettings t;
         t.centerHz = 10e6; t.sampleRate = 10e6; t.gainDb = 30;
         std::string e;
-        CHECK(!src->start(t, ring, e) && has(e, "USRP could not tune to 10 MHz (range 70-6000 MHz)"), "USRP at 10 MHz: %s", e.c_str());
+        const bool u10 = src->start(t, ring, e);
+        CHECK(u10 && st("usrp.freq") == 10e6 && has(e, "specified for 70 to 6000 MHz") && has(e, "weak or absent"), "USRP at 10 MHz is passed on with a note: %s", e.c_str());
+        if (u10) src->stop();
         src.reset();
         // a B200 lists RX2 (UHD's default, left alone: what OnAir did before) and TX/RX; a B210 the same on RF A (channel 0) and RF B (1)
         struct Want { const char* label; double ch, antenna; };   // antenna 0 = not set, 1 = RX2, 2 = TX/RX
@@ -619,12 +644,14 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
             src->stop();
         }
         src.reset();
-        // a Blog V3 with direct sampling switched off: below 24 MHz is out of range, and says why
+        // a Blog V3 with direct sampling switched off: below 24 MHz is asked of the tuner all the same, with a note that says why
         set("rtl.v3", 1);
         t.centerHz = 7e6; t.radio["ds"] = "off";
         auto off = makeSource(first("rtlsdr"));
         e.clear();
-        CHECK(!off->start(t, ring, e) && has(e, "(range 24-1766 MHz; direct sampling is off)"), "V3, direct sampling off, 7 MHz: %s", e.c_str());
+        const double dsBefore = std::max(0.0, st("rtl.dsCalls"));
+        CHECK(off->start(t, ring, e) && st("rtl.freq") == 7e6 && std::max(0.0, st("rtl.dsCalls")) == dsBefore && has(e, "specified for 24 to 1766 MHz") && has(e, "direct sampling is off"), "V3, direct sampling off, 7 MHz: asked all the same, with a note: %s", e.c_str());
+        off->stop();
         off.reset();
         // the I input
         t.radio["ds"] = "i";
@@ -1112,7 +1139,7 @@ static void fobosChecks(const char* dir, const char* ext) {
         t.radio.erase("hfadc");
         // a frequency above half the converter's rate is said so
         t.centerHz = 30e6;
-        CHECK(src->retune(t, e) && e.find("outside both") != std::string::npos, "30 MHz on the HF input: %s", e.c_str());
+        CHECK(src->retune(t, e) && e.find("weak or absent") != std::string::npos, "30 MHz on the HF input: %s", e.c_str());
         e.clear();
         // back to the RF input, live: the tuner again, at the smallest rate of the radio that is fast enough
         t.centerHz = 145e6;
@@ -1123,7 +1150,7 @@ static void fobosChecks(const char* dir, const char* ext) {
         CHECK(n > 3000 && std::fabs(mean.real() - 0.5f) < 0.02f && std::fabs(mean.imag() + 0.25f) < 0.02f, "RF samples after HF: %zu, mean %.3f %.3f", n, mean.real(), mean.imag());
         // the HF inputs switched off: the tuner is asked for its lowest frequency, and the user is told
         t.radio["hf"] = "off"; t.centerHz = 7.1e6;
-        CHECK(src->retune(t, e) && st("fobos.direct") == 0 && st("fobos.freq") == 49.5e6 && e.find("switched off") != std::string::npos, "HF off at 7.1 MHz: direct %.0f freq %.0f, note: %s", st("fobos.direct"), st("fobos.freq"), e.c_str());
+        CHECK(src->retune(t, e) && st("fobos.direct") == 0 && st("fobos.freq") == 7.1e6 && e.find("switched off") != std::string::npos, "HF off at 7.1 MHz: direct %.0f freq %.0f, note: %s", st("fobos.direct"), st("fobos.freq"), e.c_str());
         e.clear();
         t.radio.erase("hf");
         hazards("HF inputs");
@@ -1366,6 +1393,26 @@ int main(int argc, char** argv) {
             CHECK(st("sdrplay.inits") == 1, "the stream was restarted for a retune");
         }
 
+        // any frequency: a very low (9 MHz) and a very high (6 GHz) one reach each driver unchanged, with no error and no clamp (a note at most)
+        {
+            auto has = [](const std::string& s, const char* what) { return s.find(what) != std::string::npos; };
+            const char* fkey = b == "rtlsdr" ? "rtl.freq" : b == "airspy" ? "airspy.freq" : b == "bladerf" ? "blade.freq" : b == "lime" ? "lime.freq" : b == "pluto" ? "pluto.phy:altvoltage0.frequency" : b == "usrp" ? "usrp.freq" : b == "sdrplay" ? "sdrplay.rf" : "fobos.freq";
+            for (double fq : {9e6, 6e9}) {
+                if (b == "fobos" && fq < 49.5e6) continue;   // the Fobos HF inputs (a mixer below 49.5 MHz) have their own checks further down
+                t.centerHz = fq; e.clear();
+                const bool okf = src->retune(t, e);
+                // a 32-bit Hz call (RTL-SDR, Airspy) holds up to 4.29 GHz: the one thing cut, and said; the Fobos takes HF below 49.5 MHz through its own mixer
+                const double want = (b == "rtlsdr" || b == "airspy") && fq > 4.29e9 ? 4.29e9 : fq;
+                const bool viaMixer = b == "fobos" && fq < 49.5e6;
+                CHECK(okf && (viaMixer ? st("fobos.direct") == 1 : st(fkey) == want), "%s at %.0f Hz: ok %d, driver got %.0f (%s)", c.board, fq, (int)okf, st(fkey), e.c_str());
+                CHECK(e.empty() || has(e, "weak or absent") || has(e, "4.29 GHz"), "%s at %.0f Hz: unexpected message: %s", c.board, fq, e.c_str());
+                CHECK(drain(ring, 200, mean) > 1000, "%s: no stream at %.0f Hz", c.board, fq);
+            }
+            t.centerHz = 474e6; e.clear();
+            CHECK(src->retune(t, e), "%s: back to 474 MHz failed: %s", c.board, e.c_str());
+            drain(ring, 100, mean);
+        }
+
         // a different sample rate while running
         t.sampleRate = 2.5e6;
         CHECK(src->retune(t, e) || !e.empty(), "rate change failed");
@@ -1455,9 +1502,9 @@ int main(int argc, char** argv) {
                     t.gainDb = 0; t.centerHz = 1e6;
                     CHECK(src->retune(t, e), "retune failed: %s", e.c_str());
                     CHECK(st("airspyhf.att") == 8 && st("airspyhf.lna") == 0 && st("airspyhf.freq") == 1e6, "gain 0: att %.0f lna %.0f freq %.0f", st("airspyhf.att"), st("airspyhf.lna"), st("airspyhf.freq"));
-                    t.centerHz = 1e3;
+                    t.centerHz = 1e3; e.clear();
                     CHECK(src->retune(t, e), "retune failed: %s", e.c_str());
-                    CHECK(st("airspyhf.freq") == 9e3, "1 kHz request: radio set to %.0f (the 9 kHz limit expected)", st("airspyhf.freq"));
+                    CHECK(st("airspyhf.freq") == 1e3 && e.find("weak or absent") != std::string::npos, "1 kHz request: radio set to %.0f (1000 expected, not the 9 kHz limit), note: %s", st("airspyhf.freq"), e.c_str());
                     t.gainDb = 200; t.centerHz = 100e6;
                     CHECK(src->retune(t, e), "retune failed: %s", e.c_str());
                     CHECK(st("airspyhf.att") == 0 && st("airspyhf.lna") == 1, "gain beyond the slider: att %.0f lna %.0f", st("airspyhf.att"), st("airspyhf.lna"));

@@ -64,11 +64,11 @@ int main() {
     l = startLog(9, 2.56e6, 8);
     CHECK(has(l, "too low for DTMB"), "DTMB at 2.56 Msps is reported:\n%s", l.c_str());
 
-    // the scanner: a range the radio cannot tune is refused before the receiver is stopped
+    // the scanner: a range outside what the radio is specified for is NOT refused: every channel is asked of the driver
     DeviceInfo pluto; pluto.kind = DeviceInfo::Native; pluto.board = "pluto"; pluto.name = "PlutoSDR"; pluto.maxRateHz = 61.44e6; pluto.minFreqHz = 325e6; pluto.maxFreqHz = 3800e6;
     ScanConfig vhf; vhf.startMHz = 177.5; vhf.stopMHz = 226.5; vhf.stepMHz = 7; vhf.bwMhz = 7;
     std::string err;
-    CHECK(!Scanner::check(pluto, vhf, err) && has(err, "325"), "a VHF scan on a stock PlutoSDR is refused with its range: %s", err.c_str());
+    CHECK(Scanner::check(pluto, vhf, err), "a VHF scan on a stock PlutoSDR is accepted (the radio is the limit): %s", err.c_str());
     ScanConfig uhf;
     CHECK(Scanner::check(pluto, uhf, err), "a UHF scan on it is fine");
 
@@ -84,7 +84,7 @@ int main() {
         printf("  slow radio: %s\n", pr.phase.c_str());
         CHECK(!pr.running && has(pr.phase, "too low for 8 MHz channels") && s.results().empty(), "a 4 Msps radio stops the 8 MHz scan with the reason");
     }
-    // channels outside the radio's range are skipped and marked; the radio opens on the first one it can tune
+    // channels outside what the radio is specified for are measured like any other: none is skipped, the radio opens on the first channel
     {
         ScanConfig c; c.startMHz = 466; c.stopMHz = 482; c.stepMHz = 8; c.bwMhz = 8; c.autoBandwidth = false; c.identifyServices = false;
         double firstTune = 0;
@@ -98,10 +98,44 @@ int main() {
         for (const auto& r : res) printf("    %.1f MHz  %s\n", r.freqMHz, r.note.c_str());
         CHECK(res.size() == 3, "three channels");
         if (res.size() == 3) {
-            CHECK(res[0].note == "outside the radio's range" && res[2].note == "outside the radio's range", "466 and 482 MHz are skipped");
-            CHECK(res[1].note == "empty", "474 MHz is measured");
+            CHECK(res[0].note != "outside the radio's range" && res[2].note != "outside the radio's range", "466 and 482 MHz are not skipped");
+            CHECK(res[0].note == "empty" && res[1].note == "empty" && res[2].note == "empty", "all three are measured");
         }
-        CHECK(std::fabs(firstTune - 474) < 0.01, "the radio is opened on 474 MHz, not on 466 (%.1f)", firstTune);
+        CHECK(std::fabs(firstTune - 466) < 0.01, "the radio is opened on the first channel, 466 MHz (%.1f)", firstTune);
+    }
+    // ---- any frequency: no mode refuses or moves a frequency outside its usual band. The tuning table is open (any value from 1 kHz up), and an
+    // engine with a generated signal starts, retunes and runs at 9 MHz and at 6 GHz in every mode, with no refusal, clamp or "out of range" in its log
+    for (int sm = 8; sm <= 80; sm++) {
+        const ModeTuning* m = modeTuning(sm);
+        if (!m) continue;
+        CHECK(m->minMhz <= 0.001 && m->maxMhz >= 1e9, "%s: tuning range %.3f-%.3g MHz is not open", m->name, m->minMhz, m->maxMhz);
+    }
+    {
+        struct M { int std, synth; double rate, bw; const char* name; };
+        // the standard, the generated signal (99: silence at the rate asked), its rate and channel width
+        const M modes[] = {{0, 99, 10e6, 8, "DVB-T/T2"}, {7, 99, 1.2e6, 0.2, "FM"}, {8, 99, 10e6, 8, "DVB-S/S2"}, {13, 13, 4e6, 2, "ADS-B"}, {3, 99, 8e6, 6, "ATSC"}, {4, 99, 2.048e6, 1.7, "DAB"}};
+        for (const auto& mm : modes) {
+            for (double hz : {9e6, 6e9}) {
+                Engine e;
+                e.setStandard(mm.std);
+                DeviceInfo dev; dev.kind = DeviceInfo::Synthetic; dev.name = "test signal";
+                TuneSettings t;
+                t.synth.mode = mm.synth; t.sampleRate = mm.rate; t.bandwidthMhz = mm.bw; t.centerHz = hz;
+                FileOptions fo;
+                const bool started = e.start(dev, t, fo);
+                std::this_thread::sleep_for(std::chrono::milliseconds(60));
+                TuneSettings t2 = t; t2.centerHz = hz == 9e6 ? 6e9 : 9e6;
+                const bool re = e.retune(t2);
+                t2.centerHz = 1.2345e12;   // a terahertz: still not refused or cut (the radio would be the limit)
+                const bool re2 = e.retune(t2);
+                e.stop();
+                size_t total = 0;
+                std::string lg;
+                for (const auto& x : e.logSnapshot(total)) lg += x + "\n";
+                CHECK(started && re && re2, "%s at %.0f Hz: start %d, retune %d / %d\n%s", mm.name, hz, (int)started, (int)re, (int)re2, lg.c_str());
+                CHECK(!has(lg, "out of range") && !has(lg, "outside the") && !has(lg, "refused") && !has(lg, "could not tune") && !has(lg, "clamp"), "%s at %.0f Hz: the log refuses or clamps:\n%s", mm.name, hz, lg.c_str());
+            }
+        }
     }
     printf(fails ? "radio mode glue: FAILED\n" : "radio mode glue: ok\n");
     return fails ? 1 : 0;

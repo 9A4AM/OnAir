@@ -367,10 +367,10 @@ protected:
         }
         const sp::Bw_MHzT bw = sdrplayBandwidth(s.bandwidthMhz * 1e6, s.basebandFilterHz, rate_);
         if (bw != ch.tunerParams.bwType) { ch.tunerParams.bwType = bw; why |= sp::Update_Tuner_BwType; }
-        // the RSPs tune 1 kHz (RSP1: 10 kHz) to 2 GHz
+        // the RSPs are specified for 1 kHz (RSP1: 10 kHz) to 2 GHz: asked as is outside that, with a note (the API says if it refuses)
         const double fMin = dev_.hwVer == sp::kRsp1 ? 10e3 : 1e3;
-        const double f = std::min(2e9, std::max(fMin, s.centerHz));
-        if (f != s.centerHz && err.empty()) err = dev_.hwVer == sp::kRsp1 ? "the SDRplay RSP1 tunes from 10 kHz to 2 GHz" : "SDRplay RSPs tune from 1 kHz to 2 GHz";
+        const double f = std::max(0.0, s.centerHz);
+        if (f < fMin || f > 2e9) addNote(err, std::string(dev_.hwVer == sp::kRsp1 ? "the SDRplay RSP1 is" : "SDRplay RSPs are") + " specified for " + (dev_.hwVer == sp::kRsp1 ? "10 kHz" : "1 kHz") + " to 2 GHz; the driver may not reach " + std::to_string((long long)std::llround(f / 1e3)) + " kHz or the signal may be weak or absent");
         if (std::fabs(f - ch.tunerParams.rfFreq.rfHz) > 0.5) { ch.tunerParams.rfFreq.rfHz = f; why |= sp::Update_Tuner_Frf; }
         int lna = 0, gr = 40;
         sdrplayGain(dev_.hwVer, f, s.gainDb, lna, gr);

@@ -148,9 +148,9 @@ protected:
             if (api.set_samplerate(dev_, (uint32_t)pick) != 0) { err = "Airspy HF+: the radio does not accept " + rateText(pick); return false; }
             rate_ = pick;
         }
-        // the HF+ tunes 9 kHz..31 MHz and 60..260 MHz (airspy.com): say so instead of silently listening somewhere else
-        if ((s.centerHz < kMinFreqHz || s.centerHz > kMaxFreqHz || (s.centerHz > 31e6 && s.centerHz < 60e6)) && err.empty())
-            err = "Airspy HF+ tunes 9 kHz to 31 MHz and 60 to 260 MHz; " + rateText(s.centerHz) + " is outside that";
+        // the HF+ is specified for 9 kHz..31 MHz and 60..260 MHz (airspy.com): outside that the library is asked all the same, with a note
+        if (s.centerHz < kMinFreqHz || s.centerHz > kMaxFreqHz || (s.centerHz > 31e6 && s.centerHz < 60e6))
+            addNote(err, "this Airspy HF+ is specified for 9 kHz to 31 MHz and 60 to 260 MHz; the driver may not reach " + rateText(s.centerHz) + " or the signal may be weak or absent");
         // Frequency correction: the library's calibration (parts per billion, applied to the tuned frequency: freq * (1 + ppb / 1e9)) is
         // the radio's factory value plus the user's correction; a clock that runs fast by ppm needs the tuned frequency that much lower.
         // A library without it: the frequency asked for.
@@ -161,8 +161,9 @@ protected:
                 if (api.set_calibration(dev_, (int32_t)(cal0_ - std::lround(ppm * 1000))) == 0) ppm_ = ppm;
             }
         } else tuneHz = ppmCorrectedHz(s.centerHz, ppm);
-        freq_ = (uint32_t)std::llround(std::min(std::max(tuneHz, kMinFreqHz), kMaxFreqHz));
-        api.set_freq(dev_, freq_);
+        // asked as is (the library takes 32-bit Hz: only a value beyond 4.29 GHz is cut to what the call can hold)
+        freq_ = (uint32_t)std::llround(std::min(std::max(tuneHz, 0.0), 4.29e9));
+        if (api.set_freq(dev_, freq_) != 0) { err = "Airspy HF+: the library refused " + rateText(s.centerHz); openFailure_ = OpenFailure::Final; return false; }
         // the radio's own AGC (TuneSettings "agc": off, low or high threshold); off is the default, with the slider in charge
         const std::string agc = radioOption(s, "agc", "off");
         if (agc != agc_) {

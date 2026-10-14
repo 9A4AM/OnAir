@@ -208,15 +208,15 @@ protected:
             checkRate(s.sampleRate, err);
             uhd().set_rx_bandwidth(dev_, std::max(0.2e6, s.basebandFilterHz > 0 ? s.basebandFilterHz : rate_ * 0.95), ch);
         }
-        // UHD clips a frequency outside the range without failing: check first
-        const double f = hi_ > 0 ? s.centerHz : std::max(s.centerHz, 1e6);
+        // UHD may clip a frequency outside the range without failing: it is asked all the same, and the actual frequency is checked below
+        const double f = std::max(s.centerHz, 0.0);
         const std::string range = hi_ > 0 ? " (range " + mhz(lo_) + "-" + mhz(hi_) + " MHz)" : std::string();
-        if (hi_ > 0 && (f < lo_ || f > hi_)) { err = "USRP could not tune to " + mhz(f) + " MHz" + range; openFailure_ = OpenFailure::Final; return false; }
         char noArgs[1] = {0};
         // UHD has no frequency correction (a USRP takes an external reference or a GPSDO for that): a correction the user set is taken out of the frequency
         UhdApi::tune_request_t req{ppmCorrectedHz(f, radioPpm(s)), UhdApi::kPolicyAuto, 0, UhdApi::kPolicyAuto, 0, noArgs};
         UhdApi::tune_result_t res{};
-        if (uhd().set_rx_freq(dev_, &req, ch, &res) != 0) { err = "USRP could not tune to " + mhz(f) + " MHz" + range + ": " + uhd().text(dev_); return false; }
+        if (uhd().set_rx_freq(dev_, &req, ch, &res) != 0) { err = "USRP: the driver refused " + mhz(f) + " MHz" + range + ": " + uhd().text(dev_); return false; }
+        addNote(err, freqSpecNote("USRP", f, lo_, hi_));
         double gmin = 0, gmax = 76;
         if (UhdApi::range_t_* rg = nullptr; uhd().meta_range_make(&rg) == 0 && rg) {
             if (uhd().get_rx_gain_range(dev_, "", ch, rg) == 0) { uhd().meta_range_start(rg, &gmin); uhd().meta_range_stop(rg, &gmax); }

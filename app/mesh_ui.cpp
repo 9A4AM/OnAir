@@ -951,7 +951,7 @@ void loraSettings(App& a) {
     bool ch = false, retune = false;
     ImGui::SetNextItemWidth(220 * gUi);
     double mhz = a.freqMhz;
-    if (ImGui::InputDouble("Frequency (MHz)##mcf", &mhz, 0.025, 1.0, "%.4f", ImGuiInputTextFlags_EnterReturnsTrue) && mhz >= 400 && mhz <= 2500) {
+    if (ImGui::InputDouble("Frequency (MHz)##mcf", &mhz, 0.025, 1.0, "%.4f", ImGuiInputTextFlags_EnterReturnsTrue) && mhz > 0) {   // any frequency: the radio is the limit
         a.freqMhz = mhz; retune = true;
     }
     if (S.customEntry == subMask(a) && std::fabs(c.mhz - a.freqMhz) > 1e-7) { c.mhz = a.freqMhz; ch = true; }   // the frequency box is the custom frequency
