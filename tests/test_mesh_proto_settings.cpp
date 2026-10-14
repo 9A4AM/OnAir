@@ -34,6 +34,9 @@ int main() {
     CHECK(meshtasticSlotHz("EU_868", "LongFast") == 869525000.0, "EU_868 LongFast %.0f", meshtasticSlotHz("EU_868", "LongFast"));
     CHECK(meshtasticSlotHz("EU868", "LongFast") == 869525000.0, "EU868 spelling");
     CHECK(meshtasticSlotHz("US", "LongFast") == 906875000.0, "US LongFast %.0f", meshtasticSlotHz("US", "LongFast"));
+    // LongModerate's slot comes from its default channel name "LongMod", not from the preset's name
+    CHECK(meshtasticSlotHz("US", "LongModerate") == 902687500.0, "US LongModerate %.0f", meshtasticSlotHz("US", "LongModerate"));
+    CHECK(meshtasticSlotHz("ANZ", "LongMod") == 915687500.0, "ANZ LongMod %.0f", meshtasticSlotHz("ANZ", "LongMod"));
     CHECK(meshtasticSlotHz("Mars", "LongFast") == 0 && meshtasticSlotHz("US", "Nope") == 0, "unknown region and preset");
     // every region and preset: the channel lies inside the band, on a 1/2 bandwidth offset grid
     const char* regions[] = {"US", "EU_433", "EU_868", "CN", "JP", "ANZ", "RU", "KR", "TW", "IN", "NZ_865", "TH", "UA_868", "PH_868", "KZ_863", "BR_902"};
