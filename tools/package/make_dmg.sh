@@ -33,6 +33,13 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
 </dict></plist>
 PLIST
+# codec2 (FreeDV and M17 speech, LGPL-2.1, built from third_party/codec2 as its own shared library): into Contents/Frameworks, where OnAir looks first
+mkdir -p "$APP/Contents/Frameworks" "$APP/Contents/Resources/licenses/codec2"
+cp -a $BUILD/libcodec2*.dylib "$APP/Contents/Frameworks/"
+REAL=$(ls "$APP"/Contents/Frameworks/libcodec2.*.*.*.dylib | head -1)
+install_name_tool -id "@executable_path/../Frameworks/$(basename "$REAL")" "$REAL"
+cp third_party/codec2/COPYING "$APP/Contents/Resources/licenses/codec2/COPYING"
+cp third_party/codec2/README-OnAir.md "$APP/Contents/Resources/licenses/codec2/NOTICE.md"
 python3 tools/package/bundle_macos.py "$APP" || { echo "Failed to bundle radio libraries"; exit 1; }
 python3 tools/package/check_macos_target.py "$APP"
 # the app is signed ad hoc (no developer certificate): macOS shows a one-time "unidentified developer" prompt on first launch

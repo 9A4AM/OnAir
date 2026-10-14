@@ -634,7 +634,7 @@ Files: audio and IQ	文件：音频和 IQ
 Fill under the line	填充曲线下方
 Find "SDRplay API Service" and press Start (or Restart).	找到“SDRplay API Service”，点击启动（或重新启动）。
 Fix the address of the network radio (host:port).	请修正网络电台的地址（主机:端口）。
-Follow the steps in the full instructions to install codec2.	请按完整说明中的步骤安装 codec2。
+Download OnAir again and unpack or install the whole package: the codec2 library belongs next to the program.	请重新下载 OnAir，并解压或安装完整的软件包：codec2 库就在程序旁边。
 Follow the steps in the full instructions to install the codec.	请按完整说明中的步骤安装编解码器。
 For an RSP, install the SDRplay API first (sdrplay.com).	使用 RSP 时，请先安装 SDRplay API（sdrplay.com）。
 Found %s (%s)	找到 %s（%s）
@@ -763,7 +763,7 @@ Stop adding rows: the picture stays, and drag or the wheel on the waterfall scro
 Television	电视
 Text size	文字大小
 Text size %d%%	文字大小 %d%%
-The FreeDV / M17 voice codec (codec2) is not installed	未安装 FreeDV / M17 语音编解码器 (codec2)
+The FreeDV / M17 voice codec (codec2) was not found	未找到 FreeDV / M17 语音编解码器 (codec2)
 The HackRF firmware does not match	HackRF 固件不匹配
 The HackRF is not found	未找到 HackRF
 The Linux sound driver holds the radio, so the SDRplay software cannot see it.	Linux 声音驱动占用了电台，所以 SDRplay 软件看不到它。
@@ -792,7 +792,7 @@ The radio's USB connection failed	电台的 USB 连接失败
 The recording file is missing, moved or not readable.	录音文件缺失、已被移动或无法读取。
 The rtl_tcp address is not valid	rtl_tcp 地址无效
 The server has no radio	服务器没有电台
-The text and data are shown, but speech needs the open codec2 library, which OnAir does not ship.	文字和数据会显示，但语音需要开源的 codec2 库，OnAir 不附带它。
+The text and data are shown, but speech needs the codec2 library. It comes with OnAir, so this copy is probably incomplete.	文字和数据会显示，但语音需要 codec2 库。它随 OnAir 一起提供，因此这份副本可能不完整。
 The voice codec (mbelib) is not installed	未安装语音编解码器 (mbelib)
 This frequency is not reachable through the converter.	通过该变频器无法到达此频率。
 This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	这是 Linux 的问题。请在此系统上拔下电台，重新插入，然后点击刷新按钮。

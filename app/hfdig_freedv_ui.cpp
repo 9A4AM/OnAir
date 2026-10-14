@@ -9,13 +9,13 @@ namespace {
 
 const char* const kChoices[] = {"Automatic", "700D", "700E", "1600"};
 
-const char* installHint() {
+const char* installHint() {   // codec2 ships with OnAir: it is missing only from an incomplete copy
 #if defined(__APPLE__)
-    return "On macOS, install it with Homebrew: brew install codec2";
+    return "codec2 comes inside OnAir.app: download the OnAir disk image again, or install it with Homebrew: brew install codec2";
 #elif defined(_WIN32)
-    return "On Windows, copy libcodec2.dll from a FreeDV install into the OnAir codecs folder.";
+    return "codec2 comes with OnAir as libcodec2.dll next to OnAir.exe: unpack the whole OnAir zip again (do not copy OnAir.exe alone).";
 #else
-    return "On Linux, install your distribution's codec2 package (libcodec2).";
+    return "codec2 comes with the OnAir package: install it again, or install your distribution's codec2 package (libcodec2).";
 #endif
 }
 
@@ -37,7 +37,7 @@ void hfdigFreedvTab(App& a, const dect2::HfdigTelemetry& t) {
     codecHelpButton(CodecHelp::Codec2);
     if (!found) {
         ImGui::PushTextWrapPos(0);
-        ImGui::TextDisabled("codec2 library not found: FreeDV needs it to decode. Press ? to see how to get it.");
+        ImGui::TextDisabled("codec2 library not found: FreeDV needs it to decode. It normally comes with OnAir. Press ? to see what to do.");
         ImGui::TextDisabled("%s", installHint());
         ImGui::PopTextWrapPos();
     }

@@ -1,4 +1,4 @@
-// Codec 2 through the user-installed libcodec2 (see m17_codec2.h); only the few functions of codec2.h (release 1.2) that are needed.
+// Codec 2 through libcodec2, loaded at run time: the one shipped with OnAir, or one the user installed (see m17_codec2.h); only the few functions of codec2.h (release 1.2) that are needed.
 #include "dect2/m17_codec2.h"
 #include "native_common.h"
 #include <cstdlib>
@@ -46,11 +46,11 @@ bool m17Codec2Available(std::string* path) {
 
 const char* m17Codec2InstallHint() {
 #if defined(__APPLE__)
-    return "On macOS, install it with Homebrew: brew install codec2";
+    return "This copy of OnAir came without its codec2 library: download the OnAir disk image again, or install it with Homebrew: brew install codec2";
 #elif defined(_WIN32)
-    return "On Windows, put codec2.dll (from a FreeDV or codec2 build) next to OnAir.";
+    return "This copy of OnAir came without libcodec2.dll: unpack the whole OnAir zip again (it belongs next to OnAir.exe), or install OnAir with its setup program.";
 #else
-    return "On Linux, install your distribution's codec2 package (libcodec2).";
+    return "This copy of OnAir came without its codec2 library: install the OnAir package again, or install your distribution's codec2 package (libcodec2).";
 #endif
 }
 

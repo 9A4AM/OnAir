@@ -84,6 +84,13 @@ if(DECT2_BUNDLE_MBELIB)
   target_link_libraries(dect2core PUBLIC dect2_mbelib)
   target_compile_definitions(dect2core PRIVATE DECT2_BUILTIN_MBE=1)
 endif()
+# codec2 (FreeDV and M17 speech, LGPL-2.1): built from third_party/codec2 as its own shared library next to the programs and loaded at run
+# time, so the speech works without installing anything. An installed libcodec2 or one in a codecs folder is still found (docs/CODECS.md).
+option(DECT2_BUNDLE_CODEC2 "Build codec2 as a shared library next to OnAir" ON)
+if(DECT2_BUNDLE_CODEC2 AND NOT MSVC)
+  add_subdirectory(third_party/codec2)
+  add_dependencies(dect2core onair_codec2)
+endif()
 if(SOAPY_FOUND)
   message(STATUS "SoapySDR ${SOAPY_VERSION}: generic radios enabled")
   target_sources(dect2core PRIVATE core/src/source_soapy.cpp)
@@ -628,9 +635,17 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_multitv_engine PRIVATE dect2core)
   add_test(NAME multitv_engine COMMAND test_multitv_engine)
 
+  add_executable(test_multitv_wide tests/test_multitv_wide.cpp)   # the same on a 61.44 Msps capture (LimeSDR)
+  target_link_libraries(test_multitv_wide PRIVATE dect2core)
+  add_test(NAME multitv_wide COMMAND test_multitv_wide)
+
   add_executable(test_dual_engine tests/test_dual_engine.cpp)   # two modes at once (Engine::setSecondary)
   target_link_libraries(test_dual_engine PRIVATE dect2core)
   add_test(NAME dual_engine COMMAND test_dual_engine)
+
+  add_executable(test_secondary_modes tests/test_secondary_modes.cpp)   # the narrow-channel modes that may run as the second decoder
+  target_link_libraries(test_secondary_modes PRIVATE dect2core)
+  add_test(NAME secondary_modes COMMAND test_secondary_modes)
 
   add_executable(test_sigmf tests/test_sigmf.cpp)
   target_link_libraries(test_sigmf PRIVATE dect2core)
@@ -774,6 +789,11 @@ if(DECT2_BUILD_APP AND NOT APPLE)
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS "${CMAKE_INSTALL_FULL_LIBDIR}/onair")
   endif()
   install(FILES README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} OPTIONAL)
+  if(TARGET onair_codec2)   # codec2 (LGPL-2.1): its own shared library in <prefix>/lib/onair, where the program looks (../lib/onair), with licence and notice
+    install(TARGETS onair_codec2 LIBRARY DESTINATION lib/onair RUNTIME DESTINATION lib/onair)
+    install(FILES third_party/codec2/COPYING DESTINATION ${CMAKE_INSTALL_DOCDIR}/codec2)
+    install(FILES third_party/codec2/README-OnAir.md DESTINATION ${CMAKE_INSTALL_DOCDIR}/codec2 RENAME NOTICE.md)
+  endif()
   # a normal user can open every USB radio (udev rules) and the kernel's TV driver stays off RTL-SDR dongles (modprobe blacklist)
   install(FILES packaging/linux/60-onair-sdr.rules DESTINATION lib/udev/rules.d)
   install(FILES packaging/linux/onair-rtlsdr-blacklist.conf packaging/linux/onair-sdrplay-blacklist.conf DESTINATION /etc/modprobe.d)

@@ -124,7 +124,7 @@ These receivers are built from the published specifications and checked end to e
 | **ANT+ sensors** | 2457 MHz (ANT+), or any ANT channel 2400 - 2524 MHz, 4 Msps (a radio that reaches 2.4 GHz) | Heart rate straps and watches, bike speed / cadence / power sensors, footpods and environment sensors: device number and type, the data pages (heart rate with beat count and R-R interval, plotted over time; power, cadence, speed, temperature), manufacturer, serial and battery. Receive only: the open broadcasts a watch hears, nothing is sent or paired |
 | **DECT cordless phones** | Carriers 1881.792 - 1897.344 MHz (EU), 5 Msps or more (a radio that reaches 1.9 GHz) | Base stations from their beacons: RFPI with the manufacturer code and system number, level, slots used, system-information tails, a burst log with base and handset bursts. Activity and signalling only: calls are encrypted, the voice is not decoded and nothing is sent |
 | **Multitone Paging** | Multitone Electronics (UK) pagers, hospitals and industrial sites, 25 - 470 MHz, narrowband FM / FFSK. Detector only: the format is not public | Per transmission: carrier, deviation, steady tones and spectral lines of the audio; for FSK data the measured baud rate, the bit stream in hex and the 32-bit words that pass the POCSAG BCH(31,21) check, POCSAG sync flagged. Audio FFSK found in real recordings (tones f / 2f, 585 baud, the 0x605A frame word); the address and message fields are not worked out, so everything is unverified and no message text is shown; receive only, pager messages are private (see `docs/multitone-research.md`) |
-| **M17** | Open digital voice, 2 m / 70 cm | Callsigns, voice through your libcodec2, text messages, positions on a map |
+| **M17** | Open digital voice, 2 m / 70 cm | Callsigns, voice (codec2 comes with OnAir), text messages, positions on a map |
 | **D-STAR** | Amateur digital voice, 2 m / 70 cm | Call log with callsigns and repeaters, slow data messages, D-PRS / GPS positions on a map, voice through your mbelib |
 | **PSK31** | Keyboard chat on the HF bands (BPSK31 / 63, QPSK31 / 63) | Every signal in the 3 kHz passband at once: a chat log per signal, the picked one in big text, callsigns highlighted |
 | **Airband** | AM voice, 118 - 137 MHz | Several 25 and 8.33 kHz channels at once: squelch, scan, priority, activity log |
@@ -330,7 +330,7 @@ The official builds ship with the Application ID of the OnAir Discord applicatio
 ## Good to know
 
 - Encrypted (scrambled) services cannot be decoded.
-- Some voice and audio codecs are not shipped with OnAir (codec2 for FreeDV; AMBE, HDC and DRA+ are patented). **[docs/CODECS.md](docs/CODECS.md)** says how to install the ones you can, and what to use for the others. The **?** button next to the sound of each such mode says the same.
+- codec2 (FreeDV and M17 speech) comes with OnAir as a separate shared library, nothing to install. Some other voice and audio codecs are not shipped (AMBE, HDC and DRA+ are patented). **[docs/CODECS.md](docs/CODECS.md)** says how to install the ones you can, and what to use for the others. The **?** button next to the sound of each such mode says the same.
 - **Saving DRA sound.** OnAir cannot decode DRA, but it can save it. In the CDR *Radio* tab, and in the *Player* section of the TV tab for a DTMB service whose sound is DRA (or any service with MPEG audio), press **Save stream**. The raw audio elementary stream goes to `audio-streams/<name>_<date>_<time>.dra` (`.mp2` for MPEG audio) in OnAir's data folder, and the path is shown under the button. Press **Stop saving** (or pick another service) to close the file. Play it with an FFmpeg that has DRA support; user YZYMC reported a build of FFmpeg 7.1.2 with a DRA patch. The commands, assuming such a build:
   ```sh
   ffplay stream.dra                 # listen
@@ -387,7 +387,7 @@ SigMF recordings (IQEngine, public captures) and two-channel WAV IQ files open t
    ```sh
    pacman -S --needed git zip mingw-w64-ucrt-x86_64-{gcc,cmake,ninja,pkgconf,ffmpeg,glfw,hackrf,soapysdr,libiconv}
    ```
-   Optional: `mingw-w64-ucrt-x86_64-codec2` for FreeDV sound, and `mingw-w64-ucrt-x86_64-nsis` for the setup .exe.
+   Optional: `mingw-w64-ucrt-x86_64-nsis` for the setup .exe. (codec2 for FreeDV and M17 is built from `third_party/codec2` with OnAir and goes into the zip.)
 5. Get the source:
    ```sh
    git clone https://github.com/adswill/OnAir.git
@@ -432,4 +432,4 @@ I'm a bit embarrassed to ask this, but here goes. OnAir is free and always will 
 
 ## License
 
-OnAir is released under the **GNU General Public License v3.0 or later**, see [LICENSE](LICENSE). It includes [Dear ImGui](https://github.com/ocornut/imgui) and [miniaudio](https://github.com/mackron/miniaudio), each under its own permissive license, and uses [FFmpeg](https://ffmpeg.org), [GLFW](https://www.glfw.org), [libusb](https://libusb.info) and [libhackrf](https://github.com/greatscottgadgets/hackrf).
+OnAir is released under the **GNU General Public License v3.0 or later**, see [LICENSE](LICENSE). It includes [Dear ImGui](https://github.com/ocornut/imgui) and [miniaudio](https://github.com/mackron/miniaudio), each under its own permissive license. It ships [codec2](https://github.com/drowe67/codec2) (LGPL-2.1, `third_party/codec2`) as a separate shared library that it loads at run time, so you can replace it with your own build (see [docs/CODECS.md](docs/CODECS.md)). It uses [FFmpeg](https://ffmpeg.org), [GLFW](https://www.glfw.org), [libusb](https://libusb.info) and [libhackrf](https://github.com/greatscottgadgets/hackrf).

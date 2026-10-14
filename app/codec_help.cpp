@@ -42,17 +42,21 @@ struct Text {
 Text textOf(CodecHelp c) {
     switch (c) {
     case CodecHelp::Codec2:
-        return {"codec2 (FreeDV voice)",
-                "codec2 is the open voice codec of FreeDV. It is free software, but OnAir does not ship it. When it is installed, OnAir loads it "
-                "and plays FreeDV speech.",
+        return {"codec2 (FreeDV and M17 voice)",
+                "codec2 is the open voice codec of FreeDV and M17. It comes with OnAir (the library libcodec2 sits next to the program), so FreeDV and "
+                "M17 speech works with nothing to install. This help only matters when it says \"not found\" above: then this copy of OnAir is "
+                "incomplete.",
 #if defined(__APPLE__)
-                "Install Homebrew (brew.sh), then run in Terminal:\n  brew install codec2",
+                "Normally nothing to do: the library is inside OnAir.app. If it is not found, download the OnAir disk image again and copy "
+                "OnAir.app to Applications; or install it yourself with Homebrew (brew.sh):\n  brew install codec2",
 #elif defined(_WIN32)
-                "Only FreeDV and M17 need codec2; DMR, P25, NXDN, dPMR and D-STAR do not. Windows: put codec2.dll or libcodec2.dll into the codecs "
-                "folder below. It is not always in FreeDV's bin folder: install FreeDV (freedv.org) and search its folder for *codec2*.dll, or build "
-                "codec2 (github.com/drowe67/codec2) with MSYS2 (pacman -S mingw-w64-x86_64-codec2 gives libcodec2.dll in C:\\msys64\\mingw64\\bin).",
+                "Normally nothing to do: libcodec2.dll is in the same folder as OnAir.exe. If it is not found, unpack the whole OnAir zip again "
+                "(do not copy OnAir.exe alone) or use the setup program. To use your own codec2 instead, put codec2.dll or libcodec2.dll into the "
+                "codecs folder below (MSYS2: pacman -S mingw-w64-x86_64-codec2).",
 #else
-                "Debian / Ubuntu:  sudo apt install libcodec2-1.2\n(Ubuntu 22.04: libcodec2-1.0)\nFedora:  sudo dnf install codec2",
+                "Normally nothing to do: libcodec2 is in the OnAir package (the lib folder next to bin). If it is not found, install the OnAir "
+                ".deb or portable package again, or install your distribution's:\n  Debian / Ubuntu:  sudo apt install libcodec2-1.2 (Ubuntu 22.04: "
+                "libcodec2-1.0)\n  Fedora:  sudo dnf install codec2",
 #endif
                 true};
     case CodecHelp::DmrAmbe:
@@ -181,14 +185,14 @@ void codecHelpButton(CodecHelp c) {
             const bool mbe = c == CodecHelp::DstarAmbe || c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe || c == CodecHelp::P25Imbe;
             const bool found = c == CodecHelp::P25Imbe ? dect2::p25ImbeAvailable(&path) : c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe ? dect2::nxdnAmbeAvailable(&path) : mbe ? dect2::dstarAmbeAvailable(&path) : dect2::hfdigFreedvLibrary(&path, &ver);
             if (found) ImGui::TextColored(pal::okGreen(), "%s found: %s", mbe ? "mbelib" : "codec2", path.c_str());
-            else ImGui::TextColored(pal::warnAmber(), "%s not found%s", mbe ? "mbelib" : "codec2", mbe ? ": calls and data are shown, without sound" : "");
+            else ImGui::TextColored(pal::warnAmber(), "%s not found%s", mbe ? "mbelib" : "codec2", mbe ? ": calls and data are shown, without sound" : ": this copy of OnAir came without it");
         } else {
             ImGui::TextColored(pal::warnAmber(), "Not decoded in OnAir");
         }
         ImGui::Spacing();
         ImGui::TextUnformatted(t.what);
         ImGui::Spacing();
-        ImGui::TextDisabled(t.loadable ? "Install" : "What you can do");
+        ImGui::TextDisabled(t.loadable ? (c == CodecHelp::Codec2 ? "If it is not found" : "Install") : "What you can do");
         ImGui::TextUnformatted(t.install);
         if (t.loadable) {
             const bool mbe = c != CodecHelp::Codec2;

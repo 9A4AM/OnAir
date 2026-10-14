@@ -134,11 +134,9 @@ std::vector<std::string> codecFileNameList(bool codec2) {
 std::vector<std::string> codecSearchPlaces() {
     std::vector<std::string> v = native::codecFolders();
 #if defined(_WIN32)
-    char path[MAX_PATH * 2] = {0};
-    if (GetModuleFileNameA(nullptr, path, (DWORD)sizeof path - 1)) { std::string d = path; const size_t c = d.find_last_of("\\/"); if (c != std::string::npos) v.push_back(d.substr(0, c + 1)); }
     v.push_back("the PATH (Windows' own search order)");
 #elif defined(__APPLE__)
-    v.push_back("OnAir.app/Contents/Frameworks/"); v.push_back("/opt/homebrew/lib/"); v.push_back("/usr/local/lib/"); v.push_back("/opt/local/lib/");
+    v.push_back("/opt/homebrew/lib/"); v.push_back("/usr/local/lib/"); v.push_back("/opt/local/lib/");
 #else
     v.push_back("the system library folders (/usr/local/lib, /usr/lib, /usr/lib64, the multiarch folder)");
 #endif

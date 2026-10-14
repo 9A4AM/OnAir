@@ -634,7 +634,7 @@ Files: audio and IQ	Fichiers : audio et IQ
 Fill under the line	Remplir sous la ligne
 Find "SDRplay API Service" and press Start (or Restart).	Trouvez « SDRplay API Service » et cliquez sur Démarrer (ou Redémarrer).
 Fix the address of the network radio (host:port).	Corrigez l'adresse de la radio réseau (hôte:port).
-Follow the steps in the full instructions to install codec2.	Suivez les étapes des instructions complètes pour installer codec2.
+Download OnAir again and unpack or install the whole package: the codec2 library belongs next to the program.	Téléchargez OnAir à nouveau et décompressez ou installez le paquet complet : la bibliothèque codec2 se trouve à côté du programme.
 Follow the steps in the full instructions to install the codec.	Suivez les étapes des instructions complètes pour installer le codec.
 For an RSP, install the SDRplay API first (sdrplay.com).	Pour un RSP, installez d'abord l'API SDRplay (sdrplay.com).
 Found %s (%s)	%s trouvé (%s)
@@ -763,7 +763,7 @@ Stop adding rows: the picture stays, and drag or the wheel on the waterfall scro
 Television	Télévision
 Text size	Taille du texte
 Text size %d%%	Taille du texte %d%%
-The FreeDV / M17 voice codec (codec2) is not installed	Le codec vocal FreeDV / M17 (codec2) n'est pas installé
+The FreeDV / M17 voice codec (codec2) was not found	Le codec vocal FreeDV / M17 (codec2) est introuvable
 The HackRF firmware does not match	Le firmware du HackRF ne correspond pas
 The HackRF is not found	Le HackRF est introuvable
 The Linux sound driver holds the radio, so the SDRplay software cannot see it.	Le pilote audio Linux monopolise la radio : le logiciel SDRplay ne peut pas la voir.
@@ -792,7 +792,7 @@ The radio's USB connection failed	La connexion USB de la radio a échoué
 The recording file is missing, moved or not readable.	Le fichier d'enregistrement est absent, déplacé ou illisible.
 The rtl_tcp address is not valid	L'adresse rtl_tcp n'est pas valide
 The server has no radio	Le serveur n'a pas de radio
-The text and data are shown, but speech needs the open codec2 library, which OnAir does not ship.	Le texte et les données sont affichés, mais la parole nécessite la bibliothèque ouverte codec2, qu'OnAir ne fournit pas.
+The text and data are shown, but speech needs the codec2 library. It comes with OnAir, so this copy is probably incomplete.	Le texte et les données sont affichés, mais la parole nécessite la bibliothèque codec2. Elle est fournie avec OnAir : cette copie est probablement incomplète.
 The voice codec (mbelib) is not installed	Le codec vocal (mbelib) n'est pas installé
 This frequency is not reachable through the converter.	Cette fréquence n'est pas accessible via le convertisseur.
 This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	C'est un problème Linux. Sur ce système, débranchez la radio, rebranchez-la et appuyez sur le bouton d'actualisation.

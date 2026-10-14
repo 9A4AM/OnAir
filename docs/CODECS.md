@@ -1,6 +1,6 @@
 # Voice and audio codecs
 
-OnAir never ships a patented codec. You install the ones you are allowed to use yourself, and OnAir loads them. **Whether you may
+OnAir never ships a patented codec. You install the ones you are allowed to use yourself, and OnAir loads them. The one open codec, **codec2** (FreeDV and M17 speech), comes with OnAir: nothing to install. **Whether you may
 install or use them is your own responsibility: follow the patent and radio-listening law where you live.**
 
 Every mode that needs a codec has a small **?** button. It shows whether the library was found and where, the exact file names OnAir
@@ -13,7 +13,7 @@ looks for, the exact folders it searches, an **Open codecs folder** button (it m
 |---|---|---|
 | DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (DMR: calls are shown, voice is not decoded in this version) |
 | D-STAR | AMBE (patented) | **mbelib** |
-| FreeDV (HF digital), M17 | codec2 (open) | **codec2** |
+| FreeDV (HF digital), M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
 | TETRA | its own speech codec | nothing from you: it is not mbelib and not codec2 |
 | DAB, DRM, TV, FM | MP2, AAC, H.264 ... | nothing (FFmpeg is inside OnAir) |
 
@@ -26,7 +26,7 @@ OnAir tries these file names. Folders are searched in this order; inside each fo
 
 1. The `DECT2_MBELIB_PATH` / `DECT2_CODEC2_PATH` environment variable (a full path), if set.
 2. The OnAir **codecs folders** (below).
-3. The program's own folder (Windows: next to `OnAir.exe`; macOS: inside the app, `Contents/Frameworks`).
+3. The libraries that ship with OnAir: the program's own folder (Windows: next to `OnAir.exe`; Linux: next to `dect2`, and `../lib/onair` and `../lib` of it, which is where the `.deb` and the portable package put codec2; macOS: inside the app, `Contents/Frameworks` and `Contents/Resources`). A copy you put in a codecs folder (step 2) wins over the shipped one.
 4. The system: Windows `PATH`; macOS `/opt/homebrew/lib`, `/usr/local/lib`, `/opt/local/lib`; Linux `/usr/local/lib`, `/usr/lib`, `/usr/lib64`, the multiarch folder.
 
 | Library | Windows | macOS | Linux |
@@ -89,11 +89,22 @@ encrypted; OnAir never decrypts. DMR voice is not decoded in this version of OnA
 
 ## codec2 (FreeDV, M17)
 
-codec2 is open software (LGPL), but OnAir does not bundle it. It is only for FreeDV and M17.
+codec2 is open software (LGPL-2.1) and **comes with OnAir**: FreeDV and M17 speech works after you download OnAir, with nothing to install.
+It is only for FreeDV and M17.
 
-- **macOS:** `brew install codec2`.
-- **Linux:** `sudo apt install libcodec2-1.2` (Ubuntu 22.04: `libcodec2-1.0`), or `sudo dnf install codec2`.
-- **Windows:** put `codec2.dll` or `libcodec2.dll` in the codecs folder. FreeDV's installer does not always place it in its `bin` folder: search the FreeDV install folder for `*codec2*.dll`, or in MSYS2 run `pacman -S mingw-w64-x86_64-codec2` and take `libcodec2.dll` from `C:\msys64\mingw64\bin` (with the DLLs it needs).
+- Where it is: Windows `libcodec2.dll` next to `OnAir.exe`; macOS `OnAir.app/Contents/Frameworks/libcodec2.1.2.dylib`; Linux the `.deb` puts it in
+  `/usr/lib/onair/`, the portable package in `lib/` (next to `bin/`).
+- It is a **separate shared library** that OnAir loads at run time, not part of the OnAir program, as the LGPL asks for. The source is in
+  `third_party/codec2` (the unmodified 1.2.0 release, see `third_party/codec2/README-OnAir.md`), and every package carries the licence text
+  (`licenses/codec2/COPYING`) and a notice.
+- **Use your own build instead:** put your codec2 (`libcodec2.so.1.2`, `libcodec2.1.2.dylib`, `codec2.dll` or `libcodec2.dll`) in the codecs folder
+  (the **Open codecs folder** button of the **?** popup), or set `DECT2_CODEC2_PATH` to its full path. Those are searched before the shipped copy.
+- If the **?** button says `codec2 not found`, this copy of OnAir is incomplete (for example only `OnAir.exe` was copied out of the zip):
+  unpack or install the whole package again. Or install codec2 yourself: macOS `brew install codec2`; Linux `sudo apt install libcodec2-1.2`
+  (Ubuntu 22.04: `libcodec2-1.0`) or `sudo dnf install codec2`; Windows `libcodec2.dll` from a FreeDV install or MSYS2
+  (`pacman -S mingw-w64-x86_64-codec2`, with the DLLs it needs) into the codecs folder.
+- Building OnAir yourself: the codec2 library is built with it (`cmake --build build`, file `libcodec2*` next to the programs in the build folder).
+  `-DDECT2_BUNDLE_CODEC2=OFF` leaves it out; OnAir then uses an installed codec2 as before.
 
 Open HF digital and pick FreeDV (or M17): the **?** button says `codec2 found: <path>`.
 

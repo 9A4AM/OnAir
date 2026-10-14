@@ -234,6 +234,9 @@ inline std::vector<std::string> libNames(const char* stem, std::initializer_list
 // The OnAir "codecs" folders, where a user can put a codec library that OnAir does not ship: next to the program (macOS: next to OnAir.app,
 // and Contents/MacOS/codecs inside it) and in the user data folder (%LOCALAPPDATA%\OnAir\codecs, ~/Library/Application Support/OnAir/codecs,
 // $XDG_DATA_HOME/onair/codecs or ~/.local/share/onair/codecs). Each ends with the path separator.
+// Between the two come the places the libraries SHIPPED with OnAir are in (codec2, built from third_party/codec2): the program's own folder,
+// on macOS Contents/Frameworks and Contents/Resources of the app, on Linux ../lib/onair and ../lib of the program (the .deb and the portable
+// package). The user data folder stays last: it is where the "Open codecs folder" button goes.
 inline std::vector<std::string> codecFolders() {
     std::vector<std::string> v;
 #if defined(_WIN32)
@@ -241,7 +244,7 @@ inline std::vector<std::string> codecFolders() {
     if (GetModuleFileNameA(nullptr, path, (DWORD)sizeof path - 1)) {
         std::string d = path;
         const size_t cut = d.find_last_of("\\/");
-        if (cut != std::string::npos) v.push_back(d.substr(0, cut + 1) + "codecs\\");
+        if (cut != std::string::npos) { v.push_back(d.substr(0, cut + 1) + "codecs\\"); v.push_back(d.substr(0, cut + 1)); }
     }
     if (const char* la = getenv("LOCALAPPDATA")) if (*la) v.push_back(std::string(la) + "\\OnAir\\codecs\\");
 #else
@@ -264,7 +267,13 @@ inline std::vector<std::string> codecFolders() {
             const size_t up = dir.find_last_of('/', at);
             if (up != std::string::npos) v.push_back(dir.substr(0, up + 1) + "codecs/");
         }
+        v.push_back(dir + "../Frameworks/");
+        v.push_back(dir + "../Resources/");
+#else
+        v.push_back(dir + "../lib/onair/");
+        v.push_back(dir + "../lib/");
 #endif
+        v.push_back(dir);
     }
     const char* home = getenv("HOME");
 #if defined(__APPLE__)
