@@ -105,7 +105,12 @@ std::string trimWs(const std::string& v) {
     return v.substr(a, b - a);
 }
 std::string lower(std::string v) { for (char& c : v) c = (char)tolower((unsigned char)c); return v; }
-std::string remoteBase(const NetRadio& r) { return "driver=remote,remote=tcp://" + hostPort(cleanHost(r.host), netRadioPort(r)); }
+// SoapyRemote's own network timeout is 100 ms (connect, and the wait for the server to answer the log connection). A server that is slow
+// to answer (a small computer, a busy one, a server that is still probing its radios) makes the client give up and drop the connection:
+// the server logs "handlerLoop() FAIL: SoapyRPCUnpacker::recv(header)" and the client sees no radios (issue #84). A few seconds
+// cost nothing when the server is quick.
+constexpr const char* kRemoteTimeout = ",remote:timeout=5000000";
+std::string remoteBase(const NetRadio& r) { return "driver=remote,remote=tcp://" + hostPort(cleanHost(r.host), netRadioPort(r)) + kRemoteTimeout; }
 
 std::mutex gEnumMu;
 SoapyEnumerateFn gEnum = nullptr;
