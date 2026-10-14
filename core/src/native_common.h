@@ -582,6 +582,7 @@ std::unique_ptr<IqSource> makeAirspy(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeBlade(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeLime(const DeviceInfo& d);
 std::unique_ptr<IqSource> makePluto(const DeviceInfo& d);
+std::unique_ptr<TxSink> makePlutoTx(const DeviceInfo& d);   // source_plutosdr.cpp: the PlutoSDR's transmit path (libiio)
 std::unique_ptr<IqSource> makeUsrp(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeSdrplay(const DeviceInfo& d);
 // network radios the user added (netradio.cpp): a PlutoSDR at a libiio URI ("ip:host"), an rtl_tcp server

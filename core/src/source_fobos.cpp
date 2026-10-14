@@ -6,9 +6,10 @@
 // The radio has two paths:
 // - the RF input, 50 MHz to 6 GHz, through the tuner: complex samples at one of the converter's rates (8 to 50 Msps; 64 on rev. 4)
 // - the HF1 and HF2 inputs, sampled directly by the two converters (HF1 arrives as the I samples, HF2 as the Q samples). Each is a real
-//   signal from 0 to half the converter's rate, so this driver shifts the wanted frequency to zero, filters and decimates (RealDdc below).
+//   signal from 0 to half the converter's rate, so this driver shifts the wanted frequency to zero, filters and decimates (RealDdc, native_realddc.h).
 // Below 50 MHz the HF input chosen in the radio settings is used (HF1 unless set otherwise).
 #include "native_common.h"
+#include "native_realddc.h"
 #include "dect2/dsp_compat.h"
 #include <map>
 
@@ -119,79 +120,6 @@ std::vector<double> ratesOf(FobosApi::dev_t* dev) {
     if (v.empty()) v.assign(std::begin(kDefaultRates), std::end(kDefaultRates));
     return v;
 }
-
-// Zeroth-order modified Bessel function (Kaiser window)
-double besselI0(double x) {
-    double sum = 1, term = 1;
-    for (int k = 1; k < 64; k++) {
-        term *= (x / (2.0 * k)) * (x / (2.0 * k));
-        sum += term;
-        if (term < sum * 1e-17) break;
-    }
-    return sum;
-}
-
-// A real input at fsHz -> complex baseband around fcHz at fsHz / decim.
-//   y[m] = sum_k h[k] x[mD + k] exp(-jw(mD + k)) = exp(-jwmD) * sum_k (h[k] exp(-jwk)) x[mD + k],   w = 2 pi fc / fs
-// so one decimating FIR with complex taps (two real ones, dsp_compat's desamp) and one rotation per output sample. h is a Kaiser low-pass,
-// 16 taps per output sample: flat to +-0.35 of the output rate, 75 dB down from 0.65 on, so what folds back lands outside the middle 70 %.
-// A sine at the input's full scale comes out as a complex tone of the same amplitude.
-class RealDdc {
-public:
-    int decim() const { return D_; }
-    void design(int decim) {
-        D_ = std::max(1, decim);
-        N_ = 16 * D_;
-        h_.assign((size_t)N_, 0.0);
-        const double beta = 7.5, cut = 0.5 / D_, mid = (N_ - 1) / 2.0, i0b = besselI0(beta);
-        double sum = 0;
-        for (int k = 0; k < N_; k++) {
-            const double t = k - mid, r = t / (mid + 0.5);
-            const double sinc = std::fabs(t) < 1e-9 ? 2 * cut : std::sin(2 * M_PI * cut * t) / (M_PI * t);
-            h_[(size_t)k] = sinc * besselI0(beta * std::sqrt(std::max(0.0, 1 - r * r))) / i0b;
-            sum += h_[(size_t)k];
-        }
-        for (auto& v : h_) v /= sum;
-        in_.clear();
-        ph_ = {1, 0};
-    }
-    void tune(double fsHz, double fcHz, double gain) {
-        const double w = 2 * M_PI * fcHz / fsHz;
-        gr_.resize((size_t)N_); gi_.resize((size_t)N_);
-        for (int k = 0; k < N_; k++) {
-            const double a = std::fmod(w * k, 2 * M_PI);
-            gr_[(size_t)k] = (float)(2 * gain * h_[(size_t)k] * std::cos(a));
-            gi_[(size_t)k] = (float)(-2 * gain * h_[(size_t)k] * std::sin(a));
-        }
-        step_ = std::polar(1.0, -std::fmod(w * D_, 2 * M_PI));
-    }
-    // x: n samples, one every `stride` floats; the output is appended to out
-    void process(const float* x, size_t n, size_t stride, std::vector<cf32>& out) {
-        const size_t have = in_.size();
-        in_.resize(have + n);
-        for (size_t i = 0; i < n; i++) in_[have + i] = x[i * stride];
-        if (in_.size() < (size_t)N_) return;
-        const size_t m = (in_.size() - (size_t)N_) / (size_t)D_ + 1;
-        yr_.resize(m); yi_.resize(m);
-        desamp(in_.data(), D_, gr_.data(), yr_.data(), (int)m, N_);
-        desamp(in_.data(), D_, gi_.data(), yi_.data(), (int)m, N_);
-        const size_t at = out.size();
-        out.resize(at + m);
-        std::complex<double> ph = ph_;
-        for (size_t i = 0; i < m; i++) {
-            out[at + i] = cf32((float)(yr_[i] * ph.real() - yi_[i] * ph.imag()), (float)(yr_[i] * ph.imag() + yi_[i] * ph.real()));
-            ph *= step_;
-        }
-        ph_ = ph / std::abs(ph);
-        in_.erase(in_.begin(), in_.begin() + (std::ptrdiff_t)(m * (size_t)D_));
-    }
-
-private:
-    int D_ = 1, N_ = 16;
-    std::vector<double> h_;
-    std::vector<float> gr_, gi_, in_, yr_, yi_;
-    std::complex<double> ph_{1, 0}, step_{1, 0};
-};
 
 std::vector<RadioSetting> fobosSettings(bool clock) {
     std::vector<RadioSetting> v = {
@@ -378,16 +306,16 @@ private:
         if (direct_) {
             {
                 std::lock_guard<std::mutex> dl(ddcMu_);
-                ddc_.tune(adcHz_, std::min(tuneHz, adcHz_ / 2), kScale);
+                ddc_.tune(adcHz_, tuneHz, kScale);   // a mixer: above half the converter rate it aliases, as the hardware would
             }
-            if (err.empty() && (f > adcHz_ / 2 || f < kHfMinHz))
-                err = "Fobos SDR: the HF inputs cover " + mhzText(kHfMinHz) + " to " + mhzText(adcHz_ / 2) + " (half the converter's rate), the RF input starts at " +
-                      mhzText(kRfMinHz) + "; " + mhzText(f) + " is outside both";
+            if (f > adcHz_ / 2 || f < kHfMinHz)
+                addNote(err, "the HF inputs of this Fobos SDR are specified for " + mhzText(kHfMinHz) + " to " + mhzText(adcHz_ / 2) + " (half the converter's rate), the RF input starts at " +
+                      mhzText(kRfMinHz) + "; the driver may not reach " + mhzText(f) + " or the signal may be weak or absent");
         } else {
-            if (const int r = api.set_frequency(dev_, std::clamp(tuneHz, kHfBelowHz, kRfMaxHz)); r != 0) { err = "Fobos SDR could not tune to " + mhzText(f) + " (" + errorText(r) + ")"; return false; }
-            if (err.empty() && (f < kHfBelowHz || f > kRfMaxHz))
-                err = "Fobos SDR: the RF input tunes " + mhzText(kRfMinHz) + " to " + mhzText(kRfMaxHz) + "; " + mhzText(f) + " is outside that" +
-                      (f < kHfBelowHz ? " (the HF input is switched off in the radio settings)" : "");
+            if (const int r = api.set_frequency(dev_, std::max(tuneHz, 0.0)); r != 0) { err = "Fobos SDR: the library refused " + mhzText(f) + (f < kRfMinHz || f > kRfMaxHz ? " (the RF input is specified for " + mhzText(kRfMinHz) + " to " + mhzText(kRfMaxHz) + ")" : std::string()) + " (" + errorText(r) + ")"; return false; }
+            if (f < kHfBelowHz || f > kRfMaxHz)
+                addNote(err, "the RF input of this Fobos SDR is specified for " + mhzText(kRfMinHz) + " to " + mhzText(kRfMaxHz) + "; the driver may not reach " + mhzText(f) +
+                      " or the signal may be weak or absent" + (f < kHfBelowHz ? " (the HF input is switched off in the radio settings)" : ""));
         }
         // The gain slider (0..95 dB) -> the LNA step and the VGA in 2 dB steps. Auto: the LNA as high as the gain allows (the lowest noise);
         // a fixed LNA step (TuneSettings "lna") leaves the slider to the VGA.

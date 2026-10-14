@@ -10,6 +10,7 @@ constexpr const char* kSdrplay = "https://www.sdrplay.com/downloads/";
 constexpr const char* kHackrfFw = "https://hackrf.readthedocs.io/en/latest/updating_firmware.html";
 constexpr const char* kCodecs = "https://github.com/adswill/OnAir/blob/main/docs/CODECS.md";
 constexpr const char* kDevices = "https://github.com/adswill/OnAir/blob/main/DEVICES.md";
+constexpr const char* kSddcReleases = "https://github.com/renardspark/SDDC_Driver/releases";
 constexpr const char* kUhdImages = "https://files.ettus.com/manual/page_images.html";
 constexpr const char* kUdevCmd = "sudo ./install-udev-rules.sh   # in the OnAir folder; then unplug and replug the radio";
 #define NONE {nullptr}
@@ -43,6 +44,16 @@ const Entry kTable[] = {
      {N_("This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button."), nullptr}, NONE, NONE,
      {N_("Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay"), N_("Unplug the radio and plug it in again."), nullptr},
      {{Act::CopyText, N_("Copy the command"), "sudo systemctl restart sdrplay", OsLinux}}},
+    {"rx888_firmware", "SDDC_FX3.img", N_("The RX888 needs its firmware file"),
+     N_("The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it."),
+     {N_("Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below)."), N_("Put the file in OnAir's codecs folder (button below)."), N_("Press the refresh button next to the radio list."), nullptr},
+     NONE, NONE, NONE,
+     {{Act::OpenUrl, N_("Open driver page"), kSddcReleases, OsAll}, {Act::OpenCodecs, N_("Open codecs folder"), "", OsAll}}},
+    {"rx888_usb2", "on a USB 2 connection", N_("The RX888 is on a USB 2 port"),
+     N_("The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream."),
+     {N_("Plug the radio into a USB 3 port directly on the computer, not through a USB 2 hub."), N_("Use a USB 3 cable (the one that came with the radio)."), N_("Press the refresh button next to the radio list."), nullptr},
+     NONE, NONE, NONE,
+     {{Act::OpenDiagnostics, N_("Copy diagnostics"), "", OsAll}}},
     {"usb_permission", "may not open it", N_("This user may not open the radio"),
      N_("The radio is plugged in, but the system does not let your account use it yet."),
      NONE,
@@ -97,8 +108,8 @@ const Entry kTable[] = {
      N_("The PlutoSDR answered, but without its radio chip. It may still be starting, or run unusual firmware."),
      {N_("Wait a minute after plugging it in, then press the refresh button."), N_("Check that the firmware is the stock one, or a known one such as Tezuka."), nullptr},
      NONE, NONE, NONE, {{Act::OpenUrl, N_("Open the device list"), kDevices, OsAll}}},
-    {"freq_range", "is outside this radio's range", N_("This radio cannot tune that frequency"),
-     N_("The frequency is below or above what this radio can receive."),
+    {"freq_range", "or the signal may be weak or absent", N_("This frequency is outside what this radio is specified for"),
+     N_("OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent."),
      {N_("Choose a frequency inside the range shown in the message."), N_("Or choose another radio from the list."), nullptr},
      NONE, NONE, NONE, {}},
     {"codec_mbelib", "mbelib not found", N_("The voice codec (mbelib) is not installed"),
