@@ -12,6 +12,8 @@ struct State {
     bool loaded = false, wasRunning = false;
     double srMsym = 0;                  // manual symbol rate in Msym/s, 0 = find it from the spectrum
     int stdHint = 0;                    // 0 automatic, 1 DVB-S only, 2 DVB-S2 only
+    int txPol = 0, lnbPol = 0;          // polarisation of the wanted transponder / of the LNB supply (0 not set, 1 vertical, 2 horizontal): only used for a warning
+    double searchSince = -1;            // ImGui time when the receiver started looking without finding a carrier
     double pushedSr = -1; int pushedStd = -1;
     uint64_t lastSeq = 0;
     std::deque<float> snr;              // Es/N0 of the reports, newest last
@@ -28,12 +30,16 @@ void loadState() {
     plat::Prefs& d = plat::prefs();
     S.srMsym = std::max(0.0, d.getD("dvbsSr", 0.0));
     S.stdHint = (int)std::max(0L, std::min(2L, d.getI("dvbsStd", 0)));
+    S.txPol = (int)std::max(0L, std::min(2L, d.getI("dvbsTxPol", 0)));
+    S.lnbPol = (int)std::max(0L, std::min(2L, d.getI("dvbsLnbPol", 0)));
 }
 
 void saveState(App& a) {
     plat::Prefs& d = plat::prefs();
     d.setD("dvbsSr", S.srMsym);
     d.setI("dvbsStd", S.stdHint);
+    d.setI("dvbsTxPol", S.txPol);
+    d.setI("dvbsLnbPol", S.lnbPol);
     savePrefs(a);
 }
 
@@ -358,6 +364,9 @@ void receiver(App& a) {
     ImGui::Spacing();
     ImGui::TextColored(pal::accent(), "NOTES");
     ImGui::PushTextWrapPos(0);
+    if (live(a) && !t.lockSpectrum) { if (S.searchSince < 0) S.searchSince = ImGui::GetTime(); } else S.searchSince = -1;
+    if (S.searchSince >= 0 && ImGui::GetTime() - S.searchSince > 10)
+        ImGui::TextColored(pal::warnAmber(), "No carrier found. Most often the LNB is on the other polarisation (13 V vertical, 18 V horizontal) or the other band (22 kHz tone), or the dish is off target.");
     if (!t.signalNote.empty()) ImGui::TextUnformatted(t.signalNote.c_str());
     ImGui::TextDisabled("DVB-S2X: the MODCODs of EN 302 307-2 table 17a are decoded; VL-SNR frames, superframes and bundled channels are only followed, not decoded.");
     if (t.standard == 3) ImGui::TextUnformatted("A DVB-S2X signal was recognised.");
@@ -407,6 +416,32 @@ void tuner(App& a, bool& retune) {
         ImGui::EndCombo();
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Auto tries DVB-S2 and DVB-S. Choose one to skip the other search on a weak signal.");
+    {   // polarisation: the radio cannot switch the LNB (13 V vertical, 18 V horizontal), so this only warns when the two do not match
+        static const char* pn[] = {"not set", "vertical", "horizontal"};
+        ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));
+        ImGui::TextDisabled("Transponder");
+        ImGui::SameLine(0, 6 * gUi);
+        ImGui::SetNextItemWidth(std::min(100 * gUi, ImGui::GetContentRegionAvail().x));
+        if (ImGui::BeginCombo("##dvbstxpol", pn[S.txPol])) {
+            for (int i = 0; i < 3; i++) if (ImGui::Selectable(pn[i], S.txPol == i)) { S.txPol = i; ch = true; }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The polarisation of the transponder you want (from the satellite's channel list, e.g. 11.727 GHz V).");
+        ImGui::TextDisabled("LNB supply");
+        ImGui::SameLine(0, 6 * gUi);
+        ImGui::SetNextItemWidth(std::min(100 * gUi, ImGui::GetContentRegionAvail().x));
+        if (ImGui::BeginCombo("##dvbslnbpol", pn[S.lnbPol])) {
+            for (int i = 0; i < 3; i++) if (ImGui::Selectable(pn[i], S.lnbPol == i)) { S.lnbPol = i; ch = true; }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("What your LNB is switched to: about 13 V is vertical, about 18 V is horizontal.\nOnAir cannot change this itself: the radio's bias-tee is only about 5 V. Use a power inserter or a switch.");
+        if (S.txPol && S.lnbPol && S.txPol != S.lnbPol) {
+            ImGui::PushTextWrapPos(0);
+            ImGui::TextColored(pal::warnAmber(), "This transponder is %s but the LNB is set to %s. Switch the LNB supply (%s) or this channel will not be received.",
+                               pn[S.txPol], pn[S.lnbPol], S.txPol == 1 ? "13 V" : "18 V");
+            ImGui::PopTextWrapPos();
+        }
+    }
     {   // where the error correction runs (the same choice as the DVB-T2 decoder has): LDPC for DVB-S2, Viterbi for DVB-S
         static const char* modes[] = {"CPU", "GPU", "Auto"};
         const DvbsTelemetry& t = a.rx.dvbs;
