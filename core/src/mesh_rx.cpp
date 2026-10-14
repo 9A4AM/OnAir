@@ -59,10 +59,14 @@ std::vector<PlanEntry> customPlan(const MeshLoraSettings& s, double tunedHz, int
     return {e};
 }
 
+// the plan's Meshtastic region and MeshCore preset: 0 EU, 1 US, 2 ANZ (Australia, New Zealand and the 915 - 928 MHz networks elsewhere)
+const char* mtRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "ANZ" : "EU_868"; }
+const char* mcRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "AU" : "EU"; }
+
 std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets, const std::string& mtRegion, const std::string& mtPreset) {
     std::vector<PlanEntry> v;
     if (protocols & 1) {
-        const std::string reg = !mtRegion.empty() ? mtRegion : region == 1 ? "US" : "EU_868";
+        const std::string reg = !mtRegion.empty() ? mtRegion : mtRegionOf(region);
         std::vector<std::string> names = {mtPreset.empty() ? std::string("LongFast") : mtPreset};
         if (allPresets) for (const auto& n : meshtasticPresetNames()) if (n != names[0]) names.push_back(n);
         for (const auto& n : names) {
@@ -76,10 +80,10 @@ std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets, co
         }
     }
     if (protocols & 2) {
-        const MeshLoraSettings s = meshcoreDefaults(region == 1 ? "US" : "EU");
+        const MeshLoraSettings s = meshcoreDefaults(mcRegionOf(region));
         if (s.freqHz > 0) {
             PlanEntry e;
-            e.protocol = 2; e.preset = "MeshCore " + std::string(region == 1 ? "US" : "EU"); e.freqHz = s.freqHz;
+            e.protocol = 2; e.preset = "MeshCore " + std::string(mcRegionOf(region)); e.freqHz = s.freqHz;
             e.p.sf = s.sf; e.p.bwHz = s.bwHz; e.p.cr = s.cr; e.p.preamble = s.preamble; e.p.syncWord = s.syncWord; e.p.ldro = s.ldro;
             v.push_back(e);
         }
@@ -167,7 +171,7 @@ struct MeshReceiver::Impl {
         chans.clear();
         tel.decoders.clear();
         tel.inputRate = rt; tel.tunedHz = tu; tel.region = reg; tel.protocols = prot; tel.presetSearch = all;
-        tel.mtRegion = !mreg.empty() ? mreg : reg == 1 ? "US" : "EU_868"; tel.custom = cu;
+        tel.mtRegion = !mreg.empty() ? mreg : mtRegionOf(reg); tel.custom = cu;
         if (rt <= 0) return;
         const auto plan = cu ? customPlan(cs, tu, prot) : regionPlan(reg, prot, all, mreg, mpre);
         std::string inBand;
@@ -637,7 +641,7 @@ bool MeshReceiver::telemetry(MeshTelemetry& out, uint64_t lastSeq) {
 }
 void MeshReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void MeshReceiver::setTunedHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->tunedHz = hz; p_->dirty = true; }
-void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r == 1 ? 1 : 0; p_->dirty = true; }
+void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r == 1 || r == 2 ? r : 0; p_->dirty = true; }
 void MeshReceiver::setProtocols(int mask) { std::lock_guard<std::mutex> lk(p_->mu); p_->protocols = mask & 31; p_->dirty = true; }
 void MeshReceiver::setPresetSearch(bool all) { std::lock_guard<std::mutex> lk(p_->mu); p_->presetSearch = all; p_->dirty = true; }
 void MeshReceiver::setMeshtasticPlan(const std::string& region, const std::string& preset) {

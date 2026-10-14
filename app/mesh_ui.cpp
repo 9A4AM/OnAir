@@ -72,7 +72,9 @@ const Plan kPlans[] = {
     {"MeshCom EU  433.175 MHz (+ LoRa APRS 433.775)", "MeshCom EU  433.175 MHz", 433.175, 0, 2},
     {"LoRaWAN EU868  868.1 / 868.3 / 868.5 MHz (+ 867.x in a wide capture)", "LoRaWAN EU868  868.1 MHz", 868.1, 0, 3},
     {"LoRaWAN US915  903.9 MHz (sub-band 2)", "LoRaWAN US915  903.9 MHz", 903.9, 1, 4},
+    {"ANZ 915  (Meshtastic LongFast 919.875 MHz)", "ANZ 915  919.875 MHz", 919.875, 2, 5},   // last: the saved plan is an index
 };
+const char* planRegionName(int rxRegion) { return rxRegion == 1 ? "US" : rxRegion == 2 ? "ANZ" : "EU_868"; }   // the plan's Meshtastic region
 constexpr int kNumPlans = (int)(sizeof(kPlans) / sizeof(kPlans[0]));
 
 std::string nodeKey(const dect2::MeshNode& n) { return std::to_string(n.protocol) + n.id; }
@@ -144,7 +146,7 @@ void loadState() {
 int subMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 0; }
 bool planFits(const App& a, int i) {
     const int m = subMask(a);
-    return !m || ((m & 3) ? i <= 1 : m == 4 ? (i >= 2 && i <= 4) : m == 8 ? i == 5 : (i == 6 || i == 7));
+    return !m || ((m & 3) ? i <= 1 || i == 8 : m == 4 ? (i >= 2 && i <= 4) : m == 8 ? i == 5 : (i == 6 || i == 7));
 }
 int effRegion(const App& a) {   // the selected plan, or the entry's first when the selected one does not carry it
     if (planFits(a, S.region)) return S.region;
@@ -169,7 +171,7 @@ void applyRegion(App& a, int region) {
     S.region = region;
     plat::prefs().setI("meshRegion", region);
     a.freqMhz = kPlans[region].mhz;                    // the plan's channel (Meshtastic LongFast, LoRa APRS, MeshCom)
-    if (subMask(a) == 2) a.freqMhz = region == 1 ? 910.525 : 869.618;   // MeshCore's own channel
+    if (subMask(a) == 2) a.freqMhz = region == 1 ? 910.525 : region == 8 ? 915.8 : 869.618;   // MeshCore's own channel (AU in ANZ)
     a.tune.synth.modeOpt[1] = kPlans[region].synthRegion;
 }
 
@@ -867,7 +869,7 @@ void loraSettings(App& a) {
             if (a.engine.running()) startReceiver(a);
         }
         dect2::MeshLoraSettings s;
-        const std::string reg = !S.mtRegion.empty() ? S.mtRegion : kPlans[effRegion(a)].rxRegion == 1 ? "US" : "EU_868";
+        const std::string reg = !S.mtRegion.empty() ? S.mtRegion : planRegionName(kPlans[effRegion(a)].rxRegion);
         if (dect2::meshtasticRegionPreset(reg, S.mtPreset, s))
             ImGui::TextDisabled("%s %s: %.4f MHz, SF%d, %g kHz, 4/%d", reg.c_str(), S.mtPreset.c_str(), s.freqHz / 1e6, s.sf, s.bwHz / 1e3, s.cr);
         else ImGui::TextDisabled("%s has no slot for %s (the region is narrower than the preset)", reg.c_str(), S.mtPreset.c_str());
@@ -922,7 +924,7 @@ void settingsView(App& a) {
         applyRegion(a, r);
         if (a.engine.running()) startReceiver(a);
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Sets the tuning frequency (and the Meshtastic / MeshCore channel plan). Meshtastic and MeshCore use different\nfrequencies in each region; the US pair is 3.65 MHz apart and needs a radio rate of about 8 Msps or more.\nLoRa APRS and MeshCom are on 70 cm: every known LoRa APRS and MeshCom channel inside the captured band is searched.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Sets the tuning frequency (and the Meshtastic / MeshCore channel plan). Meshtastic and MeshCore use different\nfrequencies in each region; the US pair is 3.65 MHz apart and needs a radio rate of about 8 Msps or more (ANZ: 4.1 MHz).\nLoRa APRS and MeshCom are on 70 cm: every known LoRa APRS and MeshCom channel inside the captured band is searched.");
     ImGui::Spacing();
     if (lorawanEntry(a)) {
         ImGui::PushTextWrapPos(0);
@@ -1061,7 +1063,7 @@ void receiver(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
     if (t.custom) kv("tuned", "%.4f MHz, %.3f Msps, custom LoRa setting", t.tunedHz / 1e6, t.inputRate / 1e6);
-    else kv("tuned", "%.4f MHz, %.3f Msps, %s plan, Meshtastic %s", t.tunedHz / 1e6, t.inputRate / 1e6, t.region == 0 ? "EU" : "US", t.mtRegion.c_str());
+    else kv("tuned", "%.4f MHz, %.3f Msps, %s plan, Meshtastic %s", t.tunedHz / 1e6, t.inputRate / 1e6, t.region == 1 ? "US" : t.region == 2 ? "ANZ" : "EU", t.mtRegion.c_str());
     kv("frames", "%llu good, %llu CRC errors, %llu bad headers", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad, (unsigned long long)t.headerBad);
     kv("preambles", "%llu", (unsigned long long)t.preambles);
     kv("signal time", "%s", clock(t.timeSec).c_str());
@@ -1198,7 +1200,7 @@ void tuner(App& a, bool& retune) {
     ImGui::SetNextItemWidth(std::min(230 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
     int r = effRegion(a);
     if (planCombo(a, "##mreg_t", r, true)) { applyRegion(a, r); retune = true; }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("EU / US: the Meshtastic LongFast channel; MeshCore sits 93 kHz above it in the EU (one capture holds both).\nAPRS / MeshCom: 70 cm LoRa APRS and MeshCom; MeshCom EU at 433.175 MHz also holds LoRa APRS at 433.775 MHz.\nThe frequency box can be changed for other slots: the receiver follows it.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("EU / US / ANZ: the Meshtastic LongFast channel; MeshCore sits 93 kHz above it in the EU (one capture holds both).\nAPRS / MeshCom: 70 cm LoRa APRS and MeshCom; MeshCom EU at 433.175 MHz also holds LoRa APRS at 433.775 MHz.\nThe frequency box can be changed for other slots: the receiver follows it.");
 }
 
 void decoder(App& a, bool&) {
@@ -1264,6 +1266,10 @@ void synth(App& a, bool& changed) {
     bool us = sc.modeOpt[1] == 1;
     if (ImGui::Checkbox("US plan", &us)) { applyRegion(a, us ? 1 : 0); sc.modeOpt[0] = 0; changed = true; }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("LongFast at 906.875 MHz and MeshCore at 910.525 MHz. MeshCore needs a rate of about 8 Msps to be inside the capture.");
+    flowNext();
+    bool anz = sc.modeOpt[1] == 5;
+    if (ImGui::Checkbox("ANZ plan", &anz)) { applyRegion(a, anz ? 8 : 0); sc.modeOpt[0] = 0; changed = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("LongFast at 919.875 MHz and MeshCore AU at 915.8 MHz. MeshCore needs a rate of about 10 Msps to be inside the capture.");
     flowNext();
     bool b70 = p70;
     if (ImGui::Checkbox("70 cm", &b70)) { applyRegion(a, b70 ? 5 : 0); sc.modeOpt[0] = 0; changed = true; }

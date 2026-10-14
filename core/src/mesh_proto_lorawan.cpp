@@ -236,6 +236,7 @@ std::vector<MeshLoraSettings> lorawanPresets(int region) {
         s.ldro = meshLoraLdro(sf, bw);
         v.push_back(s);
     };
+    if (region == 2) return v;   // ANZ: AU915 is not covered
     if (region == 1) {
         for (int c = 0; c < 64; c++) for (int sf = 7; sf <= 10; sf++) add(902.3 + 0.2 * c, sf, 125e3);   // DR0 - DR3
         for (int c = 0; c < 8; c++) add(903.0 + 1.6 * c, 8, 500e3);                                        // DR4
