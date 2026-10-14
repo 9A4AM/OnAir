@@ -468,6 +468,16 @@ void strip(App& a) {
     }
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Clear##sxmk")) { S.markers.clear(); S.hasRegion = false; }
+    flowNext(6 * gUi);
+    if (ImGui::SmallButton("GRAVES##sxgr")) {   // the French space radar, 143.050 MHz: a +-3 kHz window, finest bins, the echoes of meteors and satellites show as short Doppler tracks
+        constexpr double kGraves = 143.050e6;
+        tuneRf(a, kGraves);
+        S.viewLo = kGraves - 3000; S.viewHi = kGraves + 3000;
+        S.fftIdx = 8; plat::prefs().setI("specxFft", 8);
+        S.avg = 1; plat::prefs().setI("specxAvg", 1);
+        S.peakHold = false; S.autoRange = true; S.peak.clear();
+    }
+    tip("GRAVES space radar view: 143.050 MHz, 6 kHz wide, the finest resolution, no averaging. Meteors and satellites crossing the beam show up as short bright tracks that bend with their Doppler shift. Needs an antenna for 2 m and a radio that tunes there.");
     tip("Remove the markers and the region");
     flowNext(10 * gUi);
     helpButton();
