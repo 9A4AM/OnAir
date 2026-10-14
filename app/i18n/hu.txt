@@ -559,3 +559,286 @@ Copied	Másolva
 Copies the version, system, radios, messages and radio log lines, for a bug report	Kimásolja a verziót, a rendszert, a rádiókat, az üzeneteket és a rádió naplósorait, hibajelentéshez
 spectrum dB	spektrum dB
 waterfall dB	vízesés dB
+# added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
+  (mirrored: I/Q swapped)	  (tükrözve: I/Q felcserélve)
+%s, %d client%s, %llu sent, %llu dropped	%s, %d kliens%s, %llu elküldve, %llu eldobva
+A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	A HackRF-hez, Airspyhoz vagy RTL-SDR-hez egyszer kell a WinUSB illesztőprogram: telepítse a Zadiggal (zadig.akeo.ie).
+A Linux driver for TV sticks took the radio before the SDRplay software could.	Egy Linux TV-pálcás illesztőprogram megelőzte az SDRplay szoftvert, és lefoglalta a rádiót.
+A high-end computer is recommended. Lower sample rates help.	Nagy teljesítményű számítógép ajánlott. Az alacsonyabb mintavételi frekvencia segít.
+A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Világtérkép: keressen helyet koordináták vagy Maidenhead-lokátor alapján, távolság és irány a saját helyétől
+Add a receiver: another radio with its own mode	Vevő hozzáadása: másik rádió saját üzemmóddal
+Add receiver	Vevő hozzáadása
+Added to a level in dBFS to give dBm for this radio: feed a known signal into the antenna port and set the difference. Used when the spectrum shows dBm (Spectrum button on the plot).	A dBFS szinthez adódik, hogy ennek a rádiónak dBm értéket kapjon: adjon ismert jelet az antennacsatlakozóra, és állítsa be a különbséget. Akkor használja a program, ha a spektrum dBm-ben jelenik meg (az ábra Spektrum gombja).
+Aircraft	Repülők
+All set. OnAir will start here:	Minden kész. Az OnAir itt indul:
+Allow remote control (frequency and gain)	Távvezérlés engedélyezése (frekvencia és erősítés)
+Amateur radio	Rádióamatőr
+An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	SDRplay RSP csatlakoztatva van, de az illesztőprogramja, az SDRplay API nincs telepítve. Ez az SDRplay saját szoftvere, amelyet a licenc miatt az OnAir nem tartalmazhat, ezért egyszer le kell tölteni.
+Another program is using the HackRF	Egy másik program használja a HackRF-et
+Australia and New Zealand	Ausztrália és Új-Zéland
+Average	Átlag
+CPU load now: %.0f%% (100%% = one core)	Jelenlegi CPU-terhelés: %.0f%% (100%% = egy mag)
+Calls and data are shown, but the voice is silent until you install the codec yourself. OnAir does not ship it (patents).	A hívások és az adatok megjelennek, de a hang némán marad, amíg Ön nem telepíti a kodeket. Az OnAir nem tartalmazza (szabadalmak).
+Cancel	Mégse
+Carrier MHz	Vivő MHz
+Carriers in the span (click: listen and show; double click: tune to it)	Vivők a tartományban (kattintás: hallgatás és megjelenítés; dupla kattintás: ráhangolás)
+Channel MHz	Csatorna MHz
+Channel raster	Csatornakiosztás
+Check that PulseAudio or PipeWire runs, and that an output is chosen in the sound settings.	Ellenőrizze, hogy fut-e a PulseAudio vagy a PipeWire, és hogy van kimenet kiválasztva a hangbeállításokban.
+Check that rtl_tcp is running on the other computer and prints "listening".	Ellenőrizze, hogy az rtl_tcp fut a másik számítógépen, és kiírja: „listening”.
+Check that the file still exists and that you may read it.	Ellenőrizze, hogy a fájl még létezik-e, és olvashatja-e.
+Check that the firmware is the stock one, or a known one such as Tezuka.	Ellenőrizze, hogy a firmware az eredeti vagy egy ismert, például a Tezuka.
+Check the USB cable and port, then press the refresh button.	Ellenőrizze az USB-kábelt és a portot, majd nyomja meg a frissítés gombot.
+Check the address and port, and that nothing blocks them (firewall, Wi-Fi).	Ellenőrizze a címet és a portot, és hogy semmi sem blokkolja őket (tűzfal, Wi-Fi).
+China	Kína
+Choose a frequency inside the range shown in the message.	Válasszon az üzenetben megadott tartományba eső frekvenciát.
+Choose the file again.	Válassza ki újra a fájlt.
+Close other programs that use the radio.	Zárja be a rádiót használó többi programot.
+Close programs that hold the sound device exclusively.	Zárja be azokat a programokat, amelyek kizárólagosan használják a hangeszközt.
+Close the other program (a second OnAir, SDR software, hackrf_info).	Zárja be a másik programot (egy második OnAir, SDR-szoftver, hackrf_info).
+Close this receiver: it stops and lets go of its radio	A vevő bezárása: leáll és elengedi a rádióját
+Colour map	Színskála
+Colours	Színek
+Converter (up-converter / LNB)	Konverter (felfelé konverter / LNB)
+Copy the command	Parancs másolása
+Copy the restart command	Újraindítási parancs másolása
+Copy the udev command	udev-parancs másolása
+Details	Részletek
+Don't show again	Ne mutassa többé
+Down, LO above: radio = LO - RF (mirrored)	Lefelé, LO felül: rádió = LO - RF (tükrözve)
+Down, LO below: radio = RF - LO	Lefelé, LO alul: rádió = RF - LO
+Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	Töltse le a számítógépéhez való SDRplay API-t a sdrplay.com/api oldalról, és futtassa a telepítőt.
+Download the current SDRplay API from sdrplay.com and install it.	Töltse le az aktuális SDRplay API-t a sdrplay.com oldalról, és telepítse.
+Drag to resize, double click for the automatic size	Húzással átméretezhető, dupla kattintás az automatikus méretért
+Drones, 2.4 / 5.8 GHz	Drónok, 2,4 / 5,8 GHz
+Elsewhere	Máshol
+Europe	Európa
+FM / DAB radio	FM / DAB rádió
+FM radio	FM rádió
+Files: audio and IQ	Fájlok: hang és IQ
+Fill under the line	Vonal alatti kitöltés
+Find "SDRplay API Service" and press Start (or Restart).	Keresse meg az „SDRplay API Service” szolgáltatást, és nyomja meg az Indítás (vagy Újraindítás) gombot.
+Fix the address of the network radio (host:port).	Javítsa ki a hálózati rádió címét (gép:port).
+Follow the steps in the full instructions to install codec2.	A codec2 telepítéséhez kövesse a teljes útmutató lépéseit.
+Follow the steps in the full instructions to install the codec.	A kodek telepítéséhez kövesse a teljes útmutató lépéseit.
+For an RSP, install the SDRplay API first (sdrplay.com).	RSP esetén először telepítse az SDRplay API-t (sdrplay.com).
+Found %s (%s)	Megtalálva: %s (%s)
+Found:	Megtalálva:
+Frequency and level of the strongest peaks in view	A látható legerősebb csúcsok frekvenciája és szintje
+Full instructions	Teljes útmutató
+Gliders, 868.2 / 868.4 MHz	Vitorlázók, 868,2 / 868,4 MHz
+Grid	Rács
+How far the converter's oscillator runs fast (positive) or slow. The LO used is LO x (1 + ppm / 1e6).	Mennyivel siet (pozitív) vagy késik a konverter oszcillátora. A használt LO: LO x (1 + ppm / 1e6).
+How fast the max-hold line falls; 0: it stays until reset	Milyen gyorsan esik a csúcstartó vonal; 0: törlésig megmarad
+How to fix	A javítás módja
+Images	Képek
+Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay	Telepítse az OnAir tiltólista-fájlját (a .deb csomag megteszi), vagy futtassa: sudo systemctl restart sdrplay
+Install the SDRplay API	SDRplay API telepítése
+Install the SDRplay API from sdrplay.com if you have not.	Ha még nem tette, telepítse az SDRplay API-t a sdrplay.com oldalról.
+Install the WinUSB driver once with Zadig (zadig.akeo.ie): choose the radio, then the driver WinUSB, then Install.	Telepítse egyszer a WinUSB illesztőprogramot a Zadiggal (zadig.akeo.ie): válassza ki a rádiót, majd a WinUSB illesztőt, végül a Telepítést.
+Install the udev rules (install-udev-rules.sh), then unplug and replug the radio.	Telepítse az udev-szabályokat (install-udev-rules.sh), majd húzza ki és dugja vissza a rádiót.
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb does it).	Telepítse az udev-szabályokat: futtassa az install-udev-rules.sh fájlt az OnAir mappából (a .deb megteszi).
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb package does it for you).	Telepítse az udev-szabályokat: futtassa az install-udev-rules.sh fájlt az OnAir mappából (a .deb csomag megteszi helyette).
+Intensity (dB)	Intenzitás (dB)
+IoT, 2.4 GHz	IoT, 2,4 GHz
+IoT, sub-GHz	IoT, sub-GHz
+It is streaming to another program: stop it there first.	Egy másik programnak streamel: először ott állítsa le.
+Japan	Japán
+Journaline	Journaline
+Just explore	Csak felfedezem
+Keep the waterfall range on the noise floor and the strongest signal (click again to stop following)	A vízesés tartománya kövesse a zajszintet és a legerősebb jelet (újabb kattintás: követés vége)
+LO (MHz)	LO (MHz)
+LO correction (ppm)	LO-korrekció (ppm)
+Let other computers connect (LAN)	Más számítógépek csatlakozhatnak (LAN)
+Level at the cursor	Szint a kurzornál
+Level dB	Szint dB
+Linux grabbed the SDRplay radio	A Linux lefoglalta az SDRplay rádiót
+Linux treats the radio as a sound card	A Linux hangkártyaként kezeli a rádiót
+Load	Betöltés
+Look again	Keresés újra
+Look for Hermes Lite 2 radios on this computer's networks again	Hermes Lite 2 rádiók keresése újra a számítógép hálózatain
+Maritime, VHF	Tengeri, URH
+Max hold	Csúcstartás
+Meteor scatter, 28.145 MHz	Meteorvisszaverődés, 28,145 MHz
+Middle East	Közel-Kelet
+Mirror the spectrum (swap I and Q)	Spektrum tükrözése (I és Q felcserélése)
+NB-IoT, band scan	NB-IoT, sávkeresés
+NCDXF/IARU, Long Dashes, single letters	NCDXF/IARU, hosszú vonások, egyes betűk
+Network	Hálózat
+Network radio: %llu samples lost (underruns)	Hálózati rádió: %llu minta elveszett (alulcsordulás)
+No Hermes Lite 2 answered on this computer's networks: type its address.	Egyetlen Hermes Lite 2 sem válaszolt a számítógép hálózatain: adja meg a címét.
+No radio found	Nem található rádió
+No sound output	Nincs hangkimenet
+North America	Észak-Amerika
+Not a locator or coordinates	Nem lokátor és nem koordináták
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Windowson a HackRF-hez egyszer kell a WinUSB illesztőprogram: telepítse a Zadiggal (zadig.akeo.ie).
+OnAir %s	OnAir %s
+OnAir cannot see a HackRF on the USB ports.	Az OnAir nem lát HackRF-et az USB-portokon.
+OnAir could not open the speakers, so there will be no sound.	Az OnAir nem tudta megnyitni a hangszórókat, ezért nem lesz hang.
+OnAir could not use the rtl_tcp server, or the connection dropped.	Az OnAir nem tudta használni az rtl_tcp szervert, vagy megszakadt a kapcsolat.
+OnAir found the SDRplay software, but its background service does not answer, so the RSP cannot be opened.	Az OnAir megtalálta az SDRplay szoftvert, de a háttérszolgáltatása nem válaszol, ezért az RSP nem nyitható meg.
+OnAir lists a radio when the computer sees it. You can still try everything with the synthetic signal or an IQ file.	Az OnAir akkor listáz egy rádiót, amikor a számítógép látja. A szintetikus jellel vagy egy IQ-fájllal így is kipróbálhat mindent.
+OnAir needs SDRplay API 3.07 or a newer 3.x.	Az OnAir-hez SDRplay API 3.07 vagy újabb 3.x szükséges.
+Only one program can use an rtl_tcp server at a time: close any other client.	Egyszerre csak egy program használhat egy rtl_tcp szervert: zárja be a többi klienst.
+Only one program can use the radio at a time.	Egyszerre csak egy program használhatja a rádiót.
+Only one receiver plays its sound at a time: click to hear this one	Egyszerre csak egy vevő játssza a hangját: kattintson, hogy ezt hallja
+Open Services (press Win+R, type services.msc).	Nyissa meg a Szolgáltatásokat (Win+R, majd services.msc).
+Open System Settings > Sound and pick an output device.	Nyissa meg a Rendszerbeállítások > Hang részt, és válasszon kimeneti eszközt.
+Open codecs folder	Kodekmappa megnyitása
+Open driver page	Illesztőprogram-oldal megnyitása
+Open firmware page	Firmware-oldal megnyitása
+Open the SDRplay API page	Az SDRplay API oldalának megnyitása
+Open the device list	Eszközlista megnyitása
+Optional: your position, as a Maidenhead locator (KO24pq) or coordinates (54.68, 25.28). It is kept on this computer and used for maps and satellite passes.	Nem kötelező: a helyzete Maidenhead-lokátorként (KO24pq) vagy koordinátákkal (54.68, 25.28). Ezen a számítógépen marad, és térképekhez, műholdátvonulásokhoz használjuk.
+Or choose another radio from the list.	Vagy válasszon másik rádiót a listából.
+Or install OnAir's blacklist file (the .deb package does it).	Vagy telepítse az OnAir tiltólista-fájlját (a .deb csomag megteszi).
+Or set the UHD_IMAGES_DIR variable to the folder with the images.	Vagy állítsa az UHD_IMAGES_DIR változót a képfájlokat tartalmazó mappára.
+Own accent colour	Saját kiemelőszín
+PSK Reporter	PSK Reporter
+Pagers, tones and FFSK	Személyhívók, hangok és FFSK
+Pause	Szünet
+Peak markers	Csúcsjelölők
+Plug a radio into the computer that runs the SpyServer, and restart the SpyServer.	Csatlakoztasson egy rádiót a SpyServert futtató számítógéphez, és indítsa újra a SpyServert.
+Plug the radio in again and press the refresh button.	Dugja vissza a rádiót, és nyomja meg a frissítés gombot.
+Plug the radio in, directly or through a powered hub.	Csatlakoztassa a rádiót közvetlenül vagy tápellátású hubon keresztül.
+Press "Look again" in the ? help next to the sound.	Nyomja meg a „Keresés újra” gombot a hang melletti ? súgóban.
+Press the refresh button next to the radio list.	Nyomja meg a rádiólista melletti frissítés gombot.
+Press the refresh button next to the source.	Nyomja meg a forrás melletti frissítés gombot.
+Put the library in the OnAir codecs folder (button below).	Tegye a könyvtárat az OnAir kodekmappájába (lenti gomb).
+Put the panels back to their automatic sizes (drag the bars between panels to resize them)	A panelek visszaállítása az automatikus méretre (a panelek közti sávok húzásával méretezhetők át)
+Radar chirps, HF	Radar-chirpek, HF
+Radio settings (%d changed)###radioset	Rádiobeállítások (%d módosítva)###radioset
+Radio settings###radioset	Rádiobeállítások###radioset
+Receivers at once	Vevők egyszerre
+Reduce CPU when hidden	CPU-terhelés csökkentése rejtett állapotban
+Remote driver	Távoli illesztő
+Reset	Visszaállítás
+Reset layout	Elrendezés visszaállítása
+Restart OnAir (the installer starts SDRplay's background service).	Indítsa újra az OnAir-t (a telepítő elindítja az SDRplay háttérszolgáltatását).
+Restart OnAir.	Indítsa újra az OnAir-t.
+Restart the Mac, or run in Terminal: sudo launchctl kickstart -k system/com.sdrplay.service	Indítsa újra a Mac-et, vagy futtassa a Terminálban: sudo launchctl kickstart -k system/com.sdrplay.service
+Right-click the speaker icon, open Sound settings and pick an output device.	Kattintson jobb gombbal a hangszóró ikonra, nyissa meg a hangbeállításokat, és válasszon kimeneti eszközt.
+Run in a terminal: sudo systemctl restart sdrplay	Futtassa terminálban: sudo systemctl restart sdrplay
+Run once in a terminal: uhd_images_downloader	Futtassa egyszer terminálban: uhd_images_downloader
+Run: sudo modprobe -r msi2500 msi001	Futtassa: sudo modprobe -r msi2500 msi001
+Running several radios at the same time needs a lot of processing power. Performance may limit what is possible: with too many or too fast receivers samples are dropped and decoding gets worse.	Több rádió egyidejű használata sok számítási teljesítményt igényel. A teljesítmény korlátozhatja a lehetőségeket: túl sok vagy túl gyors vevő esetén minták vesznek el, és romlik a dekódolás.
+SDR	SDR
+SNR dB	SNR dB
+Satellites	Műholdak
+Satellites, 1.6 GHz	Műholdak, 1,6 GHz
+Save bug report	Hibajelentés mentése
+Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue	Egy zip fájlt ment a diagnosztikával, a naplóval és az utolsó összeomlási jelentéssel: csatolja egy GitHub-hibajegyhez
+Search	Keresés
+Seen	Látva
+Send spots to PSK Reporter (pskreporter.info)	Spotok küldése a PSK Reporternek (pskreporter.info)
+Sensors and IoT	Érzékelők és IoT
+Services	Szolgáltatások
+Set the LO above 0 MHz.	Állítsa a LO-t 0 MHz fölé.
+Setup	Beállítás
+Setup wizard	Beállítási varázsló
+Share my radio (rtl_tcp server)	A rádióm megosztása (rtl_tcp szerver)
+Share the radio's samples as an rtl_tcp server	A rádió mintáinak megosztása rtl_tcp szerverként
+Ships	Hajók
+Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs.	A frekvencia megjelenítése és beállítása az antennánál, miközben a rádió a konverter kimenetére van hangolva.
+Skip setup	Beállítás kihagyása
+Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)	Spektrum: átlagolás, csúcstartás, csúcsjelölők, kitöltés, rács és mértékegység (dBFS vagy dBm)
+Speed (rows a second)	Sebesség (sor másodpercenként)
+Spots are public. A valid amateur radio callsign is required; the dial frequency is the tuned frequency.	A spotok nyilvánosak. Érvényes rádióamatőr hívójel szükséges; a tárcsafrekvencia a behangolt frekvencia.
+Stop adding rows: the picture stays, and drag or the wheel on the waterfall scroll and zoom back through it	A sorok hozzáadásának leállítása: a kép megmarad, a vízesésen húzással vagy görgővel visszagörgethet és nagyíthat
+Television	Televízió
+Text size	Szövegméret
+Text size %d%%	Szövegméret %d%%
+The FreeDV / M17 voice codec (codec2) is not installed	A FreeDV / M17 hangkodek (codec2) nincs telepítve
+The HackRF firmware does not match	A HackRF firmware nem egyezik
+The HackRF is not found	A HackRF nem található
+The Linux sound driver holds the radio, so the SDRplay software cannot see it.	A Linux hangillesztő lefoglalta a rádiót, így az SDRplay szoftver nem látja.
+The PlutoSDR answered, but without its radio chip. It may still be starting, or run unusual firmware.	A PlutoSDR válaszolt, de a rádiós lapka nélkül. Lehet, hogy még indul, vagy szokatlan firmware fut rajta.
+The PlutoSDR does not show its radio chip	A PlutoSDR nem mutatja a rádiós lapkáját
+The RTL-SDR is gone	Az RTL-SDR eltűnt
+The SDRplay service is not running	Az SDRplay szolgáltatás nem fut
+The SDRplay software is too old	Az SDRplay szoftver túl régi
+The SpyServer answered, but no radio is plugged into it.	A SpyServer válaszolt, de nincs hozzá rádió csatlakoztatva.
+The USRP needs its firmware images	Az USRP-nek szüksége van a firmware-képfájljaira
+The USRP software is installed, but the firmware images it loads are missing.	Az USRP szoftver telepítve van, de hiányoznak a betöltendő firmware-képfájlok.
+The address of the network radio must look like host:port, for example 192.168.1.20:1234.	A hálózati rádió címe gép:port alakú legyen, például 192.168.1.20:1234.
+The file could not be opened	A fájl nem nyitható meg
+The firmware inside the HackRF is older than the software talking to it.	A HackRF firmware régebbi, mint a vele kommunikáló szoftver.
+The frequency is below or above what this radio can receive.	A frekvencia ennek a rádiónak a vételi tartománya alatt vagy felett van.
+The most receivers are open	A legtöbb vevő nyitva van
+The network radio (rtl_tcp) does not answer	A hálózati rádió (rtl_tcp) nem válaszol
+The picture holds the last %.0f s.	A kép az utolsó %.0f másodpercet tartalmazza.
+The radio did not start	A rádió nem indult el
+The radio is plugged in, but the system does not let your account use it yet.	A rádió csatlakoztatva van, de a rendszer még nem engedi, hogy a fiókja használja.
+The radio opened badly or stopped at once. The message above says why; these steps solve most cases.	A rádió rosszul nyílt meg vagy azonnal leállt. A fenti üzenet megmondja az okot; ezek a lépések a legtöbb esetet megoldják.
+The radio was found but the USB link to it did not work. This is usually permission, the cable or the port.	A rádió megvan, de az USB-kapcsolat nem működött. Ez általában jogosultság, a kábel vagy a port hibája.
+The radio you chose is no longer connected.	A kiválasztott rádió már nincs csatlakoztatva.
+The radio's SoapySDR driver on the server, or a key=value list: driver=sdrplay,serial=1.	A rádió SoapySDR illesztője a kiszolgálón, vagy egy kulcs=érték lista: driver=sdrplay,serial=1.
+The radio's USB connection failed	A rádió USB-kapcsolata megszakadt
+The recording file is missing, moved or not readable.	A felvételfájl hiányzik, át lett helyezve vagy nem olvasható.
+The rtl_tcp address is not valid	Az rtl_tcp cím érvénytelen
+The server has no radio	A kiszolgálón nincs rádió
+The text and data are shown, but speech needs the open codec2 library, which OnAir does not ship.	A szöveg és az adatok megjelennek, de a beszédhez a nyílt codec2 könyvtár kell, amelyet az OnAir nem tartalmaz.
+The voice codec (mbelib) is not installed	A hangkodek (mbelib) nincs telepítve
+This frequency is not reachable through the converter.	Ez a frekvencia nem érhető el a konverteren keresztül.
+This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	Ez Linux-probléma. Ezen a rendszeren húzza ki a rádiót, dugja vissza, majd nyomja meg a frissítés gombot.
+This radio cannot tune that frequency	Ez a rádió nem tud erre a frekvenciára hangolni
+This user may not open the radio	Ez a felhasználó nem nyithatja meg a rádiót
+Time constant of the averaged line: longer is calmer	Az átlagolt vonal időállandója: hosszabb = nyugodtabb
+Tools	Eszközök
+Trace	Görbe
+Trunked and two-way radio	Trönkölt és kétirányú rádió
+Try another USB port and a short cable.	Próbáljon másik USB-portot és rövid kábelt.
+Try another USB port, directly on the computer (not a hub), and a short cable.	Próbáljon másik USB-portot közvetlenül a számítógépen (nem hubon), és rövid kábelt.
+Try another USB port, directly on the computer (not a hub).	Próbáljon másik USB-portot közvetlenül a számítógépen (nem hubon).
+Try another USB port, directly on the computer.	Próbáljon másik USB-portot közvetlenül a számítógépen.
+Tuner (DAB)###Tuner	Hangoló (DAB)###Tuner
+Tuner (FM)###Tuner	Hangoló (FM)###Tuner
+Unit	Egység
+United Kingdom and Ireland	Egyesült Királyság és Írország
+Unplug and replug the radio, then press the refresh button.	Húzza ki és dugja vissza a rádiót, majd nyomja meg a frissítés gombot.
+Unplug the HackRF and plug it in again.	Húzza ki és dugja vissza a HackRF-et.
+Unplug the USRP, plug it in again and press the refresh button.	Húzza ki az USRP-t, dugja vissza, majd nyomja meg a frissítés gombot.
+Unplug the radio and plug it in again, then press the refresh button.	Húzza ki és dugja vissza a rádiót, majd nyomja meg a frissítés gombot.
+Unplug the radio and plug it in again.	Húzza ki és dugja vissza a rádiót.
+Unplug the radio, plug it in again and press the refresh button.	Húzza ki a rádiót, dugja vissza, majd nyomja meg a frissítés gombot.
+Up: radio = RF + LO	Felfelé: rádió = RF + LO
+Update the HackRF firmware (the page below has the steps; the file comes with the HackRF software).	Frissítse a HackRF firmware-ét (a lenti oldalon vannak a lépések; a fájl a HackRF szoftverrel érkezik).
+Wait a minute after plugging it in, then press the refresh button.	Csatlakoztatás után várjon egy percet, majd nyomja meg a frissítés gombot.
+Waterfall: colour map, intensity range, speed and pause (then drag or use the wheel to look back)	Vízesés: színskála, intenzitástartomány, sebesség és szünet (utána húzással vagy görgővel visszanézhet)
+Wave buoys, HF	Hullámmérő bóják, HF
+Weather alerts, 162.55 MHz	Időjárási riasztások, 162,55 MHz
+Weather pictures, 1.7 GHz	Időjárási képek, 1,7 GHz
+What do you want to receive? Tick anything that interests you.	Mit szeretne venni? Jelölje be, ami érdekli.
+What to add to a level in dBFS to get dBm for this radio (its calibration: a known signal into the antenna port shows it). Also in the radio's settings.	Mit kell hozzáadni a dBFS szinthez, hogy ennek a rádiónak dBm értéket kapjunk (a kalibrációja: egy ismert jel az antennacsatlakozón megmutatja). A rádió beállításaiban is megtalálható.
+Where are you? This picks the right TV standard and FM band.	Hol van? Ez kiválasztja a megfelelő TV-szabványt és FM-sávot.
+Which language do you want OnAir in?	Milyen nyelven szeretné használni az OnAir-t?
+Which radio do you have?	Milyen rádiója van?
+You can change the mode any time, and run this setup again from Help > Setup wizard.	Az üzemmódot bármikor megváltoztathatja, és ezt a beállítást újra futtathatja a Súgó > Beállítási varázsló menüből.
+You can go on without one: the synthetic signal and IQ files work with no hardware.	Folytathatja nélküle is: a szintetikus jel és az IQ-fájlok hardver nélkül is működnek.
+Your callsign	Az Ön hívójele
+Your locator	Az Ön lokátora
+Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.	Nagyítás: egérgörgő (mindkét tengely), Ctrl+görgő (frekvencia), Shift+görgő (szint).\nCtrl+PageUp / PageDown: a nézet léptetése egy képernyőnyivel frekvenciában. Dupla kattintás: visszaállítás.
+antenna %.6g MHz -> %s LO %.6g -> radio %.6g MHz%s	antenna %.6g MHz -> %s LO %.6g -> rádió %.6g MHz%s
+channel scan has the radio	a csatornakeresés használja a rádiót
+dBm offset	dBm-eltolás
+dBm offset (dB)	dBm-eltolás (dB)
+decode every channel in the span: a receiver for each occupied channel, one plays, the others keep decoding\n(right click: how many at once, where the channels sit)	a tartomány minden csatornájának dekódolása: minden foglalt csatornához egy vevő, az egyik szól, a többi dekódol tovább\n(jobb kattintás: hány egyszerre, hol vannak a csatornák)
+decode every signal in the visible span, not just the tuned one	a látható tartomány minden jelének dekódolása, nem csak a behangoltnak
+empty	üres
+held	tartva
+holds	tart
+last send %s	utolsó küldés %s
+listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	figyel: %s, %d. port, %d kliens, %.1f MB elküldve, %.1f MB eldobva
+max	max
+mute	néma
+on air	adásban
+partial	részleges
+point %s	pont: %s
+power (dBm)	teljesítmény (dBm)
+searching for Hermes Lite 2 radios…	Hermes Lite 2 rádiók keresése…
+sound	hang
+up-converter	felfelé konverter
+waiting	várakozik
+waterfall dB##wfdb	vízesés dB##wfdb
+spectrum dB##specdb	spektrum dB##specdb
+Clear##log	Törlés##log

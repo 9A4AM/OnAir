@@ -574,3 +574,286 @@ Copied	已复制
 Copies the version, system, radios, messages and radio log lines, for a bug report	复制版本、系统、设备、消息和设备日志行，用于问题报告
 spectrum dB	频谱 dB
 waterfall dB	瀑布图 dB
+# added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
+  (mirrored: I/Q swapped)	  (镜像：I/Q 已交换)
+%s, %d client%s, %llu sent, %llu dropped	%s，%d 个客户端%s，已发送 %llu，已丢弃 %llu
+A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	HackRF、Airspy 或 RTL-SDR 需要一次性安装 WinUSB 驱动：请用 Zadig（zadig.akeo.ie）安装。
+A Linux driver for TV sticks took the radio before the SDRplay software could.	Linux 的电视棒驱动抢在 SDRplay 软件之前占用了这台电台。
+A high-end computer is recommended. Lower sample rates help.	建议使用高性能电脑。降低采样率会有帮助。
+A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	世界地图：按坐标或梅登黑德网格定位置，显示与你所在位置的距离和方位
+Add a receiver: another radio with its own mode	添加接收器：另一台使用自己模式的电台
+Add receiver	添加接收器
+Added to a level in dBFS to give dBm for this radio: feed a known signal into the antenna port and set the difference. Used when the spectrum shows dBm (Spectrum button on the plot).	加到 dBFS 电平上，得到这台电台的 dBm：向天线口输入已知信号并设置差值。频谱以 dBm 显示时使用（图上的“频谱”按钮）。
+Aircraft	飞机
+All set. OnAir will start here:	设置完成。OnAir 将从这里开始：
+Allow remote control (frequency and gain)	允许远程控制（频率和增益）
+Amateur radio	业余无线电
+An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	已插入 SDRplay RSP，但未安装其驱动 SDRplay API。这是 SDRplay 自己的软件，其许可不允许 OnAir 附带，因此需要一次性下载。
+Another program is using the HackRF	另一个程序正在使用 HackRF
+Australia and New Zealand	澳大利亚和新西兰
+Average	平均
+CPU load now: %.0f%% (100%% = one core)	当前 CPU 负载：%.0f%%（100%% = 一个核心）
+Calls and data are shown, but the voice is silent until you install the codec yourself. OnAir does not ship it (patents).	会显示通话和数据，但在您自行安装编解码器之前语音是静音的。OnAir 不附带它（专利原因）。
+Cancel	取消
+Carrier MHz	载波 MHz
+Carriers in the span (click: listen and show; double click: tune to it)	范围内的载波（单击：收听并显示；双击：调谐到它）
+Channel MHz	信道 MHz
+Channel raster	信道间隔
+Check that PulseAudio or PipeWire runs, and that an output is chosen in the sound settings.	请确认 PulseAudio 或 PipeWire 正在运行，并已在声音设置中选择了输出设备。
+Check that rtl_tcp is running on the other computer and prints "listening".	请确认另一台电脑上的 rtl_tcp 正在运行并显示“listening”。
+Check that the file still exists and that you may read it.	请确认文件仍然存在，并且您有读取权限。
+Check that the firmware is the stock one, or a known one such as Tezuka.	请确认固件是原厂固件或 Tezuka 等已知固件。
+Check the USB cable and port, then press the refresh button.	请检查 USB 线和端口，然后点击刷新按钮。
+Check the address and port, and that nothing blocks them (firewall, Wi-Fi).	请检查地址和端口，并确认没有被阻止（防火墙、Wi-Fi）。
+China	中国
+Choose a frequency inside the range shown in the message.	请选择消息中所示范围内的频率。
+Choose the file again.	请重新选择文件。
+Close other programs that use the radio.	请关闭其他使用这台电台的程序。
+Close programs that hold the sound device exclusively.	请关闭独占声音设备的程序。
+Close the other program (a second OnAir, SDR software, hackrf_info).	请关闭另一个程序（第二个 OnAir、SDR 软件、hackrf_info）。
+Close this receiver: it stops and lets go of its radio	关闭此接收器：它会停止并释放其电台
+Colour map	色图
+Colours	颜色
+Converter (up-converter / LNB)	变频器（上变频器 / LNB）
+Copy the command	复制命令
+Copy the restart command	复制重启命令
+Copy the udev command	复制 udev 命令
+Details	详情
+Don't show again	不再显示
+Down, LO above: radio = LO - RF (mirrored)	下变频，LO 在上：电台 = LO - RF（镜像）
+Down, LO below: radio = RF - LO	下变频，LO 在下：电台 = RF - LO
+Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	请从 sdrplay.com/api 下载适用于此电脑的 SDRplay API 并运行安装程序。
+Download the current SDRplay API from sdrplay.com and install it.	请从 sdrplay.com 下载最新的 SDRplay API 并安装。
+Drag to resize, double click for the automatic size	拖动调整大小，双击恢复自动大小
+Drones, 2.4 / 5.8 GHz	无人机，2.4 / 5.8 GHz
+Elsewhere	其他地区
+Europe	欧洲
+FM / DAB radio	FM / DAB 广播
+FM radio	FM 广播
+Files: audio and IQ	文件：音频和 IQ
+Fill under the line	填充曲线下方
+Find "SDRplay API Service" and press Start (or Restart).	找到“SDRplay API Service”，点击启动（或重新启动）。
+Fix the address of the network radio (host:port).	请修正网络电台的地址（主机:端口）。
+Follow the steps in the full instructions to install codec2.	请按完整说明中的步骤安装 codec2。
+Follow the steps in the full instructions to install the codec.	请按完整说明中的步骤安装编解码器。
+For an RSP, install the SDRplay API first (sdrplay.com).	使用 RSP 时，请先安装 SDRplay API（sdrplay.com）。
+Found %s (%s)	找到 %s（%s）
+Found:	已找到：
+Frequency and level of the strongest peaks in view	视图中最强峰值的频率和电平
+Full instructions	完整说明
+Gliders, 868.2 / 868.4 MHz	滑翔机，868.2 / 868.4 MHz
+Grid	网格
+How far the converter's oscillator runs fast (positive) or slow. The LO used is LO x (1 + ppm / 1e6).	变频器振荡器偏快（正）或偏慢的程度。实际使用的 LO 为 LO x (1 + ppm / 1e6)。
+How fast the max-hold line falls; 0: it stays until reset	最大保持线的下降速度；0：保持到重置
+How to fix	解决方法
+Images	图像
+Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay	安装 OnAir 的黑名单文件（.deb 包会自动安装），或运行：sudo systemctl restart sdrplay
+Install the SDRplay API	安装 SDRplay API
+Install the SDRplay API from sdrplay.com if you have not.	如果尚未安装，请从 sdrplay.com 安装 SDRplay API。
+Install the WinUSB driver once with Zadig (zadig.akeo.ie): choose the radio, then the driver WinUSB, then Install.	用 Zadig（zadig.akeo.ie）一次性安装 WinUSB 驱动：选择电台，再选择驱动 WinUSB，然后点击安装。
+Install the udev rules (install-udev-rules.sh), then unplug and replug the radio.	安装 udev 规则（install-udev-rules.sh），然后拔下并重新插入电台。
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb does it).	安装 udev 规则：运行 OnAir 文件夹中的 install-udev-rules.sh（.deb 包会自动完成）。
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb package does it for you).	安装 udev 规则：运行 OnAir 文件夹中的 install-udev-rules.sh（.deb 包会为您完成）。
+Intensity (dB)	强度 (dB)
+IoT, 2.4 GHz	物联网，2.4 GHz
+IoT, sub-GHz	物联网，sub-GHz
+It is streaming to another program: stop it there first.	它正在向另一个程序传输数据：请先在那里停止。
+Japan	日本
+Journaline	Journaline
+Just explore	随便看看
+Keep the waterfall range on the noise floor and the strongest signal (click again to stop following)	让瀑布图范围跟随底噪和最强信号（再次点击停止跟随）
+LO (MHz)	LO (MHz)
+LO correction (ppm)	LO 校正 (ppm)
+Let other computers connect (LAN)	允许其他电脑连接（局域网）
+Level at the cursor	光标处电平
+Level dB	电平 dB
+Linux grabbed the SDRplay radio	Linux 占用了 SDRplay 电台
+Linux treats the radio as a sound card	Linux 把电台当作声卡
+Load	加载
+Look again	重新查找
+Look for Hermes Lite 2 radios on this computer's networks again	重新在此电脑的网络上查找 Hermes Lite 2 电台
+Maritime, VHF	海事，VHF
+Max hold	最大保持
+Meteor scatter, 28.145 MHz	流星余迹通信，28.145 MHz
+Middle East	中东
+Mirror the spectrum (swap I and Q)	镜像频谱（交换 I 和 Q）
+NB-IoT, band scan	NB-IoT，频段扫描
+NCDXF/IARU, Long Dashes, single letters	NCDXF/IARU，长划，单个字母
+Network	网络
+Network radio: %llu samples lost (underruns)	网络电台：丢失 %llu 个采样（数据不足）
+No Hermes Lite 2 answered on this computer's networks: type its address.	此电脑的网络上没有 Hermes Lite 2 响应：请输入其地址。
+No radio found	未找到电台
+No sound output	没有声音输出
+North America	北美
+Not a locator or coordinates	不是网格定位符或坐标
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	在 Windows 上，HackRF 需要一次性安装 WinUSB 驱动：请用 Zadig（zadig.akeo.ie）安装。
+OnAir %s	OnAir %s
+OnAir cannot see a HackRF on the USB ports.	OnAir 在 USB 端口上看不到 HackRF。
+OnAir could not open the speakers, so there will be no sound.	OnAir 无法打开扬声器，因此不会有声音。
+OnAir could not use the rtl_tcp server, or the connection dropped.	OnAir 无法使用 rtl_tcp 服务器，或连接已断开。
+OnAir found the SDRplay software, but its background service does not answer, so the RSP cannot be opened.	OnAir 找到了 SDRplay 软件，但其后台服务没有响应，因此无法打开 RSP。
+OnAir lists a radio when the computer sees it. You can still try everything with the synthetic signal or an IQ file.	电脑识别到电台后，OnAir 就会列出它。您仍可使用合成信号或 IQ 文件体验所有功能。
+OnAir needs SDRplay API 3.07 or a newer 3.x.	OnAir 需要 SDRplay API 3.07 或更新的 3.x 版本。
+Only one program can use an rtl_tcp server at a time: close any other client.	同一时间只有一个程序能使用 rtl_tcp 服务器：请关闭其他客户端。
+Only one program can use the radio at a time.	同一时间只有一个程序能使用这台电台。
+Only one receiver plays its sound at a time: click to hear this one	同一时间只有一个接收器播放声音：点击以收听此接收器
+Open Services (press Win+R, type services.msc).	打开“服务”（按 Win+R，输入 services.msc）。
+Open System Settings > Sound and pick an output device.	打开“系统设置 > 声音”并选择输出设备。
+Open codecs folder	打开编解码器文件夹
+Open driver page	打开驱动页面
+Open firmware page	打开固件页面
+Open the SDRplay API page	打开 SDRplay API 页面
+Open the device list	打开设备列表
+Optional: your position, as a Maidenhead locator (KO24pq) or coordinates (54.68, 25.28). It is kept on this computer and used for maps and satellite passes.	可选：您的位置，梅登黑德网格定位符（KO24pq）或坐标（54.68, 25.28）。它仅保存在这台电脑上，用于地图和卫星过境。
+Or choose another radio from the list.	或从列表中选择另一台电台。
+Or install OnAir's blacklist file (the .deb package does it).	或安装 OnAir 的黑名单文件（.deb 包会自动安装）。
+Or set the UHD_IMAGES_DIR variable to the folder with the images.	或将变量 UHD_IMAGES_DIR 设置为存放镜像的文件夹。
+Own accent colour	自定义强调色
+PSK Reporter	PSK Reporter
+Pagers, tones and FFSK	寻呼机、音调和 FFSK
+Pause	暂停
+Peak markers	峰值标记
+Plug a radio into the computer that runs the SpyServer, and restart the SpyServer.	请把电台接到运行 SpyServer 的电脑上，然后重启 SpyServer。
+Plug the radio in again and press the refresh button.	请重新插入电台，然后点击刷新按钮。
+Plug the radio in, directly or through a powered hub.	请插入电台，直接连接或通过带电源的集线器连接。
+Press "Look again" in the ? help next to the sound.	在声音旁边的 ? 帮助中点击“重新查找”。
+Press the refresh button next to the radio list.	点击电台列表旁边的刷新按钮。
+Press the refresh button next to the source.	点击信号源旁边的刷新按钮。
+Put the library in the OnAir codecs folder (button below).	把库文件放入 OnAir 编解码器文件夹（下方按钮）。
+Put the panels back to their automatic sizes (drag the bars between panels to resize them)	将面板恢复为自动大小（拖动面板之间的分隔条可调整大小）
+Radar chirps, HF	雷达啁啾，短波
+Radio settings (%d changed)###radioset	电台设置（已更改 %d 项）###radioset
+Radio settings###radioset	电台设置###radioset
+Receivers at once	同时接收器数量
+Reduce CPU when hidden	隐藏时降低 CPU 占用
+Remote driver	远程驱动
+Reset	重置
+Reset layout	重置布局
+Restart OnAir (the installer starts SDRplay's background service).	重启 OnAir（安装程序会启动 SDRplay 的后台服务）。
+Restart OnAir.	重启 OnAir。
+Restart the Mac, or run in Terminal: sudo launchctl kickstart -k system/com.sdrplay.service	重启 Mac，或在终端中运行：sudo launchctl kickstart -k system/com.sdrplay.service
+Right-click the speaker icon, open Sound settings and pick an output device.	右键单击扬声器图标，打开声音设置并选择输出设备。
+Run in a terminal: sudo systemctl restart sdrplay	在终端中运行：sudo systemctl restart sdrplay
+Run once in a terminal: uhd_images_downloader	在终端中运行一次：uhd_images_downloader
+Run: sudo modprobe -r msi2500 msi001	运行：sudo modprobe -r msi2500 msi001
+Running several radios at the same time needs a lot of processing power. Performance may limit what is possible: with too many or too fast receivers samples are dropped and decoding gets worse.	同时运行多台电台需要大量计算能力。性能可能会限制可行的范围：接收器过多或速度过快会丢失采样，解码效果变差。
+SDR	SDR
+SNR dB	SNR dB
+Satellites	卫星
+Satellites, 1.6 GHz	卫星，1.6 GHz
+Save bug report	保存错误报告
+Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue	保存一个包含诊断信息、日志和最近崩溃报告的 zip 文件：请附到 GitHub issue 中
+Search	搜索
+Seen	最后出现
+Send spots to PSK Reporter (pskreporter.info)	向 PSK Reporter 发送接收报告 (pskreporter.info)
+Sensors and IoT	传感器与物联网
+Services	服务
+Set the LO above 0 MHz.	请将 LO 设置为大于 0 MHz。
+Setup	设置
+Setup wizard	设置向导
+Share my radio (rtl_tcp server)	共享我的电台（rtl_tcp 服务器）
+Share the radio's samples as an rtl_tcp server	将电台的采样作为 rtl_tcp 服务器共享
+Ships	船舶
+Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs.	显示并调谐天线端的频率，而电台实际调谐在变频器的输出频率上。
+Skip setup	跳过设置
+Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)	频谱：平均、最大保持、峰值标记、填充、网格和单位（dBFS 或 dBm）
+Speed (rows a second)	速度（每秒行数）
+Spots are public. A valid amateur radio callsign is required; the dial frequency is the tuned frequency.	接收报告是公开的。需要有效的业余无线电呼号；拨盘频率即当前调谐频率。
+Stop adding rows: the picture stays, and drag or the wheel on the waterfall scroll and zoom back through it	停止添加新行：画面保持不变，在瀑布图上拖动或使用滚轮可回看并缩放
+Television	电视
+Text size	文字大小
+Text size %d%%	文字大小 %d%%
+The FreeDV / M17 voice codec (codec2) is not installed	未安装 FreeDV / M17 语音编解码器 (codec2)
+The HackRF firmware does not match	HackRF 固件不匹配
+The HackRF is not found	未找到 HackRF
+The Linux sound driver holds the radio, so the SDRplay software cannot see it.	Linux 声音驱动占用了电台，所以 SDRplay 软件看不到它。
+The PlutoSDR answered, but without its radio chip. It may still be starting, or run unusual firmware.	PlutoSDR 有响应，但没有射频芯片。它可能仍在启动，或运行着不常见的固件。
+The PlutoSDR does not show its radio chip	PlutoSDR 未显示其射频芯片
+The RTL-SDR is gone	RTL-SDR 已消失
+The SDRplay service is not running	SDRplay 服务未运行
+The SDRplay software is too old	SDRplay 软件版本过旧
+The SpyServer answered, but no radio is plugged into it.	SpyServer 有响应，但没有接入任何电台。
+The USRP needs its firmware images	USRP 需要其固件镜像
+The USRP software is installed, but the firmware images it loads are missing.	已安装 USRP 软件，但它要加载的固件镜像缺失。
+The address of the network radio must look like host:port, for example 192.168.1.20:1234.	网络电台的地址必须形如 主机:端口，例如 192.168.1.20:1234。
+The file could not be opened	无法打开该文件
+The firmware inside the HackRF is older than the software talking to it.	HackRF 内的固件比与其通信的软件旧。
+The frequency is below or above what this radio can receive.	该频率低于或高于这台电台能接收的范围。
+The most receivers are open	已打开的接收器数量达到上限
+The network radio (rtl_tcp) does not answer	网络电台 (rtl_tcp) 没有响应
+The picture holds the last %.0f s.	画面保留最近 %.0f 秒。
+The radio did not start	电台未能启动
+The radio is plugged in, but the system does not let your account use it yet.	电台已插入，但系统尚未允许您的账户使用它。
+The radio opened badly or stopped at once. The message above says why; these steps solve most cases.	电台打开失败或立即停止。上面的消息说明了原因；这些步骤可解决大多数情况。
+The radio was found but the USB link to it did not work. This is usually permission, the cable or the port.	找到了电台，但 USB 连接失败。通常是权限、线缆或端口的问题。
+The radio you chose is no longer connected.	您选择的电台已不再连接。
+The radio's SoapySDR driver on the server, or a key=value list: driver=sdrplay,serial=1.	服务器上该电台的 SoapySDR 驱动，或 key=value 列表：driver=sdrplay,serial=1。
+The radio's USB connection failed	电台的 USB 连接失败
+The recording file is missing, moved or not readable.	录音文件缺失、已被移动或无法读取。
+The rtl_tcp address is not valid	rtl_tcp 地址无效
+The server has no radio	服务器没有电台
+The text and data are shown, but speech needs the open codec2 library, which OnAir does not ship.	文字和数据会显示，但语音需要开源的 codec2 库，OnAir 不附带它。
+The voice codec (mbelib) is not installed	未安装语音编解码器 (mbelib)
+This frequency is not reachable through the converter.	通过该变频器无法到达此频率。
+This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	这是 Linux 的问题。请在此系统上拔下电台，重新插入，然后点击刷新按钮。
+This radio cannot tune that frequency	这台电台无法调谐到该频率
+This user may not open the radio	此用户无权打开电台
+Time constant of the averaged line: longer is calmer	平均曲线的时间常数：越长越平稳
+Tools	工具
+Trace	曲线
+Trunked and two-way radio	集群与对讲无线电
+Try another USB port and a short cable.	请换一个 USB 端口并使用短线缆。
+Try another USB port, directly on the computer (not a hub), and a short cable.	请换一个直接插在电脑上的 USB 端口（不要用集线器），并使用短线缆。
+Try another USB port, directly on the computer (not a hub).	请换一个直接插在电脑上的 USB 端口（不要用集线器）。
+Try another USB port, directly on the computer.	请换一个直接插在电脑上的 USB 端口。
+Tuner (DAB)###Tuner	调谐器 (DAB)###Tuner
+Tuner (FM)###Tuner	调谐器 (FM)###Tuner
+Unit	单位
+United Kingdom and Ireland	英国和爱尔兰
+Unplug and replug the radio, then press the refresh button.	拔下并重新插入电台，然后点击刷新按钮。
+Unplug the HackRF and plug it in again.	拔下 HackRF 并重新插入。
+Unplug the USRP, plug it in again and press the refresh button.	拔下 USRP，重新插入，然后点击刷新按钮。
+Unplug the radio and plug it in again, then press the refresh button.	拔下电台并重新插入，然后点击刷新按钮。
+Unplug the radio and plug it in again.	拔下电台并重新插入。
+Unplug the radio, plug it in again and press the refresh button.	拔下电台，重新插入，然后点击刷新按钮。
+Up: radio = RF + LO	上变频：电台 = RF + LO
+Update the HackRF firmware (the page below has the steps; the file comes with the HackRF software).	更新 HackRF 固件（下方页面有步骤；固件文件随 HackRF 软件提供）。
+Wait a minute after plugging it in, then press the refresh button.	插入后等待一分钟，然后点击刷新按钮。
+Waterfall: colour map, intensity range, speed and pause (then drag or use the wheel to look back)	瀑布图：色图、强度范围、速度和暂停（之后可拖动或用滚轮回看）
+Wave buoys, HF	波浪浮标，短波
+Weather alerts, 162.55 MHz	天气警报，162.55 MHz
+Weather pictures, 1.7 GHz	气象图像，1.7 GHz
+What do you want to receive? Tick anything that interests you.	您想接收什么？勾选您感兴趣的任何内容。
+What to add to a level in dBFS to get dBm for this radio (its calibration: a known signal into the antenna port shows it). Also in the radio's settings.	要加到 dBFS 电平上才能得到这台电台 dBm 的数值（即其校准值：向天线口输入已知信号即可得出）。也可在电台设置中修改。
+Where are you? This picks the right TV standard and FM band.	您在哪里？这将选择合适的电视标准和 FM 频段。
+Which language do you want OnAir in?	您希望使用哪种语言的 OnAir？
+Which radio do you have?	您有哪种电台？
+You can change the mode any time, and run this setup again from Help > Setup wizard.	您可以随时更改模式，也可以从“帮助 > 设置向导”重新运行此设置。
+You can go on without one: the synthetic signal and IQ files work with no hardware.	没有电台也可以继续：合成信号和 IQ 文件无需硬件即可使用。
+Your callsign	您的呼号
+Your locator	您的网格定位符
+Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.	缩放：鼠标滚轮（两个轴）、Ctrl+滚轮（频率）、Shift+滚轮（电平）。\nCtrl+PageUp / PageDown：按一屏频率步进视图。双击：重置。
+antenna %.6g MHz -> %s LO %.6g -> radio %.6g MHz%s	天线 %.6g MHz -> %s LO %.6g -> 电台 %.6g MHz%s
+channel scan has the radio	信道扫描正在使用电台
+dBm offset	dBm 偏移
+dBm offset (dB)	dBm 偏移 (dB)
+decode every channel in the span: a receiver for each occupied channel, one plays, the others keep decoding\n(right click: how many at once, where the channels sit)	解码范围内的每个信道：每个有信号的信道一个接收器，一个出声，其他继续解码\n（右键：同时数量、信道位置）
+decode every signal in the visible span, not just the tuned one	解码可见范围内的每个信号，而不仅是已调谐的那个
+empty	空
+held	已保持
+holds	保持
+last send %s	上次发送 %s
+listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	正在监听 %s 端口 %d，%d 个客户端，已发送 %.1f MB，已丢弃 %.1f MB
+max	最大
+mute	静音
+on air	播出中
+partial	部分
+point %s	点 %s
+power (dBm)	功率 (dBm)
+searching for Hermes Lite 2 radios…	正在查找 Hermes Lite 2 电台…
+sound	声音
+up-converter	上变频器
+waiting	等待中
+waterfall dB##wfdb	瀑布图 dB##wfdb
+spectrum dB##specdb	频谱 dB##specdb
+Clear##log	清除##log

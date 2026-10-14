@@ -574,3 +574,286 @@ Copied	Nukopijuota
 Copies the version, system, radios, messages and radio log lines, for a bug report	Nukopijuoja versiją, sistemą, radijus, pranešimus ir radijo žurnalo eilutes klaidos ataskaitai
 spectrum dB	spektras dB
 waterfall dB	krioklys dB
+# added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
+  (mirrored: I/Q swapped)	  (atspindėta: I/Q sukeisti)
+%s, %d client%s, %llu sent, %llu dropped	%s, %d klientas%s, išsiųsta %llu, praleista %llu
+A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	HackRF, Airspy arba RTL-SDR vieną kartą reikalauja WinUSB tvarkyklės: įdiekite ją su Zadig (zadig.akeo.ie).
+A Linux driver for TV sticks took the radio before the SDRplay software could.	Linux TV nupių tvarkyklė perėmė radiją anksčiau nei SDRplay programinė įranga.
+A high-end computer is recommended. Lower sample rates help.	Rekomenduojamas galingas kompiuteris. Padeda mažesnis imties dažnis.
+A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Pasaulio žemėlapis: raskite vietą pagal koordinates ar Maidenhead lokatorių, atstumas ir azimutas nuo jūsų vietos
+Add a receiver: another radio with its own mode	Pridėti imtuvą: kitas radijas su savo režimu
+Add receiver	Pridėti imtuvą
+Added to a level in dBFS to give dBm for this radio: feed a known signal into the antenna port and set the difference. Used when the spectrum shows dBm (Spectrum button on the plot).	Pridedama prie dBFS lygio, kad gautumėte šio radijo dBm: į antenos lizdą paduokite žinomą signalą ir nustatykite skirtumą. Naudojama, kai spektras rodo dBm (grafiko mygtukas Spektras).
+Aircraft	Orlaiviai
+All set. OnAir will start here:	Viskas paruošta. OnAir prasidės čia:
+Allow remote control (frequency and gain)	Leisti nuotolinį valdymą (dažnis ir stiprinimas)
+Amateur radio	Radijo mėgėjai
+An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	Prijungtas SDRplay RSP, bet jo tvarkyklė, SDRplay API, neįdiegta. Tai pačios SDRplay programinė įranga, o jos licencija neleidžia OnAir jos įtraukti, todėl ją reikia atsisiųsti vieną kartą.
+Another program is using the HackRF	Kita programa naudoja HackRF
+Australia and New Zealand	Australija ir Naujoji Zelandija
+Average	Vidurkis
+CPU load now: %.0f%% (100%% = one core)	Dabartinė procesoriaus apkrova: %.0f%% (100%% = vienas branduolys)
+Calls and data are shown, but the voice is silent until you install the codec yourself. OnAir does not ship it (patents).	Skambučiai ir duomenys rodomi, bet balsas tylės, kol pats neįdiegsite kodeko. OnAir jo nepateikia (patentai).
+Cancel	Atšaukti
+Carrier MHz	Nešlys MHz
+Carriers in the span (click: listen and show; double click: tune to it)	Nešlio dažniai juostoje (spustelėkite: klausyti ir rodyti; dukart: derinti)
+Channel MHz	Kanalas MHz
+Channel raster	Kanalų žingsnis
+Check that PulseAudio or PipeWire runs, and that an output is chosen in the sound settings.	Patikrinkite, ar veikia PulseAudio ar PipeWire ir ar garso nustatymuose pasirinktas išvestis.
+Check that rtl_tcp is running on the other computer and prints "listening".	Patikrinkite, ar kitame kompiuteryje veikia rtl_tcp ir rodo „listening“.
+Check that the file still exists and that you may read it.	Patikrinkite, ar failas vis dar egzistuoja ir ar galite jį skaityti.
+Check that the firmware is the stock one, or a known one such as Tezuka.	Patikrinkite, ar programinė įranga originali arba žinoma, pvz., Tezuka.
+Check the USB cable and port, then press the refresh button.	Patikrinkite USB laidą ir prievadą, tada paspauskite atnaujinimo mygtuką.
+Check the address and port, and that nothing blocks them (firewall, Wi-Fi).	Patikrinkite adresą ir prievadą bei ar jų niekas neblokuoja (ugniasienė, Wi-Fi).
+China	Kinija
+Choose a frequency inside the range shown in the message.	Pasirinkite dažnį pranešime nurodytame intervale.
+Choose the file again.	Pasirinkite failą iš naujo.
+Close other programs that use the radio.	Uždarykite kitas programas, naudojančias radiją.
+Close programs that hold the sound device exclusively.	Uždarykite programas, kurios išskirtinai laiko garso įrenginį.
+Close the other program (a second OnAir, SDR software, hackrf_info).	Uždarykite kitą programą (antrą OnAir, SDR programinę įrangą, hackrf_info).
+Close this receiver: it stops and lets go of its radio	Uždaryti šį imtuvą: jis sustos ir paleis savo radiją
+Colour map	Spalvų žemėlapis
+Colours	Spalvos
+Converter (up-converter / LNB)	Keitiklis (kėlimo keitiklis / LNB)
+Copy the command	Kopijuoti komandą
+Copy the restart command	Kopijuoti perkrovimo komandą
+Copy the udev command	Kopijuoti udev komandą
+Details	Išsami informacija
+Don't show again	Daugiau nerodyti
+Down, LO above: radio = LO - RF (mirrored)	Žemyn, LO aukščiau: radijas = LO - RF (atspindėta)
+Down, LO below: radio = RF - LO	Žemyn, LO žemiau: radijas = RF - LO
+Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	Atsisiųskite šiam kompiuteriui skirtą SDRplay API iš sdrplay.com/api ir paleiskite diegimo programą.
+Download the current SDRplay API from sdrplay.com and install it.	Atsisiųskite naujausią SDRplay API iš sdrplay.com ir įdiekite.
+Drag to resize, double click for the automatic size	Tempkite, kad pakeistumėte dydį, dukart spustelėkite automatiniam dydžiui
+Drones, 2.4 / 5.8 GHz	Dronai, 2,4 / 5,8 GHz
+Elsewhere	Kitur
+Europe	Europa
+FM / DAB radio	FM / DAB radijas
+FM radio	FM radijas
+Files: audio and IQ	Failai: garsas ir IQ
+Fill under the line	Užpildyti po linija
+Find "SDRplay API Service" and press Start (or Restart).	Raskite „SDRplay API Service“ ir paspauskite Paleisti (arba Paleisti iš naujo).
+Fix the address of the network radio (host:port).	Pataisykite tinklo radijo adresą (kompiuteris:prievadas).
+Follow the steps in the full instructions to install codec2.	Sekite pilnos instrukcijos žingsnius, kad įdiegtumėte codec2.
+Follow the steps in the full instructions to install the codec.	Sekite pilnos instrukcijos žingsnius, kad įdiegtumėte kodeką.
+For an RSP, install the SDRplay API first (sdrplay.com).	RSP atveju pirmiausia įdiekite SDRplay API (sdrplay.com).
+Found %s (%s)	Rasta %s (%s)
+Found:	Rasta:
+Frequency and level of the strongest peaks in view	Stipriausių matomų smailių dažnis ir lygis
+Full instructions	Pilnos instrukcijos
+Gliders, 868.2 / 868.4 MHz	Sklandytuvai, 868,2 / 868,4 MHz
+Grid	Tinklelis
+How far the converter's oscillator runs fast (positive) or slow. The LO used is LO x (1 + ppm / 1e6).	Kiek keitiklio generatorius skuba (teigiama) arba vėluoja. Naudojamas LO x (1 + ppm / 1e6).
+How fast the max-hold line falls; 0: it stays until reset	Kaip greitai krenta maksimumo išlaikymo linija; 0: išlieka iki nustatymo iš naujo
+How to fix	Kaip ištaisyti
+Images	Vaizdai
+Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay	Įdiekite OnAir juodojo sąrašo failą (.deb paketas tai padaro) arba paleiskite: sudo systemctl restart sdrplay
+Install the SDRplay API	Įdiegti SDRplay API
+Install the SDRplay API from sdrplay.com if you have not.	Jei dar neįdiegėte, įdiekite SDRplay API iš sdrplay.com.
+Install the WinUSB driver once with Zadig (zadig.akeo.ie): choose the radio, then the driver WinUSB, then Install.	Vieną kartą įdiekite WinUSB tvarkyklę su Zadig (zadig.akeo.ie): pasirinkite radiją, tada tvarkyklę WinUSB, tada Įdiegti.
+Install the udev rules (install-udev-rules.sh), then unplug and replug the radio.	Įdiekite udev taisykles (install-udev-rules.sh), tada atjunkite ir vėl prijunkite radiją.
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb does it).	Įdiekite udev taisykles: paleiskite install-udev-rules.sh iš OnAir aplanko (.deb tai padaro).
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb package does it for you).	Įdiekite udev taisykles: paleiskite install-udev-rules.sh iš OnAir aplanko (.deb paketas tai padaro už jus).
+Intensity (dB)	Intensyvumas (dB)
+IoT, 2.4 GHz	IoT, 2,4 GHz
+IoT, sub-GHz	IoT, sub-GHz
+It is streaming to another program: stop it there first.	Jis perduoda srautą kitai programai: pirmiausia sustabdykite ten.
+Japan	Japonija
+Journaline	Journaline
+Just explore	Tiesiog naršyti
+Keep the waterfall range on the noise floor and the strongest signal (click again to stop following)	Laikyti krioklio ribas ties triukšmo lygiu ir stipriausiu signalu (spustelėkite dar kartą, kad nustotumėte sekti)
+LO (MHz)	LO (MHz)
+LO correction (ppm)	LO korekcija (ppm)
+Let other computers connect (LAN)	Leisti prisijungti kitiems kompiuteriams (LAN)
+Level at the cursor	Lygis ties žymekliu
+Level dB	Lygis dB
+Linux grabbed the SDRplay radio	Linux perėmė SDRplay radiją
+Linux treats the radio as a sound card	Linux traktuoja radiją kaip garso plokštę
+Load	Įkelti
+Look again	Ieškoti iš naujo
+Look for Hermes Lite 2 radios on this computer's networks again	Dar kartą ieškoti Hermes Lite 2 radijų šio kompiuterio tinkluose
+Maritime, VHF	Jūrinis, VHF
+Max hold	Maks. išlaikymas
+Meteor scatter, 28.145 MHz	Meteorų sklaida, 28,145 MHz
+Middle East	Artimieji Rytai
+Mirror the spectrum (swap I and Q)	Atspindėti spektrą (sukeisti I ir Q)
+NB-IoT, band scan	NB-IoT, juostos skenavimas
+NCDXF/IARU, Long Dashes, single letters	NCDXF/IARU, ilgi brūkšniai, pavienės raidės
+Network	Tinklas
+Network radio: %llu samples lost (underruns)	Tinklo radijas: prarasta %llu imčių (trūkumas)
+No Hermes Lite 2 answered on this computer's networks: type its address.	Šio kompiuterio tinkluose neatsiliepė joks Hermes Lite 2: įveskite jo adresą.
+No radio found	Radijas nerastas
+No sound output	Nėra garso išvesties
+North America	Šiaurės Amerika
+Not a locator or coordinates	Ne lokatorius ir ne koordinatės
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	„Windows“ sistemoje HackRF vieną kartą reikalauja WinUSB tvarkyklės: įdiekite ją su Zadig (zadig.akeo.ie).
+OnAir %s	OnAir %s
+OnAir cannot see a HackRF on the USB ports.	OnAir nmato HackRF USB prievaduose.
+OnAir could not open the speakers, so there will be no sound.	OnAir nepavyko atidaryti garsiakalbių, todėl garso nebus.
+OnAir could not use the rtl_tcp server, or the connection dropped.	OnAir negalėjo naudoti rtl_tcp serverio arba ryšys nutrūko.
+OnAir found the SDRplay software, but its background service does not answer, so the RSP cannot be opened.	OnAir rado SDRplay programinę įrangą, bet jos foninė tarnyba neatsako, todėl RSP atidaryti negalima.
+OnAir lists a radio when the computer sees it. You can still try everything with the synthetic signal or an IQ file.	OnAir parodo radiją, kai kompiuteris jį mato. Vis tiek galite viską išbandyti su sintetiniu signalu ar IQ failu.
+OnAir needs SDRplay API 3.07 or a newer 3.x.	OnAir reikia SDRplay API 3.07 arba naujesnės 3.x versijos.
+Only one program can use an rtl_tcp server at a time: close any other client.	Vienu metu rtl_tcp serverį gali naudoti tik viena programa: uždarykite kitus klientus.
+Only one program can use the radio at a time.	Vienu metu radiją gali naudoti tik viena programa.
+Only one receiver plays its sound at a time: click to hear this one	Vienu metu garsą groja tik vienas imtuvas: spustelėkite, kad girdėtumėte šį
+Open Services (press Win+R, type services.msc).	Atidarykite Paslaugas (spauskite Win+R, įveskite services.msc).
+Open System Settings > Sound and pick an output device.	Atidarykite Sistemos nustatymai > Garsas ir pasirinkite išvesties įrenginį.
+Open codecs folder	Atidaryti kodekų aplanką
+Open driver page	Atidaryti tvarkyklės puslapį
+Open firmware page	Atidaryti programinės įrangos puslapį
+Open the SDRplay API page	Atidaryti SDRplay API puslapį
+Open the device list	Atidaryti įrenginių sąrašą
+Optional: your position, as a Maidenhead locator (KO24pq) or coordinates (54.68, 25.28). It is kept on this computer and used for maps and satellite passes.	Neprivaloma: jūsų vieta kaip Maidenhead lokatorius (KO24pq) arba koordinatės (54.68, 25.28). Ji saugoma šiame kompiuteryje ir naudojama žemėlapiams bei palydovų praskridimams.
+Or choose another radio from the list.	Arba pasirinkite kitą radiją iš sąrašo.
+Or install OnAir's blacklist file (the .deb package does it).	Arba įdiekite OnAir juodojo sąrašo failą (.deb paketas tai padaro).
+Or set the UHD_IMAGES_DIR variable to the folder with the images.	Arba nustatykite kintamąjį UHD_IMAGES_DIR į aplanką su vaizdais.
+Own accent colour	Nuosava akcento spalva
+PSK Reporter	PSK Reporter
+Pagers, tones and FFSK	Pranešimų gaviklai, tonai ir FFSK
+Pause	Pauzė
+Peak markers	Smailių žymekliai
+Plug a radio into the computer that runs the SpyServer, and restart the SpyServer.	Prijunkite radiją prie kompiuterio, kuriame veikia SpyServer, ir paleiskite SpyServer iš naujo.
+Plug the radio in again and press the refresh button.	Vėl prijunkite radiją ir paspauskite atnaujinimo mygtuką.
+Plug the radio in, directly or through a powered hub.	Prijunkite radiją tiesiogiai arba per aktyvų šakotuvą.
+Press "Look again" in the ? help next to the sound.	Paspauskite „Ieškoti iš naujo“ ? pagalboje šalia garso.
+Press the refresh button next to the radio list.	Paspauskite atnaujinimo mygtuką šalia radijų sąrašo.
+Press the refresh button next to the source.	Paspauskite atnaujinimo mygtuką šalia šaltinio.
+Put the library in the OnAir codecs folder (button below).	Įdėkite biblioteką į OnAir kodekų aplanką (mygtukas žemiau).
+Put the panels back to their automatic sizes (drag the bars between panels to resize them)	Grąžinti skydelius į automatinius dydžius (tempkite juostas tarp skydelių, kad pakeistumėte dydį)
+Radar chirps, HF	Radarų čirpai, HF
+Radio settings (%d changed)###radioset	Radijo nustatymai (pakeista: %d)###radioset
+Radio settings###radioset	Radijo nustatymai###radioset
+Receivers at once	Vienu metu imtuvų
+Reduce CPU when hidden	Mažinti procesoriaus apkrovą, kai paslėpta
+Remote driver	Nuotolinė tvarkyklė
+Reset	Nustatyti iš naujo
+Reset layout	Atstatyti išdėstymą
+Restart OnAir (the installer starts SDRplay's background service).	Paleiskite OnAir iš naujo (diegimo programa paleidžia SDRplay foninę tarnybą).
+Restart OnAir.	Paleiskite OnAir iš naujo.
+Restart the Mac, or run in Terminal: sudo launchctl kickstart -k system/com.sdrplay.service	Perkraukite „Mac“ arba terminale paleiskite: sudo launchctl kickstart -k system/com.sdrplay.service
+Right-click the speaker icon, open Sound settings and pick an output device.	Dešiniuoju pelės klavišu spustelėkite garsiakalbio piktogramą, atidarykite garso nustatymus ir pasirinkite išvesties įrenginį.
+Run in a terminal: sudo systemctl restart sdrplay	Paleiskite terminale: sudo systemctl restart sdrplay
+Run once in a terminal: uhd_images_downloader	Vieną kartą paleiskite terminale: uhd_images_downloader
+Run: sudo modprobe -r msi2500 msi001	Paleiskite: sudo modprobe -r msi2500 msi001
+Running several radios at the same time needs a lot of processing power. Performance may limit what is possible: with too many or too fast receivers samples are dropped and decoding gets worse.	Kelių radijų naudojimas vienu metu reikalauja daug skaičiavimo galios. Našumas gali apriboti galimybes: esant per daug ar per greitų imtuvų, imtys praleidžiamos ir dekodavimas pablogėja.
+SDR	SDR
+SNR dB	SNR dB
+Satellites	Palydovai
+Satellites, 1.6 GHz	Palydovai, 1,6 GHz
+Save bug report	Išsaugoti klaidos ataskaitą
+Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue	Išsaugo vieną zip failą su diagnostika, žurnalu ir paskutine strigties ataskaita: pridėkite jį prie GitHub pranešimo
+Search	Ieškoti
+Seen	Matyta
+Send spots to PSK Reporter (pskreporter.info)	Siųsti spotus į PSK Reporter (pskreporter.info)
+Sensors and IoT	Jutikliai ir IoT
+Services	Paslaugos
+Set the LO above 0 MHz.	Nustatykite LO aukščiau nei 0 MHz.
+Setup	Sąranka
+Setup wizard	Sąrankos vedlys
+Share my radio (rtl_tcp server)	Bendrinti mano radiją (rtl_tcp serveris)
+Share the radio's samples as an rtl_tcp server	Bendrinti radijo imtis kaip rtl_tcp serverį
+Ships	Laivai
+Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs.	Rodyti ir derinti dažnį antenoje, kai radijas suderintas pagal keitiklio išvestį.
+Skip setup	Praleisti sąranką
+Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)	Spektras: vidurkinimas, maksimumo išlaikymas, smailių žymekliai, užpildymas, tinklelis ir vienetas (dBFS arba dBm)
+Speed (rows a second)	Greitis (eilučių per sekundę)
+Spots are public. A valid amateur radio callsign is required; the dial frequency is the tuned frequency.	Spotai yra vieši. Reikalingas galiojantis radijo mėgėjo šaukinys; ciferblato dažnis yra sureguliuotas dažnis.
+Stop adding rows: the picture stays, and drag or the wheel on the waterfall scroll and zoom back through it	Nebepridėti eilučių: vaizdas lieka, o tempimas ar ratukas ant krioklio leidžia slinkti ir keisti mastelį
+Television	Televizija
+Text size	Teksto dydis
+Text size %d%%	Teksto dydis %d%%
+The FreeDV / M17 voice codec (codec2) is not installed	FreeDV / M17 balso kodekas (codec2) neįdiegtas
+The HackRF firmware does not match	HackRF programinė įranga nesutampa
+The HackRF is not found	HackRF nerastas
+The Linux sound driver holds the radio, so the SDRplay software cannot see it.	Linux garso tvarkyklė laiko radiją, todėl SDRplay programinė įranga jo nemato.
+The PlutoSDR answered, but without its radio chip. It may still be starting, or run unusual firmware.	PlutoSDR atsakė, bet be radijo lusto. Galbūt jis dar kraunasi arba naudoja neįprastą programinę įrangą.
+The PlutoSDR does not show its radio chip	PlutoSDR nerodo savo radijo lusto
+The RTL-SDR is gone	RTL-SDR dingo
+The SDRplay service is not running	SDRplay tarnyba neveikia
+The SDRplay software is too old	SDRplay programinė įranga per sena
+The SpyServer answered, but no radio is plugged into it.	SpyServer atsakė, bet prie jo neprijungtas joks radijas.
+The USRP needs its firmware images	USRP reikia savo programinės įrangos vaizdų
+The USRP software is installed, but the firmware images it loads are missing.	USRP programinė įranga įdiegta, bet trūksta jos įkeliamų programinės įrangos vaizdų.
+The address of the network radio must look like host:port, for example 192.168.1.20:1234.	Tinklo radijo adresas turi atrodyti kaip kompiuteris:prievadas, pavyzdžiui, 192.168.1.20:1234.
+The file could not be opened	Nepavyko atidaryti failo
+The firmware inside the HackRF is older than the software talking to it.	HackRF programinė įranga senesnė nei su juo bendraujanti programa.
+The frequency is below or above what this radio can receive.	Dažnis yra žemiau arba aukščiau nei šis radijas gali priimti.
+The most receivers are open	Atidaryta daugiausia imtuvų
+The network radio (rtl_tcp) does not answer	Tinklo radijas (rtl_tcp) neatsako
+The picture holds the last %.0f s.	Paveikslėlyje yra paskutinės %.0f s.
+The radio did not start	Radijas nepasileido
+The radio is plugged in, but the system does not let your account use it yet.	Radijas prijungtas, bet sistema dar neleidžia jūsų paskyrai jo naudoti.
+The radio opened badly or stopped at once. The message above says why; these steps solve most cases.	Radijas atsidarė netinkamai arba iš karto sustojo. Pranešime aukščiau nurodyta priežastis; šie žingsniai išsprendžia daugumą atvejų.
+The radio was found but the USB link to it did not work. This is usually permission, the cable or the port.	Radijas rastas, bet USB ryšys neveikė. Dažniausiai kalta teisės, laidas ar prievadas.
+The radio you chose is no longer connected.	Pasirinktas radijas nebeprijungtas.
+The radio's SoapySDR driver on the server, or a key=value list: driver=sdrplay,serial=1.	Radijo SoapySDR tvarkyklė serveryje arba raktas=reikšmė sąrašas: driver=sdrplay,serial=1.
+The radio's USB connection failed	Radijo USB ryšys nepavyko
+The recording file is missing, moved or not readable.	Įrašo failo nėra, jis perkeltas arba neskaitomas.
+The rtl_tcp address is not valid	rtl_tcp adresas netinkamas
+The server has no radio	Serveryje nėra radijo
+The text and data are shown, but speech needs the open codec2 library, which OnAir does not ship.	Tekstas ir duomenys rodomi, bet kalbai reikia atvirosios codec2 bibliotekos, kurios OnAir nepateikia.
+The voice codec (mbelib) is not installed	Balso kodekas (mbelib) neįdiegtas
+This frequency is not reachable through the converter.	Šio dažnio per keitiklį pasiekti negalima.
+This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	Tai „Linux“ problema. Šioje sistemoje atjunkite radiją, vėl prijunkite ir paspauskite atnaujinimo mygtuką.
+This radio cannot tune that frequency	Šis radijas negali derintis į tą dažnį
+This user may not open the radio	Šis naudotojas negali atidaryti radijo
+Time constant of the averaged line: longer is calmer	Vidurkintos linijos laiko pastovioji: ilgesnė – ramesnė
+Tools	Įrankiai
+Trace	Kreivė
+Trunked and two-way radio	Trunkingo ir dvipusis radijas
+Try another USB port and a short cable.	Išbandykite kitą USB prievadą ir trumpą laidą.
+Try another USB port, directly on the computer (not a hub), and a short cable.	Išbandykite kitą USB prievadą tiesiai kompiuteryje (ne šakotuve) ir trumpą laidą.
+Try another USB port, directly on the computer (not a hub).	Išbandykite kitą USB prievadą tiesiai kompiuteryje (ne šakotuve).
+Try another USB port, directly on the computer.	Išbandykite kitą USB prievadą tiesiai kompiuteryje.
+Tuner (DAB)###Tuner	Imtuvas (DAB)###Tuner
+Tuner (FM)###Tuner	Imtuvas (FM)###Tuner
+Unit	Vienetas
+United Kingdom and Ireland	Jungtinė Karalystė ir Airija
+Unplug and replug the radio, then press the refresh button.	Atjunkite ir vėl prijunkite radiją, tada paspauskite atnaujinimo mygtuką.
+Unplug the HackRF and plug it in again.	Atjunkite HackRF ir vėl prijunkite.
+Unplug the USRP, plug it in again and press the refresh button.	Atjunkite USRP, vėl prijunkite ir paspauskite atnaujinimo mygtuką.
+Unplug the radio and plug it in again, then press the refresh button.	Atjunkite radiją ir vėl prijunkite, tada paspauskite atnaujinimo mygtuką.
+Unplug the radio and plug it in again.	Atjunkite radiją ir vėl prijunkite.
+Unplug the radio, plug it in again and press the refresh button.	Atjunkite radiją, vėl prijunkite ir paspauskite atnaujinimo mygtuką.
+Up: radio = RF + LO	Aukštyn: radijas = RF + LO
+Update the HackRF firmware (the page below has the steps; the file comes with the HackRF software).	Atnaujinkite HackRF programinę įrangą (žingsniai žemiau esančiame puslapyje; failas pateikiamas kartu su HackRF programine įranga).
+Wait a minute after plugging it in, then press the refresh button.	Po prijungimo palaukite minutę, tada paspauskite atnaujinimo mygtuką.
+Waterfall: colour map, intensity range, speed and pause (then drag or use the wheel to look back)	Krioklys: spalvų žemėlapis, intensyvumo intervalas, greitis ir pauzė (tada tempkite ar naudokite ratuką, kad pažiūrėtumėte atgal)
+Wave buoys, HF	Bangų plūdurai, HF
+Weather alerts, 162.55 MHz	Oro perspėjimai, 162,55 MHz
+Weather pictures, 1.7 GHz	Orų paveikslėliai, 1,7 GHz
+What do you want to receive? Tick anything that interests you.	Ką norite priimti? Pažymėkite viską, kas jus domina.
+What to add to a level in dBFS to get dBm for this radio (its calibration: a known signal into the antenna port shows it). Also in the radio's settings.	Ką pridėti prie dBFS lygio, kad gautumėte šio radijo dBm (jo kalibravimas: žinomas signalas antenos lizde jį parodo). Taip pat radijo nustatymuose.
+Where are you? This picks the right TV standard and FM band.	Kur esate? Pagal tai parenkamas tinkamas TV standartas ir FM juosta.
+Which language do you want OnAir in?	Kokia kalba norite naudoti OnAir?
+Which radio do you have?	Kokį radiją turite?
+You can change the mode any time, and run this setup again from Help > Setup wizard.	Režimą galite keisti bet kada ir šią sąranką paleisti iš naujo per Pagalba > Sąrankos vedlys.
+You can go on without one: the synthetic signal and IQ files work with no hardware.	Galite tęsti ir be jo: sintetinis signalas ir IQ failai veikia be aparatūros.
+Your callsign	Jūsų šaukinys
+Your locator	Jūsų lokatorius
+Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.	Mastelis: pelės ratukas (abi ašys), Ctrl+ratukas (dažnis), Shift+ratukas (lygis).\nCtrl+PageUp / PageDown: perstumti vaizdą per vieną ekraną dažniu. Dukart spustelėkite: atstatyti.
+antenna %.6g MHz -> %s LO %.6g -> radio %.6g MHz%s	antena %.6g MHz -> %s LO %.6g -> radijas %.6g MHz%s
+channel scan has the radio	kanalų skenavimas naudoja radiją
+dBm offset	dBm poslinkis
+dBm offset (dB)	dBm poslinkis (dB)
+decode every channel in the span: a receiver for each occupied channel, one plays, the others keep decoding\n(right click: how many at once, where the channels sit)	dekoduoti kiekvieną juostos kanalą: po imtuvą kiekvienam užimtam kanalui, vienas groja, kiti toliau dekoduoja\n(dešinysis spustelėjimas: kiek vienu metu, kur yra kanalai)
+decode every signal in the visible span, not just the tuned one	dekoduoti kiekvieną matomos juostos signalą, ne tik suderintą
+empty	tuščia
+held	išlaikyta
+holds	išlaiko
+last send %s	paskutinis siuntimas %s
+listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	klausoma %s prievadu %d, %d klientas(-ai), išsiųsta %.1f MB, praleista %.1f MB
+max	maks.
+mute	nutildyti
+on air	eteryje
+partial	dalinis
+point %s	taškas %s
+power (dBm)	galia (dBm)
+searching for Hermes Lite 2 radios…	ieškoma Hermes Lite 2 radijų…
+sound	garsas
+up-converter	kėlimo keitiklis
+waiting	laukiama
+waterfall dB##wfdb	krioklys dB##wfdb
+spectrum dB##specdb	spektras dB##specdb
+Clear##log	Išvalyti##log
