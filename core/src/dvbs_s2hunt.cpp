@@ -290,7 +290,7 @@ S2HuntResult s2Hunt(const cf32* z, size_t n) {
         if (c.pos.size() < 2 && !(c.first.rho >= 0.8f && c.first.snrDb > 6.f)) continue;
         if (bi < 0 || c.score > chains[(size_t)bi].score) bi = (int)i;
     }
-    if (bi < 0) return best;
+    if (bi < 0) { S2HuntResult v; if (vlHunt(z, n, v)) return v; return best; }
     const Chain& c = chains[(size_t)bi];
     // the start: the first header that is a data frame (not a dummy), with another header exactly one frame later
     size_t si = 0;

@@ -1,5 +1,6 @@
 // DVB-S2 frame receiver, see dvbs_s2rx.h.
 #include "dvbs_s2rx.h"
+#include "dvbs_vlsnr.h"
 #include "dvbs_s2refine.h"
 #include "dvbs_symthread.h"
 #include "dvbs_compute.h"
@@ -89,12 +90,14 @@ struct Job {
     std::vector<cf32> syms;
     float sigma2 = 0.1f;
     uint32_t frameSyms = 0;
+    int vlIdx = -1;                // >= 0: a VL-SNR frame of this mode (dvbs_vlsnr.h), syms are its data symbols
 };
 
 struct Result {
     uint64_t seq = 0;
     uint32_t frameSyms = 0;
     bool dummy = false, dropped = false, ok = false;
+    int vlIdx = -1, kbch = 0;
     int iters = 0, bchFixed = 0, mod = 0, rate = 0;
     bool sh = false, gpu = false;
     double berPre = -1;
@@ -127,6 +130,14 @@ struct S2Rx::Impl {
     int pos = 0, L = 0;
     bool haveParams = false, dummy = false, soft = true;
     bool skip = false;                       // a frame of known length that is not decoded here (S2X VL-SNR, reserved PLS codes): the loop runs free
+    // VL-SNR frames (EN 302 307-2 clause 5.5.2.5): after the 90 symbol PLHEADER (PLS code 129 / 131) come the 900 symbols of the VL-SNR header, which
+    // gives the mode (Walsh index, table 18b), then pilots and data by the layout of figures 17 and 18
+    bool vl = false;
+    int vlSet = 0, vlIdx = -1;               // vlIdx: mode (table 18a), -2 a VL-SNR dummy frame, -3 a header that was not recognised (the frame is followed only)
+    int vlShift = 0;                         // where the scrambling sequence starts (vlScrIndex)
+    const std::vector<uint8_t>* vlLay = nullptr;
+    cf32 vlHdr[kVlHeaderSymbols];
+    cf32 vlAcc[2]{cf32(0.f, 0.f), cf32(0.f, 0.f)};   // pilot correlation under the two scrambling hypotheses (shift 0 and -900)
     bool hdrS2x = false;                     // the last header was an S2X one (b0 = 1): the next is expected to be one too
     float dmin = 1.f;
     int modcod = -1, mod = 0, rate = 0;
@@ -158,6 +169,7 @@ struct S2Rx::Impl {
     // more than the phase noise of an LNB. The frequency is found before the loop starts (acquire), so it only has to follow drift. Known symbols
     // (SOF, pilots) give a clean phase and may use a wider loop, as long as they are not too noisy.
     double dataBn() const {
+        if (vl) return 0.0006;      // the symbols are far below 0 dB: the loop has to average over many of them
         // Narrow near the threshold of the MODCOD (a wide loop slips on noisy symbols), wider with margin (phase noise of the LNB is then the
         // larger part of the error and the decisions are reliable)
         const double esdb = 10 * std::log10(1.0 / (2.0 * (double)sg2));
@@ -166,7 +178,7 @@ struct S2Rx::Impl {
         return std::min(cap, base * (1.0 + 0.7 * std::max(0.0, margin - 2.0)));
     }
     void setNoise(double v) {
-        sg2 = (float)std::max(1e-3, std::min(2.0, v));
+        sg2 = (float)std::max(1e-3, std::min(vl ? 8.0 : 2.0, v));
         invSg2 = 1.f / sg2;
         tanhScale = 0.70710678f * invSg2 * TanhTable::kScale;
     }
@@ -186,7 +198,7 @@ struct S2Rx::Impl {
         theta = h.theta; omega = h.phi;
         ph = std::polar(1.0f, (float)(-theta));
         gain = h.sofScore > 0.2f && h.sofScore < 5.f ? h.sofScore : 1.f;
-        setNoise(h.snrDb > -5.f && h.snrDb < 40.f ? 0.5 * std::pow(10.0, -h.snrDb / 10.0) : 0.1);
+        { const bool vlh = h.modcod == 64 || h.modcod == 65; vl = vlh; setNoise(h.snrDb > (vlh ? -14.f : -5.f) && h.snrDb < 40.f ? 0.5 * std::pow(10.0, -h.snrDb / 10.0) : 0.1); vl = false; }
         kdGain = 1.f; kdEma = 1.f; kdN = 0;
         // the modulation is not known before the first header is read: the loops are set again then
         setLoops();
@@ -197,6 +209,7 @@ struct S2Rx::Impl {
         phErr2 = 0; phN = 0; merEma = 0;
         dryMetric = 0; dryHeaders = 0; dryAbort = false;
         tail.clear(); tailing = false;
+        vl = false; vlIdx = -1; vlShift = vlShiftHint; vlAcc[0] = vlAcc[1] = cf32(0.f, 0.f);
         lastHeaderL = 0;
         plN = o.plCode_.load() < 0 ? 0 : o.plCode_.load();
         rn = &s2ScramblingRn(plN);
@@ -296,6 +309,7 @@ struct S2Rx::Impl {
         // the scaling and the descrambling turn do not depend on the carrier loop and are done on the symbol first
         const float ig = 1.f / gain;
         cf32 zs(z.real() * ig, z.imag() * ig);
+        if (vl && pos >= 90) { stepVl(zs); return; }
         if (pos >= 90) zs = s2RotateByR(zs, (4 - (int)(*rn)[pos - 90]) & 3);
         const cf32 P = cmul(ph, smallRot((float)omega));
         const cf32 u = cmul(zs, ph);
@@ -344,6 +358,105 @@ struct S2Rx::Impl {
         pos++;
         if (pos == 90) decodeHeader();
         else if (pos == L && pos > 90) finishFrame();
+    }
+
+    // ---- VL-SNR frames
+    // The error of the pi/2 BPSK data aided detector: the symbol j of the data lies on the diagonal (even j) or the anti-diagonal (odd j); the mean of the two
+    // points weighted by how likely each is at this noise level is the expected symbol. The detector gain (kdEma) scales the error, which at -9 dB is
+    // otherwise a fraction of what the loop design assumes.
+    float vlBpskError(const cf32& w, int j) {
+        const float v = 0.70710678f * ((j & 1) ? (w.imag() - w.real()) : (w.real() + w.imag()));
+        const float t = ftanh(v * invSg2);
+        const cf32 s = t * ((j & 1) ? cf32(-0.70710678f, 0.70710678f) : cf32(0.70710678f, 0.70710678f));
+        kdEma += (v * t - kdEma) * (1.f / 1024.f);
+        if ((++kdN & 15) == 0) kdGain = 1.f / std::max(0.08f, std::min(1.f, kdEma));
+        return (w.imag() * s.real() - w.real() * s.imag()) * kdGain;
+    }
+
+    void stepVl(const cf32 zs) {
+        const cf32 P = cmul(ph, smallRot((float)omega));
+        const cf32 u = cmul(zs, ph);
+        float err = 0;
+        bool known = false;
+        if (pos < 90 + kVlHeaderSymbols) {
+            vlHdr[pos - 90] = u;
+        } else if (vlIdx != -3) {
+            const int k = pos - (90 + kVlHeaderSymbols);
+            const int r = (int)(*rn)[(size_t)vlScrIndex(pos, vlShift)];
+            if ((*vlLay)[(size_t)k] || vlIdx == -2) {
+                const cf32 x = s2RotateByR(u, (4 - r) & 3);
+                known = true;
+                err = x.imag() * kPilot.real() - x.real() * kPilot.imag();
+                daErr += std::norm(x - kPilot); daN++;
+                if (vlIdx >= 0 && !dry) {
+                    // which scrambling start the pilots follow, in case the first guess was wrong
+                    for (int h = 0; h < 2; h++) {
+                        const int rr = (int)(*rn)[(size_t)vlScrIndex(pos, h ? -kVlHeaderSymbols : 0)];
+                        vlAcc[h] += s2RotateByR(u, (4 - rr) & 3) * std::conj(kPilot);
+                    }
+                }
+            } else if (vlIdx >= 0) {
+                const bool bpsk = vlMode(vlIdx).bpsk;
+                const cf32 x = bpsk ? ((r & 1) ? -u : u) : s2RotateByR(u, (4 - r) & 3);
+                err = bpsk ? vlBpskError(x, (int)frameSyms.size()) : ddError(x);
+                frameSyms.push_back(x);
+                if ((frameSyms.size() & 7) == 0) { cellRing[cellPos] = x; cellPos = (cellPos + 1) & 2047; cellCount++; }
+            }
+        }
+        if (known) { phErr2 += (double)err * err; phN++; }
+        loopUpdate(err, P);
+        pos++;
+        if (pos == 90 + kVlHeaderSymbols) vlHeaderDone();
+        else if (pos == L) finishFrame();
+    }
+
+    // The VL-SNR header is known to be one of 16 sequences: the best correlation gives the mode (and the phase of the loop, as the SOF does)
+    void vlHeaderDone() {
+        cf32 best(0.f, 0.f); int bw = -1; float bm = 0.f;
+        cf32 ref[kVlHeaderSymbols];
+        for (int w = 0; w < 16; w++) {
+            vlHeaderSymbols(w, ref);
+            cf32 acc(0.f, 0.f);
+            for (int k = 0; k < kVlHeaderSymbols; k++) acc += vlHdr[k] * std::conj(ref[k]);
+            if (std::abs(acc) > bm) { bm = std::abs(acc); bw = w; best = acc; }
+        }
+        const float score = bm / (float)kVlHeaderSymbols;
+        const int want = vlSet;
+        int mode = -3;
+        if (score > 0.3f * std::max(0.2f, std::min(3.f, 1.f))) {
+            if (bw == kVlDummyWalsh) mode = want == 2 ? -2 : -3;
+            else { const int mi = vlModeByWalsh(bw); if (mi >= 0 && vlMode(mi).set == want) mode = mi; }
+        }
+        vlIdx = mode;
+        if (dry) { if (mode == -3) dryAbort = true; return; }
+        if (mode == -3) {
+            std::lock_guard<std::mutex> lk(statMu);
+            st.headerBad++;
+            return;
+        }
+        // the phase of the loop over the header: put back (the header is the first long known run since the PLHEADER)
+        const float psi = std::arg(best);
+        if (std::fabs(psi) < 1.0f) { ph *= std::polar(1.0f, -psi); theta += psi; }
+        const float g = score;
+        if (g > 0.2f && g < 5.f) gain *= std::pow(g, 0.7f);
+        dummy = mode == -2;
+        if (mode >= 0) {
+            const VlMode& m = vlMode(mode);
+            this->mod = kQpsk; this->rate = 0; soft = true;
+            setLoops();
+            frameSyms.clear(); frameSyms.reserve((size_t)m.symbols);
+            std::lock_guard<std::mutex> lk(statMu);
+            st.vlMode = mode; st.modcod = modcod; st.mod = m.bpsk ? 0 : kQpsk; st.rate = -1; st.shortFrame = m.nldpc == 16200; st.pilots = true;
+        }
+    }
+
+    // after a frame: if the pilots followed the other scrambling start better than the one in use, take that one from the next frame on
+    void vlFrameEnd() {
+        const float a0 = std::abs(vlAcc[0]), a1 = std::abs(vlAcc[1]);
+        const int cur = vlShift == 0 ? 0 : 1;
+        const float ac = cur ? a1 : a0, ao = cur ? a0 : a1;
+        if (ao > 3.f * ac + 100.f) { vlShift = cur ? 0 : -kVlHeaderSymbols; std::lock_guard<std::mutex> lk(statMu); st.vlShiftSwitches++; }
+        vlAcc[0] = vlAcc[1] = cf32(0.f, 0.f);
     }
 
     // ---- header position tracking. The symbol clock of the front end can slip by a symbol (noise in the timing loop, a clock offset): the next header then
@@ -491,6 +604,11 @@ struct S2Rx::Impl {
     }
 
     void setupFrame(int mc, int md, int rt, bool bs, bool bp, bool flywheel) {
+        {
+            const int code = s2PlsValue(mc, bs, bp);
+            vl = (code == 129 || code == 131);
+            if (vl) { vlSet = code == 129 ? 1 : 2; vlIdx = -3; vlLay = &vlLayout(vlSet); frameSyms.clear(); L = vlFrameSymbols(vlSet); dummy = false; skip = false; hdrS2x = true; modcod = mc; sh = bs; pil = bp; return; }
+        }
         skip = s2PlsKind(s2PlsValue(mc, bs, bp)) == 2;
         hdrS2x = s2PlsValue(mc, bs, bp) >= 128;
         modcod = mc; sh = bs; pil = bp;
@@ -521,10 +639,11 @@ struct S2Rx::Impl {
             const double mer = 10 * std::log10(std::max(1e-9, (double)daN / std::max(daErr, 1e-9)));
             merEma = merEma == 0 ? mer : 0.7 * merEma + 0.3 * mer;
         }
-        if (daN >= 90) { setNoise(0.5 * sg2 + 0.5 * sigma2); if (!dummy && !skip) soft = softWanted(); }
+        if (daN >= 90) { setNoise(0.5 * sg2 + 0.5 * sigma2); if (!dummy && !skip && !vl) soft = softWanted(); }
         {
             std::lock_guard<std::mutex> lk(statMu);
             st.framesSeen++;
+            if (vl && vlIdx >= 0) st.framesVl++;
             st.merDb = merEma; st.snrDb = merEma;
             st.carrierRadPerSym = omega;
             const size_t have = std::min<size_t>(cellCount, 2048);
@@ -533,13 +652,15 @@ struct S2Rx::Impl {
             phaseSnap = phN ? std::sqrt(phErr2 / (double)phN) : 0.0;
             lockSnap = phN > 200 && phaseSnap < 0.6;
         }
-        if (dummy || skip) {
-            { std::lock_guard<std::mutex> lk(statMu); if (dummy) st.framesDummy++; else st.framesUnsupported++; }
+        if (vl) vlFrameEnd();
+        if (dummy || skip || (vl && vlIdx < 0)) {
+            { std::lock_guard<std::mutex> lk(statMu); if (dummy) st.framesDummy++; else { st.framesUnsupported++; st.unsupportedCode = vlPlsCode(vlSet); } }
             Result r; r.seq = seqNext++; r.frameSyms = fs; r.dummy = true;
             deposit(std::move(r));
         } else {
             Job j;
             j.seq = seqNext++; j.modcod = modcod; j.mod = mod; j.rate = rate; j.sh = sh;
+            j.vlIdx = vl ? vlIdx : -1;
             j.syms = std::move(frameSyms); j.sigma2 = (float)sigma2; j.frameSyms = fs;
             frameSyms.clear();
             submit(std::move(j));
@@ -661,10 +782,82 @@ struct S2Rx::Impl {
         return true;
     }
 
+    // VL-SNR: the frame is found by its PLHEADER; the frequency, the symbol position, the mode of the header and where the scrambling starts are then
+    // searched together over the one frame: the sum of the known symbols (PLHEADER, VL-SNR header of each candidate, the pilots of each hypothesis of
+    // the scrambling start) at each trial frequency is largest, coherently, at the right combination. The frame is 16 000 to 33 000 symbols long, so
+    // the grid is 2 pi / L / 4 apart.
+    int vlShiftHint = 0;
+    bool acquireVl(const S2HuntResult& h, const cf32* win, size_t n, S2HuntResult& out) {
+        if (h.modcod != 64 && h.modcod != 65) return false;
+        const int set = h.modcod == 64 ? 1 : 2;
+        const int Lf = vlFrameSymbols(set);
+        if (h.firstPos + (size_t)Lf + 4 > n || h.firstPos < 2) return false;
+        const bool inv = h.inverted;
+        cf32 plh[90];
+        s2PlHeader(h.modcod, false, true, plh);
+        std::vector<int> cands; std::vector<std::vector<cf32>> refs;
+        for (int w = 0; w < 16; w++) {
+            const int mi = vlModeByWalsh(w);
+            if ((mi >= 0 && vlMode(mi).set == set) || (w == kVlDummyWalsh && set == 2)) {
+                cands.push_back(w); refs.emplace_back((size_t)kVlHeaderSymbols);
+                vlHeaderSymbols(w, refs.back().data());
+            }
+        }
+        const std::vector<uint8_t>& lay = vlLayout(set);
+        const std::vector<uint8_t>& R = s2ScramblingRn(plN);
+        const double stepW = 2.0 * 3.14159265358979323846 / (double)Lf / 4.0;
+        const double span = 0.008;
+        const int K = (int)std::ceil(span / stepW);
+        double bestM = -1, secondM = -1;
+        S2HuntResult best = h;
+        int bestShift = 0;
+        std::vector<cf32> frame((size_t)Lf);
+        for (long d = -2; d <= 2; d++) {
+            const size_t q = (size_t)((long)h.firstPos + d);
+            if (q + (size_t)Lf > n) continue;
+            for (int i = 0; i < Lf; i++) frame[(size_t)i] = inv ? std::conj(win[q + (size_t)i]) : win[q + (size_t)i];
+            for (int j = -K; j <= K; j++) {
+                const double w0 = h.phi + j * stepW;
+                const cf32 stp = std::polar(1.0f, (float)(-w0));
+                cf32 rot(1.f, 0.f);
+                cf32 aPlh(0, 0), aP[2]{cf32(0, 0), cf32(0, 0)};
+                std::vector<cf32> aH(cands.size(), cf32(0, 0));
+                for (int i = 0; i < Lf; i++) {
+                    const cf32 x = frame[(size_t)i] * rot;
+                    rot *= stp;
+                    if ((i & 255) == 255) rot /= std::abs(rot);
+                    if (i < 90) aPlh += x * std::conj(plh[i]);
+                    else if (i < 990) { for (size_t c = 0; c < cands.size(); c++) aH[c] += x * std::conj(refs[c][(size_t)(i - 90)]); }
+                    else if (lay[(size_t)(i - 990)]) {
+                        aP[0] += s2RotateByR(x, (4 - (int)R[(size_t)vlScrIndex(i, 0)]) & 3) * std::conj(kPilot);
+                        aP[1] += s2RotateByR(x, (4 - (int)R[(size_t)vlScrIndex(i, -kVlHeaderSymbols)]) & 3) * std::conj(kPilot);
+                    }
+                }
+                size_t bc = 0; float bh = 0.f;
+                for (size_t c = 0; c < cands.size(); c++) if (std::abs(aH[c]) > bh) { bh = std::abs(aH[c]); bc = c; }
+                for (int s = 0; s < 2; s++) {
+                    const cf32 tot = aPlh + aH[bc] + aP[s];
+                    const double m = std::abs(tot);
+                    if (m > bestM) {
+                        secondM = bestM; bestM = m; bestShift = s ? -kVlHeaderSymbols : 0;
+                        best.pos = q; best.phi = w0; best.theta = std::arg(tot);
+                        best.sofScore = std::max(0.2f, std::min(3.f, (float)(m / (90.0 + kVlHeaderSymbols + 1512.0))));
+                    } else if (m > secondM) secondM = m;
+                }
+            }
+        }
+        (void)secondM;
+        if (bestM < 0.15 * (90.0 + kVlHeaderSymbols)) return false;
+        vlShiftHint = bestShift;
+        out = best;
+        return true;
+    }
+
     S2HuntResult acquire(const S2HuntResult& h, const cf32* win, size_t n) {
         if (h.headers < 2 || h.firstPos + 90 >= n) return h;
         plN = o.plCode_.load() < 0 ? 0 : o.plCode_.load();
         S2HuntResult r;
+        if (acquireVl(h, win, n, r)) return r;
         if (acquireByHeaders(h, win, n, r)) return r;
         return acquireByLoop(h, win, n);
     }
@@ -716,7 +909,7 @@ struct S2Rx::Impl {
     // step() does for these symbols). Returns the number of symbols taken: it stops before the symbol that ends a pilot block, before the held back
     // symbols at the end of the frame and before the end of the frame, which the general path handles.
     size_t fastRun(const cf32* z, size_t n, bool inverted) {
-        if (tailing || dummy || skip || !rn || pos < 90 || L <= 90) return 0;
+        if (tailing || dummy || skip || vl || !rn || pos < 90 || L <= 90) return 0;
         const bool tailLogic = !dry && L > 400 && L < (1 << 20);
         const int stop = tailLogic ? L - kTailBefore : L - 1;
         if (pos >= stop) return 0;
@@ -849,6 +1042,25 @@ struct S2Rx::Impl {
         r.berPre = (double)diff / d.nldpc;
     }
 
+    // a VL-SNR frame: soft demapper, the code of its mode (shortened, punctured), BCH, BB descrambling
+    void processVl(const Job& j, std::vector<float>& llr, std::vector<uint8_t>& bb) {
+        const VlMode& m = vlMode(j.vlIdx);
+        Result r;
+        r.seq = j.seq; r.frameSyms = j.frameSyms; r.vlIdx = j.vlIdx; r.kbch = m.kbch;
+        if ((int)j.syms.size() == m.symbols) {
+            llr.resize((size_t)m.txBits);
+            vlDemap(j.syms.data(), j.vlIdx, std::max(j.sigma2, 1e-3f), llr.data());
+            int it = 0;
+            const int fixed = vlDecode(llr.data(), j.vlIdx, 100, bb, &it);
+            r.iters = it;
+            if (fixed >= 0) {
+                s2BbScramble(bb.data(), m.kbch);
+                r.ok = true; r.bchFixed = fixed; r.bb = bb;
+            }
+        }
+        deposit(std::move(r));
+    }
+
     void workerLoop() {
         std::vector<float> llr, dlAll;
         std::vector<uint8_t> hard, bb, hardAll, okAll;
@@ -865,12 +1077,13 @@ struct S2Rx::Impl {
                 queue.pop_front();
                 gpu = compute.pickGpu(&probe);
                 // frames of the same MODCOD that are already waiting go to the GPU together: one call decodes them all
-                while (gpu && jobs.size() < kBatch && !queue.empty() && queue.front().mod == jobs[0].mod && queue.front().rate == jobs[0].rate && queue.front().sh == jobs[0].sh) {
+                while (gpu && jobs[0].vlIdx < 0 && jobs.size() < kBatch && !queue.empty() && queue.front().vlIdx < 0 && queue.front().mod == jobs[0].mod && queue.front().rate == jobs[0].rate && queue.front().sh == jobs[0].sh) {
                     jobs.push_back(std::move(queue.front()));
                     queue.pop_front();
                 }
             }
             spaceCv.notify_all();
+            if (jobs[0].vlIdx >= 0) { processVl(jobs[0], llr, bb); continue; }
             const Job& j0 = jobs[0];
             const S2Dims d = s2Dims(j0.mod, j0.rate, j0.sh);
             const size_t nb = jobs.size();
@@ -924,6 +1137,7 @@ struct S2Rx::Impl {
     double pendingSyms = 0;
     int isiFirst = -1;
     std::vector<uint8_t> outPk;
+    bool roLow = false;
 
     void deposit(Result&& r) {
         std::lock_guard<std::mutex> lk(resMu);
@@ -958,7 +1172,7 @@ struct S2Rx::Impl {
                 st.fecOk++; st.consecutiveBad = 0;
                 st.ldpcIterAvg = st.ldpcIterAvg == 0 ? r.iters : 0.9 * st.ldpcIterAvg + 0.1 * r.iters;
                 st.ldpcOnGpu = r.gpu; if (r.gpu) st.ldpcGpuFrames++;
-                st.berPre = st.berPre < 0 ? r.berPre : 0.9 * st.berPre + 0.1 * r.berPre;
+                if (r.berPre >= 0) st.berPre = st.berPre < 0 ? r.berPre : 0.9 * st.berPre + 0.1 * r.berPre;
             } else { st.fecBad++; st.consecutiveBad++; st.bchBad++; }
         }
         if (!r.ok) { haveCarry = false; carry.clear(); havePrevCrc = false; return; }
@@ -971,7 +1185,10 @@ struct S2Rx::Impl {
         }
         {
             std::lock_guard<std::mutex> lk(statMu);
-            st.roSignalled = h.ro; st.sis = h.sis; st.tsGs = h.tsGs;
+            // RO 11 switches to the low range: 00, 01, 10 then mean 0.15, 0.10, 0.05 (EN 302 307-2 table 2)
+            if (h.ro == 3) roLow = true;
+            if (h.ro != 3) st.roSignalled = roLow ? 3 + h.ro : h.ro;
+            st.sis = h.sis; st.tsGs = h.tsGs;
         }
         if (!h.sis) {
             const int want = o.isiSel_.load() >= 0 ? o.isiSel_.load() : isiFirst;
@@ -982,7 +1199,7 @@ struct S2Rx::Impl {
             if (h.isi != sel) { std::lock_guard<std::mutex> lk(statMu); st.otherIsi++; return; }
         } else { std::lock_guard<std::mutex> lk(statMu); st.isi = -1; }
         if (h.tsGs != 3) { std::lock_guard<std::mutex> lk(statMu); st.gseFrames++; haveCarry = false; carry.clear(); return; }
-        const int d = s2Dims(r.mod, r.rate, r.sh).kbch;
+        const int d = r.kbch ? r.kbch : s2Dims(r.mod, r.rate, r.sh).kbch;
         if (h.dfl > d - 80 || h.dfl < 0) { std::lock_guard<std::mutex> lk(statMu); st.bbHeaderBad++; return; }
         // the data field as bytes
         const int nbytes = h.dfl / 8;
@@ -1041,6 +1258,7 @@ void S2Rx::start(const S2HuntResult& h, const cf32* win, size_t n) {
     Impl& I = *p_;
     stop();
     I.startWorkers();
+    I.roLow = false;
     I.carry.clear(); I.haveCarry = false; I.havePrevCrc = false; I.pendingSyms = 0; I.isiFirst = -1;
     I.seqNext = 0; I.nextOut = 0; I.results.clear();
     inverted_ = h.inverted;

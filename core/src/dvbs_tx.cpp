@@ -1,6 +1,7 @@
 // DVB-S and DVB-S2 transmitter chains, see dvbs_tx.h.
 #include "dect2/dvbs_tx.h"
 #include "dect2/dvbt.h"
+#include "dvbs_vlsnr.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -92,7 +93,37 @@ private:
         prevCrc_ = s2Crc8(up.data() + 1, (int)up.size() - 1);
     }
 
+    // The BBFRAME of kbch bits: BBHEADER, the data field cut from the user packet stream, then BB scrambled. SYNCD points at the first packet that starts
+    // inside the field. RO (clause 5.1.6, table 2): 0.35, 0.25 and 0.20 are sent as 00, 01, 10; the low range 0.15, 0.10 and 0.05 alternates 11 and 00, 01, 10.
+    int nextRo() {
+        const double r = c_.rollOff;
+        if (r > 0.3) return 0;
+        if (r > 0.22) return 1;
+        if (r > 0.17) return 2;
+        const int lo = r > 0.125 ? 0 : r > 0.075 ? 1 : 2;
+        return (roToggle_++ & 1) ? lo : 3;
+    }
+    void fillBbFrame(int kbch, std::vector<uint8_t>& bb) {
+        // the data field is a whole number of bytes; what is left of the BBFRAME is padding of zero bits (clause 5.2.1): the medium and short VL-SNR frames have
+        // a Kbch whose data field is not
+        const int dfl = (kbch - 80) / 8 * 8, upBits = c_.npd ? 1512 : 1504;
+        bb.assign((size_t)kbch, 0);
+        S2BbHeader h;
+        h.ro = nextRo();
+        h.ccm = !c_.vcm; h.npd = c_.npd; h.upl = upBits; h.dfl = dfl;
+        h.syncd = upBitPos_ == 0 ? 0 : upBits - upBitPos_;
+        if (h.syncd >= dfl) h.syncd = 65535;
+        s2BuildBbHeader(h, bb.data());
+        for (int i = 0; i < dfl; i++) {
+            if (cur_.empty()) { nextUp(cur_); upBitPos_ = 0; }
+            bb[80 + (size_t)i] = (cur_[(size_t)(upBitPos_ >> 3)] >> (7 - (upBitPos_ & 7))) & 1;
+            if (++upBitPos_ == (int)cur_.size() * 8) { upBitPos_ = 0; cur_.clear(); }
+        }
+        s2BbScramble(bb.data(), kbch);
+    }
+
     void nextFrame() {
+        if (c_.vlMode >= 0) { nextVlFrame(); return; }
         int mod = c_.mod, rate = c_.rate;
         bool sh = c_.shortFrame, pil = c_.pilots;
         if (c_.vcm) { const VcmStep& v = kVcm[vcmPos_++ % kVcm.size()]; mod = v.mod; rate = v.rate; sh = v.shortFrame; pil = v.pilots; }
@@ -107,21 +138,8 @@ private:
             return;
         }
         const S2Dims d = s2Dims(mod, rate, sh);
-        const int dfl = d.kbch - 80, upBits = c_.npd ? 1512 : 1504;
-        // data field: the UP stream, cut at DFL bits. SYNCD points at the first packet that starts inside the field.
-        std::vector<uint8_t> bb(d.kbch, 0);
-        S2BbHeader h;
-        h.ro = c_.rollOff > 0.3 ? 0 : c_.rollOff > 0.22 ? 1 : 2;
-        h.ccm = !c_.vcm; h.npd = c_.npd; h.upl = upBits; h.dfl = dfl;
-        h.syncd = upBitPos_ == 0 ? 0 : upBits - upBitPos_;
-        if (h.syncd >= dfl) h.syncd = 65535;
-        s2BuildBbHeader(h, bb.data());
-        for (int i = 0; i < dfl; i++) {
-            if (cur_.empty()) { nextUp(cur_); upBitPos_ = 0; }
-            bb[80 + i] = (cur_[upBitPos_ >> 3] >> (7 - (upBitPos_ & 7))) & 1;
-            if (++upBitPos_ == (int)cur_.size() * 8) { upBitPos_ = 0; cur_.clear(); }
-        }
-        s2BbScramble(bb.data(), d.kbch);
+        std::vector<uint8_t> bb;
+        fillBbFrame(d.kbch, bb);
         std::vector<uint8_t> fec, il;
         s2EncodeFec(bb, rate, sh, fec);
         s2BitInterleave(fec, mod, rate, il);
@@ -140,6 +158,19 @@ private:
         }
     }
 
+    // a VL-SNR PLFRAME (EN 302 307-2 clause 5.5.2.5): the mode of the configuration, with a VL-SNR dummy frame after every vlDummyEvery data frames
+    void nextVlFrame() {
+        pos_ = 0;
+        if (c_.vlDummyEvery > 0 && ++sinceDummy_ > c_.vlDummyEvery) {
+            sinceDummy_ = 0;
+            vlBuildFrame(-1, std::vector<uint8_t>(), c_.plScramble, c_.vlScrShift, frame_);
+            return;
+        }
+        std::vector<uint8_t> bb;
+        fillBbFrame(vlMode(c_.vlMode).kbch, bb);
+        vlBuildFrame(c_.vlMode, bb, c_.plScramble, c_.vlScrShift, frame_);
+    }
+
     DvbsTxConfig c_;
     std::function<void(uint8_t*)> ts_;
     std::vector<cf32> frame_;
@@ -147,7 +178,7 @@ private:
     std::vector<uint8_t> cur_;       // the packet being sent
     int upBitPos_ = 0;
     uint8_t prevCrc_ = 0;
-    int dnp_ = 0, vcmPos_ = 0, sinceDummy_ = 0;
+    int dnp_ = 0, vcmPos_ = 0, sinceDummy_ = 0, roToggle_ = 0;
     uint64_t packets_ = 0;
 };
 
@@ -164,6 +195,10 @@ double dvbsNetBitrate(const DvbsTxConfig& c) {
     if (c.standard == 1) {
         static const double r[5] = {1.0 / 2, 2.0 / 3, 3.0 / 4, 5.0 / 6, 7.0 / 8};
         return c.symbolRate * 2 * r[std::max(0, std::min(4, c.rate))] * 188.0 / 204.0;
+    }
+    if (c.vlMode >= 0) {
+        const VlMode& m = vlMode(c.vlMode);
+        return c.symbolRate * (double)((m.kbch - 80) / 8 * 8) / (double)vlFrameSymbols(m.set);
     }
     auto one = [&](int mod, int rate, bool sh, bool pil) {
         const S2Dims d = s2Dims(mod, rate, sh);

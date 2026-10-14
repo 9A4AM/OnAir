@@ -16,6 +16,8 @@ namespace dvbs {
 
 struct S2Stats {
     uint64_t framesSeen = 0, framesDummy = 0;
+    int vlMode = -1;                           // mode (dvbs_vlsnr.h) of the last VL-SNR frame, -1 none
+    uint64_t framesVl = 0, vlShiftSwitches = 0;
     uint64_t framesUnsupported = 0;            // S2X frames followed but not decoded (VL-SNR, reserved PLS codes)
     int unsupportedCode = -1;                  // PLS code value of the last of them
     uint64_t fecOk = 0, fecBad = 0;            // frames that LDPC and BCH decoded / did not decode (including frames dropped because the decoders were behind)
@@ -35,7 +37,7 @@ struct S2Stats {
     int modcod = -1, mod = -1, rate = -1;
     bool shortFrame = false, pilots = false, vcm = false;
     int isi = -1;
-    int roSignalled = -1;                      // RO field of the last good BBHEADER (0: 0.35, 1: 0.25, 2: 0.20), -1 not seen
+    int roSignalled = -1;                      // RO field of the last good BBHEADER (0: 0.35, 1: 0.25, 2: 0.20; 3, 4, 5: 0.15, 0.10, 0.05 once an 11 was seen), -1 not seen
     bool sis = true;
     int tsGs = -1;
     int consecutiveBad = 0;                    // frames in a row without a good FEC result

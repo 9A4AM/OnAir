@@ -3,8 +3,9 @@
 // cosine pulse shaping, noise, carrier offset, symbol clock offset, spectral inversion. Nothing is transmitted.
 //
 // SynthConfig::modeOpt / modeVal (the synthetic source hands them to makeDvbsSynth):
-//   modeOpt[0]  standard: 0 DVB-S2 (default), 1 DVB-S, 2 DVB-S2X (the MODCODs of EN 302 307-2 table 17a; VL-SNR and superframes are not sent)
-//   modeOpt[1]  modulation (S2): 0 QPSK (default), 1 8PSK, 2 16APSK, 3 32APSK; S2X also 4 64APSK, 5 128APSK, 6 256APSK. DVB-S is always QPSK
+//   modeOpt[0]  standard: 0 DVB-S2 (default), 1 DVB-S, 2 DVB-S2X (the MODCODs of EN 302 307-2 table 17a and the VL-SNR frames of table 18a, see modeOpt[1]; superframes and bundled channels are not sent)
+//   modeOpt[1]  modulation (S2): 0 QPSK (default), 1 8PSK, 2 16APSK, 3 32APSK; S2X also 4 64APSK, 5 128APSK, 6 256APSK, 7 VL-SNR frames (modeOpt[2]: 1 QPSK 2/9, 2 BPSK 1/5, 3 BPSK 11/45, 4 BPSK 1/3 (these medium frames),
+//               5 BPSK 1/5 SF2, 6 BPSK 11/45 SF2, 7 BPSK 1/5 short, 8 BPSK 4/15 short, 9 BPSK 1/3 short; pilots are always on). DVB-S is always QPSK
 //   modeOpt[2]  code rate, 0 = default (2/3). S2: 1 1/4, 2 1/3, 3 2/5, 4 1/2, 5 3/5, 6 2/3, 7 3/4, 8 4/5, 9 5/6, 10 8/9, 11 9/10. S: 1 1/2, 2 2/3, 3 3/4, 4 5/6, 5 7/8
 //               S2X, the MODCODs of the modulation and frame size in the order of table 17a (0 = the first):
 //                 normal  QPSK: 1 13/45, 2 9/20, 3 11/20
@@ -18,7 +19,7 @@
 //                         8PSK: 1 7/15, 2 8/15, 3 26/45, 4 32/45
 //                         16APSK: 1 7/15, 2 8/15, 3 26/45, 4 3/5, 5 32/45
 //                         32APSK: 1 2/3, 2 32/45   (64APSK and up have no short frames: normal is sent)
-//   modeOpt[3]  roll-off: 0 0.35 (default), 1 0.25, 2 0.20, 3 0.15, 4 0.10, 5 0.05
+//   modeOpt[3]  roll-off: 0 0.35 (default), 1 0.25, 2 0.20, 3 0.15, 4 0.10, 5 0.05 (the BBHEADER signals the last three by alternating 11 with 00, 01, 10)
 //   modeOpt[4]  frame size (S2): 0 normal (default), 1 short
 //   modeOpt[5]  pilots (S2): 0 off (default), 1 on
 //   modeOpt[6]  spectral inversion: 0 off (default), 1 on (an LNB with a high-side oscillator turns the spectrum around)

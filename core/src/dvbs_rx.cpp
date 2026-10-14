@@ -9,6 +9,7 @@
 #include "dvbs_s2rx.h"
 #include "dvbs_spec.h"
 #include "dvbs_symthread.h"
+#include "dvbs_vlsnr.h"
 #include "dect2/fftutil.h"
 #include <algorithm>
 #include <atomic>
@@ -463,6 +464,15 @@ struct DvbsReceiver::Impl {
             if (s2IsS2x(s.rate) || s2ModcodIsS2x(s.modcod) || s.framesUnsupported > 0) t.standard = 3;
             t.modcod = s2ModcodIsS2x(s.modcod) ? s.modcod << 1 : s.modcod;
             t.frameSize = s.shortFrame ? 2 : 1; t.pilots = s.pilots; t.vcm = s.vcm; t.isi = s.isi;
+            if (s.vlMode >= 0) {
+                // VL-SNR frame (EN 302 307-2 table 18a): the mode, not a MODCOD of table 17
+                const VlMode& m = vlMode(s.vlMode);
+                t.standard = 3; t.modulation = 0;
+                t.modulationName = m.bpsk ? "pi/2 BPSK" : "QPSK";
+                t.codeRate = std::string(m.rate) + (m.spread == 2 ? " SF2" : "");
+                t.modcod = vlPlsCode(m.set);
+                t.frameSize = m.nldpc == 16200 ? 2 : m.nldpc == 64800 ? 1 : 3;
+            }
             t.plScramblingCode = plCode.load() < 0 ? 0 : plCode.load();
             t.inverted = s2.inverted();
             t.merDb = (float)s.merDb; t.snrDb = (float)s.merDb;
@@ -477,11 +487,11 @@ struct DvbsReceiver::Impl {
             t.preFecBer = (float)s.berPre;
             t.framesSeen = s.framesSeen; t.framesDummy = s.framesDummy; t.crcErrors = s.crcErrors; t.gseFrames = s.gseFrames;
             t.framesUnsupported = s.framesUnsupported;
-            if (s.roSignalled >= 0 && s.roSignalled < 3) { t.rollOff = s.roSignalled == 0 ? 0.35f : s.roSignalled == 1 ? 0.25f : 0.20f; t.rollOffSource = 2; }
+            if (s.roSignalled >= 0 && s.roSignalled < 6) { static const float kRo[6] = {0.35f, 0.25f, 0.20f, 0.15f, 0.10f, 0.05f}; t.rollOff = kRo[s.roSignalled]; t.rollOffSource = 2; }
             if (s.gseFrames > 0 && s.tsGs != 3) t.signalNote = "generic stream (GSE) seen: not converted to a transport stream";
             if (s.framesUnsupported > 0) {
                 const int c = s.unsupportedCode;
-                t.signalNote = c == 129 || c == 131 ? std::string("S2X VL-SNR frames seen (set ") + (c == 129 ? "1" : "2") + "): not decoded"
+                t.signalNote = c == 129 || c == 131 ? std::string("S2X VL-SNR frames seen (set ") + (c == 129 ? "1" : "2") + "): header not recognised"
                                                      : "S2X frames with the reserved PLS code " + std::to_string(c) + " seen: not decoded";
             }
             { std::lock_guard<std::mutex> lk(cellMu); s2.cells(cells); }

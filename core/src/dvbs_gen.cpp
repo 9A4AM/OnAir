@@ -2,6 +2,7 @@
 #include "dect2/dvbs_gen.h"
 #include "dect2/demo_ts.h"
 #include "dvbs_simd.h"
+#include "dvbs_vlsnr.h"
 #include "dect2/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
@@ -196,6 +197,8 @@ DvbsSignalConfig dvbsConfigFromSynth(const SynthConfig& sc, double fs) {
         const int n = s2xRateCount(t.mod, t.shortFrame);
         t.rate = s2xRate(t.mod, t.shortFrame, std::max(0, std::min(n - 1, sc.modeOpt[2] - 1)));
     }
+    // modulation 7 of S2X: VL-SNR frames, the mode is the code rate option (1 = QPSK 2/9 ... 9 = BPSK 1/3 short, the order of table 18a)
+    if (t.standard == 3 && sc.modeOpt[1] == 7) { t.vlMode = std::max(0, std::min(kVlModes - 1, sc.modeOpt[2] - 1)); t.mod = kQpsk; t.rate = 0; t.shortFrame = false; }
     static const double ro[6] = {0.35, 0.25, 0.20, 0.15, 0.10, 0.05};
     t.rollOff = ro[std::max(0, std::min(5, sc.modeOpt[3]))];
     t.pilots = sc.modeOpt[5] != 0;
@@ -228,7 +231,7 @@ private:
 std::unique_ptr<ModeSynth> makeDvbsSynth(const SynthConfig& cfg, double sampleRate) {
     if (sampleRate < 2e6 || sampleRate > 40e6) return nullptr;
     dvbs::DvbsSignalConfig c = dvbs::dvbsConfigFromSynth(cfg, sampleRate);
-    if (c.tx.standard >= 2 && !dvbs::s2Dims(c.tx.mod, c.tx.rate, c.tx.shortFrame).ok) return nullptr;
+    if (c.tx.standard >= 2 && c.tx.vlMode < 0 && !dvbs::s2Dims(c.tx.mod, c.tx.rate, c.tx.shortFrame).ok) return nullptr;
     return std::make_unique<DvbsSynth>(c);
 }
 

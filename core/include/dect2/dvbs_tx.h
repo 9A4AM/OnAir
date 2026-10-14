@@ -18,11 +18,15 @@ struct DvbsTxConfig {
                                     // kS2Rates on: s2xRate()); default 2/3
     bool shortFrame = false;        // S2 only (an S2X rate has its own frame size: this must match it)
     bool pilots = false;            // S2 only
-    double rollOff = 0.35;          // used by the shaper and for the RO field of the BBHEADER
+    double rollOff = 0.35;          // used by the shaper and for the RO field of the BBHEADER (0.15, 0.10, 0.05: the low range, signalled by alternating 11)
     double symbolRate = 5e6;        // only needed for netBitrate() and the shaper
     int plScramble = 0;             // S2: Gold code number n of the physical layer scrambling
     bool vcm = false;               // S2: cycle through several MODCODs (frame by frame) to exercise the receiver's header decoding
     int dummyEvery = 0;             // S2: insert a dummy PLFRAME after this many data frames (0 = never)
+    int vlMode = -1;                // S2X: >= 0 sends VL-SNR frames of this mode (index of table 18a: 0 QPSK 2/9, 1..3 BPSK 1/5 11/45 1/3 medium, 4 and 5 BPSK 1/5
+                                    // and 11/45 spreading 2, 6..8 BPSK 1/5 4/15 1/3 short; see dvbs_vlsnr.h); mod, rate and pilots are not used then
+    int vlDummyEvery = 0;           // VL-SNR: a dummy PLFRAME after this many data frames (0 = never)
+    int vlScrShift = 0;             // VL-SNR: where the scrambling sequence starts, 0 = it counts from the end of the PLS header, -900 = from the end of the VL-SNR header
     bool npd = false;               // S2: delete null packets from the transport stream and send the count in the DNP byte (clause 5.1.3, annex D.3)
 };
 

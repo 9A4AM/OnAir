@@ -134,6 +134,7 @@ void statusRows(App& a, const DvbsTelemetry& t, bool on, bool run, bool standalo
     if (t.standard && !t.modulationName.empty()) {
         std::string m = t.modulationName + " " + t.codeRate;
         if (t.standard >= 2 && t.frameSize == 2) m += " short";
+        else if (t.standard == 3 && t.frameSize == 3) m += " medium";
         if (t.pilots) m += " pilots";
         if (t.vcm) m += " VCM";
         ro("Mode", m);
@@ -305,7 +306,7 @@ void receiver(App& a) {
     head(L, "DVB-S2");
     if (t.standard >= 2) {
         L.push_back({"MODCOD", t.modcod > 0 ? std::to_string(t.modcod) : t.modcod == 0 ? "0 (dummy frame)" : "-"});
-        L.push_back({"frame", t.frameSize == 1 ? "normal, 64800 bits" : t.frameSize == 2 ? "short, 16200 bits" : "-"});
+        L.push_back({"frame", t.frameSize == 1 ? "normal, 64800 bits" : t.frameSize == 2 ? "short, 16200 bits" : t.frameSize == 3 ? "medium, 32400 bits" : "-"});
         L.push_back({"pilots", t.pilots ? "on" : "off"});
         L.push_back({"VCM / ACM", t.vcm ? "yes, the MODCOD changes" : "no"});
         L.push_back({"stream (ISI)", t.isi >= 0 ? std::to_string(t.isi) : "single stream"});
@@ -372,7 +373,7 @@ void receiver(App& a) {
     if (S.searchSince >= 0 && ImGui::GetTime() - S.searchSince > 10)
         ImGui::TextColored(pal::warnAmber(), "No carrier found. Most often the LNB is on the other polarisation (13 V vertical, 18 V horizontal) or the other band (22 kHz tone), or the dish is off target.");
     if (!t.signalNote.empty()) ImGui::TextUnformatted(t.signalNote.c_str());
-    ImGui::TextDisabled("DVB-S2X: the MODCODs of EN 302 307-2 table 17a are decoded; VL-SNR frames, superframes and bundled channels are only followed, not decoded.");
+    ImGui::TextDisabled("DVB-S2X: the MODCODs of EN 302 307-2 table 17a and the VL-SNR frames of table 18a (set 1 and 2, PLS codes 129 and 131) are decoded; the low roll-offs 0.15, 0.10 and 0.05 are signalled and followed. Superframes (Annex E) and bundled channels are not decoded.");
     if (t.standard == 3) ImGui::TextUnformatted("A DVB-S2X signal was recognised.");
     ImGui::TextDisabled("Margin is measured against the ideal-demodulator Es/N0 of EN 302 307-1 table 13 (DVB-S2X: EN 302 307-2 tables 20a and 20c, 50 LDPC iterations): a real receiver needs a little more.");
     ImGui::PopTextWrapPos();
