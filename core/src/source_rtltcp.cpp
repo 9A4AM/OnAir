@@ -178,7 +178,7 @@ protected:
     }
     bool restartForRate() const override { return false; }   // the server changes the rate while streaming
     void streamLoop() override {
-        std::vector<unsigned char> buf(1 << 16);
+        std::vector<unsigned char> buf(1 << 18);
         while (run_) {
             const long long k = sockRecv(sock_, buf.data() + (carry_ >= 0 ? 1 : 0), buf.size() - 1);
             if (k <= 0) break;   // closed, failed or stalled
