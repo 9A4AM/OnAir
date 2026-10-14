@@ -430,7 +430,12 @@ std::vector<DeviceInfo> listSoapyDevices(std::string& err) {
             if (driver == "plutosdr") {   // SoapyPlutoSDR on the USB cable (or its USB-gadget address): the same ~4 Msps of 16-bit samples
                 const std::string uri = get("uri");
                 if (uri.empty() || uri.rfind("usb:", 0) == 0) d.steadyRateHz = 4e6;
-                else if (uri == "ip:192.168.2.1" || uri == "ip:pluto.local") d.steadyRateHz = 3e6;   // the USB-gadget network carries less (#59)
+                else if (uri == "ip:192.168.2.1" || uri == "ip:pluto.local") {
+                    d.steadyRateHz = 3e6;   // the USB-gadget network carries less (#59); a Pluto+ on Ethernet says so with "Link" (#96)
+                    d.settings.push_back(choiceSetting("link", "Link", "How this Pluto is connected at its default address. Auto: taken as the USB cable's gadget network (about 3 Msps).\n"
+                                                       "Ethernet: a Pluto+ with a real network link: no limit but the converter's. USB cable: held to the USB rate.",
+                                                       {"auto", "usb", "ethernet"}, {"Auto", "USB cable", "Ethernet"}, "auto"));
+                }
             }
             out.push_back(d);
             fprintf(stderr, "SoapySDR: found %s (driver %s)\n", d.name.c_str(), driver.c_str());

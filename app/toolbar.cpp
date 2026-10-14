@@ -46,7 +46,7 @@ static std::string rateWarning(const App& a) {
     if (engineStd(a) == 23) need = hdrMinSampleRate(a.freqMhz);   // HD Radio AM works from 200 ksps
     if (a.family == 8 && (a.atvFm || a.atvWide) && !a.atvNbtv) need = std::max(need, 16e6);   // FM video: a link is about 17 MHz wide; system E 14 MHz
     // a PlutoSDR on its USB cable run above what the cable carries (linkRateFor): why it may break up, and the fix
-    if (run && d.steadyRateHz > 0 && rate >= need - 1) return linkNote(d, a.tune, rate);
+    if (run && linkCapHz(d, a.tune) > 0 && rate >= need - 1) return linkNote(d, a.tune, rate);
     if (rate <= 0 || need <= 0 || rate >= need - 1) return "";
     char what[64];
     if (a.family == 0) snprintf(what, sizeof what, "the %g MHz DVB-T2 / DVB-T channel", bw);

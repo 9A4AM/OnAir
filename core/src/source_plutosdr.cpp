@@ -112,10 +112,18 @@ constexpr double kUsbMaxRate = 4e6;   // USB 2: the continuous rate a Pluto keep
 constexpr double kUsbNetRate = 3e6;   // the same cable as a USB-gadget network (ip:192.168.2.1, pluto.local): iiod over it keeps up with less
 // The link runs over the Pluto's USB cable: "usb:...", and its default network address ip:192.168.2.1 (pluto.local), which is the USB-gadget
 // Ethernet on the same USB 2 cable and keeps up with even less than libusb does. A Pluto on a real network (another address) may go faster.
-bool overUsbCable(const std::string& uri) { return uri.rfind("usb:", 0) == 0 || uri == "ip:192.168.2.1" || uri == "ip:pluto.local"; }
+bool defaultAddress(const std::string& uri) { return uri == "ip:192.168.2.1" || uri == "ip:pluto.local"; }
+bool overUsbCable(const std::string& uri) { return uri.rfind("usb:", 0) == 0 || defaultAddress(uri); }
 // the steady rate of the link at uri (0 = a real network, not limited here): the USB-gadget network carries less than libusb, so a mode that
 // fits in a few Msps (DVB-S/S2 of the 1.5 Msym/s QO-100 beacon, #59) is not run faster than it keeps up with there
 double usbLinkRate(const std::string& uri) { return !overUsbCable(uri) ? 0 : uri.rfind("usb:", 0) == 0 ? kUsbMaxRate : kUsbNetRate; }
+// The "Link" setting of a Pluto at its default network address, which a Pluto+ (real Gigabit Ethernet) shares with the USB-gadget link:
+// Ethernet lifts the cap, USB cable holds it, Auto guesses from the address (USB gadget). #96
+double usbLinkRate(const std::string& uri, const std::string& link) {
+    if (link == "ethernet" && defaultAddress(uri)) return 0;
+    if (link == "usb" && defaultAddress(uri)) return kUsbNetRate;
+    return usbLinkRate(uri);
+}
 
 // Whether the board at each URI runs Tezuka firmware (known once it was opened or probed): only then the IQ format can be chosen
 std::map<std::string, bool> gTezuka;
@@ -257,8 +265,8 @@ protected:
                 if (const int r = iio().channel_attr_write_longlong(rxCh_, "sampling_frequency", (long long)std::llround(want)); r != 0) { err = "PlutoSDR: the sample rate was refused: " + iio().text(r); return false; }
             // Tezuka: with only the first channel enabled the FPGA sends 8-bit I/Q pairs (half the bytes on the cable, twice the rate); both: 16-bit
             cs8_ = tezuka_ && radioOption(s, "iqformat", "cs16") == "cs8";
-            if (overUsbCable(uri_)) {
-                const std::string n = usbLinkNote(want, usbLinkRate(uri_) * (cs8_ ? 2 : 1), tezuka_, cs8_);
+            if (const double cap = usbLinkRate(uri_, radioOption(s, "link", "auto")); cap > 0) {
+                const std::string n = usbLinkNote(want, cap * (cs8_ ? 2 : 1), tezuka_, cs8_);
                 if (!n.empty()) { fprintf(stderr, "%s\n", n.c_str()); fflush(stderr); if (err.empty()) err = n; }
             }
             iio().channel_attr_write_longlong(rxCh_, "rf_bandwidth", (long long)std::llround(std::min(56e6, std::max(0.2e6, s.basebandFilterHz > 0 ? s.basebandFilterHz : want * 0.95))));
@@ -426,6 +434,12 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
             gTezuka[uri] = tez;
         }
     }
+    if (defaultAddress(uri))
+        d.settings.push_back(choiceSetting("link", "Link",
+                                           "How this Pluto is connected at its default address (192.168.2.1 / pluto.local). Auto: taken as the USB cable's\n"
+                                           "gadget network, which carries about 3 Msps without loss. Ethernet: a Pluto+ (or a Pluto on a USB Ethernet\n"
+                                           "adapter) with a real network link: no limit but the converter's. USB cable: held to the USB rate.",
+                                           {"auto", "usb", "ethernet"}, {"Auto", "USB cable", "Ethernet"}, "auto"));
     if (tez)
         d.settings.push_back(choiceSetting("iqformat", "IQ format",
                                            "Tezuka firmware only. CS16: 16-bit samples (the 12-bit converter, the default).\n"
