@@ -159,7 +159,7 @@ int main() {
         const MeshTelemetry t2 = run(rx, p, tp, lf.freqHz, lf.freqHz, 2e6, 300, 8);
         const MeshReading* rd = t2.readings.empty() ? nullptr : &t2.readings.back();
         CHECK(t2.readings.size() == 1 && rd && rd->id == "!2a0000ab" && std::abs(rd->batteryPct - 87) < 0.5 && std::abs(rd->voltage - 4.05) < 0.01 &&
-              rd->uptimeS == 3600 && !rd->hasEnv, "telemetry reading kept (%zu)", t2.readings.size());
+              rd->uptimeS == 3600 && !rd->hasEnv && rd->unixTime > 1.7e9, "telemetry reading kept (%zu)", t2.readings.size());
         bool dev = false;
         for (const auto& n : t2.nodes) dev |= n.id == "!2a0000ab" && n.devSec >= 0 && std::abs(n.batteryPct - 87) < 0.5;
         CHECK(dev, "node battery with its time");

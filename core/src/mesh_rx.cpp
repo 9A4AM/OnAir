@@ -6,6 +6,7 @@
 #include "dect2/mesh_proto.h"
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <map>
 #include <mutex>
@@ -354,6 +355,7 @@ struct MeshReceiver::Impl {
             if (u.batteryPct >= 0 || u.voltage >= 0 || u.hasEnv || u.hasPosition) {   // a telemetry or position report: kept with its time
                 MeshReading rd;
                 rd.timeSec = t; rd.protocol = pr; rd.id = u.nodeId;
+                rd.unixTime = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
                 rd.batteryPct = u.batteryPct; rd.voltage = u.voltage; rd.channelUtilPct = u.channelUtilPct; rd.airUtilTxPct = u.airUtilTxPct;
                 rd.uptimeS = u.uptimeS; rd.hasEnv = u.hasEnv; rd.tempC = u.tempC; rd.humidity = u.humidity; rd.pressureHpa = u.pressureHpa;
                 rd.hasPosition = u.hasPosition; rd.lat = u.lat; rd.lon = u.lon; rd.altM = u.altM;

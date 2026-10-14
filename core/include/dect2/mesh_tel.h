@@ -120,6 +120,7 @@ struct MeshNode {
 // the history behind the node's last values
 struct MeshReading {
     double timeSec = 0;
+    double unixTime = 0;         // the computer clock when it was decoded (0: not known)
     int protocol = 1;
     std::string id;              // the node
     double batteryPct = -1, voltage = -1, channelUtilPct = -1, airUtilTxPct = -1;   // -1 = not in this report

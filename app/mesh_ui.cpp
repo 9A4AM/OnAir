@@ -386,7 +386,7 @@ void telemetryTable(const App& a) {
                   "pressure_hpa", "lat", "lon", "alt_m"};
         const double now = (double)std::time(nullptr);
         for (const auto& r : t.readings) {
-            const double ep = meshEpoch(t, r.timeSec, now);
+            const double ep = r.unixTime > 0 ? r.unixTime : meshEpoch(t, r.timeSec, now);
             x.add({meshTime(ep), resexp::num(a.freqMhz * 1e6, 0), protoName(r.protocol), nameOf(r), r.id, opt(r.batteryPct, 0), opt(r.voltage, 2), opt(r.channelUtilPct, 1),
                    opt(r.airUtilTxPct, 1), r.uptimeS >= 0 ? std::to_string(r.uptimeS) : "", r.hasEnv ? resexp::num(r.tempC, 1) : "", r.hasEnv ? resexp::num(r.humidity, 0) : "",
                    r.hasEnv ? resexp::num(r.pressureHpa, 1) : "", r.hasPosition ? resexp::num(r.lat, 6) : "", r.hasPosition ? resexp::num(r.lon, 6) : "",
@@ -412,7 +412,7 @@ void telemetryTable(const App& a) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();   // clock time (this is a history), the date in the tooltip
                 {
-                    const std::string full = meshTime(meshEpoch(t, r.timeSec, (double)std::time(nullptr)));
+                    const std::string full = meshTime(r.unixTime > 0 ? r.unixTime : meshEpoch(t, r.timeSec, (double)std::time(nullptr)));
                     ImGui::TextUnformatted(full.size() > 11 ? full.c_str() + 11 : clock(r.timeSec).c_str());
                     if (!full.empty() && ImGui::IsItemHovered()) ImGui::SetTooltip("%s (%s after the start)", full.c_str(), clock(r.timeSec).c_str());
                 }
