@@ -4,8 +4,57 @@
 #include <cctype>
 #include <ctime>
 #include <filesystem>
+#include <fstream>
+#include <map>
+#include "dect2/png.h"
 
 namespace {
+// ---- channel logos: a PNG the user picked for a service, copied to <data>/tv-logos/<service>.png and shown on the service card
+struct LogoTex { gfx::Image* img = nullptr; int w = 0, h = 0; };
+std::map<std::string, LogoTex> gTvLogos;   // service name -> texture (img null: no logo)
+
+std::string tvLogoPath(const std::string& service) {
+    std::string name = service;
+    for (char& c : name) if (!(std::isalnum((unsigned char)c) || c == '-' || c == '_' || (unsigned char)c >= 0x80)) c = '_';
+    return plat::dataDir() + "/tv-logos/" + name + ".png";
+}
+
+const LogoTex* tvLogo(const std::string& service) {
+    if (service.empty() || !gGfx) return nullptr;
+    auto it = gTvLogos.find(service);
+    if (it == gTvLogos.end()) {
+        LogoTex t;
+        std::ifstream f(std::filesystem::u8path(tvLogoPath(service)), std::ios::binary);
+        if (f) {
+            std::vector<uint8_t> b((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+            std::vector<uint8_t> rgba;
+            int w = 0, h = 0;
+            if (dect2::decodePng(b.data(), b.size(), w, h, rgba) && w > 0 && h > 0 && rgba.size() >= (size_t)w * (size_t)h * 4) {
+                t.img = gGfx->createImage(w, h, 0x00000000u);
+                t.img->update(0, 0, w, h, reinterpret_cast<const uint32_t*>(rgba.data()));
+                t.w = w; t.h = h;
+            }
+        }
+        it = gTvLogos.emplace(service, t).first;
+    }
+    return it->second.img ? &it->second : nullptr;
+}
+
+void tvLogoSet(const std::string& service, const std::string& src) {
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::u8path(plat::dataDir() + "/tv-logos"), ec);
+    std::filesystem::copy_file(std::filesystem::u8path(src), std::filesystem::u8path(tvLogoPath(service)), std::filesystem::copy_options::overwrite_existing, ec);
+    auto it = gTvLogos.find(service);
+    if (it != gTvLogos.end()) { delete it->second.img; gTvLogos.erase(it); }
+}
+
+void tvLogoClear(const std::string& service) {
+    std::error_code ec;
+    std::filesystem::remove(std::filesystem::u8path(tvLogoPath(service)), ec);
+    auto it = gTvLogos.find(service);
+    if (it != gTvLogos.end()) { delete it->second.img; gTvLogos.erase(it); }
+}
+
 // <recordings folder>/<service>_<date>.ts
 std::string tvRecordingPath(const std::string& service) {
     std::string name = service.empty() ? "service" : service;
@@ -506,6 +555,11 @@ void rightPanel(App& a) {
         const ImVec2 p = ImGui::GetCursorScreenPos();
         const bool clicked = ImGui::InvisibleButton("##card", ImVec2(w, cardH));
         const bool hov = ImGui::IsItemHovered();
+        if (!sv.name.empty() && ImGui::BeginPopupContextItem("##tvlogo")) {
+            if (ImGui::MenuItem("Set logo (PNG)...")) { const std::string f = plat::openFileDialog(); if (!f.empty()) tvLogoSet(sv.name, f); }
+            if (ImGui::MenuItem("Remove logo", nullptr, false, tvLogo(sv.name) != nullptr)) tvLogoClear(sv.name);
+            ImGui::EndPopup();
+        }
         if (clicked) {
             if (sel) a.engine.player().select(-1);
             else {
@@ -518,10 +572,17 @@ void rightPanel(App& a) {
         // name and bit rate
         const std::string name = sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name;
         const bool isRadio = sv.type == 0x02 || sv.type == 0x0A || (!hasVideo && !ac.empty());
-        if (!pal::dev()) icons::draw(isRadio ? Ic::Radio : Ic::Tv, ImVec2(p.x + 20 * gUi, p.y + 15 * gUi), 17.f * gUi, sel ? pal::remap(IM_COL32(120, 200, 255, 255)) : IM_COL32(120, 136, 156, 255), dl);
+        const LogoTex* logo = tvLogo(sv.name);
+        float nameX = 34 * gUi;
+        if (logo) {   // the logo the user gave this service, fitted into a box at the left
+            const float bh = 24 * gUi, bw = 44 * gUi, sc = std::min(bh / (float)logo->h, bw / (float)logo->w);
+            const float iw = (float)logo->w * sc, ih = (float)logo->h * sc;
+            dl->AddImage(logo->img->texture(), ImVec2(p.x + 8 * gUi, p.y + 4 * gUi + (bh - ih) / 2), ImVec2(p.x + 8 * gUi + iw, p.y + 4 * gUi + (bh - ih) / 2 + ih));
+            nameX = 8 * gUi + bw + 6 * gUi;
+        } else if (!pal::dev()) icons::draw(isRadio ? Ic::Radio : Ic::Tv, ImVec2(p.x + 20 * gUi, p.y + 15 * gUi), 17.f * gUi, sel ? pal::remap(IM_COL32(120, 200, 255, 255)) : IM_COL32(120, 136, 156, 255), dl);
         char kbs[32]; fmtKbps(kbs, sizeof kbs, kb);
         const ImVec2 ks = ImGui::CalcTextSize(kbs);
-        dl->AddText(a.ui, 16.f * gUi, ImVec2(p.x + 34 * gUi, p.y + 6 * gUi), IM_COL32(245, 247, 250, 255), ellipsize(name, w - 34 * gUi - ks.x - 18 * gUi, 16.f * gUi).c_str());
+        dl->AddText(a.ui, 16.f * gUi, ImVec2(p.x + nameX, p.y + 6 * gUi), IM_COL32(245, 247, 250, 255), ellipsize(name, w - nameX - ks.x - 18 * gUi, 16.f * gUi).c_str());
         dl->AddText(ImVec2(p.x + w - ks.x - 10 * gUi, p.y + 8 * gUi), IM_COL32(150, 158, 168, 255), kbs);
         // tag pills
         float x = p.x + 10 * gUi;
