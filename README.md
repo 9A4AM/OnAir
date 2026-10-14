@@ -304,6 +304,7 @@ Radios on another computer or on the network are added from the source list: pic
 | **rtl_tcp** (an RTL-SDR shared by `rtl_tcp -a 0.0.0.0`) | the computer running `rtl_tcp` | 1234 |
 | **SoapyRemote** (any SoapySDR radio shared by `SoapySDRServer --bind`) | the computer running the server | 55132 |
 | **Hermes Lite 2** | found by itself on your networks (or type its address) | 1024 |
+| **Red Pitaya** (SDR transceiver app, HPSDR protocol 1) | found by itself on your networks (or type its address) | 1024 |
 
 - A Pluto on a real network (not its USB cable) is offered its full sample rate; how much of it arrives depends on the network.
 - rtl_tcp carries 8-bit samples at up to about 2.5 Msps; when the connection drops, OnAir connects again and counts the samples that were missed.
@@ -312,6 +313,7 @@ Radios on another computer or on the network are added from the source list: pic
 - When a network radio drops, OnAir reconnects by itself, and the status bar shows how many samples were lost (the underruns). Servers are reached on the address you type; nothing is opened to the network by default.
 - **Share my radio** (View > Data feeds): OnAir becomes an rtl_tcp server for the radio it is running, so a second OnAir (Add network radio, rtl_tcp), SDR#, SDR++ or any rtl_tcp client can listen to the same signal. It sends 8-bit IQ at the rate the radio runs at. Only this computer can connect until you tick **Let other computers connect (LAN)**, and clients can only change the frequency and gain when **Allow remote control** is ticked. The connected clients are listed.
 - Choosing **Hermes Lite 2** searches this computer's networks for one (openHPSDR discovery) and fills in its address; **Search** looks again. It receives up to 38.4 MHz at 48 to 384 ksps, so only HF and narrow modes fit; the N2ADR filter board's band filters are switched with the frequency (a setting of the radio turns that off).
+- **Red Pitaya** is the same openHPSDR protocol 1 client, for a board running Pavel Demin's HPSDR-compatible SDR transceiver (the STEMlab's "SDR transceiver" app): one receiver at 48 to 384 ksps, tuning up to 61.44 MHz, no gain control. It was written from that project's server source and tested only against a fake server, not a real board: the sample rate accuracy, level scaling, frequency correction and whether the spectrum is mirrored (setting "Swap I and Q") are unverified. The board id in its discovery reply (1, Hermes) is shared with other Hermes-protocol radios.
 
 ## Updates
 

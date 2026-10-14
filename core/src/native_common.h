@@ -610,6 +610,10 @@ bool spyServerDecodeDeviceInfo(const unsigned char* b, uint32_t n, uint32_t& dev
 DeviceInfo hermesLite2Device(const std::string& host, int port);
 std::unique_ptr<IqSource> makeHermesLite2(const DeviceInfo& d);
 bool hermesLite2Probe(const std::string& host, int port, int timeoutMs, std::string& err);
+// A Red Pitaya running the HPSDR-compatible SDR transceiver (the same openHPSDR protocol 1 client, source_hermeslite2.cpp), UDP port 1024
+DeviceInfo redPitayaDevice(const std::string& host, int port);
+std::unique_ptr<IqSource> makeRedPitaya(const DeviceInfo& d);
+bool redPitayaProbe(const std::string& host, int port, int timeoutMs, std::string& err);
 
 } // namespace native
 } // namespace dect2

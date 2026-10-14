@@ -545,6 +545,7 @@ struct FakeHl2 {
     std::atomic<int> starts{0}, stops{0};
     std::mutex mu;
     std::map<int, uint32_t> regs;
+    unsigned char board = 6, gateware = 73;   // the discovery reply's board id (the Red Pitaya server's: 1) and gateware version
 
     bool start() {
         netInit();
@@ -578,7 +579,7 @@ struct FakeHl2 {
                 const long long n = recvfrom(s, (char*)b, sizeof b, 0, (sockaddr*)&from, &fl);
                 if (n >= 4 && b[0] == 0xEF && b[1] == 0xFE) {
                     if (b[2] == 0x02 && n == 63) {   // discovery
-                        unsigned char r[60] = {0xEF, 0xFE, (unsigned char)(streaming ? 0x03 : 0x02), 0x00, 0x1C, 0xC0, 0xA2, 0x12, 0x34, 73, 6};
+                        unsigned char r[60] = {0xEF, 0xFE, (unsigned char)(streaming ? 0x03 : 0x02), 0x00, 0x1C, 0xC0, 0xA2, 0x12, 0x34, gateware, board};
                         r[0x15] = 2;
                         sockSendTo(s, r, sizeof r, from);
                     } else if (b[2] == 0x04) {
@@ -611,6 +612,90 @@ struct FakeHl2 {
     }
     void stop() { run = false; if (th.joinable()) th.join(); if (s != kBadSock) sockClose(s); }
 };
+
+// A Red Pitaya running the HPSDR-compatible SDR transceiver, as its server source answers: board id 1 (Hermes), gateware 32; port 1024
+// is only replaced by the fake's own. Frame layout, registers and start/stop are the HL2's.
+static void testRedPitaya() {
+    FakeHl2 rp;
+    rp.board = 1; rp.gateware = 32;
+    CHECK(rp.start());
+    if (!rp.port) return;
+    NetRadio nr; nr.type = NetRadio::RedPitaya; nr.host = "127.0.0.1"; nr.port = rp.port;
+    std::string err;
+    CHECK(probeNetRadio(nr, 1000, err));
+    // a Hermes Lite 2 (board 6) is not a Red Pitaya, and the other way round
+    FakeHl2 hl;
+    CHECK(hl.start());
+    if (hl.port) {
+        NetRadio wrongRp = nr; wrongRp.port = hl.port;
+        err.clear();
+        CHECK(!probeNetRadio(wrongRp, 300, err) && !err.empty());
+        NetRadio wrongHl; wrongHl.type = NetRadio::HermesLite2; wrongHl.host = "127.0.0.1"; wrongHl.port = rp.port;
+        err.clear();
+        CHECK(!probeNetRadio(wrongHl, 300, err) && !err.empty());
+    }
+    hl.stop();
+    const auto devs = netRadioDevices({nr});
+    CHECK(devs.size() == 1);
+    if (devs.empty()) { rp.stop(); return; }
+    const DeviceInfo d = devs[0];
+    CHECK(d.kind == DeviceInfo::Native && d.board == "redpitaya" && d.nativeArgs == "127.0.0.1:" + std::to_string(rp.port));
+    CHECK(d.name == netRadioDeviceName(nr) && d.name.find("Red Pitaya") == 0);
+    CHECK(d.rateRanges.size() == 4 && d.minRateHz == 48000 && d.maxRateHz == 384000 && d.maxFreqHz == 61.44e6 && d.gainMinDb == 0 && d.gainMaxDb == 0);
+    NetRadio dflt; dflt.type = NetRadio::RedPitaya; dflt.host = "192.168.1.60";
+    CHECK(netRadioDeviceName(dflt) == "Red Pitaya 192.168.1.60 (network)");
+    CHECK(netRadioDefaultPort(NetRadio::RedPitaya) == 1024 && std::string(netRadioTypeName(NetRadio::RedPitaya)) == "Red Pitaya");
+    const auto back = netRadiosFromString(netRadiosToString({dflt, nr}));
+    CHECK(back.size() == 2 && back[0] == dflt && back[1] == nr);
+
+    auto src = makeSource(d);
+    CHECK(src != nullptr);
+    if (!src) { rp.stop(); return; }
+    IqRing ring(1u << 20);
+    TuneSettings s;
+    s.sampleRate = 100e3;   // the 192 ksps step
+    s.centerHz = 14.074e6;
+    s.gainDb = 20;          // ignored: it has no gain register here
+    err.clear();
+    CHECK(src->start(s, ring, err));
+    CHECK(std::fabs(src->sampleRate() - 192e3) < 1);
+    CHECK(rp.waitFor(0x00, 0x02000004));   // 192 ksps, no filter board bits, duplex, one receiver
+    CHECK(rp.waitFor(0x02, 14074000));
+    CHECK(rp.waitFor(0x01, 14074000));
+    std::vector<cf32> buf(4096);
+    CHECK(readIq(ring, buf));
+    bool okVals = true;
+    for (auto& v : buf) if (std::fabs(v.real() - 0.5f) > 1e-6f || std::fabs(v.imag() + 0.25f) > 1e-6f) okVals = false;
+    CHECK(okVals);
+    // live changes: up to 61.44 MHz, 384 ksps; the HL2's LNA register is never sent
+    s.centerHz = 50.1e6; s.sampleRate = 384e3;
+    CHECK(src->retune(s, err));
+    CHECK(rp.waitFor(0x00, 0x03000004));
+    CHECK(rp.waitFor(0x02, 50100000));
+    CHECK(std::fabs(src->sampleRate() - 384e3) < 1);
+    {
+        std::lock_guard<std::mutex> lk(rp.mu);
+        CHECK(rp.regs.find(0x0a) == rp.regs.end());
+    }
+    // the swap setting mirrors the spectrum: I and Q the other way round
+    s.radio["swapiq"] = "1";
+    CHECK(src->retune(s, err));
+    for (int i = 0; i < 100; i++) { std::this_thread::sleep_for(std::chrono::milliseconds(10)); }
+    ring.clear();
+    CHECK(readIq(ring, buf));
+    okVals = true;
+    for (auto& v : buf) if (std::fabs(v.real() + 0.25f) > 1e-6f || std::fabs(v.imag() - 0.5f) > 1e-6f) okVals = false;
+    CHECK(okVals);
+    s.centerHz = 70e6;   // beyond its range: said, and its top
+    err.clear();
+    CHECK(src->retune(s, err) && !err.empty());
+    CHECK(rp.waitFor(0x02, 61440000));
+    src->stop();
+    for (int i = 0; i < 100 && rp.stops < 1; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    CHECK(rp.stops >= 1 && !rp.streaming);
+    rp.stop();
+    for (const auto& f : discoverRedPitaya(200)) CHECK(!f.host.empty());
+}
 
 static void testHermesLite2() {
     FakeHl2 hl;
@@ -766,6 +851,7 @@ int main() {
     testSpyServerBytes();
     testShare();
     testHermesLite2();
+    testRedPitaya();
     if (fails) { fprintf(stderr, "%d failure(s)\n", fails); return 1; }
     printf("netradio: all passed\n");
     return 0;

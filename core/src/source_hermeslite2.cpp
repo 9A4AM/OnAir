@@ -7,6 +7,12 @@
 // the open-collector outputs (the N2ADR filter board's relays) and the receiver count; 0x01 the TX NCO; 0x02 the RX1 NCO; 0x0a the LNA
 // gain (-12 to +48 dB). The radio is only received with here: MOX is never set and the TX samples are zero.
 // Future work: the 10 MHz external reference (VersaClock writes), more than one receiver, the EP4 wideband bandscope.
+//
+// The same client also speaks to a Red Pitaya running Pavel Demin's "SDR transceiver compatible with HPSDR" (red-pitaya-notes,
+// projects/sdr_transceiver_hpsdr; the server source was read, no real board was at hand). Differences from the HL2: its discovery reply
+// carries board id 1 (Hermes) and gateware 32; the receive NCO takes frequencies up to 61.44 MHz; it has no LNA register (register 0x0a
+// is not sent) and no N2ADR filter board; one receiver is used (it offers up to 8, not used here). The frame layout, the rate bits
+// (C1[1:0]: 48/96/192/384 ksps), the NCO registers (0x01 TX, 0x02 RX1) and start/stop are the HL2's own.
 #include "native_common.h"
 #include "netcompat.h"
 #include "dect2/netradio.h"
@@ -35,9 +41,21 @@ namespace {
 constexpr int kHl2Port = 1024;
 constexpr int kFrame = 512, kHeader = 8, kPacket = kHeader + 2 * kFrame;   // 1032
 constexpr int kSamplesPerFrame = 63, kSamplesPerPacket = 2 * kSamplesPerFrame;
-constexpr int kBoardHl2 = 6;
+constexpr int kBoardHl2 = 6, kBoardHermes = 1;   // board ids of the discovery reply: the HL2's, and the Red Pitaya server's (Hermes)
 constexpr double kRates[] = {48000, 96000, 192000, 384000};   // speed bits 0..3
 constexpr double kMaxFreqHz = 38.4e6;                          // half the AD9866's 76.8 MHz clock
+constexpr double kRpMaxFreqHz = 61.44e6;                       // freq_max of the Red Pitaya server
+
+// what differs between the radios this client talks to
+struct Profile {
+    const char* name;      // in messages and in the radio list
+    const char* board;     // DeviceInfo::board
+    int boardId;           // byte 10 of the discovery reply
+    double maxHz;
+    bool lna, filters;     // register 0x0a (the LNA gain), the N2ADR filter board
+};
+const Profile kHl2 = {"Hermes Lite 2", "hermeslite2", kBoardHl2, kMaxFreqHz, true, true};
+const Profile kRedPitaya = {"Red Pitaya", "redpitaya", kBoardHermes, kRpMaxFreqHz, false, false};
 constexpr int kStartMs = 1500, kStallMs = 3000;
 
 // the receive socket: a blocking recv gives up after ms; on Windows an ICMP "port unreachable" from an earlier send does not break it
@@ -133,7 +151,7 @@ std::vector<uint32_t> broadcastAddresses() {
 }
 
 // The radios that answer a discovery packet sent to each of to within timeoutMs (each one once, in the order they answered)
-std::vector<FoundNetRadio> discover(const std::vector<sockaddr_in>& to, int timeoutMs, bool broadcast) {
+std::vector<FoundNetRadio> discover(const std::vector<sockaddr_in>& to, int timeoutMs, bool broadcast, int boardId) {
     std::vector<FoundNetRadio> found;
     const sock_t s = udpSocket(50);
     if (s == kBadSock) return found;
@@ -150,7 +168,7 @@ std::vector<FoundNetRadio> discover(const std::vector<sockaddr_in>& to, int time
         sockaddr_in from{};
         const long long n = recvFrom(s, b, sizeof b, from);
         if (n < 11 || b[0] != 0xEF || b[1] != 0xFE || (b[2] != 0x02 && b[2] != 0x03)) continue;
-        if (b[10] != kBoardHl2) continue;   // another openHPSDR radio (Hermes, Angelia, ...): its registers differ
+        if (b[10] != boardId) continue;   // another openHPSDR radio (Hermes, Angelia, ...): its registers differ
         if (std::find(seen.begin(), seen.end(), from.sin_addr.s_addr) != seen.end()) continue;
         seen.push_back(from.sin_addr.s_addr);
         FoundNetRadio f;
@@ -185,22 +203,23 @@ uint8_t filterBits(double hz) {
 
 // the registers sent, two per packet (one per frame): every one of them every second packet
 constexpr uint8_t kCycle[] = {0x00, 0x01, 0x02, 0x0a};
+constexpr uint8_t kCycleNoLna[] = {0x00, 0x01, 0x02, 0x02};   // a radio without the LNA register: the RX frequency twice
 
 } // namespace
 
 class HermesLite2Source : public NativeSource {
 public:
-    explicit HermesLite2Source(std::string addr) : addr_(std::move(addr)) {}
+    HermesLite2Source(const Profile& p, std::string addr) : p_(p), addr_(std::move(addr)) {}
     ~HermesLite2Source() override { stop(); }
 
 protected:
     bool openDevice(const TuneSettings& s, std::string& err) override {
         std::string host;
         int port = 0;
-        if (!splitHostPort(addr_, host, port)) { err = "Hermes Lite 2: bad address " + addr_ + " (host:port)"; openFailure_ = OpenFailure::Final; return false; }
-        if (!resolve4(host, port, dev_)) { err = "Hermes Lite 2: cannot find the address " + host; openFailure_ = OpenFailure::Retry; return false; }
+        if (!splitHostPort(addr_, host, port)) { err = std::string(p_.name) + ": bad address " + addr_ + " (host:port)"; openFailure_ = OpenFailure::Final; return false; }
+        if (!resolve4(host, port, dev_)) { err = std::string(p_.name) + ": cannot find the address " + host; openFailure_ = OpenFailure::Retry; return false; }
         sock_ = udpSocket(100);
-        if (sock_ == kBadSock) { err = "Hermes Lite 2: no UDP socket"; return false; }
+        if (sock_ == kBadSock) { err = std::string(p_.name) + ": no UDP socket"; return false; }
         std::string e;
         if (!configure(s, e, false)) { err = e; return false; }
         txSeq_ = 0; cc_ = 0; rxSeqKnown_ = false;
@@ -219,18 +238,18 @@ protected:
             else if (std::chrono::steady_clock::now() - lastStart > std::chrono::milliseconds(400)) { command(true); lastStart = std::chrono::steady_clock::now(); }
         }
         if (!got) {
-            err = "Hermes Lite 2: no samples from " + addr_ + " (is it on, and not streaming to another program?)";
+            err = std::string(p_.name) + ": no samples from " + addr_ + " (is it on, and not streaming to another program?)";
             openFailure_ = OpenFailure::Retry;
             return false;
         }
         sendControl();
-        fprintf(stderr, "Hermes Lite 2: streaming from %s at %.0f ksps\n", addr_.c_str(), rate_ / 1e3);
+        fprintf(stderr, "%s: streaming from %s at %.0f ksps\n", p_.name, addr_.c_str(), rate_ / 1e3);
         fflush(stderr);
         if (lostAt_.time_since_epoch().count() != 0) {
             const double sec = std::chrono::duration<double>(std::chrono::steady_clock::now() - lostAt_).count();
             const uint64_t lost = (uint64_t)std::llround(sec * rate_);
             if (ring_) ring_->noteLost(lost);
-            fprintf(stderr, "Hermes Lite 2: back after %.1f s, about %llu samples lost\n", sec, (unsigned long long)lost);
+            fprintf(stderr, "%s: back after %.1f s, about %llu samples lost\n", p_.name, sec, (unsigned long long)lost);
             fflush(stderr);
             lostAt_ = {};
         }
@@ -243,14 +262,15 @@ protected:
         int speed = 3;
         rate_ = rateFor(s.sampleRate > 0 ? s.sampleRate : kRates[3], speed);
         requested_ = s.sampleRate;
-        const double f = std::min(std::max(ppmCorrectedHz(s.centerHz, radioPpm(s)), 0.0), kMaxFreqHz);
+        const double f = std::min(std::max(ppmCorrectedHz(s.centerHz, radioPpm(s)), 0.0), p_.maxHz);
         freqHz_ = (uint32_t)std::llround(f);
         speed_ = speed;
         lna_ = (int)std::lround(std::min(std::max(s.gainDb, -12.0), 48.0)) + 12;
-        oc_ = radioFlag(s, "filters", true) ? filterBits(f) : 0;
-        if (s.centerHz > kMaxFreqHz + 1) {
+        oc_ = p_.filters && radioFlag(s, "filters", true) ? filterBits(f) : 0;
+        swapIq_ = radioFlag(s, "swapiq", false);
+        if (s.centerHz > p_.maxHz + 1) {
             char b[160];
-            snprintf(b, sizeof b, "the Hermes Lite 2 receives up to %.1f MHz: %.3f MHz is out of its range", kMaxFreqHz / 1e6, s.centerHz / 1e6);
+            snprintf(b, sizeof b, "the %s receives up to %.1f MHz: %.3f MHz is out of its range", p_.name, p_.maxHz / 1e6, s.centerHz / 1e6);
             err = b;
         } else checkRate(s.sampleRate, err);
         return true;
@@ -284,12 +304,12 @@ protected:
             rxSeq_ = seq;
             rxSeqKnown_ = true;
             conv_.resize(kSamplesPerPacket);
-            const size_t k = frame(b + kHeader, conv_.data()) + frame(b + kHeader + kFrame, conv_.data() + kSamplesPerFrame);
+            const size_t k = frame(b + kHeader, conv_.data(), swapIq_) + frame(b + kHeader + kFrame, conv_.data() + kSamplesPerFrame, swapIq_);
             push(conv_.data(), k == (size_t)kSamplesPerPacket ? k : 0);
             sendControl();   // one back for each one received: the radio's watchdog
         }
         if (run_) {
-            fprintf(stderr, "Hermes Lite 2: no samples from %s for %d s\n", addr_.c_str(), kStallMs / 1000);
+            fprintf(stderr, "%s: no samples from %s for %d s\n", p_.name, addr_.c_str(), kStallMs / 1000);
             fflush(stderr);
             lostAt_ = std::chrono::steady_clock::now();
         }
@@ -297,13 +317,13 @@ protected:
 
 private:
     // one frame's 63 samples into out (0 when it is not a frame). The HL2 sends Q before I (measured with XMC_SDR): taken the right way round.
-    static size_t frame(const unsigned char* f, cf32* out) {
+    static size_t frame(const unsigned char* f, cf32* out, bool swapIq) {
         if (f[0] != 0x7F || f[1] != 0x7F || f[2] != 0x7F) return 0;
         const unsigned char* p = f + 8;
         for (int i = 0; i < kSamplesPerFrame; i++, p += 8) {
             const int32_t a = (int32_t)((uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8) >> 8;
             const int32_t c = (int32_t)((uint32_t)p[3] << 24 | (uint32_t)p[4] << 16 | (uint32_t)p[5] << 8) >> 8;
-            out[i] = cf32(c / 8388608.f, a / 8388608.f);
+            out[i] = swapIq ? cf32(a / 8388608.f, c / 8388608.f) : cf32(c / 8388608.f, a / 8388608.f);
         }
         return kSamplesPerFrame;
     }
@@ -332,8 +352,9 @@ private:
         p[0] = 0xEF; p[1] = 0xFE; p[2] = 0x01; p[3] = 0x02;
         p[4] = (uint8_t)(txSeq_ >> 24); p[5] = (uint8_t)(txSeq_ >> 16); p[6] = (uint8_t)(txSeq_ >> 8); p[7] = (uint8_t)txSeq_;
         txSeq_++;
-        controlFrame(p + kHeader, kCycle[cc_]);
-        controlFrame(p + kHeader + kFrame, kCycle[(cc_ + 1) % 4]);
+        const uint8_t* cyc = p_.lna ? kCycle : kCycleNoLna;
+        controlFrame(p + kHeader, cyc[cc_]);
+        controlFrame(p + kHeader + kFrame, cyc[(cc_ + 1) % 4]);
         cc_ = (cc_ + 2) % 4;
         sockSendTo(sock_, p, sizeof p, dev_);
     }
@@ -342,6 +363,7 @@ private:
         sockSendTo(sock_, c, sizeof c, dev_);
     }
 
+    const Profile& p_;
     std::string addr_;
     sockaddr_in dev_{};
     sock_t sock_ = kBadSock;
@@ -349,24 +371,32 @@ private:
     std::atomic<uint32_t> freqHz_{0};
     std::atomic<int> speed_{3}, lna_{32};
     std::atomic<uint8_t> oc_{0};
+    std::atomic<bool> swapIq_{false};
     uint32_t txSeq_ = 0, rxSeq_ = 0;
     bool rxSeqKnown_ = false;
     int cc_ = 0;
     std::chrono::steady_clock::time_point lostAt_{};
 };
 
-DeviceInfo hermesLite2Device(const std::string& host, int port) {
+DeviceInfo hpsdr1Device(const Profile& p, const std::string& host, int port) {
     DeviceInfo d;
     d.kind = DeviceInfo::Native;
-    d.board = "hermeslite2";
+    d.board = p.board;
     d.nativeArgs = host + ":" + std::to_string(port);
     d.serial = d.nativeArgs;
-    d.name = "Hermes Lite 2 " + (port == kHl2Port ? host : d.nativeArgs) + " (network)";
+    d.name = std::string(p.name) + " " + (port == kHl2Port ? host : d.nativeArgs) + " (network)";
     for (double r : kRates) d.rateRanges.push_back({r, r});
     d.minRateHz = kRates[0];
     d.maxRateHz = kRates[3];
     d.minFreqHz = 10e3;
-    d.maxFreqHz = kMaxFreqHz;
+    d.maxFreqHz = p.maxHz;
+    const RadioSetting swap = boolSetting("swapiq", "Swap I and Q",
+                                         "Mirror the spectrum if signals appear on the wrong side of the tuned frequency (the I and Q words of the stream are taken the other way round).",
+                                         false);
+    if (!p.lna) {   // no gain register is known for it: no gain control is offered
+        d.settings = {ppmSetting(0.1), swap};
+        return d;
+    }
     d.gainMinDb = -12;
     d.gainMaxDb = 48;
     d.settings = {ppmSetting(0.1),
@@ -377,19 +407,27 @@ DeviceInfo hermesLite2Device(const std::string& host, int port) {
     return d;
 }
 
-bool hermesLite2Probe(const std::string& host, int port, int timeoutMs, std::string& err) {
+bool hpsdr1Probe(const Profile& p, const std::string& host, int port, int timeoutMs, std::string& err) {
     sockaddr_in a{};
-    if (!resolve4(host, port, a)) { err = "cannot find the address " + host + " (a Hermes Lite 2 needs an IPv4 address)"; return false; }
-    if (!discover({a}, timeoutMs, false).empty()) return true;
-    err = "no Hermes Lite 2 answered at " + host + ":" + std::to_string(port) + " (wrong address, or the radio is off)";
+    if (!resolve4(host, port, a)) { err = "cannot find the address " + host + " (a " + p.name + " needs an IPv4 address)"; return false; }
+    if (!discover({a}, timeoutMs, false, p.boardId).empty()) return true;
+    err = std::string("no ") + p.name + " answered at " + host + ":" + std::to_string(port) + " (wrong address, or the radio is off";
+    err += p.boardId == kBoardHermes ? ", or its SDR transceiver app is not running)" : ")";
     return false;
 }
 
-std::unique_ptr<IqSource> makeHermesLite2(const DeviceInfo& d) { return std::make_unique<HermesLite2Source>(d.nativeArgs); }
+DeviceInfo hermesLite2Device(const std::string& host, int port) { return hpsdr1Device(kHl2, host, port); }
+bool hermesLite2Probe(const std::string& host, int port, int timeoutMs, std::string& err) { return hpsdr1Probe(kHl2, host, port, timeoutMs, err); }
+std::unique_ptr<IqSource> makeHermesLite2(const DeviceInfo& d) { return std::make_unique<HermesLite2Source>(kHl2, d.nativeArgs); }
+
+DeviceInfo redPitayaDevice(const std::string& host, int port) { return hpsdr1Device(kRedPitaya, host, port); }
+bool redPitayaProbe(const std::string& host, int port, int timeoutMs, std::string& err) { return hpsdr1Probe(kRedPitaya, host, port, timeoutMs, err); }
+std::unique_ptr<IqSource> makeRedPitaya(const DeviceInfo& d) { return std::make_unique<HermesLite2Source>(kRedPitaya, d.nativeArgs); }
 
 } // namespace native
 
-std::vector<FoundNetRadio> discoverHermesLite2(int timeoutMs) {
+namespace {
+std::vector<FoundNetRadio> discoverHpsdr1(int boardId, int timeoutMs) {
     std::vector<sockaddr_in> to;
     for (uint32_t b : native::broadcastAddresses()) {
         sockaddr_in a{};
@@ -398,7 +436,11 @@ std::vector<FoundNetRadio> discoverHermesLite2(int timeoutMs) {
         a.sin_addr.s_addr = htonl(b);
         to.push_back(a);
     }
-    return native::discover(to, timeoutMs, true);
+    return native::discover(to, timeoutMs, true, boardId);
 }
+} // namespace
+
+std::vector<FoundNetRadio> discoverHermesLite2(int timeoutMs) { return discoverHpsdr1(native::kBoardHl2, timeoutMs); }
+std::vector<FoundNetRadio> discoverRedPitaya(int timeoutMs) { return discoverHpsdr1(native::kBoardHermes, timeoutMs); }
 
 } // namespace dect2

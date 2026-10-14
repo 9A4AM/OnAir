@@ -21,7 +21,7 @@ std::mutex gNetMu;
 std::vector<NetRadio> gNet;
 
 const char* typeKey(NetRadio::Type t) {
-    return t == NetRadio::Pluto ? "pluto" : t == NetRadio::SoapyRemote ? "soapyremote" : t == NetRadio::SpyServer ? "spyserver" : t == NetRadio::HermesLite2 ? "hl2" : "rtltcp";
+    return t == NetRadio::Pluto ? "pluto" : t == NetRadio::SoapyRemote ? "soapyremote" : t == NetRadio::SpyServer ? "spyserver" : t == NetRadio::HermesLite2 ? "hl2" : t == NetRadio::RedPitaya ? "redpitaya" : "rtltcp";
 }
 
 // the host as typed: no spaces, no "ip:" (a Pluto's libiio URI), no "tcp://" (a SoapyRemote URL)
@@ -38,10 +38,10 @@ std::string hostPort(const std::string& host, int port) {
 
 const char* netRadioTypeName(NetRadio::Type t) {
     return t == NetRadio::Pluto ? "PlutoSDR" : t == NetRadio::SoapyRemote ? "SoapyRemote" : t == NetRadio::SpyServer ? "SpyServer"
-         : t == NetRadio::HermesLite2 ? "Hermes Lite 2" : "rtl_tcp";
+         : t == NetRadio::HermesLite2 ? "Hermes Lite 2" : t == NetRadio::RedPitaya ? "Red Pitaya" : "rtl_tcp";
 }
 int netRadioDefaultPort(NetRadio::Type t) {
-    return t == NetRadio::Pluto ? 0 : t == NetRadio::SoapyRemote ? 55132 : t == NetRadio::SpyServer ? 5555 : t == NetRadio::HermesLite2 ? 1024 : 1234;
+    return t == NetRadio::Pluto ? 0 : t == NetRadio::SoapyRemote ? 55132 : t == NetRadio::SpyServer ? 5555 : (t == NetRadio::HermesLite2 || t == NetRadio::RedPitaya) ? 1024 : 1234;
 }
 const char* netRadioDefaultHost(NetRadio::Type t) { return t == NetRadio::Pluto ? "192.168.2.1" : ""; }
 int netRadioPort(const NetRadio& r) {
@@ -79,6 +79,7 @@ std::vector<NetRadio> netRadiosFromString(const std::string& s) {
         else if (t == "soapyremote") r.type = NetRadio::SoapyRemote;
         else if (t == "spyserver") r.type = NetRadio::SpyServer;
         else if (t == "hl2") r.type = NetRadio::HermesLite2;
+        else if (t == "redpitaya") r.type = NetRadio::RedPitaya;
         else continue;
         r.host = cleanHost(item.substr(c1 + 1, c2 - c1 - 1));
         r.port = atoi(item.c_str() + c2 + 1);
@@ -216,6 +217,7 @@ std::string netRadioDeviceName(const NetRadio& r) {
     case NetRadio::SoapyRemote: return "SoapyRemote " + hostPort(cleanHost(r.host), netRadioPort(r)) + (r.remote.empty() ? "" : " " + r.remote) + " (network)";
     case NetRadio::SpyServer: return native::spyServerDevice(cleanHost(r.host), netRadioPort(r)).name;
     case NetRadio::HermesLite2: return native::hermesLite2Device(cleanHost(r.host), netRadioPort(r)).name;
+    case NetRadio::RedPitaya: return native::redPitayaDevice(cleanHost(r.host), netRadioPort(r)).name;
     default: return native::rtlTcpDevice(cleanHost(r.host), netRadioPort(r)).name;
     }
 }
@@ -229,6 +231,7 @@ std::vector<DeviceInfo> netRadioDevices(const std::vector<NetRadio>& v) {
         case NetRadio::RtlTcp: out.push_back(native::rtlTcpDevice(cleanHost(r.host), netRadioPort(r))); break;
         case NetRadio::SpyServer: out.push_back(native::spyServerDevice(cleanHost(r.host), netRadioPort(r))); break;
         case NetRadio::HermesLite2: out.push_back(native::hermesLite2Device(cleanHost(r.host), netRadioPort(r))); break;
+        case NetRadio::RedPitaya: out.push_back(native::redPitayaDevice(cleanHost(r.host), netRadioPort(r))); break;
         case NetRadio::SoapyRemote:
 #ifdef DECT2_HAVE_SOAPY
         {
@@ -257,6 +260,7 @@ bool probeNetRadio(const NetRadio& r, int timeoutMs, std::string& err) {
 #endif
     if (r.type == NetRadio::SpyServer) return native::spyServerProbe(host, netRadioPort(r), timeoutMs, err);   // HELLO, then its DEVICE_INFO
     if (r.type == NetRadio::HermesLite2) return native::hermesLite2Probe(host, netRadioPort(r), timeoutMs, err);   // UDP: a discovery to it
+    if (r.type == NetRadio::RedPitaya) return native::redPitayaProbe(host, netRadioPort(r), timeoutMs, err);
     const sock_t s = tcpConnect(host, netRadioPort(r), timeoutMs, err);
     if (s == kBadSock) return false;
     bool ok = true;
