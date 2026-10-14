@@ -70,9 +70,7 @@ void lampTip(const char* label, int state, const char* tip) {
 }
 
 struct Stages { int carrier, timing, frame, fec, ts; };
-Stages stages(const App& a) {
-    const DvbsTelemetry& t = a.rx.dvbs;
-    const bool on = live(a);
+Stages stages(const DvbsTelemetry& t, bool on) {
     auto st = [&](bool ok, bool searching) { return !on ? 0 : ok ? 1 : searching ? 2 : 0; };
     Stages s;
     s.carrier = st(t.lockCarrier, t.lockSpectrum);
@@ -109,15 +107,12 @@ void tick(App& a) {
 
 // ---------------------------------------------------------------------------------------------- status bar and top bar
 
-void status(App& a) {
-    const bool run = a.engine.running(), on = live(a);
-    const DvbsTelemetry& t = a.rx.dvbs;
-    const SignalStats& st = a.spec.stats;
-    const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
-    StatusPanel panel;   // a tinted panel behind the status lines (they wrap in a narrow window)
-    const Stages s = stages(a);
+// The lock lamps and the readouts of a DVB-S/S2 report (state, standard, symbol rate, MODCOD, Es/N0, margin, counters), wrapping with flowNext():
+// the status bar of the mode, and the panel of QO-100 under its wideband view (the decoder as the second mode). withCarrierOffset: a carrier
+// offset from the centre means nothing for a carrier picked out of a wider capture, nor do the radio's dropped samples belong to it (standalone)
+void statusRows(App& a, const DvbsTelemetry& t, bool on, bool run, bool standalone) {
+    const Stages s = stages(t, on);
     const float gap = 12 * gUi;
-    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(gap);
     lampTip("Carrier", s.carrier, kTipCarrier); flowNext(gap);
     lampTip("Timing", s.timing, kTipTiming); flowNext(gap);
     lampTip("Framing", s.frame, kTipFrame); flowNext(gap);
@@ -148,7 +143,7 @@ void status(App& a) {
         ro("Es/N0", fmt("%.1f dB", t.snrDb));
         double m;
         if (margin(t, m)) ro("Margin", fmt("%+.1f dB", m), m >= 1.0 ? pal::okGreen() : m >= 0 ? pal::accent() : pal::badRed());
-        ro("Offset", fmt("%+.0f kHz", t.cfoHz / 1e3));
+        if (standalone) ro("Offset", fmt("%+.0f kHz", t.cfoHz / 1e3));
     }
     if (t.standard >= 2) {
         ro("Frames", cnt(t.blocksOk) + " ok  " + cnt(t.blocksBad) + " bad", t.blocksBad ? ImVec4(0.95f, 0.55f, 0.35f, 1) : ImVec4(0.93f, 0.95f, 0.97f, 1));
@@ -157,7 +152,16 @@ void status(App& a) {
     }
     if (t.packets) ro("Packets", cnt(t.packets));
     if (t.netBitrate > 0) ro("TS", fmt("%.2f Mbit/s", t.netBitrate / 1e6));
-    if (run) { const SampleLoss l = a.engine.sampleLoss(); ro("dropped", lossText(l), lossColour(l)); lossTooltip(l); }
+    if (run && standalone) { const SampleLoss l = a.engine.sampleLoss(); ro("dropped", lossText(l), lossColour(l)); lossTooltip(l); }
+}
+
+void status(App& a) {
+    const bool run = a.engine.running(), on = live(a);
+    const SignalStats& st = a.spec.stats;
+    const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
+    StatusPanel panel;   // a tinted panel behind the status lines (they wrap in a narrow window)
+    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(12 * gUi);
+    statusRows(a, a.rx.dvbs, on, run, true);
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
@@ -235,7 +239,7 @@ void panels(App& a) {
     ImGui::BeginGroup();
     captionFit(readW, "Lock stages and counters");
     ImGui::BeginChild("##dvbsrd", ImVec2(readW, plotH + ImGui::GetFrameHeight() * 0.5f));   // scrolls when the row is short
-    const Stages s = stages(a);
+    const Stages s = stages(t, on);
     const float g2 = 8 * gUi;
     lampTip("Carrier", s.carrier, kTipCarrier); flowNext(g2);   // the lamps wrap in a narrow readout
     lampTip("Timing", s.timing, kTipTiming); flowNext(g2);
@@ -645,6 +649,9 @@ void dvbsSetSymbolRate(App& a, double msym) {
     S.srMsym = std::max(0.0, msym);
     saveState(a);
 }
+
+// The lamps and readouts of a DVB-S/S2 report that is not the first mode's (QO-100's decoder panel)
+void dvbsStatusRows(App& a, const DvbsTelemetry& t, bool on, bool run) { statusRows(a, t, on, run, false); }
 
 extern const ModeUi kDvbsUi;
 const ModeUi kDvbsUi = {

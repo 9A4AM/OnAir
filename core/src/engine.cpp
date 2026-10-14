@@ -2580,13 +2580,17 @@ bool Engine::secondaryAllowed(int m) {
     }
 }
 
-std::string Engine::secondaryCheck(int pri, int sec, double centreHz, double rateHz, double secHz) {
+bool Engine::secondaryAllowed(int m, int pri) { return secondaryAllowed(m) || (m == 8 && pri == 55); }
+
+std::string Engine::secondaryCheck(int pri, int sec, double centreHz, double rateHz, double secHz, double chanHz) {
     const ModeTuning* st = modeTuning(sec);
     const ModeTuning* pt = modeTuning(pri);
     const std::string name = st ? st->name : "This mode";
-    if (!secondaryAllowed(sec) || !st) {
+    if (!secondaryAllowed(sec, pri) || !st) {
         const char* why;
         switch (sec) {
+        case 8:
+            why = "its transport stream and picture belong to the first mode, except beside QO-100"; break;
         case 14: case 34: case 41: case 43: case 44: case 50: case 53: case 54: case 59:
             why = "it tunes the radio, scans or takes the whole capture by itself"; break;
         case 7: case 12: case 23: case 24:
@@ -2607,7 +2611,7 @@ std::string Engine::secondaryCheck(int pri, int sec, double centreHz, double rat
     }
     // the channel (its width around its frequency) inside the part of the capture the filters keep
     const double off = std::fabs(secHz - centreHz);
-    const double need = off + st->bandwidthMhz * 0.5e6;
+    const double need = off + (chanHz > 0 ? chanHz : st->bandwidthMhz * 1e6) * 0.5;
     if (rateHz > 0 && need > 0.45 * rateHz) {
         snprintf(b, sizeof b, "%s at %.3f MHz lies %.3f MHz from the centre of the capture (%.3f MHz): it needs %.1f Msps or more, the radio runs at %.2f Msps. "
                  "Raise the sample rate or tune the first mode nearer", name.c_str(), secHz / 1e6, off / 1e6, centreHz / 1e6, need / 0.45 / 1e6, rateHz / 1e6);
@@ -2628,6 +2632,7 @@ double Engine::captureCentreHz() const {
 // The receivers that can run as the second mode, set up for a sample rate (start() does it for all of them at the capture's)
 void Engine::configureReceiver(int a, double r) {
     switch (a) {
+    case 7: rxDvbs_.configure(r); break;   // the second mode beside QO-100 only
     case 10: rxDmr_.configure(r); break;
     case 12: rxAdsb_.configure(r); break;
     case 14: rxSonde_.configure(r); break;
@@ -2781,7 +2786,7 @@ void Engine::placeReceiverAsPrimary(int a) {
 bool Engine::placeSecondary(std::string& why) {
     const int sm = secStd_.load();
     const double hz = secHz_.load(), centre = captureCentreHz();
-    why = secondaryCheck(stdMode_.load(), sm, centre, rate_.load(), hz);
+    why = secondaryCheck(stdMode_.load(), sm, centre, rate_.load(), hz, secChanHz_.load());
     if (why.empty() && activeStdFor(sm) == activeStd_.load()) why = "the first mode runs the same receiver";
     if (!why.empty()) return false;
     const ModeTuning* mt = modeTuning(sm);
@@ -2797,14 +2802,24 @@ bool Engine::placeSecondary(std::string& why) {
 
 bool Engine::setSecondary(int stdMode, double offsetHz) { return setSecondaryHz(stdMode, stdMode ? captureCentreHz() + offsetHz : 0.0); }
 
-bool Engine::setSecondaryHz(int sm, double hz) {
+bool Engine::setSecondaryHz(int sm, double hz) { return setSecondaryImpl(sm, hz, 0, 0, 0); }
+
+// The carrier alone: a DVB-S/S2 signal of symbolRate takes (1 + roll-off) times that of the spectrum; the receiver runs at 3.2 times the symbol
+// rate (2 Msps at least, what it needs), a whole division of the capture's rate where there is one
+bool Engine::setSecondaryDvbs(double hz, double sym) {
+    sym = std::max(sym, 10e3);
+    return setSecondaryImpl(8, hz, sym * 1.4, std::max(2e6, sym * 3.2), sym);
+}
+
+bool Engine::setSecondaryImpl(int sm, double hz, double chanHz, double wantRate, double sym) {
     std::lock_guard<std::mutex> ck(secCtlMu_);
     stopSecondaryLocked();
     secStd_ = sm; secHz_ = hz;
+    secChanHz_ = chanHz; secWantRate_ = wantRate; secSym_ = sym;
     { std::lock_guard<std::mutex> lk(rx2Mu_); rxTel2_ = RxTelemetry(); }
     if (!sm) { setSecNote(""); return true; }
     if (!running_) {   // nothing to measure against yet: the mode now, the fit when the radio starts
-        if (!secondaryAllowed(sm) || sm == stdMode_.load()) { setSecNote(secondaryCheck(stdMode_.load(), sm, 0, 0, hz)); secStd_ = 0; return false; }
+        if (!secondaryAllowed(sm, stdMode_.load()) || sm == stdMode_.load()) { setSecNote(secondaryCheck(stdMode_.load(), sm, 0, 0, hz)); secStd_ = 0; return false; }
         setSecNote("starts with the radio");
         return true;
     }
@@ -2832,11 +2847,24 @@ bool Engine::startSecondaryLocked(bool keep) {
         ok = placeSecondary(why);
         if (ok) {   // as a radio tuned for this mode alone: its own sample rate (or the capture's when that is lower), fresh tables
             const ModeTuning* mt = modeTuning(sm);
-            const double want = mt && mt->sampleRate > 0 ? mt->sampleRate : rate_.load();
+            double want = mt && mt->sampleRate > 0 ? mt->sampleRate : rate_.load();
+            if (secWantRate_.load() > 0) {   // a whole division of the capture's rate that is not below what the mode wants
+                want = secWantRate_.load();
+                const double k = std::floor(rate_.load() / want + 1e-9);
+                if (k >= 2) want = rate_.load() / k;
+            }
             secRate_ = rate_.load() > want * 1.001 ? want : rate_.load();
             configureReceiver(a, secRate_.load());
             muteReceiver(a, !secSound_.load());   // the first mode keeps the speakers unless the second is asked to play
             resetReceiver(a);   // the first mode does not use it, the second thread is not running yet
+            if (a == 7) {   // DVB-S/S2 beside QO-100: its stream is the stream of the engine, the old one (and what played from it) goes
+                rxDvbs_.setSymbolRate(secSym_.load());
+                rxDvbs_.setStandardHint(0);
+                player_.select(-1);
+                std::lock_guard<std::mutex> tl(tsMu_);
+                demux_.reset();
+                tsSnap_ = TsSnapshot();
+            }
         }
     }
     if (!ok && !keep) { secStd_ = 0; setSecNote(why); log("second mode refused: " + why); return false; }
@@ -2871,6 +2899,13 @@ void Engine::stopSecondaryLocked() {
     {
         std::lock_guard<std::mutex> lk(secQMu_);
         secQ_.clear(); secQN_ = 0; secStop_ = false;
+    }
+    if (had && a == 7 && a != activeStd_.load()) {   // DVB-S/S2 beside QO-100: its worker threads stop with the receiver, its stream and picture go
+        rxDvbs_.resetNow();
+        player_.select(-1);
+        std::lock_guard<std::mutex> tl(tsMu_);
+        demux_.reset();
+        tsSnap_ = TsSnapshot();
     }
     // the receiver back where start() put it, should it become the first mode without a restart (autoSelect does it for the first mode itself)
     if (had && a != activeStd_.load()) { configureReceiver(a, rate_.load()); placeReceiverAsPrimary(a); muteReceiver(a, false); }

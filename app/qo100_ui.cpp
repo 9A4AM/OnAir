@@ -62,6 +62,12 @@ struct State {
     float dragX = 0;
     double dragV0 = 0, dragV1 = 0;
     char dialBuf[40] = "";
+    // the DVB-S/S2 decoder under the wideband view (Engine::setSecondaryDvbs): the carrier clicked, its report, why it was refused
+    bool dvbsOn = false, autoPlay = false;
+    dect2::Qo100Datv dvbsCarrier;
+    RxTelemetry rx2;
+    uint64_t rx2Seq = 0;
+    std::string dvbsRefused;
 };
 State S;
 
@@ -95,13 +101,25 @@ void setDial(double hz) { S.dialHz = std::round(hz / 10) * 10; save(); }
 
 void tuneRf(App& a, double rfHz) { tuneFreq(a, q::ifOf(rfHz, loHz()) / 1e6); }
 
-void openInDvbs(App& a, const dect2::Qo100Datv& d) {
-    const double msym = std::round(d.symRate / 1e3) / 1e3;
-    if (a.engine.running()) a.engine.stop();
-    selectMode(a, 6);
-    tuneFreq(a, d.ifHz / 1e6);
-    dvbsSetSymbolRate(a, msym);
-    startReceiver(a);
+// The carrier decoded as the engine's second mode, its picture and status under the wideband view: the spectrum and the beacons stay live
+void decodeBelow(App& a, const dect2::Qo100Datv& d) {
+    setSecondMode(a, -1, 0);   // there is one second mode: one chosen in the toolbar makes room
+    S.dvbsCarrier = d;
+    S.dvbsOn = true;
+    S.rx2 = RxTelemetry(); S.rx2Seq = 0;
+    S.autoPlay = true;
+    S.dvbsRefused.clear();
+    if (!a.engine.setSecondaryDvbs(d.ifHz, std::round(d.symRate / 1e3) * 1e3)) S.dvbsRefused = a.engine.secondaryNote();
+}
+
+void closeDecode(App& a) {
+    if (a.engine.secondaryStandard() == 8) a.engine.clearSecondary();   // the engine ends its stream and picture with it
+    S.dvbsOn = false; S.dvbsRefused.clear();
+    S.rx2 = RxTelemetry(); S.rx2Seq = 0;
+}
+
+bool decodingCarrier(const App& a, const dect2::Qo100Datv& d) {
+    return S.dvbsOn && a.engine.secondaryStandard() == 8 && std::fabs(d.ifHz - S.dvbsCarrier.ifHz) < 0.6 * std::max(d.bw3Hz, 50e3);
 }
 
 // LNB, IF and where the radio is
@@ -273,8 +291,12 @@ void wideView(App& a, float h) {
             ImGui::TableNextColumn(); ImGui::Text("%.1f dB", d.snrDb);
             ImGui::TableNextColumn();
             if (d.looksDvbs) {
-                if (ImGui::SmallButton("Decode with DVB-S/S2")) openInDvbs(a, d);
-                tip("Switch to the DVB-S/S2 mode at this carrier's frequency and symbol rate");
+                const bool cur = decodingCarrier(a, d);
+                if (cur) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.45f));
+                if (ImGui::SmallButton("Decode with DVB-S/S2")) decodeBelow(a, d);
+                if (cur) ImGui::PopStyleColor();
+                tip("Decode this carrier with DVB-S/S2 at its frequency and symbol rate: its picture and status appear below, "
+                    "the spectrum and the beacons stay live (the radio keeps its tuning)");
             } else ImGui::TextDisabled("-");
             ImGui::PopID();
         }
@@ -288,6 +310,81 @@ void wideView(App& a, float h) {
         resexp::saveButton(x, "qo100", note, "svqo");
         if (!note.empty()) ImGui::TextDisabled("%s", note.c_str());
     }
+    ImGui::EndChild();
+}
+
+// Under the wideband view: the DVB-S/S2 decoder of the clicked carrier. The lamps and readouts are the DVB-S mode's own (dvbsStatusRows); the
+// services of the stream and the picture are the engine's player, as the TV tab shows them
+void decodePanel(App& a, float h) {
+    ImGui::BeginChild("##qods", ImVec2(0, h), ImGuiChildFlags_Borders);
+    const dect2::Qo100Datv& c = S.dvbsCarrier;
+    const bool asked = a.engine.secondaryStandard() == 8, run = a.engine.running();
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextColored(pal::accent(), "DVB-S/S2");
+    flowNext(6 * gUi);
+    ImGui::Text("%.3f MHz  %.0f ks/s", c.rfHz / 1e6, std::round(c.symRate / 1e3));
+    flowNext(10 * gUi);
+    const bool close = ImGui::SmallButton("Close");
+    tip("Stop decoding this carrier");
+    flowEnd();
+    if (close) { closeDecode(a); ImGui::EndChild(); return; }
+    if (!asked) {
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextColored(pal::warnAmber(), "%s", S.dvbsRefused.empty() ? "not running" : S.dvbsRefused.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::EndChild();
+        return;
+    }
+    if (!a.engine.secondaryRunning()) {
+        const std::string note = a.engine.secondaryNote();
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextColored(pal::warnAmber(), "%s", note.empty() ? "not running" : note.c_str());
+        ImGui::PopTextWrapPos();
+    }
+    dvbsStatusRows(a, S.rx2.dvbs, S.rx2.standard == 7, run);
+    flowEnd();
+    ImGui::Spacing();
+
+    // the services of the stream (left) and the picture (right)
+    Player& pl = a.engine.player();
+    const PlayerStats ps = pl.stats();
+    const float bodyH = std::max(60.f * gUi, ImGui::GetContentRegionAvail().y), lw = std::min(ImGui::GetContentRegionAvail().x * 0.42f, 440.f * gUi);
+    ImGui::BeginChild("##qodsl", ImVec2(lw, bodyH));
+    if (a.ts.services.empty()) {
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextDisabled("%s", S.rx2.dvbs.tsLock ? "waiting for the service tables (PAT / SDT)..." : "no transport stream yet");
+        ImGui::PopTextWrapPos();
+    }
+    for (const TsService& sv : a.ts.services) {
+        std::string tags;
+        double kb = 0;
+        for (const auto& st : sv.streams) { kb += st.kbps; if (!st.codec.empty() && (st.kind == "video" || st.kind == "audio")) tags += (tags.empty() ? "" : "  ") + st.codec; }
+        char b[200];
+        snprintf(b, sizeof b, "%s%s  %s  %.0f kbit/s###qos%d", sv.name.empty() ? "service " : "", sv.name.empty() ? std::to_string(sv.id).c_str() : sv.name.c_str(),
+                 tags.c_str(), kb, sv.id);
+        if (ImGui::Selectable(b, sv.id == pl.selected())) {
+            if (sv.id == pl.selected()) pl.select(-1); else { pl.select(sv.id); pl.setVolume(a.volume); }
+            S.autoPlay = false;
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s%s%s\nclick: play or stop", sv.provider.c_str(), sv.provider.empty() ? "" : "\n", sv.scrambled ? "scrambled" : "free to air");
+    }
+    if (pl.selected() >= 0) {
+        if (ps.hasVideo) ImGui::TextDisabled("%s  %dx%d  %.1f fps", ps.videoCodec.c_str(), ps.width, ps.height, ps.fps);
+        if (ps.hasAudio) ImGui::TextDisabled("%s  %d ch", ps.audioCodec.c_str(), ps.audioChannels);
+        ImGui::TextDisabled("%llu pictures shown, %llu errors", (unsigned long long)ps.shown, (unsigned long long)ps.errors);
+        ImGui::SetNextItemWidth(130 * gUi);
+        if (ImGui::SliderFloat("volume", &a.volume, 0, 1, "%.2f")) pl.setVolume(a.volume);
+        ImGui::SameLine();
+        if (ImGui::Checkbox("mute", &a.muted)) pl.setMuted(a.muted);
+    }
+    ImGui::EndChild();
+    ImGui::SameLine();
+    ImGui::BeginChild("##qodsv", ImVec2(0, bodyH), ImGuiChildFlags_Borders);
+    if (pl.selected() < 0) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Pick a service to play it."); ImGui::PopTextWrapPos(); }
+    else if (!ps.videoNote.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos(); }
+    else if (!a.video.has()) ImGui::TextDisabled("%s", ps.hasAudio && !ps.hasVideo ? "audio only" : ps.status.c_str());
+    else a.video.draw(ImGui::GetContentRegionAvail());
+    ImGui::EndChild();
     ImGui::EndChild();
 }
 
@@ -335,6 +432,23 @@ void tick(App& a) {
     r.setDialHz(S.dialHz);
     r.setListen(S.listen);
     r.setVolume(a.volume); r.setMuted(a.muted);
+    if (S.dvbsOn) {   // the decoder under the wideband view: its report (it is the engine's second mode), and the first service plays by itself
+        if (a.engine.secondaryStandard() == 8) {
+            RxTelemetry t2;
+            if (a.engine.latestRx2(t2, S.rx2Seq)) { S.rx2Seq = t2.seq; S.rx2 = std::move(t2); }
+            Player& pl = a.engine.player();
+            if (S.autoPlay && pl.selected() < 0 && S.rx2.dvbs.tsLock) {
+                const TsService* pick = nullptr;
+                for (const TsService& sv : a.ts.services) {
+                    if (!sv.havePmt) continue;
+                    bool video = false;
+                    for (const auto& st : sv.streams) video |= st.kind == "video";
+                    if (video) { pick = &sv; break; }
+                }
+                if (pick) { pl.select(pick->id); pl.setVolume(a.volume); S.autoPlay = false; }
+            }
+        } else if (S.dvbsRefused.empty()) S.dvbsOn = false;   // another second mode took the place
+    }
     const auto& t = T(a);
     if (!live(a) || t.seq == S.lastSeq) return;
     S.lastSeq = t.seq;
@@ -377,6 +491,12 @@ void tab(App& a) {
     if (S.view == 0) { ImGui::SameLine(0, 16 * gUi); listenRow(a); }
     const float h = std::max(120.f, ImGui::GetContentRegionAvail().y - 2);
     if (S.view == 0) narrowView(a, h);
+    else if (S.view == 1 && S.dvbsOn) {   // the spectrum stays live above, the decoder of the clicked carrier below
+        const float sp = ImGui::GetStyle().ItemSpacing.y;
+        const float ph = std::clamp(h * 0.55f, 240.f * gUi, std::max(240.f * gUi, h - 150.f * gUi - sp));
+        wideView(a, std::max(100.f * gUi, h - ph - sp));
+        decodePanel(a, ph);
+    }
     else if (S.view == 1) wideView(a, h);
     else driftView(a, h);
 }

@@ -211,8 +211,16 @@ public:
     double captureCentreHz() const;   // the frequency at the centre of the samples the receivers get
     // The modes that can run second: narrow channels that neither retune the radio, nor make a transport stream, picture or player sound
     static bool secondaryAllowed(int stdMode);
-    // Empty when the second mode fits beside the first in a capture of rateHz around centreHz, else the reason (shown to the user)
-    static std::string secondaryCheck(int primaryStd, int secStd, double centreHz, double rateHz, double secHz);
+    // The same beside a given first mode: DVB-S/S2 (8) may run second only beside QO-100 (55), whose wideband view lists the DATV carriers; QO-100
+    // makes no transport stream of its own, so the stream, the player and the picture are the second mode's then
+    static bool secondaryAllowed(int stdMode, int primaryStd);
+    // Empty when the second mode fits beside the first in a capture of rateHz around centreHz, else the reason (shown to the user).
+    // chanHz: the width of the channel when the mode's own is not it (a DVB-S carrier: its symbol rate with the roll-off), 0 = the mode's
+    static std::string secondaryCheck(int primaryStd, int secStd, double centreHz, double rateHz, double secHz, double chanHz = 0);
+    // DVB-S/S2 as the second mode beside QO-100: the carrier at freqHz (what the radio sees, Qo100Datv::ifHz) with its symbol rate. The receiver gets the
+    // carrier alone (mixed to the centre and resampled to a few times its symbol rate, so that the other carriers of the transponder stay out of its
+    // spectrum search); its stream goes to the player, its report comes through latestRx2() as standard 7. Replaces any other second mode.
+    bool setSecondaryDvbs(double freqHz, double symbolRate);
 
     void setPlpDump(std::function<void(const PlpResult&)> cb) { plpDump_ = std::move(cb); }
 
@@ -591,6 +599,8 @@ private:
     void muteReceiver(int a, bool muted);
     std::atomic<bool> secSound_{false};
     std::atomic<double> secRate_{0};          // the second receiver's rate: its mode's own, the capture resampled down to it
+    std::atomic<double> secChanHz_{0}, secWantRate_{0}, secSym_{0};   // setSecondaryDvbs: the channel's width, the rate it wants, its symbol rate (0 = the mode's own)
+    bool setSecondaryImpl(int sm, double hz, double chanHz, double wantRate, double sym);
     void pushSecondary(const cf32* x, size_t n);
     void setSecNote(const std::string& s) { std::lock_guard<std::mutex> lk(secNoteMu_); secNote_ = s; }
     std::thread secTh_;

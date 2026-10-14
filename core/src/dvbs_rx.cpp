@@ -539,6 +539,13 @@ void DvbsReceiver::configure(double inputRateHz) {
 }
 bool DvbsReceiver::ready() const { return p_->fs >= dvbsTuning().minSampleRate - 1; }
 void DvbsReceiver::reset() { p_->resetReq = true; }
+void DvbsReceiver::resetNow() {
+    Impl& I = *p_;
+    const uint64_t keep = I.seq;
+    I.resetState();   // ends the worker threads (no packet reaches the callback afterwards); the caller makes sure nothing feeds the receiver
+    I.seq = keep;
+    I.resetReq = false; I.restartReq = false;
+}
 void DvbsReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->cbMu); p_->logCb = std::move(cb); }
 void DvbsReceiver::setPacketCallback(std::function<void(const uint8_t*, size_t, double)> cb) { std::lock_guard<std::mutex> lk(p_->cbMu); p_->pktCb = std::move(cb); }
 void DvbsReceiver::setSymbolRate(double hz) { if (hz != p_->manualRs.load()) { p_->manualRs = hz; p_->restartReq = true; } }
