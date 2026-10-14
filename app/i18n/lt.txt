@@ -857,3 +857,40 @@ waiting	laukiama
 waterfall dB##wfdb	krioklys dB##wfdb
 spectrum dB##specdb	spektras dB##specdb
 Clear##log	Išvalyti##log
+# added for 0.2.6: remaining acronyms, frequency labels and long texts
+ADS-B	ADS-B
+AFSK, 144.8 MHz	AFSK, 144.8 MHz
+AIS	AIS
+APRS	APRS
+ATSC 8-VSB, 6 MHz	ATSC 8-VSB, 6 MHz
+CFO	CFO
+Ctrl + / Ctrl - / Ctrl 0	Ctrl + / Ctrl - / Ctrl 0
+DVB-T	DVB-T
+EVM %.1f dB	EVM %.1f dB
+Es'hail-2, 10.49 GHz	Es'hail-2, 10.49 GHz
+FIC	FIC
+GI	GI
+LNB	LNB
+LoRa, 433.175 MHz	LoRa, 433.175 MHz
+LoRa, 433.775 MHz	LoRa, 433.775 MHz
+ONAIR	ONAIR
+SNR	SNR
+SRO	SRO
+TR	TR
+WSJT, 1.8366 MHz	WSJT, 1.8366 MHz
+WSJT, 14.074 MHz	WSJT, 14.074 MHz
+WSJT, 14.076 MHz	WSJT, 14.076 MHz
+WSJT, 14.078 MHz	WSJT, 14.078 MHz
+WSJT, 14.080 MHz	WSJT, 14.080 MHz
+WSJT, 14.084 MHz	WSJT, 14.084 MHz
+WSJT, 14.100 MHz	WSJT, 14.100 MHz
+%.0f deg	%.0f laipsnių
+%s, %llu spots sent in %llu packets, %llu duplicates skipped	%s, išsiųsta %llu spotų %llu paketuose, praleista %llu dublikatų
+offset %+.3f %+.3f	poslinkis %+.3f %+.3f
+sigma %.3f per axis (%.0f%% of the half-distance to a neighbour)	sigma %.3f vienai ašiai (%.0f%% pusės atstumo iki kaimyno)
+A second OnAir (Add network radio, rtl_tcp), SDR# or SDR++ connects to this computer's address and the port. Samples are sent as 8-bit IQ at the rate the radio runs at. Without 'allow remote control' the clients cannot change the frequency or gain.	Antras OnAir (Pridėti tinklo radiją, rtl_tcp), SDR# arba SDR++ jungiasi prie šio kompiuterio adreso ir prievado. Mėginiai siunčiami kaip 8 bitų IQ radijo veikimo sparta. Be „leisti nuotolinį valdymą“ klientai negali keisti dažnio ar stiprinimo.
+Sends the FT8, FT4, FT2, WSPR, JS8Call, PSK31 and CW stations you decode to pskreporter.info, so they show on its public map and statistics. A report is: the sender's callsign, frequency, SNR, mode, its locator when the message has one, and when it was heard; with your callsign, locator, antenna text and 'OnAir'. Reports are batched and sent every 5 minutes; the same station on the same band is sent once per 10 minutes. Nothing is sent until you tick the box. Spots are public: use your own valid amateur radio callsign. CW and PSK31 are only reported when the text says 'DE callsign'.	Siunčia jūsų dekoduojamas FT8, FT4, FT2, WSPR, JS8Call, PSK31 ir CW stotis į pskreporter.info, kad jos būtų rodomos viešame žemėlapyje ir statistikoje. Ataskaitoje yra: siuntėjo šaukinys, dažnis, SNR, režimas, jo lokatorius, jei pranešime jis yra, ir kada buvo išgirstas; taip pat jūsų šaukinys, lokatorius, antenos tekstas ir „OnAir“. Ataskaitos grupuojamos ir siunčiamos kas 5 minutes; ta pati stotis tame pačiame diapazone siunčiama kartą per 10 minučių. Niekas nesiunčiama, kol nepažymėsite langelio. Spotai yra vieši: naudokite savo galiojantį radijo mėgėjo šaukinį. CW ir PSK31 pranešami tik tada, kai tekste yra „DE šaukinys“.
+BW	BW
+CH	CH
+Channel scan	Kanalų paieška
+FM	FM

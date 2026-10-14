@@ -857,3 +857,40 @@ waiting	esperando
 waterfall dB##wfdb	cascada dB##wfdb
 spectrum dB##specdb	espectro dB##specdb
 Clear##log	Borrar##log
+# added for 0.2.6: remaining acronyms, frequency labels and long texts
+ADS-B	ADS-B
+AFSK, 144.8 MHz	AFSK, 144.8 MHz
+AIS	AIS
+APRS	APRS
+ATSC 8-VSB, 6 MHz	ATSC 8-VSB, 6 MHz
+CFO	CFO
+Ctrl + / Ctrl - / Ctrl 0	Ctrl + / Ctrl - / Ctrl 0
+DVB-T	DVB-T
+EVM %.1f dB	EVM %.1f dB
+Es'hail-2, 10.49 GHz	Es'hail-2, 10.49 GHz
+FIC	FIC
+GI	GI
+LNB	LNB
+LoRa, 433.175 MHz	LoRa, 433.175 MHz
+LoRa, 433.775 MHz	LoRa, 433.775 MHz
+ONAIR	ONAIR
+SNR	SNR
+SRO	SRO
+TR	TR
+WSJT, 1.8366 MHz	WSJT, 1.8366 MHz
+WSJT, 14.074 MHz	WSJT, 14.074 MHz
+WSJT, 14.076 MHz	WSJT, 14.076 MHz
+WSJT, 14.078 MHz	WSJT, 14.078 MHz
+WSJT, 14.080 MHz	WSJT, 14.080 MHz
+WSJT, 14.084 MHz	WSJT, 14.084 MHz
+WSJT, 14.100 MHz	WSJT, 14.100 MHz
+%.0f deg	%.0f grados
+%s, %llu spots sent in %llu packets, %llu duplicates skipped	%s, %llu spots enviados en %llu paquetes, %llu duplicados omitidos
+offset %+.3f %+.3f	desplazamiento %+.3f %+.3f
+sigma %.3f per axis (%.0f%% of the half-distance to a neighbour)	sigma %.3f por eje (%.0f%% de la semidistancia a un vecino)
+A second OnAir (Add network radio, rtl_tcp), SDR# or SDR++ connects to this computer's address and the port. Samples are sent as 8-bit IQ at the rate the radio runs at. Without 'allow remote control' the clients cannot change the frequency or gain.	Un segundo OnAir (Añadir radio de red, rtl_tcp), SDR# o SDR++ se conecta a la dirección de este ordenador y al puerto. Las muestras se envían como IQ de 8 bits a la tasa a la que funciona la radio. Sin «permitir control remoto», los clientes no pueden cambiar la frecuencia ni la ganancia.
+Sends the FT8, FT4, FT2, WSPR, JS8Call, PSK31 and CW stations you decode to pskreporter.info, so they show on its public map and statistics. A report is: the sender's callsign, frequency, SNR, mode, its locator when the message has one, and when it was heard; with your callsign, locator, antenna text and 'OnAir'. Reports are batched and sent every 5 minutes; the same station on the same band is sent once per 10 minutes. Nothing is sent until you tick the box. Spots are public: use your own valid amateur radio callsign. CW and PSK31 are only reported when the text says 'DE callsign'.	Envía a pskreporter.info las estaciones FT8, FT4, FT2, WSPR, JS8Call, PSK31 y CW que decodificas, para que aparezcan en su mapa público y en sus estadísticas. Un informe contiene: el indicativo del emisor, la frecuencia, la SNR, el modo, su locator si el mensaje lo incluye y cuándo se escuchó; junto con tu indicativo, tu locator, el texto de la antena y «OnAir». Los informes se agrupan y se envían cada 5 minutos; la misma estación en la misma banda se envía una vez cada 10 minutos. No se envía nada hasta que marques la casilla. Los spots son públicos: usa tu propio indicativo de radioaficionado válido. CW y PSK31 solo se reportan cuando el texto dice «DE indicativo».
+BW	BW
+CH	CH
+Channel scan	Búsqueda de canales
+FM	FM
