@@ -22,7 +22,7 @@ int main() {
     a.packets = 4; a.snrMin = 27.5f; a.snrMax = 29.0f; a.snrSum = 4 * 28.25; a.hopsAway = 0; a.batteryPct = 101; a.firstHeard = 100; a.lastHeard = 3700;
     a.hasPosition = true; a.lat = -27.6; a.lon = -48.62; a.altM = 12;
     MeshNode b; b.id = "!62c27efc"; b.longName = "luanlmd"; b.packets = 1; b.snrMin = b.snrMax = 5.5f; b.snrSum = 5.5; b.hopsAway = 4; b.batteryPct = 63;
-    b.encrypted = 1; b.firstHeard = b.lastHeard = 2000;
+    b.encrypted = 1; b.firstHeard = b.lastHeard = b.devSec = 2000; b.hasEnv = true; b.tempC = 22.4; b.humidity = 79; b.pressureHpa = 1015; b.envSec = 2000;
     t.nodes = {b, a};
     MeshMessage m; m.timeSec = 3700; m.from = "!e326743b"; m.fromName = "Sao Jose Barreiros"; m.to = "^all"; m.channel = "LongFast"; m.text = "Teste 4";
     t.messages = {m};
@@ -36,10 +36,11 @@ int main() {
     CHECK(has(r, "Nodes: 2"), "node count");
     CHECK(r.find("Sao Jose Barreiros (SJB1)") < r.find("luanlmd"), "the most heard node first");
     CHECK(has(r, "4 packets, SNR 27.5 / 28.2 / 29.0 dB (min / mean / max), direct"), "SNR range\n%s", r.c_str());
-    CHECK(has(r, "HELTEC_MESH_NODE_T114, CLIENT") && has(r, "powered") && has(r, "position -27.60000, -48.62000, 12 m"), "hardware, power, position");
-    CHECK(has(r, "1 packet (1 not decrypted), SNR 5.5 / 5.5 / 5.5 dB (min / mean / max), 4 hops") && has(r, "battery 63 %"), "second node\n%s", r.c_str());
+    CHECK(has(r, "HELTEC_MESH_NODE_T114, CLIENT") && has(r, "  powered\n") && has(r, "position -27.60000, -48.62000, 12 m"), "hardware, power, position");
+    CHECK(has(r, "1 packet (1 not decrypted), SNR 5.5 / 5.5 / 5.5 dB (min / mean / max), 4 hops") && has(r, "battery 63 % at 14:26"), "second node\n%s", r.c_str());
     CHECK(has(r, "heard 13:55 - 14:55") && has(r, "heard 14:26 - 14:26"), "heard times");
     CHECK(has(r, "Messages: 1\n14:55  Sao Jose Barreiros > LongFast: Teste 4"), "messages\n%s", r.c_str());
+    CHECK(has(r, "  sensors 22.4 C, 79 %, 1015 hPa at 14:26 (last reading)"), "sensor reading with its time\n%s", r.c_str());
     printf("mesh report: %s\n", fails ? "FAILED" : "ok");
     return fails ? 1 : 0;
 }

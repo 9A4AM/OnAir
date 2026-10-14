@@ -113,6 +113,7 @@ struct MeshNode {
     float snrMin = 0, snrMax = 0;
     double snrSum = 0;           // over `packets`: the mean SNR is snrSum / packets
     uint32_t encrypted = 0;      // of its packets, the ones that could not be decrypted
+    double envSec = -1, devSec = -1;   // when the last environment / device (battery) telemetry arrived
 };
 
 struct MeshMessage {

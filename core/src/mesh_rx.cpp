@@ -350,7 +350,8 @@ struct MeshReceiver::Impl {
             if (u.channelUtilPct >= 0) n.channelUtilPct = u.channelUtilPct;
             if (u.airUtilTxPct >= 0) n.airUtilTxPct = u.airUtilTxPct;
             if (u.uptimeS >= 0) n.uptimeS = u.uptimeS;
-            if (u.hasEnv) { n.hasEnv = true; n.tempC = u.tempC; n.humidity = u.humidity; n.pressureHpa = u.pressureHpa; }
+            if (u.batteryPct >= 0 || u.voltage >= 0) n.devSec = t;
+            if (u.hasEnv) { n.envSec = t; n.hasEnv = true; n.tempC = u.tempC; n.humidity = u.humidity; n.pressureHpa = u.pressureHpa; }
             if (fresh || (!u.longName.empty() && u.longName != n.longName))
                 logf(std::string(pr == 1 ? "Meshtastic" : "MeshCore") + ": node " + u.nodeId + (n.longName.empty() ? "" : " \"" + n.longName + "\""));
         }
@@ -520,7 +521,7 @@ struct MeshReceiver::Impl {
     static void shiftTimes(MeshTelemetry& t, double dt) {
         for (auto& p : t.packets) p.timeSec += dt;
         for (auto& m : t.messages) m.timeSec += dt;
-        for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.firstHeard >= 0) n.firstHeard += dt; if (n.posSec >= 0) n.posSec += dt; }
+        for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.firstHeard >= 0) n.firstHeard += dt; if (n.envSec >= 0) n.envSec += dt; if (n.devSec >= 0) n.devSec += dt; if (n.posSec >= 0) n.posSec += dt; }
         for (auto& a : t.aprsStations) a.st.lastHeardSec += dt;
         for (auto& d : t.lorawanDevices) if (d.lastHeard >= 0) d.lastHeard += dt;
     }

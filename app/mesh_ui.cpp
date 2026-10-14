@@ -297,15 +297,15 @@ void nodeTable(const App& a, bool compact) {
         static std::string note;
         resexp::Table x;
         x.cols = {"time", "frequency_hz", "mode", "name", "short_name", "id", "hardware", "role", "lat", "lon", "alt_m", "snr_db", "hops", "battery_pct",
-                  "voltage", "temp_c", "humidity_pct", "pressure_hpa", "heard_s_ago", "packets"};
+                  "voltage", "battery_time", "temp_c", "humidity_pct", "pressure_hpa", "sensors_time", "heard_s_ago", "packets"};
         const double now = (double)std::time(nullptr);
         for (const dect2::MeshNode* n : sortedNodes(a)) {
             const double ep = meshEpoch(t, n->lastHeard, now);
             x.add({meshTime(ep), resexp::num(a.freqMhz * 1e6, 0), protoName(n->protocol), n->longName, n->shortName, n->id, n->hwModel, n->role,
                    n->hasPosition ? resexp::num(n->lat, 6) : "", n->hasPosition ? resexp::num(n->lon, 6) : "", n->hasPosition ? resexp::num(n->altM, 0) : "",
                    resexp::num(n->lastSnrDb, 1), n->hopsAway >= 0 ? std::to_string(n->hopsAway) : "", n->batteryPct >= 0 ? resexp::num(n->batteryPct, 0) : "",
-                   n->voltage >= 0 ? resexp::num(n->voltage, 2) : "", n->hasEnv ? resexp::num(n->tempC, 1) : "", n->hasEnv ? resexp::num(n->humidity, 0) : "",
-                   n->hasEnv ? resexp::num(n->pressureHpa, 1) : "", n->lastHeard >= 0 ? resexp::num(t.timeSec - n->lastHeard, 0) : "", std::to_string(n->packets)}, ep);
+                   n->voltage >= 0 ? resexp::num(n->voltage, 2) : "", meshTime(meshEpoch(t, n->devSec, now)), n->hasEnv ? resexp::num(n->tempC, 1) : "",
+                   n->hasEnv ? resexp::num(n->humidity, 0) : "", n->hasEnv ? resexp::num(n->pressureHpa, 1) : "", meshTime(meshEpoch(t, n->envSec, now)), n->lastHeard >= 0 ? resexp::num(t.timeSec - n->lastHeard, 0) : "", std::to_string(n->packets)}, ep);
         }
         resexp::saveButton(x, "mesh-nodes", note, "svmn");
         ImGui::SameLine();

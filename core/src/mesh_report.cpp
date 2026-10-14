@@ -79,12 +79,18 @@ std::string meshReport(const MeshTelemetry& t, const std::string& plan, double n
         else if (n->hopsAway > 0) o += ", " + std::to_string(n->hopsAway) + (n->hopsAway == 1 ? " hop" : " hops");
         o += "\n";
         o += "  heard " + clockText(clock(n->firstHeard), utc, "%H:%M") + " - " + clockText(clock(n->lastHeard), utc, "%H:%M");
-        if (n->batteryPct > 100) o += ", powered";
-        else if (n->batteryPct >= 0) o += ", battery " + fmt("%.0f %%", n->batteryPct);
-        if (n->voltage > 0) o += fmt(" (%.2f V)", n->voltage);
         o += "\n";
+        if (n->batteryPct >= 0 || n->voltage > 0) {   // the node's last device telemetry, with when it was sent
+            o += "  ";
+            if (n->batteryPct > 100) o += "powered";
+            else if (n->batteryPct >= 0) o += "battery " + fmt("%.0f %%", n->batteryPct);
+            if (n->voltage > 0) o += fmt(n->batteryPct >= 0 ? " (%.2f V)" : "%.2f V", n->voltage);
+            if (n->devSec >= 0) o += " at " + clockText(clock(n->devSec), utc, "%H:%M");
+            o += "\n";
+        }
         if (n->hasPosition) o += "  position " + fmt("%.5f", n->lat) + ", " + fmt("%.5f", n->lon) + fmt(", %.0f m", n->altM) + "\n";
-        if (n->hasEnv) o += "  " + fmt("%.1f C", n->tempC) + fmt(", %.0f %%", n->humidity) + fmt(", %.0f hPa", n->pressureHpa) + "\n";
+        if (n->hasEnv) o += "  sensors " + fmt("%.1f C", n->tempC) + fmt(", %.0f %%", n->humidity) + fmt(", %.0f hPa", n->pressureHpa) +
+                            (n->envSec >= 0 ? " at " + clockText(clock(n->envSec), utc, "%H:%M") : std::string()) + " (last reading)\n";
     }
     // the text messages, oldest first
     if (!t.messages.empty()) {
