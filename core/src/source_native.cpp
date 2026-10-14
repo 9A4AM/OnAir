@@ -1,6 +1,6 @@
 // Native radios (RTL-SDR, Airspy, BladeRF, LimeSDR, PlutoSDR, USRP, SDRplay, Fobos SDR): the list of connected ones and the way to open one.
 // The drivers are in source_rtlsdr.cpp, source_airspy.cpp, source_bladerf.cpp, source_limesdr.cpp, source_plutosdr.cpp, source_usrp.cpp,
-// source_sdrplay.cpp, source_airspyhf.cpp and source_fobos.cpp;
+// source_sdrplay.cpp, source_airspyhf.cpp, source_fobos.cpp and source_rx888.cpp;
 // each loads the radio's own library at run time (native_common.h), so nothing here depends on those libraries being installed.
 #include "native_common.h"
 
@@ -13,6 +13,9 @@ std::unique_ptr<IqSource> makeAirspyHf(const DeviceInfo& d);
 // ---- fobos
 void listFobos(std::vector<DeviceInfo>& out);
 std::unique_ptr<IqSource> makeFobos(const DeviceInfo& d);
+// ---- rx888
+void listRx888(std::vector<DeviceInfo>& out);
+std::unique_ptr<IqSource> makeRx888(const DeviceInfo& d);
 }
 
 std::vector<DeviceInfo> listNativeDevices(std::string& err) {
@@ -28,6 +31,7 @@ std::vector<DeviceInfo> listNativeDevices(std::string& err) {
         native::listSdrplay(out);
         native::listAirspyHf(out);   // ---- airspyhf
         native::listFobos(out);      // ---- fobos
+        native::listRx888(out);      // ---- rx888
     } catch (const std::exception& e) {
         err = std::string("native radios: ") + e.what();
     }
@@ -48,6 +52,7 @@ std::unique_ptr<IqSource> makeNativeSource(const DeviceInfo& d) {
     if (d.board == "hermeslite2") return native::makeHermesLite2(d);
     if (d.board == "redpitaya") return native::makeRedPitaya(d);
     if (d.board == "fobos") return native::makeFobos(d);         // ---- fobos
+    if (d.board == "rx888") return native::makeRx888(d);         // ---- rx888
     return nullptr;
 }
 
