@@ -1,6 +1,8 @@
 // Radiosonde screens: the map with every sonde's track and a balloon marker, the table of sondes heard, the detail of the selected one
 // (all fields, altitude and temperature plots, calibration progress), the carriers the search found in the band, and the test signal options.
 #include "app.h"
+#include "dect2/sonde_land.h"
+#include "dect2/maidenhead.h"
 #include "adsb_map.h"
 #include "dect2/sonde_tel.h"
 #include <algorithm>
@@ -108,6 +110,17 @@ void mapView(App& a, ImVec2 size) {
             dl->AddLine(ImVec2(q.x, q.y + gUi), ImVec2(q.x, q.y + 6 * gUi), col, 1.2f * gUi);
         }
         if (isSel) dl->AddCircle(q, 10 * gUi, IM_COL32(255, 255, 255, 230), 28, 1.6f);
+        if (s.hasVel && s.vSpeed < -1.0) {   // predicted landing: a dashed line and a cross
+            const dect2::SondeLanding ld = dect2::predictSondeLanding(s.lat, s.lon, s.altM, s.vSpeed, s.hSpeed, s.headingDeg);
+            if (ld.valid) {
+                const ImVec2 e = adsbmap::project(ld.lat, ld.lon);
+                const float dx = e.x - q.x, dy = e.y - q.y, len = std::hypot(dx, dy);
+                for (float u = 0; u + 5 * gUi < len; u += 10 * gUi) dl->AddLine(ImVec2(q.x + dx * u / len, q.y + dy * u / len), ImVec2(q.x + dx * (u + 5 * gUi) / len, q.y + dy * (u + 5 * gUi) / len), col, 1.2f * gUi);
+                const float r = 6 * gUi;
+                dl->AddLine(ImVec2(e.x - r, e.y - r), ImVec2(e.x + r, e.y + r), IM_COL32(255, 80, 70, 255), 2.f * gUi);
+                dl->AddLine(ImVec2(e.x - r, e.y + r), ImVec2(e.x + r, e.y - r), IM_COL32(255, 80, 70, 255), 2.f * gUi);
+            }
+        }
         char b[48]; snprintf(b, sizeof b, "%s  %.1f km", s.serial.c_str(), s.altM / 1000.0);
         dl->AddText(ImVec2(q.x + 9 * gUi, q.y - 8 * gUi), IM_COL32(235, 238, 240, s.active ? 255 : 150), b);
         const float d = std::hypot(q.x - click.x, q.y - click.y);
@@ -208,6 +221,21 @@ void detailCard(const App& a) {
     kv("battery", txt(sp && s.batteryV >= 0, "%.1f V", s.batteryV));
     if (sp && s.burstKillS >= 0) snprintf(b, sizeof b, "%d min", s.burstKillS / 60); else snprintf(b, sizeof b, "-");
     kv("kill timer", b);
+    if (sp && s.hasPos && s.hasVel && s.vSpeed < -1.0) {   // a falling sonde: where it should land and how far that is from you
+        const dect2::SondeLanding ld = dect2::predictSondeLanding(s.lat, s.lon, s.altM, s.vSpeed, s.hSpeed, s.headingDeg);
+        if (ld.valid) {
+            snprintf(b, sizeof b, "%.4f, %.4f in %d:%02d", ld.lat, ld.lon, (int)ld.secondsLeft / 60, (int)ld.secondsLeft % 60);
+            kv("landing (estimate)", b);
+            if (receiverLocationSet()) {
+                double mla, mlo, km, br;
+                receiverLocation(mla, mlo);
+                dect2::greatCircle(mla, mlo, ld.lat, ld.lon, km, br);
+                snprintf(b, sizeof b, "%.1f km at %.0f deg from you", km, br);
+                kv("landing from you", b);
+            }
+            if (ImGui::SmallButton("copy landing position")) { snprintf(b, sizeof b, "%.5f, %.5f", ld.lat, ld.lon); ImGui::SetClipboardText(b); }
+        }
+    }
     if (sp && s.hasTime) { time_t tt = (time_t)s.unixTime; struct tm g;
 #ifdef _WIN32
         gmtime_s(&g, &tt);
