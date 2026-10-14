@@ -5,6 +5,10 @@
 #include "dect2/updater.h"
 #include "dect2/hfdig_freedv.h"
 #include "fixit.h"
+#include "dect2/crash_report.h"
+#include <fstream>
+#include <iterator>
+#include <cstring>
 #include <filesystem>
 #include <cctype>
 #include <thread>
@@ -227,6 +231,45 @@ std::vector<RadioMsg> radioMessages(const App& a) {
     return m;
 }
 
+
+namespace {
+// A zip file with the entries stored (not compressed): enough for a few text logs, and it opens everywhere.
+uint32_t crc32z(const std::string& d) {
+    static uint32_t t[256]; static bool init = false;
+    if (!init) { for (uint32_t i = 0; i < 256; i++) { uint32_t c = i; for (int k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320u ^ (c >> 1) : c >> 1; t[i] = c; } init = true; }
+    uint32_t c = 0xFFFFFFFFu;
+    for (unsigned char ch : d) c = t[(c ^ ch) & 255] ^ (c >> 8);
+    return ~c;
+}
+void put16(std::string& o, uint32_t v) { o.push_back((char)(v & 255)); o.push_back((char)((v >> 8) & 255)); }
+void put32(std::string& o, uint32_t v) { put16(o, v & 0xFFFF); put16(o, v >> 16); }
+bool writeZip(const std::string& path, const std::vector<std::pair<std::string, std::string>>& files) {
+    std::string out, dir;
+    for (const auto& f : files) {
+        const uint32_t crc = crc32z(f.second), off = (uint32_t)out.size(), n = (uint32_t)f.second.size();
+        put32(out, 0x04034b50); put16(out, 20); put16(out, 0x0800); put16(out, 0); put16(out, 0); put16(out, 0x21);
+        put32(out, crc); put32(out, n); put32(out, n); put16(out, (uint32_t)f.first.size()); put16(out, 0);
+        out += f.first; out += f.second;
+        put32(dir, 0x02014b50); put16(dir, 20); put16(dir, 20); put16(dir, 0x0800); put16(dir, 0); put16(dir, 0); put16(dir, 0x21);
+        put32(dir, crc); put32(dir, n); put32(dir, n); put16(dir, (uint32_t)f.first.size()); put16(dir, 0); put16(dir, 0); put16(dir, 0); put16(dir, 0);
+        put32(dir, 0); put32(dir, off); dir += f.first;
+    }
+    const uint32_t dirOff = (uint32_t)out.size();
+    out += dir;
+    put32(out, 0x06054b50); put16(out, 0); put16(out, 0); put16(out, (uint32_t)files.size()); put16(out, (uint32_t)files.size());
+    put32(out, (uint32_t)dir.size()); put32(out, dirOff); put16(out, 0);
+    std::ofstream o(std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(path.data()), path.size())), std::ios::binary);
+    o.write(out.data(), (std::streamsize)out.size());
+    return (bool)o;
+}
+std::string slurp(const std::filesystem::path& p, size_t maxBytes = 4u << 20) {
+    std::ifstream in(p, std::ios::binary);
+    std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    if (s.size() > maxBytes) s = "(the first part is left out)\n" + s.substr(s.size() - maxBytes);
+    return s;
+}
+}
+
 std::string buildDiagnostics(const DiagInput& in) {
     std::string s = "OnAir diagnostics\n";
     s += "Version: " + in.version + "\n";
@@ -369,6 +412,21 @@ void radioMessagesUi(App& a, bool vertical) {
         a.diagCopiedAt = ImGui::GetTime();
     }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Copies the version, system, radios, messages and radio log lines, for a bug report"));
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Save bug report"))) {
+        const std::string path = plat::saveFileDialog("onair-bug-report.zip");
+        if (!path.empty()) {
+            const std::filesystem::path d = std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(dect2::crash::logDir().data()), dect2::crash::logDir().size()));
+            std::vector<std::pair<std::string, std::string>> f;
+            f.push_back({"diagnostics.txt", diagnosticsText(a)});
+            for (const char* n : {"onair.log", "onair-prev.log", "crash.txt"}) {
+                std::error_code ec;
+                if (std::filesystem::exists(d / n, ec)) f.push_back({n, slurp(d / n)});
+            }
+            a.diagCopiedAt = writeZip(path, f) ? ImGui::GetTime() : -10.0;
+        }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue"));
     flowNext(6 * gUi);
     recordUi(a);
 }
