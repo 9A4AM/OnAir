@@ -192,9 +192,23 @@ std::string navtexTexts(int i) {
     return i == 3 ? shortMsg : t[i % 3];
 }
 
-std::vector<FskSource::Segment> navtexSegments(double idleSec, int which) {
+std::string wrapNavtex(const std::string& t) {
+    if (t.find("ZCZC") != std::string::npos) return t;
+    return "ZCZC AA09\r\n" + t + "\r\nNNNN\r\n";
+}
+
+std::vector<FskSource::Segment> navtexSegments(double idleSec, int which, const std::string& custom = {}) {
     std::vector<FskSource::Segment> segs;
     const int idleTokens = std::max(20, (int)std::lround(idleSec * 100.0 / 14.0));       // one DX token = two characters of 70 ms
+    if (!custom.empty()) {
+        std::vector<int> tok(idleTokens, -1);
+        for (uint8_t c : navtexEncode(wrapNavtex(custom))) tok.push_back(c);
+        for (int i = 0; i < 12; i++) tok.push_back(-1);
+        FskSource::Segment s;
+        s.bits = codesToBits(sitorBSlots(tok));
+        segs.push_back(std::move(s));
+        return segs;
+    }
     for (int mm = 0; mm < (which == 0 ? 3 : 1); mm++) {
         const int m = which == 0 ? mm : which - 1;
         std::vector<int> tok(idleTokens, -1);
@@ -207,7 +221,7 @@ std::vector<FskSource::Segment> navtexSegments(double idleSec, int which) {
     return segs;
 }
 
-std::vector<FskSource::Segment> dscSegments(bool vhf) {
+std::vector<FskSource::Segment> dscSegments(bool vhf, const std::string& mmsi = {}) {
     std::vector<FskSource::Segment> segs;
     const int dotHf = 200, dotShort = 20;
     const double gap = vhf ? 1.2 : 2.5;
@@ -216,6 +230,13 @@ std::vector<FskSource::Segment> dscSegments(bool vhf) {
         FskSource::Segment g; g.silenceSec = gap; segs.push_back(std::move(g));
     };
     const int dotsDist = vhf ? dotShort : dotHf;
+    if (!mmsi.empty()) {
+        std::string m = mmsi;
+        while (m.size() < 9) m.insert(m.begin(), '0');
+        if (m.size() > 9) m.resize(9);
+        add(dscBuildAllShips(m, 108, vhf ? 100 : 109, 126, vhf ? 900006 : 82910, -1), 127, dotsDist);
+        return segs;
+    }
     add(dscBuildDistress("232123456", 103, 50.85, -1.3, 12, 34, vhf ? 100 : 109), 127, dotsDist);                                 // grounding, 50d51'N 001d18'W
     add(dscBuildAllShips("235012345", 108, vhf ? 100 : 109, 126, vhf ? 900006 : 82910, -1), 127, dotsDist);                       // safety, working channel / frequency
     add(dscBuildIndividual("002320064", 100, "232123456", vhf ? 100 : 109, 126, vhf ? 900006 : 82910, vhf ? 900006 : 82910), 117, dotShort);   // routine to a coast station
@@ -225,7 +246,8 @@ std::vector<FskSource::Segment> dscSegments(bool vhf) {
 
 class MarineSynth : public ModeSynth {
 public:
-    MarineSynth(const SynthConfig& cfg, double rate, double channelOffsetHz) : cfg_(cfg), rate_(rate), off_(channelOffsetHz), noise_(17) {
+    MarineSynth(const SynthConfig& cfg, double rate, double channelOffsetHz, std::string navtex = {}, std::string dscMmsi = {})
+        : cfg_(cfg), rate_(rate), off_(channelOffsetHz), navtex_(std::move(navtex)), dscMmsi_(std::move(dscMmsi)), noise_(17) {
         build();
     }
     double sampleRate() const override { return rate_; }
@@ -260,15 +282,15 @@ private:
         const int svc = cfg_.modeOpt[0];
         const double mist = cfg_.modeVal[0];
         const double idle = cfg_.modeVal[1] > 0 ? cfg_.modeVal[1] : 6.0;
-        if (svc == 2) src_ = std::make_unique<FskSource>(dscSegments(false), 100.0, 170.0, false);       // M.493: the higher tone is B = 0
-        else if (svc == 4) src_ = std::make_unique<VhfSource>(dscSegments(true));
+        if (svc == 2) src_ = std::make_unique<FskSource>(dscSegments(false, dscMmsi_), 100.0, 170.0, false);       // M.493: the higher tone is B = 0
+        else if (svc == 4) src_ = std::make_unique<VhfSource>(dscSegments(true, dscMmsi_));
         else if (svc == 3) {   // only what a station sends: a value another mode left in the slot falls back to the default
             const int lpm = cfg_.modeOpt[3] == 60 || cfg_.modeOpt[3] == 90 || cfg_.modeOpt[3] == 100 || cfg_.modeOpt[3] == 180 || cfg_.modeOpt[3] == 240 ? cfg_.modeOpt[3] : 120;
             const int lines = cfg_.modeOpt[5] > 0 && cfg_.modeOpt[5] <= 3000 ? cfg_.modeOpt[5] : 800;
             const double phasing = cfg_.modeVal[2] >= 3 && cfg_.modeVal[2] <= 120 ? cfg_.modeVal[2] : 0.0;
             src_ = std::make_unique<FaxSource>(cfg_.modeOpt[4] == 288 ? 288 : 576, lpm, lines, 5, phasing);
         }
-        else src_ = std::make_unique<FskSource>(navtexSegments(idle, cfg_.modeOpt[2]), 100.0, 170.0, true);
+        else src_ = std::make_unique<FskSource>(navtexSegments(idle, cfg_.modeOpt[2], navtex_), 100.0, 170.0, true);
         if (cfg_.modeOpt[1] == 1 && svc != 4) fader_ = std::make_unique<Fader>(3);
         double snr = std::pow(10.0, cfg_.snrDb / 10.0);
         const double ratio = rate_ / (svc == 4 ? 12500.0 : 3000.0) / snr;     // noise power over signal power, whole band (reference band: 3 kHz, VHF channel 12.5 kHz)
@@ -290,6 +312,7 @@ private:
     }
     SynthConfig cfg_;
     double rate_, off_;
+    std::string navtex_, dscMmsi_;
     std::unique_ptr<BaseSource> src_;
     std::unique_ptr<Fader> fader_;
     std::vector<cf32> base_;
@@ -308,6 +331,20 @@ std::unique_ptr<ModeSynth> makeMarineSynthAt(const SynthConfig& cfg, double samp
 
 std::unique_ptr<ModeSynth> makeMarineSynth(const SynthConfig& cfg, double sampleRate) {
     return makeMarineSynthAt(cfg, sampleRate, -marineTuning().tuneOffsetHz);
+}
+
+std::unique_ptr<ModeSynth> makeMarineSynthNavtex(const SynthConfig& cfg, double sampleRate, const std::string& text) {
+    if (sampleRate < 250000) return nullptr;
+    SynthConfig c = cfg;
+    c.modeOpt[0] = 0;
+    return std::make_unique<MarineSynth>(c, sampleRate, -marineTuning().tuneOffsetHz, text);
+}
+
+std::unique_ptr<ModeSynth> makeMarineSynthDsc(const SynthConfig& cfg, double sampleRate, const std::string& mmsi, bool vhf) {
+    if (sampleRate < 250000) return nullptr;
+    SynthConfig c = cfg;
+    c.modeOpt[0] = vhf ? 4 : 2;
+    return std::make_unique<MarineSynth>(c, sampleRate, -marineTuning().tuneOffsetHz, std::string(), mmsi);
 }
 
 } // namespace dect2

@@ -3,6 +3,7 @@
 #include "dect2/results_io.h"
 #include "dect2/ble_tel.h"
 #include "dect2/ble_proto.h"
+#include "dect2/feeds.h"
 #include "dect2/gen_util.h"
 #include <algorithm>
 #include <atomic>
@@ -349,6 +350,7 @@ struct BleReceiver::Impl {
         const bool sentByPeer = a.type == ble::ScanReq || a.type == ble::ConnectInd;
         if (sentByPeer) { p.addr = ble::addrText(a.peer); p.random = a.txRandom; }
         else if (a.hasAdv) { p.addr = ble::addrText(a.adv); p.random = a.txRandom; }
+        if (Feeds::get().wantBle()) Feeds::get().ble(p.addr, a.name, rssi);
         tel.log.insert(tel.log.begin(), std::move(p));
         if (tel.log.size() > kBleLogMax) tel.log.pop_back();
         // the device that sent it

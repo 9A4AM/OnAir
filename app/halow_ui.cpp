@@ -105,7 +105,7 @@ void filters(App& a) {
         if (ImGui::SmallButton("Show all")) S.sel.clear();
         flowNext(10 * gUi);
     }
-    if (ImGui::Button("Clear")) a.engine.halow().clearResults();
+    if (ImGui::Button("Clear") && live(a)) a.engine.halow().clearResults();
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Forget every network and frame heard so far");
     flowBreak();
 }
@@ -216,6 +216,7 @@ void framesView(App& a) {
 std::vector<dect2::halow::Chan> plan() { return S.region == 0 ? dect2::halow::euChannels(S.width) : dect2::halow::usChannels(S.width); }
 
 void hopTo(App& a, double mhz) {
+    if (!a.engine.running() || !live(a)) return;   // wait until activeStd is 71 (engine stdMode 72)
     a.freqMhz = mhz;
     a.tune.centerHz = mhz * 1e6;
     a.engine.retune(a.tune);   // no reset: the tables stay
@@ -225,7 +226,8 @@ void hopTo(App& a, double mhz) {
 
 void tick(App& a) {
     loadState();
-    if (!a.engine.running() || !S.scan || a.devices[a.devIdx].kind == DeviceInfo::File) { S.lastHop = ImGui::GetTime(); return; }
+    const bool fileSrc = a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[(size_t)a.devIdx].kind == DeviceInfo::File;
+    if (!a.engine.running() || !live(a) || !S.scan || fileSrc) { S.lastHop = ImGui::GetTime(); return; }
     if (ImGui::GetTime() - S.lastHop < S.dwellSec) return;
     S.lastHop = ImGui::GetTime();
     const auto ch = plan();

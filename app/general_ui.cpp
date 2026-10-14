@@ -179,11 +179,13 @@ void controls(App& a) {
     ImGui::PopFont();
     tip("The frequency listened to: the dial plus where the channel marker sits.\nClick the spectrum or the waterfall to move it; drag the edges of the light band to change the filter.");
     flowNext(10 * gUi);
+    ImGui::PushButtonRepeat(true);
     if (ImGui::ArrowButton("##gdn", ImGuiDir_Left)) setListen(a, snap(listenHz(a)) - stepHz());
-    tip("Down one step");
+    tip("Down one step. Hold for a continuous change.");
     ImGui::SameLine(0, 2 * gUi);
     if (ImGui::ArrowButton("##gup", ImGuiDir_Right)) setListen(a, snap(listenHz(a)) + stepHz());
-    tip("Up one step");
+    tip("Up one step. Hold for a continuous change.");
+    ImGui::PopButtonRepeat();
     ImGui::SameLine(0, 4 * gUi);
     ImGui::SetNextItemWidth(95 * gUi);
     if (ImGui::Combo("##gstep", &S.step[S.demod], kStepNames, kNumSteps)) save();

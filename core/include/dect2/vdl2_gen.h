@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <vector>
 
 namespace dect2 {
@@ -54,6 +55,8 @@ struct Vdl2GenOptions {
     double levelSpreadDb = 10;                  // aircraft are 0 to this many dB below the ground stations
     double guardSec = 0.004;                    // quiet time between bursts on one channel
     std::shared_ptr<Vdl2SentLog> log;
+    std::string text;                           // nonempty: ACARS free-text downlinks carry this
+    std::string reg;                            // nonempty: the first aircraft uses this registration
 };
 
 // The traffic alone (tests): bursts in time order

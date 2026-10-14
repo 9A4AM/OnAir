@@ -119,7 +119,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     lastRadioMissNs_ = 0; lastCpuDropNs_ = 0; loadPct_ = 0; loadT_ = 0;
     holdDelivery(1000);   // a radio often stutters while its stream starts
     std::string err;
-    if (int holder = 0; !claimDevice(dev, receiverId_, &holder)) { log("this radio is in use by RX " + std::to_string(holder)); return false; }
+    if (int holder = 0; !claimDevice(dev, receiverId_, &holder)) { log("this radio is in use by " + deviceHolderText(holder)); return false; }
     if (dev.kind == DeviceInfo::File)
         src_ = makeFileSource(file.path, file.format, file.sampleRate, file.loop);
     else
@@ -296,6 +296,8 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         rxAnt_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxDect_.setSignalOffset(o);
         rxDect_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
+        rxTetrapol_.setSignalOffset(o);
+        rxTetrapol_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);
         rxMt_.setSignalOffset(o);
         rxCd_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // which part of the HF radar bands the radio is on
         rxTime_.setDialHz(dev.kind != DeviceInfo::File ? tune.centerHz : 0.0);   // the station when none is chosen
@@ -308,6 +310,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         rxNr_.setSignalOffset(o);
         rxNr_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // the sync raster points searched
         rxGoes_.setSignalOffset(o);
+        rxEl_.setSignalOffset(o);
         rxHrpt_.setSignalOffset(o);
         rxWifi_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // the channel noted with each network
     }
@@ -453,6 +456,8 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxAnt_.setLogCallback([this](const std::string& s) { log(s); });
     rxDect_.configure(rate_);
     rxDect_.setLogCallback([this](const std::string& s) { log(s); });
+    rxTetrapol_.configure(rate_);
+    rxTetrapol_.setLogCallback([this](const std::string& s) { log(s); });
     rxMt_.configure(rate_);
     rxMt_.setLogCallback([this](const std::string& s) { log(s); });
     rxZb_.setLogCallback([this](const std::string& s) { log(s); });
@@ -477,9 +482,11 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     rxMeteor_.configure(rate_);
     rxMeteor_.setLogCallback([this](const std::string& s) { log(s); });
     rxGoes_.configure(rate_);
+    rxEl_.configure(rate_);
     rxHrpt_.configure(rate_);
     rxHrpt_.setLogCallback([this](const std::string& s) { log(s); });
     rxGoes_.setLogCallback([this](const std::string& s) { log(s); });
+    rxEl_.setLogCallback([this](const std::string& s) { log(s); });
     rxQo100_.setLogCallback([this](const std::string& s) { log(s); });
     rxJs8_.setLogCallback([this](const std::string& s) { log(s); });
     if (const ModeTuning* mt = modeTuning(stdMode_.load()))
@@ -790,12 +797,14 @@ void Engine::applyReset() {
     rxSame_.reset();
     rxAnt_.reset();
     rxDect_.reset();
+    rxTetrapol_.reset();
     rxMt_.reset();
     rxLr_.reset();
     rxRid_.reset();
     rxMeteor_.reset();
     rxNr_.reset();
     rxGoes_.reset();
+    rxEl_.reset();
     rxHrpt_.reset();
     autoMark_ = nSamp_ / std::max(1.0, rate_.load()); lastLockSec_ = autoMark_;
     analyzer_.reset();
@@ -843,7 +852,7 @@ void Engine::feedRx(const cf32* x, size_t n) { feedReceiver(activeStd_.load(), x
 void Engine::feedReceiver(int a, const cf32* x, size_t n) {
     if (a <= 1 && mtvActive_.load(std::memory_order_relaxed)) { if (auto m = mtvGet()) { m->feed(x, n); return; } }   // multi-channel TV: one receiver per channel of the span
     if (wideOn_.load(std::memory_order_relaxed) && WideModes::supports(a)) { wide_.feed(a, x, n); return; }   // whole-span decoding: one decoder per carrier
-    if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else if (a == 33) rxCell_.feed(x, n); else if (a == 35) rxCw_.feed(x, n); else if (a == 34) rxDstar_.feed(x, n); else if (a == 36) rxHfdl_.feed(x, n); else if (a == 39) rxNxdn_.feed(x, n); else if (a == 46) rxDpmr_.feed(x, n); else if (a == 40) rxGsmr_.feed(x, n); else if (a == 37) rxPsk_.feed(x, n); else if (a == 38) rxJs8_.feed(x, n); else if (a == 42) rxSpecx_.feed(x, n); else if (a == 43) rxSpecan_.feed(x, n); else if (a == 41) rxDvbc_.feed(x, n); else if (a == 45) rxOrb_.feed(x, n); else if (a == 44) rxUplink_.feed(x, n); else if (a == 47) rxTetra_.feed(x, n); else if (a == 50) rxAle_.feed(x, n); else if (a == 48) rxMac_.feed(x, n); else if (a == 49) rxAstro_.feed(x, n); else if (a == 51) rxP25_.feed(x, n); else if (a == 52) rxBle_.feed(x, n); else if (a == 53) rxIono_.feed(x, n); else if (a == 54) rxQo100_.feed(x, n); else if (a == 55) rxWifi_.feed(x, n); else if (a == 56) { rxGeneral_.feed(x, n); for (int i = 0, k = extraGeneralN_.load(std::memory_order_relaxed); i < k; i++) extraGeneral_[(size_t)i].feed(x, n); } else if (a == 59) rxTime_.feed(x, n); else if (a == 57) rxRid_.feed(x, n); else if (a == 60) rxMeteor_.feed(x, n); else if (a == 58) rxNr_.feed(x, n); else if (a == 61) rxGoes_.feed(x, n); else if (a == 62) rxCube_.feed(x, n); else if (a == 63) rxGs_.feed(x, n); else if (a == 64) rxVdes_.feed(x, n); else if (a == 65) rxHrpt_.feed(x, n); else if (a == 66) rxZb_.feed(x, n); else if (a == 67) rxFlarm_.feed(x, n); else if (a == 68) rxHfb_.feed(x, n); else if (a == 69) rxDji_.feed(x, n); else if (a == 70) rxNb_.feed(x, n); else if (a == 71) rxHl_.feed(x, n); else if (a == 73) rxCd_.feed(x, n); else if (a == 74) rxWb_.feed(x, n); else if (a == 75) rxDw_.feed(x, n); else if (a == 77) rxSame_.feed(x, n); else if (a == 78) rxAnt_.feed(x, n); else if (a == 79) rxDect_.feed(x, n); else if (a == 76) rxMt_.feed(x, n); else if (a == 72) rxLr_.feed(x, n); else rx_.feed(x, n);
+    if (a == 5) rxI_.feed(x, n); else if (a == 4) rxA3_.feed(x, n); else if (a == 3) rxD_.feed(x, n); else if (a == 2) rxA_.feed(x, n); else if (a == 1) rxT_.feed(x, n); else if (a == 6) rxFm_.feed(x, n); else if (a == 7) rxDvbs_.feed(x, n); else if (a == 8) rxDtmb_.feed(x, n); else if (a == 9) rxAtv_.feed(x, n); else if (a == 10) rxDmr_.feed(x, n); else if (a == 11) rxDrm_.feed(x, n); else if (a == 12) rxAdsb_.feed(x, n); else if (a == 13) rxGnss_.feed(x, n); else if (a == 14) rxSonde_.feed(x, n); else if (a == 15) rxAis_.feed(x, n); else if (a == 16) rxMarine_.feed(x, n); else if (a == 17) rxAcars_.feed(x, n); else if (a == 18) rxInmc_.feed(x, n); else if (a == 19) rxAero_.feed(x, n); else if (a == 20) rxIridium_.feed(x, n); else if (a == 21) rxMesh_.feed(x, n); else if (a == 22) rxHdr_.feed(x, n); else if (a == 23) rxCdr_.feed(x, n); else if (a == 24) rxPager_.feed(x, n); else if (a == 25) rxPacket_.feed(x, n); else if (a == 26) rxHfdig_.feed(x, n); else if (a == 27) rxAirband_.feed(x, n); else if (a == 28) rxVdl2_.feed(x, n); else if (a == 29) rxIsm_.feed(x, n); else if (a == 31) rxVor_.feed(x, n); else if (a == 32) rxM17_.feed(x, n); else if (a == 33) rxCell_.feed(x, n); else if (a == 35) rxCw_.feed(x, n); else if (a == 34) rxDstar_.feed(x, n); else if (a == 36) rxHfdl_.feed(x, n); else if (a == 39) rxNxdn_.feed(x, n); else if (a == 46) rxDpmr_.feed(x, n); else if (a == 40) rxGsmr_.feed(x, n); else if (a == 37) rxPsk_.feed(x, n); else if (a == 38) rxJs8_.feed(x, n); else if (a == 42) rxSpecx_.feed(x, n); else if (a == 43) rxSpecan_.feed(x, n); else if (a == 41) rxDvbc_.feed(x, n); else if (a == 45) rxOrb_.feed(x, n); else if (a == 44) rxUplink_.feed(x, n); else if (a == 47) rxTetra_.feed(x, n); else if (a == 50) rxAle_.feed(x, n); else if (a == 48) rxMac_.feed(x, n); else if (a == 49) rxAstro_.feed(x, n); else if (a == 51) rxP25_.feed(x, n); else if (a == 52) rxBle_.feed(x, n); else if (a == 53) rxIono_.feed(x, n); else if (a == 54) rxQo100_.feed(x, n); else if (a == 55) rxWifi_.feed(x, n); else if (a == 56) { rxGeneral_.feed(x, n); for (int i = 0, k = extraGeneralN_.load(std::memory_order_relaxed); i < k; i++) extraGeneral_[(size_t)i].feed(x, n); } else if (a == 59) rxTime_.feed(x, n); else if (a == 57) rxRid_.feed(x, n); else if (a == 60) rxMeteor_.feed(x, n); else if (a == 58) rxNr_.feed(x, n); else if (a == 61) rxGoes_.feed(x, n); else if (a == 62) rxCube_.feed(x, n); else if (a == 63) rxGs_.feed(x, n); else if (a == 64) rxVdes_.feed(x, n); else if (a == 65) rxHrpt_.feed(x, n); else if (a == 66) rxZb_.feed(x, n); else if (a == 67) rxFlarm_.feed(x, n); else if (a == 68) rxHfb_.feed(x, n); else if (a == 69) rxDji_.feed(x, n); else if (a == 70) rxNb_.feed(x, n); else if (a == 71) rxHl_.feed(x, n); else if (a == 73) rxCd_.feed(x, n); else if (a == 74) rxWb_.feed(x, n); else if (a == 75) rxDw_.feed(x, n); else if (a == 77) rxSame_.feed(x, n); else if (a == 78) rxAnt_.feed(x, n); else if (a == 79) rxDect_.feed(x, n); else if (a == 80) rxTetrapol_.feed(x, n); else if (a == 81) rxEl_.feed(x, n); else if (a == 76) rxMt_.feed(x, n); else if (a == 72) rxLr_.feed(x, n); else rx_.feed(x, n);
 }
 
 void Engine::changeBandwidth(double mhz) {
@@ -958,6 +967,8 @@ void Engine::resetReceiver(int a) {
     case 77: rxSame_.reset(); break;
     case 78: rxAnt_.reset(); break;
     case 79: rxDect_.reset(); break;
+    case 80: rxTetrapol_.reset(); break;
+    case 81: rxEl_.reset(); break;
     case 76: rxMt_.reset(); break;
     case 57: rxRid_.reset(); break;
     case 60: rxMeteor_.reset(); break;
@@ -2349,6 +2360,38 @@ int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
             t.dect = std::move(mt);
             return 1;
         }
+    } else if (a == 80) {
+        TetrapolTelemetry mt;
+        if (rxTetrapol_.telemetry(mt, seqs[74])) {
+            seqs[74] = mt.seq;
+            t.standard = 80;
+            t.seq = mt.seq;
+            t.state = mt.state;
+            t.cfoHz = mt.cfoHz;
+            t.dataValid = mt.dataValid;
+            t.dataSnrDb = mt.snrDb;
+            t.blocksOk = mt.blocksOk; t.blocksBad = mt.blocksBad;
+            t.rateOk = rxTetrapol_.ready();
+            t.tetrapol = std::move(mt);
+            return 1;
+        }
+    } else if (a == 81) {
+        ElektroTelemetry mt;
+        if (rxEl_.telemetry(mt, seqs[75])) {
+            const bool ggak = elektroIsGgak(mt.link);
+            seqs[75] = ggak ? mt.ggak.seq : mt.hrit.seq;
+            t.standard = 81;
+            t.seq = ggak ? mt.ggak.seq : mt.hrit.seq;
+            t.state = ggak ? mt.ggak.state : mt.hrit.state;
+            t.cfoHz = ggak ? mt.ggak.cfoHz : mt.hrit.cfoHz;
+            t.dataValid = ggak ? mt.ggak.dataValid : mt.hrit.dataValid;
+            t.dataSnrDb = ggak ? mt.ggak.snrDb : mt.hrit.snrDb;
+            t.blocksOk = ggak ? mt.ggak.blocksOk : mt.hrit.blocksOk;
+            t.blocksBad = ggak ? mt.ggak.blocksBad : mt.hrit.blocksBad;
+            t.rateOk = rxEl_.ready();
+            t.elektro = std::move(mt);
+            return 1;
+        }
     } else if (a == 78) {
         AntTelemetry mt;
         if (rxAnt_.telemetry(mt, seqs[72])) {
@@ -2580,7 +2623,7 @@ bool Engine::secondaryAllowed(int m) {
     case 32: case 33: case 35: case 36: case 37: case 38: case 39: case 40: case 45: case 47: case 48: case 51: case 52: case 57: case 60:
     case 61: case 63:
     // the narrow-channel modes added later (each has its configureReceiver / placeReceiver / pollMode case and a test signal that decodes beside another mode)
-    case 65: case 67: case 68: case 71: case 72: case 73: case 74: case 76: case 77: case 78: case 79: case 80:
+    case 65: case 67: case 68: case 71: case 72: case 73: case 74: case 76: case 77: case 78: case 79: case 80: case 81:
         return true;
     default:
         return false;
@@ -2631,7 +2674,7 @@ double Engine::captureCentreHz() const {
     TuneSettings t;
     DeviceInfo::Kind k;
     { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; k = lastDev_.kind; }
-    if (k == DeviceInfo::File) return t.centerHz;   // a recording: the frequency it was set to is its centre
+    if (k == DeviceInfo::File || k == DeviceInfo::Audio) return t.centerHz;   // a recording or sound card: the dial frequency, not a radio centre
     const ModeTuning* mt = modeTuning(stdMode_.load());
     return t.centerHz + (mt ? mt->tuneOffsetHz : 0);   // the radio's centre (with offset tuning the samples are shifted back to it)
 }
@@ -2687,6 +2730,8 @@ void Engine::configureReceiver(int a, double r) {
     case 77: rxSame_.configure(r); break;
     case 78: rxAnt_.configure(r); break;
     case 79: rxDect_.configure(r); break;
+    case 80: rxTetrapol_.configure(r); break;
+    case 81: rxEl_.configure(r); break;
     case 76: rxMt_.configure(r); break;
     case 72: rxLr_.configure(r); break;
     default: break;
@@ -2774,6 +2819,8 @@ void Engine::placeReceiver(int a, double o, double centreHz, double dialHz, doub
     case 77: rxSame_.setSignalOffset(o); break;
     case 78: rxAnt_.setSignalOffset(o); rxAnt_.setCenterHz(centreHz); break;
     case 79: rxDect_.setSignalOffset(o); rxDect_.setCenterHz(centreHz); break;
+    case 80: rxTetrapol_.setSignalOffset(o); rxTetrapol_.setCenterHz(centreHz); break;
+    case 81: rxEl_.setSignalOffset(o); break;
     case 76: rxMt_.setSignalOffset(o); break;
     case 72: rxLr_.setSignalOffset(o); break;
     default: break;   // DMR, ADS-B, Mode S uplink: the channel on the centre, nothing to place

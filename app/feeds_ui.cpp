@@ -5,7 +5,7 @@
 #include <ctime>
 
 namespace {
-const char* kKeys[dect2::kNumFeeds] = {"feedSbs", "feedBeast", "feedAis", "feedAprsIs", "feedKiss", "feedAcars", "feedVdl2"};
+const char* kKeys[dect2::kNumFeeds] = {"feedSbs", "feedBeast", "feedAis", "feedAprsIs", "feedKiss", "feedAcars", "feedVdl2", "feedGnss", "feedBle", "feedLora"};
 
 void apply(App& a) {
     dect2::Feeds::get().configure(a.feeds);
@@ -54,6 +54,9 @@ void loadFeedPrefs(App& a) {
     c.aisHost = d.getS("feedAisHost", c.aisHost); c.aisPort = (int)d.getI("feedAisPort", c.aisPort);
     c.acarsHost = d.getS("feedAcarsHost", c.acarsHost); c.acarsPort = (int)d.getI("feedAcarsPort", c.acarsPort);
     c.vdl2Host = d.getS("feedVdl2Host", c.vdl2Host); c.vdl2Port = (int)d.getI("feedVdl2Port", c.vdl2Port);
+    c.gnssHost = d.getS("feedGnssHost", c.gnssHost); c.gnssPort = (int)d.getI("feedGnssPort", c.gnssPort);
+    c.bleHost = d.getS("feedBleHost", c.bleHost); c.blePort = (int)d.getI("feedBlePort", c.blePort);
+    c.loraHost = d.getS("feedLoraHost", c.loraHost); c.loraPort = (int)d.getI("feedLoraPort", c.loraPort);
     c.aprsCall = d.getS("feedAprsCall", ""); c.aprsPass = d.getS("feedAprsPass", "");
     c.aprsServer = d.getS("feedAprsServer", c.aprsServer); c.aprsServerPort = (int)d.getI("feedAprsServerPort", c.aprsServerPort);
     c.stationId = d.getS("feedStationId", c.stationId);
@@ -89,6 +92,9 @@ void saveFeedPrefs(const App& a) {
     d.setS("feedAisHost", c.aisHost); d.setI("feedAisPort", c.aisPort);
     d.setS("feedAcarsHost", c.acarsHost); d.setI("feedAcarsPort", c.acarsPort);
     d.setS("feedVdl2Host", c.vdl2Host); d.setI("feedVdl2Port", c.vdl2Port);
+    d.setS("feedGnssHost", c.gnssHost); d.setI("feedGnssPort", c.gnssPort);
+    d.setS("feedBleHost", c.bleHost); d.setI("feedBlePort", c.blePort);
+    d.setS("feedLoraHost", c.loraHost); d.setI("feedLoraPort", c.loraPort);
     d.setS("feedAprsCall", c.aprsCall); d.setS("feedAprsPass", c.aprsPass);
     d.setS("feedAprsServer", c.aprsServer); d.setI("feedAprsServerPort", c.aprsServerPort);
     d.setS("feedStationId", c.stationId);
@@ -163,6 +169,29 @@ void feedsWindow(App& a) {
     statusLine(dect2::kFeedVdl2, false);
     ImGui::PopID();
     changed |= textField(N_("Station ID"), c.stationId, 0, 120);
+
+    ImGui::SeparatorText(tr("GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)"));
+    ImGui::PushID("gnss");
+    changed |= ImGui::Checkbox(tr("GNSS NMEA RMC/GGA (UDP)"), &c.on[dect2::kFeedGnss]);
+    ImGui::SameLine(); changed |= textField("##host", c.gnssHost, 0, 120);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.gnssPort);
+    statusLine(dect2::kFeedGnss, false);
+    ImGui::PopID();
+    ImGui::PushID("ble");
+    changed |= ImGui::Checkbox(tr("Bluetooth LE advertisements, JSON (UDP)"), &c.on[dect2::kFeedBle]);
+    ImGui::SameLine(); changed |= textField("##host", c.bleHost, 0, 120);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.blePort);
+    statusLine(dect2::kFeedBle, false);
+    ImGui::PopID();
+    ImGui::PushID("lora");
+    changed |= ImGui::Checkbox(tr("LoRa / LoRaWAN / Meshtastic, JSON (UDP)"), &c.on[dect2::kFeedLora]);
+    ImGui::SameLine(); changed |= textField("##host", c.loraHost, 0, 120);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.loraPort);
+    statusLine(dect2::kFeedLora, false);
+    ImGui::PopID();
+    ImGui::PushTextWrapPos(460 * gUi);
+    ImGui::TextDisabled("%s", tr("JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent."));
+    ImGui::PopTextWrapPos();
 
     ImGui::SeparatorText(tr("PSK Reporter"));
     ImGui::SameLine(); ImGui::TextDisabled("(?)");

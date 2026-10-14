@@ -228,11 +228,15 @@ private:
 };
 } // namespace
 
-std::unique_ptr<ModeSynth> makeDvbsSynth(const SynthConfig& cfg, double sampleRate) {
+std::unique_ptr<ModeSynth> makeDvbsSynth(const SynthConfig& cfg, double sampleRate, std::function<void(uint8_t*)> ts) {
     if (sampleRate < 2e6 || sampleRate > 40e6) return nullptr;
     dvbs::DvbsSignalConfig c = dvbs::dvbsConfigFromSynth(cfg, sampleRate);
+    if (ts) c.ts = std::move(ts);
     if (c.tx.standard >= 2 && c.tx.vlMode < 0 && !dvbs::s2Dims(c.tx.mod, c.tx.rate, c.tx.shortFrame).ok) return nullptr;
     return std::make_unique<DvbsSynth>(c);
+}
+std::unique_ptr<ModeSynth> makeDvbsSynth(const SynthConfig& cfg, double sampleRate) {
+    return makeDvbsSynth(cfg, sampleRate, {});
 }
 
 } // namespace dect2

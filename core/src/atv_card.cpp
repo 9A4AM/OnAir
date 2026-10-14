@@ -73,7 +73,7 @@ struct AtvCard::Canvas {
 
 static int textWidth(int n, int s) { return n > 0 ? (n * 6 - 1) * s : 0; }
 
-AtvCard::AtvCard(const AtvFormat& f, int pattern) : f_(f), pattern_(pattern), w_(f.picW), h_(f.picH) {
+AtvCard::AtvCard(const AtvFormat& f, int pattern, std::string title) : f_(f), pattern_(pattern), w_(f.picW), h_(f.picH), title_(std::move(title)) {
     const double fpix = w_ / (f.activeUs * 1e-6);
     const double bw = std::min(f.videoBwMhz, 5.0) * 1e6;
     lpY_ = atvdsp::lowpass(0.8 * bw, std::min(bw + 0.6e6, 0.48 * fpix), fpix, 55, 61);
@@ -130,7 +130,7 @@ void AtvCard::buildStatic() {
         }
         // the name of the test
         const int ts = textScale_;
-        const std::string title = "ONAIR TEST";
+        const std::string title = title_.empty() ? std::string("ONAIR TEST") : title_;
         c.text((W - textWidth((int)title.size(), ts)) / 2, Y(0.50), ts, title, white);
         // resolution wedge: a sine sweep from 12 pixels to 2.2 pixels a period
         const int wx0 = x0, wx1 = X(0.30), wy0 = Y(0.60), wy1 = Y(0.75);

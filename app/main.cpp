@@ -129,6 +129,7 @@ ImU32 scoreColour(double sc) {
 }
 
 void mainTabs(App& a) {
+    if (txViewFlag()) { txSpectrum(a); return; }
     // a narrow pane: the tabs get less padding (the bar takes it from the style when it begins, each tab when it is added), so that they keep
     // their whole names instead of being cut short or scrolled out of view
     gTightTabs = ImGui::GetContentRegionAvail().x < 760 * gUi;
@@ -232,9 +233,26 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(disp);
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
+    txViewSwitch(a);   // RX / TX, top left
+    if (txViewFlag()) {
+        txBar(a);
+        standardSwitch(a);
+        ImGui::Separator();
+        float rightW = 350 * gUi;
+        float mainH = ImGui::GetContentRegionAvail().y - 6;
+        ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16 * gUi, mainH));
+        txSpectrum(a);
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild("right", ImVec2(0, mainH));
+        txRight(a);
+        ImGui::EndChild();
+        ImGui::End();
+    } else {
+
     const ImVec2 tb0 = ImGui::GetCursorScreenPos();
     toolbar(a);
-    if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) sourceOptions(a);
+        if (sourceOptionsOpen(a)) sourceOptions(a);
     a.tgMin[TgToolbar] = ImVec2(tb0.x - 4, tb0.y - 3); a.tgMax[TgToolbar] = ImVec2(tb0.x + ImGui::GetContentRegionAvail().x + 4, ImGui::GetCursorScreenPos().y);
     const ImVec2 sw0 = ImGui::GetCursorScreenPos();
     standardSwitch(a);
@@ -284,6 +302,7 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     } else a.tgMin[TgConst] = a.tgMax[TgConst] = ImVec2(0, 0);
     ImGui::End();
     }
+    }
     passesWindow(a);
     galleryWindow(a);
     scannerWindow(a);
@@ -295,6 +314,7 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     a.engine.setWideDecode(a.wideDecode && modeSupportsWideHf(a.family));
     a.engine.setMultiChannel(a.mtvOn && a.family == 0, a.mtvMax, a.mtvGrid);
     feedsWindow(a);
+    txTick(a);
     shareTick(a);
     remoteApiTick(a);
     mapWindow(a);
@@ -812,6 +832,7 @@ int main(int argc, char** argv) {
         }
     }
     delete gDiscord;   // clears the status and joins its thread
+    txShutdown();      // the transmitter goes quiet before anything else is closed
     receiversShutdown(app);
     app.engine.stop();
     app.engine.flushResults();

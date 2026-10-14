@@ -164,14 +164,9 @@ void send9600(Mod& m, const std::vector<uint8_t>& levels) {
     }
 }
 
-const Cycle& cycleFor(int mode) {
-    static Cycle cache[3];
-    static bool built[3] = {false, false, false};
-    const int k = mode == 1 ? 1 : mode == 2 ? 2 : 0;
-    if (built[k]) return cache[k];
-    Cycle& c = cache[k];
-    if (k != 2) { auto f = frames1200(); c.frames.insert(c.frames.end(), f.begin(), f.end()); }
-    if (k != 1) { auto f = frames9600(); c.frames.insert(c.frames.end(), f.begin(), f.end()); }
+Cycle renderCycle(std::vector<PacketGenFrame> frames) {
+    Cycle c;
+    c.frames = std::move(frames);
     Mod m;
     m.out = &c.bb;
     m.silence(kLeadSec);
@@ -188,13 +183,26 @@ const Cycle& cycleFor(int mode) {
             m.silence(0.15);
         }
     }
-    built[k] = true;
+    if (c.bb.empty()) m.silence(1.0);
     return c;
+}
+
+const Cycle& cycleFor(int mode) {
+    static Cycle cache[3];
+    static bool built[3] = {false, false, false};
+    const int k = mode == 1 ? 1 : mode == 2 ? 2 : 0;
+    if (built[k]) return cache[k];
+    std::vector<PacketGenFrame> f;
+    if (k != 2) { auto a = frames1200(); f.insert(f.end(), a.begin(), a.end()); }
+    if (k != 1) { auto a = frames9600(); f.insert(f.end(), a.begin(), a.end()); }
+    cache[k] = renderCycle(std::move(f));
+    built[k] = true;
+    return cache[k];
 }
 
 class PacketSynth : public ModeSynth {
 public:
-    PacketSynth(const SynthConfig& cfg, double rate) : rate_(rate), cyc_(cycleFor(cfg.modeOpt[0])), noise_(7) {
+    PacketSynth(const SynthConfig& cfg, double rate, Cycle cyc) : rate_(rate), cyc_(std::move(cyc)), noise_(7) {
         // noise per real component for the carrier-to-noise ratio in 25 kHz; the common scale keeps the peaks below 0.9 (the source rounds to 8 bits)
         const double pn = rate / kChanBw / std::pow(10.0, cfg.snrDb / 10.0);
         sigma_ = cfg.snrDb < -100 ? 0.f : (float)std::sqrt(pn / 2);
@@ -222,7 +230,7 @@ public:
     }
 private:
     double rate_;
-    const Cycle& cyc_;
+    Cycle cyc_;
     genutil::NoiseSource noise_;
     float sigma_ = 0, scale_ = 1;
     cf32 step_, rot_ = cf32(1.f, 0.f);
@@ -236,7 +244,15 @@ double packetGenCycleSec(int mode) { return (double)cycleFor(mode).bb.size() / k
 
 std::unique_ptr<ModeSynth> makePacketSynth(const SynthConfig& cfg, double sampleRate) {
     if (sampleRate < packetTuning().minSampleRate - 1) return nullptr;
-    return std::make_unique<PacketSynth>(cfg, sampleRate);
+    return std::make_unique<PacketSynth>(cfg, sampleRate, Cycle(cycleFor(cfg.modeOpt[0])));
+}
+
+std::unique_ptr<ModeSynth> makePacketSynthFrame(const SynthConfig& cfg, double sampleRate, const ax25::Frame& frame, int baud) {
+    if (sampleRate < packetTuning().minSampleRate - 1) return nullptr;
+    PacketGenFrame g;
+    g.frame = frame;
+    g.baud = baud == 9600 ? 9600 : 1200;
+    return std::make_unique<PacketSynth>(cfg, sampleRate, renderCycle({std::move(g)}));
 }
 
 } // namespace dect2

@@ -9,7 +9,7 @@ std::map<std::string, int> gHeld;
 }
 
 std::string deviceClaimKey(const DeviceInfo& d) {
-    if (!d.isRadio()) return "";
+    if (!d.isRadio() && !d.isAudio()) return "";
     std::string id = !d.serial.empty() ? d.serial : !d.nativeArgs.empty() ? d.nativeArgs : !d.soapyArgs.empty() ? d.soapyArgs : d.name;
     return std::to_string((int)d.kind) + "|" + d.board + "|" + id;
 }
@@ -28,6 +28,8 @@ void releaseDevice(int owner) {
     std::lock_guard<std::mutex> lk(gMu);
     for (auto it = gHeld.begin(); it != gHeld.end();) it = it->second == owner ? gHeld.erase(it) : std::next(it);
 }
+
+std::string deviceHolderText(int holder) { return holder >= kTxClaimOwner ? "the transmitter" : "RX " + std::to_string(holder); }
 
 int deviceHolder(const DeviceInfo& d) {
     const std::string k = deviceClaimKey(d);

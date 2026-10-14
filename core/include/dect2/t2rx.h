@@ -40,6 +40,7 @@
 #include "nxdn_tel.h"
 #include "dpmr_tel.h"
 #include "tetra_tel.h"
+#include "tetrapol_tel.h"
 #include "mac_tel.h"
 #include "gsmr_tel.h"
 #include "dvbc_tel.h"
@@ -79,6 +80,7 @@
 #include "meteor_tel.h"
 #include "nr_tel.h"
 #include "goes_tel.h"
+#include "elektro_tel.h"
 #include "hrpt_tel.h"
 #include "t2.h"
 #include "t2l1.h"
@@ -171,12 +173,14 @@ struct RxTelemetry {
     SameTelemetry same;       // valid when standard == 77 (NOAA weather radio SAME)
     AntTelemetry ant;         // valid when standard == 78 (ANT+ sensors)
     DectTelemetry dect;       // valid when standard == 79 (DECT cordless phones)
+    TetrapolTelemetry tetrapol;   // valid when standard == 80 (TETRAPOL)
     MultitoneTelemetry multitone;   // valid when standard == 76 (Multitone paging)
     HalowTelemetry halow;     // valid when standard == 71 (Wi-Fi HaLow / 802.11ah)
     RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)
     MeteorTelemetry meteor;   // valid when standard == 60 (Meteor-M LRPT)
     NrTelemetry nr;           // valid when standard == 58 (5G NR cells)
     GoesTelemetry goes;       // valid when standard == 61 (GOES HRIT)
+    ElektroTelemetry elektro; // valid when standard == 81 (Elektro-L)
     HrptTelemetry hrpt;       // valid when standard == 65 (HRPT / AHRPT)
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34

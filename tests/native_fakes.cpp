@@ -185,7 +185,7 @@ EXPORT const char* iio_context_info_get_description(const void*) { return "0456:
 EXPORT const char* iio_context_info_get_uri(const void*) { return "usb:1.2.5"; }
 EXPORT void* iio_create_context_from_uri(const char* uri) { rec("pluto.connected", strstr(uri, "usb:") ? 1 : 0); return new int(1); }
 EXPORT void iio_context_destroy(void* c) { delete (int*)c; }
-EXPORT void* iio_context_find_device(const void*, const char* name) { return strcmp(name, "ad9361-phy") == 0 ? (void*)"phy" : strcmp(name, "cf-ad9361-lpc") == 0 ? (void*)"rx" : nullptr; }
+EXPORT void* iio_context_find_device(const void*, const char* name) { return strcmp(name, "ad9361-phy") == 0 ? (void*)"phy" : strcmp(name, "cf-ad9361-lpc") == 0 ? (void*)"rx" : strcmp(name, "cf-ad9361-dds-core-lpc") == 0 ? (void*)"tx" : nullptr; }
 EXPORT int iio_context_set_timeout(void*, unsigned) { return 0; }
 EXPORT void* iio_device_find_channel(const void* dev, const char* name, bool out) { auto* c = new iio_chan{std::string((const char*)dev) + ":" + name, out}; return c; }
 EXPORT long long iio_channel_attr_write(const void* c, const char* a, const char* v) { rec(("pluto." + ((iio_chan*)c)->name + "." + a + "=" + v).c_str(), 1); return (long long)strlen(v); }
@@ -197,6 +197,20 @@ EXPORT void* iio_device_create_buffer(const void*, size_t n, bool) { auto* b = n
 EXPORT void iio_buffer_destroy(void* b) { delete (iio_buf*)b; }
 EXPORT long long iio_buffer_refill(void* b) { auto* x = (iio_buf*)b; if (x->cancel) return -1; pace(); return (long long)(x->d.size() / 2 * 4); }
 EXPORT void iio_buffer_cancel(void* b) { ((iio_buf*)b)->cancel = true; }
+// ---- transmit (PlutoSDR): iio_buffer_push records the 16-bit I/Q pairs the driver wrote into the buffer; the test reads them back
+static std::vector<int16_t> gTxCapture;
+EXPORT long long iio_buffer_push(void* b) {
+    auto* x = (iio_buf*)b;
+    if (x->cancel) return -1;
+    if (fake_state("pluto.txFail") == 1) return -32;   // EPIPE: the radio went away
+    { std::lock_guard<std::mutex> lk(gMu); gTxCapture.insert(gTxCapture.end(), x->d.begin(), x->d.end()); }
+    count("pluto.txPushes");
+    return (long long)(x->d.size() / 2 * 4);
+}
+EXPORT size_t fake_tx_pairs() { std::lock_guard<std::mutex> lk(gMu); return gTxCapture.size() / 2; }
+EXPORT size_t fake_tx_copy(int16_t* dst, size_t maxPairs) { std::lock_guard<std::mutex> lk(gMu); const size_t n = std::min(maxPairs, gTxCapture.size() / 2); memcpy(dst, gTxCapture.data(), n * 4); return n; }
+EXPORT void fake_tx_clear() { std::lock_guard<std::mutex> lk(gMu); gTxCapture.clear(); }
+// ---- end transmit
 EXPORT void* iio_buffer_start(const void* b) { return ((iio_buf*)b)->d.data(); }
 EXPORT void* iio_buffer_end(const void* b) { auto* x = (iio_buf*)b; return x->d.data() + x->d.size(); }
 

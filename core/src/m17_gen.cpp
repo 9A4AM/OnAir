@@ -113,7 +113,8 @@ void m17TxSymbols(const M17GenTx& tx, bool codec2, std::vector<int8_t>& sym, uin
         std::unique_ptr<Voice> v;
         if (codec2 && clear && tx.dataType >= 2) {
             c2 = std::make_unique<M17Codec2>(tx.dataType == 3 ? 1600 : 3200);
-            if (!c2->ok()) c2.reset(); else v = std::make_unique<Voice>(seed);
+            if (!c2->ok()) c2.reset();
+            else if (!tx.pullPcm) v = std::make_unique<Voice>(seed);
         }
         const char* dataText = "M17 data stream from the OnAir test signal. ";
         size_t dpos = 0;
@@ -125,7 +126,9 @@ void m17TxSymbols(const M17GenTx& tx, bool codec2, std::vector<int8_t>& sym, uin
                 std::vector<int16_t> pcm((size_t)c2->samplesPerFrame());
                 const int per = tx.dataType == 3 ? 1 : 2;
                 for (int k = 0; k < per; k++) {
-                    for (auto& s : pcm) s = v->next();
+                    if (tx.pullPcm) tx.pullPcm(pcm.data(), (int)pcm.size());
+                    else if (v) { for (auto& s : pcm) s = v->next(); }
+                    else std::fill(pcm.begin(), pcm.end(), 0);
                     c2->encode(pcm.data(), pl + 8 * k);
                 }
                 if (tx.dataType == 3) for (int k = 0; k < 8; k++) pl[8 + k] = (uint8_t)dataText[dpos++ % strlen(dataText)];

@@ -210,14 +210,16 @@ void presets(App& a) {
     }
     const bool vhf = a.freqMhz >= 30;
     if (vhf) {
+        ImGui::PushButtonRepeat(true);
         if (ImGui::ArrowButton("##drmdn", ImGuiDir_Left)) tuneFreq(a, std::round(a.freqMhz * 10 - 1) / 10);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("100 kHz down (the DRM+ channel raster)");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("100 kHz down (the DRM+ channel raster). Hold for a continuous change.");
         flowNext(4 * gUi);
         ImGui::AlignTextToFramePadding();
         ImGui::Text("%.1f MHz", a.freqMhz);
         flowNext(4 * gUi);
         if (ImGui::ArrowButton("##drmup", ImGuiDir_Right)) tuneFreq(a, std::round(a.freqMhz * 10 + 1) / 10);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("100 kHz up (the DRM+ channel raster)");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("100 kHz up (the DRM+ channel raster). Hold for a continuous change.");
+        ImGui::PopButtonRepeat();
     } else {
         ImGui::AlignTextToFramePadding();
         ImGui::TextDisabled("%.3f MHz", a.freqMhz);

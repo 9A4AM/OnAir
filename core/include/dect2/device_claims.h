@@ -11,5 +11,7 @@ std::string deviceClaimKey(const DeviceInfo& d);
 bool claimDevice(const DeviceInfo& d, int owner, int* holder = nullptr);
 void releaseDevice(int owner);                          // everything the receiver holds
 int deviceHolder(const DeviceInfo& d);                  // 0 = free, else the receiver number
+constexpr int kTxClaimOwner = 1000;                     // the transmitter (tx.h) holds its radio under this number; receivers are 1 to 99
+std::string deviceHolderText(int holder);               // "RX 2" or "the transmitter", for messages
 
 }

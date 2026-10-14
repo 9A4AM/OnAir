@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <random>
 #include <vector>
 using namespace dect2;
@@ -36,6 +37,7 @@ int main() {
     std::mt19937 rng(7);
     std::normal_distribution<float> nd(0.f, 1.f);
     for (int m = 0; m < kFreedvModes; m++) {
+        if (strcmp(freedvModeName(m), "RADE") == 0) continue;   // RADE is librade, not codec2
         SynthConfig sc;
         sc.modeOpt[1] = m;
         auto gen = makeFreedvTestAudio(sc);

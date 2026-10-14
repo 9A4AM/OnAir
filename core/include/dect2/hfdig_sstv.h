@@ -64,6 +64,8 @@ const SstvModeInfo& sstvModeInfo(int index);
 
 // The test picture at this size (colour bars, grey gradient, blocks), RGB bytes row by row
 void sstvTestPicture(int width, int height, std::vector<uint8_t>& rgb);
+// White block-letter caption on the last rows (callsign / a short label)
+void sstvStampText(int width, int height, std::vector<uint8_t>& rgb, const std::string& text);
 
 class HfdigSstv : public HfdigDecoder {
 public:

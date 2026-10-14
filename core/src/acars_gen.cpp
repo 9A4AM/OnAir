@@ -100,6 +100,7 @@ public:
             Aircraft a;
             const auto* r = kRegs[i % 24];
             a.reg = r[0]; a.flight = r[1]; a.origin = r[2];
+            if (i == 0 && !o_.reg.empty()) a.reg = o_.reg;
             a.dest = kDests[(size_t)(rng_() % 10)];
             if (a.dest == a.origin) a.dest = "EGLL";
             a.chan = i % nch_;
@@ -289,6 +290,18 @@ private:
 
     void sendDownlink(Aircraft& a) {
         const double now = a.nextSec;
+        if (!o_.text.empty()) {
+            AcarsBlockSpec s;
+            s.reg = a.reg;
+            s.ack = 0x15;
+            s.label[0] = 'H'; s.label[1] = '1';
+            s.blockId = (char)('0' + (a.blk++ % 10));
+            s.text = o_.text;
+            s.lastBlock = true;
+            queue(a.chan, now, s, a.carOff, a.levelDb);
+            a.lastDown = s.blockId;
+            return;
+        }
         static const char* seq[] = {"QA", "5Z", "QB", "H1", "H1", "80", "H1", "10", "QC", "QD", "SA", "Q0"};
         int ty = a.phase++ % 12;
         if (rng_() % 100 < 25) { static const int extra[] = {11, 1, 5, 3, 10}; ty = extra[rng_() % 5]; }

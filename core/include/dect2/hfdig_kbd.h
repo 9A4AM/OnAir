@@ -1,4 +1,4 @@
-// Keyboard-to-keyboard modes of fldigi as one decoder of the HF digital receiver (hfdig_rx.h, decoder bit 32): Olivia, Contestia, MFSK,
+// Keyboard-to-keyboard modes as one decoder of the HF digital receiver (hfdig_rx.h, decoder bit 32): Olivia, Contestia, MFSK,
 // THOR, DominoEX and Hellschreiber. One family runs at a time (setConfig); each is its own entry in the mode list (modes.cpp).
 // This header, hfdig_kbd*.cpp and app/hfdig_kbd_ui.cpp belong to these modes alone. The parameters follow fldigi (GPL, w1hkj/fldigi):
 //   Olivia     MFSK of 2^n tones (4 .. 256) in 125 .. 2000 Hz; each block of n seven-bit characters is Walsh-Hadamard coded (64 symbols),

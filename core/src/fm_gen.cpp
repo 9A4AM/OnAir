@@ -29,7 +29,24 @@ FmGenerator::FmGenerator(const FmGenConfig& c) : c_(c), rng_(c.seed) {
     lGain_ = g(c_.leftHz); rGain_ = g(c_.rightHz);
     if (c_.ps.size() < 8) c_.ps.resize(8, ' ');
     c_.ps.resize(8);
+    if (c_.deviationHz <= 0) c_.deviationHz = 75000;
     nextGroup();
+}
+
+void FmGenerator::pullLive() {
+    if (!c_.pull48k) return;
+    float blk[256 * 2];
+    c_.pull48k(blk, 256);
+    const double k = c_.preemphUs * 1e-6 * 48000.0;   // H(s) = 1 + s tau, at 48 kHz
+    live_.reserve(live_.size() + 512);
+    for (int i = 0; i < 256; i++) {
+        const float l = blk[2 * i], r = blk[2 * i + 1];
+        const float lp = (float)(l + k * (l - preL_));
+        const float rp = (float)(r + k * (r - preR_));
+        preL_ = l; preR_ = r;
+        live_.push_back(std::max(-1.f, std::min(1.f, lp)));
+        live_.push_back(std::max(-1.f, std::min(1.f, rp)));
+    }
 }
 
 void FmGenerator::nextGroup() {
@@ -89,7 +106,9 @@ void FmGenerator::generate(cf32* dst, size_t n, float gain) {
     const double pc = std::cos(2 * kPi * 19000.0 * dt), ps = std::sin(2 * kPi * 19000.0 * dt);
     const double bc = std::cos(2 * kPi * kRdsBaud * dt), bs = std::sin(2 * kPi * kRdsBaud * dt);
     const double lA = c_.leftAmp * lGain_, rA = c_.rightAmp * rGain_;
-    const double dphMul = 2 * kPi * 75000.0 * dt, dphCfo = 2 * kPi * c_.cfoHz * dt;
+    const double dphMul = 2 * kPi * c_.deviationHz * dt, dphCfo = 2 * kPi * c_.cfoHz * dt;
+    const bool live = (bool)c_.pull48k;
+    const double liveAdv = 48000.0 / fs;
     const FmNoiseTable& tab = FmNoiseTable::get();
     const float* nz = tab.t.data();
     const uint64_t nmask = tab.t.size() - 1;
@@ -101,7 +120,26 @@ void FmGenerator::generate(cf32* dst, size_t n, float gain) {
         renorm(lo_); renorm(ro_); renorm(po_); renorm(bo_);
         // the multiplex and the carrier phase, a sample at a time (recurrences)
         for (size_t i = 0; i < nb; i++) {
-            const double l = lA * lo_[1], r = rA * ro_[1];
+            double l, r;
+            if (live) {
+                while (liveFrac_ >= 1.0) {
+                    liveFrac_ -= 1.0;
+                    liveL_[0] = liveL_[1];
+                    liveR_[0] = liveR_[1];
+                    if (livePos_ + 1 >= live_.size()) {
+                        if (livePos_ > 4096) { live_.erase(live_.begin(), live_.begin() + (long)(livePos_ & ~1ull)); livePos_ = 0; }
+                        pullLive();
+                    }
+                    if (livePos_ + 1 < live_.size()) { liveL_[1] = live_[livePos_]; liveR_[1] = live_[livePos_ + 1]; livePos_ += 2; }
+                    else { liveL_[1] = 0; liveR_[1] = 0; }
+                }
+                const float f = (float)liveFrac_;
+                l = liveL_[0] + (liveL_[1] - liveL_[0]) * f;
+                r = liveR_[0] + (liveR_[1] - liveR_[0]) * f;
+                liveFrac_ += liveAdv;
+            } else {
+                l = lA * lo_[1]; r = rA * ro_[1];
+            }
             const double s1 = po_[1], c1 = po_[0];                     // sin and cos of the pilot phase
             double mpx;
             if (c_.stereo) {

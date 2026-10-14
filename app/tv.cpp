@@ -492,6 +492,7 @@ static void multiChannelTable(App& a) {
 }
 
 void rightPanel(App& a) {
+    if (txViewFlag()) { txRight(a); return; }
     if (const ModeUi* mu = modeUi(a.family)) if (mu->list) {
         if (!a.engine.running() && a.rx.standard > 0) ImGui::TextDisabled("stopped - showing saved results");
         mu->list(a); return;

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <ctime>
+#include <cstring>
 
 #ifndef ONAIR_VERSION
 #define ONAIR_VERSION "dev"
@@ -246,6 +247,86 @@ std::string vdl2Json(const Vdl2Message& m, const std::string& station) {
         o += "}";
     }
     o += "}}}";
+    return o;
+}
+
+// ---------------------------------------------------------------- GNSS NMEA, BLE / LoRa JSON lines
+
+namespace {
+std::string nmeaLine(const std::string& body) {
+    unsigned cs = 0;
+    for (unsigned char c : body) cs ^= c;
+    char t[8];
+    snprintf(t, sizeof t, "*%02X\r\n", cs & 0xFF);
+    return "$" + body + t;
+}
+void latLonNmea(double lat, double lon, std::string& slat, char& ns, std::string& slon, char& ew) {
+    ns = lat >= 0 ? 'N' : 'S';
+    ew = lon >= 0 ? 'E' : 'W';
+    lat = std::fabs(lat); lon = std::fabs(lon);
+    const int latd = (int)lat, lond = (int)lon;
+    char b[32];
+    snprintf(b, sizeof b, "%02d%07.4f", latd, (lat - latd) * 60.0); slat = b;
+    snprintf(b, sizeof b, "%03d%07.4f", lond, (lon - lond) * 60.0); slon = b;
+}
+std::string utcHms(const GnssFix& f) {
+    if (!f.timeValid) return "";
+    char b[16];
+    snprintf(b, sizeof b, "%02d%02d%06.3f", f.hour, f.minute, f.second);
+    return b;
+}
+std::string utcDmy(const GnssFix& f) {
+    if (!f.timeValid) return "";
+    char b[16];
+    snprintf(b, sizeof b, "%02d%02d%02d", f.day, f.month, f.year >= 0 ? f.year % 100 : 0);
+    return b;
+}
+} // namespace
+
+std::string gnssRmc(const GnssFix& f) {
+    if (!f.valid) return "";
+    std::string slat, slon; char ns = 'N', ew = 'E';
+    latLonNmea(f.latDeg, f.lonDeg, slat, ns, slon, ew);
+    const double kn = f.hasVelocity ? f.speedMps * 1.943844 : 0;
+    const double cog = f.hasVelocity ? f.courseDeg : 0;
+    char body[160];
+    snprintf(body, sizeof body, "GPRMC,%s,A,%s,%c,%s,%c,%.2f,%.2f,%s,,,A", utcHms(f).c_str(), slat.c_str(), ns, slon.c_str(), ew, kn, cog, utcDmy(f).c_str());
+    return nmeaLine(body);
+}
+
+std::string gnssGga(const GnssFix& f) {
+    if (!f.valid) return "";
+    std::string slat, slon; char ns = 'N', ew = 'E';
+    latLonNmea(f.latDeg, f.lonDeg, slat, ns, slon, ew);
+    char body[192];
+    snprintf(body, sizeof body, "GPGGA,%s,%s,%c,%s,%c,1,%02d,%.1f,%.1f,M,0.0,M,,", utcHms(f).c_str(), slat.c_str(), ns, slon.c_str(), ew,
+             std::max(0, std::min(12, f.nSats)), f.hdop > 0 ? f.hdop : 99.9, f.heightM);
+    return nmeaLine(body);
+}
+
+std::string bleJson(const std::string& mac, const std::string& name, float rssi) {
+    char r[32];
+    snprintf(r, sizeof r, "%.1f", rssi);
+    return std::string("{\"type\":\"ble\",\"mac\":\"") + jsonEscape(mac) + "\",\"name\":\"" + jsonEscape(name) + "\",\"rssi\":" + r + "}";
+}
+
+std::string loraJson(const char* kind, const std::string& hex, float snrDb, double freqHz, int sf, const std::string& extra) {
+    char sn[32], fr[48], sfs[16];
+    snprintf(sn, sizeof sn, "%.1f", snrDb);
+    snprintf(fr, sizeof fr, "%.0f", freqHz);
+    snprintf(sfs, sizeof sfs, "%d", sf);
+    std::string o = "{\"type\":\"";
+    o += jsonEscape(kind ? kind : "lora");
+    o += "\",\"hex\":\"";
+    o += jsonEscape(hex);
+    o += "\",\"snr\":";
+    o += sn;
+    o += ",\"freq\":";
+    o += fr;
+    o += ",\"sf\":";
+    o += sfs;
+    if (!extra.empty()) { o += ','; o += extra; }
+    o += '}';
     return o;
 }
 

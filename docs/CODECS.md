@@ -11,11 +11,13 @@ looks for, the exact folders it searches, an **Open codecs folder** button (it m
 
 | Mode | Codec | Library you provide |
 |---|---|---|
-| DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (DMR: calls are shown, voice is not decoded in this version) |
+| DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (built into OnAir unless you turned the bundle off; voice is decoded when the vocoder is present) |
 | D-STAR | AMBE (patented) | **mbelib** |
-| FreeDV (HF digital), M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
+| FreeDV 700D / 700E / 1600, M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
+| FreeDV RADE | RADE neural modem (open, BSD) | **librade** (not codec2): optional; without it the RADE slot stays dark |
 | TETRA | its own speech codec | nothing from you: it is not mbelib and not codec2 |
 | DAB, DRM, TV, FM | MP2, AAC, H.264 ... | nothing (FFmpeg is inside OnAir) |
+| ATSC 3.0 (US, South Korea) | Dolby AC-4 (patented) | optional **libavcodec + libavutil from an FFmpeg with an AC-4 decoder** (see below); without it the AC-4 sound is left out, picture and AAC / AC-3 sound still play |
 
 **codec2 does not help DMR, P25, NXDN or dPMR.** Putting `codec2.dll` or `libcodec2.dll` in the codecs folder only matters for FreeDV
 and M17. If a digital-voice mode says "mbelib not found", you need **mbelib**, a different library.
@@ -159,6 +161,31 @@ HE-AAC v2 in mono. OnAir uses faad2 for them when it is installed (Linux: the `l
 `libfaad.dll`, `libfaad2.dll` or `libfaad-2.dll` beside the program, for example the one that ships with QT-DAB). It is found at run time and not shipped; the DAB player panel says which decoder is working and whether SBR
 and PS are applied. Some xHE-AAC tools (harmonic SBR, PVC, inter-TES, MPEG Surround 212) are not in FFmpeg yet; DRM stations that use
 them stay silent and the DRM view says so.
+
+## AC-4 (ATSC 3.0 sound)
+
+ATSC 3.0 broadcasts in the US and South Korea (and a few DVB services) carry their sound as Dolby AC-4. FFmpeg, including the one inside
+OnAir, has **no AC-4 decoder** (it knows the codec id but no decoder: `ffmpeg -h decoder=ac4` says so). OnAir therefore leaves AC-4 sound out
+and says so in the ATSC 3.0 tab and the TV tab, with a **?** card. Picture and any AAC or AC-3 sound track of the service play as usual.
+
+**Optional support.** If you provide `libavcodec` and `libavutil` (shared libraries) from an FFmpeg that contains a decoder named `ac4`, OnAir
+loads them at run time from the codecs folders (or the folder in `DECT2_AC4_DIR`), decodes the AC-4 access units of the selected service,
+mixes them to stereo or 5.1 and plays them (internally: decoded with your library, encoded as AC-3 by OnAir's own FFmpeg, put in the
+transport stream). The libraries are used through a small, stable interface, so an FFmpeg of another major version than OnAir's works.
+Put them, and the libraries they need (`libswresample` and others), together in the codecs folder, then press **Look again**.
+
+**Where such an FFmpeg comes from.** The only public AC-4 decoder known to this project is the patch
+`ffmpeg_ac4.patch` in <https://github.com/funnymanva/ffmpeg-with-ac4> (FFmpeg 6.1 plus a 5,900 line decoder, `libavcodec/ac4dec.c`, by Paul B Mahol, 2019).
+Its `build-ffmpeg` script builds a **static** `ffmpeg` program with `--disable-shared`, which does not give OnAir what it needs: apply the patch
+to FFmpeg 6.1 yourself and configure it with `--enable-shared --disable-static`. The patch does not build with FFmpeg 7 or newer (it uses the
+removed `avctx->channels`). OnAir's test of this path used a stock FFmpeg with the AC-3 decoder standing in for the AC-4 one; **it has not been
+tried on a real AC-4 broadcast**, and nobody has checked how complete the patch's decoder is (OnAir uses its first presentation, its default).
+
+**Licences.** The patch's decoder carries the LGPL-2.1-or-later header of FFmpeg, and the build script is MIT-licensed (it is derived from
+markus-perl/ffmpeg-build-script): for copyright you may build and use them yourself. Copyright is not the whole story: AC-4 is a Dolby codec covered
+by patents, licensed to makers of products (and Dolby's AC-4 specification is ETSI TS 103 190, public, but implementing it is not a patent licence).
+OnAir ships no AC-4 code, no FFmpeg patch and downloads nothing; the build script above also pulls in GPL and non-free libraries if you ask it to
+(`--enable-gpl-and-non-free`), which would make that binary unredistributable. Whether you may use it where you live is your responsibility.
 
 ## Legal note
 

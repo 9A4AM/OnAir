@@ -31,7 +31,8 @@ constexpr float kNoiseSigma = 0.02f;   // per component: about -31 dBFS of noise
 
 class HfdigSynth : public ModeSynth {
 public:
-    HfdigSynth(const SynthConfig& c, double rate) : rate_(rate), audio_(makeHfdigTestAudio(c.modeOpt[0], c)) {
+    HfdigSynth(const SynthConfig& c, double rate, std::unique_ptr<HfdigTestAudio> audio, bool lsb)
+        : rate_(rate), audio_(std::move(audio)), lsb_(lsb) {
         if (!audio_) return;
         const auto h = hfdig::usbTaps(kTaps, kHfdigAudioRate);
         taps_.resize(kTaps);
@@ -51,7 +52,8 @@ public:
             const double adv = kHfdigAudioRate / rate_;
             for (size_t i = 0; i < n; i++) {
                 while (frac_ >= 1.0) { frac_ -= 1.0; prev_ = next_; next_ = nextSideband(); }
-                const cf32 v = prev_ + (next_ - prev_) * (float)frac_;   // linear interpolation: the images land outside the receiver's 200 .. 3800 Hz
+                cf32 v = prev_ + (next_ - prev_) * (float)frac_;   // linear interpolation: the images land outside the receiver's 200 .. 3800 Hz
+                if (lsb_) v = cf32(v.real(), -v.imag());
                 out[i] = v * rot_ * amp_;
                 rot_ *= step_;
                 frac_ += adv;
@@ -83,6 +85,7 @@ private:
     double frac_ = 1.0;
     cf32 prev_{0.f, 0.f}, next_{0.f, 0.f}, rot_{1.f, 0.f}, step_{1.f, 0.f};
     float amp_ = 0;
+    bool lsb_ = false;
     genutil::NoiseSource noise_{1};
 };
 
@@ -90,7 +93,12 @@ private:
 
 std::unique_ptr<ModeSynth> makeHfdigSynth(const SynthConfig& cfg, double sampleRate) {
     if (sampleRate <= 0) return nullptr;
-    return std::make_unique<HfdigSynth>(cfg, sampleRate);
+    return std::make_unique<HfdigSynth>(cfg, sampleRate, makeHfdigTestAudio(cfg.modeOpt[0], cfg), false);
+}
+
+std::unique_ptr<ModeSynth> makeHfdigSynthFromAudio(std::unique_ptr<HfdigTestAudio> audio, const SynthConfig& cfg, double sampleRate, bool lsb) {
+    if (sampleRate <= 0) return nullptr;
+    return std::make_unique<HfdigSynth>(cfg, sampleRate, std::move(audio), lsb);
 }
 
 } // namespace dect2

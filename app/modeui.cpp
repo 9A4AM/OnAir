@@ -37,6 +37,8 @@ extern const ModeUi kGsmrUi;
 extern const ModeUi kDvbcUi;
 extern const ModeUi kOrbcommUi;
 extern const ModeUi kTetraUi;
+extern const ModeUi kTetrapolUi;
+extern const ModeUi kElektroUi;
 extern const ModeUi kPskUi;
 extern const ModeUi kJs8Ui;
 extern const ModeUi kSpecxUi;
@@ -144,6 +146,8 @@ const ModeUi* modeUi(int family) {
     case 76: return &kSameUi;
     case 77: return &kAntUi;
     case 78: return &kDectUi;
+    case 79: return &kTetrapolUi;
+    case 80: return &kElektroUi;
     case 75: return &kMultitoneUi;
     case 71: return &kLoraRawUi;
     case 56: return &kRidUi;

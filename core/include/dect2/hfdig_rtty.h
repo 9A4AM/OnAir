@@ -27,6 +27,10 @@ constexpr size_t kRttyTextMax = 8000;   // characters kept in the telemetry text
 // what the test transmission sends in one loop (a line feed ends it; letters, figures and the shifts between them)
 constexpr const char* kRttyTestText = "RYRYRY CQ CQ DE ONAIR TEST 0123456789 1/2 -.:? THE QUICK BROWN FOX\n";
 
+class HfdigTestAudio;
+// Custom RTTY audio (8000 Hz). Empty text sends kRttyTestText. reverse: the mark is the upper tone. USB/LSB is the HF mixer, not this flag.
+std::unique_ptr<HfdigTestAudio> makeRttyTxAudio(const std::string& text, int baudIdx, int shiftIdx, bool reverse, double lowToneHz = 2125);
+
 struct HfdigRttyTelemetry {
     int state = 0;                   // 0 searching for a signal, 1 locked to a pair of tones, 2 receiving characters
     uint64_t audioSamples = 0;       // audio samples fed since the last reset

@@ -144,6 +144,19 @@ static void testJson() {
                           "\"msg_text\":\"HELLO\"", "\"noise_level\":-50.0"})
         CHECK(w.find(k) != std::string::npos, "VDL2 JSON has %s: %s", k, w.c_str());
     CHECK(depth(w) == 0, "VDL2 JSON balanced: %s", w.c_str());
+
+    GnssFix fix;
+    fix.valid = true; fix.latDeg = 54.6872; fix.lonDeg = 25.2797; fix.heightM = 112; fix.nSats = 8; fix.hdop = 1.2f;
+    fix.timeValid = true; fix.year = 2026; fix.month = 10; fix.day = 14; fix.hour = 12; fix.minute = 34; fix.second = 56.0;
+    const std::string rmc = feedfmt::gnssRmc(fix), gga = feedfmt::gnssGga(fix);
+    CHECK(rmc.rfind("$GPRMC,", 0) == 0 && rmc.find("*") != std::string::npos && rmc.size() >= 4 && rmc.substr(rmc.size() - 2) == "\r\n", "RMC: %s", rmc.c_str());
+    CHECK(gga.rfind("$GPGGA,", 0) == 0 && gga.find("54") != std::string::npos, "GGA: %s", gga.c_str());
+    const std::string ble = feedfmt::bleJson("C0:FF:EE:12:34:56", "Lock", -42.5f);
+    CHECK(ble.find("\"type\":\"ble\"") != std::string::npos && ble.find("\"mac\":\"C0:FF:EE:12:34:56\"") != std::string::npos && ble.find("\"rssi\":-42.5") != std::string::npos, "BLE JSON: %s", ble.c_str());
+    CHECK(depth(ble) == 0, "BLE JSON balanced");
+    const std::string lr = feedfmt::loraJson("meshtastic", "01 02 AA", 9.5f, 869525000, 11, "\"from\":\"!1a2b3c4d\"");
+    CHECK(lr.find("\"type\":\"meshtastic\"") != std::string::npos && lr.find("\"hex\":\"01 02 AA\"") != std::string::npos && lr.find("\"sf\":11") != std::string::npos && lr.find("\"from\":\"!1a2b3c4d\"") != std::string::npos, "LoRa JSON: %s", lr.c_str());
+    CHECK(depth(lr) == 0, "LoRa JSON balanced");
 }
 
 // ---------------------------------------------------------------- sockets on localhost
@@ -221,6 +234,21 @@ static void testLoopback() {
     k = sockRecv(acarsRx, buf, sizeof buf);
     CHECK(k > 0 && std::string(buf, (size_t)k).find("\"label\":\"H1\"") != std::string::npos, "ACARS JSON over UDP");
 
+    c.on[kFeedGnss] = c.on[kFeedBle] = c.on[kFeedLora] = true;
+    sock_t gnssRx = udpListen(c.gnssPort), bleRx = udpListen(c.blePort), loraRx = udpListen(c.loraPort);
+    F.configure(c);
+    CHECK(waitFor([&] { return F.status(kFeedGnss).active && F.status(kFeedBle).active && F.status(kFeedLora).active; }), "new UDP feeds came up");
+    GnssFix fx; fx.valid = true; fx.latDeg = 1; fx.lonDeg = 2; fx.nSats = 4;
+    F.gnss(fx);
+    k = sockRecv(gnssRx, buf, sizeof buf);
+    CHECK(k > 0 && std::string(buf, (size_t)k).rfind("$GPRMC,", 0) == 0, "GNSS NMEA over UDP");
+    F.ble("AA:BB:CC:DD:EE:FF", "Phone", -50.f);
+    k = sockRecv(bleRx, buf, sizeof buf);
+    CHECK(k > 0 && std::string(buf, (size_t)k).find("\"mac\":\"AA:BB:CC:DD:EE:FF\"") != std::string::npos, "BLE JSON over UDP");
+    F.lora("lora", "AB CD", 3.f, 868100000, 7);
+    k = sockRecv(loraRx, buf, sizeof buf);
+    CHECK(k > 0 && std::string(buf, (size_t)k).find("\"type\":\"lora\"") != std::string::npos, "LoRa JSON over UDP");
+
     // a client that goes away is dropped from the count
     sockClose(sbs2);
     F.adsb(id);
@@ -238,7 +266,7 @@ static void testLoopback() {
     CHECK(waitFor([&] { return F.status(kFeedAprsIs).state == "needs a callsign"; }), "APRS-IS needs a callsign: %s", F.status(kFeedAprsIs).state.c_str());
     F.stop();
     CHECK(!F.wantAdsb() && !F.wantAis(), "stopped");
-    for (sock_t s : {sbs, beast, kiss, aisRx, acarsRx}) sockClose(s);
+    for (sock_t s : {sbs, beast, kiss, aisRx, acarsRx, gnssRx, bleRx, loraRx}) sockClose(s);
 }
 
 int main() {

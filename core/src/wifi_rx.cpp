@@ -252,6 +252,7 @@ struct WifiReceiver::Impl {
             if (pd.stage == 0) {
                 Demod dm;
                 demod(pd.at, 48, dm);
+                if (dm.bits.size() < 48) { tel.headersBad++; pending = false; busyUntil = 0; break; }
                 uint16_t crc = 0;
                 for (int k = 0; k < 16; k++) crc = (uint16_t)(crc << 1 | dm.bits[(size_t)(32 + k)]);
                 if (wifi::crc16(dm.bits.data(), 32) != crc) { tel.headersBad++; pending = false; busyUntil = 0; break; }
@@ -271,6 +272,7 @@ struct WifiReceiver::Impl {
             demod(pd.at, 48 + 8 * pd.bytes, dm);
             pending = false;
             busyUntil = dm.end;
+            if (pd.bytes < 14 || dm.bits.size() < (size_t)48 + 8 * (size_t)pd.bytes) { tel.blocksBad++; break; }
             std::vector<uint8_t> f((size_t)pd.bytes, 0);
             for (int i = 0; i < pd.bytes; i++)
                 for (int k = 0; k < 8; k++) f[(size_t)i] |= (uint8_t)(dm.bits[(size_t)(48 + 8 * i + k)] << k);

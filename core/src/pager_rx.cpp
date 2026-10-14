@@ -508,7 +508,10 @@ struct PagerReceiver::Impl {
             if (++cnt < 32) break;
             const pager::Fixed c = pager::correctWord(acc);
             int cycle, frame;
-            if (!c.ok || !pager::flexFiwCheck(pager::rev21(c.data), cycle, frame)) { endLock(); return; }
+            if (!c.ok || !pager::flexFiwCheck(pager::rev21(c.data), cycle, frame)) {
+                // A bad FIW is common on a real channel; dropping lock here threw away the 1600/4 and 3200/4 pages.
+                stage = 0; cnt = 0; acc = 0; return;
+            }
             // sync 2 follows at the data rate
             sps = kWork / fmode->baud; w = (int)std::lround(sps);
             delta = std::max(1, (int)std::lround(sps / 4));

@@ -1,4 +1,5 @@
 // LoRa (raw) monitor (see loraraw_rx.h): channel filters and demodulators of mesh_lora.h, one per bandwidth and per spreading factor / sync word searched.
+#include "dect2/feeds.h"
 #include "dect2/loraraw_rx.h"
 #include "dect2/loraraw_tel.h"
 #include "dect2/mesh_lora.h"
@@ -171,6 +172,7 @@ struct LoraRawReceiver::Impl {
         r.payload = f.payload; r.hex = hexOf(f.payload); r.ascii = textOf(f.payload);
         if (good) {
             tel.blocksOk++; tel.dataValid = true; lastGood = sigSec();
+            if (Feeds::get().wantLora()) Feeds::get().lora("lora", r.hex, r.snrDb, r.freqHz, r.sf);
             tel.cfoHz = f.cfoHz; tel.snrDb = (float)f.snrDb;
             if (p.sf >= 5 && p.sf <= 12) tel.perSf[p.sf]++;
             tel.perBw[bwIndex(p.bwHz)]++;

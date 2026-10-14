@@ -10,6 +10,7 @@
 #include "dect2/gnss_nav.h"
 #include "dect2/gnss_solve.h"
 #include "dect2/gnss_track.h"
+#include "dect2/feeds.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -1305,6 +1306,7 @@ struct GnssReceiver::Impl {
             fix.timeValid = week > 0;
             if (fix.timeValid) gpsTimeToCalendar(week, tow, utc.valid ? utc.dtls : 18, &fix.year, &fix.month, &fix.day, &fix.hour, &fix.minute, &fix.second);
             fix.fixCount = (uint32_t)(++fixCount);
+            if (Feeds::get().wantGnss()) Feeds::get().gnss(fix);
             lastFixSignal = S;
             if (firstFix < 0) {
                 firstFix = S;

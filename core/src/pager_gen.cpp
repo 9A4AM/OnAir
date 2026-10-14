@@ -124,8 +124,9 @@ std::vector<Tx> buildCycle(int onlyKind, int onlySpeed) {
 
 class PagerSynth : public ModeSynth {
 public:
-    PagerSynth(const SynthConfig& cfg, double rate) : rate_(rate), cfo_(cfg.cfoHz), inv_(cfg.modeOpt[1] == 1), noise_(cfg.modeOpt[3] > 0 ? (uint32_t)cfg.modeOpt[3] : 1u) {
-        tx_ = buildCycle(cfg.modeOpt[0], cfg.modeOpt[2]);
+    PagerSynth(const SynthConfig& cfg, double rate, std::vector<Tx> txs) : rate_(rate), cfo_(cfg.cfoHz), inv_(cfg.modeOpt[1] == 1), noise_(cfg.modeOpt[3] > 0 ? (uint32_t)cfg.modeOpt[3] : 1u) {
+        tx_ = std::move(txs);
+        if (tx_.empty()) tx_ = buildCycle(cfg.modeOpt[0], cfg.modeOpt[2]);
         for (const Tx& t : tx_) len_.push_back((int64_t)std::llround(t.seconds() * rate));
         gap_ = (int64_t)std::llround(kGapSec * rate);
         // amplitude and noise: the noise decides the scale so that its peaks stay below 0.9 (the source rounds to 8 bits)
@@ -214,7 +215,69 @@ double pagerCycleSeconds(int onlyKind, int onlySpeed) {
 
 std::unique_ptr<ModeSynth> makePagerSynth(const SynthConfig& cfg, double sampleRate) {
     if (sampleRate <= 0) return nullptr;
-    return std::make_unique<PagerSynth>(cfg, sampleRate);
+    return std::make_unique<PagerSynth>(cfg, sampleRate, std::vector<Tx>{});
+}
+
+std::unique_ptr<ModeSynth> makePagerSynthPage(const SynthConfig& cfg, double sampleRate, int speed, uint32_t address, int function, int type, const std::string& text) {
+    if (sampleRate <= 0) return nullptr;
+    speed = std::max(0, std::min(kPagerSpeeds - 1, speed));
+    std::vector<Tx> txs;
+    if (speed < 3) {
+        pager::PocsagPage p;
+        p.ric = address ? address : 1234567;
+        p.fn = function;
+        p.type = type;
+        p.text = text;
+        Tx tx;
+        tx.dev = 4500;
+        Run r;
+        r.baud = kPocsagBaud[speed];
+        for (uint8_t b : pager::pocsagBits({p})) r.sym.push_back(b ? -3 : 3);
+        tx.runs.push_back(std::move(r));
+        txs.push_back(std::move(tx));
+    } else {
+        pager::FlexPage p;
+        p.cap = address ? address : 1234567;
+        p.type = type;
+        p.text = text;
+        using namespace pager;
+        const FlexMode* m = flexModeForSpeed(speed);
+        Tx tx;
+        tx.dev = 4800;
+        Run a;
+        a.baud = 1600;
+        auto bit2 = [&](int b) { a.sym.push_back(b ? -3 : 3); };
+        for (int i = 0; i < 64; i++) bit2(~i & 1);
+        for (int i = 0; i < 32; i++) bit2(~i & 1);
+        for (int i = 15; i >= 0; i--) bit2((m->code >> i) & 1);
+        for (int i = 31; i >= 0; i--) bit2((kFlexMarker >> i) & 1);
+        for (int i = 15; i >= 0; i--) bit2(((uint16_t)~m->code >> i) & 1);
+        for (int i = 0; i < 16; i++) bit2(~i & 1);
+        const uint32_t fiw = encodeWord(rev21(flexFiwData(0, 3)));
+        for (int i = 31; i >= 0; i--) bit2((fiw >> i) & 1);
+        tx.runs.push_back(std::move(a));
+        Run d;
+        d.baud = m->baud;
+        for (int i = 0; i < m->baud * 25 / 1000; i++) d.sym.push_back(i & 1 ? 3 : -3);
+        const int nph = speed == kFlex1600_2 ? 1 : (speed == kFlex6400_4 ? 4 : 2);
+        std::vector<uint8_t> ph[4];
+        ph[0] = flexPhaseBits({p});
+        for (int i = 1; i < nph; i++) ph[i] = flexPhaseBits({});
+        auto lev4 = [](int a1, int b1) -> int8_t { return a1 ? (b1 ? -1 : -3) : (b1 ? 1 : 3); };
+        const size_t nb = 2816;
+        for (size_t i = 0; i < nb; i++) {
+            switch (speed) {
+            case kFlex1600_2: d.sym.push_back(ph[0][i] ? -3 : 3); break;
+            case kFlex3200_2: d.sym.push_back(ph[0][i] ? -3 : 3); d.sym.push_back(ph[1][i] ? -3 : 3); break;
+            case kFlex3200_4: d.sym.push_back(lev4(ph[0][i], ph[1][i])); break;
+            default:          d.sym.push_back(lev4(ph[0][i], ph[1][i])); d.sym.push_back(lev4(ph[2][i], ph[3][i])); break;
+            }
+        }
+        tx.runs.push_back(std::move(d));
+        txs.clear();
+        txs.push_back(std::move(tx));
+    }
+    return std::make_unique<PagerSynth>(cfg, sampleRate, std::move(txs));
 }
 
 } // namespace dect2

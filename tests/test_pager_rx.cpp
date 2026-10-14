@@ -70,13 +70,41 @@ int main() {
         const PagerTelemetry t = run(c, rate, pagerCycleSeconds() + 1.0);
         compare(t, pagerTestMessages(), "inverted 15 dB");
     }
-    {   // FLEX with four levels alone, both speeds
+    {   // FLEX with four levels alone: 1600/4 (kFlex3200_4) and 3200/4 (kFlex6400_4)
         for (int sp = kFlex3200_4; sp <= kFlex6400_4; sp++) {
             SynthConfig c;
             c.snrDb = 15; c.cfoHz = 300; c.modeOpt[2] = sp + 1;
             const PagerTelemetry t = run(c, rate, pagerCycleSeconds(0, sp + 1) * 2.2);
             compare(t, pagerTestMessages(0, sp + 1), pagerSpeedName(sp));
         }
+    }
+    {   // a bad FIW must not drop lock: wipe the first frame's FIW, later 1600/4 pages still arrive
+        SynthConfig c;
+        c.snrDb = 40; c.cfoHz = 0; c.modeOpt[2] = kFlex3200_4 + 1;
+        PagerReceiver rx;
+        rx.configure(rate);
+        rx.setProtocols(2);
+        rx.setSignalOffset(-pagerTuning().tuneOffsetHz);
+        auto syn = makePagerSynth(c, rate);
+        std::vector<cf32> buf(65536);
+        PagerTelemetry t;
+        uint64_t seq = 0;
+        const int64_t fiw0 = (int64_t)(160.0 * rate / 1600.0), fiw1 = (int64_t)(220.0 * rate / 1600.0);
+        const double secs = pagerCycleSeconds(0, kFlex3200_4 + 1) * 2.4;
+        int64_t done = 0;
+        while ((double)done < secs * rate) {
+            syn->generate(buf.data(), buf.size());
+            for (size_t i = 0; i < buf.size(); i++) {
+                const int64_t s = done + (int64_t)i;
+                if (s >= fiw0 && s < fiw1) buf[i] = cf32(0.f, 0.f);
+            }
+            rx.feed(buf.data(), buf.size());
+            done += (int64_t)buf.size();
+            PagerTelemetry n;
+            if (rx.telemetry(n, seq)) { seq = n.seq; t = n; }
+        }
+        CHECK(t.speeds[kFlex3200_4].messages > 0, "bad FIW dropped FLEX 1600/4 lock (%llu pages)", (unsigned long long)t.speeds[kFlex3200_4].messages);
+        printf("  bad FIW: %llu FLEX 1600/4 pages after the first frame's FIW was wiped\n", (unsigned long long)t.speeds[kFlex3200_4].messages);
     }
     {   // the mix with one protocol on (the POCSAG and FLEX entries of the app): only its pages, all of them
         for (int prot = 1; prot <= 2; prot++) {

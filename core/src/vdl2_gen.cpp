@@ -141,6 +141,8 @@ struct Vdl2Traffic::Impl {
             a.trk = uni(0, 360); a.kt = uni(380, 480); a.alt = 25000 + (int)uni(0, 13) * 1000;
             a.levelDb = -uni(0, std::max(1e-6, o.levelSpreadDb)); a.carOff = uni(-o.cfoSpreadHz, o.cfoSpreadHz);
             a.next = uni(0.2, 2.5) / std::max(0.1, o.rateFactor);
+            if (i == 0 && !o.reg.empty()) a.reg = o.reg;
+            if (!o.text.empty()) a.step = 1;
             air.push_back(a);
             q.push({a.next, 0, i, {}});
         }
@@ -176,7 +178,8 @@ struct Vdl2Traffic::Impl {
             e.frames.push_back(vdl2Frame(gsAddr(a.chan), airAddr(a), (uint8_t)(kVdl2CtrlXID | 0x10), vdl2XidAircraftLe(a.lat, a.lon, a.alt, kDest[a.icao % 8])));
             break;
         case 1:   // free text
-            snprintf(b, sizeof b, "#DFB/FUEL %d/ETA %02d%02d/WX REQ %s", 120 + (int)(a.icao % 50), (int)(t / 60) % 24, (int)t % 60, kDest[a.icao % 8]);
+            if (!o.text.empty()) snprintf(b, sizeof b, "%s", o.text.c_str());
+            else snprintf(b, sizeof b, "#DFB/FUEL %d/ETA %02d%02d/WX REQ %s", 120 + (int)(a.icao % 50), (int)(t / 60) % 24, (int)t % 60, kDest[a.icao % 8]);
             e.frames.push_back(acars(a, "H1", b));
             break;
         case 2: { // ADS-C basic report, flight id, earth reference

@@ -24,8 +24,8 @@ namespace {
 // freedv_api.h, codec2 1.2.0
 constexpr double kPi = 3.14159265358979323846;
 constexpr int FREEDV_MODE_1600 = 0, FREEDV_MODE_700D = 7, FREEDV_MODE_700E = 13;
-constexpr int kModeCode[kFreedvModes] = {FREEDV_MODE_700D, FREEDV_MODE_700E, FREEDV_MODE_1600};
-const char* const kModeName[kFreedvModes] = {"700D", "700E", "1600"};
+constexpr int kModeCode[kFreedvModes] = {FREEDV_MODE_700D, FREEDV_MODE_700E, FREEDV_MODE_1600, -1};   // -1: RADE is librade, not codec2
+const char* const kModeName[kFreedvModes] = {"700D", "700E", "1600", "RADE"};
 // The library's sync flag also fires on RTTY tones, SSTV and noise (FreeDV 1600 above all) and its text channel then gives garbage. A mode
 // counts as synced only after the flag held for 1.5 s with an SNR estimate of at least kMinSnrDb; either failing drops it at once.
 constexpr uint64_t kConfirmSamples = 12000;
@@ -209,6 +209,7 @@ struct HfdigFreedv::Impl {
         tel.state = 1;
         for (int m = 0; m < kFreedvModes; m++) {
             Rx& r = rx[m];
+            if (kModeCode[m] < 0) continue;   // RADE: not a codec2 mode
             r.f = a.open(kModeCode[m]);
             if (!r.f) continue;
             tel.open[m] = true;
@@ -389,9 +390,63 @@ std::unique_ptr<HfdigTestAudio> makeFreedvTestAudio(const SynthConfig& cfg) {
     const Api& a = api();
     if (!a.ok) return nullptr;   // no library, no test signal: the shell keeps its noise
     const int m = std::min(std::max(cfg.modeOpt[1], 0), kFreedvModes - 1);
+    if (kModeCode[m] < 0) return nullptr;   // RADE has no codec2 test audio
     freedv* f = a.open(kModeCode[m]);
     if (!f) return nullptr;
     return std::make_unique<FreedvTestAudio>(a, f);
+}
+
+class FreedvLiveAudio : public HfdigTestAudio {
+public:
+    FreedvLiveAudio(const Api& a, freedv* f, std::function<void(float*, int)> pull, const std::string& txt)
+        : a_(a), f_(f), pull_(std::move(pull)) {
+        txt_.s = txt.empty() ? "ONAIR\r" : txt.c_str();
+        // TxText holds a pointer — keep a copy
+        text_ = txt.empty() ? "ONAIR\r" : (txt.back() == '\r' ? txt : txt + "\r");
+        txt_.s = text_.c_str();
+        a_.setTxt(f_, nullptr, txChar, &txt_);
+        nSpeech_ = std::max(a_.nSpeech(f_), 1);
+        nModem_ = std::max(a_.nNomModem(f_), 1);
+        speech_.assign((size_t)nSpeech_, 0);
+        modem_.assign((size_t)std::max(a_.nMaxModem(f_), nModem_) + 16, 0);
+        gain_ = 1.f / 16384.f;
+    }
+    ~FreedvLiveAudio() override { a_.close(f_); }
+    void generate(float* out, size_t n) override {
+        for (size_t i = 0; i < n; i++) {
+            if (pos_ >= q_.size()) {
+                q_.clear(); pos_ = 0;
+                std::vector<float> sp((size_t)nSpeech_, 0.f);
+                if (pull_) pull_(sp.data(), nSpeech_);
+                for (int k = 0; k < nSpeech_; k++) speech_[(size_t)k] = (short)lrint(std::max(-1.f, std::min(1.f, sp[(size_t)k])) * 20000.f);
+                a_.tx(f_, modem_.data(), speech_.data());
+                for (int k = 0; k < nModem_; k++) q_.push_back((float)modem_[(size_t)k] * gain_);
+            }
+            out[i] = std::min(std::max(q_[pos_++], -1.f), 1.f);
+        }
+    }
+private:
+    const Api& a_;
+    freedv* f_;
+    std::function<void(float*, int)> pull_;
+    std::string text_;
+    TxText txt_;
+    int nSpeech_ = 1, nModem_ = 1;
+    std::vector<short> speech_, modem_;
+    std::vector<float> q_;
+    size_t pos_ = 0;
+    float gain_ = 1.f;
+};
+
+std::unique_ptr<HfdigTestAudio> makeFreedvTxAudio(const SynthConfig& cfg, std::function<void(float* mono, int n)> pull8k) {
+    if (!pull8k) return makeFreedvTestAudio(cfg);
+    const Api& a = api();
+    if (!a.ok) return nullptr;
+    const int m = std::min(std::max(cfg.modeOpt[1], 0), kFreedvModes - 1);
+    if (kModeCode[m] < 0) return nullptr;
+    freedv* f = a.open(kModeCode[m]);
+    if (!f) return nullptr;
+    return std::make_unique<FreedvLiveAudio>(a, f, std::move(pull8k), std::string());
 }
 
 } // namespace dect2

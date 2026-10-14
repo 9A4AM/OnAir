@@ -30,6 +30,8 @@ public:
     ~GoesReceiver();
 
     void configure(double inputRateHz);
+    void setSymbolRate(double hz);          // default 927 ksym/s (GOES-R HRIT); Elektro-L HRIT is 665.4 ksym/s
+    double symbolRate() const;
     void setSignalOffset(double hz);
     bool ready() const;
     void reset();                               // the demodulator and partial files; the products stay

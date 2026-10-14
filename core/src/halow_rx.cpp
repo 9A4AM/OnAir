@@ -219,6 +219,7 @@ struct HalowReceiver::Impl {
         if (m < 0.3) armed = true;
         if (armed && run >= kRunMin && n >= quietUntil) {
             armed = false;
+            if (cands.size() >= 8) { tel.preambles++; return; }   // noise looks like STF forever; unbounded candidates blew the heap on Start
             std::complex<double> s(0, 0);
             for (int k = 1; k <= 64; k++) { const cf32& p = prodRing[(rp - k + 2 * kW) % kW]; s += std::complex<double>(p.real(), p.imag()); }
             Cand c;
@@ -238,6 +239,7 @@ struct HalowReceiver::Impl {
 
     bool makeSeg(Seg& s, int64_t s0, int64_t end, double cfo) const {
         if (s0 < base || end > g || end <= s0) return false;
+        if (end - s0 > 131072) return false;   // ~400 data symbols plus preamble; a waiting candidate must not copy the whole buf
         s.s0 = s0;
         s.x.resize((size_t)(end - s0));
         const std::complex<double> st = std::polar(1.0, -2 * kPi * cfo / kRate);
@@ -260,6 +262,7 @@ struct HalowReceiver::Impl {
 
     // One OFDM symbol: equalise, track the common phase and the slope across the pilots, soft bits per logical data tone (copies add)
     static bool demodSym(const cf32* x, const std::vector<Layout>& lays, int polIdx, const cf32* H, std::vector<float>& llr, double& nsum, int& ncnt) {
+        if (lays.empty() || !x || !H) return false;
         cf32 Y[kFft];
         fftWin(x, Y);
         const int pol = pilotPolarity(polIdx);
@@ -291,6 +294,9 @@ struct HalowReceiver::Impl {
 
     // coded bit LLRs of one symbol in transmit order (deinterleaved; the two copies of a repeated symbol added)
     static void symCoded(const std::vector<float>& llr, int ncbps, int ncol, int nrow, bool rep, std::vector<float>& out) {
+        if (ncbps <= 0 || ncol <= 0 || nrow <= 0) return;
+        const int last = interleave(ncol, nrow, ncbps - 1);
+        if (last < 0 || (size_t)last >= llr.size()) return;
         std::vector<float> raw((size_t)ncbps);
         for (int k = 0; k < ncbps; k++) raw[(size_t)k] = llr[(size_t)interleave(ncol, nrow, k)];
         if (rep) for (int i = 0; i < ncbps / 2; i++) out.push_back(raw[(size_t)i] + raw[(size_t)(i + ncbps / 2)]);
@@ -346,6 +352,7 @@ struct HalowReceiver::Impl {
         const int nd = dataBitsPerSym(c.w, c.sig.mcs);
         if (nd <= 0 || c.sig.len < 1 || c.sig.agg || c.sig.nsts != 0) { undecoded(c); return 1; }
         const int nsym = dataSymbols(c.w, c.sig.mcs, c.sig.len);
+        if (nsym <= 0 || nsym > 400) { undecoded(c); return 1; }
         c.needEnd = c.b1 - kDelta + bodyOff(c.w) + (int64_t)(info(c.w).sigSyms + nsym) * kSym + 8;
         if (g < c.needEnd) return 2;
         Seg seg;
@@ -357,11 +364,16 @@ struct HalowReceiver::Impl {
         double nsum = 0; int ncnt = 0;
         for (int j = 0; j < nsym; j++) {
             const int64_t at = c.b1 - kDelta - c.s0 + bodyOff(c.w) + (int64_t)(wi.sigSyms + j) * kSym;
+            if (at < 0 || at + kFft > (int64_t)seg.x.size()) { tel.blocksBad++; return 1; }
             demodSym(seg.x.data() + at, {wi.data}, wi.sigSyms + j, c.H.data(), llr, nsum, ncnt);
+            if (llr.size() < (size_t)std::max(1, wi.ncbps)) { tel.blocksBad++; return 1; }
             symCoded(llr, wi.ncbps, wi.ncol, wi.nrow, rep, coded);
         }
         const std::vector<uint8_t> bits = viterbi(coded);
+        const int need = 8 + 8 * c.sig.len;
+        if (need <= 8 || (int)bits.size() < need) { tel.blocksBad++; return 1; }
         const std::vector<uint8_t> sc = scramblerFrom(bits.data(), bits.size());
+        if ((int)sc.size() < need) { tel.blocksBad++; return 1; }
         std::vector<uint8_t> psdu((size_t)c.sig.len, 0);
         for (int i = 0; i < c.sig.len; i++) for (int b = 0; b < 8; b++) psdu[(size_t)i] |= (uint8_t)((bits[(size_t)(8 + 8 * i + b)] ^ sc[(size_t)(8 + 8 * i + b)]) << b);
         const double noise = ncnt ? nsum / ncnt : 1;
@@ -377,6 +389,7 @@ struct HalowReceiver::Impl {
         if (r1 < 0) return false;
         const int64_t endSig = r1 + bodyOff(w) + (int64_t)wi.sigSyms * kSym;
         if (endSig + 8 > (int64_t)seg.x.size()) return false;
+        if (r1 + (int64_t)(K - 1) * lag + kFft > (int64_t)seg.x.size()) return false;
         float lt[kFft];
         ltfSpectrum(w, lt);
         // residual carrier offset from the repeats of the training symbol
@@ -404,7 +417,8 @@ struct HalowReceiver::Impl {
         double nsum = 0; int ncnt = 0;
         const bool rep = w == W1;
         for (int j = 0; j < wi.sigSyms; j++) {
-            demodSym(seg.x.data() + r1 + bodyOff(w) + (int64_t)j * kSym, wi.sig, j, H.data(), llr, nsum, ncnt);
+            if (!demodSym(seg.x.data() + r1 + bodyOff(w) + (int64_t)j * kSym, wi.sig, j, H.data(), llr, nsum, ncnt)) return false;
+            if ((int)llr.size() < std::max(1, wi.sigNcbps)) return false;
             symCoded(llr, wi.sigNcbps, wi.sigNcol, wi.sigNrow, rep, coded);
         }
         const std::vector<uint8_t> bits = viterbi(coded);
@@ -522,10 +536,13 @@ struct HalowReceiver::Impl {
         // keep the buffer short
         int64_t keep = g - 16384;
         if (!cands.empty()) keep = std::min(keep, cands.front().stage == 0 ? cands.front().fire - kBack - 8 : cands.front().s0);
-        if (keep - base > 262144) {
-            const size_t drop = (size_t)(keep - base - 16384);
-            buf.erase(buf.begin(), buf.begin() + (ptrdiff_t)drop);
-            base += (int64_t)drop;
+        if (keep > base && keep - base > 262144) {
+            size_t drop = (size_t)(keep - base - 16384);
+            if (drop > buf.size()) drop = buf.size();
+            if (drop) {
+                buf.erase(buf.begin(), buf.begin() + (ptrdiff_t)drop);
+                base += (int64_t)drop;
+            }
         }
         while (cands.size() > 8) cands.pop_front();
     }

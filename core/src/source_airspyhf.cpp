@@ -1,6 +1,7 @@
 // Native driver for the Airspy HF+ and HF+ Discovery: the radio's own library (libairspyhf) is loaded at run time when it is installed. See native_common.h.
 // The radio is an HF/VHF receiver with a very narrow output (at most 912 kHz): it suits the narrow modes (DRM, AIS, marine, FM, ...), not TV.
 #include "native_common.h"
+#include <chrono>
 #include <map>
 #include <set>
 
@@ -87,6 +88,15 @@ namespace {
 std::mutex gHfMu;
 std::set<uint64_t> gHfOpen;                 // serials open in this program
 std::map<uint64_t, DeviceInfo> gHfKnown;    // what the last listing read, per serial
+std::map<uint64_t, std::chrono::steady_clock::time_point> gHfCooling;   // closed recently: listing must not reopen USB
+bool gHfUsed = false;                       // any HF+ was opened here this process (issue #78: list_devices opens every radio)
+bool hfListingFrozen() {
+    const auto now = std::chrono::steady_clock::now();
+    for (auto it = gHfCooling.begin(); it != gHfCooling.end(); ) {
+        if (it->second <= now) it = gHfCooling.erase(it); else ++it;
+    }
+    return gHfUsed || !gHfOpen.empty() || !gHfCooling.empty();
+}
 }   // namespace
 
 class AirspyHfSource : public NativeSource {
@@ -112,6 +122,7 @@ protected:
         int32_t nb = 0;
         hasBias_ = airspyhf().set_bias_tee && airspyhf().get_bias_tee_count && airspyhf().get_bias_tee_count(dev_, &nb) == 0 && nb > 0;
         gHfOpen.insert(serial_);
+        gHfUsed = true;
         freq_ = 0;
         att_ = -1;
         streaming_ = streamed_ = false;
@@ -192,9 +203,21 @@ protected:
         if (bias_ && hasBias_) airspyhf().set_bias_tee(dev_, 0);   // antenna power never stays on
         bias_ = false;
         collectTransfers();
+        // libairspyhf_close() calls libusb_exit while cancelled URBs can still be in flight (Windows 0xc0000005 in ntdll,
+        // issue #78, 0.2.5 still crashed). Drain longer, then skip close() if the library still says it is streaming.
+        if (dev_ && airspyhf().is_streaming && airspyhf().is_streaming(dev_)) {
+            fprintf(stderr, "Airspy HF+: stream still running after stop, leaving the handle (avoids a libusb crash on close)\n");
+            fflush(stderr);
+            gHfCooling[serial_] = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+            gHfOpen.erase(serial_);
+            streaming_ = streamed_ = false;
+            dev_ = nullptr;
+            return;
+        }
         airspyhf().close(dev_);
         dev_ = nullptr;
         gHfOpen.erase(serial_);
+        gHfCooling[serial_] = std::chrono::steady_clock::now() + std::chrono::seconds(3);
         streaming_ = streamed_ = false;
     }
     void streamLoop() override {
@@ -219,16 +242,16 @@ private:
         if (!dev_ || !streaming_) return;
         streaming_ = false;
         airspyhf().stop(dev_);
-        for (int i = 0; i < 200 && airspyhf().is_streaming(dev_); i++) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        for (int i = 0; i < 400 && airspyhf().is_streaming(dev_); i++) std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     // The cancelled USB transfers of a stream that was stopped come back only while libusb handles events, which each control transfer of
     // the library does: a few harmless ones (the attenuator as it is) collect them before the next start or the close. A radio that was
     // unplugged answers these at once with an error.
     void collectTransfers() {
         if (!dev_ || !streamed_) return;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 25; i++) {
             if (att_ >= 0) airspyhf().set_hf_att(dev_, (uint8_t)att_);   // (set_freq of the same frequency does not reach the radio)
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
     }
     static int DECT2_CALL callback(AirspyHfApi::transfer_t* t) {
@@ -255,7 +278,7 @@ private:
 void listAirspyHf(std::vector<DeviceInfo>& out) {
     if (!airspyhf().ok) return;
     std::lock_guard<std::mutex> g(gHfMu);
-    if (!gHfOpen.empty()) {   // a radio is open here: the library's listing would open it (and the others) again; what the last one read
+    if (hfListingFrozen()) {   // list_devices opens every HF+ (WinUSB one handle): that races stop/close and crashes (#78)
         for (const auto& k : gHfKnown) out.push_back(k.second);
         return;
     }

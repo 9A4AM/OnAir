@@ -115,6 +115,7 @@ struct HfdlTraffic::Impl {
             Air a;
             a.icao = 0xA00000u + (uint32_t)(rng() % 0x5FFFF) + (uint32_t)i * 0x1000u;
             a.reg = regs[i % 12]; a.flight = fls[i % 12];
+            if (i == 0 && !o.reg.empty()) a.reg = o.reg;
             a.chan = i % (int)std::max<size_t>(1, o.channelsHz.size());
             a.acId = 10 + i;
             a.lat = 35 + 25 * U(rng); a.lon = -60 + 50 * U(rng);
@@ -157,7 +158,7 @@ struct HfdlTraffic::Impl {
                 case 0: pdu = hfdlMpduDown(gs, 0, {hfdlLogonRequest(a.icao)}); m1 = 0; break;
                 case 1: pdu = hfdlMpduUp(gs, 0, {hfdlLogonConfirm(a.icao, a.acId)}); m1 = 1; down = false; break;
                 case 2: pdu = hfdlMpduDown(gs, a.acId, {hfdlUnnumbered(hfdlPerfData(a.flight, a.lat, a.lon, ut, gs, 0))}); m1 = 2; break;
-                case 3: pdu = hfdlMpduDown(gs, a.acId, {hfdlUnnumbered(hfdlAcarsHfnpdu(a.reg, "H1", '2', "#DFB REQ WX " + a.flight + " FL350 M.84", true))}); m1 = 7; break;
+                case 3: pdu = hfdlMpduDown(gs, a.acId, {hfdlUnnumbered(hfdlAcarsHfnpdu(a.reg, "H1", '2', o.text.empty() ? "#DFB REQ WX " + a.flight + " FL350 M.84" : o.text, true))}); m1 = 7; break;
                 case 4: pdu = hfdlMpduDown(gs, a.acId, {hfdlUnnumbered(hfdlFreqData(a.flight, a.lat, a.lon, ut, {{gs, true, fullMask(gs)}, {gsOf((c + 1) % (int)o.channelsHz.size()), true, 3}}))}); m1 = 5; break;
                 case 5: pdu = hfdlMpduUp(gs, a.acId, {hfdlUnnumbered(hfdlAcarsHfnpdu(a.reg, "QA", 'A', "WX OK. CONTINUE AS FILED", false))}); m1 = 6; down = false; break;
                 case 6: pdu = hfdlMpduDown(gs, a.acId, {hfdlUnnumbered(hfdlAcarsHfnpdu(a.reg, "5Z", '3', "/B6 POS N" + std::to_string((int)a.lat) + " W" + std::to_string((int)-a.lon), true))}); m1 = 3; break;

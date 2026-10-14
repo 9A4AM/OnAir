@@ -356,13 +356,13 @@ namespace {
 
 class RttyTestAudio : public HfdigTestAudio {
 public:
-    explicit RttyTestAudio(const SynthConfig& c) {
-        const int bi = std::clamp(c.modeOpt[1], 0, kRttyBauds - 1), si = std::clamp(c.modeOpt[2], 0, kRttyShifts - 1);
+    RttyTestAudio(int baudIdx, int shiftIdx, bool reverse, double lowToneHz, const char* text) {
+        const int bi = std::clamp(baudIdx, 0, kRttyBauds - 1), si = std::clamp(shiftIdx, 0, kRttyShifts - 1);
         step_ = kRttyBaudTable[bi] / kFs;
-        const double lo = c.modeVal[0] > 0 ? c.modeVal[0] : 2125.0;
+        const double lo = lowToneHz > 0 ? lowToneHz : 2125.0;
         const double hi = lo + kRttyShiftTable[si];
-        markW_ = 2 * kPi * (c.modeOpt[3] ? hi : lo) / kFs;
-        spaceW_ = 2 * kPi * (c.modeOpt[3] ? lo : hi) / kFs;
+        markW_ = 2 * kPi * (reverse ? hi : lo) / kFs;
+        spaceW_ = 2 * kPi * (reverse ? lo : hi) / kFs;
         // the loop: idle mark, LTRS, the text with the shifts it needs, idle mark
         segs_.push_back({true, 20.0});
         bool figs = false;
@@ -372,7 +372,8 @@ public:
             segs_.push_back({true, 1.5});
         };
         put(kLtrsCode);
-        for (const char* p = kRttyTestText; *p; p++) {
+        if (!text || !*text) text = kRttyTestText;
+        for (const char* p = text; *p; p++) {
             const char ch = *p;
             if (ch == '\n') { put(8); put(2); continue; }
             int code = -1;
@@ -404,6 +405,12 @@ private:
 
 } // namespace
 
-std::unique_ptr<HfdigTestAudio> makeRttyTestAudio(const SynthConfig& cfg) { return std::make_unique<RttyTestAudio>(cfg); }
+std::unique_ptr<HfdigTestAudio> makeRttyTestAudio(const SynthConfig& cfg) {
+    return std::make_unique<RttyTestAudio>(cfg.modeOpt[1], cfg.modeOpt[2], cfg.modeOpt[3] != 0, cfg.modeVal[0], kRttyTestText);
+}
+
+std::unique_ptr<HfdigTestAudio> makeRttyTxAudio(const std::string& text, int baudIdx, int shiftIdx, bool reverse, double lowToneHz) {
+    return std::make_unique<RttyTestAudio>(baudIdx, shiftIdx, reverse, lowToneHz, text.c_str());
+}
 
 } // namespace dect2

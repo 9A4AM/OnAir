@@ -28,6 +28,7 @@
 #include "dect2/updater.h"
 #include "dect2/gain.h"
 #include "dect2/gain_opt.h"
+#include "dect2/tx.h"
 #include "dect2/channel.h"
 #include "dect2/dvbt.h"
 #include "dect2/quality.h"
@@ -275,7 +276,7 @@ struct App {
     bool muted = false, subsOn = true;
     int playReq = -1;
     int dabStation = -1;      // --station: DAB sub-channel to play on start (testing)
-    std::vector<DeviceInfo> devices; // [0]=synthetic, [1]=file, then HackRFs
+    std::vector<DeviceInfo> devices; // [0]=synthetic, [1]=file, then sound cards, then radios
     // radios on the network the user added (prefs "netRadios"; listed by refreshDevices) and the "Add network radio" window
     std::vector<NetRadio> netRadios;
     struct NetProbe { std::atomic<bool> done{false}; bool ok = false; std::string err; NetRadio radio; };
@@ -294,6 +295,7 @@ struct App {
     int devIdx = 0;
     TuneSettings tune;
     FileOptions file;
+    int audioIqMode = 0;          // AudioIqMode: I/Q stereo, USB audio, LSB audio, mono real (sound-card source)
     int bwIdx = 0;
     int constView = 0;        // data constellation: 0 cells, 1 density, 2 clusters
     struct ConstStats {       // statistics of the decoded cells, collected over the last few seconds
@@ -674,6 +676,19 @@ void remoteApiTick(App& a);          // every frame: runs the commands the API q
 void remoteApiSection(App& a);       // the settings panel (in the Data feeds window)
 void shareTick(App& a);             // feeds_ui.cpp: carries out the frequency / gain commands of the clients of "Share my radio" (when allowed)
 void feedsWindow(App& a);          // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
+// The transmitter (tx_ui.cpp): independent of the receivers, with its own radio. The state is not an App's; transmitting is never saved.
+struct ModeDef;
+bool& txViewFlag();                // the RX / TX switch: true = TX view (never saved: the program opens in RX view)
+void txViewSwitch(App& a);         // the slider at the top left of both interfaces
+void txPanel(App& a);              // leftover: the compact TX bar + notice (classic/new shells draw spectrum and the right list themselves)
+void txBar(App& a);                // frequency, radio, gain, Start / Stop / Carrier tune
+void txSpectrum(App& a);           // live spectrum of the IQ going to the radio
+void txRight(App& a);              // this mode's payload (or why it cannot transmit)
+void txSelectMode(App& a, int family, const char* subId);
+bool txModeHighlighted(const ModeDef& m);
+void txTick(App& a);               // every frame: gives the radio back when a transmission ended; the on-screen TX indicator
+void txShutdown();                 // stops a running transmission (the radio goes quiet before it returns); the program's end
+bool txActive();
 void savePrefs(const App& a);
 int adcBitsFor(const DeviceInfo& d, double rateHz);
 void ingestSpectrum(App& a);
@@ -711,6 +726,7 @@ void setDtmbBandwidth(App& a, int mhz);  // dtmb_ui.cpp: 8 or 6 MHz; a running r
 // toolbar.cpp
 void toolbar(App& a);
 void sourceOptions(App& a);
+bool sourceOptionsOpen(const App& a);   // synthetic, a file not playing, or a sound card
 void statusBar(App& a);
 void gainControl(App& a);
 void standardSwitch(App& a);

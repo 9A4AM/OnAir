@@ -16,8 +16,8 @@ namespace dect2 {
 
 namespace {
 constexpr double kPi = 3.14159265358979323846;
-constexpr double kSymbolRate = 927000.0;
 constexpr double kRolloff = 0.5;
+constexpr double kGoesSymbolRate = 927000.0;
 constexpr int kFrameSyms = 2 * 8 * meteor::kCaduBytes;    // 16384 code symbols a frame
 constexpr int kSyncFrames = 3;                             // frames the sync search looks over
 constexpr int kAcqFft = 4096, kAcqBlocks = 8;
@@ -74,6 +74,7 @@ struct GoesReceiver::Impl {
     std::vector<std::shared_ptr<goes::Product>> loadIn;
     std::atomic<double> offset{0};
     double rateSet = 0;
+    double symbolRate = kGoesSymbolRate;
 
     // front end
     double rate = 0, fs2 = 0, sps = 0;
@@ -153,13 +154,13 @@ struct GoesReceiver::Impl {
 
     void setup(double r) {
         rate = r;
-        D = std::max(1, (int)std::floor(r / (2.3 * kSymbolRate)));
+        D = std::max(1, (int)std::floor(r / (2.3 * symbolRate)));
         fs2 = r / D;
-        sps = fs2 / kSymbolRate;
+        sps = fs2 / symbolRate;
         if (D > 1) {
             const int n = 8 * D + 1;
             std::vector<float> h((size_t)n);
-            const double fc = 0.85 * kSymbolRate / r;
+            const double fc = 0.85 * symbolRate / r;
             double sum = 0;
             for (int i = 0; i < n; i++) {
                 const double m = i - (n - 1) / 2.0, w = 0.54 - 0.46 * std::cos(2 * kPi * i / (n - 1));
@@ -293,7 +294,8 @@ struct GoesReceiver::Impl {
         if (symIdx >= nextSearch) syncSearch();
     }
 
-    double carrierHz() const { return cfo + cFreq / (2 * kPi) * kSymbolRate; }
+    double minInputRate() const { return std::max(200000.0, 2.1 * symbolRate); }
+    double carrierHz() const { return cfo + cFreq / (2 * kPi) * symbolRate; }
 
     // ---- where the frames start in the code symbols, the pairing and the G2 polarity
     void syncSearch() {
@@ -479,8 +481,15 @@ void GoesReceiver::configure(double r) {
     m.setup(r);
     m.nIn = 0; m.nextReport = 0.25 * r;
 }
+void GoesReceiver::setSymbolRate(double hz) {
+    if (!(hz > 1000)) hz = kGoesSymbolRate;
+    p_->symbolRate = hz;
+    const double r = p_->rateSet;
+    if (r > 0) configure(r);
+}
+double GoesReceiver::symbolRate() const { return p_->symbolRate; }
 void GoesReceiver::setSignalOffset(double hz) { p_->offset = hz; }
-bool GoesReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= goesTuning().minSampleRate - 1; }
+bool GoesReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= p_->minInputRate() - 1; }
 void GoesReceiver::reset() { p_->resetReq = true; }
 void GoesReceiver::clearProducts() {
     { std::lock_guard<std::mutex> lk(p_->mu); p_->pub.products.clear(); p_->pub.log.clear(); p_->loadReq = false; p_->loadIn.clear(); p_->pub.seq++; }
@@ -563,7 +572,7 @@ void GoesReceiver::feed(const cf32* x, size_t n) {
     while (i < n) {
         const size_t left = (size_t)std::max<int64_t>(1, (int64_t)m.nextReport - m.nIn);
         const size_t k = std::min(n - i, left);
-        if (m.rate >= goesTuning().minSampleRate - 1) m.feed(x + i, k);
+        if (m.rate >= m.minInputRate() - 1) m.feed(x + i, k);
         m.nIn += (int64_t)k;
         i += k;
         if ((double)m.nIn >= m.nextReport) { m.nextReport += 0.25 * m.rate; m.report(); }

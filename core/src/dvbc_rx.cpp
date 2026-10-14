@@ -851,7 +851,7 @@ private:
 };
 } // namespace
 
-std::unique_ptr<ModeSynth> makeDvbcSynth(const SynthConfig& cfg, double sampleRate) {
+std::unique_ptr<ModeSynth> makeDvbcSynth(const SynthConfig& cfg, double sampleRate, std::function<void(uint8_t*)> ts) {
     static const int qmap[5] = {2, 0, 1, 3, 4};
     dvbc::SignalConfig c;
     c.qam = qmap[std::clamp(cfg.modeOpt[0], 0, 4)];
@@ -865,7 +865,11 @@ std::unique_ptr<ModeSynth> makeDvbcSynth(const SynthConfig& cfg, double sampleRa
     c.snrDb = cfg.snrDb;
     c.cfoHz = cfg.cfoHz;
     if (cfg.echoDb > 0) { c.echoDb = cfg.echoDb; c.echoUs = cfg.echoDelay / c.sampleRate * 1e6; }
+    if (ts) c.ts = std::move(ts);
     return std::make_unique<DvbcSynth>(c);
+}
+std::unique_ptr<ModeSynth> makeDvbcSynth(const SynthConfig& cfg, double sampleRate) {
+    return makeDvbcSynth(cfg, sampleRate, {});
 }
 
 } // namespace dect2

@@ -1,5 +1,6 @@
 // IQ sample sources: HackRF, recorded file, built-in synthetic DVB-T2-like signal.
 #pragma once
+#include <cstdio>
 #include "ring.h"
 #include "t2gen.h"
 #include <cstdlib>
@@ -85,6 +86,21 @@ inline double radioPpm(const TuneSettings& s) { const double p = radioNumber(s, 
 // The frequency to ask a radio for so that it really receives hz, for radios whose library has no correction of its own: a clock that runs
 // fast by ppm tunes every frequency that much too high
 inline double ppmCorrectedHz(double hz, double ppm) { return ppm == 0 ? hz : hz / (1.0 + ppm * 1e-6); }
+
+// OnAir never refuses a frequency: it asks the driver as requested. Outside what a radio is specified for (DeviceInfo::minFreqHz..maxFreqHz, 0 = not
+// known) it adds this plain-words note to the start/retune message (a warning, not an error); whatever the driver itself refuses stays an error.
+inline std::string freqSpecNote(const char* radio, double hz, double lo, double hi) {
+    if (lo <= 0 && hi <= 0) return "";
+    if ((lo <= 0 || hz >= lo) && (hi <= 0 || hz <= hi)) return "";
+    char b[300];
+    snprintf(b, sizeof b, "this %s is specified for %.6g to %.6g MHz; the driver may not reach %.6g MHz or the signal may be weak or absent", radio, lo / 1e6, hi / 1e6, hz / 1e6);
+    return b;
+}
+inline void addNote(std::string& err, const std::string& note) {
+    if (note.empty()) return;
+    err += err.empty() ? note : "; " + note;
+}
+
 // The descriptor of that setting (step: the finest the radio's library takes, e.g. whole ppm for the RTL-SDR)
 RadioSetting ppmSetting(double step = 0.1);
 // Descriptors for the drivers' listings
@@ -92,8 +108,19 @@ RadioSetting boolSetting(const std::string& key, const std::string& label, const
 RadioSetting choiceSetting(const std::string& key, const std::string& label, const std::string& help, std::vector<std::string> values,
                            std::vector<std::string> names, const std::string& def, bool restart = false);
 
+// How a sound-card source turns captured stereo audio into complex IQ (Audio source, source_audio.cpp).
+enum class AudioIqMode { StereoIq = 0, Usb = 1, Lsb = 2, MonoReal = 3 };
+
+struct AudioHilbert {
+    static constexpr int N = 63;   // odd FIR, delay (N-1)/2
+    float x[N] = {};
+    int p = 0;
+};
+
+void audioStereoToIq(const float* stereo, int n, AudioIqMode mode, cf32* out, AudioHilbert& h);
+
 struct DeviceInfo {
-    enum Kind { Synthetic, File, HackRF, Soapy, Native } kind = Synthetic;   // Native: a radio driven by its own library (experimental), see source_native.cpp
+    enum Kind { Synthetic, File, HackRF, Soapy, Native, Audio } kind = Synthetic;   // Native: a radio driven by its own library (experimental), see source_native.cpp. Audio: a sound card (WebSDR / VAC / speaker tap), source_audio.cpp.
     std::string name;   // display name
     std::string serial; // HackRF serial / file path
     std::string board;  // "HackRF One", "HackRF Pro", "airspy", "sdrplay", ...
@@ -110,11 +137,21 @@ struct DeviceInfo {
     // above what is asked for (rate_choice.h).
     std::vector<std::pair<double, double>> rateRanges;
     double gainMinDb = 0, gainMaxDb = 0;
-    double minFreqHz = 0, maxFreqHz = 0;   // tuning range of the radio (0 = unknown)
+    double minFreqHz = 0, maxFreqHz = 0;   // the range the radio is SPECIFIED for (0 = unknown): information and a note only, OnAir asks the driver for any frequency
     bool hasBiasTee = false;               // the radio and its library can power the antenna input (TuneSettings::biasTee)
+    // Transmit (TxSink below). canTransmit: OnAir has a transmit path for this radio (HackRF, PlutoSDR, SoapySDR radios that have a TX channel);
+    // every other radio is receive-only here. The ranges are the radio's own TX scale (0 = not known until the radio has been opened); OnAir
+    // adds no limit of its own to the frequency or the level. txFullDuplex: the radio can receive while it transmits, through the same open
+    // handle (none yet: OnAir stops the receiver when a transmission starts).
+    bool canTransmit = false;
+    bool txFullDuplex = false;
+    double txMinRateHz = 0, txMaxRateHz = 0;
+    double txGainMinDb = 0, txGainMaxDb = 0;
+    std::string txGainNote;                // what the TX gain number means on this radio ("HackRF: 0-47 dB TX VGA, +14 dB with the amplifier")
     std::vector<RadioSetting> settings;    // the radio's own settings the app offers (TuneSettings::radio); empty for files and the test signal
     bool isRadio() const { return kind == HackRF || kind == Soapy || kind == Native; }
     bool isGeneric() const { return kind == Soapy || kind == Native; }   // one overall gain, a sample-rate range reported by the radio
+    bool isAudio() const { return kind == Audio; }
 };
 
 class IqSource {
@@ -126,6 +163,39 @@ public:
     virtual double sampleRate() const = 0;
     virtual bool realtimeHardware() const { return false; }
 };
+
+// ---- transmit ---------------------------------------------------------------------------------------------------------------------------
+// What a transmission asks of the radio. No limit is applied by OnAir: the frequency goes to the driver as given (a hertz-sized value, a
+// terahertz one), the gain is the radio's own TX gain in dB clamped only to the scale the radio itself reports.
+struct TxTune {
+    double centerHz = 0;
+    double sampleRate = 0;       // complex samples per second the radio is asked for; what it really runs is TxSink::sampleRate()
+    double gainDb = 0;           // the radio's TX gain scale (DeviceInfo::txGainMinDb .. txGainMaxDb)
+    double bandwidthHz = 0;      // analogue filter, 0 = automatic
+    bool ampOn = false;          // HackRF: the +14 dB amplifier
+    std::map<std::string, std::string> radio;   // the radio's own settings (TuneSettings::radio), e.g. "ppm"
+};
+
+// A radio that transmits. open() starts the radio's transmit path (a driver that refuses a frequency or a rate says why in err, in plain
+// words); write() hands it complex float samples (full scale = +-1.0; beyond that is clipped) and returns when the radio has taken them, so a
+// real radio paces the caller; close() stops the transmitter: no sample goes out after it returns. Used from one thread at a time.
+class TxSink {
+public:
+    virtual ~TxSink() = default;
+    virtual bool open(const TxTune& t, std::string& err) = 0;
+    virtual bool write(const cf32* x, size_t n, std::string& err) = 0;   // false: the radio is gone / refused the data; err says why
+    virtual bool retune(const TxTune&, std::string& err) { err = "this radio cannot change its transmit settings while sending"; return false; }
+    virtual void close() = 0;
+    virtual double sampleRate() const = 0;     // the rate the radio runs at after open()
+    virtual bool realtime() const { return true; }   // true: write() is paced by the hardware, so an empty queue is an underrun (zeros are sent); false: recording sinks (the queue waits)
+    virtual bool fullDuplex() const { return false; }
+    virtual std::string name() const { return "radio"; }
+};
+// The transmit path of a radio, nullptr when it has none (DeviceInfo::canTransmit false) or the build lacks it
+std::unique_ptr<TxSink> makeTxSink(const DeviceInfo& d);
+std::unique_ptr<TxSink> makeUsbHackrfTxSink(const std::string& serial);   // hackrf_usb.cpp
+void hackrfTxPack(const cf32* x, size_t n, int8_t* out);                  // the HackRF's DAC format: float (1.0 = full scale) to signed 8-bit I/Q pairs
+std::unique_ptr<TxSink> makeNativeTxSink(const DeviceInfo& d);           // source_native.cpp (PlutoSDR)
 
 std::vector<DeviceInfo> listHackrfDevices(std::string& err);
 // Every other radio that SoapySDR knows (Airspy, SDRplay, RTL-SDR, PlutoSDR, LimeSDR, BladeRF, USRP, ...). Empty when built without SoapySDR.
@@ -146,5 +216,11 @@ double guessSampleRate(const std::string& path);
 // offsetBytes: where the samples start (SigMF / WAV header), endBytes: where they end (0 = end of file), bigEndian: multi-byte samples.
 std::unique_ptr<IqSource> makeFileSource(const std::string& path, FileFormat fmt, double sampleRate, bool loop,
                                          uint64_t offsetBytes = 0, uint64_t endBytes = 0, bool bigEndian = false);
+
+// Sound-card / VAC / WebSDR speaker tap. listed as "Sound card: <name>". serial is the AudioIn device id (empty = default).
+// Tests: serial "tone:1500" or "silence" uses AudioIn Tone/Silence and never opens a microphone.
+// IQ mapping is TuneSettings::radio["audio_iq"] = "0".."3" (AudioIqMode). The capture rate is reported; the frequency is the dial only.
+std::vector<DeviceInfo> listAudioDevices();
+std::unique_ptr<IqSource> makeAudioSource(const DeviceInfo& d);
 
 } // namespace dect2

@@ -1,6 +1,6 @@
 // DMR screens: the two time slots and the call log, the symbol plots, the receiver counters and the options of the test signal.
-// Voice is found, counted and logged but not decoded (AMBE+2 is proprietary), so there is no sound.
 #include "app.h"
+#include "dect2/dmr_ambe.h"
 #include "dect2/dmr_proto.h"
 #include <algorithm>
 #include <cmath>
@@ -22,7 +22,7 @@ const ImVec4 kDim(0.62f, 0.65f, 0.68f, 1);
 void tick(App& a) {
     const bool run = a.engine.running();
     if (run) {   // the sound controls do nothing yet (no vocoder) but are kept in step, so that a codec can be plugged in
-        a.engine.dmr().setVolume(a.volume);
+        a.engine.dmr().setVolume(a.volume);   // AMBE+2 through mbelib when the vocoder is present
         a.engine.dmr().setMuted(a.muted);
     }
     if (run && !S.wasRunning) { S.snr.clear(); S.ber.clear(); }
@@ -240,11 +240,16 @@ void tab(App& a) {
     ImGui::Spacing();
     codecHelpButton(CodecHelp::DmrAmbe);
     ImGui::SameLine();
-    ImGui::PushStyleColor(ImGuiCol_Text, pal::warnAmber());
-    ImGui::PushTextWrapPos(0);
-    ImGui::TextUnformatted("Voice audio is not decoded: DMR voice uses the proprietary AMBE+2 vocoder, which OnAir does not include. Voice calls are found, counted and logged, there is no sound.");
-    ImGui::PopTextWrapPos();
-    ImGui::PopStyleColor();
+    {
+        const bool mbe = dect2::dmrAmbeAvailable();
+        ImGui::PushStyleColor(ImGuiCol_Text, mbe ? pal::okGreen() : pal::warnAmber());
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextUnformatted(mbe
+            ? "Voice is decoded: AMBE+2 through mbelib (built in, or a copy you installed). Follow a slot to hear it."
+            : "Voice is not decoded: DMR uses AMBE+2. Install mbelib (see ?) or rebuild OnAir with the bundled vocoder. Calls are still found and logged.");
+        ImGui::PopTextWrapPos();
+        ImGui::PopStyleColor();
+    }
     if (on && !t.cachInfo.empty() && t.cachInfo != "null") ImGui::TextDisabled("CACH: %s", t.cachInfo.c_str());
     ImGui::Spacing();
     const float rest = ImGui::GetContentRegionAvail().y;

@@ -1,8 +1,138 @@
 # OnAir interface in Polish. One text per line: the English text as in the source, a tab, the translation.
 # \n is a line break. Keep the printf conversions (%s, %d, %.1f ...) in the same order. tests/test_i18n.cpp checks this file.
 #  menus, status words, common buttons
+1 kHz test tone	1 kHz test tone
+A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.	A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.
+A SAME header. ZCZC- is added when missing.	A SAME header. ZCZC- is added when missing.
+Aircraft registration	Aircraft registration
+An RS41 with this serial. Empty: the demo sondes.	An RS41 with this serial. Empty: the demo sondes.
+ANT+ is not transmitted: it would impersonate a sensor network	ANT+ is not transmitted: it would impersonate a sensor network
+TETRAPOL is not transmitted: receive only, control-channel system information	TETRAPOL is not transmitted: receive only, control-channel system information
+Are you sure? This clears all previous data and cannot be undone.	Are you sure? This clears all previous data and cannot be undone.
+ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.	ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.
+Audio file	Audio file
+Audio input	Audio input
+AX.25 UI frame. Empty: the demo CubeSat cycle.	AX.25 UI frame. Empty: the demo CubeSat cycle.
+Baud	Baud
+Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser
+Browse…	Browse…
+Callsign / my ID	Callsign / my ID
+Capcode	Capcode
+CARRIER TUNE	CARRIER TUNE
+Carrier tune	Carrier tune
+Clear all	Clear all
+Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
+Code rate / MODCOD index	Code rate / MODCOD index
+Colour code	Colour code
+Comment	Comment
+CQ	CQ
+D2-MAC test scene (custom video is not wired into this analogue generator).	D2-MAC test scene (custom video is not wired into this analogue generator).
+DATV (DVB-S/S2 file)	DATV (DVB-S/S2 file)
+Default input	Default input
+Destination	Destination
+Destination / ID	Destination / ID
+Destination ID	Destination ID
+Deviation (Hz)	Deviation (Hz)
+Device ID	Device ID
+Dial frequency the decoder should assume (the sound card is not tuned)	Częstotliwość dial, którą dekoder ma przyjąć (karta dźwiękowa nie jest strojona)
+Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements	Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements
+DVB standard	DVB standard
+Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.	Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.
+Empty: the demo 802.15.4 scene.	Empty: the demo 802.15.4 scene.
+Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.	Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.
+Empty: the demo LoRa / mesh scene.	Empty: the demo LoRa / mesh scene.
+Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
+Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	Plik
+File to send	File to send
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Dla WebSDR, wirtualnego kabla audio (VAC) albo głośnika/linii radia do komputera. To nie zastępuje SDR, gdy potrzeba megaherców pasma.
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	Dla WebSDR, wirtualnego kabla audio (VAC) albo głośnika/linii radia do komputera. To nie zastępuje SDR, gdy potrzeba megaherców pasma. Pole częstotliwości to dial dla dekodera; karta dźwiękowa nie jest strojona. Brak wzmocnienia i zasilania anteny.
+Free text	Free text
+Function	Function
+Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	Regulacja wzmocnienia dotyczy tylko radiostacji (nie nagrania, karty dźwiękowej ani sygnału syntetycznego)
+I/Q stereo	I/Q stereo
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q stereo: lewy to I, prawy to Q (HDSDR / WebSDR VAC). Audio USB: rzeczywiste audio do analitycznego IQ dla FT8, RTTY, CW, SSB z głośnika. Audio LSB: to samo, sprzężone. Mono rzeczywiste: I to próbka, Q to 0 (próbkowanie rzeczywiste, nie audio dyskryminatora FM).
+ICAO address	ICAO address
+Idle — nothing is being sent	Idle — nothing is being sent
+Image (PNG / PPM)	Image (PNG / PPM)
+Image (PPM)	Image (PPM)
+Input device	Input device
+Latitude	Latitude
+libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.	libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.
+libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.	libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.
+Live voice is encoded with Codec 2 (FreeDV).	Live voice is encoded with Codec 2 (FreeDV).
+Live voice is encoded with Codec 2 (libcodec2).	Live voice is encoded with Codec 2 (libcodec2).
+Longitude	Longitude
+LSB audio	Audio LSB
+Message	Message
+Mic level	Mic level
+Microphone	Microphone
+MMSI	MMSI
 Mode	Tryb
+Mono real	Mono rzeczywiste
+Morse identification, up to four letters.	Morse identification, up to four letters.
+MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.	MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.
+Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
+NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
+OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.	OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.
+PAN / short address	PAN / short address
+Path	Path
+Payload text	Payload text
+Power (dBm)	Power (dBm)
+Pre-emphasis	Pre-emphasis
+PSK variant	PSK variant
+QO-100 path	QO-100 path
+Radio ID	Radio ID
+Radio text (RT)	Radio text (RT)
+RDS PI	RDS PI
+Receiver-style options (demo signal)	Receiver-style options (demo signal)
+Report	Report
+Reverse (mark is the upper tone)	Reverse (mark is the upper tone)
+RFPI	RFPI
+RFPI of the base station.	RFPI of the base station.
+Roll-off	Roll-off
+Satellite standard	Satellite standard
+Send analog NFM of the audio instead of the digital test pattern	Send analog NFM of the audio instead of the digital test pattern
+Send analog NFM of the microphone or a file instead of the test scene	Send analog NFM of the microphone or a file instead of the test scene
+Serial / ID	Serial / ID
+Shift	Shift
+Sideband	Sideband
+Silence	Silence
+sound card	karta dźwiękowa
+Speed (0=512, 1=1200, 2=2400, 3=FLEX)	Speed (0=512, 1=1200, 2=2400, 3=FLEX)
+SSB (microphone)	SSB (microphone)
+SSTV mode	SSTV mode
+Station name (PS)	Station name (PS)
+Symbol rate (Hz)	Symbol rate (Hz)
+Talkgroup	Talkgroup
+Test card (or analog picture) plus live audio on the sound carrier.	Test card (or analog picture) plus live audio on the sound carrier.
+test DJI DroneID scene (custom serial is not packed)	test DJI DroneID scene (custom serial is not packed)
+test downlink scene (this generator does not take a custom message)	test downlink scene (this generator does not take a custom message)
+test LRPT/HRIT scene (custom image not wired)	test LRPT/HRIT scene (custom image not wired)
+test NCDXF-style beacon scene	test NCDXF-style beacon scene
+test weather-fax chart (custom image not wired)	test weather-fax chart (custom image not wired)
+TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+Text	Text
+The capture rate of the sound card. The engine runs at this rate; there is no radio to tune.	Szybkość przechwytywania karty dźwiękowej. Silnik działa z tą szybkością; nie ma radia do strojenia.
+The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.	The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.
+The microphone starts only when you press START TRANSMITTING.	The microphone starts only when you press START TRANSMITTING.
+The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.	The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.
+This frequency is outside what this radio is specified for	This frequency is outside what this radio is specified for
+this is a general listening mode: there is nothing specific to transmit	this is a general listening mode: there is nothing specific to transmit
+this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
+this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
+this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
+This mode cannot transmit	This mode cannot transmit
+this mode has no transmit generator	this mode has no transmit generator
+This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
+Timeslot	Timeslot
+To	To
+TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
+Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
+USB audio	Audio USB
+Vessel name	Vessel name
+Video / MPEG-TS file	Video / MPEG-TS file
 View	Widok
 Help	Pomoc
 Language	Język
@@ -25,10 +155,16 @@ searching	szukanie
 syncing	synchronizacja
 locked	zsynchronizowano
 Locked	Zsynchronizowano
+Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.	Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.
+Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.	Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.
+WAV / MP3 file	WAV / MP3 file
 weak	słaby
 stereo	stereo
 mono	mono
 radio disconnected	radio odłączone
+What to send	What to send
+Wi-Fi is not transmitted: the generator models access-point beacons for the decoder	Wi-Fi is not transmitted: the generator models access-point beacons for the decoder
+WPM	WPM
 yes	tak
 no lock	brak synchronizacji
 never	nigdy
@@ -208,6 +344,7 @@ Digital voice, 14.236 MHz	Cyfrowa mowa, 14.236 MHz
 Digital voice, 433.475 MHz	Cyfrowa mowa, 433.475 MHz
 Digital voice, 145.375 MHz	Cyfrowa mowa, 145.375 MHz
 Network info, 380 - 470 MHz	Informacje o sieci, 380 - 470 MHz
+Network info, UHF	Informacje o sieci, UHF
 LTE, band scan	LTE, skan pasma
 5G NR, GSCN scan	5G NR, skan GSCN
 Railway, 921 - 925 MHz	Kolej, 921 - 925 MHz
@@ -278,7 +415,6 @@ Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adju
 Auto-tune	Autodopasowanie
 Stop tune	Zatrzymaj dopasowanie
 Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Pomocnik wzmocnienia: przez około 40 s próbuje kombinacji LNA/VGA/wzmacniacza i zachowuje tę z najlepszym SNR bez przesterowania.\nWymaga sygnału, z którym odbiornik może się zsynchronizować.
-Gain controls apply to radios only (not to a recording or the synthetic signal)	Regulatory wzmocnienia działają tylko dla radiów (nie dla nagrania ani sygnału syntetycznego)
 gain helper %d/%d ...	pomocnik wzmocnienia %d/%d ...
 ADC OVERLOAD - %s	PRZECIĄŻENIE ADC - %s
 AGC is lowering the gain	AGC obniża wzmocnienie
@@ -531,6 +667,7 @@ Include pre-releases	Uwzględniaj wersje wstępne
 Check now	Sprawdź teraz
 Not checked yet.	Jeszcze nie sprawdzono.
 Asking GitHub for the newest version…	Pytam GitHub o najnowszą wersję…
+Yes, clear all	Yes, clear all
 You have the newest version.	Masz najnowszą wersję.
 Version %s is available%s.	Dostępna jest wersja %s%s.
  (pre-release)	 (wersja wstępna)
@@ -957,13 +1094,10 @@ listening on %s port %d, %d HTTP and %d WebSocket client(s), %d requests, %d ref
 
 #  transmit (RX / TX switch, Transmit panel)
 Transmit...	Nadawaj...
-Transmit	Nadawanie
 Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission.	Wysyła własny sygnał tego trybu przez radio, które potrafi nadawać. Wyłączone, dopóki go nie uruchomisz; wymaga licencji lub zezwolenia.
 TRANSMITTING	NADAWANIE
-Sends this mode's own signal through a radio that can transmit. Transmitting needs a licence or permission: you are responsible for what you send. Connect an antenna, an attenuator or a dummy load before you start.	Wysyła własny sygnał tego trybu przez radio, które potrafi nadawać. Nadawanie wymaga licencji lub zezwolenia: odpowiadasz za to, co wysyłasz. Przed startem podłącz antenę, tłumik lub sztuczne obciążenie.
 Channel width	Szerokość kanału
 Frequency (MHz)	Częstotliwość (MHz)
-any value is passed to the radio as typed	każda wartość jest przekazywana do radia tak, jak wpisana
 TX gain (dB)	Wzmocnienie TX (dB)
 +14 dB amplifier	Wzmacniacz +14 dB
 Repeat until stopped	Powtarzaj do zatrzymania
@@ -977,8 +1111,6 @@ I understand	Rozumiem
 GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	GNSS nie jest nadawany: jego generator to symulator sygnału satelitarnego (spoofing)
 cellular signals are not transmitted: the generators model a network cell for testing the decoder	sygnały komórkowe nie są nadawane: generatory modelują komórkę sieci do testowania dekodera
 this is an analysis mode: there is nothing to transmit	to tryb analizy: nie ma czego nadawać
-pagers are not offered: in the round trip through the receiver only the 512 baud POCSAG pages came back, not the 1200 / 2400 baud and FLEX ones	pagery nie są oferowane: w obiegu przez odbiornik wróciły tylko strony POCSAG 512 bodów, bez 1200 / 2400 bodów i FLEX
-this mode has no transmit generator that is verified to decode in OnAir's own receiver (see core/include/dect2/tx.h)	ten tryb nie ma generatora nadawania zweryfikowanego jako dekodowalny w własnym odbiorniku OnAir (zob. core/include/dect2/tx.h)
 TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA od 0 do 47 dB; wzmacniacz +14 dB ma własny przełącznik
 the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	tłumienie TX układu AD9361 pokazane jako wzmocnienie: od -89,75 dB (najmniejsza moc) do 0 dB (największa)
 the driver's own TX gain scale (known after the radio has been opened once)	własna skala wzmocnienia TX sterownika (znana po jednorazowym otwarciu radia)
@@ -990,6 +1122,9 @@ No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapyS
 Choose a radio to transmit with.	Wybierz radio do nadawania.
 %s (in use by RX %d)	%s (używane przez RX %d)
 %s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s jest używane przez RX %d, a to radio nie może jednocześnie odbierać i nadawać. Wybierz inne radio do nadawania lub najpierw zatrzymaj ten odbiornik.
-Warning: ADS-B at 1090 MHz simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna: false aircraft on 1090 MHz can confuse real receivers, which is a safety risk and illegal in most places.	Ostrzeżenie: ADS-B na 1090 MHz symuluje samoloty. Wysyłaj go tylko na sztuczne obciążenie lub w ekranowanym układzie, nigdy do anteny: fałszywe samoloty na 1090 MHz mogą zmylić prawdziwe odbiorniki, co jest zagrożeniem dla bezpieczeństwa i w większości miejsc jest nielegalne.
-Modes that cannot transmit	Tryby, które nie mogą nadawać
 Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list.	Wpisz IP PlutoSDR (gadget USB 192.168.2.1 lub adres Ethernet) i Connect. Pojawi sie na liscie Radio.
+GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)	GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)
+GNSS NMEA RMC/GGA (UDP)	GNSS NMEA RMC/GGA (UDP)
+Bluetooth LE advertisements, JSON (UDP)	Reklamy Bluetooth LE, JSON (UDP)
+LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic, JSON (UDP)
+JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	Linie JSON (jeden obiekt na linię), oprócz GNSS, które jest NMEA. Wyłączone, dopóki nie włączysz kanału. Wysyłane są tylko tryby, które już mają uporządkowane komunikaty.

@@ -491,8 +491,8 @@ std::unique_ptr<DrmAudioSource> drmAudioFromSynth(const SynthConfig& sc, const D
 namespace {
 class DrmSynth : public ModeSynth {
 public:
-    DrmSynth(const SynthConfig& sc, double rate) : sc_(sc), rate_(rate), rng_(4242) {
-        DrmTxConfig tc = drmTxConfigFromSynth(sc);
+    DrmSynth(const SynthConfig& sc, double rate) : DrmSynth(drmTxConfigFromSynth(sc), sc, rate) {}
+    DrmSynth(DrmTxConfig tc, const SynthConfig& sc, double rate) : sc_(sc), rate_(rate), rng_(4242) {
         tx_ = std::make_unique<DrmTransmitter>(tc, drmAudioFromSynth(sc, tc));
         if (!tx_->ok()) { tc.occupancy = 3; tc.mode = kModeB; tx_ = std::make_unique<DrmTransmitter>(tc, nullptr); }
         centre_ = tx_->centreOffsetHz();
@@ -612,6 +612,11 @@ private:
 std::unique_ptr<ModeSynth> makeDrmSynth(const SynthConfig& cfg, double sampleRate) {
     if (sampleRate < 48000.0 || sampleRate > 40e6) return nullptr;
     return std::make_unique<DrmSynth>(cfg, sampleRate);
+}
+
+std::unique_ptr<ModeSynth> makeDrmSynth(const DrmTxConfig& tc, const SynthConfig& cfg, double sampleRate) {
+    if (sampleRate < 48000.0 || sampleRate > 40e6) return nullptr;
+    return std::make_unique<DrmSynth>(tc, cfg, sampleRate);
 }
 
 } // namespace dect2

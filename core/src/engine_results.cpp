@@ -101,6 +101,8 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("multitone", 76, rxMt_),
         DECT2_RESULT_SLOT("same", 77, rxSame_),
         DECT2_RESULT_SLOT("ant", 78, rxAnt_),
+        DECT2_RESULT_SLOT("tetrapol", 80, rxTetrapol_),
+        DECT2_RESULT_SLOT("elektro", 81, rxEl_),
         DECT2_RESULT_SLOT("loraraw", 72, rxLr_),
     };
 }

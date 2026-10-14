@@ -123,17 +123,19 @@ void refreshDevices(App& a) {
     // A radio that is open (the receiver or a channel scan has it) may be missing from a new list: some drivers cannot look at a radio in
     // use (WinUSB on Windows, the SDRplay service), and the list would then drop the radio being received and move the choice to another
     // entry. It stays in the list as it was.
-    const bool inUse = hadRadio && a.devices[a.devIdx].isRadio() && (a.engine.running() || a.scanner.progress().running);
+    const bool inUse = hadRadio && (a.devices[a.devIdx].isRadio() || a.devices[a.devIdx].isAudio()) && (a.engine.running() || a.scanner.progress().running);
     const DeviceInfo keepDev = inUse ? a.devices[a.devIdx] : DeviceInfo();
     a.devices.clear();
     DeviceInfo s; s.kind = DeviceInfo::Synthetic; s.name = synthLabel(a); a.devices.push_back(s);
     DeviceInfo f; f.kind = DeviceInfo::File; f.name = "IQ recording file…"; a.devices.push_back(f);
+    for (auto& d : listAudioDevices()) a.devices.push_back(d);
     std::string err;
     setNetworkRadios(a.netRadios);   // the ones the user added by address come after the ones found
     // HackRF, the radios with a native driver (RTL-SDR, Airspy, BladeRF, LimeSDR, PlutoSDR, USRP) and the rest through SoapySDR
     for (auto& d : listRadios(err)) a.devices.push_back(d);
     for (App* o : receiversAll()) {   // a radio another receiver has open may be missing from the list (drivers cannot look at a radio in use): it stays, as "in use by RX n"
-        if (o == &a || !o->engine.running() || o->devIdx < 2 || o->devIdx >= (int)o->devices.size() || !o->devices[o->devIdx].isRadio()) continue;
+        if (o == &a || !o->engine.running() || o->devIdx < 2 || o->devIdx >= (int)o->devices.size() ||
+            !(o->devices[o->devIdx].isRadio() || o->devices[o->devIdx].isAudio())) continue;
         const DeviceInfo& h = o->devices[o->devIdx];
         bool have = false;
         for (const auto& d : a.devices) have |= deviceClaimKey(d) == deviceClaimKey(h);
@@ -152,9 +154,10 @@ void refreshDevices(App& a) {
         }
         a.devIdx = idx >= 0 ? idx : std::min(a.devIdx, (int)a.devices.size() - 1);
     }
-    size_t nHack = 0;
-    for (const auto& d : a.devices) if (d.kind == DeviceInfo::HackRF) nHack++;
-    const std::string line = "device scan: " + std::to_string(nHack) + " HackRF, " + std::to_string(a.devices.size() - 2 - nHack) + " other radio(s)" + (soapySupported() ? "" : " (built without SoapySDR)");
+    size_t nHack = 0, nAudio = 0;
+    for (const auto& d : a.devices) { if (d.kind == DeviceInfo::HackRF) nHack++; if (d.isAudio()) nAudio++; }
+    const std::string line = "device scan: " + std::to_string(nHack) + " HackRF, " + std::to_string(nAudio) + " sound card(s), " +
+        std::to_string(a.devices.size() - 2 - nHack - nAudio) + " other radio(s)" + (soapySupported() ? "" : " (built without SoapySDR)");
     a.engine.log(line);
     // also in the log file (onair.log on Windows), with every radio and any error: what a user can send when a radio does not show up
     fprintf(stderr, "%s\n", line.c_str());
@@ -448,6 +451,7 @@ void loadPrefs(App& a) {
     a.engine.setAutoOffset(d.getB("offsetTune", false));
     a.engine.iqFix().iq = d.getB("iqCorrect", false);
     if (d.has("filePath")) a.file.path = d.getS("filePath", "");
+    a.audioIqMode = std::max(0, std::min(3, (int)d.getI("audioIq", 0)));
     if (d.has("outPath")) snprintf(a.filePath, sizeof a.filePath, "%s", d.getS("outPath", "").c_str());
     if (d.has("udpHost")) snprintf(a.udpHost, sizeof a.udpHost, "%s", d.getS("udpHost", "").c_str());
     if (d.has("udpPort")) a.out.port = (int)d.getI("udpPort", a.out.port);
@@ -525,6 +529,7 @@ void savePrefs(const App& a) {
         if (!a.fmScan.running) d.setS("fmStations", st);   // not a half-finished scan
     }
     d.setChannels(a.channels);
+    d.setI("audioIq", a.audioIqMode);
     d.setI("compute", a.computeMode);
     d.setI("standard", a.stdMode);
     d.setI("bw", a.bwIdx);
@@ -662,7 +667,8 @@ void ingestRx(App& a) {
 
 double radioCenterMhz(const App& a) {
     const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
-    const bool file = !a.devices.empty() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[a.devIdx].kind == DeviceInfo::File;
+    const bool file = !a.devices.empty() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() &&
+                      (a.devices[a.devIdx].kind == DeviceInfo::File || a.devices[a.devIdx].isAudio());
     return a.freqMhz + (mt && !file ? mt->tuneOffsetHz / 1e6 : 0.0);
 }
 

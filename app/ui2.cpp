@@ -449,6 +449,7 @@ void sidebar(App& a) {
         tool("Passes", a.passesOpen, "Satellite passes and automatic tuning");
         tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
+        tool("Transmit...", txViewFlag(), N_("Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission."));
         tool("Map", a.mapOpen, "A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
         tool("Scanner (highly experimental)", a.scannerOpen, "HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
         ImGui::Separator();
@@ -732,6 +733,7 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
             ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
             ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
+            ImGui::MenuItem(tr("Transmit..."), nullptr, &txViewFlag());
             ImGui::MenuItem(tr("Map"), nullptr, &a.mapOpen);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
             if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
@@ -946,18 +948,21 @@ void bodyParent(App& a, float bodyH, ImVec2 disp) {
     ImGui::PopStyleVar();
     const float gap = 4 * gUi;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(gap, gap));
-    if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) {
+    const bool tx = txViewFlag();
+    if (!tx && sourceOptionsOpen(a)) {
         beginPane("##srcopt", ImVec2(0, 0), true);
         sourceOptions(a);
         endPane();
     }
-    beginPane("##status", ImVec2(0, 0), true);
-    statusBar(a);
-    endPane();
+    if (!tx) {
+        beginPane("##status", ImVec2(0, 0), true);
+        statusBar(a);
+        endPane();
+    }
     // the analysis row gives up height (down to 150) before the tabs above it go below 240; the list on the right narrows with the window
     const float availH = ImGui::GetContentRegionAvail().y;
-    float logH = a.atsc3Mode ? 0 : std::max(144.f * gUi, std::min(215.f * gUi, availH - gap - 240.f * gUi));
-    if (!a.atsc3Mode && a.splitBottom > 0) logH = clampPx(a.splitBottom * gUi, 90 * gUi, availH - gap - 150 * gUi);
+    float logH = (a.atsc3Mode || tx) ? 0 : std::max(144.f * gUi, std::min(215.f * gUi, availH - gap - 240.f * gUi));
+    if (!a.atsc3Mode && !tx && a.splitBottom > 0) logH = clampPx(a.splitBottom * gUi, 90 * gUi, availH - gap - 150 * gUi);
     float rightW = std::floor(std::max(236.f * gUi, std::min(330.f * gUi, ImGui::GetContentRegionAvail().x * 0.30f)));
     if (a.splitRight > 0) rightW = std::floor(clampPx(a.splitRight * gUi, 150 * gUi, ImGui::GetContentRegionAvail().x - gap - 260 * gUi));
     const float mainH = std::max(186.f * gUi, availH - (logH > 0 ? logH + gap : 0));
@@ -973,7 +978,7 @@ void bodyParent(App& a, float bodyH, ImVec2 disp) {
     tgRect(a, TgRight);
     rightPanel(a);
     endPane();
-    if (!a.atsc3Mode) {
+    if (!a.atsc3Mode && !tx) {
         {   // the bar between the row above and the lower row, in the gap that is there anyway
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() - gap);
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(gap, 0));
@@ -998,7 +1003,7 @@ void ribbonPane(App& a) {
     displayControls(a, false);
     toolbarParts(a, TbSource | TbTuner | TbGain | TbDecoder, false);
     if (a.devices[a.devIdx].isRadio()) { ImGui::SameLine(0, 14 * gUi); radioSettingsUi(a, false); }
-    if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) sourceOptions(a);
+    if (sourceOptionsOpen(a)) sourceOptions(a);
     endPane();
 }
 
@@ -1059,7 +1064,7 @@ void bodyTiles(App& a, float bodyH, ImVec2 disp) {
     ImGui::PopStyleVar();
     const float gap = 4 * gUi;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(gap, gap));
-    if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) {
+    if (sourceOptionsOpen(a)) {
         beginPane("##srcopt", ImVec2(0, 0), true);
         sourceOptions(a);
         endPane();
@@ -1450,7 +1455,7 @@ void bodyPanel(App& a, float bodyH, ImVec2 disp) {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(gap, vgap));
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     const float rightW = 236 * gUi, leftW = W - rightW - gap;
-    const bool synth = a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running());
+    const bool synth = sourceOptionsOpen(a);
     const float sdrH = (synth ? 196 : 148) * gUi + (modeUi(a.family) && modeUi(a.family)->tuner ? 70 * gUi : 0), ledH = 80 * gUi, anaH = (a.atsc3Mode ? 0 : 224) * gUi;
     const float wfH = H - sdrH - ledH - anaH - (anaH > 0 ? 3 : 2) * vgap;
     ImGui::BeginGroup();
@@ -1538,12 +1543,21 @@ void drawShell2(App& a, ImVec2 disp) {
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
     if (face) ImGui::PopStyleColor();
     ImGui::PopStyleVar();
+    ImGui::Dummy(ImVec2(6 * gUi + ImGui::GetFrameHeight() * 3.2f, ImGui::GetFrameHeight() + 8 * gUi));
     ImGui::SetCursorPos(ImVec2(6 * gUi, 4 * gUi));
+    txViewSwitch(a);   // RX / TX, top left
     ImGui::SetCursorPosX(0);
     const float sbH = ImGui::GetFrameHeight() + 8 * gUi;
-    if (!face) topBar(a, disp);
+    if (txViewFlag()) {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8 * gUi, 4 * gUi));
+        ImGui::BeginChild("##txtop", ImVec2(0, 56 * gUi), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_NoScrollbar);
+        ImGui::PopStyleVar();
+        txBar(a);
+        ImGui::EndChild();
+    } else if (!face) topBar(a, disp);
     const float bodyH = ImGui::GetContentRegionAvail().y - sbH;
-    switch (a.uiVariant) {
+    if (txViewFlag()) bodyParent(a, bodyH, disp);   // same mode list as RX; main pane is TX spectrum (mainTabs), right pane is the payload
+    else switch (a.uiVariant) {
     case 1: bodyScope(a, bodyH, disp); break;
     case 2: bodyTiles(a, bodyH, disp); break;
     case 3: bodyFace(a, bodyH, disp); break;

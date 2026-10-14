@@ -120,6 +120,7 @@ private:
 };
 
 std::unique_ptr<ModeSynth> makeDrmSynth(const SynthConfig& cfg, double sampleRate);
+std::unique_ptr<ModeSynth> makeDrmSynth(const DrmTxConfig& tc, const SynthConfig& cfg, double sampleRate);
 // The transmitter configuration and audio source that the synthetic source builds from a SynthConfig (the receiver tests build the same to know what was sent)
 DrmTxConfig drmTxConfigFromSynth(const SynthConfig& sc);
 std::unique_ptr<DrmAudioSource> drmAudioFromSynth(const SynthConfig& sc, const DrmTxConfig& tc);

@@ -160,9 +160,8 @@ private:
     dtmb::Signal sig_;
     double rate_;
 };
-}
 
-std::unique_ptr<ModeSynth> makeDtmbSynth(const SynthConfig& cfg, double sampleRate) {
+std::unique_ptr<ModeSynth> makeDtmbSynthImpl(const SynthConfig& cfg, double sampleRate, dtmb::FrameTx::TsSource tsIn) {
     using namespace dtmb;
     SignalConfig sc;
     sc.symbolRate = symbolRateFor(cfg.modeOpt[7] == 1 ? 6 : 8);   // modeOpt[7]: 1 = a 6 MHz channel
@@ -182,8 +181,17 @@ std::unique_ptr<ModeSynth> makeDtmbSynth(const SynthConfig& cfg, double sampleRa
     if (cfg.modeOpt[4] == 1) { sc.tx.carriers = 1; sc.tx.header = Header::Pn595; sc.tx.phaseRotate = false; }   // single carrier is defined with PN595 only
     if (cfg.echoDb > 0) sc.echoes.push_back({cfg.echoDb, (double)cfg.echoDelay});
     if (cfg.modeVal[0] > 0) sc.echoes.push_back({cfg.modeVal[0], cfg.modeVal[1]});
-    FrameTx::TsSource ts = cfg.modeOpt[6] == 1 ? testPacketSource(1) : demoTsSource(netBitrate(sc.tx.header, sc.tx.profile, sc.symbolRate));
+    FrameTx::TsSource ts = tsIn ? std::move(tsIn)
+                                : (cfg.modeOpt[6] == 1 ? testPacketSource(1) : demoTsSource(netBitrate(sc.tx.header, sc.tx.profile, sc.symbolRate)));
     return std::make_unique<DtmbSynth>(sc, std::move(ts), sampleRate);
+}
+}
+
+std::unique_ptr<ModeSynth> makeDtmbSynth(const SynthConfig& cfg, double sampleRate) {
+    return makeDtmbSynthImpl(cfg, sampleRate, {});
+}
+std::unique_ptr<ModeSynth> makeDtmbSynth(const SynthConfig& cfg, double sampleRate, std::function<void(uint8_t*)> ts) {
+    return makeDtmbSynthImpl(cfg, sampleRate, std::move(ts));
 }
 
 } // namespace dect2

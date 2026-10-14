@@ -123,4 +123,8 @@ bool ftxAddTransmissionEx(int mode, const std::string& msg, double hz, double am
 bool ftxAddTransmission(int mode, const std::string& msg, double hz, double amp, double rate, double startSec, bool mirrored,
                         std::vector<float>& out);
 
+class HfdigTestAudio;
+// One station repeating `msg` every slot at `hz`. utcAlign: start where the system clock is in the slot (a live transmission).
+std::unique_ptr<HfdigTestAudio> makeFtxTxAudio(int mode, const std::string& msg, double hz = 1500, bool mirrored = false, bool utcAlign = true);
+
 } // namespace dect2

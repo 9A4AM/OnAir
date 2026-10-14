@@ -121,6 +121,23 @@ struct AtvGenerator::Impl {
     std::vector<double> sPhD;
     uint64_t audioBlock = ~0ull;
     double audioA0 = 0, audioA1 = 0, audioDt = 0;
+    std::vector<float> livePcm;
+    size_t livePos = 0;
+    double liveAt(double t) {
+        if (!cfg.pullAudio) return prog.at(t);
+        constexpr double sr = 48000.0;
+        const size_t want = (size_t)std::max(1.0, t * sr) + 8;
+        float st[128];
+        while (livePcm.size() < want) {
+            const int n = cfg.pullAudio(st, 64);
+            if (n <= 0) { livePcm.push_back(0.f); break; }
+            for (int i = 0; i < n; i++) livePcm.push_back(0.5f * (st[2 * i] + st[2 * i + 1]));
+        }
+        const size_t i = std::min(livePcm.size() - 1, (size_t)std::max(0.0, t * sr));
+        const float a = livePcm[i];
+        return (double)a * prog.gain(3000.0);
+    }
+    std::vector<float> liveY, liveU, liveV;
     std::vector<cf32> ghost;
     size_t ghostPos = 0;
     NoiseSource noise;
@@ -142,7 +159,7 @@ struct AtvGenerator::Impl {
             while (b0) { const int64_t t = a0 % b0; a0 = b0; b0 = t; }
             hNum = num / a0; hDen = den / a0;
         }
-        card = std::make_unique<AtvCard>(fmt, c.pattern);
+        card = std::make_unique<AtvCard>(fmt, c.pattern, c.ident);
         picTab.assign((size_t)hDen, PicTab());
         for (int f = 0; f < 2; f++) {
             const size_t n = (size_t)fmt.fieldRows * fmt.picW;
@@ -321,6 +338,19 @@ struct AtvGenerator::Impl {
         const double tf = 1.0 / fmt.fieldHz;
         const double t = cfg.startSec + (double)frame * fmt.lines * fmt.lineUs * 1e-6 + fld * tf;
         card->renderField(fld, t, frame, fy[fld].data(), fu[fld].data(), fv[fld].data());
+        if (cfg.pullVideo) {
+            const int W = fmt.picW, H = fmt.picH;
+            liveY.resize((size_t)W * (size_t)H); liveU = liveY; liveV = liveY;
+            if (cfg.pullVideo(W, H, liveY.data(), liveU.data(), liveV.data())) {
+                const int rows = fmt.fieldRows;
+                for (int k = 0; k < rows; k++) {
+                    const int r = std::min(2 * k + fld, H - 1);
+                    memcpy(fy[fld].data() + (size_t)k * W, liveY.data() + (size_t)r * W, sizeof(float) * (size_t)W);
+                    memcpy(fu[fld].data() + (size_t)k * W, liveU.data() + (size_t)r * W, sizeof(float) * (size_t)W);
+                    memcpy(fv[fld].data() + (size_t)k * W, liveV.data() + (size_t)r * W, sizeof(float) * (size_t)W);
+                }
+            }
+        }
         fieldFrame[fld] = (int64_t)frame;
     }
 
@@ -607,7 +637,7 @@ struct AtvGenerator::Impl {
     // The audio is evaluated every 32 output samples (on the absolute count, so the chunk size of the caller does not matter) and
     // interpolated linearly in between: a tone of 15 kHz at most changes very little in 3 us.
     void sound(cf32* out, size_t n, uint64_t k0) {
-        if (cfg.sound == 3) return;
+        if (cfg.sound == 3 && !cfg.pullAudio) return;
         const double dt = step / kFi;                                  // seconds of signal per output sample
         const double fSnd = atvSoundOffsetHz(fmt) + cfg.cfoHz;
         const double dev = fmt.soundDevKhz * 1e3;
@@ -625,8 +655,8 @@ struct AtvGenerator::Impl {
             while (i < n) {
                 const uint64_t k = k0 + i, kb = k / B;
                 if (kb != audioBlock || audioDt != dt) {
-                    if (kb == audioBlock + 1 && audioDt == dt) audioA0 = audioA1; else audioA0 = prog.at((double)(kb * B) * dt);
-                    audioA1 = prog.at((double)((kb + 1) * B) * dt);
+                    if (kb == audioBlock + 1 && audioDt == dt) audioA0 = audioA1; else audioA0 = liveAt((double)(kb * B) * dt);
+                    audioA1 = liveAt((double)((kb + 1) * B) * dt);
                     audioBlock = kb; audioDt = dt;
                 }
                 const size_t m0 = (size_t)(k % B), cnt = std::min<size_t>(n - i, (size_t)B - m0);
@@ -650,8 +680,8 @@ struct AtvGenerator::Impl {
         while (i < n) {
             const uint64_t k = k0 + i, kb = k / B;
             if (kb != audioBlock || audioDt != dt) {
-                if (kb == audioBlock + 1 && audioDt == dt) audioA0 = audioA1; else audioA0 = prog.at((double)(kb * B) * dt);
-                audioA1 = prog.at((double)((kb + 1) * B) * dt);
+                if (kb == audioBlock + 1 && audioDt == dt) audioA0 = audioA1; else audioA0 = liveAt((double)(kb * B) * dt);
+                audioA1 = liveAt((double)((kb + 1) * B) * dt);
                 audioBlock = kb; audioDt = dt;
             }
             // up to the end of this block of 32 samples the audio is a straight line: the phase advances by a constant plus a ramp
@@ -808,12 +838,19 @@ private:
 } // namespace
 
 std::unique_ptr<ModeSynth> makeAtvSynth(const SynthConfig& cfg, double sampleRate) {
+    return makeAtvSynth(cfg, sampleRate, AtvGenConfig());
+}
+
+std::unique_ptr<ModeSynth> makeAtvSynth(const SynthConfig& cfg, double sampleRate, const AtvGenConfig& extra) {
     {
         NbtvRfConfig n;
         if (NbtvSynth::fromSynth(cfg, sampleRate, n)) return std::make_unique<NbtvSynth>(n);
     }
     AtvGenConfig c;
     if (!AtvSynth::fromSynth(cfg, sampleRate, c)) return nullptr;
+    if (!extra.ident.empty()) c.ident = extra.ident;
+    if (extra.pullAudio) c.pullAudio = extra.pullAudio;
+    if (extra.pullVideo) c.pullVideo = extra.pullVideo;
     auto s = std::make_unique<AtvSynth>(c);
     if (!s->ok()) return nullptr;
     return s;

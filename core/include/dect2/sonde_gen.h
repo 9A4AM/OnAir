@@ -26,5 +26,7 @@
 namespace dect2 {
 
 std::unique_ptr<ModeSynth> makeSondeSynth(const SynthConfig& cfg, double sampleRate);
+// The RS41 of the scene with this serial (and lat/lon when nonzero). Empty serial: the demo sondes.
+std::unique_ptr<ModeSynth> makeSondeSynthEx(const SynthConfig& cfg, double sampleRate, const std::string& serial, double lat = 0, double lon = 0);
 
 } // namespace dect2

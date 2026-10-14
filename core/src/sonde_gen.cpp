@@ -65,6 +65,7 @@ void atmosphere(double altM, double& tC, double& rh, double& pHpa) {
 
 struct Sonde {
     Spec spec;
+    std::string serial;             // nonempty: used instead of spec.serial
     double ampl = 0.1;
     double carrierHz = 0;           // relative to the centre
     // baseband modulator
@@ -88,7 +89,8 @@ struct Sonde {
 
 class SondeSynth : public ModeSynth {
 public:
-    SondeSynth(const SynthConfig& cfg, double rate) : rate_(rate), cfg_(cfg), noise_(cfg.modeOpt[2] ? (uint32_t)cfg.modeOpt[2] : 1u) {
+    SondeSynth(const SynthConfig& cfg, double rate, const std::string& serial = {}, double lat = 0, double lon = 0)
+        : rate_(rate), cfg_(cfg), noise_(cfg.modeOpt[2] ? (uint32_t)cfg.modeOpt[2] : 1u) {
         const int mask = cfg.modeOpt[0] ? cfg.modeOpt[0] : 0x7;
         int want = cfg.modeOpt[1] > 0 ? std::min(cfg.modeOpt[1], 7) : 3;
         east_ = cfg.modeVal[0] != 0 ? cfg.modeVal[0] : 10.0;
@@ -100,6 +102,10 @@ public:
             if (!(mask & bit)) continue;
             Sonde s;
             s.spec = kSpecs[i];
+            if (!serial.empty() && sondes_.empty()) {
+                s.serial = serial;
+                if (lat != 0 || lon != 0) { s.spec.lat = lat; s.spec.lon = lon; }
+            }
             double f = s.spec.freqHz;
             if (i == 3) f = kSpecs[0].freqHz + off2;
             s.carrierHz = f - kCentreHz;
@@ -170,7 +176,7 @@ private:
 
     SondeTruth truthAt(const Sonde& s, double t, int frame) const {
         SondeTruth tr;
-        tr.serial = s.spec.serial;
+        tr.serial = s.serial.empty() ? s.spec.serial : s.serial;
         tr.frame = frame;
         tr.altM = std::max(100.0, s.spec.alt + s.spec.vv * t);
         const double hSpeed = std::fabs(east_);
@@ -232,6 +238,13 @@ private:
 std::unique_ptr<ModeSynth> makeSondeSynth(const SynthConfig& cfg, double sampleRate) {
     if (sampleRate < 1e6) return nullptr;
     return std::make_unique<SondeSynth>(cfg, sampleRate);
+}
+
+std::unique_ptr<ModeSynth> makeSondeSynthEx(const SynthConfig& cfg, double sampleRate, const std::string& serial, double lat, double lon) {
+    if (sampleRate < 1e6) return nullptr;
+    SynthConfig c = cfg;
+    if (!serial.empty()) { c.modeOpt[0] = 1; c.modeOpt[1] = 1; }   // one RS41
+    return std::make_unique<SondeSynth>(c, sampleRate, serial, lat, lon);
 }
 
 } // namespace dect2

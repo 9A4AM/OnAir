@@ -4,10 +4,12 @@
 #include "dect2/hfdig_gen.h"
 #include "hfdig_sstv_modes.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace dect2 {
@@ -19,6 +21,53 @@ const SstvModeInfo& sstvModeInfo(int index) {
 }
 
 // colour bars on top, a grey gradient, then "OnAir" in blocks on dark blue; all edges on even pixels and rows, in cells of 8 (or 16) pixels
+void sstvStampText(int w, int h, std::vector<uint8_t>& rgb, const std::string& text) {
+    if (w <= 0 || h <= 0 || (int)rgb.size() < w * h * 3 || text.empty()) return;
+    auto glyph = [](char ch, int row) -> unsigned {
+        const char u = (char)std::toupper((unsigned char)ch);
+        // 5-bit rows, bit 4 = left. Space is blank.
+        static const unsigned A[][7] = {
+            {0x0E,0x11,0x11,0x1F,0x11,0x11,0x11}, {0x1E,0x11,0x11,0x1E,0x11,0x11,0x1E}, {0x0F,0x10,0x10,0x10,0x10,0x10,0x0F},
+            {0x1E,0x11,0x11,0x11,0x11,0x11,0x1E}, {0x1F,0x10,0x10,0x1E,0x10,0x10,0x1F}, {0x1F,0x10,0x10,0x1E,0x10,0x10,0x10},
+            {0x0F,0x10,0x10,0x13,0x11,0x11,0x0F}, {0x11,0x11,0x11,0x1F,0x11,0x11,0x11}, {0x1F,0x04,0x04,0x04,0x04,0x04,0x1F},
+            {0x01,0x01,0x01,0x01,0x11,0x11,0x0E}, {0x11,0x12,0x14,0x18,0x14,0x12,0x11}, {0x10,0x10,0x10,0x10,0x10,0x10,0x1F},
+            {0x11,0x1B,0x15,0x15,0x11,0x11,0x11}, {0x11,0x19,0x15,0x13,0x11,0x11,0x11}, {0x0E,0x11,0x11,0x11,0x11,0x11,0x0E},
+            {0x1E,0x11,0x11,0x1E,0x10,0x10,0x10}, {0x0E,0x11,0x11,0x11,0x15,0x12,0x0D}, {0x1E,0x11,0x11,0x1E,0x14,0x12,0x11},
+            {0x0F,0x10,0x10,0x0E,0x01,0x01,0x1E}, {0x1F,0x04,0x04,0x04,0x04,0x04,0x04}, {0x11,0x11,0x11,0x11,0x11,0x11,0x0E},
+            {0x11,0x11,0x11,0x11,0x11,0x0A,0x04}, {0x11,0x11,0x11,0x15,0x15,0x1B,0x11}, {0x11,0x11,0x0A,0x04,0x0A,0x11,0x11},
+            {0x11,0x11,0x0A,0x04,0x04,0x04,0x04}, {0x1F,0x01,0x02,0x04,0x08,0x10,0x1F}
+        };
+        static const unsigned D[][7] = {
+            {0x0E,0x11,0x13,0x15,0x19,0x11,0x0E}, {0x04,0x0C,0x04,0x04,0x04,0x04,0x0E}, {0x0E,0x11,0x01,0x06,0x08,0x10,0x1F},
+            {0x1F,0x01,0x02,0x06,0x01,0x11,0x0E}, {0x02,0x06,0x0A,0x12,0x1F,0x02,0x02}, {0x1F,0x10,0x1E,0x01,0x01,0x11,0x0E},
+            {0x06,0x08,0x10,0x1E,0x11,0x11,0x0E}, {0x1F,0x01,0x02,0x04,0x08,0x08,0x08}, {0x0E,0x11,0x11,0x0E,0x11,0x11,0x0E},
+            {0x0E,0x11,0x11,0x0F,0x01,0x02,0x0C}
+        };
+        if (row < 0 || row > 6) return 0;
+        if (u >= 'A' && u <= 'Z') return A[u - 'A'][row];
+        if (u >= '0' && u <= '9') return D[u - '0'][row];
+        if (u == '-') return row == 3 ? 0x1F : 0;
+        if (u == '/') return (unsigned)(1 << (4 - row / 2));
+        return 0;
+    };
+    const int cw = std::max(6, w / 24), ch = std::max(6, h / 28);
+    const int n = std::min((int)text.size(), w / (cw + 2));
+    const int x0 = (w - n * (cw + 2)) / 2, y0 = std::max(0, h - ch * 7 - 2);
+    for (int i = 0; i < n; i++) for (int row = 0; row < 7; row++) {
+        const unsigned bits = glyph(text[(size_t)i], row);
+        for (int col = 0; col < 5; col++) {
+            if (((bits >> (4 - col)) & 1) == 0) continue;
+            for (int dy = 0; dy < ch; dy++) for (int dx = 0; dx < cw / 5 + 1; dx++) {
+                const int x = x0 + i * (cw + 2) + col * (cw / 5) + dx;
+                const int y = y0 + row * ch + dy;
+                if (x < 0 || y < 0 || x >= w || y >= h) continue;
+                uint8_t* p = &rgb[((size_t)y * w + x) * 3];
+                p[0] = p[1] = p[2] = 255;
+            }
+        }
+    }
+}
+
 void sstvTestPicture(int w, int h, std::vector<uint8_t>& rgb) {
     rgb.assign((size_t)w * h * 3, 0);
     static const uint8_t bars[8][3] = {{255, 255, 255}, {255, 255, 0}, {0, 255, 255}, {0, 255, 0}, {255, 0, 255}, {255, 0, 0}, {0, 0, 255}, {0, 0, 0}};
@@ -56,14 +105,17 @@ using namespace sstv;
 
 class SstvTestAudio : public HfdigTestAudio {
 public:
-    explicit SstvTestAudio(const SynthConfig& c) {
+    explicit SstvTestAudio(const SynthConfig& c)
+        : SstvTestAudio(c.modeOpt[1], {}, c.modeOpt[2] == 0, c.modeVal[0], c.sroPpm) {}
+    SstvTestAudio(int modeIdx, const std::vector<uint8_t>& rgbIn, bool withVis = true, double offHz = 0, double sroPpm = 0) {
         const auto& tab = table();
-        sp_ = &tab[(size_t)std::max(0, std::min((int)tab.size() - 1, c.modeOpt[1]))];
-        withVis_ = c.modeOpt[2] == 0;
-        offHz_ = c.modeVal[0];
-        scale_ = (1.0 - c.sroPpm * 1e-6) / 8.0;     // ms per sample
+        sp_ = &tab[(size_t)std::max(0, std::min((int)tab.size() - 1, modeIdx))];
+        withVis_ = withVis;
+        offHz_ = offHz;
+        scale_ = (1.0 - sroPpm * 1e-6) / 8.0;     // ms per sample
         const int w = sp_->info.width, h = sp_->info.height;
-        sstvTestPicture(w, h, rgb_);
+        if ((int)rgbIn.size() == w * h * 3) rgb_ = rgbIn;
+        else sstvTestPicture(w, h, rgb_);
         y_.resize((size_t)w * h); ry_.resize(y_.size()); by_.resize(y_.size());
         for (size_t i = 0; i < y_.size(); i++) rgbToYuv(rgb_[i * 3], rgb_[i * 3 + 1], rgb_[i * 3 + 2], y_[i], ry_[i], by_[i]);
         visMs_ = withVis_ ? 910.0 : 0.0;
@@ -156,5 +208,8 @@ private:
 } // namespace
 
 std::unique_ptr<HfdigTestAudio> makeSstvTestAudio(const SynthConfig& cfg) { return std::make_unique<SstvTestAudio>(cfg); }
+std::unique_ptr<HfdigTestAudio> makeSstvTx(int modeIdx, const std::vector<uint8_t>& rgb) {
+    return std::make_unique<SstvTestAudio>(modeIdx, rgb);
+}
 
 } // namespace dect2

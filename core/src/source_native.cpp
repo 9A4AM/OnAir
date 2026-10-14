@@ -38,6 +38,13 @@ std::vector<DeviceInfo> listNativeDevices(std::string& err) {
     return out;
 }
 
+// The radios of the native drivers that can transmit: the PlutoSDR (libiio). The LimeSDR, BladeRF and USRP can transmit through SoapySDR
+// when its module is installed; their native drivers here are receive-only.
+std::unique_ptr<TxSink> makeNativeTxSink(const DeviceInfo& d) {
+    if (d.board == "pluto") return native::makePlutoTx(d);
+    return nullptr;
+}
+
 std::unique_ptr<IqSource> makeNativeSource(const DeviceInfo& d) {
     if (d.board == "rtlsdr") return native::makeRtl(d);
     if (d.board == "airspy") return native::makeAirspy(d);

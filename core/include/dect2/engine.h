@@ -48,6 +48,7 @@
 #include "nxdn_rx.h"
 #include "dpmr_rx.h"
 #include "tetra_rx.h"
+#include "tetrapol_rx.h"
 #include "mac_rx.h"
 #include "gsmr_rx.h"
 #include "dvbc_rx.h"
@@ -88,6 +89,7 @@
 #include "meteor_rx.h"
 #include "nr_rx.h"
 #include "goes_rx.h"
+#include "elektro_rx.h"
 #include "hrpt_rx.h"
 #include "bbunpack.h"
 #include "multitv.h"
@@ -305,6 +307,7 @@ public:
     Js8Receiver& js8() { return rxJs8_; }   // JS8Call: the receiver's own controls and results (the interface reads telemetry through latestRx)
     OrbcommReceiver& orbcomm() { return rxOrb_; }   // Orbcomm: downlinks at once (the interface reads telemetry through latestRx)
     TetraReceiver& tetra() { return rxTetra_; }   // TETRA network information: the interface reads telemetry through latestRx
+    TetrapolReceiver& tetrapol() { return rxTetrapol_; }   // TETRAPOL control channel (receive only)
     AleReceiver& ale() { return rxAle_; }   // HF ALE: the receiver's own controls and results (the interface reads telemetry through latestRx)
     P25Receiver& p25() { return rxP25_; }   // P25 Phase 1: sound (the interface reads telemetry through latestRx)
     UplinkReceiver& uplink() { return rxUplink_; }   // Mode S uplink (1030 MHz): telemetry through latestRx
@@ -338,6 +341,7 @@ public:
     RidReceiver& rid() { return rxRid_; }   // Drone Remote ID: clear the drone table (telemetry through latestRx)
     HrptReceiver& hrpt() { return rxHrpt_; }   // HRPT / AHRPT: variant, new picture (telemetry through latestRx)
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
+    ElektroReceiver& elektro() { return rxEl_; }   // Elektro-L HRIT / LRIT / GGAK (telemetry through latestRx)
     MeteorReceiver& meteor() { return rxMeteor_; }   // Meteor-M LRPT: modulation, a new picture (telemetry through latestRx)
     NrReceiver& nr() { return rxNr_; }         // 5G NR cells: clear the cell table (telemetry through latestRx)
     WifiReceiver& wifi() { return rxWifi_; }   // Wi-Fi networks: clear the network table (telemetry through latestRx)
@@ -544,15 +548,17 @@ private:
     SameReceiver rxSame_;
     AntReceiver rxAnt_;
     DectReceiver rxDect_;
+    TetrapolReceiver rxTetrapol_;
     MultitoneReceiver rxMt_;
     LoraRawReceiver rxLr_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
+    ElektroReceiver rxEl_;
     HrptReceiver rxHrpt_;
     FlarmReceiver rxFlarm_;
-    uint64_t modeSeq_[80] = {};      // the last report taken from each of the modes added after FM (same order as above)
+    uint64_t modeSeq_[96] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;
     uint64_t atsc3Seq_ = 0;
@@ -618,7 +624,7 @@ private:
     std::atomic<double> secShift_{0};   // how far its frequency lies above the centre of the capture
     std::atomic<bool> secFlush_{false};
     std::atomic<uint64_t> secDropped_{0};
-    uint64_t modeSeq2_[80] = {};
+    uint64_t modeSeq2_[96] = {};
     std::mutex rx2Mu_;
     RxTelemetry rxTel2_;
     uint64_t rx2Pub_ = 0;

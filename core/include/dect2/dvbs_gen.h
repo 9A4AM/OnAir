@@ -106,5 +106,7 @@ double rrcAt(double t, double alpha);
 } // namespace dvbs
 
 std::unique_ptr<ModeSynth> makeDvbsSynth(const SynthConfig& cfg, double sampleRate);   // nullptr: no test signal for these options
+// Same chain, with a transport-stream packet source (188-byte packets starting 0x47). Empty `ts`: the demo programme.
+std::unique_ptr<ModeSynth> makeDvbsSynth(const SynthConfig& cfg, double sampleRate, std::function<void(uint8_t*)> ts);
 
 } // namespace dect2
