@@ -453,6 +453,14 @@ void generalChannelBand(const App& a, bool fill) {
     const double c[1] = {f};
     plt::Spec cs; cs.LineColor = ImVec4(0.95f, 0.35f, 0.30f, 0.85f); cs.LineWeight = 1.2f;
     plt::PlotInfLines("channel", c, 1, cs);
+    if (fill && S.nExtra > 0) {   // the counter at the top right of the spectrum
+        char b[40]; snprintf(b, sizeof b, "%d decoders", S.nExtra + 1);
+        const ImVec2 pp = plt::GetPlotPos(), ps = plt::GetPlotSize(), ts = ImGui::CalcTextSize(b);
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        const ImVec2 q(pp.x + ps.x - ts.x - 12 * gUi, pp.y + 6 * gUi);
+        dl->AddRectFilled(ImVec2(q.x - 5 * gUi, q.y - 2 * gUi), ImVec2(q.x + ts.x + 5 * gUi, q.y + ts.y + 2 * gUi), IM_COL32(20, 22, 26, 200), 4.f * gUi);
+        dl->AddText(q, IM_COL32(245, 190, 70, 255), b);
+    }
     for (int i = 0; i < S.nExtra && i < 3; i++) {   // the other channels: a band in another colour, its centre can be dragged
         double elo, ehi;
         dect2::generalFilterEdges(S.exDemod[i], S.width[S.exDemod[i]], elo, ehi);

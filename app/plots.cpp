@@ -210,6 +210,13 @@ static void multiSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
     ImGui::PushStyleColor(ImGuiCol_Button, bg);
     if (ImGui::SmallButton(lb)) { a.mtvOn = !a.mtvOn; savePrefs(a); }
     ImGui::PopStyleColor();
+    if (run) {   // how many decoders run now
+        int n = 0;
+        for (const TvChannelRow& r : a.rx.tvChannels) if (r.running) n++;
+        char cb[32]; snprintf(cb, sizeof cb, "%d decoders", n);
+        const ImVec2 cs = ImGui::CalcTextSize(cb);
+        if (x - cs.x - 10 * gUi > plotMin.x) ImGui::GetWindowDrawList()->AddText(ImVec2(x - cs.x - 8 * gUi, plotMin.y + m + 2 * gUi), IM_COL32(245, 190, 70, 255), cb);
+    }
     if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup("##mtvpop");
     if (ImGui::IsItemHovered()) {
         const std::string note = a.engine.multiChannelNote();
