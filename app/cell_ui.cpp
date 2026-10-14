@@ -156,6 +156,11 @@ void scanBar(App& a) {
         ImGui::SameLine(); ImGui::SetNextItemWidth(70 * gUi); ImGui::InputFloat("##cblo", &S.customLo, 0, 0, "%.1f");
         ImGui::SameLine(); ImGui::TextUnformatted("-"); ImGui::SameLine(); ImGui::SetNextItemWidth(70 * gUi); ImGui::InputFloat("MHz##cbhi", &S.customHi, 0, 0, "%.1f");
         S.customLo = std::clamp(S.customLo, 1.0f, 7250.0f); S.customHi = std::clamp(S.customHi, 1.0f, 7250.0f);
+        {   // the same range as EARFCNs (the channel number follows from the frequency alone, no broadcast message is needed)
+            const int e0 = dect2::lteNearestEarfcn(S.customLo * 1e6), e1 = dect2::lteNearestEarfcn(S.customHi * 1e6);
+            ImGui::SameLine();
+            if (e0 >= 0 && e1 >= 0) ImGui::TextDisabled("EARFCN %d - %d", e0, e1); else ImGui::TextDisabled("EARFCN: outside the LTE bands");
+        }
     }
     flowNext(10 * gUi);
     if (!S.scanning) {
@@ -163,7 +168,13 @@ void scanBar(App& a) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Step the radio over the chosen bands; every LTE carrier in each step is searched. Receive only.");
     } else {
         if (ImGui::SmallButton("Stop scan")) S.scanning = false;
-        ImGui::SameLine(); ImGui::TextDisabled("%zu / %zu", S.step + 1, S.plan.size());
+        ImGui::SameLine();
+        {
+            const double cf = S.step < S.plan.size() ? S.plan[S.step] * 1e6 : 0;
+            const int ce = cf > 0 ? dect2::lteNearestEarfcn(cf) : -1;
+            if (ce >= 0) ImGui::TextDisabled("%zu / %zu  %.1f MHz (EARFCN %d)", S.step + 1, S.plan.size(), cf / 1e6, ce);
+            else ImGui::TextDisabled("%zu / %zu  %.1f MHz", S.step + 1, S.plan.size(), cf / 1e6);
+        }
     }
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Clear")) a.engine.cell().clearCells();
