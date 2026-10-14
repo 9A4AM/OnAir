@@ -593,6 +593,15 @@ void dabStations(App& a) {
             if (p.sbr && au.sbrDecoded) row(Ic::Check, "Decoder", "%s: SBR%s applied", au.decoder.c_str(), au.psDecoded ? " and PS" : "");
             else if (p.sbr) row(Ic::Warning, "Decoder", "%s plays the %.0f kHz core only: no SBR%s (install faad2 / libfaad for full HE-AAC)", au.decoder.c_str(), p.coreRate / 1000.0, p.ps ? " or PS" : "");
             else if (!au.decoder.empty()) row(Ic::Layers, "Decoder", "%s", au.decoder.c_str());
+            if (p.sbr && !au.sbrDecoded && !dect2::dabFaadAvailable()) {   // where the library goes, for this system
+#ifdef _WIN32
+                row(Ic::Info, "libfaad", "%s", "Put libfaad2.dll (a 64-bit build, also named libfaad.dll or faad2.dll) in the folder with OnAir.exe, then restart OnAir.");
+#elif defined(__APPLE__)
+                row(Ic::Info, "libfaad", "%s", "In Terminal: brew install faad2, then restart OnAir.");
+#else
+                row(Ic::Info, "libfaad", "%s", "Install the package libfaad2 (sudo apt install libfaad2), then restart OnAir.");
+#endif
+            }
             row(Ic::Speaker, "Channels", "core %s%s%s", p.coreChannels == 2 ? "stereo" : "mono", p.ps ? " + PS: output stereo" : "", p.surround ? " + MPEG Surround" : "");
         }
         for (const auto& kv : ens.services) {
