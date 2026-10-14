@@ -121,6 +121,25 @@ int main(int argc, char** argv) {
             CHECK(r2.t.blocksOk > 20 && r2.rowsWrong == 0, "QPSK 72k at %+.0f Hz, 10 dB: %llu frames", off, (unsigned long long)r2.t.blocksOk);
         }
     }
+    if (want()) {   // issue #79: Doppler sweeping through zero over a pass, tuner not correcting it (+3.5 kHz -> -3.5 kHz in 600 s)
+        const double frameSec = 8192 / 72000.0;
+        struct Case { const char* name; int mod; double snr, rate, start, perSec, secs; };
+        const Case cs[] = {
+            {"OQPSK 72k, Doppler 10x fast (60 s)", 1, 14, 250e3, 3500, -7000.0 / 60, 60},
+            {"QPSK 72k, Doppler 10x fast (60 s)", 2, 14, 250e3, 3500, -7000.0 / 60, 60},
+            {"OQPSK 72k, Doppler real rate through 0", 1, 14, 250e3, 350, -7000.0 / 600, 60},
+            {"OQPSK 72k, Doppler real rate, 10 dB", 1, 10, 250e3, 1200, -7000.0 / 600, 60},
+            {"OQPSK 72k, Doppler 10x fast, 1 Msps, 11 dB", 1, 11, 1e6, -3500, 7000.0 / 40, 40},   // rising instead; decimating front end
+            {"OQPSK 80k il., Doppler 10x fast, 400k", 3, 22, 400e3, 3500, -7000.0 / 60, 60},
+        };
+        for (const Case& c : cs) {
+            MeteorGenConfig g; g.modulation = c.mod; g.snrDb = c.snr; g.rate = c.rate; g.cfoHz = c.start; g.cfoDriftHzPerSec = c.perSec;
+            if (c.mod == 2) g.apids = {64, 65, 68};
+            const Result r = run(c.name, g, c.secs, c.mod);
+            const double expect = (c.secs - (c.mod == 3 ? 24 : 3)) / (c.mod == 3 ? 8192 / 80000.0 : frameSec);
+            CHECK(r.t.blocksOk > 0.9 * expect && r.rowsWrong == 0, "%s: %llu frames of ~%.0f", c.name, (unsigned long long)r.t.blocksOk, expect);
+        }
+    }
     if (want()) {
         MeteorGenConfig g; g.modulation = 3; g.snrDb = 22; g.cfoHz = 1200; g.rate = 400e3;
         const Result r = run("OQPSK 80k interleaved, 400 ksps", g, 26, 3);

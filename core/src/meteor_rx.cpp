@@ -20,6 +20,7 @@ using cd = std::complex<double>;
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kAlpha = 0.6;          // roll-off
 constexpr double kPubSec = 0.25;
+constexpr double kHandOver = 0.003;     // rad/symbol (~34 Hz): the Costas frequency state moves into the front-end mixer
 constexpr int kHist = 4096;             // decimated samples kept (power of two)
 constexpr int kAcqLog2 = 10, kAcqN = 1 << kAcqLog2, kAcqBlocks = 48;
 
@@ -340,6 +341,16 @@ struct MeteorReceiver::Impl {
         theta += omega + alpha * eC;
         omega += beta * eC;
         omega = std::clamp(omega, -0.25, 0.25);
+        // Doppler (issue #79): the loop's frequency state is handed to the front-end mixer as soon as it is more than a few tens of Hz, so
+        // the Costas loop stays centred (its +-0.25 rad/symbol clamp is only ~2.9 kHz, a pass sweeps +-3.5 kHz from wherever the coarse
+        // search put it) and the matched filter always sees the signal on frequency. The correction applied in total stays continuous:
+        // theta is untouched, omega gives up exactly what the mixer takes (the matched filter's few symbols of delay make a transient of
+        // omega * ~6 symbols, a few hundredths of a radian, which the loop absorbs).
+        if (std::fabs(omega) > kHandOver) {
+            coarseHz += omega * rs / (2 * kPi);
+            step = std::polar(1.0, -2 * kPi * (offset + coarseHz) / rate);
+            omega = 0;
+        }
         if (theta > kPi) theta -= 2 * kPi; else if (theta < -kPi) theta += 2 * kPi;
         const float eTn = std::clamp(eT / (amp * amp), -1.f, 1.f);
         tau += T + kp * eTn;
@@ -512,7 +523,9 @@ struct MeteorReceiver::Impl {
                     for (size_t y = x + 1; y < hits.size(); y++) if (hits[y] - hits[x] == 8192) { at = hits[y]; break; }
                 if (at < 0) continue;
                 searchLock = true; xt = t; slip = sl;
-                rawT = diff ? rawTransform(t) : -1;
+                // The raw-pair transform guessed from the difference domain gives garbage frames when the symbol clock settled half a symbol
+                // late (OQPSK, slip 1; found with static offsets too, about one acquisition in three): decode in the difference domain then.
+                rawT = diff && !sl ? rawTransform(t) : -1;
                 nrzm = {};
                 tel.rotation = xt + 8 * slip;
                 lastAsmSec = nowSec();
