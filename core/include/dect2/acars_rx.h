@@ -18,9 +18,13 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);                     // where the radio's tuned frequency sits relative to 0 Hz in the input (0 for this mode)
     bool ready() const;                                  // false when the input rate is too low for this mode
-    void reset();                                        // after a retune: forget the signal and the decoded state
+    void reset();                                        // after a retune: forget the signal (the decoded lists stay, see clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(AcarsTelemetry& out, uint64_t lastSeq);
+    // The decoded lists (messages, aircraft) stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // the lists for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
     // UI and engine setters (any thread)

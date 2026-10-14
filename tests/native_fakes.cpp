@@ -362,9 +362,10 @@ static void ahfCount(const char* k) { const double v = fake_state(k); rec(k, v <
 //   which each control transfer does. A close or a new start with transfers in flight -> airspyhf.inFlight (the crash on Windows).
 // - a call on a handle that was closed -> airspyhf.deadCalls; a second stop of a stopped stream -> airspyhf.extraStops; two threads in the
 //   library at once for one radio (not counting is_streaming, which only reads flags) -> airspyhf.overlap; opening a radio that is open
-//   -> airspyhf.openTwice (WinUSB refuses it)
+//   -> airspyhf.openTwice (WinUSB refuses it); a listing (it opens every HF+ on the bus) while one is open -> airspyhf.listWhileOpen
+// - airspyhf_set_freq() goes to the radio only when the frequency changes: setting the same one again does not collect the transfers
 // - "airspyhf.unplug" = 1: the stream ends as when the radio is pulled out, and every control transfer fails at once
-struct ahf_dev { std::atomic<bool> run{false}; std::thread th; uint32_t rate = 768000; int inFlight = 0; bool started = false; };
+struct ahf_dev { std::atomic<bool> run{false}; std::thread th; uint32_t rate = 768000; int inFlight = 0; bool started = false; uint32_t freq = 0; };
 static std::mutex ahfMu;
 static std::set<ahf_dev*> ahfLive;
 static std::atomic<int> ahfInside{0};
@@ -380,7 +381,9 @@ struct AhfCall {   // one entry into the library
     }
     ~AhfCall() { if (ok) ahfInside--; }
 };
-EXPORT int airspyhf_list_devices(uint64_t* s, int n) { if (s && n > 0) s[0] = 0x3652A8D8C9E1F001ull; return 1; }
+EXPORT int airspyhf_list_devices(uint64_t* s, int n) {
+    { std::lock_guard<std::mutex> lk(ahfMu); if (!ahfLive.empty()) ahfCount("airspyhf.listWhileOpen"); }
+    if (s && n > 0) s[0] = 0x3652A8D8C9E1F001ull; return 1; }
 EXPORT int airspyhf_open_sn(ahf_dev** d, uint64_t sn) {
     rec("airspyhf.serialOk", sn == 0x3652A8D8C9E1F001ull ? 1 : 0);
     if (fake_state("airspyhf.open") == 1) { ahfCount("airspyhf.openTwice"); *d = nullptr; return -1; }
@@ -414,7 +417,13 @@ EXPORT int airspyhf_get_samplerates(ahf_dev*, uint32_t* b, uint32_t len) {
     return 0;
 }
 EXPORT int airspyhf_set_samplerate(ahf_dev* d, uint32_t r) { AhfCall c(d); if (!c.ok || ahfUnplugged()) return -1; if (d->run) rec("airspyhf.rateWhileStreaming", 1); d->rate = r; rec("airspyhf.rate", r); return 0; }
-EXPORT int airspyhf_set_freq(ahf_dev* d, uint32_t f) { AhfCall c(d); if (!c.ok || ahfUnplugged()) return -1; rec("airspyhf.freq", f); return 0; }
+EXPORT int airspyhf_set_freq(ahf_dev* d, uint32_t f) {
+    AhfCall c(d, false);
+    if (!c.ok || ahfUnplugged()) return -1;
+    if (f != d->freq) { d->inFlight = 0; d->freq = f; }   // (to the radio only when it changes)
+    rec("airspyhf.freq", f);
+    return 0;
+}
 EXPORT int airspyhf_set_hf_agc(ahf_dev*, uint8_t f) { rec("airspyhf.agc", f); return 0; }
 EXPORT int airspyhf_set_hf_att(ahf_dev* d, uint8_t v) { AhfCall c(d); if (!c.ok || ahfUnplugged()) return -1; rec("airspyhf.att", v); return 0; }
 EXPORT int airspyhf_set_hf_lna(ahf_dev*, uint8_t f) { rec("airspyhf.lna", f); return 0; }
@@ -496,6 +505,12 @@ EXPORT long long iio_device_attr_read(const void* dev, const char* a, char* dst,
     if (strcmp((const char*)dev, "phy") != 0 || strcmp(a, "xo_correction") != 0) return -22;
     snprintf(dst, len, "40000000");
     return (long long)strlen(dst) + 1;
+}
+EXPORT long long iio_device_attr_write(const void* dev, const char* a, const char* v) {   // the AD9361's FIR filter, loaded as text
+    if (strcmp(a, "filter_fir_config") != 0) return -22;
+    count("pluto.firLoads");
+    rec((std::string("pluto.") + (const char*)dev + ".firTaps").c_str(), (double)std::count(v, v + strlen(v), '\n') - 2);   // lines less the two headers
+    return (long long)strlen(v);
 }
 EXPORT int iio_device_attr_write_longlong(const void* dev, const char* a, long long v) { rec((std::string("pluto.") + (const char*)dev + "." + a).c_str(), (double)v); count("pluto.xoWrites"); return 0; }
 EXPORT int uhd_usrp_set_clock_source(void*, const char* src, size_t mb) { rec("usrp.clock", strcmp(src, "internal") == 0 ? 1 : strcmp(src, "external") == 0 ? 2 : strcmp(src, "gpsdo") == 0 ? 3 : 0); rec("usrp.clockMb", (double)mb); count("usrp.clockCalls"); return 0; }

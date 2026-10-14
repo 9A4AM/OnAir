@@ -96,13 +96,16 @@ int main() {
     CHECK(decrypted >= 35, "%d packets decrypted", decrypted);
     // the packet times follow the scene: the first Meshtastic frame starts at 0.2 s
     CHECK(!t.packets.empty() && std::fabs(t.packets.front().timeSec - 0.2) < 0.01, "first packet at %.4f s", t.packets.empty() ? -1.0 : t.packets.front().timeSec);
-    // a reset empties the tables; the report numbers go on
+    // a reset keeps the tables (only clearResults() empties them) and starts the counters again; the report numbers go on
+    const size_t nodesBefore = t.nodes.size();
     rx.reset();
     syn->generate(buf.data(), buf.size());
     rx.feed(buf.data(), buf.size());
     for (int i = 0; i < 10; i++) { syn->generate(buf.data(), buf.size()); rx.feed(buf.data(), buf.size()); }
     MeshTelemetry t2;
-    CHECK(rx.telemetry(t2, last) && t2.seq > last && t2.nodes.empty() && t2.blocksOk == 0, "after reset: seq %llu nodes %zu", (unsigned long long)t2.seq, t2.nodes.size());
+    CHECK(rx.telemetry(t2, last) && t2.seq > last && t2.nodes.size() >= nodesBefore && t2.blocksOk == 0, "after reset: seq %llu nodes %zu (%zu before)", (unsigned long long)t2.seq, t2.nodes.size(), nodesBefore);
+    rx.clearResults();
+    CHECK(rx.telemetry(t2, 0) && t2.nodes.empty() && t2.packets.empty(), "after clearResults: %zu nodes, %zu packets", t2.nodes.size(), t2.packets.size());
     {   // speed on noise alone (the search runs all the time)
         MeshReceiver r2;
         r2.configure(rate);

@@ -27,7 +27,7 @@ namespace dect2 {
 namespace atsc {
 
 // stage A filter for outputs k0..k1, safe to split across threads
-DECT2_MULTIVERSION void pfbBlock(const float* taps, int J, int NPH, const float* re, const float* im, int64_t base,
+DECT2_SIMD_BODY void pfbBlockBody(const float* taps, int J, int NPH, const float* re, const float* im, int64_t base,
                                  double pos0, double step, size_t k0, size_t k1, float* outRe, float* outIm) {
     const int T = 2 * J;
     for (size_t k = k0; k < k1; k++) {
@@ -72,6 +72,7 @@ DECT2_MULTIVERSION void pfbBlock(const float* taps, int J, int NPH, const float*
         outRe[k] = sr; outIm[k] = si;
     }
 }
+DECT2_AVX2_DISPATCH(void, pfbBlock, (const float* taps, int J, int NPH, const float* re, const float* im, int64_t base, double pos0, double step, size_t k0, size_t k1, float* outRe, float* outIm), (taps, J, NPH, re, im, base, pos0, step, k0, k1, outRe, outIm))
 
 namespace {
 constexpr double kPi = 3.14159265358979323846;

@@ -63,7 +63,12 @@ struct SdcAudio {
 struct SdcLabel { bool present = false; int shortId = 0; int textControl = 0; std::string text; };
 struct SdcLang { bool present = false; int shortId = 0; std::string language, country; };   // ISO 639-2 and ISO 3166 codes
 struct SdcTime { bool present = false; int mjd = 0, hour = 0, minute = 0; bool hasOffset = false; int offsetHalfHours = 0; };
-struct SdcApp { bool present = false; int shortId = 0, streamId = 0; bool packet = false; int domain = 0; };
+struct SdcApp {
+    bool present = false; int shortId = 0, streamId = 0; bool packet = false; int domain = 0;
+    bool dataUnit = false; int packetId = 0, packetLen = 0;   // packet mode: single packets or data units, the Packet Id, the data field length of every packet
+    std::vector<uint8_t> appData;                              // the application data bytes (DAB domain: 5 bits rfa, 11 bits user application type, user application data)
+    int dabUserApp() const { return domain == 0 && appData.size() >= 2 ? ((appData[0] & 7) << 8) | appData[1] : -1; }
+};
 
 struct SdcInfo {
     int afsIndex = 0;

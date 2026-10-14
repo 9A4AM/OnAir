@@ -3,6 +3,7 @@
 #pragma once
 #include "audioout.h"
 #include "ts.h"
+#include "es_save.h"
 #include <atomic>
 #include <condition_variable>
 #include <deque>
@@ -55,7 +56,16 @@ struct PlayerStats {
     double concealedAudioSec = 0;
     uint64_t repairEvents = 0, repairedFrames = 0;   // damaged pictures replaced by generated ones
     std::string concealBackend;          // how missing pictures are made: "Apple ML" or "motion search"
+    // what of the service the FFmpeg in OnAir cannot show or play (AVS+ / AVS2 / AVS3 video, DRA sound; docs/CODECS.md), one sentence, else empty
+    std::string videoNote, audioNote;
 };
+
+// The profile_id of the first AVS1-P2 / AVS+ sequence header (start code 00 00 01 B0) in p, -1 when there is none
+int avsProfileId(const uint8_t* p, size_t n);
+// Why an AVS family video stream gives no picture: codec as FFmpeg names it ("cavs", "avs2", "avs3"), whether this FFmpeg has a decoder for
+// it, the profile from avsProfileId() (-1 not seen yet). Empty when it can be decoded (or nothing is known yet).
+std::string avsVideoNote(const std::string& codec, bool haveDecoder, int profile);
+extern const char* const kDraAudioNote;   // a service whose sound is DRA only
 
 class Player {
 public:
@@ -78,6 +88,12 @@ public:
     void setHardwareDecode(bool on) { if (hwAllowed_.exchange(on) != on) restart_ = true; }
     bool hardwareDecode() const { return hwAllowed_; }
     bool subtitlesAvailable() const { return subsAvail_; }
+    // Save the raw audio elementary stream (DRA, else MPEG audio) of the selected service to a file FFmpeg can play. Returns the file
+    // actually written (the extension is set from the codec), empty when the service has no such stream yet or the file cannot be opened.
+    std::string saveAudioStream(const std::string& pathNoExt);
+    void stopSaveAudioStream() { saveSink_.close(); }
+    bool savingAudioStream() const { return saveSink_.isOpen(); }
+    uint64_t savedAudioBytes() const { return saveSink_.bytes(); }
 
 private:
     struct Impl;
@@ -93,7 +109,7 @@ private:
     std::atomic<bool> conceal_{false};   // off by default: interpolating pictures costs CPU that slower computers need for decoding
     std::atomic<bool> hwAllowed_{true};
     ServiceFilter filter_;
-    std::mutex mu_;
+    mutable std::mutex mu_;
     std::condition_variable cv_;
     std::deque<uint8_t> in_;
     // transport-stream losses on the video PID (continuity counter jumps), as positions in the byte stream fed to the demuxer
@@ -101,6 +117,14 @@ private:
     uint64_t pushed_ = 0, consumed_ = 0;
     int lastCc_[8192];
     std::atomic<int> videoPid_{-1};
+    EsSink saveSink_;
+    TsEsExtractor saveEs_;   // guarded by mu_
+    int esPid_ = -1;         // the selected service's DRA / MPEG audio stream, guarded by mu_
+    std::string esCodec_;
+    public:
+    bool hasSavableAudio() const { std::lock_guard<std::mutex> lk(mu_); return esPid_ >= 0; }
+    private:
+    std::atomic<bool> draAudio_{false};   // the selected service carries DRA sound (from the service list)
 };
 
 } // namespace dect2

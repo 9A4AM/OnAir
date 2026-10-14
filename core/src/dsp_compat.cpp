@@ -18,7 +18,7 @@ namespace dect2 {
 
 // Short filters (the channel-estimate interpolators have 16 taps): eight outputs at a time, one broadcast tap against eight
 // neighbouring inputs per step, instead of one dot product (with its reduction and call overhead) per output.
-DECT2_MULTIVERSION void convCorrShort(const float* a, const float* f, float* c, int strideC, int n, int p) {
+DECT2_SIMD_BODY void convCorrShortBody(const float* a, const float* f, float* c, int strideC, int n, int p) {
     int i = 0;
     for (; i + 8 <= n; i += 8) {
         float acc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -32,6 +32,7 @@ DECT2_MULTIVERSION void convCorrShort(const float* a, const float* f, float* c, 
         c[(size_t)i * strideC] = s;
     }
 }
+DECT2_AVX2_DISPATCH(void, convCorrShort, (const float* a, const float* f, float* c, int strideC, int n, int p), (a, f, c, strideC, n, p))
 
 #ifdef DECT2_USE_ACCELERATE
 
@@ -90,7 +91,7 @@ const Plan& planFor(int log2n) {
     return *p;
 }
 
-DECT2_MULTIVERSION void forward(float* __restrict re, float* __restrict im, int log2n) {
+DECT2_SIMD_BODY void forwardBody(float* __restrict re, float* __restrict im, int log2n) {
     const Plan& pl = planFor(log2n);
     const int n = pl.n;
     for (int i = 0; i < n; i++) {
@@ -119,6 +120,7 @@ DECT2_MULTIVERSION void forward(float* __restrict re, float* __restrict im, int 
         }
     }
 }
+DECT2_AVX2_DISPATCH(void, forward, (float* __restrict re, float* __restrict im, int log2n), (re, im, log2n))
 } // namespace
 
 void fftSplit(float* re, float* im, int log2n, bool inverse) {
@@ -127,8 +129,8 @@ void fftSplit(float* re, float* im, int log2n, bool inverse) {
     else forward(re, im, log2n);
 }
 
-DECT2_MULTIVERSION void convCorr(const float* a, const float* f, float* c, int strideC, int n, int p) {
-    if (p <= 32) { convCorrShort(a, f, c, strideC, n, p); return; }
+DECT2_SIMD_BODY void convCorrBody(const float* a, const float* f, float* c, int strideC, int n, int p) {
+    if (p <= 32) { convCorrShortBody(a, f, c, strideC, n, p); return; }
     for (int i = 0; i < n; i++) {
         float acc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         const float* x = a + i;
@@ -139,8 +141,9 @@ DECT2_MULTIVERSION void convCorr(const float* a, const float* f, float* c, int s
         c[(size_t)i * strideC] = s;
     }
 }
+DECT2_AVX2_DISPATCH(void, convCorr, (const float* a, const float* f, float* c, int strideC, int n, int p), (a, f, c, strideC, n, p))
 
-DECT2_MULTIVERSION void desamp(const float* a, int decim, const float* f, float* c, int n, int p) {
+DECT2_SIMD_BODY void desampBody(const float* a, int decim, const float* f, float* c, int n, int p) {
     for (int i = 0; i < n; i++) {
         float acc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         const float* x = a + (size_t)i * decim;
@@ -151,13 +154,14 @@ DECT2_MULTIVERSION void desamp(const float* a, int decim, const float* f, float*
         c[i] = s;
     }
 }
+DECT2_AVX2_DISPATCH(void, desamp, (const float* a, int decim, const float* f, float* c, int n, int p), (a, decim, f, c, n, p))
 
 void hannWindowNorm(float* w, int n) {
     const double scale = std::sqrt(8.0 / 3.0);
     for (int i = 0; i < n; i++) w[i] = (float)(scale * 0.5 * (1.0 - std::cos(2.0 * M_PI * i / n)));
 }
 
-DECT2_MULTIVERSION void syrkLowerT(const float* x, int rows, int n, float* a) {
+DECT2_SIMD_BODY void syrkLowerTBody(const float* x, int rows, int n, float* a) {
     std::memset(a, 0, sizeof(float) * (size_t)n * n);
     for (int r = 0; r < rows; r++) {
         const float* __restrict xr = x + (size_t)r * n;
@@ -168,8 +172,9 @@ DECT2_MULTIVERSION void syrkLowerT(const float* x, int rows, int n, float* a) {
         }
     }
 }
+DECT2_AVX2_DISPATCH(void, syrkLowerT, (const float* x, int rows, int n, float* a), (x, rows, n, a))
 
-DECT2_MULTIVERSION void gemvT(const float* x, int rows, int n, const float* t, float* b) {
+DECT2_SIMD_BODY void gemvTBody(const float* x, int rows, int n, const float* t, float* b) {
     std::memset(b, 0, sizeof(float) * n);
     for (int r = 0; r < rows; r++) {
         const float* __restrict xr = x + (size_t)r * n;
@@ -177,6 +182,7 @@ DECT2_MULTIVERSION void gemvT(const float* x, int rows, int n, const float* t, f
         for (int i = 0; i < n; i++) b[i] += tr * xr[i];
     }
 }
+DECT2_AVX2_DISPATCH(void, gemvT, (const float* x, int rows, int n, const float* t, float* b), (x, rows, n, t, b))
 
 #endif
 

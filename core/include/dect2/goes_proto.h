@@ -96,6 +96,7 @@ public:
     std::function<void(const std::vector<uint8_t>& file, int vcid, int apid)> onFile;   // every whole LRIT file (headers and data)
     // products, newest first (at most maxProducts are kept)
     std::vector<std::shared_ptr<Product>> products() const;
+    void adopt(std::vector<std::shared_ptr<Product>> v);   // products from the results file (newest first): they replace the list
     void setMaxProducts(size_t n);
     // counters
     uint64_t vcdus = 0, fillVcdus = 0, vcduGaps = 0, packets = 0, crcErrors = 0, files = 0, fileErrors = 0;

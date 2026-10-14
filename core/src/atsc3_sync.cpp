@@ -1,6 +1,7 @@
 #include "dect2/atsc3_sync.h"
 #include "dect2/dsp_compat.h"
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <chrono>
 #include <complex>
@@ -182,19 +183,36 @@ BootstrapFind findBootstrap(const cf32* x, size_t n, double maxCfo, double cente
         // the window: 4 symbols plus margins on both sides
         const long w0 = (long)pa - 40;
         if (w0 < 0 || (size_t)(w0 + 4 * L + 100) > n) continue;
-        for (int mi = -mMax; mi <= mMax; mi++) {
-            const double f = fFrac + mi * 3000.0;
-            if (std::fabs(f) > maxCfo + 1500) continue;
+        // the hypotheses do not depend on each other: a wide search tries them on a few threads
+        std::vector<double> fs;
+        for (int mi = -mMax; mi <= mMax; mi++) if (std::fabs(fFrac + mi * 3000.0) <= maxCfo + 1500) fs.push_back(fFrac + mi * 3000.0);
+        std::vector<Detection> dets(fs.size());
+        auto test = [&](size_t k) {
             std::vector<cf32> seg(x + w0, x + std::min(n, (size_t)(w0 + 8 * L + 100)));
-            derotate(seg.data(), seg.size(), f, kFs, (double)w0);
+            derotate(seg.data(), seg.size(), fs[k], kFs, (double)w0);
             // quick test of the hypothesis: the correlation with the first symbol over a few lags and the eight seeds
-            Detection det = detectBootstrap(seg.data(), seg.size(), seedOnly);
+            dets[k] = detectBootstrap(seg.data(), seg.size(), seedOnly);
+        };
+        const int hw = (int)std::thread::hardware_concurrency();
+        const size_t nt = fs.size() > 3 ? (size_t)std::max(1, std::min(8, hw)) : 1;
+        if (nt <= 1) {
+            for (size_t k = 0; k < fs.size(); k++) test(k);
+        } else {
+            std::atomic<size_t> next{0};
+            auto work = [&] { for (size_t k; (k = next++) < fs.size();) test(k); };
+            std::vector<std::thread> th;
+            for (size_t t = 1; t < std::min(nt, fs.size()); t++) th.emplace_back(work);
+            work();
+            for (auto& t : th) t.join();
+        }
+        for (size_t k = 0; k < fs.size(); k++) {
+            const Detection& det = dets[k];
             if (!det.found || det.metric < 0.30f) continue;
             if (det.metric > bestMetric) {
                 bestMetric = det.metric;
                 res.found = true;
                 res.start = (double)w0 + (double)det.start;
-                res.cfoHz = f;
+                res.cfoHz = fs[k];
                 res.metric = det.metric;
                 res.det = det;
             }
@@ -334,12 +352,21 @@ bool Atsc3Sync::search() {
     // otherwise lose an edge in the resampler. Without a hint the centre comes from the spectrum.
     std::vector<cf32> seg(raw_.begin() + (from - rawStart_), raw_.begin() + (from - rawStart_) + take);
     if (!haveHint_) coarse_ = centreOfChannel(seg.data(), seg.size());
-    const double pre = haveHint_ ? cfo_ : coarse_;
-    derotate(seg.data(), seg.size(), pre, rate, (double)from);
-    std::vector<cf32> y;
-    resampleExact(seg.data(), seg.size(), rate, kBootstrapRate, y);
-    st_.searches++;
-    auto bf = haveHint_ ? findBootstrap(y.data(), y.size(), 2500.0, 0.0, bs_.minorVersion) : findBootstrap(y.data(), y.size(), 20000.0);
+    // the spectrum's centre can be off the true one (a radio filter that cuts into one edge of the channel moves it by a hundred kHz): without a
+    // hint the search also tries the middle of the band when the centre it found gives nothing
+    double pre = haveHint_ ? cfo_ : coarse_;
+    BootstrapFind bf;
+    for (int attempt = 0; attempt < 2; attempt++) {
+        std::vector<cf32> work(seg);
+        derotate(work.data(), work.size(), pre, rate, (double)from);
+        std::vector<cf32> y;
+        resampleExact(work.data(), work.size(), rate, kBootstrapRate, y);
+        if (attempt == 0) st_.searches++;
+        bf = haveHint_ ? findBootstrap(y.data(), y.size(), 2500.0, 0.0, bs_.minorVersion) : findBootstrap(y.data(), y.size(), 20000.0);
+        if (bf.found && bf.det.valid) break;
+        if (haveHint_ || attempt > 0 || std::fabs(coarse_) < 15000.0) break;
+        pre = 0.0;
+    }
     bf.cfoHz += pre;
     if (haveHint_ && !bf.found && ++hintMisses_ > 100) { haveHint_ = false; hintMisses_ = 0; sroPpm_ = 0; sroCount_ = 0; predNext_ = -1; }   // lost: search widely again
     if (!bf.found || !bf.det.valid) {
@@ -468,8 +495,10 @@ bool Atsc3Sync::cutFrame() {
         st_.secDecode += std::chrono::duration<double>(std::chrono::steady_clock::now() - td).count();
         if (ok) { st_.frames++; missed_ = 0; } else missed_++;
     }
-    // the next bootstrap comes no earlier than the signalled time, and not before this frame is over
-    long next = std::max<long>(bsStart_ + (long)std::llround((minToNextSec_ - 0.002) * rate), frameStart_ + frameSamples_ - (long)(rate * 0.0005));
+    // the next bootstrap comes when this frame is over. The signalled minimum time to the next frame is not a lower bound to trust: a327hbr.cfile
+    // signals 250 ms but sends a frame every 242.7 ms, and searching from 250 ms skipped every second frame (and with it the FEC block that
+    // straddles the two)
+    long next = frameStart_ + frameSamples_ - (long)(rate * 0.0005);
     searchFrom_ = next;
     predNext_ = bsExact_ + bs_.numSymbols * 3072 / kBootstrapRate * rate + frameExact_;   // frames follow each other without a gap: the next bootstrap starts here
     locked_ = false;

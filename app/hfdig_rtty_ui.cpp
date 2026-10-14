@@ -2,7 +2,9 @@
 #include "app.h"
 #include "dect2/hfdig_rtty.h"
 #include "dect2/hfdig_tel.h"
+#include "dect2/updater.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <string>
 
@@ -14,6 +16,39 @@ struct State {
 };
 State S;
 
+
+// RTTY Operators' official calling frequencies (rttyops.com "RTTY QRG"); lower sideband below 10 MHz, upper above (RTTY convention)
+struct RttyBand { const char* name; double mhz; const char* note; };
+const RttyBand kRttyBands[] = {{"80m", 3.580, ""}, {"80m DX", 3.590, "DX calling"}, {"40m", 7.040, ""}, {"30m", 10.142, ""},
+                               {"20m", 14.080, ""}, {"20m DX", 14.083, "DX calling"}, {"17m", 18.105, ""}, {"15m", 21.080, ""},
+                               {"12m", 24.925, ""}, {"10m", 28.080, ""}};
+
+void rttyBandButtons(App& a);
+
+}
+
+void hfdigSetDemod(const App& a, int d);   // hfdig_ui.cpp
+
+namespace {
+void rttyBandButtons(App& a) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Band"); flowNext(6 * gUi);
+    for (int i = 0; i < IM_ARRAYSIZE(kRttyBands); i++) {
+        const RttyBand& b = kRttyBands[i];
+        const int demod = b.mhz < 10.0 ? dect2::HfDemodLsb : dect2::HfDemodUsb;
+        const bool here = std::fabs(a.freqMhz - b.mhz) < 0.002;
+        if (here) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.45f));
+        ImGui::PushID(i);
+        if (ImGui::SmallButton(b.name)) { hfdigSetDemod(a, demod); tuneFreq(a, b.mhz); }
+        ImGui::PopID();
+        if (here) ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("RTTY on %s: %.3f MHz, %s%s%s", b.name, b.mhz, dect2::hfDemodName(demod), b.note[0] ? "; " : "", b.note);
+        flowNext(4 * gUi);
+    }
+    if (ImGui::SmallButton("RTTY QRG (rttyops.com)")) dect2::openUrl("https://rttyops.com/index.php/rtty-qrg/2-about-us");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The RTTY Operators' list of calling frequencies (opens the browser)");
+    flowEnd();
+}
 }
 
 void hfdigRttyTab(App& a, const dect2::HfdigTelemetry& t) {
@@ -22,6 +57,7 @@ void hfdigRttyTab(App& a, const dect2::HfdigTelemetry& t) {
     const bool run = a.engine.running();
     HfdigRtty& dec = a.engine.hfdig().rtty();
 
+    rttyBandButtons(a);
     // settings
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("Baud"); ImGui::SameLine(0, 5 * gUi);
@@ -56,7 +92,7 @@ void hfdigRttyTab(App& a, const dect2::HfdigTelemetry& t) {
     if (ImGui::Checkbox("Unshift on space", &uns)) dec.setUnshiftOnSpace(uns);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("A space switches the figures back to letters.");
     flowNext(12 * gUi);
-    if (ImGui::Button("Clear")) dec.clearText();
+    if (ImGui::Button("Clear")) a.engine.hfdig().clearResults(1);   // the text the receiver keeps (also in the results file)
     flowNext(6 * gUi);
     if (ImGui::Button("Copy")) ImGui::SetClipboardText(r.text.c_str());
     flowEnd();

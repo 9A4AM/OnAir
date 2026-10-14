@@ -20,7 +20,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 41; }
+bool live(const App& a) { return a.rx.standard == 41; }
 
 const char* kQam[5] = {"16-QAM", "32-QAM", "64-QAM", "128-QAM", "256-QAM"};
 const ImVec4 kDim(0.6f, 0.64f, 0.68f, 1), kGood(0.35f, 0.90f, 0.45f, 1), kWarn(0.95f, 0.60f, 0.25f, 1), kBad(0.95f, 0.45f, 0.30f, 1), kText(0.93f, 0.95f, 0.97f, 1);

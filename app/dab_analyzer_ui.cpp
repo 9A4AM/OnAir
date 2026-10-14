@@ -249,6 +249,7 @@ void details(App& a, View& v) {
                 }
             } else {
                 kv(a, "Label", "%s", sv.label.c_str());
+                if (dabLogoImage(a, e, sid, 48 * gUi)) ImGui::TextDisabled("station logo (SPI)");
                 kv(a, "Service id", sid > 0xFFFF ? "0x%08X  (data service)" : "0x%04X  (programme service)", sid);
                 kv(a, "Country / reference", "%u / %u", sid > 0xFFFF ? (sid >> 20) & 15 : (sid >> 12) & 15, sid > 0xFFFF ? sid & 0xFFFFF : sid & 0xFFF);
                 if (sid > 0xFFFF) kv(a, "ECC", "0x%02X", sid >> 24); else if (in.hasEcc) kv(a, "ECC (ensemble)", "0x%02X", in.ecc);

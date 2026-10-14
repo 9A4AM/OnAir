@@ -1,5 +1,6 @@
 // HFDL receiver (hfdl_rx.h)
 #include "dect2/hfdl_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/hfdl_proto.h"
 #include <algorithm>
 #include <cmath>
@@ -19,6 +20,8 @@ constexpr int kSps = 4;
 constexpr int kSearchSyms = 2 * kHfdlALen;
 constexpr int kChunk = 8;
 constexpr double kMaxCfo = 250.0;
+constexpr int kCoarseHyp = 1;          // trial offsets of the preamble search: -1 .. 1 steps
+constexpr double kCoarseStep = 125.0;   // Hz
 constexpr int kL = 12;               // feed-forward taps each side, half a symbol apart
 constexpr int kNb = 6;               // feedback taps
 constexpr double kDefCentre = 8.9e6;
@@ -94,6 +97,13 @@ struct HfdlReceiver::Impl {
     std::map<int, bool> logged;
 
     double nowSec() const { return rate > 0 ? (double)nIn / rate : 0; }
+    // mu held: the clock starts again (configure), the kept lists move back with it
+    void shiftTimes(double dt) {
+        for (auto& m : tel.messages) m.timeSec += dt;
+        for (auto& a : tel.aircraft) { a.lastHeardSec += dt; if (a.hasPos) a.posTime += dt; for (auto& p : a.track) p.time += dt; }
+        for (auto& g : tel.stations) if (g.lastHeardSec != 0) g.lastHeardSec += dt;
+        tel.nowSec += dt;
+    }
 
     void setup() {
         rebuild = false;
@@ -186,17 +196,37 @@ struct HfdlReceiver::Impl {
     // ------------------------------------------------ search
     cf32 X(const Chan& k, int64_t i) const { const int64_t j = i - k.xBase; return j >= 0 && j < (int64_t)k.x.size() ? k.x[(size_t)j] : cf32(0, 0); }
 
-    double coarse(const Chan& k, int64_t s) const {
-        const auto& ref = hfdlPreambleRef(0);
-        double sumC = 0, sumA = 0;
-        const cf32* p = &k.x[(size_t)(s - k.xBase)];
-        for (int c = 0; c < kSearchSyms / kChunk + 1; c++) {
-            cf32 acc(0, 0);
-            const int k0 = c * kChunk, k1 = std::min(kSearchSyms, k0 + kChunk);
-            for (int q = k0; q < k1; q++) { const cf32 v = p[q * kSps]; acc += v * ref[(size_t)q]; sumA += std::abs(v); }
-            sumC += std::abs(acc);
+    // A1 + A2 against the reference turned by a few trial frequency offsets: 8-symbol chunks only stay coherent within about
+    // +-60 Hz, and a receiver off by a few ppm (or a station reported with the wrong carrier) is 100-250 Hz away
+    static const std::vector<std::vector<cf32>>& coarseRefs() {
+        static std::vector<std::vector<cf32>> r;
+        if (r.empty()) {
+            const auto& ref = hfdlPreambleRef(0);
+            for (int h = -kCoarseHyp; h <= kCoarseHyp; h++) {
+                std::vector<cf32> v((size_t)kSearchSyms);
+                for (int q = 0; q < kSearchSyms; q++) v[(size_t)q] = ref[(size_t)q] * std::polar(1.f, (float)(-2 * M_PI * h * kCoarseStep * q / kHfdlBaud));
+                r.push_back(std::move(v));
+            }
         }
-        return sumA > 1e-6 * kSearchSyms ? sumC / sumA : 0;
+        return r;
+    }
+    double coarse(const Chan& k, int64_t s) const {
+        const cf32* p = &k.x[(size_t)(s - k.xBase)];
+        double sumA = 0;
+        for (int q = 0; q < kSearchSyms; q++) sumA += std::abs(p[q * kSps]);
+        if (sumA <= 1e-6 * kSearchSyms) return 0;
+        double best = 0;
+        for (const auto& ref : coarseRefs()) {
+            double sumC = 0;
+            for (int c = 0; c < kSearchSyms / kChunk + 1; c++) {
+                cf32 acc(0, 0);
+                const int k0 = c * kChunk, k1 = std::min(kSearchSyms, k0 + kChunk);
+                for (int q = k0; q < k1; q++) acc += p[q * kSps] * ref[(size_t)q];
+                sumC += std::abs(acc);
+            }
+            best = std::max(best, sumC);
+        }
+        return best / sumA;
     }
 
     // y_k = ref_k * x(t0 + 4k), interpolated
@@ -441,7 +471,7 @@ struct HfdlReceiver::Impl {
 HfdlReceiver::HfdlReceiver() : p_(std::make_unique<Impl>()) {}
 HfdlReceiver::~HfdlReceiver() = default;
 
-void HfdlReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rate = r; p_->rebuild = true; p_->nIn = 0; }
+void HfdlReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rate = r; p_->rebuild = true; p_->nIn = 0; p_->shiftTimes(-p_->tel.nowSec); }
 void HfdlReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->offset != hz) { p_->offset = hz; p_->rebuild = true; } }
 void HfdlReceiver::setCenterHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->center != hz) { p_->center = hz; p_->rebuild = true; } }
 bool HfdlReceiver::ready() const { return p_->rate >= hfdlTuning().minSampleRate - 1; }
@@ -450,11 +480,11 @@ void HfdlReceiver::setChannels(const std::vector<double>& hz) { std::lock_guard<
 
 void HfdlReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
-    const double c = p_->tel.centerHz;
-    p_->tel = HfdlTelemetry();
-    p_->tel.centerHz = c;
+    HfdlTelemetry t;                     // the messages, aircraft and ground stations stay (clearResults); the clock runs on
+    t.centerHz = p_->tel.centerHz; t.nowSec = p_->tel.nowSec;
+    t.messages = std::move(p_->tel.messages); t.aircraft = std::move(p_->tel.aircraft); t.stations = std::move(p_->tel.stations);
+    p_->tel = std::move(t);
     p_->lastGood = p_->lastBurst = -1e9;
-    p_->acIcao.clear();
     p_->rebuild = true;
     p_->seq++;
 }
@@ -480,6 +510,32 @@ void HfdlReceiver::feed(const cf32* x, size_t n) {
     for (auto& k : I.ch) { k.info.active = k.info.lastHeardSec > 0 && now - k.info.lastHeardSec < 40; I.tel.channels.push_back(k.info); }
     I.tel.state = now - I.lastGood < 120 ? 2 : now - I.lastBurst < 60 ? 1 : 0;
     I.seq++;
+}
+
+void HfdlReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->tel.messages.clear(); p_->tel.aircraft.clear(); p_->tel.stations.clear(); p_->acIcao.clear();
+    p_->seq++;
+}
+std::string HfdlReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->tel.nowSec, p_->serial, p_->tel.messages, p_->tel.aircraft, p_->tel.stations, p_->acIcao);
+}
+bool HfdlReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    uint64_t serial = 0;
+    HfdlTelemetry l;
+    std::map<uint32_t, uint32_t> acIcao;
+    if (!results::unpack(blob, t0, serial, l.messages, l.aircraft, l.stations, acIcao)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const double now = p_->tel.nowSec;
+    p_->tel.messages = std::move(l.messages); p_->tel.aircraft = std::move(l.aircraft); p_->tel.stations = std::move(l.stations);
+    p_->acIcao = std::move(acIcao);
+    p_->serial = std::max(p_->serial, serial);
+    p_->tel.nowSec = t0;
+    p_->shiftTimes(now - t0);
+    p_->seq++;
+    return true;
 }
 
 bool HfdlReceiver::telemetry(HfdlTelemetry& out, uint64_t lastSeq) {

@@ -1,5 +1,6 @@
 // DMR receiver: front end (decimation, DC removal, carrier offset correction, channel filter, discriminator, matched filter) and the glue to the link layer.
 #include "dect2/dmr_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/dmr_dsp.h"
 #include "dect2/exact_resampler.h"
 #include "dect2/fftutil.h"
@@ -213,12 +214,34 @@ struct DmrReceiver::Impl {
         samplesSincePublish = 0;
         noiseDbfs = -120; cnrDb = 0; noiseKnown = false;
         std::lock_guard<std::mutex> lk(mu);
+        lastNow = 0;
+        DmrTelemetry t;                  // the call log and the messages stay (clearResults)
+        link.snapshot(t);
         tel = DmrTelemetry();
+        tel.callLog = std::move(t.callLog); tel.messages = std::move(t.messages); tel.calls = t.calls;
         tel.seq = ++telSeq;
+    }
+
+    // Clear and a loaded file, from any thread: the report at once, the link's own lists on the next feed() (mu)
+    bool logReq = false;
+    double lastNow = 0;                  // the link's clock at the last report (mu)
+    std::vector<DmrCall> reqCalls;
+    std::vector<DmrMessage> reqMsgs;
+    uint64_t reqCount = 0;
+    void takeRequests() {
+        std::lock_guard<std::mutex> lk(mu);
+        if (!logReq) return;
+        logReq = false;
+        const double dt = link.nowSec() - lastNow;   // the requested lists are on the report's clock
+        for (auto& c : reqCalls) { c.startSec += dt; c.endSec += dt; }
+        for (auto& m : reqMsgs) m.sec += dt;
+        link.setLogs(std::move(reqCalls), std::move(reqMsgs), reqCount);
+        reqCalls.clear(); reqMsgs.clear();
     }
 
     void feed(const cf32* x, size_t n) {
         if (!ready || n == 0) return;
+        takeRequests();
         // not-a-number or absurd values (a damaged file, a driver fault) would poison the filters for good: they become zero
         bool bad = false;
         for (size_t i = 0; i < n; i++) {
@@ -421,6 +444,7 @@ struct DmrReceiver::Impl {
         }
         t.cfoHz = coarseHz + ncoHz + link.cfoResidualHz();
         std::lock_guard<std::mutex> lk(mu);
+        lastNow = link.nowSec();
         t.seq = ++telSeq;
         tel = std::move(t);
     }
@@ -437,6 +461,31 @@ bool DmrReceiver::telemetry(DmrTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->tel.seq == lastSeq || p_->tel.seq < lastSeq) return false;
     out = p_->tel;
+    return true;
+}
+void DmrReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->tel.callLog.clear(); p_->tel.messages.clear(); p_->tel.calls = 0;
+    p_->reqCalls.clear(); p_->reqMsgs.clear(); p_->reqCount = 0; p_->logReq = true;
+    p_->tel.seq = ++p_->telSeq;
+}
+std::string DmrReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->lastNow, p_->tel.callLog, p_->tel.messages, p_->tel.calls);
+}
+bool DmrReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::vector<DmrCall> calls;
+    std::vector<DmrMessage> msgs;
+    uint64_t n = 0;
+    if (!results::unpack(blob, t0, calls, msgs, n)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const double dt = p_->lastNow - t0;
+    for (auto& c : calls) { c.startSec += dt; c.endSec += dt; c.active = false; }
+    for (auto& m : msgs) m.sec += dt;
+    p_->tel.callLog = calls; p_->tel.messages = msgs; p_->tel.calls = n;
+    p_->reqCalls = std::move(calls); p_->reqMsgs = std::move(msgs); p_->reqCount = n; p_->logReq = true;
+    p_->tel.seq = ++p_->telSeq;
     return true;
 }
 void DmrReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->cbMu); p_->logCb = std::move(cb); }

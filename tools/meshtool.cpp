@@ -63,7 +63,7 @@ static int gen(int argc, char** argv) {
         done += n;
     }
     fclose(f);
-    printf("wrote %.1f s at %.3f Msps to %s (%s); tune to %.3f MHz\n", secs, rate / 1e6, path.c_str(), cs8 ? "cs8" : "cf32", cfg.modeOpt[1] == 1 ? 906.875 : 869.525);
+    printf("wrote %.1f s at %.3f Msps to %s (%s); tune to %.3f MHz\n", secs, rate / 1e6, path.c_str(), cs8 ? "cs8" : "cf32", cfg.modeOpt[1] == 1 ? 906.875 : cfg.modeOpt[1] == 5 ? 919.875 : 869.525);
     return 0;
 }
 

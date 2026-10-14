@@ -1,5 +1,6 @@
 // ISM sensors receiver. See ism_rx.h.
 #include "dect2/ism_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/ism_tel.h"
 #include "dect2/ism_sigfox.h"
 #include "dect2/fftutil.h"
@@ -53,6 +54,20 @@ struct IsmReceiver::Impl {
     SigfoxRx sfx;
     double lastPubSec = -1;
     bool changed = false;
+    // the decoded lists (devices, log, unknown bursts) stay through resets: Clear and a loaded file reach the feed thread's copy
+    // through these requests (mu), and pub at once
+    bool loadReq = false;
+    IsmTelemetry loaded;
+
+    static void moveLists(IsmTelemetry& to, IsmTelemetry& from) {
+        to.devices = std::move(from.devices); to.events = std::move(from.events); to.raws = std::move(from.raws);
+        from.devices.clear(); from.events.clear(); from.raws.clear();
+    }
+    static void shiftTimes(IsmTelemetry& t, double dt) {
+        for (auto& d : t.devices) d.lastSec += dt;
+        for (auto& e : t.events) e.sec += dt;
+        for (auto& r : t.raws) r.sec += dt;
+    }
 
     void setup() {
         std::lock_guard<std::mutex> lk(mu);
@@ -87,10 +102,15 @@ struct IsmReceiver::Impl {
         ringMask = rn - 1;
         maxBurst = (uint64_t)(rn * 0.75);
         hangFrames = std::max(4, (int)(kHangSec * rate / N));
+        const double t0 = (double)total / std::max(1.0, tel.inputRate);   // the clock starts again: the kept lists move back by it
         total = 0; inBurst = false; idle = 0;
         const uint64_t s0 = tel.seq;
+        IsmTelemetry keep;
+        moveLists(keep, tel);
+        shiftTimes(keep, -t0);
         tel = IsmTelemetry();
         tel.seq = s0;
+        moveLists(tel, keep);
         tel.inputRate = rate; tel.centerHz = center; tel.dialOffsetHz = offset;
         tel.state = 0;
         sfx.configure(rate, offset, center > 0 ? center + offset : 0);
@@ -482,7 +502,30 @@ void IsmReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_
 void IsmReceiver::setCenterHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (hz != p_->centerSet) { p_->centerSet = hz; p_->resetReq = true; } }
 bool IsmReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= ismTuning().minSampleRate - 1; }
 void IsmReceiver::reset() { std::lock_guard<std::mutex> lk(p_->mu); p_->resetReq = true; }
-void IsmReceiver::clearDevices() { p_->clearReq = true; }
+void IsmReceiver::clearDevices() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->clearReq = true; p_->loadReq = false;
+    IsmTelemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->pub.seq++;
+}
+void IsmReceiver::clearResults() { clearDevices(); }
+std::string IsmReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.devices, p_->pub.events, p_->pub.raws);
+}
+bool IsmReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    IsmTelemetry l;
+    if (!results::unpack(blob, t0, l.devices, l.events, l.raws)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    p_->pub.devices = l.devices; p_->pub.events = l.events; p_->pub.raws = l.raws;
+    Impl::moveLists(p_->loaded, l);
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
+}
 void IsmReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void IsmReceiver::setReadingTap(std::function<void(const IsmReading&, double)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->tap = std::move(cb); }
 void IsmReceiver::setThresholdDb(float db) { std::lock_guard<std::mutex> lk(p_->mu); p_->thrSet = std::max(8.f, std::min(25.f, db)); p_->resetReq = true; }
@@ -501,6 +544,10 @@ void IsmReceiver::feed(const cf32* x, size_t n) {
     if (rs) { m.setup(); if (m.rate > 0) m.init(); }
     if (m.rate < ismTuning().minSampleRate - 1 || !m.fft) return;
     if (m.clearReq.exchange(false)) { m.tel.devices.clear(); m.tel.events.clear(); m.tel.raws.clear(); m.tel.blocksOk = m.tel.blocksBad = 0; m.sfx.clear(); m.changed = true; }
+    {
+        std::lock_guard<std::mutex> lk(m.mu);
+        if (m.loadReq) { m.loadReq = false; Impl::moveLists(m.tel, m.loaded); m.changed = true; }
+    }
     m.sfx.feed(x, n);
     for (size_t i = 0; i < n; i++) {
         cf32 v = x[i];

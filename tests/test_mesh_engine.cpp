@@ -76,15 +76,15 @@ int main() {
     } else {
         CHECK(m.blocksOk >= 3, "%llu frames", (unsigned long long)m.blocksOk);
     }
-    // a retune empties the tables, and the report numbers go on
+    // a retune keeps the decoded tables (only the Clear empties them), and the report numbers go on
     TuneSettings t2 = t;
     t2.centerHz += 1e6;
     e.retuneReset(t2);
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
     RxTelemetry r2;
     // (the test signal starts again: a frame or two may already be back)
-    CHECK(e.latestRx(r2, 0) && r2.seq > last && r2.mesh.blocksOk < m.blocksOk && r2.mesh.nodes.size() <= 2, "after a retune: seq %llu, %llu frames, %zu nodes",
-          (unsigned long long)r2.seq, (unsigned long long)r2.mesh.blocksOk, r2.mesh.nodes.size());
+    CHECK(e.latestRx(r2, 0) && r2.seq > last && r2.mesh.blocksOk < m.blocksOk && r2.mesh.nodes.size() >= m.nodes.size(), "after a retune: seq %llu, %llu frames, %zu nodes (%zu before)",
+          (unsigned long long)r2.seq, (unsigned long long)r2.mesh.blocksOk, r2.mesh.nodes.size(), m.nodes.size());
     e.stop();
     if (fails) { printf("%d failures\n", fails); return 1; }
     printf("ok\n");

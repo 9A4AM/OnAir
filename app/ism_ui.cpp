@@ -23,7 +23,7 @@ State S;
 
 const char* const kKinds[] = {"All", "Weather", "TPMS", "Remote", "Energy", "Meter", "Sensor", "Z-Wave"};
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 29; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 29; }   // the engine reports its standard code minus one
 
 std::string hhmmss(int64_t t) {
     if (t <= 0) return "-";

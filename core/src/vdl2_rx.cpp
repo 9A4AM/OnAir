@@ -1,5 +1,6 @@
 // VDL Mode 2 receiver: see vdl2_rx.h.
 #include "dect2/vdl2_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/feeds.h"
 #include "dect2/vdl2_proto.h"
 #include <algorithm>
@@ -116,6 +117,13 @@ struct Vdl2Receiver::Impl {
     float lastSnr = 0;
 
     void log(const std::string& s) { if (logCb) logCb(s); }
+    // mu held: the clock starts again (configure), the kept lists move back with it
+    void shiftTimes(double dt) {
+        for (auto& m : tel.messages) m.timeSec += dt;
+        for (auto& a : tel.aircraft) { a.lastHeardSec += dt; if (a.hasPos) a.posTime += dt; for (auto& p : a.track) p.time += dt; }
+        for (auto& g : tel.stations) if (g.lastHeardSec != 0) g.lastHeardSec += dt;
+        tel.nowSec += dt;
+    }
 
     double effCenter() const { return center > 0 ? center : kDefaultCenter - offset; }
 
@@ -466,7 +474,7 @@ struct Vdl2Receiver::Impl {
 Vdl2Receiver::Vdl2Receiver() : p_(new Impl) {}
 Vdl2Receiver::~Vdl2Receiver() = default;
 
-void Vdl2Receiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rate = r; p_->rebuild = true; p_->nIn = 0; }
+void Vdl2Receiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rate = r; p_->rebuild = true; p_->nIn = 0; p_->shiftTimes(-p_->tel.nowSec); }
 void Vdl2Receiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->offset != hz) { p_->offset = hz; p_->rebuild = true; } }
 void Vdl2Receiver::setCenterHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->center != hz) { p_->center = hz; p_->rebuild = true; } }
 bool Vdl2Receiver::ready() const { return p_->rate >= vdl2Tuning().minSampleRate - 1; }
@@ -477,9 +485,10 @@ void Vdl2Receiver::setTrackTuning(bool on) { std::lock_guard<std::mutex> lk(p_->
 
 void Vdl2Receiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
-    const double c = p_->tel.centerHz;
-    p_->tel = Vdl2Telemetry();
-    p_->tel.centerHz = c;
+    Vdl2Telemetry t;                     // the messages, aircraft and ground stations stay (clearResults); the clock runs on
+    t.centerHz = p_->tel.centerHz; t.nowSec = p_->tel.nowSec;
+    t.messages = std::move(p_->tel.messages); t.aircraft = std::move(p_->tel.aircraft); t.stations = std::move(p_->tel.stations);
+    p_->tel = std::move(t);
     p_->lastGood = p_->lastBurst = -1e9;
     p_->rebuild = true;
     p_->seq++;
@@ -528,6 +537,30 @@ void Vdl2Receiver::feed(const cf32* x, size_t n) {
     }
     I.tel.state = now - I.lastGood < 30 ? 2 : bursts ? 1 : 0;
     I.seq++;
+}
+
+void Vdl2Receiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->tel.messages.clear(); p_->tel.aircraft.clear(); p_->tel.stations.clear();
+    p_->seq++;
+}
+std::string Vdl2Receiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->tel.nowSec, p_->serial, p_->tel.messages, p_->tel.aircraft, p_->tel.stations);
+}
+bool Vdl2Receiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    uint64_t serial = 0;
+    Vdl2Telemetry l;
+    if (!results::unpack(blob, t0, serial, l.messages, l.aircraft, l.stations)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const double now = p_->tel.nowSec;
+    p_->tel.messages = std::move(l.messages); p_->tel.aircraft = std::move(l.aircraft); p_->tel.stations = std::move(l.stations);
+    p_->serial = std::max(p_->serial, serial);
+    p_->tel.nowSec = t0;
+    p_->shiftTimes(now - t0);
+    p_->seq++;
+    return true;
 }
 
 bool Vdl2Receiver::telemetry(Vdl2Telemetry& out, uint64_t lastSeq) {

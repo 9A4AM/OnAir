@@ -31,7 +31,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 27; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 27; }   // the engine reports its standard code minus one
 
 std::string encode(const std::vector<dect2::AirbandChannel>& v) {
     std::string s;
@@ -242,6 +242,7 @@ void channelView(App& a) {
 
 void activityView(App& a) {
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to see the activity"); ImGui::PopTextWrapPos(); return; }
+    if (resultsClearButton("airband")) a.engine.airband().clearResults();
     const auto& log = a.rx.airband.activity;
     if (ImGui::Button("Copy")) {
         std::string txt;

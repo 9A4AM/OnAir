@@ -1,6 +1,7 @@
 // CubeSat telemetry receiver: see cubesat_rx.h. The radio side is the packet receiver's (packet_demod.h), the frame layers are
 // packet_ax25.h and cubesat_proto.h.
 #include "dect2/cubesat_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/cubesat_tel.h"
 #include "dect2/feeds.h"
 #include "dect2/packet_ax25.h"
@@ -158,6 +159,7 @@ struct CubesatReceiver::Impl {
         for (int i = 0; i < 2; i++) { g3[i].reset(); plain[i].reset(); framer[i].reset(); framer[i].ccsdsLen = ccsdsLen; }
         nextReport = 0;
         recent.clear(); fails.clear();
+        for (auto& f : frames) f.timeSec -= t.timeSec;   // the frames stay (clearResults): the clock starts again
         CubeTelemetry n;
         n.inputRate = fs;
         n.blocksOk = t.blocksOk; n.blocksBad = t.blocksBad; n.rsFixed = t.rsFixed; n.kissSent = t.kissSent;
@@ -347,6 +349,26 @@ void CubesatReceiver::clearFrames() {
     p_->t = CubeTelemetry();
     p_->t.inputRate = rate;
     p_->seq = s;
+    std::lock_guard<std::mutex> tl(p_->telMu);
+    p_->pub.frames.clear();
+    p_->pub.seq = ++p_->seq;
+}
+void CubesatReceiver::clearResults() { clearFrames(); }
+std::string CubesatReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    return results::pack(p_->t.timeSec, p_->frames);
+}
+bool CubesatReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::deque<CubeFrame> frames;
+    if (!results::unpack(blob, t0, frames)) return false;
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    for (auto& f : frames) f.timeSec += p_->t.timeSec - t0;
+    p_->frames = std::move(frames);
+    std::lock_guard<std::mutex> tl(p_->telMu);
+    p_->pub.frames.assign(p_->frames.begin(), p_->frames.end());
+    p_->pub.seq = ++p_->seq;
+    return true;
 }
 void CubesatReceiver::feed(const cf32* x, size_t n) { std::lock_guard<std::mutex> lk(p_->procMu); p_->feed(x, n); }
 bool CubesatReceiver::telemetry(CubeTelemetry& out, uint64_t lastSeq) {

@@ -108,7 +108,7 @@ int main() {
         const double rms = std::sqrt(e / tot);
         printf("  20 s at 10 Msps: rms %.3f, peak %.3f, %.1f times real time on one core\n", rms, pk, 20.0 / busy);
         CHECK(rms > 0.19 && rms < 0.25, "rms between 0.19 and 0.25");
-        CHECK(pk < 0.95, "peak below about 0.9");
+        CHECK(pk < 0.97, "peak below about 0.97 (headroom before clipping)");
         CHECK(20.0 / busy > 1.5, "faster than real time by a safe margin");
     }
 

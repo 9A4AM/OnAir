@@ -5,6 +5,7 @@
 // The first that finds its pattern locks on (in either polarity) and reads the transmission; the symbol timing follows the data. The protocol layers
 // are in pager_proto.cpp.
 #include "dect2/pager_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/dmr_dsp.h"
 #include "dect2/exact_resampler.h"
 #include "dect2/pager_proto.h"
@@ -145,7 +146,7 @@ struct PagerReceiver::Impl {
     int dataIdx = 0, dataTotal = 0;
     int64_t lockStart = 0;
 
-    // results
+    // results (list and serial under mu: Clear and the results file reach them from other threads)
     std::deque<PagerMessage> list;         // newest first
     bool listDirty = false;
     uint64_t serial = 0;
@@ -172,6 +173,7 @@ struct PagerReceiver::Impl {
         double r, off;
         { std::lock_guard<std::mutex> lk(mu); r = rate; off = offsetHz; curRate = r; }
         const uint64_t s = tel.seq;        // the report number goes on
+        const double t0 = tel.timeSec;     // the clock starts again: the kept messages move back by the time it had reached
         tel = PagerTelemetry();
         tel.seq = s;
         tel.inputRate = r;
@@ -202,7 +204,11 @@ struct PagerReceiver::Impl {
         blkPow = 0; blkN = 0; noiseFloor = 0; snrEma = 0; sigHold = 0; haveFloor = false;
         peakH = -1; locked = false; lockH = -1; hold = 0;
         parser.reset();
-        list.clear(); listDirty = true; serial = 0;
+        {
+            std::lock_guard<std::mutex> lk(mu);
+            for (auto& m : list) m.timeSec -= t0;   // the messages stay (clearResults)
+            listDirty = true;
+        }
         lastLockEnd = -(int64_t)1e12;
         if (built) say("Pagers: listening for POCSAG and FLEX");
     }
@@ -217,28 +223,32 @@ struct PagerReceiver::Impl {
         tel.sync = locked;
         tel.state = (locked || (double)(cur - lastLockEnd) < 2.0 * kWork) ? 1 : 0;
         tel.snrDb = tel.signal ? (float)snrEma : 0.f;
+        std::lock_guard<std::mutex> lk(mu);
         if (listDirty) {
             tel.messages = std::make_shared<const std::vector<PagerMessage>>(list.begin(), list.end());
             listDirty = false;
         }
-        std::lock_guard<std::mutex> lk(mu);
         pub = tel;
     }
 
     // ---- results
     void emit(std::vector<PagerMessage>& v, int spd, bool flex) {
         for (PagerMessage& pm : v) {
-            pm.serial = ++serial;
-            pm.timeSec = nowSec();
-            pm.speed = spd;
-            pm.flex = flex;
+            uint64_t sn;
+            {
+                std::lock_guard<std::mutex> lk(mu);
+                pm.serial = sn = ++serial;
+                pm.timeSec = nowSec();
+                pm.speed = spd;
+                pm.flex = flex;
+                list.push_front(pm);
+                if (list.size() > kMaxMessages) list.pop_back();
+                listDirty = true;
+            }
             tel.speeds[spd].messages++;
             tel.messagesTotal++;
             tel.dataValid = true;
-            list.push_front(pm);
-            if (list.size() > kMaxMessages) list.pop_back();
-            listDirty = true;
-            if (serial <= 40) {
+            if (sn <= 40) {
                 char b[160];
                 snprintf(b, sizeof b, "Pagers: %s %u %s", pagerSpeedName(spd), (unsigned)pm.address, pagerTypeName(pm.type));
                 say(b);
@@ -636,8 +646,36 @@ void PagerReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->resetReq = true;
     const uint64_t s = p_->pub.seq;
+    auto keep = p_->pub.messages;        // the messages stay (clearResults)
     p_->pub = PagerTelemetry();
     p_->pub.seq = s;
+    p_->pub.messages = std::move(keep);
+}
+
+void PagerReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->list.clear();
+    p_->listDirty = true;
+    p_->pub.messages.reset();
+    p_->pub.seq++;
+}
+std::string PagerReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->serial, p_->list);
+}
+bool PagerReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    uint64_t serial = 0;
+    std::deque<PagerMessage> list;
+    if (!results::unpack(blob, t0, serial, list)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    for (auto& m : list) m.timeSec += p_->pub.timeSec - t0;
+    p_->list = std::move(list);
+    p_->serial = std::max(p_->serial, serial);
+    p_->listDirty = true;
+    p_->pub.messages = std::make_shared<const std::vector<PagerMessage>>(p_->list.begin(), p_->list.end());
+    p_->pub.seq++;
+    return true;
 }
 
 void PagerReceiver::feed(const cf32* x, size_t n) {

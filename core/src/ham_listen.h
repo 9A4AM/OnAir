@@ -3,6 +3,7 @@
 // the device has not taken in time is dropped), so the decoders never wait for it.
 #pragma once
 #include "dect2/audioout.h"
+#include "dect2/hf_demod.h"
 #include "dect2/marine_dsp.h"
 #include "hfdig_usb.h"
 #include <algorithm>
@@ -16,20 +17,51 @@
 namespace dect2 {
 namespace hfdig {
 
-// Upper sideband audio: 24 kHz complex (the dial frequency at 0 Hz) -> real audio at 8 kHz, 200 .. 3800 Hz, with a slow AGC
+// The sideband (or FM / AM) audio: 24 kHz complex (the dial frequency at 0 Hz) -> real audio at 8 kHz.
+// USB (the default): 200 .. 3800 Hz above the dial, with a slow AGC. LSB: the same below the dial. NFM: a 12.5 kHz channel, the
+// frequency discriminator (5 kHz deviation gives 0.5, no de-emphasis: SSTV and AFSK data are sent flat) and a 300 .. 3000 Hz audio
+// band. AM: a 7 kHz channel, the envelope over its carrier (the demodulator of the general receiver, general_rx.cpp), 300 .. 3000 Hz.
+// setDemod() (HfDemod, dect2/hf_demod.h; Auto is resolved by the caller) from the thread that calls process().
 class UsbAudio {
 public:
     static constexpr int kTaps = 383;          // about 270 Hz of transition at 24 kHz: the lower sideband is gone 200 Hz below the dial
     static constexpr int kDecim = 3;           // 24 kHz -> 8 kHz
-    UsbAudio() {
-        const auto h = usbTaps(kTaps, marine::kBaseRate);
-        taps_.resize(kTaps);
-        for (int j = 0; j < kTaps; j++) taps_[(size_t)j] = h[(size_t)(kTaps - 1 - j)];   // the history is kept oldest first
-        hist_.assign(2 * kTaps, cf32(0.f, 0.f));
+    static constexpr int kChanTaps = 95, kAudTaps = 255;
+    UsbAudio() { setDemod(HfDemodUsb); }
+    int demod() const { return demod_; }
+    void setDemod(int d) {
+        if (d < HfDemodUsb || d > HfDemodAm) d = HfDemodUsb;
+        if (d == demod_) return;
+        demod_ = d;
+        const double fs = marine::kBaseRate;
+        if (d == HfDemodUsb || d == HfDemodLsb) {
+            const auto h = usbTaps(kTaps, fs);
+            taps_.resize(kTaps);
+            for (int j = 0; j < kTaps; j++) {   // the history is kept oldest first; LSB: the mirror image
+                const cf32 v = h[(size_t)(kTaps - 1 - j)];
+                taps_[(size_t)j] = d == HfDemodLsb ? std::conj(v) : v;
+            }
+            hist_.assign(2 * kTaps, cf32(0.f, 0.f));
+        } else {
+            const auto lp = lowpass(kChanTaps, (d == HfDemodNfm ? 6250.0 : 3500.0) / fs, 7.0);   // symmetric: no reversal needed
+            taps_.assign(lp.begin(), lp.end());
+            hist_.assign(2 * kChanTaps, cf32(0.f, 0.f));
+            // 300 .. 3000 Hz band-pass (real), evaluated every kDecim-th sample
+            const auto a = lowpass(kAudTaps, 0.5 * (3000.0 - 300.0) / fs, 7.0);
+            const double w0 = 2 * kPi * 0.5 * (3000.0 + 300.0) / fs, c = (kAudTaps - 1) * 0.5;
+            aud_.resize(kAudTaps);
+            for (int k = 0; k < kAudTaps; k++) aud_[(size_t)k] = (float)(2 * a[(size_t)k] * std::cos(w0 * (k - c)));
+            ahist_.assign(2 * kAudTaps, 0.f);
+        }
+        reset();
     }
-    void reset() { std::fill(hist_.begin(), hist_.end(), cf32(0.f, 0.f)); pos_ = 0; phase_ = 0; env_ = 0; }
+    void reset() {
+        std::fill(hist_.begin(), hist_.end(), cf32(0.f, 0.f)); std::fill(ahist_.begin(), ahist_.end(), 0.f);
+        pos_ = apos_ = 0; phase_ = 0; env_ = 0; prev_ = cf32(0.f, 0.f); car_ = 0; carInit_ = false;
+    }
     // appends to out; adds |band|^2 of every output sample to power (before the AGC)
     void process(const cf32* x, size_t n, std::vector<float>& out, double& power) {
+        if (demod_ == HfDemodNfm || demod_ == HfDemodAm) { processFmAm(x, n, out, power); return; }
         for (size_t i = 0; i < n; i++) {
             hist_[(size_t)pos_] = x[i]; hist_[(size_t)(pos_ + kTaps)] = x[i];   // twice, so the window never wraps
             if (++pos_ >= kTaps) pos_ = 0;
@@ -51,9 +83,49 @@ public:
         }
     }
 private:
+    void processFmAm(const cf32* x, size_t n, std::vector<float>& out, double& power) {
+        const int T = kChanTaps, A = kAudTaps;
+        const bool fm = demod_ == HfDemodNfm;
+        const double fs = marine::kBaseRate;
+        const float fmK = (float)(fs / (2 * kPi) / 5000.0 * 0.5);   // 5 kHz deviation -> 0.5
+        const float carK = (float)(1 - std::exp(-1.0 / (0.05 * fs)));
+        for (size_t i = 0; i < n; i++) {
+            hist_[(size_t)pos_] = x[i]; hist_[(size_t)(pos_ + T)] = x[i];
+            if (++pos_ >= T) pos_ = 0;
+            const cf32* w = &hist_[(size_t)pos_];
+            float zr = 0, zi = 0;
+            for (int k = 0; k < T; k++) { const float t = taps_[(size_t)k].real(); zr += t * w[k].real(); zi += t * w[k].imag(); }
+            const cf32 z(zr, zi);
+            float s;
+            if (fm) {   // the discriminator, as in the general receiver
+                const cf32 d = z * std::conj(prev_);
+                prev_ = z;
+                s = std::atan2(d.imag(), d.real()) * fmK;
+            } else {    // AM: the envelope over its carrier
+                const float e = std::abs(z);
+                if (!carInit_) { car_ = e; carInit_ = true; }
+                car_ += carK * (e - car_);
+                s = (e - car_) / std::max(car_, 1e-9f) * 0.5f;
+            }
+            ahist_[(size_t)apos_] = s; ahist_[(size_t)(apos_ + A)] = s;
+            if (++apos_ >= A) apos_ = 0;
+            if (++phase_ < kDecim) continue;
+            phase_ = 0;
+            const float* v = &ahist_[(size_t)apos_];
+            float y = 0;
+            for (int k = 0; k < A; k++) y += aud_[(size_t)k] * v[k];   // symmetric taps
+            power += std::norm(z);
+            out.push_back(std::max(-1.f, std::min(1.f, y)));
+        }
+    }
     std::vector<cf32> taps_, hist_;
-    int pos_ = 0, phase_ = 0;
+    std::vector<float> aud_, ahist_;
+    int demod_ = -1;
+    int pos_ = 0, apos_ = 0, phase_ = 0;
     float env_ = 0;
+    cf32 prev_{0.f, 0.f};
+    float car_ = 0;
+    bool carInit_ = false;
 };
 
 // 8 kHz mono -> 48 kHz stereo for the sound card (polyphase interpolation by 6, pass band up to 3.6 kHz)

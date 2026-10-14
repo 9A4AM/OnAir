@@ -3,6 +3,7 @@
 // spectrum over a waterfall (a click puts the SSB dial there) with Listen, the wideband transponder with its DATV carriers and a
 // hand-over to DVB-S/S2, and the drift history. Every frequency shown is the corrected downlink frequency once the beacons are locked.
 #include "app.h"
+#include "results_export.h"
 #include "gfx.h"
 #include "plot.h"
 #include "dect2/qo100_dsp.h"
@@ -65,7 +66,7 @@ struct State {
 State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 54; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 54; }   // the engine reports its standard code minus one
 const dect2::Qo100Telemetry& T(const App& a) { return a.rx.qo100; }
 
 double loHz() {
@@ -279,6 +280,14 @@ void wideView(App& a, float h) {
         }
         ImGui::EndTable();
     }
+    if (on && !t.datv.empty()) {
+        static std::string note;
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "beacon", "symbol_rate_sps", "snr_db", "bandwidth_3db_hz", "dvbs_like"};
+        const std::string now = resexp::stamp();
+        for (const auto& d : t.datv) x.add({now, resexp::num(d.rfHz, 0), "QO-100", d.beacon ? "yes" : "no", resexp::num(d.symRate, 0), resexp::num(d.snrDb, 1), resexp::num(d.bw3Hz, 0), d.looksDvbs ? "yes" : "no"});
+        resexp::saveButton(x, "qo100", note, "svqo");
+        if (!note.empty()) ImGui::TextDisabled("%s", note.c_str());
+    }
     ImGui::EndChild();
 }
 
@@ -347,7 +356,15 @@ void tick(App& a) {
 
 void tab(App& a) {
     load();
+    // the strip wraps to another line and back as its texts change width: keep the tallest it has been at this width, so the
+    // plots under it do not jump
+    static float stripH = 0, stripW = 0;
+    const float y0 = ImGui::GetCursorPosY(), w0 = ImGui::GetContentRegionAvail().x;
+    if (w0 != stripW) { stripW = w0; stripH = 0; }
     strip(a);
+    const float used = ImGui::GetCursorPosY() - y0;
+    stripH = std::max(stripH, used);
+    if (used + ImGui::GetStyle().ItemSpacing.y < stripH) ImGui::Dummy(ImVec2(1, stripH - used - ImGui::GetStyle().ItemSpacing.y));
     // a fixed two-line height: the line wraps as its numbers change width, which would move the plots under it every frame
     ImGui::BeginChild("##lock", ImVec2(0, 2 * ImGui::GetTextLineHeightWithSpacing() + 2 * gUi), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     lockLine(a);

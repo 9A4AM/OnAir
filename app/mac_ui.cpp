@@ -21,7 +21,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 48; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 48; }   // the engine reports its standard code minus one
 
 void kv(const App& a, const char* k, const std::string& v, float col = 130) {
     ImGui::TextDisabled("%s", k); kvColumn(col * gUi);

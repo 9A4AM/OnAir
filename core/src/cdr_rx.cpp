@@ -193,6 +193,8 @@ struct CdrReceiver::Impl {
     double rate = 0;
     CdrTelemetry pub;
     std::atomic<bool> resetReq{true};
+    EsSink saveSink;
+    std::atomic<int> saveId{-1};
     // receiver thread
     CdrTelemetry tel;
     double curRate = 0;
@@ -726,6 +728,7 @@ struct CdrReceiver::Impl {
                 a.language = st.language;
                 s.streams.push_back(a);
             }
+            if (saveId.load() == (int)s.id && saveSink.isOpen()) for (const auto& u : ps.sf.audio) saveSink.write(u.data.data(), u.data.size());
             s.audioUnits = (int)ps.sf.audio.size();
             s.audioBytes = 0;
             for (const auto& u : ps.sf.audio) s.audioBytes += (int)u.data.size();
@@ -835,6 +838,16 @@ bool CdrReceiver::telemetry(CdrTelemetry& out, uint64_t lastSeq) {
     out = p_->pub;
     return true;
 }
+bool CdrReceiver::saveAudioStream(uint16_t id, const std::string& path) {
+    p_->saveSink.close();
+    if (!p_->saveSink.open(path)) { p_->saveId = -1; return false; }
+    p_->saveId = id;
+    return true;
+}
+void CdrReceiver::stopSaveAudioStream() { p_->saveId = -1; p_->saveSink.close(); }
+bool CdrReceiver::savingAudioStream() const { return p_->saveSink.isOpen(); }
+uint64_t CdrReceiver::savedAudioBytes() const { return p_->saveSink.bytes(); }
+
 void CdrReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 
 ModeTuning cdrTuning() {

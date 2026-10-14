@@ -1,6 +1,7 @@
 // Inmarsat Aero receiver: a band search finds P-channel carriers (up to 6), each gets a front end (mixer + CIC decimator to about 48 kHz)
 // and demodulators for 600, 1200 and 10500 bit/s until one of them holds frame sync; the frames go to the SU layer (aero_su.h).
 #include "dect2/aero_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/aero_demod.h"
 #include "dect2/aero_phy.h"
 #include "dect2/aero_pos.h"
@@ -124,14 +125,40 @@ struct AeroReceiver::Impl {
     std::vector<AeroAircraft> aircraft;
     uint64_t messagesTotal = 0, logonsTotal = 0, framesTotal = 0, susOk = 0, susBad = 0, positionsTotal = 0;
     bool suLayer = false;
+    double lastNow = 0;                // stream time of the last report: the kept tables move back by it when the clock starts again
+
+    void shiftTimes(double dt) {
+        for (auto& l : logons) l.time += dt;
+        for (auto& m : messages) m.time += dt;
+        for (auto& a : aircraft) { a.lastHeard += dt; if (a.hasPos) a.posTime += dt; for (auto& p : a.track) p.time += dt; }
+    }
+    // the decoded tables of a report
+    void fillLists(AeroTelemetry& t) const {
+        t.suTypes.clear();
+        for (auto& kv : types) { if (t.suTypes.size() < kMaxTypes) t.suTypes.push_back(kv.second); }
+        t.logons = logons;
+        t.messages = messages;
+        t.aircraft = aircraft;
+        std::sort(t.aircraft.begin(), t.aircraft.end(), [](const AeroAircraft& a, const AeroAircraft& b) { return a.lastHeard > b.lastHeard; });
+        t.messagesTotal = messagesTotal; t.logonsTotal = logonsTotal; t.positionsTotal = positionsTotal;
+    }
+    void republish() {   // mu held: the tables alone (after a reset, a load or a clear)
+        std::lock_guard<std::mutex> lk(snapMu);
+        AeroTelemetry t;
+        t.inputRate = rate;
+        t.seq = snap.seq + 1;
+        fillLists(t);
+        snap = std::move(t);
+    }
 
     void say(const std::string& s) { if (log) log(s); }
     double now() const { return rate > 0 ? (double)samples / rate : 0; }
 
     void setup() {
         chans.clear();
-        types.clear(); logons.clear(); messages.clear(); aircraft.clear();
-        messagesTotal = logonsTotal = framesTotal = susOk = susBad = positionsTotal = 0;
+        shiftTimes(-lastNow);          // the decoded tables stay (clearResults)
+        lastNow = 0;
+        framesTotal = susOk = susBad = 0;
         samples = 0; sinceReport = 0; period = 0;
         pending.clear();
         if (rate <= 0) return;
@@ -457,6 +484,7 @@ struct AeroReceiver::Impl {
         AeroTelemetry t;
         t.inputRate = rate;
         t.timeSec = now();
+        lastNow = t.timeSec;
         double bestDist = 1e18;
         int nSync = 0, nLock = 0;
         for (auto& cp : chans) {
@@ -486,13 +514,8 @@ struct AeroReceiver::Impl {
         t.state = chans.empty() ? 0 : nLock ? 2 : 1;
         t.blocksOk = susOk; t.blocksBad = susBad;
         t.dataValid = nLock > 0 && (messagesTotal > 0 || logonsTotal > 0 || !suLayer);
-        for (auto& kv : types) { if (t.suTypes.size() < kMaxTypes) t.suTypes.push_back(kv.second); }
-        t.logons = logons;
-        t.messages = messages;
-        t.aircraft = aircraft;
-        std::sort(t.aircraft.begin(), t.aircraft.end(), [](const AeroAircraft& a, const AeroAircraft& b) { return a.lastHeard > b.lastHeard; });
-        t.messagesTotal = messagesTotal; t.logonsTotal = logonsTotal; t.frames = framesTotal;
-        t.positionsTotal = positionsTotal;
+        fillLists(t);
+        t.frames = framesTotal;
         t.suLayer = suLayer;
         (void)nSync;
         std::lock_guard<std::mutex> lk(snapMu);
@@ -521,10 +544,34 @@ bool AeroReceiver::ready() const {
 void AeroReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->setup();
-    std::lock_guard<std::mutex> lk2(p_->snapMu);
-    const uint64_t s = p_->snap.seq;      // the report number never restarts
-    p_->snap = AeroTelemetry();
-    p_->snap.seq = s;
+    p_->republish();                     // the report number never restarts; the tables stay
+}
+void AeroReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->types.clear(); p_->logons.clear(); p_->messages.clear(); p_->aircraft.clear();
+    p_->messagesTotal = p_->logonsTotal = p_->positionsTotal = 0;
+    p_->republish();
+}
+std::string AeroReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const Impl& I = *p_;
+    return results::pack(I.lastNow, I.types, I.logons, I.messages, I.aircraft, I.messagesTotal, I.logonsTotal, I.positionsTotal);
+}
+bool AeroReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::map<int, AeroSuTypeCount> types;
+    std::vector<AeroLogonEntry> logons;
+    std::vector<AeroMessage> messages;
+    std::vector<AeroAircraft> aircraft;
+    uint64_t mt = 0, lt = 0, pt = 0;
+    if (!results::unpack(blob, t0, types, logons, messages, aircraft, mt, lt, pt)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& I = *p_;
+    I.types = std::move(types); I.logons = std::move(logons); I.messages = std::move(messages); I.aircraft = std::move(aircraft);
+    I.messagesTotal = mt; I.logonsTotal = lt; I.positionsTotal = pt;
+    I.shiftTimes(I.lastNow - t0);
+    I.republish();
+    return true;
 }
 void AeroReceiver::feed(const cf32* x, size_t n) {
     std::lock_guard<std::mutex> lk(p_->mu);

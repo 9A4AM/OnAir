@@ -1,13 +1,17 @@
 // HF digital receiver (see hfdig_rx.h): the channel to 24 kHz complex, the upper sideband to 8 kHz audio, the three decoders on that
 // audio, and FreeDV's speech to the sound card. The decoders themselves are in hfdig_rtty.cpp, hfdig_sstv.cpp and hfdig_freedv.cpp.
 #include "dect2/hfdig_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/hfdig_tel.h"
 #include "dect2/hfdig_rtty.h"
 #include "dect2/hfdig_sstv.h"
 #include "dect2/hfdig_freedv.h"
 #include "dect2/hfdig_ftx.h"
 #include "dect2/hfdig_hamdrm.h"
+#include "dect2/hfdig_kbd.h"
 #include "dect2/marine_dsp.h"
+#include "dect2/hfdig_wide.h"
+#include "dect2/widespan.h"
 #include "dect2/audioout.h"
 #include "ham_listen.h"
 #include <algorithm>
@@ -51,14 +55,41 @@ struct HfdigReceiver::Impl {
     std::unique_ptr<HfdigFreedv> freedv = makeFreedvDecoder();
     std::unique_ptr<HfdigFtx> ftx = makeFtxDecoder();
     std::unique_ptr<HfdigHamdrm> hamdrm = makeHamdrmDecoder();
-    HfdigDecoder* decoders[5] = {rtty.get(), sstv.get(), freedv.get(), ftx.get(), hamdrm.get()};
-    std::atomic<int> decMask{31};          // setDecoders(): which of the five run
+    std::unique_ptr<HfdigKbd> kbd = makeKbdDecoder();
+    HfdigDecoder* decoders[6] = {rtty.get(), sstv.get(), freedv.get(), ftx.get(), hamdrm.get(), kbd.get()};
+    std::atomic<int> decMask{31};
+    std::atomic<int> demodSet{HfDemodUsb}; // setDemod()          // setDecoders(): which of the six run
     std::function<void(const float*, size_t)> audioTap, speechTap;
+    std::atomic<bool> wideReq{false}, wideChanged{false};
+    std::atomic<double> wideSpan{250000}, dialHz{0};
+    std::unique_ptr<HfdigWide> wide;
     hfdig::Upsample6 up;
     std::vector<float> pcm;
     std::unique_ptr<AudioOut> audioOut;
 
     Impl() { freedv->setSpeechOut([this](const float* x, size_t n) { playSpeech(x, n); }); }
+
+    // the decoded results stay through resets (each decoder keeps its own); Clear and a loaded file reach the decoders through these
+    // requests (mu), the published report at once
+    int clearMask = 0;
+    bool loadReq = false;
+    HfdigTelemetry loaded;
+    void takeRequests() {        // the receiver thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (clearMask & 1) { rtty->clearText(); if (wide) wide->clearRtty(); }
+        if (clearMask & 2) sstv->setHistory({});
+        if (clearMask & 8) ftx->clearDecodes();
+        if (clearMask & 16) hamdrm->setHistory({});
+        clearMask = 0;
+        if (loadReq) {
+            rtty->setText(loaded.rtty.text, loaded.rtty.chars);
+            sstv->setHistory(loaded.sstv.history);
+            ftx->setDecodes(loaded.ftx.decodes);
+            hamdrm->setHistory(loaded.hamdrm.history);
+            loaded = HfdigTelemetry();
+            loadReq = false;
+        }
+    }
 
     void resetState() {
         std::function<void(const std::string&)> cb;
@@ -75,9 +106,19 @@ struct HfdigReceiver::Impl {
         base.clear(); audio.clear(); pcm.clear();
         for (HfdigDecoder* d : decoders) d->reset();
         hamdrm->setLogCallback(cb);
+        kbd->setLogCallback(cb);
         if (audioOut) audioOut->flush();
         listen.reset();
-        if (cb && curRate > 0) cb("HF digital: listening to the sideband audio for RTTY, SSTV, FreeDV, FT8, FT4, FT2, WSPR and HamDRM");
+        wide.reset();
+        ftx->setForwardTo(nullptr);
+        ftx->setDialHz(dialHz.load());
+        if (running && wideReq.load()) {
+            wide = std::make_unique<HfdigWide>(*ftx);
+            const int dm = decMask.load();
+            wide->configure(curRate, wideSpan.load(), dialHz.load(), off, (dm & 8) != 0, (dm & 1) != 0);
+            if (cb) cb("HF digital: whole span, " + std::to_string(wide->ftxChannels()) + " FT8 / FT4 / WSPR slots and " + std::to_string(wide->rttyChannels()) + " RTTY channels");
+        }
+        if (cb && curRate > 0) cb("HF digital: listening to the sideband audio for RTTY, SSTV, FreeDV, FT8, FT4, FT2, WSPR, JT65, JT9, Q65, FST4, MSK144 and HamDRM");
     }
 
     void playSpeech(const float* x, size_t n) {
@@ -106,6 +147,8 @@ struct HfdigReceiver::Impl {
         freedv->telemetry(tel.freedv);
         ftx->telemetry(tel.ftx);
         hamdrm->telemetry(tel.hamdrm);
+        kbd->telemetry(tel.kbd);
+        if (wide) wide->rttyTelemetry(tel.rttyWide); else tel.rttyWide.clear();
         std::lock_guard<std::mutex> lk(mu);
         pub = tel;
     }
@@ -129,20 +172,58 @@ void HfdigReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->resetReq = true;
     const uint64_t s = p_->pub.seq;
-    p_->pub = HfdigTelemetry();
+    HfdigTelemetry t;                    // the decoded results stay (clearResults)
+    t.rtty.text = std::move(p_->pub.rtty.text); t.rtty.chars = p_->pub.rtty.chars;
+    t.sstv.history = std::move(p_->pub.sstv.history);
+    t.ftx.decodes = std::move(p_->pub.ftx.decodes);
+    t.hamdrm.history = std::move(p_->pub.hamdrm.history);
+    p_->pub = std::move(t);
     p_->pub.seq = s;
+}
+
+void HfdigReceiver::clearResults(int mask) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& m = *p_;
+    m.clearMask |= mask;
+    if (mask & 1) { m.pub.rtty.text.clear(); m.pub.rtty.chars = 0; m.loaded.rtty.text.clear(); m.loaded.rtty.chars = 0; }
+    if (mask & 2) { m.pub.sstv.history.clear(); m.loaded.sstv.history.clear(); }
+    if (mask & 8) { m.pub.ftx.decodes.clear(); m.loaded.ftx.decodes.clear(); }
+    if (mask & 16) { m.pub.hamdrm.history.clear(); m.loaded.hamdrm.history.clear(); }
+    if (mask & 8) m.ftx->clearDecodes();   // thread safe: at once, also when the receiver is not running
+    m.pub.seq++;
+}
+std::string HfdigReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const HfdigTelemetry& t = p_->pub;
+    return results::pack(t.rtty.text, t.rtty.chars, t.sstv.history, t.ftx.decodes, t.hamdrm.history);
+}
+bool HfdigReceiver::loadResults(const std::string& blob) {
+    HfdigTelemetry l;
+    if (!results::unpack(blob, l.rtty.text, l.rtty.chars, l.sstv.history, l.ftx.decodes, l.hamdrm.history)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl& m = *p_;
+    m.pub.rtty.text = l.rtty.text; m.pub.rtty.chars = l.rtty.chars;
+    m.pub.sstv.history = l.sstv.history; m.pub.ftx.decodes = l.ftx.decodes; m.pub.hamdrm.history = l.hamdrm.history;
+    m.ftx->setDecodes(l.ftx.decodes);   // thread safe: the FT8 screen reads the decoder itself
+    m.loaded = std::move(l); m.loadReq = true;
+    m.pub.seq++;
+    return true;
 }
 
 void HfdigReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.tapsReq.exchange(false)) { std::lock_guard<std::mutex> lk(m.mu); m.audioTap = m.audioTapSet; m.speechTap = m.speechTapSet; }
     if (m.resetReq.exchange(false)) { m.offsetReq = false; m.resetState(); }
-    if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); }
+    m.takeRequests();
+    if (m.wideChanged.exchange(false)) m.resetState();
+    if (m.offsetReq.exchange(false) && m.running) { std::lock_guard<std::mutex> lk(m.mu); m.front.setOffsetHz(m.offsetHz); if (m.wide) m.wide->setOffsetHz(m.offsetHz); }
     if (m.curRate <= 0) return;
     for (size_t i = 0; i < n; i++) m.power += (double)std::norm(x[i]);
     m.nPower += (int64_t)n;
     m.nIn += (int64_t)n;
+    if (m.running && m.wide) m.wide->feed(x, n);
     if (m.running) {
+        if (const int d = hfDemodResolve(m.demodSet.load(), 0); d != m.usb.demod()) m.usb.setDemod(d);
         m.base.clear(); m.audio.clear();
         m.front.process(x, n, m.base);
         m.usb.process(m.base.data(), m.base.size(), m.audio, m.audioPower);
@@ -150,7 +231,7 @@ void HfdigReceiver::feed(const cf32* x, size_t n) {
         if (!m.audio.empty()) {
             if (m.audioTap) m.audioTap(m.audio.data(), m.audio.size());
             const int dm = m.decMask.load();
-            for (int k = 0; k < 5; k++) if (dm & (1 << k)) m.decoders[k]->feedAudio(m.audio.data(), m.audio.size());
+            for (int k = 0; k < 6; k++) if (dm & (1 << k)) m.decoders[k]->feedAudio(m.audio.data(), m.audio.size());
             if (dm != 4) m.listen.play(m.audio.data(), m.audio.size());   // FreeDV alone plays its speech instead
         }
     }
@@ -177,10 +258,19 @@ void HfdigReceiver::setListenTap(std::function<void(const float* x, size_t n)> c
 void HfdigReceiver::setAudioTap(std::function<void(const float* x, size_t n)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->audioTapSet = std::move(cb); p_->tapsReq = true; }
 void HfdigReceiver::setSpeechTap(std::function<void(const float* x, size_t n)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->speechTapSet = std::move(cb); p_->tapsReq = true; }
 
+void HfdigReceiver::setWide(bool on, double spanHz) {
+    p_->wideSpan = std::max(1000.0, std::min(kWideMaxSpanHz, spanHz));
+    if (p_->wideReq.exchange(on) != on) p_->wideChanged = true;
+}
+bool HfdigReceiver::wide() const { return p_->wideReq.load(); }
+void HfdigReceiver::setDialHz(double hz) { if (p_->dialHz.exchange(hz) != hz) p_->wideChanged = true; }
 HfdigRtty& HfdigReceiver::rtty() { return *p_->rtty; }
-void HfdigReceiver::setDecoders(int mask) { p_->decMask = mask & 31; }
+void HfdigReceiver::setDecoders(int mask) { p_->decMask = mask & 63; }
+HfdigKbd& HfdigReceiver::kbd() { return *p_->kbd; }
 HfdigHamdrm& HfdigReceiver::hamdrm() { return *p_->hamdrm; }
 int HfdigReceiver::decoders() const { return p_->decMask.load(); }
+void HfdigReceiver::setDemod(int d) { p_->demodSet = d; }
+int HfdigReceiver::demod() const { return p_->demodSet.load(); }
 HfdigFtx& HfdigReceiver::ftx() { return *p_->ftx; }
 
 ModeTuning hfdigTuning() {
@@ -190,8 +280,8 @@ ModeTuning hfdigTuning() {
     t.sampleRate = 2000000;
     t.basebandHz = 1750000;
     t.bandwidthMhz = 0.003;
-    t.minSampleRate = 1000000;
-    t.tuneOffsetHz = 20000;                              // as marine: the radio sits 20 kHz above the dial frequency, away from its DC spike
+    t.minSampleRate = 250000;                            // the front end takes any rate down to its 96 kHz first stage: as PSK and JS8
+    t.tuneOffsetHz = 20000;                             // as marine: the radio sits 20 kHz above the dial frequency, away from its DC spike
     return t;
 }
 

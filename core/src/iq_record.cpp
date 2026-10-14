@@ -34,9 +34,66 @@ std::string recordingFileName(const std::string& modeId, double centerHz, double
     return b;
 }
 
+const char* sigmfDatatype(FileFormat fmt) { return fmt == FileFormat::CF32 ? "cf32_le" : fmt == FileFormat::CU8 ? "ru8_le" : "ri8"; }
+
+std::string sigmfUtcNow() {
+    const std::time_t t = std::time(nullptr);
+    std::tm tm{};
+#ifdef _WIN32
+    gmtime_s(&tm, &t);
+#else
+    gmtime_r(&t, &tm);
+#endif
+    char b[32];
+    strftime(b, sizeof b, "%Y-%m-%dT%H:%M:%SZ", &tm);
+    return b;
+}
+
+static std::string jsonStr(const std::string& s) {
+    std::string o = "\"";
+    for (unsigned char c : s) {
+        if (c == '"' || c == '\\') { o += '\\'; o += (char)c; }
+        else if (c < 0x20) { char b[8]; snprintf(b, sizeof b, "\\u%04x", c); o += b; }
+        else o += (char)c;
+    }
+    return o + "\"";
+}
+
+std::string sigmfMetaJson(const SigmfInfo& i) {
+    char b[96];
+    std::string j = "{\n  \"global\": {\n";
+    j += std::string("    \"core:datatype\": \"") + sigmfDatatype(i.fmt) + "\",\n";
+    snprintf(b, sizeof b, "%.10g", i.rateHz);
+    j += std::string("    \"core:sample_rate\": ") + b + ",\n";
+    j += "    \"core:version\": \"1.0.0\",\n";
+    if (i.sampleCount) j += "    \"core:sample_count\": " + std::to_string(i.sampleCount) + ",\n";
+    if (!i.dataFile.empty()) j += "    \"core:dataset\": " + jsonStr(i.dataFile) + ",\n";
+    if (!i.description.empty()) j += "    \"core:description\": " + jsonStr(i.description) + ",\n";
+    j += "    \"core:recorder\": \"OnAir\"\n  },\n  \"captures\": [\n    {\n      \"core:sample_start\": 0";
+    if (i.centerHz > 0) { snprintf(b, sizeof b, "%.1f", i.centerHz); j += std::string(",\n      \"core:frequency\": ") + b; }
+    if (!i.datetimeUtc.empty()) j += ",\n      \"core:datetime\": " + jsonStr(i.datetimeUtc);
+    j += "\n    }\n  ],\n  \"annotations\": []\n}\n";
+    return j;
+}
+
+void IqRecorder::writeSigmf(bool final) {
+    if (sigmfPath_.empty()) return;
+    SigmfInfo i;
+    i.fmt = fmt_; i.rateHz = rate_; i.centerHz = centerHz_; i.datetimeUtc = sigmfWhen_;
+    const std::string::size_type s = path_.find_last_of("/\\");
+    i.dataFile = path_.substr(s == std::string::npos ? 0 : s + 1);
+    if (final) { std::lock_guard<std::mutex> lk(mu_); i.sampleCount = samples_; }
+    FILE* f = nullptr;
+    try { f = fopen(std::filesystem::u8path(sigmfPath_).string().c_str(), "wb"); } catch (...) {}
+    if (!f) return;
+    const std::string j = sigmfMetaJson(i);
+    fwrite(j.data(), 1, j.size(), f);
+    fclose(f);
+}
+
 bool IqRecorder::start(const std::string& path, FileFormat fmt, double rateHz, std::string& err) {
     stop();
-    if (fmt == FileFormat::CU8) { err = "only 8-bit signed and float files can be recorded"; return false; }
+    if (fmt != FileFormat::CS8 && fmt != FileFormat::CF32) { err = "only 8-bit signed and float files can be recorded"; return false; }
     if (rateHz <= 0) { err = "the radio has no sample rate yet"; return false; }
     try {
         const std::filesystem::path p = std::filesystem::u8path(path);
@@ -55,6 +112,19 @@ bool IqRecorder::start(const std::string& path, FileFormat fmt, double rateHz, s
         q_.clear(); qBytes_ = 0; stopReq_ = false;
         samples_ = bytes_ = dropped_ = 0;
         error_.clear();
+    }
+    sigmfPath_.clear();
+    if (sigmf_) {
+        try {
+            const std::filesystem::path p = std::filesystem::u8path(path);
+            std::filesystem::path base = p; base.replace_extension("");
+            sigmfPath_ = base.string() + ".sigmf-meta";
+            sigmfWhen_ = sigmfUtcNow();
+            std::error_code ec;   // the same data under the name IQEngine looks for: a hard link, no second copy
+            std::filesystem::remove(base.string() + ".sigmf-data", ec);
+            std::filesystem::create_hard_link(p, base.string() + ".sigmf-data", ec);
+        } catch (...) { sigmfPath_.clear(); }
+        writeSigmf(false);
     }
     active_ = true;
     th_ = std::thread([this] { writerLoop(); });
@@ -112,7 +182,7 @@ void IqRecorder::stop() {
     active_ = false;
     cv_.notify_all();
     if (th_.joinable()) th_.join();
-    if (file_) { fclose((FILE*)file_); file_ = nullptr; }
+    if (file_) { fclose((FILE*)file_); file_ = nullptr; writeSigmf(true); }
 }
 
 RecordingStats IqRecorder::stats() const {

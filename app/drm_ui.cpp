@@ -1,6 +1,7 @@
 // DRM screens: the Radio tab (the band presets, short wave and the VHF bands of DRM+, now playing, text message, time, signal summary), the services
 // list, status lamps, the analysis plots (FAC / SDC / MSC cells, channel, SNR), the Receiver tab with all telemetry and the options of the test signal.
 #include "app.h"
+#include "journaline_view.h"
 #include <cmath>
 #include <deque>
 
@@ -21,7 +22,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == kStd; }
+bool live(const App& a) { return a.rx.standard == kStd; }
 
 void push(std::deque<float>& d, float v) { d.push_back(v); if (d.size() > 600) d.pop_front(); }
 
@@ -438,11 +439,16 @@ void receiver(App& a) {
         ImGui::PopTextWrapPos();
         if (s.conditionalAccess) { ImGui::SameLine(0, 6 * gUi); ImGui::TextColored(kWarn, "CA"); }
     }
+    if (a.engine.drm().hasJournaline()) {
+        static JlViewState jv;
+        sectionHeader(Ic::Doc, "Journaline");
+        journalineView("drmjl", a.engine.drm().journaline(), jv, -1);
+    }
     sectionHeader(Ic::Warning, "Not supported");
     ImGui::PushTextWrapPos(0);
     ImGui::TextDisabled("AAC with SBR or parametric stereo: only the AAC core plays (no SBR for 960-sample frames in the audio library), so the sound is band-limited and mono for PS services.");
     ImGui::TextDisabled("xHE-AAC: the frames are received, but whether sound comes out depends on the audio library's USAC decoder; the state above says what happened.");
-    ImGui::TextDisabled("Data services (Journaline, packet mode), alternative frequencies and hierarchical mappings are not decoded; DRM+ with unequal error protection is untested.");
+    ImGui::TextDisabled("Other data services (packet mode applications except Journaline), alternative frequencies and hierarchical mappings are not decoded; DRM+ with unequal error protection is untested.");
     ImGui::TextDisabled("DRM+ (mode E, 100 kHz) needs a radio rate of at least 100 ksps. Below 30 MHz a HackRF needs an upconverter or a long antenna.");
     ImGui::PopTextWrapPos();
     ImGui::EndChild();

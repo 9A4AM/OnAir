@@ -6,6 +6,8 @@
 #include "atsc3_ip.h"
 #include "atsc3_remux.h"
 #include "atsc3_route.h"
+#include <condition_variable>
+#include <deque>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -53,13 +55,17 @@ public:
     std::vector<RouteComponent> components() const;
 
     int readTs(uint8_t* buf, int size) { return remux_.read(buf, size); }   // blocks; the Reader of HlsPipeline
-    int readTsTimed(uint8_t* buf, int size, int timeoutMs) { return remux_.readTimed(buf, size, timeoutMs); }
-    void stop() { remux_.stop(); }
+    int readTsTimed(uint8_t* buf, int size, int timeoutMs);   // a stream of MPEG-2 TS in ALP (A/330 5.4) comes out here directly; otherwise the remuxed services
+    void stop() { { std::lock_guard<std::mutex> lk(tsMu_); stopped_ = true; } tsCv_.notify_all(); remux_.stop(); }
     Atsc3Remux& remux() { return remux_; }
     ReceiverStats stats() const;
     FrameInfo frameInfo() const;                              // the last frame that decoded
 
 private:
+    std::mutex tsMu_;
+    std::condition_variable tsCv_;
+    std::deque<uint8_t> tsDirect_;
+    bool sawTs_ = false, stopped_ = false;
     void onAlp(const AlpPacket& a);
     void onUdp(const UdpDatagram& d);
     void startRoute();
@@ -76,6 +82,12 @@ private:
     std::unique_ptr<RouteService> route_;
     std::map<std::string, int> remuxIds_;          // component key -> remux component id
     std::map<int, std::vector<uint8_t>> lastInit_;
+    struct CtiPlp;
+    PlpResult runCti(const PlpResult& in);          // de-interleaves a CTI PLP's cells in frame order and decodes the FEC blocks that are complete
+    std::map<int, std::unique_ptr<CtiPlp>> cti_;   // by PLP id
+    struct Straddle { std::vector<cf32> tail; };
+    PlpResult joinStraddle(const PlpResult& in);    // the block made of the tail of the last frame and the head of this one goes in front of the whole blocks
+    std::map<int, Straddle> straddle_;
     Atsc3Remux remux_;
     ReceiverStats st_;
     FrameInfo info_;

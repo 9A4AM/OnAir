@@ -7,6 +7,7 @@
 #include <SoapySDR/Registry.hpp>
 #include <SoapySDR/Time.hpp>
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -30,6 +31,11 @@ void note(const std::string& k, const std::string& v) {
     setenv(name.c_str(), v.c_str(), 1);
 #endif
 }   // the native rate of an 8 MHz channel: the only rate this "radio" offers
+
+// ONAIR_TEST_DEAD_REOPEN_MS=n: a stream started within n ms of the last one ending never sends a sample, as a radio opened the moment another
+// handle let go of it can do (the channel scan opening the radio right after the receiver closed it)
+std::atomic<long long> gLastEndMs{-1000000000};
+long long nowMs() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 
 struct TestStream {
     IqRing ring{1u << 22};
@@ -97,11 +103,16 @@ public:
         auto* s = new TestStream;
         return reinterpret_cast<SoapySDR::Stream*>(s);
     }
-    void closeStream(SoapySDR::Stream* st) override { delete reinterpret_cast<TestStream*>(st); }
+    void closeStream(SoapySDR::Stream* st) override { delete reinterpret_cast<TestStream*>(st); gLastEndMs = nowMs(); }
     size_t getStreamMTU(SoapySDR::Stream*) const override { return 1 << 15; }
 
     int activateStream(SoapySDR::Stream* st, const int, const long long, const size_t) override {
         auto* s = reinterpret_cast<TestStream*>(st);
+        if (const char* dead = getenv("ONAIR_TEST_DEAD_REOPEN_MS"); dead && nowMs() - gLastEndMs.load() < atol(dead)) {
+            note("DEAD_STREAMS", std::to_string(atoi(getenv("ONAIR_TEST_DEAD_STREAMS") ? getenv("ONAIR_TEST_DEAD_STREAMS") : "0") + 1));
+            s->active = true;   // "started", and silent
+            return 0;
+        }
         DeviceInfo d; d.kind = DeviceInfo::Synthetic;
         TuneSettings t;
         t.synth.snrDb = 30;
@@ -119,6 +130,7 @@ public:
         auto* s = reinterpret_cast<TestStream*>(st);
         if (s->src) { s->src->stop(); s->src.reset(); }
         s->active = false;
+        gLastEndMs = nowMs();
         return 0;
     }
     int readStream(SoapySDR::Stream* st, void* const* buffs, const size_t n, int& flags, long long& timeNs, const long timeoutUs) override {

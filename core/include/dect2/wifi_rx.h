@@ -37,6 +37,10 @@ public:
     void clearNetworks();
     void feed(const cf32* x, size_t n);
     bool telemetry(WifiTelemetry& out, uint64_t lastSeq);
+    // The network table and the frame log stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     // Every good frame (FCS passed; n without the FCS), on the feeding thread: for a mode built on this demodulator (Drone Remote ID). Set before feeding.
     void setFrameCallback(std::function<void(const uint8_t* mpdu, size_t n, float rssiDbfs)> cb);

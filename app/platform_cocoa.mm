@@ -1,4 +1,6 @@
 #include "platform.h"
+#include <cstdlib>
+#include <filesystem>
 #import <Cocoa/Cocoa.h>
 #import <CoreLocation/CoreLocation.h>
 #import <ImageIO/ImageIO.h>
@@ -58,6 +60,12 @@ std::string cacheDir() {
 }
 
 std::string dataDir() {
+    // DECT2_DATA_DIR: another folder for everything OnAir writes (test runs keep away from the user's own data)
+    if (const char* o = getenv("DECT2_DATA_DIR"); o && *o) {
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>(o)), ec);
+        return o;
+    }
     NSArray* a = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
     if (!a.count) return cacheDir();
     NSString* d = [a[0] stringByAppendingPathComponent:@"OnAir"];
@@ -144,6 +152,16 @@ struct DefaultsPrefs : Prefs {
             [arr addObject:@{@"f": @(c.freqMhz), @"bw": @(c.bwMhz), @"name": nsText(c.name), @"mode": nsText(c.mode), @"snr": @(c.snrDb), @"n": @(c.nServices), @"fav": @(c.favourite)}];
         [d setObject:arr forKey:@"channels"];
     }
+    std::string setAside() override {
+        NSString* domain = NSBundle.mainBundle.bundleIdentifier ?: NSProcessInfo.processInfo.processName;
+        NSDictionary* old = [d persistentDomainForName:domain];
+        NSString* dir = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Logs/OnAir"];
+        [NSFileManager.defaultManager createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+        NSString* file = [dir stringByAppendingPathComponent:@"settings-crashed.plist"];
+        const bool kept = old && [old writeToURL:[NSURL fileURLWithPath:file] error:nil];
+        [d removePersistentDomainForName:domain];
+        return kept ? std::string(file.UTF8String) : "";
+    }
 };
 }
 
@@ -163,9 +181,14 @@ void showFatalError(const char* title, const char* text) {
     }
 }
 
-Prefs& prefs() { static DefaultsPrefs p; return p; }
+Prefs& basePrefs() { static DefaultsPrefs p; return p; }
 
 std::vector<std::string> uiFontCandidates() { return {"/System/Library/Fonts/Helvetica.ttc"}; }
+std::vector<std::string> cjkFontCandidates() { return {"/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/STHeiti Medium.ttc", "/System/Library/Fonts/STHeiti Light.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc"}; }
 std::vector<std::string> monoFontCandidates() { return {"/System/Library/Fonts/Menlo.ttc"}; }
+std::string uiLanguage() {
+    NSArray<NSString*>* l = [NSLocale preferredLanguages];   // the order of System Settings > Language & Region
+    return l.count ? std::string([l[0] UTF8String]) : std::string("en");
+}
 
 }

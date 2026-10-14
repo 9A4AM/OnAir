@@ -56,7 +56,7 @@ void loadState() {
     if (const char* e = getenv("DECT2_AERO_VIEW")) if (!strcmp(e, "map")) S.viewMode = 1;   // dev: open on the map (screenshots)
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 19; }
+bool live(const App& a) { return a.rx.standard == 19; }
 
 const char* kNotDecoded = "Decoded: the P channels (ground to aircraft) at 600, 1200 and 10500 bit/s, rate found on its own.\n"
                           "Not decoded: C channel voice (not supported by design). R and T channels (aircraft to ground) are not started.";
@@ -531,6 +531,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see aircraft"); ImGui::PopTextWrapPos(); } return; }
+    if (resultsClearButton("aero")) a.engine.aero().clearResults();
     const dect2::AeroTelemetry& t = a.rx.aero;
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu aircraft, %zu messages", t.aircraft.size(), t.messages.size()); ImGui::PopTextWrapPos(); }
     if (!ImGui::BeginTable("##aol_s", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;

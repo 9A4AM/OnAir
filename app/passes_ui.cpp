@@ -3,6 +3,7 @@
 // current or chosen pass, and optional tracking: Doppler-corrected retuning about once a second, the right mode started at AOS and
 // an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak or Keplerpass on request, or pasted.
 #include "app.h"
+#include "gallery.h"
 #include "dect2/passes.h"
 #include <algorithm>
 #include <atomic>
@@ -23,7 +24,7 @@ namespace {
 namespace fs = std::filesystem;
 fs::path fsPath(const std::string& p) { return fs::path(reinterpret_cast<const char8_t*>(p.c_str())); }
 
-constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kMeteor = 59, kCubesat = 61;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, Meteor-M LRPT, CubeSat telemetry
+constexpr int kSpecx = 41, kAprs = 24, kOrbcomm = 44, kMeteor = 59, kCubesat = 61, kGlobalstar = 62;   // mode families: Spectrum explorer (no decoder), APRS (AFSK), Orbcomm, Meteor-M LRPT, CubeSat telemetry
 
 struct Source { const char* file; const char* url; };
 const Source kSources[] = {
@@ -31,12 +32,13 @@ const Source kSources[] = {
     {"stations.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle"},
     {"orbcomm.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=orbcomm&FORMAT=tle"},
     {"amateur.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle"},
+    {"globalstar.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=globalstar&FORMAT=tle"},
 };
 const char* const kPasted = "pasted.txt";
 const Source kKeplerpass = {"keplerpass.txt", "https://data.keplerpass.com/PU4ELT/tle.txt"};
 
-enum Group { Weather, Iss, Orbcomm, Amateur, NumGroups };
-const char* const kGroupLabel[NumGroups] = {"Weather (137 MHz)", "ISS", "Orbcomm", "Amateur"};
+enum Group { Weather, Iss, Orbcomm, Amateur, GlobalstarGrp, NumGroups };
+const char* const kGroupLabel[NumGroups] = {N_("Weather (137 MHz)"), "ISS", "Orbcomm", N_("Amateur"), "Globalstar"};
 
 struct Known { const char* name; int norad; double mhz; const char* mode; int family; int group; };
 const Known kKnown[] = {
@@ -66,9 +68,9 @@ struct State {
     std::vector<std::string> missing;   // listed satellites without a TLE
     std::vector<Row> rows;
     bool dirty = true;
-    double computedAt = 0, lat = 1e9, lon = 1e9;
+    double computedAt = 0, lat = 1e9, lon = 1e9, altM = 0;   // altM: the observer height (metres) the passes were computed for
     float minEl = 10;
-    bool show[NumGroups] = {true, true, true, true};
+    bool show[NumGroups] = {true, true, true, true, true};
     std::vector<Cube> cubes;
     // the chosen pass (a row): its satellite is the one tracked
     int selSat = -1; double selAos = 0;
@@ -138,6 +140,8 @@ void buildSats() {
     const ModeTuning* ot = modeTuning(46);
     for (const auto& [no, t] : S.tles)
         if (t.name.rfind("ORBCOMM", 0) == 0) add(t.name, no, ot ? ot->defMhz : 137.25, "Orbcomm", kOrbcomm, Orbcomm);
+    for (const auto& [no, t] : S.tles)
+        if (t.name.rfind("GLOBALSTAR", 0) == 0) add(t.name, no, 1618.25, "Globalstar", kGlobalstar, GlobalstarGrp);
     for (const Cube& c : S.cubes) add(c.name, c.norad, c.mhz, c.aprs ? "APRS" : "CubeSat telemetry", c.aprs ? kAprs : kCubesat, Amateur);
     S.selSat = -1;
     for (int i = 0; i < (int)S.sats.size(); i++) if (!S.selName.empty() && S.sats[i].name == S.selName) S.selSat = i;
@@ -203,7 +207,7 @@ void loadState() {
 void startDownload(bool keplerpass = false, std::string customFile = {}, std::string customUrl = {}) {
     if (gDl.load() == 1) return;
     gDl = 1;
-    { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = "downloading..."; }
+    { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = tr("downloading..."); }
     const std::string dir = tleDir();
     std::thread([dir, keplerpass, customFile, customUrl] {
         std::error_code ec;
@@ -222,8 +226,8 @@ void startDownload(bool keplerpass = false, std::string customFile = {}, std::st
             }
             fs::remove(fsPath(part), ec);
         }
-        std::string m = !ok ? (custom ? "Custom TLE download failed (network or invalid TLE)" : keplerpass ? "Keplerpass download failed (check network or TLE format)" : "the download failed (no network, or Celestrak refused)")
-                            : std::string(custom ? "Custom source: downloaded " : keplerpass ? "Keplerpass: downloaded " : "Celestrak: downloaded ") + std::to_string(n) + " TLEs";
+        std::string m = !ok ? (custom ? "Custom TLE download failed (network or invalid TLE)" : keplerpass ? "Keplerpass download failed (check network or TLE format)" : std::string(tr("the download failed (no network, or Celestrak refused)")))
+                            : std::string(custom ? "Custom source: downloaded " : keplerpass ? "Keplerpass: downloaded " : (std::string(tr("downloaded")) + " ")) + std::to_string(n) + " TLEs";
         if (ok && ok < (int)sourceCount) m += "; some lists failed";
         { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = m; }
         gDl = 2;
@@ -234,9 +238,10 @@ void compute(App& a) {
     double lat, lon;
     receiverLocation(lat, lon);
     const double now = nowSec();
-    if (!S.dirty && lat == S.lat && lon == S.lon && now - S.computedAt < 600) return;
-    S.dirty = false; S.lat = lat; S.lon = lon; S.computedAt = now;
-    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon;
+    const double alt = receiverAltitudeM();
+    if (!S.dirty && lat == S.lat && lon == S.lon && alt == S.altM && now - S.computedAt < 600) return;
+    S.dirty = false; S.lat = lat; S.lon = lon; S.altM = alt; S.computedAt = now;
+    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon; o.altKm = alt / 1000;
     S.rows.clear();
     for (int i = 0; i < (int)S.sats.size(); i++)
         for (const dect2::Pass& p : dect2::findPasses(S.sats[i].sgp, o, now - 1800, now + 86400, S.minEl))
@@ -256,7 +261,7 @@ std::string timeText(double t) {
 }
 
 bool lookNow(const Sat& s, double t, dect2::Look& l) {
-    dect2::Observer o; o.latDeg = S.lat; o.lonDeg = S.lon;
+    dect2::Observer o; o.latDeg = S.lat; o.lonDeg = S.lon; o.altKm = S.altM / 1000;
     return dect2::lookAt(s.sgp, o, t, l);
 }
 
@@ -364,31 +369,31 @@ void skyPlot(const Row* r, float size) {
 void tleSection(App& a) {
     if (gDl.load() == 2) { gDl = 0; std::lock_guard<std::mutex> lk(gDlMu); S.msg = gDlMsg; loadTles(); }
     else if (gDl.load() == 1) { std::lock_guard<std::mutex> lk(gDlMu); S.msg = gDlMsg; }
-    if (!ImGui::CollapsingHeader("TLE data", S.tles.empty() ? ImGuiTreeNodeFlags_DefaultOpen : 0)) return;
+    if (!ImGui::CollapsingHeader(trw("TLE data"), S.tles.empty() ? ImGuiTreeNodeFlags_DefaultOpen : 0)) return;
     ImGui::BeginDisabled(gDl.load() == 1);
-    if (ImGui::Button(gDl.load() == 1 ? "Downloading..." : "Download TLEs from Celestrak")) startDownload(false);
+    if (ImGui::Button(tr(gDl.load() == 1 ? "Downloading..." : "Download TLEs from Celestrak"))) startDownload(false);
     ImGui::SameLine();
-    if (ImGui::Button("Download TLEs from Keplerpass")) startDownload(true);
+    if (ImGui::Button(tr("Download TLEs from Keplerpass"))) startDownload(true);
     ImGui::EndDisabled();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-        std::string tip = "Downloads only when you click. Fetches:";
+        std::string tip = tr("Downloads only when you click. Fetches:");
         for (const Source& s : kSources) tip += std::string("\n") + s.url;
         tip += "\nSaved in " + tleDir();
         ImGui::SetTooltip("%s", tip.c_str());
     }
     ImGui::SameLine();
-    if (ImGui::Button(S.showPaste ? "Hide paste box" : "Paste TLEs...")) S.showPaste = !S.showPaste;
+    if (ImGui::Button(tr(S.showPaste ? "Hide paste box" : "Paste TLEs..."))) S.showPaste = !S.showPaste;
     if (!S.msg.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", S.msg.c_str()); }
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("Sources: Celestrak and data.keplerpass.com/PU4ELT/tle.txt");
-    if (ImGui::Button(S.showSources ? "Hide TLE servers" : "Manage TLE servers")) S.showSources = !S.showSources;
+    ImGui::TextDisabled("%s", tr("From: Celestrak, Keplerpass, and any TLE servers you add"));
+    if (ImGui::Button(S.showSources ? tr("Hide TLE servers") : tr("Manage TLE servers"))) S.showSources = !S.showSources;
     if (S.showSources) {
-        ImGui::TextDisabled("Built-in: Celestrak and Keplerpass (always available)");
+        ImGui::TextDisabled("%s", tr("Built-in: Celestrak and Keplerpass (always available)"));
         ImGui::SetNextItemWidth(-140.f);
         ImGui::InputTextWithHint("##addTleUrl", "http://192.168.1.64/tle/active.tle", S.newSourceUrl, sizeof S.newSourceUrl);
         ImGui::SameLine();
         ImGui::BeginDisabled(gDl.load() == 1);
-        if (ImGui::Button("Add server")) {
+        if (ImGui::Button(tr("Add server"))) {
             const std::string url = S.newSourceUrl;
             const bool exists = std::any_of(S.customSources.begin(), S.customSources.end(),
                 [&](const auto& src) { return src.second == url; });
@@ -414,9 +419,9 @@ void tleSection(App& a) {
             const auto item = S.customSources[i];
             ImGui::TextWrapped("%s", item.second.c_str());
             ImGui::SameLine();
-            if (ImGui::SmallButton("Download")) startDownload(false, item.first, item.second);
+            if (ImGui::SmallButton(tr("Download"))) startDownload(false, item.first, item.second);
             ImGui::SameLine();
-            if (ImGui::SmallButton("Delete")) {
+            if (ImGui::SmallButton(tr("Delete"))) {
                 std::error_code ec;
                 fs::remove(fsPath(tleDir() + "/" + item.first), ec);
                 S.customSources.erase(S.customSources.begin() + (std::ptrdiff_t)i);
@@ -431,26 +436,25 @@ void tleSection(App& a) {
         }
         ImGui::EndDisabled();
     }
-
     ImGui::PopTextWrapPos();
     double oldest = 0;
     for (const Sat& s : S.sats) oldest = std::max(oldest, nowSec() / 86400.0 + 2440587.5 - s.sgp.tle().epochJd);
-    if (S.tles.empty()) ImGui::TextColored(pal::warnAmber(), "No TLEs yet: download them or paste some.");
+    if (S.tles.empty()) ImGui::TextColored(pal::warnAmber(), "%s", tr("No TLEs yet: download them or paste some."));
     else {
-        ImGui::Text("%d TLEs, %d satellites listed", (int)S.tles.size(), (int)S.sats.size());
-        if (oldest > 14) { ImGui::SameLine(); ImGui::TextColored(pal::warnAmber(), "the oldest is %.0f days old: download again", oldest); }
+        ImGui::Text(tr("%d TLEs, %d satellites listed"), (int)S.tles.size(), (int)S.sats.size());
+        if (oldest > 14) { ImGui::SameLine(); ImGui::TextColored(pal::warnAmber(), tr("the oldest is %.0f days old: download again"), oldest); }
     }
     if (!S.missing.empty() && !S.tles.empty()) {
-        std::string m = "No TLE for: ";
+        std::string m = std::string(tr("No TLE for:")) + " ";
         for (size_t i = 0; i < S.missing.size(); i++) m += (i ? ", " : "") + S.missing[i];
         ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", m.c_str()); ImGui::PopTextWrapPos();
     }
     if (S.showPaste) {
         ImGui::InputTextMultiline("##tlepaste", S.paste.data(), S.paste.size(), ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 8));
-        if (ImGui::Button("Use pasted TLEs")) {
+        if (ImGui::Button(tr("Use pasted TLEs"))) {
             const std::string txt(S.paste.data());
             const std::vector<dect2::Tle> v = dect2::parseTleText(txt);
-            if (v.empty()) S.msg = "no valid TLE in the pasted text (two lines per satellite, checksums must match)";
+            if (v.empty()) S.msg = tr("no valid TLE in the pasted text (two lines per satellite, checksums must match)");
             else {
                 std::error_code ec;
                 fs::create_directories(fsPath(tleDir()), ec);
@@ -458,32 +462,32 @@ void tleSection(App& a) {
                 std::ofstream f(fsPath(tleDir() + "/" + kPasted), std::ios::binary);
                 f << old << (old.empty() || old.back() == '\n' ? "" : "\n") << txt << "\n";
                 f.close();
-                S.msg = "added " + std::to_string(v.size()) + " pasted TLEs";
+                S.msg = std::string(tr("pasted TLEs added:")) + " " + std::to_string(v.size());
                 S.paste[0] = 0;
                 loadTles();
             }
         }
         ImGui::SameLine();
-        if (ImGui::Button("Forget pasted TLEs")) { std::error_code ec; fs::remove(fsPath(tleDir() + "/" + kPasted), ec); loadTles(); S.msg = "pasted TLEs removed"; }
+        if (ImGui::Button(tr("Forget pasted TLEs"))) { std::error_code ec; fs::remove(fsPath(tleDir() + "/" + kPasted), ec); loadTles(); S.msg = "pasted TLEs removed"; }
     }
-    if (ImGui::TreeNode("Amateur satellites")) {
+    if (ImGui::TreeNode(trw("Amateur satellites"))) {
         int del = -1;
         for (int i = 0; i < (int)S.cubes.size(); i++) {
             ImGui::PushID(i);
-            ImGui::Text("%s  #%d  %.3f MHz%s", S.cubes[i].name.c_str(), S.cubes[i].norad, S.cubes[i].mhz, S.cubes[i].aprs ? "  APRS" : "");
+            ImGui::Text(tr("%s  #%d  %.3f MHz%s"), S.cubes[i].name.c_str(), S.cubes[i].norad, S.cubes[i].mhz, S.cubes[i].aprs ? "  APRS" : "");
             ImGui::SameLine();
-            if (ImGui::SmallButton("Remove")) del = i;
+            if (ImGui::SmallButton(tr("Remove"))) del = i;
             ImGui::PopID();
         }
         if (del >= 0) { S.cubes.erase(S.cubes.begin() + del); saveCubes(); savePrefs(a); buildSats(); }
-        ImGui::SetNextItemWidth(130 * gUi); ImGui::InputTextWithHint("##cname", "name", S.cubeName, sizeof S.cubeName);
+        ImGui::SetNextItemWidth(130 * gUi); ImGui::InputTextWithHint("##cname", tr("name"), S.cubeName, sizeof S.cubeName);
         ImGui::SameLine(); ImGui::SetNextItemWidth(80 * gUi); ImGui::InputInt("##cno", &S.cubeNorad, 0, 0);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("NORAD catalogue number");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("NORAD catalogue number"));
         ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi); ImGui::InputDouble("##cmhz", &S.cubeMhz, 0, 0, "%.3f MHz");
-        ImGui::SameLine(); ImGui::Checkbox("APRS", &S.cubeAprs);
+        ImGui::SameLine(); ImGui::Checkbox(tr("APRS"), &S.cubeAprs);
         ImGui::SameLine();
         ImGui::BeginDisabled(!S.cubeName[0] || S.cubeNorad <= 0 || S.cubeMhz <= 0);
-        if (ImGui::Button("Add")) {
+        if (ImGui::Button(tr("Add"))) {
             Cube c; c.name = S.cubeName; c.norad = S.cubeNorad; c.mhz = S.cubeMhz; c.aprs = S.cubeAprs;
             for (auto& ch : c.name) if (ch == '|' || ch == ';') ch = ' ';
             S.cubes.push_back(c); saveCubes(); savePrefs(a); buildSats();
@@ -496,21 +500,21 @@ void tleSection(App& a) {
 
 void window(App& a) {
     ImGui::SetNextWindowSize(ImVec2(820 * gUi, 560 * gUi), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Passes", &a.passesOpen)) { ImGui::End(); return; }
+    if (!ImGui::Begin(trw("Passes"), &a.passesOpen)) { ImGui::End(); return; }
     {   // where the receiver is
         ImGui::AlignTextToFramePadding();
-        ImGui::TextDisabled("Receiver position");
+        ImGui::TextDisabled("%s", tr("Receiver position"));
         ImGui::SameLine();
         receiverPositionFields(a);
-        if (!receiverLocationSet()) { ImGui::SameLine(); ImGui::TextColored(pal::warnAmber(), "not set: the times are for a placeholder position"); }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The same position as the ADS-B antenna position");
+        if (!receiverLocationSet()) { ImGui::SameLine(); ImGui::TextColored(pal::warnAmber(), "%s", tr("not set: the times are for a placeholder position")); }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("The same position as the ADS-B antenna position"));
     }
     tleSection(a);
     {   // filters
         bool ch = false;
         for (int g = 0; g < NumGroups; g++) {
             if (g) ImGui::SameLine();
-            if (ImGui::Checkbox(kGroupLabel[g], &S.show[g])) { char k[24]; snprintf(k, sizeof k, "passShow%d", g); plat::prefs().setB(k, S.show[g]); ch = true; }
+            if (ImGui::Checkbox(tr(kGroupLabel[g]), &S.show[g])) { char k[24]; snprintf(k, sizeof k, "passShow%d", g); plat::prefs().setB(k, S.show[g]); ch = true; }
         }
         ImGui::SameLine();
         ImGui::SetNextItemWidth(110 * gUi);
@@ -525,13 +529,13 @@ void window(App& a) {
     const ImGuiTableFlags tf = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit;
     if (ImGui::BeginTable("##passes", 7, tf)) {
         ImGui::TableSetupScrollFreeze(0, 1);
-        ImGui::TableSetupColumn("Satellite", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("AOS");
-        ImGui::TableSetupColumn("LOS");
-        ImGui::TableSetupColumn("Max el");
-        ImGui::TableSetupColumn("Duration");
-        ImGui::TableSetupColumn("Frequency");
-        ImGui::TableSetupColumn("Mode");
+        ImGui::TableSetupColumn(tr("Satellite"), ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn(tr("AOS"));
+        ImGui::TableSetupColumn(tr("LOS"));
+        ImGui::TableSetupColumn(tr("Max el"));
+        ImGui::TableSetupColumn(tr("Duration"));
+        ImGui::TableSetupColumn(tr("Frequency"));
+        ImGui::TableSetupColumn(tr("Mode"));
         ImGui::TableHeadersRow();
         int shown = 0;
         for (const Row& r : S.rows) {
@@ -547,16 +551,16 @@ void window(App& a) {
             if (ImGui::Selectable(s.name.c_str(), sel, ImGuiSelectableFlags_SpanAllColumns)) { S.selSat = r.sat; S.selAos = r.p.aos; S.selName = s.name; }
             if (active) ImGui::PopStyleColor();
             ImGui::PopID();
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(active ? "now" : timeText(r.p.aos).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(active ? tr("now") : timeText(r.p.aos).c_str());
             ImGui::TableNextColumn(); ImGui::TextUnformatted(timeText(r.p.los).c_str());
-            ImGui::TableNextColumn(); ImGui::Text("%.0f deg", r.p.maxElDeg);
+            ImGui::TableNextColumn(); ImGui::Text(tr("%.0f deg"), r.p.maxElDeg);
             ImGui::TableNextColumn(); { const int d = (int)std::lround(r.p.los - r.p.aos); ImGui::Text("%d:%02d", d / 60, d % 60); }
             ImGui::TableNextColumn(); ImGui::Text("%.3f", s.mhz);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(s.mode.c_str());
-            if (ImGui::IsItemHovered() && s.family == kSpecx) ImGui::SetTooltip("OnAir has no decoder for this: auto start opens the Spectrum explorer, and Auto record keeps the IQ");
+            if (ImGui::IsItemHovered() && s.family == kSpecx) ImGui::SetTooltip("%s", tr("OnAir has no decoder for this: auto start opens the Spectrum explorer, and Auto record keeps the IQ"));
         }
         ImGui::EndTable();
-        if (!shown) ImGui::TextDisabled(S.tles.empty() ? "No TLEs: open TLE data above." : "No passes in the next 24 hours.");
+        if (!shown) ImGui::TextDisabled("%s", tr(S.tles.empty() ? "No TLEs: open TLE data above." : "No passes in the next 24 hours."));
     }
     ImGui::EndChild();
     ImGui::SameLine();
@@ -571,31 +575,31 @@ void window(App& a) {
     if (r) {
         const Sat& s = S.sats[r->sat];
         ImGui::TextUnformatted(s.name.c_str());
-        ImGui::TextDisabled("%s - %s, max %.0f deg", timeText(r->p.aos).c_str(), timeText(r->p.los).c_str(), r->p.maxElDeg);
-    } else ImGui::TextDisabled("no pass");
+        ImGui::TextDisabled(tr("%s - %s, max %.0f deg"), timeText(r->p.aos).c_str(), timeText(r->p.los).c_str(), r->p.maxElDeg);
+    } else ImGui::TextDisabled("%s", tr("no pass"));
     skyPlot(r, std::min(ImGui::GetContentRegionAvail().x, plotW));
     if (r && now >= r->p.aos && now <= r->p.los) {
         dect2::Look l;
         if (lookNow(S.sats[r->sat], now, l))
-            ImGui::Text("az %.0f  el %.0f  %.0f km\nDoppler %+.0f Hz", l.azDeg, l.elDeg, l.rangeKm, dect2::dopplerHz(S.sats[r->sat].mhz * 1e6, l.rangeRateKmS));
+            ImGui::Text(tr("az %.0f  el %.0f  %.0f km\nDoppler %+.0f Hz"), l.azDeg, l.elDeg, l.rangeKm, dect2::dopplerHz(S.sats[r->sat].mhz * 1e6, l.rangeRateKmS));
     } else if (r) {
         const int in = (int)std::max(0.0, r->p.aos - now);
-        ImGui::TextDisabled("AOS in %d:%02d:%02d", in / 3600, in / 60 % 60, in % 60);
+        ImGui::TextDisabled(tr("AOS in %d:%02d:%02d"), in / 3600, in / 60 % 60, in % 60);
     }
     ImGui::Separator();
     const bool haveSel = S.selSat >= 0 && S.selSat < (int)S.sats.size();
     ImGui::BeginDisabled(!haveSel);
-    std::string tl = haveSel ? "Track " + S.sats[S.selSat].name : std::string("Track (choose a pass)");
+    std::string tl = haveSel ? std::string(tr("Track")) + " " + S.sats[S.selSat].name : std::string(tr("Track (choose a pass)"));
     ImGui::Checkbox(tl.c_str(), &S.track);
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("During each pass of this satellite, retune about once a second for the Doppler shift");
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("During each pass of this satellite, retune about once a second for the Doppler shift"));
     ImGui::BeginDisabled(!S.track);
-    ImGui::Checkbox("Auto start at AOS, stop at LOS", &S.autoStart);
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Switches to the satellite's mode and starts the receiver at AOS (when it is stopped), and stops it at LOS");
-    ImGui::Checkbox("Auto record IQ", &S.autoRecord);
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Records the radio's IQ during the pass, as Record IQ does (format from the Record IQ setting), into %s/recordings", plat::dataDir().c_str());
+    ImGui::Checkbox(tr("Auto start at AOS, stop at LOS"), &S.autoStart);
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Switches to the satellite's mode and starts the receiver at AOS (when it is stopped), and stops it at LOS"));
+    ImGui::Checkbox(tr("Auto record IQ"), &S.autoRecord);
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(tr("Records the radio's IQ during the pass, as Record IQ does (format from the Record IQ setting), into %s/recordings"), plat::dataDir().c_str());
     ImGui::EndDisabled();
     ImGui::EndDisabled();
-    if (S.inPass) ImGui::TextColored(pal::okGreen(), "tracking%s", S.weRecord ? ", recording" : "");
+    if (S.inPass) ImGui::TextColored(pal::okGreen(), tr("tracking%s"), S.weRecord ? tr(", recording") : "");
     ImGui::EndChild();
     ImGui::End();
 }
@@ -609,9 +613,49 @@ void passesDevTle(const std::string& path) {
     buildSats();
 }
 
+const dect2::Sgp4* passesFindSat(const std::string& part, double unixSec, std::string* name) {
+    loadState();
+    double lat, lon;
+    receiverLocation(lat, lon);
+    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon; o.altKm = receiverAltitudeM() / 1000;
+    const Sat* best = nullptr;
+    double bestEl = -1e9;
+    for (const Sat& s : S.sats) {
+        if (s.name.find(part) == std::string::npos) continue;
+        dect2::Look l;
+        const double el = dect2::lookAt(s.sgp, o, unixSec, l) ? l.elDeg : -90;
+        if (!best || el > bestEl) { best = &s; bestEl = el; }
+    }
+    if (!best) return nullptr;
+    if (name) *name = best->name;
+    return &best->sgp;
+}
+
+void passesMapSatellites(std::vector<MapSatRef>& out) {
+    loadState();
+    for (const Sat& s : S.sats) out.push_back({s.name, s.norad, &s.sgp});
+}
+
 void passesWindow(App& a) {
     loadState();
     if (!S.sats.empty() && (S.track || a.passesOpen)) compute(a);
     trackTick(a);
     if (a.passesOpen) window(a);
+}
+
+// The Globalstar activity monitor's overlay: every Globalstar satellite above the horizon at this time with the Doppler shift its downlink would have
+// at freqHz for the receiver's position (names and Doppler, empty without TLEs).
+std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz) {
+    loadState();
+    std::vector<std::pair<std::string, double>> out;
+    if (!receiverLocationSet()) return out;
+    double lat, lon;
+    receiverLocation(lat, lon);
+    dect2::Observer o; o.latDeg = lat; o.lonDeg = lon; o.altKm = receiverAltitudeM() / 1000;
+    for (const Sat& s : S.sats) {
+        if (s.family != kGlobalstar) continue;
+        dect2::Look l;
+        if (dect2::lookAt(s.sgp, o, unixSec, l) && l.elDeg > 0) out.push_back({s.name, dect2::dopplerHz(freqHz, l.rangeRateKmS)});
+    }
+    return out;
 }

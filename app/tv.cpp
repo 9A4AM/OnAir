@@ -231,6 +231,7 @@ void playerTab(App& a) {
     const float h = std::max(60.f * gUi, ImGui::GetContentRegionAvail().y - stor->GetFloat(ctlKey, 44.f * gUi));
     ImGui::BeginChild("vbox", ImVec2(-1, h), ImGuiChildFlags_Borders);
     if (pl.selected() < 0) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Pick a service in the list on the right to start playback."); ImGui::PopTextWrapPos(); }
+    else if (!ps.videoNote.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos(); }
     else if (!a.video.has()) ImGui::TextDisabled("%s", ps.hasAudio && !ps.hasVideo ? "audio only" : ps.status.c_str());
     else a.video.draw(ImGui::GetContentRegionAvail());
     ImGui::EndChild();
@@ -291,7 +292,10 @@ void playerTab(App& a) {
 }
 
 void rightPanel(App& a) {
-    if (const ModeUi* mu = modeUi(a.family)) if (mu->list) { mu->list(a); return; }
+    if (const ModeUi* mu = modeUi(a.family)) if (mu->list) {
+        if (!a.engine.running() && a.rx.standard > 0) ImGui::TextDisabled("stopped - showing saved results");
+        mu->list(a); return;
+    }
     const bool run = a.engine.running();
     ImDrawList* dl = ImGui::GetWindowDrawList();
     // ---- clock: broadcast time (TDT) when the stream has one, otherwise this computer's clock
@@ -361,7 +365,7 @@ void rightPanel(App& a) {
         x += tagAt(dl, ImVec2(x, ty), radio ? "radio" : hasVideo ? "TV" : sv.typeName(), IM_COL32(34, 74, 108, 255)) + 4;
         if (!vc.empty()) x += tagAt(dl, ImVec2(x, ty), vc.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
         if (!ac.empty()) x += tagAt(dl, ImVec2(x, ty), ac.c_str(), IM_COL32(38, 46, 58, 255), IM_COL32(190, 200, 214, 255)) + 4;
-        if (sv.caFlag) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(112, 52, 50, 255)) + 4;
+        if (sv.scrambled) x += tagAt(dl, ImVec2(x, ty), "scrambled", IM_COL32(112, 52, 50, 255)) + 4;
         // what is on
         const EpgEvent* cur = epgCurrent(a, sv.id);
         std::string line;
@@ -408,6 +412,29 @@ void rightPanel(App& a) {
             if (ImGui::SliderFloat("##vol", &vol, 0, 100, "%.0f %%")) { a.volume = vol / 100.f; a.engine.player().setVolume(a.volume); }
             ImGui::EndTable();
         }
+        // a picture or sound OnAir's FFmpeg cannot decode (AVS+, AVS2, AVS3, DRA): why, and the codec note (docs/CODECS.md)
+        if (pl.selected() >= 0) {
+            if (!ps.videoNote.empty()) { codecHelpButton(CodecHelp::Avs); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos(); }
+            if (!ps.audioNote.empty()) { codecHelpButton(CodecHelp::DraTv); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", ps.audioNote.c_str()); ImGui::PopTextWrapPos(); }
+            if (pl.hasSavableAudio()) {   // the raw DRA (else MPEG audio) stream to a file FFmpeg can play
+                static std::string savedTo, saveErr;
+                Player& mp = a.engine.player();
+                if (mp.savingAudioStream()) {
+                    if (ImGui::Button("Stop saving")) mp.stopSaveAudioStream();
+                    ImGui::SameLine(); ImGui::TextDisabled("%.1f kB written", mp.savedAudioBytes() / 1024.0);
+                } else {
+                    if (ImGui::Button("Save stream")) {
+                        std::string nm = "service";
+                        for (const auto& sv : a.ts.services) if (sv.id == pl.selected() && !sv.name.empty()) nm = sv.name;
+                        savedTo = mp.saveAudioStream(streamSavePath(nm));
+                        saveErr = savedTo.empty() ? "cannot save: no DRA or MPEG audio stream, or the file cannot be written" : "";
+                    }
+                    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Write the raw audio stream of this service (DRA, else MPEG audio) to a file you can play with FFmpeg (see the README).");
+                }
+                if (!saveErr.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", saveErr.c_str()); ImGui::PopTextWrapPos(); }
+                else if (!savedTo.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", savedTo.c_str()); ImGui::PopTextWrapPos(); }
+            }
+        }
     }
     ImGui::Spacing();
     // ---- video preview and outputs
@@ -417,6 +444,7 @@ void rightPanel(App& a) {
         ImGui::BeginChild("video", ImVec2(0, vh), ImGuiChildFlags_Borders);
         const PlayerStats ps = a.engine.player().stats();
         if (a.engine.player().selected() < 0) ImGui::TextDisabled("no picture");
+        else if (!ps.videoNote.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos(); }
         else if (!ps.hasVideo && ps.hasAudio) ImGui::TextDisabled("audio only");
         else if (!a.video.has()) ImGui::TextDisabled("%s", ps.status.c_str());
         else a.video.draw(ImGui::GetContentRegionAvail());

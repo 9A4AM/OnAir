@@ -1,6 +1,7 @@
 // TETRA network information receiver (tetra_rx.h): blocks of input, 25 kHz carriers found in the spectrum, slot synchronised on the
 // training sequences, the broadcast channels decoded.
 #include "dect2/tetra_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/cell_dsp.h"
 #include "dect2/tetra_tel.h"
 #include <algorithm>
@@ -582,6 +583,24 @@ void TetraReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
 
 bool TetraReceiver::busy() const { std::lock_guard<std::mutex> lk(p_->mu); return !p_->idle.load() || p_->jobReady; }
 
+// the cells and the event log already stay through reset() and configure() (the sample clock runs on): only the user's Clear empties them
+void TetraReceiver::clearResults() { clearCells(); }
+std::string TetraReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->tel.timeSec, p_->tel.cells, p_->tel.events);
+}
+bool TetraReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    TetraTelemetry l;
+    if (!results::unpack(blob, t0, l.cells, l.events)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const double dt = p_->tel.timeSec - t0;    // onto this run's clock
+    for (auto& c : l.cells) c.lastSec += dt;
+    for (auto& e : l.events) e.sec += dt;
+    p_->tel.cells = std::move(l.cells); p_->tel.events = std::move(l.events);
+    p_->publish();
+    return true;
+}
 bool TetraReceiver::telemetry(TetraTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

@@ -85,6 +85,12 @@ std::string cacheDir() {
 // Windows: %LOCALAPPDATA%\OnAir; Linux: $XDG_DATA_HOME/onair or ~/.local/share/onair. Paths are UTF-8.
 std::string dataDir() {
     std::string d;
+    // DECT2_DATA_DIR: another folder for everything OnAir writes (test runs keep away from the user's own data)
+    if (const char* o = getenv("DECT2_DATA_DIR"); o && *o) {
+        std::error_code ec;
+        std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>(o)), ec);
+        return o;
+    }
 #ifdef _WIN32
     if (const wchar_t* la = _wgetenv(L"LOCALAPPDATA")) d = utf8(la) + "\\OnAir";
     else return cacheDir();
@@ -238,11 +244,17 @@ struct FilePrefs : Prefs {
         }
         if (replaceFile(tmp, path)) dirty = false;
     }
+    std::string setAside() override {
+        const std::string old = configDir() + "/settings-crashed.conf";
+        const bool kept = replaceFile(path, old);
+        kv.clear(); channels.clear(); dirty = false;
+        return kept ? old : "";
+    }
 };
 
 } // namespace
 
-Prefs& prefs() { static FilePrefs p; return p; }
+Prefs& basePrefs() { static FilePrefs p; return p; }
 
 void showFatalError(const char* title, const char* text) {
 #ifdef _WIN32
@@ -277,10 +289,33 @@ std::vector<std::string> uiFontCandidates() {
             "/usr/share/fonts/liberation/LiberationSans-Regular.ttf", "/usr/share/fonts/noto/NotoSans-Regular.ttf",
             "C:/Windows/Fonts/segoeui.ttf"};
 }
+std::vector<std::string> cjkFontCandidates() {
+    return {"C:/Windows/Fonts/msyh.ttc", "C:/Windows/Fonts/simsun.ttc", "C:/Windows/Fonts/malgun.ttf",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc", "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc"};
+}
 std::vector<std::string> monoFontCandidates() {
     return {"C:/Windows/Fonts/consola.ttf", "C:/Windows/Fonts/lucon.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
             "/usr/share/fonts/truetype/noto/NotoSansMono-Regular.ttf", "/usr/share/fonts/TTF/DejaVuSansMono.ttf", "/usr/share/fonts/dejavu/DejaVuSansMono.ttf",
             "/usr/share/fonts/liberation/LiberationMono-Regular.ttf", "C:/Windows/Fonts/consola.ttf"};
+}
+
+
+std::string uiLanguage() {
+#ifdef _WIN32
+    switch (PRIMARYLANGID(GetUserDefaultUILanguage())) {
+        case LANG_GERMAN: return "de";
+        case LANG_FRENCH: return "fr";
+        case LANG_SPANISH: return "es";
+        case LANG_CHINESE: return "zh";
+        case LANG_LITHUANIAN: return "lt";
+        default: return "en";
+    }
+#else
+    for (const char* k : {"LC_ALL", "LC_MESSAGES", "LANG"}) if (const char* v = getenv(k)) if (*v && strcmp(v, "C") && strcmp(v, "POSIX")) return v;
+    return "en";
+#endif
 }
 
 }

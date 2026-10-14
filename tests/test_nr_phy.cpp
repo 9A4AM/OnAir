@@ -152,6 +152,14 @@ int main() {
         CHECK(hzToGscn(793.25e6) == 1982 && hzToGscn(2498.55e6) == 6246, "Hz to GSCN");
         CHECK(nrBandOfGscn(7875, 30) == 78 && nrBandOfGscn(8200, 30) == 77 && nrBandOfGscn(1990, 15) == 28 && nrBandOfGscn(2030, 15) == 20 && nrBandOfGscn(7875, 15) == 0, "bands");
         CHECK(nrBandOfGscn(6253, 30) == 0 && nrBandOfGscn(6255, 30) == 41, "n41 step 3");
+        bool ok = true;
+        for (const auto& b : nrBands()) {
+            if ((b.gscnHi - b.gscnLo) % b.gscnStep || gscnToHz(b.gscnLo) < b.dlLowMhz * 1e6 || gscnToHz(b.gscnHi) > b.dlHighMhz * 1e6) ok = false;
+            for (int g = b.gscnLo; g <= b.gscnHi; g += b.gscnStep) if (hzToGscn(gscnToHz(g)) != g || !nrBandOfGscn(g, b.scsKhz)) ok = false;
+        }
+        CHECK(ok && nrBands().size() >= 25, "NR band table consistent");
+        CHECK(nrBandOfGscn(8496, 30) == 79 && nrBandOfGscn(8490, 30) == 0 && nrBandOfGscn(2200, 15) == 5 && nrBandOfGscn(1600, 15) == 71 && nrBandOfGscn(7900, 30) == 78, "new NR bands");
+        CHECK(std::fabs(gscnToHz(8480) - 4412.64e6) < 1 && std::fabs(gscnToHz(2177) - 871.25e6) < 1, "n79 / n5 raster");
         int rb, sy, of;
         CHECK(coreset0Info(30, 30, 12, rb, sy, of) && rb == 48 && sy == 1 && of == 16, "CORESET#0 13-4");
         CHECK(coreset0Info(15, 15, 3, rb, sy, of) && rb == 24 && sy == 3 && of == 0 && !coreset0Info(15, 15, 15, rb, sy, of), "CORESET#0 13-1");

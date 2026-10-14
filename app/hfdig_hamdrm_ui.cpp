@@ -2,6 +2,7 @@
 // of the segments (and the ones still missing), the last finished picture (scaled to fit), the finished files as a list to click, Save, and
 // "Save every picture" (the files as sent, in <data folder>/hamdrm/, named by the time and the sender's file name).
 #include "app.h"
+#include "gallery.h"
 #include "gfx.h"
 #include "platform.h"
 #include "dect2/hfdig_tel.h"
@@ -99,6 +100,10 @@ void update(const dect2::HfdigHamdrmTelemetry& t) {
         S.items.insert(S.items.begin(), it);
         S.sel = 0;
         if (S.autoSave) save(*h);
+        if (h->mime.rfind("image/", 0) == 0) {
+            gallery::Meta gm; gm.detail = h->callsign.empty() ? h->name : h->callsign + " " + h->name;
+            gallery::publishFile("hamdrm-" + std::to_string((long long)h->unixTime) + "-" + std::to_string(h->id), "HamDRM", (double)h->unixTime, h->data, gm);
+        }
         while (S.items.size() > (size_t)dect2::kHamdrmHistory) { delete S.items.back().tex; S.items.pop_back(); }
     }
 }
@@ -151,13 +156,13 @@ void pictureBox(ImVec2 size, bool running) {
     dl->AddText(ImVec2(p0.x + std::max(4.f, (size.x - ts.x) * 0.5f), p0.y + size.y * 0.5f), IM_COL32(150, 154, 158, 255), msg.c_str());
 }
 
-void side(bool wrap) {
+void side(App& a, bool wrap) {
     const Item* cur = S.sel >= 0 && S.sel < (int)S.items.size() ? &S.items[(size_t)S.sel] : nullptr;
     ImGui::BeginDisabled(!cur);
     if (ImGui::Button("Save") && cur) save(*cur->f);
     ImGui::EndDisabled();
     if (wrap) flowNext(8 * gUi); else ImGui::SameLine();
-    if (ImGui::Button("Clear")) { for (Item& it : S.items) delete it.tex; S.items.clear(); S.sel = 0; S.msg.clear(); }
+    if (ImGui::Button("Clear")) { for (Item& it : S.items) delete it.tex; S.items.clear(); S.sel = 0; S.msg.clear(); a.engine.hfdig().clearResults(16); }
     if (wrap) flowNext(12 * gUi);
     if (ImGui::Checkbox("Save every picture", &S.autoSave)) plat::prefs().setB("hfdigHamdrmAutoSave", S.autoSave);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("The files as they were sent, in %s/hamdrm", plat::dataDir().c_str());
@@ -217,6 +222,6 @@ void hfdigHamdrmTab(App& a, const dect2::HfdigTelemetry& t) {
     ImGui::EndChild();
     if (wide) ImGui::SameLine(0, 10 * gUi);
     ImGui::BeginChild("##hdside", ImVec2(wide ? sideW : avail.x, wide ? avail.y : 0), false);
-    side(!wide);
+    side(a, !wide);
     ImGui::EndChild();
 }

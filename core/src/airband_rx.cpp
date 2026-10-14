@@ -1,6 +1,7 @@
 // Airband receiver (see airband_rx.h): every listed channel of the sample band mixed down, filtered, AM-demodulated and squelched on its
 // own; the tuning error measured from all of them together; the open channels mixed (or scanned) to the sound card.
 #include "dect2/airband_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/airband_tel.h"
 #include "dect2/airband_gen.h"
 #include "dect2/audioout.h"
@@ -277,14 +278,37 @@ struct AirbandReceiver::Impl {
         }
     }
 
+    // The activity log stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool clearReq = false, loadReq = false;
+    AirbandTelemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(AirbandTelemetry& to, AirbandTelemetry& from) {
+        to.activity = std::move(from.activity);
+        from.activity.clear();
+    }
+    static void shiftTimes(AirbandTelemetry& t, double dt) {
+        for (auto& a : t.activity) a.startSec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (!clearReq && !loadReq) return;
+        if (clearReq) { AirbandTelemetry e; moveLists(tel, e); clearReq = false; }
+        if (loadReq) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); loadReq = false; }
+        
+    }
     void resetState() {
         std::function<void(const std::string&)> cb;
         std::vector<AirbandChannel> list;
         { std::lock_guard<std::mutex> lk(mu); curRate = rate; cb = log; center = centerSet > 0 ? centerSet : kDefaultDialHz; list = chanSet;
           sql = sqlSet; hang = hangSet; scan = scanSet; }
         const uint64_t s = tel.seq;
+        AirbandTelemetry keep;             // the activity log stays (clearResults): the clock starts again, it moves back with it
+        moveLists(keep, tel);
+        shiftTimes(keep, -tel.timeSec);
         tel = AirbandTelemetry();
         tel.seq = s;
+        moveLists(tel, keep);
         tel.inputRate = curRate;
         nIn = 0; nOut8 = 0; nextReport = 0; nextEst = 0.5; power = 0; nPower = 0;
         scanCh = -1; scanIdleSince = -1;
@@ -683,14 +707,18 @@ void AirbandReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->resetReq = true;
     const uint64_t s = p_->pub.seq;
+    AirbandTelemetry keep;
+    Impl::moveLists(keep, p_->pub);
     p_->pub = AirbandTelemetry();
     p_->pub.seq = s;
+    Impl::moveLists(p_->pub, keep);
 }
 
 void AirbandReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.tapsReq.exchange(false)) { std::lock_guard<std::mutex> lk(m.mu); m.chanTap = m.chanTapSet; m.mixTap = m.mixTapSet; }
     if (m.resetReq.exchange(false)) { m.chanReq = false; m.resetState(); }
+    m.takeRequests();
     {
         std::lock_guard<std::mutex> lk(m.mu);
         m.sql = m.sqlSet; m.hang = m.hangSet; m.scan = m.scanSet;
@@ -720,6 +748,31 @@ void AirbandReceiver::feed(const cf32* x, size_t n) {
     }
 }
 
+void AirbandReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    AirbandTelemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->pub.seq++;
+}
+std::string AirbandReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.activity);
+}
+bool AirbandReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    AirbandTelemetry l;
+    if (!results::unpack(blob, t0, l.activity)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    AirbandTelemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
+}
 bool AirbandReceiver::telemetry(AirbandTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

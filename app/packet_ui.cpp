@@ -17,15 +17,17 @@ struct State {
     adsbmap::View map;
     bool mapFollow = true;           // the map fits the stations until the user drags it
     bool logScroll = true;
+    bool listen = false; int pushedListen = -1; float pushedVol = -1; int pushedMute = -1;
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 25; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 25; }   // the engine reports its standard code minus one
 
 void loadState() {
     if (S.loaded) return;
     S.loaded = true;
     S.map.zoom = (int)plat::prefs().getI("packetZoom", 9);
+    S.listen = plat::prefs().getB("packetListen", false);
 }
 
 std::string ageText(double s) {
@@ -274,6 +276,13 @@ void lamps(App& a) {
 void tab(App& a) {
     loadState();
     lamps(a);
+    flowNext(10 * gUi);
+    listenControls(a, S.listen, "packetListen", "pkt", "Hear the channel: the demodulated audio, the AFSK tones of 1200 baud packet (1200 / 2200 Hz); decoding is the same either way");
+    {   // pushed from here: the tab is the only place the control lives
+        dect2::PacketReceiver& r = a.engine.packet();
+        if ((int)S.listen != S.pushedListen) { r.setListen(S.listen); S.pushedListen = S.listen; }
+        if (a.volume != S.pushedVol || (int)a.muted != S.pushedMute) { r.setVolume(a.volume); r.setMuted(a.muted); S.pushedVol = a.volume; S.pushedMute = a.muted; }
+    }
     subNav("pktv", S.view, {"Stations", "Map", "Packets"});
     if (S.view == 2) { packetLog(a); return; }
     if (S.view == 1) { mapView(a, ImGui::GetContentRegionAvail()); return; }
@@ -284,6 +293,7 @@ void tab(App& a) {
 void list(App& a) {
     loadState();
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see stations"); ImGui::PopTextWrapPos(); return; }
+    if (resultsClearButton("packet")) a.engine.packet().clearResults();
     ImGui::TextDisabled("%zu stations", a.rx.packet.stations.size());
     stationTable(a, true);
 }

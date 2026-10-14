@@ -4,6 +4,7 @@
 #include "dect2/aero_pos.h"
 #include "dect2/fftutil.h"
 #include "acars_chan.h"
+#include "dect2/results_io.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -72,6 +73,7 @@ struct AcarsReceiver::Impl {
     std::atomic<bool> rdy{false};
     uint64_t seq = 0;
     double lastMsgSec = -1e9;
+    double nowSec = 0;                     // signal time of the last report: the lists' times move back by it when the count restarts
     AcarsTelemetry pub;
     std::function<void(const std::string&)> log;
 
@@ -135,10 +137,32 @@ struct AcarsReceiver::Impl {
         std::fill(slotUsed.begin(), slotUsed.end(), false);
         for (auto& c : cands) { c.active = false; c.slot = -1; c.p = 0; c.ratio = 0; c.seen = false; c.msgs = c.bad = 0; c.lastHeard = 0; c.levelDb = -120; c.coolUntil = 0; }
         std::lock_guard<std::mutex> lk(telMu);
-        msgs.clear(); aircraft.clear();
+        shiftTimes(-nowSec);               // the sample count starts again: the kept lists stay in the past of the new clock
+        nowSec = 0;
         okCount = badCount = fixedCount = 0; framesTotal = 0; posTotal = 0;
         lastMsgSec = -1e9;
     }
+
+    // telMu held
+    void shiftTimes(double dt) {
+        for (auto& m : msgs) m.timeSec += dt;
+        for (auto& kv : aircraft) {
+            AcarsAircraft& a = kv.second;
+            a.lastHeardSec += dt;
+            if (a.hasPos) a.posTime += dt;
+            for (auto& tp : a.track) tp.time += dt;
+        }
+    }
+
+    // telMu held: the lists of the published report (also after a load or a clear, with no signal)
+    void fillLists(AcarsTelemetry& t) const {
+        t.messages.assign(msgs.begin(), msgs.end());
+        std::vector<AcarsAircraft> al;
+        for (auto& kv : aircraft) al.push_back(kv.second);
+        std::sort(al.begin(), al.end(), [](const AcarsAircraft& a, const AcarsAircraft& b) { return a.lastHeardSec > b.lastHeardSec; });
+        t.aircraft = std::move(al);
+    }
+    void republish() { fillLists(pub); pub.seq = ++seq; }
 
     const cf32* at(int64_t abs) const { return &ring[(size_t)(abs % rsz)]; }
 
@@ -348,6 +372,7 @@ struct AcarsReceiver::Impl {
         t.seq = ++seq;
         t.centerHz = centerHz;
         t.nowSec = (double)wr / fs;
+        nowSec = t.nowSec;
         t.blocksOk = okCount; t.blocksBad = badCount; t.parityFixed = fixedCount;
         t.framesStarted = framesTotal;
         t.positionsTotal = posTotal;
@@ -374,11 +399,7 @@ struct AcarsReceiver::Impl {
         }
         t.state = (t.nowSec - lastMsgSec < 30.0) ? 2 : (nAct > 0 ? 1 : 0);
         if (best) { t.cfoHz = best->cfo; t.snrDb = best->snrDb; }
-        t.messages.assign(msgs.begin(), msgs.end());
-        std::vector<AcarsAircraft> al;
-        for (auto& kv : aircraft) al.push_back(kv.second);
-        std::sort(al.begin(), al.end(), [](const AcarsAircraft& a, const AcarsAircraft& b) { return a.lastHeardSec > b.lastHeardSec; });
-        t.aircraft = std::move(al);
+        fillLists(t);
         pub = std::move(t);
     }
 };
@@ -440,6 +461,31 @@ bool AcarsReceiver::telemetry(AcarsTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->telMu);
     if (p_->pub.seq <= lastSeq) return false;
     out = p_->pub;
+    return true;
+}
+
+void AcarsReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->telMu);
+    p_->msgs.clear(); p_->aircraft.clear();
+    p_->republish();
+}
+
+std::string AcarsReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->telMu);
+    return results::pack(p_->nowSec, p_->serial, p_->msgs, p_->aircraft);
+}
+
+bool AcarsReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    uint64_t serial = 0;
+    std::deque<AcarsMessage> msgs;
+    std::unordered_map<std::string, AcarsAircraft> aircraft;
+    if (!results::unpack(blob, t0, serial, msgs, aircraft)) return false;
+    std::lock_guard<std::mutex> lk(p_->telMu);
+    p_->msgs = std::move(msgs); p_->aircraft = std::move(aircraft);
+    p_->serial = std::max(p_->serial, serial);
+    p_->shiftTimes(p_->nowSec - t0);
+    p_->republish();
     return true;
 }
 

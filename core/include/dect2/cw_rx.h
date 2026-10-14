@@ -7,7 +7,7 @@
 // level, with hysteresis. The key-down / key-up durations go to the timing decoder (cw_morse.h): speed 5 - 50 WPM followed from the
 // dot / dash clusters, Farnsworth spacing, prosigns. A signal that stays silent for 30 s is dropped (unless it is the focus).
 //
-// The focus (setFocusHz, a click on the waterfall) is the signal of the big text view; it can have a sidetone: a 700 Hz tone keyed by its
+// The focus (setFocusHz, a click on the waterfall) is the signal of the big text view; it can have a sidetone: a tone (400 - 1000 Hz, 700 default) keyed by its
 // decoder, off by default (setSidetone).
 //
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
@@ -33,9 +33,13 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);     // where the dial frequency sits relative to 0 Hz in the input
     bool ready() const;                  // false when the input rate is too low
-    void reset();                        // after a retune
+    void reset();                                        // after a retune (the signals' text stays: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(CwTelemetry& out, uint64_t lastSeq);
+    // The signals and their text (also of signals gone quiet) stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     void setFocusHz(double offsetHz);    // the signal nearest this offset from the dial becomes the focus (a new one when none is near)
@@ -46,7 +50,12 @@ public:
     void setVolume(float v);
     void setMuted(bool m);
     void setSilent(bool s);              // decode but do not open the sound device
-    void setSidetoneTap(std::function<void(const float* stereo, size_t frames)> cb);   // tests: the 48 kHz sidetone
+    // Whole span (the "wide decode" switch): skim the visible span (up to 250 kHz around the dial frequency) instead of +-7 kHz. The span is
+    // cut by a WideDecimator (widespan.h) and tiled by one skimmer per 12 kHz slice; the signals are listed with their offset from the dial.
+    void setWide(bool on, double spanHz = 250000);
+    bool wide() const;
+    void setSpotShiftHz(double hz);      // internal (slice skimmers): added to a signal's offset for the PSK Reporter spot
+    void setSidetoneTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 8 kHz sidetone (mono)
 
 private:
     struct Impl;

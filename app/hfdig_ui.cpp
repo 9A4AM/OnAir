@@ -20,6 +20,7 @@ void hfdigSstvTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigFreedvTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t);
 void hfdigHamdrmTab(App& a, const dect2::HfdigTelemetry& t);
+void hfdigKbdTab(App& a, const dect2::HfdigTelemetry& t);
 
 namespace {
 
@@ -31,6 +32,8 @@ struct State {
     bool tapSet = false;
     bool listen = false, listenLoaded = false;   // "Listen": off until switched on
     int pushedListen = -1;
+    std::string demodKey;                // the prefs key of the demodulator choice: one per protocol entry
+    int demod = dect2::HfDemodAuto;
     // the audio spectrum (UI thread): 1024-point frames every 512 samples, four of them averaged into one display row
     std::vector<float> pend;             // audio not yet analysed
     std::vector<float> acc;              // power sum of the frames of the row being built (bins 0 .. 4000 Hz)
@@ -129,11 +132,36 @@ void follow(const dect2::HfdigTelemetry& t) {
     }
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 26; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 26; }   // the engine reports its standard code minus one
 
 // the decoders of the selected entry (RTTY, SSTV, FreeDV, one WSJT mode or HamDRM): 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM;
 // all without one
 int decMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 31; }
+
+// the demodulator choice of the selected entry (SSTV, RTTY, ...), loaded when the entry changes
+void loadDemod(const App& a) {
+    const SubMode* sm = curSub(a);
+    std::string k = "hfdigDemod";
+    if (sm) { k += "."; k += sm->id; }
+    if (k == S.demodKey) return;
+    S.demodKey = k;
+    S.demod = hfDemodLoad(k.c_str());
+}
+} // namespace
+
+// the SSTV band buttons pick the sideband with the frequency (80 and 40 m SSTV is on lower sideband)
+void hfdigSetDemod(const App& a, int d) {
+    loadDemod(a);
+    S.demod = d;
+    plat::prefs().setI(S.demodKey.c_str(), d);
+}
+
+namespace {
+
+void tuner(App& a, bool&) {
+    loadDemod(a);
+    hfDemodControl(a, S.demod, S.demodKey.c_str(), "hfdig");
+}
 
 void tick(App& a) {
     const bool run = a.engine.running();
@@ -144,6 +172,8 @@ void tick(App& a) {
     }
     if (!S.listenLoaded) { S.listenLoaded = true; S.listen = plat::prefs().getB("hfdigListen", false); }
     if (run && (!S.wasRunning || (int)S.listen != S.pushedListen)) { a.engine.hfdig().setListen(S.listen); S.pushedListen = S.listen; }
+    loadDemod(a);
+    if (run) a.engine.hfdig().setDemod(dect2::hfDemodResolve(S.demod, a.freqMhz));   // Auto follows the dial
     if (run && a.rx.standard == 26) {
         if (!S.tapSet) {   // the 8 kHz audio for the spectrum, handed over from the receiver thread
             S.tapSet = true;
@@ -169,6 +199,7 @@ void tab(App& a) {
         else if (m == 2) hfdigSstvTab(a, t);
         else if (m == 4) hfdigFreedvTab(a, t);
         else if (m == 16) hfdigHamdrmTab(a, t);
+        else if (m == 32) hfdigKbdTab(a, t);
         else hfdigFtxTab(a, t);
         return;
     }
@@ -253,7 +284,11 @@ void panels(App& a) {
     const ImVec2 av = ImGui::GetContentRegionAvail();
     if (av.x < 80 || av.y < 80) return;
     const float cap = ImGui::GetTextLineHeightWithSpacing();
-    captionFit(av.x, "Audio 0 to 4000 Hz (upper sideband): the RTTY tones, the SSTV signal and the FT8 / WSPR decodes of the last slot");
+    static const char* const kCap[] = {"upper sideband", "lower sideband", "narrow FM", "AM"};
+    const int dmod = a.engine.hfdig().demod();
+    char capTxt[160];
+    snprintf(capTxt, sizeof capTxt, "Audio 0 to 4000 Hz (%s): the RTTY tones, the SSTV signal and the FT8 / WSPR decodes of the last slot", kCap[dmod >= 0 && dmod < 4 ? dmod : 0]);
+    captionFit(av.x, capTxt);
     const float h1 = std::max(40.f, (av.y - 2 * cap) * 0.45f), h2 = std::max(40.f, av.y - 2 * cap - h1 - 6);
     const ImVec2 p0 = ImGui::GetCursorScreenPos();
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -342,7 +377,10 @@ void receiver(App& a) {
     auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
     kv("state", "%s", dect2::hfdigSummary(t).c_str());
     kv("input", "%.3f Msps, %.1f dBFS", t.inputRate / 1e6, t.levelDb);
-    kv("sideband", "%.1f dBFS (200 - 3800 Hz above the dial frequency)", t.audioDb);
+    const int dm = a.engine.hfdig().demod();
+    static const char* const kBand[] = {"200 - 3800 Hz above the dial frequency", "200 - 3800 Hz below the dial frequency",
+                                        "FM, 12.5 kHz channel, 300 - 3000 Hz audio", "AM, 300 - 3000 Hz audio"};
+    kv("audio", "%.1f dBFS (%s: %s)", t.audioDb, dect2::hfDemodName(dm), kBand[dm >= 0 && dm < 4 ? dm : 0]);
     kv("signal time", "%.1f s", t.timeSec);
 }
 
@@ -360,6 +398,7 @@ void status(App& a) {
     if (dm & 4) { lamp("FreeDV", on && t.freedv.mode >= 0 ? 1 : 0); flowNext(10 * gUi); }
     if (dm & 8) { lamp(dm == 8 && sm ? sm->name : "FT8/WSPR", on && t.ftx.total > 0 ? (t.ftx.clockWarn ? 2 : 1) : 0); flowNext(10 * gUi); }
     if (dm & 16) { lamp("HamDRM", on && t.hamdrm.state == 1 ? 1 : 0); flowNext(10 * gUi); }
+    if (dm & 32) { lamp(sm ? sm->name : "Keyboard", on && t.kbd.state == 1 ? 1 : 0); flowNext(10 * gUi); }
     ImGui::TextDisabled("|"); flowNext(10 * gUi);
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("State"); ImGui::SameLine(0, 5 * gUi);
@@ -385,5 +424,6 @@ const ModeUi kHfdigUi = {
     .panels = panels,
     .status = status,
     .summary = summary,
+    .tuner = tuner,
     .tick = tick,
 };

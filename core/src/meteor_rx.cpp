@@ -1,5 +1,6 @@
 // Meteor-M LRPT receiver (see meteor_rx.h).
 #include "dect2/meteor_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/meteor_tel.h"
 #include "dect2/meteor_proto.h"
 #include "dect2/dsp_compat.h"
@@ -66,6 +67,26 @@ inline int8_t diffSoft(int x, int px) {   // the product's sign, the weaker magn
     return (int8_t)(((x >= 0) == (px >= 0)) ? m : -m);
 }
 
+// N2-x: the transmitter applies NRZ-M to the bits before the (linear, time-invariant) convolutional encoder, so the XOR of two successive
+// code bits on each rail is the code of the undifferenced bits. The sync word is searched for in that per-rail difference domain (as
+// diffSoft forms it, a with its sign flipped); once found, the transform t found there is turned into the one on the raw pairs (r) so
+// Viterbi works on the full-strength soft values and NRZ-M is undone on its decided bits, as SatDump does. -1: none fits.
+inline int rawTransform(int t) {
+    for (int r = 0; r < 8; r++) {
+        bool ok = true;
+        for (int s = 0; s < 16 && ok; s++) {
+            const int a = s & 1 ? 1 : -1, b = s & 2 ? 1 : -1, pa = s & 4 ? 1 : -1, pb = s & 8 ? 1 : -1;
+            int ta, tb, ra, rb, pra, prb;
+            xform(t, diffSoft(a, pa), -diffSoft(b, pb), ta, tb);
+            xform(r, a, b, ra, rb);
+            xform(r, pa, pb, pra, prb);
+            ok = ((ta > 0) == ((ra > 0) != (pra > 0))) && ((tb > 0) == ((rb > 0) != (prb > 0)));
+        }
+        if (ok) return r;
+    }
+    return -1;
+}
+
 } // namespace
 
 struct MeteorReceiver::Impl {
@@ -114,10 +135,11 @@ struct MeteorReceiver::Impl {
     int deHalf = 0;
     int8_t deFirst = 0;
     // phase ambiguity search
-    std::vector<int8_t> pairs;           // soft pairs a, b (after the differential decoder)
+    std::vector<int8_t> pairs;           // soft pairs a, b (before any differential decoding)
     int64_t pairsSinceSearch = 0;
     bool searchLock = false;
-    int xt = -1;
+    int xt = -1, rawT = -1;              // rawT >= 0: N2-x, Viterbi on the raw pairs, NRZ-M after it
+    meteor::NrzmDecoder nrzm;
     meteor::Viterbi27 vit;
     // frame sync on decoded bits
     uint32_t sr = 0;
@@ -131,6 +153,8 @@ struct MeteorReceiver::Impl {
     // packets and picture
     meteor::PacketDemux demux[64];
     MeteorImage img;
+    bool imgLoad = false;                // a loaded picture (mu): the feed thread takes it as the picture in progress
+    std::shared_ptr<const MeteorImage> imgIn;
     bool imgDirty = false;
     uint64_t imgId = 0;
     int curRow = -1, lastPos[6] = {-1, -1, -1, -1, -1, -1};
@@ -205,7 +229,7 @@ struct MeteorReceiver::Impl {
         diffPrevA = diffPrevB = 0;
         mkRing.assign(80 * 48, 0); mkN = 0; mkLast = 0; mkLock = false; mkPos = 0; mkBad = 0; mkPair = 0;
         deint.clear(); deJ = 0; deHalf = 0;
-        pairs.clear(); pairsSinceSearch = 0; searchLock = false; xt = -1;
+        pairs.clear(); pairsSinceSearch = 0; searchLock = false; xt = -1; rawT = -1; nrzm = {};
         vit.reset();
         sr = 0; bitCount = 0; inFrame = false; frameLock = false; frameBits = 0; misses = 0; sinceFrame = 0;
         for (auto& d : demux) d.reset();
@@ -357,6 +381,12 @@ struct MeteorReceiver::Impl {
     }
 
     void lockedPair(int8_t x, int8_t y) {
+        if (rawT >= 0) {
+            int oa, ob;
+            xform(rawT, x, y, oa, ob);
+            vitPush(oa, ob);
+            return;
+        }
         if (diff) {
             const int8_t ox = diffSoft(x, diffPrevA), oy = (int8_t)-diffSoft(y, diffPrevB);
             diffPrevA = x; diffPrevB = y;
@@ -482,6 +512,8 @@ struct MeteorReceiver::Impl {
                     for (size_t y = x + 1; y < hits.size(); y++) if (hits[y] - hits[x] == 8192) { at = hits[y]; break; }
                 if (at < 0) continue;
                 searchLock = true; xt = t; slip = sl;
+                rawT = diff ? rawTransform(t) : -1;
+                nrzm = {};
                 tel.rotation = xt + 8 * slip;
                 lastAsmSec = nowSec();
                 vit.reset();
@@ -507,6 +539,7 @@ struct MeteorReceiver::Impl {
     }
 
     void frameBit(uint8_t bit) {
+        if (rawT >= 0) bit = nrzm.push(bit);
         sr = sr << 1 | bit;
         sinceFrame++;
         if (inFrame) {
@@ -531,7 +564,7 @@ struct MeteorReceiver::Impl {
 
     void gotFrame() {
         uint8_t v[meteor::kVcduBytes];
-        const int e = meteor::decodeCadu(frame, v);
+        const int e = meteor::decodeCadu(frame, v, false);   // Meteor: conventional basis
         if (e < 0) { tel.blocksBad++; return; }
         tel.blocksOk++; tel.rsCorrected += (uint64_t)e;
         lastGoodSec = nowSec();
@@ -632,18 +665,38 @@ struct MeteorReceiver::Impl {
 MeteorReceiver::MeteorReceiver() : p_(std::make_unique<Impl>()) {}
 MeteorReceiver::~MeteorReceiver() = default;
 
-void MeteorReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rateSet = r; p_->resetReq = true; p_->clearReq = true; }
+void MeteorReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rateSet = r; p_->resetReq = true; }   // the picture stays (clearImage)
 void MeteorReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (hz != p_->offsetSet) { p_->offsetSet = hz; p_->resetReq = true; } }
 void MeteorReceiver::setModulation(int m) { m = std::clamp(m, 0, 3); if (p_->modSet.exchange(m) != m) p_->resetReq = true; }
 int MeteorReceiver::modulation() const { return p_->modSet.load(); }
 bool MeteorReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= meteorTuning().minSampleRate - 1; }
 void MeteorReceiver::reset() { p_->resetReq = true; }
-void MeteorReceiver::clearImage() { p_->clearReq = true; }
+void MeteorReceiver::clearImage() {
+    { std::lock_guard<std::mutex> lk(p_->mu); p_->imgLoad = false; p_->imgIn.reset(); p_->pub.image.reset(); p_->pub.imageSeq++; p_->pub.seq++; }
+    p_->clearReq = true;
+}
+void MeteorReceiver::clearResults() { clearImage(); }
+std::string MeteorReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.image);
+}
+bool MeteorReceiver::loadResults(const std::string& blob) {
+    std::shared_ptr<const MeteorImage> im;
+    if (!results::unpack(blob, im)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->pub.image = im; p_->pub.imageSeq++; p_->pub.seq++;
+    p_->imgIn = std::move(im); p_->imgLoad = p_->imgIn != nullptr;
+    return true;
+}
 
 void MeteorReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
     if (m.clearReq.exchange(false)) m.newImage();
+    {
+        std::lock_guard<std::mutex> lk(m.mu);
+        if (m.imgLoad) { m.img = *m.imgIn; m.imgId = std::max(m.imgId, m.img.id); m.imgIn.reset(); m.imgLoad = false; m.imgDirty = true; }
+    }
     if (m.rate < meteorTuning().minSampleRate - 1 || n == 0) {
         if (m.rate > 0) { m.nIn += (int64_t)n; if ((double)m.nIn >= m.nextReport) { m.nextReport += kPubSec * m.rate; m.report(); } }
         return;

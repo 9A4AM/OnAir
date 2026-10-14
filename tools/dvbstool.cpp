@@ -12,10 +12,13 @@
 //   dvbstool bench [gen options]
 //       Makes the test signal in memory, runs the receiver on it the way the engine does (frames are dropped when the decoder threads are behind) and
 //       reports the CPU time of the receiver thread and of all threads per second of signal.
+//   DECT2_COMPUTE=cpu|gpu|auto selects where the error correction runs; DECT2_DVBS_REF=1 the DVB-S chain as it was before the speed-up.
 //   dvbstool ranges
 //       The symbol rates the receiver accepts at each input sample rate.
 #include "dect2/dvbs_gen.h"
 #include "dect2/dvbs_rx.h"
+#include "../core/src/dvbs_s1.h"
+#include "../core/src/dvbs_carrier.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -115,6 +118,8 @@ int parseGen(int argc, char** argv, int first, GenOptions& g, bool needOut) {
     return 0;
 }
 
+int gCompute = -1;   // DECT2_COMPUTE=cpu|gpu|auto
+
 double threadCpu() { timespec t; clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t); return (double)t.tv_sec + 1e-9 * (double)t.tv_nsec; }
 #ifdef _WIN32
 double processCpu() {   // user plus kernel time of the whole process, in 100 ns units
@@ -137,6 +142,7 @@ int cmdBench(int argc, char** argv) {
     for (size_t i = 0; i < total; i += 65536) sig.generate(x.data() + i, std::min<size_t>(65536, total - i));
     for (auto& v : x) { v = cf32(std::round(std::min(127.f, std::max(-128.f, v.real() * 128.f))) / 128.f, std::round(std::min(127.f, std::max(-128.f, v.imag() * 128.f))) / 128.f); }
     DvbsReceiver rx;
+    if (gCompute >= 0) rx.setComputeMode(gCompute);
     rx.configure(g.c.sampleRate);
     rx.setBlocking(false);
     uint64_t packets = 0;
@@ -224,6 +230,7 @@ int cmdRx(int argc, char** argv) {
     std::ifstream f(path, std::ios::binary);
     if (!f) { fprintf(stderr, "cannot open %s\n", path.c_str()); return 1; }
     DvbsReceiver rx;
+    if (gCompute >= 0) rx.setComputeMode(gCompute);
     rx.configure(rate * 1e6);
     if (!rx.ready()) { fprintf(stderr, "%.2f Msps is below the %.1f Msps this mode needs\n", rate, dvbsTuning().minSampleRate / 1e6); return 1; }
     rx.setBlocking(true);                     // a recording is not in a hurry: wait for the decoder threads instead of dropping frames
@@ -312,6 +319,8 @@ int cmdRanges() {
 } // namespace
 
 int main(int argc, char** argv) {
+    if (const char* cm = getenv("DECT2_COMPUTE")) gCompute = !strcmp(cm, "cpu") ? 0 : !strcmp(cm, "gpu") ? 1 : 2;
+    if (getenv("DECT2_DVBS_REF")) dect2::dvbs::dvbsReferencePath(true);   // the receiver as it was before the speed-up (to compare)
     if (argc >= 2 && !strcmp(argv[1], "gen")) return cmdGen(argc, argv);
     if (argc >= 2 && !strcmp(argv[1], "rx")) return cmdRx(argc, argv);
     if (argc >= 2 && !strcmp(argv[1], "bench")) return cmdBench(argc, argv);

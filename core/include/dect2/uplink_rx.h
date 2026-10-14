@@ -44,6 +44,10 @@ public:
     void feed(const cf32* x, size_t n);
     void flush();                        // tests: process everything fed so far
     bool telemetry(UplinkTelemetry& out, uint64_t lastSeq);
+    // The interrogator and aircraft tables, TCAS list and log stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     void setEventCallback(std::function<void(const UplinkEvent&)> cb);   // every interrogation, from feed()
     void clear();                        // empty the tables

@@ -9,7 +9,8 @@
 //     then per data block 30 data symbols and 15 probe symbols (T). Known symbols are BPSK, bit 0 = +1.
 //   M1 shift index: 0..3 single slot at 300 / 600 / 1200 / 1800 bit/s, 4..7 the same on two slots.
 //     300: BPSK, rate 1/2 code with every coded bit sent twice (1/4); 600: BPSK; 1200: QPSK; 1800: 8PSK; all rate 1/2, K = 7.
-//   Data symbols are multiplied by +-1 from a 15-bit scrambler (one bit per data symbol, restarted every 120 data symbols).
+//   Data symbols are multiplied by +-1 from a 15-bit m-sequence (x^15 + x^14 + 1 form, state 0x4D4B, one bit per data symbol,
+//     restarted every 120 data symbols).
 //   Block interleaver of 40 rows, column shift 17 (single slot) or 23 (double slot), read with a row step of 9.
 //   PDU octets sent least significant bit first. FCS: CRC-16/X.25 (as the HDLC FCS).
 //   SPDU (66 octets): byte 0 rls / version / iso8208 / change note, byte 1 ground station id + UTC sync, bytes 2-3 frame index (12 bits)
@@ -61,7 +62,8 @@ std::vector<uint8_t> hfdlConvEncode(const std::vector<uint8_t>& bits);
 // soft: 2 values per input bit, positive = 0. Returns the decoded bits (n of them).
 std::vector<uint8_t> hfdlViterbi(const std::vector<float>& soft, int n);
 
-// PSK: v holds bitsPerSym bits, the first bit sent in bit 0. BPSK +-1, QPSK at 45 degrees (Gray), 8PSK Gray.
+// PSK: v holds bitsPerSym bits, the first bit sent in bit 0 (the most significant bit of the Gray label). BPSK +-1; QPSK and 8PSK
+// at k * 360 / M degrees, k the Gray-decoded label (QPSK on the axes).
 std::complex<float> hfdlPsk(int bitsPerSym, int v);
 void hfdlSoftBits(int bitsPerSym, std::complex<float> y, float scale, float* out);   // positive = 0
 int hfdlDecide(int bitsPerSym, std::complex<float> y);                               // nearest v

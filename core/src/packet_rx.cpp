@@ -5,6 +5,7 @@
 // 9600 baud: two slicers with different filters, a clock loop, the G3RUH descrambler (x^17 + x^12 + 1) and NRZI.
 // The frame layer is packet_ax25.*, the APRS layer packet_aprs.*.
 #include "dect2/packet_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/feeds.h"
 #include "dect2/dmr_dsp.h"
 #include "dect2/exact_resampler.h"
@@ -15,6 +16,7 @@
 #include <cmath>
 #include <complex>
 #include <deque>
+#include "ham_listen.h"
 #include <mutex>
 #include <unordered_map>
 
@@ -45,6 +47,9 @@ struct PacketReceiver::Impl {
     double fs = 0;
     bool isReady = false;
     pktdemod::FmFront fe;
+    hfdig::Listen listen;                  // "Listen": the demodulated audio, 8 kHz, on the sound card (off by default)
+    dmr::Fir<float> audio8;                // 48 -> 8 kHz low-pass for Listen
+    std::vector<float> a8;
     dmr::Fir<float> audio48;               // 96 -> 48 kHz low-pass for the 1200 baud path
     dmr::Fir<float> lp9600[2];
     Afsk1200 afsk[3];
@@ -64,6 +69,7 @@ struct PacketReceiver::Impl {
     PacketTelemetry t;
     int lastState = 0;
     PacketTelemetry pub;
+    double lastNow = 0;                    // signal time of the last report: the kept lists move back by it when the clock starts again
 
     double now() const { return (double)fe.n96 / kMidRate; }
     void say(const std::string& s) { if (log) log(s); }
@@ -72,6 +78,7 @@ struct PacketReceiver::Impl {
         fs = rate;
         isReady = false;
         if (!fe.configure(fs, packetTuning().minSampleRate)) return;
+        audio8.design(dmr::lowpassTaps(3200.0, 800.0, 48000.0, 50, 9), 6);
         audio48.design(dmr::lowpassTaps(3300.0, 8000.0, kMidRate, 50, 9), 2);
         lp9600[0].design(dmr::lowpassTaps(5200.0, 11000.0, kMidRate, 40, 9), 1);
         lp9600[1].design(dmr::lowpassTaps(4000.0, 9000.0, kMidRate, 40, 9), 1);
@@ -89,11 +96,13 @@ struct PacketReceiver::Impl {
     void resetState() {
         const double off = fe.offsetHz;
         fe.reset(); fe.offsetHz = off;
-        audio48.reset(); lp9600[0].reset(); lp9600[1].reset();
+        audio48.reset(); audio8.reset(); listen.reset(); lp9600[0].reset(); lp9600[1].reset();
         for (auto& a : afsk) a.reset();
         for (auto& a : fsk) a.reset();
         nextReport = 0;
-        recent.clear(); fails.clear(); frames.clear(); stations.clear();
+        recent.clear(); fails.clear();
+        shiftTimes(-lastNow);              // the frames and stations stay (clearResults)
+        lastNow = 0;
         const uint64_t s = seq;
         t = PacketTelemetry();
         t.inputRate = fs;
@@ -105,7 +114,27 @@ struct PacketReceiver::Impl {
         pub.seq = std::max(s, ps);
         seq = pub.seq;
         pub.inputRate = fs;
+        fillLists(pub);
+        pub.seq = ++seq;
         say("APRS / Packet: listening for 1200 and 9600 baud AX.25");
+    }
+
+    void shiftTimes(double dt) {
+        for (auto& f : frames) f.timeSec += dt;
+        for (auto& kv : stations) kv.second.s.lastHeardSec += dt;
+    }
+    void fillLists(PacketTelemetry& o) const {
+        o.frames.assign(frames.begin(), frames.end());
+        std::vector<const PacketStation*> order;
+        for (const auto& kv : stations) order.push_back(&kv.second.s);
+        std::sort(order.begin(), order.end(), [](const PacketStation* a, const PacketStation* b) { return a->lastHeardSec > b->lastHeardSec; });
+        o.stations.clear();
+        for (const PacketStation* s : order) o.stations.push_back(*s);
+    }
+    void republish() {   // procMu held: the lists alone, with no signal to wait for
+        std::lock_guard<std::mutex> lk(telMu);
+        fillLists(pub);
+        pub.seq = ++seq;
     }
 
     // ---- frames
@@ -194,6 +223,7 @@ struct PacketReceiver::Impl {
     void publish() {
         flushFails(false);
         const double tnow = now();
+        lastNow = tnow;
         t.timeSec = tnow;
         t.carrier = fe.carrierRecent(0.2);
         t.dataValid = tnow - std::max(t.last1200Sec, t.last9600Sec) < 15.0;
@@ -206,13 +236,9 @@ struct PacketReceiver::Impl {
             lastState = t.state;
         }
         PacketTelemetry o = t;
-        o.seq = ++seq;
-        o.frames.assign(frames.begin(), frames.end());
-        std::vector<const PacketStation*> order;
-        for (const auto& kv : stations) order.push_back(&kv.second.s);
-        std::sort(order.begin(), order.end(), [](const PacketStation* a, const PacketStation* b) { return a->lastHeardSec > b->lastHeardSec; });
-        for (const PacketStation* s : order) o.stations.push_back(*s);
+        fillLists(o);
         std::lock_guard<std::mutex> lk(telMu);
+        o.seq = ++seq;
         pub = std::move(o);
     }
 
@@ -221,6 +247,7 @@ struct PacketReceiver::Impl {
         const std::vector<float>& disc = fe.process(x, n);
         a48.clear();
         audio48.process(disc.data(), disc.size(), a48);
+        if (listen.on.load() && !a48.empty()) { a8.clear(); audio8.process(a48.data(), a48.size(), a8); listen.play(a8.data(), a8.size()); }
         if (!a48.empty()) for (auto& a : afsk) a.process(a48.data(), a48.size());
         for (int i = 0; i < 2; i++) {
             f9[i].clear();
@@ -264,6 +291,32 @@ bool PacketReceiver::telemetry(PacketTelemetry& out, uint64_t lastSeq) {
     out = p_->pub;
     return true;
 }
+void PacketReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    p_->frames.clear(); p_->stations.clear();
+    p_->republish();
+}
+std::string PacketReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    return results::pack(p_->lastNow, p_->frames, p_->stations);
+}
+bool PacketReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::deque<PacketFrameInfo> frames;
+    std::unordered_map<std::string, Rec> stations;
+    if (!results::unpack(blob, t0, frames, stations)) return false;
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    p_->frames = std::move(frames); p_->stations = std::move(stations);
+    p_->shiftTimes(p_->lastNow - t0);
+    p_->republish();
+    return true;
+}
+void PacketReceiver::setListen(bool on) { p_->listen.on = on; }
+bool PacketReceiver::listening() const { return p_->listen.on.load(); }
+void PacketReceiver::setVolume(float v) { p_->listen.volume = std::max(0.f, std::min(1.f, v)); }
+void PacketReceiver::setMuted(bool m) { p_->listen.muted = m; }
+void PacketReceiver::setSilent(bool s) { p_->listen.silent = s; }
+void PacketReceiver::setListenTap(std::function<void(const float* x, size_t n)> cb) { p_->listen.setTap(std::move(cb)); }
 void PacketReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
     std::lock_guard<std::mutex> lk(p_->procMu);
     p_->log = std::move(cb);

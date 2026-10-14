@@ -43,7 +43,7 @@ struct MeteorGenerator::Impl {
     int row = 0, seq = 0;
     std::deque<uint8_t> bits;        // channel bits, two a symbol
     meteor::ConvEncoder enc;
-    int px = 0, py = 0;              // differential encoder
+    meteor::NrzmEncoder nrzm;        // N2-x differential code, on the bits before the convolutional encoder
     std::vector<uint8_t> ring;       // interleaver: the code bits of the last 36 x 73728
     int64_t interP = 0;
     int markPos = 0;
@@ -111,11 +111,12 @@ struct MeteorGenerator::Impl {
         uint8_t v[meteor::kVcduBytes];
         while (!mux.next(v, 0x9C, 5)) addRow();
         uint8_t cadu[meteor::kCaduBytes];
-        meteor::encodeCadu(v, cadu);
+        meteor::encodeCadu(v, cadu, false);
         for (int i = 0; i < meteor::kCaduBytes * 8; i++) {
             uint8_t a, b;
-            enc.push(cadu[i >> 3] >> (7 - (i & 7)) & 1, a, b);
-            if (diff) { const int x = px ^ a ^ 1, y = py ^ b; px = x; py = y; a = (uint8_t)x; b = (uint8_t)y; }
+            uint8_t bit = (uint8_t)(cadu[i >> 3] >> (7 - (i & 7)) & 1);
+            if (diff) bit = nrzm.push(bit);
+            enc.push(bit, a, b);
             pushChannelBit(a); pushChannelBit(b);
         }
     }

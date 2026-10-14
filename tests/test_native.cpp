@@ -820,7 +820,16 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
             CHECK(src->retune(t, e) && st("pluto.phy.xo_correction") == 40000400 && st("pluto.phy:altvoltage0.frequency") == 522e6, "Pluto 10 ppm: xo %.0f, freq %.0f", st("pluto.phy.xo_correction"), st("pluto.phy:altvoltage0.frequency"));
             t.radio["gainmode"] = "fast_attack"; t.gainDb = 50;
             CHECK(src->retune(t, e) && st("pluto.phy:voltage0.gain_control_mode=fast_attack") == 1 && st("pluto.phy:voltage0.hardwaregain") == 30, "Pluto fast attack: gain written %.0f", st("pluto.phy:voltage0.hardwaregain"));
+            // 2.048 Msps (DAB): below the converter's 2.083 Msps, so through its decimating FIR (the converter at twice the rate), off again for another rate
+            t.sampleRate = 2.048e6;
+            CHECK(src->retune(t, e) && st("pluto.phy:voltage0.sampling_frequency") == 2.048e6 && st("pluto.phy:voltage0.filter_fir_en") == 1 && st("pluto.firLoads") == 1 && st("pluto.phy.firTaps") == 16,
+                  "Pluto 2.048 Msps: rate %.0f, FIR en %.0f, loads %.0f, taps %.0f (%s)", st("pluto.phy:voltage0.sampling_frequency"), st("pluto.phy:voltage0.filter_fir_en"), st("pluto.firLoads"), st("pluto.phy.firTaps"), e.c_str());
+            t.sampleRate = 10e6;
+            CHECK(src->retune(t, e) && st("pluto.phy:voltage0.sampling_frequency") == 10e6 && st("pluto.phy:voltage0.filter_fir_en") == 0, "Pluto 10 Msps after the FIR: rate %.0f, FIR en %.0f", st("pluto.phy:voltage0.sampling_frequency"), st("pluto.phy:voltage0.filter_fir_en"));
+            t.sampleRate = 2.048e6;
+            CHECK(src->retune(t, e) && st("pluto.phy:voltage0.filter_fir_en") == 1, "Pluto 2.048 Msps again");
             src->stop();
+            CHECK(st("pluto.phy:voltage0.filter_fir_en") == 0, "Pluto: the FIR left on at stop");
             CHECK(st("pluto.phy.xo_correction") == 40000000, "Pluto: reference clock not restored at stop (%.0f)", st("pluto.phy.xo_correction"));
         }
     }
@@ -1226,7 +1235,8 @@ int main(int argc, char** argv) {
             CHECK(hfSet != nullptr, "fake_set missing in the airspyhf fake");
             if (hfSet) {
                 auto hazards = [&](const char* what) {
-                    for (const char* k : {"airspyhf.inFlight", "airspyhf.deadCalls", "airspyhf.extraStops", "airspyhf.overlap", "airspyhf.openTwice"})
+                    for (const char* k : {"airspyhf.inFlight", "airspyhf.deadCalls", "airspyhf.extraStops", "airspyhf.overlap", "airspyhf.openTwice",
+                                          "airspyhf.listWhileOpen"})
                         CHECK(st(k) == -1e300, "%s: %s = %.0f", what, k, st(k));
                     CHECK(st("airspyhf.open") == 0 && st("airspyhf.opens") == st("airspyhf.closes"), "%s: left open (opens %.0f closes %.0f)", what,
                           st("airspyhf.opens"), st("airspyhf.closes"));
@@ -1260,6 +1270,29 @@ int main(int argc, char** argv) {
                     }
                     s.reset();
                     hazards("rate change, listing, retunes during stop");
+                }
+                // Stop pressed to change modes (issue #78, 0.2.4: Windows, HF+ Discovery): stopped from this (the UI) thread while the
+                // library's callback thread delivers samples, with listings and retunes from other threads, then started again; no
+                // sample reaches the ring once stop() has returned
+                for (int round = 0; round < 6; round++) {
+                    auto s = makeSource(*dev);
+                    if (!s) break;
+                    IqRing r2(1 << 20);
+                    if (!s->start(t, r2, e)) { CHECK(false, "HF+ start %d: %s", round, e.c_str()); break; }
+                    std::atomic<bool> go{true};
+                    std::thread lister([&] { std::string le; while (go) { listNativeDevices(le); std::this_thread::sleep_for(std::chrono::milliseconds(3)); } });
+                    std::thread tuner([&] { TuneSettings t3 = t; std::string e3; for (int i = 0; go; i++) { t3.centerHz = 7e6 + (i % 50) * 1e3; s->retune(t3, e3); } });
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10 + 15 * round));
+                    s->stop();
+                    const uint64_t after = r2.available() + r2.dropped();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                    CHECK(r2.available() + r2.dropped() == after, "HF+ round %d: samples arrived after stop() returned", round);
+                    go = false;
+                    lister.join();
+                    tuner.join();
+                    s->stop();
+                    s.reset();
+                    hazards("Stop to change modes, callbacks running");
                 }
                 // unplugged while streaming, Stop pressed while it is away (the driver is trying to open it again), then plugged in again and stopped
                 if (auto s = makeSource(*dev)) {

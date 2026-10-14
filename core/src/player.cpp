@@ -30,6 +30,27 @@ extern "C" {
 
 namespace dect2 {
 
+// ---- the AVS family and DRA (docs/CODECS.md): OnAir ships no codec of its own, it says what its FFmpeg cannot decode
+const char* const kDraAudioNote = "DRA audio: no decoder available";
+
+int avsProfileId(const uint8_t* p, size_t n) {
+    for (size_t i = 0; i + 4 < n; i++)
+        if (p[i] == 0 && p[i + 1] == 0 && p[i + 2] == 1 && p[i + 3] == 0xB0) return p[i + 4];
+    return -1;
+}
+
+std::string avsVideoNote(const std::string& codec, bool haveDecoder, int profile) {
+    if (codec == "avs2") return haveDecoder ? std::string() : "AVS2 video: this FFmpeg has no AVS2 decoder (it needs libdavs2), so there is no picture";
+    if (codec == "avs3") return haveDecoder ? std::string() : "AVS3 video: this FFmpeg has no AVS3 decoder (it needs libuavs3d), so there is no picture";
+    if (codec != "cavs") return std::string();
+    if (!haveDecoder) return "AVS video: this FFmpeg has no AVS decoder, so there is no picture";
+    if (profile < 0 || profile == 0x20) return std::string();   // JiZhun: FFmpeg's cavs decoder plays it
+    if (profile == 0x48) return "AVS+ video: FFmpeg decodes only the AVS JiZhun profile, not AVS+ (broadcast profile 0x48), so there is no picture";
+    char b[160];
+    snprintf(b, sizeof b, "AVS video (profile 0x%02X): FFmpeg decodes only the AVS JiZhun profile, so there is no picture", profile);
+    return b;
+}
+
 using Clock = std::chrono::steady_clock;
 static double nowSec() { return std::chrono::duration<double>(Clock::now().time_since_epoch()).count(); }
 
@@ -98,10 +119,11 @@ void Player::select(int sid) {
     {
         std::lock_guard<std::mutex> lk(mu_);
         if (sid == sid_) return;
+        saveSink_.close();
         sid_ = sid;
         filter_.select(sid);
         in_.clear();
-        lossMarks_.clear(); pushed_ = consumed_ = 0; videoPid_ = -1;
+        lossMarks_.clear(); pushed_ = consumed_ = 0; videoPid_ = -1; draAudio_ = false;
         for (int& c : lastCc_) c = -1;
         restart_ = true;
     }
@@ -120,6 +142,10 @@ void Player::select(int sid) {
 void Player::push(const uint8_t* pk, size_t n, const TsSnapshot& snap) {
     if (sid_ < 0) return;
     std::lock_guard<std::mutex> lk(mu_);
+    for (const TsService& sv : snap.services) if (sv.id == sid_) { bool d = false; for (const TsStream& st : sv.streams) d = d || st.codec == "DRA"; draAudio_ = d;
+        esPid_ = -1;   // the stream "Save stream" writes: DRA, else MPEG audio
+        for (const TsStream& st : sv.streams) if (st.codec == "DRA" && !st.scrambled) { esPid_ = st.pid; esCodec_ = st.codec; break; }
+        if (esPid_ < 0) for (const TsStream& st : sv.streams) if ((st.codec == "MPEG audio" || st.codec == "MPEG-1 audio") && !st.scrambled) { esPid_ = st.pid; esCodec_ = st.codec; break; } }
     static uint64_t calls = 0, passed = 0;
     uint8_t out[188];
     for (size_t i = 0; i < n; i++)
@@ -130,12 +156,24 @@ void Player::push(const uint8_t* pk, size_t n, const TsSnapshot& snap) {
                 if (lastCc_[pid] >= 0 && cc != ((lastCc_[pid] + 1) & 0x0F) && cc != lastCc_[pid]) lossMarks_.push_back(pushed_);
                 lastCc_[pid] = cc;
             }
+            if (saveSink_.isOpen()) saveEs_.feed(out, saveSink_);
             in_.insert(in_.end(), out, out + 188); passed++; pushed_ += 188;
         }
     calls++;
     if (getenv("DECT2_PLAYDEBUG") && calls % 8 == 0) fprintf(stderr, "[play] push #%llu: %zu pkts in, %llu passed total, queue %zu\n", (unsigned long long)calls, n, (unsigned long long)passed, in_.size());
     if (in_.size() > 12u * 1024 * 1024) in_.erase(in_.begin(), in_.begin() + (in_.size() - 8u * 1024 * 1024)); // never fall far behind
     cv_.notify_all();
+}
+
+std::string Player::saveAudioStream(const std::string& pathNoExt) {
+    saveSink_.close();
+    if (sid_ < 0) return {};
+    std::lock_guard<std::mutex> lk(mu_);
+    if (esPid_ < 0) return {};
+    const std::string path = pathNoExt + "." + esExtension(esCodec_);
+    if (!saveSink_.open(path)) return {};
+    saveEs_.setPid(esPid_);
+    return path;
 }
 
 void Player::setAudioTrack(int i) { p_->trackChange = i; }
@@ -147,6 +185,8 @@ PlayerStats Player::stats() const {
     // opposite order, and two threads each holding one and waiting for the other freeze the interface for good.
     PlayerStats s;
     { std::lock_guard<std::mutex> lk(p_->smu); s = p_->st; }
+    // FFmpeg has no DRA decoder: a service whose sound is DRA only plays without it (another audio track, if there is one, plays)
+    if (draAudio_ && !s.hasAudio && s.status == "playing") s.audioNote = kDraAudioNote;
     s.audioBufferMs = audio_.bufferedFrames() * 1000.0 / audio_.sampleRate();
     s.underruns = audio_.underruns();
     { std::lock_guard<std::mutex> l2(p_->vmu); s.videoQueue = (int)p_->vq.size(); }
@@ -267,6 +307,11 @@ void Player::threadMain() {
         // ---- video decoder
         AVCodecContext* vctx = nullptr;
         bool hw = false;
+        // the AVS family (DTMB in China): FFmpeg decodes AVS1-P2 in its JiZhun profile only, not AVS+; AVS2 and AVS3 need libdavs2 / libuavs3d
+        const AVCodecID avsId = vIdx >= 0 ? fmt->streams[vIdx]->codecpar->codec_id : AV_CODEC_ID_NONE;
+        const bool avs = avsId == AV_CODEC_ID_CAVS || avsId == AV_CODEC_ID_AVS2 || avsId == AV_CODEC_ID_AVS3;
+        int avsProfile = -1;
+        const std::string avsNote = avs ? avsVideoNote(avcodec_get_name(avsId), avcodec_find_decoder(avsId) != nullptr, -1) : std::string();
         if (vIdx >= 0) {
             const AVCodec* c = avcodec_find_decoder(fmt->streams[vIdx]->codecpar->codec_id);
             if (c) {
@@ -332,6 +377,7 @@ void Player::threadMain() {
             I.st.status = "playing";
             I.st.hasVideo = vctx != nullptr;
             I.st.hasAudio = actx != nullptr;
+            I.st.videoNote = avsNote;
             if (vctx) {
                 I.st.videoCodec = avcodec_get_name(vctx->codec_id);
                 I.st.hardware = hw;
@@ -647,6 +693,17 @@ void Player::threadMain() {
             int r = av_read_frame(fmt, pkt);
             if (getenv("DECT2_PLAYDEBUG")) { static int n = 0; if ((n++ % 100) == 0 || r < 0) fprintf(stderr, "[play] read r=%d idx=%d pts=%lld vq=%zu abuf=%d decoded=%llu\n", r, pkt->stream_index, (long long)pkt->pts, I.vq.size(), audio_.bufferedFrames(), (unsigned long long)I.st.decoded); }
             if (r < 0) break;
+            if (avsId == AV_CODEC_ID_CAVS && avsProfile < 0 && pkt->stream_index == vIdx) {
+                // the profile from the first sequence header: AVS+ (and anything else but JiZhun) is refused picture by picture, so say so instead
+                avsProfile = avsProfileId(pkt->data, (size_t)pkt->size);
+                const std::string n = avsProfile >= 0 ? avsVideoNote("cavs", vctx != nullptr, avsProfile) : std::string();
+                if (!n.empty()) {
+                    if (vctx) avcodec_free_context(&vctx);
+                    std::lock_guard<std::mutex> lk(I.smu);
+                    I.st.videoNote = n;
+                    I.st.hasVideo = false;
+                }
+            }
             if (pkt->stream_index == vIdx && vctx) {
                 if (I.lossFlag.exchange(false)) {
                     if (!suspect && conceal_ && !getenv("DECT2_NOREPAIR")) {

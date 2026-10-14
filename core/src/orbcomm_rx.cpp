@@ -1,5 +1,6 @@
 // Orbcomm receiver (orbcomm_rx.h).
 #include "dect2/orbcomm_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/fftutil.h"
 #include "dect2/mode_synth.h"
 #include "dect2/orbcomm_gen.h"
@@ -82,7 +83,7 @@ struct OrbcommReceiver::Impl {
         float pw = 1e-6f, symPw = 1;
         cf32 hist[kHist];
         int64_t nS = 0;
-        double tNext = 0, spsAdj = 0;
+        double tNext = 0, spsAdj = 0, spsAvg = 0;   // spsAvg: the loop integrator smoothed for the clock read-out
         cf32 yPrev{0, 0};
         bool havePrev = false;
         double thAvg = 0, var = 1;
@@ -132,6 +133,28 @@ struct OrbcommReceiver::Impl {
     std::mutex mu;
     OrbcommTelemetry tel;
     uint64_t seq = 0;
+    // the satellites and the packet log stay through resets (feed thread); Clear and a loaded file reach them through these requests
+    // (mu), and the report at once
+    bool clearReq = false, loadReq = false;
+    std::map<int, OrbcommSat> loadSats;
+    std::deque<OrbcommPacket> loadLog;
+    uint64_t loadMessages = 0;
+
+    void shiftTimes(double dt) {
+        for (auto& [id, st] : sats) { st.lastHeard += dt; if (st.hasPos) st.posTime += dt; }
+        for (auto& p : log) p.time += dt;
+    }
+    void takeRequests() {        // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (clearReq) { sats.clear(); log.clear(); msgParts.clear(); messages = 0; std::fill(std::begin(typeCount), std::end(typeCount), 0); clearReq = false; }
+        if (loadReq) {
+            sats = std::move(loadSats); log = std::move(loadLog); messages = loadMessages;
+            for (auto& [id, st] : sats) st.chan = -1;
+            const double dt = now() - tel.timeSec;   // the file's times are on the report's clock
+            shiftTimes(dt);
+            loadReq = false;
+        }
+    }
 
     double now() const { return R > 0 ? (double)nIn / R : 0; }
 
@@ -173,7 +196,9 @@ struct OrbcommReceiver::Impl {
 
     void clearAll() {
         for (auto& d : dec) d = Dec();
+        shiftTimes(-now());              // the satellites and the log stay (clearResults): the clock starts again
         nIn = 0;
+        nextPub = 0;
         dbuf.assign(nd, cf32(0, 0));
         psd.assign(nd, 0.f);
         dpos = dBlocks = dAcc = 0;
@@ -460,6 +485,7 @@ struct OrbcommReceiver::Impl {
         const double kp = 0.02 * sps, ki = 2e-4 * sps;
         d.spsAdj = std::clamp(d.spsAdj - ki * e, -0.01 * sps, 0.01 * sps);
         d.tNext += sps + d.spsAdj - kp * e;
+        d.spsAvg += 0.002 * (d.spsAdj - d.spsAvg);   // the raw integrator wanders with the noise by tens of ppm
         const cf32 z = y * std::conj(d.yPrev);
         d.yPrev = y;
         const float az = std::abs(z);
@@ -567,7 +593,7 @@ struct OrbcommReceiver::Impl {
             c.snrDb = d.state >= 2 ? (float)(10 * std::log10(1 / std::max(1e-4, d.var))) : 0.f;
             c.levelDb = d.levelDb;
             c.sat = d.sat;
-            c.clockPpm = d.spsAdj / sps * -1e6;
+            c.clockPpm = d.spsAvg / sps * -1e6;
             c.frames = d.frames; c.pktOk = d.pktOk; c.pktBad = d.pktBad; c.syncLost = d.syncLost;
             c.constel.assign(d.constel.begin(), d.constel.end());
             c.eyeLen = d.eye.empty() ? 0 : (int)d.eye.front().size();
@@ -607,9 +633,40 @@ void OrbcommReceiver::feed(const cf32* x, size_t n) {
     Impl& s = *p_;
     if (!s.ok) return;
     if (s.resetReq.exchange(false)) s.clearAll();
+    s.takeRequests();
     for (size_t i = 0; i < n; i++) s.feedOne(x[i]);
     s.dedupe();
     if (s.now() >= s.nextPub) { s.nextPub = s.now() + kPubSec; s.publish(); }
+}
+
+void OrbcommReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->tel.sats.clear(); p_->tel.log.clear(); p_->tel.messages = 0;
+    p_->tel.seq = ++p_->seq;
+}
+std::string OrbcommReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->tel.timeSec, p_->tel.sats, p_->tel.log, p_->tel.messages);
+}
+bool OrbcommReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::vector<OrbcommSat> sats;
+    std::vector<OrbcommPacket> log;
+    uint64_t messages = 0;
+    if (!results::unpack(blob, t0, sats, log, messages)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const double dt = p_->tel.timeSec - t0;
+    for (auto& st : sats) { st.lastHeard += dt; if (st.hasPos) st.posTime += dt; st.chan = -1; }
+    for (auto& pk : log) pk.time += dt;
+    p_->loadSats.clear();
+    for (const auto& st : sats) p_->loadSats[st.id] = st;
+    p_->loadLog.assign(log.begin(), log.end());
+    p_->loadMessages = messages;
+    p_->tel.sats = std::move(sats); p_->tel.log = std::move(log); p_->tel.messages = messages;
+    p_->loadReq = true;
+    p_->tel.seq = ++p_->seq;
+    return true;
 }
 
 bool OrbcommReceiver::telemetry(OrbcommTelemetry& out, uint64_t lastSeq) {

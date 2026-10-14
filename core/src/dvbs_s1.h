@@ -3,6 +3,7 @@
 #pragma once
 #include "dect2/dvbt.h"
 #include "dect2/ring.h"
+#include "dvbs_compute.h"
 #include <cstdint>
 #include <deque>
 #include <vector>
@@ -50,6 +51,10 @@ public:
     void push(const cf32* y, size_t n);
     // appends decoded packets; packets that Reed-Solomon could not repair have the transport error indicator set
     void takePackets(std::vector<uint8_t>& out);
+    // Where the Viterbi decoder runs (CPU, or the GPU on windows many times larger, see process()); null: always the CPU
+    void setCompute(ComputeChoice* c) { compute_ = c; gpuWindow_ = false; }
+    bool lastOnGpu() const { return lastGpu_; }
+    void flushPending() { if (started_ && !llr_.empty()) process(); }   // decode what is waiting for a full window (the end of a recording)
     bool synced() const { return syncLocked_; }
     bool started() const { return started_; }
     int rate() const { return h_.rate; }
@@ -66,6 +71,8 @@ public:
 private:
     void process();
     void findSync();
+    ComputeChoice* compute_ = nullptr;
+    bool gpuWindow_ = false, lastGpu_ = false;
     S1Hypothesis h_;
     bool started_ = false, syncLocked_ = false, inverted_ = false;
     std::vector<float> llr_;               // serial soft values waiting for the Viterbi decoder

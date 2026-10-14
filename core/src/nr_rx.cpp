@@ -1,5 +1,6 @@
 // 5G NR cells receiver (nr_rx.h): blocks of input, the sync raster points inside them searched and the PBCH of every SSB decoded.
 #include "dect2/nr_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/nr_phy.h"
 #include "dect2/nr_tel.h"
 #include <algorithm>
@@ -235,6 +236,24 @@ void NrReceiver::setLogCallback(std::function<void(const std::string&)> cb) { st
 
 bool NrReceiver::busy() const { std::lock_guard<std::mutex> lk(p_->mu); return !p_->idle.load() || p_->jobReady; }
 
+// the cells and the event log already stay through reset() and configure() (the sample clock runs on): only the user's Clear empties them
+void NrReceiver::clearResults() { clearCells(); }
+std::string NrReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->tel.timeSec, p_->tel.cells, p_->tel.events);
+}
+bool NrReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    NrTelemetry l;
+    if (!results::unpack(blob, t0, l.cells, l.events)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const double dt = p_->tel.timeSec - t0;    // onto this run's clock
+    for (auto& c : l.cells) c.lastSec += dt;
+    for (auto& e : l.events) e.sec += dt;
+    p_->tel.cells = std::move(l.cells); p_->tel.events = std::move(l.events);
+    p_->publish();
+    return true;
+}
 bool NrReceiver::telemetry(NrTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

@@ -426,6 +426,11 @@ void HfdigSstv::feedAudio(const float* x, size_t n) {
     p_->tel.audioSamples += n;
 }
 void HfdigSstv::telemetry(HfdigSstvTelemetry& out) const { p_->publish(out); }
+void HfdigSstv::setHistory(std::vector<std::shared_ptr<const HfdigSstvImage>> h) {
+    for (const auto& im : h) if (im && im->id >= gNextId.load()) gNextId = im->id + 1;   // new pictures get higher numbers (the screen lists by them)
+    if (h.size() > (size_t)kSstvHistory) h.resize((size_t)kSstvHistory);
+    p_->history = std::move(h);
+}
 
 std::unique_ptr<HfdigSstv> makeSstvDecoder() { return std::make_unique<HfdigSstv>(); }
 

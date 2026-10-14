@@ -2,6 +2,7 @@
 // at night, chosen from the channels sent, or one channel in grey), Save PNG and New picture; the frequency (137.900 / 137.100) and
 // the modulation; the receiver's state, the channels heard and the symbol constellation.
 #include "app.h"
+#include "gallery.h"
 #include "gfx.h"
 #include "platform.h"
 #include "dect2/meteor_rx.h"
@@ -49,7 +50,7 @@ void loadState() {
     S.mod = std::clamp((int)plat::prefs().getI("meteorMod", 0), 0, 3);
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 60; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 60; }   // the engine reports its standard code minus one
 
 void kvRow(const App& a, const char* k, const char* fmt, ...) {
     ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);
@@ -246,8 +247,63 @@ void summary(const App& a, std::string& l1, std::string& l2) {
     if (live(a)) l2 = dect2::meteorSummary(a.rx.meteor);
 }
 
+// ---------------------------------------------------------------- the gallery: a picture is handed over when it has stopped growing (or a new one starts)
+
+struct GalleryHold {
+    std::shared_ptr<const MeteorImage> pend;
+    double start = 0, changedAt = 0;
+    int rows = 0, pubRows = -1;
+};
+GalleryHold gHold;
+
+void galleryFlush() {
+    GalleryHold& g = gHold;
+    if (!g.pend || g.pend->rows <= 0 || g.pubRows == g.pend->rows) return;
+    const MeteorImage& im = *g.pend;
+    g.pubRows = im.rows;
+    const int h = im.rows * 8;
+    gallery::Meta m;
+    m.planes.resize(6);
+    std::string chans;
+    for (int c = 0; c < 6; c++) {
+        if (!hasCh(im, c)) continue;
+        chans += (chans.empty() ? "" : " ") + std::to_string(c + 1);
+        std::vector<uint8_t>& pl = m.planes[(size_t)c];
+        pl.assign((size_t)h * kMeteorWidth, 0);
+        for (int r = 0; r < im.rows; r++)
+            if (const MeteorStrip* s = stripOf(im, c, r)) memcpy(&pl[(size_t)r * 8 * kMeteorWidth], s->px.data(), (size_t)8 * kMeteorWidth);
+    }
+    const std::array<int, 3> ch = channelsFor(&im, 0);
+    std::vector<uint32_t> px((size_t)h * kMeteorWidth);
+    for (int r = 0; r < im.rows; r++) composeRow(im, ch, r, &px[(size_t)r * 8 * kMeteorWidth]);
+    m.detail = "channels " + chans + ", " + std::to_string(h) + " lines";
+    std::string name;
+    const double dt = 8.0 / 6.0;   // a strip of 8 lines at 6 lines a second
+    if (const dect2::Sgp4* sat = passesFindSat("METEOR-M", g.start + im.rows * dt / 2, &name)) {
+        m.satellite = name;
+        for (int r = 0; r < im.rows; r++) {
+            double lat, lon, alt;
+            if (!dect2::subPoint(*sat, g.start + r * dt, lat, lon, alt)) { m.track.clear(); break; }
+            m.track.push_back({lat, lon});
+        }
+        m.linesPerTrack = 8; m.swathKm = 2800;
+    }
+    gallery::publish("meteor-" + std::to_string((long long)g.start), "Meteor-M LRPT", g.start, kMeteorWidth, h, reinterpret_cast<const uint8_t*>(px.data()), m);
+}
+
+void galleryTick(const MeteorTelemetry& t, bool live) {
+    GalleryHold& g = gHold;
+    const double now = (double)time(nullptr);
+    if (t.image && t.image->rows > 0) {
+        if (!g.pend || g.pend->id != t.image->id) { galleryFlush(); g = GalleryHold(); g.pend = t.image; g.rows = t.image->rows; g.start = now - g.rows * 8.0 / 6.0; g.changedAt = now; }
+        else if (t.image->rows != g.rows) { g.pend = t.image; g.rows = t.image->rows; g.changedAt = now; }
+    }
+    if (g.pend && g.pubRows != g.pend->rows && (!live || now - g.changedAt > 45)) galleryFlush();
+}
+
 void tick(App& a) {
     loadState();
+    galleryTick(a.rx.meteor, a.engine.running());
     if (!a.engine.running()) { S.pushedMod = -1; return; }
     if (S.pushedMod != S.mod) { a.engine.meteor().setModulation(S.mod); S.pushedMod = S.mod; }
 }

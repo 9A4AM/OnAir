@@ -17,12 +17,25 @@
 namespace dect2 {
 namespace timesig {
 
-enum Station { Dcf77 = 0, Msf, Wwvb, Jjy40, Jjy60, Wwv, Chu, kNumStations };
-const char* stationName(int s);      // "DCF77", "MSF", "WWVB", "JJY 40 kHz", "JJY 60 kHz", "WWV / WWVH", "CHU"
-double stationKhz(int s);            // the usual frequency (WWV: 10 MHz, CHU: 7.85 MHz)
-bool stationIsHf(int s);             // WWV / WWVH and CHU: AM voice stations with an audio time code
+enum Station { Dcf77 = 0, Msf, Wwvb, Jjy40, Jjy60, Wwv, Chu, Bpm, Bpc, Hla, BpmC, kNumStations };
+const char* stationName(int s);      // "DCF77", "MSF", "WWVB", "JJY 40 kHz", "JJY 60 kHz", "WWV / WWVH", "CHU", "BPM", "BPC", "HLA", "BPM coded"
+double stationKhz(int s);            // the usual frequency (WWV: 10 MHz, CHU: 7.85 MHz, BPM and BPM coded: 5 MHz, BPC 68.5 kHz, HLA 5 MHz)
+bool stationIsHf(int s);             // WWV / WWVH, CHU, BPM, HLA and BPM coded: AM voice stations with an audio time code (BPC is LF)
 int stationForKhz(double khz, int pref60);   // the station of a frequency (pref60: which of MSF / WWVB / JJY 60 at 60 kHz), -1 none
 const char* stationTimeZone(int s);  // the time the frame carries: "CET / CEST", "UK", "UTC", "JST"
+// BPM (Pucheng, China; 2.5 / 5 / 10 / 15 MHz, the same frequencies as WWV): 1 kHz ticks of 10 ms, a pulse-width coded second after each tick
+// (100 ms 0, 200 ms 1, 300 ms marker; the long tone of the minute is the marker of second 0), the WWVB frame layout, UTC. In the minutes the
+// station sends UT1 the ticks follow UT1 (Fields::ut1). Its frequencies are WWV's: pick the station by hand.
+
+// BPC (Shangqiu, China, 68.5 kHz, UTC+8, needs a radio that tunes LF or an upconverter): the carrier drops for 0.1 - 0.4 s at each second, 2 bits
+// (00, 01, 10, 11, MSB first); no drop in second 0 of a 20 s frame (P0), three frames a minute (decodeMinute reads one frame: 20 symbols of
+// 0 - 3, SNone first; Fields::frameIndex and utcMinute = the frame's start). Hour is 12-hour like with AM / PM in P3, even parity over seconds
+// 1 - 9 (P3) and 11 - 18 (P4), the year's high bit in P4.
+// HLA (Korea, 5 MHz, UTC+9): 100 Hz subcarrier, 1 bit a second: pulses of 0.17 s (0), 0.47 s (1), 0.77 s (marker P1..P5 at seconds 9, 19, ..., 49
+// and P0 at 59), second 0 empty with a 0.8 s 1800 Hz tone, 6 ms 1800 Hz ticks 32 ms before each second. BCD minute, hour, day of year, no year, no parity.
+// BPM coded (BPMc, 2.5 / 5 MHz since 2019, in the pure carrier minutes): 10 ms code elements of 1 kHz, five cycles = 1. Each second S (1) + an empty
+// element, then sec, min, hour, day, month, year (LSB first, an odd parity bit after each) and DUT1 in ms; second 0 sends M (300 ms) and the
+// 0.1 ms DUT1 digit, the leap count and the leap second flag. Elements are plain 0 / 1 bytes below.
 
 // Symbols, one a second. bit 0 is the bit (MSF: bit A), bit 1 MSF bit B.
 enum Sym : uint8_t { S0 = 0, S1 = 1, SB = 2, SAB = 3, SMark = 4, SNone = 5, SUnknown = 6 };
@@ -39,15 +52,32 @@ struct Fields {
     int dut1 = 99;                  // UT1 - UTC in 0.1 s (99 not sent)
     bool callBit = false;           // DCF77 R: the transmitter runs on its reserve antenna
     bool leapYear = false;          // WWVB
-    int64_t utcMinute = 0;          // UTC epoch second of the minute the symbols were received in
+    bool ut1 = false;               // BPM: the ticks of this minute follow UT1, not UTC
+    int64_t utcMinute = 0;          // UTC epoch second of the minute the symbols were received in (BPC: of the frame, a multiple of 20 s)
+    int second = -1;                // BPM coded: the second of the minute this frame names; BPC: the frame's first second (0, 20, 40)
+    int frameIndex = -1;            // BPC: 0 - 2
+    bool dut1Neg = false;           // BPM coded: the sign bit says UT1 is behind UTC (also for 0 ms)
+    bool hasDut1Ms = false;         // BPM coded: dut1Ms is valid
+    double dut1Ms = 0;              // BPM coded: UT1 - UTC in milliseconds (the 0.1 ms digit once a minute frame was read)
+    int dut1Tenth = -1;             // BPM coded: the 0.1 ms digit of the minute frame, -1 not read yet
+    int leapCount = -1;             // BPM coded: TAI - UTC in seconds from the minute frame, -1 not read
+    bool parityOk = true;           // BPC, BPM coded: every parity bit checked
 };
 
 // Encode the minute that starts at UTC epoch second utcMinute (a multiple of 60): the symbols of its seconds 0 - 59.
-struct EncodeOpts { bool leapAnnounce = false; int leapSign = 1; int dut1 = 0; bool callBit = false; };
+struct EncodeOpts { bool leapAnnounce = false; int leapSign = 1; int dut1 = 0; bool callBit = false; bool ut1 = false;
+                    double dut1Ms = -35.7; int leapCount = 37; bool leapAtMonthEnd = false; };   // the last three: BPM coded
 std::vector<uint8_t> encodeMinute(int station, int64_t utcMinute, const EncodeOpts& o = {});
 // Decode the 60 symbols of a received minute (second 0 first). False when a fixed bit, a parity, a range or a marker is wrong.
 // yearHint: the year two-digit years are placed near (0: the computer's), and JJY's at minutes 15 and 45 (no year sent)
 bool decodeMinute(int station, const uint8_t* sym, Fields& f, int yearHint = 0);
+// BPM coded: one second frame (52 elements), the minute frame at second 0 (46 elements, M excluded in the input: the 14 data bits are elements 32 - 45)
+std::vector<uint8_t> encodeBpmcSecond(int64_t utcSec, double dut1Ms);
+std::vector<uint8_t> encodeBpmcMinute(int dut1Tenth, int leapCount, bool leapAtMonthEnd);
+bool decodeBpmcSecond(const uint8_t* e, Fields& f, int yearHint = 0);
+bool decodeBpmcMinute(const uint8_t* e, int& dut1Tenth, int& leapCount, bool& leapAtMonthEnd);
+// BPC: the 20 symbols of the frame that starts at UTC epoch second t (a multiple of 20)
+std::vector<uint8_t> encodeBpcFrame(int64_t t);
 std::string fieldsText(const Fields& f, int station);   // "2026-10-12 14:03 UTC (16:03 CEST)"
 
 // CHU: the A frame of a second 32 - 39 (10 bytes: day of year, hour, minute, second as BCD digits, sent twice), and its parse

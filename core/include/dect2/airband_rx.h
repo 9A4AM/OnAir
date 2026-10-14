@@ -64,9 +64,13 @@ public:
     void setSignalOffset(double hz);                     // where the user's (dial) frequency sits relative to 0 Hz in the input
     void setCenterHz(double hz);                         // the radio's centre frequency (0: the dial frequency of the test signal, for files)
     bool ready() const;                                  // false when the input rate is too low for this mode
-    void reset();                                        // after a retune: forget the transmissions (the radio's tuning error is kept)
+    void reset();                                        // after a retune: forget the transmissions (the radio's tuning error and the activity log are kept)
     void feed(const cf32* x, size_t n);
     bool telemetry(AirbandTelemetry& out, uint64_t lastSeq);
+    // The activity log stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
     void setChannels(const std::vector<AirbandChannel>& ch);   // the list; mute, solo and priority changes do not restart the channels

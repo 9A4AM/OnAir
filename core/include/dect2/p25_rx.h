@@ -31,9 +31,13 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);
     bool ready() const;
-    void reset();
+    void reset();                                        // after a retune (the logs and the site stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(P25Telemetry& out, uint64_t lastSeq);
+    // The call log, talkgroups, control messages and the site with its neighbours stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     void setVolume(float v);

@@ -1,7 +1,8 @@
 // DTMB tables (GB 20600-2006). Where each number comes from:
 //  - frame geometry, PN generators and the PN phase schedule: GB 20600-2006 clause 4.6 and appendices D / E. The three generators (seed and
 //    recurrence) and the phase schedule were taken from the dtmb-sdr project (github.com/ningzichun/dtmb-sdr, MIT licence); the test
-//    tests/test_dtmb_defs.cpp checks the chips against the hexadecimal header vectors that project quotes from the standard.
+//    tests/test_dtmb_defs.cpp checks the chips against the hexadecimal header vectors that project quotes from the standard, except PN595,
+//    which starts one chip earlier, as on the air (issue #58; see kPnGen below).
 //  - system information: the 32 bit codewords of the 11 profiles, the four leading zero chips and the complement for interleaver mode 2
 //    are from the same project (c1.cpp); the positions of the 36 symbols in a C=3780 body and the carrier interleaver are its c3780.cpp
 //    (standard appendix F). The codewords form a first order Reed-Muller coset: all 22 words are at distance 16 from each other except
@@ -27,7 +28,10 @@ const HeaderInfo kHeaders[3] = {
 struct PnGen { int len; const char* seed; int taps[4]; int nTaps; };
 const PnGen kPnGen[3] = {
     {8, "10110000", {0, 2, 3, 7}, 4},       // PN420: 8-stage m-sequence, period 255
-    {10, "0000000001", {0, 7, 0, 0}, 2},    // PN595: x^10 + x^3 + 1 truncated to 595 chips
+    // PN595: x^10 + x^3 + 1 truncated to 595 chips. The register 0000000001 read from its far end: the header starts with the 1, then the
+    // nine zeros. dtmb-sdr starts one chip later, at the zeros; on the air (two recordings of single carrier transmitters) the chip before
+    // those zeros is a 1, and where that sequence has its last chip the first system information symbol already is.
+    {10, "1000000000", {0, 7, 0, 0}, 2},
     {9, "111110111", {0, 1, 2, 7}, 4},      // PN945: 9-stage m-sequence, period 511
 };
 

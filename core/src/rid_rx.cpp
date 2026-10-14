@@ -1,5 +1,6 @@
 // Drone Remote ID receiver (rid_rx.h): the BLE and Wi-Fi demodulators side by side, their good packets decoded as Open Drone ID.
 #include "dect2/rid_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/ble_proto.h"
 #include "dect2/ble_rx.h"
 #include "dect2/ble_tel.h"
@@ -67,12 +68,37 @@ struct RidReceiver::Impl {
         tel.bleOffsetHz = plan.bleOffsetHz; tel.wifiOffsetHz = plan.wifiOffsetHz;
     }
 
+    // The drone table and the message log stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool resClear = false, resLoad = false;
+    RidTelemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(RidTelemetry& to, RidTelemetry& from) {
+        to.drones = std::move(from.drones); to.log = std::move(from.log);
+        from.drones.clear(); from.log.clear();
+    }
+    static void shiftTimes(RidTelemetry& t, double dt) {
+        for (auto& d : t.drones) { d.firstSec += dt; d.lastSec += dt; }
+        for (auto& l : t.log) l.sec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (!resClear && !resLoad) return;
+        if (resClear) { RidTelemetry e; moveLists(tel, e); resClear = false; }
+        if (resLoad) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); resLoad = false; }
+        reindex();
+    }
+    void reindex() {
+        idx.clear();
+        for (size_t i = 0; i < tel.drones.size(); i++) idx[tel.drones[i].mac] = i;
+    }
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         ble.configure(rate); wifi.configure(rate);
         ble.reset(); wifi.reset();
         applyPlan();
         nIn = 0; nextReport = 0.25 * rate; lastGood = -100;
+        shiftTimes(tel, -tel.timeSec);    // the lists stay (clearResults): the clock starts again
         tel.inputRate = rate; tel.timeSec = 0;
     }
 
@@ -221,12 +247,23 @@ void RidReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_
 void RidReceiver::setCenterHz(double hz) { p_->centerHz = hz; }
 bool RidReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= ridTuning().minSampleRate - 1; }
 void RidReceiver::reset() { p_->resetReq = true; }
-void RidReceiver::clearDrones() { p_->clearReq = true; }
+void RidReceiver::clearDrones() {
+    {
+        std::lock_guard<std::mutex> lk(p_->mu);   // the report at once; the feed thread's lists (and counters) on its next block
+        RidTelemetry e;
+        Impl::moveLists(p_->pub, e);
+        p_->resLoad = false;
+        p_->pub.seq++;
+    }
+    p_->clearReq = true;
+}
+void RidReceiver::clearResults() { clearDrones(); }
 
 void RidReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
     if (m.clearReq.exchange(false)) m.clearAll();
+    m.takeRequests();
     if (m.centerHz.load() != m.center) m.applyPlan();
     if (m.rate <= 0 || n == 0) return;
     // in pieces of at most a quarter second, so the reports keep their pace
@@ -244,6 +281,24 @@ void RidReceiver::feed(const cf32* x, size_t n) {
     }
 }
 
+std::string RidReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.drones, p_->pub.log);
+}
+bool RidReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    RidTelemetry l;
+    if (!results::unpack(blob, t0, l.drones, l.log)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    RidTelemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->resLoad = true;
+    p_->pub.seq++;
+    return true;
+}
 bool RidReceiver::telemetry(RidTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

@@ -2,6 +2,7 @@
 #include "dvbs_s1.h"
 #include <algorithm>
 #include <cmath>
+#include <chrono>
 #include <cstring>
 
 namespace dect2 {
@@ -138,7 +139,8 @@ void S1Decoder::push(const cf32* y, size_t n) {
         llr_[base + 2 * i + 1] = u.imag();
     }
     symbols += n;
-    if (llr_.size() >= 32768) process();
+    // the GPU decodes a window of 64 of the usual windows in one call (about a million steps, 64 chunks run side by side; the chunks inside are the same)
+    if (llr_.size() >= (gpuWindow_ ? 64u * 32768u : 32768u)) process();
 }
 
 void S1Decoder::process() {
@@ -151,7 +153,17 @@ void S1Decoder::process() {
     const size_t m = llr_.size() / P * P;      // whole puncturing periods: the phase is the same at the start of every chunk
     if (m == 0) return;
     double mean = 0;
-    for (size_t i = 0; i < m; i++) mean += std::fabs(llr_[i]);
+    {   // sums of up to 1024 values in float (four lanes), the blocks in double
+        const float* lp = llr_.data();
+        for (size_t i = 0; i < m; i += 1024) {
+            const size_t e = std::min(m, i + 1024);
+            float a0 = 0, a1 = 0, a2 = 0, a3 = 0;
+            size_t j = i;
+            for (; j + 4 <= e; j += 4) { a0 += std::fabs(lp[j]); a1 += std::fabs(lp[j + 1]); a2 += std::fabs(lp[j + 2]); a3 += std::fabs(lp[j + 3]); }
+            for (; j < e; j++) a0 += std::fabs(lp[j]);
+            mean += (double)((a0 + a1) + (a2 + a3));
+        }
+    }
     mean /= (double)m;
     const float scale = (float)std::min(40.0, 22.0 / std::max(1e-6, mean));
     std::vector<int8_t> soft;
@@ -164,13 +176,25 @@ void S1Decoder::process() {
     const size_t steps = window.size() / 2;
     std::vector<uint8_t> dec;
     long metric = 0;
-    dvbt::Viterbi::decode(window, dec, 1, &metric);
-    double sa = 0;
-    for (int8_t q : window) sa += std::abs(q);
+    bool done = false;
+    const auto t0 = std::chrono::steady_clock::now();
+    if (gpuWindow_ && GpuViterbi::instance().decode(window, dec, &metric)) {
+        done = true;
+        compute_->report(true, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() / (double)std::max<size_t>(1, steps));
+    }
+    if (!done) {
+        dvbt::Viterbi::decode(window, dec, 1, &metric);
+        if (compute_) compute_->report(false, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() / (double)std::max<size_t>(1, steps));
+    }
+    lastGpu_ = done;
+    gpuWindow_ = compute_ && compute_->pickGpu();
+    int64_t sai = 0;
+    for (int8_t q : window) sai += q < 0 ? -q : q;
+    const double sa = (double)sai;
     if (sa > 0) score_ = 0.8 * score_ + 0.2 * ((double)metric / sa);
     const size_t fromStep = carry_.empty() ? 0 : L;
     const size_t toStep = steps > L ? steps - L : 0;
-    for (size_t t = fromStep; t < toStep; t++) bits_.push_back(dec[t]);
+    if (toStep > fromStep) bits_.insert(bits_.end(), dec.begin() + (std::ptrdiff_t)fromStep, dec.begin() + (std::ptrdiff_t)toStep);
     const size_t keep = std::min(window.size() / 2, 2 * L);
     carry_.assign(window.end() - 2 * (std::ptrdiff_t)keep, window.end());
     (void)k;

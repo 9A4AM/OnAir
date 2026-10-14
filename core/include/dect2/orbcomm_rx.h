@@ -30,9 +30,13 @@ public:
     ~OrbcommReceiver();
     void configure(double inputRateHz);
     bool ready() const;                    // false when the input rate is too low
-    void reset();
+    void reset();                                        // after a retune (the satellites and the log stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(OrbcommTelemetry& out, uint64_t lastSeq);
+    // The satellite table and the packet log stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     void setCenterHz(double hz);           // the radio's centre (0: unknown, a recording): absolute frequencies and Doppler from it
     void setSignalOffset(double) {}        // the downlinks are found anywhere in the passband

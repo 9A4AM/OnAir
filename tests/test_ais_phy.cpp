@@ -24,15 +24,17 @@ static void initCrc() {
 }
 static std::vector<int> frameBits(const Bits& payload) {
     std::vector<int> d;
-    // FCS over bytes whose bits are taken in transmission order, least significant bit first
+    // The message tables number the bits of an octet from its MSB, HDLC sends every octet LSB first (#87: the bits of each octet are reversed on the air).
+    // FCS over the octets.
     uint16_t crc = 0xFFFF;
+    std::vector<int> body;
     for (size_t i = 0; i + 8 <= payload.size(); i += 8) {
         int byte = 0;
-        for (int k = 0; k < 8; k++) byte |= payload[i + k] << k;
+        for (int k = 0; k < 8; k++) byte |= payload[i + k] << (7 - k);
         crc = (uint16_t)((crc >> 8) ^ crcTable[(crc ^ byte) & 0xFF]);
+        for (int k = 0; k < 8; k++) body.push_back((byte >> k) & 1);
     }
     crc = (uint16_t)~crc;
-    std::vector<int> body(payload.begin(), payload.end());
     for (int k = 0; k < 16; k++) body.push_back((crc >> k) & 1);
     for (int v : {0, 1, 1, 1, 1, 1, 1, 0}) d.push_back(v);                // flag
     int ones = 0;

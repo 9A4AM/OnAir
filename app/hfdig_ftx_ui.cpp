@@ -41,12 +41,17 @@ ImVec4 modeColour(int m) {
     case 0: return ImVec4(0.55f, 0.78f, 0.95f, 1);
     case 1: return ImVec4(0.62f, 0.85f, 0.58f, 1);
     case 2: return ImVec4(0.85f, 0.70f, 0.95f, 1);
+    case 4: return ImVec4(0.95f, 0.60f, 0.55f, 1);   // JT65
+    case 5: return ImVec4(0.55f, 0.90f, 0.85f, 1);   // JT9
+    case 6: return ImVec4(0.98f, 0.85f, 0.50f, 1);   // Q65
+    case 7: case 9: return ImVec4(0.70f, 0.75f, 0.98f, 1);   // FST4, FST4W
+    case 8: return ImVec4(0.90f, 0.65f, 0.80f, 1);   // MSK144
     default: return ImVec4(0.95f, 0.75f, 0.45f, 1);
     }
 }
 
 bool shown(const dect2::FtxDecode& d) {
-    if (S.filter > 0 && d.mode != S.filter - 1) return false;
+    if (S.filter > 0 && d.mode != S.filter - 1 && !(S.filter == 8 && d.mode == 9)) return false;   // FST4 also shows its FST4W decodes
     if (S.cqOnly && !d.cq) return false;
     return true;
 }
@@ -169,6 +174,15 @@ const FtxBand kFt8Bands[] = {{"160m", 1.840}, {"80m", 3.573}, {"60m", 5.357}, {"
 const FtxBand kFt4Bands[] = {{"80m", 3.575}, {"40m", 7.0475}, {"30m", 10.140}, {"20m", 14.080}, {"17m", 18.104}, {"15m", 21.140},
                              {"12m", 24.919}, {"10m", 28.180}, {"6m", 50.318}, {"2m", 144.170}};
 const FtxBand kFt2Bands[] = {{"20m", 14.084}};
+// JT65 / JT9 / Q65 / FST4 / MSK144: the dial frequencies WSJT-X lists (JT65 and JT9 on the same bands, 2 kHz apart; MSK144 and Q65 on the VHF meteor-scatter / EME frequencies)
+const FtxBand kJt65Bands[] = {{"160m", 1.838}, {"80m", 3.570}, {"40m", 7.076}, {"30m", 10.138}, {"20m", 14.076}, {"17m", 18.102}, {"15m", 21.076},
+                              {"12m", 24.917}, {"10m", 28.076}, {"6m", 50.310}, {"2m", 144.120}};
+const FtxBand kJt9Bands[] = {{"160m", 1.839}, {"80m", 3.572}, {"40m", 7.078}, {"30m", 10.140}, {"20m", 14.078}, {"17m", 18.104}, {"15m", 21.078},
+                             {"12m", 24.919}, {"10m", 28.078}};
+const FtxBand kQ65Bands[] = {{"20m", 14.100}, {"10m", 28.100}, {"6m", 50.275}, {"2m", 144.116}, {"70cm", 432.065}};
+const FtxBand kFst4Bands[] = {{"160m", 1.8366}, {"80m", 3.5686}, {"40m", 7.0386}, {"30m", 10.1387}, {"20m", 14.0956}, {"17m", 18.1046}, {"15m", 21.0946},
+                              {"10m", 28.1246}};
+const FtxBand kMsk144Bands[] = {{"10m", 28.145}, {"6m", 50.260}, {"4m", 70.230}, {"2m", 144.150}};
 const FtxBand kWsprBands[] = {{"160m", 1.8366}, {"80m", 3.5686}, {"60m", 5.3647}, {"40m", 7.0386}, {"30m", 10.1387}, {"20m", 14.0956},
                               {"17m", 18.1046}, {"15m", 21.0946}, {"12m", 24.9246}, {"10m", 28.1246}, {"6m", 50.293}, {"2m", 144.489}};
 
@@ -177,6 +191,11 @@ void bandButtons(App& a, int mode) {
     if (mode == 1) { b = kFt4Bands; n = IM_ARRAYSIZE(kFt4Bands); }
     else if (mode == 2) { b = kFt2Bands; n = IM_ARRAYSIZE(kFt2Bands); }
     else if (mode == 3) { b = kWsprBands; n = IM_ARRAYSIZE(kWsprBands); }
+    else if (mode == 4) { b = kJt65Bands; n = IM_ARRAYSIZE(kJt65Bands); }
+    else if (mode == 5) { b = kJt9Bands; n = IM_ARRAYSIZE(kJt9Bands); }
+    else if (mode == 6) { b = kQ65Bands; n = IM_ARRAYSIZE(kQ65Bands); }
+    else if (mode == 7 || mode == 9) { b = kFst4Bands; n = IM_ARRAYSIZE(kFst4Bands); }
+    else if (mode == 8) { b = kMsk144Bands; n = IM_ARRAYSIZE(kMsk144Bands); }
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("Band"); flowNext(6 * gUi);
     for (int i = 0; i < n; i++) {
@@ -186,10 +205,70 @@ void bandButtons(App& a, int mode) {
         if (ImGui::SmallButton(b[i].name)) tuneFreq(a, b[i].mhz);
         ImGui::PopID();
         if (here) ImGui::PopStyleColor();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s on %s: dial %.4f MHz (upper sideband)", mode == 3 ? "WSPR" : mode == 2 ? "FT2" : mode == 1 ? "FT4" : "FT8", b[i].name, b[i].mhz);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s on %s: dial %.4f MHz (upper sideband)", dect2::ftxModeName(mode), b[i].name, b[i].mhz);
         flowNext(4 * gUi);
     }
     flowEnd();
+}
+
+// The sub-mode and the T/R period of the modes that have a choice (JT65 A B C, Q65 A .. E and 15 .. 300 s, FST4 / FST4W 15 .. 1800 s, MSK144 15 / 30 s),
+// remembered in the settings and handed to the decoder every frame.
+struct ModeOpt { int sub; double per; };
+ModeOpt& modeOpt(int m) {
+    static ModeOpt o[dect2::kFtxModes] = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 60}, {0, 60}, {0, 60}, {0, 60}, {0, 15}, {0, 120}};
+    static bool loaded = false;
+    if (!loaded) {
+        loaded = true;
+        for (int k = 4; k < dect2::kFtxModes; k++) {
+            char key[24];
+            snprintf(key, sizeof key, "ftxSub%d", k); o[k].sub = (int)plat::prefs().getI(key, o[k].sub);
+            snprintf(key, sizeof key, "ftxPer%d", k); o[k].per = (double)plat::prefs().getI(key, (long)o[k].per);
+        }
+    }
+    return o[m];
+}
+
+void modeOptions(App& a, int only) {
+    using namespace dect2;
+    HfdigFtx& dec = a.engine.hfdig().ftx();
+    auto save = [&](int m) {
+        char key[24];
+        snprintf(key, sizeof key, "ftxSub%d", m); plat::prefs().setI(key, modeOpt(m).sub);
+        snprintf(key, sizeof key, "ftxPer%d", m); plat::prefs().setI(key, (long)modeOpt(m).per);
+    };
+    auto periodCombo = [&](int m, const double* list, int n, const char* id) {
+        ModeOpt& o = modeOpt(m);
+        char cur[16];
+        snprintf(cur, sizeof cur, "%g s", o.per);
+        ImGui::SetNextItemWidth(78 * gUi);
+        if (ImGui::BeginCombo(id, cur)) {
+            for (int i = 0; i < n; i++) {
+                char b[16];
+                snprintf(b, sizeof b, "%g s", list[i]);
+                if (ImGui::Selectable(b, std::fabs(list[i] - o.per) < 0.5)) { o.per = list[i]; save(m); }
+            }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s: the length of the transmit / receive periods", ftxModeName(m));
+    };
+    auto subCombo = [&](int m, const char* const* names, int n, const char* id) {
+        ModeOpt& o = modeOpt(m);
+        ImGui::SetNextItemWidth(52 * gUi);
+        if (ImGui::BeginCombo(id, names[std::max(0, std::min(n - 1, o.sub))])) {
+            for (int i = 0; i < n; i++) if (ImGui::Selectable(names[i], i == o.sub)) { o.sub = i; save(m); }
+            ImGui::EndCombo();
+        }
+    };
+    static const char* const abc[] = {"A", "B", "C"};
+    static const char* const ae[] = {"A", "B", "C", "D", "E"};
+    static const double q65p[] = {15, 30, 60, 120, 300}, fstp[] = {15, 30, 60, 120, 300, 900, 1800}, mskp[] = {15, 30};
+    auto label = [&](const char* t) { ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", t); ImGui::SameLine(0, 4 * gUi); };
+    if (only < 0 || only == 4) { label("JT65"); subCombo(4, abc, 3, "##jt65sub"); if (ImGui::IsItemHovered()) ImGui::SetTooltip("JT65 sub-mode: A, B and C have tone spacings of 2.7, 5.4 and 10.8 Hz"); flowNext(10 * gUi); }
+    if (only < 0 || only == 6) { label("Q65"); subCombo(6, ae, 5, "##q65sub"); flowNext(4 * gUi); periodCombo(6, q65p, 5, "##q65per"); flowNext(10 * gUi); }
+    if (only < 0 || only == 7) { label("FST4"); periodCombo(7, fstp, 7, "##fst4per"); flowNext(10 * gUi); }
+    if (only < 0 || only == 7) { label("FST4W"); periodCombo(9, fstp, 7, "##fst4wper"); flowNext(10 * gUi); }
+    if (only < 0 || only == 8) { label("MSK144"); periodCombo(8, mskp, 2, "##mskper"); flowNext(10 * gUi); }
+    for (int m = 4; m < kFtxModes; m++) dec.setModeOption(m, modeOpt(m).sub, modeOpt(m).per);
 }
 
 void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
@@ -211,22 +290,24 @@ void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
     }
     bool mir = dec.mirrored();
     if (ImGui::Checkbox("Upside down too", &mir)) dec.setMirrored(mir);
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also look for signals sent on the lower sideband (their tones run backwards).");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Also look for signals sent on the lower sideband (their tones run backwards). FT8, FT4, FT2 and WSPR only: the other modes expect upper sideband.");
     flowNext(14 * gUi);
     if (only < 0) {
         ImGui::AlignTextToFramePadding();
         ImGui::TextDisabled("Show"); ImGui::SameLine(0, 5 * gUi);
-        const char* fl[] = {"all", "FT8", "FT4", "FT2", "WSPR"};
         ImGui::SetNextItemWidth(78 * gUi);
-        if (ImGui::BeginCombo("##ftxfilter", fl[S.filter])) {
-            for (int i = 0; i < 5; i++) if (ImGui::Selectable(fl[i], i == S.filter)) S.filter = i;
+        if (ImGui::BeginCombo("##ftxfilter", S.filter == 0 ? "all" : ftxModeName(S.filter - 1))) {
+            if (ImGui::Selectable("all", S.filter == 0)) S.filter = 0;
+            for (int i = 0; i < kFtxModes; i++) if (ImGui::Selectable(ftxModeName(i), i + 1 == S.filter)) S.filter = i + 1;
             ImGui::EndCombo();
         }
         flowNext(10 * gUi);
     }
     ImGui::Checkbox("CQ only", &S.cqOnly);
     flowNext(10 * gUi);
-    if (ImGui::Button("Clear")) dec.clearDecodes();
+    if (ImGui::Button("Clear")) a.engine.hfdig().clearResults(8);   // the decodes the receiver keeps (also in the results file)
+    flowEnd();
+    modeOptions(a, only);
     flowEnd();
     bandButtons(a, only >= 0 ? only : 0);
     // the clock
@@ -248,7 +329,7 @@ void hfdigFtxTab(App& a, const dect2::HfdigTelemetry& t) {
         flowEnd();
         std::string last;
         for (int m = 0; m < kFtxModes; m++) {
-            if (!f.slots[m] || (only >= 0 && m != only)) continue;
+            if (!f.slots[m] || (only >= 0 && m != only && !(only == 7 && m == 9))) continue;
             char tm[16], b[80];
             utcText(f.lastSlotUtc[m], tm, sizeof tm);
             snprintf(b, sizeof b, "%s%s %s: %d (%.0f ms)", last.empty() ? "" : "   ", ftxModeName(m), tm, f.lastSlotCount[m], f.decodeMs[m]);

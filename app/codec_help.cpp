@@ -6,12 +6,31 @@
 #include "dect2/nxdn_ambe.h"
 #include "dect2/p25_imbe.h"
 #include "dect2/updater.h"
+#include <filesystem>
 #include <string>
 #include <vector>
 
 namespace {
 
 constexpr const char* kDocUrl = "https://github.com/adswill/OnAir/blob/main/docs/CODECS.md";
+
+// mbelib is built from source by the user (patented codec: OnAir ships none). Plain steps; the full text is docs/CODECS.md.
+constexpr const char* kMbeMac =
+    "Build it yourself from github.com/lwvmobile/mbelib (patent notice: check your local law):\n"
+    "  brew install cmake git\n  git clone https://github.com/lwvmobile/mbelib\n  cd mbelib && mkdir build && cd build\n"
+    "  cmake .. && make\nThen copy libmbe.dylib into the codecs folder below.";
+constexpr const char* kMbeWin =
+    "Build it yourself from github.com/lwvmobile/mbelib (patent notice: check your local law). In MSYS2 MINGW64:\n"
+    "  pacman -S --needed git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make\n"
+    "  git clone https://github.com/lwvmobile/mbelib\n  cd mbelib && mkdir build && cd build\n"
+    "  cmake .. -G \"MSYS Makefiles\" -DBUILD_SHARED_LIBS=ON && make\n"
+    "Copy the .dll it makes (libmbe.dll) into the codecs folder below. It may also need libgcc_s_seh-1.dll and libwinpthread-1.dll "
+    "from C:\\msys64\\mingw64\\bin next to it. Use 64-bit if OnAir is 64-bit.\n"
+    "Do not use codec2.dll for this: codec2 is not used by DMR, P25, NXDN or dPMR.";
+constexpr const char* kMbeLinux =
+    "Build it yourself from github.com/lwvmobile/mbelib (patent notice: check your local law):\n"
+    "  sudo apt install git cmake build-essential\n  git clone https://github.com/lwvmobile/mbelib\n  cd mbelib && mkdir build && cd build\n"
+    "  cmake .. && make && sudo make install && sudo ldconfig\n(or copy libmbe.so.1 into the codecs folder below)";
 
 struct Text {
     const char* title;
@@ -29,8 +48,9 @@ Text textOf(CodecHelp c) {
 #if defined(__APPLE__)
                 "Install Homebrew (brew.sh), then run in Terminal:\n  brew install codec2",
 #elif defined(_WIN32)
-                "Install FreeDV for Windows (freedv.org/download). Copy libcodec2.dll from its bin folder (C:\\Program Files\\FreeDV ...\\bin) "
-                "into an OnAir codecs folder below. Use the same kind of Windows (x86_64 or ARM) as OnAir.",
+                "Only FreeDV and M17 need codec2; DMR, P25, NXDN, dPMR and D-STAR do not. Windows: put codec2.dll or libcodec2.dll into the codecs "
+                "folder below. It is not always in FreeDV's bin folder: install FreeDV (freedv.org) and search its folder for *codec2*.dll, or build "
+                "codec2 (github.com/drowe67/codec2) with MSYS2 (pacman -S mingw-w64-x86_64-codec2 gives libcodec2.dll in C:\\msys64\\mingw64\\bin).",
 #else
                 "Debian / Ubuntu:  sudo apt install libcodec2-1.2\n(Ubuntu 22.04: libcodec2-1.0)\nFedora:  sudo dnf install codec2",
 #endif
@@ -71,14 +91,11 @@ Text textOf(CodecHelp c) {
                 "it. The open mbelib library decodes AMBE; when you install it yourself, OnAir loads it and plays D-STAR voice. Its own notice "
                 "says that using it may need a patent licence: check the rules where you live first.",
 #if defined(__APPLE__)
-                "Homebrew has no formula; build it from github.com/szechyjs/mbelib:\n  brew install cmake\n  (clone the repository)\n"
-                "  mkdir build && cd build && cmake .. && make\nthen copy libmbe.dylib into an OnAir codecs folder below.",
+                kMbeMac,
 #elif defined(_WIN32)
-                "Build mbelib (github.com/szechyjs/mbelib) with CMake and Visual Studio, or take mbe.dll / libmbe.dll from a Windows build of "
-                "DSD-FME, and copy it into an OnAir codecs folder below. Use the same kind of Windows (x86_64 or ARM) as OnAir.",
+                kMbeWin,
 #else
-                "Most distributions do not package it; build it from github.com/szechyjs/mbelib (needs cmake and a C compiler):\n"
-                "  mkdir build && cd build && cmake .. && make && sudo make install",
+                kMbeLinux,
 #endif
                 true};
     case CodecHelp::DpmrAmbe:
@@ -87,14 +104,11 @@ Text textOf(CodecHelp c) {
                 "messages are shown without it. The open mbelib library decodes AMBE; when you install it yourself, OnAir loads it and plays dPMR "
                 "voice. Its own notice says that using it may need a patent licence: check the rules where you live first.",
 #if defined(__APPLE__)
-                "Homebrew has no formula; build it from github.com/szechyjs/mbelib:\n  brew install cmake\n  (clone the repository)\n"
-                "  mkdir build && cd build && cmake .. && make\nthen copy libmbe.dylib into an OnAir codecs folder below.",
+                kMbeMac,
 #elif defined(_WIN32)
-                "Build mbelib (github.com/szechyjs/mbelib) with CMake and Visual Studio, or take mbe.dll / libmbe.dll from a Windows build of "
-                "DSD-FME, and copy it into an OnAir codecs folder below. Use the same kind of Windows (x86_64 or ARM) as OnAir.",
+                kMbeWin,
 #else
-                "Most distributions do not package it; build it from github.com/szechyjs/mbelib (needs cmake and a C compiler):\n"
-                "  mkdir build && cd build && cmake .. && make && sudo make install",
+                kMbeLinux,
 #endif
                 true};
     case CodecHelp::NxdnAmbe:
@@ -103,14 +117,11 @@ Text textOf(CodecHelp c) {
                 "it. The open mbelib library decodes AMBE; when you install it yourself, OnAir loads it and plays NXDN voice. Its own notice "
                 "says that using it may need a patent licence: check the rules where you live first.",
 #if defined(__APPLE__)
-                "Homebrew has no formula; build it from github.com/szechyjs/mbelib:\n  brew install cmake\n  (clone the repository)\n"
-                "  mkdir build && cd build && cmake .. && make\nthen copy libmbe.dylib into an OnAir codecs folder below.",
+                kMbeMac,
 #elif defined(_WIN32)
-                "Build mbelib (github.com/szechyjs/mbelib) with CMake and Visual Studio, or take mbe.dll / libmbe.dll from a Windows build of "
-                "DSD-FME, and copy it into an OnAir codecs folder below. Use the same kind of Windows (x86_64 or ARM) as OnAir.",
+                kMbeWin,
 #else
-                "Most distributions do not package it; build it from github.com/szechyjs/mbelib (needs cmake and a C compiler):\n"
-                "  mkdir build && cd build && cmake .. && make && sudo make install",
+                kMbeLinux,
 #endif
                 true};
     case CodecHelp::P25Imbe:
@@ -120,21 +131,41 @@ Text textOf(CodecHelp c) {
                 "calls are only reported as encrypted: OnAir never decrypts. mbelib's own notice says that using it may need a patent licence, and "
                 "listening to radio services is regulated in many countries: check the rules where you live first.",
 #if defined(__APPLE__)
-                "Homebrew has no formula; build it from github.com/szechyjs/mbelib:\n  brew install cmake\n  (clone the repository)\n"
-                "  mkdir build && cd build && cmake .. && make\nthen copy libmbe.dylib into an OnAir codecs folder below.",
+                kMbeMac,
 #elif defined(_WIN32)
-                "Build mbelib (github.com/szechyjs/mbelib) with CMake and Visual Studio, or take mbe.dll / libmbe.dll from a Windows build of "
-                "DSD-FME, and copy it into an OnAir codecs folder below. Use the same kind of Windows (x86_64 or ARM) as OnAir.",
+                kMbeWin,
 #else
-                "Most distributions do not package it; build it from github.com/szechyjs/mbelib (needs cmake and a C compiler):\n"
-                "  mkdir build && cd build && cmake .. && make && sudo make install",
+                kMbeLinux,
 #endif
                 true};
+    case CodecHelp::Avs:
+        return {"AVS+, AVS2 and AVS3 (TV pictures in China)",
+                "DTMB television in China sends its pictures as AVS+ (and some channels as AVS2 or AVS3), Chinese patented video codecs. "
+                "OnAir plays them through the FFmpeg built into it and ships no codec of its own. FFmpeg decodes AVS1 in its JiZhun profile, "
+                "but not AVS+ (the broadcast profile), and AVS2 and AVS3 only when it was built with libdavs2 or libuavs3d, which the FFmpeg in "
+                "OnAir is not. The service list, the sound and the guide work without the picture.",
+                "There is no free AVS+ decoder to install at this time. For AVS2 or AVS3, save the stream (Outputs: file or UDP) and play it "
+                "with an FFmpeg build that includes libdavs2 or libuavs3d (ffplay). Check the patent rules where you live first.",
+                false};
+    case CodecHelp::DraTv:
+        return {"DRA (TV sound in China)",
+                "Some DTMB channels in China send their sound as DRA, a Chinese patented audio codec. FFmpeg has no DRA decoder, so OnAir shows "
+                "the picture without that sound; a second sound track in another format (MPEG audio, AAC, AC-3) plays.",
+                "There is no free DRA decoder to install at this time.", false};
     }
     return {"", "", "", false};
 }
 
 } // namespace
+
+const char* codecNeedMbe() {
+    static const std::string t = [] {
+        std::string n;
+        for (const auto& f : dect2::codecFileNameList(false)) n += (n.empty() ? "" : ", ") + f;
+        return "voice: needs mbelib (" + n + ")";
+    }();
+    return t.c_str();
+}
 
 void codecHelpButton(CodecHelp c) {
     const Text t = textOf(c);
@@ -160,15 +191,28 @@ void codecHelpButton(CodecHelp c) {
         ImGui::TextDisabled(t.loadable ? "Install" : "What you can do");
         ImGui::TextUnformatted(t.install);
         if (t.loadable) {
+            const bool mbe = c != CodecHelp::Codec2;
             ImGui::Spacing();
-            ImGui::TextDisabled("Where to put it");
-#if defined(_WIN32)
-            ImGui::TextUnformatted("Into one of these folders (make it if needed):");
-#else
-            ImGui::TextUnformatted("The package manager's place works. Or copy the library into one of these folders:");
-#endif
-            for (const auto& d : dect2::codecFolderList()) ImGui::BulletText("%s", d.c_str());
+            ImGui::TextDisabled("Which codec which mode needs");
+            ImGui::TextUnformatted("mbelib: DMR, P25, NXDN, dPMR, D-STAR (AMBE / AMBE+2 / IMBE).\ncodec2: FreeDV and M17 only; it does nothing for DMR, P25, NXDN or dPMR.\nTETRA: its own speech codec, needs no library from you.");
             ImGui::Spacing();
+            ImGui::TextDisabled("File names OnAir looks for (%s)", mbe ? "mbelib" : "codec2");
+            std::string names;
+            for (const auto& n : dect2::codecFileNameList(!mbe)) names += (names.empty() ? "" : ", ") + n;
+            ImGui::TextUnformatted(names.c_str());
+            ImGui::TextDisabled("Folders, in this order");
+            for (const auto& d : dect2::codecSearchPlaces()) ImGui::BulletText("%s", d.c_str());
+            ImGui::Spacing();
+            const auto folders = dect2::codecFolderList();
+            if (!folders.empty()) {
+                if (ImGui::Button("Open codecs folder")) {
+                    std::error_code ec;
+                    std::filesystem::create_directories(std::filesystem::path(folders.back()), ec);
+                    dect2::openUrl(folders.back());
+                }
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s\n(made if it does not exist)", folders.back().c_str());
+                ImGui::SameLine();
+            }
             if (ImGui::Button("Look again")) { if (c == CodecHelp::P25Imbe) dect2::p25ImbeRescan(); else if (c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe) dect2::nxdnAmbeRescan(); else if (c == CodecHelp::DstarAmbe) dect2::dstarAmbeRescan(); else dect2::hfdigFreedvRescan(); }
             ImGui::SameLine();
         }

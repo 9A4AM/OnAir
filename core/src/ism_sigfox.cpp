@@ -10,6 +10,7 @@
 // The authentication code and CRC are shown as received; the key is secret, so nothing can be checked.
 #include "dect2/ism_sigfox.h"
 #include "dect2/fftutil.h"
+#include "dect2/portable_rng.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>
@@ -25,6 +26,8 @@ constexpr double kThr = 3.1;             // carrier threshold over the median of
 constexpr double kTrackHz = 350;         // peaks within this of a track belong to it
 constexpr double kMinDurSec = 0.1;
 constexpr double kMaxDurSec = 3.2;
+constexpr double kGapSec = 0.15;     // an established track (kSureSec on the air) ends after this long without its peak
+constexpr double kSureSec = 0.3;
 constexpr double kRingSec = 3.8;
 constexpr int kPreambleBits = 19;
 constexpr double kPi = 3.14159265358979323846;
@@ -70,9 +73,8 @@ std::vector<uint8_t> sigfoxFrameBits(uint32_t id, uint32_t seq, const std::vecto
 std::vector<cf32> sigfoxSynth(double rate, double dialOff, double seconds, double snrDb, double cfoHz, const std::vector<SigfoxTx>& txs, uint32_t seed) {
     const size_t n = (size_t)(seconds * rate);
     std::vector<cf32> x(n);
-    std::mt19937 rng(seed);
-    std::normal_distribution<float> g(0.f, 0.1f);
-    for (auto& v : x) v = cf32(g(rng), g(rng));
+    PortableRng rng(seed);   // the same noise on every platform
+    for (auto& v : x) v = cf32((float)rng.gauss(0.1), (float)rng.gauss(0.1));
     const double n0 = 2 * 0.1 * 0.1 / rate;   // noise power per Hz
     for (const auto& t : txs) {
         const std::vector<uint8_t> bits = sigfoxFrameBits(t.id, t.seq, t.payload, t.repeatFlag);
@@ -128,14 +130,14 @@ struct SigfoxRx::Impl {
     SigfoxTelemetry tel;
     uint64_t seqNo = 0;
     struct Rep { double sec; };
-    std::vector<double> lastRepSec;   // per message (parallel to tel.messages): time of the latest repetition counted
+    std::vector<std::vector<double>> repSecs;   // per message (parallel to tel.messages): the times of its repetitions (parallel to freqs)
 
     void configure(double r, double off, double dial) {
         rate = r; dialOff = off; dialHz = dial;
         on = SigfoxRx::onSigfoxBand(dial) && r >= 4e5;
         tel = SigfoxTelemetry();
         tel.active = on;
-        lastRepSec.clear();
+        repSecs.clear();
         tracks.clear();
         pend.clear(); pendPos = 0;
         total1 = 0; nframes = 0; hpos = 0; wfFrames = 0;
@@ -269,7 +271,10 @@ struct SigfoxRx::Impl {
         for (size_t t = 0; t < tracks.size();) {
             Track& tr = tracks[t];
             if (sec(tr.last - tr.start) > kMaxDurSec) tr.dead = true;
-            if (total1 - tr.last > (uint64_t)(4 * hop)) {
+            // a weak carrier drops under the threshold now and then (its spectrum moves with the bits): once it has been there a while only
+            // a longer gap ends it; a young track (most often a noise peak) goes at once
+            const double gap = sec(tr.last - tr.start) >= kSureSec ? std::max(4.0 * hop, kGapSec * fs1) : 4.0 * hop;
+            if (total1 - tr.last > (uint64_t)gap) {
                 if (!tr.dead && sec(tr.last - tr.start) >= kMinDurSec) finish(tr);
                 tracks.erase(tracks.begin() + (ptrdiff_t)t);
             } else t++;
@@ -380,17 +385,27 @@ struct SigfoxRx::Impl {
         if (n0 < 0 || n1 <= n0 + kPreambleBits) return false;
         std::vector<uint8_t> b(ns - 1);
         for (int i = 0; i + 1 < ns; i++) b[i] = (S[i + 1] * std::conj(S[i])).real() > 0 ? 1 : 0;   // 1: no phase change
-        int i0 = -1;
-        for (int sh = 0; sh < 4 && i0 < 0; sh++) {
+        // the preamble (alternating bits) starts at the power step, give or take a few symbols: as it repeats every two bits, more than one
+        // start fits it, and the CRC decides
+        int i0 = -1, N12 = -1;
+        for (int sh = -2; sh <= 5 && N12 < 0; sh++) {
+            const int st = n0 + sh;
+            if (st < 0 || st + kPreambleBits > (int)b.size()) continue;
             int ok = 0;
-            for (int j = 0; j < kPreambleBits; j++) ok += b[n0 + sh + j] == (uint8_t)(j % 2 == 0);
-            if (ok >= 18) i0 = n0 + sh;
+            for (int j = 0; j < kPreambleBits; j++) ok += b[st + j] == (uint8_t)(j % 2 == 0);
+            if (ok < 18) continue;
+            const int nbits = n1 - st;
+            // the payload length from the carrier's duration, confirmed by the CRC (from the flags to the end of the MAC): a carrier lost
+            // in the noise before its end would otherwise give a shorter frame with the wrong payload.
+            for (int n = 0; n <= 12 && N12 < 0; n++) {
+                if (std::abs(frameBits(n) - nbits) > 3 || st + frameBits(n) > (int)b.size()) continue;
+                const size_t c0 = (size_t)st + kPreambleBits + 13, c1 = (size_t)st + frameBits(n) - 16;
+                uint16_t got = 0;
+                for (size_t i = c1; i < c1 + 16; i++) got = (uint16_t)(got << 1 | b[i]);
+                if (crc16(b, c0, c1) == got) { N12 = n; i0 = st; }
+            }
         }
-        if (i0 < 0) return false;
-        const int nbits = n1 - i0;
-        int N12 = -1, best = 99;
-        for (int n = 0; n <= 12; n++) { const int d = std::abs(frameBits(n) - nbits); if (d < best) { best = d; N12 = n; } }
-        if (best > 3 || i0 + frameBits(N12) > (int)b.size()) return false;
+        if (N12 < 0) return false;
         size_t pos = (size_t)i0 + kPreambleBits;
         auto get = [&](int n) { uint64_t v = 0; for (int i = 0; i < n; i++) v = (v << 1) | b[pos++]; return v; };
         msg = SigfoxMessage();
@@ -417,23 +432,30 @@ struct SigfoxRx::Impl {
         tel.frames++;
         for (size_t i = 0; i < tel.messages.size(); i++) {
             SigfoxMessage& q = tel.messages[i];
-            if (q.id != m.id || q.seq != m.seq || q.payload != m.payload || m.sec - lastRepSec[i] > 20.0 || m.sec < q.sec - 1.0) continue;
-            bool same = false;   // the same transmission seen twice (a wide 600 bit/s signal gives two peaks)
-            for (double f : q.freqs) same = same || (std::fabs(f - fAbs) < 2e3 && std::fabs(m.sec - lastRepSec[i]) < 0.5);
-            if (!same) { q.reps++; q.freqs.push_back(fAbs); lastRepSec[i] = m.sec; }
+            if (q.id != m.id || q.seq != m.seq || q.payload != m.payload) continue;
+            // the repetitions come within a few seconds of each other, but not always decoded in time order: carriers on other
+            // frequencies are finished at different moments
+            std::vector<double>& ts = repSecs[i];
+            bool near = false, same = false;   // same: one transmission seen twice (a wide 600 bit/s signal gives two peaks)
+            for (size_t j = 0; j < ts.size(); j++) {
+                near = near || std::fabs(m.sec - ts[j]) <= 20.0;
+                same = same || (std::fabs(q.freqs[j] - fAbs) < 2e3 && std::fabs(m.sec - ts[j]) < 0.5);
+            }
+            if (!near) continue;
+            if (!same) { q.reps++; q.freqs.push_back(fAbs); ts.push_back(m.sec); q.sec = std::min(q.sec, m.sec); }
             q.wallTime = now;
             q.levelDb = std::max(q.levelDb, m.levelDb);
             seqNo++;
             std::rotate(tel.messages.begin(), tel.messages.begin() + (ptrdiff_t)i, tel.messages.begin() + (ptrdiff_t)i + 1);
-            std::rotate(lastRepSec.begin(), lastRepSec.begin() + (ptrdiff_t)i, lastRepSec.begin() + (ptrdiff_t)i + 1);
+            std::rotate(repSecs.begin(), repSecs.begin() + (ptrdiff_t)i, repSecs.begin() + (ptrdiff_t)i + 1);
             return;
         }
         m.wallTime = m.firstWall = now;
         m.reps = 1;
         m.freqs = {fAbs};
         tel.messages.insert(tel.messages.begin(), m);
-        lastRepSec.insert(lastRepSec.begin(), m.sec);
-        if (tel.messages.size() > kSigfoxMsgMax) { tel.messages.pop_back(); lastRepSec.pop_back(); }
+        repSecs.insert(repSecs.begin(), std::vector<double>{m.sec});
+        if (tel.messages.size() > kSigfoxMsgMax) { tel.messages.pop_back(); repSecs.pop_back(); }
         seqNo++;
     }
 };
@@ -443,7 +465,7 @@ SigfoxRx::~SigfoxRx() = default;
 void SigfoxRx::configure(double r, double off, double dial) { p_->configure(r, off, dial); }
 void SigfoxRx::feed(const cf32* x, size_t n) { p_->feed(x, n); }
 const SigfoxTelemetry& SigfoxRx::telemetry() const { return p_->tel; }
-void SigfoxRx::clear() { p_->tel.messages.clear(); p_->lastRepSec.clear(); p_->tel.carriers = p_->tel.frames = 0; }
+void SigfoxRx::clear() { p_->tel.messages.clear(); p_->repSecs.clear(); p_->tel.carriers = p_->tel.frames = 0; }
 
 bool SigfoxRx::onSigfoxBand(double dialHz) {
     if (dialHz <= 0) return true;

@@ -112,6 +112,28 @@ int main() {
         }
         const std::vector<Pass> high = findPasses(s, vno, t0, t0 + 86400, 20);
         CHECK(high.size() < day.size(), "fewer passes above 20 degrees");
+        // the observer's height: from 2 km up the satellite is a little closer and a little lower in the sky (the local horizontal
+        // plane rises with the observer), so it rises later and sets earlier
+        const Pass* whole = nullptr;   // a pass that is not under way at t0
+        for (const auto& q : day) if (!whole && q.aos > t0 + 60) whole = &q;
+        CHECK(whole != nullptr, "a whole pass in the day");
+        if (whole) {
+            Observer hi = vno; hi.altKm = 2.0;
+            const Pass& p0 = *whole;
+            const double tm = p0.aos + (p0.tca - p0.aos) * 0.3;
+            Look lg, lh;
+            lookAt(s, vno, tm, lg); lookAt(s, hi, tm, lh);
+            CHECK(lh.elDeg < lg.elDeg && lg.elDeg - lh.elDeg < 0.5, "elevation at 2 km %.4f vs %.4f", lh.elDeg, lg.elDeg);
+            CHECK(lh.rangeKm < lg.rangeKm && lg.rangeKm - lh.rangeKm < 2.0, "range at 2 km %.3f vs %.3f", lh.rangeKm, lg.rangeKm);
+            CHECK(std::fabs(lh.azDeg - lg.azDeg) < 0.05, "azimuth unchanged %.4f vs %.4f", lh.azDeg, lg.azDeg);
+            Pass phv; const Pass* ph = nullptr;
+            for (const auto& q : findPasses(s, hi, t0, t0 + 86400)) if (!ph && std::fabs(q.tca - p0.tca) < 60) { phv = q; ph = &phv; }
+            CHECK(ph != nullptr, "the same pass from 2 km");
+            if (ph) {
+                CHECK(ph->aos > p0.aos && ph->los < p0.los, "rises later (%.1f s) and sets earlier (%.1f s)", ph->aos - p0.aos, p0.los - ph->los);
+                CHECK(ph->maxElDeg < p0.maxElDeg, "lower culmination %.3f vs %.3f", ph->maxElDeg, p0.maxElDeg);
+            }
+        }
     }
     if (fails) { printf("%d failures\n", fails); return 1; }
     printf("passes: all tests passed\n");

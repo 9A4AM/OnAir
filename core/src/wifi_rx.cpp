@@ -1,5 +1,6 @@
 // Wi-Fi network monitor (see wifi_rx.h).
 #include "dect2/wifi_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/wifi_tel.h"
 #include "dect2/wifi_proto.h"
 #include "dect2/gen_util.h"
@@ -102,12 +103,37 @@ struct WifiReceiver::Impl {
         winOpen = false; pending = false; busyUntil = 0;
     }
 
+    // The network table and the frame log stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool resClear = false, resLoad = false;
+    WifiTelemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(WifiTelemetry& to, WifiTelemetry& from) {
+        to.aps = std::move(from.aps); to.log = std::move(from.log);
+        from.aps.clear(); from.log.clear();
+    }
+    static void shiftTimes(WifiTelemetry& t, double dt) {
+        for (auto& a : t.aps) { a.firstSec += dt; a.lastSec += dt; }
+        for (auto& l : t.log) l.sec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (!resClear && !resLoad) return;
+        if (resClear) { WifiTelemetry e; moveLists(tel, e); resClear = false; }
+        if (resLoad) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); resLoad = false; }
+        reindex();
+    }
+    void reindex() {
+        apIdx.clear();
+        for (size_t i = 0; i < tel.aps.size(); i++) apIdx[tel.aps[i].bssid] = i;
+    }
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         initFront();
         resetDemod();
         power = 0; nPower = 0; nextReport = 0.25 * rate; lastGood = -100;
         tel.inputRate = rate;
+        shiftTimes(tel, -tel.timeSec);    // the lists stay (clearResults): the clock starts again
         tel.timeSec = 0;
     }
 
@@ -350,12 +376,23 @@ void WifiReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p
 void WifiReceiver::setCenterHz(double hz) { p_->centerHz = hz; }
 bool WifiReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= wifiTuning().minSampleRate - 1; }
 void WifiReceiver::reset() { p_->resetReq = true; }
-void WifiReceiver::clearNetworks() { p_->clearReq = true; }
+void WifiReceiver::clearNetworks() {
+    {
+        std::lock_guard<std::mutex> lk(p_->mu);   // the report at once; the feed thread's lists (and counters) on its next block
+        WifiTelemetry e;
+        Impl::moveLists(p_->pub, e);
+        p_->resLoad = false;
+        p_->pub.seq++;
+    }
+    p_->clearReq = true;
+}
+void WifiReceiver::clearResults() { clearNetworks(); }
 
 void WifiReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
     if (m.clearReq.exchange(false)) m.clearAll();
+    m.takeRequests();
     if (m.rate < wifiTuning().minSampleRate - 1 || n == 0) {
         if (m.rate > 0) { m.nIn += (int64_t)n; if ((double)m.nIn >= m.nextReport) { m.nextReport += 0.25 * m.rate; m.report(); } }
         return;
@@ -371,6 +408,24 @@ void WifiReceiver::feed(const cf32* x, size_t n) {
     m.process();
 }
 
+std::string WifiReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.aps, p_->pub.log);
+}
+bool WifiReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    WifiTelemetry l;
+    if (!results::unpack(blob, t0, l.aps, l.log)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    WifiTelemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->resLoad = true;
+    p_->pub.seq++;
+    return true;
+}
 bool WifiReceiver::telemetry(WifiTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

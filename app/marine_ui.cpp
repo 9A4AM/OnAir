@@ -1,6 +1,8 @@
 // Marine screens: the NAVTEX messages grouped by station with the text panel, the DSC calls (distress in red, the position on a small
 // map), the weather fax picture (zoom, pan, slant, save as PNG) and a tuning aid (the audio spectrum with the tones each service expects).
 #include "app.h"
+#include "gallery.h"
+#include "dect2/results_io.h"
 #include "adsb_map.h"
 #include "dect2/marine_tel.h"
 #include "dect2/marine_navtex_save.h"
@@ -11,6 +13,8 @@
 #include <cstring>
 #include <filesystem>
 #include <ctime>
+
+void marineFaxTexture();   // below: the texture of a picture loaded from the results file
 
 namespace {
 
@@ -25,6 +29,11 @@ struct State {
     int lastActive = -1;
     int service = 0;                 // 0 auto, 1 NAVTEX, 2 DSC, 3 fax
     int lpmIdx = 0, iocIdx = 0;      // 0 = detect
+    struct Fax { int64_t wall = 0; double khz = 0; dect2::FaxImage im; };
+    std::vector<Fax> faxes;          // the pictures received this session, newest first (the right-hand list; at most 30)
+    int prevFaxState = 0;
+    std::string listMsg;
+    bool listen = false; int pushedListen = -1; float pushedVol = -1; int pushedMute = -1;   // weather fax: "Listen"
     float slant = 0;
     bool autoSlant = true;
     int pushedService = -1, pushedLpm = -1, pushedIoc = -1;
@@ -52,7 +61,7 @@ State S;
 const int kLpm[] = {0, 60, 90, 120, 240};
 const int kIoc[] = {0, 576, 288};
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 16; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 16; }   // the engine reports its standard code minus one
 
 void loadState() {
     if (S.loaded) return;
@@ -60,6 +69,7 @@ void loadState() {
     plat::Prefs& d = plat::prefs();
     S.service = std::max(0, std::min(3, (int)d.getI("marineService", 0)));
     S.lpmIdx = std::max(0, std::min(4, (int)d.getI("marineLpm", 0)));
+    S.listen = d.getB("faxListen", false);
     S.iocIdx = std::max(0, std::min(2, (int)d.getI("marineIoc", 0)));
     S.autoSlant = d.getB("marineAutoSlant", true);
     S.slant = (float)d.getD("marineSlant", 0.0);
@@ -303,6 +313,19 @@ void uploadFax(App& a) {
     S.last = std::move(im);
 }
 
+// a picture as PNG, where the user picks
+std::string saveFaxImage(const dect2::FaxImage& im, const std::string& name) {
+    if (im.width <= 0 || im.height <= 0) return "";
+    const std::string path = saveFileDialog(name.c_str());
+    if (path.empty()) return "";
+    std::vector<uint8_t> rgba((size_t)im.width * im.height * 4);
+    for (size_t i = 0; i < im.pix.size() && i * 4 + 3 < rgba.size(); i++) {
+        rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = im.pix[i];
+        rgba[i * 4 + 3] = 255;
+    }
+    return gfx::writePng(path.c_str(), rgba.data(), im.width, im.height) ? "saved " + path : "could not write " + path;
+}
+
 void saveFax() {
     if (S.last.width <= 0 || S.last.height <= 0) return;
     const std::string path = saveFileDialog("weather-fax.png");
@@ -322,6 +345,8 @@ void faxView(App& a) {
     static const char* const iocN[] = {"IOC: start tone", "IOC 576", "IOC 288"};
     ImGui::SetNextItemWidth(110 * gUi);
     if (ImGui::Combo("##mflpm", &S.lpmIdx, lpmN, 5)) plat::prefs().setI("marineLpm", S.lpmIdx);
+    flowNext();
+    listenControls(a, S.listen, "faxListen", "fax", "Play the fax tones (the upper sideband from the dial); decoding is the same either way");
     flowNext(); ImGui::SetNextItemWidth(130 * gUi);   // the controls wrap in a narrow window
     if (ImGui::Combo("##mfioc", &S.iocIdx, iocN, 3)) plat::prefs().setI("marineIoc", S.iocIdx);
     flowNext();
@@ -579,10 +604,24 @@ void tick(App& a) {
     const double fz = k == DeviceInfo::Synthetic || k == DeviceInfo::File ? 0.0 : a.freqMhz * 1e6;
     if (S.pushedFreq != fz) { r.setFrequencyHz(fz); S.pushedFreq = fz; }
     if (S.pushedLpm != S.lpmIdx) { r.setFaxLpm(kLpm[S.lpmIdx]); S.pushedLpm = S.lpmIdx; }
+    if ((int)S.listen != S.pushedListen) { r.setListen(S.listen); S.pushedListen = S.listen; }
+    if (a.volume != S.pushedVol || (int)a.muted != S.pushedMute) { r.setVolume(a.volume); r.setMuted(a.muted); S.pushedVol = a.volume; S.pushedMute = a.muted; }
     if (S.pushedIoc != S.iocIdx) { r.setFaxIoc(kIoc[S.iocIdx]); S.pushedIoc = S.iocIdx; }
     if (S.pushedSlant != S.slant) { r.setFaxSlantPpm(S.slant); S.pushedSlant = S.slant; }
     if (S.pushedAuto != (int)S.autoSlant) { r.setFaxAutoSlant(S.autoSlant); S.pushedAuto = S.autoSlant; }
+    marineFaxTexture();
     if (live(a)) uploadFax(a);
+    // a picture that ended (the stop tone, or the signal went): keep it for the list on the right
+    const int fs = a.rx.marine.fax.state;
+    if (live(a) && S.prevFaxState == 2 && fs != 2 && S.last.height >= 50) {
+        S.faxes.insert(S.faxes.begin(), State::Fax{(int64_t)time(nullptr), a.freqMhz * 1e3, S.last});
+        {
+            gallery::Meta gm; gm.detail = std::to_string((int)std::lround(a.freqMhz * 1e3)) + " kHz, IOC " + std::to_string(a.rx.marine.fax.ioc) + ", " + std::to_string(a.rx.marine.fax.lpm) + " lpm";
+            gallery::publishGray("fax-" + std::to_string((long long)time(nullptr)), "Weather fax", (double)time(nullptr), S.last.width, S.last.height, S.last.pix.data(), gm);
+        }
+        if (S.faxes.size() > 30) S.faxes.pop_back();
+    }
+    S.prevFaxState = fs;
 }
 
 void tab(App& a) {
@@ -614,6 +653,10 @@ void tab(App& a) {
     }
     ImGui::SameLine();
     if (ImGui::SmallButton("clear")) a.engine.marine().clearMessages();
+    if (S.view == 0 || S.view == 1) {   // NAVTEX and DSC: hear the FSK tones (fax has its own control in its view)
+        ImGui::SameLine(0, 14 * gUi);
+        listenControls(a, S.listen, "faxListen", "marfsk", "Play the sideband from the dial up on the sound card (the FSK tones); decoding is the same either way");
+    }
     if (subService(a) == 0 || subService(a) == 1) {   // saving is for NAVTEX messages
     sameLineIf(ImGui::GetFrameHeight() + ImGui::CalcTextSize("Save messages").x + 100 * gUi, 20 * gUi);
     if (ImGui::Checkbox("Save messages", &S.saveNav)) { plat::prefs().setB("marineSaveNavtex", S.saveNav); S.saver.clearError(); S.saveErr.clear(); }
@@ -664,6 +707,31 @@ void list(App& a) {
             if (c.distress) ImGui::PopStyleColor();
         }
         ImGui::PopID();
+    }
+    if (svc == 0 || svc == 3) {
+        if (!S.faxes.empty()) ImGui::SeparatorText("Fax pictures");
+        for (size_t i = 0; i < S.faxes.size(); i++) {
+            const State::Fax& f = S.faxes[i];
+            ImGui::PushID((int)(1000 + i));
+            char tb[16]; struct tm tmv; const time_t tt = (time_t)f.wall;
+#ifdef _WIN32
+            localtime_s(&tmv, &tt);
+#else
+            localtime_r(&tt, &tmv);
+#endif
+            strftime(tb, sizeof tb, "%H:%M", &tmv);
+            if (iconFlat(Ic::Save, "Save this picture as PNG")) {
+                char nm[64]; strftime(nm, sizeof nm, "weather-fax-%Y%m%d-%H%M.png", &tmv);
+                const std::string r = saveFaxImage(f.im, nm);
+                if (!r.empty()) S.listMsg = r;
+            }
+            ImGui::SameLine(0, 6 * gUi);
+            ImGui::AlignTextToFramePadding();
+            if (ImGui::Selectable((std::string(tb) + "  " + std::to_string((int)std::lround(f.khz)) + " kHz  " + std::to_string(f.im.width) + " x " + std::to_string(f.im.height)).c_str(), false)) { S.view = 2; S.follow = false; }
+            ImGui::PopID();
+        }
+        if (!S.listMsg.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", S.listMsg.c_str()); ImGui::PopTextWrapPos(); }
+        if (!S.faxes.empty()) rows.push_back({0, -1, 0});   // not "nothing decoded yet"
     }
     if (rows.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(t.serviceActive == 3 ? "receiving a fax: see the Fax view" : "nothing decoded yet"); ImGui::PopTextWrapPos(); }
     ImGui::EndChild();
@@ -756,3 +824,25 @@ const ModeUi kMarineUi = {
     .tick = tick,
     .meters = meters,
 };
+
+// the last weather fax picture for the results file (results_ui.cpp): shown again until a new one comes in
+std::string marineFaxSave() { return dect2::results::pack(S.last); }
+bool marineFaxLoad(const std::string& blob) {
+    dect2::FaxImage im;
+    if (!dect2::results::unpack(blob, im)) return false;
+    if (im.width <= 0 || im.height <= 0 || im.pix.size() < (size_t)im.width * im.height) return true;
+    S.last = std::move(im);
+    S.texW = 0;                                         // the texture is made on the next frame (marineFaxTexture)
+    return true;
+}
+void marineFaxTexture() {
+    if (!gGfx || S.last.width <= 0 || S.img) return;
+    const int th = std::max(1500, S.last.height);
+    S.img = gGfx->createImage(S.last.width, th, 0xFFFFFFFFu);
+    if (!S.img) return;
+    S.texW = S.last.width; S.texH = th;
+    std::vector<uint32_t> px((size_t)S.last.width * S.last.height);
+    for (size_t i = 0; i < px.size(); i++) { const uint32_t g = S.last.pix[i]; px[i] = 0xFF000000u | (g << 16) | (g << 8) | g; }
+    S.img->update(0, 0, S.last.width, S.last.height, px.data());
+    S.imgW = S.last.width; S.imgH = S.last.height;
+}

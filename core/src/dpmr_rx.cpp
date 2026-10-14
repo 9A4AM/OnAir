@@ -1,5 +1,6 @@
 // dPMR receiver (see dpmr_rx.h).
 #include "dect2/dpmr_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/dpmr_tel.h"
 #include "dect2/dpmr_proto.h"
 #include "dect2/nxdn_ambe.h"
@@ -498,6 +499,23 @@ struct DpmrReceiver::Impl {
 
     void resetChain() { mode = Search; candN = -1; candR = 0; g = kUnit; d = 0; std::fill(y.begin(), y.end(), 0.f); yN = 0; boxSum = 0; boxPos = 0; for (float& b : box) b = 0; }
 
+    // The call log and the decoded headers stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
+    // published report at once
+    bool clearReq = false, loadReq = false;
+    DpmrTelemetry loaded;
+    double loadedAt = 0;                   // the report's clock the loaded lists are on
+    static void moveLists(DpmrTelemetry& to, DpmrTelemetry& from) {
+        to.log = std::move(from.log); to.events = std::move(from.events);
+        from.log.clear(); from.events.clear();
+    }
+    static void shiftTimes(DpmrTelemetry& t, double dt) {
+        for (auto& c : t.log) c.startSec += dt;
+    }
+    void takeRequests() {   // feed thread
+        std::lock_guard<std::mutex> lk(mu);
+        if (clearReq) { DpmrTelemetry e; moveLists(tel, e); clearReq = false; }
+        if (loadReq) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); loadReq = false; }
+    }
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; baseCh = pmrChannelOf(tunedSet); }
         if (tel.now.active) endCall(false);
@@ -507,7 +525,11 @@ struct DpmrReceiver::Impl {
         power = 0; nPower = 0; nIn = 0; nextReport = 0.25 * rate; lastHop = 0;
         lastGood = -10; berErr = berBits = 0; snrAvg = 0; sdOn = false;
         const uint64_t seq = tel.seq;
+        DpmrTelemetry keep;                          // the lists stay (clearResults): the clock starts again, they move back by the time it had reached
+        moveLists(keep, tel);
+        shiftTimes(keep, -tel.timeSec);
         tel = DpmrTelemetry(); tel.seq = seq;
+        moveLists(tel, keep);
         tel.inputRate = rate;
         tel.channel = curCh;
         tel.ambe = nxdnAmbeAvailable(&tel.ambePath);
@@ -560,6 +582,7 @@ void DpmrReceiver::reset() { p_->resetReq = true; }
 void DpmrReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
+    m.takeRequests();
     if (m.tapReq.load()) { std::lock_guard<std::mutex> lk(m.mu); m.tap = m.tapSet; m.vtap = m.vtapSet; m.tapReq = false; }
     if (m.rate <= 0 || n == 0) return;
     for (size_t i = 0; i < n; i++) {
@@ -573,6 +596,31 @@ void DpmrReceiver::feed(const cf32* x, size_t n) {
     m.nPower += (int64_t)n;
 }
 
+void DpmrReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    DpmrTelemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->pub.seq++;
+}
+std::string DpmrReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    return results::pack(p_->pub.timeSec, p_->pub.log, p_->pub.events);
+}
+bool DpmrReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    DpmrTelemetry l;
+    if (!results::unpack(blob, t0, l.log, l.events)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    DpmrTelemetry c = l;
+    Impl::moveLists(p_->pub, c);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadedAt = p_->pub.timeSec;
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
+}
 bool DpmrReceiver::telemetry(DpmrTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;

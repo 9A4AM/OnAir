@@ -2,6 +2,7 @@
 // The HackRF keeps its own native source (source.cpp); a "hackrf" Soapy entry is hidden so a radio is listed once.
 #include "dect2/rate_choice.h"
 #include "dect2/source.h"
+#include "dect2/netradio.h"
 #include "dect2/ring.h"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Errors.h>
@@ -147,6 +148,27 @@ bool gainIsReduction(SoapySDR::Device* dev, int ch) {
     } catch (...) { return false; }
 }
 
+// The RF gain stage of a gain-reduction driver (SoapySDRPlay3: the gain element "RFGR", the LNA state 0-9, 0 = most gain): offered as a
+// setting of its own ("rfgr": auto = the overall gain slider drives it as before, or a state), so the ADC can be kept from saturating
+// with the IF gain (IFGR) left to the slider. Not offered when the driver has no such element.
+const char kRfKey[] = "rfgr";
+bool hasGainElement(SoapySDR::Device* dev, const char* want) {
+    try { for (const auto& n : dev->listGains(SOAPY_SDR_RX, 0)) if (n == want) return true; } catch (...) {}
+    return false;
+}
+bool rfStage(SoapySDR::Device* dev) { return gainIsReduction(dev, 0) && hasGainElement(dev, "RFGR") && hasGainElement(dev, "IFGR"); }
+RadioSetting rfSetting(SoapySDR::Device* dev) {
+    RadioSetting r;
+    r.type = RadioSetting::Choice; r.key = kRfKey; r.label = "RF gain (LNA state)";
+    r.help = "The radio's RF gain stage. 0 is the MOST gain, higher states reduce it: raise it when the ADC saturates on a strong signal. Auto leaves it to the gain slider, which then sets both stages; any state makes the slider drive the IF gain only.";
+    r.values = {"auto"}; r.names = {"Auto (with the gain slider)"};
+    int lo = 0, hi = 9;
+    try { const auto g = dev->getGainRange(SOAPY_SDR_RX, 0, "RFGR"); lo = (int)std::lround(g.minimum()); hi = (int)std::lround(g.maximum()); } catch (...) {}
+    for (int i = lo; i <= hi; i++) { r.values.push_back(std::to_string(i)); r.names.push_back(std::to_string(i) + (i == lo ? " (maximum gain)" : i == hi ? " (least gain)" : "")); }
+    r.def = "auto";
+    return r;
+}
+
 std::string rangesKey(const std::string& serial, const std::string& args) { return serial.empty() ? args : "serial=" + serial; }
 
 // An entry for one antenna input carries its name after the device arguments (listSoapyDevices): "<args>#antenna=<name>"
@@ -177,6 +199,7 @@ void rememberRanges(const std::string& key, SoapySDR::Device* dev) {
     r.biasKey = biasSetting(dev);
     try { r.antennas = dev->listAntennas(SOAPY_SDR_RX, 0); } catch (...) {}
     r.settings = soapySettings(dev, r.biasKey);
+    if (rfStage(dev)) r.settings.insert(r.settings.begin(), rfSetting(dev));
     std::lock_guard<std::mutex> lk(gRangesMu);
     gRanges[key] = r;
 }
@@ -190,11 +213,8 @@ public:
         ring_ = &ring;
         try {
             dev_ = SoapySDR::Device::make(args_);
-            if (!dev_) { err = "cannot open " + args_; return false; }
-            // SpyServer range queries trigger multiple round trips over the network.
-            // Its device capabilities were already discovered when it was listed.
-            if (args_.find("driver=spyserver") == std::string::npos)
-                rememberRanges(key_, dev_);   // for the next listing
+            if (!dev_) { err = "cannot open " + args_; const std::string h = soapyRemoteFailureHelp(args_); if (!h.empty()) err = h; return false; }
+            rememberRanges(key_, dev_);   // for the next listing
             biasKey_ = biasSetting(dev_);
             bias_ = false;
             reduction_ = gainIsReduction(dev_, 0);
@@ -208,12 +228,13 @@ public:
             }
             if (!antenna_.empty()) dev_->setAntenna(SOAPY_SDR_RX, 0, antenna_);   // the default entry leaves the driver's choice alone
             if (!apply(s, err, false)) { close(); return false; }
-            // SpyServer requires the explicit RX channel 0 instead of an empty channel list.
             stream_ = dev_->setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, {0});
             if (!stream_) { err = "setupStream failed"; close(); return false; }
             if (dev_->activateStream(stream_) != 0) { err = "activateStream failed"; close(); return false; }
         } catch (const std::exception& e) {
             err = std::string("SoapySDR: ") + e.what();
+            const std::string h = soapyRemoteFailureHelp(args_);
+            if (!h.empty()) err = h + " (" + e.what() + ")";
             close();
             return false;
         }
@@ -312,42 +333,20 @@ private:
             }
             if (ppm != ppm_) tuneHz = ppmCorrectedHz(s.centerHz, ppm);
         } else tuneHz = ppmCorrectedHz(s.centerHz, ppm);
-        // SpyServer exposes a named RF frequency. Check the server's reported tuning
-        // rather than assuming that setFrequency succeeded (some sessions are read-only).
-        if (args_.find("driver=spyserver") != std::string::npos) {
-            dev_->setFrequency(SOAPY_SDR_RX, ch, "RF", tuneHz);
-            // During live retunes, avoid a blocking SpyServer sync/readback. The
-            // server can report its earlier frequency even when the IQ stream
-            // has already changed; it also introduces a noticeable audio gap.
-            // SpyServer readback can return an old initial frequency and may wait
-            // for a network sync timeout. Avoid it during start AND live retunes.
-            const double actualHz = tuneHz;
-            if (!live) fprintf(stderr, "[SPYSERVER] startup tune command %.6f MHz sent\\n", tuneHz / 1e6);
-            fflush(stderr);
-            if (std::fabs(actualHz - tuneHz) > 5000) {
-                char msg[220];
-                snprintf(msg, sizeof msg, "SpyServer frequency not confirmed: requested %.6f MHz, server reports %.6f MHz (continuing reception)",
-                         tuneHz / 1e6, actualHz / 1e6);
-                fprintf(stderr, "[SPYSERVER] WARNING: %s\\n", msg);
-                fflush(stderr);
-                // The plugin's client-sync state can lag behind successful tuning.
-                // Do not block IQ reception solely on a mismatched readback.
-                // Keep this diagnostic visible without treating it as a fatal error.
-            }
-        } else {
-            dev_->setFrequency(SOAPY_SDR_RX, ch, tuneHz);
-        }
-        // SpyServer setting/getting gain synchronizes over the network.
-        // On frequency-only retunes, preserve the existing gain rather than
-        // repeating several slow remote calls unnecessarily.
-        if (!live || !gainSet_ || std::fabs(s.gainDb - lastGainDb_) > 0.01) {
-            try { if (dev_->hasGainMode(SOAPY_SDR_RX, ch)) dev_->setGainMode(SOAPY_SDR_RX, ch, false); } catch (...) {}   // we run our own AGC
-            const auto gr = dev_->getGainRange(SOAPY_SDR_RX, ch);
-            const double g = std::min(std::max(s.gainDb, gr.minimum()), gr.maximum());
-            dev_->setGain(SOAPY_SDR_RX, ch, reduction_ ? gr.maximum() - (g - gr.minimum()) : g);
-            lastGainDb_ = s.gainDb;
-            gainSet_ = true;
-        }
+        dev_->setFrequency(SOAPY_SDR_RX, ch, tuneHz);
+        try { if (dev_->hasGainMode(SOAPY_SDR_RX, ch)) dev_->setGainMode(SOAPY_SDR_RX, ch, false); } catch (...) {}   // we run our own AGC
+        const auto gr = dev_->getGainRange(SOAPY_SDR_RX, ch);
+        const double g = std::min(std::max(s.gainDb, gr.minimum()), gr.maximum());
+        const std::string rfv = radioOption(s, kRfKey, "auto");
+        if (reduction_ && rfv != "auto" && !rfv.empty() && rfStage(dev_)) {
+            // the RF stage picked by hand: the slider drives the IF gain alone (its top is the least reduction)
+            const auto rr = dev_->getGainRange(SOAPY_SDR_RX, ch, "RFGR"), ir = dev_->getGainRange(SOAPY_SDR_RX, ch, "IFGR");
+            const double rf = std::min(std::max(atof(rfv.c_str()), rr.minimum()), rr.maximum());
+            const double ifg = std::min(std::max(ir.maximum() - (g - gr.minimum()), ir.minimum()), ir.maximum());
+            dev_->setGain(SOAPY_SDR_RX, ch, "RFGR", rf);
+            dev_->setGain(SOAPY_SDR_RX, ch, "IFGR", ifg);
+        } else
+        dev_->setGain(SOAPY_SDR_RX, ch, reduction_ ? gr.maximum() - (g - gr.minimum()) : g);   // a gain-reduction driver: turned around
         if (!biasKey_.empty() && s.biasTee != bias_) {
             try { dev_->writeSetting(biasKey_, s.biasTee ? "true" : "false"); bias_ = s.biasTee; } catch (...) {}
         }
@@ -379,8 +378,6 @@ private:
     bool reduction_ = false;   // the driver's gains are gain reductions (gainIsReduction)
     bool hasCorr_ = false;     // the driver has a frequency correction
     double ppm_ = 0;           // the correction set in the driver
-    double lastGainDb_ = 0;
-    bool gainSet_ = false;
     std::map<std::string, std::string> current_;   // "soapy.<key>" -> the value the radio has
     std::vector<std::string> boolKeys_;            // the ones of them that are BOOL
     SoapySDR::Device* dev_ = nullptr;
@@ -432,7 +429,8 @@ std::vector<DeviceInfo> listSoapyDevices(std::string& err) {
             d.settings.insert(d.settings.begin(), ppmSetting(0.01));   // the driver's own correction, or OnAir's
             if (driver == "plutosdr") {   // SoapyPlutoSDR on the USB cable (or its USB-gadget address): the same ~4 Msps of 16-bit samples
                 const std::string uri = get("uri");
-                if (uri.empty() || uri.rfind("usb:", 0) == 0 || uri == "ip:192.168.2.1" || uri == "ip:pluto.local") d.steadyRateHz = 4e6;
+                if (uri.empty() || uri.rfind("usb:", 0) == 0) d.steadyRateHz = 4e6;
+                else if (uri == "ip:192.168.2.1" || uri == "ip:pluto.local") d.steadyRateHz = 3e6;   // the USB-gadget network carries less (#59)
             }
             out.push_back(d);
             fprintf(stderr, "SoapySDR: found %s (driver %s)\n", d.name.c_str(), driver.c_str());

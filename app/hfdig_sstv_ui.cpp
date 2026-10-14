@@ -2,10 +2,14 @@
 // progress bar and the mode and slant under it; beside it (under it in a narrow pane) the last finished pictures as thumbnails to click,
 // Save (PNG) and Clear, and "Save every picture" (PNG files in <data folder>/sstv/, named by the time and the mode).
 #include "app.h"
+#include "gallery.h"
 #include "gfx.h"
+#include "icons.h"
 #include "platform.h"
 #include "dect2/hfdig_tel.h"
+#include "dect2/hf_demod.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <ctime>
 #include <filesystem>
@@ -66,12 +70,24 @@ std::string fileFor(const HfdigSstvImage& im) {
     return std::string(ts) + "-" + m + ".png";
 }
 
+void writeSstvPng(const HfdigSstvImage& im, const std::string& path);
+
 void savePng(const HfdigSstvImage& im) {
     if (im.width <= 0 || im.rgb.size() < (size_t)im.width * im.height * 3) return;
     const std::string dir = plat::dataDir() + "/sstv";
     std::error_code ec;
     std::filesystem::create_directories(std::filesystem::path(reinterpret_cast<const char8_t*>(dir.c_str())), ec);
-    const std::string path = dir + "/" + fileFor(im);
+    writeSstvPng(im, dir + "/" + fileFor(im));
+}
+
+// a finished picture, where the user picks (the save icon on its thumbnail)
+void savePngAs(const HfdigSstvImage& im) {
+    if (im.width <= 0 || im.rgb.size() < (size_t)im.width * im.height * 3) return;
+    const std::string path = saveFileDialog(fileFor(im).c_str());
+    if (!path.empty()) writeSstvPng(im, path);
+}
+
+void writeSstvPng(const HfdigSstvImage& im, const std::string& path) {
     std::vector<uint8_t> rgba((size_t)im.width * im.height * 4);
     for (size_t i = 0; i < (size_t)im.width * im.height; i++) {
         rgba[i * 4] = im.rgb[i * 3]; rgba[i * 4 + 1] = im.rgb[i * 3 + 1]; rgba[i * 4 + 2] = im.rgb[i * 3 + 2]; rgba[i * 4 + 3] = 255;
@@ -94,6 +110,10 @@ void update(const dect2::HfdigSstvTelemetry& t) {
         S.items.insert(S.items.begin(), it);
         if (S.sel >= 0) S.sel++;
         if (S.autoSave) savePng(*h);
+        if (h->width > 0 && h->rgb.size() >= (size_t)h->width * h->height * 3) {
+            gallery::Meta gm; gm.detail = h->mode + (h->complete ? "" : " (incomplete)");
+            gallery::publishRgb("sstv-" + std::to_string((long long)h->unixTime) + "-" + std::to_string(h->id), "SSTV", (double)h->unixTime, h->width, h->height, h->rgb.data(), gm);
+        }
         while (S.items.size() > (size_t)dect2::kSstvHistory) { dropItem(S.items.back()); S.items.pop_back(); if (S.sel >= (int)S.items.size()) S.sel = -1; }
     }
     if (t.image && t.imageSeq != S.liveSeq && gGfx) {
@@ -154,7 +174,7 @@ void picture(dect2::HfdigSstvTelemetry const& t, bool running, ImVec2 size) {
     ImGui::PopTextWrapPos();
 }
 
-void side(float width, bool wrap) {
+void side(App& a, float width, bool wrap) {
     const dect2::HfdigSstvImage* cur = nullptr;
     if (S.sel >= 0 && S.sel < (int)S.items.size()) cur = S.items[(size_t)S.sel].im.get();
     const bool canSave = cur != nullptr;
@@ -164,6 +184,7 @@ void side(float width, bool wrap) {
     if (!canSave && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Click a picture below, then save it. Finished pictures are saved\nby themselves when \"Save every picture\" is on.");
     if (wrap) flowNext(8 * gUi); else ImGui::SameLine();
     if (ImGui::Button("Clear")) {
+        a.engine.hfdig().clearResults(2);   // the pictures the receiver keeps (also in the results file)
         for (Item& it : S.items) dropItem(it);
         S.items.clear(); S.sel = -1;
         S.hideId = ~0ull;                               // set below from the telemetry shown
@@ -189,6 +210,7 @@ void side(float width, bool wrap) {
         ImGui::PushID((int)i);
         ImGui::BeginGroup();
         const ImVec2 p = ImGui::GetCursorScreenPos();
+        ImGui::SetNextItemAllowOverlap();   // the save icon sits on top of it
         if (ImGui::InvisibleButton("##th", ImVec2(th, th))) S.sel = (int)i;
         ImDrawList* dl = ImGui::GetWindowDrawList();
         dl->AddRectFilled(p, ImVec2(p.x + th, p.y + th), IM_COL32(18, 19, 21, 255));
@@ -196,6 +218,14 @@ void side(float width, bool wrap) {
         if (S.sel == (int)i) dl->AddRect(p, ImVec2(p.x + th, p.y + th), IM_COL32(80, 160, 255, 255), 0, 0, 2.f);
         else if (ImGui::IsItemHovered()) dl->AddRect(p, ImVec2(p.x + th, p.y + th), IM_COL32(150, 154, 158, 255));
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s, %d lines", it.im->mode.c_str(), it.im->lines);
+        {
+            const ImVec2 after = ImGui::GetCursorScreenPos();
+            const float ih = ImGui::GetFrameHeight();
+            ImGui::SetCursorScreenPos(ImVec2(p.x + th - ih - 2 * gUi, p.y + 2 * gUi));
+            if (iconFlat(Ic::Save, "Save this picture as PNG...")) savePngAs(*it.im);
+            ImGui::SetCursorScreenPos(after);
+            ImGui::Dummy(ImVec2(0, 0));   // an item at the restored position (ImGui wants one after a cursor move)
+        }
         ImGui::EndGroup();
         ImGui::PopID();
         col++;
@@ -205,11 +235,38 @@ void side(float width, bool wrap) {
 
 } // namespace
 
+void hfdigSetDemod(const App& a, int d);   // hfdig_ui.cpp
+
+// where SSTV is usually heard: lower sideband on 80 and 40 m, upper sideband above, FM on 2 m and from the ISS
+struct SstvBand { const char* name; double mhz; int demod; const char* note; };
+const SstvBand kSstvBands[] = {{"80m", 3.730, dect2::HfDemodLsb, "Europe (3.845 in America)"}, {"40m", 7.171, dect2::HfDemodLsb, ""},
+                               {"20m", 14.230, dect2::HfDemodUsb, "the busiest"}, {"15m", 21.340, dect2::HfDemodUsb, ""},
+                               {"10m", 28.680, dect2::HfDemodUsb, ""}, {"2m", 145.500, dect2::HfDemodNfm, "FM calling frequency (Europe)"},
+                               {"ISS", 145.800, dect2::HfDemodNfm, "the ISS's SSTV events, FM"}};
+
+void sstvBandButtons(App& a) {
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Band"); flowNext(6 * gUi);
+    for (int i = 0; i < IM_ARRAYSIZE(kSstvBands); i++) {
+        const SstvBand& b = kSstvBands[i];
+        const bool here = std::fabs(a.freqMhz - b.mhz) < 0.002;
+        if (here) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.45f));
+        ImGui::PushID(i);
+        if (ImGui::SmallButton(b.name)) { hfdigSetDemod(a, b.demod); tuneFreq(a, b.mhz); }
+        ImGui::PopID();
+        if (here) ImGui::PopStyleColor();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("SSTV on %s: %.3f MHz, %s%s%s", b.name, b.mhz, dect2::hfDemodName(b.demod), b.note[0] ? "; " : "", b.note);
+        flowNext(4 * gUi);
+    }
+    flowEnd();
+}
+
 void hfdigSstvTab(App& a, const dect2::HfdigTelemetry& t) {
     const dect2::HfdigSstvTelemetry& s = t.sstv;
     update(s);
     const bool run = a.engine.running();
     if (S.hideId == ~0ull) S.hideId = s.image ? s.image->id : 0;      // Clear: the live picture stays hidden until the next one starts
+    sstvBandButtons(a);
     lamp("SSTV", !run ? 0 : (s.state == 1 ? 1 : 2));
     flowNext(10 * gUi);
     ImGui::AlignTextToFramePadding();
@@ -226,14 +283,14 @@ void hfdigSstvTab(App& a, const dect2::HfdigTelemetry& t) {
         ImGui::EndChild();
         ImGui::SameLine(0, 10 * gUi);
         ImGui::BeginChild("##sstvside", ImVec2(sideW, avail.y), false);
-        side(sideW, false);
+        side(a, sideW, false);
         ImGui::EndChild();
     } else {
         ImGui::BeginChild("##sstvpic", ImVec2(avail.x, std::max(160 * gUi, avail.y * 0.62f)), false, ImGuiWindowFlags_NoScrollbar);
         picture(s, run, ImGui::GetContentRegionAvail());
         ImGui::EndChild();
         ImGui::BeginChild("##sstvside", ImVec2(avail.x, 0), false);
-        side(avail.x, true);
+        side(a, avail.x, true);
         ImGui::EndChild();
     }
 }

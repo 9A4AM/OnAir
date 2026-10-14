@@ -35,7 +35,7 @@ void loadState() {
     S.map.zoom = (int)plat::prefs().getI("ridZoom", 14);
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 57; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 57; }   // the engine reports its standard code minus one
 
 std::string clock(int64_t t) {
     if (t <= 0) return "-";

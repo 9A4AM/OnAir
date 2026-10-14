@@ -1,5 +1,6 @@
 // BB frame <-> transport stream round trips (normal and high-efficiency mode, with lost frames) and PSI/SI parsing.
 #include "dect2/bbunpack.h"
+#include "dect2/player.h"
 #include "dect2/ts.h"
 #include <cstdio>
 #include <cstring>
@@ -151,6 +152,13 @@ int main() {
     // text decoding
     const uint8_t arabic[] = {0x02, 0xE5, 0xD1, 0xCD, 0xC8, 0xC7}; // ISO-8859-6: "مرحبا"
     CHECK(dvbText(arabic, 6) == "\xD9\x85\xD8\xB1\xD8\xAD\xD8\xA8\xD8\xA7", "ISO-8859-6 decode");
+    const uint8_t gb[] = {0x13, 0xD6, 0xD0, 0xD1, 0xEB, 0xB5, 0xE7, 0xCA, 0xD3, 0xCC, 0xA8}; // GB-2312: "中央电视台"
+    const char* cctv = "\xE4\xB8\xAD\xE5\xA4\xAE\xE7\x94\xB5\xE8\xA7\x86\xE5\x8F\xB0";
+    CHECK(dvbText(gb, 11) == cctv, "GB2312 decode");
+    CHECK(dvbText(gb + 1, 10, true) == cctv, "unprefixed GB2312 decode (DTMB)");
+    CHECK(dvbText(gb + 1, 10) != cctv, "unprefixed high bytes stay ISO 6937 outside DTMB");
+    const uint8_t ks[] = {0x12, 0xC7, 0xD1, 0xB1, 0xB9}; // KS X 1001: "한국"
+    CHECK(dvbText(ks, 5) == "\xED\x95\x9C\xEA\xB5\xAD", "KS X 1001 decode");
     printf("%s\n", fails ? "FAILED" : "all passed");
     // EIT: two events with times, short + extended descriptions and a genre
     {
@@ -273,6 +281,63 @@ int main() {
         for (auto& sv : b.snapshot().services) if (sv.id == 51237) phantom = true;
         CHECK(!phantom, "a PAT with a bad CRC and syntax bit 0 created program 51237");
         printf("damaged PAT without syntax bit rejected\n");
+    }
+    {
+        // DTMB in China (issue #63): free channels that signal a CA system (a CA descriptor in the PMT, free_CA_mode in the SDT) with clear
+        // streams are not scrambled; AVS+ video (stream type 0x42), AVS2 (0xD2) and DRA sound (registration "DRA1") are named
+        TsDemux b;
+        int c4 = 0;
+        std::vector<uint8_t> pat = {0x00, 0xB0, 13, 0x00, 0x04, 0xC1, 0, 0, 0x01, 0x91, 0xE1, 0x91};   // program 401 -> PMT 0x191
+        feedSection(b, 0, section(pat), c4);
+        std::vector<uint8_t> pmt = {0x02, 0xB0, 0, 0x01, 0x91, 0xC1, 0, 0, 0xE2, 0x01, 0xF0, 6, 0x09, 4, 0x4A, 0x02, 0xFF, 0xFE,   // CA descriptor
+                                    0x42, 0xE2, 0x01, 0xF0, 0x00,                                                                 // AVS+ video
+                                    0x03, 0xE2, 0x02, 0xF0, 0x00,                                                                 // MPEG-1 audio
+                                    0x06, 0xE2, 0x03, 0xF0, 6, 0x05, 4, 'D', 'R', 'A', '1',                                       // DRA audio
+                                    0xD2, 0xE2, 0x04, 0xF0, 0x00};                                                                // AVS2 video
+        pmt[2] = (uint8_t)(pmt.size() - 3 + 4);
+        feedSection(b, 0x191, section(pmt), c4);
+        std::vector<uint8_t> sdt = {0x42, 0xF0, 0, 0x00, 0x04, 0xC1, 0, 0, 0x00, 0x01, 0xFF, 0x01, 0x91, 0xFC, 0x90, 0x00};   // free_CA_mode 1, no descriptors
+        sdt[2] = (uint8_t)(sdt.size() - 3 + 4);
+        feedSection(b, 0x11, section(sdt), c4);
+        auto esPacket = [&](int pid, int tsc, int afc) {
+            uint8_t p[188];
+            memset(p, 0xAB, sizeof p);
+            p[0] = 0x47; p[1] = (uint8_t)(pid >> 8); p[2] = pid & 0xFF; p[3] = (uint8_t)((tsc << 6) | (afc << 4) | (c4++ & 15));
+            if (afc >= 2) { p[4] = afc == 2 ? 183 : 7; p[5] = 0x10; }   // an adaptation field with a PCR
+            b.feed(p);
+        };
+        auto find = [&](TsService& out) { for (auto& sv : b.snapshot().services) if (sv.id == 401) { out = sv; return true; } return false; };
+        for (int k = 0; k < 4; k++) { esPacket(0x201, 0, 1); esPacket(0x202, 0, 1); }
+        TsService sv;
+        CHECK(find(sv), "service 401 missing");
+        CHECK(sv.caFlag, "the CA signalling was not seen");
+        CHECK(!sv.scrambled, "a service with CA signalling but clear streams is shown as scrambled");
+        CHECK(sv.streams.size() == 4, "%zu streams", sv.streams.size());
+        if (sv.streams.size() == 4) {
+            CHECK(sv.streams[0].kind == "video" && sv.streams[0].codec == "AVS", "stream type 0x42: %s %s", sv.streams[0].kind.c_str(), sv.streams[0].codec.c_str());
+            CHECK(sv.streams[1].kind == "audio" && sv.streams[1].codec == "MPEG-1 audio", "stream type 0x03: %s %s", sv.streams[1].kind.c_str(), sv.streams[1].codec.c_str());
+            CHECK(sv.streams[2].kind == "audio" && sv.streams[2].codec == "DRA", "DRA1: %s %s", sv.streams[2].kind.c_str(), sv.streams[2].codec.c_str());
+            CHECK(sv.streams[3].kind == "video" && sv.streams[3].codec == "AVS2", "stream type 0xD2: %s %s", sv.streams[3].kind.c_str(), sv.streams[3].codec.c_str());
+        }
+        esPacket(0x201, 2, 1);   // scrambled with the even key
+        CHECK(find(sv) && sv.scrambled, "scrambled video packets did not mark the service scrambled");
+        esPacket(0x201, 0, 2);   // a PCR-only packet says 00: the stream is still scrambled
+        CHECK(find(sv) && sv.scrambled, "a PCR-only packet cleared the scrambled state");
+        esPacket(0x201, 0, 1);
+        CHECK(find(sv) && !sv.scrambled, "the stream is clear again");
+        printf("CA signalling on clear streams is not shown as scrambled; AVS / AVS2 / DRA named\n");
+    }
+    {
+        // what the player says about the AVS family: the profile from the sequence header, JiZhun plays, AVS+ and missing decoders explained
+        const uint8_t es[] = {0x00, 0x00, 0x01, 0xB3, 0x12, 0x00, 0x00, 0x01, 0xB0, 0x48, 0x40, 0x88};
+        CHECK(avsProfileId(es, sizeof es) == 0x48, "AVS profile %d", avsProfileId(es, sizeof es));
+        CHECK(avsProfileId(es, 9) == -1, "a cut sequence header gave a profile");
+        CHECK(avsVideoNote("cavs", true, 0x20).empty() && avsVideoNote("cavs", true, -1).empty(), "JiZhun (or not known yet) must not get a note");
+        CHECK(avsVideoNote("cavs", true, 0x48).find("AVS+") != std::string::npos, "AVS+: '%s'", avsVideoNote("cavs", true, 0x48).c_str());
+        CHECK(!avsVideoNote("cavs", false, -1).empty() && !avsVideoNote("avs2", false, -1).empty() && !avsVideoNote("avs3", false, -1).empty(), "a missing decoder must get a note");
+        CHECK(avsVideoNote("avs2", true, -1).empty() && avsVideoNote("h264", false, -1).empty(), "notes only for an AVS stream without a decoder");
+        CHECK(std::string(kDraAudioNote) == "DRA audio: no decoder available", "DRA note '%s'", kDraAudioNote);
+        printf("AVS / DRA player notes\n");
     }
     return fails ? 1 : 0;
 }

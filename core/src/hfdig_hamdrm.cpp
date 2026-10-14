@@ -503,6 +503,11 @@ void HfdigHamdrm::feedAudio(const float* x, size_t n) { p_->feed(x, n); }
 void HfdigHamdrm::telemetry(HfdigHamdrmTelemetry& out) const { p_->fill(out); }
 void HfdigHamdrm::setLogCallback(std::function<void(const std::string&)> cb) { p_->log = std::move(cb); }
 void HfdigHamdrm::clearFiles() { p_->files.clear(); p_->haveCur = false; }
+void HfdigHamdrm::setHistory(std::vector<std::shared_ptr<const HamdrmFile>> h) {
+    for (const auto& f : h) if (f) p_->nextFileId = std::max(p_->nextFileId, f->id + 1);
+    if (h.size() > (size_t)kHamdrmHistory) h.resize((size_t)kHamdrmHistory);
+    p_->tel.history = std::move(h);
+}
 
 std::unique_ptr<HfdigHamdrm> makeHamdrmDecoder() { return std::make_unique<HfdigHamdrm>(); }
 

@@ -34,6 +34,10 @@ public:
     void reset();                        // after a retune: keeps the decodes, messages and stations
     void feed(const cf32* x, size_t n);
     bool telemetry(Js8Telemetry& out, uint64_t lastSeq);
+    // The decodes, messages and stations stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     void setEnabled(int submode, bool on);   // normal, fast, turbo (all on by default)

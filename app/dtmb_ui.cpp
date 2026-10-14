@@ -17,7 +17,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 8; }
+bool live(const App& a) { return a.rx.standard == 8; }
 
 const char* kHeader[3] = {"PN420", "PN595", "PN945"};
 const char* kMap[5] = {"4QAM-NR", "4QAM", "16QAM", "32QAM", "64QAM"};
@@ -90,7 +90,7 @@ void status(App& a) {
         flowNext(15 * gUi);
     };
     char b[96];
-    if (!run) ro("State", "stopped", kDim);
+    if (!run) ro("State", a.scanner.progress().running ? "channel scan has the radio" : "stopped", kDim);
     else if (a.engine.radioLost()) ro("State", "radio disconnected", kBad);
     else if (!on) ro("State", "starting", kDim);
     else if (t.tsLock) ro("State", "Locked", kGood);

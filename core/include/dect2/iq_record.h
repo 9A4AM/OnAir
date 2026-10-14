@@ -28,9 +28,25 @@ std::string recordingFileName(const std::string& modeId, double centerHz, double
 // The short name of an engine standard as used in recording names ("dvb", "fm", "dab", ...)
 std::string recordingModeId(int stdMode);
 
+// SigMF (what IQEngine reads): the metadata file next to a recording. datatype: cs8 ri8, cu8 ru8_le, cs16 ri16_le, cf32 cf32_le.
+struct SigmfInfo {
+    FileFormat fmt = FileFormat::CS8;
+    double rateHz = 0;
+    double centerHz = 0;          // 0: unknown (no frequency in the capture)
+    std::string datetimeUtc;      // "2026-10-13T09:15:30Z" ("" leaves it out)
+    std::string dataFile;         // the data file's own name, for core:dataset ("" leaves it out)
+    uint64_t sampleCount = 0;     // 0 leaves it out
+    std::string description;      // "" leaves it out
+};
+const char* sigmfDatatype(FileFormat fmt);   // "ri8", "ru8_le", "cf32_le"
+std::string sigmfMetaJson(const SigmfInfo& i);
+std::string sigmfUtcNow();
+
 class IqRecorder {
 public:
     ~IqRecorder() { stop(); }
+    // SigMF metadata (<name>.sigmf-meta next to the recording, and <name>.sigmf-data as a hard link to the same data so that IQEngine pairs them) for the next start()
+    void setSigmf(bool on, double centerHz = 0) { sigmf_ = on; centerHz_ = centerHz; }
     // Opens the file (creating its folder) and starts the writer thread. Only CS8 and CF32 can be recorded.
     bool start(const std::string& path, FileFormat fmt, double rateHz, std::string& err);
     void stop();
@@ -57,6 +73,10 @@ private:
     std::string error_;
     std::thread th_;
     void* file_ = nullptr;   // FILE*
+    bool sigmf_ = false;
+    double centerHz_ = 0;
+    std::string sigmfPath_, sigmfWhen_;
+    void writeSigmf(bool final);
 };
 
 } // namespace dect2

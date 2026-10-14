@@ -13,6 +13,7 @@
 #include <deque>
 #include <mutex>
 #include <unordered_map>
+#include "dect2/results_io.h"
 
 namespace dect2 {
 
@@ -128,8 +129,11 @@ struct AisReceiver::Impl {
     int lastState = 0;
     uint64_t seq = 0;
     AisTelemetry pub;           // what telemetry() hands out
+    double lastNow = 0;         // signal time of the last report: the kept stations move back by it when the clock starts again
 
     AisPhyConfig phy;
+    std::function<void(char, const ais::Bits&, double, double, double)> frameCb;   // every frame with a good FCS (VDES ASM listens through it)
+    bool forwardFeeds = true;
 
     void logLine(const std::string& s) { if (log) log(s); }
     double now() const { return (double)ch[0].total / kAisWorkRate; }
@@ -182,13 +186,39 @@ struct AisReceiver::Impl {
         n96 = 0; offPhase = 0;
         ch[0].reset(); ch[1].reset();
         t = AisTelemetry();
-        vessels.clear(); nmea.clear(); goodTimes[0].clear(); goodTimes[1].clear();
+        goodTimes[0].clear(); goodTimes[1].clear();
+        for (auto& kv : vessels) kv.second.lastHeard -= lastNow;   // the stations and sentences stay (clearResults)
+        lastNow = 0;
         lastGood = lastBurst = -1e9; cfoEma = snrEma = 0; haveSnr = false;
         pubMark = 0; lastState = 0;
+        republish();
+    }
+
+    // the lists of a report: the stations most recently heard first, the sentences
+    void fillLists(AisTelemetry& o, double tnow) const {
+        std::vector<const Rec*> order;
+        order.reserve(vessels.size());
+        for (const auto& kv : vessels) order.push_back(&kv.second);
+        std::sort(order.begin(), order.end(), [](const Rec* a, const Rec* b) { return a->lastHeard > b->lastHeard; });
+        o.vessels.clear();
+        o.vessels.reserve(order.size());
+        for (size_t i = 0; i < order.size(); i++) {
+            AisVessel v = order[i]->v;
+            v.ageSec = (float)(tnow - order[i]->lastHeard);
+            if (i >= kTrackShown) v.track.clear();
+            o.vessels.push_back(std::move(v));
+        }
+        o.vesselCount = (uint32_t)vessels.size();
+        o.nmea.assign(nmea.begin(), nmea.end());
+    }
+    // a report of the lists alone (after a reset, a load or a clear: no new signal to wait for)
+    void republish() {
         std::lock_guard<std::mutex> lk(telMu);
-        const uint64_t s = pub.seq;
-        pub = AisTelemetry();
-        pub.seq = s;
+        AisTelemetry o = t;
+        o.timeSec = lastNow;
+        fillLists(o, lastNow);
+        o.seq = ++seq;
+        pub = std::move(o);
     }
 
     // ---- stations
@@ -247,7 +277,8 @@ struct AisReceiver::Impl {
         const double tnow = now();
         if (bits.size() < 38) { t.blocksBad++; t.channelBad[c]++; return; }
         ais::AisMsg m;
-        ais::decodeMessage(bits, m);
+        const bool decoded = ais::decodeMessage(bits, m);
+        if (!ais::acceptableAis(m, decoded)) { if (frameCb) frameCb(c ? 'B' : 'A', bits, tnow, snrDb, cfoHz); t.blocksBad++; t.channelBad[c]++; return; }   // a good FCS on something that is not an AIS message (#87)
         const char chn = c ? 'B' : 'A';
         t.blocksOk++; t.channelOk[c]++;
         t.typeCount[c][m.type >= 1 && m.type <= 27 ? m.type : 0]++;
@@ -256,8 +287,9 @@ struct AisReceiver::Impl {
         cfoEma = haveSnr ? 0.85 * cfoEma + 0.15 * cfoHz : cfoHz;
         snrEma = haveSnr ? 0.85 * snrEma + 0.15 * snrDb : snrDb;
         haveSnr = true;
+        if (frameCb) frameCb(chn, bits, tnow, snrDb, cfoHz);
         const std::vector<std::string> sentences = ais::toNmea(bits, chn, nmeaSeq);
-        if (Feeds::get().wantAis()) Feeds::get().ais(sentences);   // the data feed out (feeds.h), off unless the user turned it on
+        if (forwardFeeds && Feeds::get().wantAis()) Feeds::get().ais(sentences);   // the data feed out (feeds.h), off unless the user turned it on
         for (const std::string& s : sentences) nmea.push_back(s);
         if (bits.size() > 6 * 60) nmeaSeq = (nmeaSeq + 1) % 10;
         while (nmea.size() > kNmeaCap) nmea.pop_front();
@@ -348,6 +380,7 @@ struct AisReceiver::Impl {
     // ---- publishing
     void publish() {
         const double tnow = now();
+        lastNow = tnow;
         for (int c = 0; c < 2; c++) {
             while (!goodTimes[c].empty() && goodTimes[c].front() < tnow - 60) goodTimes[c].pop_front();
             const double span = std::max(5.0, std::min(60.0, tnow));
@@ -367,20 +400,9 @@ struct AisReceiver::Impl {
             lastState = t.state;
         }
         AisTelemetry o = t;
-        o.seq = ++seq;
-        std::vector<const Rec*> order;
-        order.reserve(vessels.size());
-        for (const auto& kv : vessels) order.push_back(&kv.second);
-        std::sort(order.begin(), order.end(), [](const Rec* a, const Rec* b) { return a->lastHeard > b->lastHeard; });
-        o.vessels.reserve(order.size());
-        for (size_t i = 0; i < order.size(); i++) {
-            AisVessel v = order[i]->v;
-            v.ageSec = (float)(tnow - order[i]->lastHeard);
-            if (i >= kTrackShown) v.track.clear();
-            o.vessels.push_back(std::move(v));
-        }
-        o.nmea.assign(nmea.begin(), nmea.end());
+        fillLists(o, tnow);
         std::lock_guard<std::mutex> lk(telMu);
+        o.seq = ++seq;
         pub = std::move(o);
     }
 
@@ -470,9 +492,37 @@ bool AisReceiver::telemetry(AisTelemetry& out, uint64_t lastSeq) {
     out = p_->pub;
     return true;
 }
+void AisReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    p_->vessels.clear(); p_->nmea.clear();
+    p_->republish();
+}
+std::string AisReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    return results::pack(p_->lastNow, p_->vessels, p_->nmea);
+}
+bool AisReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::unordered_map<uint32_t, Rec> vessels;
+    std::deque<std::string> nmea;
+    if (!results::unpack(blob, t0, vessels, nmea)) return false;
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    for (auto& kv : vessels) kv.second.lastHeard += p_->lastNow - t0;
+    p_->vessels = std::move(vessels); p_->nmea = std::move(nmea);
+    p_->republish();
+    return true;
+}
 void AisReceiver::setPhyConfig(const AisPhyConfig& c) {
     std::lock_guard<std::mutex> lk(p_->procMu);
     p_->phy = c;
+}
+void AisReceiver::setFrameCallback(std::function<void(char, const ais::Bits&, double, double, double)> cb) {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    p_->frameCb = std::move(cb);
+}
+void AisReceiver::setForwardFeeds(bool on) {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    p_->forwardFeeds = on;
 }
 void AisReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
     std::lock_guard<std::mutex> lk(p_->procMu);

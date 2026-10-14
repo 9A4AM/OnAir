@@ -1,6 +1,7 @@
 // AIS screens: the map of vessels (the ADS-B map underneath), the vessel table, the detail panel, the message counters
 // with the rates of the two channels, and the raw NMEA log.
 #include "app.h"
+#include "results_export.h"
 #include "adsb_map.h"
 #include "dect2/ais_tel.h"
 #include <algorithm>
@@ -22,7 +23,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 15; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 15; }   // the engine reports its standard code minus one
 
 void loadState() {
     if (S.loaded) return;
@@ -266,6 +267,16 @@ void mapView(App& a, ImVec2 size) {
 void vesselTable(App& a, bool compact) {
     const dect2::AisTelemetry& t = a.rx.ais;
     const int cols = compact ? 3 : 7;
+    if (!compact) {
+        static std::string note;
+        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "name", "mmsi", "type", "sog_kn", "lat", "lon", "heard_s_ago", "channel"};
+        const std::string now = resexp::stamp();
+        for (const auto& v : t.vessels)
+            x.add({now, v.channel == 'B' ? "162025000" : "161975000", "AIS", nameOf(v), std::to_string(v.mmsi), v.shipType >= 0 ? dect2::aisShipTypeText(v.shipType) : dect2::aisClassText(v.cls),
+                   v.sog >= 0 ? resexp::num(v.sog, 1) : "", v.hasPos ? resexp::num(v.lat, 6) : "", v.hasPos ? resexp::num(v.lon, 6) : "", resexp::num(v.ageSec, 0), std::string(1, v.channel)});
+        resexp::saveButton(x, "ais", note, "svais");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     ImGuiTableFlags fl = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Sortable;
     if (!ImGui::BeginTable(compact ? "##ais_s" : "##ais_f", cols, fl, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
@@ -416,6 +427,7 @@ void tab(App& a) {
 void list(App& a) {
     loadState();
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see vessels"); ImGui::PopTextWrapPos(); } return; }
+    if (resultsClearButton("ais")) a.engine.ais().clearResults();
     ImGui::TextDisabled("%u stations", a.rx.ais.vesselCount);
     vesselTable(a, true);
 }

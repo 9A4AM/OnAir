@@ -1,5 +1,6 @@
 // the Scan tab and the Outputs tab (network tuner, files, UDP)
 #include "app.h"
+#include "results_export.h"
 #include <random>
 
 void scanTabCommon(App& a);
@@ -103,6 +104,20 @@ void scanTabCommon(App& a) {
         ImGui::SameLine();
         ImGui::Text("%.1f MHz - %s", pr.currentMHz, pr.phase.c_str());
     }
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "bandwidth_mhz", "level_dbfs", "result", "detail", "snr_db", "plp", "services"};
+        const std::string now = resexp::stamp();
+        for (const auto& r : res) {
+            if (!r.seen) continue;
+            std::string sv; for (auto& x : r.services) { if (!sv.empty()) sv += "; "; sv += x; }
+            if (sv.empty() && !r.t2) sv = r.note;
+            t.add({now, resexp::num(r.freqMHz * 1e6, 0), r.standard.empty() ? "scan" : r.standard, resexp::num(r.bwMhz, 1), resexp::num(r.levelDbfs, 1), r.t2 ? r.standard : "too weak", r.mode,
+                   r.t2 && (r.snrDb != 0 || r.standard != "ATSC 3.0") ? resexp::num(r.snrDb, 1) : "", r.plpInfo, sv});
+        }
+        resexp::saveButton(t, "tv", note, "svtv");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     ImGui::Separator();
     if (ImGui::BeginTable("scan", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable)) {
         ImGui::TableSetupScrollFreeze(0, 1);
@@ -116,7 +131,7 @@ void scanTabCommon(App& a) {
         ImGui::TableHeadersRow();
         for (size_t i = 0; i < res.size(); i++) {
             auto& r = res[i];
-            if (!r.occupied && !r.t2) continue; // hide empty channels
+            if (!r.seen) continue;   // only the channels where the scanned standard was found: not the empty ones, nor signals of another kind
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             char lbl[32]; snprintf(lbl, sizeof lbl, "%.1f##%zu", r.freqMHz, i);
@@ -131,7 +146,7 @@ void scanTabCommon(App& a) {
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Click to tune the receiver to this channel");
             ImGui::TableNextColumn(); ImGui::Text("%.1f dBFS", r.levelDbfs);
             ImGui::TableNextColumn();
-            if (r.t2) ImGui::TextColored(ImVec4(0.4f, 1, 0.5f, 1), "%s", r.standard.c_str()); else ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "other");
+            if (r.t2) ImGui::TextColored(ImVec4(0.4f, 1, 0.5f, 1), "%s", r.standard.c_str()); else ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "too weak");
             ImGui::TableNextColumn(); ImGui::TextUnformatted(r.mode.c_str());
             ImGui::TableNextColumn(); if (r.t2) { if (r.snrDb != 0 || r.standard != "ATSC 3.0") ImGui::Text("%.1f dB", r.snrDb); else ImGui::TextDisabled("-"); }   // the ATSC 3.0 receiver reports no SNR
             ImGui::TableNextColumn(); ImGui::TextUnformatted(r.plpInfo.c_str());

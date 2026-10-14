@@ -2663,6 +2663,41 @@ bool ImGui::DragBehavior(ImGuiID id, ImGuiDataType data_type, void* p_v, float v
     return false;
 }
 
+// OnAir: mouse wheel over a hovered slider/drag changes the value by one step (Shift = fine, Ctrl = coarse), clamped to the range.
+static bool WheelAdjustScalar(ImGuiID id, bool hovered, ImGuiDataType dt, void* p, const void* pmin, const void* pmax, float drag_speed, ImGuiSliderFlags flags)
+{
+    ImGuiContext& g = *GImGui;
+    if (!hovered || g.ActiveId != 0 || g.IO.MouseWheel == 0.0f) return false;
+    ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, id);
+    const double dir = g.IO.MouseWheel > 0 ? 1.0 : -1.0;
+    const double mul = g.IO.KeyShift ? 0.2 : (g.IO.KeyCtrl ? 5.0 : 1.0);
+    double v, lo = 0, hi = 0; bool hasR = pmin && pmax;
+    switch (dt) {
+    case ImGuiDataType_Float:  v = *(float*)p;  if (hasR) { lo = *(const float*)pmin;  hi = *(const float*)pmax; } break;
+    case ImGuiDataType_Double: v = *(double*)p; if (hasR) { lo = *(const double*)pmin; hi = *(const double*)pmax; } break;
+    case ImGuiDataType_S32:    v = *(int*)p;    if (hasR) { lo = *(const int*)pmin;    hi = *(const int*)pmax; } break;
+    default: return false;
+    }
+    const bool isInt = dt == ImGuiDataType_S32;
+    const bool hasRange = hasR && hi > lo;
+    double step;
+    if (hasRange) step = (hi - lo) / 50.0; else step = drag_speed > 0 ? drag_speed * 10.0 : (isInt ? 1.0 : 0.1);
+    if (isInt) step = ImMax(1.0, (double)(int)(step * mul + 0.5)); else step *= mul;
+    double nv;
+    if ((flags & ImGuiSliderFlags_Logarithmic) && !isInt && v > 0) nv = v * ImPow(1.0 + 0.05 * mul, dir);
+    else nv = v + dir * step;
+    if (hasRange) nv = ImClamp(nv, lo, hi);
+    if (isInt) nv = ImFloor(nv + 0.5);
+    if (nv == v) return false;
+    switch (dt) {
+    case ImGuiDataType_Float:  *(float*)p = (float)nv; break;
+    case ImGuiDataType_Double: *(double*)p = nv; break;
+    default: *(int*)p = (int)nv; break;
+    }
+    return true;
+}
+
+
 // Note: p_data, p_min and p_max are _pointers_ to a memory address holding the data. For a Drag widget, p_min and p_max are optional.
 // Read code of e.g. DragFloat(), DragInt() etc. or examples in 'Demo->Widgets->Data Types' to understand how to use this function directly.
 bool ImGui::DragScalar(const char* label, ImGuiDataType data_type, void* p_data, float v_speed, const void* p_min, const void* p_max, const char* format, ImGuiSliderFlags flags)
@@ -2746,7 +2781,8 @@ bool ImGui::DragScalar(const char* label, ImGuiDataType data_type, void* p_data,
     RenderFrame(frame_bb.Min, frame_bb.Max, frame_col, true, style.FrameRounding);
 
     // Drag behavior
-    const bool value_changed = DragBehavior(id, data_type, p_data, v_speed, p_min, p_max, format, flags);
+    bool value_changed = DragBehavior(id, data_type, p_data, v_speed, p_min, p_max, format, flags);
+    if (WheelAdjustScalar(id, hovered, data_type, p_data, p_min, p_max, v_speed, flags)) value_changed = true;
     if (value_changed)
         MarkItemEdited(id);
 
@@ -3333,7 +3369,8 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* p_dat
 
     // Slider behavior
     ImRect grab_bb;
-    const bool value_changed = SliderBehavior(frame_bb, id, data_type, p_data, p_min, p_max, format, flags, &grab_bb);
+    bool value_changed = SliderBehavior(frame_bb, id, data_type, p_data, p_min, p_max, format, flags, &grab_bb);
+    if (WheelAdjustScalar(id, hovered, data_type, p_data, p_min, p_max, 0.0f, flags)) value_changed = true;
     if (value_changed)
         MarkItemEdited(id);
 
@@ -3483,7 +3520,7 @@ bool ImGui::VSliderScalar(const char* label, const ImVec2& size, ImGuiDataType d
 
     // Slider behavior
     ImRect grab_bb;
-    const bool value_changed = SliderBehavior(frame_bb, id, data_type, p_data, p_min, p_max, format, flags | ImGuiSliderFlags_Vertical, &grab_bb);
+    bool value_changed = SliderBehavior(frame_bb, id, data_type, p_data, p_min, p_max, format, flags | ImGuiSliderFlags_Vertical, &grab_bb);
     if (value_changed)
         MarkItemEdited(id);
 

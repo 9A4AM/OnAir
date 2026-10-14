@@ -32,9 +32,13 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);
     bool ready() const;
-    void reset();
+    void reset();                                        // after a retune (the logs stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(DpmrTelemetry& out, uint64_t lastSeq);
+    // The call log and the decoded headers stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     // tunedMhz: the frequency the radio's channel (the signal offset) sits on; scanning hops to the other PMR446 channels from there

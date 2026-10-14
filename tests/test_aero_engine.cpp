@@ -98,12 +98,14 @@ int main() {
     TuneSettings t2 = t;
     t2.centerHz += 1e6;
     const uint64_t before = rx.seq, okBefore = a.blocksOk;
+    const size_t msgsBefore = a.messages.size();
     e.retuneReset(t2);
     std::this_thread::sleep_for(std::chrono::milliseconds((int)(800 / pace)));
     e.latestRx(rx, 0);
     CHECK(rx.seq > before, "report numbers after the retune: %llu after %llu", (unsigned long long)rx.seq, (unsigned long long)before);
-    CHECK(rx.aero.messages.empty() && rx.aero.blocksOk < okBefore, "tables after the retune: %zu messages, %llu SUs", rx.aero.messages.size(),
-          (unsigned long long)rx.aero.blocksOk);
+    // the decoded tables stay through a retune (only the Clear empties them); the link counters start again
+    CHECK(rx.aero.messages.size() >= msgsBefore && rx.aero.blocksOk < okBefore, "tables after the retune: %zu messages (%zu before), %llu SUs", rx.aero.messages.size(),
+          msgsBefore, (unsigned long long)rx.aero.blocksOk);
     e.stop();
     printf(fails ? "aero engine: %d FAILED\n" : "aero engine: all passed\n", fails);
     return fails ? 1 : 0;

@@ -12,6 +12,7 @@
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
 // telemetry() and the setters from the interface thread.
 #pragma once
+#include "hf_demod.h"
 #include "mode_tuning.h"
 #include "ring.h"
 #include <cstddef>
@@ -37,6 +38,10 @@ public:
     void reset();                        // after a retune: keeps the log and the stations
     void feed(const cf32* x, size_t n);
     bool telemetry(AleTelemetry& out, uint64_t lastSeq);
+    // The word log, events and stations stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
 
     void setStartTime(double utc);       // the clock of the first sample (< 0: the system clock, the default)
@@ -51,6 +56,8 @@ public:
     void setMuted(bool m);
     void setSilent(bool s);
     void setListenTap(std::function<void(const float* x, size_t n)> cb);
+    void setDemod(int d);                // the front end's demodulator (HfDemod, hf_demod.h): USB (default), LSB, NFM, AM; Auto counts as USB
+    int demod() const;
 
 private:
     struct Impl;

@@ -25,9 +25,13 @@ public:
 
     void configure(double inputRateHz);
     bool ready() const;                                  // false when the input rate is too low for this mode
-    void reset();                                        // after a retune: forget the signal, drop queued output
+    void reset();                                        // after a retune: forget the signal, drop queued output (the call log stays: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(DmrTelemetry& out, uint64_t lastSeq);
+    // The call log and the messages stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
     // Sound (volume, mute) as in FmReceiver; the app pushes its shared controls here. Nothing is played: there is no vocoder.
     void setVolume(float v);                             // 0 .. 1

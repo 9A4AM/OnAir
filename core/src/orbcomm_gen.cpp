@@ -1,5 +1,6 @@
 // Orbcomm test transmitter (orbcomm_gen.h).
 #include "dect2/orbcomm_gen.h"
+#include "dect2/portable_rng.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -61,9 +62,7 @@ struct Signal::Impl {
     int nch = 1;
     double fs = 250e3, rs = kSymbolRate, gain = 1, sigma = 0;
     int64_t n = 0;                // samples made
-    std::mt19937 rng;
-    std::normal_distribution<float> gauss{0.f, 1.f};
-    std::uniform_real_distribution<double> uni{0.0, 1.0};
+    PortableRng rng;   // the same noise on every platform
     double t0 = 600, badFraction = 0;
 
     void frameBits(Ch& c, double tSig) {
@@ -92,8 +91,8 @@ struct Signal::Impl {
             } else { p[0] = 0x1E; for (int i = 1; i < 10; i++) p[i] = (uint8_t)(0x55 ^ i); }
             fletcherSet(p);
             c.sent++;
-            if (k > 0 && badFraction > 0 && uni(rng) < badFraction) {
-                const int byte = 1 + (int)(uni(rng) * 11) % 11, bit = (int)(uni(rng) * 8) & 7;
+            if (k > 0 && badFraction > 0 && rng.uniform() < badFraction) {
+                const int byte = 1 + (int)(rng.uniform() * 11) % 11, bit = (int)(rng.uniform() * 8) & 7;
                 p[byte] ^= (uint8_t)(1 << bit);
                 c.broken++;
             }
@@ -164,7 +163,7 @@ void Signal::generate(cf32* out, size_t n) {
             if (c.carrier > M_PI) c.carrier -= 2 * M_PI; else if (c.carrier < -M_PI) c.carrier += 2 * M_PI;
             acc += v * cf32((float)std::cos(c.carrier), (float)std::sin(c.carrier));
         }
-        acc += cf32(s.gauss(s.rng) * (float)s.sigma, s.gauss(s.rng) * (float)s.sigma);
+        acc += cf32((float)s.rng.gauss(s.sigma), (float)s.rng.gauss(s.sigma));
         out[i] = acc * (float)s.gain;
         s.n++;
     }

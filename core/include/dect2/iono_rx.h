@@ -26,9 +26,13 @@ public:
     void setCenterHz(double hz);         // the radio's frequency (0 .. 30 MHz is placed from it)
     void setTimeOrigin(double sec);      // the time of the first sample: UTC seconds for a radio, 0 for a file or the test signal
     bool ready() const;
-    void reset();                        // forget the sounders, ionograms and coverage
+    void reset();                                        // after a retune: forget the sweeps in progress (the sounders, their history and the timeline stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(IonoTelemetry& out, uint64_t lastSeq);
+    // The sounders heard, their history and the sweep timeline stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     void setSilent(bool) {}
 

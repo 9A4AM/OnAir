@@ -141,9 +141,11 @@ struct MeshTelemetry {
     double timeSec = 0;          // signal seconds since the start (now)
     double inputRate = 0;
     double tunedHz = 0;
-    int region = 0;              // 0 EU, 1 US
+    int region = 0;              // 0 EU, 1 US, 2 ANZ
     int protocols = 15;          // 1 Meshtastic, 2 MeshCore, 4 LoRa APRS, 8 MeshCom, 16 LoRaWAN
     bool presetSearch = false;   // all Meshtastic presets of the region, not only LongFast
+    std::string mtRegion;        // Meshtastic region of the plan ("EU_868", ...)
+    bool custom = false;         // a custom LoRa setting replaces the plan
     std::vector<MeshDecoderInfo> decoders;
     // tables (oldest first; at most 100 packets, 150 nodes, 100 messages: the oldest leave first, the node heard longest ago)
     std::vector<MeshPacket> packets;

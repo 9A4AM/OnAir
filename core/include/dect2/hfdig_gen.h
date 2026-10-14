@@ -8,7 +8,7 @@
 // SynthConfig:
 //   snrDb       signal to noise ratio in 3 kHz, for test audio with an rms of 0.35 (a sine of amplitude 0.5); louder audio gives more
 //   cfoHz       carrier offset (the audio moves up by it)
-//   modeOpt[0]  which test signal: 0 RTTY, 1 SSTV, 2 FreeDV, 3 FT8, 4 FT4, 5 WSPR, 6 FT2, 7 HamDRM
+//   modeOpt[0]  which test signal: 0 RTTY, 1 SSTV, 2 FreeDV, 3 FT8, 4 FT4, 5 WSPR, 6 FT2, 7 HamDRM, 21 JT65, 22 JT9, 23 Q65, 24 FST4, 25 MSK144
 //   modeOpt[1..7], modeVal[0..3]: free for the chosen decoder's test audio (only one plays at a time)
 #pragma once
 #include "mode_synth.h"
@@ -32,7 +32,8 @@ std::unique_ptr<HfdigTestAudio> makeSstvTestAudio(const SynthConfig& cfg);
 std::unique_ptr<HfdigTestAudio> makeFreedvTestAudio(const SynthConfig& cfg);
 std::unique_ptr<HfdigTestAudio> makeFtxTestAudio(const SynthConfig& cfg);
 std::unique_ptr<HfdigTestAudio> makeHamdrmTestAudio(const SynthConfig& cfg);   // hfdig_hamdrm_gen.cpp: modeOpt[0] 7   // hfdig_ftx_gen.cpp: modeOpt[0] 3 FT8, 4 FT4, 5 WSPR, 6 FT2
-// The one modeOpt[0] picks (0 RTTY, 1 SSTV, 2 FreeDV, 3 FT8, 4 FT4, 5 WSPR, 6 FT2, 7 HamDRM; anything else: nullptr)
+std::unique_ptr<HfdigTestAudio> makeKbdTestAudio(const SynthConfig& cfg);       // hfdig_kbd.cpp: modeOpt[0] 26 .. 31 (hfdig_kbd.h)
+// The one modeOpt[0] picks (0 RTTY, 1 SSTV, 2 FreeDV, 3 FT8, 4 FT4, 5 WSPR, 6 FT2, 7 HamDRM, 21 .. 25 JT65, JT9, Q65, FST4, MSK144, 26 .. 31 the fldigi keyboard modes; anything else: nullptr)
 std::unique_ptr<HfdigTestAudio> makeHfdigTestAudio(int which, const SynthConfig& cfg);
 
 } // namespace dect2

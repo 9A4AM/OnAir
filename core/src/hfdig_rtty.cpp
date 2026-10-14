@@ -60,6 +60,7 @@ struct HfdigRtty::Impl {
     std::atomic<int> baudIdx{0}, shiftIdx{0};
     std::atomic<bool> reverse{false}, unshift{false}, clearReq{false};
     std::atomic<uint32_t> cfgGen{1};
+    std::atomic<double> fixedLo{0};          // > 0: whole-span decoding found the pair (lower tone, Hz): no search of its own
     uint32_t cfgSeen = 0;
 
     // receiver thread
@@ -107,7 +108,9 @@ struct HfdigRtty::Impl {
     }
 
     void resetAll() {
-        tel = HfdigRttyTelemetry();
+        HfdigRttyTelemetry t;            // the text stays (clearText)
+        t.text = std::move(tel.text); t.chars = tel.chars;
+        tel = std::move(t);
         pos = 0; lastCharAt = 0;
         std::fill(ring.begin(), ring.end(), 0.f);
         std::fill(pw.begin(), pw.end(), 0.f);
@@ -291,10 +294,14 @@ struct HfdigRtty::Impl {
     }
 
     void run(const float* x, size_t n) {
+        const double fx = fixedLo.load();
+        if (fx > 0 && (!locked || loHz != fx)) { locked = true; loHz = fx; hiHz = fx + shift; weakFrames = relinkFrames = 0; ratio = 1000; clearDemod(); setTones(); }
         for (size_t i = 0; i < n; i++) {
-            ring[(size_t)ringPos] = x[i];
-            if (++ringPos >= kFft) ringPos = 0;
-            if (++sinceFrame >= kHop) { sinceFrame = 0; frame(); }
+            if (fx <= 0) {
+                ring[(size_t)ringPos] = x[i];
+                if (++ringPos >= kFft) ringPos = 0;
+                if (++sinceFrame >= kHop) { sinceFrame = 0; frame(); }
+            }
             pos++;
             if (locked) demod(x[i]);
         }
@@ -331,9 +338,11 @@ void HfdigRtty::telemetry(HfdigRttyTelemetry& out) const { out = p_->tel; }
 
 void HfdigRtty::setBaudIndex(int i) { p_->baudIdx = std::clamp(i, 0, kRttyBauds - 1); p_->cfgGen++; }
 void HfdigRtty::setShiftIndex(int i) { p_->shiftIdx = std::clamp(i, 0, kRttyShifts - 1); p_->cfgGen++; }
+void HfdigRtty::setFixedPair(double lowToneHz) { p_->fixedLo = lowToneHz; }
 void HfdigRtty::setReverse(bool r) { p_->reverse = r; p_->cfgGen++; }
 void HfdigRtty::setUnshiftOnSpace(bool u) { p_->unshift = u; p_->cfgGen++; }
 void HfdigRtty::clearText() { p_->clearReq = true; }
+void HfdigRtty::setText(const std::string& text, uint64_t chars) { p_->tel.text = text; p_->tel.chars = chars; }
 int HfdigRtty::baudIndex() const { return p_->baudIdx.load(); }
 int HfdigRtty::shiftIndex() const { return p_->shiftIdx.load(); }
 bool HfdigRtty::reverse() const { return p_->reverse.load(); }

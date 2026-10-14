@@ -29,8 +29,13 @@ struct Prefs {
     virtual std::vector<Channel> getChannels() = 0;
     virtual void setChannels(const std::vector<Channel>& c) = 0;
     virtual void flush() {}
+    // Start over with no saved settings (after starts that kept crashing): the old ones are kept aside, not deleted.
+    // Returns where they went (UTF-8), empty when they could not be kept.
+    virtual std::string setAside() = 0;
 };
-Prefs& prefs();
+Prefs& prefs();       // what the app reads and writes: the keys of one receiver get its prefix (rx_prefs.cpp)
+Prefs& basePrefs();   // the platform's store itself
+extern int gPrefRx;   // the receiver whose settings prefs() reads and writes (1 = the first: no prefix)
 
 // Pictures and position (the ADS-B map).
 // Decode a picture file into RGBA8 (0xAABBGGRR, row by row): PNG everywhere, on macOS also what the system reads. False when it cannot be read.
@@ -49,6 +54,10 @@ int locateState(double& lat, double& lon, double& accuracyM, std::string& msg);
 
 // Paths of fonts to try, best first (proportional UI font, monospaced font)
 std::vector<std::string> uiFontCandidates();
+std::vector<std::string> cjkFontCandidates();   // system CJK font merged into the UI fonts for Chinese/Japanese/Korean service names
 std::vector<std::string> monoFontCandidates();
+
+// The language the user reads the system in, as a code such as "de", "zh-Hans" or "lt_LT.UTF-8" (i18n::set() takes the first letters)
+std::string uiLanguage();
 
 }

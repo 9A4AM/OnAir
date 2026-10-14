@@ -69,6 +69,7 @@ class FrameParser {
 public:
     FrameParser();
     void reset();
+    void clearMessages() { slots_.clear(); messageCount_ = 0; }   // the user's Clear: the messages only (the bulletin board and counts stay)
     // Parses one decoded frame (640 bytes). Returns true when the frame starts with a bulletin board packet with a good check.
     bool parseFrame(const uint8_t* frame, int64_t rxUnix);
     // Copies what the parser knows into the telemetry (ncs, messages, packet counts); the channel members are the caller's.

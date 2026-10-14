@@ -30,6 +30,15 @@ enum class InstallKind {
 };
 
 int compareVersions(const std::string& a, const std::string& b);   // numeric, dot separated; > 0 if a is newer
+// The start-up check: what to do now. 0 = nothing, 1 = the first check, 2 = the one retry after a failed first check.
+// enabled: the "check for updates" setting; sinceStart: seconds since the program started; attempts: checks made so far;
+// firstFailed: the last start-up check failed; sinceFail: seconds since it failed. No once-a-day throttle: every start checks.
+inline int startupCheckAction(bool enabled, double sinceStart, int attempts, bool firstFailed, double sinceFail) {
+    if (!enabled) return 0;
+    if (attempts == 0) return sinceStart >= 3 ? 1 : 0;
+    if (attempts == 1 && firstFailed && sinceFail >= 30) return 2;
+    return 0;
+}
 std::string sha256File(const std::string& path, std::string* err = nullptr);
 std::string sha256Bytes(const void* data, size_t n);
 std::string executablePath();

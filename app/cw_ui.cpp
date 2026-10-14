@@ -16,7 +16,7 @@
 namespace {
 
 struct State {
-    bool sidetone = false;
+    bool sidetone = false; float pitch = 700, pushedPitch = -1;
     float thrDb = 10;
     bool wasRunning = false;
     float pushedVol = -1; bool pushedMute = false; int pushedTone = -1; float pushedThr = -1;
@@ -33,12 +33,13 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 35; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 35; }   // the engine reports its standard code minus one
 
 void load() {
     if (S.loaded) return;
     S.loaded = true;
     S.sidetone = plat::prefs().getB("cwSidetone", false);
+    S.pitch = (float)plat::prefs().getD("cwPitch", 700);
     S.thrDb = (float)plat::prefs().getD("cwThreshold", 10);
 }
 
@@ -87,8 +88,12 @@ void presets(App& a) {
         flowNext(4 * gUi);
     }
     ImGui::TextDisabled("|"); flowNext(8 * gUi);
-    if (ImGui::Checkbox("Sidetone", &S.sidetone)) plat::prefs().setB("cwSidetone", S.sidetone);
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("A 700 Hz tone keyed by the focused signal's decoder");
+    listenControls(a, S.sidetone, "cwSidetone", "cw", "Hear the focused signal: a tone keyed by its decoder, at the pitch chosen here");
+    if (S.sidetone) {
+        flowNext(6 * gUi); ImGui::SetNextItemWidth(90 * gUi);
+        if (ImGui::SliderFloat("##cwpitch", &S.pitch, 400, 1000, "%.0f Hz")) plat::prefs().setD("cwPitch", S.pitch);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Pitch of the tone (400 - 1000 Hz)");
+    }
     flowNext(8 * gUi);
     ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("Threshold"); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(110 * gUi);
@@ -216,6 +221,7 @@ void tick(App& a) {
         r.setVolume(a.volume); r.setMuted(a.muted);
         S.pushedVol = a.volume; S.pushedMute = a.muted;
     }
+    if (!S.wasRunning || S.pitch != S.pushedPitch) { r.setSidetoneHz(S.pitch); S.pushedPitch = S.pitch; }
     if (!S.wasRunning || (int)S.sidetone != S.pushedTone) { r.setSidetone(S.sidetone); S.pushedTone = S.sidetone; }
     if (!S.wasRunning || S.thrDb != S.pushedThr) { r.setThresholdDb(S.thrDb); S.pushedThr = S.thrDb; }
     S.wasRunning = true;

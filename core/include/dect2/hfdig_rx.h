@@ -9,6 +9,7 @@
 // telemetry() and the setters from the interface thread. The decoders live on the receiver thread only: their feedAudio(), reset()
 // and telemetry() are never called at the same time, so they need no locks of their own.
 #pragma once
+#include "hf_demod.h"
 #include "mode_tuning.h"
 #include "ring.h"
 #include <cstddef>
@@ -23,6 +24,7 @@ struct HfdigTelemetry;   // hfdig_tel.h
 class HfdigRtty;         // hfdig_rtty.h
 class HfdigFtx;          // hfdig_ftx.h
 class HfdigHamdrm;       // hfdig_hamdrm.h
+class HfdigKbd;          // hfdig_kbd.h
 
 constexpr double kHfdigAudioRate = 8000.0;   // the audio every decoder gets, and the rate of FreeDV's speech
 
@@ -31,7 +33,7 @@ constexpr double kHfdigAudioRate = 8000.0;   // the audio every decoder gets, an
 class HfdigDecoder {
 public:
     virtual ~HfdigDecoder() = default;
-    virtual void reset() = 0;                                  // after a retune: forget the signal and the decoded state
+    virtual void reset() = 0;                                  // after a retune: forget the signal (what was decoded stays)
     virtual void feedAudio(const float* x, size_t n) = 0;      // 8000 Hz, about -1 .. 1
 };
 
@@ -43,9 +45,14 @@ public:
     void configure(double inputRateHz);
     void setSignalOffset(double hz);                     // where the user's (dial) frequency sits relative to 0 Hz in the input
     bool ready() const;                                  // false when the input rate is too low for this mode
-    void reset();                                        // after a retune: forget the signal and the decoded state
+    void reset();                                        // after a retune: forget the signal (the decoded results stay: clearResults)
     void feed(const cf32* x, size_t n);
     bool telemetry(HfdigTelemetry& out, uint64_t lastSeq);
+    // The RTTY text, SSTV pictures, FT8 / FT4 / FT2 / WSPR decodes and HamDRM files stay through reset(), configure() and retunes:
+    // only clearResults() empties them (mask as setDecoders(): 1 RTTY, 2 SSTV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM)
+    void clearResults(int mask = 31);
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
     // Sound (volume, mute) as in FmReceiver; the app pushes its shared controls here. FreeDV plays its speech; the other decoders are
@@ -60,9 +67,18 @@ public:
     void setSpeechTap(std::function<void(const float* x, size_t n)> cb);   // tests: FreeDV's 8 kHz speech, called from feed()
     HfdigFtx& ftx();                                     // FT8 / FT4 / FT2 / WSPR: settings and the slot clock (thread safe, hfdig_ftx.h)
     HfdigRtty& rtty();
+    HfdigKbd& kbd();                                     // Olivia, Contestia, MFSK, THOR, DominoEX, Hell (thread safe, hfdig_kbd.h)
     HfdigHamdrm& hamdrm();                               // HamDRM / EasyPal pictures (receiver thread only, or while stopped)
-    void setDecoders(int mask);                          // which decoders run: 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM (default 31: all)
-    int decoders() const;                                   // the RTTY decoder's settings (thread safe, see hfdig_rtty.h)
+    void setDecoders(int mask);                          // which decoders run: 1 RTTY, 2 SSTV, 4 FreeDV, 8 FT8 / FT4 / FT2 / WSPR, 16 HamDRM, 32 the keyboard modes (default 31: all but the keyboard modes)
+    int decoders() const;
+    void setDemod(int d);                                // the front end's demodulator (HfDemod, hf_demod.h): USB (default), LSB, NFM, AM; Auto counts as USB
+    // Whole span (the "wide decode" switch, hfdig_wide.h): FT8 / FT4 / WSPR on every standard dial slot in the span, RTTY on every pair of
+    // tones in up to 100 kHz of it; the main decoders still work on the dial frequency. dialHz: the radio's tuned frequency (the slots are
+    // found from it; 0: only RTTY). Any thread; taken up by the next feed().
+    void setWide(bool on, double spanHz = 250000);
+    bool wide() const;
+    void setDialHz(double hz);
+    int demod() const;                                   // the RTTY decoder's settings (thread safe, see hfdig_rtty.h)
 
 private:
     struct Impl;

@@ -278,6 +278,32 @@ inline std::vector<std::string> codecFolders() {
     return v;
 }
 
+// The file names OnAir accepts for the two codec libraries (docs/CODECS.md), per platform. Linux also takes any lib<stem>.so.<version>.
+#define DECT2_MBE_STEM "mbe"
+#define DECT2_MBE_SO {".1.3", ".1"}
+#define DECT2_MBE_WIN {"mbelib.dll", "libmbe.dll", "libmbe-1.dll", "mbe.dll"}
+#define DECT2_CODEC2_STEM "codec2"
+#define DECT2_CODEC2_SO {".1.2", ".1.1", ".1.0", ".1", ".0.9"}
+#define DECT2_CODEC2_WIN {"codec2.dll", "libcodec2.dll"}
+
+// The file names alone (no folder), in the order they are tried
+inline std::vector<std::string> codecFileNames(const char* stem, std::initializer_list<const char*> soVersions, std::initializer_list<const char*> winNames) {
+    std::vector<std::string> v;
+#if defined(_WIN32)
+    (void)stem; (void)soVersions;
+    for (const char* w : winNames) v.push_back(w);
+#elif defined(__APPLE__)
+    (void)winNames;
+    for (const char* ver : soVersions) v.push_back(std::string("lib") + stem + ver + ".dylib");
+    v.push_back(std::string("lib") + stem + ".dylib");
+#else
+    (void)winNames;
+    for (const char* ver : soVersions) v.push_back(std::string("lib") + stem + ".so" + ver);
+    v.push_back(std::string("lib") + stem + ".so");
+#endif
+    return v;
+}
+
 // A codec library: the copies in the OnAir codecs folders first (any of the usual file names), then the system's places (libNames)
 inline std::vector<std::string> codecLibNames(const char* stem, std::initializer_list<const char*> soVersions, std::initializer_list<const char*> winNames) {
     std::vector<std::string> v;
@@ -550,8 +576,25 @@ std::unique_ptr<IqSource> makeUsrp(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeSdrplay(const DeviceInfo& d);
 // network radios the user added (netradio.cpp): a PlutoSDR at a libiio URI ("ip:host"), an rtl_tcp server
 DeviceInfo plutoDevice(const std::string& uri);
+// the steady rate (DeviceInfo::steadyRateHz) of a Pluto found at uri: 4 Msps on USB, 3 on its USB-gadget network address, 0 elsewhere
+double plutoLinkRate(const std::string& uri);
 DeviceInfo rtlTcpDevice(const std::string& host, int port);
 std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d);
+// An rtl_tcp greeting (12 bytes): any 4 printable characters ("RTL0", rsp_tcp's, ...), a tuner type and a gain count. other: not an RTL-SDR
+// (not RTL0, or a tuner type outside librtlsdr's 1 to 6). rtlTcpNoteServer remembers that per address (nativeArgs) for the rate limits.
+bool rtlTcpGreeting(const unsigned char* hdr, std::string& magic, bool& other);
+void rtlTcpNoteServer(const std::string& addr, bool other);
+// A SpyServer (source_spyserver.cpp) at host:port. spyServerProbe connects, says HELLO and waits for its DEVICE_INFO (remembered per address for
+// the rate list); spyServerCaps sets d's rates, tuning and gain range from what was seen of the server.
+DeviceInfo spyServerDevice(const std::string& host, int port);
+std::unique_ptr<IqSource> makeSpyServer(const DeviceInfo& d);
+bool spyServerProbe(const std::string& host, int port, int timeoutMs, std::string& err);
+void spyServerCaps(DeviceInfo& d);
+// A Hermes Lite 2 (source_hermeslite2.cpp) at an IPv4 host and UDP port (1024). hermesLite2Probe sends it a discovery packet and waits for
+// its answer.
+DeviceInfo hermesLite2Device(const std::string& host, int port);
+std::unique_ptr<IqSource> makeHermesLite2(const DeviceInfo& d);
+bool hermesLite2Probe(const std::string& host, int port, int timeoutMs, std::string& err);
 
 } // namespace native
 } // namespace dect2

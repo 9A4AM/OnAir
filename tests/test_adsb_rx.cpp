@@ -475,7 +475,8 @@ static void testDropoutAndReset() {
     }
     jprintf("  reset at 200.5 ms: before %d/%d, after %d/%d\n", a2, na2, b2, nb2);
     CHECK(a2 >= na2 - 1 && b2 >= nb2 - 1, "frames around the reset: %d/%d and %d/%d", a2, na2, b2, nb2);
-    CHECK(r2.tel.aircraftCount <= 24 && r2.tel.blocksOk < r2.decoded, "the tables were not emptied by reset(): ok %llu of %zu", (unsigned long long)r2.tel.blocksOk, r2.decoded);
+    // the aircraft table (and its counters) stays through reset(): only clearResults() empties it
+    CHECK(r2.tel.aircraftCount > 0 && r2.tel.blocksOk >= r2.decoded, "the tables did not stay through reset(): ok %llu of %zu, %u aircraft", (unsigned long long)r2.tel.blocksOk, r2.decoded, r2.tel.aircraftCount);
     // a reset in the middle of a frame loses that frame and nothing else
     AdsbSimConfig d2 = d;
     d2.resetAtSec = 0.20005;

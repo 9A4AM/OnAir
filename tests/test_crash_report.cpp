@@ -64,6 +64,26 @@ int main() {
     CHECK(!crash::lastRunCrashed(path), "the start after that sees none");
 #endif
 
+    {   // startup guard: starts that never reached startupDone() are counted, a finished start clears the count
+        const fs::path g = dir / "guard";
+        fs::create_directories(g);
+        crash::install("boot", g.string().c_str());
+        CHECK(crash::failedStarts() == 0, "a first start has no failed starts (%d)", crash::failedStarts());
+        crash::install("boot", g.string().c_str());   // the run before did not finish starting
+        CHECK(crash::failedStarts() == 1, "one unfinished start (%d)", crash::failedStarts());
+        crash::install("boot", g.string().c_str());
+        CHECK(crash::failedStarts() == 2, "two unfinished starts in a row (%d)", crash::failedStarts());
+        crash::startupDone();
+        CHECK(crash::failedStarts() == 0 && !fs::exists(g / "boot.booting"), "a finished start clears the count and the mark");
+        crash::install("boot", g.string().c_str());
+        CHECK(crash::failedStarts() == 0, "the start after a finished one is clean (%d)", crash::failedStarts());
+        crash::startupDone();
+        spit(g / "boot.booting", "garbage");
+        crash::install("boot", g.string().c_str());
+        CHECK(crash::failedStarts() == 1, "an unreadable mark still counts as one unfinished start (%d)", crash::failedStarts());
+        crash::startupDone();
+    }
+
     std::error_code ec;
     fs::remove_all(dir, ec);
     if (fails) { printf("%d failure(s)\n", fails); return 1; }

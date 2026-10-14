@@ -1,5 +1,6 @@
 // Radiosonde receiver (see sonde_rx.h).
 #include "dect2/sonde_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/fftutil.h"
 #include "dect2/sonde_geo.h"
 #include "dect2/sonde_rs41.h"
@@ -294,9 +295,12 @@ struct SondeReceiver::Impl {
 
     // call with procMu and mu held
     void resetState() {
+        // the sondes stay (clearResults): the clock starts again, so their times move back by the time it had reached
+        shiftTimes(-std::max(0.0, lastReportT));
         streamN = 0; lastReportT = -1; capturing = false; fill = 0;
         for (auto& c : chans) c.release();
-        carriers.clear(); blocked.clear(); sondes.clear();
+        for (auto& r : sondes) r.info.channel = -1;
+        carriers.clear(); blocked.clear();
         okFrames = badFrames = searches = 0;
         lastDecodeT = -1e9;
         noiseVar = 0;
@@ -314,9 +318,39 @@ struct SondeReceiver::Impl {
         }
         const uint64_t s = tel.seq;
         tel = SondeTelemetry();
-        tel.seq = s;
+        tel.seq = s + 1;
         tel.bandHz = fs;
         tel.centerHz = centerHz;
+        double cfo; float snr;
+        fillSondes(tel, 0.0, cfo, snr);
+    }
+
+    void shiftTimes(double dt) {
+        for (auto& r : sondes) { r.lastFixT += dt; r.firstT += dt; r.lastTrackT += dt; }
+    }
+
+    // the sondes of a report, most recently heard first; the strongest active one's offset and SNR
+    void fillSondes(SondeTelemetry& t, double tNow, double& bestCfo, float& bestSnr) const {
+        std::vector<size_t> ord(sondes.size());
+        for (size_t i = 0; i < ord.size(); i++) ord[i] = i;
+        std::sort(ord.begin(), ord.end(), [&](size_t a, size_t b) { return sondes[a].lastFixT > sondes[b].lastFixT; });
+        bestCfo = 0; bestSnr = -1000;
+        int rank = 0;
+        t.sondes.clear();
+        for (size_t i : ord) {
+            SondeInfo s = sondes[i].info;
+            s.lastHeardS = tNow - sondes[i].lastFixT;
+            s.firstHeardS = tNow - sondes[i].firstT;
+            s.active = s.lastHeardS < 30.0;
+            s.freqHz = centerHz > 0 ? centerHz + s.offsetHz : sondes[i].announcedHz;
+            if (rank < kTrackedSondes) { s.track = sondes[i].track; s.trackIncluded = true; }
+            if (s.active && s.snrDb > bestSnr) {
+                bestSnr = s.snrDb;
+                bestCfo = (centerHz > 0 && sondes[i].announcedHz > 0) ? s.freqHz - sondes[i].announcedHz : 0;
+            }
+            rank++;
+            t.sondes.push_back(std::move(s));
+        }
     }
 
     // ---- carrier search ----
@@ -544,25 +578,8 @@ struct SondeReceiver::Impl {
         t.blocksOk = okFrames; t.blocksBad = badFrames;
         for (auto& c : chans) if (c.used) t.channelsUsed++;
         // sondes, most recently heard first
-        std::vector<size_t> ord(sondes.size());
-        for (size_t i = 0; i < ord.size(); i++) ord[i] = i;
-        std::sort(ord.begin(), ord.end(), [&](size_t a, size_t b) { return sondes[a].lastFixT > sondes[b].lastFixT; });
         double bestCfo = 0; float bestSnr = -1000;
-        int rank = 0;
-        for (size_t i : ord) {
-            SondeInfo s = sondes[i].info;
-            s.lastHeardS = tNow - sondes[i].lastFixT;
-            s.firstHeardS = tNow - sondes[i].firstT;
-            s.active = s.lastHeardS < 30.0;
-            s.freqHz = centerHz > 0 ? centerHz + s.offsetHz : sondes[i].announcedHz;
-            if (rank < kTrackedSondes) { s.track = sondes[i].track; s.trackIncluded = true; }
-            if (s.active && s.snrDb > bestSnr) {
-                bestSnr = s.snrDb;
-                bestCfo = (centerHz > 0 && sondes[i].announcedHz > 0) ? s.freqHz - sondes[i].announcedHz : 0;
-            }
-            rank++;
-            t.sondes.push_back(std::move(s));
-        }
+        fillSondes(t, tNow, bestCfo, bestSnr);
         for (auto& c : carriers) {
             SondeCarrier sc;
             sc.offsetHz = c.offHz - sigOff; sc.freqHz = centerHz > 0 ? centerHz + sc.offsetHz : 0;
@@ -638,6 +655,29 @@ void SondeReceiver::clearSondes() {
     // done by the worker's lock: the list belongs to the processing state
     std::lock_guard<std::mutex> pl(p_->procMu);
     p_->sondes.clear();
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->tel.sondes.clear();
+    p_->tel.seq++;
+}
+void SondeReceiver::clearResults() { clearSondes(); }
+std::string SondeReceiver::saveResults() const {
+    std::lock_guard<std::mutex> pl(p_->procMu);
+    return results::pack(std::max(0.0, p_->lastReportT), p_->sondes);
+}
+bool SondeReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    std::vector<SondeRec> sondes;
+    if (!results::unpack(blob, t0, sondes)) return false;
+    std::lock_guard<std::mutex> pl(p_->procMu);
+    for (auto& r : sondes) r.info.channel = -1;
+    p_->sondes = std::move(sondes);
+    const double now = std::max(0.0, p_->lastReportT);
+    p_->shiftTimes(now - t0);
+    std::lock_guard<std::mutex> lk(p_->mu);
+    double cfo; float snr;
+    p_->fillSondes(p_->tel, now, cfo, snr);
+    p_->tel.seq++;
+    return true;
 }
 uint64_t SondeReceiver::droppedSamples() const { return p_->dropped.load(); }
 double SondeReceiver::cpuSeconds() const { return p_->cpu.load(); }

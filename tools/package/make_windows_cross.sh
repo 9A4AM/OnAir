@@ -59,7 +59,7 @@ python3 tools/package/scrub_paths.py "$OUT"   # no build-machine paths in the sh
 tools/package/check_win_dlls.sh "$OUT" || { echo "error: the DLLs of $OUT do not fit together (see above)"; exit 1; }
 cp LICENSE "$OUT/LICENSE.txt"
 cat > "$OUT/README.txt" <<'TXT'
-OnAir - DVB-T2 / DVB-T / ATSC / DAB receiver (Windows 10 or 11, 64-bit, needs a CPU with AVX2)
+OnAir - DVB-T2 / DVB-T / ATSC / DAB receiver (Windows 10 or 11, 64-bit)
 
 Start OnAir.exe. Nothing to install.
 HackRF, RTL-SDR and Airspy radios: install the WinUSB driver once with Zadig (https://zadig.akeo.ie): choose the radio in the list, driver "WinUSB", Install.

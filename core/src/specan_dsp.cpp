@@ -99,21 +99,42 @@ void SaTraces::update(const std::vector<float>& db) {
     }
 }
 
-std::string saCsv(const SaGrid& g, const std::vector<float>& live, const std::vector<float>& peak, const std::vector<float>& avg) {
+size_t saCsvStream(const SaGrid& g, const std::vector<float>& live, const std::vector<float>& peak, const std::vector<float>& avg,
+                   const std::function<bool(const char*, size_t)>& sink) {
     std::string s = "frequency_hz,live_dbfs,peak_dbfs,average_dbfs\n";
-    s.reserve(s.size() + g.bins * 36);
     char b[128];
     auto col = [&](const std::vector<float>& v, size_t k) {
         if (k < v.size() && v[k] > -199) { snprintf(b, sizeof b, ",%.2f", v[k]); s += b; } else s += ",";
     };
-    for (size_t k = 0; k < g.bins; k++) {
+    size_t k = 0;
+    for (; k < g.bins; k++) {
         snprintf(b, sizeof b, "%.0f", g.centre(k));
         s += b;
         col(live, k); col(peak, k); col(avg, k);
         s += "\n";
+        if (s.size() > (1u << 16)) { if (!sink(s.data(), s.size())) return k; s.clear(); }
     }
-    return s;
+    if (!s.empty() && !sink(s.data(), s.size())) return k > 0 ? k - 1 : 0;
+    return k;
 }
+
+std::string saCsv(const SaGrid& g, const std::vector<float>& live, const std::vector<float>& peak, const std::vector<float>& avg) {
+    std::string out;
+    out.reserve(40 + g.bins * 36);
+    saCsvStream(g, live, peak, avg, [&](const char* p, size_t n) { out.append(p, n); return true; });
+    return out;
+}
+
+bool saCsvWriteFile(const std::string& path, const SaGrid& g, const std::vector<float>& live, const std::vector<float>& peak, const std::vector<float>& avg) {
+    FILE* f = fopen(path.c_str(), "wb");
+    if (!f) return false;
+    bool ok = true;
+    saCsvStream(g, live, peak, avg, [&](const char* p, size_t n) { if (fwrite(p, 1, n, f) != n) ok = false; return ok; });
+    if (fclose(f) != 0) ok = false;
+    return ok;
+}
+
+size_t saCsvEstimateBytes(size_t bins) { return 40 + bins * 36; }
 
 const SaBand* saAllocations(int& count) {
     static const SaBand kB[] = {

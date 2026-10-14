@@ -278,18 +278,19 @@ void Viterbi27::traceback(int emit, bool all) {
 void Viterbi27::flush() { if (!dec_.empty()) traceback(0, true); }
 
 // --- RS ------------------------------------------------------------------------------------------------------------------------------
-void rsEncode(const uint8_t data[223], uint8_t parity[32]) {
+void rsEncode(const uint8_t data[223], uint8_t parity[32], bool dual) {
     const Gf& G = gf();
     uint8_t r[32] = {};
     for (int i = 0; i < 223; i++) {
-        const uint8_t fb = (uint8_t)(G.tal1[data[i]] ^ r[0]);
+        const uint8_t fb = (uint8_t)((dual ? G.tal1[data[i]] : data[i]) ^ r[0]);
         std::memmove(r, r + 1, 31); r[31] = 0;
         if (fb) for (int j = 0; j < 32; j++) r[j] ^= G.mul(fb, G.gen[j + 1]);
     }
-    for (int j = 0; j < 32; j++) parity[j] = G.tal[r[j]];
+    for (int j = 0; j < 32; j++) parity[j] = dual ? G.tal[r[j]] : r[j];
 }
 
-int rsDecode(uint8_t cw[255]) {
+int rsDecode(uint8_t cw[255], bool dual) {
+    if (!dual) return rsDecodeConv(cw);
     const Gf& G = gf();
     uint8_t c[255];
     for (int i = 0; i < 255; i++) c[i] = G.tal1[cw[i]];
@@ -304,7 +305,7 @@ void pnXor(uint8_t* p, size_t n) {
     for (size_t i = 0; i < n; i++) p[i] ^= s[i % s.size()];
 }
 
-int decodeCadu(const uint8_t coded[kCodedBytes], uint8_t vcdu[kVcduBytes]) {
+int decodeCadu(const uint8_t coded[kCodedBytes], uint8_t vcdu[kVcduBytes], bool dual) {
     uint8_t b[kCodedBytes];
     std::memcpy(b, coded, sizeof b);
     pnXor(b, sizeof b);
@@ -313,20 +314,20 @@ int decodeCadu(const uint8_t coded[kCodedBytes], uint8_t vcdu[kVcduBytes]) {
     for (int k = 0; k < 4; k++) {
         uint8_t cw[255];
         for (int i = 0; i < 255; i++) cw[i] = b[i * 4 + k];
-        const int e = rsDecode(cw);
+        const int e = rsDecode(cw, dual);
         if (e < 0) bad = true; else total += e;
         for (int i = 0; i < 223; i++) vcdu[i * 4 + k] = cw[i];
     }
     return bad ? -1 : total;
 }
 
-void encodeCadu(const uint8_t vcdu[kVcduBytes], uint8_t cadu[kCaduBytes]) {
+void encodeCadu(const uint8_t vcdu[kVcduBytes], uint8_t cadu[kCaduBytes], bool dual) {
     cadu[0] = (uint8_t)(kAsm >> 24); cadu[1] = (uint8_t)(kAsm >> 16); cadu[2] = (uint8_t)(kAsm >> 8); cadu[3] = (uint8_t)kAsm;
     uint8_t* b = cadu + 4;
     for (int k = 0; k < 4; k++) {
         uint8_t d[223], par[32];
         for (int i = 0; i < 223; i++) d[i] = vcdu[i * 4 + k];
-        rsEncode(d, par);
+        rsEncode(d, par, dual);
         for (int i = 0; i < 223; i++) b[i * 4 + k] = d[i];
         for (int i = 0; i < 32; i++) b[(223 + i) * 4 + k] = par[i];
     }

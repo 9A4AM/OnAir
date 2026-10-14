@@ -79,6 +79,8 @@ public:
     void telemetry(HfdigHamdrmTelemetry& out) const;  // the receiver thread, between feedAudio() calls
     void setLogCallback(std::function<void(const std::string&)> cb);   // "transmission ended ... missing ...", "received ..."
     void clearFiles();                                // drops the partly received files too
+    // the receiver thread: the finished files from a results file, or none (the user's Clear)
+    void setHistory(std::vector<std::shared_ptr<const HamdrmFile>> h);
 
 private:
     struct Impl;

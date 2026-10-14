@@ -184,7 +184,11 @@ int sdcParse(const uint8_t* d, int bytes, SdcInfo& out) {
         } else if (type == 5 && len >= 1 && !ver) {
             SdcApp& a = out.app[(nib >> 2) & 3];
             a.present = true; a.shortId = (nib >> 2) & 3; a.streamId = nib & 3; a.packet = (b[0] & 0x80) != 0;
-            a.domain = a.packet ? (b[0] & 7) : (b[0] & 7);
+            a.domain = b[0] & 7;
+            size_t at = 1;
+            if (a.packet) { a.dataUnit = (b[0] & 0x40) != 0; a.packetId = (b[0] >> 4) & 3; a.packetLen = len >= 2 ? b[1] : 0; at = 2; }
+            a.appData.clear();
+            for (size_t i = at; i < (size_t)len; i++) a.appData.push_back(b[i]);
         } else if (type == 8 && len >= 3) {
             uint8_t bits[40];
             BitWriter w(bits);

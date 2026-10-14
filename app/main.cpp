@@ -1,5 +1,10 @@
+#ifdef __linux__
+#include <unistd.h>
+#endif
 // OnAir: window, main loop and the layout of the panels.
 #include "app.h"
+#include "dect2/iq_file.h"
+#include "gallery.h"
 #include "dect2/crash_report.h"
 #include "discord_rpc.h"
 #include <chrono>
@@ -47,28 +52,14 @@ int64_t utcNowOf(const App& a) { return a.ts.utcNow ? a.ts.utcNow : (int64_t)tim
 
 void overviewTab(App& a) {
     if (!pal::dev()) {   // the new interface has these in its sidebar (Display)
-    ImGui::Checkbox("peak hold", &a.peakHold);
+    ImGui::Checkbox(tr("peak hold"), &a.peakHold);
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
-    ImGui::DragFloatRange2("spectrum dB", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
+    ImGui::DragFloatRange2(tr("spectrum dB##specdb"), &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
-    ImGui::DragFloatRange2("waterfall dB", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
+    ImGui::DragFloatRange2(tr("waterfall dB##wfdb"), &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
     }
-    const float h = ImGui::GetContentRegionAvail().y;
-    if (pal::dev()) {   // a divider you can drag, as in SDR++
-        static float frac = 0.5f;
-        spectrumPlot(a, ImVec2(-1, std::max(60.f, h * frac - 3)), h < 300 * gUi);   // a short tab: the frequency axis only once, under the waterfall
-        const ImVec2 p = ImGui::GetCursorScreenPos();
-        const float w = ImGui::GetContentRegionAvail().x;
-        ImGui::InvisibleButton("##split", ImVec2(w, 7 * gUi));
-        const bool hot = ImGui::IsItemHovered() || ImGui::IsItemActive();
-        if (hot) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
-        if (ImGui::IsItemActive()) frac = std::min(0.8f, std::max(0.2f, frac + ImGui::GetIO().MouseDelta.y / std::max(1.f, h)));
-        ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, p.y + 3 * gUi), ImVec2(p.x + w, p.y + 3 * gUi), hot ? IM_COL32(200, 200, 200, 160) : IM_COL32(110, 110, 110, 110), hot ? 2.f : 1.f);
-        waterfallPlot(a, ImVec2(-1, -1));
-    } else {
-    spectrumPlot(a, ImVec2(-1, h * 0.5f - 2));
-    waterfallPlot(a, ImVec2(-1, -1));
-    }
+    static float frac = 0.5f;
+    spectrumWaterfall(a, frac, pal::dev());   // the new interface: the boundary is a divider you can drag, as in SDR++
 }
 
 void receiverTab(App& a) {
@@ -78,7 +69,7 @@ void receiverTab(App& a) {
     if (a.isdbtMode) { isdbtReceiverTab(a); return; }
     if (a.rx.standard == 2 || a.atscMode) {
         const AtscTelemetry& at = a.rx.atsc;
-        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("ATSC 8-VSB receiver: matched filter, pilot loop, symbol clock, field sync, per-field equaliser, trellis, Reed-Solomon"); ImGui::PopTextWrapPos(); }
+        { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", tr("ATSC 8-VSB receiver: matched filter, pilot loop, symbol clock, field sync, per-field equaliser, trellis, Reed-Solomon")); ImGui::PopTextWrapPos(); }
         ImGui::Spacing();
         auto row = [&](const char* k, const char* fmt, auto... v) {   // a long value wraps under itself in a narrow tab
         ImGui::TextDisabled("%s", k); ImGui::SameLine(std::min(190 * gUi, ImGui::GetContentRegionAvail().x * 0.45f));
@@ -143,40 +134,46 @@ void mainTabs(App& a) {
     const bool bar = ImGui::BeginTabBar("tabs", pal::dev() ? ImGuiTabBarFlags_DrawSelectedOverline : 0);
     if (gTightTabs) ImGui::PopStyleVar();
     if (bar) {
-        if (tabItem("Overview", Ic::Grid)) { overviewTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("Overview"), Ic::Grid)) { overviewTab(a); ImGui::EndTabItem(); }
         if (const ModeUi* mu = modeUi(a.family)) {   // a mode added after FM: its own tabs
             if (mu->tab && tabItem(mu->tabName ? mu->tabName : "Mode", mu->tabIcon)) { mu->tab(a); ImGui::EndTabItem(); }
-            else if (!mu->tab && mu->stream && tabItem("TV", Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
-            if (mu->receiver && tabItem("Receiver", Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
-            if (mu->stream && tabItem("Stream", Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
-            if (mu->scan && tabItem("Scan", Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
-            if (tabItem("History", Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+            else if (!mu->tab && mu->stream && tabItem(N_("TV"), Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
+            if (mu->receiver && tabItem(N_("Receiver"), Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
+            if (mu->stream && tabItem(N_("Stream"), Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
+            if (mu->scan && tabItem(N_("Scan"), Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
+            if (tabItem(N_("History"), Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+            secondModeTabs(a);
             ImGui::EndTabBar();
             return;
         }
-        if (a.dabMode) { if (tabItem("Radio", Ic::Radio)) { dabRadioTab(a); ImGui::EndTabItem(); } }
-        else if (a.fmMode) { if (tabItem("Radio", Ic::Radio)) { fmRadioTab(a); ImGui::EndTabItem(); } }
-        else if (tabItem("TV", Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
-        if (!a.fmMode && tabItem(a.dabMode ? "Ensemble" : "Receiver", Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem("Map", Ic::Compass)) { dabTransmittersTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem("Analyzer", Ic::Grid)) { dabAnalyzerTab(a); ImGui::EndTabItem(); }
-        if (a.dabMode && tabItem("FIC", Ic::Doc)) { dabFicTab(a); ImGui::EndTabItem(); }
-        if (!a.dabMode && !a.fmMode && tabItem("Stream", Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
-        if (tabItem("Scan", Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
-        if (!a.fmMode && tabItem("Antenna", Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
-        if (tabItem("History", Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode) { if (tabItem(N_("Radio"), Ic::Radio)) { dabRadioTab(a); ImGui::EndTabItem(); } }
+        else if (a.fmMode) { if (tabItem(N_("Radio"), Ic::Radio)) { fmRadioTab(a); ImGui::EndTabItem(); } }
+        else if (tabItem(N_("TV"), Ic::Tv)) { tvTab(a); ImGui::EndTabItem(); }
+        if (!a.fmMode && tabItem(a.dabMode ? N_("Ensemble") : N_("Receiver"), Ic::Antenna)) { receiverTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("Map"), Ic::Compass)) { dabTransmittersTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("Analyzer"), Ic::Grid)) { dabAnalyzerTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && dabHasJournaline(a.engine.dabEnsemble()) && tabItem(N_("Journaline"), Ic::Doc)) { dabJournalineTab(a); ImGui::EndTabItem(); }
+        if (a.dabMode && tabItem(N_("FIC"), Ic::Doc)) { dabFicTab(a); ImGui::EndTabItem(); }
+        if (!a.dabMode && !a.fmMode && tabItem(N_("Stream"), Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("Scan"), Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
+        if (!a.fmMode && tabItem(N_("Antenna"), Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
+        if (tabItem(N_("History"), Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+        secondModeTabs(a);
         ImGui::EndTabBar();
     }
 }
 
+static bool anyRunning() { for (App* r : receiversAll()) if (r->engine.running()) return true; return false; }
 static bool gIdentifyDev = false;   // --identify
 
-void drawUI(App& a, ImVec2 disp) {
+void drawUI(App& a, ImVec2 disp, bool draw) {
     ingestSpectrum(a);
     ingestRx(a);
     dabHistory(a);
     fmHistory(a);
     if (const ModeUi* mu = modeUi(a.family)) if (mu->tick) mu->tick(a);
+    wideSync(a);
+    secondModeTick(a);
     dabScanStep(a);
     fmScanStep(a);
     harvestScan(a);
@@ -206,6 +203,7 @@ void drawUI(App& a, ImVec2 disp) {
     }
     a.video.update(a.engine.player());
     if (a.playReq >= 0) for (auto& sv : a.ts.services) if (sv.id == a.playReq && sv.havePmt) { a.engine.player().select(sv.id); a.engine.player().setVolume(a.volume); a.playReq = -1; break; }
+    if (!draw) return;   // a receiver whose tab is not shown: ticked above, not drawn
     {
         ImGuiIO& io = ImGui::GetIO();
         if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
@@ -219,7 +217,7 @@ void drawUI(App& a, ImVec2 disp) {
         ImGui::SetNextWindowSize(disp);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
         ImGui::Begin("##vonly", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-        if (a.video.has()) a.video.draw(disp); else { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("no picture - press Esc"); ImGui::PopTextWrapPos(); }
+        if (a.video.has()) a.video.draw(disp); else { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", tr("no picture - press Esc")); ImGui::PopTextWrapPos(); }
         if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
         ImGui::End();
         ImGui::PopStyleColor();
@@ -239,15 +237,25 @@ void drawUI(App& a, ImVec2 disp) {
     a.tgMin[TgToolbar] = ImVec2(tb0.x - 4, tb0.y - 3); a.tgMax[TgToolbar] = ImVec2(tb0.x + ImGui::GetContentRegionAvail().x + 4, ImGui::GetCursorScreenPos().y);
     const ImVec2 sw0 = ImGui::GetCursorScreenPos();
     standardSwitch(a);
-    if (a.devices[a.devIdx].isRadio() && !a.devices[a.devIdx].settings.empty()) { ImGui::SameLine(disp.x - 64 - 410 * gUi); radioSettingsUi(a, false); }   // the top bar is full
+    if (a.devices[a.devIdx].isRadio()) { ImGui::SameLine(disp.x - 64 - 410 * gUi); radioSettingsUi(a, false); }   // the top bar is full
     ImGui::SameLine(disp.x - 64 - 290 * gUi);
     updateButton(a);
-    ImGui::SameLine(disp.x - 64 - 100 * gUi);
-    if (ImGui::SmallButton("New interface")) { a.newUi = true; savePrefs(a); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Try the new interface. You can switch back at any time.");
-    ImGui::SameLine(disp.x - 64);
-    if (ImGui::SmallButton("Tour")) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Take the guided tour with Onny");
+    {   // the language, the new interface and the tour, right-aligned (their width changes with the language)
+        int nl = 0;
+        const i18n::Language* L = i18n::languages(nl);
+        const char* langName = L[0].name;
+        for (int i = 0; i < nl; i++) if (!strcmp(i18n::current(), L[i].code)) langName = L[i].name;
+        const float pad = ImGui::GetStyle().FramePadding.x * 2, sp = ImGui::GetStyle().ItemSpacing.x;
+        const float w = ImGui::CalcTextSize(langName).x + ImGui::CalcTextSize(tr("New interface")).x + ImGui::CalcTextSize(tr("Tour")).x + 3 * pad + 2 * sp;
+        ImGui::SameLine(std::max(ImGui::GetCursorPosX(), disp.x - 12 * gUi - w));
+    }
+    languageButton(a);
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("New interface"))) { a.newUi = true; savePrefs(a); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Try the new interface. You can switch back at any time."));
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Take the guided tour with Onny"));
     a.tgMin[TgSwitch] = ImVec2(sw0.x - 2, sw0.y - 2); a.tgMax[TgSwitch] = ImVec2(sw0.x + gSwitchWidth + 20, ImGui::GetCursorScreenPos().y);
     ImGui::Separator();
     statusBar(a);
@@ -275,21 +283,26 @@ void drawUI(App& a, ImVec2 disp) {
     ImGui::End();
     }
     passesWindow(a);
+    galleryWindow(a);
     scannerWindow(a);
+    setupWizard(a, disp);
     wizard(a, disp);
     if (gIdentifyDev && a.engine.running() && ImGui::GetFrameCount() > 120) { gIdentifyDev = false; identifyStart(a, radioCenterMhz(a) * 1e6, 0, 0, radioCenterMhz(a) * 1e6); }
     identifyWindow(a);
+    dect2::PskReporter::get().setDialHz(a.freqMhz * 1e6);
+    a.engine.setWideDecode(a.wideDecode && modeSupportsWideHf(a.family));
     feedsWindow(a);
+    mapWindow(a);
     if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel
         static bool opened = false;
-        if (!opened) { ImGui::OpenPopup("OnAir crashed"); opened = true; }
+        if (!opened) { ImGui::OpenPopup(trw("OnAir crashed")); opened = true; }
         ImGui::SetNextWindowPos(ImVec2(disp.x * 0.5f, disp.y * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSizeConstraints(ImVec2(420 * gUi, 0), ImVec2(560 * gUi, 400 * gUi));
-        if (ImGui::BeginPopupModal("OnAir crashed", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::BeginPopupModal(trw("OnAir crashed"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::PushTextWrapPos(520 * gUi);
             ImGui::TextUnformatted(gCrashNote.c_str());
             ImGui::PopTextWrapPos();
-            if (ImGui::Button("OK")) { gCrashNote.clear(); ImGui::CloseCurrentPopup(); }
+            if (ImGui::Button(tr("OK"))) { gCrashNote.clear(); ImGui::CloseCurrentPopup(); }
             ImGui::EndPopup();
         }
     }
@@ -297,8 +310,8 @@ void drawUI(App& a, ImVec2 disp) {
         ImGui::SetNextWindowSize(ImVec2(640 * gUi, 380 * gUi), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowPos(ImVec2(200, 160), ImGuiCond_FirstUseEver);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
-        if (ImGui::Begin("Video", &a.popOut)) {
-            if (a.video.has()) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("no picture");
+        if (ImGui::Begin(trw("Video"), &a.popOut)) {
+            if (a.video.has()) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("%s", tr("no picture"));
             if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
         }
         ImGui::End();
@@ -396,6 +409,9 @@ static void discordTick(const App& a) {   // posts the wanted Rich Presence; the
 
 int main(int argc, char** argv) {
     dect2::crash::install();   // first: a crash from here on leaves a report
+#ifdef __linux__
+    if (geteuid() == 0) fprintf(stderr, "OnAir: running as root is not needed; see docs for udev rules\n");
+#endif
 #ifdef _WIN32
     dect2::crash::startLog();   // the program has no console window: keep its messages in a log file next to the settings (the old one is kept as onair-prev.log)
 #endif
@@ -426,6 +442,7 @@ int main(int argc, char** argv) {
     glfwInit();
 #endif
     gfx::windowHints();
+    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);   // a fullscreen main window stays up when another window or monitor is clicked (#71)
     for (int i = 1; i < argc; i++) if (std::string(argv[i]) == "--hidden") { glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); gNoOsWindows = true; }   // dev: with --shot, render without showing the window
     GLFWwindow* window = glfwCreateWindow(1500, 900, "OnAir", nullptr, nullptr);
     if (!window) return 1;
@@ -477,17 +494,48 @@ int main(int argc, char** argv) {
     for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (ui = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break; // the whole UI is monospaced
     for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (app.mono = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break;
     if (!ui) ui = io.Fonts->AddFontDefault();
+    // CJK service/EPG names: merge a system CJK font (ImGui 1.92 rasterises only the glyphs actually drawn).
+    for (const auto& f : plat::cjkFontCandidates()) if (access(f.c_str(), R_OK) == 0) {
+        ImFontConfig mc; mc.MergeMode = true;
+        mc.DstFont = ui; if (!io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mc)) continue;
+        if (app.mono && app.mono != ui) { ImFontConfig mm; mm.MergeMode = true; mm.DstFont = app.mono; io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mm); }
+        break;
+    }
     app.ui = ui;
     if (!app.mono) app.mono = ui;
 
     ImGui_ImplGlfw_InitForOther(window, true);
+    glfwSetDropCallback(window, [](GLFWwindow*, int n, const char** paths) { if (n > 0) wbQueueDrop(paths[0]); });   // a recording dropped on the window: the Signal workbench opens it
     watchMonitors();
     if (gWayland) ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // see chooseGlfwPlatform()
 
     app.wf.init(gfxBackend);
+    // startup guard: a start that keeps crashing (a saved setting that breaks it, #59) must not repeat forever. After one unfinished
+    // start the other interface is tried (the classic and the new one share little drawing code); after two in a row the saved
+    // settings are set aside and OnAir starts with the defaults
+    // a start with arguments (the dev and test runs: --shot, --hidden ...) is left out: it neither changes the settings nor counts
+    const int failedStarts = argc > 1 ? 0 : dect2::crash::failedStarts();
+    if (argc > 1) dect2::crash::startupDone();
+    std::string guardNote;
+    if (failedStarts >= 2) {
+        const std::string kept = plat::prefs().setAside();
+        guardNote = "OnAir did not finish starting " + std::to_string(failedStarts) + " times in a row, so it starts with the default settings this time. "
+                  + (kept.empty() ? std::string("The old settings could not be kept.") : "The old settings are kept in " + kept + ".");
+    }
     loadPrefs(app);
+    if (failedStarts == 1) {
+        app.newUi = !app.newUi;
+        guardNote = std::string("OnAir did not finish starting last time, so it opens with the ") + (app.newUi ? "new" : "classic")
+                  + " interface this time. The other one is under View (new interface) or the \"New interface\" button (classic).";
+    }
+    if (!guardNote.empty()) {
+        fprintf(stderr, "%s\n", guardNote.c_str());
+        gCrashNote = gCrashNote.empty() ? guardNote : gCrashNote + "\n\n" + guardNote;
+    }
     app.wizOpen = argc == 1 && !plat::prefs().getB("wizardDone", false);   // the tour runs on the very first start only
+    if (argc == 1 && !plat::prefs().getB("setupDone", false)) { app.wizOpen = false; setupWizardOpen(app); }   // the setup comes first; the tour follows it
     if (getenv("DECT2_WIZARD")) app.wizOpen = true;
+    if (getenv("DECT2_SETUP")) { app.wizOpen = false; setupWizardOpen(app); if (const char* ss = getenv("DECT2_SETUPSTEP")) app.setupStep = atoi(ss); }
     app.wizStepT = ImGui::GetTime();
     app.engine.player().setHardwareDecode(plat::prefs().getB("hwVideo", true));
     app.tune.synth.demoTv = true;   // the synthetic DVB-T / ATSC signal carries a test-card programme
@@ -505,6 +553,10 @@ int main(int argc, char** argv) {
 #endif
     }
     if (getenv("DECT2_DEMO")) { wizAction(app, 2); }   // test: start the demo programme straight away
+    // the decoded results of the last run (each mode's lists, until its Clear), then saved every 30 s and at exit
+    app.engine.setResultsDir(plat::dataDir() + "/results");
+    appResultsLoad(app);
+    receiversInit(app);   // RX 2 ... that were open at the last exit
 
     bool autostart = false, hackrfStart = false, fileStart = false, stress = false;
     int stressFrame = 0, stressStep = 0;
@@ -519,11 +571,29 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--shotdelay" && i + 1 < argc) shotAfter = atof(argv[++i]);
         if (std::string(argv[i]) == "--fmscan") fmScanAuto = true;
         if (std::string(argv[i]) == "--passes") app.passesOpen = true;
+        if (std::string(argv[i]) == "--images") app.galleryOpen = true;   // dev: open View > Images
+        if (std::string(argv[i]) == "--map") app.mapOpen = true;   // dev: open View > Map
         if (std::string(argv[i]) == "--scanner") app.scannerOpen = true;   // dev: open View > Scanner   // dev: open View > Passes
         if (std::string(argv[i]) == "--tle" && i + 1 < argc) passesDevTle(argv[++i]);   // dev: TLEs from a file for the pass planner (no download)
+        if (std::string(argv[i]) == "--rx2") addReceiver();   // dev: a second receiver at once (no warning dialog)
         if (std::string(argv[i]) == "--mute") { app.muted = true; app.volume = 0; }
+        if (std::string(argv[i]) == "--wbfile" && i + 1 < argc) {   // dev: the Signal workbench opens this recording (--wbrate for a raw file, --wbtab, --wbsel, --wbkind, --wbbaud, --wbrun)
+            double rate = 0; int tab = 0;
+            for (int k = 1; k + 1 < argc; k++) { if (std::string(argv[k]) == "--wbrate") rate = atof(argv[k + 1]); if (std::string(argv[k]) == "--wbtab") tab = atoi(argv[k + 1]); }
+            wbDevOpen(argv[i + 1], rate, tab);
+            setFamily(app, 73);
+            routeTab(app, "Workbench");
+            i++;
+        }
+        if (std::string(argv[i]) == "--wbsel" && i + 4 < argc) { wbDevSelect(atof(argv[i + 1]), atof(argv[i + 2]), atof(argv[i + 3]), atof(argv[i + 4])); i += 4; }   // dev: time range (s) and band (Hz from the centre; 0 0: none)
+        if (std::string(argv[i]) == "--wbdemod" && i + 3 < argc) { const std::string r = argv[i + 3]; wbDevDemod(atoi(argv[i + 1]), atof(argv[i + 2]), r.find('m') != std::string::npos, r.find('d') != std::string::npos); i += 3; }   // dev: demodulator number, baud, "m" measure and / or "d" demodulate
         if (std::string(argv[i]) == "--identify") gIdentifyDev = true;   // dev: identify the strongest signal once the receiver runs (with --shot)
         if (std::string(argv[i]) == "--tab" && i + 1 < argc) routeTab(app, argv[++i]);
+        if (std::string(argv[i]) == "--second" && i + 2 < argc) {   // dev: a second mode (the mode-list row named so) at a frequency in MHz
+            const std::string nm = argv[++i];
+            const double mhz = atof(argv[++i]);
+            for (int k = 0; k < kNumModes; k++) if (nm == kModes[k].name) { setSecondMode(app, k, mhz); break; }
+        }
         if (std::string(argv[i]) == "--dvb") setFamily(app, 0);
         if (std::string(argv[i]) == "--atsc") setFamily(app, 1);
         if (std::string(argv[i]) == "--atsc3") setFamily(app, 3);
@@ -542,6 +612,7 @@ int main(int argc, char** argv) {
             if (pick >= 0) selectMode(app, kModes[pick].family, kModes[pick].subId);
         }
         if (std::string(argv[i]) == "--ui2") app.newUi = true;
+        if (std::string(argv[i]) == "--lang" && i + 1 < argc) i18n::set(argv[++i]);   // dev: the interface in this language (not saved)
         if (std::string(argv[i]) == "--theme" && i + 1 < argc) app.uiTheme = atoi(argv[++i]);
         if (std::string(argv[i]) == "--light") app.lightUi = true;   // dev: View > Light
         if (std::string(argv[i]) == "--variant" && i + 1 < argc) app.uiVariant = std::max(0, std::min(7, atoi(argv[++i])));
@@ -566,7 +637,11 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--pp" && i + 1 < argc) app.tune.synth.tx.pp = atoi(argv[++i]);
         if (std::string(argv[i]) == "--ext") app.tune.synth.tx.ext = true;
         if (std::string(argv[i]) == "--hackrf") hackrfStart = true;
-        if (std::string(argv[i]) == "--file" && i + 1 < argc) { app.file.path = argv[++i]; app.file.sampleRate = 10e6; app.file.format = FileFormat::CS8; fileStart = true; hackrfStart = true; autostart = true; }
+        if (std::string(argv[i]) == "--file" && i + 1 < argc) { app.file.path = argv[++i]; app.file.sampleRate = 10e6; app.file.format = FileFormat::CS8;
+            { IqFileInfo info; std::string perr;
+              if (probeIqFile(app.file.path, info, perr)) { app.file.path = info.dataPath; app.file.format = info.format; app.file.bigEndian = info.bigEndian; app.file.offsetBytes = info.offsetBytes; app.file.endBytes = info.endBytes; if (info.sampleRate > 0) app.file.sampleRate = info.sampleRate; if (info.centerHz > 0) app.freqMhz = info.centerHz / 1e6; }
+              else if (!perr.empty()) fprintf(stderr, "%s\n", perr.c_str()); }
+            fileStart = true; hackrfStart = true; autostart = true; }
         if (std::string(argv[i]) == "--play" && i + 1 < argc) app.playReq = atoi(argv[++i]);
         if (std::string(argv[i]) == "--lna" && i + 1 < argc) app.tune.lnaDb = atoi(argv[++i]);
         if (std::string(argv[i]) == "--vga" && i + 1 < argc) app.tune.vgaDb = atoi(argv[++i]);
@@ -575,6 +650,7 @@ int main(int argc, char** argv) {
     double last = glfwGetTime();
     double frameNext = 0, lastInputT = 0;
     while (!glfwWindowShouldClose(window)) {
+        appResultsSave(app);   // every 30 s: the lists the screens keep themselves (the engine saves its own on a thread)
         discordTick(app);
         {
             {   // frame pacing: the screen is only redrawn as often as it can change, otherwise the loop would run at the refresh rate of the display (120 Hz on
@@ -584,10 +660,10 @@ int main(int argc, char** argv) {
                 const bool focused = glfwGetWindowAttrib(window, GLFW_FOCUSED) != 0;
                 double interval = 0;
                 if (!shotPath) {
-                    if (!shown && !popOutShown()) interval = 0.25;                                                  // the pop-out window keeps playing
+                    if (!shown && !popOutShown() && !gNoOsWindows) interval = app.reduceCpuHidden ? 0.1 : 0.25;                                                  // the pop-out window keeps playing
                     else if (t - lastInputT < 1.0 || app.engine.player().selected() >= 0) interval = 1.0 / 60;      // typing, dragging, video
-                    else if (app.engine.running()) interval = focused ? 1.0 / 30 : 1.0 / 15;                          // spectrum and waterfall
-                    else interval = focused ? 0.1 : 0.25;                                                            // nothing is moving
+                    else if (anyRunning()) interval = focused ? 1.0 / 30 : 1.0 / 15;                          // spectrum and waterfall
+                    else interval = focused ? 0.1 : 0.25;                                                          // nothing is moving
                 }
                 if (interval > 0 && frameNext > t) {
                     glfwWaitEventsTimeout(frameNext - t);
@@ -596,10 +672,12 @@ int main(int argc, char** argv) {
                 frameNext = glfwGetTime() + interval;
             }
             glfwPollEvents();
+            wbDropTick(app);
             updateTick(app);
             int w, h;
             glfwGetFramebufferSize(window, &w, &h);
-            if (w == 0 || h == 0 || glfwGetWindowAttrib(window, GLFW_ICONIFIED)) {
+            const bool skipDraw = !shotPath && !gNoOsWindows && app.reduceCpuHidden && !glfwGetWindowAttrib(window, GLFW_VISIBLE);
+            if (skipDraw || w == 0 || h == 0 || glfwGetWindowAttrib(window, GLFW_ICONIFIED)) {
                 // minimised: nothing to draw in the main window, but the pop-out video window stays and keeps playing
                 if (!popOutShown()) { glfwWaitEventsTimeout(0.1); continue; }
                 ImGui_ImplGlfw_NewFrame();
@@ -622,6 +700,7 @@ int main(int argc, char** argv) {
                 s = std::max(1.f, std::max(xs, ys));
 #endif
                 if (const char* e = getenv("DECT2_UISCALE")) s = std::max(0.5f, (float)atof(e));
+                s *= app.uiTextScale;   // View > Text size
                 if (s != gUi) {
                     gUi = s;
                     ImGuiStyle& st = ImGui::GetStyle();
@@ -637,6 +716,17 @@ int main(int argc, char** argv) {
                 if (!(st.WindowMinSize.y >= 1)) st.WindowMinSize.y = 32 * gUi;
             }
             ImGui::NewFrame();
+            {   // text size: Ctrl +, Ctrl - and Ctrl 0 (Cmd on a Mac), in either interface
+                ImGuiIO& kio = ImGui::GetIO();
+                if ((kio.KeyCtrl || kio.KeySuper) && !kio.WantTextInput) {
+                    float t = app.uiTextScale;
+                    if (ImGui::IsKeyPressed(ImGuiKey_Equal) || ImGui::IsKeyPressed(ImGuiKey_KeypadAdd)) t = std::min(2.f, std::round(t * 10 + 1) / 10.f);
+                    if (ImGui::IsKeyPressed(ImGuiKey_Minus) || ImGui::IsKeyPressed(ImGuiKey_KeypadSubtract)) t = std::max(0.8f, std::round(t * 10 - 1) / 10.f);
+                    if (ImGui::IsKeyPressed(ImGuiKey_0, false) || ImGui::IsKeyPressed(ImGuiKey_Keypad0, false)) t = 1.f;
+                    if (t != app.uiTextScale) { app.uiTextScale = t; savePrefs(app); }
+                }
+            }
+            if (static bool up = false; !up && ImGui::GetFrameCount() > 120 && glfwGetTime() > 5) { up = true; dect2::crash::startupDone(); }   // started: see the startup guard
             if (autostart) {
                 autostart = false;
                 app.devIdx = 0;
@@ -662,7 +752,7 @@ int main(int argc, char** argv) {
             double now = glfwGetTime();
             last = now;
             const double tUi0 = glfwGetTime();
-            drawUI(app, io.DisplaySize);
+            receiversFrame(app, io.DisplaySize);
             popOutFrame(app);
             ImGui::Render();
             if (app.lightUi) lightenDrawData(ImGui::GetDrawData());
@@ -696,7 +786,10 @@ int main(int argc, char** argv) {
         }
     }
     delete gDiscord;   // clears the status and joins its thread
+    receiversShutdown(app);
     app.engine.stop();
+    app.engine.flushResults();
+    appResultsSave(app, true);
     updateOnExit(app);   // a downloaded update replaces this program once it has ended
     popOutShutdown();   // its window and surface go before the back end
     gfxBackend->shutdown();
@@ -704,6 +797,7 @@ int main(int argc, char** argv) {
     ImGui::DestroyContext();
     glfwDestroyWindow(window);
     glfwTerminate();
+    dect2::crash::startupDone();   // a quick clean exit (the --shot runs) is not a failed start
     return 0;
 }
 

@@ -26,7 +26,7 @@ struct State {
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 34; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 34; }   // the engine reports its standard code minus one
 
 void load() {
     if (S.loaded) return;
@@ -64,7 +64,7 @@ void presets(App& a) {
     }
     ImGui::AlignTextToFramePadding();
     const bool mbe = dect2::dstarAmbeAvailable();
-    ImGui::TextColored(mbe ? pal::okGreen() : pal::warnAmber(), "%s", mbe ? "voice: mbelib" : "voice: needs mbelib");
+    ImGui::TextColored(mbe ? pal::okGreen() : pal::warnAmber(), "%s", mbe ? "voice: mbelib" : codecNeedMbe());
     ImGui::SameLine(0, 4 * gUi);
     codecHelpButton(CodecHelp::DstarAmbe);
     flowEnd();
@@ -115,13 +115,14 @@ void callsView(App& a) {
         }
         ImGui::SetClipboardText(txt.c_str());
     }
-    if (!ImGui::BeginTable("##dstarlog", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    if (!ImGui::BeginTable("##dstarlog", 8 + (wideActive(a) ? 1 : 0), ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
-    ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("MY"); ImGui::TableSetupColumn("UR"); ImGui::TableSetupColumn("RPT1");
+    if (wideActive(a)) ImGui::TableSetupColumn("Carrier"); ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("MY"); ImGui::TableSetupColumn("UR"); ImGui::TableSetupColumn("RPT1");
     ImGui::TableSetupColumn("RPT2"); ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch); ImGui::TableSetupColumn("Length"); ImGui::TableSetupColumn("BER");
     ImGui::TableHeadersRow();
     auto row = [&](const dect2::DstarCall& e, bool on) {
         ImGui::TableNextRow();
+        if (wideActive(a)) { ImGui::TableNextColumn(); wideCarrierCell(a, e.carrierId, e.carrierHz); }
         const ImVec4 c = on ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_Text);
         ImGui::TableNextColumn(); ImGui::TextColored(c, "%s", on ? "on air" : clock(e.wallTime).c_str());
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextColored(c, "%s", myOf(e).c_str()); ImGui::PopFont();
@@ -235,6 +236,7 @@ void tab(App& a) {
 
 void list(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
+    if (resultsClearButton("dstar")) a.engine.dstar().clearResults();
     const auto& log = a.rx.dstar.log;
     if (!ImGui::BeginTable("##dstarl", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupColumn("Station"); ImGui::TableSetupColumn("Heard", ImGuiTableColumnFlags_WidthStretch);
@@ -256,6 +258,7 @@ void list(App& a) {
 }
 
 void receiver(App& a) {
+    wideCarriersTable(a, 0);
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const dect2::DstarTelemetry& t = a.rx.dstar;
     kvRow(a, "state", "%s", dect2::dstarSummary(t).c_str());
@@ -265,7 +268,7 @@ void receiver(App& a) {
           (unsigned long long)t.slowHeaders, (unsigned long long)t.lateEntries);
     kvRow(a, "voice frames", "%llu received, %llu data syncs missed, %llu end patterns", (unsigned long long)t.voiceFrames, (unsigned long long)t.blocksBad, (unsigned long long)t.endPatterns);
     kvRow(a, "GPS", "%llu lines, %llu damaged", (unsigned long long)t.gpsLines, (unsigned long long)t.gpsBad);
-    kvRow(a, "voice", "%llu AMBE frames decoded%s", (unsigned long long)t.voiceDecoded, t.ambe ? "" : " (mbelib not found)");
+    kvRow(a, "voice", "%llu AMBE frames decoded%s", (unsigned long long)t.voiceDecoded, t.ambe ? "" : " (mbelib not found: click ? for the file names and folders)");
     if (t.ambe) kvRow(a, "mbelib", "%s", t.ambePath.c_str());
     kvRow(a, "input", "%.3f Msps, %.1f dBFS", t.inputRate / 1e6, t.levelDb);
     kvRow(a, "signal time", "%.1f s", t.timeSec);

@@ -1,5 +1,6 @@
 #include "dect2/ais_proto.h"
 #include "dect2/ais_tel.h"
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -110,8 +111,13 @@ Bits nrziDecode(const Bits& line, int prevLevel) {
 
 static const uint8_t kFlag[8] = {0, 1, 1, 1, 1, 1, 1, 0};
 
+void reverseOctets(Bits& b) {
+    for (size_t i = 0; i < b.size(); i += 8) std::reverse(b.begin() + (std::ptrdiff_t)i, b.begin() + (std::ptrdiff_t)std::min(i + 8, b.size()));
+}
+
 Bits burstLineBits(const Bits& payload) {
     Bits fr = payload;
+    reverseOctets(fr);           // the order on the air (#87); the FCS is computed over the bits as sent
     appendFcs(fr);
     Bits d;
     d.insert(d.end(), kFlag, kFlag + 8);
@@ -148,6 +154,7 @@ HdlcResult hdlcFrames(const Bits& d) {
         for (size_t k = 1; k <= 12 && k <= s; k++) if (!d[s - k]) zeros++;
         if (destuff(raw, fr) && fcsOk(fr)) {
             fr.resize(fr.size() - 16);
+            reverseOctets(fr);       // from the order on the air to the order of the message tables (#87)
             r.good.push_back(std::move(fr));
         } else if (alt >= 9 || zeros >= 11) r.bad++;
     }
@@ -176,6 +183,30 @@ int classOfMmsi(uint32_t mmsi, int type) {
     if (mmsi / 10000000 == 99) return AIS_CLASS_ATON;
     if (mmsi / 10000000 == 0) return AIS_CLASS_BASE;
     return AIS_CLASS_OTHER;
+}
+
+static bool midOk(uint32_t mid) {
+    const uint32_t hi = mid / 100, lo = mid % 100;      // assigned: 201-279, 301-379, 401-479, 501-579, 601-679, 701-779
+    return hi >= 2 && hi <= 7 && lo >= 1 && lo <= 79;
+}
+bool mmsiPlausible(uint32_t m) {
+    if (m == 0 || m >= 1000000000u) return false;
+    if (m >= 200000000u && m < 800000000u) return midOk(m / 1000000u);                 // ship: MID xxxxxx
+    if (m >= 111000000u && m < 112000000u) return midOk((m / 1000u) % 1000u);         // SAR aircraft: 111 MID xxx
+    if (m >= 970000000u && m < 975000000u) return true;                                // AIS-SART, MOB, EPIRB
+    if (m >= 980000000u && m < 1000000000u) return midOk((m / 10000u) % 1000u);       // craft associated with a ship, aids to navigation: 98x / 99x MID xxx
+    if (m < 100000000u) return midOk(m / 10000u) || midOk(m / 100000u);               // coast station 00 MID xxxx, group 0 MID xxxxx
+    return false;
+}
+bool acceptableAis(const AisMsg& m, bool decoded) {
+    if (m.type < 1 || m.type > 27) return false;
+    switch (m.type) {
+    case 1: case 2: case 3: case 4: case 5: case 6: case 8: case 9: case 11: case 14: case 18: case 19: case 21: case 24: case 27:
+        if (!decoded || !m.valid) return false;          // a type with a fixed layout: the length has to fit
+        break;
+    default: break;
+    }
+    return mmsiPlausible(m.mmsi);
 }
 
 static double lonOf(int32_t raw) { return raw == 0x6791AC0 ? 181.0 : raw / 600000.0; }

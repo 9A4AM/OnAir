@@ -68,6 +68,27 @@ static void runAgc(const char* name, GainSetting start, double secs) {
 }
 
 int main() {
+    {   // a sweep on a radio with an RF stage tries the RF states too and reports the winner's
+        GainSweep sw;
+        sw.start(0, 60, 9);
+        CHECK(sw.entries().size() == 12 && sw.entries().front().rf == 0 && sw.entries().back().rf == 9, "RF sweep entries %d", (int)sw.entries().size());
+        GainSetting g; double tm = 0;
+        sw.update(tm, GainSweep::Sample(), g);
+        CHECK(sw.rf() == 0, "first RF state %d", sw.rf());
+        int guard = 0;
+        while (sw.active() && guard++ < 1000) {
+            GainSweep::Sample sm; sm.locked = true; sm.rms = -16; sm.peak = 0.5f;
+            const int rf = sw.rf();
+            sm.clip = rf < 3 ? 0.05f : 0;                 // the most-gain states clip
+            sm.snrDb = rf == 6 ? 25 : 15;                  // state 6 is the best of the rest
+            tm += 0.5;
+            sw.update(tm, sm, g);
+        }
+        CHECK(!sw.active() && sw.rf() == 6, "RF sweep winner %d", sw.rf());
+        GainSweep plain; plain.start(0, 60);
+        CHECK(plain.entries().front().rf == -1 && plain.rf() == -1, "plain sweep has no RF state");
+    }
+
     // stage split
     for (int tot : {0, 10, 36, 62, 66, 80, 100, 116}) {
         GainSetting g = gainForTotal(tot);

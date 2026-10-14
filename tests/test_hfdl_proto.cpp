@@ -1,6 +1,7 @@
 // HFDL layers: check sequences, the interleaver, the code, the PDU builders and parsers, every rate's bit chain end to end.
 #include "dect2/hfdl_proto.h"
 #include <cmath>
+#include <vector>
 #include <cstdio>
 #include <set>
 using namespace dect2;
@@ -16,6 +17,38 @@ int main() {
         const auto& p = hfdlInterleave(m);
         std::set<int> u(p.begin(), p.end());
         CHECK((int)u.size() == hfdlCodedBits(m) && *u.begin() == 0 && *u.rbegin() == hfdlCodedBits(m) - 1, "interleaver %d", m);
+    }
+    // known answers against the deployed system (as dumphfdl decodes it off air), not just our own transmitter (issue #66)
+    for (int m = 0; m < 8; m++) {   // deinterleaver as a push / pop state machine: push the channel bits, pop the decoder bits
+        const int N = hfdlCodedBits(m), cols = N / 40, sh = hfdlRate(m).colShift;
+        std::vector<int> t((size_t)N);
+        int row = 0, col = 0;
+        for (int i = 0; i < N; i++) { t[(size_t)(row * cols + col)] = i; row++; if (row == 40) { row = 0; col++; } col -= sh; if (col < 0) col += cols; }
+        row = col = 0;
+        int bad = 0;
+        const auto& p = hfdlInterleave(m);
+        for (int j = 0; j < N; j++) { bad += p[(size_t)j] != t[(size_t)(row * cols + col)]; row = (row + 9) % 40; if (row == 0) col++; }
+        CHECK(bad == 0, "interleaver %d: %d of %d bits elsewhere", m, bad, N);
+    }
+    {
+        std::vector<int8_t> scr;
+        hfdlScramblerSigns(240, scr);
+        const char* want = "00010011000110111100010000100101";   // liquid msequence(15, 0x4001, 0x4D4B)
+        int bad = 0;
+        for (int i = 0; i < 32; i++) bad += (scr[(size_t)i] < 0) != (want[i] == '1') || scr[(size_t)i] != scr[(size_t)i + 120];
+        CHECK(bad == 0, "scrambler: %d bits wrong", bad);
+    }
+    {   // QPSK on the axes, the first bit the most significant bit of the Gray label
+        auto near = [](std::complex<float> a, float re, float im) { return std::abs(a - std::complex<float>(re, im)) < 1e-4f; };
+        CHECK(near(hfdlPsk(2, 0), 1, 0) && near(hfdlPsk(2, 2), 0, 1) && near(hfdlPsk(2, 3), -1, 0) && near(hfdlPsk(2, 1), 0, -1), "QPSK map");
+        const float h = 0.70710678f;
+        CHECK(near(hfdlPsk(3, 0), 1, 0) && near(hfdlPsk(3, 4), h, h) && near(hfdlPsk(3, 6), 0, 1) && near(hfdlPsk(3, 1), h, -h), "8PSK map");
+        for (int b = 2; b <= 3; b++) for (int v = 0; v < (1 << b); v++) {
+            float s[3];
+            hfdlSoftBits(b, hfdlPsk(b, v), 1, s);
+            int u = 0; for (int q = 0; q < b; q++) u |= (s[q] < 0) << q;
+            CHECK(hfdlDecide(b, hfdlPsk(b, v)) == v && u == v, "psk %d label %d", b, v);
+        }
     }
     CHECK(hfdlPayloadOctets(0) == 66 && hfdlPayloadOctets(3) == 404, "payload %d %d", hfdlPayloadOctets(0), hfdlPayloadOctets(3));
     CHECK(hfdlBurstSyms(0) + kHfdlPrekey < kHfdlSlotSec * kHfdlBaud && hfdlBurstSyms(4) + kHfdlPrekey < 2 * kHfdlSlotSec * kHfdlBaud, "burst fits its slots");

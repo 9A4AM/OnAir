@@ -1,6 +1,8 @@
 // The sample-rate choices of the app (rate_choice.h): the list per radio and mode, and the check of a typed rate.
 #include "dect2/rate_choice.h"
 #include "dect2/mode_tuning.h"
+#include "dect2/dvbs_rx.h"
+#include "../core/src/native_common.h"
 #include <cmath>
 #include <cstdio>
 
@@ -92,6 +94,26 @@ int main() {
         // on the network: no cap at all
         d.steadyRateHz = 0; t.radio.clear();
         CHECK(linkRateFor(d, t, 10e6, 7.9e6) == 10e6 && linkNote(d, t, 20e6).empty());
+    }
+    {   // #59: DVB-S/S2 of the QO-100 DATV beacon (1.5 Msym/s) on a PlutoSDR found on USB or at its USB-gadget network address: the
+        // automatic rate is the one the link keeps up with (no lost samples) and still holds the carrier
+        CHECK(native::plutoLinkRate("usb:1.4.5") == 4e6);
+        CHECK(native::plutoLinkRate("ip:pluto.local") == 3e6 && native::plutoLinkRate("ip:192.168.2.1") == 3e6);
+        CHECK(native::plutoLinkRate("ip:10.0.0.7") == 0);
+        CHECK(native::plutoDevice("ip:192.168.2.1").steadyRateHz == 0);   // typed in by hand: maybe a Pluto+ on Ethernet (#54)
+        const ModeTuning* m = modeTuning(8);
+        CHECK(m != nullptr);
+        for (const char* uri : {"usb:1.4.5", "ip:pluto.local"}) {
+            DeviceInfo d; d.kind = DeviceInfo::Native; d.board = "pluto"; d.maxRateHz = 61.44e6; d.minRateHz = 2.1e6;
+            d.steadyRateHz = native::plutoLinkRate(uri);
+            TuneSettings t;
+            const double got = m ? linkRateFor(d, t, m->sampleRate, m->minSampleRate) : 0;
+            CHECK(got <= d.steadyRateHz && got >= d.minRateHz);                  // no faster than the link: nothing lost
+            CHECK(linkNote(d, t, got).empty());
+            CHECK(dvbsMaxSymbolRate(got, 0.35) >= 1.5e6);                         // the beacon fits, even with a 0.35 roll-off
+            CHECK(1.5e6 >= dvbsMinAutoSymbolRate(got));                            // and Auto finds it in the spectrum
+            printf("  pluto %-15s DVB-S auto %.3f Msps\n", uri, got / 1e6);
+        }
     }
     if (fails) { printf("%d failures\n", fails); return 1; }
     printf("rate choice ok\n");

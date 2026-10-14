@@ -53,13 +53,14 @@ const std::vector<float>& hfdlPreambleRef(int m1) {
 }
 
 void hfdlScramblerSigns(int n, std::vector<int8_t>& out) {
+    // 15-bit m-sequence restarted every 120 data symbols: the new bit is the parity of bits 14 and 0, shifted in at bit 0
+    // (liquid-dsp msequence(15, 0x4001, 0x4D4B) as dumphfdl uses it; bit 1 turns the symbol by 180 degrees)
     out.resize((size_t)n);
     unsigned st = 0x4D4B;
     for (int i = 0; i < n; i++) {
         if (i % 120 == 0) st = 0x4D4B;
-        const unsigned b = st & 1;
-        const unsigned fb = (st ^ (st >> 1)) & 1;      // x^15 + x + 1
-        st = (st >> 1) | (fb << 14);
+        const unsigned b = (unsigned)parity(st & 0x4001);
+        st = ((st << 1) | b) & 0x7FFF;
         out[(size_t)i] = b ? -1 : 1;
     }
 }
@@ -68,15 +69,23 @@ const std::vector<int>& hfdlInterleave(int m1) {
     static std::vector<int> tab[8];
     m1 = std::max(0, std::min(7, m1));
     if (tab[m1].empty()) {
+        // channel bits are written down the 40 rows, the column moving back by the shift after every bit (and on by one after
+        // each pass over the rows); the decoder reads them with a row step of 9, the column moving on after each pass
         const int N = hfdlCodedBits(m1), cols = N / 40, sh = hfdlRate(m1).colShift;
-        std::vector<int> pinv((size_t)N);
+        std::vector<int> cell((size_t)N);
+        int row = 0, col = 0;
         for (int i = 0; i < N; i++) {
-            const int row = i % 40;
-            const int col = (((i / 40) - sh * row) % cols + cols * 40) % cols;
-            pinv[(size_t)(row * cols + col)] = i;
+            cell[(size_t)(row * cols + col)] = i;
+            if (++row == 40) { row = 0; col++; }
+            col = ((col - sh) % cols + cols) % cols;
         }
         tab[m1].resize((size_t)N);
-        for (int j = 0; j < N; j++) tab[m1][(size_t)j] = pinv[(size_t)(((9 * j) % 40) * cols + j / 40)];
+        row = 0; col = 0;
+        for (int j = 0; j < N; j++) {
+            tab[m1][(size_t)j] = cell[(size_t)(row * cols + col)];
+            row = (row + 9) % 40;
+            if (row == 0) col++;
+        }
     }
     return tab[m1];
 }
@@ -128,31 +137,46 @@ std::vector<uint8_t> hfdlViterbi(const std::vector<float>& soft, int n) {
     return o;
 }
 
+namespace {
+// v (first bit sent in bit 0) -> the phase index k of k * 360 / M degrees: the first bit is the most significant bit of the
+// Gray label (liquid-dsp PSK4 / PSK8 as dumphfdl demodulates them: QPSK at 0 / 90 / 180 / 270 degrees, not 45)
+int pskPhase(int bps, int v) {
+    int g = 0;
+    for (int q = 0; q < bps; q++) g |= ((v >> q) & 1) << (bps - 1 - q);
+    int k = g; k ^= k >> 1; k ^= k >> 2;
+    return k & ((1 << bps) - 1);
+}
+int pskLabel(int bps, int k) {
+    const int g = k ^ (k >> 1);
+    int v = 0;
+    for (int q = 0; q < bps; q++) v |= ((g >> (bps - 1 - q)) & 1) << q;
+    return v;
+}
+} // namespace
+
 std::complex<float> hfdlPsk(int bps, int v) {
     if (bps == 1) return {(v & 1) ? -1.f : 1.f, 0.f};
-    if (bps == 2) { const float a = 0.70710678f; return {(v & 1) ? -a : a, (v & 2) ? -a : a}; }
-    // 8PSK: v is the Gray label of the phase k (v = k ^ (k >> 1))
-    int k = v & 7; k ^= k >> 1; k ^= k >> 2;
-    const float ph = (float)(k * M_PI / 4);
+    const int M = 1 << bps;
+    const float ph = (float)(2 * M_PI * pskPhase(bps, v & (M - 1)) / M);
     return {std::cos(ph), std::sin(ph)};
 }
 
 int hfdlDecide(int bps, std::complex<float> y) {
     if (bps == 1) return y.real() < 0;
-    if (bps == 2) return (y.real() < 0) | ((y.imag() < 0) << 1);
-    int k = (int)std::lround(std::arg(y) / (M_PI / 4));
-    k = (k % 8 + 8) % 8;
-    return k ^ (k >> 1);
+    const int M = 1 << bps;
+    int k = (int)std::lround(std::arg(y) / (2 * M_PI / M));
+    k = (k % M + M) % M;
+    return pskLabel(bps, k);
 }
 
 void hfdlSoftBits(int bps, std::complex<float> y, float scale, float* out) {
     if (bps == 1) { out[0] = y.real() * scale; return; }
-    if (bps == 2) { out[0] = y.real() * scale; out[1] = y.imag() * scale; return; }
+    const int M = 1 << bps;
     float d[8];
-    for (int v = 0; v < 8; v++) d[v] = std::norm(y - hfdlPsk(3, v));
-    for (int b = 0; b < 3; b++) {
+    for (int v = 0; v < M; v++) d[v] = std::norm(y - hfdlPsk(bps, v));
+    for (int b = 0; b < bps; b++) {
         float m0 = 1e30f, m1 = 1e30f;
-        for (int v = 0; v < 8; v++) { if ((v >> b) & 1) m1 = std::min(m1, d[v]); else m0 = std::min(m0, d[v]); }
+        for (int v = 0; v < M; v++) { if ((v >> b) & 1) m1 = std::min(m1, d[v]); else m0 = std::min(m0, d[v]); }
         out[b] = (m1 - m0) * scale * 0.5f;
     }
 }

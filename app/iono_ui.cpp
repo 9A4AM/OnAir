@@ -39,7 +39,7 @@ struct State {
 State S;
 
 void tip(const char* t) { if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", t); }
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 53 && a.rx.iono.state == 1; }
+bool live(const App& a) { return a.rx.standard == 53 && a.rx.iono.state == 1; }
 ImU32 sounderCol(int id) { return kSounderCol[(size_t)((id - 1) % 6 + 6) % 6]; }
 
 void load() {
@@ -209,7 +209,7 @@ void controls(App& a) {
     changed |= ImGui::Checkbox("Traces", &S.traces);
     tip("Draw the echo traces the scaling found (from the newest sweep through each frequency) over the ionogram");
     flowNext(10 * gUi);
-    if (ImGui::SmallButton("Clear")) { a.engine.iono().reset(); S.sel = -1; }
+    if (ImGui::SmallButton("Clear")) { a.engine.iono().clearResults(); S.sel = -1; }
     tip("Forget the sounders, their ionograms and the coverage");
     flowNext(6 * gUi);
     if (ImGui::SmallButton("Save PNG")) savePng(a);

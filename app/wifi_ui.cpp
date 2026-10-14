@@ -35,7 +35,7 @@ void loadState() {
     S.hopSec = std::max(1, std::min(30, (int)plat::prefs().getI("wifiHopSec", 3)));
 }
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 55; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 55; }   // the engine reports its standard code minus one
 
 std::string clock(int64_t t) {
     if (t <= 0) return "-";

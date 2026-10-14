@@ -47,25 +47,26 @@ int main() {
                 cutTried++;
                 cutWrong += wrongOf(r3);
             }
-            // one pulse lengthened or shortened (a bit flipped by noise)
-            for (int f = 0; f < 40; f++) {
-                IsmTrain c = t;
-                const size_t i = std::uniform_int_distribution<size_t>(0, c.p.size() - 1)(rng);
-                const bool gap = rng() & 1;
-                float& v = gap ? c.p[i].gapUs : c.p[i].pulseUs;
-                v *= (rng() & 1) ? 2.0f : 0.5f;
-                const auto r4 = ismDecode(c);
-                flipTried++;
-                const int wr = wrongOf(r4);
-                flipWrong += wr;
-                flipOk += !r4.empty() && !wr;
-                if (wr) printf("    flip: %s pulse %zu %s\n", ismTxName(tx), i, gap ? "gap" : "pulse");
-            }
+            // every pulse and every gap lengthened or shortened in turn (a bit flipped by noise): the same set on every platform
+            for (size_t i = 0; i < t.p.size(); i++)
+                for (int gap = 0; gap < 2; gap++)
+                    for (float sc : {2.0f, 0.5f}) {
+                        IsmTrain c = t;
+                        (gap ? c.p[i].gapUs : c.p[i].pulseUs) *= sc;
+                        const auto r4 = ismDecode(c);
+                        flipTried++;
+                        const int wr = wrongOf(r4);
+                        flipWrong += wr;
+                        flipOk += !r4.empty() && !wr;
+                        if (wr) printf("    flip: %s k=%d pulse %zu of %zu, %s x%.1f\n", ismTxName(tx), k, i, t.p.size(), gap ? "gap" : "pulse", sc);
+                    }
         }
     }
     printf("  cut-off frames: %d tried, %d wrong readings; flipped: %d tried, %d still right, %d wrong\n", cutTried, cutWrong, flipTried, flipOk, flipWrong);
     CHECK(cutWrong == 0, "%d wrong readings from cut-off frames", cutWrong);
-    CHECK(flipWrong == 0, "%d wrong readings from flipped bits", flipWrong);
+    // a few flips cannot be told from a real frame: the 8-bit sums of Efergy and Z-Wave R2 pass on a shifted frame now and then, and a
+    // stretched last element of a WH24 gives the longer postamble that rtl_433 (and we) take for a WH65B. 7 of the ~31000 flips now.
+    CHECK(flipWrong * 3000 <= flipTried, "%d wrong readings from %d flipped bits", flipWrong, flipTried);
     // noise: random pulse trains give no reading
     int noiseReadings = 0;
     for (int i = 0; i < 3000; i++) {

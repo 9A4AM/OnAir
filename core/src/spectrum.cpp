@@ -9,7 +9,7 @@
 
 namespace dect2 {
 
-constexpr size_t kMaxBlocksPerFrame = 32;
+constexpr size_t kMaxBlocksPerFrame = 16;
 
 struct SpectrumAnalyzer::Impl {
     int log2n = 0;

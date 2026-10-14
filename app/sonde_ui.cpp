@@ -23,7 +23,7 @@ struct State {
 State S;
 
 // standard 14 is the engine's activeStandard for radiosondes
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 14; }
+bool live(const App& a) { return a.rx.standard == 14; }
 
 void loadState() {
     if (S.loaded) return;
@@ -416,7 +416,7 @@ void decoder(App& a, bool&) {
     if (ImGui::SliderInt("##sdch", &maxCh, 1, 8) && a.engine.running()) a.engine.sonde().setMaxChannels(maxCh);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("How many sondes are followed at once. Each one costs a little CPU.");
     sameLineIf(ImGui::CalcTextSize("clear list").x + 2 * ImGui::GetStyle().FramePadding.x, 8 * gUi);
-    if (ImGui::SmallButton("clear list") && a.engine.running()) { a.engine.sonde().clearSondes(); S.sel.clear(); }
+    if (ImGui::SmallButton("clear list")) { a.engine.sonde().clearSondes(); S.sel.clear(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Forget the sondes heard so far (the receiver keeps following the carriers).");
 }
 

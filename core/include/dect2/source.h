@@ -139,10 +139,12 @@ std::vector<DeviceInfo> listRadios(std::string& err);
 std::unique_ptr<IqSource> makeSource(const DeviceInfo& d);
 
 // File format helpers (sidecar-free for now): .cs8 interleaved signed 8-bit IQ, .cu8 unsigned, .cf32 float.
-enum class FileFormat { CS8, CU8, CF32 };
+enum class FileFormat { CS8, CU8, CF32, CI16, CU16 };   // CI16 / CU16 come from SigMF and WAV files only
 FileFormat guessFormat(const std::string& path);
 // Sample rate in Hz from a file name such as "capture_10Msps.cs8" or "x_2.5msps.cu8"; 0 if the name does not say.
 double guessSampleRate(const std::string& path);
-std::unique_ptr<IqSource> makeFileSource(const std::string& path, FileFormat fmt, double sampleRate, bool loop);
+// offsetBytes: where the samples start (SigMF / WAV header), endBytes: where they end (0 = end of file), bigEndian: multi-byte samples.
+std::unique_ptr<IqSource> makeFileSource(const std::string& path, FileFormat fmt, double sampleRate, bool loop,
+                                         uint64_t offsetBytes = 0, uint64_t endBytes = 0, bool bigEndian = false);
 
 } // namespace dect2

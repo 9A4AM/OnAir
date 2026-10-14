@@ -10,6 +10,7 @@ namespace dect2 {
 
 // One call or message in the log (the last 100 are kept)
 struct DmrCall {
+    int carrierId = 0; double carrierHz = 0;   // whole-span decoding: the carrier it came from (id 0: single channel), its frequency relative to the span centre
     int slot = 0;                // 1 or 2; 0 when the slot could not be told
     double startSec = 0, endSec = 0;   // seconds of signal since the receiver started (or was reset)
     bool active = false;         // still going on
@@ -27,6 +28,7 @@ struct DmrCall {
 };
 
 struct DmrMessage {
+    int carrierId = 0; double carrierHz = 0;   // whole-span decoding: the carrier it came from (id 0: single channel), its frequency relative to the span centre
     double sec = 0;
     int slot = 0;
     uint32_t src = 0, dst = 0;

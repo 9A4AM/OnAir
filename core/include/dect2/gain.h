@@ -58,14 +58,16 @@ private:
 class GainSweep {
 public:
     struct Sample { double snrDb = 0; bool locked = false; float clip = 0, rms = -120, peak = 0; };
-    struct Entry { GainSetting g; double snrDb = -100; float rms = -120, clip = 0; int n = 0; bool done = false; };
-    void start(double nowSec, int genericMaxDb = 0);   // genericMaxDb > 0: sweep one overall gain over 0..genericMaxDb
+    struct Entry { GainSetting g; int rf = -1; double snrDb = -100; float rms = -120, clip = 0; int n = 0; bool done = false; };
+    // rfMaxState > 0: the radio also has an RF stage (state 0 = most gain .. rfMaxState): the states are swept too, see rf()
+    void start(double nowSec, int genericMaxDb = 0, int rfMaxState = 0);   // genericMaxDb > 0: sweep one overall gain over 0..genericMaxDb
     bool active() const { return active_; }
     // Returns true when `g` changed (apply it). When the sweep ends, `g` is the winner and active() is false.
     bool update(double nowSec, const Sample& s, GainSetting& g);
     const std::vector<Entry>& entries() const { return e_; }
     int current() const { return idx_; }
     const GainSetting& best() const { return best_; }
+    int rf() const { return active_ && idx_ >= 0 && idx_ < (int)e_.size() ? e_[idx_].rf : bestRf_; }   // the RF state to apply (-1: none)
     std::string summary() const;
 
 private:
@@ -75,6 +77,7 @@ private:
     double t0_ = 0;
     bool active_ = false;
     GainSetting best_;
+    int bestRf_ = -1;
     double snrSum_ = 0, rmsSum_ = 0, clipMax_ = 0; int nSnr_ = 0, nAll_ = 0;
 };
 

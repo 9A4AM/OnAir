@@ -64,7 +64,7 @@ std::string typeText(const dect2::PagerMessage& m) {
 
 constexpr size_t kShown = 400;           // rows drawn at most: the list wraps its text, so every row has its own height
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 24; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 24; }   // the engine reports its standard code minus one
 
 std::string lower(std::string s) { for (auto& c : s) c = (char)std::tolower((unsigned char)c); return s; }
 
@@ -260,6 +260,7 @@ void tab(App& a) {
 void list(App& a) {
     loadRead();
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to see pages"); ImGui::PopTextWrapPos(); return; }
+    if (resultsClearButton("pager")) a.engine.pager().clearResults();
     const dect2::PagerTelemetry& t = a.rx.pager;
     const std::vector<dect2::PagerMessage>& all = messagesOf(t);
     ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%llu pages", (unsigned long long)t.messagesTotal); ImGui::PopTextWrapPos();

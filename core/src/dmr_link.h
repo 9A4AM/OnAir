@@ -32,6 +32,8 @@ public:
     void forgetCalibration();
     void dropTracks();                             // the front end changed the polarity: every track and calibration is wrong                      // the front end moved a long way: level calibrations from syncs seen before are not trusted
     void shiftOffset(double hz);                    // the front end moved its oscillator by this much (up): the symbol levels move down by it
+    // the call log and the messages stay through reset() (their times move back as the clock starts again); Clear and a loaded file set them
+    void setLogs(std::vector<DmrCall> calls, std::vector<DmrMessage> msgs, uint64_t calls0) { tel_.callLog = std::move(calls); tel_.messages = std::move(msgs); tel_.calls = calls0; }
 
 private:
     static constexpr int kRingBits = 14;

@@ -35,7 +35,7 @@ const Sat kSats[] = {
 };
 constexpr int kNumSats = (int)(sizeof kSats / sizeof kSats[0]);
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 18; }
+bool live(const App& a) { return a.rx.standard == 18; }
 
 void loadState() {
     if (S.loaded) return;
@@ -262,6 +262,7 @@ void panels(App& a) {
 
 void list(App& a) {
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see messages"); ImGui::PopTextWrapPos(); } return; }
+    if (resultsClearButton("inmc")) a.engine.inmc().clearResults();
     const dect2::InmcTelemetry& t = a.rx.inmc;
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu in the list, %u seen", t.messages.size(), t.messageCount); ImGui::PopTextWrapPos(); }
     if (!ImGui::BeginTable("##inml", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;

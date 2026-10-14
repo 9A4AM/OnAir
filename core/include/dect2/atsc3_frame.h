@@ -40,6 +40,18 @@ struct PlpResult {
     int blocks = 0, blocksOk = 0;
     std::vector<std::vector<uint8_t>> packets;   // the decoded baseband packets (header included), only those that decoded
     std::vector<bool> ok;                         // per block: decoded
+    // A PLP with the convolutional time interleaver: its cells wait for the receiver, which de-interleaves in frame order (the interleaver keeps
+    // its state from one frame to the next) and cuts the FEC blocks, which may straddle frames.
+    bool cti = false;
+    std::vector<cf32> cells;
+    float noise = 0.1f;
+    int ctiRows = 0, ctiStartRow = 0, ctiFecBlockStart = 0;
+    FramePlp cfg;
+    // Without time interleaving the FEC blocks of a PLP run on from frame to frame: the frame starts with the end of the last block of the frame
+    // before (`head`), then whole blocks (decoded above), then the beginning of a block that ends in the next frame (`tail`). The receiver puts
+    // the tail of one frame and the head of the next together.
+    bool straddle = false;
+    std::vector<cf32> head, tail;
 };
 
 struct FrameResult {

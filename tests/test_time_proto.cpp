@@ -3,6 +3,7 @@
 #include "dect2/time_proto.h"
 #include <cmath>
 #include <cstdio>
+#include <string>
 using namespace dect2;
 using namespace dect2::timesig;
 static int fails = 0;
@@ -75,6 +76,20 @@ int main() {
         CHECK(decodeMinute(Jjy60, encodeMinute(Jjy60, M).data(), f) && f.hour == 23 && f.minute == 3 && f.utcOffsetMin == 540, "JJY fields");
         CHECK(decodeMinute(Msf, encodeMinute(Msf, M).data(), f) && f.hour == 15 && f.minute == 4 && f.dst == 1, "MSF fields");
         CHECK(decodeMinute(Wwvb, encodeMinute(Wwvb, M).data(), f) && f.hour == 14 && f.minute == 3 && f.doy == 285 && f.month == 10 && f.day == 12 && f.dstCode == 3, "WWVB fields");
+    }
+    // BPM: the WWVB layout in UTC, the UT1 flag, the site
+    {
+        const int64_t M = daysFromCivil(2026, 10, 12) * 86400 + 14 * 3600 + 3 * 60;
+        Fields f;
+        EncodeOpts o; o.dut1 = -3; o.ut1 = true;
+        CHECK(decodeMinute(Bpm, encodeMinute(Bpm, M, o).data(), f, 2026) && f.utcMinute == M && f.dut1 == -3 && f.ut1 && f.utcOffsetMin == 0, "BPM fields");
+        o.ut1 = false;
+        CHECK(decodeMinute(Bpm, encodeMinute(Bpm, M, o).data(), f, 2026) && !f.ut1 && f.hour == 14 && f.doy == 285, "BPM UTC minute");
+        CHECK(stationIsHf(Bpm) && stationKhz(Bpm) == 5000 && std::string(stationName(Bpm)) == "BPM", "BPM name");
+        double la, lo;
+        stationSite(Bpm, la, lo);
+        const double km = distanceKm(54.687, 25.280, la, lo);   // Vilnius to Pucheng
+        CHECK(km > 6500 && km < 7500, "BPM distance %.0f km", km);
     }
     // CHU frames
     {

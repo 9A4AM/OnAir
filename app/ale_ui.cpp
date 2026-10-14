@@ -18,17 +18,19 @@ struct State {
     bool wasRunning = false, loaded = false;
     bool listen = false; int pushedListen = -1; float pushedVol = -1; bool pushedMute = false;   // "Listen": off until switched on
     int view = 0;                        // 0 events, 1 stations, 2 words
+    int demod = dect2::HfDemodAuto;      // the front end's demodulator (HfDemod)
     char nets[128] = "";
     std::string pushedNets = "\x01";
 };
 State S;
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 50; }   // the engine reports its standard code minus one
+bool live(const App& a) { return a.rx.standard == 50; }   // the engine reports its standard code minus one
 
 void load() {
     if (S.loaded) return;
     S.loaded = true;
     S.listen = plat::prefs().getB("aleListen", false);
+    S.demod = hfDemodLoad("aleDemod");
     const std::string n = plat::prefs().getS("aleNets", "");
     snprintf(S.nets, sizeof S.nets, "%s", n.c_str());
 }
@@ -175,11 +177,17 @@ void tick(App& a) {
     dect2::AleReceiver& r = a.engine.ale();
     if (!S.wasRunning || S.pushedNets != S.nets) { r.setNetAddresses(netList()); S.pushedNets = S.nets; }
     if (!S.wasRunning || (int)S.listen != S.pushedListen) { r.setListen(S.listen); S.pushedListen = S.listen; }
+    r.setDemod(dect2::hfDemodResolve(S.demod, a.freqMhz));   // Auto follows the dial
     if (!S.wasRunning || a.volume != S.pushedVol || a.muted != S.pushedMute) {   // the sound controls are shared with the other modes
         r.setVolume(a.volume); r.setMuted(a.muted);
         S.pushedVol = a.volume; S.pushedMute = a.muted;
     }
     S.wasRunning = true;
+}
+
+void tuner(App& a, bool&) {
+    load();
+    hfDemodControl(a, S.demod, "aleDemod", "ale");
 }
 
 void tab(App& a) {
@@ -249,5 +257,6 @@ const ModeUi kAleUi = {
     .list = list,
     .status = status,
     .summary = summary,
+    .tuner = tuner,
     .tick = tick,
 };

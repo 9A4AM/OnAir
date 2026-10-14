@@ -1,6 +1,7 @@
 // Mesh (LoRa) receiver: the channel plan of the region, one channel filter per frequency and bandwidth, one LoRa demodulator per
 // setting, the packet layer on every good frame, and the tables of MeshTelemetry.
 #include "dect2/mesh_rx.h"
+#include "dect2/results_io.h"
 #include "dect2/mesh_lora.h"
 #include "dect2/mesh_proto.h"
 #include <algorithm>
@@ -39,17 +40,39 @@ void addEntry(std::vector<PlanEntry>& v, int protocol, const MeshLoraSettings& s
     v.push_back(e);
 }
 
-std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets) {
+// the custom setting: one entry, tried as every enabled protocol its sync word may carry
+std::vector<PlanEntry> customPlan(const MeshLoraSettings& s, double tunedHz, int protocols) {
+    std::vector<int> ps;
+    const uint8_t w = s.syncWord;
+    const bool any = w != 0x2B && w != 0x12 && w != 0x34;
+    for (int q : {3, 4, 2, 1, 5}) {   // the strict formats first (LoRa APRS prefix, MeshCom checksum)
+        if (!(protocols & (1 << (q - 1)))) continue;
+        const bool fits = any || ((q == 1 || q == 4) && w == 0x2B) || ((q == 2 || q == 3) && w == 0x12) || (q == 5 && w == 0x34);
+        if (fits) ps.push_back(q);
+    }
+    if (ps.empty()) ps.push_back(w == 0x2B ? 1 : w == 0x34 ? 5 : 2);
+    PlanEntry e;
+    e.protocol = ps[0]; e.preset = "Custom"; e.freqHz = s.freqHz > 0 ? s.freqHz : tunedHz;
+    e.p.sf = std::max(5, std::min(12, s.sf)); e.p.bwHz = s.bwHz; e.p.cr = std::max(5, std::min(8, s.cr));
+    e.p.preamble = std::max(6, s.preamble); e.p.syncWord = s.syncWord; e.p.ldro = s.ldro;
+    e.also.assign(ps.begin() + 1, ps.end());
+    return {e};
+}
+
+// the plan's Meshtastic region and MeshCore preset: 0 EU, 1 US, 2 ANZ (Australia, New Zealand and the 915 - 928 MHz networks elsewhere)
+const char* mtRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "ANZ" : "EU_868"; }
+const char* mcRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "AU" : "EU"; }
+
+std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets, const std::string& mtRegion, const std::string& mtPreset) {
     std::vector<PlanEntry> v;
     if (protocols & 1) {
-        const char* reg = region == 1 ? "US" : "EU_868";
-        std::vector<std::string> names = {"LongFast"};
-        if (allPresets) names.insert(names.end(), {"MediumFast", "MediumSlow", "ShortFast", "ShortSlow", "ShortTurbo", "LongModerate", "LongSlow", "LongTurbo"});
+        const std::string reg = !mtRegion.empty() ? mtRegion : mtRegionOf(region);
+        std::vector<std::string> names = {mtPreset.empty() ? std::string("LongFast") : mtPreset};
+        if (allPresets) for (const auto& n : meshtasticPresetNames()) if (n != names[0]) names.push_back(n);
         for (const auto& n : names) {
             MeshLoraSettings s;
-            if (!meshtasticPreset(n, s)) continue;
-            const double f = meshtasticSlotHz(reg, n);
-            if (f <= 0) continue;
+            if (!meshtasticRegionPreset(reg, n, s)) continue;
+            const double f = s.freqHz;
             PlanEntry e;
             e.protocol = 1; e.preset = n; e.freqHz = f;
             e.p.sf = s.sf; e.p.bwHz = s.bwHz; e.p.cr = s.cr; e.p.preamble = s.preamble; e.p.syncWord = s.syncWord; e.p.ldro = s.ldro;
@@ -57,10 +80,10 @@ std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets) {
         }
     }
     if (protocols & 2) {
-        const MeshLoraSettings s = meshcoreDefaults(region == 1 ? "US" : "EU");
+        const MeshLoraSettings s = meshcoreDefaults(mcRegionOf(region));
         if (s.freqHz > 0) {
             PlanEntry e;
-            e.protocol = 2; e.preset = "MeshCore " + std::string(region == 1 ? "US" : "EU"); e.freqHz = s.freqHz;
+            e.protocol = 2; e.preset = "MeshCore " + std::string(mcRegionOf(region)); e.freqHz = s.freqHz;
             e.p.sf = s.sf; e.p.bwHz = s.bwHz; e.p.cr = s.cr; e.p.preamble = s.preamble; e.p.syncWord = s.syncWord; e.p.ldro = s.ldro;
             v.push_back(e);
         }
@@ -88,11 +111,18 @@ struct MeshReceiver::Impl {
     double rate = 0, offsetHz = 0, tunedHz = 0;
     int region = 0, protocols = 15;
     bool presetSearch = false;
+    std::string mtRegion, mtPreset;
+    bool customOn = false;
+    MeshLoraSettings custom;
     std::atomic<bool> dirty{true};
     std::atomic<bool> resetReq{false};
     std::function<void(const std::string&)> log;
     MeshTelemetry pub;                     // the published report
     MeshProto proto;                       // locks internally
+    // the decoded lists (packets, nodes, messages, stations, devices) stay through resets: Clear and a loaded file reach the feed
+    // thread's copy through these requests (mu), and pub at once
+    bool clearReq = false, loadReq = false;
+    MeshTelemetry loaded;
 
     // processing state (feed thread only)
     struct Dec {
@@ -130,18 +160,20 @@ struct MeshReceiver::Impl {
     double now() const { return curRate > 0 ? (double)nProc / curRate : 0; }
 
     void rebuild() {
-        double rt, off, tu; int reg, prot; bool all;
+        double rt, off, tu; int reg, prot; bool all, cu; std::string mreg, mpre; MeshLoraSettings cs;
         {
             std::lock_guard<std::mutex> lk(mu);
             rt = rate; off = offsetHz; tu = tunedHz; reg = region; prot = protocols; all = presetSearch;
+            mreg = mtRegion; mpre = mtPreset; cu = customOn; cs = custom;
             dirty = false;
         }
         curRate = rt; curOffset = off; curTuned = tu;
         chans.clear();
         tel.decoders.clear();
         tel.inputRate = rt; tel.tunedHz = tu; tel.region = reg; tel.protocols = prot; tel.presetSearch = all;
+        tel.mtRegion = !mreg.empty() ? mreg : mtRegionOf(reg); tel.custom = cu;
         if (rt <= 0) return;
-        const auto plan = regionPlan(reg, prot, all);
+        const auto plan = cu ? customPlan(cs, tu, prot) : regionPlan(reg, prot, all, mreg, mpre);
         std::string inBand;
         for (const auto& e : plan) {
             MeshDecoderInfo d;
@@ -268,7 +300,7 @@ struct MeshReceiver::Impl {
         if (proto_ == 5) row.raw = meshHexString(f.payload.data(), std::min<size_t>(f.payload.size(), 255));
         else if (proto_ >= 3 || !r.ok) row.raw = meshPrintable(f.payload.data(), std::min<size_t>(f.payload.size(), 255));
         if (!r.ok) {
-            row.note = r.packet.note.empty() ? "not a " + std::string(protoName(di.protocol)) + " packet" : r.packet.note;
+            row.note = r.packet.note.empty() ? "not a " + std::string(protoName(di.protocol)) + " packet" : r.packet.note;   // (the first one tried)
             count(di.protocol, "unknown");
             capPush(tel.packets, std::move(row), kPacketCap);
             return;
@@ -280,11 +312,11 @@ struct MeshReceiver::Impl {
         row.type = pk.type; row.from = pk.from; row.to = pk.to; row.channel = pk.channel; row.packetId = pk.packetId;
         row.hopLimit = pk.hopLimit; row.hopStart = pk.hopStart; row.decrypted = pk.decrypted; row.note = pk.note; row.detail = pk.detail;
         row.path = pk.path;
-        count(di.protocol, pk.type.empty() ? "?" : pk.type);
-        const int hops = di.protocol == 1 ? (pk.hopStart > 0 && pk.hopLimit >= 0 && pk.hopStart >= pk.hopLimit ? pk.hopStart - pk.hopLimit : -1)
+        count(proto_, pk.type.empty() ? "?" : pk.type);
+        const int hops = proto_ == 1 ? (pk.hopStart > 0 && pk.hopLimit >= 0 && pk.hopStart >= pk.hopLimit ? pk.hopStart - pk.hopLimit : -1)
                                           : pk.pathHashCount;
         // the sender (Meshtastic: every packet names it; MeshCore: adverts carry the key)
-        if (di.protocol == 1 && !pk.from.empty()) {
+        if (proto_ == 1 && !pk.from.empty()) {
             const bool fresh = nodeIdx.find("1|" + pk.from) == nodeIdx.end();
             MeshNode& n = node(1, pk.from);
             n.lastHeard = t; n.lastSnrDb = (float)f.snrDb; n.lastLevelDb = (float)f.levelDb; n.packets++;
@@ -472,12 +504,44 @@ struct MeshReceiver::Impl {
         pub = tel;
     }
 
+    static void moveLists(MeshTelemetry& to, MeshTelemetry& from) {
+        to.packets = std::move(from.packets); to.nodes = std::move(from.nodes); to.messages = std::move(from.messages);
+        to.counts = std::move(from.counts); to.aprsStations = std::move(from.aprsStations); to.lorawanDevices = std::move(from.lorawanDevices);
+        from.packets.clear(); from.nodes.clear(); from.messages.clear(); from.counts.clear(); from.aprsStations.clear(); from.lorawanDevices.clear();
+    }
+    static void shiftTimes(MeshTelemetry& t, double dt) {
+        for (auto& p : t.packets) p.timeSec += dt;
+        for (auto& m : t.messages) m.timeSec += dt;
+        for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.posSec >= 0) n.posSec += dt; }
+        for (auto& a : t.aprsStations) a.st.lastHeardSec += dt;
+        for (auto& d : t.lorawanDevices) if (d.lastHeard >= 0) d.lastHeard += dt;
+    }
+    void reindex() {
+        nodeIdx.clear(); aprsIdx.clear(); lwIdx.clear();
+        for (size_t i = 0; i < tel.nodes.size(); i++) nodeIdx[std::to_string(tel.nodes[i].protocol) + "|" + tel.nodes[i].id] = i;
+        for (size_t i = 0; i < tel.aprsStations.size(); i++) aprsIdx[std::to_string(tel.aprsStations[i].protocol) + "|" + tel.aprsStations[i].st.call] = i;
+        for (size_t i = 0; i < tel.lorawanDevices.size(); i++) lwIdx[tel.lorawanDevices[i].id] = i;
+    }
+    // feed thread: a Clear or a loaded file asked for from another thread
+    void takeRequests() {
+        std::lock_guard<std::mutex> lk(mu);
+        if (!clearReq && !loadReq) return;
+        if (clearReq) { MeshTelemetry e; moveLists(tel, e); msgSeen.clear(); clearReq = false; }
+        if (loadReq) { moveLists(tel, loaded); msgSeen.clear(); loadReq = false; }
+        reindex();
+    }
+
     void resetState() {
-        // forget everything decoded; the report number goes on
+        // forget the signal; the decoded lists stay (clearResults) and the report number goes on
         const uint64_t s = tel.seq;
+        const double t0 = tel.timeSec;     // the clock starts again: the kept lists move back by the time it had reached
+        MeshTelemetry keep;
+        moveLists(keep, tel);
         tel = MeshTelemetry();
         tel.seq = s;
-        nodeIdx.clear(); aprsIdx.clear(); lwIdx.clear(); msgSeen.clear();
+        moveLists(tel, keep);
+        shiftTimes(tel, -t0);
+        reindex();
         pend.clear();
         nIn = nProc = 0;
         nextReport = 0;
@@ -509,13 +573,44 @@ void MeshReceiver::reset() {
     p_->resetReq = true;
     const uint64_t s = p_->pub.seq;
     const double tu = p_->pub.tunedHz;
-    p_->pub = MeshTelemetry();
+    MeshTelemetry t;
+    Impl::moveLists(t, p_->pub);         // the lists stay (clearResults)
+    Impl::shiftTimes(t, -p_->pub.timeSec);
+    p_->pub = std::move(t);
     p_->pub.seq = s; p_->pub.tunedHz = tu;
+}
+
+void MeshReceiver::clearResults() {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    MeshTelemetry e;
+    Impl::moveLists(p_->pub, e);
+    p_->clearReq = true; p_->loadReq = false;
+    p_->pub.seq++;
+}
+std::string MeshReceiver::saveResults() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const MeshTelemetry& t = p_->pub;
+    return results::pack(t.timeSec, t.packets, t.nodes, t.messages, t.counts, t.aprsStations, t.lorawanDevices);
+}
+bool MeshReceiver::loadResults(const std::string& blob) {
+    double t0 = 0;
+    MeshTelemetry l;
+    if (!results::unpack(blob, t0, l.packets, l.nodes, l.messages, l.counts, l.aprsStations, l.lorawanDevices)) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    Impl::shiftTimes(l, p_->pub.timeSec - t0);
+    MeshTelemetry copy;
+    copy.packets = l.packets; copy.nodes = l.nodes; copy.messages = l.messages; copy.counts = l.counts; copy.aprsStations = l.aprsStations; copy.lorawanDevices = l.lorawanDevices;
+    Impl::moveLists(p_->pub, copy);
+    Impl::moveLists(p_->loaded, l);
+    p_->loadReq = true;
+    p_->pub.seq++;
+    return true;
 }
 
 void MeshReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
+    m.takeRequests();
     if (m.dirty.load()) m.rebuild();
     if (m.curRate <= 0) return;
     m.nIn += (int64_t)n;
@@ -546,9 +641,17 @@ bool MeshReceiver::telemetry(MeshTelemetry& out, uint64_t lastSeq) {
 }
 void MeshReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void MeshReceiver::setTunedHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->tunedHz = hz; p_->dirty = true; }
-void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r == 1 ? 1 : 0; p_->dirty = true; }
+void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r == 1 || r == 2 ? r : 0; p_->dirty = true; }
 void MeshReceiver::setProtocols(int mask) { std::lock_guard<std::mutex> lk(p_->mu); p_->protocols = mask & 31; p_->dirty = true; }
 void MeshReceiver::setPresetSearch(bool all) { std::lock_guard<std::mutex> lk(p_->mu); p_->presetSearch = all; p_->dirty = true; }
+void MeshReceiver::setMeshtasticPlan(const std::string& region, const std::string& preset) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->mtRegion = region; p_->mtPreset = preset; p_->dirty = true;
+}
+void MeshReceiver::setCustom(bool on, const MeshLoraSettings& s) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->customOn = on; p_->custom = s; p_->dirty = true;
+}
 bool MeshReceiver::addMeshtasticChannel(const std::string& name, const std::string& psk) { return p_->proto.addMeshtasticChannel(name, psk); }
 bool MeshReceiver::addMeshCoreChannel(const std::string& name, const std::string& secret) { return p_->proto.addMeshCoreChannel(name, secret); }
 void MeshReceiver::clearUserChannels() { p_->proto.clearUserChannels(); }
@@ -556,7 +659,7 @@ void MeshReceiver::clearUserChannels() { p_->proto.clearUserChannels(); }
 ModeTuning meshTuning() {
     ModeTuning t;
     t.stdMode = 22; t.id = "mesh"; t.name = "Mesh (LoRa)";
-    t.minMhz = 400; t.maxMhz = 1000;
+    t.minMhz = 400; t.maxMhz = 2500;   // 2.4 GHz LoRa (Meshtastic LORA_24) too
     t.defMhz = 869.525;              // Meshtastic LongFast in EU_868; MeshCore EU (869.618 MHz) is 93 kHz above
     t.sampleRate = 2000000;
     t.basebandHz = 1750000;

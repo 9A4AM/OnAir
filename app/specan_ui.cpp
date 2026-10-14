@@ -7,7 +7,12 @@
 #include "dect2/specan_tel.h"
 #include <algorithm>
 #include <cmath>
+#include <atomic>
+#include <chrono>
+#include <mutex>
 #include <cstdio>
+#include <filesystem>
+#include <thread>
 #include <ctime>
 #include <string>
 #include <vector>
@@ -32,12 +37,77 @@ struct State {
     bool wfDirty = false, psDirty = false;
     std::string note;
     bool applied = false;
+    // automatic CSV saving
+    bool autoOn = false;
+    int autoSecs = 60, autoKeep = 0;          // keep 0 = all
+    char autoDir[512] = "";
+    double autoNext = 0;                      // steady time of the next save
+    int autoCount = 0;
+    std::string autoLast;                     // text: when the last file was saved
+    std::vector<std::string> autoFiles;
+    std::atomic<bool> autoBusy{false};
+    std::thread autoTh;
+    bool prefsLoaded = false;
 };
 State S;
+std::mutex& autoMu() { static std::mutex m; return m; }
 const double kRbw[] = {5e3, 10e3, 25e3, 100e3, 250e3, 500e3, 1e6};
 const char* const kRbwName[] = {"5 kHz", "10 kHz", "25 kHz", "100 kHz", "250 kHz", "500 kHz", "1 MHz"};
 
-bool live(const App& a) { return a.engine.running() && a.rx.standard == 43 && !a.rx.specan.live.empty(); }
+std::string sizeText(size_t b) {
+    char t[32];
+    snprintf(t, sizeof t, b >= (1u << 20) ? "%.1f MB" : "%.0f kB", b >= (1u << 20) ? b / 1048576.0 : b / 1024.0);
+    return t;
+}
+
+double nowS() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+
+std::string defaultDir() {
+    const char* h = getenv("HOME");
+    if (!h) h = getenv("USERPROFILE");
+    return std::string(h ? h : ".") + "/SpectrumSweeps";
+}
+
+void loadAutoPrefs() {
+    if (S.prefsLoaded) return;
+    S.prefsLoaded = true;
+    auto& p = plat::prefs();
+    S.autoSecs = (int)p.getI("specanAutoSecs", 60);
+    S.autoKeep = (int)p.getI("specanAutoKeep", 0);
+    snprintf(S.autoDir, sizeof S.autoDir, "%s", p.getS("specanAutoDir", defaultDir()).c_str());
+}
+
+void saveAutoPrefs() {
+    auto& p = plat::prefs();
+    p.setI("specanAutoSecs", S.autoSecs); p.setI("specanAutoKeep", S.autoKeep); p.setS("specanAutoDir", S.autoDir);
+    p.flush();
+}
+
+// One automatic save: the sweep is copied here, the file is written on a worker thread (the UI keeps running)
+void autoSave(const App& a) {
+    if (S.autoBusy.load()) return;
+    if (S.autoTh.joinable()) S.autoTh.join();
+    const auto& t = a.rx.specan;
+    const dect2::SaGrid g = dect2::saMakeGrid(t.loHz, t.loHz + t.binHz * t.live.size(), t.binHz);
+    char nm[64];
+    const std::time_t now = std::time(nullptr);
+    std::strftime(nm, sizeof nm, "specan_%Y%m%d_%H%M%S.csv", std::localtime(&now));
+    std::error_code ec;
+    std::filesystem::create_directories(S.autoDir, ec);
+    const std::string path = std::string(S.autoDir) + "/" + nm;
+    char when[32];
+    std::strftime(when, sizeof when, "%H:%M:%S", std::localtime(&now));
+    S.autoBusy = true;
+    S.autoTh = std::thread([g, live = t.live, peak = t.peak, avg = t.avg, path, w = std::string(when)] {
+        const bool ok = dect2::saCsvWriteFile(path, g, live, peak, avg);
+        std::lock_guard<std::mutex> lk(autoMu());
+        if (ok) { S.autoCount++; S.autoLast = w; S.autoFiles.push_back(path); S.note = "auto-saved " + path; }
+        else S.note = "auto-save failed: " + path;
+        S.autoBusy = false;
+    });
+}
+
+bool live(const App& a) { return a.rx.standard == 43 && !a.rx.specan.live.empty(); }
 
 void pushSettings(App& a, bool rangeChanged) {
     auto& r = a.engine.specan();
@@ -146,21 +216,60 @@ void controls(App& a) {
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Reset peak")) a.engine.specan().resetPeak();
     ImGui::SameLine();
-    if (ImGui::SmallButton("Export CSV") && live(a)) {
+    {
         const auto& t = a.rx.specan;
-        char nm[64];
-        const std::time_t now = std::time(nullptr);
-        std::strftime(nm, sizeof nm, "sweep_%Y%m%d_%H%M%S.csv", std::localtime(&now));
-        const std::string path = saveFileDialog(nm);
-        if (!path.empty()) {
-            const std::string csv = dect2::saCsv(dect2::saMakeGrid(t.loHz, t.loHz + t.binHz * t.live.size(), t.binHz), t.live, t.peak, t.avg);
-            FILE* f = fopen(path.c_str(), "wb");
-            S.note = f && fwrite(csv.data(), 1, csv.size(), f) == csv.size() ? "saved " + path : "could not write " + path;
-            if (f) fclose(f);
+        const size_t bins = t.live.size();
+        if (ImGui::SmallButton("Export CSV") && live(a)) {
+            char nm[64];
+            const std::time_t now = std::time(nullptr);
+            std::strftime(nm, sizeof nm, "sweep_%Y%m%d_%H%M%S.csv", std::localtime(&now));
+            const std::string path = saveFileDialog(nm);
+            if (!path.empty())
+                S.note = dect2::saCsvWriteFile(path, dect2::saMakeGrid(t.loHz, t.loHz + t.binHz * bins, t.binHz), t.live, t.peak, t.avg) ? "saved " + path : "could not write " + path;
+        }
+        if (live(a) && bins) {
+            const size_t est = dect2::saCsvEstimateBytes(bins);
+            ImGui::SameLine();
+            ImGui::TextDisabled("%zu bins of %.1f kHz, about %s%s", bins, t.binHz / 1e3, sizeText(est).c_str(), est > (6u << 20) ? " (large)" : "");
         }
     }
     if (!S.note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", S.note.c_str()); }
     flowEnd();
+    loadAutoPrefs();
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Auto-save CSV every");
+    ImGui::SameLine();
+    bool pc = false;
+    ImGui::SetNextItemWidth(70 * gUi);
+    if (ImGui::InputInt("s##saasec", &S.autoSecs, 0, 0)) { S.autoSecs = std::max(1, S.autoSecs); pc = true; }
+    flowNext(6 * gUi);
+    ImGui::TextDisabled("keep"); ImGui::SameLine();
+    ImGui::SetNextItemWidth(60 * gUi);
+    if (ImGui::InputInt("files (0 = all)##saakeep", &S.autoKeep, 0, 0)) { S.autoKeep = std::max(0, S.autoKeep); pc = true; }
+    flowNext(6 * gUi);
+    ImGui::SetNextItemWidth(260 * gUi);
+    if (ImGui::InputText("##saadir", S.autoDir, sizeof S.autoDir)) pc = true;
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Folder...")) {   // pick any file name inside the wanted folder
+        const std::string p = saveFileDialog("specan_folder.csv");
+        if (!p.empty()) { const auto d = std::filesystem::path(p).parent_path().string(); snprintf(S.autoDir, sizeof S.autoDir, "%s", d.c_str()); pc = true; }
+    }
+    if (pc) saveAutoPrefs();
+    flowNext(6 * gUi);
+    if (ImGui::Checkbox("Auto-save on", &S.autoOn)) { S.autoNext = nowS(); if (S.autoOn) S.autoCount = 0, S.autoFiles.clear(); }
+    {
+        std::lock_guard<std::mutex> lk(autoMu());
+        if (S.autoCount || S.autoOn) { ImGui::SameLine(); ImGui::TextDisabled("%d saved, last %s", S.autoCount, S.autoLast.empty() ? "-" : S.autoLast.c_str()); }
+    }
+    flowEnd();
+    if (S.autoOn && live(a) && !S.autoBusy.load() && nowS() >= S.autoNext) {
+        S.autoNext = nowS() + S.autoSecs;
+        autoSave(a);
+    }
+    if (S.autoKeep > 0 && !S.autoBusy.load()) {   // trim the oldest of the files this run wrote
+        std::lock_guard<std::mutex> lk(autoMu());
+        while ((int)S.autoFiles.size() > S.autoKeep) { std::error_code ec; std::filesystem::remove(S.autoFiles.front(), ec); S.autoFiles.erase(S.autoFiles.begin()); }
+    }
     if (range || other || !S.applied) { if (S.hiMhz < S.loMhz + 0.1f) S.hiMhz = S.loMhz + 0.1f; pushSettings(a, range); S.applied = true; }
 }
 

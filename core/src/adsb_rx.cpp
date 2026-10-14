@@ -87,7 +87,7 @@ void AdsbReceiver::configure(double inputRateHz) {
     p_->rate = inputRateHz;
     p_->demod.configure(inputRateHz);
     p_->demod.setThresholds(p_->kPulse, p_->kGap);
-    p_->tracker.reset();
+    p_->tracker.shiftTime(-p_->now);   // the demodulator's clock starts again at 0: the kept aircraft move back with it
     p_->nextReport = 0.25; p_->now = 0; p_->state = 0;
     p_->lastGood = p_->lastActivity = p_->lastNewLog = -1e9;
     p_->resetPending = false;
@@ -96,8 +96,7 @@ void AdsbReceiver::configure(double inputRateHz) {
 bool AdsbReceiver::ready() const { return p_->rate >= adsbTuning().minSampleRate - 1; }
 
 void AdsbReceiver::reset() {
-    std::lock_guard<std::mutex> lk(p_->mu);
-    p_->tracker.reset();
+    std::lock_guard<std::mutex> lk(p_->mu);   // the aircraft stay (clearResults): the demodulator's clock runs on through its reset
     p_->state = 0;
     p_->lastGood = p_->lastActivity = -1e9;
     p_->resetPending = true;         // the demodulator is only touched by feed()
@@ -149,7 +148,15 @@ void AdsbReceiver::setReference(double lat, double lon) { std::lock_guard<std::m
 void AdsbReceiver::clearReference() { std::lock_guard<std::mutex> lk(p_->mu); p_->tracker.clearReference(); }
 void AdsbReceiver::setCorrection(int bits) { std::lock_guard<std::mutex> lk(p_->mu); AdsbOptions o = p_->tracker.options(); o.fixBits = bits < 0 ? 0 : bits > 2 ? 2 : bits; p_->tracker.setOptions(o); }
 void AdsbReceiver::setExpiry(double seconds) { std::lock_guard<std::mutex> lk(p_->mu); AdsbOptions o = p_->tracker.options(); o.expirySec = seconds < 5 ? 5 : seconds; p_->tracker.setOptions(o); }
-void AdsbReceiver::clearAircraft() { std::lock_guard<std::mutex> lk(p_->mu); p_->tracker.reset(); }
+void AdsbReceiver::clearAircraft() { std::lock_guard<std::mutex> lk(p_->mu); p_->tracker.reset(); p_->seq++; }
+void AdsbReceiver::clearResults() { clearAircraft(); }
+std::string AdsbReceiver::saveResults() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->tracker.saveResults(); }
+bool AdsbReceiver::loadResults(const std::string& blob) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (!p_->tracker.loadResults(blob, p_->now)) return false;
+    p_->seq++;
+    return true;
+}
 
 void AdsbReceiver::setThresholds(float pulseOverNoise, float pulseOverGap) { p_->kPulse = pulseOverNoise; p_->kGap = pulseOverGap; }
 

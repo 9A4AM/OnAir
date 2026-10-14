@@ -6,8 +6,10 @@
 // (non-coherent likelihoods) -> LDPC / CRC (FT) or deinterleaving and Fano (WSPR) -> the message; each decoded signal is rebuilt and
 // subtracted from the slot, and the search runs again on what is left.
 #include "dect2/hfdig_ftx.h"
+#include "dect2/pskreporter.h"
 #include "dect2/fftutil.h"
 #include "hfdig_ftx_int.h"
+#include "hfdig_wsjt_int.h"
 #include "hfdig_usb.h"
 #include <algorithm>
 #include <array>
@@ -27,7 +29,7 @@
 namespace dect2 {
 
 const char* ftxModeName(int m) {
-    static const char* n[kFtxModes] = {"FT8", "FT4", "FT2", "WSPR"};
+    static const char* n[kFtxModes] = {"FT8", "FT4", "FT2", "WSPR", "JT65", "JT9", "Q65", "FST4", "MSK144", "FST4W"};
     return m >= 0 && m < kFtxModes ? n[m] : "?";
 }
 double ftxPeriod(int m) { return ftx::spec(m).period; }
@@ -40,8 +42,61 @@ const Spec& spec(int m) {
         {"FT4", 7.5, 0.5, 0.048, 12000.0 / 576, 105, 4, 1.0},
         {"FT2", 3.75, 0.5, 0.024, 12000.0 / 288, 105, 4, 1.0},
         {"WSPR", 120.0, 1.0, 8192.0 / 12000, 12000.0 / 8192, 162, 4, 0.0},
+        {"JT65", 60.0, 1.0, 4096.0 / 11025, 11025.0 / 4096, 126, 66, 0.0},
+        {"JT9", 60.0, 1.0, 6912.0 / 12000, 12000.0 / 6912, 85, 9, 0.0},
+        {"Q65", 60.0, 1.0, 7200.0 / 12000, 12000.0 / 7200, 85, 65, 0.0},
+        {"FST4", 60.0, 1.0, 3888.0 / 12000, 12000.0 / 3888, 160, 4, 0.0},
+        {"MSK144", 15.0, 0.0, 0.072, 2000.0, 208, 2, 0.0},
+        {"FST4W", 120.0, 1.0, 8200.0 / 12000, 12000.0 / 8200, 160, 4, 0.0},
     };
     return s[std::max(0, std::min(kModes - 1, m))];
+}
+
+// the timing of a mode for its sub-mode and period
+Spec specCfg(int mode, int sub, double period) {
+    Spec s = spec(mode);
+    switch (mode) {
+    case kJt65: s.spacing *= (double)(1 << std::max(0, std::min(2, sub))); break;
+    case kQ65: {
+        static const double per[5] = {15, 30, 60, 120, 300};
+        static const int nsps[5] = {1800, 3600, 7200, 16000, 41472};
+        int i = 2;
+        for (int k = 0; k < 5; k++) if (std::fabs(per[k] - period) < 0.5) i = k;
+        s.period = per[i]; s.symSec = nsps[i] / 12000.0; s.spacing = 12000.0 / nsps[i] * (double)(1 << std::max(0, std::min(4, sub)));
+        s.t0 = i == 0 ? 0.5 : 1.0;
+        break;
+    }
+    case kFst4: case kFst4w: {
+        static const double per[7] = {15, 30, 60, 120, 300, 900, 1800};
+        static const int nsps[7] = {720, 1680, 3888, 8200, 21504, 66560, 134400};
+        int i = mode == kFst4 ? 2 : 3;
+        for (int k = 0; k < 7; k++) if (std::fabs(per[k] - period) < 0.5) i = k;
+        s.period = per[i]; s.symSec = nsps[i] / 12000.0; s.spacing = 12000.0 / nsps[i];
+        s.t0 = i == 0 ? 0.5 : 1.0;
+        break;
+    }
+    case kMsk144:
+        s.period = period > 20 ? 30.0 : 15.0;
+        s.nn = (int)std::lround(s.period / s.symSec);
+        break;
+    default: break;
+    }
+    return s;
+}
+
+double dtRange(int mode, double period) {
+    switch (mode) {
+    case kJt65: return 8.0;           // WSJT-X searches -3 .. +8 s for JT65 (a slow start, EME delays)
+    case kJt9: return 4.0;
+    case kQ65: return std::min(3.0, 0.1 * period);
+    case kFst4: case kFst4w: return std::min(3.0, 0.1 * period);
+    case kMsk144: return 0.0;
+    default: return 2.5;
+    }
+}
+
+double dtLow(int mode, double period) {   // the earliest start offset searched (as a positive number of seconds early)
+    return mode == kJt65 || mode == kJt9 ? 3.0 : dtRange(mode, period);
 }
 
 std::vector<int> ftxTones(int mode, const uint8_t* b77) {
@@ -117,7 +172,30 @@ bool ftxGridToLatLon(const std::string& grid, double& lat, double& lon) { return
 
 bool ftxAddTransmission(int mode, const std::string& msg, double hz, double amp, double rate, double startSec, bool mirrored,
                         std::vector<float>& out) {
+    return ftxAddTransmissionEx(mode, msg, hz, amp, rate, startSec, mirrored, 0, 0, out);
+}
+
+bool ftxAddTransmissionEx(int mode, const std::string& msg, double hz, double amp, double rate, double startSec, bool mirrored, int sub,
+                          double period, std::vector<float>& out) {
     using namespace ftx;
+    if (mode >= kJt65) {
+        const Spec sp = specCfg(mode, sub, period);
+        const double t = startSec;
+        switch (mode) {
+        case kJt65: { const auto tn = wsjt::jt65Tones(msg); if (tn.empty()) return false; wsjt::addJt65(tn, sub, hz, amp, rate, t, out); return true; }
+        case kJt9: { const auto tn = wsjt::jt9Tones(msg); if (tn.empty()) return false; wsjt::addJt9(tn, hz, amp, rate, t, out); return true; }
+        case kQ65: { const auto tn = wsjt::q65Tones(msg); if (tn.empty()) return false; wsjt::addQ65(tn, sub, sp.period, hz, amp, rate, t, out); return true; }
+        case kFst4: case kFst4w: { const auto tn = wsjt::fst4Tones(msg, mode == kFst4w); if (tn.empty()) return false; wsjt::addFst4(tn, sp.period, hz, amp, rate, t, out); return true; }
+        case kMsk144: {
+            uint8_t b[144];
+            if (!wsjt::msk144Frame(msg, b)) return false;
+            wsjt::addMsk144(b, hz, amp, rate, t, sp.period, out);
+            return true;
+        }
+        default: return false;
+        }
+    }
+    (void)mirrored;
     std::vector<int> tones;
     if (mode == kWspr) {
         if (!wsprSymbols(msg, tones)) return false;
@@ -181,11 +259,11 @@ private:
     int64_t in_ = 0, out_ = 0;
 };
 
-// the streams: 0 FT8 (6400 Hz), 1 FT4 and FT2 (10667 Hz), 2 WSPR (12000 Hz)
-constexpr int kStreams = 3;
-const int kStreamL[kStreams] = {4, 4, 3}, kStreamM[kStreams] = {5, 3, 2};
-const double kStreamCut[kStreams] = {3080, 3900, 3900};
-int streamOf(int mode) { return mode == kFt8 ? 0 : mode == kWspr ? 2 : 1; }
+// the streams: 0 FT8 (6400 Hz), 1 FT4 and FT2 (10667 Hz), 2 WSPR (12000 Hz), 3 the others (8000 Hz, resampled to their own rates when decoding)
+constexpr int kStreams = 4;
+const int kStreamL[kStreams] = {4, 4, 3, 1}, kStreamM[kStreams] = {5, 3, 2, 1};
+const double kStreamCut[kStreams] = {3080, 3900, 3900, 3900};
+int streamOf(int mode) { return mode == kFt8 ? 0 : mode == kWspr ? 2 : mode >= kJt65 ? 3 : 1; }   // stream 3: the 8 kHz audio for the modes of hfdig_wsjt_int.h
 double streamRate(int s) { return 8000.0 * kStreamL[s] / kStreamM[s]; }
 
 struct Layout {
@@ -201,6 +279,7 @@ struct Layout {
 Layout layoutOf(int mode) {
     Layout l;
     const Spec& s = spec(mode);
+    if (mode >= kJt65) { l.rate = 8000; return l; }
     l.rate = streamRate(streamOf(mode));
     l.sp = s.spacing;
     l.nt = s.tones;
@@ -256,6 +335,8 @@ struct Job {
     std::vector<float> x;
     double dtMin = -2.5, dtMax = 2.5;
     bool search = false;
+    int sub = 0;
+    double period = 60;
 };
 
 struct Result {
@@ -664,6 +745,24 @@ private:
 
 } // namespace
 
+// the modes of hfdig_wsjt_int.h (JT65, JT9, Q65, FST4, MSK144, FST4W)
+std::vector<FtxDecode> decodeOther(const Job& j) {
+    wsjt::Slot s;
+    s.x = j.x.data(); s.n = j.x.size(); s.x0 = j.x0; s.dtMin = j.dtMin; s.dtMax = j.dtMax; s.sub = j.sub; s.period = j.period; s.slotUtc = j.slotUtc;
+    std::vector<FtxDecode> d;
+    switch (j.mode) {
+    case kJt65: d = wsjt::decodeJt65(s); break;
+    case kJt9: d = wsjt::decodeJt9(s); break;
+    case kQ65: d = wsjt::decodeQ65(s); break;
+    case kFst4: d = wsjt::decodeFst4(s, false); break;
+    case kFst4w: d = wsjt::decodeFst4(s, true); break;
+    case kMsk144: d = wsjt::decodeMsk144(s); break;
+    default: break;
+    }
+    for (auto& x : d) x.slotUtc = j.slotUtc;
+    return d;
+}
+
 // ---------------------------------------------------------------- the decoder: slots, clock, worker thread
 
 struct HfdigFtx::Impl {
@@ -671,6 +770,8 @@ struct HfdigFtx::Impl {
     std::atomic<bool> enabled[kFtxModes];
     std::atomic<bool> mirrored{true};
     std::atomic<bool> clearReq{false};
+    std::atomic<int> sub[kFtxModes];
+    std::atomic<double> per[kFtxModes];   // 0: the default of the mode
     std::mutex setMu;
     double startTime = std::numeric_limits<double>::quiet_NaN();
     bool slotSearch = false;
@@ -697,9 +798,13 @@ struct HfdigFtx::Impl {
     CallHash hash;
     std::map<uint32_t, std::string> wsprHash;
     std::thread th;
+    std::atomic<double> dialHz{0}, spotShift{0};
+    std::atomic<HfdigFtx*> fwd{nullptr};
 
     Impl() {
         for (auto& e : enabled) e = true;
+        for (auto& e : sub) e = 0;
+        for (auto& e : per) e = 0.0;
         for (int s = 0; s < kStreams; s++) rs[s] = std::make_unique<Resampler>(kStreamL[s], kStreamM[s], kStreamCut[s]);
         for (double& v : nextSlot) v = std::numeric_limits<double>::quiet_NaN();
         th = std::thread([this] { worker(); });
@@ -727,18 +832,19 @@ struct HfdigFtx::Impl {
         tel.pending = 0;
     }
 
+    Spec sp(int m) const { return specCfg(m, sub[m].load(), per[m].load()); }
+
     double utcOfAudio(double k) const { return anchorUtc + (k - (double)anchorK) / kHfdigAudioRate; }
     double audioOfUtc(double u) const { return (double)anchorK + (u - anchorUtc) * kHfdigAudioRate; }
 
     // the window of a slot, against the slot start
     void window(int m, bool search, double& a, double& b, double& dtMin, double& dtMax) const {
-        const Spec& s = spec(m);
-        const Layout l = layoutOf(m);
+        const Spec s = sp(m);
         const double len = s.nn * s.symSec;
         // a slot search: windows every half period, each looking for starts over that half period and a little beyond (so that
         // two windows cover every offset, and WSPR needs 3 minutes of audio for the first decode instead of 4)
-        dtMax = search ? s.period * 0.55 : l.dtMax;
-        dtMin = search ? -s.period * 0.05 : -dtMax;
+        dtMax = search ? s.period * 0.55 : m >= kJt65 ? dtRange(m, s.period) : layoutOf(m).dtMax;
+        dtMin = search ? -s.period * 0.05 : m >= kJt65 ? -dtLow(m, s.period) : -dtMax;
         const double guard = 2 * s.symSec;
         a = s.t0 + dtMin - guard;
         b = s.t0 + len + dtMax + guard;
@@ -751,7 +857,7 @@ struct HfdigFtx::Impl {
             const Resampler& r = *rs[st];
             const double rate = streamRate(st);
             if (buf[st].empty()) continue;
-            const double P = spec(m).period;
+            const double P = sp(m).period;
             double a, b, dtMin, dtMax;
             window(m, search, a, b, dtMin, dtMax);
             const double uStart = utcOfAudio(r.inputPos((double)bufBase[st]));
@@ -760,18 +866,18 @@ struct HfdigFtx::Impl {
             if (std::isnan(nextSlot[m])) {
                 double S = std::floor(uStart / P) * P;
                 const double late = search ? 0.1 : 1.0;   // start mid-slot: a transmission missing more than its first second waits for the next slot
-                while (uStart > S + (search ? a : spec(m).t0) + late) S += P;
+                while (uStart > S + (search ? a : sp(m).t0) + late) S += P;
                 nextSlot[m] = S;
             }
             for (;;) {
                 const double S = nextSlot[m];
                 const bool complete = uEnd >= S + b;
-                const bool partial = flushAll && uEnd > S + spec(m).t0 + 0.5 * spec(m).nn * spec(m).symSec;
+                const bool partial = flushAll && uEnd > S + sp(m).t0 + 0.5 * sp(m).nn * sp(m).symSec;
                 if (!complete && !partial) break;
                 nextSlot[m] = S + (search ? P / 2 : P);
                 if (!enabled[m].load()) continue;
                 Job j;
-                j.mode = m; j.slotUtc = S; j.search = search; j.dtMin = dtMin; j.dtMax = dtMax;
+                j.mode = m; j.slotUtc = S; j.search = search; j.dtMin = dtMin; j.dtMax = dtMax; j.sub = sub[m].load(); j.period = P;
                 const double ja = r.outputPos(audioOfUtc(S + a));
                 const int64_t i0 = (int64_t)std::floor(ja);
                 const int64_t nwin = (int64_t)std::ceil((b - a) * rate);
@@ -801,8 +907,10 @@ struct HfdigFtx::Impl {
             const int64_t keep = (int64_t)std::floor(rs[st]->outputPos(audioOfUtc(keepUtc)));
             const int64_t drop = std::min<int64_t>((int64_t)buf[st].size(), keep - bufBase[st]);
             if (drop > 0) { buf[st].erase(buf[st].begin(), buf[st].begin() + drop); bufBase[st] += drop; }
-            // never more than five minutes
-            const int64_t cap = (int64_t)(300 * streamRate(st));
+            // never more than five minutes (the long periods of the modes of stream 3: their longest enabled period and a minute)
+            double capSec = 300;
+            if (st == 3) for (int m = kJt65; m < kFtxModes; m++) if (enabled[m].load()) capSec = std::max(capSec, sp(m).period + 60);
+            const int64_t cap = (int64_t)(capSec * streamRate(st));
             if ((int64_t)buf[st].size() > cap) {
                 const int64_t d = (int64_t)buf[st].size() - cap;
                 buf[st].erase(buf[st].begin(), buf[st].begin() + d);
@@ -873,19 +981,24 @@ struct HfdigFtx::Impl {
             std::vector<FtxDecode> dec;
             {
                 // the hash tables are only used here (and cleared under the lock): no lock needed while decoding
-                SlotDecoder sd(j, hash, wsprHash, mirrored.load());
-                dec = sd.run();
+                if (j.mode >= kJt65) dec = decodeOther(j);
+                else {
+                    SlotDecoder sd(j, hash, wsprHash, mirrored.load());
+                    dec = sd.run();
+                }
             }
             const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
-            std::lock_guard<std::mutex> lk(mu);
+            std::unique_lock<std::mutex> lk(mu);
             const int m = j.mode;
             tel.slots[m]++;
             tel.lastSlotCount[m] = (int)dec.size();
             tel.lastSlotUtc[m] = j.slotUtc;
             tel.decodeMs[m] = (float)ms;
             std::sort(dec.begin(), dec.end(), [](const FtxDecode& a, const FtxDecode& b) { return a.snrDb > b.snrDb; });
-            for (const auto& d : dec) {
+            for (auto& d : dec) {
+                d.dialHz = dialHz.load();
                 tel.decodes.push_back(d);
+                if (!d.call.empty() && PskReporter::get().want()) PskReporter::get().spot(ftxModeName(m), d.hz + spotShift.load(), d.snrDb, d.call, d.grid);
                 tel.total++;
                 tel.perMode[m]++;
             }
@@ -895,10 +1008,11 @@ struct HfdigFtx::Impl {
                 for (const auto& d : dec) dts.push_back(d.dt);
                 std::nth_element(dts.begin(), dts.begin() + dts.size() / 2, dts.end());
                 // the transmissions start at slotUtc + t0 + DT; the clock moves so that they start at t0 into a slot of the mode's grid
-                const double P = spec(m).period, at = j.slotUtc + dts[dts.size() / 2];
+                const double P = j.period, at = j.slotUtc + dts[dts.size() / 2];
                 searchShift = at - std::round(at / P) * P;
             }
             clockStats();
+            if (HfdigFtx* f = fwd.load()) { lk.unlock(); f->addForeign(dec, m, j.slotUtc, (float)ms); }
         }
     }
 
@@ -934,11 +1048,16 @@ void HfdigFtx::feedAudio(const float* x, size_t n) {
 void HfdigFtx::telemetry(HfdigFtxTelemetry& out) const {
     std::lock_guard<std::mutex> lk(p_->mu);
     out = p_->tel;
-    for (int m = 0; m < kFtxModes; m++) out.enabled[m] = p_->enabled[m].load();
+    for (int m = 0; m < kFtxModes; m++) { out.enabled[m] = p_->enabled[m].load(); out.sub[m] = p_->sub[m].load(); out.period[m] = p_->sp(m).period; }
     out.pending = (int)p_->jobs.size() + (p_->busy ? 1 : 0);
 }
 void HfdigFtx::setEnabled(int m, bool on) { if (m >= 0 && m < kFtxModes) p_->enabled[m] = on; }
 bool HfdigFtx::enabled(int m) const { return m >= 0 && m < kFtxModes && p_->enabled[m].load(); }
+void HfdigFtx::setModeOption(int m, int sub, double periodSec) {
+    if (m < 0 || m >= kFtxModes) return;
+    if (sub >= 0) p_->sub[m] = sub;
+    if (periodSec > 0) p_->per[m] = periodSec;
+}
 void HfdigFtx::setMirrored(bool on) { p_->mirrored = on; }
 bool HfdigFtx::mirrored() const { return p_->mirrored.load(); }
 void HfdigFtx::clearDecodes() {
@@ -948,9 +1067,33 @@ void HfdigFtx::clearDecodes() {
     t.audioSamples = old.audioSamples; t.timeMode = old.timeMode; t.nowUtc = old.nowUtc;
     p_->tel = t;
 }
+void HfdigFtx::setDecodes(std::vector<FtxDecode> d) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (d.size() > kFtxKeep) d.erase(d.begin(), d.end() - (long)kFtxKeep);
+    p_->tel.decodes = std::move(d);
+}
 void HfdigFtx::setStartTime(double utc) { std::lock_guard<std::mutex> lk(p_->setMu); p_->startTime = utc; }
 void HfdigFtx::setSlotSearch(bool on) { std::lock_guard<std::mutex> lk(p_->setMu); p_->slotSearch = on; }
 void HfdigFtx::setWallClock(std::function<double()> fn) { std::lock_guard<std::mutex> lk(p_->setMu); p_->wall = std::move(fn); }
+void HfdigFtx::setDialHz(double hz) { p_->dialHz = hz; }
+void HfdigFtx::setSpotShiftHz(double hz) { p_->spotShift = hz; }
+void HfdigFtx::setForwardTo(HfdigFtx* main) { p_->fwd = main; }
+void HfdigFtx::addForeign(const std::vector<FtxDecode>& d, int m, double slotUtc, float ms) {
+    if (m < 0 || m >= kFtxModes) return;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    p_->tel.slots[m]++;
+    p_->tel.lastSlotCount[m] = (int)d.size();
+    p_->tel.lastSlotUtc[m] = slotUtc;
+    p_->tel.decodeMs[m] = ms;
+    for (const auto& x : d) { p_->tel.decodes.push_back(x); p_->tel.total++; p_->tel.perMode[m]++; }
+    if (p_->tel.decodes.size() > kFtxKeep) p_->tel.decodes.erase(p_->tel.decodes.begin(), p_->tel.decodes.end() - (long)kFtxKeep);
+}
+void HfdigFtx::copyClockFrom(HfdigFtx& o) {
+    double st; bool ss; std::function<double()> w;
+    { std::lock_guard<std::mutex> lk(o.p_->setMu); st = o.p_->startTime; ss = o.p_->slotSearch; w = o.p_->wall; }
+    std::lock_guard<std::mutex> lk(p_->setMu);
+    p_->startTime = st; p_->slotSearch = ss; p_->wall = std::move(w);
+}
 void HfdigFtx::waitIdle() {
     std::unique_lock<std::mutex> lk(p_->mu);
     p_->idleCv.wait(lk, [&] { return p_->jobs.empty() && !p_->busy; });

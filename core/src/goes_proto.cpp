@@ -381,6 +381,12 @@ void Assembler::clear() {
 }
 void Assembler::push(const uint8_t* vcdu, double nowSec) { p_->now = nowSec; p_->push(vcdu); }
 std::vector<std::shared_ptr<Product>> Assembler::products() const { std::lock_guard<std::mutex> lk(p_->listMu); return p_->list; }
+void Assembler::adopt(std::vector<std::shared_ptr<Product>> v) {
+    std::lock_guard<std::mutex> lk(p_->listMu);
+    for (const auto& q : v) if (q) p_->nextId = std::max(p_->nextId, q->id + 1);
+    if (v.size() > p_->maxProducts) v.resize(p_->maxProducts);
+    p_->list = std::move(v);
+}
 void Assembler::setMaxProducts(size_t n) { std::lock_guard<std::mutex> lk(p_->listMu); p_->maxProducts = std::max<size_t>(1, n); }
 
 // ---------------------------------------------------------------- mux (test signals)
