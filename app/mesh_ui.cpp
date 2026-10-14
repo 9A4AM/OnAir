@@ -9,6 +9,7 @@
 #include <cstring>
 #include <deque>
 #include <map>
+#include <set>
 
 namespace {
 
@@ -37,6 +38,9 @@ struct State {
     int keyProto = 0;
     std::string keyMsg;
     uint64_t lastSeq = 0;
+    std::set<std::string> logged;                // packets whose position went to the log (from + id + time); filled without logging at start
+    std::deque<std::string> loggedOrder;
+    bool logPrimed = false;
     std::deque<float> snr;                       // SNR of the last good frame per report, for the history plot
     // LoRaWAN filters
     char lwFilter[48] = "";                      // DevAddr, EUI, network or vendor (any part, any case)
@@ -115,11 +119,32 @@ void pushKeys(App& a) {
     }
 }
 
+// Every position a node or station sends goes to the log once (Meshtastic POSITION_APP, MeshCom / LoRa APRS positions); the packets
+// already in the table when the receiver starts are not logged again
+void logPositions(App& a) {
+    for (const auto& p : a.rx.mesh.packets) {
+        if (p.type.find("POSITION") == std::string::npos && p.type.find("Position") == std::string::npos) continue;
+        char k[96];
+        snprintf(k, sizeof k, "%d %s %08x %.3f", p.protocol, p.from.c_str(), (unsigned)p.packetId, p.timeSec);
+        if (!S.logged.insert(k).second) continue;
+        S.loggedOrder.push_back(k);
+        if (S.loggedOrder.size() > 400) { S.logged.erase(S.loggedOrder.front()); S.loggedOrder.pop_front(); }
+        if (!S.logPrimed) continue;
+        std::string who = p.from;
+        for (const auto& n : a.rx.mesh.nodes) if (n.protocol == p.protocol && n.id == p.from && !n.longName.empty()) { who += " " + n.longName; break; }
+        char b[64];
+        snprintf(b, sizeof b, ", SNR %.1f dB, %.4f MHz", p.snrDb, p.freqHz / 1e6);
+        a.engine.log("Mesh: position from " + who + ": " + (p.detail.empty() ? std::string(p.decrypted || p.protocol != 1 ? "?" : "encrypted") : p.detail) + b);
+    }
+    S.logPrimed = true;
+}
+
 void loadState() {
     if (S.loaded) return;
     S.loaded = true;
     plat::Prefs& d = plat::prefs();
     S.map.zoom = (int)d.getI("meshZoom", 10);
+    if (receiverLocationSet()) { S.map.lat = d.getD("adsbLat", S.map.lat); S.map.lon = d.getD("adsbLon", S.map.lon); }   // until a node sends its position
     S.view = (int)d.getI("meshView", 0);
     S.region = std::max(0, std::min(kNumPlans - 1, (int)d.getI("meshRegion", 0)));
     S.protocols = (int)d.getI("meshProtocols", 15);
@@ -248,9 +273,10 @@ void tick(App& a) {
     if (S.pushedProtocols != effProtocols(a)) { S.pushedProtocols = effProtocols(a); r.setProtocols(S.pushedProtocols); }   // a protocol entry: only its own network
     if (S.pushedPresets != (int)S.allPresets) { r.setPresetSearch(S.allPresets); S.pushedPresets = (int)S.allPresets; }
     if (S.pushedTuned != a.freqMhz) { r.setTunedHz(a.freqMhz * 1e6); S.pushedTuned = a.freqMhz; }   // the engine does not pass the user's frequency
-    if (!a.engine.running()) { S.lastSeq = 0; return; }
+    if (!a.engine.running()) { S.lastSeq = 0; S.logPrimed = false; return; }
     if (live(a) && a.rx.seq != S.lastSeq) {
         S.lastSeq = a.rx.seq;
+        logPositions(a);
         if (a.rx.mesh.dataValid) { S.snr.push_back(a.rx.mesh.snrDb); if (S.snr.size() > 240) S.snr.pop_front(); }
         if (S.mapFit) {
             double la = 0, lo = 0; int n = 0;
