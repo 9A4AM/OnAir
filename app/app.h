@@ -59,9 +59,9 @@ using namespace dect2;
 
 struct Waterfall {
     static constexpr int W = 4096, H = 512;
-    enum Map { Classic, Viridis, Inferno, Grey, Turbo, NumMaps };
+    enum Map { Classic, Viridis, Inferno, Grey, Turbo, Cividis, NumMaps };   // Cividis: made to read the same with red-green colour blindness
     static const char* mapName(int m) {
-        static const char* const n[NumMaps] = {"Classic", "Viridis", "Inferno", "Grey", "Turbo"};
+        static const char* const n[NumMaps] = {"Classic", "Viridis", "Inferno", "Grey", "Turbo", "Cividis"};
         return n[m < 0 || m >= NumMaps ? 0 : m];
     }
     gfx::Image* img = nullptr;
@@ -130,7 +130,9 @@ struct Waterfall {
         static const float grey[5][3] = {{0, 0, 0}, {34, 34, 33}, {96, 95, 92}, {170, 168, 162}, {244, 242, 236}};
         static const float viridis[9][3] = {{68, 1, 84}, {71, 44, 122}, {59, 81, 139}, {44, 113, 142}, {33, 144, 141}, {39, 173, 129}, {92, 200, 99}, {170, 220, 50}, {253, 231, 37}};
         static const float inferno[9][3] = {{0, 0, 4}, {31, 12, 72}, {85, 15, 109}, {136, 34, 106}, {186, 54, 85}, {227, 89, 51}, {249, 140, 10}, {249, 201, 50}, {252, 255, 164}};
+        static const float cividis[9][3] = {{0, 32, 77}, {26, 52, 107}, {66, 78, 108}, {97, 104, 111}, {124, 123, 120}, {154, 145, 119}, {187, 167, 108}, {221, 193, 88}, {255, 233, 69}};
         switch (map) {
+        case Cividis: return stopsColor(cividis, 9, v);
         case Viridis: return stopsColor(viridis, 9, v);
         case Inferno: return stopsColor(inferno, 9, v);
         case Grey: return stopsColor(grey, 5, v);
