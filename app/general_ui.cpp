@@ -41,6 +41,7 @@ struct State {
     std::string recErr;
     bool txRec = false;
     float afHp = 0, afLp = 0, afNotch = 0;   // audio filters in Hz, 0 = off
+    bool mp3 = false;            // recordings as MP3 through LAME (when libmp3lame is installed)
     bool flac = false;           // recordings as FLAC (lossless, smaller, with tags) instead of WAV
     // more channels from the same capture (Engine::generalExtra): each is silent, has its own demodulator and, if wanted, its own recordings
     int nExtra = 0;
@@ -70,6 +71,7 @@ void load() {
         snprintf(k, sizeof k, "genStep%d", d); S.step[d] = (int)std::clamp(p.getI(k, kDefStep[d]), 0L, (long)kNumSteps - 1);
     }
     S.flac = p.getB("genFlac", false);
+    S.mp3 = p.getB("genMp3", false) && dect2::GeneralReceiver::mp3Available();
     S.afHp = (float)p.getD("genAfHp", 0); S.afLp = (float)p.getD("genAfLp", 0); S.afNotch = (float)p.getD("genAfNotch", 0);
     S.sqOn = p.getB("genSqOn", true); S.sqAuto = p.getB("genSqAuto", true); S.sqDb = (float)p.getD("genSqDb", -60);
     S.agc = p.getB("genAgc", true); S.gainDb = (float)p.getD("genGain", 20);
@@ -134,8 +136,8 @@ void startRecording(App& a) {
     char ts[32];
     std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
     char name[128];
-    snprintf(name, sizeof name, "/onair_%s_%.4fMHz_%s.%s", dect2::generalDemodName(S.demod), listenHz(a) / 1e6, ts, S.flac ? "flac" : "wav");
-    a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a)));
+    snprintf(name, sizeof name, "/onair_%s_%.4fMHz_%s.%s", dect2::generalDemodName(S.demod), listenHz(a) / 1e6, ts, S.mp3 ? "mp3" : S.flac ? "flac" : "wav");
+    a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a))); a.engine.general().setRecordMp3(S.mp3);
     if (!a.engine.general().startRecording(dir + name)) S.recErr = "cannot write " + dir + name;
     else S.recErr.clear();
 }
@@ -271,13 +273,18 @@ void controls(App& a) {
     const bool rec = live(a) ? T(a).recording : a.engine.general().recording();
     if (!rec) {
         ImGui::BeginDisabled(!a.engine.running());
-        if (ImGui::SmallButton(S.flac ? "Record FLAC" : "Record WAV")) startRecording(a);
+        if (ImGui::SmallButton(S.mp3 ? "Record MP3" : S.flac ? "Record FLAC" : "Record WAV")) startRecording(a);
         ImGui::EndDisabled();
         tip("Record what you hear (after the squelch, before the volume) to a 16-bit 48 kHz WAV file in the audio-recordings folder");
     } else if (ImGui::SmallButton("Stop recording")) a.engine.general().stopRecording();
     ImGui::SameLine(0, 6 * gUi);
-    if (ImGui::Checkbox("FLAC", &S.flac)) { plat::prefs().setB("genFlac", S.flac); a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a))); }
+    if (ImGui::Checkbox("FLAC", &S.flac)) { plat::prefs().setB("genFlac", S.flac); a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a))); a.engine.general().setRecordMp3(S.mp3); }
     tip("Save recordings as FLAC (lossless, about half the size of WAV, with the frequency and date as tags) instead of WAV");
+    ImGui::SameLine(0, 6 * gUi);
+    ImGui::BeginDisabled(!dect2::GeneralReceiver::mp3Available());
+    if (ImGui::Checkbox("MP3", &S.mp3)) { plat::prefs().setB("genMp3", S.mp3); a.engine.general().setRecordMp3(S.mp3); }
+    ImGui::EndDisabled();
+    tip(dect2::GeneralReceiver::mp3Available() ? "Save recordings as MP3 (64 kbit/s mono, small files); wins over FLAC" : "MP3 needs the LAME library (libmp3lame): install it (brew install lame, apt install libmp3lame0, or put libmp3lame.dll next to OnAir). OnAir does not ship it.");
     {   // one file per transmission, for the voice modes
         ImGui::SameLine(0, 8 * gUi);
         if (ImGui::Checkbox("One file per transmission", &S.txRec)) {
@@ -289,7 +296,7 @@ void controls(App& a) {
             std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
             char pre[96];
             snprintf(pre, sizeof pre, "onair_%s_%.4fMHz_%s", dect2::generalDemodName(S.demod), listenHz(a) / 1e6, ts);
-            a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a)));
+            a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a))); a.engine.general().setRecordMp3(S.mp3);
             a.engine.general().setTransmissionRecording(S.txRec, dir, pre);
         }
         tip("Records each transmission to its own WAV file: a file starts when the squelch opens and ends when it closes (clips under half a second are dropped). Needs the squelch on.");
@@ -381,7 +388,7 @@ void extraChannelsUi(App& a) {
             std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
             char pre[112];
             snprintf(pre, sizeof pre, "onair_ch%d_%.4fMHz_%s", i + 2, (a.freqMhz * 1e6 + S.exOff[i]) / 1e6, ts);
-            a.engine.generalExtra(i).setRecordFormat(S.flac, recTags(a, a.freqMhz * 1e6 + S.exOff[i]));
+            a.engine.generalExtra(i).setRecordFormat(S.flac, recTags(a, a.freqMhz * 1e6 + S.exOff[i])); a.engine.generalExtra(i).setRecordMp3(S.mp3);
             a.engine.generalExtra(i).setTransmissionRecording(S.exRec[i], dir, pre);
         }
         tip("Record each transmission on this channel to its own WAV file (audio-recordings folder)");

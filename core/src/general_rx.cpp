@@ -2,6 +2,7 @@
 // squelched against the noise beside it and played; optionally recorded to WAV.
 #include "dect2/general_rx.h"
 #include "dect2/flac_enc.h"
+#include "dect2/mp3_enc.h"
 #include "dect2/general_tel.h"
 #include "dect2/audioout.h"
 #include "dect2/exact_resampler.h"
@@ -225,11 +226,13 @@ struct GeneralReceiver::Impl {
         for (float& v : a) v = bqNotch.run(bqLp.run(bqHp.run(v)));
     }
     FlacEnc flac; bool flacOn = false;   // the open file is FLAC, not WAV
+    Mp3Enc mp3; bool mp3On = false; bool recMp3 = false;   // MP3 through LAME when it is installed
     bool recFlac = false; std::vector<std::string> recTags;   // format and tags of the per-transmission files
-    void openFile(const std::string& path, bool asFlac) {   // with wavMu held; wav is null when it failed
+    void openFile(const std::string& path, bool asFlac, bool asMp3 = false) {   // with wavMu held; wav is null when it failed
         wav = fopen(path.c_str(), "wb");
-        flacOn = false;
+        flacOn = false; mp3On = false;
         if (!wav) return;
+        if (asMp3) { mp3On = mp3.begin(wav, (uint32_t)kGeneralAudioRate, 64, recTags); if (!mp3On) { fclose(wav); wav = nullptr; } return; }
         if (asFlac) { flacOn = flac.begin(wav, (uint32_t)kGeneralAudioRate, recTags); if (!flacOn) { fclose(wav); wav = nullptr; } }
         else wavHeader(wav, 0);
     }
@@ -401,9 +404,9 @@ struct GeneralReceiver::Impl {
             std::lock_guard<std::mutex> lk(wavMu);
             if (txOn) {
                 if (open && !wav) {
-                    char nm[32]; snprintf(nm, sizeof nm, recFlac ? "_%d.flac" : "_%d.wav", ++txN);
+                    char nm[32]; snprintf(nm, sizeof nm, recMp3 ? "_%d.mp3" : recFlac ? "_%d.flac" : "_%d.wav", ++txN);
                     wavPath = txDir + "/" + txPrefix + nm;
-                    openFile(wavPath, recFlac);
+                    openFile(wavPath, recFlac, recMp3);
                     wavFrames = 0; txFile = wav != nullptr;
                     if (wav) wavErr.clear(); else wavErr = std::string("cannot write ") + wavPath;
                 }
@@ -411,7 +414,7 @@ struct GeneralReceiver::Impl {
             if (wav) {
                 wbuf.resize(aud.size());
                 for (size_t i = 0; i < aud.size(); i++) wbuf[i] = (int16_t)std::lround(std::clamp(aud[i], -1.f, 1.f) * 32767.f);
-                if (flacOn) flac.write(wbuf.data(), wbuf.size()); else fwrite(wbuf.data(), 2, wbuf.size(), wav);   // little-endian hosts (macOS, Windows, Linux on x86 / ARM)
+                if (mp3On) mp3.write(wbuf.data(), wbuf.size()); else if (flacOn) flac.write(wbuf.data(), wbuf.size()); else fwrite(wbuf.data(), 2, wbuf.size(), wav);   // little-endian hosts (macOS, Windows, Linux on x86 / ARM)
                 wavFrames += (uint32_t)wbuf.size();
             }
             if (txOn && txFile && wav && !open && ramp <= 0.f) endTransmission();
@@ -462,7 +465,8 @@ struct GeneralReceiver::Impl {
     }
     void closeWav() {   // with wavMu held
         if (!wav) return;
-        if (flacOn) { flac.finish(); flacOn = false; }
+        if (mp3On) { mp3.finish(); mp3On = false; }
+        else if (flacOn) { flac.finish(); flacOn = false; }
         else { fflush(wav); fseek(wav, 0, SEEK_SET); wavHeader(wav, wavFrames); }
         fclose(wav);
         wav = nullptr;
@@ -572,7 +576,8 @@ bool GeneralReceiver::startRecording(const std::string& path) {
         std::lock_guard<std::mutex> lk(p_->wavMu);
         p_->closeWav();
         const bool asFlac = path.size() > 5 && path.compare(path.size() - 5, 5, ".flac") == 0;
-        p_->openFile(path, asFlac);
+        const bool asMp3 = path.size() > 4 && path.compare(path.size() - 4, 4, ".mp3") == 0;
+        p_->openFile(path, asFlac, asMp3);
         p_->wavFrames = 0;
         p_->wavPath = path;
         ok = p_->wav != nullptr;
@@ -605,6 +610,11 @@ void GeneralReceiver::setRecordFormat(bool flac, const std::vector<std::string>&
     std::lock_guard<std::mutex> lk(p_->wavMu);
     p_->recFlac = flac; p_->recTags = tags;
 }
+void GeneralReceiver::setRecordMp3(bool on) {
+    std::lock_guard<std::mutex> lk(p_->wavMu);
+    p_->recMp3 = on && Mp3Enc::available();
+}
+bool GeneralReceiver::mp3Available() { return Mp3Enc::available(); }
 int GeneralReceiver::transmissionFiles() const { std::lock_guard<std::mutex> lk(p_->wavMu); return p_->txKept; }
 
 bool GeneralReceiver::recording() const { std::lock_guard<std::mutex> lk(p_->wavMu); return p_->wav != nullptr; }

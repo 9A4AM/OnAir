@@ -81,6 +81,10 @@ public:
     // The per-transmission files as FLAC (lossless, about half the size) instead of WAV, with Vorbis comments ("TITLE=..."). startRecording()
     // writes FLAC when its path ends in .flac (the tags apply there too).
     void setRecordFormat(bool flac, const std::vector<std::string>& tags = {});
+    // MP3 (64 kbit/s mono, through LAME loaded at run time) wins over FLAC for the per-transmission files and for paths ending in .mp3;
+    // ignored when libmp3lame is not installed (mp3Available()).
+    void setRecordMp3(bool on);
+    static bool mp3Available();
     int transmissionFiles() const;                   // files kept since it was switched on
 
 private:
