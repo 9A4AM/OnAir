@@ -479,7 +479,7 @@ int main(int argc, char** argv) {
     {
         TsSnapshot ts = e.tsSnapshot();
         BbStats bb = e.bbStats();
-        printf("\nBB frames %llu (lost %llu) packets %llu resyncs %llu  mode %s ISSYI %d NPD %d\n", (unsigned long long)bb.frames, (unsigned long long)bb.framesLost, (unsigned long long)bb.packets, (unsigned long long)bb.resyncs, bb.hem ? "HEM" : "normal", bb.issyi, bb.npd);
+        printf("\nBB frames %llu (lost %llu) packets %llu resyncs %llu unsupported %llu  mode %s ISSYI %d NPD %d SIS/MIS %d ISI %d\n", (unsigned long long)bb.frames, (unsigned long long)bb.framesLost, (unsigned long long)bb.packets, (unsigned long long)bb.resyncs, (unsigned long long)bb.unsupported, bb.hem ? "HEM" : "normal", bb.issyi, bb.npd, bb.sisMis, bb.isi);
         printf("TS: network \"%s\" onid 0x%04X tsid 0x%04X  %s  mux %.0f kbit/s (null %.0f)  CC errors %llu\n", ts.networkName.c_str(), ts.onid, ts.tsid, ts.utc.c_str(), ts.muxKbps, ts.nullKbps, (unsigned long long)ts.ccErrors);
         for (auto& sv : ts.services) {
             printf("  [%4d] %-24s %-8s lcn %-3d pmt 0x%04X %s\n", sv.id, sv.name.c_str(), sv.typeName(), sv.lcn, sv.pmtPid, sv.caFlag ? "(scrambled)" : "");

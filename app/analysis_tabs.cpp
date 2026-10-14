@@ -661,8 +661,8 @@ void tsTab(App& a) {
     { ImGui::PushTextWrapPos(0); ImGui::Text("network \"%s\"  onid 0x%04X  tsid 0x%04X   %s", ts.networkName.c_str(), ts.onid, ts.tsid, ts.utc.c_str()); ImGui::PopTextWrapPos(); }
     { ImGui::PushTextWrapPos(0); ImGui::Text("multiplex %s (null packets %s)   packets %llu   continuity errors %llu   TEI %llu",
                 fmtKbps(b, sizeof b, ts.muxKbps), fmtKbps(b2, sizeof b2, ts.nullKbps), (unsigned long long)ts.totalPackets, (unsigned long long)ts.ccErrors, (unsigned long long)ts.teiPackets); ImGui::PopTextWrapPos(); }
-    { ImGui::PushTextWrapPos(0); ImGui::Text("BB frames %llu (lost %llu)  mode %s  ISSYI %d NPD %d  resyncs %llu  CRC-8 errors %llu", (unsigned long long)a.bb.frames, (unsigned long long)a.bb.framesLost,
-                a.bb.hem ? "high-efficiency" : "normal", a.bb.issyi, a.bb.npd, (unsigned long long)a.bb.resyncs, (unsigned long long)a.bb.crcErrors); ImGui::PopTextWrapPos(); }
+    { ImGui::PushTextWrapPos(0); ImGui::Text("BB frames %llu (lost %llu)  mode %s  ISSYI %d NPD %d  SIS/MIS %d ISI %d  resyncs %llu  CRC-8 errors %llu  skipped %llu", (unsigned long long)a.bb.frames, (unsigned long long)a.bb.framesLost,
+                a.bb.hem ? "high-efficiency" : "normal", a.bb.issyi, a.bb.npd, a.bb.sisMis, a.bb.isi, (unsigned long long)a.bb.resyncs, (unsigned long long)a.bb.crcErrors, (unsigned long long)a.bb.unsupported); ImGui::PopTextWrapPos(); }
     ImGui::PopFont();
     ImGui::Spacing();
     if (ImGui::BeginTable("pids", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp, ImVec2(0, -1))) {

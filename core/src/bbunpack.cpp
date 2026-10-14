@@ -38,7 +38,14 @@ void BbUnpacker::push(const std::vector<uint8_t>& bits, const BbHeader& h) {
     if (bits.size() < 80 || !h.crcOk) { lost(); return; }
     st_.frames++;
     st_.hem = h.hem; st_.issyi = h.issyi; st_.npd = h.npd; st_.tsGs = h.tsGs;
-    if (h.tsGs != 3 || h.sisMis != 1) { st_.unsupported++; lost(); st_.framesLost--; return; } // transport streams only
+    st_.sisMis = h.sisMis; st_.isi = h.isi;
+    // TS/GS=11 is a transport stream. SIS/MIS only says whether MATYPE-2 is reserved or an ISI:
+    // a single-PLP multiplex (Dutch DVB-T2, issue 101) often still sets MIS with ISI 0.
+    if (h.tsGs != 3) { st_.unsupported++; lost(); st_.framesLost--; return; }
+    if (h.sisMis == 0) {
+        if (!haveIsi_) { isi_ = h.isi; haveIsi_ = true; }
+        else if (h.isi != isi_) { st_.otherIsi++; return; }
+    }
     const int dfl = h.dfl;
     if (dfl <= 0 || 80 + dfl > (int)bits.size() || (dfl & 7)) { st_.unsupported++; return; }
     const int len = dfl / 8;
