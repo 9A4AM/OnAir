@@ -1,6 +1,8 @@
 #include "adsb_map.h"
 #include "app.h"
+#include "dect2/mbtiles.h"
 #include "dect2/tilecache.h"
+#include "dect2/worldlow.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -47,11 +49,47 @@ fs::path fsPath(const std::string& p) { return fs::path(reinterpret_cast<const c
 bool exists(const std::string& p) { std::error_code ec; const auto n = fs::file_size(fsPath(p), ec); return !ec && n > 100; }
 
 std::string pathIn(const std::string& root, int z, int x, int y) { char b[64]; snprintf(b, sizeof b, "/%d/%d/%d.png", z, x, y); return root + b; }
-std::string found(int z, int x, int y) {   // the file of a tile already downloaded, or ""
-    std::string p = pathIn(kept, z, x, y);
+// ---- an MBTiles file the user chose (settings: tiles menu). Mode 1: used after the tiles on disk and before the network; 2: used first.
+// Its raster tiles are copied out to files (mbx/z/x/y.png) on first use, so the one decoder path serves all the sources.
+dect2::MbTiles mb;
+std::string mbx, mbPath, mbError;
+std::atomic<int> mbMode{0};   // 0 off, 1 after the cache, 2 first
+
+void mbClose() { mbMode = 0; mb.close(); }
+void mbOpen(const std::string& path, int mode) {
+    mbClose();
+    mbPath = path; mbError.clear();
+    std::error_code ec;
+    fs::remove_all(fsPath(mbx), ec);   // the copies of another file
+    if (path.empty() || mode == 0) return;
+    if (mb.open(path, &mbError)) mbMode = mode;
+}
+std::string fromMb(int z, int x, int y) {   // the file of a tile of the MBTiles file, or ""
+    if (!mbMode) return std::string();
+    const std::string p = pathIn(mbx, z, x, y);
+    if (exists(p)) return p;
+    std::vector<uint8_t> d;
+    if (!mb.tile(z, x, y, d) || !dect2::MbTiles::isRaster(d)) return std::string();
+    std::error_code ec;
+    fs::create_directories(fsPath(p).parent_path(), ec);
+    const std::string part = p + ".part";
+    FILE* f = fopen(part.c_str(), "wb");
+    if (!f) return std::string();
+    const bool w = fwrite(d.data(), 1, d.size(), f) == d.size();
+    fclose(f);
+    if (!w) { fs::remove(fsPath(part), ec); return std::string(); }
+    fs::rename(fsPath(part), fsPath(p), ec);
+    return !ec && exists(p) ? p : std::string();
+}
+
+std::string found(int z, int x, int y) {   // the file of a tile already downloaded (or in the MBTiles file), or ""
+    std::string p;
+    if (mbMode == 2 && !(p = fromMb(z, x, y)).empty()) return p;
+    p = pathIn(kept, z, x, y);
     if (exists(p)) return p;
     p = pathIn(temp, z, x, y);
-    return exists(p) ? p : std::string();
+    if (exists(p)) return p;
+    return mbMode == 1 ? fromMb(z, x, y) : std::string();
 }
 
 // move the tiles under one folder into another (a tile already there wins), then remove the first
@@ -86,11 +124,13 @@ void init() {
     const std::string cache = plat::cacheDir();
     kept = plat::dataDir() + "/maps/osm";
     temp = cache + "/osm-temp";
+    mbx = cache + "/mbtiles-x";
     keepNew = plat::prefs().getB("mapKeepTiles", true);
     onlineMap = plat::prefs().getB("adsbMap", true);   // the key from when only the ADS-B screen had a map
     std::error_code ec;
     fs::remove_all(fsPath(temp), ec);
     moveTree(cache + "/osm", kept);
+    mbOpen(plat::prefs().getS("mapMbPath", ""), (int)plat::prefs().getI("mapMbMode", 1));
 }
 
 void setKeep(bool k) {
@@ -338,6 +378,25 @@ bool draw(View& v, ImVec2 size) {
         for (int lo = -180; lo <= 180; lo += (v.zoom < 4 ? 30 : 10)) { const float x = p0.x + size.x * 0.5f + (float)(mercX(lo, v.zoom) - gCx); if (x > p0.x && x < p0.x + size.x) dl->AddLine(ImVec2(x, p0.y), ImVec2(x, p0.y + size.y), IM_COL32(30, 34, 38, 255)); }
         for (int la = -80; la <= 80; la += (v.zoom < 4 ? 30 : 10)) { const float y = p0.y + size.y * 0.5f + (float)(mercY(la, v.zoom) - gCy); if (y > p0.y && y < p0.y + size.y) dl->AddLine(ImVec2(p0.x, y), ImVec2(p0.x + size.x, y), IM_COL32(30, 34, 38, 255)); }
     }
+    // the rough world outline: under the tiles, and what is left when there are none (offline, nothing downloaded yet)
+    if (v.zoom <= 8) {
+        const double ws = worldSize(v.zoom);
+        const ImU32 col = IM_COL32(58, 74, 66, 255);
+        std::vector<ImVec2> pts;
+        for (const auto& poly : dect2::worldOutline()) {
+            pts.clear();
+            for (const auto& q : poly) pts.push_back(ImVec2(p0.x + size.x * 0.5f + (float)(mercX(q.first, v.zoom) - gCx), p0.y + size.y * 0.5f + (float)(mercY(q.second, v.zoom) - gCy)));
+            for (int k = -2; k <= 2; k++) {   // the copies one world to the left and right
+                const float dx = (float)(k * ws);
+                float x0 = 1e30f, x1 = -1e30f;
+                for (const ImVec2& q : pts) { x0 = std::min(x0, q.x + dx); x1 = std::max(x1, q.x + dx); }
+                if (x1 < p0.x || x0 > p0.x + size.x) continue;
+                std::vector<ImVec2> sh(pts);
+                for (ImVec2& q : sh) q.x += dx;
+                dl->AddPolyline(sh.data(), (int)sh.size(), col, ImDrawFlags_Closed, 1.5f);
+            }
+        }
+    }
     gAny = false;
     const int n = 1 << v.zoom;
     const int tx0 = (int)std::floor((gCx - size.x * 0.5) / 256.0), tx1 = (int)std::floor((gCx + size.x * 0.5) / 256.0);
@@ -366,7 +425,7 @@ bool draw(View& v, ImVec2 size) {
     { std::lock_guard<std::mutex> lk(mu); dropStale(ImGui::GetFrameCount()); evict(ImGui::GetFrameCount()); }
     if (gAny) { const ImVec2 ts = ImGui::CalcTextSize(kCredit); dl->AddText(ImVec2(p0.x + size.x - ts.x - 6, p0.y + size.y - ts.y - 3), IM_COL32(140, 144, 148, 220), kCredit); }
     else {   // a line above the caption the screens put along the bottom (legend()), cut short in a narrow map
-        const char* m = !onlineMap ? "map switched off: showing positions only" : missing ? "loading the map..." : "no map tiles (no network, or no picture decoder on this system): showing positions only";
+        const char* m = !onlineMap ? "map switched off: rough outline only" : missing ? "loading the map..." : "no map tiles (no network, or no picture decoder on this system): rough outline only";
         dl->AddText(ImVec2(p0.x + 8, p0.y + size.y - 2 * ImGui::GetTextLineHeightWithSpacing() - 6), IM_COL32(150, 154, 158, 255), ellipsize(m, size.x - 16).c_str());
     }
     return hov;
@@ -401,7 +460,7 @@ void dlStart(std::vector<dect2::TileKey> list) {
         for (const dect2::TileKey& t : list) {
             if (dlStop) break;
             const std::string path = dect2::tilePath(root, t.z, t.x, t.y);
-            if (exists(path) || exists(dect2::tilePath(temp, t.z, t.x, t.y))) { dlDone++; continue; }
+            if (exists(path) || !found(t.z, t.x, t.y).empty()) { dlDone++; continue; }
             std::error_code ec;
             fs::create_directories(fsPath(path).parent_path(), ec);
             char url[128];
@@ -459,6 +518,48 @@ void areaDownload() {
         ImGui::TextDisabled("one tile every 0.4 s, at most %d per download", dect2::kMaxDownloadTiles);
     }
     if (dlTotal > 0 && dlDone > 0) ImGui::TextDisabled("Last download: %d of %d tiles done, %d failed.", dlDone.load(), dlTotal.load(), dlFailed.load());
+}
+
+// forget every tile picture and queued request (the source changed): they are decoded again from the new source
+void resetTiles() {
+    std::lock_guard<std::mutex> lk(mu);
+    for (auto& [k, t] : tiles) if (t.img) { delete t.img; nImages--; }
+    tiles.clear(); queue.clear();
+}
+
+// the MBTiles file: chosen here, kept in the settings (mapMbPath, mapMbMode)
+void mbSettings() {
+    ImGui::TextUnformatted("Offline map file (MBTiles)");
+    if (mbPath.empty()) ImGui::TextDisabled("none chosen");
+    else {
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 380 * gUi);
+        ImGui::TextDisabled("%s", mbPath.c_str());
+        ImGui::PopTextWrapPos();
+    }
+    if (ImGui::SmallButton("Choose file...")) {
+        const std::string p = plat::openFileDialog();
+        if (!p.empty()) {
+            int m = (int)plat::prefs().getI("mapMbMode", 1);
+            if (m == 0) m = 1;
+            mbOpen(p, m);
+            plat::prefs().setS("mapMbPath", mbError.empty() ? p : std::string());
+            plat::prefs().setI("mapMbMode", m); plat::prefs().flush();
+            resetTiles();
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Clear")) { mbOpen(std::string(), 0); mbPath.clear(); plat::prefs().setS("mapMbPath", ""); plat::prefs().flush(); resetTiles(); }
+    if (!mbError.empty()) ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.4f, 1), "%s", mbError.c_str());
+    else if (mb.isOpen()) {
+        const std::string nm = mb.meta("name"), at = mb.meta("attribution");
+        ImGui::TextDisabled("%s%s%s", nm.empty() ? "opened" : nm.c_str(), mb.hasIndex() ? "" : " (no index: slow lookups)", at.empty() ? "" : ("  -  " + at).c_str());
+        int m = mbMode;
+        bool changed = false;
+        changed |= ImGui::RadioButton("after the downloaded tiles, before the network", &m, 1);
+        changed |= ImGui::RadioButton("first (instead of downloaded tiles)", &m, 2);
+        if (changed) { mbMode = m; plat::prefs().setI("mapMbMode", m); plat::prefs().flush(); }
+    }
+    ImGui::TextDisabled("Raster 256 px PNG/JPEG tiles only (vector MBTiles cannot be drawn).");
 }
 
 void tilesMenu(ImVec4 buttonColour) {
@@ -534,6 +635,8 @@ void tilesMenu(ImVec4 buttonColour) {
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("When the tiles take more room than this, the ones used longest ago are deleted (checked at start and every 50 downloads). Default 500 MB.");
     }
+    ImGui::Separator();
+    mbSettings();
     ImGui::Separator();
     areaDownload();
     ImGui::Separator();
