@@ -410,7 +410,12 @@ void telemetryTable(const App& a) {
             for (int row = clip.DisplayStart; row < clip.DisplayEnd; row++) {
                 const dect2::MeshReading& r = t.readings[t.readings.size() - 1 - (size_t)row];
                 ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(r.timeSec).c_str());
+                ImGui::TableNextColumn();   // clock time (this is a history), the date in the tooltip
+                {
+                    const std::string full = meshTime(meshEpoch(t, r.timeSec, (double)std::time(nullptr)));
+                    ImGui::TextUnformatted(full.size() > 11 ? full.c_str() + 11 : clock(r.timeSec).c_str());
+                    if (!full.empty() && ImGui::IsItemHovered()) ImGui::SetTooltip("%s (%s after the start)", full.c_str(), clock(r.timeSec).c_str());
+                }
                 ImGui::TableNextColumn(); ImGui::TextColored(protoColour(r.protocol), "%s", nameOf(r).c_str());
                 ImGui::TableNextColumn(); if (r.batteryPct > 100) ImGui::TextUnformatted("powered"); else if (r.batteryPct >= 0) ImGui::Text("%.0f %%", r.batteryPct);
                 ImGui::TableNextColumn(); if (r.voltage >= 0) ImGui::Text("%.2f V", r.voltage);
