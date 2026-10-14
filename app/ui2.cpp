@@ -523,7 +523,42 @@ void statusLine(App& a) {
 } // namespace
 
 // Classic or new colours and shapes. The classic style is captured once and restored when switching back.
+static bool gAccentDirty = false;
+static void applyUiThemeBase(App& a);
+// the colour the user picked for highlights (Appearance > Accent colour); off = each palette's own
+static struct { bool loaded = false, on = false; float c[3] = {0.45f, 0.72f, 0.82f}; } gUserAccent;
+static void loadUserAccent() {
+    if (gUserAccent.loaded) return;
+    gUserAccent.loaded = true;
+    plat::Prefs& p = plat::prefs();
+    gUserAccent.on = p.getB("userAccentOn", false);
+    for (int i = 0; i < 3; i++) { char k[24]; snprintf(k, sizeof k, "userAccent%d", i); gUserAccent.c[i] = (float)p.getD(k, gUserAccent.c[i]); }
+}
+static void saveUserAccent() {
+    plat::Prefs& p = plat::prefs();
+    p.setB("userAccentOn", gUserAccent.on);
+    for (int i = 0; i < 3; i++) { char k[24]; snprintf(k, sizeof k, "userAccent%d", i); p.setD(k, gUserAccent.c[i]); }
+}
+static void accentMenu() {
+    loadUserAccent();
+    if (ImGui::Checkbox(tr("Own accent colour"), &gUserAccent.on)) { gAccentDirty = true; saveUserAccent(); }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!gUserAccent.on);
+    if (ImGui::ColorEdit3("##useraccent", gUserAccent.c, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) saveUserAccent();
+    ImGui::EndDisabled();
+}
 void applyUiTheme(App& a) {
+    applyUiThemeBase(a);
+    loadUserAccent();
+    if (!gUserAccent.on) return;
+    const ImVec4 ac(gUserAccent.c[0], gUserAccent.c[1], gUserAccent.c[2], 1.f);
+    pal::accentRef() = ac;
+    ImVec4* c = ImGui::GetStyle().Colors;
+    c[ImGuiCol_CheckMark] = ac; c[ImGuiCol_SliderGrabActive] = ac; c[ImGuiCol_TabSelectedOverline] = ac;
+    c[ImGuiCol_ButtonActive] = ImVec4(ac.x * 0.7f, ac.y * 0.7f, ac.z * 0.7f, 1.f);
+    c[ImGuiCol_HeaderActive] = c[ImGuiCol_ButtonActive];
+}
+static void applyUiThemeBase(App& a) {
     pal::panel() = a.newUi && a.uiVariant == 7;   // round LEDs only in the Panel layout
     static ImGuiStyle classic;
     static plt::Style classicPlot;
@@ -535,6 +570,7 @@ void applyUiTheme(App& a) {
     // the window went to a monitor with another display scale: main.cpp has just reset the style to the classic one at that scale
     // (taken again as the classic style), and the chosen theme is applied again with its sizes at the new scale
     if (gUi != scale) { classic = ImGui::GetStyle(); classicPlot.Scale = gUi; scale = gUi; key = -1; }
+    if (gAccentDirty) { key = -1; gAccentDirty = false; }
     const int want = a.newUi ? 1 + a.uiTheme : 0;
     if (want == key) return;
     key = want;
@@ -614,6 +650,7 @@ float menuBar(App& a) {
             static const char* names[3] = {N_("Terminal palette"), N_("Instrument palette"), N_("Mono palette")};
             for (int t = 0; t < 3; t++) if (ImGui::MenuItem(tr(names[t]), nullptr, a.uiTheme == t)) { a.uiTheme = t; savePrefs(a); }
             if (ImGui::MenuItem(tr("Light (dark on white)"), nullptr, &a.lightUi)) savePrefs(a);
+            accentMenu();
             if (ImGui::BeginMenu(tr("Language"))) { languageMenuItems(a); ImGui::EndMenu(); }
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Reduce CPU when hidden"), nullptr, &a.reduceCpuHidden)) savePrefs(a);
