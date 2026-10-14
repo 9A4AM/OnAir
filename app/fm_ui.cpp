@@ -392,6 +392,8 @@ void fmRadioTab(App& a) {
 // Phase 1 reads the live spectrum in 2 MHz steps and picks the 100 kHz channels that stand out; phase 2 tunes to each of them,
 // checks that a real FM carrier is there and waits for its RDS name.
 static constexpr int kSurveyHops = 11;
+// full RDS: the scan stays on each station until its name, radio text and PI are complete (up to 12 s), instead of leaving at the first name
+static bool fmScanFullRds() { return plat::prefs().getB("fmScanFullRds", false); }
 static double fmSurveyCentre(int hop) { return 88.5 + 2.0 * hop; }
 
 // power of one 100 kHz channel (+-50 kHz) in a spectrum frame, dB; the radio's DC spike is skipped
@@ -415,6 +417,13 @@ void fmScanTab(App& a) {
     App::FmScan& s = a.fmScan;
     const bool run = a.engine.running();
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Surveys the FM band (87.5 - 108 MHz) for carriers, then listens to each one and reads its name. About two minutes."); ImGui::PopTextWrapPos(); }
+    {
+        bool full = fmScanFullRds();
+        ImGui::BeginDisabled(s.running);
+        if (ImGui::Checkbox("full RDS", &full)) { plat::prefs().setB("fmScanFullRds", full); plat::prefs().flush(); }
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stay on each station until its whole name (also a scrolling one), the radio text and the PI code are in,\nup to 12 s per station instead of about 2 s. A scan of a busy band then takes several minutes.");
+    }
     ImGui::Spacing();
     if (!s.running) {
         ImGui::BeginDisabled(!run);
@@ -439,16 +448,20 @@ void fmScanTab(App& a) {
     ImGui::Spacing();
     {
         static std::string note;
-        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "station", "type", "snr_db", "sound", "rds"};
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "station", "type", "snr_db", "sound", "rds", "pi", "radio_text", "names"};
         const std::string now = resexp::stamp();
-        for (const auto& r : s.results) if (r.found) t.add({now, resexp::num(r.mhz * 1e6, 0), "FM", r.name, r.pty, resexp::num(r.snr, 0), r.stereo ? "stereo" : "mono", r.rds ? "yes" : "no"});
+        for (const auto& r : s.results) if (r.found) {
+            char pi[8] = ""; if (r.pi) snprintf(pi, sizeof pi, "%04X", r.pi);
+            t.add({now, resexp::num(r.mhz * 1e6, 0), "FM", r.name, r.pty, resexp::num(r.snr, 0), r.stereo ? "stereo" : "mono", r.rds ? "yes" : "no", pi, r.rt, r.psText});
+        }
         resexp::saveButton(t, "fm", note, "svfm");
         if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
-    if (ImGui::BeginTable("fmscan", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
+    if (ImGui::BeginTable("fmscan", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp)) {
         ImGui::TableSetupColumn("MHz", ImGuiTableColumnFlags_WidthFixed, 80); ImGui::TableSetupColumn("Station"); ImGui::TableSetupColumn("Type");
         ImGui::TableSetupColumn("SNR", ImGuiTableColumnFlags_WidthFixed, 70); ImGui::TableSetupColumn("Sound", ImGuiTableColumnFlags_WidthFixed, 70);
-        ImGui::TableSetupColumn("RDS", ImGuiTableColumnFlags_WidthFixed, 50);
+        ImGui::TableSetupColumn("RDS", ImGuiTableColumnFlags_WidthFixed, 50); ImGui::TableSetupColumn("PI", ImGuiTableColumnFlags_WidthFixed, 50);
+        ImGui::TableSetupColumn("Radio text");
         ImGui::TableHeadersRow();
         for (size_t i = 0; i < s.results.size(); i++) {
             const auto& r = s.results[i];
@@ -460,10 +473,13 @@ void fmScanTab(App& a) {
             if (ImGui::Selectable(fl, false, ImGuiSelectableFlags_SpanAllColumns) && !s.running) fmTune(a, r.mhz);
             ImGui::PopID();
             ImGui::TableNextColumn(); ImGui::TextUnformatted(r.name.empty() ? "-" : r.name.c_str());
+            if (!r.psText.empty() && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", r.psText.c_str());   // a scrolling name, all its parts
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", r.pty.c_str());
             ImGui::TableNextColumn(); ImGui::Text("%.0f dB", r.snr);
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", r.stereo ? "stereo" : "mono");
             ImGui::TableNextColumn(); ImGui::TextDisabled("%s", r.rds ? "yes" : "-");
+            ImGui::TableNextColumn(); if (r.pi) ImGui::TextDisabled("%04X", r.pi);
+            ImGui::TableNextColumn(); ImGui::TextDisabled("%s", r.rt.c_str());
         }
         ImGui::EndTable();
     }
@@ -483,6 +499,7 @@ void fmScanStep(App& a) {
         s.t0 = now;
         s.seq0 = a.lastSeq;
         s.rxSeq0 = a.rx.seq;
+        s.psSeq.clear(); s.psT = now;
     };
     auto finish = [&]() {
         s.running = false;
@@ -521,13 +538,33 @@ void fmScanStep(App& a) {
     if (!fresh && dwell < 3.0) return;   // no fresh telemetry yet
     const bool station = fresh && fm.carrier && fm.state >= 1;
     const bool nameKnown = station && !fmTrim(fm.psName).empty();
-    const bool done = !station ? dwell > 1.4 : (nameKnown && dwell > 1.6) || dwell > 5.0;
+    bool done = !station ? dwell > 1.4 : (nameKnown && dwell > 1.6) || dwell > 5.0;
+    if (station && fmScanFullRds()) {
+        // full RDS: stay while the station sends RDS, until the name has come round (a scrolling name: back to the first one; a fixed
+        // name: unchanged for 4 s), the radio text is whole (or none came in 6 s) and the PI is known; never longer than 12 s
+        const std::string ps = fmTrim(fm.psName);
+        if (!ps.empty() && (s.psSeq.empty() || ps != s.psSeq.back())) {
+            if (s.psSeq.size() < 2 || ps != s.psSeq.front()) { if (s.psSeq.size() < 16) s.psSeq.push_back(ps); s.psT = now; }
+            else s.psSeq.push_back(ps);   // the first name again: the cycle is complete
+        }
+        const bool cycled = s.psSeq.size() >= 3 && s.psSeq.back() == s.psSeq.front();
+        const bool nameDone = cycled || (s.psSeq.size() == 1 && now - s.psT > 4.0);
+        const bool rtDone = fm.radioTextComplete || (fm.radioText.empty() && dwell > 6.0);
+        const bool rdsDone = nameDone && rtDone && fm.piCode != 0;
+        done = (!fm.rdsSync && dwell > 2.5) || (fm.rdsSync && rdsDone) || dwell > 12.0;
+    }
     if (!done) return;
     App::FmScan::Res r;
     r.mhz = s.cand[(size_t)s.idx];
     r.found = station;
     if (station) {
         r.snr = fm.snrDb; r.stereo = fm.stereo; r.rds = fm.rdsSync; r.name = fmTrim(fm.psName); r.pty = fm.ptyText == "None" ? "" : fm.ptyText;
+        r.pi = fm.piCode; r.tp = fm.trafficProgram; r.rt = fmTrim(fm.radioText);
+        if (s.psSeq.size() >= 2) {   // a scrolling name: its parts once, in order; the station's name is the first part seen
+            const size_t n = s.psSeq.back() == s.psSeq.front() ? s.psSeq.size() - 1 : s.psSeq.size();
+            for (size_t k = 0; k < n; k++) r.psText += (k ? " " : "") + s.psSeq[k];
+            r.name = s.psSeq.front();
+        }
         a.engine.log("FM scan: " + fmStationLabel(r) + " SNR " + std::to_string((int)r.snr) + " dB" + (r.stereo ? " stereo" : ""));
     }
     s.results.push_back(r);

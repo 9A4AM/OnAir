@@ -25,6 +25,7 @@ struct FmTelemetry {
     // RDS contents (empty until received)
     std::string psName;         // programme service name, 8 characters
     std::string radioText;      // radio text, up to 64 characters
+    bool radioTextComplete = false;   // every segment of the radio text received (not only a part of it)
     std::string ptyText;        // programme type
     bool trafficAlert = false;  // TA: a traffic announcement is on air
     bool trafficProgram = false;// TP: the station carries traffic announcements
