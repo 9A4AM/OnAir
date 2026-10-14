@@ -1,6 +1,7 @@
 // General receiver (see general_rx.h): one channel of the band mixed down, filtered, demodulated (NFM, WFM, AM, USB, LSB, CW),
 // squelched against the noise beside it and played; optionally recorded to WAV.
 #include "dect2/general_rx.h"
+#include "dect2/flac_enc.h"
 #include "dect2/general_tel.h"
 #include "dect2/audioout.h"
 #include "dect2/exact_resampler.h"
@@ -195,6 +196,15 @@ struct GeneralReceiver::Impl {
     // WAV
     std::mutex wavMu;
     FILE* wav = nullptr;
+    FlacEnc flac; bool flacOn = false;   // the open file is FLAC, not WAV
+    bool recFlac = false; std::vector<std::string> recTags;   // format and tags of the per-transmission files
+    void openFile(const std::string& path, bool asFlac) {   // with wavMu held; wav is null when it failed
+        wav = fopen(path.c_str(), "wb");
+        flacOn = false;
+        if (!wav) return;
+        if (asFlac) { flacOn = flac.begin(wav, (uint32_t)kGeneralAudioRate, recTags); if (!flacOn) { fclose(wav); wav = nullptr; } }
+        else wavHeader(wav, 0);
+    }
     uint32_t wavFrames = 0;
     std::string wavPath, wavErr;
     std::vector<int16_t> wbuf;
@@ -362,17 +372,17 @@ struct GeneralReceiver::Impl {
             std::lock_guard<std::mutex> lk(wavMu);
             if (txOn) {
                 if (open && !wav) {
-                    char nm[32]; snprintf(nm, sizeof nm, "_%d.wav", ++txN);
+                    char nm[32]; snprintf(nm, sizeof nm, recFlac ? "_%d.flac" : "_%d.wav", ++txN);
                     wavPath = txDir + "/" + txPrefix + nm;
-                    wav = fopen(wavPath.c_str(), "wb");
+                    openFile(wavPath, recFlac);
                     wavFrames = 0; txFile = wav != nullptr;
-                    if (wav) { wavHeader(wav, 0); wavErr.clear(); } else wavErr = std::string("cannot write ") + wavPath;
+                    if (wav) wavErr.clear(); else wavErr = std::string("cannot write ") + wavPath;
                 }
             }
             if (wav) {
                 wbuf.resize(aud.size());
                 for (size_t i = 0; i < aud.size(); i++) wbuf[i] = (int16_t)std::lround(std::clamp(aud[i], -1.f, 1.f) * 32767.f);
-                fwrite(wbuf.data(), 2, wbuf.size(), wav);   // little-endian hosts (macOS, Windows, Linux on x86 / ARM)
+                if (flacOn) flac.write(wbuf.data(), wbuf.size()); else fwrite(wbuf.data(), 2, wbuf.size(), wav);   // little-endian hosts (macOS, Windows, Linux on x86 / ARM)
                 wavFrames += (uint32_t)wbuf.size();
             }
             if (txOn && txFile && wav && !open && ramp <= 0.f) endTransmission();
@@ -423,9 +433,8 @@ struct GeneralReceiver::Impl {
     }
     void closeWav() {   // with wavMu held
         if (!wav) return;
-        fflush(wav);
-        fseek(wav, 0, SEEK_SET);
-        wavHeader(wav, wavFrames);
+        if (flacOn) { flac.finish(); flacOn = false; }
+        else { fflush(wav); fseek(wav, 0, SEEK_SET); wavHeader(wav, wavFrames); }
         fclose(wav);
         wav = nullptr;
     }
@@ -532,11 +541,12 @@ bool GeneralReceiver::startRecording(const std::string& path) {
     {
         std::lock_guard<std::mutex> lk(p_->wavMu);
         p_->closeWav();
-        p_->wav = fopen(path.c_str(), "wb");
+        const bool asFlac = path.size() > 5 && path.compare(path.size() - 5, 5, ".flac") == 0;
+        p_->openFile(path, asFlac);
         p_->wavFrames = 0;
         p_->wavPath = path;
         ok = p_->wav != nullptr;
-        if (ok) { wavHeader(p_->wav, 0); p_->wavErr.clear(); msg = "General receiver: recording audio to " + path; }
+        if (ok) { p_->wavErr.clear(); msg = "General receiver: recording audio to " + path; }
         else { p_->wavErr = std::string("cannot write ") + path + ": " + std::strerror(errno); msg = "General receiver: " + p_->wavErr; }
     }
     p_->log(msg);
@@ -560,6 +570,10 @@ void GeneralReceiver::setTransmissionRecording(bool on, const std::string& dir, 
     if (!on && p_->txOn && p_->txFile) p_->endTransmission();
     p_->txOn = on; p_->txDir = dir; p_->txPrefix = prefix; p_->txMinSec = minSec;
     if (on) { p_->txN = 0; p_->txKept = 0; }
+}
+void GeneralReceiver::setRecordFormat(bool flac, const std::vector<std::string>& tags) {
+    std::lock_guard<std::mutex> lk(p_->wavMu);
+    p_->recFlac = flac; p_->recTags = tags;
 }
 int GeneralReceiver::transmissionFiles() const { std::lock_guard<std::mutex> lk(p_->wavMu); return p_->txKept; }
 

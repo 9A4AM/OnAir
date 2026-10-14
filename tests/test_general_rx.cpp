@@ -169,6 +169,37 @@ int main() {
         CHECK(files == 2 && r.transmissionFiles() == 2, "per-transmission files %d / %d", files, r.transmissionFiles());
     }
 
+    // the same as FLAC: the files start with fLaC, STREAMINFO holds the sample count, and they are smaller than the WAV would be
+    {
+        SynthConfig on, off;
+        on.mode = 57; on.snrDb = 30; off.mode = 57; off.snrDb = 30; off.modeOpt[1] = 1;
+        auto sOn = makeGeneralSynth(on, kRate), sOff = makeGeneralSynth(off, kRate);
+        GeneralReceiver r;
+        r.configure(kRate); r.setSignalOffset(-generalTuning().tuneOffsetHz); r.setSilent(true);
+        r.setSquelch(true, true, -60);
+        r.setRecordFormat(true, {"TITLE=test"});
+        r.setTransmissionRecording(true, ".", "general_rx_fl", 0.5);
+        std::vector<cf32> buf(20000);
+        auto feedSecs = [&](std::unique_ptr<ModeSynth>& syn, double secs) {
+            for (double t = 0; t < secs; t += buf.size() / kRate) { syn->generate(buf.data(), buf.size()); r.feed(buf.data(), buf.size()); }
+        };
+        feedSecs(sOff, 1.0); feedSecs(sOn, 2.0); feedSecs(sOff, 2.0);
+        r.setTransmissionRecording(false, ".", "general_rx_fl");
+        int files = 0; bool magic = true; long sz = 0; uint64_t total = 0;
+        for (int i = 1; i <= 4; i++) {
+            char n[64]; snprintf(n, sizeof n, "general_rx_fl_%d.flac", i);
+            if (FILE* f = fopen(n, "rb")) {
+                unsigned char h[42] = {};
+                const size_t got = fread(h, 1, 42, f);
+                fseek(f, 0, SEEK_END); sz = ftell(f); fclose(f); remove(n); files++;
+                magic = magic && got == 42 && !memcmp(h, "fLaC", 4);
+                total = ((uint64_t)(h[21] & 0x0F) << 32) | (uint64_t)h[22] << 24 | h[23] << 16 | h[24] << 8 | h[25];
+            }
+        }
+        printf("  flac files: %d, %ld bytes, %llu samples\n", files, sz, (unsigned long long)total);
+        CHECK(files == 1 && magic && total > 90000 && sz < (long)total * 2, "flac recording");
+    }
+
     printf(fails ? "general rx: %d FAILED\n" : "general rx: all passed\n", fails);
     return fails ? 1 : 0;
 }

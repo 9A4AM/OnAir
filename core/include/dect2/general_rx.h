@@ -22,6 +22,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace dect2 {
 
@@ -76,6 +77,9 @@ public:
     // One WAV file per transmission: a file opens when the squelch opens and closes when it has shut (clips under minSec are deleted).
     // The files are dir/prefix_<n>.wav. Off (the default) leaves startRecording() as it was.
     void setTransmissionRecording(bool on, const std::string& dir, const std::string& prefix, double minSec = 0.5);
+    // The per-transmission files as FLAC (lossless, about half the size) instead of WAV, with Vorbis comments ("TITLE=..."). startRecording()
+    // writes FLAC when its path ends in .flac (the tags apply there too).
+    void setRecordFormat(bool flac, const std::vector<std::string>& tags = {});
     int transmissionFiles() const;                   // files kept since it was switched on
 
 private:

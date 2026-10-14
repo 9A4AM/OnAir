@@ -40,6 +40,7 @@ struct State {
     bool dragged = false;
     std::string recErr;
     bool txRec = false;
+    bool flac = false;           // recordings as FLAC (lossless, smaller, with tags) instead of WAV
     // more channels from the same capture (Engine::generalExtra): each is silent, has its own demodulator and, if wanted, its own recordings
     int nExtra = 0;
     double exOff[3] = {100e3, -100e3, 200e3};       // relative to the dial
@@ -67,6 +68,7 @@ void load() {
         snprintf(k, sizeof k, "genWidth%d", d); S.width[d] = dect2::generalClampWidth(d, p.getD(k, dect2::generalDefaultWidth(d)));
         snprintf(k, sizeof k, "genStep%d", d); S.step[d] = (int)std::clamp(p.getI(k, kDefStep[d]), 0L, (long)kNumSteps - 1);
     }
+    S.flac = p.getB("genFlac", false);
     S.sqOn = p.getB("genSqOn", true); S.sqAuto = p.getB("genSqAuto", true); S.sqDb = (float)p.getD("genSqDb", -60);
     S.agc = p.getB("genAgc", true); S.gainDb = (float)p.getD("genGain", 20);
     S.deNfm = (int)std::clamp(p.getI("genDeNfm", 0), 0L, 3L); S.deWfm = (int)std::clamp(p.getI("genDeWfm", 1), 0L, 3L);
@@ -112,6 +114,16 @@ void setDemod(int d) {
     save();
 }
 
+std::vector<std::string> recTags(const App& a, double hz) {
+    const std::time_t now = std::time(nullptr);
+    char ts[32];
+    std::strftime(ts, sizeof ts, "%Y-%m-%d", std::localtime(&now));
+    char t[96];
+    snprintf(t, sizeof t, "TITLE=%.4f MHz %s", hz / 1e6, dect2::generalDemodName(S.demod));
+    (void)a;
+    return {t, std::string("DATE=") + ts, "COMMENT=Recorded with OnAir"};
+}
+
 void startRecording(App& a) {
     std::error_code ec;
     const std::string dir = plat::dataDir() + "/audio-recordings";
@@ -120,7 +132,8 @@ void startRecording(App& a) {
     char ts[32];
     std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
     char name[128];
-    snprintf(name, sizeof name, "/onair_%s_%.4fMHz_%s.wav", dect2::generalDemodName(S.demod), listenHz(a) / 1e6, ts);
+    snprintf(name, sizeof name, "/onair_%s_%.4fMHz_%s.%s", dect2::generalDemodName(S.demod), listenHz(a) / 1e6, ts, S.flac ? "flac" : "wav");
+    a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a)));
     if (!a.engine.general().startRecording(dir + name)) S.recErr = "cannot write " + dir + name;
     else S.recErr.clear();
 }
@@ -255,10 +268,13 @@ void controls(App& a) {
     const bool rec = live(a) ? T(a).recording : a.engine.general().recording();
     if (!rec) {
         ImGui::BeginDisabled(!a.engine.running());
-        if (ImGui::SmallButton("Record WAV")) startRecording(a);
+        if (ImGui::SmallButton(S.flac ? "Record FLAC" : "Record WAV")) startRecording(a);
         ImGui::EndDisabled();
         tip("Record what you hear (after the squelch, before the volume) to a 16-bit 48 kHz WAV file in the audio-recordings folder");
     } else if (ImGui::SmallButton("Stop recording")) a.engine.general().stopRecording();
+    ImGui::SameLine(0, 6 * gUi);
+    if (ImGui::Checkbox("FLAC", &S.flac)) { plat::prefs().setB("genFlac", S.flac); a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a))); }
+    tip("Save recordings as FLAC (lossless, about half the size of WAV, with the frequency and date as tags) instead of WAV");
     {   // one file per transmission, for the voice modes
         ImGui::SameLine(0, 8 * gUi);
         if (ImGui::Checkbox("One file per transmission", &S.txRec)) {
@@ -270,6 +286,7 @@ void controls(App& a) {
             std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
             char pre[96];
             snprintf(pre, sizeof pre, "onair_%s_%.4fMHz_%s", dect2::generalDemodName(S.demod), listenHz(a) / 1e6, ts);
+            a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a)));
             a.engine.general().setTransmissionRecording(S.txRec, dir, pre);
         }
         tip("Records each transmission to its own WAV file: a file starts when the squelch opens and ends when it closes (clips under half a second are dropped). Needs the squelch on.");
@@ -340,6 +357,7 @@ void extraChannelsUi(App& a) {
             std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
             char pre[112];
             snprintf(pre, sizeof pre, "onair_ch%d_%.4fMHz_%s", i + 2, (a.freqMhz * 1e6 + S.exOff[i]) / 1e6, ts);
+            a.engine.generalExtra(i).setRecordFormat(S.flac, recTags(a, a.freqMhz * 1e6 + S.exOff[i]));
             a.engine.generalExtra(i).setTransmissionRecording(S.exRec[i], dir, pre);
         }
         tip("Record each transmission on this channel to its own WAV file (audio-recordings folder)");
