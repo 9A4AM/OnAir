@@ -3,6 +3,7 @@
 #include "app.h"
 #include "results_export.h"
 #include "adsb_map.h"
+#include "rangeplot_ui.h"
 #include "dect2/ais_tel.h"
 #include <algorithm>
 #include <cmath>
@@ -20,6 +21,8 @@ struct State {
     bool mapFollow = true;           // the map fits the stations until the user drags it
     int sortCol = 4, sortDir = 1;    // table: the column and the direction (1 ascending); starts on "heard"
     bool nmeaScroll = true;
+    RangeView range;                 // the receiver-range plot (Range view)
+    uint64_t rangeSeq = 0;
 };
 State S;
 
@@ -404,7 +407,7 @@ void nmeaView(App& a) {
 
 void tab(App& a) {
     loadState();
-    subNav("aisv", S.view, {"Map", "Table", "Messages", "NMEA"});
+    subNav("aisv", S.view, {"Map", "Table", "Messages", "NMEA", tr("Range")});
     const bool on = live(a);
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     if (S.view == 2) {
@@ -413,6 +416,7 @@ void tab(App& a) {
         return;
     }
     if (S.view == 3) { nmeaView(a); return; }
+    if (S.view == 4) { rangeView(S.range, ImGui::GetContentRegionAvail(), 0.5399568, "nm", "ais", receiverLocationSet()); return; }
     const float cw = std::min(320.f * gUi, W * 0.34f);
     ImGui::BeginChild("##ais_l", ImVec2(W - cw - 8 * gUi, H));
     if (S.view == 0) mapView(a, ImGui::GetContentRegionAvail());
@@ -449,6 +453,16 @@ void receiver(App& a) {
     counters(a);
 }
 
+// every frame while AIS is selected: the positions heard, for the range plot (from the receiver position)
+void tick(App& a) {
+    if (!live(a) || a.rx.seq == S.rangeSeq) return;
+    S.rangeSeq = a.rx.seq;
+    double lat, lon;
+    receiverLocation(lat, lon);
+    rangeSetStation(S.range, lat, lon);
+    for (const auto& v : a.rx.ais.vessels) if (v.hasPos) rangeFeed(S.range, v.lat, v.lon);
+}
+
 void summary(const App& a, std::string& l1, std::string& l2) {
     l1 = "AIS";
     if (live(a)) l2 = dect2::aisSummary(a.rx.ais);
@@ -465,4 +479,5 @@ const ModeUi kAisUi = {
     .receiver = receiver,
     .list = list,
     .summary = summary,
+    .tick = tick,
 };

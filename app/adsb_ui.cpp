@@ -3,6 +3,7 @@
 #include "dect2/adsb_units.h"
 #include "results_export.h"
 #include "adsb_map.h"
+#include "rangeplot_ui.h"
 #include "dect2/adsb_msg.h"
 #include <cstring>
 #include <algorithm>
@@ -32,6 +33,7 @@ struct State {
     double ctxLat = 0, ctxLon = 0;              // where the map was right-clicked
     std::string locMsg;
     int locBusy = 0;
+    RangeView range;                            // the receiver-range plot (Range view)
 };
 State S;
 
@@ -109,6 +111,8 @@ void tick(App& a) {
         const AdsbTelemetry& t = a.rx.adsb;
         S.rate.push_back(t.msgsPerSec); if (S.rate.size() > 240) S.rate.pop_front();
         if (t.dataValid) { S.snr.push_back(t.snrDb); if (S.snr.size() > 240) S.snr.pop_front(); }
+        rangeSetStation(S.range, S.refLat, S.refLon);
+        for (const auto& ac : t.aircraft) if (ac.hasPos) rangeFeed(S.range, ac.lat, ac.lon);
     }
 }
 
@@ -458,13 +462,14 @@ void detail(const App& a) {
 // ---------------------------------------------------------------- the hooks
 
 void tab(App& a) {
-    subNav("adsbv", S.viewMode, {"Map", "Table", "Radar"});
+    subNav("adsbv", S.viewMode, {"Map", "Table", "Radar", tr("Range")});
     const float W = ImGui::GetContentRegionAvail().x, H = ImGui::GetContentRegionAvail().y;
     const float dw = std::min(250.f * gUi, W * 0.26f);
     ImGui::BeginChild("##adsb_l", ImVec2(S.viewMode == 1 ? W : W - dw - 8 * gUi, H));
     if (S.viewMode == 0) mapView(a, ImGui::GetContentRegionAvail());
     else if (S.viewMode == 1) aircraftTable(a, false);
-    else radar(a, ImGui::GetContentRegionAvail());
+    else if (S.viewMode == 2) radar(a, ImGui::GetContentRegionAvail());
+    else rangeView(S.range, ImGui::GetContentRegionAvail(), au::distOut(S.units, 1.0 / 1.852), au::distUnit(S.units), "adsb", receiverLocationSet());
     ImGui::EndChild();
     if (S.viewMode != 1) {
         ImGui::SameLine();
