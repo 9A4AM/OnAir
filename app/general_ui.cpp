@@ -39,6 +39,7 @@ struct State {
     int drag = -1, dragPlot = -1;   // the filter edge held (0 low, 1 high) and on which plot
     bool dragged = false;
     std::string recErr;
+    bool txRec = false;
 };
 State S;
 
@@ -249,6 +250,22 @@ void controls(App& a) {
         ImGui::EndDisabled();
         tip("Record what you hear (after the squelch, before the volume) to a 16-bit 48 kHz WAV file in the audio-recordings folder");
     } else if (ImGui::SmallButton("Stop recording")) a.engine.general().stopRecording();
+    {   // one file per transmission, for the voice modes
+        ImGui::SameLine(0, 8 * gUi);
+        if (ImGui::Checkbox("One file per transmission", &S.txRec)) {
+            std::error_code ec;
+            const std::string dir = plat::dataDir() + "/audio-recordings";
+            std::filesystem::create_directories(dir, ec);
+            const std::time_t now = std::time(nullptr);
+            char ts[32];
+            std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
+            char pre[96];
+            snprintf(pre, sizeof pre, "onair_%s_%.4fMHz_%s", dect2::generalDemodName(S.demod), listenHz(a) / 1e6, ts);
+            a.engine.general().setTransmissionRecording(S.txRec, dir, pre);
+        }
+        tip("Records each transmission to its own WAV file: a file starts when the squelch opens and ends when it closes (clips under half a second are dropped). Needs the squelch on.");
+        if (S.txRec) { ImGui::SameLine(0, 6 * gUi); ImGui::TextDisabled("%d saved", a.engine.general().transmissionFiles()); }
+    }
     if (live(a) && (T(a).recording || !T(a).recordPath.empty())) {
         ImGui::SameLine(0, 8 * gUi);
         if (T(a).recording) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "REC %.1f s", T(a).recordSec);

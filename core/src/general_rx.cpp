@@ -198,6 +198,8 @@ struct GeneralReceiver::Impl {
     uint32_t wavFrames = 0;
     std::string wavPath, wavErr;
     std::vector<int16_t> wbuf;
+    // per-transmission recording (wavMu held for all of these)
+    bool txOn = false; std::string txDir, txPrefix; double txMinSec = 0.5; int txN = 0, txKept = 0; bool txFile = false;
     // telemetry
     GeneralTelemetry pub;
     double pubAcc = 0;
@@ -358,12 +360,22 @@ struct GeneralReceiver::Impl {
         if (tap) tap(aud.data(), aud.size());
         {
             std::lock_guard<std::mutex> lk(wavMu);
+            if (txOn) {
+                if (open && !wav) {
+                    char nm[32]; snprintf(nm, sizeof nm, "_%d.wav", ++txN);
+                    wavPath = txDir + "/" + txPrefix + nm;
+                    wav = fopen(wavPath.c_str(), "wb");
+                    wavFrames = 0; txFile = wav != nullptr;
+                    if (wav) { wavHeader(wav, 0); wavErr.clear(); } else wavErr = std::string("cannot write ") + wavPath;
+                }
+            }
             if (wav) {
                 wbuf.resize(aud.size());
                 for (size_t i = 0; i < aud.size(); i++) wbuf[i] = (int16_t)std::lround(std::clamp(aud[i], -1.f, 1.f) * 32767.f);
                 fwrite(wbuf.data(), 2, wbuf.size(), wav);   // little-endian hosts (macOS, Windows, Linux on x86 / ARM)
                 wavFrames += (uint32_t)wbuf.size();
             }
+            if (txOn && txFile && wav && !open && ramp <= 0.f) endTransmission();
         }
         if (silent.load()) return;
         pcm.clear();
@@ -401,6 +413,14 @@ struct GeneralReceiver::Impl {
         pub = std::move(t);
     }
 
+    void endTransmission() {   // with wavMu held: the squelch has shut
+        const double sec = wavFrames / kGeneralAudioRate;
+        const std::string path = wavPath;
+        closeWav();
+        txFile = false;
+        if (sec < txMinSec) { std::remove(path.c_str()); return; }
+        txKept++;
+    }
     void closeWav() {   // with wavMu held
         if (!wav) return;
         fflush(wav);
@@ -534,6 +554,14 @@ void GeneralReceiver::stopRecording() {
     }
     p_->log(msg);
 }
+
+void GeneralReceiver::setTransmissionRecording(bool on, const std::string& dir, const std::string& prefix, double minSec) {
+    std::lock_guard<std::mutex> lk(p_->wavMu);
+    if (!on && p_->txOn && p_->txFile) p_->endTransmission();
+    p_->txOn = on; p_->txDir = dir; p_->txPrefix = prefix; p_->txMinSec = minSec;
+    if (on) { p_->txN = 0; p_->txKept = 0; }
+}
+int GeneralReceiver::transmissionFiles() const { std::lock_guard<std::mutex> lk(p_->wavMu); return p_->txKept; }
 
 bool GeneralReceiver::recording() const { std::lock_guard<std::mutex> lk(p_->wavMu); return p_->wav != nullptr; }
 

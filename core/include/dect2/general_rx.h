@@ -73,6 +73,10 @@ public:
     bool startRecording(const std::string& wavPath); // 16-bit mono 48 kHz WAV of what is heard; false when the file cannot be made
     void stopRecording();
     bool recording() const;
+    // One WAV file per transmission: a file opens when the squelch opens and closes when it has shut (clips under minSec are deleted).
+    // The files are dir/prefix_<n>.wav. Off (the default) leaves startRecording() as it was.
+    void setTransmissionRecording(bool on, const std::string& dir, const std::string& prefix, double minSec = 0.5);
+    int transmissionFiles() const;                   // files kept since it was switched on
 
 private:
     struct Impl;

@@ -148,6 +148,27 @@ int main() {
         CHECK(!r.startRecording("/nonexistent-dir/x.wav") && !r.recording(), "a bad path fails");
     }
 
+    // one WAV per transmission: station 2 s, nothing 2 s, station 2 s, nothing: two files (a 0.1 s blip would be dropped)
+    {
+        SynthConfig on, off;
+        on.mode = 57; on.snrDb = 30; off.mode = 57; off.snrDb = 30; off.modeOpt[1] = 1;   // quiet: noise only
+        auto sOn = makeGeneralSynth(on, kRate), sOff = makeGeneralSynth(off, kRate);
+        GeneralReceiver r;
+        r.configure(kRate); r.setSignalOffset(-generalTuning().tuneOffsetHz); r.setSilent(true);
+        r.setSquelch(true, true, -60);
+        r.setTransmissionRecording(true, ".", "general_rx_tx", 0.5);
+        std::vector<cf32> buf(20000);
+        auto feedSecs = [&](GeneralReceiver& rr, std::unique_ptr<ModeSynth>& syn, double secs) {
+            for (double t = 0; t < secs; t += buf.size() / kRate) { syn->generate(buf.data(), buf.size()); rr.feed(buf.data(), buf.size()); }
+        };
+        feedSecs(r, sOff, 1.0); feedSecs(r, sOn, 2.0); feedSecs(r, sOff, 2.0); feedSecs(r, sOn, 2.0); feedSecs(r, sOff, 2.0);
+        r.setTransmissionRecording(false, ".", "general_rx_tx");
+        int files = 0;
+        for (int i = 1; i <= 6; i++) { char n[64]; snprintf(n, sizeof n, "general_rx_tx_%d.wav", i); if (FILE* f = fopen(n, "rb")) { fclose(f); files++; remove(n); } }
+        printf("  per-transmission files: %d (kept %d)\n", files, r.transmissionFiles());
+        CHECK(files == 2 && r.transmissionFiles() == 2, "per-transmission files %d / %d", files, r.transmissionFiles());
+    }
+
     printf(fails ? "general rx: %d FAILED\n" : "general rx: all passed\n", fails);
     return fails ? 1 : 0;
 }
