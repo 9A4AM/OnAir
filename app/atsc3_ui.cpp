@@ -1,5 +1,6 @@
 // ATSC 3.0: the status bar and the Receiver tab (lock, frame structure, service list, statistics)
 #include "app.h"
+#include "dect2/ac4_dec.h"
 
 static const char* modName(int bits) {
     switch (bits) { case 2: return "QPSK"; case 4: return "16QAM"; case 6: return "64QAM"; case 8: return "256QAM"; case 10: return "1024QAM"; case 12: return "4096QAM"; default: return "?"; }
@@ -137,6 +138,20 @@ void atsc3ReceiverTab(App& a) {
             ImGui::PopID();
         }
         ImGui::EndTable();
+    }
+    {   // AC-4 sound (Dolby, the ATSC 3.0 codec of the US and South Korea): decoded only with the optional library (docs/CODECS.md)
+        const Ac4Status a4 = ac4Status();
+        if (a4.seen) {
+            ImGui::Spacing();
+            ImGui::TextDisabled("AC-4 sound"); ImGui::SameLine(std::min(190 * gUi, ImGui::GetContentRegionAvail().x * 0.45f));
+            codecHelpButton(CodecHelp::Ac4); ImGui::SameLine();
+            ImGui::PushTextWrapPos(0);
+            char b[200];
+            if (a4.hasDecoder && a4.decoded > 0) { snprintf(b, sizeof b, "playing: %llu frames decoded, %d channel(s), %d Hz%s%s", (unsigned long long)a4.decoded, a4.channels, a4.sampleRate, a4.failed ? ", errors: " : "", a4.failed ? std::to_string(a4.failed).c_str() : ""); ImGui::TextColored(pal::okGreen(), "%s", b); }
+            else if (a4.hasDecoder) ImGui::TextColored(pal::warnAmber(), "decoder found (%s), waiting for the first frames%s%s", a4.libPath.c_str(), a4.failed ? ": errors " : "", a4.failed ? std::to_string(a4.failed).c_str() : "");
+            else ImGui::TextColored(pal::warnAmber(), "%s: the sound is left out. It needs an FFmpeg with the AC-4 decoder (press ? for how to get it)", a4.detail.empty() ? "AC-4" : a4.detail.c_str());
+            ImGui::PopTextWrapPos();
+        }
     }
     ImGui::Spacing();
     { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Picture and sound appear in the TV tab. Services that use MMTP instead of ROUTE are listed but cannot be received yet."); ImGui::PopTextWrapPos(); }

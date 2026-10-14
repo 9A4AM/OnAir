@@ -1,6 +1,7 @@
 // The "?" button next to the sound of each mode whose voice or audio needs a codec that OnAir does not ship (docs/CODECS.md). It says whether
 // the codec was found and where, what it is, how to install it on this computer, where to put it, a link to the full page, and "Look again".
 #include "app.h"
+#include "dect2/ac4_dec.h"
 #include "dect2/hfdig_freedv.h"
 #include "dect2/dstar_ambe.h"
 #include "dect2/nxdn_ambe.h"
@@ -156,6 +157,20 @@ Text textOf(CodecHelp c) {
                 "Some DTMB channels in China send their sound as DRA, a Chinese patented audio codec. FFmpeg has no DRA decoder, so OnAir shows "
                 "the picture without that sound; a second sound track in another format (MPEG audio, AAC, AC-3) plays.",
                 "There is no free DRA decoder to install at this time.", false};
+    case CodecHelp::Ac4:
+        return {"AC-4 (ATSC 3.0 sound)",
+                "ATSC 3.0 in the US and South Korea (and some DVB services) send their sound as Dolby AC-4, a patented codec. The FFmpeg inside "
+                "OnAir has no AC-4 decoder, so without help OnAir plays the picture and any other sound track (AAC, AC-3) but not the AC-4 sound. "
+                "If you install a libavcodec built from an FFmpeg that includes an AC-4 decoder, OnAir loads it, decodes the AC-4 sound of the "
+                "selected service and plays it, mixed to stereo or 5.1. This is experimental: it has not been tried on a real AC-4 broadcast.",
+                "AC-4 audio needs an FFmpeg with the AC-4 decoder. The one public source is the patch in github.com/funnymanva/ffmpeg-with-ac4 "
+                "(FFmpeg 6.1 plus an AC-4 decoder; its script builds a static ffmpeg program, but OnAir needs the SHARED libraries: configure "
+                "FFmpeg with --enable-shared --disable-static after applying ffmpeg_ac4.patch). Put libavcodec and libavutil (and the "
+                "libswresample and other libraries they need) next to each other in the codecs folder below, then press Look again.\n"
+                "Licences, honestly: the decoder in that patch (ac4dec.c, Paul B Mahol) is LGPL-2.1-or-later and the build script is MIT, so "
+                "building and using it yourself is fine as far as copyright goes. The patents are another matter: Dolby holds patents on AC-4 "
+                "and licenses them for products; OnAir ships no AC-4 code and downloads nothing. Whether you may use it is for you to check where you live.",
+                true};
     }
     return {"", "", "", false};
 }
@@ -180,6 +195,39 @@ void codecHelpButton(CodecHelp c) {
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30);
         ImGui::TextUnformatted(t.title);
         ImGui::Separator();
+        if (c == CodecHelp::Ac4) {   // its own layout: the optional FFmpeg, not mbelib or codec2
+            const dect2::Ac4LibInfo li = dect2::ac4Library();
+            if (li.hasDecoder) ImGui::TextColored(pal::okGreen(), "AC-4 decoder found: %s", li.path.c_str());
+            else ImGui::TextColored(pal::warnAmber(), "AC-4 decoder not found: AC-4 sound is left out%s%s", li.message.empty() ? "" : "\n", li.message.c_str());
+            ImGui::Spacing();
+            ImGui::TextUnformatted(t.what);
+            ImGui::Spacing();
+            ImGui::TextDisabled("Install");
+            ImGui::TextUnformatted(t.install);
+            ImGui::Spacing();
+            ImGui::TextDisabled("File names OnAir looks for");
+            ImGui::TextUnformatted("libavcodec.dylib / libavcodec.NN.dylib (macOS), libavcodec.so.NN (Linux), avcodec-NN.dll (Windows), and the libavutil of the same kind in the same folder");
+            ImGui::TextDisabled("Folders, in this order");
+            for (const auto& d : dect2::ac4SearchFolders()) ImGui::BulletText("%s", d.c_str());
+            ImGui::Spacing();
+            const auto folders = dect2::codecFolderList();
+            if (!folders.empty()) {
+                if (ImGui::Button("Open codecs folder")) {
+                    std::error_code ec;
+                    std::filesystem::create_directories(std::filesystem::path(folders.back()), ec);
+                    dect2::openUrl(folders.back());
+                }
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s\n(made if it does not exist)", folders.back().c_str());
+                ImGui::SameLine();
+            }
+            if (ImGui::Button("Look again")) dect2::ac4Library(true);
+            ImGui::SameLine();
+            if (ImGui::Button("Full instructions")) dect2::openUrl(kDocUrl);
+            ImGui::PopTextWrapPos();
+            ImGui::EndPopup();
+            ImGui::PopID();
+            return;
+        }
         if (t.loadable) {
             std::string path, ver;
             const bool mbe = c == CodecHelp::DstarAmbe || c == CodecHelp::NxdnAmbe || c == CodecHelp::DpmrAmbe || c == CodecHelp::P25Imbe;

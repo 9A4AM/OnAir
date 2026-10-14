@@ -1,8 +1,10 @@
 #include "dect2/atsc3_remux.h"
+#include "dect2/ac4_dec.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <memory>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -36,6 +38,8 @@ struct Atsc3Remux::Impl {
         std::deque<AVPacket*> q;        // packets waiting for the muxer (guarded by Impl::pmu)
         bool done = false;
         std::vector<uint8_t> init;      // the init segment already given to the demuxer
+        bool ac4 = false;               // the init segment has an AC-4 sample entry ('ac-4')
+        int ac4Channels = 0;            // its channel count (a hint)
     };
 
     std::mutex mu;                      // components map, state
@@ -172,6 +176,7 @@ struct Atsc3Remux::Impl {
         oc->pb = oio;
         oc->flags |= AVFMT_FLAG_CUSTOM_IO;
         std::vector<AVBSFContext*> bsfs;
+        std::map<int, std::unique_ptr<Ac4ToAc3>> xcodes;   // output stream index -> AC-4 to AC-3 converter
         std::vector<std::vector<AVStream*>> inStreams(cs.size());
         for (size_t ci = 0; ci < cs.size(); ci++) {
             Comp* c = cs[ci];
@@ -180,6 +185,30 @@ struct Atsc3Remux::Impl {
                 AVStream* in = c->ic->streams[si];
                 const AVCodecParameters* cp = in->codecpar;
                 if (cp->codec_type != AVMEDIA_TYPE_VIDEO && cp->codec_type != AVMEDIA_TYPE_AUDIO) continue;
+                // AC-4 sound (ATSC A/342-2, sample entry 'ac-4'): the FFmpeg inside OnAir cannot decode it. With the optional AC-4 library it is
+                // decoded here and goes on as AC-3; without it the component is left out (and said so), the picture and other sound still play.
+                if (cp->codec_type == AVMEDIA_TYPE_AUDIO && (cp->codec_id == AV_CODEC_ID_AC4 || cp->codec_tag == MKTAG('a', 'c', '-', '4') || c->ac4)) {
+                    ac4NoteSeen("");
+                    auto xc = std::make_unique<Ac4ToAc3>();
+                    AVStream* os = nullptr;
+                    if (xc->open(c->ac4Channels > 0 ? c->ac4Channels : cp->ch_layout.nb_channels) && (os = avformat_new_stream(oc, nullptr))) {
+                        os->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+                        os->codecpar->codec_id = AV_CODEC_ID_AC3;
+                        os->codecpar->sample_rate = xc->outSampleRate();
+                        os->codecpar->bit_rate = xc->outBitRate();
+                        av_channel_layout_default(&os->codecpar->ch_layout, xc->outChannels());
+                        os->time_base = AVRational{1, 90000};
+                        c->outStream[si] = os->index;
+                        if ((int)bsfs.size() <= os->index) bsfs.resize(os->index + 1, nullptr);
+                        xcodes[os->index] = std::move(xc);
+                        inStreams[ci].push_back(in);
+                    } else {
+                        ac4NoteDropped();
+                        std::lock_guard<std::mutex> lk(mu);
+                        if (std::find(dropped.begin(), dropped.end(), "AC-4") == dropped.end()) dropped.push_back("AC-4");
+                    }
+                    continue;
+                }
                 AVStream* os = avformat_new_stream(oc, nullptr);
                 if (!os || avcodec_parameters_copy(os->codecpar, cp) < 0) continue;
                 os->codecpar->codec_tag = 0;
@@ -203,7 +232,7 @@ struct Atsc3Remux::Impl {
         }
         // a component that has nothing to put in the output (timed metadata, captions) never delivers a packet: it must not be waited for
         cs.erase(std::remove_if(cs.begin(), cs.end(), [](Comp* c) { for (int o : c->outStream) if (o >= 0) return false; return true; }), cs.end());
-        if (oc->nb_streams == 0) { fail("no picture or sound in the stream"); finishOut(); avformat_free_context(oc); return; }
+        if (oc->nb_streams == 0) { fail(!dropped.empty() ? "only AC-4 sound in the stream, and no AC-4 decoder library is installed" : "no picture or sound in the stream"); finishOut(); avformat_free_context(oc); return; }
         if (avformat_write_header(oc, nullptr) < 0) { fail("cannot start the transport stream"); finishOut(); avformat_free_context(oc); return; }
         nStreams = (int)oc->nb_streams;
         hdr = true;
@@ -213,6 +242,7 @@ struct Atsc3Remux::Impl {
         std::vector<int64_t> epochBases;
         std::map<Comp*, int64_t> lastOut;   // the output time of the last packet taken from each component
         std::vector<int64_t> lastDts(oc->nb_streams, INT64_MIN);
+        std::map<int, int64_t> lastAc3;   // last written time of each converted (AC-4) stream;
         long idle = 0;
         bool paced = false;
         std::chrono::steady_clock::time_point wall0;
@@ -305,7 +335,24 @@ struct Atsc3Remux::Impl {
                 pk->stream_index = os;
                 if (pk->pts != AV_NOPTS_VALUE && pk->pts >= 0) {
                     AVBSFContext* bsf = os < (int)bsfs.size() ? bsfs[os] : nullptr;
-                    if (!bsf) av_interleaved_write_frame(oc, pk);
+                    auto xit = xcodes.find(os);
+                    if (xit != xcodes.end()) {
+                        std::vector<Ac4TsPacket> outs;
+                        xit->second->push(pk->data, (size_t)pk->size, pk->pts, outs);
+                        for (auto& o : outs) {
+                            AVPacket* o2 = av_packet_alloc();
+                            if (o2 && av_new_packet(o2, (int)o.data.size()) >= 0) {
+                                memcpy(o2->data, o.data.data(), o.data.size());
+                                int64_t t = std::max(o.pts90, lastAc3[os] + 1);
+                                o2->pts = o2->dts = t;
+                                lastAc3[os] = t;
+                                o2->duration = av_rescale(o.samples, 90000, 48000);
+                                o2->stream_index = os;
+                                av_interleaved_write_frame(oc, o2);
+                            }
+                            av_packet_free(&o2);
+                        }
+                    } else if (!bsf) av_interleaved_write_frame(oc, pk);
                     else if (av_bsf_send_packet(bsf, pk) >= 0) {   // the filter takes the packet over
                         AVPacket* o2 = av_packet_alloc();
                         while (av_bsf_receive_packet(bsf, o2) >= 0) { o2->stream_index = os; av_interleaved_write_frame(oc, o2); av_packet_unref(o2); }
@@ -357,6 +404,17 @@ void Atsc3Remux::push(int id, const std::vector<uint8_t>& data) {
         if (data.size() >= 8 && (!memcmp(&data[4], "ftyp", 4) || !memcmp(&data[4], "moov", 4))) {
             if (!c->init.empty() && c->init == data) return;
             c->init = data;
+            Ac4Dsi dsi;
+            int ch = 0;
+            if (findAc4InInit(data.data(), data.size(), &dsi, &ch)) {
+                c->ac4 = true;
+                c->ac4Channels = ch;
+                char b[96];
+                snprintf(b, sizeof b, "AC-4%s%s", dsi.valid ? (dsi.sampleRate() == 48000 ? ", 48 kHz" : ", 44.1 kHz") : "", ch > 0 ? (ch >= 6 ? ", 5.1 or more" : ", stereo or mono") : "");
+                std::string d = b;
+                if (dsi.valid) d += ", " + std::to_string(dsi.presentations) + " presentation(s)";
+                ac4NoteSeen(d);
+            }
         }
         c->chunks.push_back(data);
         if (!c->th.joinable()) c->th = std::thread([this, c] { p_->demuxLoop(c); });

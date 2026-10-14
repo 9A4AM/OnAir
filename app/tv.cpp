@@ -1,5 +1,6 @@
 // the TV side: player, service list, programme guide, teletext
 #include "app.h"
+#include "dect2/ac4_dec.h"
 
 #include <cctype>
 #include <ctime>
@@ -643,6 +644,10 @@ void rightPanel(App& a) {
         if (pl.selected() >= 0) {
             if (!ps.videoNote.empty()) { codecHelpButton(CodecHelp::Avs); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", ps.videoNote.c_str()); ImGui::PopTextWrapPos(); }
             if (!ps.audioNote.empty()) { codecHelpButton(CodecHelp::DraTv); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "%s", ps.audioNote.c_str()); ImGui::PopTextWrapPos(); }
+            {   // ATSC 3.0 sound in AC-4 and no decoder library: say why there is no sound
+                const dect2::Ac4Status a4 = dect2::ac4Status();
+                if (a4.seen && a4.dropped && !a4.hasDecoder) { codecHelpButton(CodecHelp::Ac4); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(pal::warnAmber(), "This service's sound is AC-4 (Dolby). OnAir needs an optional FFmpeg with an AC-4 decoder to play it."); ImGui::PopTextWrapPos(); }
+            }
             if (pl.hasSavableAudio()) {   // the raw DRA (else MPEG audio) stream to a file FFmpeg can play
                 static std::string savedTo, saveErr;
                 Player& mp = a.engine.player();
