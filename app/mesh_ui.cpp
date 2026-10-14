@@ -5,11 +5,13 @@
 #include "dect2/packet_aprs.h"
 #include "dect2/mesh_proto.h"
 #include "results_export.h"
+#include "dect2/mesh_report.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <ctime>
 #include <deque>
+#include <fstream>
 #include <map>
 
 namespace {
@@ -306,6 +308,20 @@ void nodeTable(const App& a, bool compact) {
                    n->hasEnv ? resexp::num(n->pressureHpa, 1) : "", n->lastHeard >= 0 ? resexp::num(t.timeSec - n->lastHeard, 0) : "", std::to_string(n->packets)}, ep);
         }
         resexp::saveButton(x, "mesh-nodes", note, "svmn");
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Report...")) {   // a short text summary: copied to the clipboard and saved as .txt
+            char mhz[32];
+            snprintf(mhz, sizeof mhz, "  %.3f MHz", a.freqMhz);
+            const std::string rep = dect2::meshReport(t, std::string(kPlans[effRegion(a)].shortName) + (t.custom ? "  (custom LoRa setting)" : "") + mhz, now);
+            ImGui::SetClipboardText(rep.c_str());
+            const std::string path = saveFileDialog(("mesh-report-" + resexp::stamp() + ".txt").c_str());
+            if (!path.empty()) {
+                std::ofstream f(path, std::ios::binary);
+                f << rep;
+                note = f ? "report saved to " + path + " and copied" : "could not write " + path;
+            } else note = "report copied to the clipboard";
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("A short text report: period, frames and CRC errors, packet types, every node with its SNR range,\nhops, battery, sensors and position, and the text messages. Copied to the clipboard and saved as a .txt file.");
         if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
     const int cols = compact ? 3 : 11;

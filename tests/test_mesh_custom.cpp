@@ -150,6 +150,9 @@ int main() {
         printf("ANZ plan LongFast %.4f MHz: %s, plan %s, MeshCore AU %s\n", lf.freqHz / 1e6, got ? "decoded" : "MISSING", t.mtRegion.c_str(), mc ? "planned" : "MISSING");
         CHECK(got && t.region == 2 && t.mtRegion == "ANZ" && !t.custom, "ANZ plan LongFast");
         CHECK(mc && !lw, "ANZ plan: MeshCore AU, no LoRaWAN");
+        const MeshNode* nd = t.nodes.empty() ? nullptr : &t.nodes[0];
+        CHECK(nd && nd->packets == 1 && nd->firstHeard >= 0 && nd->firstHeard == nd->lastHeard && nd->snrMin == nd->snrMax && std::abs(nd->snrSum - nd->snrMin) < 1e-3 &&
+              nd->encrypted == 0, "node statistics after one packet");
     }
 
     if (fails) { printf("%d failures\n", fails); return 1; }

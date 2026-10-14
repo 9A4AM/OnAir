@@ -235,6 +235,13 @@ struct MeshReceiver::Impl {
         nProc += (int64_t)n;
     }
 
+    // a packet from the node: when, how strong (the report's first / last heard and SNR range)
+    static void heard(MeshNode& n, double t, double snr, double level) {
+        if (n.packets == 0 || n.firstHeard < 0) { n.firstHeard = t; n.snrMin = n.snrMax = (float)snr; }
+        n.snrMin = std::min(n.snrMin, (float)snr); n.snrMax = std::max(n.snrMax, (float)snr);
+        n.snrSum += snr;
+        n.lastHeard = t; n.lastSnrDb = (float)snr; n.lastLevelDb = (float)level; n.packets++;
+    }
     MeshNode& node(int protocol, const std::string& id) {
         const std::string key = std::to_string(protocol) + "|" + id;
         auto it = nodeIdx.find(key);
@@ -319,7 +326,8 @@ struct MeshReceiver::Impl {
         if (proto_ == 1 && !pk.from.empty()) {
             const bool fresh = nodeIdx.find("1|" + pk.from) == nodeIdx.end();
             MeshNode& n = node(1, pk.from);
-            n.lastHeard = t; n.lastSnrDb = (float)f.snrDb; n.lastLevelDb = (float)f.levelDb; n.packets++;
+            heard(n, t, f.snrDb, f.levelDb);
+            if (!pk.decrypted) n.encrypted++;
             if (hops >= 0) n.hopsAway = hops;
             if (fresh) logf("Meshtastic: new node " + pk.from);
         }
@@ -329,7 +337,7 @@ struct MeshReceiver::Impl {
             const bool fresh = nodeIdx.find(std::to_string(pr) + "|" + u.nodeId) == nodeIdx.end();
             MeshNode& n = node(pr, u.nodeId);
             if (pr == 2) {
-                n.lastHeard = t; n.lastSnrDb = (float)f.snrDb; n.lastLevelDb = (float)f.levelDb; n.packets++;
+                heard(n, t, f.snrDb, f.levelDb);
                 if (hops >= 0) n.hopsAway = hops;
             }
             if (!u.longName.empty()) n.longName = u.longName;
@@ -512,7 +520,7 @@ struct MeshReceiver::Impl {
     static void shiftTimes(MeshTelemetry& t, double dt) {
         for (auto& p : t.packets) p.timeSec += dt;
         for (auto& m : t.messages) m.timeSec += dt;
-        for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.posSec >= 0) n.posSec += dt; }
+        for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.firstHeard >= 0) n.firstHeard += dt; if (n.posSec >= 0) n.posSec += dt; }
         for (auto& a : t.aprsStations) a.st.lastHeardSec += dt;
         for (auto& d : t.lorawanDevices) if (d.lastHeard >= 0) d.lastHeard += dt;
     }

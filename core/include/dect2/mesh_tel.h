@@ -109,6 +109,10 @@ struct MeshNode {
     int hopsAway = -1;           // hop start - hop limit of its last packet (-1 unknown)
     double lastHeard = -1;
     uint32_t packets = 0;
+    double firstHeard = -1;
+    float snrMin = 0, snrMax = 0;
+    double snrSum = 0;           // over `packets`: the mean SNR is snrSum / packets
+    uint32_t encrypted = 0;      // of its packets, the ones that could not be decrypted
 };
 
 struct MeshMessage {
