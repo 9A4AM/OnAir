@@ -199,7 +199,9 @@ void teletextTab(App& a) {
     TtxGrid grid;
     ttxRender(pg, grid);
     ImVec2 avail = ImGui::GetContentRegionAvail();
-    const float cw = std::max(6.f, std::min(avail.x / 40.f, avail.y / 25.f * 0.55f)), ch = cw / 0.55f;
+    // Teletext cell aspect ~7×9 (ETS 300 706); 0.55 was too squat and glyphs bled between rows.
+    constexpr float kTtxAspect = 7.f / 9.f;
+    const float cw = std::max(6.f, std::min(avail.x / 40.f, avail.y / 25.f * kTtxAspect)), ch = cw / kTtxAspect;
     ImVec2 o = ImGui::GetCursorScreenPos();
     ImDrawList* dl = ImGui::GetWindowDrawList();
     dl->AddRectFilled(o, ImVec2(o.x + cw * 40, o.y + ch * 25), IM_COL32(0, 0, 0, 255));
