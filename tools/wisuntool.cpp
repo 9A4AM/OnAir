@@ -4,11 +4,18 @@
 //       prints every frame, then the networks, nodes and links
 //   wisuntool gen <out.cf32> [--rate Hz] [--secs s] [--snr dB]
 //       the test schedule (wisun_gen.h) around 921.5 MHz
+//   wisuntool live <log.txt> [--secs s] [--center Hz] [--rate Hz] [--gain dB] [--region ANZ|NA]
+//       the first radio found, for hours if need be: every frame (UTC time, MPDU hex) and a summary line a minute into the log
+//       (appended), the tables at the end
 #include "dect2/iq_file.h"
+#include "dect2/source.h"
 #include "dect2/wisun_gen.h"
+#include "dect2/wisun_proto.h"
 #include "dect2/wisun_rx.h"
 #include "dect2/wisun_tel.h"
 #include <chrono>
+#include <ctime>
+#include <thread>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -16,26 +23,114 @@
 #include <vector>
 using namespace dect2;
 
-static void printNew(const WisunTelemetry& t, size_t& printed) {
-    // the log is newest first: the entries beyond what was printed, oldest of them first
+static std::string utc(int64_t t) {
+    const time_t tt = (time_t)t;
+    struct tm g;
+#ifdef _WIN32
+    gmtime_s(&g, &tt);
+#else
+    gmtime_r(&tt, &g);
+#endif
+    char b[32];
+    strftime(b, sizeof b, "%Y-%m-%dT%H:%M:%SZ", &g);
+    return b;
+}
+
+// The frames decoded since the last call (the log is newest first: the new entries, oldest first), with the UTC time and the MPDU hex when asked
+static void printNew(FILE* o, const WisunTelemetry& t, size_t& printed, bool wall = false, bool hex = getenv("WISUN_HEX") != nullptr) {
     size_t fresh = (size_t)(t.blocksOk - printed);
     if (fresh > t.log.size()) fresh = t.log.size();
     for (size_t i = fresh; i-- > 0;) {
         const WsFrame& f = t.log[i];
-        printf("%9.4f %8.3f MHz ch %2d %3d kbit/s %6.1f dBFS %5.1f dB  %-23s > %-23s %4d  %s  [%s]\n", f.sec, f.mhz, f.channel, f.bitRate / 1000, f.rssi, f.snrDb,
-               f.src.c_str(), f.dst.c_str(), f.len, f.info.c_str(), f.ies.c_str());
-        if (getenv("WISUN_HEX")) printf("          %s\n", f.hex.c_str());
+        if (wall) fprintf(o, "%s ", utc(f.wallTime).c_str());
+        fprintf(o, "%9.4f %8.3f MHz ch %2d %3d kbit/s %6.1f dBFS %5.1f dB  %-23s > %-23s %4d  %s  [%s]\n", f.sec, f.mhz, f.channel, f.bitRate / 1000, f.rssi, f.snrDb,
+                f.src.c_str(), f.dst.c_str(), f.len, f.info.c_str(), f.ies.c_str());
+        if (hex) fprintf(o, "          %s\n", f.hex.c_str());
     }
     printed = (size_t)t.blocksOk;
 }
 
+static void printTables(FILE* o, const WisunTelemetry& t) {
+    fprintf(o, "%llu mode switches:", (unsigned long long)t.modeSwitches);
+    for (const auto& m : t.switchModes) fprintf(o, " 0x%02X x%u", m.first, m.second);
+    fprintf(o, "\n");
+    for (const WsPan& p : t.pans)
+        fprintf(o, "PAN 0x%04X \"%s\" size %d, version %d, border router %s, %d nodes, %llu frames; %s\n", p.pan, p.netName.c_str(), p.panSize, p.panVersion,
+                p.borderRouter.empty() ? "-" : p.borderRouter.c_str(), p.nodes, (unsigned long long)p.packets, p.unicast.c_str());
+    for (const WsNode& n : t.nodes)
+        fprintf(o, "node %s %-14s %-24s PAN %5d  %4llu frames  %6.1f dBFS  %6.3f MHz  %s\n", n.eui.c_str(), n.role.c_str(), n.vendor.c_str(), n.pan,
+                (unsigned long long)n.packets, n.rssi, n.lastMhz, n.last.c_str());
+    for (const WsLink& l : t.links)
+        fprintf(o, "link %s > %s  %llu frames, %llu acks, RSL %d dBm\n", l.src.c_str(), l.dst.c_str(), (unsigned long long)l.frames, (unsigned long long)l.acks, l.rslDbm);
+}
+
+static void summaryLine(FILE* o, const WisunTelemetry& t) {
+    fprintf(o, "SUMMARY %s %.0f s: %s; types", utc((int64_t)time(nullptr)).c_str(), t.timeSec, wisunSummary(t).c_str());
+    for (int k = 0; k < kWsUttTypes; k++) if (t.perUtt[k]) fprintf(o, " %s %llu", wisun::uttShort(k), (unsigned long long)t.perUtt[k]);
+    fprintf(o, ", plain %llu, corrected %llu, bad %llu, mode switches %llu, dropped %llu, level %.1f dBFS, load %.0f%%\n", (unsigned long long)t.plain,
+            (unsigned long long)t.corrected, (unsigned long long)t.blocksBad, (unsigned long long)t.modeSwitches, (unsigned long long)t.dropped, t.levelDb, t.loadPct);
+}
+
+static int live(const std::string& path, double secs, double center, double rate, double gain, const std::string& region) {
+    std::string err;
+    const auto radios = listRadios(err);
+    if (radios.empty()) { fprintf(stderr, "no radio found %s\n", err.c_str()); return 1; }
+    const DeviceInfo& dev = radios[0];
+    FILE* o = fopen(path.c_str(), "a");
+    if (!o) { perror(path.c_str()); return 1; }
+    TuneSettings ts;
+    ts.centerHz = center; ts.sampleRate = rate; ts.gainDb = gain; ts.bandwidthMhz = rate / 1e6;
+    auto src = makeSource(dev);
+    IqRing ring(1u << 25);
+    if (!src->start(ts, ring, err)) { fprintf(stderr, "start: %s\n", err.c_str()); return 1; }
+    const double r = src->sampleRate();
+    fprintf(o, "START %s %s, %.3f MHz, %.2f Msps, gain %.0f dB\n", utc((int64_t)time(nullptr)).c_str(), dev.name.c_str(), center / 1e6, r / 1e6, gain);
+    fflush(o);
+    WisunReceiver rx;
+    rx.setCenterHz(center);
+    if (!region.empty()) rx.setRegion(region);
+    rx.configure(r);
+    std::vector<cf32> buf(1 << 18);
+    WisunTelemetry t;
+    uint64_t seq = 0;
+    size_t printed = 0;
+    uint64_t total = 0;
+    const uint64_t limit = secs > 0 ? (uint64_t)(secs * r) : UINT64_MAX;
+    auto nextSummary = std::chrono::steady_clock::now() + std::chrono::seconds(60);
+    while (total < limit) {
+        const size_t n = ring.read(buf.data(), (size_t)std::min<uint64_t>(buf.size(), limit - total));
+        if (!n) { std::this_thread::sleep_for(std::chrono::milliseconds(2)); continue; }
+        rx.feed(buf.data(), n);
+        total += n;
+        if (rx.telemetry(t, seq)) {
+            seq = t.seq;
+            printNew(o, t, printed, true, true);
+            if (std::chrono::steady_clock::now() >= nextSummary) {
+                summaryLine(o, t);
+                fprintf(stderr, "%s\n", wisunSummary(t).c_str());
+                fflush(o);
+                nextSummary += std::chrono::seconds(60);
+            }
+        }
+    }
+    src->stop();
+    rx.flush();
+    if (rx.telemetry(t, seq)) printNew(o, t, printed, true, true);
+    summaryLine(o, t);
+    fprintf(o, "radio dropped %llu samples\n", (unsigned long long)ring.dropped());
+    printTables(o, t);
+    fclose(o);
+    return 0;
+}
+
 int main(int argc, char** argv) {
     if (argc < 3) {
-        fprintf(stderr, "usage: wisuntool rx <file> [--rate Hz] [--center Hz] [--region ANZ|NA] [--secs s]\n       wisuntool gen <out.cf32> [--rate Hz] [--secs s] [--snr dB]\n");
+        fprintf(stderr, "usage: wisuntool rx <file> [--rate Hz] [--center Hz] [--region ANZ|NA] [--secs s]\n       wisuntool gen <out.cf32> [--rate Hz] [--secs s] [--snr dB]\n"
+                        "       wisuntool live <log.txt> [--secs s] [--center Hz] [--rate Hz] [--gain dB] [--region ANZ|NA]\n");
         return 2;
     }
     const std::string cmd = argv[1], path = argv[2];
-    double rate = 0, center = 0, secs = 0, snr = 30;
+    double rate = 0, center = 0, secs = 0, snr = 30, gain = 40;
     std::string region;
     for (int i = 3; i + 1 < argc; i += 2) {
         const std::string k = argv[i];
@@ -44,7 +139,9 @@ int main(int argc, char** argv) {
         else if (k == "--region") region = argv[i + 1];
         else if (k == "--secs") secs = atof(argv[i + 1]);
         else if (k == "--snr") snr = atof(argv[i + 1]);
+        else if (k == "--gain") gain = atof(argv[i + 1]);
     }
+    if (cmd == "live") return live(path, secs, center > 0 ? center : wisunTuning().defMhz * 1e6, rate > 0 ? rate : wisunTuning().sampleRate, gain, region);
     if (cmd == "gen") {
         if (rate <= 0) rate = 20e6;
         if (secs <= 0) secs = 1;
@@ -112,27 +209,17 @@ int main(int argc, char** argv) {
         }
         rx.feed(buf.data(), n);
         total += n;
-        if (rx.telemetry(t, seq)) { seq = t.seq; printNew(t, printed); }
+        if (rx.telemetry(t, seq)) { seq = t.seq; printNew(stdout, t, printed); }
     }
     fclose(f);
     const std::vector<cf32> tail((size_t)(0.3 * rate), cf32(0, 0));   // flush the last bursts and the report
     rx.feed(tail.data(), tail.size());
     rx.flush();
-    if (rx.telemetry(t, seq)) printNew(t, printed);
+    if (rx.telemetry(t, seq)) printNew(stdout, t, printed);
     const double wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
     printf("\n%.1f s of signal in %.1f s: %s; %llu corrected, %llu bad FCS, %llu FEC frames, %llu bursts, %llu dropped; region %s, %.1f - %.1f MHz, %d bins of %.1f kHz\n",
            total / rate, wall, wisunSummary(t).c_str(), (unsigned long long)t.corrected, (unsigned long long)t.blocksBad, (unsigned long long)t.fecFrames, (unsigned long long)t.bursts, (unsigned long long)t.dropped,
            t.region.c_str(), t.loMhz, t.hiMhz, t.bins, t.binKhz);
-    printf("%llu mode switches:", (unsigned long long)t.modeSwitches);
-    for (const auto& m : t.switchModes) printf(" 0x%02X x%u", m.first, m.second);
-    printf("\n");
-    for (const WsPan& p : t.pans)
-        printf("PAN 0x%04X \"%s\" size %d, version %d, border router %s, %d nodes, %llu frames; %s\n", p.pan, p.netName.c_str(), p.panSize, p.panVersion,
-               p.borderRouter.empty() ? "-" : p.borderRouter.c_str(), p.nodes, (unsigned long long)p.packets, p.unicast.c_str());
-    for (const WsNode& n : t.nodes)
-        printf("node %s %-14s %-24s PAN %5d  %4llu frames  %6.1f dBFS  %6.3f MHz  %s\n", n.eui.c_str(), n.role.c_str(), n.vendor.c_str(), n.pan,
-               (unsigned long long)n.packets, n.rssi, n.lastMhz, n.last.c_str());
-    for (const WsLink& l : t.links)
-        printf("link %s > %s  %llu frames, %llu acks, RSL %d dBm\n", l.src.c_str(), l.dst.c_str(), (unsigned long long)l.frames, (unsigned long long)l.acks, l.rslDbm);
+    printTables(stdout, t);
     return 0;
 }

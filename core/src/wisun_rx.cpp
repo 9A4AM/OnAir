@@ -623,20 +623,23 @@ struct WisunReceiver::Impl {
         for (int k = 0; k < 16; k++) phrBits = (uint16_t)(phrBits << 1 | readBit());
         const wisun::Phr phr = wisun::parsePhr(phrBits);
         const size_t fcsLen = phr.fcs2 ? 2 : 4;
-        if (phr.modeSwitch) {   // a mode switch: the next frame comes in another PHY (FAN 1.1: OFDM or a faster FSK), not decoded here
-            std::lock_guard<std::mutex> lk(qm);
-            wModeSwitch.push_back(phrBits);
-            return true;
-        }
-        if (phr.length < (int)fcsLen + 3) return false;
+        // A mode switch (the next frame comes in another PHY: FAN 1.1 OFDM or a faster FSK) or a PHR whose first bit was received wrong: read
+        // as an ordinary frame first, counted as a mode switch only when that fails
+        auto modeSwitch = [&]() { std::lock_guard<std::mutex> lk(qm); wModeSwitch.push_back(phrBits); return true; };
+        if (phr.length < (int)fcsLen + 3) return phr.modeSwitch ? modeSwitch() : false;
         more((size_t)phr.length * 8, t);
-        if ((size_t)(t + (phr.length * 8 + 1) * sps) >= g.size() + 1) return false;   // the burst ends before the frame
+        if ((size_t)(t + (phr.length * 8 + 1) * sps) >= g.size() + 1) return phr.modeSwitch ? modeSwitch() : false;   // the burst ends before the frame
         std::vector<uint8_t> psdu((size_t)phr.length, 0);
         std::vector<float> rel((size_t)phr.length * 8);
         for (int k = 0; k < phr.length * 8; k++) { psdu[(size_t)(k >> 3)] |= (uint8_t)(readBit() << (k & 7)); rel[(size_t)k] = lastRel; }
         if (phr.whitened) wisun::whiten(psdu.data(), psdu.size());
         if (!wisun::fcsOk(psdu.data(), psdu.size(), phr.fcs2)) {
-            if (phr.fcs2 || !chase(psdu, rel)) { std::lock_guard<std::mutex> lk(qm); wBad++; return false; }
+            if (phr.fcs2 || !chase(psdu, rel)) {
+                if (phr.modeSwitch) return modeSwitch();
+                std::lock_guard<std::mutex> lk(qm);
+                wBad++;
+                return false;
+            }
             std::lock_guard<std::mutex> lk(qm);
             wCorrected++;
         }

@@ -38,7 +38,7 @@ std::vector<uint8_t> wisunPpduBits(const WisunGenFrame& f) {
     std::vector<uint8_t> bits;
     for (int i = 0; i < f.preambleOctets * 8; i++) bits.push_back((uint8_t)(i & 1));   // 0101...: 0x55 sent least significant bit first
     for (int i = 15; i >= 0; i--) bits.push_back((uint8_t)(wisun::kSfdUncoded >> i & 1));
-    const uint16_t p = wisun::buildPhr(phr);
+    const uint16_t p = (uint16_t)(wisun::buildPhr(phr) | (f.msError ? 0x8000 : 0));
     for (int i = 15; i >= 0; i--) bits.push_back((uint8_t)(p >> i & 1));
     for (uint8_t o : psdu) for (int j = 0; j < 8; j++) bits.push_back((uint8_t)(o >> j & 1));
     return bits;

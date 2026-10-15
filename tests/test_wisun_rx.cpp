@@ -94,7 +94,8 @@ int main() {
         WisunGenConfig c;
         c.rate = 20e6; c.snrDb = 15; c.cfoHz = 12e3; c.clockPpm = 60; c.seed = 7; c.frames = sched;
         const WisunTelemetry t = run(c, scheduleSecs(sched));
-        printf("  20 Msps 15 dB: %s, %llu bad, SNR %.1f dB, CFO %.1f kHz\n", wisunSummary(t).c_str(), (unsigned long long)t.blocksBad, t.snrDb, t.cfoHz / 1e3);
+        printf("  20 Msps 15 dB: %s, %llu bad, %llu corrected, %llu mode switches, SNR %.1f dB, CFO %.1f kHz\n", wisunSummary(t).c_str(), (unsigned long long)t.blocksBad,
+               (unsigned long long)t.corrected, (unsigned long long)t.modeSwitches, t.snrDb, t.cfoHz / 1e3);
         CHECK(t.blocksOk >= frames - 1, "%llu of %zu frames at 15 dB", (unsigned long long)t.blocksOk, frames);
     }
     {   // a slow radio: 2.4 Msps around 921.5 MHz takes in the channels 920.6 - 922.4 MHz only
@@ -113,6 +114,14 @@ int main() {
         c.rate = 20e6; c.snrDb = 99; c.frames = one;
         const WisunTelemetry t = run(c, scheduleSecs(one));
         CHECK(t.blocksOk == 1 && t.blocksBad == 1, "%llu good, %llu bad", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
+    }
+    {   // the mode switch bit received set by a bit error: still an ordinary frame, not a mode switch
+        std::vector<WisunGenFrame> one(sched.begin(), sched.begin() + 2);
+        one[1].msError = true;
+        WisunGenConfig c;
+        c.rate = 20e6; c.snrDb = 99; c.frames = one;
+        const WisunTelemetry t = run(c, scheduleSecs(one));
+        CHECK(t.blocksOk == 2 && t.modeSwitches == 0, "%llu good, %llu mode switches", (unsigned long long)t.blocksOk, (unsigned long long)t.modeSwitches);
     }
     printf(fails ? "wisun rx: %d FAILED\n" : "wisun rx: all passed\n", fails);
     return fails ? 1 : 0;

@@ -26,6 +26,7 @@ struct WisunGenFrame {
     bool fcs2 = false;
     bool whiten = true;
     bool badFcs = false;         // tests: the last FCS octet sent wrong
+    bool msError = false;        // tests: the PHR's mode switch bit sent set (as a bit error makes it)
 };
 
 struct WisunGenConfig {
