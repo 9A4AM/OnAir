@@ -280,7 +280,7 @@ MeshLoraSettings meshcoreDefaults(const std::string& region) {
         {"NL", 869.618, 7, 62.5, 5},   {"PT", 869.618, 7, 62.5, 6},   {"EU433", 433.650, 8, 62.5, 8},
         {"EU_DEPRECATED", 869.525, 11, 250, 5},
         {"US", 910.525, 7, 62.5, 5},   {"CA", 910.525, 7, 62.5, 5},   {"AU", 915.800, 10, 250, 5},
-        {"NZ", 917.375, 7, 62.5, 5},
+        {"NZ", 917.375, 7, 62.5, 5},   {"ANZ Mid", 915.075, 9, 125, 5},
     };
     const std::string k = lower(region);
     const Row* r = &rows[0];
