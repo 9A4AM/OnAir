@@ -4,6 +4,7 @@
 #include "dect2/usb_diag.h"
 #include "dect2/rate_choice.h"
 #include "dect2/hdr_rx.h"
+#include "dect2/sonde_rx.h"
 
 // the name of the built-in test signal in the source list: it follows the mode
 static std::string synthLabel(const App& a) {
@@ -309,6 +310,8 @@ void applyBandwidth(App& a) {
             if (a.tune.sampleRate > 2 * mt->basebandHz) a.tune.basebandFilterHz = 0.8 * a.tune.sampleRate;
         } else if (mt->stdMode == 23 && hdrIsAmBand(a.freqMhz)) {   // HD Radio AM: a 30 kHz station; 1 Msps suits the HF radios (an HF+ gives 912 ksps)
             a.tune.sampleRate = hdrSampleRate(a.freqMhz); a.tune.basebandFilterHz = 0;
+        } else if (mt->stdMode == 15 && dect2::sondeIsLbandMhz(a.freqMhz)) {   // LMS6-1680: wide FSK (~170 kHz)
+            a.tune.bandwidthMhz = 0.4; a.tune.sampleRate = 2e6; a.tune.basebandFilterHz = 0.4e6;
         }
         const DeviceInfo& dv = a.devices[a.devIdx];
         if (dv.isGeneric()) a.tune.sampleRate = linkRateFor(dv, a.tune, a.tune.sampleRate, mt->stdMode == 23 ? hdrMinSampleRate(a.freqMhz) : mt->minSampleRate);

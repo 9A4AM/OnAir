@@ -426,14 +426,14 @@ void tuner(App& a, bool& retune) {
     ImGui::TextDisabled("Band");
     ImGui::SetNextItemWidth(std::min(230 * gUi, ImGui::GetContentRegionAvail().x));   // no wider than the side panel
     const bool std403 = std::fabs(a.freqMhz - 403.0) < 0.001;
-    if (ImGui::BeginCombo("##sdband", std403 ? "400 to 406 MHz  (403.0)" : "custom frequency")) {
+    const bool std1680 = std::fabs(a.freqMhz - 1680.0) < 0.001;
+    const char* bandLabel = std403 ? "400 to 406 MHz  (403.0)" : std1680 ? "1680 MHz (LMS6)" : "custom frequency";
+    if (ImGui::BeginCombo("##sdband", bandLabel)) {
         if (ImGui::Selectable("400 to 406 MHz  (403.0)", std403)) { a.freqMhz = 403.0; retune = true; }
-        ImGui::BeginDisabled();
-        ImGui::Selectable("1680 MHz (LMS6, not decoded yet)", false);
-        ImGui::EndDisabled();
+        if (ImGui::Selectable("1680 MHz (LMS6)", std1680)) { a.freqMhz = 1680.0; retune = true; }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Every sonde inside the captured width is found and decoded at the same time (up to 8).\nAt 8 Msps the whole 400 to 406 MHz band is not covered: centre it on the sondes you expect, or lower the rate\nand pick a centre near a launch site's frequency. LMS6 sondes (1680 MHz) are not decoded yet.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Every sonde inside the captured width is found and decoded at the same time (up to 8).\nAt 8 Msps the whole 400 to 406 MHz band is not covered: centre it on the sondes you expect, or lower the rate\nand pick a centre near a launch site's frequency.\nLMS6 at 1680 MHz needs about 1 Msps or more and a wide analogue filter (~400 kHz); centre on 1680.0 MHz.");
 }
 
 void decoder(App& a, bool&) {
@@ -452,15 +452,16 @@ void synth(App& a, bool& changed) {
     SynthConfig& sc = a.tune.synth;
     ImGui::TextDisabled("simulated sondes");
     // type mask: 0 means RS41, DFM and M10
-    static const char* names[5] = {"RS41", "DFM", "M10", "M20", "RS92"};
+    static const char* names[6] = {"RS41", "DFM", "M10", "M20", "RS92", "LMS6"};
     int mask = (int)sc.modeOpt[0];
     if (mask == 0) mask = 7;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         flowNext();
-        bool on = (mask >> i) & 1;
+        const int bit = i < 5 ? (1 << i) : 32;
+        bool on = (mask & bit) != 0;
         char id[16]; snprintf(id, sizeof id, "%s##sdm%d", names[i], i);
         if (ImGui::Checkbox(id, &on)) {
-            const int nm = on ? (mask | (1 << i)) : (mask & ~(1 << i));
+            const int nm = on ? (mask | bit) : (mask & ~bit);
             if (nm != 0) { sc.modeOpt[0] = nm == 7 ? 0 : nm; changed = true; }
         }
     }
