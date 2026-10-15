@@ -109,6 +109,26 @@ struct MeshNode {
     int hopsAway = -1;           // hop start - hop limit of its last packet (-1 unknown)
     double lastHeard = -1;
     uint32_t packets = 0;
+    double firstHeard = -1;
+    float snrMin = 0, snrMax = 0;
+    double snrSum = 0;           // over `packets`: the mean SNR is snrSum / packets
+    uint32_t encrypted = 0;      // of its packets, the ones that could not be decrypted
+    double envSec = -1, devSec = -1;   // when the last environment / device (battery) telemetry arrived
+};
+
+// One report a node sent about itself (Meshtastic TELEMETRY_APP device or environment metrics, POSITION_APP; MeshCore advert positions):
+// the history behind the node's last values
+struct MeshReading {
+    double timeSec = 0;
+    double unixTime = 0;         // the computer clock when it was decoded (0: not known)
+    int protocol = 1;
+    std::string id;              // the node
+    double batteryPct = -1, voltage = -1, channelUtilPct = -1, airUtilTxPct = -1;   // -1 = not in this report
+    long uptimeS = -1;
+    bool hasEnv = false;
+    double tempC = 0, humidity = 0, pressureHpa = 0;
+    bool hasPosition = false;
+    double lat = 0, lon = 0, altM = 0;
 };
 
 struct MeshMessage {
@@ -151,6 +171,7 @@ struct MeshTelemetry {
     std::vector<MeshPacket> packets;
     std::vector<MeshNode> nodes;
     std::vector<MeshMessage> messages;
+    std::vector<MeshReading> readings;       // telemetry and position reports, oldest first (at most 2000)
     std::vector<MeshTypeCount> counts;
     uint64_t preambles = 0, headerBad = 0;
     std::vector<std::string> userChannels;   // "Meshtastic: name", "MeshCore: name"
