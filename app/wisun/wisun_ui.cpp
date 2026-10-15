@@ -1,6 +1,6 @@
 // Wi-SUN FAN screens: the network list (PAN ID, network name, border router, size, schedule, PHY modes), the node list (EUI-64, vendor, role,
 // routing cost, frame types, channels, schedule, EAPOL), the link list (unicast frames and the levels the acks report), the live frame log and the
-// hop chart (every frame by time and frequency, coloured by sender), and the region picker.
+// hop chart (every frame by time and frequency, coloured by sender), and the band plan picker (every region of the Wi-SUN band table).
 // Receive only: nothing is ever sent, joined or answered; PAN configurations and data are encrypted (keys from an EAP-TLS exchange) and stay so.
 #include "app.h"
 #include "dect2/wisun_proto.h"
@@ -21,7 +21,7 @@ namespace {
 struct State {
     int view = 0;                        // 0 networks, 1 nodes, 2 links, 3 frames, 4 hops
     bool loaded = false;
-    int region = 0;                      // 0 automatic, 1 ANZ, 2 NA
+    std::string band;                    // the band plan's id (wisun::bandPlans()), "" automatic (by the frequency)
     char filter[64] = "";
     float minRssi = -120;
     std::string sel;                     // the node clicked: the log and the links show only its frames
@@ -31,13 +31,39 @@ struct State {
 };
 State S;
 
-const char* kRegions[] = {"automatic", "ANZ", "NA"};
-
 void loadState() {
     if (S.loaded) return;
     S.loaded = true;
-    S.region = std::max(0, std::min(2, (int)plat::prefs().getI("wsRegion", 0)));
+    S.band = plat::prefs().getS("wsBand", "");
+    if (S.band.empty()) {   // the earlier setting: 1 ANZ, 2 NA
+        const int old = (int)plat::prefs().getI("wsRegion", 0);
+        S.band = old == 1 ? "ANZ" : old == 2 ? "NA" : "";
+    }
+    if (!S.band.empty() && !dect2::wisun::bandPlan(S.band)) S.band.clear();
 }
+
+// The band plan's channel plans, one line each: "400 kHz x 32 from 915.4 MHz: 100, 150 kbit/s"
+std::string plansText(const dect2::wisun::BandPlan& b) {
+    std::string s;
+    char t[160];
+    snprintf(t, sizeof t, "%s, %.1f - %.1f MHz, regulatory domain 0x%02X", b.name, b.loMhz, b.hiMhz, b.regDomain);
+    s = t;
+    if (b.gapHiMhz > b.gapLoMhz) { snprintf(t, sizeof t, " (no channels %.1f - %.1f MHz)", b.gapLoMhz, b.gapHiMhz); s += t; }
+    for (const auto& p : dect2::wisun::plansOf(b.id)) {
+        int n = 0;
+        for (int k = 0; k < p.channels; k++) n += dect2::wisun::channelUsable(p, k);
+        snprintf(t, sizeof t, "\n  %g kHz x %d from %.3f MHz:", p.spacingKhz, n, p.ch0Mhz);
+        s += t;
+        for (const auto& r : p.rates) {
+            if (r.bitRate <= 0) continue;
+            snprintf(t, sizeof t, " %d kbit/s (h %g)%s", r.bitRate / 1000, r.modIndex, r.bitRate > 150000 ? " not decoded" : "");
+            s += t;
+        }
+    }
+    return s;
+}
+
+void applyBand(App& a) { a.engine.wisun().setRegion(S.band); }
 
 bool live(const App& a) { return a.rx.standard == 85; }   // the engine reports its standard code minus one
 
@@ -384,28 +410,48 @@ void hopsView(App& a) {
 
 void tuner(App& a, bool& retune) {
     loadState();
-    ImGui::TextDisabled("Region");
+    namespace ws = dect2::wisun;
+    const ws::BandPlan& autoPlan = ws::bandPlanFor(a.freqMhz);
+    const ws::BandPlan* cur = S.band.empty() ? &autoPlan : ws::bandPlan(S.band);
+    if (!cur) cur = &autoPlan;
+    ImGui::TextDisabled("Band plan");
     ImGui::SameLine(0, 5 * gUi);
-    ImGui::SetNextItemWidth(std::min(110 * gUi, ImGui::GetContentRegionAvail().x));
-    if (ImGui::Combo("##wsreg", &S.region, kRegions, 3)) {
-        plat::prefs().setI("wsRegion", S.region); plat::prefs().flush();
-        a.engine.wisun().setRegion(S.region == 0 ? "" : kRegions[S.region]);
+    char label[96];
+    if (S.band.empty()) snprintf(label, sizeof label, "automatic (%s)", autoPlan.id);
+    else snprintf(label, sizeof label, "%s  %s", cur->id, cur->name);
+    ImGui::SetNextItemWidth(std::min(230 * gUi, ImGui::GetContentRegionAvail().x));
+    if (ImGui::BeginCombo("##wsband", label)) {
+        if (ImGui::Selectable("automatic: by the frequency", S.band.empty())) { S.band.clear(); plat::prefs().setS("wsBand", ""); plat::prefs().flush(); applyBand(a); }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("ANZ from 914.5 MHz up to 929, North America below, Europe at 863 - 876 MHz, China at 470 - 510 and\n779 - 787 MHz, the worldwide band at 2.4 GHz; any other region by name");
+        for (const ws::BandPlan& b : ws::bandPlans()) {
+            char e[128];
+            snprintf(e, sizeof e, "%-6s %s  %.1f - %.1f MHz", b.id, b.name, b.loMhz, b.hiMhz);
+            if (ImGui::Selectable(e, S.band == b.id)) { S.band = b.id; plat::prefs().setS("wsBand", S.band); plat::prefs().flush(); applyBand(a); }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", plansText(b).c_str());
+        }
+        ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The channel plans the receiver listens with: ANZ (Australia / New Zealand, 915 - 928 MHz: 400 kHz channels at\n"
-                                                  "100 and 150 kbit/s, 200 kHz channels at 50 kbit/s) or NA (North America, 902 - 928 MHz). Automatic: ANZ from 915 MHz up.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", plansText(*cur).c_str());
     ImGui::SameLine(0, 8 * gUi);
-    if (ImGui::SmallButton("915 - 928")) { tuneFreq(a, 921.5); retune = true; }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Centre on 921.5 MHz: all of the ANZ band at 16 Msps or more");
+    const double mid = (cur->loMhz + cur->hiMhz) / 2, needMsps = (cur->hiMhz - cur->loMhz) / 0.9;
+    if (ImGui::SmallButton("Centre on band")) {
+        if (!S.band.empty() || std::fabs(a.freqMhz - mid) > 0.01) { tuneFreq(a, mid); retune = true; }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Tune to %.2f MHz, the middle of %s: the whole band at %.0f Msps or more,\nless of it (the channels around the centre) at a lower rate", mid, cur->name, std::ceil(needMsps));
     if (live(a) && a.rx.wisun.loMhz > 0) {
         ImGui::SameLine(0, 8 * gUi);
-        ImGui::TextDisabled("covers %.1f - %.1f MHz", a.rx.wisun.loMhz, a.rx.wisun.hiMhz);
+        const dect2::WisunTelemetry& t = a.rx.wisun;
+        ImGui::TextDisabled("covers %.1f - %.1f MHz, %d of %zu channels", t.loMhz, t.hiMhz, t.channelsCovered, t.chanMhz.size());
+    } else if (live(a) && a.rx.wisun.inputRate > 0) {
+        ImGui::SameLine(0, 8 * gUi);
+        ImGui::TextColored(pal::warnAmber(), "no %s channel in the band taken in", cur->id);
     }
 }
 
 void tick(App& a) {
     loadState();
     static bool applied = false;
-    if (!applied) { applied = true; a.engine.wisun().setRegion(S.region == 0 ? "" : kRegions[S.region]); }
+    if (!applied) { applied = true; applyBand(a); }
 }
 
 void tab(App& a) {
@@ -451,7 +497,8 @@ void receiver(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const dect2::WisunTelemetry& t = a.rx.wisun;
     kvRow(a, "state", "%s", dect2::wisunSummary(t).c_str());
-    if (t.loMhz > 0) kvRow(a, "covers", "%.1f - %.1f MHz (%s), %d channels, %d bins of %.1f kHz", t.loMhz, t.hiMhz, t.region.c_str(), t.channelsCovered, t.bins, t.binKhz);
+    kvRow(a, "band plan", "%s %s, %.1f - %.1f MHz", t.region.c_str(), t.bandName.c_str(), t.bandLoMhz, t.bandHiMhz);
+    if (t.loMhz > 0) kvRow(a, "covers", "%.1f - %.1f MHz, %d of %zu channels, %d bins of %.1f kHz", t.loMhz, t.hiMhz, t.channelsCovered, t.chanMhz.size(), t.bins, t.binKhz);
     kvRow(a, "signal", "SNR %.1f dB, offset %+.1f kHz", t.snrDb, t.cfoHz / 1e3);
     kvRow(a, "frames", "%llu good, %llu failed FCS, %llu FEC (not decoded), %llu bursts, %llu encrypted", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad,
           (unsigned long long)t.fecFrames, (unsigned long long)t.bursts, (unsigned long long)t.encryptedFrames);
@@ -467,7 +514,7 @@ void receiver(App& a) {
     std::string ch;
     for (size_t i = 0; i < busy.size() && i < 8; i++) {
         char b[40];
-        snprintf(b, sizeof b, "%s%.1f: %u", ch.empty() ? "" : ", ", t.gridCh0Mhz + 0.2 * busy[i].second, busy[i].first);
+        snprintf(b, sizeof b, "%s%.3f: %u", ch.empty() ? "" : ", ", (size_t)busy[i].second < t.chanMhz.size() ? t.chanMhz[(size_t)busy[i].second] : 0.0, busy[i].first);
         ch += b;
     }
     kvRow(a, "busiest (MHz)", "%s", ch.empty() ? "-" : ch.c_str());

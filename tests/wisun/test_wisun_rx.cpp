@@ -115,6 +115,31 @@ int main() {
         const WisunTelemetry t = run(c, scheduleSecs(one));
         CHECK(t.blocksOk == 1 && t.blocksBad == 1, "%llu good, %llu bad", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
     }
+    {   // another band plan, picked by the frequency: Europe at 863 - 870 MHz, 50 kbit/s (h 0.5) on a 100 kHz channel, 100 kbit/s (h 0.5) on a
+        // 200 kHz one
+        std::vector<WisunGenFrame> eu(sched.begin(), sched.begin() + 2);
+        eu[0].mhz = 867.5; eu[0].bitRate = 50000; eu[0].modIndex = 0.5;
+        eu[1].mhz = 868.3; eu[1].bitRate = 100000; eu[1].modIndex = 0.5;
+        WisunGenConfig c;
+        c.rate = 4e6; c.centerMhz = 868.0; c.snrDb = 25; c.frames = eu;
+        const WisunTelemetry t = run(c, scheduleSecs(eu));
+        printf("  EU 863: %s, %s, %.1f - %.1f MHz, %d of %zu channels\n", wisunSummary(t).c_str(), t.region.c_str(), t.loMhz, t.hiMhz, t.channelsCovered, t.chanMhz.size());
+        CHECK(t.region == "EU863" && t.bandName == "Europe (863 MHz)" && t.chanMhz.size() == 69, "band plan %s, %zu channels", t.region.c_str(), t.chanMhz.size());
+        CHECK(t.blocksOk == 2 && t.blocksBad == 0, "%llu of 2 frames", (unsigned long long)t.blocksOk);
+        bool slow = false, fast = false;
+        for (const auto& f : t.log) {
+            if (f.bitRate == 50000) slow = f.opClass == 1 && f.channel == 44;
+            if (f.bitRate == 100000) fast = f.opClass == 2 && f.channel == 26;
+        }
+        CHECK(slow && fast, "channels of the 100 and 200 kHz plans");
+    }
+    {   // a band plan asked for by name (Japan) where the frames are 150 kbit/s on ANZ's 400 kHz raster, not on Japan's: its channels are
+        // listened to, the ANZ frames not decoded
+        WisunGenConfig c;
+        c.rate = 4e6; c.snrDb = 25; c.frames = std::vector<WisunGenFrame>(sched.begin(), sched.begin() + 2);
+        const WisunTelemetry t = run(c, scheduleSecs(c.frames), "JP");
+        CHECK(t.region == "JP" && t.channelsCovered > 0 && t.blocksOk == 0, "JP at 921.5 MHz: %d channels, %llu frames", t.channelsCovered, (unsigned long long)t.blocksOk);
+    }
     {   // the mode switch bit received set by a bit error: still an ordinary frame, not a mode switch
         std::vector<WisunGenFrame> one(sched.begin(), sched.begin() + 2);
         one[1].msError = true;

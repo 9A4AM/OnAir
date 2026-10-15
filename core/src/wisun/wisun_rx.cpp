@@ -26,7 +26,6 @@ namespace dect2 {
 
 namespace {
 constexpr double kPi = 3.14159265358979323846;
-constexpr double kGridKhz = 200;          // every channel of every plan lies on a 200 kHz grid
 constexpr int kTapsPerBranch = 16;        // polyphase prototype length: 16 M
 constexpr size_t kQueueMax = 8000000;     // bin samples waiting for the decoder at most (64 MB); more bursts are dropped
 constexpr int kLook = 96;                 // bin samples kept from before a burst's rise
@@ -99,12 +98,12 @@ struct WisunReceiver::Impl {
         double mhz = 0;
         double offHz = 0;                 // from its bin's centre
         int bin = -1;
-        int grid = 0;                     // index on the region's 200 kHz grid
-        std::vector<int> rates;           // bit rates to try, fastest first
+        int grid = 0;                     // index into the band plan's channel list (allMhz)
+        std::vector<wisun::PhyRate> rates;   // the FSK modes to try, fastest first (the ones this receiver demodulates)
     };
     std::vector<Chan> chans;
-    double gridCh0 = 915.2;
-    int gridCount = 64;
+    std::vector<double> allMhz;           // every channel centre of the band plan, every spacing, in order
+    static constexpr int kMaxBitRate = 150000;   // 200 and 300 kbit/s (600 kHz channels) need more than a bin
 
     // results
     WisunTelemetry tel, pub;
@@ -221,12 +220,17 @@ struct WisunReceiver::Impl {
         outRate = 2 * binHz;
         proto = lowpass(N, 1.0 / M);   // cut-off at one bin spacing: the pass band reaches the neighbouring bins' centres
         ur.assign((size_t)M, 0.f); ui.assign((size_t)M, 0.f);
-        // the region and its 200 kHz grid
+        // the band plan (the one asked for, else the one for this frequency) and all its channel centres
         const double c = centreAbs;
-        region = !regionSet.empty() ? regionSet : (c >= 914.5e6 || c == 0 ? "ANZ" : "NA");
+        const wisun::BandPlan* bp = !regionSet.empty() ? wisun::bandPlan(regionSet) : nullptr;
+        if (!bp) bp = &wisun::bandPlanFor(c / 1e6);
+        region = bp->id;
         const auto plans = wisun::plansOf(region);
-        gridCh0 = plans.empty() ? 915.2 : plans[0].ch0Mhz;
-        gridCount = plans.empty() ? 64 : plans[0].channels;
+        allMhz.clear();
+        for (const auto& p : plans)
+            for (int k = 0; k < p.channels; k++) if (wisun::channelUsable(p, k)) allMhz.push_back(wisun::channelMhz(p, k));
+        std::sort(allMhz.begin(), allMhz.end());
+        allMhz.erase(std::unique(allMhz.begin(), allMhz.end(), [](double x, double y) { return std::fabs(x - y) < 1e-6; }), allMhz.end());
         bins.assign((size_t)M, Bin());
         for (int k = 0; k < M; k++) {
             Bin& b = bins[(size_t)k];
@@ -236,8 +240,8 @@ struct WisunReceiver::Impl {
         // the channels inside the coverage, each with its nearest bin
         const double edge = 0.45 * rate;
         double lo = 1e30, hi = 0;
-        for (int g = 0; g < gridCount; g++) {
-            const double mhz = gridCh0 + g * kGridKhz / 1000.0;
+        for (int g = 0; g < (int)allMhz.size(); g++) {
+            const double mhz = allMhz[(size_t)g];
             const double off = mhz * 1e6 - c;
             if (c <= 0 || std::fabs(off) > edge) continue;
             int k = (int)std::lround(off / binHz);
@@ -246,22 +250,32 @@ struct WisunReceiver::Impl {
             Chan ch;
             ch.mhz = mhz; ch.grid = g; ch.bin = k;
             ch.offHz = off - std::lround(off / binHz) * binHz;
-            for (const auto& p : plans)
-                if (wisun::channelOf(p, mhz) >= 0 && std::fabs(wisun::channelMhz(p, wisun::channelOf(p, mhz)) - mhz) < 1e-6)
-                    for (int r : p.bitRates) if (r > 0 && std::find(ch.rates.begin(), ch.rates.end(), r) == ch.rates.end()) ch.rates.push_back(r);
-            std::sort(ch.rates.rbegin(), ch.rates.rend());
+            double half = 0.1;
+            for (const auto& p : plans) {
+                const int n = wisun::channelOf(p, mhz);
+                if (n < 0 || std::fabs(wisun::channelMhz(p, n) - mhz) > 1e-6) continue;
+                half = std::max(half, p.spacingKhz / 2000.0);
+                for (const wisun::PhyRate& r : p.rates) {
+                    if (r.bitRate <= 0 || r.bitRate > kMaxBitRate) continue;
+                    bool have = false;
+                    for (const auto& x : ch.rates) have |= x.bitRate == r.bitRate && x.modIndex == r.modIndex;
+                    if (!have) ch.rates.push_back(r);
+                }
+            }
+            std::sort(ch.rates.begin(), ch.rates.end(), [](const wisun::PhyRate& x, const wisun::PhyRate& y) { return x.bitRate > y.bitRate; });
             if (ch.rates.empty()) continue;
             bins[(size_t)k].chans.push_back((int)chans.size());
             chans.push_back(ch);
-            lo = std::min(lo, mhz - 0.1); hi = std::max(hi, mhz + 0.1);
+            lo = std::min(lo, mhz - half); hi = std::max(hi, mhz + half);
         }
         setupRates();
         tel.region = region;
+        tel.bandName = bp->name;
+        tel.bandLoMhz = bp->loMhz; tel.bandHiMhz = bp->hiMhz;
         tel.loMhz = chans.empty() ? 0 : lo; tel.hiMhz = chans.empty() ? 0 : hi;
         tel.bins = M; tel.binKhz = binHz / 1e3;
         tel.channelsCovered = (int)chans.size();
-        tel.gridCh0Mhz = gridCh0;
-        if (tel.perChannel.size() != (size_t)gridCount) tel.perChannel.assign((size_t)gridCount, 0);
+        if (tel.chanMhz != allMhz) { tel.chanMhz = allMhz; tel.perChannel.assign(allMhz.size(), 0); }
     }
 
     // The tables and the frame log stay through resets: Clear and a loaded file reach the feed thread's copy through these requests (mu), and the
@@ -315,7 +329,8 @@ struct WisunReceiver::Impl {
         WisunTelemetry fresh;
         fresh.seq = seq; fresh.inputRate = rate;
         fresh.region = tel.region; fresh.loMhz = tel.loMhz; fresh.hiMhz = tel.hiMhz; fresh.bins = tel.bins; fresh.binKhz = tel.binKhz;
-        fresh.channelsCovered = tel.channelsCovered; fresh.gridCh0Mhz = tel.gridCh0Mhz;
+        fresh.channelsCovered = tel.channelsCovered; fresh.chanMhz = tel.chanMhz; fresh.bandName = tel.bandName;
+        fresh.bandLoMhz = tel.bandLoMhz; fresh.bandHiMhz = tel.bandHiMhz;
         fresh.perChannel.assign(tel.perChannel.size(), 0);
         tel = std::move(fresh);
         panIdx.clear(); nodeIdx.clear(); linkIdx.clear();
@@ -419,16 +434,22 @@ struct WisunReceiver::Impl {
     std::vector<Rate> rateDefs;
 
     void setupRates() {
+        // one chain for each FSK mode the band plan's channels carry
         rateDefs.clear();
-        for (int br : {150000, 100000, 50000}) {
-            Rate r;
-            r.br = br; r.h = br == 50000 ? 1.0 : 0.5;
-            r.decim = std::max(1, (int)std::floor(outRate / (br * 5.0)));
-            const double cut = r.h * br / 2 + 0.35 * br;   // the deviation and most of the modulation's own width
-            const int n = std::max(31, (int)(5.5 * outRate / (0.6 * cut))) | 1;
-            r.lp = lowpass(n, cut / outRate);
-            rateDefs.push_back(std::move(r));
-        }
+        for (const Chan& ch : chans)
+            for (const wisun::PhyRate& pr : ch.rates) {
+                bool have = false;
+                for (const Rate& x : rateDefs) have |= x.br == pr.bitRate && x.h == pr.modIndex;
+                if (have) continue;
+                Rate r;
+                r.br = pr.bitRate; r.h = pr.modIndex;
+                const int br = r.br;
+                r.decim = std::max(1, (int)std::floor(outRate / (br * 5.0)));
+                const double cut = r.h * br / 2 + 0.35 * br;   // the deviation and most of the modulation's own width
+                const int n = std::max(31, (int)(5.5 * outRate / (0.6 * cut))) | 1;
+                r.lp = lowpass(n, cut / outRate);
+                rateDefs.push_back(std::move(r));
+            }
     }
 
     struct Demod {
@@ -488,11 +509,11 @@ struct WisunReceiver::Impl {
     void decode(const Job& b) {
         for (int ci : b.chans) {
             const Chan& ch = chans[(size_t)ci];
-            for (int br : ch.rates) {
+            for (const wisun::PhyRate& pr : ch.rates) {
                 // too short for the shortest frame at this rate: preamble, delimiter, PHR, a few octets
-                if ((double)b.buf.size() < 120.0 * outRate / br) continue;
+                if ((double)b.buf.size() < 120.0 * outRate / pr.bitRate) continue;
                 const Rate* r = nullptr;
-                for (const Rate& x : rateDefs) if (x.br == br) r = &x;
+                for (const Rate& x : rateDefs) if (x.br == pr.bitRate && x.h == pr.modIndex) r = &x;
                 if (!r) continue;
                 Demod d;
                 d.r = r;
@@ -702,7 +723,7 @@ struct WisunReceiver::Impl {
         WsNode n;
         n.euiNum = eui; n.eui = wisun::euiText(eui); n.vendor = zigbee::vendorOfExt(eui);
         n.firstSec = sigSec();
-        n.channels.assign((size_t)gridCount, 0);
+        n.channels.assign(allMhz.size(), 0);
         tel.nodes.push_back(std::move(n));
         nodeIdx[eui] = tel.nodes.size() - 1;
         return tel.nodes.back();
@@ -751,7 +772,7 @@ struct WisunReceiver::Impl {
         // the channel number in the plan of the frame's bit rate
         int chNum = -1, opClass = 0;
         for (const auto& p : plansOf(region)) {
-            if (p.bitRates[0] != br && p.bitRates[1] != br) continue;
+            if (p.rates[0].bitRate != br && p.rates[1].bitRate != br) continue;
             const int c = channelOf(p, ch.mhz);
             if (c >= 0 && std::fabs(channelMhz(p, c) - ch.mhz) < 1e-6) { chNum = c; opClass = p.opClass; break; }
         }
@@ -945,7 +966,7 @@ void WisunReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
 ModeTuning wisunTuning() {
     ModeTuning t;
     t.stdMode = 86; t.id = "wisun"; t.name = "Wi-SUN FAN";
-    t.minMhz = 902; t.maxMhz = 928; t.defMhz = 921.5;   // the middle of the 915 - 928 MHz ANZ band
+    t.minMhz = 470; t.maxMhz = 2484; t.defMhz = 921.5;  // the band plans run from 470 MHz (China) to 2.4 GHz; the middle of the ANZ band
     t.sampleRate = 20000000;                 // all of 915 - 928 MHz at once (the nodes hop over every channel)
     t.basebandHz = 0;
     t.bandwidthMhz = 18;

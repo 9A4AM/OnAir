@@ -43,20 +43,47 @@ void addFcs(std::vector<uint8_t>& mpdu, bool fcs2);
 
 // ---------------------------------------------------------------- channel plans
 
+// A band plan: one region's band and regulatory domain (the Wi-SUN frequency band table: band, region, regulatory domain value, channel
+// spacings and the number of channels at each), with the channel plans it allows
+struct BandPlan {
+    const char* id;            // "ANZ", "NA", "EU863", "JP", ...
+    const char* name;          // "Australia / New Zealand"
+    int regDomain;             // the Wi-SUN regulatory domain value (0x08)
+    double loMhz, hiMhz;       // the band
+    double gapLoMhz, gapHiMhz; // a part of the band without channels (Brazil: 907.5 - 915 MHz), 0 none
+};
+const std::vector<BandPlan>& bandPlans();
+const BandPlan* bandPlan(const std::string& id);    // nullptr: no such plan
+// The plan a receiver tuned here most likely wants (the user can pick another): ANZ from 914.5 MHz up to 929, North America below,
+// Europe at 863 - 876, China at 470 - 510 and 779 - 787, the worldwide 2.4 GHz band
+const BandPlan& bandPlanFor(double mhz);
+
+struct PhyRate {
+    int bitRate = 0;           // bit/s, 0 none
+    double modIndex = 0.5;
+};
+
+// One channel spacing of a band plan. The first channel and the FSK PHY modes are not in the band table: ch0 follows the Wi-SUN PHY
+// specification where it is known (902.2 / 902.4 / 902.6 MHz in North America, 915.2 / 915.4 in ANZ, 920.6 / 920.9 / 920.8 in Japan, ...)
+// and the band's edge plus one spacing elsewhere; the rates are the usual FSK modes of each spacing (100 kHz: 50 kbit/s, h 0.5; 200 kHz:
+// 50 kbit/s, h 1, or 100 kbit/s, h 0.5 in the 100 / 200 kHz bands of Europe and India; 400 kHz: 100 and 150 kbit/s, h 0.5; 600 kHz:
+// 200 and 300 kbit/s, which this receiver does not demodulate).
 struct ChannelPlan {
-    const char* region;        // "ANZ", "NA"
-    int opClass;               // the regulatory operating class
+    const char* region;        // the band plan's id
+    int opClass;               // 1, 2, 3 in the order of the band table's spacings (the regulatory operating class where the two agree)
     double ch0Mhz;
     double spacingKhz;
     int channels;
-    int bitRates[2];           // the FSK PHY modes the class carries (bit/s; 0 none)
+    PhyRate rates[2];          // the FSK PHY modes the plan carries
 };
 const std::vector<ChannelPlan>& channelPlans();
-// The plans of a region ("ANZ", "NA")
+// The channel plans of a band plan
 std::vector<ChannelPlan> plansOf(const std::string& region);
-// The nearest channel of the plan to a frequency (-1 when outside it by more than half a spacing)
+// The nearest channel of the plan to a frequency (-1 when outside it by more than half a spacing, or in the band plan's gap)
 int channelOf(const ChannelPlan& p, double mhz);
 inline double channelMhz(const ChannelPlan& p, int ch) { return p.ch0Mhz + ch * p.spacingKhz / 1000.0; }
+// The channel exists: inside the plan and not in the band plan's gap
+bool channelUsable(const ChannelPlan& p, int ch);
 
 const char* regDomainName(int code);   // Wi-SUN regulatory domain codes (0x08: Australia / New Zealand)
 

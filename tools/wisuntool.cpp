@@ -1,10 +1,10 @@
 // Wi-SUN FAN tool: decode a recording, or write the test signal.
-//   wisuntool rx <file> [--rate Hz] [--center Hz] [--region ANZ|NA] [--secs s]
+//   wisuntool rx <file> [--rate Hz] [--center Hz] [--region ANZ|NA|EU863|JP|...] [--secs s]
 //       a SigMF recording (.sigmf-meta / .sigmf-data: rate and centre from the meta), or .cf32 / .cs16 / .cs8 with --rate and --center;
 //       prints every frame, then the networks, nodes and links
 //   wisuntool gen <out.cf32> [--rate Hz] [--secs s] [--snr dB]
 //       the test schedule (wisun_gen.h) around 921.5 MHz
-//   wisuntool live <log.txt> [--secs s] [--center Hz] [--rate Hz] [--gain dB] [--region ANZ|NA]
+//   wisuntool live <log.txt> [--secs s] [--center Hz] [--rate Hz] [--gain dB] [--region ANZ|NA|EU863|JP|...]
 //       the first radio found, for hours if need be: every frame (UTC time, MPDU hex) and a summary line a minute into the log
 //       (appended), the tables at the end
 #include "dect2/iq_file.h"
@@ -125,8 +125,8 @@ static int live(const std::string& path, double secs, double center, double rate
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        fprintf(stderr, "usage: wisuntool rx <file> [--rate Hz] [--center Hz] [--region ANZ|NA] [--secs s]\n       wisuntool gen <out.cf32> [--rate Hz] [--secs s] [--snr dB]\n"
-                        "       wisuntool live <log.txt> [--secs s] [--center Hz] [--rate Hz] [--gain dB] [--region ANZ|NA]\n");
+        fprintf(stderr, "usage: wisuntool rx <file> [--rate Hz] [--center Hz] [--region ANZ|NA|EU863|JP|...] [--secs s]\n       wisuntool gen <out.cf32> [--rate Hz] [--secs s] [--snr dB]\n"
+                        "       wisuntool live <log.txt> [--secs s] [--center Hz] [--rate Hz] [--gain dB] [--region ANZ|NA|EU863|JP|...]\n");
         return 2;
     }
     const std::string cmd = argv[1], path = argv[2];

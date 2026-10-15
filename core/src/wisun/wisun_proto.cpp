@@ -87,16 +87,97 @@ void addFcs(std::vector<uint8_t>& m, bool fcs2) {
     }
 }
 
-// ---------------------------------------------------------------- channel plans
+// ---------------------------------------------------------------- band and channel plans
+
+const std::vector<BandPlan>& bandPlans() {
+    // The Wi-SUN frequency band table: band, region, regulatory domain value (channel spacings and counts in channelPlans())
+    static const std::vector<BandPlan> v = {
+        {"ANZ", "Australia / New Zealand", 0x08, 915, 928, 0, 0},
+        {"NA", "North America", 0x01, 902, 928, 0, 0},
+        {"MX", "Mexico", 0x06, 902, 928, 0, 0},
+        {"BZ", "Brazil", 0x07, 902, 928, 907.5, 915},
+        {"JP", "Japan", 0x02, 920, 928, 0, 0},
+        {"KR", "Korea", 0x09, 917, 923.5, 0, 0},
+        {"PH", "Philippines", 0x0A, 915, 918, 0, 0},
+        {"MY", "Malaysia", 0x0B, 919, 923, 0, 0},
+        {"HK", "Hong Kong", 0x0C, 920, 925, 0, 0},
+        {"SG", "Singapore (920 MHz)", 0x0D, 920, 925, 0, 0},
+        {"SG866", "Singapore (866 MHz)", 0x10, 866, 869, 0, 0},
+        {"TH", "Thailand", 0x0E, 920, 925, 0, 0},
+        {"VN", "Vietnam", 0x0F, 920, 925, 0, 0},
+        {"EU863", "Europe (863 MHz)", 0x03, 863, 870, 0, 0},
+        {"EU870", "Europe (870 MHz)", 0x03, 870, 876, 0, 0},
+        {"IN", "India", 0x05, 865, 867, 0, 0},
+        {"CN470", "China (470 MHz)", 0x04, 470, 510, 0, 0},
+        {"CN779", "China (779 MHz)", 0x04, 779, 787, 0, 0},
+        {"CN920", "China (920 MHz)", 0x04, 920.5, 924.5, 0, 0},
+        {"WW", "Worldwide 2.4 GHz", 0x00, 2400, 2483.5, 0, 0},
+    };
+    return v;
+}
+
+const BandPlan* bandPlan(const std::string& id) {
+    for (const BandPlan& b : bandPlans()) if (id == b.id) return &b;
+    return nullptr;
+}
+
+const BandPlan& bandPlanFor(double mhz) {
+    const char* id = "ANZ";
+    if (mhz >= 900 && mhz < 914.5) id = "NA";
+    else if (mhz >= 862 && mhz < 870) id = "EU863";
+    else if (mhz >= 870 && mhz < 877) id = "EU870";
+    else if (mhz >= 469 && mhz < 511) id = "CN470";
+    else if (mhz >= 778 && mhz < 788) id = "CN779";
+    else if (mhz >= 2399 && mhz < 2485) id = "WW";
+    return *bandPlan(id);
+}
 
 const std::vector<ChannelPlan>& channelPlans() {
-    // Wi-SUN PHY specification: the 915 - 928 MHz Australia / New Zealand and 902 - 928 MHz North America operating classes
+    // Channel counts and spacings from the band table; ch0 and the FSK modes as wisun_proto.h says
+    constexpr PhyRate r50h1{50000, 1.0}, r50{50000, 0.5}, r100{100000, 0.5}, r150{150000, 0.5}, r200{200000, 0.5}, r300{300000, 0.5}, none{};
     static const std::vector<ChannelPlan> v = {
-        {"ANZ", 1, 915.2, 200, 64, {50000, 0}},
-        {"ANZ", 2, 915.4, 400, 32, {100000, 150000}},
-        {"NA", 1, 902.2, 200, 129, {50000, 0}},
-        {"NA", 2, 902.4, 400, 64, {100000, 150000}},
-        {"NA", 3, 902.6, 600, 42, {200000, 300000}},
+        {"ANZ", 1, 915.2, 200, 64, {r50h1, none}},
+        {"ANZ", 2, 915.4, 400, 32, {r100, r150}},
+        {"NA", 1, 902.2, 200, 129, {r50h1, none}},
+        {"NA", 2, 902.4, 400, 64, {r100, r150}},
+        {"NA", 3, 902.6, 600, 42, {r200, r300}},
+        {"MX", 1, 902.2, 200, 129, {r50h1, none}},
+        {"MX", 2, 902.4, 400, 64, {r100, r150}},
+        {"BZ", 1, 902.2, 200, 129, {r50h1, none}},
+        {"BZ", 2, 902.4, 400, 64, {r100, r150}},
+        {"BZ", 3, 902.6, 600, 42, {r200, r300}},
+        {"JP", 1, 920.6, 200, 38, {r50h1, none}},
+        {"JP", 2, 920.9, 400, 18, {r100, r150}},
+        {"JP", 3, 920.8, 600, 12, {r200, r300}},
+        {"KR", 1, 917.1, 200, 32, {r50h1, none}},
+        {"KR", 2, 917.3, 400, 16, {r100, r150}},
+        {"PH", 1, 915.2, 200, 14, {r50h1, none}},
+        {"PH", 2, 915.4, 400, 7, {r100, r150}},
+        {"MY", 1, 919.2, 200, 19, {r50h1, none}},
+        {"MY", 2, 919.4, 400, 10, {r100, r150}},
+        {"HK", 1, 920.2, 200, 24, {r50h1, none}},
+        {"HK", 2, 920.4, 400, 12, {r100, r150}},
+        {"SG", 1, 920.2, 200, 24, {r50h1, none}},
+        {"SG", 2, 920.4, 400, 12, {r100, r150}},
+        {"SG866", 1, 866.1, 100, 29, {r50, none}},
+        {"SG866", 2, 866.1, 200, 15, {r100, none}},
+        {"SG866", 3, 866.3, 400, 7, {r150, none}},
+        {"TH", 1, 920.2, 200, 24, {r50h1, none}},
+        {"TH", 2, 920.4, 400, 12, {r100, r150}},
+        {"VN", 1, 920.2, 200, 24, {r50h1, none}},
+        {"VN", 2, 920.4, 400, 12, {r100, r150}},
+        {"EU863", 1, 863.1, 100, 69, {r50, none}},
+        {"EU863", 2, 863.1, 200, 35, {r100, none}},
+        {"EU870", 1, 870.1, 100, 59, {r50, none}},
+        {"EU870", 2, 870.2, 200, 30, {r100, none}},
+        {"IN", 1, 865.1, 100, 19, {r50, none}},
+        {"IN", 2, 865.1, 200, 10, {r100, none}},
+        {"CN470", 1, 470.2, 200, 199, {r50h1, none}},
+        {"CN779", 1, 779.2, 200, 39, {r50h1, none}},
+        {"CN779", 2, 779.4, 400, 19, {r100, r150}},
+        {"CN920", 1, 920.625, 250, 16, {r50h1, r100}},
+        {"WW", 1, 2400.2, 200, 416, {r50h1, none}},
+        {"WW", 2, 2400.4, 400, 207, {r100, r150}},
     };
     return v;
 }
@@ -107,10 +188,18 @@ std::vector<ChannelPlan> plansOf(const std::string& region) {
     return out;
 }
 
+bool channelUsable(const ChannelPlan& p, int ch) {
+    if (ch < 0 || ch >= p.channels) return false;
+    const BandPlan* b = bandPlan(p.region);
+    if (!b || b->gapHiMhz <= b->gapLoMhz) return true;
+    const double f = channelMhz(p, ch), h = p.spacingKhz / 2000.0;
+    return f + h <= b->gapLoMhz || f - h >= b->gapHiMhz;   // wholly outside the gap
+}
+
 int channelOf(const ChannelPlan& p, double mhz) {
     const double k = (mhz - p.ch0Mhz) * 1000.0 / p.spacingKhz;
     const int ch = (int)(k + (k >= 0 ? 0.5 : -0.5));
-    if (ch < 0 || ch >= p.channels) return -1;
+    if (!channelUsable(p, ch)) return -1;
     return std::abs(k - ch) <= 0.5 ? ch : -1;
 }
 
@@ -132,6 +221,7 @@ const char* regDomainName(int c) {
     case 0x0D: return "Singapore";
     case 0x0E: return "Thailand";
     case 0x0F: return "Vietnam";
+    case 0x10: return "Singapore (866 MHz)";
     default: return "?";
     }
 }

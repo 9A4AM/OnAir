@@ -50,7 +50,7 @@ struct WsNode {
     uint64_t perUtt[kWsUttTypes] = {};
     uint64_t encrypted = 0;
     double lastMhz = 0;                // where its last frame was
-    std::vector<uint8_t> channels;     // a mark per channel of the 200 kHz grid it was heard on (ChanGrid)
+    std::vector<uint8_t> channels;     // a mark per channel of the band plan it was heard on (WisunTelemetry::chanMhz)
     int bitRate = 0;                   // of its last frame
     std::string unicast;               // its US-IE (from an unsecured frame)
     std::string broadcast;             // its BS-IE
@@ -114,12 +114,14 @@ struct WisunTelemetry {
     uint64_t corrected = 0;            // good frames that needed bits flipped (the least reliable ones, checked by the CRC)
     // details
     double timeSec = 0, inputRate = 0;
-    std::string region;                // "ANZ", "NA"
+    std::string region;                // the band plan's id: "ANZ", "NA", "EU863", ... (wisun::bandPlans())
+    std::string bandName;              // "Australia / New Zealand"
+    double bandLoMhz = 0, bandHiMhz = 0;   // the band plan's band
     double loMhz = 0, hiMhz = 0;       // the part of the band the receiver covers (0: not known, a file without a frequency)
     int bins = 0;                      // channelizer bins
     double binKhz = 0;
     int channelsCovered = 0;           // channels of the 200 kHz grid inside the coverage
-    double gridCh0Mhz = 0;             // the 200 kHz grid: channel k at gridCh0Mhz + 0.2 k
+    std::vector<double> chanMhz;       // every channel centre of the band plan (all its spacings, in order): what perChannel and WsNode::channels count
     uint64_t bursts = 0;               // bursts the energy detector handed to the demodulators
     uint64_t dropped = 0;              // bursts the decoder had no time for
     uint64_t modeSwitches = 0;         // mode switch PHRs: the frame that follows is in another PHY (FAN 1.1 OFDM / faster FSK), not decoded
@@ -128,7 +130,7 @@ struct WisunTelemetry {
     uint64_t perUtt[kWsUttTypes] = {};
     uint64_t plain = 0;                // 802.15.4 frames without Wi-SUN IEs
     uint64_t encryptedFrames = 0;
-    std::vector<uint32_t> perChannel;  // good frames per channel of the 200 kHz grid
+    std::vector<uint32_t> perChannel;  // good frames per channel (chanMhz)
     float pps = 0;
     std::vector<float> ppsHist;
     float loadPct = 0;                 // the receiver's time against real time

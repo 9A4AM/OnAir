@@ -71,6 +71,43 @@ int main() {
         CHECK(channelOf(p[1], 916.2) == 2 && channelOf(p[1], 927.0) == 29 && channelOf(p[1], 914.0) == -1, "channels");
         CHECK(std::abs(channelMhz(p[0], 63) - 927.8) < 1e-9, "last 200 kHz channel");
     }
+    {   // the band plans against the Wi-SUN frequency band table: band, regulatory domain, spacings and channel counts; every channel
+        // centre inside the band. Brazil's counts (90, 43, 27) come from a raster the table does not give: with the North American one and
+        // no channel overlapping 907.5 - 915 MHz the counts land within 2 of them.
+        struct Row { const char* id; int reg; double lo, hi; std::vector<std::pair<int, int>> sp; };
+        const std::vector<Row> table = {
+            {"CN470", 0x04, 470, 510, {{200, 199}}}, {"CN779", 0x04, 779, 787, {{200, 39}, {400, 19}}}, {"CN920", 0x04, 920.5, 924.5, {{250, 16}}},
+            {"EU863", 0x03, 863, 870, {{100, 69}, {200, 35}}}, {"EU870", 0x03, 870, 876, {{100, 59}, {200, 30}}}, {"IN", 0x05, 865, 867, {{100, 19}, {200, 10}}},
+            {"SG866", 0x10, 866, 869, {{100, 29}, {200, 15}, {400, 7}}}, {"MX", 0x06, 902, 928, {{200, 129}, {400, 64}}},
+            {"NA", 0x01, 902, 928, {{200, 129}, {400, 64}, {600, 42}}}, {"BZ", 0x07, 902, 928, {{200, 90}, {400, 43}, {600, 27}}},
+            {"ANZ", 0x08, 915, 928, {{200, 64}, {400, 32}}}, {"KR", 0x09, 917, 923.5, {{200, 32}, {400, 16}}}, {"PH", 0x0A, 915, 918, {{200, 14}, {400, 7}}},
+            {"MY", 0x0B, 919, 923, {{200, 19}, {400, 10}}}, {"HK", 0x0C, 920, 925, {{200, 24}, {400, 12}}}, {"SG", 0x0D, 920, 925, {{200, 24}, {400, 12}}},
+            {"TH", 0x0E, 920, 925, {{200, 24}, {400, 12}}}, {"VN", 0x0F, 920, 925, {{200, 24}, {400, 12}}},
+            {"JP", 0x02, 920, 928, {{200, 38}, {400, 18}, {600, 12}}}, {"WW", 0x00, 2400, 2483.5, {{200, 416}, {400, 207}}},
+        };
+        CHECK(bandPlans().size() == table.size(), "%zu band plans", bandPlans().size());
+        for (const Row& r : table) {
+            const BandPlan* b = bandPlan(r.id);
+            CHECK(b && b->regDomain == r.reg && b->loMhz == r.lo && b->hiMhz == r.hi, "%s band", r.id);
+            const auto plans = plansOf(r.id);
+            CHECK(plans.size() == r.sp.size(), "%s: %zu plans", r.id, plans.size());
+            for (size_t i = 0; i < plans.size() && i < r.sp.size(); i++) {
+                const ChannelPlan& p = plans[i];
+                int n = 0;
+                double first = 1e9, last = 0;
+                for (int k = 0; k < p.channels; k++)
+                    if (channelUsable(p, k)) { n++; first = std::min(first, channelMhz(p, k)); last = std::max(last, channelMhz(p, k)); }
+                const bool brazil = std::string(r.id) == "BZ";
+                CHECK(p.spacingKhz == r.sp[i].first && (brazil ? std::abs(n - r.sp[i].second) <= 2 : n == r.sp[i].second), "%s %g kHz: %d channels", r.id, p.spacingKhz, n);
+                CHECK(first >= r.lo - 1e-9 && last <= r.hi + 1e-9, "%s %g kHz: %.3f - %.3f MHz outside the band", r.id, p.spacingKhz, first, last);
+            }
+        }
+        CHECK(std::string(bandPlanFor(921.5).id) == "ANZ" && std::string(bandPlanFor(906).id) == "NA" && std::string(bandPlanFor(868).id) == "EU863" &&
+              std::string(bandPlanFor(2440).id) == "WW", "automatic choice");
+        const ChannelPlan bz = plansOf("BZ")[0];
+        CHECK(channelOf(bz, 910.0) == -1 && channelOf(bz, 906.0) >= 0 && channelOf(bz, 916.0) >= 0, "Brazil's gap");
+        CHECK(std::string(regDomainName(0x10)) == "Singapore (866 MHz)", "domain 0x10");
+    }
     {   // a PAN advertisement, built and read back: the payload IEs in the clear
         Build b;
         b.utt = PA; b.src = 0x0007810000ABCDEFull; b.srcPanPresent = true; b.pan = 0x7A31; b.ufsi = 0x123456;

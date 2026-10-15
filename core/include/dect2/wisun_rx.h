@@ -7,7 +7,7 @@
 // A polyphase filter bank splits the input into bins of about 300 kHz (rate / M, M a power of two), each at twice the bin spacing. An energy
 // detector per bin marks bursts (with some samples before the rise). Every burst is handed to the channels of the 200 kHz grid whose
 // nearest bin it is: each mixes the burst to 0 Hz, low-pass filters it, takes the frequency (FM discriminator) and, for each bit rate the
-// region's channel plans carry there (50, 100, 150 kbit/s), looks for the start-of-frame delimiter after the 0101 preamble at several sample
+// band plan's channel plans carry there (50, 100, 150 kbit/s), looks for the start-of-frame delimiter after the 0101 preamble at several sample
 // phases (one bit error allowed). The frame then follows with the carrier offset from the preamble and a zero-crossing clock tracker; the PHR
 // gives the length, whitening and FCS type; the PSDU is dewhitened (PN9) and kept when the FCS passes, or when flipping some of its least
 // reliable bits makes it pass (the CRC-32 is linear: the flips are found from the syndrome). The bursts are demodulated on a thread of the
@@ -39,7 +39,8 @@ public:
     // The radio's centre frequency: where every channel lies in the input. 0 (a file without a frequency): the dial frequency is used.
     void setCenterHz(double hz);
     void setDialHz(double hz);
-    // "ANZ" (Australia / New Zealand, 915 - 928 MHz) or "NA" (North America, 902 - 928 MHz); "" picks by the frequency (ANZ from 915 MHz)
+    // The band plan (wisun::bandPlans(): "ANZ", "NA", "EU863", "JP", ...) whose channels and FSK modes the receiver listens with; "" picks
+    // by the frequency (wisun::bandPlanFor)
     void setRegion(const std::string& r);
     bool ready() const;
     void reset();                         // the demodulator only: the tables stay
