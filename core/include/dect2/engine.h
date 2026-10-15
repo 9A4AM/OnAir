@@ -38,6 +38,7 @@
 #include "mode_tuning.h"
 #include "airband_rx.h"
 #include "vdl2_rx.h"
+#include "vdl4_rx.h"
 #include "ism_rx.h"
 #include "vor_rx.h"
 #include "ndb_rx.h"
@@ -91,6 +92,7 @@
 #include "nr_rx.h"
 #include "goes_rx.h"
 #include "elektro_rx.h"
+#include "uat_rx.h"
 #include "hrpt_rx.h"
 #include "bbunpack.h"
 #include "multitv.h"
@@ -348,7 +350,9 @@ public:
     RidReceiver& rid() { return rxRid_; }   // Drone Remote ID: clear the drone table (telemetry through latestRx)
     HrptReceiver& hrpt() { return rxHrpt_; }   // HRPT / AHRPT: variant, new picture (telemetry through latestRx)
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
-    ElektroReceiver& elektro() { return rxEl_; }   // Elektro-L HRIT / LRIT / GGAK (telemetry through latestRx)
+    ElektroReceiver& elektro() { return rxEl_; }
+    Vdl4Receiver& vdl4() { return rxVdl4_; }   // VDL Mode 4 (telemetry through latestRx)
+    UatReceiver& uat() { return rxUat_; }         // UAT 978 MHz ADS-B / FIS-B / TIS-B (telemetry through latestRx)
     MeteorReceiver& meteor() { return rxMeteor_; }   // Meteor-M LRPT: modulation, a new picture (telemetry through latestRx)
     NrReceiver& nr() { return rxNr_; }         // 5G NR cells: clear the cell table (telemetry through latestRx)
     WifiReceiver& wifi() { return rxWifi_; }   // Wi-Fi networks: clear the network table (telemetry through latestRx)
@@ -565,6 +569,8 @@ private:
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
     ElektroReceiver rxEl_;
+    Vdl4Receiver rxVdl4_;
+    UatReceiver rxUat_;
     HrptReceiver rxHrpt_;
     FlarmReceiver rxFlarm_;
     uint64_t modeSeq_[96] = {};      // the last report taken from each of the modes added after FM (same order as above)
