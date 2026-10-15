@@ -255,6 +255,12 @@ function ageSec(t) {
   return (Date.now() - t.t) / 1000;
 }
 
+function positionTimeMs(t) {
+  const a = Number(t.age);
+  if (Number.isFinite(a) && a > 0) return t.t - a * 1000;
+  return t.t;
+}
+
 function colorOf(kind, t) {
   if (t) {
     const src = srcOf(t);
@@ -350,6 +356,7 @@ function apply() {
 }
 
 function mergePathClient(prev, t) {
+  if (prev && positionTimeMs(t) + 500 < positionTimeMs(prev)) return prev;
   const cur = Array.isArray(t.path) ? t.path.slice() : [];
   const old = prev && Array.isArray(prev.path) ? prev.path.slice() : [];
   let path = cur.length >= 2 ? cur : (old.length ? old : cur);

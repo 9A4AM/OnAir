@@ -35,6 +35,56 @@ function ttlFor(kind) {
   return TTL_MS[kind] || 20 * 60e3;
 }
 
+/** Wall-clock ms of the position report (ingest time minus client age field). */
+function positionTimeMs(tMs, ageSec) {
+  const a = Number(ageSec);
+  if (Number.isFinite(a) && a > 0) return tMs - a * 1000;
+  return tMs;
+}
+
+function fresherPosition(incomingAge, prevRow, now) {
+  if (!prevRow) return true;
+  const inT = positionTimeMs(now, incomingAge);
+  const prevT = positionTimeMs(prevRow.t, prevRow.age);
+  return inT >= prevT - 500;
+}
+
+const SRC_RANK = { adsb: 40, acars: 30, hfdl: 28, sat: 22, flarm: 35 };
+
+function normalizeIcao(s) {
+  const x = String(s || "").toUpperCase().replace(/[^0-9A-F]/g, "");
+  return x.length === 6 ? x : "";
+}
+
+/** One map row per ICAO when known; otherwise per client id (callsign / reg). */
+function trackStorageId(kind, raw) {
+  const rawId = String(raw.id || "").slice(0, 80);
+  if (!rawId) return null;
+  if (kind !== "aircraft") return `${kind}:${rawId}`;
+  const icao = normalizeIcao(raw.icao) || normalizeIcao(rawId);
+  if (icao) return `aircraft:${icao}`;
+  return `aircraft:${rawId}`;
+}
+
+function srcRank(src) {
+  return SRC_RANK[String(src || "").toLowerCase()] || 10;
+}
+
+/** When merging a fresher fix, keep the better callsign / source label if the update is from a weaker link. */
+function mergeTrackMeta(prev, inc) {
+  if (!prev) return inc;
+  const out = { ...inc };
+  const prevR = srcRank(prev.src);
+  const incR = srcRank(inc.src);
+  if (incR < prevR) {
+    out.sub = prev.sub || inc.sub;
+    out.src = prev.src || inc.src;
+    if (prev.label && (!inc.label || inc.label === inc.id)) out.label = prev.label;
+  }
+  if (prev.squawk && !inc.squawk) out.squawk = prev.squawk;
+  return out;
+}
+
 export class MapHub {
   constructor(ctx, env) {
     this.ctx = ctx;
@@ -113,12 +163,18 @@ export class MapHub {
 
     const kept = [];
     for (const raw of tracks) {
-      const t = sanitize(raw, now);
+      let t = sanitize(raw, now);
       if (!t) continue;
-      const prev = this.ctx.storage.sql.exec("SELECT path, heading, speed FROM tracks WHERE id = ?", t.id).toArray()[0];
-      t.path = mergePath(prev && prev.path, t.path, t.lon, t.lat);
-      if (t.heading == null && prev && prev.heading != null) t.heading = prev.heading;
-      if (t.speed == null && prev && prev.speed != null) t.speed = prev.speed;
+      const prev = this.ctx.storage.sql.exec(
+        "SELECT t, age, path, heading, speed, label, sub, src, squawk FROM tracks WHERE id = ?",
+        t.id,
+      ).toArray()[0];
+      if (!fresherPosition(t.age, prev, now)) continue;
+      let merged = prev ? mergeTrackMeta(prev, t) : t;
+      merged.path = mergePath(prev && prev.path, merged.path, merged.lon, merged.lat);
+      if (merged.heading == null && prev && prev.heading != null) merged.heading = prev.heading;
+      if (merged.speed == null && prev && prev.speed != null) merged.speed = prev.speed;
+      t = merged;
       let pathArr = [];
       try { pathArr = JSON.parse(t.path); } catch { pathArr = []; }
       this.ctx.storage.sql.exec(
@@ -245,8 +301,10 @@ function sanitize(raw, now) {
   const lat = Number(raw.lat), lon = Number(raw.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
   if (lat === 0 && lon === 0) return null;
-  const id = String(raw.id || "").slice(0, 80);
-  if (!id) return null;
+  const storageId = trackStorageId(kind, raw);
+  if (!storageId) return null;
+  const rawId = String(raw.id || "").slice(0, 80);
+  const icao = normalizeIcao(raw.icao) || (kind === "aircraft" ? normalizeIcao(rawId) : "");
   const alt = Number.isFinite(Number(raw.alt)) ? Number(raw.alt) : null;
   const heading = Number.isFinite(Number(raw.heading)) ? Number(raw.heading) : null;
   const speed = Number.isFinite(Number(raw.speed)) ? Number(raw.speed) : null;
@@ -265,9 +323,10 @@ function sanitize(raw, now) {
   }
   path.push([lon, lat]);
   return {
-    id: kind + ":" + id,
+    id: storageId,
     kind,
-    label: String(raw.label || id).slice(0, 48),
+    icao,
+    label: String(raw.label || rawId).slice(0, 48),
     sub: String(raw.sub || "").slice(0, 32),
     lat, lon, alt, heading, speed, vrate, age,
     squawk,

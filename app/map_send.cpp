@@ -25,6 +25,7 @@ constexpr double kHeartbeatSec = 60.0;
 constexpr double kRetrySec = 8.0;
 constexpr int kFailPopupAfter = 3;
 constexpr size_t kMaxTracks = 250;
+constexpr double kIngestMaxAdsbPosAgeSec = 30.0;   // frozen CPR: do not publish to the map
 
 std::atomic<bool> gBusy{false};
 std::mutex gThMu;
@@ -120,8 +121,28 @@ struct RunGate {
 std::unordered_map<int, RunGate> gRun;
 RunGate* gG = nullptr;
 
+std::string aircraftMapId(uint32_t icao, const std::string& flight, const std::string& reg) {
+    if (icao & 0xFFFFFFu) {
+        char b[8];
+        snprintf(b, sizeof b, "%06X", icao & 0xFFFFFFu);
+        return b;
+    }
+    if (!reg.empty()) return reg;
+    if (!flight.empty()) return flight;
+    return {};
+}
+
+bool isIcaoHexId(const std::string& id) {
+    if (id.size() != 6) return false;
+    for (unsigned char c : id) {
+        if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))) return false;
+    }
+    return true;
+}
+
 void addTrack(std::vector<Track>& v, std::unordered_set<std::string>& seen, Track t) {
     if (!t.kind || !*t.kind || t.id.empty() || !validPos(t.lat, t.lon)) return;
+    if (t.kind && std::strcmp(t.kind, "aircraft") == 0 && t.src == "adsb" && t.age > kIngestMaxAdsbPosAgeSec) return;
     if (t.id.size() > 80) t.id.resize(80);
     const std::string key = std::string(t.kind) + ":" + t.id;
     const double ht = t.hasHeard ? t.heardAt : -1;
@@ -195,7 +216,9 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
         for (const auto& a : acars.aircraft) {
             if (!a.hasPos) continue;
             Track t; t.kind = "aircraft"; t.sub = "ACARS"; t.src = "acars";
-            t.id = a.reg.empty() ? a.flight : a.reg; t.label = a.flight.empty() ? t.id : a.flight;
+            t.id = aircraftMapId(a.icao, a.flight, a.reg.empty() ? a.flight : a.reg);
+            if (t.id.empty()) continue;
+            t.label = a.flight.empty() ? t.id : a.flight;
             t.lat = a.lat; t.lon = a.lon; t.age = acars.nowSec - a.lastHeardSec;
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
@@ -228,9 +251,10 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
         for (const auto& a : hfdl.aircraft) {
             if (!a.hasPos) continue;
             Track t; t.kind = "aircraft"; t.sub = "HFDL"; t.src = "hfdl";
-            char id[16]; snprintf(id, sizeof id, "%06X", a.icao ? a.icao : a.key);
-            t.id = a.flight.empty() ? (a.reg.empty() ? id : a.reg) : a.flight;
-            t.label = t.id; t.lat = a.lat; t.lon = a.lon; t.age = hfdl.nowSec - a.lastHeardSec;
+            const uint32_t ic = a.icao ? a.icao : (a.key < 0x1000000u ? a.key : 0u);
+            t.id = aircraftMapId(ic, a.flight, a.reg);
+            if (t.id.empty()) continue;
+            t.label = a.flight.empty() ? t.id : a.flight; t.lat = a.lat; t.lon = a.lon; t.age = hfdl.nowSec - a.lastHeardSec;
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
             t.cat = a.posKind;
@@ -243,9 +267,9 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
         for (const auto& a : vdl.aircraft) {
             if (!a.hasPos) continue;
             Track t; t.kind = "aircraft"; t.sub = "VDL2"; t.src = "acars";
-            char id[16]; snprintf(id, sizeof id, "%06X", a.icao);
-            t.id = a.flight.empty() ? (a.reg.empty() ? id : a.reg) : a.flight;
-            t.label = t.id; t.lat = a.lat; t.lon = a.lon; t.age = vdl.nowSec - a.lastHeardSec;
+            t.id = aircraftMapId(a.icao, a.flight, a.reg);
+            if (t.id.empty()) continue;
+            t.label = a.flight.empty() ? t.id : a.flight; t.lat = a.lat; t.lon = a.lon; t.age = vdl.nowSec - a.lastHeardSec;
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
             t.cat = a.posKind;
@@ -340,6 +364,9 @@ std::string buildJson(const std::string& station, const std::vector<Track>& trac
         if (!first) j += ',';
         first = false;
         j += "{\"kind\":\""; j += t.kind; j += "\",\"id\":\""; j += jsonEsc(t.id);
+        if (t.kind && std::strcmp(t.kind, "aircraft") == 0 && isIcaoHexId(t.id)) {
+            j += "\",\"icao\":\""; j += jsonEsc(t.id);
+        }
         j += "\",\"label\":\""; j += jsonEsc(t.label.empty() ? t.id : t.label);
         j += "\",\"sub\":\""; j += jsonEsc(t.sub);
         char b[96];
