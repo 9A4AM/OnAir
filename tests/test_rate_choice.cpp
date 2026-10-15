@@ -101,6 +101,16 @@ int main() {
         CHECK(native::plutoLinkRate("ip:pluto.local") == 3e6 && native::plutoLinkRate("ip:192.168.2.1") == 3e6);
         CHECK(native::plutoLinkRate("ip:10.0.0.7") == 0);
         CHECK(native::plutoDevice("ip:192.168.2.1").steadyRateHz == 0);   // typed in by hand: maybe a Pluto+ on Ethernet (#54)
+        {   // #96: the Link setting says a Pluto+ at the default address is on real Ethernet: no USB cap
+            DeviceInfo d = native::plutoDevice("ip:192.168.2.1"); d.steadyRateHz = native::plutoLinkRate("ip:192.168.2.1");
+            TuneSettings t;
+            CHECK(linkCapHz(d, t) == 3e6);                          // Auto: the USB-gadget guess
+            t.radio["link"] = "ethernet";
+            CHECK(linkCapHz(d, t) == 0 && linkNote(d, t, 20e6).empty());
+            t.radio["link"] = "usb";
+            CHECK(linkCapHz(d, t) == 3e6);
+            CHECK(native::plutoDevice("ip:10.0.0.7").settings.size() + 1 == native::plutoDevice("ip:192.168.2.1").settings.size());   // only the ambiguous address asks
+        }
         const ModeTuning* m = modeTuning(8);
         CHECK(m != nullptr);
         for (const char* uri : {"usb:1.4.5", "ip:pluto.local"}) {

@@ -1,8 +1,145 @@
 # OnAir interface in German. One text per line: the English text as in the source, a tab, the translation.
 # \n is a line break. Keep the printf conversions (%s, %d, %.1f ...) in the same order. tests/test_i18n.cpp checks this file.
 #  menus, status words, common buttons
+%.1f dB	%.1f dB
+%s  #%d  %.3f MHz%s	%s  #%d  %.3f MHz%s
+%s  %.4f MHz  %s%s%s%s  %.1f dB  %s	%s  %.4f MHz  %s%s%s%s  %.1f dB  %s
+-	-
+1 kHz test tone	1 kHz test tone
+8 MHz	8 MHz
+A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.	A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.
+A SAME header. ZCZC- is added when missing.	A SAME header. ZCZC- is added when missing.
+Aircraft registration	Aircraft registration
+An RS41 with this serial. Empty: the demo sondes.	An RS41 with this serial. Empty: the demo sondes.
+ANT+ is not transmitted: it would impersonate a sensor network	ANT+ is not transmitted: it would impersonate a sensor network
+TETRAPOL is not transmitted: receive only, control-channel system information	TETRAPOL wird nicht gesendet: nur Empfang, Systeminformation des Steuerkanals
+Are you sure? This clears all previous data and cannot be undone.	Are you sure? This clears all previous data and cannot be undone.
+ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.	ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.
+Audio file	Audio file
+Audio input	Audio input
+AX.25 UI frame. Empty: the demo CubeSat cycle.	AX.25 UI frame. Empty: the demo CubeSat cycle.
+Baud	Baud
+Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser
+Browse…	Browse…
+Callsign / my ID	Callsign / my ID
+Capcode	Capcode
+CARRIER TUNE	CARRIER TUNE
+Carrier tune	Carrier tune
+Clear all	Clear all
+Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
+Code rate / MODCOD index	Code rate / MODCOD index
+Colour code	Colour code
+Comment	Comment
+CQ	CQ
+D2-MAC test scene (custom video is not wired into this analogue generator).	D2-MAC test scene (custom video is not wired into this analogue generator).
+DATV (DVB-S/S2 file)	DATV (DVB-S/S2 file)
+Default input	Default input
+Destination	Destination
+Destination / ID	Destination / ID
+Destination ID	Destination ID
+Deviation (Hz)	Deviation (Hz)
+Device ID	Device ID
+Dial frequency the decoder should assume (the sound card is not tuned)	Wählfrequenz, die der Decoder annehmen soll (die Soundkarte wird nicht abgestimmt)
+Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements	Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements
+DVB standard	DVB standard
+Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.	Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.
+Empty: the demo 802.15.4 scene.	Empty: the demo 802.15.4 scene.
+Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.	Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.
+Empty: the demo LoRa / mesh scene.	Empty: the demo LoRa / mesh scene.
+Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
+Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	Datei
+File to send	File to send
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Für WebSDR, ein virtuelles Audiokabel (VAC) oder Lautsprecher/Line eines Funkgeräts in den Rechner. Kein Ersatz für ein SDR, wenn Sie Megahertz Bandbreite brauchen.
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	Für WebSDR, ein virtuelles Audiokabel (VAC) oder Lautsprecher/Line eines Funkgeräts in den Rechner. Kein Ersatz für ein SDR, wenn Sie Megahertz Bandbreite brauchen. Das Frequenzfeld ist die Wählfrequenz für den Decoder; die Soundkarte wird nicht abgestimmt. Es gibt keine Verstärkung und keine Antennenspeisung.
+Free text	Free text
+Function	Function
+Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	Verstärkungsregler wirken nur bei Radios (nicht bei Aufnahmen, einer Soundkarte oder dem synthetischen Signal)
+I/Q stereo	I/Q-Stereo
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q-Stereo: links ist I, rechts ist Q (HDSDR / WebSDR VAC). USB-Audio: reelles Audio zu analytischem IQ für FT8, RTTY, CW, SSB vom Lautsprecherabgriff. LSB-Audio: dasselbe, konjugiert. Mono reell: I ist die Probe, Q ist 0 (reelle Abtastung, kein FM-Diskriminator-Audio).
+ICAO address	ICAO address
+Idle — nothing is being sent	Idle — nothing is being sent
+Image (PNG / PPM)	Image (PNG / PPM)
+Image (PPM)	Image (PPM)
+Input device	Input device
+Latitude	Latitude
+libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.	libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.
+libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.	libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.
+Live voice is encoded with Codec 2 (FreeDV).	Live voice is encoded with Codec 2 (FreeDV).
+Live voice is encoded with Codec 2 (libcodec2).	Live voice is encoded with Codec 2 (libcodec2).
+Longitude	Longitude
+Look for Red Pitaya boards on this computer's networks again	Look for Red Pitaya boards on this computer's networks again
+LSB audio	LSB-Audio
+Message	Message
+MHz	MHz
+Mic level	Mic level
+Microphone	Microphone
+MMSI	MMSI
 Mode	Betriebsart
+Mono real	Mono reell
+Morse identification, up to four letters.	Morse identification, up to four letters.
+MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.	MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.
+Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
+NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
+No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.	No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.
+PAN / short address	PAN / short address
+Path	Path
+Payload text	Payload text
+Power (dBm)	Power (dBm)
+Pre-emphasis	Pre-emphasis
+PSK variant	PSK variant
+QO-100 path	QO-100 path
+Radio ID	Radio ID
+Radio text (RT)	Radio text (RT)
+RDS PI	RDS PI
+Receiver-style options (demo signal)	Receiver-style options (demo signal)
+Report	Report
+Reverse (mark is the upper tone)	Reverse (mark is the upper tone)
+RFPI	RFPI
+RFPI of the base station.	RFPI of the base station.
+Roll-off	Roll-off
+Satellite standard	Satellite standard
+searching for Red Pitaya boards…	searching for Red Pitaya boards…
+Send analog NFM of the audio instead of the digital test pattern	Send analog NFM of the audio instead of the digital test pattern
+Send analog NFM of the microphone or a file instead of the test scene	Send analog NFM of the microphone or a file instead of the test scene
+Serial / ID	Serial / ID
+Shift	Shift
+Sideband	Sideband
+Silence	Silence
+sound card	Soundkarte
+Speed (0=512, 1=1200, 2=2400, 3=FLEX)	Speed (0=512, 1=1200, 2=2400, 3=FLEX)
+SSB (microphone)	SSB (microphone)
+SSTV mode	SSTV mode
+Station name (PS)	Station name (PS)
+Symbol rate (Hz)	Symbol rate (Hz)
+Talkgroup	Talkgroup
+Test card (or analog picture) plus live audio on the sound carrier.	Test card (or analog picture) plus live audio on the sound carrier.
+test DJI DroneID scene (custom serial is not packed)	test DJI DroneID scene (custom serial is not packed)
+test downlink scene (this generator does not take a custom message)	test downlink scene (this generator does not take a custom message)
+test LRPT/HRIT scene (custom image not wired)	test LRPT/HRIT scene (custom image not wired)
+test NCDXF-style beacon scene	test NCDXF-style beacon scene
+test weather-fax chart (custom image not wired)	test weather-fax chart (custom image not wired)
+TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+Text	Text
+The capture rate of the sound card. The engine runs at this rate; there is no radio to tune.	Die Aufnahmerate der Soundkarte. Die Engine läuft mit dieser Rate; es gibt kein Radio zum Abstimmen.
+The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.	The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.
+The microphone starts only when you press START TRANSMITTING.	The microphone starts only when you press START TRANSMITTING.
+The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.	The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.
+this is a general listening mode: there is nothing specific to transmit	this is a general listening mode: there is nothing specific to transmit
+this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
+this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
+this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
+This mode cannot transmit	This mode cannot transmit
+this mode has no transmit generator	this mode has no transmit generator
+This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
+Timeslot	Timeslot
+To	To
+TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
+Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
+USB audio	USB-Audio
+Vessel name	Vessel name
+Video / MPEG-TS file	Video / MPEG-TS file
 View	Ansicht
 Help	Hilfe
 Language	Sprache
@@ -25,10 +162,16 @@ searching	suche
 syncing	synchronisiere
 locked	eingerastet
 Locked	Eingerastet
+Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.	Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.
+Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.	Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.
+WAV / MP3 file	WAV / MP3 file
 weak	schwach
 stereo	Stereo
 mono	Mono
 radio disconnected	Radio getrennt
+What to send	What to send
+Wi-Fi is not transmitted: the generator models access-point beacons for the decoder	Wi-Fi is not transmitted: the generator models access-point beacons for the decoder
+WPM	WPM
 yes	ja
 no lock	nicht eingerastet
 never	nie
@@ -124,7 +267,6 @@ Peak hold	Spitzenwert halten
 peak hold	Spitzenwert halten
 Spectrum	Spektrum
 Waterfall	Wasserfall
-Set the waterfall range from the noise floor and the strongest signal	Den Wasserfallbereich aus Rauschpegel und stärkstem Signal setzen
 search modes (FT8, LoRa, APRS...)	Betriebsarten suchen (FT8, LoRa, APRS...)
 search (FT8, LoRa, APRS...)	suchen (FT8, LoRa, APRS...)
 no mode matches "%s"	keine Betriebsart passt zu „%s“
@@ -209,6 +351,7 @@ Digital voice, 14.236 MHz	Digitale Sprache, 14.236 MHz
 Digital voice, 433.475 MHz	Digitale Sprache, 433.475 MHz
 Digital voice, 145.375 MHz	Digitale Sprache, 145.375 MHz
 Network info, 380 - 470 MHz	Netzinformationen, 380 - 470 MHz
+Network info, UHF	Netzinformationen, UHF
 LTE, band scan	LTE, Bandsuchlauf
 5G NR, GSCN scan	5G NR, GSCN-Suchlauf
 Railway, 921 - 925 MHz	Bahn, 921 - 925 MHz
@@ -279,7 +422,6 @@ Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adju
 Auto-tune	Auto-Abgleich
 Stop tune	Abgleich stoppen
 Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Verstärkungshelfer: probiert etwa 40 s lang LNA/VGA/Verstärker-Kombinationen und behält die mit dem besten SNR ohne Übersteuerung.\nBraucht ein Signal, auf das der Empfänger einrasten kann.
-Gain controls apply to radios only (not to a recording or the synthetic signal)	Verstärkungsregler wirken nur bei Radios (nicht bei Aufnahmen oder dem synthetischen Signal)
 gain helper %d/%d ...	Verstärkungshelfer %d/%d ...
 ADC OVERLOAD - %s	ADC ÜBERSTEUERT - %s
 AGC is lowering the gain	AGC senkt die Verstärkung
@@ -528,13 +670,14 @@ Symbol rate	Symbolrate
 #  updates
 Updates	Updates
 Check for updates automatically	Automatisch nach Updates suchen
-Include pre-releases	Vorabversionen einschließen
+Include beta versions	Beta-Versionen einschließen
 Check now	Jetzt prüfen
 Not checked yet.	Noch nicht geprüft.
 Asking GitHub for the newest version…	Frage GitHub nach der neuesten Version…
+Yes, clear all	Yes, clear all
 You have the newest version.	Du hast die neueste Version.
 Version %s is available%s.	Version %s ist verfügbar%s.
- (pre-release)	 (Vorabversion)
+ (beta)	 (Beta)
 Download and install	Herunterladen und installieren
 Download and install them by themselves	Selbstständig herunterladen und installieren
 Skip this version	Diese Version überspringen
@@ -575,3 +718,413 @@ Copied	Kopiert
 Copies the version, system, radios, messages and radio log lines, for a bug report	Kopiert Version, System, Radios, Meldungen und Radio-Protokollzeilen, für einen Fehlerbericht
 spectrum dB	Spektrum dB
 waterfall dB	Wasserfall dB
+# added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
+  (mirrored: I/Q swapped)	  (gespiegelt: I/Q vertauscht)
+%s, %d client%s, %llu sent, %llu dropped	%s, %d Client%s, %llu gesendet, %llu verworfen
+A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Ein HackRF, Airspy oder RTL-SDR braucht einmalig seinen WinUSB-Treiber: Installiere ihn mit Zadig (zadig.akeo.ie).
+A Linux driver for TV sticks took the radio before the SDRplay software could.	Ein Linux-Treiber für TV-Sticks hat das Radio belegt, bevor die SDRplay-Software es konnte.
+A high-end computer is recommended. Lower sample rates help.	Ein leistungsstarker Computer wird empfohlen. Niedrigere Abtastraten helfen.
+A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Eine Weltkarte: Position über Koordinaten oder Maidenhead-Locator finden, Entfernung und Peilung von deinem Standort
+Add a receiver: another radio with its own mode	Empfänger hinzufügen: ein weiteres Radio mit eigener Betriebsart
+Add receiver	Empfänger hinzufügen
+Added to a level in dBFS to give dBm for this radio: feed a known signal into the antenna port and set the difference. Used when the spectrum shows dBm (Spectrum button on the plot).	Wird zu einem Pegel in dBFS addiert, um dBm für dieses Radio zu erhalten: Speise ein bekanntes Signal in den Antennenanschluss ein und stelle die Differenz ein. Gilt, wenn das Spektrum dBm zeigt (Schaltfläche Spektrum am Diagramm).
+Aircraft	Flugzeuge
+All set. OnAir will start here:	Alles bereit. OnAir startet hier:
+Allow remote control (frequency and gain)	Fernsteuerung erlauben (Frequenz und Verstärkung)
+Amateur radio	Amateurfunk
+An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	Ein SDRplay RSP ist angeschlossen, aber sein Treiber, die SDRplay API, ist nicht installiert. Es ist SDRplays eigene Software, und ihre Lizenz erlaubt OnAir nicht, sie mitzuliefern; sie muss einmalig heruntergeladen werden.
+Another program is using the HackRF	Ein anderes Programm verwendet den HackRF
+Australia and New Zealand	Australien und Neuseeland
+Average	Mittelwert
+CPU load now: %.0f%% (100%% = one core)	CPU-Last jetzt: %.0f%% (100%% = ein Kern)
+Calls and data are shown, but the voice is silent until you install the codec yourself. OnAir does not ship it (patents).	Anrufe und Daten werden angezeigt, die Sprache bleibt aber stumm, bis du den Codec selbst installierst. OnAir liefert ihn nicht mit (Patente).
+Cancel	Abbrechen
+Carrier MHz	Träger MHz
+Carriers in the span (click: listen and show; double click: tune to it)	Träger im Ausschnitt (Klick: anhören und anzeigen; Doppelklick: darauf abstimmen)
+Channel MHz	Kanal MHz
+Channel raster	Kanalraster
+Check that PulseAudio or PipeWire runs, and that an output is chosen in the sound settings.	Prüfe, ob PulseAudio oder PipeWire läuft und in den Klangeinstellungen ein Ausgang gewählt ist.
+Check that rtl_tcp is running on the other computer and prints "listening".	Prüfe, ob rtl_tcp auf dem anderen Computer läuft und „listening“ ausgibt.
+Check that the file still exists and that you may read it.	Prüfe, ob die Datei noch existiert und du sie lesen darfst.
+Check that the firmware is the stock one, or a known one such as Tezuka.	Prüfe, ob die Firmware die Original-Firmware oder eine bekannte wie Tezuka ist.
+Check the USB cable and port, then press the refresh button.	Prüfe USB-Kabel und Anschluss und drücke dann die Aktualisieren-Schaltfläche.
+Check the address and port, and that nothing blocks them (firewall, Wi-Fi).	Prüfe Adresse und Port und ob nichts sie blockiert (Firewall, WLAN).
+China	China
+Choose a frequency inside the range shown in the message.	Wähle eine Frequenz innerhalb des in der Meldung genannten Bereichs.
+Choose the file again.	Wähle die Datei erneut.
+Close other programs that use the radio.	Schließe andere Programme, die das Radio verwenden.
+Close programs that hold the sound device exclusively.	Schließe Programme, die das Audiogerät exklusiv belegen.
+Close the other program (a second OnAir, SDR software, hackrf_info).	Schließe das andere Programm (ein zweites OnAir, SDR-Software, hackrf_info).
+Close this receiver: it stops and lets go of its radio	Diesen Empfänger schließen: er stoppt und gibt sein Radio frei
+Colour map	Farbskala
+Colours	Farben
+Converter (up-converter / LNB)	Konverter (Aufwärtskonverter / LNB)
+Copy the command	Befehl kopieren
+Copy the restart command	Neustart-Befehl kopieren
+Copy the udev command	udev-Befehl kopieren
+Details	Details
+Don't show again	Nicht mehr anzeigen
+Down, LO above: radio = LO - RF (mirrored)	Abwärts, LO darüber: Radio = LO - HF (gespiegelt)
+Down, LO below: radio = RF - LO	Abwärts, LO darunter: Radio = HF - LO
+Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	Lade die SDRplay API für diesen Computer von sdrplay.com/api herunter und starte das Installationsprogramm.
+Download the current SDRplay API from sdrplay.com and install it.	Lade die aktuelle SDRplay API von sdrplay.com herunter und installiere sie.
+Drag to resize, double click for the automatic size	Ziehen zum Ändern der Größe, Doppelklick für die automatische Größe
+Drones, 2.4 / 5.8 GHz	Drohnen, 2,4 / 5,8 GHz
+Elsewhere	Anderswo
+Europe	Europa
+FM / DAB radio	UKW- / DAB-Radio
+FM radio	UKW-Radio
+Files: audio and IQ	Dateien: Audio und IQ
+Fill under the line	Fläche unter der Linie füllen
+Find "SDRplay API Service" and press Start (or Restart).	Suche „SDRplay API Service“ und drücke Starten (oder Neu starten).
+Fix the address of the network radio (host:port).	Korrigiere die Adresse des Netzwerkradios (Host:Port).
+Download OnAir again and unpack or install the whole package: the codec2 library belongs next to the program.	Lade OnAir erneut herunter und entpacke oder installiere das ganze Paket: Die codec2-Bibliothek gehört neben das Programm.
+Follow the steps in the full instructions to install the codec.	Folge den Schritten in der vollständigen Anleitung, um den Codec zu installieren.
+For an RSP, install the SDRplay API first (sdrplay.com).	Für einen RSP installiere zuerst die SDRplay API (sdrplay.com).
+Found %s (%s)	%s gefunden (%s)
+Found:	Gefunden:
+Frequency and level of the strongest peaks in view	Frequenz und Pegel der stärksten Spitzen im Ausschnitt
+Full instructions	Vollständige Anleitung
+Gliders, 868.2 / 868.4 MHz	Segelflugzeuge, 868,2 / 868,4 MHz
+Grid	Raster
+How far the converter's oscillator runs fast (positive) or slow. The LO used is LO x (1 + ppm / 1e6).	Wie weit der Oszillator des Konverters zu schnell (positiv) oder zu langsam läuft. Verwendet wird LO x (1 + ppm / 1e6).
+How fast the max-hold line falls; 0: it stays until reset	Wie schnell die Max-Hold-Linie fällt; 0: sie bleibt bis zum Zurücksetzen
+How to fix	So behebst du es
+Images	Bilder
+Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay	Installiere die Blacklist-Datei von OnAir (das .deb-Paket macht das) oder führe aus: sudo systemctl restart sdrplay
+Install the SDRplay API	SDRplay API installieren
+Install the SDRplay API from sdrplay.com if you have not.	Installiere die SDRplay API von sdrplay.com, falls noch nicht geschehen.
+Install the WinUSB driver once with Zadig (zadig.akeo.ie): choose the radio, then the driver WinUSB, then Install.	Installiere den WinUSB-Treiber einmalig mit Zadig (zadig.akeo.ie): Radio wählen, dann den Treiber WinUSB, dann Installieren.
+Install the udev rules (install-udev-rules.sh), then unplug and replug the radio.	Installiere die udev-Regeln (install-udev-rules.sh), dann stecke das Radio aus und wieder ein.
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb does it).	Installiere die udev-Regeln: Führe install-udev-rules.sh aus dem OnAir-Ordner aus (das .deb macht das).
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb package does it for you).	Installiere die udev-Regeln: Führe install-udev-rules.sh aus dem OnAir-Ordner aus (das .deb-Paket erledigt das für dich).
+Intensity (dB)	Intensität (dB)
+IoT, 2.4 GHz	IoT, 2,4 GHz
+IoT, sub-GHz	IoT, Sub-GHz
+It is streaming to another program: stop it there first.	Es streamt an ein anderes Programm: Beende es zuerst dort.
+Japan	Japan
+Journaline	Journaline
+Just explore	Einfach erkunden
+Keep the waterfall range on the noise floor and the strongest signal (click again to stop following)	Wasserfallbereich auf Rauschteppich und stärkstes Signal halten (erneut klicken zum Beenden)
+LO (MHz)	LO (MHz)
+LO correction (ppm)	LO-Korrektur (ppm)
+Let other computers connect (LAN)	Andere Computer verbinden lassen (LAN)
+Level at the cursor	Pegel am Cursor
+Level dB	Pegel dB
+Linux grabbed the SDRplay radio	Linux hat das SDRplay-Radio belegt
+Linux treats the radio as a sound card	Linux behandelt das Radio als Soundkarte
+Load	Laden
+Look again	Erneut suchen
+Look for Hermes Lite 2 radios on this computer's networks again	Erneut nach Hermes-Lite-2-Radios in den Netzwerken dieses Computers suchen
+Maritime, VHF	Seefunk, VHF
+Max hold	Max-Hold
+Meteor scatter, 28.145 MHz	Meteorscatter, 28,145 MHz
+Middle East	Naher Osten
+Mirror the spectrum (swap I and Q)	Spektrum spiegeln (I und Q vertauschen)
+NB-IoT, band scan	NB-IoT, Bandsuche
+NCDXF/IARU, Long Dashes, single letters	NCDXF/IARU, lange Striche, einzelne Buchstaben
+Network	Netzwerk
+Network radio: %llu samples lost (underruns)	Netzwerkradio: %llu Samples verloren (Unterläufe)
+No Hermes Lite 2 answered on this computer's networks: type its address.	Kein Hermes Lite 2 hat in den Netzwerken dieses Computers geantwortet: Gib die Adresse ein.
+No radio found	Kein Radio gefunden
+No sound output	Kein Audioausgang
+North America	Nordamerika
+Not a locator or coordinates	Kein Locator und keine Koordinaten
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Unter Windows braucht ein HackRF einmalig seinen WinUSB-Treiber: Installiere ihn mit Zadig (zadig.akeo.ie).
+OnAir %s	OnAir %s
+OnAir cannot see a HackRF on the USB ports.	OnAir findet keinen HackRF an den USB-Anschlüssen.
+OnAir could not open the speakers, so there will be no sound.	OnAir konnte die Lautsprecher nicht öffnen, daher gibt es keinen Ton.
+OnAir could not use the rtl_tcp server, or the connection dropped.	OnAir konnte den rtl_tcp-Server nicht nutzen, oder die Verbindung brach ab.
+OnAir found the SDRplay software, but its background service does not answer, so the RSP cannot be opened.	OnAir hat die SDRplay-Software gefunden, aber ihr Hintergrunddienst antwortet nicht, daher lässt sich der RSP nicht öffnen.
+OnAir lists a radio when the computer sees it. You can still try everything with the synthetic signal or an IQ file.	OnAir listet ein Radio auf, sobald der Computer es sieht. Mit dem synthetischen Signal oder einer IQ-Datei kannst du trotzdem alles ausprobieren.
+OnAir needs SDRplay API 3.07 or a newer 3.x.	OnAir braucht die SDRplay API 3.07 oder eine neuere 3.x.
+Only one program can use an rtl_tcp server at a time: close any other client.	Nur ein Programm kann einen rtl_tcp-Server gleichzeitig nutzen: Schließe jeden anderen Client.
+Only one program can use the radio at a time.	Nur ein Programm kann das Radio gleichzeitig nutzen.
+Only one receiver plays its sound at a time: click to hear this one	Nur ein Empfänger spielt gleichzeitig Ton: Klicke, um diesen zu hören
+Open Services (press Win+R, type services.msc).	Öffne die Dienste (Win+R drücken, services.msc eingeben).
+Open System Settings > Sound and pick an output device.	Öffne Systemeinstellungen > Ton und wähle ein Ausgabegerät.
+Open codecs folder	Codec-Ordner öffnen
+Open driver page	Treiberseite öffnen
+Open firmware page	Firmware-Seite öffnen
+Open the SDRplay API page	SDRplay-API-Seite öffnen
+Open the device list	Geräteliste öffnen
+Optional: your position, as a Maidenhead locator (KO24pq) or coordinates (54.68, 25.28). It is kept on this computer and used for maps and satellite passes.	Optional: deine Position als Maidenhead-Locator (KO24pq) oder Koordinaten (54.68, 25.28). Sie bleibt auf diesem Computer und wird für Karten und Satellitenüberflüge verwendet.
+Or choose another radio from the list.	Oder wähle ein anderes Radio aus der Liste.
+Or install OnAir's blacklist file (the .deb package does it).	Oder installiere die Blacklist-Datei von OnAir (das .deb-Paket macht das).
+Or set the UHD_IMAGES_DIR variable to the folder with the images.	Oder setze die Variable UHD_IMAGES_DIR auf den Ordner mit den Images.
+Own accent colour	Eigene Akzentfarbe
+PSK Reporter	PSK Reporter
+Pagers, tones and FFSK	Pager, Töne und FFSK
+Pause	Pause
+Peak markers	Spitzenmarker
+Plug a radio into the computer that runs the SpyServer, and restart the SpyServer.	Schließe ein Radio an den Computer an, auf dem der SpyServer läuft, und starte den SpyServer neu.
+Plug the radio in again and press the refresh button.	Stecke das Radio wieder ein und drücke die Aktualisieren-Schaltfläche.
+Plug the radio in, directly or through a powered hub.	Schließe das Radio an, direkt oder über einen aktiven Hub.
+Press "Look again" in the ? help next to the sound.	Drücke „Erneut suchen“ in der ?-Hilfe neben dem Ton.
+Press the refresh button next to the radio list.	Drücke die Aktualisieren-Schaltfläche neben der Radioliste.
+Press the refresh button next to the source.	Drücke die Aktualisieren-Schaltfläche neben der Quelle.
+Put the library in the OnAir codecs folder (button below).	Lege die Bibliothek in den OnAir-Codec-Ordner (Schaltfläche unten).
+Put the panels back to their automatic sizes (drag the bars between panels to resize them)	Panels auf ihre automatischen Größen zurücksetzen (Balken zwischen den Panels ziehen, um die Größe zu ändern)
+Radar chirps, HF	Radar-Chirps, KW
+Radio settings (%d changed)###radioset	Radioeinstellungen (%d geändert)###radioset
+Radio settings###radioset	Radioeinstellungen###radioset
+Receivers at once	Empfänger gleichzeitig
+Reduce CPU when hidden	CPU-Last verringern, wenn verdeckt
+Remote driver	Remote-Treiber
+Reset	Zurücksetzen
+Reset layout	Layout zurücksetzen
+Restart OnAir (the installer starts SDRplay's background service).	Starte OnAir neu (das Installationsprogramm startet den Hintergrunddienst von SDRplay).
+Restart OnAir.	Starte OnAir neu.
+Restart the Mac, or run in Terminal: sudo launchctl kickstart -k system/com.sdrplay.service	Starte den Mac neu oder führe im Terminal aus: sudo launchctl kickstart -k system/com.sdrplay.service
+Right-click the speaker icon, open Sound settings and pick an output device.	Klicke mit rechts auf das Lautsprechersymbol, öffne die Klangeinstellungen und wähle ein Ausgabegerät.
+Run in a terminal: sudo systemctl restart sdrplay	Führe in einem Terminal aus: sudo systemctl restart sdrplay
+Run once in a terminal: uhd_images_downloader	Führe einmalig in einem Terminal aus: uhd_images_downloader
+Run: sudo modprobe -r msi2500 msi001	Führe aus: sudo modprobe -r msi2500 msi001
+Running several radios at the same time needs a lot of processing power. Performance may limit what is possible: with too many or too fast receivers samples are dropped and decoding gets worse.	Mehrere Radios gleichzeitig zu betreiben erfordert viel Rechenleistung. Die Leistung kann das Machbare begrenzen: Bei zu vielen oder zu schnellen Empfängern gehen Samples verloren und die Dekodierung wird schlechter.
+SDR	SDR
+SNR dB	SNR dB
+Satellites	Satelliten
+Satellites, 1.6 GHz	Satelliten, 1,6 GHz
+Save bug report	Fehlerbericht speichern
+Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue	Speichert eine ZIP-Datei mit der Diagnose, dem Protokoll und dem letzten Absturzbericht: an ein GitHub-Issue anhängen
+Search	Suchen
+Seen	Gesehen
+Send spots to PSK Reporter (pskreporter.info)	Spots an PSK Reporter senden (pskreporter.info)
+Sensors and IoT	Sensoren und IoT
+Services	Dienste
+Set the LO above 0 MHz.	Setze den LO über 0 MHz.
+Setup	Einrichtung
+Setup wizard	Einrichtungsassistent
+Share my radio (rtl_tcp server)	Mein Radio freigeben (rtl_tcp-Server)
+Share the radio's samples as an rtl_tcp server	Die Samples des Radios als rtl_tcp-Server freigeben
+Ships	Schiffe
+Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs.	Die Frequenz an der Antenne anzeigen und einstellen, während das Radio auf den Ausgang des Konverters abgestimmt ist.
+Skip setup	Einrichtung überspringen
+Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)	Spektrum: Mittelung, Max-Hold, Spitzenmarker, Füllung, Raster und Einheit (dBFS oder dBm)
+Speed (rows a second)	Geschwindigkeit (Zeilen pro Sekunde)
+Spots are public. A valid amateur radio callsign is required; the dial frequency is the tuned frequency.	Spots sind öffentlich. Ein gültiges Amateurfunk-Rufzeichen ist erforderlich; die Dial-Frequenz ist die eingestellte Frequenz.
+Stop adding rows: the picture stays, and drag or the wheel on the waterfall scroll and zoom back through it	Keine neuen Zeilen mehr hinzufügen: Das Bild bleibt, und Ziehen oder das Rad auf dem Wasserfall scrollt und zoomt darin zurück
+Television	Fernsehen
+Text size	Textgröße
+Text size %d%%	Textgröße %d%%
+The FreeDV / M17 voice codec (codec2) was not found	Der FreeDV-/M17-Sprachcodec (codec2) wurde nicht gefunden
+The HackRF firmware does not match	Die HackRF-Firmware passt nicht
+The HackRF is not found	Der HackRF wurde nicht gefunden
+The Linux sound driver holds the radio, so the SDRplay software cannot see it.	Der Linux-Audiotreiber belegt das Radio, daher kann die SDRplay-Software es nicht sehen.
+The PlutoSDR answered, but without its radio chip. It may still be starting, or run unusual firmware.	Der PlutoSDR hat geantwortet, aber ohne seinen Funkchip. Er startet vielleicht noch oder läuft mit ungewöhnlicher Firmware.
+The PlutoSDR does not show its radio chip	Der PlutoSDR zeigt seinen Funkchip nicht
+The RTL-SDR is gone	Der RTL-SDR ist weg
+The SDRplay service is not running	Der SDRplay-Dienst läuft nicht
+The SDRplay software is too old	Die SDRplay-Software ist zu alt
+The SpyServer answered, but no radio is plugged into it.	Der SpyServer hat geantwortet, aber es ist kein Radio angeschlossen.
+The USRP needs its firmware images	Der USRP braucht seine Firmware-Images
+The USRP software is installed, but the firmware images it loads are missing.	Die USRP-Software ist installiert, aber die Firmware-Images, die sie lädt, fehlen.
+The address of the network radio must look like host:port, for example 192.168.1.20:1234.	Die Adresse des Netzwerkradios muss wie Host:Port aussehen, zum Beispiel 192.168.1.20:1234.
+The file could not be opened	Die Datei konnte nicht geöffnet werden
+The firmware inside the HackRF is older than the software talking to it.	Die Firmware im HackRF ist älter als die Software, die mit ihm spricht.
+OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.	OnAir fragt das Radio trotzdem danach, aber das Radio oder sein Treiber erreicht diese Frequenz möglicherweise nicht, oder das Signal ist schwach oder fehlt.
+The most receivers are open	Die meisten Empfänger sind geöffnet
+The network radio (rtl_tcp) does not answer	Das Netzwerkradio (rtl_tcp) antwortet nicht
+The picture holds the last %.0f s.	Das Bild enthält die letzten %.0f s.
+The radio did not start	Das Radio ist nicht gestartet
+The radio is plugged in, but the system does not let your account use it yet.	Das Radio ist angeschlossen, aber das System erlaubt deinem Konto noch nicht, es zu verwenden.
+The radio opened badly or stopped at once. The message above says why; these steps solve most cases.	Das Radio ließ sich nicht richtig öffnen oder stoppte sofort. Die Meldung oben nennt den Grund; diese Schritte lösen die meisten Fälle.
+The radio was found but the USB link to it did not work. This is usually permission, the cable or the port.	Das Radio wurde gefunden, aber die USB-Verbindung funktionierte nicht. Meist liegt es an Berechtigungen, dem Kabel oder dem Anschluss.
+The radio you chose is no longer connected.	Das gewählte Radio ist nicht mehr verbunden.
+The radio's SoapySDR driver on the server, or a key=value list: driver=sdrplay,serial=1.	Der SoapySDR-Treiber des Radios auf dem Server oder eine Schlüssel=Wert-Liste: driver=sdrplay,serial=1.
+The radio's USB connection failed	Die USB-Verbindung des Radios ist fehlgeschlagen
+The recording file is missing, moved or not readable.	Die Aufnahmedatei fehlt, wurde verschoben oder ist nicht lesbar.
+The rtl_tcp address is not valid	Die rtl_tcp-Adresse ist ungültig
+The server has no radio	Der Server hat kein Radio
+The text and data are shown, but speech needs the codec2 library. It comes with OnAir, so this copy is probably incomplete.	Text und Daten werden angezeigt, aber Sprache braucht die codec2-Bibliothek. Sie gehört zu OnAir, diese Kopie ist also wahrscheinlich unvollständig.
+The voice codec (mbelib) is not installed	Der Sprachcodec (mbelib) ist nicht installiert
+This frequency is not reachable through the converter.	Diese Frequenz ist über den Konverter nicht erreichbar.
+This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	Das ist ein Linux-Problem. Ziehe auf diesem System das Radio ab, stecke es wieder ein und drücke die Aktualisieren-Schaltfläche.
+This frequency is outside what this radio is specified for	Diese Frequenz liegt außerhalb dessen, wofür dieses Radio spezifiziert ist
+This user may not open the radio	Dieser Benutzer darf das Radio nicht öffnen
+Time constant of the averaged line: longer is calmer	Zeitkonstante der gemittelten Linie: länger ist ruhiger
+Tools	Werkzeuge
+Trace	Kurve
+Trunked and two-way radio	Bündelfunk und Sprechfunk
+Try another USB port and a short cable.	Versuche einen anderen USB-Anschluss und ein kurzes Kabel.
+Try another USB port, directly on the computer (not a hub), and a short cable.	Versuche einen anderen USB-Anschluss direkt am Computer (kein Hub) und ein kurzes Kabel.
+Try another USB port, directly on the computer (not a hub).	Versuche einen anderen USB-Anschluss direkt am Computer (kein Hub).
+Try another USB port, directly on the computer.	Versuche einen anderen USB-Anschluss direkt am Computer.
+Tuner (DAB)###Tuner	Tuner (DAB)###Tuner
+Tuner (FM)###Tuner	Tuner (UKW)###Tuner
+Unit	Einheit
+United Kingdom and Ireland	Vereinigtes Königreich und Irland
+Unplug and replug the radio, then press the refresh button.	Ziehe das Radio ab und stecke es wieder ein, dann drücke die Aktualisieren-Schaltfläche.
+Unplug the HackRF and plug it in again.	Ziehe den HackRF ab und stecke ihn wieder ein.
+Unplug the USRP, plug it in again and press the refresh button.	Ziehe den USRP ab, stecke ihn wieder ein und drücke die Aktualisieren-Schaltfläche.
+Unplug the radio and plug it in again, then press the refresh button.	Ziehe das Radio ab und stecke es wieder ein, dann drücke die Aktualisieren-Schaltfläche.
+Unplug the radio and plug it in again.	Ziehe das Radio ab und stecke es wieder ein.
+Unplug the radio, plug it in again and press the refresh button.	Ziehe das Radio ab, stecke es wieder ein und drücke die Aktualisieren-Schaltfläche.
+Up: radio = RF + LO	Aufwärts: Radio = HF + LO
+Update the HackRF firmware (the page below has the steps; the file comes with the HackRF software).	Aktualisiere die HackRF-Firmware (die Seite unten enthält die Schritte; die Datei liegt der HackRF-Software bei).
+Wait a minute after plugging it in, then press the refresh button.	Warte nach dem Einstecken eine Minute und drücke dann die Aktualisieren-Schaltfläche.
+Waterfall: colour map, intensity range, speed and pause (then drag or use the wheel to look back)	Wasserfall: Farbskala, Intensitätsbereich, Geschwindigkeit und Pause (danach Ziehen oder Rad zum Zurückblicken)
+Wave buoys, HF	Wellenbojen, KW
+Weather alerts, 162.55 MHz	Wetterwarnungen, 162,55 MHz
+Weather pictures, 1.7 GHz	Wetterbilder, 1,7 GHz
+What do you want to receive? Tick anything that interests you.	Was möchtest du empfangen? Hake alles an, was dich interessiert.
+What to add to a level in dBFS to get dBm for this radio (its calibration: a known signal into the antenna port shows it). Also in the radio's settings.	Was zu einem Pegel in dBFS addiert wird, um dBm für dieses Radio zu erhalten (seine Kalibrierung: ein bekanntes Signal am Antennenanschluss zeigt sie). Auch in den Radioeinstellungen.
+Where are you? This picks the right TV standard and FM band.	Wo bist du? Das wählt den passenden TV-Standard und das UKW-Band.
+Which language do you want OnAir in?	In welcher Sprache möchtest du OnAir nutzen?
+Which radio do you have?	Welches Radio hast du?
+You can change the mode any time, and run this setup again from Help > Setup wizard.	Du kannst die Betriebsart jederzeit ändern und diese Einrichtung über Hilfe > Einrichtungsassistent erneut starten.
+You can go on without one: the synthetic signal and IQ files work with no hardware.	Du kannst auch ohne fortfahren: Das synthetische Signal und IQ-Dateien funktionieren ohne Hardware.
+Your callsign	Dein Rufzeichen
+Your locator	Dein Locator
+Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.	Zoom: Mausrad (beide Achsen), Strg+Rad (Frequenz), Umschalt+Rad (Pegel).\nStrg+Bild auf / ab: Ansicht um eine Bildschirmbreite in der Frequenz verschieben. Doppelklick: zurücksetzen.
+antenna %.6g MHz -> %s LO %.6g -> radio %.6g MHz%s	Antenne %.6g MHz -> %s LO %.6g -> Radio %.6g MHz%s
+channel scan has the radio	Die Kanalsuche belegt das Radio
+dBm offset	dBm-Offset
+dBm offset (dB)	dBm-Offset (dB)
+decode every channel in the span: a receiver for each occupied channel, one plays, the others keep decoding\n(right click: how many at once, where the channels sit)	jeden Kanal im Ausschnitt dekodieren: ein Empfänger je belegtem Kanal, einer spielt Ton, die anderen dekodieren weiter\n(Rechtsklick: wie viele gleichzeitig, wo die Kanäle liegen)
+decode every signal in the visible span, not just the tuned one	jedes Signal im sichtbaren Ausschnitt dekodieren, nicht nur das eingestellte
+empty	leer
+held	gehalten
+holds	hält
+last send %s	letztes Senden %s
+listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	lauscht auf %s Port %d, %d Client(s), %.1f MB gesendet, %.1f MB verworfen
+max	max
+mute	stumm
+on air	auf Sendung
+partial	teilweise
+point %s	Punkt %s
+power (dBm)	Leistung (dBm)
+searching for Hermes Lite 2 radios…	suche nach Hermes-Lite-2-Radios …
+sound	Ton
+up-converter	Aufwärtskonverter
+waiting	wartet
+waterfall dB##wfdb	Wasserfall dB##wfdb
+spectrum dB##specdb	Spektrum dB##specdb
+Clear##log	Leeren##log
+# added for 0.2.6: remaining acronyms, frequency labels and long texts
+ADS-B	ADS-B
+AFSK, 144.8 MHz	AFSK, 144.8 MHz
+AIS	AIS
+APRS	APRS
+ATSC 8-VSB, 6 MHz	ATSC 8-VSB, 6 MHz
+CFO	CFO
+Ctrl + / Ctrl - / Ctrl 0	Ctrl + / Ctrl - / Ctrl 0
+DVB-T	DVB-T
+EVM %.1f dB	EVM %.1f dB
+Es'hail-2, 10.49 GHz	Es'hail-2, 10.49 GHz
+FIC	FIC
+GI	GI
+LNB	LNB
+LoRa, 433.175 MHz	LoRa, 433.175 MHz
+LoRa, 433.775 MHz	LoRa, 433.775 MHz
+ONAIR	ONAIR
+SNR	SNR
+SRO	SRO
+TR	TR
+WSJT, 1.8366 MHz	WSJT, 1.8366 MHz
+WSJT, 14.074 MHz	WSJT, 14.074 MHz
+WSJT, 14.076 MHz	WSJT, 14.076 MHz
+WSJT, 14.078 MHz	WSJT, 14.078 MHz
+WSJT, 14.080 MHz	WSJT, 14.080 MHz
+WSJT, 14.084 MHz	WSJT, 14.084 MHz
+WSJT, 14.100 MHz	WSJT, 14.100 MHz
+%.0f deg	%.0f Grad
+%s, %llu spots sent in %llu packets, %llu duplicates skipped	%s, %llu Spots in %llu Paketen gesendet, %llu Duplikate übersprungen
+offset %+.3f %+.3f	Versatz %+.3f %+.3f
+sigma %.3f per axis (%.0f%% of the half-distance to a neighbour)	Sigma %.3f pro Achse (%.0f%% des halben Abstands zu einem Nachbarn)
+A second OnAir (Add network radio, rtl_tcp), SDR# or SDR++ connects to this computer's address and the port. Samples are sent as 8-bit IQ at the rate the radio runs at. Without 'allow remote control' the clients cannot change the frequency or gain.	Ein zweites OnAir (Netzwerk-Radio hinzufügen, rtl_tcp), SDR# oder SDR++ verbindet sich mit der Adresse dieses Computers und dem Port. Die Samples werden als 8-Bit-IQ mit der Rate gesendet, mit der das Radio läuft. Ohne „Fernsteuerung erlauben“ können die Clients Frequenz und Verstärkung nicht ändern.
+Sends the FT8, FT4, FT2, WSPR, JS8Call, PSK31 and CW stations you decode to pskreporter.info, so they show on its public map and statistics. A report is: the sender's callsign, frequency, SNR, mode, its locator when the message has one, and when it was heard; with your callsign, locator, antenna text and 'OnAir'. Reports are batched and sent every 5 minutes; the same station on the same band is sent once per 10 minutes. Nothing is sent until you tick the box. Spots are public: use your own valid amateur radio callsign. CW and PSK31 are only reported when the text says 'DE callsign'.	Sendet die dekodierten FT8-, FT4-, FT2-, WSPR-, JS8Call-, PSK31- und CW-Stationen an pskreporter.info, sodass sie auf der öffentlichen Karte und in den Statistiken erscheinen. Ein Report enthält: das Rufzeichen des Senders, Frequenz, SNR, Betriebsart, den Locator, wenn die Nachricht einen enthält, und den Zeitpunkt des Empfangs; dazu Ihr Rufzeichen, Ihren Locator, den Antennentext und „OnAir“. Reports werden gesammelt und alle 5 Minuten gesendet; dieselbe Station auf demselben Band wird nur einmal pro 10 Minuten gesendet. Es wird nichts gesendet, bevor Sie das Kästchen anhaken. Spots sind öffentlich: Verwenden Sie Ihr eigenes gültiges Amateurfunk-Rufzeichen. CW und PSK31 werden nur gemeldet, wenn der Text „DE Rufzeichen“ enthält.
+BW	BW
+CH	CH
+Channel scan	Kanalsuche
+FM	FM
+# RX888 MkII
+The RX888 needs its firmware file	Das RX888 braucht seine Firmware-Datei
+The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	Der USB-Chip des RX888 MkII hat kein eigenes Programm: Der Computer lädt es bei jedem Anstecken des Radios. Diese Datei, SDDC_FX3.img, gehört zum SDDC-Projekt und hat eine eigene Lizenz, deshalb liegt sie OnAir nicht bei.
+Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below).	Lade SDDC_FX3.img von der Releases-Seite des SDDC_Driver-Projekts herunter (Schaltfläche unten).
+Put the file in OnAir's codecs folder (button below).	Lege die Datei in den OnAir-Codec-Ordner (Schaltfläche unten).
+The RX888 is on a USB 2 port	Das RX888 hängt an einem USB-2-Anschluss
+The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	Das RX888 MkII sendet bis zu 256 MB pro Sekunde. Es braucht einen USB-3-Anschluss (SuperSpeed) und ein USB-3-Kabel; an USB 2 kann es nicht streamen.
+Plug the radio into a USB 3 port directly on the computer, not through a USB 2 hub.	Stecke das Radio direkt am Computer in einen USB-3-Anschluss, nicht über einen USB-2-Hub.
+Use a USB 3 cable (the one that came with the radio).	Verwende ein USB-3-Kabel (das, das dem Radio beilag).
+Downloads when you click, and by itself once a day. Fetches:	Lädt beim Klicken und einmal am Tag von selbst. Holt:
+Automatic update	Automatisch aktualisieren
+Downloads the TLEs again once a day, only while this window is open or a pass is tracked. Without a network the saved lists are used.	Lädt die TLEs einmal am Tag neu, nur solange dieses Fenster offen ist oder ein Überflug verfolgt wird. Ohne Netz werden die gespeicherten Listen verwendet.
+last downloaded %s	zuletzt geladen: %s
+Pass of %s in %d:%02d (max %.0f deg): the receiver starts by itself	Überflug von %s in %d:%02d (max. %.0f Grad): der Empfänger startet selbst
+Pass of %s in %d:%02d (max %.0f deg)	Überflug von %s in %d:%02d (max. %.0f Grad)
+remind %.0f min before	%.0f Min. vorher erinnern
+A line at the top of the window and a log entry before the tracked pass rises (0: off)	Eine Zeile oben im Fenster und ein Protokolleintrag, bevor der verfolgte Überflug beginnt (0: aus)
+Record this pass	Diesen Überflug aufzeichnen
+Cancel recording this pass	Aufzeichnung dieses Überflugs abbrechen
+Arms this pass only: at AOS the receiver starts in the satellite's mode and frequency (when it is stopped), Doppler is followed and the IQ is recorded; at LOS it stops and tracking switches off again	Gilt nur für diesen Überflug: bei AOS startet der Empfänger (falls gestoppt) in Betriebsart und Frequenz des Satelliten, der Doppler wird nachgeführt und das IQ aufgezeichnet; bei LOS stoppt er und die Verfolgung schaltet sich wieder aus
+armed: %s at %s	bereit: %s um %s
+Save PNG...	PNG speichern...
+Save CSV...	CSV speichern...
+saved	gespeichert
+All time	Gesamte Zeit
+Last 24 hours	Letzte 24 Stunden
+Last hour	Letzte Stunde
+Rolling window: a sector's furthest position counts only for this long	Gleitendes Fenster: Die weiteste Position eines Sektors zählt nur so lange
+Set the receiver position first: ranges are measured from it.	Lege zuerst die Empfängerposition fest: Die Reichweiten werden von ihr aus gemessen.
+Nothing heard yet: the plot fills in as positions arrive.	Noch nichts empfangen: Das Diagramm füllt sich, sobald Positionen eintreffen.
+Longest range: %.0f %s at %.0f deg (%llu reports)	Größte Reichweite: %.0f %s bei %.0f Grad (%llu Meldungen)
+Range	Reichweite
+Dark	Dunkel
+High contrast (black, white, yellow)	Hoher Kontrast (schwarz, weiß, gelb)
+Remote control API (HTTP and WebSocket)	Fernsteuerungs-API (HTTP und WebSocket)
+Let scripts and other programs control this receiver	Skripten und anderen Programmen erlauben, diesen Empfänger zu steuern
+Let other computers connect (LAN, needs the token)	Andere Computer zulassen (LAN, Token erforderlich)
+Token	Token
+New token	Neues Token
+Copy token	Token kopieren
+listening on %s port %d, %d HTTP and %d WebSocket client(s), %d requests, %d refused	hört auf %s, Port %d, %d HTTP- und %d WebSocket-Client(s), %d Anfragen, %d abgelehnt
+Programs on this computer need no token; any other address must send it as 'Authorization: Bearer <token>'. The API lists the radios, starts and stops the receiver, sets mode, frequency, sample rate and gain, and gives the telemetry and the spectrum as JSON, also as a WebSocket stream. Endpoints: see README.md.	Programme auf diesem Computer brauchen kein Token; jede andere Adresse muss es als 'Authorization: Bearer <Token>' senden. Die API listet die Funkgeräte auf, startet und stoppt den Empfänger, stellt Modus, Frequenz, Abtastrate und Verstärkung ein und liefert Telemetrie und Spektrum als JSON, auch als WebSocket-Strom. Endpunkte: siehe README.md.
+Stop optimising	Optimieren beenden
+Optimise gain	Verstärkung optimieren
+Optimise gain: steps through the radio's gain range and measures the reception quality at each step (the mode's SNR while it is locked, else the signal-to-noise ratio of the spectrum around the channel, else the ADC level), then sets the lowest gain that is within 0.5 dB of the best quality and does not overload the ADC. Takes about 40 s and needs a signal. The AGC is paused and stays off.	Verstärkung optimieren: durchläuft den Verstärkungsbereich des Funkgeräts und misst bei jedem Schritt die Empfangsqualität (das SNR des Modus, solange er eingerastet ist, sonst das Signal-Rausch-Verhältnis des Spektrums um den Kanal, sonst den ADC-Pegel). Danach wird die niedrigste Verstärkung gesetzt, die höchstens 0,5 dB unter der besten Qualität liegt und den ADC nicht übersteuert. Dauert etwa 40 s und braucht ein Signal. Die AGC wird angehalten und bleibt aus.
+Undo gain	Verstärkung zurücksetzen
+Go back to the gain (and the AGC setting) from before the last optimisation	Zur Verstärkung (und AGC-Einstellung) vor der letzten Optimierung zurückkehren
+Optimising gain %d/%d: %d dB ...	Verstärkung wird optimiert %d/%d: %d dB ...
+Every gain step overloaded the ADC: the lowest gain was kept	Jeder Verstärkungsschritt hat den ADC übersteuert: die niedrigste Verstärkung wurde beibehalten
+Gain optimised: %d dB (was %d dB)	Verstärkung optimiert: %d dB (vorher %d dB)
+judged by the mode's SNR	bewertet nach dem SNR des Modus
+judged by the SNR in the spectrum	bewertet nach dem SNR im Spektrum
+judged by the ADC level	bewertet nach dem ADC-Pegel
+
+#  transmit (View > Transmit)
+Transmit...	Senden...
+Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission.	Sendet das eigene Signal dieser Betriebsart über ein Funkgerät, das senden kann. Aus, bis Sie es starten; erfordert eine Lizenz oder Erlaubnis.
+TRANSMITTING	SENDET
+Channel width	Kanalbreite
+Frequency (MHz)	Frequenz (MHz)
+TX gain (dB)	Sendeverstärkung (dB)
++14 dB amplifier	+14-dB-Verstärker
+Repeat until stopped	Wiederholen bis zum Stopp
+seconds	Sekunden
+STOP TRANSMITTING	SENDEN STOPPEN
+START TRANSMITTING	SENDEN STARTEN
+This radio has no transmit driver in OnAir.	Dieses Funkgerät hat in OnAir keinen Sendetreiber.
+Before you transmit	Bevor Sie senden
+Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	Senden erfordert an Ihrem Ort eine Lizenz oder Erlaubnis. Sie sind für das verantwortlich, was Sie aussenden, und dafür, andere nicht zu stören (auch Dienste, auf die sich Menschen für ihre Sicherheit verlassen). Schließen Sie vor dem Start eine Antenne, ein Dämpfungsglied oder einen Blindabschluss an das Funkgerät an. OnAir begrenzt weder Frequenz noch Leistung: nur die Grenzen des Funkgeräts gelten.
+I understand	Ich verstehe
+GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	GNSS wird nicht gesendet: sein Generator ist ein Satellitensignal-Simulator (Spoofing)
+cellular signals are not transmitted: the generators model a network cell for testing the decoder	Mobilfunksignale werden nicht gesendet: die Generatoren bilden eine Netzzelle zum Testen des Decoders nach
+this is an analysis mode: there is nothing to transmit	dies ist eine Analyse-Betriebsart: es gibt nichts zu senden
+TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX-VGA 0 bis 47 dB; der +14-dB-Verstärker hat einen eigenen Schalter
+the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	die TX-Dämpfung des AD9361 als Verstärkung dargestellt: -89,75 dB (geringste Leistung) bis 0 dB (höchste)
+the driver's own TX gain scale (known after the radio has been opened once)	die eigene TX-Verstärkungsskala des Treibers (bekannt, sobald das Funkgerät einmal geöffnet wurde)
+RX	RX
+TX	TX
+Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	Zwischen Empfänger (RX) und Sender (TX) umschalten. Der Sender hat ein eigenes Funkgerät, ein Empfänger kann also weiter empfangen, während Sie senden.
+Transmit radio	Sende-Funkgerät
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	Kein sendefähiges Funkgerät gefunden. Schließen Sie eines an (HackRF, PlutoSDR oder ein SoapySDR-Funkgerät mit Sender) und aktualisieren Sie die Funkgeräteliste.
+Choose a radio to transmit with.	Wählen Sie ein Funkgerät zum Senden.
+%s (in use by RX %d)	%s (belegt durch RX %d)
+%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s wird von RX %d benutzt, und dieses Funkgerät kann nicht gleichzeitig empfangen und senden. Wählen Sie ein anderes Funkgerät zum Senden oder beenden Sie zuerst diesen Empfänger.
+Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list.	Geben Sie die IP des PlutoSDR ein (USB-Gadget 192.168.2.1 oder seine Ethernet-Adresse) und Connect. Er steht dann in der Radio-Liste.
+GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)	GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)
+GNSS NMEA RMC/GGA (UDP)	GNSS NMEA RMC/GGA (UDP)
+Bluetooth LE advertisements, JSON (UDP)	Bluetooth-LE-Werbung, JSON (UDP)
+LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic, JSON (UDP)
+JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	JSON-Zeilen (ein Objekt je Zeile), außer GNSS, das NMEA ist. Aus, bis Sie einen Feed einschalten. Nur Betriebsarten mit strukturierten Meldungen werden gesendet.

@@ -48,6 +48,7 @@ struct AdsbAircraft {
     bool alert = false, spi = false;
     bool tisb = false;               // seen in DF18 (TIS-B / ADS-R / non-transponder)
     std::vector<AdsbTrackPoint> track;   // recent positions, oldest first (for the map)
+    int cprHave = 0;                 // bit 0: even CPR in the last 15 s, bit 1: odd (table Fix column when there is still no lat/lon)
 };
 
 struct AdsbFrameInfo {               // one line of the message monitor

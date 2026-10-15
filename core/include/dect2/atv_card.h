@@ -5,6 +5,7 @@
 #pragma once
 #include "dect2/atv_std.h"
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace dect2 {
@@ -13,8 +14,8 @@ struct AtvMbPacket { double startUs, endUs, mhz; };   // a burst of sine in the 
 
 class AtvCard {
 public:
-    // pattern: 0 the test card, 1 EBU colour bars only, 2 grey ramp only
-    AtvCard(const AtvFormat& f, int pattern = 0);
+    // pattern: 0 the test card, 1 EBU colour bars only, 2 grey ramp only. title: the ident on the card (empty: "ONAIR TEST")
+    AtvCard(const AtvFormat& f, int pattern = 0, std::string title = {});
     int width() const { return w_; }
     int height() const { return h_; }
     // The visible lines of one field (0 = first, 1 = second) at time t seconds: fieldRows rows of width() floats in each plane
@@ -44,6 +45,7 @@ private:
     int trackX0_ = 0, trackX1_ = 0, trackY0_ = 0, trackY1_ = 0, clockY0_ = 0, clockY1_ = 0, boxSize_ = 0;
     int textScale_ = 3;
     std::string label_;
+    std::string title_;
 };
 
 } // namespace dect2

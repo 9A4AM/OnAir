@@ -162,6 +162,12 @@ void radioSettingsUi(App& a, bool vertical) {
         if (r.restart) restart = true; else retune = true;
     }
     if (converterUi(a, vertical)) { saveRadioSettings(a); retune = true; }
+    {   // the level offset of this radio, for the spectrum in dBm (plots.cpp): only the picture changes, the radio is not touched
+        float off = dbmOffset(a);
+        ImGui::SetNextItemWidth((vertical ? 150 : 170) * gUi);
+        if (ImGui::InputFloat(tr("dBm offset (dB)"), &off, 0.5f, 5.f, "%+.1f")) setDbmOffset(a, std::max(-200.f, std::min(200.f, off)));
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Added to a level in dBFS to give dBm for this radio: feed a known signal into the antenna port and set the difference. Used when the spectrum shows dBm (Spectrum button on the plot)."));
+    }
     if (d.kind == DeviceInfo::Soapy && d.settings.size() <= 1) ImGui::TextDisabled("%s", tr("The driver's own settings show up here\nonce this radio has been started."));
     if (vertical) ImGui::TreePop(); else ImGui::EndPopup();
     if (!a.engine.running()) return;   // the next start takes them

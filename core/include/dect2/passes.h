@@ -56,6 +56,11 @@ double dopplerHz(double freqHz, double rangeRateKmS);
 // The point under the satellite (geodetic, WGS-84) and its height
 bool subPoint(const Sgp4& s, double unixSec, double& latDeg, double& lonDeg, double& altKm);
 
+// Whether the TLE files should be fetched now (all times UNIX seconds, 0 = never): the last good fetch is a day old or more (or in the
+// future: the clock was set back), and the last attempt, good or not, is at least retrySec ago, so a failing network is tried a few
+// times a day and not on every frame. At most one fetch every minInterval after a success.
+bool tleUpdateDue(double nowSec, double lastOkSec, double lastTrySec, double minIntervalSec = 86400, double retrySec = 6 * 3600);
+
 struct Pass {
     double aos = 0, los = 0, tca = 0;   // UNIX seconds: rise, set and highest point
     double maxElDeg = 0, aosAzDeg = 0, losAzDeg = 0;

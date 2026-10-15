@@ -86,6 +86,19 @@ int main(int argc, char** argv) {
         CHECK(a && std::string(a) == "RX2", "RX2 entry picked antenna %s", a ? a : "(none)");
         if (src) src->stop();
     }
+    // ---- any frequency: far below (9 MHz) and far above (6 GHz) the range the driver lists (50 MHz - 2 GHz) reach the driver unchanged,
+    // the start does not fail, and the user gets a note instead of a refusal
+    for (double fq : {9e6, 6e9}) {
+        IqRing ring(1 << 20);
+        TuneSettings tf = t; tf.centerHz = fq;
+        auto src = makeSource(radio);
+        std::string e3;
+        const bool okf = src && src->start(tf, ring, e3);
+        const char* got = getenv("ONAIR_TEST_FREQ");
+        CHECK(okf && got && std::atoll(got) == (long long)fq, "%.0f Hz: started %d, the driver got %s (%s)", fq, (int)okf, got ? got : "(nothing)", e3.c_str());
+        CHECK(e3.find("weak or absent") != std::string::npos, "%.0f Hz: no note: '%s'", fq, e3.c_str());
+        if (okf) src->stop();
+    }
     // ---- radio settings: the driver's own settings (learned at the first start), the frequency correction, a gain-reduction driver
     {
         DeviceInfo d;

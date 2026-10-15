@@ -28,12 +28,15 @@
 #include "dect2/scanner.h"
 #include "dect2/updater.h"
 #include "dect2/gain.h"
+#include "dect2/gain_opt.h"
+#include "dect2/tx.h"
 #include "dect2/channel.h"
 #include "dect2/dvbt.h"
 #include "dect2/quality.h"
 #include "dect2/direction.h"
 #include "dect2/teletext.h"
 #include "dect2/feeds.h"
+#include "dect2/share.h"
 #include "dect2/pskreporter.h"
 #include "dect2/passes.h"
 #include "dect2/maplayers.h"
@@ -59,14 +62,30 @@ using namespace dect2;
 
 struct Waterfall {
     static constexpr int W = 4096, H = 512;
+    enum Map { Classic, Viridis, Inferno, Grey, Turbo, Cividis, NumMaps };   // Cividis: made to read the same with red-green colour blindness
+    static const char* mapName(int m) {
+        static const char* const n[NumMaps] = {"Classic", "Viridis", "Inferno", "Grey", "Turbo", "Cividis"};
+        return n[m < 0 || m >= NumMaps ? 0 : m];
+    }
     gfx::Image* img = nullptr;
-    std::vector<uint32_t> lut;
+    uint32_t lut[256] = {};
+    int builtMap = -1;
+    std::vector<uint32_t> row;      // scratch for the row being written (kept: no allocation per frame)
+    std::vector<float> acc, floorScratch;   // the highest level per bin since the last row; the samples of the noise floor estimate
+    bool accEmpty = true;
     int writeRow = 0; // newest row; older rows follow at writeRow+1 ... wrapping
     int filled = 0;
     double pushT = 0; // when the newest row came in (glfwGetTime)
     double rowDt = 1.0 / 30; // steady seconds per row, for the time labels and the scrolling
     double stamps[128] = {};
     int nStamps = 0;
+    float minDb = -100, maxDb = -32;
+    int map = -1;            // the colour map (Map); -1: the one that goes with the interface theme
+    bool autoTrack = false;  // the intensity range follows the noise floor
+    float rowsPerSec = 0;    // 0: one row per spectrum frame (about 30 a second); else this many rows a second, each the highest level of the frames in between
+    bool paused = false;     // no new rows: the picture stays and can be scrolled back
+    double nextRowT = 0;
+    double trackT = 0;
 
     // average over the last 128 rows, and move only when that drifts by more than 2%: the labels stay put
     void stamp(double t) {
@@ -79,17 +98,29 @@ struct Waterfall {
         nStamps++;
         pushT = t;
     }
-    float minDb = -100, maxDb = -32;
+    bool slow() const { return rowsPerSec > 0.5f && rowsPerSec < 28.f; }   // rows come at a set, slower pace
+    bool timeKnown() const { return nStamps >= 128 || slow(); }
+    void setRate(float r) { rowsPerSec = r; nStamps = 0; nextRowT = 0; accEmpty = true; rowDt = slow() ? 1.0 / r : 1.0 / 30; }
 
-    void palette() { if (lut.size() == 256) for (int i = 0; i < 256; i++) lut[i] = jet(i / 255.0f); }   // after the interface palette changed
+    int effMap() const { return map >= 0 && map < NumMaps ? map : pal::wfMode() == 2 ? Turbo : pal::wfMode() == 1 ? Grey : Classic; }
+    static int& curMap() { static int m = 0; return m; }   // the map in use, for the other waterfalls (modes with their own picture) that colour with jet()
+    static uint32_t jet(float v) { return color(curMap(), v); }
+    void palette() { builtMap = effMap(); curMap() = builtMap; for (int i = 0; i < 256; i++) lut[i] = color(builtMap, i / 255.0f); }   // after the map or the interface palette changed
     void init(gfx::Backend* gfx) {
         img = gfx->createImage(W, H, 0xFF000000u);
-        lut.resize(256);
-        for (int i = 0; i < 256; i++) lut[i] = jet(i / 255.0f);
+        row.assign(W, 0);
+        palette();
     }
-    static uint32_t jet(float v) {
+    static uint32_t stopsColor(const float (*s)[3], int n, float v) {   // n colour stops (0..255 per channel), blended linearly
+        v *= (float)(n - 1);
+        const int i = std::min(n - 2, (int)v);
+        const float f = v - i;
+        auto ch = [&](int k) { return (uint32_t)(s[i][k] + (s[i + 1][k] - s[i][k]) * f + 0.5f); };
+        return 0xFF000000u | (ch(2) << 16) | (ch(1) << 8) | ch(0);
+    }
+    static uint32_t color(int map, float v) {
         v = std::min(1.f, std::max(0.f, v));
-        if (pal::wfMode() == 2) {   // Turbo (Google's colour map), with the noise floor fading to black
+        if (map == Turbo) {   // Turbo (Google's colour map), with the noise floor fading to black
             const float t = 0.12f + 0.84f * v;
             auto poly = [&](float a0, float a1, float a2, float a3, float a4, float a5) { return std::min(1.f, std::max(0.f, a0 + t * (a1 + t * (a2 + t * (a3 + t * (a4 + t * a5)))))); };
             const float r = poly(0.13572138f, 4.61539260f, -42.66032258f, 132.13108234f, -152.94239396f, 59.28637943f);
@@ -98,28 +129,68 @@ struct Waterfall {
             const float f = std::min(1.f, v / 0.22f), k = f * f * (3 - 2 * f);   // smoothstep: black at the bottom
             return 0xFF000000u | ((uint32_t)(b * k * 255 + 0.5f) << 16) | ((uint32_t)(g * k * 255 + 0.5f) << 8) | (uint32_t)(r * k * 255 + 0.5f);
         }
-        static const float cool[5][3] = {{6, 10, 20}, {16, 38, 70}, {30, 100, 140}, {110, 190, 205}, {240, 250, 250}};
+        static const float cool[5][3] = {{6, 10, 20}, {16, 38, 70}, {30, 100, 140}, {110, 190, 205}, {240, 250, 250}};   // Classic: dark blue, teal, near white
         static const float grey[5][3] = {{0, 0, 0}, {34, 34, 33}, {96, 95, 92}, {170, 168, 162}, {244, 242, 236}};
-        const float (*stops)[3] = pal::wfMode() == 1 ? grey : cool;
-        v *= 4.f;
-        const int i = std::min(3, (int)v);
-        const float f = v - i;
-        auto ch = [&](int k) { return (uint32_t)(stops[i][k] + (stops[i + 1][k] - stops[i][k]) * f + 0.5f); };
-        return 0xFF000000u | (ch(2) << 16) | (ch(1) << 8) | ch(0);
+        static const float viridis[9][3] = {{68, 1, 84}, {71, 44, 122}, {59, 81, 139}, {44, 113, 142}, {33, 144, 141}, {39, 173, 129}, {92, 200, 99}, {170, 220, 50}, {253, 231, 37}};
+        static const float inferno[9][3] = {{0, 0, 4}, {31, 12, 72}, {85, 15, 109}, {136, 34, 106}, {186, 54, 85}, {227, 89, 51}, {249, 140, 10}, {249, 201, 50}, {252, 255, 164}};
+        static const float cividis[9][3] = {{0, 32, 77}, {26, 52, 107}, {66, 78, 108}, {97, 104, 111}, {124, 123, 120}, {154, 145, 119}, {187, 167, 108}, {221, 193, 88}, {255, 233, 69}};
+        switch (map) {
+        case Cividis: return stopsColor(cividis, 9, v);
+        case Viridis: return stopsColor(viridis, 9, v);
+        case Inferno: return stopsColor(inferno, 9, v);
+        case Grey: return stopsColor(grey, 5, v);
+        default: return stopsColor(cool, 5, v);
+        }
     }
-    void push(const std::vector<float>& dbfs) {
-        std::vector<uint32_t> row(W);
-        size_t n = dbfs.size();
+
+    // One spectrum frame arrives: it becomes a row of the texture, now or (rows at a set pace) when the next row is due. True when a row was written.
+    bool offer(const std::vector<float>& dbfs, double now) {
+        if (paused || dbfs.empty()) return false;
+        if (effMap() != builtMap) palette();
+        const float* d = dbfs.data();
+        if (slow()) {   // the highest level of every bin since the last row, so a short burst is not missed
+            if (acc.size() != dbfs.size() || accEmpty) { acc = dbfs; accEmpty = false; }
+            else for (size_t i = 0; i < dbfs.size(); i++) acc[i] = std::max(acc[i], dbfs[i]);
+            if (now < nextRowT) return false;
+            const double dt = 1.0 / rowsPerSec;
+            nextRowT = now - nextRowT > dt ? now + dt : nextRowT + dt;
+            accEmpty = true;
+            d = acc.data();
+        }
+        writeFrom(d, dbfs.size());
+        return true;
+    }
+    // the bins of the frame onto the 4096 columns (the highest of those that share a column), the levels onto the colour table: one row uploaded
+    void writeFrom(const float* d, size_t n) {
+        const float inv = 255.f / std::max(1.f, maxDb - minDb);
+        uint32_t* r = row.data();
         for (int x = 0; x < W; x++) {
-            size_t a = (size_t)x * n / W, b = std::max(a + 1, (size_t)(x + 1) * n / W);
-            float m = -200;
-            for (size_t k = a; k < b; k++) m = std::max(m, dbfs[k]);
-            float v = (m - minDb) / (maxDb - minDb);
-            row[x] = lut[(int)(std::min(1.f, std::max(0.f, v)) * 255)];
+            const size_t a = (size_t)x * n / W, b = std::max(a + 1, (size_t)(x + 1) * n / W);
+            float m = d[a];
+            for (size_t k = a + 1; k < b; k++) m = std::max(m, d[k]);
+            const float v = (m - minDb) * inv;
+            r[x] = lut[v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v];
         }
         writeRow = (writeRow + H - 1) % H;
-        img->update(0, writeRow, W, 1, row.data());
+        img->update(0, writeRow, W, 1, r);
         filled = std::min(H, filled + 1);
+    }
+    // the range from the spectrum: the noise floor is the 20th percentile, the top is the strongest signal (at most 45 dB above the floor).
+    // instant: set it at once; else move a part of the way (called a few times a second, so the colours do not jump)
+    void fitRange(const std::vector<float>& s, bool instant) {
+        const size_t n = s.size();
+        if (n < 64) return;
+        const size_t step = std::max<size_t>(1, n / 1024);
+        floorScratch.clear();
+        float top = -300;
+        for (size_t i = 0; i < n; i += step) { floorScratch.push_back(s[i]); top = std::max(top, s[i]); }
+        const size_t k = floorScratch.size() / 5;
+        std::nth_element(floorScratch.begin(), floorScratch.begin() + (long)k, floorScratch.end());
+        const float fl = floorScratch[k];
+        const float lo = std::floor(fl - 6.f);
+        float hi = std::ceil(std::min(top + 2.f, fl + 45.f));
+        if (hi < lo + 12.f) hi = lo + 12.f;
+        if (instant) { minDb = lo; maxDb = hi; } else { minDb += (lo - minDb) * 0.25f; maxDb += (hi - maxDb) * 0.25f; }
     }
 };
 
@@ -175,7 +246,7 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 78;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumFamilies = 85;   // App::family runs from 0 to kNumFamilies - 1
 constexpr int kNumSubModes = 31;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
@@ -206,7 +277,7 @@ struct App {
     bool muted = false, subsOn = true;
     int playReq = -1;
     int dabStation = -1;      // --station: DAB sub-channel to play on start (testing)
-    std::vector<DeviceInfo> devices; // [0]=synthetic, [1]=file, then HackRFs
+    std::vector<DeviceInfo> devices; // [0]=synthetic, [1]=file, then sound cards, then radios
     // radios on the network the user added (prefs "netRadios"; listed by refreshDevices) and the "Add network radio" window
     std::vector<NetRadio> netRadios;
     struct NetProbe { std::atomic<bool> done{false}; bool ok = false; std::string err; NetRadio radio; };
@@ -225,6 +296,7 @@ struct App {
     int devIdx = 0;
     TuneSettings tune;
     FileOptions file;
+    int audioIqMode = 0;          // AudioIqMode: I/Q stereo, USB audio, LSB audio, mono real (sound-card source)
     int bwIdx = 0;
     int constView = 0;        // data constellation: 0 cells, 1 density, 2 clusters
     struct ConstStats {       // statistics of the decoded cells, collected over the last few seconds
@@ -257,12 +329,21 @@ struct App {
     bool wideDecode = false;  // "Whole span": decode every carrier in the visible span, not only the tuned one (only for modes that opt in: modeSupportsWide)
     uint64_t wideFamMask = 0; // the switch per mode family (bit = family); wideDecode is the current mode's bit
     int wideSel = 0;          // the carrier the sound and the detail follow (0: the best locked one)
+    bool mtvOn = false;       // "Multi-channel": decode two or three adjacent TV channels of a wide capture (DVB-T2 / DVB-T)
+    int mtvMax = 0;           // receivers at once (0: 2 on a laptop, 3 on a desktop)
+    int mtvGrid = 0;          // 0 find out, 1 the capture is centred on a channel, 2 between two channels
+    std::vector<MultiService> mtvSvc;   // every service of every channel (refreshed with ts)
     bool atvWide = false;     // analog TV: system E chosen (14 MHz channel, 10 MHz of video): the radio runs at 20 Msps
     bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
+    bool mapSend = false, mapConsent = false;     // Server > Send data to map server (opt-in; consent once)
+    std::string mapStationId;                     // client id for /ingest, generated once
+    std::string mapServer;                        // empty: https://map.on-air.dev (a local worker URL for developers)
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
+    dect2::ShareConfig share; // "Share my radio": the rtl_tcp server (off by default; feeds_ui.cpp), saved with the preferences
     dect2::PskReporterConfig pskr;   // PSK Reporter spots (off by default; feeds_ui.cpp), saved with the preferences
+    bool highContrast = false; // View > Theme > High contrast: black, white and yellow, thick outlines, dim text lifted to 7:1 (ui2.cpp, main.cpp); wins over lightUi
     bool lightUi = false;     // View > Light: every colour drawn with its lightness turned over (dark on white), hues kept (main.cpp)
     int family = 68;           // 68 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.68, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 168 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 268 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 368 VOR / ILS, 31 M17, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 42 spectrum analyser, 38 NXDN, 468 DVB-C, 45 dPMR, 44 Orbcomm, 43 Mode S uplink, 46 TETRA, 49 HF ALE, 47 MAC, 48 radio astronomy, 568 P25, 51 Bluetooth LE, 52 ionospheric sounders, 53 QO-16868, 54 Wi-Fi networks, 55 general receiver, 61 CubeSat telemetry, 64 HRPT / AHRPT (6 and up: see ModeUi; engine standard code = family + 2)
     int sub = 0;              // 1 .. kNumSubModes: the protocol entry (dect2::subModes() index + 1) of HF digital, mesh, pagers, marine or VOR / ILS; 0 none
@@ -314,7 +395,11 @@ struct App {
     uint64_t lastSeq = 0;
     Waterfall wf;
     float yMin = -110, yMax = -30;
-    bool peakHold = true;
+    bool peakHold = true;               // the max-hold line
+    float holdDecay = 4.5f;             // dB a second the max-hold line falls (0: it stays until it is reset)
+    float specAvgSec = 0.08f;           // time constant of the averaged trace in seconds (0: the raw frames)
+    bool specFill = false, specGrid = true, specPeaks = false, specReadout = true, specDbm = false;   // fill under the line, grid, peak markers, level at the cursor, dBm instead of dBFS
+    double specLastT = 0;               // when the last spectrum frame came in
     ImFont* mono = nullptr;
     ImFont* ui = nullptr;
     std::string hackrfErr;
@@ -325,6 +410,10 @@ struct App {
     bool diagWasRunning = false;
     bool recSigmf = true;               // write SigMF metadata beside IQ recordings (pref "recSigmf", default on)
     int recFormat = 0;                  // IQ recording format: 0 = 8-bit, 1 = float (pref "recFormat")
+    int tvBufMb = 256;                  // TV live buffer for Pause (pref "tvBufMb")
+    int tvRecMin = 0, tvRecAtH = 0, tvRecAtM = 0;   // TV recording timer: stop after N minutes (0 = off), at a clock time
+    bool tvRecAtOn = false, tvRecWasActive = false;
+    std::string tvRecDonePath, tvRecErr;   // the last finished TV recording; why one could not start
     bool recWasActive = false;          // a recording was running at the last frame (to log it once when it ends)
     std::string recDonePath;            // the last finished recording, for "Show recording"
     RxTelemetry rx;
@@ -362,7 +451,7 @@ struct App {
     int subTv = 0, subRx = 0, subStream = 0; // sub-view of the TV / Receiver / Stream tabs
     std::map<int, std::vector<EpgEvent>> epg;
     double epgT = -10;
-    int guideSid = -1, guideEvent = -1;
+    int guideSid = -1, guideEvent = -1, guidePlaySid = -1; // guide follows playing service until user picks another in the list
     bool fakeEpg = false; // --fakeepg: made-up programmes, for checking the layout when the mux sends none
     char favName[64] = "";
     MultipathDetector mpd;
@@ -379,13 +468,14 @@ struct App {
     std::string radioKey;  // the radio a.tune.radio (its own settings, DeviceInfo::settings) was loaded for (radioKeyOf); "" = none
     AutoGain agc;
     GainSweep sweep;
+    GainOptSession gopt;   // "Optimise gain" (gain_opt_ui.cpp): a sweep of the radio's gain range for the best quality that does not overload
     bool sweepRetune = false;
     Scanner scanner;
     ScanConfig scanCfg;
     int scanPreset = 0;
     bool scanWasRunning = false;
     std::unique_ptr<Updater> upd;      // update check and installer
-    bool updCheck = true, updAuto = true, updPre = true, updStarted = false;
+    bool updCheck = true, updAuto = true, updPre = false, updStarted = false;   // official updates on; betas off until asked
     double updLast = 0;                // when the last check was made (seconds since 1970)
     std::string updSkip;               // a version the user chose to skip
     DirectionFinder dir;
@@ -486,7 +576,8 @@ void languageButton(App& a);
 void setUiLanguage(App& a, const std::string& code);   // empty: the system's language
 extern bool gTightTabs;   // the tabs of mainTabs() get less padding (a narrow pane)
 void toggleFullscreen();
-bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map over the whole window when it is popped out
+void handleFullscreenHotkeys();          // F11 and Alt+Enter; ignored while a text field has the keyboard
+bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map or radar over the whole window when it is popped out
 void receiverLocation(double& lat, double& lon);  // adsb_ui.cpp: the one receiver position (the ADS-B antenna position)
 bool receiverLocationSet();                        // the user has set it (else it is a placeholder)
 void receiverPositionFields(App& a);               // its fields (latitude, longitude, altitude) and the Locate button
@@ -497,6 +588,16 @@ void passesMapSatellites(std::vector<MapSatRef>& out);   // passes_ui.cpp: the l
 struct MapCellTower { double lat = 0, lon = 0; int rangeM = 0; std::string label; unsigned colour = 0; };
 void cellMapTowers(const dect2::CellTelemetry& t, std::vector<MapCellTower>& out);   // cell_ui.cpp: the towers placed (OpenCelliD / CSV)
 void mapWindow(App& a);                             // map_ui.cpp: View > Map (a.mapOpen): coordinates, Maidenhead locators, distance and bearing
+void mapSendServerMenu(App& a);                     // map_send.cpp: Server menu (opt-in public map)
+void mapSendButton(App& a);                         // classic interface: the same choice as a button
+void mapSendTick(App& a);                           // POST current decoded positions when opted in
+bool mapPauseForTransmit(App& a);                   // turn the map connection off before the radio is keyed; true if it was on
+void mapTransmitAbort(App& a);                      // the radio did not start: put the connection back if it was on
+void mapTransmitEnded();                            // the radio is quiet: the Server control works again; the next send skips what is already on screen
+void aeroToolsTick(App& a);                         // aero_ui.cpp: SNR-sound tone while Inmarsat Aero is the mode
+void mapSendShutdown();                             // join the ingest thread before exit
+bool mapFamilySends(int family);                    // this mode can put decoded positions on the public map
+std::string mapSendStatusLine();                    // short "connected / N sent" line for the mode header (empty when off)
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
@@ -520,14 +621,15 @@ int subNav(const char* id, int& cur, std::initializer_list<const char*> names);
 float tagAt(ImDrawList* dl, ImVec2 pos, const char* text, ImU32 bg, ImU32 fg = IM_COL32(225, 232, 240, 255));
 void gaugePill(float width, float frac, ImU32 fill, const char* text);
 void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/, int icon = -1);
-// Lost samples (Engine::sampleLoss()) for the "dropped" read-outs: "0", or the seconds lost on the radio side and on the OnAir (CPU) side;
-// red while a loss is recent, amber after it; the tooltip on the item before says what each side means and what helps
+// Lost samples (Engine::sampleLoss()) for the "dropped" read-outs: "0", or where they went (callback gaps, ring overflow) and, when the
+// radio is under about 97% of its set rate, that rate. Red while that is happening or a loss is recent, amber after; the tooltip says
+// which problem it is (the radio's deliveries, the input ring, or receiver load).
 std::string lossText(const SampleLoss& l);
 ImVec4 lossColour(const SampleLoss& l, ImVec4 normal = ImVec4(0.93f, 0.95f, 0.97f, 1));
 void lossTooltip(const SampleLoss& l);
 // The "?" button next to the sound of a mode whose voice needs a codec OnAir does not ship (codec_help.cpp, docs/CODECS.md): found or not,
 // what it is, how to install it here, where to put it, a link to the full page and "Look again"
-enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe, P25Imbe, Avs, DraTv };
+enum class CodecHelp { Codec2, DmrAmbe, Hdc, Dra, AeroAmbe, IridiumAmbe, DstarAmbe, NxdnAmbe, DpmrAmbe, P25Imbe, Avs, DraTv, Ac4 };
 void codecHelpButton(CodecHelp c);
 // A new file path in the "audio-streams" folder of the user data folder, without extension: "<stem>_<date>_<time>" (the stem cleaned for a file name)
 std::string streamSavePath(const std::string& stem);
@@ -585,12 +687,38 @@ std::string saveFileDialog(const char* name);
 void loadPrefs(App& a);
 void loadFeedPrefs(App& a);         // feeds_ui.cpp: the data feed settings, and starts the ones that are on
 void saveFeedPrefs(const App& a);
-void feedsWindow(App& a);           // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
+void gainOptButtons(App& a, bool running);   // gain_opt_ui.cpp: "Optimise gain" / "Cancel" and "Undo gain" on the gain row
+void gainOptTick(App& a);                      // every frame (gainControl): runs the sweep
+bool gainOptStatus(App& a);                    // the progress / result line; true when it drew something
+void remoteApiLoadPrefs(App& a);    // remote_api_app.cpp: the remote-control API (HTTP + WebSocket), off by default: its settings, started when on
+void remoteApiSavePrefs(const App& a);
+void remoteApiTick(App& a);          // every frame: runs the commands the API queued for the main thread, publishes the telemetry
+void remoteApiSection(App& a);       // the settings panel (in the Data feeds window)
+void shareTick(App& a);             // feeds_ui.cpp: carries out the frequency / gain commands of the clients of "Share my radio" (when allowed)
+void feedsWindow(App& a);          // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
+// The transmitter (tx_ui.cpp): independent of the receivers, with its own radio. The state is not an App's; transmitting is never saved.
+struct ModeDef;
+bool& txViewFlag();                // the RX / TX switch: true = TX view (never saved: the program opens in RX view)
+void txViewSwitch(App& a);         // the slider at the top left of both interfaces
+void txPanel(App& a);              // leftover: the compact TX bar + notice (classic/new shells draw spectrum and the right list themselves)
+void txBar(App& a);                // frequency, radio, gain, Start / Stop / Carrier tune
+void txSpectrum(App& a);           // live spectrum of the IQ going to the radio
+void txRight(App& a);              // this mode's payload (or why it cannot transmit)
+void txSelectMode(App& a, int family, const char* subId);
+bool txModeHighlighted(const ModeDef& m);
+void txTick(App& a);               // every frame: gives the radio back when a transmission ended; the on-screen TX indicator
+void txShutdown();                 // stops a running transmission (the radio goes quiet before it returns); the program's end
+bool txActive();
 void savePrefs(const App& a);
 int adcBitsFor(const DeviceInfo& d, double rateHz);
 void ingestSpectrum(App& a);
 void ingestRx(App& a);
 std::vector<double> xs(const App& a);
+float dbmOffset(const App& a);                 // dB to add to a level in dBFS to get dBm, set for the selected radio (0 until it is)
+void setDbmOffset(const App& a, float db);
+void wfAutoButton(App& a);                     // plots.cpp: "Auto", on while the waterfall range follows the noise floor
+void wfDisplayPopup(App& a);                   // plots.cpp: colour map, intensity range, speed and pause of the waterfall
+void specDisplayPopup(App& a);                 // plots.cpp: the spectrum's averaging, max hold, markers, grid, fill and unit
 // Whole-span decoding (modeui.cpp). A mode opts in with registerWideMode(family); the switch is drawn by the spectrum (plots.cpp) for those only.
 bool modeSupportsWide(int family);
 void registerWideMode(int family);
@@ -618,6 +746,7 @@ void setDtmbBandwidth(App& a, int mhz);  // dtmb_ui.cpp: 8 or 6 MHz; a running r
 // toolbar.cpp
 void toolbar(App& a);
 void sourceOptions(App& a);
+bool sourceOptionsOpen(const App& a);   // synthetic, a file not playing, or a sound card
 void statusBar(App& a);
 void gainControl(App& a);
 void standardSwitch(App& a);
@@ -671,6 +800,7 @@ void receiverGlance(App& a, float w, float h);       // analysis_tabs.cpp: a few
 void tuneFreq(App& a, double mhz);                     // set the frequency now (resets the FM receiver)
 void uplinkNoteAdsb(const dect2::AdsbTelemetry& t);   // uplink_ui.cpp: callsigns heard by the ADS-B mode in this session
 double meshSampleRate(App& a);                  // mesh_ui.cpp: the radio rate the selected LoRa bandwidth needs (2 Msps; 4 above 500 kHz)
+void dvbsStatusRows(App& a, const DvbsTelemetry& t, bool on, bool run);   // dvbs_ui.cpp: the lock lamps and readouts of a report (QO-100's decoder panel)
 void dvbsSetSymbolRate(App& a, double msym);   // dvbs_ui.cpp: the DVB-S/S2 symbol rate, set from elsewhere (the spectrum explorer)
 // wb_ui.cpp: the Signal workbench. A file dropped on the window opens in it (the mode is selected); the dev flags open and drive it for --shot runs
 void wbQueueDrop(const char* path);
@@ -690,6 +820,9 @@ ChanWidth channelWidth(const App& a);
 std::string widthText(double mhz);   // "7 MHz", "1.536 MHz", "12.5 kHz"
 void channelWidthPopup(App& a);      // automatic or manual, where the mode allows it; otherwise what fixes the width
 void spectrumWaterfall(App& a, float& frac, bool drag);   // the spectrum on top of the waterfall, one panel
+float bandPlanStripHeight();         // plots.cpp: one text line plus padding; follows the font and resize
+void drawBandPlanStrip(ImDrawList* dl, float x0, float x1, float y, float h, double loMhz, double hiMhz);   // saAllocations in view
+void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, float x1, float y0, float y1);   // specx_ui.cpp: named point / range marks
 // specx_ident.cpp: "Identify this signal" (dect2/sig_ident.h). The region is [offHz -+ widthHz / 2] from the samples' centre, which the radio
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)
 void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widthHz, double rfOfCentreHz);
@@ -717,6 +850,7 @@ void isdbtStatus(App& a);
 void isdbtReceiverTab(App& a);
 void updateTick(App& a);
 void updateButton(App& a);
+void clearAllButton(App& a);   // top bar, next to the version: empties every decoded list, after an "are you sure"
 bool updateOnExit(App& a);
 void constellationsTab(App& a);
 void channelTab(App& a);

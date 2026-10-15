@@ -24,6 +24,7 @@ struct AxisSetup {
     std::vector<double> tickPos;
     std::vector<std::string> tickLab;
     double* linkMin = nullptr; double* linkMax = nullptr;
+    double cmin = -std::numeric_limits<double>::infinity(), cmax = std::numeric_limits<double>::infinity();   // pan and zoom stay inside these
     double fitMin = std::numeric_limits<double>::infinity(), fitMax = -std::numeric_limits<double>::infinity();
 };
 
@@ -33,6 +34,8 @@ struct State {
     double lim[2][2] = {{0, 1}, {0, 1}};
     bool fitValid[2] = {false, false};
     double fit[2][2] = {{0, 1}, {0, 1}};
+    double tgt[2][2] = {{0, 1}, {0, 1}}, last[2][2] = {{0, 1}, {0, 1}};   // an eased wheel zoom: where the limits are heading, and where this plot left them
+    bool hasTgt[2] = {false, false};
 };
 std::unordered_map<ImGuiID, State> gStates;
 
@@ -137,6 +140,16 @@ std::vector<Tick> makeTicks(int a, double pixels, double minPixelsPerTick) {
     return out;
 }
 
+// keep [a, b] of axis ax inside the constraints: no wider than they are, and shifted back in
+void clampAxis(int ax, double& a, double& b) {
+    const double lo = C.ax[ax].cmin, hi = C.ax[ax].cmax;
+    if (!std::isfinite(lo) || !std::isfinite(hi) || !(hi > lo)) return;
+    double span = b - a;
+    if (span > hi - lo) { a = lo; b = hi; return; }
+    if (a < lo) { a = lo; b = lo + span; }
+    if (b > hi) { b = hi; a = hi - span; }
+}
+
 void setLimitsFromSetup() {
     for (int a = 0; a < 2; a++) {
         AxisSetup& A = C.ax[a];
@@ -207,6 +220,9 @@ void finishSetup() {
     const bool movable[2] = {!(C.ax[0].haveLimits && C.ax[0].cond == Cond_Always), !(C.ax[1].haveLimits && C.ax[1].cond == Cond_Always)};
     ImGuiIO& io = ImGui::GetIO();
     if (!(C.flags & (Flags_Equal | Flags_NoPan)) && (movable[0] || movable[1])) {
+        const bool smooth = (C.flags & Flags_SmoothZoom) != 0;
+        for (int a = 0; a < 2; a++)   // somebody else moved the limits (a drag, a plot sharing the axis, a reset): the eased zoom gives way
+            if (C.st->hasTgt[a] && (std::fabs(C.st->lim[a][0] - C.st->last[a][0]) > 1e-12 || std::fabs(C.st->lim[a][1] - C.st->last[a][1]) > 1e-12)) C.st->hasTgt[a] = false;
         if (held && (io.MouseDelta.x != 0 || io.MouseDelta.y != 0)) {
             if (movable[0] && C.ax[0].scale == Scale_Linear) { const double d = -io.MouseDelta.x / C.plot.GetWidth() * (C.hi[0] - C.lo[0]); C.st->lim[0][0] += d; C.st->lim[0][1] += d; }
             if (movable[1] && C.ax[1].scale == Scale_Linear) { const double d = io.MouseDelta.y / C.plot.GetHeight() * (C.hi[1] - C.lo[1]); C.st->lim[1][0] += d; C.st->lim[1][1] += d; }
@@ -218,14 +234,28 @@ void finishSetup() {
             ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY); ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
             const double f = std::pow(0.9, wheel);
             const double mx = (io.MousePos.x - C.plot.Min.x) / C.plot.GetWidth(), my = 1.0 - (io.MousePos.y - C.plot.Min.y) / C.plot.GetHeight();
-            if (zx && movable[0] && C.ax[0].scale == Scale_Linear) {
-                const double r = C.hi[0] - C.lo[0], p = C.lo[0] + mx * r;
-                C.st->lim[0][0] = p - mx * r * f; C.st->lim[0][1] = p + (1 - mx) * r * f;
+            for (int a = 0; a < 2; a++) {
+                if (!((a == 0 ? zx : zy) && movable[a] && C.ax[a].scale == Scale_Linear)) continue;
+                const double m = a == 0 ? mx : my;
+                const double b0 = smooth && C.st->hasTgt[a] ? C.st->tgt[a][0] : C.st->lim[a][0], b1 = smooth && C.st->hasTgt[a] ? C.st->tgt[a][1] : C.st->lim[a][1];
+                const double r = b1 - b0, p = b0 + m * r;   // the point under the mouse stays under it (of the view the zoom is heading for)
+                double n0 = p - m * r * f, n1 = p + (1 - m) * r * f;
+                clampAxis(a, n0, n1);
+                if (smooth) { C.st->tgt[a][0] = n0; C.st->tgt[a][1] = n1; C.st->hasTgt[a] = true; }
+                else { C.st->lim[a][0] = n0; C.st->lim[a][1] = n1; }
             }
-            if (zy && movable[1] && C.ax[1].scale == Scale_Linear) {
-                const double r = C.hi[1] - C.lo[1], p = C.lo[1] + my * r;
-                C.st->lim[1][0] = p - my * r * f; C.st->lim[1][1] = p + (1 - my) * r * f;
+        }
+        if (smooth) {   // ease towards the target: about 80 ms to cover most of the way, whatever the frame rate
+            const double k = 1.0 - std::exp(-std::min(0.1, (double)io.DeltaTime) * 22.0);
+            for (int a = 0; a < 2; a++) if (C.st->hasTgt[a]) {
+                for (int e = 0; e < 2; e++) C.st->lim[a][e] += (C.st->tgt[a][e] - C.st->lim[a][e]) * k;
+                const double span = C.st->tgt[a][1] - C.st->tgt[a][0];
+                if (std::fabs(C.st->lim[a][0] - C.st->tgt[a][0]) + std::fabs(C.st->lim[a][1] - C.st->tgt[a][1]) < span * 1e-4) { C.st->lim[a][0] = C.st->tgt[a][0]; C.st->lim[a][1] = C.st->tgt[a][1]; C.st->hasTgt[a] = false; }
             }
+        }
+        for (int a = 0; a < 2; a++) if (movable[a] && C.ax[a].scale == Scale_Linear) {   // a drag or an unusual limit may not leave the allowed range either
+            if (!C.st->hasTgt[a]) clampAxis(a, C.st->lim[a][0], C.st->lim[a][1]);
+            C.st->last[a][0] = C.st->lim[a][0]; C.st->last[a][1] = C.st->lim[a][1];
         }
         if (hov && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) C.st->init = false;
         // draw this frame with the new limits (a plot sharing the axis reads them at once, so both must show the same range)
@@ -317,6 +347,7 @@ void SetupAxisLimits(Axis a, double mn, double mx, Cond cond) {
     if (!C.active) return;
     C.ax[a].min = mn; C.ax[a].max = mx; C.ax[a].cond = cond; C.ax[a].haveLimits = true;
 }
+void SetupAxisConstraints(Axis a, double lo, double hi) { if (C.active) { C.ax[a].cmin = lo; C.ax[a].cmax = hi; } }
 void SetupAxisFormat(Axis a, const char* fmt) { if (C.active) C.ax[a].fmt = fmt ? fmt : ""; }
 void SetupAxisUnit(Axis a, double unit) { if (C.active && unit > 0 && std::isfinite(unit)) C.ax[a].unit = unit; }
 void SetupAxisScale(Axis a, Scale s) { if (C.active) C.ax[a].scale = s; }
@@ -402,6 +433,8 @@ template <class T> void PlotShaded(const char*, const T* xs, const T* ys, int n,
     if (!C.active) return;
     finishSetup();
     const ImU32 fill = ImGui::ColorConvertFloat4ToU32(pick(s.FillColor));
+    const ImDrawListFlags keep = C.dl->Flags;
+    if (n > 400) C.dl->Flags &= ~ImDrawListFlags_AntiAliasedFill;   // a trace of thousands of columns: two plain triangles each, without the feathered edge
     for (int i = 0; i + 1 < n; i++) {
         const double x0 = at(xs, i, s.Stride), x1 = at(xs, i + 1, s.Stride), y0 = at(ys, i, s.Stride), y1 = at(ys, i + 1, s.Stride);
         fitData(x0, y0); fitData(x1, y1);
@@ -409,6 +442,7 @@ template <class T> void PlotShaded(const char*, const T* xs, const T* ys, int n,
         const ImVec2 q[4] = {ImVec2(px(x0), py(y0)), ImVec2(px(x1), py(y1)), ImVec2(px(x1), py(yRef)), ImVec2(px(x0), py(yRef))};
         C.dl->AddConvexPolyFilled(q, 4, fill);
     }
+    C.dl->Flags = keep;
 }
 
 template <class T> void PlotInfLines(const char*, const T* values, int n, const Spec& s) {

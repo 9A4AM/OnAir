@@ -4,6 +4,7 @@
 #include <deque>
 #include <functional>
 #include <random>
+#include <string>
 #include <cstdint>
 #include <vector>
 
@@ -13,6 +14,8 @@ namespace dvbt {
 
 class Generator;
 std::function<void(uint8_t*)> testTsSource(unsigned seed = 1);
+// the same stream with its own service id and name (several test channels with different service lists)
+std::function<void(uint8_t*)> testTsSourceNamed(unsigned seed, int serviceId, const std::string& name);
 
 class Generator {
 public:

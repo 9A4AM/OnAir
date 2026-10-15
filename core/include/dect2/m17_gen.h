@@ -13,6 +13,7 @@
 #include "m17_proto.h"
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,6 +32,8 @@ struct M17GenTx {
     std::string ext1, ext2;      // meta 2
     double durSec = 2;           // stream length (frames of 40 ms)
     double gapSec = 1;           // silence after it
+    // 8 kHz PCM for Codec 2. Empty: the synthetic voice. Used when the library can encode.
+    std::function<void(int16_t* pcm, int n)> pullPcm;
 };
 
 struct M17GenConfig {

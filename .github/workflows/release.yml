@@ -1,17 +1,65 @@
 name: Release
 
-# Builds the installers when a version tag is pushed (git tag v0.1.0 && git push --tags) and attaches them to a GitHub release.
+# A version tag (git tag v0.2.6 && git push --tags) builds the installers and attaches them to that release.
+# A push to a release branch (release-0.2.6) builds the same installers, deletes the previous beta of that
+# version and publishes one replacement, tagged v0.2.6-beta.<commit count>. The beta tag does not start
+# this workflow again.
 on:
   push:
-    tags: ['v*']
+    tags:
+      - 'v*'
+      - '!v*-beta*'
+    branches:
+      - 'release-*'
   workflow_dispatch:
+
+# A newer push on the same branch cancels the beta build still running, so an older beta is not published after it.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
 
 jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    outputs:
+      beta: ${{ steps.v.outputs.beta }}
+      ver: ${{ steps.v.outputs.ver }}
+      tag: ${{ steps.v.outputs.tag }}
+      base: ${{ steps.v.outputs.base }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: v
+        run: |
+          set -eu
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            base="${GITHUB_REF_NAME#v}"
+            echo "beta=false" >> "$GITHUB_OUTPUT"
+            echo "ver=${base}" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "base=${base}" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF_NAME" == release-* ]]; then
+            base="${GITHUB_REF_NAME#release-}"
+            n=$(git rev-list --count HEAD)
+            echo "beta=true" >> "$GITHUB_OUTPUT"
+            echo "ver=${base}-beta.${n}" >> "$GITHUB_OUTPUT"
+            echo "tag=v${base}-beta.${n}" >> "$GITHUB_OUTPUT"
+            echo "base=${base}" >> "$GITHUB_OUTPUT"
+          else
+            base=$(grep -m1 'project(' CMakeLists.txt | sed -E 's/.*VERSION ([0-9.]+).*/\1/')
+            echo "beta=false" >> "$GITHUB_OUTPUT"
+            echo "ver=${base}" >> "$GITHUB_OUTPUT"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            echo "base=${base}" >> "$GITHUB_OUTPUT"
+          fi
+
   macos:
     name: macOS disk image (${{ matrix.arch }})
+    needs: version
     env:
       MACOSX_DEPLOYMENT_TARGET: "15.0"
     runs-on: ${{ matrix.os }}
@@ -25,12 +73,13 @@ jobs:
       - name: Install dependencies
         run: brew install cmake pkg-config hackrf soapysdr libusb ffmpeg glfw librtlsdr airspy airspyhf libbladerf limesuite uhd   # the radio libraries go into the app (tools/package/bundle_macos.py)
       - name: Build the app and the .dmg
-        run: tools/package/make_dmg.sh
+        run: tools/package/make_dmg.sh "${{ needs.version.outputs.ver }}"
       - uses: actions/upload-artifact@v4
         with: { name: "macos-dmg-${{ matrix.arch }}", path: build-release/*.dmg }
 
   linux:
     name: Linux ${{ matrix.arch }} packages
+    needs: version
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -55,7 +104,7 @@ jobs:
         run: tools/package/collect_radio_libs_linux.sh "$GITHUB_WORKSPACE/build/radiolibs"
       - name: Build
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON -DDECT2_FFMPEG_PREFIX="$HOME/ffmpeg" -DDECT2_RADIO_LIB_DIR="$GITHUB_WORKSPACE/build/radiolibs"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON -DDECT2_FFMPEG_PREFIX="$HOME/ffmpeg" -DDECT2_RADIO_LIB_DIR="$GITHUB_WORKSPACE/build/radiolibs" -DONAIR_VERSION="${{ needs.version.outputs.ver }}"
           cmake --build build -j 4 --target dect2 dect2cli dect2scan
       - name: Package
         run: |
@@ -70,12 +119,39 @@ jobs:
 
   publish:
     name: Attach to the release
-    needs: [macos, linux]
-    if: startsWith(github.ref, 'refs/tags/')
+    needs: [version, macos, linux]
+    if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release-')
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with: { path: dist, merge-multiple: true }
       - name: Create the release
-        env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh release upload "${GITHUB_REF_NAME}" dist/* --repo "${GITHUB_REPOSITORY}" --clobber || gh release create "${GITHUB_REF_NAME}" dist/* --repo "${GITHUB_REPOSITORY}" --title "OnAir ${GITHUB_REF_NAME}" --generate-notes --prerelease   # a release written by hand first only gets the files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BETA: ${{ needs.version.outputs.beta }}
+          TAG: ${{ needs.version.outputs.tag }}
+          BASE: ${{ needs.version.outputs.base }}
+        run: |
+          set -euo pipefail
+          # One beta per version. A new push deletes the previous beta, including its tag, before publishing the replacement.
+          # An official tag deletes that beta too, so the finished release is the one people are offered.
+          prefix="v${BASE}-beta"
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName -q '.[].tagName' | while read -r t; do
+            [ -n "$t" ] || continue
+            [ "$t" = "$TAG" ] && continue
+            case "$t" in
+              "$prefix"|"$prefix."*) gh release delete "$t" --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" ;;
+            esac
+          done
+          if [ "$BETA" = "true" ]; then
+            notes="Test build of ${BASE} (${GITHUB_SHA}). This replaces the previous beta. The finished release is still to come."
+            if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+            else
+              gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+                --title "OnAir ${BASE} beta" --notes "$notes" --prerelease
+            fi
+          else
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber \
+              || gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "OnAir ${TAG}" --generate-notes
+          fi

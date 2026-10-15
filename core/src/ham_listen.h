@@ -5,7 +5,7 @@
 #include "dect2/audioout.h"
 #include "dect2/hf_demod.h"
 #include "dect2/marine_dsp.h"
-#include "hfdig_usb.h"
+#include "hfdig/hfdig_usb.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

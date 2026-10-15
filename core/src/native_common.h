@@ -234,6 +234,9 @@ inline std::vector<std::string> libNames(const char* stem, std::initializer_list
 // The OnAir "codecs" folders, where a user can put a codec library that OnAir does not ship: next to the program (macOS: next to OnAir.app,
 // and Contents/MacOS/codecs inside it) and in the user data folder (%LOCALAPPDATA%\OnAir\codecs, ~/Library/Application Support/OnAir/codecs,
 // $XDG_DATA_HOME/onair/codecs or ~/.local/share/onair/codecs). Each ends with the path separator.
+// Between the two come the places the libraries SHIPPED with OnAir are in (codec2, built from third_party/codec2): the program's own folder,
+// on macOS Contents/Frameworks and Contents/Resources of the app, on Linux ../lib/onair and ../lib of the program (the .deb and the portable
+// package). The user data folder stays last: it is where the "Open codecs folder" button goes.
 inline std::vector<std::string> codecFolders() {
     std::vector<std::string> v;
 #if defined(_WIN32)
@@ -241,7 +244,7 @@ inline std::vector<std::string> codecFolders() {
     if (GetModuleFileNameA(nullptr, path, (DWORD)sizeof path - 1)) {
         std::string d = path;
         const size_t cut = d.find_last_of("\\/");
-        if (cut != std::string::npos) v.push_back(d.substr(0, cut + 1) + "codecs\\");
+        if (cut != std::string::npos) { v.push_back(d.substr(0, cut + 1) + "codecs\\"); v.push_back(d.substr(0, cut + 1)); }
     }
     if (const char* la = getenv("LOCALAPPDATA")) if (*la) v.push_back(std::string(la) + "\\OnAir\\codecs\\");
 #else
@@ -264,7 +267,13 @@ inline std::vector<std::string> codecFolders() {
             const size_t up = dir.find_last_of('/', at);
             if (up != std::string::npos) v.push_back(dir.substr(0, up + 1) + "codecs/");
         }
+        v.push_back(dir + "../Frameworks/");
+        v.push_back(dir + "../Resources/");
+#else
+        v.push_back(dir + "../lib/onair/");
+        v.push_back(dir + "../lib/");
 #endif
+        v.push_back(dir);
     }
     const char* home = getenv("HOME");
 #if defined(__APPLE__)
@@ -567,11 +576,13 @@ void listLime(std::vector<DeviceInfo>& out);
 void listPluto(std::vector<DeviceInfo>& out);
 void listUsrp(std::vector<DeviceInfo>& out);
 void listSdrplay(std::vector<DeviceInfo>& out);
+bool sdrplayApiInstalled();   // the SDRplay API library (sdrplay_api.dll / libsdrplay_api) was found
 std::unique_ptr<IqSource> makeRtl(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeAirspy(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeBlade(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeLime(const DeviceInfo& d);
 std::unique_ptr<IqSource> makePluto(const DeviceInfo& d);
+std::unique_ptr<TxSink> makePlutoTx(const DeviceInfo& d);   // source_plutosdr.cpp: the PlutoSDR's transmit path (libiio)
 std::unique_ptr<IqSource> makeUsrp(const DeviceInfo& d);
 std::unique_ptr<IqSource> makeSdrplay(const DeviceInfo& d);
 // network radios the user added (netradio.cpp): a PlutoSDR at a libiio URI ("ip:host"), an rtl_tcp server
@@ -590,11 +601,20 @@ DeviceInfo spyServerDevice(const std::string& host, int port);
 std::unique_ptr<IqSource> makeSpyServer(const DeviceInfo& d);
 bool spyServerProbe(const std::string& host, int port, int timeoutMs, std::string& err);
 void spyServerCaps(DeviceInfo& d);
+// The message formats without a socket (unit test): the bytes of a client command; the type, flags and body size of a server message header
+// (20 bytes); the fields of a DEVICE_INFO body (12 little-endian 32-bit words)
+std::vector<unsigned char> spyServerEncodeCommand(uint32_t type, const std::vector<unsigned char>& body);
+bool spyServerDecodeHeader(const unsigned char* h, uint32_t& type, uint32_t& flags, uint32_t& size);
+bool spyServerDecodeDeviceInfo(const unsigned char* b, uint32_t n, uint32_t& devType, uint32_t& maxRate, uint32_t& decStages, uint32_t& maxGainIndex);
 // A Hermes Lite 2 (source_hermeslite2.cpp) at an IPv4 host and UDP port (1024). hermesLite2Probe sends it a discovery packet and waits for
 // its answer.
 DeviceInfo hermesLite2Device(const std::string& host, int port);
 std::unique_ptr<IqSource> makeHermesLite2(const DeviceInfo& d);
 bool hermesLite2Probe(const std::string& host, int port, int timeoutMs, std::string& err);
+// A Red Pitaya running the HPSDR-compatible SDR transceiver (the same openHPSDR protocol 1 client, source_hermeslite2.cpp), UDP port 1024
+DeviceInfo redPitayaDevice(const std::string& host, int port);
+std::unique_ptr<IqSource> makeRedPitaya(const DeviceInfo& d);
+bool redPitayaProbe(const std::string& host, int port, int timeoutMs, std::string& err);
 
 } // namespace native
 } // namespace dect2

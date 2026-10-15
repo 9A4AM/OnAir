@@ -1,4 +1,5 @@
-// Codec 2 for M17 voice, from the user's own libcodec2 loaded at run time (as FreeDV does, hfdig_freedv.cpp): OnAir does not ship it.
+// Codec 2 for M17 voice, from libcodec2 loaded at run time (as FreeDV does, hfdig_freedv.cpp). OnAir ships it as a separate shared library
+// (third_party/codec2, LGPL-2.1) next to the program; an installed libcodec2 or a copy in a codecs folder works as well.
 // Without the library the M17 receiver still shows the frames and callsigns, only without sound.
 #pragma once
 #include <cstdint>

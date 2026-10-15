@@ -53,6 +53,11 @@ std::vector<RateEntry> rateEntries(const RateLimits& L, double modeMinHz) {
     std::vector<double> ask;
     if (allSingle(L)) for (const auto& r : L.ranges) ask.push_back(r.first);
     else ask.assign(std::begin(kLadder), std::end(kLadder));
+    // the wide captures of multi-channel TV (a LimeSDR, USRP, BladeRF, PlutoSDR): only for a radio that says it runs above 20 Msps
+    if (!allSingle(L) && L.maxHz > 20e6 + 1) {
+        static const double kWide[] = {25e6, 30.72e6, 40e6, 50e6, 56e6, 61.44e6};
+        for (double w : kWide) if (w <= L.maxHz + 1) ask.push_back(w);
+    }
     std::vector<RateEntry> out;
     for (double a : ask) {
         if (L.minHz > 0 && a < L.minHz - 1) continue;
@@ -107,8 +112,13 @@ static bool canCs8(const DeviceInfo& d) {
 }
 
 double linkCapHz(const DeviceInfo& d, const TuneSettings& t) {
-    if (d.steadyRateHz <= 0) return 0;
-    return d.steadyRateHz * (streamsCs8(d, t) ? 2 : 1);
+    double steady = d.steadyRateHz;
+    for (const auto& r : d.settings) if (r.key == "link") {   // a Pluto at its default address: the user says USB cable or Ethernet (#96)
+        const std::string l = radioOption(t, "link", "auto");
+        if (l == "ethernet") steady = 0; else if (l == "usb" && steady <= 0) steady = 3e6;
+    }
+    if (steady <= 0) return 0;
+    return steady * (streamsCs8(d, t) ? 2 : 1);
 }
 
 double linkRateFor(const DeviceInfo& d, const TuneSettings& t, double wantHz, double needHz) {

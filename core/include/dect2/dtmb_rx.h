@@ -29,6 +29,8 @@ public:
     void flush();
     // Number of threads of the LDPC decoder (default: about half of the cores, at most 4); takes effect at the next lock
     void setDecoderThreads(int n);
+    // Where the LDPC decoder runs: 0 CPU, 1 GPU, 2 auto (default). The GPU decodes several codewords at once; the output is the same on either.
+    void setComputeMode(int mode);
 
 private:
     struct Impl;

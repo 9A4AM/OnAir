@@ -55,6 +55,48 @@ bool fetchUrl(const std::string& url, const std::string& file, const std::string
 #endif
 }
 
+bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) {
+    const std::string file = cacheDir() + "/map_ingest.json";
+#ifdef _WIN32
+    {
+        FILE* f = _wfopen(wide(file).c_str(), L"wb");
+        if (!f) return false;
+        fwrite(json.data(), 1, json.size(), f);
+        fclose(f);
+    }
+    wchar_t sys[MAX_PATH + 1] = {0};
+    std::wstring exe = GetSystemDirectoryW(sys, MAX_PATH) ? std::wstring(sys) + L"\\curl.exe" : std::wstring(L"curl.exe");
+    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) exe = L"curl.exe";
+    std::wstring cmd = L"\"" + exe + L"\" -fsSL --max-time 12 -A \"" + wide(userAgent) +
+                       L"\" -H \"Content-Type: application/json\" --data-binary @\"" + wide(file) + L"\" -o NUL \"" + wide(url) + L"\"";
+    STARTUPINFOW si{};
+    si.cb = sizeof si;
+    PROCESS_INFORMATION pi{};
+    std::wstring line = cmd;
+    if (!CreateProcessW(nullptr, line.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) return false;
+    if (WaitForSingleObject(pi.hProcess, 15000) != WAIT_OBJECT_0) TerminateProcess(pi.hProcess, 1);
+    DWORD rc = 1;
+    GetExitCodeProcess(pi.hProcess, &rc);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    DeleteFileW(wide(file).c_str());
+    return rc == 0;
+#else
+    {
+        FILE* f = fopen(file.c_str(), "wb");
+        if (!f) return false;
+        fwrite(json.data(), 1, json.size(), f);
+        fclose(f);
+    }
+    auto q = [](const std::string& s) { std::string o = "'"; for (char c : s) { if (c == '\'') o += "'\\''"; else o += c; } return o + "'"; };
+    const std::string cmd = "curl -fsSL --max-time 12 -A " + q(userAgent) +
+                            " -H 'Content-Type: application/json' --data-binary @" + q(file) + " -o /dev/null " + q(url) + " 2>/dev/null";
+    const int rc = system(cmd.c_str());
+    std::remove(file.c_str());
+    return rc == 0;
+#endif
+}
+
 // the map tiles are PNG: OnAir's own decoder (these systems have none it could call without an extra library)
 bool decodeImage(const std::string& path, int& w, int& h, std::vector<uint32_t>& rgba) {
     std::ifstream f(std::filesystem::path(reinterpret_cast<const char8_t*>(path.c_str())), std::ios::binary);
@@ -291,6 +333,7 @@ std::vector<std::string> uiFontCandidates() {
 }
 std::vector<std::string> cjkFontCandidates() {
     return {"C:/Windows/Fonts/msyh.ttc", "C:/Windows/Fonts/simsun.ttc", "C:/Windows/Fonts/malgun.ttf",
+            "C:/Windows/Fonts/YuGothM.ttc", "C:/Windows/Fonts/meiryo.ttc",   // kana and kanji for Japanese if the Chinese fonts are missing
             "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
             "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc", "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
             "/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc"};
@@ -310,7 +353,13 @@ std::string uiLanguage() {
         case LANG_SPANISH: return "es";
         case LANG_CHINESE: return "zh";
         case LANG_LITHUANIAN: return "lt";
-        		case LANG_PORTUGUESE: return "pt";
+        case LANG_HUNGARIAN: return "hu";
+        case LANG_JAPANESE: return "ja";
+        case LANG_POLISH: return "pl";
+        case LANG_DUTCH: return "nl";
+        case LANG_PORTUGUESE: return "pt";
+        case LANG_ITALIAN: return "it";
+        case LANG_RUSSIAN: return "ru";
         default: return "en";
     }
 #else

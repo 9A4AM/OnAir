@@ -154,6 +154,30 @@ void setCaps(DeviceInfo& d, const SpyInfo& known) {
 
 } // namespace
 
+// The wire format without a socket (for the unit test): a command is type, body size (32-bit little endian each) and the body
+std::vector<unsigned char> spyServerEncodeCommand(uint32_t type, const std::vector<unsigned char>& body) {
+    std::vector<unsigned char> b(8 + body.size());
+    put32(b.data(), type);
+    put32(b.data() + 4, (uint32_t)body.size());
+    if (!body.empty()) memcpy(b.data() + 8, body.data(), body.size());
+    return b;
+}
+// A message from the server starts with 20 bytes: protocol version, type | flags << 16, stream type, sequence number, body size
+bool spyServerDecodeHeader(const unsigned char* h, uint32_t& type, uint32_t& flags, uint32_t& size) {
+    const uint32_t mt = le32(h + 4);
+    size = le32(h + 16);
+    type = mt & 0xffff;
+    flags = mt >> 16;
+    return size <= kMaxBody;
+}
+bool spyServerDecodeDeviceInfo(const unsigned char* b, uint32_t n, uint32_t& devType, uint32_t& maxRate, uint32_t& decStages, uint32_t& maxGainIndex) {
+    if (n < 48) return false;
+    SpyInfo i;
+    parseDeviceInfo(b, n, i);
+    devType = i.devType; maxRate = i.maxRate; decStages = i.decStages; maxGainIndex = i.maxGainIndex;
+    return true;
+}
+
 bool spyServerProbe(const std::string& host, int port, int timeoutMs, std::string& err) {
     const sock_t s = tcpConnect(host, port, timeoutMs, err);
     if (s == kBadSock) return false;
@@ -223,18 +247,17 @@ protected:
         if (dec != sentDec_) { ok = ok && setting(kSetIqDecimation, dec); sentDec_ = dec; }
         rate_ = (double)i.maxRate / (double)(1u << dec);
         requested_ = s.sampleRate;
-        // the frequency within the radio's tuning range; read only: within the band the server's radio receives now
+        // the frequency as asked (outside the server radio's specified range with a note); a read-only client is told what the server gives
         double f = std::max(s.centerHz, 0.0);
-        if (i.maxFreq > i.minFreq) f = std::min(std::max(f, (double)i.minFreq), (double)i.maxFreq);
         std::string warn;
+        if (i.maxFreq > i.minFreq) addNote(warn, freqSpecNote("SpyServer radio", f, (double)i.minFreq, (double)i.maxFreq));
         if (!i.canControl && i.synced && i.maxIqCenter >= i.minIqCenter && i.maxIqCenter > 0) {
             const double lo = i.minIqCenter, hi = i.maxIqCenter;
             if (f < lo || f > hi) {
                 char b[240];
                 snprintf(b, sizeof b, "the SpyServer at %s is read only (another client controls it): it is tuned to %.3f MHz and gives %.3f to %.3f MHz",
                          addr_.c_str(), i.devCenter / 1e6, lo / 1e6, hi / 1e6);
-                warn = b;
-                f = std::min(std::max(f, lo), hi);
+                addNote(warn, b);
             }
         }
         const uint32_t hz = (uint32_t)std::llround(std::min(f, 4.29e9));

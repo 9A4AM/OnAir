@@ -127,7 +127,19 @@ protected:
     bool configure(const TuneSettings& s, std::string& err, bool live) override {
         (void)live;
         if (sock_ == kBadSock) return false;
-        const bool other = detected_ || radioOption(s, "server", "rtl") == "other";
+        const std::string server = radioOption(s, "server", "auto");
+        bool other = detected_ || server == "other";
+        // Auto: a server that greets as an RTL-SDR is held to 2.56 Msps, but a mode that asks for more is let through up to 20 Msps (it may be
+        // SDR++, OpenWebRX or rsp_tcp serving a faster radio): samples may drop if it is a real RTL-SDR
+        if (!other && server == "auto" && s.sampleRate > 2.56e6 * 1.0001) {
+            other = true;
+            if (!autoNoted_) {
+                autoNoted_ = true;
+                fprintf(stderr, "rtl_tcp: %s greets as an RTL-SDR but %.2f Msps was asked for (Server radio: Auto): running it at that rate; "
+                                "samples may drop if this really is an RTL-SDR (set Server radio to RTL-SDR to hold it at 2.56 Msps)\n", addr_.c_str(), s.sampleRate / 1e6);
+                fflush(stderr);
+            }
+        }
         if (s.sampleRate > (other ? kOtherMaxRate : 3.2e6) * 1.0001) {
             char b[200];
             if (other) snprintf(b, sizeof b, "an rtl_tcp server gives at most 20 Msps; this mode needs about %.0f Msps: use a faster radio", s.sampleRate / 1e6);
@@ -148,8 +160,14 @@ protected:
         if (rate != sentRate_) { ok = ok && command(kCmdRate, rate); sentRate_ = rate; rate_ = rate; }
         requested_ = s.sampleRate;
         const double f = std::max(s.centerHz, 0.0);
-        const std::string mode = radioOption(s, "ds", "off");
+        // Auto: nothing is sent, the server's own library picks the way down (an RTL-SDR Blog V4 server upconverts HF itself; a direct-sampling
+        // request would break it, and the server does not say which dongle it is). OnAir does not refuse the frequency: a V3 or modified
+        // dongle behind the server takes the I or Q input below. The server's tuner is only told so far, hence the note.
+        const std::string mode = radioOption(s, "ds", "auto");
         const int ds = (mode == "i" || mode == "q") && f < 24e6 ? (mode == "i" ? 1 : 2) : 0;
+        if (!other && mode == "auto" && f < 24e6 && (tuner_ == 5 || tuner_ == 6))
+            addNote(err, "below 24 MHz the tuner of this server cannot receive on its own: a Blog V4 server upconverts HF itself, otherwise pick the I or Q input in the radio settings (a V3 has its HF input on Q); the signal may be weak or absent");
+        if (f > 4.29e9) addNote(err, "the rtl_tcp protocol takes the frequency as 32-bit Hz (at most 4.29 GHz): it was cut to that");
         if (ds != sentDs_) { ok = ok && command(kCmdDirect, (uint32_t)ds); sentDs_ = ds; }
         const int ppm = (int)std::lround(radioPpm(s));
         if (ppm != sentPpm_) { ok = ok && command(kCmdPpm, (uint32_t)ppm); sentPpm_ = ppm; }
@@ -178,7 +196,7 @@ protected:
     }
     bool restartForRate() const override { return false; }   // the server changes the rate while streaming
     void streamLoop() override {
-        std::vector<unsigned char> buf(1 << 16);
+        std::vector<unsigned char> buf(1 << 18);
         while (run_) {
             const long long k = sockRecv(sock_, buf.data() + (carry_ >= 0 ? 1 : 0), buf.size() - 1);
             if (k <= 0) break;   // closed, failed or stalled
@@ -215,6 +233,7 @@ private:
     sock_t sock_ = kBadSock;
     std::mutex sendMu_;
     int tuner_ = kTunerUnknown;
+    bool autoNoted_ = false;
     bool detected_ = false;   // the greeting says another radio than an RTL-SDR
     std::vector<int> gains_;
     uint32_t sentRate_ = 0, sentFreq_ = 0;
@@ -238,15 +257,18 @@ DeviceInfo rtlTcpDevice(const std::string& host, int port) {
     d.hasBiasTee = true;   // rtl_tcp of the RTL-SDR Blog library (command 0x0e); other servers ignore it
     d.settings = {choiceSetting("server", "Server radio",
                                 "The radio behind this rtl_tcp server. A real RTL-SDR drops samples above 2.56 Msps, so OnAir holds it there and\n"
-                                "picks its gains from the tuner's list. Other radio: an rtl_tcp-compatible server of another radio (rsp_tcp for\n"
+                                "picks its gains from the tuner's list. Auto (the default): the same, but if a mode needs more than 2.56 Msps the\n"
+                                "rate is allowed up to 20 Msps (samples may drop if the server is a real RTL-SDR). RTL-SDR: always held at\n"
+                                "2.56 Msps, nothing above 3.2 Msps. Other radio: an rtl_tcp-compatible server of another radio (rsp_tcp for\n"
                                 "SDRplay, airspy_tcp, hackrf_tcp, SDR++'s rtl_tcp server): any rate from 0.25 to 20 Msps, the gain as set, still\n"
                                 "8-bit samples. A server that greets as another radio is taken as one by itself.",
-                                {"rtl", "other"}, {"RTL-SDR (up to 2.56 Msps)", "Other radio (up to 20 Msps)"}, "rtl"),
+                                {"auto", "rtl", "other"}, {"Auto", "RTL-SDR (up to 2.56 Msps)", "Other radio (up to 20 Msps)"}, "auto"),
                   ppmSetting(1),
                   choiceSetting("ds", "Direct sampling (HF)",
                                 "Below 24 MHz the tuner cannot receive: the RTL2832U can sample an HF antenna on one of its inputs directly.\n"
+                                "Auto: nothing is sent, the server's own library decides (an RTL-SDR Blog V4 upconverts HF itself).\n"
                                 "I / Q: that input below 24 MHz (the RTL-SDR Blog V3 has its HF input on Q). Off: never.",
-                                {"off", "i", "q"}, {"Off", "I input", "Q input"}, "off")};
+                                {"auto", "off", "i", "q"}, {"Auto", "Off", "I input", "Q input"}, "auto")};
     return d;
 }
 
@@ -257,6 +279,6 @@ std::unique_ptr<IqSource> makeRtlTcp(const DeviceInfo& d) { return std::make_uni
 void applyRadioOptionCaps(DeviceInfo& d, const TuneSettings& t) {
     if (d.kind == DeviceInfo::Native && d.board == "spyserver") { native::spyServerCaps(d); return; }   // as the server was last seen
     if (d.kind != DeviceInfo::Native || d.board != "rtltcp") return;
-    native::setCaps(d, radioOption(t, "server", "rtl") == "other" || native::noted(d.nativeArgs));
+    native::setCaps(d, radioOption(t, "server", "auto") == "other" || native::noted(d.nativeArgs));
 }
 } // namespace dect2

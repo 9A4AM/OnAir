@@ -319,4 +319,17 @@ std::vector<Pass> findPasses(const Sgp4& s, const Observer& o, double t0, double
     return out;
 }
 
+
+bool tleUpdateDue(double nowSec, double lastOkSec, double lastTrySec, double minIntervalSec, double retrySec) {
+    if (lastOkSec > 0) {
+        const double age = nowSec - lastOkSec;
+        if (age >= 0 && age < minIntervalSec) return false;
+    }
+    if (lastTrySec > 0) {
+        const double since = nowSec - lastTrySec;
+        if (since >= 0 && since < retrySec) return false;
+    }
+    return true;
+}
+
 }

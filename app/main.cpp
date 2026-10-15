@@ -3,6 +3,7 @@
 #endif
 // OnAir: window, main loop and the layout of the panels.
 #include "app.h"
+#include "contrast.h"
 #include "dect2/iq_file.h"
 #include "gallery.h"
 #include "dect2/crash_report.h"
@@ -52,11 +53,12 @@ int64_t utcNowOf(const App& a) { return a.ts.utcNow ? a.ts.utcNow : (int64_t)tim
 
 void overviewTab(App& a) {
     if (!pal::dev()) {   // the new interface has these in its sidebar (Display)
-    ImGui::Checkbox(tr("peak hold"), &a.peakHold);
+    if (ImGui::Checkbox(tr("peak hold"), &a.peakHold)) savePrefs(a);
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
     ImGui::DragFloatRange2(tr("spectrum dB##specdb"), &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
     ImGui::SameLine(0, 16 * gUi); ImGui::SetNextItemWidth(170 * gUi);
-    ImGui::DragFloatRange2(tr("waterfall dB##wfdb"), &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f");
+    if (ImGui::DragFloatRange2(tr("waterfall dB##wfdb"), &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;
+    ImGui::SameLine(0, 4 * gUi); wfAutoButton(a);
     }
     static float frac = 0.5f;
     spectrumWaterfall(a, frac, pal::dev());   // the new interface: the boundary is a divider you can drag, as in SDR++
@@ -127,6 +129,7 @@ ImU32 scoreColour(double sc) {
 }
 
 void mainTabs(App& a) {
+    if (txViewFlag()) { txSpectrum(a); return; }
     // a narrow pane: the tabs get less padding (the bar takes it from the style when it begins, each tab when it is added), so that they keep
     // their whole names instead of being cut short or scrolled out of view
     gTightTabs = ImGui::GetContentRegionAvail().x < 760 * gUi;
@@ -230,26 +233,45 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(disp);
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
+    txViewSwitch(a);   // RX / TX, top left
+    if (txViewFlag()) {
+        txBar(a);
+        standardSwitch(a);
+        ImGui::Separator();
+        float rightW = 350 * gUi;
+        float mainH = ImGui::GetContentRegionAvail().y - 6;
+        ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16 * gUi, mainH));
+        txSpectrum(a);
+        ImGui::EndChild();
+        ImGui::SameLine();
+        ImGui::BeginChild("right", ImVec2(0, mainH));
+        txRight(a);
+        ImGui::EndChild();
+        ImGui::End();
+    } else {
 
     const ImVec2 tb0 = ImGui::GetCursorScreenPos();
     toolbar(a);
-    if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic || (a.devices[a.devIdx].kind == DeviceInfo::File && !a.engine.running())) sourceOptions(a);
+        if (sourceOptionsOpen(a)) sourceOptions(a);
     a.tgMin[TgToolbar] = ImVec2(tb0.x - 4, tb0.y - 3); a.tgMax[TgToolbar] = ImVec2(tb0.x + ImGui::GetContentRegionAvail().x + 4, ImGui::GetCursorScreenPos().y);
     const ImVec2 sw0 = ImGui::GetCursorScreenPos();
     standardSwitch(a);
     if (a.devices[a.devIdx].isRadio()) { ImGui::SameLine(disp.x - 64 - 410 * gUi); radioSettingsUi(a, false); }   // the top bar is full
     ImGui::SameLine(disp.x - 64 - 290 * gUi);
     updateButton(a);
+    clearAllButton(a);
     {   // the language, the new interface and the tour, right-aligned (their width changes with the language)
         int nl = 0;
         const i18n::Language* L = i18n::languages(nl);
         const char* langName = L[0].name;
         for (int i = 0; i < nl; i++) if (!strcmp(i18n::current(), L[i].code)) langName = L[i].name;
         const float pad = ImGui::GetStyle().FramePadding.x * 2, sp = ImGui::GetStyle().ItemSpacing.x;
-        const float w = ImGui::CalcTextSize(langName).x + ImGui::CalcTextSize(tr("New interface")).x + ImGui::CalcTextSize(tr("Tour")).x + 3 * pad + 2 * sp;
+        const float w = ImGui::CalcTextSize(langName).x + ImGui::CalcTextSize(tr("Server")).x + ImGui::CalcTextSize(tr("New interface")).x + ImGui::CalcTextSize(tr("Tour")).x + 4 * pad + 3 * sp;
         ImGui::SameLine(std::max(ImGui::GetCursorPosX(), disp.x - 12 * gUi - w));
     }
     languageButton(a);
+    ImGui::SameLine();
+    mapSendButton(a);
     ImGui::SameLine();
     if (ImGui::SmallButton(tr("New interface"))) { a.newUi = true; savePrefs(a); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Try the new interface. You can switch back at any time."));
@@ -282,6 +304,7 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     } else a.tgMin[TgConst] = a.tgMax[TgConst] = ImVec2(0, 0);
     ImGui::End();
     }
+    }
     passesWindow(a);
     galleryWindow(a);
     scannerWindow(a);
@@ -291,7 +314,11 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     identifyWindow(a);
     dect2::PskReporter::get().setDialHz(a.freqMhz * 1e6);
     a.engine.setWideDecode(a.wideDecode && modeSupportsWideHf(a.family));
+    a.engine.setMultiChannel(a.mtvOn && a.family == 0, a.mtvMax, a.mtvGrid);
     feedsWindow(a);
+    txTick(a);
+    shareTick(a);
+    remoteApiTick(a);
     mapWindow(a);
     if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel
         static bool opened = false;
@@ -323,9 +350,13 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
 // panes turn white, light text dark, and red, amber and green stay themselves. Done on the finished draw lists, so every panel of every
 // mode follows without colours of its own. Only what is drawn from the font atlas (text, shapes, plots) is turned: pictures, map tiles
 // and other textures keep their colours. Per channel c' = c + (255 - max - min), which keeps max - min and the hue.
-static void lightenDrawData(ImDrawData* dd) {
+// Light and High contrast also check the text: a glyph's vertices (not the solid shapes, whose texture coordinate is the atlas' white pixel)
+// get a colour that holds the contrast ratio of contrast.h on that theme's panes (Light: 5:1 on white after the turn-over, so the amber and
+// green status words and the dim grey do not fade; High contrast: 7:1 on black).
+static void lightenDrawData(ImDrawData* dd, bool light = true, bool highContrast = false) {
     if (!dd) return;
     static std::vector<unsigned char> keep;
+    const ImVec2 wp = ImGui::GetFontTexUvWhitePixel();
     for (ImDrawList* dl : dd->CmdLists) {
         const int nv = dl->VtxBuffer.Size;
         keep.assign((size_t)nv, 0);
@@ -340,9 +371,23 @@ static void lightenDrawData(ImDrawData* dd) {
             if (keep[(size_t)i]) continue;
             ImU32& col = dl->VtxBuffer[i].col;
             const int r = (int)(col >> IM_COL32_R_SHIFT) & 255, g = (int)(col >> IM_COL32_G_SHIFT) & 255, b = (int)(col >> IM_COL32_B_SHIFT) & 255;
-            const int d = 255 - std::max(r, std::max(g, b)) - std::min(r, std::min(g, b));
+            const int d = light ? 255 - std::max(r, std::max(g, b)) - std::min(r, std::min(g, b)) : 0;
             auto cl = [](int x) { return (ImU32)std::clamp(x, 0, 255); };
-            col = (col & IM_COL32_A_MASK) | (cl(r + d) << IM_COL32_R_SHIFT) | (cl(g + d) << IM_COL32_G_SHIFT) | (cl(b + d) << IM_COL32_B_SHIFT);
+            int nr = (int)cl(r + d), ng = (int)cl(g + d), nb = (int)cl(b + d);
+            const ImDrawVert& vt = dl->VtxBuffer[i];
+            const bool glyph = std::fabs(vt.uv.x - wp.x) > 1e-5f || std::fabs(vt.uv.y - wp.y) > 1e-5f;
+            if (glyph) {   // text (and the textured lines): the legible colour, remembered for the next vertex of the same colour
+                static int ir = -1, ig = -1, ib = -1, orr = 0, og = 0, ob = 0;
+                static bool lastLight = false, lastHc = false;
+                if (nr != ir || ng != ig || nb != ib || light != lastLight || highContrast != lastHc) {
+                    const contrast::Rgb c{nr / 255.f, ng / 255.f, nb / 255.f};
+                    const contrast::Rgb o = highContrast ? contrast::legibleOnDark(c) : contrast::legibleOnLight(c);
+                    ir = nr; ig = ng; ib = nb; lastLight = light; lastHc = highContrast;
+                    orr = (int)std::lround(o.r * 255); og = (int)std::lround(o.g * 255); ob = (int)std::lround(o.b * 255);
+                }
+                nr = orr; ng = og; nb = ob;
+            }
+            col = (col & IM_COL32_A_MASK) | (cl(nr) << IM_COL32_R_SHIFT) | (cl(ng) << IM_COL32_G_SHIFT) | (cl(nb) << IM_COL32_B_SHIFT);
         }
     }
 }
@@ -614,7 +659,8 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--ui2") app.newUi = true;
         if (std::string(argv[i]) == "--lang" && i + 1 < argc) i18n::set(argv[++i]);   // dev: the interface in this language (not saved)
         if (std::string(argv[i]) == "--theme" && i + 1 < argc) app.uiTheme = atoi(argv[++i]);
-        if (std::string(argv[i]) == "--light") app.lightUi = true;   // dev: View > Light
+        if (std::string(argv[i]) == "--light") app.lightUi = true;   // dev: View > Theme > Light
+        if (std::string(argv[i]) == "--hc") app.highContrast = true;   // dev: View > Theme > High contrast
         if (std::string(argv[i]) == "--variant" && i + 1 < argc) app.uiVariant = std::max(0, std::min(7, atoi(argv[++i])));
         if (std::string(argv[i]) == "--classic") app.newUi = false;
         if (std::string(argv[i]) == "--rate" && i + 1 < argc) app.file.sampleRate = atof(argv[++i]) * 1e6;
@@ -689,7 +735,8 @@ int main(int argc, char** argv) {
                 continue;
             }
             static const float kClear[4] = {0.04f, 0.045f, 0.05f, 1.f}, kClearLight[4] = {0.955f, 0.95f, 0.96f, 1.f};
-            gfxBackend->newFrame(w, h, app.lightUi ? kClearLight : kClear);
+            static const float kClearHc[4] = {0.f, 0.f, 0.f, 1.f};
+            gfxBackend->newFrame(w, h, app.highContrast ? kClearHc : app.lightUi ? kClearLight : kClear);
             ImGui_ImplGlfw_NewFrame();
             {   // display scaling (Windows / Linux): follow the scale factor of the monitor the window is on. macOS scales by itself;
                 // there DECT2_UISCALE (dev) still sets it, to see how a Windows laptop at 125 or 150 % lays out
@@ -717,6 +764,7 @@ int main(int argc, char** argv) {
             }
             ImGui::NewFrame();
             {   // text size: Ctrl +, Ctrl - and Ctrl 0 (Cmd on a Mac), in either interface
+                handleFullscreenHotkeys();   // F11 / Alt+Enter: the whole window, either interface (not while typing)
                 ImGuiIO& kio = ImGui::GetIO();
                 if ((kio.KeyCtrl || kio.KeySuper) && !kio.WantTextInput) {
                     float t = app.uiTextScale;
@@ -755,7 +803,8 @@ int main(int argc, char** argv) {
             receiversFrame(app, io.DisplaySize);
             popOutFrame(app);
             ImGui::Render();
-            if (app.lightUi) lightenDrawData(ImGui::GetDrawData());
+            if (app.highContrast) lightenDrawData(ImGui::GetDrawData(), false, true);   // High contrast wins over Light
+            else if (app.lightUi) lightenDrawData(ImGui::GetDrawData());
             static const bool perf = getenv("DECT2_FPS") != nullptr;   // frame statistics on stderr: DECT2_FPS=1
             static double pAcc = 0, pMax = 0, pT0 = glfwGetTime(); static int pN = 0;
             if (perf) {
@@ -786,6 +835,7 @@ int main(int argc, char** argv) {
         }
     }
     delete gDiscord;   // clears the status and joins its thread
+    txShutdown();      // the transmitter goes quiet before anything else is closed
     receiversShutdown(app);
     app.engine.stop();
     app.engine.flushResults();

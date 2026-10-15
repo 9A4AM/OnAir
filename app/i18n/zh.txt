@@ -1,8 +1,145 @@
 # OnAir interface in Simplified Chinese. One text per line: the English text as in the source, a tab, the translation.
 # \n is a line break. Keep the printf conversions (%s, %d, %.1f ...) in the same order. tests/test_i18n.cpp checks this file.
 #  menus, status words, common buttons
+%.1f dB	%.1f dB
+%s  #%d  %.3f MHz%s	%s  #%d  %.3f MHz%s
+%s  %.4f MHz  %s%s%s%s  %.1f dB  %s	%s  %.4f MHz  %s%s%s%s  %.1f dB  %s
+-	-
+1 kHz test tone	1 kHz test tone
+8 MHz	8 MHz
+A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.	A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.
+A SAME header. ZCZC- is added when missing.	A SAME header. ZCZC- is added when missing.
+Aircraft registration	Aircraft registration
+An RS41 with this serial. Empty: the demo sondes.	An RS41 with this serial. Empty: the demo sondes.
+ANT+ is not transmitted: it would impersonate a sensor network	ANT+ is not transmitted: it would impersonate a sensor network
+TETRAPOL is not transmitted: receive only, control-channel system information	TETRAPOL is not transmitted: receive only, control-channel system information
+Are you sure? This clears all previous data and cannot be undone.	Are you sure? This clears all previous data and cannot be undone.
+ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.	ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.
+Audio file	Audio file
+Audio input	Audio input
+AX.25 UI frame. Empty: the demo CubeSat cycle.	AX.25 UI frame. Empty: the demo CubeSat cycle.
+Baud	Baud
+Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser
+Browse…	Browse…
+Callsign / my ID	Callsign / my ID
+Capcode	Capcode
+CARRIER TUNE	CARRIER TUNE
+Carrier tune	Carrier tune
+Clear all	Clear all
+Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
+Code rate / MODCOD index	Code rate / MODCOD index
+Colour code	Colour code
+Comment	Comment
+CQ	CQ
+D2-MAC test scene (custom video is not wired into this analogue generator).	D2-MAC test scene (custom video is not wired into this analogue generator).
+DATV (DVB-S/S2 file)	DATV (DVB-S/S2 file)
+Default input	Default input
+Destination	Destination
+Destination / ID	Destination / ID
+Destination ID	Destination ID
+Deviation (Hz)	Deviation (Hz)
+Device ID	Device ID
+Dial frequency the decoder should assume (the sound card is not tuned)	解码器应假定的刻度频率（声卡不会调谐）
+Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements	Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements
+DVB standard	DVB standard
+Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.	Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.
+Empty: the demo 802.15.4 scene.	Empty: the demo 802.15.4 scene.
+Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.	Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.
+Empty: the demo LoRa / mesh scene.	Empty: the demo LoRa / mesh scene.
+Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
+Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	文件
+File to send	File to send
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	用于 WebSDR、虚拟声卡线（VAC）或把电台扬声器/线路接入电脑。需要兆赫带宽时不能代替 SDR。
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	用于 WebSDR、虚拟声卡线（VAC）或把电台扬声器/线路接入电脑。需要兆赫带宽时不能代替 SDR。频率栏是解码器应假定的刻度；声卡不会调谐。没有增益或天线供电。
+Free text	Free text
+Function	Function
+Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	增益控制只对电台有效（不用于录音、声卡或合成信号）
+I/Q stereo	I/Q 立体声
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q 立体声：左为 I、右为 Q（HDSDR / WebSDR VAC）。USB 音频：把扬声器分接的实音频变成解析 IQ，用于 FT8、RTTY、CW、SSB。LSB 音频：同样，取共轭。单声道实数：I 为样点，Q 为 0（实采样，不是 FM 鉴频器音频）。
+ICAO address	ICAO address
+Idle — nothing is being sent	Idle — nothing is being sent
+Image (PNG / PPM)	Image (PNG / PPM)
+Image (PPM)	Image (PPM)
+Input device	Input device
+Latitude	Latitude
+libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.	libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.
+libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.	libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.
+Live voice is encoded with Codec 2 (FreeDV).	Live voice is encoded with Codec 2 (FreeDV).
+Live voice is encoded with Codec 2 (libcodec2).	Live voice is encoded with Codec 2 (libcodec2).
+Longitude	Longitude
+Look for Red Pitaya boards on this computer's networks again	Look for Red Pitaya boards on this computer's networks again
+LSB audio	LSB 音频
+Message	Message
+MHz	MHz
+Mic level	Mic level
+Microphone	Microphone
+MMSI	MMSI
 Mode	模式
+Mono real	单声道实数
+Morse identification, up to four letters.	Morse identification, up to four letters.
+MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.	MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.
+Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
+NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
+No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.	No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.
+PAN / short address	PAN / short address
+Path	Path
+Payload text	Payload text
+Power (dBm)	Power (dBm)
+Pre-emphasis	Pre-emphasis
+PSK variant	PSK variant
+QO-100 path	QO-100 path
+Radio ID	Radio ID
+Radio text (RT)	Radio text (RT)
+RDS PI	RDS PI
+Receiver-style options (demo signal)	Receiver-style options (demo signal)
+Report	Report
+Reverse (mark is the upper tone)	Reverse (mark is the upper tone)
+RFPI	RFPI
+RFPI of the base station.	RFPI of the base station.
+Roll-off	Roll-off
+Satellite standard	Satellite standard
+searching for Red Pitaya boards…	searching for Red Pitaya boards…
+Send analog NFM of the audio instead of the digital test pattern	Send analog NFM of the audio instead of the digital test pattern
+Send analog NFM of the microphone or a file instead of the test scene	Send analog NFM of the microphone or a file instead of the test scene
+Serial / ID	Serial / ID
+Shift	Shift
+Sideband	Sideband
+Silence	Silence
+sound card	声卡
+Speed (0=512, 1=1200, 2=2400, 3=FLEX)	Speed (0=512, 1=1200, 2=2400, 3=FLEX)
+SSB (microphone)	SSB (microphone)
+SSTV mode	SSTV mode
+Station name (PS)	Station name (PS)
+Symbol rate (Hz)	Symbol rate (Hz)
+Talkgroup	Talkgroup
+Test card (or analog picture) plus live audio on the sound carrier.	Test card (or analog picture) plus live audio on the sound carrier.
+test DJI DroneID scene (custom serial is not packed)	test DJI DroneID scene (custom serial is not packed)
+test downlink scene (this generator does not take a custom message)	test downlink scene (this generator does not take a custom message)
+test LRPT/HRIT scene (custom image not wired)	test LRPT/HRIT scene (custom image not wired)
+test NCDXF-style beacon scene	test NCDXF-style beacon scene
+test weather-fax chart (custom image not wired)	test weather-fax chart (custom image not wired)
+TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+Text	Text
+The capture rate of the sound card. The engine runs at this rate; there is no radio to tune.	声卡的采集速率。引擎按该速率运行；没有可调谐的电台。
+The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.	The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.
+The microphone starts only when you press START TRANSMITTING.	The microphone starts only when you press START TRANSMITTING.
+The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.	The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.
+this is a general listening mode: there is nothing specific to transmit	this is a general listening mode: there is nothing specific to transmit
+this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
+this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
+this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
+This mode cannot transmit	This mode cannot transmit
+this mode has no transmit generator	this mode has no transmit generator
+This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
+Timeslot	Timeslot
+To	To
+TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
+Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
+USB audio	USB 音频
+Vessel name	Vessel name
+Video / MPEG-TS file	Video / MPEG-TS file
 View	视图
 Help	帮助
 Language	语言
@@ -25,10 +162,16 @@ searching	正在搜索
 syncing	正在同步
 locked	已锁定
 Locked	已锁定
+Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.	Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.
+Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.	Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.
+WAV / MP3 file	WAV / MP3 file
 weak	弱
 stereo	立体声
 mono	单声道
 radio disconnected	无线电设备已断开
+What to send	What to send
+Wi-Fi is not transmitted: the generator models access-point beacons for the decoder	Wi-Fi is not transmitted: the generator models access-point beacons for the decoder
+WPM	WPM
 yes	是
 no lock	未锁定
 never	从未
@@ -124,7 +267,6 @@ Peak hold	峰值保持
 peak hold	峰值保持
 Spectrum	频谱
 Waterfall	瀑布图
-Set the waterfall range from the noise floor and the strongest signal	根据底噪和最强信号设置瀑布图范围
 search modes (FT8, LoRa, APRS...)	搜索模式（FT8、LoRa、APRS...）
 search (FT8, LoRa, APRS...)	搜索（FT8、LoRa、APRS...）
 no mode matches "%s"	没有与“%s”匹配的模式
@@ -209,6 +351,7 @@ Digital voice, 14.236 MHz	数字语音，14.236 MHz
 Digital voice, 433.475 MHz	数字语音，433.475 MHz
 Digital voice, 145.375 MHz	数字语音，145.375 MHz
 Network info, 380 - 470 MHz	网络信息，380 - 470 MHz
+Network info, UHF	网络信息，UHF
 LTE, band scan	LTE，频段扫描
 5G NR, GSCN scan	5G NR，GSCN 扫描
 Railway, 921 - 925 MHz	铁路，921 - 925 MHz
@@ -279,7 +422,6 @@ Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adju
 Auto-tune	自动调节
 Stop tune	停止调节
 Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	增益助手：用约 40 秒尝试各种 LNA/VGA/放大器组合，保留信噪比最好且不削波的一组。\n需要一个接收机能锁定的信号。
-Gain controls apply to radios only (not to a recording or the synthetic signal)	增益控件仅对无线电设备有效（对录制文件或合成信号无效）
 gain helper %d/%d ...	增益助手 %d/%d ...
 ADC OVERLOAD - %s	ADC 过载 - %s
 AGC is lowering the gain	自动增益正在降低增益
@@ -528,13 +670,14 @@ Symbol rate	符号率
 #  updates
 Updates	更新
 Check for updates automatically	自动检查更新
-Include pre-releases	包括预发布版本
+Include beta versions	包括测试版
 Check now	立即检查
 Not checked yet.	尚未检查。
 Asking GitHub for the newest version…	正在向 GitHub 查询最新版本…
+Yes, clear all	Yes, clear all
 You have the newest version.	已是最新版本。
 Version %s is available%s.	版本 %s 已发布%s。
- (pre-release)	（预发布）
+ (beta)	（测试版）
 Download and install	下载并安装
 Download and install them by themselves	自动下载并安装
 Skip this version	跳过此版本
@@ -575,3 +718,413 @@ Copied	已复制
 Copies the version, system, radios, messages and radio log lines, for a bug report	复制版本、系统、设备、消息和设备日志行，用于问题报告
 spectrum dB	频谱 dB
 waterfall dB	瀑布图 dB
+# added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
+  (mirrored: I/Q swapped)	  (镜像：I/Q 已交换)
+%s, %d client%s, %llu sent, %llu dropped	%s，%d 个客户端%s，已发送 %llu，已丢弃 %llu
+A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	HackRF、Airspy 或 RTL-SDR 需要一次性安装 WinUSB 驱动：请用 Zadig（zadig.akeo.ie）安装。
+A Linux driver for TV sticks took the radio before the SDRplay software could.	Linux 的电视棒驱动抢在 SDRplay 软件之前占用了这台电台。
+A high-end computer is recommended. Lower sample rates help.	建议使用高性能电脑。降低采样率会有帮助。
+A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	世界地图：按坐标或梅登黑德网格定位置，显示与你所在位置的距离和方位
+Add a receiver: another radio with its own mode	添加接收器：另一台使用自己模式的电台
+Add receiver	添加接收器
+Added to a level in dBFS to give dBm for this radio: feed a known signal into the antenna port and set the difference. Used when the spectrum shows dBm (Spectrum button on the plot).	加到 dBFS 电平上，得到这台电台的 dBm：向天线口输入已知信号并设置差值。频谱以 dBm 显示时使用（图上的“频谱”按钮）。
+Aircraft	飞机
+All set. OnAir will start here:	设置完成。OnAir 将从这里开始：
+Allow remote control (frequency and gain)	允许远程控制（频率和增益）
+Amateur radio	业余无线电
+An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	已插入 SDRplay RSP，但未安装其驱动 SDRplay API。这是 SDRplay 自己的软件，其许可不允许 OnAir 附带，因此需要一次性下载。
+Another program is using the HackRF	另一个程序正在使用 HackRF
+Australia and New Zealand	澳大利亚和新西兰
+Average	平均
+CPU load now: %.0f%% (100%% = one core)	当前 CPU 负载：%.0f%%（100%% = 一个核心）
+Calls and data are shown, but the voice is silent until you install the codec yourself. OnAir does not ship it (patents).	会显示通话和数据，但在您自行安装编解码器之前语音是静音的。OnAir 不附带它（专利原因）。
+Cancel	取消
+Carrier MHz	载波 MHz
+Carriers in the span (click: listen and show; double click: tune to it)	范围内的载波（单击：收听并显示；双击：调谐到它）
+Channel MHz	信道 MHz
+Channel raster	信道间隔
+Check that PulseAudio or PipeWire runs, and that an output is chosen in the sound settings.	请确认 PulseAudio 或 PipeWire 正在运行，并已在声音设置中选择了输出设备。
+Check that rtl_tcp is running on the other computer and prints "listening".	请确认另一台电脑上的 rtl_tcp 正在运行并显示“listening”。
+Check that the file still exists and that you may read it.	请确认文件仍然存在，并且您有读取权限。
+Check that the firmware is the stock one, or a known one such as Tezuka.	请确认固件是原厂固件或 Tezuka 等已知固件。
+Check the USB cable and port, then press the refresh button.	请检查 USB 线和端口，然后点击刷新按钮。
+Check the address and port, and that nothing blocks them (firewall, Wi-Fi).	请检查地址和端口，并确认没有被阻止（防火墙、Wi-Fi）。
+China	中国
+Choose a frequency inside the range shown in the message.	请选择消息中所示范围内的频率。
+Choose the file again.	请重新选择文件。
+Close other programs that use the radio.	请关闭其他使用这台电台的程序。
+Close programs that hold the sound device exclusively.	请关闭独占声音设备的程序。
+Close the other program (a second OnAir, SDR software, hackrf_info).	请关闭另一个程序（第二个 OnAir、SDR 软件、hackrf_info）。
+Close this receiver: it stops and lets go of its radio	关闭此接收器：它会停止并释放其电台
+Colour map	色图
+Colours	颜色
+Converter (up-converter / LNB)	变频器（上变频器 / LNB）
+Copy the command	复制命令
+Copy the restart command	复制重启命令
+Copy the udev command	复制 udev 命令
+Details	详情
+Don't show again	不再显示
+Down, LO above: radio = LO - RF (mirrored)	下变频，LO 在上：电台 = LO - RF（镜像）
+Down, LO below: radio = RF - LO	下变频，LO 在下：电台 = RF - LO
+Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	请从 sdrplay.com/api 下载适用于此电脑的 SDRplay API 并运行安装程序。
+Download the current SDRplay API from sdrplay.com and install it.	请从 sdrplay.com 下载最新的 SDRplay API 并安装。
+Drag to resize, double click for the automatic size	拖动调整大小，双击恢复自动大小
+Drones, 2.4 / 5.8 GHz	无人机，2.4 / 5.8 GHz
+Elsewhere	其他地区
+Europe	欧洲
+FM / DAB radio	FM / DAB 广播
+FM radio	FM 广播
+Files: audio and IQ	文件：音频和 IQ
+Fill under the line	填充曲线下方
+Find "SDRplay API Service" and press Start (or Restart).	找到“SDRplay API Service”，点击启动（或重新启动）。
+Fix the address of the network radio (host:port).	请修正网络电台的地址（主机:端口）。
+Download OnAir again and unpack or install the whole package: the codec2 library belongs next to the program.	请重新下载 OnAir，并解压或安装完整的软件包：codec2 库就在程序旁边。
+Follow the steps in the full instructions to install the codec.	请按完整说明中的步骤安装编解码器。
+For an RSP, install the SDRplay API first (sdrplay.com).	使用 RSP 时，请先安装 SDRplay API（sdrplay.com）。
+Found %s (%s)	找到 %s（%s）
+Found:	已找到：
+Frequency and level of the strongest peaks in view	视图中最强峰值的频率和电平
+Full instructions	完整说明
+Gliders, 868.2 / 868.4 MHz	滑翔机，868.2 / 868.4 MHz
+Grid	网格
+How far the converter's oscillator runs fast (positive) or slow. The LO used is LO x (1 + ppm / 1e6).	变频器振荡器偏快（正）或偏慢的程度。实际使用的 LO 为 LO x (1 + ppm / 1e6)。
+How fast the max-hold line falls; 0: it stays until reset	最大保持线的下降速度；0：保持到重置
+How to fix	解决方法
+Images	图像
+Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay	安装 OnAir 的黑名单文件（.deb 包会自动安装），或运行：sudo systemctl restart sdrplay
+Install the SDRplay API	安装 SDRplay API
+Install the SDRplay API from sdrplay.com if you have not.	如果尚未安装，请从 sdrplay.com 安装 SDRplay API。
+Install the WinUSB driver once with Zadig (zadig.akeo.ie): choose the radio, then the driver WinUSB, then Install.	用 Zadig（zadig.akeo.ie）一次性安装 WinUSB 驱动：选择电台，再选择驱动 WinUSB，然后点击安装。
+Install the udev rules (install-udev-rules.sh), then unplug and replug the radio.	安装 udev 规则（install-udev-rules.sh），然后拔下并重新插入电台。
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb does it).	安装 udev 规则：运行 OnAir 文件夹中的 install-udev-rules.sh（.deb 包会自动完成）。
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb package does it for you).	安装 udev 规则：运行 OnAir 文件夹中的 install-udev-rules.sh（.deb 包会为您完成）。
+Intensity (dB)	强度 (dB)
+IoT, 2.4 GHz	物联网，2.4 GHz
+IoT, sub-GHz	物联网，sub-GHz
+It is streaming to another program: stop it there first.	它正在向另一个程序传输数据：请先在那里停止。
+Japan	日本
+Journaline	Journaline
+Just explore	随便看看
+Keep the waterfall range on the noise floor and the strongest signal (click again to stop following)	让瀑布图范围跟随底噪和最强信号（再次点击停止跟随）
+LO (MHz)	LO (MHz)
+LO correction (ppm)	LO 校正 (ppm)
+Let other computers connect (LAN)	允许其他电脑连接（局域网）
+Level at the cursor	光标处电平
+Level dB	电平 dB
+Linux grabbed the SDRplay radio	Linux 占用了 SDRplay 电台
+Linux treats the radio as a sound card	Linux 把电台当作声卡
+Load	加载
+Look again	重新查找
+Look for Hermes Lite 2 radios on this computer's networks again	重新在此电脑的网络上查找 Hermes Lite 2 电台
+Maritime, VHF	海事，VHF
+Max hold	最大保持
+Meteor scatter, 28.145 MHz	流星余迹通信，28.145 MHz
+Middle East	中东
+Mirror the spectrum (swap I and Q)	镜像频谱（交换 I 和 Q）
+NB-IoT, band scan	NB-IoT，频段扫描
+NCDXF/IARU, Long Dashes, single letters	NCDXF/IARU，长划，单个字母
+Network	网络
+Network radio: %llu samples lost (underruns)	网络电台：丢失 %llu 个采样（数据不足）
+No Hermes Lite 2 answered on this computer's networks: type its address.	此电脑的网络上没有 Hermes Lite 2 响应：请输入其地址。
+No radio found	未找到电台
+No sound output	没有声音输出
+North America	北美
+Not a locator or coordinates	不是网格定位符或坐标
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	在 Windows 上，HackRF 需要一次性安装 WinUSB 驱动：请用 Zadig（zadig.akeo.ie）安装。
+OnAir %s	OnAir %s
+OnAir cannot see a HackRF on the USB ports.	OnAir 在 USB 端口上看不到 HackRF。
+OnAir could not open the speakers, so there will be no sound.	OnAir 无法打开扬声器，因此不会有声音。
+OnAir could not use the rtl_tcp server, or the connection dropped.	OnAir 无法使用 rtl_tcp 服务器，或连接已断开。
+OnAir found the SDRplay software, but its background service does not answer, so the RSP cannot be opened.	OnAir 找到了 SDRplay 软件，但其后台服务没有响应，因此无法打开 RSP。
+OnAir lists a radio when the computer sees it. You can still try everything with the synthetic signal or an IQ file.	电脑识别到电台后，OnAir 就会列出它。您仍可使用合成信号或 IQ 文件体验所有功能。
+OnAir needs SDRplay API 3.07 or a newer 3.x.	OnAir 需要 SDRplay API 3.07 或更新的 3.x 版本。
+Only one program can use an rtl_tcp server at a time: close any other client.	同一时间只有一个程序能使用 rtl_tcp 服务器：请关闭其他客户端。
+Only one program can use the radio at a time.	同一时间只有一个程序能使用这台电台。
+Only one receiver plays its sound at a time: click to hear this one	同一时间只有一个接收器播放声音：点击以收听此接收器
+Open Services (press Win+R, type services.msc).	打开“服务”（按 Win+R，输入 services.msc）。
+Open System Settings > Sound and pick an output device.	打开“系统设置 > 声音”并选择输出设备。
+Open codecs folder	打开编解码器文件夹
+Open driver page	打开驱动页面
+Open firmware page	打开固件页面
+Open the SDRplay API page	打开 SDRplay API 页面
+Open the device list	打开设备列表
+Optional: your position, as a Maidenhead locator (KO24pq) or coordinates (54.68, 25.28). It is kept on this computer and used for maps and satellite passes.	可选：您的位置，梅登黑德网格定位符（KO24pq）或坐标（54.68, 25.28）。它仅保存在这台电脑上，用于地图和卫星过境。
+Or choose another radio from the list.	或从列表中选择另一台电台。
+Or install OnAir's blacklist file (the .deb package does it).	或安装 OnAir 的黑名单文件（.deb 包会自动安装）。
+Or set the UHD_IMAGES_DIR variable to the folder with the images.	或将变量 UHD_IMAGES_DIR 设置为存放镜像的文件夹。
+Own accent colour	自定义强调色
+PSK Reporter	PSK Reporter
+Pagers, tones and FFSK	寻呼机、音调和 FFSK
+Pause	暂停
+Peak markers	峰值标记
+Plug a radio into the computer that runs the SpyServer, and restart the SpyServer.	请把电台接到运行 SpyServer 的电脑上，然后重启 SpyServer。
+Plug the radio in again and press the refresh button.	请重新插入电台，然后点击刷新按钮。
+Plug the radio in, directly or through a powered hub.	请插入电台，直接连接或通过带电源的集线器连接。
+Press "Look again" in the ? help next to the sound.	在声音旁边的 ? 帮助中点击“重新查找”。
+Press the refresh button next to the radio list.	点击电台列表旁边的刷新按钮。
+Press the refresh button next to the source.	点击信号源旁边的刷新按钮。
+Put the library in the OnAir codecs folder (button below).	把库文件放入 OnAir 编解码器文件夹（下方按钮）。
+Put the panels back to their automatic sizes (drag the bars between panels to resize them)	将面板恢复为自动大小（拖动面板之间的分隔条可调整大小）
+Radar chirps, HF	雷达啁啾，短波
+Radio settings (%d changed)###radioset	电台设置（已更改 %d 项）###radioset
+Radio settings###radioset	电台设置###radioset
+Receivers at once	同时接收器数量
+Reduce CPU when hidden	隐藏时降低 CPU 占用
+Remote driver	远程驱动
+Reset	重置
+Reset layout	重置布局
+Restart OnAir (the installer starts SDRplay's background service).	重启 OnAir（安装程序会启动 SDRplay 的后台服务）。
+Restart OnAir.	重启 OnAir。
+Restart the Mac, or run in Terminal: sudo launchctl kickstart -k system/com.sdrplay.service	重启 Mac，或在终端中运行：sudo launchctl kickstart -k system/com.sdrplay.service
+Right-click the speaker icon, open Sound settings and pick an output device.	右键单击扬声器图标，打开声音设置并选择输出设备。
+Run in a terminal: sudo systemctl restart sdrplay	在终端中运行：sudo systemctl restart sdrplay
+Run once in a terminal: uhd_images_downloader	在终端中运行一次：uhd_images_downloader
+Run: sudo modprobe -r msi2500 msi001	运行：sudo modprobe -r msi2500 msi001
+Running several radios at the same time needs a lot of processing power. Performance may limit what is possible: with too many or too fast receivers samples are dropped and decoding gets worse.	同时运行多台电台需要大量计算能力。性能可能会限制可行的范围：接收器过多或速度过快会丢失采样，解码效果变差。
+SDR	SDR
+SNR dB	SNR dB
+Satellites	卫星
+Satellites, 1.6 GHz	卫星，1.6 GHz
+Save bug report	保存错误报告
+Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue	保存一个包含诊断信息、日志和最近崩溃报告的 zip 文件：请附到 GitHub issue 中
+Search	搜索
+Seen	最后出现
+Send spots to PSK Reporter (pskreporter.info)	向 PSK Reporter 发送接收报告 (pskreporter.info)
+Sensors and IoT	传感器与物联网
+Services	服务
+Set the LO above 0 MHz.	请将 LO 设置为大于 0 MHz。
+Setup	设置
+Setup wizard	设置向导
+Share my radio (rtl_tcp server)	共享我的电台（rtl_tcp 服务器）
+Share the radio's samples as an rtl_tcp server	将电台的采样作为 rtl_tcp 服务器共享
+Ships	船舶
+Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs.	显示并调谐天线端的频率，而电台实际调谐在变频器的输出频率上。
+Skip setup	跳过设置
+Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)	频谱：平均、最大保持、峰值标记、填充、网格和单位（dBFS 或 dBm）
+Speed (rows a second)	速度（每秒行数）
+Spots are public. A valid amateur radio callsign is required; the dial frequency is the tuned frequency.	接收报告是公开的。需要有效的业余无线电呼号；拨盘频率即当前调谐频率。
+Stop adding rows: the picture stays, and drag or the wheel on the waterfall scroll and zoom back through it	停止添加新行：画面保持不变，在瀑布图上拖动或使用滚轮可回看并缩放
+Television	电视
+Text size	文字大小
+Text size %d%%	文字大小 %d%%
+The FreeDV / M17 voice codec (codec2) was not found	未找到 FreeDV / M17 语音编解码器 (codec2)
+The HackRF firmware does not match	HackRF 固件不匹配
+The HackRF is not found	未找到 HackRF
+The Linux sound driver holds the radio, so the SDRplay software cannot see it.	Linux 声音驱动占用了电台，所以 SDRplay 软件看不到它。
+The PlutoSDR answered, but without its radio chip. It may still be starting, or run unusual firmware.	PlutoSDR 有响应，但没有射频芯片。它可能仍在启动，或运行着不常见的固件。
+The PlutoSDR does not show its radio chip	PlutoSDR 未显示其射频芯片
+The RTL-SDR is gone	RTL-SDR 已消失
+The SDRplay service is not running	SDRplay 服务未运行
+The SDRplay software is too old	SDRplay 软件版本过旧
+The SpyServer answered, but no radio is plugged into it.	SpyServer 有响应，但没有接入任何电台。
+The USRP needs its firmware images	USRP 需要其固件镜像
+The USRP software is installed, but the firmware images it loads are missing.	已安装 USRP 软件，但它要加载的固件镜像缺失。
+The address of the network radio must look like host:port, for example 192.168.1.20:1234.	网络电台的地址必须形如 主机:端口，例如 192.168.1.20:1234。
+The file could not be opened	无法打开该文件
+The firmware inside the HackRF is older than the software talking to it.	HackRF 内的固件比与其通信的软件旧。
+OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.	OnAir 仍会向电台请求该频率,但电台或其驱动程序可能无法达到该频率,信号也可能很弱或没有。
+The most receivers are open	已打开的接收器数量达到上限
+The network radio (rtl_tcp) does not answer	网络电台 (rtl_tcp) 没有响应
+The picture holds the last %.0f s.	画面保留最近 %.0f 秒。
+The radio did not start	电台未能启动
+The radio is plugged in, but the system does not let your account use it yet.	电台已插入，但系统尚未允许您的账户使用它。
+The radio opened badly or stopped at once. The message above says why; these steps solve most cases.	电台打开失败或立即停止。上面的消息说明了原因；这些步骤可解决大多数情况。
+The radio was found but the USB link to it did not work. This is usually permission, the cable or the port.	找到了电台，但 USB 连接失败。通常是权限、线缆或端口的问题。
+The radio you chose is no longer connected.	您选择的电台已不再连接。
+The radio's SoapySDR driver on the server, or a key=value list: driver=sdrplay,serial=1.	服务器上该电台的 SoapySDR 驱动，或 key=value 列表：driver=sdrplay,serial=1。
+The radio's USB connection failed	电台的 USB 连接失败
+The recording file is missing, moved or not readable.	录音文件缺失、已被移动或无法读取。
+The rtl_tcp address is not valid	rtl_tcp 地址无效
+The server has no radio	服务器没有电台
+The text and data are shown, but speech needs the codec2 library. It comes with OnAir, so this copy is probably incomplete.	文字和数据会显示，但语音需要 codec2 库。它随 OnAir 一起提供，因此这份副本可能不完整。
+The voice codec (mbelib) is not installed	未安装语音编解码器 (mbelib)
+This frequency is not reachable through the converter.	通过该变频器无法到达此频率。
+This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	这是 Linux 的问题。请在此系统上拔下电台，重新插入，然后点击刷新按钮。
+This frequency is outside what this radio is specified for	该频率超出了这台电台的规格范围
+This user may not open the radio	此用户无权打开电台
+Time constant of the averaged line: longer is calmer	平均曲线的时间常数：越长越平稳
+Tools	工具
+Trace	曲线
+Trunked and two-way radio	集群与对讲无线电
+Try another USB port and a short cable.	请换一个 USB 端口并使用短线缆。
+Try another USB port, directly on the computer (not a hub), and a short cable.	请换一个直接插在电脑上的 USB 端口（不要用集线器），并使用短线缆。
+Try another USB port, directly on the computer (not a hub).	请换一个直接插在电脑上的 USB 端口（不要用集线器）。
+Try another USB port, directly on the computer.	请换一个直接插在电脑上的 USB 端口。
+Tuner (DAB)###Tuner	调谐器 (DAB)###Tuner
+Tuner (FM)###Tuner	调谐器 (FM)###Tuner
+Unit	单位
+United Kingdom and Ireland	英国和爱尔兰
+Unplug and replug the radio, then press the refresh button.	拔下并重新插入电台，然后点击刷新按钮。
+Unplug the HackRF and plug it in again.	拔下 HackRF 并重新插入。
+Unplug the USRP, plug it in again and press the refresh button.	拔下 USRP，重新插入，然后点击刷新按钮。
+Unplug the radio and plug it in again, then press the refresh button.	拔下电台并重新插入，然后点击刷新按钮。
+Unplug the radio and plug it in again.	拔下电台并重新插入。
+Unplug the radio, plug it in again and press the refresh button.	拔下电台，重新插入，然后点击刷新按钮。
+Up: radio = RF + LO	上变频：电台 = RF + LO
+Update the HackRF firmware (the page below has the steps; the file comes with the HackRF software).	更新 HackRF 固件（下方页面有步骤；固件文件随 HackRF 软件提供）。
+Wait a minute after plugging it in, then press the refresh button.	插入后等待一分钟，然后点击刷新按钮。
+Waterfall: colour map, intensity range, speed and pause (then drag or use the wheel to look back)	瀑布图：色图、强度范围、速度和暂停（之后可拖动或用滚轮回看）
+Wave buoys, HF	波浪浮标，短波
+Weather alerts, 162.55 MHz	天气警报，162.55 MHz
+Weather pictures, 1.7 GHz	气象图像，1.7 GHz
+What do you want to receive? Tick anything that interests you.	您想接收什么？勾选您感兴趣的任何内容。
+What to add to a level in dBFS to get dBm for this radio (its calibration: a known signal into the antenna port shows it). Also in the radio's settings.	要加到 dBFS 电平上才能得到这台电台 dBm 的数值（即其校准值：向天线口输入已知信号即可得出）。也可在电台设置中修改。
+Where are you? This picks the right TV standard and FM band.	您在哪里？这将选择合适的电视标准和 FM 频段。
+Which language do you want OnAir in?	您希望使用哪种语言的 OnAir？
+Which radio do you have?	您有哪种电台？
+You can change the mode any time, and run this setup again from Help > Setup wizard.	您可以随时更改模式，也可以从“帮助 > 设置向导”重新运行此设置。
+You can go on without one: the synthetic signal and IQ files work with no hardware.	没有电台也可以继续：合成信号和 IQ 文件无需硬件即可使用。
+Your callsign	您的呼号
+Your locator	您的网格定位符
+Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.	缩放：鼠标滚轮（两个轴）、Ctrl+滚轮（频率）、Shift+滚轮（电平）。\nCtrl+PageUp / PageDown：按一屏频率步进视图。双击：重置。
+antenna %.6g MHz -> %s LO %.6g -> radio %.6g MHz%s	天线 %.6g MHz -> %s LO %.6g -> 电台 %.6g MHz%s
+channel scan has the radio	信道扫描正在使用电台
+dBm offset	dBm 偏移
+dBm offset (dB)	dBm 偏移 (dB)
+decode every channel in the span: a receiver for each occupied channel, one plays, the others keep decoding\n(right click: how many at once, where the channels sit)	解码范围内的每个信道：每个有信号的信道一个接收器，一个出声，其他继续解码\n（右键：同时数量、信道位置）
+decode every signal in the visible span, not just the tuned one	解码可见范围内的每个信号，而不仅是已调谐的那个
+empty	空
+held	已保持
+holds	保持
+last send %s	上次发送 %s
+listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	正在监听 %s 端口 %d，%d 个客户端，已发送 %.1f MB，已丢弃 %.1f MB
+max	最大
+mute	静音
+on air	播出中
+partial	部分
+point %s	点 %s
+power (dBm)	功率 (dBm)
+searching for Hermes Lite 2 radios…	正在查找 Hermes Lite 2 电台…
+sound	声音
+up-converter	上变频器
+waiting	等待中
+waterfall dB##wfdb	瀑布图 dB##wfdb
+spectrum dB##specdb	频谱 dB##specdb
+Clear##log	清除##log
+# added for 0.2.6: remaining acronyms, frequency labels and long texts
+ADS-B	ADS-B
+AFSK, 144.8 MHz	AFSK, 144.8 MHz
+AIS	AIS
+APRS	APRS
+ATSC 8-VSB, 6 MHz	ATSC 8-VSB, 6 MHz
+CFO	CFO
+Ctrl + / Ctrl - / Ctrl 0	Ctrl + / Ctrl - / Ctrl 0
+DVB-T	DVB-T
+EVM %.1f dB	EVM %.1f dB
+Es'hail-2, 10.49 GHz	Es'hail-2, 10.49 GHz
+FIC	FIC
+GI	GI
+LNB	LNB
+LoRa, 433.175 MHz	LoRa, 433.175 MHz
+LoRa, 433.775 MHz	LoRa, 433.775 MHz
+ONAIR	ONAIR
+SNR	SNR
+SRO	SRO
+TR	TR
+WSJT, 1.8366 MHz	WSJT, 1.8366 MHz
+WSJT, 14.074 MHz	WSJT, 14.074 MHz
+WSJT, 14.076 MHz	WSJT, 14.076 MHz
+WSJT, 14.078 MHz	WSJT, 14.078 MHz
+WSJT, 14.080 MHz	WSJT, 14.080 MHz
+WSJT, 14.084 MHz	WSJT, 14.084 MHz
+WSJT, 14.100 MHz	WSJT, 14.100 MHz
+%.0f deg	%.0f 度
+%s, %llu spots sent in %llu packets, %llu duplicates skipped	%s，已在 %llu 个数据包中发送 %llu 个 spot，跳过 %llu 个重复项
+offset %+.3f %+.3f	偏移 %+.3f %+.3f
+sigma %.3f per axis (%.0f%% of the half-distance to a neighbour)	每轴 sigma %.3f（相邻点半距离的 %.0f%%）
+A second OnAir (Add network radio, rtl_tcp), SDR# or SDR++ connects to this computer's address and the port. Samples are sent as 8-bit IQ at the rate the radio runs at. Without 'allow remote control' the clients cannot change the frequency or gain.	第二个 OnAir（添加网络电台，rtl_tcp）、SDR# 或 SDR++ 可连接到这台计算机的地址和端口。采样以 8 位 IQ 格式按电台运行的速率发送。未勾选“允许远程控制”时，客户端无法更改频率或增益。
+Sends the FT8, FT4, FT2, WSPR, JS8Call, PSK31 and CW stations you decode to pskreporter.info, so they show on its public map and statistics. A report is: the sender's callsign, frequency, SNR, mode, its locator when the message has one, and when it was heard; with your callsign, locator, antenna text and 'OnAir'. Reports are batched and sent every 5 minutes; the same station on the same band is sent once per 10 minutes. Nothing is sent until you tick the box. Spots are public: use your own valid amateur radio callsign. CW and PSK31 are only reported when the text says 'DE callsign'.	将您解码的 FT8、FT4、FT2、WSPR、JS8Call、PSK31 和 CW 电台发送到 pskreporter.info，使其显示在该网站的公开地图和统计中。一条报告包含：发送方呼号、频率、SNR、模式、消息中的网格定位（如有）以及接收时间；同时附带您的呼号、网格定位、天线说明和“OnAir”。报告会批量处理并每 5 分钟发送一次；同一波段上的同一电台每 10 分钟只发送一次。勾选复选框之前不会发送任何内容。Spot 是公开的：请使用您自己的有效业余无线电呼号。CW 和 PSK31 仅在文本中包含“DE 呼号”时才会上报。
+BW	BW
+CH	CH
+Channel scan	频道扫描
+FM	FM
+# RX888 MkII
+The RX888 needs its firmware file	RX888 需要它的固件文件
+The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	RX888 MkII 的 USB 芯片本身没有程序：每次插入电台时由电脑加载。这个文件 SDDC_FX3.img 属于 SDDC 项目并有自己的许可证，因此 OnAir 不包含它。
+Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below).	请从 SDDC_Driver 项目的 Releases 页面下载 SDDC_FX3.img（下方按钮）。
+Put the file in OnAir's codecs folder (button below).	把文件放入 OnAir 编解码器文件夹（下方按钮）。
+The RX888 is on a USB 2 port	RX888 连接在 USB 2 端口上
+The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	RX888 MkII 每秒最多发送 256 MB 数据。它需要 USB 3（SuperSpeed）端口和 USB 3 数据线；在 USB 2 端口上无法传输数据流。
+Plug the radio into a USB 3 port directly on the computer, not through a USB 2 hub.	请把电台直接插到电脑的 USB 3 端口上，不要通过 USB 2 集线器。
+Use a USB 3 cable (the one that came with the radio).	请使用 USB 3 数据线（电台附带的那根）。
+Downloads when you click, and by itself once a day. Fetches:	点击时下载，并每天自动下载一次。获取：
+Automatic update	自动更新
+Downloads the TLEs again once a day, only while this window is open or a pass is tracked. Without a network the saved lists are used.	每天重新下载一次 TLE，仅在此窗口打开或正在跟踪过境时进行。没有网络时使用已保存的列表。
+last downloaded %s	上次下载：%s
+Pass of %s in %d:%02d (max %.0f deg): the receiver starts by itself	%s 将在 %d:%02d 后过境（最大 %.0f 度）：接收机将自动启动
+Pass of %s in %d:%02d (max %.0f deg)	%s 将在 %d:%02d 后过境（最大 %.0f 度）
+remind %.0f min before	提前 %.0f 分钟提醒
+A line at the top of the window and a log entry before the tracked pass rises (0: off)	在被跟踪的过境开始前，窗口顶部显示一行提示并写入日志（0：关闭）
+Record this pass	录制此次过境
+Cancel recording this pass	取消录制此次过境
+Arms this pass only: at AOS the receiver starts in the satellite's mode and frequency (when it is stopped), Doppler is followed and the IQ is recorded; at LOS it stops and tracking switches off again	仅对此次过境有效：在 AOS 时，接收机（若已停止）以卫星的模式和频率启动，跟随多普勒并录制 IQ；在 LOS 时停止，跟踪随之关闭
+armed: %s at %s	已就绪：%s，%s
+Save PNG...	保存 PNG...
+Save CSV...	保存 CSV...
+saved	已保存
+All time	全部时间
+Last 24 hours	最近 24 小时
+Last hour	最近 1 小时
+Rolling window: a sector's furthest position counts only for this long	滑动窗口：每个扇区的最远位置只在这段时间内有效
+Set the receiver position first: ranges are measured from it.	请先设置接收机位置：距离从该位置起算。
+Nothing heard yet: the plot fills in as positions arrive.	尚未收到任何信号：收到位置后图表会逐步填充。
+Longest range: %.0f %s at %.0f deg (%llu reports)	最大距离：%.0f %s，方位 %.0f 度（%llu 条报告）
+Range	范围
+Dark	深色
+High contrast (black, white, yellow)	高对比度（黑、白、黄）
+Remote control API (HTTP and WebSocket)	远程控制 API（HTTP 和 WebSocket）
+Let scripts and other programs control this receiver	允许脚本和其他程序控制此接收机
+Let other computers connect (LAN, needs the token)	允许其他计算机连接（局域网，需要令牌）
+Token	令牌
+New token	新令牌
+Copy token	复制令牌
+listening on %s port %d, %d HTTP and %d WebSocket client(s), %d requests, %d refused	正在监听 %s，端口 %d，%d 个 HTTP 和 %d 个 WebSocket 客户端，%d 个请求，%d 个被拒绝
+Programs on this computer need no token; any other address must send it as 'Authorization: Bearer <token>'. The API lists the radios, starts and stops the receiver, sets mode, frequency, sample rate and gain, and gives the telemetry and the spectrum as JSON, also as a WebSocket stream. Endpoints: see README.md.	本机上的程序无需令牌；其他任何地址都必须以 'Authorization: Bearer <令牌>' 发送令牌。该 API 可列出无线电设备、启动和停止接收机、设置模式、频率、采样率和增益，并以 JSON（也可通过 WebSocket 流）提供遥测数据和频谱。端点：见 README.md。
+Stop optimising	停止优化
+Optimise gain	优化增益
+Optimise gain: steps through the radio's gain range and measures the reception quality at each step (the mode's SNR while it is locked, else the signal-to-noise ratio of the spectrum around the channel, else the ADC level), then sets the lowest gain that is within 0.5 dB of the best quality and does not overload the ADC. Takes about 40 s and needs a signal. The AGC is paused and stays off.	优化增益：逐步扫描无线电设备的增益范围，并在每一步测量接收质量（模式锁定时用其 SNR，否则用信道周围频谱的信噪比，再否则用 ADC 电平），然后设置与最佳质量相差不超过 0.5 dB 且不使 ADC 过载的最低增益。约需 40 秒，并且需要有信号。AGC 会暂停并保持关闭。
+Undo gain	撤销增益
+Go back to the gain (and the AGC setting) from before the last optimisation	恢复到上次优化之前的增益（和 AGC 设置）
+Optimising gain %d/%d: %d dB ...	正在优化增益 %d/%d：%d dB ...
+Every gain step overloaded the ADC: the lowest gain was kept	每个增益步进都使 ADC 过载：保留了最低增益
+Gain optimised: %d dB (was %d dB)	增益已优化：%d dB（原为 %d dB）
+judged by the mode's SNR	依据模式的 SNR 判定
+judged by the SNR in the spectrum	依据频谱中的 SNR 判定
+judged by the ADC level	依据 ADC 电平判定
+
+#  transmit (View > Transmit)
+Transmit...	发射...
+Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission.	通过支持发射的无线电发送此模式自身的信号。在您启动之前保持关闭；需要许可证或许可。
+TRANSMITTING	正在发射
+Channel width	信道带宽
+Frequency (MHz)	频率 (MHz)
+TX gain (dB)	发射增益 (dB)
++14 dB amplifier	+14 dB 放大器
+Repeat until stopped	重复直到停止
+seconds	秒
+STOP TRANSMITTING	停止发射
+START TRANSMITTING	开始发射
+This radio has no transmit driver in OnAir.	此无线电在 OnAir 中没有发射驱动。
+Before you transmit	发射之前
+Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	在您所在的地方发射需要许可证或许可。您对所发射的内容以及不干扰他人（包括人们依赖其保障安全的服务）负责。开始前请将天线、衰减器或假负载连接到无线电。OnAir 不限制频率或功率：只有无线电自身的限制。
+I understand	我已了解
+GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	不发射 GNSS：其生成器是卫星信号模拟器（欺骗）
+cellular signals are not transmitted: the generators model a network cell for testing the decoder	不发射蜂窝信号：这些生成器模拟网络小区，用于测试解码器
+this is an analysis mode: there is nothing to transmit	这是分析模式：没有可发射的内容
+TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA 0 至 47 dB；+14 dB 放大器有独立开关
+the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	AD9361 的发射衰减以增益显示：-89.75 dB（最小功率）至 0 dB（最大）
+the driver's own TX gain scale (known after the radio has been opened once)	驱动程序自身的发射增益范围（无线电打开过一次后可知）
+RX	RX
+TX	TX
+Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	在接收机 (RX) 与发射机 (TX) 之间切换。发射机有自己的无线电，所以您发射时接收机可以继续接收。
+Transmit radio	发射用无线电
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	未找到可发射的无线电。请接入一台（HackRF、PlutoSDR 或带发射器的 SoapySDR 无线电）并刷新无线电列表。
+Choose a radio to transmit with.	请选择用于发射的无线电。
+%s (in use by RX %d)	%s（被 RX %d 使用）
+%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s 正被 RX %d 使用，而这台无线电不能同时接收和发射。请选择另一台无线电来发射，或先停止该接收机。
+Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list.	输入 PlutoSDR 的 IP（USB gadget 192.168.2.1，或其以太网地址）并 Connect。之后它会出现在 Radio 列表中。
+GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)	GNSS、蓝牙 LE、LoRa（UDP JSON / NMEA）
+GNSS NMEA RMC/GGA (UDP)	GNSS NMEA RMC/GGA（UDP）
+Bluetooth LE advertisements, JSON (UDP)	蓝牙 LE 广播，JSON（UDP）
+LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic，JSON（UDP）
+JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	JSON 行（每行一个对象）；GNSS 除外，用 NMEA。默认关闭，直到打开某个输出。只发送已有结构化消息的模式。

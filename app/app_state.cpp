@@ -4,6 +4,7 @@
 #include "dect2/usb_diag.h"
 #include "dect2/rate_choice.h"
 #include "dect2/hdr_rx.h"
+#include "dect2/sonde_rx.h"
 
 // the name of the built-in test signal in the source list: it follows the mode
 static std::string synthLabel(const App& a) {
@@ -123,17 +124,19 @@ void refreshDevices(App& a) {
     // A radio that is open (the receiver or a channel scan has it) may be missing from a new list: some drivers cannot look at a radio in
     // use (WinUSB on Windows, the SDRplay service), and the list would then drop the radio being received and move the choice to another
     // entry. It stays in the list as it was.
-    const bool inUse = hadRadio && a.devices[a.devIdx].isRadio() && (a.engine.running() || a.scanner.progress().running);
+    const bool inUse = hadRadio && (a.devices[a.devIdx].isRadio() || a.devices[a.devIdx].isAudio()) && (a.engine.running() || a.scanner.progress().running);
     const DeviceInfo keepDev = inUse ? a.devices[a.devIdx] : DeviceInfo();
     a.devices.clear();
     DeviceInfo s; s.kind = DeviceInfo::Synthetic; s.name = synthLabel(a); a.devices.push_back(s);
     DeviceInfo f; f.kind = DeviceInfo::File; f.name = "IQ recording file…"; a.devices.push_back(f);
+    for (auto& d : listAudioDevices()) a.devices.push_back(d);
     std::string err;
     setNetworkRadios(a.netRadios);   // the ones the user added by address come after the ones found
     // HackRF, the radios with a native driver (RTL-SDR, Airspy, BladeRF, LimeSDR, PlutoSDR, USRP) and the rest through SoapySDR
     for (auto& d : listRadios(err)) a.devices.push_back(d);
     for (App* o : receiversAll()) {   // a radio another receiver has open may be missing from the list (drivers cannot look at a radio in use): it stays, as "in use by RX n"
-        if (o == &a || !o->engine.running() || o->devIdx < 2 || o->devIdx >= (int)o->devices.size() || !o->devices[o->devIdx].isRadio()) continue;
+        if (o == &a || !o->engine.running() || o->devIdx < 2 || o->devIdx >= (int)o->devices.size() ||
+            !(o->devices[o->devIdx].isRadio() || o->devices[o->devIdx].isAudio())) continue;
         const DeviceInfo& h = o->devices[o->devIdx];
         bool have = false;
         for (const auto& d : a.devices) have |= deviceClaimKey(d) == deviceClaimKey(h);
@@ -141,7 +144,8 @@ void refreshDevices(App& a) {
     }
     a.hackrfErr = err;
     a.hackrfErrHidden = false;
-    a.usbHints = a.devices.size() == 2 ? usbRadioHints() : std::vector<std::string>();   // reads sysfs: only here, not every frame
+    a.usbHints = std::vector<std::string>();
+    if (a.devices.size() == 2) { a.usbHints = usbRadioHints(); for (auto& h : sdrplayApiHints()) a.usbHints.push_back(h); }   // reads sysfs: only here, not every frame
     if (hadRadio) {
         int idx = -1;
         for (int i = 2; i < (int)a.devices.size(); i++) if (a.devices[i].name == keep) { idx = i; break; }
@@ -151,9 +155,10 @@ void refreshDevices(App& a) {
         }
         a.devIdx = idx >= 0 ? idx : std::min(a.devIdx, (int)a.devices.size() - 1);
     }
-    size_t nHack = 0;
-    for (const auto& d : a.devices) if (d.kind == DeviceInfo::HackRF) nHack++;
-    const std::string line = "device scan: " + std::to_string(nHack) + " HackRF, " + std::to_string(a.devices.size() - 2 - nHack) + " other radio(s)" + (soapySupported() ? "" : " (built without SoapySDR)");
+    size_t nHack = 0, nAudio = 0;
+    for (const auto& d : a.devices) { if (d.kind == DeviceInfo::HackRF) nHack++; if (d.isAudio()) nAudio++; }
+    const std::string line = "device scan: " + std::to_string(nHack) + " HackRF, " + std::to_string(nAudio) + " sound card(s), " +
+        std::to_string(a.devices.size() - 2 - nHack - nAudio) + " other radio(s)" + (soapySupported() ? "" : " (built without SoapySDR)");
     a.engine.log(line);
     // also in the log file (onair.log on Windows), with every radio and any error: what a user can send when a radio does not show up
     fprintf(stderr, "%s\n", line.c_str());
@@ -305,6 +310,8 @@ void applyBandwidth(App& a) {
             if (a.tune.sampleRate > 2 * mt->basebandHz) a.tune.basebandFilterHz = 0.8 * a.tune.sampleRate;
         } else if (mt->stdMode == 23 && hdrIsAmBand(a.freqMhz)) {   // HD Radio AM: a 30 kHz station; 1 Msps suits the HF radios (an HF+ gives 912 ksps)
             a.tune.sampleRate = hdrSampleRate(a.freqMhz); a.tune.basebandFilterHz = 0;
+        } else if (mt->stdMode == 15 && dect2::sondeIsLbandMhz(a.freqMhz)) {   // LMS6-1680: wide FSK (~170 kHz)
+            a.tune.bandwidthMhz = 0.4; a.tune.sampleRate = 2e6; a.tune.basebandFilterHz = 0.4e6;
         }
         const DeviceInfo& dv = a.devices[a.devIdx];
         if (dv.isGeneric()) a.tune.sampleRate = linkRateFor(dv, a.tune, a.tune.sampleRate, mt->stdMode == 23 ? hdrMinSampleRate(a.freqMhz) : mt->minSampleRate);
@@ -352,6 +359,11 @@ void loadPrefs(App& a) {
     a.tune.ampOn = d.getB("amp", false);
     a.recFormat = d.getI("recFormat", 0) == 1 ? 1 : 0;
     a.recSigmf = d.getB("recSigmf", true);
+    a.tvBufMb = (int)d.getI("tvBufMb", 256); a.engine.player().setBufferMB(a.tvBufMb); a.tvBufMb = a.engine.player().bufferMB();
+    a.tvRecMin = std::max(0, (int)d.getI("tvRecMin", 0));
+    a.tvRecAtOn = d.getB("tvRecAtOn", false);
+    a.tvRecAtH = std::max(0, std::min(23, (int)d.getI("tvRecAtH", 0)));
+    a.tvRecAtM = std::max(0, std::min(59, (int)d.getI("tvRecAtM", 0)));
     a.engine.setRecordSigmf(a.recSigmf);
     if (d.has("family")) {
         const int f = std::max(0, std::min(kNumFamilies - 1, (int)d.getI("family", 0)));
@@ -360,7 +372,7 @@ void loadPrefs(App& a) {
         a.family = f;
         if (!curSub(a)) a.sub = firstSubOf(f);
         setFamilyFlags(a, f);
-        if (a.fmMode && !(a.freqMhz >= 87.5 && a.freqMhz <= 108)) a.freqMhz = 100.0;
+        if (a.fmMode && !(a.freqMhz > 0)) a.freqMhz = 100.0;   // a saved FM frequency outside the broadcast band is kept
     }
     for (int f = 0; f < kNumSlots; f++) {   // as many as savePrefs writes
         const std::string k = slotKey(f);
@@ -383,6 +395,19 @@ void loadPrefs(App& a) {
     a.splitSide = (float)d.getI("splitSide", 0); a.splitRight = (float)d.getI("splitRight", 0); a.splitBottom = (float)d.getI("splitBottom", 0);
     a.splitDock = (float)d.getI("splitDock", 0); a.splitBot2 = (float)d.getI("splitBot2", 0);
     if (d.has("newUi")) a.newUi = d.getB("newUi", true);
+    // the spectrum and the waterfall (plots.cpp): every choice is kept
+    if (d.has("wfMap")) a.wf.map = std::max(-1, std::min((int)Waterfall::NumMaps - 1, (int)d.getI("wfMap", -1)));
+    a.wf.autoTrack = d.getB("wfAuto", false);
+    if (d.has("wfMin") && d.has("wfMax")) { a.wf.minDb = (float)d.getD("wfMin", a.wf.minDb); a.wf.maxDb = (float)d.getD("wfMax", a.wf.maxDb); }
+    a.wf.setRate((float)d.getD("wfRate", 0.0));
+    if (d.has("specMin") && d.has("specMax")) { a.yMin = (float)d.getD("specMin", a.yMin); a.yMax = (float)d.getD("specMax", a.yMax); }
+    if (!(a.yMax - a.yMin >= 10)) { a.yMin = -110; a.yMax = -30; }
+    if (!(a.wf.maxDb - a.wf.minDb >= 3)) { a.wf.minDb = -100; a.wf.maxDb = -32; }
+    a.peakHold = d.getB("specHold", a.peakHold);
+    a.holdDecay = std::max(0.f, std::min(60.f, (float)d.getD("holdDecay", a.holdDecay)));
+    a.specAvgSec = std::max(0.f, std::min(5.f, (float)d.getD("specAvg", a.specAvgSec)));
+    a.specFill = d.getB("specFill", a.specFill); a.specGrid = d.getB("specGrid", a.specGrid); a.specPeaks = d.getB("specPeaks", a.specPeaks);
+    a.specReadout = d.getB("specReadout", a.specReadout); a.specDbm = d.getB("specDbm", a.specDbm);
     a.modeGroupsOpen = d.getS("modeGroupsOpen", "");
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
     if (d.has("dtmbBw")) a.dtmbBwMhz = d.getI("dtmbBw", 8) == 6 ? 6 : 8;
@@ -392,10 +417,21 @@ void loadPrefs(App& a) {
     if (d.has("atvNbtvLines")) a.atvNbtvLines = std::max(24, std::min(240, (int)d.getI("atvNbtvLines", 32)));
     if (d.has("atvNbtvFps")) a.atvNbtvFps = std::max(1.f, std::min(60.f, (float)d.getI("atvNbtvFps", 125) / 10.f));
     if (d.has("wideMaskLo")) a.wideFamMask = (uint64_t)(uint32_t)d.getI("wideMaskLo", 0) | ((uint64_t)(uint32_t)d.getI("wideMaskHi", 0) << 32);
+    if (d.has("mtvOn")) a.mtvOn = d.getI("mtvOn", 0) != 0;
+    if (d.has("mtvMax")) a.mtvMax = std::max(0, std::min(8, (int)d.getI("mtvMax", 0)));
+    if (d.has("mtvGrid")) a.mtvGrid = std::max(0, std::min(2, (int)d.getI("mtvGrid", 0)));
     if (d.has("reduceCpuHidden")) a.reduceCpuHidden = d.getI("reduceCpuHidden", 1) != 0;
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
+    if (a.rxId == 1) {
+        a.mapSend = d.getI("mapSend", 0) != 0;
+        a.mapConsent = d.getI("mapConsent", 0) != 0;
+        a.mapStationId = d.getS("mapStationId", "");
+        a.mapServer = d.getS("mapServer", "");
+        if (a.mapSend && !a.mapConsent) a.mapSend = false;   // never on without consent
+    }
     if (d.has("lightUi")) a.lightUi = d.getI("lightUi", 0) != 0;
+    if (d.has("highContrast")) a.highContrast = d.getI("highContrast", 0) != 0;
     a.uiLang = d.getS("uiLang", "");
     i18n::set(a.uiLang.empty() ? plat::uiLanguage() : a.uiLang);
     if (d.has("uiTheme")) a.uiTheme = std::max(0, std::min(2, (int)d.getI("uiTheme", 1)));
@@ -429,13 +465,14 @@ void loadPrefs(App& a) {
     a.engine.setAutoOffset(d.getB("offsetTune", false));
     a.engine.iqFix().iq = d.getB("iqCorrect", false);
     if (d.has("filePath")) a.file.path = d.getS("filePath", "");
+    a.audioIqMode = std::max(0, std::min(3, (int)d.getI("audioIq", 0)));
     if (d.has("outPath")) snprintf(a.filePath, sizeof a.filePath, "%s", d.getS("outPath", "").c_str());
     if (d.has("udpHost")) snprintf(a.udpHost, sizeof a.udpHost, "%s", d.getS("udpHost", "").c_str());
     if (d.has("udpPort")) a.out.port = (int)d.getI("udpPort", a.out.port);
     a.out.rtp = d.getB("udpRtp", false);
     a.out.dropNull = d.getB("dropNull", false);
     a.popTop = d.getB("popTop", true);
-    a.updCheck = d.getB("updCheck", true); a.updAuto = d.getB("updAuto", true); a.updPre = d.getB("updPre", true);
+    a.updCheck = d.getB("updCheck", true); a.updAuto = d.getB("updAuto", true); a.updPre = d.getB("updBeta", false);
     a.updLast = d.getD("updLast", 0); a.updSkip = d.getS("updSkip", "");
     if (a.rxId == 1) loadFeedPrefs(a);   // the feeds are shared by all receivers: RX 1 owns their settings
     a.channels = d.getChannels();
@@ -456,6 +493,10 @@ void savePrefs(const App& a) {
     d.setI("fmDeemph", a.fmDeemph);
     d.setI("fmChanKhz", a.fmChanKhz);
     if (a.rxId == 1) d.setB("newUi", a.newUi);
+    d.setI("wfMap", a.wf.map); d.setB("wfAuto", a.wf.autoTrack); d.setD("wfMin", a.wf.minDb); d.setD("wfMax", a.wf.maxDb); d.setD("wfRate", a.wf.rowsPerSec);
+    d.setD("specMin", a.yMin); d.setD("specMax", a.yMax);
+    d.setB("specHold", a.peakHold); d.setD("holdDecay", a.holdDecay); d.setD("specAvg", a.specAvgSec);
+    d.setB("specFill", a.specFill); d.setB("specGrid", a.specGrid); d.setB("specPeaks", a.specPeaks); d.setB("specReadout", a.specReadout); d.setB("specDbm", a.specDbm);
     const int curSlot = modeSlot(a);
     for (int f = 0; f < kNumSlots; f++) {   // gains per mode (the current mode from the live settings)
         const bool cur = f == curSlot;
@@ -474,13 +515,19 @@ void savePrefs(const App& a) {
     d.setI("uiTheme", a.uiTheme);
     d.setS("uiLang", a.uiLang);
     d.setI("lightUi", a.lightUi ? 1 : 0);
+    d.setI("highContrast", a.highContrast ? 1 : 0);
     d.setI("reduceCpuHidden", a.reduceCpuHidden ? 1 : 0);
     d.setI("discordOn", a.discordOn ? 1 : 0);
     d.setI("discordFreq", a.discordFreq ? 1 : 0);
+    d.setI("mapSend", a.mapSend ? 1 : 0);
+    d.setI("mapConsent", a.mapConsent ? 1 : 0);
+    d.setS("mapStationId", a.mapStationId);
+    d.setS("mapServer", a.mapServer);
     d.setI("dtmbBw", a.dtmbBwMhz);
     d.setI("isdbtBw", a.isdbtBwMhz);
     d.setI("atvFm", a.atvFm ? 1 : 0);
     d.setI("wideMaskLo", (int)(uint32_t)(a.wideFamMask & 0xffffffffu)); d.setI("wideMaskHi", (int)(uint32_t)(a.wideFamMask >> 32));
+    d.setI("mtvOn", a.mtvOn ? 1 : 0); d.setI("mtvMax", a.mtvMax); d.setI("mtvGrid", a.mtvGrid);
     d.setI("atvNbtv", a.atvNbtv);
     d.setI("atvNbtvLines", a.atvNbtvLines);
     d.setI("atvNbtvFps", (int)std::lround(a.atvNbtvFps * 10));
@@ -503,6 +550,7 @@ void savePrefs(const App& a) {
     }
     d.setS("fmSaved", fmSavedEncode(a.fmSaved));   // the saved-stations library, not the scan results
     d.setChannels(a.channels);
+    d.setI("audioIq", a.audioIqMode);
     d.setI("compute", a.computeMode);
     d.setI("standard", a.stdMode);
     d.setI("bw", a.bwIdx);
@@ -518,30 +566,53 @@ void savePrefs(const App& a) {
     d.setB("udpRtp", a.out.rtp);
     d.setB("dropNull", a.out.dropNull);
     d.setB("popTop", a.popTop);
-    d.setB("updCheck", a.updCheck); d.setB("updAuto", a.updAuto); d.setB("updPre", a.updPre);
+    d.setB("updCheck", a.updCheck); d.setB("updAuto", a.updAuto); d.setB("updBeta", a.updPre);
     d.setD("updLast", a.updLast); d.setS("updSkip", a.updSkip);
     saveFeedPrefs(a);
     d.flush();
 }
 
 void ingestSpectrum(App& a) {
-    SpectrumFrame f;
-    if (!a.engine.latestSpectrum(f, a.lastSeq)) return;
+    if (!a.engine.latestSpectrum(a.spec, a.lastSeq)) return;   // straight into the kept frame: no copy that allocates, 30 times a second
+    const SpectrumFrame& f = a.spec;
     a.lastSeq = f.seq;
-    a.spec = f;
+    const double now = glfwGetTime();
+    const float dt = a.specLastT > 0 ? (float)std::min(0.5, std::max(0.001, now - a.specLastT)) : 1.f / 30;
+    a.specLastT = now;
     size_t n = f.dbfs.size();
     if (a.smooth.size() != n || a.peak.size() != n) { a.smooth = f.dbfs; a.peak = f.dbfs; }   // both lines always have the frame size (a retune clears the peak line)
+    const float alpha = a.specAvgSec <= 0.001f ? 1.f : 1.f - std::exp(-dt / a.specAvgSec);   // a time constant, so the look does not depend on the frame rate
+    const float fall = a.holdDecay * dt;
+    float* sm = a.smooth.data(); float* pk = a.peak.data(); const float* in = f.dbfs.data();
     for (size_t i = 0; i < n; i++) {
-        a.smooth[i] += 0.35f * (f.dbfs[i] - a.smooth[i]);
-        a.peak[i] = std::max(a.peak[i] - 0.15f, f.dbfs[i]);
+        sm[i] += alpha * (in[i] - sm[i]);
+        pk[i] = a.holdDecay > 0 ? std::max(pk[i] - fall, in[i]) : std::max(pk[i], in[i]);
     }
-    a.wf.push(f.dbfs);
-    a.wf.stamp(glfwGetTime());
+    if (a.wf.offer(f.dbfs, now)) a.wf.stamp(now);
+    if (a.wf.autoTrack && !a.wf.paused && now - a.wf.trackT > 0.25) { a.wf.trackT = now; a.wf.fitRange(a.smooth, false); }
+}
+
+// The level offset to dBm of the selected radio (what the antenna feeds in for a full-scale sample: found with a signal generator), kept per radio by name
+static std::string gDbmKey; static float gDbmVal = 0;
+float dbmOffset(const App& a) {
+    if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return 0;
+    const std::string k = "dbmOff_" + a.devices[a.devIdx].name;
+    if (k != gDbmKey) { gDbmKey = k; gDbmVal = (float)plat::prefs().getD(k.c_str(), 0.0); }
+    return gDbmVal;
+}
+void setDbmOffset(const App& a, float db) {
+    if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return;
+    gDbmKey = "dbmOff_" + a.devices[a.devIdx].name; gDbmVal = db;
+    plat::prefs().setD(gDbmKey.c_str(), db);
+    plat::prefs().flush();
 }
 
 void ingestRx(App& a) {
     double now = glfwGetTime();
-    if (a.engine.running() && now - a.tsT > 0.25) { a.ts = a.engine.tsSnapshot(); a.bb = a.engine.bbStats(); a.tsT = now; }
+    if (a.engine.running() && now - a.tsT > 0.25) {
+        a.ts = a.engine.tsSnapshot(); a.bb = a.engine.bbStats(); a.tsT = now;
+        if (a.engine.multiChannelActive()) a.mtvSvc = a.engine.multiServices(); else a.mtvSvc.clear();
+    }
     RxTelemetry t;
     if (!a.engine.latestRx(t, a.rxSeq)) return;
     a.rxSeq = t.seq;
@@ -617,7 +688,8 @@ void ingestRx(App& a) {
 
 double radioCenterMhz(const App& a) {
     const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
-    const bool file = !a.devices.empty() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[a.devIdx].kind == DeviceInfo::File;
+    const bool file = !a.devices.empty() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() &&
+                      (a.devices[a.devIdx].kind == DeviceInfo::File || a.devices[a.devIdx].isAudio());
     return a.freqMhz + (mt && !file ? mt->tuneOffsetHz / 1e6 : 0.0);
 }
 

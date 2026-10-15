@@ -32,8 +32,8 @@ struct DvbsTelemetry {
     int modulation = -1;             // 0 QPSK, 1 8PSK (or 8APSK), 2 16APSK, 3 32APSK, 4 64APSK, 5 128APSK, 6 256APSK, -1 not known
     std::string modulationName;      // "QPSK" ... (S2X: the canonical name of EN 302 307-2 table 17a, "8APSK" ...)
     std::string codeRate;            // "2/3" ... (S2X: the canonical code rate, "5/9-L" ...)
-    int frameSize = 0;               // DVB-S2: 0 not known, 1 normal (64800), 2 short (16200)
-    int modcod = -1;                 // DVB-S2 MODCOD number (1..28), 0 dummy frame, -1 not known; DVB-S2X: the PLS code value of table 17a (132..248)
+    int frameSize = 0;               // DVB-S2: 0 not known, 1 normal (64800), 2 short (16200), 3 medium (VL-SNR, S2X: 32400)
+    int modcod = -1;                 // DVB-S2 MODCOD number (1..28), 0 dummy frame, -1 not known; DVB-S2X: the PLS code value of table 17a (132..248); 129 / 131 VL-SNR frames (modulationName and codeRate then name the mode of table 18a)
     bool pilots = false;
     bool inverted = false;           // the spectrum is turned around (an LNB with a high-side oscillator)
     bool vcm = false;                // the MODCOD changes from frame to frame (VCM or ACM)

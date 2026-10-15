@@ -99,7 +99,18 @@ struct Feeds::Impl {
     bool isVerified = false, isAnswered = false;
 
     static bool isServer(int id) { return id == kFeedSbs || id == kFeedBeast || id == kFeedKiss; }
-    static bool isUdp(int id) { return id == kFeedAis || id == kFeedAcars || id == kFeedVdl2; }
+    static bool isUdp(int id) {
+        return id == kFeedAis || id == kFeedAcars || id == kFeedVdl2 || id == kFeedGnss || id == kFeedBle || id == kFeedLora;
+    }
+    void udpTarget(int id, std::string& host, int& port) const {
+        host = "127.0.0.1"; port = 0;
+        if (id == kFeedAis) { host = live.aisHost; port = live.aisPort; }
+        else if (id == kFeedAcars) { host = live.acarsHost; port = live.acarsPort; }
+        else if (id == kFeedVdl2) { host = live.vdl2Host; port = live.vdl2Port; }
+        else if (id == kFeedGnss) { host = live.gnssHost; port = live.gnssPort; }
+        else if (id == kFeedBle) { host = live.bleHost; port = live.blePort; }
+        else if (id == kFeedLora) { host = live.loraHost; port = live.loraPort; }
+    }
     int serverPort(int id) const { return id == kFeedSbs ? live.sbsPort : id == kFeedBeast ? live.beastPort : live.kissPort; }
 
     void closeServer(int id) {
@@ -136,8 +147,8 @@ struct Feeds::Impl {
     }
     void openUdp(int id) {
         Udp& u = udp[id];
-        const std::string& host = id == kFeedAis ? live.aisHost : id == kFeedAcars ? live.acarsHost : live.vdl2Host;
-        const int port = id == kFeedAis ? live.aisPort : id == kFeedAcars ? live.acarsPort : live.vdl2Port;
+        std::string host; int port = 0;
+        udpTarget(id, host, port);
         if (u.s != kBadSock && u.host == host && u.port == port) return;
         closeUdp(id);
         u.host = host; u.port = port;
@@ -428,6 +439,23 @@ void Feeds::vdl2(const Vdl2Message& m) {
     std::string st;
     { std::lock_guard<std::mutex> lk(impl_->mu); st = impl_->cfg.stationId; }
     push(kFeedVdl2, feedfmt::vdl2Json(m, st) + "\n");
+}
+
+void Feeds::gnss(const GnssFix& f) {
+    if (!wantGnss() || !f.valid) return;
+    std::string rmc = feedfmt::gnssRmc(f), gga = feedfmt::gnssGga(f);
+    if (!rmc.empty()) push(kFeedGnss, std::move(rmc));
+    if (!gga.empty()) push(kFeedGnss, std::move(gga));
+}
+
+void Feeds::ble(const std::string& mac, const std::string& name, float rssi) {
+    if (!wantBle()) return;
+    push(kFeedBle, feedfmt::bleJson(mac, name, rssi) + "\n");
+}
+
+void Feeds::lora(const char* kind, const std::string& hex, float snrDb, double freqHz, int sf, const std::string& extra) {
+    if (!wantLora()) return;
+    push(kFeedLora, feedfmt::loraJson(kind ? kind : "lora", hex, snrDb, freqHz, sf, extra) + "\n");
 }
 
 } // namespace dect2

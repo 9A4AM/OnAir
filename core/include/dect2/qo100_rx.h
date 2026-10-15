@@ -40,6 +40,7 @@ public:
     void setLo(double loHz);             // the LNB's nominal oscillator (default 9750 MHz; above the downlink = inverted spectrum)
     void setSearchHz(double hz);         // how far from nominal the beacons are looked for (default 600 kHz)
     void setDialHz(double rfHz);         // SSB dial (USB suppressed carrier), corrected RF
+    void setAutoCorrection(bool on);     // default on: the LNB error measured on the beacons corrects every frequency; off for a GPS-locked LNB
     void setListen(bool on);
     bool listening() const;
     void setVolume(float v);

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Map · OnAir</title>
+  <meta name="description" content="Positions decoded in OnAir. Shared only when the user opts in, and only if the signal carried a location.">
+  <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="menubar">
+    <a class="name" href="https://on-air.dev">OnAir</a>
+    <span class="sep">/</span>
+    <span class="cur">Map</span>
+    <span class="pill" id="link"><i></i><span>connecting</span></span>
+    <span class="counts" id="counts"></span>
+    <span class="clock" id="clock"></span>
+    <input id="q" type="search" placeholder="Find callsign, MMSI, ICAO" autocomplete="off" spellcheck="false">
+    <a class="link" href="https://on-air.dev">Download</a>
+  </div>
+
+  <aside class="rail">
+    <div class="ptitle">Layers</div>
+    <div id="layers"></div>
+    <div class="key">
+      <div><i style="background:#e6e8ea"></i>ADS-B</div>
+      <div><i style="background:#5096dc"></i>Satellite</div>
+      <div><i style="background:#dc4848"></i>ACARS / VDL2</div>
+      <div><i style="background:#e6c640"></i>HFDL</div>
+      <div><i style="background:#6ccc7a"></i>FLARM</div>
+      <div><i style="background:#969a9e"></i>Stale</div>
+    </div>
+    <div class="ptitle row">
+      <span>Tracks</span>
+      <span class="n" id="trackn">0</span>
+    </div>
+    <div id="list"></div>
+    <div class="note" id="hint">Nothing on the map yet. In OnAir: Server → Send data to map server, then decode something that reports a position.</div>
+  </aside>
+
+  <div class="pane inspect" id="card" hidden></div>
+
+  <div class="status">
+    <span id="cursor">—</span>
+    <span class="grow"></span>
+    <span id="zoom"></span>
+    <span>© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a></span>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js"></script>
+  <script src="/app.js?v=4"></script>
+</body>
+</html>

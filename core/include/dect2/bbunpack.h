@@ -10,9 +10,9 @@ namespace dect2 {
 
 struct BbStats {
     uint64_t frames = 0, framesLost = 0, packets = 0, nullInserted = 0;
-    uint64_t resyncs = 0, crcErrors = 0, unsupported = 0;
+    uint64_t resyncs = 0, crcErrors = 0, unsupported = 0, otherIsi = 0;
     bool hem = false;
-    int issyi = 0, npd = 0, tsGs = 0;
+    int issyi = 0, npd = 0, tsGs = 0, sisMis = 1, isi = 0;
 };
 
 class BbUnpacker {
@@ -35,6 +35,8 @@ private:
     uint8_t lastCrc_ = 0;
     bool haveCrc_ = false;
     uint8_t cc_null_ = 0;
+    bool haveIsi_ = false;
+    int isi_ = 0;
 };
 
 } // namespace dect2

@@ -40,6 +40,7 @@ struct IioApi {
     // optional: the context attributes, where the firmware names itself ("fw_version", "tezuka-v0.3.21" on a Tezuka)
     const char* (DECT2_CALL* context_get_attr_value)(const iio_context*, const char*) = nullptr;
     int (DECT2_CALL* device_set_kernel_buffers_count)(const iio_device*, unsigned) = nullptr;   // optional: more buffers queued in the kernel
+    long long (DECT2_CALL* buffer_push)(iio_buffer*) = nullptr;   // optional: sends a transmit buffer (without it the radio cannot transmit here)
     bool ok = false;
     bool v1 = false;   // libiio 1.x: another API (iio_create_context(params, uri), blocks instead of buffers), not supported yet
     DynLib lib;
@@ -73,6 +74,7 @@ struct IioApi {
             lib.opt(device_attr_read, "iio_device_attr_read"); lib.opt(device_attr_write_longlong, "iio_device_attr_write_longlong"); lib.opt(device_attr_write, "iio_device_attr_write");
             lib.opt(context_get_attr_value, "iio_context_get_attr_value");
             lib.opt(device_set_kernel_buffers_count, "iio_device_set_kernel_buffers_count");
+            lib.opt(buffer_push, "iio_buffer_push");
         }
     }
     // libiio reports failures as negative errno values (or NULL and errno)
@@ -112,10 +114,18 @@ constexpr double kUsbMaxRate = 4e6;   // USB 2: the continuous rate a Pluto keep
 constexpr double kUsbNetRate = 3e6;   // the same cable as a USB-gadget network (ip:192.168.2.1, pluto.local): iiod over it keeps up with less
 // The link runs over the Pluto's USB cable: "usb:...", and its default network address ip:192.168.2.1 (pluto.local), which is the USB-gadget
 // Ethernet on the same USB 2 cable and keeps up with even less than libusb does. A Pluto on a real network (another address) may go faster.
-bool overUsbCable(const std::string& uri) { return uri.rfind("usb:", 0) == 0 || uri == "ip:192.168.2.1" || uri == "ip:pluto.local"; }
+bool defaultAddress(const std::string& uri) { return uri == "ip:192.168.2.1" || uri == "ip:pluto.local"; }
+bool overUsbCable(const std::string& uri) { return uri.rfind("usb:", 0) == 0 || defaultAddress(uri); }
 // the steady rate of the link at uri (0 = a real network, not limited here): the USB-gadget network carries less than libusb, so a mode that
 // fits in a few Msps (DVB-S/S2 of the 1.5 Msym/s QO-100 beacon, #59) is not run faster than it keeps up with there
 double usbLinkRate(const std::string& uri) { return !overUsbCable(uri) ? 0 : uri.rfind("usb:", 0) == 0 ? kUsbMaxRate : kUsbNetRate; }
+// The "Link" setting of a Pluto at its default network address, which a Pluto+ (real Gigabit Ethernet) shares with the USB-gadget link:
+// Ethernet lifts the cap, USB cable holds it, Auto guesses from the address (USB gadget). #96
+double usbLinkRate(const std::string& uri, const std::string& link) {
+    if (link == "ethernet" && defaultAddress(uri)) return 0;
+    if (link == "usb" && defaultAddress(uri)) return kUsbNetRate;
+    return usbLinkRate(uri);
+}
 
 // Whether the board at each URI runs Tezuka firmware (known once it was opened or probed): only then the IQ format can be chosen
 std::map<std::string, bool> gTezuka;
@@ -257,8 +267,8 @@ protected:
                 if (const int r = iio().channel_attr_write_longlong(rxCh_, "sampling_frequency", (long long)std::llround(want)); r != 0) { err = "PlutoSDR: the sample rate was refused: " + iio().text(r); return false; }
             // Tezuka: with only the first channel enabled the FPGA sends 8-bit I/Q pairs (half the bytes on the cable, twice the rate); both: 16-bit
             cs8_ = tezuka_ && radioOption(s, "iqformat", "cs16") == "cs8";
-            if (overUsbCable(uri_)) {
-                const std::string n = usbLinkNote(want, usbLinkRate(uri_) * (cs8_ ? 2 : 1), tezuka_, cs8_);
+            if (const double cap = usbLinkRate(uri_, radioOption(s, "link", "auto")); cap > 0) {
+                const std::string n = usbLinkNote(want, cap * (cs8_ ? 2 : 1), tezuka_, cs8_);
                 if (!n.empty()) { fprintf(stderr, "%s\n", n.c_str()); fflush(stderr); if (err.empty()) err = n; }
             }
             iio().channel_attr_write_longlong(rxCh_, "rf_bandwidth", (long long)std::llround(std::min(56e6, std::max(0.2e6, s.basebandFilterHz > 0 ? s.basebandFilterHz : want * 0.95))));
@@ -298,12 +308,15 @@ protected:
             if (ppm != xoPpm_) tuneHz = ppmCorrectedHz(s.centerHz, ppm - xoPpm_);
         } else tuneHz = ppmCorrectedHz(s.centerHz, ppm);
         const double f = s.centerHz;
-        if (f < loHz_ || f > hiHz_ || iio().channel_attr_write_longlong(lo_, "frequency", (long long)std::llround(tuneHz)) != 0) {
-            err = "PlutoSDR could not tune to " + mhz(f) + " MHz (range " + mhz(loHz_) + "-" + mhz(hiHz_) + " MHz)";
+        // outside what the radio is specified for it is asked all the same: the AD936x driver decides (it refuses a frequency its PLL cannot make)
+        const std::string spec = freqSpecNote("PlutoSDR", f, loHz_, hiHz_);
+        if (iio().channel_attr_write_longlong(lo_, "frequency", (long long)std::llround(std::max(tuneHz, 0.0))) != 0) {
+            err = "PlutoSDR: the driver refused " + mhz(f) + " MHz (specified for " + mhz(loHz_) + "-" + mhz(hiHz_) + " MHz)";
             if (hiHz_ <= 3.8e9) err += ": the stock firmware tunes 325-3800 MHz, 70-6000 MHz needs the AD9364 setting (fw_setenv attr_name compatible; fw_setenv attr_val ad9364)";
             openFailure_ = OpenFailure::Final;
             return false;
         }
+        addNote(err, spec);
         // The highest gain depends on the frequency (the AD9361's gain tables: 73 dB below 1300 MHz, 71 dB to 4000 MHz, 62 dB above), and a
         // gain above it is refused (EINVAL) with the old gain left in place: the driver's own range for this frequency, else the tables
         double gmin = -1, gmax = f < 1.3e9 ? 73 : f < 4e9 ? 71 : 62;
@@ -397,6 +410,148 @@ private:
     bool cs8_ = false;                // streaming 8-bit samples (Tezuka only)
 };
 
+// ---- transmit -----------------------------------------------------------------------------------------------------------------------
+// The PlutoSDR's transmit path through libiio: the AD9361's TX channels (device cf-ad9361-dds-core-lpc, voltage0 / voltage1 are I and Q as
+// 16-bit samples), the TX LO (altvoltage1), the TX attenuation (voltage0 output "hardwaregain", -89.75 .. 0 dB), a non-cyclic buffer that is
+// pushed block by block. NOT tested on a radio: the tests run it against a fake libiio that records what it is given.
+// Level: 1.0 (full scale of the generators) is sent as 2^14, as the AD9361 examples do, leaving the converter 6 dB of headroom.
+class PlutoTx : public TxSink {
+public:
+    explicit PlutoTx(std::string uri) : uri_(std::move(uri)) {
+        std::lock_guard<std::mutex> lk(gRangeMu);
+        auto it = gSerial.find(uri_);
+        if (it != gSerial.end()) serial_ = it->second;
+    }
+    ~PlutoTx() override { close(); }
+
+    bool open(const TxTune& t, std::string& err) override {
+        close();
+        if (iio().v1) { err = IioApi::kV1Msg; return false; }
+        if (!iio().ok) { err = "PlutoSDR: libiio is not installed"; return false; }
+        if (!iio().buffer_push) { err = "PlutoSDR: this libiio has no iio_buffer_push, it cannot transmit"; return false; }
+        errno = 0;
+        ctx_ = iio().create_context_from_uri(uri_.c_str());
+        if (!ctx_ && uri_.rfind("usb:", 0) == 0 && !serial_.empty()) {
+            const std::string now = usbUriOf(serial_);
+            if (!now.empty() && now != uri_) { uri_ = now; errno = 0; ctx_ = iio().create_context_from_uri(uri_.c_str()); }
+        }
+        if (!ctx_) {
+            const int e = errno;
+            err = "PlutoSDR: cannot connect (" + uri_ + ")" + (e ? ": " + iio().text(e) : std::string());
+            if (kOnWindows && uri_.rfind("usb:", 0) == 0) err += std::string(". ") + windowsUsbDriverHint();
+            return false;
+        }
+        iio().context_set_timeout(ctx_, 3000);
+        phy_ = iio().context_find_device(ctx_, "ad9361-phy");
+        dev_ = iio().context_find_device(ctx_, "cf-ad9361-dds-core-lpc");
+        if (!phy_ || !dev_) { err = "PlutoSDR: the AD9361 transmit devices were not found"; shut(); return false; }
+        // voltage0 is TX1. A 2T image (some Pluto+) has voltage1 as TX2; its I/Q pair on the DDS core is voltage2 and voltage3. One LO (altvoltage1) tunes both.
+        const int ch = t.channel < 0 ? 0 : t.channel;
+        if (ch > 1) { err = "this Pluto has at most two transmit outputs"; shut(); return false; }
+        const char* phyName = ch == 0 ? "voltage0" : "voltage1";
+        const char* iName = ch == 0 ? "voltage0" : "voltage2";
+        const char* qName = ch == 0 ? "voltage1" : "voltage3";
+        txCh_ = iio().device_find_channel(phy_, phyName, true);
+        lo_ = iio().device_find_channel(phy_, "altvoltage1", true);
+        i_ = iio().device_find_channel(dev_, iName, true);
+        q_ = iio().device_find_channel(dev_, qName, true);
+        if (ch == 1 && (!txCh_ || !i_ || !q_)) { err = "this Pluto has one transmit output (TX1)"; shut(); return false; }
+        if (!txCh_ || !lo_ || !i_ || !q_) { err = "PlutoSDR: the transmit channels were not found"; shut(); return false; }
+        if (t.sampleRate < 2.083e6) { err = "PlutoSDR: the converter runs from 2.083 Msps up; " + std::to_string(t.sampleRate / 1e6) + " Msps is below that"; shut(); return false; }
+        if (const int r = iio().channel_attr_write_longlong(txCh_, "sampling_frequency", (long long)std::llround(t.sampleRate)); r != 0) {
+            err = "PlutoSDR: the sample rate was refused: " + iio().text(r); shut(); return false;
+        }
+        rate_ = t.sampleRate;
+        {
+            char v[64] = {0};
+            double got = 0;
+            if (iio().channel_attr_read && iio().channel_attr_read(txCh_, "sampling_frequency", v, sizeof v - 1) > 0 && sscanf(v, "%lf", &got) == 1 && got > 0) rate_ = got;
+        }
+        iio().channel_attr_write_longlong(txCh_, "rf_bandwidth", (long long)std::llround(std::min(56e6, std::max(0.2e6, t.bandwidthHz > 0 ? t.bandwidthHz : rate_ * 0.95))));
+        // the transmit gain is an attenuation, shown as a gain from -89.75 dB (the least) to 0 dB; the radio's own range is read when it says
+        double gmin = -89.75, gmax = 0;
+        {
+            char v[96] = {0};
+            if (iio().channel_attr_read && iio().channel_attr_read(txCh_, "hardwaregain_available", v, sizeof v - 1) > 0) rangeIn(v, gmin, gmax);
+        }
+        // the frequency: asked for as given; the driver decides (the PLL refuses what it cannot make)
+        TuneSettings ts; ts.radio = t.radio;
+        const double want = std::max(ppmCorrectedHz(txRadioHz(t), radioPpm(ts)), 0.0);
+        if (const int r = iio().channel_attr_write_longlong(lo_, "frequency", (long long)std::llround(want)); r != 0) {
+            err = "PlutoSDR: the driver refused " + mhz(txRadioHz(t)) + " MHz as a transmit frequency (" + iio().text(r) + "): the AD9361's synthesiser tunes 70 to 6000 MHz with the AD9364 setting, 325 to 3800 MHz on the stock firmware";
+            shut();
+            return false;
+        }
+        iio().channel_attr_write_longlong(lo_, "powerdown", 0);
+        const double g = std::min(gmax, std::max(gmin, t.gainDb));
+        {
+            char s[32];
+            snprintf(s, sizeof s, "%.2f", g);
+            if (iio().channel_attr_write(txCh_, "hardwaregain", s) < 0) { err = "PlutoSDR: the transmit gain " + std::string(s) + " dB was refused"; shut(); return false; }
+        }
+        iio().channel_enable(i_);
+        iio().channel_enable(q_);
+        if (iio().device_set_kernel_buffers_count) iio().device_set_kernel_buffers_count(dev_, 4);
+        buf_ = iio().device_create_buffer(dev_, kBlock, false);
+        if (!buf_) { err = "PlutoSDR: cannot allocate the transmit buffer"; shut(); return false; }
+        fill_ = 0;
+        return true;
+    }
+
+    bool write(const cf32* x, size_t n, std::string& err) override {
+        if (!buf_) { err = "the PlutoSDR is not open for transmitting"; return false; }
+        size_t i = 0;
+        while (i < n) {
+            int16_t* p = static_cast<int16_t*>(iio().buffer_start(buf_));
+            const size_t m = std::min(n - i, kBlock - fill_);
+            for (size_t k = 0; k < m; k++) { p[2 * (fill_ + k)] = q16(x[i + k].real()); p[2 * (fill_ + k) + 1] = q16(x[i + k].imag()); }
+            fill_ += m; i += m;
+            if (fill_ == kBlock && !push(err)) return false;
+        }
+        return true;
+    }
+
+    void close() override { if (ctx_ || buf_) shut(); }
+    double sampleRate() const override { return rate_; }
+    std::string name() const override { return "PlutoSDR"; }
+
+private:
+    static constexpr size_t kBlock = 1 << 15;
+    static int16_t q16(float v) { const float r = std::nearbyint(v * 16384.f); return (int16_t)(r > 32767.f ? 32767 : r < -32768.f ? -32768 : r); }
+    bool push(std::string& err) {
+        const long long r = iio().buffer_push(buf_);
+        fill_ = 0;
+        if (r < 0) { err = "the PlutoSDR stopped taking samples: " + iio().text((int)-r); return false; }
+        return true;
+    }
+    void shut() {
+        if (buf_ && fill_ > 0) {   // the rest of the last block goes out as silence
+            int16_t* p = static_cast<int16_t*>(iio().buffer_start(buf_));
+            std::fill(p + 2 * fill_, p + 2 * kBlock, (int16_t)0);
+            std::string e;
+            push(e);
+        }
+        if (txCh_) { iio().channel_attr_write(txCh_, "hardwaregain", "-89.75"); }   // least power, and the TX LO off, before OnAir lets go of the radio
+        if (lo_) iio().channel_attr_write_longlong(lo_, "powerdown", 1);
+        if (buf_) { iio().buffer_destroy(buf_); buf_ = nullptr; }
+        if (i_) iio().channel_disable(i_);
+        if (q_) iio().channel_disable(q_);
+        if (ctx_) iio().context_destroy(ctx_);
+        ctx_ = nullptr; phy_ = dev_ = nullptr; txCh_ = lo_ = i_ = q_ = nullptr; fill_ = 0;
+    }
+    std::string uri_, serial_;
+    IioApi::iio_context* ctx_ = nullptr;
+    IioApi::iio_device* phy_ = nullptr;
+    IioApi::iio_device* dev_ = nullptr;
+    IioApi::iio_channel* txCh_ = nullptr;
+    IioApi::iio_channel* lo_ = nullptr;
+    IioApi::iio_channel* i_ = nullptr;
+    IioApi::iio_channel* q_ = nullptr;
+    IioApi::iio_buffer* buf_ = nullptr;
+    size_t fill_ = 0;
+    double rate_ = 0;
+};
+
 namespace {
 // The entry of the Pluto at uri. probe: a board on the network is asked which firmware it runs (not for one the user typed in: an address
 // that does not answer would hold up the listing; its firmware is learnt when it is opened)
@@ -412,6 +567,11 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
     d.steadyRateHz = plutoLinkRate(uri);
     d.gainMinDb = 0; d.gainMaxDb = 73;
     d.minFreqHz = 70e6; d.maxFreqHz = 6e9;
+    d.canTransmit = true;   // PlutoTx (the AD9361 transmits; not tested on a radio)
+    d.txChannels = 1;       // the firmware OnAir opens exposes one RF output; a second (voltage1) is used only when that image has it, and the open says so
+    d.txMinRateHz = 2.1e6; d.txMaxRateHz = 61.44e6;
+    d.txGainMinDb = -89.75; d.txGainMaxDb = 0;
+    d.txGainNote = "the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)";
     d.settings = {ppmSetting(0.01),
                   choiceSetting("gainmode", "Gain mode",
                                 "Manual: the gain slider (and OnAir's AGC) set the AD9361's gain (the default).\n"
@@ -432,6 +592,12 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
             gTezuka[uri] = tez;
         }
     }
+    if (defaultAddress(uri))
+        d.settings.push_back(choiceSetting("link", "Link",
+                                           "How this Pluto is connected at its default address (192.168.2.1 / pluto.local). Auto: taken as the USB cable's\n"
+                                           "gadget network, which carries about 3 Msps without loss. Ethernet: a Pluto+ (or a Pluto on a USB Ethernet\n"
+                                           "adapter) with a real network link: no limit but the converter's. USB cable: held to the USB rate.",
+                                           {"auto", "usb", "ethernet"}, {"Auto", "USB cable", "Ethernet"}, "auto"));
     if (tez)
         d.settings.push_back(choiceSetting("iqformat", "IQ format",
                                            "Tezuka firmware only. CS16: 16-bit samples (the 12-bit converter, the default).\n"
@@ -483,6 +649,8 @@ void listPluto(std::vector<DeviceInfo>& out) {
 std::unique_ptr<IqSource> makePluto(const DeviceInfo& d) {
     return std::make_unique<PlutoSource>(d.nativeArgs);
 }
+
+std::unique_ptr<TxSink> makePlutoTx(const DeviceInfo& d) { return std::make_unique<PlutoTx>(d.nativeArgs); }
 
 } // namespace native
 } // namespace dect2

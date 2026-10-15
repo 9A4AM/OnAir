@@ -210,21 +210,39 @@ struct JParser {
 // ---------------------------------------------------------------- versions and release selection
 
 int compareVersions(const std::string& a, const std::string& b) {
-    auto parts = [](const std::string& v) {
-        std::vector<long> r;
+    // Numeric parts, then a pre-release suffix. 0.2.5 < 0.2.6-beta.1 < 0.2.6-beta.2 < 0.2.6.
+    // The number after the last dot of the suffix is the beta number (0.2.6-beta.2). A finished
+    // version beats every beta of the same numbers, so a beta is never offered over the release.
+    struct Ver { std::vector<long> num; bool pre = false; long preN = 0; };
+    auto parse = [](const std::string& v) {
+        Ver r;
         size_t i = (!v.empty() && (v[0] == 'v' || v[0] == 'V')) ? 1 : 0;
         while (i < v.size()) {
-            if (isdigit((unsigned char)v[i])) { long x = 0; while (i < v.size() && isdigit((unsigned char)v[i])) x = x * 10 + (v[i++] - '0'); r.push_back(x); }
+            if (isdigit((unsigned char)v[i])) { long x = 0; while (i < v.size() && isdigit((unsigned char)v[i])) x = x * 10 + (v[i++] - '0'); r.num.push_back(x); }
             else if (v[i] == '.') i++;
-            else break;   // a suffix such as -rc1 is ignored
+            else break;
+        }
+        if (i < v.size() && (v[i] == '-' || v[i] == '+')) {
+            r.pre = true;
+            const size_t dot = v.rfind('.');
+            if (dot != std::string::npos && dot > i && dot + 1 < v.size()) {
+                long x = 0; bool all = true;
+                for (size_t k = dot + 1; k < v.size(); k++) {
+                    if (!isdigit((unsigned char)v[k])) { all = false; break; }
+                    x = x * 10 + (v[k] - '0');
+                }
+                if (all) r.preN = x;
+            }
         }
         return r;
     };
-    auto x = parts(a), y = parts(b);
-    for (size_t i = 0; i < std::max(x.size(), y.size()); i++) {
-        const long p = i < x.size() ? x[i] : 0, q = i < y.size() ? y[i] : 0;
+    const Ver x = parse(a), y = parse(b);
+    for (size_t i = 0; i < std::max(x.num.size(), y.num.size()); i++) {
+        const long p = i < x.num.size() ? x.num[i] : 0, q = i < y.num.size() ? y.num[i] : 0;
         if (p != q) return p > q ? 1 : -1;
     }
+    if (x.pre != y.pre) return x.pre ? -1 : 1;
+    if (x.preN != y.preN) return x.preN > y.preN ? 1 : -1;
     return 0;
 }
 

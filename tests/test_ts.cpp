@@ -113,6 +113,18 @@ int main() {
     std::mt19937 rng(4);
     roundTrip(true, rng);
     roundTrip(false, rng);
+    {   // HEM + MIS (SIS/MIS=0, ISI 0): same user-packet layout as SIS; Dutch DVB-T2 uses this
+        auto ts = makeTs(80, rng);
+        Packer pk; pk.hem = true; pk.dfBytes = 187 * 8;
+        pk.load(ts);
+        BbUnpacker u;
+        size_t n = 0;
+        u.setSink([&](const uint8_t*) { n++; });
+        std::vector<uint8_t> bits; BbHeader h;
+        while (pk.next(bits, h)) { h.sisMis = 0; h.isi = 0; u.push(bits, h); }
+        CHECK(n >= 40 && u.stats().unsupported == 0, "HEM MIS: %zu packets unsupported %llu", n, (unsigned long long)u.stats().unsupported);
+        printf("HEM MIS (ISI 0): %zu packets\n", n);
+    }
     // PSI/SI
     TsDemux d;
     int cc = 0;

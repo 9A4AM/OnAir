@@ -18,7 +18,7 @@
 #include "dect2/dvbs_gen.h"
 #include "dect2/dvbs_rx.h"
 #include "../core/src/dvbs_s1.h"
-#include "../core/src/dvbs_carrier.h"
+#include "../core/src/dvbs/dvbs_carrier.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

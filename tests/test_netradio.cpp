@@ -1,7 +1,9 @@
 // Network radios (netradio.h): the rtl_tcp, SpyServer and Hermes Lite 2 clients against fake servers on localhost, a user-added Pluto
 // address, the saved list.
 #include "../core/src/tcp_client.h"
+#include "../core/src/native_common.h"
 #include "dect2/netradio.h"
+#include "dect2/share.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -333,6 +335,107 @@ static bool readIq(IqRing& ring, std::vector<cf32>& buf) {
     return got == buf.size();
 }
 
+// SpyServer messages from hand-written bytes (no socket)
+static void testSpyServerBytes() {
+    // HELLO: type 0, body = protocol version 2.0.1700 (0x020006a4 little endian) and "OnAir"
+    const std::vector<unsigned char> hello = {0xa4, 0x06, 0x00, 0x02, 'O', 'n', 'A', 'i', 'r'};
+    const std::vector<unsigned char> want = {0, 0, 0, 0, 9, 0, 0, 0, 0xa4, 0x06, 0x00, 0x02, 'O', 'n', 'A', 'i', 'r'};
+    CHECK(native::spyServerEncodeCommand(0, hello) == want);
+    // SET_SETTING (2): setting 101 (IQ frequency) = 100 MHz = 0x05f5e100
+    const std::vector<unsigned char> setf = {101, 0, 0, 0, 0x00, 0xe1, 0xf5, 0x05};
+    const std::vector<unsigned char> wantF = {2, 0, 0, 0, 8, 0, 0, 0, 101, 0, 0, 0, 0x00, 0xe1, 0xf5, 0x05};
+    CHECK(native::spyServerEncodeCommand(2, setf) == wantF);
+    CHECK(native::spyServerEncodeCommand(2, {}).size() == 8);
+    // a server header: version, type 100 (uint8 IQ) with flags 0x0001, stream type, sequence, body size 65536
+    const unsigned char h[20] = {0xa4, 0x06, 0, 2, 100, 0, 1, 0, 1, 0, 0, 0, 7, 0, 0, 0, 0, 0, 1, 0};
+    uint32_t type = 0, flags = 0, size = 0;
+    CHECK(native::spyServerDecodeHeader(h, type, flags, size));
+    CHECK(type == 100 && flags == 1 && size == 65536);
+    const unsigned char big[20] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x20, 0};   // 2 MB: refused
+    CHECK(!native::spyServerDecodeHeader(big, type, flags, size));
+    // DEVICE_INFO: Airspy HF+ (2), serial 7, max rate 768000, max bandwidth 600000, 6 decimation stages, 3 gain stages, max gain 3, ...
+    const uint32_t words[12] = {2, 7, 768000, 600000, 6, 3, 3, 100000, 31000000, 16, 1, 0};
+    unsigned char body[48];
+    for (int i = 0; i < 12; i++) for (int k = 0; k < 4; k++) body[4 * i + k] = (unsigned char)(words[i] >> (8 * k));
+    uint32_t dev = 0, rate = 0, dec = 0, gain = 0;
+    CHECK(native::spyServerDecodeDeviceInfo(body, sizeof body, dev, rate, dec, gain));
+    CHECK(dev == 2 && rate == 768000 && dec == 6 && gain == 3);
+    CHECK(!native::spyServerDecodeDeviceInfo(body, 20, dev, rate, dec, gain));
+}
+
+// "Share my radio": the rtl_tcp server of OnAir against a raw socket and OnAir's own rtl_tcp client on localhost
+static void testShare() {
+    ShareServer& sh = ShareServer::get();
+    ShareConfig c; c.on = true; c.port = 0; c.lan = false; c.allowControl = false;
+    sh.configure(c);
+    CHECK(sh.status().listening);
+    const int port = sh.config().port;
+    CHECK(port > 0);
+    if (!sh.status().listening || port <= 0) { c.on = false; sh.configure(c); return; }
+
+    // a raw client: the 12-byte greeting, then the samples exactly as offered
+    netInit();
+    std::string err;
+    sock_t k = tcpConnect("127.0.0.1", port, 2000, err);
+    CHECK(k != kBadSock);
+    if (k == kBadSock) { c.on = false; sh.configure(c); return; }
+    sockRecvTimeout(k, 2000);
+    unsigned char hdr[12];
+    CHECK(sockRecvAll(k, hdr, sizeof hdr));
+    CHECK(memcmp(hdr, "RTL0", 4) == 0);
+    for (int i = 0; i < 100 && sh.status().clients.empty(); i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    CHECK(sh.status().clients.size() == 1);
+    std::vector<cf32> iq(5000);
+    for (size_t i = 0; i < iq.size(); i++) iq[i] = cf32(((int)(i % 200) + 28 - 127.4f) / 128.f, ((int)(i % 150) + 40 - 127.4f) / 128.f);
+    sh.offer(iq.data(), iq.size());
+    std::vector<unsigned char> got(iq.size() * 2);
+    CHECK(sockRecvAll(k, got.data(), got.size()));
+    bool same = true;
+    for (size_t i = 0; i < iq.size(); i++) if (got[2 * i] != (i % 200) + 28 || got[2 * i + 1] != (i % 150) + 40) same = false;
+    CHECK(same);
+    // commands are not carried out while "allow remote control" is off
+    const unsigned char setF[5] = {0x01, 0x05, 0xf5, 0xe1, 0x00};
+    CHECK(sockSendAll(k, setF, 5));
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    CHECK(sh.takeCommands().empty());
+    sockClose(k);
+
+    // OnAir's own client: its frequency and gain commands arrive once control is allowed; the samples come back as sent
+    c.port = port;
+    c.allowControl = true;
+    sh.configure(c);   // only the control flag changed: the server keeps running
+    CHECK(sh.config().port == port);
+    NetRadio nr; nr.type = NetRadio::RtlTcp; nr.host = "127.0.0.1"; nr.port = port;
+    const auto devs = netRadioDevices({nr});
+    CHECK(devs.size() == 1);
+    if (!devs.empty()) {
+        auto src = makeSource(devs[0]);
+        IqRing ring(1u << 20);
+        TuneSettings s; s.sampleRate = 2.048e6; s.centerHz = 100e6; s.gainDb = 30;
+        err.clear();
+        CHECK(src->start(s, ring, err));
+        bool freq = false, gain = false;
+        for (int i = 0; i < 200 && !(freq && gain); i++) {
+            for (const ShareCommand& m : sh.takeCommands()) { if (m.cmd == 0x01 && m.value == 100000000u) freq = true; if (m.cmd == 0x04) gain = true; }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        CHECK(freq && gain);
+        for (int round = 0; round < 20; round++) { sh.offer(iq.data(), iq.size()); std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
+        std::vector<cf32> buf(4000);
+        CHECK(readIq(ring, buf));
+        bool okv = true;   // every pair is one of ours
+        for (const cf32& v : buf) {
+            const int ii = (int)std::lround(v.real() * 128.f + 127.4f), qq = (int)std::lround(v.imag() * 128.f + 127.4f);
+            if (ii < 28 || ii >= 228 || qq < 40 || qq >= 190) okv = false;
+        }
+        CHECK(okv);
+        src->stop();
+    }
+    c.on = false;
+    sh.configure(c);
+    CHECK(!sh.status().listening);
+}
+
 static void testSpyServer() {
     FakeSpy srv;
     CHECK(srv.start());
@@ -390,9 +493,9 @@ static void testSpyServer() {
     okVals = true;
     for (size_t i = buf.size() / 2; i < buf.size(); i++) if (std::fabs(buf[i].real() - 0.5f) > 1e-5f || std::fabs(buf[i].imag() + 0.25f) > 1e-5f) okVals = false;
     CHECK(okVals);
-    s.centerHz = 3e9;   // beyond the radio's range: its top
+    s.centerHz = 3e9;   // beyond the radio's specified range: sent as asked
     CHECK(src->retune(s, err));
-    CHECK(srv.waitFor(101, 1800000000));
+    CHECK(srv.waitFor(101, 3000000000u));
 
     // the server drops the connection: the source connects again and sends its settings again
     { std::lock_guard<std::mutex> lk(srv.mu); srv.sets.clear(); }
@@ -413,7 +516,7 @@ static void testSpyServer() {
     err.clear();
     CHECK(ro->start(s, ring, err));
     CHECK(err.find("read only") != std::string::npos);
-    CHECK(srv.waitFor(101, 101000000));
+    CHECK(srv.waitFor(101, 200000000));   // as asked: the read-only server decides, the note says so
     CHECK(srv.waitFor(1, 1));
     CHECK(!srv.hasId(2));
     s.centerHz = 99.5e6;
@@ -442,6 +545,7 @@ struct FakeHl2 {
     std::atomic<int> starts{0}, stops{0};
     std::mutex mu;
     std::map<int, uint32_t> regs;
+    unsigned char board = 6, gateware = 73;   // the discovery reply's board id (the Red Pitaya server's: 1) and gateware version
 
     bool start() {
         netInit();
@@ -475,7 +579,7 @@ struct FakeHl2 {
                 const long long n = recvfrom(s, (char*)b, sizeof b, 0, (sockaddr*)&from, &fl);
                 if (n >= 4 && b[0] == 0xEF && b[1] == 0xFE) {
                     if (b[2] == 0x02 && n == 63) {   // discovery
-                        unsigned char r[60] = {0xEF, 0xFE, (unsigned char)(streaming ? 0x03 : 0x02), 0x00, 0x1C, 0xC0, 0xA2, 0x12, 0x34, 73, 6};
+                        unsigned char r[60] = {0xEF, 0xFE, (unsigned char)(streaming ? 0x03 : 0x02), 0x00, 0x1C, 0xC0, 0xA2, 0x12, 0x34, gateware, board};
                         r[0x15] = 2;
                         sockSendTo(s, r, sizeof r, from);
                     } else if (b[2] == 0x04) {
@@ -508,6 +612,90 @@ struct FakeHl2 {
     }
     void stop() { run = false; if (th.joinable()) th.join(); if (s != kBadSock) sockClose(s); }
 };
+
+// A Red Pitaya running the HPSDR-compatible SDR transceiver, as its server source answers: board id 1 (Hermes), gateware 32; port 1024
+// is only replaced by the fake's own. Frame layout, registers and start/stop are the HL2's.
+static void testRedPitaya() {
+    FakeHl2 rp;
+    rp.board = 1; rp.gateware = 32;
+    CHECK(rp.start());
+    if (!rp.port) return;
+    NetRadio nr; nr.type = NetRadio::RedPitaya; nr.host = "127.0.0.1"; nr.port = rp.port;
+    std::string err;
+    CHECK(probeNetRadio(nr, 1000, err));
+    // a Hermes Lite 2 (board 6) is not a Red Pitaya, and the other way round
+    FakeHl2 hl;
+    CHECK(hl.start());
+    if (hl.port) {
+        NetRadio wrongRp = nr; wrongRp.port = hl.port;
+        err.clear();
+        CHECK(!probeNetRadio(wrongRp, 300, err) && !err.empty());
+        NetRadio wrongHl; wrongHl.type = NetRadio::HermesLite2; wrongHl.host = "127.0.0.1"; wrongHl.port = rp.port;
+        err.clear();
+        CHECK(!probeNetRadio(wrongHl, 300, err) && !err.empty());
+    }
+    hl.stop();
+    const auto devs = netRadioDevices({nr});
+    CHECK(devs.size() == 1);
+    if (devs.empty()) { rp.stop(); return; }
+    const DeviceInfo d = devs[0];
+    CHECK(d.kind == DeviceInfo::Native && d.board == "redpitaya" && d.nativeArgs == "127.0.0.1:" + std::to_string(rp.port));
+    CHECK(d.name == netRadioDeviceName(nr) && d.name.find("Red Pitaya") == 0);
+    CHECK(d.rateRanges.size() == 4 && d.minRateHz == 48000 && d.maxRateHz == 384000 && d.maxFreqHz == 61.44e6 && d.gainMinDb == 0 && d.gainMaxDb == 0);
+    NetRadio dflt; dflt.type = NetRadio::RedPitaya; dflt.host = "192.168.1.60";
+    CHECK(netRadioDeviceName(dflt) == "Red Pitaya 192.168.1.60 (network)");
+    CHECK(netRadioDefaultPort(NetRadio::RedPitaya) == 1024 && std::string(netRadioTypeName(NetRadio::RedPitaya)) == "Red Pitaya");
+    const auto back = netRadiosFromString(netRadiosToString({dflt, nr}));
+    CHECK(back.size() == 2 && back[0] == dflt && back[1] == nr);
+
+    auto src = makeSource(d);
+    CHECK(src != nullptr);
+    if (!src) { rp.stop(); return; }
+    IqRing ring(1u << 20);
+    TuneSettings s;
+    s.sampleRate = 100e3;   // the 192 ksps step
+    s.centerHz = 14.074e6;
+    s.gainDb = 20;          // ignored: it has no gain register here
+    err.clear();
+    CHECK(src->start(s, ring, err));
+    CHECK(std::fabs(src->sampleRate() - 192e3) < 1);
+    CHECK(rp.waitFor(0x00, 0x02000004));   // 192 ksps, no filter board bits, duplex, one receiver
+    CHECK(rp.waitFor(0x02, 14074000));
+    CHECK(rp.waitFor(0x01, 14074000));
+    std::vector<cf32> buf(4096);
+    CHECK(readIq(ring, buf));
+    bool okVals = true;
+    for (auto& v : buf) if (std::fabs(v.real() - 0.5f) > 1e-6f || std::fabs(v.imag() + 0.25f) > 1e-6f) okVals = false;
+    CHECK(okVals);
+    // live changes: up to 61.44 MHz, 384 ksps; the HL2's LNA register is never sent
+    s.centerHz = 50.1e6; s.sampleRate = 384e3;
+    CHECK(src->retune(s, err));
+    CHECK(rp.waitFor(0x00, 0x03000004));
+    CHECK(rp.waitFor(0x02, 50100000));
+    CHECK(std::fabs(src->sampleRate() - 384e3) < 1);
+    {
+        std::lock_guard<std::mutex> lk(rp.mu);
+        CHECK(rp.regs.find(0x0a) == rp.regs.end());
+    }
+    // the swap setting mirrors the spectrum: I and Q the other way round
+    s.radio["swapiq"] = "1";
+    CHECK(src->retune(s, err));
+    for (int i = 0; i < 100; i++) { std::this_thread::sleep_for(std::chrono::milliseconds(10)); }
+    ring.clear();
+    CHECK(readIq(ring, buf));
+    okVals = true;
+    for (auto& v : buf) if (std::fabs(v.real() + 0.25f) > 1e-6f || std::fabs(v.imag() - 0.5f) > 1e-6f) okVals = false;
+    CHECK(okVals);
+    s.centerHz = 70e6;   // beyond its specified range: said, and sent as asked
+    err.clear();
+    CHECK(src->retune(s, err) && !err.empty());
+    CHECK(rp.waitFor(0x02, 70000000));
+    src->stop();
+    for (int i = 0; i < 100 && rp.stops < 1; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    CHECK(rp.stops >= 1 && !rp.streaming);
+    rp.stop();
+    for (const auto& f : discoverRedPitaya(200)) CHECK(!f.host.empty());
+}
 
 static void testHermesLite2() {
     FakeHl2 hl;
@@ -554,10 +742,10 @@ static void testHermesLite2() {
     CHECK(hl.waitFor(0x02, 14200000));
     CHECK(hl.waitFor(0x0a, 0x40 | 60));    // its top, +48 dB
     CHECK(std::fabs(src->sampleRate() - 384e3) < 1);
-    s.centerHz = 100e6;                    // beyond its range: said, and its top
+    s.centerHz = 100e6;                    // beyond its specified range: said, and sent as asked
     err.clear();
     CHECK(src->retune(s, err) && !err.empty());
-    CHECK(hl.waitFor(0x02, 38400000));
+    CHECK(hl.waitFor(0x02, 100000000));
     src->stop();
     for (int i = 0; i < 100 && hl.stops < 1; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));
     CHECK(hl.stops >= 1 && !hl.streaming);
@@ -599,11 +787,11 @@ static std::vector<std::map<std::string, std::string>> fakeEnumerate(const std::
 }
 static void testSoapyRemote() {
     NetRadio r; r.type = NetRadio::SoapyRemote; r.host = "tcp://192.168.0.13"; r.port = 55133;
-    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133");
+    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133,remote:timeout=5000000");
     r.remote = "mirisdr";
-    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133,remote:driver=mirisdr");
+    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133,remote:timeout=5000000,remote:driver=mirisdr");
     r.remote = "driver=sdrplay, serial=7";
-    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133,remote:driver=sdrplay,remote:serial=7");
+    CHECK(soapyRemoteArgs(r) == "driver=remote,remote=tcp://192.168.0.13:55133,remote:timeout=5000000,remote:driver=sdrplay,remote:serial=7");
     const auto back = netRadiosFromString(netRadiosToString({r}));
     CHECK(back.size() == 1 && back[0].remote == "driver=sdrplay, serial=7" && back[0].port == 55133);
     NetRadio plain = r; plain.remote.clear();
@@ -620,7 +808,7 @@ static void testSoapyRemote() {
     CHECK(soapyRemoteFailureHelp("driver=rtlsdr").empty());
 #ifdef DECT2_HAVE_SOAPY
     const auto v = netRadioDevices({plain});
-    CHECK(v.size() == 1 && v[0].soapyArgs == "driver=remote,remote=tcp://192.168.0.13:55133,remote:driver=mirisdr,remote:serial=1");
+    CHECK(v.size() == 1 && v[0].soapyArgs == "driver=remote,remote=tcp://192.168.0.13:55133,remote:timeout=5000000,remote:driver=mirisdr,remote:serial=1");
     CHECK(v[0].name.find("mirisdr") != std::string::npos && v[0].name.find("192.168.0.13:55133") != std::string::npos);
     const auto v2 = netRadioDevices({r});
     CHECK(v2.size() == 1 && v2[0].soapyArgs == soapyRemoteArgs(r));
@@ -643,7 +831,7 @@ static void testPrefs() {
 #ifdef DECT2_HAVE_SOAPY
     setSoapyEnumerator([](const std::string&) { return std::vector<std::map<std::string, std::string>>(); });   // a server that lists nothing: the plain entry
     const auto v = netRadioDevices({c});
-    CHECK(v.size() == 1 && v[0].kind == DeviceInfo::Soapy && v[0].soapyArgs == "driver=remote,remote=tcp://10.0.0.7:55132");
+    CHECK(v.size() == 1 && v[0].kind == DeviceInfo::Soapy && v[0].soapyArgs == "driver=remote,remote=tcp://10.0.0.7:55132,remote:timeout=5000000");
     setSoapyEnumerator(nullptr);
 #else
     CHECK(netRadioDevices({c}).empty());
@@ -660,7 +848,10 @@ int main() {
     testRtlTcp();
     testRtlTcpOther();
     testSpyServer();
+    testSpyServerBytes();
+    testShare();
     testHermesLite2();
+    testRedPitaya();
     if (fails) { fprintf(stderr, "%d failure(s)\n", fails); return 1; }
     printf("netradio: all passed\n");
     return 0;

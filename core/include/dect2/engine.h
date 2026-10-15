@@ -38,8 +38,10 @@
 #include "mode_tuning.h"
 #include "airband_rx.h"
 #include "vdl2_rx.h"
+#include "vdl4_rx.h"
 #include "ism_rx.h"
 #include "vor_rx.h"
+#include "ndb_rx.h"
 #include "m17_rx.h"
 #include "hfdl_rx.h"
 #include "cell_rx.h"
@@ -48,6 +50,7 @@
 #include "nxdn_rx.h"
 #include "dpmr_rx.h"
 #include "tetra_rx.h"
+#include "tetrapol_rx.h"
 #include "mac_rx.h"
 #include "gsmr_rx.h"
 #include "dvbc_rx.h"
@@ -80,6 +83,8 @@
 #include "wb_rx.h"
 #include "datawell_rx.h"
 #include "same_rx.h"
+#include "ant_rx.h"
+#include "dect_rx.h"
 #include "multitone_rx.h"
 #include "loraraw_rx.h"
 #include "wisun_rx.h"
@@ -87,8 +92,11 @@
 #include "meteor_rx.h"
 #include "nr_rx.h"
 #include "goes_rx.h"
+#include "elektro_rx.h"
+#include "uat_rx.h"
 #include "hrpt_rx.h"
 #include "bbunpack.h"
+#include "multitv.h"
 #include "ts.h"
 #include "tsout.h"
 #include "player.h"
@@ -122,15 +130,18 @@ struct FileOptions {
     bool bigEndian = false;
 };
 
-// Where samples were lost since the radio was started. The radio side: samples that never came out of the radio (its USB link or driver
-// could not keep up, or the computer slept), found by comparing what arrived with the radio's sample rate. The OnAir side: samples the
-// receiver had to skip because it could not keep up with the rate (a slow or busy processor). The two need opposite remedies.
+// Where samples were lost since the radio was started. Callback gaps: the library delivered less than the radio's rate (the radio or its
+// driver), found by comparing what arrived with that rate. Ring overflow: samples the library did hand over, which OnAir then discarded
+// because it did not read the input ring in time. Receiver load (loadPct) is processing time against the block's duration, a third thing:
+// it can be high while every sample is kept, and samples can be lost while it is low. deliveredPct is the rate that actually arrived.
 struct SampleLoss {
     bool live = false;                 // a live radio (files and the test signal never lose samples: they wait for the receiver)
     double radioSec = 0, cpuSec = 0;   // seconds of signal lost on each side
     uint64_t radioEvents = 0, cpuEvents = 0;
     double sinceRadioSec = -1, sinceCpuSec = -1;   // seconds since the last loss of each kind, -1 = none yet
     float loadPct = 0;                 // the receiver's share of real time on the sample thread over the last seconds (100 = just keeping up)
+    float deliveredPct = -1;           // samples the radio handed over, percent of the rate it is set to, over the last seconds. -1 = not measured yet
+    bool rateLow = false;              // a live radio under about 97% of that rate (the radio or driver, not the receiver's CPU load)
 };
 
 class Engine {
@@ -149,12 +160,14 @@ public:
     bool retuneReset(const TuneSettings& tune);
     uint64_t resetCount() const { return resets_.load(); }
     bool running() const { return running_; }
+    uint64_t startEpoch() const { return startEpoch_.load(); }   // grows at each successful start (map send: ignore leftover lists)
+    bool syntheticSource() const;   // last start was the built-in test signal (never posted to the public map)
     // What the radio's driver said without failing: at the last retune (a frequency outside what the radio covers, ...) or else at the start
     // (a lower sample rate than asked for, ...); empty when it had nothing to say. The app shows it with the radio messages.
     std::string sourceNote() const { std::lock_guard<std::mutex> lk(noteMu_); return retuneNote_.empty() ? note_ : retuneNote_; }
     // A live radio that has stopped delivering samples (unplugged, or its USB connection broke). A HackRF is reopened when it comes back.
     bool radioLost() const { return radioLost_; }
-    void setComputeMode(int m) { rx_.setComputeMode(m); rxDvbs_.setComputeMode(m); }
+    void setComputeMode(int m) { rx_.setComputeMode(m); rxDvbs_.setComputeMode(m); rxDtmb_.setComputeMode(m); }
     void selectPlp(int id) { rx_.selectPlp(id); }
     // Which standard to decode: 0 = automatic (alternates between DVB-T2 and DVB-T until one locks), 1 = DVB-T2, 2 = DVB-T, 3 = ATSC, 4 = DAB, 5 = ATSC 3.0, 6 = ISDB-T, 7 = FM,
     // 8 = DVB-S/S2, 9 = DTMB, 10 = analog TV, 11 = DMR, 12 = DRM, 13 = ADS-B, 14 = GNSS,
@@ -209,17 +222,40 @@ public:
     double captureCentreHz() const;   // the frequency at the centre of the samples the receivers get
     // The modes that can run second: narrow channels that neither retune the radio, nor make a transport stream, picture or player sound
     static bool secondaryAllowed(int stdMode);
-    // Empty when the second mode fits beside the first in a capture of rateHz around centreHz, else the reason (shown to the user)
-    static std::string secondaryCheck(int primaryStd, int secStd, double centreHz, double rateHz, double secHz);
+    // The same beside a given first mode: DVB-S/S2 (8) may run second only beside QO-100 (55), whose wideband view lists the DATV carriers; QO-100
+    // makes no transport stream of its own, so the stream, the player and the picture are the second mode's then
+    static bool secondaryAllowed(int stdMode, int primaryStd);
+    // Empty when the second mode fits beside the first in a capture of rateHz around centreHz, else the reason (shown to the user).
+    // chanHz: the width of the channel when the mode's own is not it (a DVB-S carrier: its symbol rate with the roll-off), 0 = the mode's
+    static std::string secondaryCheck(int primaryStd, int secStd, double centreHz, double rateHz, double secHz, double chanHz = 0);
+    // DVB-S/S2 as the second mode beside QO-100: the carrier at freqHz (what the radio sees, Qo100Datv::ifHz) with its symbol rate. The receiver gets the
+    // carrier alone (mixed to the centre and resampled to a few times its symbol rate, so that the other carriers of the transponder stay out of its
+    // spectrum search); its stream goes to the player, its report comes through latestRx2() as standard 7. Replaces any other second mode.
+    bool setSecondaryDvbs(double freqHz, double symbolRate);
 
     void setPlpDump(std::function<void(const PlpResult&)> cb) { plpDump_ = std::move(cb); }
 
+    // Multi-channel TV (DVB-T / DVB-T2, multitv.h): when the capture is wide enough for more than one channel of the chosen width, one receiver runs for
+    // every occupied channel of the raster (up to maxChannels), each with its own telemetry and service list; one channel plays at a time while the others
+    // keep decoding. grid: 0 finds out whether the capture is centred on a channel or between two, 1 on a channel, 2 between two. Off: the single receiver as before.
+    void setMultiChannel(bool on, int maxChannels = 0, int grid = 0);
+    bool multiChannel() const { return mtvOn_.load(); }                  // asked for
+    bool multiChannelActive() const { return mtvActive_.load(); }        // running now (the mode, the span and the width allow it)
+    static bool multiChannelSupported(int stdMode) { return stdMode == 1 || stdMode == 2; }   // DVB-T2, DVB-T
+    static int defaultMaxChannels();                                      // 2 on a laptop, 3 on a desktop
+    static int slotsInSpan(double spanRate, double widthMhz, int grid);   // channels of the raster that fit the capture
+    void selectTvChannel(int slot);                                       // the channel that plays and shows in detail
+    int selectedTvChannel() const { auto m = mtvGet(); return m ? m->selected() : 0; }
+    std::vector<TvChannelRow> tvChannels();
+    std::vector<MultiService> multiServices();                            // every service of every channel, with the channel it comes from
+    std::string multiChannelNote() const { std::lock_guard<std::mutex> lk(mtvNoteMu_); return mtvNote_; }
     // Transport stream (phase 4)
     TsSnapshot tsSnapshot();
     BbStats bbStats();
     std::map<int, std::vector<EpgEvent>> epg();
     // Every burst of transport stream packets is also handed to this function (the network tuner); it runs on the receiver thread, so it must be quick.
-    void setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*)> f);
+    // `secs` is how long the burst represents in the stream, so a client can hand it to a player at that rate instead of in one lump.
+    void setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> f);
     void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }
@@ -281,11 +317,18 @@ public:
     Js8Receiver& js8() { return rxJs8_; }   // JS8Call: the receiver's own controls and results (the interface reads telemetry through latestRx)
     OrbcommReceiver& orbcomm() { return rxOrb_; }   // Orbcomm: downlinks at once (the interface reads telemetry through latestRx)
     TetraReceiver& tetra() { return rxTetra_; }   // TETRA network information: the interface reads telemetry through latestRx
+    TetrapolReceiver& tetrapol() { return rxTetrapol_; }   // TETRAPOL control channel (receive only)
     AleReceiver& ale() { return rxAle_; }   // HF ALE: the receiver's own controls and results (the interface reads telemetry through latestRx)
     P25Receiver& p25() { return rxP25_; }   // P25 Phase 1: sound (the interface reads telemetry through latestRx)
     UplinkReceiver& uplink() { return rxUplink_; }   // Mode S uplink (1030 MHz): telemetry through latestRx
     BleReceiver& ble() { return rxBle_; }   // Bluetooth LE advertising: clear the device table (telemetry through latestRx)
     IonoReceiver& iono() { return rxIono_; }   // ionospheric sounders: timing lock, the sounder shown (telemetry through latestRx)
+    // More channels for the general receiver: up to kGeneralExtra further receivers on the same capture, each with its own channel offset,
+    // demodulator, squelch and recording. They are silent (the one that is listened to is general()); n = how many run (0 .. kGeneralExtra).
+    static constexpr int kGeneralExtra = 3;
+    GeneralReceiver& generalExtra(int i) { return extraGeneral_[(size_t)i]; }
+    int generalExtraCount() const { return extraGeneralN_.load(); }
+    void setGeneralExtraCount(int n) { extraGeneralN_ = n < 0 ? 0 : n > kGeneralExtra ? kGeneralExtra : n; }
     GeneralReceiver& general() { return rxGeneral_; }   // general receiver: demodulator, filter, squelch, sound and recording (telemetry through latestRx)
     GlobalstarReceiver& globalstar() { return rxGs_; }   // Globalstar activity monitor: clear the event log (telemetry through latestRx)
     VdesReceiver& vdes() { return rxVdes_; }   // VDES: clear the ASM and burst lists (telemetry through latestRx)
@@ -300,6 +343,8 @@ public:
     DatawellReceiver& datawell() { return rxDw_; }   // Datawell buoy HF link: clear the frames, force the format (telemetry through latestRx)
     MultitoneReceiver& multitone() { return rxMt_; }   // Multitone paging: clear the transmission list (telemetry through latestRx)
     CodarReceiver& codar() { return rxCd_; }   // CODAR / HF ocean radar: clear the station table and the events (telemetry through latestRx)
+    DectReceiver& dect() { return rxDect_; }   // DECT: the base station table and log (telemetry through latestRx)
+    AntReceiver& ant() { return rxAnt_; }   // ANT+ sensors: the sensor table and frame log (telemetry through latestRx)
     SameReceiver& same() { return rxSame_; }   // NOAA weather radio SAME: the alert list, country, Listen (telemetry through latestRx)
     HalowReceiver& halow() { return rxHl_; }   // Wi-Fi HaLow / 802.11ah: clear the network table and the frame log (telemetry through latestRx)
     CubesatReceiver& cubesat() { return rxCube_; }   // CubeSat telemetry: satellite table, tracked satellite, KISS (telemetry through latestRx)
@@ -307,6 +352,9 @@ public:
     RidReceiver& rid() { return rxRid_; }   // Drone Remote ID: clear the drone table (telemetry through latestRx)
     HrptReceiver& hrpt() { return rxHrpt_; }   // HRPT / AHRPT: variant, new picture (telemetry through latestRx)
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
+    ElektroReceiver& elektro() { return rxEl_; }
+    Vdl4Receiver& vdl4() { return rxVdl4_; }   // VDL Mode 4 (telemetry through latestRx)
+    UatReceiver& uat() { return rxUat_; }         // UAT 978 MHz ADS-B / FIS-B / TIS-B (telemetry through latestRx)
     MeteorReceiver& meteor() { return rxMeteor_; }   // Meteor-M LRPT: modulation, a new picture (telemetry through latestRx)
     NrReceiver& nr() { return rxNr_; }         // 5G NR cells: clear the cell table (telemetry through latestRx)
     WifiReceiver& wifi() { return rxWifi_; }   // Wi-Fi networks: clear the network table (telemetry through latestRx)
@@ -318,6 +366,7 @@ public:
     M17Receiver& m17() { return rxM17_; }   // M17: the receiver's own controls and results (the interface reads telemetry through latestRx)
     AirbandReceiver& airband() { return rxAirband_; }   // Airband: the receiver's own controls and results (the interface reads telemetry through latestRx)
     VorReceiver& vor() { return rxVor_; }   // VOR / ILS: the receiver's own controls and results (the interface reads telemetry through latestRx)
+    NdbReceiver& ndb() { return rxNdb_; }   // NDB: long-wave non-directional beacons, the Morse ident (telemetry through latestRx)
     TeletextDecoder& teletext() { return ttx_; }
     // ATSC 3.0: the service list and statistics, and which service to receive (-1 = the first video service)
     bool atsc3Telemetry(Atsc3Telemetry& t) const { std::lock_guard<std::mutex> lk(atsc3Mu_); t = atsc3Tel_; return atsc3Tel_.seq != 0; }
@@ -333,6 +382,7 @@ public:
     void setWideMuted(bool m) { wide_.setMuted(m); }
     void setWideSelected(int carrierId) { wide_.setSelected(carrierId); }   // the carrier whose sound plays and whose detail shows (0: the best locked)
     static bool wideSupported(int analysisMode) { return WideModes::supports(analysisMode); }
+    void clearAllResults();                              // the lists of every mode at once (the top bar's Clear all)
     void clearResults(int stdMode);                      // the Clear of a mode's screen: every list of its receiver
     int loadResults(const std::string& dir);             // the lists of the last run (a file of another build is discarded); the receivers restored
     int saveResults(const std::string& dir);             // the receivers whose lists changed since the last save (or load); the files written
@@ -377,12 +427,25 @@ private:
     void logRxEvents(const RxTelemetry& t);
     std::function<void(const PlpResult&)> plpDump_;
     void onPlp(const PlpResult& r);
+    // multi-channel TV (setMultiChannel)
+    std::shared_ptr<MultiTv> mtv_;
+    mutable std::mutex mtvMu_;               // mtv_ (the analysis thread replaces it, the interface reads it)
+    std::shared_ptr<MultiTv> mtvGet() const { std::lock_guard<std::mutex> lk(mtvMu_); return mtv_; }
+    std::atomic<bool> mtvOn_{false}, mtvActive_{false};
+    std::atomic<int> mtvMax_{0}, mtvGrid_{0};
+    double mtvKeyRate_ = -1, mtvKeyBw_ = 0;
+    int mtvKeyStd_ = -1, mtvKeyMax_ = -1, mtvKeyGrid_ = -1;
+    bool mtvKeyOn_ = false;
+    mutable std::mutex mtvNoteMu_;
+    std::string mtvNote_;
+    void syncMultiTv();                       // the analysis thread: starts, changes or stops the multi-channel receivers when the settings or the capture changed
+    void onMultiPackets(const uint8_t* pk, size_t n, double secs, const TsSnapshot& snap);
     std::mutex tsMu_;
     BbUnpacker unpack_;
     TsDemux demux_;
     TsSnapshot tsSnap_;
     OutputManager outputs_;
-    std::function<void(const uint8_t*, size_t, const TsSnapshot*)> tap_;
+    std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> tap_;
     Player player_;
     IqCorrector iqFix_;
     // offset tuning (offset_tune.h): the radio is tuned offHz_ below the channel at offRate_, and offMix_ brings the channel back to the centre;
@@ -454,6 +517,7 @@ private:
     Vdl2Receiver rxVdl2_;
     IsmReceiver rxIsm_;
     VorReceiver rxVor_;
+    NdbReceiver rxNdb_;
     M17Receiver rxM17_;
     HfdlReceiver rxHfdl_;
     CellReceiver rxCell_;
@@ -482,6 +546,8 @@ private:
     Qo100Receiver rxQo100_;
     WifiReceiver rxWifi_;
     GeneralReceiver rxGeneral_;
+    GeneralReceiver extraGeneral_[3];
+    std::atomic<int> extraGeneralN_{0};
     TimeReceiver rxTime_;
     CubesatReceiver rxCube_;
     GlobalstarReceiver rxGs_;
@@ -495,6 +561,9 @@ private:
     WbReceiver rxWb_;
     DatawellReceiver rxDw_;
     SameReceiver rxSame_;
+    AntReceiver rxAnt_;
+    DectReceiver rxDect_;
+    TetrapolReceiver rxTetrapol_;
     MultitoneReceiver rxMt_;
     LoraRawReceiver rxLr_;
     WisunReceiver rxWs_;
@@ -502,9 +571,12 @@ private:
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
+    ElektroReceiver rxEl_;
+    Vdl4Receiver rxVdl4_;
+    UatReceiver rxUat_;
     HrptReceiver rxHrpt_;
     FlarmReceiver rxFlarm_;
-    uint64_t modeSeq_[80] = {};      // the last report taken from each of the modes added after FM (same order as above)
+    uint64_t modeSeq_[96] = {};      // the last report taken from each of the modes added after FM (same order as above)
     mutable std::mutex atsc3Mu_;
     Atsc3Telemetry atsc3Tel_;
     uint64_t atsc3Seq_ = 0;
@@ -552,6 +624,8 @@ private:
     void muteReceiver(int a, bool muted);
     std::atomic<bool> secSound_{false};
     std::atomic<double> secRate_{0};          // the second receiver's rate: its mode's own, the capture resampled down to it
+    std::atomic<double> secChanHz_{0}, secWantRate_{0}, secSym_{0};   // setSecondaryDvbs: the channel's width, the rate it wants, its symbol rate (0 = the mode's own)
+    bool setSecondaryImpl(int sm, double hz, double chanHz, double wantRate, double sym);
     void pushSecondary(const cf32* x, size_t n);
     void setSecNote(const std::string& s) { std::lock_guard<std::mutex> lk(secNoteMu_); secNote_ = s; }
     std::thread secTh_;
@@ -568,7 +642,7 @@ private:
     std::atomic<double> secShift_{0};   // how far its frequency lies above the centre of the capture
     std::atomic<bool> secFlush_{false};
     std::atomic<uint64_t> secDropped_{0};
-    uint64_t modeSeq2_[80] = {};
+    uint64_t modeSeq2_[96] = {};
     std::mutex rx2Mu_;
     RxTelemetry rxTel2_;
     uint64_t rx2Pub_ = 0;
@@ -588,6 +662,7 @@ private:
     void publishRx(RxTelemetry&& t) { t.seq = ++rxPub_; rxTel_ = std::move(t); }
     std::thread th_;
     std::atomic<bool> running_{false}, stopReq_{false};
+    std::atomic<uint64_t> startEpoch_{0};
     void watchRadio();
     std::atomic<bool> radioLost_{false};
     TuneSettings hwTune(const TuneSettings& t) const;      // radioTune() through the converter (converter.h): what the radio itself is tuned to
@@ -608,8 +683,11 @@ private:
     std::atomic<uint64_t> radioMissEvents_{0}, cpuDropEvents_{0}, ringDroppedSeen_{0};
     std::atomic<int64_t> lastRadioMissNs_{0}, lastCpuDropNs_{0}, lastRadioLogNs_{0};
     std::atomic<float> loadPct_{0};
+    std::atomic<float> deliveredPct_{-1};   // checkDelivery(): samples the library offered over wall time, percent of srcRate_; -1 until a window completes
     std::atomic<bool> live_{false};   // the source is a live radio (sampleLoss() is read by the interface without touching src_)
     double loadT_ = 0, loadRx_ = 0, loadSamp_ = 0;   // analysis thread: where the last load measurement started
+    int64_t rateT0_ = 0;       // analysis thread: start of the delivered-rate window (steady ns); 0 = not started
+    uint64_t rateOff0_ = 0;    // offered-sample count at rateT0_
     std::string reconnectErr_;
     mutable std::mutex noteMu_;
     std::string note_, retuneNote_;     // sourceNote(): the driver's note at the start, at the last retune

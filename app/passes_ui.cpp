@@ -76,6 +76,10 @@ struct State {
     int selSat = -1; double selAos = 0;
     std::string selName;                // selSat again after the list is rebuilt
     bool track = false, autoStart = false, autoRecord = false;
+    bool once = false, prevStart = false, prevRec = false;   // "Record this pass": armed for the chosen pass only (the settings it overrode)
+    bool autoTle = true;                                     // download the TLEs by itself, at most once a day
+    float notifyMin = 5;                                     // minutes before AOS of the tracked pass: banner and log line
+    double notifiedAos = 0;                                  // the pass the log line was written for
     // tracking
     bool inPass = false, weStarted = false, weRecord = false, recTried = false;
     std::string passName;               // the satellite of the pass under way
@@ -93,6 +97,7 @@ State S;
 
 // the download runs on its own thread: these outlive it
 std::atomic<int> gDl{0};   // 0 idle, 1 working, 2 finished
+std::atomic<bool> gDlOk{false};   // the finished download got at least one list
 std::mutex gDlMu;
 std::string gDlMsg;
 
@@ -198,6 +203,8 @@ void loadState() {
     S.loaded = true;
     plat::Prefs& p = plat::prefs();
     S.minEl = (float)p.getD("passMinEl", 10);
+    S.autoTle = p.getB("passTleAuto", true);
+    S.notifyMin = (float)p.getD("passNotifyMin", 5);
     for (int g = 0; g < NumGroups; g++) { char k[24]; snprintf(k, sizeof k, "passShow%d", g); S.show[g] = p.getB(k, true); }
     loadCubes();
     loadCustomSources();
@@ -207,6 +214,8 @@ void loadState() {
 void startDownload(bool keplerpass = false, std::string customFile = {}, std::string customUrl = {}) {
     if (gDl.load() == 1) return;
     gDl = 1;
+    gDlOk = false;
+    plat::prefs().setD("passTleTry", nowSec());
     { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = tr("downloading..."); }
     const std::string dir = tleDir();
     std::thread([dir, keplerpass, customFile, customUrl] {
@@ -230,8 +239,28 @@ void startDownload(bool keplerpass = false, std::string customFile = {}, std::st
                             : std::string(custom ? "Custom source: downloaded " : keplerpass ? "Keplerpass: downloaded " : (std::string(tr("downloaded")) + " ")) + std::to_string(n) + " TLEs";
         if (ok && ok < (int)sourceCount) m += "; some lists failed";
         { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = m; }
+        gDlOk = ok > 0;
         gDl = 2;
     }).detach();
+}
+
+// the end of a download, noticed on the main thread whether or not the window is open: the new lists are loaded, the day is noted
+void pollDownload() {
+    if (gDl.load() == 2) {
+        gDl = 0;
+        std::lock_guard<std::mutex> lk(gDlMu);
+        S.msg = gDlMsg;
+        if (gDlOk.load()) plat::prefs().setD("passTleOk", nowSec());
+        loadTles();
+    } else if (gDl.load() == 1) { std::lock_guard<std::mutex> lk(gDlMu); S.msg = gDlMsg; }
+}
+
+// Automatic update: once a day while the planner is open or a pass is tracked (cached lists are used meanwhile and when offline)
+void autoUpdateTle(bool wanted) {
+    if (!S.autoTle || !wanted || gDl.load() != 0) return;
+    plat::Prefs& p = plat::prefs();
+    const double ok = S.tles.empty() ? 0.0 : p.getD("passTleOk", 0), tried = p.getD("passTleTry", 0);
+    if (dect2::tleUpdateDue(nowSec(), ok, tried)) startDownload();
 }
 
 void compute(App& a) {
@@ -279,6 +308,13 @@ void retuneTo(App& a, double mhz) {
     if (a.engine.running()) { a.tune.centerHz = a.freqMhz * 1e6; a.engine.retune(a.tune); }
 }
 
+// "Record this pass" is over (or cancelled): the tracking settings it overrode come back
+void disarmOnce() {
+    if (!S.once) return;
+    S.once = false;
+    S.track = false; S.autoStart = S.prevStart; S.autoRecord = S.prevRec;
+}
+
 void endPass(App& a, bool los) {
     S.inPass = false;
     a.engine.log("pass of " + S.passName + (los ? " ends (LOS)" : ": tracking stopped"));
@@ -287,17 +323,23 @@ void endPass(App& a, bool los) {
     S.weStarted = false;
     a.engine.cubesat().setTracked(0, "");
     retuneTo(a, S.nominalMhz);
+    if (los) disarmOnce();
 }
 
 // once a frame, open or not: follow the tracked satellite's pass
 void trackTick(App& a) {
     const bool have = S.selSat >= 0 && S.selSat < (int)S.sats.size();
     const double now = nowSec();
+    if (S.once && !S.track) { S.once = false; S.autoStart = S.prevStart; S.autoRecord = S.prevRec; }   // Track was switched off by hand
     if (S.inPass && (!have || !S.track || S.sats[S.selSat].name != S.passName)) { endPass(a, false); return; }
     if (S.inPass && now > S.passLos) { endPass(a, true); return; }
     if (!have || !S.track) return;
     const Sat& sat = S.sats[S.selSat];
-    const Row* r = activeOrNext(S.selSat);
+    const Row* r = nullptr;
+    if (S.once) {   // armed for the chosen pass only, not for the satellite's next one
+        for (const Row& x : S.rows) if (x.sat == S.selSat && std::fabs(x.p.aos - S.selAos) < 1 && x.p.los >= now) r = &x;
+        if (!r && !S.inPass) { disarmOnce(); return; }   // it has gone (the list was rebuilt without it)
+    } else r = activeOrNext(S.selSat);
     const bool active = r && r->p.aos <= now && now <= r->p.los;
     if (active && !S.inPass) {   // AOS
         S.inPass = true; S.passLos = r->p.los; S.passName = sat.name; S.weStarted = false; S.weRecord = false; S.recTried = false; S.nominalMhz = sat.mhz; S.lastTune = 0;
@@ -324,6 +366,35 @@ void trackTick(App& a) {
         dect2::Look l;
         if (lookNow(sat, now, l)) retuneTo(a, (S.nominalMhz * 1e6 + dect2::dopplerHz(S.nominalMhz * 1e6, l.rangeRateKmS)) / 1e6);
     }
+}
+
+// A reminder in the last notifyMin minutes before the tracked satellite rises: one line over the top of the window (and one log line)
+void aosBanner(App& a) {
+    if (!S.track || S.inPass || S.selSat < 0 || S.selSat >= (int)S.sats.size() || S.notifyMin <= 0) return;
+    const double now = nowSec();
+    const Row* r = nullptr;
+    for (const Row& x : S.rows) {
+        if (x.sat != S.selSat || x.p.los < now) continue;
+        if (S.once && std::fabs(x.p.aos - S.selAos) >= 1) continue;
+        if (!r || x.p.aos < r->p.aos) r = &x;
+    }
+    if (!r) return;
+    const double left = r->p.aos - now;
+    if (left <= 0 || left > S.notifyMin * 60) return;
+    const std::string& nm = S.sats[S.selSat].name;
+    if (S.notifiedAos != r->p.aos) {
+        S.notifiedAos = r->p.aos;
+        a.engine.log("pass of " + nm + " begins in " + std::to_string((int)(left / 60)) + " min");
+    }
+    const int in = (int)left;
+    char b[200];
+    snprintf(b, sizeof b, tr(S.autoStart || S.autoRecord ? "Pass of %s in %d:%02d (max %.0f deg): the receiver starts by itself" : "Pass of %s in %d:%02d (max %.0f deg)"), nm.c_str(), in / 60, in % 60, r->p.maxElDeg);
+    ImDrawList* dl = ImGui::GetForegroundDrawList();
+    const ImVec2 ts = ImGui::CalcTextSize(b), disp = ImGui::GetIO().DisplaySize;
+    const float pad = 8 * gUi, x = (disp.x - ts.x) * 0.5f, y = 36 * gUi;
+    dl->AddRectFilled(ImVec2(x - pad, y - pad * 0.5f), ImVec2(x + ts.x + pad, y + ts.y + pad * 0.5f), IM_COL32(20, 22, 24, 230), 4.f);
+    dl->AddRect(ImVec2(x - pad, y - pad * 0.5f), ImVec2(x + ts.x + pad, y + ts.y + pad * 0.5f), ImGui::GetColorU32(pal::warnAmber()), 4.f);
+    dl->AddText(ImVec2(x, y), ImGui::GetColorU32(pal::warnAmber()), b);
 }
 
 void skyPlot(const Row* r, float size) {
@@ -367,8 +438,6 @@ void skyPlot(const Row* r, float size) {
 }
 
 void tleSection(App& a) {
-    if (gDl.load() == 2) { gDl = 0; std::lock_guard<std::mutex> lk(gDlMu); S.msg = gDlMsg; loadTles(); }
-    else if (gDl.load() == 1) { std::lock_guard<std::mutex> lk(gDlMu); S.msg = gDlMsg; }
     if (!ImGui::CollapsingHeader(trw("TLE data"), S.tles.empty() ? ImGuiTreeNodeFlags_DefaultOpen : 0)) return;
     ImGui::BeginDisabled(gDl.load() == 1);
     if (ImGui::Button(tr(gDl.load() == 1 ? "Downloading..." : "Download TLEs from Celestrak"))) startDownload(false);
@@ -376,11 +445,14 @@ void tleSection(App& a) {
     if (ImGui::Button(tr("Download TLEs from Keplerpass"))) startDownload(true);
     ImGui::EndDisabled();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-        std::string tip = tr("Downloads only when you click. Fetches:");
+        std::string tip = tr(S.autoTle ? "Downloads when you click, and by itself once a day. Fetches:" : "Downloads only when you click. Fetches:");
         for (const Source& s : kSources) tip += std::string("\n") + s.url;
         tip += "\nSaved in " + tleDir();
         ImGui::SetTooltip("%s", tip.c_str());
     }
+    ImGui::SameLine();
+    if (ImGui::Checkbox(tr("Automatic update"), &S.autoTle)) plat::prefs().setB("passTleAuto", S.autoTle);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Downloads the TLEs again once a day, only while this window is open or a pass is tracked. Without a network the saved lists are used."));
     ImGui::SameLine();
     if (ImGui::Button(tr(S.showPaste ? "Hide paste box" : "Paste TLEs..."))) S.showPaste = !S.showPaste;
     if (!S.msg.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", S.msg.c_str()); }
@@ -439,6 +511,10 @@ void tleSection(App& a) {
     ImGui::PopTextWrapPos();
     double oldest = 0;
     for (const Sat& s : S.sats) oldest = std::max(oldest, nowSec() / 86400.0 + 2440587.5 - s.sgp.tle().epochJd);
+    {
+        const double ok = plat::prefs().getD("passTleOk", 0);
+        if (ok > 0 && !S.tles.empty()) ImGui::TextDisabled(tr("last downloaded %s"), timeText(ok).c_str());
+    }
     if (S.tles.empty()) ImGui::TextColored(pal::warnAmber(), "%s", tr("No TLEs yet: download them or paste some."));
     else {
         ImGui::Text(tr("%d TLEs, %d satellites listed"), (int)S.tles.size(), (int)S.sats.size());
@@ -597,8 +673,27 @@ void window(App& a) {
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Switches to the satellite's mode and starts the receiver at AOS (when it is stopped), and stops it at LOS"));
     ImGui::Checkbox(tr("Auto record IQ"), &S.autoRecord);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip(tr("Records the radio's IQ during the pass, as Record IQ does (format from the Record IQ setting), into %s/recordings"), plat::dataDir().c_str());
+    ImGui::SetNextItemWidth(110 * gUi);
+    if (ImGui::SliderFloat("##notmin", &S.notifyMin, 0, 30, tr("remind %.0f min before"))) plat::prefs().setD("passNotifyMin", S.notifyMin);
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("A line at the top of the window and a log entry before the tracked pass rises (0: off)"));
     ImGui::EndDisabled();
     ImGui::EndDisabled();
+    {   // one pass, everything armed
+        const bool canArm = r && r->p.los > now && !S.inPass;
+        ImGui::BeginDisabled(!canArm && !S.once);
+        const bool armed = S.once;
+        if (ImGui::Button(tr(armed ? "Cancel recording this pass" : "Record this pass"))) {
+            if (armed) { disarmOnce(); }
+            else {
+                S.selSat = r->sat; S.selAos = r->p.aos; S.selName = S.sats[r->sat].name;
+                S.prevStart = S.autoStart; S.prevRec = S.autoRecord;
+                S.once = true; S.track = true; S.autoStart = true; S.autoRecord = true;
+            }
+        }
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Arms this pass only: at AOS the receiver starts in the satellite's mode and frequency (when it is stopped), Doppler is followed and the IQ is recorded; at LOS it stops and tracking switches off again"));
+        if (S.once) ImGui::TextColored(pal::okGreen(), tr("armed: %s at %s"), S.selName.c_str(), timeText(S.selAos).c_str());
+    }
     if (S.inPass) ImGui::TextColored(pal::okGreen(), tr("tracking%s"), S.weRecord ? tr(", recording") : "");
     ImGui::EndChild();
     ImGui::End();
@@ -639,7 +734,10 @@ void passesMapSatellites(std::vector<MapSatRef>& out) {
 void passesWindow(App& a) {
     loadState();
     if (!S.sats.empty() && (S.track || a.passesOpen)) compute(a);
+    pollDownload();
+    autoUpdateTle(a.passesOpen || S.track);
     trackTick(a);
+    aosBanner(a);
     if (a.passesOpen) window(a);
 }
 

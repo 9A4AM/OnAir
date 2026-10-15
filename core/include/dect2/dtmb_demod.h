@@ -1,6 +1,8 @@
 // DTMB demodulator pieces on symbol-rate samples: channel estimate from a PN header, removal of the header's leakage into the frame body
 // (TDS-OFDM), the 3780 point FFT and the equaliser, and the system information decoder.
 #pragma once
+#include <map>
+#include <utility>
 #include "dtmb_defs.h"
 #include "dtmb_fft.h"
 #include "ring.h"
@@ -38,6 +40,7 @@ private:
     int pre_ = 0, post_ = 0, t0_ = 0, rows_ = 0;
     double amp_;                              // amplitude of one header symbol component (symbol = amp (1 + j) chip)
     std::vector<double> minv_;                // PN595: inverse of the normal matrix, L x L
+    std::map<std::pair<int, int>, std::vector<double>> minvCache_;   // the inverses of the windows used so far (pre, post)
     std::vector<float> chipf_, re_, im_;
 };
 

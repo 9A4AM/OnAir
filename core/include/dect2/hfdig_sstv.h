@@ -1,6 +1,6 @@
 // SSTV decoder of the HF digital receiver (hfdig_rx.h): gets the 8 kHz upper sideband audio, finds the VIS header (or, when it was missed,
 // the line sync pulses at a known line period), and builds the picture line by line. Modes: Robot 36 and 72, Martin M1 and M2, Scottie
-// S1, S2 and DX, PD50, PD90, PD120 and PD180, Wraase SC2-180. This header, hfdig_sstv.cpp (+ hfdig_sstv_*.cpp) and app/hfdig_sstv_ui.cpp
+// S1, S2 and DX, PD50, PD90, PD120 and PD180, Wraase SC2-180. This header, hfdig_sstv.cpp (+ hfdig_sstv_*.cpp) and app/hfdig/hfdig_sstv_ui.cpp
 // belong to SSTV alone.
 //
 // The decoder reports one picture at a time (the one being received, or the last one) and the last kSstvHistory finished ones. Pictures
@@ -64,6 +64,8 @@ const SstvModeInfo& sstvModeInfo(int index);
 
 // The test picture at this size (colour bars, grey gradient, blocks), RGB bytes row by row
 void sstvTestPicture(int width, int height, std::vector<uint8_t>& rgb);
+// White block-letter caption on the last rows (callsign / a short label)
+void sstvStampText(int width, int height, std::vector<uint8_t>& rgb, const std::string& text);
 
 class HfdigSstv : public HfdigDecoder {
 public:

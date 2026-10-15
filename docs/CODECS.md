@@ -1,6 +1,6 @@
 # Voice and audio codecs
 
-OnAir never ships a patented codec. You install the ones you are allowed to use yourself, and OnAir loads them. **Whether you may
+OnAir never ships a patented codec. You install the ones you are allowed to use yourself, and OnAir loads them. The one open codec, **codec2** (FreeDV and M17 speech), comes with OnAir: nothing to install. **Whether you may
 install or use them is your own responsibility: follow the patent and radio-listening law where you live.**
 
 Every mode that needs a codec has a small **?** button. It shows whether the library was found and where, the exact file names OnAir
@@ -11,11 +11,13 @@ looks for, the exact folders it searches, an **Open codecs folder** button (it m
 
 | Mode | Codec | Library you provide |
 |---|---|---|
-| DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (DMR: calls are shown, voice is not decoded in this version) |
+| DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (built into OnAir unless you turned the bundle off; voice is decoded when the vocoder is present) |
 | D-STAR | AMBE (patented) | **mbelib** |
-| FreeDV (HF digital), M17 | codec2 (open) | **codec2** |
+| FreeDV 700D / 700E / 1600, M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
+| FreeDV RADE | RADE neural modem (open, BSD) | **librade** (not codec2): optional; without it the RADE slot stays dark |
 | TETRA | its own speech codec | nothing from you: it is not mbelib and not codec2 |
 | DAB, DRM, TV, FM | MP2, AAC, H.264 ... | nothing (FFmpeg is inside OnAir) |
+| ATSC 3.0 (US, South Korea) | Dolby AC-4 (patented) | optional **libavcodec + libavutil from an FFmpeg with an AC-4 decoder** (see below); without it the AC-4 sound is left out, picture and AAC / AC-3 sound still play |
 
 **codec2 does not help DMR, P25, NXDN or dPMR.** Putting `codec2.dll` or `libcodec2.dll` in the codecs folder only matters for FreeDV
 and M17. If a digital-voice mode says "mbelib not found", you need **mbelib**, a different library.
@@ -26,7 +28,7 @@ OnAir tries these file names. Folders are searched in this order; inside each fo
 
 1. The `DECT2_MBELIB_PATH` / `DECT2_CODEC2_PATH` environment variable (a full path), if set.
 2. The OnAir **codecs folders** (below).
-3. The program's own folder (Windows: next to `OnAir.exe`; macOS: inside the app, `Contents/Frameworks`).
+3. The libraries that ship with OnAir: the program's own folder (Windows: next to `OnAir.exe`; Linux: next to `dect2`, and `../lib/onair` and `../lib` of it, which is where the `.deb` and the portable package put codec2; macOS: inside the app, `Contents/Frameworks` and `Contents/Resources`). A copy you put in a codecs folder (step 2) wins over the shipped one.
 4. The system: Windows `PATH`; macOS `/opt/homebrew/lib`, `/usr/local/lib`, `/opt/local/lib`; Linux `/usr/local/lib`, `/usr/lib`, `/usr/lib64`, the multiarch folder.
 
 | Library | Windows | macOS | Linux |
@@ -89,11 +91,22 @@ encrypted; OnAir never decrypts. DMR voice is not decoded in this version of OnA
 
 ## codec2 (FreeDV, M17)
 
-codec2 is open software (LGPL), but OnAir does not bundle it. It is only for FreeDV and M17.
+codec2 is open software (LGPL-2.1) and **comes with OnAir**: FreeDV and M17 speech works after you download OnAir, with nothing to install.
+It is only for FreeDV and M17.
 
-- **macOS:** `brew install codec2`.
-- **Linux:** `sudo apt install libcodec2-1.2` (Ubuntu 22.04: `libcodec2-1.0`), or `sudo dnf install codec2`.
-- **Windows:** put `codec2.dll` or `libcodec2.dll` in the codecs folder. FreeDV's installer does not always place it in its `bin` folder: search the FreeDV install folder for `*codec2*.dll`, or in MSYS2 run `pacman -S mingw-w64-x86_64-codec2` and take `libcodec2.dll` from `C:\msys64\mingw64\bin` (with the DLLs it needs).
+- Where it is: Windows `libcodec2.dll` next to `OnAir.exe`; macOS `OnAir.app/Contents/Frameworks/libcodec2.1.2.dylib`; Linux the `.deb` puts it in
+  `/usr/lib/onair/`, the portable package in `lib/` (next to `bin/`).
+- It is a **separate shared library** that OnAir loads at run time, not part of the OnAir program, as the LGPL asks for. The source is in
+  `third_party/codec2` (the unmodified 1.2.0 release, see `third_party/codec2/README-OnAir.md`), and every package carries the licence text
+  (`licenses/codec2/COPYING`) and a notice.
+- **Use your own build instead:** put your codec2 (`libcodec2.so.1.2`, `libcodec2.1.2.dylib`, `codec2.dll` or `libcodec2.dll`) in the codecs folder
+  (the **Open codecs folder** button of the **?** popup), or set `DECT2_CODEC2_PATH` to its full path. Those are searched before the shipped copy.
+- If the **?** button says `codec2 not found`, this copy of OnAir is incomplete (for example only `OnAir.exe` was copied out of the zip):
+  unpack or install the whole package again. Or install codec2 yourself: macOS `brew install codec2`; Linux `sudo apt install libcodec2-1.2`
+  (Ubuntu 22.04: `libcodec2-1.0`) or `sudo dnf install codec2`; Windows `libcodec2.dll` from a FreeDV install or MSYS2
+  (`pacman -S mingw-w64-x86_64-codec2`, with the DLLs it needs) into the codecs folder.
+- Building OnAir yourself: the codec2 library is built with it (`cmake --build build`, file `libcodec2*` next to the programs in the build folder).
+  `-DDECT2_BUNDLE_CODEC2=OFF` leaves it out; OnAir then uses an installed codec2 as before.
 
 Open HF digital and pick FreeDV (or M17): the **?** button says `codec2 found: <path>`.
 
@@ -145,9 +158,34 @@ DAB/DAB+ (MP2, AAC), DRM (AAC, xHE-AAC) and the TV modes decode with FFmpeg, whi
 Nothing to install, with one exception: the SBR and parametric stereo of DAB+ HE-AAC (HE-AAC and HE-AAC v2 stations). FFmpeg cannot apply
 them to the 960-sample frames of DAB+ ("SBR with 960 frame length"), so without help those stations play the core only: band-limited, and
 HE-AAC v2 in mono. OnAir uses faad2 for them when it is installed (Linux: the `libfaad2` package; macOS: `brew install faad2`; Windows: a
-`libfaad2.dll` beside the program). It is found at run time and not shipped; the DAB player panel says which decoder is working and whether SBR
+`libfaad.dll`, `libfaad2.dll` or `libfaad-2.dll` beside the program, for example the one that ships with QT-DAB). It is found at run time and not shipped; the DAB player panel says which decoder is working and whether SBR
 and PS are applied. Some xHE-AAC tools (harmonic SBR, PVC, inter-TES, MPEG Surround 212) are not in FFmpeg yet; DRM stations that use
 them stay silent and the DRM view says so.
+
+## AC-4 (ATSC 3.0 sound)
+
+ATSC 3.0 broadcasts in the US and South Korea (and a few DVB services) carry their sound as Dolby AC-4. FFmpeg, including the one inside
+OnAir, has **no AC-4 decoder** (it knows the codec id but no decoder: `ffmpeg -h decoder=ac4` says so). OnAir therefore leaves AC-4 sound out
+and says so in the ATSC 3.0 tab and the TV tab, with a **?** card. Picture and any AAC or AC-3 sound track of the service play as usual.
+
+**Optional support.** If you provide `libavcodec` and `libavutil` (shared libraries) from an FFmpeg that contains a decoder named `ac4`, OnAir
+loads them at run time from the codecs folders (or the folder in `DECT2_AC4_DIR`), decodes the AC-4 access units of the selected service,
+mixes them to stereo or 5.1 and plays them (internally: decoded with your library, encoded as AC-3 by OnAir's own FFmpeg, put in the
+transport stream). The libraries are used through a small, stable interface, so an FFmpeg of another major version than OnAir's works.
+Put them, and the libraries they need (`libswresample` and others), together in the codecs folder, then press **Look again**.
+
+**Where such an FFmpeg comes from.** The only public AC-4 decoder known to this project is the patch
+`ffmpeg_ac4.patch` in <https://github.com/funnymanva/ffmpeg-with-ac4> (FFmpeg 6.1 plus a 5,900 line decoder, `libavcodec/ac4dec.c`, by Paul B Mahol, 2019).
+Its `build-ffmpeg` script builds a **static** `ffmpeg` program with `--disable-shared`, which does not give OnAir what it needs: apply the patch
+to FFmpeg 6.1 yourself and configure it with `--enable-shared --disable-static`. The patch does not build with FFmpeg 7 or newer (it uses the
+removed `avctx->channels`). OnAir's test of this path used a stock FFmpeg with the AC-3 decoder standing in for the AC-4 one; **it has not been
+tried on a real AC-4 broadcast**, and nobody has checked how complete the patch's decoder is (OnAir uses its first presentation, its default).
+
+**Licences.** The patch's decoder carries the LGPL-2.1-or-later header of FFmpeg, and the build script is MIT-licensed (it is derived from
+markus-perl/ffmpeg-build-script): for copyright you may build and use them yourself. Copyright is not the whole story: AC-4 is a Dolby codec covered
+by patents, licensed to makers of products (and Dolby's AC-4 specification is ETSI TS 103 190, public, but implementing it is not a patent licence).
+OnAir ships no AC-4 code, no FFmpeg patch and downloads nothing; the build script above also pulls in GPL and non-free libraries if you ask it to
+(`--enable-gpl-and-non-free`), which would make that binary unredistributable. Whether you may use it where you live is your responsibility.
 
 ## Legal note
 

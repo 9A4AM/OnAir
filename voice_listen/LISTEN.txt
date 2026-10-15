@@ -1,0 +1,17 @@
+These files are the spoken phrase encoded and decoded where OnAir is allowed to encode.
+
+00  original (8 kHz)
+01  M17 Codec 2 3200 (vocoder only)
+02  M17 Codec 2 1600 (vocoder only)
+03  FreeDV 700D
+04  FreeDV 700E
+05  FreeDV 1600
+06  M17 over the air (4FSK -> receiver)
+
+Not in this pack, and they cannot contain this recording:
+DMR (4FSK), NXDN 4800/9600, dPMR, P25 Phase 1, D-STAR.
+Those vocoders are patented. OnAir loads mbelib to decode only; there is no encoder,
+so the phrase cannot be turned into AMBE/IMBE bits. Earlier 03/04 files were random
+decoder output, not speech — they were removed.
+TETRA / TETRAPOL: no speech codec in OnAir (signalling only).
+FreeDV RADE: UI slot only, not encoded here.

@@ -10,13 +10,15 @@
 #include <thread>
 
 // The converter resolution at the rate in use, for the ADC level advice and the AGC (gain.h): the 8-bit HackRF and RTL-SDR, the 12-bit
-// Airspy, LimeSDR, PlutoSDR, bladeRF and USRP, the 16-bit HF+ path; the SDRplay ADC gives up bits as its rate rises (API specification:
+// Airspy, LimeSDR, PlutoSDR, bladeRF and USRP, the 14-bit Fobos SDR, the 16-bit HF+ path; the SDRplay ADC gives up bits as its rate rises (API specification:
 // 14 bits to 6.048 MHz, 12 to 8.064, 10 to 9.216, 8 above). Unknown radios, files and the test signal count as 8 bits (as before).
 int adcBitsFor(const DeviceInfo& d, double rateHz) {
     if (d.kind != DeviceInfo::Native) return 8;
     if (d.board == "sdrplay") return rateHz <= 6.048e6 ? 14 : rateHz <= 8.064e6 ? 12 : rateHz <= 9.216e6 ? 10 : 8;
     if (d.board == "airspy" || d.board == "lime" || d.board == "pluto" || d.board == "bladerf" || d.board == "usrp") return 12;
     if (d.board == "airspyhf") return 16;
+    if (d.board == "fobos") return 14;   // (the driver scales its samples to full scale 1.0)
+    if (d.board == "rx888") return 16;   // the RX888 MkII's converter (the driver scales to full scale 1.0)
     return 8;   // rtlsdr and anything new
 }
 
@@ -45,7 +47,7 @@ static std::string rateWarning(const App& a) {
     if (engineStd(a) == 23) need = hdrMinSampleRate(a.freqMhz);   // HD Radio AM works from 200 ksps
     if (a.family == 8 && (a.atvFm || a.atvWide) && !a.atvNbtv) need = std::max(need, 16e6);   // FM video: a link is about 17 MHz wide; system E 14 MHz
     // a PlutoSDR on its USB cable run above what the cable carries (linkRateFor): why it may break up, and the fix
-    if (run && d.steadyRateHz > 0 && rate >= need - 1) return linkNote(d, a.tune, rate);
+    if (run && linkCapHz(d, a.tune) > 0 && rate >= need - 1) return linkNote(d, a.tune, rate);
     if (rate <= 0 || need <= 0 || rate >= need - 1) return "";
     char what[64];
     if (a.family == 0) snprintf(what, sizeof what, "the %g MHz DVB-T2 / DVB-T channel", bw);
@@ -67,6 +69,7 @@ void startReceiver(App& a) {
     if (isFile && a.file.offsetBytes == 0) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate (a SigMF / WAV file says it itself)
     if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
     else {
+        if (a.devices[a.devIdx].isAudio()) a.tune.radio["audio_iq"] = std::to_string(a.audioIqMode);
         a.engine.setComputeMode(a.computeMode); a.engine.setStandard(engineStd(a));
         a.engine.start(a.devices[a.devIdx], a.tune, a.file);
         savePrefs(a);
@@ -116,6 +119,14 @@ void sampleRateControl(App& a) {
     if (d.kind == DeviceInfo::File) {   // the file's own rate (set in the source options); nothing to choose
         ImGui::TextUnformatted((mspsText(run ? a.engine.radioRate() : a.file.sampleRate) + " (file)").c_str());
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A recording plays at the rate it was made at: set it with the file."));
+        return;
+    }
+    if (d.isAudio()) {
+        const double hz = run ? a.engine.radioRate() : 48000.0;
+        char b[64];
+        snprintf(b, sizeof b, "%.0f Hz (sound card)", hz);
+        ImGui::TextUnformatted(b);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("The capture rate of the sound card. The engine runs at this rate; there is no radio to tune."));
         return;
     }
     if (!run && a.rateCtx != rateContext(a)) applyBandwidth(a);   // another mode, radio or channel width: its own Auto and its own choice
@@ -189,14 +200,17 @@ void setDvbBandwidth(App& a, int idx) {
 
 // ---- radios on the network (issues #28, #54, #68): a PlutoSDR by IP, an rtl_tcp server, a SoapyRemote server, a SpyServer, a Hermes Lite 2
 
-// looks for Hermes Lite 2 radios on a worker thread (the broadcast waits 1.5 s for answers); netRadioWindow() takes the result
+static bool netTypeSearches(int t) { return t == NetRadio::HermesLite2 || t == NetRadio::RedPitaya; }   // found by a discovery broadcast
+
+// looks for Hermes Lite 2 (or Red Pitaya) radios, by the type chosen, on a worker thread (the broadcast waits 1.5 s for answers); netRadioWindow() takes the result
 static void startNetDiscovery(App& a) {
     if (a.netDiscovery) return;
     auto d = std::make_shared<App::NetDiscovery>();
     a.netDiscovery = d;
     a.netFound.clear();
     a.netSearched = false;
-    std::thread([d] { d->found = discoverHermesLite2(1500); d->done = true; }).detach();
+    const bool rp = a.netAddType == NetRadio::RedPitaya;
+    std::thread([d, rp] { d->found = rp ? discoverRedPitaya(1500) : discoverHermesLite2(1500); d->done = true; }).detach();
 }
 
 void netRadioWindow(App& a) {
@@ -222,47 +236,48 @@ void netRadioWindow(App& a) {
         a.netDiscovery.reset();
         a.netSearched = true;
         std::stable_sort(a.netFound.begin(), a.netFound.end(), [](const FoundNetRadio& x, const FoundNetRadio& y) { return !x.busy && y.busy; });
-        if (a.netAddType == NetRadio::HermesLite2 && !a.netFound.empty() && a.netAddHost[0] == 0) {
+        if (netTypeSearches(a.netAddType) && !a.netFound.empty() && a.netAddHost[0] == 0) {
             snprintf(a.netAddHost, sizeof a.netAddHost, "%s", a.netFound[0].host.c_str());
-            a.netAddPort = netRadioDefaultPort(NetRadio::HermesLite2);
+            a.netAddPort = netRadioDefaultPort((NetRadio::Type)a.netAddType);
         }
     }
     if (!a.netAddOpen) return;
-    if (a.netAddType == NetRadio::HermesLite2 && !a.netSearched && !a.netDiscovery) startNetDiscovery(a);   // the window opened with that type
+    if (netTypeSearches(a.netAddType) && !a.netSearched && !a.netDiscovery) startNetDiscovery(a);   // the window opened with that type
     ImGui::SetNextWindowSize(ImVec2(420 * gUi, 0), ImGuiCond_Appearing);
     if (!ImGui::Begin(trw("Network radios"), &a.netAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
     const bool busy = a.netAddProbe != nullptr;
     ImGui::BeginDisabled(busy);
-    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2"};
+    static const char* kTypes[] = {"PlutoSDR (by IP)", "rtl_tcp", "SoapyRemote", "SpyServer", "Hermes Lite 2", "Red Pitaya"};
     ImGui::SetNextItemWidth(200 * gUi);
-    if (ImGui::Combo("Type", &a.netAddType, kTypes, 5)) {
+    if (ImGui::Combo("Type", &a.netAddType, kTypes, 6)) {
         const auto t = (NetRadio::Type)a.netAddType;
         a.netAddPort = netRadioDefaultPort(t);
         const std::string h = a.netAddHost;
         const bool found = std::any_of(a.netFound.begin(), a.netFound.end(), [&](const FoundNetRadio& f) { return f.host == h; });
         if (h.empty() || h == netRadioDefaultHost(NetRadio::Pluto) || found) snprintf(a.netAddHost, sizeof a.netAddHost, "%s", netRadioDefaultHost(t));
         a.netAddErr.clear();
-        if (t == NetRadio::HermesLite2) { a.netAddHost[0] = 0; startNetDiscovery(a); }   // its address comes from the answers
+        if (netTypeSearches(t)) { a.netAddHost[0] = 0; startNetDiscovery(a); }   // its address comes from the answers
     }
     ImGui::SetNextItemWidth(200 * gUi);
-    ImGui::InputTextWithHint(tr("Address"), a.netAddType == NetRadio::Pluto ? "192.168.2.1" : a.netAddType == NetRadio::HermesLite2 ? "192.168.1.20" : "192.168.1.20 or raspberrypi.local", a.netAddHost, sizeof a.netAddHost);
-    if (a.netAddType == NetRadio::HermesLite2) {
+    ImGui::InputTextWithHint(tr("Address"), a.netAddType == NetRadio::Pluto ? "192.168.2.1" : netTypeSearches(a.netAddType) ? "192.168.1.20" : "192.168.1.20 or raspberrypi.local", a.netAddHost, sizeof a.netAddHost);
+    if (netTypeSearches(a.netAddType)) {
+        const bool rpType = a.netAddType == NetRadio::RedPitaya;
         ImGui::SameLine();
         ImGui::BeginDisabled(a.netDiscovery != nullptr);
         if (ImGui::Button(tr("Search"))) { a.netAddHost[0] = 0; startNetDiscovery(a); }
         ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Look for Hermes Lite 2 radios on this computer's networks again"));
-        if (a.netDiscovery) ImGui::TextDisabled("%s", tr("searching for Hermes Lite 2 radios…"));
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", rpType ? tr("Look for Red Pitaya boards on this computer's networks again") : tr("Look for Hermes Lite 2 radios on this computer's networks again"));
+        if (a.netDiscovery) ImGui::TextDisabled("%s", rpType ? tr("searching for Red Pitaya boards…") : tr("searching for Hermes Lite 2 radios…"));
         else if (a.netSearched && a.netFound.empty())
-            ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", tr("No Hermes Lite 2 answered on this computer's networks: type its address."));
+            ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", rpType ? tr("No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.") : tr("No Hermes Lite 2 answered on this computer's networks: type its address."));
         else if (a.netFound.size() > 1 || (a.netFound.size() == 1 && a.netFound[0].host != a.netAddHost)) {
             ImGui::TextDisabled("%s", tr("Found:"));
             for (size_t i = 0; i < a.netFound.size(); i++) {
                 const auto& f = a.netFound[i];
-                const std::string label = f.host + "  (" + f.detail + (f.busy ? ", in use" : "") + ")##hl2" + std::to_string(i);
+                const std::string label = f.host + "  (" + f.detail + (f.busy ? ", in use" : "") + ")##hpsdr" + std::to_string(i);
                 if (ImGui::Selectable(label.c_str(), f.host == a.netAddHost)) {
                     snprintf(a.netAddHost, sizeof a.netAddHost, "%s", f.host.c_str());
-                    a.netAddPort = netRadioDefaultPort(NetRadio::HermesLite2);
+                    a.netAddPort = netRadioDefaultPort((NetRadio::Type)a.netAddType);
                 }
             }
         } else if (a.netFound.size() == 1) {
@@ -274,7 +289,10 @@ void netRadioWindow(App& a) {
     ImGui::SetNextItemWidth(120 * gUi);
     ImGui::InputInt(tr("Port"), &a.netAddPort, 0, 0);
     a.netAddPort = std::max(0, std::min(65535, a.netAddPort));
-    if (a.netAddType == NetRadio::Pluto) { ImGui::SameLine(); ImGui::TextDisabled("%s", tr("0 = libiio's default")); }
+    if (a.netAddType == NetRadio::Pluto) {
+        ImGui::SameLine(); ImGui::TextDisabled("%s", tr("0 = libiio's default"));
+        ImGui::TextDisabled("%s", tr("Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list."));
+    }
     if (a.netAddType == NetRadio::SoapyRemote && !soapySupported()) ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", tr("This build has no SoapySDR, which SoapyRemote needs."));
     if (a.netAddType == NetRadio::SoapyRemote) {
         ImGui::InputTextWithHint(tr("Remote driver"), "mirisdr  (empty: list what the server offers)", a.netAddRemote, sizeof a.netAddRemote);
@@ -335,7 +353,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
         {
             const int held = deviceHolder(a.devices[i]);   // a radio another receiver has open cannot be picked here
             const bool other = held != 0 && held != a.rxId;
-            const std::string nm = a.devices[i].name + (other ? " (in use by RX " + std::to_string(held) + ")" : std::string());
+            const std::string nm = a.devices[i].name + (other ? " (in use by " + deviceHolderText(held) + ")" : std::string());
             ImGui::BeginDisabled(other);
             if (ImGui::Selectable(nm.c_str(), i == a.devIdx) && i != a.devIdx) {
                 a.devIdx = i;
@@ -347,7 +365,12 @@ void toolbarParts(App& a, int mask, bool vertical) {
         if (ImGui::Selectable(tr("Add network radio…"))) a.netAddOpen = true;
         ImGui::EndCombo();
     }
-    if (srcName != a.devices[a.devIdx].name && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", a.devices[a.devIdx].name.c_str());
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+        if (a.devices[a.devIdx].isAudio())
+            ImGui::SetTooltip("%s", tr("For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth."));
+        else if (srcName != a.devices[a.devIdx].name)
+            ImGui::SetTooltip("%s", a.devices[a.devIdx].name.c_str());
+    }
     {   // the antenna port of a radio with several (one list entry each): the same switch as choosing the entry above
         const auto ports = antennaSiblings(a.devices, a.devIdx);
         if (!ports.empty()) {
@@ -397,10 +420,13 @@ void toolbarParts(App& a, int mask, bool vertical) {
     if (mask & TbFreq) {
     if (!vertical) vSeparator();
     ImGui::TextDisabled("%s", tr("FREQ"));
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Centre frequency"));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", a.devices[a.devIdx].isAudio()
+        ? tr("Dial frequency the decoder should assume (the sound card is not tuned)")
+        : tr("Centre frequency"));
     ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(110 * gUi);
     ImGui::InputDouble("##freq", &a.freqMhz, 0, 0, "%.3f MHz");
+    if (!std::isfinite(a.freqMhz) || a.freqMhz < 0) a.freqMhz = 0;   // the only guard: no radio takes a negative frequency (any other value is passed on as typed)
     if (ImGui::IsItemDeactivatedAfterEdit()) retune = true;
     if (vertical) sampleRateControl(a); else { ImGui::SameLine(0, 10 * gUi); sampleRateControl(a); }   // the sample rate, next to the frequency
     }
@@ -504,8 +530,9 @@ void toolbarParts(App& a, int mask, bool vertical) {
         a.agcOn = false;
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to."));
+    gainOptButtons(a, running);
     ImGui::EndDisabled();
-    if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain controls apply to radios only (not to a recording or the synthetic signal)"));
+    if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)"));
     if (isHw) {   // sample clean-up for zero-IF radios; applied as the samples come in, so it works while running
         if (vertical) ImGui::NewLine(); else flowNext(14 * gUi);
         bool iq = a.engine.iqFix().iq;
@@ -707,9 +734,16 @@ void secondModeControl(App& a, bool vertical) {
     ImGui::EndPopup();
 }
 
+bool sourceOptionsOpen(const App& a) {
+    if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return false;
+    const DeviceInfo::Kind k = a.devices[a.devIdx].kind;
+    return k == DeviceInfo::Synthetic || (k == DeviceInfo::File && !a.engine.running()) || k == DeviceInfo::Audio;
+}
+
 void sourceOptions(App& a) {
     bool running = a.engine.running();
     bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
+    const bool isAudio = a.devices[a.devIdx].isAudio();
     if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic) {
         SynthConfig& sc = a.tune.synth;
         bool ch = false;
@@ -821,9 +855,43 @@ void sourceOptions(App& a) {
         ImGui::Checkbox(tr("loop"), &a.file.loop);
         flowEnd();
     }
+    if (isAudio) {
+        ImGui::TextDisabled("%s", tr("sound card"));
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::PushTextWrapPos(380 * gUi);
+            ImGui::TextUnformatted(tr("For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power."));
+            ImGui::PopTextWrapPos();
+            ImGui::EndTooltip();
+        }
+        flowNext();
+        ImGui::SetNextItemWidth(130 * gUi);
+        const char* am[] = {tr("I/Q stereo"), tr("USB audio"), tr("LSB audio"), tr("Mono real")};
+        if (ImGui::Combo("##aiq", &a.audioIqMode, am, 4)) {
+            a.tune.radio["audio_iq"] = std::to_string(a.audioIqMode);
+            savePrefs(a);
+            if (running) { std::string e; a.engine.retune(a.tune); (void)e; }
+        }
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::PushTextWrapPos(380 * gUi);
+            ImGui::TextUnformatted(tr("I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio)."));
+            ImGui::PopTextWrapPos();
+            ImGui::EndTooltip();
+        }
+        flowEnd();
+    }
 }
 
 void statusBar(App& a) {
+    // a radio on the network: the samples that did not arrive (the connection dropped and came back, or the receiver was too slow)
+    if (a.engine.running() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[a.devIdx].kind == DeviceInfo::Native &&
+        (a.devices[a.devIdx].board == "rtltcp" || a.devices[a.devIdx].board == "spyserver")) {
+        const uint64_t lost = a.engine.droppedSamples();
+        if (lost) ImGui::TextColored(pal::warnAmber(), tr("Network radio: %llu samples lost (underruns)"), (unsigned long long)lost);
+    }
     // flowEnd(): the last group of the status line wraps too
     if (const ModeUi* mu = modeUi(a.family)) if (mu->status) { mu->status(a); flowEnd(); return; }
     if (a.dabMode) { dabStatus(a); flowEnd(); return; }
@@ -975,6 +1043,7 @@ void statusBar(App& a) {
     if (run && a.devices[a.devIdx].kind != DeviceInfo::File) {
         ImGui::AlignTextToFramePadding();
         if (a.sweep.active()) ImGui::TextColored(pal::heading(), tr("gain helper %d/%d ..."), std::max(0, a.sweep.current()) + 1, (int)a.sweep.entries().size());
+        else if (gainOptStatus(a)) {}
         else if (adc == AdcStatus::Overload) ImGui::TextColored(ImVec4(0.95f, 0.35f, 0.25f, 1), tr("ADC OVERLOAD - %s"), tr(a.agcOn ? "AGC is lowering the gain" : "reduce the gain (or enable AGC)"));
         else if (adc == AdcStatus::High) ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), "%s", tr("ADC level high"));
         else if (adc == AdcStatus::Low) ImGui::TextColored(ImVec4(0.95f, 0.70f, 0.15f, 1), "%s", tr("ADC level low - raise the gain"));
@@ -985,6 +1054,7 @@ void statusBar(App& a) {
 }
 
 void gainControl(App& a) {
+    gainOptTick(a);
     if (!a.engine.running() || a.devices[a.devIdx].kind == DeviceInfo::File) { a.sweep = GainSweep(); return; }
     const DeviceInfo& cd = a.devices[a.devIdx];
     const bool generic = cd.isGeneric();
@@ -1036,10 +1106,12 @@ const ModeDef kModes[] = {
     {43, "Mode S uplink", 2, IM_COL32(64, 92, 140, 255), "Mode S uplink: the 1030 MHz interrogations of radars and ACAS (Mode A/C, intermode, UF0 to UF24); needs 8 Msps", "Mode S uplink: interrogators, rotation periods, aircraft asked for registers, TCAS coordination", N_("Interrogations, 1030 MHz"), ImVec4(0.56f, 0.70f, 0.96f, 1), nullptr, "mode s uplink 1030 interrogation interrogator radar ssr all-call roll-call tcas acas uf11 comm-b bds sidelobe"},
     {16, "ACARS", 2, IM_COL32(110, 100, 60, 255), "ACARS aircraft data link messages around 131 MHz", "ACARS: short messages between aircraft and the ground", N_("Aircraft messages, VHF"), ImVec4(0.88f, 0.80f, 0.50f, 1)},
     {27, "VDL2", 2, IM_COL32(96, 104, 64, 255), "VDL Mode 2: the aircraft data link on 136.725 to 136.975 MHz, every channel at once", "VDL Mode 2: ACARS and ATN messages between aircraft and ground stations, positions on a map", N_("Data link, 136.9 MHz"), ImVec4(0.80f, 0.84f, 0.50f, 1), nullptr, "vdl vdl2 avlc acars atn cpdlc ads-c x.25 clnp datalink"},
+    {81, "VDL4", 2, IM_COL32(88, 108, 72, 255), "VDL Mode 4: STDMA GFSK data link on 118 to 137 MHz (synthetic + spec; receive only)", "VDL Mode 4: synchronization and DLS bursts, CPR positions when decoded in the clear", N_("STDMA link, 136.9 MHz"), ImVec4(0.76f, 0.86f, 0.52f, 1), nullptr, "vdl vdl4 stdma gfsk sync burst dls cpr ads-b datalink experimental"},
     {35, "HFDL", 2, IM_COL32(104, 88, 60, 255), "HFDL: the HF aircraft data link (ARINC 635), 3 to 22 MHz, every channel in the band at once", "HFDL: ACARS, squitters and positions of aircraft over oceans and remote areas, on HF", N_("Data link, 8.9 MHz"), ImVec4(0.90f, 0.74f, 0.48f, 1), nullptr, "hfdl hf data link acars aircraft arinc 635 squitter oceanic"},
     {26, "Airband", 2, IM_COL32(70, 96, 130, 255), "Airband AM voice, 118 to 137 MHz: several 25 and 8.33 kHz channels at once", "Airband: tower, ground and ATIS voice on several channels at once", N_("AM voice, 118-137 MHz"), ImVec4(0.58f, 0.72f, 0.92f, 1)},
     {30, "VOR", 2, IM_COL32(60, 104, 120, 255), "VOR navigation beacons, 108 to 118 MHz: the radial, the identification and a position from two stations", "VOR: your bearing from a navigation beacon, its Morse identification and voice", N_("Radial, 108-118 MHz"), ImVec4(0.46f, 0.78f, 0.84f, 1), "vor", "vor dvor navaid radial bearing beacon navigation"},
     {30, "ILS", 2, IM_COL32(66, 92, 126, 255), "ILS approach guidance: localizer 108.10 - 111.95 MHz, glide slope 329 - 335 MHz, marker beacons on 75 MHz", "ILS: left / right of the runway centreline and above / below the glide path", N_("Localizer and glide slope"), ImVec4(0.54f, 0.70f, 0.94f, 1), "ils", "ils localizer glideslope glide slope marker approach landing"},
+    {29, "NDB", 2, IM_COL32(120, 96, 48, 255), "NDB (non-directional beacon) on long wave, 190-535 kHz: the Morse ident of an aeronautical beacon (a keyed 400 Hz or 1020 Hz tone, or a keyed carrier, about 7 WPM). Receive only. Not the HF beacon list", "NDB: the Morse identification of a long-wave navigation beacon", N_("Ident, 190-535 kHz"), ImVec4(0.90f, 0.74f, 0.42f, 1), nullptr, "ndb non-directional beacon navaid morse ident long wave lw lf beacon band 190 535 khz 400 hz 1020 hz locator"},
     {56, "Drone Remote ID", 2, IM_COL32(70, 104, 112, 255), "Drone Remote ID (ASTM F3411 / ASD-STAN EN 4709-002 Open Drone ID) on 2.4 GHz: Bluetooth LE advertising and Wi-Fi beacons at once; serial number or session ID, UA type, position, height, speed and track, operator position and ID, on a table and a map (receive only: Remote ID is a public broadcast meant for anyone to read; nothing is transmitted)", "Drone Remote ID: drones and their operators, from the identification every drone must broadcast", N_("Drones, 2.4 GHz"), ImVec4(0.52f, 0.82f, 0.86f, 1), nullptr, "drone remote id rid uas uav open drone id opendroneid astm f3411 en 4709 asd-stan dji operator serial bluetooth wifi beacon 2.4 ghz faa easa"},
     {14, "AIS", 3, IM_COL32(40, 110, 140, 255), "AIS ship transponders on 161.975 and 162.025 MHz", "AIS: ship positions and identities", N_("Ships, 162 MHz"), ImVec4(0.40f, 0.76f, 0.90f, 1)},
     {63, "VDES", 3, IM_COL32(30, 100, 130, 255), "VDES (VHF Data Exchange System, ITU-R M.2092): ASM messages on 161.975 / 162.025 MHz decoded (GMSK 9.6 kbit/s, AIS framing, CRC checked); VDE-TER bursts on the 157.2 and 161.8 MHz channels detected with bandwidth, level and modulation class (frames not decoded)", "VDES: ASM frames decoded, VDE-TER bursts logged and classified", N_("Maritime, VHF"), ImVec4(0.46f, 0.80f, 0.94f, 1), nullptr, "vdes vde-ter vde ter asm m.2092 maritime vhf data exchange 157.2 161.8 161.975 162.025 pi/4-qpsk 8psk 16qam ais"},
@@ -1048,10 +1120,12 @@ const ModeDef kModes[] = {
     {15, "Weather fax", 3, IM_COL32(64, 108, 108, 255), "HF weather fax (radiofax): weather charts for ships on upper sideband", "Weather fax: HF radiofax charts for ships", N_("Weather charts, HF"), ImVec4(0.52f, 0.80f, 0.78f, 1), "wefax", "wefax weather fax radiofax hf fax marine"},
     {12, "GNSS", 4, IM_COL32(130, 112, 52, 255), "GNSS satellites (GPS, GLONASS, BeiDou, Galileo) around 1575 MHz, needs an active antenna", "GNSS: satellite tracking and position fix", N_("GPS, GLONASS, BeiDou"), ImVec4(0.90f, 0.78f, 0.42f, 1)},
     {17, "Inmarsat-C", 4, IM_COL32(100, 80, 140, 255), "Inmarsat-C satellite messages (EGC safety and news broadcasts) near 1537.7 MHz", "Inmarsat-C: satellite safety and news broadcasts, needs an L-band antenna", N_("EGC, L-band"), ImVec4(0.74f, 0.64f, 0.94f, 1)},
-    {18, "Inmarsat Aero", 4, IM_COL32(120, 76, 120, 255), "Inmarsat Aero satellite data link (P channels at 600, 1200 and 10500 bit/s) near 1545 MHz", "Inmarsat Aero: aircraft satellite data link, needs an L-band antenna", N_("Aero, L-band"), ImVec4(0.88f, 0.62f, 0.88f, 1)},
+    {18, "Inmarsat Aero", 4, IM_COL32(120, 76, 120, 255), "Inmarsat Aero satellite data link: P channels at 600 and 1200 bit/s near 1545 MHz, and 10500 bit/s near 1546 MHz", "Inmarsat Aero: aircraft satellite data link, needs an L-band antenna", N_("Aero, L-band"), ImVec4(0.88f, 0.62f, 0.88f, 1)},
     {19, "Iridium", 4, IM_COL32(140, 76, 60, 255), "Iridium satellite bursts around 1622 MHz", "Iridium satellite downlink bursts, needs an L-band antenna", N_("Satellites, 1622 MHz"), ImVec4(0.94f, 0.60f, 0.46f, 1)},
     {59, "Meteor-M LRPT", 4, IM_COL32(64, 104, 132, 255), "Meteor-M N2-3 / N2-4 weather pictures on 137.1 / 137.9 MHz (LRPT: OQPSK or QPSK, 72 or 80 ksym/s): the MSU-MR channels and a colour composite grow line by line during the pass, saved as PNG", "Meteor-M LRPT: weather satellite pictures as the satellite passes", N_("Weather pictures, 137 MHz"), ImVec4(0.52f, 0.78f, 0.96f, 1), nullptr, "meteor meteor-m m2 n2-3 n2-4 lrpt msu-mr weather satellite picture image 137 mhz 137.1 137.9 oqpsk qpsk apt noaa cloud"},
     {60, "GOES HRIT", 4, IM_COL32(58, 96, 140, 255), "GOES-16 / 18 / 19 HRIT on 1694.1 MHz (BPSK 927 ksym/s, Viterbi, Reed-Solomon, CCSDS packets, LRIT files): full disk and mesoscale images (Rice, plain or JPEG) grow as their lines arrive, EMWIN weather text and admin messages, saved to a folder. Needs a dish (about 1 m, or a grid) with an LNA at the feed", "GOES HRIT: geostationary weather images and EMWIN text (needs a dish and an LNA)", N_("Weather images, 1694 MHz"), ImVec4(0.48f, 0.72f, 0.98f, 1), nullptr, "goes goes-16 goes-18 goes-19 goes-r hrit lrit emwin full disk mesoscale abi weather satellite geostationary image 1694 1694.1 l-band dish lna noaa"},
+    {80, "Elektro-L", 4, IM_COL32(64, 92, 132, 255), "Elektro-L N3 / N4 / N5 L-band weather: HRIT and LRIT on 1691 MHz (BPSK, Viterbi, Reed-Solomon, CCSDS / xRIT, the same product path as GOES) and GGAK space-weather PCM/PM on 1693 MHz at 5 ksym/s. Pick the spacecraft and the link. Needs a dish with an LNA. Receive only", "Elektro-L: geostationary weather images (HRIT / LRIT) and GGAK (needs a dish and an LNA)", N_("Weather images, 1691 MHz"), ImVec4(0.50f, 0.70f, 0.94f, 1), nullptr, "elektro elektro-l elektrol n3 n4 n5 roscosmos hrit lrit ggak 1691 1693 l-band weather satellite geostationary dish lna"},
+    {83, "UAT", 2, IM_COL32(48, 108, 148, 255), "UAT on 978 MHz: ADS-B position and identity reports, FIS-B weather text products and TIS-B traffic relay (DO-282). Typical 1 Msps capture. Receive only", "UAT 978 MHz: ADS-B, FIS-B weather and TIS-B relay", N_("Aircraft, 978 MHz"), ImVec4(0.48f, 0.72f, 0.96f, 1), nullptr, "uat 978 uat978 ads-b fis-b tis-b do-282 universal access transceiver weather metar taf nexrad"},
     {64, "HRPT / AHRPT", 9, IM_COL32(52, 98, 124, 255), "HRPT / AHRPT weather satellite pictures near 1.7 GHz: MetOp-B / MetOp-C AHRPT (QPSK 2.33 Msym/s, 1701.3 MHz) with the AVHRR channels growing line by line, FY-3 AHRPT (about 2.8 Msym/s, frames counted only) and the retired NOAA HRPT (BPSK, Manchester, 665.4 kbit/s). Needs a dish (about 1 m or more, tracking the satellite) with an LNA at the feed and a fast radio (4 Msps or more: HackRF, Airspy, SDRplay, Pluto; not an RTL-SDR)", "HRPT / AHRPT: MetOp AVHRR pictures at 1.7 GHz (needs a dish and a fast radio)", N_("Weather pictures, 1.7 GHz"), ImVec4(0.42f, 0.74f, 0.92f, 1), nullptr, "hrpt ahrpt metop metop-b metop-c avhrr fy-3 fengyun noaa noaa-15 noaa-18 noaa-19 weather satellite picture image 1701 1701.3 1698 1707 1702.5 l-band dish lna qpsk bpsk manchester polar orbit"},
     {44, "Orbcomm", 4, IM_COL32(70, 118, 96, 255), "Orbcomm subscriber downlinks, 137.2 - 137.8 MHz: 4800 bit/s SDPSK, two downlinks at once, satellites and their ephemeris", "Orbcomm satellite downlinks: satellite IDs, positions, channel assignments, messages", N_("Satellites, 137 MHz"), ImVec4(0.50f, 0.86f, 0.66f, 1), nullptr, "orbcomm orb sdpsk 137 mhz leo satellite iot ephemeris doppler"},
     {53, "QO-100", 4, IM_COL32(120, 84, 52, 255), "QO-100 (Es'hail-2) geostationary amateur satellite, 10489.5 - 10500 MHz through a Ku LNB: beacon lock corrects the LNB's error and drift, narrowband SSB listening, wideband DATV hand-over to DVB-S/S2", "QO-100: the amateur satellite's transponders with exact frequencies from its beacons", N_("Es'hail-2, 10.49 GHz"), ImVec4(0.94f, 0.68f, 0.42f, 1), nullptr, "qo100 qo-100 eshail es'hail-2 oscar 100 geostationary amateur satellite lnb ku 10489 739 ssb datv beacon bullseye"},
@@ -1063,7 +1137,8 @@ const ModeDef kModes[] = {
     {38, "NXDN", 5, IM_COL32(60, 110, 110, 255), "NXDN digital two-way radio: NXDN48 (6.25 kHz) and NXDN96 (12.5 kHz), conventional and trunked", "NXDN: unit IDs, talkgroups, status and short data, site information", N_("Digital voice, 6.25 / 12.5 kHz"), ImVec4(0.50f, 0.84f, 0.84f, 1), nullptr, "nxdn nxdn48 nxdn96 kenwood nexedge icom idas digital voice two-way radio trunking ambe"},
     {50, "P25", 5, IM_COL32(90, 90, 130, 255), "APCO Project 25 Phase 1 (TIA-102) digital two-way radio, C4FM, 12.5 kHz: conventional channels and trunked control channels", "P25: talkgroups, unit IDs, trunking sites and channels, voice grants (receive only; encrypted calls are only reported)", N_("Digital voice, 12.5 kHz"), ImVec4(0.66f, 0.66f, 0.94f, 1), nullptr, "p25 apco project 25 tia-102 phase 1 c4fm imbe public safety police fire ems trunking talkgroup control channel wacn nac op25 dsd"},
     {45, "dPMR / PMR446", 5, IM_COL32(70, 100, 130, 255), "dPMR (ETSI TS 102 490) digital two-way radio, 6.25 kHz: PMR446 digital channels 1 to 16 (446.1 - 446.2 MHz) and the licensed bands", "dPMR: own and called IDs, colour codes, status and short messages, PMR446 channel scan", N_("Digital voice, 6.25 kHz"), ImVec4(0.56f, 0.76f, 0.94f, 1), nullptr, "dpmr pmr446 pmr 446 digital pmr walkie talkie icom kenwood dpmr446 two-way radio colour color code ambe"},
-    {46, "TETRA", 5, IM_COL32(96, 84, 128, 255), "TETRA base stations (ETSI EN 300 392): network code, colour code, location area, carriers, neighbour cells, services and whether encryption is used (receive only, public broadcast, nothing decrypted)", "TETRA: the public broadcast information of TETRA cells", N_("Network info, 380 - 470 MHz"), ImVec4(0.74f, 0.66f, 0.96f, 1), nullptr, "tetra trunked radio emergency services police pmr tetrapol mcc mnc colour color code bsch bnch sysinfo base station network info"},
+    {46, "TETRA", 5, IM_COL32(96, 84, 128, 255), "TETRA base stations (ETSI EN 300 392): network code, colour code, location area, carriers, neighbour cells, services and whether encryption is used (receive only, public broadcast, nothing decrypted)", "TETRA: the public broadcast information of TETRA cells", N_("Network info, 380 - 470 MHz"), ImVec4(0.74f, 0.66f, 0.96f, 1), nullptr, "tetra trunked radio emergency services police pmr mcc mnc colour color code bsch bnch sysinfo base station network info"},
+    {79, "TETRAPOL", 5, IM_COL32(88, 76, 120, 255), "TETRAPOL (not TETRA) base stations, GMSK 8 kbit/s on 10 / 12.5 kHz UHF channels (PAS 0001-2): D_SYSTEM_INFO gives country, system, cell, location area and scramble. Receive only, no voice, nothing decrypted", "TETRAPOL: control-channel system information (receive only)", N_("Network info, UHF"), ImVec4(0.70f, 0.62f, 0.92f, 1), nullptr, "tetrapol tetra-pol pas 0001 gmsk 8 kbit control channel system info police france uhf"},
     {32, "Cell towers", 6, IM_COL32(70, 96, 130, 255), "LTE cells around you: operator, band, EARFCN, PCI, eNB and sector, TAC, neighbours (receive only, public broadcast)", "Cell towers: the public broadcast information of LTE cells", N_("LTE, band scan"), ImVec4(0.52f, 0.70f, 0.94f, 1), nullptr, "cell tower lte 4g enb earfcn pci operator"},
     {57, "5G NR cells", 6, IM_COL32(64, 104, 140, 255), "5G NR cells around you from their SS/PBCH blocks on the sync raster (GSCN) of n1, n3, n7, n8, n20, n28, n38, n40, n41, n77, n78: PCI, SSB index / beam, SS-RSRP / RSRQ / SINR, MIB (SFN, subcarrier spacing, k_SSB, CORESET#0, barred) (receive only, public broadcast)", "5G NR cells: the public broadcast of NR cells (PSS / SSS / PBCH, MIB)", N_("5G NR, GSCN scan"), ImVec4(0.56f, 0.74f, 0.96f, 1), nullptr, "5g nr new radio gnb cell tower ssb pss sss pbch mib gscn pci beam n78 n77 n28 n20 3.5 ghz sa nsa"},
     {69, "NB-IoT cells", 6, IM_COL32(60, 112, 124, 255), "LTE NB-IoT cells around you (180 kHz carriers, in-band, guard band or standalone) from their NPSS / NSSS, NPBCH (MIB-NB) and SIB1-NB: PCI, operating mode, antenna ports, SFN, operator (MCC / MNC), tracking area, cell identity, band, level; band scan over the 100 kHz raster. Receive only: the public broadcast only, nothing addressed to a device is decoded", "NB-IoT cells: the public broadcast information of narrowband IoT carriers (receive only)", N_("NB-IoT, band scan"), ImVec4(0.46f, 0.80f, 0.86f, 1), nullptr, "nb-iot nbiot narrowband iot lte-m cellular iot npss nsss npbch mib-nb sib1-nb pci operator tac band 20 8 3 800 900 1800 mhz 4g"},
@@ -1081,7 +1156,9 @@ const ModeDef kModes[] = {
     {72, "CODAR / HF ocean radar", 12, IM_COL32(56, 104, 128, 255), "CODAR SeaSonde, WERA and similar coastal HF ocean radars: the FMCW sweeps in the 4.4 - 4.65, 5.25, 12 - 14, 24.45 - 24.65 and 41.5 - 42.5 MHz bands, found as moving lines in the spectrum: centre, sweep width, rate, direction, repetition and level, a table of the radars heard with first / last heard and SNR history, a chirp waterfall with the sweeps marked, the band and time each was heard (propagation, no position claimed), band presets and a scan over the radar bands. The Morse call sign some radars send is decoded from the keyed sweep width and always labelled unverified. Receive only: broadcast radar, nothing is decrypted", "CODAR / HF ocean radar: the coastal radar chirps on the HF bands (receive only)", N_("Radar chirps, HF"), ImVec4(0.56f, 0.80f, 0.92f, 1), nullptr, "codar seasonde wera hf radar ocean radar oceanographic fmcw chirp sweep sweeps current surface 4 mhz 13 mhz 25 mhz 42 mhz call sign morse cw id ilfm"},
     {75, "Multitone Paging", 7, IM_COL32(104, 96, 56, 255), "Multitone Electronics (UK) pagers, Mk IV to VII, in hospitals and industrial sites, 25 - 470 MHz, narrowband FM with FFSK: a detector, not a decoder, because the format is not public. Per transmission: the carrier, the FM deviation, the steady tones and spectral lines of the audio and, when the audio is two-level FSK, the measured baud rate, the bit stream in hex and how many 32-bit words pass the POCSAG BCH(31,21) check, with the POCSAG sync word flagged. Everything is labelled unverified; no message text is shown. Receive only: pager messages are private, nothing is decrypted or transmitted", "Multitone Paging: tone and FFSK pagers for hospitals and sites, detector only (receive only)", N_("Pagers, tones and FFSK"), ImVec4(0.80f, 0.74f, 0.44f, 1), nullptr, "multitone paging pager hospital tone sequence ffsk fsk pocsag bch mk iv v vi vii uk"},
     {76, "NOAA Weather Radio SAME", 9, IM_COL32(176, 96, 64, 255), "NOAA Weather Radio (US and Canada) SAME / EAS alerts on the seven narrow-FM weather channels, 162.400 - 162.550 MHz: the 520.83 baud AFSK header sent three times is voted bit by bit and every field checked, then shown in plain English: originator, event (tornado warning, severe thunderstorm warning, required weekly test and the rest of the EAS table), the locations with the partial-county direction, valid for, issue time and sender call sign, how many of the three repeats agreed, the 1050 Hz attention tone, an alert history and a map of the states and provinces named (approximate). County names come only from a county table you load (none are built in). Receive only: the text of an alert is a public broadcast", "NOAA Weather Radio SAME: weather and emergency alerts, decoded and explained (receive only)", N_("Weather alerts, 162.55 MHz"), ImVec4(0.96f, 0.68f, 0.50f, 1), nullptr, "same eas noaa weather radio nwr wx alert alerts warning watch tornado severe thunderstorm flood hurricane required weekly test rwt 162.400 162.425 162.450 162.475 162.500 162.525 162.550 attention tone 1050 emergency alert system canada weatheradio"},
-    {77, "Wi-SUN FAN", 8, IM_COL32(70, 112, 140, 255), "Wi-SUN FAN smart utility networks (smart meters, street lights) on 902 - 928 MHz (IEEE 802.15.4g FSK at 50, 100 and 150 kbit/s): the whole 915 - 928 MHz Australia / New Zealand band at once (the nodes hop over every channel), networks with their name and border router, nodes with vendor, role, routing cost and schedules, links with the levels acks report, a frame log and a hop chart. Receive only: nothing is sent or joined; PAN configurations and data are encrypted and stay so. Needs 16 Msps or more for the whole band (a few channels from 2 Msps)", "Wi-SUN FAN: smart meter and street light mesh networks, nodes and links (receive only, no decryption)", N_("IoT, sub-GHz"), ImVec4(0.48f, 0.74f, 0.90f, 1), nullptr, "wi-sun wisun fan smart meter smart grid utility street light 802.15.4g sun fsk 915 920 921 928 anz australia new zealand mesh rpl 6lowpan pan border router eapol landis itron"},
+    {77, "ANT+ sensors", 8, IM_COL32(96, 140, 72, 255), "ANT+ sensors on 2457 MHz (and other ANT networks on their own channel): heart rate straps and watches, bike speed, cadence and power sensors, footpods, environment sensors, as a watch or bike computer hears them: 1 Mbit/s GFSK frames with the device number, type and the data page, the heart rate with the beat count and R-R interval plotted over time, power, cadence, speed, temperature, manufacturer, serial and battery pages. Receive only: nothing is sent, paired or acknowledged, and only the open broadcasts are shown. Needs a radio that reaches 2.4 GHz at 4 Msps (HackRF, Pluto, LimeSDR, BladeRF, USRP)."},
+    {78, "DECT cordless phones", 8, IM_COL32(120, 88, 140, 255), "DECT cordless phones and base stations on the ten carriers 1881.792 - 1897.344 MHz (Europe; 1.152 Mbit/s GFSK, 10 ms frames of 24 slots): every base station from the beacon it sends every frame, with its RFPI (the manufacturer code and system number inside it), level and the slots it uses, the system information tails and a burst log with base and handset bursts. Activity and signalling only: calls are encrypted and the voice is not decoded, nothing is transmitted. Needs a radio that reaches 1.9 GHz at 5 Msps or more (HackRF, Pluto, LimeSDR, BladeRF, USRP, SDRplay)."},
+    {84, "Wi-SUN FAN", 8, IM_COL32(70, 112, 140, 255), "Wi-SUN FAN smart utility networks (smart meters, street lights) on 902 - 928 MHz (IEEE 802.15.4g FSK at 50, 100 and 150 kbit/s): the whole 915 - 928 MHz Australia / New Zealand band at once (the nodes hop over every channel), networks with their name and border router, nodes with vendor, role, routing cost and schedules, links with the levels acks report, a frame log and a hop chart. Receive only: nothing is sent or joined; PAN configurations and data are encrypted and stay so. Needs 16 Msps or more for the whole band (a few channels from 2 Msps)", "Wi-SUN FAN: smart meter and street light mesh networks, nodes and links (receive only, no decryption)", N_("IoT, sub-GHz"), ImVec4(0.48f, 0.74f, 0.90f, 1), nullptr, "wi-sun wisun fan smart meter smart grid utility street light 802.15.4g sun fsk 915 920 921 928 anz australia new zealand mesh rpl 6lowpan pan border router eapol landis itron"},
     {71, "LoRa (raw)", 8, IM_COL32(120, 104, 40, 255), "Plain LoRa between two radios (point to point, not LoRaWAN, not a mesh): every frame as bytes (hex and text) with SNR, level and carrier offset. You set the spreading factor (SF5 - SF12), bandwidth (125 / 250 / 500 kHz), coding rate and CRC (implicit header), header mode and sync word, or leave the spreading factor and bandwidth on Auto and every combination is searched. EU868, US915 and 433 MHz presets. Receive only: nothing is sent, decrypted or interpreted", "LoRa (raw): point-to-point LoRa frames as hex and text, SF / bandwidth set or searched (receive only, no decryption)", N_("IoT, sub-GHz"), ImVec4(0.86f, 0.76f, 0.38f, 1), nullptr, "lora raw p2p point to point sx127x sx126x sx1276 sx1262 rfm95 ra-02 chirp spread spectrum css 433 868 915 eu868 us915 sf7 sf12 spreading factor implicit header sync word 0x12 arduino esp32 heltec ttgo"},
     {54, "Wi-Fi networks", 8, IM_COL32(48, 110, 120, 255), "Wi-Fi access points on 2.4 GHz channels 1 - 13 from their beacons (802.11b DSSS, 1 Mbit/s): SSID, BSSID and vendor, channel, security (open, WEP, WPA, WPA2, WPA3), rates, beacon interval and level, like a phone's Wi-Fi list (passive: beacons only, never joins or transmits)", "Wi-Fi networks: the access points around you, from the beacons they broadcast", N_("Beacons, 2.4 GHz"), ImVec4(0.46f, 0.84f, 0.90f, 1), nullptr, "wifi wi-fi wlan 802.11 802.11b access point ap ssid bssid beacon probe response wpa wpa2 wpa3 wep scanner 2.4 ghz channel dsss"},
     {13, "Radiosonde", 9, IM_COL32(60, 112, 150, 255), "Weather balloon radiosondes, 400 to 406 MHz (RS41, DFM, M10 and others)", "Radiosonde weather balloons: position, altitude and weather data", N_("Balloons, 403 MHz"), ImVec4(0.46f, 0.74f, 0.94f, 1)},
@@ -1103,12 +1180,12 @@ const ModeDef kModes[] = {
     {34, "CW", 10, IM_COL32(110, 96, 60, 255), "CW (Morse) skimmer: every signal in a 14 kHz window, 5 to 50 WPM, on the HF CW segments", "CW: Morse code from every signal in the window, speed and callsigns", N_("Morse, 14.020 MHz"), ImVec4(0.92f, 0.80f, 0.52f, 1), nullptr, "cw morse skimmer hf amateur telegraphy"},
     {25, "SSTV", 10, IM_COL32(130, 70, 100, 255), "SSTV slow-scan TV pictures (Martin, Scottie, Robot, PD) on upper sideband", "SSTV: slow-scan television pictures", N_("Pictures, 14.230 MHz"), ImVec4(0.94f, 0.56f, 0.76f, 1), "sstv", "sstv hf digital pictures"},
     {25, "HamDRM", 10, IM_COL32(120, 84, 70, 255), "HamDRM / EasyPal digital SSTV: pictures as files over DRM-style OFDM in 2.3 or 2.5 kHz of upper sideband, 14.233 MHz", "HamDRM: digital SSTV pictures (EasyPal, QSSTV DRM)", N_("Digital SSTV, 14.233 MHz"), ImVec4(0.92f, 0.66f, 0.56f, 1), "hamdrm", "hamdrm easypal qsstv drm digital sstv dsstv pictures jpeg hf"},
-    {25, "Olivia", 6, IM_COL32(86, 100, 130, 255), "Olivia MFSK keyboard mode with Walsh-Hadamard coding, weak-signal text, 14.1065 MHz", "Olivia: text that gets through noise", "Keyboard, 14.1065 MHz", ImVec4(0.62, 0.72, 0.94, 1), "olivia", "olivia mfsk keyboard hf digital text fldigi"},
-    {25, "Contestia", 6, IM_COL32(96, 96, 130, 255), "Contestia (Olivia with 6-bit characters, upper case, faster), 14.1095 MHz", "Contestia: Olivia's faster cousin", "Keyboard, 14.1095 MHz", ImVec4(0.70, 0.70, 0.96, 1), "contestia", "contestia olivia keyboard hf digital text fldigi"},
-    {25, "MFSK", 6, IM_COL32(90, 112, 100, 255), "MFSK4 to MFSK64 keyboard modes (MFSK16 is the usual one) with forward error correction, 14.0785 MHz", "MFSK: error-corrected keyboard text", "Keyboard, 14.0785 MHz", ImVec4(0.66, 0.86, 0.72, 1), "mfsk", "mfsk mfsk16 mfsk32 keyboard hf digital text fldigi"},
-    {25, "THOR", 6, IM_COL32(120, 92, 70, 255), "THOR keyboard modes (4 to 100) with incremental frequency keying and FEC, 14.077 MHz", "THOR: robust keyboard text", "Keyboard, 14.077 MHz", ImVec4(0.94, 0.76, 0.58, 1), "thor", "thor keyboard hf digital text fldigi"},
-    {25, "DominoEX", 6, IM_COL32(110, 84, 100, 255), "DominoEX keyboard modes (4 to 22) with incremental frequency keying, 14.0715 MHz", "DominoEX: keyboard text that ignores tuning", "Keyboard, 14.0715 MHz", ImVec4(0.90, 0.68, 0.86, 1), "dominoex", "dominoex domino keyboard hf digital text fldigi"},
-    {25, "Hellschreiber", 6, IM_COL32(100, 100, 84, 255), "Hellschreiber (Feld Hell, Slow Hell, Hell 80, HellX5): text as a picture of dots, 14.063 MHz", "Hell: text drawn as a picture", "Keyboard, 14.063 MHz", ImVec4(0.86, 0.86, 0.66, 1), "hell", "hell hellschreiber feld slow hell80 keyboard hf digital picture fldigi"},
+    {25, "Olivia", 6, IM_COL32(86, 100, 130, 255), "Olivia MFSK keyboard mode with Walsh-Hadamard coding, weak-signal text, 14.1065 MHz", "Olivia: text that gets through noise", "Keyboard, 14.1065 MHz", ImVec4(0.62, 0.72, 0.94, 1), "olivia", "olivia mfsk keyboard hf digital text"},
+    {25, "Contestia", 6, IM_COL32(96, 96, 130, 255), "Contestia (Olivia with 6-bit characters, upper case, faster), 14.1095 MHz", "Contestia: Olivia's faster cousin", "Keyboard, 14.1095 MHz", ImVec4(0.70, 0.70, 0.96, 1), "contestia", "contestia olivia keyboard hf digital text"},
+    {25, "MFSK", 6, IM_COL32(90, 112, 100, 255), "MFSK4 to MFSK64 keyboard modes (MFSK16 is the usual one) with forward error correction, 14.0785 MHz", "MFSK: error-corrected keyboard text", "Keyboard, 14.0785 MHz", ImVec4(0.66, 0.86, 0.72, 1), "mfsk", "mfsk mfsk16 mfsk32 keyboard hf digital text"},
+    {25, "THOR", 6, IM_COL32(120, 92, 70, 255), "THOR keyboard modes (4 to 100) with incremental frequency keying and FEC, 14.077 MHz", "THOR: robust keyboard text", "Keyboard, 14.077 MHz", ImVec4(0.94, 0.76, 0.58, 1), "thor", "thor keyboard hf digital text"},
+    {25, "DominoEX", 6, IM_COL32(110, 84, 100, 255), "DominoEX keyboard modes (4 to 22) with incremental frequency keying, 14.0715 MHz", "DominoEX: keyboard text that ignores tuning", "Keyboard, 14.0715 MHz", ImVec4(0.90, 0.68, 0.86, 1), "dominoex", "dominoex domino keyboard hf digital text"},
+    {25, "Hellschreiber", 6, IM_COL32(100, 100, 84, 255), "Hellschreiber (Feld Hell, Slow Hell, Hell 80, HellX5): text as a picture of dots, 14.063 MHz", "Hell: text drawn as a picture", "Keyboard, 14.063 MHz", ImVec4(0.86, 0.86, 0.66, 1), "hell", "hell hellschreiber feld slow hell80 keyboard hf digital picture"},
     {25, "FreeDV", 11, IM_COL32(70, 100, 130, 255), "FreeDV digital voice (700D, 700E, 1600) on upper sideband", "FreeDV: open digital voice on HF", N_("Digital voice, 14.236 MHz"), ImVec4(0.52f, 0.72f, 0.94f, 1), "freedv", "freedv hf digital voice"},
     {31, "M17", 11, IM_COL32(60, 110, 90, 255), "M17 open digital voice and data (4FSK, 9 kHz), 2 m and 70 cm", "M17: open digital voice, text messages and positions on VHF / UHF", N_("Digital voice, 433.475 MHz"), ImVec4(0.48f, 0.86f, 0.66f, 1), nullptr, "m17 digital voice codec2 amateur vhf uhf"},
     {33, "D-STAR", 11, IM_COL32(70, 90, 130, 255), "D-STAR digital voice (GMSK 4800 bit/s, 6.25 kHz), 2 m and 70 cm", "D-STAR: callsigns, repeaters, messages and D-PRS positions on VHF / UHF", N_("Digital voice, 145.375 MHz"), ImVec4(0.56f, 0.70f, 0.96f, 1), nullptr, "dstar d-star dv digital voice ambe icom jarl d-prs amateur vhf uhf repeater"},
@@ -1133,13 +1210,17 @@ const ImU32 kGroupCols[kNumGroups] = {
 float gSwitchWidth = 420;   // width of the mode selector as drawn (the guided tour points at it)
 
 void selectMode(App& a, int fam, const char* subId) {
+    if (txViewFlag()) { txSelectMode(a, fam, subId); return; }
     if (a.engine.running()) { a.engine.log("stop the receiver before switching mode"); return; }
     const int sub = subIndexOf(subId);
     if (fam == a.family && (sub == a.sub || !sub)) return;
     setMode(a, fam, sub);
     savePrefs(a);
 }
-bool modeSelected(const App& a, const ModeDef& m) { return m.family == a.family && (!m.subId || subIndexOf(m.subId) == a.sub); }
+bool modeSelected(const App& a, const ModeDef& m) {
+    if (txViewFlag()) return txModeHighlighted(m);
+    return m.family == a.family && (!m.subId || subIndexOf(m.subId) == a.sub);
+}
 bool modeMatches(const ModeDef& m, const char* q) {
     if (!q || !*q) return true;
     auto has = [&](const char* s) {

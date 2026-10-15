@@ -27,4 +27,7 @@ double packetGenCycleSec(int mode);
 
 std::unique_ptr<ModeSynth> makePacketSynth(const SynthConfig& cfg, double sampleRate);
 
+// One custom AX.25 UI frame (and silence around it), looping. baud 1200 or 9600.
+std::unique_ptr<ModeSynth> makePacketSynthFrame(const SynthConfig& cfg, double sampleRate, const ax25::Frame& frame, int baud);
+
 } // namespace dect2

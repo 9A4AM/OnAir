@@ -39,4 +39,7 @@ double pagerCycleSeconds(int onlyKind = 0, int onlySpeed = 0);
 
 std::unique_ptr<ModeSynth> makePagerSynth(const SynthConfig& cfg, double sampleRate);
 
+// One custom page at `speed` (PagerSpeed). Empty text is a tone-only page when type is kPagerTone.
+std::unique_ptr<ModeSynth> makePagerSynthPage(const SynthConfig& cfg, double sampleRate, int speed, uint32_t address, int function, int type, const std::string& text);
+
 } // namespace dect2

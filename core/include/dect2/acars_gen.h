@@ -45,6 +45,8 @@ struct AcarsGenOptions {
     bool positions = false;                     // the first six aircraft also send position reports (ADS-C B6 / H1, POS and label 16 text), see acars_gen.cpp
                                                 // (off by default: the extra bursts change the timing the older tests were written for; the engine path turns it on)
     std::shared_ptr<AcarsSentLog> log;
+    std::string text;                               // nonempty: every downlink is this free-text (label H1)
+    std::string reg;                                // nonempty: the first aircraft uses this registration
 };
 
 std::unique_ptr<ModeSynth> makeAcarsSynthEx(const AcarsGenOptions& o, const SynthConfig& cfg, double sampleRate);
