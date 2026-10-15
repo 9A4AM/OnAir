@@ -18,7 +18,6 @@
 #include <thread>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <string>
 #include <vector>
 using namespace dect2;
@@ -82,7 +81,7 @@ static int live(const std::string& path, double secs, double center, double rate
     ts.centerHz = center; ts.sampleRate = rate; ts.gainDb = gain; ts.bandwidthMhz = rate / 1e6;
     auto src = makeSource(dev);
     IqRing ring(1u << 25);
-    if (!src->start(ts, ring, err)) { fprintf(stderr, "start: %s\n", err.c_str()); return 1; }
+    if (!src->start(ts, ring, err)) { fprintf(stderr, "start: %s\n", err.c_str()); fclose(o); return 1; }
     const double r = src->sampleRate();
     fprintf(o, "START %s %s, %.3f MHz, %.2f Msps, gain %.0f dB\n", utc((int64_t)time(nullptr)).c_str(), dev.name.c_str(), center / 1e6, r / 1e6, gain);
     fflush(o);
@@ -165,10 +164,11 @@ int main(int argc, char** argv) {
     std::string data = path;
     FileFormat fmt = FileFormat::CF32;
     uint64_t offset = 0;
+    bool bigEndian = false;
     IqFileInfo info;
     std::string err;
     if (probeIqFile(path, info, err)) {
-        data = info.dataPath; fmt = info.format; offset = info.offsetBytes;
+        data = info.dataPath; fmt = info.format; offset = info.offsetBytes; bigEndian = info.bigEndian;
         if (rate <= 0) rate = info.sampleRate;
         if (center <= 0) center = info.centerHz;
     } else if (!err.empty()) { fprintf(stderr, "%s\n", err.c_str()); return 1; }
@@ -177,6 +177,11 @@ int main(int argc, char** argv) {
         fmt = ext == "cs16" ? FileFormat::CI16 : ext == "cs8" ? FileFormat::CS8 : FileFormat::CF32;
     }
     if (rate <= 0 || center <= 0) { fprintf(stderr, "the sample rate and the centre frequency are needed (--rate, --center)\n"); return 2; }
+    // the sample formats read here: 32-bit float, 16-bit and 8-bit signed, 8-bit unsigned pairs, little endian
+    if ((fmt != FileFormat::CF32 && fmt != FileFormat::CI16 && fmt != FileFormat::CS8 && fmt != FileFormat::CU8) || bigEndian) {
+        fprintf(stderr, "%s: sample format not supported (cf32, ci16, cs8 and cu8, little endian)\n", data.c_str());
+        return 2;
+    }
     FILE* f = fopen(data.c_str(), "rb");
     if (!f) { perror(data.c_str()); return 1; }
     fseek(f, (long)offset, SEEK_SET);
@@ -186,9 +191,10 @@ int main(int argc, char** argv) {
     rx.configure(rate);
     rx.setOffline(true);
     const size_t chunk = 1 << 16;
-    const int bytesPer = fmt == FileFormat::CF32 ? 8 : fmt == FileFormat::CI16 || fmt == FileFormat::CU16 ? 4 : 2;
-    std::vector<uint8_t> raw(chunk * (size_t)bytesPer);
     std::vector<cf32> buf(chunk);
+    std::vector<int16_t> s16(fmt == FileFormat::CI16 ? 2 * chunk : 0);
+    std::vector<int8_t> s8(fmt == FileFormat::CS8 ? 2 * chunk : 0);
+    std::vector<uint8_t> u8(fmt == FileFormat::CU8 ? 2 * chunk : 0);
     WisunTelemetry t;
     uint64_t seq = 0;
     size_t printed = 0, total = 0;
@@ -197,16 +203,20 @@ int main(int argc, char** argv) {
     for (;;) {
         const size_t want = std::min(chunk, limit - total);
         if (want == 0) break;
-        const size_t n = fread(raw.data(), (size_t)bytesPer, want, f);
-        if (n == 0) break;
-        for (size_t i = 0; i < n; i++) {
-            if (fmt == FileFormat::CF32) memcpy(&buf[i], raw.data() + 8 * i, 8);
-            else if (fmt == FileFormat::CI16) {
-                int16_t a, b; memcpy(&a, raw.data() + 4 * i, 2); memcpy(&b, raw.data() + 4 * i + 2, 2);
-                buf[i] = cf32(a / 32768.f, b / 32768.f);
-            } else if (fmt == FileFormat::CU8) buf[i] = cf32((raw[2 * i] - 127.5f) / 128.f, (raw[2 * i + 1] - 127.5f) / 128.f);
-            else buf[i] = cf32((int8_t)raw[2 * i] / 128.f, (int8_t)raw[2 * i + 1] / 128.f);
+        // each format straight into a buffer of its own type: want pairs at most, which every buffer holds
+        size_t n = 0;
+        if (fmt == FileFormat::CF32) n = fread(buf.data(), sizeof(cf32), want, f);
+        else if (fmt == FileFormat::CI16) {
+            n = fread(s16.data(), 2 * sizeof(int16_t), want, f);
+            for (size_t i = 0; i < n; i++) buf[i] = cf32(s16[2 * i] / 32768.f, s16[2 * i + 1] / 32768.f);
+        } else if (fmt == FileFormat::CS8) {
+            n = fread(s8.data(), 2 * sizeof(int8_t), want, f);
+            for (size_t i = 0; i < n; i++) buf[i] = cf32(s8[2 * i] / 128.f, s8[2 * i + 1] / 128.f);
+        } else {
+            n = fread(u8.data(), 2 * sizeof(uint8_t), want, f);
+            for (size_t i = 0; i < n; i++) buf[i] = cf32((u8[2 * i] - 127.5f) / 128.f, (u8[2 * i + 1] - 127.5f) / 128.f);
         }
+        if (n == 0) break;
         rx.feed(buf.data(), n);
         total += n;
         if (rx.telemetry(t, seq)) { seq = t.seq; printNew(stdout, t, printed); }

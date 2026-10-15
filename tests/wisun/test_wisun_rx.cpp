@@ -11,7 +11,8 @@
 #include <vector>
 using namespace dect2;
 static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+// The message is glued to a literal: a format that is not a string literal does not compile
+#define CHECK(c, fmt, ...) do { if (!(c)) { printf("FAIL line %d: " fmt "\n", __LINE__ __VA_OPT__(,) __VA_ARGS__); fails++; } } while (0)   // Flawfinder: ignore (the format is a literal)
 
 // Plays the schedule once (plus silence for the last burst and report) through a receiver
 static WisunTelemetry run(WisunGenConfig c, double secs, const std::string& region = "") {
@@ -148,6 +149,7 @@ int main() {
         const WisunTelemetry t = run(c, scheduleSecs(one));
         CHECK(t.blocksOk == 2 && t.modeSwitches == 0, "%llu good, %llu mode switches", (unsigned long long)t.blocksOk, (unsigned long long)t.modeSwitches);
     }
-    printf(fails ? "wisun rx: %d FAILED\n" : "wisun rx: all passed\n", fails);
+    if (fails) printf("wisun rx: %d FAILED\n", fails);
+    else printf("wisun rx: all passed\n");
     return fails ? 1 : 0;
 }

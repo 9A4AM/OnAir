@@ -62,7 +62,7 @@ struct WisunReceiver::Impl {
     std::mutex mu;
     std::function<void(const std::string&)> log;
     double rateSet = 0, offsetSet = 0;
-    std::string regionSet;
+    std::string regionSet;                // under mu
     std::atomic<bool> resetReq{true}, clearReq{false};
     std::atomic<double> centerHz{0}, dialHz{0};
 
@@ -206,7 +206,8 @@ struct WisunReceiver::Impl {
 
     // ---------------------------------------------------------------- set-up
 
-    void setup() {
+    // regionAsked: the band plan's id as set (a copy taken under mu), "" by the frequency
+    void setup(const std::string& regionAsked) {
         bins.clear(); chans.clear();
         xr.clear(); xi.clear(); xPos = 0; frame = 0;
         if (rate <= 0) return;
@@ -222,7 +223,7 @@ struct WisunReceiver::Impl {
         ur.assign((size_t)M, 0.f); ui.assign((size_t)M, 0.f);
         // the band plan (the one asked for, else the one for this frequency) and all its channel centres
         const double c = centreAbs;
-        const wisun::BandPlan* bp = !regionSet.empty() ? wisun::bandPlan(regionSet) : nullptr;
+        const wisun::BandPlan* bp = !regionAsked.empty() ? wisun::bandPlan(regionAsked) : nullptr;
         if (!bp) bp = &wisun::bandPlanFor(c / 1e6);
         region = bp->id;
         const auto plans = wisun::plansOf(region);
@@ -303,16 +304,18 @@ struct WisunReceiver::Impl {
         reindex();
     }
     void resetState() {
+        std::string regionAsked;
         {
             std::lock_guard<std::mutex> lk(mu);
             rate = rateSet; offset = offsetSet;
+            regionAsked = regionSet;   // setRegion() writes it from the interface thread
             const double c = centerHz.load(), d = dialHz.load();
             centreAbs = c > 0 ? c : (d > 0 ? d - offset : wisunTuning().defMhz * 1e6);
         }
         stopWorker();
         { std::lock_guard<std::mutex> lk(qm); outs.clear(); wBad = wFec = wCorrected = wDropped = 0; }
         recent.clear();
-        setup();
+        setup(regionAsked);
         if (rate > 0) startWorker();
         nIn = 0;
         power = 0; nPower = 0; nextReport = 0.25 * rate; lastGood = -100;

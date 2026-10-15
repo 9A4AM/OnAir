@@ -7,7 +7,8 @@
 #include <thread>
 using namespace dect2;
 static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+// The message is glued to a literal: a format that is not a string literal does not compile
+#define CHECK(c, fmt, ...) do { if (!(c)) { printf("FAIL line %d: " fmt "\n", __LINE__ __VA_OPT__(,) __VA_ARGS__); fails++; } } while (0)   // Flawfinder: ignore (the format is a literal)
 
 int main() {
     const ModeTuning mt = wisunTuning();
@@ -46,6 +47,7 @@ int main() {
     e.wisun().clearResults();
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
     e.stop();
-    printf(fails ? "wisun engine: %d FAILED\n" : "wisun engine: all passed\n", fails);
+    if (fails) printf("wisun engine: %d FAILED\n", fails);
+    else printf("wisun engine: all passed\n");
     return fails ? 1 : 0;
 }

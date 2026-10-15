@@ -8,7 +8,8 @@
 #include <vector>
 using namespace dect2::wisun;
 static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+// The message is glued to a literal: a format that is not a string literal does not compile
+#define CHECK(c, fmt, ...) do { if (!(c)) { printf("FAIL line %d: " fmt "\n", __LINE__ __VA_OPT__(,) __VA_ARGS__); fails++; } } while (0)   // Flawfinder: ignore (the format is a literal)
 
 static std::vector<uint8_t> hex(const char* s) {
     std::vector<uint8_t> v;
@@ -143,6 +144,7 @@ int main() {
         const uint8_t d[] = {0x09, 0xE3, 0x00, 0x00, 0x4D};
         CHECK(!parse(d, sizeof d).ok, "short frame");
     }
-    printf(fails ? "wisun proto: %d FAILED\n" : "wisun proto: all passed\n", fails);
+    if (fails) printf("wisun proto: %d FAILED\n", fails);
+    else printf("wisun proto: all passed\n");
     return fails ? 1 : 0;
 }
