@@ -38,8 +38,10 @@ constexpr int kMaxSondes = 16;
 constexpr int kTrackCap = 600;
 constexpr int kTrackedSondes = 5;       // sondes whose track goes into a report (5 x 600 x 24 bytes)
 constexpr double kSearchPeriodS = 0.5;
-constexpr double kChanCutoffHz = 10000.0;       // half width of the channel filter
+constexpr double kChanCutoffHz = 10000.0;       // half width of the channel filter (400 MHz sondes)
 constexpr double kChanNoiseBwHz = 20000.0;      // noise bandwidth of it
+constexpr double kLbandCutoffHz = 95000.0;      // LMS6-1680: ~170 kHz RF bandwidth
+constexpr double kLbandNoiseBwHz = 190000.0;
 constexpr double kReportPeriodS = 0.25;
 constexpr int kSearchBlocks = 32;
 
@@ -90,20 +92,22 @@ public:
     int lockedKind = -1;
     double lastPresentT = -1;
 
-    void init(int chanId, double fsIn, double f, double t, double noiseVar) {
+    void init(int chanId, double fsIn, double f, double t, double noiseVar, bool lband) {
         id = chanId; used = true; fs = fsIn; freq = freq0 = f; createdT = lastSeenT = t; lastFixT = -1;
-        lockedKind = -1; sondeKey.clear(); snrDb = 0; pn = noiseVar * kChanNoiseBwHz / fsIn;
-        int R1 = std::max(1, (int)std::floor(fs / 200000.0));
+        lockedKind = -1; sondeKey.clear(); snrDb = 0;
+        const double noiseBw = lband ? kLbandNoiseBwHz : kChanNoiseBwHz;
+        const double cutoff = lband ? kLbandCutoffHz : kChanCutoffHz;
+        pn = noiseVar * noiseBw / fsIn;
+        int R1 = std::max(1, (int)std::floor(fs / (lband ? 400000.0 : 200000.0)));
         fs1 = fs / R1;
-        const int R2 = std::max(1, (int)std::floor(fs1 / 96000.0));
+        const int R2 = std::max(1, (int)std::floor(fs1 / (lband ? 192000.0 : 96000.0)));
         fs2 = fs1 / R2;
         const int taps1 = R1 == 1 ? 1 : 5 * R1 + 1;
-        // stage 1: pass +-22 kHz, stop from fs1 - 22 kHz
-        s1.init(R1, taps1, 0.5 / R1, 7.0);
+        // stage 1: passband wide enough for the channel type
+        s1.init(R1, taps1, (lband ? 0.45 : 0.5) / R1, 7.0);
         s1.setMixer(freq / fs);
-        // stage 2: pass +-10 kHz, stop above about 22 kHz (Kaiser: taps ~ 3.1 / transition)
-        const int taps2 = std::max(15, (int)std::ceil(3.2 * fs1 / 12000.0)) | 1;
-        s2.init(R2, taps2, kChanCutoffHz / fs1, 7.0);
+        const int taps2 = std::max(15, (int)std::ceil(3.2 * fs1 / (lband ? 40000.0 : 12000.0))) | 1;
+        s2.init(R2, taps2, cutoff / fs1, 7.0);
         b1.clear(); b2.clear();
         prevY = cf32(1, 0);
         pAvg = 0; present = false; dc = 0; dcN = 0; afcSum = 0; afcCnt = 0;
@@ -126,12 +130,15 @@ public:
         addDec(makeDfmDecoder(), SondeDfm, nullptr);
         addDec(makeM10Decoder(), SondeM10, nullptr);
         addDec(makeM20Decoder(), SondeM20, nullptr);
+        if (lband) addDec(makeLms6Decoder(), SondeLms6, nullptr);
         syms.assign(chains.size(), {});
         symT.assign(chains.size(), 0.0);
     }
 
     void release() { used = false; decs.clear(); chains.clear(); }
-    void setNoise(double noiseVar) { pn = noiseVar * kChanNoiseBwHz / fs; }
+    void setNoise(double noiseVar, bool lband) {
+        pn = noiseVar * (lband ? kLbandNoiseBwHz : kChanNoiseBwHz) / fs;
+    }
     void retune(double f) { freq = f; s1.setMixer(freq / fs); }
 
     // x: input samples starting at stream time t0
@@ -403,7 +410,8 @@ struct SondeReceiver::Impl {
         const double floorBin = tmp[tmp.size() / 2] * 1.0;
         if (floorBin <= 0) return;
         noiseVar = floorBin / winSq;
-        for (auto& c : chans) if (c.used) c.setNoise(noiseVar);
+        const bool lband = sondeIsLbandMhz(centerHz.load() * 1e-6);
+        for (auto& c : chans) if (c.used) c.setNoise(noiseVar, lband);
         // box sum over about 8 kHz
         const int w = std::max(1, (int)std::lround(4000.0 / bin));
         std::vector<double> cum((size_t)N + 1, 0.0);
@@ -461,7 +469,7 @@ struct SondeReceiver::Impl {
             int usedN = 0;
             for (auto& ch : chans) { if (ch.used) usedN++; else if (!fr) fr = &ch; }
             if (!fr || usedN >= maxChan.load()) continue;
-            fr->init((int)(fr - chans.data()), fs, car.offHz, tNow, noiseVar);
+            fr->init((int)(fr - chans.data()), fs, car.offHz, tNow, noiseVar, lband);
             fr->snrDb = car.level;
             car.assigned = true; car.channel = fr->id;
             char b[100];
@@ -640,7 +648,7 @@ void SondeReceiver::configure(double inputRateHz) { p_->configure(inputRateHz); 
 void SondeReceiver::setSignalOffset(double hz) { p_->sigOff = hz; }
 bool SondeReceiver::ready() const {
     std::lock_guard<std::mutex> lk(p_->mu);
-    return p_->fs >= sondeTuning().minSampleRate - 1;
+    return p_->fs >= sondeMinSampleRateHz(p_->centerHz.load() * 1e-6) - 1;
 }
 void SondeReceiver::reset() {
     std::lock_guard<std::mutex> pl(p_->procMu);
@@ -724,6 +732,12 @@ bool SondeReceiver::telemetry(SondeTelemetry& out, uint64_t lastSeq) {
     return true;
 }
 void SondeReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
+
+bool sondeIsLbandMhz(double mhz) { return mhz > 1500.0; }
+
+double sondeMinSampleRateHz(double centerMhz) {
+    return sondeIsLbandMhz(centerMhz) ? 1000000.0 : 2000000.0;
+}
 
 ModeTuning sondeTuning() {
     ModeTuning t;
