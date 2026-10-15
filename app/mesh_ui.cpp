@@ -80,9 +80,10 @@ const Plan kPlans[] = {
     {"MeshCom EU  433.175 MHz (+ LoRa APRS 433.775)", "MeshCom EU  433.175 MHz", 433.175, 0, 2},
     {"LoRaWAN EU868  868.1 / 868.3 / 868.5 MHz (+ 867.x in a wide capture)", "LoRaWAN EU868  868.1 MHz", 868.1, 0, 3},
     {"LoRaWAN US915  903.9 MHz (sub-band 2)", "LoRaWAN US915  903.9 MHz", 903.9, 1, 4},
-    {"ANZ 915  (Meshtastic LongFast 919.875 MHz)", "ANZ 915  919.875 MHz", 919.875, 2, 5},   // last: the saved plan is an index
+    {"ANZ 915  (Meshtastic LongFast 919.875 MHz)", "ANZ 915  919.875 MHz", 919.875, 2, 5},
+    {"ANZ 915  (MeshCore Mid 915.075 MHz)", "ANZ 915  915.075 MHz", 915.075, 3, 5},   // last: the saved plan is an index
 };
-const char* planRegionName(int rxRegion) { return rxRegion == 1 ? "US" : rxRegion == 2 ? "ANZ" : "EU_868"; }   // the plan's Meshtastic region
+const char* planRegionName(int rxRegion) { return rxRegion == 1 ? "US" : rxRegion >= 2 ? "ANZ" : "EU_868"; }   // the plan's Meshtastic region
 constexpr int kNumPlans = (int)(sizeof(kPlans) / sizeof(kPlans[0]));
 
 std::string nodeKey(const dect2::MeshNode& n) { return std::to_string(n.protocol) + n.id; }
@@ -175,7 +176,7 @@ void loadState() {
 int subMask(const App& a) { const SubMode* sm = curSub(a); return sm ? sm->decoders : 0; }
 bool planFits(const App& a, int i) {
     const int m = subMask(a);
-    return !m || ((m & 3) ? i <= 1 || i == 8 : m == 4 ? (i >= 2 && i <= 4) : m == 8 ? i == 5 : (i == 6 || i == 7));
+    return !m || ((m & 3) ? i <= 1 || i >= 8 : m == 4 ? (i >= 2 && i <= 4) : m == 8 ? i == 5 : (i == 6 || i == 7));
 }
 int effRegion(const App& a) {   // the selected plan, or the entry's first when the selected one does not carry it
     if (planFits(a, S.region)) return S.region;
@@ -200,7 +201,7 @@ void applyRegion(App& a, int region) {
     S.region = region;
     plat::prefs().setI("meshRegion", region);
     a.freqMhz = kPlans[region].mhz;                    // the plan's channel (Meshtastic LongFast, LoRa APRS, MeshCom)
-    if (subMask(a) == 2) a.freqMhz = region == 1 ? 910.525 : region == 8 ? 915.8 : 869.618;   // MeshCore's own channel (AU in ANZ)
+    if (subMask(a) == 2) a.freqMhz = region == 1 ? 910.525 : region == 8 ? 915.8 : region == 9 ? 915.075 : 869.618;   // MeshCore's own channel (AU or Mid in ANZ)
     a.tune.synth.modeOpt[1] = kPlans[region].synthRegion;
 }
 
@@ -1213,7 +1214,7 @@ void receiver(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
     if (t.custom) kv("tuned", "%.4f MHz, %.3f Msps, custom LoRa setting", t.tunedHz / 1e6, t.inputRate / 1e6);
-    else kv("tuned", "%.4f MHz, %.3f Msps, %s plan, Meshtastic %s", t.tunedHz / 1e6, t.inputRate / 1e6, t.region == 1 ? "US" : t.region == 2 ? "ANZ" : "EU", t.mtRegion.c_str());
+    else kv("tuned", "%.4f MHz, %.3f Msps, %s plan, Meshtastic %s", t.tunedHz / 1e6, t.inputRate / 1e6, t.region == 1 ? "US" : t.region == 2 ? "ANZ" : t.region == 3 ? "ANZ Mid" : "EU", t.mtRegion.c_str());
     kv("frames", "%llu good, %llu CRC errors, %llu bad headers", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad, (unsigned long long)t.headerBad);
     kv("preambles", "%llu", (unsigned long long)t.preambles);
     kv("signal time", "%s", clock(t.timeSec).c_str());

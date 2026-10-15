@@ -61,9 +61,10 @@ std::vector<PlanEntry> customPlan(const MeshLoraSettings& s, double tunedHz, int
     return {e};
 }
 
-// the plan's Meshtastic region and MeshCore preset: 0 EU, 1 US, 2 ANZ (Australia, New Zealand and the 915 - 928 MHz networks elsewhere)
-const char* mtRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "ANZ" : "EU_868"; }
-const char* mcRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "AU" : "EU"; }
+// the plan's Meshtastic region and MeshCore preset: 0 EU, 1 US, 2 ANZ (Australia, New Zealand and the 915 - 928 MHz networks elsewhere),
+// 3 ANZ with MeshCore Mid (915.075 MHz, SF9, 125 kHz, 4/5)
+const char* mtRegionOf(int region) { return region == 1 ? "US" : region >= 2 ? "ANZ" : "EU_868"; }
+const char* mcRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "AU" : region == 3 ? "ANZ Mid" : "EU"; }
 
 std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets, const std::string& mtRegion, const std::string& mtPreset) {
     std::vector<PlanEntry> v;
@@ -664,7 +665,7 @@ bool MeshReceiver::telemetry(MeshTelemetry& out, uint64_t lastSeq) {
 }
 void MeshReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void MeshReceiver::setTunedHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->tunedHz = hz; p_->dirty = true; }
-void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r == 1 || r == 2 ? r : 0; p_->dirty = true; }
+void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r >= 1 && r <= 3 ? r : 0; p_->dirty = true; }
 void MeshReceiver::setProtocols(int mask) { std::lock_guard<std::mutex> lk(p_->mu); p_->protocols = mask & 31; p_->dirty = true; }
 void MeshReceiver::setPresetSearch(bool all) { std::lock_guard<std::mutex> lk(p_->mu); p_->presetSearch = all; p_->dirty = true; }
 void MeshReceiver::setMeshtasticPlan(const std::string& region, const std::string& preset) {
