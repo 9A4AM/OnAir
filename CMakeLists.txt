@@ -63,7 +63,7 @@ add_library(dect2core STATIC core/src/source.cpp core/src/source_audio.cpp core/
 # The modes added after FM (DVB-S/S2, DTMB, analog TV, DMR, DRM, ADS-B): every core/src/<mode>/*.cpp belongs to its mode, so a mode can add files without editing this list
 set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb)
 target_sources(dect2core PRIVATE core/src/modes.cpp core/src/rate_choice.cpp core/src/passes.cpp core/src/imgproc.cpp core/src/sig_ident.cpp core/src/maidenhead.cpp core/src/maplayers.cpp core/src/tilecache.cpp)
-target_sources(dect2core PRIVATE core/src/remote_api.cpp core/src/rx_json.cpp core/src/gain_opt.cpp)   # remote-control API server, telemetry JSON, gain optimiser
+target_sources(dect2core PRIVATE core/src/remote_api.cpp core/src/rx_json.cpp core/src/gain_opt.cpp core/src/mesh_report.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text
 target_sources(dect2core PRIVATE core/src/tx.cpp core/src/tx_payload.cpp core/src/tx_voice.cpp core/src/audioin.cpp core/src/videoin.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
 foreach(m ${DECT2_MODES})
   file(GLOB DECT2_MODE_SRC CONFIGURE_DEPENDS core/src/${m}/*.cpp)
