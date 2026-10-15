@@ -17,7 +17,7 @@ command -v "$OBJDUMP" >/dev/null 2>&1 || { echo "no objdump found (install mingw
 
 # DLLs every Windows has, plus api-ms-win-* (the universal C runtime forwarders)
 SYSTEM=" $(echo kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32 ws2_32 wsock32 iphlpapi setupapi winusb cfgmgr32 crypt32 bcrypt ntdll msvcrt ucrtbase \
-    opengl32 d3d11 dxgi d3dcompiler_47 dbghelp comdlg32 imm32 winmm version shlwapi secur32 userenv mswsock dwmapi uxtheme hid avrt mfplat ksuser \
+    opengl32 gdiplus dnsapi ncrypt dwrite rpcrt4 usp10 bcryptprimitives d3d11 dxgi d3dcompiler_47 dbghelp comdlg32 imm32 msimg32 winmm version shlwapi secur32 userenv mswsock dwmapi uxtheme hid avrt mfplat ksuser \
     propsys powrprof) "
 is_system() {
     case "$1" in api-ms-win-*) return 0;; esac
@@ -45,7 +45,7 @@ exports() {
 }
 
 # exports of every DLL in the folder, by lowercase name
-mkdir -p "$T/exp"
+mkdir -p "$T/exp" "$T/imp-cache"
 while read -r f; do
     b=$(basename "$f" | tr 'A-Z' 'a-z')
     case "$b" in *.dll) exports "$f" > "$T/exp/$b";; esac
@@ -65,6 +65,7 @@ locate() {
 n=0
 while read -r f; do
     n=$((n + 1)); rel=${f#$DIR/}
+    if [ $((n % 10)) -eq 0 ]; then echo "DLL check: $n files checked ($rel)" >&2; fi
     imports "$f" | sort -u > "$T/imp"
     for d in $(awk '{print $1}' "$T/imp" | sort -u); do
         if [ -f "$T/exp/$d" ] && locate "$(dirname "$f")" "$d" >/dev/null; then

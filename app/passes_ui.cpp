@@ -1,7 +1,7 @@
 // The satellite pass planner (View > Passes): the next 24 hours of passes of the satellites OnAir's modes receive (weather satellites
 // on 137 MHz, the ISS, Orbcomm, a short editable list of amateur satellites) over the receiver's position, a polar sky plot of the
 // current or chosen pass, and optional tracking: Doppler-corrected retuning about once a second, the right mode started at AOS and
-// an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak only when the user asks, or pasted.
+// an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak or Keplerpass on request, or pasted.
 #include "app.h"
 #include "gallery.h"
 #include "dect2/passes.h"
@@ -12,6 +12,7 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <mutex>
 #include <sstream>
@@ -34,6 +35,7 @@ const Source kSources[] = {
     {"globalstar.txt", "https://celestrak.org/NORAD/elements/gp.php?GROUP=globalstar&FORMAT=tle"},
 };
 const char* const kPasted = "pasted.txt";
+const Source kKeplerpass = {"keplerpass.txt", "https://data.keplerpass.com/PU4ELT/tle.txt"};
 
 enum Group { Weather, Iss, Orbcomm, Amateur, GlobalstarGrp, NumGroups };
 const char* const kGroupLabel[NumGroups] = {N_("Weather (137 MHz)"), "ISS", "Orbcomm", N_("Amateur"), "Globalstar"};
@@ -80,6 +82,9 @@ struct State {
     double passLos = 0, lastTune = 0, nominalMhz = 0;
     // TLE data
     bool showPaste = false;
+    bool showSources = false;
+    char newSourceUrl[512] = "";
+    std::vector<std::pair<std::string,std::string>> customSources;
     std::vector<char> paste = std::vector<char>(32768, 0);
     std::string msg;
     char cubeName[40] = ""; int cubeNorad = 0; double cubeMhz = 145.9; bool cubeAprs = false;
@@ -144,9 +149,46 @@ void buildSats() {
     S.dirty = true;
 }
 
+// Custom source URLs are saved separately from the downloaded TLE files.
+// Use generated local filenames, never remote URL fragments as paths.
+// Local Raspberry Pi TLE feeds may use HTTP; public servers must use HTTPS.
+bool validTleUrl(const std::string& url) {
+    if (url.rfind("https://", 0) == 0) return true;
+    if (url.rfind("http://", 0) != 0) return false;
+    const size_t end = url.find_first_of("/?#", 7);
+    const std::string hostPort = url.substr(7, end == std::string::npos ? end : end - 7);
+    const std::string host = hostPort.substr(0, hostPort.find(':'));
+    if (host == "localhost") return true;
+    unsigned a=0,b=0,c=0,d=0;
+    char extra=0;
+    if (std::sscanf(host.c_str(), "%u.%u.%u.%u%c", &a,&b,&c,&d,&extra) != 4
+        || a>255 || b>255 || c>255 || d>255) return false;
+    return a==10 || a==127 || (a==192 && b==168) || (a==172 && b>=16 && b<=31);
+}
+
+void loadCustomSources() {
+    S.customSources.clear();
+    std::istringstream in(readText(tleDir() + "/custom_sources.txt"));
+    std::string name, url;
+    while (std::getline(in, name, '\t') && std::getline(in, url)) {
+        if (name.rfind("user_", 0) == 0 && name.size() < 64 &&
+            name.find('/') == std::string::npos && name.find('\\') == std::string::npos &&
+            validTleUrl(url))
+            S.customSources.emplace_back(name, url);
+    }
+}
+void saveCustomSources() {
+    std::error_code ec;
+    fs::create_directories(fsPath(tleDir()), ec);
+    std::ofstream out(fsPath(tleDir() + "/custom_sources.txt"), std::ios::trunc);
+    for (const auto& item : S.customSources) out << item.first << '\t' << item.second << '\n';
+}
+
 void loadTles() {
     S.tles.clear();
     for (const Source& s : kSources) for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + s.file))) S.tles[t.norad] = t;
+    for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + kKeplerpass.file))) S.tles[t.norad] = t;
+    for (const auto& src : S.customSources) for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + src.first))) S.tles[t.norad] = t;
     for (const dect2::Tle& t : dect2::parseTleText(readText(tleDir() + "/" + kPasted))) S.tles[t.norad] = t;
     buildSats();
 }
@@ -158,28 +200,35 @@ void loadState() {
     S.minEl = (float)p.getD("passMinEl", 10);
     for (int g = 0; g < NumGroups; g++) { char k[24]; snprintf(k, sizeof k, "passShow%d", g); S.show[g] = p.getB(k, true); }
     loadCubes();
+    loadCustomSources();
     loadTles();
 }
 
-void startDownload() {
+void startDownload(bool keplerpass = false, std::string customFile = {}, std::string customUrl = {}) {
     if (gDl.load() == 1) return;
     gDl = 1;
     { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = tr("downloading..."); }
     const std::string dir = tleDir();
-    std::thread([dir] {
+    std::thread([dir, keplerpass, customFile, customUrl] {
         std::error_code ec;
         fs::create_directories(fsPath(dir), ec);
         int ok = 0, n = 0;
-        for (const Source& s : kSources) {
-            const std::string path = dir + "/" + s.file, part = path + ".part";
-            if (plat::fetchUrl(s.url, part, "OnAir/" ONAIR_VERSION " (passes)")) {
+        const bool custom = !customUrl.empty();
+        const size_t sourceCount = (keplerpass || custom) ? 1 : sizeof kSources / sizeof kSources[0];
+        for (size_t i = 0; i < sourceCount; ++i) {
+            const Source& source = keplerpass ? kKeplerpass : kSources[i];
+            const std::string filename = custom ? customFile : source.file;
+            const std::string url = custom ? customUrl : source.url;
+            const std::string path = dir + "/" + filename, part = path + ".part";
+            if (plat::fetchUrl(url, part, "OnAir/" ONAIR_VERSION " (passes)")) {
                 const size_t got = dect2::parseTleText(readText(part)).size();
                 if (got > 0) { fs::rename(fsPath(part), fsPath(path), ec); if (!ec) { ok++; n += (int)got; } }
             }
             fs::remove(fsPath(part), ec);
         }
-        std::string m = !ok ? std::string(tr("the download failed (no network, or Celestrak refused)")) : std::string(tr("downloaded")) + " " + std::to_string(n) + " TLEs";
-        if (ok && ok < (int)(sizeof kSources / sizeof kSources[0])) m += "; some lists failed";
+        std::string m = !ok ? (custom ? "Custom TLE download failed (network or invalid TLE)" : keplerpass ? "Keplerpass download failed (check network or TLE format)" : std::string(tr("the download failed (no network, or Celestrak refused)")))
+                            : std::string(custom ? "Custom source: downloaded " : keplerpass ? "Keplerpass: downloaded " : (std::string(tr("downloaded")) + " ")) + std::to_string(n) + " TLEs";
+        if (ok && ok < (int)sourceCount) m += "; some lists failed";
         { std::lock_guard<std::mutex> lk(gDlMu); gDlMsg = m; }
         gDl = 2;
     }).detach();
@@ -322,7 +371,9 @@ void tleSection(App& a) {
     else if (gDl.load() == 1) { std::lock_guard<std::mutex> lk(gDlMu); S.msg = gDlMsg; }
     if (!ImGui::CollapsingHeader(trw("TLE data"), S.tles.empty() ? ImGuiTreeNodeFlags_DefaultOpen : 0)) return;
     ImGui::BeginDisabled(gDl.load() == 1);
-    if (ImGui::Button(tr(gDl.load() == 1 ? "Downloading..." : "Download TLEs from Celestrak"))) startDownload();
+    if (ImGui::Button(tr(gDl.load() == 1 ? "Downloading..." : "Download TLEs from Celestrak"))) startDownload(false);
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Download TLEs from Keplerpass"))) startDownload(true);
     ImGui::EndDisabled();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
         std::string tip = tr("Downloads only when you click. Fetches:");
@@ -334,7 +385,57 @@ void tleSection(App& a) {
     if (ImGui::Button(tr(S.showPaste ? "Hide paste box" : "Paste TLEs..."))) S.showPaste = !S.showPaste;
     if (!S.msg.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", S.msg.c_str()); }
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("%s", tr("From: celestrak.org/NORAD/elements/gp.php?GROUP=weather|stations|orbcomm|amateur&FORMAT=tle"));
+    ImGui::TextDisabled("%s", tr("From: Celestrak, Keplerpass, and any TLE servers you add"));
+    if (ImGui::Button(S.showSources ? tr("Hide TLE servers") : tr("Manage TLE servers"))) S.showSources = !S.showSources;
+    if (S.showSources) {
+        ImGui::TextDisabled("%s", tr("Built-in: Celestrak and Keplerpass (always available)"));
+        ImGui::SetNextItemWidth(-140.f);
+        ImGui::InputTextWithHint("##addTleUrl", "http://192.168.1.64/tle/active.tle", S.newSourceUrl, sizeof S.newSourceUrl);
+        ImGui::SameLine();
+        ImGui::BeginDisabled(gDl.load() == 1);
+        if (ImGui::Button(tr("Add server"))) {
+            const std::string url = S.newSourceUrl;
+            const bool exists = std::any_of(S.customSources.begin(), S.customSources.end(),
+                [&](const auto& src) { return src.second == url; });
+            if (!validTleUrl(url) || url.find_first_of(" \t\r\n") != std::string::npos)
+                S.msg = "Use HTTPS or HTTP for a local network server";
+            else if (exists) S.msg = "Server already listed";
+            else {
+                unsigned id = 1;
+                std::string file;
+                do {
+                    file = "user_" + std::to_string(id++) + ".tle";
+                } while (std::any_of(S.customSources.begin(), S.customSources.end(),
+                    [&](const auto& src) { return src.first == file; }) ||
+                    fs::exists(fsPath(tleDir() + "/" + file)));
+                S.customSources.emplace_back(file, url);
+                saveCustomSources();
+                S.newSourceUrl[0] = '\0';
+                S.msg = "TLE server saved";
+            }
+        }
+        for (size_t i = 0; i < S.customSources.size();) {
+            ImGui::PushID((int)i);
+            const auto item = S.customSources[i];
+            ImGui::TextWrapped("%s", item.second.c_str());
+            ImGui::SameLine();
+            if (ImGui::SmallButton(tr("Download"))) startDownload(false, item.first, item.second);
+            ImGui::SameLine();
+            if (ImGui::SmallButton(tr("Delete"))) {
+                std::error_code ec;
+                fs::remove(fsPath(tleDir() + "/" + item.first), ec);
+                S.customSources.erase(S.customSources.begin() + (std::ptrdiff_t)i);
+                saveCustomSources();
+                loadTles();
+                S.msg = "TLE server deleted";
+                ImGui::PopID();
+                continue;
+            }
+            ImGui::PopID();
+            ++i;
+        }
+        ImGui::EndDisabled();
+    }
     ImGui::PopTextWrapPos();
     double oldest = 0;
     for (const Sat& s : S.sats) oldest = std::max(oldest, nowSec() / 86400.0 + 2440587.5 - s.sgp.tle().epochJd);

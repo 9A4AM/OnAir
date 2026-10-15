@@ -495,8 +495,10 @@ bool Atsc3Sync::cutFrame() {
         st_.secDecode += std::chrono::duration<double>(std::chrono::steady_clock::now() - td).count();
         if (ok) { st_.frames++; missed_ = 0; } else missed_++;
     }
-    // the next bootstrap comes no earlier than the signalled time, and not before this frame is over
-    long next = std::max<long>(bsStart_ + (long)std::llround((minToNextSec_ - 0.002) * rate), frameStart_ + frameSamples_ - (long)(rate * 0.0005));
+    // the next bootstrap comes when this frame is over. The signalled minimum time to the next frame is not a lower bound to trust: a327hbr.cfile
+    // signals 250 ms but sends a frame every 242.7 ms, and searching from 250 ms skipped every second frame (and with it the FEC block that
+    // straddles the two)
+    long next = frameStart_ + frameSamples_ - (long)(rate * 0.0005);
     searchFrom_ = next;
     predNext_ = bsExact_ + bs_.numSymbols * 3072 / kBootstrapRate * rate + frameExact_;   // frames follow each other without a gap: the next bootstrap starts here
     locked_ = false;

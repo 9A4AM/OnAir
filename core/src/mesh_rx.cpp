@@ -6,6 +6,7 @@
 #include "dect2/mesh_proto.h"
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <map>
 #include <mutex>
@@ -17,6 +18,7 @@ namespace {
 
 constexpr size_t kBlock = 4096;          // input is processed in blocks of this size (the result does not depend on the chunking)
 // rows kept: the report stays under about 100 kB (a packet row is about 270 bytes, a node 280, a message 150 plus its text)
+constexpr size_t kReadingCap = 2000;
 constexpr size_t kPacketCap = 100, kMessageCap = 100, kNodeCap = 150, kAprsCap = 150, kLorawanCap = 200;
 
 struct PlanEntry {
@@ -59,10 +61,14 @@ std::vector<PlanEntry> customPlan(const MeshLoraSettings& s, double tunedHz, int
     return {e};
 }
 
+// the plan's Meshtastic region and MeshCore preset: 0 EU, 1 US, 2 ANZ (Australia, New Zealand and the 915 - 928 MHz networks elsewhere)
+const char* mtRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "ANZ" : "EU_868"; }
+const char* mcRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "AU" : "EU"; }
+
 std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets, const std::string& mtRegion, const std::string& mtPreset) {
     std::vector<PlanEntry> v;
     if (protocols & 1) {
-        const std::string reg = !mtRegion.empty() ? mtRegion : region == 1 ? "US" : "EU_868";
+        const std::string reg = !mtRegion.empty() ? mtRegion : mtRegionOf(region);
         std::vector<std::string> names = {mtPreset.empty() ? std::string("LongFast") : mtPreset};
         if (allPresets) for (const auto& n : meshtasticPresetNames()) if (n != names[0]) names.push_back(n);
         for (const auto& n : names) {
@@ -76,10 +82,10 @@ std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets, co
         }
     }
     if (protocols & 2) {
-        const MeshLoraSettings s = meshcoreDefaults(region == 1 ? "US" : "EU");
+        const MeshLoraSettings s = meshcoreDefaults(mcRegionOf(region));
         if (s.freqHz > 0) {
             PlanEntry e;
-            e.protocol = 2; e.preset = "MeshCore " + std::string(region == 1 ? "US" : "EU"); e.freqHz = s.freqHz;
+            e.protocol = 2; e.preset = "MeshCore " + std::string(mcRegionOf(region)); e.freqHz = s.freqHz;
             e.p.sf = s.sf; e.p.bwHz = s.bwHz; e.p.cr = s.cr; e.p.preamble = s.preamble; e.p.syncWord = s.syncWord; e.p.ldro = s.ldro;
             v.push_back(e);
         }
@@ -167,7 +173,7 @@ struct MeshReceiver::Impl {
         chans.clear();
         tel.decoders.clear();
         tel.inputRate = rt; tel.tunedHz = tu; tel.region = reg; tel.protocols = prot; tel.presetSearch = all;
-        tel.mtRegion = !mreg.empty() ? mreg : reg == 1 ? "US" : "EU_868"; tel.custom = cu;
+        tel.mtRegion = !mreg.empty() ? mreg : mtRegionOf(reg); tel.custom = cu;
         if (rt <= 0) return;
         const auto plan = cu ? customPlan(cs, tu, prot) : regionPlan(reg, prot, all, mreg, mpre);
         std::string inBand;
@@ -231,6 +237,13 @@ struct MeshReceiver::Impl {
         nProc += (int64_t)n;
     }
 
+    // a packet from the node: when, how strong (the report's first / last heard and SNR range)
+    static void heard(MeshNode& n, double t, double snr, double level) {
+        if (n.packets == 0 || n.firstHeard < 0) { n.firstHeard = t; n.snrMin = n.snrMax = (float)snr; }
+        n.snrMin = std::min(n.snrMin, (float)snr); n.snrMax = std::max(n.snrMax, (float)snr);
+        n.snrSum += snr;
+        n.lastHeard = t; n.lastSnrDb = (float)snr; n.lastLevelDb = (float)level; n.packets++;
+    }
     MeshNode& node(int protocol, const std::string& id) {
         const std::string key = std::to_string(protocol) + "|" + id;
         auto it = nodeIdx.find(key);
@@ -315,7 +328,8 @@ struct MeshReceiver::Impl {
         if (proto_ == 1 && !pk.from.empty()) {
             const bool fresh = nodeIdx.find("1|" + pk.from) == nodeIdx.end();
             MeshNode& n = node(1, pk.from);
-            n.lastHeard = t; n.lastSnrDb = (float)f.snrDb; n.lastLevelDb = (float)f.levelDb; n.packets++;
+            heard(n, t, f.snrDb, f.levelDb);
+            if (!pk.decrypted) n.encrypted++;
             if (hops >= 0) n.hopsAway = hops;
             if (fresh) logf("Meshtastic: new node " + pk.from);
         }
@@ -325,7 +339,7 @@ struct MeshReceiver::Impl {
             const bool fresh = nodeIdx.find(std::to_string(pr) + "|" + u.nodeId) == nodeIdx.end();
             MeshNode& n = node(pr, u.nodeId);
             if (pr == 2) {
-                n.lastHeard = t; n.lastSnrDb = (float)f.snrDb; n.lastLevelDb = (float)f.levelDb; n.packets++;
+                heard(n, t, f.snrDb, f.levelDb);
                 if (hops >= 0) n.hopsAway = hops;
             }
             if (!u.longName.empty()) n.longName = u.longName;
@@ -338,7 +352,17 @@ struct MeshReceiver::Impl {
             if (u.channelUtilPct >= 0) n.channelUtilPct = u.channelUtilPct;
             if (u.airUtilTxPct >= 0) n.airUtilTxPct = u.airUtilTxPct;
             if (u.uptimeS >= 0) n.uptimeS = u.uptimeS;
-            if (u.hasEnv) { n.hasEnv = true; n.tempC = u.tempC; n.humidity = u.humidity; n.pressureHpa = u.pressureHpa; }
+            if (u.batteryPct >= 0 || u.voltage >= 0 || u.hasEnv || u.hasPosition) {   // a telemetry or position report: kept with its time
+                MeshReading rd;
+                rd.timeSec = t; rd.protocol = pr; rd.id = u.nodeId;
+                rd.unixTime = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+                rd.batteryPct = u.batteryPct; rd.voltage = u.voltage; rd.channelUtilPct = u.channelUtilPct; rd.airUtilTxPct = u.airUtilTxPct;
+                rd.uptimeS = u.uptimeS; rd.hasEnv = u.hasEnv; rd.tempC = u.tempC; rd.humidity = u.humidity; rd.pressureHpa = u.pressureHpa;
+                rd.hasPosition = u.hasPosition; rd.lat = u.lat; rd.lon = u.lon; rd.altM = u.altM;
+                capPush(tel.readings, std::move(rd), kReadingCap);
+            }
+            if (u.batteryPct >= 0 || u.voltage >= 0) n.devSec = t;
+            if (u.hasEnv) { n.envSec = t; n.hasEnv = true; n.tempC = u.tempC; n.humidity = u.humidity; n.pressureHpa = u.pressureHpa; }
             if (fresh || (!u.longName.empty() && u.longName != n.longName))
                 logf(std::string(pr == 1 ? "Meshtastic" : "MeshCore") + ": node " + u.nodeId + (n.longName.empty() ? "" : " \"" + n.longName + "\""));
         }
@@ -503,12 +527,15 @@ struct MeshReceiver::Impl {
     static void moveLists(MeshTelemetry& to, MeshTelemetry& from) {
         to.packets = std::move(from.packets); to.nodes = std::move(from.nodes); to.messages = std::move(from.messages);
         to.counts = std::move(from.counts); to.aprsStations = std::move(from.aprsStations); to.lorawanDevices = std::move(from.lorawanDevices);
+        to.readings = std::move(from.readings);
         from.packets.clear(); from.nodes.clear(); from.messages.clear(); from.counts.clear(); from.aprsStations.clear(); from.lorawanDevices.clear();
+        from.readings.clear();
     }
     static void shiftTimes(MeshTelemetry& t, double dt) {
         for (auto& p : t.packets) p.timeSec += dt;
         for (auto& m : t.messages) m.timeSec += dt;
-        for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.posSec >= 0) n.posSec += dt; }
+        for (auto& r : t.readings) r.timeSec += dt;
+        for (auto& n : t.nodes) { if (n.lastHeard >= 0) n.lastHeard += dt; if (n.firstHeard >= 0) n.firstHeard += dt; if (n.envSec >= 0) n.envSec += dt; if (n.devSec >= 0) n.devSec += dt; if (n.posSec >= 0) n.posSec += dt; }
         for (auto& a : t.aprsStations) a.st.lastHeardSec += dt;
         for (auto& d : t.lorawanDevices) if (d.lastHeard >= 0) d.lastHeard += dt;
     }
@@ -586,16 +613,16 @@ void MeshReceiver::clearResults() {
 std::string MeshReceiver::saveResults() const {
     std::lock_guard<std::mutex> lk(p_->mu);
     const MeshTelemetry& t = p_->pub;
-    return results::pack(t.timeSec, t.packets, t.nodes, t.messages, t.counts, t.aprsStations, t.lorawanDevices);
+    return results::pack(t.timeSec, t.packets, t.nodes, t.messages, t.counts, t.aprsStations, t.lorawanDevices, t.readings);
 }
 bool MeshReceiver::loadResults(const std::string& blob) {
     double t0 = 0;
     MeshTelemetry l;
-    if (!results::unpack(blob, t0, l.packets, l.nodes, l.messages, l.counts, l.aprsStations, l.lorawanDevices)) return false;
+    if (!results::unpack(blob, t0, l.packets, l.nodes, l.messages, l.counts, l.aprsStations, l.lorawanDevices, l.readings)) return false;
     std::lock_guard<std::mutex> lk(p_->mu);
     Impl::shiftTimes(l, p_->pub.timeSec - t0);
     MeshTelemetry copy;
-    copy.packets = l.packets; copy.nodes = l.nodes; copy.messages = l.messages; copy.counts = l.counts; copy.aprsStations = l.aprsStations; copy.lorawanDevices = l.lorawanDevices;
+    copy.packets = l.packets; copy.nodes = l.nodes; copy.messages = l.messages; copy.counts = l.counts; copy.aprsStations = l.aprsStations; copy.lorawanDevices = l.lorawanDevices; copy.readings = l.readings;
     Impl::moveLists(p_->pub, copy);
     Impl::moveLists(p_->loaded, l);
     p_->loadReq = true;
@@ -637,7 +664,7 @@ bool MeshReceiver::telemetry(MeshTelemetry& out, uint64_t lastSeq) {
 }
 void MeshReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 void MeshReceiver::setTunedHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->tunedHz = hz; p_->dirty = true; }
-void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r == 1 ? 1 : 0; p_->dirty = true; }
+void MeshReceiver::setRegion(int r) { std::lock_guard<std::mutex> lk(p_->mu); p_->region = r == 1 || r == 2 ? r : 0; p_->dirty = true; }
 void MeshReceiver::setProtocols(int mask) { std::lock_guard<std::mutex> lk(p_->mu); p_->protocols = mask & 31; p_->dirty = true; }
 void MeshReceiver::setPresetSearch(bool all) { std::lock_guard<std::mutex> lk(p_->mu); p_->presetSearch = all; p_->dirty = true; }
 void MeshReceiver::setMeshtasticPlan(const std::string& region, const std::string& preset) {

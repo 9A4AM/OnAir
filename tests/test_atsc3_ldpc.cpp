@@ -65,6 +65,14 @@ int main() {
         snprintf(m, sizeof m, "decode noisy 64800 rate %d/15", r);
         CHECK(ok && hard == bits, m);
         printf("  64800 rate %2d/15: decoded in %d iterations\n", r, it);
+        // the 8-bit batch decoder takes every code (7/15 has checks of degree 86, more than the 64 it first allowed)
+        std::vector<int8_t> q(64800);
+        for (int i = 0; i < 64800; i++) q[i] = bits[i] ? -20 : 20;
+        std::vector<std::vector<uint8_t>> bh;
+        std::vector<char> bok;
+        c.decodeBatch({q.data()}, 40, bh, bok);
+        snprintf(m, sizeof m, "batch decode 64800 rate %d/15", r);
+        CHECK(bok[0] && bh[0] == bits, m);
     }
     printf(fails ? "atsc3 ldpc: FAILED\n" : "atsc3 ldpc: ok\n");
     return fails ? 1 : 0;

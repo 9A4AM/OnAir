@@ -176,6 +176,8 @@ struct RdsDecoder {
     std::string ps, rt;
     char rtBuf[65] = {};
     int rtAb = -1;
+    uint16_t rtSeen = 0;          // the radio text segments received since the A/B flag last changed
+    bool rtComplete = false;      // every segment up to the end (a carriage return, or the last segment) received
     int lastSyncBits = 0;
     TmcDecoder tmc;
 
@@ -243,12 +245,21 @@ struct RdsDecoder {
             tmc.onGroup8A((uint16_t)low, info[2], info[3], std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count());
         } else if (type == 2) {
             const int ab = (low >> 4) & 1, seg = low & 15;
-            if (ab != rtAb) { std::memset(rtBuf, ' ', 64); rtAb = ab; rt.clear(); }
+            if (ab != rtAb) { std::memset(rtBuf, ' ', 64); rtAb = ab; rt.clear(); rtSeen = 0; }
             if (ver == 0 && ok[2]) {
                 rtBuf[seg * 4] = rdsChar(info[2] >> 8); rtBuf[seg * 4 + 1] = rdsChar(info[2] & 0xFF);
                 rtBuf[seg * 4 + 2] = rdsChar(info[3] >> 8); rtBuf[seg * 4 + 3] = rdsChar(info[3] & 0xFF);
+                rtSeen |= (uint16_t)(1u << seg);
             } else if (ver == 1) {
                 rtBuf[seg * 2] = rdsChar(info[3] >> 8); rtBuf[seg * 2 + 1] = rdsChar(info[3] & 0xFF);
+                rtSeen |= (uint16_t)(1u << seg);
+            }
+            {   // complete: the segments up to the one holding the carriage return (2A: 4 characters each, 2B: 2), or all 16
+                const int per = ver == 0 ? 4 : 2;
+                const char* end = (const char*)std::memchr(rtBuf, '\r', (size_t)(16 * per));
+                const int last = end ? (int)(end - rtBuf) / per : 15;
+                const uint16_t need = (uint16_t)((2u << last) - 1);
+                rtComplete = (rtSeen & need) == need;
             }
             std::string s(rtBuf, 64);
             const size_t cr = s.find('\r');
@@ -710,7 +721,7 @@ struct FmReceiver::Impl {
         t.rdsSync = rds.synced;
         t.rdsBlockOkPct = rds.okPct;
         t.rdsGroups = rds.groups;
-        t.psName = rds.ps; t.radioText = rds.rt; t.ptyText = rds.groups ? kPtyNames[rds.pty & 31] : "";
+        t.psName = rds.ps; t.radioText = rds.rt; t.radioTextComplete = rds.rtComplete; t.ptyText = rds.groups ? kPtyNames[rds.pty & 31] : "";
         t.tmc = rds.tmc.system();
         t.tmcMessages = rds.tmc.messages(std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count());
         t.trafficAlert = rds.ta; t.trafficProgram = rds.tp; t.music = rds.ms; t.piCode = rds.groups ? rds.pi : 0;
