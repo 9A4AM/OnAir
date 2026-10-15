@@ -10,6 +10,7 @@
 #include "imgui_impl_glfw.h"
 #include "plot.h"
 #include "i18n.h"
+#include "fm_saved.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -381,8 +382,8 @@ struct App {
         struct Res { std::string name, pty; double mhz = 0; bool found = false, stereo = false, rds = false; float snr = 0; };
         std::vector<Res> results;
     } fmScan;
-    struct FmSaved { std::string name; double mhz = 0; };   // a station the user saved by hand: its name (from RDS or typed) and dial frequency
-    std::vector<FmSaved> fmSaved;   // the saved-stations library, kept in the preferences between sessions
+    std::vector<FmSavedStation> fmSaved;   // stations the user saved by hand, kept in the preferences between sessions
+    FmSavedEdit fmSavedEdit;               // rename box, search and delete confirmation for this receiver only
     bool bwAuto = true;       // the engine measures the channel width and switches by itself
     double freqMhz = 522.0;
     bool autoScroll = true;

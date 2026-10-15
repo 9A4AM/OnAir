@@ -210,17 +210,16 @@ void fmPanels(App& a) {
 // ------------------------------------------------------------------ saved stations (a favourites library, under the RDS decoder)
 // A library the user builds by hand. "Save station" takes the frequency tuned now and the live RDS name (kept editable, or left for the
 // user to type when the station sends no name), the list can be searched, and clicking an entry tunes to it. Kept in the preferences.
-static std::string fmLower(std::string s) { for (char& c : s) if (c >= 'A' && c <= 'Z') c = (char)(c + 32); return s; }
-
 static void fmSavedPanel(App& a) {
     const FmTelemetry& fm = a.rx.fm;
     const bool live = a.engine.running() && a.rx.standard == 6 && fm.carrier;
     const std::string rdsName = live ? fmTrim(fm.psName) : "";
-    static struct { int editing = -1; char name[64] = ""; char filter[64] = ""; bool focus = false; int confirmDel = -1; bool askConfirm = false; } S;
+    fmSavedValidateEdit(a.fmSavedEdit, (int)a.fmSaved.size());
+    FmSavedEdit& S = a.fmSavedEdit;
 
     sectionHeader(Ic::Star, "Saved stations");
     if (iconButton(Ic::Save, "Save station", pal::remap(IM_COL32(32, 96, 140, 255)), pal::remap(IM_COL32(44, 124, 178, 255)))) {
-        App::FmSaved st;
+        FmSavedStation st;
         st.mhz = a.freqMhz;
         st.name = rdsName;   // the RDS name if one is coming in, otherwise empty for the user to fill in
         a.fmSaved.push_back(st);
@@ -237,11 +236,7 @@ static void fmSavedPanel(App& a) {
     ImGui::SetNextItemWidth(-1);
     ImGui::InputTextWithHint("##fmsavedsearch", "Search saved stations", S.filter, sizeof S.filter);
 
-    auto matches = [&](const App::FmSaved& st) -> bool {   // case-insensitive, over the name and the frequency text
-        if (!S.filter[0]) return true;
-        char fl[16]; snprintf(fl, sizeof fl, "%.1f", st.mhz);
-        return fmLower(st.name + ' ' + fl).find(fmLower(S.filter)) != std::string::npos;
-    };
+    auto matches = [&](const FmSavedStation& st) -> bool { return fmSavedMatches(st, S.filter); };
     int shown = 0; for (const auto& st : a.fmSaved) if (matches(st)) shown++;
     const float rowH = ImGui::GetFrameHeightWithSpacing();
     const float h = std::min(170.f * gUi, std::max(rowH, shown * rowH + 8));
@@ -253,7 +248,7 @@ static void fmSavedPanel(App& a) {
         ImGui::TableSetupColumn("Station");
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight());
         for (size_t i = 0; i < a.fmSaved.size(); i++) {
-            App::FmSaved& st = a.fmSaved[i];
+            FmSavedStation& st = a.fmSaved[i];
             if (!matches(st)) continue;
             ImGui::PushID((int)i);
             ImGui::TableNextRow();
@@ -267,7 +262,8 @@ static void fmSavedPanel(App& a) {
                 ImGui::SetNextItemWidth(-1);
                 if (S.focus) { ImGui::SetKeyboardFocusHere(); S.focus = false; }
                 if (ImGui::InputText("##edname", S.name, sizeof S.name, ImGuiInputTextFlags_EnterReturnsTrue) || ImGui::IsItemDeactivatedAfterEdit()) {
-                    st.name = fmTrim(S.name); S.editing = -1; savePrefs(a);
+                    if (fmSavedRename(a.fmSaved, (int)i, S.name)) savePrefs(a);
+                    S.editing = -1;
                 }
             } else {
                 ImGui::AlignTextToFramePadding();
@@ -285,15 +281,17 @@ static void fmSavedPanel(App& a) {
     ImGui::EndChild();
 
     // confirmation before a station is removed. OpenPopup / BeginPopupModal run outside any PushID so their ids match.
-    if (S.askConfirm) { ImGui::OpenPopup("Remove saved station"); S.askConfirm = false; }
-    if (ImGui::BeginPopupModal("Remove saved station", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    char popId[40];
+    snprintf(popId, sizeof popId, "Remove saved station##rx%d", a.rxId);
+    if (S.askConfirm) { ImGui::OpenPopup(popId); S.askConfirm = false; }
+    if (ImGui::BeginPopupModal(popId, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         if (S.confirmDel >= 0 && S.confirmDel < (int)a.fmSaved.size()) {
-            const App::FmSaved& st = a.fmSaved[(size_t)S.confirmDel];
+            const FmSavedStation& st = a.fmSaved[(size_t)S.confirmDel];
             ImGui::Text("Remove \"%s\" (%.1f MHz) from your saved stations?", st.name.empty() ? "unnamed station" : st.name.c_str(), st.mhz);
         } else ImGui::TextUnformatted("Remove this saved station?");
         ImGui::Spacing();
         if (ImGui::Button("Delete", ImVec2(90 * gUi, 0))) {
-            if (S.confirmDel >= 0 && S.confirmDel < (int)a.fmSaved.size()) { a.fmSaved.erase(a.fmSaved.begin() + S.confirmDel); S.editing = -1; savePrefs(a); }
+            if (fmSavedRemove(a.fmSaved, S.confirmDel)) { S.editing = -1; savePrefs(a); }
             S.confirmDel = -1; ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine(0, 8 * gUi);
