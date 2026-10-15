@@ -302,6 +302,8 @@ struct App {
         struct Res { std::string name, pty; double mhz = 0; bool found = false, stereo = false, rds = false; float snr = 0; std::string rt, psText; int pi = 0; bool tp = false; };
         std::vector<Res> results;
     } fmScan;
+    struct FmSaved { std::string name; double mhz = 0; };   // a station the user saved by hand: its name (from RDS or typed) and dial frequency
+    std::vector<FmSaved> fmSaved;   // the saved-stations library, kept in the preferences between sessions
     bool bwAuto = true;       // the engine measures the channel width and switches by itself
     double freqMhz = 522.0;
     bool autoScroll = true;

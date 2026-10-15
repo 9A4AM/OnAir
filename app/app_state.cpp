@@ -415,6 +415,21 @@ void loadPrefs(App& a) {
             if (r.found) a.fmScan.results.push_back(r);
         }
     }
+    if (d.has("fmSaved")) {   // the saved-stations library: mhz <US> name per record, records joined by <RS> (these survive the prefs' clean(), unlike | or newline)
+        const std::string st = d.getS("fmSaved", "");
+        size_t pos = 0;
+        while (pos < st.size()) {
+            size_t rec = st.find('\x1e', pos);
+            if (rec == std::string::npos) rec = st.size();
+            const std::string line = st.substr(pos, rec - pos); pos = rec + 1;
+            const size_t us = line.find('\x1f');
+            if (us == std::string::npos) continue;
+            App::FmSaved r;
+            r.mhz = atof(line.substr(0, us).c_str());
+            r.name = line.substr(us + 1);
+            if (r.mhz >= 87.5 && r.mhz <= 108.01) a.fmSaved.push_back(r);
+        }
+    }
     if (d.has("fmDeemph")) a.fmDeemph = d.getI("fmDeemph", 50) == 75 ? 75 : 50;
     if (d.has("fmChanKhz")) { const int k = (int)d.getI("fmChanKhz", 0); a.fmChanKhz = k > 0 ? std::min(300, std::max(100, k)) : 0; }
     if (d.has("compute")) a.computeMode = std::max(0, std::min(2, (int)d.getI("compute", a.computeMode)));   // indexes the CPU / GPU / Auto names
@@ -497,6 +512,17 @@ void savePrefs(const App& a) {
             st += std::string("|") + pi + "|" + (r.tp ? "1" : "0") + "|" + clean(r.rt) + "|" + clean(r.psText) + "\n";
         }
         if (!a.fmScan.running) d.setS("fmStations", st);   // not a half-finished scan
+    }
+    {   // the saved-stations library: mhz <US> name per record, records joined by <RS>. setS()'s clean() strips | and newlines, so those
+        // control bytes (unit / record separators) are used instead; they never occur in an RDS name or a typed one.
+        std::string st;
+        for (const auto& r : a.fmSaved) {
+            std::string name = r.name;
+            for (auto& c : name) if (c == '\x1e' || c == '\x1f' || c == '\n' || c == '\r') c = ' ';
+            char b[32]; snprintf(b, sizeof b, "%.1f", r.mhz);
+            st += b; st += '\x1f'; st += name; st += '\x1e';
+        }
+        d.setS("fmSaved", st);
     }
     d.setChannels(a.channels);
     d.setI("compute", a.computeMode);
