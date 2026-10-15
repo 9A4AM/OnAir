@@ -261,7 +261,14 @@ void guideTab(App& a) {
         { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("clock: %s%s", fmtLocal(now, "%a %d %b %H:%M").c_str(), a.ts.utcNow ? " (from the broadcast time signal)" : " (this computer's clock)"); ImGui::PopTextWrapPos(); }
         return;
     }
-    if (a.guideSid < 0 || !a.epg.count(a.guideSid)) { a.guideSid = a.engine.player().selected() >= 0 && a.epg.count(a.engine.player().selected()) ? a.engine.player().selected() : a.epg.begin()->first; }
+    const int playSid = a.engine.player().selected();
+    if (playSid >= 0 && playSid != a.guidePlaySid) {
+        a.guidePlaySid = playSid;
+        if (a.epg.count(playSid)) { a.guideSid = playSid; a.guideEvent = -1; }
+    } else if (a.guideSid < 0 || !a.epg.count(a.guideSid)) {
+        if (playSid >= 0 && a.epg.count(playSid)) a.guideSid = playSid;
+        else if (!a.epg.empty()) a.guideSid = a.epg.begin()->first;
+    }
     ImGui::BeginChild("gsv", ImVec2(260 * gUi, 0), ImGuiChildFlags_Borders);
     for (auto& sv : a.ts.services) {
         auto it = a.epg.find(sv.id);
