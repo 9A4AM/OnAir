@@ -10,17 +10,19 @@ streams it as H.264 video with Opus sound.
 
 ```sh
 cd packaging/docker
+echo "ONAIR_PASSWORD=<a password>" > .env      # the login of the page (user onair); compose will not start without it
 docker compose up -d --build
 ```
 
-Then open `https://<server>:3001`. The certificate is self-signed, so the browser warns once. Click into the page once: browsers keep
-the sound off until the page has been clicked. The sound button in the sidebar on the left turns it on and off.
+Then open `https://<server>:3001` and log in. The certificate is self-signed, so the browser warns once. Click into the page once:
+browsers keep the sound off until the page has been clicked. The sound button in the sidebar on the left turns it on and off.
 
 Without compose:
 
 ```sh
 docker build -t onair packaging/docker
-docker run -d --name onair -p 3001:3001 --device /dev/bus/usb -v onair-config:/config onair
+docker run -d --name onair -p 3001:3001 -e CUSTOM_USER=onair -e PASSWORD=<a password> \
+  --device /dev/bus/usb -v onair-config:/config onair
 ```
 
 Every release is also published ready-made, for x86-64 and arm64: use `ghcr.io/adswill/onair:latest` (or `:<version>`) in place of
@@ -59,7 +61,7 @@ Toolkit (`--gpus all`) as the base image describes; that path is not tested with
 |---|---|---|
 | `PUID`, `PGID` | 1000 | owner of the files in `/config` |
 | `TZ` | UTC | time zone |
-| `CUSTOM_USER`, `PASSWORD` | none | a login for the page. Set one when other computers can reach the port: the page is the whole desktop |
+| `CUSTOM_USER`, `PASSWORD` | none (`compose.yaml` requires one) | the login of the page. The page is the whole desktop, so keep a login whenever other computers can reach the port |
 | `LANG` | `en_US.UTF-8` | system language; any other locale is made at the start (OnAir's own language is chosen in the app) |
 | `MAX_RES` | `3840x2160` | the largest screen a browser can ask for. The virtual display reserves memory for it (4K: 33 MB; the base image's 15360x8640: 530 MB) |
 | `DRINODE`, `DRI_NODE` | none | graphics chip, see above |
@@ -74,8 +76,10 @@ what a bug report needs.
   (the Docker Engine inside the base, the compiler tool chain, `locales-all`, Noto CJK). It is flattened into one layer so that the
   removed files are really gone: about 1.7 GB instead of 2.9 GB. The base image's settings are therefore repeated in the
   `Dockerfile`; check them when the base changes.
-- The page is plain HTTP on port 3000 and HTTPS on 3001. Browsers decode the video only on HTTPS (or `localhost`), so put a reverse
-  proxy with HTTPS in front of 3000, or use 3001.
+- **HTTPS is required.** Browsers offer WebCodecs (the video and sound decoders the page uses) only on HTTPS or `localhost`; over plain
+  HTTP from another computer the page stops with "This application requires a secure connection (HTTPS)". Use 3001 (HTTPS, self-signed),
+  or a reverse proxy that serves HTTPS with your own certificate and passes on to 3000 (plain HTTP, WebSockets on). Publish 3000 only
+  to the proxy, for example `127.0.0.1:3000:3000`.
 - Selkies loads a stand-in `libudev` into the desktop session for its virtual gamepads. With it, libusb finds no USB devices, so
   the start script (`root/defaults/autostart`) starts OnAir without it.
 - Tested on x86-64 (Docker 27, Intel UHD 770, HackRF One). The arm64 image is built from the same file and the arm64 `.deb`, but

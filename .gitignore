@@ -34,3 +34,6 @@ CLAUDE.local.md
 __pycache__/
 build-*/
 logo-concepts/
+
+# the password of the Docker image's page (packaging/docker/compose.yaml)
+packaging/docker/.env

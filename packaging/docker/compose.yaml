@@ -1,4 +1,5 @@
-# OnAir in a browser (README.md here). In this folder: docker compose up -d --build, then open https://<this computer>:3001
+# OnAir in a browser (README.md here). In this folder: put ONAIR_PASSWORD=<a password> into a file named .env, then
+# docker compose up -d --build and open https://<this computer>:3001 (log in as onair).
 services:
   onair:
     build: .
@@ -9,12 +10,14 @@ services:
       PUID: "1000"              # the owner of the files OnAir writes into the config volume
       PGID: "1000"
       TZ: Etc/UTC               # the time zone the clocks and logs show
-      # CUSTOM_USER: onair      # a login for the page; set one whenever other computers can reach the port
-      # PASSWORD: change-me
+      # the login of the page, which is the whole desktop: compose stops with this message until .env sets a password
+      CUSTOM_USER: ${ONAIR_USER:-onair}
+      PASSWORD: ${ONAIR_PASSWORD:?set ONAIR_PASSWORD=<a password> in the file .env next to compose.yaml}
       # DRINODE: /dev/dri/renderD128    # Intel / AMD graphics: draw the GUI and encode the stream on the GPU (with the device below)
       # DRI_NODE: /dev/dri/renderD128
     ports:
-      - "3001:3001"             # HTTPS (self-signed certificate). 3000 is plain HTTP, for a reverse proxy that adds HTTPS
+      - "3001:3001"             # HTTPS with a self-signed certificate: browsers refuse the stream over plain HTTP
+      # - "127.0.0.1:3000:3000" # plain HTTP, only for a reverse proxy on this computer that serves it as HTTPS
     devices:
       - /dev/bus/usb:/dev/bus/usb   # the USB radios; restart the container after plugging one in
       # - /dev/dri/renderD128:/dev/dri/renderD128
