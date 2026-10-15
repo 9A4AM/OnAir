@@ -35,6 +35,20 @@ function ttlFor(kind) {
   return TTL_MS[kind] || 20 * 60e3;
 }
 
+/** Wall-clock ms of the position report (ingest time minus client age field). */
+function positionTimeMs(tMs, ageSec) {
+  const a = Number(ageSec);
+  if (Number.isFinite(a) && a > 0) return tMs - a * 1000;
+  return tMs;
+}
+
+function fresherPosition(incomingAge, prevRow, now) {
+  if (!prevRow) return true;
+  const inT = positionTimeMs(now, incomingAge);
+  const prevT = positionTimeMs(prevRow.t, prevRow.age);
+  return inT >= prevT - 500;
+}
+
 export class MapHub {
   constructor(ctx, env) {
     this.ctx = ctx;
@@ -115,7 +129,8 @@ export class MapHub {
     for (const raw of tracks) {
       const t = sanitize(raw, now);
       if (!t) continue;
-      const prev = this.ctx.storage.sql.exec("SELECT path, heading, speed FROM tracks WHERE id = ?", t.id).toArray()[0];
+      const prev = this.ctx.storage.sql.exec("SELECT t, age, path, heading, speed FROM tracks WHERE id = ?", t.id).toArray()[0];
+      if (!fresherPosition(t.age, prev, now)) continue;
       t.path = mergePath(prev && prev.path, t.path, t.lon, t.lat);
       if (t.heading == null && prev && prev.heading != null) t.heading = prev.heading;
       if (t.speed == null && prev && prev.speed != null) t.speed = prev.speed;
