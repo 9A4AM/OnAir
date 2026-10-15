@@ -1,0 +1,25 @@
+# OnAir in a browser (README.md here). In this folder: docker compose up -d --build, then open https://<this computer>:3001
+services:
+  onair:
+    build: .
+    image: onair
+    container_name: onair
+    restart: unless-stopped
+    environment:
+      PUID: "1000"              # the owner of the files OnAir writes into the config volume
+      PGID: "1000"
+      TZ: Etc/UTC               # the time zone the clocks and logs show
+      # CUSTOM_USER: onair      # a login for the page; set one whenever other computers can reach the port
+      # PASSWORD: change-me
+      # DRINODE: /dev/dri/renderD128    # Intel / AMD graphics: draw the GUI and encode the stream on the GPU (with the device below)
+      # DRI_NODE: /dev/dri/renderD128
+    ports:
+      - "3001:3001"             # HTTPS (self-signed certificate). 3000 is plain HTTP, for a reverse proxy that adds HTTPS
+    devices:
+      - /dev/bus/usb:/dev/bus/usb   # the USB radios; restart the container after plugging one in
+      # - /dev/dri/renderD128:/dev/dri/renderD128
+    volumes:
+      - onair-config:/config    # settings, recordings and onair.log
+
+volumes:
+  onair-config:
