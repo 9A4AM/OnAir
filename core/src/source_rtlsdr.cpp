@@ -31,6 +31,8 @@ struct RtlApi {
     int (DECT2_CALL* set_bias_tee)(rtlsdr_dev_t*, int) = nullptr;         // optional: the RTL-SDR Blog library and osmocom 0.6 and later
     int (DECT2_CALL* set_freq_correction)(rtlsdr_dev_t*, int) = nullptr;  // optional (every librtlsdr has it): whole ppm
     int (DECT2_CALL* set_offset_tuning)(rtlsdr_dev_t*, int) = nullptr;    // optional
+    int (DECT2_CALL* check_dongle_model)(rtlsdr_dev_t*, char*, char*) = nullptr;   // RTL-SDR Blog library only
+    bool blogLib = false;
     bool ok = false;
     DynLib lib;
     RtlApi() {
@@ -46,6 +48,8 @@ struct RtlApi {
             lib.opt(get_tuner_type, "rtlsdr_get_tuner_type"); lib.opt(set_direct_sampling, "rtlsdr_set_direct_sampling"); lib.opt(set_bias_tee, "rtlsdr_set_bias_tee");
             lib.opt(set_freq_correction, "rtlsdr_set_freq_correction"); lib.opt(set_offset_tuning, "rtlsdr_set_offset_tuning");
             lib.opt(read_sync, "rtlsdr_read_sync");
+            lib.opt(check_dongle_model, "rtlsdr_check_dongle_model");
+            blogLib = check_dongle_model != nullptr;
         }
     }
 };
@@ -70,13 +74,28 @@ std::string mhz(double hz) {
 // - the RTL-SDR Blog V3 ("RTLSDRBlog" / "Blog V3") has its HF input on the RTL2832U's Q branch: direct sampling below 24 MHz.
 // - any other dongle has no HF input unless it was modified (the user can pick the I or Q input in the radio settings)
 enum RtlModel { kGeneric, kBlogV3, kBlogV4 };
-RtlModel rtlModel(uint32_t index) {
-    char vendor[256] = {0}, product[256] = {0}, serial[256] = {0};
-    if (rtl().get_device_usb_strings(index, vendor, product, serial) != 0) return kGeneric;
-    const std::string v = trimmed(vendor, sizeof vendor), p = trimmed(product, sizeof product);
+RtlModel rtlModelFromStrings(const std::string& v, const std::string& p) {
     if ((v == "RTLSDRBlog" && (p == "Blog V4" || p == "Blog V4L")) || p.find("RTL-SDR Blog V4") != std::string::npos) return kBlogV4;
     if ((v == "RTLSDRBlog" && p == "Blog V3") || p.find("RTL-SDR Blog V3") != std::string::npos) return kBlogV3;
     return kGeneric;
+}
+RtlModel rtlModel(uint32_t index) {
+    char vendor[256] = {0}, product[256] = {0}, serial[256] = {0};
+    if (rtl().get_device_usb_strings(index, vendor, product, serial) != 0) return kGeneric;
+    return rtlModelFromStrings(trimmed(vendor, sizeof vendor), trimmed(product, sizeof product));
+}
+void refineRtlModel(RtlApi::rtlsdr_dev_t* dev, uint32_t usbIndex, int tuner, RtlModel& model) {
+    if (dev && rtl().check_dongle_model) {
+        char vendor[256] = {0}, product[256] = {0};
+        if (rtl().check_dongle_model(dev, vendor, product) == 0) {
+            const RtlModel m = rtlModelFromStrings(trimmed(vendor, sizeof vendor), trimmed(product, sizeof product));
+            if (m != kGeneric) model = m;
+        }
+    }
+    if (model == kGeneric && rtl().blogLib) {
+        if (tuner == kR828D) model = kBlogV4;   // R828D is the V4 tuner; HF uses the upconverter in the Blog library
+        else if (tuner == kR820T && rtlModel(usbIndex) == kBlogV4) model = kBlogV4;
+    }
 }
 
 // Auto direct sampling: the V3's Q-branch HF input below 24 MHz
@@ -148,8 +167,13 @@ protected:
             return false;
         }
         model_ = rtlModel(index);
-        v4_ = model_ == kBlogV4;
         tuner_ = rtl().get_tuner_type ? rtl().get_tuner_type(dev_) : kTunerUnknown;
+        refineRtlModel(dev_, index, tuner_, model_);
+        v4_ = model_ == kBlogV4;
+        fprintf(stderr, "RTL-SDR: %s librtlsdr, model %s, tuner %d, Blog HF upconverter in driver: %s\n",
+                rtl().lib.path.c_str(), v4_ ? "V4" : model_ == kBlogV3 ? "V3" : "generic", tuner_,
+                rtl().blogLib ? "yes" : "no");
+        fflush(stderr);
         tunerRange(tuner_, model_, lo_, hi_);
         ds_ = 0;
         bias_ = offset_ = false;
@@ -189,7 +213,13 @@ protected:
         int ds = 0;   // librtlsdr: 0 off, 1 I input, 2 Q input
         const bool canDirect = !v4_ && rtl().set_direct_sampling;
         if (mode == "i" || mode == "q") ds = canDirect && f < kDirectBelowHz ? (mode == "i" ? 1 : 2) : 0;
-        else if (mode != "off") ds = canDirect && f < kDirectBelowHz ? 2 : 0;
+        else if (mode != "off") {
+            // R828D / V4: never auto direct sampling (no HF on the Q branch; HF needs the Blog upconverter in set_center_freq).
+            if (v4_ || tuner_ == kR828D) ds = 0;
+            else ds = canDirect && f < kDirectBelowHz ? 2 : 0;
+        }
+        if (v4_ && !rtl().blogLib && f < kDirectBelowHz)
+            addNote(err, "this dongle is an RTL-SDR Blog V4: HF needs librtlsdr from rtl-sdr-blog (the stock osmocom library does not switch the upconverter). Install the Blog driver or use an OnAir build that bundles it");
         // nothing here refuses a frequency: the driver is asked as is. Outside what the dongle is specified for it gets a note.
         const bool r82 = tuner_ == kR820T || tuner_ == kR828D;
         const double specLo = ds ? 0.5e6 : v4_ ? lo_ : r82 ? (model_ == kBlogV3 && canDirect && mode != "off" ? 0.5e6 : kDirectBelowHz) : lo_;

@@ -25,7 +25,10 @@ def rpaths(path):
                 if m: r.append(m.group(1))
     return r
 
-SEARCH = ["/opt/homebrew/lib", "/usr/local/lib", "/opt/homebrew/opt"]
+SEARCH = []
+if os.environ.get("ONAIR_RTLSDR_FRAMEWORK"):
+    SEARCH.append(os.environ["ONAIR_RTLSDR_FRAMEWORK"])
+SEARCH += ["/opt/homebrew/lib", "/usr/local/lib", "/opt/homebrew/opt"]
 def resolve(dep, owner):
     d = os.path.dirname(owner)
     if dep.startswith("@loader_path/"): return os.path.normpath(os.path.join(d, dep[len("@loader_path/"):]))

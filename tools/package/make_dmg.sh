@@ -40,6 +40,9 @@ REAL=$(ls "$APP"/Contents/Frameworks/libcodec2.*.*.*.dylib | head -1)
 install_name_tool -id "@executable_path/../Frameworks/$(basename "$REAL")" "$REAL"
 cp third_party/codec2/COPYING "$APP/Contents/Resources/licenses/codec2/COPYING"
 cp third_party/codec2/README-OnAir.md "$APP/Contents/Resources/licenses/codec2/NOTICE.md"
+RTL_FW=$BUILD/rtlsdr-blog-framework
+bash tools/package/build_rtlsdr_blog_macos.sh "$RTL_FW"
+export ONAIR_RTLSDR_FRAMEWORK="$RTL_FW"
 python3 tools/package/bundle_macos.py "$APP" || { echo "Failed to bundle radio libraries"; exit 1; }
 python3 tools/package/check_macos_target.py "$APP"
 # the app is signed ad hoc (no developer certificate): macOS shows a one-time "unidentified developer" prompt on first launch
