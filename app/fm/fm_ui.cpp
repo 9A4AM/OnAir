@@ -5,7 +5,7 @@
 
 bool freqStepArrow(const char* id, ImGuiDir dir);
 
-static constexpr double kFmLow = 87.5, kFmHigh = 108.0;
+static constexpr double kFmLow = 87.0, kFmHigh = 108.0;
 
 // the dial steps and rounds to 0.1 MHz; the broadcast band is the slider's span only, a frequency outside it (typed, or stepped to) is kept
 static double fmRound(double mhz) { return std::round(std::max(0.0, mhz) * 10.0) / 10.0; }
@@ -489,7 +489,6 @@ void fmRadioTab(App& a) {
 // ------------------------------------------------------------------ band scanner
 // Phase 1 reads the live spectrum in 2 MHz steps and picks the 100 kHz channels that stand out; phase 2 tunes to each of them,
 // checks that a real FM carrier is there and waits for its RDS name.
-static constexpr int kSurveyHops = 11;
 // The text of a scrolling name from the 8-character windows the station sent, in order: a window that is the previous one moved on by
 // 1 - 7 characters adds only its new characters ("NOSTALGI", "OSTALGIA" -> "NOSTALGIA"), any other window is a new word. cyclic: the
 // windows are one round of the name, so where the last one runs on into the first, the start is not repeated
@@ -541,7 +540,26 @@ static std::vector<std::string> fmScrollCycle(const std::vector<std::string>& se
 
 // full RDS: the scan stays on each station until its name, radio text and PI are complete (up to 12 s), instead of leaving at the first name
 static bool fmScanFullRds() { return plat::prefs().getB("fmScanFullRds", false); }
-static double fmSurveyCentre(int hop) { return 88.5 + 2.0 * hop; }
+
+static void fmScanPrefsRange(double& lo, double& hi) {
+    lo = plat::prefs().getD("fmScanLoMhz", 87.0);
+    hi = plat::prefs().getD("fmScanHiMhz", 108.0);
+    lo = std::max(76.0, std::min(lo, 107.5));
+    hi = std::max(lo + 0.5, std::min(hi, 108.0));
+}
+
+static int fmSurveyHopCount(double lo, double hi) {
+    const double c0 = lo + 1.0, cLast = hi - 1.0;
+    if (cLast <= c0) return 1;
+    return (int)std::floor((cLast - c0) / 2.0) + 1;
+}
+
+static double fmSurveyCentre(double lo, int hop) { return lo + 1.0 + 2.0 * hop; }
+
+static void fmScanBeginRange(App::FmScan& s) {
+    fmScanPrefsRange(s.scanLoMhz, s.scanHiMhz);
+    s.surveyHops = fmSurveyHopCount(s.scanLoMhz, s.scanHiMhz);
+}
 
 // power of one 100 kHz channel (+-50 kHz) in a spectrum frame, dB; the radio's DC spike is skipped
 static double fmChannelDb(const SpectrumFrame& f, double fs, double offHz) {
@@ -563,7 +581,18 @@ static double fmChannelDb(const SpectrumFrame& f, double fs, double offHz) {
 void fmScanTab(App& a) {
     App::FmScan& s = a.fmScan;
     const bool run = a.engine.running();
-    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Surveys the FM band (87.5 - 108 MHz) for carriers, then listens to each one and reads its name. About two minutes."); ImGui::PopTextWrapPos(); }
+    double lo = 87.0, hi = 108.0;
+    fmScanPrefsRange(lo, hi);
+    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("Surveys an FM range for carriers, then listens to each one and reads its name. About two minutes for 87 - 108 MHz."); ImGui::PopTextWrapPos(); }
+    {
+        ImGui::BeginDisabled(s.running);
+        float flo = (float)lo, fhi = (float)hi;
+        if (ImGui::InputFloat("from MHz", &flo, 0.1f, 1.0f, "%.1f")) { lo = flo; plat::prefs().setD("fmScanLoMhz", lo); plat::prefs().flush(); }
+        ImGui::SameLine();
+        if (ImGui::InputFloat("to MHz", &fhi, 0.1f, 1.0f, "%.1f")) { hi = fhi; plat::prefs().setD("fmScanHiMhz", hi); plat::prefs().flush(); }
+        fmScanPrefsRange(lo, hi);
+        ImGui::EndDisabled();
+    }
     {
         bool full = fmScanFullRds();
         ImGui::BeginDisabled(s.running);
@@ -575,6 +604,7 @@ void fmScanTab(App& a) {
     if (!s.running) {
         ImGui::BeginDisabled(!run);
         if (iconButton(Ic::Scan, "Scan FM band", pal::remap(IM_COL32(32, 96, 140, 255)), pal::remap(IM_COL32(44, 124, 178, 255)))) {
+            fmScanBeginRange(s);
             s.running = true; s.phase = 0; s.idx = -1; s.t0 = 0; s.results.clear(); s.cand.clear(); s.savedFreq = a.freqMhz;
         }
         ImGui::EndDisabled();
@@ -584,8 +614,8 @@ void fmScanTab(App& a) {
         ImGui::SameLine(0, 12 * gUi);
         float frac;
         if (s.phase == 0) {
-            { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("surveying the band, step %d of %d", std::max(0, s.idx) + 1, kSurveyHops); ImGui::PopTextWrapPos(); }
-            frac = 0.2f * (float)std::max(0, s.idx) / kSurveyHops;
+            { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("surveying the band, step %d of %d", std::max(0, s.idx) + 1, s.surveyHops); ImGui::PopTextWrapPos(); }
+            frac = 0.2f * (float)std::max(0, s.idx) / std::max(1, s.surveyHops);
         } else {
             { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("checking %.1f MHz (%d of %d)", s.idx >= 0 && s.idx < (int)s.cand.size() ? s.cand[(size_t)s.idx] : 0.0, s.idx + 1, (int)s.cand.size()); ImGui::PopTextWrapPos(); }
             frac = 0.2f + 0.8f * (float)std::max(0, s.idx) / std::max<size_t>(1, s.cand.size());
@@ -657,25 +687,25 @@ void fmScanStep(App& a) {
     };
 
     if (s.phase == 0) {
-        if (s.idx < 0) { s.idx = 0; tuneTo(fmSurveyCentre(0)); return; }
+        if (s.idx < 0) { fmScanBeginRange(s); s.idx = 0; tuneTo(fmSurveyCentre(s.scanLoMhz, 0)); return; }
         if (now - s.t0 < 0.7 || a.lastSeq == s.seq0) return;
-        const double centre = fmSurveyCentre(s.idx), fs = a.engine.sampleRate();
+        const double centre = fmSurveyCentre(s.scanLoMhz, s.idx), fs = a.engine.sampleRate();
         double db[20];
         for (int j = 0; j < 20; j++) db[j] = fmChannelDb(a.spec, fs, (-1.0 + 0.1 * j) * 1e6);
         double sorted[20]; std::copy(db, db + 20, sorted); std::sort(sorted, sorted + 20);
         const double floorDb = sorted[4];
         for (int j = 0; j < 20; j++) {
             const double mhz = std::round((centre - 1.0 + 0.1 * j) * 10) / 10;
-            if (mhz < kFmLow - 0.01 || mhz > kFmHigh + 0.01) continue;
+            if (mhz < s.scanLoMhz - 0.01 || mhz > s.scanHiMhz + 0.01) continue;
             const bool peak = (j == 0 || db[j] >= db[j - 1]) && (j == 19 || db[j] >= db[j + 1]);
             if (db[j] - floorDb > 9 && peak) s.cand.push_back(mhz);
         }
-        if (++s.idx >= kSurveyHops) {
+        if (++s.idx >= s.surveyHops) {
             std::sort(s.cand.begin(), s.cand.end());
             s.phase = 1; s.idx = 0;
             if (s.cand.empty()) { finish(); return; }
             tuneTo(s.cand[0]);
-        } else tuneTo(fmSurveyCentre(s.idx));
+        } else tuneTo(fmSurveyCentre(s.scanLoMhz, s.idx));
         return;
     }
 
