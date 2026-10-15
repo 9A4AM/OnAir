@@ -23,6 +23,9 @@ docker build -t onair packaging/docker
 docker run -d --name onair -p 3001:3001 --device /dev/bus/usb -v onair-config:/config onair
 ```
 
+Every release is also published ready-made, for x86-64 and arm64: use `ghcr.io/adswill/onair:latest` (or `:<version>`) in place of
+`onair` above and skip the build.
+
 The image installs the release `.deb` of the version named in the `Dockerfile` (`ONAIR_VERSION`). For another release:
 `docker build --build-arg ONAIR_VERSION=0.2.6 -t onair packaging/docker`. The in-app update check is off (`ONAIR_NO_UPDATE_CHECK`):
 an update installed inside a container is lost when the container is recreated, so build the new version instead.
