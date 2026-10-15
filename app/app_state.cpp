@@ -415,6 +415,9 @@ void loadPrefs(App& a) {
             if (r.found) a.fmScan.results.push_back(r);
         }
     }
+    if (d.has("fmSaved")) {   // the saved-stations library, separate from the band-scan list in fmStations
+        for (const auto& r : fmSavedDecode(d.getS("fmSaved", ""))) a.fmSaved.push_back(r);
+    }
     if (d.has("fmDeemph")) a.fmDeemph = d.getI("fmDeemph", 50) == 75 ? 75 : 50;
     if (d.has("fmChanKhz")) { const int k = (int)d.getI("fmChanKhz", 0); a.fmChanKhz = k > 0 ? std::min(300, std::max(100, k)) : 0; }
     if (d.has("compute")) a.computeMode = std::max(0, std::min(2, (int)d.getI("compute", a.computeMode)));   // indexes the CPU / GPU / Auto names
@@ -498,6 +501,7 @@ void savePrefs(const App& a) {
         }
         if (!a.fmScan.running) d.setS("fmStations", st);   // not a half-finished scan
     }
+    d.setS("fmSaved", fmSavedEncode(a.fmSaved));   // the saved-stations library, not the scan results
     d.setChannels(a.channels);
     d.setI("compute", a.computeMode);
     d.setI("standard", a.stdMode);
