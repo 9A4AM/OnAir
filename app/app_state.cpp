@@ -420,6 +420,13 @@ void loadPrefs(App& a) {
     if (d.has("reduceCpuHidden")) a.reduceCpuHidden = d.getI("reduceCpuHidden", 1) != 0;
     if (d.has("discordOn")) a.discordOn = d.getI("discordOn", 0) != 0;
     if (d.has("discordFreq")) a.discordFreq = d.getI("discordFreq", 1) != 0;
+    if (a.rxId == 1) {
+        a.mapSend = d.getI("mapSend", 0) != 0;
+        a.mapConsent = d.getI("mapConsent", 0) != 0;
+        a.mapStationId = d.getS("mapStationId", "");
+        a.mapServer = d.getS("mapServer", "");
+        if (a.mapSend && !a.mapConsent) a.mapSend = false;   // never on without consent
+    }
     if (d.has("lightUi")) a.lightUi = d.getI("lightUi", 0) != 0;
     if (d.has("highContrast")) a.highContrast = d.getI("highContrast", 0) != 0;
     a.uiLang = d.getS("uiLang", "");
@@ -505,6 +512,10 @@ void savePrefs(const App& a) {
     d.setI("reduceCpuHidden", a.reduceCpuHidden ? 1 : 0);
     d.setI("discordOn", a.discordOn ? 1 : 0);
     d.setI("discordFreq", a.discordFreq ? 1 : 0);
+    d.setI("mapSend", a.mapSend ? 1 : 0);
+    d.setI("mapConsent", a.mapConsent ? 1 : 0);
+    d.setS("mapStationId", a.mapStationId);
+    d.setS("mapServer", a.mapServer);
     d.setI("dtmbBw", a.dtmbBwMhz);
     d.setI("isdbtBw", a.isdbtBwMhz);
     d.setI("atvFm", a.atvFm ? 1 : 0);

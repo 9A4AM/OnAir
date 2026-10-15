@@ -230,12 +230,15 @@ void receiversFrame(App& first, ImVec2 disp) {
         if (!play && !r->rxForcedMute) { r->rxSavedMuted = r->muted; r->muted = true; r->rxForcedMute = true; }
         else if (play && r->rxForcedMute) { r->muted = r->rxSavedMuted; r->rxForcedMute = false; }
         drawUI(*r, d, r->rxId == gSel);
+        aeroToolsTick(*r);
     }
     strip(first, disp, h);
     drawWarning(first);
+    mapSendTick(first);
 }
 
 void receiversShutdown(App& first) {
+    mapSendShutdown();
     for (int id = 2; id <= kMaxReceivers; id++) if (App* r = gExtra[id - 2].get()) {
         { PrefScope ps(id); savePrefs(*r); }
         r->engine.stop();

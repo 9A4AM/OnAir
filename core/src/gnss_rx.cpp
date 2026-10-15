@@ -1505,6 +1505,81 @@ struct GnssReceiver::Impl {
         int na = 0;
         for (int p = 1; p <= 32; p++) if (sat[p].alm.valid) na++;
         t.almanacGps = na;
+        auto pushSat = [&](int sys, int prn, int fcn, const double pos[3], bool fromEph, int health, bool used) {
+            if (t.sats.size() >= 96) return;
+            double lat, lon, h;
+            ecefToLla(pos, &lat, &lon, &h);
+            if (!std::isfinite(lat) || !std::isfinite(lon) || h < 100e3) return;
+            GnssSatPos s;
+            s.sys = sys; s.prn = prn; s.fcn = fcn;
+            s.lat = lat; s.lon = lon; s.altKm = h / 1e3;
+            s.fromEphemeris = fromEph; s.health = health; s.used = used;
+            for (auto& tr : trackers) {
+                const bool match = sys == GnssGlonass ? (tr->sys == GnssGlonass && tr->fcn == fcn)
+                                                      : (tr->sys == sys && tr->prn == prn);
+                if (!match) continue;
+                s.tracked = tr->carrierLocked();
+                s.cn0 = s.tracked ? tr->cn0() : 0.f;
+            }
+            t.sats.push_back(s);
+        };
+        double gpsTowNow = -1;
+        if (fix.valid && fix.gpsWeek >= 0) gpsTowNow = fix.gpsTow;
+        else {
+            for (int p = 1; p <= 32 && gpsTowNow < 0; p++) if (sat[p].hasEph && sat[p].towLast >= 0) gpsTowNow = sat[p].towLast;
+            for (int p = 193; p <= 202 && gpsTowNow < 0; p++) if (sat[p].hasEph && sat[p].towLast >= 0) gpsTowNow = sat[p].towLast;
+        }
+        if (gpsTowNow >= 0) {
+            for (int p = 1; p <= 32; p++) {
+                double pos[3];
+                bool fromEph = false;
+                if (sat[p].hasEph) { gpsEphemerisState(sat[p].eph, gpsTowNow, pos, nullptr); fromEph = true; }
+                else if (sat[p].alm.valid) gpsAlmanacPos(sat[p].alm, gpsTowNow, pos);
+                else continue;
+                const int health = fromEph ? (sat[p].eph.health ? 1 : 0) : (sat[p].alm.health ? 1 : 0);
+                pushSat(GnssGps, p, 0, pos, fromEph, health, sol[p].used);
+            }
+            for (int p = 193; p <= 202; p++) {
+                if (!sat[p].hasEph) continue;
+                double pos[3];
+                gpsEphemerisState(sat[p].eph, gpsTowNow, pos, nullptr);
+                pushSat(GnssQzss, p, 0, pos, true, sat[p].eph.health ? 1 : 0, sol[p].used);
+            }
+        }
+        double galTow = gpsTowNow >= 0 ? gpsTowNow + ggtoAt(gpsTowNow) : -1;
+        if (galTow < 0) for (int p = 1; p < kGalPrns; p++) if (gsat[p].hasEph && gsat[p].towLast >= 0) { galTow = gsat[p].towLast; break; }
+        if (galTow >= 0) {
+            for (int p = 1; p < kGalPrns; p++) {
+                if (!gsat[p].hasEph) continue;
+                double pos[3];
+                gpsEphemerisState(gsat[p].eph, galTow, pos, nullptr);
+                pushSat(GnssGalileo, p, 0, pos, true, gsat[p].eph.health ? 1 : 0, gsol[p].used);
+            }
+        }
+        double bdtTow = -1;
+        if (gpsTowNow >= 0) {
+            bdtTow = gpsTowNow - kBdtGpsSeconds + bdtAt(gpsTowNow - kBdtGpsSeconds);
+            if (bdtTow < 0) bdtTow += 604800.0;
+        } else {
+            for (int p = 1; p <= kBdsMaxPrn; p++) if (bsat[p].hasEph && bsat[p].towLast >= 0) { bdtTow = bsat[p].towLast; break; }
+        }
+        if (bdtTow >= 0) {
+            for (int p = 1; p <= kBdsMaxPrn; p++) {
+                if (!bsat[p].hasEph) continue;
+                double pos[3];
+                gpsEphemerisState(bsat[p].eph, bdtTow, pos, nullptr);
+                pushSat(GnssBeidou, p, 0, pos, true, bsat[p].eph.health ? 1 : 0, bsol[p].used);
+            }
+        }
+        const double gloTod = gpsTowNow >= 0 ? gpsToGloTod(gpsTowNow) : -1;
+        for (int i = 0; i < kGloSlots; i++) {
+            if (!gloSat[i].hasEph) continue;
+            double tod = gloTod;
+            if (tod < 0) tod = gloEph[i].tb;
+            double pos[3];
+            gloEphemerisState(gloEph[i], tod, pos, nullptr, nullptr, 60.0);
+            pushSat(GnssGlonass, gloEph[i].n, i + kGloMinK, pos, true, gloEph[i].healthy() ? 0 : 1, glsol[i].used);
+        }
         // the sky: satellites above the horizon by the ephemeris or the almanac, from the fix
         if (fix.valid) {
             for (int p = 1; p <= 32 && t.sky.size() < 64; p++) {

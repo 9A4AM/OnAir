@@ -15,7 +15,7 @@ using namespace adsb;
 static const size_t kMaxRecords = 2000;     // bound on the table, whatever the band carries
 static const size_t kMaxListed = 128;       // aircraft in one telemetry report
 static const size_t kMaxFrames = 64;
-static const size_t kMaxTrack = 30;
+static const size_t kMaxTrack = 80;   // a few minutes of 5 s samples: enough of a trail to read the path on the map
 static const double kMaxSpeedKt = 1800;     // faster than this between two positions is a jump, not a flight
 static const double kReplyLevelDb = 25.0;   // an address / parity reply is refused when its level differs from the aircraft's mean level by more than this
 static const int kReplyAltFt = 5000;        // ... or its altitude from the last ADS-B altitude (up to 30 s old) by more than this
@@ -272,7 +272,8 @@ void AdsbTracker::airbornePosition(Rec& r, const Msg& m, double now) {
     if (r.cpr[1 - p].valid && std::fabs(now - r.cpr[1 - p].t) <= 10.0 &&
         cprGlobalAirborne(r.cpr[0].lat, r.cpr[0].lon, r.cpr[1].lat, r.cpr[1].lon, p == 1, lat, lon)) kind = 2;
     else if (a.hasPos && now - r.lastPos <= 30.0 && cprLocalAirborne(m.cprLat, m.cprLon, p == 1, a.lat, a.lon, lat, lon)) kind = 3;
-    else if (!a.hasPos && refValid_ && cprLocalAirborne(m.cprLat, m.cprLon, p == 1, refLat_, refLon_, lat, lon)) kind = 1;
+    else if (!a.hasPos && refValid_ && cprLocalAirborne(m.cprLat, m.cprLon, p == 1, refLat_, refLon_, lat, lon)
+             && distanceNm(refLat_, refLon_, lat, lon) <= 180.0) kind = 1;
     if (!kind) return;
     // a position that jumps farther than an aircraft can fly is dropped; the third one in a row is believed (the first was the wrong one)
     if (a.hasPos && a.posKind >= 2 && now - r.lastPos < 60.0) {
@@ -454,6 +455,9 @@ void AdsbTracker::snapshot(AdsbTelemetry& t, double now) const {
         AdsbAircraft a = r->a;
         a.ageSec = (float)std::max(0.0, now - r->lastSeen);
         a.posAgeSec = a.hasPos ? (float)std::max(0.0, now - r->lastPos) : 0.f;
+        a.cprHave = 0;
+        if (r->cpr[0].valid && now - r->cpr[0].t <= 15.0) a.cprHave |= 1;
+        if (r->cpr[1].valid && now - r->cpr[1].t <= 15.0) a.cprHave |= 2;
         a.emergency = r->emergencyTc ? r->emergencyTc : r->emergencySq;
         if (now - r->tWind > 300.0) a.hasWindDer = false;      // weather goes stale after five minutes, an advisory after one
         if (now - r->tWindRep > 300.0) a.hasWindRep = false;

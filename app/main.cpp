@@ -266,10 +266,12 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
         const char* langName = L[0].name;
         for (int i = 0; i < nl; i++) if (!strcmp(i18n::current(), L[i].code)) langName = L[i].name;
         const float pad = ImGui::GetStyle().FramePadding.x * 2, sp = ImGui::GetStyle().ItemSpacing.x;
-        const float w = ImGui::CalcTextSize(langName).x + ImGui::CalcTextSize(tr("New interface")).x + ImGui::CalcTextSize(tr("Tour")).x + 3 * pad + 2 * sp;
+        const float w = ImGui::CalcTextSize(langName).x + ImGui::CalcTextSize(tr("Server")).x + ImGui::CalcTextSize(tr("New interface")).x + ImGui::CalcTextSize(tr("Tour")).x + 4 * pad + 3 * sp;
         ImGui::SameLine(std::max(ImGui::GetCursorPosX(), disp.x - 12 * gUi - w));
     }
     languageButton(a);
+    ImGui::SameLine();
+    mapSendButton(a);
     ImGui::SameLine();
     if (ImGui::SmallButton(tr("New interface"))) { a.newUi = true; savePrefs(a); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Try the new interface. You can switch back at any time."));
@@ -762,6 +764,7 @@ int main(int argc, char** argv) {
             }
             ImGui::NewFrame();
             {   // text size: Ctrl +, Ctrl - and Ctrl 0 (Cmd on a Mac), in either interface
+                handleFullscreenHotkeys();   // F11 / Alt+Enter: the whole window, either interface (not while typing)
                 ImGuiIO& kio = ImGui::GetIO();
                 if ((kio.KeyCtrl || kio.KeySuper) && !kio.WantTextInput) {
                     float t = app.uiTextScale;

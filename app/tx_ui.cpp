@@ -57,8 +57,10 @@ struct TxUi {
     SynthConfig synth;                       // the mode's own signal options (the same fields as the receiver's built-in test signal)
     int bwIdx = 0;                           // DVB-T2 / DVB-T channel width: 8, 7, 6, 5 MHz
     double freqMhz = 0;                      // typed by the user, any value; pre-filled from the receiver when the mode is chosen
+    double offsetMhz = 0;                    // added only to the frequency sent to the radio; the typed frequency stays freqMhz
     float gainDb = 0;
     bool gainSet = false, ampOn = false, loop = true;
+    int txCh = 0;                            // 0 = TX1. Shown when the radio has, or may have, more than one output
     int onceSeconds = 10;
     bool view = false;                       // TX view (never saved)
     bool claimed = false, askNotice = false;
@@ -156,6 +158,7 @@ void loadPayloadPrefs(TxUi& s) {
     snprintf(s.callsign, sizeof s.callsign, "%s", p.getS("tx.callsign", "").c_str());
     snprintf(s.grid, sizeof s.grid, "%s", p.getS("tx.grid", "").c_str());
     snprintf(s.text, sizeof s.text, "%s", p.getS("tx.text", "").c_str());
+    s.offsetMhz = p.getD("tx.offsetMhz", 0);
 }
 
 void saveStr(const char* key, const char* v) {
@@ -170,8 +173,10 @@ TxRequest makeReq(const TxUi& s, const TxModeSpec& mode, bool carrier) {
     r.loop = s.loop;
     r.onceSeconds = s.onceSeconds;
     r.tune.centerHz = s.freqMhz * 1e6;
+    r.tune.offsetHz = s.offsetMhz * 1e6;
     r.tune.gainDb = s.gainDb;
     r.tune.ampOn = s.ampOn;
+    r.tune.channel = s.txCh < 0 ? 0 : s.txCh;
     r.callsign = s.callsign;
     r.grid = s.grid;
     r.text = s.text[0] ? s.text : s.rdsRt;
@@ -781,6 +786,7 @@ bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, b
     s.claimed = true;
     sink = makeTxSink(*radio);
     if (!sink) { s.error = tr("This radio has no transmit driver in OnAir."); release(s); return false; }
+    mapPauseForTransmit(a);   // before the radio is keyed, so this frame cannot post what the receiver hears from it
     if (s.session.start(std::move(sink), req, TxRateLimits{radio->txMinRateHz, radio->txMaxRateHz}, err)) {
         s.radioName = radio->name; s.modeName = mode->name; s.freqSent = req.tune.centerHz;
         s.fileNote = s.session.stats().fileNote;
@@ -789,7 +795,7 @@ bool startTx(App& a, TxUi& s, const DeviceInfo* radio, const TxModeSpec* mode, b
         return true;
     }
     s.error = err;
-    if (!s.session.running()) release(s);
+    if (!s.session.running()) { release(s); mapTransmitAbort(a); }
     return false;
 }
 
@@ -815,6 +821,7 @@ void txTick(App&) {
         s.session.stop();
         release(s);
         s.radioName.clear();
+        mapTransmitEnded();
     }
     if (!s.session.running()) return;
     char b[220];
@@ -907,8 +914,17 @@ void txBar(App& a) {
     const std::vector<int> radios = txRadios(a);
 
     ImGui::BeginDisabled(running);
+    loadPayloadPrefs(s);
     ImGui::SetNextItemWidth(150 * gUi);
     ImGui::InputDouble(tr("Frequency (MHz)"), &s.freqMhz, 0.0, 0.0, "%.6f");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(140 * gUi);
+    if (ImGui::InputDouble(tr("Offset (MHz)"), &s.offsetMhz, 0.0, 0.0, "%.6f")) plat::basePrefs().setD("tx.offsetMhz", s.offsetMhz);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("This is added to the frequency sent to the radio, for a radio that radiates off frequency."));
+    if (s.offsetMhz != 0) {
+        ImGui::SameLine();
+        ImGui::Text(tr("radio is told %.6f MHz"), s.freqMhz + s.offsetMhz);
+    }
     ImGui::SameLine();
     ImGui::SetNextItemWidth(240 * gUi);
     if (ImGui::BeginCombo(tr("Transmit radio"), radio ? radio->name.c_str() : tr("Choose a radio to transmit with."))) {
@@ -932,6 +948,29 @@ void txBar(App& a) {
         if (hasRange) ImGui::SliderFloat(tr("TX gain (dB)"), &s.gainDb, (float)radio->txGainMinDb, (float)radio->txGainMaxDb, "%.1f dB");
         else ImGui::InputFloat(tr("TX gain (dB)"), &s.gainDb, 0, 0, "%.1f");
         if (radio->kind == DeviceInfo::HackRF) { ImGui::SameLine(); ImGui::Checkbox(tr("+14 dB amplifier"), &s.ampOn); }
+        // txChannels 0: not opened yet (LimeSDR-USB and bladeRF 2.0 have two, a USRP may have four). 1: no choice.
+        int nOut = radio->txChannels;
+        if (nOut <= 0) nOut = radio->board == "uhd" ? 4 : 2;
+        if (!running) {
+            if (radio->txChannels == 1) s.txCh = 0;
+            else if (s.txCh < 0 || s.txCh >= nOut) s.txCh = 0;
+        }
+        if (radio->txChannels != 1) {
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(80 * gUi);
+            char cur[16];
+            snprintf(cur, sizeof cur, "TX%d", s.txCh + 1);
+            if (ImGui::BeginCombo(tr("TX channel"), cur)) {
+                for (int c = 0; c < nOut; c++) {
+                    char lab[32];
+                    snprintf(lab, sizeof lab, "TX%d", c + 1);
+                    if (ImGui::Selectable(lab, s.txCh == c)) s.txCh = c;
+                }
+                ImGui::EndCombo();
+            }
+            if (radio->txChannels <= 0 && ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", tr("The exact number of outputs is known after this radio has transmitted once. An output it does not have is refused."));
+        }
     }
     ImGui::SameLine();
     ImGui::Checkbox(tr("Repeat until stopped"), &s.loop);

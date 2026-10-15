@@ -402,7 +402,23 @@ void receiverGlance(App& a, float w, float h) {
             kv("SNR", "%.1f dB", rx.dataSnrDb);
             kv("carrier offset", "%+.0f Hz", rx.cfoHz);
         }
-        { const SampleLoss l = a.engine.sampleLoss(); kv("dropped", "%s", lossText(l).c_str()); lossTooltip(l); kv("receiver load", "%.0f%%", l.loadPct); }
+        {
+            const SampleLoss l = a.engine.sampleLoss();
+            ImGui::TextDisabled("dropped"); kvColumn(112 * gUi);
+            ImGui::PushFont(a.mono, 0); ImGui::TextColored(lossColour(l), "%s", lossText(l).c_str()); ImGui::PopFont();
+            lossTooltip(l);
+            if (l.live) {
+                ImGui::TextDisabled("arriving"); kvColumn(112 * gUi);
+                ImGui::PushFont(a.mono, 0);
+                if (l.deliveredPct < 0) ImGui::TextUnformatted("-");
+                else if (l.rateLow) ImGui::TextColored(pal::badRed(), "%.1f%%", l.deliveredPct);
+                else ImGui::Text("%.1f%%", l.deliveredPct);
+                ImGui::PopFont();
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Samples the radio handed over, as a percent of the rate it was set to. Warns below 97%. Not the receiver load.");
+            }
+            kv("receiver load", "%.0f%%", l.loadPct);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Processing time of a block versus its duration. High load is not the same as lost samples.");
+        }
     }
     ImGui::EndChild();
 }

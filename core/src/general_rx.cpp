@@ -1,5 +1,5 @@
 // General receiver (see general_rx.h): one channel of the band mixed down, filtered, demodulated (NFM, WFM, AM, USB, LSB, CW),
-// squelched against the noise beside it and played; optionally recorded to WAV.
+// squelched and played; optionally recorded to WAV, one file per transmission.
 #include "dect2/general_rx.h"
 #include "dect2/flac_enc.h"
 #include "dect2/mp3_enc.h"
@@ -8,14 +8,17 @@
 #include "dect2/exact_resampler.h"
 #include "dect2/fftutil.h"
 #include "dect2/qo100_dsp.h"
+#include "dect2/timecompat.h"
 #include "hfdig_usb.h"
 #include <algorithm>
 #include <cerrno>
 #include <atomic>
 #include <cmath>
 #include <complex>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -27,7 +30,7 @@ namespace {
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kOutLevel = 0.5;          // full deviation / full AM depth / an SSB tone under the AGC: this peak
 constexpr double kBlockSec = 0.01;         // squelch decisions
-constexpr double kHangSec = 0.15;
+constexpr double kHangSec = 0.15;      // the mute: long enough that a click does not get through. The file hang is separate (setTransmissionGate).
 constexpr int kNoiseN = 512;               // noise spectrum of the decimated stream
 constexpr int kNoiseAvg = 8;
 constexpr double kMedianToMean = 0.959;    // median / mean of an average of 8 exponential bins (chi-square, 16 degrees)
@@ -103,6 +106,45 @@ struct Biquad {
         a1 = -2 * c / a0; a2 = (1 - al) / a0; b0 /= a0; b1 /= a0; b2 /= a0;
     }
     float run(float x) { if (!on) return x; const double y = b0 * x + z1; z1 = b1 * x - a1 * y + z2; z2 = b2 * x - a2 * y; return (float)y; }
+};
+
+// The speaker and the transmission file each have their own filters: the file keeps the signal while the squelch has muted the speaker.
+struct AudioFilt {
+    float curHp = -1, curLp = -1, curNotch = -1;
+    Biquad hp, lp, notch;
+    void reset() { hp.z1 = hp.z2 = lp.z1 = lp.z2 = notch.z1 = notch.z2 = 0; }
+    void apply(std::vector<float>& a, float hpHz, float lpHz, float ntHz) {
+        if (hpHz != curHp) { curHp = hpHz; hp.set(0, hpHz, 0.707); }
+        if (lpHz != curLp) { curLp = lpHz; lp.set(1, lpHz, 0.707); }
+        if (ntHz != curNotch) { curNotch = ntHz; notch.set(2, ntHz, 12.0); }
+        if (!hp.on && !lp.on && !notch.on) return;
+        for (float& v : a) v = notch.run(lp.run(hp.run(v)));
+    }
+};
+
+// The last few seconds of audio or channel IQ, so a file can start before the squelch opened.
+template <class T>
+struct Delay {
+    std::vector<T> b;
+    size_t wr = 0, filled = 0;
+    void assign(size_t n) { b.assign(n, T{}); wr = 0; filled = 0; }
+    void clear() { wr = 0; filled = 0; if (!b.empty()) std::fill(b.begin(), b.end(), T{}); }
+    void push(const T* x, size_t n) {
+        if (b.empty() || !x || n == 0) return;
+        for (size_t i = 0; i < n; i++) {
+            b[wr] = x[i];
+            if (++wr == b.size()) wr = 0;
+            if (filled < b.size()) filled++;
+        }
+    }
+    void copyTail(size_t n, std::vector<T>& dst) const {
+        if (b.empty() || filled == 0 || n == 0) return;
+        if (n > filled) n = filled;
+        const size_t start = (wr + b.size() - n) % b.size();
+        const size_t first = std::min(n, b.size() - start);
+        dst.insert(dst.end(), b.begin() + (std::ptrdiff_t)start, b.begin() + (std::ptrdiff_t)(start + first));
+        if (first < n) dst.insert(dst.end(), b.begin(), b.begin() + (std::ptrdiff_t)(n - first));
+    }
 };
 
 } // namespace
@@ -189,7 +231,8 @@ struct GeneralReceiver::Impl {
     double wsum2 = 1;
     std::vector<double> acc;
     int accN = 0;
-    double noisePsd = -1;      // per Hz; < 0 not measured yet
+    double noisePsd = -1;      // per Hz, beside the channel; < 0 not measured yet
+    double noisePsdIn = -1;    // per Hz, the median bin inside the voice passband (USB / LSB)
     bool noiseImpossible = false;
     // demodulators
     cf32 prev{0, 0};
@@ -209,22 +252,16 @@ struct GeneralReceiver::Impl {
     uint64_t blkOpen = 0, blkShut = 0;
     double audPow = 0; uint64_t audN = 0;
     // sound
-    std::vector<float> aud, pcm;
+    std::vector<float> aud, dryAud, pcm;
+    std::vector<cf32> iqBlk;             // channel samples of this feed, when a transmission file wants them
     std::unique_ptr<AudioOut> out;
     // WAV
     std::mutex wavMu;
     FILE* wav = nullptr;
-    // audio filters: high-pass, low-pass and a notch on the demodulated audio (before the sound and the recordings)
-    std::atomic<float> afHp{0}, afLp{0}, afNotch{0}; float curHp = -1, curLp = -1, curNotch = -1;
-    Biquad bqHp, bqLp, bqNotch;
-    void applyAudioFilters(std::vector<float>& a) {
-        const float hp = afHp, lp = afLp, nt = afNotch;
-        if (hp != curHp) { curHp = hp; bqHp.set(0, hp, 0.707); }
-        if (lp != curLp) { curLp = lp; bqLp.set(1, lp, 0.707); }
-        if (nt != curNotch) { curNotch = nt; bqNotch.set(2, nt, 12.0); }
-        if (!bqHp.on && !bqLp.on && !bqNotch.on) return;
-        for (float& v : a) v = bqNotch.run(bqLp.run(bqHp.run(v)));
-    }
+    FILE* iqFile = nullptr;
+    // audio filters: high-pass, low-pass and a notch. The speaker hears the squelched audio; the file hears the signal.
+    std::atomic<float> afHp{0}, afLp{0}, afNotch{0};
+    AudioFilt spk, dry;
     FlacEnc flac; bool flacOn = false;   // the open file is FLAC, not WAV
     Mp3Enc mp3; bool mp3On = false; bool recMp3 = false;   // MP3 through LAME when it is installed
     bool recFlac = false; std::vector<std::string> recTags;   // format and tags of the per-transmission files
@@ -239,8 +276,17 @@ struct GeneralReceiver::Impl {
     uint32_t wavFrames = 0;
     std::string wavPath, wavErr;
     std::vector<int16_t> wbuf;
-    // per-transmission recording (wavMu held for all of these)
+    // per-transmission recording (wavMu held for the plain fields; the atomics are read from the sample loop)
     bool txOn = false; std::string txDir, txPrefix; double txMinSec = 0.5; int txN = 0, txKept = 0; bool txFile = false;
+    std::atomic<double> txPreRoll{0}, txHang{0}, listenHz{0};
+    std::atomic<bool> txIq{false}, txCsv{false}, wantDry{false}, wantIq{false};
+    bool iqThis = false;                // this file has a channel-IQ sibling
+    std::string iqPath, txIso;
+    double txHz = 0, txOpenSec = 0, txClosedFor = 0;
+    int txDemod = 0;
+    uint64_t iqSamples = 0;
+    Delay<float> preAud;
+    Delay<cf32> preIq;
     // telemetry
     GeneralTelemetry pub;
     double pubAcc = 0;
@@ -283,17 +329,18 @@ struct GeneralReceiver::Impl {
         }
         hist.assign(2 * (size_t)T, cf32(0, 0));
         hpos = 0;
-        acc.assign(kNoiseN, 0.0); accN = 0; fbuf.clear(); noisePsd = -1;   // the bins beside the channel moved
+        acc.assign(kNoiseN, 0.0); accN = 0; fbuf.clear(); noisePsd = -1; noisePsdIn = -1;   // the bins beside the channel moved
     }
 
     void clearState() {
         nco.reset(); dec.reset(); rs.reset();
         std::fill(hist.begin(), hist.end(), cf32(0, 0)); hpos = 0;
-        acc.assign(kNoiseN, 0.0); accN = 0; fbuf.clear(); noisePsd = -1;
+        acc.assign(kNoiseN, 0.0); accN = 0; fbuf.clear(); noisePsd = -1; noisePsdIn = -1;
         prev = cf32(0, 0); car = 0; env = 0; carInit = false; bfoPh = 0;
-        dcX = dcY = deY = 0; audLp.reset();
+        dcX = dcY = deY = 0; audLp.reset(); dry.reset();
         blkPow = 0; blkN = 0; lvl = -1; open = false; hang = 0; ramp = 0;
         fmSum = 0; fmN = 0; cfo = 0;
+        preAud.clear(); preIq.clear();
         if (out) out->flush();
     }
 
@@ -307,20 +354,31 @@ struct GeneralReceiver::Impl {
             for (int k = 0; k < kNoiseN; k++) acc[(size_t)k] += std::norm(fbuf[(size_t)k]);
             fbuf.clear();
             if (++accN < kNoiseAvg) continue;
-            // the bins inside +-0.4 of the rate, away from the channel filter (and a guard either side)
+            // Beside the channel (NFM, AM, CW) and, separately, the bins inside the passband (USB / LSB: speech lifts a few of them,
+            // the median stays near the noise). Both inside +-0.4 of the rate.
             const double bin = decRate / kNoiseN, guard = std::max(2 * bin, 0.15 * (fHi - fLo));
-            std::vector<double> v;
+            std::vector<double> v, inb;
             for (int k = 0; k < kNoiseN; k++) {
                 const double f = (k < kNoiseN / 2 ? k : k - kNoiseN) * bin;
-                if (std::fabs(f) > 0.4 * decRate || (f > fLo - guard && f < fHi + guard)) continue;
-                v.push_back(acc[(size_t)k] / accN);
+                if (std::fabs(f) > 0.4 * decRate) continue;
+                const double p = acc[(size_t)k] / accN;
+                if (f > fLo && f < fHi) inb.push_back(p);
+                else if (!(f > fLo - guard && f < fHi + guard)) v.push_back(p);
             }
             acc.assign(kNoiseN, 0.0); accN = 0;
             noiseImpossible = v.size() < 16;
-            if (noiseImpossible) { noisePsd = -1; continue; }
-            std::nth_element(v.begin(), v.begin() + v.size() / 2, v.end());
-            const double psd = v[v.size() / 2] / kMedianToMean / wsum2 / decRate;
-            noisePsd = noisePsd < 0 ? psd : 0.7 * noisePsd + 0.3 * psd;
+            if (noiseImpossible) noisePsd = -1;
+            else {
+                std::nth_element(v.begin(), v.begin() + v.size() / 2, v.end());
+                const double psd = v[v.size() / 2] / kMedianToMean / wsum2 / decRate;
+                noisePsd = noisePsd < 0 ? psd : 0.7 * noisePsd + 0.3 * psd;
+            }
+            if (inb.size() < 6) noisePsdIn = -1;   // a very narrow filter has too few bins for a median
+            else {
+                std::nth_element(inb.begin(), inb.begin() + inb.size() / 2, inb.end());
+                const double psd = inb[inb.size() / 2] / kMedianToMean / wsum2 / decRate;
+                noisePsdIn = noisePsdIn < 0 ? psd : 0.7 * noisePsdIn + 0.3 * psd;
+            }
         }
     }
 
@@ -329,9 +387,11 @@ struct GeneralReceiver::Impl {
         blkPow = 0; blkN = 0;
         const double b = 1 - std::exp(-kBlockSec / 0.06);
         lvl = lvl < 0 ? p : lvl + b * (p - lvl);
-        const double noiseCh = noisePsd > 0 ? noisePsd * (fHi - fLo) : -1;
+        const bool ssb = (cfg.demod == GenUsb || cfg.demod == GenLsb) && cfg.sqAuto && noisePsdIn > 0;
+        const double noiseCh = (ssb ? noisePsdIn : noisePsd) > 0 ? (ssb ? noisePsdIn : noisePsd) * (fHi - fLo) : -1;
         bool want;
         if (!cfg.sqOn) want = true;
+        else if (ssb) want = lvl > noiseCh * (open ? 2.5 : 4.0);   // 6 dB over the noise inside the passband, closes under 4
         else if (cfg.sqAuto) {
             if (noiseCh <= 0) want = noiseImpossible;   // no band beside the channel to compare with: the squelch stays open
             else want = lvl > noiseCh * (open ? 2.5 : 4.0);   // opens 6 dB over the noise, closes under 4 dB
@@ -387,39 +447,45 @@ struct GeneralReceiver::Impl {
         }
         }
         if (!have) return;
+        const float dry = std::clamp(a, -1.f, 1.f);
         const float target = open ? 1.f : 0.f;
         ramp += std::clamp(target - ramp, -1.f / 240, 1.f / 240);   // 5 ms
-        a = std::clamp(a * ramp, -1.f, 1.f);
-        aud.push_back(a);
+        aud.push_back(std::clamp(dry * ramp, -1.f, 1.f));
+        if (wantDry.load(std::memory_order_relaxed)) dryAud.push_back(dry);
     }
 
     void play() {
-        if (aud.empty()) return;
-        applyAudioFilters(aud);
-        for (float v : aud) audPow += (double)v * v;
-        audN += aud.size();
-        if (tapReq.exchange(false)) { std::lock_guard<std::mutex> lk(mu); tap = tapSet; }
-        if (tap) tap(aud.data(), aud.size());
+        const bool haveAud = !aud.empty();
+        if (haveAud) {
+            spk.apply(aud, afHp, afLp, afNotch);
+            for (float v : aud) audPow += (double)v * v;
+            audN += aud.size();
+            if (tapReq.exchange(false)) { std::lock_guard<std::mutex> lk(mu); tap = tapSet; }
+            if (tap) tap(aud.data(), aud.size());
+        }
+        if (!dryAud.empty()) dry.apply(dryAud, afHp, afLp, afNotch);
         {
             std::lock_guard<std::mutex> lk(wavMu);
-            if (txOn) {
-                if (open && !wav) {
-                    char nm[32]; snprintf(nm, sizeof nm, recMp3 ? "_%d.mp3" : recFlac ? "_%d.flac" : "_%d.wav", ++txN);
-                    wavPath = txDir + "/" + txPrefix + nm;
-                    openFile(wavPath, recFlac, recMp3);
-                    wavFrames = 0; txFile = wav != nullptr;
-                    if (wav) wavErr.clear(); else wavErr = std::string("cannot write ") + wavPath;
-                }
-            }
+            if (txOn && open && !wav) beginTransmission();
             if (wav) {
-                wbuf.resize(aud.size());
-                for (size_t i = 0; i < aud.size(); i++) wbuf[i] = (int16_t)std::lround(std::clamp(aud[i], -1.f, 1.f) * 32767.f);
-                if (mp3On) mp3.write(wbuf.data(), wbuf.size()); else if (flacOn) flac.write(wbuf.data(), wbuf.size()); else fwrite(wbuf.data(), 2, wbuf.size(), wav);   // little-endian hosts (macOS, Windows, Linux on x86 / ARM)
-                wavFrames += (uint32_t)wbuf.size();
+                if (txFile) writePcm(dryAud.data(), dryAud.size());
+                else if (haveAud) writePcm(aud.data(), aud.size());
+                if (txFile && iqThis) writeIq(iqBlk.data(), iqBlk.size());
             }
-            if (txOn && txFile && wav && !open && ramp <= 0.f) endTransmission();
+            if (txFile) {
+                const double dt = (double)dryAud.size() / kGeneralAudioRate;
+                if (open) { txClosedFor = 0; txOpenSec += dt; }
+                else txClosedFor += dt;
+                const double hangFor = std::clamp(txHang.load(), 0.0, 3.0);
+                if (!open && txClosedFor >= hangFor) endTransmission();
+            }
+            if (txOn) {
+                sizeRings();
+                if (!dryAud.empty()) preAud.push(dryAud.data(), dryAud.size());
+                if ((txIq.load() || iqThis) && !iqBlk.empty()) preIq.push(iqBlk.data(), iqBlk.size());
+            }
         }
-        if (silent.load()) return;
+        if (!haveAud || silent.load()) return;
         pcm.clear();
         for (float v : aud) { pcm.push_back(v); pcm.push_back(v); }
         if (!out) { out = std::make_unique<AudioOut>(); out->start((int)kGeneralAudioRate); out->setStartThreshold((int)kGeneralAudioRate / 10); }
@@ -434,13 +500,14 @@ struct GeneralReceiver::Impl {
         t.seq = pub.seq + 1;
         t.demod = cfg.demod; t.rate = curRate; t.demodRate = demodRate;
         t.chanOffsetHz = cfg.chanOff; t.filterLoHz = fLo; t.filterHiHz = fHi;
-        const double noiseCh = noisePsd > 0 ? noisePsd * (fHi - fLo) : -1;
+        const bool ssb = (cfg.demod == GenUsb || cfg.demod == GenLsb) && noisePsdIn > 0;
+        const double noisePow = (ssb ? noisePsdIn : noisePsd) > 0 ? (ssb ? noisePsdIn : noisePsd) * (fHi - fLo) : -1;
         t.levelDb = lvl > 0 ? (float)(10 * std::log10(lvl)) : -200;
-        t.noiseDb = noiseCh > 0 ? (float)(10 * std::log10(noiseCh)) : -200;
-        t.dataValid = noiseCh > 0 && lvl > 0;
+        t.noiseDb = noisePow > 0 ? (float)(10 * std::log10(noisePow)) : -200;
+        t.dataValid = noisePow > 0 && lvl > 0;
         t.snrDb = t.dataValid ? t.levelDb - t.noiseDb : 0;
         t.squelchOpen = open;
-        t.squelchDb = !cfg.sqOn ? -200 : cfg.sqAuto ? (noiseCh > 0 ? t.noiseDb + 6 : -200) : cfg.sqDb;
+        t.squelchDb = !cfg.sqOn ? -200 : cfg.sqAuto ? (noisePow > 0 ? t.noiseDb + 6 : -200) : cfg.sqDb;
         t.state = !built || lvl < 0 ? 0 : open ? 2 : 1;
         if (fmN) { cfo = fmSum / fmN; fmSum = 0; fmN = 0; }
         t.cfoHz = (cfg.demod == GenNfm || cfg.demod == GenWfm) && open ? cfo : 0;
@@ -455,26 +522,131 @@ struct GeneralReceiver::Impl {
         pub = std::move(t);
     }
 
-    void endTransmission() {   // with wavMu held: the squelch has shut
+    void sizeRings() {   // with wavMu held
+        const size_t aN = (size_t)std::lround(3.0 * kGeneralAudioRate);
+        if (preAud.b.size() != aN) preAud.assign(aN);
+        if (txIq.load() || iqThis) {
+            const size_t iN = (size_t)std::lround(3.0 * std::max(demodRate, kGeneralAudioRate));
+            if (preIq.b.size() != iN) preIq.assign(iN);
+        }
+    }
+    static bool fileThere(const std::string& p) {
+        FILE* f = fopen(p.c_str(), "rb");
+        if (!f) return false;
+        fclose(f);
+        return true;
+    }
+    void writePcm(const float* x, size_t n) {   // with wavMu held
+        if (!wav || !x || n == 0) return;
+        for (size_t off = 0; off < n; ) {
+            const size_t k = std::min(n - off, (size_t)4096);
+            wbuf.resize(k);
+            for (size_t i = 0; i < k; i++) wbuf[i] = (int16_t)std::lround(std::clamp(x[off + i], -1.f, 1.f) * 32767.f);
+            if (mp3On) mp3.write(wbuf.data(), wbuf.size());
+            else if (flacOn) flac.write(wbuf.data(), wbuf.size());
+            else fwrite(wbuf.data(), 2, k, wav);   // little-endian hosts (macOS, Windows, Linux on x86 / ARM)
+            wavFrames += (uint32_t)k;
+            off += k;
+        }
+    }
+    void writeIq(const cf32* x, size_t n) {   // with wavMu held. Complex float, little-endian, at demodRate.
+        if (!iqFile || !x || n == 0) return;
+        fwrite(x, sizeof(cf32), n, iqFile);
+        iqSamples += n;
+    }
+    void beginTransmission() {   // with wavMu held, squelch just opened, no file yet
+        const char* ext = recMp3 ? "mp3" : recFlac ? "flac" : "wav";
+        txIso.clear(); txHz = listenHz.load(); txDemod = cfg.demod;
+        if (!txPrefix.empty()) {
+            char nm[64];
+            snprintf(nm, sizeof nm, "_%d.%s", ++txN, ext);
+            wavPath = txDir + "/" + txPrefix + nm;
+        } else {
+            const std::time_t now = std::time(nullptr);
+            std::tm tm{};
+            localTime(now, &tm);
+            char stamp[32], iso[32];
+            std::strftime(stamp, sizeof stamp, "%Y%m%d-%H%M%S", &tm);
+            std::strftime(iso, sizeof iso, "%Y-%m-%dT%H:%M:%S", &tm);
+            txIso = iso;
+            char base[192];
+            snprintf(base, sizeof base, "onair_%s_%.6fMHz_%s", stamp, txHz / 1e6, generalDemodName(txDemod));
+            std::string path = txDir + "/" + base + "." + ext;
+            for (int n = 2; fileThere(path) && n < 100; n++) {
+                char b[240];
+                snprintf(b, sizeof b, "%s/%s_%d.%s", txDir.c_str(), base, n, ext);
+                path = b;
+            }
+            wavPath = path;
+        }
+        openFile(wavPath, recFlac, recMp3);
+        wavFrames = 0; txOpenSec = 0; txClosedFor = 0; iqSamples = 0; iqPath.clear(); iqThis = false;
+        txFile = wav != nullptr;
+        if (!wav) { wavErr = std::string("cannot write ") + wavPath; return; }
+        wavErr.clear();
+        if (txIq.load()) {
+            std::string iq = wavPath;
+            const auto dot = iq.find_last_of('.');
+            if (dot != std::string::npos) iq.resize(dot);
+            char rate[32];
+            snprintf(rate, sizeof rate, "_%.0fk.cf32", demodRate / 1000.0);
+            iq += rate;
+            iqFile = fopen(iq.c_str(), "wb");
+            if (iqFile) { iqPath = iq; iqThis = true; }
+        }
+        const double pr = std::clamp(txPreRoll.load(), 0.0, 3.0);
+        if (pr > 0) {
+            std::vector<float> pre;
+            preAud.copyTail((size_t)std::lround(pr * kGeneralAudioRate), pre);
+            writePcm(pre.data(), pre.size());
+            if (iqThis) {
+                std::vector<cf32> pi;
+                preIq.copyTail((size_t)std::lround(pr * demodRate), pi);
+                writeIq(pi.data(), pi.size());
+            }
+        }
+    }
+    void appendCsv(double sec, const std::string& path) {   // with wavMu held
+        if (!txCsv.load() || txIso.empty()) return;
+        const std::string cp = txDir + "/transmissions.csv";
+        FILE* f = fopen(cp.c_str(), "ab+");
+        if (!f) return;
+        if (fseek(f, 0, SEEK_END) == 0 && ftell(f) == 0)
+            fputs("time,frequency_hz,mode,duration_s,path\n", f);
+        fprintf(f, "%s,%.1f,%s,%.3f,\"%s\"\n", txIso.c_str(), txHz, generalDemodName(txDemod), sec, path.c_str());
+        fclose(f);
+    }
+    void endTransmission() {   // with wavMu held: the squelch has shut and the recording hang has run out
         const double sec = wavFrames / kGeneralAudioRate;
-        const std::string path = wavPath;
+        const double openSec = txOpenSec;
+        const std::string path = wavPath, iq = iqPath;
         closeWav();
-        txFile = false;
-        if (sec < txMinSec) { std::remove(path.c_str()); return; }
+        txFile = false; iqThis = false;
+        if (openSec < txMinSec) {
+            std::remove(path.c_str());
+            if (!iq.empty()) std::remove(iq.c_str());
+            return;
+        }
         txKept++;
+        appendCsv(sec, path);
     }
     void closeWav() {   // with wavMu held
-        if (!wav) return;
-        if (mp3On) { mp3.finish(); mp3On = false; }
-        else if (flacOn) { flac.finish(); flacOn = false; }
-        else { fflush(wav); fseek(wav, 0, SEEK_SET); wavHeader(wav, wavFrames); }
-        fclose(wav);
-        wav = nullptr;
+        if (wav) {
+            if (mp3On) { mp3.finish(); mp3On = false; }
+            else if (flacOn) { flac.finish(); flacOn = false; }
+            else { fflush(wav); fseek(wav, 0, SEEK_SET); wavHeader(wav, wavFrames); }
+            fclose(wav);
+            wav = nullptr;
+        }
+        if (iqFile) { fclose(iqFile); iqFile = nullptr; }
     }
 };
 
 GeneralReceiver::GeneralReceiver() : p_(std::make_unique<Impl>()) {}
-GeneralReceiver::~GeneralReceiver() { std::lock_guard<std::mutex> lk(p_->wavMu); p_->closeWav(); }
+GeneralReceiver::~GeneralReceiver() {
+    std::lock_guard<std::mutex> lk(p_->wavMu);
+    if (p_->txFile) p_->endTransmission(); else p_->closeWav();
+}
 
 void GeneralReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rate = r; p_->cfgDirty = true; p_->resetReq = true; }
 void GeneralReceiver::setSignalOffset(double hz) { p_->sigOff = hz; }
@@ -488,14 +660,20 @@ void GeneralReceiver::feed(const cf32* x, size_t n) {
         Cfg c; double r;
         { std::lock_guard<std::mutex> lk(m.mu); c = m.cfgSet; r = m.rate; }
         const bool rebuild = !m.built || r != m.curRate || (c.demod == GenWfm) != (m.cfg.demod == GenWfm);
-        const bool refilter = c.demod != m.cfg.demod || c.width != m.cfg.width;
+        const bool demodCh = c.demod != m.cfg.demod;
+        const bool refilter = demodCh || c.width != m.cfg.width;
         const bool retuned = c.chanOff != m.cfg.chanOff;
+        if (rebuild || retuned || demodCh) {   // the open file is the old channel: finish it before the dial or the mode moves
+            std::lock_guard<std::mutex> lk(m.wavMu);
+            if (m.txFile) m.endTransmission();
+            if (!rebuild) { m.preAud.clear(); m.preIq.clear(); }
+        }
         m.cfg = c; m.curRate = r;
         m.gLin = std::pow(10.0, c.gainDb / 20.0);
         m.deAl = c.deemphUs > 0 ? (float)(1 - std::exp(-1.0 / (kGeneralAudioRate * c.deemphUs * 1e-6))) : 1.f;
         if (rebuild) m.build();
         else if (refilter) { m.design(); m.prev = cf32(0, 0); m.carInit = false; m.env = 0; m.deY = 0; }
-        if (retuned && !rebuild) { m.acc.assign(kNoiseN, 0.0); m.accN = 0; m.fbuf.clear(); m.noisePsd = -1; m.lvl = -1; }
+        if (retuned && !rebuild) { m.acc.assign(kNoiseN, 0.0); m.accN = 0; m.fbuf.clear(); m.noisePsd = -1; m.noisePsdIn = -1; m.lvl = -1; }
     }
     if (m.resetReq.exchange(false) && m.built) m.clearState();
     if (!m.built || n == 0) return;
@@ -512,7 +690,7 @@ void GeneralReceiver::feed(const cf32* x, size_t n) {
     m.noiseFeed(m.decd.data(), m.decd.size());
     m.base.clear();
     m.rs.process(m.decd.data(), m.decd.size(), m.base);
-    m.aud.clear();
+    m.aud.clear(); m.dryAud.clear(); m.iqBlk.clear();
     const int T = (int)m.taps.size();
     for (const cf32 v : m.base) {
         m.hist[(size_t)m.hpos] = v; m.hist[(size_t)(m.hpos + T)] = v;
@@ -527,6 +705,7 @@ void GeneralReceiver::feed(const cf32* x, size_t n) {
         const cf32 z(ar, ai);
         m.blkPow += std::norm(z);
         if (++m.blkN >= m.blkLen) m.squelchBlock();
+        if (m.iqThis || m.wantIq.load(std::memory_order_relaxed)) m.iqBlk.push_back(z);
         m.demod(z);
     }
     m.play();
@@ -574,7 +753,7 @@ bool GeneralReceiver::startRecording(const std::string& path) {
     bool ok;
     {
         std::lock_guard<std::mutex> lk(p_->wavMu);
-        p_->closeWav();
+        if (p_->txFile) p_->endTransmission(); else p_->closeWav();
         const bool asFlac = path.size() > 5 && path.compare(path.size() - 5, 5, ".flac") == 0;
         const bool asMp3 = path.size() > 4 && path.compare(path.size() - 4, 4, ".mp3") == 0;
         p_->openFile(path, asFlac, asMp3);
@@ -595,7 +774,7 @@ void GeneralReceiver::stopRecording() {
         if (!p_->wav) return;
         char b[64]; snprintf(b, sizeof b, " (%.1f s)", p_->wavFrames / kGeneralAudioRate);
         msg = "General receiver: recording stopped, " + p_->wavPath + b;
-        p_->closeWav();
+        if (p_->txFile) p_->endTransmission(); else p_->closeWav();
     }
     p_->log(msg);
 }
@@ -603,8 +782,19 @@ void GeneralReceiver::stopRecording() {
 void GeneralReceiver::setTransmissionRecording(bool on, const std::string& dir, const std::string& prefix, double minSec) {
     std::lock_guard<std::mutex> lk(p_->wavMu);
     if (!on && p_->txOn && p_->txFile) p_->endTransmission();
-    p_->txOn = on; p_->txDir = dir; p_->txPrefix = prefix; p_->txMinSec = minSec;
+    p_->txOn = on; p_->txDir = dir; p_->txPrefix = prefix; p_->txMinSec = std::max(0.0, minSec);
+    p_->wantDry.store(on);
+    p_->wantIq.store(on && p_->txIq.load());
     if (on) { p_->txN = 0; p_->txKept = 0; }
+}
+void GeneralReceiver::setListenHz(double hz) { p_->listenHz.store(std::isfinite(hz) ? hz : 0); }
+void GeneralReceiver::setTransmissionGate(double preRollSec, double hangSec, bool iq, bool csv) {
+    std::lock_guard<std::mutex> lk(p_->wavMu);
+    p_->txPreRoll.store(std::clamp(preRollSec, 0.0, 3.0));
+    p_->txHang.store(std::clamp(hangSec, 0.0, 3.0));
+    p_->txIq.store(iq);
+    p_->txCsv.store(csv);
+    p_->wantIq.store(p_->txOn && iq);
 }
 void GeneralReceiver::setRecordFormat(bool flac, const std::vector<std::string>& tags) {
     std::lock_guard<std::mutex> lk(p_->wavMu);

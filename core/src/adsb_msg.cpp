@@ -245,9 +245,11 @@ bool cprGlobalAirborne(int latE, int lonE, int latO, int lonO, bool oddLatest, d
     if (ve >= 270.0) ve -= 360.0;
     if (vo >= 270.0) vo -= 360.0;
     if (ve < -90.0 || ve > 90.0 || vo < -90.0 || vo > 90.0) return false;
-    const int nl = cprNl(ve);
-    if (nl != cprNl(vo)) return false;           // the two frames are in different longitude zone layouts: no solution
+    // The spec drops a pair whose even/odd latitudes sit in different NL zones (the table steps at 54.66° among others).
+    // Using the later frame's latitude still gives a unique longitude; without this, a whole track over Lithuania / southern Sweden
+    // never gets a global fix.
     const double rlat = oddLatest ? vo : ve;
+    const int nl = cprNl(rlat);
     const int ni = std::max(nl - (oddLatest ? 1 : 0), 1);
     const double m = std::floor((lonE / kCprScale) * (nl - 1) - (lonO / kCprScale) * nl + 0.5);
     double rlon = (360.0 / ni) * (mod(m, ni) + (oddLatest ? lonO : lonE) / kCprScale);

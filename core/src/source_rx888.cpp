@@ -5,7 +5,9 @@
 //
 // - The FX3 has no firmware of its own: it enumerates as 04b4:00f3 until the image of the SDDC project (SDDC_FX3.img) is written into its
 //   RAM, then as 04b4:00f1 "RX888mk2". OnAir does not ship the image (it contains Cypress SDK code under a licence of its own): the driver
-//   looks for it in the OnAir codecs folders and in ONAIR_RX888_FIRMWARE (rx888FirmwarePaths()).
+//   looks for it in the OnAir codecs folders and in ONAIR_RX888_FIRMWARE (rx888FirmwarePaths()). Loading that image makes the chip drop off
+//   the bus and come back at a new address. On Windows the Cypress driver from the official RX-888 setup (HDSDR / ExtIO) binds 04b4:00f1;
+//   OnAir uses libusb and needs WinUSB for that device. OnAir does not ship a driver.
 // - The converter delivers REAL 16-bit samples at the ADC clock (64 Msps typically, 128 at most 130). HF (below half the clock): the wanted
 //   frequency is shifted to zero, filtered and decimated by RealDdc (native_realddc.h, the same code as the Fobos SDR's HF inputs).
 //   VHF (the R828D tuner, from half the clock up to 1.75 GHz): the tuner puts the channel on an IF of 4.57 MHz, spectrum inverted
@@ -14,10 +16,14 @@
 #include "native_common.h"
 #include "native_realddc.h"
 #include "rx888_usb.h"
+#include <cstring>
 #include <deque>
 #include <fstream>
 #include <map>
 #include <libusb.h>
+#ifdef _WIN32
+#include <setupapi.h>
+#endif
 
 namespace dect2 {
 namespace native {
@@ -29,17 +35,26 @@ namespace {
 constexpr int kControlTimeoutMs = 5000;
 constexpr int kBulkTimeoutMs = 5000;
 
+// One lock for the context, the device list and every open handle. list() and open() hold it for the whole libusb call, so a rescan
+// after the firmware jump cannot destroy the context under them.
+std::mutex gUsbMu;
+libusb_context* gCtx = nullptr;
+int gCtxRc = 1;
+int gOpenLinks = 0;
+int gReenumWaitOverrideMs = 0;
+int gReenumPollOverrideMs = 0;
+
 libusb_context* usbContext(std::string& err) {
-    static libusb_context* ctx = nullptr;
-    static int rc = 1;
-    static std::mutex mu;
-    std::lock_guard<std::mutex> g(mu);
-    if (!ctx && rc != 0) {
-        rc = libusb_init(&ctx);
-        if (rc != 0) { ctx = nullptr; err = std::string("libusb_init: ") + libusb_error_name(rc); }
+    // gUsbMu is held by the caller
+    if (!gCtx && gCtxRc != 0) {
+        gCtxRc = libusb_init(&gCtx);
+        if (gCtxRc != 0) { gCtx = nullptr; err = std::string("libusb_init: ") + libusb_error_name(gCtxRc); }
     }
-    return ctx;
+    return gCtx;
 }
+
+int reenumWaitMs() { return gReenumWaitOverrideMs > 0 ? gReenumWaitOverrideMs : (kOnWindows ? 15000 : 8000); }
+int reenumPollMs() { return gReenumPollOverrideMs > 0 ? gReenumPollOverrideMs : 200; }
 
 int statusCode(libusb_transfer_status s) {
     switch (s) {
@@ -55,9 +70,12 @@ class LibusbLink : public Rx888Link {
 public:
     LibusbLink(libusb_context* ctx, libusb_device_handle* h, bool claimed, bool ss, uint8_t ep) : ctx_(ctx), h_(h), claimed_(claimed), ss_(ss), ep_(ep) {}
     ~LibusbLink() override {
-        if (claimed_) libusb_release_interface(h_, 0);
+        std::lock_guard<std::mutex> g(gUsbMu);
+        if (claimed_ && !gone_) libusb_release_interface(h_, 0);
         libusb_close(h_);
+        if (gOpenLinks > 0) gOpenLinks--;
     }
+    void noteDisconnected() override { gone_ = true; }
     int control(bool in, uint8_t request, uint16_t value, uint16_t index, uint8_t* data, uint16_t length) override {
         const uint8_t type = (uint8_t)((in ? LIBUSB_ENDPOINT_IN : LIBUSB_ENDPOINT_OUT) | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE);
         return libusb_control_transfer(h_, type, request, value, index, data, length, kControlTimeoutMs);
@@ -119,6 +137,7 @@ private:
     libusb_context* ctx_;
     libusb_device_handle* h_;
     bool claimed_;
+    bool gone_ = false;
     bool ss_;
     uint8_t ep_;
 };
@@ -132,6 +151,7 @@ std::string stringOf(libusb_device_handle* h, uint8_t idx) {
 class LibusbRx888 : public Rx888Usb {
 public:
     std::vector<Rx888UsbDevice> list() override {
+        std::lock_guard<std::mutex> g(gUsbMu);
         std::vector<Rx888UsbDevice> out;
         std::string err;
         libusb_context* ctx = usbContext(err);
@@ -139,7 +159,6 @@ public:
         libusb_device** devs = nullptr;
         const ssize_t n = libusb_get_device_list(ctx, &devs);
         if (n < 0) return out;
-        std::lock_guard<std::mutex> g(mu_);
         for (ssize_t i = 0; i < n; i++) {
             libusb_device_descriptor d{};
             if (libusb_get_device_descriptor(devs[i], &d) != 0 || d.idVendor != kRx888Vid) continue;
@@ -149,22 +168,27 @@ public:
             u.bus = libusb_get_bus_number(devs[i]); u.address = libusb_get_device_address(devs[i]);
             if (!u.bootloader()) {
                 // 04b4:00f1 is also what a LimeSDR-USB shows (LimeSuite's): the strings say which it is. Read once per device: a radio that is
-                // open (Windows: one handle at a time) could not be asked again.
+                // open (Windows: one handle at a time) could not be asked again. A failed or empty read is not cached: the name often appears
+                // only after Windows has finished binding the driver of a radio that just re-enumerated.
                 const int key = u.bus * 256 + u.address;
                 auto it = known_.find(key);
-                if (it == known_.end() || it->second.pid != u.pid) {
+                if (it != known_.end() && it->second.pid == u.pid && it->second.nameError == 0 && !it->second.product.empty()) {
+                    u = it->second;
+                } else {
                     libusb_device_handle* h = nullptr;
                     const int r = libusb_open(devs[i], &h);
-                    if (r != 0) { logOnce("RX888: a Cypress FX3 (04b4:00f1) could not be opened to read its name: " + usbErrorText(r)); continue; }
-                    u.manufacturer = stringOf(h, d.iManufacturer);
-                    u.product = stringOf(h, d.iProduct);
-                    u.serial = stringOf(h, d.iSerialNumber);
-                    libusb_close(h);
-                    known_[key] = u;
-                } else {
-                    u = it->second;
+                    if (r != 0) {
+                        u.nameError = r;
+                        logOnce("RX888: a Cypress FX3 (04b4:00f1) could not be opened to read its name: " + usbErrorText(r));
+                    } else {
+                        u.manufacturer = stringOf(h, d.iManufacturer);
+                        u.product = stringOf(h, d.iProduct);
+                        u.serial = stringOf(h, d.iSerialNumber);
+                        libusb_close(h);
+                        if (!u.product.empty()) known_[key] = u;
+                    }
                 }
-                if (!rx888ProductIsMk2(u.product)) continue;
+                if (u.nameError == 0 && !rx888ProductIsMk2(u.product)) continue;
             }
             out.push_back(u);
         }
@@ -172,6 +196,7 @@ public:
         return out;
     }
     std::unique_ptr<Rx888Link> open(const Rx888UsbDevice& d, int& code) override {
+        std::lock_guard<std::mutex> g(gUsbMu);
         code = 0;
         std::string err;
         libusb_context* ctx = usbContext(err);
@@ -209,7 +234,20 @@ public:
             libusb_free_config_descriptor(cfg);
         }
         libusb_free_device_list(devs, 1);
+        gOpenLinks++;
         return std::make_unique<LibusbLink>(ctx, h, true, ss, ep);
+    }
+    void rescan() override {
+        std::lock_guard<std::mutex> g(gUsbMu);
+        known_.clear();
+        // The Windows backend keeps the device list of this context. After the FX3 re-enumerates, that list still describes the boot
+        // loader that has gone, and the new 04b4:00f1 does not show up until the context is created again. No handle is open here: the
+        // boot loader's was closed before this runs.
+        if (gOpenLinks == 0 && gCtx) {
+            libusb_exit(gCtx);
+            gCtx = nullptr;
+            gCtxRc = 1;
+        }
     }
 
 private:
@@ -219,7 +257,6 @@ private:
         fprintf(stderr, "%s\n", m.c_str());
         fflush(stderr);
     }
-    std::mutex mu_;
     std::map<int, Rx888UsbDevice> known_;
     std::string lastLog_;
 };
@@ -233,6 +270,8 @@ Rx888Usb& rx888Usb() {
     return gUsb ? *gUsb : real;
 }
 void rx888UseUsb(Rx888Usb* usb) { gUsb = usb; }
+void rx888SetReenumWaitMs(int ms) { gReenumWaitOverrideMs = ms; }
+void rx888SetReenumPollMs(int ms) { gReenumPollOverrideMs = ms; }
 
 // ---------------------------------------------------------------------------------------------------------------- firmware image
 
@@ -387,6 +426,73 @@ std::vector<RadioSetting> rx888Settings() {
 
 } // namespace
 
+// The Windows driver bound to a USB device, or "" when it is not there. libusb only sees WinUSB / libusbK / libusb0, so a radio that
+// re-enumerated onto the Cypress driver (the official RX-888 installer) is missing from list() even though Windows has it.
+// Loaded by name: the Windows build does not link setupapi.
+static std::string windowsUsbService(uint16_t vid, uint16_t pid) {
+#ifndef _WIN32
+    (void)vid; (void)pid;
+    return {};
+#else
+    HMODULE mod = LoadLibraryW(L"setupapi.dll");
+    if (!mod) return {};
+    struct Guard { HMODULE m; ~Guard() { if (m) FreeLibrary(m); } } guard{mod};
+    using Get_t = HDEVINFO (WINAPI *)(const GUID*, PCWSTR, HWND, DWORD);
+    using Enum_t = BOOL (WINAPI *)(HDEVINFO, DWORD, PSP_DEVINFO_DATA);
+    using Id_t = BOOL (WINAPI *)(HDEVINFO, PSP_DEVINFO_DATA, PWSTR, DWORD, PDWORD);
+    using Prop_t = BOOL (WINAPI *)(HDEVINFO, PSP_DEVINFO_DATA, DWORD, PDWORD, PBYTE, DWORD, PDWORD);
+    using Destroy_t = BOOL (WINAPI *)(HDEVINFO);
+    auto pGet = (Get_t)GetProcAddress(mod, "SetupDiGetClassDevsW");
+    auto pEnum = (Enum_t)GetProcAddress(mod, "SetupDiEnumDeviceInfo");
+    auto pId = (Id_t)GetProcAddress(mod, "SetupDiGetDeviceInstanceIdW");
+    auto pProp = (Prop_t)GetProcAddress(mod, "SetupDiGetDeviceRegistryPropertyW");
+    auto pDestroy = (Destroy_t)GetProcAddress(mod, "SetupDiDestroyDeviceInfoList");
+    if (!pGet || !pEnum || !pId || !pProp || !pDestroy) return {};
+    HDEVINFO info = pGet(nullptr, L"USB", nullptr, DIGCF_PRESENT | DIGCF_ALLCLASSES);
+    if (info == INVALID_HANDLE_VALUE) return {};
+    char needle[32];
+    snprintf(needle, sizeof needle, "VID_%04X&PID_%04X", vid, pid);
+    std::string found;
+    SP_DEVINFO_DATA dev{};
+    dev.cbSize = sizeof dev;
+    for (DWORD i = 0; pEnum(info, i, &dev); i++) {
+        WCHAR id[512];
+        if (!pId(info, &dev, id, 512, nullptr)) continue;
+        char ascii[512];
+        size_t n = 0;
+        for (; n + 1 < sizeof ascii && id[n]; n++) ascii[n] = (char)toupper((unsigned char)id[n]);
+        ascii[n] = 0;
+        if (!strstr(ascii, needle)) continue;
+        WCHAR svc[128] = {};
+        if (!pProp(info, &dev, SPDRP_SERVICE, nullptr, (PBYTE)svc, sizeof svc, nullptr)) { found = "present"; continue; }
+        std::string s;
+        for (int k = 0; svc[k] && k < 127; k++) s.push_back((char)tolower((unsigned char)svc[k]));
+        if (s.empty()) { found = "present"; continue; }
+        found = s;
+        if (s.find("cyusb") != std::string::npos || s.find("cypress") != std::string::npos) break;
+    }
+    pDestroy(info);
+    return found;
+#endif
+}
+
+// What start() shows when the firmware was written and the new device never became an RX888 MkII we can name.
+// Kept free of the words start() treats as "try again" ("not found", "unplugged"): a retry looks up the boot loader's old
+// address, which has gone, and would replace this with "RX888 MkII not found".
+static std::string reenumTimeoutMessage() {
+    const std::string svc = windowsUsbService(kRx888Vid, kRx888PidApp);
+    const bool cypress = svc.find("cyusb") != std::string::npos || svc.find("cypress") != std::string::npos;
+    if (cypress)
+        return "RX888 MkII: the firmware was loaded and the radio left the bus, but OnAir cannot see it come back. Windows has bound USB\\VID_04B4&PID_00F1 to the Cypress driver, which OnAir cannot use. OnAir does not ship a driver. Install the WinUSB driver for 04B4:00F1 with Zadig (zadig.akeo.ie); the Cypress driver stays what HDSDR and ExtIO use.";
+    const bool libusbDriver = svc == "winusb" || svc == "libusbk" || svc == "libusb0" || svc == "libusb-win32";
+    if (!svc.empty() && svc != "present" && !libusbDriver)
+        return "RX888 MkII: the firmware was loaded and the radio left the bus, but OnAir cannot see it come back. Windows has bound USB\\VID_04B4&PID_00F1 to the driver \"" + svc + "\". OnAir uses libusb, needs the WinUSB driver for that device (Zadig, zadig.akeo.ie), and does not ship a driver.";
+    std::string e = "RX888 MkII: the firmware was loaded and the radio left the bus, but it did not come back in time. Unplug it, plug it in again and try once more.";
+    if (kOnWindows && !libusbDriver)
+        e += " On Windows the USB package from the official RX-888 setup binds USB\\VID_04B4&PID_00F1 and hides the radio from OnAir. OnAir needs the WinUSB driver for that device (Zadig, zadig.akeo.ie) and does not ship a driver.";
+    return e;
+}
+
 class Rx888Source : public NativeSource {
 public:
     Rx888Source(std::string args, std::string serial) : args_(std::move(args)), serial_(std::move(serial)) {}
@@ -404,6 +510,8 @@ protected:
         if (!link_) {
             err = "RX888 MkII: cannot open the radio: " + usbErrorText(code);
             if (code == LIBUSB_ERROR_ACCESS || code == LIBUSB_ERROR_NOT_SUPPORTED) openFailure_ = OpenFailure::Final;
+            if (kOnWindows && code == LIBUSB_ERROR_NOT_SUPPORTED)
+                err += " The Cypress driver from the official RX-888 setup is not usable by OnAir, and OnAir does not ship a driver. After the firmware loads, the radio is USB\\VID_04B4&PID_00F1 and needs the WinUSB driver: install it once with Zadig (zadig.akeo.ie), choosing that device and the driver WinUSB.";
             return false;
         }
         if (!link_->superSpeed()) {
@@ -591,21 +699,52 @@ private:
             if (!rx888LoadFirmware(*l, image, e)) { err = "RX888 MkII: " + e; return false; }
             fprintf(stderr, "RX888 MkII: firmware loaded from %s\n", path.c_str());
             fflush(stderr);
+            l->noteDisconnected();   // the jump drops the chip off the bus; releasing the interface on it can stall
         }
-        // the FX3 re-enumerates with the new firmware: half a second at least, then every 200 ms for a few seconds
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        for (int i = 0; i < 30; i++) {
-            const std::vector<Rx888UsbDevice> now = rx888Usb().list();
+        rx888Usb().rescan();
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(reenumWaitMs());
+        int pendingKey = -1;
+        auto pendingSince = std::chrono::steady_clock::now();
+        auto take = [&](const Rx888UsbDevice& d) {
+            dev = d;
+            args_ = std::to_string(d.bus) + ":" + std::to_string(d.address);   // the boot loader's address is gone
+            if (!d.serial.empty()) serial_ = d.serial;
+            fprintf(stderr, "RX888 MkII: radio back at %d:%d\n", d.bus, d.address);
+            fflush(stderr);
+            return true;
+        };
+        // The new device has a new USB address. Keep looking until it is an RX888 MkII, or until Windows has had time to bind its
+        // driver (several seconds; the old 6 s cap, then a retry of the boot loader address, reported "not found").
+        for (;;) {
+            const auto now = std::chrono::steady_clock::now();
+            const std::vector<Rx888UsbDevice> nowList = rx888Usb().list();
             const Rx888UsbDevice* pick = nullptr;
-            for (const auto& d : now) {
+            const Rx888UsbDevice* unread = nullptr;
+            for (const auto& d : nowList) {
+                const int key = d.bus * 256 + d.address;
                 if (d.bootloader()) continue;
-                if (std::find(set_before_.begin(), set_before_.end(), d.bus * 256 + d.address) == set_before_.end()) { pick = &d; break; }
+                // An app-mode radio that was already there is not the one that just left the bus. The boot loader's own address is not in
+                // this set, so the running radio is taken even when Windows gives it that address again.
+                if (std::find(set_before_.begin(), set_before_.end(), key) != set_before_.end()) continue;
+                if (d.nameError == 0 && rx888ProductIsMk2(d.product)) { pick = &d; break; }
+                if (d.nameError != 0 && !unread) unread = &d;
             }
-            if (!pick) { int apps = 0; for (const auto& d : now) if (!d.bootloader()) { apps++; pick = &d; } if (apps != 1) pick = nullptr; }
-            if (pick) { dev = *pick; serial_ = dev.serial; return true; }
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            if (pick) return take(*pick);
+            if (unread) {
+                const int key = unread->bus * 256 + unread->address;
+                if (key != pendingKey) { pendingKey = key; pendingSince = now; }
+                const bool driver = usbDriverMissing(unread->nameError);
+                const bool graceOver = now - pendingSince >= std::chrono::seconds(1);
+                if (now >= deadline || (driver && graceOver)) return take(*unread);   // open() reports the driver, or the name arrives on a retry
+            }
+            if (now >= deadline) break;
+            auto left = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
+            auto step = std::chrono::milliseconds(reenumPollMs());
+            if (step > left) step = left;
+            if (step.count() > 0) std::this_thread::sleep_for(step);
         }
-        err = "RX888 MkII: the firmware was loaded but the radio did not come back (not found (unplugged?)); unplug it, plug it in again and try once more";
+        err = reenumTimeoutMessage();
+        openFailure_ = OpenFailure::Final;   // a retry would resolve the boot loader and report "not found (unplugged?)"
         return false;
     }
 
@@ -725,6 +864,7 @@ void listRx888(std::vector<DeviceInfo>& out) {
     bool haveImage = false;
     for (const auto& p : rx888FirmwarePaths()) { std::ifstream f(p, std::ios::binary); if (f) { haveImage = true; break; } }
     for (const auto& u : all) {
+        if (u.nameError != 0) continue;   // no name: 04b4:00f1 is also a LimeSDR, so it is not offered as an RX888
         DeviceInfo d;
         d.kind = DeviceInfo::Native;
         d.board = "rx888";

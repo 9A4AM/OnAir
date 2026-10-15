@@ -88,7 +88,7 @@ double rateAtLeast(const std::vector<SoapySDR::Range>& ranges, double want) {
 // The ranges of each radio (by serial, or its arguments when it has none), read when it is started: the list is built from the enumerate
 // results alone, because opening every radio to ask makes a refresh slow and can take a radio from the program that is using it.
 struct SoapyRanges { std::vector<std::pair<double, double>> rates; double minRate = 0, maxRate = 0, gainMin = 0, gainMax = 0, minFreq = 0, maxFreq = 0; std::string biasKey; std::vector<std::string> antennas; std::vector<RadioSetting> settings;
-    bool txKnown = false, canTx = false; double txMinRate = 0, txMaxRate = 0, txGainMin = 0, txGainMax = 0; };   // transmit: known once the radio has been opened
+    bool txKnown = false, canTx = false; int nTx = 0; double txMinRate = 0, txMaxRate = 0, txGainMin = 0, txGainMax = 0; };   // transmit: known once the radio has been opened
 std::mutex gRangesMu;
 std::map<std::string, SoapyRanges> gRanges;
 
@@ -199,7 +199,8 @@ void rememberRanges(const std::string& key, SoapySDR::Device* dev) {
     } catch (...) {}
     try {   // the transmit side (a radio with a TX channel), so that the list can offer Transmit for it
         r.txKnown = true;
-        r.canTx = dev->getNumChannels(SOAPY_SDR_TX) > 0;
+        r.nTx = (int)dev->getNumChannels(SOAPY_SDR_TX);
+        r.canTx = r.nTx > 0;
         if (r.canTx) {
             for (const auto& x : dev->getSampleRateRange(SOAPY_SDR_TX, 0)) { r.txMaxRate = std::max(r.txMaxRate, x.maximum()); r.txMinRate = r.txMinRate == 0 ? x.minimum() : std::min(r.txMinRate, x.minimum()); }
             const auto g = dev->getGainRange(SOAPY_SDR_TX, 0);
@@ -423,17 +424,25 @@ public:
             dev_ = SoapySDR::Device::make(args_);
             if (!dev_) { err = "cannot open " + args_; const std::string h = soapyRemoteFailureHelp(args_); if (!h.empty()) err = h; return false; }
             rememberRanges(key_, dev_);
-            if (dev_->getNumChannels(SOAPY_SDR_TX) == 0) { err = "this radio has no transmit channel"; shut(); return false; }
-            const auto ranges = dev_->getSampleRateRange(SOAPY_SDR_TX, 0);
+            const int nTx = (int)dev_->getNumChannels(SOAPY_SDR_TX);
+            if (nTx <= 0) { err = "this radio has no transmit channel"; shut(); return false; }
+            ch_ = t.channel < 0 ? 0 : t.channel;
+            if (ch_ >= nTx) {
+                err = nTx == 1 ? "this radio has one transmit output (TX1)"
+                               : "this radio has " + std::to_string(nTx) + " transmit outputs (TX1 to TX" + std::to_string(nTx) + ")";
+                shut();
+                return false;
+            }
+            const auto ranges = dev_->getSampleRateRange(SOAPY_SDR_TX, (size_t)ch_);
             const double want = ranges.empty() ? t.sampleRate : rateAtLeast(ranges, t.sampleRate);
-            dev_->setSampleRate(SOAPY_SDR_TX, 0, want);
-            rate_ = dev_->getSampleRate(SOAPY_SDR_TX, 0);
+            dev_->setSampleRate(SOAPY_SDR_TX, (size_t)ch_, want);
+            rate_ = dev_->getSampleRate(SOAPY_SDR_TX, (size_t)ch_);
             try {
-                const auto bws = dev_->getBandwidthRange(SOAPY_SDR_TX, 0);
-                if (!bws.empty()) dev_->setBandwidth(SOAPY_SDR_TX, 0, nearestRate(bws, t.bandwidthHz > 0 ? t.bandwidthHz : rate_ * 0.95));
+                const auto bws = dev_->getBandwidthRange(SOAPY_SDR_TX, (size_t)ch_);
+                if (!bws.empty()) dev_->setBandwidth(SOAPY_SDR_TX, (size_t)ch_, nearestRate(bws, t.bandwidthHz > 0 ? t.bandwidthHz : rate_ * 0.95));
             } catch (...) {}
             if (!tuneAndGain(t, err)) { shut(); return false; }
-            stream_ = dev_->setupStream(SOAPY_SDR_TX, SOAPY_SDR_CF32);
+            stream_ = dev_->setupStream(SOAPY_SDR_TX, SOAPY_SDR_CF32, {(size_t)ch_});
             if (!stream_) { err = "setupStream (transmit) failed"; shut(); return false; }
             if (dev_->activateStream(stream_) != 0) { err = "activateStream (transmit) failed"; shut(); return false; }
         } catch (const std::exception& e) {
@@ -476,17 +485,17 @@ private:
     bool tuneAndGain(const TxTune& t, std::string& err) {
         TuneSettings ts; ts.radio = t.radio;
         const double ppm = radioPpm(ts);
-        const double tuneHz = std::max(ppmCorrectedHz(t.centerHz, ppm), 0.0);
-        try { dev_->setFrequency(SOAPY_SDR_TX, 0, tuneHz); }
+        const double tuneHz = std::max(ppmCorrectedHz(txRadioHz(t), ppm), 0.0);
+        try { dev_->setFrequency(SOAPY_SDR_TX, (size_t)ch_, tuneHz); }
         catch (const std::exception& e) {
             char b[400];
-            snprintf(b, sizeof b, "the radio's driver refused %.6g MHz as a transmit frequency: %s", t.centerHz / 1e6, e.what());
+            snprintf(b, sizeof b, "the radio's driver refused %.6g MHz as a transmit frequency: %s", txRadioHz(t) / 1e6, e.what());
             err = b;
             return false;
         }
-        const auto gr = dev_->getGainRange(SOAPY_SDR_TX, 0);
+        const auto gr = dev_->getGainRange(SOAPY_SDR_TX, (size_t)ch_);
         const double g = gr.maximum() > gr.minimum() ? std::min(std::max(t.gainDb, gr.minimum()), gr.maximum()) : t.gainDb;   // only the radio's own scale clamps
-        try { dev_->setGain(SOAPY_SDR_TX, 0, g); }
+        try { dev_->setGain(SOAPY_SDR_TX, (size_t)ch_, g); }
         catch (const std::exception& e) { err = std::string("the radio's driver refused the TX gain: ") + e.what(); return false; }
         return true;
     }
@@ -500,6 +509,7 @@ private:
         dev_ = nullptr;
     }
     std::string args_, key_;
+    int ch_ = 0;
     SoapySDR::Device* dev_ = nullptr;
     SoapySDR::Stream* stream_ = nullptr;
     double rate_ = 0;
@@ -514,8 +524,13 @@ void applyTxInfo(DeviceInfo& d, const std::string& driver, const SoapyRanges* r)
     for (const char* h : kHinted) if (driver == h) hinted = true;
     if (r && r->txKnown) {
         d.canTransmit = r->canTx;
+        d.txChannels = r->nTx > 0 ? r->nTx : 1;
         d.txMinRateHz = r->txMinRate; d.txMaxRateHz = r->txMaxRate; d.txGainMinDb = r->txGainMin; d.txGainMaxDb = r->txGainMax;
-    } else d.canTransmit = hinted;
+    } else {
+        d.canTransmit = hinted;
+        // LimeSDR-USB, bladeRF 2.0 and a USRP often have two or more outputs; the exact count is filled in once the radio has been opened
+        if (driver == "lime" || driver == "limesdr" || driver == "bladerf" || driver == "uhd" || driver == "xtrx" || driver == "iris" || driver == "redpitaya" || driver == "remote") d.txChannels = 0;
+    }
     if (d.canTransmit) d.txGainNote = "the driver's own TX gain scale (known after the radio has been opened once)";
 }
 

@@ -251,6 +251,54 @@ int main() {
         CHECK(pOff > 1e-6 && pLp < 0.5 * pOff, "low-pass reduces the audio power");
     }
 
+    // pre-roll and hang: two transmissions 0.8 s apart stay one file, the file is longer than the open time, and a
+    // channel-IQ sibling plus a CSV line are written beside a name that carries the time, the frequency and the mode
+    {
+        SynthConfig on, off;
+        on.mode = 57; on.snrDb = 30; off.mode = 57; off.snrDb = 30; off.modeOpt[1] = 1;
+        auto sOn = makeGeneralSynth(on, kRate), sOff = makeGeneralSynth(off, kRate);
+        GeneralReceiver r;
+        r.configure(kRate); r.setSignalOffset(-generalTuning().tuneOffsetHz); r.setSilent(true);
+        r.setDemod(GenNfm); r.setSquelch(true, true, -60);
+        r.setListenHz(145.5e6);
+        r.setTransmissionGate(1.0, 1.5, true, true);
+        r.setTransmissionRecording(true, ".", "", 0.5);
+        std::vector<cf32> buf(20000);
+        auto feedSecs = [&](std::unique_ptr<ModeSynth>& syn, double secs) {
+            for (double t = 0; t < secs; t += buf.size() / kRate) { syn->generate(buf.data(), buf.size()); r.feed(buf.data(), buf.size()); }
+        };
+        feedSecs(sOff, 1.0); feedSecs(sOn, 1.5); feedSecs(sOff, 0.8); feedSecs(sOn, 1.5); feedSecs(sOff, 2.5);
+        r.setTransmissionRecording(false, ".", "");
+        GeneralTelemetry g;
+        r.telemetry(g, 0);
+        const std::string path = g.recordPath;
+        FILE* f = fopen(path.c_str(), "rb");
+        unsigned char h[44] = {};
+        const size_t got = f ? fread(h, 1, 44, f) : 0;
+        if (f) fclose(f);
+        const uint32_t data = h[40] | h[41] << 8 | h[42] << 16 | (uint32_t)h[43] << 24;
+        std::string iq = path;
+        const auto dot = iq.find_last_of('.');
+        if (dot != std::string::npos) iq.resize(dot);
+        iq += "_48k.cf32";
+        FILE* iqF = fopen(iq.c_str(), "rb");
+        long iqSz = 0;
+        if (iqF) { fseek(iqF, 0, SEEK_END); iqSz = ftell(iqF); fclose(iqF); }
+        std::string csv;
+        if (FILE* c = fopen("transmissions.csv", "rb")) {
+            char b[512];
+            while (fgets(b, sizeof b, c)) csv += b;
+            fclose(c);
+        }
+        printf("  hang file: %s, %u bytes, iq %ld, kept %d\n", path.c_str(), data, iqSz, r.transmissionFiles());
+        CHECK(r.transmissionFiles() == 1, "hang kept two bursts as %d files", r.transmissionFiles());
+        CHECK(path.find("145.500000MHz") != std::string::npos && path.find("_NFM") != std::string::npos, "name %s", path.c_str());
+        CHECK(got == 44 && data > 4u * 48000u * 2u, "pre-roll file %u bytes", data);
+        CHECK(iqSz > 48000L * 8L, "channel iq %ld", iqSz);
+        CHECK(csv.find("NFM") != std::string::npos && csv.find("145500000") != std::string::npos, "csv [%s]", csv.c_str());
+        remove(path.c_str()); remove(iq.c_str()); remove("transmissions.csv");
+    }
+
     printf(fails ? "general rx: %d FAILED\n" : "general rx: all passed\n", fails);
     return fails ? 1 : 0;
 }

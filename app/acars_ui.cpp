@@ -224,10 +224,8 @@ std::string nameOf(const dect2::AcarsAircraft& c) {
 
 bool isSel(const dect2::AcarsAircraft& c) { return !S.selReg.empty() && c.reg == S.selReg; }
 
-// ADS-C reports blue, text reports amber; older than half an hour greyed
 ImU32 planeColour(const dect2::AcarsAircraft& c, double now, float alpha = 1.f) {
-    if (now - c.posTime > 1800) return IM_COL32(150, 154, 158, (int)(200 * alpha));
-    return c.posSource == 2 ? IM_COL32(230, 178, 70, (int)(255 * alpha)) : IM_COL32(115, 184, 210, (int)(255 * alpha));
+    return adsbmap::acColour(adsbmap::AcSrc::Acars, now - c.lastHeardSec, alpha);
 }
 
 // an airliner seen from above, nose to the heading

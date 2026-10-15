@@ -335,6 +335,9 @@ struct App {
     bool atvWide = false;     // analog TV: system E chosen (14 MHz channel, 10 MHz of video): the radio runs at 20 Msps
     bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
+    bool mapSend = false, mapConsent = false;     // Server > Send data to map server (opt-in; consent once)
+    std::string mapStationId;                     // client id for /ingest, generated once
+    std::string mapServer;                        // empty: https://map.on-air.dev (a local worker URL for developers)
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
     dect2::ShareConfig share; // "Share my radio": the rtl_tcp server (off by default; feeds_ui.cpp), saved with the preferences
@@ -568,7 +571,8 @@ void languageButton(App& a);
 void setUiLanguage(App& a, const std::string& code);   // empty: the system's language
 extern bool gTightTabs;   // the tabs of mainTabs() get less padding (a narrow pane)
 void toggleFullscreen();
-bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map over the whole window when it is popped out
+void handleFullscreenHotkeys();          // F11 and Alt+Enter; ignored while a text field has the keyboard
+bool adsbFullMap(App& a, ImVec2 disp);           // adsb_ui.cpp: the ADS-B map or radar over the whole window when it is popped out
 void receiverLocation(double& lat, double& lon);  // adsb_ui.cpp: the one receiver position (the ADS-B antenna position)
 bool receiverLocationSet();                        // the user has set it (else it is a placeholder)
 void receiverPositionFields(App& a);               // its fields (latitude, longitude, altitude) and the Locate button
@@ -579,6 +583,16 @@ void passesMapSatellites(std::vector<MapSatRef>& out);   // passes_ui.cpp: the l
 struct MapCellTower { double lat = 0, lon = 0; int rangeM = 0; std::string label; unsigned colour = 0; };
 void cellMapTowers(const dect2::CellTelemetry& t, std::vector<MapCellTower>& out);   // cell_ui.cpp: the towers placed (OpenCelliD / CSV)
 void mapWindow(App& a);                             // map_ui.cpp: View > Map (a.mapOpen): coordinates, Maidenhead locators, distance and bearing
+void mapSendServerMenu(App& a);                     // map_send.cpp: Server menu (opt-in public map)
+void mapSendButton(App& a);                         // classic interface: the same choice as a button
+void mapSendTick(App& a);                           // POST current decoded positions when opted in
+bool mapPauseForTransmit(App& a);                   // turn the map connection off before the radio is keyed; true if it was on
+void mapTransmitAbort(App& a);                      // the radio did not start: put the connection back if it was on
+void mapTransmitEnded();                            // the radio is quiet: the Server control works again; the next send skips what is already on screen
+void aeroToolsTick(App& a);                         // aero_ui.cpp: SNR-sound tone while Inmarsat Aero is the mode
+void mapSendShutdown();                             // join the ingest thread before exit
+bool mapFamilySends(int family);                    // this mode can put decoded positions on the public map
+std::string mapSendStatusLine();                    // short "connected / N sent" line for the mode header (empty when off)
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
@@ -602,8 +616,9 @@ int subNav(const char* id, int& cur, std::initializer_list<const char*> names);
 float tagAt(ImDrawList* dl, ImVec2 pos, const char* text, ImU32 bg, ImU32 fg = IM_COL32(225, 232, 240, 255));
 void gaugePill(float width, float frac, ImU32 fill, const char* text);
 void lamp(const char* label, int state /*0 grey 1 green 2 amber 3 red*/, int icon = -1);
-// Lost samples (Engine::sampleLoss()) for the "dropped" read-outs: "0", or the seconds lost on the radio side and on the OnAir (CPU) side;
-// red while a loss is recent, amber after it; the tooltip on the item before says what each side means and what helps
+// Lost samples (Engine::sampleLoss()) for the "dropped" read-outs: "0", or where they went (callback gaps, ring overflow) and, when the
+// radio is under about 97% of its set rate, that rate. Red while that is happening or a loss is recent, amber after; the tooltip says
+// which problem it is (the radio's deliveries, the input ring, or receiver load).
 std::string lossText(const SampleLoss& l);
 ImVec4 lossColour(const SampleLoss& l, ImVec4 normal = ImVec4(0.93f, 0.95f, 0.97f, 1));
 void lossTooltip(const SampleLoss& l);
@@ -800,6 +815,9 @@ ChanWidth channelWidth(const App& a);
 std::string widthText(double mhz);   // "7 MHz", "1.536 MHz", "12.5 kHz"
 void channelWidthPopup(App& a);      // automatic or manual, where the mode allows it; otherwise what fixes the width
 void spectrumWaterfall(App& a, float& frac, bool drag);   // the spectrum on top of the waterfall, one panel
+float bandPlanStripHeight();         // plots.cpp: one text line plus padding; follows the font and resize
+void drawBandPlanStrip(ImDrawList* dl, float x0, float x1, float y, float h, double loMhz, double hiMhz);   // saAllocations in view
+void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, float x1, float y0, float y1);   // specx_ui.cpp: named point / range marks
 // specx_ident.cpp: "Identify this signal" (dect2/sig_ident.h). The region is [offHz -+ widthHz / 2] from the samples' centre, which the radio
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)
 void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widthHz, double rfOfCentreHz);

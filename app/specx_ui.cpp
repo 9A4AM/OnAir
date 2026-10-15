@@ -1,5 +1,5 @@
 // Spectrum explorer screens: a slim control strip (frequency as text, span, RBW and averaging, peak hold, auto range, gain, sample
-// rate, LNB / converter offset, bookmarks, help), a big spectrum over a waterfall that answer the mouse (crosshair, markers, centre,
+// rate, LNB / converter offset, named point and range bookmarks, help), a band-plan strip, a big spectrum over a waterfall that answer the mouse (crosshair, markers, centre,
 // zoom, pan, region), the region's measurements (with a hand-over to DVB-S/S2), and a sweep across a range that stitches a panorama
 // with its own waterfall and a table of the signals found. No decoder.
 #include <fstream>
@@ -11,6 +11,7 @@
 #include "dect2/specx_rx.h"
 #include "dect2/specx_tel.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <sstream>
@@ -21,7 +22,15 @@ namespace {
 
 namespace sx = dect2::specx;
 
-struct Bookmark { std::string name; double rfHz; uint32_t rgb = 0x4FA3E0; };   // rgb: 0xRRGGBB
+struct Bookmark {
+    std::string name;
+    double rfHz = 0;     // a point, or the low edge of a range
+    double rfHiHz = 0;   // 0: a point; else the high edge (Hz)
+    uint32_t rgb = 0x4FA3E0;   // 0xRRGGBB
+};
+bool markRange(const Bookmark& b) { return b.rfHiHz > b.rfHz + 0.5; }
+double markMid(const Bookmark& b) { return markRange(b) ? 0.5 * (b.rfHz + b.rfHiHz) : b.rfHz; }
+ImU32 markRgb(uint32_t rgb, int a) { return IM_COL32((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, a); }
 
 struct WfImage {
     gfx::Image* img = nullptr;
@@ -86,6 +95,7 @@ struct State {
     std::vector<Bookmark> marks;
     char markName[48] = "";
     float markCol[3] = {0.31f, 0.64f, 0.88f};
+    bool markAsRange = true;             // when a region is selected: save it as a range, not the centre
     uint64_t lastSeq = 0;
     WfImage wf;
     Sweep sw;
@@ -103,7 +113,11 @@ double toRadio(double rfHz) { return S.lnb.radioHz(rfHz); }
 
 void saveMarks() {
     std::string s;
-    for (auto& b : S.marks) { char v[56]; snprintf(v, sizeof v, "\t%.0f\t%06X\n", b.rfHz, b.rgb & 0xFFFFFF); s += b.name + v; }
+    for (auto& b : S.marks) {
+        char v[80];
+        snprintf(v, sizeof v, "\t%.0f\t%06X\t%.0f\n", b.rfHz, b.rgb & 0xFFFFFF, markRange(b) ? b.rfHiHz : 0.0);
+        s += b.name + v;
+    }
     plat::prefs().setS("specxBookmarks", s);
 }
 void saveLnb() {
@@ -127,9 +141,16 @@ void loadState() {
     while (std::getline(in, line)) {
         const size_t t = line.find('\t');
         if (t == std::string::npos) continue;
-        Bookmark b{line.substr(0, t), std::atof(line.c_str() + t + 1)};
+        Bookmark b;
+        b.name = line.substr(0, t);
+        b.rfHz = std::atof(line.c_str() + t + 1);
         const size_t t2 = line.find('\t', t + 1);
-        if (t2 != std::string::npos) b.rgb = (uint32_t)strtoul(line.c_str() + t2 + 1, nullptr, 16) & 0xFFFFFF;
+        if (t2 != std::string::npos) {
+            b.rgb = (uint32_t)strtoul(line.c_str() + t2 + 1, nullptr, 16) & 0xFFFFFF;
+            const size_t t3 = line.find('\t', t2 + 1);
+            if (t3 != std::string::npos) b.rfHiHz = std::atof(line.c_str() + t3 + 1);
+        }
+        if (b.rfHiHz > 0 && b.rfHiHz < b.rfHz) std::swap(b.rfHz, b.rfHiHz);
         S.marks.push_back(b);
     }
 }
@@ -281,6 +302,38 @@ void gestures(App& a, float l, float r, bool hovered, float top, float bot) {
     }
 }
 
+void drawMarks(ImDrawList* dl, double loHz, double hiHz, float l, float r, float top, float bot) {
+    if (!dl || r <= l || hiHz <= loHz || bot <= top) return;
+    const float lh = ImGui::GetTextLineHeight();
+    auto X = [&](double f) { return (float)(l + (f - loHz) / (hiHz - loHz) * (r - l)); };
+    dl->PushClipRect(ImVec2(l, top), ImVec2(r, bot), true);
+    int row = 0;
+    for (const Bookmark& m : S.marks) {
+        const double a0 = m.rfHz, a1 = markRange(m) ? m.rfHiHz : m.rfHz;
+        if (a1 < loHz || a0 > hiHz) continue;
+        const ImU32 c = markRgb(m.rgb, 220), fill = markRgb(m.rgb, 36), edge = markRgb(m.rgb, 180);
+        const float ny = top + 2 + lh * (float)(row % 3);
+        row++;
+        if (markRange(m)) {
+            const float x0 = std::max(l, X(a0)), x1 = std::min(r, X(a1));
+            dl->AddRectFilled(ImVec2(x0, top), ImVec2(std::max(x0 + 1.f, x1), bot), fill);
+            dl->AddLine(ImVec2(x0, top), ImVec2(x0, bot), edge);
+            dl->AddLine(ImVec2(x1, top), ImVec2(x1, bot), edge);
+            if (!m.name.empty()) {
+                const ImVec2 ts = ImGui::CalcTextSize(m.name.c_str());
+                const float tx = std::clamp(x0 + 3.f, l, std::max(l, r - ts.x - 2));
+                if (ny + lh <= bot) dl->AddText(ImVec2(tx, ny), c, m.name.c_str());
+            }
+        } else {
+            const float x = X(a0);
+            if (x < l || x > r) continue;
+            dl->AddLine(ImVec2(x, top), ImVec2(x, bot), edge);
+            if (!m.name.empty() && ny + lh <= bot) dl->AddText(ImVec2(x + 3, ny), c, m.name.c_str());
+        }
+    }
+    dl->PopClipRect();
+}
+
 void overlays(App& a, float l, float r, float top, float bot) {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const double span = S.viewHi - S.viewLo;
@@ -296,8 +349,8 @@ void overlays(App& a, float l, float r, float top, float bot) {
         char b[64]; snprintf(b, sizeof b, "M%zu %.1f", i + 1, levelAt(a, S.markers[i]));
         dl->AddText(ImVec2(x + 3, top + 2 + 14 * gUi * (float)(i % 3)), IM_COL32(255, 210, 90, 255), b);
     }
-    (void)a;
     dl->PopClipRect();
+    drawMarks(dl, S.viewLo, S.viewHi, l, r, top, bot);
 }
 
 void spectrumView(App& a, float h) {
@@ -404,7 +457,7 @@ void strip(App& a) {
     tip("Type a frequency and press Enter: 1.2G, 433.92M, 145500k (no unit: MHz)");
     flowNext(6 * gUi);
     if (ImGui::Button("*##sxstar")) ImGui::OpenPopup("##sxbm");
-    tip("Bookmark this frequency");
+    tip("Bookmark this frequency, or the selected region as a named range");
     if (ImGui::BeginPopup("##sxbm")) {
         if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
         ImGui::SetNextItemWidth(160 * gUi);
@@ -413,9 +466,20 @@ void strip(App& a) {
         ImGui::ColorEdit3("##sxbmc", S.markCol, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
         tip("Colour of this bookmark");
         ImGui::SameLine();
-        if (ImGui::Button("Save") || ent) {
+        const bool save = ImGui::Button("Save") || ent;
+        if (S.hasRegion) {
+            ImGui::Checkbox("Range (selected region)", &S.markAsRange);
+            tip("Save the selected region as a named range marker; off: the centre frequency as a point");
+        }
+        if (save) {
             const uint32_t rgb = ((uint32_t)(S.markCol[0] * 255 + 0.5f) << 16) | ((uint32_t)(S.markCol[1] * 255 + 0.5f) << 8) | (uint32_t)(S.markCol[2] * 255 + 0.5f);
-            S.marks.push_back({S.markName[0] ? S.markName : sx::freqText(toRf(centreRadio(a))), toRf(centreRadio(a)), rgb});
+            double lo = toRf(centreRadio(a)), hi = 0;
+            if (S.hasRegion && S.markAsRange) {
+                lo = S.regLo; hi = S.regHi;
+                if (lo > hi) std::swap(lo, hi);
+            }
+            std::string nm = S.markName[0] ? S.markName : (hi > lo ? "range" : sx::freqText(lo));
+            S.marks.push_back({std::move(nm), lo, hi, rgb});
             S.markName[0] = 0; saveMarks(); ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
@@ -599,7 +663,14 @@ void tab(App& a) {
     const float avail = ImGui::GetContentRegionAvail().y;
     const bool panel = S.hasRegion || S.sw.active || !S.sw.pano.db.empty();
     const float ph = panel ? std::min(avail * 0.42f, 260 * gUi) : 0;
-    const float rest = avail - ph - ImGui::GetStyle().ItemSpacing.y * (panel ? 2 : 1);
+    const float stripH = bandPlanStripHeight();
+    const float rest = avail - ph - stripH - ImGui::GetStyle().ItemSpacing.y * (panel ? 3 : 2);
+    {
+        const ImVec2 p0 = ImGui::GetCursorScreenPos();
+        const float w = ImGui::GetContentRegionAvail().x;
+        drawBandPlanStrip(ImGui::GetWindowDrawList(), p0.x, p0.x + w, p0.y, stripH, S.viewLo / 1e6, S.viewHi / 1e6);
+        ImGui::Dummy(ImVec2(w, stripH));
+    }
     spectrumView(a, std::max(80.f, rest * 0.58f));
     waterfallView(a, std::max(40.f, rest * 0.42f - ImGui::GetStyle().ItemSpacing.y));
     if (!panel) return;
@@ -623,7 +694,7 @@ void tab(App& a) {
 void list(App& a) {
     loadState();
     ImGui::TextDisabled("Bookmarks");
-    if (S.marks.empty()) { ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)); ImGui::TextWrapped("Star (*) a frequency to keep it here."); ImGui::PopStyleColor(); }
+    if (S.marks.empty()) { ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)); ImGui::TextWrapped("Star (*) a frequency, or a selected region as a named range, to keep it here."); ImGui::PopStyleColor(); }
     for (size_t i = 0; i < S.marks.size(); i++) {
         ImGui::PushID((int)i);
         if (ImGui::SmallButton("x")) { S.marks.erase(S.marks.begin() + (long)i); saveMarks(); ImGui::PopID(); break; }
@@ -638,24 +709,31 @@ void list(App& a) {
             }
             ImGui::SameLine();
         }
-        char b[96]; snprintf(b, sizeof b, "%s  %s", S.marks[i].name.c_str(), sx::freqText(S.marks[i].rfHz).c_str());
-        if (ImGui::Selectable(b)) tuneRf(a, S.marks[i].rfHz);
-        tip("Tune there");
+        char b[128];
+        if (markRange(S.marks[i])) snprintf(b, sizeof b, "%s  %s – %s", S.marks[i].name.c_str(), sx::freqText(S.marks[i].rfHz).c_str(), sx::freqText(S.marks[i].rfHiHz).c_str());
+        else snprintf(b, sizeof b, "%s  %s", S.marks[i].name.c_str(), sx::freqText(S.marks[i].rfHz).c_str());
+        if (ImGui::Selectable(b)) {
+            if (markRange(S.marks[i])) {
+                S.viewLo = S.marks[i].rfHz; S.viewHi = S.marks[i].rfHiHz;
+            }
+            tuneRf(a, markMid(S.marks[i]));
+        }
+        tip(markRange(S.marks[i]) ? "Tune to the middle and show this range" : "Tune there");
         ImGui::PopID();
     }
     if (ImGui::SmallButton("Export")) {
         const std::string path = plat::saveFileDialog("bookmarks.csv");
         if (!path.empty()) {
             std::ofstream o(path);
-            o << "name,frequency_hz,colour\n";
+            o << "name,frequency_hz,frequency_hi_hz,colour\n";
             for (auto& m : S.marks) {
                 std::string n = m.name; for (char& ch : n) if (ch == ',' || ch == '\n' || ch == '\r') ch = ' ';
-                char v[48]; snprintf(v, sizeof v, ",%.0f,#%06X\n", m.rfHz, m.rgb & 0xFFFFFF);
+                char v[72]; snprintf(v, sizeof v, ",%.0f,%.0f,#%06X\n", m.rfHz, markRange(m) ? m.rfHiHz : 0.0, m.rgb & 0xFFFFFF);
                 o << n << v;
             }
         }
     }
-    tip("Save the bookmarks to a CSV file: name, frequency in Hz, colour");
+    tip("Save the bookmarks to a CSV file: name, frequency in Hz, high frequency (0 for a point), colour");
     ImGui::SameLine();
     if (ImGui::SmallButton("Import")) {
         const std::string path = plat::openFileDialog();
@@ -664,14 +742,36 @@ void list(App& a) {
             std::string line;
             while (std::getline(in, line)) {
                 if (!line.empty() && line.back() == '\r') line.pop_back();
-                const size_t c2 = line.rfind(','), c1 = c2 == std::string::npos || c2 == 0 ? std::string::npos : line.rfind(',', c2 - 1);
-                if (c1 == std::string::npos) continue;
-                const double hz = std::atof(line.c_str() + c1 + 1);
-                if (hz <= 0) continue;   // the header line
-                Bookmark m{line.substr(0, c1), hz};
-                const char* cs = line.c_str() + c2 + 1;
-                if (*cs == '#') cs++;
-                if (*cs) m.rgb = (uint32_t)strtoul(cs, nullptr, 16) & 0xFFFFFF;
+                std::vector<std::string> p;
+                for (size_t i = 0; i < line.size();) {
+                    size_t j = line.find(',', i);
+                    if (j == std::string::npos) j = line.size();
+                    p.push_back(line.substr(i, j - i));
+                    i = j + (j < line.size() ? 1 : 0);
+                    if (j == line.size()) break;
+                }
+                if (p.size() < 2) continue;
+                auto hex = [](const std::string& s) {
+                    if (s.empty()) return false;
+                    size_t k = s[0] == '#' ? 1 : 0;
+                    if (s.size() - k != 6) return false;
+                    for (; k < s.size(); k++) if (!std::isxdigit((unsigned char)s[k])) return false;
+                    return true;
+                };
+                Bookmark m;
+                int last = (int)p.size() - 1;
+                if (hex(p[(size_t)last])) {
+                    const char* cs = p[(size_t)last].c_str();
+                    if (*cs == '#') cs++;
+                    m.rgb = (uint32_t)strtoul(cs, nullptr, 16) & 0xFFFFFF;
+                    last--;
+                }
+                if (last < 1) continue;
+                m.name = p[0];
+                m.rfHz = std::atof(p[1].c_str());
+                if (m.rfHz <= 0) continue;   // the header line
+                if (last >= 2) m.rfHiHz = std::atof(p[2].c_str());
+                if (m.rfHiHz > 0 && m.rfHiHz < m.rfHz) std::swap(m.rfHz, m.rfHiHz);
                 S.marks.push_back(m);
             }
             saveMarks();
@@ -747,6 +847,11 @@ void summary(const App& a, std::string& l1, std::string& l2) {
 }
 
 } // namespace
+
+void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, float x1, float y0, float y1) {
+    loadState();
+    drawMarks(dl, loHz, hiHz, x0, x1, y0, y1);
+}
 
 extern const ModeUi kSpecxUi;
 const ModeUi kSpecxUi = {

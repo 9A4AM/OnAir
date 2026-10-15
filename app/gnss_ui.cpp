@@ -318,6 +318,25 @@ void mapView(App& a, ImVec2 size) {
     if (S.fixes.size() > 1) {   // the trail of fixes: on a fixed antenna it shows the scatter of the solution
         for (const auto& fp : S.fixes) dl->AddCircleFilled(adsbmap::project(fp.lat, fp.lon), 1.8f * gUi, IM_COL32(120, 200, 255, 110));
     }
+    const ImVec2 mouse = ImGui::GetIO().MousePos;
+    const GnssSatPos* tip = nullptr;
+    float tipD = 14 * gUi;
+    if (on) {
+        for (const auto& s : t.sats) {
+            const ImVec2 q = adsbmap::project(s.lat, s.lon);
+            const float r = (s.used ? 7.f : 5.5f) * gUi;
+            const ImVec2 d[4] = {{q.x, q.y - r}, {q.x + r, q.y}, {q.x, q.y + r}, {q.x - r, q.y}};
+            dl->AddConvexPolyFilled(d, 4, sysColour(s.sys, s.tracked ? 0.95f : 0.45f));
+            dl->AddPolyline(d, 4, s.used ? IM_COL32(255, 255, 255, 230) : IM_COL32(0, 0, 0, 150), ImDrawFlags_Closed, s.used ? 1.5f : 1.f);
+            const std::string n = satName(s.sys, s.prn, s.fcn);
+            const ImVec2 ts = ImGui::CalcTextSize(n.c_str());
+            const ImVec2 lp(q.x + 8 * gUi, q.y - ts.y * 0.5f);
+            dl->AddRectFilled(ImVec2(lp.x - 3 * gUi, lp.y - 1), ImVec2(lp.x + ts.x + 3 * gUi, lp.y + ts.y + 1), IM_COL32(10, 12, 14, 190), 2.f);
+            dl->AddText(lp, IM_COL32(235, 238, 240, 255), n.c_str());
+            const float dd = std::hypot(q.x - mouse.x, q.y - mouse.y);
+            if (dd < tipD) { tipD = dd; tip = &s; }
+        }
+    }
     if (on && t.fix.valid) {
         const ImVec2 q = adsbmap::project(t.fix.latDeg, t.fix.lonDeg);
         // the estimated error as a circle: metres to pixels from the projection of a point that far north
@@ -329,6 +348,11 @@ void mapView(App& a, ImVec2 size) {
         dl->AddCircle(q, 5 * gUi, IM_COL32(20, 90, 200, 255), 24, 2.f);
     }
     dl->PopClipRect();
+    if (tip) {
+        ImGui::SetTooltip("%s (%s)  %.2f, %.2f  %.0f km\n%s%s%s", satNameK(tip->sys, tip->prn, tip->fcn).c_str(), gnssSystemName(tip->sys),
+                          tip->lat, tip->lon, tip->altKm, tip->tracked ? "tracked" : "not tracked", tip->used ? ", in the fix" : "",
+                          tip->fromEphemeris ? "" : "  (almanac)");
+    }
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 8 * gUi));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
     if (ImGui::Button("+", ImVec2(26 * gUi, 0))) S.map.zoom = std::min(adsbmap::kMaxZoom, S.map.zoom + 1);
@@ -337,15 +361,29 @@ void mapView(App& a, ImVec2 size) {
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Button("follow")) { S.mapFollow = true; if (on && t.fix.valid) { S.map.lat = t.fix.latDeg; S.map.lon = t.fix.lonDeg; } }
     ImGui::SameLine(0, 6 * gUi);
+    if (ImGui::Button("fit")) {
+        S.mapFollow = false;
+        double la0 = 90, la1 = -90, lo0 = 180, lo1 = -180;
+        int n = 0;
+        auto box = [&](double la, double lo) { la0 = std::min(la0, la); la1 = std::max(la1, la); lo0 = std::min(lo0, lo); lo1 = std::max(lo1, lo); n++; };
+        if (on && t.fix.valid) box(t.fix.latDeg, t.fix.lonDeg);
+        if (on) for (const auto& s : t.sats) box(s.lat, s.lon);
+        if (n) {
+            S.map.lat = (la0 + la1) / 2; S.map.lon = (lo0 + lo1) / 2;
+            const double span = std::max(12.0, std::max(lo1 - lo0, (la1 - la0) * 1.4));
+            S.map.zoom = std::max(2, std::min(6, (int)std::floor(std::log2(std::max(2.0, 0.7 * size.x * 360.0 / (256.0 * span))))));
+        }
+    }
+    ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Button("clear trail")) S.fixes.clear();
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls("never the position itself");
     plat::prefs().setI("gnssZoom", S.map.zoom);
-    if (!on || !t.fix.valid) {
-        ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + size.y - ImGui::GetTextLineHeight() - 6 * gUi));
-        adsbmap::legend(size.x, "%s", on ? "no fix yet" : "start the receiver");
-    }
+    ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + size.y - ImGui::GetTextLineHeight() - 6 * gUi));
+    if (!on) adsbmap::legend(size.x, "start the receiver");
+    else if (!t.sats.empty()) adsbmap::legend(size.x, "%zu satellite sub-points from the navigation message; white dot: the fix. Fit to see them.", t.sats.size());
+    else adsbmap::legend(size.x, "%s", t.fix.valid ? "fix, no satellite orbits yet" : "no fix yet");
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
 }
 

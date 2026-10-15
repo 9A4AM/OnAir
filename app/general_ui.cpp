@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+bool freqStepArrow(const char* id, ImGuiDir dir);
+
 namespace {
 
 const double kSteps[] = {10, 100, 1000, 2500, 5000, 6250, 8333.333333, 9000, 10000, 12500, 25000, 50000, 100000};
@@ -40,6 +42,9 @@ struct State {
     bool dragged = false;
     std::string recErr;
     bool txRec = false;
+    float preRoll = 1.5f;        // seconds of signal kept from before the squelch opens
+    float txHang = 1.5f;         // the file stays open this long after the squelch shuts
+    int txIq = -1;               // -1 follows the mode (on for USB / LSB), 0 off, 1 on
     float afHp = 0, afLp = 0, afNotch = 0;   // audio filters in Hz, 0 = off
     bool mp3 = false;            // recordings as MP3 through LAME (when libmp3lame is installed)
     bool flac = false;           // recordings as FLAC (lossless, smaller, with tags) instead of WAV
@@ -74,6 +79,10 @@ void load() {
     S.mp3 = p.getB("genMp3", false) && dect2::GeneralReceiver::mp3Available();
     S.afHp = (float)p.getD("genAfHp", 0); S.afLp = (float)p.getD("genAfLp", 0); S.afNotch = (float)p.getD("genAfNotch", 0);
     S.sqOn = p.getB("genSqOn", true); S.sqAuto = p.getB("genSqAuto", true); S.sqDb = (float)p.getD("genSqDb", -60);
+    S.preRoll = (float)std::clamp(p.getD("genPreRoll", 1.5), 0.0, 3.0);
+    S.txHang = (float)std::clamp(p.getD("genTxHang", 1.5), 0.0, 3.0);
+    S.txIq = (int)p.getI("genTxIq", -1);
+    if (S.txIq < -1 || S.txIq > 1) S.txIq = -1;
     S.agc = p.getB("genAgc", true); S.gainDb = (float)p.getD("genGain", 20);
     S.deNfm = (int)std::clamp(p.getI("genDeNfm", 0), 0L, 3L); S.deWfm = (int)std::clamp(p.getI("genDeWfm", 1), 0L, 3L);
     S.pitch = (float)std::clamp(p.getD("genPitch", 700), 200.0, 1500.0);
@@ -93,6 +102,7 @@ void save() {
 }
 
 double listenHz(const App& a) { return a.freqMhz * 1e6 + S.chanOff; }
+bool channelIq(int demod) { return S.txIq < 0 ? (demod == dect2::GenUsb || demod == dect2::GenLsb) : S.txIq > 0; }
 double stepHz() { return kSteps[S.step[S.demod]]; }
 void edges(double& lo, double& hi) { dect2::generalFilterEdges(S.demod, S.width[S.demod], lo, hi); }
 
@@ -171,6 +181,7 @@ void sMeter(const App& a) {
 
 void extraChannelsUi(App& a);
 void audioFiltersUi(App& a);
+
 void controls(App& a) {
     load();
     // the listening frequency and the step
@@ -179,13 +190,11 @@ void controls(App& a) {
     ImGui::PopFont();
     tip("The frequency listened to: the dial plus where the channel marker sits.\nClick the spectrum or the waterfall to move it; drag the edges of the light band to change the filter.");
     flowNext(10 * gUi);
-    ImGui::PushButtonRepeat(true);
-    if (ImGui::ArrowButton("##gdn", ImGuiDir_Left)) setListen(a, snap(listenHz(a)) - stepHz());
+    if (freqStepArrow("##gdn", ImGuiDir_Left)) setListen(a, snap(listenHz(a)) - stepHz());
     tip("Down one step. Hold for a continuous change.");
     ImGui::SameLine(0, 2 * gUi);
-    if (ImGui::ArrowButton("##gup", ImGuiDir_Right)) setListen(a, snap(listenHz(a)) + stepHz());
+    if (freqStepArrow("##gup", ImGuiDir_Right)) setListen(a, snap(listenHz(a)) + stepHz());
     tip("Up one step. Hold for a continuous change.");
-    ImGui::PopButtonRepeat();
     ImGui::SameLine(0, 4 * gUi);
     ImGui::SetNextItemWidth(95 * gUi);
     if (ImGui::Combo("##gstep", &S.step[S.demod], kStepNames, kNumSteps)) save();
@@ -225,7 +234,7 @@ void controls(App& a) {
     ImGui::SetNextItemWidth(80 * gUi);
     int sm = S.sqAuto ? 0 : 1;
     if (ImGui::Combo("##gsqm", &sm, "Auto\0Level\0")) { S.sqAuto = sm == 0; save(); }
-    tip("Auto: opens 6 dB over the noise measured beside the channel. Level: opens at the threshold in dBFS.");
+    tip("Auto: USB and LSB open when the voice passband is 6 dB over its own noise (speech, no carrier needed). NFM, AM and the others open 6 dB over the noise beside the channel. Level: opens at the threshold in dBFS.");
     if (!S.sqAuto) {
         ImGui::SameLine(0, 4 * gUi);
         ImGui::SetNextItemWidth(140 * gUi);
@@ -293,15 +302,13 @@ void controls(App& a) {
             std::error_code ec;
             const std::string dir = plat::dataDir() + "/audio-recordings";
             std::filesystem::create_directories(dir, ec);
-            const std::time_t now = std::time(nullptr);
-            char ts[32];
-            std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
-            char pre[96];
-            snprintf(pre, sizeof pre, "onair_%s_%.4fMHz_%s", dect2::generalDemodName(S.demod), listenHz(a) / 1e6, ts);
-            a.engine.general().setRecordFormat(S.flac, recTags(a, listenHz(a))); a.engine.general().setRecordMp3(S.mp3);
-            a.engine.general().setTransmissionRecording(S.txRec, dir, pre);
+            auto& r = a.engine.general();
+            r.setRecordFormat(S.flac, recTags(a, listenHz(a))); r.setRecordMp3(S.mp3);
+            r.setListenHz(listenHz(a));
+            r.setTransmissionGate(S.preRoll, S.txHang, channelIq(S.demod), true);
+            r.setTransmissionRecording(S.txRec, dir, "");
         }
-        tip("Records each transmission to its own WAV file: a file starts when the squelch opens and ends when it closes (clips under half a second are dropped). Needs the squelch on.");
+        tip("One file each time the squelch opens. It starts with the pre-roll, so the first syllable is kept, and it stays open through the hang so a pause between words is not a new file. The name has the time, the frequency and the mode, and a line is added to transmissions.csv. Clips under half a second are dropped. Needs the squelch on.");
         if (S.txRec) { ImGui::SameLine(0, 6 * gUi); ImGui::TextDisabled("%d saved", a.engine.general().transmissionFiles()); }
     }
     if (live(a) && (T(a).recording || !T(a).recordPath.empty())) {
@@ -313,6 +320,19 @@ void controls(App& a) {
     }
     const std::string& err = S.recErr.empty() && live(a) ? T(a).recordError : S.recErr;
     if (!err.empty()) { ImGui::SameLine(0, 8 * gUi); ImGui::TextColored(pal::warnAmber(), "%s", err.c_str()); }
+    ImGui::SetNextItemWidth(155 * gUi);
+    ImGui::SliderFloat("##gpr", &S.preRoll, 0.f, 3.f, "pre-roll %.1f s");
+    if (ImGui::IsItemDeactivatedAfterEdit()) plat::prefs().setD("genPreRoll", S.preRoll);
+    tip("Seconds of signal kept from before the squelch opens, written at the start of each transmission file (0 to 3).");
+    ImGui::SameLine(0, 8 * gUi);
+    ImGui::SetNextItemWidth(140 * gUi);
+    ImGui::SliderFloat("##ghang", &S.txHang, 0.f, 3.f, "hang %.1f s");
+    if (ImGui::IsItemDeactivatedAfterEdit()) plat::prefs().setD("genTxHang", S.txHang);
+    tip("How long the file stays open after the squelch shuts. About 1.5 s keeps one SSB transmission together across a gap between words. The mute itself still waits 150 ms.");
+    ImGui::SameLine(0, 8 * gUi);
+    bool iq = channelIq(S.demod);
+    if (ImGui::Checkbox("Channel IQ", &iq)) { S.txIq = iq ? 1 : 0; plat::prefs().setI("genTxIq", S.txIq); }
+    tip("Save the channel's complex baseband next to the audio (48 kHz float IQ, about 23 MB a minute), so the carrier can be measured afterwards. On for USB and LSB unless you change it; off for NFM, where those files would be large.");
     audioFiltersUi(a);
     extraChannelsUi(a);
 }
@@ -385,15 +405,14 @@ void extraChannelsUi(App& a) {
             std::error_code ec;
             const std::string dir = plat::dataDir() + "/audio-recordings";
             std::filesystem::create_directories(dir, ec);
-            const std::time_t now = std::time(nullptr);
-            char ts[32];
-            std::strftime(ts, sizeof ts, "%Y%m%d-%H%M%S", std::localtime(&now));
-            char pre[112];
-            snprintf(pre, sizeof pre, "onair_ch%d_%.4fMHz_%s", i + 2, (a.freqMhz * 1e6 + S.exOff[i]) / 1e6, ts);
-            a.engine.generalExtra(i).setRecordFormat(S.flac, recTags(a, a.freqMhz * 1e6 + S.exOff[i])); a.engine.generalExtra(i).setRecordMp3(S.mp3);
-            a.engine.generalExtra(i).setTransmissionRecording(S.exRec[i], dir, pre);
+            auto& x = a.engine.generalExtra(i);
+            const double hz = a.freqMhz * 1e6 + S.exOff[i];
+            x.setRecordFormat(S.flac, recTags(a, hz)); x.setRecordMp3(S.mp3);
+            x.setListenHz(hz);
+            x.setTransmissionGate(S.preRoll, S.txHang, channelIq(S.exDemod[i]), true);
+            x.setTransmissionRecording(S.exRec[i], dir, "");
         }
-        tip("Record each transmission on this channel to its own WAV file (audio-recordings folder)");
+        tip("Record each transmission on this channel to its own file (time, frequency and mode in the name; audio-recordings folder)");
         if (S.exRec[i]) { ImGui::SameLine(0, 6 * gUi); ImGui::TextDisabled("%d saved", a.engine.generalExtra(i).transmissionFiles()); }
         ImGui::PopID();
     }
@@ -413,6 +432,8 @@ void tick(App& a) {
     r.setCwPitchHz(S.pitch);
     r.setVolume(a.volume); r.setMuted(a.muted);
     r.setAudioFilters(S.afHp, S.afLp, S.afNotch);
+    r.setListenHz(listenHz(a));
+    r.setTransmissionGate(S.preRoll, S.txHang, channelIq(S.demod), true);
     a.engine.setGeneralExtraCount(S.nExtra);
     for (int i = 0; i < S.nExtra && i < dect2::Engine::kGeneralExtra; i++) {   // the other channels: the squelch and gain of the main one, their own offset and demodulator
         auto& x = a.engine.generalExtra(i);
@@ -425,6 +446,8 @@ void tick(App& a) {
         x.setDeemphUs(S.exDemod[i] == dect2::GenNfm ? kDeemph[S.deNfm] : S.exDemod[i] == dect2::GenWfm ? kDeemph[S.deWfm] : 0);
         x.setCwPitchHz(S.pitch);
         x.setAudioFilters(S.afHp, S.afLp, S.afNotch);
+        x.setListenHz(a.freqMhz * 1e6 + S.exOff[i]);
+        x.setTransmissionGate(S.preRoll, S.txHang, channelIq(S.exDemod[i]), true);
         dect2::GeneralTelemetry g;
         if (x.telemetry(g, S.exSeq[i])) { S.exSeq[i] = g.seq; S.exTel[i] = g; }
     }

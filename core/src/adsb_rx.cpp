@@ -87,8 +87,12 @@ void AdsbReceiver::configure(double inputRateHz) {
     p_->rate = inputRateHz;
     p_->demod.configure(inputRateHz);
     p_->demod.setThresholds(p_->kPulse, p_->kGap);
-    p_->tracker.shiftTime(-p_->now);   // the demodulator's clock starts again at 0: the kept aircraft move back with it
-    p_->nextReport = 0.25; p_->now = 0; p_->state = 0;
+    // reset() keeps the sample counter, so timeSec continues. Do not rewind the aircraft table onto a 0..now catch-up:
+    // that made even/odd CPR times differ by minutes and no pair decoded.
+    const double t = p_->demod.timeSec();
+    p_->nextReport = t + 0.25;
+    p_->now = t;
+    p_->state = 0;
     p_->lastGood = p_->lastActivity = p_->lastNewLog = -1e9;
     p_->resetPending = false;
 }

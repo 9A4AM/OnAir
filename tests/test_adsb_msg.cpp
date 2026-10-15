@@ -100,6 +100,11 @@ static void testAirbornePosition() {
     CHECK(cprLocalAirborne(mo.cprLat, mo.cprLon, true, 51.0, 5.0, lat, lon) && std::fabs(lat - glat) < 1e-9 && std::fabs(lon - glon) < 1e-9, "local odd %.9f %.9f vs %.9f %.9f", lat, lon, glat, glon);
     cprGlobalAirborne(me.cprLat, me.cprLon, mo.cprLat, mo.cprLon, false, glat, glon);
     CHECK(cprLocalAirborne(me.cprLat, me.cprLon, false, 53.0, 3.0, lat, lon) && std::fabs(lat - glat) < 1e-9 && std::fabs(lon - glon) < 1e-9, "local even %.9f %.9f", lat, lon);
+    // Lithuania sits on the NL 14/15 step (54.66°): a pair over Vilnius must still decode
+    int le, xe, lo_, xo;
+    cprEncodeAirborne(54.687, 25.280, false, le, xe);
+    cprEncodeAirborne(54.687, 25.280, true, lo_, xo);
+    CHECK(cprGlobalAirborne(le, xe, lo_, xo, true, lat, lon) && std::fabs(lat - 54.687) < 1e-3 && std::fabs(lon - 25.280) < 1e-3, "Vilnius CPR %.4f %.4f", lat, lon);
 }
 
 static void testNl() {

@@ -599,9 +599,9 @@ void AeroReceiver::setFrameCallback(std::function<void(double, const AeroFrameEv
 ModeTuning aeroTuning() {
     ModeTuning t;
     t.stdMode = 20; t.id = "aero"; t.name = "Inmarsat Aero";
-    t.minMhz = 1525; t.maxMhz = 1559; t.defMhz = 1545;
-    t.sampleRate = 2000000;
-    t.basebandHz = 1750000;
+    t.minMhz = 1525; t.maxMhz = 1559; t.defMhz = 1545.57;   // between the 600/1200 group (~1545.1) and 10500 bit/s (~1546.0)
+    t.sampleRate = 4000000;              // Auto: a 4 Msps radio sees both P groups; a slower radio runs as fast as it can
+    t.basebandHz = 3500000;
     t.bandwidthMhz = 0.02;
     t.minSampleRate = 240000;
     t.tuneOffsetHz = 50000;

@@ -145,6 +145,7 @@ struct DeviceInfo {
     // handle (none yet: OnAir stops the receiver when a transmission starts).
     bool canTransmit = false;
     bool txFullDuplex = false;
+    int txChannels = 1;                    // transmit outputs (LimeSDR-USB, bladeRF 2.0, USRP: more than one). 0: not known until the radio has been opened
     double txMinRateHz = 0, txMaxRateHz = 0;
     double txGainMinDb = 0, txGainMaxDb = 0;
     std::string txGainNote;                // what the TX gain number means on this radio ("HackRF: 0-47 dB TX VGA, +14 dB with the amplifier")
@@ -166,15 +167,20 @@ public:
 
 // ---- transmit ---------------------------------------------------------------------------------------------------------------------------
 // What a transmission asks of the radio. No limit is applied by OnAir: the frequency goes to the driver as given (a hertz-sized value, a
-// terahertz one), the gain is the radio's own TX gain in dB clamped only to the scale the radio itself reports.
+// terahertz one) plus offsetHz, the gain is the radio's own TX gain in dB clamped only to the scale the radio itself reports.
 struct TxTune {
-    double centerHz = 0;
+    double centerHz = 0;         // the frequency the operator means; sinks do not add offsetHz into this
+    double offsetHz = 0;         // added only to the frequency sent to the radio (txRadioHz). 0: no change. May be negative
     double sampleRate = 0;       // complex samples per second the radio is asked for; what it really runs is TxSink::sampleRate()
     double gainDb = 0;           // the radio's TX gain scale (DeviceInfo::txGainMinDb .. txGainMaxDb)
     double bandwidthHz = 0;      // analogue filter, 0 = automatic
     bool ampOn = false;          // HackRF: the +14 dB amplifier
+    int channel = 0;             // which transmit output (0 = TX1). A radio with one output refuses any other
     std::map<std::string, std::string> radio;   // the radio's own settings (TuneSettings::radio), e.g. "ppm"
 };
+
+// The hertz value a transmit sink writes at its set-frequency call. PPM correction, where a radio has it, is applied to this result.
+inline double txRadioHz(const TxTune& t) { return t.centerHz + t.offsetHz; }
 
 // A radio that transmits. open() starts the radio's transmit path (a driver that refuses a frequency or a rate says why in err, in plain
 // words); write() hands it complex float samples (full scale = +-1.0; beyond that is clipped) and returns when the radio has taken them, so a

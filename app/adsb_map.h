@@ -2,6 +2,7 @@
 // (curl, as the updater uses) and a picture decoder (macOS only for now); without them it shows a plain graticule.
 #pragma once
 #include "imgui.h"
+#include <cmath>
 
 namespace adsbmap {
 
@@ -27,5 +28,29 @@ void legend(float mapWidth, const char* fmt, ...);   // TextDisabled() along the
 void tileControls(const char* privacy);
 bool online();                                 // tiles are fetched from the tile server (the "online map" switch)
 void shutdown();                               // stop the downloader; delete this session's tiles unless they are kept
+
+// Aircraft icon fill: white ADS-B, blue Inmarsat, red ACARS, yellow HFDL; grey when the last update is older than 30 s (60 s for satellite).
+enum class AcSrc { Adsb, Sat, Acars, Hfdl, Flarm };
+inline double acStaleSec(AcSrc s) { return s == AcSrc::Sat ? 60.0 : 30.0; }
+inline ImU32 acLive(AcSrc s) {
+    switch (s) {
+        case AcSrc::Sat: return IM_COL32(80, 150, 220, 255);
+        case AcSrc::Acars: return IM_COL32(220, 72, 72, 255);
+        case AcSrc::Hfdl: return IM_COL32(230, 198, 64, 255);
+        case AcSrc::Flarm: return IM_COL32(108, 204, 122, 255);
+        default: return IM_COL32(236, 238, 240, 255);
+    }
+}
+inline ImU32 acStale() { return IM_COL32(150, 154, 158, 255); }
+inline ImU32 acColour(AcSrc s, double ageSec, float alpha = 1.f) {
+    const ImU32 c = ageSec > acStaleSec(s) ? acStale() : acLive(s);
+    return (c & 0x00FFFFFF) | ((ImU32)std::lround(255.f * alpha) << 24);
+}
+// point `nm` nautical miles along `headingDeg` (0 = north): the short "where it is going" stroke
+inline void aheadNm(double lat, double lon, double headingDeg, double nm, double& ola, double& olo) {
+    const double rad = 0.017453292519943295, r = nm / 3440.065, h = headingDeg * rad, p1 = lat * rad;
+    ola = std::asin(std::sin(p1) * std::cos(r) + std::cos(p1) * std::sin(r) * std::cos(h)) / rad;
+    olo = lon + std::atan2(std::sin(h) * std::sin(r) * std::cos(p1), std::cos(r) - std::sin(p1) * std::sin(ola * rad)) / rad;
+}
 
 } // namespace adsbmap

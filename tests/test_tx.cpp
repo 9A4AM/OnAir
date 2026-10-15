@@ -777,6 +777,7 @@ static void soapyChecks(const std::string& moduleDir) {
     const auto st = s.stats();
     CHECK(st.finished && !st.failed, "soapy session failed: %s", st.error.c_str());
     CHECK(getenv("ONAIR_TEST_TXFREQ") && atof(getenv("ONAIR_TEST_TXFREQ")) == 1090e6, "TX frequency %s", getenv("ONAIR_TEST_TXFREQ") ? getenv("ONAIR_TEST_TXFREQ") : "-");
+    CHECK(getenv("ONAIR_TEST_TXCH") && std::string(getenv("ONAIR_TEST_TXCH")) == "0", "a one-output radio transmits on TX1: %s", getenv("ONAIR_TEST_TXCH") ? getenv("ONAIR_TEST_TXCH") : "-");
     CHECK(getenv("ONAIR_TEST_TXGAIN") && std::fabs(atof(getenv("ONAIR_TEST_TXGAIN")) - 60) < 1e-9, "the gain is clamped to the radio's own scale only: %s", getenv("ONAIR_TEST_TXGAIN") ? getenv("ONAIR_TEST_TXGAIN") : "-");
     CHECK(getenv("ONAIR_TEST_TXACTIVE") && std::string(getenv("ONAIR_TEST_TXACTIVE")) == "0", "the TX stream is deactivated at the end");
     CHECK(std::fabs(st.rateHz - 64e6 / 7) < 1, "this radio only runs 64/7 Msps; the generator followed: %.0f", st.rateHz);
@@ -790,6 +791,20 @@ static void soapyChecks(const std::string& moduleDir) {
         CHECK(d.locked, "the samples the SoapySDR sink wrote do not decode");
     }
     std::remove(file.c_str());
+    {   // two outputs: the chosen one is tuned and streamed; one past the end is refused
+        setenv("ONAIR_TEST_NTX", "2", 1);
+        setenv("ONAIR_TEST_TX_FILE", "/dev/null", 1);
+        TxRequest rch = r; rch.tune.channel = 1; rch.loop = true;
+        TxSession sch;
+        CHECK(sch.start(makeTxSink(radio), rch, {}, err), "TX2 start: %s", err.c_str());
+        CHECK(getenv("ONAIR_TEST_TXCH") && std::string(getenv("ONAIR_TEST_TXCH")) == "1", "the stream is on TX2: %s", getenv("ONAIR_TEST_TXCH") ? getenv("ONAIR_TEST_TXCH") : "-");
+        sch.stop();
+        rch.tune.channel = 2;
+        TxSession sch2;
+        std::string ech;
+        CHECK(!sch2.start(makeTxSink(radio), rch, {}, ech) && ech.find("TX1 to TX2") != std::string::npos, "TX3 refused: %s", ech.c_str());
+        unsetenv("ONAIR_TEST_NTX");
+    }
     {   // 1 THz goes to the driver; a driver that throws gets its words back
         setenv("ONAIR_TEST_TX_FILE", "/dev/null", 1);
         TxRequest r2 = r; r2.tune.centerHz = 1e12; r2.loop = true;
@@ -803,6 +818,16 @@ static void soapyChecks(const std::string& moduleDir) {
         CHECK(!s3.start(makeTxSink(radio), r2, {}, e3) && e3.find("the synthesiser stops at 6e9") != std::string::npos && e3.find("refused") != std::string::npos, "the driver's own words: %s", e3.c_str());
         CHECK(!s3.running(), "nothing runs after a refusal");
         unsetenv("ONAIR_TEST_TX_MAXFREQ");
+    }
+    {   // offset is added only to the frequency the driver records; channel and gain stay as they were
+        setenv("ONAIR_TEST_TX_FILE", "/dev/null", 1);
+        TxRequest ro = r; ro.tune.centerHz = 50e6; ro.tune.offsetHz = 5e6; ro.tune.channel = 0; ro.loop = true;
+        TxSession so;
+        CHECK(so.start(makeTxSink(radio), ro, {}, err), "offset start: %s", err.c_str());
+        CHECK(getenv("ONAIR_TEST_TXFREQ") && atof(getenv("ONAIR_TEST_TXFREQ")) == 55e6, "the radio is told center plus offset: %s", getenv("ONAIR_TEST_TXFREQ") ? getenv("ONAIR_TEST_TXFREQ") : "-");
+        CHECK(getenv("ONAIR_TEST_TXCH") && std::string(getenv("ONAIR_TEST_TXCH")) == "0", "offset does not change the channel: %s", getenv("ONAIR_TEST_TXCH") ? getenv("ONAIR_TEST_TXCH") : "-");
+        CHECK(getenv("ONAIR_TEST_TXGAIN") && std::fabs(atof(getenv("ONAIR_TEST_TXGAIN")) - 60) < 1e-9, "offset does not change the gain: %s", getenv("ONAIR_TEST_TXGAIN") ? getenv("ONAIR_TEST_TXGAIN") : "-");
+        so.stop();
     }
     {   // a radio that takes no samples: the session fails with words instead of hanging
         setenv("ONAIR_TEST_TX_STALL", "1", 1);

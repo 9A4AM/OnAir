@@ -39,6 +39,9 @@ struct Rx888UsbDevice {
     uint16_t vid = 0, pid = 0;
     int bus = 0, address = 0;
     std::string manufacturer, product, serial;   // app mode only (the boot loader has none)
+    // 0: the name was read (a boot loader has nothing to read). Otherwise the libusb error from opening the device to read it.
+    // An application-mode FX3 that could not be opened is still listed, so a radio that just re-enumerated is not invisible.
+    int nameError = 0;
     bool bootloader() const { return pid == kRx888PidBoot; }
 };
 
@@ -57,18 +60,26 @@ public:
                        const std::function<void()>& onStarted) = 0;
     // makes a blocked stream() look at keepGoing again
     virtual void interrupt() = 0;
+    // The FX3 has left the bus (the firmware jump). release of the interface then can stall on the dead device; close is enough.
+    virtual void noteDisconnected() {}
 };
 
 class Rx888Usb {
 public:
     virtual ~Rx888Usb() = default;
-    // every FX3 (04b4:00f1 and 04b4:00f3) in the order of the system; an app-mode one that is not an RX888 MkII is left out
+    // every FX3 (04b4:00f1 and 04b4:00f3) in the order of the system. An app-mode one whose name is not "RX888mk2" is left out.
+    // One whose name could not be read is included with nameError set (a LimeSDR-USB shares 04b4:00f1, so a name that was read still decides).
     virtual std::vector<Rx888UsbDevice> list() = 0;
     virtual std::unique_ptr<Rx888Link> open(const Rx888UsbDevice& d, int& libusbError) = 0;
+    // After the boot loader drops off the bus: forget cached names and, for libusb, the context, so the next list() sees the new device.
+    virtual void rescan() {}
 };
 
 Rx888Usb& rx888Usb();
 void rx888UseUsb(Rx888Usb* usb);   // tests: nullptr goes back to libusb
+// Tests: how long upload waits for the re-enumerated radio, and how often it looks. 0 restores the default.
+void rx888SetReenumWaitMs(int ms);
+void rx888SetReenumPollMs(int ms);
 
 // The firmware image of the SDDC project (SDDC_FX3.img). Not shipped (the Cypress SDK code inside it has a licence of its own): found in
 // this order: ONAIR_RX888_FIRMWARE (a file), SDDC_FX3.img in the OnAir codecs folders (codecFolders()).

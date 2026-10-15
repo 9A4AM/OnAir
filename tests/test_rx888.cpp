@@ -29,13 +29,21 @@ struct Ev { bool in; uint8_t req; uint16_t val, idx; std::vector<uint8_t> data; 
 constexpr uint8_t kMarkQueued = 0xFF;   // not a request: the fake's bulk transfers were queued
 
 struct FakeUsb : Rx888Usb {
-    struct Dev { uint16_t pid; int bus, addr; std::string man, prod, serial; bool super = true; uint8_t model = kModelRx888Mk2; };
+    struct Dev {
+        uint16_t pid; int bus, addr; std::string man, prod, serial; bool super = true; uint8_t model = kModelRx888Mk2;
+        int nameError = 0;         // sticky: list() reports it and open() fails with it
+        int nameErrorsLeft = 0;   // list() reports NOT_SUPPORTED this many times, then the name reads
+    };
     std::mutex mu;
     std::vector<Dev> devs;
     std::vector<Ev> log;                       // the requests of application-mode radios
     std::map<uint32_t, std::vector<uint8_t>> ram;   // what the boot loader was given, by address
     uint32_t entry = 0;
     int jumps = 0, opens = 0, lists = 0;
+    int lastOpenBus = 0, lastOpenAddr = 0;
+    int muteAfterJump = 0, muteLeft = 0;       // lists that return nothing once the firmware has jumped
+    int nameErrorAfterJump = 0, nameErrorsAfterJump = 0;
+    bool dropOnJump = false;                   // the chip leaves and does not come back
     std::atomic<bool> gone{false};
     std::atomic<double> toneHz{7.2e6};
     std::atomic<uint32_t> adc{0}, gpio{0};
@@ -46,10 +54,13 @@ struct FakeUsb : Rx888Usb {
         lists++;
         std::vector<Rx888UsbDevice> v;
         if (gone) return v;
-        for (const auto& d : devs) {
+        if (muteLeft > 0) { muteLeft--; return v; }
+        for (auto& d : devs) {
             Rx888UsbDevice u;
             u.vid = 0x04b4; u.pid = d.pid; u.bus = d.bus; u.address = d.addr; u.manufacturer = d.man; u.product = d.prod; u.serial = d.serial;
-            if (!u.bootloader() && !rx888ProductIsMk2(u.product)) continue;   // what the libusb listing does
+            if (!u.bootloader() && d.nameErrorsLeft > 0) { d.nameErrorsLeft--; u.nameError = -12; u.product.clear(); u.serial.clear(); }
+            else if (!u.bootloader() && d.nameError) { u.nameError = d.nameError; u.product.clear(); u.serial.clear(); }
+            else if (!u.bootloader() && !rx888ProductIsMk2(u.product)) continue;   // what the libusb listing does
             v.push_back(u);
         }
         return v;
@@ -58,6 +69,7 @@ struct FakeUsb : Rx888Usb {
     void reset() {
         std::lock_guard<std::mutex> g(mu);
         devs.clear(); log.clear(); ram.clear(); entry = 0; jumps = 0; opens = 0; lists = 0; gone = false; adc = 0; gpio = 0; toneHz = 7.2e6;
+        lastOpenBus = lastOpenAddr = 0; muteAfterJump = muteLeft = 0; nameErrorAfterJump = nameErrorsAfterJump = 0; dropOnJump = false;
     }
     Dev* find(int bus, int addr) { for (auto& d : devs) if (d.bus == bus && d.addr == addr) return &d; return nullptr; }
     size_t count(uint8_t req) { std::lock_guard<std::mutex> g(mu); size_t n = 0; for (const auto& e : log) n += e.req == req; return n; }
@@ -87,7 +99,10 @@ struct FakeLink : Rx888Link {
             const uint32_t addr = (uint32_t)val | ((uint32_t)idx << 16);
             if (!in && len == 0) {   // the jump: the boot loader drops off the bus and the application shows up under a new address
                 f_->entry = addr; f_->jumps++;
+                f_->muteLeft = f_->muteAfterJump;
+                if (f_->dropOnJump) { f_->devs.clear(); return -1; }   // LIBUSB_ERROR_IO: the chip left and has not come back
                 d->pid = kRx888PidApp; d->addr += 1; d->man = "sdr prototypes"; d->prod = "RX888mk2"; d->serial = "0123456789ABCDEF";
+                d->nameError = f_->nameErrorAfterJump; d->nameErrorsLeft = f_->nameErrorsAfterJump;
                 return 0;
             }
             if (!in) { f_->ram[addr].assign(data, data + len); return len; }
@@ -134,7 +149,10 @@ std::unique_ptr<Rx888Link> FakeUsb::open(const Rx888UsbDevice& d, int& code) {
     std::lock_guard<std::mutex> g(mu);
     opens++;
     code = 0;
-    if (gone || !find(d.bus, d.address)) { code = -4; return nullptr; }
+    Dev* found = find(d.bus, d.address);
+    if (gone || !found) { code = -4; return nullptr; }
+    lastOpenBus = d.bus; lastOpenAddr = d.address;
+    if (found->nameError || found->nameErrorsLeft) { code = found->nameError ? found->nameError : -12; return nullptr; }
     return std::make_unique<FakeLink>(this, d.bus, d.address);
 }
 
@@ -326,11 +344,87 @@ static void firmwareUploadChecks() {
         CHECK(flat.size() == 6000 && memcmp(flat.data(), image.data() + 12, 6000) == 0, "the RAM does not hold the image's section");
         CHECK(fake.devs.size() == 1 && fake.devs[0].pid == kRx888PidApp, "the radio did not come back as 04b4:00f1");
         CHECK(fake.count(kStopFx3) >= 1 && fake.count(kStartAdc) == 1, "the application got no requests (stop %zu, adc %zu)", fake.count(kStopFx3), fake.count(kStartAdc));
-        CHECK(secs > 0.4 && secs < 8, "the upload and the wait took %.2f s", secs);
+        CHECK(secs < 3, "the upload and the wait took %.2f s (a radio that is already back is not held for the old half-second)", secs);
         const auto y = collect(ring, 20000, 3000);
         CHECK(y.size() >= 20000, "no samples after the upload (%zu)", y.size());
         src->stop();
         unlink(path.c_str());
+        CHECK(fake.lastOpenAddr == 10, "the running radio was opened at %d (the boot loader was at 9)", fake.lastOpenAddr);
+    }
+    // gone for many polls after the jump, then back at a new address: the old bus address is not what gets opened
+    {
+        fake.reset();
+        fake.devs.push_back({kRx888PidBoot, 3, 9, "", "", ""});
+        fake.muteAfterJump = 40;
+        rx888SetReenumPollMs(25);
+        const std::string path = writeTemp(makeImage(64, 0x40000000, 0x40000010), "rx888_late");
+        setenv("ONAIR_RX888_FIRMWARE", path.c_str(), 1);
+        auto src = makeNativeSource(findRx888());
+        IqRing ring(1 << 20);
+        std::string err;
+        CHECK(src->start(s, ring, err), "late re-enumeration: %s", err.c_str());
+        CHECK(fake.jumps == 1 && fake.lastOpenAddr == 10 && fake.devs.size() == 1 && fake.devs[0].pid == kRx888PidApp && fake.devs[0].addr == 10,
+              "opened %d:%d jumps %d pid %u addr %d", fake.lastOpenBus, fake.lastOpenAddr, fake.jumps, fake.devs.empty() ? 0 : fake.devs[0].pid, fake.devs.empty() ? 0 : fake.devs[0].addr);
+        src->stop();
+        unlink(path.c_str());
+        rx888SetReenumPollMs(0);
+    }
+    // a few failed name reads (the device is back, Windows has not bound it yet), then the name arrives
+    {
+        fake.reset();
+        fake.devs.push_back({kRx888PidBoot, 3, 9, "", "", ""});
+        fake.nameErrorsAfterJump = 4;
+        rx888SetReenumPollMs(20);
+        const std::string path = writeTemp(makeImage(64, 0x40000000, 0x40000010), "rx888_name");
+        setenv("ONAIR_RX888_FIRMWARE", path.c_str(), 1);
+        auto src = makeNativeSource(findRx888());
+        IqRing ring(1 << 20);
+        std::string err;
+        CHECK(src->start(s, ring, err), "name not ready at first: %s", err.c_str());
+        CHECK(fake.lastOpenAddr == 10 && fake.jumps == 1, "opened %d jumps %d", fake.lastOpenAddr, fake.jumps);
+        src->stop();
+        unlink(path.c_str());
+        rx888SetReenumPollMs(0);
+    }
+    // the chip leaves and never comes back: say so, and do not replace it with "not found" by retrying the boot loader address
+    {
+        fake.reset();
+        fake.devs.push_back({kRx888PidBoot, 3, 9, "", "", ""});
+        fake.dropOnJump = true;
+        rx888SetReenumWaitMs(300);
+        rx888SetReenumPollMs(50);
+        const std::string path = writeTemp(makeImage(64, 0x40000000, 0x40000010), "rx888_gone");
+        setenv("ONAIR_RX888_FIRMWARE", path.c_str(), 1);
+        auto src = makeNativeSource(findRx888());
+        IqRing ring(1 << 20);
+        std::string err;
+        CHECK(!src->start(s, ring, err) && err.find("the firmware was loaded") != std::string::npos, "gone: %s", err.c_str());
+        CHECK(err.find("not found (unplugged") == std::string::npos, "the retry replaced the firmware error: %s", err.c_str());
+        CHECK(fake.jumps == 1, "the upload ran again (%d)", fake.jumps);
+        unlink(path.c_str());
+        rx888SetReenumWaitMs(0);
+        rx888SetReenumPollMs(0);
+    }
+    // back as 04b4:00f1, but opening it to read the name is refused (on Windows that is the Cypress driver, which libusb cannot use)
+    {
+        fake.reset();
+        fake.devs.push_back({kRx888PidBoot, 3, 9, "", "", ""});
+        fake.nameErrorAfterJump = -12;
+        rx888SetReenumWaitMs(1500);
+        rx888SetReenumPollMs(50);
+        const std::string path = writeTemp(makeImage(64, 0x40000000, 0x40000010), "rx888_drv");
+        setenv("ONAIR_RX888_FIRMWARE", path.c_str(), 1);
+        auto src = makeNativeSource(findRx888());
+        IqRing ring(1 << 20);
+        std::string err;
+        CHECK(!src->start(s, ring, err) && err.find("NOT_SUPPORTED") != std::string::npos, "driver: %s", err.c_str());
+        CHECK(err.find("not found (unplugged") == std::string::npos, "reported unplugged: %s", err.c_str());
+        if (kOnWindows) CHECK(err.find("Cypress driver") != std::string::npos && err.find("does not ship a driver") != std::string::npos, "Windows: %s", err.c_str());
+        CHECK(fake.jumps == 1 && fake.lastOpenAddr == 10, "opened the new device %d, jumps %d", fake.lastOpenAddr, fake.jumps);
+        CHECK(findRx888().board.empty(), "an unreadable 04b4:00f1 was listed as an RX888");
+        unlink(path.c_str());
+        rx888SetReenumWaitMs(0);
+        rx888SetReenumPollMs(0);
     }
     unsetenv("ONAIR_RX888_FIRMWARE");
 }

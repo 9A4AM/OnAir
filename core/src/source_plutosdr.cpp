@@ -439,10 +439,17 @@ public:
         phy_ = iio().context_find_device(ctx_, "ad9361-phy");
         dev_ = iio().context_find_device(ctx_, "cf-ad9361-dds-core-lpc");
         if (!phy_ || !dev_) { err = "PlutoSDR: the AD9361 transmit devices were not found"; shut(); return false; }
-        txCh_ = iio().device_find_channel(phy_, "voltage0", true);
+        // voltage0 is TX1. A 2T image (some Pluto+) has voltage1 as TX2; its I/Q pair on the DDS core is voltage2 and voltage3. One LO (altvoltage1) tunes both.
+        const int ch = t.channel < 0 ? 0 : t.channel;
+        if (ch > 1) { err = "this Pluto has at most two transmit outputs"; shut(); return false; }
+        const char* phyName = ch == 0 ? "voltage0" : "voltage1";
+        const char* iName = ch == 0 ? "voltage0" : "voltage2";
+        const char* qName = ch == 0 ? "voltage1" : "voltage3";
+        txCh_ = iio().device_find_channel(phy_, phyName, true);
         lo_ = iio().device_find_channel(phy_, "altvoltage1", true);
-        i_ = iio().device_find_channel(dev_, "voltage0", true);
-        q_ = iio().device_find_channel(dev_, "voltage1", true);
+        i_ = iio().device_find_channel(dev_, iName, true);
+        q_ = iio().device_find_channel(dev_, qName, true);
+        if (ch == 1 && (!txCh_ || !i_ || !q_)) { err = "this Pluto has one transmit output (TX1)"; shut(); return false; }
         if (!txCh_ || !lo_ || !i_ || !q_) { err = "PlutoSDR: the transmit channels were not found"; shut(); return false; }
         if (t.sampleRate < 2.083e6) { err = "PlutoSDR: the converter runs from 2.083 Msps up; " + std::to_string(t.sampleRate / 1e6) + " Msps is below that"; shut(); return false; }
         if (const int r = iio().channel_attr_write_longlong(txCh_, "sampling_frequency", (long long)std::llround(t.sampleRate)); r != 0) {
@@ -463,9 +470,9 @@ public:
         }
         // the frequency: asked for as given; the driver decides (the PLL refuses what it cannot make)
         TuneSettings ts; ts.radio = t.radio;
-        const double want = std::max(ppmCorrectedHz(t.centerHz, radioPpm(ts)), 0.0);
+        const double want = std::max(ppmCorrectedHz(txRadioHz(t), radioPpm(ts)), 0.0);
         if (const int r = iio().channel_attr_write_longlong(lo_, "frequency", (long long)std::llround(want)); r != 0) {
-            err = "PlutoSDR: the driver refused " + mhz(t.centerHz) + " MHz as a transmit frequency (" + iio().text(r) + "): the AD9361's synthesiser tunes 70 to 6000 MHz with the AD9364 setting, 325 to 3800 MHz on the stock firmware";
+            err = "PlutoSDR: the driver refused " + mhz(txRadioHz(t)) + " MHz as a transmit frequency (" + iio().text(r) + "): the AD9361's synthesiser tunes 70 to 6000 MHz with the AD9364 setting, 325 to 3800 MHz on the stock firmware";
             shut();
             return false;
         }
@@ -555,6 +562,7 @@ DeviceInfo plutoEntry(const std::string& uri, const std::string& desc, bool prob
     d.gainMinDb = 0; d.gainMaxDb = 73;
     d.minFreqHz = 70e6; d.maxFreqHz = 6e9;
     d.canTransmit = true;   // PlutoTx (the AD9361 transmits; not tested on a radio)
+    d.txChannels = 1;       // the firmware OnAir opens exposes one RF output; a second (voltage1) is used only when that image has it, and the open says so
     d.txMinRateHz = 2.1e6; d.txMaxRateHz = 61.44e6;
     d.txGainMinDb = -89.75; d.txGainMaxDb = 0;
     d.txGainNote = "the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)";

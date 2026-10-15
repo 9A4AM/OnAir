@@ -1,5 +1,5 @@
 // Spectrum analyser screens: the sweep controls (range and presets, resolution, gains, averaging), one wide chart with live, peak-hold
-// and averaged traces or a persistence display, the band allocations along the axis, a hover read-out, a marker and a delta marker,
+// and averaged traces or a persistence display, the band allocations in a strip above the chart (height from the font), a hover read-out, a marker and a delta marker,
 // the waterfall of the sweeps below, and CSV export of the current sweep.
 #include "app.h"
 #include "dect2/specan_dsp.h"
@@ -280,8 +280,9 @@ void chart(App& a, float h) {
     const float w = ImGui::GetContentRegionAvail().x;
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const float axisW = 44 * gUi, lh = ImGui::GetTextLineHeight();
-    const float l = p0.x + axisW, r = p0.x + w - 4 * gUi, top = p0.y + lh / 2 + 2, bandH = S.bands ? lh + 4 * gUi : 0;
-    const float bot = p0.y + h - lh - 6 * gUi - bandH;
+    const float bandH = S.bands ? bandPlanStripHeight() : 0;
+    const float l = p0.x + axisW, r = p0.x + w - 4 * gUi, top = p0.y + bandH + lh / 2 + 2;
+    const float bot = p0.y + h - lh - 6 * gUi;
     dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), IM_COL32(10, 11, 13, 255));
     const double lo = on ? t.loHz : S.loMhz * 1e6, hi = on ? t.loHz + t.binHz * t.live.size() : S.hiMhz * 1e6;
     auto X = [&](double hz) { return (float)(l + (hz - lo) / (hi - lo) * (r - l)); };
@@ -300,21 +301,9 @@ void chart(App& a, float h) {
         dl->AddLine(ImVec2(x, top), ImVec2(x, bot), grid);
         snprintf(b, sizeof b, stepMhz < 0.1 ? "%.3f" : stepMhz < 1 ? "%.1f" : "%.0f", f);
         const float tw = ImGui::CalcTextSize(b).x;
-        dl->AddText(ImVec2(std::clamp(x - tw / 2, p0.x, p0.x + w - tw - 2), bot + bandH + 3 * gUi), txt, b);
+        dl->AddText(ImVec2(std::clamp(x - tw / 2, p0.x, p0.x + w - tw - 2), bot + 3 * gUi), txt, b);
     }
-    if (S.bands) {   // the allocations along the axis
-        int nb = 0;
-        const dect2::SaBand* bd = dect2::saAllocations(nb);
-        for (int i = 0; i < nb; i++) {
-            const double a0 = bd[i].loMhz * 1e6, a1 = bd[i].hiMhz * 1e6;
-            if (a1 < lo || a0 > hi) continue;
-            const float x0 = std::max(l, X(a0)), x1 = std::min(r, X(a1));
-            const ImU32 c = (i % 2) ? IM_COL32(70, 110, 160, 160) : IM_COL32(150, 110, 60, 160);
-            dl->AddRectFilled(ImVec2(x0, bot + 1), ImVec2(std::max(x0 + 1, x1), bot + bandH - 1), c);
-            const ImVec2 ts = ImGui::CalcTextSize(bd[i].name);
-            if (ts.x + 4 < x1 - x0) dl->AddText(ImVec2(x0 + 2, bot + 2 * gUi), IM_COL32(230, 230, 230, 230), bd[i].name);
-        }
-    }
+    if (S.bands) drawBandPlanStrip(dl, l, r, p0.y, bandH, lo / 1e6, hi / 1e6);
     if (!on) {
         dl->AddText(ImVec2(l + 10, top + 10), txt, a.engine.running() ? "sweeping ..." : "start the receiver to sweep");
     } else {
@@ -349,7 +338,7 @@ void chart(App& a, float h) {
     if (on && ImGui::IsItemHovered()) {
         const float mx = ImGui::GetIO().MousePos.x;
         const double hz = lo + (mx - l) / std::max(1.f, r - l) * (hi - lo);
-        if (mx >= l && mx <= r) {
+        if (mx >= l && mx <= r && ImGui::GetIO().MousePos.y >= top) {
             const long k = (long)((hz - t.loHz) / t.binHz);
             const float v = k >= 0 && k < (long)t.live.size() ? t.live[(size_t)k] : -200;
             const float pk = k >= 0 && k < (long)t.peak.size() ? t.peak[(size_t)k] : -200;

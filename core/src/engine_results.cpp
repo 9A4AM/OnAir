@@ -64,6 +64,7 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("airband", 27, rxAirband_),
         DECT2_RESULT_SLOT("vdl2", 28, rxVdl2_),
         DECT2_RESULT_SLOT("ism", 29, rxIsm_),
+        DECT2_RESULT_SLOT("ndb", 30, rxNdb_),
         DECT2_RESULT_SLOT("m17", 32, rxM17_),
         DECT2_RESULT_SLOT("cell", 33, rxCell_),
         DECT2_RESULT_SLOT("dstar", 34, rxDstar_),

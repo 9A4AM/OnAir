@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 
+bool freqStepArrow(const char* id, ImGuiDir dir);
+
 namespace {
 
 constexpr int kStd = 22;   // RxTelemetry::standard of HD Radio (the tuning table says 23, the engine reports 22)
@@ -328,16 +330,14 @@ void bandBar(App& a) {
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("AM hybrid (MA1) and all-digital (MA3) stations, 530 to 1710 kHz. Needs a radio that reaches medium wave (an HF radio, an RTL-SDR in direct sampling, an upconverter); 1 Msps is plenty.");
     flowNext(10 * gUi);
     const double step = am ? (S.raster9 ? 0.009 : 0.010) : 0.2;
-    ImGui::PushButtonRepeat(true);
-    if (ImGui::ArrowButton("##hdrdn", ImGuiDir_Left)) go(snapChannel(snapChannel(a.freqMhz, am, S.raster9) - step, am, S.raster9));
+    if (freqStepArrow("##hdrdn", ImGuiDir_Left)) go(snapChannel(snapChannel(a.freqMhz, am, S.raster9) - step, am, S.raster9));
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("the channel below. Hold for a continuous change.");
     flowNext(4 * gUi);
     ImGui::AlignTextToFramePadding();
     if (am) ImGui::Text("%.0f kHz", a.freqMhz * 1000); else ImGui::Text("%.1f MHz", a.freqMhz);
     flowNext(4 * gUi);
-    if (ImGui::ArrowButton("##hdrup", ImGuiDir_Right)) go(snapChannel(snapChannel(a.freqMhz, am, S.raster9) + step, am, S.raster9));
+    if (freqStepArrow("##hdrup", ImGuiDir_Right)) go(snapChannel(snapChannel(a.freqMhz, am, S.raster9) + step, am, S.raster9));
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("the channel above. Hold for a continuous change.");
-    ImGui::PopButtonRepeat();
     if (am) {
         flowNext(10 * gUi);
         static const char* const items[] = {"10 kHz raster (the Americas)", "9 kHz raster (elsewhere)"};

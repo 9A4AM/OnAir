@@ -384,6 +384,7 @@ public:
 
     bool open(const TxTune& t, std::string& err) override {
         close();
+        if (t.channel != 0) { err = "this HackRF has one transmit output (TX1)"; return false; }
         ctx_ = acquireContext(err);
         if (!ctx_) return false;
         if (!openDevice(err)) { releaseContext(); ctx_ = nullptr; return false; }
@@ -470,14 +471,14 @@ private:
         }
         {
             TuneSettings ts; ts.radio = t.radio;
-            const double want = std::max(ppmCorrectedHz(t.centerHz, radioPpm(ts)), 0.0);
+            const double want = std::max(ppmCorrectedHz(txRadioHz(t), radioPpm(ts)), 0.0);
             if (want / 1e6 >= 4294967295.0) { err = "the HackRF's tuning request holds at most 4.29e9 MHz: " + std::to_string(want) + " Hz does not fit it"; return false; }
             const uint64_t f = (uint64_t)want;
             uint8_t d[8]; le32(d, (uint32_t)(f / 1000000)); le32(d + 4, (uint32_t)(f % 1000000));
             const int r = dev_.out(kSetFreq, 0, 0, d, sizeof d);
             if (r < 0) {
                 char b[200];
-                snprintf(b, sizeof b, "the HackRF refused the frequency %.6g MHz (%s): its firmware tunes only what the radio's synthesiser can make", t.centerHz / 1e6, r == LIBUSB_ERROR_PIPE ? "the radio answered with an error" : libusb_error_name(r));
+                snprintf(b, sizeof b, "the HackRF refused the frequency %.6g MHz (%s): its firmware tunes only what the radio's synthesiser can make", txRadioHz(t) / 1e6, r == LIBUSB_ERROR_PIPE ? "the radio answered with an error" : libusb_error_name(r));
                 err = b;
                 return false;
             }
@@ -568,6 +569,7 @@ std::vector<DeviceInfo> listUsbHackrfDevices(std::string& err) {
         info.name = info.board + (tail.empty() ? std::string() : " (" + tail + ")");
         info.settings = {ppmSetting(0.1)};   // amplifier and antenna power have their own controls
         info.canTransmit = true;             // OnAir's own USB driver has a transmit path (see UsbHackrfTx); the libhackrf fallback has none
+        info.txChannels = 1;                 // one SMA output
         info.txMinRateHz = 2e6; info.txMaxRateHz = 20e6;
         info.txGainMinDb = 0; info.txGainMaxDb = 47;
         info.txGainNote = "TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch";

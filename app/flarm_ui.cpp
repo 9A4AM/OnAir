@@ -142,22 +142,24 @@ void mapView(App& a, const dect2::FlarmTelemetry& t) {
     float bestD = 14 * gUi;
     for (const auto& ac : t.aircraft) {
         if (!ac.hasPos) continue;
+        const ImVec2 q = adsbmap::project(ac.lat, ac.lon);
+        const bool sel = S.sel == ac.id;
+        const ImU32 col = adsbmap::acColour(adsbmap::AcSrc::Flarm, ac.ageSec);
         if (ac.track.size() > 1) {
             ImVec2 prev = adsbmap::project(ac.track[0].lat, ac.track[0].lon);
             for (size_t i = 1; i < ac.track.size(); i++) {
-                const ImVec2 q = adsbmap::project(ac.track[i].lat, ac.track[i].lon);
-                dl->AddLine(prev, q, (typeColour(ac.acType) & 0x00FFFFFF) | 0x80000000, 1.5f);
-                prev = q;
+                const ImVec2 p = adsbmap::project(ac.track[i].lat, ac.track[i].lon);
+                dl->AddLine(prev, p, (col & 0x00FFFFFF) | 0x90000000, 1.5f);
+                prev = p;
             }
         }
-        const ImVec2 q = adsbmap::project(ac.lat, ac.lon);
-        const bool sel = S.sel == ac.id;
-        const float r = (sel ? 7.f : 5.f) * gUi;
-        const float a0 = (ac.trackDeg - 90.f) * 3.14159265f / 180.f;
-        const ImVec2 d(std::cos(a0), std::sin(a0)), n(-d.y, d.x);
-        dl->AddTriangleFilled(ImVec2(q.x + d.x * r * 1.6f, q.y + d.y * r * 1.6f), ImVec2(q.x - d.x * r + n.x * r, q.y - d.y * r + n.y * r),
-                              ImVec2(q.x - d.x * r - n.x * r, q.y - d.y * r - n.y * r), typeColour(ac.acType));
-        char b[64]; snprintf(b, sizeof b, "%s %dm", idText(ac.id).c_str(), ac.altM);
+        const float r = (sel ? 13.f : 11.f) * gUi, h = ac.trackDeg * 3.14159265f / 180.f, ch = std::cos(h), sh = std::sin(h);
+        auto gv = [&](float x, float y) { return ImVec2(q.x + (x * ch - y * sh) * r, q.y + (x * sh + y * ch) * r); };
+        ImVec2 g[12] = { gv(0, -1), gv(0.08f, -0.2f), gv(1.15f, 0.05f), gv(1.15f, 0.18f), gv(0.08f, 0.08f), gv(0.07f, 0.55f),
+                         gv(-0.07f, 0.55f), gv(-0.08f, 0.08f), gv(-1.15f, 0.18f), gv(-1.15f, 0.05f), gv(-0.08f, -0.2f), gv(0, -1) };
+        dl->AddConcavePolyFilled(g, 12, col);
+        dl->AddPolyline(g, 12, sel ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 150), ImDrawFlags_Closed, sel ? 1.6f : 1.f);
+        char b[80]; snprintf(b, sizeof b, "%s  %s  %dm", idText(ac.id).c_str(), dect2::flarm::aircraftTypeName(ac.acType), ac.altM);
         dl->AddText(ImVec2(q.x + 9 * gUi, q.y - 7 * gUi), IM_COL32(255, 255, 255, 230), b);
         if (clicked) { const float dd = std::hypot(click.x - q.x, click.y - q.y); if (dd < bestD) { bestD = dd; S.sel = ac.id; } }
     }

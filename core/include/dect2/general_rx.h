@@ -7,9 +7,11 @@
 // the AGC, SSB and CW as the real part of the filtered channel (CW: mixed up by the BFO pitch) with an envelope AGC (fast attack, slow
 // release) or a fixed gain.
 //
-// Squelch: the channel power against the noise in the channel. The noise is the median of an averaged spectrum of the decimated stream
-// outside the channel filter, scaled to the filter's width; "auto" opens 6 dB over it (closes under 4), "level" opens at a threshold in
-// dBFS. A 150 ms hang and a 5 ms ramp keep it from clicking.
+// Squelch: NFM, WFM, AM and CW compare the channel power with the noise beside the channel (the median of an averaged spectrum of the
+// decimated stream, outside the filter, scaled to the filter's width). "auto" opens 6 dB over it (closes under 4), "level" opens at a
+// threshold in dBFS. USB and LSB have no carrier, so auto ignores that and opens on the signal-to-noise inside the voice passband (the
+// channel power against the median bin there): speech lifts the mean, the median stays near the noise. A 150 ms hang and a 5 ms ramp keep
+// the mute from clicking. The recording hang is separate and longer, so a gap between words does not start a new file.
 //
 // Audio: 48 kHz to the sound card with the shared volume and mute, and optionally into a 16-bit mono WAV file (what is heard, before
 // the volume). Engine standard 57 (active 56). Written to the engine's contract: configure() once the sample rate is known, feed() from
@@ -75,9 +77,17 @@ public:
     bool startRecording(const std::string& wavPath); // 16-bit mono 48 kHz WAV of what is heard; false when the file cannot be made
     void stopRecording();
     bool recording() const;
-    // One WAV file per transmission: a file opens when the squelch opens and closes when it has shut (clips under minSec are deleted).
-    // The files are dir/prefix_<n>.wav. Off (the default) leaves startRecording() as it was.
+    // One file per transmission: a file opens when the squelch opens and closes after the recording hang (clips whose squelch-open
+    // time is under minSec are deleted). A non-empty prefix keeps the old names dir/prefix_<n>.wav. An empty prefix names each file
+    // from the time, the RF frequency (setListenHz) and the mode: onair_YYYYMMDD-HHMMSS_145.500000MHz_USB.wav.
     void setTransmissionRecording(bool on, const std::string& dir, const std::string& prefix, double minSec = 0.5);
+    // The channel's RF frequency in Hz, read when a per-transmission file opens (the name and the log).
+    void setListenHz(double hz);
+    // preRollSec 0..3: the file starts this far before the squelch opened (the first syllable). hangSec 0..3: after the squelch shuts,
+    // wait this long before ending the file, so a pause between words stays one transmission. iq: also write the channel IQ, the complex
+    // baseband at the demodulator rate (48 kHz, WFM 240 kHz), little-endian float, beside the audio as <name>_48k.cf32. csv: append
+    // time,frequency_hz,mode,duration_s,path to dir/transmissions.csv for each file kept.
+    void setTransmissionGate(double preRollSec, double hangSec, bool iq, bool csv);
     // The per-transmission files as FLAC (lossless, about half the size) instead of WAV, with Vorbis comments ("TITLE=..."). startRecording()
     // writes FLAC when its path ends in .flac (the tags apply there too).
     void setRecordFormat(bool flac, const std::vector<std::string>& tags = {});

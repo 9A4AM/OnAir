@@ -3,6 +3,8 @@
 #include "results_export.h"
 #include <chrono>
 
+bool freqStepArrow(const char* id, ImGuiDir dir);
+
 static constexpr double kFmLow = 87.5, kFmHigh = 108.0;
 
 // the dial steps and rounds to 0.1 MHz; the broadcast band is the slider's span only, a frequency outside it (typed, or stepped to) is kept
@@ -34,13 +36,11 @@ static std::string fmStationLabel(const App::FmScan::Res& r) {
 // Step buttons and a list of the stations the scan found. Returns true when the frequency changed.
 bool fmFrequencyCombo(App& a) {
     bool changed = false;
-    ImGui::PushButtonRepeat(true);
-    if (ImGui::ArrowButton("##fmdn", ImGuiDir_Left)) { a.freqMhz = fmRound(a.freqMhz - 0.1); changed = true; }
+    if (freqStepArrow("##fmdn", ImGuiDir_Left)) { a.freqMhz = fmRound(a.freqMhz - 0.1); changed = true; }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Tune down 0.1 MHz. Hold for a continuous change.");
     ImGui::SameLine(0, 2 * gUi);
-    if (ImGui::ArrowButton("##fmup", ImGuiDir_Right)) { a.freqMhz = fmRound(a.freqMhz + 0.1); changed = true; }
+    if (freqStepArrow("##fmup", ImGuiDir_Right)) { a.freqMhz = fmRound(a.freqMhz + 0.1); changed = true; }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Tune up 0.1 MHz. Hold for a continuous change.");
-    ImGui::PopButtonRepeat();
     ImGui::SameLine(0, 8 * gUi);
     char lbl[64];
     int cur = -1;

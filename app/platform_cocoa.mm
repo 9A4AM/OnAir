@@ -1,4 +1,5 @@
 #include "platform.h"
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #import <Cocoa/Cocoa.h>
@@ -99,6 +100,27 @@ bool fetchUrl(const std::string& url, const std::string& file, const std::string
     auto q = [](const std::string& s) { std::string o = "'"; for (char c : s) { if (c == '\'') o += "'\\''"; else o += c; } return o + "'"; };
     const std::string cmd = "curl -fsSL --max-time 12 -A " + q(userAgent) + " -o " + q(file) + " " + q(url) + " 2>/dev/null";
     return system(cmd.c_str()) == 0;
+}
+
+bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) {
+    @autoreleasepool {
+        NSURL* u = [NSURL URLWithString:[NSString stringWithUTF8String:url.c_str()]];
+        if (!u) return false;
+        NSMutableURLRequest* req = [NSMutableURLRequest requestWithURL:u cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:12];
+        req.HTTPMethod = @"POST";
+        req.HTTPBody = [NSData dataWithBytes:json.data() length:json.size()];
+        [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+        [req setValue:[NSString stringWithUTF8String:userAgent.c_str()] forHTTPHeaderField:@"User-Agent"];
+        dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+        __block bool ok = false;
+        [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData*, NSURLResponse* resp, NSError* err) {
+            NSHTTPURLResponse* h = (NSHTTPURLResponse*)resp;
+            ok = err == nil && h && h.statusCode >= 200 && h.statusCode < 300;
+            dispatch_semaphore_signal(sem);
+        }] resume];
+        if (dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 13 * NSEC_PER_SEC)) != 0) return false;
+        return ok;
+    }
 }
 
 std::string openFileDialog() {

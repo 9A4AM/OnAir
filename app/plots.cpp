@@ -1,5 +1,6 @@
 // spectrum, waterfall, histogram and constellation plots
 #include "app.h"
+#include "dect2/specan_dsp.h"
 
 // Click on the spectrum or the waterfall to tune to that frequency (a drag still pans). The grid follows the mode: FM 0.1 MHz, DMR 12.5 kHz, else 1 kHz.
 static void clickToTune(App& a, int plotId) {
@@ -30,7 +31,7 @@ static void clickToTune(App& a, int plotId) {
                 plt::PlotInfLines("##ghostedges", ge, 2, es);
                 if (plotId == 0) {
                     char lb[48]; snprintf(lb, sizeof lb, "%.4f MHz  (%s)", mhz, widthText(cw.mhz).c_str());
-                    plt::PlotText(lb, mhz, lim.Y.Max, ImVec2(0, 14 * gUi));
+                    plt::PlotText(lb, mhz, lim.Y.Max, ImVec2(0, bandPlanStripHeight() + 4 * gUi));
                 }
             }
         }
@@ -443,12 +444,44 @@ void specDisplayPopup(App& a) {
 
 static float gSpecBtnW = 0;
 
+float bandPlanStripHeight() {
+    const float lh = ImGui::GetTextLineHeight();
+    const float pad = std::max(2.f * gUi, ImGui::GetStyle().FramePadding.y);
+    return std::ceil(lh + 2.f * pad);
+}
+
+void drawBandPlanStrip(ImDrawList* dl, float x0, float x1, float y, float h, double loMhz, double hiMhz) {
+    if (!dl || x1 <= x0 || h < 1 || !(hiMhz > loMhz)) return;
+    dl->PushClipRect(ImVec2(x0, y), ImVec2(x1, y + h), true);
+    dl->AddRectFilled(ImVec2(x0, y), ImVec2(x1, y + h), IM_COL32(14, 16, 18, 255));
+    int nb = 0;
+    const dect2::SaBand* bd = dect2::saAllocations(nb);
+    auto X = [&](double mhz) { return (float)(x0 + (mhz - loMhz) / (hiMhz - loMhz) * (x1 - x0)); };
+    const float lh = ImGui::GetTextLineHeight();
+    const float ty = y + std::max(0.f, (h - lh) * 0.5f);
+    for (int i = 0; i < nb; i++) {
+        if (bd[i].hiMhz < loMhz || bd[i].loMhz > hiMhz) continue;
+        const float a = std::max(x0, X(bd[i].loMhz)), b = std::min(x1, X(bd[i].hiMhz));
+        const ImU32 fill = pal::remap((i % 2) ? IM_COL32(70, 110, 160, 150) : IM_COL32(150, 110, 60, 150));
+        dl->AddRectFilled(ImVec2(a, y + 1), ImVec2(std::max(a + 1.f, b), y + h - 1), fill);
+        const ImVec2 ts = ImGui::CalcTextSize(bd[i].name);
+        if (ts.x + 4 < b - a && ts.y <= h + 0.5f) dl->AddText(ImVec2(a + 2, ty), IM_COL32(220, 222, 224, 230), bd[i].name);
+    }
+    dl->PopClipRect();
+    if (ImGui::IsMouseHoveringRect(ImVec2(x0, y), ImVec2(x1, y + h), false)) {
+        const float mx = ImGui::GetIO().MousePos.x;
+        const double mhz = loMhz + (mx - x0) / (x1 - x0) * (hiMhz - loMhz);
+        if (const dect2::SaBand* at = dect2::saAllocationAt(mhz)) ImGui::SetTooltip("%s — %s", at->name, at->use);
+    }
+}
+
 static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
     const bool dbm = a.specDbm;
     const float dbmOff = dbm ? dbmOffset(a) : 0.f;
     const char* const kYLabel = dbm ? tr("power (dBm)") : tr("power (dBFS/bin)");
     ImVec2 plotMin, plotSize;
     bool drawn = false, openCtx = false;
+    double visLo = 0, visHi = 0;
     static double ctxMhz = 0;
     if (plt::BeginPlot("##spec", size, plt::Flags_NoLegend | plt::Flags_NoTitle | plt::Flags_Overlay | plt::Flags_SmoothZoom | extraFlags | (a.family == 55 && generalDragging(0) ? plt::Flags_NoPan : 0))) {
         drawn = true;
@@ -548,17 +581,22 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
                     char id[16]; snprintf(id, sizeof id, "mark%d", k++);
                     plt::PlotLine(id, mx, my, 2, ms);
                     char lb[48]; snprintf(lb, sizeof lb, "%s", r.name.empty() ? "" : r.name.c_str());
-                    if (lb[0]) plt::PlotText(lb, r.mhz, a.yMax, ImVec2(ImGui::CalcTextSize(lb).x * 0.5f + 4, 10 + (k % 2) * 13));
+                    if (lb[0]) plt::PlotText(lb, r.mhz, a.yMax, ImVec2(ImGui::CalcTextSize(lb).x * 0.5f + 4, bandPlanStripHeight() + 4 * gUi + (k % 2) * ImGui::GetTextLineHeight()));
                 }
             }
         }
         wideMarkers(a);
         multiMarkers(a);
         clickToTune(a, 0);
+        visLo = plt::GetPlotLimits().X.Min; visHi = plt::GetPlotLimits().X.Max;
+        specxDrawBookmarks(ImGui::GetWindowDrawList(), visLo * 1e6, visHi * 1e6,
+                           plotMin.x, plotMin.x + plotSize.x, plotMin.y, plotMin.y + plotSize.y);
         if (plt::IsPlotHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { ctxMhz = plt::GetPlotMousePos().x; openCtx = true; }
         plt::EndPlot();
     }
     if (drawn) {
+        const float sh = bandPlanStripHeight();
+        drawBandPlanStrip(ImGui::GetWindowDrawList(), plotMin.x, plotMin.x + plotSize.x, plotMin.y - sh, sh, visLo, visHi);
         channelWidthButton(a, plotMin, plotSize, kYLabel); wideSwitch(a, plotMin, plotSize); multiSwitch(a, plotMin, plotSize);
         gSpecBtnW = cornerPopup(a, "Spectrum###specbtn", "##specpop", plotMin, plotSize, gBwBtnW + gWideBtnW, ImGui::CalcTextSize(kYLabel).x + 24 * gUi, 0, false,
                                 tr("Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)"), specDisplayPopup);
@@ -635,7 +673,8 @@ void spectrumWaterfall(App& a, float& frac, bool drag) {
     const ImVec2 p = ImGui::GetCursorScreenPos();
     const ImVec2 avail = ImGui::GetContentRegionAvail();
     const float w = std::max(60.f, avail.x), h = avail.y;
-    const float hs = std::floor(std::min(std::max(60.f, h * frac), std::max(60.f, h - 60.f)));
+    const float stripH = bandPlanStripHeight();
+    const float hs = std::floor(std::min(std::max(60.f + stripH, h * frac), std::max(60.f + stripH, h - 60.f)));
     const float y = p.y + hs;
     bool hot = false;
     if (drag) {   // first, so the handle takes the mouse before the plots under it
@@ -656,7 +695,8 @@ void spectrumWaterfall(App& a, float& frac, bool drag) {
             savePrefs(a);
         }
     }
-    spectrumPlot(a, ImVec2(w, hs), plt::Flags_Flush | plt::Flags_OpenBottom);
+    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + stripH));
+    spectrumPlot(a, ImVec2(w, std::max(40.f, hs - stripH)), plt::Flags_Flush | plt::Flags_OpenBottom);
     ImGui::SetCursorScreenPos(ImVec2(p.x, y));
     waterfallPlot(a, ImVec2(w, std::max(60.f, h - hs)), plt::Flags_Flush | plt::Flags_OpenTop);
     ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, y), ImVec2(p.x + w, y), hot ? IM_COL32(200, 200, 200, 160) : IM_COL32(110, 110, 110, 110), hot ? 2.f : 1.f);

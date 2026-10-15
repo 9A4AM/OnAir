@@ -227,7 +227,7 @@ void mapCanvas(App& a, ImVec2 size) {
         for (const auto& c : t.aircraft) {
             if (!c.hasPos) continue;
             placed++;
-            const ImU32 col = t.nowSec - c.posTime > 1800 ? IM_COL32(150, 154, 158, 220) : IM_COL32(205, 214, 120, 255);
+            const ImU32 col = adsbmap::acColour(adsbmap::AcSrc::Hfdl, t.nowSec - c.lastHeardSec);
             for (size_t i = 1; i < c.track.size(); i++) dl->AddLine(adsbmap::project(c.track[i - 1].lat, c.track[i - 1].lon), adsbmap::project(c.track[i].lat, c.track[i].lon), (col & 0x00FFFFFF) | 0x90000000, 1.5f);
             const ImVec2 q = adsbmap::project(c.lat, c.lon);
             const bool sel = c.key == S.selAir;

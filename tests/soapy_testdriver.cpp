@@ -49,7 +49,14 @@ class OnAirTestDevice : public SoapySDR::Device {
 public:
     std::string getDriverKey() const override { return "onairtest"; }
     std::string getHardwareKey() const override { return "OnAir synthetic radio"; }
-    size_t getNumChannels(const int dir) const override { return dir == SOAPY_SDR_RX || dir == SOAPY_SDR_TX ? 1 : 0; }
+    size_t getNumChannels(const int dir) const override {
+        if (dir == SOAPY_SDR_RX) return 1;
+        if (dir == SOAPY_SDR_TX) {
+            if (const char* n = getenv("ONAIR_TEST_NTX")) return (size_t)std::max(0, atoi(n));
+            return 1;
+        }
+        return 0;
+    }
     // two inputs; the one picked is put in ONAIR_TEST_ANTENNA, which the test (the same process) reads
     std::vector<std::string> listAntennas(const int, const size_t) const override { return {"RX1", "RX2"}; }
     void setAntenna(const int, const size_t, const std::string& name) override {
@@ -71,9 +78,10 @@ public:
     }
     double getGain(const int, const size_t) const override { return gain_; }
     SoapySDR::Range getGainRange(const int, const size_t) const override { return SoapySDR::Range(0, 60, 1); }
-    void setFrequency(const int dir, const size_t, const double f, const SoapySDR::Kwargs&) override {
+    void setFrequency(const int dir, const size_t ch, const double f, const SoapySDR::Kwargs&) override {
         if (dir == SOAPY_SDR_TX) {   // ONAIR_TEST_TX_MAXFREQ: a radio that cannot tune above that and says so, as a driver does
             if (const char* m = getenv("ONAIR_TEST_TX_MAXFREQ"); m && f > atof(m)) throw std::runtime_error("setFrequency(" + std::to_string(f) + ") out of range: the synthesiser stops at " + m);
+            note("TXCH", std::to_string(ch));
             note("TXFREQ", std::to_string((long long)std::llround(f)));
             return;
         }
@@ -110,8 +118,9 @@ public:
     std::vector<std::string> getStreamFormats(const int, const size_t) const override { return {SOAPY_SDR_CF32}; }
     std::string getNativeStreamFormat(const int, const size_t, double& fullScale) const override { fullScale = 1.0; return SOAPY_SDR_CF32; }
 
-    SoapySDR::Stream* setupStream(const int dir, const std::string& fmt, const std::vector<size_t>&, const SoapySDR::Kwargs&) override {
+    SoapySDR::Stream* setupStream(const int dir, const std::string& fmt, const std::vector<size_t>& chans, const SoapySDR::Kwargs&) override {
         if (fmt != SOAPY_SDR_CF32) throw std::runtime_error("only CF32");
+        if (dir == SOAPY_SDR_TX) note("TXCH", chans.empty() ? "0" : std::to_string(chans[0]));
         auto* s = new TestStream;
         s->tx = dir == SOAPY_SDR_TX;
         return reinterpret_cast<SoapySDR::Stream*>(s);

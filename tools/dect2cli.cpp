@@ -60,6 +60,7 @@ int main(int argc, char** argv) {
     bool dpmrScan = false;
     double dvbcSr = 0; int dvbcQam = 0; bool dvbcAnnexC = false;
     int orbcommMax = 2;
+    double refLat = 0, refLon = 0; bool haveRef = false;
     const SubMode* subMode = nullptr;   // --standard named one protocol of a shared receiver
     std::string wavPath;
     std::vector<int16_t> wav;
@@ -81,6 +82,7 @@ int main(int argc, char** argv) {
         else if (a == "--orbcomm-downlinks") orbcommMax = atoi(next());   // with --standard orbcomm: 1 or 2 downlinks decoded at once (default 2)
         else if (a == "--dvbc-annexc") dvbcAnnexC = true;          // with --standard dvbc: J.83 annex C (roll-off 0.13)   // with --standard atv: FM video (analog FPV links), 20 Msps
         else if (a == "--freq") { freq = atof(next()); freqSet = true; }
+        else if (a == "--ref" && i + 2 < argc) { refLat = atof(argv[++i]); refLon = atof(argv[++i]); haveRef = true; }
         else if (a == "--lna") tune.lnaDb = atoi(next());
         else if (a == "--vga") tune.vgaDb = atoi(next());
         else if (a == "--amp") tune.ampOn = true;
@@ -231,6 +233,7 @@ int main(int argc, char** argv) {
     if (atvFm) e.atv().setModulation(1);
     e.setBandwidthAuto(autoBw);
     e.setSpectrumEnabled(autoBw);   // cli doesn't show the spectrum
+    if (haveRef) e.adsb().setReference(refLat, refLon);
     if (!e.start(dev, tune, file)) {
         size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
         return 1;
@@ -302,6 +305,19 @@ int main(int argc, char** argv) {
                 for (const auto& ap : t.wifi.aps)
                     printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
                            wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
+            if (t.standard == 12) {   // ADS-B: aircraft and whether CPR produced a position
+                for (const auto& a : t.adsb.aircraft) {
+                    char pos[48] = "-";
+                    if (a.hasPos) snprintf(pos, sizeof pos, "%.4f,%.4f", a.lat, a.lon);
+                    printf("  ac: %06X %-8s alt=%d spd=%d pos=%s cpr=%c%c kind=%d msgs=%u%s\n",
+                           a.icao & 0xFFFFFF, a.callsign.empty() ? "-" : a.callsign.c_str(),
+                           a.hasAlt ? a.altFt : -1, a.hasSpeed ? (int)a.speedKt : -1, pos,
+                           (a.cprHave & 1) ? 'E' : '-', (a.cprHave & 2) ? 'O' : '-', a.posKind, a.messages, a.hasPos ? " FIX" : "");
+                }
+                int nfr = 0;
+                for (auto it = t.adsb.frames.rbegin(); it != t.adsb.frames.rend() && nfr < 12; ++it, ++nfr)
+                    printf("  msg: DF%02d TC%2d %s\n", it->df, it->tc, it->what.c_str());
+            }
             if (t.standard == 67)   // FLARM: the aircraft heard (flagged aircraft are only counted)
                 for (size_t i = 0; i < t.flarm.aircraft.size() && i < 3; i++) {
                     const FlarmAircraft& a = t.flarm.aircraft[i];

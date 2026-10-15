@@ -40,6 +40,7 @@
 #include "vdl2_rx.h"
 #include "ism_rx.h"
 #include "vor_rx.h"
+#include "ndb_rx.h"
 #include "m17_rx.h"
 #include "hfdl_rx.h"
 #include "cell_rx.h"
@@ -126,15 +127,18 @@ struct FileOptions {
     bool bigEndian = false;
 };
 
-// Where samples were lost since the radio was started. The radio side: samples that never came out of the radio (its USB link or driver
-// could not keep up, or the computer slept), found by comparing what arrived with the radio's sample rate. The OnAir side: samples the
-// receiver had to skip because it could not keep up with the rate (a slow or busy processor). The two need opposite remedies.
+// Where samples were lost since the radio was started. Callback gaps: the library delivered less than the radio's rate (the radio or its
+// driver), found by comparing what arrived with that rate. Ring overflow: samples the library did hand over, which OnAir then discarded
+// because it did not read the input ring in time. Receiver load (loadPct) is processing time against the block's duration, a third thing:
+// it can be high while every sample is kept, and samples can be lost while it is low. deliveredPct is the rate that actually arrived.
 struct SampleLoss {
     bool live = false;                 // a live radio (files and the test signal never lose samples: they wait for the receiver)
     double radioSec = 0, cpuSec = 0;   // seconds of signal lost on each side
     uint64_t radioEvents = 0, cpuEvents = 0;
     double sinceRadioSec = -1, sinceCpuSec = -1;   // seconds since the last loss of each kind, -1 = none yet
     float loadPct = 0;                 // the receiver's share of real time on the sample thread over the last seconds (100 = just keeping up)
+    float deliveredPct = -1;           // samples the radio handed over, percent of the rate it is set to, over the last seconds. -1 = not measured yet
+    bool rateLow = false;              // a live radio under about 97% of that rate (the radio or driver, not the receiver's CPU load)
 };
 
 class Engine {
@@ -153,6 +157,8 @@ public:
     bool retuneReset(const TuneSettings& tune);
     uint64_t resetCount() const { return resets_.load(); }
     bool running() const { return running_; }
+    uint64_t startEpoch() const { return startEpoch_.load(); }   // grows at each successful start (map send: ignore leftover lists)
+    bool syntheticSource() const;   // last start was the built-in test signal (never posted to the public map)
     // What the radio's driver said without failing: at the last retune (a frequency outside what the radio covers, ...) or else at the start
     // (a lower sample rate than asked for, ...); empty when it had nothing to say. The app shows it with the radio messages.
     std::string sourceNote() const { std::lock_guard<std::mutex> lk(noteMu_); return retuneNote_.empty() ? note_ : retuneNote_; }
@@ -245,7 +251,8 @@ public:
     BbStats bbStats();
     std::map<int, std::vector<EpgEvent>> epg();
     // Every burst of transport stream packets is also handed to this function (the network tuner); it runs on the receiver thread, so it must be quick.
-    void setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*)> f);
+    // `secs` is how long the burst represents in the stream, so a client can hand it to a player at that rate instead of in one lump.
+    void setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> f);
     void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }
@@ -353,6 +360,7 @@ public:
     M17Receiver& m17() { return rxM17_; }   // M17: the receiver's own controls and results (the interface reads telemetry through latestRx)
     AirbandReceiver& airband() { return rxAirband_; }   // Airband: the receiver's own controls and results (the interface reads telemetry through latestRx)
     VorReceiver& vor() { return rxVor_; }   // VOR / ILS: the receiver's own controls and results (the interface reads telemetry through latestRx)
+    NdbReceiver& ndb() { return rxNdb_; }   // NDB: long-wave non-directional beacons, the Morse ident (telemetry through latestRx)
     TeletextDecoder& teletext() { return ttx_; }
     // ATSC 3.0: the service list and statistics, and which service to receive (-1 = the first video service)
     bool atsc3Telemetry(Atsc3Telemetry& t) const { std::lock_guard<std::mutex> lk(atsc3Mu_); t = atsc3Tel_; return atsc3Tel_.seq != 0; }
@@ -431,7 +439,7 @@ private:
     TsDemux demux_;
     TsSnapshot tsSnap_;
     OutputManager outputs_;
-    std::function<void(const uint8_t*, size_t, const TsSnapshot*)> tap_;
+    std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> tap_;
     Player player_;
     IqCorrector iqFix_;
     // offset tuning (offset_tune.h): the radio is tuned offHz_ below the channel at offRate_, and offMix_ brings the channel back to the centre;
@@ -503,6 +511,7 @@ private:
     Vdl2Receiver rxVdl2_;
     IsmReceiver rxIsm_;
     VorReceiver rxVor_;
+    NdbReceiver rxNdb_;
     M17Receiver rxM17_;
     HfdlReceiver rxHfdl_;
     CellReceiver rxCell_;
@@ -644,6 +653,7 @@ private:
     void publishRx(RxTelemetry&& t) { t.seq = ++rxPub_; rxTel_ = std::move(t); }
     std::thread th_;
     std::atomic<bool> running_{false}, stopReq_{false};
+    std::atomic<uint64_t> startEpoch_{0};
     void watchRadio();
     std::atomic<bool> radioLost_{false};
     TuneSettings hwTune(const TuneSettings& t) const;      // radioTune() through the converter (converter.h): what the radio itself is tuned to
@@ -664,8 +674,11 @@ private:
     std::atomic<uint64_t> radioMissEvents_{0}, cpuDropEvents_{0}, ringDroppedSeen_{0};
     std::atomic<int64_t> lastRadioMissNs_{0}, lastCpuDropNs_{0}, lastRadioLogNs_{0};
     std::atomic<float> loadPct_{0};
+    std::atomic<float> deliveredPct_{-1};   // checkDelivery(): samples the library offered over wall time, percent of srcRate_; -1 until a window completes
     std::atomic<bool> live_{false};   // the source is a live radio (sampleLoss() is read by the interface without touching src_)
     double loadT_ = 0, loadRx_ = 0, loadSamp_ = 0;   // analysis thread: where the last load measurement started
+    int64_t rateT0_ = 0;       // analysis thread: start of the delivered-rate window (steady ns); 0 = not started
+    uint64_t rateOff0_ = 0;    // offered-sample count at rateT0_
     std::string reconnectErr_;
     mutable std::mutex noteMu_;
     std::string note_, retuneNote_;     // sourceNote(): the driver's note at the start, at the last retune

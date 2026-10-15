@@ -263,6 +263,13 @@ void summaryText(App& a, std::string& l1, std::string& l2) {
             snprintf(b, sizeof b, "%s  SNR %.1f dB  CFO %+.0f Hz", tr(rx.state == 2 ? "locked" : "searching"), rx.dataSnrDb, rx.cfoHz);
             l2 = b;
         }
+        if (mapFamilySends(a.family)) {
+            const std::string m = mapSendStatusLine();
+            if (!m.empty()) {
+                if (!l2.empty()) l2 += "  ";
+                l2 += m;
+            }
+        }
     }
 }
 float summaryWidth(App& a, float scale = 1.f) {
@@ -515,7 +522,7 @@ void statusLine(App& a) {
     if (run) {
         const SampleLoss l = a.engine.sampleLoss();
         if (l.live) { snprintf(b, sizeof b, tr("load %.0f%%"), l.loadPct); field(b, false, l.loadPct > 90 ? pal::warnAmber() : ImVec4(-1, 0, 0, 0)); lossTooltip(l); }
-        if (l.radioEvents || l.cpuEvents) { field((std::string(tr("dropped")) + " " + lossText(l)).c_str(), false, lossColour(l)); lossTooltip(l); }
+        if (l.radioEvents || l.cpuEvents || l.rateLow) { field((std::string(tr("dropped")) + " " + lossText(l)).c_str(), false, lossColour(l)); lossTooltip(l); }
     }
     {   // CPU load meter: this process's CPU (100 = one core) and, while receiving, the receiver's DSP load
         static double cpuT = 0, cpuPct = 0, lastCpu = 0, lastWall = 0;
@@ -532,7 +539,9 @@ void statusLine(App& a) {
         if (ImGui::IsItemHovered()) {
             ImGui::BeginTooltip();
             ImGui::Text("Process CPU: %.0f%% (100%% = one core)", cpuPct);
-            if (run && l.live) ImGui::Text("DSP load: %.0f%% of real time on the sample thread", l.loadPct);
+            if (run && l.live) ImGui::Text("DSP load: %.0f%% of real time on the sample thread (processing time, not lost samples)", l.loadPct);
+            if (run && l.live && l.deliveredPct >= 0)
+                ImGui::Text(l.rateLow ? "Samples arriving: %.1f%% of the set rate (below 97%%: the radio or its driver)" : "Samples arriving: %.1f%% of the set rate", l.deliveredPct);
             ImGui::TextDisabled("Drawing is slowed when nothing moves and paused while hidden.");
             ImGui::EndTooltip();
         }
@@ -708,6 +717,8 @@ float menuBar(App& a) {
             }
             if (ImGui::MenuItem(tr("Reset layout"))) { a.splitSide = a.splitRight = a.splitBottom = a.splitDock = a.splitBot2 = 0; savePrefs(a); }
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Put the panels back to their automatic sizes (drag the bars between panels to resize them)"));
+            if (ImGui::MenuItem(tr("Full screen"), "F11", gWindow && glfwGetWindowMonitor(gWindow))) toggleFullscreen();
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Fill the display, hiding the taskbar (F11 or Alt+Enter). The same shortcut leaves it."));
             ImGui::Separator();
             static const char* names[3] = {N_("Terminal palette"), N_("Instrument palette"), N_("Mono palette")};
             for (int t = 0; t < 3; t++) if (ImGui::MenuItem(tr(names[t]), nullptr, a.uiTheme == t)) { a.uiTheme = t; savePrefs(a); }
@@ -742,6 +753,7 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Classic interface"))) { a.newUi = false; savePrefs(a); }
             ImGui::EndMenu();
         }
+        mapSendServerMenu(a);
         if (ImGui::BeginMenu(tr("Help"))) {
             if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
             if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
