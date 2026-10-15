@@ -9,9 +9,12 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <deque>
 #include <mutex>
+#include <ctime>
 #include <random>
 #include <thread>
 #include <unordered_map>
@@ -25,7 +28,26 @@ constexpr double kHeartbeatSec = 60.0;
 constexpr double kRetrySec = 8.0;
 constexpr int kFailPopupAfter = 3;
 constexpr size_t kMaxTracks = 250;
-constexpr double kIngestMaxAdsbPosAgeSec = 30.0;   // frozen CPR: do not publish to the map
+// Max position age (seconds) before OnAir omits a fix from ingest (per kind / link).
+double maxIngestPosAgeSec(const char* kind, const std::string& src) {
+    if (!kind || !*kind) return 300;
+    const std::string s = src;
+    if (!std::strcmp(kind, "aircraft")) {
+        if (s == "adsb" || s == "acars" || s == "hfdl") return 30;
+        if (s == "sat") return 60;
+        return 45;
+    }
+    if (!std::strcmp(kind, "vessel")) return 90;
+    if (!std::strcmp(kind, "flarm")) return 30;
+    if (!std::strcmp(kind, "drone")) return 45;
+    if (!std::strcmp(kind, "aprs") || !std::strcmp(kind, "ham")) return 120;
+    if (!std::strcmp(kind, "sonde")) return 900;
+    if (!std::strcmp(kind, "sat")) return 180;
+    if (!std::strcmp(kind, "dsc")) return 600;
+    if (!std::strcmp(kind, "buoy")) return 7200;
+    if (!std::strcmp(kind, "station")) return 3600;
+    return 300;
+}
 
 std::atomic<bool> gBusy{false};
 std::mutex gThMu;
@@ -41,7 +63,40 @@ std::atomic<bool> gNeedRetryPopup{false};
 std::atomic<int> gFails{0};
 std::atomic<int64_t> gLastOkMs{0};
 std::atomic<int64_t> gLastTryMs{0};
+std::mutex gMapLogMu;
+std::deque<std::string> gMapLog;
+constexpr size_t kMapLogMax = 100;
 bool gToastRetry = false;
+
+void mapLog(const char* fmt, ...) {
+    char msg[480];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof msg, fmt, ap);
+    va_end(ap);
+    const std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    char ts[32];
+    std::tm tm{};
+#if defined(_WIN32)
+    gmtime_s(&tm, &t);
+#else
+    gmtime_r(&t, &tm);
+#endif
+    std::strftime(ts, sizeof ts, "%Y-%m-%d %H:%M:%S UTC", &tm);
+    std::string line = std::string(ts) + "  " + msg;
+    std::lock_guard<std::mutex> lk(gMapLogMu);
+    gMapLog.push_back(std::move(line));
+    while (gMapLog.size() > kMapLogMax) gMapLog.pop_front();
+}
+
+const char* phaseName(int ph) {
+    switch (ph) {
+    case kConnecting: return "connecting";
+    case kOk: return "connected";
+    case kRetry: return "retrying";
+    default: return "off";
+    }
+}
 bool gTxHold = false;                // a transmission is in progress, or just ended: do not post, and do not let the user turn sending back on
 bool gTxPausedSend = false;          // the connection was on when transmit started (restored only if the radio never keyed)
 int64_t gToastTxUntil = 0;
@@ -140,9 +195,28 @@ bool isIcaoHexId(const std::string& id) {
     return true;
 }
 
+std::string normalizeMmsiId(const std::string& s) {
+    std::string d;
+    for (unsigned char c : s) if (c >= '0' && c <= '9') d += (char)c;
+    if (d.size() >= 9) return d.substr(d.size() - 9);
+    return d;
+}
+
+bool isMmsiId(const std::string& id) {
+    if (id.size() != 9) return false;
+    for (unsigned char c : id) if (c < '0' || c > '9') return false;
+    return true;
+}
+
+bool fresherThan(const Track& a, const Track& b) {
+    if (a.age > 0 && b.age > 0) return a.age < b.age;
+    if (a.hasHeard && b.hasHeard) return a.heardAt > b.heardAt + 0.2;
+    return true;
+}
+
 void addTrack(std::vector<Track>& v, std::unordered_set<std::string>& seen, Track t) {
     if (!t.kind || !*t.kind || t.id.empty() || !validPos(t.lat, t.lon)) return;
-    if (t.kind && std::strcmp(t.kind, "aircraft") == 0 && t.src == "adsb" && t.age > kIngestMaxAdsbPosAgeSec) return;
+    if (t.age > maxIngestPosAgeSec(t.kind, t.src)) return;
     if (t.id.size() > 80) t.id.resize(80);
     const std::string key = std::string(t.kind) + ":" + t.id;
     const double ht = t.hasHeard ? t.heardAt : -1;
@@ -154,7 +228,14 @@ void addTrack(std::vector<Track>& v, std::unordered_set<std::string>& seen, Trac
             t.path.clear();                                 // saved trail is not this run
         }
     }
-    if (!seen.insert(key).second) return;
+    if (!seen.insert(key).second) {
+        for (Track& existing : v) {
+            if (std::string(existing.kind) + ":" + existing.id != key) continue;
+            if (fresherThan(t, existing)) existing = std::move(t);
+            return;
+        }
+        return;
+    }
     if (v.size() >= kMaxTracks) return;
     v.push_back(std::move(t));
 }
@@ -165,9 +246,14 @@ void fromMarkers(std::vector<Track>& v, std::unordered_set<std::string>& seen, c
         t.id = m.id;
         t.label = m.label.empty() ? m.id : m.label;
         if (m.layer == dect2::LayerAdsb) { t.kind = "aircraft"; t.sub = "ADS-B"; t.src = "adsb"; if (m.hasAlt) { t.hasAlt = true; t.alt = m.altM / 0.3048; } }
-        else if (m.layer == dect2::LayerAis) { t.kind = "vessel"; t.sub = "AIS"; if (m.hasAlt) { t.hasAlt = true; t.alt = m.altM; } }
-        else if (m.layer == dect2::LayerAprs) { t.kind = "aprs"; t.sub = "APRS"; if (m.hasAlt) { t.hasAlt = true; t.alt = m.altM; } }
-        else if (m.layer == dect2::LayerSonde) { t.kind = "sonde"; t.sub = "sonde"; if (m.hasAlt) { t.hasAlt = true; t.alt = m.altM; } }
+        else if (m.layer == dect2::LayerAis) {
+            t.kind = "vessel"; t.sub = "AIS"; t.src = "ais";
+            const std::string mmsi = normalizeMmsiId(m.id);
+            if (!mmsi.empty()) t.id = mmsi;
+            if (m.hasAlt) { t.hasAlt = true; t.alt = m.altM; }
+        }
+        else if (m.layer == dect2::LayerAprs) { t.kind = "aprs"; t.sub = "APRS"; t.src = "aprs"; if (m.hasAlt) { t.hasAlt = true; t.alt = m.altM; } }
+        else if (m.layer == dect2::LayerSonde) { t.kind = "sonde"; t.sub = "sonde"; t.src = "sonde"; if (m.hasAlt) { t.hasAlt = true; t.alt = m.altM; } }
         else continue;
         t.lat = m.lat; t.lon = m.lon;
         t.age = m.ageSec;
@@ -296,29 +382,32 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
 
     for (const dect2::OrbcommSat& s : rx.rx.orbcomm.sats) {
         if (!s.hasPos) continue;
-        Track t; t.kind = "sat"; t.sub = "Orbcomm";
+        Track t; t.kind = "sat"; t.sub = "Orbcomm"; t.src = "sat";
         t.id = std::to_string(s.id); t.label = t.id;
         t.lat = s.lat; t.lon = s.lon; t.hasAlt = true; t.alt = s.altKm;
         t.hasHeard = true; t.heardAt = s.posTime > 0 ? s.posTime : s.lastHeard;
+        if (rx.rx.orbcomm.timeSec > 0 && t.heardAt > 0) t.age = rx.rx.orbcomm.timeSec - t.heardAt;
         addTrack(v, seen, std::move(t));
     }
 
     for (const dect2::IridiumSatInfo& s : rx.rx.iridium.sats) {
         if (!s.hasPos || s.altKm < 100) continue;   // IRA sub-point of the satellite, not a beam centre on the ground
-        Track t; t.kind = "sat"; t.sub = "Iridium";
+        Track t; t.kind = "sat"; t.sub = "Iridium"; t.src = "sat";
         t.id = std::to_string(s.id); t.label = t.id;
         t.lat = s.lat; t.lon = s.lon; t.hasAlt = true; t.alt = s.altKm;
         t.hasHeard = true; t.heardAt = s.lastHeard;
+        if (rx.rx.iridium.timeSec > 0 && t.heardAt > 0) t.age = rx.rx.iridium.timeSec - t.heardAt;
         addTrack(v, seen, std::move(t));
     }
 
     for (const dect2::RidDrone& d : rx.rx.rid.drones) {
         if (!d.hasPos) continue;   // not the operator location
-        Track t; t.kind = "drone"; t.sub = "Remote ID";
+        Track t; t.kind = "drone"; t.sub = "Remote ID"; t.src = "rid";
         t.id = !d.serial.empty() ? d.serial : d.mac;
         t.label = t.id;
         t.lat = d.lat; t.lon = d.lon;
         t.hasHeard = true; t.heardAt = d.lastSec;
+        if (rx.rx.rid.timeSec > 0 && t.heardAt > 0) t.age = rx.rx.rid.timeSec - t.heardAt;
         if (d.altGeo > -1000) { t.hasAlt = true; t.alt = d.altGeo; }
         if (d.direction >= 0) { t.hasHdg = true; t.hdg = d.direction; }
         if (d.speed >= 0) { t.hasSpd = true; t.spd = d.speed * 1.943844; }
@@ -328,17 +417,20 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
     for (const dect2::DjiDrone& d : rx.rx.dji.drones) {
         const double la = d.last.lat(), lo = d.last.lon();
         if (!validPos(la, lo)) continue;   // drone position only, not home or the pilot
-        Track t; t.kind = "drone"; t.sub = "DJI";
+        Track t; t.kind = "drone"; t.sub = "DJI"; t.src = "dji";
         t.id = d.serial.empty() ? "dji" : d.serial; t.label = t.id;
         t.lat = la; t.lon = lo; t.hasAlt = true; t.alt = d.last.altitudeM();
         t.hasHeard = true; t.heardAt = d.lastSec;
+        if (rx.rx.dji.timeSec > 0 && t.heardAt > 0) t.age = rx.rx.dji.timeSec - t.heardAt;
         addTrack(v, seen, std::move(t));
     }
 
     for (const dect2::DscCall& c : rx.rx.marine.dsc) {
         if (!c.hasPos || !c.eccOk) continue;
-        Track t; t.kind = "dsc"; t.sub = "DSC";
-        t.id = !c.fromMmsi.empty() ? c.fromMmsi : c.distressMmsi;
+        Track t; t.kind = "dsc"; t.sub = "DSC"; t.src = "dsc";
+        const std::string raw = !c.fromMmsi.empty() ? c.fromMmsi : c.distressMmsi;
+        const std::string mmsi = normalizeMmsiId(raw);
+        t.id = mmsi.empty() ? raw : mmsi;
         t.label = t.id; t.lat = c.lat; t.lon = c.lon;
         t.hasHeard = true; t.heardAt = c.rxSec;
         if (!c.natureName.empty()) t.extra = c.natureName;
@@ -347,10 +439,11 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
 
     const dect2::DatawellTelemetry& dw = rx.rx.datawell;
     if (dw.sys.havePos && validPos(dw.sys.lat, dw.sys.lon)) {
-        Track t; t.kind = "buoy"; t.sub = "Datawell";
+        Track t; t.kind = "buoy"; t.sub = "Datawell"; t.src = "buoy";
         t.id = !dw.channel.empty() ? dw.channel : "datawell";
         t.label = t.id; t.lat = dw.sys.lat; t.lon = dw.sys.lon;
         t.hasHeard = true; t.heardAt = dw.timeSec;
+        t.age = 0;
         addTrack(v, seen, std::move(t));
     }
     g.primed = true;
@@ -366,6 +459,9 @@ std::string buildJson(const std::string& station, const std::vector<Track>& trac
         j += "{\"kind\":\""; j += t.kind; j += "\",\"id\":\""; j += jsonEsc(t.id);
         if (t.kind && std::strcmp(t.kind, "aircraft") == 0 && isIcaoHexId(t.id)) {
             j += "\",\"icao\":\""; j += jsonEsc(t.id);
+        }
+        if (t.kind && (std::strcmp(t.kind, "vessel") == 0 || std::strcmp(t.kind, "dsc") == 0) && isMmsiId(t.id)) {
+            j += "\",\"mmsi\":\""; j += jsonEsc(t.id);
         }
         j += "\",\"label\":\""; j += jsonEsc(t.label.empty() ? t.id : t.label);
         j += "\",\"sub\":\""; j += jsonEsc(t.sub);
@@ -408,20 +504,24 @@ void startPost(const std::string& url, const std::string& body, int n) {
         const int64_t t = nowMs();
         gLastTryMs.store(t, std::memory_order_relaxed);
         if (ok) {
+            const int prevFail = gFails.load(std::memory_order_relaxed);
             gPhase.store(kOk, std::memory_order_relaxed);
             gLastN.store(n, std::memory_order_relaxed);
             gTotalN.fetch_add((uint64_t)std::max(0, n), std::memory_order_relaxed);
             gLastOkMs.store(t, std::memory_order_relaxed);
             gFails.store(0, std::memory_order_relaxed);
+            if (prevFail > 0) mapLog("connection restored after %d failed ingest(s)", prevFail);
         } else {
             const int nfail = gFails.fetch_add(1, std::memory_order_relaxed) + 1;
             const int64_t lastOk = gLastOkMs.load(std::memory_order_relaxed);
             const bool outage = nfail >= kFailPopupAfter || lastOk == 0 || (t - lastOk) > 20000;
             if (outage) {
                 gPhase.store(kRetry, std::memory_order_relaxed);
+                mapLog("retrying after ingest failure #%d (last ok %s)", nfail, lastOk ? "earlier" : "never");
                 if (nfail == kFailPopupAfter || lastOk == 0) gNeedRetryPopup.store(true, std::memory_order_relaxed);
             }
         }
+        mapLog("ingest %s tracks=%d body=%zu B url=%s", ok ? "ok" : "failed", n, body.size(), url.c_str());
         fprintf(stderr, "map ingest %s n=%d (%zu bytes) %s\n", ok ? "ok" : "failed", n, body.size(), url.c_str());
         gBusy = false;
     });
@@ -437,6 +537,7 @@ void beginSend(App& s) {
     gFails.store(0, std::memory_order_relaxed);
     gNeedRetryPopup.store(false, std::memory_order_relaxed);
     gPingNow = true;
+    mapLog("send enabled origin=%s station=%s", originOf(s).c_str(), s.mapStationId.c_str());
 }
 
 void forgetHeard() {
@@ -451,6 +552,7 @@ void stopSend(App& s) {
     gToastRetry = false;
     gNeedRetryPopup.store(false, std::memory_order_relaxed);
     gPingNow = false;
+    mapLog("send disabled");
 }
 
 void consentPopup(App& a) {
@@ -645,6 +747,7 @@ bool mapPauseForTransmit(App& a) {
     gTxPausedSend = true;
     stopSend(s);
     gToastTxUntil = nowMs() + 8000;
+    mapLog("send paused for transmit");
     return true;
 }
 
@@ -668,4 +771,41 @@ void mapSendShutdown() {
     { std::lock_guard<std::mutex> lk(gThMu); if (gTh.joinable()) t = std::move(gTh); }
     if (t.joinable()) t.join();
     gBusy = false;
+}
+
+std::string mapSendDiagnosticsBlock(const App& a) {
+    App& s = rootApp(const_cast<App&>(a));
+    const int ph = gPhase.load(std::memory_order_relaxed);
+    const int64_t lastOk = gLastOkMs.load(std::memory_order_relaxed);
+    const int64_t lastTry = gLastTryMs.load(std::memory_order_relaxed);
+    const int fails = gFails.load(std::memory_order_relaxed);
+    const int lastN = gLastN.load(std::memory_order_relaxed);
+    const uint64_t tot = gTotalN.load(std::memory_order_relaxed);
+    const int64_t now = nowMs();
+    auto ago = [&](int64_t t) -> std::string {
+        if (t <= 0) return "never";
+        const double sec = (now - t) / 1000.0;
+        if (sec < 2) return "just now";
+        char b[48];
+        snprintf(b, sizeof b, "%.1f s ago", sec);
+        return b;
+    };
+    std::string out = "\nMap server connection:\n";
+    out += "  enabled: " + std::string(s.mapSend && s.mapConsent ? "yes" : "no") + "\n";
+    out += "  consent: " + std::string(s.mapConsent ? "yes" : "no") + "\n";
+    out += "  origin: " + originOf(s) + "\n";
+    out += "  station id: " + s.mapStationId + "\n";
+    out += "  state: " + std::string(phaseName(ph)) + "\n";
+    out += "  consecutive ingest failures: " + std::to_string(fails) + "\n";
+    out += "  last successful ingest: " + ago(lastOk) + "\n";
+    out += "  last ingest attempt: " + ago(lastTry) + "\n";
+    out += "  last batch size: " + std::to_string(lastN) + " tracks\n";
+    out += "  total tracks sent (session): " + std::to_string(tot) + "\n";
+    out += "  ingest in progress: " + std::string(gBusy.load(std::memory_order_relaxed) ? "yes" : "no") + "\n";
+    out += "\n  Connection log (newest last):\n";
+    std::deque<std::string> logCopy;
+    { std::lock_guard<std::mutex> lk(gMapLogMu); logCopy = gMapLog; }
+    if (logCopy.empty()) out += "    (none yet)\n";
+    else for (const std::string& line : logCopy) out += "    " + line + "\n";
+    return out;
 }

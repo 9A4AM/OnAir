@@ -47,6 +47,32 @@ html, body {
 }
 .pill.ok { color: var(--text); }
 .pill.ok i { background: #b8bab8; }
+.load {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+.load-track {
+  width: 44px;
+  height: 5px;
+  background: var(--frame);
+  border: 1px solid var(--edge);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.load-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: #6a9e6a;
+  transition: width 0.35s ease, background 0.2s;
+}
+.load.warn .load-fill { background: #c0a040; }
+.load.hot .load-fill { background: #c85848; }
+.load-pct { min-width: 2.5em; text-align: right; }
 .menubar input {
   margin-left: auto; width: 210px; height: 20px;
   background: var(--frame); color: var(--text);

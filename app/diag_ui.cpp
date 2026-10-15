@@ -295,6 +295,7 @@ std::string buildDiagnostics(const DiagInput& in) {
     const size_t from = pick.size() > 60 ? pick.size() - 60 : 0;
     s += fmt("\nLog (last %zu matching lines):\n", pick.size() - from);
     for (size_t i = from; i < pick.size(); i++) s += *pick[i] + "\n";
+    if (!in.mapServer.empty()) s += in.mapServer;
     return s;
 }
 
@@ -308,6 +309,7 @@ std::string diagnosticsText(App& a) {
     for (auto& m : radioMessages(a)) in.messages.push_back(m.text);
     size_t total = 0;
     in.log = a.engine.logSnapshot(total);
+    in.mapServer = mapSendDiagnosticsBlock(a);
     return buildDiagnostics(in);
 }
 

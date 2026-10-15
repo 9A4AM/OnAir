@@ -35,6 +35,32 @@ function ttlFor(kind) {
   return TTL_MS[kind] || 20 * 60e3;
 }
 
+/** Soft capacity — used only for the public load meter (not hard limits). */
+const LOAD_CAP = {
+  tracks: 5000,
+  stations: 200,
+  viewers: 400,
+  ingestPerMin: 700,
+  throttlePerMin: 25,
+};
+
+function pruneTimeWindow(arr, now, windowMs = 60e3) {
+  const cut = now - windowMs;
+  while (arr.length && arr[0] < cut) arr.shift();
+}
+
+function serverLoadPct({ tracks, stations, viewers, ingestPerMin, throttlePerMin }) {
+  const ratios = [
+    tracks / LOAD_CAP.tracks,
+    stations / LOAD_CAP.stations,
+    viewers / LOAD_CAP.viewers,
+    ingestPerMin / LOAD_CAP.ingestPerMin,
+    throttlePerMin / LOAD_CAP.throttlePerMin,
+  ];
+  const peak = Math.max(0, ...ratios);
+  return Math.round(Math.min(100, peak * 100));
+}
+
 /** Wall-clock ms of the position report (ingest time minus client age field). */
 function positionTimeMs(tMs, ageSec) {
   const a = Number(ageSec);
@@ -49,28 +75,83 @@ function fresherPosition(incomingAge, prevRow, now) {
   return inT >= prevT - 500;
 }
 
-const SRC_RANK = { adsb: 40, acars: 30, hfdl: 28, sat: 22, flarm: 35 };
+const SRC_RANK = {
+  adsb: 40, ais: 38, flarm: 35, acars: 30, hfdl: 28, aprs: 25, ham: 25, sonde: 20, sat: 22, dsc: 18, buoy: 12,
+};
+
+/** Max position age (seconds) accepted at ingest — aligned with map UI stale colouring. */
+const MAX_INGEST_AGE_SEC = {
+  aircraft: { default: 45, adsb: 30, acars: 30, hfdl: 30, sat: 60 },
+  vessel: { default: 90, ais: 90 },
+  flarm: { default: 30 },
+  drone: { default: 45 },
+  aprs: { default: 120 },
+  ham: { default: 120 },
+  sonde: { default: 900 },
+  sat: { default: 180 },
+  dsc: { default: 600 },
+  buoy: { default: 7200 },
+  station: { default: 3600 },
+};
+
+function maxIngestAgeSec(kind, src) {
+  const spec = MAX_INGEST_AGE_SEC[kind];
+  if (!spec) return 300;
+  const s = String(src || "").toLowerCase();
+  if (s && spec[s] != null) return spec[s];
+  return spec.default ?? 300;
+}
 
 function normalizeIcao(s) {
   const x = String(s || "").toUpperCase().replace(/[^0-9A-F]/g, "");
   return x.length === 6 ? x : "";
 }
 
-/** One map row per ICAO when known; otherwise per client id (callsign / reg). */
-function trackStorageId(kind, raw) {
+function normalizeMmsi(s) {
+  const x = String(s || "").replace(/\D/g, "");
+  if (x.length >= 9) return x.slice(-9);
+  return x.length ? x : "";
+}
+
+/** Stable client id before kind prefix (ICAO, MMSI, callsign, serial, …). */
+function canonicalClientId(kind, raw) {
   const rawId = String(raw.id || "").slice(0, 80);
   if (!rawId) return null;
-  if (kind !== "aircraft") return `${kind}:${rawId}`;
-  const icao = normalizeIcao(raw.icao) || normalizeIcao(rawId);
-  if (icao) return `aircraft:${icao}`;
-  return `aircraft:${rawId}`;
+  switch (kind) {
+    case "aircraft": {
+      const icao = normalizeIcao(raw.icao) || normalizeIcao(rawId);
+      return icao || rawId;
+    }
+    case "vessel":
+    case "dsc": {
+      const mmsi = normalizeMmsi(raw.mmsi) || normalizeMmsi(rawId);
+      return mmsi || rawId;
+    }
+    case "flarm": {
+      const hex = normalizeIcao(raw.id) || normalizeIcao(rawId);
+      return hex || rawId;
+    }
+    case "aprs":
+    case "ham": {
+      const cs = rawId.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 12);
+      return cs || rawId;
+    }
+    default:
+      return rawId;
+  }
+}
+
+function trackStorageId(kind, raw) {
+  const id = canonicalClientId(kind, raw);
+  if (!id) return null;
+  return `${kind}:${id}`;
 }
 
 function srcRank(src) {
   return SRC_RANK[String(src || "").toLowerCase()] || 10;
 }
 
-/** When merging a fresher fix, keep the better callsign / source label if the update is from a weaker link. */
+/** When merging a fresher fix, keep the better label / source if the update is from a weaker link. */
 function mergeTrackMeta(prev, inc) {
   if (!prev) return inc;
   const out = { ...inc };
@@ -79,9 +160,12 @@ function mergeTrackMeta(prev, inc) {
   if (incR < prevR) {
     out.sub = prev.sub || inc.sub;
     out.src = prev.src || inc.src;
-    if (prev.label && (!inc.label || inc.label === inc.id)) out.label = prev.label;
+    const weakLabel = !inc.label || inc.label === inc.rawId || inc.label === inc.id;
+    if (prev.label && weakLabel) out.label = prev.label;
   }
   if (prev.squawk && !inc.squawk) out.squawk = prev.squawk;
+  if (prev.extra && !inc.extra) out.extra = prev.extra;
+  if (prev.cat && !inc.cat) out.cat = prev.cat;
   return out;
 }
 
@@ -90,7 +174,40 @@ export class MapHub {
     this.ctx = ctx;
     this.env = env;
     this.sockets = new Set();
+    this.ingestAt = [];
+    this.throttleAt = [];
+    this.lastLoadBroadcast = 0;
     this.ready = this.ctx.blockConcurrencyWhile(() => this.init());
+  }
+
+  touchLoad(now, kind) {
+    if (kind === "throttle") this.throttleAt.push(now);
+    else this.ingestAt.push(now);
+    pruneTimeWindow(this.ingestAt, now);
+    pruneTimeWindow(this.throttleAt, now);
+  }
+
+  loadMetrics(now) {
+    pruneTimeWindow(this.ingestAt, now);
+    pruneTimeWindow(this.throttleAt, now);
+    const trackRow = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM tracks").toArray()[0];
+    const tracks = trackRow ? trackRow.n : 0;
+    const st = this.ctx.storage.sql.exec(
+      "SELECT COUNT(*) AS n FROM stations WHERE last > ?",
+      now - 30 * 60e3,
+    ).toArray()[0];
+    const stations = st ? st.n : 0;
+    const viewers = this.ctx.getWebSockets().length;
+    const ingestPerMin = this.ingestAt.length;
+    const throttlePerMin = this.throttleAt.length;
+    const pct = serverLoadPct({ tracks, stations, viewers, ingestPerMin, throttlePerMin });
+    return { pct, tracks, stations, viewers, ingestPerMin, throttlePerMin };
+  }
+
+  maybeBroadcastLoad(now) {
+    if (now - this.lastLoadBroadcast < 4000) return;
+    this.lastLoadBroadcast = now;
+    this.broadcast({ type: "load", load: this.loadMetrics(now) });
   }
 
   async init() {
@@ -159,7 +276,11 @@ export class MapHub {
 
     const now = Date.now();
     const prev = this.ctx.storage.sql.exec("SELECT last, n FROM stations WHERE id = ?", station).toArray()[0];
-    if (prev && now - prev.last < 1500) return json({ error: "slow down" }, 429);
+    if (prev && now - prev.last < 1500) {
+      this.touchLoad(now, "throttle");
+      this.maybeBroadcastLoad(now);
+      return json({ error: "slow down" }, 429);
+    }
 
     const kept = [];
     for (const raw of tracks) {
@@ -196,8 +317,10 @@ export class MapHub {
       station, now,
     );
     this.prune(now);
+    this.touchLoad(now, "ingest");
     if (kept.length) this.broadcast({ type: "upsert", tracks: kept });
-    return json({ ok: true, n: kept.length });
+    this.maybeBroadcastLoad(now);
+    return json({ ok: true, n: kept.length, load: this.loadMetrics(now) });
   }
 
   prune(now) {
@@ -222,7 +345,8 @@ export class MapHub {
       });
     }
     const st = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM stations WHERE last > ?", now - 30 * 60e3).toArray()[0];
-    return { now, stations: st ? st.n : 0, tracks };
+    const load = this.loadMetrics(now);
+    return { now, stations: st ? st.n : 0, tracks, load };
   }
 
   live() {
@@ -278,7 +402,9 @@ export class MapHub {
     const client = pair[0];
     const server = pair[1];
     this.ctx.acceptWebSocket(server);
+    const now = Date.now();
     server.send(JSON.stringify({ type: "hello", ...this.snapshot() }));
+    this.maybeBroadcastLoad(now);
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -304,12 +430,15 @@ function sanitize(raw, now) {
   const storageId = trackStorageId(kind, raw);
   if (!storageId) return null;
   const rawId = String(raw.id || "").slice(0, 80);
-  const icao = normalizeIcao(raw.icao) || (kind === "aircraft" ? normalizeIcao(rawId) : "");
+  const clientId = canonicalClientId(kind, raw) || rawId;
+  const icao = kind === "aircraft" ? (normalizeIcao(raw.icao) || normalizeIcao(clientId)) : "";
+  const mmsi = (kind === "vessel" || kind === "dsc") ? (normalizeMmsi(raw.mmsi) || normalizeMmsi(clientId)) : "";
   const alt = Number.isFinite(Number(raw.alt)) ? Number(raw.alt) : null;
   const heading = Number.isFinite(Number(raw.heading)) ? Number(raw.heading) : null;
   const speed = Number.isFinite(Number(raw.speed)) ? Number(raw.speed) : null;
   const vrate = Number.isFinite(Number(raw.vrate)) ? Number(raw.vrate) : null;
   const age = Number.isFinite(Number(raw.age)) ? Number(raw.age) : 0;
+  if (age > maxIngestAgeSec(kind, raw.src)) return null;
   const squawk = raw.squawk == null || raw.squawk === "" ? null : String(raw.squawk).slice(0, 8);
   const path = [];
   if (Array.isArray(raw.path)) {
@@ -325,7 +454,9 @@ function sanitize(raw, now) {
   return {
     id: storageId,
     kind,
+    rawId: clientId,
     icao,
+    mmsi,
     label: String(raw.label || rawId).slice(0, 48),
     sub: String(raw.sub || "").slice(0, 32),
     lat, lon, alt, heading, speed, vrate, age,

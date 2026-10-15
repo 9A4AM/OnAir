@@ -16,6 +16,10 @@
     <span class="sep">/</span>
     <span class="cur">Map</span>
     <span class="pill" id="link"><i></i><span>connecting</span></span>
+    <span class="load" id="load" hidden title="Shared map load. 100% means very busy — new ingests may be slowed.">
+      <span class="load-track" aria-hidden="true"><span class="load-fill" id="loadFill"></span></span>
+      <span class="load-pct" id="loadPct">0%</span>
+    </span>
     <span class="counts" id="counts"></span>
     <span class="clock" id="clock"></span>
     <input id="q" type="search" placeholder="Find callsign, MMSI, ICAO" autocomplete="off" spellcheck="false">
@@ -51,6 +55,6 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js"></script>
-  <script src="/app.js?v=4"></script>
+  <script src="/app.js?v=5"></script>
 </body>
 </html>

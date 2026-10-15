@@ -18,6 +18,7 @@ let tracks = new Map();
 let selected = null;
 let liveOk = false;
 let stations = 0;
+let serverLoad = null;
 let query = "";
 
 const map = new maplibregl.Map({
@@ -231,11 +232,16 @@ function icons(colorOfKind) {
 
 const SRC = {
   adsb: { color: "#e6e8ea", stale: 30 },
+  ais: { color: "#40b0e0", stale: 90 },
   sat: { color: "#5096dc", stale: 60 },
   acars: { color: "#dc4848", stale: 30 },
   hfdl: { color: "#e6c640", stale: 30 },
   flarm: { color: "#6ccc7a", stale: 30 },
+  aprs: { color: "#c87848", stale: 120 },
+  sonde: { color: "#a878dc", stale: 900 },
+  dsc: { color: "#e87840", stale: 600 },
 };
+const SRC_RANK = { adsb: 40, ais: 38, flarm: 35, acars: 30, hfdl: 28, aprs: 25, ham: 25, sat: 22, sonde: 20, dsc: 18, buoy: 12 };
 const STALE = "#969a9e";
 
 function srcOf(t) {
@@ -243,8 +249,12 @@ function srcOf(t) {
   if (s && SRC[s]) return s;
   const sub = (t.sub || "").toLowerCase();
   if (t.kind === "flarm" || sub.includes("flarm")) return "flarm";
+  if (t.kind === "vessel" || sub.includes("ais")) return "ais";
   if (sub.includes("hfdl")) return "hfdl";
   if (sub.includes("vdl") || sub.includes("acars")) return "acars";
+  if (sub.includes("aprs")) return "aprs";
+  if (t.kind === "sonde" || sub.includes("sonde")) return "sonde";
+  if (t.kind === "dsc" || sub.includes("dsc")) return "dsc";
   if (sub.includes("aero") || sub.includes("inmarsat") || sub.includes("ads-c")) return "sat";
   if (t.kind === "aircraft") return "adsb";
   return "";
@@ -367,6 +377,18 @@ function mergePathClient(prev, t) {
   if (t.heading == null && prev && prev.heading != null) t.heading = prev.heading;
   if (t.speed == null && prev && prev.speed != null) t.speed = prev.speed;
   if (prev && prev.meta && !t.meta) t.meta = prev.meta;
+  if (prev) {
+    const prevR = SRC_RANK[srcOf(prev)] || 10;
+    const incR = SRC_RANK[srcOf(t)] || 10;
+    if (incR < prevR) {
+      if (prev.label && !t.label) t.label = prev.label;
+      t.sub = prev.sub || t.sub;
+      t.src = prev.src || t.src;
+    }
+    if (prev.squawk && !t.squawk) t.squawk = prev.squawk;
+    if (prev.extra && !t.extra) t.extra = prev.extra;
+    if (prev.cat && !t.cat) t.cat = prev.cat;
+  }
   return t;
 }
 
@@ -438,6 +460,33 @@ function renderList() {
   paintMiniIcons(el);
 }
 
+function renderLoad() {
+  const el = document.getElementById("load");
+  const fill = document.getElementById("loadFill");
+  const pctEl = document.getElementById("loadPct");
+  if (!el || !fill || !pctEl) return;
+  if (!liveOk || !serverLoad || serverLoad.pct == null) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  const pct = Math.max(0, Math.min(100, Number(serverLoad.pct) || 0));
+  fill.style.width = pct + "%";
+  pctEl.textContent = pct + "%";
+  el.classList.toggle("warn", pct >= 55 && pct < 82);
+  el.classList.toggle("hot", pct >= 82);
+  const tip = [
+    "Shared map load. 100% = very busy; ingests may be slowed.",
+    "Load " + pct + "%",
+    serverLoad.viewers != null ? serverLoad.viewers + " viewers" : "",
+    serverLoad.stations != null ? serverLoad.stations + " stations (30m)" : "",
+    serverLoad.tracks != null ? serverLoad.tracks + " tracks stored" : "",
+    serverLoad.ingestPerMin != null ? serverLoad.ingestPerMin + " ingests/min" : "",
+    serverLoad.throttlePerMin ? serverLoad.throttlePerMin + " rate-limits/min" : "",
+  ].filter(Boolean).join(" · ");
+  el.title = tip;
+}
+
 function renderStats() {
   const pill = document.getElementById("link");
   pill.classList.toggle("ok", liveOk);
@@ -446,6 +495,7 @@ function renderStats() {
   for (const t of tracks.values()) counts[t.kind] = (counts[t.kind] || 0) + 1;
   const bits = KINDS.filter((k) => counts[k.id]).map((k) => counts[k.id] + " " + k.name.toLowerCase());
   document.getElementById("counts").textContent = bits.length ? bits.join("  ·  ") : "no reports";
+  renderLoad();
 }
 
 function icaoOf(t) {
@@ -708,6 +758,7 @@ function takeSnapshot(d) {
   for (const t of d.tracks || []) next.set(t.id, mergePathClient(tracks.get(t.id), t));
   tracks = next;
   stations = d.stations || 0;
+  if (d.load) serverLoad = d.load;
   apply();
   setLive(true);
 }
@@ -721,6 +772,7 @@ function connect() {
   ws.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.type === "hello") takeSnapshot(m);
+    else if (m.type === "load" && m.load) { serverLoad = m.load; renderLoad(); }
     else if (m.type === "upsert") upsert(m.tracks || []);
   };
   ws.onclose = () => { setLive(false); setTimeout(connect, 5000); };

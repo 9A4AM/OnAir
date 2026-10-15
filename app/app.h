@@ -598,6 +598,7 @@ void aeroToolsTick(App& a);                         // aero_ui.cpp: SNR-sound to
 void mapSendShutdown();                             // join the ingest thread before exit
 bool mapFamilySends(int family);                    // this mode can put decoded positions on the public map
 std::string mapSendStatusLine();                    // short "connected / N sent" line for the mode header (empty when off)
+std::string mapSendDiagnosticsBlock(const App& a);  // map.on-air.dev ingest state + recent log for Copy diagnostics
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
@@ -870,6 +871,7 @@ struct DiagInput {
     std::string version, os, cpu, gpu;
     std::vector<DeviceInfo> radios;
     std::vector<std::string> messages, log;   // log: the whole engine log, filtered inside
+    std::string mapServer;                    // map ingest connection log (map_send.cpp)
 };
 std::string buildDiagnostics(const DiagInput& in);   // plain text, no ImGui
 std::string diagnosticsText(App& a);
