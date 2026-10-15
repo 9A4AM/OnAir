@@ -3,7 +3,7 @@
 // 850 Hz. Normal: the mark tone is the lower one. The decoder looks for the pair of tones itself (300 .. 3300 Hz) and locks to it.
 // Pipeline: spectrum of the audio -> pair search at the chosen shift -> a matched filter (one bit time of integration) at each tone ->
 // envelopes -> ATC decision (each envelope against its own slowly decaying peak) -> start bit edge, bit sampling, stop bit check.
-// This header, hfdig_rtty.cpp and app/hfdig_rtty_ui.cpp belong to RTTY alone.
+// This header, hfdig_rtty.cpp and app/hfdig/hfdig_rtty_ui.cpp belong to RTTY alone.
 //
 // Test audio (hfdig_gen.h, modeOpt[0] = 0): a looping RTTY transmission of kRttyTestText, amplitude 0.5, with the lower tone at 2125 Hz.
 //   modeOpt[1]  baud index  (0 45.45, 1 50, 2 75, 3 100)
@@ -26,6 +26,10 @@ constexpr size_t kRttyTextMax = 8000;   // characters kept in the telemetry text
 
 // what the test transmission sends in one loop (a line feed ends it; letters, figures and the shifts between them)
 constexpr const char* kRttyTestText = "RYRYRY CQ CQ DE ONAIR TEST 0123456789 1/2 -.:? THE QUICK BROWN FOX\n";
+
+class HfdigTestAudio;
+// Custom RTTY audio (8000 Hz). Empty text sends kRttyTestText. reverse: the mark is the upper tone. USB/LSB is the HF mixer, not this flag.
+std::unique_ptr<HfdigTestAudio> makeRttyTxAudio(const std::string& text, int baudIdx, int shiftIdx, bool reverse, double lowToneHz = 2125);
 
 struct HfdigRttyTelemetry {
     int state = 0;                   // 0 searching for a signal, 1 locked to a pair of tones, 2 receiving characters

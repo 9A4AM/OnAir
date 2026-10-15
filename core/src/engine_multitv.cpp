@@ -1,0 +1,115 @@
+// The engine's side of multi-channel TV (multitv.h): when it is asked for and the capture holds more than one channel of the chosen width, the
+// DVB-T / DVB-T2 receiver is replaced by one receiver per occupied channel; the selected channel's packets go the way the single receiver's did.
+#include "dect2/engine.h"
+#include <algorithm>
+#include <thread>
+
+namespace dect2 {
+
+int Engine::defaultMaxChannels() { return std::thread::hardware_concurrency() >= 8 ? 3 : 2; }
+
+int Engine::slotsInSpan(double spanRate, double widthMhz, int grid) {
+    const double w = widthMhz * 1e6;
+    if (spanRate <= 0 || w <= 0) return 0;
+    const size_t on = spanSlots(spanRate, w, 0).size(), between = spanSlots(spanRate, w, 0.5 * w).size();
+    return (int)(grid == 1 ? on : grid == 2 ? between : std::max(on, between));
+}
+
+void Engine::setMultiChannel(bool on, int maxChannels, int grid) {
+    mtvMax_ = maxChannels > 0 ? std::min(maxChannels, 8) : 0;
+    mtvGrid_ = std::max(0, std::min(2, grid));
+    mtvOn_ = on;
+}
+
+void Engine::selectTvChannel(int slot) {
+    auto m = mtvGet();
+    if (!m || m->selected() == slot) return;
+    const auto rows = m->runningSlots();
+    if (std::find(rows.begin(), rows.end(), slot) == rows.end()) return;
+    const TsSnapshot snap = m->snapshot(slot);
+    {
+        std::lock_guard<std::mutex> lk(tsMu_);
+        player_.select(-1);   // the picture of the other channel stops; the interface picks the service again
+        m->setSelected(slot);
+        tsSnap_ = snap;
+    }
+}
+
+std::vector<TvChannelRow> Engine::tvChannels() {
+    auto m = mtvGet();
+    return m ? m->channels() : std::vector<TvChannelRow>();
+}
+
+std::vector<MultiService> Engine::multiServices() {
+    auto m = mtvGet();
+    return m ? m->services() : std::vector<MultiService>();
+}
+
+void Engine::onMultiPackets(const uint8_t* pk, size_t n, double secs, const TsSnapshot& snap) {
+    std::lock_guard<std::mutex> lk(tsMu_);
+    for (size_t i = 0; i < n; i++) ttx_.feedTs(pk + i * 188);
+    tsSnap_ = snap;
+    outputs_.packets(pk, n, &tsSnap_);
+    if (tap_) tap_(pk, n, &tsSnap_, secs);
+    if (player_.selected() >= 0) player_.push(pk, n, tsSnap_);
+    outputs_.burstDone(secs);
+}
+
+// Called on the analysis thread every round: starts, changes or stops the multi-channel receivers when the switch, the mode, the capture's rate or
+// the channel width changed. With the switch off (or a capture that holds one channel) nothing here touches the single receiver.
+void Engine::syncMultiTv() {
+    const bool on = mtvOn_.load();
+    const int sm = stdMode_.load(), mx = mtvMax_.load(), grid = mtvGrid_.load();
+    const double rate = rate_.load(), bw = bwMhz_;
+    if (on == mtvKeyOn_ && sm == mtvKeyStd_ && mx == mtvKeyMax_ && grid == mtvKeyGrid_ && rate == mtvKeyRate_ && bw == mtvKeyBw_) return;
+    const bool wasActive = mtvActive_.load();
+    mtvKeyOn_ = on; mtvKeyStd_ = sm; mtvKeyMax_ = mx; mtvKeyGrid_ = grid; mtvKeyRate_ = rate; mtvKeyBw_ = bw;
+    std::string note;
+    bool want = on;
+    if (on && !multiChannelSupported(sm)) { want = false; note = "multi-channel TV works with DVB-T2 or DVB-T selected (not automatic detection)"; }
+    else if (on && slotsInSpan(rate, bw, grid) < 2) {
+        want = false;
+        char b[200];
+        snprintf(b, sizeof b, "the capture (%.2f Msps) holds only one %g MHz channel: a wider capture is needed for several", rate / 1e6, bw);
+        note = b;
+    }
+    { std::lock_guard<std::mutex> lk(mtvNoteMu_); mtvNote_ = note; }
+    if (!want) {
+        if (!wasActive) return;
+        mtvActive_ = false;
+        { std::shared_ptr<MultiTv> m; { std::lock_guard<std::mutex> lk(mtvMu_); m.swap(mtv_); } }
+        player_.select(-1);
+        resetReceiver(activeStd_.load());
+        log("multi-channel TV off");
+        return;
+    }
+    auto m = std::make_shared<MultiTv>();
+    MultiTvOptions o;
+    o.dvbt = sm == 2;
+    o.spanRate = rate;
+    o.widthMhz = bw;
+    o.maxChannels = mx > 0 ? mx : defaultMaxChannels();
+    o.autoGrid = grid == 0;
+    o.gridOffsetHz = grid == 2 ? 0.5 * bw * 1e6 : 0;
+    o.blocking = !(src_ && src_->realtimeHardware());
+    if (!m->configure(o)) { std::lock_guard<std::mutex> lk(mtvNoteMu_); mtvNote_ = "the capture is too narrow for multi-channel TV"; return; }
+    m->setSink([this](int, const uint8_t* pk, size_t n, double secs, const TsSnapshot& snap) { onMultiPackets(pk, n, secs, snap); });
+    player_.select(-1);
+    {
+        std::lock_guard<std::mutex> lk(tsMu_);
+        tsSnap_ = TsSnapshot();
+    }
+    std::shared_ptr<MultiTv> old;
+    {
+        std::lock_guard<std::mutex> lk(mtvMu_);
+        old = std::move(mtv_);
+        mtv_ = m;
+    }
+    old.reset();
+    mtvActive_ = true;
+    char b[200];
+    snprintf(b, sizeof b, "multi-channel TV: %s, %g MHz channels, up to %d at once from a %.2f Msps capture", o.dvbt ? "DVB-T" : "DVB-T2", bw, o.maxChannels, rate / 1e6);
+    log(b);
+}
+
+} // namespace dect2

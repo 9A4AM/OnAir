@@ -21,11 +21,16 @@
 #pragma once
 #include "mode_synth.h"
 #include <memory>
+#include <string>
 
 namespace dect2 {
 
 std::unique_ptr<ModeSynth> makeMarineSynth(const SynthConfig& cfg, double sampleRate);
 // The same with the channel at an explicit place in the output (a recording is made with 0)
 std::unique_ptr<ModeSynth> makeMarineSynthAt(const SynthConfig& cfg, double sampleRate, double channelOffsetHz);
+// NAVTEX of this text (ZCZC … NNNN is added when missing), looping. Empty text: the demo messages.
+std::unique_ptr<ModeSynth> makeMarineSynthNavtex(const SynthConfig& cfg, double sampleRate, const std::string& text);
+// One all-ships safety DSC call from this 9-digit MMSI, looping. vhf: channel 70; else MF/HF.
+std::unique_ptr<ModeSynth> makeMarineSynthDsc(const SynthConfig& cfg, double sampleRate, const std::string& mmsi, bool vhf);
 
 } // namespace dect2

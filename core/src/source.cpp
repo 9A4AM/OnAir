@@ -185,7 +185,7 @@ private:
         uint32_t bw = s.basebandFilterHz > 0 ? (uint32_t)s.basebandFilterHz : hackrfAutoFilterHz(s.sampleRate, s.bandwidthMhz);   // as hackrf_usb.cpp
         if (!chk(hackrf_set_baseband_filter_bandwidth(dev_, bw), "set_baseband_filter")) return false;
         // the HackRF's library has no frequency correction: the clock error is taken out of the frequency asked for
-        if (!sweep_ && !chk(hackrf_set_freq(dev_, (uint64_t)ppmCorrectedHz(s.centerHz, radioPpm(s))), "set_freq")) return false;
+        if (!sweep_ && !chk(hackrf_set_freq(dev_, (uint64_t)std::max(ppmCorrectedHz(s.centerHz, radioPpm(s)), 0.0)), "set_freq")) return false;
         if (!chk(hackrf_set_lna_gain(dev_, (uint32_t)s.lnaDb), "set_lna_gain")) return false;
         if (!chk(hackrf_set_vga_gain(dev_, (uint32_t)s.vgaDb), "set_vga_gain")) return false;
         if (!chk(hackrf_set_amp_enable(dev_, s.ampOn ? 1 : 0), "set_amp_enable")) return false;
@@ -610,6 +610,24 @@ std::unique_ptr<IqSource> makeSource(const DeviceInfo& d) {
 #endif
     case DeviceInfo::Native: return makeNativeSource(d);
     case DeviceInfo::Synthetic: return std::make_unique<SyntheticSource>();
+    case DeviceInfo::Audio: return makeAudioSource(d);
+    default: return nullptr;
+    }
+}
+
+// The transmit path of a radio: HackRF (OnAir's own USB driver), the PlutoSDR (libiio) and SoapySDR radios with a transmit channel;
+// nullptr for every other radio, files and the test signal.
+#ifdef DECT2_HAVE_SOAPY
+std::unique_ptr<TxSink> makeSoapyTxSink(const DeviceInfo& d);
+#endif
+std::unique_ptr<TxSink> makeTxSink(const DeviceInfo& d) {
+    if (!d.canTransmit) return nullptr;
+    switch (d.kind) {
+    case DeviceInfo::HackRF: return makeUsbHackrfTxSink(d.serial);
+    case DeviceInfo::Native: return makeNativeTxSink(d);
+#ifdef DECT2_HAVE_SOAPY
+    case DeviceInfo::Soapy: return makeSoapyTxSink(d);
+#endif
     default: return nullptr;
     }
 }

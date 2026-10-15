@@ -105,6 +105,8 @@ codar	--mode codar	Overview|Radar|Receiver|History
 wb	--mode wb	Overview|Workbench|Receiver|History
 datawell	--mode datawell	Overview|Buoy|Receiver|History
 same	--mode same	Overview|Alerts|Receiver|History
+ant	--mode ant	Overview|Sensors|Receiver|History
+dect	--mode dect	Overview|Bases|Receiver|History
 multitone	--mode multitone	Overview|Multitone|Receiver|History
 iono	--mode iono	Overview|Ionogram|Receiver|History
 qo100	--mode qo100	Overview|QO-100|Receiver|History

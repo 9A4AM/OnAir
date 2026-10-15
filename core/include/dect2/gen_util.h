@@ -88,7 +88,7 @@ private:
     size_t pos_ = 0, left_ = 0;
 };
 
-// sum_i h[i] * a[i] and sum_i h[i] * b[i]. NEON and SSE2 where available (the same pattern as core/src/dvbs_simd.h), plain code
+// sum_i h[i] * a[i] and sum_i h[i] * b[i]. NEON and SSE2 where available (the same pattern as core/src/dvbs/dvbs_simd.h), plain code
 // with independent partial sums elsewhere.
 inline void dot2(const float* h, const float* a, const float* b, int n, float* out) {
     int i = 0;

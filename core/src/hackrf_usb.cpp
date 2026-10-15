@@ -38,7 +38,9 @@ enum Request : uint8_t {
     kSetLnaGain = 19,
     kSetVgaGain = 20,
     kAntennaEnable = 23,
+    kSetTxvgaGain = 21,   // transmit: the TX VGA, 0..47 dB in 1 dB steps (index = gain, one byte comes back)
 };
+constexpr uint8_t kTxEndpoint = 0x02;   // transmit: samples go out on bulk endpoint 0x02 as signed 8-bit I/Q pairs
 constexpr uint8_t kOut = LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT;
 constexpr uint8_t kIn = LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN;
 constexpr uint8_t kRxEndpoint = 0x81;
@@ -270,7 +272,7 @@ private:
             if (r < 0) return fail("set baseband filter", r);
         }
         {   // the HackRF has no frequency correction of its own: the clock error (TuneSettings "ppm") is taken out of the frequency asked for
-            const uint64_t f = (uint64_t)ppmCorrectedHz(s.centerHz, radioPpm(s));
+            const uint64_t f = (uint64_t)std::max(ppmCorrectedHz(s.centerHz, radioPpm(s)), 0.0);   // (a negative frequency cannot be sent)
             uint8_t d[8]; le32(d, (uint32_t)(f / 1000000)); le32(d + 4, (uint32_t)(f % 1000000));
             int r = dev_.out(kSetFreq, 0, 0, d, sizeof d);
             if (r < 0) return fail("set frequency", r);
@@ -362,7 +364,177 @@ private:
 
 } // namespace
 
+// ---- transmit -----------------------------------------------------------------------------------------------------------------------
+// The HackRF transmits through the same USB protocol: transceiver mode 2, the TX VGA gain, and the samples on bulk endpoint 0x02 (the host side
+// of the open-source firmware, as libhackrf's hackrf_start_tx() drives it). NOT tested on a radio: the loopback tests use a recording sink and
+// the conversion below; this class has only been built, never run against a HackRF.
+
+// float samples (full scale 1.0) to the signed 8-bit pairs the HackRF's DAC takes; beyond full scale is clipped. Exposed for the test.
+void hackrfTxPack(const cf32* x, size_t n, int8_t* out) {
+    auto q = [](float v) { const float r = std::nearbyint(v * 127.f); return (int8_t)(r > 127.f ? 127 : r < -127.f ? -127 : r); };
+    for (size_t i = 0; i < n; i++) { out[2 * i] = q(x[i].real()); out[2 * i + 1] = q(x[i].imag()); }
+}
+
+namespace {
+
+class UsbHackrfTx : public TxSink {
+public:
+    explicit UsbHackrfTx(std::string serial) : serial_(std::move(serial)) {}
+    ~UsbHackrfTx() override { close(); }
+
+    bool open(const TxTune& t, std::string& err) override {
+        close();
+        if (t.channel != 0) { err = "this HackRF has one transmit output (TX1)"; return false; }
+        ctx_ = acquireContext(err);
+        if (!ctx_) return false;
+        if (!openDevice(err)) { releaseContext(); ctx_ = nullptr; return false; }
+        if (!apply(t, err)) { shut(); return false; }
+        rate_ = t.sampleRate;
+        if (dev_.out(kSetTransceiverMode, 2, 0) < 0) { err = "the HackRF would not switch to transmit"; shut(); return false; }
+        transmitting_ = true;
+        return true;
+    }
+
+    bool write(const cf32* x, size_t n, std::string& err) override {
+        if (!transmitting_) { err = "the HackRF is not transmitting"; return false; }
+        std::vector<int8_t> buf;
+        size_t i = 0;
+        while (i < n) {
+            const size_t m = std::min(n - i, (size_t)kTransferBytes / 2);
+            buf.resize(m * 2);
+            hackrfTxPack(x + i, m, buf.data());
+            size_t sent = 0;
+            while (sent < buf.size()) {
+                int got = 0;
+                const int r = libusb_bulk_transfer(dev_.h, kTxEndpoint, reinterpret_cast<unsigned char*>(buf.data()) + sent, (int)(buf.size() - sent), &got, 1000);
+                if (r == LIBUSB_ERROR_NO_DEVICE) { err = "the HackRF was unplugged"; return false; }
+                if (r != 0 && r != LIBUSB_ERROR_TIMEOUT) { err = std::string("sending samples to the HackRF failed: ") + native::usbErrorText(r); return false; }
+                if (r == LIBUSB_ERROR_TIMEOUT && got == 0 && ++stalls_ > 5) { err = "the HackRF stopped taking samples"; return false; }
+                if (got > 0) stalls_ = 0;
+                sent += (size_t)got;
+            }
+            i += m;
+        }
+        return true;
+    }
+
+    bool retune(const TxTune& t, std::string& err) override { return dev_.h ? apply(t, err) : false; }
+
+    void close() override { if (dev_.h || ctx_) shut(); }
+    double sampleRate() const override { return rate_; }
+    std::string name() const override { return "HackRF"; }
+
+private:
+    bool openDevice(std::string& err) {
+        libusb_device** list = nullptr;
+        const ssize_t n = libusb_get_device_list(ctx_, &list);
+        if (n < 0) { err = std::string("device list: ") + libusb_error_name((int)n); return false; }
+        bool found = false;
+        std::string lastErr = "no HackRF found";
+        for (ssize_t i = 0; i < n && !found; i++) {
+            libusb_device_descriptor d{};
+            if (libusb_get_device_descriptor(list[i], &d) != 0 || !isHackrf(d)) continue;
+            if (!serial_.empty()) {
+                libusb_device_handle* probe = nullptr;
+                const int r = libusb_open(list[i], &probe);
+                if (r != 0) { lastErr = "open: " + native::usbErrorText(r); continue; }
+                const std::string sn = serialOf(probe, d);
+                libusb_close(probe);
+                if (sn.size() < serial_.size() || sn.compare(sn.size() - serial_.size(), serial_.size(), serial_) != 0) continue;
+            }
+            std::string e;
+            if (dev_.open(list[i], e)) found = true; else lastErr = e;
+        }
+        libusb_free_device_list(list, 1);
+        if (!found) err = lastErr;
+        return found;
+    }
+
+    // Sample rate, filter, frequency, gains for transmitting. The frequency goes to the radio as asked: when its firmware refuses it (the stall comes
+    // back as LIBUSB_ERROR_PIPE) that is what the message says.
+    bool apply(const TxTune& t, std::string& err) {
+        {
+            const double f = t.sampleRate;
+            uint32_t div = 1, hz = (uint32_t)std::llround(f);
+            for (uint32_t i = 1; i < 32; i++) {
+                const double v = f * i;
+                if (std::fabs(v - std::round(v)) < 1e-6) { div = i; hz = (uint32_t)std::llround(v); break; }
+            }
+            uint8_t d[8]; le32(d, hz); le32(d + 4, div);
+            const int r = dev_.out(kSampleRateSet, 0, 0, d, sizeof d);
+            if (r < 0) { err = "the HackRF refused the sample rate " + std::to_string(f / 1e6) + " Msps (" + libusb_error_name(r) + ")"; return false; }
+        }
+        {
+            const uint32_t bw = t.bandwidthHz > 0 ? (uint32_t)t.bandwidthHz : hackrfAutoFilterHz(t.sampleRate, 0);
+            const int r = dev_.out(kBasebandFilterSet, (uint16_t)(bw & 0xffff), (uint16_t)(bw >> 16));
+            if (r < 0) { err = std::string("the HackRF refused the filter width (") + libusb_error_name(r) + ")"; return false; }
+        }
+        {
+            TuneSettings ts; ts.radio = t.radio;
+            const double want = std::max(ppmCorrectedHz(txRadioHz(t), radioPpm(ts)), 0.0);
+            if (want / 1e6 >= 4294967295.0) { err = "the HackRF's tuning request holds at most 4.29e9 MHz: " + std::to_string(want) + " Hz does not fit it"; return false; }
+            const uint64_t f = (uint64_t)want;
+            uint8_t d[8]; le32(d, (uint32_t)(f / 1000000)); le32(d + 4, (uint32_t)(f % 1000000));
+            const int r = dev_.out(kSetFreq, 0, 0, d, sizeof d);
+            if (r < 0) {
+                char b[200];
+                snprintf(b, sizeof b, "the HackRF refused the frequency %.6g MHz (%s): its firmware tunes only what the radio's synthesiser can make", txRadioHz(t) / 1e6, r == LIBUSB_ERROR_PIPE ? "the radio answered with an error" : libusb_error_name(r));
+                err = b;
+                return false;
+            }
+        }
+        {
+            const uint16_t g = (uint16_t)std::min(47, std::max(0, (int)std::lround(t.gainDb)));
+            uint8_t ok = 0;
+            const int r = dev_.in(kSetTxvgaGain, 0, g, &ok, 1);
+            if (r < 0 || !ok) { err = "the HackRF refused the TX gain"; return false; }
+        }
+        {
+            const int r = dev_.out(kAmpEnable, t.ampOn ? 1 : 0, 0);
+            if (r < 0) { err = "the HackRF refused the amplifier setting"; return false; }
+        }
+        return true;
+    }
+
+    void shut() {
+        if (dev_.h) {
+            dev_.out(kSetTransceiverMode, 0, 0);   // transmitter off, whatever else happens
+            dev_.out(kAmpEnable, 0, 0);            // and the amplifier back off
+        }
+        transmitting_ = false;
+        dev_.close();
+        if (ctx_) { releaseContext(); ctx_ = nullptr; }
+    }
+
+    std::string serial_;
+    libusb_context* ctx_ = nullptr;
+    Handle dev_;
+    double rate_ = 0;
+    bool transmitting_ = false;
+    int stalls_ = 0;
+};
+
+} // namespace
+
+std::unique_ptr<TxSink> makeUsbHackrfTxSink(const std::string& serial) { return std::make_unique<UsbHackrfTx>(serial); }
+
 std::unique_ptr<IqSource> makeUsbHackrfSource(const std::string& serial) { return std::make_unique<UsbHackrf>(serial); }
+
+// Is a USB device of this vendor plugged in (a radio whose own driver is missing is still on the bus)?
+bool usbVendorPresent(uint16_t vid) {
+    std::string err;
+    libusb_context* ctx = acquireContext(err);
+    if (!ctx) return false;
+    libusb_device** list = nullptr;
+    const ssize_t n = libusb_get_device_list(ctx, &list);
+    bool found = false;
+    for (ssize_t i = 0; i < n && !found; i++) {
+        libusb_device_descriptor d{};
+        if (libusb_get_device_descriptor(list[i], &d) == 0 && d.idVendor == vid) found = true;
+    }
+    if (n >= 0) libusb_free_device_list(list, 1);
+    return found;
+}
 
 std::vector<DeviceInfo> listUsbHackrfDevices(std::string& err) {
     std::vector<DeviceInfo> out;
@@ -396,6 +568,11 @@ std::vector<DeviceInfo> listUsbHackrfDevices(std::string& err) {
         const std::string tail = info.serial.size() > 8 ? info.serial.substr(info.serial.size() - 8) : info.serial;
         info.name = info.board + (tail.empty() ? std::string() : " (" + tail + ")");
         info.settings = {ppmSetting(0.1)};   // amplifier and antenna power have their own controls
+        info.canTransmit = true;             // OnAir's own USB driver has a transmit path (see UsbHackrfTx); the libhackrf fallback has none
+        info.txChannels = 1;                 // one SMA output
+        info.txMinRateHz = 2e6; info.txMaxRateHz = 20e6;
+        info.txGainMinDb = 0; info.txGainMaxDb = 47;
+        info.txGainNote = "TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch";
         out.push_back(info);
     }
     if (n >= 0) libusb_free_device_list(list, 1);

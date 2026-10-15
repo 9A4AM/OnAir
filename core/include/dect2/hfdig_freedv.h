@@ -9,7 +9,7 @@
 // Test audio (hfdig_gen.h, makeFreedvTestAudio): only with the library. SynthConfig::modeOpt[0] = 2 picks FreeDV (the shell), and
 // modeOpt[1] picks the FreeDV mode: 0 = 700D (default), 1 = 700E, 2 = 1600. The transmission is a synthetic speech-like signal with
 // the text "ONAIR TEST" in the text channel. Without the library makeFreedvTestAudio() returns nullptr and the shell sends noise.
-// This header, hfdig_freedv.cpp and app/hfdig_freedv_ui.cpp belong to FreeDV alone.
+// This header, hfdig_freedv.cpp and app/hfdig/hfdig_freedv_ui.cpp belong to FreeDV alone.
 #pragma once
 #include "hfdig_rx.h"
 #include <cstddef>
@@ -21,8 +21,8 @@
 
 namespace dect2 {
 
-constexpr int kFreedvModes = 3;   // index 0 700D, 1 700E, 2 1600
-const char* freedvModeName(int idx);   // "700D", "700E", "1600"
+constexpr int kFreedvModes = 4;   // index 0 700D, 1 700E, 2 1600, 3 RADE (librade, not codec2)
+const char* freedvModeName(int idx);   // "700D", "700E", "1600", "RADE"
 
 struct HfdigFreedvTelemetry {
     int state = 0;                   // 0 library not found, 1 listening (no sync), 2 sync on a mode
@@ -30,7 +30,8 @@ struct HfdigFreedvTelemetry {
     bool libFound = false;
     std::string libPath;             // where the library was loaded from
     std::string libVersion;          // from its file name ("1.2"), empty when it has none
-    int modeChoice = 0;              // the user's choice: 0 automatic, 1 700D, 2 700E, 3 1600
+    int modeChoice = 0;              // the user's choice: 0 automatic, 1 700D, 2 700E, 3 1600, 4 RADE
+    bool radeLib = false;            // librade was found (RADE is not in codec2 1.2)
     int mode = -1;                   // the active mode (index as above), -1 = none has sync
     bool open[kFreedvModes] = {};    // the mode could be opened in this library
     bool sync[kFreedvModes] = {};

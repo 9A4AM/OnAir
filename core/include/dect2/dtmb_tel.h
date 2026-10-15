@@ -46,6 +46,10 @@ struct DtmbTelemetry {
     bool tsLock = false;         // transport packets with good sync bytes are coming out
     float netMbps = 0;           // payload bit rate of the signalled mode
     float frameLossPct = 0;      // share of recent frames without a usable header
+    int computeMode = 2;         // the choice that is set: 0 CPU, 1 GPU, 2 auto
+    bool gpuAvailable = false;   // the GPU has a LDPC kernel for these codes
+    bool onGpu = false;          // the last codewords were decoded on the GPU
+    uint64_t gpuWords = 0;       // codewords whose LDPC ran on the GPU
     bool rateOk = true;
 };
 

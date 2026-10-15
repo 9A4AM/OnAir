@@ -1,5 +1,6 @@
 #include "dect2/tsout.h"
 
+#include "dect2/platform.h"
 #include "netcompat.h"
 
 #include <chrono>
@@ -44,8 +45,10 @@ struct OutputManager::Impl {
     // service filter
     ServiceFilter filter;
     // udp pacing
-    struct Dgram { std::vector<uint8_t> data; Clock::time_point due; };
+    struct Dgram { std::vector<uint8_t> data; Clock::time_point due; bool toFile = false; };
     std::deque<Dgram> queue;
+    std::deque<Dgram> fileQ;         // the recording, released on the same clock as the UDP datagrams
+    std::vector<uint8_t> fileHold;   // packets not yet given a send time
     std::vector<uint8_t> building;   // datagram under construction (payload packets)
     std::vector<std::vector<uint8_t>> burst; // datagrams of the current frame
     double pendingSecs = 0;                  // signal time handed over since the last scheduled burst
@@ -56,17 +59,51 @@ struct OutputManager::Impl {
     uint32_t rtpTs = 0;
     Clock::time_point lastDue = Clock::now();
 
+    // mu held. Whatever is still buffered for the recording goes out now (the file is about to be closed).
+    void flushFileLocked() {
+        if (!file) { fileHold.clear(); fileQ.clear(); return; }
+        auto wr = [&](const uint8_t* p, size_t n) {
+            if (!n) return;
+            fwrite(p, 1, n, file);
+            st.fileBytes += n;
+            st.filePackets += n / 188;
+        };
+        wr(fileHold.data(), fileHold.size());
+        fileHold.clear();
+        for (const Dgram& d : fileQ) wr(d.data.data(), d.data.size());
+        fileQ.clear();
+        fflush(file);
+    }
     void startSender() {
         running = true;
         sender = std::thread([this] {
+            // A condition_variable timed wait on a normal thread is coalesced by the OS to about 100 ms, so every datagram that
+            // came due in that window left in one lump and the player stalled until the next lump. This thread asks for a tight
+            // timer and sleeps until the datagram's own time.
+            setThreadPriority(ThreadPriority::Realtime);
             std::unique_lock<std::mutex> lk(mu);
             while (running) {
-                if (queue.empty()) { cv.wait_for(lk, std::chrono::milliseconds(50)); continue; }
-                auto due = queue.front().due;
-                if (Clock::now() < due) { cv.wait_until(lk, due); continue; }
-                Dgram d = std::move(queue.front());
-                queue.pop_front();
-                if (sock != kBadSock) {
+                if (queue.empty() && fileQ.empty()) { cv.wait(lk, [&] { return !running || !queue.empty() || !fileQ.empty(); }); continue; }
+                const bool fileFirst = queue.empty() || (!fileQ.empty() && fileQ.front().due < queue.front().due);
+                const Clock::time_point due = (fileFirst ? fileQ : queue).front().due;
+                if (Clock::now() < due) {
+                    // long waits (a stopped player, a far due time) wake often enough that close() is not stuck behind them
+                    const auto slice = std::min(due, Clock::now() + std::chrono::milliseconds(20));
+                    lk.unlock();
+                    std::this_thread::sleep_until(slice);
+                    lk.lock();
+                    continue;
+                }
+                Dgram d = std::move((fileFirst ? fileQ : queue).front());
+                (fileFirst ? fileQ : queue).pop_front();
+                if (d.toFile) {
+                    if (file) {
+                        fwrite(d.data.data(), 1, d.data.size(), file);
+                        st.fileBytes += d.data.size();
+                        st.filePackets += d.data.size() / 188;
+                        fflush(file);   // a player tailing the file sees the packets as their time arrives, not a lump at the end of the burst
+                    }
+                } else if (sock != kBadSock) {
                     long long n = sockSendTo(sock, d.data.data(), d.data.size(), dst);
                     if (n > 0) { st.udpDatagrams++; st.udpBytes += (uint64_t)n; }
                     else st.udpSendErrors++;   // the system refused it (a full send buffer): it never reached the network
@@ -90,11 +127,13 @@ OutputConfig OutputManager::config() const { std::lock_guard<std::mutex> lk(p_->
 
 void OutputManager::close() {
     std::lock_guard<std::mutex> lk(p_->mu);
+    p_->flushFileLocked();
     if (p_->file) { fclose(p_->file); p_->file = nullptr; }
     if (p_->sock != kBadSock) { sockClose(p_->sock); p_->sock = kBadSock; }
     p_->queue.clear();
     p_->building.clear();
     p_->burst.clear();
+    p_->pendingSecs = 0;
     p_->st.fileOpen = p_->st.udpOpen = false;
 }
 
@@ -104,7 +143,7 @@ void OutputManager::configure(const OutputConfig& c) {
     OutputConfig old = I.cfg;
     I.cfg = c;
     I.st.error.clear();
-    if (I.file && (!c.file || c.path != old.path)) { fclose(I.file); I.file = nullptr; I.st.fileOpen = false; }
+    if (I.file && (!c.file || c.path != old.path)) { I.flushFileLocked(); fclose(I.file); I.file = nullptr; I.st.fileOpen = false; }
     if (c.file && !I.file && c.path.empty()) I.st.error = "choose a file to record to first";
     if (c.file && !I.file && !c.path.empty()) {
         I.file = openForWriting(c.path);
@@ -152,7 +191,7 @@ void OutputManager::packets(const uint8_t* data, size_t n, const TsSnapshot* sna
         if (!I.filter.process(pkt, snap, rewritten)) continue;
         out = rewritten;
     }
-    if (I.file) { fwrite(out, 1, 188, I.file); I.st.fileBytes += 188; I.st.filePackets++; }
+    if (I.file) I.fileHold.insert(I.fileHold.end(), out, out + 188);   // written later, at the packet's own time (see burstDone)
     if (I.sock != kBadSock) {
         I.building.insert(I.building.end(), out, out + 188);
         if (I.building.size() >= 7 * 188) {
@@ -166,8 +205,9 @@ void OutputManager::packets(const uint8_t* data, size_t n, const TsSnapshot* sna
 void OutputManager::burstDone(double frameSeconds) {
     std::lock_guard<std::mutex> lk(p_->mu);
     Impl& I = *p_;
-    if (I.file) fflush(I.file);
-    if (I.sock == kBadSock) { I.burst.clear(); I.building.clear(); I.pendingSecs = 0; return; }
+    const bool udp = I.sock != kBadSock;
+    if (!udp && !I.file) { I.burst.clear(); I.building.clear(); I.fileHold.clear(); I.pendingSecs = 0; return; }
+    if (!udp) { I.burst.clear(); I.building.clear(); }
     // DVB-T, ISDB-T, DTMB and ATSC hand over their packets after every symbol or segment (about a millisecond of signal), DVB-T2 once a
     // frame. Collect at least kMinSpan of signal before scheduling: each call used to count as 20 ms or more and was padded with null
     // packets, so the schedule ran ahead of the clock many times over and the queue was thrown away every few seconds (VLC stuttered
@@ -182,7 +222,7 @@ void OutputManager::burstDone(double frameSeconds) {
         I.burst.push_back(std::move(I.building));
         I.building.clear();
     }
-    if (I.burst.empty()) return;
+    if (I.burst.empty() && I.fileHold.empty()) return;
     const double span = frameSeconds;
     const auto now = Clock::now();
     auto base = std::max(now, I.lastDue);
@@ -193,36 +233,62 @@ void OutputManager::burstDone(double frameSeconds) {
     // kMaxBacklog seconds, say a dead network) is dropped.
     constexpr double kMaxBacklog = 5.0;
     const double ahead = I.queue.empty() ? 0 : std::chrono::duration<double>(I.queue.back().due - now).count();
+    auto dueIn = [](double sec) { return std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(sec)); };
     if (ahead > kMaxBacklog) {
         I.st.udpDropped += I.queue.size();
         I.queue.clear();
         base = now;
-    } else if (ahead > 3.0 * span + 0.2) {
+        for (auto& d : I.fileQ) d.due = now;   // the recording does not wait on a dead network, and it stays in order
+    } else if (ahead > 3.0 * span + 0.2 && !I.queue.empty()) {
         const double over = std::min(span, 0.25);   // what is waiting goes out over this time
         const double gap = over / (double)I.queue.size();
-        for (size_t i = 0; i < I.queue.size(); i++) I.queue[i].due = now + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(gap * (double)i));
-        base = now + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(over));
+        for (size_t i = 0; i < I.queue.size(); i++) I.queue[i].due = now + dueIn(gap * (double)i);
+        if (!I.fileQ.empty()) {
+            const double fg = over / (double)I.fileQ.size();
+            for (size_t i = 0; i < I.fileQ.size(); i++) I.fileQ[i].due = now + dueIn(fg * (double)i);
+        }
+        base = now + dueIn(over);
         I.st.udpCatchUps++;
     }
     // if a backlog has built up, drain it a little faster instead of letting the latency grow
     const double backlog = std::chrono::duration<double>(base - now).count();
     const double eff = backlog > span ? span * 0.6 : span;
-    const double step = eff / I.burst.size();
-    for (size_t i = 0; i < I.burst.size(); i++) {
-        Impl::Dgram d;
-        if (I.cfg.rtp) {
-            d.data.resize(12);
-            d.data[0] = 0x80; d.data[1] = 33;
-            d.data[2] = I.rtpSeq >> 8; d.data[3] = I.rtpSeq & 0xFF; I.rtpSeq++;
-            I.rtpTs += (uint32_t)(step * 90000);
-            d.data[4] = I.rtpTs >> 24; d.data[5] = I.rtpTs >> 16; d.data[6] = I.rtpTs >> 8; d.data[7] = I.rtpTs;
-            d.data[8] = 0x44; d.data[9] = 0x54; d.data[10] = 0x32; d.data[11] = 0x00;
-            d.data.insert(d.data.end(), I.burst[i].begin(), I.burst[i].end());
-        } else d.data = std::move(I.burst[i]);
-        d.due = base + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(step * i));
-        I.queue.push_back(std::move(d));
+    if (!I.burst.empty()) {
+        const double step = eff / I.burst.size();
+        for (size_t i = 0; i < I.burst.size(); i++) {
+            Impl::Dgram d;
+            if (I.cfg.rtp) {
+                d.data.resize(12);
+                d.data[0] = 0x80; d.data[1] = 33;
+                d.data[2] = I.rtpSeq >> 8; d.data[3] = I.rtpSeq & 0xFF; I.rtpSeq++;
+                I.rtpTs += (uint32_t)(step * 90000);
+                d.data[4] = I.rtpTs >> 24; d.data[5] = I.rtpTs >> 16; d.data[6] = I.rtpTs >> 8; d.data[7] = I.rtpTs;
+                d.data[8] = 0x44; d.data[9] = 0x54; d.data[10] = 0x32; d.data[11] = 0x00;
+                d.data.insert(d.data.end(), I.burst[i].begin(), I.burst[i].end());
+            } else d.data = std::move(I.burst[i]);
+            d.due = base + dueIn(step * i);
+            I.queue.push_back(std::move(d));
+        }
     }
-    I.lastDue = base + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(span));
+    // The same clock for the recording. A player that reads the file while it is still being written used to see a whole burst
+    // (about 100 ms of samples from the radio, or one T2 frame) land at once and then nothing until the next one.
+    if (I.file && !I.fileHold.empty()) {
+        constexpr size_t sliceBytes = 7 * 188;
+        const size_t n = I.fileHold.size();
+        const size_t ns = std::max<size_t>(1, (n + sliceBytes - 1) / sliceBytes);
+        size_t off = 0;
+        for (size_t i = 0; off < n; i++) {
+            const size_t m = std::min(sliceBytes, n - off);
+            Impl::Dgram d;
+            d.toFile = true;
+            d.data.assign(I.fileHold.begin() + (std::ptrdiff_t)off, I.fileHold.begin() + (std::ptrdiff_t)(off + m));
+            d.due = base + dueIn(span * (double)i / (double)ns);
+            I.fileQ.push_back(std::move(d));
+            off += m;
+        }
+        I.fileHold.clear();
+    }
+    I.lastDue = base + dueIn(span);
     I.burst.clear();
     I.cv.notify_all();
 }

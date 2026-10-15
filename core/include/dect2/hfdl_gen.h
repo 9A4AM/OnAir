@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <vector>
 
 namespace dect2 {
@@ -50,6 +51,8 @@ struct HfdlGenOptions {
     std::vector<HfdlPath> paths;                // empty: one clean path
     double cfoSpreadHz = 30;                    // each aircraft's own offset, up to this
     std::shared_ptr<HfdlSentLog> log;
+    std::string text;                           // nonempty: ACARS H1 downlinks carry this
+    std::string reg;                            // nonempty: the first aircraft uses this registration
 };
 
 struct HfdlTxBurst { double t = 0; int chan = 0; int m1 = 1; std::vector<uint8_t> pdu; double levelDb = 0; double carOffHz = 0; };

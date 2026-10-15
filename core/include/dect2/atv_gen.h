@@ -26,11 +26,10 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace dect2 {
-
-std::unique_ptr<ModeSynth> makeAtvSynth(const SynthConfig& cfg, double sampleRate);   // nullptr: unsupported combination
 
 struct AtvGenConfig {
     int sys = kAtvG;
@@ -44,6 +43,11 @@ struct AtvGenConfig {
     double humPct = 0, humHz = 50;
     int sound = 0;                // see above
     int pattern = 0;              // 0 card, 1 bars, 2 ramp
+    std::string ident;            // text on the test card; empty: ONAIR TEST
+    // 48 kHz interleaved stereo for the sound carrier (mic / file). Empty: the built-in tone / melody of `sound`.
+    std::function<int(float* stereo, int frames)> pullAudio;
+    // Live camera / file: full-frame analog YUV at picW x picH (Y 0..1). Empty: the test card / bars of `pattern`.
+    std::function<bool(int w, int h, float* y, float* u, float* v)> pullVideo;
     bool groupDelay = true;
     bool nyquistTx = false;
     bool setup = true;            // 7.5 IRE black level in M
@@ -77,5 +81,8 @@ private:
     struct Impl;
     std::unique_ptr<Impl> p_;
 };
+
+std::unique_ptr<ModeSynth> makeAtvSynth(const SynthConfig& cfg, double sampleRate);   // nullptr: unsupported combination
+std::unique_ptr<ModeSynth> makeAtvSynth(const SynthConfig& cfg, double sampleRate, const AtvGenConfig& extra);
 
 } // namespace dect2

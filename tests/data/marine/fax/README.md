@@ -1,4 +1,4 @@
-# Weather fax layer (`core/src/marine_fax.cpp`)
+# Weather fax layer (`core/src/marine/marine_fax.cpp`)
 
 Text for the fax section of `docs/modes/marine.md`. Nothing here was checked against a real radio signal or a recording.
 

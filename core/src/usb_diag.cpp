@@ -2,6 +2,7 @@
 // kernel's TV driver holds an RTL-SDR. Read from sysfs, which needs no root. The paths go under DECT2_SYSFS_ROOT when it is set (the tests
 // build a fake /sys and /dev tree in a temp folder), so this code is compiled and tested on every platform.
 #include "dect2/usb_diag.h"
+#include "native_common.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -16,6 +17,7 @@
 #endif
 
 namespace dect2 {
+bool usbVendorPresent(uint16_t vid);   // hackrf_usb.cpp
 namespace {
 
 namespace fs = std::filesystem;
@@ -125,6 +127,11 @@ std::vector<std::string> usbRadioHints() {
     if (root && *root) return hintsUnder(root);
     return {};
 #endif
+}
+
+std::vector<std::string> sdrplayApiHints() {
+    if (native::sdrplayApiInstalled() || !usbVendorPresent(0x1df7)) return {};
+    return {"An SDRplay RSP is plugged in but the SDRplay API is not installed: install the free SDRplay API from sdrplay.com/api (OnAir cannot ship it), then restart OnAir"};
 }
 
 } // namespace dect2

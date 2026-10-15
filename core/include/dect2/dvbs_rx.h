@@ -22,6 +22,7 @@ public:
     bool ready() const;                                  // false when the input rate is too low for this mode
     void reset();                                        // after a retune: forget the signal, drop queued output
     void feed(const cf32* x, size_t n);
+    void resetNow();                                     // reset() at once, on the calling thread (nothing may be feeding): the worker threads are stopped when it returns
     bool telemetry(DvbsTelemetry& out, uint64_t lastSeq);
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
     // The decoded transport stream: packets of 188 bytes, `secs` of signal time since the previous call. Runs on the receiver thread.

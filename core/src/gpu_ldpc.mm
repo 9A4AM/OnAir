@@ -104,6 +104,84 @@ kernel void ldpc(constant P& p [[buffer(0)]], device const int* lStart [[buffer(
 }
 )MSL";
 
+
+// Table-driven quasi-cyclic layered normalised min-sum (DTMB). One threadgroup of z threads per word, thread m owns check m of every block row.
+// The same operations in the same order as the CPU decoder (dtmb_ldpc.cpp), so the results agree to the bit: totals live in threadgroup memory.
+static NSString* const kQcSource = @R"MSL(
+#include <metal_stdlib>
+using namespace metal;
+struct QP { int z, rows, cols, punct, sent, info, maxIter, gu0, gd0, gu1, gd1; float alpha, clip; uint msgPer; };
+
+kernel void qc(constant QP& p [[buffer(0)]], device const int* rowStart [[buffer(1)]], device const int* ecol [[buffer(2)]], device const int* esh [[buffer(3)]],
+               device float* msgAll [[buffer(4)]], device const float* llrAll [[buffer(5)]], device uchar* infoAll [[buffer(6)]], device int* res [[buffer(7)]],
+               threadgroup float* lv [[threadgroup(0)]], uint m [[thread_position_in_threadgroup]], uint blk [[threadgroup_position_in_grid]]) {
+    threadgroup atomic_int weight;
+    const int z = p.z;
+    const int mm = (int)m;
+    device float* msg = msgAll + (ulong)blk * p.msgPer;
+    device const float* llr = llrAll + (ulong)blk * (ulong)p.sent;
+    for (int v = mm; v < p.cols * z; v += z) lv[v] = v < p.punct ? 0.f : max(-p.clip, min(p.clip, llr[v - p.punct]));
+    for (uint i = m; i < p.msgPer; i += (uint)z) msg[i] = 0.f;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    int iters = 0;
+    bool ok = false;
+    // parity checks of the hard decisions: the number of unsatisfied checks of the whole word
+    #define CHECKS(out) { \
+        if (mm == 0) atomic_store_explicit(&weight, 0, memory_order_relaxed); \
+        threadgroup_barrier(mem_flags::mem_threadgroup); \
+        int bad_ = 0; \
+        for (int r = 0; r < p.rows; r++) { \
+            int par = 0; \
+            for (int e = rowStart[r]; e < rowStart[r + 1]; e++) { int sh = mm + esh[e]; if (sh >= z) sh -= z; par ^= lv[ecol[e] * z + sh] < 0.f; } \
+            bad_ += par; \
+        } \
+        atomic_fetch_add_explicit(&weight, bad_, memory_order_relaxed); \
+        threadgroup_barrier(mem_flags::mem_threadgroup); \
+        out = atomic_load_explicit(&weight, memory_order_relaxed); \
+        threadgroup_barrier(mem_flags::mem_threadgroup); }
+    int w0;
+    CHECKS(w0)
+    if (w0 == 0) { ok = true; iters = 1; }
+    else {
+        for (int iter = 1; iter <= p.maxIter; iter++) {
+            for (int r = 0; r < p.rows; r++) {
+                const int e0 = rowStart[r], e1 = rowStart[r + 1];
+                float min1 = 0.f, min2 = 3.4028235e38f;
+                uint sg = 0;
+                for (int e = e0; e < e1; e++) {
+                    int sh = mm + esh[e]; if (sh >= z) sh -= z;
+                    const float q = lv[ecol[e] * z + sh] - msg[(ulong)e * z + m];
+                    const float a = fabs(q);
+                    if (e == e0) min1 = a;
+                    else { min2 = min(min2, max(a, min1)); min1 = min(min1, a); }
+                    sg ^= as_type<uint>(q) & 0x80000000u;
+                }
+                for (int e = e0; e < e1; e++) {
+                    int sh = mm + esh[e]; if (sh >= z) sh -= z;
+                    const int vi = ecol[e] * z + sh;
+                    const float q = lv[vi] - msg[(ulong)e * z + m];
+                    const float a = fabs(q);
+                    const float mg = (a == min1 ? min2 : min1) * p.alpha;
+                    const float v = as_type<float>(as_type<uint>(mg) | (sg ^ (as_type<uint>(q) & 0x80000000u)));
+                    msg[(ulong)e * z + m] = v;
+                    lv[vi] = max(-p.clip, min(p.clip, q + v));
+                }
+                threadgroup_barrier(mem_flags::mem_threadgroup);   // the next block row reads totals other threads have just written
+            }
+            int w;
+            CHECKS(w)
+            iters = iter;
+            if (w == 0) { ok = true; break; }
+            const int gu = iter == p.gu0 ? p.gd0 : iter == p.gu1 ? p.gd1 : 0;
+            if (gu > 0 && w > p.rows * z / gu) break;
+        }
+    }
+    device uchar* info = infoAll + (ulong)blk * (ulong)p.info;
+    for (int v = mm; v < p.info; v += z) info[v] = lv[p.rows * z + v] < 0.f;
+    if (mm == 0) { res[blk * 2] = ok ? 1 : 0; res[blk * 2 + 1] = iters; }
+}
+)MSL";
+
 struct GpuLdpc::Impl {
     id<MTLDevice> dev = nil;
     id<MTLCommandQueue> queue = nil;
@@ -120,6 +198,17 @@ struct GpuLdpc::Impl {
     std::map<const LdpcCode*, State> codes;
 
     static constexpr int kChunk = 128;
+
+    // table-driven quasi-cyclic codes (decodeQc)
+    id<MTLComputePipelineState> qcPso = nil;
+    bool qcTried = false;
+    struct QcState {
+        id<MTLBuffer> rowStart, col, shift;
+        uint32_t msgPer = 0;
+        int cap = 0;
+        id<MTLBuffer> msg, llr, info, res;
+    };
+    std::map<std::vector<int>, QcState> qcCodes;
 
     id<MTLBuffer> shared(size_t bytes) { return [dev newBufferWithLength:bytes options:MTLResourceStorageModeShared]; }
 
@@ -221,6 +310,86 @@ bool GpuLdpc::decode(const LdpcCode& code, const float* llr, int nb, int maxIter
             memcpy(hard + (size_t)b0 * n, s.hard.contents, (size_t)cnt * n);
             const int* inf = (const int*)s.info.contents;
             for (int i = 0; i < cnt; i++) { ok[b0 + i] = (uint8_t)inf[i * 2]; iters[b0 + i] = inf[i * 2 + 1]; }
+        }
+    }
+    return true;
+}
+
+bool GpuLdpc::qcAvailable() const { return available(); }
+
+bool GpuLdpc::decodeQc(const QcLdpc& code, const float* llr, int nb, int maxIter, uint8_t* info, uint8_t* ok, int* iters, float alpha) {
+    if (!available() || nb <= 0) return nb == 0;
+    const int z = code.z, rows = code.blockRows, cols = code.blockCols;
+    if (z <= 0 || z > 1024 || rows <= 0 || cols <= rows || (int)code.rowStart.size() != rows + 1 || code.col.size() != code.shift.size() || (int)code.col.size() != code.rowStart.back()) return false;
+    std::lock_guard<std::mutex> lk(p_->mu);
+    @autoreleasepool {
+        Impl& d = *p_;
+        if (!d.qcPso && !d.qcTried) {
+            d.qcTried = true;
+            NSError* err = nil;
+            MTLCompileOptions* opt = [MTLCompileOptions new];
+            opt.fastMathEnabled = NO;   // the CPU decoder's arithmetic, operation for operation
+            id<MTLLibrary> lib = [d.dev newLibraryWithSource:kQcSource options:opt error:&err];
+            if (!lib) { NSLog(@"GpuLdpc: QC shader compile failed: %@", err); return false; }
+            id<MTLFunction> fn = [lib newFunctionWithName:@"qc"];
+            d.qcPso = [d.dev newComputePipelineStateWithFunction:fn error:&err];
+            if (!d.qcPso) { NSLog(@"GpuLdpc: QC pipeline failed: %@", err); return false; }
+        }
+        if (!d.qcPso) return false;
+        const size_t tgMem = (size_t)cols * z * 4;
+        if ((int)d.qcPso.maxTotalThreadsPerThreadgroup < z || tgMem > d.dev.maxThreadgroupMemoryLength) return false;
+        // a block column twice in a block row would make two threads write one variable
+        for (int r = 0; r < rows; r++)
+            for (int a = code.rowStart[r]; a < code.rowStart[r + 1]; a++) {
+                if (code.col[a] < 0 || code.col[a] >= cols || code.shift[a] < 0 || code.shift[a] >= z) return false;
+                for (int b = a + 1; b < code.rowStart[r + 1]; b++) if (code.col[a] == code.col[b]) return false;
+            }
+        std::vector<int> key = {z, rows, cols, code.punctured};
+        key.insert(key.end(), code.rowStart.begin(), code.rowStart.end());
+        key.insert(key.end(), code.col.begin(), code.col.end());
+        key.insert(key.end(), code.shift.begin(), code.shift.end());
+        auto it = d.qcCodes.find(key);
+        if (it == d.qcCodes.end()) {
+            Impl::QcState s;
+            auto mk = [&](const std::vector<int>& v) { return [d.dev newBufferWithBytes:v.data() length:std::max<size_t>(v.size() * 4, 4) options:MTLResourceStorageModeShared]; };
+            s.rowStart = mk(code.rowStart); s.col = mk(code.col); s.shift = mk(code.shift);
+            s.msgPer = (uint32_t)code.col.size() * (uint32_t)z;
+            it = d.qcCodes.emplace(key, std::move(s)).first;
+        }
+        Impl::QcState& s = it->second;
+        const int sent = code.sentBits(), infoN = code.infoBits();
+        for (int b0 = 0; b0 < nb; b0 += Impl::kChunk) {
+            const int cnt = std::min(Impl::kChunk, nb - b0);
+            if (s.cap < cnt) {
+                s.msg = d.shared((size_t)cnt * s.msgPer * 4);
+                s.llr = d.shared((size_t)cnt * sent * 4);
+                s.info = d.shared((size_t)cnt * infoN);
+                s.res = d.shared((size_t)cnt * 8);
+                s.cap = cnt;
+            }
+            memcpy(s.llr.contents, llr + (size_t)b0 * sent, (size_t)cnt * sent * 4);
+            struct { int z, rows, cols, punct, sent, info, maxIter, gu0, gd0, gu1, gd1; float alpha, clip; uint32_t msgPer; } P = {
+                z, rows, cols, code.punctured, sent, infoN, maxIter, code.giveUpIter[0], code.giveUpDiv[0], code.giveUpIter[1], code.giveUpDiv[1], alpha, code.clip, s.msgPer};
+            id<MTLCommandBuffer> cb = [d.queue commandBuffer];
+            id<MTLComputeCommandEncoder> enc = [cb computeCommandEncoder];
+            [enc setComputePipelineState:d.qcPso];
+            [enc setBytes:&P length:sizeof P atIndex:0];
+            [enc setBuffer:s.rowStart offset:0 atIndex:1];
+            [enc setBuffer:s.col offset:0 atIndex:2];
+            [enc setBuffer:s.shift offset:0 atIndex:3];
+            [enc setBuffer:s.msg offset:0 atIndex:4];
+            [enc setBuffer:s.llr offset:0 atIndex:5];
+            [enc setBuffer:s.info offset:0 atIndex:6];
+            [enc setBuffer:s.res offset:0 atIndex:7];
+            [enc setThreadgroupMemoryLength:(tgMem + 15) & ~(size_t)15 atIndex:0];
+            [enc dispatchThreadgroups:MTLSizeMake(cnt, 1, 1) threadsPerThreadgroup:MTLSizeMake(z, 1, 1)];
+            [enc endEncoding];
+            [cb commit];
+            [cb waitUntilCompleted];
+            if (cb.status != MTLCommandBufferStatusCompleted) return false;
+            memcpy(info + (size_t)b0 * infoN, s.info.contents, (size_t)cnt * infoN);
+            const int* rs = (const int*)s.res.contents;
+            for (int i = 0; i < cnt; i++) { ok[b0 + i] = (uint8_t)rs[i * 2]; iters[b0 + i] = rs[i * 2 + 1]; }
         }
     }
     return true;

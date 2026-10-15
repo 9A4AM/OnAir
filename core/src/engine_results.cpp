@@ -64,6 +64,7 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("airband", 27, rxAirband_),
         DECT2_RESULT_SLOT("vdl2", 28, rxVdl2_),
         DECT2_RESULT_SLOT("ism", 29, rxIsm_),
+        DECT2_RESULT_SLOT("ndb", 30, rxNdb_),
         DECT2_RESULT_SLOT("m17", 32, rxM17_),
         DECT2_RESULT_SLOT("cell", 33, rxCell_),
         DECT2_RESULT_SLOT("dstar", 34, rxDstar_),
@@ -100,6 +101,9 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("codar", 73, rxCd_),
         DECT2_RESULT_SLOT("multitone", 76, rxMt_),
         DECT2_RESULT_SLOT("same", 77, rxSame_),
+        DECT2_RESULT_SLOT("ant", 78, rxAnt_),
+        DECT2_RESULT_SLOT("tetrapol", 80, rxTetrapol_),
+        DECT2_RESULT_SLOT("elektro", 81, rxEl_),
         DECT2_RESULT_SLOT("loraraw", 72, rxLr_),
     };
 }
@@ -110,6 +114,12 @@ std::vector<std::string> Engine::resultNames() const {
     std::vector<std::string> r;
     for (const ResultSlot& s : const_cast<Engine*>(this)->resultSlots()) r.push_back(s.name);
     return r;
+}
+
+void Engine::clearAllResults() {
+    for (const ResultSlot& s : resultSlots()) s.clear();
+    wide_.clearResults();
+    refreshIdle();
 }
 
 void Engine::clearResults(int stdMode) {

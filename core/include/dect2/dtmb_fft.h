@@ -17,6 +17,8 @@ public:
 private:
     struct Level { int r, n, m, s; std::vector<float> twr, twi; };   // twiddles exp(-j 2 pi p k / n) at [(k - 1) * m + p]
     void run(cf32* x, bool inv);
+    void runBody(cf32* x, bool inv);        // compiled twice on x86-64: baseline and AVX2 (see dect2/simd.h)
+    void runAvx2(cf32* x, bool inv);
     int n_;
     std::vector<Level> levels_;             // in the order of computation
     std::vector<float> ar_, ai_, br_, bi_;

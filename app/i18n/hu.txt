@@ -1,0 +1,1115 @@
+# OnAir interface in Hungarian. One text per line: the English text as in the source, a tab, the translation.
+# \n is a line break. Keep the printf conversions (%s, %d, %.1f ...) in the same order. tests/test_i18n.cpp checks this file.
+#  menus, status words, common buttons
+%.1f dB	%.1f dB
+%s  #%d  %.3f MHz%s	%s  #%d  %.3f MHz%s
+%s  %.4f MHz  %s%s%s%s  %.1f dB  %s	%s  %.4f MHz  %s%s%s%s  %.1f dB  %s
+-	-
+1 kHz test tone	1 kHz test tone
+8 MHz	8 MHz
+A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.	A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.
+A SAME header. ZCZC- is added when missing.	A SAME header. ZCZC- is added when missing.
+Aircraft registration	Aircraft registration
+An RS41 with this serial. Empty: the demo sondes.	An RS41 with this serial. Empty: the demo sondes.
+ANT+ is not transmitted: it would impersonate a sensor network	ANT+ is not transmitted: it would impersonate a sensor network
+TETRAPOL is not transmitted: receive only, control-channel system information	TETRAPOL is not transmitted: receive only, control-channel system information
+Are you sure? This clears all previous data and cannot be undone.	Are you sure? This clears all previous data and cannot be undone.
+ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.	ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.
+Audio file	Audio file
+Audio input	Audio input
+AX.25 UI frame. Empty: the demo CubeSat cycle.	AX.25 UI frame. Empty: the demo CubeSat cycle.
+Baud	Baud
+Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser
+Browse…	Browse…
+Callsign / my ID	Callsign / my ID
+Capcode	Capcode
+CARRIER TUNE	CARRIER TUNE
+Carrier tune	Carrier tune
+Clear all	Clear all
+Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
+Code rate / MODCOD index	Code rate / MODCOD index
+Colour code	Colour code
+Comment	Comment
+CQ	CQ
+D2-MAC test scene (custom video is not wired into this analogue generator).	D2-MAC test scene (custom video is not wired into this analogue generator).
+DATV (DVB-S/S2 file)	DATV (DVB-S/S2 file)
+Default input	Default input
+Destination	Destination
+Destination / ID	Destination / ID
+Destination ID	Destination ID
+Deviation (Hz)	Deviation (Hz)
+Device ID	Device ID
+Dial frequency the decoder should assume (the sound card is not tuned)	A dekóder által feltételezett tárcsa-frekvencia (a hangkártya nincs hangolva)
+Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements	Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements
+DVB standard	DVB standard
+Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.	Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.
+Empty: the demo 802.15.4 scene.	Empty: the demo 802.15.4 scene.
+Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.	Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.
+Empty: the demo LoRa / mesh scene.	Empty: the demo LoRa / mesh scene.
+Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
+Empty: the demo VDES scene.	Empty: the demo VDES scene.
+File	Fájl
+File to send	File to send
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR-hez, virtuális hangkábelhez (VAC), vagy a rádió hangszórójához/vonalához a számítógépen. Nem helyettesíti az SDR-t, ha megahertznyi sávszélesség kell.
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	WebSDR-hez, virtuális hangkábelhez (VAC), vagy a rádió hangszórójához/vonalához a számítógépen. Nem helyettesíti az SDR-t, ha megahertznyi sávszélesség kell. A gyakoriságmező a dekóder által feltételezett tárcsa; a hangkártya nincs hangolva. Nincs erősítés és antenna-táp.
+Free text	Free text
+Function	Function
+Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	Az erősítésszabályzók csak rádiókra vonatkoznak (nem felvételre, hangkártyára vagy a szintetikus jelre)
+I/Q stereo	I/Q sztereó
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q sztereó: bal = I, jobb = Q (HDSDR / WebSDR VAC). USB hang: valós hang analitikus IQ-vá FT8, RTTY, CW, SSB-hez hangszóróról. LSB hang: ugyanez, konjugált. Mono valós: I a minta, Q = 0 (valós mintavétel, nem FM-diszkriminátor hang).
+ICAO address	ICAO address
+Idle — nothing is being sent	Idle — nothing is being sent
+Image (PNG / PPM)	Image (PNG / PPM)
+Image (PPM)	Image (PPM)
+Input device	Input device
+Latitude	Latitude
+libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.	libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.
+libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.	libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.
+Live voice is encoded with Codec 2 (FreeDV).	Live voice is encoded with Codec 2 (FreeDV).
+Live voice is encoded with Codec 2 (libcodec2).	Live voice is encoded with Codec 2 (libcodec2).
+Longitude	Longitude
+Look for Red Pitaya boards on this computer's networks again	Look for Red Pitaya boards on this computer's networks again
+LSB audio	LSB hang
+Message	Message
+MHz	MHz
+Mic level	Mic level
+Microphone	Microphone
+MMSI	MMSI
+Mode	Üzemmód
+Mono real	Mono valós
+Morse identification, up to four letters.	Morse identification, up to four letters.
+MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.	MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.
+Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
+NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
+No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.	No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.
+PAN / short address	PAN / short address
+Path	Path
+Payload text	Payload text
+Power (dBm)	Power (dBm)
+Pre-emphasis	Pre-emphasis
+PSK variant	PSK variant
+QO-100 path	QO-100 path
+Radio ID	Radio ID
+Radio text (RT)	Radio text (RT)
+RDS PI	RDS PI
+Receiver-style options (demo signal)	Receiver-style options (demo signal)
+Report	Report
+Reverse (mark is the upper tone)	Reverse (mark is the upper tone)
+RFPI	RFPI
+RFPI of the base station.	RFPI of the base station.
+Roll-off	Roll-off
+Satellite standard	Satellite standard
+searching for Red Pitaya boards…	searching for Red Pitaya boards…
+Send analog NFM of the audio instead of the digital test pattern	Send analog NFM of the audio instead of the digital test pattern
+Send analog NFM of the microphone or a file instead of the test scene	Send analog NFM of the microphone or a file instead of the test scene
+Serial / ID	Serial / ID
+Shift	Shift
+Sideband	Sideband
+Silence	Silence
+sound card	hangkártya
+Speed (0=512, 1=1200, 2=2400, 3=FLEX)	Speed (0=512, 1=1200, 2=2400, 3=FLEX)
+SSB (microphone)	SSB (microphone)
+SSTV mode	SSTV mode
+Station name (PS)	Station name (PS)
+Symbol rate (Hz)	Symbol rate (Hz)
+Talkgroup	Talkgroup
+Test card (or analog picture) plus live audio on the sound carrier.	Test card (or analog picture) plus live audio on the sound carrier.
+test DJI DroneID scene (custom serial is not packed)	test DJI DroneID scene (custom serial is not packed)
+test downlink scene (this generator does not take a custom message)	test downlink scene (this generator does not take a custom message)
+test LRPT/HRIT scene (custom image not wired)	test LRPT/HRIT scene (custom image not wired)
+test NCDXF-style beacon scene	test NCDXF-style beacon scene
+test weather-fax chart (custom image not wired)	test weather-fax chart (custom image not wired)
+TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+Text	Text
+The capture rate of the sound card. The engine runs at this rate; there is no radio to tune.	A hangkártya rögzítési sebessége. A motor ezen a sebességen fut; nincs hangolható rádió.
+The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.	The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.
+The microphone starts only when you press START TRANSMITTING.	The microphone starts only when you press START TRANSMITTING.
+The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.	The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.
+this is a general listening mode: there is nothing specific to transmit	this is a general listening mode: there is nothing specific to transmit
+this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
+this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
+this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
+This mode cannot transmit	This mode cannot transmit
+this mode has no transmit generator	this mode has no transmit generator
+This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
+Timeslot	Timeslot
+To	To
+TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
+Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
+USB audio	USB hang
+Vessel name	Vessel name
+Video / MPEG-TS file	Video / MPEG-TS file
+View	Nézet
+Help	Súgó
+Language	Nyelv
+Interface language	A felület nyelve
+Same as the system	Mint a rendszer
+Start receiver	Vevő indítása
+Stop receiver	Vevő leállítása
+Start the receiver	A vevő indítása
+Stop the receiver	A vevő leállítása
+%s (space)	%s (szóköz)
+Start the receiver first	Előbb indítsd el a vevőt
+Stop the receiver to switch mode	Az üzemmód váltásához állítsd le a vevőt
+Start	Indítás
+Stop	Leállítás
+Receiving	Vétel
+Stopped	Leállítva
+starting	indul
+stopped	leállt
+searching	keresés
+syncing	szinkronizálás
+locked	bekapcsolódott
+Locked	Bekapcsolódott
+Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.	Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.
+Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.	Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.
+WAV / MP3 file	WAV / MP3 file
+weak	gyenge
+stereo	sztereó
+mono	mono
+radio disconnected	a rádió lecsatlakozott
+What to send	What to send
+Wi-Fi is not transmitted: the generator models access-point beacons for the decoder	Wi-Fi is not transmitted: the generator models access-point beacons for the decoder
+WPM	WPM
+yes	igen
+no lock	nincs jel
+never	soha
+%.0f s ago	%.0f mp-e
+%.0f min ago	%.0f perce
+State	Állapot
+Channel	Csatorna
+Delay	Késleltetés
+dropped	elveszett
+level %.1f dBFS	szint %.1f dBFS
+load %.0f%%	terhelés %.0f%%
+FM: no station	FM: nincs állomás
+%s  SNR %.0f dB  %d services	%s  SNR %.0f dB  %d szolgáltatás
+OK	OK
+Close	Bezárás
+Clear	Törlés
+clear	törlés
+Add	Hozzáadás
+Remove	Eltávolítás
+Connect	Csatlakozás
+connecting…	csatlakozás…
+Open	Megnyitás
+Open…	Megnyitás…
+Use	Használat
+Tune	Hangolás
+Back	Vissza
+Next	Tovább
+Finish	Befejezés
+Skip	Kihagyás
+Skip tour	Bemutató kihagyása
+Dismiss	Elvetés
+Again	Újra
+Auto	Auto
+Auto (%s)	Auto (%s)
+Automatic	Automatikus
+Automatic (220 kHz)	Automatikus (220 kHz)
+Manual	Kézi
+Manual…	Kézi…
+off	ki
+now	most
+Listen	Hallgatás
+Mute	Némítás
+Unmute	Némítás feloldása
+Volume (shared with the other modes)	Hangerő (közös a többi üzemmóddal)
+Light (dark on white)	Világos (sötét fehéren)
+Sidebar	Oldalsáv
+Scope	Oszcilloszkóp
+Tiles	Csempék
+Faceplate	Előlap
+Scope: Cinema	Oszcilloszkóp: Mozi
+Scope: Meters	Oszcilloszkóp: Műszerek
+Scope: Dock	Oszcilloszkóp: Dokk
+Panel	Panel
+Terminal palette	Terminál színséma
+Instrument palette	Műszer színséma
+Mono palette	Mono színséma
+Show in Discord	Megjelenítés a Discordon
+Show the frequency	A frekvencia megjelenítése
+Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running.	Megjeleníti a Discord-profilodon, hogy az OnAir-t használod, az üzemmódot és a frekvenciát. A Discord asztali alkalmazásnak futnia kell.
+Discord application ID not set in this build	A Discord alkalmazásazonosító nincs beállítva ebben a kiadásban
+Passes	Átvonulások
+Data feeds...	Adatforrások...
+Data feeds	Adatforrások
+Scanner (highly experimental)	Pásztázó (erősen kísérleti)
+Scanner (highly experimental)...	Pásztázó (erősen kísérleti)...
+HIGHLY EXPERIMENTAL	ERŐSEN KÍSÉRLETI
+HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity	ERŐSEN KÍSÉRLETI: frekvenciák és üzemmódok listáján vagy egy sávon lépked, és aktivitásnál megáll
+Classic interface	Klasszikus felület
+New interface	Új felület
+Try the new interface. You can switch back at any time.	Próbáld ki az új felületet. Bármikor visszaválthatsz.
+Guided tour	Vezetett bemutató
+Tour	Bemutató
+Take the guided tour with Onny	Vezetett bemutató Onnyval
+by: Kristijonas Adomaitis, made with help from the community	készítette: Kristijonas Adomaitis, a közösség segítségével
+Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Köszönet mindenkinek, aki hibákat jelentett, felvételeket küldött és pull requesteket nyitott.
+Source	Forrás
+source	forrás
+Tuner	Hangoló
+Tuner (FM)	Hangoló (FM)
+Tuner (DAB)	Hangoló (DAB)
+tuner	hangoló
+Gain	Erősítés
+gain	erősítés
+GAIN	ERŐSÍTÉS
+Display	Megjelenítés
+Decoder	Dekóder
+decoder	dekóder
+Log	Napló
+mode	üzemmód
+MODE	ÜZEMMÓD
+Peak hold	Csúcstartás
+peak hold	csúcstartás
+Spectrum	Spektrum
+Waterfall	Vízesés
+search modes (FT8, LoRa, APRS...)	üzemmódok keresése (FT8, LoRa, APRS...)
+search (FT8, LoRa, APRS...)	keresés (FT8, LoRa, APRS...)
+no mode matches "%s"	nincs "%s" nevű üzemmód
+Controls  ▴	Vezérlők  ▴
+Controls  ▾	Vezérlők  ▾
+INSTRUMENTS	MŰSZEREK
+Analysis	Elemzés
+ANALYSIS	ELEMZÉS
+Receiver	Vevő
+CONTROLS	VEZÉRLŐK
+LOG	NAPLÓ
+DISPLAY	MEGJELENÍTÉS
+SPECTRUM	SPEKTRUM
+SPECTRUM / WATERFALL	SPEKTRUM / VÍZESÉS
+SOURCE / GAIN	FORRÁS / ERŐSÍTÉS
+MODE / TUNER	ÜZEMMÓD / HANGOLÓ
+STATUS	ÁLLAPOT
+CONSTELLATIONS	KONSTELLÁCIÓK
+ADC level	ADC-szint
+DMR voice audio is not decoded: AMBE+2 is proprietary, so there is no sound.	A DMR beszéd nincs dekódolva: az AMBE+2 védett, ezért nincs hang.
+no stations yet: run the scan	még nincs állomás: indítsd el a keresést
+no saved channels yet: run the scan	még nincsenek mentett csatornák: indítsd el a keresést
+Hz	Hz
+Frequency in MHz (%.3f to %.3f)	Frekvencia MHz-ben (%.3f – %.3f)
+OnAir crashed	Az OnAir összeomlott
+no picture - press Esc	nincs kép - nyomd meg az Esc-et
+no picture	nincs kép
+Video	Videó
+TV	TV
+BROADCAST RADIO	MŰSORSZÓRÓ RÁDIÓ
+AVIATION	REPÜLÉS
+MARITIME	TENGERÉSZET
+SATELLITE & NAVIGATION	MŰHOLD ÉS NAVIGÁCIÓ
+TWO-WAY RADIO	KÉTIRÁNYÚ RÁDIÓ
+CELLULAR & RAIL	MOBIL ÉS VASÚT
+PAGERS	PAGEREK
+IoT & SENSORS	IoT ÉS ÉRZÉKELŐK
+WEATHER & SCIENCE	IDŐJÁRÁS ÉS TUDOMÁNY
+AMATEUR - DIGITAL	RÁDIÓAMATŐR - DIGITÁLIS
+AMATEUR - VOICE & PACKET	RÁDIÓAMATŐR - BESZÉD ÉS CSOMAG
+HF UTILITY	HF SZOLGÁLTATÁS
+GENERAL & TOOLS	ÁLTALÁNOS ÉS ESZKÖZÖK
+T2 and T, automatic	T2 és T, automatikus
+8-VSB, North America	8-VSB, Észak-Amerika
+NextGen TV	NextGen TV
+Japan, Brazil	Japán, Brazília
+China, Hong Kong, Cuba	Kína, Hongkong, Kuba
+Cable	Kábel
+PAL, SECAM, NTSC	PAL, SECAM, NTSC
+D2-MAC, D-MAC satellite	D2-MAC, D-MAC műholdas
+Digital radio	Digitális rádió
+Stereo and RDS	Sztereó és RDS
+SW, MW, VHF	RH, KH, URH
+USA, FM and AM	USA, FM és AM
+China digital radio	Kínai digitális rádió
+Aircraft, 1090 MHz	Repülőgépek, 1090 MHz
+Interrogations, 1030 MHz	Lekérdezések, 1030 MHz
+Aircraft messages, VHF	Repülőgépes üzenetek, URH
+Data link, 136.9 MHz	Adatkapcsolat, 136,9 MHz
+Data link, 8.9 MHz	Adatkapcsolat, 8,9 MHz
+AM voice, 118-137 MHz	AM beszéd, 118-137 MHz
+Radial, 108-118 MHz	Radiál, 108-118 MHz
+Localizer and glide slope	Iránysáv és siklópálya
+Drones, 2.4 GHz	Drónok, 2,4 GHz
+Ships, 162 MHz	Hajók, 162 MHz
+Ship warnings, 518 kHz	Hajóviszony-figyelmeztetések, 518 kHz
+Ship calls, 2187.5 kHz	Hajóhívások, 2187,5 kHz
+Weather charts, HF	Időjárási térképek, HF
+GPS, GLONASS, BeiDou	GPS, GLONASSZ, BeiDou
+Satellites, 1622 MHz	Műholdak, 1622 MHz
+Satellites, 137 MHz	Műholdak, 137 MHz
+Weather pictures, 137 MHz	Időjárási képek, 137 MHz
+Weather images, 1694 MHz	Időjárási képek, 1694 MHz
+Satellites, 2 m / 70 cm	Műholdak, 2 m / 70 cm
+Digital voice	Digitális beszéd
+Digital voice, 6.25 / 12.5 kHz	Digitális beszéd, 6,25 / 12,5 kHz
+Digital voice, 12.5 kHz	Digitális beszéd, 12,5 kHz
+Digital voice, 6.25 kHz	Digitális beszéd, 6,25 kHz
+Digital voice, 14.236 MHz	Digitális beszéd, 14,236 MHz
+Digital voice, 433.475 MHz	Digitális beszéd, 433,475 MHz
+Digital voice, 145.375 MHz	Digitális beszéd, 145,375 MHz
+Network info, 380 - 470 MHz	Hálózati információ, 380 - 470 MHz
+Network info, UHF	Hálózati információ, UHF
+LTE, band scan	LTE, sávkeresés
+5G NR, GSCN scan	5G NR, GSCN-keresés
+Railway, 921 - 925 MHz	Vasút, 921 - 925 MHz
+Pagers, 512-2400 bd	Pagerek, 512-2400 baud
+Pagers, 1600-6400	Pagerek, 1600-6400
+Sensors, 433 / 868 MHz	Érzékelők, 433 / 868 MHz
+IoT, 868.1 MHz	IoT, 868,1 MHz
+LoRa mesh, 869.525 MHz	LoRa mesh, 869,525 MHz
+LoRa mesh, 869.618 MHz	LoRa mesh, 869,618 MHz
+Advertising, 2.4 GHz	Hirdetés, 2,4 GHz
+Beacons, 2.4 GHz	Jeladók, 2,4 GHz
+Balloons, 403 MHz	Ballonok, 403 MHz
+LF and HF time codes	LF és HF időkódok
+Chirp sweeps, 0 - 30 MHz	Chirp-söprések, 0 - 30 MHz
+Hydrogen line, 1420 MHz	Hidrogénvonal, 1420 MHz
+Beacons, 14.0956 MHz	Jeladók, 14,0956 MHz
+Keyboard chat, 14.070 MHz	Billentyűzetes csevegés, 14,070 MHz
+Messaging, 14.078 MHz	Üzenetküldés, 14,078 MHz
+Teletype, 14.080 MHz	Távíró, 14,080 MHz
+Morse, 14.020 MHz	Morze, 14,020 MHz
+Pictures, 14.230 MHz	Képek, 14,230 MHz
+Digital SSTV, 14.233 MHz	Digitális SSTV, 14,233 MHz
+Link establishment, 14.109 MHz	Kapcsolatfelvétel, 14,109 MHz
+NFM / AM / SSB / CW	NFM / AM / SSB / CW
+Spectrum, waterfall, sweep	Spektrum, vízesés, söprés
+Sweep, 1 - 6000 MHz	Söprés, 1 - 6000 MHz
+Aero, L-band	Aero, L-sáv
+EGC, L-band	EGC, L-sáv
+SRC	SRC
+FREQ	FREKV
+RATE	MINTAV
+STD	SZABV
+COMPUTE	SZÁMÍTÁS
+Centre frequency	Középfrekvencia
+DAB channel	DAB-csatorna
+FM station	FM-állomás
+Channel bandwidth	Csatornaszélesség
+Rescan for devices	Eszközök újrakeresése
+Add network radio…	Hálózati rádió hozzáadása…
+Network radios	Hálózati rádiók
+Address	Cím
+Port	Port
+Cannot connect: %s	Nem lehet csatlakozni: %s
+Added radios (listed with the others)	Hozzáadott rádiók (a többi mellett listázva)
+This build has no SoapySDR, which SoapyRemote needs.	Ez a kiadás nem tartalmaz SoapySDR-t, amelyre a SoapyRemote-nak szüksége van.
+Antenna port%s%s	Antennacsatlakozó%s%s
+Sample rate of the radio for this mode	A rádió mintavételi sebessége ehhez az üzemmódhoz
+Sample rate of the radio for this mode, remembered for this radio. Auto is the mode's own rate.	A rádió mintavételi sebessége ehhez az üzemmódhoz, megjegyezve ehhez a rádióhoz. Az Auto az üzemmód saját sebessége.
+Sample rate (Msps)	Mintavételi sebesség (Msps)
+The test signal is made at the mode's own rate (%s).	A tesztjel az üzemmód saját sebességén készül (%s).
+This mode needs at least %s.	Ehhez az üzemmódhoz legalább %s kell.
+This radio: %s to %s.	Ez a rádió: %s – %s.
+The radio runs at %s.	A rádió %s sebességgel fut.
+runs at %s	%s sebességgel fut
+The radio gave %s instead of the %s asked for.	A rádió %s értéket adott a kért %s helyett.
+A higher rate shows more spectrum but needs more USB bandwidth and processor time: when the status bar reports samples lost on the radio side, choose a lower rate.	Nagyobb sebesség több spektrumot mutat, de több USB-sávszélességet és processzoridőt igényel: ha az állapotsor a rádió oldalán elveszett mintákat jelez, válassz kisebbet.
+A recording plays at the rate it was made at: set it with the file.	A felvétel azzal a sebességgel játszódik le, amivel készült: a fájllal együtt állítható.
+A scan is using the radio and sets its own rate.	Egy keresés használja a rádiót, és saját sebességet állít be.
+DVB-T2 and DVB-T channels sit on this raster; a running radio may be opened again at another sample rate.	A DVB-T2 és DVB-T csatornák erre a rasztere esnek; egy futó rádió más mintavételi sebességgel újra megnyitható.
+Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7 or 8 MHz) is set for you.	Automatikus: a jel szélességét a spektrumból mérjük, és a csatornaszélesség (5, 6, 7 vagy 8 MHz) magától beáll.
+ISDB-T channel width: 6 MHz in Japan, Brazil and the rest of the Americas, 8 MHz in the Maldives (ISDB-T International).\nThe same signal, every time scaled by the width. Automatic measures it in the spectrum and tries each width\nwhile nothing locks; it opens the radio at 10 Msps.	ISDB-T csatornaszélesség: 6 MHz Japánban, Brazíliában és Amerika többi részén, 8 MHz a Maldív-szigeteken (ISDB-T International).\nUgyanaz a jel, mindig a szélességgel skálázva. Az automatikus a spektrumból méri, és addig próbálja\naz egyes szélességeket, amíg semmi sem kapcsolódik be; a rádiót 10 Msps-sel nyitja meg.
+Amp	Erősítő
+LNA	LNA
+VGA	VGA
+AGC	AGC
+Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	Az ADC-szintet egészséges tartományban tartja (kb. -16 dBFS rms, nincs túlvezérlés) az LNA, a VGA és az erősítő állításával.\nHa hozzányúlsz egy erősítésvezérlőhöz, kikapcsol.
+Auto-tune	Automatikus hangolás
+Stop tune	Hangolás leállítása
+Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	Erősítéssegéd: kb. 40 mp-ig próbál LNA/VGA/erősítő kombinációkat, és a legjobb SNR-t adó, nem túlvezérelt beállítást tartja meg.\nOlyan jel kell hozzá, amelyre a vevő be tud kapcsolódni.
+gain helper %d/%d ...	erősítéssegéd %d/%d ...
+ADC OVERLOAD - %s	ADC TÚLVEZÉRLÉS - %s
+AGC is lowering the gain	Az AGC csökkenti az erősítést
+reduce the gain (or enable AGC)	csökkentsd az erősítést (vagy kapcsold be az AGC-t)
+ADC level high	Magas ADC-szint
+ADC level low - raise the gain	Alacsony ADC-szint - növeld az erősítést
+ADC sees almost nothing - antenna / gain?	Az ADC alig lát valamit - antenna / erősítés?
+ADC level (rms). %s\npeak %.2f   clip %.3f%%   DC %+.3f / %+.3f	ADC-szint (rms). %s\ncsúcs %.2f   túlvezérlés %.3f%%   DC %+.3f / %+.3f
+Bias-tee (antenna power)	Bias-tee (antennatáplálás)
+Sends DC power up the antenna cable for an active antenna or LNA (e.g. a GNSS patch antenna). Leave it off with a passive antenna, and never with a DC short in the antenna path (some antennas, splitters or filters): it can damage the radio.	Egyenáramot küld az antennakábelen egy aktív antennának vagy LNA-nak (pl. GNSS patch antenna). Passzív antennánál hagyd kikapcsolva, és soha ne használd, ha az antennaúton egyenáramú zárlat van (egyes antennák, osztók vagy szűrők): károsíthatja a rádiót.
+Most GNSS antennas are active and need this on.	A legtöbb GNSS-antenna aktív, és ezt be kell kapcsolni.
+IQ correction	IQ-korrekció
+Corrects I/Q gain and phase imbalance, which puts a faint mirror image of every signal on the other side of the centre.\nMeasured from the signal itself; now %.2f dB, %.1f degrees. Not applied in DTMB and analog TV (their signals fool the measurement).	Korrigálja az I/Q erősítés- és fáziskiegyensúlyozatlanságot, amely minden jel halvány tükörképét a középpont másik oldalára teszi.\nA jelből magából mérve; most %.2f dB, %.1f fok. DTMB-ben és analóg TV-ben nem alkalmazzuk (a jeleik megtévesztik a mérést).
+The spike in the middle of the spectrum is the radio's own oscillator leaking in (strong on the HackRF and RTL-SDR).\nRemove: filtered out of the samples (not in FM: a station tuned to the centre has its carrier there).\nTune beside it: the radio is tuned just beside the channel, so the spike falls outside it, and the channel is moved\nback digitally. Needs a higher sample rate (DAB about 3.5 Msps); a radio too slow for it removes the spike instead.\nA line that stays at a round frequency (e.g. 650.000 MHz) when you retune is interference from the radio's clock, not the DC spike.	A spektrum közepén lévő tüske a rádió saját oszcillátorának beszivárgása (erős a HackRF-en és az RTL-SDR-en).\nEltávolítás: kiszűrjük a mintákból (FM-ben nem: a középre hangolt állomás vivője ott van).\nHangolás mellé: a rádiót a csatorna mellé hangoljuk, így a tüske kívül esik, a csatornát pedig\ndigitálisan visszatoljuk. Nagyobb mintavételi sebesség kell hozzá (DAB-hoz kb. 3,5 Msps); egy ehhez lassú rádió helyette eltávolítja a tüskét.\nEgy kerek frekvencián (pl. 650,000 MHz) maradó vonal újrahangoláskor a rádió órajelének zavara, nem a DC-tüske.
+%+.2f MHz	%+.2f MHz
+Which broadcast standard to decode.\nAuto alternates between DVB-T2 and DVB-T until one locks.	Melyik műsorszóró szabványt dekódolja.\nAz Auto váltogat a DVB-T2 és a DVB-T között, amíg valamelyik be nem kapcsolódik.
+synthetic	szintetikus
+%s test signal	%s tesztjel
+echo	visszhang
+file	fájl
+rate	sebesség
+loop	ismétlés
+ext	kiterj.
+Level	Szint
+Quality	Minőség
+signal quality: %s	jelminőség: %s
+signal quality %.0f%%  %s	jelminőség %.0f%%  %s
+data SNR %.1f dB, needed about %.1f dB (margin %+.1f dB)\nFEC blocks decoded %.1f%%	adat-SNR %.1f dB, szükséges kb. %.1f dB (tartalék %+.1f dB)\nFEC-blokkok dekódolva: %.1f%%
+data SNR %.1f dB, needed for this modulation/code rate about %.1f dB	adat-SNR %.1f dB, ehhez a modulációhoz/kódaránnyal szükséges kb. %.1f dB
+data SNR %.1f dB, data decoded %.1f%% (last frames)	adat-SNR %.1f dB, adat dekódolva %.1f%% (utolsó keretek)
+margin %+.1f dB, FEC blocks decoded %.1f%% (last frames)	tartalék %+.1f dB, FEC-blokkok dekódolva %.1f%% (utolsó keretek)
+FEC blocks decoded in the last frame: %.1f%%	FEC-blokkok dekódolva az utolsó keretben: %.1f%%
+0 dB margin is the edge of reception (25%); +6 dB or more is comfortable.	A 0 dB tartalék a vétel határa (25%); a +6 dB vagy több kényelmes.
+ATSC 3.0 does not report a signal-to-noise ratio yet; this bar shows how much of the data decodes.	Az ATSC 3.0 még nem jelent jel-zaj viszonyt; ez a sáv azt mutatja, mennyi adat dekódolódik.
+This bar shows how much of the recent data decodes.	Ez a sáv azt mutatja, a legutóbbi adatból mennyi dekódolódik.
+multipath: %s	többutas terjedés: %s
+Files and the test signal never lose samples: they wait for the receiver.	A fájlok és a tesztjel sosem veszítenek mintát: megvárják a vevőt.
+Radio side: %.2f s lost in %llu gaps, last %s	Rádió oldal: %.2f mp veszett el %llu résben, utolsó %s
+Samples that never arrived from the radio: its USB connection or driver could not keep up. Try a USB port directly on the computer (no hub), a shorter cable, or a lower sample rate.	Minták, amelyek sosem érkeztek meg a rádióból: az USB-kapcsolata vagy az illesztőprogram nem bírta a tempót. Próbálj a számítógép közvetlen USB-portját (elosztó nélkül), rövidebb kábelt vagy kisebb mintavételi sebességet.
+CPU side: %.2f s skipped %llu times, last %s	CPU oldal: %.2f mp kimaradt %llu alkalommal, utolsó %s
+Signal OnAir had to skip because the receiver could not keep up with the sample rate. Close other programs, or pick a lower sample rate or a narrower channel.	Jel, amelyet az OnAirnek ki kellett hagynia, mert a vevő nem bírta a mintavételi sebességet. Zárj be más programokat, vagy válassz kisebb mintavételi sebességet vagy keskenyebb csatornát.
+Receiver load: %.0f%% of real time	Vevő terhelése: a valós idő %.0f%%-a
+The receiver's time on the sample thread per second of signal. Near or above 100%, signal is skipped.	A vevő ideje a mintaszálon egy másodpercnyi jelre. 100% körül vagy fölött a jel kimarad.
+Demod	Demod
+How the signal becomes the audio the decoders hear.\nAuto: USB below 30 MHz, NFM at and above.\nNFM: 12.5 kHz channel, no de-emphasis, 300 - 3000 Hz audio.\nISS SSTV on 145.800 MHz is FM.	Hogyan lesz a jelből az a hang, amit a dekóderek hallanak.\nAuto: USB 30 MHz alatt, NFM attól fölfelé.\nNFM: 12,5 kHz-es csatorna, nincs de-emfázis, 300 - 3000 Hz hang.\nAz ISS SSTV a 145,800 MHz-en FM.
+Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping.	Mintafolyam. Zöld: az ADC-szint egészséges tartományban van. Borostyán: túl alacsony vagy magas. Piros: túlvezérlés.
+DVB-T2: the P1 preamble symbol (frame start and mode) is being found.	DVB-T2: a P1 előtag-szimbólum (keretkezdet és mód) keresése folyik.
+Guard interval and symbol timing are locked.	A védőintervallum és a szimbólumidőzítés bekapcsolódott.
+DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC.	DVB-T2: az L1 előjelzési blokk (keretszerkezet) jó CRC-vel dekódolódik.
+DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC.	DVB-T2: az L1 utójelzési blokk (PLP-lista, moduláció) jó CRC-vel dekódolódik.
+A full T2 frame is being received and equalised.	Egy teljes T2-keret érkezik és egyenlítődik.
+Forward error correction, inner code: share of blocks that decode.	Hibajavítás, belső kód: a dekódolódó blokkok aránya.
+Forward error correction, outer code: share of blocks that decode.	Hibajavítás, külső kód: a dekódolódó blokkok aránya.
+Transport stream: services found, continuity errors counted.	Átviteli folyam: talált szolgáltatások, számolt folytonossági hibák.
+The player is decoding and showing pictures.	A lejátszó dekódol és képet mutat.
+The player has audio buffered and playing.	A lejátszónak van pufferelt és szóló hangja.
+DVB-T: OFDM symbol sync from the cyclic prefix.	DVB-T: OFDM-szimbólumszinkron a ciklikus előtagból.
+DVB-T: the transmission parameter signalling bits are decoded.	DVB-T: az átviteli paraméterek jelzőbitjei dekódolódtak.
+Channel estimate from the pilots is valid.	A pilótákból számolt csatornabecslés érvényes.
+DVB-T: the convolutional decoder found the packet sync.	DVB-T: a konvolúciós dekóder megtalálta a csomagszinkront.
+Reed-Solomon outer code: share of packets that are clean.	Reed-Solomon külső kód: a tiszta csomagok aránya.
+ATSC: the 8-VSB pilot carrier is locked.	ATSC: a 8-VSB pilótavivő bekapcsolódott.
+ATSC: data segment sync found.	ATSC: adatszegmens-szinkron megvan.
+ATSC: field sync found.	ATSC: mezőszinkron megvan.
+ATSC: the equaliser is trained.	ATSC: az egyenlítő betanult.
+ATSC: the trellis decoder produces a valid transport stream.	ATSC: a trellis dekóder érvényes átviteli folyamot állít elő.
+click to tune to %.4f MHz	kattints a %.4f MHz-re hangoláshoz
+Channel width: %s	Csatornaszélesség: %s
+The width of the signal is measured in the spectrum and the receiver switches between 1.7, 5, 6, 7 and 8 MHz by itself.	A jel szélességét a spektrumból mérjük, és a vevő magától vált 1,7, 5, 6, 7 és 8 MHz között.
+The receiver's channel filter. Narrower keeps a strong neighbour out (150 kHz copes with one 10 dB stronger 150 kHz away); below about 180 kHz loud passages distort a little and RDS suffers first.	A vevő csatornaszűrője. A keskenyebb kint tartja az erős szomszédot (150 kHz elbír egy 10 dB-lel erősebb, 150 kHz-re lévő állomást); kb. 180 kHz alatt a hangos részek kissé torzulnak, és az RDS szenved először.
+The width is measured in the spectrum, and 6, 8 and 7 MHz are tried in turn while nothing locks.	A szélességet a spektrumból mérjük, és 6, 8 és 7 MHz-et próbál sorban, amíg semmi sem kapcsolódik be.
+6 MHz in Japan and the Americas, 8 MHz in the Maldives (ISDB-T International). The signal is the same, scaled in time by the width.	6 MHz Japánban és Amerikában, 8 MHz a Maldív-szigeteken (ISDB-T International). A jel ugyanaz, időben a szélességgel skálázva.
+Set by the country: there is nothing to measure it from. A receiver set to the wrong width finds nothing.	Az ország határozza meg: nincs mit mérni. A rossz szélességre állított vevő semmit sem talál.
+Follows the symbol rate: symbol rate x (1 + roll-off).	Követi a szimbólumsebességet: szimbólumsebesség x (1 + roll-off).
+Choose automatic or a manual symbol rate in the tuner to change it.	A módosításhoz válassz automatikus vagy kézi szimbólumsebességet a hangolóban.
+This mode	Ez az üzemmód
+%s: fixed for this mode.	%s: ehhez az üzemmódhoz rögzített.
+The receiver's filters are made for the signal (or for the group of channels it watches), so a manual width would only make reception worse.	A vevő szűrői a jelhez (vagy a figyelt csatornák csoportjához) készülnek, ezért a kézi szélesség csak ronthatná a vételt.
+Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width.	Csatornaszélesség: a sáv, amellyel a vevő dolgozik (a világos sáv).\nKattints az automatikus vagy kézi szélesség választásához.
+Channel width: the band the receiver works with (the light band), set by the standard.	Csatornaszélesség: a sáv, amellyel a vevő dolgozik (a világos sáv), a szabvány határozza meg.
+power (dBFS/bin)	teljesítmény (dBFS/bin)
+seconds ago	másodperce
+Identify this signal	A jel azonosítása
+Radio settings	Rádióbeállítások
+Radio settings*	Rádióbeállítások*
+Radio settings (%d changed)	Rádióbeállítások (%d módosítva)
+%s: frequency correction and the other settings of this radio	%s: frekvenciakorrekció és a rádió egyéb beállításai
+The driver's own settings show up here\nonce this radio has been started.	Az illesztőprogram saját beállításai itt jelennek meg,\nmiután a rádiót elindítottad.
+0 = libiio's default	0 = a libiio alapértéke
+Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Szia, Onny vagyok! Egy kis TV vagyok, aki az OnAirben él. Kérsz egy gyors bemutatót? Körülbelül egy percig tart, és egy demójellel mutatok meg mindent, így még hardver sem kell hozzá.
+Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Itt fent kapcsolod át, milyen adást szeretnél: DVB a világ legtöbb digitális TV-jéhez, ATSC Észak-Amerikához, DAB a digitális rádióhoz. Az OnAirben mind a három egy helyen van.
+Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Nézzük működés közben! Elindítok egy képzelt jelet. Ez egy tesztadó az alkalmazáson belül, így semmit sem kell csatlakoztatni.
+Start the demo signal	A demójel indítása
+See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Látod a hullámzó vonalat? Ez a spektrum: balról jobbra mutatja, mennyire erős minden az éterben. A közepén lévő magas púp a mi csatornánk. Alatta a vízesés ugyanezt mutatja, lassan gördülve az időben.
+And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	Ez a négy doboz pedig a vevő által látott pontokat mutatja. Jó jelnél a pontok szép csoportokba állnak össze. A szétszórt pontok zajos jelet jeleznek. Most tiszta demó van, így rendezettnek kell látszaniuk!
+Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Itt találod a csatornákat, miután a vevő bekapcsolódott. Kattints egyre, és nézheted. Van lejátszó képpel és hanggal, óra, valamint lehetőségek a nézett adás rögzítésére vagy továbbítására.
+Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Most jöhet az igazi. Itt választhatod ki a rádiódat, adhatsz meg frekvenciát, és állíthatod az erősítést. Az erősítés azt jelenti, mennyire erősíti a rádió a jelet: kevés esetén elvész, sok esetén torzul. Az Automatikus hangolás gomb jó értéket talál neked.
+Stop the demo and look for my radio	A demó leállítása és a rádióm keresése
+Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Nem tudod, hol vannak a csatornák? A Keresés fül megkeresi helyetted. Egy jó, magasra és ablak közelébe tett antenna többet számít bármi másnál. Ígérem!
+That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Ennyi volt a bemutató! A csatornáidat megoszthatod más eszközökkel a Folyam fülről (Kimenetek), és bármikor visszahívhatsz a jobb felső sarokban lévő Bemutató gombbal. Jó nézelődést!
+Good news: I can see "%s"!	Jó hír: látom ezt: "%s"!
+(I can't see a radio right now. Plug it in and press the button again.)	(Most nem látok rádiót. Dugd be, és nyomd meg újra a gombot.)
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windowson a HackRF-nek egyszer szüksége van a WinUSB illesztőprogramra: telepítsd a Zadiggal, a zadig.akeo.ie oldalról.
+Weather (137 MHz)	Időjárás (137 MHz)
+Amateur	Amatőr
+Amateur satellites	Amatőr műholdak
+downloading...	letöltés...
+Downloading...	Letöltés...
+the download failed (no network, or Celestrak refused)	a letöltés nem sikerült (nincs hálózat, vagy a Celestrak elutasította)
+downloaded	letöltve
+Download TLEs from Celestrak	TLE-k letöltése a Celestrakról
+Downloads only when you click. Fetches:	Csak kattintásra tölt le. Letölti:
+Paste TLEs...	TLE-k beillesztése...
+Hide paste box	Beillesztőmező elrejtése
+Use pasted TLEs	A beillesztett TLE-k használata
+Forget pasted TLEs	A beillesztett TLE-k elfelejtése
+No TLE for:	Nincs TLE ehhez:
+no valid TLE in the pasted text (two lines per satellite, checksums must match)	nincs érvényes TLE a beillesztett szövegben (műholdanként két sor, az ellenőrzőösszegeknek egyezniük kell)
+pasted TLEs added:	beillesztett TLE-k hozzáadva:
+No TLEs yet: download them or paste some.	Még nincsenek TLE-k: tölts le vagy illessz be néhányat.
+No TLEs: open TLE data above.	Nincsenek TLE-k: nyisd meg fent a TLE-adatokat.
+No passes in the next 24 hours.	Nincs átvonulás a következő 24 órában.
+TLE data	TLE-adatok
+From: celestrak.org/NORAD/elements/gp.php?GROUP=weather|stations|orbcomm|amateur&FORMAT=tle	Innen: celestrak.org/NORAD/elements/gp.php?GROUP=weather|stations|orbcomm|amateur&FORMAT=tle
+%d TLEs, %d satellites listed	%d TLE, %d műhold listázva
+the oldest is %.0f days old: download again	a legrégebbi %.0f napos: tölts le újat
+NORAD catalogue number	NORAD katalógusszám
+Receiver position	A vevő helye
+The same position as the ADS-B antenna position	Ugyanaz a hely, mint az ADS-B antenna helye
+not set: the times are for a placeholder position	nincs megadva: az időpontok egy helyettesítő pozícióra vonatkoznak
+Satellite	Műhold
+AOS	AOS
+LOS	LOS
+Max el	Max. emelk.
+Duration	Időtartam
+Frequency	Frekvencia
+AOS in %d:%02d:%02d	AOS %d:%02d:%02d múlva
+%s - %s, max %.0f deg	%s - %s, max. %.0f fok
+no pass	nincs átvonulás
+az %.0f  el %.0f  %.0f km\nDoppler %+.0f Hz	azim. %.0f  emelk. %.0f  %.0f km\nDoppler %+.0f Hz
+Track	Követés
+Track (choose a pass)	Követés (válassz átvonulást)
+During each pass of this satellite, retune about once a second for the Doppler shift	A műhold minden átvonulása alatt kb. másodpercenként újrahangol a Doppler-eltolódás miatt
+Auto start at AOS, stop at LOS	Automatikus indítás AOS-nál, leállítás LOS-nál
+Switches to the satellite's mode and starts the receiver at AOS (when it is stopped), and stops it at LOS	AOS-nál átvált a műhold üzemmódjára és elindítja a vevőt (ha le van állítva), LOS-nál leállítja
+Auto record IQ	Automatikus IQ-felvétel
+Records the radio's IQ during the pass, as Record IQ does (format from the Record IQ setting), into %s/recordings	Az átvonulás alatt rögzíti a rádió IQ-jét, mint az IQ rögzítése (a formátum az IQ rögzítése beállításból), ide: %s/recordings
+OnAir has no decoder for this: auto start opens the Spectrum explorer, and Auto record keeps the IQ	Az OnAirnek nincs dekódere ehhez: az automatikus indítás a Spektrumfelfedezőt nyitja meg, az automatikus felvétel pedig megtartja az IQ-t
+tracking%s	követés%s
+, recording	, felvétel
+Sends decoded data to other programs while the mode runs. Every feed is off until you turn it on.	Dekódolt adatot küld más programoknak, amíg az üzemmód fut. Minden adatforrás ki van kapcsolva, amíg be nem kapcsolod.
+Let other computers connect to the TCP feeds (LAN)	Más számítógépek csatlakozhatnak a TCP-forrásokhoz (LAN)
+SBS-1 BaseStation (TCP server)	SBS-1 BaseStation (TCP-szerver)
+Beast binary (TCP server)	Beast bináris (TCP-szerver)
+NMEA !AIVDM (UDP)	NMEA !AIVDM (UDP)
+APRS-IS (receive-only igate)	APRS-IS (csak vevő igate)
+KISS (TCP server)	KISS (TCP-szerver)
+ACARS, acarsdec format (UDP)	ACARS, acarsdec formátum (UDP)
+VDL2, dumpvdl2 format (UDP)	VDL2, dumpvdl2 formátum (UDP)
+ACARS and VDL2 (JSON)	ACARS és VDL2 (JSON)
+Callsign	Hívójel
+Passcode	Jelkód
+Server	Szerver
+Station ID	Állomásazonosító
+%s, %llu sent, %llu dropped	%s, %llu elküldve, %llu eldobva
+Steps through the list or a band, stops on activity. A mode change restarts the receiver.	Végiglépked a listán vagy egy sávon, aktivitásnál megáll. Az üzemmódváltás újraindítja a vevőt.
+Start scan	Keresés indítása
+Stop scan	Keresés leállítása
+List	Lista
+Band	Sáv
+Name	Név
+name	név
+Dwell s	Várakozás mp
+dwell s	várakozás mp
+Priority	Prioritás
+Lockout	Kizárás
+Add current	Jelenlegi hozzáadása
+Adds the frequency and mode the receiver is on now	Hozzáadja a frekvenciát és az üzemmódot, amelyen a vevő éppen van
+Clear lockouts	Kizárások törlése
+Import CSV...	CSV importálása...
+Export CSV...	CSV exportálása...
+Columns: frequency_mhz, mode, name, dwell_s, lockout, priority.\nmode is a mode id: fm, dab, airband, dmr, pocsag, ft8 ...	Oszlopok: frequency_mhz, mode, name, dwell_s, lockout, priority.\nA mode egy üzemmód-azonosító: fm, dab, airband, dmr, pocsag, ft8 ...
+imported %d entries%s	%d bejegyzés importálva%s
+ (some with a mode OnAir does not know)	 (némelyik olyan üzemmóddal, amelyet az OnAir nem ismer)
+exported	exportálva
+could not write	nem sikerült írni
+start MHz	kezdő MHz
+stop MHz	záró MHz
+step kHz	lépés kHz
+%d steps, %d locked out	%d lépés, %d kizárva
+Time	Idő
+For	Ennyi ideig
+Decoded	Dekódolt
+Hits	Találatok
+Move on to the next channel now	Továbblépés a következő csatornára most
+Skip this channel from now on	Ennek a csatornának a kihagyása mostantól
+Channel power over the noise (in the mode's bandwidth) that counts as activity.\nA mode that reports it decodes (sync, frames, data) stops the scan too.	A csatorna zaj feletti teljesítménye (az üzemmód sávszélességében), amely aktivitásnak számít.\nHa egy üzemmód jelzi, hogy dekódol (szinkron, keretek, adat), az is megállítja a keresést.
+Checked every %.0f s, also while another channel holds (one priority entry)	%.0f mp-enként ellenőrzi, akkor is, ha egy másik csatorna tart (egy prioritásos bejegyzés)
+squelch %.0f dB	zajzár %.0f dB
+hang %.1f s	tartás %.1f mp
+priority every %.0f s	prioritás %.0f mp-enként
+priority off	prioritás ki
+idle	tétlen
+listening	hallgatás
+ACTIVE	AKTÍV
+hang	tartás
+  (priority)	  (prioritás)
+signal only	csak jel
+nothing left to scan	nincs több keresnivaló
+the band has no steps (check start, stop and step)	a sávnak nincsenek lépései (ellenőrizd a kezdetet, a véget és a lépést)
+the list has nothing to scan (empty, or every entry locked out)	a listán nincs mit keresni (üres, vagy minden bejegyzés ki van zárva)
+Identify signal	Jel azonosítása
+Start the receiver to identify a signal.	Indítsd el a vevőt egy jel azonosításához.
+The strongest signal around %s	A legerősebb jel %s körül
+Region %s, %s wide	Régió %s, %s széles
+collecting samples	minták gyűjtése
+Working it out...	Kiszámítás...
+Nothing to identify here.	Itt nincs mit azonosítani.
+Looks like: %s	Úgy tűnik: %s
+Looks like: %s (frame sync found %dx)	Úgy tűnik: %s (keretszinkron %dx találva)
+No mode fits well.	Egyik üzemmód sem illik jól.
+Open %s on this frequency	%s megnyitása ezen a frekvencián
+Switch to %s and tune to %s	Váltás erre: %s, és hangolás: %s
+Candidates	Jelöltek
+(sync %dx)	(szinkron %dx)
+(no sync)	(nincs szinkron)
+Centre	Közép
+Width -3 / -20 / -26 dB	Szélesség -3 / -20 / -26 dB
+Occupied (99 %)	Foglalt (99 %)
+On the air	Adásban
+bursts, %.0f %% on, %d of about %.3g ms	impulzusok, %.0f %% bekapcsolva, %d, kb. %.3g ms
+continuous	folyamatos
+Modulation	Moduláció
+Envelope	Burkoló
+%.2f (1 constant, 2 noise-like)	%.2f (1 állandó, 2 zajszerű)
+Symbol rate	Szimbólumsebesség
+Updates	Frissítések
+Check for updates automatically	Frissítések automatikus keresése
+Include beta versions	Béta verziókkal együtt
+Check now	Keresés most
+Not checked yet.	Még nincs ellenőrizve.
+Asking GitHub for the newest version…	A GitHubtól kérdezem a legújabb verziót…
+Yes, clear all	Yes, clear all
+You have the newest version.	A legújabb verziót használod.
+Version %s is available%s.	A(z) %s verzió elérhető%s.
+ (beta)	 (béta)
+Download and install	Letöltés és telepítés
+Download and install them by themselves	Letöltés és telepítés maguktól
+Skip this version	Ennek a verziónak a kihagyása
+Release page	Kiadási oldal
+Download page	Letöltési oldal
+Checking and preparing the new version…	Az új verzió ellenőrzése és előkészítése…
+Downloaded and checked. It is installed when you close OnAir.	Letöltve és ellenőrizve. Az OnAir bezárásakor települ.
+Restart now and update	Újraindítás és frissítés most
+Windows asks for permission to run the installer.	A Windows engedélyt kér a telepítő futtatásához.
+The system asks for your password to install the package.	A rendszer a jelszavadat kéri a csomag telepítéséhez.
+This copy of OnAir cannot replace itself.	Ez az OnAir-példány nem tudja lecserélni önmagát.
+The update to v%s did not install (setup exit code %d).	A v%s verzióra frissítés nem települt (telepítő kilépési kódja: %d).
+Only github.com is contacted. Downloads are checked against the SHA-256 GitHub lists for the file.	Csak a github.com-mal létesít kapcsolatot. A letöltéseket a GitHub által a fájlhoz megadott SHA-256 ellenőrzi.
+checking…	ellenőrzés…
+update %s	frissítés %s
+downloading %.0f%%	letöltés %.0f%%
+preparing…	előkészítés…
+restart to update	újraindítás a frissítéshez
+6 MHz (Cuba)	6 MHz (Kuba)
+DAB ensemble, transmission mode I	DAB-együttes, I. átviteli mód
+ATSC 8-VSB receiver: matched filter, pilot loop, symbol clock, field sync, per-field equaliser, trellis, Reed-Solomon	ATSC 8-VSB vevő: illesztett szűrő, pilótahurok, szimbólumóra, mezőszinkron, mezőnkénti egyenlítő, trellis, Reed-Solomon
+Overview	Áttekintés
+Stream	Folyam
+Scan	Keresés
+Antenna	Antenna
+History	Előzmények
+Radio	Rádió
+Ensemble	Együttes
+Map	Térkép
+Analyzer	Elemző
+Record IQ	IQ rögzítése
+Recordings of a file are not needed	Fájl felvételére nincs szükség
+Start the radio first	Előbb indítsd el a rádiót
+Saves the radio's raw samples to a file, for a bug report	Elmenti a rádió nyers mintáit egy fájlba, hibajelentéshez
+Copy diagnostics	Diagnosztika másolása
+Copied	Másolva
+Copies the version, system, radios, messages and radio log lines, for a bug report	Kimásolja a verziót, a rendszert, a rádiókat, az üzeneteket és a rádió naplósorait, hibajelentéshez
+spectrum dB	spektrum dB
+waterfall dB	vízesés dB
+# added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
+  (mirrored: I/Q swapped)	  (tükrözve: I/Q felcserélve)
+%s, %d client%s, %llu sent, %llu dropped	%s, %d kliens%s, %llu elküldve, %llu eldobva
+A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	A HackRF-hez, Airspyhoz vagy RTL-SDR-hez egyszer kell a WinUSB illesztőprogram: telepítse a Zadiggal (zadig.akeo.ie).
+A Linux driver for TV sticks took the radio before the SDRplay software could.	Egy Linux TV-pálcás illesztőprogram megelőzte az SDRplay szoftvert, és lefoglalta a rádiót.
+A high-end computer is recommended. Lower sample rates help.	Nagy teljesítményű számítógép ajánlott. Az alacsonyabb mintavételi frekvencia segít.
+A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Világtérkép: keressen helyet koordináták vagy Maidenhead-lokátor alapján, távolság és irány a saját helyétől
+Add a receiver: another radio with its own mode	Vevő hozzáadása: másik rádió saját üzemmóddal
+Add receiver	Vevő hozzáadása
+Added to a level in dBFS to give dBm for this radio: feed a known signal into the antenna port and set the difference. Used when the spectrum shows dBm (Spectrum button on the plot).	A dBFS szinthez adódik, hogy ennek a rádiónak dBm értéket kapjon: adjon ismert jelet az antennacsatlakozóra, és állítsa be a különbséget. Akkor használja a program, ha a spektrum dBm-ben jelenik meg (az ábra Spektrum gombja).
+Aircraft	Repülők
+All set. OnAir will start here:	Minden kész. Az OnAir itt indul:
+Allow remote control (frequency and gain)	Távvezérlés engedélyezése (frekvencia és erősítés)
+Amateur radio	Rádióamatőr
+An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	SDRplay RSP csatlakoztatva van, de az illesztőprogramja, az SDRplay API nincs telepítve. Ez az SDRplay saját szoftvere, amelyet a licenc miatt az OnAir nem tartalmazhat, ezért egyszer le kell tölteni.
+Another program is using the HackRF	Egy másik program használja a HackRF-et
+Australia and New Zealand	Ausztrália és Új-Zéland
+Average	Átlag
+CPU load now: %.0f%% (100%% = one core)	Jelenlegi CPU-terhelés: %.0f%% (100%% = egy mag)
+Calls and data are shown, but the voice is silent until you install the codec yourself. OnAir does not ship it (patents).	A hívások és az adatok megjelennek, de a hang némán marad, amíg Ön nem telepíti a kodeket. Az OnAir nem tartalmazza (szabadalmak).
+Cancel	Mégse
+Carrier MHz	Vivő MHz
+Carriers in the span (click: listen and show; double click: tune to it)	Vivők a tartományban (kattintás: hallgatás és megjelenítés; dupla kattintás: ráhangolás)
+Channel MHz	Csatorna MHz
+Channel raster	Csatornakiosztás
+Check that PulseAudio or PipeWire runs, and that an output is chosen in the sound settings.	Ellenőrizze, hogy fut-e a PulseAudio vagy a PipeWire, és hogy van kimenet kiválasztva a hangbeállításokban.
+Check that rtl_tcp is running on the other computer and prints "listening".	Ellenőrizze, hogy az rtl_tcp fut a másik számítógépen, és kiírja: „listening”.
+Check that the file still exists and that you may read it.	Ellenőrizze, hogy a fájl még létezik-e, és olvashatja-e.
+Check that the firmware is the stock one, or a known one such as Tezuka.	Ellenőrizze, hogy a firmware az eredeti vagy egy ismert, például a Tezuka.
+Check the USB cable and port, then press the refresh button.	Ellenőrizze az USB-kábelt és a portot, majd nyomja meg a frissítés gombot.
+Check the address and port, and that nothing blocks them (firewall, Wi-Fi).	Ellenőrizze a címet és a portot, és hogy semmi sem blokkolja őket (tűzfal, Wi-Fi).
+China	Kína
+Choose a frequency inside the range shown in the message.	Válasszon az üzenetben megadott tartományba eső frekvenciát.
+Choose the file again.	Válassza ki újra a fájlt.
+Close other programs that use the radio.	Zárja be a rádiót használó többi programot.
+Close programs that hold the sound device exclusively.	Zárja be azokat a programokat, amelyek kizárólagosan használják a hangeszközt.
+Close the other program (a second OnAir, SDR software, hackrf_info).	Zárja be a másik programot (egy második OnAir, SDR-szoftver, hackrf_info).
+Close this receiver: it stops and lets go of its radio	A vevő bezárása: leáll és elengedi a rádióját
+Colour map	Színskála
+Colours	Színek
+Converter (up-converter / LNB)	Konverter (felfelé konverter / LNB)
+Copy the command	Parancs másolása
+Copy the restart command	Újraindítási parancs másolása
+Copy the udev command	udev-parancs másolása
+Details	Részletek
+Don't show again	Ne mutassa többé
+Down, LO above: radio = LO - RF (mirrored)	Lefelé, LO felül: rádió = LO - RF (tükrözve)
+Down, LO below: radio = RF - LO	Lefelé, LO alul: rádió = RF - LO
+Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	Töltse le a számítógépéhez való SDRplay API-t a sdrplay.com/api oldalról, és futtassa a telepítőt.
+Download the current SDRplay API from sdrplay.com and install it.	Töltse le az aktuális SDRplay API-t a sdrplay.com oldalról, és telepítse.
+Drag to resize, double click for the automatic size	Húzással átméretezhető, dupla kattintás az automatikus méretért
+Drones, 2.4 / 5.8 GHz	Drónok, 2,4 / 5,8 GHz
+Elsewhere	Máshol
+Europe	Európa
+FM / DAB radio	FM / DAB rádió
+FM radio	FM rádió
+Files: audio and IQ	Fájlok: hang és IQ
+Fill under the line	Vonal alatti kitöltés
+Find "SDRplay API Service" and press Start (or Restart).	Keresse meg az „SDRplay API Service” szolgáltatást, és nyomja meg az Indítás (vagy Újraindítás) gombot.
+Fix the address of the network radio (host:port).	Javítsa ki a hálózati rádió címét (gép:port).
+Download OnAir again and unpack or install the whole package: the codec2 library belongs next to the program.	Töltse le újra az OnAirt, és csomagolja ki vagy telepítse a teljes csomagot: a codec2 könyvtár a program mellett van.
+Follow the steps in the full instructions to install the codec.	A kodek telepítéséhez kövesse a teljes útmutató lépéseit.
+For an RSP, install the SDRplay API first (sdrplay.com).	RSP esetén először telepítse az SDRplay API-t (sdrplay.com).
+Found %s (%s)	Megtalálva: %s (%s)
+Found:	Megtalálva:
+Frequency and level of the strongest peaks in view	A látható legerősebb csúcsok frekvenciája és szintje
+Full instructions	Teljes útmutató
+Gliders, 868.2 / 868.4 MHz	Vitorlázók, 868,2 / 868,4 MHz
+Grid	Rács
+How far the converter's oscillator runs fast (positive) or slow. The LO used is LO x (1 + ppm / 1e6).	Mennyivel siet (pozitív) vagy késik a konverter oszcillátora. A használt LO: LO x (1 + ppm / 1e6).
+How fast the max-hold line falls; 0: it stays until reset	Milyen gyorsan esik a csúcstartó vonal; 0: törlésig megmarad
+How to fix	A javítás módja
+Images	Képek
+Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay	Telepítse az OnAir tiltólista-fájlját (a .deb csomag megteszi), vagy futtassa: sudo systemctl restart sdrplay
+Install the SDRplay API	SDRplay API telepítése
+Install the SDRplay API from sdrplay.com if you have not.	Ha még nem tette, telepítse az SDRplay API-t a sdrplay.com oldalról.
+Install the WinUSB driver once with Zadig (zadig.akeo.ie): choose the radio, then the driver WinUSB, then Install.	Telepítse egyszer a WinUSB illesztőprogramot a Zadiggal (zadig.akeo.ie): válassza ki a rádiót, majd a WinUSB illesztőt, végül a Telepítést.
+Install the udev rules (install-udev-rules.sh), then unplug and replug the radio.	Telepítse az udev-szabályokat (install-udev-rules.sh), majd húzza ki és dugja vissza a rádiót.
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb does it).	Telepítse az udev-szabályokat: futtassa az install-udev-rules.sh fájlt az OnAir mappából (a .deb megteszi).
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb package does it for you).	Telepítse az udev-szabályokat: futtassa az install-udev-rules.sh fájlt az OnAir mappából (a .deb csomag megteszi helyette).
+Intensity (dB)	Intenzitás (dB)
+IoT, 2.4 GHz	IoT, 2,4 GHz
+IoT, sub-GHz	IoT, sub-GHz
+It is streaming to another program: stop it there first.	Egy másik programnak streamel: először ott állítsa le.
+Japan	Japán
+Journaline	Journaline
+Just explore	Csak felfedezem
+Keep the waterfall range on the noise floor and the strongest signal (click again to stop following)	A vízesés tartománya kövesse a zajszintet és a legerősebb jelet (újabb kattintás: követés vége)
+LO (MHz)	LO (MHz)
+LO correction (ppm)	LO-korrekció (ppm)
+Let other computers connect (LAN)	Más számítógépek csatlakozhatnak (LAN)
+Level at the cursor	Szint a kurzornál
+Level dB	Szint dB
+Linux grabbed the SDRplay radio	A Linux lefoglalta az SDRplay rádiót
+Linux treats the radio as a sound card	A Linux hangkártyaként kezeli a rádiót
+Load	Betöltés
+Look again	Keresés újra
+Look for Hermes Lite 2 radios on this computer's networks again	Hermes Lite 2 rádiók keresése újra a számítógép hálózatain
+Maritime, VHF	Tengeri, URH
+Max hold	Csúcstartás
+Meteor scatter, 28.145 MHz	Meteorvisszaverődés, 28,145 MHz
+Middle East	Közel-Kelet
+Mirror the spectrum (swap I and Q)	Spektrum tükrözése (I és Q felcserélése)
+NB-IoT, band scan	NB-IoT, sávkeresés
+NCDXF/IARU, Long Dashes, single letters	NCDXF/IARU, hosszú vonások, egyes betűk
+Network	Hálózat
+Network radio: %llu samples lost (underruns)	Hálózati rádió: %llu minta elveszett (alulcsordulás)
+No Hermes Lite 2 answered on this computer's networks: type its address.	Egyetlen Hermes Lite 2 sem válaszolt a számítógép hálózatain: adja meg a címét.
+No radio found	Nem található rádió
+No sound output	Nincs hangkimenet
+North America	Észak-Amerika
+Not a locator or coordinates	Nem lokátor és nem koordináták
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Windowson a HackRF-hez egyszer kell a WinUSB illesztőprogram: telepítse a Zadiggal (zadig.akeo.ie).
+OnAir %s	OnAir %s
+OnAir cannot see a HackRF on the USB ports.	Az OnAir nem lát HackRF-et az USB-portokon.
+OnAir could not open the speakers, so there will be no sound.	Az OnAir nem tudta megnyitni a hangszórókat, ezért nem lesz hang.
+OnAir could not use the rtl_tcp server, or the connection dropped.	Az OnAir nem tudta használni az rtl_tcp szervert, vagy megszakadt a kapcsolat.
+OnAir found the SDRplay software, but its background service does not answer, so the RSP cannot be opened.	Az OnAir megtalálta az SDRplay szoftvert, de a háttérszolgáltatása nem válaszol, ezért az RSP nem nyitható meg.
+OnAir lists a radio when the computer sees it. You can still try everything with the synthetic signal or an IQ file.	Az OnAir akkor listáz egy rádiót, amikor a számítógép látja. A szintetikus jellel vagy egy IQ-fájllal így is kipróbálhat mindent.
+OnAir needs SDRplay API 3.07 or a newer 3.x.	Az OnAir-hez SDRplay API 3.07 vagy újabb 3.x szükséges.
+Only one program can use an rtl_tcp server at a time: close any other client.	Egyszerre csak egy program használhat egy rtl_tcp szervert: zárja be a többi klienst.
+Only one program can use the radio at a time.	Egyszerre csak egy program használhatja a rádiót.
+Only one receiver plays its sound at a time: click to hear this one	Egyszerre csak egy vevő játssza a hangját: kattintson, hogy ezt hallja
+Open Services (press Win+R, type services.msc).	Nyissa meg a Szolgáltatásokat (Win+R, majd services.msc).
+Open System Settings > Sound and pick an output device.	Nyissa meg a Rendszerbeállítások > Hang részt, és válasszon kimeneti eszközt.
+Open codecs folder	Kodekmappa megnyitása
+Open driver page	Illesztőprogram-oldal megnyitása
+Open firmware page	Firmware-oldal megnyitása
+Open the SDRplay API page	Az SDRplay API oldalának megnyitása
+Open the device list	Eszközlista megnyitása
+Optional: your position, as a Maidenhead locator (KO24pq) or coordinates (54.68, 25.28). It is kept on this computer and used for maps and satellite passes.	Nem kötelező: a helyzete Maidenhead-lokátorként (KO24pq) vagy koordinátákkal (54.68, 25.28). Ezen a számítógépen marad, és térképekhez, műholdátvonulásokhoz használjuk.
+Or choose another radio from the list.	Vagy válasszon másik rádiót a listából.
+Or install OnAir's blacklist file (the .deb package does it).	Vagy telepítse az OnAir tiltólista-fájlját (a .deb csomag megteszi).
+Or set the UHD_IMAGES_DIR variable to the folder with the images.	Vagy állítsa az UHD_IMAGES_DIR változót a képfájlokat tartalmazó mappára.
+Own accent colour	Saját kiemelőszín
+PSK Reporter	PSK Reporter
+Pagers, tones and FFSK	Személyhívók, hangok és FFSK
+Pause	Szünet
+Peak markers	Csúcsjelölők
+Plug a radio into the computer that runs the SpyServer, and restart the SpyServer.	Csatlakoztasson egy rádiót a SpyServert futtató számítógéphez, és indítsa újra a SpyServert.
+Plug the radio in again and press the refresh button.	Dugja vissza a rádiót, és nyomja meg a frissítés gombot.
+Plug the radio in, directly or through a powered hub.	Csatlakoztassa a rádiót közvetlenül vagy tápellátású hubon keresztül.
+Press "Look again" in the ? help next to the sound.	Nyomja meg a „Keresés újra” gombot a hang melletti ? súgóban.
+Press the refresh button next to the radio list.	Nyomja meg a rádiólista melletti frissítés gombot.
+Press the refresh button next to the source.	Nyomja meg a forrás melletti frissítés gombot.
+Put the library in the OnAir codecs folder (button below).	Tegye a könyvtárat az OnAir kodekmappájába (lenti gomb).
+Put the panels back to their automatic sizes (drag the bars between panels to resize them)	A panelek visszaállítása az automatikus méretre (a panelek közti sávok húzásával méretezhetők át)
+Radar chirps, HF	Radar-chirpek, HF
+Radio settings (%d changed)###radioset	Rádiobeállítások (%d módosítva)###radioset
+Radio settings###radioset	Rádiobeállítások###radioset
+Receivers at once	Vevők egyszerre
+Reduce CPU when hidden	CPU-terhelés csökkentése rejtett állapotban
+Remote driver	Távoli illesztő
+Reset	Visszaállítás
+Reset layout	Elrendezés visszaállítása
+Restart OnAir (the installer starts SDRplay's background service).	Indítsa újra az OnAir-t (a telepítő elindítja az SDRplay háttérszolgáltatását).
+Restart OnAir.	Indítsa újra az OnAir-t.
+Restart the Mac, or run in Terminal: sudo launchctl kickstart -k system/com.sdrplay.service	Indítsa újra a Mac-et, vagy futtassa a Terminálban: sudo launchctl kickstart -k system/com.sdrplay.service
+Right-click the speaker icon, open Sound settings and pick an output device.	Kattintson jobb gombbal a hangszóró ikonra, nyissa meg a hangbeállításokat, és válasszon kimeneti eszközt.
+Run in a terminal: sudo systemctl restart sdrplay	Futtassa terminálban: sudo systemctl restart sdrplay
+Run once in a terminal: uhd_images_downloader	Futtassa egyszer terminálban: uhd_images_downloader
+Run: sudo modprobe -r msi2500 msi001	Futtassa: sudo modprobe -r msi2500 msi001
+Running several radios at the same time needs a lot of processing power. Performance may limit what is possible: with too many or too fast receivers samples are dropped and decoding gets worse.	Több rádió egyidejű használata sok számítási teljesítményt igényel. A teljesítmény korlátozhatja a lehetőségeket: túl sok vagy túl gyors vevő esetén minták vesznek el, és romlik a dekódolás.
+SDR	SDR
+SNR dB	SNR dB
+Satellites	Műholdak
+Satellites, 1.6 GHz	Műholdak, 1,6 GHz
+Save bug report	Hibajelentés mentése
+Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue	Egy zip fájlt ment a diagnosztikával, a naplóval és az utolsó összeomlási jelentéssel: csatolja egy GitHub-hibajegyhez
+Search	Keresés
+Seen	Látva
+Send spots to PSK Reporter (pskreporter.info)	Spotok küldése a PSK Reporternek (pskreporter.info)
+Sensors and IoT	Érzékelők és IoT
+Services	Szolgáltatások
+Set the LO above 0 MHz.	Állítsa a LO-t 0 MHz fölé.
+Setup	Beállítás
+Setup wizard	Beállítási varázsló
+Share my radio (rtl_tcp server)	A rádióm megosztása (rtl_tcp szerver)
+Share the radio's samples as an rtl_tcp server	A rádió mintáinak megosztása rtl_tcp szerverként
+Ships	Hajók
+Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs.	A frekvencia megjelenítése és beállítása az antennánál, miközben a rádió a konverter kimenetére van hangolva.
+Skip setup	Beállítás kihagyása
+Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)	Spektrum: átlagolás, csúcstartás, csúcsjelölők, kitöltés, rács és mértékegység (dBFS vagy dBm)
+Speed (rows a second)	Sebesség (sor másodpercenként)
+Spots are public. A valid amateur radio callsign is required; the dial frequency is the tuned frequency.	A spotok nyilvánosak. Érvényes rádióamatőr hívójel szükséges; a tárcsafrekvencia a behangolt frekvencia.
+Stop adding rows: the picture stays, and drag or the wheel on the waterfall scroll and zoom back through it	A sorok hozzáadásának leállítása: a kép megmarad, a vízesésen húzással vagy görgővel visszagörgethet és nagyíthat
+Television	Televízió
+Text size	Szövegméret
+Text size %d%%	Szövegméret %d%%
+The FreeDV / M17 voice codec (codec2) was not found	A FreeDV / M17 hangkodek (codec2) nem található
+The HackRF firmware does not match	A HackRF firmware nem egyezik
+The HackRF is not found	A HackRF nem található
+The Linux sound driver holds the radio, so the SDRplay software cannot see it.	A Linux hangillesztő lefoglalta a rádiót, így az SDRplay szoftver nem látja.
+The PlutoSDR answered, but without its radio chip. It may still be starting, or run unusual firmware.	A PlutoSDR válaszolt, de a rádiós lapka nélkül. Lehet, hogy még indul, vagy szokatlan firmware fut rajta.
+The PlutoSDR does not show its radio chip	A PlutoSDR nem mutatja a rádiós lapkáját
+The RTL-SDR is gone	Az RTL-SDR eltűnt
+The SDRplay service is not running	Az SDRplay szolgáltatás nem fut
+The SDRplay software is too old	Az SDRplay szoftver túl régi
+The SpyServer answered, but no radio is plugged into it.	A SpyServer válaszolt, de nincs hozzá rádió csatlakoztatva.
+The USRP needs its firmware images	Az USRP-nek szüksége van a firmware-képfájljaira
+The USRP software is installed, but the firmware images it loads are missing.	Az USRP szoftver telepítve van, de hiányoznak a betöltendő firmware-képfájlok.
+The address of the network radio must look like host:port, for example 192.168.1.20:1234.	A hálózati rádió címe gép:port alakú legyen, például 192.168.1.20:1234.
+The file could not be opened	A fájl nem nyitható meg
+The firmware inside the HackRF is older than the software talking to it.	A HackRF firmware régebbi, mint a vele kommunikáló szoftver.
+OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.	Az OnAir ennek ellenére elkéri a rádiótól, de a rádió vagy az illesztőprogramja nem biztos, hogy eléri ezt a frekvenciát, vagy a jel gyenge lehet, illetve hiányozhat.
+The most receivers are open	A legtöbb vevő nyitva van
+The network radio (rtl_tcp) does not answer	A hálózati rádió (rtl_tcp) nem válaszol
+The picture holds the last %.0f s.	A kép az utolsó %.0f másodpercet tartalmazza.
+The radio did not start	A rádió nem indult el
+The radio is plugged in, but the system does not let your account use it yet.	A rádió csatlakoztatva van, de a rendszer még nem engedi, hogy a fiókja használja.
+The radio opened badly or stopped at once. The message above says why; these steps solve most cases.	A rádió rosszul nyílt meg vagy azonnal leállt. A fenti üzenet megmondja az okot; ezek a lépések a legtöbb esetet megoldják.
+The radio was found but the USB link to it did not work. This is usually permission, the cable or the port.	A rádió megvan, de az USB-kapcsolat nem működött. Ez általában jogosultság, a kábel vagy a port hibája.
+The radio you chose is no longer connected.	A kiválasztott rádió már nincs csatlakoztatva.
+The radio's SoapySDR driver on the server, or a key=value list: driver=sdrplay,serial=1.	A rádió SoapySDR illesztője a kiszolgálón, vagy egy kulcs=érték lista: driver=sdrplay,serial=1.
+The radio's USB connection failed	A rádió USB-kapcsolata megszakadt
+The recording file is missing, moved or not readable.	A felvételfájl hiányzik, át lett helyezve vagy nem olvasható.
+The rtl_tcp address is not valid	Az rtl_tcp cím érvénytelen
+The server has no radio	A kiszolgálón nincs rádió
+The text and data are shown, but speech needs the codec2 library. It comes with OnAir, so this copy is probably incomplete.	A szöveg és az adatok megjelennek, de a beszédhez a codec2 könyvtár kell. Az OnAirhez tartozik, ezért ez a példány valószínűleg hiányos.
+The voice codec (mbelib) is not installed	A hangkodek (mbelib) nincs telepítve
+This frequency is not reachable through the converter.	Ez a frekvencia nem érhető el a konverteren keresztül.
+This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	Ez Linux-probléma. Ezen a rendszeren húzza ki a rádiót, dugja vissza, majd nyomja meg a frissítés gombot.
+This frequency is outside what this radio is specified for	Ez a frekvencia kívül esik azon, amire ez a rádió specifikálva van
+This user may not open the radio	Ez a felhasználó nem nyithatja meg a rádiót
+Time constant of the averaged line: longer is calmer	Az átlagolt vonal időállandója: hosszabb = nyugodtabb
+Tools	Eszközök
+Trace	Görbe
+Trunked and two-way radio	Trönkölt és kétirányú rádió
+Try another USB port and a short cable.	Próbáljon másik USB-portot és rövid kábelt.
+Try another USB port, directly on the computer (not a hub), and a short cable.	Próbáljon másik USB-portot közvetlenül a számítógépen (nem hubon), és rövid kábelt.
+Try another USB port, directly on the computer (not a hub).	Próbáljon másik USB-portot közvetlenül a számítógépen (nem hubon).
+Try another USB port, directly on the computer.	Próbáljon másik USB-portot közvetlenül a számítógépen.
+Tuner (DAB)###Tuner	Hangoló (DAB)###Tuner
+Tuner (FM)###Tuner	Hangoló (FM)###Tuner
+Unit	Egység
+United Kingdom and Ireland	Egyesült Királyság és Írország
+Unplug and replug the radio, then press the refresh button.	Húzza ki és dugja vissza a rádiót, majd nyomja meg a frissítés gombot.
+Unplug the HackRF and plug it in again.	Húzza ki és dugja vissza a HackRF-et.
+Unplug the USRP, plug it in again and press the refresh button.	Húzza ki az USRP-t, dugja vissza, majd nyomja meg a frissítés gombot.
+Unplug the radio and plug it in again, then press the refresh button.	Húzza ki és dugja vissza a rádiót, majd nyomja meg a frissítés gombot.
+Unplug the radio and plug it in again.	Húzza ki és dugja vissza a rádiót.
+Unplug the radio, plug it in again and press the refresh button.	Húzza ki a rádiót, dugja vissza, majd nyomja meg a frissítés gombot.
+Up: radio = RF + LO	Felfelé: rádió = RF + LO
+Update the HackRF firmware (the page below has the steps; the file comes with the HackRF software).	Frissítse a HackRF firmware-ét (a lenti oldalon vannak a lépések; a fájl a HackRF szoftverrel érkezik).
+Wait a minute after plugging it in, then press the refresh button.	Csatlakoztatás után várjon egy percet, majd nyomja meg a frissítés gombot.
+Waterfall: colour map, intensity range, speed and pause (then drag or use the wheel to look back)	Vízesés: színskála, intenzitástartomány, sebesség és szünet (utána húzással vagy görgővel visszanézhet)
+Wave buoys, HF	Hullámmérő bóják, HF
+Weather alerts, 162.55 MHz	Időjárási riasztások, 162,55 MHz
+Weather pictures, 1.7 GHz	Időjárási képek, 1,7 GHz
+What do you want to receive? Tick anything that interests you.	Mit szeretne venni? Jelölje be, ami érdekli.
+What to add to a level in dBFS to get dBm for this radio (its calibration: a known signal into the antenna port shows it). Also in the radio's settings.	Mit kell hozzáadni a dBFS szinthez, hogy ennek a rádiónak dBm értéket kapjunk (a kalibrációja: egy ismert jel az antennacsatlakozón megmutatja). A rádió beállításaiban is megtalálható.
+Where are you? This picks the right TV standard and FM band.	Hol van? Ez kiválasztja a megfelelő TV-szabványt és FM-sávot.
+Which language do you want OnAir in?	Milyen nyelven szeretné használni az OnAir-t?
+Which radio do you have?	Milyen rádiója van?
+You can change the mode any time, and run this setup again from Help > Setup wizard.	Az üzemmódot bármikor megváltoztathatja, és ezt a beállítást újra futtathatja a Súgó > Beállítási varázsló menüből.
+You can go on without one: the synthetic signal and IQ files work with no hardware.	Folytathatja nélküle is: a szintetikus jel és az IQ-fájlok hardver nélkül is működnek.
+Your callsign	Az Ön hívójele
+Your locator	Az Ön lokátora
+Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.	Nagyítás: egérgörgő (mindkét tengely), Ctrl+görgő (frekvencia), Shift+görgő (szint).\nCtrl+PageUp / PageDown: a nézet léptetése egy képernyőnyivel frekvenciában. Dupla kattintás: visszaállítás.
+antenna %.6g MHz -> %s LO %.6g -> radio %.6g MHz%s	antenna %.6g MHz -> %s LO %.6g -> rádió %.6g MHz%s
+channel scan has the radio	a csatornakeresés használja a rádiót
+dBm offset	dBm-eltolás
+dBm offset (dB)	dBm-eltolás (dB)
+decode every channel in the span: a receiver for each occupied channel, one plays, the others keep decoding\n(right click: how many at once, where the channels sit)	a tartomány minden csatornájának dekódolása: minden foglalt csatornához egy vevő, az egyik szól, a többi dekódol tovább\n(jobb kattintás: hány egyszerre, hol vannak a csatornák)
+decode every signal in the visible span, not just the tuned one	a látható tartomány minden jelének dekódolása, nem csak a behangoltnak
+empty	üres
+held	tartva
+holds	tart
+last send %s	utolsó küldés %s
+listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	figyel: %s, %d. port, %d kliens, %.1f MB elküldve, %.1f MB eldobva
+max	max
+mute	néma
+on air	adásban
+partial	részleges
+point %s	pont: %s
+power (dBm)	teljesítmény (dBm)
+searching for Hermes Lite 2 radios…	Hermes Lite 2 rádiók keresése…
+sound	hang
+up-converter	felfelé konverter
+waiting	várakozik
+waterfall dB##wfdb	vízesés dB##wfdb
+spectrum dB##specdb	spektrum dB##specdb
+Clear##log	Törlés##log
+# added for 0.2.6: remaining acronyms, frequency labels and long texts
+ADS-B	ADS-B
+AFSK, 144.8 MHz	AFSK, 144.8 MHz
+AIS	AIS
+APRS	APRS
+ATSC 8-VSB, 6 MHz	ATSC 8-VSB, 6 MHz
+CFO	CFO
+Ctrl + / Ctrl - / Ctrl 0	Ctrl + / Ctrl - / Ctrl 0
+DVB-T	DVB-T
+EVM %.1f dB	EVM %.1f dB
+Es'hail-2, 10.49 GHz	Es'hail-2, 10.49 GHz
+FIC	FIC
+GI	GI
+LNB	LNB
+LoRa, 433.175 MHz	LoRa, 433.175 MHz
+LoRa, 433.775 MHz	LoRa, 433.775 MHz
+ONAIR	ONAIR
+SNR	SNR
+SRO	SRO
+TR	TR
+WSJT, 1.8366 MHz	WSJT, 1.8366 MHz
+WSJT, 14.074 MHz	WSJT, 14.074 MHz
+WSJT, 14.076 MHz	WSJT, 14.076 MHz
+WSJT, 14.078 MHz	WSJT, 14.078 MHz
+WSJT, 14.080 MHz	WSJT, 14.080 MHz
+WSJT, 14.084 MHz	WSJT, 14.084 MHz
+WSJT, 14.100 MHz	WSJT, 14.100 MHz
+%.0f deg	%.0f fok
+%s, %llu spots sent in %llu packets, %llu duplicates skipped	%s, %llu spot elküldve %llu csomagban, %llu duplikátum kihagyva
+offset %+.3f %+.3f	eltolás %+.3f %+.3f
+sigma %.3f per axis (%.0f%% of the half-distance to a neighbour)	sigma %.3f tengelyenként (a szomszédig mért fél távolság %.0f%%-a)
+A second OnAir (Add network radio, rtl_tcp), SDR# or SDR++ connects to this computer's address and the port. Samples are sent as 8-bit IQ at the rate the radio runs at. Without 'allow remote control' the clients cannot change the frequency or gain.	Egy második OnAir (Hálózati rádió hozzáadása, rtl_tcp), SDR# vagy SDR++ csatlakozik ennek a számítógépnek a címéhez és a porthoz. A minták 8 bites IQ-ként, a rádió működési sebességével kerülnek elküldésre. „Távvezérlés engedélyezése” nélkül a kliensek nem tudják módosítani a frekvenciát vagy az erősítést.
+Sends the FT8, FT4, FT2, WSPR, JS8Call, PSK31 and CW stations you decode to pskreporter.info, so they show on its public map and statistics. A report is: the sender's callsign, frequency, SNR, mode, its locator when the message has one, and when it was heard; with your callsign, locator, antenna text and 'OnAir'. Reports are batched and sent every 5 minutes; the same station on the same band is sent once per 10 minutes. Nothing is sent until you tick the box. Spots are public: use your own valid amateur radio callsign. CW and PSK31 are only reported when the text says 'DE callsign'.	A dekódolt FT8, FT4, FT2, WSPR, JS8Call, PSK31 és CW állomásokat elküldi a pskreporter.info oldalnak, így megjelennek annak nyilvános térképén és statisztikáin. Egy jelentés tartalma: a feladó hívójele, frekvencia, SNR, üzemmód, a lokátora, ha az üzenet tartalmaz ilyet, és mikor hallották; valamint a saját hívójeled, lokátorod, antennaszöveged és az „OnAir”. A jelentések csoportosan, 5 percenként kerülnek elküldésre; ugyanaz az állomás ugyanazon a sávon 10 percenként egyszer kerül elküldésre. Addig semmi sem kerül elküldésre, amíg be nem jelölöd a négyzetet. A spotok nyilvánosak: használd a saját érvényes amatőrrádiós hívójeled. A CW és a PSK31 csak akkor kerül jelentésre, ha a szöveg tartalmazza: „DE hívójel”.
+BW	BW
+CH	CH
+Channel scan	Csatornakeresés
+FM	FM
+# RX888 MkII
+The RX888 needs its firmware file	Az RX888-nak szüksége van a firmware-fájljára
+The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	Az RX888 MkII USB-chipjében nincs saját program: a számítógép tölti be, valahányszor csatlakoztatja a rádiót. Ez a fájl, az SDDC_FX3.img, az SDDC projekthez tartozik és saját licenc vonatkozik rá, ezért az OnAir nem tartalmazza.
+Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below).	Töltse le az SDDC_FX3.img fájlt az SDDC_Driver projekt Releases oldaláról (lenti gomb).
+Put the file in OnAir's codecs folder (button below).	Tegye a fájlt az OnAir kodekmappájába (lenti gomb).
+The RX888 is on a USB 2 port	Az RX888 USB 2 porton van
+The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	Az RX888 MkII másodpercenként akár 256 MB-ot küld. USB 3 (SuperSpeed) portra és USB 3 kábelre van szüksége; USB 2 porton nem tud streamelni.
+Plug the radio into a USB 3 port directly on the computer, not through a USB 2 hub.	Dugja a rádiót közvetlenül a számítógép egyik USB 3 portjába, ne USB 2 elosztón keresztül.
+Use a USB 3 cable (the one that came with the radio).	Használjon USB 3 kábelt (a rádióhoz mellékeltet).
+Downloads when you click, and by itself once a day. Fetches:	Kattintásra tölt, és naponta egyszer magától is. Letölti:
+Automatic update	Automatikus frissítés
+Downloads the TLEs again once a day, only while this window is open or a pass is tracked. Without a network the saved lists are used.	Naponta egyszer újratölti a TLE-ket, csak amíg ez az ablak nyitva van vagy egy átvonulást követ. Hálózat nélkül a mentett listákat használja.
+last downloaded %s	utoljára letöltve: %s
+Pass of %s in %d:%02d (max %.0f deg): the receiver starts by itself	%s átvonulása %d:%02d múlva (max. %.0f fok): a vevő magától elindul
+Pass of %s in %d:%02d (max %.0f deg)	%s átvonulása %d:%02d múlva (max. %.0f fok)
+remind %.0f min before	emlékeztető %.0f perccel előtte
+A line at the top of the window and a log entry before the tracked pass rises (0: off)	Egy sor az ablak tetején és egy naplóbejegyzés a követett átvonulás kezdete előtt (0: ki)
+Record this pass	E átvonulás rögzítése
+Cancel recording this pass	E átvonulás rögzítésének törlése
+Arms this pass only: at AOS the receiver starts in the satellite's mode and frequency (when it is stopped), Doppler is followed and the IQ is recorded; at LOS it stops and tracking switches off again	Csak erre az átvonulásra: AOS-kor a vevő (ha le van állítva) a műhold módjában és frekvenciáján indul, a Doppler követve van és az IQ rögzítve; LOS-kor leáll, és a követés újra kikapcsol
+armed: %s at %s	élesítve: %s, %s
+Save PNG...	PNG mentése...
+Save CSV...	CSV mentése...
+saved	mentve
+All time	Teljes időszak
+Last 24 hours	Utolsó 24 óra
+Last hour	Utolsó óra
+Rolling window: a sector's furthest position counts only for this long	Gördülő ablak: egy szektor legtávolabbi pozíciója csak ennyi ideig számít
+Set the receiver position first: ranges are measured from it.	Először add meg a vevő helyzetét: a hatótávolságokat innen mérjük.
+Nothing heard yet: the plot fills in as positions arrive.	Még semmi sem érkezett: a diagram a pozíciók beérkezésével töltődik fel.
+Longest range: %.0f %s at %.0f deg (%llu reports)	Legnagyobb hatótávolság: %.0f %s %.0f foknál (%llu jelentés)
+Range	Hatótáv
+Dark	Sötét
+High contrast (black, white, yellow)	Nagy kontraszt (fekete, fehér, sárga)
+Remote control API (HTTP and WebSocket)	Távvezérlő API (HTTP és WebSocket)
+Let scripts and other programs control this receiver	Szkriptek és más programok vezérelhessék ezt a vevőt
+Let other computers connect (LAN, needs the token)	Más számítógépek csatlakozhatnak (LAN, tokent igényel)
+Token	Token
+New token	Új token
+Copy token	Token másolása
+listening on %s port %d, %d HTTP and %d WebSocket client(s), %d requests, %d refused	figyel: %s, %d. port, %d HTTP- és %d WebSocket-kliens, %d kérés, %d elutasítva
+Programs on this computer need no token; any other address must send it as 'Authorization: Bearer <token>'. The API lists the radios, starts and stops the receiver, sets mode, frequency, sample rate and gain, and gives the telemetry and the spectrum as JSON, also as a WebSocket stream. Endpoints: see README.md.	Az ezen a számítógépen futó programoknak nincs szükségük tokenre; minden más címnek 'Authorization: Bearer <token>' formában kell elküldenie. Az API felsorolja a rádiókat, elindítja és leállítja a vevőt, beállítja a módot, a frekvenciát, a mintavételi sebességet és az erősítést, valamint JSON-ban, WebSocket-folyamként is adja a telemetriát és a spektrumot. Végpontok: lásd a README.md-t.
+Stop optimising	Optimalizálás leállítása
+Optimise gain	Erősítés optimalizálása
+Optimise gain: steps through the radio's gain range and measures the reception quality at each step (the mode's SNR while it is locked, else the signal-to-noise ratio of the spectrum around the channel, else the ADC level), then sets the lowest gain that is within 0.5 dB of the best quality and does not overload the ADC. Takes about 40 s and needs a signal. The AGC is paused and stays off.	Erősítés optimalizálása: végigmegy a rádió erősítési tartományán, és minden lépésnél méri a vétel minőségét (a mód SNR-ét, amíg beakadt, különben a csatorna körüli spektrum jel-zaj viszonyát, különben az ADC-szintet), majd azt a legalacsonyabb erősítést állítja be, amely legfeljebb 0,5 dB-re van a legjobb minőségtől, és nem vezérli túl az ADC-t. Kb. 40 másodpercig tart, és jel kell hozzá. Az AGC szünetel, és kikapcsolva marad.
+Undo gain	Erősítés visszavonása
+Go back to the gain (and the AGC setting) from before the last optimisation	Vissza az utolsó optimalizálás előtti erősítéshez (és AGC-beállításhoz)
+Optimising gain %d/%d: %d dB ...	Erősítés optimalizálása %d/%d: %d dB ...
+Every gain step overloaded the ADC: the lowest gain was kept	Minden erősítési lépés túlvezérelte az ADC-t: a legalacsonyabb erősítés maradt
+Gain optimised: %d dB (was %d dB)	Erősítés optimalizálva: %d dB (volt: %d dB)
+judged by the mode's SNR	a mód SNR-je alapján értékelve
+judged by the SNR in the spectrum	a spektrum SNR-je alapján értékelve
+judged by the ADC level	az ADC-szint alapján értékelve
+
+#  transmit (View > Transmit)
+Transmit...	Adás...
+Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission.	A mód saját jelét küldi egy adásra képes rádión keresztül. Kikapcsolva marad, amíg el nem indítja; engedély vagy licenc szükséges hozzá.
+TRANSMITTING	ADÁS
+Channel width	Csatornaszélesség
+Frequency (MHz)	Frekvencia (MHz)
+TX gain (dB)	Adási erősítés (dB)
++14 dB amplifier	+14 dB-es erősítő
+Repeat until stopped	Ismétlés leállításig
+seconds	másodperc
+STOP TRANSMITTING	ADÁS LEÁLLÍTÁSA
+START TRANSMITTING	ADÁS INDÍTÁSA
+This radio has no transmit driver in OnAir.	Ennek a rádiónak nincs adó-illesztőprogramja az OnAirben.
+Before you transmit	Adás előtt
+Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	Az adáshoz az Ön tartózkodási helyén engedély vagy licenc kell. Ön felel azért, amit kibocsát, és azért, hogy ne zavarjon másokat (azokat a szolgáltatásokat is beleértve, amelyekre az emberek a biztonságukért támaszkodnak). Indítás előtt csatlakoztasson a rádióhoz antennát, csillapítót vagy műterhelést. Az OnAir nem korlátozza sem a frekvenciát, sem a teljesítményt: csak maga a rádió korlátai érvényesek.
+I understand	Megértettem
+GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	A GNSS-t nem adja: a generátora műholdjel-szimulátor (hamisítás)
+cellular signals are not transmitted: the generators model a network cell for testing the decoder	a mobilhálózati jeleket nem adja: a generátorok egy hálózati cellát modelleznek a dekóder teszteléséhez
+this is an analysis mode: there is nothing to transmit	ez elemző mód: nincs mit adni
+TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA 0-tól 47 dB-ig; a +14 dB-es erősítőnek saját kapcsolója van
+the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	az AD9361 TX csillapítása erősítésként megjelenítve: -89,75 dB (legkisebb teljesítmény) és 0 dB (legnagyobb) között
+the driver's own TX gain scale (known after the radio has been opened once)	az illesztőprogram saját TX erősítési skálája (a rádió egyszeri megnyitása után ismert)
+RX	RX
+TX	TX
+Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	Váltás a vevő (RX) és az adó (TX) között. Az adónak saját rádiója van, így a vevő tovább vehet, miközben Ön ad.
+Transmit radio	Adó rádió
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	Nem található adásra képes rádió. Csatlakoztasson egyet (HackRF, PlutoSDR vagy adóval rendelkező SoapySDR rádió), és frissítse a rádiók listáját.
+Choose a radio to transmit with.	Válasszon rádiót az adáshoz.
+%s (in use by RX %d)	%s (használja: RX %d)
+%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s használatban van (RX %d), és ez a rádió nem tud egyszerre venni és adni. Válasszon másik rádiót az adáshoz, vagy előbb állítsa le azt a vevőt.
+Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list.	Irja be a PlutoSDR IP-cimet (USB gadget 192.168.2.1, vagy Ethernet-cime) es Connect. Ezutan a Radio listaban jelenik meg.
+GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)	GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)
+GNSS NMEA RMC/GGA (UDP)	GNSS NMEA RMC/GGA (UDP)
+Bluetooth LE advertisements, JSON (UDP)	Bluetooth LE hirdetések, JSON (UDP)
+LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic, JSON (UDP)
+JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	JSON-sorok (egy objektum soronként), kivéve a GNSS-t, az NMEA. Ki van kapcsolva, amíg be nem kapcsol egy adatfolyamot. Csak a már strukturált üzenetekkel rendelkező módok mennek.

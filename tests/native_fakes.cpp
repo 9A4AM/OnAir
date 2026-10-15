@@ -1,5 +1,5 @@
-// A fake "vendor library" that exports the functions of librtlsdr, libairspy, libbladeRF, LimeSuite, libiio, UHD and the SDRplay API that OnAir uses, and
-// streams a known tone. The test copies this one file under the seven real library names. It checks OnAir's driver code (what it asks the
+// A fake "vendor library" that exports the functions of librtlsdr, libairspy, libbladeRF, LimeSuite, libiio, UHD, the SDRplay API, libairspyhf and
+// libfobos-sdr-agile that OnAir uses, and streams a known tone. The test copies this one file under the real library names. It checks OnAir's driver code (what it asks the
 // libraries to do and how it converts the samples), not the real libraries.
 #include <algorithm>
 #include <atomic>
@@ -185,7 +185,7 @@ EXPORT const char* iio_context_info_get_description(const void*) { return "0456:
 EXPORT const char* iio_context_info_get_uri(const void*) { return "usb:1.2.5"; }
 EXPORT void* iio_create_context_from_uri(const char* uri) { rec("pluto.connected", strstr(uri, "usb:") ? 1 : 0); return new int(1); }
 EXPORT void iio_context_destroy(void* c) { delete (int*)c; }
-EXPORT void* iio_context_find_device(const void*, const char* name) { return strcmp(name, "ad9361-phy") == 0 ? (void*)"phy" : strcmp(name, "cf-ad9361-lpc") == 0 ? (void*)"rx" : nullptr; }
+EXPORT void* iio_context_find_device(const void*, const char* name) { return strcmp(name, "ad9361-phy") == 0 ? (void*)"phy" : strcmp(name, "cf-ad9361-lpc") == 0 ? (void*)"rx" : strcmp(name, "cf-ad9361-dds-core-lpc") == 0 ? (void*)"tx" : nullptr; }
 EXPORT int iio_context_set_timeout(void*, unsigned) { return 0; }
 EXPORT void* iio_device_find_channel(const void* dev, const char* name, bool out) { auto* c = new iio_chan{std::string((const char*)dev) + ":" + name, out}; return c; }
 EXPORT long long iio_channel_attr_write(const void* c, const char* a, const char* v) { rec(("pluto." + ((iio_chan*)c)->name + "." + a + "=" + v).c_str(), 1); return (long long)strlen(v); }
@@ -197,6 +197,20 @@ EXPORT void* iio_device_create_buffer(const void*, size_t n, bool) { rec("pluto.
 EXPORT void iio_buffer_destroy(void* b) { delete (iio_buf*)b; }
 EXPORT long long iio_buffer_refill(void* b) { auto* x = (iio_buf*)b; if (x->cancel) return -1; pace(); return (long long)(x->d.size() / 2 * 4); }
 EXPORT void iio_buffer_cancel(void* b) { ((iio_buf*)b)->cancel = true; }
+// ---- transmit (PlutoSDR): iio_buffer_push records the 16-bit I/Q pairs the driver wrote into the buffer; the test reads them back
+static std::vector<int16_t> gTxCapture;
+EXPORT long long iio_buffer_push(void* b) {
+    auto* x = (iio_buf*)b;
+    if (x->cancel) return -1;
+    if (fake_state("pluto.txFail") == 1) return -32;   // EPIPE: the radio went away
+    { std::lock_guard<std::mutex> lk(gMu); gTxCapture.insert(gTxCapture.end(), x->d.begin(), x->d.end()); }
+    count("pluto.txPushes");
+    return (long long)(x->d.size() / 2 * 4);
+}
+EXPORT size_t fake_tx_pairs() { std::lock_guard<std::mutex> lk(gMu); return gTxCapture.size() / 2; }
+EXPORT size_t fake_tx_copy(int16_t* dst, size_t maxPairs) { std::lock_guard<std::mutex> lk(gMu); const size_t n = std::min(maxPairs, gTxCapture.size() / 2); memcpy(dst, gTxCapture.data(), n * 4); return n; }
+EXPORT void fake_tx_clear() { std::lock_guard<std::mutex> lk(gMu); gTxCapture.clear(); }
+// ---- end transmit
 EXPORT void* iio_buffer_start(const void* b) { return ((iio_buf*)b)->d.data(); }
 EXPORT void* iio_buffer_end(const void* b) { auto* x = (iio_buf*)b; return x->d.data() + x->d.size(); }
 
@@ -526,3 +540,139 @@ EXPORT int uhd_usrp_set_rx_antenna(void*, const char* a, size_t ch) {
     return strcmp(a, "RX2") == 0 || strcmp(a, "TX/RX") == 0 ? 0 : 1;
 }
 // ---- end radios
+
+// ---- fobos: libfobos-sdr-agile 3.3.0 (a Fobos SDR rev. 3 with the agile firmware, serial FOBOS0001).
+// The RF input streams the test tone at a quarter of full scale, as the library does (14-bit samples scaled as 16-bit): I = 0.125, Q = -0.0625.
+// With direct sampling on, the I samples are the HF1 input and the Q samples the HF2 input: a real sine each, of amplitude 0.125, at
+// fobos.tone1 / fobos.tone2 Hz (7.2 and 6.9 MHz unless set) against the sample rate the radio was set to.
+// As the real library:
+// - fobos_sdr_read_async() blocks, and fobos_sdr_cancel_async() only acts while the stream is in its running state: a cancel that comes while
+//   it is still starting (fobos.startDelayMs) is lost
+// - a radio that is open is listed as XXXXXXXXXXXX (its serial cannot be read a second time on Windows) and cannot be opened again
+//   (fobos.openTwice)
+// Counted so the tests can see a driver doing what the firmware is not asked to do: the rate or the input changed while streaming
+// (fobos.rateWhileStreaming, fobos.directWhileStreaming), a close while streaming (fobos.closeWhileStreaming), a call on a closed handle
+// (fobos.deadCalls).
+// fobos.gone = 1: unplugged (the stream ends, the radio is not listed, opens fail); fobos.stall = 1: the stream delivers nothing;
+// fobos.shift = 1: another Fobos SDR (OTHER0002) is listed in front of it; fobos.rev4 = 1: the rates of hardware rev. 4 (to 64 Msps).
+enum { kFobIdle = 0, kFobStarting, kFobRunning, kFobCanceling };
+struct fobos_dev { std::atomic<int> status{kFobIdle}; double rate = 25e6; std::atomic<bool> direct{false}; int index = 0; };
+static std::mutex fobMu;
+static std::set<fobos_dev*> fobLive;
+static void fobCount(const char* k) { const double v = fake_state(k); rec(k, v < 0 ? 1 : v + 1); }
+static bool fobGone() { return fake_state("fobos.gone") == 1; }
+static bool fobAlive(fobos_dev* d) {
+    std::lock_guard<std::mutex> lk(fobMu);
+    if (fobLive.count(d)) return true;
+    fobCount("fobos.deadCalls");
+    return false;
+}
+static int fobIndex() { return fake_state("fobos.shift") == 1 ? 1 : 0; }   // where FOBOS0001 is in the list
+EXPORT int fobos_sdr_get_api_info(char* lib, char* drv) { if (lib) strcpy(lib, "3.3.0 (agile) fake"); if (drv) strcpy(drv, "libusb"); return 0; }
+EXPORT int fobos_sdr_list_devices(char* serials) {
+    fobCount("fobos.lists");
+    if (serials) serials[0] = 0;
+    if (fobGone()) return 0;
+    int n = 0;
+    if (fobIndex() == 1) { if (serials) strcat(serials, "OTHER0002 "); n++; }
+    if (serials) strcat(serials, fake_state("fobos.open") == 1 ? "XXXXXXXXXXXX " : "FOBOS0001 ");
+    return n + 1;
+}
+EXPORT int fobos_sdr_get_device_count(void) { return fobGone() ? 0 : fobIndex() + 1; }
+EXPORT int fobos_sdr_open(fobos_dev** d, uint32_t index) {
+    *d = nullptr;
+    if (fobGone() || (int)index > fobIndex()) return -1;
+    if (fake_state("fobos.open") == 1 && (int)index == fobIndex()) { fobCount("fobos.openTwice"); return -1; }
+    fobCount("fobos.opens");
+    rec("fobos.openIndex", index);
+    auto* dev = new fobos_dev;
+    dev->index = (int)index;
+    if ((int)index == fobIndex()) rec("fobos.open", 1);
+    { std::lock_guard<std::mutex> lk(fobMu); fobLive.insert(dev); }
+    *d = dev;
+    return 0;
+}
+EXPORT int fobos_sdr_close(fobos_dev* d) {
+    if (!fobAlive(d)) return -1;
+    if (d->status != kFobIdle) fobCount("fobos.closeWhileStreaming");
+    { std::lock_guard<std::mutex> lk(fobMu); fobLive.erase(d); }
+    if (d->index == fobIndex()) rec("fobos.open", 0);
+    delete d;
+    fobCount("fobos.closes");
+    return 0;
+}
+EXPORT int fobos_sdr_get_board_info(fobos_dev* d, char* hw, char* fw, char* man, char* prod, char* ser) {
+    if (!fobAlive(d)) return -1;
+    if (hw) strcpy(hw, fake_state("fobos.rev4") == 1 ? "4.0.0" : "3.0.0");
+    if (fw) strcpy(fw, fake_state("fobos.rev4") == 1 ? "4.0.0 fake" : "3.1.0 fake");
+    if (man) strcpy(man, "RigExpert");
+    if (prod) strcpy(prod, "Fobos SDR");
+    if (ser) strcpy(ser, d->index == fobIndex() ? "FOBOS0001" : "OTHER0002");
+    return 0;
+}
+EXPORT int fobos_sdr_set_frequency(fobos_dev* d, double hz) { if (!fobAlive(d) || fobGone()) return -1; rec("fobos.freq", hz); fobCount("fobos.freqCalls"); return 0; }
+EXPORT int fobos_sdr_set_direct_sampling(fobos_dev* d, unsigned on) {
+    if (!fobAlive(d) || fobGone()) return -1;
+    if (d->status != kFobIdle) fobCount("fobos.directWhileStreaming");
+    d->direct = on != 0;
+    rec("fobos.direct", on); fobCount("fobos.directCalls");
+    return 0;
+}
+EXPORT int fobos_sdr_set_lna_gain(fobos_dev* d, unsigned v) { if (!fobAlive(d) || fobGone()) return -1; rec("fobos.lna", v); return 0; }
+EXPORT int fobos_sdr_set_vga_gain(fobos_dev* d, unsigned v) { if (!fobAlive(d) || fobGone()) return -1; rec("fobos.vga", v); return 0; }
+EXPORT int fobos_sdr_get_samplerates(fobos_dev* d, double* values, unsigned* count) {
+    if (!fobAlive(d)) return -1;
+    static const double v3[] = {50e6, 40e6, 32e6, 25e6, 20e6, 16e6, 12.5e6, 10e6, 8e6};
+    static const double v4[] = {64e6, 58e6, 50e6, 40e6, 32e6, 25e6, 20e6, 16e6, 12.5e6, 10e6, 8e6};
+    const bool r4 = fake_state("fobos.rev4") == 1;
+    if (count) *count = r4 ? 11 : 9;
+    if (values) memcpy(values, r4 ? v4 : v3, r4 ? sizeof v4 : sizeof v3);
+    return 0;
+}
+EXPORT int fobos_sdr_set_samplerate(fobos_dev* d, double hz) {
+    if (!fobAlive(d) || fobGone()) return -1;
+    if (d->status != kFobIdle) fobCount("fobos.rateWhileStreaming");
+    d->rate = hz;
+    rec("fobos.rate", hz);
+    return 0;
+}
+EXPORT int fobos_sdr_set_clk_source(fobos_dev* d, int ext) { if (!fobAlive(d) || fobGone()) return -1; rec("fobos.clock", ext); fobCount("fobos.clockCalls"); return 0; }
+EXPORT const char* fobos_sdr_error_name(int e) { return e == 0 ? "Ok" : e == -1 ? "No device spesified, dev == NUL" : "Unknown error"; }
+EXPORT int fobos_sdr_read_async(fobos_dev* d, void (*cb)(float*, uint32_t, fobos_dev*, void*), void* user, uint32_t bufCount, uint32_t bufLength) {
+    if (!fobAlive(d)) return -1;
+    if (d->status != kFobIdle) return -5;
+    d->status = kFobStarting;
+    rec("fobos.bufCount", bufCount); rec("fobos.bufLength", bufLength);
+    fobCount("fobos.streams");
+    rec("fobos.streaming", 1);
+    const double delay = fake_state("fobos.startDelayMs");
+    if (delay > 0) std::this_thread::sleep_for(std::chrono::milliseconds((int)delay));
+    int expect = kFobStarting;
+    d->status.compare_exchange_strong(expect, kFobRunning);
+    const uint32_t n = bufLength ? bufLength : 65536;
+    std::vector<float> s((size_t)n * 2);
+    uint64_t k = 0;
+    while (d->status == kFobRunning) {
+        if (fobGone()) break;   // the library cancels its own stream when the radio is lost
+        if (fake_state("fobos.stall") == 1) { pace(); continue; }
+        if (d->direct) {
+            const double t1 = fake_state("fobos.tone1") > 0 ? fake_state("fobos.tone1") : 7.2e6, t2 = fake_state("fobos.tone2") > 0 ? fake_state("fobos.tone2") : 6.9e6;
+            const double w1 = 2 * M_PI * t1 / d->rate, w2 = 2 * M_PI * t2 / d->rate;
+            for (uint32_t i = 0; i < n; i++, k++) { s[2 * i] = (float)(0.125 * cos(fmod(w1 * (double)k, 2 * M_PI))); s[2 * i + 1] = (float)(0.125 * cos(fmod(w2 * (double)k, 2 * M_PI))); }
+        } else {
+            for (uint32_t i = 0; i < n; i++) { s[2 * i] = kI / 4; s[2 * i + 1] = kQ / 4; }
+        }
+        cb(s.data(), n, d, user);
+        pace();
+    }
+    d->status = kFobIdle;
+    rec("fobos.streaming", 0);
+    return 0;
+}
+EXPORT int fobos_sdr_cancel_async(fobos_dev* d) {
+    if (!fobAlive(d)) return -1;
+    int expect = kFobRunning;
+    if (d->status.compare_exchange_strong(expect, kFobCanceling)) fobCount("fobos.cancels");
+    return 0;
+}
+// ---- end fobos

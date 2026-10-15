@@ -63,7 +63,7 @@ inline bool s2ModcodIsS2x(int modcod) { return modcod >= 64 && modcod < 128; }
 const LdpcCode& s2Ldpc(int rate, bool shortFrame);
 const BchCode& s2Bch(int rate, bool shortFrame);
 // Normalisation factor of the min-sum decoder for this code rate. The T2 default (0.78) fails on the low rates (1/4 to 2/5), which is why it
-// is chosen per rate: measured with tests/test_dvbs_s2fec.cpp-style sweeps, within about 0.3 dB of the Es/N0 of table 13.
+// is chosen per rate: measured with tests/dvbs/test_dvbs_s2fec.cpp-style sweeps, within about 0.3 dB of the Es/N0 of table 13.
 float s2LdpcAlpha(int rate);
 // BBFRAME (kbch bits, already scrambled) -> FECFRAME (nldpc bits, before the bit interleaver)
 void s2EncodeFec(const std::vector<uint8_t>& bb, int rate, bool shortFrame, std::vector<uint8_t>& fec);

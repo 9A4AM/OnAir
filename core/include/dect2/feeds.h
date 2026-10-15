@@ -5,6 +5,7 @@
 #pragma once
 #include "acars_tel.h"
 #include "adsb_msg.h"
+#include "gnss_tel.h"
 #include "vdl2_tel.h"
 #include <atomic>
 #include <condition_variable>
@@ -18,7 +19,7 @@
 
 namespace dect2 {
 
-enum FeedId { kFeedSbs, kFeedBeast, kFeedAis, kFeedAprsIs, kFeedKiss, kFeedAcars, kFeedVdl2, kNumFeeds };
+enum FeedId { kFeedSbs, kFeedBeast, kFeedAis, kFeedAprsIs, kFeedKiss, kFeedAcars, kFeedVdl2, kFeedGnss, kFeedBle, kFeedLora, kNumFeeds };
 
 struct FeedConfig {
     bool on[kNumFeeds] = {};
@@ -27,6 +28,9 @@ struct FeedConfig {
     std::string aisHost = "127.0.0.1"; int aisPort = 10110;    // UDP
     std::string acarsHost = "127.0.0.1"; int acarsPort = 5550; // UDP, acarsdec JSON (acarshub's ACARS port)
     std::string vdl2Host = "127.0.0.1"; int vdl2Port = 5555;   // UDP, dumpvdl2 JSON (acarshub's VDLM2 port)
+    std::string gnssHost = "127.0.0.1"; int gnssPort = 10111;  // UDP, NMEA RMC/GGA
+    std::string bleHost = "127.0.0.1"; int blePort = 5620;    // UDP JSON lines: mac, name, rssi
+    std::string loraHost = "127.0.0.1"; int loraPort = 5621;  // UDP JSON lines: LoRa / LoRaWAN / Meshtastic
     std::string aprsCall, aprsPass;                            // APRS-IS login; the feed stays idle without a callsign
     std::string aprsServer = "rotate.aprs2.net"; int aprsServerPort = 14580;
     std::string stationId = "OnAir";                           // station_id in the ACARS / VDL2 JSON
@@ -72,6 +76,11 @@ std::string acarsJson(const AcarsMessage& m, const std::string& station);
 // dumpvdl2 style JSON
 std::string vdl2Json(const Vdl2Message& m, const std::string& station);
 std::string jsonEscape(const std::string& s);
+std::string gnssRmc(const GnssFix& f);
+std::string gnssGga(const GnssFix& f);
+std::string bleJson(const std::string& mac, const std::string& name, float rssi);
+// kind: "lora", "meshtastic", "meshcore", "lorawan", ... extra: more JSON object fields without braces (may be empty)
+std::string loraJson(const char* kind, const std::string& hex, float snrDb, double freqHz, int sf, const std::string& extra);
 } // namespace feedfmt
 
 class Feeds {
@@ -90,12 +99,18 @@ public:
     bool wantKiss() const { return want_[kFeedKiss].load(std::memory_order_relaxed); }
     bool wantAcars() const { return want_[kFeedAcars].load(std::memory_order_relaxed); }
     bool wantVdl2() const { return want_[kFeedVdl2].load(std::memory_order_relaxed); }
+    bool wantGnss() const { return want_[kFeedGnss].load(std::memory_order_relaxed); }
+    bool wantBle() const { return want_[kFeedBle].load(std::memory_order_relaxed); }
+    bool wantLora() const { return want_[kFeedLora].load(std::memory_order_relaxed); }
     void adsb(const FeedAdsbFrame& f);
     void ais(const std::vector<std::string>& sentences);
     void aprs(const std::vector<uint8_t>& ax25NoFcs, const std::string& from, const std::string& to, const std::string& path, const std::string& info, bool uiF0);
     void kiss(const uint8_t* d, size_t n);   // a frame for the KISS server only (CubeSat telemetry: AX.25 without FCS, or a CSP packet)
     void acars(const AcarsMessage& m);
     void vdl2(const Vdl2Message& m);
+    void gnss(const GnssFix& f);
+    void ble(const std::string& mac, const std::string& name, float rssi);
+    void lora(const char* kind, const std::string& hex, float snrDb, double freqHz, int sf, const std::string& extra = {});
 
     struct Impl;
 private:

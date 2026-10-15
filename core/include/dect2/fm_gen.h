@@ -2,6 +2,7 @@
 #pragma once
 #include "ring.h"
 #include <cstdint>
+#include <functional>
 #include <random>
 #include <array>
 #include <string>
@@ -27,7 +28,10 @@ struct FmGenConfig {
     // extra RDS groups sent round the station groups (blocks B, C, D; B complete with type, TP and PTY); a test can send TMC (3A, 8A) with them
     std::vector<std::array<uint16_t, 3>> extraGroups;
     double preemphUs = 50;
+    double deviationHz = 75000;   // 75 kHz broadcast; NFM uses a separate generator
     uint32_t seed = 1;
+    // Live L/R at 48 kHz stereo (the transmitter's microphone or a file). Empty: the leftHz / rightHz tones.
+    std::function<void(float* stereo, int frames)> pull48k;
 };
 
 class FmGenerator {
@@ -52,6 +56,12 @@ private:
     size_t bitBase_ = 0;           // stream index of bits_[0]
     uint8_t lastDiff_ = 0;
     int groupNo_ = 0;
+    std::vector<float> live_;     // interleaved stereo at 48 kHz, pre-emphasised
+    size_t livePos_ = 0;
+    double liveFrac_ = 1;
+    float liveL_[2] = {0, 0}, liveR_[2] = {0, 0};
+    float preL_ = 0, preR_ = 0;
+    void pullLive();
 };
 
 } // namespace dect2

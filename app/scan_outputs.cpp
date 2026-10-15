@@ -165,13 +165,23 @@ void outputsTab(App& a) {
     bool ch = false;
     ImGui::TextColored(pal::heading(), "What to send");
     {
+        // Two programmes often share a name and a type (two "W8RZ-DT (TV)" rows). The visible text can match; the id after ## cannot, or ImGui reports a conflicting ID.
+        auto face = [](const TsService& sv) {
+            return (sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name) + " (" + sv.typeName() + ")";
+        };
+        auto labelOf = [&](const TsService& sv) {
+            const std::string n = face(sv);
+            int same = 0;
+            for (const auto& o : a.ts.services) if (face(o) == n) same++;
+            return same > 1 ? n + "  #" + std::to_string(sv.id) : n;
+        };
         std::string cur = "Whole multiplex";
-        for (auto& sv : a.ts.services) if (sv.id == a.selService) cur = sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name;
+        for (auto& sv : a.ts.services) if (sv.id == a.selService) cur = labelOf(sv);
         ImGui::SetNextItemWidth(std::min(320 * gUi, ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("service").x - ImGui::GetStyle().ItemInnerSpacing.x));
         if (ImGui::BeginCombo("service", cur.c_str())) {
             if (ImGui::Selectable("Whole multiplex", a.selService < 0)) { a.selService = -1; ch = true; }
             for (auto& sv : a.ts.services) {
-                std::string n = (sv.name.empty() ? "service " + std::to_string(sv.id) : sv.name) + "  [" + sv.typeName() + "]";
+                const std::string n = labelOf(sv) + "##svc" + std::to_string(sv.id);
                 if (ImGui::Selectable(n.c_str(), sv.id == a.selService)) { a.selService = sv.id; ch = true; }
             }
             ImGui::EndCombo();

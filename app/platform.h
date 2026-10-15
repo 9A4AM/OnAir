@@ -47,6 +47,8 @@ std::string dataDir();
 // Downloads url into file (UTF-8 path) with the curl program, which Windows 10 and later, macOS and nearly every Linux have (no TLS library
 // is linked). On Windows it runs without a console window. Gives up after about 15 s. False when the download did not work.
 bool fetchUrl(const std::string& url, const std::string& file, const std::string& userAgent);
+// POST of UTF-8 JSON (Content-Type: application/json), same curl program. False when it did not work (including HTTP 4xx/5xx).
+bool postJson(const std::string& url, const std::string& json, const std::string& userAgent);
 // The position from the system's location service (on macOS this is Wi-Fi positioning and needs the user's permission).
 // locateStart() begins a request; locateState() says how it went: 0 nothing asked, 1 working, 2 done (lat, lon, accuracy in metres), 3 failed (msg says why).
 void locateStart();

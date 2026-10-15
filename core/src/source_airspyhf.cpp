@@ -1,6 +1,7 @@
 // Native driver for the Airspy HF+ and HF+ Discovery: the radio's own library (libairspyhf) is loaded at run time when it is installed. See native_common.h.
 // The radio is an HF/VHF receiver with a very narrow output (at most 912 kHz): it suits the narrow modes (DRM, AIS, marine, FM, ...), not TV.
 #include "native_common.h"
+#include <chrono>
 #include <map>
 #include <set>
 
@@ -87,6 +88,15 @@ namespace {
 std::mutex gHfMu;
 std::set<uint64_t> gHfOpen;                 // serials open in this program
 std::map<uint64_t, DeviceInfo> gHfKnown;    // what the last listing read, per serial
+std::map<uint64_t, std::chrono::steady_clock::time_point> gHfCooling;   // closed recently: listing must not reopen USB
+bool gHfUsed = false;                       // any HF+ was opened here this process (issue #78: list_devices opens every radio)
+bool hfListingFrozen() {
+    const auto now = std::chrono::steady_clock::now();
+    for (auto it = gHfCooling.begin(); it != gHfCooling.end(); ) {
+        if (it->second <= now) it = gHfCooling.erase(it); else ++it;
+    }
+    return gHfUsed || !gHfOpen.empty() || !gHfCooling.empty();
+}
 }   // namespace
 
 class AirspyHfSource : public NativeSource {
@@ -112,6 +122,7 @@ protected:
         int32_t nb = 0;
         hasBias_ = airspyhf().set_bias_tee && airspyhf().get_bias_tee_count && airspyhf().get_bias_tee_count(dev_, &nb) == 0 && nb > 0;
         gHfOpen.insert(serial_);
+        gHfUsed = true;
         freq_ = 0;
         att_ = -1;
         streaming_ = streamed_ = false;
@@ -148,9 +159,9 @@ protected:
             if (api.set_samplerate(dev_, (uint32_t)pick) != 0) { err = "Airspy HF+: the radio does not accept " + rateText(pick); return false; }
             rate_ = pick;
         }
-        // the HF+ tunes 9 kHz..31 MHz and 60..260 MHz (airspy.com): say so instead of silently listening somewhere else
-        if ((s.centerHz < kMinFreqHz || s.centerHz > kMaxFreqHz || (s.centerHz > 31e6 && s.centerHz < 60e6)) && err.empty())
-            err = "Airspy HF+ tunes 9 kHz to 31 MHz and 60 to 260 MHz; " + rateText(s.centerHz) + " is outside that";
+        // the HF+ is specified for 9 kHz..31 MHz and 60..260 MHz (airspy.com): outside that the library is asked all the same, with a note
+        if (s.centerHz < kMinFreqHz || s.centerHz > kMaxFreqHz || (s.centerHz > 31e6 && s.centerHz < 60e6))
+            addNote(err, "this Airspy HF+ is specified for 9 kHz to 31 MHz and 60 to 260 MHz; the driver may not reach " + rateText(s.centerHz) + " or the signal may be weak or absent");
         // Frequency correction: the library's calibration (parts per billion, applied to the tuned frequency: freq * (1 + ppb / 1e9)) is
         // the radio's factory value plus the user's correction; a clock that runs fast by ppm needs the tuned frequency that much lower.
         // A library without it: the frequency asked for.
@@ -161,8 +172,9 @@ protected:
                 if (api.set_calibration(dev_, (int32_t)(cal0_ - std::lround(ppm * 1000))) == 0) ppm_ = ppm;
             }
         } else tuneHz = ppmCorrectedHz(s.centerHz, ppm);
-        freq_ = (uint32_t)std::llround(std::min(std::max(tuneHz, kMinFreqHz), kMaxFreqHz));
-        api.set_freq(dev_, freq_);
+        // asked as is (the library takes 32-bit Hz: only a value beyond 4.29 GHz is cut to what the call can hold)
+        freq_ = (uint32_t)std::llround(std::min(std::max(tuneHz, 0.0), 4.29e9));
+        if (api.set_freq(dev_, freq_) != 0) { err = "Airspy HF+: the library refused " + rateText(s.centerHz); openFailure_ = OpenFailure::Final; return false; }
         // the radio's own AGC (TuneSettings "agc": off, low or high threshold); off is the default, with the slider in charge
         const std::string agc = radioOption(s, "agc", "off");
         if (agc != agc_) {
@@ -191,9 +203,21 @@ protected:
         if (bias_ && hasBias_) airspyhf().set_bias_tee(dev_, 0);   // antenna power never stays on
         bias_ = false;
         collectTransfers();
+        // libairspyhf_close() calls libusb_exit while cancelled URBs can still be in flight (Windows 0xc0000005 in ntdll,
+        // issue #78, 0.2.5 still crashed). Drain longer, then skip close() if the library still says it is streaming.
+        if (dev_ && airspyhf().is_streaming && airspyhf().is_streaming(dev_)) {
+            fprintf(stderr, "Airspy HF+: stream still running after stop, leaving the handle (avoids a libusb crash on close)\n");
+            fflush(stderr);
+            gHfCooling[serial_] = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+            gHfOpen.erase(serial_);
+            streaming_ = streamed_ = false;
+            dev_ = nullptr;
+            return;
+        }
         airspyhf().close(dev_);
         dev_ = nullptr;
         gHfOpen.erase(serial_);
+        gHfCooling[serial_] = std::chrono::steady_clock::now() + std::chrono::seconds(3);
         streaming_ = streamed_ = false;
     }
     void streamLoop() override {
@@ -218,16 +242,16 @@ private:
         if (!dev_ || !streaming_) return;
         streaming_ = false;
         airspyhf().stop(dev_);
-        for (int i = 0; i < 200 && airspyhf().is_streaming(dev_); i++) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        for (int i = 0; i < 400 && airspyhf().is_streaming(dev_); i++) std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     // The cancelled USB transfers of a stream that was stopped come back only while libusb handles events, which each control transfer of
     // the library does: a few harmless ones (the attenuator as it is) collect them before the next start or the close. A radio that was
     // unplugged answers these at once with an error.
     void collectTransfers() {
         if (!dev_ || !streamed_) return;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 25; i++) {
             if (att_ >= 0) airspyhf().set_hf_att(dev_, (uint8_t)att_);   // (set_freq of the same frequency does not reach the radio)
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
     }
     static int DECT2_CALL callback(AirspyHfApi::transfer_t* t) {
@@ -254,7 +278,7 @@ private:
 void listAirspyHf(std::vector<DeviceInfo>& out) {
     if (!airspyhf().ok) return;
     std::lock_guard<std::mutex> g(gHfMu);
-    if (!gHfOpen.empty()) {   // a radio is open here: the library's listing would open it (and the others) again; what the last one read
+    if (hfListingFrozen()) {   // list_devices opens every HF+ (WinUSB one handle): that races stop/close and crashes (#78)
         for (const auto& k : gHfKnown) out.push_back(k.second);
         return;
     }

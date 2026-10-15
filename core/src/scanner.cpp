@@ -46,17 +46,7 @@ bool Scanner::check(const DeviceInfo& dev, const ScanConfig& cfg, std::string& e
         err = b;
         return false;
     }
-    // a range the radio cannot tune at all (a VHF scan on a stock PlutoSDR or a bladeRF 1); channels partly outside are skipped in run()
-    if (dev.minFreqHz > 0 && dev.maxFreqHz > 0) {
-        bool any = false;
-        for (double f : channels(cfg)) if (f * 1e6 >= dev.minFreqHz && f * 1e6 <= dev.maxFreqHz) { any = true; break; }
-        if (!any) {
-            char b[240];
-            snprintf(b, sizeof b, "%s tunes %.6g-%.6g MHz: no channel of %.6g-%.6g MHz is in that range", dev.name.c_str(), dev.minFreqHz / 1e6, dev.maxFreqHz / 1e6, cfg.startMHz, cfg.stopMHz);
-            err = b;
-            return false;
-        }
-    }
+    // no channel is left out for the radio's specified range: every channel is asked of the driver, and one it refuses is noted in its result
     return true;
 }
 
@@ -113,10 +103,7 @@ void Scanner::run() {
     tune.bandwidthMhz = cfg_.bwMhz;
     tune.sampleRate = cfg_.bwMhz >= 7 || cfg_.autoBandwidth ? 10e6 : 8e6;
     tune.basebandFilterHz = 0;   // automatic: the receiver's tune may still carry the narrow filter of FM, DAB or a narrow-band mode
-    // channels the radio cannot tune are skipped (check() made sure some are left); the radio opens on the first one it can
-    auto tunable = [&](double mhz) { return dev_.minFreqHz <= 0 || dev_.maxFreqHz <= 0 || (mhz * 1e6 >= dev_.minFreqHz && mhz * 1e6 <= dev_.maxFreqHz); };
     tune.centerHz = freqs.empty() ? 0 : freqs[0] * 1e6;
-    for (double f : freqs) if (tunable(f)) { tune.centerHz = f * 1e6; break; }
     if (cfg_.atsc) { tune.bandwidthMhz = 6; tune.sampleRate = 8e6; e.setStandard(3); }   // ATSC: always 6 MHz, no bandwidth detection
     if (cfg_.isdbt) { tune.bandwidthMhz = 6; tune.sampleRate = 8e6; e.setStandard(6); }   // ISDB-T: 6 MHz channels as well
     if (cfg_.atsc3) { tune.bandwidthMhz = 6; tune.sampleRate = 8e6; e.setStandard(5); }   // ATSC 3.0 needs at least 6.144 Msps; 8 leaves room for the channel edges
@@ -201,13 +188,6 @@ void Scanner::run() {
         ScanResult r;
         r.freqMHz = f; r.bwMhz = chBw;
         setPhase("tuning", (int)i, f);
-        if (!tunable(f)) {
-            r.note = "outside the radio's range";
-            std::lock_guard<std::mutex> lk(mu_);
-            results_.push_back(r);
-            prog_.index = (int)i + 1;
-            continue;
-        }
         tune.centerHz = f * 1e6;
         if (cfg_.testTune) cfg_.testTune(f, tune);
         uint64_t rc = e.resetCount();

@@ -319,8 +319,19 @@ static void radiosChecks(const char* dir, const char* ext) {
             t.centerHz = 7e6; t.sampleRate = 2.048e6; t.gainDb = 30; t.bandwidthMhz = 0.2;
             std::string e;
             const double calls = std::max(0.0, st("rtl.dsCalls"));
-            CHECK(!src->start(t, ring, e) && has(e, "RTL-SDR could not tune to 7 MHz (range 24-1766 MHz)") && std::max(0.0, st("rtl.dsCalls")) == calls, "generic dongle at 7 MHz: %s", e.c_str());
+            // no frequency is refused: a generic dongle at 7 MHz is asked as it is, through the Q input (Auto), with a note that it has no HF input
+            const bool g7 = src->start(t, ring, e);
+            CHECK(g7 && st("rtl.ds") == 2 && st("rtl.freq") == 7e6 && has(e, "weak or absent") && std::max(0.0, st("rtl.dsCalls")) == calls + 1, "generic dongle at 7 MHz: %s (ds %.0f)", e.c_str(), st("rtl.ds"));
+            if (g7) src->stop();
             src.reset();
+            // Off: never direct sampling, the tuner is asked all the same (the driver decides), with the range note
+            t.radio["ds"] = "off";
+            auto off = makeSource(g);
+            e.clear();
+            const bool o7 = off->start(t, ring, e);
+            CHECK(o7 && std::max(0.0, st("rtl.dsCalls")) == calls + 1 && st("rtl.freq") == 7e6 && has(e, "specified for 24 to 1766 MHz") && has(e, "weak or absent"), "generic dongle, direct sampling off, 7 MHz: %s", e.c_str());
+            if (o7) off->stop();
+            t.radio.erase("ds");
             // a dongle modified for HF: the Q input picked in the radio settings
             t.radio["ds"] = "q";
             auto q = makeSource(g);
@@ -348,8 +359,8 @@ static void radiosChecks(const char* dir, const char* ext) {
             CHECK(src->retune(t, e) && st("rtl.ds") == 2 && st("rtl.freq") == 14e6, "back to 14 MHz: direct sampling %.0f", st("rtl.ds"));
             t.centerHz = 2000e6;
             e.clear();
-            CHECK(!src->retune(t, e) && has(e, "RTL-SDR could not tune to 2000 MHz (range 0.5-1766 MHz)"), "out of range: %s", e.c_str());
-            CHECK(drain(ring, 100, mean) > 1000, "the stream stopped after a refused retune");
+            CHECK(src->retune(t, e) && st("rtl.freq") == 2000e6 && st("rtl.ds") == 0 && has(e, "specified for 0.5 to 1766 MHz") && has(e, "weak or absent"), "above the range: passed on with a note: %s", e.c_str());
+            CHECK(drain(ring, 100, mean) > 1000, "the stream stopped after an out-of-range retune");
             src->stop();
         }
         src.reset();
@@ -366,10 +377,19 @@ static void radiosChecks(const char* dir, const char* ext) {
         t.centerHz = 7e6; t.sampleRate = 2.048e6; t.bandwidthMhz = 0.2;
         e.clear();
         CHECK(v4->start(t, ring, e), "V4 at 7 MHz: %s", e.c_str());
-        CHECK(std::max(0.0, st("rtl.dsCalls")) == calls && st("rtl.freq") == 7e6, "V4: direct sampling switched (%.0f calls)", st("rtl.dsCalls") - calls);
+        CHECK(std::max(0.0, st("rtl.dsCalls")) == calls && st("rtl.freq") == 7e6 && e.empty(), "V4: direct sampling switched (%.0f calls), note '%s'", st("rtl.dsCalls") - calls, e.c_str());
+        // a V4 goes down to 9 MHz (and below) and up through the same call: nothing is refused, direct sampling is never asked for
+        for (double fq : {9e6, 100e3, 1e9, 2e9}) {
+            t.centerHz = fq; e.clear();
+            CHECK(v4->retune(t, e) && st("rtl.freq") == fq && std::max(0.0, st("rtl.dsCalls")) == calls, "V4 at %.0f Hz: freq %.0f, direct sampling calls %.0f, %s", fq, st("rtl.freq"), st("rtl.dsCalls") - calls, e.c_str());
+        }
+        // above what a 32-bit Hz value holds: cut to that, and said
+        t.centerHz = 6e9; e.clear();
+        CHECK(v4->retune(t, e) && st("rtl.freq") == 4.29e9 && has(e, "4.29 GHz"), "V4 at 6 GHz: freq %.0f, %s", st("rtl.freq"), e.c_str());
         v4->stop();
         v4.reset();
         set("rtl.v4", 0);
+        t.centerHz = 7e6;
         // the V4 Lite (an R820T, USB product "Blog V4L") upconverts HF in its library as well: no direct sampling, listed from 0.5 MHz
         set("rtl.v3", 0); set("rtl.v4l", 1);
         const DeviceInfo dl = find("rtlsdr");
@@ -378,6 +398,8 @@ static void radiosChecks(const char* dir, const char* ext) {
         e.clear();
         CHECK(v4l->start(t, ring, e), "V4 Lite at 7 MHz: %s", e.c_str());
         CHECK(std::max(0.0, st("rtl.dsCalls")) == calls && st("rtl.freq") == 7e6, "V4 Lite: direct sampling switched (%.0f calls)", st("rtl.dsCalls") - calls);
+        t.centerHz = 9e6; e.clear();
+        CHECK(v4l->retune(t, e) && st("rtl.freq") == 9e6 && std::max(0.0, st("rtl.dsCalls")) == calls, "V4 Lite at 9 MHz: %.0f, %s", st("rtl.freq"), e.c_str());
         v4l->stop();
         v4l.reset();
         set("rtl.v4l", 0);
@@ -439,7 +461,7 @@ static void radiosChecks(const char* dir, const char* ext) {
         if (ok1) {
             t.centerHz = 100e6;
             e.clear();
-            CHECK(!src->retune(t, e) && has(e, "bladeRF could not tune to 100 MHz (range 237.5-3800 MHz)"), "bladeRF 1 at 100 MHz: %s", e.c_str());
+            CHECK(src->retune(t, e) && st("blade.freq") == 100e6 && has(e, "specified for 237.5 to 3800 MHz") && has(e, "weak or absent"), "bladeRF 1 at 100 MHz is passed on with a note: %s", e.c_str());
             src->stop();
         }
         src.reset();
@@ -486,7 +508,7 @@ static void radiosChecks(const char* dir, const char* ext) {
             CHECK(src->retune(t, e) && st("lime.calibrations") == c0 + 1, "a 2 %% retune recalibrated");
             t.centerHz = 5000e6;
             e.clear();
-            CHECK(!src->retune(t, e) && has(e, "LimeSDR could not tune to 5000 MHz (range 30-3800 MHz)"), "LimeSDR at 5 GHz: %s", e.c_str());
+            CHECK(src->retune(t, e) && st("lime.freq") == 5000e6 && has(e, "specified for 30 to 3800 MHz") && has(e, "weak or absent"), "LimeSDR at 5 GHz is passed on with a note: %s", e.c_str());
             src->stop();
         }
     }
@@ -499,7 +521,8 @@ static void radiosChecks(const char* dir, const char* ext) {
         TuneSettings t;
         t.centerHz = 100e6; t.sampleRate = 4e6; t.gainDb = 30;
         std::string e;
-        CHECK(!src->start(t, ring, e) && has(e, "PlutoSDR could not tune to 100 MHz (range 325-3800 MHz)") && has(e, "AD9364"), "Pluto at 100 MHz: %s", e.c_str());
+        CHECK(src->start(t, ring, e) && st("pluto.phy:altvoltage0.frequency") == 100e6 && has(e, "specified for 325 to 3800 MHz") && has(e, "weak or absent"), "Pluto at 100 MHz is passed on with a note: %s", e.c_str());
+        src->stop();
     }
 
     if (use("uhd")) {
@@ -510,7 +533,9 @@ static void radiosChecks(const char* dir, const char* ext) {
         TuneSettings t;
         t.centerHz = 10e6; t.sampleRate = 10e6; t.gainDb = 30;
         std::string e;
-        CHECK(!src->start(t, ring, e) && has(e, "USRP could not tune to 10 MHz (range 70-6000 MHz)"), "USRP at 10 MHz: %s", e.c_str());
+        const bool u10 = src->start(t, ring, e);
+        CHECK(u10 && st("usrp.freq") == 10e6 && has(e, "specified for 70 to 6000 MHz") && has(e, "weak or absent"), "USRP at 10 MHz is passed on with a note: %s", e.c_str());
+        if (u10) src->stop();
         src.reset();
         // a B200 lists RX2 (UHD's default, left alone: what OnAir did before) and TX/RX; a B210 the same on RF A (channel 0) and RF B (1)
         struct Want { const char* label; double ch, antenna; };   // antenna 0 = not set, 1 = RX2, 2 = TX/RX
@@ -619,12 +644,14 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
             src->stop();
         }
         src.reset();
-        // a Blog V3 with direct sampling switched off: below 24 MHz is out of range, and says why
+        // a Blog V3 with direct sampling switched off: below 24 MHz is asked of the tuner all the same, with a note that says why
         set("rtl.v3", 1);
         t.centerHz = 7e6; t.radio["ds"] = "off";
         auto off = makeSource(first("rtlsdr"));
         e.clear();
-        CHECK(!off->start(t, ring, e) && has(e, "(range 24-1766 MHz; direct sampling is off)"), "V3, direct sampling off, 7 MHz: %s", e.c_str());
+        const double dsBefore = std::max(0.0, st("rtl.dsCalls"));
+        CHECK(off->start(t, ring, e) && st("rtl.freq") == 7e6 && std::max(0.0, st("rtl.dsCalls")) == dsBefore && has(e, "specified for 24 to 1766 MHz") && has(e, "direct sampling is off"), "V3, direct sampling off, 7 MHz: asked all the same, with a note: %s", e.c_str());
+        off->stop();
         off.reset();
         // the I input
         t.radio["ds"] = "i";
@@ -958,7 +985,7 @@ static void biasTeeChecks(const char* dir, const char* ext) {
         CHECK(st(r.key) == 0, "%s: antenna power %.0f after a start with it off", r.board, st(r.key));
         if (again) again->stop();
     }
-    for (const char* b : {"lime", "pluto", "usrp", "airspyhf"}) CHECK(!find(b).hasBiasTee, "%s: hasBiasTee is true (no antenna power on this radio)", b);
+    for (const char* b : {"lime", "pluto", "usrp", "airspyhf", "fobos"}) CHECK(!find(b).hasBiasTee, "%s: hasBiasTee is true (no antenna power on this radio)", b);
 }
 // libraries without the functions: no radio claims the option and a start with it asked for still works
 static void biasTeeMissingChecks() {
@@ -979,6 +1006,291 @@ static void biasTeeMissingChecks() {
 }
 // ---- end bias-tee
 
+
+// ---- fobos: the Fobos SDR with the agile firmware (source_fobos.cpp) against the fake libfobos_sdr: the listing, the RF input, the gain split,
+// the HF inputs with the driver's own frequency shift and decimation, and the ways the library's blocking stream can be stopped
+static void fobosChecks(const char* dir, const char* ext) {
+    printf("fobos:\n");
+    void* h = dlopen((std::string(dir) + "/libfobos_sdr" + ext).c_str(), RTLD_NOW | RTLD_NOLOAD);
+    fakeState = h ? (double (*)(const char*))dlsym(h, "fake_state") : nullptr;
+    auto set = h ? (void (*)(const char*, double))dlsym(h, "fake_set") : nullptr;
+    CHECK(fakeState && set, "the fake library of the Fobos SDR is not loaded");
+    if (!fakeState || !set) return;
+    const double kNone = -1e300;
+    auto find = [&] {
+        std::string e;
+        DeviceInfo d;
+        for (const auto& x : listNativeDevices(e)) if (x.board == "fobos") d = x;
+        return d;
+    };
+    auto hazards = [&](const char* what) {
+        for (const char* k : {"fobos.rateWhileStreaming", "fobos.directWhileStreaming", "fobos.closeWhileStreaming", "fobos.deadCalls", "fobos.openTwice"})
+            CHECK(st(k) == kNone, "%s: %s = %.0f", what, k, st(k));
+    };
+    // the frequency and the rms amplitude of what the radio delivers (a tone), read at the rate it runs at
+    auto tone = [&](IqRing& ring, double rate, double& amp) {
+        std::vector<cf32> buf(1 << 14), got;
+        std::this_thread::sleep_for(std::chrono::milliseconds(60));
+        while (ring.read(buf.data(), buf.size())) {}   // what an earlier setting left behind
+        const auto end = std::chrono::steady_clock::now() + std::chrono::milliseconds(400);
+        while (std::chrono::steady_clock::now() < end && got.size() < 8192) {
+            const size_t n = ring.read(buf.data(), std::min(buf.size(), (size_t)8192 - got.size()));
+            got.insert(got.end(), buf.begin(), buf.begin() + (long)n);
+            if (!n) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        }
+        if (got.size() < 1024) { amp = 0; return -1e300; }
+        std::complex<double> a = 0;
+        double p = 0;
+        for (size_t i = 0; i + 1 < got.size(); i++) { a += std::complex<double>(got[i + 1]) * std::conj(std::complex<double>(got[i])); p += std::norm(std::complex<double>(got[i])); }
+        amp = std::sqrt(p / (double)(got.size() - 1));
+        return std::arg(a) * rate / (2 * M_PI);
+    };
+
+    // the listing: opened once to read the rates, then not again
+    DeviceInfo dev = find();
+    CHECK(dev.board == "fobos", "radio not listed");
+    if (dev.board != "fobos") return;
+    CHECK(dev.kind == DeviceInfo::Native && dev.isRadio() && dev.isGeneric(), "wrong kind");
+    CHECK(dev.name == "Fobos SDR FOBOS0001 (agile, experimental)" && dev.serial == "FOBOS0001", "name/serial: %s / %s", dev.name.c_str(), dev.serial.c_str());
+    CHECK(dev.minRateHz == 8e6 && dev.maxRateHz == 50e6 && dev.rateRanges.size() == 9, "rates %.0f..%.0f, %zu listed", dev.minRateHz, dev.maxRateHz, dev.rateRanges.size());
+    CHECK(dev.gainMinDb == 0 && dev.gainMaxDb == 95, "gain range %.0f..%.0f", dev.gainMinDb, dev.gainMaxDb);
+    CHECK(dev.minFreqHz == 0.1e6 && dev.maxFreqHz == 6e9, "tuning range %.0f..%.0f", dev.minFreqHz, dev.maxFreqHz);
+    CHECK(!dev.hasBiasTee, "hasBiasTee is true (no antenna power on this radio)");
+    {
+        std::set<std::string> keys;
+        for (const auto& x : dev.settings) keys.insert(x.key);
+        CHECK(keys == std::set<std::string>({"ppm", "hf", "hfadc", "lna", "clock"}), "settings: %zu listed", keys.size());
+    }
+    CHECK(st("fobos.open") == 0 && st("fobos.opens") == st("fobos.closes"), "a listing left the radio open (opens %.0f closes %.0f)", st("fobos.opens"), st("fobos.closes"));
+    {
+        const double opens = st("fobos.opens");
+        (void)find();
+        CHECK(st("fobos.opens") == opens && opens >= 1, "a rescan opened the radio again (%.0f, then %.0f)", opens, st("fobos.opens"));
+    }
+
+    IqRing ring(1 << 22);
+    TuneSettings t;
+    t.centerHz = 522e6; t.sampleRate = 10e6; t.gainDb = 30; t.bandwidthMhz = 8;
+    std::string e;
+    std::complex<float> mean(0, 0);
+    double amp = 0;
+    {
+        auto src = makeSource(dev);
+        CHECK(src != nullptr, "no source");
+        if (!src) return;
+        // the RF input
+        const double streams0 = std::max(0.0, st("fobos.streams"));   // (the fake counts on from the checks before this one)
+        bool ok = src->start(t, ring, e);
+        CHECK(ok, "start failed: %s", e.c_str());
+        if (!ok) return;
+        CHECK(e.empty(), "a note for a rate and a frequency the radio has: %s", e.c_str());
+        CHECK(src->realtimeHardware() && src->sampleRate() == 10e6 && st("fobos.rate") == 10e6, "rate %.0f, radio set to %.0f", src->sampleRate(), st("fobos.rate"));
+        CHECK(st("fobos.freq") == 522e6 && st("fobos.openIndex") == 0, "freq %.0f, opened at position %.0f", st("fobos.freq"), st("fobos.openIndex"));
+        CHECK(st("fobos.directCalls") == kNone && st("fobos.clockCalls") == kNone, "defaults: direct sampling calls %.0f, clock calls %.0f (none expected)", st("fobos.directCalls"), st("fobos.clockCalls"));
+        CHECK(st("fobos.lna") == 2 && st("fobos.vga") == 7, "gain 30 dB: LNA step %.0f VGA step %.0f (2 = +16 dB and 7 = 14 dB expected)", st("fobos.lna"), st("fobos.vga"));
+        CHECK(st("fobos.bufCount") == 16 && st("fobos.bufLength") == 65536, "stream buffers %.0f x %.0f", st("fobos.bufCount"), st("fobos.bufLength"));
+        size_t n = drain(ring, 300, mean);
+        // the library gives full scale as 0.25: the driver brings it to 1.0
+        CHECK(n > 8000 && std::fabs(mean.real() - 0.5f) < 0.02f && std::fabs(mean.imag() + 0.25f) < 0.02f, "RF samples: %zu, mean %.3f %.3f (0.5 -0.25 expected)", n, mean.real(), mean.imag());
+        // a rescan while it streams keeps the radio, with its serial (the library can no longer read it)
+        {
+            const DeviceInfo again = find();
+            CHECK(again.board == "fobos" && again.serial == "FOBOS0001", "the radio left the list while streaming (serial %s)", again.serial.c_str());
+        }
+        // live: frequency, gain, correction, a fixed LNA step, the reference clock; the stream goes on
+        t.centerHz = 474e6; t.gainDb = 40;
+        CHECK(src->retune(t, e) && st("fobos.freq") == 474e6 && st("fobos.lna") == 3 && st("fobos.vga") == 4, "retune: freq %.0f, LNA %.0f VGA %.0f (3 and 4 expected for 40 dB)", st("fobos.freq"), st("fobos.lna"), st("fobos.vga"));
+        t.gainDb = 200;
+        CHECK(src->retune(t, e) && st("fobos.lna") == 3 && st("fobos.vga") == 31, "gain beyond the slider: LNA %.0f VGA %.0f", st("fobos.lna"), st("fobos.vga"));
+        t.gainDb = 10;
+        CHECK(src->retune(t, e) && st("fobos.lna") == 0 && st("fobos.vga") == 5, "gain 10 dB: LNA %.0f VGA %.0f (0 and 5 expected)", st("fobos.lna"), st("fobos.vga"));
+        t.gainDb = 40; t.radio["lna"] = "0";
+        CHECK(src->retune(t, e) && st("fobos.lna") == 0 && st("fobos.vga") == 20, "LNA fixed at 0 dB, gain 40: LNA %.0f VGA %.0f (0 and 20 expected)", st("fobos.lna"), st("fobos.vga"));
+        t.radio["lna"] = "33";
+        CHECK(src->retune(t, e) && st("fobos.lna") == 3 && st("fobos.vga") == 4, "LNA fixed at +33 dB, gain 40: LNA %.0f VGA %.0f", st("fobos.lna"), st("fobos.vga"));
+        t.radio.erase("lna");
+        t.radio["ppm"] = "10";
+        CHECK(src->retune(t, e) && std::fabs(st("fobos.freq") - 474e6 / 1.00001) < 0.5, "10 ppm: radio tuned to %.1f", st("fobos.freq"));
+        t.radio.erase("ppm");
+        t.radio["clock"] = "external";
+        CHECK(src->retune(t, e) && st("fobos.clock") == 1, "external clock: %.0f", st("fobos.clock"));
+        t.radio.erase("clock");
+        CHECK(src->retune(t, e) && st("fobos.clock") == 0 && st("fobos.freq") == 474e6, "back to the internal clock: %.0f", st("fobos.clock"));
+        CHECK(st("fobos.streams") == streams0 + 1, "the stream was restarted for a retune (%.0f starts)", st("fobos.streams") - streams0);
+        n = drain(ring, 150, mean);
+        CHECK(n > 3000, "stream stopped after the retunes (%zu samples)", n);
+        hazards("RF input");
+
+        // the HF1 input: 7.1 MHz at 1 Msps. The fake puts a sine at 7.2 MHz on HF1 and one at 6.9 MHz on HF2, both at half scale.
+        t.centerHz = 7.1e6; t.sampleRate = 1e6; t.bandwidthMhz = 0.2;
+        CHECK(src->retune(t, e), "retune to HF failed: %s", e.c_str());
+        CHECK(e.empty(), "a note at 7.1 MHz: %s", e.c_str());
+        CHECK(st("fobos.direct") == 1 && st("fobos.rate") == 50e6 && src->sampleRate() == 1e6, "HF1: direct %.0f, converter %.0f, output %.0f", st("fobos.direct"), st("fobos.rate"), src->sampleRate());
+        double f = tone(ring, 1e6, amp);
+        CHECK(std::fabs(f - 100e3) < 200 && std::fabs(amp - 0.5) < 0.02, "HF1 at 7.1 MHz: tone at %.0f Hz, amplitude %.3f (+100000 and 0.5 expected)", f, amp);
+        const double streams = st("fobos.streams");
+        t.centerHz = 7.3e6;   // live, on the same input: only the driver's own frequency shift moves
+        CHECK(src->retune(t, e), "retune within HF failed: %s", e.c_str());
+        f = tone(ring, 1e6, amp);
+        CHECK(std::fabs(f + 100e3) < 200 && std::fabs(amp - 0.5) < 0.02, "HF1 at 7.3 MHz: tone at %.0f Hz, amplitude %.3f (-100000 expected)", f, amp);
+        CHECK(st("fobos.streams") == streams, "the stream was restarted for a retune on the same HF input");
+        t.radio["ppm"] = "100";   // a clock 100 ppm fast: the shift is that much lower, the tone that much higher
+        CHECK(src->retune(t, e), "retune failed: %s", e.c_str());
+        f = tone(ring, 1e6, amp);
+        CHECK(std::fabs(f - (7.2e6 - 7.3e6 / 1.0001)) < 200, "HF1 with 100 ppm: tone at %.0f Hz (%.0f expected)", f, 7.2e6 - 7.3e6 / 1.0001);
+        t.radio.erase("ppm");
+        // the other connector
+        t.radio["hf"] = "hf2"; t.centerHz = 7.0e6;
+        CHECK(src->retune(t, e), "switch to HF2 failed: %s", e.c_str());
+        f = tone(ring, 1e6, amp);
+        CHECK(std::fabs(f + 100e3) < 200 && std::fabs(amp - 0.5) < 0.02, "HF2 at 7.0 MHz: tone at %.0f Hz, amplitude %.3f (-100000 expected)", f, amp);
+        // a slower converter, and a rate the decimation does not hit exactly (25 Msps / 12 for 2 Msps asked)
+        t.radio["hfadc"] = "25"; t.sampleRate = 2e6;
+        CHECK(src->retune(t, e), "slower converter failed: %s", e.c_str());
+        CHECK(st("fobos.rate") == 25e6 && std::fabs(src->sampleRate() - 25e6 / 12) < 1, "25 Msps converter: %.0f, output %.1f", st("fobos.rate"), src->sampleRate());
+        f = tone(ring, src->sampleRate(), amp);
+        CHECK(std::fabs(f + 100e3) < 400 && std::fabs(amp - 0.5) < 0.02, "HF2 at 25 Msps: tone at %.0f Hz, amplitude %.3f", f, amp);
+        t.radio.erase("hfadc");
+        // a frequency above half the converter's rate is said so
+        t.centerHz = 30e6;
+        CHECK(src->retune(t, e) && e.find("weak or absent") != std::string::npos, "30 MHz on the HF input: %s", e.c_str());
+        e.clear();
+        // back to the RF input, live: the tuner again, at the smallest rate of the radio that is fast enough
+        t.centerHz = 145e6;
+        CHECK(src->retune(t, e), "back to RF failed: %s", e.c_str());
+        CHECK(st("fobos.direct") == 0 && st("fobos.freq") == 145e6 && st("fobos.rate") == 8e6 && src->sampleRate() == 8e6, "RF again: direct %.0f freq %.0f rate %.0f", st("fobos.direct"), st("fobos.freq"), st("fobos.rate"));
+        n = drain(ring, 100, mean);   // (what the HF input left in the ring)
+        n = drain(ring, 200, mean);
+        CHECK(n > 3000 && std::fabs(mean.real() - 0.5f) < 0.02f && std::fabs(mean.imag() + 0.25f) < 0.02f, "RF samples after HF: %zu, mean %.3f %.3f", n, mean.real(), mean.imag());
+        // the HF inputs switched off: the tuner is asked for its lowest frequency, and the user is told
+        t.radio["hf"] = "off"; t.centerHz = 7.1e6;
+        CHECK(src->retune(t, e) && st("fobos.direct") == 0 && st("fobos.freq") == 7.1e6 && e.find("switched off") != std::string::npos, "HF off at 7.1 MHz: direct %.0f freq %.0f, note: %s", st("fobos.direct"), st("fobos.freq"), e.c_str());
+        e.clear();
+        t.radio.erase("hf");
+        hazards("HF inputs");
+
+        src->stop();
+        const size_t left = ring.available();
+        std::this_thread::sleep_for(std::chrono::milliseconds(80));
+        CHECK(ring.available() == left, "samples kept arriving after stop()");
+        CHECK(st("fobos.streaming") == 0 && st("fobos.open") == 0 && st("fobos.opens") == st("fobos.closes"), "not stopped and closed (streaming %.0f open %.0f)", st("fobos.streaming"), st("fobos.open"));
+        hazards("stop");
+    }
+
+    t = TuneSettings();
+    t.centerHz = 522e6; t.sampleRate = 10e6; t.gainDb = 30; t.bandwidthMhz = 8;
+    auto timedStop = [&](IqSource& s) {
+        const auto t0 = std::chrono::steady_clock::now();
+        s.stop();
+        return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    };
+    // a start at an HF frequency goes straight to the HF input (nothing set while streaming), and a rev. 4 radio runs its converter at 64 Msps
+    {
+        set("fobos.rev4", 1);
+        set("fobos.tone1", 14.1e6);
+        auto src = makeSource(dev);
+        t.centerHz = 14.074e6; t.sampleRate = 250e3; t.bandwidthMhz = 0.003;
+        const bool ok = src && src->start(t, ring, e);
+        CHECK(ok, "start on HF failed: %s", e.c_str());
+        if (ok) {
+            CHECK(st("fobos.direct") == 1 && st("fobos.rate") == 64e6 && src->sampleRate() == 250e3, "direct %.0f, converter %.0f, output %.0f", st("fobos.direct"), st("fobos.rate"), src->sampleRate());
+            const double f = tone(ring, 250e3, amp);
+            CHECK(std::fabs(f - 26e3) < 100 && std::fabs(amp - 0.5) < 0.02, "20 m: tone at %.0f Hz, amplitude %.3f (+26000 and 0.5 expected)", f, amp);
+            src->stop();
+        }
+        set("fobos.rev4", 0);
+        set("fobos.tone1", 0);
+        hazards("start on HF");
+        t.centerHz = 522e6; t.sampleRate = 10e6; t.bandwidthMhz = 8;
+    }
+    // a stop while the library's stream is still starting: its cancel is lost then, and the driver has to ask again
+    {
+        set("fobos.startDelayMs", 300);
+        auto src = makeSource(dev);
+        const bool ok = src && src->start(t, ring, e);
+        CHECK(ok, "start failed: %s", e.c_str());
+        if (ok) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            const double secs = timedStop(*src);
+            CHECK(secs < 2.0, "stop during the stream's start took %.1f s", secs);
+            CHECK(st("fobos.streaming") == 0 && st("fobos.open") == 0, "left running (streaming %.0f open %.0f)", st("fobos.streaming"), st("fobos.open"));
+        }
+        set("fobos.startDelayMs", 0);
+        hazards("stop while starting");
+    }
+    // a stream that delivers nothing still stops
+    {
+        set("fobos.stall", 1);
+        auto src = makeSource(dev);
+        const bool ok = src && src->start(t, ring, e);
+        CHECK(ok, "start failed: %s", e.c_str());
+        if (ok) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            const double secs = timedStop(*src);
+            CHECK(secs < 2.0, "stop of a silent stream took %.1f s", secs);
+            CHECK(st("fobos.streaming") == 0 && st("fobos.open") == 0, "left running (streaming %.0f open %.0f)", st("fobos.streaming"), st("fobos.open"));
+        }
+        set("fobos.stall", 0);
+        hazards("stop of a silent stream");
+    }
+    // destroyed while streaming (quit)
+    if (auto s = makeSource(dev)) {
+        s->start(t, ring, e);
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        s.reset();
+        CHECK(st("fobos.streaming") == 0 && st("fobos.open") == 0, "quit while running: left open");
+        hazards("quit while running");
+    }
+    // unplugged while streaming: the stream ends, the radio is opened again when it is back, and the samples go on
+    {
+        auto src = makeSource(dev);
+        const bool ok = src && src->start(t, ring, e);
+        CHECK(ok, "start failed: %s", e.c_str());
+        if (ok) {
+            drain(ring, 100, mean);
+            set("fobos.gone", 1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(400));
+            CHECK(st("fobos.streaming") == 0 && st("fobos.open") == 0, "unplugged: still streaming %.0f / open %.0f", st("fobos.streaming"), st("fobos.open"));
+            const size_t quiet = drain(ring, 100, mean);
+            CHECK(quiet == 0 || ring.available() == 0, "samples while unplugged");
+            set("fobos.gone", 0);
+            size_t n = 0;
+            for (int i = 0; i < 40 && n < 3000; i++) n += drain(ring, 100, mean);
+            CHECK(n >= 3000, "no samples after the radio came back (%zu)", n);
+            CHECK(st("fobos.freq") == 522e6 && st("fobos.rate") == 10e6, "reopened with freq %.0f rate %.0f", st("fobos.freq"), st("fobos.rate"));
+            // unplugged, and stopped while it is away
+            set("fobos.gone", 1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            const double secs = timedStop(*src);
+            CHECK(secs < 2.5, "stop while the radio is away took %.1f s", secs);
+            set("fobos.gone", 0);
+        }
+        CHECK(st("fobos.open") == 0 && st("fobos.opens") == st("fobos.closes"), "left open after the unplugs (opens %.0f closes %.0f)", st("fobos.opens"), st("fobos.closes"));
+        hazards("unplug");
+    }
+    // another Fobos SDR in front of it in the library's list: the serial finds the radio at its new position
+    {
+        set("fobos.shift", 1);
+        auto src = makeSource(dev);
+        const bool ok = src && src->start(t, ring, e);
+        CHECK(ok && st("fobos.openIndex") == 1, "second radio in front: opened position %.0f (%s)", st("fobos.openIndex"), e.c_str());
+        if (src) src->stop();
+        set("fobos.shift", 0);
+    }
+    // gone before the start: said so, and nothing is left open
+    {
+        set("fobos.gone", 1);
+        auto src = makeSource(dev);
+        e.clear();
+        CHECK(src && !src->start(t, ring, e) && e.find("FOBOS0001 not found") != std::string::npos, "start without the radio: %s", e.c_str());
+        set("fobos.gone", 0);
+        CHECK(st("fobos.open") == 0 && st("fobos.opens") == st("fobos.closes"), "left open after a failed start");
+    }
+    hazards("end");
+    fakeState = nullptr;
+}
+// ---- end fobos
+
 int main(int argc, char** argv) {
     if (argc < 2) { printf("usage: test_native <fake library>\n"); return 2; }
     const std::string fake = argv[1];
@@ -990,14 +1302,14 @@ int main(int argc, char** argv) {
 #else
     const char* ext = ".so";
 #endif
-    for (const char* stem : {"rtlsdr", "airspy", "bladeRF", "LimeSuite", "iio", "uhd", "airspyhf"})
+    for (const char* stem : {"rtlsdr", "airspy", "bladeRF", "LimeSuite", "iio", "uhd", "airspyhf", "fobos_sdr"})
         if (!copyFile(fake, std::string(dir) + "/lib" + stem + ext)) { printf("cannot copy the fake library\n"); return 2; }
     // the SDRplay API installs libsdrplay_api.so.3 on macOS too (not .dylib); the driver looks for libsdrplay_api.so in the test folder
     if (!copyFile(fake, std::string(dir) + "/libsdrplay_api.so")) { printf("cannot copy the fake library\n"); return 2; }
     setenv("DECT2_NATIVE_LIBDIR", dir, 1);
     auto fileOf = [&](const std::string& board) {
         if (board == "sdrplay") return std::string("libsdrplay_api.so");
-        const std::string stem = board == "bladerf" ? "bladeRF" : board == "lime" ? "LimeSuite" : board == "pluto" ? "iio" : board == "usrp" ? "uhd" : board;
+        const std::string stem = board == "bladerf" ? "bladeRF" : board == "lime" ? "LimeSuite" : board == "pluto" ? "iio" : board == "usrp" ? "uhd" : board == "fobos" ? "fobos_sdr" : board;
         return "lib" + stem + ext;
     };
 
@@ -1014,11 +1326,11 @@ int main(int argc, char** argv) {
     {   // a radio with several antenna inputs is listed once per input (the same board)
         std::set<std::string> boards;
         for (const auto& d : list) boards.insert(d.board);
-        CHECK(boards.size() == 8, "expected 8 radios, found %zu", boards.size());
+        CHECK(boards.size() == 9, "expected 9 radios, found %zu", boards.size());
     }
 
     struct Case { const char* board; double wantRate; double wantMinRate; };
-    const Case cases[] = {{"rtlsdr", 2.4e6, 0}, {"airspy", 10e6, 0}, {"bladerf", 10e6, 0}, {"lime", 10e6, 0}, {"pluto", 10e6, 0}, {"usrp", 10e6, 0}, {"sdrplay", 10e6, 0}};
+    const Case cases[] = {{"rtlsdr", 2.4e6, 0}, {"airspy", 10e6, 0}, {"bladerf", 10e6, 0}, {"lime", 10e6, 0}, {"pluto", 10e6, 0}, {"usrp", 10e6, 0}, {"sdrplay", 10e6, 0}, {"fobos", 10e6, 0}};
     for (const auto& c : cases) {
         printf("%s:\n", c.board);
         const DeviceInfo* dev = nullptr;
@@ -1085,6 +1397,7 @@ int main(int argc, char** argv) {
         if (b == "lime") { CHECK(st("lime.freq") == 474e6, "retune freq"); CHECK(st("lime.gain") == 40, "retune gain"); }
         if (b == "pluto") { CHECK(st("pluto.phy:altvoltage0.frequency") == 474e6, "retune freq"); CHECK(st("pluto.phy:voltage0.hardwaregain") == 40, "retune gain"); }
         if (b == "usrp") { CHECK(st("usrp.freq") == 474e6, "retune freq"); CHECK(st("usrp.gain") == 40, "retune gain"); }
+        if (b == "fobos") { CHECK(st("fobos.freq") == 474e6, "retune freq"); CHECK(st("fobos.lna") == 3 && st("fobos.vga") == 4, "retune gain: LNA %.0f VGA %.0f", st("fobos.lna"), st("fobos.vga")); }
         if (b == "sdrplay") {   // one live update: frequency and gain (40 of 103 dB = 83 dB reduction = LNAstate 6 (33 dB) + gRdB 50)
             const unsigned why = (unsigned)st("sdrplay.reasons");
             CHECK((why & 0x00020000) && (why & 0x00008000), "update reasons 0x%08x (Tuner_Frf and Tuner_Gr expected)", why);
@@ -1092,6 +1405,26 @@ int main(int argc, char** argv) {
             CHECK(st("sdrplay.rf") == 474e6, "retune rfHz %.0f", st("sdrplay.rf"));
             CHECK(st("sdrplay.lna") == 6 && st("sdrplay.grdb") == 50, "gain 40 dB: LNAstate %.0f gRdB %.0f (6 and 50 expected)", st("sdrplay.lna"), st("sdrplay.grdb"));
             CHECK(st("sdrplay.inits") == 1, "the stream was restarted for a retune");
+        }
+
+        // any frequency: a very low (9 MHz) and a very high (6 GHz) one reach each driver unchanged, with no error and no clamp (a note at most)
+        {
+            auto has = [](const std::string& s, const char* what) { return s.find(what) != std::string::npos; };
+            const char* fkey = b == "rtlsdr" ? "rtl.freq" : b == "airspy" ? "airspy.freq" : b == "bladerf" ? "blade.freq" : b == "lime" ? "lime.freq" : b == "pluto" ? "pluto.phy:altvoltage0.frequency" : b == "usrp" ? "usrp.freq" : b == "sdrplay" ? "sdrplay.rf" : "fobos.freq";
+            for (double fq : {9e6, 6e9}) {
+                if (b == "fobos" && fq < 49.5e6) continue;   // the Fobos HF inputs (a mixer below 49.5 MHz) have their own checks further down
+                t.centerHz = fq; e.clear();
+                const bool okf = src->retune(t, e);
+                // a 32-bit Hz call (RTL-SDR, Airspy) holds up to 4.29 GHz: the one thing cut, and said; the Fobos takes HF below 49.5 MHz through its own mixer
+                const double want = (b == "rtlsdr" || b == "airspy") && fq > 4.29e9 ? 4.29e9 : fq;
+                const bool viaMixer = b == "fobos" && fq < 49.5e6;
+                CHECK(okf && (viaMixer ? st("fobos.direct") == 1 : st(fkey) == want), "%s at %.0f Hz: ok %d, driver got %.0f (%s)", c.board, fq, (int)okf, st(fkey), e.c_str());
+                CHECK(e.empty() || has(e, "weak or absent") || has(e, "4.29 GHz"), "%s at %.0f Hz: unexpected message: %s", c.board, fq, e.c_str());
+                CHECK(drain(ring, 200, mean) > 1000, "%s: no stream at %.0f Hz", c.board, fq);
+            }
+            t.centerHz = 474e6; e.clear();
+            CHECK(src->retune(t, e), "%s: back to 474 MHz failed: %s", c.board, e.c_str());
+            drain(ring, 100, mean);
         }
 
         // a different sample rate while running
@@ -1102,6 +1435,7 @@ int main(int argc, char** argv) {
         if (b == "airspy") CHECK(st("airspy.rate") == 2.5e6, "airspy rate %.0f (the 2.5 Msps step expected)", st("airspy.rate"));
         if (b == "bladerf") CHECK(st("blade.rate") == 2.5e6, "rate");
         if (b == "usrp") CHECK(st("usrp.rate") == 2.5e6, "rate");
+        if (b == "fobos") CHECK(st("fobos.rate") == 8e6 && src->sampleRate() == 8e6, "fobos rate %.0f (the 8 Msps step, its slowest, expected)", st("fobos.rate"));
         if (b == "pluto") CHECK(st("pluto.phy:voltage0.sampling_frequency") == 2.5e6, "pluto rate %.0f", st("pluto.phy:voltage0.sampling_frequency"));
         if (b == "sdrplay") {   // restarted at the new rate; the 8 MHz channel no longer fits, so the widest filter below 2.5 Msps
             CHECK(st("sdrplay.fs") == 2.5e6 && st("sdrplay.decim") == 0, "fsHz %.0f decimation %.0f", st("sdrplay.fs"), st("sdrplay.decim"));
@@ -1182,9 +1516,9 @@ int main(int argc, char** argv) {
                     t.gainDb = 0; t.centerHz = 1e6;
                     CHECK(src->retune(t, e), "retune failed: %s", e.c_str());
                     CHECK(st("airspyhf.att") == 8 && st("airspyhf.lna") == 0 && st("airspyhf.freq") == 1e6, "gain 0: att %.0f lna %.0f freq %.0f", st("airspyhf.att"), st("airspyhf.lna"), st("airspyhf.freq"));
-                    t.centerHz = 1e3;
+                    t.centerHz = 1e3; e.clear();
                     CHECK(src->retune(t, e), "retune failed: %s", e.c_str());
-                    CHECK(st("airspyhf.freq") == 9e3, "1 kHz request: radio set to %.0f (the 9 kHz limit expected)", st("airspyhf.freq"));
+                    CHECK(st("airspyhf.freq") == 1e3 && e.find("weak or absent") != std::string::npos, "1 kHz request: radio set to %.0f (1000 expected, not the 9 kHz limit), note: %s", st("airspyhf.freq"), e.c_str());
                     t.gainDb = 200; t.centerHz = 100e6;
                     CHECK(src->retune(t, e), "retune failed: %s", e.c_str());
                     CHECK(st("airspyhf.att") == 0 && st("airspyhf.lna") == 1, "gain beyond the slider: att %.0f lna %.0f", st("airspyhf.att"), st("airspyhf.lna"));
@@ -1342,6 +1676,7 @@ int main(int argc, char** argv) {
         }
         fakeState = nullptr;
     }
+    fobosChecks(dir, ext);   // ---- fobos
     radiosChecks(dir, ext);   // ---- radios
     biasTeeChecks(dir, ext);   // ---- bias-tee
     radioSettingsChecks(dir, ext);   // ---- radio settings

@@ -1,4 +1,5 @@
 #include "platform.h"
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #import <Cocoa/Cocoa.h>
@@ -101,6 +102,27 @@ bool fetchUrl(const std::string& url, const std::string& file, const std::string
     return system(cmd.c_str()) == 0;
 }
 
+bool postJson(const std::string& url, const std::string& json, const std::string& userAgent) {
+    @autoreleasepool {
+        NSURL* u = [NSURL URLWithString:[NSString stringWithUTF8String:url.c_str()]];
+        if (!u) return false;
+        NSMutableURLRequest* req = [NSMutableURLRequest requestWithURL:u cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:12];
+        req.HTTPMethod = @"POST";
+        req.HTTPBody = [NSData dataWithBytes:json.data() length:json.size()];
+        [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+        [req setValue:[NSString stringWithUTF8String:userAgent.c_str()] forHTTPHeaderField:@"User-Agent"];
+        dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+        __block bool ok = false;
+        [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData*, NSURLResponse* resp, NSError* err) {
+            NSHTTPURLResponse* h = (NSHTTPURLResponse*)resp;
+            ok = err == nil && h && h.statusCode >= 200 && h.statusCode < 300;
+            dispatch_semaphore_signal(sem);
+        }] resume];
+        if (dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 13 * NSEC_PER_SEC)) != 0) return false;
+        return ok;
+    }
+}
+
 std::string openFileDialog() {
     NSOpenPanel* p = [NSOpenPanel openPanel];
     p.canChooseFiles = YES; p.canChooseDirectories = NO; p.allowsMultipleSelection = NO;
@@ -184,7 +206,8 @@ void showFatalError(const char* title, const char* text) {
 Prefs& basePrefs() { static DefaultsPrefs p; return p; }
 
 std::vector<std::string> uiFontCandidates() { return {"/System/Library/Fonts/Helvetica.ttc"}; }
-std::vector<std::string> cjkFontCandidates() { return {"/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/STHeiti Medium.ttc", "/System/Library/Fonts/STHeiti Light.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc"}; }
+std::vector<std::string> cjkFontCandidates() { return {"/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/STHeiti Medium.ttc", "/System/Library/Fonts/STHeiti Light.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc",
+                                                          "/System/Library/Fonts/\xE3\x83\x92\xE3\x83\xA9\xE3\x82\xAE\xE3\x83\x8E\xE8\xA7\x92\xE3\x82\xB4\xE3\x82\xB7\xE3\x83\x83\xE3\x82\xAF W3.ttc"}; }   // the last: Hiragino Kaku Gothic (Japanese)
 std::vector<std::string> monoFontCandidates() { return {"/System/Library/Fonts/Menlo.ttc"}; }
 std::string uiLanguage() {
     NSArray<NSString*>* l = [NSLocale preferredLanguages];   // the order of System Settings > Language & Region

@@ -51,6 +51,9 @@ for m in "$P"/lib/SoapySDR/modules0.8/*.dll; do
   [ -f "$m" ] && cp "$m" "$OUT/lib/SoapySDR/modules0.8/"
 done
 [ -d "$P/licenses" ] && { mkdir -p "$OUT/licenses"; cp -R "$P/licenses/." "$OUT/licenses/"; rm -rf "$OUT/licenses/boost-libs" "$OUT/licenses/python3.14"; }   # (Boost and Python came with UHD only)
+# codec2 (FreeDV and M17 speech, LGPL-2.1, third_party/codec2): libcodec2.dll next to OnAir.exe, with its licence and notice
+[ -f $BUILD/libcodec2.dll ] && cp $BUILD/libcodec2.dll "$OUT/" || echo "warning: $BUILD/libcodec2.dll is missing (built with -DDECT2_BUNDLE_CODEC2=OFF?)"
+mkdir -p "$OUT/licenses/codec2"; cp third_party/codec2/COPYING "$OUT/licenses/codec2/COPYING"; cp third_party/codec2/README-OnAir.md "$OUT/licenses/codec2/NOTICE.md"
 for f in "$OUT"/*.dll "$OUT"/lib/SoapySDR/modules0.8/*.dll; do
   [ -f "$f" ] || continue
   [ "$(basename "$f")" = FTD3XX.dll ] || $S --strip-unneeded "$f" 2>/dev/null   # debugging information makes libstdc++ alone 29 MB
@@ -64,6 +67,7 @@ OnAir - DVB-T2 / DVB-T / ATSC / DAB receiver (Windows 10 or 11, 64-bit)
 Start OnAir.exe. Nothing to install.
 HackRF, RTL-SDR and Airspy radios: install the WinUSB driver once with Zadig (https://zadig.akeo.ie): choose the radio in the list, driver "WinUSB", Install.
 Airspy HF+ radios: the same, WinUSB with Zadig.
+Fobos SDR (agile firmware): copy RigExpert's 64-bit fobos_sdr.dll (libfobos-sdr-agile) next to OnAir.exe; the radio needs the WinUSB driver.
 SDRplay RSP radios: install the SDRplay API from sdrplay.com first (it brings the driver; no Zadig).
 BladeRF radios: the library is included; the radio needs a WinUSB (or libusbK) driver: the installer from nuand.com brings one, or use Zadig.
 USRP radios (Ettus): install UHD from Ettus (files.ettus.com) with its firmware and FPGA images (uhd_images_downloader); OnAir uses that UHD. USB models (B200/B210) also need the driver from the UHD installer.

@@ -67,6 +67,17 @@ struct GnssSky {
     bool fromEphemeris = false;  // the position came from a decoded ephemeris (else the almanac)
 };
 
+// Sub-satellite point from a decoded ephemeris or almanac (the ECEF used for the fix, as lat/lon)
+struct GnssSatPos {
+    int sys = 0, prn = 0, fcn = 0;
+    double lat = 0, lon = 0, altKm = 0;
+    bool tracked = false;
+    bool used = false;
+    bool fromEphemeris = false;
+    int health = -1;
+    float cn0 = 0;
+};
+
 // What the navigation message of one satellite has delivered
 struct GnssNavInfo {
     int sys = 0, prn = 0;
@@ -230,6 +241,8 @@ struct GnssTelemetry {
     int nTracked = 0;            // channels that are at least locked
     // The sky: every satellite known to be above the horizon, at most 64
     std::vector<GnssSky> sky;
+    // Sub-points of satellites with an ephemeris or almanac, at most 96 (the geographic map)
+    std::vector<GnssSatPos> sats;
     // Navigation data of the tracked satellites (same order as `channels`, shorter when a system has none yet)
     std::vector<GnssNavInfo> nav;
     GnssFix fix;

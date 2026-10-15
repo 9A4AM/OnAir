@@ -91,7 +91,7 @@ std::vector<RadioSetting> rtlSettings(int tuner, RtlModel m) {
     if (m != kBlogV4 && rtl().set_direct_sampling)
         v.push_back(choiceSetting("ds", "Direct sampling (HF)",
                                   "Below 24 MHz the tuner cannot receive: the RTL2832U can sample an HF antenna on one of its inputs directly.\n"
-                                  "Auto: the Q input below 24 MHz on an RTL-SDR Blog V3 (its HF input); other dongles have none unless modified.\n"
+                                  "Auto: the Q input below 24 MHz on every dongle but the RTL-SDR Blog V4 (which upconverts HF itself); a stock dongle has no HF input, so\nthe signal may be weak or absent unless it is modified.\n"
                                   "I / Q: that input below 24 MHz, whatever the dongle (dongles modified for HF). Off: never.",
                                   {"auto", "off", "i", "q"}, {"Auto", "Off", "I input", "Q input"}, "auto"));
     if (offsetCapable(tuner))
@@ -181,21 +181,24 @@ protected:
             requested_ = s.sampleRate;
             checkRate(s.sampleRate, err);
         }
-        const double f = std::max(s.centerHz, 0.0);
-        // below 24 MHz the R820T/R828D cannot tune: on a Blog V3 the HF signal on the Q input of the RTL2832U is sampled directly (Auto);
-        // the radio settings can name the input for a modified dongle, or switch it off (TuneSettings "ds")
+        const double f = std::max(s.centerHz, 0.0);   // (a negative frequency cannot be asked of the library)
+        // below 24 MHz the R820T/R828D cannot tune: Auto picks the way down on its own for ANY frequency. The RTL-SDR Blog V4 upconverts in the
+        // library (no direct sampling, never asked for); every other dongle samples the Q input of the RTL2832U directly (a V3's HF input; a
+        // stock dongle has none unless it was modified: it still gets tried). The radio settings can name the I input, or switch it off.
         const std::string mode = radioOption(s, "ds", "auto");
         int ds = 0;   // librtlsdr: 0 off, 1 I input, 2 Q input
-        if (mode == "i" || mode == "q") ds = !v4_ && rtl().set_direct_sampling && f < kDirectBelowHz ? (mode == "i" ? 1 : 2) : 0;
-        else if (mode != "off") ds = directCapable(tuner_, model_) && f < kDirectBelowHz ? 2 : 0;
-        // the direct-sampling input works from 0.5 MHz, the tuner from its own lower end (24 MHz for an R820T/R828D without the V4's upconverter)
-        const double tunerLo = !v4_ && (tuner_ == kR820T || tuner_ == kR828D) ? kDirectBelowHz : lo_;
-        const double lo = mode == "off" ? tunerLo : mode == "auto" ? lo_ : (!v4_ && rtl().set_direct_sampling ? 0.5e6 : lo_);   // for the message
-        if (hi_ > 0 && (f > hi_ || f < (ds ? 0.5e6 : tunerLo))) {
-            err = "RTL-SDR could not tune to " + mhz(f) + " MHz (range " + mhz(lo) + "-" + mhz(hi_) + " MHz" + (mode == "off" && tunerLo == kDirectBelowHz ? "; direct sampling is off" : "") + ")";
-            openFailure_ = OpenFailure::Final;
-            return false;
+        const bool canDirect = !v4_ && rtl().set_direct_sampling;
+        if (mode == "i" || mode == "q") ds = canDirect && f < kDirectBelowHz ? (mode == "i" ? 1 : 2) : 0;
+        else if (mode != "off") ds = canDirect && f < kDirectBelowHz ? 2 : 0;
+        // nothing here refuses a frequency: the driver is asked as is. Outside what the dongle is specified for it gets a note.
+        const bool r82 = tuner_ == kR820T || tuner_ == kR828D;
+        const double specLo = ds ? 0.5e6 : v4_ ? lo_ : r82 ? (model_ == kBlogV3 && canDirect && mode != "off" ? 0.5e6 : kDirectBelowHz) : lo_;
+        if (hi_ > 0 && (f > hi_ || f < specLo)) {
+            const std::string where = ds ? "direct sampling reaches from 0.5 MHz" : v4_ || f >= kDirectBelowHz ? "" : "direct sampling is " + std::string(canDirect ? "off" : "not available in this library");
+            addNote(err, "this RTL-SDR is specified for " + mhz(specLo) + " to " + mhz(hi_) + " MHz" + (where.empty() ? std::string() : " (" + where + ")") + ": the driver may not reach " + mhz(f) + " MHz or the signal may be weak or absent");
         }
+        if (ds && model_ != kBlogV3 && model_ != kBlogV4)
+            addNote(err, "below 24 MHz this dongle samples its Q input directly; a stock RTL-SDR has no HF input, so the signal may be weak or absent unless it is modified (the radio settings can pick the I input)");
         if (ds != ds_) {
             rtl().set_direct_sampling(dev_, ds);
             ds_ = ds;
@@ -219,8 +222,10 @@ protected:
             const bool off = radioFlag(s, "offset");
             if (off != offset_ && rtl().set_offset_tuning(dev_, off ? 1 : 0) == 0) offset_ = off;
         }
+        // the library takes the frequency as a 32-bit Hz value: 4.29 GHz is all the wire format holds
+        if (tuneHz > 4.29e9) addNote(err, "the RTL-SDR library takes at most 4.29 GHz (32-bit Hz): " + mhz(f) + " MHz was cut to that");
         if (rtl().set_center_freq(dev_, (uint32_t)std::llround(std::min(tuneHz, 4.29e9))) < 0) {
-            err = "RTL-SDR could not tune to " + mhz(f) + " MHz" + (hi_ > 0 ? " (range " + mhz(lo) + "-" + mhz(hi_) + " MHz)" : std::string());
+            err = "RTL-SDR: the driver refused " + mhz(f) + " MHz" + (hi_ > 0 ? " (this radio is specified for " + mhz(specLo) + " to " + mhz(hi_) + " MHz)" : std::string());
             openFailure_ = OpenFailure::Final;
             return false;
         }

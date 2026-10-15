@@ -1,11 +1,13 @@
 #include "dect2/nettuner.h"
 #include "dect2/hls.h"
+#include "dect2/platform.h"
 #include "netcompat.h"
 #include "dect2/timecompat.h"
 #ifndef _WIN32
 #include <ifaddrs.h>
 #endif
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstring>
 #include <deque>
@@ -56,13 +58,15 @@ bool sendAll(sock_t fd, const void* d, size_t n) {
 }
 } // namespace
 
+struct Piece { std::vector<uint8_t> data; double secs = 0; };   // secs: stream time this piece represents
+
 struct Client {
     sock_t fd = kBadSock;
     int sid = 0;
     ServiceFilter filter;
     std::mutex mu;
     std::condition_variable cv;
-    std::deque<std::vector<uint8_t>> q;
+    std::deque<Piece> q;
     size_t bytes = 0;
     bool done = false;
 };
@@ -128,7 +132,7 @@ struct NetTuner::Impl {
                 {
                     std::unique_lock<std::mutex> lk(raw->client->mu);
                     raw->client->cv.wait_for(lk, std::chrono::milliseconds(250), [&] { return !raw->client->q.empty() || raw->quit || !running; });
-                    if (!raw->client->q.empty()) { chunk = std::move(raw->client->q.front()); raw->client->q.pop_front(); raw->client->bytes -= chunk.size(); }
+                    if (!raw->client->q.empty()) { chunk = std::move(raw->client->q.front().data); raw->client->q.pop_front(); raw->client->bytes -= chunk.size(); }
                 }
                 if (!chunk.empty()) { raw->rest = std::move(chunk); raw->restOff = 0; }
             }
@@ -170,7 +174,7 @@ struct NetTuner::Impl {
     explicit Impl(Engine& e) : eng(e) {}
 
     // called from the receiver thread for every burst of transport stream packets: must stay fast
-    void tap(const uint8_t* pk, size_t n, const TsSnapshot* snap) {
+    void tap(const uint8_t* pk, size_t n, const TsSnapshot* snap, double secs) {
         std::vector<std::shared_ptr<Client>> cs;
         { std::lock_guard<std::mutex> lk(mu); for (auto& c : clients) cs.push_back(c); }
         for (auto& c : cs) {
@@ -181,8 +185,8 @@ struct NetTuner::Impl {
             if (out.empty()) continue;
             std::lock_guard<std::mutex> lk(c->mu);
             c->bytes += out.size();
-            c->q.push_back(std::move(out));
-            while (c->bytes > kMaxQueueBytes && c->q.size() > 1) { c->bytes -= c->q.front().size(); c->q.pop_front(); }
+            c->q.push_back(Piece{std::move(out), secs});
+            while (c->bytes > kMaxQueueBytes && c->q.size() > 1) { c->bytes -= c->q.front().data.size(); c->q.pop_front(); }
             c->cv.notify_one();
         }
     }
@@ -243,16 +247,33 @@ struct NetTuner::Impl {
             auto c = std::make_shared<Client>();
             c->fd = fd; c->sid = sid; c->filter.select(sid);
             { std::lock_guard<std::mutex> lk(mu); clients.push_back(c); }
-            // a closed connection shows up as a failed send; a pending read tells us at once when the viewer goes away
+            // The radio (and a T2 frame) hands the packets over in a lump. Writing that lump in one send makes VLC play it
+            // immediately and then wait until the next lump, about every 100 ms. Each piece is spread over the stream time it represents.
+            setThreadPriority(ThreadPriority::Realtime);
+            auto next = std::chrono::steady_clock::now();
             while (running) {
-                std::vector<uint8_t> chunk;
+                Piece chunk;
                 {
                     std::unique_lock<std::mutex> lk(c->mu);
                     c->cv.wait_for(lk, std::chrono::milliseconds(250), [&] { return !c->q.empty() || !running; });
-                    if (!c->q.empty()) { chunk = std::move(c->q.front()); c->q.pop_front(); c->bytes -= chunk.size(); }
+                    if (!c->q.empty()) { chunk = std::move(c->q.front()); c->q.pop_front(); c->bytes -= chunk.data.size(); }
                 }
-                if (!chunk.empty()) { if (!sendAll(fd, chunk.data(), chunk.size())) break; sent += chunk.size(); }
-                else if (sockPeekClosed(fd) == 0) break;
+                if (chunk.data.empty()) { if (sockPeekClosed(fd) == 0) break; continue; }
+                const double span = (chunk.secs > 0 && chunk.secs < 2.0) ? chunk.secs : 0;
+                size_t off = 0;
+                bool dead = false;
+                while (off < chunk.data.size() && running) {
+                    const size_t m = std::min(chunk.data.size() - off, (size_t)7 * 188);
+                    if (!sendAll(fd, chunk.data.data() + off, m)) { dead = true; break; }
+                    sent += m;
+                    off += m;
+                    if (span <= 0) continue;
+                    next += std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(span * (double)m / (double)chunk.data.size()));
+                    const auto now = std::chrono::steady_clock::now();
+                    if (now > next + std::chrono::milliseconds(80)) next = now;   // idle or a real pause: that gap is not a licence to dump the queue
+                    else if (next > now) std::this_thread::sleep_until(next);
+                }
+                if (dead) break;
             }
             { std::lock_guard<std::mutex> lk(mu); clients.remove(c); }
             sockClose(fd);
@@ -333,7 +354,7 @@ bool NetTuner::start(const NetTunerConfig& c) {
     if (bind(s, (sockaddr*)&a, sizeof a) < 0 || listen(s, 16) < 0) { p_->error = "port " + std::to_string(c.port) + " is not available"; sockClose(s); return false; }
     p_->lsock = s; p_->running = true;
     p_->acceptor = std::thread([this] { p_->acceptLoop(); });
-    p_->eng.setPacketTap([this](const uint8_t* pk, size_t n, const TsSnapshot* sn) { p_->tap(pk, n, sn); });
+    p_->eng.setPacketTap([this](const uint8_t* pk, size_t n, const TsSnapshot* sn, double secs) { p_->tap(pk, n, sn, secs); });
     return true;
 }
 

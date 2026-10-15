@@ -2,6 +2,7 @@
 // symbol synchronisation, CFO / timing tracking and raw OFDM cell extraction.
 #pragma once
 #include "wide_bank.h"
+#include "tvchan.h"
 #include <string>
 #include "ring.h"
 #include "atsc_tel.h"
@@ -31,6 +32,7 @@
 #include "vdl2_tel.h"
 #include "ism_tel.h"
 #include "vor_tel.h"
+#include "ndb_tel.h"
 #include "m17_tel.h"
 #include "hfdl_tel.h"
 #include "cell_tel.h"
@@ -39,6 +41,7 @@
 #include "nxdn_tel.h"
 #include "dpmr_tel.h"
 #include "tetra_tel.h"
+#include "tetrapol_tel.h"
 #include "mac_tel.h"
 #include "gsmr_tel.h"
 #include "dvbc_tel.h"
@@ -70,12 +73,15 @@
 #include "wb_tel.h"
 #include "datawell_tel.h"
 #include "same_tel.h"
+#include "ant_tel.h"
+#include "dect_tel.h"
 #include "multitone_tel.h"
 #include "loraraw_tel.h"
 #include "rid_tel.h"
 #include "meteor_tel.h"
 #include "nr_tel.h"
 #include "goes_tel.h"
+#include "elektro_tel.h"
 #include "hrpt_tel.h"
 #include "t2.h"
 #include "t2l1.h"
@@ -104,6 +110,7 @@ struct P1Info {
 
 struct RxTelemetry {
     std::vector<WideCarrier> wide;   // whole-span decoding: the carriers table (empty otherwise)
+    std::vector<TvChannelRow> tvChannels;   // multi-channel TV (DVB-T / DVB-T2): the channels of the span (empty otherwise)
     AtscTelemetry atsc;          // valid when standard == 2
     DabTelemetry dab;            // valid when standard == 3
     FmTelemetry fm;              // valid when standard == 6
@@ -133,6 +140,7 @@ struct RxTelemetry {
     int standard = 0;            // 0 DVB-T2, 1 DVB-T, 2 ATSC, 3 DAB, 4 ATSC 3.0 (details: Engine::atsc3Telemetry), 5 ISDB-T, 6 FM, 7 DVB-S/S2, 8 DTMB, 9 analog TV, 10 DMR, 11 DRM, 12 ADS-B, 13 GNSS, 14 radiosonde, 15 AIS, 16 marine, 17 ACARS, 18 Inmarsat-C, 19 Inmarsat Aero, 20 Iridium, 21 mesh, 22 HD Radio, 23 CDR, 24 pagers, 25 APRS / packet, 26 HF digital, 27 airband, 28 VDL Mode 2, 29 ISM sensors, 31 VOR / ILS, 32 M17, 34 D-STAR, 35 CW, 36 HFDL, 37 PSK31, 38 JS8Call, 41 DVB-C, 45 Orbcomm, 47 TETRA, 39 NXDN, 39 NXDN, 50 HF ALE, 48 MAC, 51 P25
     IsmTelemetry ism;           // valid when standard == 29
     VorTelemetry vor;           // valid when standard == 31
+    NdbTelemetry ndb;           // valid when standard == 30 (NDB, engine standard 31)
     HfdlTelemetry hfdl;         // valid when standard == 36
     M17Telemetry m17;           // valid when standard == 32
     CellTelemetry cell;         // valid when standard == 33
@@ -165,12 +173,16 @@ struct RxTelemetry {
     DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)
     CodarTelemetry codar;     // valid when standard == 73 (CODAR / HF ocean radar)
     SameTelemetry same;       // valid when standard == 77 (NOAA weather radio SAME)
+    AntTelemetry ant;         // valid when standard == 78 (ANT+ sensors)
+    DectTelemetry dect;       // valid when standard == 79 (DECT cordless phones)
+    TetrapolTelemetry tetrapol;   // valid when standard == 80 (TETRAPOL)
     MultitoneTelemetry multitone;   // valid when standard == 76 (Multitone paging)
     HalowTelemetry halow;     // valid when standard == 71 (Wi-Fi HaLow / 802.11ah)
     RidTelemetry rid;         // valid when standard == 57 (Drone Remote ID)
     MeteorTelemetry meteor;   // valid when standard == 60 (Meteor-M LRPT)
     NrTelemetry nr;           // valid when standard == 58 (5G NR cells)
     GoesTelemetry goes;       // valid when standard == 61 (GOES HRIT)
+    ElektroTelemetry elektro; // valid when standard == 81 (Elektro-L)
     HrptTelemetry hrpt;       // valid when standard == 65 (HRPT / AHRPT)
     PskTelemetry psk;      // valid when standard == 37
     DstarTelemetry dstar;       // valid when standard == 34

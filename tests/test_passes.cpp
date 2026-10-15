@@ -135,6 +135,18 @@ int main() {
             }
         }
     }
+    // ---- when to fetch TLEs again: never fetched -> now; a day after a success; a failed try waits 6 hours; a clock set back does not block
+    {
+        const double D = 86400, H = 3600, t = 1.8e9;
+        CHECK(tleUpdateDue(t, 0, 0), "never fetched: due");
+        CHECK(!tleUpdateDue(t, t - 23 * H, 0), "23 h after a success: not due");
+        CHECK(tleUpdateDue(t, t - D, 0) && tleUpdateDue(t, t - 3 * D, 0), "a day after a success: due");
+        CHECK(!tleUpdateDue(t, t - 3 * D, t - 1 * H), "old but tried an hour ago: not due");
+        CHECK(tleUpdateDue(t, t - 3 * D, t - 7 * H), "old and the last try was 7 h ago: due");
+        CHECK(!tleUpdateDue(t, 0, t - 60), "first fetch failed a minute ago: not due");
+        CHECK(tleUpdateDue(t, t + 5 * D, 0), "success stamped in the future (clock set back): due");
+        CHECK(tleUpdateDue(t, t - 2 * D, t + 100), "a try stamped in the future (clock set back) does not block");
+    }
     if (fails) { printf("%d failures\n", fails); return 1; }
     printf("passes: all tests passed\n");
     return 0;

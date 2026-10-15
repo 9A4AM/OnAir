@@ -402,7 +402,23 @@ void receiverGlance(App& a, float w, float h) {
             kv("SNR", "%.1f dB", rx.dataSnrDb);
             kv("carrier offset", "%+.0f Hz", rx.cfoHz);
         }
-        { const SampleLoss l = a.engine.sampleLoss(); kv("dropped", "%s", lossText(l).c_str()); lossTooltip(l); kv("receiver load", "%.0f%%", l.loadPct); }
+        {
+            const SampleLoss l = a.engine.sampleLoss();
+            ImGui::TextDisabled("dropped"); kvColumn(112 * gUi);
+            ImGui::PushFont(a.mono, 0); ImGui::TextColored(lossColour(l), "%s", lossText(l).c_str()); ImGui::PopFont();
+            lossTooltip(l);
+            if (l.live) {
+                ImGui::TextDisabled("arriving"); kvColumn(112 * gUi);
+                ImGui::PushFont(a.mono, 0);
+                if (l.deliveredPct < 0) ImGui::TextUnformatted("-");
+                else if (l.rateLow) ImGui::TextColored(pal::badRed(), "%.1f%%", l.deliveredPct);
+                else ImGui::Text("%.1f%%", l.deliveredPct);
+                ImGui::PopFont();
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Samples the radio handed over, as a percent of the rate it was set to. Warns below 97%. Not the receiver load.");
+            }
+            kv("receiver load", "%.0f%%", l.loadPct);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", "Processing time of a block versus its duration. High load is not the same as lost samples.");
+        }
     }
     ImGui::EndChild();
 }
@@ -661,8 +677,8 @@ void tsTab(App& a) {
     { ImGui::PushTextWrapPos(0); ImGui::Text("network \"%s\"  onid 0x%04X  tsid 0x%04X   %s", ts.networkName.c_str(), ts.onid, ts.tsid, ts.utc.c_str()); ImGui::PopTextWrapPos(); }
     { ImGui::PushTextWrapPos(0); ImGui::Text("multiplex %s (null packets %s)   packets %llu   continuity errors %llu   TEI %llu",
                 fmtKbps(b, sizeof b, ts.muxKbps), fmtKbps(b2, sizeof b2, ts.nullKbps), (unsigned long long)ts.totalPackets, (unsigned long long)ts.ccErrors, (unsigned long long)ts.teiPackets); ImGui::PopTextWrapPos(); }
-    { ImGui::PushTextWrapPos(0); ImGui::Text("BB frames %llu (lost %llu)  mode %s  ISSYI %d NPD %d  resyncs %llu  CRC-8 errors %llu", (unsigned long long)a.bb.frames, (unsigned long long)a.bb.framesLost,
-                a.bb.hem ? "high-efficiency" : "normal", a.bb.issyi, a.bb.npd, (unsigned long long)a.bb.resyncs, (unsigned long long)a.bb.crcErrors); ImGui::PopTextWrapPos(); }
+    { ImGui::PushTextWrapPos(0); ImGui::Text("BB frames %llu (lost %llu)  mode %s  ISSYI %d NPD %d  SIS/MIS %d ISI %d  resyncs %llu  CRC-8 errors %llu  skipped %llu", (unsigned long long)a.bb.frames, (unsigned long long)a.bb.framesLost,
+                a.bb.hem ? "high-efficiency" : "normal", a.bb.issyi, a.bb.npd, a.bb.sisMis, a.bb.isi, (unsigned long long)a.bb.resyncs, (unsigned long long)a.bb.crcErrors, (unsigned long long)a.bb.unsupported); ImGui::PopTextWrapPos(); }
     ImGui::PopFont();
     ImGui::Spacing();
     if (ImGui::BeginTable("pids", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp, ImVec2(0, -1))) {

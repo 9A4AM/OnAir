@@ -1,6 +1,27 @@
 // small reusable widgets: pill buttons, lamps, gauges, scatter and history plots, formatting helpers
 #include "app.h"
 
+// Frequency step arrows: one step on press, then after 0.40 s one more step every 0.08 s.
+// At most one step per frame so a hitch does not jump many channels.
+bool freqStepArrow(const char* id, ImGuiDir dir) {
+    constexpr float kDelay = 0.40f, kRate = 0.08f;
+    ImGui::ArrowButton(id, dir);
+    const ImGuiID item = ImGui::GetItemID();
+    struct Hold { ImGuiID id = 0; float t0 = 0, last = 0; };
+    static Hold h;
+    const float now = (float)ImGui::GetTime();
+    if (ImGui::IsItemClicked()) {
+        h.id = item;
+        h.t0 = h.last = now;
+        return true;
+    }
+    if (ImGui::IsItemActive() && h.id == item && now - h.t0 >= kDelay && now - h.last >= kRate) {
+        h.last = now;
+        return true;
+    }
+    return false;
+}
+
 bool gTightTabs = false;
 void setUiLanguage(App& a, const std::string& code) {
     a.uiLang = code;
@@ -104,6 +125,15 @@ void toggleFullscreen() {
     if (!vm) return;
     glfwSetWindowAttrib(gWindow, GLFW_AUTO_ICONIFY, GLFW_FALSE);  // stay up when focus moves (#71)
     glfwSetWindowMonitor(gWindow, m, 0, 0, vm->width, vm->height, vm->refreshRate);
+}
+
+void handleFullscreenHotkeys() {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantTextInput) return;   // F11 / Alt+Enter stay with the field while typing
+    const bool f11 = ImGui::IsKeyPressed(ImGuiKey_F11, false);
+    const bool altEnter = io.KeyAlt && !io.KeyCtrl && !io.KeySuper
+        && (ImGui::IsKeyPressed(ImGuiKey_Enter, false) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false));
+    if (f11 || altEnter) toggleFullscreen();
 }
 
 bool pillButton(const char* label, bool selected, float padX) {
@@ -396,15 +426,20 @@ void qualityBar(App& a, float width) {
 
 
 std::string lossText(const SampleLoss& l) {
-    if (l.radioEvents == 0 && l.cpuEvents == 0) return "0";
     auto dur = [](double s) { char b[32]; if (s < 1) snprintf(b, sizeof b, "%.0f ms", s * 1000); else snprintf(b, sizeof b, "%.1f s", s); return std::string(b); };
     std::string t;
-    if (l.radioEvents) t = dur(l.radioSec) + " radio";
-    if (l.cpuEvents) t += (t.empty() ? "" : ", ") + dur(l.cpuSec) + " CPU";
-    return t;
+    if (l.rateLow) {
+        char b[96];
+        snprintf(b, sizeof b, tr("%.1f%% of set rate"), l.deliveredPct);
+        t = b;
+    }
+    if (l.radioEvents) t += (t.empty() ? "" : ", ") + dur(l.radioSec) + " " + tr("callback gaps");
+    if (l.cpuEvents) t += (t.empty() ? "" : ", ") + dur(l.cpuSec) + " " + tr("ring overflow");
+    return t.empty() ? "0" : t;
 }
 
 ImVec4 lossColour(const SampleLoss& l, ImVec4 normal) {
+    if (l.rateLow) return pal::badRed();
     double since = -1;
     for (double s : {l.sinceRadioSec, l.sinceCpuSec}) if (s >= 0 && (since < 0 || s < since)) since = s;
     if (since < 0) return normal;
@@ -414,18 +449,25 @@ ImVec4 lossColour(const SampleLoss& l, ImVec4 normal) {
 void lossTooltip(const SampleLoss& l) {
     if (!ImGui::IsItemHovered()) return;
     ImGui::BeginTooltip();
-    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 28);
+    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32);
     auto ago = [](double s) { char b[48]; if (s < 0) return std::string(tr("never")); if (s < 120) snprintf(b, sizeof b, tr("%.0f s ago"), s); else snprintf(b, sizeof b, tr("%.0f min ago"), s / 60); return std::string(b); };
     if (!l.live) ImGui::TextUnformatted(tr("Files and the test signal never lose samples: they wait for the receiver."));
     else {
-        ImGui::Text(tr("Radio side: %.2f s lost in %llu gaps, last %s"), l.radioSec, (unsigned long long)l.radioEvents, ago(l.sinceRadioSec).c_str());
-        ImGui::TextDisabled("%s", tr("Samples that never arrived from the radio: its USB connection or driver could not keep up. Try a USB port directly on the computer (no hub), a shorter cable, or a lower sample rate."));
+        if (l.deliveredPct >= 0)
+            ImGui::Text(tr("Arriving from the radio: %.1f%% of the set rate"), l.deliveredPct);
+        else ImGui::TextUnformatted(tr("Arriving from the radio: not measured yet"));
+        ImGui::TextDisabled("%s", l.rateLow
+            ? tr("Below 97% of the rate the radio was set to: the radio or its driver is handing over less than asked. This is not the receiver's CPU load. Try a USB port on the computer (no hub), a shorter cable, or a lower sample rate.")
+            : tr("The sample rate actually handed over by the radio, over the last seconds. A warning appears below 97% of the set rate."));
         ImGui::Spacing();
-        ImGui::Text(tr("CPU side: %.2f s skipped %llu times, last %s"), l.cpuSec, (unsigned long long)l.cpuEvents, ago(l.sinceCpuSec).c_str());
-        ImGui::TextDisabled("%s", tr("Signal OnAir had to skip because the receiver could not keep up with the sample rate. Close other programs, or pick a lower sample rate or a narrower channel."));
+        ImGui::Text(tr("Callback gaps: %.2f s in %llu gaps, last %s"), l.radioSec, (unsigned long long)l.radioEvents, ago(l.sinceRadioSec).c_str());
+        ImGui::TextDisabled("%s", tr("Gaps between the library's callbacks: the radio or its driver delivered less than the set rate, so those samples never entered OnAir."));
+        ImGui::Spacing();
+        ImGui::Text(tr("Ring overflow: %.2f s discarded %llu times, last %s"), l.cpuSec, (unsigned long long)l.cpuEvents, ago(l.sinceCpuSec).c_str());
+        ImGui::TextDisabled("%s", tr("OnAir did not read the input ring fast enough, so samples the radio had already delivered were thrown away. Close other programs, or pick a lower sample rate or a narrower channel."));
         ImGui::Spacing();
         ImGui::Text(tr("Receiver load: %.0f%% of real time"), l.loadPct);
-        ImGui::TextDisabled("%s", tr("The receiver's time on the sample thread per second of signal. Near or above 100%, signal is skipped."));
+        ImGui::TextDisabled("%s", tr("Processing time of a block versus its duration, on the sample thread. Near 100% the receiver is just keeping up. High load and lost samples are separate: load can be high with every sample kept, and samples can be lost while load is low."));
     }
     ImGui::PopTextWrapPos();
     ImGui::EndTooltip();

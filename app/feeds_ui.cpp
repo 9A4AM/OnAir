@@ -5,7 +5,7 @@
 #include <ctime>
 
 namespace {
-const char* kKeys[dect2::kNumFeeds] = {"feedSbs", "feedBeast", "feedAis", "feedAprsIs", "feedKiss", "feedAcars", "feedVdl2"};
+const char* kKeys[dect2::kNumFeeds] = {"feedSbs", "feedBeast", "feedAis", "feedAprsIs", "feedKiss", "feedAcars", "feedVdl2", "feedGnss", "feedBle", "feedLora"};
 
 void apply(App& a) {
     dect2::Feeds::get().configure(a.feeds);
@@ -54,6 +54,9 @@ void loadFeedPrefs(App& a) {
     c.aisHost = d.getS("feedAisHost", c.aisHost); c.aisPort = (int)d.getI("feedAisPort", c.aisPort);
     c.acarsHost = d.getS("feedAcarsHost", c.acarsHost); c.acarsPort = (int)d.getI("feedAcarsPort", c.acarsPort);
     c.vdl2Host = d.getS("feedVdl2Host", c.vdl2Host); c.vdl2Port = (int)d.getI("feedVdl2Port", c.vdl2Port);
+    c.gnssHost = d.getS("feedGnssHost", c.gnssHost); c.gnssPort = (int)d.getI("feedGnssPort", c.gnssPort);
+    c.bleHost = d.getS("feedBleHost", c.bleHost); c.blePort = (int)d.getI("feedBlePort", c.blePort);
+    c.loraHost = d.getS("feedLoraHost", c.loraHost); c.loraPort = (int)d.getI("feedLoraPort", c.loraPort);
     c.aprsCall = d.getS("feedAprsCall", ""); c.aprsPass = d.getS("feedAprsPass", "");
     c.aprsServer = d.getS("feedAprsServer", c.aprsServer); c.aprsServerPort = (int)d.getI("feedAprsServerPort", c.aprsServerPort);
     c.stationId = d.getS("feedStationId", c.stationId);
@@ -63,6 +66,22 @@ void loadFeedPrefs(App& a) {
     bool any = false;
     for (bool o : c.on) any = any || o;
     if (any) dect2::Feeds::get().configure(c);
+    dect2::ShareConfig& sc = a.share;
+    sc.on = d.getB("shareOn", false); sc.port = (int)d.getI("sharePort", sc.port); sc.lan = d.getI("shareLan", 0) != 0; sc.allowControl = d.getI("shareControl", 0) != 0;
+    if (sc.on) dect2::ShareServer::get().configure(sc);
+    remoteApiLoadPrefs(a);
+}
+
+// Remote control from the clients of "Share my radio": their frequency and gain commands (only arrive when the box is ticked)
+void shareTick(App& a) {
+    if (a.rxId != 1 || !a.share.on || !a.share.allowControl) return;
+    bool retune = false;
+    for (const dect2::ShareCommand& m : dect2::ShareServer::get().takeCommands()) {
+        if (m.cmd == 0x01 && m.value > 0) { a.freqMhz = m.value / 1e6; a.tune.centerHz = a.freqMhz * 1e6; retune = true; }
+        else if (m.cmd == 0x04 && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[a.devIdx].isGeneric()) { a.tune.gainDb = m.value / 10.0; retune = true; }
+        else if (m.cmd == 0x0e) { a.tune.biasTee = m.value != 0; retune = true; }
+    }
+    if (retune && a.engine.running()) { a.engine.retune(a.tune); a.peak.clear(); }
 }
 
 void saveFeedPrefs(const App& a) {
@@ -73,9 +92,14 @@ void saveFeedPrefs(const App& a) {
     d.setS("feedAisHost", c.aisHost); d.setI("feedAisPort", c.aisPort);
     d.setS("feedAcarsHost", c.acarsHost); d.setI("feedAcarsPort", c.acarsPort);
     d.setS("feedVdl2Host", c.vdl2Host); d.setI("feedVdl2Port", c.vdl2Port);
+    d.setS("feedGnssHost", c.gnssHost); d.setI("feedGnssPort", c.gnssPort);
+    d.setS("feedBleHost", c.bleHost); d.setI("feedBlePort", c.blePort);
+    d.setS("feedLoraHost", c.loraHost); d.setI("feedLoraPort", c.loraPort);
     d.setS("feedAprsCall", c.aprsCall); d.setS("feedAprsPass", c.aprsPass);
     d.setS("feedAprsServer", c.aprsServer); d.setI("feedAprsServerPort", c.aprsServerPort);
     d.setS("feedStationId", c.stationId);
+    d.setB("shareOn", a.share.on); d.setI("sharePort", a.share.port); d.setI("shareLan", a.share.lan ? 1 : 0); d.setI("shareControl", a.share.allowControl ? 1 : 0);
+    remoteApiSavePrefs(a);
     d.setB("pskrOn", a.pskr.on); d.setS("pskrCall", a.pskr.call); d.setS("pskrLocator", a.pskr.locator); d.setS("pskrAntenna", a.pskr.antenna);
 }
 
@@ -146,6 +170,29 @@ void feedsWindow(App& a) {
     ImGui::PopID();
     changed |= textField(N_("Station ID"), c.stationId, 0, 120);
 
+    ImGui::SeparatorText(tr("GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)"));
+    ImGui::PushID("gnss");
+    changed |= ImGui::Checkbox(tr("GNSS NMEA RMC/GGA (UDP)"), &c.on[dect2::kFeedGnss]);
+    ImGui::SameLine(); changed |= textField("##host", c.gnssHost, 0, 120);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.gnssPort);
+    statusLine(dect2::kFeedGnss, false);
+    ImGui::PopID();
+    ImGui::PushID("ble");
+    changed |= ImGui::Checkbox(tr("Bluetooth LE advertisements, JSON (UDP)"), &c.on[dect2::kFeedBle]);
+    ImGui::SameLine(); changed |= textField("##host", c.bleHost, 0, 120);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.blePort);
+    statusLine(dect2::kFeedBle, false);
+    ImGui::PopID();
+    ImGui::PushID("lora");
+    changed |= ImGui::Checkbox(tr("LoRa / LoRaWAN / Meshtastic, JSON (UDP)"), &c.on[dect2::kFeedLora]);
+    ImGui::SameLine(); changed |= textField("##host", c.loraHost, 0, 120);
+    ImGui::SameLine(); changed |= portField(N_("Port"), c.loraPort);
+    statusLine(dect2::kFeedLora, false);
+    ImGui::PopID();
+    ImGui::PushTextWrapPos(460 * gUi);
+    ImGui::TextDisabled("%s", tr("JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent."));
+    ImGui::PopTextWrapPos();
+
     ImGui::SeparatorText(tr("PSK Reporter"));
     ImGui::SameLine(); ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered()) {
@@ -181,6 +228,32 @@ void feedsWindow(App& a) {
         ImGui::Unindent();
     }
     if (pc) { dect2::PskReporter::get().configure(r); savePrefs(a); }
+
+    ImGui::SeparatorText(tr("Share my radio (rtl_tcp server)"));
+    {
+        dect2::ShareConfig& sc = a.share;
+        bool sch = false;
+        sch |= ImGui::Checkbox(tr("Share the radio's samples as an rtl_tcp server"), &sc.on);
+        ImGui::SameLine(); sch |= portField(N_("Port"), sc.port);
+        ImGui::Indent();
+        sch |= ImGui::Checkbox(tr("Let other computers connect (LAN)"), &sc.lan);
+        sch |= ImGui::Checkbox(tr("Allow remote control (frequency and gain)"), &sc.allowControl);
+        const dect2::ShareStatus ss = dect2::ShareServer::get().status();
+        if (!sc.on) ImGui::TextDisabled("%s", tr("off"));
+        else if (!ss.listening) ImGui::TextColored(pal::badRed(), "%s", ss.lastError.empty() ? tr("starting") : ss.lastError.c_str());
+        else {
+            ImGui::TextColored(pal::okGreen(), tr("listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped"), sc.lan ? "all addresses" : "127.0.0.1", sc.port,
+                               (int)ss.clients.size(), (double)ss.sentBytes / 1e6, (double)ss.droppedBytes / 1e6);
+            for (const std::string& c : ss.clients) ImGui::BulletText("%s", c.c_str());
+        }
+        ImGui::PushTextWrapPos(460 * gUi);
+        ImGui::TextDisabled("%s", tr("A second OnAir (Add network radio, rtl_tcp), SDR# or SDR++ connects to this computer's address and the port. Samples are sent as 8-bit IQ at the rate the radio runs at. "
+                                     "Without 'allow remote control' the clients cannot change the frequency or gain."));
+        ImGui::PopTextWrapPos();
+        ImGui::Unindent();
+        if (sch) { dect2::ShareServer::get().configure(sc); savePrefs(a); }
+    }
+    remoteApiSection(a);
 
     if (changed) apply(a);
     ImGui::End();

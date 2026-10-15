@@ -39,6 +39,7 @@ struct Qo100Telemetry {
     bool nbOk = false, wbOk = false;   // the narrowband / wideband transponder lies inside the radio's band
     // the LNB's frequency error, measured on the CW beacons: actual LO = nominal + lnbErrHz
     bool corrValid = false;
+    bool corrApplied = true;    // false: automatic frequency correction is switched off (the error is measured but not applied)
     double lnbErrHz = 0, lnbErrPpm = 0;
     double driftHzPerMin = 0;   // over the last 30 s
     bool driftValid = false;

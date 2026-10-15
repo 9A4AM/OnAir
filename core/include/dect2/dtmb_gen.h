@@ -20,6 +20,7 @@
 
 namespace dect2 {
 std::unique_ptr<ModeSynth> makeDtmbSynth(const SynthConfig& cfg, double sampleRate);   // nullptr: below 8 Msps
+std::unique_ptr<ModeSynth> makeDtmbSynth(const SynthConfig& cfg, double sampleRate, std::function<void(uint8_t*)> ts);
 
 namespace dtmb {
 

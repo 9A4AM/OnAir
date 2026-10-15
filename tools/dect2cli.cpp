@@ -60,6 +60,7 @@ int main(int argc, char** argv) {
     bool dpmrScan = false;
     double dvbcSr = 0; int dvbcQam = 0; bool dvbcAnnexC = false;
     int orbcommMax = 2;
+    double refLat = 0, refLon = 0; bool haveRef = false;
     const SubMode* subMode = nullptr;   // --standard named one protocol of a shared receiver
     std::string wavPath;
     std::vector<int16_t> wav;
@@ -81,6 +82,7 @@ int main(int argc, char** argv) {
         else if (a == "--orbcomm-downlinks") orbcommMax = atoi(next());   // with --standard orbcomm: 1 or 2 downlinks decoded at once (default 2)
         else if (a == "--dvbc-annexc") dvbcAnnexC = true;          // with --standard dvbc: J.83 annex C (roll-off 0.13)   // with --standard atv: FM video (analog FPV links), 20 Msps
         else if (a == "--freq") { freq = atof(next()); freqSet = true; }
+        else if (a == "--ref" && i + 2 < argc) { refLat = atof(argv[++i]); refLon = atof(argv[++i]); haveRef = true; }
         else if (a == "--lna") tune.lnaDb = atoi(next());
         else if (a == "--vga") tune.vgaDb = atoi(next());
         else if (a == "--amp") tune.ampOn = true;
@@ -204,6 +206,8 @@ int main(int argc, char** argv) {
     e.multitone().clearResults(); // Multitone paging: the transmissions are printed with each line
     e.codar().clearResults();     // CODAR radars: the table is printed with each line
     e.same().clearResults();      // SAME alerts: the newest are printed with each line
+    e.ant().clearResults();       // ANT+ sensors: the sensors are printed with each line
+    e.dect().clearResults();      // DECT: the base stations are printed with each line
     e.same().setSilent(true);     // weather radio: no sound from the command line
     e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
@@ -229,6 +233,7 @@ int main(int argc, char** argv) {
     if (atvFm) e.atv().setModulation(1);
     e.setBandwidthAuto(autoBw);
     e.setSpectrumEnabled(autoBw);   // cli doesn't show the spectrum
+    if (haveRef) e.adsb().setReference(refLat, refLon);
     if (!e.start(dev, tune, file)) {
         size_t n; for (auto& l : e.logSnapshot(n)) fprintf(stderr, "%s\n", l.c_str());
         return 1;
@@ -300,6 +305,19 @@ int main(int argc, char** argv) {
                 for (const auto& ap : t.wifi.aps)
                     printf("  wifi: %s %-32s ch %2d %-12s %6.1f dBFS %s\n", ap.bssid.c_str(), ap.hidden && ap.ssid.empty() ? "(hidden)" : ap.ssid.c_str(), ap.channel,
                            wifi::securityName(ap.security, ap.enterprise), ap.rssi, ap.vendor.c_str());
+            if (t.standard == 12) {   // ADS-B: aircraft and whether CPR produced a position
+                for (const auto& a : t.adsb.aircraft) {
+                    char pos[48] = "-";
+                    if (a.hasPos) snprintf(pos, sizeof pos, "%.4f,%.4f", a.lat, a.lon);
+                    printf("  ac: %06X %-8s alt=%d spd=%d pos=%s cpr=%c%c kind=%d msgs=%u%s\n",
+                           a.icao & 0xFFFFFF, a.callsign.empty() ? "-" : a.callsign.c_str(),
+                           a.hasAlt ? a.altFt : -1, a.hasSpeed ? (int)a.speedKt : -1, pos,
+                           (a.cprHave & 1) ? 'E' : '-', (a.cprHave & 2) ? 'O' : '-', a.posKind, a.messages, a.hasPos ? " FIX" : "");
+                }
+                int nfr = 0;
+                for (auto it = t.adsb.frames.rbegin(); it != t.adsb.frames.rend() && nfr < 12; ++it, ++nfr)
+                    printf("  msg: DF%02d TC%2d %s\n", it->df, it->tc, it->what.c_str());
+            }
             if (t.standard == 67)   // FLARM: the aircraft heard (flagged aircraft are only counted)
                 for (size_t i = 0; i < t.flarm.aircraft.size() && i < 3; i++) {
                     const FlarmAircraft& a = t.flarm.aircraft[i];
@@ -333,6 +351,13 @@ int main(int argc, char** argv) {
                 if (d.periodBits) printf("  datawell: period %d bits (z %.0f) sync %s CRC attempt %s (%d / %d) unverified\n", d.periodBits, d.periodZ, d.syncHex.empty() ? "-" : d.syncHex.c_str(), d.crcName.empty() ? "none" : d.crcName.c_str(), d.crcPass, d.crcTotal);
                 for (size_t i = 0; i < d.frames.size() && i < 3; i++) printf("  datawell: frame %s%s\n", d.frames[i].hex.c_str(), d.frames[i].crcOk ? " crc-attempt-ok" : "");
             }
+            if (t.standard == 78)   // ANT+ sensors: one line a sensor
+                for (const auto& d : t.ant.devices)
+                    printf("  ant: %u %s%s trans %u  %s: %s  %.1f dBFS, %llu frames\n", d.deviceNumber, d.typeName.c_str(), d.marker == 0xA6C5 ? "" : " (other network)", d.transType,
+                           d.lastPage.c_str(), d.lastText.c_str(), d.rssi, (unsigned long long)d.frames);
+            if (t.standard == 79)   // DECT: one line a base station
+                for (const auto& b : t.dect.bases)
+                    printf("  dect: base %s emc %d  %.1f dBFS, %llu beacons, slots %06X\n", dect::hex40(b.rfpi).c_str(), b.emc, b.rssi, (unsigned long long)b.frames, b.slotsMask);
             if (t.standard == 77)   // NOAA weather radio SAME: the newest messages
                 for (size_t i = 0; i < t.same.alerts.size() && i < 3; i++) {
                     const auto& al = t.same.alerts[i];
@@ -470,7 +495,7 @@ int main(int argc, char** argv) {
     {
         TsSnapshot ts = e.tsSnapshot();
         BbStats bb = e.bbStats();
-        printf("\nBB frames %llu (lost %llu) packets %llu resyncs %llu  mode %s ISSYI %d NPD %d\n", (unsigned long long)bb.frames, (unsigned long long)bb.framesLost, (unsigned long long)bb.packets, (unsigned long long)bb.resyncs, bb.hem ? "HEM" : "normal", bb.issyi, bb.npd);
+        printf("\nBB frames %llu (lost %llu) packets %llu resyncs %llu unsupported %llu  mode %s ISSYI %d NPD %d SIS/MIS %d ISI %d\n", (unsigned long long)bb.frames, (unsigned long long)bb.framesLost, (unsigned long long)bb.packets, (unsigned long long)bb.resyncs, (unsigned long long)bb.unsupported, bb.hem ? "HEM" : "normal", bb.issyi, bb.npd, bb.sisMis, bb.isi);
         printf("TS: network \"%s\" onid 0x%04X tsid 0x%04X  %s  mux %.0f kbit/s (null %.0f)  CC errors %llu\n", ts.networkName.c_str(), ts.onid, ts.tsid, ts.utc.c_str(), ts.muxKbps, ts.nullKbps, (unsigned long long)ts.ccErrors);
         for (auto& sv : ts.services) {
             printf("  [%4d] %-24s %-8s lcn %-3d pmt 0x%04X %s\n", sv.id, sv.name.c_str(), sv.typeName(), sv.lcn, sv.pmtPid, sv.caFlag ? "(scrambled)" : "");

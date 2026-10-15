@@ -1,0 +1,1130 @@
+# OnAir interface in Japanese. One text per line: the English text as in the source, a tab, the translation.
+# \n is a line break. Keep the printf conversions (%s, %d, %.1f ...) in the same order. tests/test_i18n.cpp checks this file.
+#  menus, status words, common buttons
+1 kHz test tone	1 kHz test tone
+A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.	A P6 PPM is sent as the picture; any other or empty file uses the test picture. The callsign is stamped on it.
+A SAME header. ZCZC- is added when missing.	A SAME header. ZCZC- is added when missing.
+Aircraft registration	Aircraft registration
+An RS41 with this serial. Empty: the demo sondes.	An RS41 with this serial. Empty: the demo sondes.
+ANT+ is not transmitted: it would impersonate a sensor network	ANT+ is not transmitted: it would impersonate a sensor network
+TETRAPOL is not transmitted: receive only, control-channel system information	TETRAPOL is not transmitted: receive only, control-channel system information
+Are you sure? This clears all previous data and cannot be undone.	Are you sure? This clears all previous data and cannot be undone.
+ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.	ATSC 3.0 uses a ROUTE / fMP4 demo; a custom MPEG-TS is not the payload path.
+Audio file	Audio file
+Audio input	Audio input
+AX.25 UI frame. Empty: the demo CubeSat cycle.	AX.25 UI frame. Empty: the demo CubeSat cycle.
+Baud	Baud
+Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser
+Browse…	Browse…
+Callsign / my ID	Callsign / my ID
+Capcode	Capcode
+CARRIER TUNE	CARRIER TUNE
+Carrier tune	Carrier tune
+Clear all	Clear all
+Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
+Code rate / MODCOD index	Code rate / MODCOD index
+Colour code	Colour code
+Comment	Comment
+CQ	CQ
+D2-MAC test scene (custom video is not wired into this analogue generator).	D2-MAC test scene (custom video is not wired into this analogue generator).
+DATV (DVB-S/S2 file)	DATV (DVB-S/S2 file)
+Default input	Default input
+Destination	Destination
+Destination / ID	Destination / ID
+Destination ID	Destination ID
+Deviation (Hz)	Deviation (Hz)
+Device ID	Device ID
+Dial frequency the decoder should assume (the sound card is not tuned)	デコーダーが仮定するダイヤル周波数（サウンドカードはチューニングしません）
+Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements	Drone Remote ID is not transmitted: it rides on Wi-Fi and Bluetooth advertisements
+DVB standard	DVB standard
+Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.	Empty: the built-in demo ensemble. Custom audio is not muxed into this encoder yet.
+Empty: the demo 802.15.4 scene.	Empty: the demo 802.15.4 scene.
+Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.	Empty: the demo FLARM scene. This ID is not packed into the unpublished newer protocol.
+Empty: the demo LoRa / mesh scene.	Empty: the demo LoRa / mesh scene.
+Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
+Empty: the demo VDES scene.	Empty: the demo VDES scene.
+File	ファイル
+File to send	File to send
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR、仮想オーディオケーブル（VAC）、無線機のスピーカー／ライン入力用。MHz単位の帯域が必要なときのSDRの代わりにはなりません。
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	WebSDR、仮想オーディオケーブル（VAC）、無線機のスピーカー／ライン入力用。MHz単位の帯域が必要なときのSDRの代わりにはなりません。周波数欄はデコーダーが仮定するダイヤルで、サウンドカードはチューニングしません。ゲインもアンテナ給電もありません。
+Free text	Free text
+Function	Function
+Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	ゲイン操作はラジオのみです（録音、サウンドカード、合成信号には使いません）
+I/Q stereo	I/Q ステレオ
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Qステレオ：左がI、右がQ（HDSDR / WebSDR VAC）。USBオーディオ：スピーカタップからのFT8/RTTY/CW/SSB向け実音声を解析IQへ。LSBオーディオ：同じ信号の共役。モノ実数：Iがサンプル、Qは0（実サンプリング。FMディスクリミネータ音声ではありません）。
+ICAO address	ICAO address
+Idle — nothing is being sent	Idle — nothing is being sent
+Image (PNG / PPM)	Image (PNG / PPM)
+Image (PPM)	Image (PPM)
+Input device	Input device
+Latitude	Latitude
+libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.	libcodec2 is not loaded: live encode is off. A 1 kHz tone, silence or a WAV/MP3 can still be sent.
+libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.	libcodec2 is not loaded: live encode is off. Destination callsigns still go on the air; voice bits are the known test pattern. A 1 kHz tone, silence or a WAV/MP3 can still be sent as analog NFM.
+Live voice is encoded with Codec 2 (FreeDV).	Live voice is encoded with Codec 2 (FreeDV).
+Live voice is encoded with Codec 2 (libcodec2).	Live voice is encoded with Codec 2 (libcodec2).
+Longitude	Longitude
+LSB audio	LSB オーディオ
+Message	Message
+Mic level	Mic level
+Microphone	Microphone
+MMSI	MMSI
+Mode	モード
+Mono real	モノ実数
+Morse identification, up to four letters.	Morse identification, up to four letters.
+MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.	MPEG-TS (.ts, .m2ts) goes into the modulator. Other video is remuxed with the linked FFmpeg when it can. Empty: the built-in demo programme.
+Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
+NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
+OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.	OnAir still asks the radio for it, but the radio or its driver may not reach this frequency, or the signal may be weak or absent.
+PAN / short address	PAN / short address
+Path	Path
+Payload text	Payload text
+Power (dBm)	Power (dBm)
+Pre-emphasis	Pre-emphasis
+PSK variant	PSK variant
+QO-100 path	QO-100 path
+Radio ID	Radio ID
+Radio text (RT)	Radio text (RT)
+RDS PI	RDS PI
+Receiver-style options (demo signal)	Receiver-style options (demo signal)
+Report	Report
+Reverse (mark is the upper tone)	Reverse (mark is the upper tone)
+RFPI	RFPI
+RFPI of the base station.	RFPI of the base station.
+Roll-off	Roll-off
+Satellite standard	Satellite standard
+Send analog NFM of the audio instead of the digital test pattern	Send analog NFM of the audio instead of the digital test pattern
+Send analog NFM of the microphone or a file instead of the test scene	Send analog NFM of the microphone or a file instead of the test scene
+Serial / ID	Serial / ID
+Shift	Shift
+Sideband	Sideband
+Silence	Silence
+sound card	サウンドカード
+Speed (0=512, 1=1200, 2=2400, 3=FLEX)	Speed (0=512, 1=1200, 2=2400, 3=FLEX)
+SSB (microphone)	SSB (microphone)
+SSTV mode	SSTV mode
+Station name (PS)	Station name (PS)
+Symbol rate (Hz)	Symbol rate (Hz)
+Talkgroup	Talkgroup
+Test card (or analog picture) plus live audio on the sound carrier.	Test card (or analog picture) plus live audio on the sound carrier.
+test DJI DroneID scene (custom serial is not packed)	test DJI DroneID scene (custom serial is not packed)
+test downlink scene (this generator does not take a custom message)	test downlink scene (this generator does not take a custom message)
+test LRPT/HRIT scene (custom image not wired)	test LRPT/HRIT scene (custom image not wired)
+test NCDXF-style beacon scene	test NCDXF-style beacon scene
+test weather-fax chart (custom image not wired)	test weather-fax chart (custom image not wired)
+TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	TETRA ACELP is not encoded here. Colour code and IDs are shown; the downlink test pattern is sent. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+Text	Text
+The capture rate of the sound card. The engine runs at this rate; there is no radio to tune.	サウンドカードの取り込みレートです。エンジンはこのレートで動きます。チューニングするラジオはありません。
+The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.	The file bytes go out as a HamDRM object with this callsign. Empty file: the test picture.
+The microphone starts only when you press START TRANSMITTING.	The microphone starts only when you press START TRANSMITTING.
+The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.	The registration and free-text go on the air as an H1 / ACARS downlink. Empty: the demo traffic.
+This frequency is outside what this radio is specified for	This frequency is outside what this radio is specified for
+this is a general listening mode: there is nothing specific to transmit	this is a general listening mode: there is nothing specific to transmit
+this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
+this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
+this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
+This mode cannot transmit	This mode cannot transmit
+this mode has no transmit generator	this mode has no transmit generator
+This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
+time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
+Timeslot	Timeslot
+To	To
+TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
+Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
+USB audio	USB オーディオ
+Vessel name	Vessel name
+Video / MPEG-TS file	Video / MPEG-TS file
+View	表示
+Help	ヘルプ
+Language	言語
+Interface language	インターフェースの言語
+Same as the system	システムに合わせる
+Start receiver	受信を開始
+Stop receiver	受信を停止
+Start the receiver	受信機を開始
+Stop the receiver	受信機を停止
+%s (space)	%s (スペース)
+Start the receiver first	先に受信機を開始してください
+Stop the receiver to switch mode	モードを切り替えるには受信機を停止してください
+Start	開始
+Stop	停止
+Receiving	受信中
+Stopped	停止中
+starting	開始中
+stopped	停止
+searching	検索中
+syncing	同期中
+locked	ロック
+Locked	ロック
+Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.	Warning: ADS-B simulates aircraft. Send it only into a dummy load or a shielded setup, never to an antenna.
+Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.	Warning: AIS simulates vessels. Send it only into a dummy load or a shielded setup, never to an antenna: false ships can confuse real receivers, which is a safety risk and illegal in most places.
+WAV / MP3 file	WAV / MP3 file
+weak	弱い
+stereo	ステレオ
+mono	モノラル
+radio disconnected	無線機が切断されました
+What to send	What to send
+Wi-Fi is not transmitted: the generator models access-point beacons for the decoder	Wi-Fi is not transmitted: the generator models access-point beacons for the decoder
+WPM	WPM
+yes	はい
+no lock	ロックなし
+never	なし
+%.0f s ago	%.0f 秒前
+%.0f min ago	%.0f 分前
+State	状態
+Channel	チャンネル
+Delay	遅延
+dropped	欠落
+level %.1f dBFS	レベル %.1f dBFS
+load %.0f%%	負荷 %.0f%%
+FM: no station	FM: 放送局なし
+%s  SNR %.0f dB  %d services	%s  SNR %.0f dB  サービス %d 件
+OK	OK
+Close	閉じる
+Clear	クリア
+clear	クリア
+Add	追加
+Remove	削除
+Connect	接続
+connecting…	接続中…
+Open	開く
+Open…	開く…
+Use	使用
+Tune	同調
+Back	戻る
+Next	次へ
+Finish	完了
+Skip	スキップ
+Skip tour	ツアーをスキップ
+Dismiss	閉じる
+Again	もう一度
+Auto	自動
+Auto (%s)	自動 (%s)
+Automatic	自動
+Automatic (220 kHz)	自動 (220 kHz)
+Manual	手動
+Manual…	手動…
+off	オフ
+now	今
+Listen	聴く
+Mute	ミュート
+Unmute	ミュート解除
+Volume (shared with the other modes)	音量 (他のモードと共通)
+#  the new interface: menus and layout
+Light (dark on white)	ライト (白地に暗い文字)
+Sidebar	サイドバー
+Scope	スコープ
+Tiles	タイル
+Faceplate	フェースプレート
+Scope: Cinema	スコープ: シネマ
+Scope: Meters	スコープ: メーター
+Scope: Dock	スコープ: ドック
+Panel	パネル
+Terminal palette	ターミナルのパレット
+Instrument palette	計器のパレット
+Mono palette	モノクロのパレット
+Show in Discord	Discord に表示
+Show the frequency	周波数を表示
+Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running.	OnAir を使用中であることを、モードと周波数とともに Discord のプロフィールに表示します。Discord のデスクトップアプリが起動している必要があります。
+Discord application ID not set in this build	このビルドでは Discord のアプリケーション ID が設定されていません
+Passes	衛星パス
+Data feeds...	データフィード...
+Data feeds	データフィード
+Scanner (highly experimental)	スキャナー (非常に実験的)
+Scanner (highly experimental)...	スキャナー (非常に実験的)...
+HIGHLY EXPERIMENTAL	非常に実験的
+HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity	非常に実験的: 周波数とモードのリスト、またはバンドを順に巡回し、信号があると停止します
+Classic interface	クラシックインターフェース
+New interface	新しいインターフェース
+Try the new interface. You can switch back at any time.	新しいインターフェースを試せます。いつでも元に戻せます。
+Guided tour	ガイドツアー
+Tour	ツアー
+Take the guided tour with Onny	Onny と一緒にガイドツアーを見る
+by: Kristijonas Adomaitis, made with help from the community	作者: Kristijonas Adomaitis、コミュニティの協力で制作
+Thank you to everyone who reported bugs, sent recordings and opened pull requests.	不具合の報告、録音の提供、プルリクエストをしてくださったみなさん、ありがとうございます。
+Source	ソース
+source	ソース
+Tuner	チューナー
+Tuner (FM)	チューナー (FM)
+Tuner (DAB)	チューナー (DAB)
+tuner	チューナー
+Gain	ゲイン
+gain	ゲイン
+GAIN	ゲイン
+Display	表示
+Decoder	デコーダー
+decoder	デコーダー
+Log	ログ
+mode	モード
+MODE	モード
+Peak hold	ピークホールド
+peak hold	ピークホールド
+Spectrum	スペクトラム
+Waterfall	ウォーターフォール
+search modes (FT8, LoRa, APRS...)	モードを検索 (FT8, LoRa, APRS...)
+search (FT8, LoRa, APRS...)	検索 (FT8, LoRa, APRS...)
+no mode matches "%s"	「%s」に一致するモードはありません
+Controls  ▴	コントロール  ▴
+Controls  ▾	コントロール  ▾
+INSTRUMENTS	計器
+Analysis	解析
+ANALYSIS	解析
+Receiver	受信機
+CONTROLS	コントロール
+LOG	ログ
+DISPLAY	表示
+SPECTRUM	スペクトラム
+SPECTRUM / WATERFALL	スペクトラム / ウォーターフォール
+SOURCE / GAIN	ソース / ゲイン
+MODE / TUNER	モード / チューナー
+STATUS	状態
+CONSTELLATIONS	コンスタレーション
+ADC level	ADC レベル
+DMR voice audio is not decoded: AMBE+2 is proprietary, so there is no sound.	DMR の音声はデコードされません。AMBE+2 は独自仕様のため、音は出ません。
+no stations yet: run the scan	放送局がまだありません: スキャンを実行してください
+no saved channels yet: run the scan	保存されたチャンネルがまだありません: スキャンを実行してください
+Hz	Hz
+Frequency in MHz (%.3f to %.3f)	周波数 (MHz) (%.3f ～ %.3f)
+OnAir crashed	OnAir がクラッシュしました
+no picture - press Esc	映像なし - Esc を押してください
+no picture	映像なし
+Video	映像
+#  the mode list: group names
+TV	テレビ
+BROADCAST RADIO	放送ラジオ
+AVIATION	航空
+MARITIME	海上
+SATELLITE & NAVIGATION	衛星・航法
+TWO-WAY RADIO	業務無線
+CELLULAR & RAIL	携帯電話・鉄道
+PAGERS	ポケットベル
+IoT & SENSORS	IoT・センサー
+WEATHER & SCIENCE	気象・科学
+AMATEUR - DIGITAL	アマチュア無線 - デジタル
+AMATEUR - VOICE & PACKET	アマチュア無線 - 音声・パケット
+HF UTILITY	HF 業務通信
+GENERAL & TOOLS	一般・ツール
+#  the mode list: short descriptions (the mode names stay protocol names)
+T2 and T, automatic	T2 と T、自動
+8-VSB, North America	8-VSB、北米
+NextGen TV	NextGen TV
+Japan, Brazil	日本、ブラジル
+China, Hong Kong, Cuba	中国、香港、キューバ
+Cable	ケーブル
+PAL, SECAM, NTSC	PAL, SECAM, NTSC
+D2-MAC, D-MAC satellite	D2-MAC, D-MAC 衛星
+Digital radio	デジタルラジオ
+Stereo and RDS	ステレオと RDS
+SW, MW, VHF	短波、中波、VHF
+USA, FM and AM	米国、FM と AM
+China digital radio	中国のデジタルラジオ
+Aircraft, 1090 MHz	航空機、1090 MHz
+Interrogations, 1030 MHz	質問信号、1030 MHz
+Aircraft messages, VHF	航空機メッセージ、VHF
+Data link, 136.9 MHz	データリンク、136.9 MHz
+Data link, 8.9 MHz	データリンク、8.9 MHz
+AM voice, 118-137 MHz	AM 音声、118-137 MHz
+Radial, 108-118 MHz	ラジアル、108-118 MHz
+Localizer and glide slope	ローカライザーとグライドスロープ
+Drones, 2.4 GHz	ドローン、2.4 GHz
+Ships, 162 MHz	船舶、162 MHz
+Ship warnings, 518 kHz	船舶向け警報、518 kHz
+Ship calls, 2187.5 kHz	船舶の呼び出し、2187.5 kHz
+Weather charts, HF	気象図、HF
+GPS, GLONASS, BeiDou	GPS, GLONASS, BeiDou
+Satellites, 1622 MHz	衛星、1622 MHz
+Satellites, 137 MHz	衛星、137 MHz
+Weather pictures, 137 MHz	気象画像、137 MHz
+Weather images, 1694 MHz	気象画像、1694 MHz
+Satellites, 2 m / 70 cm	衛星、2 m / 70 cm
+Digital voice	デジタル音声
+Digital voice, 6.25 / 12.5 kHz	デジタル音声、6.25 / 12.5 kHz
+Digital voice, 12.5 kHz	デジタル音声、12.5 kHz
+Digital voice, 6.25 kHz	デジタル音声、6.25 kHz
+Digital voice, 14.236 MHz	デジタル音声、14.236 MHz
+Digital voice, 433.475 MHz	デジタル音声、433.475 MHz
+Digital voice, 145.375 MHz	デジタル音声、145.375 MHz
+Network info, 380 - 470 MHz	ネットワーク情報、380 - 470 MHz
+Network info, UHF	ネットワーク情報、UHF
+LTE, band scan	LTE、バンドスキャン
+5G NR, GSCN scan	5G NR、GSCN スキャン
+Railway, 921 - 925 MHz	鉄道、921 - 925 MHz
+Pagers, 512-2400 bd	ポケットベル、512-2400 bd
+Pagers, 1600-6400	ポケットベル、1600-6400
+Sensors, 433 / 868 MHz	センサー、433 / 868 MHz
+IoT, 868.1 MHz	IoT、868.1 MHz
+LoRa mesh, 869.525 MHz	LoRa メッシュ、869.525 MHz
+LoRa mesh, 869.618 MHz	LoRa メッシュ、869.618 MHz
+Advertising, 2.4 GHz	アドバタイズ、2.4 GHz
+Beacons, 2.4 GHz	ビーコン、2.4 GHz
+Balloons, 403 MHz	気球、403 MHz
+LF and HF time codes	LF と HF の標準電波
+Chirp sweeps, 0 - 30 MHz	チャープスイープ、0 - 30 MHz
+Hydrogen line, 1420 MHz	水素線、1420 MHz
+Beacons, 14.0956 MHz	ビーコン、14.0956 MHz
+Keyboard chat, 14.070 MHz	キーボードチャット、14.070 MHz
+Messaging, 14.078 MHz	メッセージ、14.078 MHz
+Teletype, 14.080 MHz	テレタイプ、14.080 MHz
+Morse, 14.020 MHz	モールス、14.020 MHz
+Pictures, 14.230 MHz	画像、14.230 MHz
+Digital SSTV, 14.233 MHz	デジタル SSTV、14.233 MHz
+Link establishment, 14.109 MHz	リンク確立、14.109 MHz
+NFM / AM / SSB / CW	NFM / AM / SSB / CW
+Spectrum, waterfall, sweep	スペクトラム、ウォーターフォール、スイープ
+Sweep, 1 - 6000 MHz	スイープ、1 - 6000 MHz
+Aero, L-band	Aero、L バンド
+EGC, L-band	EGC、L バンド
+#  source, tuner, gain, sample rate
+SRC	ソース
+FREQ	周波数
+RATE	レート
+STD	規格
+COMPUTE	計算
+Centre frequency	中心周波数
+DAB channel	DAB チャンネル
+FM station	FM 局
+Channel bandwidth	チャンネル帯域幅
+Rescan for devices	デバイスを再検索
+Add network radio…	ネットワーク無線機を追加…
+Network radios	ネットワーク無線機
+Address	アドレス
+Port	ポート
+Cannot connect: %s	接続できません: %s
+Added radios (listed with the others)	追加した無線機 (他の無線機と一緒に一覧表示されます)
+This build has no SoapySDR, which SoapyRemote needs.	このビルドには SoapyRemote に必要な SoapySDR が含まれていません。
+Antenna port%s%s	アンテナ端子%s%s
+Sample rate of the radio for this mode	このモードで使う無線機のサンプルレート
+Sample rate of the radio for this mode, remembered for this radio. Auto is the mode's own rate.	このモードで使う無線機のサンプルレートで、この無線機ごとに記憶されます。自動はモード固有のレートです。
+Sample rate (Msps)	サンプルレート (Msps)
+The test signal is made at the mode's own rate (%s).	テスト信号はモード固有のレート (%s) で生成されます。
+This mode needs at least %s.	このモードには少なくとも %s が必要です。
+This radio: %s to %s.	この無線機: %s ～ %s。
+The radio runs at %s.	無線機は %s で動作しています。
+runs at %s	%s で動作
+The radio gave %s instead of the %s asked for.	無線機は要求された %s ではなく %s を返しました。
+A higher rate shows more spectrum but needs more USB bandwidth and processor time: when the status bar reports samples lost on the radio side, choose a lower rate.	レートを上げるとより広いスペクトラムを表示できますが、USB 帯域とプロセッサー時間も多く必要になります。ステータスバーに無線機側でのサンプル欠落が表示される場合は、レートを下げてください。
+A recording plays at the rate it was made at: set it with the file.	録音は録音時のレートで再生されます。ファイルと一緒にレートを設定してください。
+A scan is using the radio and sets its own rate.	スキャンが無線機を使用中で、独自のレートを設定しています。
+DVB-T2 and DVB-T channels sit on this raster; a running radio may be opened again at another sample rate.	DVB-T2 と DVB-T のチャンネルはこのラスター上にあります。動作中の無線機は別のサンプルレートで開き直されることがあります。
+Automatic: the width of the signal is measured in the spectrum and the channel bandwidth (5, 6, 7 or 8 MHz) is set for you.	自動: スペクトラムから信号の幅を測定し、チャンネル帯域幅 (5、6、7、8 MHz) を自動で設定します。
+ISDB-T channel width: 6 MHz in Japan, Brazil and the rest of the Americas, 8 MHz in the Maldives (ISDB-T International).\nThe same signal, every time scaled by the width. Automatic measures it in the spectrum and tries each width\nwhile nothing locks; it opens the radio at 10 Msps.	ISDB-T のチャンネル幅: 日本、ブラジルなど中南米では 6 MHz、モルディブでは 8 MHz (ISDB-T International)。\n信号は同じで、幅に応じて時間軸が拡縮されます。自動ではスペクトラムから幅を測定し、ロックしない間は\n各幅を順に試します。無線機は 10 Msps で開かれます。
+Amp	アンプ
+LNA	LNA
+VGA	VGA
+AGC	AGC
+Keep the ADC level in a healthy window (about -16 dBFS rms, no clipping) by adjusting LNA, VGA and amp.\nTouching a gain control turns it off.	LNA、VGA、アンプを調整して、ADC レベルを適正な範囲 (約 -16 dBFS rms、クリップなし) に保ちます。\nゲインのコントロールを操作すると無効になります。
+Auto-tune	自動調整
+Stop tune	調整を停止
+Gain helper: tries LNA/VGA/amp combinations for about 40 s and keeps the one with the best SNR that does not clip.\nNeeds a signal the receiver can lock to.	ゲインヘルパー: 約 40 秒間 LNA / VGA / アンプの組み合わせを試し、クリップしない中で最も SNR の良いものを採用します。\n受信機がロックできる信号が必要です。
+gain helper %d/%d ...	ゲインヘルパー %d/%d ...
+ADC OVERLOAD - %s	ADC 過負荷 - %s
+AGC is lowering the gain	AGC がゲインを下げています
+reduce the gain (or enable AGC)	ゲインを下げてください (または AGC を有効に)
+ADC level high	ADC レベルが高い
+ADC level low - raise the gain	ADC レベルが低い - ゲインを上げてください
+ADC sees almost nothing - antenna / gain?	ADC にほとんど入力がありません - アンテナ / ゲインを確認してください
+ADC level (rms). %s\npeak %.2f   clip %.3f%%   DC %+.3f / %+.3f	ADC レベル (rms)。%s\nピーク %.2f   クリップ %.3f%%   DC %+.3f / %+.3f
+Bias-tee (antenna power)	バイアスティー (アンテナ給電)
+Sends DC power up the antenna cable for an active antenna or LNA (e.g. a GNSS patch antenna). Leave it off with a passive antenna, and never with a DC short in the antenna path (some antennas, splitters or filters): it can damage the radio.	アクティブアンテナや LNA (GNSS パッチアンテナなど) のために、アンテナケーブルに直流電力を供給します。パッシブアンテナではオフのままにし、アンテナ経路に DC ショートがある場合 (一部のアンテナ、分配器、フィルター) は絶対に使わないでください。無線機が故障する恐れがあります。
+Most GNSS antennas are active and need this on.	ほとんどの GNSS アンテナはアクティブ型で、これをオンにする必要があります。
+IQ correction	IQ 補正
+Corrects I/Q gain and phase imbalance, which puts a faint mirror image of every signal on the other side of the centre.\nMeasured from the signal itself; now %.2f dB, %.1f degrees. Not applied in DTMB and analog TV (their signals fool the measurement).	I/Q のゲインと位相の不均衡を補正します。この不均衡があると、すべての信号の弱いミラー像が中心の反対側に現れます。\n信号自体から測定します。現在 %.2f dB、%.1f 度。DTMB とアナログテレビでは適用されません (信号が測定を狂わせるため)。
+The spike in the middle of the spectrum is the radio's own oscillator leaking in (strong on the HackRF and RTL-SDR).\nRemove: filtered out of the samples (not in FM: a station tuned to the centre has its carrier there).\nTune beside it: the radio is tuned just beside the channel, so the spike falls outside it, and the channel is moved\nback digitally. Needs a higher sample rate (DAB about 3.5 Msps); a radio too slow for it removes the spike instead.\nA line that stays at a round frequency (e.g. 650.000 MHz) when you retune is interference from the radio's clock, not the DC spike.	スペクトラム中央のスパイクは、無線機自身の発振器の漏れ込みです (HackRF や RTL-SDR で顕著)。\n除去: サンプルからフィルターで取り除きます (FM では使いません。中心に同調した局のキャリアがそこにあるため)。\n横にずらして同調: 無線機をチャンネルのすぐ横に同調してスパイクがチャンネル外に出るようにし、チャンネルをデジタル処理で\n元の位置に戻します。高めのサンプルレートが必要です (DAB で約 3.5 Msps)。レートが足りない無線機では代わりにスパイクを除去します。\n同調し直しても切りのよい周波数 (例: 650.000 MHz) に残る線は、無線機のクロックによる干渉であり、DC スパイクではありません。
+%+.2f MHz	%+.2f MHz
+Which broadcast standard to decode.\nAuto alternates between DVB-T2 and DVB-T until one locks.	デコードする放送規格を選びます。\n自動では、どちらかがロックするまで DVB-T2 と DVB-T を交互に試します。
+synthetic	合成
+%s test signal	%s テスト信号
+echo	エコー
+file	ファイル
+rate	レート
+loop	ループ
+ext	外部
+#  status bar and quality
+Level	レベル
+Quality	品質
+signal quality: %s	信号品質: %s
+signal quality %.0f%%  %s	信号品質 %.0f%%  %s
+data SNR %.1f dB, needed about %.1f dB (margin %+.1f dB)\nFEC blocks decoded %.1f%%	データ SNR %.1f dB、必要値 約 %.1f dB (マージン %+.1f dB)\nFEC ブロックのデコード率 %.1f%%
+data SNR %.1f dB, needed for this modulation/code rate about %.1f dB	データ SNR %.1f dB、この変調方式/符号化率に必要な値は約 %.1f dB
+data SNR %.1f dB, data decoded %.1f%% (last frames)	データ SNR %.1f dB、データのデコード率 %.1f%% (直近のフレーム)
+margin %+.1f dB, FEC blocks decoded %.1f%% (last frames)	マージン %+.1f dB、FEC ブロックのデコード率 %.1f%% (直近のフレーム)
+FEC blocks decoded in the last frame: %.1f%%	直近のフレームでの FEC ブロックのデコード率: %.1f%%
+0 dB margin is the edge of reception (25%); +6 dB or more is comfortable.	マージン 0 dB は受信限界 (25%) で、+6 dB 以上なら余裕があります。
+ATSC 3.0 does not report a signal-to-noise ratio yet; this bar shows how much of the data decodes.	ATSC 3.0 ではまだ信号対雑音比を報告できません。このバーはデータのデコードできた割合を示します。
+This bar shows how much of the recent data decodes.	このバーは直近のデータのデコードできた割合を示します。
+multipath: %s	マルチパス: %s
+Files and the test signal never lose samples: they wait for the receiver.	ファイルとテスト信号はサンプルを失いません。受信機を待ちます。
+Radio side: %.2f s lost in %llu gaps, last %s	無線機側: %.2f 秒を欠落 (途切れ %llu 回)、直近 %s
+Samples that never arrived from the radio: its USB connection or driver could not keep up. Try a USB port directly on the computer (no hub), a shorter cable, or a lower sample rate.	無線機から届かなかったサンプルです。USB 接続またはドライバーが追いつきませんでした。コンピューターに直接 (ハブなしで) USB ポートに接続する、短いケーブルを使う、サンプルレートを下げる、のいずれかを試してください。
+CPU side: %.2f s skipped %llu times, last %s	CPU 側: %.2f 秒をスキップ (%llu 回)、直近 %s
+Signal OnAir had to skip because the receiver could not keep up with the sample rate. Close other programs, or pick a lower sample rate or a narrower channel.	受信機がサンプルレートに追いつけず、OnAir がスキップした信号です。他のプログラムを閉じるか、サンプルレートを下げる、またはより狭いチャンネルを選んでください。
+Receiver load: %.0f%% of real time	受信機の負荷: リアルタイムの %.0f%%
+The receiver's time on the sample thread per second of signal. Near or above 100%, signal is skipped.	信号 1 秒あたりに受信機がサンプルスレッドで費やす時間です。100% に近いか超えると、信号がスキップされます。
+Demod	復調
+How the signal becomes the audio the decoders hear.\nAuto: USB below 30 MHz, NFM at and above.\nNFM: 12.5 kHz channel, no de-emphasis, 300 - 3000 Hz audio.\nISS SSTV on 145.800 MHz is FM.	信号をデコーダーが聞く音声にする方法です。\n自動: 30 MHz 未満は USB、30 MHz 以上は NFM。\nNFM: 12.5 kHz チャンネル、ディエンファシスなし、300 - 3000 Hz の音声。\n145.800 MHz の ISS SSTV は FM です。
+#  the lamps
+Sample stream. Green: the ADC level is in a healthy range. Amber: too low or high. Red: clipping.	サンプルストリーム。緑: ADC レベルが適正範囲。黄: 低すぎるか高すぎる。赤: クリップ。
+DVB-T2: the P1 preamble symbol (frame start and mode) is being found.	DVB-T2: P1 プリアンブルシンボル (フレーム開始とモード) を検出しています。
+Guard interval and symbol timing are locked.	ガードインターバルとシンボルタイミングがロックしました。
+DVB-T2: the L1 pre-signalling block (frame structure) decodes with a good CRC.	DVB-T2: L1 プリシグナリングブロック (フレーム構造) が正常な CRC でデコードできました。
+DVB-T2: the L1 post-signalling block (PLP list, modulation) decodes with a good CRC.	DVB-T2: L1 ポストシグナリングブロック (PLP リスト、変調) が正常な CRC でデコードできました。
+A full T2 frame is being received and equalised.	完全な T2 フレームを受信し、等化しています。
+Forward error correction, inner code: share of blocks that decode.	前方誤り訂正、内符号: デコードできたブロックの割合。
+Forward error correction, outer code: share of blocks that decode.	前方誤り訂正、外符号: デコードできたブロックの割合。
+Transport stream: services found, continuity errors counted.	トランスポートストリーム: 検出したサービス数、カウントした連続性エラー。
+The player is decoding and showing pictures.	プレーヤーが映像をデコードして表示しています。
+The player has audio buffered and playing.	プレーヤーが音声をバッファして再生しています。
+DVB-T: OFDM symbol sync from the cyclic prefix.	DVB-T: サイクリックプレフィックスによる OFDM シンボル同期。
+DVB-T: the transmission parameter signalling bits are decoded.	DVB-T: 伝送パラメーター (TPS) のビットをデコードしました。
+Channel estimate from the pilots is valid.	パイロットによるチャンネル推定が有効です。
+DVB-T: the convolutional decoder found the packet sync.	DVB-T: 畳み込みデコーダーがパケット同期を検出しました。
+Reed-Solomon outer code: share of packets that are clean.	リード・ソロモン外符号: 誤りのないパケットの割合。
+ATSC: the 8-VSB pilot carrier is locked.	ATSC: 8-VSB のパイロットキャリアがロックしました。
+ATSC: data segment sync found.	ATSC: データセグメント同期を検出しました。
+ATSC: field sync found.	ATSC: フィールド同期を検出しました。
+ATSC: the equaliser is trained.	ATSC: イコライザーの学習が完了しました。
+ATSC: the trellis decoder produces a valid transport stream.	ATSC: トレリスデコーダーが有効なトランスポートストリームを出力しています。
+#  spectrum and channel width
+click to tune to %.4f MHz	クリックで %.4f MHz に同調
+Channel width: %s	チャンネル幅: %s
+The width of the signal is measured in the spectrum and the receiver switches between 1.7, 5, 6, 7 and 8 MHz by itself.	スペクトラムから信号の幅を測定し、受信機が 1.7、5、6、7、8 MHz を自動で切り替えます。
+The receiver's channel filter. Narrower keeps a strong neighbour out (150 kHz copes with one 10 dB stronger 150 kHz away); below about 180 kHz loud passages distort a little and RDS suffers first.	受信機のチャンネルフィルターです。狭くすると強い隣接局を排除できます (150 kHz なら 150 kHz 離れた 10 dB 強い局に耐えます)。約 180 kHz 未満では大きな音がやや歪み、まず RDS に影響が出ます。
+The width is measured in the spectrum, and 6, 8 and 7 MHz are tried in turn while nothing locks.	スペクトラムから幅を測定し、ロックしない間は 6、8、7 MHz を順に試します。
+6 MHz in Japan and the Americas, 8 MHz in the Maldives (ISDB-T International). The signal is the same, scaled in time by the width.	日本と中南米では 6 MHz、モルディブでは 8 MHz (ISDB-T International)。信号は同じで、幅に応じて時間軸が拡縮されます。
+Set by the country: there is nothing to measure it from. A receiver set to the wrong width finds nothing.	国によって決まります。測定の手がかりはありません。幅を間違えた受信機は何も見つけられません。
+Follows the symbol rate: symbol rate x (1 + roll-off).	シンボルレートに従います: シンボルレート x (1 + ロールオフ)。
+Choose automatic or a manual symbol rate in the tuner to change it.	変更するには、チューナーでシンボルレートを自動または手動にしてください。
+This mode	このモード
+%s: fixed for this mode.	%s: このモードでは固定です。
+The receiver's filters are made for the signal (or for the group of channels it watches), so a manual width would only make reception worse.	受信機のフィルターは信号 (または監視するチャンネル群) に合わせて作られているため、手動で幅を指定すると受信が悪化するだけです。
+Channel width: the band the receiver works with (the light band).\nClick to choose automatic or a manual width.	チャンネル幅: 受信機が扱う帯域 (明るい帯)。\nクリックして自動または手動の幅を選択します。
+Channel width: the band the receiver works with (the light band), set by the standard.	チャンネル幅: 受信機が扱う帯域 (明るい帯)。規格で決まります。
+power (dBFS/bin)	電力 (dBFS/ビン)
+seconds ago	秒前
+Identify this signal	この信号を識別
+#  radio settings
+Radio settings	無線機の設定
+Radio settings*	無線機の設定*
+Radio settings (%d changed)	無線機の設定 (%d 件変更)
+%s: frequency correction and the other settings of this radio	%s: この無線機の周波数補正とその他の設定
+The driver's own settings show up here\nonce this radio has been started.	ドライバー固有の設定は、この無線機を一度\n開始するとここに表示されます。
+0 = libiio's default	0 = libiio の既定値
+#  the guided tour
+Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	こんにちは、Onny です! OnAir に住んでいる小さなテレビです。簡単なツアーはいかがですか? 約 1 分で、デモ信号を使ってすべてをご案内しますので、ハードウェアはまだ必要ありません。
+Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	ここ上部では、受信したい放送の種類を切り替えます。世界の多くのデジタルテレビは DVB、北米は ATSC、デジタルラジオは DAB です。OnAir ならこの 3 つがひとつにまとまっています。
+Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	実際に動かしてみましょう! 模擬信号を開始します。アプリの中で動くテスト用の送信機なので、何もつなぐ必要はありません。
+Start the demo signal	デモ信号を開始
+See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	このくねくねした線が見えますか? これがスペクトラムで、電波の強さを左から右へ表しています。中央の高い山が私たちのチャンネルです。その下のウォーターフォールは、同じ内容を時間とともにゆっくりスクロールして表示します。
+And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	そしてこの 4 つの枠は、受信機が見ている点を表示します。信号が良いと点はきれいにまとまります。点が乱れているのはノイズが多い信号です。今はきれいなデモなので、整って見えるはずです!
+Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	ここには、受信機がロックするとチャンネルが並びます。クリックすると視聴できます。映像と音声のプレーヤー、時計、視聴中の番組を録画・配信するオプションもあります。
+Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	では本番です。ここで無線機を選び、周波数を決め、ゲインを設定します。ゲインは無線機が信号をどれだけ増幅するかで、小さすぎると信号が埋もれ、大きすぎると歪みます。自動調整ボタンが良い値を見つけてくれます。
+Stop the demo and look for my radio	デモを停止して無線機を探す
+Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	チャンネルの場所がわかりませんか? スキャンタブが探してくれます。高い場所の窓際に置いた良いアンテナは、何よりも大きな違いを生みます。約束します!
+That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	ツアーは以上です! ストリームタブ (出力) から、チャンネルを他の機器と共有できます。右上のツアーボタンを押せば、いつでも私を呼び戻せます。楽しい視聴を!
+Good news: I can see "%s"!	朗報です: 「%s」が見つかりました!
+(I can't see a radio right now. Plug it in and press the button again.)	(今は無線機が見つかりません。接続してもう一度ボタンを押してください。)
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windows では、HackRF に WinUSB ドライバーが一度だけ必要です。zadig.akeo.ie の Zadig でインストールしてください。
+#  passes
+Weather (137 MHz)	気象 (137 MHz)
+Amateur	アマチュア
+Amateur satellites	アマチュア衛星
+downloading...	ダウンロード中...
+Downloading...	ダウンロード中...
+the download failed (no network, or Celestrak refused)	ダウンロードに失敗しました (ネットワークがないか、Celestrak に拒否されました)
+downloaded	ダウンロード完了
+Download TLEs from Celestrak	Celestrak から TLE をダウンロード
+Downloads only when you click. Fetches:	クリックしたときだけダウンロードします。取得先:
+Paste TLEs...	TLE を貼り付け...
+Hide paste box	貼り付け欄を隠す
+Use pasted TLEs	貼り付けた TLE を使用
+Forget pasted TLEs	貼り付けた TLE を破棄
+No TLE for:	TLE がありません:
+no valid TLE in the pasted text (two lines per satellite, checksums must match)	貼り付けたテキストに有効な TLE がありません (衛星ごとに 2 行、チェックサムが一致する必要があります)
+pasted TLEs added:	貼り付けた TLE を追加しました:
+No TLEs yet: download them or paste some.	TLE がまだありません: ダウンロードするか貼り付けてください。
+No TLEs: open TLE data above.	TLE がありません: 上の TLE データを開いてください。
+No passes in the next 24 hours.	今後 24 時間以内のパスはありません。
+TLE data	TLE データ
+From: celestrak.org/NORAD/elements/gp.php?GROUP=weather|stations|orbcomm|amateur&FORMAT=tle	取得元: celestrak.org/NORAD/elements/gp.php?GROUP=weather|stations|orbcomm|amateur&FORMAT=tle
+%d TLEs, %d satellites listed	TLE %d 件、衛星 %d 機を一覧表示
+the oldest is %.0f days old: download again	最も古いものは %.0f 日前です: 再ダウンロードしてください
+NORAD catalogue number	NORAD カタログ番号
+Receiver position	受信地点
+The same position as the ADS-B antenna position	ADS-B アンテナの位置と同じ
+not set: the times are for a placeholder position	未設定: 時刻は仮の位置のものです
+Satellite	衛星
+AOS	AOS
+LOS	LOS
+Max el	最大仰角
+Duration	継続時間
+Frequency	周波数
+AOS in %d:%02d:%02d	AOS まで %d:%02d:%02d
+%s - %s, max %.0f deg	%s - %s、最大 %.0f 度
+no pass	パスなし
+az %.0f  el %.0f  %.0f km\nDoppler %+.0f Hz	方位 %.0f  仰角 %.0f  %.0f km\nドップラー %+.0f Hz
+Track	追尾
+Track (choose a pass)	追尾 (パスを選択)
+During each pass of this satellite, retune about once a second for the Doppler shift	この衛星のパス中、ドップラーシフトに合わせて約 1 秒ごとに同調し直します
+Auto start at AOS, stop at LOS	AOS で自動開始、LOS で停止
+Switches to the satellite's mode and starts the receiver at AOS (when it is stopped), and stops it at LOS	衛星のモードに切り替え、AOS で受信機を開始し (停止中の場合)、LOS で停止します
+Auto record IQ	IQ を自動録音
+Records the radio's IQ during the pass, as Record IQ does (format from the Record IQ setting), into %s/recordings	IQ 録音と同様に (形式は IQ 録音の設定に従います)、パス中の無線機の IQ を %s/recordings に録音します
+OnAir has no decoder for this: auto start opens the Spectrum explorer, and Auto record keeps the IQ	OnAir にはこれ用のデコーダーがありません。自動開始では Spectrum explorer が開き、自動録音では IQ が保存されます
+tracking%s	追尾中%s
+, recording	、録音中
+#  data feeds
+Sends decoded data to other programs while the mode runs. Every feed is off until you turn it on.	モードの動作中、デコードしたデータを他のプログラムに送ります。すべてのフィードは、オンにするまでオフです。
+Let other computers connect to the TCP feeds (LAN)	他のコンピューターから TCP フィードへの接続を許可 (LAN)
+SBS-1 BaseStation (TCP server)	SBS-1 BaseStation (TCP サーバー)
+Beast binary (TCP server)	Beast バイナリ (TCP サーバー)
+NMEA !AIVDM (UDP)	NMEA !AIVDM (UDP)
+APRS-IS (receive-only igate)	APRS-IS (受信専用 iGate)
+KISS (TCP server)	KISS (TCP サーバー)
+ACARS, acarsdec format (UDP)	ACARS、acarsdec 形式 (UDP)
+VDL2, dumpvdl2 format (UDP)	VDL2、dumpvdl2 形式 (UDP)
+ACARS and VDL2 (JSON)	ACARS と VDL2 (JSON)
+Callsign	コールサイン
+Passcode	パスコード
+Server	サーバー
+Station ID	局 ID
+%s, %llu sent, %llu dropped	%s、送信 %llu、破棄 %llu
+#  scanner
+Steps through the list or a band, stops on activity. A mode change restarts the receiver.	リストまたはバンドを順に巡回し、信号があると停止します。モードが変わると受信機が再起動します。
+Start scan	スキャン開始
+Stop scan	スキャン停止
+List	リスト
+Band	バンド
+Name	名前
+name	名前
+Dwell s	滞留 秒
+dwell s	滞留 秒
+Priority	優先
+Lockout	ロックアウト
+Add current	現在を追加
+Adds the frequency and mode the receiver is on now	受信機が現在使っている周波数とモードを追加します
+Clear lockouts	ロックアウトを解除
+Import CSV...	CSV をインポート...
+Export CSV...	CSV をエクスポート...
+Columns: frequency_mhz, mode, name, dwell_s, lockout, priority.\nmode is a mode id: fm, dab, airband, dmr, pocsag, ft8 ...	列: frequency_mhz, mode, name, dwell_s, lockout, priority。\nmode はモード ID です: fm, dab, airband, dmr, pocsag, ft8 ...
+imported %d entries%s	%d 件をインポートしました%s
+ (some with a mode OnAir does not know)	 (OnAir が知らないモードを含むものあり)
+exported	エクスポートしました
+could not write	書き込めませんでした
+start MHz	開始 MHz
+stop MHz	終了 MHz
+step kHz	ステップ kHz
+%d steps, %d locked out	%d ステップ、%d 件ロックアウト
+Time	時刻
+For	継続
+Decoded	デコード
+Hits	ヒット
+Move on to the next channel now	今すぐ次のチャンネルへ進む
+Skip this channel from now on	このチャンネルを今後スキップする
+Channel power over the noise (in the mode's bandwidth) that counts as activity.\nA mode that reports it decodes (sync, frames, data) stops the scan too.	信号ありと見なす、ノイズを上回るチャンネル電力 (モードの帯域幅内)。\nデコード中 (同期、フレーム、データ) と報告するモードでもスキャンが停止します。
+Checked every %.0f s, also while another channel holds (one priority entry)	%.0f 秒ごとにチェックします。別のチャンネルで停止中も同様です (優先エントリー 1 件)
+squelch %.0f dB	スケルチ %.0f dB
+hang %.1f s	ハング %.1f 秒
+priority every %.0f s	優先 %.0f 秒ごと
+priority off	優先オフ
+idle	待機中
+listening	受信待ち
+ACTIVE	アクティブ
+hang	ハング
+  (priority)	  (優先)
+signal only	信号のみ
+nothing left to scan	スキャン対象がもうありません
+the band has no steps (check start, stop and step)	バンドにステップがありません (開始、終了、ステップを確認してください)
+the list has nothing to scan (empty, or every entry locked out)	リストにスキャン対象がありません (空か、すべてロックアウト)
+#  identify
+Identify signal	信号を識別
+Start the receiver to identify a signal.	信号を識別するには受信機を開始してください。
+The strongest signal around %s	%s 付近で最も強い信号
+Region %s, %s wide	範囲 %s、幅 %s
+collecting samples	サンプル収集中
+Working it out...	解析中...
+Nothing to identify here.	ここには識別できるものがありません。
+Looks like: %s	推定: %s
+Looks like: %s (frame sync found %dx)	推定: %s (フレーム同期を %d 回検出)
+No mode fits well.	よく合うモードがありません。
+Open %s on this frequency	この周波数で %s を開く
+Switch to %s and tune to %s	%s に切り替えて %s に同調
+Candidates	候補
+(sync %dx)	(同期 %d 回)
+(no sync)	(同期なし)
+Centre	中心
+Width -3 / -20 / -26 dB	幅 -3 / -20 / -26 dB
+Occupied (99 %)	占有 (99 %)
+On the air	運用中
+bursts, %.0f %% on, %d of about %.3g ms	バースト、オン %.0f %%、%d 個 (各約 %.3g ms)
+continuous	連続
+Modulation	変調
+Envelope	包絡線
+%.2f (1 constant, 2 noise-like)	%.2f (1 = 一定、2 = ノイズ状)
+Symbol rate	シンボルレート
+#  updates
+Updates	アップデート
+Check for updates automatically	自動的にアップデートを確認
+Include beta versions	ベータ版を含める
+Check now	今すぐ確認
+Not checked yet.	まだ確認していません。
+Asking GitHub for the newest version…	GitHub に最新バージョンを問い合わせています…
+Yes, clear all	Yes, clear all
+You have the newest version.	最新バージョンです。
+Version %s is available%s.	バージョン %s が利用可能です%s。
+ (beta)	 (ベータ)
+Download and install	ダウンロードしてインストール
+Download and install them by themselves	自動でダウンロードしてインストール
+Skip this version	このバージョンをスキップ
+Release page	リリースページ
+Download page	ダウンロードページ
+Checking and preparing the new version…	新しいバージョンを確認して準備しています…
+Downloaded and checked. It is installed when you close OnAir.	ダウンロードと確認が完了しました。OnAir を閉じるときにインストールされます。
+Restart now and update	今すぐ再起動して更新
+Windows asks for permission to run the installer.	Windows がインストーラーの実行の許可を求めます。
+The system asks for your password to install the package.	パッケージをインストールするため、システムがパスワードを求めます。
+This copy of OnAir cannot replace itself.	この OnAir は自分自身を置き換えられません。
+The update to v%s did not install (setup exit code %d).	v%s へのアップデートはインストールされませんでした (セットアップの終了コード %d)。
+Only github.com is contacted. Downloads are checked against the SHA-256 GitHub lists for the file.	通信先は github.com のみです。ダウンロードは、GitHub がファイルに記載している SHA-256 と照合されます。
+checking…	確認中…
+update %s	更新 %s
+downloading %.0f%%	ダウンロード中 %.0f%%
+preparing…	準備中…
+restart to update	再起動して更新
+6 MHz (Cuba)	6 MHz (キューバ)
+DAB ensemble, transmission mode I	DAB アンサンブル、伝送モード I
+ATSC 8-VSB receiver: matched filter, pilot loop, symbol clock, field sync, per-field equaliser, trellis, Reed-Solomon	ATSC 8-VSB 受信機: マッチドフィルター、パイロットループ、シンボルクロック、フィールド同期、フィールドごとのイコライザー、トレリス、リード・ソロモン
+#  the classic interface's tabs, the diagnostics buttons
+Overview	概要
+Stream	ストリーム
+Scan	スキャン
+Antenna	アンテナ
+History	履歴
+Radio	無線機
+Ensemble	アンサンブル
+Map	地図
+Analyzer	アナライザー
+Record IQ	IQ 録音
+Recordings of a file are not needed	ファイルの録音は不要です
+Start the radio first	先に無線機を開始してください
+Saves the radio's raw samples to a file, for a bug report	不具合報告用に、無線機の生サンプルをファイルに保存します
+Copy diagnostics	診断情報をコピー
+Copied	コピーしました
+Copies the version, system, radios, messages and radio log lines, for a bug report	不具合報告用に、バージョン、システム、無線機、メッセージ、無線機のログ行をコピーします
+spectrum dB	スペクトラム dB
+waterfall dB	ウォーターフォール dB
+# added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
+  (mirrored: I/Q swapped)	  (ミラー: I/Q 入れ替え)
+%s, %d client%s, %llu sent, %llu dropped	%s、クライアント %d%s、送信 %llu、破棄 %llu
+A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	HackRF、Airspy、RTL-SDR には WinUSB ドライバーが一度だけ必要です。Zadig (zadig.akeo.ie) でインストールしてください。
+A Linux driver for TV sticks took the radio before the SDRplay software could.	SDRplay のソフトウェアより先に、Linux のテレビチューナー用ドライバーが無線機を占有しました。
+A high-end computer is recommended. Lower sample rates help.	高性能なコンピューターを推奨します。サンプルレートを下げると改善します。
+A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	世界地図: 座標または Maidenhead ロケーターで位置を探し、現在地からの距離と方位を表示します
+Add a receiver: another radio with its own mode	受信機を追加: 独自のモードを持つ別の無線機
+Add receiver	受信機を追加
+Added to a level in dBFS to give dBm for this radio: feed a known signal into the antenna port and set the difference. Used when the spectrum shows dBm (Spectrum button on the plot).	この無線機の dBm を得るために dBFS のレベルに加算する値です。既知の信号をアンテナ端子に入力して差を設定してください。スペクトラムを dBm 表示にしたときに使います (プロット上のスペクトラムボタン)。
+Aircraft	航空機
+All set. OnAir will start here:	準備完了です。OnAir は次から始まります:
+Allow remote control (frequency and gain)	リモート制御を許可 (周波数とゲイン)
+Amateur radio	アマチュア無線
+An SDRplay RSP is plugged in, but its driver, the SDRplay API, is not installed. It is SDRplay's own software and its licence does not let OnAir include it, so it is a one-time download.	SDRplay RSP は接続されていますが、そのドライバーである SDRplay API がインストールされていません。これは SDRplay 自身のソフトウェアで、ライセンス上 OnAir に同梱できないため、一度だけダウンロードが必要です。
+Another program is using the HackRF	別のプログラムが HackRF を使用しています
+Australia and New Zealand	オーストラリアとニュージーランド
+Average	平均
+CPU load now: %.0f%% (100%% = one core)	現在の CPU 負荷: %.0f%% (100%% = 1 コア)
+Calls and data are shown, but the voice is silent until you install the codec yourself. OnAir does not ship it (patents).	通話とデータは表示されますが、コーデックを自分でインストールするまで音声は無音です。OnAir には特許の関係で同梱されていません。
+Cancel	キャンセル
+Carrier MHz	キャリア MHz
+Carriers in the span (click: listen and show; double click: tune to it)	範囲内のキャリア (クリック: 聴いて表示、ダブルクリック: 同調)
+Channel MHz	チャンネル MHz
+Channel raster	チャンネルラスター
+Check that PulseAudio or PipeWire runs, and that an output is chosen in the sound settings.	PulseAudio または PipeWire が動作していること、サウンド設定で出力が選ばれていることを確認してください。
+Check that rtl_tcp is running on the other computer and prints "listening".	相手のコンピューターで rtl_tcp が動作し、「listening」と表示されていることを確認してください。
+Check that the file still exists and that you may read it.	ファイルがまだ存在し、読み取りが許可されていることを確認してください。
+Check that the firmware is the stock one, or a known one such as Tezuka.	ファームウェアが標準のもの、または Tezuka などの既知のものであることを確認してください。
+Check the USB cable and port, then press the refresh button.	USB ケーブルとポートを確認してから、更新ボタンを押してください。
+Check the address and port, and that nothing blocks them (firewall, Wi-Fi).	アドレスとポートを確認し、ファイアウォールや Wi-Fi などで遮断されていないか確認してください。
+China	中国
+Choose a frequency inside the range shown in the message.	メッセージに表示された範囲内の周波数を選んでください。
+Choose the file again.	ファイルを選び直してください。
+Close other programs that use the radio.	無線機を使用している他のプログラムを閉じてください。
+Close programs that hold the sound device exclusively.	サウンドデバイスを占有しているプログラムを閉じてください。
+Close the other program (a second OnAir, SDR software, hackrf_info).	他のプログラム (2 つ目の OnAir、SDR ソフトウェア、hackrf_info) を閉じてください。
+Close this receiver: it stops and lets go of its radio	この受信機を閉じる: 停止して無線機を解放します
+Colour map	カラーマップ
+Colours	色
+Converter (up-converter / LNB)	コンバーター (アップコンバーター / LNB)
+Copy the command	コマンドをコピー
+Copy the restart command	再起動コマンドをコピー
+Copy the udev command	udev コマンドをコピー
+Details	詳細
+Don't show again	今後表示しない
+Down, LO above: radio = LO - RF (mirrored)	ダウン、LO が上: 無線機 = LO - RF (ミラー)
+Down, LO below: radio = RF - LO	ダウン、LO が下: 無線機 = RF - LO
+Download the SDRplay API for this computer from sdrplay.com/api and run the installer.	sdrplay.com/api からこのコンピューター用の SDRplay API をダウンロードし、インストーラーを実行してください。
+Download the current SDRplay API from sdrplay.com and install it.	sdrplay.com から最新の SDRplay API をダウンロードしてインストールしてください。
+Drag to resize, double click for the automatic size	ドラッグでサイズ変更、ダブルクリックで自動サイズ
+Drones, 2.4 / 5.8 GHz	ドローン、2.4 / 5.8 GHz
+Elsewhere	その他の地域
+Europe	ヨーロッパ
+FM / DAB radio	FM / DAB ラジオ
+FM radio	FM ラジオ
+Files: audio and IQ	ファイル: 音声と IQ
+Fill under the line	線の下を塗りつぶす
+Find "SDRplay API Service" and press Start (or Restart).	「SDRplay API Service」を探して、開始 (または再起動) を押してください。
+Fix the address of the network radio (host:port).	ネットワーク無線機のアドレス (ホスト:ポート) を修正してください。
+Download OnAir again and unpack or install the whole package: the codec2 library belongs next to the program.	OnAir をダウンロードし直し、パッケージ全体を展開またはインストールしてください。codec2 ライブラリはプログラムと同じ場所に置く必要があります。
+Follow the steps in the full instructions to install the codec.	詳しい手順に従ってコーデックをインストールしてください。
+For an RSP, install the SDRplay API first (sdrplay.com).	RSP の場合は、先に SDRplay API (sdrplay.com) をインストールしてください。
+Found %s (%s)	%s (%s) を検出しました
+Found:	検出:
+Frequency and level of the strongest peaks in view	表示範囲内で最も強いピークの周波数とレベル
+Full instructions	詳しい手順
+Gliders, 868.2 / 868.4 MHz	グライダー、868.2 / 868.4 MHz
+Grid	グリッド
+How far the converter's oscillator runs fast (positive) or slow. The LO used is LO x (1 + ppm / 1e6).	コンバーターの発振器の進み (正) または遅れ (負) の量です。実際に使われる LO は LO x (1 + ppm / 1e6) です。
+How fast the max-hold line falls; 0: it stays until reset	マックスホールドの線が下がる速さ。0: リセットするまで保持
+How to fix	対処方法
+Images	画像
+Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay	OnAir のブラックリストファイルをインストールする (.deb パッケージなら自動で行われます)か、次を実行してください: sudo systemctl restart sdrplay
+Install the SDRplay API	SDRplay API をインストール
+Install the SDRplay API from sdrplay.com if you have not.	まだの場合は、sdrplay.com から SDRplay API をインストールしてください。
+Install the WinUSB driver once with Zadig (zadig.akeo.ie): choose the radio, then the driver WinUSB, then Install.	Zadig (zadig.akeo.ie) で WinUSB ドライバーを一度インストールしてください。無線機を選び、ドライバーに WinUSB を選んで Install を押します。
+Install the udev rules (install-udev-rules.sh), then unplug and replug the radio.	udev ルール (install-udev-rules.sh) をインストールしてから、無線機を抜き差ししてください。
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb does it).	udev ルールをインストールしてください: OnAir フォルダー内の install-udev-rules.sh を実行します (.deb なら自動で行われます)。
+Install the udev rules: run install-udev-rules.sh from the OnAir folder (the .deb package does it for you).	udev ルールをインストールしてください: OnAir フォルダー内の install-udev-rules.sh を実行します (.deb パッケージなら自動で行われます)。
+Intensity (dB)	強度 (dB)
+IoT, 2.4 GHz	IoT、2.4 GHz
+IoT, sub-GHz	IoT、サブ GHz
+It is streaming to another program: stop it there first.	別のプログラムにストリーミング中です。先にそちらで停止してください。
+Japan	日本
+Journaline	Journaline
+Just explore	まずは見てみる
+Keep the waterfall range on the noise floor and the strongest signal (click again to stop following)	ウォーターフォールの範囲をノイズフロアと最強信号に合わせ続けます (もう一度クリックで追従を停止)
+LO (MHz)	LO (MHz)
+LO correction (ppm)	LO 補正 (ppm)
+Let other computers connect (LAN)	他のコンピューターからの接続を許可 (LAN)
+Level at the cursor	カーソル位置のレベル
+Level dB	レベル dB
+Linux grabbed the SDRplay radio	Linux が SDRplay の無線機を占有しました
+Linux treats the radio as a sound card	Linux が無線機をサウンドカードとして扱っています
+Load	読み込み
+Look again	再検索
+Look for Hermes Lite 2 radios on this computer's networks again	このコンピューターのネットワーク上で Hermes Lite 2 を再検索します
+Maritime, VHF	海上、VHF
+Max hold	マックスホールド
+Meteor scatter, 28.145 MHz	流星散乱、28.145 MHz
+Middle East	中東
+Mirror the spectrum (swap I and Q)	スペクトラムを反転 (I と Q を入れ替え)
+NB-IoT, band scan	NB-IoT、バンドスキャン
+NCDXF/IARU, Long Dashes, single letters	NCDXF/IARU、ロングダッシュ、単独の文字
+Network	ネットワーク
+Network radio: %llu samples lost (underruns)	ネットワーク無線機: %llu サンプルを欠落 (アンダーラン)
+No Hermes Lite 2 answered on this computer's networks: type its address.	このコンピューターのネットワーク上で Hermes Lite 2 の応答がありません: アドレスを入力してください。
+No radio found	無線機が見つかりません
+No sound output	音声出力がありません
+North America	北米
+Not a locator or coordinates	ロケーターでも座標でもありません
+On Windows a HackRF needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Windows では、HackRF に WinUSB ドライバーが一度だけ必要です。Zadig (zadig.akeo.ie) でインストールしてください。
+OnAir %s	OnAir %s
+OnAir cannot see a HackRF on the USB ports.	OnAir は USB ポート上に HackRF を見つけられません。
+OnAir could not open the speakers, so there will be no sound.	OnAir がスピーカーを開けなかったため、音は出ません。
+OnAir could not use the rtl_tcp server, or the connection dropped.	OnAir は rtl_tcp サーバーを使用できなかったか、接続が切れました。
+OnAir found the SDRplay software, but its background service does not answer, so the RSP cannot be opened.	OnAir は SDRplay のソフトウェアを見つけましたが、そのバックグラウンドサービスが応答しないため、RSP を開けません。
+OnAir lists a radio when the computer sees it. You can still try everything with the synthetic signal or an IQ file.	OnAir は、コンピューターが認識した無線機を一覧に表示します。無線機がなくても、合成信号や IQ ファイルですべてを試せます。
+OnAir needs SDRplay API 3.07 or a newer 3.x.	OnAir には SDRplay API 3.07 以降の 3.x が必要です。
+Only one program can use an rtl_tcp server at a time: close any other client.	rtl_tcp サーバーは同時に 1 つのプログラムしか使えません。他のクライアントを閉じてください。
+Only one program can use the radio at a time.	無線機は同時に 1 つのプログラムしか使えません。
+Only one receiver plays its sound at a time: click to hear this one	音声を再生できる受信機は同時に 1 つだけです。クリックでこの受信機の音を聴く
+Open Services (press Win+R, type services.msc).	サービスを開いてください (Win+R を押して services.msc と入力)。
+Open System Settings > Sound and pick an output device.	システム設定 > サウンドを開き、出力デバイスを選んでください。
+Open codecs folder	コーデックフォルダーを開く
+Open driver page	ドライバーのページを開く
+Open firmware page	ファームウェアのページを開く
+Open the SDRplay API page	SDRplay API のページを開く
+Open the device list	デバイス一覧を開く
+Optional: your position, as a Maidenhead locator (KO24pq) or coordinates (54.68, 25.28). It is kept on this computer and used for maps and satellite passes.	任意: あなたの位置を Maidenhead ロケーター (KO24pq) または座標 (54.68, 25.28) で入力します。このコンピューターにのみ保存され、地図や衛星パスに使われます。
+Or choose another radio from the list.	または、一覧から別の無線機を選んでください。
+Or install OnAir's blacklist file (the .deb package does it).	または、OnAir のブラックリストファイルをインストールしてください (.deb パッケージなら自動で行われます)。
+Or set the UHD_IMAGES_DIR variable to the folder with the images.	または、環境変数 UHD_IMAGES_DIR をイメージのあるフォルダーに設定してください。
+Own accent colour	独自のアクセントカラー
+PSK Reporter	PSK Reporter
+Pagers, tones and FFSK	ポケットベル、トーンと FFSK
+Pause	一時停止
+Peak markers	ピークマーカー
+Plug a radio into the computer that runs the SpyServer, and restart the SpyServer.	SpyServer を動かしているコンピューターに無線機を接続し、SpyServer を再起動してください。
+Plug the radio in again and press the refresh button.	無線機を接続し直して、更新ボタンを押してください。
+Plug the radio in, directly or through a powered hub.	無線機を直接、またはセルフパワーのハブ経由で接続してください。
+Press "Look again" in the ? help next to the sound.	音声の横の ? ヘルプにある「再検索」を押してください。
+Press the refresh button next to the radio list.	無線機一覧の横にある更新ボタンを押してください。
+Press the refresh button next to the source.	ソースの横にある更新ボタンを押してください。
+Put the library in the OnAir codecs folder (button below).	ライブラリを OnAir のコーデックフォルダーに置いてください (下のボタン)。
+Put the panels back to their automatic sizes (drag the bars between panels to resize them)	パネルを自動サイズに戻します (パネル間のバーをドラッグしてサイズを変更できます)
+Radar chirps, HF	レーダーチャープ、HF
+Radio settings (%d changed)###radioset	無線機の設定 (%d 件変更)###radioset
+Radio settings###radioset	無線機の設定###radioset
+Receivers at once	同時受信数
+Reduce CPU when hidden	非表示時に CPU 使用を抑える
+Remote driver	リモートドライバー
+Reset	リセット
+Reset layout	レイアウトをリセット
+Restart OnAir (the installer starts SDRplay's background service).	OnAir を再起動してください (インストーラーが SDRplay のバックグラウンドサービスを開始します)。
+Restart OnAir.	OnAir を再起動してください。
+Restart the Mac, or run in Terminal: sudo launchctl kickstart -k system/com.sdrplay.service	Mac を再起動するか、ターミナルで次を実行してください: sudo launchctl kickstart -k system/com.sdrplay.service
+Right-click the speaker icon, open Sound settings and pick an output device.	スピーカーアイコンを右クリックし、サウンド設定を開いて出力デバイスを選んでください。
+Run in a terminal: sudo systemctl restart sdrplay	ターミナルで次を実行してください: sudo systemctl restart sdrplay
+Run once in a terminal: uhd_images_downloader	ターミナルで一度だけ実行してください: uhd_images_downloader
+Run: sudo modprobe -r msi2500 msi001	次を実行してください: sudo modprobe -r msi2500 msi001
+Running several radios at the same time needs a lot of processing power. Performance may limit what is possible: with too many or too fast receivers samples are dropped and decoding gets worse.	複数の無線機を同時に動かすには多くの処理能力が必要です。性能によって実行できる範囲が制限される場合があります。受信機が多すぎたり速すぎたりすると、サンプルが欠落してデコード性能が低下します。
+SDR	SDR
+SNR dB	SNR dB
+Satellites	衛星
+Satellites, 1.6 GHz	衛星、1.6 GHz
+Save bug report	不具合報告を保存
+Saves one zip file with the diagnostics, the log and the last crash report: attach it to a GitHub issue	診断情報、ログ、直近のクラッシュレポートを 1 つの zip ファイルに保存します。GitHub の issue に添付してください
+Search	検索
+Seen	確認日時
+Send spots to PSK Reporter (pskreporter.info)	スポットを PSK Reporter (pskreporter.info) に送信
+Sensors and IoT	センサーと IoT
+Services	サービス
+Set the LO above 0 MHz.	LO を 0 MHz より大きく設定してください。
+Setup	セットアップ
+Setup wizard	セットアップウィザード
+Share my radio (rtl_tcp server)	自分の無線機を共有 (rtl_tcp サーバー)
+Share the radio's samples as an rtl_tcp server	無線機のサンプルを rtl_tcp サーバーとして共有します
+Ships	船舶
+Show and tune the frequency at the antenna while the radio is tuned to what the converter outputs.	無線機がコンバーターの出力に同調している間も、アンテナ側の周波数を表示・設定します。
+Skip setup	セットアップをスキップ
+Spectrum: averaging, max hold, peak markers, fill, grid and the unit (dBFS or dBm)	スペクトラム: 平均化、マックスホールド、ピークマーカー、塗りつぶし、グリッド、単位 (dBFS または dBm)
+Speed (rows a second)	速度 (1 秒あたりの行数)
+Spots are public. A valid amateur radio callsign is required; the dial frequency is the tuned frequency.	スポットは公開されます。有効なアマチュア無線のコールサインが必要です。ダイヤル周波数は同調している周波数です。
+Stop adding rows: the picture stays, and drag or the wheel on the waterfall scroll and zoom back through it	行の追加を止めます。画像は残り、ウォーターフォール上のドラッグやホイールでスクロール・ズームして過去に戻れます
+Television	テレビ
+Text size	文字サイズ
+Text size %d%%	文字サイズ %d%%
+The FreeDV / M17 voice codec (codec2) was not found	FreeDV / M17 の音声コーデック (codec2) が見つかりません
+The HackRF firmware does not match	HackRF のファームウェアが一致しません
+The HackRF is not found	HackRF が見つかりません
+The Linux sound driver holds the radio, so the SDRplay software cannot see it.	Linux のサウンドドライバーが無線機を占有しているため、SDRplay のソフトウェアから見えません。
+The PlutoSDR answered, but without its radio chip. It may still be starting, or run unusual firmware.	PlutoSDR は応答しましたが、無線チップが見えません。まだ起動中か、特殊なファームウェアが動作している可能性があります。
+The PlutoSDR does not show its radio chip	PlutoSDR が無線チップを認識しません
+The RTL-SDR is gone	RTL-SDR が見えなくなりました
+The SDRplay service is not running	SDRplay のサービスが動作していません
+The SDRplay software is too old	SDRplay のソフトウェアが古すぎます
+The SpyServer answered, but no radio is plugged into it.	SpyServer は応答しましたが、無線機が接続されていません。
+The USRP needs its firmware images	USRP にはファームウェアイメージが必要です
+The USRP software is installed, but the firmware images it loads are missing.	USRP のソフトウェアはインストールされていますが、読み込むファームウェアイメージがありません。
+The address of the network radio must look like host:port, for example 192.168.1.20:1234.	ネットワーク無線機のアドレスは、192.168.1.20:1234 のようにホスト:ポートの形式にしてください。
+The file could not be opened	ファイルを開けませんでした
+The firmware inside the HackRF is older than the software talking to it.	HackRF 内のファームウェアが、通信しているソフトウェアより古い状態です。
+The most receivers are open	受信機が上限まで開かれています
+The network radio (rtl_tcp) does not answer	ネットワーク無線機 (rtl_tcp) が応答しません
+The picture holds the last %.0f s.	画像には直近の %.0f 秒分が保持されています。
+The radio did not start	無線機が開始しませんでした
+The radio is plugged in, but the system does not let your account use it yet.	無線機は接続されていますが、システムがあなたのアカウントにまだ使用を許可していません。
+The radio opened badly or stopped at once. The message above says why; these steps solve most cases.	無線機が正しく開かなかったか、すぐに停止しました。上のメッセージが理由を示しています。多くの場合、次の手順で解決します。
+The radio was found but the USB link to it did not work. This is usually permission, the cable or the port.	無線機は見つかりましたが、USB 接続が機能しませんでした。多くの場合、権限、ケーブル、またはポートが原因です。
+The radio you chose is no longer connected.	選択した無線機は接続されていません。
+The radio's SoapySDR driver on the server, or a key=value list: driver=sdrplay,serial=1.	サーバー上の無線機の SoapySDR ドライバー名、または key=value のリスト: driver=sdrplay,serial=1。
+The radio's USB connection failed	無線機の USB 接続に失敗しました
+The recording file is missing, moved or not readable.	録音ファイルが存在しないか、移動されたか、読み取れません。
+The rtl_tcp address is not valid	rtl_tcp のアドレスが無効です
+The server has no radio	サーバーに無線機がありません
+The text and data are shown, but speech needs the codec2 library. It comes with OnAir, so this copy is probably incomplete.	テキストとデータは表示されますが、音声には codec2 ライブラリが必要です。これは OnAir に付属しているため、このコピーは不完全な可能性があります。
+The voice codec (mbelib) is not installed	音声コーデック (mbelib) がインストールされていません
+This frequency is not reachable through the converter.	この周波数はコンバーター経由では受信できません。
+This is a Linux problem. On this system, unplug the radio, plug it in again and press the refresh button.	これは Linux 側の問題です。このシステムでは、無線機を抜いて差し直し、更新ボタンを押してください。
+This user may not open the radio	このユーザーは無線機を開く権限がありません
+Time constant of the averaged line: longer is calmer	平均線の時定数: 長いほど動きが穏やかになります
+Tools	ツール
+Trace	トレース
+Trunked and two-way radio	トランキングと業務無線
+Try another USB port and a short cable.	別の USB ポートと短いケーブルを試してください。
+Try another USB port, directly on the computer (not a hub), and a short cable.	コンピューター本体の (ハブではない) 別の USB ポートと、短いケーブルを試してください。
+Try another USB port, directly on the computer (not a hub).	コンピューター本体の (ハブではない) 別の USB ポートを試してください。
+Try another USB port, directly on the computer.	コンピューター本体の別の USB ポートを試してください。
+Tuner (DAB)###Tuner	チューナー (DAB)###Tuner
+Tuner (FM)###Tuner	チューナー (FM)###Tuner
+Unit	単位
+United Kingdom and Ireland	イギリスとアイルランド
+Unplug and replug the radio, then press the refresh button.	無線機を抜いて差し直してから、更新ボタンを押してください。
+Unplug the HackRF and plug it in again.	HackRF を抜いて差し直してください。
+Unplug the USRP, plug it in again and press the refresh button.	USRP を抜いて差し直し、更新ボタンを押してください。
+Unplug the radio and plug it in again, then press the refresh button.	無線機を抜いて差し直してから、更新ボタンを押してください。
+Unplug the radio and plug it in again.	無線機を抜いて差し直してください。
+Unplug the radio, plug it in again and press the refresh button.	無線機を抜いて差し直し、更新ボタンを押してください。
+Up: radio = RF + LO	アップ: 無線機 = RF + LO
+Update the HackRF firmware (the page below has the steps; the file comes with the HackRF software).	HackRF のファームウェアを更新してください (下のページに手順があります。ファイルは HackRF のソフトウェアに付属しています)。
+Wait a minute after plugging it in, then press the refresh button.	接続してから 1 分待って、更新ボタンを押してください。
+Waterfall: colour map, intensity range, speed and pause (then drag or use the wheel to look back)	ウォーターフォール: カラーマップ、強度範囲、速度、一時停止 (その後ドラッグまたはホイールで過去を確認)
+Wave buoys, HF	波浪ブイ、HF
+Weather alerts, 162.55 MHz	気象警報、162.55 MHz
+Weather pictures, 1.7 GHz	気象画像、1.7 GHz
+What do you want to receive? Tick anything that interests you.	何を受信したいですか? 興味のあるものをすべてチェックしてください。
+What to add to a level in dBFS to get dBm for this radio (its calibration: a known signal into the antenna port shows it). Also in the radio's settings.	この無線機の dBm を得るために dBFS のレベルに加算する値です (校正値で、既知の信号をアンテナ端子に入力すると求められます)。無線機の設定にもあります。
+Where are you? This picks the right TV standard and FM band.	どこにお住まいですか? これにより、適切なテレビ規格と FM バンドが選ばれます。
+Which language do you want OnAir in?	OnAir の言語を選んでください。
+Which radio do you have?	お持ちの無線機はどれですか?
+You can change the mode any time, and run this setup again from Help > Setup wizard.	モードはいつでも変更でき、このセットアップはヘルプ > セットアップウィザードから再実行できます。
+You can go on without one: the synthetic signal and IQ files work with no hardware.	無くても続けられます。合成信号と IQ ファイルはハードウェアなしで動作します。
+Your callsign	あなたのコールサイン
+Your locator	あなたのロケーター
+Zoom: mouse wheel (both axes), Ctrl+wheel (frequency), Shift+wheel (level).\nCtrl+PageUp / PageDown: step the view by one screen in frequency. Double click: reset.	ズーム: マウスホイール (両軸)、Ctrl+ホイール (周波数)、Shift+ホイール (レベル)。\nCtrl+PageUp / PageDown: 表示を周波数方向に 1 画面分ずらします。ダブルクリック: リセット。
+antenna %.6g MHz -> %s LO %.6g -> radio %.6g MHz%s	アンテナ %.6g MHz -> %s LO %.6g -> 無線機 %.6g MHz%s
+channel scan has the radio	チャンネルスキャンが無線機を使用中です
+dBm offset	dBm オフセット
+dBm offset (dB)	dBm オフセット (dB)
+decode every channel in the span: a receiver for each occupied channel, one plays, the others keep decoding\n(right click: how many at once, where the channels sit)	範囲内のすべてのチャンネルをデコード: 使用中のチャンネルごとに受信機を用意し、1 つが再生し、他はデコードを続けます\n(右クリック: 同時数、チャンネルの配置)
+decode every signal in the visible span, not just the tuned one	同調中の信号だけでなく、表示範囲内のすべての信号をデコード
+empty	空
+held	保持
+holds	保持中
+last send %s	最終送信 %s
+listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	%s ポート %d で待ち受け中、クライアント %d 件、送信 %.1f MB、破棄 %.1f MB
+max	最大
+mute	ミュート
+on air	運用中
+partial	一部
+point %s	地点 %s
+power (dBm)	電力 (dBm)
+searching for Hermes Lite 2 radios…	Hermes Lite 2 を検索中…
+sound	音声
+up-converter	アップコンバーター
+waiting	待機中
+waterfall dB##wfdb	ウォーターフォール dB##wfdb
+spectrum dB##specdb	スペクトラム dB##specdb
+Clear##log	クリア##log
+# added for 0.2.6: remaining acronyms, frequency labels and long texts
+ADS-B	ADS-B
+AFSK, 144.8 MHz	AFSK、144.8 MHz
+AIS	AIS
+APRS	APRS
+ATSC 8-VSB, 6 MHz	ATSC 8-VSB、6 MHz
+CFO	CFO
+Ctrl + / Ctrl - / Ctrl 0	Ctrl + / Ctrl - / Ctrl 0
+DVB-T	DVB-T
+EVM %.1f dB	EVM %.1f dB
+Es'hail-2, 10.49 GHz	Es'hail-2、10.49 GHz
+FIC	FIC
+GI	GI
+LNB	LNB
+LoRa, 433.175 MHz	LoRa、433.175 MHz
+LoRa, 433.775 MHz	LoRa、433.775 MHz
+ONAIR	ONAIR
+SNR	SNR
+SRO	SRO
+TR	TR
+WSJT, 1.8366 MHz	WSJT、1.8366 MHz
+WSJT, 14.074 MHz	WSJT、14.074 MHz
+WSJT, 14.076 MHz	WSJT、14.076 MHz
+WSJT, 14.078 MHz	WSJT、14.078 MHz
+WSJT, 14.080 MHz	WSJT、14.080 MHz
+WSJT, 14.084 MHz	WSJT、14.084 MHz
+WSJT, 14.100 MHz	WSJT、14.100 MHz
+%.0f deg	%.0f 度
+%s, %llu spots sent in %llu packets, %llu duplicates skipped	%s、%llu 件のスポットを %llu パケットで送信、重複 %llu 件をスキップ
+offset %+.3f %+.3f	オフセット %+.3f %+.3f
+sigma %.3f per axis (%.0f%% of the half-distance to a neighbour)	シグマ 軸あたり %.3f (隣接点との半分の距離の %.0f%%)
+A second OnAir (Add network radio, rtl_tcp), SDR# or SDR++ connects to this computer's address and the port. Samples are sent as 8-bit IQ at the rate the radio runs at. Without 'allow remote control' the clients cannot change the frequency or gain.	2 台目の OnAir (ネットワーク無線機を追加、rtl_tcp)、SDR#、SDR++ が、このコンピューターのアドレスとポートに接続します。サンプルは無線機の動作レートで 8 ビット IQ として送られます。「リモート制御を許可」がオフの場合、クライアントは周波数やゲインを変更できません。
+Sends the FT8, FT4, FT2, WSPR, JS8Call, PSK31 and CW stations you decode to pskreporter.info, so they show on its public map and statistics. A report is: the sender's callsign, frequency, SNR, mode, its locator when the message has one, and when it was heard; with your callsign, locator, antenna text and 'OnAir'. Reports are batched and sent every 5 minutes; the same station on the same band is sent once per 10 minutes. Nothing is sent until you tick the box. Spots are public: use your own valid amateur radio callsign. CW and PSK31 are only reported when the text says 'DE callsign'.	デコードした FT8、FT4、FT2、WSPR、JS8Call、PSK31、CW の局を pskreporter.info に送信し、公開マップと統計に表示します。レポートの内容は、送信局のコールサイン、周波数、SNR、モード、メッセージにロケーターがあればそのロケーター、受信時刻、そしてあなたのコールサイン、ロケーター、アンテナの説明、「OnAir」です。レポートはまとめて 5 分ごとに送信され、同じバンドの同じ局は 10 分に 1 回だけ送信されます。チェックボックスをオンにするまで何も送信されません。スポットは公開されるため、ご自身の有効なアマチュア無線のコールサインを使用してください。CW と PSK31 は、テキストに「DE コールサイン」がある場合のみ報告されます。
+BW	BW
+CH	CH
+Channel scan	チャンネルスキャン
+FM	FM
+# added late (keys other agents added while this catalog was written)
+%.1f dB	%.1f dB
+%s  #%d  %.3f MHz%s	%s  #%d  %.3f MHz%s
+%s  %.4f MHz  %s%s%s%s  %.1f dB  %s	%s  %.4f MHz  %s%s%s%s  %.1f dB  %s
+-	-
+8 MHz	8 MHz
+A line at the top of the window and a log entry before the tracked pass rises (0: off)	追尾するパスが始まる前に、ウィンドウ上部の表示とログを出します (0: オフ)
+All time	全期間
+Arms this pass only: at AOS the receiver starts in the satellite's mode and frequency (when it is stopped), Doppler is followed and the IQ is recorded; at LOS it stops and tracking switches off again	このパスだけを予約します。AOS で、受信機が停止中なら衛星のモードと周波数で開始し、ドップラーに追従して IQ を録音します。LOS で停止し、追尾も再びオフになります
+Automatic update	自動アップデート
+Cancel recording this pass	このパスの録音を取り消す
+Dark	ダーク
+Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below).	SDDC_Driver プロジェクトの Releases ページから SDDC_FX3.img をダウンロードしてください (下のボタン)。
+Downloads the TLEs again once a day, only while this window is open or a pass is tracked. Without a network the saved lists are used.	TLE を 1 日に 1 回再ダウンロードします。このウィンドウが開いているか、パスを追尾している間のみです。ネットワークがない場合は保存済みのリストを使います。
+Downloads when you click, and by itself once a day. Fetches:	クリックしたときと、1 日に 1 回自動でダウンロードします。取得先:
+High contrast (black, white, yellow)	ハイコントラスト (黒、白、黄)
+Last 24 hours	過去 24 時間
+Last hour	過去 1 時間
+Longest range: %.0f %s at %.0f deg (%llu reports)	最長距離: %.0f %s、方位 %.0f 度 (%llu 件のレポート)
+Look for Red Pitaya boards on this computer's networks again	このコンピューターのネットワーク上で Red Pitaya ボードを再検索します
+MHz	MHz
+No Red Pitaya answered on this computer's networks (is its SDR transceiver app running?): type its address.	このコンピューターのネットワーク上で Red Pitaya の応答がありません (SDR トランシーバーアプリは動作していますか?): アドレスを入力してください。
+Nothing heard yet: the plot fills in as positions arrive.	まだ何も受信していません。位置情報が届くとプロットが埋まっていきます。
+Pass of %s in %d:%02d (max %.0f deg)	%s のパスまで %d:%02d (最大 %.0f 度)
+Pass of %s in %d:%02d (max %.0f deg): the receiver starts by itself	%s のパスまで %d:%02d (最大 %.0f 度): 受信機は自動で開始します
+Plug the radio into a USB 3 port directly on the computer, not through a USB 2 hub.	無線機は USB 2 ハブ経由ではなく、コンピューター本体の USB 3 ポートに直接接続してください。
+Put the file in OnAir's codecs folder (button below).	ファイルを OnAir のコーデックフォルダーに置いてください (下のボタン)。
+Range	距離
+Record this pass	このパスを録音
+Rolling window: a sector's furthest position counts only for this long	移動ウィンドウ: 各セクターの最遠位置は、この時間だけ有効です
+Save CSV...	CSV を保存...
+Save PNG...	PNG を保存...
+Set the receiver position first: ranges are measured from it.	先に受信地点を設定してください。距離はそこから測定されます。
+The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	RX888 MkII の USB チップには自前のプログラムがなく、無線機を接続するたびにコンピューターが読み込ませます。そのファイル SDDC_FX3.img は SDDC プロジェクトのもので独自のライセンスがあるため、OnAir には含まれていません。
+The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	RX888 MkII は最大で毎秒 256 MB を送出します。USB 3 (SuperSpeed) ポートと USB 3 ケーブルが必要で、USB 2 ポートではストリーミングできません。
+The RX888 is on a USB 2 port	RX888 が USB 2 ポートに接続されています
+The RX888 needs its firmware file	RX888 にはファームウェアファイルが必要です
+Use a USB 3 cable (the one that came with the radio).	USB 3 ケーブル (無線機に付属のもの) を使用してください。
+armed: %s at %s	予約済み: %s、%s
+last downloaded %s	最終ダウンロード %s
+remind %.0f min before	%.0f 分前に通知
+saved	保存しました
+searching for Red Pitaya boards…	Red Pitaya ボードを検索中…
+Copy token	トークンをコピー
+Every gain step overloaded the ADC: the lowest gain was kept	どのゲイン段階でも ADC が過負荷になったため、最小のゲインを維持しました
+Gain optimised: %d dB (was %d dB)	ゲインを最適化しました: %d dB (以前は %d dB)
+Go back to the gain (and the AGC setting) from before the last optimisation	直前の最適化より前のゲイン (と AGC の設定) に戻します
+Let other computers connect (LAN, needs the token)	他のコンピューターからの接続を許可 (LAN、トークンが必要)
+Let scripts and other programs control this receiver	スクリプトや他のプログラムがこの受信機を制御できるようにする
+New token	新しいトークン
+Optimise gain	ゲインを最適化
+Optimise gain: steps through the radio's gain range and measures the reception quality at each step (the mode's SNR while it is locked, else the signal-to-noise ratio of the spectrum around the channel, else the ADC level), then sets the lowest gain that is within 0.5 dB of the best quality and does not overload the ADC. Takes about 40 s and needs a signal. The AGC is paused and stays off.	ゲインを最適化: 無線機のゲイン範囲を段階的に変えながら各段階の受信品質を測定します (ロック中はモードの SNR、そうでなければチャンネル周辺のスペクトラムの信号対雑音比、それもなければ ADC レベル)。その後、最良の品質から 0.5 dB 以内で ADC を過負荷にしない最小のゲインを設定します。約 40 秒かかり、信号が必要です。AGC は一時停止し、オフのままになります。
+Optimising gain %d/%d: %d dB ...	ゲインを最適化中 %d/%d: %d dB ...
+Programs on this computer need no token; any other address must send it as 'Authorization: Bearer <token>'. The API lists the radios, starts and stops the receiver, sets mode, frequency, sample rate and gain, and gives the telemetry and the spectrum as JSON, also as a WebSocket stream. Endpoints: see README.md.	このコンピューター上のプログラムにはトークンは不要です。それ以外のアドレスからは 'Authorization: Bearer <token>' として送信する必要があります。この API では、無線機の一覧、受信機の開始と停止、モード・周波数・サンプルレート・ゲインの設定ができ、テレメトリとスペクトラムを JSON で (WebSocket ストリームでも) 取得できます。エンドポイントは README.md を参照してください。
+Remote control API (HTTP and WebSocket)	リモート制御 API (HTTP と WebSocket)
+Stop optimising	最適化を停止
+Token	トークン
+Undo gain	ゲインを元に戻す
+judged by the ADC level	ADC レベルで判定
+judged by the SNR in the spectrum	スペクトラムの SNR で判定
+judged by the mode's SNR	モードの SNR で判定
+listening on %s port %d, %d HTTP and %d WebSocket client(s), %d requests, %d refused	%s ポート %d で待ち受け中、HTTP クライアント %d 件、WebSocket クライアント %d 件、リクエスト %d 件、拒否 %d 件
+
+#  transmit (RX / TX switch, Transmit panel)
+Transmit...	送信...
+Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission.	このモード自身の信号を、送信できる無線機から送ります。開始するまでオフです。免許または許可が必要です。
+TRANSMITTING	送信中
+Channel width	チャンネル幅
+Frequency (MHz)	周波数 (MHz)
+TX gain (dB)	送信ゲイン (dB)
++14 dB amplifier	+14 dB アンプ
+Repeat until stopped	停止するまで繰り返す
+seconds	秒
+STOP TRANSMITTING	送信を停止
+START TRANSMITTING	送信を開始
+This radio has no transmit driver in OnAir.	この無線機には OnAir の送信ドライバーがありません。
+Before you transmit	送信する前に
+Transmitting needs a licence or permission where you are. You are responsible for what you emit and for not interfering with others (including services that people rely on for safety). Connect an antenna, an attenuator or a dummy load to the radio before you start. OnAir does not limit the frequency or the power: the radio's own limits are the only ones.	お住まいの場所で送信するには免許または許可が必要です。発射するものと、他者(安全のために人々が頼るサービスを含む)に混信しないことについては、あなたが責任を負います。開始前に、無線機にアンテナ、アッテネーター、またはダミーロードを接続してください。OnAir は周波数も出力も制限しません。制限は無線機自身のものだけです。
+I understand	了解しました
+GNSS is not transmitted: its generator is a satellite-signal simulator (spoofing)	GNSS は送信しません。そのジェネレーターは衛星信号シミュレーター(なりすまし)です
+cellular signals are not transmitted: the generators model a network cell for testing the decoder	セルラー信号は送信しません。ジェネレーターはデコーダーのテスト用にネットワークセルを模擬するものです
+this is an analysis mode: there is nothing to transmit	これは解析モードです。送信するものはありません
+TX VGA 0 to 47 dB; the +14 dB amplifier has its own switch	TX VGA は 0〜47 dB。+14 dB アンプには専用のスイッチがあります
+the AD9361's TX attenuation shown as a gain: -89.75 dB (least power) to 0 dB (most)	AD9361 の送信減衰量をゲインとして表示: -89.75 dB(最小出力)〜0 dB(最大)
+the driver's own TX gain scale (known after the radio has been opened once)	ドライバー自身の送信ゲイン範囲(無線機を一度開くと分かります)
+RX	RX
+TX	TX
+Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	受信機 (RX) と送信機 (TX) を切り替えます。送信機は専用の無線機を持つので、送信中も受信機は受信を続けられます。
+Transmit radio	送信用無線機
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	送信できる無線機が見つかりません。1 台接続して(HackRF、PlutoSDR、または送信機付きの SoapySDR 無線機)、無線機リストを更新してください。
+Choose a radio to transmit with.	送信に使う無線機を選んでください。
+%s (in use by RX %d)	%s(RX %d が使用中)
+%s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s は RX %d が使用中で、この無線機は同時に受信と送信ができません。送信用に別の無線機を選ぶか、先にその受信機を停止してください。
+Type the PlutoSDR's IP (USB gadget 192.168.2.1, or its Ethernet address) and Connect. It is then in the Radio list.	PlutoSDR の IP（USB gadget 192.168.2.1、または Ethernet アドレス）を入力して Connect。Radio 一覧に出ます。
+GNSS, Bluetooth LE, LoRa (UDP JSON / NMEA)	GNSS、Bluetooth LE、LoRa（UDP JSON / NMEA）
+GNSS NMEA RMC/GGA (UDP)	GNSS NMEA RMC/GGA（UDP）
+Bluetooth LE advertisements, JSON (UDP)	Bluetooth LE アドバタイズ、JSON（UDP）
+LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic、JSON（UDP）
+JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	JSON行（1行に1オブジェクト）。GNSSだけはNMEAです。フィードを入れるまでオフ。構造化されたメッセージがあるモードだけを送ります。

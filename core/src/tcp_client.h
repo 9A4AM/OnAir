@@ -117,6 +117,8 @@ inline sock_t tcpConnect(const std::string& host, int port, int timeoutMs, std::
             sockSetNonBlocking(s, false);
             int one = 1;
             setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (const char*)&one, sizeof one);
+            int rcv = 4 << 20;   // room for a fast stream (20 Msps of 8-bit IQ is 40 MB/s) while the receiver is busy
+            setsockopt(s, SOL_SOCKET, SO_RCVBUF, (const char*)&rcv, sizeof rcv);
             ok = s;
         } else sockClose(s);
     }
