@@ -6,7 +6,7 @@
 // The protocols are those of WSJT-X (K1JT et al., GPL-3): FT8 8-GFSK 6.25 Hz, 79 symbols of 0.16 s; FT4 4-GFSK 20.83 Hz, 105 symbols of
 // 48 ms; FT2 (WSJT-X Improved 3.1.0) the FT4 frame at twice the speed, 41.67 Hz, 24 ms symbols, 3.75 s periods; all with the 77-bit
 // messages, CRC-14 and the (174,91) LDPC code. WSPR 4-FSK 1.4648 Hz, 162 symbols of 0.683 s, K=32 r=1/2 convolutional code, 50-bit
-// messages (call, grid, power; types 2 and 3). See core/src/hfdig_ftx_int.h for the sources.
+// messages (call, grid, power; types 2 and 3). See core/src/hfdig/hfdig_ftx_int.h for the sources.
 // Time: the slots come from the system clock (UTC) unless a start time is given (a recording whose start is known), or from the
 // signals themselves (slot search, when the start time of a recording is unknown). The DT of the decodes shows the clock error.
 // Decoding runs on a thread of its own, so feedAudio() never waits for it.
@@ -15,7 +15,7 @@
 // mode, every slot, from sample 0 = the start of a slot. modeOpt[1] = 1: mirrored (a lower sideband transmission). modeOpt[2] = 1:
 // in step with the system clock (a live demonstration: the slots of the audio are the UTC slots).
 // modeVal[0]: added to every station's audio frequency (Hz). The station at 0 dB has the amplitude 0.5 of the shell's convention.
-// This header, hfdig_ftx*.cpp, hfdig_wspr.cpp and app/hfdig_ftx_ui.cpp belong to these modes alone.
+// This header, hfdig_ftx*.cpp, hfdig_wspr.cpp and app/hfdig/hfdig_ftx_ui.cpp belong to these modes alone.
 #pragma once
 #include "hfdig_rx.h"
 #include <cstddef>

@@ -150,7 +150,8 @@ void recordUi(App& a) {
     const bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
     if (rs.active) {
         char b[96];
-        snprintf(b, sizeof b, "Stop  %.1f s  %s", rs.seconds, sizeText(rs.bytes).c_str());
+        // ### keeps the button id still while the seconds and the size change. Without it the click is lost and the recording only ends when the radio is stopped.
+        snprintf(b, sizeof b, "Stop  %.1f s  %s###recstop", rs.seconds, sizeText(rs.bytes).c_str());
         ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
         if (ImGui::SmallButton(b)) a.engine.stopRecording();
         ImGui::PopStyleColor();

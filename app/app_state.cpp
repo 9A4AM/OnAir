@@ -465,7 +465,7 @@ void loadPrefs(App& a) {
     a.out.rtp = d.getB("udpRtp", false);
     a.out.dropNull = d.getB("dropNull", false);
     a.popTop = d.getB("popTop", true);
-    a.updCheck = d.getB("updCheck", true); a.updAuto = d.getB("updAuto", true); a.updPre = d.getB("updPre", true);
+    a.updCheck = d.getB("updCheck", true); a.updAuto = d.getB("updAuto", true); a.updPre = d.getB("updBeta", false);
     a.updLast = d.getD("updLast", 0); a.updSkip = d.getS("updSkip", "");
     if (a.rxId == 1) loadFeedPrefs(a);   // the feeds are shared by all receivers: RX 1 owns their settings
     a.channels = d.getChannels();
@@ -556,7 +556,7 @@ void savePrefs(const App& a) {
     d.setB("udpRtp", a.out.rtp);
     d.setB("dropNull", a.out.dropNull);
     d.setB("popTop", a.popTop);
-    d.setB("updCheck", a.updCheck); d.setB("updAuto", a.updAuto); d.setB("updPre", a.updPre);
+    d.setB("updCheck", a.updCheck); d.setB("updAuto", a.updAuto); d.setB("updBeta", a.updPre);
     d.setD("updLast", a.updLast); d.setS("updSkip", a.updSkip);
     saveFeedPrefs(a);
     d.flush();

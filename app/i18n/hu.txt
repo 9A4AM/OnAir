@@ -656,14 +656,14 @@ Envelope	Burkoló
 Symbol rate	Szimbólumsebesség
 Updates	Frissítések
 Check for updates automatically	Frissítések automatikus keresése
-Include pre-releases	Előzetes kiadásokkal együtt
+Include beta versions	Béta verziókkal együtt
 Check now	Keresés most
 Not checked yet.	Még nincs ellenőrizve.
 Asking GitHub for the newest version…	A GitHubtól kérdezem a legújabb verziót…
 Yes, clear all	Yes, clear all
 You have the newest version.	A legújabb verziót használod.
 Version %s is available%s.	A(z) %s verzió elérhető%s.
- (pre-release)	 (előzetes kiadás)
+ (beta)	 (béta)
 Download and install	Letöltés és telepítés
 Download and install them by themselves	Letöltés és telepítés maguktól
 Skip this version	Ennek a verziónak a kihagyása

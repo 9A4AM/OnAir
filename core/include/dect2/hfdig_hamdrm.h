@@ -1,6 +1,6 @@
 // HamDRM / EasyPal decoder of the HF digital receiver (hfdig_rx.h): digital SSTV as QSSTV and EasyPal send it, a DRM-style OFDM signal in
 // a 2.3 or 2.5 kHz SSB channel carrying a file (usually a JPEG picture) in MOT-style segments, sent several times so that a receiver can
-// fill in what it missed. This header, hfdig_hamdrm*.cpp and app/hfdig_hamdrm_ui.cpp belong to HamDRM alone.
+// fill in what it missed. This header, hfdig_hamdrm*.cpp and app/hfdig/hfdig_hamdrm_ui.cpp belong to HamDRM alone.
 //
 // The modem reuses the DRM receiver's parts: the robustness mode timing (drm::modeParams), the FFT, the multilevel code and its rate
 // tables (MLC with the DRM punctured convolutional code), the QAM maps, the interleaver, the energy dispersal and the CRCs.

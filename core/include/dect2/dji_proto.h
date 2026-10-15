@@ -9,7 +9,7 @@
 // drones leave out the first symbol. The six data symbols after the first carry 6 x 600 x 2 = 7200 bits: Gold-scrambled (LTE sequence, seed 0x12345678),
 // the rate-matched output (rv 0) of the LTE turbo code (K = 1408, QPP interleaver) of 176 bytes: the DroneID packet (91 bytes), padding and a CRC-24A.
 //
-// What has been checked against the published material and what only against our own encoder is listed in tests/test_dji_proto.cpp.
+// What has been checked against the published material and what only against our own encoder is listed in tests/dji/test_dji_proto.cpp.
 #pragma once
 #include "ring.h"
 #include <cstdint>

@@ -670,14 +670,14 @@ Symbol rate	符号率
 #  updates
 Updates	更新
 Check for updates automatically	自动检查更新
-Include pre-releases	包括预发布版本
+Include beta versions	包括测试版
 Check now	立即检查
 Not checked yet.	尚未检查。
 Asking GitHub for the newest version…	正在向 GitHub 查询最新版本…
 Yes, clear all	Yes, clear all
 You have the newest version.	已是最新版本。
 Version %s is available%s.	版本 %s 已发布%s。
- (pre-release)	（预发布）
+ (beta)	（测试版）
 Download and install	下载并安装
 Download and install them by themselves	自动下载并安装
 Skip this version	跳过此版本

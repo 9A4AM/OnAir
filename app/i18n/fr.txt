@@ -670,14 +670,14 @@ Symbol rate	Débit de symboles
 #  updates
 Updates	Mises à jour
 Check for updates automatically	Rechercher les mises à jour automatiquement
-Include pre-releases	Inclure les préversions
+Include beta versions	Inclure les versions bêta
 Check now	Vérifier maintenant
 Not checked yet.	Pas encore vérifié.
 Asking GitHub for the newest version…	Demande de la dernière version à GitHub…
 Yes, clear all	Yes, clear all
 You have the newest version.	Vous avez la dernière version.
 Version %s is available%s.	La version %s est disponible%s.
- (pre-release)	 (préversion)
+ (beta)	 (bêta)
 Download and install	Télécharger et installer
 Download and install them by themselves	Les télécharger et installer automatiquement
 Skip this version	Ignorer cette version

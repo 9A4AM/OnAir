@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Generates core/src/mesh_presets_data.cpp (the built-in MeshCore radio presets) from the meshcore.nz API.
+"""Generates core/src/mesh/mesh_presets_data.cpp (the built-in MeshCore radio presets) from the meshcore.nz API.
 
   python3 tools/gen_meshcore_presets.py                 fetch https://api.meshcore.nz/api/v1/config and write the table
   python3 tools/gen_meshcore_presets.py --json f.json   use a saved copy (offline)
 The table is committed, so builds need no network. The regions are worked out from the preset title (the API has no region field);
-core/src/mesh_presets.cpp has the same rule (meshCoreRegionOf) and tests/test_mesh_presets_meshcore.cpp checks the two agree."""
+core/src/mesh/mesh_presets.cpp has the same rule (meshCoreRegionOf) and tests/mesh/test_mesh_presets_meshcore.cpp checks the two agree."""
 import argparse, datetime, json, os, sys, urllib.request
 
 URL = "https://api.meshcore.nz/api/v1/config"
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "core", "src", "mesh_presets_data.cpp")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "core", "src", "mesh", "mesh_presets_data.cpp")
 
 def region_of(title):
     t = title.lower()

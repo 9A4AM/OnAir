@@ -670,14 +670,14 @@ Symbol rate	Tasa de símbolos
 #  updates
 Updates	Actualizaciones
 Check for updates automatically	Buscar actualizaciones automáticamente
-Include pre-releases	Incluir versiones preliminares
+Include beta versions	Incluir versiones beta
 Check now	Comprobar ahora
 Not checked yet.	Aún no comprobado.
 Asking GitHub for the newest version…	Preguntando a GitHub por la versión más reciente…
 Yes, clear all	Yes, clear all
 You have the newest version.	Tiene la versión más reciente.
 Version %s is available%s.	La versión %s está disponible%s.
- (pre-release)	 (versión preliminar)
+ (beta)	 (beta)
 Download and install	Descargar e instalar
 Download and install them by themselves	Descargarlas e instalarlas solas
 Skip this version	Omitir esta versión

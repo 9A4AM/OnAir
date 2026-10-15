@@ -9,7 +9,7 @@
 // Test audio (hfdig_gen.h, makeFreedvTestAudio): only with the library. SynthConfig::modeOpt[0] = 2 picks FreeDV (the shell), and
 // modeOpt[1] picks the FreeDV mode: 0 = 700D (default), 1 = 700E, 2 = 1600. The transmission is a synthetic speech-like signal with
 // the text "ONAIR TEST" in the text channel. Without the library makeFreedvTestAudio() returns nullptr and the shell sends noise.
-// This header, hfdig_freedv.cpp and app/hfdig_freedv_ui.cpp belong to FreeDV alone.
+// This header, hfdig_freedv.cpp and app/hfdig/hfdig_freedv_ui.cpp belong to FreeDV alone.
 #pragma once
 #include "hfdig_rx.h"
 #include <cstddef>

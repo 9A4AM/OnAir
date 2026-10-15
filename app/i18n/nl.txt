@@ -663,14 +663,14 @@ Symbol rate	Symboolsnelheid
 #  updates
 Updates	Updates
 Check for updates automatically	Automatisch op updates controleren
-Include pre-releases	Voorlopige versies meenemen
+Include beta versions	Bètaversies meenemen
 Check now	Nu controleren
 Not checked yet.	Nog niet gecontroleerd.
 Asking GitHub for the newest version…	GitHub naar de nieuwste versie vragen…
 Yes, clear all	Yes, clear all
 You have the newest version.	Je hebt de nieuwste versie.
 Version %s is available%s.	Versie %s is beschikbaar%s.
- (pre-release)	 (voorlopige versie)
+ (beta)	 (bèta)
 Download and install	Downloaden en installeren
 Download and install them by themselves	Zelf downloaden en installeren
 Skip this version	Deze versie overslaan

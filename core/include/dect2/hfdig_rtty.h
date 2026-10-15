@@ -3,7 +3,7 @@
 // 850 Hz. Normal: the mark tone is the lower one. The decoder looks for the pair of tones itself (300 .. 3300 Hz) and locks to it.
 // Pipeline: spectrum of the audio -> pair search at the chosen shift -> a matched filter (one bit time of integration) at each tone ->
 // envelopes -> ATC decision (each envelope against its own slowly decaying peak) -> start bit edge, bit sampling, stop bit check.
-// This header, hfdig_rtty.cpp and app/hfdig_rtty_ui.cpp belong to RTTY alone.
+// This header, hfdig_rtty.cpp and app/hfdig/hfdig_rtty_ui.cpp belong to RTTY alone.
 //
 // Test audio (hfdig_gen.h, modeOpt[0] = 0): a looping RTTY transmission of kRttyTestText, amplitude 0.5, with the lower tone at 2125 Hz.
 //   modeOpt[1]  baud index  (0 45.45, 1 50, 2 75, 3 100)

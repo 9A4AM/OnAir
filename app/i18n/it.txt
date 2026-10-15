@@ -647,14 +647,14 @@ Envelope	Inviluppo
 Symbol rate	Symbol rate
 Updates	Aggiornamenti
 Check for updates automatically	Controlla gli aggiornamenti automaticamente
-Include pre-releases	Includi pre-release
+Include beta versions	Includi le versioni beta
 Check now	Controlla ora
 Not checked yet.	Non ancora controllato.
 Asking GitHub for the newest version…	Richiesta a GitHub dell'ultima versione…
 Yes, clear all	Yes, clear all
 You have the newest version.	Hai l'ultima versione.
 Version %s is available%s.	È disponibile la versione %s%s.
- (pre-release)	 (pre-release)
+ (beta)	 (beta)
 Download and install	Scarica e installa
 Download and install them by themselves	Scaricali e installali da solo
 Skip this version	Salta questa versione

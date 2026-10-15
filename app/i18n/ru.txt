@@ -647,14 +647,14 @@ Envelope	Огибающая
 Symbol rate	Символьная скорость
 Updates	Обновления
 Check for updates automatically	Проверять обновления автоматически
-Include pre-releases	Включать предварительные версии
+Include beta versions	Включать бета-версии
 Check now	Проверить сейчас
 Not checked yet.	Ещё не проверялось.
 Asking GitHub for the newest version…	Запрос к GitHub о самой новой версии…
 Yes, clear all	Yes, clear all
 You have the newest version.	У вас самая новая версия.
 Version %s is available%s.	Доступна версия %s%s.
- (pre-release)	 (предварительная)
+ (beta)	 (бета)
 Download and install	Загрузить и установить
 Download and install them by themselves	Загружать и устанавливать самостоятельно
 Skip this version	Пропустить эту версию

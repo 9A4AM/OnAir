@@ -47,7 +47,7 @@ void updateTick(App& a) {
         case Updater::Phase::UpToDate: a.updLast = nowS(); savePrefs(a); a.engine.log(std::string("OnAir ") + ONAIR_VERSION + " is the newest version"); break;
         case Updater::Phase::Available:
             a.updLast = nowS(); savePrefs(a);
-            a.engine.log("update available: OnAir " + st.release.version + (st.release.prerelease ? tr(" (pre-release)") : ""));
+            a.engine.log("update available: OnAir " + st.release.version + (st.release.prerelease ? tr(" (beta)") : ""));
             if (a.updAuto && st.autoInstallable && !skipped(a, st.release) && !failedBefore(st, st.release)) { U(a).download(); a.engine.log("downloading OnAir " + st.release.version + " in the background"); }
             break;
         case Updater::Phase::Ready: a.engine.log("OnAir " + st.release.version + " is ready: it is installed when you close the program"); break;
@@ -110,7 +110,7 @@ void updateButton(App& a) {
         case Updater::Phase::Downloading:
         case Updater::Phase::Preparing:
         case Updater::Phase::Ready: {
-            ImGui::Text(tr("Version %s is available%s."), st.release.version.c_str(), st.release.prerelease ? tr(" (pre-release)") : "");
+            ImGui::Text(tr("Version %s is available%s."), st.release.version.c_str(), st.release.prerelease ? tr(" (beta)") : "");
             if (!st.release.notes.empty()) {
                 ImGui::BeginChild("##notes", ImVec2(0, 150 * gUi), true);
                 ImGui::PushTextWrapPos(0);
@@ -149,7 +149,7 @@ void updateButton(App& a) {
         bool ch = false;
         ch |= ImGui::Checkbox(tr("Check for updates automatically"), &a.updCheck);
         ch |= ImGui::Checkbox(tr("Download and install them by themselves"), &a.updAuto);
-        ch |= ImGui::Checkbox(tr("Include pre-releases"), &a.updPre);
+        ch |= ImGui::Checkbox(tr("Include beta versions"), &a.updPre);
         if (ch) savePrefs(a);
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
         ImGui::TextWrapped("%s", tr("Only github.com is contacted. Downloads are checked against the SHA-256 GitHub lists for the file."));

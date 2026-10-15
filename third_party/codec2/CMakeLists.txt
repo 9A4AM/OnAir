@@ -1,5 +1,5 @@
 # codec2 1.2.0 (David Rowe, LGPL-2.1, see COPYING and README-OnAir.md), built as a SEPARATE SHARED library that OnAir loads at run time
-# (core/src/m17_codec2.cpp, hfdig_freedv.cpp). It is not linked into OnAir, so a user can replace it with their own build of codec2.
+# (core/src/m17/m17_codec2.cpp, core/src/hfdig/hfdig_freedv.cpp). It is not linked into OnAir, so a user can replace it with their own build of codec2.
 # The source is the unmodified 1.2.0 release (src/*.c without the command line tools and the test programs); the codebook*.c files are the
 # output of its generate_codebook tool, made once (the upstream build makes them at build time, which does not work when cross-compiling).
 # -DDECT2_BUNDLE_CODEC2=OFF leaves it out (OnAir then uses an installed libcodec2 or none, docs/CODECS.md).

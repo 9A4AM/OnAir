@@ -5,6 +5,7 @@
 //   service 0x1002  audio, 32 kHz mono, about 35 %, 20 audio units per logical frame
 //   service 0x1003  data: one data broadcast unit (Table 12 type 160) with a short UTF-8 text in every logical frame
 // The audio units are filler bytes, not DRA+ (the codec is not openly specified): a receiver can list and measure them but not play them.
+// CdrTxConfig::audioA replaces the filler of service 0x1001. Those bytes are still not DRA+.
 // GY/T 268.2 leaves the codes of the audio algorithm field to later documents; the generator writes 0 there. The service description
 // channel carries the service multiplex configuration table and the network information table ("OnAir CDR", country CHN) in every frame.
 //
@@ -43,6 +44,9 @@ struct CdrTxConfig {
     uint16_t serviceA = 0x1001, serviceB = 0x1002, serviceText = 0x1003;
     std::string text = "OnAir CDR test signal. CDR sound uses the DRA+ codec.";
     uint32_t seed = 1;
+    // Bytes of service 0x1001, split across its audio units and repeated for as long as the signal runs.
+    // Empty: filler bytes. This is not DRA+; a receiver can only play it with a decoder written for these bytes.
+    std::vector<uint8_t> audioA;
 };
 CdrTxConfig cdrTxConfigFrom(const SynthConfig& sc);
 

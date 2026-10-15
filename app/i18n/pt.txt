@@ -647,14 +647,14 @@ Envelope	Envolvente
 Symbol rate	Taxa de símbolos
 Updates	Atualizações
 Check for updates automatically	Procurar atualizações automaticamente
-Include pre-releases	Incluir pré-lançamentos
+Include beta versions	Incluir versões beta
 Check now	Verificar agora
 Not checked yet.	Ainda não verificado.
 Asking GitHub for the newest version…	A perguntar ao GitHub pela versão mais recente…
 Yes, clear all	Yes, clear all
 You have the newest version.	Tem a versão mais recente.
 Version %s is available%s.	A versão %s está disponível%s.
- (pre-release)	 (pré-lançamento)
+ (beta)	 (beta)
 Download and install	Transferir e instalar
 Download and install them by themselves	Transferi-las e instalá-las sozinho
 Skip this version	Ignorar esta versão

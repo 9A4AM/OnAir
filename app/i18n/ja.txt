@@ -663,14 +663,14 @@ Symbol rate	シンボルレート
 #  updates
 Updates	アップデート
 Check for updates automatically	自動的にアップデートを確認
-Include pre-releases	プレリリースを含める
+Include beta versions	ベータ版を含める
 Check now	今すぐ確認
 Not checked yet.	まだ確認していません。
 Asking GitHub for the newest version…	GitHub に最新バージョンを問い合わせています…
 Yes, clear all	Yes, clear all
 You have the newest version.	最新バージョンです。
 Version %s is available%s.	バージョン %s が利用可能です%s。
- (pre-release)	 (プレリリース)
+ (beta)	 (ベータ)
 Download and install	ダウンロードしてインストール
 Download and install them by themselves	自動でダウンロードしてインストール
 Skip this version	このバージョンをスキップ

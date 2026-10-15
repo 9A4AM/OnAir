@@ -102,7 +102,7 @@ void tvRecordRow(App& a) {
         if (rs.droppedPackets) a.engine.log("the disk was too slow: " + std::to_string(rs.droppedPackets) + " packets are missing from the recording");
     }
     if (rs.active) {
-        char b[96]; snprintf(b, sizeof b, "Stop  %s  %.1f MB##tvrec", clockText(rs.seconds).c_str(), rs.bytes / 1e6);
+        char b[96]; snprintf(b, sizeof b, "Stop  %s  %.1f MB###tvrec", clockText(rs.seconds).c_str(), rs.bytes / 1e6);
         ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
         if (ImGui::Button(b)) pl.stopRecording();
         ImGui::PopStyleColor();

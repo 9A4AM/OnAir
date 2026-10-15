@@ -663,14 +663,14 @@ Symbol rate	Szybkość symbolowa
 #  updates
 Updates	Aktualizacje
 Check for updates automatically	Sprawdzaj aktualizacje automatycznie
-Include pre-releases	Uwzględniaj wersje wstępne
+Include beta versions	Uwzględniaj wersje beta
 Check now	Sprawdź teraz
 Not checked yet.	Jeszcze nie sprawdzono.
 Asking GitHub for the newest version…	Pytam GitHub o najnowszą wersję…
 Yes, clear all	Yes, clear all
 You have the newest version.	Masz najnowszą wersję.
 Version %s is available%s.	Dostępna jest wersja %s%s.
- (pre-release)	 (wersja wstępna)
+ (beta)	 (beta)
 Download and install	Pobierz i zainstaluj
 Download and install them by themselves	Pobieraj i instaluj samodzielnie
 Skip this version	Pomiń tę wersję

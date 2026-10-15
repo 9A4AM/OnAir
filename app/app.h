@@ -470,7 +470,7 @@ struct App {
     int scanPreset = 0;
     bool scanWasRunning = false;
     std::unique_ptr<Updater> upd;      // update check and installer
-    bool updCheck = true, updAuto = true, updPre = true, updStarted = false;
+    bool updCheck = true, updAuto = true, updPre = false, updStarted = false;   // official updates on; betas off until asked
     double updLast = 0;                // when the last check was made (seconds since 1970)
     std::string updSkip;               // a version the user chose to skip
     DirectionFinder dir;

@@ -670,14 +670,14 @@ Symbol rate	Simbolių sparta
 #  updates
 Updates	Atnaujinimai
 Check for updates automatically	Automatiškai tikrinti atnaujinimus
-Include pre-releases	Įtraukti išankstines versijas
+Include beta versions	Įtraukti beta versijas
 Check now	Tikrinti dabar
 Not checked yet.	Dar netikrinta.
 Asking GitHub for the newest version…	Klausiama GitHub apie naujausią versiją…
 Yes, clear all	Yes, clear all
 You have the newest version.	Turite naujausią versiją.
 Version %s is available%s.	Galima versija %s%s.
- (pre-release)	 (išankstinė versija)
+ (beta)	 (beta)
 Download and install	Atsisiųsti ir įdiegti
 Download and install them by themselves	Atsisiųsti ir įdiegti savaime
 Skip this version	Praleisti šią versiją

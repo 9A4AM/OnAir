@@ -4,7 +4,7 @@ OnAir ships **codec2 1.2.0** (https://github.com/drowe67/codec2, by David Rowe a
 
 - **Licence:** GNU Lesser General Public License, version 2.1 (the text is in `COPYING`, shipped with every OnAir package as `licenses/codec2/COPYING`).
 - **Separate library:** codec2 is **not linked into OnAir**. It is built as its own shared library (`libcodec2.so.1.2`, `libcodec2.1.2.dylib`,
-  `libcodec2.dll`) that OnAir loads at run time with `dlopen` / `LoadLibrary` (`core/src/m17_codec2.cpp`, `core/src/hfdig_freedv.cpp`).
+  `libcodec2.dll`) that OnAir loads at run time with `dlopen` / `LoadLibrary` (`core/src/m17/m17_codec2.cpp`, `core/src/hfdig/hfdig_freedv.cpp`).
 - **You can replace it:** put your own build of codec2 (any 1.x with the same functions) in OnAir's `codecs` folder, or set `DECT2_CODEC2_PATH`
   to its full path; OnAir looks there before the copy it ships (docs/CODECS.md).
 - **Source:** the files in `src/` are the unmodified sources of the 1.2.0 release (only the command-line tools and test programs are left out).
