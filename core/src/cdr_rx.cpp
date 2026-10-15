@@ -857,7 +857,9 @@ ModeTuning cdrTuning() {
     t.sampleRate = 2000000;
     t.basebandHz = 1750000;
     t.bandwidthMhz = 0.5;
-    t.minSampleRate = 1000000;
+    // The decoder resamples to 816 kHz. The widest mode reaches 254 kHz from the centre, so 768 ksps already covers it.
+    // 1 Msps refused the Airspy HF+'s fastest rate (912 ksps) and the receiver never ran.
+    t.minSampleRate = 768000;
     t.tuneOffsetHz = 0;                  // no offset: the digital spectrum sits either side of the station's centre
     return t;
 }
