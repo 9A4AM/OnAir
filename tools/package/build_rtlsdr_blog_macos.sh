@@ -15,7 +15,13 @@ if [ -z "$tarball" ]; then
 fi
 mkdir "$W/src" && tar xf "$tarball" -C "$W/src" --strip-components=1
 sed -i '' 's/^set(VERSION_INFO_PATCH_VERSION git)/set(VERSION_INFO_PATCH_VERSION 6)/' "$W/src/CMakeLists.txt"
-cmake -S "$W/src" -B "$W/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$W/inst" -DVERSION=0.6.6 -DDETACH_KERNEL_DRIVER=ON -DINSTALL_UDEV_RULES=OFF
+CMAKE_EXTRA=()
+if command -v brew >/dev/null 2>&1; then
+  prefix=$(brew --prefix libusb 2>/dev/null || brew --prefix)
+  CMAKE_EXTRA+=(-DCMAKE_PREFIX_PATH="$prefix" -DCMAKE_EXE_LINKER_FLAGS="-L$prefix/lib" -DCMAKE_SHARED_LINKER_FLAGS="-L$prefix/lib")
+  export PKG_CONFIG_PATH="$prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+fi
+cmake -S "$W/src" -B "$W/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$W/inst" -DVERSION=0.6.6 -DDETACH_KERNEL_DRIVER=ON -DINSTALL_UDEV_RULES=OFF "${CMAKE_EXTRA[@]}"
 cmake --build "$W/build" -j"$(sysctl -n hw.ncpu)" --target rtlsdr
 lib=$(find "$W/build/src" -name 'librtlsdr.*.dylib' -type f | head -1)
 [ -n "$lib" ] || { echo "Blog librtlsdr dylib not built"; exit 1; }
