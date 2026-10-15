@@ -21,6 +21,7 @@ Free and open source, for macOS, Windows and Linux.</p>
   <a href="https://github.com/adswill/OnAir/releases/download/v0.2.0/OnAir_promo_v0.2.0.mp4"><b>Overview video</b></a> &nbsp;·&nbsp;
   <a href="https://discord.gg/Kky9c6atm"><b>Discord</b></a> &nbsp;·&nbsp;
   <a href="https://files.on-air.dev"><b>Signal samples</b></a> &nbsp;·&nbsp;
+  <a href="https://map.on-air.dev"><b>Live map</b></a> &nbsp;·&nbsp;
   <a href="https://github.com/adswill/OnAir-channels"><b>Channel list</b></a>
 </p>
 
@@ -269,6 +270,7 @@ To try it without a signal, `isdbtgen --out sample.cs8` (built with the tools) m
 - **DC spike handling:** leave the radio's centre spike alone, remove it, or keep it off the channel by tuning just beside it. Optional **IQ imbalance correction**.
 
 **Share it**
+- **[map.on-air.dev](https://map.on-air.dev)** is the public live map of aircraft, ships, APRS, mesh nodes and other positions that OnAir users choose to share (opt in under **Server**). Everyone can watch it; your receiver only sends data when you turn that on.
 - A built-in **network tuner** streams your channels to VLC, phones, Plex or Jellyfin over your home network, as a plain stream or as HLS for browsers and phones.
 - On a Mac, **cast** the playing service to an Apple TV or AirPlay TV.
 - **Record** to a file, or send the stream out over UDP.
