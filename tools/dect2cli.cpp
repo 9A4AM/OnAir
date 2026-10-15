@@ -206,6 +206,7 @@ int main(int argc, char** argv) {
     e.same().clearResults();      // SAME alerts: the newest are printed with each line
     e.same().setSilent(true);     // weather radio: no sound from the command line
     e.halow().clearResults();     // Wi-Fi HaLow networks: the table is printed with each line
+    e.wisun().clearResults();     // Wi-SUN FAN: the newest frames are printed with each line
     e.cubesat().clearFrames();    // CubeSat telemetry: the frames are printed with each line
     e.globalstar().clearResults();   // Globalstar: the events are printed with each line
     e.vdes().clearResults();      // VDES: the ASM frames and bursts are printed with each line
@@ -361,6 +362,11 @@ int main(int argc, char** argv) {
                 for (const auto& n : t.halow.nets)
                     printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
                            n.seenWidthMhz, n.mcs, n.security.c_str(), n.rssi, n.vendor.c_str());
+            if (t.standard == 78)   // Wi-SUN FAN: the newest frames
+                for (size_t i = 0; i < t.wisun.log.size() && i < 4; i++) {
+                    const WsFrame& f = t.wisun.log[i];
+                    printf("  wisun: %8.3f s %7.1f MHz %3d kbit/s %6.1f dBFS %-23s > %-23s %s\n", f.sec, f.mhz, f.bitRate / 1000, f.rssi, f.src.c_str(), f.dst.c_str(), f.info.c_str());
+                }
             if (t.standard == 72)   // LoRa (raw): the newest frames
                 for (size_t i = 0; i < t.loraraw.log.size() && i < 4; i++) {
                     const LrFrame& f = t.loraraw.log[i];

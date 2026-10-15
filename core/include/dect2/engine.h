@@ -82,6 +82,7 @@
 #include "same_rx.h"
 #include "multitone_rx.h"
 #include "loraraw_rx.h"
+#include "wisun_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
@@ -291,6 +292,7 @@ public:
     NbiotReceiver& nbiot() { return rxNb_; }   // NB-IoT cells: clear the cell table (telemetry through latestRx)
     ZigbeeReceiver& zigbee() { return rxZb_; }   // Zigbee / 802.15.4: clear the PAN and device tables (telemetry through latestRx)
     FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
+    WisunReceiver& wisun() { return rxWs_; }   // Wi-SUN FAN: region, clear the tables (telemetry through latestRx)
     LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
     DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
@@ -495,6 +497,7 @@ private:
     SameReceiver rxSame_;
     MultitoneReceiver rxMt_;
     LoraRawReceiver rxLr_;
+    WisunReceiver rxWs_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
