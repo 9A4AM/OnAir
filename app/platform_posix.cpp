@@ -37,7 +37,7 @@ bool fetchUrl(const std::string& url, const std::string& file, const std::string
     wchar_t sys[MAX_PATH + 1] = {0};
     std::wstring exe = GetSystemDirectoryW(sys, MAX_PATH) ? std::wstring(sys) + L"\\curl.exe" : std::wstring(L"curl.exe");
     if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) exe = L"curl.exe";   // Windows before 10 1803: a curl the user installed
-    std::wstring cmd = L"\"" + exe + L"\" -fsSL --max-time 12 -A \"" + wide(userAgent) + L"\" -o \"" + wide(file) + L"\" \"" + wide(url) + L"\"";
+    std::wstring cmd = L"\"" + exe + L"\" -fsSL --ssl-no-revoke --max-time 12 -A \"" + wide(userAgent) + L"\" -o \"" + wide(file) + L"\" \"" + wide(url) + L"\"";
     STARTUPINFOW si{};
     si.cb = sizeof si;
     PROCESS_INFORMATION pi{};

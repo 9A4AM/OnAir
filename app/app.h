@@ -379,7 +379,9 @@ struct App {
     struct FmScan {
         bool running = false; int phase = 0; int idx = -1; double t0 = 0, savedFreq = 100.0; uint64_t seq0 = 0, rxSeq0 = 0;   // seq0: spectrum frame, rxSeq0: receiver report at the moment of tuning; phase 0 surveys the band, phase 1 checks each candidate
         std::vector<double> cand;
-        struct Res { std::string name, pty; double mhz = 0; bool found = false, stereo = false, rds = false; float snr = 0; };
+        std::vector<std::string> psSeq; double psT = 0;   // the names the station sent on this channel, in order, and when the last new one came
+        // rt: radio text; psText: the names of a station whose name changes (a scrolling name), in order; pi: programme identification
+        struct Res { std::string name, pty; double mhz = 0; bool found = false, stereo = false, rds = false; float snr = 0; std::string rt, psText; int pi = 0; bool tp = false; };
         std::vector<Res> results;
     } fmScan;
     std::vector<FmSavedStation> fmSaved;   // stations the user saved by hand, kept in the preferences between sessions

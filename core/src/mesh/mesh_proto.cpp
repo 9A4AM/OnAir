@@ -176,12 +176,12 @@ static std::string lower(std::string s) {
 }
 
 namespace {
-struct PresetRow { const char* name; int sf; double bwKHz; int cr; };
+struct PresetRow { const char* name; int sf; double bwKHz; int cr; const char* channel = nullptr; };   // channel: the default channel name, when not name
 // MeshRadio.h modemPresetToParams (non-wide regions), names from DisplayFormatters.cpp
 const PresetRow kPresets[] = {
     {"ShortTurbo", 7, 500, 5},  {"ShortFast", 7, 250, 5},   {"ShortSlow", 8, 250, 5},
     {"MediumFast", 9, 250, 5},  {"MediumSlow", 10, 250, 5}, {"LongTurbo", 11, 500, 8},
-    {"LongFast", 11, 250, 5},   {"LongModerate", 11, 125, 8}, {"LongSlow", 12, 125, 8},
+    {"LongFast", 11, 250, 5},   {"LongModerate", 11, 125, 8, "LongMod"}, {"LongSlow", 12, 125, 8},
 };
 struct Region { const char* name; double startMHz, endMHz; bool wide = false; };
 // RadioInterface.cpp regions[] (freqStart, freqEnd; the spacing is 0 in all of them)
@@ -230,7 +230,8 @@ bool meshtasticPreset(const std::string& preset, MeshLoraSettings& out) {
     return true;
 }
 
-// numChannels = floor((end - start) / (spacing + bw)); slot = hash(name) % numChannels; f = start + bw/2 + slot*bw
+// numChannels = floor((end - start) / (spacing + bw)); slot = hash(name) % numChannels; f = start + bw/2 + slot*bw. The name is the
+// default channel's (Channels::getName: getModemPresetDisplayName(preset, false)), "LongMod" for LongModerate
 double meshtasticSlotHz(const std::string& region, const std::string& preset) {
     const PresetRow* p = findPreset(preset);
     const Region* g = findRegion(region);
@@ -239,7 +240,7 @@ double meshtasticSlotHz(const std::string& region, const std::string& preset) {
     if (g->endMHz - g->startMHz < bw) return 0;            // the firmware would fall back to LongFast here
     const uint32_t n = (uint32_t)std::floor((g->endMHz - g->startMHz) / bw + 1e-9);
     if (n == 0) return 0;
-    const uint32_t slot = djb2(p->name) % n;
+    const uint32_t slot = djb2(p->channel ? p->channel : p->name) % n;
     return std::round((g->startMHz + bw / 2 + slot * bw) * 1e6);
 }
 
@@ -279,7 +280,7 @@ MeshLoraSettings meshcoreDefaults(const std::string& region) {
         {"NL", 869.618, 7, 62.5, 5},   {"PT", 869.618, 7, 62.5, 6},   {"EU433", 433.650, 8, 62.5, 8},
         {"EU_DEPRECATED", 869.525, 11, 250, 5},
         {"US", 910.525, 7, 62.5, 5},   {"CA", 910.525, 7, 62.5, 5},   {"AU", 915.800, 10, 250, 5},
-        {"NZ", 917.375, 7, 62.5, 5},
+        {"NZ", 917.375, 7, 62.5, 5},   {"ANZ Mid", 915.075, 9, 125, 5},
     };
     const std::string k = lower(region);
     const Row* r = &rows[0];

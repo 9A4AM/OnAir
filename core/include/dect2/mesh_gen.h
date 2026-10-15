@@ -21,6 +21,7 @@
 //               3 LoRaWAN EU868, 4 LoRaWAN US915: six end devices (The Things Network, Helium, Orange, a private network, two join
 //               requests from Dragino and Milesight DevEUIs) on 868.1 / 868.3 / 868.5 MHz (US: 903.9 / 904.1 / 904.3) at SF7 - SF12
 //               (US: SF7 - SF10), 125 kHz, sync 0x34, for a receiver tuned to the first channel; frame counters go on from cycle to cycle
+//               5 ANZ: the EU / US scene on Meshtastic LongFast 919.875 MHz, MeshCore AU (915.8 MHz, SF10, 250 kHz) 4.075 MHz below
 //   modeOpt[2]  seed of the packet ids, offsets and SNR variation (0 = 1)
 //   modeOpt[3]  1: start with a quiet second (default: the first frame starts after 0.2 s); 2 (70 cm scene): no SNR variation
 //   modeOpt[4]  1: the scene is placed for a receiver tuned to MeshCore (868 / 915) or to LoRa APRS EU 433.775 MHz (70 cm) instead

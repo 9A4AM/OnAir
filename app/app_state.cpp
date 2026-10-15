@@ -444,6 +444,7 @@ void loadPrefs(App& a) {
             if (f.size() < 6) continue;
             App::FmScan::Res r;
             r.mhz = atof(f[0].c_str()); r.name = f[1]; r.pty = f[2]; r.snr = (float)atof(f[3].c_str()); r.stereo = f[4] == "1"; r.rds = f[5] == "1"; r.found = r.mhz >= 87.5 && r.mhz <= 108.01;
+            if (f.size() >= 10) { r.pi = (int)strtol(f[6].c_str(), nullptr, 16); r.tp = f[7] == "1"; r.rt = f[8]; r.psText = f[9]; }   // since full RDS
             if (r.found) a.fmScan.results.push_back(r);
         }
     }
@@ -532,13 +533,15 @@ void savePrefs(const App& a) {
     d.setI("splitSide", (int)std::lround(a.splitSide)); d.setI("splitRight", (int)std::lround(a.splitRight)); d.setI("splitBottom", (int)std::lround(a.splitBottom));
     d.setI("splitDock", (int)std::lround(a.splitDock)); d.setI("splitBot2", (int)std::lround(a.splitBot2));
     d.setS("modeGroupsOpen", a.modeGroupsOpen);
-    {   // the stations the FM scan found: mhz|name|type|snr|stereo|rds, one per line
+    {   // the stations the FM scan found: mhz|name|type|snr|stereo|rds|pi (hex)|tp|radio text|scrolling name, one per line
         std::string st;
         for (const auto& r : a.fmScan.results) {
             if (!r.found) continue;
             auto clean = [](std::string s) { for (auto& c : s) if (c == '|' || c == '\n') c = ' '; return s; };
             char b[64]; snprintf(b, sizeof b, "%.1f|", r.mhz);
-            st += b + clean(r.name) + "|" + clean(r.pty) + "|" + std::to_string((int)r.snr) + "|" + (r.stereo ? "1" : "0") + "|" + (r.rds ? "1" : "0") + "\n";
+            st += b + clean(r.name) + "|" + clean(r.pty) + "|" + std::to_string((int)r.snr) + "|" + (r.stereo ? "1" : "0") + "|" + (r.rds ? "1" : "0");
+            char pi[8]; snprintf(pi, sizeof pi, "%04X", r.pi & 0xFFFF);
+            st += std::string("|") + pi + "|" + (r.tp ? "1" : "0") + "|" + clean(r.rt) + "|" + clean(r.psText) + "\n";
         }
         if (!a.fmScan.running) d.setS("fmStations", st);   // not a half-finished scan
     }

@@ -193,7 +193,7 @@ EXPORT int iio_channel_attr_write_longlong(const void* c, const char* a, long lo
 EXPORT void iio_channel_enable(void*) {}
 EXPORT void iio_channel_disable(void*) {}
 struct iio_buf { std::vector<int16_t> d; std::atomic<bool> cancel{false}; };
-EXPORT void* iio_device_create_buffer(const void*, size_t n, bool) { auto* b = new iio_buf; b->d.resize(n * 2); for (size_t i = 0; i < n; i++) { b->d[2 * i] = (int16_t)lround(kI * 2048); b->d[2 * i + 1] = (int16_t)lround(kQ * 2048); } return b; }
+EXPORT void* iio_device_create_buffer(const void*, size_t n, bool) { rec("pluto.bufSamples", (double)n); auto* b = new iio_buf; b->d.resize(n * 2); for (size_t i = 0; i < n; i++) { b->d[2 * i] = (int16_t)lround(kI * 2048); b->d[2 * i + 1] = (int16_t)lround(kQ * 2048); } return b; }
 EXPORT void iio_buffer_destroy(void* b) { delete (iio_buf*)b; }
 EXPORT long long iio_buffer_refill(void* b) { auto* x = (iio_buf*)b; if (x->cancel) return -1; pace(); return (long long)(x->d.size() / 2 * 4); }
 EXPORT void iio_buffer_cancel(void* b) { ((iio_buf*)b)->cancel = true; }

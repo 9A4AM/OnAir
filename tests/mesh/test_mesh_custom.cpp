@@ -132,6 +132,43 @@ int main() {
         CHECK(got && t.mtRegion == "ANZ" && !t.custom, "ANZ MediumSlow");
     }
 
+    // the ANZ band plan (setRegion 2, no Meshtastic region set): LongFast on 919.875 MHz, MeshCore AU (915.8 MHz) in the plan, no LoRaWAN
+    {
+        MeshLoraSettings lf;
+        CHECK(meshtasticRegionPreset("ANZ", "LongFast", lf), "ANZ LongFast");
+        lora::Params p;
+        p.sf = lf.sf; p.bwHz = lf.bwHz; p.cr = lf.cr; p.preamble = lf.preamble; p.syncWord = lf.syncWord; p.ldro = lf.ldro;
+        const auto data = meshtasticData(1, std::vector<uint8_t>({'s', 'c'}));
+        const auto pkt = meshtasticRaw(0x2a0000abu, 0xFFFFFFFFu, 0x9a, 3, 3, false, "LongFast", key, data);
+        MeshReceiver rx;
+        rx.setProtocols(1 | 2 | 16);
+        rx.setRegion(2);
+        const MeshTelemetry t = run(rx, p, pkt, lf.freqHz, lf.freqHz, 2e6, 300, 8);
+        bool got = false, mc = false, lw = false;
+        for (const auto& m : t.messages) got |= m.text == "sc";
+        for (const auto& d : t.decoders) { mc |= d.protocol == 2 && d.preset == "MeshCore AU" && std::fabs(d.freqHz - 915.8e6) < 1; lw |= d.protocol == 5; }
+        printf("ANZ plan LongFast %.4f MHz: %s, plan %s, MeshCore AU %s\n", lf.freqHz / 1e6, got ? "decoded" : "MISSING", t.mtRegion.c_str(), mc ? "planned" : "MISSING");
+        CHECK(got && t.region == 2 && t.mtRegion == "ANZ" && !t.custom, "ANZ plan LongFast");
+        CHECK(mc && !lw, "ANZ plan: MeshCore AU, no LoRaWAN");
+        const MeshNode* nd = t.nodes.empty() ? nullptr : &t.nodes[0];
+        CHECK(nd && nd->packets == 1 && nd->firstHeard >= 0 && nd->firstHeard == nd->lastHeard && nd->snrMin == nd->snrMax && std::abs(nd->snrSum - nd->snrMin) < 1e-3 &&
+              nd->encrypted == 0, "node statistics after one packet");
+        // a device telemetry report: the node's last values, and one reading in the history with its time
+        MeshtasticNode tn; tn.num = 0x2a0000ab;
+        const auto tp = meshtasticTelemetry(tn, 0x9b, 3, 3, 87, 4.05, 3.5, 0.4, 3600);
+        const MeshTelemetry t2 = run(rx, p, tp, lf.freqHz, lf.freqHz, 2e6, 300, 8);
+        const MeshReading* rd = t2.readings.empty() ? nullptr : &t2.readings.back();
+        CHECK(t2.readings.size() == 1 && rd && rd->id == "!2a0000ab" && std::abs(rd->batteryPct - 87) < 0.5 && std::abs(rd->voltage - 4.05) < 0.01 &&
+              rd->uptimeS == 3600 && !rd->hasEnv && rd->unixTime > 1.7e9, "telemetry reading kept (%zu)", t2.readings.size());
+        bool dev = false;
+        for (const auto& n : t2.nodes) dev |= n.id == "!2a0000ab" && n.devSec >= 0 && std::abs(n.batteryPct - 87) < 0.5;
+        CHECK(dev, "node battery with its time");
+        tn.lat = -27.6; tn.lon = -48.62; tn.altM = 12;
+        const MeshTelemetry t3 = run(rx, p, meshtasticPosition(tn, 0x9c, 3, 3, 1790000000u), lf.freqHz, lf.freqHz, 2e6, 300, 8);
+        CHECK(t3.readings.size() == 2 && t3.readings.back().hasPosition && std::abs(t3.readings.back().lat + 27.6) < 1e-5 &&
+              std::abs(t3.readings.back().lon + 48.62) < 1e-5 && t3.readings.back().batteryPct < 0, "position kept in the history");
+    }
+
     if (fails) { printf("%d failures\n", fails); return 1; }
     printf("ok\n");
     return 0;

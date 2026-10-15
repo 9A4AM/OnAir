@@ -239,7 +239,7 @@ public:
             }
             if (!antenna_.empty()) dev_->setAntenna(SOAPY_SDR_RX, 0, antenna_);   // the default entry leaves the driver's choice alone
             if (!apply(s, err, false)) { close(); return false; }
-            stream_ = dev_->setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32);
+            stream_ = dev_->setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, {0});
             if (!stream_) { err = "setupStream failed"; close(); return false; }
             if (dev_->activateStream(stream_) != 0) { err = "activateStream failed"; close(); return false; }
         } catch (const std::exception& e) {

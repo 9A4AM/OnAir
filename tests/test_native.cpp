@@ -842,6 +842,7 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
         e.clear();
         const bool ok = src->start(t, ring, e);
         CHECK(ok && st("pluto.xoWrites") == kNone && st("pluto.phy:voltage0.gain_control_mode=manual") == 1, "Pluto defaults: xo writes %.0f (%s)", st("pluto.xoWrites"), e.c_str());
+        CHECK(st("pluto.bufSamples") == 65536, "Pluto over USB: buffer of %.0f samples", st("pluto.bufSamples"));
         if (ok) {
             t.radio["ppm"] = "10";
             CHECK(src->retune(t, e) && st("pluto.phy.xo_correction") == 40000400 && st("pluto.phy:altvoltage0.frequency") == 522e6, "Pluto 10 ppm: xo %.0f, freq %.0f", st("pluto.phy.xo_correction"), st("pluto.phy:altvoltage0.frequency"));
@@ -859,6 +860,19 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
             CHECK(st("pluto.phy:voltage0.filter_fir_en") == 0, "Pluto: the FIR left on at stop");
             CHECK(st("pluto.phy.xo_correction") == 40000000, "Pluto: reference clock not restored at stop (%.0f)", st("pluto.phy.xo_correction"));
         }
+        // over a network every refill is a round trip to iiod: ~25 ms per buffer, 64k to 1M samples (#114)
+        DeviceInfo nd = d; nd.nativeArgs = "ip:10.0.0.7";
+        auto net = makeSource(nd);
+        t = TuneSettings(); t.centerHz = 1291e6; t.sampleRate = 16e6; t.gainDb = 30;
+        e.clear();
+        if (net->start(t, ring, e)) {
+            CHECK(st("pluto.bufSamples") == 524288, "Pluto on Ethernet, 16 Msps: buffer of %.0f samples", st("pluto.bufSamples"));
+            t.sampleRate = 30e6;
+            CHECK(net->retune(t, e) && st("pluto.bufSamples") == 1048576, "Pluto on Ethernet, 30 Msps: buffer of %.0f samples", st("pluto.bufSamples"));
+            t.sampleRate = 2.5e6;
+            CHECK(net->retune(t, e) && st("pluto.bufSamples") == 65536, "Pluto on Ethernet, 2.5 Msps: buffer of %.0f samples", st("pluto.bufSamples"));
+            net->stop();
+        } else CHECK(false, "Pluto on Ethernet did not start (%s)", e.c_str());
     }
 
     if (use(lib("bladeRF").c_str())) {
