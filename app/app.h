@@ -38,6 +38,7 @@
 #include "dect2/feeds.h"
 #include "dect2/share.h"
 #include "dect2/pskreporter.h"
+#include "dect2/wsprnet.h"
 #include "dect2/passes.h"
 #include "dect2/maplayers.h"
 #include "theme.h"
@@ -343,6 +344,7 @@ struct App {
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
     dect2::ShareConfig share; // "Share my radio": the rtl_tcp server (off by default; feeds_ui.cpp), saved with the preferences
     dect2::PskReporterConfig pskr;   // PSK Reporter spots (off by default; feeds_ui.cpp), saved with the preferences
+    dect2::WsprNetConfig wsprNet;    // WSPRnet spots (off by default; feeds_ui.cpp), saved with the preferences
     bool highContrast = false; // View > Theme > High contrast: black, white and yellow, thick outlines, dim text lifted to 7:1 (ui2.cpp, main.cpp); wins over lightUi
     bool lightUi = false;     // View > Light: every colour drawn with its lightness turned over (dark on white), hues kept (main.cpp)
     int family = 68;           // 68 DVB, 1 ATSC, 2 DAB, 3 ATSC 3.68, 4 ISDB-T, 5 FM, 6 DVB-S/S2, 7 DTMB, 8 analog TV, 9 DMR, 168 DRM, 11 ADS-B, 12 GNSS, 13 radiosonde, 14 AIS, 15 marine, 16 ACARS, 17 Inmarsat-C, 18 Inmarsat Aero, 19 Iridium, 268 mesh, 21 HD Radio, 22 CDR, 23 pagers, 24 APRS / packet, 25 HF digital, 26 airband, 27 VDL Mode 2, 28 ISM sensors, 368 VOR / ILS, 31 M17, 33 D-STAR, 34 CW, 35 HFDL, 36 PSK31, 37 JS8Call, 42 spectrum analyser, 38 NXDN, 468 DVB-C, 45 dPMR, 44 Orbcomm, 43 Mode S uplink, 46 TETRA, 49 HF ALE, 47 MAC, 48 radio astronomy, 568 P25, 51 Bluetooth LE, 52 ionospheric sounders, 53 QO-16868, 54 Wi-Fi networks, 55 general receiver, 61 CubeSat telemetry, 64 HRPT / AHRPT (6 and up: see ModeUi; engine standard code = family + 2)
@@ -378,6 +380,7 @@ struct App {
     } dabScan;
     struct FmScan {
         bool running = false; int phase = 0; int idx = -1; double t0 = 0, savedFreq = 100.0; uint64_t seq0 = 0, rxSeq0 = 0;   // seq0: spectrum frame, rxSeq0: receiver report at the moment of tuning; phase 0 surveys the band, phase 1 checks each candidate
+        double scanLoMhz = 87.0, scanHiMhz = 108.0; int surveyHops = 11;   // scan range (MHz), fixed for the run from preferences
         std::vector<double> cand;
         std::vector<std::string> psSeq; double psT = 0;   // the names the station sent on this channel, in order, and when the last new one came
         // rt: radio text; psText: the names of a station whose name changes (a scrolling name), in order; pi: programme identification

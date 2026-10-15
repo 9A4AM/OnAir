@@ -7,6 +7,7 @@
 // subtracted from the slot, and the search runs again on what is left.
 #include "dect2/hfdig_ftx.h"
 #include "dect2/pskreporter.h"
+#include "dect2/wsprnet.h"
 #include "dect2/fftutil.h"
 #include "hfdig_ftx_int.h"
 #include "hfdig_wsjt_int.h"
@@ -999,6 +1000,8 @@ struct HfdigFtx::Impl {
                 d.dialHz = dialHz.load();
                 tel.decodes.push_back(d);
                 if (!d.call.empty() && PskReporter::get().want()) PskReporter::get().spot(ftxModeName(m), d.hz + spotShift.load(), d.snrDb, d.call, d.grid);
+                if (m == kWspr && !d.call.empty() && WsprNet::get().want())
+                    WsprNet::get().spot(d.hz + spotShift.load(), d.snrDb, d.dt, d.call, d.grid, d.dbm, d.slotUtc);
                 tel.total++;
                 tel.perMode[m]++;
             }

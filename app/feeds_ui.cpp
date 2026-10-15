@@ -63,6 +63,9 @@ void loadFeedPrefs(App& a) {
     dect2::PskReporterConfig& r = a.pskr;
     r.on = d.getB("pskrOn", false); r.call = d.getS("pskrCall", ""); r.locator = d.getS("pskrLocator", ""); r.antenna = d.getS("pskrAntenna", "");
     if (r.on) dect2::PskReporter::get().configure(r);
+    dect2::WsprNetConfig& w = a.wsprNet;
+    w.on = d.getB("wsprNetOn", false); w.call = d.getS("wsprNetCall", ""); w.locator = d.getS("wsprNetLocator", "");
+    if (w.on) dect2::WsprNet::get().configure(w);
     bool any = false;
     for (bool o : c.on) any = any || o;
     if (any) dect2::Feeds::get().configure(c);
@@ -101,6 +104,7 @@ void saveFeedPrefs(const App& a) {
     d.setB("shareOn", a.share.on); d.setI("sharePort", a.share.port); d.setI("shareLan", a.share.lan ? 1 : 0); d.setI("shareControl", a.share.allowControl ? 1 : 0);
     remoteApiSavePrefs(a);
     d.setB("pskrOn", a.pskr.on); d.setS("pskrCall", a.pskr.call); d.setS("pskrLocator", a.pskr.locator); d.setS("pskrAntenna", a.pskr.antenna);
+    d.setB("wsprNetOn", a.wsprNet.on); d.setS("wsprNetCall", a.wsprNet.call); d.setS("wsprNetLocator", a.wsprNet.locator);
 }
 
 void feedsWindow(App& a) {
@@ -228,6 +232,41 @@ void feedsWindow(App& a) {
         ImGui::Unindent();
     }
     if (pc) { dect2::PskReporter::get().configure(r); savePrefs(a); }
+
+    ImGui::SeparatorText(tr("WSPRnet"));
+    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(380 * gUi);
+        ImGui::TextUnformatted(tr("Sends WSPR stations you decode to wsprnet.org (HTTP), so they appear on the WSPR map and database. "
+            "Each spot includes the sender's callsign, frequency, SNR, grid and power; with your callsign and locator. "
+            "Uploads are queued with a short pause between posts; the same station in the same two-minute slot is sent once. "
+            "Nothing is sent until you tick the box. Spots are public: use your own valid amateur radio callsign."));
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+    dect2::WsprNetConfig& wn = a.wsprNet;
+    bool wc = false;
+    wc |= ImGui::Checkbox(tr("Send WSPR spots to WSPRnet (wsprnet.org)"), &wn.on);
+    ImGui::Indent();
+    wc |= textField(N_("Your callsign"), wn.call, ImGuiInputTextFlags_CharsUppercase, 120);
+    wc |= textField(N_("Your locator"), wn.locator, ImGuiInputTextFlags_CharsUppercase, 90);
+    ImGui::Unindent();
+    {
+        const dect2::WsprNetStatus ws = dect2::WsprNet::get().status();
+        ImGui::Indent();
+        if (!wn.on) ImGui::TextDisabled("%s", tr("off"));
+        else {
+            ImGui::TextColored(ws.active ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled), tr("%s, %llu spots sent, %llu duplicates skipped, %llu failed"), ws.state.c_str(), (unsigned long long)ws.spotsSent, (unsigned long long)ws.duplicates, (unsigned long long)ws.failures);
+            if (ws.lastSend) { char b[32]; const time_t t = (time_t)ws.lastSend; strftime(b, sizeof b, "%H:%M:%S", localtime(&t)); ImGui::Text(tr("last send %s"), b); }
+            if (!ws.lastError.empty()) ImGui::TextColored(pal::badRed(), "%s", ws.lastError.c_str());
+        }
+        ImGui::PushTextWrapPos(460 * gUi);
+        ImGui::TextDisabled("%s", tr("WSPR decodes only. Spots are public. A valid amateur radio callsign and locator are required."));
+        ImGui::PopTextWrapPos();
+        ImGui::Unindent();
+    }
+    if (wc) { dect2::WsprNet::get().configure(wn); savePrefs(a); }
 
     ImGui::SeparatorText(tr("Share my radio (rtl_tcp server)"));
     {
