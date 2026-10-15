@@ -27,7 +27,7 @@ struct Spec {
     const char* serial;
 };
 
-const Spec kSpecs[7] = {
+const Spec kSpecs[8] = {
     {SondeRs41, 403.000e6, 25.20, 55.36, 12000, 5.0, 0, 2400, "N4750123"},
     {SondeDfm, 402.200e6, 25.30, 55.50, 22000, -15.0, 17, 2400, "17012345"},
     {SondeM10, 404.100e6, 25.10, 55.20, 8000, 5.0, 0, 4800, "310-2-11329"},
@@ -35,6 +35,7 @@ const Spec kSpecs[7] = {
     {SondeM20, 401.600e6, 25.00, 55.60, 15000, 5.0, 0, 4800, "211-4-01234"},
     {SondeDfm, 405.000e6, 25.40, 55.30, 3000, 4.0, 9, 2400, "19076543"},
     {SondeRs92, 405.300e6, 25.15, 55.45, 6000, 5.0, 0, 2400, "P4953934"},
+    {SondeLms6, 1680.000e6, 46.77, -100.77, 12000, 5.0, 0, 75000, "LMS6-77668800"},
 };
 
 double baudOf(int kind) {
@@ -42,6 +43,7 @@ double baudOf(int kind) {
     case SondeRs41: case SondeRs92: return 4800;
     case SondeDfm: return 2500;
     case SondeM10: return 9615;
+    case SondeLms6: return 9616;
     default: return 9600;
     }
 }
@@ -51,7 +53,20 @@ const char* typeOf(int kind) {
     case SondeDfm: return "DFM";
     case SondeM10: return "M10";
     case SondeRs92: return "RS92";
+    case SondeLms6: return "LMS6";
     default: return "M20";
+    }
+}
+
+int specMaskBit(int kind) {
+    switch (kind) {
+    case SondeRs41: return 1;
+    case SondeDfm: return 2;
+    case SondeM10: return 4;
+    case SondeM20: return 8;
+    case SondeRs92: return 16;
+    case SondeLms6: return 32;
+    default: return 0;
     }
 }
 
@@ -92,13 +107,14 @@ public:
     SondeSynth(const SynthConfig& cfg, double rate, const std::string& serial = {}, double lat = 0, double lon = 0)
         : rate_(rate), cfg_(cfg), noise_(cfg.modeOpt[2] ? (uint32_t)cfg.modeOpt[2] : 1u) {
         const int mask = cfg.modeOpt[0] ? cfg.modeOpt[0] : 0x7;
-        int want = cfg.modeOpt[1] > 0 ? std::min(cfg.modeOpt[1], 7) : 3;
+        centreHz_ = (mask & 32) ? 1680.0e6 : kCentreHz;
+        int want = cfg.modeOpt[1] > 0 ? std::min(cfg.modeOpt[1], 8) : 3;
         east_ = cfg.modeVal[0] != 0 ? cfg.modeVal[0] : 10.0;
         driftHzPerMin_ = cfg.modeVal[1];
         const double off2 = cfg.modeVal[2] != 0 ? cfg.modeVal[2] : 450000.0;
         std::mt19937 rng(cfg.modeOpt[2] ? (uint32_t)cfg.modeOpt[2] : 1u);
-        for (int i = 0; i < 7 && (int)sondes_.size() < want; i++) {
-            const int bit = kSpecs[i].kind == SondeRs41 ? 1 : kSpecs[i].kind == SondeDfm ? 2 : kSpecs[i].kind == SondeM10 ? 4 : kSpecs[i].kind == SondeM20 ? 8 : 16;
+        for (int i = 0; i < 8 && (int)sondes_.size() < want; i++) {
+            const int bit = specMaskBit(kSpecs[i].kind);
             if (!(mask & bit)) continue;
             Sonde s;
             s.spec = kSpecs[i];
@@ -108,7 +124,7 @@ public:
             }
             double f = s.spec.freqHz;
             if (i == 3) f = kSpecs[0].freqHz + off2;
-            s.carrierHz = f - kCentreHz;
+            s.carrierHz = f - centreHz_;
             if (std::fabs(s.carrierHz) > 0.45 * rate) continue;
             s.period = sondeFramePeriodS(typeOf(s.spec.kind));
             if (s.period <= 0.1) s.period = 1.0;
@@ -170,6 +186,7 @@ private:
     SynthConfig cfg_;
     genutil::NoiseSource noise_;
     std::vector<Sonde> sondes_;
+    double centreHz_ = kCentreHz;
     double east_ = 10, driftHzPerMin_ = 0, step_ = 0, ncoScale_ = 1;
     float noiseSigma_ = 0;
     uint64_t count_ = 0;
@@ -205,6 +222,7 @@ private:
             else if (s.spec.kind == SondeDfm) sy = dfmSymbols(tr, s.spec.variant);
             else if (s.spec.kind == SondeM10) sy = m10Symbols(tr);
             else if (s.spec.kind == SondeRs92) { Rs92Truth rt; rt.serial = tr.serial; rt.frame = tr.frame; rt.unixTime = tr.unixTime; rt.sats = tr.sats; rt.freqHz = s.spec.freqHz; sy = rs92Symbols(rs92Frame(rt, s.frameCount % kRs92CalFrames)); }
+            else if (s.spec.kind == SondeLms6) sy = lms6Symbols(tr);
             else sy = m20Symbols(tr);
             s.frameCount++;
             s.nextBurstT += s.period;

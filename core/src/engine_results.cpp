@@ -63,6 +63,7 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("hfdig", 26, rxHfdig_),
         DECT2_RESULT_SLOT("airband", 27, rxAirband_),
         DECT2_RESULT_SLOT("vdl2", 28, rxVdl2_),
+        DECT2_RESULT_SLOT("vdl4", 83, rxVdl4_),
         DECT2_RESULT_SLOT("ism", 29, rxIsm_),
         DECT2_RESULT_SLOT("ndb", 30, rxNdb_),
         DECT2_RESULT_SLOT("m17", 32, rxM17_),
@@ -104,6 +105,7 @@ std::vector<Engine::ResultSlot> Engine::resultSlots() {
         DECT2_RESULT_SLOT("ant", 78, rxAnt_),
         DECT2_RESULT_SLOT("tetrapol", 80, rxTetrapol_),
         DECT2_RESULT_SLOT("elektro", 81, rxEl_),
+        DECT2_RESULT_SLOT("uat", 84, rxUat_),
         DECT2_RESULT_SLOT("loraraw", 72, rxLr_),
     };
 }

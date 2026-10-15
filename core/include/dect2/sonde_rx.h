@@ -3,7 +3,7 @@
 // thread (never blocks: the work is done on the receiver's own thread), telemetry() and the setters from the interface thread.
 //
 // Per channel: mixer and two decimating filters (to about 100 kHz), FM discriminator, symbol timing per baud rate, and the frame
-// decoders of all types (RS41 here; DFM, M10, M20 from sonde_bits.h), which are fed until one of them reports good frames.
+// decoders of all types (RS41 here; DFM, M10, M20, LMS6-1680 from sonde_bits.h), which are fed until one of them reports good frames.
 #pragma once
 #include "mode_tuning.h"
 #include "sonde_tel.h"
@@ -47,5 +47,7 @@ private:
 };
 
 ModeTuning sondeTuning();
+bool sondeIsLbandMhz(double mhz);              // LMS6-1680 profile (wide FSK, ~170 kHz)
+double sondeMinSampleRateHz(double centerMhz);
 
 } // namespace dect2

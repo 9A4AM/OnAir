@@ -107,6 +107,7 @@ These receivers are built from the published specifications and checked end to e
 | **P25** | APCO Project 25 Phase 1 (TIA-102), C4FM, 12.5 kHz, conventional and trunked | Calls with talkgroups, unit IDs and emergency flags; trunking: WACN, system, NAC, RFSS / site, adjacent sites, channel identifiers, voice grants, talkgroup activity; voice through your mbelib. Receive only: encrypted calls are only reported as encrypted, nothing is decrypted. Follow the rules on receiving radio where you live |
 | **dPMR / PMR446** | Digital two-way radio (ETSI TS 102 490), 6.25 kHz, PMR446 channels 1 to 16 | Call log with own and called IDs and colour codes, status and short messages, packet data, scan of all 16 PMR446 channels, voice through your mbelib |
 | **ADS-B** | Aircraft transponders, 1090 MHz | Aircraft on a map, with altitude, speed and callsign; units switch between aviation (kt, ft, nm, ft/min) and metric (km/h or m/s, m, km, m/s) in the table, details, map labels and CSV export (SBS and feeds stay in aviation units) |
+| **UAT** | Universal Access Transceiver, 978 MHz (DO-282) | UAT ADS-B position and identity reports, FIS-B weather text products and TIS-B traffic relay; aircraft table and FIS-B tab. Typical 2 Msps capture. Receive only |
 | **Mode S uplink** | Radar and ACAS interrogations, 1030 MHz (needs 8 Msps) | Interrogator codes and rotation periods, aircraft and the registers asked for, TCAS coordination |
 | **ACARS** | Aircraft data link, VHF | Messages, and positions on a map |
 | **HFDL** | Aircraft data link on HF, 3 - 22 MHz | Squitters and ground stations, ACARS, positions on a map; every channel in the band at once |
@@ -130,6 +131,7 @@ These receivers are built from the published specifications and checked end to e
 | **PSK31** | Keyboard chat on the HF bands (BPSK31 / 63, QPSK31 / 63) | Every signal in the 3 kHz passband at once: a chat log per signal, the picked one in big text, callsigns highlighted |
 | **Airband** | AM voice, 118 - 137 MHz | Several 25 and 8.33 kHz channels at once: squelch, scan, priority, activity log |
 | **VDL Mode 2** | Aircraft data link, 136.7 - 137 MHz | Every VDL2 channel at once: ACARS, X.25 / CLNP, ADS-C, aircraft and ground stations, positions on a map |
+| **VDL Mode 4**, *experimental* | STDMA GFSK data link, 118 - 137 MHz | Synchronization and DLS bursts (ISO/IEC 13239 framing, CPR positions from sync bursts). Synthetic test signal and spec-based decoder only; no live captures validated yet. Receive only |
 | **VOR** | Navigation beacons, 108 - 118 MHz | The radial (conventional and Doppler VOR), Morse identification, voice; a position from two stations on the map |
 | **ILS** | Approach guidance, 75 / 108 - 112 / 329 - 335 MHz | Localizer and glide slope needles (DDM), marker beacons, identification |
 | **Inmarsat Aero** | Aircraft satellite data link, L band | Messages, and positions on a map |

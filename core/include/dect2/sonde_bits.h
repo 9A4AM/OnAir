@@ -44,6 +44,7 @@ public:
 std::unique_ptr<SondeBitDecoder> makeDfmDecoder();
 std::unique_ptr<SondeBitDecoder> makeM10Decoder();
 std::unique_ptr<SondeBitDecoder> makeM20Decoder();
+std::unique_ptr<SondeBitDecoder> makeLms6Decoder();
 
 // What the test signal wants a sonde to send
 struct SondeTruth {
@@ -59,6 +60,7 @@ struct SondeTruth {
 std::vector<uint8_t> dfmSymbols(const SondeTruth& t, int variant);     // variant: 6, 9 or 17
 std::vector<uint8_t> m10Symbols(const SondeTruth& t);
 std::vector<uint8_t> m20Symbols(const SondeTruth& t);
+std::vector<uint8_t> lms6Symbols(const SondeTruth& t);
 double sondeFramePeriodS(const std::string& type);
 
 // ---- Added by the decoder owner (the declarations above are unchanged) ----
@@ -80,9 +82,13 @@ double sondeFramePeriodS(const std::string& type);
 std::vector<uint8_t> dfmFrameBits(const SondeTruth& t, int variant);           // the 280 data bits (header 0x45CF, config, 2 data blocks)
 std::vector<uint8_t> m10FrameBytes(const SondeTruth& t);                       // 101 bytes with checksum
 std::vector<uint8_t> m20FrameBytes(const SondeTruth& t);                       // 70 bytes with checksum
+std::vector<uint8_t> lms6GpsFrameBytes(const SondeTruth& t);                   // 1680 MHz GPS subframe (0x245254) with CRC-16
+std::vector<uint8_t> lms6UartPreamble();                                       // UART bits: 4x 0xCA sync and 0x24
 // Frame bytes to a fix. Return true when the checksum is right (out is then filled).
 bool m10ParseFrame(const uint8_t* f, size_t n, SondeFix& out);
 bool m20ParseFrame(const uint8_t* f, size_t n, SondeFix& out);
+bool lms6ParseFrame(const uint8_t* f, size_t n, SondeFix& out);
+uint16_t sondeLms6Crc16(const uint8_t* msg, size_t len);
 uint16_t sondeM10Checksum(const uint8_t* msg, size_t len);
 // Hamming(8,4) of the DFM frames: codeword = d0 d1 d2 d3 p0 p1 p2 p3 (d0 first on air), nibble bit 3 = d0.
 uint8_t sondeHamming84Encode(uint8_t nibble);

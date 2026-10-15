@@ -108,6 +108,7 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("hell", "Hellschreiber", 27, "makeKbdTx", "text", kUnv, 31),
         mk("airband", "Airband AM", 28, "makeAirbandSynth, AM voice channels", "tone Hz or WAV file", kUnv),
         mk("vdl2", "VDL Mode 2", 29, "makeVdl2Synth", kOpt, kUnv),
+        mk("vdl4", "VDL Mode 4", 84, "makeVdl4Synth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
         mk("m17", "M17", 33, "makeM17Synth", kOpt, kUnv),
         mk("dstar", "D-STAR", 35, "makeDstarSynth", kOpt, kUnv),
