@@ -62,9 +62,10 @@ OPTIONAL = {"iio": "ADI's libiio package (github.com/analogdevicesinc/libiio/rel
 allow_missing = os.environ.get("ONAIR_ALLOW_MISSING_RADIO_LIBS") == "1"
 links = []
 missing = []
+HOMEBREW_LIB = [p for p in ("/opt/homebrew/lib", "/usr/local/lib") if os.path.isdir(p)]
 for stem in list(REQUIRED) + list(OPTIONAL):
     found = False
-    for d in SEARCH[:2]:
+    for d in HOMEBREW_LIB:
         for src in sorted(glob.glob(os.path.join(d, "lib%s.*dylib" % stem)) + glob.glob(os.path.join(d, "lib%s*.dylib" % stem))):
             name = os.path.basename(src)
             if name.endswith(".a"): continue
