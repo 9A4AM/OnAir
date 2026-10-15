@@ -10,7 +10,7 @@ struct Catalog { const char* code; const char* text; };
 
 const i18n::Language kLanguages[] = {
     {"en", "English"}, {"de", "Deutsch"}, {"fr", "Fran\xC3\xA7" "ais"}, {"es", "Espa\xC3\xB1ol"},
-    {"zh", "\xE4\xB8\xAD\xE6\x96\x87 (\xE7\xAE\x80\xE4\xBD\x93)"}, {"lt", "Lietuvi\xC5\xB3"},
+    {"zh", "\xE4\xB8\xAD\xE6\x96\x87 (\xE7\xAE\x80\xE4\xBD\x93)"}, {"lt", "Lietuvi\xC5\xB3"}, {"pt", "Portugu\xC3\xAA" "s (Brasil)"},
 };
 constexpr int kNumLanguages = (int)(sizeof kLanguages / sizeof *kLanguages);
 

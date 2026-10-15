@@ -310,6 +310,7 @@ std::string uiLanguage() {
         case LANG_SPANISH: return "es";
         case LANG_CHINESE: return "zh";
         case LANG_LITHUANIAN: return "lt";
+        		case LANG_PORTUGUESE: return "pt";
         default: return "en";
     }
 #else
