@@ -67,7 +67,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 | pager | `onair_pager` | `DECT2_RUST_PAGER` | `rs/pager.h` | POCSAG / FLEX code word (BCH, repair), word classification, text readers and looks-like-text heuristic, FLEX speed table, FIW, phase decoding | done (generators, POCSAG message assembler and receiver in C++) |
 | ax25 | `onair_ax25` | `DECT2_RUST_AX25` | `rs/ax25.h` | AX.25 frame parser, FCS, address / path / TNC-2 text, HDLC receiver, APRS parser (positions, Mic-E, objects, items, messages, weather, telemetry...) | done (frame builder, HDLC / NRZI / G3RUH transmit helpers and receiver in C++) |
 | dmr | `onair_dmr` | `DECT2_RUST_DMR` | `rs/dmr.h` | DMR frame layer: Golay / QR / Hamming / RS (12,9), CRCs, BPTC (196,96), embedded LC, short LC, CACH, trellis 3/4, rate 1, sync patterns, bursts, slot type / EMB, link control, CSBK, data headers and blocks, text formats, talker alias | done (link / receiver, generator, bit helpers and alias PDU builder in C++) |
-| p25 | `onair_p25` | `DECT2_RUST_P25` | `rs/p25.h` | P25 | not started |
+| p25 | `onair_p25` | `DECT2_RUST_P25` | `rs/p25.h` | P25 Phase 1 frame layer: NID (BCH), Reed-Solomon GF(64), Hamming / Golay, CRC-CCITT, trellis 1/2, TSBK, link control, encryption sync, header word, IMBE interleave | done (receiver, generator and vocoder glue in C++) |
 | nxdn | `onair_nxdn` | `DECT2_RUST_NXDN` | `rs/nxdn.h` | NXDN frame layer: scrambler, LICH, CRC-6/12/16, SACCH / FACCH1 / CAC coding (convolutional code, interleaver, soft Viterbi), layer 3 messages, AMBE+2 bit order | done (receiver, generator and vocoder glue in C++) |
 | dstar | `onair_dstar` | `DECT2_RUST_DSTAR` | `rs/dstar.h` | D-STAR | not started |
 | tetra | `onair_tetra` | `DECT2_RUST_TETRA` | `rs/tetra.h` | TETRA | not started |
@@ -89,7 +89,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 ## The C++ originals are still there
 
 For every converted module the replaced C++ stays in its file under `#ifndef DECT2_RUST_<MODULE>` (AIS: `ais_proto.cpp`; ADS-B: `adsb_msg.cpp`; ACARS:
-`acars_proto.cpp`; SAME: `same_proto.cpp`; pager: `pager_proto.cpp`; AX.25 / APRS: `packet_ax25.cpp`, `packet_aprs.cpp`; NXDN: `nxdn_proto.cpp`; DMR: `dmr_fec.cpp`, `dmr_proto.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
+`acars_proto.cpp`; SAME: `same_proto.cpp`; pager: `pager_proto.cpp`; AX.25 / APRS: `packet_ax25.cpp`, `packet_aprs.cpp`; NXDN: `nxdn_proto.cpp`; DMR: `dmr_fec.cpp`, `dmr_proto.cpp`; P25: `p25_proto.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
 twin is `<file>_rs.cpp` (guarded by `#ifdef DECT2_RUST_<MODULE>`). A later step deletes the `#ifndef` blocks when Rust becomes mandatory; the differential
 tests then keep a frozen copy as their reference (`cmake/gen_rs_ref.cmake` writes it from the C++ file with the switch undefined).
 

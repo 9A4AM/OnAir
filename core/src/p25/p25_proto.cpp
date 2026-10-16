@@ -9,6 +9,11 @@
 namespace dect2 {
 namespace p25 {
 
+const int kSync[kSyncSym] = {3, 3, 3, 3, 3, -3, 3, 3, -3, -3, 3, 3, -3, -3, -3, -3, 3, -3, 3, -3, -3, -3, -3, -3};
+
+// Everything from here to the matching #endif is the C++ implementation; with DECT2_RUST_P25 (rust/onair_p25) p25_proto_rs.cpp provides the same
+// functions. It stays until the Rust build is mandatory (rust/README.md); tests/p25/test_p25_proto_rs.cpp compares the two.
+#ifndef DECT2_RUST_P25
 namespace {
 int popc(uint64_t v) { return __builtin_popcountll(v); }
 
@@ -75,7 +80,6 @@ void bitsToHex(const uint8_t* b, int nHex, uint8_t* hex) { for (int i = 0; i < n
 void hexToBits(const uint8_t* hex, int nHex, uint8_t* b) { for (int i = 0; i < nHex; i++) for (int k = 0; k < 6; k++) b[6 * i + k] = (uint8_t)((hex[i] >> (5 - k)) & 1); }
 } // namespace
 
-const int kSync[kSyncSym] = {3, 3, 3, 3, 3, -3, 3, 3, -3, -3, 3, 3, -3, -3, -3, -3, 3, -3, 3, -3, -3, -3, -3, -3};
 
 const char* duidName(int d) {
     switch (d) {
@@ -355,6 +359,8 @@ std::string channelText(int ch) {
     snprintf(b, sizeof b, "%d-%d", (ch >> 12) & 15, ch & 0xFFF);
     return b;
 }
+
+#endif // DECT2_RUST_P25
 
 } // namespace p25
 } // namespace dect2

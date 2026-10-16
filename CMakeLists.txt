@@ -115,7 +115,7 @@ set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc 
 onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (core/src/ais/ais_proto.cpp leaves the covered functions to ais_proto_rs.cpp) and links onair_rs
 # adsb_msg.cpp and the APRS parser (and the reference copies the Rust differential test builds) is compiled without fused multiply-add and without the sin+cos -> sincos rewrite:
 # clang and gcc do both by default (arm64, macOS), Rust never does, and the two builds (DECT2_RUST ON and OFF) should give the same numbers bit for bit
-set_source_files_properties(core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
+set_source_files_properties(core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/p25/p25_proto.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
 target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx_json.cpp core/src/source/gain_opt.cpp core/src/mesh/mesh_report.cpp core/src/source/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
 target_sources(dect2core PRIVATE core/src/tx/tx.cpp core/src/tx/tx_payload.cpp core/src/tx/tx_voice.cpp core/src/audio/audioin.cpp core/src/audio/videoin.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
@@ -875,7 +875,7 @@ if(DECT2_BUILD_TESTS)
       COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=${NAME} -DHDR=${HDR} -DCPP=${DIR}/${BASE}.cpp -DDEF=DECT2_RUST_${_MU}
               "-DFROM=${FROM}" "-DTO=${TO}" "-DEXTRA=${EXTRA}" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
       DEPENDS core/include/${HDR} core/src/${DIR}/${BASE}.cpp cmake/gen_rs_ref.cmake VERBATIM)
-    if(MOD STREQUAL "adsb")   # same flags as the production file (see the note at dect2core)
+    if(MOD STREQUAL "adsb" OR MOD STREQUAL "p25")   # same flags as the production file (see the note at dect2core)
       set_source_files_properties(${_dir}/${NAME}_ref.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
     endif()
     set(_srcs core/src/${DIR}/${BASE}.cpp core/src/${DIR}/${BASE}_rs.cpp)
@@ -895,6 +895,7 @@ if(DECT2_BUILD_TESTS)
   onair_rust_diff_tests(adsb adsb_msg adsb adsb_msg dect2/adsb/adsb_msg.h "namespace dect2::adsb {" "namespace dect2::adsb_ref {" "" "")
   onair_rust_diff_tests(pager pager_proto pager pager_proto dect2/pager/pager_proto.h "namespace pager {" "namespace pager_ref {" "" ${CMAKE_SOURCE_DIR}/core/include/dect2/pager)
   onair_rust_diff_tests(nxdn nxdn_proto nxdn nxdn_proto dect2/nxdn/nxdn_proto.h "namespace nxdn {" "namespace nxdn_ref {" "" "")
+  onair_rust_diff_tests(p25 p25_proto p25 p25_proto dect2/p25/p25_proto.h "namespace p25 {" "namespace p25_ref {" "" "")
   # DMR: two layers in one test program (dmr_fec.cpp, dmr_proto.cpp), each with a generated reference copy; the proto copy includes the fec copy
   if(ONAIR_RUST_DMR)
     set(_dir ${CMAKE_BINARY_DIR}/dmr_ref)
