@@ -39,7 +39,7 @@ multi-link elements, EHT capability details, 802.11ah (HaLow has its own mode).
 ## Receiving
 
 A 20 MHz channel needs 20 Msps (25 Msps is better for the radio's filter). A capture of 43.5 Msps or more centred on 5 / 6 GHz holds several channels: each gets
-its own channel filter and OFDM receiver (`channelsInSpan`). Radios that stop below 20 Msps (RTL-SDR, Airspy R2 / Mini, SDRplay at the narrow settings) show a
+its own channel filter and OFDM receiver (`channelsInSpan`). Radios that stop below 20 Msps show a
 message in the tuner; radios specified below 5 GHz or 6 GHz show the range message. The scan hops over the chosen band and domain with a dwell of 100 - 2000 ms
 (default 200: a beacon comes every 102.4 ms).
 
