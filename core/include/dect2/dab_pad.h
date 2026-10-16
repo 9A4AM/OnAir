@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "dab_mot.h"
 #include "dab_tel.h"
 
 namespace dect2 {
@@ -31,6 +32,9 @@ struct DabLogo {
 
 class DabPadDecoder {
 public:
+    DabPadDecoder() : mot_(6, 1u << 20) { mot_.setSink([this](const MotObject& o) { motObject(o); }); }
+    DabPadDecoder(const DabPadDecoder&) = delete;
+    DabPadDecoder& operator=(const DabPadDecoder&) = delete;
     void reset();
     void setDataGroupSink(std::function<void(const uint8_t*, size_t)> cb) { sink_ = std::move(cb); }   // survives reset()
     // One DAB+ access unit (raw AAC data block, CRC removed). Looks for the data stream element that carries the PAD.
@@ -54,16 +58,10 @@ public:
     const std::vector<DabLogo>& logos() const { return logos_; }
 
 private:
-    struct Obj {
-        std::map<int, std::vector<uint8_t>> head, body;
-        int headLast = -1, bodyLast = -1;
-        bool done = false;
-    };
     std::function<void(const uint8_t*, size_t)> sink_;
     void subfield(int type, const uint8_t* d, int n);
     void dataGroup(const uint8_t* d, int n);
-    void segment(uint16_t tid, int type, int segNo, bool last, const uint8_t* d, int n);
-    void tryComplete(Obj& o);
+    void motObject(const MotObject& o);   // a MOT object is complete (the reassembly is MotDecoder, shared with DRM)
     void labelSegment(const uint8_t* d, int n);
     void dlPlusCommand(int toggle, const uint8_t* d, int n);
     void resolveDlPlus();
@@ -88,8 +86,7 @@ private:
     int dlpToggle_ = -1;                 // toggle bit of the label the tags belong to
     bool dlpRunning_ = false;
     std::vector<DabDlpTag> dlp_;
-    std::map<uint16_t, Obj> objs_;
-    std::deque<uint16_t> order_;
+    MotDecoder mot_;
     DabSlide slide_;
     struct SpiLogo { uint32_t sid; std::string type, url; int w, h; };
     std::vector<SpiLogo> spiLogos_;          // the logo entries of the service information

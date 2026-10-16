@@ -15,8 +15,6 @@ namespace dect2 {
 
 namespace {
 constexpr int kSubfieldLen[8] = {4, 6, 8, 12, 16, 24, 32, 48};   // EN 300 401 table 30: the length index of a content indicator
-constexpr size_t kMaxObjects = 6;
-constexpr size_t kMaxObjectBytes = 1 << 20;
 }
 
 bool decodeSlideImage(const uint8_t* data, size_t n, int subtype, int& w, int& h, std::vector<uint8_t>& rgba) {
@@ -66,7 +64,7 @@ void DabPadDecoder::reset() {
     lastCont_ = 0; lastType_ = 0; group_.clear(); groupLen_ = 0; collecting_ = false;
     dls_.clear(); dlsOn_ = false; dlsToggle_ = -1; dlsParts_.clear(); dlsLast_ = -1; label_.clear();
     labelChars_.clear(); dlpRaw_.clear(); dlpToggle_ = -1; dlpRunning_ = false; dlp_.clear();
-    objs_.clear(); order_.clear();
+    mot_.reset();
     slide_ = DabSlide();
     spiLogos_.clear(); images_.clear(); imageOrder_.clear(); logos_.clear(); logoSeq_ = 0;
 }
@@ -251,89 +249,18 @@ void DabPadDecoder::resolveDlPlus() {
 
 void DabPadDecoder::dataGroup(const uint8_t* d, int n) {
     if (n < 3) return;
-    const bool ext = d[0] & 0x80, crc = d[0] & 0x40, seg = d[0] & 0x20, ua = d[0] & 0x10;
+    const bool crc = d[0] & 0x40;
     const int type = d[0] & 0x0F;
     if (sink_ && (type == 0 || type == 6)) sink_(d, (size_t)n);
-    if (crc) {
-        if (n < 5 || dab::crc16(d, n - 2) != (uint16_t)((d[n - 2] << 8) | d[n - 1])) return;
-        n -= 2;
-    }
-    int p = 2 + (ext ? 2 : 0);
-    bool last = true;
-    int segNo = 0;
-    if (seg) {
-        if (p + 2 > n) return;
-        last = (d[p] & 0x80) != 0;
-        segNo = ((d[p] & 0x7F) << 8) | d[p + 1];
-        p += 2;
-    }
-    uint16_t tid = 0;
-    if (ua) {
-        if (p + 1 > n) return;
-        const bool hasTid = d[p] & 0x10;
-        const int li = d[p] & 0x0F;
-        p++;
-        if (p + li > n) return;
-        if (hasTid && li >= 2) tid = (uint16_t)((d[p] << 8) | d[p + 1]);
-        p += li;
-    }
-    if (type != 3 && type != 4) return;                     // MOT header and (unscrambled) body; the directory mode is not used by slide shows
-    if (p + 2 > n) return;
-    const int size = ((d[p] & 0x1F) << 8) | d[p + 1];      // the MOT segmentation header: repetition count (3 bits), segment size (13 bits)
-    p += 2;
-    segment(tid, type, segNo, last, d + p, std::min(size, n - p));
+    (void)crc;
+    mot_.dataGroup(d, n);                                   // header, body and directory groups: header mode and directory mode
 }
 
-void DabPadDecoder::segment(uint16_t tid, int type, int segNo, bool last, const uint8_t* d, int n) {
-    if (n < 0 || segNo > 4095) return;
-    auto it = objs_.find(tid);
-    if (it == objs_.end()) {
-        if (order_.size() >= kMaxObjects) { objs_.erase(order_.front()); order_.pop_front(); }
-        it = objs_.emplace(tid, Obj()).first;
-        order_.push_back(tid);
-    }
-    Obj& o = it->second;
-    auto& parts = type == 3 ? o.head : o.body;
-    int& lastNo = type == 3 ? o.headLast : o.bodyLast;
-    if (type == 3 && segNo == 0) {                          // a different header under the same transport id: a new object
-        auto h0 = o.head.find(0);
-        if (h0 != o.head.end() && (h0->second.size() != (size_t)n || std::memcmp(h0->second.data(), d, (size_t)n) != 0)) o = Obj();
-    }
-    if (o.done) return;
-    parts[segNo].assign(d, d + n);
-    if (last) lastNo = segNo;
-    if (lastNo >= 0 && parts.rbegin()->first > lastNo) { parts.clear(); lastNo = -1; return; }
-    tryComplete(o);
-}
-
-void DabPadDecoder::tryComplete(Obj& o) {
-    if (o.headLast < 0 || o.bodyLast < 0) return;
-    if ((int)o.head.size() != o.headLast + 1 || (int)o.body.size() != o.bodyLast + 1) return;
-    std::vector<uint8_t> h, b;
-    for (auto& kv : o.head) h.insert(h.end(), kv.second.begin(), kv.second.end());
-    for (auto& kv : o.body) b.insert(b.end(), kv.second.begin(), kv.second.end());
-    if (h.size() < 7 || b.size() > kMaxObjectBytes) return;
-    o.done = true;
-    const size_t bodySize = ((size_t)h[0] << 20) | ((size_t)h[1] << 12) | ((size_t)h[2] << 4) | (h[3] >> 4);
-    const size_t headSize = (((size_t)h[3] & 0x0F) << 9) | ((size_t)h[4] << 1) | (h[5] >> 7);
-    const int ctype = (h[5] >> 1) & 0x3F;
-    const int subtype = ((h[5] & 1) << 8) | h[6];
-    if (bodySize && bodySize != b.size()) return;                      // the body is not what the header says
-    std::string name, category;
-    for (size_t p = 7; p < std::min(headSize, h.size());) {            // the header extension: parameters with a 2 bit length class
-        const int pli = h[p] >> 6, id = h[p] & 0x3F;
-        p++;
-        size_t len = pli == 0 ? 0 : pli == 1 ? 1 : pli == 2 ? 4 : 0;
-        if (pli == 3) {
-            if (p >= h.size()) break;
-            if (h[p] & 0x80) { if (p + 1 >= h.size()) break; len = ((size_t)(h[p] & 0x7F) << 8) | h[p + 1]; p += 2; }
-            else len = h[p++] & 0x7F;
-        }
-        if (p + len > h.size()) break;
-        if (id == 0x0C && len >= 1) name.assign((const char*)&h[p + 1], len - 1);   // ContentName: character set byte, then the text
-        if (id == 0x26 && len >= 1) category.assign((const char*)&h[p], len);        // slide show CategoryTitle
-        p += len;
-    }
+void DabPadDecoder::motObject(const MotObject& m) {
+    const std::vector<uint8_t>& b = m.body;
+    const int ctype = m.contentType, subtype = m.subtype;
+    const std::string& name = m.name;
+    const std::string& category = m.category;
     if (ctype != 2) {                                                   // not a picture: the SPI service information is XML
         if (b.size() < 20) return;
         const std::string xml((const char*)b.data(), b.size());
