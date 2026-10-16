@@ -60,6 +60,47 @@ of the one that was opened.
 - SoapySDR: a SoapyFobosSDR module built with Visual Studio (PothosSDR) cannot be loaded by OnAir's Windows build, which is built with
   MinGW; the native driver needs no SoapySDR
 
+# RFNM
+
+Contributed; tested on Windows only. The driver uses [librfnm](https://github.com/rfnm/librfnm), modelled on the RFNM client in XMC_SDR.
+
+librfnm has a C++ interface only, so OnAir cannot load it at run time as it does the other radio libraries: it is linked when OnAir is
+built, and only when CMake finds it through pkg-config (`librfnm.pc`). The downloads do not include it yet. Without librfnm the build is
+the same as before; `-DDECT2_WITH_RFNM=OFF` leaves it out even when it is installed. CMake says which applies ("librfnm ...: RFNM enabled"
+or "librfnm not found").
+
+Building librfnm (it needs spdlog and libusb-1.0, and pkg-config):
+
+- Windows, in the MSYS2 **UCRT64** shell (build it with the same compiler as OnAir: a librfnm built with Visual Studio cannot be linked
+  into the MinGW build):
+  ```sh
+  pacman -S --needed mingw-w64-ucrt-x86_64-{spdlog,libusb}
+  git clone https://github.com/rfnm/librfnm.git
+  cmake -S librfnm -B librfnm/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/ucrt64 -DBUILD_RFNM_UTILS=OFF
+  cmake --build librfnm/build && cmake --install librfnm/build
+  ```
+  If the compiler stops at `'memcpy' is not a member of 'std'` in `src/api/rx_stream.cpp`, add `#include <cstring>` at its top (newer
+  GCC no longer brings it in through other headers). Without `-DCMAKE_INSTALL_PREFIX` librfnm installs to `C:/Program Files/RFNM`; then
+  add its `lib/pkgconfig` folder to `PKG_CONFIG_PATH` before running CMake for OnAir. `librfnm.dll` must be next to `OnAir.exe` or on the
+  PATH (`-DDECT2_COPY_RUNTIME_DLLS=ON` copies it into the build folder). The radio needs the WinUSB driver on USB.
+- Linux / macOS: install spdlog and libusb-1.0 from the package manager, then build and install librfnm with CMake (on Linux it also
+  installs its udev rules), and `sudo ldconfig`.
+
+The radio list has one entry per receive channel: `RFNM <board> CH<n> <serial>`, with the slot when both slots are fitted. A radio
+that librfnm finds on USB and on the network is listed once, on USB. `onair.log`
+(Windows) or the terminal says how many radios librfnm lists, and for the channel that was opened its frequency and gain range.
+
+- sample rates: 7.68, 15.36, 30.72, 61.44 and 122.88 Msps; OnAir takes the smallest one that is fast enough for the mode. A new rate
+  restarts the stream
+- frequency and gain: the channel's own ranges, as the board reports them once the radio has been opened (until then the list shows a
+  guess). A frequency outside the channel's range is clamped to it, with a note: librfnm refuses it otherwise
+- RF input: radio settings, "Automatic" (the board's preferred input) or one SMA input; an input the channel does not have falls back
+  to the automatic one
+- the low-pass filter follows the sample rate (or the baseband filter setting); boards without an RFIC (Breakout, XMC_RFFE) ignore it
+- DC offset is removed by librfnm's stream
+- not yet: channels that carry a real signal (the XMC_RFFE's HF input) are not listed, the Breakout's second channel comes with I and Q
+  swapped, and there is no transmit
+
 # RX888 MkII (Cypress FX3, USB 3)
 
 **Experimental: written from the open SDDC protocol ([SDDC_Driver](https://github.com/renardspark/SDDC_Driver), MIT) and tested only against a
