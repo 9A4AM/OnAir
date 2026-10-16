@@ -1134,3 +1134,82 @@ Keep sending positions	Continuar a enviar posições
 OnAir asks this question at every start. "No, do not ask again" stops it until OnAir is updated.	O OnAir faz esta pergunta em cada arranque. «Não, não perguntar de novo» pára-a até o OnAir ser atualizado.
 Nothing is sent in this session. OnAir asks again the next time it starts.	Nada é enviado nesta sessão. O OnAir volta a perguntar no próximo arranque.
 Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu.	Nada é enviado e esta pergunta não aparece até o OnAir ser atualizado. Pode ativá-lo mais tarde no menu Servidor.
+#  Wi-Fi HaLow
+(hidden)	(oculta)
+The radio runs at %.1f Msps: %d MHz channels need at least %.0f Msps (%.0f recommended). Pick the RATE in the top bar or another receive width.	O rádio funciona a %.1f Msps: canais de %d MHz precisam de pelo menos %.0f Msps (%.0f recomendado). Escolhe a TAXA na barra superior ou outra largura de receção.
+At %.1f Msps channels up to %d MHz are read; 16 MHz channels need 16 Msps or more (20 recommended).	A %.1f Msps leem-se canais até %d MHz; os de 16 MHz precisam de 16 Msps ou mais (20 recomendado).
+Receive only: OnAir never transmits, probes, joins or answers a network, and nothing is decrypted. The security type is what the beacon announces, shown for information. Sub-GHz Wi-Fi HaLow (802.11ah) is for low power sensors and cameras at long range; 1, 2, 4, 8 and 16 MHz channels. 1 and 2 MHz channels work from 2.4 Msps (an RTL-SDR), 4 MHz from 4 Msps, 8 MHz from 10 Msps, 16 MHz from 20 Msps.	Só receção: o OnAir nunca transmite, sonda, entra ou responde a uma rede, e nada é decifrado. O tipo de segurança é o que o beacon anuncia, apenas a título informativo. O Wi-Fi HaLow (802.11ah) sub-GHz serve sensores e câmaras de baixo consumo e longo alcance; canais de 1, 2, 4, 8 e 16 MHz. Os canais de 1 e 2 MHz funcionam a partir de 2,4 Msps (um RTL-SDR), 4 MHz a partir de 4 Msps, 8 MHz a partir de 10 Msps, 16 MHz a partir de 20 Msps.
+channel	canal
+Filter	Filtro
+SSID, BSSID, vendor, security, country	SSID, BSSID, fabricante, segurança, país
+Level above	Nível acima de
+%s only	só %s
+Show all	Mostrar tudo
+Forget every network and frame heard so far	Esquecer todas as redes e tramas ouvidas até agora
+last frame:	última trama:
+stream(s)	fluxo(s)
+class	classe
+operating width	largura operacional
+primary	primário
+country	país
+power constraint	limite de potência
+long preamble	preâmbulo longo
+basic rate set	conjunto de taxas básico
+click to show only this network's frames	clica para mostrar só as tramas desta rede
+start the receiver to see the networks around you	inicia o recetor para ver as redes à tua volta
+Frames per second	Tramas por segundo
+Vendor	Fabricante
+Ch	Can.
+Security	Segurança
+Beacon	Beacon
+Country	País
+Last seen	Visto pela última vez
+What the beacon announces, for information. OnAir does not decrypt or test anything.	O que o beacon anuncia, apenas a título informativo. O OnAir não decifra nem testa nada.
+nothing heard yet	ainda nada ouvido
+no network passes the filter	nenhuma rede passa no filtro
+start the receiver to see the frames	inicia o recetor para ver as tramas
+Showing %s only	A mostrar só %s
+Copy	Copiar
+%.0f frames/s	%.0f tramas/s
+Time UTC	Hora UTC
+Preamble	Preâmbulo
+Type	Tipo
+Len	Comp.
+no frames yet	ainda sem tramas
+no frame passes the selection	nenhuma trama passa na seleção
+start the receiver to see the statistics	inicia o recetor para ver as estatísticas
+SIG fields read	campos SIG lidos
+Radio rate needed	taxa de rádio necessária
+%.0f Msps (%.0f recommended)	%.0f Msps (%.0f recomendado)
+sample rate too low	taxa de amostragem demasiado baixa
+not selected	não selecionado
+by MCS	por MCS
+by streams	por fluxos
+by preamble	por preâmbulo
+read from the SIG field only	lido só do campo SIG
+%llu several streams, %llu STBC, %llu LDPC, %llu A-MPDU, %llu null data packets	%llu vários fluxos, %llu STBC, %llu LDPC, %llu A-MPDU, %llu pacotes de dados nulos
+The data field is decoded for one spatial stream with BCC coding at MCS 0 - 10. With several streams (a radio with one antenna cannot separate them), STBC, LDPC coding (parity-check matrices not included) and A-MPDU the frame is detected and counted, its contents are not read.	O campo de dados é descodificado para um fluxo espacial com codificação BCC em MCS 0 - 10. Com vários fluxos (um rádio com uma antena não os consegue separar), STBC, LDPC (matrizes de paridade não incluídas) e A-MPDU a trama é detetada e contada, o conteúdo não é lido.
+Auto 1 - 4 MHz	Auto 1 - 4 MHz
+Auto, all widths	Auto, todas as larguras
+Region	Região
+The channel width of the list below: S1G channels of this width in the region. What the receiver reads is set by Receive.	A largura de canal da lista abaixo: canais S1G desta largura na região. O que o recetor lê é definido por Receção.
+S1G channels of the region and width: centre = start frequency + 0.5 MHz x channel number, with the operating class of the plan	Canais S1G da região e largura: centro = frequência inicial + 0,5 MHz x número do canal, com a classe operacional do plano
+Receive	Receção
+Which channel widths the receiver reads. Auto 1 - 4 MHz runs the radio at 4 Msps. Auto, all widths needs 20 Msps (a HackRF, a LimeSDR ...) and reads 1 - 16 MHz.\nOne width sets the radio rate that width needs (2, 4, 5, 10 or 20 Msps) and ignores the other widths.	Que larguras de canal o recetor lê. Auto 1 - 4 MHz faz o rádio funcionar a 4 Msps. Auto, todas as larguras precisa de 20 Msps (HackRF, LimeSDR ...) e lê 1 - 16 MHz.\nUma largura define a taxa de rádio de que precisa (2, 4, 5, 10 ou 20 Msps) e ignora as outras.
+scan	varrimento
+Step through the channels of the list, listening to each for the dwell time (a radio that takes in a single channel misses what is\nsent on the others meanwhile). Off: single channel.	Percorre os canais da lista, ouvindo cada um durante o tempo de permanência (um rádio que apanha um só canal perde entretanto o que se envia\nnos outros). Desligado: um só canal.
+Frames	Tramas
+Statistics	Estatísticas
+state	estado
+tuned	sintonizado
+signal	sinal
+tone SNR %.1f dB, offset %+.1f kHz	SNR dos tons %.1f dB, desvio %+.1f kHz
+preambles	preâmbulos
+%llu detected, %llu SIG fields read, %llu not readable	%llu detetados, %llu campos SIG lidos, %llu ilegíveis
+frames	tramas
+%llu good, %llu failed FCS, %llu only counted	%llu boas, %llu com FCS errada, %llu só contadas
+by width	por largura
+reads	lê
+up to %d MHz channels at this rate	canais até %d MHz a esta taxa
+input	entrada
+signal time	tempo de sinal

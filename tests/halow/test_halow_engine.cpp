@@ -43,6 +43,26 @@ int main() {
     e.halow().clearResults();
     std::this_thread::sleep_for(std::chrono::milliseconds(400));
     e.stop();
+    {   // the same through the engine at 20 Msps: the 8 and 16 MHz networks join (the app picks 20 Msps for Auto, all widths)
+        Engine e2;
+        TuneSettings t2 = t;
+        t2.sampleRate = 20e6;
+        t2.bandwidthMhz = 16;
+        e2.setStandard(72);
+        CHECK(e2.start(dev, t2, fo), "engine start at 20 Msps");
+        RxTelemetry rx2;
+        uint64_t seq2 = 0;
+        const auto s0 = std::chrono::steady_clock::now();
+        while (std::chrono::duration<double>(std::chrono::steady_clock::now() - s0).count() < 6.0) {
+            if (e2.latestRx(rx2, seq2)) seq2 = rx2.seq;
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
+        const HalowTelemetry& d2 = rx2.halow;
+        printf("  20 Msps: %s, %zu networks, widths 8 / 16 MHz: %llu / %llu\n", halowSummary(d2).c_str(), d2.nets.size(), (unsigned long long)d2.perWidth[3], (unsigned long long)d2.perWidth[4]);
+        CHECK(d2.nets.size() == 6 && d2.blocksBad == 0 && d2.perWidth[3] > 0 && d2.perWidth[4] > 0 && d2.maxWidthMhz == 16, "%zu networks, %llu bad, max %d MHz", d2.nets.size(), (unsigned long long)d2.blocksBad, d2.maxWidthMhz);
+        CHECK(e2.droppedSamples() == 0, "dropped %llu at 20 Msps", (unsigned long long)e2.droppedSamples());
+        e2.stop();
+    }
     printf(fails ? "halow engine: %d FAILED\n" : "halow engine: all passed\n", fails);
     return fails ? 1 : 0;
 }

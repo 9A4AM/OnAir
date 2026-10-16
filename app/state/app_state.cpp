@@ -316,6 +316,8 @@ void applyBandwidth(App& a) {
             if (a.tune.sampleRate > 2 * mt->basebandHz) a.tune.basebandFilterHz = 0.8 * a.tune.sampleRate;
         } else if (mt->stdMode == 23 && hdrIsAmBand(a.freqMhz)) {   // HD Radio AM: a 30 kHz station; 1 Msps suits the HF radios (an HF+ gives 912 ksps)
             a.tune.sampleRate = hdrSampleRate(a.freqMhz); a.tune.basebandFilterHz = 0;
+        } else if (mt->stdMode == 72) {   // Wi-Fi HaLow: the rate of the receive width (4 Msps Auto 1 - 4 MHz, 20 Msps Auto all, else the width's own); the marker shows the channel width
+            a.tune.sampleRate = halowWantedRateHz(); a.tune.bandwidthMhz = halowWantedWidthMhz(); a.tune.basebandFilterHz = 0;
         } else if (mt->stdMode == 15 && dect2::sondeIsLbandMhz(a.freqMhz)) {   // LMS6-1680: wide FSK (~170 kHz)
             a.tune.bandwidthMhz = 0.4; a.tune.sampleRate = 2e6; a.tune.basebandFilterHz = 0.4e6;
         }
