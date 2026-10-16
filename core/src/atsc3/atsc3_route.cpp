@@ -4,13 +4,15 @@
 #include <algorithm>
 #include <cstdlib>
 #include <tuple>
+#include "dect2/common/str.h"
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace atsc3 {
 
 namespace {
-uint32_t be32(const uint8_t* p) { return ((uint32_t)p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]; }
-void put32(std::vector<uint8_t>& v, uint32_t x) { v.push_back(x >> 24); v.push_back(x >> 16); v.push_back(x >> 8); v.push_back(x); }
+uint32_t be32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
+void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putBe32(v, x); }
 }
 
 bool parseRoutePacket(const uint8_t* d, size_t n, LctPacket& p) {
@@ -155,8 +157,8 @@ void RouteReceiver::push(const LctPacket& p, std::vector<RouteObject>& done) {
 
 namespace {
 
-std::string lower(std::string s) { for (auto& c : s) c = (char)tolower((unsigned char)c); return s; }
-std::string trim(const std::string& s) { size_t a = s.find_first_not_of(" \t\r\n"), b = s.find_last_not_of(" \t\r\n"); return a == std::string::npos ? "" : s.substr(a, b - a + 1); }
+std::string lower(std::string s) { return dect2::str::lower(std::move(s)); }
+std::string trim(const std::string& s) { return dect2::str::trimChars(s, " \t\r\n"); }
 
 void parseHeaders(const std::string& block, std::map<std::string, std::string>& h) {
     size_t pos = 0;

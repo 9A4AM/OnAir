@@ -16,6 +16,7 @@
 #ifndef _WIN32
 #include <sys/select.h>
 #include <sys/time.h>
+#include "dect2/common/str.h"
 #endif
 
 namespace dect2 {
@@ -81,22 +82,7 @@ std::string wsFrame(int opcode, const std::string& p) {
 }
 
 // ------------------------------------------------------------------ JSON
-std::string jsonEscape(const std::string& s) {
-    std::string o;
-    for (unsigned char c : s) {
-        switch (c) {
-        case '"': o += "\\\""; break;
-        case '\\': o += "\\\\"; break;
-        case '\n': o += "\\n"; break;
-        case '\r': o += "\\r"; break;
-        case '\t': o += "\\t"; break;
-        default:
-            if (c < 0x20) { char b[8]; snprintf(b, sizeof b, "\\u%04x", c); o += b; }
-            else o.push_back((char)c);
-        }
-    }
-    return o;
-}
+std::string jsonEscape(const std::string& s) { return dect2::str::jsonEscape(s); }
 
 std::string jsonNum(double v) {
     if (!std::isfinite(v)) return "null";
@@ -202,7 +188,7 @@ namespace {
 constexpr size_t kMaxHeader = 8192, kMaxBody = 4096, kMaxConns = 16, kMaxWs = 8, kMaxWsFrame = 4096;
 constexpr int kRequestMs = 5000;
 
-std::string lower(std::string s) { for (char& c : s) c = (char)tolower((unsigned char)c); return s; }
+std::string lower(std::string s) { return dect2::str::lower(std::move(s)); }
 std::string trim(const std::string& s) {
     size_t a = 0, b = s.size();
     while (a < b && (s[a] == ' ' || s[a] == '\t')) a++;

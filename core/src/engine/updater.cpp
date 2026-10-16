@@ -33,6 +33,8 @@ extern char** environ;
 #include <functional>
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
+#include "dect2/common/str.h"
+#include "dect2/common/timecompat.h"
 #endif
 
 namespace dect2 {
@@ -579,7 +581,7 @@ int pidNow() {
 #endif
 }
 
-double nowSeconds() { return (double)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); }
+double nowSeconds() { return (double)dect2::unixNow(); }
 }
 
 
@@ -597,12 +599,7 @@ std::string batchValue(const std::string& v, bool path) {
     }
     return o;
 }
-std::string trim(const std::string& s) {
-    size_t a = 0, b = s.size();
-    while (a < b && isspace((unsigned char)s[a])) a++;
-    while (b > a && isspace((unsigned char)s[b - 1])) b--;
-    return s.substr(a, b - a);
-}
+std::string trim(const std::string& s) { return dect2::str::trimSpace(s); }
 }
 
 std::string windowsApplyScript(int pid, const std::string& setupExe, const std::string& installedExe, const std::string& resultFile, const std::string& version, bool restart) {

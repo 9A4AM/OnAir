@@ -11,6 +11,7 @@
 #include <ctime>
 #include <mutex>
 #include <vector>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 
@@ -29,12 +30,7 @@ LoraRawSettings sanitize(LoraRawSettings s) {
     return s;
 }
 
-std::string hexOf(const std::vector<uint8_t>& p) {
-    std::string s;
-    char b[4];
-    for (size_t i = 0; i < p.size() && i < 255; i++) { snprintf(b, sizeof b, "%02X", p[i]); if (i) s += ' '; s += b; }
-    return s;
-}
+std::string hexOf(const std::vector<uint8_t>& p) { return dect2::str::toHex(p.data(), p.size(), true, ' ', 255); }
 std::string textOf(const std::vector<uint8_t>& p) {
     std::string s;
     for (size_t i = 0; i < p.size() && i < 255; i++) s += (p[i] >= 32 && p[i] < 127) ? (char)p[i] : '.';

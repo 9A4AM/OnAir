@@ -5,18 +5,13 @@
 #include "dect2/uat/uat_frame.h"
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 
 namespace {
 
-std::string hexOf(const uint8_t* d, int n) {
-    std::string h;
-    h.reserve((size_t)n * 2);
-    char b[4];
-    for (int i = 0; i < n; i++) { snprintf(b, sizeof b, "%02X", d[i]); h += b; }
-    return h;
-}
+std::string hexOf(const uint8_t* d, int n) { return dect2::str::toHex(d, n > 0 ? (size_t)n : 0); }
 
 void fillAcFromMdb(const uat_adsb_mdb& m, UatAircraft& ac) {
     ac.icao = m.address & 0xFFFFFF;

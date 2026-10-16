@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 namespace chdb {
@@ -24,12 +25,7 @@ std::string join(const std::vector<std::string>& v, char sep) {
     for (size_t i = 0; i < v.size(); i++) { if (i) s += sep; s += v[i]; }
     return s;
 }
-std::string trim(const std::string& s) {
-    size_t a = 0, b = s.size();
-    while (a < b && (s[a] == ' ' || s[a] == '\t' || s[a] == '\r')) a++;
-    while (b > a && (s[b - 1] == ' ' || s[b - 1] == '\t' || s[b - 1] == '\r')) b--;
-    return s.substr(a, b - a);
-}
+std::string trim(const std::string& s) { return dect2::str::trimChars(s, " \t\r"); }
 // services in the sent text must not contain the separator or line breaks
 std::string cleanService(std::string s) {
     // Names come from the air in many character sets; whatever a receiver let through, the list only takes valid UTF-8 without control or

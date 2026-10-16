@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 
@@ -191,12 +192,7 @@ static std::vector<std::string> splitFields(const std::string& line, char sep, b
     v.push_back(cur);
     return v;
 }
-static std::string trim(std::string s) {
-    while (!s.empty() && isspace((unsigned char)s.back())) s.pop_back();
-    size_t a = 0;
-    while (a < s.size() && isspace((unsigned char)s[a])) a++;
-    return s.substr(a);
-}
+static std::string trim(std::string s) { return dect2::str::trimSpace(s); }
 
 size_t AdsbRegDb::loadText(const std::string& text, size_t* skipped) {
     size_t n = 0, bad = 0;

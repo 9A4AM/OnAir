@@ -4,20 +4,19 @@
 #include <cmath>
 #include <cstdlib>
 #include <sstream>
+#include "dect2/common/str.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846, k2Pi = 2 * kPi, kDeg = kPi / 180;
+constexpr double kPi = dect2::math::kPi, k2Pi = 2 * kPi, kDeg = kPi / 180;
 // WGS-72, as SGP4 needs it
 constexpr double kMu = 398600.8, kRe = 6378.135, kJ2 = 0.001082616, kJ3 = -0.00000253881, kJ4 = -0.00000165597, kJ3oJ2 = kJ3 / kJ2;
 const double kXke = 60.0 / std::sqrt(kRe * kRe * kRe / kMu);
 constexpr double kC = 299792.458, kOmegaE = 7.292115e-5;
 
-std::string trim(const std::string& s) {
-    size_t a = s.find_first_not_of(" \t\r\n"), b = s.find_last_not_of(" \t\r\n");
-    return a == std::string::npos ? std::string() : s.substr(a, b - a + 1);
-}
+std::string trim(const std::string& s) { return dect2::str::trimChars(s, " \t\r\n"); }
 bool num(const std::string& s, size_t pos, size_t len, double& v) {
     if (s.size() < pos + len) return false;
     std::string f = trim(s.substr(pos, len));

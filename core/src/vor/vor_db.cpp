@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 
@@ -29,7 +30,7 @@ std::vector<std::string> csvLine(const std::string& t, size_t& pos) {   // one r
     f.push_back(cur);
     return f;
 }
-std::string lower(std::string s) { for (auto& c : s) c = (char)std::tolower((unsigned char)c); return s; }
+std::string lower(std::string s) { return dect2::str::lower(std::move(s)); }
 } // namespace
 
 int navParseCsv(const std::string& text, std::vector<NavStation>& out, std::string& err) {

@@ -20,6 +20,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 
@@ -41,10 +42,7 @@ bool hamLoad(std::string& err) {
     return gHamLoaded;
 }
 
-std::string upper(std::string s) {
-    for (auto& c : s) c = (char)toupper((unsigned char)c);
-    return s;
-}
+std::string upper(std::string s) { return dect2::str::upper(std::move(s)); }
 
 rmode_t modeFromName(const std::string& name) {
     std::string le;
