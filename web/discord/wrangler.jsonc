@@ -1,0 +1,7 @@
+{
+  "name": "onair-discord",
+  "main": "src/index.js",
+  "compatibility_date": "2026-05-03",
+  "vars": { "MAP_URL": "https://map.on-air.dev" },
+  "observability": { "enabled": true }
+}
