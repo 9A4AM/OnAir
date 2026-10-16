@@ -1,5 +1,6 @@
 // The new interface: its three palettes (terminal, instrument, mono), the accent colour, the Dark / Light / High
 // contrast choice and applying the theme to ImGui's style. The shared declarations are in ui2_internal.h.
+// Split from ui2.cpp; the shared declarations are in ui2_internal.h.
 #include "ui2_internal.h"
 
 using namespace ui2;

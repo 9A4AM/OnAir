@@ -1,4 +1,6 @@
 // ADS-B screens: the radar plot around the receiver and the map of aircraft (tiles, trails, range rings), with the full-window map.
+// Split from adsb_ui.cpp; the tile map itself (projection, tiles, controls) is in adsb_map.cpp.
+// The shared state and helpers are declared in adsb_internal.h.
 #include "adsb_internal.h"
 
 using namespace adsbui;

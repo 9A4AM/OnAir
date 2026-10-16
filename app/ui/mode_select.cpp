@@ -1,5 +1,6 @@
 // Choosing a receiver mode: selectMode(), the highlight and search tests on a kModes row, the search box of the
 // mode drop-downs and the segmented mode selector of the top bar. The table itself is in mode_table.cpp.
+// Search matches the name, the sub line, the blurb and the extra search words of a kModes row.
 #include "../app.h"
 #include "dect2/engine/rate_choice.h"
 #include "dect2/source/antenna_ports.h"

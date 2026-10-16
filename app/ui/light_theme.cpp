@@ -1,5 +1,6 @@
 // View > Light and High contrast: the finished draw lists are recoloured (lightness turned over, text kept readable).
 // Split from main.cpp.
+// Called by main() after ImGui::Render() for each frame while View > Light or High contrast is on.
 #ifdef __linux__
 #include <unistd.h>
 #endif

@@ -1,5 +1,6 @@
 // Mesh (LoRa) settings: band plan and region, protocols and presets, channel keys, the custom LoRa setting of each entry,
 // and the MeshCore preset list (with its optional refresh from the internet).
+// Split from mesh_ui.cpp; the shared state is declared in mesh_internal.h.
 #include "mesh_internal.h"
 #include <algorithm>
 #include <cmath>
@@ -123,42 +124,45 @@ void mcApply(App& a, const dect2::MeshCorePresetEntry& p) {
 
 
 // the LoRa setting: the band plan's presets (with the Meshtastic region and modem preset) or a custom one, remembered per entry
-void loraSettings(App& a) {
-    State::Custom& c = customOf(a);
-    if (subMask(a) == 2) {   // MeshCore: the community's regional radio presets (meshcore.nz), or custom entry
-        if (!S.mcListed) mcLoad();
-        if (S.mcFetch == 2 || S.mcFetch == 3) { if (S.mcThread.joinable()) S.mcThread.join(); if (S.mcFetch == 2) mcLoad(); S.mcFetch = S.mcFetch == 2 ? 4 : 5; }
-        const dect2::MeshCorePresetEntry* cur = nullptr;
-        for (const auto& p : S.mcList) if (p.title == S.mcPreset) cur = &p;
-        ImGui::TextDisabled("MeshCore radio preset");
-        ImGui::SetNextItemWidth(340 * gUi);
-        if (ImGui::BeginCombo("##mcpre", cur ? cur->title.c_str() : "Custom")) {
-            if (ImGui::Selectable("Custom", !cur)) { S.mcPreset.clear(); plat::prefs().setS("meshCorePreset", ""); }
-            for (const auto& reg : dect2::meshCoreRegions(S.mcList)) {
-                ImGui::TextDisabled("%s", reg.c_str());
-                for (const auto& p : S.mcList) {
-                    if (p.region != reg) continue;
-                    const std::string lab = p.title + "   " + dect2::meshCorePresetSummary(p) + "##mcp" + p.title;
-                    if (ImGui::Selectable(lab.c_str(), cur && cur->title == p.title)) {
-                        S.mcPreset = p.title; plat::prefs().setS("meshCorePreset", p.title);
-                        mcApply(a, p);
-                        if (a.engine.running()) startReceiver(a);
-                    }
+// the MeshCore radio presets of the community (meshcore.nz): a list per region and a refresh from the internet on request
+static void meshCorePresets(App& a) {
+    if (!S.mcListed) mcLoad();
+    if (S.mcFetch == 2 || S.mcFetch == 3) { if (S.mcThread.joinable()) S.mcThread.join(); if (S.mcFetch == 2) mcLoad(); S.mcFetch = S.mcFetch == 2 ? 4 : 5; }
+    const dect2::MeshCorePresetEntry* cur = nullptr;
+    for (const auto& p : S.mcList) if (p.title == S.mcPreset) cur = &p;
+    ImGui::TextDisabled("MeshCore radio preset");
+    ImGui::SetNextItemWidth(340 * gUi);
+    if (ImGui::BeginCombo("##mcpre", cur ? cur->title.c_str() : "Custom")) {
+        if (ImGui::Selectable("Custom", !cur)) { S.mcPreset.clear(); plat::prefs().setS("meshCorePreset", ""); }
+        for (const auto& reg : dect2::meshCoreRegions(S.mcList)) {
+            ImGui::TextDisabled("%s", reg.c_str());
+            for (const auto& p : S.mcList) {
+                if (p.region != reg) continue;
+                const std::string lab = p.title + "   " + dect2::meshCorePresetSummary(p) + "##mcp" + p.title;
+                if (ImGui::Selectable(lab.c_str(), cur && cur->title == p.title)) {
+                    S.mcPreset = p.title; plat::prefs().setS("meshCorePreset", p.title);
+                    mcApply(a, p);
+                    if (a.engine.running()) startReceiver(a);
                 }
             }
-            ImGui::EndCombo();
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("The radio settings the MeshCore app suggests for each region (frequency, bandwidth, spreading factor, coding rate). A preset fills in the\ncustom LoRa setting and tunes to its frequency. Custom keeps the values you enter below. %s", S.mcFromFile ? "The list is the one you refreshed from meshcore.nz." : "The list is the one built into this version.");
-        if (cur) ImGui::TextDisabled("%s", dect2::meshCorePresetSummary(*cur).c_str());
-        ImGui::BeginDisabled(S.mcFetch == 1);
-        if (ImGui::SmallButton("Refresh from meshcore.nz")) mcRefresh();
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Contacts the internet (api.meshcore.nz), only when you click, and nothing about you is sent. Saves the list of presets and uses it instead of the built-in one.");
-        if (S.mcFetch == 1) { ImGui::SameLine(); ImGui::TextDisabled("fetching..."); }
-        else if (S.mcFetch == 4) { ImGui::SameLine(); ImGui::TextDisabled("%zu presets loaded", S.mcList.size()); }
-        else if (S.mcFetch == 5) { ImGui::SameLine(); ImGui::TextDisabled("could not fetch (the previous list stays)"); }
-        ImGui::Spacing();
+        ImGui::EndCombo();
     }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The radio settings the MeshCore app suggests for each region (frequency, bandwidth, spreading factor, coding rate). A preset fills in the\ncustom LoRa setting and tunes to its frequency. Custom keeps the values you enter below. %s", S.mcFromFile ? "The list is the one you refreshed from meshcore.nz." : "The list is the one built into this version.");
+    if (cur) ImGui::TextDisabled("%s", dect2::meshCorePresetSummary(*cur).c_str());
+    ImGui::BeginDisabled(S.mcFetch == 1);
+    if (ImGui::SmallButton("Refresh from meshcore.nz")) mcRefresh();
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Contacts the internet (api.meshcore.nz), only when you click, and nothing about you is sent. Saves the list of presets and uses it instead of the built-in one.");
+    if (S.mcFetch == 1) { ImGui::SameLine(); ImGui::TextDisabled("fetching..."); }
+    else if (S.mcFetch == 4) { ImGui::SameLine(); ImGui::TextDisabled("%zu presets loaded", S.mcList.size()); }
+    else if (S.mcFetch == 5) { ImGui::SameLine(); ImGui::TextDisabled("could not fetch (the previous list stays)"); }
+    ImGui::Spacing();
+}
+
+void loraSettings(App& a) {
+    State::Custom& c = customOf(a);
+    if (subMask(a) == 2) meshCorePresets(a);
     ImGui::TextDisabled("LoRa setting");
     int mode = c.on ? 1 : 0;
     ImGui::SetNextItemWidth(220 * gUi);

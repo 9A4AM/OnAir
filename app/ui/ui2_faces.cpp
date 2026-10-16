@@ -1,5 +1,6 @@
 // The new interface: the Faceplate, Cinema, Meters, Dock and Panel layouts of the body (the "Scope: Cinema" and
 // "Faceplate" variants are instruments in a chassis; Dock and Panel are the two-column ones).
+// Split from ui2.cpp; the shared declarations are in ui2_internal.h.
 #include "ui2_internal.h"
 
 using namespace ui2;

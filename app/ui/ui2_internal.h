@@ -1,5 +1,6 @@
 // The shared declarations of the new interface (ui2*.cpp): the theme, the small widgets, the shell (menu bar, top and
 // bottom bars, side bar) and the body layouts. Everything lives in namespace ui2 except the entry points in app.h.
+// Included by ui2.cpp, ui2_theme.cpp, ui2_widgets.cpp, ui2_shell.cpp and ui2_faces.cpp only.
 #pragma once
 #include "../app.h"
 #include "imgui_internal.h"   // RenderArrow for the folding mode groups

@@ -1,5 +1,6 @@
 // The main window: choosing the GLFW platform on Linux, creating and sizing the window, and loading the fonts.
 // Split from main.cpp; main() calls createMainWindow() and loadFonts().
+// Linux picks X11 or Wayland here; on macOS and Windows the window is created as is.
 #ifdef __linux__
 #include <unistd.h>
 #endif

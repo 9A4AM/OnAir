@@ -1,4 +1,5 @@
 // Shared between the toolbar_*.cpp files (the top bar, source options, rig windows): the few helpers more than one of them calls.
+// Declared here, defined in toolbar_source.cpp and toolbar_rig.cpp.
 #pragma once
 #include "../app.h"
 

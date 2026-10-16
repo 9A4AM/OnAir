@@ -1,5 +1,6 @@
 // ADS-B screens: the aircraft table, the selected aircraft's detail, the statistics view, the sources panel and the
 // unit controls.
+// Split from adsb_ui.cpp; the shared state is declared in adsb_internal.h.
 #include "adsb_internal.h"
 
 using namespace adsbui;

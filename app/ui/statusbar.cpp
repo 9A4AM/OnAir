@@ -1,5 +1,6 @@
 // The status bar under the spectrum (lamps, lock state, signal readouts, level and quality gauges, advice) and the
 // gain control. Split from toolbar.cpp; the entry points statusBar() and gainControl() are declared in app.h.
+// Each line of the bar is one function: lamps, state and mode readouts, numbers, gauges, notes.
 #include "../app.h"
 #include "dect2/engine/rate_choice.h"
 #include "dect2/source/antenna_ports.h"

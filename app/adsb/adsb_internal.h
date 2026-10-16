@@ -1,5 +1,6 @@
 // Shared by the ADS-B screens (adsb_*.cpp): the screen state, the colours, the unit helpers and the functions more than
 // one file uses. Everything is in namespace adsbui; the mode entry is kAdsbUi (declared in modeui.cpp).
+// Included by adsb_ui.cpp, adsb_table_ui.cpp and adsb_map_ui.cpp only.
 #pragma once
 #include "app.h"
 #include "dect2/adsb/adsb_units.h"

@@ -1,5 +1,6 @@
 // Shared by the Mesh (LoRa) screens (mesh_*.cpp): the screen state, the band plans and the helpers more than one file uses.
 // Everything is in namespace meshui; the mode entry is kMeshUi (declared in modeui.cpp).
+// Included by mesh_ui.cpp, mesh_tables.cpp, mesh_lorawan_ui.cpp, mesh_views.cpp and mesh_settings_ui.cpp only.
 #pragma once
 #include "app.h"
 #include "../adsb/adsb_map.h"

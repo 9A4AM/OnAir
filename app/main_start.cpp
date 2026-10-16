@@ -1,5 +1,6 @@
 // Start-up of the main program: the startup guard and first-run dialogs, and the developer / test command-line flags.
 // Split from main.cpp.
+// The flags are listed where they are parsed (parseDevFlags); none of them is saved.
 #ifdef __linux__
 #include <unistd.h>
 #endif
