@@ -112,7 +112,7 @@ int stationForKhz(double khz, int pref60) {
     if (near(68.5, 1.5)) return Bpc;
     if (near(60, 1.5)) return pref60 == Msf || pref60 == Wwvb || pref60 == Jjy60 ? pref60 : Msf;
     for (double f : {2500.0, 5000.0, 10000.0, 15000.0, 20000.0}) if (near(f, 8)) return Wwv;
-    for (double f : {3330.0, 7850.0, 14670.0}) if (near(f, 8)) return Chu;
+    // CHU removed from the product (#150); 3.33 / 7.85 / 14.67 MHz are not auto-identified.
     return -1;
 }
 

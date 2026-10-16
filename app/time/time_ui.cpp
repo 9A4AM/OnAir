@@ -33,6 +33,7 @@ void loadState() {
     if (S.loaded) return;
     S.loaded = true;
     S.station = std::max(-1, std::min((int)kNumStations - 1, (int)plat::prefs().getI("timeStation", -1)));
+    if (S.station == Chu) S.station = Wwv;   // CHU removed (#150)
     S.pref60 = (int)plat::prefs().getI("timePref60", Msf);
     if (S.pref60 != Msf && S.pref60 != Wwvb && S.pref60 != Jjy60) S.pref60 = Msf;
     S.listen = plat::prefs().getB("timeListen", false);
@@ -79,7 +80,7 @@ std::string rangeNote(const App& a) {
     snprintf(b, sizeof b, "This radio is specified from %.6g MHz: OnAir still tries %.4g kHz, but the driver may not reach it or the signal may be weak or absent. The LF stations (DCF77, MSF, WWVB, JJY) need a radio that "
              "tunes below 1 MHz: an SDRplay, an Airspy HF+, or an RTL-SDR in direct sampling mode, with an LF antenna (a ferrite rod or a long wire). "
              "BPC (68.5 kHz) is below the HackRF and most HF radios too: it needs an LF-capable radio or an upconverter in front of the radio. "
-         "WWV / WWVH, CHU, BPM and HLA are on HF and work with any radio that reaches 2.5 - 15 MHz.", d.minFreqHz / 1e6, a.freqMhz * 1e3);
+         "WWV / WWVH, BPM and HLA are on HF and work with any radio that reaches 2.5 - 15 MHz.", d.minFreqHz / 1e6, a.freqMhz * 1e3);
     return b;
 }
 
@@ -239,6 +240,7 @@ void tuner(App& a, bool& retune) {
     if (ImGui::BeginCombo("##tmst", cur)) {
         if (ImGui::Selectable("from the frequency", S.station < 0)) { S.station = -1; saveState(); }
         for (int s = 0; s < kNumStations; s++) {
+            if (s == Chu) continue;
             char b[64];
             snprintf(b, sizeof b, "%-11s %g kHz", stationName(s), stationKhz(s));
             if (ImGui::Selectable(b, S.station == s)) {
@@ -251,15 +253,15 @@ void tuner(App& a, bool& retune) {
         }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("DCF77 Germany, MSF UK, WWVB and WWV USA, WWVH Hawaii, JJY Japan, CHU Canada, BPM China (ticks, and the coded signal), BPC China (68.5 kHz, needs an LF radio or an upconverter), HLA Korea.\nIn Europe DCF77 and MSF are heard across the continent at night and in the day.");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("DCF77 Germany, MSF UK, WWVB and WWV USA, WWVH Hawaii, JJY Japan, BPM China (ticks, and the coded signal), BPC China (68.5 kHz, needs an LF radio or an upconverter), HLA Korea.\nIn Europe DCF77 and MSF are heard across the continent at night and in the day.");
     const int st = S.station >= 0 ? S.station : stationForKhz(a.freqMhz * 1e3, S.pref60);
-    if (st == Wwv || st == Chu || st == Bpm || st == BpmC || st == Hla) {
+    if (st == Wwv || st == Bpm || st == BpmC || st == Hla) {
         ImGui::SameLine(0, 8 * gUi);
         ImGui::SetNextItemWidth(std::min(100 * gUi, ImGui::GetContentRegionAvail().x));
         char lb[32];
         snprintf(lb, sizeof lb, "%.3g MHz", a.freqMhz);
         if (ImGui::BeginCombo("##tmfq", lb)) {
-            const std::vector<double> fs = st == Wwv ? std::vector<double>{2.5, 5, 10, 15, 20} : st == Bpm ? std::vector<double>{2.5, 5, 10, 15} : st == BpmC ? std::vector<double>{2.5, 5} : st == Hla ? std::vector<double>{5} : std::vector<double>{3.33, 7.85, 14.67};
+            const std::vector<double> fs = st == Wwv ? std::vector<double>{2.5, 5, 10, 15, 20} : st == Bpm ? std::vector<double>{2.5, 5, 10, 15} : st == BpmC ? std::vector<double>{2.5, 5} : std::vector<double>{5};
             for (double f : fs) {
                 char b[24];
                 snprintf(b, sizeof b, "%g MHz", f);
@@ -267,11 +269,11 @@ void tuner(App& a, bool& retune) {
             }
             ImGui::EndCombo();
         }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", st == Wwv ? "WWV and WWVH share 2.5, 5, 10 and 15 MHz (WWV also 20 MHz); the 1000 / 1200 Hz ticks tell them apart" : st == Bpm ? "BPM (China, Pucheng) shares 2.5, 5, 10 and 15 MHz with WWV: choose the station by hand, the frequency cannot tell them apart" : st == BpmC ? "BPM's coded time signal (2.5 and 5 MHz, in the 5 minute pure carrier slots of every half hour)" : st == Hla ? "HLA (Korea) 5 MHz" : "CHU: 3330, 7850 and 14670 kHz");
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", st == Wwv ? "WWV and WWVH share 2.5, 5, 10 and 15 MHz (WWV also 20 MHz); the 1000 / 1200 Hz ticks tell them apart" : st == Bpm ? "BPM (China, Pucheng) shares 2.5, 5, 10 and 15 MHz with WWV: choose the station by hand, the frequency cannot tell them apart" : st == BpmC ? "BPM's coded time signal (2.5 and 5 MHz, in the 5 minute pure carrier slots of every half hour)" : "HLA (Korea) 5 MHz");
     }
     if (st < 0) { ImGui::SameLine(0, 8 * gUi); ImGui::TextColored(pal::warnAmber(), "no station at this frequency"); }
     ImGui::SameLine(0, 8 * gUi);
-    listenControls(a, S.listen, "timeListen", "time", "Hear the station: the AM audio (ticks, voice) of WWV / CHU, a tone keyed by the carrier for the LF stations (DCF77, MSF, WWVB, JJY); decoding is the same either way");
+    listenControls(a, S.listen, "timeListen", "time", "Hear the station: the AM audio (ticks, voice) of WWV, a tone keyed by the carrier for the LF stations (DCF77, MSF, WWVB, JJY); decoding is the same either way");
 }
 
 void synth(App& a, bool& changed) {
@@ -281,7 +283,10 @@ void synth(App& a, bool& changed) {
     ImGui::SetNextItemWidth(std::min(130 * gUi, ImGui::GetContentRegionAvail().x));
     int s = sc.modeOpt[0] > 0 ? sc.modeOpt[0] - 1 : Dcf77;
     if (ImGui::BeginCombo("##tmsy", stationName(s))) {
-        for (int k = 0; k < kNumStations; k++) if (ImGui::Selectable(stationName(k), k == s)) { sc.modeOpt[0] = k + 1; changed = true; }
+        for (int k = 0; k < kNumStations; k++) {
+            if (k == Chu) continue;
+            if (ImGui::Selectable(stationName(k), k == s)) { sc.modeOpt[0] = k + 1; changed = true; }
+        }
         ImGui::EndCombo();
     }
     if (s == Wwv) {
@@ -335,7 +340,7 @@ void receiver(App& a) {
     kvRow(a, "signal time", "%.1f s", t.timeSec);
     ImGui::Spacing();
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("Not used: the DCF77 and WWVB phase codes, the CHU B frame's contents, the WWV voice announcements.");
+    ImGui::TextDisabled("Not used: the DCF77 and WWVB phase codes, the WWV voice announcements.");
     ImGui::PopTextWrapPos();
 }
 

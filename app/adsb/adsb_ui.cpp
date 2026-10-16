@@ -249,6 +249,7 @@ void radar(App& a, ImVec2 size) {
     const AdsbTelemetry& t = a.rx.adsb;
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImGui::SetNextItemAllowOverlap();   // full-screen control sits on top (same as adsb_map.cpp)
     ImGui::InvisibleButton("##radar", size);
     const float side = std::min(size.x, size.y), R = side * 0.5f - 6 * gUi;
     const ImVec2 c(p0.x + size.x * 0.5f, p0.y + size.y * 0.5f);
