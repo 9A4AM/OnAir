@@ -895,6 +895,7 @@ if(DECT2_BUILD_TESTS)
   onair_rust_diff_tests(adsb adsb_msg adsb adsb_msg dect2/adsb/adsb_msg.h "namespace dect2::adsb {" "namespace dect2::adsb_ref {" "" "")
   onair_rust_diff_tests(pager pager_proto pager pager_proto dect2/pager/pager_proto.h "namespace pager {" "namespace pager_ref {" "" ${CMAKE_SOURCE_DIR}/core/include/dect2/pager)
   onair_rust_diff_tests(nxdn nxdn_proto nxdn nxdn_proto dect2/nxdn/nxdn_proto.h "namespace nxdn {" "namespace nxdn_ref {" "" "")
+  onair_rust_diff_tests(dstar dstar_proto dstar dstar_proto dect2/dstar/dstar_proto.h "namespace dstar {" "namespace dstar_ref {" "" "")
   onair_rust_diff_tests(p25 p25_proto p25 p25_proto dect2/p25/p25_proto.h "namespace p25 {" "namespace p25_ref {" "" "")
   # DMR: two layers in one test program (dmr_fec.cpp, dmr_proto.cpp), each with a generated reference copy; the proto copy includes the fec copy
   if(ONAIR_RUST_DMR)
