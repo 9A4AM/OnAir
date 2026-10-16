@@ -22,6 +22,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "dect2/common/u8file.h"
 
 namespace {
 

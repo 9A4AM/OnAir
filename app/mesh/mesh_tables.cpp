@@ -8,6 +8,7 @@
 #include <cstring>
 #include <ctime>
 #include <fstream>
+#include "dect2/common/u8file.h"
 
 using namespace meshui;
 
@@ -63,7 +64,7 @@ void nodeTable(const App& a, bool compact) {
             ImGui::SetClipboardText(rep.c_str());
             const std::string path = saveFileDialog(("mesh-report-" + resexp::stamp() + ".txt").c_str());
             if (!path.empty()) {
-                std::ofstream f(path, std::ios::binary);
+                std::ofstream f(dect2::u8file(path), std::ios::binary);
                 f << rep;
                 note = f ? "report saved to " + path + " and copied" : "could not write " + path;
             } else note = "report copied to the clipboard";

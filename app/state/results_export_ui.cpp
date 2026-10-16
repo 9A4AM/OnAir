@@ -4,6 +4,7 @@
 #include "../ui/icons.h"
 #include <ctime>
 #include <fstream>
+#include "dect2/common/u8file.h"
 
 namespace resexp {
 

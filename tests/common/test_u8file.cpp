@@ -1,6 +1,6 @@
 // u8file.h: a UTF-8 path with an accent ("Área de Trabalho", what the save dialog gives on a Brazilian Windows whose desktop is in
 // OneDrive) is written and read back through std::ofstream / std::ifstream and u8fopen, and lands in the folder with that name.
-#include "dect2/u8file.h"
+#include "dect2/common/u8file.h"
 #include <cstdio>
 #include <filesystem>
 #include <fstream>

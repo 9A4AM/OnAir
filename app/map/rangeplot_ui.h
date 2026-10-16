@@ -8,6 +8,7 @@
 #include <ctime>
 #include <fstream>
 #include <string>
+#include "dect2/common/u8file.h"
 
 struct RangeView {
     dect2::RangePlot plot{5.0, 0.0, 1000.0};

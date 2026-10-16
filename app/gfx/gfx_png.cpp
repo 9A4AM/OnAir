@@ -1,6 +1,6 @@
 // Minimal PNG writer (stored deflate blocks), used for --shot screenshots on back ends without an image library.
 #include "gfx.h"
-#include "dect2/u8file.h"
+#include "dect2/common/u8file.h"
 #include <algorithm>
 #include <cstdio>
 #include <vector>

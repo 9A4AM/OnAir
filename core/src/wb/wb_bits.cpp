@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include "dect2/common/u8file.h"
 
 namespace dect2 {
 namespace wb {

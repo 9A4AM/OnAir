@@ -9,6 +9,7 @@
 #include <cmath>
 #include <ctime>
 #include <deque>
+#include "dect2/common/u8file.h"
 
 namespace {
 

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include "dect2/common/u8file.h"
 
 namespace dect2 {
 

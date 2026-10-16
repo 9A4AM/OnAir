@@ -7,7 +7,7 @@
 #include "dect2/results/results_io.h"
 #include "dect2/common/timecompat.h"
 #include "scan_list.h"
-#include "dect2/u8file.h"
+#include "dect2/common/u8file.h"
 #include <cstring>
 #include <ctime>
 #include <fstream>

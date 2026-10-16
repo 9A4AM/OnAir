@@ -1007,7 +1007,7 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_direction tests/dsp/test_direction.cpp)
   target_link_libraries(test_direction PRIVATE dect2core)
   add_test(NAME direction COMMAND test_direction)
-  add_executable(test_u8file tests/test_u8file.cpp)
+  add_executable(test_u8file tests/common/test_u8file.cpp)
   target_link_libraries(test_u8file PRIVATE dect2core)
   add_test(NAME u8file COMMAND test_u8file)
 
