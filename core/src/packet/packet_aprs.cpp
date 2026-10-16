@@ -6,6 +6,9 @@
 #include <cstdlib>
 #include <cstring>
 
+// The whole parser is the C++ implementation; with DECT2_RUST_AX25 (rust/onair_ax25) packet_aprs_rs.cpp provides the same functions. It stays until the
+// Rust build is mandatory (rust/README.md); tests/packet/test_packet_proto_rs.cpp compares the two.
+#ifndef DECT2_RUST_AX25
 namespace dect2 {
 namespace aprs {
 
@@ -339,3 +342,4 @@ bool parse(const std::string& dest, const std::string& info, Info& o) {
 
 } // namespace aprs
 } // namespace dect2
+#endif // DECT2_RUST_AX25

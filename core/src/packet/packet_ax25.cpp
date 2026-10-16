@@ -4,6 +4,17 @@
 namespace dect2 {
 namespace ax25 {
 
+namespace {
+void putAddr(std::vector<uint8_t>& o, const Address& a, bool last) {
+    for (size_t i = 0; i < 6; i++) o.push_back((uint8_t)((i < a.call.size() ? a.call[i] : ' ') << 1));
+    o.push_back((uint8_t)(0x60 | (a.h ? 0x80 : 0) | ((a.ssid & 15) << 1) | (last ? 1 : 0)));
+}
+} // namespace
+
+// Everything from here to the matching #endif is the C++ implementation of the FCS, frame parser, text forms and HDLC receiver step; with
+// DECT2_RUST_AX25 (rust/onair_ax25) packet_ax25_rs.cpp provides the same functions. It stays until the Rust build is mandatory (rust/README.md);
+// tests/packet/test_packet_proto_rs.cpp compares the two. Frame building and the transmit-side bit helpers below are C++ in both builds.
+#ifndef DECT2_RUST_AX25
 uint16_t fcs(const uint8_t* d, size_t n) {
     uint16_t crc = 0xFFFF;
     for (size_t i = 0; i < n; i++) {
@@ -11,11 +22,6 @@ uint16_t fcs(const uint8_t* d, size_t n) {
         for (int k = 0; k < 8; k++) crc = (crc & 1) ? (uint16_t)((crc >> 1) ^ 0x8408) : (uint16_t)(crc >> 1);
     }
     return (uint16_t)~crc;
-}
-void appendFcs(std::vector<uint8_t>& f) {
-    const uint16_t c = fcs(f.data(), f.size());
-    f.push_back((uint8_t)(c & 0xFF));
-    f.push_back((uint8_t)(c >> 8));
 }
 bool fcsOk(const uint8_t* d, size_t n) {
     if (n < 3) return false;
@@ -79,12 +85,7 @@ bool parseAddr(const uint8_t* p, Address& a, bool& last) {
     last = (p[6] & 1) != 0;
     return true;
 }
-void putAddr(std::vector<uint8_t>& o, const Address& a, bool last) {
-    for (size_t i = 0; i < 6; i++) o.push_back((uint8_t)((i < a.call.size() ? a.call[i] : ' ') << 1));
-    o.push_back((uint8_t)(0x60 | (a.h ? 0x80 : 0) | ((a.ssid & 15) << 1) | (last ? 1 : 0)));
-}
 } // namespace
-
 bool parseFrame(const uint8_t* d, size_t n, Frame& f) {
     f = Frame();
     if (n < 15) return false;
@@ -111,6 +112,48 @@ bool parseFrame(const uint8_t* d, size_t n, Frame& f) {
     return true;
 }
 
+int hdlcStep(HdlcState& s, int level, bool nrzi, size_t& len) {
+    len = 0;
+    int d = level & 1;
+    if (nrzi) { d = (d == s.prev) ? 1 : 0; s.prev = level & 1; }
+    if (s.flagRecent > 0) s.flagRecent--;
+    s.pat = (uint8_t)((s.pat >> 1) | (d << 7));
+    if (s.pat == 0x7E) {
+        // a flag: seven of its bits were already stored, so a frame that ends here leaves seven bits in the accumulator
+        int flagHold = 16, ev = 0;
+        if (!s.hunting && s.inFrame && s.cnt == 7 && s.len >= 17 && s.len <= 400) {
+            if (fcsOk(s.buf, s.len)) { ev = 1; len = s.len - 2; s.resyncClock = true; flagHold = 48; }
+            else { ev = 2; len = s.len; }
+            s.hunting = true;
+            s.inFrame = false;
+        } else {
+            s.hunting = false;
+            s.inFrame = true;
+        }
+        s.len = 0; s.acc = 0; s.cnt = 0;
+        s.flagRecent = flagHold;
+        return ev;
+    }
+    if (s.pat == 0xFE) { s.inFrame = false; s.hunting = true; s.len = 0; s.cnt = 0; return 0; }       // seven ones: abort
+    if ((s.pat & 0xFC) == 0x7C) return 0;                                              // a stuffed zero
+    if (s.hunting || !s.inFrame) return 0;
+    s.acc = (uint8_t)((s.acc >> 1) | (d << 7));
+    if (++s.cnt == 8) {
+        if (s.len > 400) { s.inFrame = false; s.len = 0; s.cnt = 0; return 0; }
+        s.buf[s.len++] = s.acc;
+        s.cnt = 0;
+    }
+    return 0;
+}
+
+void hdlcReset(HdlcState& s) { s = HdlcState(); }
+#endif // DECT2_RUST_AX25
+
+void appendFcs(std::vector<uint8_t>& f) {
+    const uint16_t c = fcs(f.data(), f.size());
+    f.push_back((uint8_t)(c & 0xFF));
+    f.push_back((uint8_t)(c >> 8));
+}
 std::vector<uint8_t> buildFrame(const Frame& f) {
     std::vector<uint8_t> o;
     putAddr(o, f.to, false);
@@ -156,45 +199,10 @@ std::vector<uint8_t> scramble(const std::vector<uint8_t>& bits, uint32_t& st) {
     return o;
 }
 
-void HdlcRx::reset() {
-    prev_ = 0; pat_ = 0; acc_ = 0; cnt_ = 0; inFrame_ = false; hunting_ = true; resyncClock_ = false; flagRecent_ = 0;
-    buf_.clear();
-}
-
 void HdlcRx::bit(int level) {
-    int d = level & 1;
-    if (nrzi_) { d = (d == prev_) ? 1 : 0; prev_ = level & 1; }
-    if (flagRecent_ > 0) flagRecent_--;
-    pat_ = (uint8_t)((pat_ >> 1) | (d << 7));
-    if (pat_ == 0x7E) {
-        // a flag: seven of its bits were already stored, so a frame that ends here leaves seven bits in the accumulator
-        int flagHold = 16;
-        if (!hunting_ && inFrame_ && cnt_ == 7 && buf_.size() >= 17 && buf_.size() <= 400) {
-            const bool ok = fcsOk(buf_.data(), buf_.size());
-            if (cb_) {
-                if (ok) cb_(std::vector<uint8_t>(buf_.begin(), buf_.end() - 2), true);
-                else cb_(buf_, false);
-            }
-            if (ok) { resyncClock_ = true; flagHold = 48; }
-            hunting_ = true;
-            inFrame_ = false;
-        } else {
-            hunting_ = false;
-            inFrame_ = true;
-        }
-        buf_.clear(); acc_ = 0; cnt_ = 0;
-        flagRecent_ = flagHold;
-        return;
-    }
-    if (pat_ == 0xFE) { inFrame_ = false; hunting_ = true; buf_.clear(); cnt_ = 0; return; }       // seven ones: abort
-    if ((pat_ & 0xFC) == 0x7C) return;                                              // a stuffed zero
-    if (hunting_ || !inFrame_) return;
-    acc_ = (uint8_t)((acc_ >> 1) | (d << 7));
-    if (++cnt_ == 8) {
-        if (buf_.size() > 400) { inFrame_ = false; buf_.clear(); cnt_ = 0; return; }
-        buf_.push_back(acc_);
-        cnt_ = 0;
-    }
+    size_t n = 0;
+    const int ev = hdlcStep(st_, level, nrzi_, n);
+    if (ev && cb_) cb_(std::vector<uint8_t>(st_.buf, st_.buf + n), ev == 1);
 }
 
 } // namespace ax25
