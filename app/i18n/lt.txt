@@ -23,7 +23,6 @@ Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Blueto
 Browse…	Browse…
 Callsign / my ID	Callsign / my ID
 Capcode	Capcode
-CARRIER TUNE	CARRIER TUNE
 Carrier tune	Carrier tune
 Clear all	Clear all
 Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
@@ -56,7 +55,6 @@ Gain controls apply to radios only (not to a recording, a sound card, or the syn
 I/Q stereo	I/Q stereo
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q stereo: kairė yra I, dešinė Q (HDSDR / WebSDR VAC). USB garsas: realus garsas į analitinį IQ FT8, RTTY, CW, SSB iš garsiakalbio. LSB garsas: tas pats, jungtinis. Mono realus: I yra ėminys, Q yra 0 (reali atranka, ne FM diskriminatoriaus garsas).
 ICAO address	ICAO address
-Idle — nothing is being sent	Idle — nothing is being sent
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
 Input device	Input device
@@ -124,14 +122,11 @@ this is a general listening mode: there is nothing specific to transmit	this is 
 this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
 this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
 this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
-This mode cannot transmit	This mode cannot transmit
 this mode has no transmit generator	this mode has no transmit generator
 This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
 time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
 Timeslot	Timeslot
 To	To
-TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
-Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
 USB audio	USB garsas
 Vessel name	Vessel name
 View	Rodinys
@@ -1085,11 +1080,9 @@ Send this mode's own signal through a radio that can transmit. Off until you sta
 TRANSMITTING	SIUNČIA
 Channel width	Kanalo plotis
 Frequency (MHz)	Dažnis (MHz)
-TX gain (dB)	Siuntimo stiprinimas (dB)
 +14 dB amplifier	+14 dB stiprintuvas
 Repeat until stopped	Kartoti, kol sustabdysite
 seconds	sekundės
-STOP TRANSMITTING	SUSTABDYTI SIUNTIMĄ
 START TRANSMITTING	PRADĖTI SIŲSTI
 This radio has no transmit driver in OnAir.	Šis radijas neturi siuntimo tvarkyklės OnAir.
 Before you transmit	Prieš siunčiant
@@ -1105,7 +1098,6 @@ RX	RX
 TX	TX
 Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	Perjungti tarp imtuvo (RX) ir siųstuvo (TX). Siųstuvas turi savo radiją, todėl imtuvas gali toliau priimti, kol siunčiate.
 Transmit radio	Siuntimo radijas
-No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	Nerasta radijo, galinčio siųsti. Prijunkite vieną (HackRF, PlutoSDR arba SoapySDR radiją su siųstuvu) ir atnaujinkite radijų sąrašą.
 Choose a radio to transmit with.	Pasirinkite radiją siuntimui.
 %s (in use by RX %d)	%s (naudoja RX %d)
 %s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s naudoja RX %d, o šis radijas negali vienu metu priimti ir siųsti. Pasirinkite kitą radiją siuntimui arba pirmiausia sustabdykite tą imtuvą.
@@ -1231,3 +1223,57 @@ reads	skaito
 up to %d MHz channels at this rate	iki %d MHz kanalai su šia sparta
 input	įvestis
 signal time	signalo laikas
+#  transmit: the guided panel
+%s at %.6f MHz, level %.1f dB	%s %.6f MHz dažniu, lygis %.1f dB
+Apply frequency and level now	Taikyti dažnį ir lygį dabar
+Bring it back here	Grąžinti čia
+Carrier tune (hold)	Nešlio derinimas (laikyti)
+Choose a radio in step 2, or switch on the test (no RF).	2 žingsnyje pasirinkite radiją arba įjunkite bandymą (be RF).
+Choose a signal in step 1	1 žingsnyje pasirinkite signalą
+Choose a signal in step 1.	1 žingsnyje pasirinkite signalą.
+Clipping	Apkirpimas
+Idle	Neveikia
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	Radijo, galinčio siųsti, nerasta. Prijunkite (HackRF, PlutoSDR arba SoapySDR radiją su siųstuvu) ir atnaujinkite sąrašą. Bandymui žemiau radijo nereikia.
+Nothing matches this search.	Pagal paiešką nieko nerasta.
+Occupied bandwidth	Užimamas dažnių ruožas
+Offset (MHz)	Poslinkis (MHz)
+Offset, repeat and timing	Poslinkis, kartojimas ir trukmė
+Output level (dB)	Išėjimo lygis (dB)
+Peak	Pikas
+Pop out into a window of its own	Atskirti į savo langą
+Preparing	Ruošiama
+Preview and send	Peržiūra ir siuntimas
+RMS	RMS
+Recent	Neseniai
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	Signalų generatorius veikia radijo atrankos dažniu į niekur: radijas neatidaromas ir niekas nesiunčiama. Spektras ir lygiai žemiau rodo, kas būtų išsiųsta.
+STOP	STOP
+STOP ALL	SUSTABDYTI VISKĄ
+Sample rate	Atrankos dažnis
+Search signals...	Ieškoti signalų...
+Settings	Nustatymai
+Signal	Signalas
+Space = start / stop     Esc = stop	Tarpas = pradėti / stabdyti     Esc = stabdyti
+Stops the transmission or test, the carrier and any pending start, and gives the radio back.	Sustabdo siuntimą ar bandymą, nešlį ir laukiantį paleidimą bei atlaisvina radiją.
+TEST - NO RF	BANDYMAS - BE RF
+Test (dry run, no RF)	Bandymas (sausas paleidimas, be RF)
+Test (no RF)	Bandymas (be RF)
+Test: the IQ the radio would get	Bandymas: IQ, kurį gautų radijas
+The IQ going to the radio	Radijui siunčiamas IQ
+The generator fell behind %llu time(s): silence was sent for those gaps.	Generatorius atsiliko %llu k.: tuose tarpuose buvo siųsta tyla.
+The transmit panel is in its own window.	Siuntimo skydelis yra savo lange.
+This is added to the frequency sent to the radio, for a radio that radiates off frequency.	Pridedama prie radijui siunčiamo dažnio, kai radijas spinduliuoja nukrypęs nuo dažnio.
+TX channel	TX kanalas
+Transmit	Siųsti
+Transmitting	Siunčiama
+Unmodulated carrier at this frequency and level, for adjusting the transmission (drive, filter, SWR, dummy-load level), not a message. Hold the button. Stop still applies. Not saved as transmitting.	Nemoduliuotas nešlys šiuo dažniu ir lygiu siuntimui derinti (galia, filtras, SWR, fiktyvios apkrovos lygis), ne žinutė. Laikykite mygtuką. Stop vis tiek veikia. Neišsaugoma kaip siuntimas.
+What will be sent (preview)	Kas bus išsiųsta (peržiūra)
+at full scale: the limiter will round the peaks	visa skalė: ribotuvas suapvalins pikus
+making the preview...	kuriama peržiūra...
+none chosen	nepasirinkta
+none: the signal fits	nėra: signalas telpa
+on the air	eteryje
+radio range %s	radijo diapazonas %s
+test (no RF)	bandymas (be RF)
+test running	vyksta bandymas
+test, no RF	bandymas, be RF
+the limiter is working: %.2f%% of samples (lower the level)	ribotuvas veikia: %.2f%% imčių (sumažinkite lygį)

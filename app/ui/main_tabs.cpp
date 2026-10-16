@@ -104,7 +104,6 @@ ImU32 scoreColour(double sc) {
 }
 
 void mainTabs(App& a) {
-    if (txViewFlag()) { txSpectrum(a); return; }
     // a narrow pane: the tabs get less padding (the bar takes it from the style when it begins, each tab when it is added), so that they keep
     // their whole names instead of being cut short or scrolled out of view
     gTightTabs = ImGui::GetContentRegionAvail().x < 760 * gUi;
