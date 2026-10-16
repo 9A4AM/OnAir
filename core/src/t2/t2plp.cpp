@@ -13,18 +13,17 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include "dect2/common/threadpool.h"
 
 namespace dect2 {
 
 namespace {
+// The LDPC codewords of a frame: on the shared background pool (common/threadpool.h, started once and reused; before, every frame created its own threads).
+// The calling thread (the PlpDecoder loop, itself background priority) takes part. threads <= 1 or DECT2_THREADS=0: in order on the caller.
 template <class F>
 void parallelFor(int n, int threads, F fn) {
     if (threads <= 1 || n <= 1) { for (int i = 0; i < n; i++) fn(i); return; }
-    std::atomic<int> next{0};
-    std::vector<std::thread> ts;
-    for (int t = 0; t < std::min(threads, n); t++)
-        ts.emplace_back([&] { setThreadPriority(ThreadPriority::Background); for (int i; (i = next++) < n;) fn(i); });
-    for (auto& t : ts) t.join();
+    ThreadPool::background().parallelFor((size_t)n, [&](size_t i) { fn((int)i); });
 }
 } // namespace
 

@@ -37,7 +37,7 @@ std::string fmt(const char* f, int v) { char b[48]; snprintf(b, sizeof b, f, v);
 
 template <class Rx> void commonSetup(Rx& r, const std::function<void(const std::string&)>& log) {
     r.setSilent(true);
-    if (log) r.setLogCallback(log);
+    if (log) r.setLogCallback([log](const std::string& line) { if (!WideLogCapture::sink(line)) log(line); });   // inside a parallel feed the line is held and logged in carrier order
 }
 
 template <class Rx> void audioSwitch(Rx& r, bool play) { r.setSilent(!play); r.setMuted(!play); }
@@ -63,6 +63,7 @@ struct WideModes::Impl {
         // the carrier is handed over at that low rate, mixed to 0 Hz, with only the aliases of the narrowing removed here
         WideOps<Rx, Tel> o;
         o.outRate = outRate; o.occupiedHz = 60000;
+        o.log = [this](const std::string& line) { if (log) log(line); };
         o.setup = [this](Rx& r) { commonSetup(r, log); };
         o.audio = [](Rx& r, bool play) { audioSwitch(r, play); };
         o.clear = [](Rx& r) { r.clearResults(); };

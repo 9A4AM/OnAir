@@ -1,8 +1,11 @@
 // HFDL receiver (hfdl_rx.h)
 #include "dect2/hfdl/hfdl_rx.h"
+#include "dect2/common/threadpool.h"
 #include "dect2/results/results_io.h"
 #include "dect2/hfdl/hfdl_proto.h"
 #include <algorithm>
+#include <atomic>
+#include <functional>
 #include <cmath>
 #include <complex>
 #include <cstdio>
@@ -84,6 +87,7 @@ struct HfdlReceiver::Impl {
         int64_t searchAt = 0, waitUntil = 0;
         double noisePow = 0; double blkPow = 0; int blkN = 0;
         HfdlChannelInfo info;
+        std::vector<std::function<void()>> pend;        // what the channel found, applied to the shared lists after the parallel phase, in channel order (feed)
     };
     std::mutex mu;
     std::function<void(const std::string&)> logCb;
@@ -95,7 +99,9 @@ struct HfdlReceiver::Impl {
     uint64_t nIn = 0;
     uint64_t seq = 0, serial = 0;
     HfdlTelemetry tel;
-    double lastGood = -1e9, lastBurst = -1e9;
+    double lastGood = -1e9;
+    std::atomic<double> lastBurst{-1e9};     // written by the channel jobs (all with the same value within one feed)
+    bool parallel = true;                     // false: the channels run one after the other on the caller (tests)
     std::map<uint32_t, uint32_t> acIcao;      // gs << 8 | ac id -> ICAO
     std::map<int, bool> logged;
 
@@ -203,15 +209,16 @@ struct HfdlReceiver::Impl {
     // A1 + A2 against the reference turned by a few trial frequency offsets: 8-symbol chunks only stay coherent within about
     // +-60 Hz, and a receiver off by a few ppm (or a station reported with the wrong carrier) is 100-250 Hz away
     static const std::vector<std::vector<cf32>>& coarseRefs() {
-        static std::vector<std::vector<cf32>> r;
-        if (r.empty()) {
+        static const std::vector<std::vector<cf32>> r = [] {   // built once, thread-safe: the channels search in parallel
+            std::vector<std::vector<cf32>> t;
             const auto& ref = hfdlPreambleRef(0);
             for (int h = -kCoarseHyp; h <= kCoarseHyp; h++) {
                 std::vector<cf32> v((size_t)kSearchSyms);
                 for (int q = 0; q < kSearchSyms; q++) v[(size_t)q] = ref[(size_t)q] * std::polar(1.f, (float)(-2 * M_PI * h * kCoarseStep * q / kHfdlBaud));
-                r.push_back(std::move(v));
+                t.push_back(std::move(v));
             }
-        }
+            return t;
+        }();
         return r;
     }
     double coarse(const Chan& k, int64_t s) const {
@@ -410,20 +417,23 @@ struct HfdlReceiver::Impl {
         const float snr = (float)(-10 * std::log10(sig2));
         const float lvl = (float)(10 * std::log10(pw + 1e-20));
         k.searchAt = (int64_t)t0 + (int64_t)(nsym - 40) * kSps;
-        std::lock_guard<std::mutex> lk(mu);
         k.info.levelDb = lvl; k.info.snrDb = snr; k.info.lastCfoHz = (float)bf;
-        if (!ok) { k.info.bad++; tel.blocksBad++; k.searchAt = s0 + kSearchSyms * kSps; return 0; }
+        if (!ok) { k.info.bad++; k.pend.push_back([this] { tel.blocksBad++; }); k.searchAt = s0 + kSearchSyms * kSps; return 0; }
         k.info.good++; k.info.lastHeardSec = nowSec(); k.info.lastBps = R.bps;
-        tel.blocksOk++; tel.byRate[m1 & 3]++;
-        tel.cfoHz = bf; tel.snrDb = snr; tel.dataValid = true;
-        lastGood = nowSec();
-        for (auto& m : msgs) {
-            m.serial = ++serial; m.timeSec = tStart; m.wallTime = (int64_t)time(nullptr); m.freqHz = k.dial; m.levelDb = lvl; m.snrDb = snr; m.cfoHz = (float)bf;
-            m.bps = R.bps; m.slots = R.twoSlots ? 2 : 1;
-            note(k, m);
-            tel.messages.insert(tel.messages.begin(), m);
-        }
-        if (tel.messages.size() > kHfdlMsgMax) tel.messages.resize(kHfdlMsgMax);
+        // the shared lists change in feed(), under mu, one channel after the other: the same order as a sequential run
+        const double dial = k.dial;
+        k.pend.push_back([this, dial, msgs = std::move(msgs), bf, snr, lvl, tStart, R, m1]() mutable {
+            tel.blocksOk++; tel.byRate[m1 & 3]++;
+            tel.cfoHz = bf; tel.snrDb = snr; tel.dataValid = true;
+            lastGood = nowSec();
+            for (auto& m : msgs) {
+                m.serial = ++serial; m.timeSec = tStart; m.wallTime = (int64_t)time(nullptr); m.freqHz = dial; m.levelDb = lvl; m.snrDb = snr; m.cfoHz = (float)bf;
+                m.bps = R.bps; m.slots = R.twoSlots ? 2 : 1;
+                note(dial, m);
+                tel.messages.insert(tel.messages.begin(), m);
+            }
+            if (tel.messages.size() > kHfdlMsgMax) tel.messages.resize(kHfdlMsgMax);
+        });
         return 0;
     }
 
@@ -438,20 +448,20 @@ struct HfdlReceiver::Impl {
         return tel.stations.front();
     }
 
-    void note(Chan& k, HfdlMessage& m) {
+    void note(double dial, HfdlMessage& m) {
         const double now = nowSec();
         if (m.squitter) {
             tel.squitters++;
             HfdlGroundStation& g = station(m.gsId);
-            g.squitters++; g.freqHz = k.dial; g.lastHeardSec = now; g.levelDb = m.levelDb; g.utcSync = m.utcSync; g.frameIndex = m.frameIndex; g.activeKhz = m.activeKhz; g.heardDirect = true;
+            g.squitters++; g.freqHz = dial; g.lastHeardSec = now; g.levelDb = m.levelDb; g.utcSync = m.utcSync; g.frameIndex = m.frameIndex; g.activeKhz = m.activeKhz; g.heardDirect = true;
             if (!logged[m.gsId]) {
                 logged[m.gsId] = true;
-                if (logCb) { char b[160]; snprintf(b, sizeof b, "HFDL: ground station %d %s heard on %.3f MHz", m.gsId, g.name.c_str(), k.dial / 1e6); logCb(b); }
+                if (logCb) { char b[160]; snprintf(b, sizeof b, "HFDL: ground station %d %s heard on %.3f MHz", m.gsId, g.name.c_str(), dial / 1e6); logCb(b); }
             }
             return;
         }
         tel.lpdus++;
-        if (m.gsId) { HfdlGroundStation& g = station(m.gsId); g.messages++; if (m.uplink) { g.heardDirect = true; g.lastHeardSec = now; g.freqHz = k.dial; } }
+        if (m.gsId) { HfdlGroundStation& g = station(m.gsId); g.messages++; if (m.uplink) { g.heardDirect = true; g.lastHeardSec = now; g.freqHz = dial; } }
         const uint32_t slot = (uint32_t)(m.gsId << 8) | (uint32_t)(m.acId & 0xFF);
         if (m.kind == "Logon confirm" || m.kind == "Logon resume confirm") { if (m.icao && m.acId >= 0) acIcao[((uint32_t)m.gsId << 8) | (uint32_t)m.acId] = m.icao; }
         if (!m.icao && m.acId > 0) { auto it = acIcao.find(slot); if (it != acIcao.end()) m.icao = it->second; }
@@ -467,7 +477,7 @@ struct HfdlReceiver::Impl {
         a->gsId = m.gsId;
         if (!m.reg.empty()) a->reg = m.reg;
         if (!m.flight.empty()) a->flight = m.flight;
-        a->messages++; a->freqHz = k.dial; a->lastHeardSec = now;
+        a->messages++; a->freqHz = dial; a->lastHeardSec = now;
         if (!m.uplink) a->levelDb = m.levelDb;
         if (m.kind == "Logon confirm") a->loggedOn = true;
         if (m.kind == "Logoff request" || m.kind == "Logon denied") a->loggedOn = false;
@@ -509,14 +519,25 @@ void HfdlReceiver::feed(const cf32* x, size_t n) {
     Impl& I = *p_;
     { std::lock_guard<std::mutex> lk(I.mu); if (I.rebuild) I.setup(); }
     if (I.rate < 1 || I.ch.empty()) { I.nIn += n; return; }
-    for (auto& k : I.ch) {
-        if (!k.inBand) continue;
+    // Every channel in the band: its own filter chain, search and burst decoder, no state shared with the others. They run in parallel on the shared pool
+    // (the analysis thread helps and waits); what they find for the shared lists is held per channel and applied below in channel order, so the
+    // messages, serial numbers and log lines are those of a sequential run.
+    std::vector<Impl::Chan*> act;
+    for (auto& k : I.ch) if (k.inBand) act.push_back(&k);
+    auto job = [&](size_t j) {
+        Impl::Chan& k = *act[j];
         for (size_t i = 0; i < n; i++) {
             cf32 v = x[i];
             if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0);
             I.push(k, v);
         }
         I.process(k);
+    };
+    if (I.parallel && act.size() > 1 && n >= 4096) ThreadPool::shared().parallelFor(act.size(), job);
+    else for (size_t j = 0; j < act.size(); j++) job(j);
+    {
+        std::lock_guard<std::mutex> lk(I.mu);
+        for (Impl::Chan* k : act) { for (auto& f : k->pend) f(); k->pend.clear(); }
     }
     I.nIn += n;
     std::lock_guard<std::mutex> lk(I.mu);
@@ -527,6 +548,8 @@ void HfdlReceiver::feed(const cf32* x, size_t n) {
     I.tel.state = now - I.lastGood < 120 ? 2 : now - I.lastBurst < 60 ? 1 : 0;
     I.seq++;
 }
+
+void HfdlReceiver::setParallel(bool on) { std::lock_guard<std::mutex> lk(p_->mu); p_->parallel = on; }
 
 void HfdlReceiver::clearResults() {
     std::lock_guard<std::mutex> lk(p_->mu);

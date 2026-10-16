@@ -4,9 +4,15 @@
 //   feed(span) -> CarrierFinder -> per carrier: Channelizer -> Rx::feed
 //   snapshot() -> the selected carrier's telemetry, with the log of every carrier (also the ones that have gone) merged in, and the carriers table
 //
+// Threads: the analysis thread calls feed(); the per-carrier work (Channelizer + Rx::feed, the expensive part) of the live carriers then runs in
+// parallel on the shared pool (ThreadPool::shared().parallelFor, the analysis thread helps and waits). Each slot touches only its own receiver, so
+// the output is the same as a sequential loop; the lines the receivers log meanwhile are caught per carrier (WideLogCapture) and passed on in
+// carrier order after the join, so the log is deterministic too. DECT2_THREADS=0 runs the plain loop.
+//
 // Template over the receiver and its telemetry so every mode uses the same machinery; the mode supplies a few hooks (WideOps).
 #pragma once
 #include "dect2/dsp/carrierfind.h"
+#include "dect2/common/threadpool.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -31,10 +37,24 @@ struct WideCarrier {
     std::string info;            // what is known: colour code / RAN / NAC / system / talkgroup ...
 };
 
+// While a pool job feeds one carrier's receiver, the lines that receiver logs go to this buffer (thread-local) instead of the engine's log;
+// WideBank::feed replays them in carrier order. A mode's log callback must route through WideLogCapture::sink() first.
+// Process-wide switch (default on) for the parallel per-carrier feed: tests and benchmarks turn it off to compare with the sequential loop.
+struct WideParallel {
+    static std::atomic<bool>& enabled() { static std::atomic<bool> e{true}; return e; }
+};
+
+struct WideLogCapture {
+    static std::vector<std::string>*& current() { static thread_local std::vector<std::string>* c = nullptr; return c; }
+    // true when the line was captured (the caller must not log it itself)
+    static bool sink(const std::string& line) { auto* c = current(); if (!c) return false; c->push_back(line); return true; }
+};
+
 template <class Rx, class Tel>
 struct WideOps {
     double outRate = 48000;                                  // the rate the receiver wants
     double occupiedHz = 9000;                                // bandwidth the channel filter keeps
+    std::function<void(const std::string&)> log;             // optional: where the captured log lines go after a parallel feed (the same sink the receivers' callback uses)
     std::function<void(Rx&)> setup;                          // after configure: silent, no offset, log callback
     std::function<void(Rx&, bool play)> audio;               // play = this is the listened-to carrier
     std::function<void(Rx&)> clear;                          // clearResults
@@ -90,12 +110,7 @@ public:
             if (!s) s = add(c);
             if (s) { s->car = c; }
         }
-        std::vector<cf32> out;
-        for (auto& s : live_) {
-            out.clear();
-            s->ch.process(x, n, out);
-            if (!out.empty()) s->rx->feed(out.data(), out.size());
-        }
+        feedCarriers(x, n);
         if (ops_.preRollSec > 0) {   // keep the last preRollSec of the span (before this block) for a carrier found later
             const size_t cap = (size_t)(ops_.preRollSec * spanRate_);
             hist_.insert(hist_.end(), x, x + n);
@@ -144,8 +159,31 @@ public:
     std::vector<double> liveHz() const { std::lock_guard<std::mutex> g(m_); std::vector<double> v; for (auto& s : live_) v.push_back(s->car.hz); return v; }
 
 private:
-    struct Slot { Carrier car; std::unique_ptr<Rx> rx; Channelizer ch; Tel tel; uint64_t telSeq = 0; };
+    struct Slot { Carrier car; std::unique_ptr<Rx> rx; Channelizer ch; Tel tel; uint64_t telSeq = 0; std::vector<cf32> scratch; std::vector<std::string> log; };
     struct Retired { int id; double hz; Tel tel; };   // hz: relative to the span centre plus the centre of that time (absolute)
+    // Channelizer + receiver of every live carrier. Two or more carriers: in parallel on the shared pool, each slot with its own scratch and log buffer.
+    void feedCarriers(const cf32* x, size_t n) {
+        ThreadPool& pool = ThreadPool::shared();
+        if (live_.size() < 2 || pool.workers() == 0 || n < 4096 || !WideParallel::enabled().load(std::memory_order_relaxed)) {
+            std::vector<cf32> out;
+            for (auto& s : live_) {
+                out.clear();
+                s->ch.process(x, n, out);
+                if (!out.empty()) s->rx->feed(out.data(), out.size());
+            }
+            return;
+        }
+        pool.parallelFor(live_.size(), [&](size_t i) {
+            Slot& s = *live_[i];
+            s.log.clear();
+            WideLogCapture::current() = &s.log;
+            s.scratch.clear();
+            s.ch.process(x, n, s.scratch);
+            if (!s.scratch.empty()) s.rx->feed(s.scratch.data(), s.scratch.size());
+            WideLogCapture::current() = nullptr;
+        });
+        if (ops_.log) for (auto& s : live_) for (const std::string& l : s->log) ops_.log(l);
+    }
     Slot* find(int id) { for (auto& s : live_) if (s->car.id == id) return s.get(); return nullptr; }
     Slot* add(const Carrier& c) {
         auto s = std::make_unique<Slot>();

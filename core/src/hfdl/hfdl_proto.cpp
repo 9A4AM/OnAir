@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstring>
+#include <mutex>
 
 namespace dect2 {
 
@@ -38,8 +39,8 @@ int hfdlMBit(int shift, int k) { return kMBase[(kMShift[shift & 7] + k) % 127] -
 
 const std::vector<float>& hfdlPreambleRef(int m1) {
     static std::vector<float> ref[8];
-    static bool init = false;
-    if (!init) {
+    static std::once_flag once;   // built once, thread-safe (the channels of the receiver run in parallel)
+    std::call_once(once, [] {
         for (int m = 0; m < 8; m++) {
             auto& r = ref[m];
             for (int a = 0; a < 2; a++) for (int k = 0; k < kHfdlALen; k++) r.push_back(hfdlABit(k) ? -1.f : 1.f);
@@ -47,8 +48,7 @@ const std::vector<float>& hfdlPreambleRef(int m1) {
             for (int k = 0; k < kHfdlM2Len; k++) r.push_back(hfdlMBit(m, k) ? -1.f : 1.f);
             for (int t = 0; t < kHfdlTrain; t++) for (int k = 0; k < kHfdlTLen; k++) r.push_back(kHfdlT[k]);
         }
-        init = true;
-    }
+    });
     return ref[std::max(0, std::min(7, m1))];
 }
 
@@ -67,8 +67,9 @@ void hfdlScramblerSigns(int n, std::vector<int8_t>& out) {
 
 const std::vector<int>& hfdlInterleave(int m1) {
     static std::vector<int> tab[8];
+    static std::once_flag once[8];
     m1 = std::max(0, std::min(7, m1));
-    if (tab[m1].empty()) {
+    std::call_once(once[m1], [m1] {
         // channel bits are written down the 40 rows, the column moving back by the shift after every bit (and on by one after
         // each pass over the rows); the decoder reads them with a row step of 9, the column moving on after each pass
         const int N = hfdlCodedBits(m1), cols = N / 40, sh = hfdlRate(m1).colShift;
@@ -86,7 +87,7 @@ const std::vector<int>& hfdlInterleave(int m1) {
             row = (row + 9) % 40;
             if (row == 0) col++;
         }
-    }
+    });
     return tab[m1];
 }
 
@@ -105,8 +106,8 @@ std::vector<uint8_t> hfdlConvEncode(const std::vector<uint8_t>& bits) {
 std::vector<uint8_t> hfdlViterbi(const std::vector<float>& soft, int n) {
     // state = the last 6 input bits (newest in bit 0)
     static int out0[128], out1[128];
-    static bool init = false;
-    if (!init) { for (int r = 0; r < 128; r++) { out0[r] = parity((unsigned)r & 0x4F); out1[r] = parity((unsigned)r & 0x6D); } init = true; }
+    static std::once_flag once;
+    std::call_once(once, [] { for (int r = 0; r < 128; r++) { out0[r] = parity((unsigned)r & 0x4F); out1[r] = parity((unsigned)r & 0x6D); } });
     std::vector<float> m(64, -1e30f), nm(64);
     m[0] = 0;
     std::vector<uint8_t> dec((size_t)n * 64);
