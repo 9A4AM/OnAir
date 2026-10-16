@@ -3,7 +3,7 @@
 #ifdef DECT2_RUST_PROTO
 #include "dect2/ais/ais_proto.h"
 #include "dect2/ais/ais_tel.h"
-#include "dect2/ais/onair_proto_rs.h"
+#include "dect2/rs/proto.h"
 #include <cstdio>
 #include <cstdlib>
 

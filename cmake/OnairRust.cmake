@@ -1,25 +1,55 @@
-# Optional Rust protocol crate (rust/onair_proto): the AIS frame layer behind a plain C ABI.
+# Optional Rust code (the workspace rust/): one static library libonair_rs.a (crate rust/onair) holding every converted module.
 #
-#   -DDECT2_RUST=AUTO (default)  use it when cargo and the Rust target for this build are there, otherwise the C++ implementation
+#   -DDECT2_RUST=AUTO (default)  use it when cargo and the Rust target for this build are there, otherwise the C++ implementations
 #   -DDECT2_RUST=ON              as AUTO, but stop with an error when it cannot be used
-#   -DDECT2_RUST=OFF             always the C++ implementation
+#   -DDECT2_RUST=OFF             always the C++ implementations (pure C++ build, cargo is not even looked for)
+#   -DDECT2_RUST_<MODULE>=AUTO|ON|OFF   per module (PROTO = the AIS frame layer, ADSB, ACARS, ...; default AUTO): OFF keeps that module in C++
+#                                       even when Rust is available; ON stops with an error when the Rust build is unavailable
 #
-# The crate has no dependencies and is built with `cargo build --offline`; nothing is downloaded and no rustup target is installed. When
-# the target for a cross build (Windows with MinGW, Android, ...) is missing, AUTO falls back to C++ with a status message.
-# Sets ONAIR_RUST_ACTIVE (TRUE/FALSE); when TRUE the imported target onair_proto_rs and the custom target onair_proto_cargo exist.
-set(DECT2_RUST "AUTO" CACHE STRING "Rust protocol crate: AUTO (when cargo is found), ON, OFF")
+# Nothing is downloaded: the workspace has no external crates and is built with `cargo build --offline`. When the target for a cross
+# build (Windows with MinGW, Android, ...) is missing, AUTO falls back to C++ with a status message.
+#
+# Results: ONAIR_RUST_ACTIVE (TRUE/FALSE, the library exists), ONAIR_RUST_<MODULE> (TRUE when that module's Rust code is used),
+# ONAIR_RUST_MODULES (list of the active ones), the imported target onair_rs and the custom target onair_rs_cargo.
+# C++ side: call onair_rust_use(<target>) on every target that compiles or links a converted module. It adds -DDECT2_RUST_<MODULE> for each
+# active module (so `#ifndef DECT2_RUST_<MODULE>` blocks drop out) and links onair_rs. With the Rust build unavailable it does nothing.
+set(DECT2_RUST "AUTO" CACHE STRING "Rust code: AUTO (when cargo is found), ON, OFF")
 set_property(CACHE DECT2_RUST PROPERTY STRINGS AUTO ON OFF)
+set(ONAIR_RUST_ALL_MODULES PROTO ADSB ACARS SAME PAGER AX25 DMR P25 NXDN DSTAR TETRA VDL2 HFDL MESH WISUN UAT TS DVBSI DAB DRM FILES NET ENGINE FEC USB)
 set(ONAIR_RUST_ACTIVE FALSE)
+set(ONAIR_RUST_MODULES "")
+set(_rust_forced "")
+foreach(_m ${ONAIR_RUST_ALL_MODULES})
+  set(DECT2_RUST_${_m} "AUTO" CACHE STRING "Rust implementation of the ${_m} module: AUTO, ON, OFF")
+  set_property(CACHE DECT2_RUST_${_m} PROPERTY STRINGS AUTO ON OFF)
+  set(ONAIR_RUST_${_m} FALSE)
+  if(DECT2_RUST_${_m} STREQUAL "ON")
+    list(APPEND _rust_forced ${_m})
+  endif()
+endforeach()
+
+function(onair_rust_use target)
+  if(NOT ONAIR_RUST_ACTIVE)
+    return()
+  endif()
+  foreach(_m ${ONAIR_RUST_MODULES})
+    target_compile_definitions(${target} PRIVATE DECT2_RUST_${_m})
+  endforeach()
+  target_link_libraries(${target} PRIVATE onair_rs)
+endfunction()
 
 function(_onair_rust_unavailable why)
-  if(DECT2_RUST STREQUAL "ON")
-    message(FATAL_ERROR "DECT2_RUST=ON but the Rust crate cannot be built: ${why}")
+  if(DECT2_RUST STREQUAL "ON" OR _rust_forced)
+    message(FATAL_ERROR "Rust was requested (DECT2_RUST=ON or DECT2_RUST_<MODULE>=ON ${_rust_forced}) but cannot be built: ${why}")
   endif()
-  message(STATUS "Rust protocol crate: not used (${why}); the C++ implementation is built")
+  message(STATUS "Rust code: not used (${why}); the C++ implementations are built")
 endfunction()
 
 if(DECT2_RUST STREQUAL "OFF")
-  message(STATUS "Rust protocol crate: off (DECT2_RUST=OFF); the C++ implementation is built")
+  if(_rust_forced)
+    message(FATAL_ERROR "DECT2_RUST_<MODULE>=ON (${_rust_forced}) contradicts DECT2_RUST=OFF")
+  endif()
+  message(STATUS "Rust code: off (DECT2_RUST=OFF); the C++ implementations are built")
   return()
 endif()
 
@@ -47,12 +77,12 @@ set(_want "")
 set(_arch "${CMAKE_SYSTEM_PROCESSOR}")
 if(APPLE)
   if(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
-    _onair_rust_unavailable("no iOS support in this pilot")
+    _onair_rust_unavailable("no iOS support yet")
     return()
   endif()
   list(LENGTH CMAKE_OSX_ARCHITECTURES _narch)
   if(_narch GREATER 1)
-    _onair_rust_unavailable("universal macOS builds are not supported by the pilot")
+    _onair_rust_unavailable("universal macOS builds are not supported yet")
     return()
   elseif(_narch EQUAL 1)
     set(_arch "${CMAKE_OSX_ARCHITECTURES}")
@@ -119,26 +149,40 @@ else()
   set(_prof_dir "release")
 endif()
 
-set(_crate_dir "${CMAKE_SOURCE_DIR}/rust/onair_proto")
+set(_ws_dir "${CMAKE_SOURCE_DIR}/rust")
 set(_cargo_target "${CMAKE_BINARY_DIR}/rust")
 if(_out_sub)
-  set(_lib "${_cargo_target}/${_out_sub}/${_prof_dir}/libonair_proto.a")
+  set(_lib "${_cargo_target}/${_out_sub}/${_prof_dir}/libonair_rs.a")
 else()
-  set(_lib "${_cargo_target}/${_prof_dir}/libonair_proto.a")
+  set(_lib "${_cargo_target}/${_prof_dir}/libonair_rs.a")
 endif()
-file(GLOB_RECURSE _crate_src CONFIGURE_DEPENDS "${_crate_dir}/src/*.rs")
+file(GLOB_RECURSE _ws_src CONFIGURE_DEPENDS "${_ws_dir}/*/src/*.rs")
+file(GLOB _ws_toml CONFIGURE_DEPENDS "${_ws_dir}/Cargo.toml" "${_ws_dir}/*/Cargo.toml")
 
+# `--features bare`: the archive is no_std and carries the panic handler (see rust/onair/src/lib.rs)
 add_custom_command(
   OUTPUT "${_lib}"
   COMMAND ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS --unset=MFLAGS --unset=CARGO_MAKEFLAGS CARGO_TARGET_DIR=${_cargo_target} ${ONAIR_CARGO} build ${_prof_flag} --offline ${_cross_flag}
-          --manifest-path ${_crate_dir}/Cargo.toml
-  DEPENDS ${_crate_src} "${_crate_dir}/Cargo.toml"
-  COMMENT "cargo build onair_proto (${_want}, ${_prof_dir})"
+          --manifest-path ${_ws_dir}/Cargo.toml -p onair --features bare
+  DEPENDS ${_ws_src} ${_ws_toml}
+  COMMENT "cargo build onair_rs (${_want}, ${_prof_dir})"
   VERBATIM)
-add_custom_target(onair_proto_cargo DEPENDS "${_lib}")
-add_library(onair_proto_rs STATIC IMPORTED GLOBAL)
-set_target_properties(onair_proto_rs PROPERTIES IMPORTED_LOCATION "${_lib}")
-add_dependencies(onair_proto_rs onair_proto_cargo)
+add_custom_target(onair_rs_cargo DEPENDS "${_lib}")
+add_library(onair_rs STATIC IMPORTED GLOBAL)
+set_target_properties(onair_rs PROPERTIES IMPORTED_LOCATION "${_lib}")
+add_dependencies(onair_rs onair_rs_cargo)
 
 set(ONAIR_RUST_ACTIVE TRUE)
-message(STATUS "Rust protocol crate: used for the AIS frame layer (${_want}, ${_prof_dir}; ${ONAIR_CARGO})")
+foreach(_m ${ONAIR_RUST_ALL_MODULES})
+  if(NOT DECT2_RUST_${_m} STREQUAL "OFF")
+    set(ONAIR_RUST_${_m} TRUE)
+    list(APPEND ONAIR_RUST_MODULES ${_m})
+  endif()
+endforeach()
+if(NOT ONAIR_RUST_MODULES)
+  set(ONAIR_RUST_ACTIVE FALSE)
+  message(STATUS "Rust code: every module is OFF; the C++ implementations are built")
+  return()
+endif()
+list(JOIN ONAIR_RUST_MODULES " " _mods)
+message(STATUS "Rust code: used for ${_mods} (${_want}, ${_prof_dir}; ${ONAIR_CARGO})")

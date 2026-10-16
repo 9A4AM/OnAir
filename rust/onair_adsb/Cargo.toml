@@ -1,0 +1,10 @@
+[package]
+name = "onair_adsb"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "OnAir ADS-B (empty skeleton)"
+
+[dependencies]
+onair_common = { path = "../onair_common" }

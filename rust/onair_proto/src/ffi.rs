@@ -1,4 +1,4 @@
-//! The C ABI (include/dect2/ais/onair_proto_rs.h). The only file with `unsafe`: it turns (pointer, length) pairs into slices and calls the safe
+//! The C ABI (core/include/dect2/rs/proto.h). The only file with `unsafe`: it turns (pointer, length) pairs into slices and calls the safe
 //! modules. Callers own every buffer; functions that write return the length written, or `usize::MAX` when the buffer is too small.
 #![allow(clippy::missing_safety_doc)]
 
@@ -21,19 +21,7 @@ unsafe fn wr<'a>(p: *mut u8, n: usize) -> &'a mut [u8] {
     }
 }
 
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(_: &core::panic::PanicInfo) -> ! {
-    extern "C" {
-        fn abort() -> !;
-    }
-    unsafe { abort() }
-}
-
-// The prebuilt `core` still names the unwinding personality routine; with panic=abort nothing ever calls it.
-#[cfg(not(test))]
-#[no_mangle]
-pub extern "C" fn rust_eh_personality() {}
+// The panic handler and the unwinding personality stub live once, in the aggregating staticlib crate rust/onair.
 
 #[no_mangle]
 pub extern "C" fn onair_proto_version() -> u32 {
@@ -93,7 +81,15 @@ pub unsafe extern "C" fn onair_ais_reverse_octets(b: *mut u8, n: usize) {
 /// Good frames are written one after the other to `out` (`out_cap >= n` bits) with their lengths in `lens` (`lens_cap >= n / 64 + 2`).
 /// Returns the number of good frames; `*bad` gets the count of failed bursts.
 #[no_mangle]
-pub unsafe extern "C" fn onair_ais_hdlc_frames(b: *const u8, n: usize, out: *mut u8, out_cap: usize, lens: *mut usize, lens_cap: usize, bad: *mut i32) -> usize {
+pub unsafe extern "C" fn onair_ais_hdlc_frames(
+    b: *const u8,
+    n: usize,
+    out: *mut u8,
+    out_cap: usize,
+    lens: *mut usize,
+    lens_cap: usize,
+    bad: *mut i32,
+) -> usize {
     let lens_s: &mut [usize] = if lens.is_null() || lens_cap == 0 { &mut [] } else { core::slice::from_raw_parts_mut(lens, lens_cap) };
     let (good, nbad) = frame::hdlc_frames(rd(b, n), wr(out, out_cap), lens_s);
     if !bad.is_null() {
@@ -152,7 +148,16 @@ pub unsafe extern "C" fn onair_nmea_checksum(c: *const u8, n: usize) -> u8 {
 /// Parses a sentence. Returns 0 (rejected, nothing set), 1 (layout wrong, outputs set as far as the C++ parser sets them) or 2 (good).
 /// `chars_start` / `chars_len` locate the payload characters inside the sentence; `channel` may be null.
 #[no_mangle]
-pub unsafe extern "C" fn onair_nmea_parse(s: *const u8, n: usize, chars_start: *mut usize, chars_len: *mut usize, fill: *mut i32, frag_count: *mut i32, frag_no: *mut i32, channel: *mut u8) -> i32 {
+pub unsafe extern "C" fn onair_nmea_parse(
+    s: *const u8,
+    n: usize,
+    chars_start: *mut usize,
+    chars_len: *mut usize,
+    fill: *mut i32,
+    frag_count: *mut i32,
+    frag_no: *mut i32,
+    channel: *mut u8,
+) -> i32 {
     let r = nmea::parse(rd(s, n));
     if r.state != 0 {
         if !chars_start.is_null() {

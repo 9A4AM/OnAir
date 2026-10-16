@@ -1,19 +1,20 @@
 //! HDLC frame layer of AIS: CRC-16 X.25, bit stuffing, NRZI, octet order and frame search. Values other than 0 and 1 in a bit stream are
 //! treated exactly as the C++ code treats them (nonzero tests, raw comparisons), so both implementations agree on any input.
 
+use onair_common::crc::{reflect, Crc, CRC16_X25};
+use onair_common::nrzi;
+
 pub const FCS_GOOD: u16 = 0xF0B8;
 const FLAG: [u8; 8] = [0, 1, 1, 1, 1, 1, 1, 0];
 
+/// CRC-16/X-25 register after feeding `bits` (one per byte, transmission order, LSB of each octet first), in the reflected form
+/// the HDLC residue 0xF0B8 is quoted in. Nonzero tests only, so odd values behave as in the C++ code.
 pub fn fcs_register(bits: &[u8]) -> u16 {
-    let mut r: u16 = 0xFFFF;
+    let mut c = Crc::new(CRC16_X25);
     for &b in bits {
-        let fb = ((b ^ r as u8) & 1) != 0;
-        r >>= 1;
-        if fb {
-            r ^= 0x8408;
-        }
+        c.update_bit(b & 1 != 0);
     }
-    r
+    reflect(c.register(), 16) as u16
 }
 
 pub fn fcs_ok(frame: &[u8]) -> bool {
@@ -42,6 +43,7 @@ pub fn stuff(inp: &[u8], out: &mut [u8]) -> Option<usize> {
 }
 
 /// Removes the stuffed 0s. Err(()) when six 1s in a row appear (flag or abort); Ok(len) otherwise. `out` must hold `inp.len()`.
+#[allow(clippy::result_unit_err)]
 pub fn destuff(inp: &[u8], out: &mut [u8]) -> Result<usize, ()> {
     let mut n = 0;
     let mut ones = 0;
@@ -61,23 +63,11 @@ pub fn destuff(inp: &[u8], out: &mut [u8]) -> Result<usize, ()> {
 }
 
 pub fn nrzi_encode(data: &[u8], start: i32, out: &mut [u8]) -> Option<usize> {
-    let mut lv = start & 1;
-    for (i, &d) in data.iter().enumerate() {
-        if d == 0 {
-            lv ^= 1;
-        }
-        *out.get_mut(i)? = lv as u8;
-    }
-    Some(data.len())
+    nrzi::encode_hdlc(data, start, out)
 }
 
 pub fn nrzi_decode(line: &[u8], prev: i32, out: &mut [u8]) -> Option<usize> {
-    let mut p = prev & 1;
-    for (i, &l) in line.iter().enumerate() {
-        *out.get_mut(i)? = if l as i32 == p { 1 } else { 0 };
-        p = l as i32;
-    }
-    Some(line.len())
+    nrzi::decode_hdlc(line, prev, out)
 }
 
 /// HDLC sends every octet least significant bit first: reverse each group of 8 (the last group on its own).

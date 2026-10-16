@@ -1,0 +1,10 @@
+[package]
+name = "onair_dab"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+description = "OnAir DAB (empty skeleton)"
+
+[dependencies]
+onair_common = { path = "../onair_common" }

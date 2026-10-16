@@ -8,7 +8,7 @@ pub const CALL_CAP: usize = 8;
 pub const DEST_CAP: usize = 24;
 pub const VENDOR_CAP: usize = 4;
 
-/// Mirror of the C++ `AisMsg`, flat and `repr(C)` (see include/dect2/ais/onair_proto_rs.h). Strings are fixed buffers with a length; the text
+/// Mirror of the C++ `AisMsg`, flat and `repr(C)` (see core/include/dect2/rs/proto.h). Strings are fixed buffers with a length; the text
 /// of type 14 is fetched by the caller (`text_bits` bits from bit 40) because its length is not bounded.
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -205,7 +205,7 @@ pub fn decode_message(b: &[u8], m: &mut Msg) -> bool {
     let n = b.len();
     let u = |p: usize, l: usize| get_u(b, p, l) as i32;
     match m.typ {
-        1 | 2 | 3 => {
+        1..=3 => {
             if n != 168 {
                 return false;
             }

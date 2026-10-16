@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = [
+    "onair_common", "onair_proto", "onair",
+    "onair_adsb", "onair_acars", "onair_same", "onair_pager", "onair_ax25", "onair_dmr", "onair_p25", "onair_nxdn",
+    "onair_dstar", "onair_tetra", "onair_vdl2", "onair_hfdl", "onair_mesh", "onair_wisun", "onair_uat",
+    "onair_ts", "onair_dvbsi", "onair_dab", "onair_drm", "onair_files", "onair_net", "onair_engine", "onair_fec", "onair_usb",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+publish = false
+
+# One set of profiles for everything (profiles are only read from the workspace root). panic=abort: nothing may unwind across the C boundary.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+panic = "abort"
