@@ -3,6 +3,7 @@
 #include "dect2/ant_proto.h"
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 #include <string>
 #include <vector>
 using namespace dect2;
