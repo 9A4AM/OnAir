@@ -1,8 +1,10 @@
 // DRM screens: the Radio tab (the band presets, short wave and the VHF bands of DRM+, now playing, text message, time, signal summary), the services
 // list, status lamps, the analysis plots (FAC / SDC / MSC cells, channel, SNR), the Receiver tab with all telemetry and the options of the test signal.
 #include "app.h"
+#include "gallery.h"
 #include "journaline_view.h"
 #include <cmath>
+#include <ctime>
 #include <deque>
 
 bool freqStepArrow(const char* id, ImGuiDir dir);
@@ -17,6 +19,12 @@ struct State {
     bool pushedMute = false;
     int sel = -1;                     // short id the user picked, -1: the first audio service
     int pushedSel = -2;
+    int dataSel = -1;                 // short id of the data service shown instead of the audio one, -1 none
+    gfx::Image* img = nullptr;        // the slide show picture of that service
+    uint64_t imgSeq = 0;
+    int imgShort = -1;
+    int objSel = -1;                  // the object of a website / EPG service whose text is shown
+    std::string objSelName;
     uint64_t lastSeq = 0;
     std::deque<float> snr, audio;     // SNR of the cells and share of good audio frames, a point per report
     uint64_t prevFacOk = 0, prevFacBad = 0, prevSdcOk = 0, prevSdcBad = 0, prevAudOk = 0, prevAudBad = 0;
@@ -44,7 +52,7 @@ std::string serviceName(const DrmService& s) {
 }
 
 std::string serviceFacts(const DrmService& s) {
-    std::string r = s.audio ? (s.programmeName.empty() ? "audio" : s.programmeName) : "data";
+    std::string r = s.audio ? (s.programmeName.empty() ? "audio" : s.programmeName) : s.appName.empty() ? "data" : s.appName;
     if (!s.languageName.empty() && s.languageName != "-") r += ", " + s.languageName;
     if (!s.country.empty()) r += ", " + upper(s.country);
     return r;
@@ -99,6 +107,16 @@ void tick(App& a) {
     }
     if (run && (!S.wasRunning || S.sel != S.pushedSel)) { a.engine.drm().selectService(S.sel); S.pushedSel = S.sel; }
     S.wasRunning = run;
+    if (run && a.rx.standard == kStd) {   // slide show pictures go to the gallery (View > Images), every one that completes
+        int sid = 0;
+        dect2::DrmSlide sl;
+        while (a.engine.drm().takeSlide(sid, sl)) {
+            if (sl.w <= 0 || sl.h <= 0 || sl.rgba.size() < (size_t)sl.w * (size_t)sl.h * 4) continue;
+            gallery::Meta gm;
+            gm.detail = sl.caption.empty() ? sl.name : sl.caption;
+            gallery::publish("drm-slide-" + std::to_string(sid) + "-" + (sl.name.empty() ? std::to_string(sl.seq) : sl.name), "DRM slide show", (double)time(nullptr), sl.w, sl.h, sl.rgba.data(), gm);
+        }
+    }
     if (!live(a) || a.rx.seq == S.lastSeq) return;
     S.lastSeq = a.rx.seq;
     const DrmTelemetry& t = a.rx.drm;
@@ -120,10 +138,123 @@ void kvRow(const App& a, const char* k, const std::string& v, float x = 110.f) {
     ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont();
 }
 
+// ---- data services: MOT slide show and broadcast website, EPG, TPEG (ES 201 980 clause 6.6; the application is named by the SDC)
+
+std::string bytesText(uint64_t n) { char b[32]; if (n >= 10240) snprintf(b, sizeof b, "%.1f kB", n / 1024.0); else snprintf(b, sizeof b, "%llu B", (unsigned long long)n); return b; }
+
+void slideImage(const dect2::DrmDataView& v) {
+    if (v.slide.seq == 0) return;
+    if (S.imgSeq != v.slide.seq || S.imgShort != v.shortId) {
+        delete S.img; S.img = nullptr;
+        if (gGfx && v.slide.w > 0 && v.slide.h > 0 && v.slide.rgba.size() >= (size_t)v.slide.w * (size_t)v.slide.h * 4) {
+            S.img = gGfx->createImage(v.slide.w, v.slide.h, 0xFF000000u);
+            S.img->update(0, 0, v.slide.w, v.slide.h, reinterpret_cast<const uint32_t*>(v.slide.rgba.data()));
+        }
+        S.imgSeq = v.slide.seq; S.imgShort = v.shortId;
+    }
+}
+
+void dataPanel(App& a, float w, float h, const DrmService& s) {
+    using namespace dect2;
+    DrmDataView v;
+    const bool have = a.engine.drm().dataView(s.shortId, v);
+    ImGui::BeginChild("##drm_data", ImVec2(w, h), ImGuiChildFlags_Borders);
+    ImGui::PushFont(a.ui, 26.f);
+    ImGui::TextColored(pal::dev() ? pal::accent() : ImVec4(0.55f, 0.80f, 1.f, 1), "%s", serviceName(s).c_str());
+    ImGui::PopFont();
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("%s: %s", s.appName.empty() ? "data service" : s.appName.c_str(), s.appMode.empty() ? "waiting for the application information" : s.appMode.c_str());
+    ImGui::PopTextWrapPos();
+    ImGui::Spacing();
+    if (!have) { ImGui::TextDisabled("waiting for the application information (SDC)"); ImGui::EndChild(); return; }
+    char b[200];
+    ImGui::PushTextWrapPos(0);
+    if (!v.packet) {
+        ImGui::TextColored(kWarn, "Stream mode data, not decoded: this receiver reads the packet mode applications only.");
+    } else if (!v.dataUnit && v.userApp != 0x44A) {
+        ImGui::TextColored(kWarn, "Single packet mode (not data units): not decoded.");
+    } else if (v.journaline) {
+        ImGui::TextDisabled("Journaline is shown in the Receiver tab (section Journaline).");
+    } else if (!v.decoded) {
+        ImGui::TextColored(kWarn, "%s: this application is not decoded. The packets are counted below.", v.appName.c_str());
+    } else if (v.userApp == 0x002) {
+        slideImage(v);
+        if (v.slide.seq == 0) ImGui::TextDisabled("no picture received yet (the carousel sends one object after the other)");
+        else if (S.img) {
+            const float sc = std::max(0.1f, std::min(std::min((ImGui::GetContentRegionAvail().x - 4 * gUi) / (float)v.slide.w, std::max(80.f * gUi, h * 0.45f) / (float)v.slide.h), 8.f));
+            ImGui::Image(S.img->texture(), ImVec2((float)v.slide.w * sc, (float)v.slide.h * sc));
+        }
+        if (v.slide.seq) {
+            if (!v.slide.caption.empty()) { ImGui::PushFont(a.ui, 18.f); ImGui::TextUnformatted(v.slide.caption.c_str()); ImGui::PopFont(); }
+            snprintf(b, sizeof b, "%s, %d x %d, %s", v.slide.type.c_str(), v.slide.w, v.slide.h, bytesText(v.slide.bytes).c_str());
+            kvRow(a, "picture", b);
+            if (!v.slide.name.empty()) kvRow(a, "name", v.slide.name);
+            if (!v.slide.category.empty() || v.slide.categoryId >= 0) {
+                std::string cat = v.slide.category;
+                if (v.slide.categoryId >= 0) cat += (cat.empty() ? "" : "  ") + std::string("(category ") + std::to_string(v.slide.categoryId) + ", slide " + std::to_string(v.slide.slideId) + ")";
+                kvRow(a, "category", cat);
+            }
+            if (!v.slide.trigger.empty()) kvRow(a, "trigger time", v.slide.trigger);
+            if (!v.slide.clickUrl.empty()) kvRow(a, "link", v.slide.clickUrl + "  (shown only, never opened)");
+            if (!v.slide.altUrl.empty()) kvRow(a, "alternative", v.slide.altUrl);
+            snprintf(b, sizeof b, "%llu picture%s received; every picture is saved to View > Images", (unsigned long long)v.slide.seq, v.slide.seq == 1 ? "" : "s");
+            ImGui::TextDisabled("%s", b);
+        }
+    } else if (v.userApp == 0x004) {
+        snprintf(b, sizeof b, "%llu frames, %s in %llu data groups", (unsigned long long)v.tpegFrames, bytesText(v.tpegBytes).c_str(), (unsigned long long)v.mot.groups);
+        kvRow(a, "TPEG", b);
+        ImGui::TextDisabled("Traffic and travel messages are identified and counted; the TPEG content (TS 102 818) is not decoded.");
+    } else {   // 0x003 broadcast website, 0x007 EPG: the object list
+        ImGui::TextDisabled(v.userApp == 0x003 ? "Web pages are shown as text: nothing is rendered or run, links are not followed." : "EPG files in the clear (XML) are shown as text; binary coded ones are only listed.");
+        if (v.objects.empty()) ImGui::TextDisabled("no object received yet");
+        else if (ImGui::BeginTable("##drm_obj", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_ScrollY, ImVec2(0, std::max(70.f * gUi, h * 0.28f)))) {
+            ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthStretch, 3.f);
+            ImGui::TableSetupColumn("type", ImGuiTableColumnFlags_WidthStretch, 1.6f);
+            ImGui::TableSetupColumn("size", ImGuiTableColumnFlags_WidthStretch, 1.f);
+            ImGui::TableSetupColumn("seen", ImGuiTableColumnFlags_WidthStretch, 0.7f);
+            ImGui::TableHeadersRow();
+            for (size_t i = 0; i < v.objects.size(); i++) {
+                const DrmObjectInfo& o = v.objects[i];
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::PushID((int)i);
+                if (ImGui::Selectable(o.name.c_str(), S.objSelName == o.name, ImGuiSelectableFlags_SpanAllColumns)) { S.objSel = (int)i; S.objSelName = o.name; }
+                ImGui::PopID();
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(o.type.c_str());
+                ImGui::TableNextColumn(); ImGui::TextUnformatted(bytesText(o.size).c_str());
+                ImGui::TableNextColumn(); ImGui::Text("%llux", (unsigned long long)o.received);
+            }
+            ImGui::EndTable();
+        }
+        const DrmObjectInfo* sel = nullptr;
+        for (const DrmObjectInfo& o : v.objects) if (o.name == S.objSelName) sel = &o;
+        if (!sel && !v.objects.empty()) sel = &v.objects.back();
+        if (sel) {
+            ImGui::TextDisabled("%s%s%s", sel->name.c_str(), sel->note.empty() ? "" : "  -  ", sel->note.c_str());
+            if (sel->text) {
+                ImGui::BeginChild("##drm_obj_text", ImVec2(0, std::max(40.f * gUi, ImGui::GetContentRegionAvail().y - 3 * ImGui::GetTextLineHeightWithSpacing())), ImGuiChildFlags_Borders);
+                ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(sel->content.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont();
+                ImGui::EndChild();
+            } else ImGui::TextDisabled("not text: %s, %s", sel->type.c_str(), bytesText(sel->size).c_str());
+        }
+    }
+    ImGui::PopTextWrapPos();
+    if (v.packet && v.dataUnit && v.packetLen > 0) {
+        snprintf(b, sizeof b, "%llu ok, %llu bad CRC, %llu lost, %llu orphan", (unsigned long long)v.packets, (unsigned long long)v.badPackets, (unsigned long long)v.lostPackets, (unsigned long long)v.orphanPackets);
+        kvRow(a, "packets", b, 80);
+        snprintf(b, sizeof b, "%llu ok, %llu dropped", (unsigned long long)v.unitsOk, (unsigned long long)v.unitsDropped);
+        kvRow(a, "data units", b, 80);
+    }
+    ImGui::EndChild();
+}
+
 void nowPlaying(App& a, float w, float h) {
     const DrmTelemetry& t = a.rx.drm;
     const bool on = live(a);
     const DrmService* s = on ? playing(t) : nullptr;
+    if (on && S.dataSel >= 0) {
+        for (const auto& d : t.services) if (d.shortId == S.dataSel && !d.audio) { dataPanel(a, w, h, d); return; }
+    }
     ImGui::BeginChild("##drm_now", ImVec2(w, h), ImGuiChildFlags_Borders);
     if (!on || !s) {
         ImGui::PushFont(a.ui, 22.f);
@@ -136,7 +267,7 @@ void nowPlaying(App& a, float w, float h) {
     ImGui::PushFont(a.ui, 26.f);
     ImGui::TextColored(pal::dev() ? pal::accent() : ImVec4(0.55f, 0.80f, 1.f, 1), "%s", serviceName(*s).c_str());
     ImGui::PopFont();
-    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", s->audio ? "audio service" : "data service (not decoded)"); ImGui::PopTextWrapPos(); }
+    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", s->audio ? "audio service" : s->appName.empty() ? "data service" : (s->appName + ", " + s->appMode).c_str()); ImGui::PopTextWrapPos(); }
     ImGui::Spacing();
     kvRow(a, "programme", s->programmeName.empty() ? "-" : s->programmeName);
     kvRow(a, "language", s->languageName.empty() ? "-" : s->languageName);
@@ -243,20 +374,19 @@ void list(App& a) {
     const DrmTelemetry& t = a.rx.drm;
     if (!live(a)) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see services"); ImGui::PopTextWrapPos(); } return; }
     if (t.services.empty()) { { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(t.mode >= 0 ? "reading the multiplex" : "searching for a DRM signal"); ImGui::PopTextWrapPos(); } return; }
-    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu service%s, click to play", t.services.size(), t.services.size() == 1 ? "" : "s"); ImGui::PopTextWrapPos(); }
+    { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%zu service%s, click to play or to see the data", t.services.size(), t.services.size() == 1 ? "" : "s"); ImGui::PopTextWrapPos(); }
     const DrmService* cur = playing(t);
     for (const auto& s : t.services) {
         ImGui::PushID(s.shortId);
         const bool isCur = cur && cur->shortId == s.shortId;
-        if (!s.audio) ImGui::BeginDisabled();
         const ImVec2 p = ImGui::GetCursorScreenPos();
         const float lh = ImGui::GetTextLineHeightWithSpacing();
-        if (ImGui::Selectable("##svc", isCur, 0, ImVec2(0, lh * 2 + 2 * gUi))) S.sel = s.shortId;
+        const bool shown = s.audio ? (isCur && S.dataSel < 0) : S.dataSel == s.shortId;
+        if (ImGui::Selectable("##svc", shown, 0, ImVec2(0, lh * 2 + 2 * gUi))) { if (s.audio) { S.sel = s.shortId; S.dataSel = -1; } else S.dataSel = s.shortId; }
         ImDrawList* dl = ImGui::GetWindowDrawList();
         dl->AddText(ImVec2(p.x + 4 * gUi, p.y + 1), ImGui::GetColorU32(ImGuiCol_Text), serviceName(s).c_str());
         dl->AddText(ImVec2(p.x + 4 * gUi, p.y + lh + 1), ImGui::GetColorU32(ImGuiCol_TextDisabled), serviceFacts(s).c_str());
-        if (!s.audio) ImGui::EndDisabled();
-        if (!s.audio && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("Data services are listed but not decoded.");
+        if (!s.audio && ImGui::IsItemHovered()) ImGui::SetTooltip("%s%s%s", s.appName.empty() ? "data service" : s.appName.c_str(), s.appMode.empty() ? "" : ": ", (s.appMode + (s.appDecoded ? "" : " (not decoded)")).c_str());
         if (s.audio && ImGui::IsItemHovered() && !s.codecText.empty()) ImGui::SetTooltip("%s", s.codecText.c_str());
         ImGui::PopID();
     }
@@ -450,7 +580,7 @@ void receiver(App& a) {
     ImGui::PushTextWrapPos(0);
     ImGui::TextDisabled("AAC with SBR or parametric stereo: only the AAC core plays (no SBR for 960-sample frames in the audio library), so the sound is band-limited and mono for PS services.");
     ImGui::TextDisabled("xHE-AAC: the frames are received, but whether sound comes out depends on the audio library's USAC decoder; the state above says what happened.");
-    ImGui::TextDisabled("Other data services (packet mode applications except Journaline), alternative frequencies and hierarchical mappings are not decoded; DRM+ with unequal error protection is untested.");
+    ImGui::TextDisabled("Data services: the MOT slide show, MOT broadcast website, EPG, TPEG and Journaline applications are decoded (the website as text, EPG and TPEG listed and counted only). Not decoded: stream mode data, single packet mode, compressed MOT directories, scrambled MOT bodies, other applications (named only), alternative frequency applications and hierarchical mappings. DRM+ with unequal error protection is untested.");
     ImGui::TextDisabled("DRM+ (mode E, 100 kHz) needs a radio rate of at least 100 ksps. Below 30 MHz a HackRF needs an upconverter or a long antenna.");
     ImGui::PopTextWrapPos();
     ImGui::EndChild();
