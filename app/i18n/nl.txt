@@ -702,7 +702,6 @@ waterfall dB	waterval dB
 # added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
   (mirrored: I/Q swapped)	  (gespiegeld: I/Q verwisseld)
 %s, %d client%s, %llu sent, %llu dropped	%s, %d client%s, %llu verzonden, %llu verworpen
-A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Een HackRF, Airspy of RTL-SDR heeft eenmalig zijn WinUSB-stuurprogramma nodig: installeer het met Zadig (zadig.akeo.ie).
 A Linux driver for TV sticks took the radio before the SDRplay software could.	Een Linux-stuurprogramma voor tv-sticks heeft de radio ingepikt voordat de SDRplay-software dat kon.
 A high-end computer is recommended. Lower sample rates help.	Een krachtige computer wordt aanbevolen. Lagere samplefrequenties helpen.
 A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Een wereldkaart: zoek een positie op coördinaten of Maidenhead-locator, afstand en peiling vanaf je locatie

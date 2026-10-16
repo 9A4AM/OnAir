@@ -702,7 +702,6 @@ waterfall dB	ウォーターフォール dB
 # added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
   (mirrored: I/Q swapped)	  (ミラー: I/Q 入れ替え)
 %s, %d client%s, %llu sent, %llu dropped	%s、クライアント %d%s、送信 %llu、破棄 %llu
-A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	HackRF、Airspy、RTL-SDR には WinUSB ドライバーが一度だけ必要です。Zadig (zadig.akeo.ie) でインストールしてください。
 A Linux driver for TV sticks took the radio before the SDRplay software could.	SDRplay のソフトウェアより先に、Linux のテレビチューナー用ドライバーが無線機を占有しました。
 A high-end computer is recommended. Lower sample rates help.	高性能なコンピューターを推奨します。サンプルレートを下げると改善します。
 A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	世界地図: 座標または Maidenhead ロケーターで位置を探し、現在地からの距離と方位を表示します

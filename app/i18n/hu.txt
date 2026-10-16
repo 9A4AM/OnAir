@@ -694,7 +694,6 @@ waterfall dB	vízesés dB
 # added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
   (mirrored: I/Q swapped)	  (tükrözve: I/Q felcserélve)
 %s, %d client%s, %llu sent, %llu dropped	%s, %d kliens%s, %llu elküldve, %llu eldobva
-A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	A HackRF-hez, Airspyhoz vagy RTL-SDR-hez egyszer kell a WinUSB illesztőprogram: telepítse a Zadiggal (zadig.akeo.ie).
 A Linux driver for TV sticks took the radio before the SDRplay software could.	Egy Linux TV-pálcás illesztőprogram megelőzte az SDRplay szoftvert, és lefoglalta a rádiót.
 A high-end computer is recommended. Lower sample rates help.	Nagy teljesítményű számítógép ajánlott. Az alacsonyabb mintavételi frekvencia segít.
 A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Világtérkép: keressen helyet koordináták vagy Maidenhead-lokátor alapján, távolság és irány a saját helyétől

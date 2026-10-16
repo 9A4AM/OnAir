@@ -684,7 +684,6 @@ spectrum dB	спектр dB
 waterfall dB	водопад dB
   (mirrored: I/Q swapped)	  (зеркально: I/Q поменяны местами)
 %s, %d client%s, %llu sent, %llu dropped	%s, клиентов: %d%s, отправлено %llu, отброшено %llu
-A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Для HackRF, Airspy или RTL-SDR один раз нужен драйвер WinUSB: установите его через Zadig (zadig.akeo.ie).
 A Linux driver for TV sticks took the radio before the SDRplay software could.	Драйвер Linux для ТВ-донглов занял радио раньше, чем программа SDRplay.
 A high-end computer is recommended. Lower sample rates help.	Рекомендуется мощный компьютер. Помогают меньшие частоты дискретизации.
 A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Карта мира: найдите положение по координатам или локатору Maidenhead, расстояние и азимут от вашего местоположения

@@ -684,7 +684,6 @@ spectrum dB	spettro dB
 waterfall dB	waterfall dB
   (mirrored: I/Q swapped)	  (specchiato: I/Q scambiati)
 %s, %d client%s, %llu sent, %llu dropped	%s, %d client%s, %llu inviati, %llu scartati
-A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Un HackRF, Airspy o RTL-SDR ha bisogno una volta del driver WinUSB: installalo con Zadig (zadig.akeo.ie).
 A Linux driver for TV sticks took the radio before the SDRplay software could.	Un driver Linux per le chiavette TV ha preso la radio prima del software SDRplay.
 A high-end computer is recommended. Lower sample rates help.	Si consiglia un computer potente. Frequenze di campionamento più basse aiutano.
 A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Una mappa del mondo: trova una posizione per coordinate o locatore Maidenhead, distanza e azimut dalla tua posizione

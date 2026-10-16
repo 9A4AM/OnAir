@@ -684,7 +684,6 @@ spectrum dB	espectro dB
 waterfall dB	cascata dB
   (mirrored: I/Q swapped)	  (espelhado: I/Q trocados)
 %s, %d client%s, %llu sent, %llu dropped	%s, %d cliente%s, %llu enviados, %llu descartados
-A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	Um HackRF, Airspy ou RTL-SDR precisa uma vez do controlador WinUSB: instale-o com o Zadig (zadig.akeo.ie).
 A Linux driver for TV sticks took the radio before the SDRplay software could.	Um controlador Linux para dongles de TV ficou com o rádio antes do software SDRplay.
 A high-end computer is recommended. Lower sample rates help.	Recomenda-se um computador potente. Taxas de amostragem mais baixas ajudam.
 A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Um mapa-mundo: encontre uma posição por coordenadas ou localizador Maidenhead, distância e azimute a partir da sua localização

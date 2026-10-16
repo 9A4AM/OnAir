@@ -108,7 +108,7 @@ int main() {
     for (int sm = 8; sm <= 80; sm++) {
         const ModeTuning* m = modeTuning(sm);
         if (!m) continue;
-        CHECK(m->minMhz <= 0.001 && m->maxMhz >= 1e9, "%s: tuning range %.3f-%.3g MHz is not open", m->name, m->minMhz, m->maxMhz);
+        CHECK(m->minMhz <= 0.001 && m->maxMhz >= kMaxTuneMhz, "%s: tuning range %.3f-%.3g MHz is not open", m->name, m->minMhz, m->maxMhz);
     }
     {
         struct M { int std, synth; double rate, bw; const char* name; };

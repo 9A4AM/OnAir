@@ -709,7 +709,6 @@ waterfall dB	krioklys dB
 # added for 0.2.6: setup wizard, radio troubleshooting, converter, spectrum and waterfall options
   (mirrored: I/Q swapped)	  (atspindėta: I/Q sukeisti)
 %s, %d client%s, %llu sent, %llu dropped	%s, %d klientas%s, išsiųsta %llu, praleista %llu
-A HackRF, Airspy or RTL-SDR needs its WinUSB driver once: install it with Zadig (zadig.akeo.ie).	HackRF, Airspy arba RTL-SDR vieną kartą reikalauja WinUSB tvarkyklės: įdiekite ją su Zadig (zadig.akeo.ie).
 A Linux driver for TV sticks took the radio before the SDRplay software could.	Linux TV nupių tvarkyklė perėmė radiją anksčiau nei SDRplay programinė įranga.
 A high-end computer is recommended. Lower sample rates help.	Rekomenduojamas galingas kompiuteris. Padeda mažesnis imties dažnis.
 A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location	Pasaulio žemėlapis: raskite vietą pagal koordinates ar Maidenhead lokatorių, atstumas ir azimutas nuo jūsų vietos

@@ -682,7 +682,7 @@ void rightPanel(App& a) {
     // ---- video preview and outputs
     {
         const float vw = ImGui::GetContentRegionAvail().x;
-        const float vh = std::min(vw * 9.f / 16.f, std::max(60.f, ImGui::GetContentRegionAvail().y - 52.f));
+        const float vh = std::min(vw * 9.f / 16.f, std::max(60.f, ImGui::GetContentRegionAvail().y - 52.f - 2 * ImGui::GetTextLineHeightWithSpacing()));
         ImGui::BeginChild("video", ImVec2(0, vh), ImGuiChildFlags_Borders);
         const PlayerStats ps = a.engine.player().stats();
         if (a.engine.player().selected() < 0) ImGui::TextDisabled("no picture");
@@ -691,6 +691,10 @@ void rightPanel(App& a) {
         else if (!a.video.has()) ImGui::TextDisabled("%s", ps.status.c_str());
         else a.video.draw(ImGui::GetContentRegionAvail());
         ImGui::EndChild();
+        // The picture here is only a preview: the big one is on the TV tab (and many people look for it here, #118)
+        ImGui::PushTextWrapPos(0);
+        ImGui::TextDisabled("This is a small preview. For the big picture, open the TV tab (the pop-out window and full screen are there too).");
+        ImGui::PopTextWrapPos();
     }
     {
         OutputStats os = a.engine.outputStats();
