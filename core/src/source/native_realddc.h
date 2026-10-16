@@ -3,20 +3,13 @@
 #pragma once
 #include "native_common.h"
 #include "dect2/dsp/dsp_compat.h"
+#include "dect2/common/window.h"
 
 namespace dect2 {
 namespace native {
 
 // Zeroth-order modified Bessel function (Kaiser window)
-inline double besselI0(double x) {
-    double sum = 1, term = 1;
-    for (int k = 1; k < 64; k++) {
-        term *= (x / (2.0 * k)) * (x / (2.0 * k));
-        sum += term;
-        if (term < sum * 1e-17) break;
-    }
-    return sum;
-}
+inline double besselI0(double x) { return dect2::window::besselI0(x, 64, 1e-17); }
 
 // A real input at fsHz -> complex baseband around fcHz at fsHz / decim.
 //   y[m] = sum_k h[k] x[mD + k] exp(-jw(mD + k)) = exp(-jwmD) * sum_k (h[k] exp(-jwk)) x[mD + k],   w = 2 pi fc / fs

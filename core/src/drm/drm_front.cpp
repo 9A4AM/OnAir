@@ -2,15 +2,12 @@
 #include "drm_front.h"
 #include <algorithm>
 #include <cmath>
+#include "dect2/common/window.h"
 
 namespace dect2 { namespace drm {
 
 namespace {
-double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 60; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; }
-    return s;
-}
+double besselI0(double x) { return dect2::window::besselI0(x, 60, 0.0); }
 
 // factors of d, none above 16 where that is possible, largest first
 std::vector<int> splitFactors(int d) {

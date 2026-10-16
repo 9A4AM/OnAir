@@ -3,10 +3,11 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
-constexpr double kC = 299792458.0;               // speed of light, m/s
+constexpr double kC = dect2::math::kSpeedOfLight;               // speed of light, m/s
 constexpr double kGpsMu = 3.986005e14;           // WGS-84 earth gravitational constant used by GPS, m^3/s^2
 constexpr double kEarthRate = 7.2921151467e-5;   // rad/s
 constexpr double kRelF = -4.442807633e-10;       // relativistic clock constant, s/sqrt(m)

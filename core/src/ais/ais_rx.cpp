@@ -14,12 +14,13 @@
 #include <mutex>
 #include <unordered_map>
 #include "dect2/results/results_io.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kChanHz = 25000.0;
 constexpr double kMidRate = 96000.0;
 constexpr int kW = 24;                      // power smoothing: 0.5 ms

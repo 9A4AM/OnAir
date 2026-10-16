@@ -14,6 +14,7 @@
 #include "dect2/dtmb/dtmb_defs.h"
 #include <cmath>
 #include <cstring>
+#include "dect2/common/mathconst.h"
 
 namespace dect2::dtmb {
 
@@ -237,7 +238,7 @@ const QamPoint* qamPoints(Mapping m) {
 uint8_t nrParity(uint8_t x) { return kNr[x]; }
 
 double srrcPulse(double t) {
-    const double a = kRollOff, pi = 3.14159265358979323846;
+    const double a = kRollOff, pi = dect2::math::kPi;
     if (std::fabs(t) < 1e-9) return 1.0 - a + 4.0 * a / pi;
     if (std::fabs(std::fabs(4.0 * a * t) - 1.0) < 1e-9)
         return a / std::sqrt(2.0) * ((1.0 + 2.0 / pi) * std::sin(pi / (4.0 * a)) + (1.0 - 2.0 / pi) * std::cos(pi / (4.0 * a)));

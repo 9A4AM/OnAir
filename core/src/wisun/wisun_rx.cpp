@@ -21,11 +21,13 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kTapsPerBranch = 16;        // polyphase prototype length: 16 M
 constexpr size_t kQueueMax = 8000000;     // bin samples waiting for the decoder at most (64 MB); more bursts are dropped
 constexpr int kLook = 96;                 // bin samples kept from before a burst's rise
@@ -37,7 +39,7 @@ constexpr int kSearchBits = 512;          // how far into a burst the start of f
 
 using cf = std::complex<float>;
 
-int popc32(uint32_t v) { int n = 0; while (v) { v &= v - 1; n++; } return n; }
+int popc32(uint32_t v) { return dect2::bits::popcount(v); }
 
 // A windowed-sinc low-pass (Blackman), unity gain at 0 Hz; fc in cycles per sample
 std::vector<float> lowpass(int n, double fc) {

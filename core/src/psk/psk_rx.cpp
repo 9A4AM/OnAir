@@ -16,11 +16,12 @@
 #include <mutex>
 #include <utility>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kBase = marine::kBaseRate;      // 24 kHz complex
 constexpr double kWideSpanMaxPsk = 100000;       // whole span: a receiver per 3.4 kHz of it (about 20 % of a core at 100 kHz)
 constexpr int kN = 4096, kHop = 2048;            // window spectrum

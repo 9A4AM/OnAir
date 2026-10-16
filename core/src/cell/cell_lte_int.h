@@ -2,6 +2,7 @@
 #pragma once
 #include "dect2/cell/cell_lte.h"
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2::cell {
 
@@ -15,7 +16,7 @@ struct LteGrid {
 };
 
 // QPSK (36.211 7.1.2)
-inline cf32 qpsk(uint8_t b0, uint8_t b1) { const float s = 0.70710678f; return cf32(b0 ? -s : s, b1 ? -s : s); }
+inline cf32 qpsk(uint8_t b0, uint8_t b1) { const float s = dect2::math::k1OverSqrt2f; return cf32(b0 ? -s : s, b1 ? -s : s); }
 // Transmit diversity (6.3.3.3 / 6.3.4.3): symbols -> per-port symbols (ports 1, 2, 4); the count is padded to a multiple of the ports
 void lteTxdEncode(const std::vector<cf32>& d, int ports, std::vector<std::vector<cf32>>& y);
 // Its inverse on received REs: r[j] with channel h[p][j] (per RE), noise variance nv; out: 2 LLRs per symbol (in order)

@@ -9,12 +9,13 @@
 #include <complex>
 #include <cstdio>
 #include <cstdlib>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace multitone {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 struct Edge { double t; };   // seconds from the start of the recording
 

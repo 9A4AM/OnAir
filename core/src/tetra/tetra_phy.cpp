@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
+#include "dect2/common/crc.h"
 
 namespace dect2::tetra {
 
@@ -22,14 +23,7 @@ int dibitPhase(int b1, int b2) {
 
 // ---------------------------------------------------------------- CRC
 
-uint16_t crc16(const uint8_t* b, int n) {
-    uint16_t crc = 0xFFFF;
-    for (int i = 0; i < n; i++) {
-        crc ^= (uint16_t)((b[i] & 1) << 15);
-        crc = (crc & 0x8000) ? (uint16_t)((crc << 1) ^ 0x1021) : (uint16_t)(crc << 1);
-    }
-    return (uint16_t)~crc;
-}
+uint16_t crc16(const uint8_t* b, int n) { return (uint16_t)crc::bits(b, (size_t)n, 16, 0x1021, 0xFFFF, 0xFFFF); }
 
 // ---------------------------------------------------------------- RCPC
 

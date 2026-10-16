@@ -5,12 +5,13 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
-constexpr double kC = 299792458.0;
+using dect2::math::kPi;
+constexpr double kC = dect2::math::kSpeedOfLight;
 constexpr size_t kMaxHistory = 900, kMaxEvents = 200, kMaxSpikes = 16;
 constexpr size_t kAnalyse = 4096;            // samples of each block that go through the spectra (the pulse detector sees all of them)
 

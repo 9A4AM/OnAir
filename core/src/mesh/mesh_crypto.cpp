@@ -2,6 +2,7 @@
 #include "dect2/mesh/mesh_crypto.h"
 #include "mesh_crypto_tables.h"
 #include <cstring>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 namespace meshcrypto {
@@ -298,12 +299,7 @@ bool hexDecode(const std::string& s, std::vector<uint8_t>& out) {
     return hi < 0;
 }
 
-std::string hexEncode(const uint8_t* p, size_t n, bool upper) {
-    const char* d = upper ? "0123456789ABCDEF" : "0123456789abcdef";
-    std::string s;
-    for (size_t i = 0; i < n; i++) { s += d[p[i] >> 4]; s += d[p[i] & 15]; }
-    return s;
-}
+std::string hexEncode(const uint8_t* p, size_t n, bool upper) { return dect2::str::toHex(p, n, upper); }
 
 } // namespace meshcrypto
 } // namespace dect2

@@ -8,13 +8,14 @@
 #include <cmath>
 #include <complex>
 #include <cstring>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 using namespace mac;
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kFm = 2 * kClockHz;   // the FM grid: 40.5 Msps
 
 double kaiserW(double x, double beta) {   // x in [-1, 1]

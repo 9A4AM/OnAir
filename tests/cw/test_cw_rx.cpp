@@ -9,8 +9,7 @@
 #include <string>
 #include <vector>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 constexpr double kRate = 250000;
 constexpr double kOff = -20000;   // the dial sits 20 kHz below the centre, as with the radio

@@ -4,6 +4,7 @@
 #include "dect2/common/ring.h"
 #include <cmath>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2::dji {
 
@@ -20,8 +21,8 @@ public:
             for (int t = 0; t < taps_; t++) {
                 const double d = (double)(t - hw_ + 1) - frac;  // distance of input sample (j0 + t - hw + 1) from the output
                 const double a = 2 * fc * d;
-                const double sinc = std::abs(a) < 1e-9 ? 1.0 : std::sin(3.14159265358979323846 * a) / (3.14159265358979323846 * a);
-                const double w = std::abs(d) >= hw_ ? 0.0 : 0.42 + 0.5 * std::cos(3.14159265358979323846 * d / hw_) + 0.08 * std::cos(2 * 3.14159265358979323846 * d / hw_);
+                const double sinc = std::abs(a) < 1e-9 ? 1.0 : std::sin(dect2::math::kPi * a) / (dect2::math::kPi * a);
+                const double w = std::abs(d) >= hw_ ? 0.0 : 0.42 + 0.5 * std::cos(dect2::math::kPi * d / hw_) + 0.08 * std::cos(2 * dect2::math::kPi * d / hw_);
                 table_[(size_t)p * (size_t)taps_ + (size_t)t] = (float)(2 * fc * sinc * w);
             }
         }
@@ -62,8 +63,8 @@ private:
 
 // multiply by exp(j 2 pi f n / rate) starting at sample n0
 inline void mixInPlace(cf32* x, size_t n, double f, double rate, double n0 = 0) {
-    const double step = 2 * 3.14159265358979323846 * f / rate;
-    double ph = std::fmod(step * n0, 2 * 3.14159265358979323846);
+    const double step = 2 * dect2::math::kPi * f / rate;
+    double ph = std::fmod(step * n0, 2 * dect2::math::kPi);
     cf32 p((float)std::cos(ph), (float)std::sin(ph));
     const cf32 inc((float)std::cos(step), (float)std::sin(step));
     for (size_t i = 0; i < n; i++) {

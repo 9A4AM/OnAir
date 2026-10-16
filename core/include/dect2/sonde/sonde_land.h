@@ -3,6 +3,7 @@
 // 7 km). The horizontal speed is kept at the last measured value, so the answer is a guide, good to a few km from 10 km up.
 #pragma once
 #include <cmath>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -15,7 +16,7 @@ struct SondeLanding {
 inline SondeLanding predictSondeLanding(double lat, double lon, double altM, double vSpeedMs, double hSpeedMs, double headingDeg, double groundM = 0) {
     SondeLanding r;
     if (!(vSpeedMs < -1.0) || altM <= groundM + 10) return r;
-    const double kPi = 3.14159265358979323846, kR = 6371000.0, kScale = 7000.0;
+    const double kPi = dect2::math::kPi, kR = 6371000.0, kScale = 7000.0;
     const double vE = hSpeedMs * std::sin(headingDeg * kPi / 180.0), vN = hSpeedMs * std::cos(headingDeg * kPi / 180.0);
     double h = altM, t = 0, la = lat, lo = lon;
     const double v0 = -vSpeedMs, h0 = altM;

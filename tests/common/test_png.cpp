@@ -11,13 +11,14 @@
 #include <iterator>
 #include <string>
 #include <vector>
+#include "dect2/common/endian.h"
 
 using namespace dect2;
 
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { fails++; printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); } } while (0)
 
-static void put32(std::vector<uint8_t>& v, uint32_t x) { for (int s = 24; s >= 0; s -= 8) v.push_back(uint8_t(x >> s)); }
+static void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putBe32(v, x); }
 
 static void chunk(std::vector<uint8_t>& png, const char* type, const std::vector<uint8_t>& data) {
     put32(png, (uint32_t)data.size());

@@ -3,6 +3,7 @@
 #include "dect2/dab/dab.h"
 #include "dect2/common/inflate.h"
 #include <algorithm>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 
@@ -134,7 +135,7 @@ struct Parser {
     }
 };
 
-uint16_t be16(const uint8_t* p) { return (uint16_t)((p[0] << 8) | p[1]); }
+uint16_t be16(const uint8_t* p) { return (uint16_t)dect2::endian::loadBe16(p); }
 
 } // namespace
 

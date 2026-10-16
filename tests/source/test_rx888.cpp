@@ -16,6 +16,7 @@
 #include <set>
 #include <thread>
 #include <unistd.h>
+#include "dect2/common/endian.h"
 
 using namespace dect2;
 using namespace dect2::native;
@@ -174,7 +175,7 @@ static void addApp(int bus = 1, int addr = 5, const char* serial = "0123456789AB
 }
 
 // the little-endian 32-bit words of an image
-static void put32(std::vector<uint8_t>& v, uint32_t w) { for (int i = 0; i < 4; i++) v.push_back((uint8_t)(w >> (8 * i))); }
+static void put32(std::vector<uint8_t>& v, uint32_t w) { dect2::endian::putLe32(v, w); }
 static std::vector<uint8_t> makeImage(uint32_t words, uint32_t addr, uint32_t entryAddr, bool badSum = false) {
     std::vector<uint8_t> v = {'C', 'Y', 0x00, 0xB0};
     put32(v, words);

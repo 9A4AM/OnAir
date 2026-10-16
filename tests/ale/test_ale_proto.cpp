@@ -5,8 +5,7 @@
 #include <random>
 using namespace dect2;
 using namespace dect2::ale;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static void feedCall(Assembler& a, const std::vector<uint32_t>& ws) {
     for (uint32_t w : ws) { uint8_t b[147]; wordBits(w, b); Word x = decodeBits(b); CHECK(x.ok && x.w == w, "word %06X", w); a.add(x); }

@@ -4,8 +4,7 @@
 #include "dect2/iridium/iridium_sbd.h"
 #include <cstdio>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static IridiumFrame ida(const std::vector<uint8_t>& payload, int ctr, bool more) {
     IridiumBurstBits b;

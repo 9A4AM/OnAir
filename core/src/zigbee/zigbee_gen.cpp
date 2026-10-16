@@ -7,11 +7,12 @@
 #include <cmath>
 #include <deque>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kChipRate = 2e6;
 
 // the baseband of chips at fractional chip time u (chip n occupies [n, n + 2]: a half-sine pulse, even chips on I, odd on Q)

@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include "dect2/common/mathconst.h"
 using namespace dect2;
 using namespace dect2::gnsstest;
 using dect2::testpar::CaseOut;
@@ -66,7 +67,7 @@ static void runCase(const Case& k, CaseOut& out) {
             if (m.sys != GnssQzss || m.prn != x.prn || m.rxTime < 20) continue;
             // the receiver's sample clock: the clock fault makes 1 + ppm samples of each, and the skipped start is missing
             const double tSim = m.rxTime / (1.0 + k.f.clockPpm * 1e-6) + (double)k.f.skip / o.rate;
-            const double e = (m.txTow - sim.svTransmitTime(i, sim.trueTime(tSim))) * 299792458.0;
+            const double e = (m.txTow - sim.svTransmitTime(i, sim.trueTime(tSim))) * dect2::math::kSpeedOfLight;
             sum += e; sum2 += e * e; n++;
         }
         if (n) out.print("  %s range error: mean %+.2f m, rms %.2f m over %d s\n", gnssSatName(GnssQzss, x.prn).c_str(), sum / n, std::sqrt(sum2 / n), n);

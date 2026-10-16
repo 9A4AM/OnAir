@@ -2,6 +2,7 @@
 // block, one Rice partition, a Vorbis comment block for tags. About half the size of WAV for speech, lossless. The MD5 field is left zero
 // (not computed; decoders skip the check). Not thread safe: one writer per file.
 #pragma once
+#include "dect2/common/crc.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -55,7 +56,7 @@ private:
         void align() { while (n) put(0, 1); }
     };
     static uint8_t crc8(const uint8_t* d, size_t n) { uint8_t c = 0; for (size_t i = 0; i < n; i++) { c ^= d[i]; for (int k = 0; k < 8; k++) c = (uint8_t)((c & 0x80) ? (c << 1) ^ 0x07 : c << 1); } return c; }
-    static uint16_t crc16(const uint8_t* d, size_t n) { uint16_t c = 0; for (size_t i = 0; i < n; i++) { c ^= (uint16_t)(d[i] << 8); for (int k = 0; k < 8; k++) c = (uint16_t)((c & 0x8000) ? (c << 1) ^ 0x8005 : c << 1); } return c; }
+    static uint16_t crc16(const uint8_t* d, size_t n) { return dect2::crc::crc16Buypass(d, n); }   // CRC-16/BUYPASS, the FLAC frame footer
 
     void writeStreamInfoBody() {
         uint8_t b[34] = {};

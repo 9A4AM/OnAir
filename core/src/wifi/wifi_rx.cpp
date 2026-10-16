@@ -14,18 +14,20 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kOut = 20e6;             // working rate: 20 samples a 1 Mbit/s symbol
 constexpr int kSps = 20;
 constexpr int kBack = 10;                 // symbols before the SFD's last one where a decode starts (inside SYNC)
 constexpr int kMargin = 3 * kSps;         // samples past a packet's end a decode waits for (the timing tracker may move)
 constexpr int kWin = 12;                  // samples over which the 20 phase detectors' SFD hits are compared
 
-int popc(uint64_t v) { int n = 0; while (v) { v &= v - 1; n++; } return n; }
+int popc(uint64_t v) { return dect2::bits::popcount(v); }
 
 uint16_t sfdPattern() {   // the SFD as the history register holds it (newest bit lowest)
     uint16_t p = 0;

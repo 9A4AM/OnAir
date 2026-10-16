@@ -12,12 +12,13 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 using Clock = std::chrono::steady_clock;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kHilN = AudioHilbert::N;
 constexpr int kHilDelay = (kHilN - 1) / 2;
 

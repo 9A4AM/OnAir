@@ -3,6 +3,7 @@
 #include "dect2/tetrapol/tetrapol_codec.h"
 #include <algorithm>
 #include <cstring>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace tetrapol {
@@ -93,14 +94,8 @@ int convDec(const uint8_t in[kDataBits], uint8_t out[kConvIn]) {
     return score;
 }
 
-void putBits(uint8_t* dst, int& p, int v, int n) {
-    for (int i = n - 1; i >= 0; i--) dst[p++] = (uint8_t)((v >> i) & 1);
-}
-int getBits(const uint8_t* src, int& p, int n) {
-    int v = 0;
-    for (int i = 0; i < n; i++) v = (v << 1) | src[p++];
-    return v;
-}
+void putBits(uint8_t* dst, int& p, int v, int n) { bits::putMsbAdv(dst, p, (uint64_t)(uint32_t)v, n); }
+int getBits(const uint8_t* src, int& p, int n) { return (int)bits::getMsbAdvRaw(src, p, n); }
 
 } // namespace
 

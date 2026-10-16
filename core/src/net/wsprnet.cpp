@@ -9,6 +9,7 @@
 #include <cstring>
 #include <mutex>
 #include <thread>
+#include "dect2/common/timecompat.h"
 
 #ifndef ONAIR_VERSION
 #define ONAIR_VERSION "dev"
@@ -133,8 +134,7 @@ struct WsprNet::Impl {
     int64_t lastPost = 0;
     static constexpr int kMinPostIntervalSec = 2;   // gentle on wsprnet.org
     static constexpr int kHttpTimeoutMs = 30000;
-
-    static int64_t nowSec() { return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); }
+    static int64_t nowSec() { return dect2::unixNow(); }
     bool credsOk() const { return pskr::validCallsign(cfg.call) && pskr::validLocator(cfg.locator); }
 
     void sendOne(const wsprnet::SpotFields& spot) {

@@ -4,21 +4,19 @@
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
+#include "dect2/common/mathconst.h"
+#include "dect2/common/window.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kMskOver = 12;                  // matched filter oversampling (acarsdec MFLTOVER)
 constexpr double kPllG = 38e-4, kPllC = 0.52; // acarsdec msk.c
 constexpr int kMaxParityErr = 3;              // acarsdec MAXPERR
 
-double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; }
-    return s;
-}
+double besselI0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
 
 // Kaiser-windowed sinc low-pass; cutoff as a fraction of the sample rate, unity gain at DC
 std::vector<float> lowpass(int n, double fc, double beta) {

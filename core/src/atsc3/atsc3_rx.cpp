@@ -2,13 +2,14 @@
 #include "dect2/atsc3/atsc3_rx.h"
 #include <algorithm>
 #include <chrono>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 
 using namespace atsc3;
 
 namespace {
-double wallNow() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+double wallNow() { return dect2::steadyNowSec(); }
 }
 
 Atsc3Rx::Atsc3Rx() {}

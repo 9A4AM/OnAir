@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 
@@ -437,12 +438,7 @@ void AeroSuDecoder::reset() {
 }
 
 namespace {
-std::string hexOf(const std::vector<uint8_t>& v) {
-    static const char* d = "0123456789ABCDEF";
-    std::string s;
-    for (uint8_t c : v) { s += d[c >> 4]; s += d[c & 15]; }
-    return s;
-}
+std::string hexOf(const std::vector<uint8_t>& v) { return dect2::str::toHex(v.data(), v.size()); }
 std::string stripDots(const std::string& r) {
     size_t i = 0;
     while (i < r.size() && r[i] == '.') i++;

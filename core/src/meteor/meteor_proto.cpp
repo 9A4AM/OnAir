@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/bits.h"
 
 namespace dect2::meteor {
 
 namespace {
 
-inline int parity8(unsigned x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (int)(x & 1); }
+inline int parity8(unsigned x) { return dect2::bits::parity(x & 0xFFu); }
 
 constexpr unsigned kPolyA = 0x4F, kPolyB = 0x6D;
 

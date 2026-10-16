@@ -11,8 +11,7 @@
 #include <vector>
 using namespace dect2;
 
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static void run(const char* name, double rate, int mask, double secs, size_t chunk, double ebn0 = 0) {
     SynthConfig cfg;

@@ -19,6 +19,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 
@@ -174,7 +175,7 @@ std::string serialOf(libusb_device_handle* h, const libusb_device_descriptor& d)
     return {};
 }
 
-void le32(uint8_t* p, uint32_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24); }
+void le32(uint8_t* p, uint32_t v) { dect2::endian::storeLe32(p, v); }
 
 class UsbHackrf : public IqSource {
 public:

@@ -8,8 +8,7 @@
 #include <set>
 #include <string>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static std::string decodeBits(const std::vector<uint8_t>& b, int* bad = nullptr) {
     psk::VaricodeRx rx;

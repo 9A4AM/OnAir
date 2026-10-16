@@ -17,11 +17,12 @@
 #include <deque>
 #include <mutex>
 #include <thread>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 #if defined(__GNUC__) && !defined(__clang__) && defined(__x86_64__) && defined(__linux__)
 #define DVBC_HOT __attribute__((target_clones("arch=haswell", "default")))   // the loops that set the CPU load: use AVX2 and FMA where the CPU has them
 #else

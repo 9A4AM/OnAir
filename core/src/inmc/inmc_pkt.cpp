@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <ctime>
 #include <map>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 namespace inmc {
@@ -134,18 +135,7 @@ std::string frameTimeText(uint32_t f) {
     return b;
 }
 
-std::string utcText(int64_t t) {
-    const time_t tt = (time_t)t;
-    struct tm g;
-#if defined(_WIN32)
-    gmtime_s(&g, &tt);
-#else
-    gmtime_r(&tt, &g);
-#endif
-    char b[32];
-    snprintf(b, sizeof b, "%02d:%02d:%02d UTC", g.tm_hour, g.tm_min, g.tm_sec);
-    return b;
-}
+std::string utcText(int64_t t) { return dect2::utcClockText(t); }
 
 // ITA2 tables as in the table of the open decoder (from the baudot project); 0x1F shifts to letters, 0x1B to figures
 std::string ita2ToText(const std::vector<uint8_t>& codes) {

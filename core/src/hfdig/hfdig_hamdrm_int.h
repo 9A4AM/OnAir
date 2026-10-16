@@ -12,6 +12,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 { namespace hamdrm {
 
@@ -50,7 +51,7 @@ inline cf32 refCell(int k) {
         std::vector<uint8_t> b(512);
         drm::prbs(b.data(), b.size());
         std::vector<cf32> v(128);
-        const float a = 0.70710678f;
+        const float a = dect2::math::k1OverSqrt2f;
         for (int i = 0; i < 128; i++) v[(size_t)i] = cf32(b[(size_t)(2 * i + 7)] ? -a : a, b[(size_t)(2 * i + 100)] ? -a : a);
         return v;
     }();

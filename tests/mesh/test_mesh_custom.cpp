@@ -12,8 +12,7 @@
 #include <vector>
 using namespace dect2;
 
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // renders one frame (carrier error cfoHz) at freqHz with the radio tuned to tuned, feeds it, returns the report
 static MeshTelemetry run(MeshReceiver& rx, const lora::Params& p, const std::vector<uint8_t>& pkt, double freqHz, double tuned, double rate,

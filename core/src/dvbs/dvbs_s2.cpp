@@ -9,12 +9,13 @@
 #include <cstring>
 #include <map>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 const char* kRateNames[kS2Rates] = {"1/4", "1/3", "2/5", "1/2", "3/5", "2/3", "3/4", "4/5", "5/6", "8/9", "9/10"};
 const double kRateValues[kS2Rates] = {1.0 / 4, 1.0 / 3, 2.0 / 5, 1.0 / 2, 3.0 / 5, 2.0 / 3, 3.0 / 4, 4.0 / 5, 5.0 / 6, 8.0 / 9, 9.0 / 10};
 // table 5a (normal) and 5b (short): kldpc, kbch, t, and tables 7a / 7b: q
@@ -318,7 +319,7 @@ void buildConstellation(int mod, int rate, std::vector<cf32>& pts) {
     }
     if (mod == kQpsk) {
         pts.assign(4, cf32());
-        for (int l = 0; l < 4; l++) pts[l] = cf32((1 - 2 * (l >> 1)) * 0.70710678f, (1 - 2 * (l & 1)) * 0.70710678f);   // figure 9: I = MSB, 0 -> positive
+        for (int l = 0; l < 4; l++) pts[l] = cf32((1 - 2 * (l >> 1)) * dect2::math::k1OverSqrt2f, (1 - 2 * (l & 1)) * dect2::math::k1OverSqrt2f);   // figure 9: I = MSB, 0 -> positive
     } else if (mod == k8psk) {
         // figure 10 (angle of each label in degrees)
         static const int ang[8] = {45, 0, 180, 225, 90, 315, 135, 270};
@@ -368,7 +369,7 @@ void s2Demap(const cf32* sym, int n, int mod, int rate, float sigma2, float* llr
     const int m = mod + 2;
     const float w = 1.f / (2.f * std::max(sigma2, 1e-6f));
     if (mod == kQpsk) {
-        const float k = 4.f * 0.70710678f * w;   // (|y-s1|^2 - |y-s0|^2) / (2 sigma^2) = 4 a y w with a = 1/sqrt(2)
+        const float k = 4.f * dect2::math::k1OverSqrt2f * w;   // (|y-s1|^2 - |y-s0|^2) / (2 sigma^2) = 4 a y w with a = 1/sqrt(2)
         for (int i = 0; i < n; i++) { llr[2 * i] = k * sym[i].real(); llr[2 * i + 1] = k * sym[i].imag(); }
         return;
     }

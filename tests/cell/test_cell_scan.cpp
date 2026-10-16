@@ -14,8 +14,7 @@
 #include <thread>
 using namespace dect2;
 using namespace dect2::cell;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 constexpr double kFs = 20e6, kCenter = 800e6;
 constexpr int kFrames = 26;

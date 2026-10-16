@@ -4,6 +4,7 @@
 #include "dect2/dvbt/dvbt.h"
 #include <algorithm>
 #include <cstring>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbc {
@@ -113,7 +114,7 @@ void Mapper::push(const uint8_t* bytes, size_t n, std::vector<cf32>& out) {
 }
 
 double rrc(double t, double b) {
-    const double pi = 3.14159265358979323846;
+    const double pi = dect2::math::kPi;
     if (std::fabs(t) < 1e-9) return 1 - b + 4 * b / pi;
     if (std::fabs(std::fabs(t) - 1 / (4 * b)) < 1e-9)
         return b / std::sqrt(2.0) * ((1 + 2 / pi) * std::sin(pi / (4 * b)) + (1 - 2 / pi) * std::cos(pi / (4 * b)));
@@ -132,11 +133,11 @@ Signal::Signal(const SignalConfig& cfg) : cfg_(cfg), map_(cfg.qam), il_(new Il),
     const double var = cfg.snrDb >= 199 ? 0 : cfg.sampleRate / (cfg.symbolRate * snr);
     noise_ = (float)std::sqrt(var / 2);
     scale_ = (float)(cfg.level / std::sqrt(1 + var));
-    dph_ = 2 * 3.14159265358979323846 * cfg.cfoHz / cfg.sampleRate;
+    dph_ = 2 * dect2::math::kPi * cfg.cfoHz / cfg.sampleRate;
     if (cfg.echoDb > 0) {
         echoLen_ = std::max(1, (int)std::lround(cfg.echoUs * 1e-6 * cfg.sampleRate));
         echo_.assign((size_t)echoLen_, cf32(0, 0));
-        echoGain_ = std::polar((float)std::pow(10.0, -cfg.echoDb / 20), (float)(cfg.echoDeg * 3.14159265358979323846 / 180));
+        echoGain_ = std::polar((float)std::pow(10.0, -cfg.echoDb / 20), (float)(cfg.echoDeg * dect2::math::kPi / 180));
     }
 }
 
@@ -168,7 +169,7 @@ void Signal::generate(cf32* out, size_t n) {
         if (cfg_.inverted) y = std::conj(y);
         y *= cf32((float)std::cos(ph_), (float)std::sin(ph_));
         ph_ += dph_;
-        if (ph_ > 3.14159265358979323846) ph_ -= 2 * 3.14159265358979323846; else if (ph_ < -3.14159265358979323846) ph_ += 2 * 3.14159265358979323846;
+        if (ph_ > dect2::math::kPi) ph_ -= 2 * dect2::math::kPi; else if (ph_ < -dect2::math::kPi) ph_ += 2 * dect2::math::kPi;
         if (noise_ > 0) y += cf32(noise_ * nd_(rng_), noise_ * nd_(rng_));
         out[i] = y * scale_;
         t_ += step_;

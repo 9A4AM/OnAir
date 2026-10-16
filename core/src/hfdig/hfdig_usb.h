@@ -6,18 +6,16 @@
 #include <cmath>
 #include <complex>
 #include <vector>
+#include "dect2/common/mathconst.h"
+#include "dect2/common/window.h"
 
 namespace dect2 {
 namespace hfdig {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kUsbLowHz = 200, kUsbHighHz = 3800;
 
-inline double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 40; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; if (t < 1e-12 * s) break; }
-    return s;
-}
+inline double besselI0(double x) { return dect2::window::besselI0(x, 40, 1e-12); }
 
 // n taps, cut-off fc in cycles per sample, unity gain at 0 Hz
 inline std::vector<double> lowpass(int n, double fc, double beta) {

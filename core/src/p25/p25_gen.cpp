@@ -7,11 +7,12 @@
 #include <cmath>
 #include <cstring>
 #include <deque>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kShapeRate = 48000.0;
 constexpr int kBaud = 4800;
 constexpr double kUnit = 600.0;   // Hz per level: +3 is 1800 Hz

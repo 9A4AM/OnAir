@@ -9,6 +9,8 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace atsc3 {
@@ -23,11 +25,11 @@ const char* kTypes16[4] = {"AAAABBABAAAA", "AAAABBABABAB", "AAAABBABAAAA", "AAAA
 
 int modIndex(int eta) { return eta / 2 - 1; }   // 2, 4, 6, 8, 10, 12 -> 0..5
 
-int grayInverse(int g) { int q = 0; for (; g; g >>= 1) q ^= g; return q; }
+int grayInverse(int g) { return (int)dect2::bits::grayInverse((uint32_t)g); }
 
 std::vector<cf32> buildPoints(int eta, int rate15) {
     if (eta == 2) {
-        const float s = 0.70710678f;
+        const float s = dect2::math::k1OverSqrt2f;
         return {cf32(s, s), cf32(-s, s), cf32(s, -s), cf32(-s, -s)};
     }
     const float* v = nucVectors(eta, rate15);

@@ -8,11 +8,12 @@
 #include <cstring>
 #include <deque>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kSps = 10;                 // 48 kHz shaping rate
 constexpr double kShapeRate = 4800.0 * kSps;
 

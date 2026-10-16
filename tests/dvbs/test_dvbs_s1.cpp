@@ -9,6 +9,7 @@
 #include <cstring>
 #include <random>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 using namespace dect2;
 using namespace dect2::dvbs;
@@ -127,7 +128,7 @@ int main() {
         tx->generate(sym.data(), nsym);
         size_t wrong = 0;
         for (size_t i = 0; i < nsym; i++) {
-            const cf32 e((1 - 2 * serial[2 * i]) * 0.70710678f, (1 - 2 * serial[2 * i + 1]) * 0.70710678f);
+            const cf32 e((1 - 2 * serial[2 * i]) * dect2::math::k1OverSqrt2f, (1 - 2 * serial[2 * i + 1]) * dect2::math::k1OverSqrt2f);
             if (std::abs(sym[i] - e) > 1e-4f) wrong++;
         }
         static const char* rn[5] = {"1/2", "2/3", "3/4", "5/6", "7/8"};

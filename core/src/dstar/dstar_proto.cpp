@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include "dect2/common/bits.h"
+#include "dect2/common/str.h"
 
 namespace dect2 {
 namespace dstar {
@@ -62,12 +64,8 @@ std::string flagText(const uint8_t f[3]) {
     return s;
 }
 
-void bytesToBits(const uint8_t* b, int nBytes, uint8_t* bits) {
-    for (int i = 0; i < nBytes; i++) for (int k = 0; k < 8; k++) bits[i * 8 + k] = (b[i] >> k) & 1;
-}
-void bitsToBytes(const uint8_t* bits, int nBytes, uint8_t* b) {
-    for (int i = 0; i < nBytes; i++) { b[i] = 0; for (int k = 0; k < 8; k++) b[i] |= (uint8_t)((bits[i * 8 + k] & 1) << k); }
-}
+void bytesToBits(const uint8_t* b, int nBytes, uint8_t* bits) { dect2::bits::bytesToBitsLsb(b, (size_t)nBytes, bits); }
+void bitsToBytes(const uint8_t* bits, int nBytes, uint8_t* b) { dect2::bits::bitsToBytesLsb(bits, (size_t)nBytes, b); }
 
 void convEncode(const uint8_t* in, int nIn, uint8_t* out) {
     int d1 = 0, d2 = 0;
@@ -181,13 +179,7 @@ std::string nmeaChecksum(const std::string& body) {
     return b;
 }
 
-static std::vector<std::string> split(const std::string& s, char sep) {
-    std::vector<std::string> v;
-    std::string cur;
-    for (char c : s) { if (c == sep) { v.push_back(cur); cur.clear(); } else cur += c; }
-    v.push_back(cur);
-    return v;
-}
+static std::vector<std::string> split(const std::string& s, char sep) { return dect2::str::split(s, sep); }
 
 // ddmm.mmmm (or dddmm.mmmm) and a hemisphere letter
 static bool coord(const std::string& v, const std::string& h, int degDigits, double& out) {

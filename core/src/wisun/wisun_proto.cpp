@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace wisun {
@@ -39,18 +41,6 @@ struct Pn9 {
     }
 };
 const Pn9& pn9() { static const Pn9 t; return t; }
-
-struct Crc32Table {
-    uint32_t t[256];
-    Crc32Table() {
-        for (uint32_t i = 0; i < 256; i++) {
-            uint32_t c = i;
-            for (int k = 0; k < 8; k++) c = c & 1 ? (c >> 1) ^ 0xEDB88320u : c >> 1;
-            t[i] = c;
-        }
-    }
-};
-const Crc32Table& crcTable() { static const Crc32Table t; return t; }
 }
 
 void whiten(uint8_t* d, size_t n) {
@@ -58,12 +48,7 @@ void whiten(uint8_t* d, size_t n) {
     for (size_t i = 0; i < n; i++) d[i] ^= p.b[i % 2048];
 }
 
-uint32_t crc32(const uint8_t* d, size_t n) {
-    const Crc32Table& t = crcTable();
-    uint32_t c = 0xFFFFFFFFu;
-    for (size_t i = 0; i < n; i++) c = (c >> 8) ^ t.t[(c ^ d[i]) & 0xFF];
-    return c ^ 0xFFFFFFFFu;
-}
+uint32_t crc32(const uint8_t* d, size_t n) { return crc::crc32(d, n); }
 
 uint16_t crc16(const uint8_t* d, size_t n) { return zigbee::crc16(d, n); }
 
@@ -298,10 +283,10 @@ std::string dstText(const Frame& f) {
 // ---------------------------------------------------------------- parsing
 
 namespace {
-uint16_t le16(const uint8_t* p) { return (uint16_t)(p[0] | p[1] << 8); }
+uint16_t le16(const uint8_t* p) { return (uint16_t)dect2::endian::loadLe16(p); }
 uint32_t le24(const uint8_t* p) { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16; }
 uint32_t le32(const uint8_t* p) { return le24(p) | (uint32_t)p[3] << 24; }
-uint64_t le64(const uint8_t* p) { uint64_t v = 0; for (int i = 7; i >= 0; i--) v = v << 8 | p[i]; return v; }
+uint64_t le64(const uint8_t* p) { return (uint64_t)dect2::endian::loadLe64(p); }
 
 int popcount8(uint8_t v) { int n = 0; while (v) { v &= (uint8_t)(v - 1); n++; } return n; }
 
@@ -558,10 +543,10 @@ Frame parse(const uint8_t* d, size_t n) {
 // ---------------------------------------------------------------- building
 
 namespace {
-void put16(std::vector<uint8_t>& v, unsigned x) { v.push_back((uint8_t)x); v.push_back((uint8_t)(x >> 8)); }
+void put16(std::vector<uint8_t>& v, unsigned x) { dect2::endian::putLe16(v, x); }
 void put24(std::vector<uint8_t>& v, uint32_t x) { for (int i = 0; i < 3; i++) v.push_back((uint8_t)(x >> (8 * i))); }
-void put32(std::vector<uint8_t>& v, uint32_t x) { for (int i = 0; i < 4; i++) v.push_back((uint8_t)(x >> (8 * i))); }
-void put64(std::vector<uint8_t>& v, uint64_t x) { for (int i = 0; i < 8; i++) v.push_back((uint8_t)(x >> (8 * i))); }
+void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putLe32(v, x); }
+void put64(std::vector<uint8_t>& v, uint64_t x) { dect2::endian::putLe64(v, x); }
 
 void headerIe(std::vector<uint8_t>& v, int id, const std::vector<uint8_t>& body) {
     put16(v, (unsigned)(body.size() & 0x7F) | (unsigned)id << 7);

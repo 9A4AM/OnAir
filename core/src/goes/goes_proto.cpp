@@ -6,14 +6,15 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include "dect2/common/endian.h"
 
 namespace dect2::goes {
 
 namespace {
-inline uint32_t be16(const uint8_t* p) { return (uint32_t)p[0] << 8 | p[1]; }
-inline uint32_t be32(const uint8_t* p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
+inline uint32_t be16(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe16(p); }
+inline uint32_t be32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
 inline uint64_t be64(const uint8_t* p) { return (uint64_t)be32(p) << 32 | be32(p + 4); }
-inline void put16(std::vector<uint8_t>& v, uint32_t x) { v.push_back((uint8_t)(x >> 8)); v.push_back((uint8_t)x); }
+inline void put16(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putBe16(v, x); }
 inline void put32(std::vector<uint8_t>& v, uint32_t x) { put16(v, x >> 16); put16(v, x & 0xFFFF); }
 inline void put64(std::vector<uint8_t>& v, uint64_t x) { put32(v, (uint32_t)(x >> 32)); put32(v, (uint32_t)x); }
 std::string text(const uint8_t* p, size_t n) {

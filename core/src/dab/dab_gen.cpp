@@ -18,6 +18,8 @@ extern "C" {
 #include <map>
 #include <memory>
 #include <numeric>
+#include "dect2/common/bits.h"
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace dabgen {
@@ -139,7 +141,7 @@ struct Transmitter::Impl {
     float scale = 0.f;
 
     // ---- audio -> logical frames
-    static void bytesToBits(const uint8_t* b, int n, uint8_t* bits) { for (int i = 0; i < n; i++) for (int k = 0; k < 8; k++) bits[i * 8 + k] = (b[i] >> (7 - k)) & 1; }
+    static void bytesToBits(const uint8_t* b, int n, uint8_t* bits) { dect2::bits::bytesToBitsMsb(b, (size_t)n, bits); }
 
     // CUs of a sub-channel: EEP from the bitrate and profile, UEP from table 6 (0 when the bitrate is not the table's)
     static int subSize(const TxService& sv) {
@@ -302,7 +304,7 @@ struct Transmitter::Impl {
     }
 
     // ---- FIC
-    static void put16(std::vector<uint8_t>& v, unsigned x) { v.push_back((uint8_t)(x >> 8)); v.push_back((uint8_t)x); }
+    static void put16(std::vector<uint8_t>& v, unsigned x) { dect2::endian::putBe16(v, x); }
     static std::vector<uint8_t> fig(int type, const std::vector<uint8_t>& body) { std::vector<uint8_t> f; f.push_back((uint8_t)((type << 5) | (int)body.size())); f.insert(f.end(), body.begin(), body.end()); return f; }
     static void labelBytes(std::vector<uint8_t>& b, const std::string& l) {
         for (int i = 0; i < 16; i++) b.push_back(i < (int)l.size() ? (uint8_t)l[(size_t)i] : (uint8_t)' ');

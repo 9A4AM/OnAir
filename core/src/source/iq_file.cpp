@@ -9,6 +9,8 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include "dect2/common/str.h"
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace {
@@ -78,7 +80,7 @@ struct P {
     }
 };
 
-std::string lower(std::string x) { for (auto& c : x) c = (char)tolower((unsigned char)c); return x; }
+std::string lower(std::string x) { return dect2::str::lower(std::move(x)); }
 bool endsWith(const std::string& s, const char* e) { size_t n = strlen(e); return s.size() >= n && lower(s.substr(s.size() - n)) == e; }
 std::filesystem::path fsPath(const std::string& p) { return std::filesystem::u8path(p); }
 
@@ -164,8 +166,8 @@ bool probeSigmf(const std::string& metaPath, const std::string& dataPathIn, IqFi
     return true;
 }
 
-uint32_t rd32(const uint8_t* p) { return p[0] | (p[1] << 8) | (p[2] << 16) | ((uint32_t)p[3] << 24); }
-uint16_t rd16(const uint8_t* p) { return (uint16_t)(p[0] | (p[1] << 8)); }
+uint32_t rd32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
+uint16_t rd16(const uint8_t* p) { return (uint16_t)dect2::endian::loadLe16(p); }
 
 bool probeWav(const std::string& path, IqFileInfo& out, std::string& err) {
     std::ifstream f(fsPath(path), std::ios::binary);

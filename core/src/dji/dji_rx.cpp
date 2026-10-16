@@ -11,6 +11,7 @@
 #include <cstring>
 #include <deque>
 #include <mutex>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 
@@ -23,7 +24,7 @@ constexpr double kReportSec = 0.25;
 constexpr int kPsd = 1024;
 constexpr double kMinBwMhz = 3.0;          // narrower signals are not drone video links
 
-int64_t wallNow() { return (int64_t)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); }
+int64_t wallNow() { return dect2::unixNow(); }
 
 double db10(double v) { return 10.0 * std::log10(std::max(v, 1e-20)); }
 

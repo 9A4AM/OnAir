@@ -1,13 +1,14 @@
 // HRPT / AHRPT layers above the demodulator (see hrpt_proto.h).
 #include "dect2/hrpt/hrpt_proto.h"
 #include <cstring>
+#include "dect2/common/bits.h"
 
 namespace dect2::hrpt {
 
 const uint16_t kNoaaSync[kNoaaSyncWords] = {0x284, 0x16F, 0x35C, 0x19D, 0x20F, 0x095};
 
 namespace {
-inline int parity7(unsigned v) { v ^= v >> 4; v ^= v >> 2; v ^= v >> 1; return (int)(v & 1); }
+inline int parity7(unsigned v) { return dect2::bits::parity(v & 0xFFu); }   // folds the low 8 bits, as before
 }
 
 void CcsdsEncoder::push(int bit, uint8_t& a, uint8_t& b) {

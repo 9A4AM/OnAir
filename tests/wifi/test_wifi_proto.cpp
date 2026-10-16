@@ -4,8 +4,7 @@
 #include <cstring>
 #include <string>
 using namespace dect2::wifi;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     const uint8_t s[9] = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};

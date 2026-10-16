@@ -18,12 +18,14 @@
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kWorkRate = 800000.0;     // 8 samples per chip
 constexpr int kSps = 8;
 constexpr int kRing = 1024;
@@ -32,7 +34,7 @@ constexpr double kChanOffsetHz = 100000.0;
 constexpr size_t kBlock = 16000;           // 20 ms noise blocks
 constexpr size_t kNoiseBlocks = 250;
 
-int popcount32(uint32_t v) { int c = 0; while (v) { c++; v &= v - 1; } return c; }
+int popcount32(uint32_t v) { return dect2::bits::popcount(v); }
 
 struct Cand { int64_t n = 0; int p = 0; int64_t k0 = 0; bool inv = false; int err = 0; float score = 0; };
 

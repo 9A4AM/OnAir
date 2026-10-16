@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include "dect2/common/bits.h"
+#include "dect2/common/str.h"
 
 namespace dect2::adsb {
 
@@ -49,14 +51,7 @@ int dfLength(int df) {
     }
 }
 
-uint32_t getBits(const uint8_t* m, int first, int count) {
-    uint32_t v = 0;
-    for (int i = 0; i < count; i++) {
-        const int b = first - 1 + i;
-        v = (v << 1) | ((m[b >> 3] >> (7 - (b & 7))) & 1u);
-    }
-    return v;
-}
+uint32_t getBits(const uint8_t* m, int first, int count) { return (uint32_t)bits::getPackedMsb(m, (size_t)(first - 1), count); }
 
 void setBits(uint8_t* m, int first, int count, uint32_t value) {
     for (int i = 0; i < count; i++) {
@@ -602,12 +597,7 @@ std::string raText(unsigned ara, unsigned rac, bool terminated) {
 
 // ---------------------------------------------------------------- message decoding
 
-std::string toHex(const uint8_t* b, int nbits) {
-    static const char* d = "0123456789ABCDEF";
-    std::string s;
-    for (int i = 0; i < nbits / 8; i++) { s += d[b[i] >> 4]; s += d[b[i] & 15]; }
-    return s;
-}
+std::string toHex(const uint8_t* b, int nbits) { return dect2::str::toHex(b, nbits > 0 ? (size_t)(nbits / 8) : 0); }
 
 // movement field of a surface position (DO-260B; the ranges as printed in the Riddle, chapter Surface Position). The lower edge of the range is reported.
 static bool movementToKt(unsigned c, double& kt) {

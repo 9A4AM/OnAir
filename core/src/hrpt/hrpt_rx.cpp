@@ -12,13 +12,14 @@
 #include <cstring>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
 using cd = std::complex<double>;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kPubSec = 0.25;
 constexpr int kHist = 4096;             // decimated samples kept (power of two)
 constexpr int kAcqLog2 = 10, kAcqN = 1 << kAcqLog2, kAcqBlocks = 48;

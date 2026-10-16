@@ -12,6 +12,7 @@ extern "C" {
 #include <cstring>
 #include <map>
 #include <mutex>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace atsc3synth {
@@ -59,8 +60,8 @@ void drawCard(AVFrame* f, int n) {
 }
 
 // ---------------------------------------------------------------- box helpers
-uint32_t rd32(const uint8_t* p) { return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3]; }
-void wr32(uint8_t* p, uint32_t v) { p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16); p[2] = (uint8_t)(v >> 8); p[3] = (uint8_t)v; }
+uint32_t rd32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
+void wr32(uint8_t* p, uint32_t v) { dect2::endian::storeBe32(p, v); }
 uint64_t rd64(const uint8_t* p) { return ((uint64_t)rd32(p) << 32) | rd32(p + 4); }
 void wr64(uint8_t* p, uint64_t v) { wr32(p, (uint32_t)(v >> 32)); wr32(p + 4, (uint32_t)v); }
 

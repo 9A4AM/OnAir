@@ -10,6 +10,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 using namespace dect2;
 using namespace dect2::dvbs;
@@ -136,7 +137,7 @@ int main() {
             for (size_t k = 0; k < lay.size(); k++) {
                 if (mode >= 0 && !lay[k]) continue;
                 const cf32 x = s2RotateByR(f[990 + k], (4 - rn[990 + k - 90]) & 3);
-                pil += x.real() * 0.70710678f + x.imag() * 0.70710678f; n++;
+                pil += x.real() * dect2::math::k1OverSqrt2f + x.imag() * dect2::math::k1OverSqrt2f; n++;
             }
             CHECK(std::fabs(pil / n - 1.0) < 1e-4, "mode %d: pilots / dummy symbols are not the scrambled (1 + j) / sqrt 2 (%.4f)", mode, pil / n);
         }

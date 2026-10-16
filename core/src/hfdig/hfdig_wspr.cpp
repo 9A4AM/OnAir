@@ -9,6 +9,7 @@
 #include <cstring>
 #include <sstream>
 #include <vector>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace ftx {
@@ -252,10 +253,7 @@ std::string wsprUnpack(const uint8_t* d, std::map<uint32_t, std::string>& table,
 // ---------------------------------------------------------------- the convolutional code and the interleaver
 
 static constexpr uint32_t kPoly1 = 0xF2D05351u, kPoly2 = 0xE4613C47u;
-static inline int parity(uint32_t x) {
-    x ^= x >> 16; x ^= x >> 8; x ^= x >> 4; x ^= x >> 2; x ^= x >> 1;
-    return (int)(x & 1);
-}
+static inline int parity(uint32_t x) { return dect2::bits::parity(x); }
 
 void wsprConvEncode(const uint8_t* d, uint8_t* out) {
     uint32_t reg = 0;
@@ -267,7 +265,7 @@ void wsprConvEncode(const uint8_t* d, uint8_t* out) {
     }
 }
 
-static int rev8(int j) { int r = 0; for (int b = 0; b < 8; b++) if (j & (1 << b)) r |= 1 << (7 - b); return r; }
+static int rev8(int j) { return dect2::bits::reverse8((uint8_t)j); }
 
 void wsprInterleave(const uint8_t* in, uint8_t* out) {
     int p = 0;

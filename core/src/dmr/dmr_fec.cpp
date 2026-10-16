@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace dmr {
@@ -29,11 +31,7 @@ void bitsToBytes(const Bits& b, size_t pos, size_t nbits, uint8_t* out) {
     for (size_t i = 0; i < nbits / 8; i++) out[i] = (uint8_t)getBits(b, pos + i * 8, 8);
 }
 
-int popcount32(uint32_t v) {
-    int n = 0;
-    while (v) { v &= v - 1; n++; }
-    return n;
-}
+int popcount32(uint32_t v) { return dect2::bits::popcount(v); }
 
 namespace {
 
@@ -187,14 +185,7 @@ int rs129Correct(uint8_t word[12]) {
 
 // ---------------------------------------------------------------------------------------------------- checksums
 
-uint16_t crcCcitt(const uint8_t* d, size_t n) {
-    uint16_t c = 0;
-    for (size_t i = 0; i < n; i++) {
-        c ^= (uint16_t)(d[i] << 8);
-        for (int b = 0; b < 8; b++) c = (c & 0x8000) ? (uint16_t)((c << 1) ^ 0x1021) : (uint16_t)(c << 1);
-    }
-    return (uint16_t)~c;
-}
+uint16_t crcCcitt(const uint8_t* d, size_t n) { return (uint16_t)~crc::crc16Xmodem(d, n); }
 
 uint8_t crc8Short(uint32_t bits28) {
     unsigned c = 0;
@@ -226,12 +217,8 @@ uint16_t crc9(const uint8_t* d, size_t nbytes, unsigned dbsn) {
 uint32_t crc32Msg(const uint8_t* d, size_t n) {
     // the octets of each 16-bit word go in least significant octet first (B.8B); polynomial B.21, initial value 0, no inversion
     uint32_t c = 0;
-    auto feed = [&](uint8_t b) {
-        c ^= (uint32_t)b << 24;
-        for (int i = 0; i < 8; i++) c = (c & 0x80000000u) ? (c << 1) ^ 0x04C11DB7u : (c << 1);
-    };
-    for (size_t i = 0; i + 1 < n; i += 2) { feed(d[i + 1]); feed(d[i]); }
-    if (n & 1) feed(d[n - 1]);
+    for (size_t i = 0; i + 1 < n; i += 2) { c = crc::msbUpdate<32, 0x04C11DB7u>(c, d[i + 1]); c = crc::msbUpdate<32, 0x04C11DB7u>(c, d[i]); }
+    if (n & 1) c = crc::msbUpdate<32, 0x04C11DB7u>(c, d[n - 1]);
     return c;
 }
 

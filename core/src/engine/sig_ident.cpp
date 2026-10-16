@@ -13,13 +13,14 @@
 #include <cstdio>
 #include <mutex>
 #include <thread>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace sigid {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 double lin(double db) { return std::pow(10.0, db / 10); }
 double dB(double x) { return 10 * std::log10(std::max(1e-30, x)); }

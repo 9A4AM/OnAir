@@ -3,6 +3,7 @@
 #pragma once
 #include "dect2/common/ring.h"
 #include <cstddef>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
@@ -34,7 +35,7 @@ private:
     void processReference(const cf32* z, size_t n, cf32* out);   // the loop one symbol at a time with libm
     double theta_ = 0, omega_ = 0, kp_ = 0, ki_ = 0;
     float lock_ = 0, snrDb_ = 0;
-    float sigma2_ = 0.1f, amp_ = 0.70710678f;
+    float sigma2_ = 0.1f, amp_ = dect2::math::k1OverSqrt2f;
     double m2_ = 1, m4_ = 1, c4re_ = 0;
     size_t count_ = 0;
 };

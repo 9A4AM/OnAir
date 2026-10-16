@@ -13,8 +13,7 @@
 #include <random>
 #include <vector>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // the strip the receiver should show for picture row r, block k, channel c
 static void expected(int c, int r, int k, uint8_t out[8][112]) {

@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cmath>
 #include <mutex>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 
@@ -34,7 +35,7 @@ Enabled chooseServices(int service, double f) {
     return e;
 }
 
-int64_t wallNow() { return (int64_t)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); }
+int64_t wallNow() { return dect2::unixNow(); }
 } // namespace
 
 struct MarineReceiver::Impl {

@@ -1,6 +1,7 @@
 // LoRa coding chain and the test signal's frame waveform. Sources are named in mesh_lora.h.
 #include "dect2/mesh/mesh_lora.h"
 #include <cmath>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace lora {
@@ -82,11 +83,7 @@ uint16_t payloadCrc(const uint8_t* p, size_t n) {
     return crc;
 }
 
-uint32_t grayDecode(uint32_t g) {
-    uint32_t x = g;
-    for (uint32_t s = g >> 1; s; s >>= 1) x ^= s;
-    return x;
-}
+uint32_t grayDecode(uint32_t g) { return dect2::bits::grayInverse(g); }
 
 int dataSymbols(const Params& p, size_t len) {
     // SX1261/2 datasheet 6.1.4, explicit header

@@ -2,6 +2,8 @@
 #include "dect2/zigbee/zigbee_proto.h"
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace zigbee {
@@ -12,14 +14,7 @@ const uint32_t kChipTable[16] = {
     0x8C96077B, 0xB8C96077, 0x7B8C9607, 0x77B8C960, 0x077B8C96, 0x6077B8C9, 0x96077B8C, 0xC96077B8,
 };
 
-uint16_t crc16(const uint8_t* d, size_t n) {
-    uint16_t c = 0;
-    for (size_t i = 0; i < n; i++) {
-        c ^= d[i];
-        for (int b = 0; b < 8; b++) c = (c & 1) ? (uint16_t)((c >> 1) ^ 0x8408) : (uint16_t)(c >> 1);
-    }
-    return c;
-}
+uint16_t crc16(const uint8_t* d, size_t n) { return crc::crc16Kermit(d, n); }   // CRC-16/KERMIT, the 802.15.4 FCS
 
 const char* frameTypeName(int t) {
     switch (t) {
@@ -160,8 +155,8 @@ const char* vendorOfExt(uint64_t ext) {
 }
 
 namespace {
-uint16_t le16(const uint8_t* p) { return (uint16_t)(p[0] | p[1] << 8); }
-uint64_t le64(const uint8_t* p) { uint64_t v = 0; for (int i = 7; i >= 0; i--) v = v << 8 | p[i]; return v; }
+uint16_t le16(const uint8_t* p) { return (uint16_t)dect2::endian::loadLe16(p); }
+uint64_t le64(const uint8_t* p) { return (uint64_t)dect2::endian::loadLe64(p); }
 }
 
 std::string srcText(const Frame& f) {
@@ -400,8 +395,8 @@ Frame parse(const uint8_t* d, size_t total) {
 // ------------------------------------------------------------------ builders
 
 namespace {
-void put16(std::vector<uint8_t>& v, uint16_t x) { v.push_back((uint8_t)x); v.push_back((uint8_t)(x >> 8)); }
-void put64(std::vector<uint8_t>& v, uint64_t x) { for (int i = 0; i < 8; i++) v.push_back((uint8_t)(x >> (8 * i))); }
+void put16(std::vector<uint8_t>& v, uint16_t x) { dect2::endian::putLe16(v, x); }
+void put64(std::vector<uint8_t>& v, uint64_t x) { dect2::endian::putLe64(v, x); }
 }
 
 std::vector<uint8_t> buildMac(const MacBuild& b) {

@@ -16,6 +16,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 
@@ -111,8 +112,8 @@ private:
 
     static bool fail(std::string* e, const char* m) { if (e) *e = m; return false; }
     bool closeFail(std::string* e, const char* m) { if (f_) fclose(f_); f_ = nullptr; return fail(e, m); }
-    static uint32_t be32(const uint8_t* p) { return ((uint32_t)p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]; }
-    static uint32_t be16(const uint8_t* p) { return (p[0] << 8) | p[1]; }
+    static uint32_t be32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
+    static uint32_t be16(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe16(p); }
 
     bool page(uint32_t no, std::vector<uint8_t>& buf) {
         if (no < 1 || no > pages_) return false;

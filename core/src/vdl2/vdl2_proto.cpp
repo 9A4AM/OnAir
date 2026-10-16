@@ -8,6 +8,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/str.h"
 
 namespace dect2 {
 
@@ -381,13 +382,7 @@ std::vector<uint8_t> vdl2Frame(const Vdl2Addr& dst, const Vdl2Addr& src, uint8_t
 // ---- protocol readers ----
 namespace {
 
-std::string hexs(const uint8_t* p, size_t n, size_t max = 24) {
-    std::string s;
-    char b[4];
-    for (size_t i = 0; i < n && i < max; i++) { snprintf(b, sizeof b, "%02X", p[i]); s += b; }
-    if (n > max) s += "...";
-    return s;
-}
+std::string hexs(const uint8_t* p, size_t n, size_t max = 24) { std::string s = dect2::str::toHex(p, n, true, 0, max); if (n > max) s += "..."; return s; }
 
 std::string bcd(const uint8_t* p, int digits, int startNibble) {
     std::string s;

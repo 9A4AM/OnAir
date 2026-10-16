@@ -2,8 +2,7 @@
 // with normal and inverted polarity, and the channel readings must be sane.
 #include "dect2/inmc/inmc_testutil.h"
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static void one(const char* name, bool invert, double ebn0, double secs) {
     InmcRunOpts o;

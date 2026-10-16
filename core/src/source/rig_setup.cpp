@@ -10,17 +10,14 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <limits.h>
+#include "dect2/common/str.h"
 #endif
 
 namespace dect2 {
 
 namespace {
 
-std::string lower(const std::string& s) {
-    std::string r = s;
-    for (auto& c : r) c = (char)tolower((unsigned char)c);
-    return r;
-}
+std::string lower(const std::string& s) { return dect2::str::lower(s); }
 // lower case with spaces, dashes, underscores, dots and slashes removed: "IC-R8600" and "ic r8600" compare equal
 std::string squash(const std::string& s) {
     std::string r;

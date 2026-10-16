@@ -15,6 +15,7 @@
 #include <cmath>
 #include <map>
 #include <mutex>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace native {
@@ -34,8 +35,8 @@ enum : uint32_t { kDevInvalid = 0, kDevAirspyOne = 1, kDevAirspyHf = 2, kDevRtlS
 constexpr uint32_t kMaxBody = 1u << 20;
 constexpr int kConnectMs = 3000, kStallMs = 3000;
 
-uint32_t le32(const unsigned char* p) { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
-void put32(unsigned char* p, uint32_t v) { p[0] = (unsigned char)v; p[1] = (unsigned char)(v >> 8); p[2] = (unsigned char)(v >> 16); p[3] = (unsigned char)(v >> 24); }
+uint32_t le32(const unsigned char* p) { return (uint32_t)dect2::endian::loadLe32(p); }
+void put32(unsigned char* p, uint32_t v) { dect2::endian::storeLe32(p, v); }
 
 const char* devName(uint32_t t) {
     switch (t) { case kDevAirspyOne: return "Airspy"; case kDevAirspyHf: return "Airspy HF+"; case kDevRtlSdr: return "RTL-SDR"; default: return "radio"; }

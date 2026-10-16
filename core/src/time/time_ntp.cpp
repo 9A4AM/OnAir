@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstring>
 #include <thread>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 
@@ -129,9 +130,9 @@ bool clockSyncRun(double offsetMs, std::string& message) {
 // ---------------------------------------------------------------- NTP packets
 namespace ntp {
 
-static void put32(uint8_t* p, uint32_t v) { p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16); p[2] = (uint8_t)(v >> 8); p[3] = (uint8_t)v; }
+static void put32(uint8_t* p, uint32_t v) { dect2::endian::storeBe32(p, v); }
 static void put64(uint8_t* p, uint64_t v) { put32(p, (uint32_t)(v >> 32)); put32(p + 4, (uint32_t)v); }
-static uint32_t get32(const uint8_t* p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
+static uint32_t get32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
 static uint64_t get64(const uint8_t* p) { return (uint64_t)get32(p) << 32 | get32(p + 4); }
 
 bool parse(const uint8_t* b, size_t n, Packet& p) {

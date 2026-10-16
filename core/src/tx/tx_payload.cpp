@@ -67,6 +67,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "dect2/common/str.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -75,12 +77,9 @@ std::unique_ptr<ModeSynth> makeTxMixSynth(std::unique_ptr<ModeSynth> a, std::uni
 void txPullPcm8k(const TxRequest& r, int16_t* pcm, int n);
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
-std::string upper(std::string s) {
-    for (char& c : s) c = (char)std::toupper((unsigned char)c);
-    return s;
-}
+std::string upper(std::string s) { return dect2::str::upper(std::move(s)); }
 
 ax25::Address ax25Addr(const std::string& s) {
     ax25::Address a;

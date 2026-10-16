@@ -7,8 +7,7 @@
 #include <string>
 #include <vector>
 using namespace dect2::zigbee;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     // CRC-16 ITU-T, init 0, reflected (CRC-16/KERMIT): the catalogue's check value for "123456789" is 0x2189

@@ -7,19 +7,20 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // white Gaussian noise, one table shared by all generators (unit variance per complex sample); each generator reads it from pseudo random positions
 const std::vector<cf32>& noiseTable() {
     static const std::vector<cf32> t = [] {
         std::vector<cf32> v(1 << 20);
         std::mt19937 rng(20240607);
-        std::normal_distribution<float> nd(0.f, 0.70710678f);
+        std::normal_distribution<float> nd(0.f, dect2::math::k1OverSqrt2f);
         for (auto& x : v) x = cf32(nd(rng), nd(rng));
         return v;
     }();

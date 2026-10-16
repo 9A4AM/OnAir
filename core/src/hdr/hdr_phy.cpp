@@ -9,6 +9,7 @@
 #include <cmath>
 #include <complex>
 #include <cstring>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 { namespace hdr {
 
@@ -181,7 +182,7 @@ struct FmRx::Impl {
         cFreq.assign(kFftFm, 0.f);
         cPhase.assign(kFftFm, 0.f);
         pm.assign((size_t)16 * kPmBlock, 0.f);
-        const float bw = 0.05f, damp = 0.70710678f;
+        const float bw = 0.05f, damp = dect2::math::k1OverSqrt2f;
         const float den = 1 + 2 * damp * bw + bw * bw;
         alpha = 4 * damp * bw / den;
         beta = 4 * bw * bw / den;

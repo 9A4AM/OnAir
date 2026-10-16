@@ -6,8 +6,7 @@
 #include <vector>
 using namespace dect2;
 using namespace dect2::pager;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static void bchTests() {
     CHECK(encodeWord(kPocsagIdle >> 11) == kPocsagIdle, "the idle code word is not a valid word: %08x", encodeWord(kPocsagIdle >> 11));

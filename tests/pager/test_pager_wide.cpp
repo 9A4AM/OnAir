@@ -11,8 +11,7 @@
 #include <cstdio>
 #include <memory>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static const double kFs = 2.0e6;
 static const double kTol = 4000;   // the FLEX 4-level test signal sits about 2.8 kHz off its nominal carrier (its symbol mix is lopsided); the POCSAG ones within 150 Hz

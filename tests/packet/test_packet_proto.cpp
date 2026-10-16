@@ -5,9 +5,9 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/mathconst.h"
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 static bool near(double a, double b, double tol) { return std::fabs(a - b) <= tol; }
 
 static void testCrc() {
@@ -66,7 +66,7 @@ static void testStuffing() {
     double tph = 0;
     for (uint8_t lv : ax25::nrziEncode(b2b)) {
         for (int s = 0; s < 40; s++) {
-            tph += 2 * 3.14159265358979323846 * (lv ? 1200.0 : 2200.0) / pktdemod::kAudioRate;
+            tph += 2 * dect2::math::kPi * (lv ? 1200.0 : 2200.0) / pktdemod::kAudioRate;
             au.push_back((float)std::sin(tph));
         }
     }

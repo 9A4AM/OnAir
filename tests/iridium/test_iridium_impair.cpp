@@ -6,8 +6,7 @@
 #include <cstdio>
 using namespace dect2;
 using namespace dect2::iridiumtest;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static Match go(const char* name, const SceneOpts& so, const RunOpts& ro, RunResult* out = nullptr, double from = 0, double to = 1e9) {
     const auto bursts = makeScene(so, ro.noiseSigma);

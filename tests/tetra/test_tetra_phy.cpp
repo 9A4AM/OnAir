@@ -9,8 +9,7 @@
 #include <random>
 using namespace dect2;
 using namespace dect2::tetra;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static std::vector<float> toLlr(const Bits& b, std::mt19937& g, double flipRate) {
     std::uniform_real_distribution<double> u(0, 1);

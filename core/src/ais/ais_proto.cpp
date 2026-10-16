@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include "dect2/common/linecode.h"
 
 namespace dect2 {
 namespace ais {
@@ -99,24 +100,8 @@ bool destuff(const Bits& in, Bits& out) {
     }
     return true;
 }
-Bits nrziEncode(const Bits& data, int startLevel) {
-    Bits out(data.size());
-    int lv = startLevel & 1;
-    for (size_t i = 0; i < data.size(); i++) {
-        if (!data[i]) lv ^= 1;
-        out[i] = (uint8_t)lv;
-    }
-    return out;
-}
-Bits nrziDecode(const Bits& line, int prevLevel) {
-    Bits out(line.size());
-    int p = prevLevel & 1;
-    for (size_t i = 0; i < line.size(); i++) {
-        out[i] = (line[i] == p) ? 1 : 0;
-        p = line[i];
-    }
-    return out;
-}
+Bits nrziEncode(const Bits& data, int startLevel) { return dect2::linecode::nrziEncode(data, startLevel); }
+Bits nrziDecode(const Bits& line, int prevLevel) { return dect2::linecode::nrziDecode(line, prevLevel); }
 
 #endif
 static const uint8_t kFlag[8] = {0, 1, 1, 1, 1, 1, 1, 0};

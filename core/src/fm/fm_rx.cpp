@@ -17,11 +17,12 @@
 #include <cstring>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kAudioRate = 48000;
 constexpr double kDevHz = 75000.0;      // 100 % modulation
 constexpr double kChanPass = 110e3;     // the channel filter passes +-110 kHz and is 60 dB down by +-190 kHz (setChannelWidth() changes the pass band)

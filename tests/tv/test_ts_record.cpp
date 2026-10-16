@@ -10,8 +10,7 @@
 #include <set>
 #include <vector>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 typedef std::vector<uint8_t> Bytes;
 static std::map<int, int> gCc;

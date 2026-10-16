@@ -2,13 +2,14 @@
 #pragma once
 #include <cmath>
 #include <cstdint>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace sondegeo {
 
 constexpr double kA = 6378137.0, kF = 1.0 / 298.257223563;
 constexpr double kE2 = kF * (2 - kF);
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 // GPS time runs ahead of UTC by the leap seconds since 1980 (18 since 2017-01-01). A sonde that sends GPS time is shown in UTC.
 constexpr int kGpsMinusUtcS = 18;
 constexpr double kGpsEpochUnix = 315964800.0;     // 1980-01-06 00:00:00 UTC

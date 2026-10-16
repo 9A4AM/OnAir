@@ -4,8 +4,7 @@
 #include <algorithm>
 #include <cstdio>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 static bool has(const std::vector<std::string>& v, const std::string& s) { return std::find(v.begin(), v.end(), s) != v.end(); }
 static size_t at(const std::vector<std::string>& v, const std::string& s) { return (size_t)(std::find(v.begin(), v.end(), s) - v.begin()); }
 int main() {

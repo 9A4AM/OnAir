@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstring>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -458,7 +459,7 @@ public:
         return v;
     }
 private:
-    cf32 gauss() { std::normal_distribution<float> nd(0.f, 0.70710678f); return cf32(nd(rng_), nd(rng_)); }
+    cf32 gauss() { std::normal_distribution<float> nd(0.f, dect2::math::k1OverSqrt2f); return cf32(nd(rng_), nd(rng_)); }
     cf32 step() {
         noise_[(size_t)head_] = gauss();
         head_ = (head_ + 1) % (int)noise_.size();

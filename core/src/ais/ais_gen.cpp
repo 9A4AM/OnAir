@@ -8,12 +8,13 @@
 #include <map>
 #include <random>
 #include <set>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kBit = 9600.0;
 constexpr double kSlotSec = 60.0 / 2250.0;
 constexpr double kChanHz = 25000.0;

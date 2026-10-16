@@ -14,11 +14,12 @@
 #include <deque>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr float kThrDb = 10.f;           // a peak must stand this far above its bin's floor
 constexpr int kMaxPeaks = 8;
 constexpr int kMaxTracks = 32;

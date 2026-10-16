@@ -7,11 +7,12 @@
 #include <cmath>
 #include <cstring>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // the frequency pulse of one bit: a rectangle through the Gaussian filter (BT 0.5), in bit units
 double gfskPulse(double tau) {

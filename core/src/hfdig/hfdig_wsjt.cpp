@@ -10,17 +10,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include "dect2/common/window.h"
 
 namespace dect2 {
 namespace wsjt {
 
 namespace {
 
-double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 60; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; if (t < 1e-14 * s) break; }
-    return s;
-}
+double besselI0(double x) { return dect2::window::besselI0(x, 60, 1e-14); }
 
 } // namespace
 

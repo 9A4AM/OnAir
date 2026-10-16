@@ -7,11 +7,12 @@
 #include <cstddef>
 #include <type_traits>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dmr {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kSymbolRate = 4800.0;
 constexpr int kSps = 10;                       // samples per symbol at the working rate of 48 kHz
 constexpr double kWorkRate = kSymbolRate * kSps;

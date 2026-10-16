@@ -24,6 +24,7 @@ extern "C" {
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#include "dect2/common/endian.h"
 #endif
 
 namespace dect2 {
@@ -215,7 +216,7 @@ struct DabAudio::Impl {
         std::string lastDl;
     } rec;
 
-    static void le32(uint8_t* p, uint32_t v) { for (int i = 0; i < 4; i++) p[i] = (uint8_t)(v >> (8 * i)); }
+    static void le32(uint8_t* p, uint32_t v) { dect2::endian::storeLe32(p, v); }
     void wavHeader(uint32_t dataBytes) {
         uint8_t h[44];
         std::memcpy(h, "RIFF", 4); le32(h + 4, 36 + dataBytes); std::memcpy(h + 8, "WAVEfmt ", 8); le32(h + 16, 16);

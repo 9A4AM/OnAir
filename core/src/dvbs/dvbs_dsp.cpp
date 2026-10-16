@@ -5,18 +5,16 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/mathconst.h"
+#include "dect2/common/window.h"
 
 namespace dect2 {
 namespace dvbs {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
-double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 60; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; if (t < 1e-12 * s) break; }
-    return s;
-}
+double besselI0(double x) { return dect2::window::besselI0(x, 60, 1e-12); }
 double kaiser(double x, double beta) {            // x in [-1, 1]
     if (std::fabs(x) >= 1) return 0;
     return besselI0(beta * std::sqrt(1 - x * x)) / besselI0(beta);

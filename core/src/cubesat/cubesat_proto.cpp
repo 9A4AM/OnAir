@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace cubesat {
@@ -172,8 +173,8 @@ namespace {
 
 const uint16_t kGolayP[12] = {0x8ed, 0x1db, 0x3b5, 0x769, 0xed1, 0xda3, 0xb47, 0x68f, 0xd1d, 0xa3b, 0x477, 0xffe};
 
-int parity(uint32_t v) { int p = 0; while (v) { p ^= 1; v &= v - 1; } return p; }
-int popcount(uint32_t v) { int c = 0; while (v) { c++; v &= v - 1; } return c; }
+int parity(uint32_t v) { return dect2::bits::parity(v); }
+int popcount(uint32_t v) { return dect2::bits::popcount(v); }
 
 uint32_t golaySyndrome(uint32_t w) {
     const uint32_t data = w & 0xFFF, par = (w >> 12) & 0xFFF;

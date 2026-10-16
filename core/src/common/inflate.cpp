@@ -1,5 +1,6 @@
 #include "dect2/common/inflate.h"
 #include <cstring>
+#include "dect2/common/crc.h"
 
 namespace dect2 {
 
@@ -145,21 +146,7 @@ bool inflateRaw(const uint8_t* data, size_t size, std::vector<uint8_t>& out, siz
     return true;
 }
 
-uint32_t crc32Ieee(const uint8_t* d, size_t n, uint32_t crc) {
-    static uint32_t table[256];
-    static bool init = false;
-    if (!init) {
-        for (uint32_t i = 0; i < 256; i++) {
-            uint32_t c = i;
-            for (int k = 0; k < 8; k++) c = (c & 1) ? 0xEDB88320u ^ (c >> 1) : c >> 1;
-            table[i] = c;
-        }
-        init = true;
-    }
-    crc = ~crc;
-    for (size_t i = 0; i < n; i++) crc = table[(crc ^ d[i]) & 0xFF] ^ (crc >> 8);
-    return ~crc;
-}
+uint32_t crc32Ieee(const uint8_t* d, size_t n, uint32_t crc) { return dect2::crc::crc32Update(crc, d, n); }
 
 bool gunzip(const uint8_t* d, size_t n, std::vector<uint8_t>& out, size_t maxOut) {
     if (n < 18 || d[0] != 0x1F || d[1] != 0x8B || d[2] != 8) return false;

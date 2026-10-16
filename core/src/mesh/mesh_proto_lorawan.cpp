@@ -4,6 +4,7 @@
 #include "mesh_proto_internal.h"
 #include <algorithm>
 #include <cstring>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 
@@ -58,10 +59,10 @@ const OuiDef kOuis[] = {
     {0x70B3D5, "IEEE small-vendor block"},
 };
 
-uint32_t le32(const uint8_t* p) { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
-uint64_t le64(const uint8_t* p) { uint64_t v = 0; for (int i = 7; i >= 0; i--) v = v << 8 | p[i]; return v; }
-uint32_t be32(const uint8_t* p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | (uint32_t)p[3]; }
-void put32(std::vector<uint8_t>& v, uint32_t x) { for (int i = 0; i < 4; i++) v.push_back((uint8_t)(x >> (8 * i))); }
+uint32_t le32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
+uint64_t le64(const uint8_t* p) { return (uint64_t)dect2::endian::loadLe64(p); }
+uint32_t be32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
+void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putLe32(v, x); }
 void putMic(std::vector<uint8_t>& v, uint32_t mic) { for (int i = 3; i >= 0; i--) v.push_back((uint8_t)(mic >> (8 * i))); }
 
 // the FOpts MAC commands: names, and the values of the ones that say something about the device or the link

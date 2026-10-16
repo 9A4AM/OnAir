@@ -5,13 +5,14 @@
 #include "dect2/dsp/gen_util.h"
 #include <cmath>
 #include <cstdio>
+#include "dect2/common/mathconst.h"
 using namespace dect2;
 using namespace dect2::ais;
 using namespace dect2::aistest;
 
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL: " __VA_ARGS__); printf("\n"); fails++; } } while (0)
-static const double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // ---- framing written a second way: bytes, a CRC table, a stuffing loop
 static uint16_t crcTable[256];

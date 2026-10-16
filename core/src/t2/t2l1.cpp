@@ -6,6 +6,8 @@
 #include <cstring>
 #include <cstdint>
 #include <vector>
+#include "dect2/common/crc.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -237,15 +239,7 @@ std::vector<uint8_t> postRandomizer() {
 // ------------------------------------------------------------------ public: bits
 bool l1PostScrambled(const L1Pre& p) { return p.version >= 2 && p.postScrambled != 0; }
 
-uint32_t crc32Bits(const std::vector<uint8_t>& bits, size_t n) {
-    uint32_t crc = 0xffffffffu;
-    for (size_t i = 0; i < n; i++) {
-        uint32_t b = bits[i] ^ ((crc >> 31) & 1);
-        crc <<= 1;
-        if (b) crc ^= 0x04C11DB7u;
-    }
-    return crc;
-}
+uint32_t crc32Bits(const std::vector<uint8_t>& bits, size_t n) { return crc::bits(bits.data(), n, 32, 0x04C11DB7u, 0xFFFFFFFFu); }
 
 void packL1Pre(const L1Pre& p, std::vector<uint8_t>& bits) {
     bits.clear();
@@ -290,7 +284,7 @@ cf32 mapCell(int mod, unsigned b) {
     switch (mod) {
     case 0: return cf32(b ? -1.f : 1.f, 0.f);
     case 1: {
-        const float a = 0.70710678f;
+        const float a = dect2::math::k1OverSqrt2f;
         return cf32((b & 2) ? -a : a, (b & 1) ? -a : a);
     }
     case 2: {

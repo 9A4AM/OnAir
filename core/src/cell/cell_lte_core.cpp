@@ -3,6 +3,7 @@
 #include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
+#include "dect2/common/mathconst.h"
 
 namespace dect2::cell {
 
@@ -10,7 +11,7 @@ void lteTxdEncode(const std::vector<cf32>& d0, int P, std::vector<std::vector<cf
     std::vector<cf32> d = d0;
     while (d.size() % (size_t)P) d.push_back(0);
     y.assign((size_t)P, std::vector<cf32>(d.size(), cf32(0, 0)));
-    const float s = 0.70710678f;
+    const float s = dect2::math::k1OverSqrt2f;
     if (P == 1) { y[0] = d; return; }
     if (P == 2) {
         for (size_t i = 0; i + 1 < d.size(); i += 2) {

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <map>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
@@ -85,7 +86,7 @@ float s2RefinePhase(cf32* x, int n, int mod, int rate, float sigma2, int W, cons
                 const float xr = x[k].real(), xi = x[k].imag();
                 float er, ei;
                 if (!soft) { const cf32 e = c[np.index(xr, xi)]; er = e.real(); ei = e.imag(); }
-                else if (mod == kQpsk) { er = 0.70710678f * ftanhf(0.70710678f * invS * xr); ei = 0.70710678f * ftanhf(0.70710678f * invS * xi); }
+                else if (mod == kQpsk) { er = dect2::math::k1OverSqrt2f * ftanhf(dect2::math::k1OverSqrt2f * invS * xr); ei = dect2::math::k1OverSqrt2f * ftanhf(dect2::math::k1OverSqrt2f * invS * xi); }
                 else if (P > 32) {
                     // the dense S2X constellations: the two nearest points carry the expectation
                     int i1, i2;

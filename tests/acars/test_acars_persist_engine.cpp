@@ -12,8 +12,7 @@
 #include <thread>
 using namespace dect2;
 using namespace dect2::enginetest;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // the newest report of the given active standard, waited for up to secs
 static bool reportOf(Engine& e, int act, double secs, RxTelemetry& rx) {

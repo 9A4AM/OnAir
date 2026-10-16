@@ -7,8 +7,7 @@
 #include <cmath>
 #include <cstdio>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static const double kRate = 48000, kCentre = 8.935e6;
 static const double kChans[3] = {8.927e6, 8.942e6, 8.936e6};

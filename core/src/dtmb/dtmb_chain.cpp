@@ -7,6 +7,7 @@
 #include <ctime>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/timecompat.h"
 
 namespace dect2::dtmb {
 
@@ -15,9 +16,9 @@ namespace {
 #ifndef _WIN32
 double nowSec() { timespec ts; clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts); return (double)ts.tv_sec + 1e-9 * (double)ts.tv_nsec; }
 #else
-double nowSec() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+double nowSec() { return dect2::steadyNowSec(); }
 #endif
-double wallSec() { return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
+double wallSec() { return dect2::steadyNowSec(); }
 constexpr size_t kGpuBatch = 32;      // codewords the GPU takes at once
 }
 

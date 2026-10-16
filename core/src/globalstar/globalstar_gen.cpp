@@ -6,12 +6,13 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 class GlobalstarSynth : public ModeSynth {
 public:

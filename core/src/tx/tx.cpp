@@ -34,6 +34,7 @@ extern "C" {
 #include <functional>
 #include <memory>
 #include <vector>
+#include "dect2/common/mathconst.h"
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -533,7 +534,7 @@ void txSpectrumDb(const cf32* x, size_t n, int nfft, std::vector<float>& db) {
     std::vector<float> re((size_t)nfft), im((size_t)nfft);
     const size_t use = std::min(n, (size_t)nfft);
     for (int i = 0; i < nfft; i++) {
-        const float w = i < (int)use ? (float)(0.5 - 0.5 * std::cos(2 * 3.14159265358979323846 * i / (double)use)) : 0.f;
+        const float w = i < (int)use ? (float)(0.5 - 0.5 * std::cos(2 * dect2::math::kPi * i / (double)use)) : 0.f;
         const cf32 s = i < (int)use ? x[i] : cf32(0.f, 0.f);
         re[(size_t)i] = s.real() * w;
         im[(size_t)i] = s.imag() * w;

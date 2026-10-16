@@ -19,6 +19,7 @@ extern "C" {
 #include <map>
 #include <memory>
 #include <vector>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace dabgen {
@@ -81,7 +82,7 @@ int squareX(int64_t n) {   // left edge of the square: there and back in 75 pict
 constexpr int kSquareY = 64;   // the square fills macroblock row 4
 
 // ---------------------------------------------------------------- MPEG-4 Systems descriptors (ISO/IEC 14496-1)
-void put16(std::vector<uint8_t>& v, unsigned x) { v.push_back((uint8_t)(x >> 8)); v.push_back((uint8_t)x); }
+void put16(std::vector<uint8_t>& v, unsigned x) { dect2::endian::putBe16(v, x); }
 void put32(std::vector<uint8_t>& v, uint32_t x) { put16(v, x >> 16); put16(v, x & 0xFFFF); }
 std::vector<uint8_t> descr(int tag, const std::vector<uint8_t>& body) {
     std::vector<uint8_t> d{(uint8_t)tag};

@@ -8,6 +8,7 @@
 #include <ctime>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -23,7 +24,7 @@ ModeTuning tetrapolTuning() {
 }
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kBaud = 8000.0;
 constexpr int kSps = 8;
 constexpr double kWork = kBaud * kSps;

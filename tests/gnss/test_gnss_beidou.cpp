@@ -12,6 +12,7 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include "dect2/common/mathconst.h"
 using namespace dect2;
 using namespace dect2::gnsstest;
 using dect2::testpar::CaseOut;
@@ -130,8 +131,8 @@ static void runCase(const Case& k, CaseOut& out) {
     if (k.combined) {
         CHECK(t.fix.nSatsPerSystem[GnssGps] >= 4, "GPS left the combined fix");
         const double isb = t.fix.clockBiasM[GnssBeidou] - t.fix.clockBiasM[GnssGps];
-        out.print("  receiver clock against BDT minus against GPS: %+.2f m (expected %+.2f)\n", isb, -299792458.0 * 30e-9);
-        CHECK(std::fabs(isb + 299792458.0 * 30e-9) < (t.fix.bdtGpsApplied ? 0.5 : 6.0), "inter-system clock %.2f m", isb);
+        out.print("  receiver clock against BDT minus against GPS: %+.2f m (expected %+.2f)\n", isb, -dect2::math::kSpeedOfLight * 30e-9);
+        CHECK(std::fabs(isb + dect2::math::kSpeedOfLight * 30e-9) < (t.fix.bdtGpsApplied ? 0.5 : 6.0), "inter-system clock %.2f m", isb);
         if (k.offset) CHECK(t.fix.bdtGpsApplied && std::fabs(t.fix.bdtGpsNs - 30.0) < 0.1, "BDT-GPS offset not applied (%.2f ns)", t.fix.bdtGpsNs);
         else CHECK(!t.fix.bdtGpsApplied && t.fix.systemInFix[GnssBeidou], "without the broadcast offset BeiDou needs its own clock unknown");
     }
@@ -143,7 +144,7 @@ static void runCase(const Case& k, CaseOut& out) {
         for (auto& ep : r.meas) for (auto& m : ep) {
             if (m.sys != GnssBeidou || m.prn != s.prn) continue;
             const double tSim = m.rxTime / (1.0 + k.f.clockPpm * 1e-6) + (double)k.f.skip / o.rate;
-            const double e = (m.txTow - (sim.svTransmitTime(i, sim.trueTime(tSim)) - kBdtGpsSeconds)) * 299792458.0;
+            const double e = (m.txTow - (sim.svTransmitTime(i, sim.trueTime(tSim)) - kBdtGpsSeconds)) * dect2::math::kSpeedOfLight;
             sum += e; sum2 += e * e; n++;
         }
         const GnssChannel* ch = nullptr;

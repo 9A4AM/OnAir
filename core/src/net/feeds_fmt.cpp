@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <ctime>
 #include <cstring>
+#include "dect2/common/str.h"
 
 #ifndef ONAIR_VERSION
 #define ONAIR_VERSION "dev"
@@ -35,24 +36,7 @@ std::string num(double v, const char* fmt) {
 }
 } // namespace
 
-std::string jsonEscape(const std::string& s) {
-    std::string o;
-    o.reserve(s.size() + 8);
-    for (unsigned char c : s) {
-        switch (c) {
-        case '"': o += "\\\""; break;
-        case '\\': o += "\\\\"; break;
-        case '\n': o += "\\n"; break;
-        case '\r': o += "\\r"; break;
-        case '\t': o += "\\t"; break;
-        default:
-            if (c < 0x20 || c == 0x7f) { char b[8]; snprintf(b, sizeof b, "\\u%04x", c); o += b; }
-            else if (c >= 0x80) o += '?';          // the decoders' texts are 7 bit; keep the JSON valid UTF-8 whatever comes
-            else o += (char)c;
-        }
-    }
-    return o;
-}
+std::string jsonEscape(const std::string& s) { return dect2::str::jsonEscape7bit(s); }   // the decoders' texts are 7 bit; keep the JSON valid UTF-8 whatever comes
 
 // ---------------------------------------------------------------- ADS-B
 

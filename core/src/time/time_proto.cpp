@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <ctime>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace timesig {
@@ -577,7 +578,7 @@ void stationSite(int s, double& lat, double& lon, bool hawaii) {
     }
 }
 double distanceKm(double lat1, double lon1, double lat2, double lon2) {
-    const double r = 3.14159265358979323846 / 180;
+    const double r = dect2::math::kPi / 180;
     const double p1 = lat1 * r, p2 = lat2 * r, dp = (lat2 - lat1) * r, dl = (lon2 - lon1) * r;
     const double h = std::sin(dp / 2) * std::sin(dp / 2) + std::cos(p1) * std::cos(p2) * std::sin(dl / 2) * std::sin(dl / 2);
     return 2 * 6371.0 * std::asin(std::min(1.0, std::sqrt(h)));

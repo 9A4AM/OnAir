@@ -7,8 +7,7 @@
 #include <vector>
 using namespace dect2;
 using namespace dect2::specx;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // |H(f)|^2 of a root-raised-cosine carrier (Rs, roll-off ro) at offset f
 static double rrc2(double f, double rs, double ro) {

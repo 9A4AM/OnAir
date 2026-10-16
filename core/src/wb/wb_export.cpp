@@ -5,14 +5,15 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace wb {
 
 namespace {
 
-void le32(uint8_t* p, uint32_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24); }
-void le16(uint8_t* p, uint16_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); }
+void le32(uint8_t* p, uint32_t v) { dect2::endian::storeLe32(p, v); }
+void le16(uint8_t* p, uint16_t v) { dect2::endian::storeLe16(p, v); }
 
 void wavHeader(uint8_t* h, int fmtTag, int channels, int rate, int bits, uint64_t dataBytes) {
     memcpy(h, "RIFF", 4); le32(h + 4, (uint32_t)(36 + dataBytes)); memcpy(h + 8, "WAVEfmt ", 8);

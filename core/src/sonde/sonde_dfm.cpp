@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 using namespace sondebits;
@@ -70,14 +71,8 @@ constexpr char kRawHeader[33] = "10011010100110010101101001010101";
 constexpr int kConfAt = 16, kDat1At = 72, kDat2At = 176;
 
 // ---- bit helpers ----
-void putBits(std::vector<uint8_t>& b, int at, int n, uint64_t v) {
-    for (int i = 0; i < n; i++) b[(size_t)at + i] = (uint8_t)((v >> (n - 1 - i)) & 1);
-}
-uint32_t getBits(const uint8_t* b, int n) {
-    uint32_t v = 0;
-    for (int i = 0; i < n; i++) v = (v << 1) | (b[i] & 1);
-    return v;
-}
+void putBits(std::vector<uint8_t>& b, int at, int n, uint64_t v) { bits::putMsb(b.data(), (size_t)at, v, n); }
+uint32_t getBits(const uint8_t* b, int n) { return (uint32_t)bits::getMsb(b, 0, n); }
 
 // ---- measurement floats ----
 float fl24(int d) { return (float)(d & 0xFFFFF) / (float)(1 << ((d >> 20) & 0xF)); }

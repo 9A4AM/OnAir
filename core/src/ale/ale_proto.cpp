@@ -2,6 +2,7 @@
 #include "dect2/ale/ale_proto.h"
 #include <algorithm>
 #include <cstdio>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace ale {
@@ -15,7 +16,7 @@ uint32_t parity11(uint32_t d12) {
     return r & 0x7FF;
 }
 
-int popc(uint32_t v) { int n = 0; while (v) { v &= v - 1; n++; } return n; }
+int popc(uint32_t v) { return dect2::bits::popcount(v); }
 
 uint32_t syndrome(uint32_t c24) {   // the check bits received against those of the data received
     return (c24 & 0xFFF) ^ (golayEncode(c24 >> 12) & 0xFFF);

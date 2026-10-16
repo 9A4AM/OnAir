@@ -16,6 +16,7 @@
 #include <complex>
 #include <cstring>
 #include <mutex>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 
@@ -27,9 +28,7 @@ constexpr int kRing = 16384;         // symbol history, a power of two above the
 constexpr double kCarrierBnHz = 15;  // carrier loop noise bandwidth
 constexpr double kMaxCfoHz = 20000;  // search range (a radio 10 ppm off at 1.54 GHz is 15 kHz away)
 
-inline int64_t unixNow() {
-    return (int64_t)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-}
+inline int64_t unixNow() { return dect2::unixNow(); }
 
 } // namespace
 

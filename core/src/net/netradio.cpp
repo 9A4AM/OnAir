@@ -8,6 +8,7 @@
 #include <mutex>
 #ifdef DECT2_HAVE_SOAPY
 #include <SoapySDR/Device.hpp>
+#include "dect2/common/str.h"
 #endif
 
 namespace dect2 {
@@ -99,13 +100,8 @@ std::string plutoUri(const NetRadio& r) {
     const std::string h = cleanHost(r.host);
     return "ip:" + (r.port > 0 ? hostPort(h, r.port) : h);
 }
-std::string trimWs(const std::string& v) {
-    size_t a = 0, b = v.size();
-    while (a < b && (v[a] == ' ' || v[a] == '\t')) a++;
-    while (b > a && (v[b - 1] == ' ' || v[b - 1] == '\t')) b--;
-    return v.substr(a, b - a);
-}
-std::string lower(std::string v) { for (char& c : v) c = (char)tolower((unsigned char)c); return v; }
+std::string trimWs(const std::string& v) { return dect2::str::trimChars(v, " \t"); }
+std::string lower(std::string v) { return dect2::str::lower(std::move(v)); }
 // SoapyRemote's own network timeout is 100 ms (connect, and the wait for the server to answer the log connection). A server that is slow
 // to answer (a small computer, a busy one, a server that is still probing its radios) makes the client give up and drop the connection:
 // the server logs "handlerLoop() FAIL: SoapyRPCUnpacker::recv(header)" and the client sees no radios (issue #84). A few seconds

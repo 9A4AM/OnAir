@@ -5,8 +5,7 @@
 #include <string>
 using namespace dect2;
 
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "test_util.h"
 
 static bool has(const std::string& s, const std::string& x) { return s.find(x) != std::string::npos; }
 

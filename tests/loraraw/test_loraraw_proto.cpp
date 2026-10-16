@@ -7,8 +7,7 @@
 #include <random>
 #include <vector>
 using namespace dect2::lora;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static bool roundTrip(const Params& p, const std::vector<uint8_t>& pl, int flipBin = -1, int* corr = nullptr) {
     std::vector<uint16_t> d = encode(p, pl.data(), pl.size());

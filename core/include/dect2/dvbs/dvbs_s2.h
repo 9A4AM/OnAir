@@ -9,6 +9,7 @@
 #include <complex>
 #include <cstdint>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
@@ -130,7 +131,7 @@ PlsResult s2PlsDecode(const cf32* sym64);
 float s2PlsScore(const cf32* sym64, int modcod, bool shortFrame, bool pilots);
 // pi/2 BPSK symbol for header bit y at position j (0-based) in the header
 inline cf32 s2Bpsk(int j, int y) {
-    const float a = (1 - 2 * y) * 0.70710678f;
+    const float a = (1 - 2 * y) * dect2::math::k1OverSqrt2f;
     return (j & 1) ? cf32(-a, a) : cf32(a, a);
 }
 // Physical layer scrambling sequence (clause 5.5.4), Gold code number n: the symbol i is multiplied by exp(j R(i) pi/2).

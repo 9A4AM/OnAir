@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace {
 
-uint32_t be32(const uint8_t* p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
-unsigned be16(const uint8_t* p) { return (unsigned)p[0] << 8 | p[1]; }
+uint32_t be32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
+unsigned be16(const uint8_t* p) { return (unsigned)dect2::endian::loadBe16(p); }
 
 int paeth(int a, int b, int c) {
     const int p = a + b - c, pa = std::abs(p - a), pb = std::abs(p - b), pc = std::abs(p - c);

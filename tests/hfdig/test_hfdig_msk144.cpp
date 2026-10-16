@@ -5,8 +5,7 @@
 #include <chrono>
 #include <cstring>
 using namespace wsjttest;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 using namespace dect2::wsjt;
 
 // a burst of the repeating frame at `startSec` for `lenSec` over noise (SNR in 2500 Hz while on)

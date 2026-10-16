@@ -3,6 +3,8 @@
 #include "dect2/dab/dab_gen.h"
 #include <algorithm>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace dabgen {
@@ -12,12 +14,8 @@ constexpr int kW = 80, kH = 60;
 constexpr uint16_t kTransportId = 0x1234;
 constexpr int kSub = 16;              // bytes of a data subfield (content indicator length index 4)
 
-uint32_t crc32(const uint8_t* d, size_t n, uint32_t crc = 0) {
-    crc = ~crc;
-    for (size_t i = 0; i < n; i++) { crc ^= d[i]; for (int b = 0; b < 8; b++) crc = (crc & 1) ? (crc >> 1) ^ 0xEDB88320u : crc >> 1; }
-    return ~crc;
-}
-void put32(std::vector<uint8_t>& v, uint32_t x) { for (int s = 24; s >= 0; s -= 8) v.push_back((uint8_t)(x >> s)); }
+uint32_t crc32(const uint8_t* d, size_t n, uint32_t crc = 0) { return dect2::crc::crc32Update(crc, d, n); }
+void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putBe32(v, x); }
 void chunk(std::vector<uint8_t>& png, const char* type, const std::vector<uint8_t>& data) {
     put32(png, (uint32_t)data.size());
     std::vector<uint8_t> td(type, type + 4);

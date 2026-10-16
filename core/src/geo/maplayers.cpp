@@ -2,10 +2,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace {
-constexpr double kPi = 3.14159265358979323846, kEarthKm = 6371.0;
+constexpr double kPi = dect2::math::kPi, kEarthKm = 6371.0;
 std::string hex(uint32_t v, int w) { char b[16]; snprintf(b, sizeof b, "%0*X", w, v); return b; }
 }
 

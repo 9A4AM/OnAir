@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 using namespace dect2;
 
@@ -20,7 +21,7 @@ static void testList() {
 }
 
 static double goertzel(const std::vector<cf32>& x, int skip, double hz, double rate, bool pos) {
-    const double w = (pos ? -1 : 1) * 2 * 3.14159265358979323846 * hz / rate;
+    const double w = (pos ? -1 : 1) * 2 * dect2::math::kPi * hz / rate;
     cf32 acc = 0;
     for (size_t i = (size_t)skip; i < x.size(); i++) {
         const float c = (float)std::cos(w * (double)(i - (size_t)skip)), s = (float)std::sin(w * (double)(i - (size_t)skip));

@@ -21,12 +21,14 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kMidRate = 96000.0;
 constexpr double kWork = 48000.0;
 constexpr double kMinWideRate = 192000.0;   // whole-span decoding hands a receiver its carrier at this rate (setWideInput)
@@ -67,7 +69,7 @@ std::vector<int> splitFactors(int d) {
     return stages;
 }
 
-inline int popcount32(uint32_t v) { int n = 0; for (; v; v &= v - 1) n++; return n; }
+inline int popcount32(uint32_t v) { return dect2::bits::popcount(v); }
 
 struct Hit {
     bool ok = false;

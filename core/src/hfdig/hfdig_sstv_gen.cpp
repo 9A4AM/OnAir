@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -129,7 +130,7 @@ public:
             if (t >= cycleMs_) { pos_ = 1; t = 0; }
             const double f = freqAt(t);
             if (f <= 0) { out[i] = 0.f; continue; }
-            ph_ += 2 * 3.14159265358979323846 * (f + offHz_) / 8000.0;
+            ph_ += 2 * dect2::math::kPi * (f + offHz_) / 8000.0;
             if (ph_ > 6.283185307179586) ph_ -= 6.283185307179586;
             out[i] = 0.5f * (float)std::sin(ph_);
         }

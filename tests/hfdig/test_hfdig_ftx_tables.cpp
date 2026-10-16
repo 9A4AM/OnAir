@@ -7,8 +7,7 @@
 #include <cstring>
 #include <string>
 using namespace dect2::ftx;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // WSJT-X ldpc_174_91_c_generator.f90: characters 1-6 and 18-23 of each of the 83 hex rows
 static const char* kWsjtRowEnds[83] = {

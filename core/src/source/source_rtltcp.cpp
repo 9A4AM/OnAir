@@ -10,6 +10,7 @@
 #include <map>
 #include <mutex>
 #include <set>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace native {
@@ -51,7 +52,7 @@ bool splitHostPort(const std::string& a, std::string& host, int& port) {
     return port > 0 && port < 65536;
 }
 
-uint32_t be32(const unsigned char* p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
+uint32_t be32(const unsigned char* p) { return (uint32_t)dect2::endian::loadBe32(p); }
 
 constexpr double kOtherMinRate = 0.25e6, kOtherMaxRate = 20e6;
 

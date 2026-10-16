@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
@@ -25,7 +26,7 @@ struct SplitBuf {
 class MixDc {
 public:
     void configure(double fs, double freqHz);
-    void setFrequency(double hz) { step_ = 2 * 3.14159265358979323846 * hz / fs_; makeTable(); }
+    void setFrequency(double hz) { step_ = 2 * dect2::math::kPi * hz / fs_; makeTable(); }
     void reset() { phase_ = 0; dcRe_ = dcIm_ = 0; dcInit_ = false; }
     void process(const cf32* x, size_t n, SplitBuf& out);   // appends
 private:

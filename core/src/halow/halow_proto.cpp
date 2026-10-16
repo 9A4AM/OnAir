@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/bits.h"
 
 namespace dect2::halow {
 
@@ -80,7 +81,7 @@ WidthInfo makeInfo(int w) {
 
 Fft& fft128() { static thread_local Fft f(kFft); return f; }
 
-int parity(uint32_t v) { v ^= v >> 16; v ^= v >> 8; v ^= v >> 4; v ^= v >> 2; v ^= v >> 1; return (int)(v & 1); }
+int parity(uint32_t v) { return dect2::bits::parity((uint32_t)v); }
 
 void putLe(std::vector<uint8_t>& v, uint32_t x, int n) { for (int i = 0; i < n; i++) v.push_back((uint8_t)(x >> (8 * i))); }
 
@@ -243,8 +244,8 @@ std::vector<uint8_t> viterbi(const std::vector<float>& llr) {
 // ---------------------------------------------------------------- SIG
 
 namespace {
-void putBits(std::vector<uint8_t>& v, size_t at, uint32_t x, int n) { for (int i = 0; i < n; i++) v[at + (size_t)i] = (uint8_t)(x >> i & 1); }
-uint32_t getBits(const uint8_t* v, size_t at, int n) { uint32_t x = 0; for (int i = 0; i < n; i++) x |= (uint32_t)(v[at + (size_t)i] & 1) << i; return x; }
+void putBits(std::vector<uint8_t>& v, size_t at, uint32_t x, int n) { bits::putLsb(v.data(), at, x, n); }
+uint32_t getBits(const uint8_t* v, size_t at, int n) { return (uint32_t)bits::getLsb(v, at, n); }
 }
 
 // Bit positions follow the published field order as the author remembers it; unverified against a live signal.

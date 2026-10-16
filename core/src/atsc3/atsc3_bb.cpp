@@ -1,5 +1,6 @@
 #include "dect2/atsc3/atsc3_bb.h"
 #include <algorithm>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace atsc3 {
@@ -129,8 +130,7 @@ std::vector<uint8_t> bitsToBytes(const std::vector<uint8_t>& bits) {
 
 std::vector<uint8_t> bytesToBits(const std::vector<uint8_t>& bytes) {
     std::vector<uint8_t> b(bytes.size() * 8);
-    for (size_t i = 0; i < bytes.size(); i++)
-        for (int k = 0; k < 8; k++) b[i * 8 + k] = (bytes[i] >> (7 - k)) & 1;
+    dect2::bits::bytesToBitsMsb(bytes.data(), bytes.size(), b.data());
     return b;
 }
 

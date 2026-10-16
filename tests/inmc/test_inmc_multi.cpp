@@ -2,8 +2,7 @@
 // the one tuned to. The receiver must find them from the spectrum, decode their frames and messages, and not disturb the main channel.
 #include "dect2/inmc/inmc_testutil.h"
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static void run(bool search, int extras, double ebn0, double secs) {
     InmcGenConfig g;

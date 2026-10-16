@@ -4,6 +4,8 @@
 #include <cstring>
 #include <functional>
 #include <mutex>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace isdbt {
@@ -260,8 +262,8 @@ bool tmccCorrect(uint8_t bits[184], const float* reliability) {
 }
 
 namespace {
-void putBits(uint8_t* dst, int& pos, unsigned v, int n) { for (int i = n - 1; i >= 0; i--) dst[pos++] = (v >> i) & 1; }
-unsigned getBits(const uint8_t* src, int& pos, int n) { unsigned v = 0; for (int i = 0; i < n; i++) v = (v << 1) | src[pos++]; return v; }
+void putBits(uint8_t* dst, int& pos, unsigned v, int n) { bits::putMsbAdv(dst, pos, v, n); }
+unsigned getBits(const uint8_t* src, int& pos, int n) { return (unsigned)bits::getMsbAdvRaw(src, pos, n); }
 }
 
 void tmccPack(const Tmcc& t, uint8_t bits[kTmccInfoBits]) {
@@ -419,7 +421,7 @@ namespace {
 template <int Mod>
 inline void demapAxis(float x, float inv, float* llr, int stride) {
     if constexpr (Mod == kQpsk) {
-        llr[0] = 4.f * 0.70710678f * x * inv;
+        llr[0] = 4.f * dect2::math::k1OverSqrt2f * x * inv;
     } else if constexpr (Mod == k16Qam) {
         constexpr float n = 0.31622777f, n2 = 0.1f, rn = 1.f / n;
         const float u = x * rn;

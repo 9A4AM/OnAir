@@ -13,8 +13,8 @@
 #include <string>
 #include <vector>
 
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
+#include "dect2/common/endian.h"
 
 namespace {
 
@@ -53,7 +53,7 @@ uint8_t adpcmEncode(int sample, int& pred, int& index) {
     return (uint8_t)(mag | (sign ? 8 : 0));
 }
 
-void put16(std::vector<uint8_t>& d, int v) { d.push_back((uint8_t)v); d.push_back((uint8_t)(v >> 8)); }
+void put16(std::vector<uint8_t>& d, int v) { dect2::endian::putLe16(d, v); }
 
 // Independent 40 ms packets, so the receiver can start at any packet.
 std::vector<uint8_t> encode(const std::vector<int16_t>& pcm) {

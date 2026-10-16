@@ -4,15 +4,16 @@
 #include <cstdio>
 #include <algorithm>
 #include <cstring>
+#include "dect2/common/endian.h"
 
 namespace dect2::rid {
 
 namespace {
 
-uint16_t get16(const uint8_t* p) { return (uint16_t)(p[0] | p[1] << 8); }
-uint32_t get32(const uint8_t* p) { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
-void put16(uint8_t* p, unsigned v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); }
-void put32(uint8_t* p, uint32_t v) { for (int k = 0; k < 4; k++) p[k] = (uint8_t)(v >> (8 * k)); }
+uint16_t get16(const uint8_t* p) { return (uint16_t)dect2::endian::loadLe16(p); }
+uint32_t get32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
+void put16(uint8_t* p, unsigned v) { dect2::endian::storeLe16(p, v); }
+void put32(uint8_t* p, uint32_t v) { dect2::endian::storeLe32(p, v); }
 
 double altDec(uint16_t v) { return v * 0.5 - 1000; }
 uint16_t altEnc(double a) {

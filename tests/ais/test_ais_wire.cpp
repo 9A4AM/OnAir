@@ -8,6 +8,7 @@
 #include "dect2/ais/ais_rx.h"
 #include "dect2/ais/ais_proto.h"
 #include <cmath>
+#include "dect2/common/crc.h"
 #include <cstdint>
 #include <cstdio>
 #include <random>
@@ -47,14 +48,7 @@ static void field(V& b, size_t pos, size_t len, long long v) {
 static long long fieldU(const V& b, size_t pos, size_t len) { long long v = 0; for (size_t i = 0; i < len; i++) v = v * 2 + b[pos + i]; return v; }
 static long long fieldS(const V& b, size_t pos, size_t len) { long long v = fieldU(b, pos, len); return (v >> (len - 1)) ? v - (1LL << len) : v; }
 
-static uint16_t crc16x25(const std::vector<uint8_t>& bytes) {
-    uint16_t crc = 0xFFFF;
-    for (uint8_t by : bytes) {
-        crc ^= by;
-        for (int k = 0; k < 8; k++) crc = (crc & 1) ? (uint16_t)((crc >> 1) ^ 0x8408) : (uint16_t)(crc >> 1);
-    }
-    return (uint16_t)~crc;
-}
+static uint16_t crc16x25(const std::vector<uint8_t>& bytes) { return dect2::crc::crc16X25(bytes.data(), bytes.size()); }
 
 // the bits on the air for one packet: training sequence, flag, stuffed message + FCS, flag, buffer (all after NRZI)
 static V airBits(const V& msg) {

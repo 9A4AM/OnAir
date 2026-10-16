@@ -20,12 +20,13 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kDefaultDialHz = 118.700e6;
 constexpr int kCicOrder = 5;
 constexpr int kBlock = 256;               // carrier search FFT at the channel rate

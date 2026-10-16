@@ -5,15 +5,12 @@
 #endif
 #include <algorithm>
 #include <cmath>
+#include "dect2/common/window.h"
 
 namespace dect2 {
 
 namespace {
-double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 40; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; }
-    return s;
-}
+double besselI0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
 }
 
 bool ExactResampler::configure(double inRate, double outRate, int lobes) {

@@ -7,13 +7,14 @@
 #include <cmath>
 #include <deque>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 using namespace halow;
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kHalf = 12;   // sinc taps each side
 }
 
