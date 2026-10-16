@@ -61,7 +61,17 @@ std::string serviceFacts(const dect2::CdrServiceInfo& s) {
 
 const dect2::CdrServiceInfo* picked(const dect2::CdrTelemetry& t) {
     for (const auto& s : t.services) if (s.id == S.sel) return &s;
-    return t.services.empty() ? nullptr : &t.services[0];
+    if (t.services.empty()) return nullptr;
+    for (const auto& s : t.services) if (s.audio) return &s;
+    return &t.services[0];
+}
+
+uint16_t listenServiceId(const dect2::CdrTelemetry& t) {
+    for (const auto& s : t.services)
+        if (s.id == S.sel && s.audio) return s.id;
+    if (S.sel != 0) return 0;
+    for (const auto& s : t.services) if (s.audio) return s.id;
+    return 0;
 }
 
 int blockLamp(double okAt, double badAt, double window, double now) {
@@ -73,8 +83,7 @@ void push(std::deque<float>& d, float v) { d.push_back(v); if (d.size() > 600) d
 
 void tick(App& a) {
     if (live(a)) {
-        const dect2::CdrServiceInfo* s = picked(a.rx.cdr);
-        a.engine.cdr().setListen(s && s->audio ? (int)s->id : 0);
+        a.engine.cdr().setListen((int)listenServiceId(a.rx.cdr));
         a.engine.cdr().setVolume(a.volume);
         a.engine.cdr().setMuted(a.muted);
     } else a.engine.cdr().setListen(0);

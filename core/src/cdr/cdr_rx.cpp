@@ -204,6 +204,7 @@ struct CdrReceiver::Impl {
     void* dra = nullptr;
     int draRate = 0;
     int playingId = -1;
+    int lastListen = -1;                   // last listenId seen on the feed thread (service switch)
     std::unique_ptr<AudioOut> audioOut;
     // receiver thread
     CdrTelemetry tel;
@@ -275,6 +276,7 @@ struct CdrReceiver::Impl {
         svc.clear(); svcOrder.clear(); haveSmct = false; snrAvg = 0;
         if (dra) { DRADecDestroy(dra); dra = nullptr; }
         playingId = -1;
+        lastListen = -1;
         if (audioOut) audioOut->flush();
     }
 
@@ -283,6 +285,12 @@ struct CdrReceiver::Impl {
     void playUnits(uint16_t id, const std::vector<AudioUnit>& units) {
         const int want = listenId.load();
         if (want == 0 || (int)id != want || units.empty()) return;
+        if (lastListen != want) {
+            if (dra) { DRADecDestroy(dra); dra = nullptr; }
+            playingId = -1;
+            lastListen = want;
+            if (audioOut) audioOut->flush();
+        }
         if (playingId != (int)id) {
             if (dra) { DRADecDestroy(dra); dra = nullptr; }
             playingId = (int)id;
@@ -302,14 +310,17 @@ struct CdrReceiver::Impl {
                 if (!audioOut || draRate != info.nSampleRate) {
                     audioOut = std::make_unique<AudioOut>();
                     audioOut->start(info.nSampleRate);
-                    audioOut->setStartThreshold(info.nSampleRate / 5);
+                    audioOut->setStartThreshold(info.nSampleRate / 10);
                     draRate = info.nSampleRate;
                 }
                 audioOut->setVolume(volume.load());
                 audioOut->setMuted(muted.load());
                 const int ch = info.nChannels;
-                const int frames = len / (2 * ch);
+                int frames = len / (2 * ch);
                 if (frames < 1) continue;
+                // Audio arrives in ~640 ms logical-frame bursts; after an underrun AudioOut needs 0.8 s to resume unless the threshold is lowered again.
+                if (!audioOut->playing()) audioOut->setStartThreshold(draRate / 10);
+                if (audioOut->bufferedFrames() > draRate / 2) audioOut->flush();
                 std::vector<float> st((size_t)frames * 2);
                 const int16_t* s = reinterpret_cast<const int16_t*>(pcm);
                 for (int i = 0; i < frames; i++) {
@@ -318,7 +329,6 @@ struct CdrReceiver::Impl {
                     st[(size_t)i * 2] = L;
                     st[(size_t)i * 2 + 1] = R;
                 }
-                if (audioOut->bufferedFrames() > draRate * 3 / 2) audioOut->flush();
                 audioOut->write(st.data(), frames);
             }
         }
