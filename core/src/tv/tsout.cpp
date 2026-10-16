@@ -1,7 +1,7 @@
 #include "dect2/tv/tsout.h"
 
 #include "dect2/common/platform.h"
-#include "netcompat.h"
+#include "../net/netcompat.h"
 
 #include <chrono>
 #include <cerrno>

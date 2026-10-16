@@ -1,6 +1,6 @@
 // Codec 2 through libcodec2, loaded at run time: the one shipped with OnAir, or one the user installed (see m17_codec2.h); only the few functions of codec2.h (release 1.2) that are needed.
 #include "dect2/m17/m17_codec2.h"
-#include "../native_common.h"
+#include "../source/native_common.h"
 #include <cstdlib>
 #include <cstring>
 #include <vector>

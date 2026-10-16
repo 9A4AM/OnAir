@@ -1,7 +1,7 @@
 // Data feeds out: the formats (SBS, Beast, AIVDM, KISS, APRS-IS, ACARS / VDL2 JSON) and the feeds' sockets on localhost.
 #include "dect2/net/feeds.h"
 #include "dect2/ais/ais_proto.h"
-#include "../core/src/tcp_client.h"
+#include "../core/src/net/tcp_client.h"
 #include <chrono>
 #include <cstdio>
 #include <cstring>

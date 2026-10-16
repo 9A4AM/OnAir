@@ -255,7 +255,7 @@ EXPORT int uhd_rx_streamer_recv(void*, void** bufs, size_t n, void**, double, bo
 
 // ------------------------------------------------------------------ SDRplay API 3.x (an RSP1B; the structs come from OnAir's own copy of
 // the API's layouts, which sdrplay_api_min.h checks against the official headers' sizes)
-#include "../core/src/sdrplay_api_min.h"
+#include "../core/src/source/sdrplay_api_min.h"
 namespace sp = dect2::sdrplay;
 namespace fakesdrplay {
 static sp::DevParamsT devParams;

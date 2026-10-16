@@ -6,7 +6,7 @@
 #include "dect2/cw/cw_morse.h"
 #include "dect2/marine/marine_dsp.h"
 #include "dect2/engine/widespan.h"
-#include "../ham_listen.h"
+#include "../audio/ham_listen.h"
 #include "dect2/net/pskreporter.h"
 #include "dect2/dsp/fftutil.h"
 #include <algorithm>

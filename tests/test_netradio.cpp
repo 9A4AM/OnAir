@@ -1,7 +1,7 @@
 // Network radios (netradio.h): the rtl_tcp, SpyServer and Hermes Lite 2 clients against fake servers on localhost, a user-added Pluto
 // address, the saved list.
-#include "../core/src/tcp_client.h"
-#include "../core/src/native_common.h"
+#include "../core/src/net/tcp_client.h"
+#include "../core/src/source/native_common.h"
 #include "dect2/net/netradio.h"
 #include "dect2/net/share.h"
 #include <atomic>

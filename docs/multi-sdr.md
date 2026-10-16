@@ -12,7 +12,7 @@ tab strip show the process CPU load.
 - Tabs: a strip at the bottom of the window, `RX 1 | RX 2 | +`, in both interfaces (the classic interface is one
   full-window layout, so it gets the same strip instead of an extra OS window). Only the selected receiver is drawn
   (so ImGui window names never clash); all receivers tick every frame (`drawUI(a, disp, draw=false)`).
-- Radio claims (core/src/device_claims.cpp): `Engine::start` claims the radio for `receiverId`; a second claim fails
+- Radio claims (core/src/engine/device_claims.cpp): `Engine::start` claims the radio for `receiverId`; a second claim fails
   ("this radio is in use by RX n"). The source list shows such radios as "in use by RX n" and disables them. Network
   radios (rtl_tcp, SoapyRemote, SpyServer) are keyed by address, so they open once too. Test signal and files are free.
 - Closing a tab (x) stops the engine, saves its results and releases the radio.
@@ -23,7 +23,7 @@ tab strip show the process CPU load.
 | Shared | Per receiver |
 |---|---|
 | preferences file, data folder, language, theme | engine, scanner, results (`results_rx2/` ...; RX 1 keeps `results/`) |
-| data feeds out (core/src/feeds.cpp: all receivers send into it, settings are RX 1's) | prefs `rx2_freqMhz`, `rx2_family`, `rx2_subMode`, `rx2_lna/vga/gain/amp`, `rx2_g*`, `rx2_fFreq*`, `rx2_devName`, `rx2_bw`, `rx2_standard` |
+| data feeds out (core/src/net/feeds.cpp: all receivers send into it, settings are RX 1's) | prefs `rx2_freqMhz`, `rx2_family`, `rx2_subMode`, `rx2_lna/vga/gain/amp`, `rx2_g*`, `rx2_fFreq*`, `rx2_devName`, `rx2_bw`, `rx2_standard` |
 | PSK Reporter, Discord status (RX 1), tile cache, map, update check, i18n, codecs, diagnostics | |
 
 `plat::prefs()` is a facade (app/rx_prefs.cpp): with `plat::gPrefRx = n` the per-receiver keys get the prefix `rxn_`.

@@ -14,7 +14,7 @@
 // is not sent) and no N2ADR filter board; one receiver is used (it offers up to 8, not used here). The frame layout, the rate bits
 // (C1[1:0]: 48/96/192/384 ksps), the NCO registers (0x01 TX, 0x02 RX1) and start/stop are the HL2's own.
 #include "native_common.h"
-#include "netcompat.h"
+#include "../net/netcompat.h"
 #include "dect2/net/netradio.h"
 #include <algorithm>
 #include <chrono>

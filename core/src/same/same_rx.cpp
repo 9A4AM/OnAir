@@ -9,7 +9,7 @@
 #include <ctime>
 #include <deque>
 #include <mutex>
-#include "../ham_listen.h"
+#include "../audio/ham_listen.h"
 
 namespace dect2 {
 

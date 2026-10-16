@@ -2,7 +2,7 @@
 #include "dect2/ndb/ndb_rx.h"
 #include "dect2/cw/cw_morse.h"
 #include "dect2/ndb/ndb_tel.h"
-#include "../ham_listen.h"
+#include "../audio/ham_listen.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

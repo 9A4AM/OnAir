@@ -1,6 +1,6 @@
 // Radios on the network that the user adds by address: see netradio.h
 #include "tcp_client.h"
-#include "native_common.h"
+#include "../source/native_common.h"
 #include "dect2/net/netradio.h"
 #include <algorithm>
 #include <chrono>

@@ -1,6 +1,6 @@
 // Clock discipline, the one-click clock sync and the hobby NTP server (see time_ntp.h).
 #include "dect2/time/time_ntp.h"
-#include "../netcompat.h"
+#include "../net/netcompat.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

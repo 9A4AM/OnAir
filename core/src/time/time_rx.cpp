@@ -3,7 +3,7 @@
 #include "dect2/results/results_io.h"
 #include "dect2/time/time_tel.h"
 #include "dect2/time/time_proto.h"
-#include "../ham_listen.h"
+#include "../audio/ham_listen.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

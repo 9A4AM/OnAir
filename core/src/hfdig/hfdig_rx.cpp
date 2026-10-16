@@ -13,7 +13,7 @@
 #include "dect2/hfdig/hfdig_wide.h"
 #include "dect2/engine/widespan.h"
 #include "dect2/audio/audioout.h"
-#include "../ham_listen.h"
+#include "../audio/ham_listen.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

@@ -1,8 +1,8 @@
 // AMBE+2 through the user-installed mbelib (see nxdn_ambe.h); only the two functions of mbelib.h (1.3) that are needed.
 #include "dect2/nxdn/nxdn_ambe.h"
 #include "dect2/nxdn/nxdn_proto.h"
-#include "../native_common.h"
-#include "../mbe_builtin.h"
+#include "../source/native_common.h"
+#include "../audio/mbe_builtin.h"
 #include <atomic>
 #include <cstdlib>
 #include <cstring>

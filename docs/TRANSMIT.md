@@ -1,6 +1,6 @@
 # Transmit: modes offered and not offered
 
-This list is taken from the tables in `core/src/tx.cpp` (`txModes()` and `txRefusalReason()`). OnAir applies no frequency or power limit; see the Transmit section of the README.
+This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()` and `txRefusalReason()`). OnAir applies no frequency or power limit; see the Transmit section of the README.
 
 ## Modes offered (76)
 

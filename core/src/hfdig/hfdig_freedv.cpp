@@ -3,7 +3,7 @@
 // 1.2.0. The decode path has not run against a real library yet (codec2 was not installed where this was written).
 #include "dect2/hfdig/hfdig_freedv.h"
 #include "dect2/hfdig/hfdig_gen.h"
-#include "../native_common.h"
+#include "../source/native_common.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

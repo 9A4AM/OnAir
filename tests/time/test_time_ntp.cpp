@@ -1,7 +1,7 @@
 // The clock sync checks and the hobby NTP server: packet round trip, the reply fields (stratum 1 "GPS", stratum 2 for a time station, unsynchronised
 // without a measurement), the rate limit and the LAN filter, the refusals of the one-click sync and its commands, and a request over UDP on the
 // loopback address. The clock itself is never touched.
-#include "../../core/src/netcompat.h"
+#include "../../core/src/net/netcompat.h"
 #include "dect2/time/time_ntp.h"
 #include <cmath>
 #include <cstdio>

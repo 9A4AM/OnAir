@@ -46,7 +46,7 @@ static size_t drain(IqRing& ring, int ms, std::complex<float>& mean) {
 }
 
 // ---- native-robust: library lookup, open retries, reconnect after an unplug, USB error texts and the Linux USB hints
-#include "../core/src/native_common.h"
+#include "../core/src/source/native_common.h"
 #include "dect2/source/usb_diag.h"
 #include <fcntl.h>
 #include <functional>

@@ -1,6 +1,6 @@
 // The remote-control API against a socket client: the HTTP endpoints, the request limits, the Host / Origin / token checks, the WebSocket
 // (handshake, telemetry and spectrum pushes, ping, protocol errors) and, at the end, the real engine on the generated DVB-T2 signal behind it.
-#include "../core/src/tcp_client.h"
+#include "../core/src/net/tcp_client.h"
 #include "dect2/engine/engine.h"
 #include "dect2/net/remote_api.h"
 #include "dect2/results/rx_json.h"

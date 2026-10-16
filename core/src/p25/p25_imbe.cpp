@@ -1,7 +1,7 @@
 // IMBE through the user-installed mbelib (see p25_imbe.h); only the two functions of mbelib.h (1.3) that are needed.
 #include "dect2/p25/p25_imbe.h"
-#include "../native_common.h"
-#include "../mbe_builtin.h"
+#include "../source/native_common.h"
+#include "../audio/mbe_builtin.h"
 #include <atomic>
 #include <cstdlib>
 #include <cstring>

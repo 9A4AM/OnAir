@@ -9,7 +9,7 @@
 // radio receives, so the frequency follows the server's when it is outside that.
 // Future work: the narrow "VFO" use (a small decimated band anywhere in the server's band, the FFT stream) is not offered; OnAir always
 // takes the IQ band at the decimation its mode needs.
-#include "tcp_client.h"
+#include "../net/tcp_client.h"
 #include "native_common.h"
 #include "dect2/net/netradio.h"
 #include <cmath>

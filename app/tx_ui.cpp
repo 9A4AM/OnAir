@@ -1,5 +1,5 @@
 // The transmitter: the RX / TX switch at the top left of the interface and the Transmit panel that fills the main area in TX view. What can be sent is the
-// table in core/include/dect2/tx/tx.h; the session, the radios' sinks and the rules are in core/src/tx.cpp and the radios' sources.
+// table in core/include/dect2/tx/tx.h; the session, the radios' sinks and the rules are in core/src/tx/tx.cpp and the radios' sources.
 //
 // The transmitter is independent of the receivers: it has its own radio choice and its own state (not an App's), so a receiver goes on receiving while it
 // transmits (the owner's example: a HackRF Pro transmits, an RTL-SDR receives and decodes it). A radio is never used by both unless it is genuinely full

@@ -5,7 +5,7 @@
 #include "dect2/dsp/fftutil.h"
 #include "dect2/marine/marine_dsp.h"
 #include "dect2/specx/specx_measure.h"
-#include "../ham_listen.h"
+#include "../audio/ham_listen.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

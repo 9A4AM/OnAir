@@ -1,11 +1,11 @@
-// The RX888 MkII driver (core/src/source_rx888.cpp) against a FAKE FX3: no radio is involved. What this checks is OnAir's own side: the USB
+// The RX888 MkII driver (core/src/source/source_rx888.cpp) against a FAKE FX3: no radio is involved. What this checks is OnAir's own side: the USB
 // requests in the order the SDDC driver sends them (written from renardspark/SDDC_Driver), the firmware upload to the boot loader and the
 // wait for the radio to come back, discovery (a LimeSDR-USB shares 04b4:00f1), the clock / decimation / input choices, and that a known tone
 // comes out of the real-to-complex conversion where it should (HF directly, VHF through the 4.57 MHz IF with the spectrum inverted).
 // What it cannot say: whether a real RX888 MkII answers these requests as the fake does, or delivers its VHF IF where the fake puts it.
-#include "../core/src/native_common.h"
-#include "../core/src/native_realddc.h"
-#include "../core/src/rx888_usb.h"
+#include "../core/src/source/native_common.h"
+#include "../core/src/source/native_realddc.h"
+#include "../core/src/source/rx888_usb.h"
 #include "dect2/source/source.h"
 #include <chrono>
 #include <cmath>

@@ -4,7 +4,7 @@
 // gains (big endian 32-bit each), then streams unsigned 8-bit IQ without end. Commands are 5 bytes: one command byte and a big-endian 32-bit
 // parameter. A real RTL-SDR drops samples above 2.56 Msps, so it is held to that; another radio ("Server radio", or found from the greeting:
 // not RTL0, or a tuner type outside 1 to 6) takes any rate from 0.25 to 20 Msps and its gain in tenths of a dB as asked.
-#include "tcp_client.h"
+#include "../net/tcp_client.h"
 #include "native_common.h"
 #include "dect2/net/netradio.h"
 #include <map>

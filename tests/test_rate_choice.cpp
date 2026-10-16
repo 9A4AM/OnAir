@@ -2,7 +2,7 @@
 #include "dect2/engine/rate_choice.h"
 #include "dect2/engine/mode_tuning.h"
 #include "dect2/dvbs/dvbs_rx.h"
-#include "../core/src/native_common.h"
+#include "../core/src/source/native_common.h"
 #include <cmath>
 #include <cstdio>
 

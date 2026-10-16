@@ -5,7 +5,7 @@
 #include "dect2/js8/js8_tel.h"
 #include "dect2/js8/js8_proto.h"
 #include "dect2/marine/marine_dsp.h"
-#include "../ham_listen.h"
+#include "../audio/ham_listen.h"
 #include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>

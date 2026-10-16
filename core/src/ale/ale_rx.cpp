@@ -4,7 +4,7 @@
 #include "dect2/ale/ale_tel.h"
 #include "dect2/ale/ale_proto.h"
 #include "dect2/marine/marine_dsp.h"
-#include "../ham_listen.h"
+#include "../audio/ham_listen.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

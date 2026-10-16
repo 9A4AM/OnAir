@@ -369,7 +369,7 @@ curl -s -X POST -H 'Content-Type: application/json' -d '{"mhz": 474}' http://127
 curl -s -H "Authorization: Bearer $TOKEN" http://192.168.1.20:8765/api/v1/status
 ```
 
-The server is `core/src/remote_api.cpp`; `tests/test_remote_api.cpp` runs a socket client against it, and against the real engine on a generated DVB-T2 signal.
+The server is `core/src/net/remote_api.cpp`; `tests/test_remote_api.cpp` runs a socket client against it, and against the real engine on a generated DVB-T2 signal.
 
 ## Updates
 

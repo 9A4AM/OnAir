@@ -1,4 +1,4 @@
-// "Optimise gain": the button, the sweep that drives GainOptimiser (core/src/gain_opt.cpp) from the engine's telemetry and spectrum, the progress / result
+// "Optimise gain": the button, the sweep that drives GainOptimiser (core/src/source/gain_opt.cpp) from the engine's telemetry and spectrum, the progress / result
 // line and the undo. The AGC is paused for the sweep and stays off after it (it would move the gain the sweep chose); Undo puts the gain and the AGC back.
 #include "app.h"
 #include <cmath>
