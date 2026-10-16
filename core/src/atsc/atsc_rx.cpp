@@ -15,6 +15,7 @@
 #include "dect2/dsp/dsp_compat.h"
 #include "dect2/common/platform.h"
 #include "dect2/dsp/simd.h"
+#include "dect2/common/mathconst.h"
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
 #include <cstdint>
@@ -75,7 +76,7 @@ DECT2_SIMD_BODY void pfbBlockBody(const float* taps, int J, int NPH, const float
 DECT2_AVX2_DISPATCH(void, pfbBlock, (const float* taps, int J, int NPH, const float* re, const float* im, int64_t base, double pos0, double step, size_t k0, size_t k1, float* outRe, float* outIm), (taps, J, NPH, re, im, base, pos0, step, k0, k1, outRe, outIm))
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kPilotHz = -(3.0e6 - 0.309440559e6);   // pilot relative to the centre of the channel
 constexpr int kSegSamples = 2 * kSegSyms;               // 1664 samples at 2 per symbol
 constexpr int kNF = 24;                                 // equaliser taps after the cursor (future samples)

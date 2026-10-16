@@ -2,12 +2,13 @@
 #include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace wb {
 
 namespace {
-const double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 double bessel0(double x) {
     double s = 1, t = 1;

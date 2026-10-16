@@ -4,9 +4,9 @@
 #include <vector>
 #include <cstdio>
 #include <set>
+#include "dect2/common/mathconst.h"
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     // CRC-16/X.25 check value
@@ -41,7 +41,7 @@ int main() {
     {   // QPSK on the axes, the first bit the most significant bit of the Gray label
         auto near = [](std::complex<float> a, float re, float im) { return std::abs(a - std::complex<float>(re, im)) < 1e-4f; };
         CHECK(near(hfdlPsk(2, 0), 1, 0) && near(hfdlPsk(2, 2), 0, 1) && near(hfdlPsk(2, 3), -1, 0) && near(hfdlPsk(2, 1), 0, -1), "QPSK map");
-        const float h = 0.70710678f;
+        const float h = dect2::math::k1OverSqrt2f;
         CHECK(near(hfdlPsk(3, 0), 1, 0) && near(hfdlPsk(3, 4), h, h) && near(hfdlPsk(3, 6), 0, 1) && near(hfdlPsk(3, 1), h, -h), "8PSK map");
         for (int b = 2; b <= 3; b++) for (int v = 0; v < (1 << b); v++) {
             float s[3];

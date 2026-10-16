@@ -13,11 +13,12 @@
 #include <ctime>
 #include <map>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kMaxChannels = 6;
 constexpr size_t kMaxMessages = 200, kMaxLogons = 100, kMaxAircraft = 100, kMaxTypes = 64, kMaxTrack = 24;
 const int kRates[3] = {600, 1200, 10500};

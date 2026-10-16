@@ -12,12 +12,13 @@
 #include <complex>
 #include <deque>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kWork = 230400.0;          // 3 samples per symbol at 100 kHz, 12 at 25 kHz
 constexpr int kNf = 256, kHop = 128;
 constexpr double kDf = kWork / kNf;         // 900 Hz

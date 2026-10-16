@@ -8,11 +8,12 @@
 #include <cmath>
 #include <cstring>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr size_t kHist = 120, kLogMax = 80, kFramesMax = 80;
 constexpr int kAcqFft = 4096, kAcqBlocks = 8;
 

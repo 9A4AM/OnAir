@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstring>
 #include <deque>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
@@ -46,7 +47,7 @@ private:
         if (haveSpare_) { spare_ = all.back(); all.pop_back(); }
         syms_.resize(all.size() / 2);
         pos_ = 0;
-        for (size_t i = 0; i < syms_.size(); i++) syms_[i] = cf32((1 - 2 * all[2 * i]) * 0.70710678f, (1 - 2 * all[2 * i + 1]) * 0.70710678f);
+        for (size_t i = 0; i < syms_.size(); i++) syms_[i] = cf32((1 - 2 * all[2 * i]) * dect2::math::k1OverSqrt2f, (1 - 2 * all[2 * i + 1]) * dect2::math::k1OverSqrt2f);
     }
     int rate_;
     std::function<void(uint8_t*)> ts_;
@@ -134,7 +135,7 @@ private:
             frame_.resize(90 + 36 * 90);
             s2PlHeader(0, false, false, frame_.data());
             const auto& rn = s2ScramblingRn(c_.plScramble);
-            for (int i = 0; i < 36 * 90; i++) frame_[90 + i] = s2RotateByR(cf32(0.70710678f, 0.70710678f), rn[i]);
+            for (int i = 0; i < 36 * 90; i++) frame_[90 + i] = s2RotateByR(cf32(dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f), rn[i]);
             return;
         }
         const S2Dims d = s2Dims(mod, rate, sh);
@@ -154,7 +155,7 @@ private:
         for (int slot = 0; slot < d.slots; slot++) {
             for (int k = 0; k < 90; k++, si++) { frame_[o] = s2RotateByR(sym[si], rn[i]); o++; i++; }
             if (pil && (slot + 1) % 16 == 0 && slot + 1 < d.slots)
-                for (int k = 0; k < 36; k++) { frame_[o] = s2RotateByR(cf32(0.70710678f, 0.70710678f), rn[i]); o++; i++; }
+                for (int k = 0; k < 36; k++) { frame_[o] = s2RotateByR(cf32(dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f), rn[i]); o++; i++; }
         }
     }
 

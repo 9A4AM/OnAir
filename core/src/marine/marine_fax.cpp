@@ -16,12 +16,13 @@
 #include <deque>
 #include <limits>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kBlackHz = 1500.0, kWhiteHz = 2300.0, kCentreHz = 1900.0;
 constexpr int kLpmChoices[] = {60, 90, 100, 120, 180, 240};
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();

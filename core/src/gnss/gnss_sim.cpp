@@ -9,12 +9,13 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-const double kPiS = 3.14159265358979323846;
+const double kPiS = dect2::math::kPi;
 const int kWeek = 2400;                 // the simulated GPS week (any week works: the receiver resolves the 10 bit number against its clock)
 const double kToe = 352800.0;           // ephemeris reference time of every satellite
 const double kToa = 356352.0;           // almanac reference time (a multiple of 4096 s)

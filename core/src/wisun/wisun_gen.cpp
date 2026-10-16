@@ -6,11 +6,12 @@
 #include <cmath>
 #include <deque>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kPulseRes = 64;     // pulse table points per bit
 constexpr int kPulseSpan = 3;     // bits on each side the Gaussian pulse reaches
 

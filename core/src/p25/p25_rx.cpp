@@ -15,11 +15,12 @@
 #include <deque>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kFs = 48000;            // demodulator rate: 10 samples per symbol
 constexpr int kSps = 10;
 constexpr int kTaps = 161, kDelay = 80;   // the symbol filter: low pass, flat to the C4FM band edge (2880 Hz), off by 4 kHz

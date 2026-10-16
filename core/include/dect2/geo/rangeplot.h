@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -79,7 +80,7 @@ public:
 
     // initial bearing (degrees from north) and great-circle distance (km, mean earth radius) from (lat0, lon0) to (lat1, lon1)
     static void bearingDistance(double lat0, double lon0, double lat1, double lon1, double& azDeg, double& km) {
-        const double d2r = 3.14159265358979323846 / 180.0;
+        const double d2r = dect2::math::kPi / 180.0;
         const double p0 = lat0 * d2r, p1 = lat1 * d2r, dl = (lon1 - lon0) * d2r;
         const double sa = std::sin((p1 - p0) / 2), sb = std::sin(dl / 2);
         double h = sa * sa + std::cos(p0) * std::cos(p1) * sb * sb;
@@ -128,7 +129,7 @@ public:
         for (int y = 0; y < size; y++) for (int x = 0; x < size; x++) {
             const double dx = x - cx, dy = cy - y, r = std::sqrt(dx * dx + dy * dy);
             if (r < 1 || r > R + 2) continue;
-            const double az = std::atan2(dx, dy) * 180.0 / 3.14159265358979323846;
+            const double az = std::atan2(dx, dy) * 180.0 / dect2::math::kPi;
             const int b = bucketOf(az);
             const double rb = maxKm(b, nowSec) * pxPerKm;
             if (rb <= 0) continue;
@@ -138,7 +139,7 @@ public:
         // rings and spokes
         const int dots = 720;
         for (int k = 1; k <= nRings; k++) for (int i = 0; i < dots; i++) {
-            const double a = i * 2 * 3.14159265358979323846 / dots, r = R * k / nRings;
+            const double a = i * 2 * dect2::math::kPi / dots, r = R * k / nRings;
             put((int)std::lround(cx + r * std::sin(a)), (int)std::lround(cy - r * std::cos(a)), ring);
         }
         for (int i = -(int)R; i <= (int)R; i++) { put((int)std::lround(cx) + i, (int)std::lround(cy), ring); put((int)std::lround(cx), (int)std::lround(cy) + i, ring); }

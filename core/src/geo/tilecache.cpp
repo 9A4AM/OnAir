@@ -4,11 +4,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace fs = std::filesystem;
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 fs::path fsPath(const std::string& p) { return fs::path(reinterpret_cast<const char8_t*>(p.c_str())); }
 }
 

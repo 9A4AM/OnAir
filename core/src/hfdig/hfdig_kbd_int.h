@@ -11,12 +11,13 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace kbd {
 
 constexpr double kFs = 8000.0;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 using cf = std::complex<float>;
 
 // One receiver of a family. feed() takes the 8 kHz audio; what it decodes appears in `out` (taken by the caller) and `hell`.

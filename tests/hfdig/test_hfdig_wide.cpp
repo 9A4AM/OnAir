@@ -17,12 +17,12 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include "dect2/common/mathconst.h"
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 constexpr double kFs = 2400000, kOff = -20000, kT0 = 1767225600.0;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 struct Rng {
     uint64_t s = 88172645463325252ull;

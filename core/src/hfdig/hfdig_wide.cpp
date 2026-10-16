@@ -8,6 +8,7 @@
 #include <cmath>
 #include <complex>
 #include <cstdio>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -24,7 +25,7 @@ const FtxSlot kSlots[] = {
     {28124600, 3}, {50293000, 3},
 };
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kFs = kHfdigAudioRate;
 constexpr int kFft = 2048, kHop = 1024;
 constexpr double kBinHz = kFs / kFft;

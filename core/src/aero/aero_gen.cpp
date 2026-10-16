@@ -9,11 +9,12 @@
 #include <deque>
 #include <cstdio>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // six aircraft: ICAO addresses in their countries' blocks, registrations and flights of airlines that cross the Gulf and the Indian Ocean
 struct Plane { uint32_t aes; const char* reg; const char* flight; };

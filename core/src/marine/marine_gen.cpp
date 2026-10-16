@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <deque>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -14,7 +15,7 @@ using namespace marine;
 
 namespace {
 
-const double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kBase = 24000.0;
 
 // ---- sources at 24 kHz, complex baseband with the carrier at 0 Hz
@@ -165,7 +166,7 @@ public:
             hist_[(size_t)hp_] = x[i];
             const cf32 d = hist_[(size_t)((hp_ + kDelay + 1 - kDelay) % (kDelay + 1))];   // 24 samples = 1 ms ago
             hp_ = (hp_ + 1) % (kDelay + 1);
-            x[i] = 0.70710678f * (g1 * x[i] + g2 * d);
+            x[i] = dect2::math::k1OverSqrt2f * (g1 * x[i] + g2 * d);
         }
     }
 private:

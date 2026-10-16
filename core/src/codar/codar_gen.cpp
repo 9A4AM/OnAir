@@ -5,11 +5,12 @@
 #include <algorithm>
 #include <cmath>
 #include <complex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kNoise = 0.1;         // rms of the complex noise
 constexpr double kIdLead = 1.2;        // silence at the start of the ID slot
 constexpr double kIdSweep = 0.005;     // repetition of the fast sweeps while the key is down

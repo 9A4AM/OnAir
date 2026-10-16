@@ -8,11 +8,12 @@
 #include <queue>
 #include <random>
 #include <string>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kRamp = 3, kTail = 2, kSpan = 5, kRes = 256;   // ramp and tail symbols, pulse half-length (symbols), table steps per symbol
 
 const std::vector<float>& rcTable() {

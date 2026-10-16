@@ -4,11 +4,12 @@
 #include <algorithm>
 #include <cmath>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 { namespace drm {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 const ModeParams kModes[5] = {
     // name, Tu, Tg (units of T), Ns, frames, x, y, k0, sdc symbols, D        Tables 2, 47, 58, 60, clause 8.5.3.1, clause 7.6

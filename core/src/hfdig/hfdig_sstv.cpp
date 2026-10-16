@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <memory>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -34,7 +35,7 @@ using namespace sstv;
 namespace {
 
 constexpr double kFs = 8000.0;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kCenter = 1900.0;           // the mixer frequency
 constexpr int kTaps = 63;
 constexpr double kLowpassHz = 950.0;         // of the complex baseband around 1900 Hz: passes 950 .. 2850 Hz, so a VIS bit (1100 Hz) with a dial error of -100 Hz still gets through

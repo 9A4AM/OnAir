@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include "dect2/common/mathconst.h"
 using namespace dect2;
 using namespace dect2::gnsstest;
 using dect2::testpar::CaseOut;
@@ -141,7 +142,7 @@ static void runCase(const Case& k, CaseOut& out) {
             if (m.sys != GnssGlonass || m.fcn != s.fcn) continue;
             const double tSim = m.rxTime / (1.0 + k.f.clockPpm * 1e-6) + (double)k.f.skip / o.rate;
             double truth = std::fmod(sim.svTransmitTime(i, sim.trueTime(tSim)) + 10800.0 - 18.0, 86400.0);
-            const double e = gloWrapDay(m.txTow - truth) * 299792458.0;
+            const double e = gloWrapDay(m.txTow - truth) * dect2::math::kSpeedOfLight;
 
             sum += e; sum2 += e * e; n++;
         }
@@ -162,7 +163,7 @@ static void runCase(const Case& k, CaseOut& out) {
             const double a = 7.292115e-5 * tau, x = pos[0] * std::cos(a) + pos[1] * std::sin(a), y = -pos[0] * std::sin(a) + pos[1] * std::cos(a);
             const double* rx = sim.receiverEcef();
             const double rr = std::sqrt((x - rx[0]) * (x - rx[0]) + (y - rx[1]) * (y - rx[1]) + (pos[2] - rx[2]) * (pos[2] - rx[2]));
-            CHECK(std::fabs(rr - tau * 299792458.0) < 0.05, "R%02d: the orbit from the ephemeris is %.3f m off in range", s.prn, rr - tau * 299792458.0);
+            CHECK(std::fabs(rr - tau * dect2::math::kSpeedOfLight) < 0.05, "R%02d: the orbit from the ephemeris is %.3f m off in range", s.prn, rr - tau * dect2::math::kSpeedOfLight);
         }
         if (hasEph[slot]) {
             const GloEphemeris& a = eph[slot];

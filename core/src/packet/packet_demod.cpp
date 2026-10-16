@@ -2,13 +2,14 @@
 #include "dect2/packet/packet_demod.h"
 #include <algorithm>
 #include <cmath>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace pktdemod {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr size_t kNoiseBlocks = 250;           // the noise floor is a low percentile of the last 5 s
 
 int pickDecimation(double fs) {

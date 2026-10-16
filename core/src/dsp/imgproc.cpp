@@ -2,11 +2,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace img {
 
-static const double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 static inline double rad(double d) { return d * kPi / 180.0; }
 static inline double deg(double r) { return r * 180.0 / kPi; }
 

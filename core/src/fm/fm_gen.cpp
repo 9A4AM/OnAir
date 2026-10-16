@@ -3,11 +3,12 @@
 #include "fm_noise.h"
 #include <algorithm>
 #include <cmath>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kRdsBaud = 1187.5;
 
 // remainder of a polynomial (bit i = coefficient of x^i) divided by the RDS generator x^10 + x^8 + x^7 + x^5 + x^4 + x^3 + 1

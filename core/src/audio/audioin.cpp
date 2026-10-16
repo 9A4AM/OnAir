@@ -10,12 +10,13 @@ extern "C" {
 #include <libavutil/channel_layout.h>
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
+#include "dect2/common/mathconst.h"
 }
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 bool loadPcmWav(const std::string& path, std::vector<float>& stereo, int wantRate) {
     FILE* f = fopen(path.c_str(), "rb");

@@ -14,11 +14,12 @@
 #include <ctime>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kFs = 48000;            // demodulator rate: 20 samples per NXDN48 symbol, 10 per NXDN96 symbol
 constexpr int kYMask = 32767;
 constexpr size_t kMaxEvents = 200;

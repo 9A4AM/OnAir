@@ -7,11 +7,12 @@
 #include <memory>
 #include <random>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kAudRate = 16000;
 constexpr double kRamp = 0.002;
 

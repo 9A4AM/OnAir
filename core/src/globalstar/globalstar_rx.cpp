@@ -9,12 +9,13 @@
 #include <cmath>
 #include <deque>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kSlotSec = 0.01;
 constexpr double kPublishSec = 0.25;
 constexpr double kPowerHalf = 0.615e6;       // the channel's own bandwidth: 1.23 MHz

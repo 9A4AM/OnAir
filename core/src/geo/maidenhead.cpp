@@ -5,11 +5,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 // the deepest level (8 characters) is 1/120 degree of longitude and 1/240 of latitude: positions are counted in those units
 long long units(double v, double off, double per, long long max) {
     long long u = (long long)std::floor((v + off) * per + 1e-9);

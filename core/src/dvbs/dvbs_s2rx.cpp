@@ -15,6 +15,7 @@
 #include <map>
 #include <mutex>
 #include <thread>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
@@ -28,8 +29,8 @@ namespace dvbs {
 #endif
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
-const cf32 kPilot(0.70710678f, 0.70710678f);
+using dect2::math::kPi;
+const cf32 kPilot(dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f);
 
 // complex product written out (the library one tests for NaN results on every call)
 inline cf32 cmul(cf32 a, cf32 b) {
@@ -180,7 +181,7 @@ struct S2Rx::Impl {
     void setNoise(double v) {
         sg2 = (float)std::max(1e-3, std::min(vl ? 8.0 : 2.0, v));
         invSg2 = 1.f / sg2;
-        tanhScale = 0.70710678f * invSg2 * TanhTable::kScale;
+        tanhScale = dect2::math::k1OverSqrt2f * invSg2 * TanhTable::kScale;
     }
     static void gains(double bnT, double zeta, float& kp, float& ki) {
         const double th = bnT / (zeta + 1.0 / (4.0 * zeta));
@@ -236,7 +237,7 @@ struct S2Rx::Impl {
         if (!soft) {
             switch (mod) {
             case kQpsk: {
-                const float a = 0.70710678f;
+                const float a = dect2::math::k1OverSqrt2f;
                 const float sr = xr > 0 ? a : -a, si = xi > 0 ? a : -a;
                 return xi * sr - xr * si;
             }
@@ -250,7 +251,7 @@ struct S2Rx::Impl {
         if (mod == kQpsk) {
             // The error is a * kdGain * (xi sgn(xr) t(xr) - xr sgn(xi) t(xi)), t = tanh of the scaled magnitude: the signs are put on the factors
             // beside the table lookups and the constant factors outside, which keeps the chain from the symbol to the loop correction short.
-            const float a = 0.70710678f;
+            const float a = dect2::math::k1OverSqrt2f;
             const float tr = tanhMag(std::fabs(xr)), ti = tanhMag(std::fabs(xi));
             const float xis = std::bit_cast<float>(std::bit_cast<uint32_t>(xi) ^ (std::bit_cast<uint32_t>(xr) & 0x80000000u));
             const float xrs = std::bit_cast<float>(std::bit_cast<uint32_t>(xr) ^ (std::bit_cast<uint32_t>(xi) & 0x80000000u));
@@ -327,9 +328,9 @@ struct S2Rx::Impl {
             // other orientation would push the loop away from the right phase, so it works on the symbol turned back, the orientation of the header
             // before (the next one is the same in all but a mixed stream)
             const cf32 w = hdrS2x ? cf32(u.imag(), -u.real()) : u;
-            const float v = 0.70710678f * ((pos & 1) ? (w.imag() - w.real()) : (w.real() + w.imag()));
+            const float v = dect2::math::k1OverSqrt2f * ((pos & 1) ? (w.imag() - w.real()) : (w.real() + w.imag()));
             const float t = ftanh(v * invSg2);
-            const cf32 s = t * ((pos & 1) ? cf32(-0.70710678f, 0.70710678f) : cf32(0.70710678f, 0.70710678f));
+            const cf32 s = t * ((pos & 1) ? cf32(-dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f) : cf32(dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f));
             err = w.imag() * s.real() - w.real() * s.imag();
         } else {
             const int i = pos - 90;
@@ -365,9 +366,9 @@ struct S2Rx::Impl {
     // points weighted by how likely each is at this noise level is the expected symbol. The detector gain (kdEma) scales the error, which at -9 dB is
     // otherwise a fraction of what the loop design assumes.
     float vlBpskError(const cf32& w, int j) {
-        const float v = 0.70710678f * ((j & 1) ? (w.imag() - w.real()) : (w.real() + w.imag()));
+        const float v = dect2::math::k1OverSqrt2f * ((j & 1) ? (w.imag() - w.real()) : (w.real() + w.imag()));
         const float t = ftanh(v * invSg2);
-        const cf32 s = t * ((j & 1) ? cf32(-0.70710678f, 0.70710678f) : cf32(0.70710678f, 0.70710678f));
+        const cf32 s = t * ((j & 1) ? cf32(-dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f) : cf32(dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f));
         kdEma += (v * t - kdEma) * (1.f / 1024.f);
         if ((++kdN & 15) == 0) kdGain = 1.f / std::max(0.08f, std::min(1.f, kdEma));
         return (w.imag() * s.real() - w.real() * s.imag()) * kdGain;
@@ -752,7 +753,7 @@ struct S2Rx::Impl {
         if (std::abs(s1) < 90 * 0.15f || std::abs(s2) < 90 * 0.15f) return false;
         const double psi = std::arg(s2 * std::conj(s1));
         const double span = h.snrDb < 4.f ? 0.006 : 0.0045;
-        const double stepW = 2.0 * 3.14159265358979323846 / (double)L;
+        const double stepW = 2.0 * dect2::math::kPi / (double)L;
         // the phase of the second header minus that of the first is the true frequency times L (the same local derotation is applied to both)
         const int mmin = (int)std::ceil(((w0 - span) - psi / L) / stepW), mmax = (int)std::floor(((w0 + span) - psi / L) / stepW);
         std::vector<cf32> conjFrame;
@@ -805,7 +806,7 @@ struct S2Rx::Impl {
         }
         const std::vector<uint8_t>& lay = vlLayout(set);
         const std::vector<uint8_t>& R = s2ScramblingRn(plN);
-        const double stepW = 2.0 * 3.14159265358979323846 / (double)Lf / 4.0;
+        const double stepW = 2.0 * dect2::math::kPi / (double)Lf / 4.0;
         const double span = 0.008;
         const int K = (int)std::ceil(span / stepW);
         double bestM = -1, secondM = -1;

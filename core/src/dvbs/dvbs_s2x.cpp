@@ -6,12 +6,13 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // Table 17a: the S2X MODCODs, normal FECFRAMEs then short ones. LDPC code (table 17a "implementation MODCOD name" and table 4 / 6), bit interleaver
 // pattern (tables 9a, 9b), constellation and radius ratios (tables 10b, 11a, 11b, 11d, 12a, 12b, 12e, 13b, 13d, 13f, 14a, 15a), Es/N0 (tables 20a, 20c).

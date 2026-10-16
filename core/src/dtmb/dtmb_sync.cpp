@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <complex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2::dtmb {
 
@@ -53,7 +54,7 @@ void Acquirer::correlate(int ref, const cf32* xs, int len) {
 double Acquirer::refineCfo(const cf32* r, const AcqResult& res, float& coherence) const {
     const HeaderInfo& hi = headerInfo(res.header);
     const int L = hi.length, F = hi.framesPerSuper, n = (int)res.starts.size();
-    constexpr double kPi = 3.14159265358979323846;
+    using dect2::math::kPi;
     constexpr int kFrames = 12;
     std::vector<std::vector<cf32>> x;
     double energy = 0;

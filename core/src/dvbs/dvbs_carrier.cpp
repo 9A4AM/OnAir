@@ -6,12 +6,13 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 }
 
 QpskEstimate qpskEstimate(const cf32* z, size_t n) {
@@ -64,7 +65,7 @@ void QpskPll::start(double freq, double phase, double bnT, double zeta) {
     theta_ = phase;
     omega_ = 2 * kPi * freq;
     setBandwidth(bnT, zeta);
-    lock_ = 0; sigma2_ = 0.1f; amp_ = 0.70710678f;
+    lock_ = 0; sigma2_ = 0.1f; amp_ = dect2::math::k1OverSqrt2f;
     m2_ = 1; m4_ = 1; c4re_ = 0; count_ = 0;
 }
 

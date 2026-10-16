@@ -8,11 +8,12 @@
 #include <cmath>
 #include <queue>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 double gfskPulse(double tau) {
     const double sigma = std::sqrt(std::log(2.0)) / (2 * kPi * 0.28);

@@ -6,6 +6,7 @@
 #include <cstring>
 #include <random>
 #include "dtmb_simd.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dtmb {
@@ -48,7 +49,7 @@ Signal::Signal(const SignalConfig& cfg, FrameTx::TsSource ts) : cfg_(cfg), tx_(c
         for (int k = 0; k < taps_; k++) table_[(size_t)p * (size_t)taps_ + (size_t)k] = (float)srrcPulse((kHalf - 1 - k) + f);
     }
     step_ = cfg.symbolRate / cfg.rate * (1.0 + cfg.sroPpm * 1e-6);
-    dph_ = 2.0 * 3.14159265358979323846 * cfg.cfoHz / cfg.rate;
+    dph_ = 2.0 * dect2::math::kPi * cfg.cfoHz / cfg.rate;
     rot_ = cf32((float)std::cos(dph_), (float)std::sin(dph_));
     // echoes: delays relative to the earliest path
     long mainDelay = 0;

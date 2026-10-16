@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include "dect2/common/mathconst.h"
 using namespace dect2;
 using namespace dect2::gnsstest;
 using dect2::testpar::CaseOut;
@@ -64,8 +65,8 @@ static void runCase(const Case& k, CaseOut& out) {
     // the clock against GST is the clock against GPS time less the 25 ns the simulation puts between them
     if (t.fix.systemInFix[GnssGalileo]) {
         const double isb = t.fix.clockBiasM[GnssGalileo] - t.fix.clockBiasM[GnssGps];
-        out.print("  receiver clock against GST minus against GPS: %+.2f m (expected %+.2f)\n", isb, -299792458.0 * 25e-9);
-        CHECK(std::fabs(isb + 299792458.0 * 25e-9) < (t.fix.ggtoApplied ? 0.5 : 6.0), "inter-system clock %.2f m", isb);
+        out.print("  receiver clock against GST minus against GPS: %+.2f m (expected %+.2f)\n", isb, -dect2::math::kSpeedOfLight * 25e-9);
+        CHECK(std::fabs(isb + dect2::math::kSpeedOfLight * 25e-9) < (t.fix.ggtoApplied ? 0.5 : 6.0), "inter-system clock %.2f m", isb);
     }
     if (!weak && k.ggto) CHECK(t.fix.ggtoApplied && std::fabs(t.fix.ggtoNs - 25.0) < 0.1, "GST-GPS offset not applied (%.2f ns)", t.fix.ggtoNs);
     if (!k.ggto) CHECK(!t.fix.ggtoApplied && t.fix.systemInFix[GnssGalileo], "without the broadcast offset Galileo needs its own clock unknown");
@@ -77,7 +78,7 @@ static void runCase(const Case& k, CaseOut& out) {
         for (auto& ep : r.meas) for (auto& m : ep) {
             if (m.sys != GnssGalileo || m.prn != s.prn) continue;
             const double tSim = m.rxTime / (1.0 + k.f.clockPpm * 1e-6) + (double)k.f.skip / o.rate;
-            const double e = (m.txTow - sim.svTransmitTime(i, sim.trueTime(tSim))) * 299792458.0;
+            const double e = (m.txTow - sim.svTransmitTime(i, sim.trueTime(tSim))) * dect2::math::kSpeedOfLight;
             sum += e; sum2 += e * e; n++;
         }
         const GnssChannel* ch = nullptr;

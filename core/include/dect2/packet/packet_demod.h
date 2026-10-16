@@ -13,6 +13,7 @@
 #include <deque>
 #include <functional>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace pktdemod {
@@ -76,7 +77,7 @@ struct Afsk1200 {
     int snapBits_ = 0;               // after a good frame: snap the clock on edges while the next preamble arrives
 
     void init(int L, bool hann, float g, float inert, float inertLocked) {
-        constexpr double kPi = 3.14159265358979323846;
+        using dect2::math::kPi;
         len = L; gain = g; inertia = inert; inertiaLocked = inertLocked;
         mr.assign((size_t)L, 0.f); mi = mr; sr = mr; si = mr;
         for (int t = 0; t < L; t++) {

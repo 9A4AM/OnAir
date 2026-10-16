@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // phase (unwrapped, in radians) at a fractional sample position
 struct PhaseTrack {

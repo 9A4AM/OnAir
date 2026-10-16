@@ -13,11 +13,12 @@
 #include <cstdio>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kFs = 8000;                   // audio
 constexpr int kSps = 64;                       // 8 ms
 constexpr int kHop = 2;                        // tones measured every 2 samples

@@ -8,6 +8,7 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
@@ -278,7 +279,7 @@ void vlMap(const uint8_t* tx, int mode, cf32* sym) {
 void vlDemap(const cf32* sym, int mode, float sigma2, float* llr) {
     const VlMode& m = vlMode(mode);
     if (!m.bpsk) { s2Demap(sym, m.txBits / 2, kQpsk, 0, sigma2, llr); return; }
-    const float k = 2.f / std::max(sigma2, 1e-6f), a = 0.70710678f;
+    const float k = 2.f / std::max(sigma2, 1e-6f), a = dect2::math::k1OverSqrt2f;
     for (int i = 0; i < m.txBits; i++) {
         float s = 0;
         for (int r = 0; r < m.spread; r++) {
@@ -352,7 +353,7 @@ void vlBuildFrame(int mode, const std::vector<uint8_t>& bb, int plScramble, int 
     s2PlHeader(set == 1 ? 64 : 65, false, true, frame.data());
     vlHeaderSymbols(mode < 0 ? kVlDummyWalsh : vlMode(mode).walsh, &frame[90]);
     const std::vector<uint8_t>& rn = s2ScramblingRn(plScramble);
-    const cf32 pilot(0.70710678f, 0.70710678f);
+    const cf32 pilot(dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f);
     std::vector<cf32> sym;
     if (mode >= 0) {
         std::vector<uint8_t> tx;

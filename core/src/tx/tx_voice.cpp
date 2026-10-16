@@ -7,11 +7,12 @@
 #include <cstring>
 #include <functional>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // 48 kHz stereo from the session → one sample of mono at `rate` (linear).
 struct PullMono {

@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <cmath>
 #include <numeric>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace wb {
 
 namespace {
-const double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // FIR filter of a complex signal, the same length, the group delay taken out (zeros outside)
 std::vector<cf32> firFilter(const std::vector<cf32>& x, const std::vector<float>& h) {

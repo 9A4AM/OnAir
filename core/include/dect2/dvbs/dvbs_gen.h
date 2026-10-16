@@ -34,6 +34,7 @@
 #include <functional>
 #include <memory>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -47,7 +48,7 @@ class PhaseNoise {
 public:
     PhaseNoise(int mask, double rate, uint32_t seed);
     double next() { const double v = th_[pos_]; pos_ = pos_ + 1 == th_.size() ? 0 : pos_ + 1; return v; }
-    double rmsDegrees() const { return rms_ * 180.0 / 3.14159265358979323846; }
+    double rmsDegrees() const { return rms_ * 180.0 / dect2::math::kPi; }
 private:
     std::vector<float> th_;
     size_t pos_ = 0;

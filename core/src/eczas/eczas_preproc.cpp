@@ -8,12 +8,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2::eczas {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kDeviation = 36.0 / (360.0 * 0.019);
 constexpr int kHilN = 101;
 constexpr float kShortScale = 16384.f;

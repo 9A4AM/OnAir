@@ -14,11 +14,12 @@
 #include <deque>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kMidRate = 96000.0, kWork = 48000.0;
 constexpr size_t kMaxSeg = (size_t)(6.0 * kWork);
 constexpr int kAudDecim = 6;                  // 48 kHz -> 8 kHz audio for the spectrum

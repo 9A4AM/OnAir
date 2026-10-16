@@ -12,12 +12,13 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kGapSec = 0.5;                // silence after every transmission
 constexpr double kEdge = 0.3;                  // the frequency changes over the 30 % either side of a symbol boundary
 

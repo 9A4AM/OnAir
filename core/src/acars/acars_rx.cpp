@@ -13,12 +13,13 @@
 #include <deque>
 #include <mutex>
 #include <unordered_map>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kMaxActive = 8;                 // carriers decoded at the same time
 constexpr int kMaxChanInfo = 24;
 constexpr double kBlockSec = 0.008;           // spectrum look every 8 ms

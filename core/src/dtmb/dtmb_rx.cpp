@@ -19,13 +19,14 @@
 #include <limits>
 #include <mutex>
 #include <thread>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 using namespace dtmb;
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr float kPeakNoiseRatio = 25.f;    // a header counts when its strongest tap stands this far (power) above the estimation noise
 constexpr int kLostFrames = 12;            // frames without a usable header before the lock is given up
 }

@@ -10,6 +10,7 @@
 #include <deque>
 #include <mutex>
 #include "../audio/ham_listen.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -83,7 +84,7 @@ struct BitDemod {
     float inertia = 0.75f, inertiaLocked = 0.85f;
     bool locked = false;
     void init() {
-        constexpr double kPi = 3.14159265358979323846;
+        using dect2::math::kPi;
         mr.resize(kWin); mi.resize(kWin); sr.resize(kWin); si.resize(kWin);
         for (int t = 0; t < kWin; t++) {
             const int k = kWin - 1 - t;
@@ -351,7 +352,7 @@ struct SameReceiver::Impl {
     // ---- the attention tone
     void toneBlock() {
         const double N = kToneBlock;
-        const double p = ts1 * ts1 + ts2 * ts2 - 2 * std::cos(2 * 3.14159265358979323846 * kToneHz / kRate) * ts1 * ts2;
+        const double p = ts1 * ts1 + ts2 * ts2 - 2 * std::cos(2 * dect2::math::kPi * kToneHz / kRate) * ts1 * ts2;
         const double msq = tsum / N;
         const double rho = tsum > 0 ? 2.0 * p / (N * tsum) : 0;
         const bool present = rho > 0.5 && msq > 1e5;
@@ -381,7 +382,7 @@ struct SameReceiver::Impl {
         republish();
     }
     void tone(const float* x, size_t n) {
-        const double coeff = 2 * std::cos(2 * 3.14159265358979323846 * kToneHz / kRate);
+        const double coeff = 2 * std::cos(2 * dect2::math::kPi * kToneHz / kRate);
         for (size_t i = 0; i < n; i++) {
             const double s0 = x[i] + coeff * ts1 - ts2;
             ts2 = ts1; ts1 = s0;

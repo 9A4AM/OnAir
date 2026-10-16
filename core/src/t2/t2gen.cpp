@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <random>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -143,7 +144,7 @@ void T2Generator::nextFrame(std::vector<cf32>& out) {
     memcpy(o, I.p1a, sizeof I.p1a); o += kP1ALen;
     memcpy(o, I.p1b, sizeof I.p1b); o += kP1BLen;
 
-    const float a = 0.70710678f;
+    const float a = dect2::math::k1OverSqrt2f;
     const float norm = 5.0f / std::sqrt(27.0f * (float)k_);
     std::vector<uint8_t> types;
     // ---- P2 payload: L1-pre, L1-post, then filler, distributed over the P2 symbols and frequency interleaved
@@ -203,7 +204,7 @@ void T2Generator::nextFrame(std::vector<cf32>& out) {
     while ((int)stream.size() < nP2_ * cP2) {
         if (plpUsed < plp.size()) { stream.push_back(plp[plpUsed++]); continue; }
         uint32_t r = I.rng();
-        stream.push_back(cf32((r & 1) ? 0.70710678f : -0.70710678f, (r & 2) ? 0.70710678f : -0.70710678f));
+        stream.push_back(cf32((r & 1) ? dect2::math::k1OverSqrt2f : -dect2::math::k1OverSqrt2f, (r & 2) ? dect2::math::k1OverSqrt2f : -dect2::math::k1OverSqrt2f));
     }
     std::vector<std::vector<cf32>> p2sym;
     p2Distribute(stream, nP2_, cP2, (int)preCells.size(), (int)postCells.size(), p2sym);

@@ -11,11 +11,12 @@
 #include <cstring>
 #include <deque>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kRolloff = 0.5;
 constexpr double kGoesSymbolRate = 927000.0;
 constexpr int kFrameSyms = 2 * 8 * meteor::kCaduBytes;    // 16384 code symbols a frame

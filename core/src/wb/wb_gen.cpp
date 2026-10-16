@@ -2,12 +2,13 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace wb {
 
 namespace {
-const double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 std::vector<float> rrcTaps(double alpha, double sps, int spanSyms) {
     const int n = (int)(spanSyms * sps) | 1;

@@ -1,6 +1,7 @@
 // Constellations of A/322 section 6.3 and Annex C used by the signalling: QPSK and the non-uniform 16, 64 and 256 point constellations
 // (position vectors of the first quadrant; the other quadrants follow by symmetry). Unit average power.
 #include "atsc3_constellations.h"
+#include "dect2/common/mathconst.h"
 namespace dect2 {
 namespace atsc3 {
 namespace {
@@ -59,7 +60,7 @@ std::vector<cf32> build(const float* w, int b) {
 
 const std::vector<cf32>& signallingConstellation(Nuc kind) {
     static const std::vector<cf32> qpsk = [] {
-        const float s = 0.70710678f;   // Table C.1.1: 00 (1+j), 01 (-1+j), 10 (1-j), 11 (-1-j), over sqrt 2
+        const float s = dect2::math::k1OverSqrt2f;   // Table C.1.1: 00 (1+j), 01 (-1+j), 10 (1-j), 11 (-1-j), over sqrt 2
         return std::vector<cf32>{cf32(s, s), cf32(-s, s), cf32(s, -s), cf32(-s, -s)};
     }();
     static const std::vector<cf32> n16 = build(k16_8, 4);

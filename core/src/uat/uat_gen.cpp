@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <random>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -13,7 +14,7 @@ namespace {
 
 constexpr int kSyncBits = 36;
 constexpr uint64_t kAdsbSync = 0xEACDDA4E2UL;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 static int hexNibble(char c) {
     if (c >= '0' && c <= '9') return c - '0';

@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2::dji {
 
@@ -82,7 +83,7 @@ bool parseDroneId(const std::vector<uint8_t>& frame176, DroneId& d);   // false 
 // The 9 (or 8: no first symbol) symbols of a burst at 15.36 Msps with cyclic prefixes, from 7200 coded bits (already scrambled), unit-rms carriers
 std::vector<cf32> buildBurst(const std::vector<uint8_t>& scrambledBits, bool withFirstSymbol);
 // The bits of the QPSK carriers of one symbol (carrier order, 2 per carrier, bit 0 the sign of the real part): the constellation is (1 - 2 b0, 1 - 2 b1) / sqrt 2
-inline cf32 qpsk(int b0, int b1) { return cf32((1 - 2 * b0) * 0.70710678f, (1 - 2 * b1) * 0.70710678f); }
+inline cf32 qpsk(int b0, int b1) { return cf32((1 - 2 * b0) * dect2::math::k1OverSqrt2f, (1 - 2 * b1) * dect2::math::k1OverSqrt2f); }
 
 // ---- receiving one burst
 struct BurstResult {

@@ -1,6 +1,7 @@
 #include "dect2/engine/widespan.h"
 #include <algorithm>
 #include <cmath>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -17,7 +18,7 @@ void WideDecimator::configure(double inRate, double spanHz) {
         const double fc = 0.5 * (edgeLo + edgeHi) / fs_, tr = (edgeHi - edgeLo) / fs_;
         int n = (int)std::ceil(4.0 / tr) | 1;
         n = std::max(n, 2 * dec_ + 1);
-        const double kPi = 3.14159265358979323846;
+        using dect2::math::kPi;
         double s = 0;
         h_.resize((size_t)n);
         for (int i = 0; i < n; i++) {
@@ -34,7 +35,7 @@ void WideDecimator::configure(double inRate, double spanHz) {
 
 void WideDecimator::setOffsetHz(double hz) {
     off_ = hz;
-    if (fs_ > 0) { const double w = -2.0 * 3.14159265358979323846 * hz / fs_; step_ = cf32((float)std::cos(w), (float)std::sin(w)); }
+    if (fs_ > 0) { const double w = -2.0 * dect2::math::kPi * hz / fs_; step_ = cf32((float)std::cos(w), (float)std::sin(w)); }
 }
 
 void WideDecimator::reset() { rot_ = cf32(1.f, 0.f); rotCount_ = 0; buf_.clear(); buf_.resize(h_.size()); pos_ = 0; }

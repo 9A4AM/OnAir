@@ -18,13 +18,14 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 using namespace halow;
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kW = 96;                   // detector window: 24 us
 constexpr int kRunMin = 64;              // samples the detector must stay above the threshold
 constexpr float kThr = 0.55f;

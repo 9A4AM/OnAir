@@ -5,6 +5,7 @@
 #pragma once
 #include "dect2/dvbs/dvbs_s2.h"
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace dvbs {
@@ -50,7 +51,7 @@ const std::vector<uint8_t>& vlMediumBchGenerator();
 void vlMap(const uint8_t* tx, int mode, cf32* sym);
 void vlDemap(const cf32* sym, int mode, float sigma2, float* llr);
 // pi/2 BPSK reference of the symbol at position j of a run: +-(1 + j)/sqrt 2 (j even), +-(-1 + j)/sqrt 2 (odd), for bit 0 / bit 1
-inline cf32 vlBpskRef(int j) { return (j & 1) ? cf32(-0.70710678f, 0.70710678f) : cf32(0.70710678f, 0.70710678f); }
+inline cf32 vlBpskRef(int j) { return (j & 1) ? cf32(-dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f) : cf32(dect2::math::k1OverSqrt2f, dect2::math::k1OverSqrt2f); }
 
 // ---- VL-SNR header: the 900 symbols for a table 18b index (0 .. 15). walshHeaderIndex of a received header: the best correlation
 void vlHeaderSymbols(int walsh, cf32* out900);

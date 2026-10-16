@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -58,13 +59,13 @@ struct Vdl2TrackPoint { double lat = 0, lon = 0; int altFt = 0; double time = 0;
 // Dead reckoning from a lat/lon fix (flat-earth nm, same as the aero test routes).
 inline void vdl2MoveFlat(double latDeg, double lonDeg, double trackDeg, double groundKt, double dtSec, double& latOut, double& lonOut) {
     const double nm = groundKt * dtSec / 3600.0;
-    const double a = trackDeg * 3.14159265358979323846 / 180.0;
+    const double a = trackDeg * dect2::math::kPi / 180.0;
     latOut = latDeg + nm * std::cos(a) / 60.0;
-    lonOut = lonDeg + nm * std::sin(a) / (60.0 * std::cos(latDeg * 3.14159265358979323846 / 180.0));
+    lonOut = lonDeg + nm * std::sin(a) / (60.0 * std::cos(latDeg * dect2::math::kPi / 180.0));
 }
 
 inline double vdl2DistNm(double lat1, double lon1, double lat2, double lon2) {
-    constexpr double kPi = 3.14159265358979323846;
+    using dect2::math::kPi;
     const double r = kPi / 180.0;
     const double la1 = lat1 * r, la2 = lat2 * r, dlo = (lon2 - lon1) * r, dla = (lat2 - lat1) * r;
     const double h = std::sin(dla * 0.5) * std::sin(dla * 0.5) + std::cos(la1) * std::cos(la2) * std::sin(dlo * 0.5) * std::sin(dlo * 0.5);

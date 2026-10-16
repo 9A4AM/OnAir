@@ -10,13 +10,14 @@
 #include <cstdlib>
 #include <ctime>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
 using cd = std::complex<double>;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kDefaultCenter = 136.85e6;
 constexpr int kRingBits = 16;
 constexpr size_t kRing = (size_t)1 << kRingBits, kMask = kRing - 1;

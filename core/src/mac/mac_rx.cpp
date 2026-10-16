@@ -13,13 +13,14 @@
 #include <map>
 #include <mutex>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 using namespace mac;
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kTaps = 16, kPhases = 256;
 constexpr int kAcqLines = 48;
 constexpr double kTimingSlope = 1.2;   // midpoint deviation per bit of timing error (duobinary, measured on the test signal)

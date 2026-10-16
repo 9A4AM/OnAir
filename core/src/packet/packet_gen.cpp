@@ -7,12 +7,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kWork = 96000.0;              // the rate the cycle is built at
 constexpr double kLeadSec = 0.6;               // quiet before the first frame (the receiver measures its noise floor then)
 constexpr double kDev1200 = 2800.0;            // peak deviation of the AFSK tones, Hz

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <ctime>
+#include "dect2/common/mathconst.h"
 
 // a sanitised build is ten times slower than real time: the speed checks are skipped there
 #if defined(__SANITIZE_ADDRESS__) || defined(__SANITIZE_THREAD__)
@@ -197,7 +198,7 @@ inline RangeStats rangeError(const GnssSim& sim, const Run& r, int prn, double f
             if (m.prn != prn || m.rxTime < from) continue;
             const size_t i = (size_t)(prn - 1);
             const double tTrue = sim.trueTime(m.rxTime);
-            const double e = (m.txTow - sim.svTransmitTime(i, tTrue)) * 299792458.0;
+            const double e = (m.txTow - sim.svTransmitTime(i, tTrue)) * dect2::math::kSpeedOfLight;
             sum += e; sum2 += e * e; s.n++;
             s.maxAbs = std::max(s.maxAbs, std::fabs(e));
         }

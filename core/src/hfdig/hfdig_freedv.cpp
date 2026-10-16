@@ -16,13 +16,14 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
 // freedv_api.h, codec2 1.2.0
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int FREEDV_MODE_1600 = 0, FREEDV_MODE_700D = 7, FREEDV_MODE_700E = 13;
 constexpr int kModeCode[kFreedvModes] = {FREEDV_MODE_700D, FREEDV_MODE_700E, FREEDV_MODE_1600, -1};   // -1: RADE is librade, not codec2
 const char* const kModeName[kFreedvModes] = {"700D", "700E", "1600", "RADE"};
