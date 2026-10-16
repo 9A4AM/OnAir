@@ -352,7 +352,7 @@ struct HalowReceiver::Impl {
         const int nd = dataBitsPerSym(c.w, c.sig.mcs);
         if (nd <= 0 || c.sig.len < 1 || c.sig.agg || c.sig.nsts != 0) { undecoded(c); return 1; }
         const int nsym = dataSymbols(c.w, c.sig.mcs, c.sig.len);
-        if (nsym <= 0 || nsym > 400) { undecoded(c); return 1; }
+        if (nsym <= 0 || nsym > 1024) { undecoded(c); return 1; }   // 1 MHz MCS 10, 300 byte PSDU: 403 symbols; 511 bytes: 685
         c.needEnd = c.b1 - kDelta + bodyOff(c.w) + (int64_t)(info(c.w).sigSyms + nsym) * kSym + 8;
         if (g < c.needEnd) return 2;
         Seg seg;

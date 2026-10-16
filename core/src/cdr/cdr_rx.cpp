@@ -233,7 +233,7 @@ struct CdrReceiver::Impl {
     bool mirror = false;                    // the input is read conjugated (a mirrored spectrum)
     ChannelCentre cc;                       // moves a signal far from the middle of the sample band there
     std::vector<cf32> cin;
-    int badBeacons = 0, badSi = 0;
+    int badBeacons = 0, badSi = 0, badRun = 0;   // badRun: beacons missing in a row
     bool siSeen = false;                    // the system information has decoded since the lock
     int64_t nSub = 0;                       // sub-frames processed since the lock
     double bsAtLock = 0;
@@ -490,8 +490,7 @@ struct CdrReceiver::Impl {
         bsAtLock = bs;
         searchFloor = r.dEnd + 1;
         locked = true;
-        cc.freeze();
-        badBeacons = 0; badSi = 0; nSub = 0; siSeen = false;
+        badBeacons = 0; badRun = 0; badSi = 0; nSub = 0; siSeen = false;
         tel.tm = tm; tel.sm = sm; tel.ni = lay->ni;
         tel.innerKhz = lay->spec->innerKhz; tel.outerKhz = lay->spec->outerKhz;
         tel.state = std::max(tel.state, 1);
@@ -536,7 +535,8 @@ struct CdrReceiver::Impl {
             const double df = std::arg(half) * kFs / (2 * M_PI * nb);
             cfo += 0.5 * df;
             badBeacons = std::max(0, badBeacons - 1);
-        } else if (++badBeacons > 12) badBeacons = 12;   // hybrid FM: occasional weak beacons, not instant unlock at 6
+            badRun = 0;
+        } else { if (++badBeacons > 12) badBeacons = 12; badRun++; }   // hybrid FM: occasional weak beacons, not instant unlock at 6
         const double sub0 = (double)b0 + (std::fabs(terr) < 64 ? terr : 0.0);     // this sub-frame's beacon start
         // OFDM symbols
         const int bo = std::max(2, tp.tcp / 4);
@@ -865,7 +865,8 @@ struct CdrReceiver::Impl {
                 continue;
             }
             processSubframe();
-            if (badBeacons >= 12 || badSi >= (siSeen ? 24 : 12)) { unlock(badBeacons >= 12 ? "no beacon" : "no system information"); break; }
+            // a run of missing beacons is a timing jump (samples lost in the USB link), not fading: search again at once
+            if (badBeacons >= 12 || badRun >= 4 || badSi >= (siSeen ? 24 : 12)) { unlock(badBeacons >= 12 || badRun >= 4 ? "no beacon" : "no system information"); break; }
         }
         // keep what the next step still needs
         int64_t keep = locked ? (int64_t)std::llround(bs) - 4096 : std::min(searchNext - kSearchHop, pending.empty() ? searchNext : pending.front().dStart) - 4096;

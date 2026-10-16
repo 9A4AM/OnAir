@@ -192,7 +192,7 @@ struct NdbReceiver::Impl {
         for (int i = 0; i < 3; i++) {
             const auto& h = depthHist[i];
             if (h.size() < 20) continue;
-            std::vector<float> s(h.end() - 20, h.end());
+            std::vector<float> s(h.begin(), h.end());   // 2 s: a 0.4 s window inside a dash shows no contrast
             std::sort(s.begin(), s.end());
             const float p10 = s[s.size() / 10], p90 = s[s.size() * 9 / 10];
             const float contrast = p90 - p10;
@@ -257,7 +257,9 @@ struct NdbReceiver::Impl {
         bool present = false;
         float p10 = 0, p90 = 0;
         if (use >= 0 && depthHist[use].size() >= 20) {
-            std::vector<float> s(depthHist[use].end() - 20, depthHist[use].end());
+            // the whole 2 s history: a window of 0.4 s holds only key-down inside a dash (about 0.5 s at 7 WPM), p10 meets p90 and the
+            // dash is cut short, so it reads as a dot
+            std::vector<float> s(depthHist[use].begin(), depthHist[use].end());
             std::sort(s.begin(), s.end());
             p10 = s[s.size() / 10]; p90 = s[s.size() * 9 / 10];
             present = p90 > 0.05f && p90 > 1.8f * std::max(p10, 1e-4f);
