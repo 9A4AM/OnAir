@@ -10,12 +10,10 @@ Stats come from the map Worker's `GET /live` (marker counts per layer, stations 
 2. On General Information copy the **Application ID** and **Public Key**.
 3. Bot tab: Reset Token, copy the **bot token** (only used by the register script).
 4. Invite link (no bot permissions needed):
-   `https://discord.com/oauth2/authorize?client_id=APP_ID&scope=applications.commands`
+   `https://discord.com/oauth2/authorize?client_id=1558882824717602895&scope=applications.commands`
 5. Cloudflare dashboard, My Profile, API Tokens, Create Token, custom, permission **Account / Browser Rendering / Edit**. Copy the token, and your Account ID from the dashboard sidebar.
 6. Secrets (from `web/discord`; paste each value when asked):
    ```
-   npx wrangler secret put DISCORD_PUBLIC_KEY
-   npx wrangler secret put DISCORD_APP_ID
    npx wrangler secret put CF_ACCOUNT_ID
    npx wrangler secret put CF_API_TOKEN
    ```
@@ -33,7 +31,7 @@ Behaviour: one screenshot per 20 s per Worker instance; the PNG is cached in mem
 
 ## Troubleshooting
 
-- **Endpoint URL rejected / "invalid signature"**: the `DISCORD_PUBLIC_KEY` secret is wrong or has whitespace; re-put it. Use the Public Key, not the client secret.
+- **Endpoint URL rejected / "invalid signature"**: the `DISCORD_PUBLIC_KEY` var in wrangler.jsonc is wrong or has whitespace; re-put it. Use the Public Key, not the client secret.
 - **"The application did not respond"**: Worker not deployed, or commands registered against a different app ID.
 - **Deferred message never completes**: Discord drops the interaction token after 15 minutes; check `wrangler tail` for "discord edit failed" (wrong `DISCORD_APP_ID`) or Browser Rendering errors.
 - **Screenshot blank or tiles missing**: map tiles did not load in time; raise `waitForTimeout` in `src/screenshot.js`. The embed note shows the API error otherwise.
