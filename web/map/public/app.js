@@ -292,10 +292,40 @@ function iconName(t) {
   return t.kind;
 }
 
+function pathDistanceM(lon1, lat1, lon2, lat2) {
+  const p = Math.PI / 180;
+  const dLat = (lat2 - lat1) * p;
+  const dLon = (lon2 - lon1) * p;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * p) * Math.cos(lat2 * p) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/** Bearing degrees true north from (lon1,lat1) to (lon2,lat2). */
+function bearingDeg(lon1, lat1, lon2, lat2) {
+  const p = Math.PI / 180;
+  const dLon = (lon2 - lon1) * p;
+  const y = Math.sin(dLon) * Math.cos(lat2 * p);
+  const x = Math.cos(lat1 * p) * Math.sin(lat2 * p) - Math.sin(lat1 * p) * Math.cos(lat2 * p) * Math.cos(dLon);
+  return (Math.atan2(y, x) / p + 360) % 360;
+}
+
+/** ADS-B heading when present; else direction of the last path segment (VDL2 / ACARS). */
+function effectiveHeading(t) {
+  if (t.heading != null && Number.isFinite(t.heading)) return t.heading;
+  const path = Array.isArray(t.path) ? t.path : [];
+  if (path.length < 2) return null;
+  const [lon1, lat1] = path[path.length - 2];
+  const [lon2, lat2] = path[path.length - 1];
+  if (pathDistanceM(lon1, lat1, lon2, lat2) < 120) return null;
+  return bearingDeg(lon1, lat1, lon2, lat2);
+}
+
 function destPoint(t) {
-  if (t.heading == null || t.speed == null || t.speed < 20) return null;
+  const hdg = effectiveHeading(t);
+  if (hdg == null || t.speed == null || t.speed < 20) return null;
   const nm = t.speed * (2 / 60);
-  const rad = Math.PI / 180, r = nm / 3440.065, h = t.heading * rad, p1 = t.lat * rad;
+  const rad = Math.PI / 180, r = nm / 3440.065, h = hdg * rad, p1 = t.lat * rad;
   const lat = Math.asin(Math.sin(p1) * Math.cos(r) + Math.cos(p1) * Math.sin(r) * Math.cos(h)) / rad;
   const lon = t.lon + Math.atan2(Math.sin(h) * Math.sin(r) * Math.cos(p1), Math.cos(r) - Math.sin(p1) * Math.sin(lat * rad)) / rad;
   return [lon, lat];
@@ -305,7 +335,8 @@ function geojson() {
   const features = [];
   for (const t of tracks.values()) {
     if (!on[t.kind]) continue;
-    const rot = kindOf[t.kind] && kindOf[t.kind].rotate && t.heading != null;
+    const hdg = effectiveHeading(t);
+    const rot = kindOf[t.kind] && kindOf[t.kind].rotate && hdg != null;
     features.push({
       type: "Feature",
       id: t.id,
@@ -315,7 +346,8 @@ function geojson() {
         icon: iconName(t),
         label: t.label || "",
         color: colorOf(t.kind, t),
-        heading: rot || srcOf(t) ? (t.heading || 0) : 0,
+        heading: rot ? hdg : 0,
+        rot: rot ? 1 : 0,
         sel: t.id === selected ? 1 : 0,
       },
       geometry: { type: "Point", coordinates: [t.lon, t.lat] },
@@ -559,7 +591,11 @@ function showCard(t) {
   if (t.cat) rows.push(["Category", t.cat]);
   if (t.squawk != null && t.squawk !== "") rows.push(["Squawk", String(t.squawk).padStart(4, "0")]);
   if (t.alt != null) rows.push(["Altitude", fmtAlt(t)]);
-  if (t.heading != null) rows.push(["Heading", String(Math.round(t.heading)).padStart(3, "0") + "°"]);
+  const hdg = effectiveHeading(t);
+  if (hdg != null) {
+    const tag = t.heading == null ? " (from track)" : "";
+    rows.push(["Heading", String(Math.round(hdg)).padStart(3, "0") + "°" + tag]);
+  }
   if (t.speed != null) rows.push(["Speed", fmtSpeed(t)]);
   if (t.vrate != null) rows.push(["Vertical", Math.round(t.vrate) + " fpm"]);
   if (t.extra) rows.push(["", t.extra]);
@@ -694,9 +730,13 @@ map.on("load", () => {
       id: "sym",
       type: "symbol",
       source: "live",
+      filter: ["any",
+        ["==", ["to-number", ["get", "rot"]], 1],
+        ["!", ["in", ["get", "kind"], ["literal", ["aircraft", "flarm", "drone", "vessel"]]]],
+      ],
       layout: {
         "icon-image": ["coalesce", ["image", ["get", "icon"]], ["image", ["get", "kind"]], ["image", "aircraft"]],
-        "icon-rotate": ["to-number", ["get", "heading"]],
+        "icon-rotate": ["case", ["==", ["to-number", ["get", "rot"]], 1], ["to-number", ["get", "heading"]], 0],
         "icon-rotation-alignment": "map",
         "icon-pitch-alignment": "map",
         "icon-allow-overlap": true,
@@ -720,6 +760,7 @@ map.on("load", () => {
       document.getElementById("card").hidden = true;
       selected = null;
       apply();
+      if (window.matchMedia("(max-width: 860px)").matches) setRailOpen(false);
     }
   });
   apply();
@@ -731,6 +772,24 @@ map.on("mousemove", (e) => {
 map.on("move", () => {
   document.getElementById("zoom").textContent = "z " + map.getZoom().toFixed(1);
 });
+
+function setRailOpen(open) {
+  const rail = document.getElementById("rail");
+  const backdrop = document.getElementById("railBackdrop");
+  const btn = document.getElementById("panelBtn");
+  if (!rail) return;
+  rail.classList.toggle("open", open);
+  if (backdrop) {
+    backdrop.classList.toggle("show", open);
+    backdrop.hidden = !open;
+  }
+  if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+document.getElementById("panelBtn")?.addEventListener("click", () => {
+  setRailOpen(!document.getElementById("rail")?.classList.contains("open"));
+});
+document.getElementById("railBackdrop")?.addEventListener("click", () => setRailOpen(false));
 
 document.getElementById("q").addEventListener("input", (e) => {
   query = e.target.value;

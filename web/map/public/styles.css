@@ -11,20 +11,44 @@
 
 * { box-sizing: border-box; }
 html, body {
-  margin: 0; height: 100%; overflow: hidden;
+  margin: 0;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--plot);
   color: var(--text);
   font: 12.5px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
-#map { position: absolute; inset: 28px 0 22px 228px; }
+#map {
+  position: absolute;
+  top: calc(28px + env(safe-area-inset-top, 0px));
+  right: 0;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  left: 228px;
+}
 
 .menubar {
-  position: absolute; z-index: 6; top: 0; left: 0; right: 0; height: 28px;
+  position: absolute; z-index: 6; top: 0; left: 0; right: 0;
+  min-height: 28px;
+  height: calc(28px + env(safe-area-inset-top, 0px));
   display: flex; align-items: center; gap: 8px;
-  padding: 0 10px;
+  padding: env(safe-area-inset-top, 0px) 10px 0;
   background: var(--rail);
   border-bottom: 1px solid var(--edge);
+}
+.panel-btn {
+  display: none;
+  flex: none;
+  width: 32px; height: 28px;
+  margin: 0 -4px 0 0;
+  padding: 0;
+  border: 1px solid var(--edge);
+  background: var(--button);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
 }
 .name { color: var(--text); text-decoration: none; font-weight: 600; }
 .sep, .cur { color: var(--dim); }
@@ -82,9 +106,15 @@ html, body {
 .menubar input:focus { border-color: #8a8c8e; }
 .link { color: var(--text); text-decoration: none; }
 .link:hover { text-decoration: underline; }
+.status .donate a { color: var(--text); text-decoration: none; }
+.status .donate a:hover { text-decoration: underline; }
 
 .rail {
-  position: absolute; z-index: 5; top: 28px; left: 0; bottom: 22px; width: 228px;
+  position: absolute; z-index: 5;
+  top: calc(28px + env(safe-area-inset-top, 0px));
+  left: 0;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  width: 228px;
   background: var(--bg);
   border-right: 1px solid var(--edge);
   display: flex; flex-direction: column;
@@ -152,19 +182,27 @@ html, body {
 }
 
 .status {
-  position: absolute; z-index: 6; left: 0; right: 0; bottom: 0; height: 22px;
-  display: flex; align-items: center; gap: 12px;
-  padding: 0 10px;
+  position: absolute; z-index: 6; left: 0; right: 0; bottom: 0;
+  min-height: 22px;
+  height: calc(22px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 10px env(safe-area-inset-bottom, 0px);
   background: var(--rail);
   border-top: 1px solid var(--edge);
   color: var(--dim);
   font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  overflow: hidden;
 }
+.status .donate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .status a { color: var(--text); text-decoration: none; }
 .status a:hover { text-decoration: underline; }
 .grow { flex: 1; }
 
-.maplibregl-ctrl-bottom-right { right: 6px; bottom: 6px; }
+.maplibregl-ctrl-bottom-right {
+  right: max(6px, env(safe-area-inset-right, 0px));
+  bottom: max(6px, env(safe-area-inset-bottom, 0px));
+}
 .maplibregl-ctrl-group {
   background: var(--bg) !important;
   border: 1px solid var(--edge) !important;
@@ -177,8 +215,40 @@ html, body {
 
 @media (max-width: 860px) {
   #map { left: 0; }
-  .rail { display: none; }
-  .counts, .link { display: none; }
-  .menubar input { width: 140px; }
-  .inspect { left: 8px; right: 8px; width: auto; top: auto; bottom: 30px; }
+  .panel-btn { display: block; }
+  .rail {
+    display: flex;
+    width: min(88vw, 300px);
+    max-width: 100%;
+    z-index: 9;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.45);
+  }
+  .rail.open { transform: translateX(0); }
+  .rail-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    background: rgba(0, 0, 0, 0.35);
+  }
+  .rail-backdrop.show { display: block; }
+  .counts, .clock, .link:not(.donate) { display: none; }
+  .menubar { gap: 6px; flex-wrap: nowrap; }
+  .menubar input {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+  }
+  .pill span { max-width: 5.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .inspect {
+    left: 8px; right: 8px; width: auto;
+    top: auto;
+    bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+    max-height: 42vh;
+    overflow: auto;
+  }
+  .status .donate { display: none; }
 }

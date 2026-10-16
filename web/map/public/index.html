@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Map · OnAir</title>
   <meta name="description" content="Positions decoded in OnAir. Shared only when the user opts in, and only if the signal carried a location.">
   <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet">
@@ -12,6 +12,7 @@
   <div id="map"></div>
 
   <div class="menubar">
+    <button type="button" class="panel-btn" id="panelBtn" aria-label="Layers and tracks" aria-expanded="false">☰</button>
     <a class="name" href="https://on-air.dev">OnAir</a>
     <span class="sep">/</span>
     <span class="cur">Map</span>
@@ -23,10 +24,12 @@
     <span class="counts" id="counts"></span>
     <span class="clock" id="clock"></span>
     <input id="q" type="search" placeholder="Find callsign, MMSI, ICAO" autocomplete="off" spellcheck="false">
+    <a class="link donate" href="https://ko-fi.com/adswill" rel="noopener noreferrer" title="Donate on Ko-fi to help keep map.on-air.dev online">Support</a>
     <a class="link" href="https://on-air.dev">Download</a>
   </div>
 
-  <aside class="rail">
+  <div class="rail-backdrop" id="railBackdrop" hidden></div>
+  <aside class="rail" id="rail">
     <div class="ptitle">Layers</div>
     <div id="layers"></div>
     <div class="key">
@@ -52,9 +55,10 @@
     <span class="grow"></span>
     <span id="zoom"></span>
     <span>© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a></span>
+    <span class="donate">· <a href="https://ko-fi.com/adswill" rel="noopener noreferrer">Ko-fi</a> — keeps this site running</span>
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js"></script>
-  <script src="/app.js?v=5"></script>
+  <script src="/app.js?v=6"></script>
 </body>
 </html>
