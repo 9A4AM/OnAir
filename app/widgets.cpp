@@ -374,8 +374,11 @@ void historyPlot(const char* id, const char* ylabel, const std::deque<float>& h,
 }
 
 std::string fmtLocal(int64_t utc, const char* f) {
-    time_t t = (time_t)utc; struct tm m; dect2::localTime(t, &m);
-    char b[48]; strftime(b, sizeof b, f, &m);
+    time_t t = (time_t)utc; struct tm m{}; dect2::localTime(t, &m);
+    // a time that cannot be converted (zero or out-of-range from a damaged table) leaves negative fields: strftime() with those is undefined
+    // and a debug runtime asserts on it (#74)
+    if (m.tm_sec < 0 || m.tm_min < 0 || m.tm_hour < 0 || m.tm_mday < 1 || m.tm_mon < 0 || m.tm_year < 0 || m.tm_wday < 0 || m.tm_yday < 0) return "-";
+    char b[48]; if (!strftime(b, sizeof b, f, &m)) return "-";
     return b;
 }
 
