@@ -93,7 +93,7 @@ export function createCard(host, api) {
         </section>
         <figure class="pic" data-f="pic">
           <div class="pic-art" data-f="art"></div>
-          <img class="pic-photo" data-f="photo" alt="" hidden referrerpolicy="no-referrer" loading="lazy">
+          <img class="pic-photo" data-f="photo" alt="" hidden referrerpolicy="no-referrer" decoding="async">
           <figcaption><span data-f="picName"></span><span class="pic-credit" data-f="credit" hidden></span></figcaption>
         </figure>
         <dl class="rows" data-f="rows"></dl>
@@ -153,34 +153,53 @@ export function createCard(host, api) {
     f.pic.classList.toggle("generic", t.kind !== "aircraft");
   }
 
+  /** Look up a photo of the aircraft once per card: by ICAO hex first, then by registration (Planespotters has either). Any failure leaves the illustration. */
   function maybeLoadPhoto(t) {
     if (t.kind !== "aircraft" || api.demo || !api.loadPhoto) return;
     const hex = String(t.id).split(":")[1] || "";
     if (!/^[0-9A-Fa-f]{6}$/.test(hex) || photoFor === hex) return;
     photoFor = hex;
-    // visitor's browser asks Planespotters directly (free, keyless); any failure leaves the illustration in place
-    fetch("https://api.planespotters.net/pub/photos/hex/" + hex.toUpperCase())
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        const p = d && d.photos && d.photos[0];
-        if (!p || photoFor !== hex || !cur || !String(cur.id).endsWith(hex)) return;
-        const src = (p.thumbnail_large && p.thumbnail_large.src) || (p.thumbnail && p.thumbnail.src);
-        if (!src || !/^https:\/\//.test(src)) return;
-        const img = f.photo;
-        img.onload = () => {
-          img.hidden = false;
-          f.art.hidden = true;
-          const c = f.credit;
-          c.hidden = false;
-          const who = esc(p.photographer || "unknown");
-          const link = /^https:\/\/(www\.)?planespotters\.net\//.test(p.link || "") ? p.link : "https://www.planespotters.net/";
-          c.innerHTML = `Photo: <a href="${esc(link)}" target="_blank" rel="noopener noreferrer">${who}</a> / <a href="https://www.planespotters.net/" target="_blank" rel="noopener noreferrer">Planespotters.net</a>`;
-        };
-        img.onerror = () => { img.hidden = true; };
-        img.alt = (p.photographer ? "Photo by " + p.photographer : "Aircraft photo");
-        img.src = src;
+    const first = fetchPhotoInfo("hex/" + hex.toUpperCase());
+    // the registration is only tried when the hex gives no photo; it comes from the route/type lookup, which usually has arrived by then
+    first
+      .then((p) => {
+        if (p) return p;
+        const reg = String(((cur && cur.meta) || t.meta || {}).registration || "").trim();
+        return reg ? fetchPhotoInfo("reg/" + encodeURIComponent(reg)) : null;
       })
+      .then((p) => { if (p) showPhoto(p, hex); })
       .catch(() => {});
+  }
+
+  /** One Planespotters lookup ('hex/<ICAO>' or 'reg/<registration>'): the first photo, or null. Asked from the visitor's browser (free, keyless). */
+  function fetchPhotoInfo(path) {
+    return fetch("https://api.planespotters.net/pub/photos/" + path)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => (d && d.photos && d.photos[0]) || null)
+      .catch(() => null);
+  }
+
+  /** Show a looked-up photo: it is loaded by an off-screen Image first (a hidden <img> with lazy loading would never load), then swapped in. */
+  function showPhoto(p, hex) {
+    if (photoFor !== hex || !cur || !String(cur.id).endsWith(hex)) return;
+    const src = (p.thumbnail_large && p.thumbnail_large.src) || (p.thumbnail && p.thumbnail.src);
+    if (!src || !/^https:\/\//.test(src)) return;
+    const pre = new Image();
+    pre.referrerPolicy = "no-referrer";
+    pre.onload = () => {
+      if (photoFor !== hex || !cur) return;
+      const img = f.photo;
+      img.src = src;
+      img.alt = p.photographer ? "Photo by " + p.photographer : "Aircraft photo";
+      img.hidden = false;
+      f.art.hidden = true;
+      const c = f.credit;
+      c.hidden = false;
+      const who = esc(p.photographer || "unknown");
+      const link = /^https:\/\/(www\.)?planespotters\.net\//.test(p.link || "") ? p.link : "https://www.planespotters.net/";
+      c.innerHTML = `Photo: <a href="${esc(link)}" target="_blank" rel="noopener noreferrer">${who}</a> / <a href="https://www.planespotters.net/" target="_blank" rel="noopener noreferrer">Planespotters.net</a>`;
+    };
+    pre.src = src;
   }
 
   /** Header: callsign, airline badge, flight number. */
