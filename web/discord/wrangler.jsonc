@@ -4,6 +4,7 @@
   "compatibility_date": "2026-05-03",
   "vars": {
     "MAP_URL": "https://map.on-air.dev",
+    "CF_ACCOUNT_ID": "a214ca5b8d6cdda4b4802acc6cc7f8be",   // an identifier, not a secret (the Browser Rendering call also needs the CF_API_TOKEN secret)
     // The Application ID and the Public Key of the OnAir Discord application. Both are public by design (the Public Key only verifies
     // Discord's signatures), so they live here; the bot token and the Cloudflare token are secrets and never go in this file.
     "DISCORD_APP_ID": "1558882824717602895",
