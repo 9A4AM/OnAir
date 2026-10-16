@@ -232,16 +232,16 @@ void drawShell2(App& a, ImVec2 disp) {
     txViewSwitch(a);   // RX / TX, top left
     ImGui::SetCursorPosX(0);
     const float sbH = ImGui::GetFrameHeight() + 8 * gUi;
-    if (txViewFlag()) {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8 * gUi, 4 * gUi));
-        ImGui::BeginChild("##txtop", ImVec2(0, 56 * gUi), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_NoScrollbar);
-        ImGui::PopStyleVar();
-        txBar(a);
-        ImGui::EndChild();
+    if (txViewFlag()) {   // the guided transmit panel has its own signal list and status header: no top bar and no side list
     } else if (!face) topBar(a, disp);
     const float bodyH = ImGui::GetContentRegionAvail().y - sbH;
-    if (txViewFlag()) bodyParent(a, bodyH, disp);   // same mode list as RX; main pane is TX spectrum (mainTabs), right pane is the payload
-    else switch (a.uiVariant) {
+    if (txViewFlag()) {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10 * gUi, 6 * gUi));
+        ImGui::BeginChild("##txbody", ImVec2(0, bodyH), ImGuiChildFlags_AlwaysUseWindowPadding);
+        ImGui::PopStyleVar();
+        txPanel(a);
+        ImGui::EndChild();
+    } else switch (a.uiVariant) {
     case 1: bodyScope(a, bodyH, disp); break;
     case 2: bodyTiles(a, bodyH, disp); break;
     case 3: bodyFace(a, bodyH, disp); break;

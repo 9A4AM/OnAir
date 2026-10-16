@@ -102,8 +102,10 @@ struct Cam {
 
 bool videoInCameraStart(VideoIn::Impl* I, const std::string& deviceId, std::string& err) {
     @autoreleasepool {
+        const AVAuthorizationStatus st = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+        if (st == AVAuthorizationStatusDenied || st == AVAuthorizationStatusRestricted) { err = "camera access is off for OnAir (System Settings > Privacy & Security > Camera)"; return false; }
         AVCaptureDevice* dev = findDev(deviceId);
-        if (!dev) { err = "no camera or capture card was found"; return false; }
+        if (!dev) { err = deviceId.empty() ? "no camera or capture card was found" : "the chosen camera is not connected any more"; return false; }
         NSError* nse = nil;
         AVCaptureDeviceInput* in = [AVCaptureDeviceInput deviceInputWithDevice:dev error:&nse];
         if (!in) { err = nse.localizedDescription.UTF8String ? nse.localizedDescription.UTF8String : "the camera could not be opened (check Camera in System Settings)"; return false; }

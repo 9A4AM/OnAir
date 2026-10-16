@@ -18,7 +18,6 @@ Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Blueto
 Browse…	Browse…
 Callsign / my ID	Callsign / my ID
 Capcode	Capcode
-CARRIER TUNE	CARRIER TUNE
 Carrier tune	Carrier tune
 Clear all	Clear all
 Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
@@ -51,7 +50,6 @@ Gain controls apply to radios only (not to a recording, a sound card, or the syn
 I/Q stereo	I/Q estéreo
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q estéreo: esquerda = I, direita = Q (HDSDR / WebSDR VAC). Áudio USB: áudio real para IQ analítico para FT8, RTTY, CW, SSB a partir de um altifalante. Áudio LSB: o mesmo, conjugado. Mono real: I é a amostra, Q é 0 (amostragem real, não áudio de discriminador FM).
 ICAO address	ICAO address
-Idle — nothing is being sent	Idle — nothing is being sent
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
 Input device	Input device
@@ -115,14 +113,11 @@ this is a general listening mode: there is nothing specific to transmit	this is 
 this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
 this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
 this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
-This mode cannot transmit	This mode cannot transmit
 this mode has no transmit generator	this mode has no transmit generator
 This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
 time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
 Timeslot	Timeslot
 To	To
-TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
-Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
 USB audio	Áudio USB
 Vessel name	Vessel name
 View	Exibir
@@ -1067,11 +1062,9 @@ Send this mode's own signal through a radio that can transmit. Off until you sta
 TRANSMITTING	A TRANSMITIR
 Channel width	Largura do canal
 Frequency (MHz)	Frequência (MHz)
-TX gain (dB)	Ganho de TX (dB)
 +14 dB amplifier	Amplificador de +14 dB
 Repeat until stopped	Repetir até parar
 seconds	segundos
-STOP TRANSMITTING	PARAR TRANSMISSÃO
 START TRANSMITTING	INICIAR TRANSMISSÃO
 This radio has no transmit driver in OnAir.	Este rádio não tem controlador de transmissão no OnAir.
 Before you transmit	Antes de transmitir
@@ -1087,7 +1080,6 @@ RX	RX
 TX	TX
 Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	Alternar entre o recetor (RX) e o emissor (TX). O emissor tem o seu próprio rádio, por isso um recetor pode continuar a receber enquanto transmite.
 Transmit radio	Rádio de transmissão
-No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	Não foi encontrado nenhum rádio capaz de transmitir. Ligue um (HackRF, PlutoSDR ou um rádio SoapySDR com emissor) e atualize a lista de rádios.
 Choose a radio to transmit with.	Escolha um rádio para transmitir.
 %s (in use by RX %d)	%s (em uso por RX %d)
 %s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s está em uso por RX %d, e este rádio não pode receber e transmitir ao mesmo tempo. Escolha outro rádio para transmitir ou pare primeiro esse recetor.
@@ -1213,3 +1205,57 @@ reads	lê
 up to %d MHz channels at this rate	canais até %d MHz a esta taxa
 input	entrada
 signal time	tempo de sinal
+#  transmit: the guided panel
+%s at %.6f MHz, level %.1f dB	%s em %.6f MHz, nível %.1f dB
+Apply frequency and level now	Aplicar frequência e nível agora
+Bring it back here	Trazer de volta para aqui
+Carrier tune (hold)	Portadora de ajuste (segurar)
+Choose a radio in step 2, or switch on the test (no RF).	Escolha um rádio no passo 2 ou ative o teste (sem RF).
+Choose a signal in step 1	Escolha um sinal no passo 1
+Choose a signal in step 1.	Escolha um sinal no passo 1.
+Clipping	Clipping
+Idle	Inativo
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	Nenhum rádio capaz de transmitir foi encontrado. Conecte um (HackRF, PlutoSDR ou um rádio SoapySDR com transmissor) e atualize a lista. O teste abaixo não precisa de rádio.
+Nothing matches this search.	Nada corresponde à pesquisa.
+Occupied bandwidth	Largura de banda ocupada
+Offset (MHz)	Deslocamento (MHz)
+Offset, repeat and timing	Deslocamento, repetição e duração
+Output level (dB)	Nível de saída (dB)
+Peak	Pico
+Pop out into a window of its own	Abrir em janela própria
+Preparing	Preparando
+Preview and send	Pré-visualização e envio
+RMS	RMS
+Recent	Recentes
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	Executa o gerador de sinal na taxa de amostragem do rádio no vazio: nenhum rádio é aberto e nada é enviado. O espectro e os níveis abaixo mostram o que sairia.
+STOP	PARAR
+STOP ALL	PARAR TUDO
+Sample rate	Taxa de amostragem
+Search signals...	Procurar sinais...
+Settings	Definições
+Signal	Sinal
+Space = start / stop     Esc = stop	Espaço = iniciar / parar     Esc = parar
+Stops the transmission or test, the carrier and any pending start, and gives the radio back.	Interrompe a transmissão ou o teste, a portadora e qualquer início pendente, e libera o rádio.
+TEST - NO RF	TESTE - SEM RF
+Test (dry run, no RF)	Teste (simulação, sem RF)
+Test (no RF)	Teste (sem RF)
+Test: the IQ the radio would get	Teste: o IQ que o rádio receberia
+The IQ going to the radio	O IQ enviado ao rádio
+The generator fell behind %llu time(s): silence was sent for those gaps.	O gerador atrasou-se %llu vez(es): foi enviado silêncio nessas lacunas.
+The transmit panel is in its own window.	O painel de transmissão está em janela própria.
+This is added to the frequency sent to the radio, for a radio that radiates off frequency.	É somado à frequência enviada ao rádio, para um rádio que irradia fora da frequência.
+TX channel	Canal TX
+Transmit	Transmitir
+Transmitting	Transmitindo
+Unmodulated carrier at this frequency and level, for adjusting the transmission (drive, filter, SWR, dummy-load level), not a message. Hold the button. Stop still applies. Not saved as transmitting.	Portadora não modulada nesta frequência e nível, para ajustar a transmissão (excitação, filtro, ROE, nível na carga fantasma), não uma mensagem. Segure o botão. Parar continua a valer. Não é guardado como transmissão.
+What will be sent (preview)	O que será enviado (pré-visualização)
+at full scale: the limiter will round the peaks	em fundo de escala: o limitador arredondará os picos
+making the preview...	a criar a pré-visualização...
+none chosen	nenhum escolhido
+none: the signal fits	nenhum: o sinal cabe
+on the air	no ar
+radio range %s	faixa do rádio %s
+test (no RF)	teste (sem RF)
+test running	teste em curso
+test, no RF	teste, sem RF
+the limiter is working: %.2f%% of samples (lower the level)	o limitador está a atuar: %.2f%% das amostras (baixe o nível)

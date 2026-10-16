@@ -18,7 +18,6 @@ Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Blueto
 Browse…	Browse…
 Callsign / my ID	Callsign / my ID
 Capcode	Capcode
-CARRIER TUNE	CARRIER TUNE
 Carrier tune	Carrier tune
 Clear all	Clear all
 Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
@@ -51,7 +50,6 @@ Gain controls apply to radios only (not to a recording, a sound card, or the syn
 I/Q stereo	I/Q ステレオ
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Qステレオ：左がI、右がQ（HDSDR / WebSDR VAC）。USBオーディオ：スピーカタップからのFT8/RTTY/CW/SSB向け実音声を解析IQへ。LSBオーディオ：同じ信号の共役。モノ実数：Iがサンプル、Qは0（実サンプリング。FMディスクリミネータ音声ではありません）。
 ICAO address	ICAO address
-Idle — nothing is being sent	Idle — nothing is being sent
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
 Input device	Input device
@@ -117,14 +115,11 @@ this is a general listening mode: there is nothing specific to transmit	this is 
 this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
 this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
 this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
-This mode cannot transmit	This mode cannot transmit
 this mode has no transmit generator	this mode has no transmit generator
 This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
 time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
 Timeslot	Timeslot
 To	To
-TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
-Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
 USB audio	USB オーディオ
 Vessel name	Vessel name
 View	表示
@@ -1085,11 +1080,9 @@ Send this mode's own signal through a radio that can transmit. Off until you sta
 TRANSMITTING	送信中
 Channel width	チャンネル幅
 Frequency (MHz)	周波数 (MHz)
-TX gain (dB)	送信ゲイン (dB)
 +14 dB amplifier	+14 dB アンプ
 Repeat until stopped	停止するまで繰り返す
 seconds	秒
-STOP TRANSMITTING	送信を停止
 START TRANSMITTING	送信を開始
 This radio has no transmit driver in OnAir.	この無線機には OnAir の送信ドライバーがありません。
 Before you transmit	送信する前に
@@ -1105,7 +1098,6 @@ RX	RX
 TX	TX
 Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	受信機 (RX) と送信機 (TX) を切り替えます。送信機は専用の無線機を持つので、送信中も受信機は受信を続けられます。
 Transmit radio	送信用無線機
-No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	送信できる無線機が見つかりません。1 台接続して(HackRF、PlutoSDR、または送信機付きの SoapySDR 無線機)、無線機リストを更新してください。
 Choose a radio to transmit with.	送信に使う無線機を選んでください。
 %s (in use by RX %d)	%s(RX %d が使用中)
 %s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s は RX %d が使用中で、この無線機は同時に受信と送信ができません。送信用に別の無線機を選ぶか、先にその受信機を停止してください。
@@ -1231,3 +1223,57 @@ reads	読み取り
 up to %d MHz channels at this rate	このレートで %d MHz までのチャネル
 input	入力
 signal time	信号時間
+#  transmit: the guided panel
+%s at %.6f MHz, level %.1f dB	%s、%.6f MHz、レベル %.1f dB
+Apply frequency and level now	周波数とレベルを今すぐ適用
+Bring it back here	ここに戻す
+Carrier tune (hold)	キャリア調整(押し続ける)
+Choose a radio in step 2, or switch on the test (no RF).	手順2で無線機を選ぶか、テスト(RFなし)をオンにしてください。
+Choose a signal in step 1	手順1で信号を選んでください
+Choose a signal in step 1.	手順1で信号を選んでください。
+Clipping	クリップ
+Idle	待機中
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	送信できる無線機が見つかりません。HackRF、PlutoSDR、または送信機付きのSoapySDR無線機を接続し、リストを更新してください。下のテストには無線機は不要です。
+Nothing matches this search.	検索に一致するものはありません。
+Occupied bandwidth	占有帯域幅
+Offset (MHz)	オフセット (MHz)
+Offset, repeat and timing	オフセット、繰り返し、時間
+Output level (dB)	出力レベル (dB)
+Peak	ピーク
+Pop out into a window of its own	別ウィンドウに分離
+Preparing	準備中
+Preview and send	プレビューと送信
+RMS	RMS
+Recent	最近
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	無線機のサンプルレートで信号生成器を空運転します。無線機は開かず、何も送信しません。下のスペクトルとレベルは、送信される内容を示します。
+STOP	停止
+STOP ALL	すべて停止
+Sample rate	サンプルレート
+Search signals...	信号を検索...
+Settings	設定
+Signal	信号
+Space = start / stop     Esc = stop	スペース = 開始 / 停止     Esc = 停止
+Stops the transmission or test, the carrier and any pending start, and gives the radio back.	送信またはテスト、キャリア、保留中の開始をすべて止め、無線機を解放します。
+TEST - NO RF	テスト - RFなし
+Test (dry run, no RF)	テスト(空運転、RFなし)
+Test (no RF)	テスト(RFなし)
+Test: the IQ the radio would get	テスト:無線機に渡されるIQ
+The IQ going to the radio	無線機へ送られているIQ
+The generator fell behind %llu time(s): silence was sent for those gaps.	ジェネレーターが%llu回遅れました。その間は無音が送信されました。
+The transmit panel is in its own window.	送信パネルは別ウィンドウにあります。
+This is added to the frequency sent to the radio, for a radio that radiates off frequency.	周波数からずれて発射する無線機のために、無線機へ送る周波数に加算されます。
+TX channel	TXチャンネル
+Transmit	送信
+Transmitting	送信中
+Unmodulated carrier at this frequency and level, for adjusting the transmission (drive, filter, SWR, dummy-load level), not a message. Hold the button. Stop still applies. Not saved as transmitting.	この周波数とレベルの無変調キャリアで、送信の調整(ドライブ、フィルター、SWR、ダミーロードのレベル)用です。メッセージではありません。ボタンを押し続けてください。停止は常に有効です。送信中としては保存されません。
+What will be sent (preview)	送信される内容(プレビュー)
+at full scale: the limiter will round the peaks	フルスケール:リミッターがピークを丸めます
+making the preview...	プレビューを作成中...
+none chosen	未選択
+none: the signal fits	なし:信号は収まっています
+on the air	送信中
+radio range %s	無線機の範囲 %s
+test (no RF)	テスト(RFなし)
+test running	テスト実行中
+test, no RF	テスト、RFなし
+the limiter is working: %.2f%% of samples (lower the level)	リミッター動作中:サンプルの %.2f%%(レベルを下げてください)

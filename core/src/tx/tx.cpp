@@ -376,10 +376,10 @@ public:
     bool configure() { return rs_.configure(in_->sampleRate(), out_); }
     double sampleRate() const override { return out_; }
     void generate(cf32* out, size_t n) override {
-        std::vector<cf32> in(1 << 14);
+        if (in_buf_.empty()) in_buf_.resize(1 << 14);
         while (pending_.size() - pos_ < n) {
-            in_->generate(in.data(), in.size());
-            rs_.process(in.data(), in.size(), pending_);
+            in_->generate(in_buf_.data(), in_buf_.size());
+            rs_.process(in_buf_.data(), in_buf_.size(), pending_);
         }
         std::copy(pending_.begin() + (long)pos_, pending_.begin() + (long)(pos_ + n), out);
         pos_ += n;
@@ -389,27 +389,42 @@ private:
     std::unique_ptr<TxGenerator> in_;
     double out_;
     ExactResampler rs_;
-    std::vector<cf32> pending_;
+    std::vector<cf32> pending_, in_buf_;
     size_t pos_ = 0;
 };
 
+// Switches between the payload and an unmodulated carrier (amplitude 1.0). The change is a 512-sample raised-cosine cross-fade, not a step, so that
+// pressing "Carrier tune" does not splatter. While the payload is on (the normal case) the samples pass through untouched.
 class CarrierGate : public TxGenerator {
 public:
     CarrierGate(std::unique_ptr<TxGenerator> inner, std::atomic<bool>* flag, double rate)
         : inner_(std::move(inner)), flag_(flag), rate_(rate) {}
     double sampleRate() const override { return inner_ ? inner_->sampleRate() : rate_; }
     void generate(cf32* out, size_t n) override {
-        if (flag_ && flag_->load(std::memory_order_relaxed)) {
-            for (size_t i = 0; i < n; i++) out[i] = cf32(1.f, 0.f);
+        const bool want = flag_ && flag_->load(std::memory_order_relaxed);
+        if (want == carrier_ && fade_ >= kFade) {
+            if (carrier_) { for (size_t i = 0; i < n; i++) out[i] = cf32(1.f, 0.f); return; }
+            if (inner_) inner_->generate(out, n);
+            else for (size_t i = 0; i < n; i++) out[i] = cf32(1.f, 0.f);
             return;
         }
-        if (inner_) inner_->generate(out, n);
+        if (want != carrier_) { carrier_ = want; fade_ = 0; }
+        if (inner_) inner_->generate(out, n);   // the payload keeps running while it is faded out, so it resumes where it would be
         else for (size_t i = 0; i < n; i++) out[i] = cf32(1.f, 0.f);
+        for (size_t i = 0; i < n; i++) {
+            float w = 1.f;   // weight of the carrier
+            if (fade_ < kFade) { const float t = (float)fade_ / (float)kFade; w = 0.5f - 0.5f * std::cos(t * 3.14159265f); fade_++; }
+            const float wc = carrier_ ? w : 1.f - w;
+            out[i] = out[i] * (1.f - wc) + cf32(wc, 0.f);
+        }
     }
 private:
+    static constexpr int kFade = 512;
     std::unique_ptr<TxGenerator> inner_;
     std::atomic<bool>* flag_;
     double rate_;
+    bool carrier_ = false;
+    int fade_ = kFade;
 };
 
 std::function<void(uint8_t*)> loopingTsFile(const std::string& path, int stride = 188, int syncOff = 0) {
@@ -681,6 +696,105 @@ double txRequestRate(const TxModeSpec& m, const TxRequest& r, const TxRateLimits
 
 // ---------------------------------------------------------------- the session
 
+
+// ---------------------------------------------------------------- level helpers
+
+float txSoftLimit(cf32* x, size_t n, size_t* limited) {
+    constexpr float kKnee = 0.9f, kRoom = 1.f - kKnee;
+    float peak2 = 0;
+    size_t lim = 0;
+    for (size_t i = 0; i < n; i++) {
+        const float re = x[i].real(), im = x[i].imag();
+        if (!std::isfinite(re) || !std::isfinite(im)) { x[i] = cf32(0.f, 0.f); continue; }   // a NaN would reach the DAC as an undefined byte
+        const float m2 = re * re + im * im;
+        if (m2 > peak2) peak2 = m2;
+        if (m2 <= kKnee * kKnee) continue;
+        const float m = std::sqrt(m2);
+        const float k = (kKnee + kRoom * std::tanh((m - kKnee) / kRoom)) / m;
+        x[i] = cf32(re * k, im * k);
+        lim++;
+    }
+    if (limited) *limited = lim;
+    return std::sqrt(peak2);
+}
+
+TxLevel txMeasure(const cf32* x, size_t n) {
+    TxLevel l;
+    if (!x || !n) return l;
+    double acc = 0;
+    float pk = 0;
+    for (size_t i = 0; i < n; i++) {
+        const float m2 = x[i].real() * x[i].real() + x[i].imag() * x[i].imag();
+        acc += m2;
+        if (m2 > pk) pk = m2;
+    }
+    l.peak = std::sqrt(pk);
+    l.rms = (float)std::sqrt(acc / (double)n);
+    return l;
+}
+
+double txOccupiedBandwidthHz(const std::vector<float>& db, double rateHz) {
+    const size_t n = db.size();
+    if (n < 8 || rateHz <= 0) return 0;
+    std::vector<double> p(n);
+    double tot = 0;
+    for (size_t i = 0; i < n; i++) { p[i] = std::pow(10.0, db[i] / 10.0); tot += p[i]; }
+    if (tot <= 0) return 0;
+    // 99%: drop 0.5% of the power from each edge of the span (DC at bin 0: bins n/2.. are negative frequencies)
+    std::vector<double> q(n);   // in frequency order, lowest first
+    for (size_t i = 0; i < n; i++) q[i] = p[(i + n / 2) % n];
+    double lo = 0, hi = 0;
+    size_t a = 0, b = n - 1;
+    while (a < b && lo + q[a] <= tot * 0.005) lo += q[a++];
+    while (b > a && hi + q[b] <= tot * 0.005) hi += q[b--];
+    return (double)(b - a + 1) / (double)n * rateHz;
+}
+
+std::string txRangeInfo(const DeviceInfo& d, double hz) {
+    if (d.maxFreqHz <= d.minFreqHz || hz <= 0) return "";
+    if (hz >= d.minFreqHz && hz <= d.maxFreqHz) return "";
+    char b[256];
+    snprintf(b, sizeof b, "%s is specified for %.3f to %.3f MHz; %.6f MHz is outside that. It is sent anyway: the radio decides what comes out.", d.name.c_str(), d.minFreqHz / 1e6, d.maxFreqHz / 1e6, hz / 1e6);
+    return b;
+}
+
+std::string txUnavailableReason(const DeviceInfo& d) {
+    if (d.canTransmit) return "";
+    switch (d.kind) {
+    case DeviceInfo::Synthetic: return "the test signal is not a radio";
+    case DeviceInfo::File: return "a recording is not a radio";
+    case DeviceInfo::Audio: return "a sound card is not a radio";
+    case DeviceInfo::Hamlib: return d.name + " is controlled through CAT only: OnAir has no transmit path for it";
+    default: return d.name + " is receive-only in OnAir (its driver has no transmit channel, or this build lacks it)";
+    }
+}
+
+namespace {
+// takes samples at the pace of the rate it was opened with and sends them nowhere
+class NullTxSink : public TxSink {
+public:
+    bool open(const TxTune& t, std::string&) override { rate_ = t.sampleRate > 0 ? t.sampleRate : 1e6; next_ = std::chrono::steady_clock::now(); open_ = true; return true; }
+    bool write(const cf32*, size_t n, std::string&) override {
+        const auto now = std::chrono::steady_clock::now();
+        if (next_ < now - std::chrono::milliseconds(200)) next_ = now;   // do not "catch up" after a stall
+        next_ += std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>((double)n / rate_));
+        std::this_thread::sleep_until(next_);
+        return true;
+    }
+    bool retune(const TxTune&, std::string&) override { return true; }
+    void close() override { open_ = false; }
+    double sampleRate() const override { return rate_; }
+    std::string name() const override { return "test (no RF)"; }
+private:
+    double rate_ = 1e6;
+    bool open_ = false;
+    std::chrono::steady_clock::time_point next_;
+};
+}
+std::unique_ptr<TxSink> makeNullTxSink() { return std::make_unique<NullTxSink>(); }
+
+// ---------------------------------------------------------------- the session
+
 namespace {
 constexpr size_t kBlock = 1 << 15;
 std::string mhzText(double hz) { char b[48]; snprintf(b, sizeof b, "%.6f MHz", hz / 1e6); return b; }
@@ -693,7 +807,9 @@ void TxSession::note(const std::string& s) {
         std::lock_guard<std::mutex> lk(mu_);
         const time_t now = time(nullptr);
         char b[32];
-        strftime(b, sizeof b, "%H:%M:%S ", localtime(&now));
+        struct tm tmv;
+        localtime_r(&now, &tmv);
+        strftime(b, sizeof b, "%H:%M:%S ", &tmv);
         line = std::string(b) + s;
         log_.push_back(line);
         if (log_.size() > 500) log_.erase(log_.begin(), log_.begin() + 100);
@@ -712,25 +828,34 @@ void TxSession::fail(const std::string& why) {
     note("TRANSMISSION STOPPED: " + why);
 }
 
+// closes the radio once (the sender thread does it when a pass ends, stop() does it otherwise)
+void TxSession::closeSink() {
+    if (sink_ && !sinkClosed_.exchange(true)) sink_->close();
+}
+
 bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const TxRateLimits& lim, std::string& err) {
     stop();
+    std::lock_guard<std::mutex> ctl(ctl_);
     if (!sink) { err = "this radio has no transmit path in OnAir"; return false; }
     const TxModeSpec* mode = txModeById(r.modeId);
     if (!mode) { err = "this mode cannot be transmitted by OnAir"; return false; }
+    dry_ = sink->name() == "test (no RF)";
     sink_ = std::move(sink);
     req_ = r;
     carrierTune_ = r.carrierTune;
     audio_.reset();
     video_.reset();
-    stop_ = false; genDone_ = false; failed_ = false; finished_ = false; sent_ = 0; under_ = 0; error_.clear();
-    q_.clear();
+    stop_ = false; genDone_ = false; failed_ = false; finished_ = false; sent_ = 0; under_ = 0; limited_ = 0; madeTotal_ = 0; error_.clear();
+    senderDone_ = false; sinkClosed_ = false; peak_ = 0; rms_ = 0; audioPeak_ = 0;
     {
         std::lock_guard<std::mutex> lk(mu_);
+        q_.clear(); pool_.clear();
         tap_.clear(); tapPos_ = 0; tapHave_ = 0;
+        log_.clear();
     }
     {
-        std::lock_guard<std::mutex> lk(mu_);
-        log_.clear();
+        std::lock_guard<std::mutex> lk(rtMu_);
+        rtPending_ = false; rtDone_ = false;
     }
     TxTune t = r.tune;
     t.sampleRate = txRequestRate(*mode, r, lim);
@@ -744,8 +869,10 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
         else if (req_.audioSrc == 3) k = AudioIn::Silence;
         std::string aerr;
         const std::string arg = k == AudioIn::Mic ? req_.audioDevice : req_.file;
-        if (!audio_->start(k, 48000, arg, req_.toneHz > 0 ? req_.toneHz : 1000, aerr)) {
-            if (k == AudioIn::Mic) { err = aerr; note("could not start: " + err); sink_->close(); sink_.reset(); audio_.reset(); return false; }
+        if (k == AudioIn::File && arg.empty()) aerr = "no audio file was chosen";
+        if (!aerr.empty() || !audio_->start(k, 48000, arg, req_.toneHz > 0 ? req_.toneHz : 1000, aerr)) {
+            if (k == AudioIn::Mic) { err = aerr; note("could not start: " + err); closeSink(); sink_.reset(); audio_.reset(); return false; }
+            if (k == AudioIn::File) note("audio file not used: " + aerr + "; a 1 kHz tone is sent instead");
             audio_->start(AudioIn::Tone, 48000, {}, req_.toneHz > 0 ? req_.toneHz : 1000, aerr);
         }
         audio_->setMuted(req_.audioMute);
@@ -758,18 +885,23 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
         const VideoIn::Kind vk = req_.videoSrc == 2 ? VideoIn::Camera : VideoIn::File;
         const std::string varg = vk == VideoIn::Camera ? req_.videoDevice : req_.file;
         if (!video_->start(vk, varg, verr)) {
-            if (vk == VideoIn::Camera) { err = verr; note("could not start: " + err); sink_->close(); sink_.reset(); audio_.reset(); video_.reset(); return false; }
+            if (vk == VideoIn::Camera) { err = verr; note("could not start: " + err); closeSink(); sink_.reset(); audio_.reset(); video_.reset(); return false; }
             video_.reset();
-            note("video file not used: " + verr);
+            note("video file not used: " + verr + "; the test card is sent instead");
         } else {
             req_.pullVideo = [this](int w, int h, float* y, float* u, float* v) { return video_ && video_->copyYuv(w, h, y, u, v); };
         }
     }
-    gen_ = makeTxGenerator(*mode, req_, rate_, err);
+    try {
+        gen_ = makeTxGenerator(*mode, req_, rate_, err);
+    } catch (const std::exception& e) {
+        gen_.reset();
+        err = std::string("the generator failed to start: ") + e.what();
+    }
     if (!gen_ && req_.carrierTune) { err.clear(); gen_.reset(); }
     if (!gen_ && !req_.carrierTune) {
         note("could not start: " + err);
-        sink_->close(); sink_.reset();
+        closeSink(); sink_.reset();
         if (audio_) { audio_->stop(); audio_.reset(); }
         if (video_) { video_->stop(); video_.reset(); }
         return false;
@@ -779,7 +911,7 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
     running_ = true;
     started_ = true;
     char b[400];
-    snprintf(b, sizeof b, "TRANSMITTING %s on %s, %.3f Msps, gain %.1f dB%s, %s", mode->name, mhzText(r.tune.centerHz).c_str(), rate_ / 1e6, r.tune.gainDb, r.tune.ampOn ? " + amplifier" : "",
+    snprintf(b, sizeof b, "%s %s on %s, %.3f Msps, gain %.1f dB%s, %s", dry_ ? "TEST (no RF)" : "TRANSMITTING", mode->name, mhzText(r.tune.centerHz).c_str(), rate_ / 1e6, r.tune.gainDb, r.tune.ampOn ? " + amplifier" : "",
              r.loop ? "until stopped" : (std::to_string(r.onceSeconds).substr(0, std::to_string(r.onceSeconds).find('.') + 2) + " s, one pass").c_str());
     note(b);
     if (req_.carrierTune) note("CARRIER TUNE (unmodulated, for adjusting the transmission — not a message)");
@@ -791,17 +923,36 @@ bool TxSession::start(std::unique_ptr<TxSink> sink, const TxRequest& r, const Tx
 void TxSession::generatorLoop() {
     const uint64_t limit = req_.loop ? ~0ull : (uint64_t)(std::max(0.1, req_.onceSeconds) * rate_);
     uint64_t made = 0;
-    while (!stop_ && made < limit) {
-        const size_t n = (size_t)std::min<uint64_t>(kBlock, limit - made);
-        std::vector<cf32> blk(n);
-        gen_->generate(blk.data(), n);
-        tapWrite(blk.data(), n);
-        made += n;
-        std::unique_lock<std::mutex> lk(mu_);
-        cvIn_.wait(lk, [&] { return stop_ || q_.size() < maxQ_; });
-        if (stop_) break;
-        q_.push_back(std::move(blk));
-        cvOut_.notify_one();
+    try {
+        while (!stop_ && !senderDone_ && made < limit) {
+            const size_t n = (size_t)std::min<uint64_t>(kBlock, limit - made);
+            std::vector<cf32> blk;
+            {
+                std::lock_guard<std::mutex> lk(mu_);
+                if (!pool_.empty()) { blk = std::move(pool_.back()); pool_.pop_back(); }
+            }
+            blk.resize(n);
+            gen_->generate(blk.data(), n);
+            size_t lim = 0;
+            txSoftLimit(blk.data(), n, &lim);   // never above full scale, never NaN, at the last step before the radio
+            const TxLevel lv = txMeasure(blk.data(), n);
+            peak_ = std::max(lv.peak, peak_.load() * 0.97f);
+            rms_ = rms_.load() * 0.7f + lv.rms * 0.3f;
+            limited_ += lim;
+            madeTotal_ += n;
+            if (audio_) audioPeak_ = audio_->peak();
+            tapWrite(blk.data(), n);
+            made += n;
+            std::unique_lock<std::mutex> lk(mu_);
+            cvIn_.wait(lk, [&] { return stop_ || senderDone_ || q_.size() < maxQ_; });
+            if (stop_ || senderDone_) break;
+            q_.push_back(std::move(blk));
+            cvOut_.notify_one();
+        }
+    } catch (const std::exception& e) {
+        fail(std::string("the generator stopped: ") + e.what());
+    } catch (...) {
+        fail("the generator stopped unexpectedly");
     }
     {
         std::lock_guard<std::mutex> lk(mu_);
@@ -812,13 +963,33 @@ void TxSession::generatorLoop() {
 
 void TxSession::senderLoop() {
     const bool rt = sink_->realtime();
-    {   // fill the queue before the first sample goes out, so that the start is not an underrun
+    // the radio is written in pieces of about 40 ms so that Stop and a retune are heard quickly, whatever the rate
+    const size_t piece = std::max<size_t>(1024, std::min<size_t>(kBlock, (size_t)(rate_ * 0.04)));
+    {   // fill the queue before the first sample goes out, so that the start is not an underrun: about 150 ms of signal (at least 4 blocks, at most half the queue)
+        const size_t need = std::min<size_t>(maxQ_ / 2 + 1, std::max<size_t>(4, (size_t)std::ceil(rate_ * 0.15 / kBlock)));
         std::unique_lock<std::mutex> lk(mu_);
-        cvOut_.wait_for(lk, std::chrono::seconds(5), [&] { return stop_ || genDone_ || q_.size() >= std::min<size_t>(maxQ_ / 2 + 1, 4); });
+        cvOut_.wait_for(lk, std::chrono::seconds(5), [&] { return stop_ || genDone_ || q_.size() >= need; });
     }
     uint64_t lastReported = 0;
     auto lastReport = std::chrono::steady_clock::now();
-    while (!stop_) {
+    bool ok = true;
+    auto applyRetune = [&] {
+        TxTune t;
+        {
+            std::lock_guard<std::mutex> lk(rtMu_);
+            if (!rtPending_) return;
+            t = rtTune_;
+        }
+        std::string e;
+        const bool r = sink_->retune(t, e);
+        {
+            std::lock_guard<std::mutex> lk(rtMu_);
+            rtPending_ = false; rtDone_ = true; rtOk_ = r; rtErr_ = e;
+        }
+        rtCv_.notify_all();
+    };
+    while (!stop_ && ok) {
+        applyRetune();
         std::vector<cf32> blk;
         bool underrun = false;
         {
@@ -834,9 +1005,17 @@ void TxSession::senderLoop() {
         if (stop_) break;
         if (blk.empty() && !underrun) break;   // the generator is done and the queue is empty: one pass finished
         if (underrun) { blk.assign(kBlock / 8, cf32(0.f, 0.f)); under_++; }
-        std::string e;
-        if (!sink_->write(blk.data(), blk.size(), e)) { fail(e); break; }
-        if (!underrun) sent_ += blk.size();
+        for (size_t off = 0; off < blk.size() && !stop_; off += piece) {
+            const size_t m = std::min(piece, blk.size() - off);
+            std::string e;
+            if (!sink_->write(blk.data() + off, m, e)) { fail(e); ok = false; break; }
+            if (!underrun) sent_ += m;
+            applyRetune();
+        }
+        if (!underrun && !blk.empty()) {   // give the block back for the generator to refill (no allocation per block)
+            std::lock_guard<std::mutex> lk(mu_);
+            if (pool_.size() < 4) pool_.push_back(std::move(blk));
+        }
         const auto now = std::chrono::steady_clock::now();
         if (under_ != lastReported && now - lastReport > std::chrono::seconds(2)) {
             note("the generator fell behind: " + std::to_string(under_.load() - lastReported) + " gap(s) of silence sent");
@@ -845,7 +1024,7 @@ void TxSession::senderLoop() {
         }
     }
     if (!stop_) {   // finished or failed on its own: the transmitter goes off now
-        sink_->close();
+        closeSink();
         if (!failed_) {
             char b[160];
             snprintf(b, sizeof b, "transmission finished: %.1f s sent", (double)sent_ / rate_);
@@ -855,9 +1034,35 @@ void TxSession::senderLoop() {
         }
         running_ = false;
     }
+    senderDone_ = true;
+    {   // a retune waiting for this thread is answered
+        std::lock_guard<std::mutex> lk(rtMu_);
+        if (rtPending_) { rtPending_ = false; rtDone_ = true; rtOk_ = false; rtErr_ = "the transmission has ended"; }
+    }
+    rtCv_.notify_all();
+    cvIn_.notify_all();
+}
+
+bool TxSession::retune(const TxTune& t, std::string& err) {
+    std::lock_guard<std::mutex> ctl(ctl_);
+    if (!started_ || !running_ || senderDone_) { err = "nothing is being sent"; return false; }
+    std::unique_lock<std::mutex> lk(rtMu_);
+    rtTune_ = t; rtTune_.sampleRate = rate_;
+    rtPending_ = true; rtDone_ = false;
+    if (!rtCv_.wait_for(lk, std::chrono::seconds(3), [&] { return rtDone_; })) { rtPending_ = false; err = "the radio did not answer the change in time"; return false; }
+    err = rtErr_;
+    if (rtOk_) {
+        char b[160];
+        snprintf(b, sizeof b, "retuned: %s, gain %.1f dB", mhzText(t.centerHz).c_str(), t.gainDb);
+        lk.unlock();
+        req_.tune = t;
+        note(b);
+    }
+    return rtOk_;
 }
 
 void TxSession::stop() {
+    std::lock_guard<std::mutex> ctl(ctl_);
     if (!started_) { sink_.reset(); return; }
     {
         std::lock_guard<std::mutex> lk(mu_);
@@ -865,10 +1070,11 @@ void TxSession::stop() {
     }
     cvIn_.notify_all();
     cvOut_.notify_all();
+    rtCv_.notify_all();
     if (gen_t_.joinable()) gen_t_.join();
     if (send_t_.joinable()) send_t_.join();
     const bool wasRunning = running_.exchange(false);
-    if (sink_) sink_->close();     // no sample goes out after this
+    closeSink();     // no sample goes out after this
     if (wasRunning && !failed_) {
         char b[160];
         snprintf(b, sizeof b, "transmission stopped: %.1f s sent, %llu gap(s) of silence", rate_ > 0 ? (double)sent_ / rate_ : 0.0, (unsigned long long)under_.load());
@@ -882,7 +1088,8 @@ void TxSession::stop() {
     started_ = false;
     {
         std::lock_guard<std::mutex> lk(mu_);
-        tap_.clear(); tapPos_ = 0; tapHave_ = 0;
+        tap_.clear(); tap_.shrink_to_fit(); tapPos_ = 0; tapHave_ = 0;
+        q_.clear(); pool_.clear(); pool_.shrink_to_fit();
     }
 }
 
@@ -891,11 +1098,12 @@ void TxSession::tapWrite(const cf32* x, size_t n) {
     const size_t cap = (size_t)std::max<double>(n, std::min(rate_ * 0.5, 1e6));
     std::lock_guard<std::mutex> lk(mu_);
     if (tap_.size() != cap) { tap_.assign(cap, cf32(0.f, 0.f)); tapPos_ = 0; tapHave_ = 0; }
-    for (size_t i = 0; i < n; i++) {
-        tap_[tapPos_] = x[i];
-        tapPos_ = (tapPos_ + 1) % tap_.size();
-        if (tapHave_ < tap_.size()) tapHave_++;
-    }
+    if (n >= cap) { x += n - cap; n = cap; }   // only the newest cap samples can matter
+    const size_t first = std::min(n, cap - tapPos_);
+    std::memcpy(tap_.data() + tapPos_, x, first * sizeof(cf32));
+    if (n > first) std::memcpy(tap_.data(), x + first, (n - first) * sizeof(cf32));
+    tapPos_ = (tapPos_ + n) % cap;
+    tapHave_ = std::min(cap, tapHave_ + n);
 }
 
 void TxSession::copyTap(std::vector<cf32>& out, double& rateHz) const {
@@ -904,8 +1112,10 @@ void TxSession::copyTap(std::vector<cf32>& out, double& rateHz) const {
     if (!tapHave_ || tap_.empty()) { out.clear(); return; }
     out.resize(tapHave_);
     const size_t cap = tap_.size();
-    size_t start = tapHave_ < cap ? 0 : tapPos_;
-    for (size_t i = 0; i < tapHave_; i++) out[i] = tap_[(start + i) % cap];
+    const size_t start = tapHave_ < cap ? 0 : tapPos_;
+    const size_t first = std::min(tapHave_, cap - start);
+    std::memcpy(out.data(), tap_.data() + start, first * sizeof(cf32));
+    if (tapHave_ > first) std::memcpy(out.data() + first, tap_.data(), (tapHave_ - first) * sizeof(cf32));
 }
 
 void TxSession::setCarrierTune(bool on) {
@@ -920,12 +1130,18 @@ TxSession::Stats TxSession::stats() const {
     s.underruns = under_;
     s.rateHz = rate_;
     s.seconds = rate_ > 0 ? (double)sent_ / rate_ : 0;
+    s.peak = peak_;
+    s.rms = rms_;
+    s.audioPeak = audioPeak_;
+    const uint64_t made = madeTotal_;
+    s.limitedPct = made ? 100.0 * (double)limited_.load() / (double)made : 0;
     std::lock_guard<std::mutex> lk(mu_);
+    s.queued = q_.size();
+    s.queueMax = maxQ_;
     s.failed = failed_;
     s.finished = finished_;
     s.error = error_;
     s.carrierTune = carrierTune_.load();
-    s.audioPeak = audio_ ? audio_->peak() : 0.f;
     s.fileNote = req_.fileNote;
     return s;
 }

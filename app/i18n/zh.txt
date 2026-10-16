@@ -23,7 +23,6 @@ Bluetooth is not transmitted: it would impersonate a Bluetooth advertiser	Blueto
 Browse…	Browse…
 Callsign / my ID	Callsign / my ID
 Capcode	Capcode
-CARRIER TUNE	CARRIER TUNE
 Carrier tune	Carrier tune
 Clear all	Clear all
 Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.	Clears all previous data: the decoded lists of every mode (aircraft, ships, messages, pictures and so on), on every open receiver. The saved copy on disk is emptied too.
@@ -56,7 +55,6 @@ Gain controls apply to radios only (not to a recording, a sound card, or the syn
 I/Q stereo	I/Q 立体声
 I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q 立体声：左为 I、右为 Q（HDSDR / WebSDR VAC）。USB 音频：把扬声器分接的实音频变成解析 IQ，用于 FT8、RTTY、CW、SSB。LSB 音频：同样，取共轭。单声道实数：I 为样点，Q 为 0（实采样，不是 FM 鉴频器音频）。
 ICAO address	ICAO address
-Idle — nothing is being sent	Idle — nothing is being sent
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
 Input device	Input device
@@ -124,14 +122,11 @@ this is a general listening mode: there is nothing specific to transmit	this is 
 this is a receive-only sensor harvester: there is nothing meaningful to transmit	this is a receive-only sensor harvester: there is nothing meaningful to transmit
 this is a signal workbench: it is for measurement, not a radio service	this is a signal workbench: it is for measurement, not a radio service
 this is a spectrum analyser: there is nothing to transmit	this is a spectrum analyser: there is nothing to transmit
-This mode cannot transmit	This mode cannot transmit
 this mode has no transmit generator	this mode has no transmit generator
 This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.	This vocoder cannot encode: OnAir loads mbelib for decode only (AMBE/IMBE). Destination ID / talkgroup / colour code still go on the air; voice bits are the test pattern. A 1 kHz tone, silence or a WAV/MP3 can be sent as analog NFM instead.
 time signals are not transmitted: the generator imitates broadcast clocks (spoofing)	time signals are not transmitted: the generator imitates broadcast clocks (spoofing)
 Timeslot	Timeslot
 To	To
-TX spectrum (IQ going to the radio)	TX spectrum (IQ going to the radio)
-Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.	Unmodulated carrier at this frequency and gain, for adjusting the transmission (drive, filter, SWR, dummy-load level) — not a message. Hold the button. Stop still applies. Not saved as transmitting.
 USB audio	USB 音频
 Vessel name	Vessel name
 View	视图
@@ -1085,11 +1080,9 @@ Send this mode's own signal through a radio that can transmit. Off until you sta
 TRANSMITTING	正在发射
 Channel width	信道带宽
 Frequency (MHz)	频率 (MHz)
-TX gain (dB)	发射增益 (dB)
 +14 dB amplifier	+14 dB 放大器
 Repeat until stopped	重复直到停止
 seconds	秒
-STOP TRANSMITTING	停止发射
 START TRANSMITTING	开始发射
 This radio has no transmit driver in OnAir.	此无线电在 OnAir 中没有发射驱动。
 Before you transmit	发射之前
@@ -1105,7 +1098,6 @@ RX	RX
 TX	TX
 Switch between the receiver (RX) and the transmitter (TX). The transmitter has its own radio, so a receiver can keep receiving while you transmit.	在接收机 (RX) 与发射机 (TX) 之间切换。发射机有自己的无线电，所以您发射时接收机可以继续接收。
 Transmit radio	发射用无线电
-No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list.	未找到可发射的无线电。请接入一台（HackRF、PlutoSDR 或带发射器的 SoapySDR 无线电）并刷新无线电列表。
 Choose a radio to transmit with.	请选择用于发射的无线电。
 %s (in use by RX %d)	%s（被 RX %d 使用）
 %s is in use by RX %d, and this radio cannot receive and transmit at the same time. Choose another radio for transmitting, or stop that receiver first.	%s 正被 RX %d 使用，而这台无线电不能同时接收和发射。请选择另一台无线电来发射，或先停止该接收机。
@@ -1231,3 +1223,57 @@ reads	读取
 up to %d MHz channels at this rate	此速率下可读取至多 %d MHz 的信道
 input	输入
 signal time	信号时间
+#  transmit: the guided panel
+%s at %.6f MHz, level %.1f dB	%s,%.6f MHz,电平 %.1f dB
+Apply frequency and level now	立即应用频率和电平
+Bring it back here	放回此处
+Carrier tune (hold)	载波调谐(按住)
+Choose a radio in step 2, or switch on the test (no RF).	请在第2步选择电台,或开启测试(无射频)。
+Choose a signal in step 1	请在第1步选择信号
+Choose a signal in step 1.	请在第1步选择信号。
+Clipping	削波
+Idle	空闲
+No radio that can transmit was found. Plug one in (HackRF, PlutoSDR, or a SoapySDR radio with a transmitter) and refresh the radio list. The test below needs no radio.	未找到可发射的电台。请连接一台(HackRF、PlutoSDR 或带发射机的 SoapySDR 电台)并刷新列表。下面的测试不需要电台。
+Nothing matches this search.	没有匹配的结果。
+Occupied bandwidth	占用带宽
+Offset (MHz)	偏移 (MHz)
+Offset, repeat and timing	偏移、重复和时长
+Output level (dB)	输出电平 (dB)
+Peak	峰值
+Pop out into a window of its own	弹出为独立窗口
+Preparing	准备中
+Preview and send	预览并发送
+RMS	有效值
+Recent	最近
+Runs the signal generator at the radio's sample rate into nothing: no radio is opened and nothing is sent. The spectrum and levels below show what would go out.	以电台的采样率让信号发生器空转:不打开电台,也不发送任何内容。下方的频谱和电平显示将会发出的内容。
+STOP	停止
+STOP ALL	全部停止
+Sample rate	采样率
+Search signals...	搜索信号...
+Settings	设置
+Signal	信号
+Space = start / stop     Esc = stop	空格 = 开始 / 停止     Esc = 停止
+Stops the transmission or test, the carrier and any pending start, and gives the radio back.	停止发射或测试、载波和任何待处理的启动,并释放电台。
+TEST - NO RF	测试 - 无射频
+Test (dry run, no RF)	测试(空跑,无射频)
+Test (no RF)	测试(无射频)
+Test: the IQ the radio would get	测试:电台将收到的IQ
+The IQ going to the radio	发送到电台的IQ
+The generator fell behind %llu time(s): silence was sent for those gaps.	生成器落后了 %llu 次:这些间隙发送的是静音。
+The transmit panel is in its own window.	发射面板在独立窗口中。
+This is added to the frequency sent to the radio, for a radio that radiates off frequency.	加到发送给电台的频率上,用于实际辐射频率有偏差的电台。
+TX channel	TX 通道
+Transmit	发射
+Transmitting	发射中
+Unmodulated carrier at this frequency and level, for adjusting the transmission (drive, filter, SWR, dummy-load level), not a message. Hold the button. Stop still applies. Not saved as transmitting.	此频率和电平的未调制载波,用于调整发射(激励、滤波器、驻波比、假负载电平),不是消息。按住按钮。停止始终有效。不会保存为正在发射。
+What will be sent (preview)	将要发送的内容(预览)
+at full scale: the limiter will round the peaks	满量程:限幅器会圆滑峰值
+making the preview...	正在生成预览...
+none chosen	未选择
+none: the signal fits	无:信号正常
+on the air	发射中
+radio range %s	电台范围 %s
+test (no RF)	测试(无射频)
+test running	测试运行中
+test, no RF	测试,无射频
+the limiter is working: %.2f%% of samples (lower the level)	限幅器正在工作:%.2f%% 的采样(请降低电平)

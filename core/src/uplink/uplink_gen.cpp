@@ -67,7 +67,9 @@ void UplinkGenerator::generate(cf32* out, size_t n) {
         }
         const cf32 y = 0.25f * h2_ + 0.5f * h1_ + 0.25f * s;
         h2_ = h1_; h1_ = s;
-        out[i] = y + cf32(nd_(rng_), nd_(rng_)) * (float)(noise_ * 0.70710678);
+        // a transmitter asks for no noise (rms about 1e-10): the two Gaussian draws per sample are then not made at all
+        if (noise_ < 1e-8) out[i] = y;
+        else out[i] = y + cf32(nd_(rng_), nd_(rng_)) * (float)(noise_ * 0.70710678);
     }
     pos_ += n;
     ev_.erase(std::remove_if(ev_.begin(), ev_.end(), [&](const Ev& e) { return e.t1 < tB; }), ev_.end());

@@ -89,6 +89,23 @@ bool txOpenMpegTs(const std::string& path, std::function<void(uint8_t*)>& outTs,
 // Power spectrum of n complex samples (Hann, FFT size nfft, DC at bin 0). For a carrier at IF centre, bin 0 is the peak.
 void txSpectrumDb(const cf32* x, size_t n, int nfft, std::vector<float>& db);
 
+// Soft limiter used on every block before it reaches the radio: samples with a magnitude up to 0.9 pass untouched (bit-identical), above that the
+// magnitude is rounded smoothly towards 1.0 (never above), the phase is kept; NaN / Inf become 0. Returns the largest input magnitude seen.
+// `limited` (optional) gets the number of samples that were compressed.
+float txSoftLimit(cf32* x, size_t n, size_t* limited = nullptr);
+// Peak, RMS (both of the magnitude, full scale 1.0) of a block
+struct TxLevel { float peak = 0, rms = 0; };
+TxLevel txMeasure(const cf32* x, size_t n);
+// Occupied bandwidth (Hz) holding 99% of the power of a spectrum from txSpectrumDb (DC at bin 0, bins span rateHz). 0 when empty.
+double txOccupiedBandwidthHz(const std::vector<float>& db, double rateHz);
+// A radio's own frequency range as information for the panel: "" when the frequency is inside it or the range is unknown, otherwise a sentence
+// that names the range. It is never a block: the driver is asked for the frequency anyway.
+std::string txRangeInfo(const DeviceInfo& d, double hz);
+// Why a radio cannot be used to transmit ("" when it can): receive-only radios, sound cards, files
+std::string txUnavailableReason(const DeviceInfo& d);
+// A sink that takes samples at the pace of `rateHz` and sends them nowhere: the "Test (dry run, no RF)" path. No radio is claimed or opened.
+std::unique_ptr<TxSink> makeNullTxSink();
+
 // A generator at a given sample rate: endless, continuous, clean (no noise, offsets or echoes).
 class TxGenerator {
 public:
@@ -189,7 +206,11 @@ public:
     // Unmodulated carrier at DC, independent of the payload. While on, generate() is CW of amplitude 1.0. Not persisted. Stop still applies.
     void setCarrierTune(bool on);
     bool carrierTune() const { return carrierTune_.load(); }
-    struct Stats { uint64_t samples = 0; uint64_t underruns = 0; double seconds = 0; double rateHz = 0; bool failed = false; bool finished = false; bool carrierTune = false; float audioPeak = 0; std::string error; std::string fileNote; };
+    struct Stats { uint64_t samples = 0; uint64_t underruns = 0; double seconds = 0; double rateHz = 0; bool failed = false; bool finished = false; bool carrierTune = false; float audioPeak = 0;
+                   float peak = 0, rms = 0; double limitedPct = 0; size_t queued = 0, queueMax = 0; std::string error; std::string fileNote; };
+    // Change frequency / gain / bandwidth while sending (a radio that cannot says so in err and goes on as it was). Applied between two writes by the sender thread.
+    bool retune(const TxTune& t, std::string& err);
+    bool dryRun() const { return dry_; }
     Stats stats() const;
     std::vector<std::string> log() const;          // what was sent and what happened, oldest first, each with the time
     void setLogCallback(std::function<void(const std::string&)> f) { std::lock_guard<std::mutex> lk(mu_); cb_ = std::move(f); }
@@ -197,6 +218,7 @@ public:
     void copyTap(std::vector<cf32>& out, double& rateHz) const;
 
 private:
+    void closeSink();
     void generatorLoop();
     void senderLoop();
     void note(const std::string& s);
@@ -211,7 +233,17 @@ private:
     std::atomic<bool> carrierTune_{false};
     double rate_ = 0;
     std::atomic<bool> running_{false}, stop_{false}, genDone_{false}, failed_{false};
-    std::atomic<uint64_t> sent_{0}, under_{0};
+    std::atomic<uint64_t> sent_{0}, under_{0}, limited_{0}, madeTotal_{0};
+    std::atomic<float> peak_{0}, rms_{0}, audioPeak_{0};
+    std::atomic<bool> senderDone_{false}, sinkClosed_{false};
+    bool dry_ = false;
+    std::mutex ctl_;                       // start / stop / retune are serialised
+    std::mutex rtMu_;                      // the pending retune
+    std::condition_variable rtCv_;
+    bool rtPending_ = false, rtDone_ = false, rtOk_ = false;
+    TxTune rtTune_;
+    std::string rtErr_;
+    std::vector<std::vector<cf32>> pool_;  // recycled sample blocks (guarded by mu_)
     mutable std::mutex mu_;
     std::condition_variable cvIn_, cvOut_;
     std::deque<std::vector<cf32>> q_;

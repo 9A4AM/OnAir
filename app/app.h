@@ -773,10 +773,8 @@ void rotatorPointBearing(double bearingDeg, double elDeg);
 struct ModeDef;
 bool& txViewFlag();                // the RX / TX switch: true = TX view (never saved: the program opens in RX view)
 void txViewSwitch(App& a);         // the slider at the top left of both interfaces
-void txPanel(App& a);              // leftover: the compact TX bar + notice (classic/new shells draw spectrum and the right list themselves)
-void txBar(App& a);                // frequency, radio, gain, Start / Stop / Carrier tune
-void txSpectrum(App& a);           // live spectrum of the IQ going to the radio
-void txRight(App& a);              // this mode's payload (or why it cannot transmit)
+void txDevOpen(App& a, const char* modeId, bool dryRun);   // dev flags --tx / --txdry <mode id>: open the TX view on a signal, optionally with the test (no RF) running
+void txPanel(App& a);              // the guided transmit panel (tx_panel.cpp): status header, 1 Signal, 2 Settings, 3 Preview and send; fills the main area in TX view
 void txSelectMode(App& a, int family, const char* subId);
 bool txModeHighlighted(const ModeDef& m);
 void txTick(App& a);               // every frame: gives the radio back when a transmission ended; the on-screen TX indicator

@@ -77,20 +77,12 @@ static void videoOnlyWindow(App& a, ImVec2 disp) {
     ImGui::PopStyleColor();
 }
 
-// the classic interface in TX view: the transmitter bar, spectrum and payload
+// the classic interface in TX view: the guided transmit panel fills the window
 static void classicTx(App& a, ImVec2 disp) {
-    txBar(a);
+    (void)disp;
     standardSwitch(a);
     ImGui::Separator();
-    float rightW = 350 * gUi;
-    float mainH = ImGui::GetContentRegionAvail().y - 6;
-    ImGui::BeginChild("main", ImVec2(disp.x - rightW - 16 * gUi, mainH));
-    txSpectrum(a);
-    ImGui::EndChild();
-    ImGui::SameLine();
-    ImGui::BeginChild("right", ImVec2(0, mainH));
-    txRight(a);
-    ImGui::EndChild();
+    txPanel(a);
     ImGui::End();
 }
 

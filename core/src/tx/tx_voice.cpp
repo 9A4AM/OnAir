@@ -51,7 +51,7 @@ public:
         for (int k = -kHilN; k <= kHilN; k++) {
             if (k % 2) hil_[(size_t)(k + kHilN)] = (float)(2.0 / (kPi * k));
         }
-        hist_.assign(hil_.size(), 0.f);
+        hist2_.assign(2 * hil_.size(), 0.f);
     }
     double sampleRate() const override { return rate_; }
     void generate(cf32* out, size_t n) override {
@@ -78,11 +78,15 @@ public:
                 out[i] = cf32(m * (float)std::cos(cph_), m * (float)std::sin(cph_));
                 cph_ += w0;
             } else if (kind_ == 3 || kind_ == 4) {   // USB / LSB, suppressed carrier at `off`
-                hist_[hpos_] = a;
+                // The newest 63 inputs sit twice in hist2_ so that the window hist2_[hpos_ .. hpos_ + 62] is contiguous (no modulo per tap). Only the odd taps
+                // are not zero, and they are added in the same order as before, so the sum is bit-identical.
+                const size_t N = hil_.size();
+                hist2_[hpos_] = a; hist2_[hpos_ + N] = a;
+                const float* w = hist2_.data() + hpos_;
                 float im = 0;
-                for (size_t k = 0; k < hil_.size(); k++) im += hil_[k] * hist_[(hpos_ + k) % hist_.size()];
-                const float re = hist_[(hpos_ + (size_t)kHilN) % hist_.size()];
-                if (++hpos_ >= hist_.size()) hpos_ = 0;
+                for (size_t k = 0; k < N; k++) if (!(k & 1)) im += hil_[k] * w[k];   // the taps with k - kHilN odd are at even indices
+                const float re = w[(size_t)kHilN];
+                if (++hpos_ >= N) hpos_ = 0;
                 const float sg = kind_ == 4 ? -1.f : 1.f;
                 const float I = 0.4f * re, Q = 0.4f * sg * im;
                 const float cs = (float)std::cos(cph_), sn = (float)std::sin(cph_);
@@ -101,7 +105,7 @@ private:
     int kind_ = 1, local_ = 2;
     PullMono pull_;
     float preX_ = 0;
-    std::vector<float> hil_, hist_;
+    std::vector<float> hil_, hist2_;
     size_t hpos_ = 0;
 };
 

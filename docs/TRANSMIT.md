@@ -1,8 +1,37 @@
-# Transmit: modes offered and not offered
+# Transmit
 
-This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()` and `txRefusalReason()`). OnAir applies no frequency or power limit; see the Transmit section of the README.
+**You are responsible.** OnAir limits nothing: not the frequency, not the power. What you type goes to the radio as typed (the radio's own range is shown as information only). Transmitting needs a licence or permission where you are, and a radio without an antenna, an attenuator or a dummy load can disturb others. Transmit is meant for test signals into a dummy load or a shielded setup, and for your own use. The first time you start, a one-time notice has to be accepted with "I understand".
 
-## Modes offered (76)
+## How to transmit, step by step
+
+Switch the RX / TX slider at the top left to **TX**. The transmit panel fills the window. Nothing is sent until you press the big Start button.
+
+**The header.** A big status word: **Idle**, **Preparing** (the radio is being opened and the first samples made), **Transmitting** (with a pulsing red dot and the elapsed time), **Test (no RF)** or **Carrier tune**. Next to it is the one primary button: **START TRANSMITTING** or **STOP**. Space starts and stops, Esc stops (not while you are typing in a text box). Errors and notes appear as boxes under the header, never as popups (except the one-time notice).
+
+**Step 1, Signal.** A searchable list of every signal OnAir can send, grouped like the receiver's mode list, with a short description and an icon per group. Click one to choose it. The **Recent** buttons above the list bring back one of the last signals with its frequency and level.
+
+**Step 2, Settings.**
+- **Test (dry run, no RF)**: runs the generator at the radio's sample rate into nothing. No radio is opened or claimed, nothing is sent, and the spectrum and levels in step 3 show what would go out. Use it to try a signal and its settings first.
+- **Transmit radio**: only radios with a transmit path are listed. If there is none, receive-only radios are named with the reason. A radio a receiver is using is refused in plain words unless it is genuinely full duplex.
+- **Frequency (MHz)**: any value. The radio's specified range is shown next to the field; a value outside it gets a note, not a block.
+- **Output level (dB)**: a slider over the radio's own TX gain scale, with the radio's stage names under it (HackRF: TX VGA, and the +14 dB amplifier as its own switch). Start low.
+- **Offset, repeat and timing**: an offset added only to the frequency sent to the radio, "repeat until stopped" or one pass of N seconds.
+- The signal's own options (message text, callsign, bandwidth, modulation, test pattern, input file, microphone / camera choice) sit under the signal's name, with sensible defaults. Empty fields send the mode's built-in demo signal.
+- While a transmission runs, the frequency and the level can still be changed: **Apply frequency and level now** retunes the running radio (a radio that cannot change while sending says so and carries on as before).
+
+**Step 3, Preview and send.** A live spectrum and waterfall of what will be sent (made in the background a moment after each change) or, while running, of the IQ really handed to the radio. Under it: **Peak** and **RMS** meters in dBFS, a **Clipping** lamp (red when the limiter has to work: lower the level), the **Sample rate** the radio will use and the estimated **Occupied bandwidth** (99% of the power), and an IQ scatter. **Carrier tune (hold)** sends an unmodulated carrier while the button is held, for adjusting drive, filter and SWR. **STOP ALL** stops the transmission, the test, the carrier and any pending start and gives the radio back. The log below lists what was sent and what happened.
+
+**Pop out.** The small button in the top right corner moves the whole panel into a window of its own.
+
+**Level safety.** Every block passes a soft limiter just before the radio: samples up to 0.9 of full scale pass untouched, above that they are rounded smoothly towards 1.0 and never exceed it, and a NaN or infinity becomes zero. The HackRF's 8-bit conversion clips at plus or minus 127. The limiter is not a power limit: it only keeps the generated signal inside the converter's range.
+
+**Map upload** stays suspended while transmitting.
+
+## Modes offered and not offered
+
+This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()` and `txRefusalReason()`).
+
+### Modes offered (76)
 
 | Id | Mode | Engine code | Generator |
 |---|---|---|---|
@@ -86,7 +115,7 @@ This list is taken from the tables in `core/src/tx/tx.cpp` (`txModes()` and `txR
 | same | NOAA Weather Radio SAME | 78 | makeSameSynth |
 | dect | DECT cordless phones | 80 | makeDectSynth |
 
-## Modes not offered
+### Modes not offered
 
 | Engine code | Reason |
 |---|---|

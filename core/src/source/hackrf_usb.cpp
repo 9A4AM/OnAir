@@ -372,7 +372,7 @@ private:
 
 // float samples (full scale 1.0) to the signed 8-bit pairs the HackRF's DAC takes; beyond full scale is clipped. Exposed for the test.
 void hackrfTxPack(const cf32* x, size_t n, int8_t* out) {
-    auto q = [](float v) { const float r = std::nearbyint(v * 127.f); return (int8_t)(r > 127.f ? 127 : r < -127.f ? -127 : r); };
+    auto q = [](float v) { if (!(v == v)) return (int8_t)0; const float r = std::nearbyint(v * 127.f); return (int8_t)(r > 127.f ? 127 : r < -127.f ? -127 : r); };
     for (size_t i = 0; i < n; i++) { out[2 * i] = q(x[i].real()); out[2 * i + 1] = q(x[i].imag()); }
 }
 

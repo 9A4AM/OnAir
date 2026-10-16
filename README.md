@@ -339,6 +339,7 @@ OnAir is a receiver first, but it can also send the signal of a mode through a r
 - **Needs a radio that can transmit.** A receive-only radio (RTL-SDR, Airspy and so on) cannot be used.
 - **A one-time notice** appears the first time you start a transmission and has to be accepted with "I understand".
 - **No frequency or power limits are applied by OnAir.** The frequency and the gain you enter go to the radio as typed. You are responsible for staying within the law where you are: transmitting needs a licence on most frequencies, and a radio without a filter or an antenna can disturb others.
+- **A guided panel.** Switch RX / TX at the top left: a status header with one Start / Stop button (Space starts and stops, Esc stops), then three steps: **1 Signal** (a searchable, grouped list), **2 Settings** (radio, frequency with the radio's range as a hint, output level, the signal's own options, and a **Test (dry run, no RF)** switch that runs the generator into nothing and shows the spectrum) and **3 Preview and send** (live spectrum, peak / RMS meters, clipping lamp, sample rate, occupied bandwidth, **STOP ALL**). It can pop out into its own window. A soft limiter keeps the generated signal inside the converter's range; it is not a power limit.
 - **Some modes are not offered** (for example GNSS, cellular, Bluetooth, Wi-Fi and the analysis modes).
 
 The full list of modes offered and not offered, with the reasons, is in [docs/TRANSMIT.md](docs/TRANSMIT.md).
