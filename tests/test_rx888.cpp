@@ -16,6 +16,10 @@
 #include <set>
 #include <thread>
 #include <unistd.h>
+#ifdef _WIN32   // MinGW has no setenv / unsetenv
+static int setenv(const char* k, const char* v, int) { return _putenv_s(k, v); }
+static int unsetenv(const char* k) { return _putenv_s(k, ""); }
+#endif
 
 using namespace dect2;
 using namespace dect2::native;
