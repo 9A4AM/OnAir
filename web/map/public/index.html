@@ -35,7 +35,8 @@
     <div class="key">
       <div><i style="background:#e6e8ea"></i>ADS-B</div>
       <div><i style="background:#5096dc"></i>Satellite</div>
-      <div><i style="background:#dc4848"></i>ACARS / VDL2</div>
+      <div title="ACARS and VDL2 messages carry a position but no heading."><i style="background:#dc4848"></i>ACARS / VDL2</div>
+      <div class="keynote">The first position of an aircraft is a dot. ACARS and VDL2 messages only give a position, not the direction of flight. When a second position arrives (at least 15 m from the first) the map works out the heading from the two points, and the dot becomes a plane icon.</div>
       <div><i style="background:#e6c640"></i>HFDL</div>
       <div><i style="background:#6ccc7a"></i>FLARM</div>
       <div><i style="background:#969a9e"></i>Stale</div>
