@@ -18,6 +18,9 @@ const uint8_t kEndPattern[48] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
                                  0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0};
 const uint8_t kSlowScramble[3] = {0x70, 0x4F, 0x93};
 
+// Everything from here to the matching #endif is the C++ implementation; with DECT2_RUST_DSTAR (rust/onair_dstar) dstar_proto_rs.cpp provides the same
+// functions. It stays until the Rust build is mandatory (rust/README.md); tests/dstar/test_dstar_proto_rs.cpp compares the two.
+#ifndef DECT2_RUST_DSTAR
 uint16_t crc(const uint8_t* p, size_t n) {
     uint16_t c = 0xFFFF;
     for (size_t i = 0; i < n; i++) {
@@ -247,6 +250,8 @@ bool parseDprs(const std::string& line, Fix& f) {
     f.comment = c;
     return true;
 }
+
+#endif // DECT2_RUST_DSTAR
 
 } // namespace dstar
 } // namespace dect2
