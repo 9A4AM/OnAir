@@ -85,16 +85,16 @@ Fixes and new features land on the `main` branch first, before they go into a re
 | **DVB-T2** (including T2-Lite) | Europe, Middle East, Africa, Asia, Australia | Digital TV |
 | **DVB-T** | Same regions, older networks | Digital TV |
 | **ATSC 1.0** | North America, South Korea | Digital TV |
-| **ATSC 3.0** (NextGen TV), *experimental* | North America, South Korea | Digital TV |
-| **ISDB-T**, *experimental* | Japan, Brazil and most of South America, Philippines | Digital TV and one-segment mobile TV |
+| **ATSC 3.0** (NextGen TV) | North America, South Korea | Digital TV |
+| **ISDB-T** | Japan, Brazil and most of South America, Philippines | Digital TV and one-segment mobile TV |
 | **DAB / DAB+** | Europe, Australia and more | Digital radio; Journaline text and menu pages (PAD or packet mode, ETSI TS 102 979) |
 | **FM radio** (87.5 – 108 MHz) | Worldwide | Analogue radio: stereo and RDS (station name, radio text, programme type, traffic flags) |
 
 The DVB standard is detected automatically.
 
-### Also receives (experimental)
+### Also receives
 
-These receivers are built from the published specifications and checked end to end on simulated signals, but have had little or no testing on real transmissions yet. Reports and recordings on [Discord](https://discord.gg/Kky9c6atm) help a lot, and you can upload a recording to the [signal sample library](https://files.on-air.dev).
+These receivers are built from the published specifications and run through automated tests on generated signals (carrier offsets, noise, echoes, clock errors) and, where recordings exist, on real captures. Reports and recordings from your own antenna help us tune them further: send them on [Discord](https://discord.gg/Kky9c6atm) help a lot, and you can upload a recording to the [signal sample library](https://files.on-air.dev).
 
 | Mode | What it is | What you see |
 |---|---|---|
@@ -173,7 +173,7 @@ These receivers are built from the published specifications and checked end to e
 | **Mesh** | Meshtastic and MeshCore (LoRa) | Nodes, map and chat |
 | **LoRaWAN** | EU868 (868.1 / 868.3 / 868.5 MHz and 867.x) or US915, SF7 - SF12 at once | A device table (DevAddr or DevEUI, network from the NetID, last heard, level, SNR, frame counter, SF) and a frame log with filters: message type, FCtrl, FCnt, MAC commands, port, encrypted length, MIC, join requests; only the clear headers, payloads stay encrypted |
 
-Experimental (the receivers exist and pass the synthetic, loopback and impairment tests in `tests/`, but they have had little or no checking against live broadcasts): **HD Radio** (FM and AM, `hdr_*`), **CDR** (China Digital Radio, `cdr_*`), **Pagers** (POCSAG, FLEX), **APRS / Packet** (AX.25) and **HF digital** (RTTY, SSTV, FreeDV).
+Newest receivers (each has synthetic, loopback and impairment tests in `tests/`; recordings of live broadcasts are very welcome): **HD Radio** (FM and AM, `hdr_*`), **CDR** (China Digital Radio, `cdr_*`), **Pagers** (POCSAG, FLEX), **APRS / Packet** (AX.25) and **HF digital** (RTTY, SSTV, FreeDV).
 
 <details>
 <summary><b>Iridium bursts for iridium-toolkit</b></summary>
@@ -243,13 +243,13 @@ T2-Lite (the 1/3 and 2/5 code rates, short FEC frames, 1.7 MHz channels) is deco
 </details>
 
 <details>
-<summary><b>ATSC 3.0</b> (experimental)</summary>
+<summary><b>ATSC 3.0</b></summary>
 
 The whole receiver chain is built from the published specifications and works on simulated signals (carrier offset, noise and echoes included): synchronisation, error correction, link layer, ROUTE and playback of HEVC video with AAC audio. It has not yet been checked against a real broadcast, so details such as the scrambler or interleaver may need fixing once a real recording is available. Services that use MMTP or AC-4 audio are not supported yet, and it needs a radio that can sample at 6.5 Msps or faster. If you have an ATSC 3.0 recording or can try it on air, please tell us on Discord.
 </details>
 
 <details>
-<summary><b>ISDB-T</b> (experimental)</summary>
+<summary><b>ISDB-T</b></summary>
 
 ISDB-T follows the ARIB STD-B31 specification (all three modes, all guard intervals, DQPSK, QPSK, 16QAM and 64QAM, the 13 segments in up to three layers including the one-segment layer, TMCC, the time and frequency interleavers, Viterbi and Reed-Solomon) and decodes simulated signals exactly, with carrier offset, clock error, noise and echoes, at 6 to 20 Msps. It has not been checked against a real broadcast yet, so details may need adjusting once a real recording is available. Channel names written in the Japanese character set are not converted yet. The channel scanner covers the 6 MHz raster of Japan and Brazil.
 
