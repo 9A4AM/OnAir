@@ -482,3 +482,7 @@ I'm a bit embarrassed to ask this, but here goes. OnAir is free and always will 
 ## License
 
 OnAir is released under the **GNU General Public License v3.0 or later**, see [LICENSE](LICENSE). It includes [Dear ImGui](https://github.com/ocornut/imgui) and [miniaudio](https://github.com/mackron/miniaudio), each under its own permissive license. It ships [codec2](https://github.com/drowe67/codec2) (LGPL-2.1, `third_party/codec2`) as a separate shared library that it loads at run time, so you can replace it with your own build (see [docs/CODECS.md](docs/CODECS.md)). It uses [FFmpeg](https://ffmpeg.org), [GLFW](https://www.glfw.org), [libusb](https://libusb.info) and [libhackrf](https://github.com/greatscottgadgets/hackrf).
+
+---
+
+Business enquiries, press and anything that does not belong in an issue: **kristijonasvr@gmail.com**
