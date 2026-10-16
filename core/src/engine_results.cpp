@@ -210,7 +210,7 @@ void Engine::refreshIdle() {
     const int m = stdMode_.load();
     if (m < 2) return;
     RxTelemetry t;
-    uint64_t seqs[64] = {};
+    uint64_t seqs[96] = {};   // must match modeSeq_ / highest pollMode slot (Elektro uses 75)
     if (pollMode(m - 1, t, seqs) != 1) return;
     std::lock_guard<std::mutex> lk(rxMu_);
     publishRx(std::move(t));

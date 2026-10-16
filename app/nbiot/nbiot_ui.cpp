@@ -87,7 +87,7 @@ void scanBar(App& a) {
         ImGui::SameLine(); ImGui::TextDisabled("%zu / %zu", S.step + 1, S.plan.size());
     }
     flowNext(10 * gUi);
-    if (ImGui::SmallButton("Clear")) a.engine.nbiot().clearCells();
+    if (ImGui::SmallButton("Clear") && live(a)) a.engine.nbiot().clearCells();
     flowNext(10 * gUi);
     {
         static std::string note;
@@ -166,7 +166,7 @@ void logView(App& a) {
 
 void tick(App& a) {
     if (!S.scanning) return;
-    if (!a.engine.running()) { S.scanning = false; return; }
+    if (!a.engine.running() || !live(a)) { if (!a.engine.running()) S.scanning = false; return; }
     const double now = ImGui::GetTime();
     // a step ends once the dwell is over and the receiver has finished two blocks at this centre (a block cut off by the retune is thrown away),
     // or after 40 s
