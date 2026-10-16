@@ -108,7 +108,7 @@ const ModeUi* modeUi(int family) {
     case 25: return &kHfdigUi;
     case 26: return &kAirbandUi;
     case 27: return &kVdl2Ui;
-    case 81: return &kVdl4Ui;
+    case 82: return &kVdl4Ui;   // std 84 = family + 2
     case 28: return &kIsmUi;
     case 29: return &kNdbUi;
     case 30: return &kVorUi;
