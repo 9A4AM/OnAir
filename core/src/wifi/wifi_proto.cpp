@@ -91,11 +91,17 @@ std::vector<uint8_t> makeBeacon(const ApSpec& s, bool probe, const uint8_t* clie
     if (s.hidden && !probe) f.push_back(0);
     else { f.push_back((uint8_t)s.ssid.size()); f.insert(f.end(), s.ssid.begin(), s.ssid.end()); }
     const uint8_t b[4] = {0x82, 0x84, 0x8B, 0x96}, g1[4] = {0x0C, 0x12, 0x18, 0x24}, g2[4] = {0x30, 0x48, 0x60, 0x6C};
+    if (s.band != 0) {   // 5 and 6 GHz: OFDM rates only, 6 / 12 / 24 Mbit/s basic; no DS parameter set (the primary channel is in HT / HE operation)
+        const uint8_t o[8] = {0x8C, 0x12, 0x98, 0x24, 0xB0, 0x48, 0x60, 0x6C};
+        f.push_back(1); f.push_back(8); f.insert(f.end(), o, o + 8);
+        if (!probe) { const uint8_t tim[6] = {5, 4, 0, 1, 0, 0}; f.insert(f.end(), tim, tim + 6); }
+    } else {
     f.push_back(1); f.push_back(s.gRates ? 8 : 4); f.insert(f.end(), b, b + 4);
     if (s.gRates) f.insert(f.end(), g1, g1 + 4);
     f.push_back(3); f.push_back(1); f.push_back((uint8_t)s.channel);
     if (!probe) { const uint8_t tim[6] = {5, 4, 0, 1, 0, 0}; f.insert(f.end(), tim, tim + 6); }
     if (s.gRates) { f.push_back(50); f.push_back(4); f.insert(f.end(), g2, g2 + 4); }
+    }
     auto rsn = [&](std::vector<uint8_t> akms, uint8_t pairwise, bool mfp) {
         std::vector<uint8_t> e;
         put16(e, 1);
@@ -124,6 +130,7 @@ std::vector<uint8_t> makeBeacon(const ApSpec& s, bool probe, const uint8_t* clie
     case Owe: rsn({18}, 4, true); break;
     default: break;
     }
+    appendModernElements(f, s);
     appendFcs(f);
     return f;
 }
@@ -147,23 +154,7 @@ std::string macText(const uint8_t a[6]) {
 
 const char* vendorOf(const uint8_t a[6]) {
     if (a[0] & 0x02) return "local";   // locally administered: a virtual or randomised BSSID
-    struct O { uint32_t oui; const char* name; };
-    static const O t[] = {
-        {0x000393, "Apple"}, {0x001B63, "Apple"}, {0xF01898, "Apple"}, {0xACBC32, "Apple"},
-        {0x00000C, "Cisco"}, {0x00180A, "Cisco Meraki"}, {0x001839, "Linksys"},
-        {0x50C7BF, "TP-Link"}, {0x14CC20, "TP-Link"}, {0xF4F26D, "TP-Link"},
-        {0x00095B, "Netgear"}, {0x00146C, "Netgear"},
-        {0x00156D, "Ubiquiti"}, {0x002722, "Ubiquiti"}, {0x24A43C, "Ubiquiti"}, {0x802AA8, "Ubiquiti"}, {0xFCECDA, "Ubiquiti"},
-        {0x00040E, "AVM"}, {0x3810D5, "AVM"}, {0xC80E14, "AVM"},
-        {0x00E0FC, "Huawei"}, {0x000C6E, "ASUS"}, {0x001D60, "ASUS"},
-        {0x00055D, "D-Link"}, {0x000D88, "D-Link"},
-        {0x000C42, "MikroTik"}, {0x4C5E0C, "MikroTik"}, {0x6C3B6B, "MikroTik"}, {0xD4CA6D, "MikroTik"}, {0xE48D8C, "MikroTik"},
-        {0x000B86, "Aruba"}, {0x00A0C5, "Zyxel"}, {0x0000F0, "Samsung"}, {0x640980, "Xiaomi"},
-        {0x240AC4, "Espressif"}, {0x30AEA4, "Espressif"}, {0xB827EB, "Raspberry Pi"}, {0xDCA632, "Raspberry Pi"},
-    };
-    const uint32_t o = (uint32_t)a[0] << 16 | (uint32_t)a[1] << 8 | a[2];
-    for (const auto& e : t) if (e.oui == o) return e.name;
-    return "";
+    return ouiVendor((uint32_t)a[0] << 16 | (uint32_t)a[1] << 8 | a[2]);
 }
 
 const char* frameTypeName(int type, int sub) {
@@ -219,7 +210,7 @@ void suites(const uint8_t* e, size_t n, bool wpa, bool& psk, bool& sae, bool& en
 }
 } // namespace
 
-bool parseFrame(const uint8_t* p, size_t n, Frame& f) {
+bool parseFrame(const uint8_t* p, size_t n, Frame& f, int band) {
     f = Frame();
     if (n < 10) return false;
     f.type = p[0] >> 2 & 3;
@@ -230,13 +221,28 @@ bool parseFrame(const uint8_t* p, size_t n, Frame& f) {
     if (n >= 22) memcpy(f.bssid, p + 16, 6);
     f.beacon = f.type == 0 && f.subtype == 8;
     f.probeResp = f.type == 0 && f.subtype == 5;
+    if (f.type == 0 && f.subtype == 13 && n >= 24 + 4) {   // action: a FILS Discovery frame announces a 6 GHz AP (sender = the BSSID)
+        FilsInfo fi;
+        if (parseFils(p + 24, n - 24, fi)) {
+            f.fils = true; f.ssid = fi.ssid; f.hidden = fi.ssid.empty(); f.interval = fi.interval; f.tsf = fi.tsf; f.shortSsid = fi.shortSsid;
+            memcpy(f.bssid, p + 10, 6);
+            char b[120];
+            snprintf(b, sizeof b, "FILS discovery %s%s%s, %d TU", fi.ssid.empty() ? "(short SSID " : "\"", fi.ssid.empty() ? fmtShortSsid(fi.shortSsid).c_str() : fi.ssid.c_str(), fi.ssid.empty() ? ")" : "\"", fi.interval);
+            f.summary = b;
+            return true;
+        }
+    }
     if (!f.beacon && !f.probeResp) { f.summary = frameTypeName(f.type, f.subtype); return true; }
+    static const uint8_t bcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    f.unsolicited = f.probeResp && !memcmp(f.addr1, bcast, 6);
     size_t i = 24 + ((p[1] & 0x80) ? 4 : 0);   // +HTC
     if (n < i + 12) return false;
     for (int k = 0; k < 8; k++) f.tsf |= (uint64_t)p[i + k] << (8 * k);
     f.interval = p[i + 8] | p[i + 9] << 8;
     f.cap = (uint16_t)(p[i + 10] | p[i + 11] << 8);
     i += 12;
+    parseElements(p + i, n - i, f.el);
+    combineElems(f.el, band);
     bool rsn = false, wpaIe = false, psk = false, sae = false, ent = false, owe = false, suiteB = false, haveSsid = false;
     bool wpsk = false, wsae = false, went = false, wowe = false, wsb = false;
     while (i + 2 <= n) {
@@ -275,6 +281,7 @@ bool parseFrame(const uint8_t* p, size_t n, Frame& f) {
     } else {
         f.security = (f.cap & 0x0010) ? Wep : Open;
     }
+    if (!f.channel) f.channel = f.el.primary;
     char b[200];
     snprintf(b, sizeof b, "%s %s%s%s, ch %d, %s, %d TU", f.beacon ? "beacon" : "probe resp", f.hidden ? "(hidden" : "\"", f.hidden ? ")" : f.ssid.c_str(),
              f.hidden ? "" : "\"", f.channel, securityName(f.security, f.enterprise), f.interval);

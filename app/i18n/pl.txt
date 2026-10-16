@@ -349,7 +349,7 @@ IoT, 868.1 MHz	IoT, 868.1 MHz
 LoRa mesh, 869.525 MHz	LoRa mesh, 869.525 MHz
 LoRa mesh, 869.618 MHz	LoRa mesh, 869.618 MHz
 Advertising, 2.4 GHz	Advertising, 2.4 GHz
-Beacons, 2.4 GHz	Beacony, 2.4 GHz
+Beacons, 2.4 / 5 / 6 GHz	Beacony, 2.4 / 5 / 6 GHz
 Balloons, 403 MHz	Balony, 403 MHz
 LF and HF time codes	Sygnały czasu DF i KF
 Chirp sweeps, 0 - 30 MHz	Przemiatanie chirp, 0 - 30 MHz

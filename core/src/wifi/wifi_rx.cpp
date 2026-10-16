@@ -3,6 +3,9 @@
 #include "dect2/results/results_io.h"
 #include "dect2/wifi/wifi_tel.h"
 #include "dect2/wifi/wifi_proto.h"
+#include "dect2/wifi/wifi_chan.h"
+#include "dect2/wifi/wifi_ofdm.h"
+#include "dect2/engine/channelizer.h"
 #include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <atomic>
@@ -44,6 +47,18 @@ struct WifiReceiver::Impl {
     double rateSet = 0, offsetSet = 0;
     std::atomic<bool> resetReq{true}, clearReq{false};
     std::atomic<double> centerHz{0};
+    std::atomic<bool> centerChanged{false};
+    // OFDM receivers for 5 / 6 GHz (and the 6 Mbit/s beacons some 2.4 GHz APs send): one per 20 MHz channel listened to
+    struct Sub {
+        ChannelFilter cf;
+        wifi::ofdm::OfdmRx rx;
+        double offHz = 0;               // frequency relative to the radio's centre
+        double freqMhz = 0;             // absolute (0: a file, unknown)
+    };
+    std::vector<std::unique_ptr<Sub>> subs;
+    std::vector<cf32> san, tmp;
+    bool dsss = true;                   // the 802.11b chain runs: 2.4 GHz or an unknown band
+    int band = 0;
 
     double rate = 0, offset = 0;
     int64_t nIn = 0;
@@ -83,7 +98,44 @@ struct WifiReceiver::Impl {
 
     int tunedChannel() const {
         const double c = centerHz.load();
-        return c > 0 ? wifi::channelOf((c + offset) / 1e6) : 0;
+        if (c <= 0) return 0;
+        const double mhz = (c + offset) / 1e6;
+        const int b = wifi::bandOfMhz(mhz);
+        return b < 0 ? 0 : wifi::bandChannelOf(b, mhz, b == wifi::Band24 ? 1.0 : 2.5);
+    }
+
+    // The OFDM receivers: one for the signal at the offset (a 20 - 25 Msps capture), or one per 20 MHz channel of a wide capture on 5 / 6 GHz
+    // (a 20 MHz channel needs 25 Msps of span plus its neighbours: channelsInSpan). Called on the feed thread.
+    void rebuildSubs() {
+        subs.clear();
+        const double c = centerHz.load();
+        const double mhz = (c + offset) / 1e6;
+        band = c > 0 ? std::max(0, wifi::bandOfMhz(mhz)) : 0;
+        dsss = c <= 0 || band == wifi::Band24;
+        std::vector<double> offs, freqs;
+        if (c > 0 && band != wifi::Band24 && rate >= 43.5e6) {
+            for (int ch : wifi::channelsInSpan(band, c / 1e6, rate)) { const double f = wifi::bandChannelMhz(band, ch); offs.push_back((f - c / 1e6) * 1e6); freqs.push_back(f); }
+        }
+        if (offs.empty()) { offs.push_back(offset); freqs.push_back(c > 0 ? mhz : 0); }
+        for (size_t i = 0; i < offs.size() && rate >= kOut - 1; i++) {
+            auto sb = std::make_unique<Sub>();
+            sb->offHz = offs[i]; sb->freqMhz = freqs[i];
+            sb->cf.configure(rate, offs[i], kOut);
+            Sub* sp = sb.get();
+            sb->rx.setCallback([this, sp](const uint8_t* p, size_t n, const wifi::ofdm::Info& in) { onOfdm(*sp, p, n, in); });
+            subs.push_back(std::move(sb));
+        }
+        tel.subChannels = (int)subs.size();
+    }
+
+    void onOfdm(const Sub& sb, const uint8_t* p, size_t n, const wifi::ofdm::Info& in) {
+        tel.ofdmFrames++;
+        if (in.snrDb > 0) { snrAvg = snrSet ? 0.8 * snrAvg + 0.2 * in.snrDb : in.snrDb; snrSet = true; }
+        tel.cfoHz = in.cfoHz;
+        const int b = sb.freqMhz > 0 ? wifi::bandOfMhz(sb.freqMhz) : -1;
+        const int ch = b >= 0 ? wifi::bandChannelOf(b, sb.freqMhz, b == wifi::Band24 ? 1.0 : 2.5) : 0;
+        tel.phy = 1;
+        accept(p, n, (int)n + 4, in.rssiDb, sigSec(), ch, b);
     }
 
     void initFront() {
@@ -135,6 +187,7 @@ struct WifiReceiver::Impl {
         resetDemod();
         power = 0; nPower = 0; nextReport = 0.25 * rate; lastGood = -100;
         tel.inputRate = rate;
+        rebuildSubs();
         shiftTimes(tel, -tel.timeSec);    // the lists stay (clearResults): the clock starts again
         tel.timeSec = 0;
     }
@@ -290,6 +343,7 @@ struct WifiReceiver::Impl {
                 snrAvg = snrSet ? 0.8 * snrAvg + 0.2 * snr : snr; snrSet = true;
                 tel.cfoHz = m / (2 * kPi) * wifi::kSymRate;
             }
+            tel.phy = 0;
             accept(f.data(), n, (int)f.size(), rssi, (double)pd.at / kOut);
         }
         // drop what no decode needs any more
@@ -303,31 +357,62 @@ struct WifiReceiver::Impl {
         }
     }
 
-    void accept(const uint8_t* p, size_t n, int len, float rssi, double sec) {
+    // A frame whose FCS passed: count it, and for beacons, probe responses and FILS discovery frames update the access point's row.
+    // tuned / bnd: the channel and band the frame was heard on (0 / -1: unknown, a file); the DSSS chain passes -1 and gets the radio's.
+    void accept(const uint8_t* p, size_t n, int len, float rssi, double sec, int tuned = -1, int bnd = -2) {
         tel.blocksOk++;
         lastGood = sigSec();
         if (onFrame) onFrame(p, n, rssi);
+        if (tuned < 0) tuned = tunedChannel();
+        if (bnd == -2) { const double c = centerHz.load(); bnd = c > 0 ? wifi::bandOfMhz((c + offset) / 1e6) : -1; }
         wifi::Frame f;
-        if (!wifi::parseFrame(p, n, f)) return;
+        if (!wifi::parseFrame(p, n, f, bnd)) return;
         if (f.type >= 0 && f.type < 3) tel.perType[f.type]++;
-        if (!f.beacon && !f.probeResp) return;   // data and the other frames: counted only
-        if (f.beacon) tel.beacons++; else tel.probeResps++;
+        if (!f.beacon && !f.probeResp && !f.fils) return;   // data and the other frames: counted only
+        // A 40 / 80 / 160 MHz BSS sends its non-HT frame on every 20 MHz part (clause 17.3.8.2): the copies heard away from the primary channel are not new beacons
+        if (bnd >= wifi::Band5 && tuned && f.channel && f.channel != tuned && wifi::validChannel(bnd, f.channel) && !f.fils) { tel.dupFrames++; return; }
+        if (f.fils) tel.filsFrames++; else if (f.beacon) tel.beacons++; else tel.probeResps++;
         const int64_t wall = (int64_t)time(nullptr);
-        const int tuned = tunedChannel();
         WifiFrameLog l;
-        l.wallTime = wall; l.sec = sec; l.channel = tuned; l.type = f.type; l.subtype = f.subtype; l.bssid = wifi::macText(f.bssid);
+        l.wallTime = wall; l.sec = sec; l.channel = tuned; l.band = std::max(0, bnd); l.type = f.type; l.subtype = f.subtype; l.bssid = wifi::macText(f.bssid);
         l.rssi = rssi; l.len = len; l.info = f.summary;
         tel.log.insert(tel.log.begin(), std::move(l));
         if (tel.log.size() > kWifiLogMax) tel.log.pop_back();
         WifiAp& a = ap(f.bssid);
-        if (f.beacon) { a.hidden = f.hidden; if (!f.hidden) a.ssid = f.ssid; a.beacons++; }
-        else { if (!f.hidden) a.ssid = f.ssid; a.probeResps++; }
+        if (f.fils) { a.fils = true; a.filsFrames++; if (!f.ssid.empty() && a.ssid.empty()) a.ssid = f.ssid; if (!tuned) tuned = 0; }
+        else if (f.beacon) { a.hidden = f.hidden; if (!f.hidden) a.ssid = f.ssid; a.beacons++; }
+        else { if (!f.hidden) a.ssid = f.ssid; a.probeResps++; if (f.unsolicited) a.unsolicited = true; }
         if (f.channel) a.channel = f.channel;
+        else if (tuned && !a.channel && bnd != wifi::Band24) a.channel = tuned;
         if (tuned) a.heardOn = tuned;
-        a.security = f.security; a.enterprise = f.enterprise; a.ciphers = f.ciphers;
-        const std::string r = wifi::ratesText(f.rates);
-        if (!r.empty()) a.rates = r;
-        a.interval = f.interval; a.cap = f.cap;
+        if (bnd >= 0) a.band = bnd;
+        a.phy = tel.phy;
+        if (!f.fils) {
+            a.security = f.security; a.enterprise = f.enterprise; a.ciphers = f.ciphers;
+            const std::string r = wifi::ratesText(f.rates);
+            if (!r.empty()) a.rates = r;
+            a.interval = f.interval; a.cap = f.cap;
+            const wifi::Elems& e = f.el;
+            a.widthMhz = e.widthMhz; a.standard = e.standard; a.caps = wifi::capsText(e); a.akms = e.akms; a.pmf = e.pmf;
+            a.bssColor = e.bssColor; a.twt = e.heTwtReq || e.heTwtResp; a.eht = e.eht;
+            if (!e.country.empty()) a.country = e.country;
+            if (e.powerConstraint >= 0) a.powerConstraint = e.powerConstraint;
+            if (e.mobility) a.mdid = e.mdid;
+            if (e.he6) a.he6Reg = e.he6Reg;
+            if (!e.rnr.empty()) {
+                std::string t;
+                for (const wifi::Neighbor& nb : e.rnr) {
+                    char bf[120];
+                    snprintf(bf, sizeof bf, "%s%s ch %d%s%s", t.empty() ? "" : "; ", wifi::bandName(nb.band >= 0 ? nb.band : 2), nb.channel, nb.hasBssid ? " " : "",
+                             nb.hasBssid ? wifi::macText(nb.bssid).c_str() : "");
+                    t += bf;
+                    if (nb.coLocated) t += " (co-located)";
+                    if (nb.unsolicitedProbe) t += " (unsolicited probe responses)";
+                    if (nb.hasShortSsid) t += " short SSID " + wifi::fmtShortSsid(nb.shortSsid);
+                }
+                a.neighbors = t;
+            }
+        }
         a.rssi = rssi;
         a.rssiHist.push_back(rssi);
         if (a.rssiHist.size() > kWifiRssiHist) a.rssiHist.erase(a.rssiHist.begin());
@@ -362,6 +447,12 @@ struct WifiReceiver::Impl {
         tel.levelDb = nPower ? (float)(10 * std::log10(power / (double)nPower + 1e-20)) : -200.f;
         power = 0; nPower = 0;
         tel.channel = tunedChannel();
+        tel.band = band;
+        tel.ofdmTriggers = tel.ofdmSignalOk = tel.ofdmSignalBad = tel.ofdmOther = tel.ofdmBadFcs = 0;
+        for (const auto& sb : subs) {
+            const auto& q = sb->rx.stats();
+            tel.ofdmTriggers += q.triggers; tel.ofdmSignalOk += q.signalOk; tel.ofdmSignalBad += q.signalBad; tel.ofdmOther += q.otherRate; tel.ofdmBadFcs += q.framesBad;
+        }
         tel.snrDb = (float)snrAvg;
         tel.state = sigSec() - lastGood < 5 ? 1 : 0;
         tel.dataValid = tel.state >= 1;
@@ -377,7 +468,7 @@ WifiReceiver::~WifiReceiver() = default;
 
 void WifiReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rateSet = r; p_->resetReq = true; }
 void WifiReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (hz != p_->offsetSet) { p_->offsetSet = hz; p_->resetReq = true; } }
-void WifiReceiver::setCenterHz(double hz) { p_->centerHz = hz; }
+void WifiReceiver::setCenterHz(double hz) { if (hz != p_->centerHz.load()) { p_->centerHz = hz; p_->centerChanged = true; } }
 bool WifiReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= wifiTuning().minSampleRate - 1; }
 void WifiReceiver::reset() { p_->resetReq = true; }
 void WifiReceiver::clearNetworks() {
@@ -396,9 +487,29 @@ void WifiReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
     if (m.clearReq.exchange(false)) m.clearAll();
+    if (m.centerChanged.exchange(false)) m.rebuildSubs();
     m.takeRequests();
     if (m.rate < wifiTuning().minSampleRate - 1 || n == 0) {
         if (m.rate > 0) { m.nIn += (int64_t)n; if ((double)m.nIn >= m.nextReport) { m.nextReport += 0.25 * m.rate; m.report(); } }
+        return;
+    }
+    // the OFDM receivers (5 / 6 GHz, and 2.4 GHz beacons sent at 6 Mbit/s and up): every 20 MHz channel through its own channel filter
+    if (!m.subs.empty()) {
+        const cf32* src = x;
+        bool bad = false;
+        for (size_t i = 0; i < n && !bad; i++) bad = !std::isfinite(x[i].real()) || !std::isfinite(x[i].imag());
+        if (bad) { m.san.assign(x, x + n); for (cf32& v : m.san) if (!std::isfinite(v.real()) || !std::isfinite(v.imag())) v = cf32(0, 0); src = m.san.data(); }
+        for (auto& sb : m.subs) {
+            m.tmp.clear();
+            sb->cf.process(src, n, m.tmp);
+            sb->rx.feed(m.tmp.data(), m.tmp.size());
+        }
+    }
+    if (!m.dsss) {   // 5 / 6 GHz: no 802.11b chain; the clock, level and reports still run
+        for (size_t i = 0; i < n; i++) { const float re = x[i].real(), im = x[i].imag(); if (std::isfinite(re) && std::isfinite(im)) m.power += (double)re * re + (double)im * im; }
+        m.nPower += (int64_t)n;
+        m.nIn += (int64_t)n;
+        while ((double)m.nIn >= m.nextReport) { m.nextReport += 0.25 * m.rate; m.report(); }
         return;
     }
     for (size_t i = 0; i < n; i++) {
@@ -442,7 +553,7 @@ void WifiReceiver::setFrameCallback(std::function<void(const uint8_t*, size_t, f
 ModeTuning wifiTuning() {
     ModeTuning t;
     t.stdMode = 56; t.id = "wifi"; t.name = "Wi-Fi networks";
-    t.minMhz = 2400; t.maxMhz = 2500; t.defMhz = 2437;   // channel 6
+    t.minMhz = 2400; t.maxMhz = 7125; t.defMhz = 2437;   // channel 6; 2.4 GHz, 5 GHz (5150 - 5895 MHz) and 6 GHz (5925 - 7125 MHz)
     t.sampleRate = 20000000;                 // one 22 MHz channel at a time
     t.basebandHz = 0;
     t.bandwidthMhz = 20;

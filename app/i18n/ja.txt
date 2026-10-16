@@ -349,7 +349,7 @@ IoT, 868.1 MHz	IoT、868.1 MHz
 LoRa mesh, 869.525 MHz	LoRa メッシュ、869.525 MHz
 LoRa mesh, 869.618 MHz	LoRa メッシュ、869.618 MHz
 Advertising, 2.4 GHz	アドバタイズ、2.4 GHz
-Beacons, 2.4 GHz	ビーコン、2.4 GHz
+Beacons, 2.4 / 5 / 6 GHz	ビーコン、2.4 / 5 / 6 GHz
 Balloons, 403 MHz	気球、403 MHz
 LF and HF time codes	LF と HF の標準電波
 Chirp sweeps, 0 - 30 MHz	チャープスイープ、0 - 30 MHz

@@ -30,12 +30,32 @@ struct WifiAp {
     double firstSec = 0, lastSec = 0;  // signal time
     int64_t firstWall = 0, lastWall = 0;
     uint64_t beacons = 0, probeResps = 0;
+    // 5 / 6 GHz and the capabilities (wifi_elems.h)
+    int band = 0;                      // 0 2.4 GHz, 1 5 GHz, 2 6 GHz: where it was heard
+    int widthMhz = 20;                 // the BSS channel width from HT / VHT / HE / EHT operation
+    int phy = 0;                       // the PHY of the last frame: 0 802.11b DSSS, 1 OFDM
+    std::string standard;              // "a/n/ac/ax": what the elements announce
+    std::string caps;                  // plain words: "Wi-Fi 6 (HE) 2x2, up to 80 MHz wide, up to 1201 Mbit/s, TWT, BSS color 5"
+    std::string akms;                  // "SAE", "PSK, SAE" ... the key management suites
+    int pmf = 0;                       // management frame protection: 0 none, 1 capable, 2 required
+    int bssColor = -1;                 // HE BSS color (-1 none)
+    bool twt = false;                  // HE: target wake time supported
+    bool eht = false;                  // Wi-Fi 7
+    std::string country;               // "DE I"
+    int powerConstraint = -1;          // dB
+    int mdid = -1;                     // mobility domain
+    int he6Reg = -1;                   // 6 GHz: 0 indoor, 1 standard power, 2 very low power AP
+    std::string neighbors;             // the Reduced Neighbor Report in words (the co-located 6 GHz APs on a 2.4 / 5 GHz beacon)
+    bool fils = false;                 // FILS discovery frames heard (6 GHz)
+    bool unsolicited = false;          // unsolicited probe responses heard (6 GHz)
+    uint64_t filsFrames = 0;
 };
 
 struct WifiFrameLog {
     int64_t wallTime = 0;
     double sec = 0;
     int channel = 0;                   // the tuned channel (0: a file)
+    int band = 0;
     int type = 0, subtype = 0;
     std::string bssid;
     float rssi = -200;
@@ -58,6 +78,13 @@ struct WifiTelemetry {
     uint64_t sfdHits = 0, headersOk = 0, headersBad = 0, otherRate = 0;   // otherRate: a good header for 2, 5.5 or 11 Mbit/s (not decoded)
     uint64_t perType[3] = {};          // good frames: management, control, data (data frames are only counted)
     uint64_t beacons = 0, probeResps = 0;
+    int band = 0;                      // the band the radio is tuned to (from its centre): 0 2.4, 1 5, 2 6 GHz
+    int subChannels = 1;               // 20 MHz channels listened to at once (a wide capture on 5 / 6 GHz: several)
+    int phy = 0;                       // the PHY of the last good frame: 0 802.11b DSSS, 1 OFDM
+    uint64_t ofdmFrames = 0;           // good-FCS frames from the OFDM receiver
+    uint64_t ofdmTriggers = 0, ofdmSignalOk = 0, ofdmSignalBad = 0, ofdmOther = 0, ofdmBadFcs = 0;   // the receiver's stages: preambles, SIGNAL fields, FCS
+    uint64_t dupFrames = 0;            // frames heard on the secondary 20 MHz of a wider channel (non-HT duplicates), not counted twice
+    uint64_t filsFrames = 0;
     std::vector<WifiAp> aps;           // most recently heard first
     std::vector<WifiFrameLog> log;     // beacons and probe responses, newest first
 };

@@ -356,7 +356,7 @@ IoT, 868.1 MHz	IoT, 868.1 MHz
 LoRa mesh, 869.525 MHz	LoRa tinklas, 869.525 MHz
 LoRa mesh, 869.618 MHz	LoRa tinklas, 869.618 MHz
 Advertising, 2.4 GHz	Reklaminiai paketai, 2.4 GHz
-Beacons, 2.4 GHz	Švyturiai, 2.4 GHz
+Beacons, 2.4 / 5 / 6 GHz	Švyturiai, 2.4 / 5 / 6 GHz
 Balloons, 403 MHz	Balionai, 403 MHz
 LF and HF time codes	IB ir KB laiko signalai
 Chirp sweeps, 0 - 30 MHz	Čirpų skleidimai, 0 - 30 MHz

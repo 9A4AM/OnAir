@@ -353,7 +353,7 @@ IoT, 868.1 MHz	IoT, 868,1 MHz
 LoRa mesh, 869.525 MHz	LoRa mesh, 869,525 MHz
 LoRa mesh, 869.618 MHz	LoRa mesh, 869,618 MHz
 Advertising, 2.4 GHz	Hirdetés, 2,4 GHz
-Beacons, 2.4 GHz	Jeladók, 2,4 GHz
+Beacons, 2.4 / 5 / 6 GHz	Jeladók, 2,4 / 5 / 6 GHz
 Balloons, 403 MHz	Ballonok, 403 MHz
 LF and HF time codes	LF és HF időkódok
 Chirp sweeps, 0 - 30 MHz	Chirp-söprések, 0 - 30 MHz
