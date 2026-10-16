@@ -60,8 +60,7 @@ void overviewTab(App& a) {
     if (ImGui::DragFloatRange2(tr("waterfall dB##wfdb"), &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;
     ImGui::SameLine(0, 4 * gUi); wfAutoButton(a);
     }
-    static float frac = 0.5f;
-    spectrumWaterfall(a, frac, pal::dev());   // the new interface: the boundary is a divider you can drag, as in SDR++
+    spectrumWaterfall(a, specWaterfallSplit(), pal::dev());   // the new interface: the boundary is a divider you can drag, as in SDR++
 }
 
 void receiverTab(App& a) {

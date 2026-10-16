@@ -353,6 +353,28 @@ static float cornerPopup(App& a, const char* label, const char* popId, ImVec2 pl
     return w + m;
 }
 
+float& specWaterfallSplit() {
+    static float g = 0.5f;
+    return g;
+}
+
+void resetSpectrum(App& a) {
+    a.yMin = -110.f;
+    a.yMax = -30.f;
+    a.wf.autoTrack = true;
+    if (!a.smooth.empty()) {
+        a.wf.fitRange(a.smooth, true);
+        a.peak = a.smooth;
+    } else {
+        a.wf.minDb = -110.f;
+        a.wf.maxDb = -30.f;
+    }
+    a.wf.paused = false;
+    a.wf.nextRowT = 0;
+    specWaterfallSplit() = 0.5f;
+    savePrefs(a);
+}
+
 void wfAutoButton(App& a) {
     const bool on = a.wf.autoTrack;
     if (on) ImGui::PushStyleColor(ImGuiCol_Button, pal::accent(0.55f));
@@ -381,6 +403,9 @@ static void colourMapList(App& a) {
 }
 
 void wfDisplayPopup(App& a) {
+    if (ImGui::Button(tr("Reset spectrum"))) resetSpectrum(a);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Restore the default spectrum and waterfall levels and the usual half-and-half split (does not change panel layout)"));
+    ImGui::Separator();
     ImGui::TextDisabled("%s", tr("Colour map"));
     colourMapList(a);
     ImGui::Separator();
@@ -407,6 +432,9 @@ void wfDisplayPopup(App& a) {
 
 // the unit, the offset of the radio and the other choices of the spectrum line
 void specDisplayPopup(App& a) {
+    if (ImGui::Button(tr("Reset spectrum"))) resetSpectrum(a);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Restore the default spectrum and waterfall levels and the usual half-and-half split (does not change panel layout)"));
+    ImGui::Separator();
     bool save = false;
     ImGui::TextDisabled("%s", tr("Trace"));
     ImGui::SetNextItemWidth(150 * gUi);

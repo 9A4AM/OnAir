@@ -455,8 +455,7 @@ void tick(App& a) {
 
 void tab(App& a) {
     controls(a);
-    static float frac = 0.45f;
-    spectrumWaterfall(a, frac, false);
+    spectrumWaterfall(a, specWaterfallSplit(), false);
 }
 
 void receiver(App& a) {

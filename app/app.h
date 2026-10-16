@@ -723,6 +723,8 @@ void setDbmOffset(const App& a, float db);
 void wfAutoButton(App& a);                     // plots.cpp: "Auto", on while the waterfall range follows the noise floor
 void wfDisplayPopup(App& a);                   // plots.cpp: colour map, intensity range, speed and pause of the waterfall
 void specDisplayPopup(App& a);                 // plots.cpp: the spectrum's averaging, max hold, markers, grid, fill and unit
+float& specWaterfallSplit();                   // plots.cpp: spectrum share of the combined plot (default 0.5)
+void resetSpectrum(App& a);                    // plots.cpp: default dB ranges, waterfall auto, 50/50 split (#142)
 // Whole-span decoding (modeui.cpp). A mode opts in with registerWideMode(family); the switch is drawn by the spectrum (plots.cpp) for those only.
 bool modeSupportsWide(int family);
 void registerWideMode(int family);
