@@ -1,52 +1,19 @@
-// ADS-B screens: the aircraft table, a radar plot around the receiver, the message monitor, statistics and the options of the test signal.
-#include "app.h"
-#include "dect2/adsb/adsb_units.h"
-#include "state/results_export.h"
-#include "adsb_map.h"
-#include "map/rangeplot_ui.h"
-#include "dect2/adsb/adsb_msg.h"
-#include "dect2/adsb/adsb_reg.h"
-#include <cstring>
-#include <algorithm>
-#include <cmath>
-#include <deque>
-#include <vector>
-
+// ADS-B mode entry: the screen state, the receiver position, the tick, and the entry points the shell calls (tab,
+// list, receiver, panels, status, summary, tuner, decoder, synth, meters). The table views are in adsb_table_ui.cpp, the
+// radar and map in adsb_map_ui.cpp.
+#include "adsb_internal.h"
 void vdl2NoteAdsb(const dect2::AdsbTelemetry& t);   // vdl2_ui.cpp: VDL2 links its aircraft to what ADS-B heard
 
-namespace {
+using namespace adsbui;
 
-struct State {
-    bool loaded = false, wasRunning = false;
-    double refLat = 25.25, refLon = 55.36;      // where the antenna is: ranges and local decoding; the default is only a placeholder
-    double refAltM = 0;                         // its height above sea level (metres): the pass planner's look angles
-    double pushedLat = 1e9, pushedLon = 1e9;
-    uint32_t sel = 0xFFFFFFFFu;                 // the selected aircraft (ICAO address)
-    int correction = 1;
-    std::deque<float> rate, snr;                // good messages per second and SNR, a point per report
-    uint64_t lastSeq = 0;
-    int viewMode = 0;                           // 0 map, 1 table, 2 radar
-    adsbmap::View map;
-    bool mapHome = true;                        // the map follows the antenna position until the user drags it
-    dect2::adsbu::Units units;                  // display units (prefs adsbUnits, adsbSpeedUnit)
-    bool winds = false;                         // "winds aloft": wind arrows at the aircraft (from Comm-B)
-    bool full = false;                          // the map or radar fills the whole window (Esc or the same button to leave)
-    double ctxLat = 0, ctxLon = 0;              // where the map was right-clicked
-    std::string locMsg;
-    int locBusy = 0;
-    RangeView range;                            // the receiver-range plot (Range view)
-    // other receivers (Beast / SBS feeds in), the registration database
-    std::string srcText;                        // one host:port per line
-    bool srcAny = false;                        // also hosts outside the local network
-    std::string pushedSrc; bool pushedAny = false, srcPushed = false;
-    dect2::AdsbRegDb db;
-    std::string dbMsg;
-};
+namespace adsbui {
+
 State S;
 
 bool live(const App& a) { return a.rx.standard == 12; }
 
 std::string dbPath() { return plat::dataDir() + "/aircraft.csv"; }
+
 void reloadDb() {
     S.db.clear();
     size_t n = 0, bad = 0;
@@ -56,9 +23,11 @@ void reloadDb() {
 
 // "NL  Netherlands" style text: the two letter country code (the flag), from the address block
 std::string countryCode(uint32_t icao) { return icao >> 24 ? "" : dect2::adsbCountry(icao).iso; }
+
 std::string registrationOf(uint32_t icao) { return icao >> 24 ? "" : S.db.registration(icao); }
+
 std::string operatorOf(uint32_t icao) { const dect2::AdsbRegEntry* e = icao >> 24 ? nullptr : S.db.find(icao); return e ? e->operatorName : ""; }
-std::string typeText(const AdsbAircraft& ac);
+
 std::string typeOf(const AdsbAircraft& ac) {
     const dect2::AdsbRegEntry* e = ac.icao >> 24 ? nullptr : S.db.find(ac.icao);
     std::string ty = e ? e->type : "";
@@ -66,6 +35,7 @@ std::string typeOf(const AdsbAircraft& ac) {
     if (!ct.empty()) ty += (ty.empty() ? "" : ", ") + ct;
     return ty;
 }
+
 std::string sourceName(const dect2::AdsbTelemetry& t, int id) { return id >= 0 && id < (int)t.sources.size() ? (id == 0 ? "local" : t.sources[id].name) : "?"; }
 
 void loadState() {
@@ -85,8 +55,6 @@ void loadState() {
     S.srcAny = d.getB("adsbSrcAny", false);
     reloadDb();
 }
-
-const ImVec4 kDim(0.62f, 0.65f, 0.68f, 1), kGood(0.40f, 0.85f, 0.50f, 1), kWarn(0.95f, 0.60f, 0.25f, 1);
 
 std::string icaoText(uint32_t i) { char b[16]; snprintf(b, sizeof b, "%06X", i & 0xFFFFFF); return b; }
 
@@ -168,634 +136,6 @@ void tick(App& a) {
         rangeSetStation(S.range, S.refLat, S.refLon);
         for (const auto& ac : t.aircraft) if (ac.hasPos) rangeFeed(S.range, ac.lat, ac.lon);
     }
-}
-
-// one number or a dash
-std::string num(bool has, const char* fmt, double v) { if (!has) return "-"; char b[32]; snprintf(b, sizeof b, fmt, v); return b; }
-
-namespace au = dect2::adsbu;
-std::string uAlt(double ft) { return au::fmt(au::altOut(S.units, ft), 0); }
-std::string uSpd(double kt) { return au::fmt(au::speedOut(S.units, kt), au::speedDecimals(S.units)); }
-std::string uDist(double nm, int dec = 1) { return au::fmt(au::distOut(S.units, nm), dec); }
-std::string uVr(double fpm) { return au::fmt(au::vrateOut(S.units, fpm), au::vrateDecimals(S.units), true); }
-std::string dash(bool has, const std::string& v) { return has ? v : "-"; }
-
-// the units toggle (aviation / metric, and km/h or m/s), saved in the prefs
-void unitsControls() {
-    bool ch = false;
-    ImGui::TextDisabled("Units");
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(130 * gUi);
-    int sys = S.units.metric() ? 1 : 0;
-    if (ImGui::Combo("##adsbunits", &sys, "Aviation (kt, ft, nm)\0Metric\0")) { S.units.sys = sys ? au::System::Metric : au::System::Aviation; ch = true; }
-    if (S.units.metric()) {
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(70 * gUi);
-        int sp = S.units.spd == au::Speed::MS ? 1 : 0;
-        if (ImGui::Combo("##adsbspd", &sp, "km/h\0m/s\0")) { S.units.spd = sp ? au::Speed::MS : au::Speed::KmH; ch = true; }
-    }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Aviation: knots, feet, nautical miles, ft/min. Metric: km/h or m/s, metres, km, m/min. Only what is shown and exported changes; SBS and the feeds stay in aviation units.");
-    if (ch) { plat::prefs().setI("adsbUnits", S.units.metric() ? 1 : 0); plat::prefs().setI("adsbSpeedUnit", S.units.spd == au::Speed::MS ? 1 : 0); plat::prefs().flush(); }
-}
-
-std::string typeText(const AdsbAircraft& ac) {
-    if (ac.category.size() < 2) return "";
-    const int set = ac.category[0] - 'A', ca = ac.category[1] - '0';
-    const std::string n = (set >= 0 && set <= 3 && ca >= 0 && ca <= 7) ? dect2::adsb::categoryName(4 - set, ca) : "";
-    if (n.empty() || n == "No information") return ac.category;
-    return ac.category + " " + n;
-}
-
-void aircraftTable(App& a, bool compact) {
-    const AdsbTelemetry& t = a.rx.adsb;
-    const bool on = live(a);
-    const int cols = compact ? 7 : 27;
-    if (!compact) {
-        static std::string note;
-        resexp::Table x; x.cols = {"time", "frequency_hz", "mode", "icao", "registration", "country", "operator", "callsign", "type", "source", au::altCol(S.units), "geo_" + std::string(au::altCol(S.units)), au::speedCol(S.units), "speed_kind", "ias_kt", "mach", "heading_deg", "heading_kind", au::vrateCol(S.units), "lat", "lon", "fix", au::distCol(S.units), "bearing_deg", "squawk", "selected_" + std::string(au::altCol(S.units)), "emergency", "nacp", "adsb_version", "tisb", "ground", "messages", "age_s", "pos_age_s", "level_dbfs"};
-        const std::string now = resexp::stamp();
-        if (on) for (const auto& ac : t.aircraft)
-            x.add({now, "1090000000", "ADS-B", icaoText(ac.icao), registrationOf(ac.icao), countryCode(ac.icao), operatorOf(ac.icao), ac.callsign, typeOf(ac), sourceName(t, ac.srcId), ac.ground ? "ground" : (ac.hasAlt ? uAlt(ac.altFt) : ""), ac.hasGeoAlt ? uAlt(ac.geoAltFt) : "",
-                   ac.hasSpeed ? uSpd(ac.speedKt) : "", ac.hasSpeed ? (ac.speedKind == 0 ? "gs" : ac.speedKind == 1 ? "ias" : "tas") : "", ac.hasIas ? std::to_string(ac.iasKt) : "", ac.hasMach ? resexp::num(ac.mach, 2) : "",
-                   ac.hasHeading ? resexp::num(ac.headingDeg, 0) : "", ac.hasHeading ? (ac.headingIsTrack ? "track" : "heading") : "",
-                   ac.hasVrate ? au::fmt(au::vrateOut(S.units, ac.vrateFpm), au::vrateDecimals(S.units)) : "", ac.hasPos ? resexp::num(ac.lat, 6) : "", ac.hasPos ? resexp::num(ac.lon, 6) : "",
-                   ac.hasPos ? (ac.posKind == 2 ? "global" : ac.posKind == 3 ? "local+" : "local") : "", ac.hasRange ? uDist(ac.distNm) : "", ac.hasRange ? resexp::num(ac.bearingDeg, 0) : "",
-                   ac.hasSquawk ? std::to_string(ac.squawk) : "", ac.hasSelAlt ? uAlt(ac.selAltFt) : "", ac.emergency ? dect2::adsb::emergencyName(ac.emergency) : "",
-                   ac.nacp >= 0 ? std::to_string(ac.nacp) : "", ac.adsbVersion >= 0 ? std::to_string(ac.adsbVersion) : "", ac.tisb ? "1" : "", ac.ground ? "1" : "",
-                   std::to_string(ac.messages), resexp::num(ac.ageSec, 0), ac.hasPos ? resexp::num(ac.posAgeSec, 0) : "", resexp::num(ac.levelDbfs, 0)});
-        resexp::saveButton(x, "adsb", note, "svadsb");
-        ImGui::SameLine();
-        unitsControls();
-        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
-    }
-    if (!ImGui::BeginTable(compact ? "##acs" : "##acf", cols, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_ScrollX | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
-    ImGui::TableSetupScrollFreeze(0, 1);
-    ImGui::TableSetupColumn("ICAO", ImGuiTableColumnFlags_WidthFixed, 62 * gUi); ImGui::TableSetupColumn("Callsign", ImGuiTableColumnFlags_WidthFixed, 72 * gUi);
-    ImGui::TableSetupColumn("Reg", ImGuiTableColumnFlags_WidthFixed, 70 * gUi);
-    if (!compact) { ImGui::TableSetupColumn("Ctry", ImGuiTableColumnFlags_WidthFixed, 34 * gUi); ImGui::TableSetupColumn("Operator", ImGuiTableColumnFlags_WidthFixed, 110 * gUi); }
-    const std::string hAlt = std::string("Alt ") + au::altUnit(S.units), hSpd = std::string("Spd ") + au::speedUnit(S.units), hVs = std::string("V/S ") + au::vrateUnit(S.units), hDist = std::string("Dist ") + au::distUnit(S.units);
-    const std::string hGeo = std::string("GNSS ") + au::altUnit(S.units), hSel = std::string("Sel ") + au::altUnit(S.units);
-    ImGui::TableSetupColumn(hAlt.c_str());
-    if (!compact) {
-        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 140 * gUi);
-        ImGui::TableSetupColumn(hSpd.c_str()); ImGui::TableSetupColumn("Hdg"); ImGui::TableSetupColumn(hVs.c_str());
-        ImGui::TableSetupColumn("Lat", ImGuiTableColumnFlags_WidthFixed, 78 * gUi); ImGui::TableSetupColumn("Lon", ImGuiTableColumnFlags_WidthFixed, 82 * gUi);
-    } else {
-        ImGui::TableSetupColumn("Lat", ImGuiTableColumnFlags_WidthFixed, 70 * gUi); ImGui::TableSetupColumn("Lon", ImGuiTableColumnFlags_WidthFixed, 74 * gUi);
-    }
-    ImGui::TableSetupColumn(hDist.c_str());
-    if (!compact) {
-        ImGui::TableSetupColumn("Brg"); ImGui::TableSetupColumn("Fix"); ImGui::TableSetupColumn("Sqk");
-        ImGui::TableSetupColumn(hGeo.c_str()); ImGui::TableSetupColumn("IAS"); ImGui::TableSetupColumn("Mach"); ImGui::TableSetupColumn(hSel.c_str());
-        ImGui::TableSetupColumn("Emg"); ImGui::TableSetupColumn("NACp"); ImGui::TableSetupColumn("Ver"); ImGui::TableSetupColumn("Msgs"); ImGui::TableSetupColumn("Age s"); ImGui::TableSetupColumn("dBFS"); ImGui::TableSetupColumn("Source");
-    }
-    ImGui::TableHeadersRow();
-    std::vector<const AdsbAircraft*> rows;   // by address, not by last heard: the rows do not move about
-    if (on) for (const auto& x : t.aircraft) rows.push_back(&x);
-    std::sort(rows.begin(), rows.end(), [](const AdsbAircraft* x, const AdsbAircraft* y) { return x->icao < y->icao; });
-    for (const AdsbAircraft* pac : rows) {
-        const AdsbAircraft& ac = *pac;
-        ImGui::TableNextRow();
-        const bool emg = ac.emergency > 0;
-        if (emg) ImGui::PushStyleColor(ImGuiCol_Text, pal::badRed());
-        ImGui::TableNextColumn();
-        char id[24]; snprintf(id, sizeof id, "%s##%u", icaoText(ac.icao).c_str(), ac.icao);
-        if (ImGui::Selectable(id, S.sel == ac.icao, ImGuiSelectableFlags_SpanAllColumns)) S.sel = ac.icao;
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.callsign.empty() ? "-" : ac.callsign.c_str());
-        { const std::string rg = registrationOf(ac.icao); ImGui::TableNextColumn(); ImGui::TextUnformatted(rg.empty() ? "-" : rg.c_str()); }
-        if (!compact) {
-            const std::string cc = countryCode(ac.icao), op = operatorOf(ac.icao);
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(cc.empty() ? "-" : cc.c_str());
-            if (ImGui::IsItemHovered() && !cc.empty()) ImGui::SetTooltip("%s", dect2::adsbCountry(ac.icao).name);
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(op.empty() ? "-" : op.c_str());
-        }
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.ground ? "ground" : dash(ac.hasAlt, uAlt(ac.altFt)).c_str());
-        if (!compact) {
-            const std::string ty = typeOf(ac);
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(ty.empty() ? "-" : ty.c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(dash(ac.hasSpeed, uSpd(ac.speedKt)).c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(num(ac.hasHeading, "%.0f", ac.headingDeg).c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(dash(ac.hasVrate, uVr(ac.vrateFpm)).c_str());
-        }
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.hasPos ? num(true, "%.4f", ac.lat).c_str() : "-");
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.hasPos ? num(true, "%.4f", ac.lon).c_str() : "-");
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(dash(ac.hasRange, uDist(ac.distNm)).c_str());
-        if (!compact) {
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(num(ac.hasRange, "%.0f", ac.bearingDeg).c_str());
-            ImGui::TableNextColumn();
-            if (ac.hasPos) ImGui::TextUnformatted(ac.posKind == 2 ? "global" : ac.posKind == 3 ? "local+" : "local");
-            else if ((ac.cprHave & 3) == 3) ImGui::TextUnformatted("pair");
-            else if (ac.cprHave & 1) ImGui::TextUnformatted("even");
-            else if (ac.cprHave & 2) ImGui::TextUnformatted("odd");
-            else ImGui::TextUnformatted("-");
-            ImGui::TableNextColumn(); if (ac.hasSquawk) ImGui::Text("%04d", ac.squawk); else ImGui::TextUnformatted("-");
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(dash(ac.hasGeoAlt, uAlt(ac.geoAltFt)).c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.hasIas ? std::to_string(ac.iasKt).c_str() : "-");
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(num(ac.hasMach, "%.2f", ac.mach).c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(dash(ac.hasSelAlt, uAlt(ac.selAltFt)).c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(ac.emergency ? dect2::adsb::emergencyName(ac.emergency) : "-");
-            ImGui::TableNextColumn(); if (ac.nacp >= 0) ImGui::Text("%d", ac.nacp); else ImGui::TextUnformatted("-");
-            ImGui::TableNextColumn(); if (ac.adsbVersion >= 0) ImGui::Text("%d", ac.adsbVersion); else ImGui::TextUnformatted("-");
-            ImGui::TableNextColumn(); ImGui::Text("%u", ac.messages);
-            ImGui::TableNextColumn(); ImGui::Text("%.0f", ac.ageSec);
-            ImGui::TableNextColumn(); ImGui::Text("%.0f", ac.levelDbfs);
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(sourceName(t, ac.srcId).c_str());
-        }
-        if (emg) ImGui::PopStyleColor();
-    }
-    ImGui::EndTable();
-}
-
-static double pathDistanceM(double lat1, double lon1, double lat2, double lon2) {
-    const double p = M_PI / 180.0, dLat = (lat2 - lat1) * p, dLon = (lon2 - lon1) * p;
-    const double a = std::sin(dLat / 2) * std::sin(dLat / 2)
-        + std::cos(lat1 * p) * std::cos(lat2 * p) * std::sin(dLon / 2) * std::sin(dLon / 2);
-    return 6371000.0 * 2.0 * std::asin(std::min(1.0, std::sqrt(a)));
-}
-
-static double bearingDeg(double lat1, double lon1, double lat2, double lon2) {
-    const double p = M_PI / 180.0, dLon = (lon2 - lon1) * p;
-    const double y = std::sin(dLon) * std::cos(lat2 * p);
-    const double x = std::cos(lat1 * p) * std::sin(lat2 * p) - std::sin(lat1 * p) * std::cos(lat2 * p) * std::cos(dLon);
-    double b = std::atan2(y, x) / p;
-    if (b < 0) b += 360.0;
-    return b;
-}
-
-static bool planeHeadingDeg(const AdsbAircraft& ac, float& out) {
-    if (ac.hasHeading) { out = (float)ac.headingDeg; return true; }
-    constexpr double kMinM = 15.0;
-    if (ac.hasPos && !ac.track.empty()) {
-        const double lat2 = ac.lat, lon2 = ac.lon;
-        for (size_t i = ac.track.size(); i > 0; i--) {
-            const double lat1 = ac.track[i - 1].lat, lon1 = ac.track[i - 1].lon;
-            if (pathDistanceM(lat1, lon1, lat2, lon2) >= kMinM) { out = (float)bearingDeg(lat1, lon1, lat2, lon2); return true; }
-        }
-    }
-    return false;
-}
-
-// the radar: the receiver in the middle, north up, a ring every few tens of nautical miles
-void radar(App& a, ImVec2 size) {
-    const AdsbTelemetry& t = a.rx.adsb;
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    const ImVec2 p0 = ImGui::GetCursorScreenPos();
-    ImGui::SetNextItemAllowOverlap();   // full-screen control sits on top (same as adsb_map.cpp)
-    ImGui::InvisibleButton("##radar", size);
-    const float side = std::min(size.x, size.y), R = side * 0.5f - 6 * gUi;
-    const ImVec2 c(p0.x + size.x * 0.5f, p0.y + size.y * 0.5f);
-    dl->AddRectFilled(p0, ImVec2(p0.x + size.x, p0.y + size.y), IM_COL32(8, 9, 10, 255));
-    double maxNm = 20;
-    const bool on = live(a);
-    if (on) for (const auto& ac : t.aircraft) if (ac.hasRange) maxNm = std::max<double>(maxNm, ac.distNm * 1.1);
-    static const double steps[] = {20, 50, 100, 150, 200, 300, 400, 600};
-    double scale = steps[7];
-    for (double s : steps) if (s >= maxNm) { scale = s; break; }
-    const int rings = scale <= 20 ? 4 : scale <= 50 ? 5 : 4;
-    const ImU32 grid = IM_COL32(60, 64, 66, 255);
-    for (int i = 1; i <= rings; i++) {
-        dl->AddCircle(c, R * i / rings, grid, 64);
-        char b[24]; snprintf(b, sizeof b, "%.0f %s", au::distOut(S.units, scale * i / rings), au::distUnit(S.units));
-        dl->AddText(ImVec2(c.x + 3 * gUi, c.y - R * i / rings), IM_COL32(110, 114, 118, 255), b);
-    }
-    dl->AddLine(ImVec2(c.x - R, c.y), ImVec2(c.x + R, c.y), grid); dl->AddLine(ImVec2(c.x, c.y - R), ImVec2(c.x, c.y + R), grid);
-    dl->AddText(ImVec2(c.x - 3 * gUi, c.y - R - ImGui::GetTextLineHeight() - 1), IM_COL32(130, 134, 138, 255), "N");
-    dl->AddCircleFilled(c, 3 * gUi, ImGui::ColorConvertFloat4ToU32(pal::accent()));
-    if (on) {
-        const double k = std::cos(S.refLat * M_PI / 180.0);
-        auto pt = [&](double lat, double lon) { return ImVec2(c.x + (float)((lon - S.refLon) * k * 60.0 / scale * R), c.y - (float)((lat - S.refLat) * 60.0 / scale * R)); };
-        for (const auto& ac : t.aircraft) {
-            if (!ac.hasPos) continue;
-            const bool sel = ac.icao == S.sel;
-            const ImU32 col = ac.emergency ? ImGui::ColorConvertFloat4ToU32(pal::badRed()) : sel ? IM_COL32(255, 255, 255, 255) : ImGui::ColorConvertFloat4ToU32(pal::accent());
-            ImVec2 prev;
-            bool first = true;
-            for (const auto& tp : ac.track) { const ImVec2 q = pt(tp.lat, tp.lon); if (!first) dl->AddLine(prev, q, IM_COL32(70, 74, 78, 255)); prev = q; first = false; }
-            const ImVec2 q = pt(ac.lat, ac.lon);
-            if (std::fabs(q.x - c.x) > R * 1.1f || std::fabs(q.y - c.y) > R * 1.1f) continue;
-            { float hdg = 0.f; if (planeHeadingDeg(ac, hdg)) { const float h = hdg * (float)M_PI / 180.f; dl->AddLine(q, ImVec2(q.x + std::sin(h) * 10 * gUi, q.y - std::cos(h) * 10 * gUi), col, 1.5f); } }
-            dl->AddCircleFilled(q, (sel ? 4.f : 3.f) * gUi, col);
-            char b[48]; snprintf(b, sizeof b, "%s", ac.callsign.empty() ? icaoText(ac.icao).c_str() : ac.callsign.c_str());
-            dl->AddText(ImVec2(q.x + 6 * gUi, q.y - 6 * gUi), IM_COL32(190, 194, 198, 255), b);
-        }
-    }
-    if (!t.refValid) dl->AddText(ImVec2(p0.x + 6 * gUi, p0.y + 36 * gUi), IM_COL32(150, 154, 158, 255), "no reference position");
-    ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 8 * gUi));
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
-    if (ImGui::Button(S.full ? "exit full screen" : "full screen")) S.full = !S.full;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip(S.full ? "Back to the normal layout (Esc)" : "The radar fills the whole window (Esc to leave)");
-    ImGui::PopStyleColor();
-    ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
-}
-
-
-// altitude colours, as on the flight-tracking sites: low and warm, high and cool
-ImU32 altColour(const AdsbAircraft& ac, float alpha = 1.f) {
-    static const float stops[5][3] = {{0.95f, 0.50f, 0.20f}, {0.55f, 0.85f, 0.40f}, {0.30f, 0.85f, 0.75f}, {0.35f, 0.60f, 0.95f}, {0.72f, 0.52f, 0.95f}};
-    if (ac.emergency) return IM_COL32(235, 70, 70, (int)(255 * alpha));
-    if (ac.ground) return IM_COL32(140, 144, 148, (int)(255 * alpha));
-    float v = ac.hasAlt ? std::max(0.f, std::min(3.999f, ac.altFt / 10000.f)) : 1.5f;
-    const int i = (int)v; const float f = v - i;
-    auto c = [&](int k) { return (int)(255 * (stops[i][k] + (stops[i + 1][k] - stops[i][k]) * f)); };
-    return IM_COL32(c(0), c(1), c(2), (int)(255 * alpha));
-}
-
-// an airliner seen from above, nose to the heading
-void drawPlane(ImDrawList* dl, ImVec2 c, float headingDeg, float r, ImU32 fill, bool outline) {
-    static const float pts[][2] = {{0, -1}, {0.09f, -0.75f}, {0.10f, -0.15f}, {1.0f, 0.30f}, {1.0f, 0.46f}, {0.10f, 0.22f}, {0.09f, 0.68f}, {0.40f, 0.90f}, {0.40f, 1.0f}, {0, 0.92f},
-                                   {-0.40f, 1.0f}, {-0.40f, 0.90f}, {-0.09f, 0.68f}, {-0.10f, 0.22f}, {-1.0f, 0.46f}, {-1.0f, 0.30f}, {-0.10f, -0.15f}, {-0.09f, -0.75f}};
-    const int n = (int)(sizeof pts / sizeof *pts);
-    const float h = headingDeg * (float)M_PI / 180.f, ch = std::cos(h), sh = std::sin(h);
-    ImVec2 q[18];
-    for (int i = 0; i < n; i++) q[i] = ImVec2(c.x + (pts[i][0] * ch - pts[i][1] * sh) * r, c.y + (pts[i][0] * sh + pts[i][1] * ch) * r);
-    dl->AddConcavePolyFilled(q, n, fill);
-    dl->AddPolyline(q, n, outline ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 150), ImDrawFlags_Closed, outline ? 1.6f : 1.f);
-}
-
-// The antenna position is not where the receiver is (still the placeholder, or typed wrong): every aircraft with a position is further
-// away than any 1090 MHz signal carries (500 nm; real ranges end near 250). Then lat/lon get the middle of the aircraft (median, so one
-// bad fix does not pull it), which is within about 100 nm of the receiver: good enough for the map, not for exact ranges.
-bool positionLooksWrong(const AdsbTelemetry& t, double& lat, double& lon, double& nearestNm) {
-    std::vector<double> las, los;
-    nearestNm = 1e9;
-    for (const auto& ac : t.aircraft) {
-        if (!ac.hasPos) continue;
-        las.push_back(ac.lat); los.push_back(ac.lon);
-        const double p1 = S.refLat * M_PI / 180, p2 = ac.lat * M_PI / 180, dl = (ac.lon - S.refLon) * M_PI / 180;
-        const double c = std::sin(p1) * std::sin(p2) + std::cos(p1) * std::cos(p2) * std::cos(dl);
-        nearestNm = std::min(nearestNm, std::acos(std::max(-1.0, std::min(1.0, c))) * 3440.065);   // great circle, Earth radius in nm
-    }
-    if (las.size() < 3 || nearestNm < 500) return false;
-    std::nth_element(las.begin(), las.begin() + las.size() / 2, las.end());
-    std::nth_element(los.begin(), los.begin() + los.size() / 2, los.end());
-    lat = las[las.size() / 2]; lon = los[los.size() / 2];
-    return true;
-}
-
-void mapView(App& a, ImVec2 size) {
-    const AdsbTelemetry& t = a.rx.adsb;
-    const bool on = live(a);
-    const ImVec2 p0 = ImGui::GetCursorScreenPos();
-    double areaLat = 0, areaLon = 0, nearest = 0;
-    const bool wrongRef = on && positionLooksWrong(t, areaLat, areaLon, nearest);
-    if (wrongRef && S.mapHome) { S.map.lat = areaLat; S.map.lon = areaLon; }   // show the aircraft, not an empty map around the wrong antenna
-    const double homeLat = S.map.lat, homeLon = S.map.lon;
-    const bool hov = adsbmap::draw(S.map, size);
-    if (hov && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) { adsbmap::unproject(ImGui::GetIO().MousePos, S.ctxLat, S.ctxLon); ImGui::OpenPopup("##adsbmapctx"); }
-    if (S.map.lat != homeLat || S.map.lon != homeLon) S.mapHome = false;
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    dl->PushClipRect(p0, ImVec2(p0.x + size.x, p0.y + size.y), true);
-    // the antenna
-    {
-        const ImVec2 h = adsbmap::project(S.refLat, S.refLon);
-        dl->AddCircle(h, 6 * gUi, IM_COL32(255, 255, 255, 220), 24, 1.5f);
-        dl->AddCircleFilled(h, 2.5f * gUi, IM_COL32(255, 255, 255, 220));
-    }
-    const AdsbAircraft* hit = nullptr; float best = 16 * gUi;
-    ImVec2 click; const bool clicked = adsbmap::clickedAt(click);
-    if (on) {
-        for (const auto& ac : t.aircraft) {   // trails first, so the icons sit on top
-            if (!ac.hasPos || ac.track.size() < 2) continue;
-            const ImU32 trail = adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec, 0.55f);
-            ImVec2 prev = adsbmap::project(ac.track[0].lat, ac.track[0].lon);
-            for (size_t i = 1; i < ac.track.size(); i++) {
-                const ImVec2 q = adsbmap::project(ac.track[i].lat, ac.track[i].lon);
-                if (std::fabs(ac.track[i].lat - ac.track[i - 1].lat) < 2 && std::fabs(ac.track[i].lon - ac.track[i - 1].lon) < 2) dl->AddLine(prev, q, trail, 1.8f);   // a jump is a bad fix, not a flight
-                prev = q;
-            }
-            if (std::fabs(ac.track.back().lat - ac.lat) < 2 && std::fabs(ac.track.back().lon - ac.lon) < 2) dl->AddLine(prev, adsbmap::project(ac.lat, ac.lon), trail, 1.8f);
-        }
-        for (const auto& ac : t.aircraft) {   // a couple of minutes ahead at the last speed, like the path on the flight-tracking sites
-            if (!ac.hasPos || !ac.hasHeading || !ac.hasSpeed || ac.speedKt < 30 || ac.ground) continue;
-            double la = 0, lo = 0;
-            adsbmap::aheadNm(ac.lat, ac.lon, ac.headingDeg, ac.speedKt * (2.0 / 60.0), la, lo);
-            dl->AddLine(adsbmap::project(ac.lat, ac.lon), adsbmap::project(la, lo), adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec, 0.35f), 1.2f);
-        }
-        if (S.winds) for (const auto& ac : t.aircraft) {   // winds aloft: an arrow downwind from the aircraft, 1 px per kt, a tick per 50 kt
-            if (!ac.hasPos || ac.ground || !(ac.hasWindDer || ac.hasWindRep)) continue;
-            const float kt = ac.hasWindDer ? ac.windDerKt : ac.windRepKt, from = ac.hasWindDer ? ac.windDerDir : ac.windRepDir;
-            const ImVec2 q = adsbmap::project(ac.lat, ac.lon);
-            const float rad = (from + 180.f) * (float)M_PI / 180.f, dx = std::sin(rad), dy = -std::cos(rad);
-            const float len = (18.f + std::min(kt, 200.f) * 0.35f) * gUi;
-            const ImVec2 e(q.x + dx * len, q.y + dy * len);
-            const ImU32 col = altColour(ac, 0.9f);
-            dl->AddLine(q, e, IM_COL32(0, 0, 0, 160), 3.5f * gUi);
-            dl->AddLine(q, e, col, 2.f * gUi);
-            const float hw = 5 * gUi;
-            dl->AddTriangleFilled(ImVec2(e.x + dx * hw, e.y + dy * hw), ImVec2(e.x - dy * hw * 0.7f, e.y + dx * hw * 0.7f), ImVec2(e.x + dy * hw * 0.7f, e.y - dx * hw * 0.7f), col);
-            for (int k = 1; k * 50 <= (int)kt && k <= 4; k++) {   // ticks at the tail
-                const ImVec2 m(q.x + dx * (len * 0.12f * k + 4 * gUi), q.y + dy * (len * 0.12f * k + 4 * gUi));
-                dl->AddLine(ImVec2(m.x - dy * 4 * gUi, m.y + dx * 4 * gUi), ImVec2(m.x + dy * 4 * gUi, m.y - dx * 4 * gUi), col, 1.5f * gUi);
-            }
-            if (S.map.zoom >= 7) { char b[16]; snprintf(b, sizeof b, "%s", uSpd(kt).c_str()); dl->AddText(ImVec2(e.x + 4 * gUi, e.y - 6 * gUi), col, b); }
-        }
-        for (const auto& ac : t.aircraft) {
-            if (!ac.hasPos) continue;
-            const ImVec2 q = adsbmap::project(ac.lat, ac.lon);
-            if (q.x < p0.x - 40 || q.y < p0.y - 40 || q.x > p0.x + size.x + 40 || q.y > p0.y + size.y + 40) continue;
-            const bool sel = ac.icao == S.sel;
-            const ImU32 fill = ac.emergency ? ImGui::ColorConvertFloat4ToU32(pal::badRed()) : adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec);
-            { float hdg = 0.f; drawPlane(dl, q, planeHeadingDeg(ac, hdg) ? hdg : 0.f, (sel ? 14.f : 12.f) * gUi, fill, sel); }
-            if (S.map.zoom >= 6 || sel) {
-                char l1[48]; snprintf(l1, sizeof l1, "%s", ac.callsign.empty() ? icaoText(ac.icao).c_str() : ac.callsign.c_str());
-                char l2[48] = "", l3[48] = "";
-                if (ac.ground) snprintf(l2, sizeof l2, "GND");
-                else if (ac.hasAlt) {
-                    if (S.units.metric()) snprintf(l2, sizeof l2, "%s m", uAlt(ac.altFt).c_str());
-                    else snprintf(l2, sizeof l2, "FL%03d", (ac.altFt + 50) / 100);
-                }
-                if (ac.hasSpeed) {
-                    const size_t n = strlen(l2);
-                    snprintf(l2 + n, sizeof l2 - n, "%s%s %s", n ? "  " : "", uSpd(ac.speedKt).c_str(), au::speedUnit(S.units));
-                }
-                if (ac.hasSquawk) snprintf(l3, sizeof l3, "sqk %04d", ac.squawk);
-                if (!ac.category.empty()) {
-                    const size_t n = strlen(l3);
-                    snprintf(l3 + n, sizeof l3 - n, "%s%s", n ? "  " : "", ac.category.c_str());
-                }
-                char l4[96] = "";   // registration, country code and operator: for the selected aircraft and when zoomed in
-                if (sel || S.map.zoom >= 9) {
-                    const std::string rg = registrationOf(ac.icao), cc = countryCode(ac.icao), op = operatorOf(ac.icao);
-                    snprintf(l4, sizeof l4, "%s%s%s%s%s", rg.c_str(), rg.empty() || cc.empty() ? "" : " ", cc.c_str(), op.empty() ? "" : "  ", op.c_str());
-                }
-                const ImVec2 t1 = ImGui::CalcTextSize(l1), t2 = ImGui::CalcTextSize(l2), t3 = ImGui::CalcTextSize(l3), t4 = ImGui::CalcTextSize(l4);
-                const float w = std::max(std::max(t1.x, t2.x), std::max(t3.x, t4.x)) + 8 * gUi;
-                const float hh = t1.y + (l2[0] ? t2.y : 0) + (l3[0] ? t3.y : 0) + (l4[0] ? t4.y : 0) + 4 * gUi;
-                const ImVec2 lp(q.x + 12 * gUi, q.y - hh * 0.5f);
-                dl->AddRectFilled(lp, ImVec2(lp.x + w, lp.y + hh), IM_COL32(10, 12, 14, 210), 2.f);
-                dl->AddRect(lp, ImVec2(lp.x + w, lp.y + hh), sel ? IM_COL32(255, 255, 255, 200) : IM_COL32(60, 64, 68, 255), 2.f);
-                float y = lp.y + 2 * gUi;
-                dl->AddText(ImVec2(lp.x + 4 * gUi, y), IM_COL32(235, 238, 240, 255), l1); y += t1.y;
-                if (l2[0]) { dl->AddText(ImVec2(lp.x + 4 * gUi, y), fill, l2); y += t2.y; }
-                if (l3[0]) { dl->AddText(ImVec2(lp.x + 4 * gUi, y), IM_COL32(190, 194, 198, 255), l3); y += t3.y; }
-                if (l4[0]) dl->AddText(ImVec2(lp.x + 4 * gUi, y), IM_COL32(170, 176, 182, 255), l4);
-            }
-            const float d = std::hypot(q.x - click.x, q.y - click.y);
-            if (clicked && d < best) { best = d; hit = &ac; }
-        }
-    }
-    if (clicked) S.sel = hit ? hit->icao : 0xFFFFFFFFu;
-    dl->PopClipRect();
-    // controls in the corner
-    ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 8 * gUi));
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
-    if (ImGui::Button("+", ImVec2(26 * gUi, 0))) S.map.zoom = std::min(adsbmap::kMaxZoom, S.map.zoom + 1);
-    ImGui::SameLine(0, 2 * gUi);
-    if (ImGui::Button("-", ImVec2(26 * gUi, 0))) S.map.zoom = std::max(adsbmap::kMinZoom, S.map.zoom - 1);
-    ImGui::SameLine(0, 6 * gUi);
-    if (ImGui::Button("antenna")) { S.map.lat = S.refLat; S.map.lon = S.refLon; S.mapHome = true; }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Centre the map on the antenna");
-    ImGui::SameLine(0, 2 * gUi);
-    if (ImGui::Button("position")) ImGui::OpenPopup("##adsbpos");
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Set where the antenna is: for ranges, the radar rings and decoding positions locally. You can also right-click the map.");
-    ImGui::SameLine(0, 6 * gUi);
-    if (ImGui::Button(S.full ? "exit full screen" : "full screen")) S.full = !S.full;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip(S.full ? "Back to the normal layout (Esc)" : "The map fills the whole window (Esc to leave)");
-    ImGui::PopStyleColor();
-    ImGui::SameLine(0, 6 * gUi);
-    unitsControls();
-    ImGui::SameLine(0, 6 * gUi);
-    if (ImGui::Checkbox("winds aloft", &S.winds)) { plat::prefs().setB("adsbWinds", S.winds); plat::prefs().flush(); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Wind arrows (downwind) at the aircraft, coloured by altitude: derived from Comm-B 5,0 + 6,0 replies, or reported in 4,4.");
-    ImGui::SameLine(0, 6 * gUi);
-    adsbmap::tileControls(nullptr);
-    if (wrongRef) {
-        ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 38 * gUi));
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.18f, 0.14f, 0.04f, 0.92f));
-        ImGui::BeginChild("##wrongref", ImVec2(std::min(size.x - 16 * gUi, 520 * gUi), 0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_Borders);
-        ImGui::PushTextWrapPos(0);
-        ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.4f, 1), "The antenna position (%.2f, %.2f) is %.0f nm from the nearest aircraft: it is probably not set, so ranges are wrong.", S.refLat, S.refLon, nearest);
-        ImGui::PopTextWrapPos();
-        if (ImGui::Button("Use the aircraft's area")) setReference(a, areaLat, areaLon);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Puts the antenna in the middle of the aircraft received (within about 100 nm). For exact ranges type your position in the Tuner section.");
-        ImGui::EndChild();
-        ImGui::PopStyleColor();
-    }
-    if (ImGui::BeginPopup("##adsbpos")) {
-        ImGui::TextDisabled("Antenna position");
-        positionFields(a);
-        ImGui::TextDisabled("or right-click the map to put it there");
-        ImGui::EndPopup();
-    }
-    if (ImGui::BeginPopup("##adsbmapctx")) {
-        ImGui::TextDisabled("%.4f  %.4f", S.ctxLat, S.ctxLon);
-        if (ImGui::MenuItem("Put the antenna here")) { setReference(a, S.ctxLat, S.ctxLon); S.mapHome = true; S.locMsg.clear(); }
-        if (ImGui::MenuItem("Centre the map here")) { S.map.lat = S.ctxLat; S.map.lon = S.ctxLon; S.mapHome = false; }
-        ImGui::EndPopup();
-    }
-    plat::prefs().setI("adsbZoom", S.map.zoom);
-    int withPos = 0;
-    if (on) for (const auto& ac : t.aircraft) if (ac.hasPos) withPos++;
-    ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + size.y - ImGui::GetTextLineHeight() - 6 * gUi));
-    if (!on) adsbmap::legend(size.x, "start the receiver");
-    else if (!withPos) adsbmap::legend(size.x, "no lat/lon yet: ident, altitude and speed do not need a position. Set the antenna (Tuner, Locate) or wait for both even and odd CPR frames");
-    else adsbmap::legend(size.x, "%d of %zu placed · white ADS-B, grey after 30 s", withPos, t.aircraft.size());
-    ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
-}
-
-void detail(const App& a) {
-    // the readout of the selected aircraft is refreshed once a second and always has the same rows, so that it does not jump about
-    static AdsbAircraft shown; static bool have = false; static double at = 0; static uint32_t of = 0;
-    const AdsbTelemetry& t = a.rx.adsb;
-    const AdsbAircraft* cur = nullptr;
-    if (live(a)) for (const auto& x : t.aircraft) if (x.icao == S.sel) cur = &x;
-    if (!cur) { have = false; ImGui::PushTextWrapPos(0); ImGui::TextDisabled("click an aircraft"); ImGui::PopTextWrapPos(); return; }
-    const double now = ImGui::GetTime();
-    if (!have || of != cur->icao || now - at > 1.0) { shown = *cur; have = true; of = cur->icao; at = now; }
-    const AdsbAircraft* ac = &shown;
-    auto kv = [&](const char* k, const std::string& v) { ImGui::TextDisabled("%s", k); kvColumn(96 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(v.c_str()); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
-    char b[96];
-    kv("ICAO", icaoText(ac->icao) + (ac->icao >> 24 ? " (not ICAO)" : ""));
-    { const std::string rg = registrationOf(ac->icao); kv("registration", rg.empty() ? "-" : rg); }
-    { const dect2::AdsbCountry c = ac->icao >> 24 ? dect2::AdsbCountry{"", "unknown"} : dect2::adsbCountry(ac->icao); kv("country", c.iso[0] ? std::string(c.iso) + "  " + c.name : "-"); }
-    {
-        const dect2::AdsbRegEntry* e = ac->icao >> 24 ? nullptr : S.db.find(ac->icao);
-        std::string ty = e ? e->type : "";
-        if (ac->category.size() >= 2) {
-            const int set = ac->category[0] - 'A', ca = ac->category[1] - '0';
-            const std::string n = (set >= 0 && set <= 3 && ca >= 0 && ca <= 7) ? dect2::adsb::categoryName(4 - set, ca) : "";
-            ty += (ty.empty() ? "" : ", ") + ac->category + (n.empty() ? "" : "  " + n);
-        }
-        kv("type", ty.empty() ? "-" : ty);   // database type, and the ADS-B emitter category (the signal does not send a type designator such as B738)
-        kv("operator", e && !e->operatorName.empty() ? e->operatorName : "-");
-    }
-    kv("source", sourceName(a.rx.adsb, ac->srcId));
-    kv("callsign", ac->callsign.empty() ? "-" : ac->callsign);
-    if (ac->hasPos) snprintf(b, sizeof b, "%.4f  %.4f", ac->lat, ac->lon); else snprintf(b, sizeof b, "-");
-    kv("position", b);
-    {
-        const char* fx = "-";
-        if (ac->hasPos) fx = ac->posKind == 2 ? "global" : ac->posKind == 3 ? "local, confirmed" : "local";
-        else if ((ac->cprHave & 3) == 3) fx = "both even and odd CPR, no fix yet";
-        else if (ac->cprHave & 1) fx = "even CPR only";
-        else if (ac->cprHave & 2) fx = "odd CPR only";
-        kv("fix", fx);
-    }
-    if (ac->hasRange) snprintf(b, sizeof b, "%s %s at %.0f deg", uDist(ac->distNm).c_str(), au::distUnit(S.units), ac->bearingDeg); else snprintf(b, sizeof b, "-");
-    kv("range", b);
-    kv("altitude", ac->ground ? "on the ground" : ac->hasAlt ? uAlt(ac->altFt) + " " + au::altUnit(S.units) : "-");
-    kv("GNSS height", ac->hasGeoAlt ? uAlt(ac->geoAltFt) + " " + au::altUnit(S.units) : "-");
-    kv("speed", ac->hasSpeed ? uSpd(ac->speedKt) + " " + au::speedUnit(S.units) + (ac->speedKind == 0 ? " ground" : ac->speedKind == 1 ? " ias" : " tas") : "-");
-    kv(ac->headingIsTrack ? "track" : "heading", ac->hasHeading ? num(true, "%.0f deg", ac->headingDeg) : "-");
-    kv("vertical", ac->hasVrate ? uVr(ac->vrateFpm) + " " + au::vrateUnit(S.units) : "-");
-    if (ac->hasSquawk) snprintf(b, sizeof b, "%04d", ac->squawk); else snprintf(b, sizeof b, "-");
-    kv("squawk", b);
-    kv("selected alt", ac->hasSelAlt ? uAlt(ac->selAltFt) + " " + au::altUnit(S.units) : "-");
-    kv("mach", ac->hasMach ? num(true, "%.2f", ac->mach) : "-");
-    if (ac->hasWindDer) snprintf(b, sizeof b, "%03.0f/%s %s derived", ac->windDerDir, uSpd(ac->windDerKt).c_str(), au::speedUnit(S.units));
-    else if (ac->hasWindRep) snprintf(b, sizeof b, "%03.0f/%s %s reported", ac->windRepDir, uSpd(ac->windRepKt).c_str(), au::speedUnit(S.units));
-    else snprintf(b, sizeof b, "-");
-    if (ac->hasWindDer && ac->hasWindRep) { char r[48]; snprintf(r, sizeof r, "\n%03.0f/%s %s reported", ac->windRepDir, uSpd(ac->windRepKt).c_str(), au::speedUnit(S.units)); strncat(b, r, sizeof b - strlen(b) - 1); }
-    kv("wind", b);
-    if (ac->hasSat) snprintf(b, sizeof b, "%+.0f C %s", ac->satC, ac->satDerived ? "derived" : "reported"); else snprintf(b, sizeof b, "-");
-    kv("SAT", b);
-    if (ac->hasRa) {
-        std::string ra = dect2::adsb::raText(ac->raAra, ac->raRac, ac->raTerminated);
-        if (ac->raThreat) { snprintf(b, sizeof b, ", threat %06X", (unsigned)ac->raThreat); ra += b; }
-        snprintf(b, sizeof b, " (%.0f s ago)", ac->raAgeSec); ra += b;
-        ImGui::TextDisabled("ACAS RA"); kvColumn(96 * gUi); ImGui::TextColored(kWarn, "%s", ra.c_str());
-    } else kv("ACAS RA", "-");
-    if (ac->emergency) snprintf(b, sizeof b, "state %d", ac->emergency); else snprintf(b, sizeof b, "none");
-    kv("emergency", b);
-    snprintf(b, sizeof b, "%u messages", ac->messages); kv("heard", b);
-    snprintf(b, sizeof b, "%.0f dBFS", ac->levelDbfs); kv("level", b);
-}
-
-// ---------------------------------------------------------------- range statistics
-
-// farthest position per 10 degree bearing sector (polar plot), histogram of ranges, message rate and aircraft count over time
-void statsView(App& a) {
-    const AdsbTelemetry& t = a.rx.adsb;
-    const dect2::AdsbRangeStats& st = t.stats;
-    const bool on = live(a);
-    static std::string note;
-    {
-        resexp::Table x; x.cols = {"kind", "index", "from", "to", "value"};
-        const std::string u = au::distUnit(S.units);
-        for (int i = 0; i < dect2::kAdsbSectors; i++) x.add({"sector_max_range_" + u, std::to_string(i), std::to_string(i * 10), std::to_string(i * 10 + 10), resexp::num(au::distOut(S.units, st.sectorMaxNm[i]), 1)});
-        for (int i = 0; i < dect2::kAdsbRangeBins; i++) x.add({"range_histogram_count_" + u, std::to_string(i), resexp::num(au::distOut(S.units, i * 10.0), 1), i == dect2::kAdsbRangeBins - 1 ? "" : resexp::num(au::distOut(S.units, i * 10.0 + 10), 1), std::to_string(st.rangeHist[i])});
-        for (size_t i = 0; i < st.rateSeries.size(); i++) x.add({"messages_per_second", std::to_string(i), std::to_string(i * 10 + 10), "", resexp::num(st.rateSeries[i], 1)});
-        for (size_t i = 0; i < st.countSeries.size(); i++) x.add({"aircraft_count", std::to_string(i), std::to_string(i * 10 + 10), "", std::to_string(st.countSeries[i])});
-        x.add({"max_altitude_" + std::string(au::altUnit(S.units)), "", "", "", st.hasMaxAlt ? uAlt(st.maxAltFt) : ""});
-        x.add({"max_range_" + u, "", "", "", resexp::num(au::distOut(S.units, st.maxRangeNm), 1)});
-        resexp::saveButton(x, "adsbstats", note, "svadsbst");
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Reset##adsbst") && on) a.engine.adsb().resetStats();
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Empty the range statistics (the aircraft stay). They are saved with the session otherwise.");
-    ImGui::SameLine();
-    unitsControls();
-    if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
-    if (on && !t.refValid) ImGui::TextColored(kWarn, "Set the antenna position (Tuner section): ranges need it.");
-    char b[160];
-    snprintf(b, sizeof b, "farthest %s %s   max altitude %s %s   %llu positions counted", uDist(st.maxRangeNm, 0).c_str(), au::distUnit(S.units),
-             st.hasMaxAlt ? uAlt(st.maxAltFt).c_str() : "-", au::altUnit(S.units), (unsigned long long)st.positions);
-    ImGui::TextUnformatted(b);
-    const ImVec2 av = ImGui::GetContentRegionAvail();
-    const float side = std::max(120.f, std::min(av.y, av.x * 0.5f));
-    const ImVec2 p0 = ImGui::GetCursorScreenPos();
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    // polar plot: north up, a ring at a round distance
-    {
-        ImGui::InvisibleButton("##polar", ImVec2(side, side));
-        const ImVec2 c(p0.x + side * 0.5f, p0.y + side * 0.5f);
-        const float R = side * 0.5f - 18 * gUi;
-        float mx = 10.f;
-        for (float v : st.sectorMaxNm) mx = std::max(mx, v);
-        const double mxU = au::distOut(S.units, mx);
-        const double nice[] = {5, 10, 20, 25, 50, 100, 200, 250, 500};
-        double step = 1000;
-        for (double n : nice) if (n * 4 >= mxU) { step = n; break; }
-        const double top = std::ceil(mxU / step) * step;
-        for (double r = step; r <= top + 1e-6; r += step) {
-            const float rr = (float)(r / top) * R;
-            dl->AddCircle(c, rr, IM_COL32(70, 76, 82, 255), 64);
-            char l[24]; snprintf(l, sizeof l, "%.0f", r);
-            dl->AddText(ImVec2(c.x + 3 * gUi, c.y - rr - ImGui::GetTextLineHeight()), IM_COL32(130, 136, 142, 255), l);
-        }
-        for (int d = 0; d < 360; d += 30) {
-            const float ang = (float)(d * M_PI / 180.0);
-            dl->AddLine(c, ImVec2(c.x + std::sin(ang) * R, c.y - std::cos(ang) * R), IM_COL32(55, 60, 66, 255));
-            if (d % 90 == 0) { const char* nm[] = {"N", "E", "S", "W"}; dl->AddText(ImVec2(c.x + std::sin(ang) * (R + 4 * gUi) - 4 * gUi, c.y - std::cos(ang) * (R + 4 * gUi) - 7 * gUi), IM_COL32(190, 195, 200, 255), nm[d / 90]); }
-        }
-        const ImU32 fill = ImGui::ColorConvertFloat4ToU32(pal::accent(0.45f)), edge = ImGui::ColorConvertFloat4ToU32(pal::accent(0.95f));
-        for (int i = 0; i < dect2::kAdsbSectors; i++) {
-            const double nm = au::distOut(S.units, st.sectorMaxNm[i]);
-            if (nm <= 0) continue;
-            const float rr = (float)(nm / top) * R;
-            ImVec2 pts[8];
-            pts[0] = c;
-            for (int k = 0; k < 7; k++) {
-                const float ang = (float)((i * 10 + k * 10.0 / 6.0) * M_PI / 180.0);
-                pts[1 + k] = ImVec2(c.x + std::sin(ang) * rr, c.y - std::cos(ang) * rr);
-            }
-            dl->AddConvexPolyFilled(pts, 8, fill);
-            dl->AddPolyline(pts + 1, 7, edge, 0, 1.5f);
-        }
-        if (ImGui::IsItemHovered()) {
-            const ImVec2 m = ImGui::GetMousePos();
-            const double brg = std::fmod(std::atan2(m.x - c.x, c.y - m.y) * 180.0 / M_PI + 360.0, 360.0);
-            const int sec = std::min(dect2::kAdsbSectors - 1, (int)(brg / 10));
-            ImGui::SetTooltip("%d - %d deg: %s %s", sec * 10, sec * 10 + 10, uDist(st.sectorMaxNm[sec], 0).c_str(), au::distUnit(S.units));
-        }
-    }
-    ImGui::SameLine();
-    ImGui::BeginGroup();
-    const float cw = std::max(120.f, av.x - side - 16 * gUi), ph = std::max(50.f, (side - 3 * ImGui::GetTextLineHeightWithSpacing()) / 3.f);
-    captionFit(cw, "Ranges of the positions");
-    {
-        const ImVec2 q = ImGui::GetCursorScreenPos();
-        ImGui::InvisibleButton("##rhist", ImVec2(cw, ph));
-        int last = 0; uint32_t mx = 1;
-        for (int i = 0; i < dect2::kAdsbRangeBins; i++) if (st.rangeHist[i]) { last = i; mx = std::max(mx, st.rangeHist[i]); }
-        const int nb = std::min(dect2::kAdsbRangeBins, std::max(last + 1, 5));
-        const float bw = cw / (float)nb;
-        for (int i = 0; i < nb; i++) {
-            const float h = (ph - 4) * (float)st.rangeHist[i] / (float)mx;
-            dl->AddRectFilled(ImVec2(q.x + i * bw + 1, q.y + ph - h), ImVec2(q.x + (i + 1) * bw - 1, q.y + ph), ImGui::ColorConvertFloat4ToU32(pal::accent(0.8f)));
-        }
-        if (ImGui::IsItemHovered()) {
-            const int i = std::min(nb - 1, std::max(0, (int)((ImGui::GetMousePos().x - q.x) / bw)));
-            ImGui::SetTooltip("%s - %s %s: %u positions", uDist(i * 10.0, 0).c_str(), uDist(i * 10.0 + 10, 0).c_str(), au::distUnit(S.units), st.rangeHist[i]);
-        }
-    }
-    captionFit(cw, "Messages per second (a point per 10 s)");
-    { std::vector<float> v(st.rateSeries.begin(), st.rateSeries.end()); if (v.empty()) v.push_back(0); ImGui::PlotLines("##strate", v.data(), (int)v.size(), 0, nullptr, 0.f, FLT_MAX, ImVec2(cw, ph)); }
-    captionFit(cw, "Aircraft in the table");
-    { std::vector<float> v(st.countSeries.begin(), st.countSeries.end()); if (v.empty()) v.push_back(0); ImGui::PlotLines("##stcnt", v.data(), (int)v.size(), 0, nullptr, 0.f, FLT_MAX, ImVec2(cw, ph)); }
-    ImGui::EndGroup();
-}
-
-// the feeds in from other receivers, and the aircraft database
-void sourcesPanel(App& a) {
-    const AdsbTelemetry& t = a.rx.adsb;
-    ImGui::TextDisabled("Other receivers (Beast or SBS, one host:port per line)");
-    char buf[1024];
-    snprintf(buf, sizeof buf, "%s", S.srcText.c_str());
-    if (ImGui::InputTextMultiline("##adsbsrc", buf, sizeof buf, ImVec2(std::min(240 * gUi, ImGui::GetContentRegionAvail().x), 60 * gUi))) {
-        S.srcText = buf;
-        std::string st = S.srcText;
-        for (char& c : st) if (c == '\n') c = '|';
-        plat::prefs().setS("adsbSources", st); plat::prefs().flush();
-    }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("dump1090 / readsb: port 30005 (Beast) or 30003 (SBS); another OnAir: the port of its Beast or SBS feed. Their aircraft join this table and the map. Positions from other receivers are shown, not computed (no MLAT: that needs synchronised time stamps across sites).");
-    if (ImGui::Checkbox("also hosts outside my network", &S.srcAny)) { plat::prefs().setB("adsbSrcAny", S.srcAny); plat::prefs().flush(); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Off: only addresses on this network (192.168.x.x, 10.x.x.x, 172.16-31.x.x, localhost, *.local). On: any host. Positions from other receivers are shown, not computed.");
-    for (size_t i = 1; i < t.sources.size(); i++) {
-        const dect2::AdsbSourceInfo& s = t.sources[i];
-        ImGui::PushTextWrapPos(0);
-        ImGui::TextDisabled("%s", s.name.c_str());
-        if (!s.error.empty()) ImGui::TextColored(kWarn, "%s", s.error.c_str());
-        else ImGui::TextColored(s.state ? kGood : kDim, "%s %s  %llu msgs  %u aircraft", s.state ? "connected" : "connecting", s.format.c_str(), (unsigned long long)s.msgs, s.aircraft);
-        ImGui::PopTextWrapPos();
-    }
-    ImGui::Spacing();
-    ImGui::TextDisabled("Aircraft database");
-    ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("%s", S.dbMsg.c_str());
-    ImGui::PopTextWrapPos();
-    if (ImGui::Button("Reload aircraft.csv")) reloadDb();
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s\nicao,registration,type,operator (one aircraft per line; the readsb / tar1090 aircraft database works too). Registrations of US, Canadian and Australian aircraft come from the address itself, with no file.", dbPath().c_str());
 }
 
 // ---------------------------------------------------------------- the hooks
@@ -996,9 +336,10 @@ void meters(const App& a, std::vector<ModeMeter>& out) {
     out.push_back({"NOISE  dBFS", "%.1f", t.noiseDbfs, -80, -20, t.noiseDbfs > -35 ? 3 : 0});
 }
 
-} // namespace
+}  // namespace adsbui
 
 extern const ModeUi kAdsbUi;
+
 const ModeUi kAdsbUi = {
     .sideTitle = "AIRCRAFT",
     .tabName = "Aircraft",
@@ -1016,24 +357,6 @@ const ModeUi kAdsbUi = {
     .meters = meters,
 };
 
-// main.cpp: the map or radar over the whole window while it is popped out (the "full screen" button); false when it is not
-bool adsbFullMap(App& a, ImVec2 disp) {
-    if (!S.full) return false;
-    if (modeUi(a.family) != &kAdsbUi) { S.full = false; return false; }
-    if (S.viewMode != 0 && S.viewMode != 2) { S.full = false; return false; }
-    if (!ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) { S.full = false; return false; }
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(disp);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::Begin("##adsbfull", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
-    ImGui::PopStyleVar();
-    if (S.viewMode == 2) radar(a, ImGui::GetContentRegionAvail());
-    else mapView(a, ImGui::GetContentRegionAvail());
-    ImGui::Dummy(ImVec2(0, 0));   // the view leaves the cursor at the bottom edge: an item there so ImGui does not take it as growing the window
-    ImGui::End();
-    return true;
-}
-
 // The receiver's position, shared by every screen that needs one (ADS-B ranges, the pass planner): the ADS-B antenna position
 void syncAdsbReference(App& a) {
     if (!a.engine.running() || a.rx.standard != 12) return;
@@ -1045,7 +368,11 @@ void syncAdsbReference(App& a) {
 }
 
 void receiverLocation(double& lat, double& lon) { loadState(); lat = S.refLat; lon = S.refLon; }
+
 bool receiverLocationSet() { return plat::prefs().has("adsbLat") && plat::prefs().has("adsbLon"); }
+
 double receiverAltitudeM() { loadState(); return S.refAltM; }
+
 void setReceiverLocation(App& a, double lat, double lon) { loadState(); setReference(a, lat, lon); }
+
 void receiverPositionFields(App& a) { loadState(); pollLocate(a); positionFields(a); }

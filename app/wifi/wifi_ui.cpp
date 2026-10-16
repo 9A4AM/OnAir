@@ -2,6 +2,7 @@
 // last seen, beacon interval, rates) with name, level and security filters, the beacon log, the channel picker and the hop over 1 - 13.
 // Passive: only the beacons and probe responses access points broadcast openly are read; nothing is sent, probed, joined or decrypted.
 #include "app.h"
+#include "ui/ui_common.h"
 #include "dect2/wifi/wifi_proto.h"
 #include "dect2/wifi/wifi_rx.h"
 #include "dect2/wifi/wifi_tel.h"
@@ -36,27 +37,6 @@ void loadState() {
 }
 
 bool live(const App& a) { return a.rx.standard == 55; }   // the engine reports its standard code minus one
-
-std::string clock(int64_t t) {
-    if (t <= 0) return "-";
-    const time_t tt = (time_t)t;
-    struct tm g;
-#ifdef _WIN32
-    gmtime_s(&g, &tt);
-#else
-    gmtime_r(&tt, &g);
-#endif
-    char b[16];
-    snprintf(b, sizeof b, "%02d:%02d:%02d", g.tm_hour, g.tm_min, g.tm_sec);
-    return b;
-}
-
-void kvRow(const App& a, const char* k, const char* fmt, ...) {
-    ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);
-    char b[512];
-    va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof b, fmt, ap); va_end(ap);
-    ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(b); ImGui::PopTextWrapPos(); ImGui::PopFont();
-}
 
 std::string lower(std::string s) { for (char& c : s) c = (char)std::tolower((unsigned char)c); return s; }
 
@@ -125,7 +105,7 @@ void networksView(App& a) {
         if (d.ssid.empty()) ImGui::TextDisabled("(hidden)"); else ImGui::TextColored(c, "%s", d.ssid.c_str());
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s%s\nfirst heard %s UTC%s%s\ncapabilities %04X", d.hidden ? "hidden network: its beacons carry no name" : "network name from its beacons",
-                              d.hidden && !d.ssid.empty() ? " (the name came from a probe response)" : "", clock(d.firstWall).c_str(),
+                              d.hidden && !d.ssid.empty() ? " (the name came from a probe response)" : "", clockText(d.firstWall).c_str(),
                               d.probeResps ? "\nprobe responses: " : "", d.probeResps ? std::to_string(d.probeResps).c_str() : "", d.cap);
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(d.bssid.c_str()); ImGui::PopFont();
         ImGui::TableNextColumn(); ImGui::TextUnformatted(d.vendor == "local" ? "(local)" : d.vendor.c_str());
@@ -160,7 +140,7 @@ void beaconsView(App& a) {
         std::string txt;
         for (const auto& p : log) {
             char b[600];
-            snprintf(b, sizeof b, "%s\t%d\t%s\t%.0f\t%d\t%s\n", clock(p.wallTime).c_str(), p.channel, p.bssid.c_str(), p.rssi, p.len, p.info.c_str());
+            snprintf(b, sizeof b, "%s\t%d\t%s\t%.0f\t%d\t%s\n", clockText(p.wallTime).c_str(), p.channel, p.bssid.c_str(), p.rssi, p.len, p.info.c_str());
             txt += b;
         }
         ImGui::SetClipboardText(txt.c_str());
@@ -178,7 +158,7 @@ void beaconsView(App& a) {
         for (int i = clip.DisplayStart; i < clip.DisplayEnd; i++) {
             const auto& p = log[(size_t)i];
             ImGui::TableNextRow();
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(p.wallTime).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(clockText(p.wallTime).c_str());
             ImGui::TableNextColumn(); if (p.channel) ImGui::Text("%d", p.channel); else ImGui::TextDisabled("-");
             ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(p.bssid.c_str()); ImGui::PopFont();
             ImGui::TableNextColumn(); ImGui::Text("%.0f", p.rssi);
@@ -277,16 +257,11 @@ void receiver(App& a) {
 }
 
 void status(App& a) {
-    const bool run = a.engine.running(), on = live(a);
-    const SignalStats& st = a.spec.stats;
-    const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
+    const bool on = live(a);
     StatusPanel panel;
-    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(12 * gUi);
+    statusIqLamp(a);
     lamp("Beacons", !on ? 0 : a.rx.wifi.state >= 1 ? 1 : 0); flowNext(10 * gUi);
-    ImGui::TextDisabled("|"); flowNext(10 * gUi);
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("State"); ImGui::SameLine(0, 5 * gUi);
-    ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(!on ? (run ? "starting" : "stopped") : dect2::wifiSummary(a.rx.wifi).c_str()); ImGui::PopFont();
+    statusState(a, on, [&] { return dect2::wifiSummary(a.rx.wifi); });
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {

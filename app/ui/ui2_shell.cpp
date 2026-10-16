@@ -1,0 +1,554 @@
+// The new interface: the shell around the body (menu bar, top bar with the mode combo and summary, bottom bar, the
+// mode list and side bar, the status line and the log console).
+// Split from ui2.cpp; the shared declarations are in ui2_internal.h.
+#include "ui2_internal.h"
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#else
+#include <sys/resource.h>
+#endif
+#include "../platform/discord_rpc.h"
+
+using namespace ui2;
+
+namespace ui2 {
+
+// two lines about what is being received, in the top bar: the station or ensemble, the state and the main numbers
+void summaryText(App& a, std::string& l1, std::string& l2) {
+    const bool run = a.engine.running();
+    const ModeDef* cur = &kModes[0];
+    for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) cur = &kModes[i];
+    l1 = cur->name; l2 = tr(run ? "starting" : a.scanner.progress().running ? "channel scan has the radio" : "stopped");
+    char b[96];
+    if (run) {
+        const RxTelemetry& rx = a.rx;
+        const ModeUi* mu = modeUi(a.family);
+        if (mu && mu->summary) {
+            mu->summary(a, l1, l2);
+        } else if (a.fmMode && rx.standard == 6) {
+            const FmTelemetry& f = rx.fm;
+            std::string ps = f.psName;
+            while (!ps.empty() && (ps.back() == ' ' || ps.back() == '-')) ps.pop_back();
+            while (!ps.empty() && (ps.front() == ' ' || ps.front() == '-')) ps.erase(ps.begin());
+            l1 = f.carrier ? (ps.empty() ? "FM" : ps) : tr("FM: no station");
+            snprintf(b, sizeof b, "%s  %s  SNR %.0f dB", tr(f.state == 2 ? "locked" : f.state == 1 ? "weak" : "searching"), tr(f.stereo ? "stereo" : "mono"), f.snrDb);
+            l2 = f.carrier ? b : tr("searching");
+        } else if (a.dabMode && rx.standard == 3) {
+            l1 = rx.dab.ensembleLabel.empty() ? "DAB" : rx.dab.ensembleLabel;
+            snprintf(b, sizeof b, tr("%s  SNR %.0f dB  %d services"), tr(rx.dab.state == 2 ? "locked" : "searching"), rx.dab.snrDb, rx.dab.services);
+            l2 = b;
+        } else {
+            snprintf(b, sizeof b, "%s  SNR %.1f dB  CFO %+.0f Hz", tr(rx.state == 2 ? "locked" : "searching"), rx.dataSnrDb, rx.cfoHz);
+            l2 = b;
+        }
+        if (mapFamilySends(a.family)) {
+            const std::string m = mapSendStatusLine();
+            if (!m.empty()) {
+                if (!l2.empty()) l2 += "  ";
+                l2 += m;
+            }
+        }
+    }
+}
+
+float summaryWidth(App& a, float scale = 1.f) {
+    std::string l1, l2;
+    summaryText(a, l1, l2);
+    return std::max(ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize() * scale, FLT_MAX, 0, l1.c_str()).x,
+                    ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize() * (scale > 1 ? 1.15f : 1.f), FLT_MAX, 0, l2.c_str()).x);
+}
+
+// maxW: the lines are cut short with "..." rather than run into what is to their right
+void summary(App& a, float x, float y, float scale, float maxW) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    std::string l1, l2;
+    summaryText(a, l1, l2);
+    const float s1 = ImGui::GetFontSize() * scale, s2 = ImGui::GetFontSize() * (scale > 1 ? 1.15f : 1.f);
+    // primary: the mode / station, semibold (drawn twice, a fraction of a pixel apart); secondary: the state, green when locked, amber while searching
+    const std::string e1 = ellipsize(l1, maxW, s1);
+    dl->AddText(ImGui::GetFont(), s1, ImVec2(x, y), u32(T.bright), e1.c_str());
+    dl->AddText(ImGui::GetFont(), s1, ImVec2(x + 0.6f * gUi, y), u32(T.bright), e1.c_str());
+    ImU32 c2 = u32(T.dim);
+    if (a.engine.running()) {
+        if (l2.find(tr("locked")) != std::string::npos) c2 = u32(pal::okGreen());
+        else if (l2.find(tr("searching")) != std::string::npos || l2.find(tr("weak")) != std::string::npos) c2 = IM_COL32(230, 180, 70, 255);
+    }
+    dl->AddText(ImGui::GetFont(), s2, ImVec2(x, y + s1 + 3 * gUi), c2, ellipsize(l2, maxW, s2).c_str());
+}
+
+// the fold state of the mode list groups, kept in the prefs by group name (never by number, so regrouping cannot open the wrong ones)
+static bool groupOpen(const App& a, int g) { return ("|" + a.modeGroupsOpen + "|").find("|" + std::string(kGroupNames[g]) + "|") != std::string::npos; }
+
+static void setGroupOpen(App& a, int g, bool on) {
+    std::string out;
+    for (int k = 0; k < kNumGroups; k++) if (k == g ? on : groupOpen(a, k)) { if (!out.empty()) out += "|"; out += kGroupNames[k]; }
+    a.modeGroupsOpen = out;
+    savePrefs(a);
+}
+
+// the modes as a plain radio list, grouped like the menu
+void modeList(App& a) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const bool running = a.engine.running();
+    const ImVec2 first = ImGui::GetCursorScreenPos();
+    static char q[32] = "";
+    ImGui::SetNextItemWidth(-1);
+    ImGui::InputTextWithHint("##modeside", tr("search modes (FT8, LoRa, APRS...)"), q, sizeof q);
+    if (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Escape)) q[0] = 0;
+    const bool searching = q[0] != 0;
+    int shown = 0;
+    for (int g = 0; g < kNumGroups; g++) {
+        int matches = 0, members = 0;
+        const ModeDef* cur = nullptr;
+        for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g) {
+            members++;
+            if (modeMatches(kModes[i], q)) matches++;
+            if (modeSelected(a, kModes[i])) cur = &kModes[i];
+        }
+        if (!members || (searching && !matches)) continue;
+        if (shown++) ImGui::Dummy(ImVec2(0, 1 * gUi));   // the same small gap above every heading but the first
+        // the group header: a thin accent in the group's colour, a fold arrow, the name, the member count, and the selected mode when folded
+        const float hh = ImGui::GetFrameHeight() - 4 * gUi, hw = ImGui::GetContentRegionAvail().x;
+        ImGui::PushID(1000 + g);
+        if (ImGui::InvisibleButton("##grp", ImVec2(hw, hh)) && !searching) setGroupOpen(a, g, !groupOpen(a, g));
+        ImGui::PopID();
+        const bool unfolded = searching || groupOpen(a, g);
+        const ImVec2 g0 = ImGui::GetItemRectMin();
+        if (ImGui::IsItemHovered()) dl->AddRectFilled(g0, ImVec2(g0.x + hw, g0.y + hh), IM_COL32(255, 255, 255, 10));
+        dl->AddRectFilled(ImVec2(g0.x, g0.y + 3 * gUi), ImVec2(g0.x + 2.5f * gUi, g0.y + hh - 3 * gUi), kGroupCols[g], 1.f);
+        const float ty = g0.y + (hh - ImGui::GetTextLineHeight()) * 0.5f;
+        ImGui::RenderArrow(dl, ImVec2(g0.x + 7 * gUi, ty), u32(T.dim), unfolded ? ImGuiDir_Down : ImGuiDir_Right, 0.7f);
+        const float nx = g0.x + 22 * gUi;
+        dl->AddText(ImVec2(nx, ty), u32(T.dim), tr(kGroupNames[g]));
+        char cnt[16];
+        if (searching) snprintf(cnt, sizeof cnt, "%d/%d", matches, members); else snprintf(cnt, sizeof cnt, "%d", members);
+        const float cx = nx + ImGui::CalcTextSize(tr(kGroupNames[g])).x + 7 * gUi;
+        const ImVec2 cs0 = ImGui::CalcTextSize(cnt);
+        dl->AddRectFilled(ImVec2(cx - 3 * gUi, ty), ImVec2(cx + cs0.x + 3 * gUi, ty + cs0.y), IM_COL32(255, 255, 255, 14), 3 * gUi);
+        dl->AddText(ImVec2(cx, ty), (kGroupCols[g] & 0x00FFFFFF) | 0xC0000000, cnt);
+        if (!unfolded && cur) {
+            const ImVec2 cs = ImGui::CalcTextSize(cur->name);
+            if (cx + cs0.x + 12 * gUi < g0.x + hw - cs.x - 6 * gUi) dl->AddText(ImVec2(g0.x + hw - cs.x - 6 * gUi, ty), u32(T.accent), cur->name);
+        }
+        if (!unfolded) continue;
+        for (int i = 0; i < kNumModes; i++) {
+            const ModeDef& m = kModes[i];
+            if (m.group != g || !modeMatches(m, q)) continue;
+            const float h = ImGui::GetFrameHeight() - 2 * gUi, w = ImGui::GetContentRegionAvail().x;
+            ImGui::PushID(i);
+            const bool clicked = ImGui::InvisibleButton("##mode", ImVec2(w, h));
+            ImGui::PopID();
+            const bool hov = ImGui::IsItemHovered();
+            const ImVec2 p0 = ImGui::GetItemRectMin();
+            const bool sel = modeSelected(a, m);
+            if (hov) dl->AddRectFilled(p0, ImVec2(p0.x + w, p0.y + h), IM_COL32(255, 255, 255, 12));
+            const ImVec2 c(p0.x + 14 * gUi, p0.y + h * 0.5f);   // under the heading's arrow, the name under the heading's name
+            dl->AddCircle(c, 5 * gUi, u32(sel ? T.bright : T.dim), 0, 1.f);
+            if (sel) dl->AddCircleFilled(c, 2.6f * gUi, u32(T.accent));
+            dl->AddText(ImVec2(p0.x + 28 * gUi, p0.y + (h - ImGui::GetTextLineHeight()) * 0.5f), u32(sel ? T.bright : (running ? T.dim : T.text)), m.name);
+            const char* sub = tr(m.sub);
+            const ImVec2 ss = ImGui::CalcTextSize(sub);
+            if (p0.x + 28 * gUi + ImGui::CalcTextSize(m.name).x + 10 * gUi < p0.x + w - ss.x - 6 * gUi)   // no room: the name alone, not both on top of each other
+                dl->AddText(ImVec2(p0.x + w - ss.x - 6 * gUi, p0.y + (h - ss.y) * 0.5f), u32(T.dim), sub);
+            if (clicked) selectMode(a, m.family, m.subId);
+            if (hov && running && !sel) ImGui::SetTooltip("%s", tr("Stop the receiver to switch mode"));
+        }
+    }
+    if (!shown) ImGui::TextDisabled(tr("no mode matches \"%s\""), q);
+    a.tgMin[TgSwitch] = first; a.tgMax[TgSwitch] = ImVec2(first.x + ImGui::GetContentRegionAvail().x, ImGui::GetCursorScreenPos().y);
+}
+
+void sidebar(App& a) {
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8 * gUi, 4 * gUi));
+    if (section(N_("Source"))) {
+        ImGui::Indent(6 * gUi);
+        toolbarParts(a, TbSource, true);
+        ImGui::Unindent(6 * gUi);
+        ImGui::Spacing();
+    }
+    if (section(N_("Gain"))) {
+        ImGui::Indent(6 * gUi);
+        toolbarParts(a, TbGain, true);
+        ImGui::Unindent(6 * gUi);
+        ImGui::Spacing();
+    }
+    if (section(a.fmMode ? N_("Tuner (FM)###Tuner") : a.dabMode ? N_("Tuner (DAB)###Tuner") : N_("Tuner"))) {
+        ImGui::Indent(6 * gUi);
+        toolbarParts(a, TbTuner, true);
+        ImGui::Unindent(6 * gUi);
+        ImGui::Spacing();
+    }
+    if (section(N_("Mode"))) { ImGui::Indent(6 * gUi); modeList(a); ImGui::Unindent(6 * gUi); ImGui::Spacing(); }
+    if (section(N_("Display"))) {
+        ImGui::Indent(6 * gUi);
+        if (ImGui::Checkbox(tr("Peak hold"), &a.peakHold)) savePrefs(a);
+        const float col = ImGui::GetCursorPosX() + ImGui::CalcTextSize(tr("Waterfall")).x + 8 * gUi;   // the controls line up after the longer label
+        const float autoW = ImGui::CalcTextSize(tr("Auto")).x + ImGui::GetStyle().FramePadding.x * 2 + 4 * gUi;
+        ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("Spectrum")); ImGui::SameLine(col); ImGui::SetNextItemWidth(std::min(150.f * gUi, ImGui::GetContentRegionAvail().x));
+        ImGui::DragFloatRange2("##specdb", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
+        ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("Waterfall")); ImGui::SameLine(col);
+        ImGui::SetNextItemWidth(std::min(104.f * gUi, ImGui::GetContentRegionAvail().x - autoW));
+        if (ImGui::DragFloatRange2("##wfdb", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;
+        ImGui::SameLine(0, 4 * gUi);
+        wfAutoButton(a);
+        if (ImGui::SmallButton(tr("Reset spectrum"))) resetSpectrum(a);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Restore the default spectrum and waterfall levels and the usual half-and-half split (does not change panel layout)"));
+        ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("%s", tr("Colours")); ImGui::SameLine(col); ImGui::SetNextItemWidth(std::min(150.f * gUi, ImGui::GetContentRegionAvail().x));
+        if (ImGui::BeginCombo("##wfmap", tr(Waterfall::mapName(a.wf.effMap())))) {   // also in the Waterfall popup on the plot
+            for (int i = 0; i < Waterfall::NumMaps; i++)
+                if (ImGui::Selectable(tr(Waterfall::mapName(i)), a.wf.effMap() == i)) { a.wf.map = i; a.wf.palette(); savePrefs(a); }
+            ImGui::EndCombo();
+        }
+        ImGui::Unindent(6 * gUi);
+        ImGui::Spacing();
+    }
+    if ((a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) && section(N_("Decoder"))) {
+        ImGui::Indent(6 * gUi);
+        toolbarParts(a, TbDecoder, true);
+        ImGui::Unindent(6 * gUi);
+    }
+    if (section(N_("Tools"), false)) {   // what used to be only in the View menu; folded until it is wanted
+        ImGui::Indent(6 * gUi);
+        auto tool = [&](const char* label, bool& on, const char* tipText) {
+            if (ImGui::Checkbox(tr(label), &on)) savePrefs(a);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr(tipText));
+        };
+        tool("Passes", a.passesOpen, "Satellite passes and automatic tuning");
+        tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
+        tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
+        tool("Transmit...", txViewFlag(), N_("Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission."));
+        tool("Map", a.mapOpen, "A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
+        tool("Antenna rotator...", a.rotatorOpen, "Connect a GS-232-compatible rotator (serial or TCP), set azimuth and elevation");
+        tool("Scanner (highly experimental)", a.scannerOpen, "HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
+        ImGui::Separator();
+        themeChoice(a, false);
+        accentMenu();
+        int pct = (int)std::lround(a.uiTextScale * 100);
+        ImGui::SetNextItemWidth(-1);
+        if (ImGui::SliderInt("##sidetxt", &pct, 80, 200, tr("Text size %d%%"))) a.uiTextScale = std::max(0.8f, std::min(2.f, pct / 100.f));
+        if (ImGui::IsItemDeactivatedAfterEdit()) savePrefs(a);
+        ImGui::Unindent(6 * gUi);
+        ImGui::Spacing();
+    }
+    if (section(N_("Log"))) {
+        ImGui::BeginChild("##logc", ImVec2(0, std::max(40.f * gUi, ImGui::GetContentRegionAvail().y - 4 * gUi)), ImGuiChildFlags_Borders);
+        size_t n = 0;
+        const std::vector<std::string> lines = a.engine.logSnapshot(n);
+        for (const std::string& l : lines) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", l.c_str()); ImGui::PopTextWrapPos(); }
+        if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 2) ImGui::SetScrollHereY(1.f);
+        ImGui::EndChild();
+    }
+    ImGui::PopStyleVar();
+}
+
+#ifdef _WIN32
+static double processCpuSeconds() {
+    FILETIME c, e, k, u;
+    if (!GetProcessTimes(GetCurrentProcess(), &c, &e, &k, &u)) return 0;
+    return (((uint64_t)k.dwHighDateTime << 32 | k.dwLowDateTime) + ((uint64_t)u.dwHighDateTime << 32 | u.dwLowDateTime)) * 1e-7;
+}
+#else
+static double processCpuSeconds() {
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &ru);
+    return ru.ru_utime.tv_sec + ru.ru_stime.tv_sec + (ru.ru_utime.tv_usec + ru.ru_stime.tv_usec) * 1e-6;
+}
+#endif
+
+// WSJT-X style status bar: fields separated by rules
+void statusLine(App& a) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const bool run = a.engine.running();
+    const ModeDef* cur = &kModes[0];
+    for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) cur = &kModes[i];
+    const float lh = ImGui::GetTextLineHeight();
+    auto field = [&](const char* text, bool first = false, ImVec4 col = ImVec4(-1, 0, 0, 0), bool fit = false) {
+        if (!first) {
+            if (!sameLineIf(16 * gUi + (fit ? 40 * gUi : ImGui::CalcTextSize(text).x), 8 * gUi)) return;   // no room left on the bar
+            const ImVec2 p = ImGui::GetCursorScreenPos();
+            dl->AddLine(ImVec2(p.x, p.y + 1), ImVec2(p.x, p.y + lh - 1), u32(T.dim));
+            ImGui::SameLine(0, 8 * gUi);
+        }
+        const std::string t = fit ? ellipsize(text, ImGui::GetContentRegionAvail().x, ImGui::GetFontSize()) : text;   // the log line: as much as fits
+        if (col.x < 0) ImGui::TextUnformatted(t.c_str()); else ImGui::TextColored(col, "%s", t.c_str());
+    };
+    char b[96];
+    ImGui::AlignTextToFramePadding();
+    const bool scanning = !run && a.scanner.progress().running;   // the receiver let go of the radio for a channel scan
+    field(tr(run ? "Receiving" : scanning ? "Channel scan" : "Stopped"), true, run || scanning ? pal::okGreen() : pal::grey());
+    field(cur->name);
+    snprintf(b, sizeof b, "%.3f MHz", a.freqMhz); field(b);
+    if (run) { snprintf(b, sizeof b, "%.3f Msps", a.engine.sampleRate() / 1e6); field(b); }
+    if (run) { snprintf(b, sizeof b, tr("level %.1f dBFS"), a.spec.stats.rmsDbfs); field(b); }
+    if (run) {
+        const SampleLoss l = a.engine.sampleLoss();
+        if (l.live) { snprintf(b, sizeof b, tr("load %.0f%%"), l.loadPct); field(b, false, l.loadPct > 90 ? pal::warnAmber() : ImVec4(-1, 0, 0, 0)); lossTooltip(l); }
+        if (l.radioEvents || l.cpuEvents || l.rateLow) { field((std::string(tr("dropped")) + " " + lossText(l)).c_str(), false, lossColour(l)); lossTooltip(l); }
+    }
+    {   // CPU load meter: this process's CPU (100 = one core) and, while receiving, the receiver's DSP load
+        static double cpuT = 0, cpuPct = 0, lastCpu = 0, lastWall = 0;
+        const double wall = ImGui::GetTime();
+        if (wall - lastWall >= 1.0) {
+            const double cpu = processCpuSeconds();
+            if (lastWall > 0) cpuPct = (cpu - lastCpu) / (wall - lastWall) * 100;
+            lastCpu = cpu; lastWall = wall; cpuT = wall;
+        }
+        gCpuPct = (float)cpuPct;
+        const SampleLoss l = a.engine.sampleLoss();
+        snprintf(b, sizeof b, "CPU %.0f%%", cpuPct);
+        field(b, false, cpuPct > 250 ? pal::warnAmber() : ImVec4(-1, 0, 0, 0));
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::Text("Process CPU: %.0f%% (100%% = one core)", cpuPct);
+            if (run && l.live) ImGui::Text("DSP load: %.0f%% of real time on the sample thread (processing time, not lost samples)", l.loadPct);
+            if (run && l.live && l.deliveredPct >= 0)
+                ImGui::Text(l.rateLow ? "Samples arriving: %.1f%% of the set rate (below 97%%: the radio or its driver)" : "Samples arriving: %.1f%% of the set rate", l.deliveredPct);
+            ImGui::TextDisabled("Drawing is slowed when nothing moves and paused while hidden.");
+            ImGui::EndTooltip();
+        }
+        (void)cpuT;
+    }
+    {
+        size_t n = 0;
+        const std::vector<std::string> lines = a.engine.logSnapshot(n);
+        if (!lines.empty()) field(lines.back().c_str(), false, ImVec4(-1, 0, 0, 0), true);
+    }
+}
+
+const char* kVariantNames[8] = {N_("Sidebar"), N_("Scope"), N_("Tiles"), N_("Faceplate"), N_("Scope: Cinema"), N_("Scope: Meters"), N_("Scope: Dock"), N_("Panel")};
+
+// the View menu: interface variants, text size, light / high contrast, language, accent, the classic interface
+static void viewMenu(App& a) {
+    if (ImGui::BeginMenu(tr("View"))) {
+        for (int v = 0; v < 8; v++) if (ImGui::MenuItem(tr(kVariantNames[v]), nullptr, a.uiVariant == v)) { a.uiVariant = v; savePrefs(a); }
+        ImGui::Separator();
+        if (ImGui::BeginMenu(tr("Text size"))) {
+            int pct = (int)std::lround(a.uiTextScale * 100);
+            ImGui::SetNextItemWidth(160 * gUi);
+            if (ImGui::SliderInt("##txtsz", &pct, 80, 200, "%d%%")) a.uiTextScale = std::max(0.8f, std::min(2.f, pct / 100.f));
+            if (ImGui::IsItemDeactivatedAfterEdit()) savePrefs(a);
+            for (int p : {80, 100, 125, 150, 200}) { char l[16]; snprintf(l, sizeof l, "%d%%", p); if (ImGui::MenuItem(l, nullptr, pct == p)) { a.uiTextScale = p / 100.f; savePrefs(a); } }
+            ImGui::Separator();
+            ImGui::TextDisabled("%s", tr("Ctrl + / Ctrl - / Ctrl 0"));
+            ImGui::EndMenu();
+        }
+        if (ImGui::MenuItem(tr("Reset layout"))) { a.splitSide = a.splitRight = a.splitBottom = a.splitDock = a.splitBot2 = 0; savePrefs(a); }
+        if (ImGui::MenuItem(tr("Reset spectrum"))) resetSpectrum(a);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Put the panels back to their automatic sizes (drag the bars between panels to resize them)"));
+        if (ImGui::MenuItem(tr("Full screen"), "F11", gWindow && glfwGetWindowMonitor(gWindow))) toggleFullscreen();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Fill the display, hiding the taskbar (F11 or Alt+Enter). The same shortcut leaves it."));
+        ImGui::Separator();
+        static const char* names[3] = {N_("Terminal palette"), N_("Instrument palette"), N_("Mono palette")};
+        for (int t = 0; t < 3; t++) if (ImGui::MenuItem(tr(names[t]), nullptr, a.uiTheme == t)) { a.uiTheme = t; savePrefs(a); }
+        themeChoice(a, true);
+        accentMenu();
+        if (ImGui::BeginMenu(tr("Language"))) { languageMenuItems(a); ImGui::EndMenu(); }
+        ImGui::Separator();
+        if (ImGui::MenuItem(tr("Reduce CPU when hidden"), nullptr, &a.reduceCpuHidden)) savePrefs(a);
+        {   // opt-in Discord Rich Presence
+            const bool have = *discord::appId() != 0;
+            ImGui::BeginDisabled(!have);
+            if (ImGui::MenuItem(tr("Show in Discord"), nullptr, &a.discordOn)) savePrefs(a);
+            ImGui::BeginDisabled(!a.discordOn);
+            if (ImGui::MenuItem(tr("Show the frequency"), nullptr, &a.discordFreq)) savePrefs(a);
+            ImGui::EndDisabled();
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            ImGui::TextDisabled("(?)");
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                ImGui::SetTooltip("%s", tr(have ? "Shows on your Discord profile that you are using OnAir, the mode and the frequency. Needs the Discord desktop app running." : "Discord application ID not set in this build"));
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
+        ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
+        ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
+        ImGui::MenuItem(tr("Transmit..."), nullptr, &txViewFlag());
+        ImGui::MenuItem(tr("Map"), nullptr, &a.mapOpen);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
+        if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
+        ImGui::MenuItem(tr("Antenna rotator..."), nullptr, &a.rotatorOpen);
+        ImGui::Separator();
+        if (ImGui::MenuItem(tr("Classic interface"))) { a.newUi = false; savePrefs(a); }
+        ImGui::EndMenu();
+    }
+}
+
+// the right end of the menu bar: credit, Support, the update button and Clear all (their widths set where the credit may sit)
+static void menuBarRight(App& a) {
+        const ImGuiStyle& ist = ImGui::GetStyle();
+        const float btnPad = 2.f * ist.FramePadding.x + ist.FrameBorderSize;
+        char verLbl[64];
+        snprintf(verLbl, sizeof verLbl, "v%s", ONAIR_VERSION);
+        float updW = ImGui::CalcTextSize(verLbl).x + btnPad;
+        updW = std::max(updW, ImGui::CalcTextSize(tr("restart to update")).x + btnPad);
+        updW = std::max(updW, ImGui::CalcTextSize(tr("downloading 100%")).x + btnPad);
+        updW = std::max(updW, ImGui::CalcTextSize(tr("checking…")).x + btnPad);
+        updW = std::max(updW, ImGui::CalcTextSize(tr("preparing…")).x + btnPad);
+        char updLbl[80];
+        snprintf(updLbl, sizeof updLbl, tr("update %s"), ONAIR_VERSION);
+        updW = std::max(updW, ImGui::CalcTextSize(updLbl).x + btnPad);
+        const float clearW = ImGui::CalcTextSize(tr("Clear all##clearall")).x + btnPad;
+        const float supportW = ImGui::CalcTextSize(tr("Support")).x + btnPad;
+        const float rightReserve = updW + 6.f * gUi + clearW + 12.f * gUi + supportW + 4.f * gUi;
+        const char* credit = tr("by: Kristijonas Adomaitis, made with help from the community");
+        const float cw = ImGui::CalcTextSize(credit).x + btnPad;
+        const float x = ImGui::GetWindowWidth() - rightReserve - cw - supportW - 12.f * gUi;
+        if (x > ImGui::GetCursorPosX() + 20 * gUi) {   // only when the menu bar has room for it
+            ImGui::SameLine(x);
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 1, 1, 0.04f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.08f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.08f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.62f, 0.68f, 0.75f, 1));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+            ImGui::SmallButton(credit);
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(4);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Thank you to everyone who reported bugs, sent recordings and opened pull requests."));
+            ImGui::SameLine();
+            supportButton();
+        }
+        ImGui::SameLine(ImGui::GetWindowWidth() - rightReserve);
+        updateButton(a);
+        clearAllButton(a);
+}
+
+float menuBar(App& a) {
+    float menuH = 0;
+    if (ImGui::BeginMainMenuBar()) {
+        menuH = ImGui::GetWindowHeight();
+        const bool running = a.engine.running();
+        if (ImGui::BeginMenu(tr("File"))) {
+            if (ImGui::MenuItem(tr(running ? "Stop receiver" : "Start receiver"), "Space")) { if (running) a.engine.stop(); else startReceiver(a); }
+            ImGui::Separator();
+            if (ImGui::MenuItem(tr("Exit program"), "Alt+F4")) { if (gWindow) glfwSetWindowShouldClose(gWindow, GLFW_TRUE); }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu(tr("Mode"))) {
+            int key = 0;
+            for (int g = 0; g < kNumGroups; g++) {
+                if (g) ImGui::Separator();
+                for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g) {
+                    char k[4]; snprintf(k, sizeof k, "%d", ++key);
+                    if (ImGui::MenuItem(kModes[i].name, key <= 9 ? k : nullptr, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);   // only 1-9 are keys
+                }
+            }
+            ImGui::EndMenu();
+        }
+        viewMenu(a);
+        mapSendServerMenu(a);
+        if (ImGui::BeginMenu(tr("Help"))) {
+            if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
+            if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
+            ImGui::Separator();
+            if (ImGui::MenuItem(tr("Documentation"))) dect2::openUrl("https://on-air.dev/docs/");
+            if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");
+            if (ImGui::MenuItem(tr("Voice codecs (mbelib)"))) dect2::openUrl("https://on-air.dev/docs/codecs/");
+            if (ImGui::MenuItem(tr("Website"))) dect2::openUrl("https://on-air.dev/");
+            ImGui::EndMenu();
+        }
+        menuBarRight(a);
+        ImGui::EndMainMenuBar();
+    }
+    return menuH;
+}
+
+void topBar(App& a, ImVec2 disp) {
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, kRail);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8 * gUi, 4 * gUi));
+    ImGui::BeginChild("##top", ImVec2(0, 50 * gUi), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar();
+    a.tgMin[TgToolbar] = ImGui::GetWindowPos(); a.tgMax[TgToolbar] = ImVec2(a.tgMin[TgToolbar].x + ImGui::GetWindowSize().x, a.tgMin[TgToolbar].y + ImGui::GetWindowSize().y);
+    {
+        const bool running = a.engine.running();
+        const ImVec2 o = ImGui::GetCursorScreenPos();
+        if (runButton(running, 40 * gUi) || (!running && a.wizStart)) { if (running) a.engine.stop(); else startReceiver(a); a.wizStart = false; }
+        const float W = ImGui::GetContentRegionAvail().x;
+        ImGui::SetCursorScreenPos(ImVec2(o.x + 58 * gUi, o.y));
+        const float digitsEnd = freqDigits(a);
+        // a narrow window: the level meter and the volume give up width (the meter goes last), then the summary is cut short
+        const float sumX = digitsEnd + 34 * gUi;
+        float vw = 230 * gUi, mw = 260 * gUi;
+        const float spare = o.x + W - sumX - summaryWidth(a) - 40 * gUi;
+        if (spare < vw + mw) {
+            const float k = std::max(0.f, spare) / (vw + mw);
+            vw = std::max(150.f * gUi, vw * k); mw = std::max(130.f * gUi, mw * k);
+            if (o.x + W - vw - mw - 20 * gUi < sumX + 120 * gUi) mw = 0;
+        }
+        const float meterX = o.x + W - vw - mw - 20 * gUi;
+        {   // subtle separators between the groups: run | frequency | state | meter | volume
+            ImDrawList* sd = ImGui::GetWindowDrawList();
+            const ImU32 sc = IM_COL32(255, 255, 255, 28);
+            const float y0 = o.y + 4 * gUi, y1 = o.y + 38 * gUi;
+            sd->AddLine(ImVec2(o.x + 49 * gUi, y0), ImVec2(o.x + 49 * gUi, y1), sc);
+            sd->AddLine(ImVec2(sumX - 17 * gUi, y0), ImVec2(sumX - 17 * gUi, y1), sc);
+            if (mw > 0) sd->AddLine(ImVec2(meterX - 9 * gUi, y0), ImVec2(meterX - 9 * gUi, y1), sc);
+            sd->AddLine(ImVec2(o.x + W - vw - 4 * gUi, y0), ImVec2(o.x + W - vw - 4 * gUi, y1), sc);
+        }
+        summary(a, sumX, o.y + 6 * gUi, 1.f, (mw > 0 ? meterX : o.x + W - vw) - 16 * gUi - sumX);
+        if (mw > 0) levelMeter(a, meterX, o.y, mw);
+        ImGui::SetCursorScreenPos(ImVec2(o.x + W - vw + 4 * gUi, o.y + 8 * gUi));
+        volumeControl(a, vw);
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::GetWindowDrawList()->AddLine(ImVec2(ImGui::GetWindowPos().x, ImGui::GetCursorScreenPos().y), ImVec2(ImGui::GetWindowPos().x + disp.x, ImGui::GetCursorScreenPos().y), u32(kEdge));
+}
+
+void bottomBar(App& a, ImVec2 disp) {
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, kRail);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10 * gUi, 4 * gUi));
+    ImGui::BeginChild("##statusbar", ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar();
+    ImGui::GetWindowDrawList()->AddLine(ImGui::GetWindowPos(), ImVec2(ImGui::GetWindowPos().x + disp.x, ImGui::GetWindowPos().y), u32(kEdge));
+    statusLine(a);
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+}
+
+void tgRect(App& a, int id) { a.tgMin[id] = ImGui::GetWindowPos(); a.tgMax[id] = ImVec2(a.tgMin[id].x + ImGui::GetWindowSize().x, a.tgMin[id].y + ImGui::GetWindowSize().y); }
+
+void logConsole(App& a, float h) {
+    ImGui::BeginChild("##logc", ImVec2(0, h), ImGuiChildFlags_Borders);
+    size_t n = 0;
+    const std::vector<std::string> lines = a.engine.logSnapshot(n);
+    for (const std::string& l : lines) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", l.c_str()); ImGui::PopTextWrapPos(); }
+    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 2) ImGui::SetScrollHereY(1.f);
+    ImGui::EndChild();
+}
+
+void modeCombo(App& a, float w) {
+    const ModeDef* cur = &kModes[0];
+    for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) cur = &kModes[i];
+    ImGui::SetNextItemWidth(w);
+    if (ImGui::BeginCombo("##modec", cur->name)) {
+        const char* q = modeSearchBox();
+        for (int g = 0; g < kNumGroups; g++) {
+            bool any = false;
+            for (int i = 0; i < kNumModes; i++) any |= kModes[i].group == g && modeMatches(kModes[i], q);
+            if (!any) continue;
+            ImGui::Separator();
+            ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(kGroupCols[g]), "%s", tr(kGroupNames[g]));
+            for (int i = 0; i < kNumModes; i++) if (kModes[i].group == g && modeMatches(kModes[i], q)) {
+                ImGui::PushID(i);
+                if (ImGui::Selectable(kModes[i].name, modeSelected(a, kModes[i]))) selectMode(a, kModes[i].family, kModes[i].subId);
+                if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kModes[i].tip);
+                ImGui::PopID();
+            }
+        }
+        ImGui::EndCombo();
+    }
+}
+
+void displayControls(App& a, bool wide) {
+    if (ImGui::Checkbox(tr("Peak hold"), &a.peakHold)) savePrefs(a);
+    ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("%s", tr("Spectrum")); ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth((wide ? 130 : 104) * gUi);
+    ImGui::DragFloatRange2("##specdb", &a.yMin, &a.yMax, 1, -160, 20, "%.0f", "%.0f");
+    ImGui::SameLine(0, 12 * gUi); ImGui::TextDisabled("%s", tr("Waterfall")); ImGui::SameLine(0, 4 * gUi); ImGui::SetNextItemWidth((wide ? 130 : 104) * gUi);
+    if (ImGui::DragFloatRange2("##wfdb", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;
+    ImGui::SameLine(0, 4 * gUi);
+    wfAutoButton(a);
+}
+
+}  // namespace ui2
