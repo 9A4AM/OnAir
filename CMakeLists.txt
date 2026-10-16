@@ -885,6 +885,7 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME fuzz_${MOD}_proto COMMAND fuzz_${MOD}_proto)
   endfunction()
   onair_rust_diff_tests(same same_proto same same_proto dect2/same/same_proto.h "namespace same {" "namespace same_ref {" "" "")
+  onair_rust_diff_tests(acars acars_proto acars acars_proto dect2/acars/acars_proto.h "namespace dect2 {" "namespace dect2_acars_ref {" " using namespace dect2;" ${CMAKE_SOURCE_DIR}/core/include/dect2/acars)
 
   # seeded mutation runs of the AIS and ANT frame layers (also libFuzzer targets with -DONAIR_LIBFUZZER); meant for DECT2_SANITIZE=ON
   foreach(f ais ant)

@@ -4,6 +4,10 @@
 
 namespace dect2 {
 
+// Everything down to the matching #endif is the C++ implementation of the block layer; with DECT2_RUST_ACARS (rust/onair_acars) acars_proto_rs.cpp
+// provides the same functions. It stays until the Rust build is mandatory (rust/README.md); tests/acars/test_acars_proto_rs.cpp compares the two.
+// acarsBuildFrame (the test signal's transmitter side) is C++ in both builds.
+#ifndef DECT2_RUST_ACARS
 namespace {
 
 struct CrcTable {
@@ -288,6 +292,8 @@ bool acarsParseBlock(const uint8_t* t, int len, AcarsMessage& m) {
     m.decoded = acarsDecodeText(m.label, m.text);
     return true;
 }
+
+#endif // DECT2_RUST_ACARS
 
 std::vector<uint8_t> acarsBuildFrame(const AcarsBlockSpec& s, int preKeyChars) {
     std::vector<uint8_t> out;
