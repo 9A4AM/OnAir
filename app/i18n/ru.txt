@@ -1129,3 +1129,8 @@ Channels 1, 6 and 11 do not overlap.	Каналы 1, 6 и 11 не перекры
 Amber: DFS channels (radar sharing).	Янтарный: каналы DFS (общие с радарами).
 Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Яркие числа: предпочтительные каналы сканирования (PSC), где передаётся FILS discovery.
 start the receiver to see the channels	запустите приёмник, чтобы увидеть каналы
+# map server start-up question
+Keep sending positions	Продолжить отправку позиций
+OnAir asks this question at every start. "No, do not ask again" stops it until OnAir is updated.	OnAir задаёт этот вопрос при каждом запуске. «Нет, больше не спрашивать» отключает его до следующего обновления OnAir.
+Nothing is sent in this session. OnAir asks again the next time it starts.	В этом сеансе ничего не отправляется. OnAir спросит снова при следующем запуске.
+Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu.	Ничего не отправляется, и этот вопрос не показывается до следующего обновления OnAir. Позже это можно включить в меню «Сервер».

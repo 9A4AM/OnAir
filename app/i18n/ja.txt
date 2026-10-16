@@ -1147,3 +1147,8 @@ Channels 1, 6 and 11 do not overlap.	チャンネル 1、6、11 は重なりま�
 Amber: DFS channels (radar sharing).	琥珀色：DFS チャンネル（レーダーと共用）。
 Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	明るい数字：優先スキャンチャンネル（PSC）。FILS ディスカバリが送られます。
 start the receiver to see the channels	受信機を起動するとチャンネルが表示されます
+# map server start-up question
+Keep sending positions	位置情報の送信を続ける
+OnAir asks this question at every start. "No, do not ask again" stops it until OnAir is updated.	OnAir は起動のたびにこの質問をします。「いいえ、今後は尋ねない」を選ぶと、OnAir が更新されるまで表示されません。
+Nothing is sent in this session. OnAir asks again the next time it starts.	このセッションでは何も送信されません。次回の起動時に OnAir が再度尋ねます。
+Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu.	何も送信されず、この質問は OnAir が更新されるまで表示されません。あとでサーバーメニューからオンにできます。

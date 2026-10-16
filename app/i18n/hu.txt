@@ -1132,3 +1132,8 @@ Channels 1, 6 and 11 do not overlap.	Az 1., 6. és 11. csatorna nem fedi át egy
 Amber: DFS channels (radar sharing).	Borostyán: DFS-csatornák (radarral osztott).
 Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Világos számok: előnyben részesített keresési csatornák (PSC), ahol a FILS discovery megy.
 start the receiver to see the channels	indítsd el a vevőt a csatornák megtekintéséhez
+# map server start-up question
+Keep sending positions	Pozíciók küldésének folytatása
+OnAir asks this question at every start. "No, do not ask again" stops it until OnAir is updated.	Az OnAir minden indításkor feltészi ezt a kérdést. A „Nem, ne kérdezz többet” az OnAir következő frissítéséig leállítja.
+Nothing is sent in this session. OnAir asks again the next time it starts.	Ebben a munkamenetben semmi sem kerül elküldésre. Az OnAir a következő indításkor újra rákérdez.
+Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu.	Semmi sem kerül elküldésre, és a kérdés az OnAir következő frissítéséig nem jelenik meg. A Szerver menüben később is bekapcsolható.

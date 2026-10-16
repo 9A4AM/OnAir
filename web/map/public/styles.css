@@ -252,3 +252,6 @@ html, body {
   }
   .status .donate { display: none; }
 }
+
+/* the explanation under the ACARS / VDL2 line of the key */
+.key .keynote { margin: 2px 0 8px 22px; font-size: 11px; line-height: 1.35; color: #8c9095; }

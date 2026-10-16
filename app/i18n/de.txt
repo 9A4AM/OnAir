@@ -1147,3 +1147,8 @@ Channels 1, 6 and 11 do not overlap.	Die Kanäle 1, 6 und 11 überlappen nicht.
 Amber: DFS channels (radar sharing).	Bernstein: DFS-Kanäle (Radarmitnutzung).
 Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Helle Zahlen: bevorzugte Suchkanäle (PSC), auf denen FILS Discovery gesendet wird.
 start the receiver to see the channels	Empfänger starten, um die Kanäle zu sehen
+# map server start-up question
+Keep sending positions	Positionen weiter senden
+OnAir asks this question at every start. "No, do not ask again" stops it until OnAir is updated.	OnAir stellt diese Frage bei jedem Start. „Nein, nicht mehr fragen“ beendet das bis zum nächsten Update von OnAir.
+Nothing is sent in this session. OnAir asks again the next time it starts.	In dieser Sitzung wird nichts gesendet. OnAir fragt beim nächsten Start wieder.
+Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu.	Es wird nichts gesendet, und die Frage erscheint bis zum nächsten Update von OnAir nicht mehr. Im Server-Menü lässt es sich weiterhin einschalten.
