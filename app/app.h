@@ -759,6 +759,7 @@ void rotatorPointBearing(double bearingDeg, double elDeg);
 struct ModeDef;
 bool& txViewFlag();                // the RX / TX switch: true = TX view (never saved: the program opens in RX view)
 void txViewSwitch(App& a);         // the slider at the top left of both interfaces
+void txDevOpen(App& a, const char* modeId, bool dryRun);   // dev flags --tx / --txdry <mode id>: open the TX view on a signal, optionally with the test (no RF) running
 void txPanel(App& a);              // the guided transmit panel (tx_panel.cpp): status header, 1 Signal, 2 Settings, 3 Preview and send; fills the main area in TX view
 void txSelectMode(App& a, int family, const char* subId);
 bool txModeHighlighted(const ModeDef& m);

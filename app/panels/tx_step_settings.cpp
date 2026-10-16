@@ -71,7 +71,7 @@ void levelRow(TxUi& s, const DeviceInfo* radio) {
         s.gainDb = (float)(hasRange ? radio->txGainMinDb : 0);
         s.gainSet = true;
     }
-    ImGui::SetNextItemWidth(std::max(160.f * gUi, ImGui::GetContentRegionAvail().x - 150 * gUi));
+    ImGui::SetNextItemWidth(hasRange ? std::max(160.f * gUi, ImGui::GetContentRegionAvail().x - 150 * gUi) : 120 * gUi);
     if (hasRange) ImGui::SliderFloat(tr("Output level (dB)"), &s.gainDb, (float)radio->txGainMinDb, (float)radio->txGainMaxDb, "%.1f dB");
     else ImGui::InputFloat(tr("Output level (dB)"), &s.gainDb, 0, 0, "%.1f");
     if (radio) {

@@ -60,6 +60,7 @@ struct TxUi {
     std::string info;                        // an inline note under the header (not an error)
     struct Recent { std::string id; double mhz = 0; float gain = 0; };
     std::vector<Recent> recent;              // the last signals sent (newest first), saved in the settings
+    bool devAutoStart = false;               // dev flag --txdry: start the test (no RF) at the first frame
     float meterPeak = 0, meterRms = 0;       // smoothed meters of what is shown
 };
 

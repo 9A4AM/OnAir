@@ -965,9 +965,10 @@ void TxSession::senderLoop() {
     const bool rt = sink_->realtime();
     // the radio is written in pieces of about 40 ms so that Stop and a retune are heard quickly, whatever the rate
     const size_t piece = std::max<size_t>(1024, std::min<size_t>(kBlock, (size_t)(rate_ * 0.04)));
-    {   // fill the queue before the first sample goes out, so that the start is not an underrun
+    {   // fill the queue before the first sample goes out, so that the start is not an underrun: about 150 ms of signal (at least 4 blocks, at most half the queue)
+        const size_t need = std::min<size_t>(maxQ_ / 2 + 1, std::max<size_t>(4, (size_t)std::ceil(rate_ * 0.15 / kBlock)));
         std::unique_lock<std::mutex> lk(mu_);
-        cvOut_.wait_for(lk, std::chrono::seconds(5), [&] { return stop_ || genDone_ || q_.size() >= std::min<size_t>(maxQ_ / 2 + 1, 4); });
+        cvOut_.wait_for(lk, std::chrono::seconds(5), [&] { return stop_ || genDone_ || q_.size() >= need; });
     }
     uint64_t lastReported = 0;
     auto lastReport = std::chrono::steady_clock::now();

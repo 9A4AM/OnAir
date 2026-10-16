@@ -394,3 +394,14 @@ bool txModeHighlighted(const ModeDef& m) {
     return std::string(s.subId) == m.subId;
 }
 
+
+// the dev flags --tx and --txdry <id>: TX view on a signal; the test starts by itself only with --txdry (it sends nothing, no radio is opened)
+void txDevOpen(App& a, const char* modeId, bool dryRun) {
+    TxUi& s = ui();
+    s.view = true;
+    if (!modeId || !*modeId) return;
+    const TxModeSpec* t = txModeById(modeId);
+    if (!t) return;
+    for (const auto& m : allModes()) if (txModeForList(m.family, m.subId, s.dvbVariant) == t) { txSelectMode(a, m.family, m.subId); break; }
+    if (dryRun) { s.dryRun = true; s.devAutoStart = true; }
+}

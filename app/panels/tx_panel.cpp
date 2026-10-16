@@ -116,6 +116,7 @@ void body(App& a, bool inWindow) {
     // Start was pressed last frame: the header showed "Preparing", now the radio is opened (it can take a moment)
     if (s.pendingStart && !running) { s.pendingStart = false; if (mode && canStart(a, s, radio, conflict, mode)) startTx(a, s, radio, mode, false); }
     if (s.pendingCarrier && !running) { s.pendingCarrier = false; if (mode && canStart(a, s, radio, conflict, mode)) startTx(a, s, radio, mode, true); }
+    if (s.devAutoStart && mode && !running) { s.devAutoStart = false; s.dryRun = true; s.pendingStart = true; }   // dev flag --txdry (no RF)
     shortcuts(a, s, radio, conflict, mode);
 
     drawStatusHeader(a, s, radio, conflict, mode);

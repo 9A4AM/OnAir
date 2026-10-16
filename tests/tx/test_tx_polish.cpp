@@ -273,6 +273,7 @@ static void dryRunChecks() {
     std::vector<cf32> iq; double rate = 0;
     s.copyTap(iq, rate);
     CHECK(iq.size() > 2048 && rate > 0, "the tap has IQ for the spectrum");
+    CHECK(st.underruns == 0, "the start is pre-rolled: no gap of silence in the first seconds (%llu)", (unsigned long long)st.underruns);
     const auto t0 = std::chrono::steady_clock::now();
     s.stop();
     CHECK(std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count() < 0.5, "stop is quick");

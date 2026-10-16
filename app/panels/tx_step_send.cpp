@@ -15,7 +15,7 @@ namespace {
 void meter(const char* label, float lin, bool hot) {
     const float db = lin > 1e-6f ? 20.f * std::log10(lin) : -120.f;
     const float frac = std::max(0.f, std::min(1.f, (db + 60.f) / 60.f));
-    const float lw = 46 * gUi;
+    const float lw = 64 * gUi;
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("%s", label);
     ImGui::SameLine(lw);
@@ -144,7 +144,7 @@ void stepSend(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxMo
     meter(tr("RMS"), s.meterRms, false);
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("%s", tr("Clipping"));
-    ImGui::SameLine(46 * gUi);
+    ImGui::SameLine(64 * gUi);
     const ImVec2 lp = ImGui::GetCursorScreenPos();
     ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2(lp.x + 8 * gUi, lp.y + ImGui::GetFrameHeight() * 0.5f), 6 * gUi, ImGui::GetColorU32(hot ? kRed : pal::okGreen()));
     ImGui::Dummy(ImVec2(18 * gUi, ImGui::GetFrameHeight()));
@@ -156,10 +156,10 @@ void stepSend(App& a, TxUi& s, const DeviceInfo* radio, int conflict, const TxMo
     double obw = 0;
     if (pv.iq.size() >= 2048) { txSpectrumDb(pv.iq.data() + pv.iq.size() - 2048, 2048, 2048, dbs); obw = txOccupiedBandwidthHz(dbs, rate); }
     ImGui::TextDisabled("%s", tr("Sample rate"));
-    ImGui::SameLine(110 * gUi);
+    ImGui::SameLine(140 * gUi);
     ImGui::Text("%s", hzText(rate).c_str());
     ImGui::TextDisabled("%s", tr("Occupied bandwidth"));
-    ImGui::SameLine(110 * gUi);
+    ImGui::SameLine(140 * gUi);
     if (obw > 0) ImGui::Text("~%s", hzText(obw).c_str()); else ImGui::TextDisabled("-");
     ImGui::EndChild();
     ImGui::PopItemWidth();
