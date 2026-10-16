@@ -180,6 +180,16 @@ static int rx(int argc, char** argv) {
     for (const auto& s : last.services)
         printf("service %d: %s  '%s'  id %06X  language %s  country %s  type %s  %s\n", s.shortId, s.audio ? "audio" : "data", s.label.c_str(), s.id, s.languageName.c_str(), s.country.c_str(),
                s.programmeName.c_str(), s.codecText.c_str());
+    for (const auto& s : last.services) {
+        if (s.audio) continue;
+        DrmDataView v;
+        if (!r.dataView(s.shortId, v)) continue;
+        printf("data service %d: %s, %s%s\n", s.shortId, v.appName.c_str(), v.modeText.c_str(), v.decoded ? "" : " (not decoded)");
+        printf("  packets %llu ok %llu bad CRC %llu lost %llu orphan, units %llu ok %llu dropped, MOT objects %llu, pictures %llu, listed objects %zu, TPEG frames %llu\n", (unsigned long long)v.packets,
+               (unsigned long long)v.badPackets, (unsigned long long)v.lostPackets, (unsigned long long)v.orphanPackets, (unsigned long long)v.unitsOk, (unsigned long long)v.unitsDropped,
+               (unsigned long long)v.mot.objects, (unsigned long long)v.slide.seq, v.objects.size(), (unsigned long long)v.tpegFrames);
+        for (const auto& o : v.objects) printf("  object '%s' %s %zu bytes%s%s\n", o.name.c_str(), o.type.c_str(), o.size, o.note.empty() ? "" : "  ", o.note.c_str());
+    }
     if (last.timeValid) printf("time %04d-%02d-%02d %02d:%02d UTC\n", last.year, last.month, last.day, last.hour, last.minute);
     if (!last.textMessage.empty()) printf("text: %s\n", last.textMessage.c_str());
     printf("audio: %s\n", last.audioInfo.c_str());

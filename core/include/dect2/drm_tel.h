@@ -29,6 +29,10 @@ struct DrmService {
     int streamId = -1;
     int bitrateBps = 0;            // net rate of the stream that carries the service
     std::string codecText;         // "AAC + SBR + PS, 24 kHz, mono core"
+    // data services: the application information of the SDC (type 5); appName is empty until it came
+    std::string appName;           // "MOT slide show", "MOT broadcast website", "Journaline" ...
+    std::string appMode;           // "packet mode, data units, packet id 1" or "stream mode data, not decoded"
+    bool appDecoded = false;       // this receiver decodes the application
 };
 
 struct DrmTelemetry {

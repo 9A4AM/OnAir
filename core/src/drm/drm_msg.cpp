@@ -133,6 +133,18 @@ std::vector<uint8_t> sdcEntityAudio(const SdcAudio& a) {
     for (uint8_t c : a.config) b.push_back(c);
     return b;
 }
+std::vector<uint8_t> sdcEntityApp(const SdcApp& a) {
+    std::vector<uint8_t> b;
+    b.push_back((uint8_t)((((a.shortId & 3) << 2) | (a.streamId & 3)) << 4));
+    if (a.packet) {
+        b.push_back((uint8_t)(0x80 | ((a.dataUnit ? 1 : 0) << 6) | ((a.packetId & 3) << 4) | (a.domain & 7)));
+        b.push_back((uint8_t)a.packetLen);
+    } else {
+        b.push_back((uint8_t)(a.domain & 7));
+    }
+    for (uint8_t c : a.appData) b.push_back(c);
+    return b;
+}
 std::vector<uint8_t> sdcEntityLabel(int shortId, const std::string& text) {
     std::vector<uint8_t> b;
     b.push_back((uint8_t)((shortId & 3) << 6));

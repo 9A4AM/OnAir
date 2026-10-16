@@ -27,6 +27,34 @@
 
 namespace dect2 {
 
+// The content of a packet mode data service: MSC data groups (data units), one after the other, for ever
+class DrmDataSource {
+public:
+    virtual ~DrmDataSource() = default;
+    virtual std::vector<uint8_t> nextUnit() = 0;
+};
+
+// A MOT object to send (ETSI EN 301 234; slide show parameters of TS 101 499)
+struct DrmMotObject {
+    std::string name;
+    int contentType = 2, subtype = 1;    // 2/1 image JPEG, 2/3 PNG, 1/2 HTML, 1/0 ASCII text
+    std::vector<uint8_t> body;
+    std::string caption, category, clickUrl;
+    int categoryId = -1, slideId = -1;   // -1: not sent
+    bool hasTrigger = false;             // TriggerTime: now (trigMjd 0) or the given date and time
+    int trigMjd = 0, trigHour = 0, trigMinute = 0;
+};
+// The MOT carousel: every object in turn, as a header and body segments of `segSize` bytes each (header mode), or the directory first and then the bodies
+// (directory mode). Transport ids count up from firstTid.
+std::shared_ptr<DrmDataSource> makeDrmMotSource(const std::vector<DrmMotObject>& objects, int segSize, bool directoryMode, uint16_t firstTid = 1);
+// A PNG picture of w x h pixels (RGB, stored deflate) and the pixels it holds, for tests
+std::vector<uint8_t> drmGenPng(int w, int h, int seed);
+void drmGenPngPixels(int w, int h, int seed, std::vector<uint8_t>& rgba);
+// One MSC data group (EN 300 401 clause 5.3.3.1) of a MOT segment: type 3 header, 4 body, 6 directory
+std::vector<uint8_t> drmGenMotGroup(int type, uint16_t tid, int segNo, bool last, int repetition, const uint8_t* seg, size_t n, int continuity);
+// MOT header core and extension for an object (the same bytes in the header segments and in a directory entry)
+std::vector<uint8_t> drmGenMotHeader(const DrmMotObject& o);
+
 struct DrmTxConfig {
     int mode = drm::kModeB;      // 0 A, 1 B, 2 C, 3 D, 4 E (DRM+)
     int occupancy = 3;           // Table 48: 0 4.5 kHz, 1 5, 2 9, 3 10, 4 18, 5 20 kHz (mode E: 0, 100 kHz)
@@ -51,6 +79,19 @@ struct DrmTxConfig {
     int year = 2026, month = 10, day = 6, hour = 12, minute = 0;   // the clock that SDC type 8 reports (advances with the signal)
     bool sendTime = true, sendLanguage = true;
     uint32_t seed = 1;
+    // A packet mode data service next to the audio service (modes A to D only): short id 1, stream 1 with equal error protection, DAB domain user application
+    // `dataApp` (0 = none; 0x002 slide show, 0x003 broadcast website, 0x004 TPEG, 0x007 EPG). Its units come from dataSource; they are cut into packets of
+    // dataPacketLen data bytes (ES 201 980 clause 6.6.1) and dataPackets of them fill a logical frame (400 ms).
+    int dataApp = 0;
+    int dataPackets = 12;
+    int dataPacketLen = 45;
+    int dataPacketId = 1;
+    bool dataUnitMode = true;            // false: the application information says "single packets"
+    std::shared_ptr<DrmDataSource> dataSource;
+    int dataLossEvery = 0;               // > 0: every n-th packet is not sent at all (the continuity index jumps)
+    int dataBadCrcEvery = 0;             // > 0: every n-th packet is sent with a wrong CRC-16
+    int dataOtherIdEvery = 0;            // > 0: every n-th packet slot carries a packet of another Packet Id (an unrelated application)
+    std::string dataLabel = "OnAir Data";
 };
 
 // The content of the audio stream: the frames of each audio super frame

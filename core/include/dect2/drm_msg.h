@@ -89,6 +89,7 @@ int sdcParse(const uint8_t* data, int bytes, SdcInfo& out);
 void sdcPutEntity(std::vector<uint8_t>& field, int type, int version, const std::vector<uint8_t>& body4plus);   // body: first nibble in the high bits of body[0], then whole bytes
 std::vector<uint8_t> sdcEntityMux(const SdcMux& m);
 std::vector<uint8_t> sdcEntityAudio(const SdcAudio& a);
+std::vector<uint8_t> sdcEntityApp(const SdcApp& a);   // type 5, application information of a data service (packet mode: appData is what follows the packet length)
 std::vector<uint8_t> sdcEntityLabel(int shortId, const std::string& text);
 std::vector<uint8_t> sdcEntityLang(int shortId, const std::string& lang, const std::string& country);
 std::vector<uint8_t> sdcEntityTime(const SdcTime& t);

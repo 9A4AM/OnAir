@@ -99,7 +99,12 @@ public:
         buf_.erase(buf_.begin(), buf_.begin() + (long)pos);
         if (buf_.size() > 4096) buf_.clear();
     }
-    uint64_t packets = 0, badPackets = 0;
+    uint64_t packets = 0, badPackets = 0;   // packets with a good / a wrong CRC-16
+    uint64_t lostPackets = 0;               // packets missing according to the continuity index (not the ones with a wrong CRC: those are in badPackets)
+    uint64_t orphanPackets = 0;             // continuation packets without the first packet of their data unit
+    uint64_t otherIdPackets = 0;            // good packets of another Packet Id (other applications of the stream)
+    uint64_t emptyPackets = 0;              // packets without data (padding)
+    uint64_t unitsOk = 0, unitsDropped = 0; // data units delivered / started and abandoned (lost packet, bad CRC, too long)
 private:
     bool packet(const uint8_t* p, size_t len, std::vector<uint8_t>& out);
     int addr_;
@@ -109,7 +114,9 @@ private:
 };
 
 // DRM packet mode (ES 201 980 clause 6.6): packets of `dataLen` + 3 bytes (8 bit header, data field, CRC-16) of one Packet Id; the data units
-// (first to last packet) are MSC data groups for Journaline (TS 102 979 clause 8.2). Feed it whole logical frames of the stream.
+// (first to last packet) are MSC data groups for Journaline (TS 102 979 clause 8.2) and for MOT (TS 101 499 slide show, broadcast website).
+// Feed it whole logical frames of the stream. A packet with a wrong CRC-16 is dropped; the 3 bit continuity index of the packets of one Packet Id
+// shows packets that were lost (the data unit they belong to is dropped); a continuation packet without a first packet is an orphan.
 class DrmPacketDemux {
 public:
     void configure(int dataLen, int packetId);
@@ -120,7 +127,12 @@ public:
         if (len_ <= 0) return;
         for (size_t p = 0; p + sz <= n; p += sz) if (packet(d + p, sz, out)) { onUnit(out.data(), out.size()); out.clear(); }
     }
-    uint64_t packets = 0, badPackets = 0;
+    uint64_t packets = 0, badPackets = 0;   // packets with a good / a wrong CRC-16
+    uint64_t lostPackets = 0;               // packets missing according to the continuity index (not the ones with a wrong CRC: those are in badPackets)
+    uint64_t orphanPackets = 0;             // continuation packets without the first packet of their data unit
+    uint64_t otherIdPackets = 0;            // good packets of another Packet Id (other applications of the stream)
+    uint64_t emptyPackets = 0;              // packets without data (padding)
+    uint64_t unitsOk = 0, unitsDropped = 0; // data units delivered / started and abandoned (lost packet, bad CRC, too long)
 private:
     bool packet(const uint8_t* p, size_t sz, std::vector<uint8_t>& out);   // true: `out` holds a complete data unit
     int len_ = 0, id_ = 0;

@@ -15,6 +15,7 @@
 #include "dect2/audioout.h"
 #include "dect2/drm_audio.h"
 #include "dect2/drm_dec.h"
+#include "dect2/drm_data.h"
 #include "dect2/drm_fft.h"
 #include "drm_front.h"
 #include "dect2/channel_find.h"
@@ -23,6 +24,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstring>
+#include <map>
 #include <mutex>
 
 namespace dect2 {
@@ -87,6 +89,19 @@ struct DrmReceiver::Impl {
         }
         jlStream = a.streamId;
         if (a.streamId == f.stream) jlDemux.feed(f.data, (size_t)(f.lenA + f.lenB), [this](const uint8_t* g, size_t n) { jl.feedDataGroup(g, n); });
+    }
+    // the other data services, by short id (ES 201 980 clause 6.4.3.6: one application information entity per data service)
+    mutable std::mutex dataMu;
+    std::map<int, DrmDataService> dsvc;
+    void dataServices(const LogicalFrame& f, const SdcInfo& sd) {
+        std::lock_guard<std::mutex> lk(dataMu);
+        for (int i = 0; i < 4; i++) {
+            const SdcApp& a = sd.app[i];
+            if (!a.present) { dsvc.erase(i); continue; }
+            DrmDataService& s = dsvc[i];
+            s.configure(a);
+            if (a.streamId == f.stream && a.packet) s.feed(f.data, (size_t)(f.lenA + f.lenB));
+        }
     }
     std::function<void(const float*, const float*, size_t)> tap;
     std::atomic<float> volume{1.f};
@@ -257,6 +272,7 @@ struct DrmReceiver::Impl {
         mode = -1;
         audioOk = audioBad = 0;
         textDec.reset(); textMsg.clear();
+        { std::lock_guard<std::mutex> lk(dataMu); dsvc.clear(); }
         adec.reset(); adecKey = 0; adecShort = -1; adecOkSeen = adecBadSeen = 0; audioInfoText.clear(); audioStateNow = 0;
         if (audioOut) audioOut->flush();
         sincePub = 0; inSamples = 0;
@@ -966,6 +982,7 @@ struct DrmReceiver::Impl {
         const SdcInfo& sd = be.sdc();
         if (streamCb) streamCb(f.stream, f.data, f.lenA + f.lenB, f.lenA, tel);
         journaline(f, sd);
+        dataServices(f, sd);
         const SdcAudio* au = chooseAudio(sd);
         if (!au || au->streamId != f.stream) return;
         const int len = f.lenA + f.lenB;
@@ -1183,13 +1200,27 @@ struct DrmReceiver::Impl {
         t.services.clear();
         for (int i = 0; i < 4; i++) {
             const FacService* fs = be.facService(i);
-            if (!fs && !(sd.audio[i].present || sd.label[i].present)) continue;
+            if (!fs && !(sd.audio[i].present || sd.label[i].present || sd.app[i].present)) continue;
             DrmService s;
             s.shortId = i;
             if (fs) {
                 s.id = fs->id; s.audio = !fs->data; s.language = fs->language; s.languageName = languageName(fs->language);
                 s.programmeType = fs->descriptor; s.programmeName = fs->data ? "" : (fs->descriptor < 30 ? programmeTypeName(fs->descriptor) : "");
                 s.conditionalAccess = fs->audioCa || fs->dataCa;
+            }
+            if (sd.app[i].present && !sd.audio[i].present) {
+                const SdcApp& a = sd.app[i];
+                s.audio = false;
+                s.streamId = a.streamId;
+                s.appName = drmAppName(a.domain, a.dabUserApp());
+                char mb[120];
+                if (a.packet) snprintf(mb, sizeof mb, "packet mode, %s, packet id %d", a.dataUnit ? "data units" : "single packets", a.packetId);
+                else snprintf(mb, sizeof mb, "stream mode data, not decoded");
+                s.appMode = mb;
+                const int app = a.dabUserApp();
+                s.appDecoded = a.packet && a.dataUnit && a.packetLen > 0 && a.domain == 0 && (app == 0x002 || app == 0x003 || app == 0x004 || app == 0x007 || app == 0x44A);
+                if (a.streamId < sd.mux.nStreams)
+                    s.bitrateBps = (int)((sd.mux.stream[a.streamId].lenA + sd.mux.stream[a.streamId].lenB) * 8 / (modeParams(be.mode() >= 0 ? be.mode() : 1).frameMs() / 1000.0));
             }
             if (sd.label[i].present) s.label = sd.label[i].text;
             if (sd.lang[i].present) { s.country = sd.lang[i].country; if (!sd.lang[i].language.empty() && sd.lang[i].language[0] != '-') s.languageName = sd.lang[i].language; }
@@ -1274,6 +1305,18 @@ void DrmReceiver::setSilent(bool s) { p_->silent = s; }
 void DrmReceiver::setAudioTap(std::function<void(const float*, const float*, size_t)> cb) { p_->tap = std::move(cb); }
 void DrmReceiver::selectService(int shortId) { p_->selected = shortId; }
 JournalineDecoder& DrmReceiver::journaline() { return p_->jl; }
+bool DrmReceiver::dataView(int shortId, DrmDataView& out) const {
+    std::lock_guard<std::mutex> lk(p_->dataMu);
+    auto it = p_->dsvc.find(shortId);
+    if (it == p_->dsvc.end()) return false;
+    it->second.fill(out);
+    return true;
+}
+bool DrmReceiver::takeSlide(int& shortId, DrmSlide& out) {
+    std::lock_guard<std::mutex> lk(p_->dataMu);
+    for (auto& kv : p_->dsvc) if (kv.second.takeSlide(out)) { shortId = kv.first; return true; }
+    return false;
+}
 bool DrmReceiver::hasJournaline() const { return p_->jlStream.load() >= 0; }
 void DrmReceiver::setStreamCallback(std::function<void(int, const uint8_t*, int, int, const DrmTelemetry&)> cb) { p_->streamCb = std::move(cb); }
 

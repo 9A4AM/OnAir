@@ -52,6 +52,13 @@ struct DrmTransmitter::Impl {
     int levels = 1;
     int lenA = 0, lenB = 0, textBytes = 0, nAudio = 0, hp = 0, hdr = 0, payload = 0;
     int sdcFieldBytes = 0;
+    // the data service (packet mode stream 1)
+    int dataLen = 0;                          // bytes of its logical frame: whole packets
+    std::vector<uint8_t> dataQ;               // the data unit being cut into packets
+    size_t dataQPos = 0;
+    uint8_t dataCi = 0;                       // continuity index of the packets of the data service's Packet Id
+    uint64_t dataSlot = 0;
+    bool hasData() const { return dataLen > 0; }
     std::vector<std::vector<cf32>> hist;      // previous multiplex frames z (before the cell interleaver), most recent first
     int depth = 1;
     TextEncoder text;
@@ -110,6 +117,10 @@ struct DrmTransmitter::Impl {
         const int capacity = mscCode->infoBits() / 8;
         lenA = X;
         lenB = capacity - X;
+        if (!modeE && cfg.dataApp > 0 && cfg.dataSource && cfg.dataPackets > 0 && cfg.dataPacketLen >= 8 && cfg.dataPacketLen <= 255) {
+            dataLen = cfg.dataPackets * (cfg.dataPacketLen + 3);
+            lenB -= dataLen;                          // stream 1 takes the end of part B
+        }
         if (lenA > 4095 || lenB > 4095 || lenB < 40) return;
         // mode E: the audio super frame (200 ms) fills two logical frames (100 ms each), half of it in each
         halfBytes = lenA + lenB - textBytes;
@@ -149,6 +160,48 @@ struct DrmTransmitter::Impl {
         preroll = depth - 1;
     }
 
+    // A packet of the data service (ES 201 980 clause 6.6.1): header (first, last, packet id, padded packet indicator, continuity index), the data field, CRC-16
+    void dataPacket(std::vector<uint8_t>& out) {
+        const int pl = cfg.dataPacketLen;
+        if (dataQPos >= dataQ.size()) { dataQ = cfg.dataSource->nextUnit(); dataQPos = 0; }
+        const bool empty = dataQ.empty();
+        const size_t remaining = dataQ.size() - dataQPos;
+        const bool first = empty || dataQPos == 0, last = empty || remaining <= (size_t)pl - 1 || remaining == (size_t)pl;
+        const bool ppi = empty || remaining < (size_t)pl;
+        const size_t take = empty ? 0 : std::min(remaining, (size_t)pl - (ppi ? 1 : 0));
+        std::vector<uint8_t> pk((size_t)pl + 3, 0);
+        pk[0] = (uint8_t)((first ? 0x80 : 0) | (last && take == remaining ? 0x40 : 0) | ((cfg.dataPacketId & 3) << 4) | (ppi ? 0x08 : 0) | (dataCi & 7));
+        size_t at = 1;
+        if (ppi) pk[at++] = (uint8_t)take;
+        if (take) std::memcpy(&pk[at], &dataQ[dataQPos], take);
+        dataQPos += take;
+        if (empty) pk[0] |= 0xC0;
+        const uint32_t c = drm::crc16Bytes(pk.data(), (size_t)pl + 1);
+        pk[(size_t)pl + 1] = (uint8_t)(c >> 8); pk[(size_t)pl + 2] = (uint8_t)c;
+        dataCi = (uint8_t)((dataCi + 1) & 7);
+        out = pk;
+    }
+    // The bytes of the data stream's logical frame: dataPackets packets, with the losses and damage the configuration asks for
+    void dataFrame(std::vector<uint8_t>& lf) {
+        int sent = 0;
+        while (sent < cfg.dataPackets) {
+            dataSlot++;
+            if (cfg.dataOtherIdEvery > 0 && dataSlot % (uint64_t)cfg.dataOtherIdEvery == 0) {   // a packet of another application on the same stream
+                std::vector<uint8_t> pk((size_t)cfg.dataPacketLen + 3, 0);
+                pk[0] = (uint8_t)(0xC0 | (((cfg.dataPacketId + 1) & 3) << 4) | 0x08);   // first and last, padded, no data
+                const uint32_t c = drm::crc16Bytes(pk.data(), (size_t)cfg.dataPacketLen + 1);
+                pk[(size_t)cfg.dataPacketLen + 1] = (uint8_t)(c >> 8); pk[(size_t)cfg.dataPacketLen + 2] = (uint8_t)c;
+                lf.insert(lf.end(), pk.begin(), pk.end()); sent++;
+                continue;
+            }
+            std::vector<uint8_t> pk;
+            dataPacket(pk);
+            if (cfg.dataLossEvery > 0 && dataSlot % (uint64_t)cfg.dataLossEvery == 0) continue;   // not sent: the next packet follows with the next index
+            if (cfg.dataBadCrcEvery > 0 && dataSlot % (uint64_t)cfg.dataBadCrcEvery == 0) pk.back() ^= 0x5A;
+            lf.insert(lf.end(), pk.begin(), pk.end()); sent++;
+        }
+    }
+
     // the cells (before the time interleaver) of the next multiplex frame
     std::vector<cf32> muxCells() {
         const int n = nAudio;
@@ -175,6 +228,7 @@ struct DrmTransmitter::Impl {
             text.next(four);
             lf.insert(lf.end(), four, four + 4);
         }
+        if (hasData()) dataFrame(lf);
         const int Lbits = mscCode->infoBits();
         std::vector<uint8_t> u((size_t)Lbits, 0), pr((size_t)Lbits);
         for (size_t i = 0; i < lf.size() && i * 8 < (size_t)Lbits; i++)
@@ -205,20 +259,29 @@ struct DrmTransmitter::Impl {
     void sdcField(std::vector<uint8_t>& field) {
         // entities that every block carries: multiplex description and audio information; the others rotate when the block is small
         SdcMux mx;
-        mx.present = true; mx.nStreams = 1; mx.protA = cfg.partABytes > 0 ? cfg.protA : 0; mx.protB = cfg.protB;
+        mx.present = true; mx.nStreams = hasData() ? 2 : 1; mx.protA = cfg.partABytes > 0 ? cfg.protA : 0; mx.protB = cfg.protB;
         mx.stream[0].lenA = lenA; mx.stream[0].lenB = lenB;
+        if (hasData()) { mx.stream[1].lenA = 0; mx.stream[1].lenB = dataLen; }
         SdcAudio a;
         a.shortId = 0; a.streamId = 0; a.coding = cfg.audioCoding; a.sbr = cfg.audioSbr; a.mode = cfg.audioMode;
         a.rateCode = cfg.audioRateHz == 12000 ? 1 : cfg.audioRateHz == 24000 ? 3 : cfg.audioRateHz == 48000 ? 5 : 3; a.text = cfg.textMessage;
         field.clear();
         sdcPutEntity(field, 0, 0, sdcEntityMux(mx));
         sdcPutEntity(field, 9, 0, sdcEntityAudio(a));
+        if (hasData()) {
+            SdcApp ap;
+            ap.present = true; ap.shortId = 1; ap.streamId = 1; ap.packet = true; ap.domain = 0; ap.dataUnit = cfg.dataUnitMode;
+            ap.packetId = cfg.dataPacketId; ap.packetLen = cfg.dataPacketLen;
+            ap.appData = {(uint8_t)((cfg.dataApp >> 8) & 7), (uint8_t)(cfg.dataApp & 0xFF)};
+            sdcPutEntity(field, 5, 0, sdcEntityApp(ap));
+        }
         std::vector<std::vector<uint8_t>> opt;       // optional entities, each is a complete entity
         {
             std::vector<uint8_t> e;
             sdcPutEntity(e, 1, 0, sdcEntityLabel(0, cfg.label.substr(0, 16)));
             opt.push_back(e);
         }
+        if (hasData()) { std::vector<uint8_t> e; sdcPutEntity(e, 1, 0, sdcEntityLabel(1, cfg.dataLabel.substr(0, 16))); opt.push_back(e); }
         if (cfg.sendLanguage) { std::vector<uint8_t> e; sdcPutEntity(e, 12, 0, sdcEntityLang(0, cfg.language3, cfg.country2)); opt.push_back(e); }
         if (cfg.sendTime) {
             SdcTime t;
@@ -250,9 +313,12 @@ struct DrmTransmitter::Impl {
             fi.interleaver = cfg.longInterleave ? 0 : 1;
             fi.mscMode = modeE ? (cfg.mscQam == 16 ? 0 : 3) : (cfg.mscQam == 64 ? 0 : 3);
             fi.sdcMode = cfg.sdcMode;
-            fi.numServicesCode = 4;                      // one audio service
+            fi.numServicesCode = hasData() ? 5 : 4;      // one audio service (and one data service)
             fi.svc[0].id = cfg.serviceId; fi.svc[0].shortId = 0; fi.svc[0].language = cfg.language; fi.svc[0].descriptor = cfg.programmeType;
             fi.svc[1] = fi.svc[0];                       // mode E carries two sets of service parameters: with one service both describe it
+            if (hasData() && f % 2 == 1) {               // the blocks of a super frame describe the services in turn
+                fi.svc[0].id = cfg.serviceId + 1; fi.svc[0].shortId = 1; fi.svc[0].data = true; fi.svc[0].descriptor = 0; fi.svc[0].language = 0;
+            }
             std::vector<uint8_t> bits((size_t)facInfoBits(modeE)), pr(bits.size());
             facBuild(fi, bits.data());
             prbs(pr.data(), pr.size());

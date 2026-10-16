@@ -4,6 +4,7 @@
 // telemetry() and the setters from the interface thread (they must be safe while feed() runs).
 #pragma once
 #include "dab_journaline.h"
+#include "drm_data.h"
 #include "drm_tel.h"
 #include "mode_tuning.h"
 #include "ring.h"
@@ -38,6 +39,11 @@ public:
     // The Journaline data service of the multiplex (SDC application information, packet mode, DAB domain user application 0x44a)
     JournalineDecoder& journaline();
     bool hasJournaline() const;
+    // The other data services (MOT slide show, broadcast website, EPG, TPEG; the others by name): what the data service with this short id has received.
+    // False when the multiplex has no application information for it. Safe to call while feed() runs.
+    bool dataView(int shortId, DrmDataView& out) const;
+    // Slide show pictures that came since the last call (any service), oldest first; the app saves them to the gallery
+    bool takeSlide(int& shortId, DrmSlide& out);
 
 private:
     struct Impl;
