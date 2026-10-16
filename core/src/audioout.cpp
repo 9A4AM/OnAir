@@ -17,7 +17,7 @@ namespace dect2 {
 static const bool kForceMute = [] { const char* e = getenv("DECT2_MUTE"); return e && *e && *e != '0'; }();
 
 void AudioOut::Impl::render(float* out, uint32_t nFrames) {
-    if (flushReq.exchange(false)) { r.store(w.load()); playing = false; }
+    if (flushReq.exchange(false)) { r.store(w.load()); playing = false; leveler.reset(); }
     const uint64_t wr = w.load(std::memory_order_acquire), rd = r.load(std::memory_order_relaxed);
     const uint64_t avail = wr - rd;
     if (!playing) {
@@ -26,16 +26,18 @@ void AudioOut::Impl::render(float* out, uint32_t nFrames) {
     uint32_t n = 0;
     if (playing) {
         n = (uint32_t)std::min<uint64_t>(avail, nFrames);
-        const float vol = muted.load() || kForceMute ? 0.f : volume.load();
+        const float vol = muted.load() || kForceMute ? 0.f : volumeTaper(volume.load());
         const size_t mask = frames - 1;
         for (uint32_t i = 0; i < n; i++) {
             const size_t k = (size_t)((rd + i) & mask) * 2;
-            out[2 * i] = ring[k] * vol;
-            out[2 * i + 1] = ring[k + 1] * vol;
+            out[2 * i] = ring[k];
+            out[2 * i + 1] = ring[k + 1];
         }
+        leveler.process(out, (int)n);
+        for (uint32_t i = 0; i < 2 * n; i++) out[i] *= vol;
         r.store(rd + n, std::memory_order_release);
         played.fetch_add(n);
-        if (n < nFrames) { underruns++; playing = false; }
+        if (n < nFrames) { underruns++; playing = false; leveler.reset(); }
     }
     if (n < nFrames) memset(out + 2 * n, 0, (size_t)(nFrames - n) * 2 * sizeof(float));
 }
