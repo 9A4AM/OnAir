@@ -17,7 +17,7 @@
 //       The symbol rates the receiver accepts at each input sample rate.
 #include "dect2/dvbs_gen.h"
 #include "dect2/dvbs_rx.h"
-#include "../core/src/dvbs_s1.h"
+#include "../core/src/dvbs/dvbs_s1.h"
 #include "../core/src/dvbs/dvbs_carrier.h"
 #include <algorithm>
 #include <chrono>
