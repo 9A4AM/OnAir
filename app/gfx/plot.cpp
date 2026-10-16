@@ -2,7 +2,9 @@
 #include "plot.h"
 #include "imgui_internal.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <limits>
 #include <string>
@@ -306,6 +308,27 @@ void drawMarker(ImVec2 p, MarkerType m, float size, ImU32 fill, ImU32 line) {
     }
 }
 
+// DECT2_PLOTSTATS=1: the CPU time of every plot (from BeginPlot to the end of EndPlot, so the data calls between are in it) added up per
+// frame, and the number of plots, printed every 2 seconds on stderr. Dev tool for the plot speed work; costs two clock reads per plot when on.
+struct PlotStats {
+    bool on = getenv("DECT2_PLOTSTATS") != nullptr;
+    std::chrono::steady_clock::time_point t0;
+    double acc = 0, worst = 0, frameAcc = 0; int plots = 0, frames = 0, lastFrame = -1; double last = 0;
+    void begin() { if (on) t0 = std::chrono::steady_clock::now(); }
+    void end() {
+        if (!on) return;
+        const double d = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        const int f = ImGui::GetFrameCount();
+        if (f != lastFrame) { worst = std::max(worst, frameAcc); acc += frameAcc; if (lastFrame >= 0) frames++; frameAcc = 0; lastFrame = f; }
+        frameAcc += d; plots++;
+        const double now = ImGui::GetTime();
+        if (now - last > 2.0 && frames > 0) {
+            fprintf(stderr, "plotstats: %.3f ms avg / %.2f ms max per frame in plots (%d frames, %.1f plots/frame)\n", 1e3 * acc / frames, 1e3 * worst, frames, (double)plots / frames);
+            acc = worst = 0; plots = frames = 0; last = now;
+        }
+    }
+} gPlotStats;
+
 } // namespace
 
 Style& GetStyle() { return gStyle; }
@@ -336,6 +359,7 @@ bool BeginPlot(const char* id, ImVec2 size, int flags) {
         ImGui::ItemSize(s);
     }
     C.active = true;
+    gPlotStats.begin();
     return true;
 }
 
@@ -528,6 +552,7 @@ Rect GetPlotLimits() {
 
 void EndPlot() {
     if (!C.active) return;
+    struct Timed { ~Timed() { gPlotStats.end(); } } timed;
     finishSetup();
     C.dl->PopClipRect();
     const float sc = gStyle.Scale, th = ImGui::GetTextLineHeight(), tickLen = gStyle.TickLen * sc, pad = gStyle.Pad * sc;
