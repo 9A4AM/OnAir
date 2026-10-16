@@ -27,7 +27,7 @@ bool hamAcquire(std::string& err) {
     if (gHamRefs == 0) {
         const int r = rig_load_all_backends();
         if (r != RIG_OK && r != -RIG_ENIMPL) {
-            err = std::string("Hamlib: ") + rigerror2(r);
+            err = std::string("Hamlib: ") + rigerror(r);
             return false;
         }
     }
@@ -65,14 +65,14 @@ public:
         if (!path.empty()) {
             const int r = rig_set_conf(rig_, rig_token_lookup(rig_, "rig_path"), path.c_str());
             if (r != RIG_OK) {
-                err = std::string("Hamlib rig_path: ") + rigerror2(r);
+                err = std::string("Hamlib rig_path: ") + rigerror(r);
                 close();
                 return false;
             }
         }
         const int r = rig_open(rig_);
         if (r != RIG_OK) {
-            err = std::string("Hamlib open ") + path + ": " + rigerror2(r);
+            err = std::string("Hamlib open ") + path + ": " + rigerror(r);
             close();
             return false;
         }
@@ -96,25 +96,25 @@ public:
     bool setRx(double hz, rmode_t mode, std::string& err) {
         if (!rig_) { err = "Hamlib: rig not open"; return false; }
         int r = rig_set_freq(rig_, RIG_VFO_RX, (freq_t)hz);
-        if (r != RIG_OK) { err = std::string("Hamlib set RX frequency: ") + rigerror2(r); return false; }
+        if (r != RIG_OK) { err = std::string("Hamlib set RX frequency: ") + rigerror(r); return false; }
         r = rig_set_mode(rig_, RIG_VFO_RX, mode, RIG_PASSBAND_NORMAL);
-        if (r != RIG_OK) { err = std::string("Hamlib set RX mode: ") + rigerror2(r); return false; }
+        if (r != RIG_OK) { err = std::string("Hamlib set RX mode: ") + rigerror(r); return false; }
         return true;
     }
 
     bool setTx(double hz, rmode_t mode, std::string& err) {
         if (!rig_) { err = "Hamlib: rig not open"; return false; }
         int r = rig_set_freq(rig_, RIG_VFO_TX, (freq_t)hz);
-        if (r != RIG_OK) { err = std::string("Hamlib set TX frequency: ") + rigerror2(r); return false; }
+        if (r != RIG_OK) { err = std::string("Hamlib set TX frequency: ") + rigerror(r); return false; }
         r = rig_set_mode(rig_, RIG_VFO_TX, mode, RIG_PASSBAND_NORMAL);
-        if (r != RIG_OK) { err = std::string("Hamlib set TX mode: ") + rigerror2(r); return false; }
+        if (r != RIG_OK) { err = std::string("Hamlib set TX mode: ") + rigerror(r); return false; }
         return true;
     }
 
     bool setPtt(bool on, std::string& err) {
         if (!rig_) { err = "Hamlib: rig not open"; return false; }
         const int r = rig_set_ptt(rig_, RIG_VFO_CURR, on ? RIG_PTT_ON : RIG_PTT_OFF);
-        if (r != RIG_OK) { err = std::string("Hamlib PTT: ") + rigerror2(r); return false; }
+        if (r != RIG_OK) { err = std::string("Hamlib PTT: ") + rigerror(r); return false; }
         return true;
     }
 
