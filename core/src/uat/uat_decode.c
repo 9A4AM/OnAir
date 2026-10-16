@@ -19,8 +19,8 @@
 #include <string.h>
 #include <assert.h>
 
-#include "dect2/uat_frame.h"
-#include "dect2/uat_decode_c.h"
+#include "dect2/uat/uat_frame.h"
+#include "dect2/uat/uat_decode_c.h"
 
 static void uat_decode_hdr(uint8_t *frame, struct uat_adsb_mdb *mdb)
 {

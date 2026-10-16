@@ -2,7 +2,7 @@
 // The signal comes from adsb_gen (pulses, carrier offsets, overlapping bursts, noise) and adsb_sim (impairments, 8 bit rounding, bookkeeping).
 // SNR figures are pulse power over noise power in 2 MHz, which is what the generator's snr setting means; the receiver's own SNR (telemetry) is the pulse
 // power over the noise power per sample and so depends on the sample rate.
-#include "dect2/adsb_sim.h"
+#include "dect2/adsb/adsb_sim.h"
 #include "../jobs.h"
 #include <algorithm>
 #include <chrono>

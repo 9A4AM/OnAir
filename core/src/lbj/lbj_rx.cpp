@@ -1,9 +1,9 @@
 // LBJ receiver: FM + POCSAG 1200 on the railway warning channel (~821.2375 MHz). Demodulation reuses the pagers POCSAG path.
-#include "dect2/lbj_rx.h"
-#include "dect2/lbj_proto.h"
-#include "dect2/pager_rx.h"
-#include "dect2/pager_tel.h"
-#include "dect2/exact_resampler.h"
+#include "dect2/lbj/lbj_rx.h"
+#include "dect2/lbj/lbj_proto.h"
+#include "dect2/pager/pager_rx.h"
+#include "dect2/pager/pager_tel.h"
+#include "dect2/dsp/exact_resampler.h"
 #include <algorithm>
 #include <cmath>
 #include <ctime>

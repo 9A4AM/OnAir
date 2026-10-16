@@ -1,6 +1,6 @@
 // AIS: generator to receiver round trip with the simulated port (15 vessels, base station, aids, aircraft): every burst that was sent comes back
 // bit for bit, on the right channel, nothing else comes out, and the station table matches what was sent.
-#include "dect2/ais_testutil.h"
+#include "dect2/ais/ais_testutil.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

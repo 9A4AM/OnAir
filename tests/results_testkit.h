@@ -1,8 +1,8 @@
 // The decoded-results tests (tests/test_*_results.cpp): a receiver fed with its mode's built-in test signal, then reset, configured
 // again, saved, loaded into a fresh receiver and cleared. The lists must live through all but the Clear.
 #pragma once
-#include "dect2/mode_synth.h"
-#include "dect2/results_io.h"
+#include "dect2/engine/mode_synth.h"
+#include "dect2/results/results_io.h"
 #include <cstdio>
 #include <memory>
 #include <string>

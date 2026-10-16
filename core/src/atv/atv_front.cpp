@@ -1,9 +1,9 @@
 // Analog TV receiver, radio side. See atv_front.h.
 #include "atv_front.h"
 #include "atv_dsp.h"
-#include "dect2/fftutil.h"
-#include "dect2/dsp_compat.h"
-#include "dect2/exact_resampler.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/dsp/dsp_compat.h"
+#include "dect2/dsp/exact_resampler.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

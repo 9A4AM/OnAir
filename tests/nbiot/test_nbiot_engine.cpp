@@ -1,8 +1,8 @@
 // NB-IoT cells through the engine (setStandard(71)): the synthetic source plays the standalone test cell, the receiver reports through latestRx(),
 // the results save and load. No sound.
-#include "dect2/nbiot_rx.h"
-#include "dect2/nbiot_tel.h"
-#include "dect2/engine.h"
+#include "dect2/nbiot/nbiot_rx.h"
+#include "dect2/nbiot/nbiot_tel.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

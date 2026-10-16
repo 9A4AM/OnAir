@@ -7,9 +7,9 @@
 //
 // A layer is name:segments:modulation:rate:interleaving (0..3). Without --layer: a one-segment layer A (QPSK 2/3, the picture phones use) and a
 // twelve-segment layer B (64QAM 3/4) that carries the programme. The programme goes into the last layer given, the others carry null packets.
-#include "dect2/demo_ts.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/isdbt_gen.h"
+#include "dect2/tv/demo_ts.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/isdbt/isdbt_gen.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

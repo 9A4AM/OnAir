@@ -1,9 +1,9 @@
 // HamDRM internals shared by the decoder (hfdig_hamdrm.cpp) and the transmitter (hfdig_hamdrm_gen.cpp): the OFDM geometry on top of the
 // DRM mode timing, the cell layout of a frame, the codes, the 8 <-> 12 kHz resampler and the data groups.
 #pragma once
-#include "dect2/drm_defs.h"
-#include "dect2/drm_fec.h"
-#include "dect2/ring.h"
+#include "dect2/drm/drm_defs.h"
+#include "dect2/drm/drm_fec.h"
+#include "dect2/common/ring.h"
 #include "hfdig_usb.h"
 #include <algorithm>
 #include <cmath>

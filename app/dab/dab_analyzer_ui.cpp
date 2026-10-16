@@ -3,10 +3,10 @@
 // 864 capacity units of the main service channel. Everything comes from the FIC (dab_fig.h): the receiver's ensemble tables plus the FIGs it
 // keeps for the rest (programme types, languages, announcements, time, frequencies ...).
 #include "app.h"
-#include "dect2/dab_fig.h"
-#include "dect2/dab_pad.h"
-#include "dect2/dab_announce.h"
-#include "dect2/fftutil.h"
+#include "dect2/dab/dab_fig.h"
+#include "dect2/dab/dab_pad.h"
+#include "dect2/dab/dab_announce.h"
+#include "dect2/dsp/fftutil.h"
 #include <cmath>
 #include <ctime>
 

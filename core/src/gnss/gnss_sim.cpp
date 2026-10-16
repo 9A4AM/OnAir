@@ -1,10 +1,10 @@
 // Simulated sky for the GNSS test signal (see gnss_sim.h).
-#include "dect2/gnss_sim.h"
-#include "dect2/gen_util.h"
-#include "dect2/gnss_bds.h"
-#include "dect2/gnss_codes.h"
-#include "dect2/gnss_glo.h"
-#include "dect2/gnss_msg.h"
+#include "dect2/gnss/gnss_sim.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/gnss/gnss_bds.h"
+#include "dect2/gnss/gnss_codes.h"
+#include "dect2/gnss/gnss_glo.h"
+#include "dect2/gnss/gnss_msg.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

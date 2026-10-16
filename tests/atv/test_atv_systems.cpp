@@ -1,8 +1,8 @@
 // Analog TV: the systems added after B/G, I, D/K, M and N: the positive-modulation systems with AM sound (A 405 lines, C, E 819 lines, L, L'),
 // the colour combinations NTSC-N, NTSC 4.43 and SECAM-M, and NBTV / mechanical television (atv_nbtv.h). Generator -> receiver: line and field
 // lock, the system found, the test card back within tolerance; positive modulation off frequency; the system found by itself.
-#include "dect2/atv_nbtv.h"
-#include "dect2/atv_testkit.h"
+#include "dect2/atv/atv_nbtv.h"
+#include "dect2/atv/atv_testkit.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

@@ -1,6 +1,6 @@
-#include "dect2/atsc3_ip.h"
-#include "dect2/inflate.h"
-#include "dect2/xmlmini.h"
+#include "dect2/atsc3/atsc3_ip.h"
+#include "dect2/common/inflate.h"
+#include "dect2/common/xmlmini.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>

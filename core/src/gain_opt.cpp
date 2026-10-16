@@ -1,4 +1,4 @@
-#include "dect2/gain_opt.h"
+#include "dect2/source/gain_opt.h"
 #include <algorithm>
 #include <cmath>
 

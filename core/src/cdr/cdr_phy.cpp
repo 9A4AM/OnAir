@@ -1,7 +1,7 @@
 // CDR physical layer building blocks (see cdr_defs.h); clause and table numbers refer to GY/T 268.1-2013 and GY/T 268.2-2013.
-#include "dect2/cdr_defs.h"
-#include "dect2/cdr_ldpc.h"
-#include "dect2/drm_fec.h"
+#include "dect2/cdr/cdr_defs.h"
+#include "dect2/cdr/cdr_ldpc.h"
+#include "dect2/drm/drm_fec.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

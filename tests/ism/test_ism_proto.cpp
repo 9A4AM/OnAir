@@ -1,8 +1,8 @@
 // ISM sensors, the protocol layer alone: every test device's frame is decoded to the right model, ID and values; cut-off frames,
 // frames with a flipped bit and frames with timing errors give the right reading or none, never a wrong one; noise gives nothing.
-#include "dect2/ism_gen.h"
-#include "dect2/ism_proto.h"
-#include "dect2/ism_tel.h"
+#include "dect2/ism/ism_gen.h"
+#include "dect2/ism/ism_proto.h"
+#include "dect2/ism/ism_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

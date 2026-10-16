@@ -1,7 +1,7 @@
 // Time signals through the engine (setStandard(60)): the synthetic source plays DCF77 at the computer's time, the receiver finds the
 // seconds and reports through latestRx(). A whole minute takes too long for this test; test_time_rx decodes them. No sound.
-#include "dect2/time_rx.h"
-#include "dect2/engine.h"
+#include "dect2/time/time_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

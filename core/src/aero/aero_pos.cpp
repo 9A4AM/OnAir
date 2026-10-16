@@ -1,6 +1,6 @@
 // Positions from Aero ACARS messages (formats and sources in aero_pos.h).
-#include "dect2/aero_pos.h"
-#include "dect2/aero_adsc.h"
+#include "dect2/aero/aero_pos.h"
+#include "dect2/aero/aero_adsc.h"
 
 #include <cctype>
 #include <cstdlib>

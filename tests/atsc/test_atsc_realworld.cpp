@@ -2,9 +2,9 @@
 // independently of the receiver), through the real AtscReceiver. Every case must give nearly only good packets.
 //   test_atsc_realworld          all cases
 //   test_atsc_realworld N        only case N, with details
-#include "dect2/atsc_gen.h"
-#include "dect2/atsc_rx.h"
-#include "dect2/dvbt_gen.h"
+#include "dect2/atsc/atsc_gen.h"
+#include "dect2/atsc/atsc_rx.h"
+#include "dect2/dvbt/dvbt_gen.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdio>

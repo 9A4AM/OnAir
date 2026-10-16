@@ -1,9 +1,9 @@
 // DVB-S/S2 test signal, see dvbs_gen.h.
-#include "dect2/dvbs_gen.h"
-#include "dect2/demo_ts.h"
+#include "dect2/dvbs/dvbs_gen.h"
+#include "dect2/tv/demo_ts.h"
 #include "dvbs_simd.h"
 #include "dvbs_vlsnr.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

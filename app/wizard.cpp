@@ -1,9 +1,9 @@
 // First-run tour with Onny the TV.
 #include "app.h"
 #include "fixit.h"
-#include "dect2/maidenhead.h"
-#include "dect2/mode_tuning.h"
-#include "dect2/updater.h"
+#include "dect2/geo/maidenhead.h"
+#include "dect2/engine/mode_tuning.h"
+#include "dect2/engine/updater.h"
 
 // First-run tour with Onny the TV: a friendly guide that explains the window, plays the synthetic demo signal and helps pick a radio.
 // Included by main.cpp (needs App, setFamily, refreshDevices, savePrefs, gForceTab).

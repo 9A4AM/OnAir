@@ -3,7 +3,7 @@
 // locked, or typed), the band buttons, the decoded text; Hellschreiber draws what it hears as a picture, lines of columns of 14 pixels.
 #include "app.h"
 #include "platform.h"
-#include "dect2/hfdig_tel.h"
+#include "dect2/hfdig/hfdig_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -1,6 +1,6 @@
 // D-STAR protocol pieces: the CRC, the header FEC chain (with bit errors), the interleaver, the AMBE bit order, the GPS parsers.
-#include "dect2/dstar_proto.h"
-#include "dect2/dstar_gen.h"
+#include "dect2/dstar/dstar_proto.h"
+#include "dect2/dstar/dstar_gen.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

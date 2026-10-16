@@ -1,6 +1,6 @@
-#include "dect2/atsc_gen.h"
-#include "dect2/dsp_compat.h"
-#include "dect2/gen_util.h"
+#include "dect2/atsc/atsc_gen.h"
+#include "dect2/dsp/dsp_compat.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

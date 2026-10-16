@@ -1,5 +1,5 @@
 // ACARS block layer: check sequence, parity, repair, field parsing, labels. Known answers come from acarsdec (syndrom.h, acars.c) and libacars (acars.c).
-#include "dect2/acars_proto.h"
+#include "dect2/acars/acars_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <random>

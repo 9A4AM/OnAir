@@ -1,5 +1,5 @@
 // TETRA downlink physical layer and lower MAC (tetra_phy.h).
-#include "dect2/tetra_phy.h"
+#include "dect2/tetra/tetra_phy.h"
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>

@@ -1,5 +1,5 @@
-#include "dect2/uplink_msg.h"
-#include "dect2/adsb_msg.h"
+#include "dect2/uplink/uplink_msg.h"
+#include "dect2/adsb/adsb_msg.h"
 #include <cstdio>
 #include <cstring>
 

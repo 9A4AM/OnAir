@@ -1,8 +1,8 @@
 // Wi-SUN FAN test signal (see wisun_gen.h).
-#include "dect2/wisun_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/wisun_proto.h"
-#include "dect2/wisun_rx.h"
+#include "dect2/wisun/wisun_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/wisun/wisun_proto.h"
+#include "dect2/wisun/wisun_rx.h"
 #include <cmath>
 #include <deque>
 #include <random>

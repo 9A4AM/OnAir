@@ -8,7 +8,7 @@
 // msk144decodeframe.f90, genmsk_128_90.f90, encode_128_90.f90, crc13.cpp (K1JT, GPL-3). Not done: the 40-bit short messages (MSK40), the
 // receiver equaliser, the adaptive 'long averages'.
 #include "hfdig_wsjt_int.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

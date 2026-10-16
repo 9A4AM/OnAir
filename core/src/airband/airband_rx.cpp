@@ -1,11 +1,11 @@
 // Airband receiver (see airband_rx.h): every listed channel of the sample band mixed down, filtered, AM-demodulated and squelched on its
 // own; the tuning error measured from all of them together; the open channels mixed (or scanned) to the sound card.
-#include "dect2/airband_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/airband_tel.h"
-#include "dect2/airband_gen.h"
-#include "dect2/audioout.h"
-#include "dect2/fftutil.h"
+#include "dect2/airband/airband_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/airband/airband_tel.h"
+#include "dect2/airband/airband_gen.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

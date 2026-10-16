@@ -3,10 +3,10 @@
 // the frames are named after, and the KISS forwarding option. The pass planner (passes_ui.cpp) starts this mode at AOS for its CubeSat rows
 // and keeps the Doppler corrected; it tells the receiver which satellite it follows.
 #include "app.h"
-#include "dect2/cubesat_proto.h"
-#include "dect2/cubesat_rx.h"
-#include "dect2/cubesat_tel.h"
-#include "dect2/feeds.h"
+#include "dect2/cubesat/cubesat_proto.h"
+#include "dect2/cubesat/cubesat_rx.h"
+#include "dect2/cubesat/cubesat_tel.h"
+#include "dect2/net/feeds.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

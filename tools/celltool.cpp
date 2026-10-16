@@ -2,10 +2,10 @@
 //   celltool <file> <rate Hz> <centre Hz> [cs8|cf32]     the whole receiver (spectrum, every carrier, system information)
 //   celltool --gen <file.cf32> [scene]                     write the test signal (cellTestCell) at its native rate
 // Receive only: it reads a file.
-#include "dect2/cell_gen.h"
-#include "dect2/cell_lte.h"
-#include "dect2/cell_rx.h"
-#include "dect2/cell_tel.h"
+#include "dect2/cell/cell_gen.h"
+#include "dect2/cell/cell_lte.h"
+#include "dect2/cell/cell_rx.h"
+#include "dect2/cell/cell_tel.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

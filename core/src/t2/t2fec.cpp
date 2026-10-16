@@ -1,5 +1,5 @@
-#include "dect2/t2fec.h"
-#include "dect2/t2fec_tables.h"
+#include "dect2/t2/t2fec.h"
+#include "dect2/t2/t2fec_tables.h"
 
 #include <algorithm>
 #include <cmath>

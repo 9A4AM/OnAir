@@ -1,7 +1,7 @@
 // DVB-S/S2 screens: lock lamps and readouts, constellation and quality plots, the receiver tab, symbol rate and standard controls,
 // and the options of the test signal.
 #include "app.h"
-#include "dect2/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_s2.h"
 #include <cfloat>
 #include <cmath>
 #include <deque>

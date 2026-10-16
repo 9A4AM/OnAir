@@ -1,7 +1,7 @@
 // Analog TV test card, see atv_card.h.
-#include "dect2/atv_card.h"
+#include "dect2/atv/atv_card.h"
 #include "atv_dsp.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include "atv_font.h"
 #include <algorithm>
 #include <cmath>

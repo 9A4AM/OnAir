@@ -1,6 +1,6 @@
 // The radiofax directory: every station has frequencies in the HF range, every broadcast names a known station at a valid time,
 // the dial is 1.9 kHz below the carrier, and the "next broadcasts" list is in order and starts within a day.
-#include "dect2/marine_wefax_stations.h"
+#include "dect2/marine/marine_wefax_stations.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

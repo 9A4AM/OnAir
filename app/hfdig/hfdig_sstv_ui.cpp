@@ -6,8 +6,8 @@
 #include "gfx.h"
 #include "icons.h"
 #include "platform.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/hf_demod.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/audio/hf_demod.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

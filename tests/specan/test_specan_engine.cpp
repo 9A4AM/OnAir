@@ -1,9 +1,9 @@
 // The spectrum analyser through the engine (setStandard(44)) with the synthetic source, which plays a HackRF native sweep of
 // 1 - 6000 MHz with carriers at 100, 433.92, 1090 and 2440 MHz. No radio.
-#include "dect2/specan_rx.h"
-#include "dect2/specan_gen.h"
-#include "dect2/specan_dsp.h"
-#include "dect2/engine.h"
+#include "dect2/specan/specan_rx.h"
+#include "dect2/specan/specan_gen.h"
+#include "dect2/specan/specan_dsp.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

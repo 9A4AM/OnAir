@@ -1,5 +1,5 @@
 // DVB-T: Reed-Solomon, TPS, Viterbi and the whole coding chain (TS -> cells -> noise -> TS) for several modes.
-#include "dect2/dvbt_fec.h"
+#include "dect2/dvbt/dvbt_fec.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

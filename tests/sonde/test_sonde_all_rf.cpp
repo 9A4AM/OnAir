@@ -1,6 +1,6 @@
 // All types at once: the default three sondes, then six (two RS41, two DFM, M10, M20), then seven with an RS92, in one band.
 // Every sonde must be found on its own channel, with the position and speed of the test flight.
-#include "dect2/sonde_testkit.h"
+#include "dect2/sonde/sonde_testkit.h"
 using namespace dect2;
 using namespace dect2::sondetest;
 

@@ -5,12 +5,12 @@
 // ILS: a course deviation indicator with the localizer and glide slope needles, the marker lamps, the paired frequencies and a hop
 // between localizer and glide slope.
 #include "app.h"
-#include "dect2/results_io.h"
+#include "dect2/results/results_io.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/ils.h"
-#include "dect2/vor_db.h"
-#include "dect2/vor_rx.h"
-#include "dect2/vor_tel.h"
+#include "dect2/ils/ils.h"
+#include "dect2/vor/vor_db.h"
+#include "dect2/vor/vor_rx.h"
+#include "dect2/vor/vor_tel.h"
 #include <algorithm>
 #include <cfloat>
 #include <cmath>

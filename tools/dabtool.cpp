@@ -3,8 +3,8 @@
 //   dabtool gen <out.cs8> <seconds> [sampleRate=2048000] [snrDb=30] [cfoHz=0] [sroPpm=0]
 //   dabtool rx <in.cs8> <sampleRate> [subChannel]
 //   dabtool info
-#include "dect2/dab.h"
-#include "dect2/dab_gen.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

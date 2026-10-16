@@ -1,10 +1,10 @@
 // GOES HRIT receiver (goes_rx.h).
-#include "dect2/goes_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/fftutil.h"
-#include "dect2/goes_proto.h"
-#include "dect2/goes_tel.h"
-#include "dect2/meteor_proto.h"
+#include "dect2/goes/goes_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/goes/goes_proto.h"
+#include "dect2/goes/goes_tel.h"
+#include "dect2/meteor/meteor_proto.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

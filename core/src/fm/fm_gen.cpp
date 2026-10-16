@@ -1,5 +1,5 @@
 // FM broadcast transmitter for tests (see fm_gen.h).
-#include "dect2/fm_gen.h"
+#include "dect2/fm/fm_gen.h"
 #include "fm_noise.h"
 #include <algorithm>
 #include <cmath>

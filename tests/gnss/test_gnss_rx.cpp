@@ -1,7 +1,7 @@
 // GNSS receiver round trip: the simulated sky (8 satellites, 44 dB-Hz at the zenith, rounded to 8 bits like a HackRF) through the receiver for 40 s.
 // The receiver must acquire and track the satellites, decode the navigation message bit-exactly, and solve a position that is near the truth but, with
 // real pseudorange noise from its loops and an atmosphere that its models only approximate, not exactly on it.
-#include "dect2/gnss_testkit.h"
+#include "dect2/gnss/gnss_testkit.h"
 #include <cstdlib>
 #include <cmath>
 #include <cstdio>

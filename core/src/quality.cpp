@@ -1,4 +1,4 @@
-#include "dect2/quality.h"
+#include "dect2/engine/quality.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

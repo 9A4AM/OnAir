@@ -1,7 +1,7 @@
 // NB-IoT test signal (nbiot_gen.h, nbiot_phy.h).
-#include "dect2/nbiot_gen.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/source.h"
+#include "dect2/nbiot/nbiot_gen.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/source/source.h"
 #include "../cell/cell_lte_int.h"
 #include <algorithm>
 #include <cmath>

@@ -1,6 +1,6 @@
-#include "dect2/tsout.h"
+#include "dect2/tv/tsout.h"
 
-#include "dect2/platform.h"
+#include "dect2/common/platform.h"
 #include "netcompat.h"
 
 #include <chrono>

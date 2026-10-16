@@ -1,4 +1,4 @@
-#include "dect2/teletext.h"
+#include "dect2/tv/teletext.h"
 #include <algorithm>
 #include <cstring>
 #include <cstdint>

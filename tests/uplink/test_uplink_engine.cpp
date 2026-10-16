@@ -1,8 +1,8 @@
 // Mode S uplink through the engine, as the GUI uses it: the synthetic source plays the test scene (SynthConfig::mode = 45) in real time and
 // the receiver must find the interrogators (II 3 with its 4.8 s rotation, SI 17, Mode A/C), the aircraft and the ACAS coordination.
-#include "dect2/engine.h"
-#include "dect2/modes.h"
-#include "dect2/uplink_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
+#include "dect2/uplink/uplink_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

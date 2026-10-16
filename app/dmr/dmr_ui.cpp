@@ -1,7 +1,7 @@
 // DMR screens: the two time slots and the call log, the symbol plots, the receiver counters and the options of the test signal.
 #include "app.h"
-#include "dect2/dmr_ambe.h"
-#include "dect2/dmr_proto.h"
+#include "dect2/dmr/dmr_ambe.h"
+#include "dect2/dmr/dmr_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <deque>

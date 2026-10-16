@@ -1,5 +1,5 @@
 // T2-Lite and MISO signalling: the receiver must lock on a T2-Lite SISO signal, and flag a MISO signal as unsupported.
-#include "dect2/engine.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

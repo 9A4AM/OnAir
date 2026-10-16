@@ -1,8 +1,8 @@
 // Inmarsat Aero receiver on the test signal: the band search finds both default channels (10500 bit/s and 1200 bit/s), the rate is found
 // on its own, and every frame the receiver hands on is bit-exact with one the generator sent.
-#include "dect2/aero_gen.h"
-#include "dect2/aero_rx.h"
-#include "dect2/aero_demod.h"
+#include "dect2/aero/aero_gen.h"
+#include "dect2/aero/aero_rx.h"
+#include "dect2/aero/aero_demod.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

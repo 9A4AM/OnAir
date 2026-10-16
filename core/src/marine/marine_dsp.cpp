@@ -1,5 +1,5 @@
-#include "dect2/marine_dsp.h"
-#include "dect2/fftutil.h"
+#include "dect2/marine/marine_dsp.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 

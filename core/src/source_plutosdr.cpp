@@ -1,5 +1,5 @@
 // Native driver for the PlutoSDR: the radio's own library is loaded at run time when it is installed. See native_common.h.
-#include "dect2/rate_choice.h"
+#include "dect2/engine/rate_choice.h"
 #include "native_common.h"
 #include <cerrno>
 #include <map>

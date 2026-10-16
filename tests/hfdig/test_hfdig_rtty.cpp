@@ -1,11 +1,11 @@
 // HF digital, RTTY: the generator's audio with noise straight into the decoder (three speeds and shifts, tuning offsets, reversed, noise
 // alone), then the whole way through the engine (synthetic source -> USB audio -> decoder). Quick and silent.
-#include "dect2/engine.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_rtty.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_rtty.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdint>

@@ -1,5 +1,5 @@
 // HF ALE word and call layer (see ale_proto.h).
-#include "dect2/ale_proto.h"
+#include "dect2/ale/ale_proto.h"
 #include <algorithm>
 #include <cstdio>
 

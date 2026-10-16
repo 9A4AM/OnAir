@@ -1,4 +1,4 @@
-//! The C ABI (include/dect2/onair_proto_rs.h). The only file with `unsafe`: it turns (pointer, length) pairs into slices and calls the safe
+//! The C ABI (include/dect2/ais/onair_proto_rs.h). The only file with `unsafe`: it turns (pointer, length) pairs into slices and calls the safe
 //! modules. Callers own every buffer; functions that write return the length written, or `usize::MAX` when the buffer is too small.
 #![allow(clippy::missing_safety_doc)]
 

@@ -2,10 +2,10 @@
 // NOAA HRPT through the receiver with carrier offsets up to +-45 kHz, a Doppler ramp, symbol clock error, noise and different carrier
 // phases (the QPSK phase ambiguity), at 8 Msps and near the lowest rate. Every picture line that comes back must equal the test line
 // its on-board time names, pixel for pixel. Noise alone gives nothing.
-#include "dect2/hrpt_gen.h"
-#include "dect2/hrpt_proto.h"
-#include "dect2/hrpt_rx.h"
-#include "dect2/hrpt_tel.h"
+#include "dect2/hrpt/hrpt_gen.h"
+#include "dect2/hrpt/hrpt_proto.h"
+#include "dect2/hrpt/hrpt_rx.h"
+#include "dect2/hrpt/hrpt_tel.h"
 #include <chrono>
 #include <ctime>
 #include <cmath>

@@ -1,5 +1,5 @@
 #include "atsc3_synth_resampler.h"
-#include "dect2/gen_util.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 

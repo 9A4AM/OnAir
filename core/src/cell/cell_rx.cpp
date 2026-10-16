@@ -1,10 +1,10 @@
 // Cell towers receiver (cell_rx.h): blocks of input, carriers found in the spectrum, cells searched and their broadcast decoded.
-#include "dect2/cell_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/cell_asn.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/cell_lte.h"
-#include "dect2/cell_tel.h"
+#include "dect2/cell/cell_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/cell/cell_asn.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/cell/cell_lte.h"
+#include "dect2/cell/cell_tel.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

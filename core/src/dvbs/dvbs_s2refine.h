@@ -2,7 +2,7 @@
 // does not slip on noisy symbols); the frame is then handed over here, where the phase error that the loop left (phase noise of the LNB faster
 // than the loop, lag) is measured in blocks against decisions on the same symbols and taken out with a zero lag smoother. Internal.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <cstdint>
 #include <vector>
 

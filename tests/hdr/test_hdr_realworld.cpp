@@ -1,8 +1,8 @@
 // HD Radio against the faults of REAL_WORLD_CHECKLIST.md, applied with tests/impair.h (written independently of the receiver) to the generator's
 // clean signal: 50 ppm tuning errors (+-5.4 kHz in band II; AM: a few hundred Hz), +-100 ppm sample clocks, swapped I/Q, NaN samples, a USB
 // drop, and one combined case per band (worst offset, +80 ppm, an echo and 8-bit clipping).
-#include "dect2/hdr_gen.h"
-#include "dect2/hdr_rx.h"
+#include "dect2/hdr/hdr_gen.h"
+#include "dect2/hdr/hdr_rx.h"
 #include "../impair.h"
 #include "../jobs.h"
 #include <atomic>

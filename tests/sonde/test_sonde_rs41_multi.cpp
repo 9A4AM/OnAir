@@ -1,5 +1,5 @@
 // RS41: two sondes at once (far apart and 20 kHz apart), a carrier that drifts 2 kHz in a minute.
-#include "dect2/sonde_testkit.h"
+#include "dect2/sonde/sonde_testkit.h"
 using namespace dect2;
 using namespace dect2::sondetest;
 

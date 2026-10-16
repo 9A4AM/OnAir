@@ -1,6 +1,6 @@
 // DVB-S/S2 receiver, hard cases: how close to the threshold it works, a gap in the samples, reset in the middle, phase noise, VCM, an adjacent carrier.
 // The thresholds are compared with the Es/N0 of table 13 of EN 302 307-1 (DVB-S2, ideal demodulator) and the Eb/N0 of EN 300 421 (DVB-S).
-#include "dect2/dvbs_testkit.h"
+#include "dect2/dvbs/dvbs_testkit.h"
 #include <cstdio>
 #include <cstdlib>
 

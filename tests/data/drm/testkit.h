@@ -3,11 +3,11 @@
 // instance of the encoder makes the reference frames).
 // Signals are produced in chunks, so a few seconds at 20 Msps never sit in memory.
 #pragma once
-#include "dect2/drm_gen.h"
-#include "dect2/drm_aacenc.h"
-#include "dect2/drm_msg.h"
-#include "dect2/drm_rx.h"
-#include "dect2/mode_synth.h"
+#include "dect2/drm/drm_gen.h"
+#include "dect2/drm/drm_aacenc.h"
+#include "dect2/drm/drm_msg.h"
+#include "dect2/drm/drm_rx.h"
+#include "dect2/engine/mode_synth.h"
 #include <chrono>
 #include <ctime>
 #include <cmath>

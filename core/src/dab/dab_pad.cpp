@@ -1,8 +1,8 @@
 // DAB+ PAD: data stream element -> F-PAD / X-PAD -> MSC data groups -> MOT objects -> slide show picture.
-#include "dect2/dab_pad.h"
-#include "dect2/dab.h"
-#include "dect2/png.h"
-#include "dect2/text_charset.h"
+#include "dect2/dab/dab_pad.h"
+#include "dect2/dab/dab.h"
+#include "dect2/common/png.h"
+#include "dect2/common/text_charset.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>

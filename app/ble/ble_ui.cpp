@@ -2,9 +2,9 @@
 // services) with name and level filters, the packet log, the advertising channel picker and the hop between 37, 38 and 39.
 // Receive only: what devices broadcast openly, as a scanner app shows it; nothing is ever sent, connected to or paired with.
 #include "app.h"
-#include "dect2/ble_proto.h"
-#include "dect2/ble_rx.h"
-#include "dect2/ble_tel.h"
+#include "dect2/ble/ble_proto.h"
+#include "dect2/ble/ble_rx.h"
+#include "dect2/ble/ble_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

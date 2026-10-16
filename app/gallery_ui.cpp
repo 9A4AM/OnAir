@@ -7,8 +7,8 @@
 #include "gfx.h"
 #include "icons.h"
 #include "platform.h"
-#include "dect2/png.h"
-#include "dect2/updater.h"
+#include "dect2/common/png.h"
+#include "dect2/engine/updater.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -1,7 +1,7 @@
 // NOAA Weather Radio SAME test signal: see same_gen.h.
-#include "dect2/same_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/same_rx.h"
+#include "dect2/same/same_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/same/same_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <random>

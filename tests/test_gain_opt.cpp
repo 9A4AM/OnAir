@@ -1,8 +1,8 @@
 // "Optimise gain": the selection logic on synthetic SNR-vs-gain curves (with a clipping region that looks deceptively good), the sweep's state machine,
 // undo/cancel, the spectrum SNR estimate, the telemetry SNR picker; and, with the argument "engine", a sweep against the engine's generated DVB-T2 signal
 // whose level follows the gain and clips like an 8-bit ADC (slow: about 40 s, registered as gain_opt_engine).
-#include "dect2/engine.h"
-#include "dect2/gain_opt.h"
+#include "dect2/engine/engine.h"
+#include "dect2/source/gain_opt.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

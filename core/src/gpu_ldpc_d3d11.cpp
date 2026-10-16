@@ -5,8 +5,8 @@
 // HLSL's shader compiler only accepts thread-group barriers in code that every thread of the group reaches together, so unlike the Metal
 // kernel this one never leaves its loops early. It runs a few iterations per dispatch (a block that has converged does no more work),
 // the CPU then looks at which blocks are still unfinished and launches only those again.
-#include "dect2/gpu_ldpc.h"
-#include "dect2/t2fec.h"
+#include "dect2/dsp/gpu_ldpc.h"
+#include "dect2/t2/t2fec.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

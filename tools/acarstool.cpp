@@ -5,9 +5,9 @@
 //                  [--quant] [--dc 0.05] [--gap secs] [--reset secs] [--list]
 // rx prints every good block as one line (time, channel, address, label, block id, text) and then the channel and aircraft tables.
 // sim prints how many of the transmitted blocks came out right, and the real-time factor of the receiver.
-#include "dect2/acars_gen.h"
-#include "dect2/acars_rx.h"
-#include "dect2/acars_sim.h"
+#include "dect2/acars/acars_gen.h"
+#include "dect2/acars/acars_rx.h"
+#include "dect2/acars/acars_sim.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

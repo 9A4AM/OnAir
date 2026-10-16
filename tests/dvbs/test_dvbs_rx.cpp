@@ -1,7 +1,7 @@
 // DVB-S/S2 receiver: generator -> receiver round trips. Every case sends a transport stream whose packets can be checked one by one through the
 // whole chain (pulse shaping, 8-bit quantisation, AGC, symbol rate search, timing, carrier, frame search, FEC) and requires every packet to arrive
 // intact and in order once the receiver has locked.
-#include "dect2/dvbs_testkit.h"
+#include "dect2/dvbs/dvbs_testkit.h"
 #include <cstdio>
 #include <cstdlib>
 

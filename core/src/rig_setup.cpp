@@ -1,4 +1,4 @@
-#include "dect2/rig_setup.h"
+#include "dect2/source/rig_setup.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>

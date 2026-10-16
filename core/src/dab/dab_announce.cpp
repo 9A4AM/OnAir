@@ -1,4 +1,4 @@
-#include "dect2/dab_announce.h"
+#include "dect2/dab/dab_announce.h"
 #include <algorithm>
 
 namespace dect2 {

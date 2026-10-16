@@ -1,8 +1,8 @@
 // JS8Call test signal (see js8_gen.h).
-#include "dect2/js8_gen.h"
-#include "dect2/js8_proto.h"
-#include "dect2/js8_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/js8/js8_gen.h"
+#include "dect2/js8/js8_proto.h"
+#include "dect2/js8/js8_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <chrono>
 #include <cmath>
 #include <complex>

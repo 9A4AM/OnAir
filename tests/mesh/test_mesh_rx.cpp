@@ -1,10 +1,10 @@
 // Mesh (LoRa) round trip: the test signal (6 Meshtastic + 3 MeshCore nodes, packets built as the firmware builds them) through the
 // receiver at 2 Msps with 8-bit samples. One whole cycle of the scene (60 s): every frame decodes, every node, name, position,
 // battery and message arrives, nothing fails its CRC. Also measures the receiver's speed.
-#include "dect2/gen_util.h"
-#include "dect2/mesh_gen.h"
-#include "dect2/mesh_rx.h"
-#include "dect2/modes.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/mesh/mesh_gen.h"
+#include "dect2/mesh/mesh_rx.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <ctime>
 #include <cmath>

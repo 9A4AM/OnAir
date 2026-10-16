@@ -1,7 +1,7 @@
 // VOR / ILS receiver (see vor_rx.h).
-#include "dect2/vor_rx.h"
-#include "dect2/audioout.h"
-#include "dect2/ils.h"
+#include "dect2/vor/vor_rx.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/ils/ils.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

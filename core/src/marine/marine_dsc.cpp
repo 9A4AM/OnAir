@@ -1,4 +1,4 @@
-#include "dect2/marine_dsc.h"
+#include "dect2/marine/marine_dsc.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -1,8 +1,8 @@
 // General receiver test signal (see general_gen.h).
-#include "dect2/general_gen.h"
-#include "dect2/general_rx.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
+#include "dect2/general/general_gen.h"
+#include "dect2/general/general_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <complex>
 

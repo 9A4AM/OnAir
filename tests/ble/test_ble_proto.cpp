@@ -1,5 +1,5 @@
 // Bluetooth LE advertising: CRC, whitening, PDU and advertising data parsing (ble_proto.h).
-#include "dect2/ble_proto.h"
+#include "dect2/ble/ble_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <string>

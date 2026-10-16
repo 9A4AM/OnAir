@@ -2,8 +2,8 @@
 // the aircraft, the ground stations with their status, and the channel list with its activity. Band presets in the tuner.
 #include "../adsb/adsb_map.h"
 #include "app.h"
-#include "dect2/hfdl_proto.h"
-#include "dect2/hfdl_tel.h"
+#include "dect2/hfdl/hfdl_proto.h"
+#include "dect2/hfdl/hfdl_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

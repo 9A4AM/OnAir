@@ -4,9 +4,9 @@
 #include "app.h"
 #include "gfx.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/js8_proto.h"
-#include "dect2/js8_rx.h"
-#include "dect2/js8_tel.h"
+#include "dect2/js8/js8_proto.h"
+#include "dect2/js8/js8_rx.h"
+#include "dect2/js8/js8_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

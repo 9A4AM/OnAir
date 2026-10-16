@@ -1,5 +1,5 @@
-#include "dect2/channelizer.h"
-#include "dect2/fftutil.h"
+#include "dect2/engine/channelizer.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

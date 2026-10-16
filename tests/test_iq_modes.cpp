@@ -11,19 +11,19 @@
 //
 // Modes with a tuneOffsetHz run as the engine runs them with a radio (the channel tuneOffsetHz from the centre) and as a recording holds them
 // (the channel on the centre: a file is played without the offset). Usage: test_iq_modes [part of a mode name]
-#include "dect2/engine.h"
-#include "dect2/engine_testkit.h"
-#include "dect2/iq_correct.h"
-#include "dect2/mode_synth.h"
-#include "dect2/mode_tuning.h"
-#include "dect2/acars_gen.h"
-#include "dect2/atsc_gen.h"
-#include "dect2/dvbt_gen.h"
-#include "dect2/fm_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/marine_gen.h"
-#include "dect2/t2.h"
-#include "dect2/t2gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/engine_testkit.h"
+#include "dect2/dsp/iq_correct.h"
+#include "dect2/engine/mode_synth.h"
+#include "dect2/engine/mode_tuning.h"
+#include "dect2/acars/acars_gen.h"
+#include "dect2/atsc/atsc_gen.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/fm/fm_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/marine/marine_gen.h"
+#include "dect2/t2/t2.h"
+#include "dect2/t2/t2gen.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

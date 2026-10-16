@@ -1,9 +1,9 @@
 // CW skimmer against generated keyed carriers: several speeds at once across the window, two signals 150 Hz apart, a tuning error and
 // signals near the window edges, QSB fading, weak signals in noise, hand keying with Farnsworth spacing, noise only (no false text),
 // the focus on a picked frequency and its sidetone (through the tap only: silent).
-#include "dect2/cw_gen.h"
-#include "dect2/cw_rx.h"
-#include "dect2/cw_tel.h"
+#include "dect2/cw/cw_gen.h"
+#include "dect2/cw/cw_rx.h"
+#include "dect2/cw/cw_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

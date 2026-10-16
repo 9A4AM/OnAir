@@ -1,7 +1,7 @@
 // Journaline decoder, see dab_journaline.h. Clause numbers are those of ETSI TS 102 979 V1.1.1 unless named otherwise.
-#include "dect2/dab_journaline.h"
-#include "dect2/dab.h"
-#include "dect2/inflate.h"
+#include "dect2/dab/dab_journaline.h"
+#include "dect2/dab/dab.h"
+#include "dect2/common/inflate.h"
 #include <algorithm>
 
 namespace dect2 {

@@ -1,5 +1,5 @@
-#include "dect2/t2l1.h"
-#include "dect2/ldpc.h"
+#include "dect2/t2/t2l1.h"
+#include "dect2/dsp/ldpc.h"
 
 #include <algorithm>
 #include <cmath>

@@ -1,8 +1,8 @@
 // UAT protocol layer: wraps dump978 uat_decode and maps into UatTelemetry types.
-#include "dect2/uat_proto.h"
-#include "dect2/adsb_msg.h"
-#include "dect2/uat_decode_c.h"
-#include "dect2/uat_frame.h"
+#include "dect2/uat/uat_proto.h"
+#include "dect2/adsb/adsb_msg.h"
+#include "dect2/uat/uat_decode_c.h"
+#include "dect2/uat/uat_frame.h"
 #include <cstdio>
 #include <cstring>
 

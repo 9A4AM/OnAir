@@ -5,7 +5,7 @@
 // - low C/N0: impair::noise with its own seed for every chunk
 // - a start in the middle: the first `skip` samples are thrown away (impair::skip)
 #pragma once
-#include "dect2/gnss_testkit.h"
+#include "dect2/gnss/gnss_testkit.h"
 #include "../impair.h"
 #include <deque>
 #include <memory>

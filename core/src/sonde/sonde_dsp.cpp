@@ -1,6 +1,6 @@
 // Filters of the radiosonde channel (see sonde_chan.h).
 #include "sonde_chan.h"
-#include "dect2/gen_util.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cstring>
 

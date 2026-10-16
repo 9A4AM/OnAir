@@ -1,4 +1,4 @@
-#include "dect2/direction.h"
+#include "dect2/dsp/direction.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

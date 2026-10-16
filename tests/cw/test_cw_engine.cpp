@@ -1,6 +1,6 @@
 // CW through the engine (setStandard(36)): the synthetic source plays the test band, the receiver reports through latestRx().
-#include "dect2/cw_rx.h"
-#include "dect2/engine.h"
+#include "dect2/cw/cw_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

@@ -1,7 +1,7 @@
 // D-STAR test signal (see dstar_gen.h): whole DV transmissions as GMSK, over noise.
-#include "dect2/dstar_gen.h"
-#include "dect2/dstar_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/dstar/dstar_gen.h"
+#include "dect2/dstar/dstar_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

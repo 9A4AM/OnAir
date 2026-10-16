@@ -5,12 +5,12 @@
 // and the decoder on impaired audio: tuning errors, sample clock errors, noise near the threshold, noise alone.
 // DECT2_KBD_REF=<raw float file> DECT2_KBD_FAMILY=<n> DECT2_KBD_VARIANT=<n> [DECT2_KBD_TONES, DECT2_KBD_BW] decodes a file made by
 // the original fldigi code (8 kHz, 32 bit float) and prints the text: how the Olivia port was checked against Jalocha's transmitter.
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_kbd.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/modes.h"
-#include "dect2/source.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_kbd.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/engine/modes.h"
+#include "dect2/source/source.h"
 #include "../../core/src/hfdig/hfdig_kbd_tables.h"
 #include "../../core/src/hfdig/hfdig_kbd_dsp.h"
 #include <chrono>

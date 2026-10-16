@@ -1,4 +1,4 @@
-#include "dect2/astro_dsp.h"
+#include "dect2/astro/astro_dsp.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

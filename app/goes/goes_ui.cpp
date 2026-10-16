@@ -6,9 +6,9 @@
 #include "gallery.h"
 #include "gfx.h"
 #include "platform.h"
-#include "dect2/goes_proto.h"
-#include "dect2/goes_rx.h"
-#include "dect2/goes_tel.h"
+#include "dect2/goes/goes_proto.h"
+#include "dect2/goes/goes_rx.h"
+#include "dect2/goes/goes_tel.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

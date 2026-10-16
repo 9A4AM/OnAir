@@ -1,5 +1,5 @@
-#include "dect2/atsc3_remux.h"
-#include "dect2/ac4_dec.h"
+#include "dect2/atsc3/atsc3_remux.h"
+#include "dect2/audio/ac4_dec.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

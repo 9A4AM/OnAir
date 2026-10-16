@@ -1,10 +1,10 @@
 // NXDN receiver (see nxdn_rx.h).
-#include "dect2/nxdn_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/nxdn_tel.h"
-#include "dect2/nxdn_proto.h"
-#include "dect2/nxdn_ambe.h"
-#include "dect2/audioout.h"
+#include "dect2/nxdn/nxdn_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/nxdn/nxdn_tel.h"
+#include "dect2/nxdn/nxdn_proto.h"
+#include "dect2/nxdn/nxdn_ambe.h"
+#include "dect2/audio/audioout.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

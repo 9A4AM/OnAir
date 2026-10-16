@@ -1,6 +1,6 @@
 // Lockheed Martin LMS6 at 1680 MHz (Sippican MK2A telemetry): UART 8N1 at 9616 baud, CRC-16, GPS subframe 0x245254.
 // Facts from rs1729/RS mk2a/mk2a_lms1680.c and mk2a.txt (field offsets, scales, checksum); implementation is our own.
-#include "dect2/sonde_bits.h"
+#include "dect2/sonde/sonde_bits.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

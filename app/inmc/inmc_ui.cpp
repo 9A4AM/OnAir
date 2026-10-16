@@ -1,8 +1,8 @@
 // Inmarsat-C screens: the message list with a reading pane, the channel status with the packet counters, and the system information of the
 // station (bulletin board).
 #include "app.h"
-#include "dect2/inmc_pkt.h"
-#include "dect2/inmc_tel.h"
+#include "dect2/inmc/inmc_pkt.h"
+#include "dect2/inmc/inmc_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cfloat>

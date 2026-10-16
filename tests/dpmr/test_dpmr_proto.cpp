@@ -1,6 +1,6 @@
 // dPMR air interface pieces: syncs, Hamming (12,8) with errors, CRCs, interleaved blocks, header / CCH / end / data round trips,
 // colour codes, the PMR446 channel raster.
-#include "dect2/dpmr_proto.h"
+#include "dect2/dpmr/dpmr_proto.h"
 #include <cstdio>
 #include <cstring>
 using namespace dect2;

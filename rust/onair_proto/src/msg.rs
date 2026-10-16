@@ -8,7 +8,7 @@ pub const CALL_CAP: usize = 8;
 pub const DEST_CAP: usize = 24;
 pub const VENDOR_CAP: usize = 4;
 
-/// Mirror of the C++ `AisMsg`, flat and `repr(C)` (see include/dect2/onair_proto_rs.h). Strings are fixed buffers with a length; the text
+/// Mirror of the C++ `AisMsg`, flat and `repr(C)` (see include/dect2/ais/onair_proto_rs.h). Strings are fixed buffers with a length; the text
 /// of type 14 is fetched by the caller (`text_bits` bits from bit 40) because its length is not bounded.
 #[repr(C)]
 #[derive(Clone, Copy)]

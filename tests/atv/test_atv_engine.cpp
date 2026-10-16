@@ -2,9 +2,9 @@
 // tested, not real time) and the run is counted in seconds of signal; the field rate is checked per second of signal.
 // First the card the app plays by default (PAL B/G, test card, 1 kHz tone with gaps, a carrier offset and noise) for about 15 seconds, then SECAM D/K
 // and NTSC M for about 8 seconds each, started from the same engine, and a retune in the middle.
-#include "dect2/atv_testkit.h"
-#include "dect2/engine.h"
-#include "dect2/engine_testkit.h"
+#include "dect2/atv/atv_testkit.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/engine_testkit.h"
 #include <cstdlib>
 #include <chrono>
 #include <cmath>

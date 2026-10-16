@@ -1,7 +1,7 @@
 // Reed-Solomon FEC for UAT downlink frames (from dump978/fec.c, GPL).
 #include <stdint.h>
 #include "fec.h"
-#include "dect2/uat_frame.h"
+#include "dect2/uat/uat_frame.h"
 
 void uat_fec_init(void) { init_fec(); }
 

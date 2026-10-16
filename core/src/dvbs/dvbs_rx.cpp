@@ -1,6 +1,6 @@
 // DVB-S/S2 receiver, see dvbs_rx.h.
-#include "dect2/dvbs_rx.h"
-#include "dect2/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_rx.h"
+#include "dect2/dvbs/dvbs_s2.h"
 #include "dvbs_carrier.h"
 #include "dvbs_front.h"
 #include "dvbs_s1.h"
@@ -10,7 +10,7 @@
 #include "dvbs_spec.h"
 #include "dvbs_symthread.h"
 #include "dvbs_vlsnr.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

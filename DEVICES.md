@@ -142,7 +142,7 @@ refusal by the driver is shown in its own words. The gain slider is the radio's 
 same USB id 1d50:6089 (the code lists it in `kPids`, and `boardName(5)` reads "HackRF Pro", 0.1 MHz to 6 GHz), and the transmit protocol is the same vendor requests
 (transceiver mode 2, TX VGA) with the samples on bulk endpoint 0x02. That is read from the vendor's sources, not tried: no HackRF Pro was available.
 
-**Radios** (`DeviceInfo::canTransmit`; the code is `TxSink` in `core/include/dect2/source.h`):
+**Radios** (`DeviceInfo::canTransmit`; the code is `TxSink` in `core/include/dect2/source/source.h`):
 
 | Radio | Path | Notes |
 |---|---|---|

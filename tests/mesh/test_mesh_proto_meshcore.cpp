@@ -3,8 +3,8 @@
 // examples/companion_radio/MyMesh.cpp (PUBLIC_GROUP_PSK "izOH6cXN6mrJ5e26oRXNcg=="), docs/packet_format.md.
 // The group text vector (GRP_TXT, Public channel, path ab, "Dubai Repeater: hello mesh") was computed independently with
 // Python hashlib/hmac and OpenSSL 3.6.4 (aes-128-ecb) following Utils::encryptThenMAC, not with this code.
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_crypto.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_crypto.h"
 #include <cstdio>
 #include <cstring>
 #include <random>

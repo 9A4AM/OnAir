@@ -4,8 +4,8 @@
 // src/modules/{NodeInfoModule,PositionModule,Telemetry/DeviceTelemetry}.cpp (what the firmware sends); meshtastic/protobufs
 // mesh.proto (Data, Position, User, Routing, RouteDiscovery, NeighborInfo), portnums.proto, telemetry.proto, config.proto.
 #include "mesh_proto_internal.h"
-#include "dect2/mesh_crypto.h"
-#include "dect2/mesh_pb.h"
+#include "dect2/mesh/mesh_crypto.h"
+#include "dect2/mesh/mesh_pb.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

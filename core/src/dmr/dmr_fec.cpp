@@ -1,7 +1,7 @@
 // DMR error control codes (ETSI TS 102 361-1 annex B). The generator matrices, the interleaving rules and the trellis tables are the ones of
 // the specification (tables B.2 to B.18, figure B.9); tests/test_dmr_fec.cpp checks them against the worked example of annex D and against
 // bursts that were captured off the air and published with the ok-dmrlib test suite.
-#include "dect2/dmr_fec.h"
+#include "dect2/dmr/dmr_fec.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

@@ -1,7 +1,7 @@
 // Shared by the FT8 / FT4 / FT2 / WSPR tests: audio with stations at known SNRs (in 2500 Hz, as WSJT-X), time offsets and frequencies,
 // the receiving side's faults (dial error, sample clock error, upside down), and a run through the decoder with a known start time.
 #pragma once
-#include "dect2/hfdig_ftx.h"
+#include "dect2/hfdig/hfdig_ftx.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

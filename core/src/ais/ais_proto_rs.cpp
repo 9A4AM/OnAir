@@ -1,9 +1,9 @@
 // The AIS frame layer on top of the Rust crate rust/onair_proto (DECT2_RUST_PROTO): the same functions as ais_proto.cpp, which keeps the
 // generator side (putU, appendFcs, burstLineBits, toNmea). Empty when the crate is not built.
 #ifdef DECT2_RUST_PROTO
-#include "dect2/ais_proto.h"
-#include "dect2/ais_tel.h"
-#include "dect2/onair_proto_rs.h"
+#include "dect2/ais/ais_proto.h"
+#include "dect2/ais/ais_tel.h"
+#include "dect2/ais/onair_proto_rs.h"
 #include <cstdio>
 #include <cstdlib>
 

@@ -1,5 +1,5 @@
-#include "dect2/png.h"
-#include "dect2/inflate.h"
+#include "dect2/common/png.h"
+#include "dect2/common/inflate.h"
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>

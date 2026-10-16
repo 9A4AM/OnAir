@@ -1,6 +1,6 @@
 // L1 codec round trip: encode -> noise -> decode, plus P2 distribution and interleaver self-consistency.
-#include "dect2/t2interleave.h"
-#include "dect2/t2l1.h"
+#include "dect2/t2/t2interleave.h"
+#include "dect2/t2/t2l1.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

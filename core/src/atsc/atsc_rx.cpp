@@ -1,6 +1,6 @@
-#include "dect2/atsc_rx.h"
-#include "dect2/atsc.h"
-#include "dect2/atsc_gen.h"   // rrcValue
+#include "dect2/atsc/atsc_rx.h"
+#include "dect2/atsc/atsc.h"
+#include "dect2/atsc/atsc_gen.h"   // rrcValue
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -12,9 +12,9 @@
 #include <deque>
 #include <mutex>
 #include <thread>
-#include "dect2/dsp_compat.h"
-#include "dect2/platform.h"
-#include "dect2/simd.h"
+#include "dect2/dsp/dsp_compat.h"
+#include "dect2/common/platform.h"
+#include "dect2/dsp/simd.h"
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
 #include <cstdint>

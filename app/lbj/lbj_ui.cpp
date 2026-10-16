@@ -1,7 +1,7 @@
 // LBJ screens: train number, kilometre marker, locomotive ID and a log of recent warnings.
 #include "app.h"
-#include "dect2/lbj_rx.h"
-#include "dect2/lbj_tel.h"
+#include "dect2/lbj/lbj_rx.h"
+#include "dect2/lbj/lbj_tel.h"
 #include <cstdio>
 #include <ctime>
 #include <string>

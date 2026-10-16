@@ -1,10 +1,10 @@
 // Mesh (LoRa), several Meshtastic presets at once (setPresetSearch): a text message on every EU_868 preset that has a slot, each on
 // its own slot frequency and spreading factor, encrypted with the default key under the preset's channel name as the firmware does,
 // some of them on the air at the same time; plus MeshCore. Every one decodes; the CPU cost of the wider search is printed.
-#include "dect2/gen_util.h"
-#include "dect2/mesh_lora.h"
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <ctime>

@@ -2,8 +2,8 @@
 // correlation finds the mode, the symbol timing and the fine frequency; the reference symbol finds the frame and the coarse frequency.
 // Each frame: the channel from the reference symbol, corrected per symbol by the scattered pilots, the frame information, then the data
 // cells through the DRM multilevel decoder, and the data group (CRC-16) into the file it belongs to.
-#include "dect2/hfdig_hamdrm.h"
-#include "dect2/drm_fft.h"
+#include "dect2/hfdig/hfdig_hamdrm.h"
+#include "dect2/drm/drm_fft.h"
 #include "hfdig_hamdrm_int.h"
 #include <algorithm>
 #include <cmath>

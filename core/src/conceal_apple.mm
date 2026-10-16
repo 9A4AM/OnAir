@@ -1,6 +1,6 @@
 // Frame interpolation with Apple's machine-learning frame rate conversion (VideoToolbox VTFrameProcessor, macOS 15.4 and later).
 // It runs on the GPU / Neural Engine and needs no model download: the model ships with the system.
-#include "dect2/conceal.h"
+#include "dect2/tv/conceal.h"
 #import <CoreMedia/CoreMedia.h>
 #import <CoreVideo/CoreVideo.h>
 #import <Foundation/Foundation.h>

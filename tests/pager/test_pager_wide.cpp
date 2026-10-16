@@ -2,11 +2,11 @@
 // 3 kHz off it, the last one starting late). Every carrier must get its own receiver, every page must arrive with its exact text and address and be
 // stamped with the frequency of the carrier that sent it, none may turn up at another carrier; a retune must keep the rows at their absolute
 // frequencies; and the single receiver (switch off) is unchanged.
-#include "dect2/modes.h"
-#include "dect2/pager_gen.h"
-#include "dect2/pager_rx.h"
-#include "dect2/t2rx.h"
-#include "dect2/wide_modes.h"
+#include "dect2/engine/modes.h"
+#include "dect2/pager/pager_gen.h"
+#include "dect2/pager/pager_rx.h"
+#include "dect2/t2/t2rx.h"
+#include "dect2/engine/wide_modes.h"
 #include <cmath>
 #include <cstdio>
 #include <memory>

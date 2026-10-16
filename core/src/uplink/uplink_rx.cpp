@@ -1,5 +1,5 @@
-#include "dect2/uplink_rx.h"
-#include "dect2/results_io.h"
+#include "dect2/uplink/uplink_rx.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

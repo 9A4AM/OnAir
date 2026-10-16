@@ -1,10 +1,10 @@
 // Radiosonde screens: the map with every sonde's track and a balloon marker, the table of sondes heard, the detail of the selected one
 // (all fields, altitude and temperature plots, calibration progress), the carriers the search found in the band, and the test signal options.
 #include "app.h"
-#include "dect2/sonde_land.h"
-#include "dect2/maidenhead.h"
+#include "dect2/sonde/sonde_land.h"
+#include "dect2/geo/maidenhead.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/sonde_tel.h"
+#include "dect2/sonde/sonde_tel.h"
 #include <algorithm>
 #include <cmath>
 

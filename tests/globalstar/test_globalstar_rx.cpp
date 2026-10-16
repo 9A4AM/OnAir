@@ -1,9 +1,9 @@
 // Globalstar activity monitor: the test signal (globalstar_gen.h) through the receiver (globalstar_rx.h): a steady channel with Doppler offsets, SNRs and
 // a radio clock error; a satellite pass (the Doppler track follows the sweep); bursts on a second channel (the event log); noise alone gives nothing.
-#include "dect2/globalstar_gen.h"
-#include "dect2/globalstar_rx.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
+#include "dect2/globalstar/globalstar_gen.h"
+#include "dect2/globalstar/globalstar_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

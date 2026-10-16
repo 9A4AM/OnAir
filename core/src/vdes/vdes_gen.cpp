@@ -1,7 +1,7 @@
 // VDES test signal: see vdes_gen.h.
-#include "dect2/vdes_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/vdes_tel.h"
+#include "dect2/vdes/vdes_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/vdes/vdes_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <random>

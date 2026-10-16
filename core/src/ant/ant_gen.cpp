@@ -1,8 +1,8 @@
 // ANT+ test signal (see ant_gen.h).
-#include "dect2/ant_gen.h"
-#include "dect2/ant_rx.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
+#include "dect2/ant/ant_gen.h"
+#include "dect2/ant/ant_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

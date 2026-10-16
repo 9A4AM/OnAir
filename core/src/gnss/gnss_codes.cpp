@@ -1,6 +1,6 @@
 // Spreading codes of the satellite navigation signals (see gnss_codes.h).
-#include "dect2/gnss_codes.h"
-#include "dect2/gnss_tel.h"
+#include "dect2/gnss/gnss_codes.h"
+#include "dect2/gnss/gnss_tel.h"
 #include <cstring>
 
 namespace dect2 {

@@ -1,5 +1,5 @@
 // Maidenhead locators (known pairs, every length, the edges and the poles, round trips), the coordinate parser and the great circle
-#include "dect2/maidenhead.h"
+#include "dect2/geo/maidenhead.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

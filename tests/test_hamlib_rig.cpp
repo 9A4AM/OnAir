@@ -1,10 +1,10 @@
 // Hamlib rig control against Hamlib's own dummy rig (model 1), in process and through rigctld (model 2, netrigctl): open and close, both
 // directions of frequency and mode, polling, a rig that disappears and comes back, repeated and concurrent start/stop, mode names, and a
 // check that receiving never keys the transmitter. rigctld missing: the network tests are skipped with a note.
-#include "dect2/hamlib_link.h"
-#include "dect2/hamlib_rig.h"
-#include "dect2/ring.h"
-#include "dect2/source.h"
+#include "dect2/source/hamlib_link.h"
+#include "dect2/source/hamlib_rig.h"
+#include "dect2/common/ring.h"
+#include "dect2/source/source.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>

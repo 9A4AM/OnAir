@@ -1,7 +1,7 @@
 // HF radiofax directory and schedule (see marine_wefax_stations.h). Edit the two tables below to update.
 // Frequencies are the assigned carriers in kHz (tune the USB dial 1.9 kHz lower). Broadcast times are UTC; most are marked
 // approximate: they follow the published schedules only roughly, and stations change them with the seasons.
-#include "dect2/marine_wefax_stations.h"
+#include "dect2/marine/marine_wefax_stations.h"
 #include <algorithm>
 
 namespace dect2 {

@@ -1,11 +1,11 @@
 // Time stations BPC, HLA and the coded BPM signal (BPMc): the frames and their parities, the generator through the receiver started part way
 // into a minute, a sample clock that runs slow, noise alone gives nothing. With DECT2_TIME_REC_DIR set to a folder holding BPC.wav, HLA.wav and
 // BPM.wav (mono recordings of the stations' audio, read only, never part of the repository) they are decoded too.
-#include "dect2/gen_util.h"
-#include "dect2/time_gen.h"
-#include "dect2/time_proto.h"
-#include "dect2/time_rx.h"
-#include "dect2/time_tel.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/time/time_gen.h"
+#include "dect2/time/time_proto.h"
+#include "dect2/time/time_rx.h"
+#include "dect2/time/time_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

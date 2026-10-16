@@ -1,5 +1,5 @@
 #include "atsc3_ldpc.h"
-#include "dect2/simd.h"
+#include "dect2/dsp/simd.h"
 #include <algorithm>
 #include <cmath>
 #include <map>

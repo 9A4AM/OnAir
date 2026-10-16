@@ -1,6 +1,6 @@
 // Time per frame of the AIS frame layer: C++ (dect2::ais_ref, a generated copy) against the Rust crate (dect2::ais). Run from a release build:
 // bench_ais_proto prints ns per call for the pieces and for the whole receive path (find frames, decode, armour into a sentence).
-#include "dect2/ais_proto.h"
+#include "dect2/ais/ais_proto.h"
 #include "ais_proto_ref.h"
 #include <algorithm>
 #include <chrono>

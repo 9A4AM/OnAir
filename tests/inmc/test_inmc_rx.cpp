@@ -1,6 +1,6 @@
 // Inmarsat-C: generator to receiver round trip. The loop of five messages must come back bit exact (text, service, priority, id),
 // with normal and inverted polarity, and the channel readings must be sane.
-#include "dect2/inmc_testutil.h"
+#include "dect2/inmc/inmc_testutil.h"
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)

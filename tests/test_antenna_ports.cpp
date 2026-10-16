@@ -1,4 +1,4 @@
-#include "dect2/antenna_ports.h"
+#include "dect2/source/antenna_ports.h"
 #include <cstdio>
 using namespace dect2;
 static int fails = 0;

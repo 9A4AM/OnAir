@@ -1,6 +1,6 @@
-#include "dect2/atsc3_subframe.h"
+#include "dect2/atsc3/atsc3_subframe.h"
 #include "atsc3_tables.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

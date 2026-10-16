@@ -1,4 +1,4 @@
-#include "dect2/uplink_gen.h"
+#include "dect2/uplink/uplink_gen.h"
 #include <algorithm>
 #include <cmath>
 

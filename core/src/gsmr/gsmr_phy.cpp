@@ -1,6 +1,6 @@
 // GSM-R physical layer (gsmr_phy.h): channel coding, burst formats, GMSK modulation, FCCH search, equaliser.
-#include "dect2/gsmr_phy.h"
-#include "dect2/cell_dsp.h"
+#include "dect2/gsmr/gsmr_phy.h"
+#include "dect2/cell/cell_dsp.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

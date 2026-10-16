@@ -7,11 +7,11 @@
 //      DMB stream itself (reported, not checked)
 //   5. over the air: the DAB signal with noise through DabReceiver (FIC signalling, sub-channel, outer code, remux) to decoded pictures
 //   6. the engine as the app uses it: the built-in DAB test signal, the DMB service selected, pictures out of the player (muted)
-#include "dect2/dab.h"
-#include "dect2/dab_dmb.h"
-#include "dect2/dab_gen.h"
-#include "dect2/engine.h"
-#include "dect2/ts.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_dmb.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/tv/ts.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>

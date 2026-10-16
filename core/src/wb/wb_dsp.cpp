@@ -1,5 +1,5 @@
-#include "dect2/wb_dsp.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/wb/wb_dsp.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 

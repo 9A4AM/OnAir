@@ -7,8 +7,8 @@
 //     of the first argument), and the test stream is an AC-3 stream whose sample entry was relabelled 'ac-4' / 'dac4'. That proves loading,
 //     calling the library through its stable interface, the remux branch, the AC-3 re-encoding and the time line. It does NOT prove that
 //     any AC-4 bitstream decodes: that needs the patched FFmpeg and a real stream (not available here).
-#include "dect2/ac4_dec.h"
-#include "dect2/atsc3_remux.h"
+#include "dect2/audio/ac4_dec.h"
+#include "dect2/atsc3/atsc3_remux.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

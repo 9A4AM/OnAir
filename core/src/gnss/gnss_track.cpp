@@ -1,8 +1,8 @@
 // One tracking channel (see gnss_track.h).
-#include "dect2/gnss_track.h"
-#include "dect2/gnss_bds.h"
-#include "dect2/gnss_glo.h"
-#include "dect2/gnss_msg.h"
+#include "dect2/gnss/gnss_track.h"
+#include "dect2/gnss/gnss_bds.h"
+#include "dect2/gnss/gnss_glo.h"
+#include "dect2/gnss/gnss_msg.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

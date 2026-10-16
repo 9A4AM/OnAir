@@ -1,7 +1,7 @@
 // ADS-B frame validation and the aircraft table.
-#include "dect2/adsb_track.h"
-#include "dect2/results_io.h"
-#include "dect2/feeds.h"
+#include "dect2/adsb/adsb_track.h"
+#include "dect2/results/results_io.h"
+#include "dect2/net/feeds.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

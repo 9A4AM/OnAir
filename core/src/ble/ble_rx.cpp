@@ -1,10 +1,10 @@
 // Bluetooth LE advertising monitor (see ble_rx.h).
-#include "dect2/ble_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/ble_tel.h"
-#include "dect2/ble_proto.h"
-#include "dect2/feeds.h"
-#include "dect2/gen_util.h"
+#include "dect2/ble/ble_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/ble/ble_tel.h"
+#include "dect2/ble/ble_proto.h"
+#include "dect2/net/feeds.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

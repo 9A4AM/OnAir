@@ -4,10 +4,10 @@
 // and GPS with GLONASS in one 40 Msps tune at 1590.4 MHz, GLONASS with a clock unknown of its own and tau_GPS applied; the "All systems" tune
 // (1582 MHz, 50 Msps) holds the L1, B1I and all fourteen GLONASS bands. The faults of tests/impair.h:
 // +-5 kHz, a sample clock 20 ppm off, low C/N0, a start in the middle of a string.
-#include "dect2/gnss_codes.h"
-#include "dect2/gnss_glo.h"
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_codes.h"
+#include "dect2/gnss/gnss_glo.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include "gnss_faults.h"
 #include <cmath>
 #include <cstdio>

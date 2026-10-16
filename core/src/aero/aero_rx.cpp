@@ -1,12 +1,12 @@
 // Inmarsat Aero receiver: a band search finds P-channel carriers (up to 6), each gets a front end (mixer + CIC decimator to about 48 kHz)
 // and demodulators for 600, 1200 and 10500 bit/s until one of them holds frame sync; the frames go to the SU layer (aero_su.h).
-#include "dect2/aero_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/aero_demod.h"
-#include "dect2/aero_phy.h"
-#include "dect2/aero_pos.h"
-#include "dect2/aero_su.h"
-#include "dect2/fftutil.h"
+#include "dect2/aero/aero_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/aero/aero_demod.h"
+#include "dect2/aero/aero_phy.h"
+#include "dect2/aero/aero_pos.h"
+#include "dect2/aero/aero_su.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

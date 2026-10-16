@@ -1,12 +1,12 @@
 // JS8Call receiver (see js8_rx.h).
-#include "dect2/js8_rx.h"
-#include "dect2/pskreporter.h"
-#include "dect2/results_io.h"
-#include "dect2/js8_tel.h"
-#include "dect2/js8_proto.h"
-#include "dect2/marine_dsp.h"
+#include "dect2/js8/js8_rx.h"
+#include "dect2/net/pskreporter.h"
+#include "dect2/results/results_io.h"
+#include "dect2/js8/js8_tel.h"
+#include "dect2/js8/js8_proto.h"
+#include "dect2/marine/marine_dsp.h"
 #include "../ham_listen.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

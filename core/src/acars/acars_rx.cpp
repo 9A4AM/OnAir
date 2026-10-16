@@ -1,10 +1,10 @@
-#include "dect2/acars_rx.h"
-#include "dect2/feeds.h"
-#include "dect2/acars_proto.h"
-#include "dect2/aero_pos.h"
-#include "dect2/fftutil.h"
+#include "dect2/acars/acars_rx.h"
+#include "dect2/net/feeds.h"
+#include "dect2/acars/acars_proto.h"
+#include "dect2/aero/aero_pos.h"
+#include "dect2/dsp/fftutil.h"
 #include "acars_chan.h"
-#include "dect2/results_io.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

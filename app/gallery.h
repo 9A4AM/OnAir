@@ -1,8 +1,8 @@
 // The shared picture gallery (View > Images): every picture the satellite, fax, SSTV and HamDRM receivers finish is handed to publish()
 // below by the receiver's screen code (the DSP is not touched). The pictures are kept in <data folder>/images/ with an index file, capped by size.
 #pragma once
-#include "dect2/imgproc.h"
-#include "dect2/passes.h"
+#include "dect2/dsp/imgproc.h"
+#include "dect2/geo/passes.h"
 #include <cstdint>
 #include <string>
 #include <vector>

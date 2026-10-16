@@ -4,9 +4,9 @@
 // carrier offset hypotheses, correlation energy folded over the 20 ms SSB period), then each PSS peak is taken at 256 x SCS: fine timing
 // and carrier offset from the PSS, N_ID1 from the SSS (equalised by the PSS), the SSB index from the PBCH DMRS, the channel from the DMRS,
 // and the PBCH polar decoded (CRC24C) into the MIB. SS-RSRP, SS-RSRQ and SS-SINR come from the SSS and the DMRS.
-#include "dect2/cell_dsp.h"
-#include "dect2/fftutil.h"
-#include "dect2/nr_phy.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/nr/nr_phy.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

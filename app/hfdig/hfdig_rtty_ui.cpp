@@ -1,8 +1,8 @@
 // HF digital, the RTTY view of the main tab (called by hfdig_ui.cpp): the settings, the tones found and the decoded text.
 #include "app.h"
-#include "dect2/hfdig_rtty.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/updater.h"
+#include "dect2/hfdig/hfdig_rtty.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/engine/updater.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

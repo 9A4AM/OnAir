@@ -1,6 +1,6 @@
 // Builds without a GPU backend (everything except macOS for now): the GPU decoder reports itself as unavailable and the engine's
 // Auto/CPU modes use the CPU decoder. A Vulkan / OpenCL implementation can replace this file.
-#include "dect2/gpu_ldpc.h"
+#include "dect2/dsp/gpu_ldpc.h"
 #include <cstdint>
 
 namespace dect2 {

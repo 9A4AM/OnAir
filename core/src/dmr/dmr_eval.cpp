@@ -1,6 +1,6 @@
 // Compare what the DMR receiver reported with what the test signal sent (see dmr_eval.h).
-#include "dect2/dmr_eval.h"
-#include "dect2/dmr_rx.h"
+#include "dect2/dmr/dmr_eval.h"
+#include "dect2/dmr/dmr_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

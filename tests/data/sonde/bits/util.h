@@ -1,6 +1,6 @@
 // Shared helpers of the test_sonde_bits / _dfm / _m10 / _m20 programs (a header, kept here so that it is delivered with the tests).
 #pragma once
-#include "dect2/sonde_bits.h"
+#include "dect2/sonde/sonde_bits.h"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>

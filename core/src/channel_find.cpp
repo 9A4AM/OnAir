@@ -1,6 +1,6 @@
 // See channel_find.h.
-#include "dect2/channel_find.h"
-#include "dect2/fftutil.h"
+#include "dect2/channels/channel_find.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 

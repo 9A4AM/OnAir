@@ -1,9 +1,9 @@
 // ADS-B: the decoded lists live through reset() and configure(), go into the results file and come back from it, and only
 // clearResults() empties them (tests/results_testkit.h).
 #include "../results_testkit.h"
-#include "dect2/adsb_rx.h"
-#include "dect2/ais_rx.h"
-#include "dect2/source.h"
+#include "dect2/adsb/adsb_rx.h"
+#include "dect2/ais/ais_rx.h"
+#include "dect2/source/source.h"
 #include <cstdio>
 using namespace dect2;
 

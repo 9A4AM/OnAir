@@ -1,4 +1,4 @@
-#include "dect2/exact_resampler.h"
+#include "dect2/dsp/exact_resampler.h"
 #if defined(__GNUC__) && defined(__x86_64__) && !defined(DECT2_NO_SIMD)
 #include <immintrin.h>
 #define DECT2_ER_AVX2 1

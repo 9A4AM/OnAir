@@ -1,7 +1,7 @@
 // AIS under the conditions a real radio brings: carrier offsets, clock errors, sample rates, chunk sizes, 8-bit samples, a DC spike, a gap,
 // a reset in the middle, bursts at the same time on both channels, a strong station next to a weak one, noise only.
-#include "dect2/ais_testutil.h"
-#include "dect2/gen_util.h"
+#include "dect2/ais/ais_testutil.h"
+#include "dect2/dsp/gen_util.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdio>

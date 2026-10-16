@@ -2,9 +2,9 @@
 // damaged input. tests/test_dmr_radio.cpp: carrier offset, clock offset, 8 bit rounding, DC spike, IQ imbalance, wrong deviation.
 // tests/test_dmr_field.cpp: other sample rates, direct mode, dropouts, level steps, adjacent channels, impulse noise, reset.
 // Everything is compared with what the generator says it sent (dmr_eval.h).
-#include "dect2/dmr_eval.h"
-#include "dect2/dmr_gen.h"
-#include "dect2/dmr_rx.h"
+#include "dect2/dmr/dmr_eval.h"
+#include "dect2/dmr/dmr_gen.h"
+#include "dect2/dmr/dmr_rx.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>

@@ -2,7 +2,7 @@
 // and to read a clicked position's coordinates, locator, and distance and bearing from the receiver location.
 #include "app.h"
 #include "adsb/adsb_map.h"
-#include "dect2/maidenhead.h"
+#include "dect2/geo/maidenhead.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

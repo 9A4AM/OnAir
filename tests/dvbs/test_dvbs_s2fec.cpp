@@ -1,7 +1,7 @@
 // DVB-S2 channel coding and framing building blocks: properties of the code tables, known-answer checks against the specification
 // (EN 302 307-1), and a round trip through every MODCOD (BB scrambling, BCH, LDPC, bit interleaver, mapping, noise, soft demapping, decoding).
-#include "dect2/dvbs_s2.h"
-#include "dect2/dvbt.h"
+#include "dect2/dvbs/dvbs_s2.h"
+#include "dect2/dvbt/dvbt.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

@@ -1,5 +1,5 @@
 // VDL Mode 4 link layer without a radio: NRZI, HDLC, CRC, sync/DLS bursts.
-#include "dect2/vdl4_proto.h"
+#include "dect2/vdl4/vdl4_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

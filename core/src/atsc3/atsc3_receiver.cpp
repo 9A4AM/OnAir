@@ -1,8 +1,8 @@
 #include <chrono>
-#include "dect2/atsc3_receiver.h"
-#include "dect2/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_receiver.h"
+#include "dect2/atsc3/atsc3_bb.h"
 #include "atsc3_ldpc.h"
-#include "dect2/atsc3_ti.h"
+#include "dect2/atsc3/atsc3_ti.h"
 #include <algorithm>
 #include <atomic>
 #include <cstring>

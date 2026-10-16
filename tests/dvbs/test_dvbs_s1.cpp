@@ -1,8 +1,8 @@
 // DVB-S (EN 300 421) transmit chain against an independent model written from the standard in this file: energy dispersal, Reed-Solomon (204,188),
 // convolutional interleaver (I = 12), convolutional code (171,133 octal) with puncturing, QPSK mapping. The generator's symbols must be the model's
 // symbols exactly. Then the receiver's building blocks: sync byte search, rate search, code rate and puncture phase on symbols with noise and a rotation.
-#include "dect2/dvbs_tx.h"
-#include "dect2/dvbt.h"
+#include "dect2/dvbs/dvbs_tx.h"
+#include "dect2/dvbt/dvbt.h"
 #include "../../core/src/dvbs/dvbs_s1.h"
 #include <cstdio>
 #include <cstdlib>

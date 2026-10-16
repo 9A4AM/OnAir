@@ -1,6 +1,6 @@
 // Broadcast character sets to UTF-8 (see text_charset.h). The tables are generated from: welle.io src/backend/charsets.cpp (EBU Latin,
 // GPL-2+), checked entry by entry against ODR-PadEnc src/charset.cpp; glibc iconvdata/iso_6937.c (ISO/IEC 6937, LGPL-2.1+).
-#include "dect2/text_charset.h"
+#include "dect2/common/text_charset.h"
 
 namespace dect2::text {
 namespace {

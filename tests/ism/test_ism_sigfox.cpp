@@ -1,10 +1,10 @@
 // Sigfox uplinks in the ISM sensors mode: generated RC1 frames (0, 4 and 12 byte payloads, three repetitions each on random frequencies
 // within the 192 kHz span) through the ISM receiver. Must hold: ID, sequence and payload decode, the three repetitions merge into one
 // message, +-1 kHz radio offset, 12 dB in the 100 Hz channel, noise gives nothing.
-#include "dect2/ism_rx.h"
-#include "dect2/ism_sigfox.h"
-#include "dect2/ism_tel.h"
-#include "dect2/portable_rng.h"
+#include "dect2/ism/ism_rx.h"
+#include "dect2/ism/ism_sigfox.h"
+#include "dect2/ism/ism_tel.h"
+#include "dect2/dsp/portable_rng.h"
 #include <cmath>
 #include <cstdio>
 using namespace dect2;

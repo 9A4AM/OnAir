@@ -4,8 +4,8 @@
 //   convolutional code impulse response for polynomials 109, 79 (aerol.cpp SetCode(2,7,{109,79},..); libcorrect puts the newest bit in bit 0)
 //   SU check: CRC-16/X-25 (aerol.h AeroLcrc16: 0x8408 reflected, start 0xFFFF, inverted), catalogue check value 0x906E for "123456789"
 //   interleaver row permutation (aerol.cpp: interleaverowdepermute[i] = (i*27) % 64)
-#include "dect2/aero_phy.h"
-#include "dect2/aero_demod.h"
+#include "dect2/aero/aero_phy.h"
+#include "dect2/aero/aero_demod.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

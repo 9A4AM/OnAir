@@ -11,8 +11,8 @@
 // Receiving: each line's sync pulse is searched near where the previous ones predict it; a straight line fitted through the line start
 // times gives the line period of the sender against this clock (the slant, as a ratio applied to all times inside the line) and the
 // position of each line. A line is cut into pixels when its time has passed.
-#include "dect2/hfdig_sstv.h"
-#include "dect2/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_sstv.h"
+#include "dect2/hfdig/hfdig_gen.h"
 #include "hfdig_sstv_modes.h"
 #include "hfdig_usb.h"
 #include <algorithm>

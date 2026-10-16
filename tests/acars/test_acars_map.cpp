@@ -1,8 +1,8 @@
 // ACARS positions end to end: the test signal's position reports (ADS-C as B6 and as H1 "#M1B/B6", a POS text report and a label 16 report)
 // through modulation and the receiver into the aircraft table. Each aircraft ends up at a position it sent, the track holds the positions in
 // order, and the ADS-C groups are read.
-#include "dect2/acars_sim.h"
-#include "dect2/aero_pos.h"
+#include "dect2/acars/acars_sim.h"
+#include "dect2/aero/aero_pos.h"
 #include <cstdio>
 #include <map>
 #include <vector>

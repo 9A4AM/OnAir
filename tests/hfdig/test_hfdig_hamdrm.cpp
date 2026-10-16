@@ -1,12 +1,12 @@
 // HF digital HamDRM: the test JPEG in mode B (16-QAM, 2.5 kHz) at 20 dB (signal to noise in 3 kHz) with a +-20 Hz tuning error decodes byte
 // for byte with its name and callsign; segments left out of a transmission are reported missing and filled in by the repeat; the other
 // modes and constellations; noise alone gives nothing; and the whole HF digital receiver on the I/Q test signal.
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_hamdrm.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/modes.h"
-#include "dect2/source.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_hamdrm.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/engine/modes.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

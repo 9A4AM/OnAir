@@ -1,6 +1,6 @@
 // QPSK carrier recovery, see dvbs_carrier.h.
 #include "dvbs_carrier.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

@@ -1,5 +1,5 @@
 // ACARS at 20 Msps (the HackRF's widest exact rate): three channels, 8-bit samples, a clock offset. Slow: the generator alone needs most of the time.
-#include "dect2/acars_sim.h"
+#include "dect2/acars/acars_sim.h"
 #include <cstdio>
 using namespace dect2;
 int main() {

@@ -2,14 +2,14 @@
 // how well Doppler and code phase come out, and the false alarm count on satellites that are not there; (B) a lone C/A signal made in this file (Doppler, a
 // Doppler rate, random data bits, noise) through one tracking channel: lock time, Doppler and code phase accuracy, C/N0 estimate; (C) noise only, 40 s
 // through the whole receiver: no satellite may be locked.
-#include "dect2/gnss_acq.h"
-#include "dect2/gnss_codes.h"
-#include "dect2/gnss_front.h"
-#include "dect2/gnss_sim.h"
-#include "dect2/gnss_track.h"
-#include "dect2/gnss_rx.h"
-#include "dect2/gen_util.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_acq.h"
+#include "dect2/gnss/gnss_codes.h"
+#include "dect2/gnss/gnss_front.h"
+#include "dect2/gnss/gnss_sim.h"
+#include "dect2/gnss/gnss_track.h"
+#include "dect2/gnss/gnss_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/engine/test_parallel.h"
 #include <cmath>
 #include <cstdio>
 #include <iterator>

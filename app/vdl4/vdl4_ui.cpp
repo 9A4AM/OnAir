@@ -1,7 +1,7 @@
 // VDL Mode 4 screens: message log and aircraft list.
 #include "../adsb/adsb_map.h"
 #include "app.h"
-#include "dect2/vdl4_tel.h"
+#include "dect2/vdl4/vdl4_tel.h"
 #include <cstdio>
 #include <cstring>
 

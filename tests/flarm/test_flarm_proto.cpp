@@ -1,6 +1,6 @@
 // FLARM packet layer: the sync word chips against the published SoftRF constant, CRC-16 check value, XXTEA round trip, V6 key / packet round trip,
 // position and velocity packing, parity rejection.
-#include "dect2/flarm_proto.h"
+#include "dect2/flarm/flarm_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

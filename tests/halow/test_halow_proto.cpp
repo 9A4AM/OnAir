@@ -1,7 +1,7 @@
 // Wi-Fi HaLow (802.11ah) pieces: the tone layouts, preamble sequences, SIG field and its CRC-4, scrambler, convolutional code and Viterbi decoder,
 // the PPDU length, S1G beacon building and parsing (SSID, compressed SSID, security, S1G Operation), channel plans.
-#include "dect2/halow_proto.h"
-#include "dect2/wifi_proto.h"
+#include "dect2/halow/halow_proto.h"
+#include "dect2/wifi/wifi_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

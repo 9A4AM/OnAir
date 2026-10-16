@@ -1,5 +1,5 @@
 // DRM back end: FAC, SDC and MSC decoding from equalised cells.
-#include "dect2/drm_dec.h"
+#include "dect2/drm/drm_dec.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

@@ -1,5 +1,5 @@
 // ANT frame layer under mutation: libFuzzer entry point (-DONAIR_LIBFUZZER) or a deterministic seeded mutation run (ONAIR_FUZZ_ITERS, default 200000).
-#include "dect2/ant_proto.h"
+#include "dect2/ant/ant_proto.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

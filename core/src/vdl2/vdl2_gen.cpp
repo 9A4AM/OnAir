@@ -1,7 +1,7 @@
 // VDL Mode 2 test signal: see vdl2_gen.h.
-#include "dect2/vdl2_gen.h"
-#include "dect2/aero_adsc.h"
-#include "dect2/vdl2_proto.h"
+#include "dect2/vdl2/vdl2_gen.h"
+#include "dect2/aero/aero_adsc.h"
+#include "dect2/vdl2/vdl2_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

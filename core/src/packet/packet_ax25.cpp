@@ -1,5 +1,5 @@
 // AX.25 link layer: see packet_ax25.h. Written from the AX.25 2.2 specification.
-#include "dect2/packet_ax25.h"
+#include "dect2/packet/packet_ax25.h"
 
 namespace dect2 {
 namespace ax25 {

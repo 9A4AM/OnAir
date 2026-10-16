@@ -6,7 +6,7 @@
 // (github.com/ningzichun/dtmb-sdr, MIT licence, python/dtmb/data/dtmb_ldpc_rate{1,2,3}.alist, which that project derived from the standard)
 // and reduced to the block shifts. They were checked here for: all 127 rows of each block row agree (quasi-cyclic), every block has weight one,
 // no 4-cycles, edge counts 34925 / 37592 / 37338, parity part full rank, systematic encoding works. They were not compared with the standard text.
-#include "dect2/dtmb_ldpc.h"
+#include "dect2/dtmb/dtmb_ldpc.h"
 
 namespace dect2::dtmb {
 

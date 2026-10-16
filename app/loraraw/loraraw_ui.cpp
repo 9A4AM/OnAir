@@ -3,8 +3,8 @@
 // rate, CRC, length, sync word. Spreading factor and bandwidth can be left on Auto (every combination is searched).
 // Receive only: nothing is ever sent, nothing is decrypted or interpreted; the payload is shown as the bytes it is.
 #include "app.h"
-#include "dect2/loraraw_rx.h"
-#include "dect2/loraraw_tel.h"
+#include "dect2/loraraw/loraraw_rx.h"
+#include "dect2/loraraw/loraraw_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

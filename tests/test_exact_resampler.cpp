@@ -1,5 +1,5 @@
 // The streaming resampler: a tone keeps its frequency and phase through any ratio, and block boundaries do not matter.
-#include "dect2/exact_resampler.h"
+#include "dect2/dsp/exact_resampler.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

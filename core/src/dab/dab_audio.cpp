@@ -1,7 +1,7 @@
 // DAB / DAB+ audio: superframe assembly (Reed-Solomon, firecode, access units) and decoding with FFmpeg.
-#include "dect2/dab.h"
-#include "dect2/audioout.h"
-#include "dect2/dab_pad.h"
+#include "dect2/dab/dab.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/dab/dab_pad.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>

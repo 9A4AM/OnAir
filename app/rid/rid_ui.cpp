@@ -3,11 +3,11 @@
 // Receive only: Remote ID (ASTM F3411 / ASD-STAN EN 4709-002) is a public broadcast meant for anyone to read; nothing is transmitted.
 #include "../adsb/adsb_map.h"
 #include "app.h"
-#include "dect2/ble_proto.h"
-#include "dect2/rid_proto.h"
-#include "dect2/rid_rx.h"
-#include "dect2/rid_tel.h"
-#include "dect2/wifi_proto.h"
+#include "dect2/ble/ble_proto.h"
+#include "dect2/rid/rid_proto.h"
+#include "dect2/rid/rid_rx.h"
+#include "dect2/rid/rid_tel.h"
+#include "dect2/wifi/wifi_proto.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

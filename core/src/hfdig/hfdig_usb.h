@@ -1,7 +1,7 @@
 // The filters the HF digital receiver (hfdig_rx.cpp) and its test signal (hfdig_gen.cpp) share: a Kaiser-windowed low-pass, and from it
 // the complex band-pass that keeps the upper sideband audio, 200 .. 3800 Hz above 0 Hz.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

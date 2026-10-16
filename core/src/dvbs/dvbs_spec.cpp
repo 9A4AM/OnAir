@@ -1,6 +1,6 @@
 // DVB-S/S2 receiver: spectrum analysis, see dvbs_spec.h.
 #include "dvbs_spec.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

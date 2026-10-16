@@ -3,7 +3,7 @@
 // zero, low-pass, decimate to about 2.5 Msps, undo the high-frequency pre-emphasis (the "bell", an FIR made from the response of BT.470-6 item
 // 2.13), frequency discriminator, undo the low-frequency pre-emphasis (item 2.7). One line at a time; the video decoder does the sequencing.
 #pragma once
-#include "dect2/atv_std.h"
+#include "dect2/atv/atv_std.h"
 #include <complex>
 #include <vector>
 

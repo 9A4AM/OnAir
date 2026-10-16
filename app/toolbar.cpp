@@ -1,10 +1,10 @@
 // the top bar, the source options, the status bar, gain control and the standard switch
 #include "app.h"
-#include "dect2/rate_choice.h"
-#include "dect2/antenna_ports.h"
-#include "dect2/hdr_rx.h"
-#include "dect2/hamlib_link.h"
-#include "dect2/iq_file.h"
+#include "dect2/engine/rate_choice.h"
+#include "dect2/source/antenna_ports.h"
+#include "dect2/hdr/hdr_rx.h"
+#include "dect2/source/hamlib_link.h"
+#include "dect2/source/iq_file.h"
 #include <algorithm>
 #include <cctype>
 #include <memory>

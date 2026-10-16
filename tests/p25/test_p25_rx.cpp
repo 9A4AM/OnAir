@@ -1,10 +1,10 @@
 // P25 Phase 1 receiver against the test signal with real-world faults: +-1 kHz offset, off centre with a 100 ppm clock error, 14 dB SNR,
 // a call joined late and one without its terminator, all at once; an encrypted call is reported as encrypted and never reaches the codec;
 // noise only gives nothing. Silent.
-#include "dect2/p25_gen.h"
-#include "dect2/p25_rx.h"
-#include "dect2/p25_tel.h"
-#include "dect2/p25_proto.h"
+#include "dect2/p25/p25_gen.h"
+#include "dect2/p25/p25_rx.h"
+#include "dect2/p25/p25_tel.h"
+#include "dect2/p25/p25_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

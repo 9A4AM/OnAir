@@ -1,8 +1,8 @@
 // Radiosonde receiver, one channel: mixer + decimating filters, FM discriminator, symbol timing, and the decoders of every sonde type.
 // Private to the receiver (sonde_rx.cpp).
 #pragma once
-#include "dect2/ring.h"
-#include "dect2/sonde_bits.h"
+#include "dect2/common/ring.h"
+#include "dect2/sonde/sonde_bits.h"
 #include <cmath>
 #include <cstdint>
 #include <memory>

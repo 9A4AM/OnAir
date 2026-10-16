@@ -1,5 +1,5 @@
 // Radiosonde bit decoders (DFM, M10, M20): shared entry points. The decoders are in sonde_dfm.cpp, sonde_m10.cpp, sonde_m20.cpp.
-#include "dect2/sonde_bits.h"
+#include "dect2/sonde/sonde_bits.h"
 
 namespace dect2 {
 

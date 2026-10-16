@@ -2,8 +2,8 @@
 // ground stations, and the channel list with its activity.
 #include "../adsb/adsb_map.h"
 #include "app.h"
-#include "dect2/adsb_tel.h"
-#include "dect2/vdl2_tel.h"
+#include "dect2/adsb/adsb_tel.h"
+#include "dect2/vdl2/vdl2_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

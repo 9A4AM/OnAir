@@ -1,5 +1,5 @@
 // ADS-B test signal generator (see adsb_gen.h).
-#include "dect2/adsb_gen.h"
+#include "dect2/adsb/adsb_gen.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

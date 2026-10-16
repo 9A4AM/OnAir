@@ -2,8 +2,8 @@
 // search space of the PDCCH, PDSCH). 3GPP TS 36.211 / 36.212 / 36.213. A DCI is accepted only when its CRC matches SI-RNTI: paging
 // (P-RNTI), random access and every UE-specific channel are never decoded.
 #include "cell_lte_int.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/fftutil.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

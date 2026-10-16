@@ -1,6 +1,6 @@
-#include "dect2/uat_track.h"
-#include "dect2/adsb_msg.h"
-#include "dect2/results_io.h"
+#include "dect2/uat/uat_track.h"
+#include "dect2/adsb/adsb_msg.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <cmath>
 

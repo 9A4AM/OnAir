@@ -3,10 +3,10 @@
 // their shape; Wi-Fi-like wideband bursts and noise are not taken for DJI; DroneID bursts that collide with Wi-Fi-like bursts are reported as they are.
 // The OcuSync-like and Lightbridge-like trains are our own stand-ins for the described shapes, not recordings: this checks the detector's logic, not that
 // real DJI links look like this.
-#include "dect2/dji_gen.h"
-#include "dect2/dji_rx.h"
-#include "dect2/dji_tel.h"
-#include "dect2/gen_util.h"
+#include "dect2/dji/dji_gen.h"
+#include "dect2/dji/dji_rx.h"
+#include "dect2/dji/dji_tel.h"
+#include "dect2/dsp/gen_util.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

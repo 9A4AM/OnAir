@@ -1,6 +1,6 @@
 // ATSC 3.0 L1-Detail: the syntax of A/322 Table 9.8 (pack, unpack, CRC) and the protection chain for FEC modes 1 to 7, including
 // segmentation into several coded blocks.
-#include "dect2/atsc3_l1.h"
+#include "dect2/atsc3/atsc3_l1.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

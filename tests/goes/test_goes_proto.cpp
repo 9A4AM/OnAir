@@ -2,10 +2,10 @@
 // VCDUs (and through the CADU coding with byte errors Reed-Solomon must correct) back into products that match byte for byte: the
 // Rice full disk in two segments, the plain mesoscale image, the JPEG, the admin text and the zipped EMWIN text; a lost VCDU marks the
 // file it hit and the rest still decode.
-#include "dect2/goes_gen.h"
-#include "dect2/goes_proto.h"
-#include "dect2/hfdig_hamdrm.h"
-#include "dect2/meteor_proto.h"
+#include "dect2/goes/goes_gen.h"
+#include "dect2/goes/goes_proto.h"
+#include "dect2/hfdig/hfdig_hamdrm.h"
+#include "dect2/meteor/meteor_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <random>

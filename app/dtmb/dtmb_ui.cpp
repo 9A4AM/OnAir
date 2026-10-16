@@ -1,7 +1,7 @@
 // DTMB screens: status bar, the analysis row (constellation, channel impulse response from the PN header, C/N and MER history, codeword loss),
 // the Receiver tab, the decoder option and the options of the test signal. The TV tab, services and the player are the shared ones.
 #include "app.h"
-#include "dect2/gpu_ldpc.h"
+#include "dect2/dsp/gpu_ldpc.h"
 #include <cmath>
 #include <deque>
 #include <utility>

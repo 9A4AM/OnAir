@@ -1,7 +1,7 @@
 // APRS / Packet test signal: see packet_gen.h.
-#include "dect2/packet_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/packet_rx.h"
+#include "dect2/packet/packet_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/packet/packet_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

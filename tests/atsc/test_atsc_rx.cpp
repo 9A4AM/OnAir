@@ -1,7 +1,7 @@
 // ATSC receiver: generated 8-VSB signals through the whole receive chain, with carrier offset, clock offset, noise and echoes.
-#include "dect2/atsc_gen.h"
-#include "dect2/atsc_rx.h"
-#include "dect2/dvbt_gen.h"
+#include "dect2/atsc/atsc_gen.h"
+#include "dect2/atsc/atsc_rx.h"
+#include "dect2/dvbt/dvbt_gen.h"
 #include <chrono>
 #include <random>
 #include <cmath>

@@ -1,5 +1,5 @@
 // RS92 through the whole receiver: serial, frame number, calibration progress, announced frequency, no position, impairments, SNR sweep.
-#include "dect2/sonde_testkit.h"
+#include "dect2/sonde/sonde_testkit.h"
 using namespace dect2;
 using namespace dect2::sondetest;
 

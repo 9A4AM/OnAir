@@ -1,9 +1,9 @@
 // Wi-Fi network monitor (see wifi_rx.h).
-#include "dect2/wifi_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/wifi_tel.h"
-#include "dect2/wifi_proto.h"
-#include "dect2/gen_util.h"
+#include "dect2/wifi/wifi_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/wifi/wifi_tel.h"
+#include "dect2/wifi/wifi_proto.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

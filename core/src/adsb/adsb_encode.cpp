@@ -1,5 +1,5 @@
 // ADS-B / Mode S message encoders (see adsb_encode.h).
-#include "dect2/adsb_encode.h"
+#include "dect2/adsb/adsb_encode.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

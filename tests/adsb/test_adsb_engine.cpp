@@ -1,9 +1,9 @@
 // ADS-B through the engine, as the interface and dect2cli use it: the synthetic source plays the test airspace (8 bit samples),
 // the engine must lock, decode, keep every sample, and report through latestRx(). The source plays faster than a radio (the receiver is what is
 // tested, not real time) and the run is counted in seconds of signal.
-#include "dect2/adsb_gen.h"
-#include "dect2/engine.h"
-#include "dect2/engine_testkit.h"
+#include "dect2/adsb/adsb_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/engine_testkit.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -5,11 +5,11 @@
 //    independently of the generator: -15 dB SNR in the LoRa band, +-22 kHz tuning error (50 ppm at 433 MHz), +-100 ppm sample clock,
 //    a capture that starts inside a frame, two colliding frames, a frame sent without CRC.
 // 3. The 70 cm test scene (mesh_gen region 2): every LoRa APRS and MeshCom packet of a cycle at -15 dB / +22 kHz / +100 ppm.
-#include "dect2/mesh_gen.h"
-#include "dect2/mesh_lora.h"
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_rx.h"
-#include "dect2/modes.h"
+#include "dect2/mesh/mesh_gen.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_rx.h"
+#include "dect2/engine/modes.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdio>

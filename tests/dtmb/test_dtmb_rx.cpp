@@ -1,7 +1,7 @@
 // DTMB receiver on the test signal: lock, bit-exact packets, header modes and profiles, carrier and clock offsets, echoes, input rates, odd chunk
 // sizes, 8-bit samples with DC offset and IQ imbalance, dropouts, reset.
-#include "dect2/dtmb_gen.h"
-#include "dect2/dtmb_rx.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

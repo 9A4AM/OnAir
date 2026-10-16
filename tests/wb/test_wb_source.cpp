@@ -1,8 +1,8 @@
 // Signal workbench: opening recordings (raw IQ in every format, SigMF, WAV mono / stereo-as-IQ, MP3), exporting selections, the band
 // extractor's frequency placement, the overview and the spectrogram tiles.
-#include "dect2/wb_export.h"
-#include "dect2/wb_gen.h"
-#include "dect2/wb_view.h"
+#include "dect2/wb/wb_export.h"
+#include "dect2/wb/wb_gen.h"
+#include "dect2/wb/wb_view.h"
 #include "wb_test.h"
 #include <chrono>
 #include <cstring>

@@ -1,7 +1,7 @@
 // Airband through the engine (setStandard(28)): the synthetic source plays the test layout, the receiver hears its channels and reports
 // through latestRx(); a retune keeps the report numbers growing.
-#include "dect2/airband_rx.h"
-#include "dect2/engine.h"
+#include "dect2/airband/airband_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

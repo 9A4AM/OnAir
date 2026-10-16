@@ -1,7 +1,7 @@
 // Where does the receiver's error correction fall off a cliff? Frame error rate against SNR for one DVB-T2 mode, comparing the production
 // decoder (normalised min-sum, 50 iterations, then a retry pass) with a floating-point sum-product reference with many iterations.
 //   bench_threshold [mod 0..3] [rate 0..] [rotation 0|1] [blocks per point] [snr_from snr_to step] [short 0|1]
-#include "dect2/t2fec.h"
+#include "dect2/t2/t2fec.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

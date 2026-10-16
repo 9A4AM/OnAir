@@ -1,5 +1,5 @@
 // D-STAR protocol pieces (see dstar_proto.h).
-#include "dect2/dstar_proto.h"
+#include "dect2/dstar/dstar_proto.h"
 #include <cctype>
 #include <cmath>
 #include <cstdio>

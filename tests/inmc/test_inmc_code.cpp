@@ -1,8 +1,8 @@
 // Inmarsat-C frame coding: known answers from the open decoder "inmarsatc" (Scytale-C library) and its documentation comments, the encoder against the
 // decoder's own branch table, round trip, and the Viterbi decoder against the well known behaviour of the K = 7 rate 1/2 code.
 // Nothing here is a recorded frame: no recording of a real signal was available.
-#include "dect2/gen_util.h"
-#include "dect2/inmc_code.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/inmc/inmc_code.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

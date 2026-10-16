@@ -1,5 +1,5 @@
 // dPMR air interface helpers (see dpmr_proto.h).
-#include "dect2/dpmr_proto.h"
+#include "dect2/dpmr/dpmr_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

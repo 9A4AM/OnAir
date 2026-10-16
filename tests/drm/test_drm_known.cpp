@@ -1,8 +1,8 @@
 // DRM known answers: CRC and energy dispersal vectors, cell counts and code sizes against the tables of ETSI ES 201 980 (V4.3.1), the pilot rules,
 // the message formats, and decoding of real over-the-air cells (FAC of modes A, B and C, SDC and MSC of mode A).
-#include "dect2/drm_defs.h"
-#include "dect2/drm_fec.h"
-#include "dect2/drm_msg.h"
+#include "dect2/drm/drm_defs.h"
+#include "dect2/drm/drm_fec.h"
+#include "dect2/drm/drm_msg.h"
 #include "../data/drm/real_cells.h"
 #include "../../core/src/drm/drm_internal.h"
 #include <cmath>

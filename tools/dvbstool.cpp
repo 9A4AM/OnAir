@@ -15,8 +15,8 @@
 //   DECT2_COMPUTE=cpu|gpu|auto selects where the error correction runs; DECT2_DVBS_REF=1 the DVB-S chain as it was before the speed-up.
 //   dvbstool ranges
 //       The symbol rates the receiver accepts at each input sample rate.
-#include "dect2/dvbs_gen.h"
-#include "dect2/dvbs_rx.h"
+#include "dect2/dvbs/dvbs_gen.h"
+#include "dect2/dvbs/dvbs_rx.h"
 #include "../core/src/dvbs/dvbs_s1.h"
 #include "../core/src/dvbs/dvbs_carrier.h"
 #include <algorithm>

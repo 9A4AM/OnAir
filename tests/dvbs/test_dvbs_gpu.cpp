@@ -1,7 +1,7 @@
 // DVB-S and DVB-S2 compute choice: the transport stream that comes out with the error correction forced onto the GPU must be the one the CPU gives
 // (and Auto must too). Skipped when the machine has no usable GPU backend.
-#include "dect2/dvbs_testkit.h"
-#include "dect2/gpu_ldpc.h"
+#include "dect2/dvbs/dvbs_testkit.h"
+#include "dect2/dsp/gpu_ldpc.h"
 #include <cstdio>
 #include <cstdlib>
 

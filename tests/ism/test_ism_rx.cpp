@@ -11,9 +11,9 @@
 //   carrier 30 dB, 300 kHz away  every device heard
 //   cut-off packets              nothing wrong
 //   noise, zeros, NaN            nothing reported
-#include "dect2/ism_gen.h"
-#include "dect2/ism_rx.h"
-#include "dect2/ism_tel.h"
+#include "dect2/ism/ism_gen.h"
+#include "dect2/ism/ism_rx.h"
+#include "dect2/ism/ism_tel.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdlib>

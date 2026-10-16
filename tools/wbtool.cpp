@@ -3,10 +3,10 @@
 //                [--offset Hz] [--lead s] [--tail s] [--diff] [--bitsfile f.txt]
 //   wbtool analyze <file> [--rate R] [--format cs8|cu8|cf32|ci16|cu16] [--stereo-iq] [--band f0 f1] [--t0 s] [--t1 s]
 //   wbtool demod <file> --kind K --baud B [--band f0 f1] [--t0 s] [--t1 s] [--bits f.txt] [--audio f.wav] [--diff] [other analyze options]
-#include "dect2/wb_demod.h"
-#include "dect2/wb_export.h"
-#include "dect2/wb_gen.h"
-#include "dect2/wb_measure.h"
+#include "dect2/wb/wb_demod.h"
+#include "dect2/wb/wb_export.h"
+#include "dect2/wb/wb_gen.h"
+#include "dect2/wb/wb_measure.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

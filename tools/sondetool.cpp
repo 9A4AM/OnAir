@@ -2,8 +2,8 @@
 //   sondetool gen <secs> <file.cs8|.cf32> [--rate sps] [--snr dB] [--cfo Hz] [--sro ppm] [--types mask] [--count n] [--seed n]
 //                                          [--east m/s] [--drift Hz/min] [--spacing Hz]
 //   sondetool rx <file> --rate <sps> [--format cs8|cu8|cf32] [--center MHz] [--chunk n]
-#include "dect2/sonde_gen.h"
-#include "dect2/sonde_rx.h"
+#include "dect2/sonde/sonde_gen.h"
+#include "dect2/sonde/sonde_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -1,8 +1,8 @@
 // FreeDV decoder of the HF digital receiver. Without the codec2 library (the normal case): the loader says "not found" cleanly, the
 // decoder counts audio and reports no library, and there is no test audio. With DECT2_CODEC2_PATH pointing at the library: a loopback
 // (freedv_tx test audio, plus noise, into the decoder) per mode must reach sync and decode speech frames. Quick; no sound.
-#include "dect2/hfdig_freedv.h"
-#include "dect2/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_freedv.h"
+#include "dect2/hfdig/hfdig_gen.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

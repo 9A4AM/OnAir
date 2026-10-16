@@ -1,7 +1,7 @@
 // Shared tools of JT65, JT9, Q65, FST4 and MSK144 (see hfdig_wsjt_int.h): resampling of the 8 kHz audio, spectrograms, tone correlation, and
 // the 72-bit message packing of JT65 / JT9 (WSJT-X lib/packjt.f90: 28-bit calls, 15-bit locators, 13 characters of free text).
 #include "hfdig_wsjt_int.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <array>
 #include <cctype>

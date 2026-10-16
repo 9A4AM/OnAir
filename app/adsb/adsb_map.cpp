@@ -1,8 +1,8 @@
 #include "adsb_map.h"
 #include "app.h"
-#include "dect2/mbtiles.h"
-#include "dect2/tilecache.h"
-#include "dect2/worldlow.h"
+#include "dect2/geo/mbtiles.h"
+#include "dect2/geo/tilecache.h"
+#include "dect2/geo/worldlow.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

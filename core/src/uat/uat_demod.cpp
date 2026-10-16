@@ -1,6 +1,6 @@
 // UAT demodulator: phase-difference slicing at 2 samples/symbol (dump978 algorithm).
-#include "dect2/uat_demod.h"
-#include "dect2/uat_frame.h"
+#include "dect2/uat/uat_demod.h"
+#include "dect2/uat/uat_frame.h"
 extern "C" {
 #include "fec.h"
 }

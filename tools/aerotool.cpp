@@ -3,8 +3,8 @@
 //       writes the test signal as the radio would see it (tuned tuneOffsetHz above the user's frequency)
 //   aerotool rx <file> --rate <sps> [--format cs8|cu8|cf32] [--offset Hz] [--frames]
 //       decodes a recording; --offset is where the user's frequency sits in the file (gen files: -50000), --frames prints every frame
-#include "dect2/aero_gen.h"
-#include "dect2/aero_rx.h"
+#include "dect2/aero/aero_gen.h"
+#include "dect2/aero/aero_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

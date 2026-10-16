@@ -5,8 +5,8 @@
 #include "gallery.h"
 #include "gfx.h"
 #include "platform.h"
-#include "dect2/meteor_rx.h"
-#include "dect2/meteor_tel.h"
+#include "dect2/meteor/meteor_rx.h"
+#include "dect2/meteor/meteor_tel.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

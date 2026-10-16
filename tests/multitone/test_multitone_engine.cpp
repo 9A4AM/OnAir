@@ -1,7 +1,7 @@
 // Multitone paging through the engine (setStandard(77)): the synthetic source plays the test signal (an invented one: the real format is not
 // public), the receiver reports through latestRx(). No sound.
-#include "dect2/engine.h"
-#include "dect2/multitone_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/multitone/multitone_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

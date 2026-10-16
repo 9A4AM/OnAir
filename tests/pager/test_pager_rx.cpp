@@ -1,7 +1,7 @@
 // Pagers receiver on the test signal: noise and a carrier offset, then every page of a cycle must arrive with its exact text and address.
 // Cases: the mix at 15 dB with an offset, the mix with only POCSAG or only FLEX decoded, the same inverted (as some transmitters send it), the four-level FLEX speeds alone at 15 dB, and noise alone.
-#include "dect2/pager_gen.h"
-#include "dect2/pager_rx.h"
+#include "dect2/pager/pager_gen.h"
+#include "dect2/pager/pager_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

@@ -1,6 +1,6 @@
 // The shared channel database: see channel_db.h.
-#include "dect2/text_charset.h"
-#include "dect2/channel_db.h"
+#include "dect2/common/text_charset.h"
+#include "dect2/channels/channel_db.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

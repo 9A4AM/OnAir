@@ -1,8 +1,8 @@
 // Analog TV, FM video (analog FPV links): the generator's composite video is frequency modulated, as a video transmitter does, and goes through the
 // receiver in FM mode. What the synthetic signal cannot say is which end of the swing real transmitters call the sync tip, the deviation and the
 // pre-emphasis: the receiver finds the polarity itself, the rest does not matter to it; a real recording is the check for those.
-#include "dect2/atv_testkit.h"
-#include "dect2/exact_resampler.h"
+#include "dect2/atv/atv_testkit.h"
+#include "dect2/dsp/exact_resampler.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

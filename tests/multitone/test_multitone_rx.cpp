@@ -2,9 +2,9 @@
 // format is not public): tones, then FSK words with the POCSAG BCH check behind an invented header. Checked: the tones and their lengths, the
 // baud rate at 512 / 1200 / 2400, both polarities, a carrier error of +-2 kHz, low SNR, other sample rates, noise alone (nothing logged), a
 // standard POCSAG batch (its sync word is flagged), a plain tone and noise through the FSK slicer, and the results file.
-#include "dect2/multitone_gen.h"
-#include "dect2/multitone_rx.h"
-#include "dect2/multitone_tel.h"
+#include "dect2/multitone/multitone_gen.h"
+#include "dect2/multitone/multitone_rx.h"
+#include "dect2/multitone/multitone_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

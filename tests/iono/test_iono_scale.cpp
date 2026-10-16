@@ -2,10 +2,10 @@
 // foF1, foF2, fxF2, h'E, h'F, M(3000)F2 and MUF(3000)F2 within tolerance of the model; an oblique path gives its distance from the
 // delay, the 1F / 2F modes and the path MUF; a known sounder (rate and schedule) and the receiver location give the distance from
 // the sites; noise alone (with interfering carriers) gives nothing. Last, the real processor on the IQ test signal: its echo traces.
-#include "dect2/iono_dsp.h"
-#include "dect2/iono_gen.h"
-#include "dect2/iono_rx.h"
-#include "dect2/iono_scale.h"
+#include "dect2/iono/iono_dsp.h"
+#include "dect2/iono/iono_gen.h"
+#include "dect2/iono/iono_rx.h"
+#include "dect2/iono/iono_scale.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

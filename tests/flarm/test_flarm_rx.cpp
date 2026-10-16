@@ -1,7 +1,7 @@
 // FLARM receiver: clean frames at two radio rates, privacy flags honoured, the newer protocol counted, bad packets rejected, noise alone gives nothing.
-#include "dect2/flarm_gen.h"
-#include "dect2/flarm_rx.h"
-#include "dect2/flarm_tel.h"
+#include "dect2/flarm/flarm_gen.h"
+#include "dect2/flarm/flarm_rx.h"
+#include "dect2/flarm/flarm_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

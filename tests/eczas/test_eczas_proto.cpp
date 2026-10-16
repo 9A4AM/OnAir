@@ -1,4 +1,4 @@
-#include "dect2/eczas_proto.h"
+#include "dect2/eczas/eczas_proto.h"
 #include <cstdio>
 using namespace dect2::eczas;
 

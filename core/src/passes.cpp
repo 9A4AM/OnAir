@@ -1,5 +1,5 @@
 // SGP4 (near-earth), look angles, pass search and Doppler: see passes.h
-#include "dect2/passes.h"
+#include "dect2/geo/passes.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>

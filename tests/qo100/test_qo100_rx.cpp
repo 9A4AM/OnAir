@@ -2,11 +2,11 @@
 // measured within 50 Hz, the drift is followed, a test carrier's corrected frequency is right within 20 Hz, a 200 kHz error and an
 // inverted (10600 MHz) LNB lock too, the whole downlink at 10 Msps shows the DATV beacon at 1.5 Msym/s, SSB listening gives audio, and
 // noise alone never locks.
-#include "dect2/qo100_dsp.h"
-#include "dect2/qo100_gen.h"
-#include "dect2/qo100_rx.h"
-#include "dect2/qo100_tel.h"
-#include "dect2/source.h"
+#include "dect2/qo100/qo100_dsp.h"
+#include "dect2/qo100/qo100_gen.h"
+#include "dect2/qo100/qo100_rx.h"
+#include "dect2/qo100/qo100_tel.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

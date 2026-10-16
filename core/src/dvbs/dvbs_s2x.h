@@ -1,7 +1,7 @@
 // DVB-S2X (EN 302 307-2 V1.2.1) MODCODs: what each one of table 17a is made of (LDPC code, frame size, constellation, bit interleaver), and its
 // constellation. dvbs_s2.cpp turns these into the rate indices kS2Rates and up. Internal.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <vector>
 
 namespace dect2 {

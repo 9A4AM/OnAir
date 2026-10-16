@@ -1,5 +1,5 @@
 // DSC calls at the bit level: dot pattern, phasing hunt, DX/RX time diversity, ECC, polarity, bit offsets, damage.
-#include "dect2/marine_dsc.h"
+#include "dect2/marine/marine_dsc.h"
 #include <cstdio>
 #include <random>
 #include <string>

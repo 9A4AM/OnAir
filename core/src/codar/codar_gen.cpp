@@ -1,7 +1,7 @@
 // CODAR / HF ocean radar test signal (see codar_gen.h).
-#include "dect2/codar_gen.h"
-#include "dect2/codar_rx.h"
-#include "dect2/cw_morse.h"
+#include "dect2/codar/codar_gen.h"
+#include "dect2/codar/codar_rx.h"
+#include "dect2/cw/cw_morse.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

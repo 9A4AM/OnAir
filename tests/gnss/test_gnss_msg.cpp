@@ -4,9 +4,9 @@
 // - Galileo E1-B: the first hexadecimal symbols of codes 1 and 50 (OS SIS ICD Annex C), and balance
 // - the convolutional code and the interleaver against the I/NAV numerical example of OS SIS ICD Annex D.2
 // - CRC-24Q, SBAS messages and I/NAV pages through the coder and the Viterbi decoder with noise, both polarities
-#include "dect2/gnss_codes.h"
-#include "dect2/gnss_msg.h"
-#include "dect2/gnss_tel.h"
+#include "dect2/gnss/gnss_codes.h"
+#include "dect2/gnss/gnss_msg.h"
+#include "dect2/gnss/gnss_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

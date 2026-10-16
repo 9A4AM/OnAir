@@ -1,5 +1,5 @@
 // ATSC 3.0 baseband packet header (A/322 5.2.2): the worked example of the standard, round trips, the counter extension, and scrambling.
-#include "dect2/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_bb.h"
 #include <cstdio>
 
 using namespace dect2::atsc3;

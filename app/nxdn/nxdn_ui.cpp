@@ -1,10 +1,10 @@
 // NXDN screens: the current call (unit id, talkgroup, call type, encryption, voice), the call log (voice, status and short data), the
 // decoded control messages, the site information, and a "?" about the mbelib library the voice needs (docs/CODECS.md).
 #include "app.h"
-#include "dect2/nxdn_ambe.h"
-#include "dect2/nxdn_proto.h"
-#include "dect2/nxdn_rx.h"
-#include "dect2/nxdn_tel.h"
+#include "dect2/nxdn/nxdn_ambe.h"
+#include "dect2/nxdn/nxdn_proto.h"
+#include "dect2/nxdn/nxdn_rx.h"
+#include "dect2/nxdn/nxdn_tel.h"
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>

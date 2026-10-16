@@ -4,11 +4,11 @@
 // echo traces drawn over the ionogram, a panel beside it with the scaled values (foE, foF2, M(3000)F2 ... or the path's distance, modes
 // and MUF), the sounder's identification, the bands open now on each path, and the history of foF2 / MUF with CSV export.
 #include "app.h"
-#include "dect2/iono_dsp.h"
-#include "dect2/iono_gen.h"
-#include "dect2/iono_rx.h"
-#include "dect2/iono_scale.h"
-#include "dect2/iono_tel.h"
+#include "dect2/iono/iono_dsp.h"
+#include "dect2/iono/iono_gen.h"
+#include "dect2/iono/iono_rx.h"
+#include "dect2/iono/iono_scale.h"
+#include "dect2/iono/iono_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

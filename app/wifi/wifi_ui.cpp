@@ -2,9 +2,9 @@
 // last seen, beacon interval, rates) with name, level and security filters, the beacon log, the channel picker and the hop over 1 - 13.
 // Passive: only the beacons and probe responses access points broadcast openly are read; nothing is sent, probed, joined or decrypted.
 #include "app.h"
-#include "dect2/wifi_proto.h"
-#include "dect2/wifi_rx.h"
-#include "dect2/wifi_tel.h"
+#include "dect2/wifi/wifi_proto.h"
+#include "dect2/wifi/wifi_rx.h"
+#include "dect2/wifi/wifi_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

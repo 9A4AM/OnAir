@@ -1,9 +1,9 @@
-#include "dect2/aero_gen.h"
-#include "dect2/aero_adsc.h"
-#include "dect2/aero_demod.h"
-#include "dect2/aero_phy.h"
-#include "dect2/aero_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/aero/aero_gen.h"
+#include "dect2/aero/aero_adsc.h"
+#include "dect2/aero/aero_demod.h"
+#include "dect2/aero/aero_phy.h"
+#include "dect2/aero/aero_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <deque>

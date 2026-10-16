@@ -1,7 +1,7 @@
 // MOT object reassembly (ETSI EN 301 234), see dab_mot.h. Shared by the DAB PAD / packet mode decoders and the DRM data services.
-#include "dect2/dab_mot.h"
-#include "dect2/dab.h"
-#include "dect2/text_charset.h"
+#include "dect2/dab/dab_mot.h"
+#include "dect2/dab/dab.h"
+#include "dect2/common/text_charset.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>

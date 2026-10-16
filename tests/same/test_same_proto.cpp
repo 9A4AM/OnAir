@@ -1,6 +1,6 @@
 // SAME message parsing and tables: fields, the Partial County Alerting digit, state names, validation, the optional county table, the bit vote.
-#include "dect2/same_proto.h"
-#include "dect2/same_rx.h"
+#include "dect2/same/same_proto.h"
+#include "dect2/same/same_rx.h"
 #include <cstdio>
 #include <string>
 #include <vector>

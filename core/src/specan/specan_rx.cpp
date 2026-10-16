@@ -1,9 +1,9 @@
 // Spectrum analyser receiver: wide sweeps put together from FFT snapshots, either from the HackRF's own sweep (blocks tagged with their
 // tuning, through SaSweepTap) or by stepping the radio over the range. See specan_rx.h.
-#include "dect2/specan_rx.h"
-#include "dect2/specan_dsp.h"
-#include "dect2/specan_tel.h"
-#include "dect2/fftutil.h"
+#include "dect2/specan/specan_rx.h"
+#include "dect2/specan/specan_dsp.h"
+#include "dect2/specan/specan_tel.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

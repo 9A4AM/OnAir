@@ -1,6 +1,6 @@
 // Satellite pass planner core: TLE parsing, SGP4 against the Vallado et al. (2006) verification vectors, GMST, pass search
 // (an observer put under the satellite must see it culminate overhead at that moment) and Doppler sign and size at 137 MHz.
-#include "dect2/passes.h"
+#include "dect2/geo/passes.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

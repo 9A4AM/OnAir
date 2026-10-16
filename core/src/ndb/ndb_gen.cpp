@@ -1,7 +1,7 @@
-#include "dect2/ndb_gen.h"
-#include "dect2/cw_morse.h"
-#include "dect2/gen_util.h"
-#include "dect2/ndb_rx.h"
+#include "dect2/ndb/ndb_gen.h"
+#include "dect2/cw/cw_morse.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/ndb/ndb_rx.h"
 #include <cmath>
 #include <vector>
 

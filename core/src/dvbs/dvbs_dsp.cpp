@@ -1,7 +1,7 @@
 // DVB-S/S2 receiver signal path, see dvbs_dsp.h.
 #include "dvbs_dsp.h"
 #include "dvbs_simd.h"
-#include "dect2/dvbs_gen.h"     // rrcAt
+#include "dect2/dvbs/dvbs_gen.h"     // rrcAt
 #include <algorithm>
 #include <cmath>
 #include <cstring>

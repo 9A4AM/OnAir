@@ -1,7 +1,7 @@
 // Helpers for the marine radio-level tests: play the test signal into the receiver the way the engine does and collect what it reports.
 #pragma once
-#include "dect2/marine_gen.h"
-#include "dect2/marine_rx.h"
+#include "dect2/marine/marine_gen.h"
+#include "dect2/marine/marine_rx.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

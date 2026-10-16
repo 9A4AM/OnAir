@@ -1,7 +1,7 @@
 // UAT (978 MHz): aircraft table, FIS-B weather text, message log.
 #include "app.h"
-#include "dect2/uat_rx.h"
-#include "dect2/uat_tel.h"
+#include "dect2/uat/uat_rx.h"
+#include "dect2/uat/uat_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

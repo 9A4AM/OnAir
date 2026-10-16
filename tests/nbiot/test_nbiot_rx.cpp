@@ -1,8 +1,8 @@
 // NB-IoT receiver (nbiot_phy.h searchDecode / probe): the four test cells (standalone, guard band, in-band with the same and with another PCI),
 // one and two NRS ports, carrier offsets, sample clock errors, noise, other sample rates, an offset candidate, noise alone.
-#include "dect2/nbiot_gen.h"
-#include "dect2/nbiot_phy.h"
-#include "dect2/source.h"
+#include "dect2/nbiot/nbiot_gen.h"
+#include "dect2/nbiot/nbiot_phy.h"
+#include "dect2/source/source.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

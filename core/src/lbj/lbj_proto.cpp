@@ -1,5 +1,5 @@
 // LBJ: POCSAG 1200 numeric pages on 821 MHz (TB/T 3504-2018 style train proximity warnings).
-#include "dect2/lbj_proto.h"
+#include "dect2/lbj/lbj_proto.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>

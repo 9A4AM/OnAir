@@ -1,8 +1,8 @@
 // The GNSS interference and spoofing monitor: the simulated sky alone reports "clear"; a CW tone, a swept chirp, pulses and broadband noise added
 // after the baseline has been learned are each found and classified; broadband noise through the whole receiver shows as a C/N0 drop next to the
 // noise rise; a sudden position jump and equal C/N0 on every satellite raise the spoofing indicators; the CSV export has the history and the log.
-#include "dect2/gnss_interf.h"
-#include "dect2/gnss_testkit.h"
+#include "dect2/gnss/gnss_interf.h"
+#include "dect2/gnss/gnss_testkit.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

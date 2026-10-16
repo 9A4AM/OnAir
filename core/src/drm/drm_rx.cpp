@@ -11,14 +11,14 @@
 //
 // The window of every FFT starts half a guard interval into the guard, on whole samples; the window moves by whole samples to follow the channel's
 // delay, and the symbols are referred to one fixed grid again by a phase ramp over the carriers, so channel estimates of different symbols stay comparable.
-#include "dect2/drm_rx.h"
-#include "dect2/audioout.h"
-#include "dect2/drm_audio.h"
-#include "dect2/drm_dec.h"
-#include "dect2/drm_data.h"
-#include "dect2/drm_fft.h"
+#include "dect2/drm/drm_rx.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/drm/drm_audio.h"
+#include "dect2/drm/drm_dec.h"
+#include "dect2/drm/drm_data.h"
+#include "dect2/drm/drm_fft.h"
 #include "drm_front.h"
-#include "dect2/channel_find.h"
+#include "dect2/channels/channel_find.h"
 #include "drm_internal.h"
 #include <algorithm>
 #include <atomic>

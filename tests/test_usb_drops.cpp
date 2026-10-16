@@ -3,11 +3,11 @@
 // and baseband-frame (DVB-T2) error rates, which are what the app can promise, and checks them against limits. Each gap moves the symbol
 // timing: the receivers notice within a symbol or two (DVB-T) or from the next P1 (DVB-T2), find the symbol start again and keep the
 // carrier, the channel estimate and the frame position, so a gap costs roughly the symbols it touches.
-#include "dect2/dvbt_gen.h"
-#include "dect2/dvbt_rx.h"
-#include "dect2/t2.h"
-#include "dect2/t2gen.h"
-#include "dect2/t2rx.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/dvbt/dvbt_rx.h"
+#include "dect2/t2/t2.h"
+#include "dect2/t2/t2gen.h"
+#include "dect2/t2/t2rx.h"
 #include "impair.h"
 #include "jobs.h"
 #include <atomic>

@@ -5,11 +5,11 @@
 // 2. Radio: uplinks and a join request at SF7 and SF12 (125 kHz, sync 0x34) through MeshReceiver with a +-5 kHz tuning error (tests/
 //    impair.h, independent of the generator), a frame with a broken CRC (rejected, no device), noise alone (nothing).
 // 3. The EU868 test scene (mesh_gen region 3): every device of a cycle in the device table with the right counters.
-#include "dect2/mesh_gen.h"
-#include "dect2/mesh_lora.h"
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_rx.h"
-#include "dect2/mode_tuning.h"
+#include "dect2/mesh/mesh_gen.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_rx.h"
+#include "dect2/engine/mode_tuning.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdio>

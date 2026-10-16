@@ -1,11 +1,11 @@
 // Radiosonde test signal (see sonde_gen.h).
-#include "dect2/sonde_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/sonde_bits.h"
-#include "dect2/sonde_geo.h"
-#include "dect2/sonde_rs41.h"
-#include "dect2/sonde_rs92.h"
-#include "dect2/sonde_tel.h"
+#include "dect2/sonde/sonde_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/sonde/sonde_bits.h"
+#include "dect2/sonde/sonde_geo.h"
+#include "dect2/sonde/sonde_rs41.h"
+#include "dect2/sonde/sonde_rs92.h"
+#include "dect2/sonde/sonde_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <random>

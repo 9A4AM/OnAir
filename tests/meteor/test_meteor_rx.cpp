@@ -1,10 +1,10 @@
 // Meteor-M LRPT receiver on the test signal: OQPSK 72k (N2-3 / N2-4), QPSK 72k and OQPSK 80k interleaved, with carrier offsets, a
 // symbol clock off, noise and other input rates; the picture strips must come back exactly as the strip coder makes them (the lossy
 // step is only the coder's). Automatic modulation finds QPSK. Noise alone gives nothing. No real recording was available.
-#include "dect2/meteor_rx.h"
-#include "dect2/meteor_tel.h"
-#include "dect2/meteor_gen.h"
-#include "dect2/meteor_proto.h"
+#include "dect2/meteor/meteor_rx.h"
+#include "dect2/meteor/meteor_tel.h"
+#include "dect2/meteor/meteor_gen.h"
+#include "dect2/meteor/meteor_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

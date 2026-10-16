@@ -1,5 +1,5 @@
 // POCSAG and FLEX at the bit level (see pager_proto.h).
-#include "dect2/pager_proto.h"
+#include "dect2/pager/pager_proto.h"
 #include <algorithm>
 #include <array>
 #include <cctype>

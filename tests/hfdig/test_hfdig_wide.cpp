@@ -5,10 +5,10 @@
 //     with the baud rate and shift found; the CPU time of the receiver
 // The signals are made here at the sample rate (RTTY) or from audio at 48 kHz made by the FT8 / FT4 generator, turned into the analytic
 // signal and interpolated up (FT8 / FT4).
-#include "dect2/fftutil.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/hfdig_wide.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/hfdig/hfdig_wide.h"
 #include <chrono>
 #include <ctime>
 #include <cmath>

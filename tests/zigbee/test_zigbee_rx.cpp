@@ -1,11 +1,11 @@
 // Zigbee / IEEE 802.15.4 monitor: the test signal through the receiver (zigbee_gen.h, zigbee_rx.h): clean frames, noise near the threshold, carrier
 // offsets of +-100 kHz (+-40 ppm at 2.4 GHz), chip clock error and timing offsets, an adjacent-channel transmitter, back-to-back frames, a
 // wrong FCS, another sample rate, and noise alone.
-#include "dect2/gen_util.h"
-#include "dect2/zigbee_gen.h"
-#include "dect2/zigbee_proto.h"
-#include "dect2/zigbee_rx.h"
-#include "dect2/zigbee_tel.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/zigbee/zigbee_gen.h"
+#include "dect2/zigbee/zigbee_proto.h"
+#include "dect2/zigbee/zigbee_rx.h"
+#include "dect2/zigbee/zigbee_tel.h"
 #include <cstdio>
 #include <string>
 #include <vector>

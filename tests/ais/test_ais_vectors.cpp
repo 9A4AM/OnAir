@@ -1,9 +1,9 @@
 // AIS: known sentences and field values through the message decoder, and the same messages through the whole receiver at awkward sample rates
 // (issue #87: wrong positions and MMSIs).
-#include "dect2/ais_rx.h"
-#include "dect2/ais_proto.h"
-#include "dect2/ais_gen.h"
-#include "dect2/ais_testutil.h"
+#include "dect2/ais/ais_rx.h"
+#include "dect2/ais/ais_proto.h"
+#include "dect2/ais/ais_gen.h"
+#include "dect2/ais/ais_testutil.h"
 #include <cmath>
 #include <cstdio>
 using namespace dect2;

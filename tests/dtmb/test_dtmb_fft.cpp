@@ -1,5 +1,5 @@
 // MixedFft against a direct DFT, round trips, and speed at the DTMB size.
-#include "dect2/dtmb_fft.h"
+#include "dect2/dtmb/dtmb_fft.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

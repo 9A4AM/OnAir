@@ -1,6 +1,6 @@
 // DRM signalling and message formats: FAC, SDC data entities, text message, AAC audio super frame.
-#include "dect2/drm_msg.h"
-#include "dect2/drm_fec.h"
+#include "dect2/drm/drm_msg.h"
+#include "dect2/drm/drm_fec.h"
 #include <algorithm>
 #include <cstring>
 

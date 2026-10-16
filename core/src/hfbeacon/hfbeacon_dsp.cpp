@@ -1,7 +1,7 @@
-#include "dect2/hfbeacon_dsp.h"
-#include "dect2/fftutil.h"
-#include "dect2/maidenhead.h"
-#include "dect2/results_io.h"
+#include "dect2/hfbeacon/hfbeacon_dsp.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/geo/maidenhead.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

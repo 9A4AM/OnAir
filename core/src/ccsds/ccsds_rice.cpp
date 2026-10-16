@@ -7,7 +7,7 @@
 // bits of each. Second extension: pairs (a, b) as the fundamental sequence of (a + b)(a + b + 1) / 2 + b; in a reference block the
 // first pair is (0, first difference). Zero blocks: a fundamental sequence count, 1 - 4 blocks for 0 - 3, 4 the rest of the segment of
 // 64 blocks (or of the interval), n - 1 blocks for n >= 5. Every interval ends on a byte boundary (SZIP).
-#include "dect2/ccsds.h"
+#include "dect2/ccsds/ccsds.h"
 #include <algorithm>
 
 namespace dect2 {

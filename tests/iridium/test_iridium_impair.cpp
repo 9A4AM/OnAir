@@ -1,8 +1,8 @@
 // Iridium receiver under impairments (random payloads, bit-exact or counted): SNR sweep to the failure point, carrier offset of
 // +-10 ppm at 1.6 GHz plus the satellite Doppler (+-37.5 kHz, 350 Hz/s), sample clock +-50 ppm, 8-bit samples, DC offset, a 20 ms
 // gap, reset() in the middle of the stream.
-#include "dect2/iridium_testkit.h"
-#include "dect2/iridium_frame.h"
+#include "dect2/iridium/iridium_testkit.h"
+#include "dect2/iridium/iridium_frame.h"
 #include <cstdio>
 using namespace dect2;
 using namespace dect2::iridiumtest;

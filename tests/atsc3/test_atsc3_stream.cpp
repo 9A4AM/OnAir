@@ -2,7 +2,7 @@
 // the frame's rate, everything converted to the radio's rate, with a carrier frequency offset, noise and an echo. The synchroniser finds the
 // frames on its own, and the receiver delivers a transport stream with all the video and audio frames.
 #include "atsc3_sim.h"
-#include "dect2/atsc3_sync.h"
+#include "dect2/atsc3/atsc3_sync.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

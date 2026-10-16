@@ -1,6 +1,6 @@
-#include "dect2/specx_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
+#include "dect2/specx/specx_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <complex>
 #include <vector>

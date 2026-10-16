@@ -2,9 +2,9 @@
 // applySubMode for the decoder, the service and the frequency the marine tab pushes), the synthetic source plays, and the picture that
 // comes out of MarineReceiver::latestImage() must be the test chart. Also with a SynthConfig left over from other modes (GNSS, mesh,
 // ADS-B and the spectrum analyser write into the same modeOpt / modeVal slots).
-#include "dect2/engine.h"
-#include "dect2/engine_testkit.h"
-#include "dect2/marine_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/engine_testkit.h"
+#include "dect2/marine/marine_gen.h"
 #include "../data/marine/fax/fax_util.h"
 #include <chrono>
 #include <cmath>

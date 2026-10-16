@@ -1,5 +1,5 @@
 // HFDL layers: check sequences, the interleaver, the code, the PDU builders and parsers, every rate's bit chain end to end.
-#include "dect2/hfdl_proto.h"
+#include "dect2/hfdl/hfdl_proto.h"
 #include <cmath>
 #include <vector>
 #include <cstdio>

@@ -3,10 +3,10 @@
 // lamps, the analysis row (constellation, MER, P1 frames), the Receiver tab and the options of the test signal. HD Radio sound is HDC, a
 // patented codec that OnAir does not decode.
 #include "app.h"
-#include "dect2/hdr_l2.h"
-#include "dect2/hdr_rx.h"
-#include "dect2/hdr_tel.h"
-#include "dect2/png.h"
+#include "dect2/hdr/hdr_l2.h"
+#include "dect2/hdr/hdr_rx.h"
+#include "dect2/hdr/hdr_tel.h"
+#include "dect2/common/png.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

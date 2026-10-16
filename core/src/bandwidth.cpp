@@ -1,4 +1,4 @@
-#include "dect2/bandwidth.h"
+#include "dect2/dsp/bandwidth.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>

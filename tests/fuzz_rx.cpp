@@ -1,13 +1,13 @@
 // Robustness: feed the receiver noise, NaN/Inf samples, bursts of corruption, dropped chunks, resets and re-configurations
 // and make sure it neither crashes nor hangs (build with -fsanitize=address,undefined to make this meaningful).
-#include "dect2/dvbt_gen.h"
-#include "dect2/dvbt_rx.h"
-#include "dect2/atsc_rx.h"
-#include "dect2/atsc_gen.h"
-#include "dect2/dvbt_gen.h"
-#include "dect2/t2gen.h"
-#include "dect2/spectrum.h"
-#include "dect2/t2rx.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/dvbt/dvbt_rx.h"
+#include "dect2/atsc/atsc_rx.h"
+#include "dect2/atsc/atsc_gen.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/t2/t2gen.h"
+#include "dect2/dsp/spectrum.h"
+#include "dect2/t2/t2rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

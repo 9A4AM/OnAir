@@ -1,6 +1,6 @@
 // PSK31 protocol pieces: the varicode table (no "00" inside a code, every code different, round trip of all 128 characters, a bad code),
 // the K = 5 convolutional code and its Viterbi decoder (clean, with soft noise, with hard bit errors), the QPSK phase mapping.
-#include "dect2/psk_varicode.h"
+#include "dect2/psk/psk_varicode.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

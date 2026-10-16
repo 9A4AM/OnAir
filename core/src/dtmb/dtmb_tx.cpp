@@ -1,6 +1,6 @@
 // DTMB transmitter model (see dtmb_tx.h).
-#include "dect2/dtmb_tx.h"
-#include "dect2/dtmb_map.h"
+#include "dect2/dtmb/dtmb_tx.h"
+#include "dect2/dtmb/dtmb_map.h"
 #include <cmath>
 #include <cstring>
 

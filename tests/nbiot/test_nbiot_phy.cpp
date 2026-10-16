@@ -1,7 +1,7 @@
 // NB-IoT physical layer pieces (nbiot_phy.h): the messages, the synchronisation sequences, the resource element maps, OFDM, the channel estimate,
 // the NPBCH code and the generator.
-#include "dect2/nbiot_phy.h"
-#include "dect2/nbiot_gen.h"
+#include "dect2/nbiot/nbiot_phy.h"
+#include "dect2/nbiot/nbiot_gen.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

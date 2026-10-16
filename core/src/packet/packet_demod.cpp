@@ -1,5 +1,5 @@
 // The FM front end of the packet receivers: see packet_demod.h.
-#include "dect2/packet_demod.h"
+#include "dect2/packet/packet_demod.h"
 #include <algorithm>
 #include <cmath>
 

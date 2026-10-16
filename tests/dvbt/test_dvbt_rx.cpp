@@ -1,7 +1,7 @@
 // End-to-end DVB-T: generator -> channel impairments -> receiver, checking lock, TPS and transport stream recovery.
-#include "dect2/dvbt_gen.h"
-#include "dect2/dvbt_rx.h"
-#include "dect2/t2.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/dvbt/dvbt_rx.h"
+#include "dect2/t2/t2.h"
 #include "../jobs.h"
 #include <atomic>
 #include <chrono>

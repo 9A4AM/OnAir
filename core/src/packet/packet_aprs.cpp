@@ -1,6 +1,6 @@
 // APRS parser: see packet_aprs.h. Written from APRS101 (chapters 5-12) and the APRS 1.2 addenda; the Mic-E longitude and speed rules were
 // cross-checked against the description in Dire Wolf's decode_aprs.c (WB2OSZ, GPL-2.0-or-later) - no code was copied.
-#include "dect2/packet_aprs.h"
+#include "dect2/packet/packet_aprs.h"
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>

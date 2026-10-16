@@ -1,7 +1,7 @@
 // Gain control tests: the stage split, ADC classification, and AutoGain / GainSweep closed loop on the synthetic source
 // (whose level follows the LNA/VGA/amp gains and clips like an 8-bit ADC).
-#include "dect2/engine.h"
-#include "dect2/gain.h"
+#include "dect2/engine/engine.h"
+#include "dect2/source/gain.h"
 #include "jobs.h"
 #include <atomic>
 #include <chrono>

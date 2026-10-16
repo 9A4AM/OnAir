@@ -1,8 +1,8 @@
 // Inmarsat Aero through the engine as the interface and dect2cli use it: the synthetic source plays the test signal (8-bit samples, tuned
 // tuneOffsetHz above the user's frequency), the engine must find both P channels, decode SUs, logons and ACARS messages, keep every sample
 // and report through latestRx(). A retune empties the tables and the report numbers go on growing.
-#include "dect2/engine.h"
-#include "dect2/aero_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/aero/aero_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

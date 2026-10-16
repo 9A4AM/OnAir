@@ -1,9 +1,9 @@
 // CODAR / HF ocean radar monitor (see codar_rx.h).
-#include "dect2/codar_rx.h"
-#include "dect2/codar_tel.h"
-#include "dect2/cw_morse.h"
-#include "dect2/fftutil.h"
-#include "dect2/results_io.h"
+#include "dect2/codar/codar_rx.h"
+#include "dect2/codar/codar_tel.h"
+#include "dect2/cw/cw_morse.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <atomic>
 #include <cctype>

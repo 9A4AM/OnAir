@@ -1,13 +1,13 @@
 // The rest of the WSJT-X family inside the HF digital receiver (JT65, JT9, Q65, FST4 / FST4W, MSK144): what hfdig_wsjt.cpp (shared tools),
 // hfdig_jt65.cpp, hfdig_jt9.cpp, hfdig_q65.cpp, hfdig_fst4.cpp and hfdig_msk144.cpp share with the slot decoder (hfdig_ftx.cpp), the test
-// audio and the tests. Not part of the public interface (see dect2/hfdig_ftx.h).
+// audio and the tests. Not part of the public interface (see dect2/hfdig/hfdig_ftx.h).
 //
 // Sources (read, re-implemented, credited): WSJT-X (K1JT et al., GPL-3): lib/packjt.f90, lib/gen65.f90, lib/interleave63.f90, lib/igray.c,
 //   lib/wrapkarn.c, lib/ftrsd/*.c (K. Karn KA9Q's Reed-Solomon codec), lib/sync65.f90, lib/jt9fano.f90, lib/gen9.f90, lib/interleave9.f90,
 //   lib/jt9sync.f90, lib/qra/q65/*.c and *.f90 (Nico Palermo IV3NWV's QRA codes), lib/fst4/*.f90, lib/genmsk_128_90.f90, lib/mskrtd.f90,
 //   lib/msk144*.f90, lib/ldpc_128_90_*.f90, lib/bpdecode128_90.f90.
 #pragma once
-#include "dect2/hfdig_ftx.h"
+#include "dect2/hfdig/hfdig_ftx.h"
 #include "hfdig_ftx_int.h"
 #include <cstddef>
 #include <cstdint>

@@ -1,5 +1,5 @@
 // M17 protocol layers (see m17_proto.h), from the M17 specification 2.0.
-#include "dect2/m17_proto.h"
+#include "dect2/m17/m17_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

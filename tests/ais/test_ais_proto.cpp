@@ -1,8 +1,8 @@
 // AIS message layer: known answers from gpsd's test/sample.aivdm and sample.aivdm.chk (real sentences, with the values that the noaadata
 // tools and the Maritec decoder gave), the frame check value of the X.25 FCS, NRZI and stuffing round trips, and !AIVDM sentences rebuilt
 // bit for bit from the decoded payload. (The type 5 ETA hour is 14 as in sample.aivdm.chk, the regression file; the comment in sample.aivdm says 16.)
-#include "dect2/ais_proto.h"
-#include "dect2/ais_tel.h"
+#include "dect2/ais/ais_proto.h"
+#include "dect2/ais/ais_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

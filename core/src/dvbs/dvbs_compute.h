@@ -2,8 +2,8 @@
 // the other path (one decode in 64) so that it moves to whichever finishes a frame sooner. A GPU call that fails is retried on the CPU by the caller.
 // Internal.
 #pragma once
-#include "dect2/gpu_ldpc.h"
-#include "dect2/gpu_viterbi.h"
+#include "dect2/dsp/gpu_ldpc.h"
+#include "dect2/dsp/gpu_viterbi.h"
 #include <atomic>
 #include <chrono>
 

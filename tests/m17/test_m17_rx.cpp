@@ -2,10 +2,10 @@
 // +-20 %, swapped I/Q, a start in the middle of a stream (the LSF rebuilt from the LICH), and a BER curve over the SNR.
 // Each case plays the test schedule once: a voice stream with META text, a packet SMS, a voice + data stream with a GNSS META, and an
 // AES-flagged stream.
-#include "dect2/m17_gen.h"
-#include "dect2/m17_rx.h"
-#include "dect2/m17_tel.h"
-#include "dect2/m17_codec2.h"
+#include "dect2/m17/m17_gen.h"
+#include "dect2/m17/m17_rx.h"
+#include "dect2/m17/m17_tel.h"
+#include "dect2/m17/m17_codec2.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdio>

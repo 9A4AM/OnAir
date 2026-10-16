@@ -3,7 +3,7 @@
 // 100 kS/s, then a channel filter down to 25 kS/s, the envelope, and 12.5 kS/s audio for the demodulator.
 // MSK demodulator and framing follow acarsdec (msk.c, acars.c: matched filter, 1800 Hz VCO, 3 pi/2 per bit, SYN SYN SOH search).
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <cstdint>
 #include <vector>
 

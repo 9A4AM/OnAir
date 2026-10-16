@@ -1,12 +1,12 @@
 // The "?" button next to the sound of each mode whose voice or audio needs a codec that OnAir does not ship (docs/CODECS.md). It says whether
 // the codec was found and where, what it is, how to install it on this computer, where to put it, a link to the full page, and "Look again".
 #include "app.h"
-#include "dect2/ac4_dec.h"
-#include "dect2/hfdig_freedv.h"
-#include "dect2/dstar_ambe.h"
-#include "dect2/nxdn_ambe.h"
-#include "dect2/p25_imbe.h"
-#include "dect2/updater.h"
+#include "dect2/audio/ac4_dec.h"
+#include "dect2/hfdig/hfdig_freedv.h"
+#include "dect2/dstar/dstar_ambe.h"
+#include "dect2/nxdn/nxdn_ambe.h"
+#include "dect2/p25/p25_imbe.h"
+#include "dect2/engine/updater.h"
 #include <filesystem>
 #include <string>
 #include <vector>

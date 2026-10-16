@@ -1,4 +1,4 @@
-#include "dect2/atsc3_alp.h"
+#include "dect2/atsc3/atsc3_alp.h"
 #include <algorithm>
 
 namespace dect2 {

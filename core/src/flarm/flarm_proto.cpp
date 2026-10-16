@@ -1,5 +1,5 @@
 // FLARM V6 packet: see flarm_proto.h. The constants and the layout follow the open SoftRF (Legacy) and OGN descriptions of the old protocol.
-#include "dect2/flarm_proto.h"
+#include "dect2/flarm/flarm_proto.h"
 #include <cmath>
 #include <cstring>
 

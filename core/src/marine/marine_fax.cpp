@@ -7,7 +7,7 @@
 //  - phasing line: white for the first 2.5 % and the last 2.5 % of the line, black in between (a 5 % white pulse
 //    centred on the line boundary), then one white line before the image (tx phasing, ENDPHASING)
 // Not covered: inverted phasing (black pulse on white), colour fax, line rates other than 60/90/100/120/180/240.
-#include "dect2/marine_fax.h"
+#include "dect2/marine/marine_fax.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

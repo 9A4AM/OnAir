@@ -1,5 +1,5 @@
 // BeiDou B1I navigation messages (see gnss_bds.h). Field positions: BDS SIS ICD Figures 5-8 .. 5-11 (D1) and 5-14 (D2), scale factors Tables 5-7, 5-10, 5-17.
-#include "dect2/gnss_bds.h"
+#include "dect2/gnss/gnss_bds.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

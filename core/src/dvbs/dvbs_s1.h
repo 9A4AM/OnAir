@@ -1,8 +1,8 @@
 // DVB-S (EN 300 421) receive chain: carrier recovery for QPSK, trial of the code rate / puncturing phase / constellation rotation, Viterbi,
 // de-interleaver, Reed-Solomon, energy dispersal removal. Internal to the dvbs_*.cpp files.
 #pragma once
-#include "dect2/dvbt.h"
-#include "dect2/ring.h"
+#include "dect2/dvbt/dvbt.h"
+#include "dect2/common/ring.h"
 #include "dvbs_compute.h"
 #include <cstdint>
 #include <deque>

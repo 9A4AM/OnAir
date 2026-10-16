@@ -1,7 +1,7 @@
 // Picture concealment: video interpolation puts a moving object where it belongs, much closer to the truth than a plain cross-fade.
 // The CPU motion search is checked everywhere; where a GPU backend exists (Direct3D 11 on Windows) it is checked against the true pictures
 // and against the CPU result at full HD, with timings.
-#include "dect2/conceal.h"
+#include "dect2/tv/conceal.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

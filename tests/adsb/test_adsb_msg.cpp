@@ -1,8 +1,8 @@
 // ADS-B message layer: known answers from published examples (CRC, identification, CPR, altitude codes, velocity, surface, Mode S replies, Comm-B).
 // Examples: "The 1090 Megahertz Riddle" (Junzi Sun, https://mode-s.org/1090mhz, chapters ADS-B 1-8 and Mode S 2, 3, 6, 7) unless a comment says otherwise.
 // The expected numbers below are the ones printed there; a hex string that does not give a zero CRC would show up as a failure here first.
-#include "dect2/adsb_msg.h"
-#include "dect2/adsb_encode.h"
+#include "dect2/adsb/adsb_msg.h"
+#include "dect2/adsb/adsb_encode.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

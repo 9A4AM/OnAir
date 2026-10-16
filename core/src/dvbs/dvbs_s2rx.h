@@ -2,7 +2,7 @@
 // with a loop that uses the known symbols and decisions, and hands the FECFRAMEs to decoder threads (demapper, LDPC, BCH, BBHEADER) whose
 // results are put back in order and turned into transport stream packets. Internal.
 #pragma once
-#include "dect2/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_s2.h"
 #include "dvbs_s2hunt.h"
 #include <atomic>
 #include <cstdint>

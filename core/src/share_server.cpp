@@ -1,5 +1,5 @@
-// "Share my radio": see dect2/share.h. One thread accepts, sends and reads commands with select(); the engine only converts and queues.
-#include "dect2/share.h"
+// "Share my radio": see dect2/net/share.h. One thread accepts, sends and reads commands with select(); the engine only converts and queues.
+#include "dect2/net/share.h"
 #include "netcompat.h"
 #include <cerrno>
 #include <chrono>

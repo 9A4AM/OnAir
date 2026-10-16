@@ -1,10 +1,10 @@
 // HF digital skeleton through the engine: the synthetic source plays the mode's test signal, the receiver makes the 8 kHz sideband audio
 // and hands it to all three decoders, the engine reports telemetry through latestRx() with the mode's standard. About 2 s; quick and silent.
-#include "dect2/engine.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/engine/modes.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>

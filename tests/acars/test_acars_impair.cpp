@@ -1,5 +1,5 @@
 // ACARS with the faults of real radios: carrier offset, clock offset, 8-bit samples, DC offset, a gap, a reset, a weak channel next to a strong one.
-#include "dect2/acars_sim.h"
+#include "dect2/acars/acars_sim.h"
 #include "../impair.h"
 #include <cstdio>
 using namespace dect2;

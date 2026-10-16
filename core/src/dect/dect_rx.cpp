@@ -1,6 +1,6 @@
 // DECT monitor (see dect_rx.h).
-#include "dect2/dect_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/dect/dect_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

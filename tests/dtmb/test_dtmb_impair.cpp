@@ -1,7 +1,7 @@
 // DTMB receiver against what real radios and channels do (part 1): carrier offsets up to the edge of the capture range, clock offsets, sample rates
 // that are not multiples of the symbol rate, echoes before and after the main path for every header. Every case runs the numbered test packets
 // through generator -> channel -> 8 bit -> receiver and counts what comes out. Pass an argument to run the cases whose name contains it.
-#include "dect2/dtmb_testkit.h"
+#include "dect2/dtmb/dtmb_testkit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

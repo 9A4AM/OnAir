@@ -1,6 +1,6 @@
 // Iridium receiver round trip with random payloads: bursts all over the band at every radio rate, any chunk size, downlink and
 // uplink, bursts overlapping in time on other channels; the bits after the unique word must come back exactly.
-#include "dect2/iridium_testkit.h"
+#include "dect2/iridium/iridium_testkit.h"
 #include <cstdio>
 using namespace dect2;
 using namespace dect2::iridiumtest;

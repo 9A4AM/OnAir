@@ -7,10 +7,10 @@
 //   adsbtool decode 8D4840D6202CC371C32CE0576098 [...]   one message (14 or 7 bytes in hex) taken apart: CRC remainder, address, every field
 // A recording that is named like capture_2Msps.cs8 gives its own rate. Output of rx: the table of aircraft, the statistics, and with --messages
 // every good message as one line (time, hex, address, level, what it is).
-#include "dect2/adsb_gen.h"
-#include "dect2/adsb_rx.h"
-#include "dect2/adsb_sim.h"
-#include "dect2/adsb_track.h"
+#include "dect2/adsb/adsb_gen.h"
+#include "dect2/adsb/adsb_rx.h"
+#include "dect2/adsb/adsb_sim.h"
+#include "dect2/adsb/adsb_track.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

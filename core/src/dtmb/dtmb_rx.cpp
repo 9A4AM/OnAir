@@ -1,13 +1,13 @@
 // DTMB receiver (GB 20600-2006, multi-carrier C=3780 mode): matched filter and resampling to the symbol rate, frame search from the PN headers,
 // tracking (timing, carrier offset, channel from the headers), header leakage removal and equalisation of the OFDM body, system information,
 // then the channel decoder. See docs/modes/dtmb.md.
-#include "dect2/dtmb_rx.h"
-#include "dect2/chan_locate.h"
-#include "dect2/dtmb_chain.h"
-#include "dect2/dtmb_demod.h"
-#include "dect2/dtmb_front.h"
-#include "dect2/dtmb_map.h"
-#include "dect2/dtmb_sync.h"
+#include "dect2/dtmb/dtmb_rx.h"
+#include "dect2/channels/chan_locate.h"
+#include "dect2/dtmb/dtmb_chain.h"
+#include "dect2/dtmb/dtmb_demod.h"
+#include "dect2/dtmb/dtmb_front.h"
+#include "dect2/dtmb/dtmb_map.h"
+#include "dect2/dtmb/dtmb_sync.h"
 #include <algorithm>
 #include <array>
 #include <atomic>

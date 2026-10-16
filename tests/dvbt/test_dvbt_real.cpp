@@ -2,10 +2,10 @@
 // a UHF radio off by up to 50 ppm (+-43 kHz at 860 MHz, far more than 20 carriers in 8K and in narrow channels), a sample clock 80 ppm
 // fast, hierarchical transmissions (the receiver gives the high-priority stream), signalling with a reserved LP code rate in a
 // non-hierarchical multiplex, and everything at once with an echo and an overdriven 8-bit radio.
-#include "dect2/dvbt_gen.h"
-#include "dect2/dvbt_rx.h"
-#include "dect2/resampler.h"
-#include "dect2/t2.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/dvbt/dvbt_rx.h"
+#include "dect2/dsp/resampler.h"
+#include "dect2/t2/t2.h"
 #include "../impair.h"
 #include "../jobs.h"
 #include <algorithm>

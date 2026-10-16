@@ -1,8 +1,8 @@
 // ADS-B feeds from other receivers, offline registrations and countries, range statistics.
-#include "dect2/adsb_feedin.h"
-#include "dect2/adsb_msg.h"
-#include "dect2/adsb_reg.h"
-#include "dect2/adsb_track.h"
+#include "dect2/adsb/adsb_feedin.h"
+#include "dect2/adsb/adsb_msg.h"
+#include "dect2/adsb/adsb_reg.h"
+#include "dect2/adsb/adsb_track.h"
 #include "../../core/src/tcp_client.h"
 #include <atomic>
 #include <chrono>

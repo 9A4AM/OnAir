@@ -1,12 +1,12 @@
-#include "dect2/mode_synth.h"
-#include "dect2/hamlib_rig.h"
-#include "dect2/source.h"
-#include "dect2/netradio.h"
-#include "dect2/gen_util.h"
-#include "dect2/demo_ts.h"
-#include "dect2/dvbt_gen.h"
-#include "dect2/atsc_gen.h"
-#include "dect2/specan_dsp.h"
+#include "dect2/engine/mode_synth.h"
+#include "dect2/source/hamlib_rig.h"
+#include "dect2/source/source.h"
+#include "dect2/net/netradio.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/tv/demo_ts.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/atsc/atsc_gen.h"
+#include "dect2/specan/specan_dsp.h"
 
 #include <libhackrf/hackrf.h>
 

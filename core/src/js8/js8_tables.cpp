@@ -1,7 +1,7 @@
 // JS8 (174,87) LDPC code tables (see js8_proto.h): the parity generator rows of JS8Call's JS8.cpp (as reordered there for the
 // "87 parity bits, then the 87 message bits" codeword) and its parity checks (Nm). Harvested from JS8Call (J. Sherer KN4CRD et al.,
 // GPL-3), which took them from WSJT-X 1.x lib/ft8/ldpc_174_87_params.f90 (K1JT et al., GPL-3).
-#include "dect2/js8_proto.h"
+#include "dect2/js8/js8_proto.h"
 
 namespace dect2 {
 namespace js8 {

@@ -1,7 +1,7 @@
 // A radio whose oscillator is 3 kHz off at L1 (1.9 ppm, a poor TCXO) and whose sample clock is a further 20 ppm off: every signal appears shifted by 3 kHz
 // on top of its Doppler, the code runs 20 chips a second off against the samples. The receiver must still acquire, decode and fix, and report the shift.
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include <cmath>
 #include <cstdio>
 using namespace dect2;

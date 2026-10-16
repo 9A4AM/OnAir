@@ -4,7 +4,7 @@
 // HMAC-SHA256 over the ciphertext with the 32 byte secret), src/helpers/BaseChatMesh.cpp (group text layout, channel hash =
 // SHA-256 of the secret), src/helpers/AdvertDataHelpers.{h,cpp} (advert app data), docs/packet_format.md.
 #include "mesh_proto_internal.h"
-#include "dect2/mesh_crypto.h"
+#include "dect2/mesh/mesh_crypto.h"
 #include <cmath>
 #include <cstring>
 

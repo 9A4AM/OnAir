@@ -1,6 +1,6 @@
-#include "dect2/dvbt_gen.h"
-#include "dect2/fftutil.h"
-#include "dect2/ts.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/tv/ts.h"
 #include <cmath>
 #include <cstring>
 #include <algorithm>

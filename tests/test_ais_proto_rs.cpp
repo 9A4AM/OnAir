@@ -1,7 +1,7 @@
 // Differential test: the C++ AIS frame layer (a generated copy in dect2::ais_ref, see cmake/gen_ais_ref.cmake) against the Rust one (dect2::ais when
 // DECT2_RUST is used). The same inputs go to both and every result has to be identical: the known gpsd / AIS-catcher sentences, frames built here,
 // and ONAIR_DIFF_ITERS (default 200000) seeded random and mutated frames, bit streams with values other than 0 and 1, and damaged sentences.
-#include "dect2/ais_proto.h"
+#include "dect2/ais/ais_proto.h"
 #include "ais_proto_ref.h"
 #include <algorithm>
 #include <chrono>

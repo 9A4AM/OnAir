@@ -1,5 +1,5 @@
-#include "dect2/spectrum.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/spectrum.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

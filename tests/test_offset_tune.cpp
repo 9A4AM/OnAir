@@ -1,11 +1,11 @@
 // Offset tuning (offset_tune.h): the plan puts the channel clear of DC with the rate it needs, refuses radios that are too slow, and the
 // mixer brings a signal at +offset back to DC with no phase jump between blocks and no drift in level over a long run.
-#include "dect2/offset_tune.h"
-#include "dect2/dab.h"
-#include "dect2/dab_gen.h"
-#include "dect2/fm_gen.h"
-#include "dect2/fm_rx.h"
-#include "dect2/iq_correct.h"
+#include "dect2/source/offset_tune.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/fm/fm_gen.h"
+#include "dect2/fm/fm_rx.h"
+#include "dect2/dsp/iq_correct.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

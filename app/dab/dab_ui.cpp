@@ -2,8 +2,8 @@
 #include "app.h"
 #include "journaline_view.h"
 #include "results_export.h"
-#include "dect2/dab_announce.h"
-#include "dect2/dab_fig.h"
+#include "dect2/dab/dab_announce.h"
+#include "dect2/dab/dab_fig.h"
 #include <ctime>
 #include <filesystem>
 

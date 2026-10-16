@@ -1,6 +1,6 @@
 // Inmarsat-C: the tuning entry exists, and the receiver reports at a steady rate whatever the chunk size.
-#include "dect2/modes.h"
-#include "dect2/inmc_rx.h"
+#include "dect2/engine/modes.h"
+#include "dect2/inmc/inmc_rx.h"
 #include <cstdio>
 #include <vector>
 using namespace dect2;

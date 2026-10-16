@@ -1,6 +1,6 @@
 // Small DSP helpers for the analog TV receiver and generator: FIR design, a phase accumulator, block filters, a table-driven noise source.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

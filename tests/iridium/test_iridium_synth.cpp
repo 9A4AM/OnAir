@@ -1,10 +1,10 @@
 // Iridium test signal through the receiver and the frame layer: the satellites of the model, their ring alerts (positions as the
 // model has them), the broadcast time, the pager messages assembled from their parts, the Doppler shift of every satellite;
 // at 10 Msps (the default), 4, 8 and 20 Msps, and 2.4 Msps on the simplex channels only.
-#include "dect2/iridium_frame.h"
-#include "dect2/iridium_gen.h"
-#include "dect2/iridium_phy.h"
-#include "dect2/iridium_rx.h"
+#include "dect2/iridium/iridium_frame.h"
+#include "dect2/iridium/iridium_gen.h"
+#include "dect2/iridium/iridium_phy.h"
+#include "dect2/iridium/iridium_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <map>

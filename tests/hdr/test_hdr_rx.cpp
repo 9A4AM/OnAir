@@ -2,10 +2,10 @@
 // receiver, without the engine. Everything the signal carries must come out exactly: the station information, the program list, the program
 // service data of every program and the picture, byte for byte. FM and AM at 15 dB SNR on the (primary) digital subcarriers, offsets of
 // +-1 kHz; MP3's third program comes on the P3 channel of the extended partitions.
-#include "dect2/hdr_gen.h"
-#include "dect2/hdr_l2.h"
-#include "dect2/hdr_rx.h"
-#include "dect2/mode_synth.h"
+#include "dect2/hdr/hdr_gen.h"
+#include "dect2/hdr/hdr_l2.h"
+#include "dect2/hdr/hdr_rx.h"
+#include "dect2/engine/mode_synth.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -2,10 +2,10 @@
 // 9 MHz baseband filter, 1622 MHz, the test signal's defaults), and the interface's tick pushing the tuned frequency and the
 // threshold to the receiver once it runs. A threshold pushed while samples flow used to restart the detector's sample count but
 // not the ring's, so every later burst was read from the wrong place and almost nothing decoded.
-#include "dect2/engine.h"
-#include "dect2/iridium_frame.h"
-#include "dect2/iridium_gen.h"
-#include "dect2/iridium_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/iridium/iridium_frame.h"
+#include "dect2/iridium/iridium_gen.h"
+#include "dect2/iridium/iridium_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

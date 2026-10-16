@@ -1,6 +1,6 @@
 // Time signal frames (time_proto.h): every station's minute encoded and decoded back over a year of minutes (DST changes, leap years,
 // year ends), single symbol errors caught, the calendar and the path delay.
-#include "dect2/time_proto.h"
+#include "dect2/time/time_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

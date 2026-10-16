@@ -2,8 +2,8 @@
 // access, the line and data-eye scopes, the status lamps, the service identification (channel and network name, aspect, access, sound) and
 // the options of the test signal. The receiver (MacReceiver) makes the pictures; the telemetry carries the waveforms and the numbers.
 #include "app.h"
-#include "dect2/mac_rx.h"
-#include "dect2/mac_tel.h"
+#include "dect2/mac/mac_rx.h"
+#include "dect2/mac/mac_tel.h"
 #include <cmath>
 #include <cstring>
 #include <memory>

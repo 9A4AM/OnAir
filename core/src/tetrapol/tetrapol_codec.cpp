@@ -1,6 +1,6 @@
 // TETRAPOL PAS 0001-2 UHF data frames (tetrapol_codec.h). Inner coding of the 20 ms / 160-bit GMSK frame:
 // header 0x46, CRC-5, rate-1/2 K=5 convolutional code, 152-bit interleave, optional LFSR scramble.
-#include "dect2/tetrapol_codec.h"
+#include "dect2/tetrapol/tetrapol_codec.h"
 #include <algorithm>
 #include <cstring>
 

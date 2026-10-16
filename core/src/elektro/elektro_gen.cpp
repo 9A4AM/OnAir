@@ -1,6 +1,6 @@
 // Elektro-L HRIT test signal (elektro_gen.h): GOES xRIT products at 665.4 ksym/s.
-#include "dect2/elektro_gen.h"
-#include "dect2/goes_gen.h"
+#include "dect2/elektro/elektro_gen.h"
+#include "dect2/goes/goes_gen.h"
 
 namespace dect2 {
 

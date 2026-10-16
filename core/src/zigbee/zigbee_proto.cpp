@@ -1,5 +1,5 @@
 // IEEE 802.15.4 / Zigbee frame layers (see zigbee_proto.h).
-#include "dect2/zigbee_proto.h"
+#include "dect2/zigbee/zigbee_proto.h"
 #include <cstdio>
 #include <cstring>
 

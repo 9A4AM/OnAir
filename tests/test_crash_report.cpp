@@ -1,5 +1,5 @@
 // Crash report tests: the log rotation (everywhere) and, where there is fork(), a child that crashes and leaves a report.
-#include "dect2/crash_report.h"
+#include "dect2/engine/crash_report.h"
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>

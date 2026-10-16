@@ -1,6 +1,6 @@
 // ACARS receiver, clean signal: the generator's blocks come out bit-exact, three channels at once, eight channels with 25 kHz neighbours,
 // the same result whatever the chunk size, a channel list for 8.33 kHz channels, a tuning that is not on the grid.
-#include "dect2/acars_sim.h"
+#include "dect2/acars/acars_sim.h"
 #include <cstdio>
 #include <set>
 using namespace dect2;

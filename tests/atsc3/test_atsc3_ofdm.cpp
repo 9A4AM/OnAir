@@ -1,6 +1,6 @@
 // ATSC 3.0 Preamble OFDM layer: pilot sequence, cell counts against A/322 Table 7.2, the frequency interleaver, and a round trip
 // through modulation, noise and demodulation.
-#include "dect2/atsc3_ofdm.h"
+#include "dect2/atsc3/atsc3_ofdm.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -3,7 +3,7 @@
 // saved per radio (app_state.cpp: syncRadioSettings / saveRadioSettings) and reach a running radio at once (a retune); one that takes
 // effect when the radio is opened restarts a running receiver. A value set back to its default is dropped, so the driver does what it always did.
 #include "app.h"
-#include "dect2/converter.h"
+#include "dect2/source/converter.h"
 #include <cmath>
 #include <map>
 

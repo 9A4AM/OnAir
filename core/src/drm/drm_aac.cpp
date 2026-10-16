@@ -10,8 +10,8 @@
 // Codeword reordering: the sorted list of codewords (codebook priority, then spectral position) is cut into segments of the widths of their longest possible
 // code words; the first code word of the list sits at the start of its segment (a priority code word), the others fill the segments from the end and from the
 // start alternately, set by set, and continue in the next segment when one does not fit.
-#include "dect2/drm_aac.h"
-#include "dect2/drm_fec.h"
+#include "dect2/drm/drm_aac.h"
+#include "dect2/drm/drm_fec.h"
 #include "drm_aac_internal.h"
 extern "C" {
 #include <libavcodec/avcodec.h>

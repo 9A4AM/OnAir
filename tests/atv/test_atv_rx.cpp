@@ -1,6 +1,6 @@
 // Analog TV receiver: generator -> receiver on clean and simulated signals. The picture is compared with the card the generator drew, the sound
 // with the tone it sent, the timing with the standard.
-#include "dect2/atv_testkit.h"
+#include "dect2/atv/atv_testkit.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

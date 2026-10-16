@@ -2,8 +2,8 @@
 // (baud rate, bit stream, 32-bit words against the POCSAG BCH check) and the steady tones heard so far.
 // Receive only. Multitone's own format is not public, so this is a detector: everything is labelled unverified and no message text is shown.
 #include "app.h"
-#include "dect2/multitone_rx.h"
-#include "dect2/multitone_tel.h"
+#include "dect2/multitone/multitone_rx.h"
+#include "dect2/multitone/multitone_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

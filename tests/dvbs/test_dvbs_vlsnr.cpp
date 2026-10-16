@@ -3,7 +3,7 @@
 // receiver round trips (transport stream equal) for the modes the front end can acquire at the Es/N0 they need. Only generated signals: no real VL-SNR
 // transmission was available, see the notes in core/src/dvbs_vlsnr.h on what the text of the standard leaves open.
 #include "../../core/src/dvbs/dvbs_vlsnr.h"
-#include "dect2/dvbs_testkit.h"
+#include "dect2/dvbs/dvbs_testkit.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

@@ -2,7 +2,7 @@
 #include "atv_video.h"
 #include "atv_dsp.h"
 #include "atv_secam.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

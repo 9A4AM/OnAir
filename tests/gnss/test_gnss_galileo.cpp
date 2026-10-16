@@ -2,8 +2,8 @@
 // Viterbi, CRC), the ephemeris assembled from words 1-5 and compared with what was sent, the GST-GPS offset of word type 10 read, and the position
 // fixed with GPS and Galileo together (Galileo time moved to GPS time with that offset; before it has arrived, a clock unknown of its own).
 // The same with the faults of tests/impair.h: +-5 kHz frequency offset, a sample clock 20 ppm off, low C/N0, and a start in the middle of a page.
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include "gnss_faults.h"
 #include <cmath>
 #include <cstdio>

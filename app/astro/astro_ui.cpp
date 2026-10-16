@@ -3,9 +3,9 @@
 // radial velocity and in dB or relative temperature with the peak marker, the drift-scan waterfall of finished integrations, CSV export,
 // and a short "?" guide.
 #include "app.h"
-#include "dect2/astro_dsp.h"
-#include "dect2/astro_rx.h"
-#include "dect2/astro_tel.h"
+#include "dect2/astro/astro_dsp.h"
+#include "dect2/astro/astro_rx.h"
+#include "dect2/astro/astro_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

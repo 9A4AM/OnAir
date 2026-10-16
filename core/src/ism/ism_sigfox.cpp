@@ -8,9 +8,9 @@
 // spare 1, sequence number 12), the authentication code length per payload length (16 + 8 * ceil(N / 4) bits is assumed; the
 // payload length is found from the burst's length), whether a 0 bit is a phase inversion (assumed) or no change, the CRC polynomial.
 // The authentication code and CRC are shown as received; the key is secret, so nothing can be checked.
-#include "dect2/ism_sigfox.h"
-#include "dect2/fftutil.h"
-#include "dect2/portable_rng.h"
+#include "dect2/ism/ism_sigfox.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/dsp/portable_rng.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

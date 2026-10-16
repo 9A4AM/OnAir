@@ -1,6 +1,6 @@
 // DVB-S2 frame synchronisation, see dvbs_s2hunt.h.
 #include "dvbs_s2hunt.h"
-#include "dect2/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_s2.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

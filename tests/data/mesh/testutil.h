@@ -1,7 +1,7 @@
 // Helpers shared by the mesh (LoRa) tests: a signal made of LoRa frames plus noise, and a channel + demodulator chain.
 #pragma once
-#include "dect2/gen_util.h"
-#include "dect2/mesh_lora.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/mesh/mesh_lora.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

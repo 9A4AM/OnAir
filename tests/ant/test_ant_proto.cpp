@@ -1,6 +1,6 @@
 // ANT+ frames: the CRC against frames captured off the air (rtl_433 issue 1990, reverse-engineered with reveng), the field layout, the
 // heart rate and other profile pages.
-#include "dect2/ant_proto.h"
+#include "dect2/ant/ant_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <cmath>

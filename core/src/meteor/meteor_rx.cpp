@@ -1,9 +1,9 @@
 // Meteor-M LRPT receiver (see meteor_rx.h).
-#include "dect2/meteor_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/meteor_tel.h"
-#include "dect2/meteor_proto.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/meteor/meteor_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/meteor/meteor_tel.h"
+#include "dect2/meteor/meteor_proto.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

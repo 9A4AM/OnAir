@@ -5,7 +5,7 @@
 // modulator integrates the phase exactly. If the receiver and the generator had the same wrong idea of the modulation, this is where it shows.
 // A CACH is added to the base station signal with the bit positions and the Hamming (7,4) words of the OP25 project (dmr_const.h), also written
 // out again here.
-#include "dect2/dmr_rx.h"
+#include "dect2/dmr/dmr_rx.h"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>

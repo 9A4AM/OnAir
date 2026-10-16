@@ -1,7 +1,7 @@
 // A complete frame: Preamble with L1 and a subframe with two PLPs (different FEC and constellation), through a channel with an echo and noise,
 // decoded back to the baseband packets. Frequency interleaving, boundary symbols with null cells, 8K, 16K and 32K FFT sizes.
-#include "dect2/atsc3_frame.h"
-#include "dect2/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_frame.h"
+#include "dect2/atsc3/atsc3_bb.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

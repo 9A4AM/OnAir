@@ -1,6 +1,6 @@
 // The codec library names and the search order are what docs/CODECS.md says: mbelib (AMBE/IMBE: DMR, P25, NXDN, dPMR, D-STAR) and codec2
 // (FreeDV, M17). The codecs folders come first, then the program's folder, then the system's places.
-#include "dect2/hfdig_freedv.h"
+#include "dect2/hfdig/hfdig_freedv.h"
 #include <algorithm>
 #include <cstdio>
 using namespace dect2;

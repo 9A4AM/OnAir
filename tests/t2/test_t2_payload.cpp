@@ -1,7 +1,7 @@
 // End to end: a DVB-T2 signal that carries real payload (T2-Base and T2-Lite configurations) goes through noise and the whole receiver
 // (sync, L1, channel estimation, de-interleaving, LDPC, BCH), and every decoded baseband frame must equal what was sent.
-#include "dect2/t2gen.h"
-#include "dect2/t2rx.h"
+#include "dect2/t2/t2gen.h"
+#include "dect2/t2/t2rx.h"
 #include "../impair.h"
 #include "../jobs.h"
 #include <atomic>

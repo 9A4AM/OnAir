@@ -1,7 +1,7 @@
 // Known-answer tests for the crypto behind the Meshtastic and MeshCore packet layers.
 // Sources: FIPS 197 appendix C, NIST SP 800-38A F.1.1/F.5.1/F.5.5, RFC 3686 section 6 (as used in the Meshtastic firmware's
 // test/test_crypto), FIPS 180-4 examples, RFC 4231 test cases 1-4 and 6, RFC 8032 section 7.1 tests 1 and 2.
-#include "dect2/mesh_crypto.h"
+#include "dect2/mesh/mesh_crypto.h"
 #include <cstdio>
 #include <cstring>
 using namespace dect2::meshcrypto;

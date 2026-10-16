@@ -1,8 +1,8 @@
 // Iridium radio layer: known answers (unique words, DQPSK mapping, sync word rule) and single bursts through the detector and the
 // demodulator at the rates the radios offer.
-#include "dect2/iridium_frame.h"
-#include "dect2/iridium_gen.h"
-#include "dect2/iridium_phy.h"
+#include "dect2/iridium/iridium_frame.h"
+#include "dect2/iridium/iridium_gen.h"
+#include "dect2/iridium/iridium_phy.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

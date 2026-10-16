@@ -1,5 +1,5 @@
 // NXDN common air interface (see nxdn_proto.h).
-#include "dect2/nxdn_proto.h"
+#include "dect2/nxdn/nxdn_proto.h"
 #include <cmath>
 #include <cstring>
 #include <vector>

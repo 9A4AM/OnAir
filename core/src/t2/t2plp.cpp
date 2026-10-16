@@ -1,12 +1,12 @@
-#include "dect2/t2plp.h"
-#include "dect2/gpu_ldpc.h"
+#include "dect2/t2/t2plp.h"
+#include "dect2/dsp/gpu_ldpc.h"
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include "dect2/platform.h"
+#include "dect2/common/platform.h"
 #include <atomic>
 #include <cstdint>
 #include <mutex>

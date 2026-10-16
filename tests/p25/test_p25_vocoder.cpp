@@ -1,8 +1,8 @@
 // The vocoder built into OnAir (third_party/mbelib): IMBE (P25) and AMBE (D-STAR, NXDN) must be available with no library installed,
 // and decoding frames must give 160 samples of audio each. Skipped in the default build, which does not include mbelib (-DDECT2_BUNDLE_MBELIB=ON builds it in).
-#include "dect2/p25_imbe.h"
-#include "dect2/dstar_ambe.h"
-#include "dect2/nxdn_ambe.h"
+#include "dect2/p25/p25_imbe.h"
+#include "dect2/dstar/dstar_ambe.h"
+#include "dect2/nxdn/nxdn_ambe.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>

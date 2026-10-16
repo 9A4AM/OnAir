@@ -1,4 +1,4 @@
-#include "dect2/dmr_ambe.h"
+#include "dect2/dmr/dmr_ambe.h"
 #include <cstring>
 
 namespace dect2 {

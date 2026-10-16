@@ -1,10 +1,10 @@
-#include "dect2/qo100_rx.h"
-#include "dect2/qo100_tel.h"
-#include "dect2/qo100_dsp.h"
-#include "dect2/dmr_dsp.h"
-#include "dect2/fftutil.h"
-#include "dect2/marine_dsp.h"
-#include "dect2/specx_measure.h"
+#include "dect2/qo100/qo100_rx.h"
+#include "dect2/qo100/qo100_tel.h"
+#include "dect2/qo100/qo100_dsp.h"
+#include "dect2/dmr/dmr_dsp.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/marine/marine_dsp.h"
+#include "dect2/specx/specx_measure.h"
 #include "../ham_listen.h"
 #include <algorithm>
 #include <atomic>

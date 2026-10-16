@@ -1,7 +1,7 @@
 // HF beacon list: the shipped default against its sources (sigidwiki Long Dashes, priyom single-letter beacons, the NCDXF/IARU schedule text), the
 // JSON round trip and refusals, the NCDXF slot arithmetic, and the planning of radio centres.
-#include "dect2/hfbeacon_list.h"
-#include "dect2/maidenhead.h"
+#include "dect2/hfbeacon/hfbeacon_list.h"
+#include "dect2/geo/maidenhead.h"
 #include <cmath>
 #include <cstdio>
 #include <set>

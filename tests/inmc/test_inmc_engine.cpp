@@ -1,8 +1,8 @@
 // Inmarsat-C through the engine, as the interface and dect2cli use it: the synthetic source plays the NCS channel (8 bit samples, faster than a radio: the receiver
 // is tested, not real time, and the run is counted in seconds of signal) with a carrier offset and a clock error; the engine must find the carrier, decode frames and messages, keep every sample and report through latestRx().
-#include "dect2/engine.h"
-#include "dect2/engine_testkit.h"
-#include "dect2/inmc_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/engine_testkit.h"
+#include "dect2/inmc/inmc_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

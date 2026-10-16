@@ -1,6 +1,6 @@
 // ANT+ through the engine (setStandard(79)): the synthetic source plays the test sensors, the receiver reports through latestRx().
-#include "dect2/engine.h"
-#include "dect2/ant_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/ant/ant_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

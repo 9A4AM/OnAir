@@ -8,11 +8,11 @@
 // Nothing is transmitted and no sound is played. `rx` prints the events as they happen (colour code, calls, messages) and a summary at the end.
 // `--voice` writes the vocoder bits of every voice burst, 29 bytes each: slot (1 or 2), position in the superframe (0 = A ... 5 = F), then the 216 bits
 // VS(215)..VS(0) in 27 bytes. The AMBE+2 vocoder is not part of this receiver: this is what a codec would be fed with.
-#include "dect2/dmr_eval.h"
-#include "dect2/dmr_gen.h"
-#include "dect2/dmr_proto.h"
-#include "dect2/dmr_rx.h"
-#include "dect2/source.h"
+#include "dect2/dmr/dmr_eval.h"
+#include "dect2/dmr/dmr_gen.h"
+#include "dect2/dmr/dmr_proto.h"
+#include "dect2/dmr/dmr_rx.h"
+#include "dect2/source/source.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

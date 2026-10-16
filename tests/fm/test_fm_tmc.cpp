@@ -1,7 +1,7 @@
 // RDS-TMC: group 3A announcement, single-group and multi-group 8A messages, repeats, lost groups, and a full path through the FM generator and receiver.
-#include "dect2/fm_gen.h"
-#include "dect2/fm_rx.h"
-#include "dect2/rds_tmc.h"
+#include "dect2/fm/fm_gen.h"
+#include "dect2/fm/fm_rx.h"
+#include "dect2/fm/rds_tmc.h"
 #include <cstdio>
 #include <string>
 

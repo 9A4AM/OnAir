@@ -1,6 +1,6 @@
 // Spectrum explorer maths: frequency text, LNB conversions both ways, the floor under a tilt, bandwidth / power / symbol rate of
 // synthetic spectra with noise, signal detection, sweep steps and stitching.
-#include "dect2/specx_measure.h"
+#include "dect2/specx/specx_measure.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

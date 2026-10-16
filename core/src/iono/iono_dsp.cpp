@@ -1,7 +1,7 @@
-#include "dect2/iono_dsp.h"
-#include "dect2/results_io.h"
-#include "dect2/fftutil.h"
-#include "dect2/iono_scale.h"
+#include "dect2/iono/iono_dsp.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/iono/iono_scale.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

@@ -3,9 +3,9 @@
 // about the Codec 2 library the voice needs.
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/m17_codec2.h"
-#include "dect2/m17_rx.h"
-#include "dect2/m17_tel.h"
+#include "dect2/m17/m17_codec2.h"
+#include "dect2/m17/m17_rx.h"
+#include "dect2/m17/m17_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

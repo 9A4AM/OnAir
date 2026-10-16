@@ -5,8 +5,8 @@
 //   test_atsc3_synth_rx --full [secs]   the whole matrix (rates 6.144, 8, 10, 20 Msps; SNR 25 and 15 dB; carrier +-3 kHz; clock +-20 ppm; chunks 1, 7, 4096, 65536)
 //   test_atsc3_synth_rx --one rate_msps snr cfo ppm chunk secs [modeOpt0 modeOpt1 modeOpt2 modeOpt3 modeOpt4]
 #include "atsc3_sim.h"
-#include "dect2/atsc3_rx.h"
-#include "dect2/atsc3_synth.h"
+#include "dect2/atsc3/atsc3_rx.h"
+#include "dect2/atsc3/atsc3_synth.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

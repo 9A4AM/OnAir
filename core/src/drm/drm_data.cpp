@@ -1,7 +1,7 @@
 // DRM data services: packet reassembly -> MSC data groups -> MOT objects (slide show, broadcast website, EPG) and TPEG frames, see drm_data.h.
-#include "dect2/drm_data.h"
-#include "dect2/dab.h"
-#include "dect2/dab_pad.h"
+#include "dect2/drm/drm_data.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_pad.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>

@@ -1,5 +1,5 @@
 // CubeSat framings: see cubesat_proto.h.
-#include "dect2/cubesat_proto.h"
+#include "dect2/cubesat/cubesat_proto.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>

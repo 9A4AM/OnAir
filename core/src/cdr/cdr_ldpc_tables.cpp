@@ -3,7 +3,7 @@
 // (row, col, shift): check i of the block row contains variable col * 256 + (i + shift) mod 256. The published matrices of rates
 // 1/2 and 3/4 each leave one entry out of 16 consecutive rows of one circulant; those are listed as holes (they are not typos of
 // this table: the standard prints those rows with one column less).
-#include "dect2/cdr_ldpc.h"
+#include "dect2/cdr/cdr_ldpc.h"
 
 namespace dect2::cdr {
 

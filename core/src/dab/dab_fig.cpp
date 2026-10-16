@@ -5,8 +5,8 @@
 // Each decoder works on one FIG data field copied into a zero padded buffer, so a truncated FIG reads zeros and ends its loops instead
 // of reading outside it; the global databases of etisnoop (international table, main identifier positions, label segments) come in
 // through DabFigContext.
-#include "dect2/dab_fig.h"
-#include "dect2/text_charset.h"
+#include "dect2/dab/dab_fig.h"
+#include "dect2/common/text_charset.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

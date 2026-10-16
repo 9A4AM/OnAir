@@ -1,5 +1,5 @@
-#include "dect2/player.h"
-#include "dect2/conceal.h"
+#include "dect2/tv/player.h"
+#include "dect2/tv/conceal.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -14,7 +14,7 @@ extern "C" {
 
 #include <algorithm>
 #include <chrono>
-#include "dect2/platform.h"
+#include "dect2/common/platform.h"
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>

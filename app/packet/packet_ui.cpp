@@ -1,7 +1,7 @@
 // APRS / Packet screens: the stations heard (table and map, the ADS-B map underneath, as for AIS), the log of raw packets, the state lamps.
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/packet_tel.h"
+#include "dect2/packet/packet_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

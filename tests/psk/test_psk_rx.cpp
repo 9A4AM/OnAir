@@ -1,9 +1,9 @@
 // PSK31 receiver against generated signals: four BPSK31 signals across the passband at once (one drifting, one with a clock error),
 // a tuning error, two signals 70 Hz apart, a weak signal in noise, a fast drift and a large clock error, PSK63, QPSK31 and QPSK63,
 // a picked frequency (the focus), the chat log lines, and noise only (no text).
-#include "dect2/psk_gen.h"
-#include "dect2/psk_rx.h"
-#include "dect2/psk_tel.h"
+#include "dect2/psk/psk_gen.h"
+#include "dect2/psk/psk_rx.h"
+#include "dect2/psk/psk_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

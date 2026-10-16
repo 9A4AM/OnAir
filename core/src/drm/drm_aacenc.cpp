@@ -1,9 +1,9 @@
 // DRM AAC encoder for the test signal (see drm_aacenc.h): MDCT with the 960 transform, one flat quantiser step for the whole frame, the Huffman codebooks
 // of drm_aactab.cpp, section data, and the spectral data in the order of the codeword reordering (HCR) of clause 5.4.1.
-#include "dect2/drm_aacenc.h"
-#include "dect2/drm_fec.h"
-#include "dect2/drm_fft.h"
-#include "dect2/drm_gen.h"
+#include "dect2/drm/drm_aacenc.h"
+#include "dect2/drm/drm_fec.h"
+#include "dect2/drm/drm_fft.h"
+#include "dect2/drm/drm_gen.h"
 #include "drm_aac_internal.h"
 #include <algorithm>
 #include <cmath>

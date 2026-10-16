@@ -1,8 +1,8 @@
 // QZSS L1 C/A and SBAS L1 next to GPS in the simulated sky: the QZSS satellites are tracked, their ephemeris decoded and used in the fix with GPS (one
 // clock), the SBAS satellites are tracked and their messages decoded (Viterbi, preamble, CRC; the type and PRN reported, the corrections not applied).
 // The same with the faults of tests/impair.h: +-5 kHz frequency offset, a sample clock 20 ppm off, low C/N0, and a start in the middle of a frame.
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include "gnss_faults.h"
 #include <cmath>
 #include <cstdio>

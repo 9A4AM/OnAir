@@ -4,14 +4,14 @@
 // weights and clock-loop speeds - the way good TNCs do it); a frame is kept once even when several of them decode it.
 // 9600 baud: two slicers with different filters, a clock loop, the G3RUH descrambler (x^17 + x^12 + 1) and NRZI.
 // The frame layer is packet_ax25.*, the APRS layer packet_aprs.*.
-#include "dect2/packet_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/feeds.h"
-#include "dect2/dmr_dsp.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/packet_aprs.h"
-#include "dect2/packet_ax25.h"
-#include "dect2/packet_demod.h"
+#include "dect2/packet/packet_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/net/feeds.h"
+#include "dect2/dmr/dmr_dsp.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/packet/packet_aprs.h"
+#include "dect2/packet/packet_ax25.h"
+#include "dect2/packet/packet_demod.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

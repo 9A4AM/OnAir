@@ -2,8 +2,8 @@
 // environment variable: a copy of this program in an empty folder, with only the library copied next to it, must load it from there (and
 // not from Homebrew or the system). Skipped when the build has no bundled codec2 (-DDECT2_BUNDLE_CODEC2=OFF) or on Windows.
 // "test_hfdig_codec2bundle --probe" is the copy's mode: it prints the library it loaded.
-#include "dect2/hfdig_freedv.h"
-#include "dect2/m17_codec2.h"
+#include "dect2/hfdig/hfdig_freedv.h"
+#include "dect2/m17/m17_codec2.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>

@@ -1,6 +1,6 @@
 // ISDB-T: the status bar and the Receiver tab (lock, carrier layout, the three hierarchical layers with their statistics)
 #include "app.h"
-#include "dect2/isdbt.h"
+#include "dect2/isdbt/isdbt.h"
 
 const char* isdbtWidthLabel(int mhz) { return mhz == 0 ? "Automatic" : mhz == 7 ? "7 MHz" : mhz == 8 ? "8 MHz (Maldives)" : "6 MHz"; }
 

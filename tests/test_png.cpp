@@ -1,8 +1,8 @@
 // PNG decoder (map tiles on Windows and Linux): every colour type and bit depth, all five filters, Adam7, tRNS, broken files.
 // The PNGs are made here with stored deflate blocks, so the test needs no image library. Optional argument: a folder of real PNG
 // tiles that must all decode (e.g. the macOS map cache).
-#include "dect2/inflate.h"
-#include "dect2/png.h"
+#include "dect2/common/inflate.h"
+#include "dect2/common/png.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>

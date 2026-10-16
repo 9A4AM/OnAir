@@ -1,7 +1,7 @@
 // Iridium short burst data (Phase B): IDA fragments joined as iridium-toolkit's ida.py does, SBD headers and ACARS as its sbd.py
 // reads them, built from the frame layer's IDA frames.
-#include "dect2/iridium_frame.h"
-#include "dect2/iridium_sbd.h"
+#include "dect2/iridium/iridium_frame.h"
+#include "dect2/iridium/iridium_sbd.h"
 #include <cstdio>
 using namespace dect2;
 static int fails = 0;

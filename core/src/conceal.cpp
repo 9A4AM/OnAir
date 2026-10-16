@@ -1,6 +1,6 @@
-#include "dect2/conceal.h"
+#include "dect2/tv/conceal.h"
 #include "conceal_internal.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -8,7 +8,7 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
-#include "dect2/platform.h"
+#include "dect2/common/platform.h"
 #include <cstdlib>
 #include <cstdio>
 

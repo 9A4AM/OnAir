@@ -3,10 +3,10 @@
 // Receiving never keys the transmitter: only HamlibTx (the transmit subsystem, an operator action) calls PTT.
 #ifdef DECT2_HAVE_HAMLIB
 
-#include "dect2/hamlib_link.h"
-#include "dect2/hamlib_rig.h"
-#include "dect2/rig_setup.h"
-#include "dect2/source.h"
+#include "dect2/source/hamlib_link.h"
+#include "dect2/source/hamlib_rig.h"
+#include "dect2/source/rig_setup.h"
+#include "dect2/source/source.h"
 #include <hamlib/rig.h>
 
 #include <algorithm>

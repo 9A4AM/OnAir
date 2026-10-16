@@ -1,10 +1,10 @@
 // Ionospheric sounders through the engine (setStandard(54)): the synthetic source plays the two-sounder test scene in real time at
 // 1 Msps around 0.5 MHz; the 100 kHz/s sweep that starts at 2 s comes back through latestRx() as standard 53 with its ionogram.
-#include "dect2/iono_dsp.h"
-#include "dect2/iono_gen.h"
-#include "dect2/iono_rx.h"
-#include "dect2/iono_tel.h"
-#include "dect2/engine.h"
+#include "dect2/iono/iono_dsp.h"
+#include "dect2/iono/iono_gen.h"
+#include "dect2/iono/iono_rx.h"
+#include "dect2/iono/iono_tel.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

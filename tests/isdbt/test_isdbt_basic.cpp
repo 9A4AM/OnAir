@@ -1,5 +1,5 @@
 // ISDB-T basics: geometry and bit rates against the tables of the standard, carrier layout, pilot sequences, TMCC coding, constellations.
-#include "dect2/isdbt.h"
+#include "dect2/isdbt/isdbt.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

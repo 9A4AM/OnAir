@@ -1,4 +1,4 @@
-#include "dect2/wb_view.h"
+#include "dect2/wb/wb_view.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

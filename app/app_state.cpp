@@ -1,10 +1,10 @@
 // application state: preferences, device list, bandwidth, ingesting spectrum and receiver telemetry, channel list
 #include "app.h"
 #include <cstring>
-#include "dect2/usb_diag.h"
-#include "dect2/rate_choice.h"
-#include "dect2/hdr_rx.h"
-#include "dect2/sonde_rx.h"
+#include "dect2/source/usb_diag.h"
+#include "dect2/engine/rate_choice.h"
+#include "dect2/hdr/hdr_rx.h"
+#include "dect2/sonde/sonde_rx.h"
 
 // the name of the built-in test signal in the source list: it follows the mode
 static std::string synthLabel(const App& a) {

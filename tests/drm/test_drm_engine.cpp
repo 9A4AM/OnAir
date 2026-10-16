@@ -1,7 +1,7 @@
 // DRM through the engine, as the app uses it: the synthetic source plays the mode's test signal at the rate the tuning table asks for; the engine
 // must lock, decode the multiplex and report it through latestRx without dropping samples. Real time: about 20 s.
-#include "dect2/engine.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

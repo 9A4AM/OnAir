@@ -1,6 +1,6 @@
 // AIS: receiving only noise must not produce stations or positions (issue #87).
-#include "dect2/ais_rx.h"
-#include "dect2/ais_testutil.h"
+#include "dect2/ais/ais_rx.h"
+#include "dect2/ais/ais_testutil.h"
 #include <cstdio>
 #include <random>
 using namespace dect2;

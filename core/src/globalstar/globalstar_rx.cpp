@@ -1,9 +1,9 @@
 // Globalstar activity monitor: see globalstar_rx.h. Windowed FFT frames of the whole sampled band are averaged into 10 ms slots; each of the
 // 1.23 MHz channels gets its power, a noise floor tracker, an on / off decision with hysteresis and, while on, the centroid of its spectrum
 // (the Doppler shift against the channel centre). Nothing is demodulated.
-#include "dect2/globalstar_rx.h"
-#include "dect2/fftutil.h"
-#include "dect2/results_io.h"
+#include "dect2/globalstar/globalstar_rx.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

@@ -1,9 +1,9 @@
 // Spectrum explorer through the engine (setStandard(43)): the synthetic source plays a QPSK carrier and a tone in noise; the spectrum
 // comes back through latestRx() and the region maths find the carrier's symbol rate.
-#include "dect2/specx_rx.h"
-#include "dect2/specx_gen.h"
-#include "dect2/specx_measure.h"
-#include "dect2/engine.h"
+#include "dect2/specx/specx_rx.h"
+#include "dect2/specx/specx_gen.h"
+#include "dect2/specx/specx_measure.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

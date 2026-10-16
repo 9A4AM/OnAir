@@ -1,5 +1,5 @@
 // Teletext: Hamming 8/4 against the table from ETS 300 706, then a page encoded into TS packets and decoded again.
-#include "dect2/teletext.h"
+#include "dect2/tv/teletext.h"
 #include <cstdio>
 #include <cstring>
 #include <string>

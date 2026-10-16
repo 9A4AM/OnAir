@@ -2,7 +2,7 @@
 // 65536 samples (and a ragged mixture) gives the same channel table, the same states, the same search work and the same report numbers. The Doppler,
 // code phase and C/N0 values agree to the last digits but not always bit for bit: the FFT of the platform (Accelerate) rounds differently depending on
 // the alignment of its arrays, and two runs of the program put them at different addresses. The tolerances below are far under what a loop's noise is.
-#include "dect2/gnss_testkit.h"
+#include "dect2/gnss/gnss_testkit.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

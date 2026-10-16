@@ -1,12 +1,12 @@
 // Whole-span APRS / packet: three channels in one 2 Msps capture, each with its own station (1200 baud on the raster, a weak 9600 baud one off the raster,
 // a 1200 baud one that starts late). Every channel needs its own receiver; each station's frame must come back with the frequency of its own channel
 // and no other; the stations table lists all three; a retune keeps the frequencies; and the single receiver (switch off) is unchanged.
-#include "dect2/modes.h"
-#include "dect2/packet_ax25.h"
-#include "dect2/packet_gen.h"
-#include "dect2/packet_rx.h"
-#include "dect2/t2rx.h"
-#include "dect2/wide_modes.h"
+#include "dect2/engine/modes.h"
+#include "dect2/packet/packet_ax25.h"
+#include "dect2/packet/packet_gen.h"
+#include "dect2/packet/packet_rx.h"
+#include "dect2/t2/t2rx.h"
+#include "dect2/engine/wide_modes.h"
 #include <cmath>
 #include <cstdio>
 #include <memory>

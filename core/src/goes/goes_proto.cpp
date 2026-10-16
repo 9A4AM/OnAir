@@ -1,7 +1,7 @@
 // GOES HRIT transport layer and file assembly (goes_proto.h).
-#include "dect2/goes_proto.h"
-#include "dect2/ccsds.h"
-#include "dect2/inflate.h"
+#include "dect2/goes/goes_proto.h"
+#include "dect2/ccsds/ccsds.h"
+#include "dect2/common/inflate.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>

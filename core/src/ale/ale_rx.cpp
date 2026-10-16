@@ -1,9 +1,9 @@
 // HF ALE receiver (see ale_rx.h).
-#include "dect2/ale_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/ale_tel.h"
-#include "dect2/ale_proto.h"
-#include "dect2/marine_dsp.h"
+#include "dect2/ale/ale_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/ale/ale_tel.h"
+#include "dect2/ale/ale_proto.h"
+#include "dect2/marine/marine_dsp.h"
 #include "../ham_listen.h"
 #include <algorithm>
 #include <atomic>

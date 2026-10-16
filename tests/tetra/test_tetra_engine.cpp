@@ -1,10 +1,10 @@
 // TETRA through the engine (setStandard(48)): the synthetic source plays the two test cells at 2 Msps; the receiver finds them and
 // reports through latestRx() with their network information.
-#include "dect2/engine.h"
-#include "dect2/modes.h"
-#include "dect2/tetra_gen.h"
-#include "dect2/tetra_rx.h"
-#include "dect2/tetra_tel.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
+#include "dect2/tetra/tetra_gen.h"
+#include "dect2/tetra/tetra_rx.h"
+#include "dect2/tetra/tetra_tel.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

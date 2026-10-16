@@ -1,7 +1,7 @@
 // Analog TV receiver against what a real radio and a real path do to the signal: noise down to the threshold, carrier offset, sample clock error,
 // other sample rates, chunks of any size, 8 bit samples at low level, DC offset and IQ imbalance. The generator makes the signal and draws the
 // card the receiver is compared with. Every line printed here is a number that is in the report.
-#include "dect2/atv_testkit.h"
+#include "dect2/atv/atv_testkit.h"
 #include "../jobs.h"
 #include <atomic>
 #include <cmath>

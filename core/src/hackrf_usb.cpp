@@ -6,8 +6,8 @@
 //
 // Why our own: the sample stream is the part of the receiver where lost data is most expensive, and this lets the reader run at the highest
 // priority, use large transfers, and write converted samples straight into the receiver's ring buffer, with one conversion and no other copy.
-#include "dect2/source.h"
-#include "dect2/platform.h"
+#include "dect2/source/source.h"
+#include "dect2/common/platform.h"
 #include "native_common.h"   // the plain-words USB error texts
 #include <libusb.h>
 #include <algorithm>

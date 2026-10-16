@@ -1,7 +1,7 @@
 // VDL Mode 4 receiver: see vdl4_rx.h.
-#include "dect2/vdl4_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/vdl4_proto.h"
+#include "dect2/vdl4/vdl4_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/vdl4/vdl4_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

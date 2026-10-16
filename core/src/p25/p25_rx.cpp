@@ -1,10 +1,10 @@
 // P25 Phase 1 receiver (see p25_rx.h).
-#include "dect2/p25_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/p25_tel.h"
-#include "dect2/p25_proto.h"
-#include "dect2/p25_imbe.h"
-#include "dect2/audioout.h"
+#include "dect2/p25/p25_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/p25/p25_tel.h"
+#include "dect2/p25/p25_proto.h"
+#include "dect2/p25/p25_imbe.h"
+#include "dect2/audio/audioout.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

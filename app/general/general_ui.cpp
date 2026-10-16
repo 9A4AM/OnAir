@@ -4,9 +4,9 @@
 // covers, without retuning; outside it the radio is retuned), its filter edges can be dragged.
 #include "app.h"
 #include "plot.h"
-#include "dect2/general_gen.h"
-#include "dect2/general_rx.h"
-#include "dect2/general_tel.h"
+#include "dect2/general/general_gen.h"
+#include "dect2/general/general_rx.h"
+#include "dect2/general/general_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

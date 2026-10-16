@@ -1,9 +1,9 @@
-#include "dect2/isdbt_rx.h"
-#include "dect2/isdbt_resample.h"
-#include "dect2/fftutil.h"
-#include "dect2/isdbt.h"
-#include "dect2/isdbt_demod.h"
-#include "dect2/t2ofdm.h"
+#include "dect2/isdbt/isdbt_rx.h"
+#include "dect2/isdbt/isdbt_resample.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/isdbt/isdbt.h"
+#include "dect2/isdbt/isdbt_demod.h"
+#include "dect2/t2/t2ofdm.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

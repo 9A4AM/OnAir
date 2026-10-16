@@ -1,7 +1,7 @@
 // dPMR through the engine (setStandard(47)): the synthetic source plays the test schedule, the receiver reports through latestRx().
 // Silent: the receiver never opens the sound device.
-#include "dect2/dpmr_rx.h"
-#include "dect2/engine.h"
+#include "dect2/dpmr/dpmr_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

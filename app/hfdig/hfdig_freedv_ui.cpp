@@ -1,7 +1,7 @@
 // HF digital, the FreeDV view of the main tab (called by hfdig_ui.cpp): the codec2 library lamp, one sync lamp per FreeDV mode, the mode
 // choice, the SNR, the text channel (callsign) and the speech frames. Without the codec2 library one sentence says so and how to get it.
 #include "app.h"
-#include "dect2/hfdig_tel.h"
+#include "dect2/hfdig/hfdig_tel.h"
 #include <algorithm>
 #include <cstdio>
 

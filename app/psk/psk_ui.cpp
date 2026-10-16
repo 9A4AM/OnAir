@@ -3,9 +3,9 @@
 // chat log (one row per line, with the time) beside its text in big letters, callsigns highlighted.
 #include "app.h"
 #include "gfx.h"
-#include "dect2/cw_morse.h"
-#include "dect2/psk_rx.h"
-#include "dect2/psk_tel.h"
+#include "dect2/cw/cw_morse.h"
+#include "dect2/psk/psk_rx.h"
+#include "dect2/psk/psk_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

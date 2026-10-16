@@ -1,9 +1,9 @@
 // Mesh (LoRa) test signal: see mesh_gen.h.
-#include "dect2/mesh_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/mesh_lora.h"
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_rx.h"
+#include "dect2/mesh/mesh_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <deque>

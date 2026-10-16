@@ -2,10 +2,10 @@
 // generator (its own service id and name in the transport stream), is resampled from its native rate to the capture rate, shifted to its
 // offset, and the channels are added with noise. Streamed, so a capture of seconds at 28 Msps needs no memory.
 #pragma once
-#include "dect2/dvbt_gen.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/t2.h"
-#include "dect2/t2gen.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/t2/t2.h"
+#include "dect2/t2/t2gen.h"
 #include <cmath>
 #include <memory>
 #include <random>

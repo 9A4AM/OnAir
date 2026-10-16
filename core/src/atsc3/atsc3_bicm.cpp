@@ -1,9 +1,9 @@
-#include "dect2/atsc3_bicm.h"
+#include "dect2/atsc3/atsc3_bicm.h"
 #include "atsc3_data_tables.h"
 #include "atsc3_ldpc.h"
-#include "dect2/atsc3_l1.h"
-#include "dect2/simd.h"
-#include "dect2/t2fec.h"
+#include "dect2/atsc3/atsc3_l1.h"
+#include "dect2/dsp/simd.h"
+#include "dect2/t2/t2fec.h"
 #include <algorithm>
 #include <cmath>
 #include <map>

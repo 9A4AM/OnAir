@@ -1,7 +1,7 @@
 // RTTY decoder of the HF digital receiver (see hfdig_rtty.h), and its test audio for the generator (hfdig_gen.h).
-#include "dect2/hfdig_rtty.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/source.h"
+#include "dect2/hfdig/hfdig_rtty.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/source/source.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

@@ -6,7 +6,7 @@
 #include "../core/src/native_common.h"
 #include "../core/src/native_realddc.h"
 #include "../core/src/rx888_usb.h"
-#include "dect2/source.h"
+#include "dect2/source/source.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

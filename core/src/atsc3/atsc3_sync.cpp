@@ -1,5 +1,5 @@
-#include "dect2/atsc3_sync.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/atsc3/atsc3_sync.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

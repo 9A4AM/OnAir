@@ -1,6 +1,6 @@
 // Analog TV receiver against real-world faults from tests/impair.h (REAL_WORLD_CHECKLIST.md), applied to the whole recording independently of the
 // receiver: NaN samples, a mirrored spectrum, a ghost, an overdriven 8-bit radio, lost samples, and all of them at once with the worst UHF tuning error.
-#include "dect2/atv_testkit.h"
+#include "dect2/atv/atv_testkit.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdio>

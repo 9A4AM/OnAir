@@ -1,11 +1,11 @@
 // Radio problems where the user looks: the listing error, a failed start, a frequency the radio cannot tune and the USB hints, all under the
 // radio picker, plus a "Copy diagnostics" button that puts what a bug report needs on the clipboard.
 #include "app.h"
-#include "dect2/converter.h"
-#include "dect2/updater.h"
-#include "dect2/hfdig_freedv.h"
+#include "dect2/source/converter.h"
+#include "dect2/engine/updater.h"
+#include "dect2/hfdig/hfdig_freedv.h"
 #include "fixit.h"
-#include "dect2/crash_report.h"
+#include "dect2/engine/crash_report.h"
 #include <fstream>
 #include <iterator>
 #include <cstring>

@@ -1,8 +1,8 @@
 // FLARM test signal: see flarm_gen.h.
-#include "dect2/flarm_gen.h"
-#include "dect2/flarm_proto.h"
-#include "dect2/flarm_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/flarm/flarm_gen.h"
+#include "dect2/flarm/flarm_proto.h"
+#include "dect2/flarm/flarm_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

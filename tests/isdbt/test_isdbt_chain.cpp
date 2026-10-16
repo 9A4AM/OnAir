@@ -1,7 +1,7 @@
 // ISDB-T channel coding loop-back: generator -> FFT with ideal timing -> demodulator core -> transport stream packets, noise free and noisy.
-#include "dect2/fftutil.h"
-#include "dect2/isdbt_demod.h"
-#include "dect2/isdbt_gen.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/isdbt/isdbt_demod.h"
+#include "dect2/isdbt/isdbt_gen.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

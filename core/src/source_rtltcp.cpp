@@ -6,7 +6,7 @@
 // not RTL0, or a tuner type outside 1 to 6) takes any rate from 0.25 to 20 Msps and its gain in tenths of a dB as asked.
 #include "tcp_client.h"
 #include "native_common.h"
-#include "dect2/netradio.h"
+#include "dect2/net/netradio.h"
 #include <map>
 #include <mutex>
 #include <set>

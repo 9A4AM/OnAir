@@ -1,6 +1,6 @@
 // HFDL test signal (hfdl_gen.h)
-#include "dect2/hfdl_gen.h"
-#include "dect2/portable_rng.h"
+#include "dect2/hfdl/hfdl_gen.h"
+#include "dect2/dsp/portable_rng.h"
 #include <algorithm>
 #include <cmath>
 #include <random>

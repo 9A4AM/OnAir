@@ -1,5 +1,5 @@
 #pragma once
-#include "dect2/audioin.h"
+#include "dect2/audio/audioin.h"
 #include <atomic>
 #include <cstdint>
 #include <string>

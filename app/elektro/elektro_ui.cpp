@@ -3,9 +3,9 @@
 #include "gallery.h"
 #include "gfx.h"
 #include "platform.h"
-#include "dect2/elektro_rx.h"
-#include "dect2/elektro_tel.h"
-#include "dect2/goes_proto.h"
+#include "dect2/elektro/elektro_rx.h"
+#include "dect2/elektro/elektro_tel.h"
+#include "dect2/goes/goes_proto.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

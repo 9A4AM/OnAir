@@ -1,7 +1,7 @@
 // VDL Mode 2 layers without a radio signal: header code, scrambler, Reed-Solomon code with shortened blocks and erasures, interleaving,
 // HDLC framing, AVLC addresses, and the decoders of what the frames carry (ACARS with ADS-C, X.25 / CLNP / COTP, XID).
-#include "dect2/vdl2_proto.h"
-#include "dect2/aero_adsc.h"
+#include "dect2/vdl2/vdl2_proto.h"
+#include "dect2/aero/aero_adsc.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

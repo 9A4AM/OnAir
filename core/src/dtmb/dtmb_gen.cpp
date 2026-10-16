@@ -1,6 +1,6 @@
 // DTMB test signal (see dtmb_gen.h).
-#include "dect2/dtmb_gen.h"
-#include "dect2/demo_ts.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/tv/demo_ts.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

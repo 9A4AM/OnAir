@@ -1,7 +1,7 @@
 // Shared state of the audio output: the lock-free ring buffer and the playback bookkeeping. A platform backend (CoreAudio, miniaudio)
 // calls render() from its real-time callback.
 #pragma once
-#include "dect2/audioout.h"
+#include "dect2/audio/audioout.h"
 #include <atomic>
 #include <vector>
 #include <cstdint>

@@ -1,9 +1,9 @@
 // Drone Remote ID receiver end to end (rid_gen.h, rid_rx.h): Open Drone ID in BLE advertising and in Wi-Fi beacons through the BLE and
 // Wi-Fi demodulators, each alone and both in one 20 MHz band at 2432 MHz, a carrier offset with noise, a file (no centre), and noise alone.
-#include "dect2/rid_gen.h"
-#include "dect2/rid_proto.h"
-#include "dect2/rid_rx.h"
-#include "dect2/rid_tel.h"
+#include "dect2/rid/rid_gen.h"
+#include "dect2/rid/rid_proto.h"
+#include "dect2/rid/rid_rx.h"
+#include "dect2/rid/rid_tel.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

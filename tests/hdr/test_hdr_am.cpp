@@ -4,8 +4,8 @@
 // Every case must find the waveform, the service mode, the station information (call sign, name, slogan, message) and the program data
 // (title and artist) of both programs, as on FM. MA3 also carries P3 (HD1's enhanced stream, on the weaker secondary and tertiary
 // sidebands), which must decode when the signal is good (25 dB).
-#include "dect2/hdr_gen.h"
-#include "dect2/hdr_rx.h"
+#include "dect2/hdr/hdr_gen.h"
+#include "dect2/hdr/hdr_rx.h"
 #include "../impair.h"
 #include "../jobs.h"
 #include <atomic>

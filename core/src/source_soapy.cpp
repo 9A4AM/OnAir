@@ -1,9 +1,9 @@
 // Generic radios through SoapySDR: Airspy, SDRplay, RTL-SDR, PlutoSDR, LimeSDR, BladeRF, USRP, ... (whatever drivers are installed).
 // The HackRF keeps its own native source (source.cpp); a "hackrf" Soapy entry is hidden so a radio is listed once.
-#include "dect2/rate_choice.h"
-#include "dect2/source.h"
-#include "dect2/netradio.h"
-#include "dect2/ring.h"
+#include "dect2/engine/rate_choice.h"
+#include "dect2/source/source.h"
+#include "dect2/net/netradio.h"
+#include "dect2/common/ring.h"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Errors.h>
 #include <SoapySDR/Formats.h>

@@ -5,7 +5,7 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
 }
-#include "dect2/atv_std.h"
+#include "dect2/atv/atv_std.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

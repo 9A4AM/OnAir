@@ -1,8 +1,8 @@
 // Inmarsat Aero demodulators on one carrier: modulator -> carrier offset, clock offset, noise -> demodulator -> frames, bit-exact.
 // Each rate at its own sample rate, chunks of 4096; a carrier 230 Hz off.
-#include "dect2/aero_demod.h"
-#include "dect2/aero_phy.h"
-#include "dect2/gen_util.h"
+#include "dect2/aero/aero_demod.h"
+#include "dect2/aero/aero_phy.h"
+#include "dect2/dsp/gen_util.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

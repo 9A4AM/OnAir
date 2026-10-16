@@ -1,5 +1,5 @@
 // NXDN protocol: CRCs, LICH, the three coded channels with bit errors, layer 3 messages, AMBE+2 bit order, scrambler.
-#include "dect2/nxdn_proto.h"
+#include "dect2/nxdn/nxdn_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <set>

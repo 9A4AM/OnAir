@@ -1,6 +1,6 @@
 // FM receiver against real-world faults (tests/impair.h, REAL_WORLD_CHECKLIST.md): the generator's signal is damaged independently of the receiver.
-#include "dect2/fm_gen.h"
-#include "dect2/fm_rx.h"
+#include "dect2/fm/fm_gen.h"
+#include "dect2/fm/fm_rx.h"
 #include "../impair.h"
 #include <cstdio>
 #include <functional>

@@ -1,9 +1,9 @@
 // Ionospheric sounder processing on the test signal: two sounders (100 kHz/s every 30 s at +2 s, 500 kHz/s every 20 s at +7 s), each on
 // two delayed paths, seen by a 1 Msps radio at 0.5 MHz (a narrow radio: 0.05 .. 0.95 MHz of the band). The rates, periods and start
 // offsets are found, the echo delays land in the right group-range bin of each ionogram, and noise alone gives no sounder.
-#include "dect2/iono_dsp.h"
-#include "dect2/iono_gen.h"
-#include "dect2/iono_rx.h"
+#include "dect2/iono/iono_dsp.h"
+#include "dect2/iono/iono_gen.h"
+#include "dect2/iono/iono_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

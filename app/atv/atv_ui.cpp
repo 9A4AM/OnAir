@@ -1,7 +1,7 @@
 // Analog TV screens: the picture with a line scope, the status lamps, the vertical-interval and level panels, the receiver readouts and the options
 // of the test signal. The receiver (AtvReceiver) makes the pictures; the telemetry carries the waveforms and the numbers.
 #include "app.h"
-#include "dect2/atv_std.h"
+#include "dect2/atv/atv_std.h"
 #include <cmath>
 #include <memory>
 

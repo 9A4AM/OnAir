@@ -1,4 +1,4 @@
-#include "dect2/iono_scale.h"
+#include "dect2/iono/iono_scale.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

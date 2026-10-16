@@ -1,8 +1,8 @@
 // CubeSat telemetry test signal: see cubesat_gen.h.
-#include "dect2/cubesat_gen.h"
-#include "dect2/cubesat_rx.h"
-#include "dect2/gen_util.h"
-#include "dect2/packet_ax25.h"
+#include "dect2/cubesat/cubesat_gen.h"
+#include "dect2/cubesat/cubesat_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/packet/packet_ax25.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>

@@ -1,9 +1,9 @@
 // DMR link layer of the receiver: frame sync search on the demodulated symbols, time slot tracking, burst decoding and the call logic.
 // Input is the output of the matched filter at 48 kHz in Hz (ten samples per symbol), one sample at a time. Internal to the DMR receiver.
 #pragma once
-#include "dect2/dmr_fec.h"
-#include "dect2/dmr_proto.h"
-#include "dect2/dmr_tel.h"
+#include "dect2/dmr/dmr_fec.h"
+#include "dect2/dmr/dmr_proto.h"
+#include "dect2/dmr/dmr_tel.h"
 #include <deque>
 #include <functional>
 #include <string>

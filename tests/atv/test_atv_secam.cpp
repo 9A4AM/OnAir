@@ -1,7 +1,7 @@
 // Analog TV, SECAM: generator -> receiver. The picture is compared with the colour bars the generator drew; the standard and the way the lines were
 // identified are read back from the telemetry and the log. The generator's SECAM chrominance is checked against the numbers of BT.470-6 in
 // test_atv_gen (frequencies, amplitudes, identification lines), so a receiver that agrees with it agrees with the Recommendation.
-#include "dect2/atv_testkit.h"
+#include "dect2/atv/atv_testkit.h"
 #include <cmath>
 #include <cstdio>
 

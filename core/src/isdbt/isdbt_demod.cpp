@@ -1,6 +1,6 @@
-#include "dect2/isdbt_demod.h"
-#include "dect2/dvbt_fec.h"
-#include "dect2/t2ofdm.h"
+#include "dect2/isdbt/isdbt_demod.h"
+#include "dect2/dvbt/dvbt_fec.h"
+#include "dect2/t2/t2ofdm.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

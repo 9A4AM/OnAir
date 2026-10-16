@@ -1,8 +1,8 @@
 // DAB TII (EN 300 401 clause 14.8, transmission mode I): the pattern table and the carriers against the standard, then a network of
 // transmitters from the test transmitter through noise, a carrier offset and the real DabReceiver, which has to name them all.
-#include "dect2/dab.h"
-#include "dect2/dab_gen.h"
-#include "dect2/dab_tii.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/dab/dab_tii.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

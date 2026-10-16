@@ -2,8 +2,8 @@
 //   sync slicer (levels found from the signal) -> line phase-locked loop -> field sync (broad pulses) -> line and row assignment
 //   -> clamp and gain from the sync pulses -> luminance and colour decoding (PAL with delay-line averaging, NTSC) -> pictures
 #pragma once
-#include "dect2/atv_std.h"
-#include "dect2/atv_tel.h"
+#include "dect2/atv/atv_std.h"
+#include "dect2/atv/atv_tel.h"
 #include <cstdint>
 #include <functional>
 #include <memory>

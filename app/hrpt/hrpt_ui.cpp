@@ -4,8 +4,8 @@
 #include "app.h"
 #include "gfx.h"
 #include "platform.h"
-#include "dect2/hrpt_rx.h"
-#include "dect2/hrpt_tel.h"
+#include "dect2/hrpt/hrpt_rx.h"
+#include "dect2/hrpt/hrpt_tel.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

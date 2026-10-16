@@ -1,7 +1,7 @@
 // ADS-B receiver: the pulse demodulator (adsb_demod), the frame checks and the aircraft table (adsb_track), reports four times a second.
 // Everything runs in feed(); telemetry() and the setters only take the lock that protects the table.
-#include "dect2/adsb_rx.h"
-#include "dect2/adsb_demod.h"
+#include "dect2/adsb/adsb_rx.h"
+#include "dect2/adsb/adsb_demod.h"
 #include <atomic>
 #include <cmath>
 #include <cstring>

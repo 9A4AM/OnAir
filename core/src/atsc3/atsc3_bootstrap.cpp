@@ -1,5 +1,5 @@
-#include "dect2/atsc3_bootstrap.h"
-#include "dect2/fftutil.h"
+#include "dect2/atsc3/atsc3_bootstrap.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

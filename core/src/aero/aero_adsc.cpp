@@ -1,6 +1,6 @@
 // ADS-C downlink groups and their ARINC 622 wrapping (layouts in aero_adsc.h). Written from the layouts libacars documents
 // (adsc.c, arinc.c, crc.c); no code taken from it.
-#include "dect2/aero_adsc.h"
+#include "dect2/aero/aero_adsc.h"
 
 #include <cctype>
 #include <cmath>

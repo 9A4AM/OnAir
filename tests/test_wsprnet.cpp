@@ -1,5 +1,5 @@
 // WSPRnet: form encoding, dedupe, and the sender staying off until configured.
-#include "dect2/wsprnet.h"
+#include "dect2/net/wsprnet.h"
 #include <cstdio>
 #include <cstring>
 using namespace dect2;

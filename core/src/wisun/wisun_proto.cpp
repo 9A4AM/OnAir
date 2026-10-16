@@ -1,6 +1,6 @@
 // Wi-SUN FAN / IEEE 802.15.4g SUN FSK frame layers (see wisun_proto.h).
-#include "dect2/wisun_proto.h"
-#include "dect2/zigbee_proto.h"
+#include "dect2/wisun/wisun_proto.h"
+#include "dect2/zigbee/zigbee_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

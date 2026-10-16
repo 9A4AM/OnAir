@@ -1,6 +1,6 @@
 // 5G NR cells: the polar code of the downlink control channels (38.212 5.3.1 code construction and encoding, 5.4.1 rate matching) and a
 // CRC-aided successive-cancellation list decoder.
-#include "dect2/nr_phy.h"
+#include "dect2/nr/nr_phy.h"
 #include <algorithm>
 #include <cmath>
 #include <numeric>

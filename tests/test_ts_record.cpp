@@ -1,8 +1,8 @@
 // Recording a service and the live buffer: the single-program filter (a synthetic two-programme multiplex in, one programme out: valid PAT and
 // PMT, continuity counters intact, every PID of the service and nothing else), the packet ring (overflow, reading behind, jump to live), and the
 // writer queue (a stalled disk drops and counts, never blocks).
-#include "dect2/ts.h"
-#include "dect2/ts_record.h"
+#include "dect2/tv/ts.h"
+#include "dect2/tv/ts_record.h"
 #include <chrono>
 #include <cstdio>
 #include <cstring>

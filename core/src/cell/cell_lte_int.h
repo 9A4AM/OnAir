@@ -1,6 +1,6 @@
 // Cell towers, LTE: helpers shared by the test signal and the receiver (not part of the public interface).
 #pragma once
-#include "dect2/cell_lte.h"
+#include "dect2/cell/cell_lte.h"
 #include <vector>
 
 namespace dect2::cell {

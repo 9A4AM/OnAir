@@ -1,8 +1,8 @@
 // DTMB receiver as the engine uses it: feed() runs on one thread while another reads telemetry, resets the receiver and changes the number of decoder
 // threads. Meant for a thread sanitiser build as much as for the check itself: the signal must still lock before the reset and again after it, the telemetry
 // sequence must only grow, and the packets must stay right.
-#include "dect2/dtmb_gen.h"
-#include "dect2/dtmb_rx.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_rx.h"
 #include <atomic>
 #include <chrono>
 #include <cstdio>

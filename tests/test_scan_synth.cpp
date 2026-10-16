@@ -1,6 +1,6 @@
 // The channel scanner on ATSC 3.0 and DTMB: the built-in test signal stands in for the radio and sits on one of three channels (the other two are
 // silent). The scan must find exactly that channel, lock it, and fill in the note and the mode.
-#include "dect2/scanner.h"
+#include "dect2/engine/scanner.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -1,7 +1,7 @@
-#include "dect2/uat_rx.h"
-#include "dect2/uat_demod.h"
-#include "dect2/uat_proto.h"
-#include "dect2/uat_track.h"
+#include "dect2/uat/uat_rx.h"
+#include "dect2/uat/uat_demod.h"
+#include "dect2/uat/uat_proto.h"
+#include "dect2/uat/uat_track.h"
 #include <atomic>
 #include <mutex>
 

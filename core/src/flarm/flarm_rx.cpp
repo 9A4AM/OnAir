@@ -3,13 +3,13 @@
 // discriminator, then at each of the 8 sampling phases an integrate-and-dump chip value. A pair of chips is a data bit (second chip above the first
 // = 1), so the carrier offset needs no threshold. The 32 sync bits are hunted at every phase and chip parity; the best phase of a match
 // collects 26 bytes, the CRC and the V6 parity decide.
-#include "dect2/flarm_rx.h"
-#include "dect2/dmr_dsp.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/flarm_proto.h"
-#include "dect2/flarm_tel.h"
-#include "dect2/maidenhead.h"
-#include "dect2/results_io.h"
+#include "dect2/flarm/flarm_rx.h"
+#include "dect2/dmr/dmr_dsp.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/flarm/flarm_proto.h"
+#include "dect2/flarm/flarm_tel.h"
+#include "dect2/geo/maidenhead.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

@@ -3,8 +3,8 @@
 // escape sequence lengths, general link targets, a deflate stream made by zlib (RFC 1951), the TOC layout, user application data.
 // LOOPBACK ONLY (the generator below is written by the same author from the same text): the packet mode round trip, multi-packet groups,
 // lost packets, repetition. Robustness: truncated and random input must never crash.
-#include "dect2/dab_journaline.h"
-#include "dect2/dab.h"
+#include "dect2/dab/dab_journaline.h"
+#include "dect2/dab/dab.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

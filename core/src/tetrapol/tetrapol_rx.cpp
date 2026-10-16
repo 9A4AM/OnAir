@@ -1,8 +1,8 @@
 // TETRAPOL receiver (PAS 0001-2): GMSK 8 kbit/s, 20 ms data frames, D_SYSTEM_INFO when the 66-bit payload carries it.
-#include "dect2/tetrapol_rx.h"
-#include "dect2/tetrapol_codec.h"
-#include "dect2/tetrapol_tel.h"
-#include "dect2/results_io.h"
+#include "dect2/tetrapol/tetrapol_rx.h"
+#include "dect2/tetrapol/tetrapol_codec.h"
+#include "dect2/tetrapol/tetrapol_tel.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <cmath>
 #include <ctime>

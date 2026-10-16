@@ -1,10 +1,10 @@
 // Radiosonde receiver (see sonde_rx.h).
-#include "dect2/sonde_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/fftutil.h"
-#include "dect2/sonde_geo.h"
-#include "dect2/sonde_rs41.h"
-#include "dect2/sonde_rs92.h"
+#include "dect2/sonde/sonde_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/sonde/sonde_geo.h"
+#include "dect2/sonde/sonde_rs41.h"
+#include "dect2/sonde/sonde_rs92.h"
 #include "sonde_chan.h"
 #include <algorithm>
 #include <atomic>

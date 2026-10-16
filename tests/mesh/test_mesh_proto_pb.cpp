@@ -1,8 +1,8 @@
 // Protobuf reader and writer, and the field layouts of the Meshtastic messages (mesh.proto) with hand-encoded messages.
 // Wire format examples: protobuf encoding guide (field 1 varint 150 = 08 96 01; field 2 string "testing" = 12 07 ...).
-#include "dect2/mesh_pb.h"
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_crypto.h"
+#include "dect2/mesh/mesh_pb.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_crypto.h"
 #include <cstdio>
 using namespace dect2;
 using namespace dect2::meshpb;

@@ -1,7 +1,7 @@
 // DAB channel coding: tables, CRCs, energy dispersal, the rate 1/4 convolutional code with puncturing (FIC and EEP sub-channels),
 // and the Reed-Solomon code of DAB+. Conventions verified against a live Band III ensemble.
-#include "dect2/dab.h"
-#include "dect2/simd.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dsp/simd.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

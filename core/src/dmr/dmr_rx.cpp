@@ -1,11 +1,11 @@
 // DMR receiver: front end (decimation, DC removal, carrier offset correction, channel filter, discriminator, matched filter) and the glue to the link layer.
-#include "dect2/dmr_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/dmr_dsp.h"
-#include "dect2/dmr_ambe.h"
-#include "dect2/audioout.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/fftutil.h"
+#include "dect2/dmr/dmr_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dmr/dmr_dsp.h"
+#include "dect2/dmr/dmr_ambe.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/dsp/fftutil.h"
 #include "dmr_link.h"
 #include <algorithm>
 #include <atomic>

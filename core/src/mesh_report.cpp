@@ -1,5 +1,5 @@
 // Mesh session report (mesh_report.h)
-#include "dect2/mesh_report.h"
+#include "dect2/mesh/mesh_report.h"
 #include <algorithm>
 #include <cstdio>
 #include <ctime>

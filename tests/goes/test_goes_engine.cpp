@@ -1,7 +1,7 @@
 // GOES HRIT through the engine (setStandard(62)): the synthetic source plays the HRIT test signal, the receiver decodes the products
 // and reports through latestRx(). No sound.
-#include "dect2/goes_rx.h"
-#include "dect2/engine.h"
+#include "dect2/goes/goes_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

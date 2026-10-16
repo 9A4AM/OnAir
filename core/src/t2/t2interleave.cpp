@@ -1,7 +1,7 @@
 #include <cstdint>
 #include <map>
 #include <mutex>
-#include "dect2/t2interleave.h"
+#include "dect2/t2/t2interleave.h"
 #include <utility>
 #include <vector>
 

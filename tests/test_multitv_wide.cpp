@@ -2,10 +2,10 @@
 // cost of the channeliser at that rate, the rate ladder the UI offers for a radio that runs that fast, MultiTv with several DVB-T2 channels from
 // generated signals, and the same through the engine from a recorded 8-bit capture. Nothing here needs hardware; what a real LimeSDR's USB link
 // sustains at 61.44 Msps is not tested.
-#include "dect2/channelizer.h"
-#include "dect2/engine.h"
-#include "dect2/multitv.h"
-#include "dect2/rate_choice.h"
+#include "dect2/engine/channelizer.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/multitv.h"
+#include "dect2/engine/rate_choice.h"
 #include "multitv_testkit.h"
 #include <chrono>
 #include <cstdio>

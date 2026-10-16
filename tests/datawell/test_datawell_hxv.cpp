@@ -1,8 +1,8 @@
 // Datawell HXV real-time format (datawell_hxv.h): the parity of the three example lines in the Datawell RX-C4 manual (appendix B), error correction,
 // and the block layer fed with a bit stream built from the documented layout (datawell_gen.h): system words, spectrum points, WR-SG vectors, a bit
 // slip, polarity.
-#include "dect2/datawell_gen.h"
-#include "dect2/datawell_hxv.h"
+#include "dect2/datawell/datawell_gen.h"
+#include "dect2/datawell/datawell_hxv.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

@@ -1,8 +1,8 @@
 // HF digital, WSPR: the generator's five stations (types 1, 2 and 3), then four stations at -26 dB (2500 Hz) with DT +-1.5 s and the
 // receiving side's faults (dial error +-100 Hz with clock +-100 ppm, upside down), and noise alone (no false decodes).
 #include "hfdig_ftx_testutil.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/mode_synth.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/engine/mode_synth.h"
 #include <chrono>
 using namespace ftxtest;
 static int fails = 0;

@@ -1,8 +1,8 @@
 // RS41: known answers. The example frame is the one printed in rs1729/RS rs41/rs41.txt (de-whitened bytes; the printed copy has a stray
 // nibble in the parity and loses the last zeros, repaired here: the parity is then confirmed by our own RS encoder, which is a check
 // of the code's polynomial and root choice, and every block CRC is confirmed). Plus RS error correction and the symbol path.
-#include "dect2/sonde_rs41.h"
-#include "dect2/sonde_geo.h"
+#include "dect2/sonde/sonde_rs41.h"
+#include "dect2/sonde/sonde_geo.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

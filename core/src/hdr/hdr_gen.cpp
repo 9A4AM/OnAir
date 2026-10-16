@@ -1,11 +1,11 @@
 // HD Radio test signal (see hdr_gen.h): the station's Layer 2 content, the FM MP1 or AM MA1 Layer 1 frames, the analog host, resampling
 // to the radio's rate, carrier offset and noise.
-#include "dect2/hdr_gen.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/gen_util.h"
-#include "dect2/hdr_fec.h"
-#include "dect2/hdr_l2.h"
-#include "dect2/hdr_phy.h"
+#include "dect2/hdr/hdr_gen.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/hdr/hdr_fec.h"
+#include "dect2/hdr/hdr_l2.h"
+#include "dect2/hdr/hdr_phy.h"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

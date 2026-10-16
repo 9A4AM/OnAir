@@ -3,11 +3,11 @@
 // decision between C=1 and C=3780 for PN595 signals. The C=1 frame layout (system information first, no scrambling beyond the data scrambler) is
 // taken from the dtmb-sdr project (c1.cpp) and the standard as recalled; two recordings of real C=1 transmitters (issue #58, test_dtmb_onair.cpp)
 // agree with it once the PN595 header is the on-air one.
-#include "dect2/dtmb_demod.h"
-#include "dect2/dtmb_front.h"
-#include "dect2/dtmb_gen.h"
-#include "dect2/dtmb_map.h"
-#include "dect2/dtmb_testkit.h"
+#include "dect2/dtmb/dtmb_demod.h"
+#include "dect2/dtmb/dtmb_front.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_map.h"
+#include "dect2/dtmb/dtmb_testkit.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

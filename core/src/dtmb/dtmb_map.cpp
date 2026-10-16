@@ -1,5 +1,5 @@
 // DTMB constellation mapping and soft demapping (see dtmb_map.h).
-#include "dect2/dtmb_map.h"
+#include "dect2/dtmb/dtmb_map.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

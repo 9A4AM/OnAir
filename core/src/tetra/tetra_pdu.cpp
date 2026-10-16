@@ -1,5 +1,5 @@
 // TETRA broadcast PDUs (tetra_pdu.h).
-#include "dect2/tetra_pdu.h"
+#include "dect2/tetra/tetra_pdu.h"
 #include <cstdio>
 #include <random>
 

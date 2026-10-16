@@ -4,10 +4,10 @@
 // start time; and the generator's audio through the whole receiver (IQ at 1 MHz, tests/impair.h: frequency offset, clock, noise).
 #include "hfdig_ftx_testutil.h"
 #include "../impair.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/mode_synth.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/engine/mode_synth.h"
 #include <chrono>
 #include <limits>
 using namespace ftxtest;

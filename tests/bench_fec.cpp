@@ -1,5 +1,5 @@
-#include "dect2/gpu_ldpc.h"
-#include "dect2/t2fec.h"
+#include "dect2/dsp/gpu_ldpc.h"
+#include "dect2/t2/t2fec.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

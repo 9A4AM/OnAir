@@ -1,5 +1,5 @@
 // The channel scanner accepts any radio the receiver can open (not only a HackRF), and refuses what cannot work with a clear reason.
-#include "dect2/scanner.h"
+#include "dect2/engine/scanner.h"
 #include <cstdio>
 
 using namespace dect2;

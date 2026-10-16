@@ -4,7 +4,7 @@
 // an IQ recording (the same as Record IQ) until LOS. TLEs are downloaded from Celestrak or Keplerpass on request, or pasted.
 #include "app.h"
 #include "gallery.h"
-#include "dect2/passes.h"
+#include "dect2/geo/passes.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

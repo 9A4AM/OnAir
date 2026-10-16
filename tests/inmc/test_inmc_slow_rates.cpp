@@ -1,6 +1,6 @@
 // Inmarsat-C at the sample rates of the radios: 0.25 (RTL-SDR minimum), 0.96, 2, 2.4, 3.2, 8, 10, 20 Msps, with a non-integer ratio among them.
 // Slow: the generator has to make up to 20 million samples a second.
-#include "dect2/inmc_testutil.h"
+#include "dect2/inmc/inmc_testutil.h"
 using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)

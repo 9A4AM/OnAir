@@ -1,10 +1,10 @@
 // GOES HRIT test signal (goes_gen.h).
-#include "dect2/goes_gen.h"
-#include "dect2/goes_rx.h"
-#include "dect2/hfdig_hamdrm.h"
-#include "dect2/inflate.h"
-#include "dect2/meteor_proto.h"
-#include "dect2/ccsds.h"
+#include "dect2/goes/goes_gen.h"
+#include "dect2/goes/goes_rx.h"
+#include "dect2/hfdig/hfdig_hamdrm.h"
+#include "dect2/common/inflate.h"
+#include "dect2/meteor/meteor_proto.h"
+#include "dect2/ccsds/ccsds.h"
 #include <cmath>
 #include <deque>
 #include <random>

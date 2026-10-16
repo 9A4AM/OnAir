@@ -1,5 +1,5 @@
 // ACARS at the sample rates of the radios: 1 (the minimum), 2, 2.4, 8 and 10 Msps (HackRF exact rates, RTL-SDR), and a rate that is not a multiple of 100 kHz.
-#include "dect2/acars_sim.h"
+#include "dect2/acars/acars_sim.h"
 #include <cstdio>
 using namespace dect2;
 static int fails = 0;

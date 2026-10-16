@@ -1,5 +1,5 @@
 // MAC/packet codes: Golay header, BCH of line 625, Hamming 8/4, CRC, interleaving, companded sound blocks, SI data groups.
-#include "dect2/mac_proto.h"
+#include "dect2/mac/mac_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

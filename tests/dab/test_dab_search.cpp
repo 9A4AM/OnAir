@@ -1,8 +1,8 @@
 // DAB sync search on channels with no DAB: silence and signals with deep power dips look like a null symbol, and the phase reference search that
 // follows is the costly part. It must not run on every block that comes in (that took ten times real time), and a DAB signal that starts after
 // them must still be found.
-#include "dect2/dab.h"
-#include "dect2/dab_gen.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

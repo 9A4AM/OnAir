@@ -1,9 +1,9 @@
 // CDR tables and building blocks against values printed in GY/T 268.1-2013 / GY/T 268.2-2013 (as published by the NRTA) and against
 // independent implementations, so that the generator and the receiver are not only checked against each other. Quick.
-#include "dect2/cdr_defs.h"
-#include "dect2/cdr_ldpc.h"
-#include "dect2/cdr_mux.h"
-#include "dect2/dab.h"
+#include "dect2/cdr/cdr_defs.h"
+#include "dect2/cdr/cdr_ldpc.h"
+#include "dect2/cdr/cdr_mux.h"
+#include "dect2/dab/dab.h"
 #include <cmath>
 #include <complex>
 #include <cstdio>

@@ -1,10 +1,10 @@
 // dPMR receiver against the test signal with real-world faults: +-1 kHz offset, off centre with clock errors, noise, symbol errors, a call
 // joined late, a call without its end frame, all at once, scanning the 16 PMR446 channels; and noise only.
 // Silent.
-#include "dect2/dpmr_gen.h"
-#include "dect2/dpmr_rx.h"
-#include "dect2/dpmr_tel.h"
-#include "dect2/dpmr_proto.h"
+#include "dect2/dpmr/dpmr_gen.h"
+#include "dect2/dpmr/dpmr_rx.h"
+#include "dect2/dpmr/dpmr_tel.h"
+#include "dect2/dpmr/dpmr_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>

@@ -1,9 +1,9 @@
 // DECT screens: the base stations heard on a carrier (RFPI, manufacturer code, level, slot, how often), the system information they send and the
 // burst log. Activity and signalling only: the voice is encrypted and its codec is not decoded, and nothing is sent.
 #include "app.h"
-#include "dect2/dect_proto.h"
-#include "dect2/dect_rx.h"
-#include "dect2/dect_tel.h"
+#include "dect2/dect/dect_proto.h"
+#include "dect2/dect/dect_rx.h"
+#include "dect2/dect/dect_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

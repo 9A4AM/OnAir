@@ -1,8 +1,8 @@
 // Mixed-radix FFT (see dtmb_fft.h). Decimation in time in Stockham form: a level of radix r with sub-length m (n = r m) and stride s reads
 // in[q + s (r p + k)] for k < r, multiplies by exp(-j 2 pi p k / n), takes the r point DFT and writes out[q + s (p + m j)]. The levels are
 // applied from the one with the largest stride (the first radix to be computed) to the one with stride 1, which produces the natural order.
-#include "dect2/dtmb_fft.h"
-#include "dect2/simd.h"
+#include "dect2/dtmb/dtmb_fft.h"
+#include "dect2/dsp/simd.h"
 #include <cmath>
 #include <stdexcept>
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)

@@ -1,5 +1,5 @@
-#include "dect2/text_charset.h"
-#include "dect2/ts.h"
+#include "dect2/common/text_charset.h"
+#include "dect2/tv/ts.h"
 #include <algorithm>
 #include <cstring>
 #ifdef _WIN32

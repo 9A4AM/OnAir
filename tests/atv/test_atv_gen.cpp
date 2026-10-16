@@ -1,9 +1,9 @@
 // Analog TV test-signal generator, checked by an analysis that does not use the receiver: the composite video is read from the generator's
 // tap and measured against the numbers of BT.470-6 (pulse widths, line and field timing, levels, burst, colour bars), and the radio
 // signal is demodulated with an ideal frequency-domain detector and measured against what the standard asks of the transmitted spectrum.
-#include "dect2/atv_card.h"
-#include "dect2/atv_gen.h"
-#include "dect2/fftutil.h"
+#include "dect2/atv/atv_card.h"
+#include "dect2/atv/atv_gen.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

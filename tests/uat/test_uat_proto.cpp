@@ -1,6 +1,6 @@
-#include "dect2/uat_proto.h"
-#include "dect2/uat_decode_c.h"
-#include "dect2/uat_frame.h"
+#include "dect2/uat/uat_proto.h"
+#include "dect2/uat/uat_decode_c.h"
+#include "dect2/uat/uat_frame.h"
 extern "C" {
 void init_fec(void);
 int correct_adsb_frame(uint8_t* to, int* rs_errors);

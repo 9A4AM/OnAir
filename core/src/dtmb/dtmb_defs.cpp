@@ -11,7 +11,7 @@
 //  - 4QAM-NR: Nordstrom-Robinson table of appendix C (via dtmb-sdr tests/nr_appendix_c.txt); the test checks that it is a (16,256,6) code
 //    with the weight distribution 1, 112, 30, 112, 1.
 // None of this has been compared with the printed standard.
-#include "dect2/dtmb_defs.h"
+#include "dect2/dtmb/dtmb_defs.h"
 #include <cmath>
 #include <cstring>
 

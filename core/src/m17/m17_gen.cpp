@@ -1,8 +1,8 @@
 // M17 test signal (see m17_gen.h): whole M17 transmissions as 4FSK, over noise.
-#include "dect2/m17_gen.h"
-#include "dect2/m17_codec2.h"
-#include "dect2/m17_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/m17/m17_gen.h"
+#include "dect2/m17/m17_codec2.h"
+#include "dect2/m17/m17_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

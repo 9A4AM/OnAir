@@ -1,5 +1,5 @@
 // DTMB demodulator pieces (see dtmb_demod.h).
-#include "dect2/dtmb_demod.h"
+#include "dect2/dtmb/dtmb_demod.h"
 #include <algorithm>
 #include <cmath>
 #include "dtmb_simd.h"

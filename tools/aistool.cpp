@@ -2,8 +2,8 @@
 //   aistool gen <secs> <file.cs8|.cf32> [--rate sps] [--snr dB] [--cfo Hz] [--sro ppm] [--vessels n] [--seed n] [--speed x] [--equal] [--only-vessels]
 //   aistool rx <file> --rate <sps> [--format cs8|cu8|cf32] [--offset Hz] [--quiet]
 // rx prints the !AIVDM sentences as they are decoded, then the counters and the station table.
-#include "dect2/ais_gen.h"
-#include "dect2/ais_rx.h"
+#include "dect2/ais/ais_gen.h"
+#include "dect2/ais/ais_rx.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

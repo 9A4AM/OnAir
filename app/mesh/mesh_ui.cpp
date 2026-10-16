@@ -2,11 +2,11 @@
 // packet log with the raw payload, settings (band plan, protocols, presets, channel keys); LoRaWAN device table and frame log with filters.
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/packet_aprs.h"
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_presets.h"
+#include "dect2/packet/packet_aprs.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_presets.h"
 #include "results_export.h"
-#include "dect2/mesh_report.h"
+#include "dect2/mesh/mesh_report.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

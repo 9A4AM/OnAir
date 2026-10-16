@@ -1,4 +1,4 @@
-#include "dect2/t2pilots.h"
+#include "dect2/t2/t2pilots.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

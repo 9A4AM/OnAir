@@ -2,8 +2,8 @@
 // the decoded displacements, sea state words (wave height and period, temperatures, position) and the directional spectrum, from the Datawell Waverider
 // Reference Manual; for the 4FSK HVA format only measurements (its over-the-air coding is not public). Receive only.
 #include "app.h"
-#include "dect2/datawell_rx.h"
-#include "dect2/datawell_tel.h"
+#include "dect2/datawell/datawell_rx.h"
+#include "dect2/datawell/datawell_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

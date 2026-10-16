@@ -1,9 +1,9 @@
 // Whole-span decoding: the carrier finder on synthetic carriers (offsets, levels, appearing and vanishing, the cap, adjacent channels) and the
 // DMR bank on several generated DMR carriers at once (different levels, offsets of +-1 kHz, one that appears late).
-#include "dect2/carrierfind.h"
-#include "dect2/dmr_gen.h"
-#include "dect2/wide_modes.h"
-#include "dect2/t2rx.h"
+#include "dect2/dsp/carrierfind.h"
+#include "dect2/dmr/dmr_gen.h"
+#include "dect2/engine/wide_modes.h"
+#include "dect2/t2/t2rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

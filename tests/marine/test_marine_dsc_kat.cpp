@@ -1,5 +1,5 @@
 // DSC symbol code, number fields and call layout against ITU-R M.493 (Table 1 in full, the packing rules and the call tables).
-#include "dect2/marine_dsc.h"
+#include "dect2/marine/marine_dsc.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

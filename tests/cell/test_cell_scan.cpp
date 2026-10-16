@@ -1,11 +1,11 @@
 // Cell towers, the band scan's search of one 20 Msps step: several 5 MHz carriers side by side (no gap in the spectrum between them),
 // each with two or three cells 3-10 dB apart, synchronised (one site's sectors, and two cells of the same NID2) or not (other sites).
 // Every cell must be listed, the ones 6 dB or less under the strongest with their MIB; noise alone must list nothing.
-#include "dect2/cell_dsp.h"
-#include "dect2/cell_gen.h"
-#include "dect2/cell_lte.h"
-#include "dect2/cell_rx.h"
-#include "dect2/cell_tel.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/cell/cell_gen.h"
+#include "dect2/cell/cell_lte.h"
+#include "dect2/cell/cell_rx.h"
+#include "dect2/cell/cell_tel.h"
 #include "../impair.h"
 #include <chrono>
 #include <cmath>

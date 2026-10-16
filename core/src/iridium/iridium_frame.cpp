@@ -1,7 +1,7 @@
 // Iridium frame layer: classification, BCH, de-interleaving and field decoding of one burst, pager message assembly, and the
 // builders for the test signal. Written from the field layouts of iridium-toolkit (bitsparser.py, bch.py, FORMAT.md) and the
 // symbol mapping of gr-iridium (iridium_qpsk_demod_impl.cc); the code is our own.
-#include "dect2/iridium_frame.h"
+#include "dect2/iridium/iridium_frame.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

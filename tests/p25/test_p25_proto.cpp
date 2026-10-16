@@ -1,6 +1,6 @@
 // P25 Phase 1 protocol: the NID BCH, Reed-Solomon, Hamming and Golay codes with errors, the trellis code, TSBK CRC, link control and
 // encryption sync fields, the IMBE interleave.
-#include "dect2/p25_proto.h"
+#include "dect2/p25/p25_proto.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>

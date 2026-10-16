@@ -1,8 +1,8 @@
 // DRM test signal: DRM30 transmitter (modes A to D), DRM+ (mode E), the channels of Annex B.1, and the synthetic source.
-#include "dect2/drm_gen.h"
-#include "dect2/drm_fec.h"
-#include "dect2/drm_fft.h"
-#include "dect2/exact_resampler.h"
+#include "dect2/drm/drm_gen.h"
+#include "dect2/drm/drm_fec.h"
+#include "dect2/drm/drm_fft.h"
+#include "dect2/dsp/exact_resampler.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

@@ -1,5 +1,5 @@
 // GPS navigation message and the models of IS-GPS-200 (see gnss_nav.h).
-#include "dect2/gnss_nav.h"
+#include "dect2/gnss/gnss_nav.h"
 #include <cmath>
 
 namespace dect2 {

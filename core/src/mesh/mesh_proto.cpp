@@ -4,7 +4,7 @@
 // meshcore-dev/MeshCore src/helpers/BaseChatMesh.cpp (addChannel), examples/companion_radio/MyMesh.cpp (Public channel PSK),
 // src/helpers/radiolib (sync word, preamble), api.meshcore.nz/api/v1/config (community presets, read 2026-10).
 #include "mesh_proto_internal.h"
-#include "dect2/mesh_crypto.h"
+#include "dect2/mesh/mesh_crypto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

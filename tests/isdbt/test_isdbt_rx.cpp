@@ -1,7 +1,7 @@
 // ISDB-T receiver end to end: generator -> radio impairments (carrier offset, noise, echo, sample rate) -> receiver -> transport stream.
-#include "dect2/exact_resampler.h"
-#include "dect2/isdbt_gen.h"
-#include "dect2/isdbt_rx.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/isdbt/isdbt_gen.h"
+#include "dect2/isdbt/isdbt_rx.h"
 #include "../jobs.h"
 #include <algorithm>
 #include <atomic>

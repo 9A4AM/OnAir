@@ -1,6 +1,6 @@
-#include "dect2/rx_json.h"
-#include "dect2/gain_opt.h"
-#include "dect2/remote_api.h"
+#include "dect2/results/rx_json.h"
+#include "dect2/source/gain_opt.h"
+#include "dect2/net/remote_api.h"
 #include <cstdio>
 
 namespace dect2 {

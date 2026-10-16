@@ -2,9 +2,9 @@
 // code, the puncturing tables, the frequency interleaver, the phase reference symbol, DQPSK), the same steps compared with the receiver's independent
 // implementation in dab_fec.cpp, the frame structure in the time domain, the AAC-LC encoder (decoded with libavcodec), the superframe, the levels, the
 // chunk independence, the carrier and clock offsets, and the speed of the generator.
-#include "dect2/dab.h"
-#include "dect2/dab_gen.h"
-#include "dect2/fftutil.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/dsp/fftutil.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>

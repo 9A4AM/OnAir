@@ -1,5 +1,5 @@
 // Bluetooth LE advertising PDUs and advertising data (see ble_proto.h).
-#include "dect2/ble_proto.h"
+#include "dect2/ble/ble_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

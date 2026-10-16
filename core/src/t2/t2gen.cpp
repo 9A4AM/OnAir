@@ -1,7 +1,7 @@
-#include "dect2/t2gen.h"
-#include "dect2/t2interleave.h"
-#include "dect2/t2fec.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/t2/t2gen.h"
+#include "dect2/t2/t2interleave.h"
+#include "dect2/t2/t2fec.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <cmath>
 #include <cstring>
 #include <algorithm>

@@ -1,9 +1,9 @@
 // VDL Mode 4 test signal: see vdl4_gen.h.
-#include "dect2/vdl4_gen.h"
-#include "dect2/vdl4_proto.h"
-#include "dect2/vdl4_rx.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
+#include "dect2/vdl4/vdl4_gen.h"
+#include "dect2/vdl4/vdl4_proto.h"
+#include "dect2/vdl4/vdl4_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
 #include <algorithm>
 #include <cmath>
 #include <queue>

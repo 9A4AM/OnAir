@@ -3,8 +3,8 @@
 #include "app.h"
 #include "clocksync_ui.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/gnss_interf.h"
-#include "dect2/rate_choice.h"
+#include "dect2/gnss/gnss_interf.h"
+#include "dect2/engine/rate_choice.h"
 #include <cctype>
 #include <cmath>
 #include <ctime>

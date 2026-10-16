@@ -1,5 +1,5 @@
 // Navigation beacon list (CSV import) and the two-radial position fix (see vor_db.h).
-#include "dect2/vor_db.h"
+#include "dect2/vor/vor_db.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

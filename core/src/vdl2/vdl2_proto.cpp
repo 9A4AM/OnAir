@@ -1,8 +1,8 @@
 // VDL Mode 2 bit layer, AVLC and the protocols above it: see vdl2_proto.h.
-#include "dect2/vdl2_proto.h"
-#include "dect2/acars_proto.h"
-#include "dect2/aero_adsc.h"
-#include "dect2/aero_pos.h"
+#include "dect2/vdl2/vdl2_proto.h"
+#include "dect2/acars/acars_proto.h"
+#include "dect2/aero/aero_adsc.h"
+#include "dect2/aero/aero_pos.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

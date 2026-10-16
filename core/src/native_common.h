@@ -1,8 +1,8 @@
 // Shared parts of the native radio drivers (source_rtlsdr.cpp, source_airspy.cpp, source_sdrplay.cpp, ...): loading a radio's own library at run time and the
 // base class every native source builds on.
 #pragma once
-#include "dect2/source.h"
-#include "dect2/ring.h"
+#include "dect2/source/source.h"
+#include "dect2/common/ring.h"
 #include <algorithm>
 #include <atomic>
 #include <cctype>

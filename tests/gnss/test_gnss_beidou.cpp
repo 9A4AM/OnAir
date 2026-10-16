@@ -3,10 +3,10 @@
 // was sent, the position fixed with BeiDou alone; and GPS and BeiDou together in one 20 Msps tune at 1568.26 MHz, BeiDou in the combined fix with
 // the broadcast BDT - GPS offset or a clock unknown of its own. The faults of tests/impair.h: +-5 kHz, a sample clock 20 ppm off, low C/N0, a start
 // in the middle of a subframe.
-#include "dect2/gnss_bds.h"
-#include "dect2/gnss_codes.h"
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_bds.h"
+#include "dect2/gnss/gnss_codes.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include "gnss_faults.h"
 #include <cmath>
 #include <cstring>

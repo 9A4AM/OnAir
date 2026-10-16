@@ -1,8 +1,8 @@
 // AIS test signal: GMSK bursts (ITU-R M.1371-5 annex 2: BT 0.4, 9600 bit/s, modulation index 0.5) and a simulated port area.
 // The modulator is the textbook one: the data bits drive a Gaussian frequency pulse, the phase is its integral, one bit moves the phase by pi/2.
-#include "dect2/ais_gen.h"
-#include "dect2/ais_tel.h"
-#include "dect2/gen_util.h"
+#include "dect2/ais/ais_gen.h"
+#include "dect2/ais/ais_tel.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <map>

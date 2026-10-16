@@ -10,22 +10,22 @@
 //   dect2cli --standard tetra --freq 392.5   (TETRA network information: the cells found are listed at the end; receive only, nothing is decrypted)
 //     onair_dvb_554.000MHz_10Msps_20261009-071530.cs8, which reopens with the right rate and format)
 //   dect2cli --standard ble --ble-channel 37|38|39   (Bluetooth LE advertising, receive only: devices and packets in the status line and the log)
-#include "dect2/wisun_proto.h"
-#include "dect2/ais_proto.h"
-#include "dect2/wifi_proto.h"
-#include "dect2/rate_choice.h"
-#include "dect2/ble_proto.h"
-#include "dect2/engine.h"
-#include "dect2/flarm_proto.h"
-#include "dect2/iq_file.h"
-#include "dect2/crash_report.h"
-#include "dect2/modes.h"
-#include "dect2/dvbt.h"
-#include "dect2/channel.h"
-#include "dect2/quality.h"
-#include "dect2/nettuner.h"
-#include "dect2/platform.h"
-#include "dect2/timecompat.h"
+#include "dect2/wisun/wisun_proto.h"
+#include "dect2/ais/ais_proto.h"
+#include "dect2/wifi/wifi_proto.h"
+#include "dect2/engine/rate_choice.h"
+#include "dect2/ble/ble_proto.h"
+#include "dect2/engine/engine.h"
+#include "dect2/flarm/flarm_proto.h"
+#include "dect2/source/iq_file.h"
+#include "dect2/engine/crash_report.h"
+#include "dect2/engine/modes.h"
+#include "dect2/dvbt/dvbt.h"
+#include "dect2/channels/channel.h"
+#include "dect2/engine/quality.h"
+#include "dect2/net/nettuner.h"
+#include "dect2/common/platform.h"
+#include "dect2/common/timecompat.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

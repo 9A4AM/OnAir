@@ -1,7 +1,7 @@
 // DVB-T receiver load: how much of real time does the receive path need for a given mode?
 //   bench_dvbt [frames] [mode 0=2K 1=8K] [constellation 0..2] [gi 0..3]
-#include "dect2/dvbt_gen.h"
-#include "dect2/dvbt_rx.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/dvbt/dvbt_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

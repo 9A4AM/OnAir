@@ -1,8 +1,8 @@
 // The DMB video service of the DAB test transmitter (see dab_gen.h): the test picture and its H.264 writer, AAC-LC sound from libavcodec,
 // MPEG-4 Systems in an MPEG-2 transport stream (ETSI TS 102 428) and the outer code of TS 102 427 (RS(204,188) and the Forney interleaver).
-#include "dect2/dab_gen.h"
-#include "dect2/dvbt.h"
-#include "dect2/ts.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/dvbt/dvbt.h"
+#include "dect2/tv/ts.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>

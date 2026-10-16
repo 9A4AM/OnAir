@@ -1,5 +1,5 @@
 // Meteor-M LRPT layers above the demodulator (see meteor_proto.h).
-#include "dect2/meteor_proto.h"
+#include "dect2/meteor/meteor_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

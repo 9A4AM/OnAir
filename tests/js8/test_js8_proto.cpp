@@ -1,6 +1,6 @@
 // JS8 protocol: the CRC-12 frame, the (174,87) code (every parity check holds, decoding through noise and bit errors), the tones and
 // Costas arrays of the three submodes, callsign / grid / 50-bit call packing, heartbeat, CQ, directed, data frames, a whole message.
-#include "dect2/js8_proto.h"
+#include "dect2/js8/js8_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

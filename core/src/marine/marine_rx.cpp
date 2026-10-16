@@ -1,9 +1,9 @@
 #include "../ham_listen.h"
-#include "dect2/marine_rx.h"
-#include "dect2/marine_dsc.h"
-#include "dect2/marine_dsp.h"
-#include "dect2/marine_navtex.h"
-#include "dect2/results_io.h"
+#include "dect2/marine/marine_rx.h"
+#include "dect2/marine/marine_dsc.h"
+#include "dect2/marine/marine_dsp.h"
+#include "dect2/marine/marine_navtex.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

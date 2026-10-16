@@ -1,4 +1,4 @@
-#include "dect2/imgproc.h"
+#include "dect2/dsp/imgproc.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

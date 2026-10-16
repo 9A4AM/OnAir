@@ -1,7 +1,7 @@
 // Inmarsat Aero receiver at the radios' sample rates (0.25, 2.4, 8, 10 Msps), with all three channel rates in band (600 bit/s too),
 // and fed in chunks of 1, 7 and 65536 samples: the channels are found, the rate is found, the frames are bit-exact.
-#include "dect2/aero_gen.h"
-#include "dect2/aero_rx.h"
+#include "dect2/aero/aero_gen.h"
+#include "dect2/aero/aero_rx.h"
 #include <chrono>
 #include <ctime>
 #include <cmath>

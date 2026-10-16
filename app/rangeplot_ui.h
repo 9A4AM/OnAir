@@ -1,8 +1,8 @@
 // The receiver-range view shared by ADS-B and AIS: a polar plot (north up) of the furthest position heard in each 5 degree sector, rings in
-// the display unit, a rolling-window choice, Reset, and export to PNG or CSV. The maths is dect2/rangeplot.h; this is only drawing.
+// the display unit, a rolling-window choice, Reset, and export to PNG or CSV. The maths is dect2/geo/rangeplot.h; this is only drawing.
 #pragma once
 #include "app.h"
-#include "dect2/rangeplot.h"
+#include "dect2/geo/rangeplot.h"
 #include "results_export.h"
 #include <cmath>
 #include <ctime>

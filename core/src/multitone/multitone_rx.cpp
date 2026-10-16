@@ -1,10 +1,10 @@
 // Multitone paging detector (see multitone_rx.h): the front end of the pager receiver, an FM discriminator, then a per-transmission analysis.
-#include "dect2/multitone_rx.h"
-#include "dect2/multitone_tel.h"
-#include "dect2/dmr_dsp.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/fftutil.h"
-#include "dect2/results_io.h"
+#include "dect2/multitone/multitone_rx.h"
+#include "dect2/multitone/multitone_tel.h"
+#include "dect2/dmr/dmr_dsp.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

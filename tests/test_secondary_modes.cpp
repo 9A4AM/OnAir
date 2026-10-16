@@ -1,10 +1,10 @@
 // Modes that may run as the second decoder (Engine::setSecondary): for each of the narrow-channel modes added after the first allow-list, the mode's
 // own test signal is written as a recording; it must decode (a) as the first mode alone and (b) as the second mode beside VDL Mode 2 (which only sees
 // noise in it), through latestRx2(), with the same kind of result. Modes that stay refused must say why. SEC_MODES="65 67" limits the run.
-#include "dect2/engine.h"
-#include "dect2/mode_synth.h"
-#include "dect2/mode_tuning.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/mode_synth.h"
+#include "dect2/engine/mode_tuning.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

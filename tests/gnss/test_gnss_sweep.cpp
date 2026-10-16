@@ -1,7 +1,7 @@
 // Signal strength sweep: the same sky with the zenith C/N0 lowered. Lower satellites are weaker still (down to 9 dB under the zenith one), so each run shows
 // how many satellites each level yields. The numbers are printed: where acquisition stops, where bits stop decoding, where the fix is lost.
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include <cmath>
 #include <cstdio>
 using namespace dect2;

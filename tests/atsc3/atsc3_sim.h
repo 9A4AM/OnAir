@@ -1,8 +1,8 @@
 // Shared pieces of the ATSC 3.0 simulations: the test MP4 fragments, a sender that turns them into an IP packet stream, ALP and baseband packets.
 #pragma once
-#include "dect2/atsc3_alp.h"
-#include "dect2/atsc3_bb.h"
-#include "dect2/atsc3_receiver.h"
+#include "dect2/atsc3/atsc3_alp.h"
+#include "dect2/atsc3/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_receiver.h"
 #include <cstring>
 #include <fstream>
 #include <vector>

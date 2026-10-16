@@ -1,6 +1,6 @@
 // RS41: builder -> symbols -> decoder. Position, speed, time, battery, calibration progress, temperature and humidity (the builder inverts
 // the decoder's formulas: this checks the plumbing and the unit handling, not the sensor model), frequency and kill timer.
-#include "dect2/sonde_rs41.h"
+#include "dect2/sonde/sonde_rs41.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

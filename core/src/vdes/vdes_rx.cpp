@@ -1,11 +1,11 @@
 // VDES receiver: see vdes_rx.h. ASM goes through the AIS receiver (ais_rx.cpp), VDE-TER through a power detector per 25 kHz sub-channel and a
 // symbol-statistics classifier.
-#include "dect2/vdes_rx.h"
-#include "dect2/ais_rx.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/fftutil.h"
-#include "dect2/results_io.h"
-#include "dect2/vdes_gen.h"
+#include "dect2/vdes/vdes_rx.h"
+#include "dect2/ais/ais_rx.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/results/results_io.h"
+#include "dect2/vdes/vdes_gen.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

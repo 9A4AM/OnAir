@@ -1,5 +1,5 @@
 // DTMB channel coding: LDPC encoder against the parity-check matrix, decoder round trips, BCH, scrambler, interleaver, 4QAM-NR.
-#include "dect2/dtmb_ldpc.h"
+#include "dect2/dtmb/dtmb_ldpc.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -1,13 +1,13 @@
 // Iridium receiver: the detector runs in feed(), the bursts are demodulated and decoded on a worker thread that reads them from a
 // ring of input samples (no copy per burst on the feed side; a burst whose samples were overwritten before the worker got to it is
 // dropped and counted).
-#include "dect2/iridium_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/iridium_bits.h"
+#include "dect2/iridium/iridium_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/iridium/iridium_bits.h"
 #include <chrono>
-#include "dect2/iridium_frame.h"
-#include "dect2/iridium_phy.h"
-#include "dect2/iridium_sbd.h"
+#include "dect2/iridium/iridium_frame.h"
+#include "dect2/iridium/iridium_phy.h"
+#include "dect2/iridium/iridium_sbd.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

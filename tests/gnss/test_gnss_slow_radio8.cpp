@@ -1,8 +1,8 @@
 // What an RTL-SDR really delivers: 2.048, 2.4 or 2.56 Msps (asked for 4, the dongle stops at 2.56), unsigned 8-bit samples at a low level (the noise covers
 // only a few steps), a DC offset, I/Q gain and phase imbalance, and an oscillator that is 1.5 kHz off with a TCXO and warms up (drifts). The last case is a
 // dongle without a TCXO, 60 ppm off, at 2.048 Msps. The receiver must lock, decode and fix in every case.
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include <cmath>
 #include <cstdio>
 #include <iterator>

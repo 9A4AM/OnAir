@@ -1,9 +1,9 @@
 // PSK31 / PSK63 test signal (see psk_gen.h).
-#include "dect2/psk_gen.h"
-#include "dect2/psk_rx.h"
-#include "dect2/psk_tel.h"
-#include "dect2/psk_varicode.h"
-#include "dect2/gen_util.h"
+#include "dect2/psk/psk_gen.h"
+#include "dect2/psk/psk_rx.h"
+#include "dect2/psk/psk_tel.h"
+#include "dect2/psk/psk_varicode.h"
+#include "dect2/dsp/gen_util.h"
 #include <cmath>
 #include <complex>
 

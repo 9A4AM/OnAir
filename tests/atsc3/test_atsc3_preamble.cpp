@@ -1,6 +1,6 @@
 // ATSC 3.0, the front of a frame: bootstrap found in noise, then the Preamble (L1-Basic and L1-Detail across several OFDM symbols)
 // decoded through a channel with an echo.
-#include "dect2/atsc3_preamble.h"
+#include "dect2/atsc3/atsc3_preamble.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

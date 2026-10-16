@@ -1,7 +1,7 @@
 // The sample-rate choices of the app (rate_choice.h): the list per radio and mode, and the check of a typed rate.
-#include "dect2/rate_choice.h"
-#include "dect2/mode_tuning.h"
-#include "dect2/dvbs_rx.h"
+#include "dect2/engine/rate_choice.h"
+#include "dect2/engine/mode_tuning.h"
+#include "dect2/dvbs/dvbs_rx.h"
 #include "../core/src/native_common.h"
 #include <cmath>
 #include <cstdio>

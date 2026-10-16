@@ -1,5 +1,5 @@
 // Picture enhancement and the swath projection: LUT properties, percentile range, and lat/lon <-> pixel round trips on a synthetic pass.
-#include "dect2/imgproc.h"
+#include "dect2/dsp/imgproc.h"
 #include <cmath>
 #include <cstdio>
 using namespace dect2::img;

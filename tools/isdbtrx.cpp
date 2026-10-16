@@ -1,6 +1,6 @@
 // isdbtrx: decodes an ISDB-T IQ recording offline and writes the transport stream.
 //   isdbtrx recording.cs8 --rate 10e6 [--format cs8|cu8|cf32] [--out out.ts]
-#include "dect2/isdbt_rx.h"
+#include "dect2/isdbt/isdbt_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

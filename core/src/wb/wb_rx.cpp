@@ -1,5 +1,5 @@
-#include "dect2/wb_rx.h"
-#include "dect2/wb_tel.h"
+#include "dect2/wb/wb_rx.h"
+#include "dect2/wb/wb_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <mutex>

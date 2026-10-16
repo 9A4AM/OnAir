@@ -1,7 +1,7 @@
 // DTMB tables against what the standard (as quoted by other implementations) and the codes' own properties say.
-#include "dect2/dtmb_defs.h"
-#include "dect2/dtmb_ldpc.h"
-#include "dect2/dtmb_map.h"
+#include "dect2/dtmb/dtmb_defs.h"
+#include "dect2/dtmb/dtmb_ldpc.h"
+#include "dect2/dtmb/dtmb_map.h"
 #include <random>
 #include <cmath>
 #include <cstdio>

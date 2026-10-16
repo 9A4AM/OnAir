@@ -1,8 +1,8 @@
 // VDL Mode 2 through the engine (setStandard(29)): the synthetic source plays the test traffic, the receiver decodes it and reports through
 // latestRx(): frames, aircraft with positions, ground stations with their locations, every channel in the band; a retune keeps the report
 // numbers growing.
-#include "dect2/engine.h"
-#include "dect2/vdl2_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/vdl2/vdl2_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

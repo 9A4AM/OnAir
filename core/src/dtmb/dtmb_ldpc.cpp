@@ -1,6 +1,6 @@
 // DTMB LDPC codes, BCH, 4QAM-NR decoding (see dtmb_ldpc.h).
-#include "dect2/dtmb_ldpc.h"
-#include "dect2/simd.h"
+#include "dect2/dtmb/dtmb_ldpc.h"
+#include "dect2/dsp/simd.h"
 #include <array>
 #include <bit>
 #include <cmath>
@@ -206,7 +206,7 @@ LdpcCode::Decoder::Decoder(const LdpcCode& code) : code_(code) {
     hard_.assign(59 * 2, 0);
 }
 
-// The decoder body is compiled twice on x86-64 (baseline and AVX2 + FMA, picked at run time, see dect2/simd.h): the planar 128 lane loops below
+// The decoder body is compiled twice on x86-64 (baseline and AVX2 + FMA, picked at run time, see dect2/dsp/simd.h): the planar 128 lane loops below
 // are written to be vectorised by the compiler.
 DECT2_SIMD_MEMBER_BODY LdpcCode::Result LdpcCode::Decoder::decodeBody(const float* llr, uint8_t* info, int maxIter, float alpha) {
     const int c = code_.c_, e = code_.e_;

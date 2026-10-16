@@ -1,8 +1,8 @@
 // MAC television receiver (see mac_rx.h).
-#include "dect2/mac_rx.h"
-#include "dect2/mac_tel.h"
-#include "dect2/mac_proto.h"
-#include "dect2/audioout.h"
+#include "dect2/mac/mac_rx.h"
+#include "dect2/mac/mac_tel.h"
+#include "dect2/mac/mac_proto.h"
+#include "dect2/audio/audioout.h"
 #include "../atv/atv_dsp.h"
 #include <algorithm>
 #include <atomic>

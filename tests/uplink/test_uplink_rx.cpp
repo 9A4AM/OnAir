@@ -1,8 +1,8 @@
 // Mode S uplink receiver on the test signal, with impairments: every uplink format through the DPSK demodulator, noise near the threshold,
 // +-200 kHz offsets, overlapping interrogations of two interrogators, Mode A/C against Mode S, sidelobe P2 and P5, intermode all-calls,
 // and the test scene: interrogator codes, antenna rotation periods from the main-beam bursts, aircraft and their registers, ACAS.
-#include "dect2/uplink_gen.h"
-#include "dect2/uplink_rx.h"
+#include "dect2/uplink/uplink_gen.h"
+#include "dect2/uplink/uplink_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

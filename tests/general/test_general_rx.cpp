@@ -1,9 +1,9 @@
 // General receiver: a tone through each demodulator comes out at the right audio frequency and level; the squelch closes on noise
 // (auto and level), opens on a station; a channel off the dial is found by its offset; de-emphasis; WAV recording. No sound.
-#include "dect2/general_gen.h"
-#include "dect2/general_rx.h"
-#include "dect2/general_tel.h"
-#include "dect2/source.h"
+#include "dect2/general/general_gen.h"
+#include "dect2/general/general_rx.h"
+#include "dect2/general/general_tel.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <complex>
 #include <cstring>

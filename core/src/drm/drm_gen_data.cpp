@@ -1,7 +1,7 @@
 // DRM test signal: the content of a packet mode data service, MOT objects (ETSI EN 301 234, TS 101 499) in MSC data groups (EN 300 401 clause 5.3.3.1).
 // Written from the standards, not from the receiver's MotDecoder.
-#include "dect2/drm_gen.h"
-#include "dect2/dab.h"
+#include "dect2/drm/drm_gen.h"
+#include "dect2/dab/dab.h"
 #include <algorithm>
 #include <cstring>
 

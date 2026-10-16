@@ -1,7 +1,7 @@
 // QPSK carrier recovery for DVB-S (and as a building block for DVB-S2 QPSK): a frequency and phase estimate from the fourth power of the
 // symbols, and a decision directed phase locked loop. Internal.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <cstddef>
 
 namespace dect2 {

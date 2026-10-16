@@ -1,9 +1,9 @@
 // HamDRM transmitter (hfdig_hamdrm.h): the test audio of the HamDRM decoder. A file in a header segment and body segments, one data
 // group per OFDM frame, built at 12 kHz with the decoder's own layout (hfdig_hamdrm_int.h), put on 1600 Hz of the audio and brought to 8 kHz.
-#include "dect2/hfdig_hamdrm.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/drm_fft.h"
-#include "dect2/source.h"
+#include "dect2/hfdig/hfdig_hamdrm.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/drm/drm_fft.h"
+#include "dect2/source/source.h"
 #include "hfdig_hamdrm_int.h"
 #include <algorithm>
 #include <cmath>

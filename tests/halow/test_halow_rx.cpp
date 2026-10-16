@@ -1,11 +1,11 @@
 // Wi-Fi HaLow (802.11ah) monitor: the test signal through the receiver (halow_gen.h, halow_rx.h): the whole schedule, every width alone near
 // the threshold, carrier offsets of +-30 kHz (+-33 ppm at 915 MHz), sample clock error, other sample rates, a signal off the centre, a wrong
 // FCS, back-to-back PPDUs, noise alone, a continuous tone, and the results file.
-#include "dect2/gen_util.h"
-#include "dect2/halow_gen.h"
-#include "dect2/halow_proto.h"
-#include "dect2/halow_rx.h"
-#include "dect2/halow_tel.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/halow/halow_gen.h"
+#include "dect2/halow/halow_proto.h"
+#include "dect2/halow/halow_rx.h"
+#include "dect2/halow/halow_tel.h"
 #include <cstdio>
 #include <string>
 #include <vector>

@@ -1,7 +1,7 @@
-// FT8 / FT4 / FT2 / WSPR test audio (see dect2/hfdig_ftx.h): every slot the same stations with known messages, frequencies, levels and
+// FT8 / FT4 / FT2 / WSPR test audio (see dect2/hfdig/hfdig_ftx.h): every slot the same stations with known messages, frequencies, levels and
 // time offsets, from sample 0 = the start of a slot. Nothing is transmitted.
-#include "dect2/hfdig_ftx.h"
-#include "dect2/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_ftx.h"
+#include "dect2/hfdig/hfdig_gen.h"
 #include "hfdig_ftx_int.h"
 #include <algorithm>
 #include <chrono>

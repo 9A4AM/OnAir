@@ -1,5 +1,5 @@
 // Sound output: the backend opens (a silent device with correct timing when the computer has no sound), takes audio and plays it in real time.
-#include "dect2/audioout.h"
+#include "dect2/audio/audioout.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

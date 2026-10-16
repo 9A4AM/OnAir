@@ -1,5 +1,5 @@
 // e-Czas PCSK225 time frame decode (see eczas_proto.h). CRC/field layout from sp5wwp/e-Czas and GUM PDF v1.0.
-#include "dect2/eczas_proto.h"
+#include "dect2/eczas/eczas_proto.h"
 #include <cstring>
 
 namespace dect2::eczas {

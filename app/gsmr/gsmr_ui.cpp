@@ -3,9 +3,9 @@
 // once, and the log. Only what base stations broadcast to every mobile is shown.
 #include "app.h"
 #include "results_export.h"
-#include "dect2/gsmr_rx.h"
-#include "dect2/gsmr_si.h"
-#include "dect2/gsmr_tel.h"
+#include "dect2/gsmr/gsmr_rx.h"
+#include "dect2/gsmr/gsmr_si.h"
+#include "dect2/gsmr/gsmr_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

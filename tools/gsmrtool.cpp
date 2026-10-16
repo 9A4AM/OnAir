@@ -2,10 +2,10 @@
 //   gsmrtool <file> <rate Hz> <centre Hz> [cs8|cf32]     the whole receiver (spectrum, every carrier, synchronisation, BCCH)
 //   gsmrtool --gen <file.cf32> [scene] [seconds]          write the test signal (gsmr_gen.h) at 5 Msps, centred on 922.8 MHz
 // Receive only: it reads a file.
-#include "dect2/gsmr_gen.h"
-#include "dect2/gsmr_rx.h"
-#include "dect2/gsmr_tel.h"
-#include "dect2/source.h"
+#include "dect2/gsmr/gsmr_gen.h"
+#include "dect2/gsmr/gsmr_rx.h"
+#include "dect2/gsmr/gsmr_tel.h"
+#include "dect2/source/source.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

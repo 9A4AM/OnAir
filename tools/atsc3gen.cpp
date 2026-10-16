@@ -5,12 +5,12 @@
 //   atsc3gen --video v.mp4 --audio a.mp4 --out sample.cs8 [--rate 10e6] [--cfo 2500] [--snr 25] [--echo-us 2] [--echo-db -12] [--format cs8|cf32]
 //
 // The MP4 files must be fragmented with about one second per fragment, see tools/dev/make_atsc3_sample.sh.
-#include "dect2/atsc3_alp.h"
-#include "dect2/atsc3_bb.h"
-#include "dect2/atsc3_frame.h"
-#include "dect2/atsc3_ip.h"
-#include "dect2/atsc3_route.h"
-#include "dect2/atsc3_sync.h"
+#include "dect2/atsc3/atsc3_alp.h"
+#include "dect2/atsc3/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_frame.h"
+#include "dect2/atsc3/atsc3_ip.h"
+#include "dect2/atsc3/atsc3_route.h"
+#include "dect2/atsc3/atsc3_sync.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

@@ -2,8 +2,8 @@
 //   test_hls                      checks that the demo programme (MPEG-2 picture) is refused with a clear message
 //   test_hls <file.ts> [outdir]   streams a recorded transport stream and checks the playlist and the segments; with `outdir` they are
 //                                 written there, so that they can be looked at with ffprobe or played with a browser
-#include "dect2/demo_ts.h"
-#include "dect2/hls.h"
+#include "dect2/tv/demo_ts.h"
+#include "dect2/tv/hls.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

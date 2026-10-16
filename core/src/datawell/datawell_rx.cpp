@@ -1,9 +1,9 @@
 // Datawell Waverider buoy HF link monitor (see datawell_rx.h).
-#include "dect2/datawell_rx.h"
-#include "dect2/datawell_tel.h"
-#include "dect2/datawell_frames.h"
-#include "dect2/datawell_hxv.h"
-#include "dect2/fftutil.h"
+#include "dect2/datawell/datawell_rx.h"
+#include "dect2/datawell/datawell_tel.h"
+#include "dect2/datawell/datawell_frames.h"
+#include "dect2/datawell/datawell_hxv.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

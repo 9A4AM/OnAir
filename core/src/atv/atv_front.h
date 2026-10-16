@@ -1,7 +1,7 @@
 // Analog TV receiver, radio side: carrier search, the vision channel (mixer, vestigial-sideband filter, detectors) and the FM sound channel.
 #pragma once
-#include "dect2/atv_std.h"
-#include "dect2/ring.h"
+#include "dect2/atv/atv_std.h"
+#include "dect2/common/ring.h"
 #include <cstdint>
 #include <functional>
 #include <memory>

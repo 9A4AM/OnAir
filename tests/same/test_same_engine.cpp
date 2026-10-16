@@ -1,7 +1,7 @@
 // NOAA weather radio SAME through the engine (setStandard(78)): the synthetic source plays the test signal, the receiver reports through latestRx().
 // No sound.
-#include "dect2/engine.h"
-#include "dect2/same_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/same/same_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

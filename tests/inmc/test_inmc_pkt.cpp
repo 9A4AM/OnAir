@@ -1,7 +1,7 @@
 // Inmarsat-C packets: bulletin board and EGC parsing, multi-part and multi-frame assembly, ITA2 text, the message list limits.
 // The byte layouts are those of the open decoder "inmarsatc" (inmarsatc_parser.cpp); no recorded frame was available, so the
 // packets here are built from the documented field positions (see inmc_pkt.h for what is not confirmed).
-#include "dect2/inmc_pkt.h"
+#include "dect2/inmc/inmc_pkt.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

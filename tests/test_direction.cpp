@@ -1,5 +1,5 @@
 // Direction finder: drive the wizard with simulated antennas and check where it ends up.
-#include "dect2/direction.h"
+#include "dect2/dsp/direction.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

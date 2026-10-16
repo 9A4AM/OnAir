@@ -1,9 +1,9 @@
 // NB-IoT cells receiver (nbiot_rx.h): blocks of input, raster points searched, cells found and their broadcast decoded.
-#include "dect2/nbiot_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/cell_rx.h"
-#include "dect2/nbiot_phy.h"
-#include "dect2/nbiot_tel.h"
+#include "dect2/nbiot/nbiot_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/cell/cell_rx.h"
+#include "dect2/nbiot/nbiot_phy.h"
+#include "dect2/nbiot/nbiot_tel.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

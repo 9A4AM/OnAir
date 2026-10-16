@@ -1,5 +1,5 @@
 // MAC/packet codes and tables (see mac_proto.h).
-#include "dect2/mac_proto.h"
+#include "dect2/mac/mac_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

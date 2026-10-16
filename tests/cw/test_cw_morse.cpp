@@ -1,7 +1,7 @@
 // CW code table, callsign pattern and timing decoder: perfect keying from 5 to 50 WPM, Farnsworth spacing, hand keying (jitter, heavy
 // dashes), a change of speed, noise spikes and drop-outs.
-#include "dect2/cw_morse.h"
-#include "dect2/cw_gen.h"
+#include "dect2/cw/cw_morse.h"
+#include "dect2/cw/cw_gen.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

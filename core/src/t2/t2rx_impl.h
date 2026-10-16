@@ -1,13 +1,13 @@
-#include "dect2/t2rx.h"
-#include "dect2/t2ofdm.h"
-#include "dect2/resampler.h"
-#include "dect2/clock_correct.h"
-#include "dect2/platform.h"
-#include "dect2/t2pilots.h"
-#include "dect2/t2l1.h"
-#include "dect2/t2interleave.h"
+#include "dect2/t2/t2rx.h"
+#include "dect2/t2/t2ofdm.h"
+#include "dect2/dsp/resampler.h"
+#include "dect2/dsp/clock_correct.h"
+#include "dect2/common/platform.h"
+#include "dect2/t2/t2pilots.h"
+#include "dect2/t2/t2l1.h"
+#include "dect2/t2/t2interleave.h"
 
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 
 #include <algorithm>
 #include <array>

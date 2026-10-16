@@ -4,9 +4,9 @@
 // confidence, never a certain identification; only a DroneID packet that passes its CRC is one. The standard Remote ID broadcast (Wi-Fi / BLE) is the
 // Drone Remote ID mode.
 #include "app.h"
-#include "dect2/dji_gen.h"
-#include "dect2/dji_rx.h"
-#include "dect2/dji_tel.h"
+#include "dect2/dji/dji_gen.h"
+#include "dect2/dji/dji_rx.h"
+#include "dect2/dji/dji_tel.h"
 #include <algorithm>
 #include <cfloat>
 #include <cmath>

@@ -1,6 +1,6 @@
 // Multipath detector: a clean synthetic channel must read "none"; a strong echo must be found, with the right delay.
-#include "dect2/channel.h"
-#include "dect2/engine.h"
+#include "dect2/channels/channel.h"
+#include "dect2/engine/engine.h"
 #include "jobs.h"
 #include <chrono>
 #include <cstdio>

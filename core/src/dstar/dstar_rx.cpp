@@ -1,10 +1,10 @@
 // D-STAR receiver (see dstar_rx.h).
-#include "dect2/dstar_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/dstar_tel.h"
-#include "dect2/dstar_proto.h"
-#include "dect2/dstar_ambe.h"
-#include "dect2/audioout.h"
+#include "dect2/dstar/dstar_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dstar/dstar_tel.h"
+#include "dect2/dstar/dstar_proto.h"
+#include "dect2/dstar/dstar_ambe.h"
+#include "dect2/audio/audioout.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

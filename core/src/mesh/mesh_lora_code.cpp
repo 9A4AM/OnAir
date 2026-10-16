@@ -1,5 +1,5 @@
 // LoRa coding chain and the test signal's frame waveform. Sources are named in mesh_lora.h.
-#include "dect2/mesh_lora.h"
+#include "dect2/mesh/mesh_lora.h"
 #include <cmath>
 
 namespace dect2 {

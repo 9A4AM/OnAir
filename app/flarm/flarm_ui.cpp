@@ -4,10 +4,10 @@
 // flag are only counted ("privacy-flagged"), never listed, drawn, saved or sent anywhere.
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/flarm_proto.h"
-#include "dect2/flarm_rx.h"
-#include "dect2/flarm_tel.h"
-#include "dect2/maidenhead.h"
+#include "dect2/flarm/flarm_proto.h"
+#include "dect2/flarm/flarm_rx.h"
+#include "dect2/flarm/flarm_tel.h"
+#include "dect2/geo/maidenhead.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

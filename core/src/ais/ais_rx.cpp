@@ -2,18 +2,18 @@
 // Front end: mix out the signal offset, decimate to about 100 kHz, resample to exactly 96 kHz; each channel is mixed to zero, filtered and
 // decimated to 48 kHz (5 samples per bit). A power detector finds the bursts (they are short and stand alone), each one is cut out of a ring of samples
 // and decoded offline by aisDecodeBurst (ais_phy.cpp). The message layer and the station table are here.
-#include "dect2/ais_rx.h"
-#include "dect2/feeds.h"
-#include "dect2/ais_phy.h"
-#include "dect2/ais_proto.h"
-#include "dect2/dmr_dsp.h"
-#include "dect2/exact_resampler.h"
+#include "dect2/ais/ais_rx.h"
+#include "dect2/net/feeds.h"
+#include "dect2/ais/ais_phy.h"
+#include "dect2/ais/ais_proto.h"
+#include "dect2/dmr/dmr_dsp.h"
+#include "dect2/dsp/exact_resampler.h"
 #include <algorithm>
 #include <cmath>
 #include <deque>
 #include <mutex>
 #include <unordered_map>
-#include "dect2/results_io.h"
+#include "dect2/results/results_io.h"
 
 namespace dect2 {
 

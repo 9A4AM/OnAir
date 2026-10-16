@@ -1,4 +1,4 @@
-#include "dect2/wb_bits.h"
+#include "dect2/wb/wb_bits.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>

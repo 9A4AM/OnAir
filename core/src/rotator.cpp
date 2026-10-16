@@ -1,5 +1,5 @@
-#include "dect2/rotator.h"
-#include "dect2/remote_api.h"
+#include "dect2/source/rotator.h"
+#include "dect2/net/remote_api.h"
 #include "netcompat.h"
 #include <algorithm>
 #include <chrono>

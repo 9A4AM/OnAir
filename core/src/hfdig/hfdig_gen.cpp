@@ -1,8 +1,8 @@
 // HF digital test signal (see hfdig_gen.h): a decoder's test audio on the upper sideband, over noise. The test audio itself comes from
 // the decoders' own files.
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include "hfdig_usb.h"
 #include <algorithm>
 #include <cmath>

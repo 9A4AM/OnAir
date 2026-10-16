@@ -1,6 +1,6 @@
 // BFO audio (~1 kHz tone with PCSK225) to 500 Hz discriminator PCM (sp5wwp / scipy butter chain).
-#include "dect2/eczas_rx.h"
-#include "dect2/fftutil.h"
+#include "dect2/eczas/eczas_rx.h"
+#include "dect2/dsp/fftutil.h"
 #include "eczas_taps.h"
 #include <algorithm>
 #include <cmath>

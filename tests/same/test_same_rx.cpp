@@ -1,7 +1,7 @@
 // SAME receiver on synthetic signals, fed directly: back to back alerts with the attention tone and the end of message, carrier offsets, noise,
 // a corrupted repeat, a missing repeat, partial county codes, many locations, and no false alerts on noise.
-#include "dect2/same_gen.h"
-#include "dect2/same_rx.h"
+#include "dect2/same/same_gen.h"
+#include "dect2/same/same_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

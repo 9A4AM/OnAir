@@ -1,5 +1,5 @@
 // Wi-Fi frames and PHY pieces (wifi_proto.h): CRC-32 and CRC-16, the scrambled PPDU, beacons built and parsed back for each security.
-#include "dect2/wifi_proto.h"
+#include "dect2/wifi/wifi_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <string>

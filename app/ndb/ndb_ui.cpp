@@ -1,8 +1,8 @@
 // NDB screens: the Morse ident in large type, the tone it was keyed with, the speed, and the idents read so far.
 // The listener hears the keyed tone. HF beacons stay on their own screen.
 #include "app.h"
-#include "dect2/ndb_rx.h"
-#include "dect2/ndb_tel.h"
+#include "dect2/ndb/ndb_rx.h"
+#include "dect2/ndb/ndb_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <string>

@@ -1,6 +1,6 @@
 // DECT receiver on the generated signal: base stations found with their identities, handset bursts counted, CRC forms, noise gives nothing.
-#include "dect2/dect_gen.h"
-#include "dect2/dect_rx.h"
+#include "dect2/dect/dect_gen.h"
+#include "dect2/dect/dect_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

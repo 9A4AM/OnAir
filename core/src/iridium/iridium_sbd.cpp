@@ -1,5 +1,5 @@
 // Iridium short burst data: IDA reassembly, SBD headers, ACARS (see iridium_sbd.h for the sources).
-#include "dect2/iridium_sbd.h"
+#include "dect2/iridium/iridium_sbd.h"
 #include <algorithm>
 #include <cmath>
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "dect2/videoin.h"
+#include "dect2/audio/videoin.h"
 #include <atomic>
 #include <cstdint>
 #include <mutex>

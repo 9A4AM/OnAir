@@ -1,6 +1,6 @@
 // HF ALE through the engine (setStandard(51)): the synthetic source plays the test calls, the receiver reports through latestRx().
-#include "dect2/ale_rx.h"
-#include "dect2/engine.h"
+#include "dect2/ale/ale_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

@@ -1,5 +1,5 @@
 // ILS localizer / glide path frequency pairing, ICAO Annex 10 Volume I, 3.1.6.1 (checked against the list at sigidwiki.com).
-#include "dect2/ils.h"
+#include "dect2/ils/ils.h"
 #include <cmath>
 
 namespace dect2 {

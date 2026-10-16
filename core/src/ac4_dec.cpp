@@ -1,4 +1,4 @@
-#include "dect2/ac4_dec.h"
+#include "dect2/audio/ac4_dec.h"
 #include "native_common.h"
 #include <algorithm>
 #include <cstring>

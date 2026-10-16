@@ -1,8 +1,8 @@
 // Aero positions end to end: the test signal's position reports (ADS-C and a text POS report) through modulation, the receiver and
 // the SU layer into the aircraft table, with tracks; each aircraft's position is the one in the last report it sent.
-#include "dect2/aero_gen.h"
-#include "dect2/aero_pos.h"
-#include "dect2/aero_rx.h"
+#include "dect2/aero/aero_gen.h"
+#include "dect2/aero/aero_pos.h"
+#include "dect2/aero/aero_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <map>

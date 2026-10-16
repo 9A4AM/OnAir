@@ -1,6 +1,6 @@
 // VDL Mode 4 link layer and PHY helpers: see vdl4_proto.h.
-#include "dect2/vdl4_proto.h"
-#include "dect2/adsb_msg.h"
+#include "dect2/vdl4/vdl4_proto.h"
+#include "dect2/adsb/adsb_msg.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

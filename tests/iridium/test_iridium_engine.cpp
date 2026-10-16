@@ -1,8 +1,8 @@
 // Iridium through the engine as the interface and dect2cli use it: the synthetic source plays the test signal at 10 Msps (8-bit
 // samples, in real time), the engine must decode the satellites, ring alerts, time and pager messages, keep every sample and
 // report through latestRx().
-#include "dect2/engine.h"
-#include "dect2/iridium_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/iridium/iridium_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

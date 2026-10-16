@@ -1,7 +1,7 @@
 // Drone Remote ID messages (rid_proto.h): messages written byte by byte from the ASTM F3411-22a field tables, decoded; encode / decode
 // round trips of every type; a message pack; the BLE service data and the Wi-Fi vendor element; unknown values and malformed input.
-#include "dect2/rid_proto.h"
-#include "dect2/wifi_proto.h"
+#include "dect2/rid/rid_proto.h"
+#include "dect2/wifi/wifi_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

@@ -1,9 +1,9 @@
 // LoRa (raw) monitor (see loraraw_rx.h): channel filters and demodulators of mesh_lora.h, one per bandwidth and per spreading factor / sync word searched.
-#include "dect2/feeds.h"
-#include "dect2/loraraw_rx.h"
-#include "dect2/loraraw_tel.h"
-#include "dect2/mesh_lora.h"
-#include "dect2/results_io.h"
+#include "dect2/net/feeds.h"
+#include "dect2/loraraw/loraraw_rx.h"
+#include "dect2/loraraw/loraraw_tel.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

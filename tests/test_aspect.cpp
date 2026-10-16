@@ -1,5 +1,5 @@
 // Display aspect ratio: the pure computation, and an MPEG-2 clip with a sample aspect ratio decoded by FFmpeg the way the player does.
-#include "dect2/player.h"
+#include "dect2/tv/player.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>

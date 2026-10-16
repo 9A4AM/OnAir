@@ -1,5 +1,5 @@
 // GSM-R System Information messages (gsmr_si.h).
-#include "dect2/gsmr_si.h"
+#include "dect2/gsmr/gsmr_si.h"
 #include <algorithm>
 
 namespace dect2::gsmr {

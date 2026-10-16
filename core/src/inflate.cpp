@@ -1,4 +1,4 @@
-#include "dect2/inflate.h"
+#include "dect2/common/inflate.h"
 #include <cstring>
 
 namespace dect2 {

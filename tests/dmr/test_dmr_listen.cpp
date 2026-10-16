@@ -1,12 +1,12 @@
 // Listen-pack WAVs of a spoken phrase through every vocoder OnAir is allowed to encode with (Codec 2: M17 and FreeDV).
 // DMR / NXDN / dPMR / P25 / D-STAR have no encoder here (mbelib is decode-only), so those files are not written.
 // Set DECT2_VOICE_LISTEN_DIR (or writes next to the binary). Optional DECT2_VOICE_WAV, else voice_listen/00_original.wav.
-#include "dect2/hfdig_freedv.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/m17_codec2.h"
-#include "dect2/m17_gen.h"
-#include "dect2/m17_rx.h"
-#include "dect2/wb_export.h"
+#include "dect2/hfdig/hfdig_freedv.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/m17/m17_codec2.h"
+#include "dect2/m17/m17_gen.h"
+#include "dect2/m17/m17_rx.h"
+#include "dect2/wb/wb_export.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

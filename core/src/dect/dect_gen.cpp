@@ -1,6 +1,6 @@
 // DECT test signal (see dect_gen.h).
-#include "dect2/dect_gen.h"
-#include "dect2/dect_rx.h"
+#include "dect2/dect/dect_gen.h"
+#include "dect2/dect/dect_rx.h"
 #include <cmath>
 #include <complex>
 #include <random>

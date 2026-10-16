@@ -5,8 +5,8 @@
 //       [--key <name>=<base64 PSK>] [--mckey <name>=<secret>] [--secs <s>]
 //       runs the receiver over a recording and prints every packet, then the node table and the messages.
 //       --offset: where the user's frequency (--tuned, default 869.525 MHz) lies in the recording (default -300000, as gen writes it)
-#include "dect2/mesh_gen.h"
-#include "dect2/mesh_rx.h"
+#include "dect2/mesh/mesh_gen.h"
+#include "dect2/mesh/mesh_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

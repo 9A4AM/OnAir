@@ -3,7 +3,7 @@
 // edge (which also takes out the audio subcarriers above it) and a decimation to about 10 Msps, the rate the picture decoder works at.
 // The decoder levels itself from the sync pulses, so only the polarity matters here: its input has the sync tip at the maximum.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <vector>
 
 namespace dect2 {

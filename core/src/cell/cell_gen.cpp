@@ -1,8 +1,8 @@
 // Cell towers test signal (cell_gen.h).
-#include "dect2/cell_gen.h"
-#include "dect2/cell_asn.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/source.h"
+#include "dect2/cell/cell_gen.h"
+#include "dect2/cell/cell_asn.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <random>
 

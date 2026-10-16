@@ -1,4 +1,4 @@
-#include "dect2/gpu_viterbi.h"
+#include "dect2/dsp/gpu_viterbi.h"
 
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>

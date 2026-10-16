@@ -1,6 +1,6 @@
 // Iridium bursts as gr-iridium iridium-extractor "RAW:" lines (see iridium_bits.h).
-#include "dect2/iridium_bits.h"
-#include "dect2/iridium_phy.h"
+#include "dect2/iridium/iridium_bits.h"
+#include "dect2/iridium/iridium_phy.h"
 #include <algorithm>
 #include <cmath>
 #include <filesystem>

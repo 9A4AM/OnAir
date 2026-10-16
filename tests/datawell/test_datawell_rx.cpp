@@ -3,9 +3,9 @@
 //    spectrum points are checked against the numbers that went in, under an offset, a clock error, inverted tones, a low SNR, the WR-SG vector.
 //  - 4FSK carries a synthetic test frame of our own (the real over-the-air format is not public): only the modem and the frame finder are tested.
 // Noise alone, a plain carrier, other sample rates, a wrongly forced format and the channel names.
-#include "dect2/datawell_gen.h"
-#include "dect2/datawell_rx.h"
-#include "dect2/datawell_tel.h"
+#include "dect2/datawell/datawell_gen.h"
+#include "dect2/datawell/datawell_rx.h"
+#include "dect2/datawell/datawell_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

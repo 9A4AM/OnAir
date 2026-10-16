@@ -2,10 +2,10 @@
 // (7.8 - 500 kHz, and the 812.5 kHz of 2.4 GHz LoRa), coding rates, sync words and preamble lengths, through the receiver with
 // setCustom() at the rate the app picks for the bandwidth; a frame on a regional Meshtastic slot through setMeshtasticPlan(); the
 // slot frequencies of every region and preset.
-#include "dect2/gen_util.h"
-#include "dect2/mesh_lora.h"
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

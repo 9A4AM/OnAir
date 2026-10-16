@@ -1,9 +1,9 @@
 // Marine through the engine as the interface and dect2cli use it: the synthetic source (8 bit samples at 2 Msps, faster than a radio: the receiver
 // is tested, not real time, and the run is counted in seconds of signal)
 // plays NAVTEX, then an MF/HF DSC sequence, then a VHF one; the engine must decode, report and keep every sample.
-#include "dect2/engine.h"
-#include "dect2/engine_testkit.h"
-#include "dect2/marine_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/engine_testkit.h"
+#include "dect2/marine/marine_gen.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

@@ -4,7 +4,7 @@
 // from the coherent sum over the known symbols.
 #include "dvbs_s2hunt.h"
 #include "dvbs_vlsnr.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

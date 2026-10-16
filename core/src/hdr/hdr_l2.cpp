@@ -1,8 +1,8 @@
 // HD Radio Layer 2 and the data services (see hdr_l2.h). The decoding logic is adapted from nrsc5 (GPL-3.0,
 // github.com/theori-io/nrsc5): the transfer frame and PDU parsing from src/frame.c, the SIS messages from src/pids.c, the ID3, SIG and LOT
 // handling from src/output.c. Nothing here touches the HDC audio codec: the audio packets are only counted.
-#include "dect2/hdr_l2.h"
-#include "dect2/hdr_fec.h"
+#include "dect2/hdr/hdr_l2.h"
+#include "dect2/hdr/hdr_fec.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

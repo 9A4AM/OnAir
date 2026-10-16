@@ -1,8 +1,8 @@
 // Spectrum analyser maths: the grid, stitching across step edges, spur removal, peak hold and average, CSV, allocations, ticks,
 // and the stepped receiver over a synthetic band (the retune callback moves a made-up radio).
-#include "dect2/specan_dsp.h"
-#include "dect2/specan_rx.h"
-#include "dect2/specan_tel.h"
+#include "dect2/specan/specan_dsp.h"
+#include "dect2/specan/specan_rx.h"
+#include "dect2/specan/specan_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

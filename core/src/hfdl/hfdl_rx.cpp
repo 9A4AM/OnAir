@@ -1,7 +1,7 @@
 // HFDL receiver (hfdl_rx.h)
-#include "dect2/hfdl_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/hfdl_proto.h"
+#include "dect2/hfdl/hfdl_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/hfdl/hfdl_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

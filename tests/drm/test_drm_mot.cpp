@@ -1,11 +1,11 @@
 // MOT (ETSI EN 301 234, TS 101 499) parameter parsing and reassembly with hand made byte vectors, and the DRM packet layer (ES 201 980 clause 6.6.1):
 // first / last flags, padded packets, continuity index, lost packets, CRC-16, other Packet Ids, orphans, and the application names of the SDC.
-#include "dect2/dab.h"
-#include "dect2/dab_mot.h"
-#include "dect2/dab_journaline.h"
-#include "dect2/drm_data.h"
-#include "dect2/drm_fec.h"
-#include "dect2/drm_msg.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_mot.h"
+#include "dect2/dab/dab_journaline.h"
+#include "dect2/drm/drm_data.h"
+#include "dect2/drm/drm_fec.h"
+#include "dect2/drm/drm_msg.h"
 #include <cstdio>
 #include <cstring>
 #include <string>

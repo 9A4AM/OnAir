@@ -1,9 +1,9 @@
 // CDR screens: the Radio tab (the picked service and the signal), the station list (every service tagged DRA+: the sound is not decoded),
 // status lamps (Signal, Sync, SIC, SDC, Data), the analysis plots (SIC / SDC / MSD cells, channel, SNR), the Receiver tab and the test signal.
 #include "app.h"
-#include "dect2/cdr_defs.h"
-#include "dect2/cdr_mux.h"
-#include "dect2/cdr_tel.h"
+#include "dect2/cdr/cdr_defs.h"
+#include "dect2/cdr/cdr_mux.h"
+#include "dect2/cdr/cdr_tel.h"
 #include <cctype>
 #include <ctime>
 #include <deque>

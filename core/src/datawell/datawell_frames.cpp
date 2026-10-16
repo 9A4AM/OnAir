@@ -1,5 +1,5 @@
 // Bit stream analysis for the Datawell buoy HF link (datawell_frames.h).
-#include "dect2/datawell_frames.h"
+#include "dect2/datawell/datawell_frames.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

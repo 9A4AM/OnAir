@@ -2,7 +2,7 @@
 // engine's analysis thread and hands its symbols to one of these, so that the carrier loop and the frame logic (DVB-S2) or the Viterbi decoder (DVB-S)
 // do not have to fit into the same core as the front end. Internal.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>

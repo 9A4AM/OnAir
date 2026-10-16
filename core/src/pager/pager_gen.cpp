@@ -1,9 +1,9 @@
 // Pagers test signal (see pager_gen.h).
-#include "dect2/pager_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/mode_tuning.h"
-#include "dect2/pager_proto.h"
-#include "dect2/pager_rx.h"
+#include "dect2/pager/pager_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/engine/mode_tuning.h"
+#include "dect2/pager/pager_proto.h"
+#include "dect2/pager/pager_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

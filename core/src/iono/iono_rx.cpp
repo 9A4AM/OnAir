@@ -1,8 +1,8 @@
-#include "dect2/iono_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/iono_tel.h"
-#include "dect2/iono_dsp.h"
-#include "dect2/iono_gen.h"
+#include "dect2/iono/iono_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/iono/iono_tel.h"
+#include "dect2/iono/iono_dsp.h"
+#include "dect2/iono/iono_gen.h"
 #include <atomic>
 #include <cmath>
 #include <cstdio>

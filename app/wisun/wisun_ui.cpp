@@ -3,9 +3,9 @@
 // hop chart (every frame by time and frequency, coloured by sender), and the band plan picker (every region of the Wi-SUN band table).
 // Receive only: nothing is ever sent, joined or answered; PAN configurations and data are encrypted (keys from an EAP-TLS exchange) and stay so.
 #include "app.h"
-#include "dect2/wisun_proto.h"
-#include "dect2/wisun_rx.h"
-#include "dect2/wisun_tel.h"
+#include "dect2/wisun/wisun_proto.h"
+#include "dect2/wisun/wisun_rx.h"
+#include "dect2/wisun/wisun_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

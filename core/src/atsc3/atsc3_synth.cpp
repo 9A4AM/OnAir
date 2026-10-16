@@ -1,15 +1,15 @@
 // ATSC 3.0 test signal, see atsc3_synth.h.
-#include "dect2/atsc3_synth.h"
+#include "dect2/atsc3/atsc3_synth.h"
 #include "atsc3_synth_content.h"
 #include "atsc3_synth_resampler.h"
-#include "dect2/atsc3_alp.h"
-#include "dect2/atsc3_bb.h"
-#include "dect2/atsc3_frame.h"
-#include "dect2/atsc3_ip.h"
-#include "dect2/atsc3_route.h"
-#include "dect2/atsc3_sync.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/gen_util.h"
+#include "dect2/atsc3/atsc3_alp.h"
+#include "dect2/atsc3/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_frame.h"
+#include "dect2/atsc3/atsc3_ip.h"
+#include "dect2/atsc3/atsc3_route.h"
+#include "dect2/atsc3/atsc3_sync.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <deque>

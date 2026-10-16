@@ -1,8 +1,8 @@
 // GSM-R test signal (gsmr_gen.h).
-#include "dect2/gsmr_gen.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/gsmr_phy.h"
-#include "dect2/source.h"
+#include "dect2/gsmr/gsmr_gen.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/gsmr/gsmr_phy.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <random>
 

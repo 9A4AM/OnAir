@@ -1,8 +1,8 @@
 // Wi-Fi HaLow (802.11ah) test signal (see halow_gen.h).
-#include "dect2/halow_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/halow_proto.h"
-#include "dect2/halow_rx.h"
+#include "dect2/halow/halow_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/halow/halow_proto.h"
+#include "dect2/halow/halow_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <deque>

@@ -1,9 +1,9 @@
 // Orbcomm through the engine, as the GUI uses it: the synthetic source plays the test signal (SynthConfig::mode = 46) in real time with
 // two downlinks and the +/-4 kHz Doppler ramp, the receiver runs on the engine's thread, and both satellites must be decoded with
 // their positions, absolute frequencies on the 137 MHz raster and the Doppler.
-#include "dect2/engine.h"
-#include "dect2/modes.h"
-#include "dect2/orbcomm_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
+#include "dect2/orbcomm/orbcomm_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

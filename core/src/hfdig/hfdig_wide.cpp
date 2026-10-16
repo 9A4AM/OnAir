@@ -1,8 +1,8 @@
 // Whole-span decoding of the HF digital receiver (see hfdig_wide.h).
-#include "dect2/hfdig_wide.h"
-#include "dect2/fftutil.h"
-#include "dect2/marine_dsp.h"
-#include "dect2/widespan.h"
+#include "dect2/hfdig/hfdig_wide.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/marine/marine_dsp.h"
+#include "dect2/engine/widespan.h"
 #include "../ham_listen.h"
 #include <algorithm>
 #include <cmath>

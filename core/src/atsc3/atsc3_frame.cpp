@@ -1,6 +1,6 @@
-#include "dect2/atsc3_frame.h"
-#include "dect2/atsc3_ti.h"
-#include "dect2/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_frame.h"
+#include "dect2/atsc3/atsc3_ti.h"
+#include "dect2/atsc3/atsc3_bb.h"
 #include <algorithm>
 #include <cmath>
 

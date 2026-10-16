@@ -6,11 +6,11 @@
 #include "results_export.h"
 #include "gfx.h"
 #include "plot.h"
-#include "dect2/qo100_dsp.h"
-#include "dect2/qo100_gen.h"
-#include "dect2/qo100_rx.h"
-#include "dect2/qo100_tel.h"
-#include "dect2/specx_measure.h"
+#include "dect2/qo100/qo100_dsp.h"
+#include "dect2/qo100/qo100_gen.h"
+#include "dect2/qo100/qo100_rx.h"
+#include "dect2/qo100/qo100_tel.h"
+#include "dect2/specx/specx_measure.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

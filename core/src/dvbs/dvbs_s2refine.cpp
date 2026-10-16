@@ -1,6 +1,6 @@
 // DVB-S2 receiver: decisions and phase refinement, see dvbs_s2refine.h.
 #include "dvbs_s2refine.h"
-#include "dect2/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_s2.h"
 #include <algorithm>
 #include <cmath>
 #include <map>

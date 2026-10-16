@@ -1,5 +1,5 @@
-#include "dect2/ldpc.h"
-#include "dect2/simd.h"
+#include "dect2/dsp/ldpc.h"
+#include "dect2/dsp/simd.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

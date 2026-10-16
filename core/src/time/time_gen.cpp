@@ -1,7 +1,7 @@
 // Time signal test signal (see time_gen.h).
-#include "dect2/time_gen.h"
-#include "dect2/time_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/time/time_gen.h"
+#include "dect2/time/time_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <chrono>
 #include <cmath>
 #include <map>

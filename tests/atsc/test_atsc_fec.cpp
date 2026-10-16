@@ -1,5 +1,5 @@
 // ATSC channel coding: Reed-Solomon, randomiser, interleaver pair and the full field encoder/decoder round trip, with noise.
-#include "dect2/atsc.h"
+#include "dect2/atsc/atsc.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

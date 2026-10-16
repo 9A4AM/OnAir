@@ -1,9 +1,9 @@
 // ISM sensors receiver. See ism_rx.h.
-#include "dect2/ism_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/ism_tel.h"
-#include "dect2/ism_sigfox.h"
-#include "dect2/fftutil.h"
+#include "dect2/ism/ism_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/ism/ism_tel.h"
+#include "dect2/ism/ism_sigfox.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

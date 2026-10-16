@@ -1,10 +1,10 @@
 // HD Radio receiver (see hdr_rx.h): resampling to 744187.5 Hz, the FM and AM Layer 1 receivers, Layer 2 and the data services, and the
 // telemetry for the interface.
-#include "dect2/hdr_rx.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/hdr_fec.h"
-#include "dect2/hdr_l2.h"
-#include "dect2/hdr_phy.h"
+#include "dect2/hdr/hdr_rx.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/hdr/hdr_fec.h"
+#include "dect2/hdr/hdr_l2.h"
+#include "dect2/hdr/hdr_phy.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>

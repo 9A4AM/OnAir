@@ -1,6 +1,6 @@
 // Helpers shared by the fax tests: audio from the test source with impairments, decoding, and comparison with the chart.
 #pragma once
-#include "dect2/marine_fax.h"
+#include "dect2/marine/marine_fax.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

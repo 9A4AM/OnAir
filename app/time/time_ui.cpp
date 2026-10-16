@@ -4,9 +4,9 @@
 // 1 MHz: a note says so when the radio chosen cannot.
 #include "app.h"
 #include "clocksync_ui.h"
-#include "dect2/time_proto.h"
-#include "dect2/time_rx.h"
-#include "dect2/time_tel.h"
+#include "dect2/time/time_proto.h"
+#include "dect2/time/time_rx.h"
+#include "dect2/time/time_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

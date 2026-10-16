@@ -1,10 +1,10 @@
 // GSM-R receiver (gsmr_rx.h): blocks of input, 200 kHz carriers found in the spectrum, base stations synchronised and their BCCH decoded.
-#include "dect2/gsmr_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/gsmr_phy.h"
-#include "dect2/gsmr_si.h"
-#include "dect2/gsmr_tel.h"
+#include "dect2/gsmr/gsmr_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/gsmr/gsmr_phy.h"
+#include "dect2/gsmr/gsmr_si.h"
+#include "dect2/gsmr/gsmr_tel.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

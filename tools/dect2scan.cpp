@@ -1,5 +1,5 @@
 // Command-line channel scanner:  dect2scan [--from MHz] [--to MHz] [--step MHz] [--bw MHz] [--quick] [--lna dB] [--vga dB] [--noamp]
-#include "dect2/scanner.h"
+#include "dect2/engine/scanner.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

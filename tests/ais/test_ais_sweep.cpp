@@ -1,7 +1,7 @@
 // AIS: how many bursts decode at a given signal to noise ratio, with random class A messages on both channels, 2 Msps.
 // SNR is the burst power against the noise in 48 kHz (a 25 kHz channel sees 2.8 dB more).
 // argv: [snr list in dB, comma separated] [bursts per point] [rate]
-#include "dect2/ais_testutil.h"
+#include "dect2/ais/ais_testutil.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

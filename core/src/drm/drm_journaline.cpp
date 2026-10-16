@@ -1,6 +1,6 @@
 // DRM packet mode demultiplexer for the Journaline data service (ES 201 980 clause 6.6.1), see dab_journaline.h.
-#include "dect2/dab_journaline.h"
-#include "dect2/drm_fec.h"
+#include "dect2/dab/dab_journaline.h"
+#include "dect2/drm/drm_fec.h"
 
 namespace dect2 {
 

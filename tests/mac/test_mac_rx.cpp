@@ -1,11 +1,11 @@
 // MAC receiver against the test signal: D2-MAC and D-MAC at 20 Msps (the outer part of the 27 MHz channel cut off as a 20 Msps radio
 // does), lock, the picture (colour bars against the test card), the channel name, the tone of the sound, +-200 kHz offset, 18 dB C/N,
 // 16:9, EuroCrypt scrambling, spectrum inversion, noise only. Silent.
-#include "dect2/mac_gen.h"
-#include "dect2/mac_rx.h"
-#include "dect2/mac_tel.h"
-#include "dect2/atv_card.h"
-#include "dect2/atv_std.h"
+#include "dect2/mac/mac_gen.h"
+#include "dect2/mac/mac_rx.h"
+#include "dect2/mac/mac_tel.h"
+#include "dect2/atv/atv_card.h"
+#include "dect2/atv/atv_std.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

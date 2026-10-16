@@ -1,8 +1,8 @@
 // ISM sensors screens: the device table (sortable, with a history sparkline per device), the live log, the unknown signals with a pulse
 // viewer for reporting them, band presets and the privacy note.
 #include "app.h"
-#include "dect2/ism_rx.h"
-#include "dect2/ism_tel.h"
+#include "dect2/ism/ism_rx.h"
+#include "dect2/ism/ism_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

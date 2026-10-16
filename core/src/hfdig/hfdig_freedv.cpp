@@ -1,8 +1,8 @@
 // FreeDV decoder of the HF digital receiver (see hfdig_freedv.h), and its test audio for the generator (hfdig_gen.h). The codec2 library
 // is loaded at run time (native_common.h); only the few functions of its freedv_api.h that are needed are declared here, from release
 // 1.2.0. The decode path has not run against a real library yet (codec2 was not installed where this was written).
-#include "dect2/hfdig_freedv.h"
-#include "dect2/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_freedv.h"
+#include "dect2/hfdig/hfdig_gen.h"
 #include "../native_common.h"
 #include <algorithm>
 #include <atomic>

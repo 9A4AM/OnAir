@@ -3,10 +3,10 @@
 // frames (an audio super frame of 200 ms in two logical frames of 100 ms). At the rates the app asks for and the least the DRM+ lane takes,
 // 16-QAM and 4-QAM, the short interleaver, +-200 Hz and a few kHz of tuning error, 15 dB SNR, a 20 ppm sample clock; and a DRM30 signal
 // at the same rates is still found as DRM30.
-#include "dect2/drm_gen.h"
-#include "dect2/drm_rx.h"
-#include "dect2/modes.h"
-#include "dect2/mode_synth.h"
+#include "dect2/drm/drm_gen.h"
+#include "dect2/drm/drm_rx.h"
+#include "dect2/engine/modes.h"
+#include "dect2/engine/mode_synth.h"
 #include "../jobs.h"
 #include <atomic>
 #include <cmath>

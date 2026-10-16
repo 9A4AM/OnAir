@@ -1,8 +1,8 @@
 // DAB against the faults of REAL_WORLD_CHECKLIST.md: the generator's clean signal goes through tests/impair.h (written independently of
 // the receiver) and then through the real DabReceiver. Band III radios are up to 12 kHz off, L-band ones up to 75 kHz; sample clocks up to
 // 100 ppm; swapped I/Q; lost samples; NaN samples; and one combined case (L-band offset, +80 ppm, an echo, 8-bit clipping).
-#include "dect2/dab.h"
-#include "dect2/dab_gen.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_gen.h"
 #include "../impair.h"
 #include "../jobs.h"
 #include <algorithm>

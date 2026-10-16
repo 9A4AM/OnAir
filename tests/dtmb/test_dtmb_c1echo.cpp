@@ -6,7 +6,7 @@
 //  - radio overflows shorter than a frame (the fixed header gives the frame grid back at once, one frame is erased) lose nothing;
 //  - a gap of several frames: a fixed PN phase cannot tell how many frames went, so the de-interleaver is out of step until it has refilled
 //    (0.3 s); what comes out in that time is thrown away by the LDPC and BCH checks, never passed on as wrong packets, and the lock holds.
-#include "dect2/dtmb_testkit.h"
+#include "dect2/dtmb/dtmb_testkit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>

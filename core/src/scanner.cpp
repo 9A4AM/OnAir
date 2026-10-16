@@ -1,9 +1,9 @@
-#include "dect2/rate_choice.h"
-#include "dect2/scanner.h"
-#include "dect2/isdbt.h"
-#include "dect2/bandwidth.h"
-#include "dect2/dvbt.h"
-#include "dect2/mode_tuning.h"
+#include "dect2/engine/rate_choice.h"
+#include "dect2/engine/scanner.h"
+#include "dect2/isdbt/isdbt.h"
+#include "dect2/dsp/bandwidth.h"
+#include "dect2/dvbt/dvbt.h"
+#include "dect2/engine/mode_tuning.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

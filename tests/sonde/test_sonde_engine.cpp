@@ -1,9 +1,9 @@
 // Radiosonde through the engine, as the GUI and dect2cli use it: the built-in synthetic source plays the default test signal (three sondes,
 // SynthConfig::mode = 15) at the mode's sample rate, the receiver runs on its own thread, telemetry comes through latestRx. 20 s; a retune
 // in the middle must reset the receiver without the sequence number going back; no samples may be dropped.
-#include "dect2/engine.h"
-#include "dect2/modes.h"
-#include "dect2/sonde_bits.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
+#include "dect2/sonde/sonde_bits.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

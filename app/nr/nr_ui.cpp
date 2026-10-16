@@ -4,9 +4,9 @@
 #include "app.h"
 #include "results_export.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/nr_phy.h"
-#include "dect2/nr_rx.h"
-#include "dect2/nr_tel.h"
+#include "dect2/nr/nr_phy.h"
+#include "dect2/nr/nr_rx.h"
+#include "dect2/nr/nr_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

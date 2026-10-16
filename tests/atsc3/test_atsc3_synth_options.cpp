@@ -1,8 +1,8 @@
 // The options of the ATSC 3.0 test signal (SynthConfig::modeOpt, see atsc3_synth.h): every choice of modulation, code rate, FEC frame, guard interval, video
 // codec and L1-Detail mode must give a signal the real receiver decodes into a transport stream with video and sound.
 #include "atsc3_sim.h"
-#include "dect2/atsc3_rx.h"
-#include "dect2/atsc3_synth.h"
+#include "dect2/atsc3/atsc3_rx.h"
+#include "dect2/atsc3/atsc3_synth.h"
 #include "../jobs.h"
 #include <atomic>
 #include <chrono>

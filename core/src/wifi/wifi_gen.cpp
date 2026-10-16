@@ -1,8 +1,8 @@
 // Wi-Fi beacon test signal (see wifi_gen.h).
-#include "dect2/wifi_gen.h"
-#include "dect2/wifi_proto.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
+#include "dect2/wifi/wifi_gen.h"
+#include "dect2/wifi/wifi_proto.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <deque>
 

@@ -1,9 +1,9 @@
 // Iridium test signal: constellation model, burst schedule, DQPSK burst shaping and rendering (see iridium_gen.h).
-#include "dect2/iridium_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/iridium_frame.h"
-#include "dect2/iridium_phy.h"
-#include "dect2/iridium_sbd.h"
+#include "dect2/iridium/iridium_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/iridium/iridium_frame.h"
+#include "dect2/iridium/iridium_phy.h"
+#include "dect2/iridium/iridium_sbd.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

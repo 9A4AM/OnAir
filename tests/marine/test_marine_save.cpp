@@ -1,6 +1,6 @@
 // NAVTEX messages saved as text files: once per message, with the header, and not again for repeats.
 #include "../data/marine/rf_util.h"
-#include "dect2/marine_navtex_save.h"
+#include "dect2/marine/marine_navtex_save.h"
 #include <filesystem>
 #include <fstream>
 #include <sstream>

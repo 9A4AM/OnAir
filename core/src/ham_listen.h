@@ -2,9 +2,9 @@
 // the sound card. Listening is off unless switched on; when on it only copies the samples into the sound card's lock-free ring (audio
 // the device has not taken in time is dropped), so the decoders never wait for it.
 #pragma once
-#include "dect2/audioout.h"
-#include "dect2/hf_demod.h"
-#include "dect2/marine_dsp.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/audio/hf_demod.h"
+#include "dect2/marine/marine_dsp.h"
 #include "hfdig/hfdig_usb.h"
 #include <algorithm>
 #include <atomic>
@@ -21,7 +21,7 @@ namespace hfdig {
 // USB (the default): 200 .. 3800 Hz above the dial, with a slow AGC. LSB: the same below the dial. NFM: a 12.5 kHz channel, the
 // frequency discriminator (5 kHz deviation gives 0.5, no de-emphasis: SSTV and AFSK data are sent flat) and a 300 .. 3000 Hz audio
 // band. AM: a 7 kHz channel, the envelope over its carrier (the demodulator of the general receiver, general_rx.cpp), 300 .. 3000 Hz.
-// setDemod() (HfDemod, dect2/hf_demod.h; Auto is resolved by the caller) from the thread that calls process().
+// setDemod() (HfDemod, dect2/audio/hf_demod.h; Auto is resolved by the caller) from the thread that calls process().
 class UsbAudio {
 public:
     static constexpr int kTaps = 383;          // about 270 Hz of transition at 24 kHz: the lower sideband is gone 200 Hz below the dial

@@ -3,10 +3,10 @@
 // broadcast in the clear to every terminal is shown: nothing is decrypted, no voice, no short data, no subscriber identities.
 #include "app.h"
 #include "results_export.h"
-#include "dect2/gsmr_rx.h"
-#include "dect2/tetra_pdu.h"
-#include "dect2/tetra_rx.h"
-#include "dect2/tetra_tel.h"
+#include "dect2/gsmr/gsmr_rx.h"
+#include "dect2/tetra/tetra_pdu.h"
+#include "dect2/tetra/tetra_rx.h"
+#include "dect2/tetra/tetra_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -1,7 +1,7 @@
-#include "dect2/astro_rx.h"
-#include "dect2/astro_tel.h"
-#include "dect2/astro_dsp.h"
-#include "dect2/fftutil.h"
+#include "dect2/astro/astro_rx.h"
+#include "dect2/astro/astro_tel.h"
+#include "dect2/astro/astro_dsp.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

@@ -1,5 +1,5 @@
 // DAB TII: the patterns of table 26, the carriers of clause 14.8.1 (transmission mode I) and the detector. See dab_tii.h.
-#include "dect2/dab_tii.h"
+#include "dect2/dab/dab_tii.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

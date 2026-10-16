@@ -1,7 +1,7 @@
 // Globalstar through the engine (setStandard(64)): the synthetic source plays a pass, the receiver reports channels and the Doppler track through latestRx().
-#include "dect2/engine.h"
-#include "dect2/modes.h"
-#include "dect2/globalstar_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
+#include "dect2/globalstar/globalstar_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

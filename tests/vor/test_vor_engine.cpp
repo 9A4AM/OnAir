@@ -1,7 +1,7 @@
 // VOR / ILS through the engine (setStandard(32)): the synthetic source plays a Doppler VOR on radial 123.4, the VOR entry measures it
 // and reports through latestRx(); then the ILS entry on a localizer channel reads the DDM; a retune keeps the report numbers growing.
-#include "dect2/engine.h"
-#include "dect2/vor_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/vor/vor_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

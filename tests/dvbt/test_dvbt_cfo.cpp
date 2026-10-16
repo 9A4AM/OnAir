@@ -3,10 +3,10 @@
 // carrier of offset with guard 1/4, an eighth with 1/8. The TPS bits are differential from symbol to symbol, so that turn has to come out of
 // them, or the TPS never decodes and nothing else follows. The first case is the condition of a real capture (Hungary, 554 MHz) that did not
 // decode: 8K, guard 1/4, 64-QAM 3/4, the radio 7.9 kHz off (7 carriers and a bit), recorded at 10 Msps.
-#include "dect2/dvbt_gen.h"
-#include "dect2/dvbt_rx.h"
-#include "dect2/resampler.h"
-#include "dect2/t2.h"
+#include "dect2/dvbt/dvbt_gen.h"
+#include "dect2/dvbt/dvbt_rx.h"
+#include "dect2/dsp/resampler.h"
+#include "dect2/t2/t2.h"
 #include "../jobs.h"
 #include <atomic>
 #include <cmath>

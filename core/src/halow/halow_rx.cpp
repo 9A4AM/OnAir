@@ -1,11 +1,11 @@
 // Wi-Fi HaLow (802.11ah) network monitor (see halow_rx.h).
-#include "dect2/halow_rx.h"
-#include "dect2/fftutil.h"
-#include "dect2/gen_util.h"
-#include "dect2/halow_proto.h"
-#include "dect2/halow_tel.h"
-#include "dect2/results_io.h"
-#include "dect2/wifi_proto.h"
+#include "dect2/halow/halow_rx.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/halow/halow_proto.h"
+#include "dect2/halow/halow_tel.h"
+#include "dect2/results/results_io.h"
+#include "dect2/wifi/wifi_proto.h"
 #include <algorithm>
 #include <array>
 #include <atomic>

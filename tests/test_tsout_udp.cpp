@@ -1,6 +1,6 @@
 // UDP streaming when frames come out of the receiver unevenly: several frames finish at once now and then (a busy CPU, the GPU working
 // in batches). Every datagram must still reach the network; before, the whole queue was thrown away (VLC stuttered every few seconds).
-#include "dect2/tsout.h"
+#include "dect2/tv/tsout.h"
 #include <chrono>
 #include <cstdio>
 #include <cstring>

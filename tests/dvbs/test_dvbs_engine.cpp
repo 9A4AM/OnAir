@@ -1,8 +1,8 @@
 // DVB-S/S2 through the engine, as the GUI uses it: the synthetic source plays the mode's test signal (SynthConfig::mode = 8) in real time, the engine runs
 // the receiver on its analysis thread, and the transport stream analysis must find the test programme (a video and an audio stream). The signal options
 // are the ones of dvbs_gen.h.
-#include "dect2/dvbs_gen.h"
-#include "dect2/engine.h"
+#include "dect2/dvbs/dvbs_gen.h"
+#include "dect2/engine/engine.h"
 #include <cstdlib>
 #include <chrono>
 #include <cmath>

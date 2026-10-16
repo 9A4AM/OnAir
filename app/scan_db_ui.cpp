@@ -3,8 +3,8 @@
 // app; downloads happen only after a yes. The files live in github.com/adswill/OnAir-channels; DECT2_CHANNELDB_URL replaces the address
 // (a folder or file:// address works too, for tests). Core part: core/src/channel_db.cpp.
 #include "app.h"
-#include "dect2/channel_db.h"
-#include "dect2/updater.h"
+#include "dect2/channels/channel_db.h"
+#include "dect2/engine/updater.h"
 #include <atomic>
 #include <cmath>
 #include <filesystem>

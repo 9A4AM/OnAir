@@ -1,9 +1,9 @@
 // GSM-R receiver on the test signal: carriers found in the spectrum, synchronised, System Information decoded; frequency error, noise,
 // the band edge, three cells of different levels, a radio with a lower sample rate.
-#include "dect2/gsmr_gen.h"
-#include "dect2/gsmr_rx.h"
-#include "dect2/gsmr_tel.h"
-#include "dect2/source.h"
+#include "dect2/gsmr/gsmr_gen.h"
+#include "dect2/gsmr/gsmr_rx.h"
+#include "dect2/gsmr/gsmr_tel.h"
+#include "dect2/source/source.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

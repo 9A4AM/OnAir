@@ -1,7 +1,7 @@
 // CubeSat framings without a radio: Reed-Solomon (255,223) in both bases, full and shortened, up to 16 byte errors and beyond; Golay (24,12)
 // with every error pattern of up to three bits on a few words; the CCSDS randomiser sequence; AX100 Mode 5 / Mode 6 and CCSDS frames
 // built, damaged and decoded; the CSP header; the satellite table as text.
-#include "dect2/cubesat_proto.h"
+#include "dect2/cubesat/cubesat_proto.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>

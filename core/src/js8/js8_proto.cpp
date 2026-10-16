@@ -1,5 +1,5 @@
 // JS8 protocol: frame, CRC-12, (174,87) LDPC, tones and the message layer (see js8_proto.h).
-#include "dect2/js8_proto.h"
+#include "dect2/js8/js8_proto.h"
 #include "../hfdig/hfdig_ftx_int.h"
 #include <algorithm>
 #include <cmath>

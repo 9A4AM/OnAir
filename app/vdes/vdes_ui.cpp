@@ -1,8 +1,8 @@
 // VDES screens: the ASM frames (decoded: GMSK 9.6 kbit/s, AIS framing, CRC-16 checked, payload as hex) and the VDE-TER burst log (detected only: band,
 // bandwidth, level, modulation class; the content is not decoded).
 #include "app.h"
-#include "dect2/vdes_rx.h"
-#include "dect2/vdes_tel.h"
+#include "dect2/vdes/vdes_rx.h"
+#include "dect2/vdes/vdes_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

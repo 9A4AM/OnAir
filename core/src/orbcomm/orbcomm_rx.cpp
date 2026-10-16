@@ -1,10 +1,10 @@
 // Orbcomm receiver (orbcomm_rx.h).
-#include "dect2/orbcomm_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/fftutil.h"
-#include "dect2/mode_synth.h"
-#include "dect2/orbcomm_gen.h"
-#include "dect2/source.h"
+#include "dect2/orbcomm/orbcomm_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/engine/mode_synth.h"
+#include "dect2/orbcomm/orbcomm_gen.h"
+#include "dect2/source/source.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

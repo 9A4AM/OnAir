@@ -2,8 +2,8 @@
 // an RTL-SDR without a TCXO 50-100 ppm (80-160 kHz). The sample clock comes from the same crystal (the simulator makes it follow the oscillator), so the
 // code runs up to 100 chips a second off as well. On top of that the satellites' own Doppler of up to +-5 kHz. The receiver must find the radio's offset by
 // itself, lock every satellite, fix, and report the offset. A last case gives it the offset remembered from an earlier run (2 kHz stale): it must lock fast.
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include <cmath>
 #include <cstdio>
 #include <iterator>

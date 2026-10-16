@@ -5,11 +5,11 @@
 // matched filter that also decimates to about 10 ksps (r2), Gardner timing recovery with a cubic interpolator, soft symbols. Frames are found by
 // their 128 unique word symbols (spread over the whole frame, every 162 symbols), which also gives the polarity; then deinterleave, soft Viterbi,
 // descramble, packets (inmc_pkt.cpp). Everything runs in feed(): at 2 Msps the cost is a few multiplications per input sample.
-#include "dect2/inmc_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/fftutil.h"
-#include "dect2/inmc_code.h"
-#include "dect2/inmc_pkt.h"
+#include "dect2/inmc/inmc_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/inmc/inmc_code.h"
+#include "dect2/inmc/inmc_pkt.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

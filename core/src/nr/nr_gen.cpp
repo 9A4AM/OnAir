@@ -1,7 +1,7 @@
 // 5G NR cells test signal (nr_gen.h).
-#include "dect2/nr_gen.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/source.h"
+#include "dect2/nr/nr_gen.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <random>
 

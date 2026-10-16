@@ -1,5 +1,5 @@
 // Pseudorange position solution (see gnss_solve.h).
-#include "dect2/gnss_solve.h"
+#include "dect2/gnss/gnss_solve.h"
 #include <algorithm>
 #include <cmath>
 

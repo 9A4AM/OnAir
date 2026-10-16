@@ -1,8 +1,8 @@
 // P25 Phase 1 test signal (see p25_gen.h): whole transmissions as C4FM, over noise.
-#include "dect2/p25_gen.h"
-#include "dect2/p25_rx.h"
-#include "dect2/p25_proto.h"
-#include "dect2/gen_util.h"
+#include "dect2/p25/p25_gen.h"
+#include "dect2/p25/p25_rx.h"
+#include "dect2/p25/p25_proto.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

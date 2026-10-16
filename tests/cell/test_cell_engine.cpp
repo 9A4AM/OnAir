@@ -1,9 +1,9 @@
 // Cell towers through the engine (setStandard(34)): the synthetic source plays the 10 MHz test cell at 20 Msps; the receiver finds it,
 // reads its MIB and system information and reports through latestRx() with its EARFCN.
-#include "dect2/cell_rx.h"
-#include "dect2/cell_tel.h"
-#include "dect2/engine.h"
-#include "dect2/modes.h"
+#include "dect2/cell/cell_rx.h"
+#include "dect2/cell/cell_tel.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -1,5 +1,5 @@
 // ANT / ANT+ frames and device profiles (see ant_proto.h).
-#include "dect2/ant_proto.h"
+#include "dect2/ant/ant_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

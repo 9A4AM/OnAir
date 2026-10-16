@@ -1,7 +1,7 @@
 // Wi-SUN FAN / 802.15.4g SUN FSK frame layers against values that do not come from our own encoder: the CRC-32 check value, and two
 // PSDUs received off air from a Wi-SUN FAN 1.1 network near Sydney (915 - 928 MHz, 150 kbit/s FSK), octets as sent (whitened), FCS included.
 // Then frames built here and read back (the PAN advert and EAPOL fields no off-air frame of ours carries in the clear).
-#include "dect2/wisun_proto.h"
+#include "dect2/wisun/wisun_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <string>

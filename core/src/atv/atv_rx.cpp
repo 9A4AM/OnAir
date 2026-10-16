@@ -3,12 +3,12 @@
 //   input -> DC removal -> [searching: spectrum -> vision carrier + sound carrier]
 //                       -> [running: vision channel -> picture decoder -> pictures]
 //                                    sound channel  -> 48 kHz mono -> sound device
-#include "dect2/atv_rx.h"
+#include "dect2/atv/atv_rx.h"
 #include "atv_front.h"
 #include "atv_fm.h"
 #include "atv_video.h"
-#include "dect2/atv_nbtv.h"
-#include "dect2/audioout.h"
+#include "dect2/atv/atv_nbtv.h"
+#include "dect2/audio/audioout.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

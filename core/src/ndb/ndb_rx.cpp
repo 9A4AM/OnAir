@@ -1,7 +1,7 @@
 // NDB receiver (see ndb_rx.h).
-#include "dect2/ndb_rx.h"
-#include "dect2/cw_morse.h"
-#include "dect2/ndb_tel.h"
+#include "dect2/ndb/ndb_rx.h"
+#include "dect2/cw/cw_morse.h"
+#include "dect2/ndb/ndb_tel.h"
 #include "../ham_listen.h"
 #include <algorithm>
 #include <atomic>

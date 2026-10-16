@@ -1,8 +1,8 @@
 // 5G NR cells receiver (nr_rx.h): blocks of input, the sync raster points inside them searched and the PBCH of every SSB decoded.
-#include "dect2/nr_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/nr_phy.h"
-#include "dect2/nr_tel.h"
+#include "dect2/nr/nr_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/nr/nr_phy.h"
+#include "dect2/nr/nr_tel.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

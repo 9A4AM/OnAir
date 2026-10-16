@@ -1,9 +1,9 @@
 // DRM data services end to end: the generator's multiplex (audio service 0 and a packet mode data service 1 with MOT objects, TPEG frames or EPG files, segmented,
 // with lost, damaged and foreign packets) through the OFDM chain into the receiver's data service view: slide show pictures with their parameters,
 // broadcast website objects as text, EPG and TPEG identified, the packet counters, and the application names in the service table.
-#include "dect2/drm_gen.h"
-#include "dect2/drm_rx.h"
-#include "dect2/dab.h"
+#include "dect2/drm/drm_gen.h"
+#include "dect2/drm/drm_rx.h"
+#include "dect2/dab/dab.h"
 #include <atomic>
 #include <cstdio>
 #include <functional>

@@ -1,6 +1,6 @@
 // Several receivers at once: see receivers.h and docs/multi-sdr.md.
 #include "receivers.h"
-#include "dect2/device_claims.h"
+#include "dect2/engine/device_claims.h"
 #include <memory>
 #ifndef _WIN32
 #include <sys/resource.h>

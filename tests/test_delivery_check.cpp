@@ -1,6 +1,6 @@
 // DeliveryCheck (delivery_check.h): radios simulated as the engine sees them, with USB transfers that arrive late and in bursts, a clock off
 // its nominal rate and a sample thread that looks only now and then. Nothing lost must count nothing; lost transfers must count what was lost.
-#include "dect2/delivery_check.h"
+#include "dect2/source/delivery_check.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

@@ -1,7 +1,7 @@
 // DTMB in a 6 MHz channel (Cuba, the American 6 MHz raster): the same signal at 5.67 Msym/s instead of 7.56. The receiver set to 6 MHz
 // decodes it at several radio rates, including 6 Msps that an 8 MHz channel could not use; set to 8 MHz it finds nothing, and the 8 MHz
 // channel still works as before.
-#include "dect2/dtmb_testkit.h"
+#include "dect2/dtmb/dtmb_testkit.h"
 #include <cstdio>
 
 using namespace dect2;

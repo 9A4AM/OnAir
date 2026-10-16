@@ -1,7 +1,7 @@
 // ANT+ sensor monitor (see ant_rx.h).
-#include "dect2/ant_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/gen_util.h"
+#include "dect2/ant/ant_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

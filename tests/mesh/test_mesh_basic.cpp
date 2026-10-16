@@ -1,6 +1,6 @@
 // Mesh (LoRa): the tuning entry exists, and the receiver reports at a steady rate whatever the chunk size.
-#include "dect2/modes.h"
-#include "dect2/mesh_rx.h"
+#include "dect2/engine/modes.h"
+#include "dect2/mesh/mesh_rx.h"
 #include <cstdio>
 #include <vector>
 using namespace dect2;

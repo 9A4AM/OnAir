@@ -1,8 +1,8 @@
 // DRM audio: xHE-AAC super frames and the glue to libavcodec's USAC decoder (see drm_audio.h).
-#include "dect2/drm_audio.h"
-#include "dect2/drm_aac.h"
-#include "dect2/drm_fec.h"
-#include "dect2/exact_resampler.h"
+#include "dect2/drm/drm_audio.h"
+#include "dect2/drm/drm_aac.h"
+#include "dect2/drm/drm_fec.h"
+#include "dect2/dsp/exact_resampler.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>

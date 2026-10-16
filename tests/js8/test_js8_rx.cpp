@@ -1,10 +1,10 @@
 // JS8Call receiver against generated stations: the test band (heartbeat, CQ, directed SNR report, a multi-frame free text message, a
 // relay, fast and turbo) with messages put together and grids on the map; then impairments: a tuning error, drift, early and late
 // starts (DT -1.2 / +2.0 s), a weak signal, five signals in one slot close in frequency, and noise only (nothing decoded).
-#include "dect2/js8_gen.h"
-#include "dect2/js8_proto.h"
-#include "dect2/js8_rx.h"
-#include "dect2/js8_tel.h"
+#include "dect2/js8/js8_gen.h"
+#include "dect2/js8/js8_proto.h"
+#include "dect2/js8/js8_rx.h"
+#include "dect2/js8/js8_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

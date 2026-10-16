@@ -1,6 +1,6 @@
 // ADS-B pulse demodulator (see adsb_demod.h).
-#include "dect2/adsb_demod.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/adsb/adsb_demod.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

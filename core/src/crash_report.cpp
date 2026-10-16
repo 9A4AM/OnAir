@@ -1,7 +1,7 @@
 // Crash reports. The handlers do as little as they can: the text is built in a fixed buffer and written with plain system calls,
 // because the heap and the C library may be what is broken. The binaries are stripped, so a report names module+offset and the
 // image base; those can be looked up against the matching symbols later.
-#include "dect2/crash_report.h"
+#include "dect2/engine/crash_report.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>

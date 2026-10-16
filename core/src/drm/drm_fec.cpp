@@ -1,5 +1,5 @@
 // DRM channel coding: CRC, energy dispersal, interleavers, constellations, multilevel coding with the punctured convolutional code.
-#include "dect2/drm_fec.h"
+#include "dect2/drm/drm_fec.h"
 #include "drm_internal.h"
 #include <algorithm>
 #include <cassert>

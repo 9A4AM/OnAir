@@ -1,6 +1,6 @@
-#include "dect2/hfbeacon_rx.h"
-#include "dect2/hfbeacon_dsp.h"
-#include "dect2/hfbeacon_tel.h"
+#include "dect2/hfbeacon/hfbeacon_rx.h"
+#include "dect2/hfbeacon/hfbeacon_dsp.h"
+#include "dect2/hfbeacon/hfbeacon_tel.h"
 #include "../ham_listen.h"
 #include <atomic>
 #include <chrono>

@@ -1,6 +1,6 @@
 // Airband test signal (see airband_gen.h): AM channels with keyed carriers, voice-like audio or a tone, over noise.
-#include "dect2/airband_gen.h"
-#include "dect2/gen_util.h"
+#include "dect2/airband/airband_gen.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

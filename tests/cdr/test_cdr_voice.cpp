@@ -2,8 +2,8 @@
 // The bytes in the audio units are a small test codec (4-bit ADPCM at 8 kHz), not DRA+.
 // A real CDR station still will not play. Pass a 16-bit WAV to use that recording; otherwise a tone is used.
 // With a WAV argument the recovered sound is written to /tmp/cdr_voice_out.wav.
-#include "dect2/cdr_gen.h"
-#include "dect2/cdr_rx.h"
+#include "dect2/cdr/cdr_gen.h"
+#include "dect2/cdr/cdr_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

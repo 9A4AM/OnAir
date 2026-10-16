@@ -1,7 +1,7 @@
 // NB-IoT cell search and decode (nbiot_phy.h): NPSS detection, timing and carrier / clock offset, NSSS (cell id), NPBCH (MIB-NB), SIB1-NB.
-#include "dect2/nbiot_phy.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/fftutil.h"
+#include "dect2/nbiot/nbiot_phy.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/dsp/fftutil.h"
 #include "../cell/cell_lte_int.h"
 #include <algorithm>
 #include <array>

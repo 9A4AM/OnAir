@@ -4,9 +4,9 @@
 //   iridiumtool rx <file> --rate <sps> [--format cs8|cu8|cf32] [--center MHz] [--raw] [--threshold dB]
 //       --raw prints every burst with a unique word as a gr-iridium "RAW:" line (iridium-toolkit's iridium-parser.py reads them)
 //   iridiumtool sky [secs] [--seed n] [--sats n]
-#include "dect2/iridium_gen.h"
-#include "dect2/iridium_rx.h"
-#include "dect2/iridium_bits.h"
+#include "dect2/iridium/iridium_gen.h"
+#include "dect2/iridium/iridium_rx.h"
+#include "dect2/iridium/iridium_bits.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

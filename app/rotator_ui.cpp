@@ -1,7 +1,7 @@
 // View > Antenna rotator: GS-232-compatible rotator, calibration offsets, limits, park.
 #include "app.h"
-#include "dect2/passes.h"
-#include "dect2/rotator.h"
+#include "dect2/geo/passes.h"
+#include "dect2/source/rotator.h"
 #include "imgui.h"
 #include <algorithm>
 #include <cmath>

@@ -1,8 +1,8 @@
 // MAC television test signal (see mac_gen.h).
-#include "dect2/mac_gen.h"
-#include "dect2/mac_proto.h"
-#include "dect2/atv_card.h"
-#include "dect2/atv_std.h"
+#include "dect2/mac/mac_gen.h"
+#include "dect2/mac/mac_proto.h"
+#include "dect2/atv/atv_card.h"
+#include "dect2/atv/atv_std.h"
 #include "../atv/atv_dsp.h"
 #include <algorithm>
 #include <cmath>

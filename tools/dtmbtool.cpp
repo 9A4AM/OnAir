@@ -5,9 +5,9 @@
 // Signal options: --carriers 3780|1 (1 forces PN595)  --header 945|595|420  --mod 64|32|16|4|4nr  --code 0.4|0.6|0.8  --mode 1|2 (interleaver)  --snr dB  --cfo Hz  --ppm ppm
 //   --echo dB:samples (repeatable; negative samples arrive before the main path)  --fixed-phase  --payload demo|test  --seed n  --level rms
 // --check on rx: the packets are the numbered test packets of `gen --payload test`; counts good, wrong and missing ones.
-#include "dect2/dtmb_gen.h"
-#include "dect2/dtmb_rx.h"
-#include "dect2/demo_ts.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_rx.h"
+#include "dect2/tv/demo_ts.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

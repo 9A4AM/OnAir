@@ -1,7 +1,7 @@
 // BB frame <-> transport stream round trips (normal and high-efficiency mode, with lost frames) and PSI/SI parsing.
-#include "dect2/bbunpack.h"
-#include "dect2/player.h"
-#include "dect2/ts.h"
+#include "dect2/tv/bbunpack.h"
+#include "dect2/tv/player.h"
+#include "dect2/tv/ts.h"
 #include <cstdio>
 #include <cstring>
 #include <random>

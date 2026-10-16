@@ -1,9 +1,9 @@
 // NOAA Weather Radio SAME receiver: see same_rx.h.
-#include "dect2/same_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/dmr_dsp.h"
-#include "dect2/packet_demod.h"
-#include "dect2/same_proto.h"
+#include "dect2/same/same_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dmr/dmr_dsp.h"
+#include "dect2/packet/packet_demod.h"
+#include "dect2/same/same_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <ctime>

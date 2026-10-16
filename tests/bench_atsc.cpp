@@ -3,10 +3,10 @@
 //   chain : the generated 8-VSB signal with the same noise goes through the whole receiver (timing, carrier, equaliser, decoder)
 // SNR is the data power over the noise power in the 5.38 MHz Nyquist band, the way the generator defines it.
 //   bench_atsc [from to step] [fields]
-#include "dect2/atsc.h"
-#include "dect2/atsc_gen.h"
-#include "dect2/atsc_rx.h"
-#include "dect2/dvbt_gen.h"
+#include "dect2/atsc/atsc.h"
+#include "dect2/atsc/atsc_gen.h"
+#include "dect2/atsc/atsc_rx.h"
+#include "dect2/dvbt/dvbt_gen.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

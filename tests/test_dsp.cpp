@@ -1,5 +1,5 @@
 // The portable DSP kernels (FFT, filters, window, small BLAS) against textbook implementations.
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

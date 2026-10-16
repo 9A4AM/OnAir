@@ -1,8 +1,8 @@
 // Narrow Bandwidth Television and mechanical television: see atv_nbtv.h.
-#include "dect2/atv_nbtv.h"
-#include "dect2/atv_std.h"
+#include "dect2/atv/atv_nbtv.h"
+#include "dect2/atv/atv_std.h"
 #include "atv_dsp.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

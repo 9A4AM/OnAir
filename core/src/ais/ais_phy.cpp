@@ -1,5 +1,5 @@
-#include "dect2/ais_phy.h"
-#include "dect2/dmr_dsp.h"
+#include "dect2/ais/ais_phy.h"
+#include "dect2/dmr/dmr_dsp.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

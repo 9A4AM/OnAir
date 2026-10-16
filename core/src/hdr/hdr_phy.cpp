@@ -2,9 +2,9 @@
 // (GPL-3.0, github.com/theori-io/nrsc5): src/acquire.c (cyclic prefix correlation, filter taps, AM carrier tracking), src/sync.c (Costas
 // loops on the reference subcarriers, integer offset search, block sync, channel estimate, MER, AM training symbols) and src/decode.c
 // (interleavers). The demapping is soft decision for every constellation (nrsc5 uses hard decisions in AM), the modulators are OnAir's own.
-#include "dect2/hdr_phy.h"
-#include "dect2/fftutil.h"
-#include "dect2/hdr_fec.h"
+#include "dect2/hdr/hdr_phy.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/hdr/hdr_fec.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

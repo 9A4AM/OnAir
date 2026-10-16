@@ -1,11 +1,11 @@
 // Time signals: the test signal of every station (time_gen.h) through the receiver (time_rx.h), started part way into a minute, with a
 // known time: the decoded time and flags, the seconds tick and the computer clock offset after the path delay; a weak signal, a carrier
 // and sample clock error, another rate; noise alone gives nothing.
-#include "dect2/gen_util.h"
-#include "dect2/time_gen.h"
-#include "dect2/time_proto.h"
-#include "dect2/time_rx.h"
-#include "dect2/time_tel.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/time/time_gen.h"
+#include "dect2/time/time_proto.h"
+#include "dect2/time/time_rx.h"
+#include "dect2/time/time_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

@@ -2,9 +2,9 @@
 // heart rate with the beat count and R-R interval, power, speed, temperature), its pages (manufacturer, serial, battery) and the frame log.
 // Receive only: only the open broadcasts a watch hears, nothing is sent, paired or acknowledged.
 #include "app.h"
-#include "dect2/ant_proto.h"
-#include "dect2/ant_rx.h"
-#include "dect2/ant_tel.h"
+#include "dect2/ant/ant_proto.h"
+#include "dect2/ant/ant_rx.h"
+#include "dect2/ant/ant_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

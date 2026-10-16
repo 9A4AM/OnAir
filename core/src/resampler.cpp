@@ -1,5 +1,5 @@
-#include "dect2/resampler.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/resampler.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <numeric>

@@ -3,7 +3,7 @@
 // codes (shortened and punctured), the VL-SNR header of 900 symbols, the PLFRAME layout with the additional pilots (figures 17 and 18) and the
 // scrambling. Shared by the transmitter (test signal), the receiver and the tests. Internal.
 #pragma once
-#include "dect2/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_s2.h"
 #include <vector>
 
 namespace dect2 {

@@ -1,6 +1,6 @@
 // Signal workbench: measurements on synthetic recordings: peak finder accuracy, bandwidth, occupied bandwidth, SNR, symbol rate, bursts.
-#include "dect2/wb_gen.h"
-#include "dect2/wb_measure.h"
+#include "dect2/wb/wb_gen.h"
+#include "dect2/wb/wb_measure.h"
 #include "wb_test.h"
 #include <random>
 using namespace dect2::wb;

@@ -1,5 +1,5 @@
 // SAME / EAS message parsing and the tables: see same_proto.h.
-#include "dect2/same_proto.h"
+#include "dect2/same/same_proto.h"
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>

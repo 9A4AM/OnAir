@@ -1,5 +1,5 @@
 // DMR burst layout and message formats, see dmr_proto.h.
-#include "dect2/dmr_proto.h"
+#include "dect2/dmr/dmr_proto.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>

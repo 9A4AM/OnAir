@@ -1,7 +1,7 @@
 // Orbcomm receiver against the test transmitter: format helpers, one and two downlinks, Doppler (fixed and a +/-4 kHz ramp), noise
 // near the threshold, symbol clock offset, packets with a broken checksum, ephemeris positions.
-#include "dect2/orbcomm_gen.h"
-#include "dect2/orbcomm_rx.h"
+#include "dect2/orbcomm/orbcomm_gen.h"
+#include "dect2/orbcomm/orbcomm_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

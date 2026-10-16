@@ -5,8 +5,8 @@
 // polynomial, the packet layout offsets (paper appendix, 0x5b bytes).
 // SYNTHETIC ONLY (our own encoder and decoder agree, no real DJI capture was available): the LTE turbo encoder and rate matching details (tail-bit mapping,
 // sub-block interleaver, rv 0), the scrambler seed convention, the QPSK orientation, the QPP parameters (43, 88), the field scales (altitude 0.01 m).
-#include "dect2/dji_proto.h"
-#include "dect2/fftutil.h"
+#include "dect2/dji/dji_proto.h"
+#include "dect2/dsp/fftutil.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

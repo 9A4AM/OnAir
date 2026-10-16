@@ -1,8 +1,8 @@
-#include "dect2/nettuner.h"
-#include "dect2/hls.h"
-#include "dect2/platform.h"
+#include "dect2/net/nettuner.h"
+#include "dect2/tv/hls.h"
+#include "dect2/common/platform.h"
 #include "netcompat.h"
-#include "dect2/timecompat.h"
+#include "dect2/common/timecompat.h"
 #ifndef _WIN32
 #include <ifaddrs.h>
 #endif

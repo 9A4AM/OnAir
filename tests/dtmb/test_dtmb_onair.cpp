@@ -6,10 +6,10 @@
 // The test signal here is the transmitter model with every frame header replaced by the on-air PN595 written out in this file (not taken from
 // the receiver's tables, so that the two cannot drift together again), at the parameters of the recordings: 10 Msps, 8 MHz, a carrier offset of
 // 230 Hz, a clock 0.4 ppm off, a short echo, C/N 18 dB, 8 bit samples.
-#include "dect2/dtmb_defs.h"
-#include "dect2/dtmb_gen.h"
-#include "dect2/dtmb_rx.h"
-#include "dect2/dtmb_tx.h"
+#include "dect2/dtmb/dtmb_defs.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_rx.h"
+#include "dect2/dtmb/dtmb_tx.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

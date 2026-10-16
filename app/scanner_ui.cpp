@@ -4,8 +4,8 @@
 // moves on. Skip, lockout, a priority entry checked every N seconds, and a log of the hits. The state machine is app/scan_list.h.
 #include "app.h"
 #include "results_export.h"
-#include "dect2/results_io.h"
-#include "dect2/timecompat.h"
+#include "dect2/results/results_io.h"
+#include "dect2/common/timecompat.h"
 #include "scan_list.h"
 #include <cstring>
 #include <ctime>

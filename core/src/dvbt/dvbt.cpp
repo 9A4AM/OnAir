@@ -1,4 +1,4 @@
-#include "dect2/dvbt.h"
+#include "dect2/dvbt/dvbt.h"
 #include <algorithm>
 #include <atomic>
 #include <cassert>

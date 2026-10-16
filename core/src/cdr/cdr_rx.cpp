@@ -8,15 +8,15 @@
 // (Viterbi, CRC-6) of every sub-frame; per logical frame (after undoing the sub-frame allocation): the service description channel
 // (de-interleaving, Viterbi, descrambling, control multiplex frame) and the service data (de-interleaving of 5.7, LDPC, descrambling,
 // service multiplex frame).
-#include "dect2/cdr_rx.h"
-#include "dect2/audioout.h"
-#include "dect2/cdr_defs.h"
+#include "dect2/cdr/cdr_rx.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/cdr/cdr_defs.h"
 #include "dradec.h"
-#include "dect2/cdr_ldpc.h"
-#include "dect2/cdr_mux.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/channel_find.h"
-#include "dect2/fftutil.h"
+#include "dect2/cdr/cdr_ldpc.h"
+#include "dect2/cdr/cdr_mux.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/channels/channel_find.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <array>
 #include <atomic>

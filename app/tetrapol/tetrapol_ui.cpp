@@ -1,7 +1,7 @@
 // TETRAPOL screens: cells heard from D_SYSTEM_INFO on the downlink control channel. Receive only: no voice, nothing decrypted.
 #include "app.h"
-#include "dect2/tetrapol_rx.h"
-#include "dect2/tetrapol_tel.h"
+#include "dect2/tetrapol/tetrapol_rx.h"
+#include "dect2/tetrapol/tetrapol_tel.h"
 #include <cstdio>
 #include <ctime>
 #include <string>

@@ -1,10 +1,10 @@
 // HF beacons through the engine (setStandard(69)): the synthetic source plays single-letter beacons D (3594.7 kHz) and K (3595.3 kHz) keyed at 15 dB
 // in 100 Hz, and a steady carrier at 3595.45 kHz, 1 Msps around 3.65 MHz; the engine reports them as standard 68 with D and K heard (identity from
 // the keying), the carrier and the silent markers not. Also: the beacon list pushed from outside, results save / load / clear, the tuning table.
-#include "dect2/engine.h"
-#include "dect2/hfbeacon_gen.h"
-#include "dect2/hfbeacon_rx.h"
-#include "dect2/hfbeacon_tel.h"
+#include "dect2/engine/engine.h"
+#include "dect2/hfbeacon/hfbeacon_gen.h"
+#include "dect2/hfbeacon/hfbeacon_rx.h"
+#include "dect2/hfbeacon/hfbeacon_tel.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

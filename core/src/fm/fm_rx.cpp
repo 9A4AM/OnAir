@@ -3,12 +3,12 @@
 //   input -> channel filter (decimate to ~500 kHz) -> discriminator -> multiplex (MPX) at ~250 kHz
 //   MPX -> pilot PLL -> L+R (low-pass), L-R (x sin 2*pilot, low-pass) -> matrix -> de-emphasis -> 48 kHz audio
 //   MPX -> x exp(-j 3*pilot) -> low-pass -> 19 kHz -> carrier phase from the squared signal -> matched filter -> bits -> blocks -> groups
-#include "dect2/fm_rx.h"
-#include "dect2/audioout.h"
-#include "dect2/dsp_compat.h"
-#include "dect2/fftutil.h"
-#include "dect2/rds_tmc.h"
-#include "dect2/resampler.h"
+#include "dect2/fm/fm_rx.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/dsp/dsp_compat.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/fm/rds_tmc.h"
+#include "dect2/dsp/resampler.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

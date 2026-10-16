@@ -1,9 +1,9 @@
 // Zigbee / IEEE 802.15.4 monitor (see zigbee_rx.h).
-#include "dect2/zigbee_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/zigbee_tel.h"
-#include "dect2/zigbee_proto.h"
-#include "dect2/gen_util.h"
+#include "dect2/zigbee/zigbee_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/zigbee/zigbee_tel.h"
+#include "dect2/zigbee/zigbee_proto.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

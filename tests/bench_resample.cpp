@@ -1,4 +1,4 @@
-#include "dect2/resampler.h"
+#include "dect2/dsp/resampler.h"
 #include <chrono>
 #include <cstdio>
 using namespace dect2;

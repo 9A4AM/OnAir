@@ -1,6 +1,6 @@
 // PSK31 through the engine (setStandard(38)): the synthetic source plays the test band, the receiver reports through latestRx().
-#include "dect2/psk_rx.h"
-#include "dect2/engine.h"
+#include "dect2/psk/psk_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

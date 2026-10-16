@@ -1,5 +1,5 @@
 // Cell towers, LTE: sequences, resource grid, control region, DCI and PDSCH mapping (36.211, 36.212, 36.213). See cell_lte.h.
-#include "dect2/cell_lte.h"
+#include "dect2/cell/cell_lte.h"
 #include <algorithm>
 #include <cmath>
 

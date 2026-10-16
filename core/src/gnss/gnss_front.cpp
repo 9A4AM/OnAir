@@ -1,9 +1,9 @@
 // Front end of one GNSS signal band (see gnss_front.h).
-#include "dect2/gnss_front.h"
+#include "dect2/gnss/gnss_front.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 
 namespace dect2 {
 

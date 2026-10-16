@@ -1,6 +1,6 @@
 // DMR codes against known answers: the worked idle message of TS 102 361-1 annex D, the generator matrices of annex B, and values taken from
 // bursts that were captured off the air (published as test vectors by the ok-dmrlib project, https://github.com/OK-DMR/ok-dmrlib).
-#include "dect2/dmr_fec.h"
+#include "dect2/dmr/dmr_fec.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

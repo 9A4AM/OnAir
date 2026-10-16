@@ -1,7 +1,7 @@
 // DRM receiver front end: any input rate to the 48 kHz complex baseband the OFDM receiver works on (DRM+, mode E: 192 kHz). Private to the DRM receiver.
 #pragma once
-#include "dect2/exact_resampler.h"
-#include "dect2/ring.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/common/ring.h"
 #include <vector>
 
 namespace dect2 { namespace drm {

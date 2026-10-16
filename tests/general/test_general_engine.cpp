@@ -1,7 +1,7 @@
 // General receiver through the engine (setStandard(57)): the synthetic source plays an NFM station on the default frequency, the
 // receiver reports through latestRx() with the squelch open. No sound.
-#include "dect2/general_rx.h"
-#include "dect2/engine.h"
+#include "dect2/general/general_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

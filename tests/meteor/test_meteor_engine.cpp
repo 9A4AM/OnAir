@@ -1,8 +1,8 @@
 // Meteor-M LRPT through the engine (setStandard(61)): the synthetic source plays the test signal (OQPSK 72k, 1 Msps, offset tuning),
 // the receiver reports through latestRx() and the picture grows. No sound.
-#include "dect2/meteor_rx.h"
-#include "dect2/modes.h"
-#include "dect2/engine.h"
+#include "dect2/meteor/meteor_rx.h"
+#include "dect2/engine/modes.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

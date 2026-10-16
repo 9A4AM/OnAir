@@ -1,8 +1,8 @@
 // CW (Morse) test signal (see cw_gen.h).
-#include "dect2/cw_gen.h"
-#include "dect2/cw_morse.h"
-#include "dect2/cw_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/cw/cw_gen.h"
+#include "dect2/cw/cw_morse.h"
+#include "dect2/cw/cw_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <random>

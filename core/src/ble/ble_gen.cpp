@@ -1,9 +1,9 @@
 // Bluetooth LE advertising test signal (see ble_gen.h).
-#include "dect2/ble_gen.h"
-#include "dect2/ble_proto.h"
-#include "dect2/ble_rx.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
+#include "dect2/ble/ble_gen.h"
+#include "dect2/ble/ble_proto.h"
+#include "dect2/ble/ble_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <deque>
 

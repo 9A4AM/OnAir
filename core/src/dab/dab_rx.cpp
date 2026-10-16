@@ -1,13 +1,13 @@
 // DAB receiver, transmission mode I: null-symbol and phase-reference synchronisation, carrier and timing tracking, DQPSK
 // demodulation, fast information channel (ensemble, services, labels) and the main service channel of the selected sub-channel.
-#include "dect2/text_charset.h"
-#include "dect2/dab.h"
-#include "dect2/dab_journaline.h"
-#include "dect2/fftutil.h"
-#include "dect2/dab_tii.h"
-#include "dect2/dab_fig.h"
-#include "dect2/resampler.h"
-#include "dect2/channel_find.h"
+#include "dect2/common/text_charset.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_journaline.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/dab/dab_tii.h"
+#include "dect2/dab/dab_fig.h"
+#include "dect2/dsp/resampler.h"
+#include "dect2/channels/channel_find.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

@@ -1,6 +1,6 @@
 // Orbcomm test transmitter (orbcomm_gen.h).
-#include "dect2/orbcomm_gen.h"
-#include "dect2/portable_rng.h"
+#include "dect2/orbcomm/orbcomm_gen.h"
+#include "dect2/dsp/portable_rng.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

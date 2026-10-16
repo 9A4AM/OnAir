@@ -1,7 +1,7 @@
 // DVB-S2X VL-SNR frames, see dvbs_vlsnr.h. Clauses and tables are those of ETSI EN 302 307-2 V1.2.1, read from its text.
 #include "dvbs_vlsnr.h"
 #include "dvbs_s2x_tables.h"
-#include "dect2/t2fec.h"
+#include "dect2/t2/t2fec.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

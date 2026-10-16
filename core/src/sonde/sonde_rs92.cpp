@@ -1,7 +1,7 @@
 // RS92 frame decoder and builder (see sonde_rs92.h).
-#include "dect2/sonde_rs92.h"
-#include "dect2/sonde_geo.h"
-#include "dect2/sonde_rs41.h"
+#include "dect2/sonde/sonde_rs92.h"
+#include "dect2/sonde/sonde_geo.h"
+#include "dect2/sonde/sonde_rs41.h"
 #include <cmath>
 #include <cstring>
 

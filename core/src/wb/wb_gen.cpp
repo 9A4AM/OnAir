@@ -1,4 +1,4 @@
-#include "dect2/wb_gen.h"
+#include "dect2/wb/wb_gen.h"
 #include <algorithm>
 #include <cmath>
 #include <random>

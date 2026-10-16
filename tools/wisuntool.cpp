@@ -7,12 +7,12 @@
 //   wisuntool live <log.txt> [--secs s] [--center Hz] [--rate Hz] [--gain dB] [--region ANZ|NA|EU863|JP|...]
 //       the first radio found, for hours if need be: every frame (UTC time, MPDU hex) and a summary line a minute into the log
 //       (appended), the tables at the end
-#include "dect2/iq_file.h"
-#include "dect2/source.h"
-#include "dect2/wisun_gen.h"
-#include "dect2/wisun_proto.h"
-#include "dect2/wisun_rx.h"
-#include "dect2/wisun_tel.h"
+#include "dect2/source/iq_file.h"
+#include "dect2/source/source.h"
+#include "dect2/wisun/wisun_gen.h"
+#include "dect2/wisun/wisun_proto.h"
+#include "dect2/wisun/wisun_rx.h"
+#include "dect2/wisun/wisun_tel.h"
 #include <chrono>
 #include <ctime>
 #include <thread>

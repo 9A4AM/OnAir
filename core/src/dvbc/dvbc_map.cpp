@@ -1,7 +1,7 @@
 // DVB-C constellations, byte to symbol mapping with the differential coding of the two MSBs, and the test transmitter (EN 300 429 sections 7 to 9).
-#include "dect2/dvbc.h"
-#include "dect2/demo_ts.h"
-#include "dect2/dvbt.h"
+#include "dect2/dvbc/dvbc.h"
+#include "dect2/tv/demo_ts.h"
+#include "dect2/dvbt/dvbt.h"
 #include <algorithm>
 #include <cstring>
 

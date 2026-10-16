@@ -1,6 +1,6 @@
-#include "dect2/astro_gen.h"
-#include "dect2/astro_dsp.h"
-#include "dect2/fftutil.h"
+#include "dect2/astro/astro_gen.h"
+#include "dect2/astro/astro_dsp.h"
+#include "dect2/dsp/fftutil.h"
 #include <cmath>
 #include <vector>
 

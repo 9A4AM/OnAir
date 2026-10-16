@@ -1,7 +1,7 @@
 // Wi-Fi HaLow (802.11ah) pieces (see halow_proto.h).
-#include "dect2/halow_proto.h"
-#include "dect2/fftutil.h"
-#include "dect2/wifi_proto.h"
+#include "dect2/halow/halow_proto.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/wifi/wifi_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

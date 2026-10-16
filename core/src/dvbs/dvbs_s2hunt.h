@@ -3,7 +3,7 @@
 // each candidate is fitted with a maximum likelihood search over the 256 code words (DVB-S2 and S2X), the carrier frequency and the sense of the spectrum, and the
 // frames are followed from it by the lengths the MODCODs give. Internal.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <cstddef>
 #include <vector>
 

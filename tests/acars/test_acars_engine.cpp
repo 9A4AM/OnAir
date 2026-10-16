@@ -1,7 +1,7 @@
 // ACARS through the engine, as the interface and dect2cli use it: the synthetic source plays the test signal (8 bit samples, paced like a radio),
 // the engine must decode, keep every sample, and report through latestRx().
-#include "dect2/acars_gen.h"
-#include "dect2/engine.h"
+#include "dect2/acars/acars_gen.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -1,7 +1,7 @@
 // Wi-Fi networks through the engine (setStandard(56)): the synthetic source plays the test schedule, the receiver reports through
 // latestRx(). No sound.
-#include "dect2/wifi_rx.h"
-#include "dect2/engine.h"
+#include "dect2/wifi/wifi_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

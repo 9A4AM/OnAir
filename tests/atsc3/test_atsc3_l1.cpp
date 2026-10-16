@@ -1,7 +1,7 @@
 // ATSC 3.0 L1-Basic: packing with CRC, the protection chain for modes 1 to 5 (cell counts of A/322 Table 6.17, decoding in noise), and the
 // complete path through a Preamble OFDM symbol.
-#include "dect2/atsc3_l1.h"
-#include "dect2/atsc3_ofdm.h"
+#include "dect2/atsc3/atsc3_l1.h"
+#include "dect2/atsc3/atsc3_ofdm.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

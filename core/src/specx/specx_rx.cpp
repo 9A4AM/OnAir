@@ -1,6 +1,6 @@
-#include "dect2/specx_rx.h"
-#include "dect2/specx_tel.h"
-#include "dect2/fftutil.h"
+#include "dect2/specx/specx_rx.h"
+#include "dect2/specx/specx_tel.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

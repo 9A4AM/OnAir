@@ -1,5 +1,5 @@
-#include "dect2/wb_source.h"
-#include "dect2/iq_file.h"
+#include "dect2/wb/wb_source.h"
+#include "dect2/source/iq_file.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

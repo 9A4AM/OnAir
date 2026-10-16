@@ -1,8 +1,8 @@
 // Input sample rates from 2.046 to 10 Msps (the radio's choice, not the receiver's): the receiver must lock the satellites, find the frame start and the
 // time of every satellite, and measure pseudoranges that agree with the simulated truth. 20 s of signal each: the first subframe ends 14 s in.
 // (20 Msps and the position fix are in test_gnss_rate20.)
-#include "dect2/gnss_testkit.h"
-#include "dect2/test_parallel.h"
+#include "dect2/gnss/gnss_testkit.h"
+#include "dect2/engine/test_parallel.h"
 #include <cstdlib>
 #include <cmath>
 #include <cstdio>

@@ -1,8 +1,8 @@
 // FLARM receiver under real-world impairments: AWGN near the threshold, carrier offsets of +-10 kHz, chip clock errors of +-50 ppm, two transmitters
 // colliding, a transmitter clock a few seconds off at a key-time step boundary. Loopback against our own generator (flarm_gen.h), not on-air captures.
-#include "dect2/flarm_gen.h"
-#include "dect2/flarm_rx.h"
-#include "dect2/flarm_tel.h"
+#include "dect2/flarm/flarm_gen.h"
+#include "dect2/flarm/flarm_rx.h"
+#include "dect2/flarm/flarm_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

@@ -1,7 +1,7 @@
 // DMR under real-radio faults (REAL_WORLD_CHECKLIST.md): a radio 50 ppm off at 446 MHz (22 kHz), a mirrored spectrum (I and Q swapped), and the
 // combined case (offset, +80 ppm clock, an echo, 8-bit clipping) through the real receiver, base station and direct mode. A lone carrier on the
 // 12.5 kHz raster stays the neighbouring channel (test_dmr_radio).
-#include "dect2/dmr_eval.h"
+#include "dect2/dmr/dmr_eval.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdio>

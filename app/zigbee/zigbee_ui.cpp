@@ -4,9 +4,9 @@
 // Receive only: nothing is ever sent, joined or answered; encrypted payloads are not decrypted (the network key is not obtainable here), only frames
 // sent in the clear are shown in full.
 #include "app.h"
-#include "dect2/zigbee_proto.h"
-#include "dect2/zigbee_rx.h"
-#include "dect2/zigbee_tel.h"
+#include "dect2/zigbee/zigbee_proto.h"
+#include "dect2/zigbee/zigbee_rx.h"
+#include "dect2/zigbee/zigbee_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

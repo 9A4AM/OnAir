@@ -2,9 +2,9 @@
 // the orbit algorithm against closed forms, the time and coordinate helpers against known dates and points.
 // The navigation messages here come from the simulator (gnss_sim.cpp), which encodes them with its own code: a layout mistake that is the same
 // in both would not show, so the field positions are also pinned by the properties of the message (preamble, TOW count, parity solved bits).
-#include "dect2/gnss_codes.h"
-#include "dect2/gnss_nav.h"
-#include "dect2/gnss_sim.h"
+#include "dect2/gnss/gnss_codes.h"
+#include "dect2/gnss/gnss_nav.h"
+#include "dect2/gnss/gnss_sim.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

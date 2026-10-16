@@ -1,8 +1,8 @@
 // Radio astronomy through the engine (setStandard(50)): the synthetic source plays the hydrogen-line test sky in real time; the running
 // average and a finished 1 s integration come back through latestRx() as standard 49.
-#include "dect2/astro_rx.h"
-#include "dect2/astro_tel.h"
-#include "dect2/engine.h"
+#include "dect2/astro/astro_rx.h"
+#include "dect2/astro/astro_tel.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

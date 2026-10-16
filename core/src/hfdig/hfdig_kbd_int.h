@@ -1,8 +1,8 @@
 // Inside the keyboard-to-keyboard decoders (hfdig_kbd.h): the engine each family implements, the transmitter base, and the small DSP parts
 // they share (FFT, fast Hadamard transform, Gray code, Viterbi decoder for the K = 7 / K = 15 codes, the text filter).
 #pragma once
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_kbd.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_kbd.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

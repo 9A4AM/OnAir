@@ -1,7 +1,7 @@
 // CCSDS shared pieces (ccsds.h): CRC-16 check value, and the CCSDS 121 Rice coder: round trips over sample widths, block sizes,
 // reference intervals, with and without the predictor, flat / smooth / noisy / zero data (zero block runs and the rest-of-segment
 // code), a padded last block, truncated input.
-#include "dect2/ccsds.h"
+#include "dect2/ccsds/ccsds.h"
 #include <cstdio>
 #include <random>
 #include <vector>

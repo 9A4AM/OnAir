@@ -1,5 +1,5 @@
-#include "dect2/hamlib_rig.h"
-#include "dect2/hamlib_link.h"
+#include "dect2/source/hamlib_rig.h"
+#include "dect2/source/hamlib_link.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>

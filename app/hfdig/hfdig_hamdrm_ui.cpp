@@ -5,8 +5,8 @@
 #include "gallery.h"
 #include "gfx.h"
 #include "platform.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/png.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/common/png.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>

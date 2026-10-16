@@ -1,8 +1,8 @@
 // DRM transmitter and back end without the synchronisation: the transmitter's baseband is cut into symbols at the exact positions, transformed, and
 // the cells go to the back end (FAC, SDC, time deinterleaver, multilevel decoder). Checks the structure of the signal and the formats.
-#include "dect2/drm_dec.h"
-#include "dect2/drm_fft.h"
-#include "dect2/drm_gen.h"
+#include "dect2/drm/drm_dec.h"
+#include "dect2/drm/drm_fft.h"
+#include "dect2/drm/drm_gen.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

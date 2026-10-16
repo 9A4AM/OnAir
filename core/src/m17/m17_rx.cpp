@@ -1,10 +1,10 @@
 // M17 receiver (see m17_rx.h).
-#include "dect2/m17_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/m17_tel.h"
-#include "dect2/m17_proto.h"
-#include "dect2/m17_codec2.h"
-#include "dect2/audioout.h"
+#include "dect2/m17/m17_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/m17/m17_tel.h"
+#include "dect2/m17/m17_proto.h"
+#include "dect2/m17/m17_codec2.h"
+#include "dect2/audio/audioout.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

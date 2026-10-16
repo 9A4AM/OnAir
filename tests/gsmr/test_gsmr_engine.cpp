@@ -1,10 +1,10 @@
 // GSM-R through the engine (setStandard(41)): the synthetic source plays the two railway cells at 5 Msps; the receiver finds them and reports
 // through latestRx() with their ARFCNs.
-#include "dect2/engine.h"
-#include "dect2/gsmr_gen.h"
-#include "dect2/gsmr_rx.h"
-#include "dect2/gsmr_tel.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/gsmr/gsmr_gen.h"
+#include "dect2/gsmr/gsmr_rx.h"
+#include "dect2/gsmr/gsmr_tel.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

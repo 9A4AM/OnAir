@@ -1,8 +1,8 @@
 // HRPT / AHRPT protocol layers: known-answer vectors written out here, independent of the code under test, where the standards give them
 // (CCSDS ASM and the convolutional code's impulse response, the NOAA HRPT sync words, 10-bit packing), then round trips of the pieces.
-#include "dect2/hrpt_gen.h"
-#include "dect2/hrpt_proto.h"
-#include "dect2/meteor_proto.h"
+#include "dect2/hrpt/hrpt_gen.h"
+#include "dect2/hrpt/hrpt_proto.h"
+#include "dect2/meteor/meteor_proto.h"
 #include <cstdio>
 #include <random>
 using namespace dect2;

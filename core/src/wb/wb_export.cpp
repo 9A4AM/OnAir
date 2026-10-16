@@ -1,6 +1,6 @@
-#include "dect2/wb_export.h"
-#include "dect2/iq_file.h"
-#include "dect2/wb_dsp.h"
+#include "dect2/wb/wb_export.h"
+#include "dect2/source/iq_file.h"
+#include "dect2/wb/wb_dsp.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

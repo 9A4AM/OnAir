@@ -1,7 +1,7 @@
 // Pagers screens: lamps for the signal, the sync and the two protocols; the message list with a filter; the statistics per speed.
 #include "app.h"
-#include "dect2/pager_rx.h"
-#include "dect2/pager_tel.h"
+#include "dect2/pager/pager_rx.h"
+#include "dect2/pager/pager_tel.h"
 #include "platform.h"
 #include <algorithm>
 #include <cctype>

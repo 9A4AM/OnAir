@@ -1,10 +1,10 @@
 // QO-100 through the engine (setStandard(55)): the synthetic source plays the narrowband transponder at 2 Msps in real time; the beacons
 // lock and the reports come back through latestRx() as standard 54 with the LNB error.
-#include "dect2/engine.h"
-#include "dect2/qo100_dsp.h"
-#include "dect2/qo100_gen.h"
-#include "dect2/qo100_rx.h"
-#include "dect2/qo100_tel.h"
+#include "dect2/engine/engine.h"
+#include "dect2/qo100/qo100_dsp.h"
+#include "dect2/qo100/qo100_gen.h"
+#include "dect2/qo100/qo100_rx.h"
+#include "dect2/qo100/qo100_tel.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

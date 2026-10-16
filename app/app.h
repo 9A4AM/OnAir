@@ -16,33 +16,33 @@
 #include <GLFW/glfw3.h>
 
 
-#include "dect2/engine.h"
-#include "dect2/modes.h"
-#include "dect2/gpu_ldpc.h"
-#include "dect2/t2rx.h"
-#include "dect2/nettuner.h"
-#include "dect2/netradio.h"
-#include "dect2/hamlib_rig.h"
-#include "dect2/rig_setup.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
+#include "dect2/dsp/gpu_ldpc.h"
+#include "dect2/t2/t2rx.h"
+#include "dect2/net/nettuner.h"
+#include "dect2/net/netradio.h"
+#include "dect2/source/hamlib_rig.h"
+#include "dect2/source/rig_setup.h"
 #include "airplay.h"
-#include "dect2/timecompat.h"
-#include "dect2/platform.h"
-#include "dect2/scanner.h"
-#include "dect2/updater.h"
-#include "dect2/gain.h"
-#include "dect2/gain_opt.h"
-#include "dect2/tx.h"
-#include "dect2/channel.h"
-#include "dect2/dvbt.h"
-#include "dect2/quality.h"
-#include "dect2/direction.h"
-#include "dect2/teletext.h"
-#include "dect2/feeds.h"
-#include "dect2/share.h"
-#include "dect2/pskreporter.h"
-#include "dect2/wsprnet.h"
-#include "dect2/passes.h"
-#include "dect2/maplayers.h"
+#include "dect2/common/timecompat.h"
+#include "dect2/common/platform.h"
+#include "dect2/engine/scanner.h"
+#include "dect2/engine/updater.h"
+#include "dect2/source/gain.h"
+#include "dect2/source/gain_opt.h"
+#include "dect2/tx/tx.h"
+#include "dect2/channels/channel.h"
+#include "dect2/dvbt/dvbt.h"
+#include "dect2/engine/quality.h"
+#include "dect2/dsp/direction.h"
+#include "dect2/tv/teletext.h"
+#include "dect2/net/feeds.h"
+#include "dect2/net/share.h"
+#include "dect2/net/pskreporter.h"
+#include "dect2/net/wsprnet.h"
+#include "dect2/geo/passes.h"
+#include "dect2/geo/maplayers.h"
 #include "theme.h"
 #include "gfx.h"
 #include "icons.h"
@@ -893,7 +893,7 @@ float specCornerPopup(App& a, const char* label, const char* popId, ImVec2 plotM
 float bandPlanStripHeight();         // plots.cpp: one text line plus padding; follows the font and resize
 void drawBandPlanStrip(ImDrawList* dl, float x0, float x1, float y, float h, double loMhz, double hiMhz);   // saAllocations in view
 void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, float x1, float y0, float y1);   // specx_ui.cpp: named point / range marks
-// specx_ident.cpp: "Identify this signal" (dect2/sig_ident.h). The region is [offHz -+ widthHz / 2] from the samples' centre, which the radio
+// specx_ident.cpp: "Identify this signal" (dect2/engine/sig_ident.h). The region is [offHz -+ widthHz / 2] from the samples' centre, which the radio
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)
 void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widthHz, double rfOfCentreHz);
 void identifyAt(App& a, double clickMhz);
@@ -1016,5 +1016,5 @@ void wizFinish(App& a);
 void wizard(App& a, ImVec2 disp);
 void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
 void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
-#include "dect2/device_claims.h"
+#include "dect2/engine/device_claims.h"
 #include "receivers.h"

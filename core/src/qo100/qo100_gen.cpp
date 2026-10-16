@@ -1,6 +1,6 @@
-#include "dect2/qo100_gen.h"
-#include "dect2/qo100_dsp.h"
-#include "dect2/fftutil.h"
+#include "dect2/qo100/qo100_gen.h"
+#include "dect2/qo100/qo100_dsp.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>

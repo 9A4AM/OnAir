@@ -1,4 +1,4 @@
-#include "dect2/mesh_pb.h"
+#include "dect2/mesh/mesh_pb.h"
 
 namespace dect2 {
 namespace meshpb {

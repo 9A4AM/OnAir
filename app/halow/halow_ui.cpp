@@ -2,9 +2,9 @@
 // the live frame log with a frames-per-second plot, the region (EU 863 - 868 MHz / US 902 - 928 MHz) and channel pickers, and the channel scan.
 // Receive only: nothing is ever sent, joined or answered; nothing is decrypted, the security type is only what the beacon announces.
 #include "app.h"
-#include "dect2/halow_proto.h"
-#include "dect2/halow_rx.h"
-#include "dect2/halow_tel.h"
+#include "dect2/halow/halow_proto.h"
+#include "dect2/halow/halow_rx.h"
+#include "dect2/halow/halow_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

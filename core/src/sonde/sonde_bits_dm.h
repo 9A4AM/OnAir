@@ -7,7 +7,7 @@
 //  - rs1729/RS demod/mod/demod_mod.c (read_softbit2p: the line code is read two symbols at a time)
 //  - oe5hpm/dxlAPRS src/sondeudp.c (independent: the M10 sync word 0x649F20)
 #pragma once
-#include "dect2/sonde_bits.h"
+#include "dect2/sonde/sonde_bits.h"
 #include <cstdint>
 #include <cstddef>
 #include <vector>

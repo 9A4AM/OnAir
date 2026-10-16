@@ -1,9 +1,9 @@
 // Zigbee / IEEE 802.15.4 test signal (see zigbee_gen.h).
-#include "dect2/zigbee_gen.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
-#include "dect2/zigbee_proto.h"
-#include "dect2/zigbee_rx.h"
+#include "dect2/zigbee/zigbee_gen.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
+#include "dect2/zigbee/zigbee_proto.h"
+#include "dect2/zigbee/zigbee_rx.h"
 #include <cmath>
 #include <deque>
 #include <random>

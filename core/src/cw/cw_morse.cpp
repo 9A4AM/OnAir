@@ -1,5 +1,5 @@
 // CW (Morse) code table, callsign pattern and timing decoder (see cw_morse.h).
-#include "dect2/cw_morse.h"
+#include "dect2/cw/cw_morse.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

@@ -1,5 +1,5 @@
 // Bandwidth detection from modelled spectra: flat-top OFDM with ripple (multipath), noise, a DC spike, deep fades and neighbours.
-#include "dect2/bandwidth.h"
+#include "dect2/dsp/bandwidth.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

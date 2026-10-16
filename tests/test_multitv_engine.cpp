@@ -2,7 +2,7 @@
 // With the switch on, every occupied channel locks and shows its service list with the channel it comes from, an empty slot gets no receiver, the
 // channel that plays can be changed, and the load per receiver is printed. With the switch off, or a capture that holds one channel, the single
 // receiver runs as before (no channel table, same results).
-#include "dect2/engine.h"
+#include "dect2/engine/engine.h"
 #include "multitv_testkit.h"
 #include <chrono>
 #include <cmath>

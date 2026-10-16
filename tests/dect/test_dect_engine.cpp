@@ -1,6 +1,6 @@
 // DECT through the engine (setStandard(80)): the synthetic source plays the test base stations, the receiver reports through latestRx().
-#include "dect2/engine.h"
-#include "dect2/dect_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/dect/dect_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

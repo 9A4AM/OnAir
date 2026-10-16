@@ -1,5 +1,5 @@
 // Radiosonde landing prediction: straight down lands below, drift moves the landing point, a rising sonde has no prediction.
-#include "dect2/sonde_land.h"
+#include "dect2/sonde/sonde_land.h"
 #include <cmath>
 #include <cstdio>
 static int fails = 0;

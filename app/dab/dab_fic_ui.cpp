@@ -2,7 +2,7 @@
 // (https://github.com/Opendigitalradio/etisnoop): a node per FIG type and extension, a node per distinct FIG under it with how often and how
 // regularly it comes, and the decoded fields of that FIG under that (dab_fig.h).
 #include "app.h"
-#include "dect2/dab_fig.h"
+#include "dect2/dab/dab_fig.h"
 #include <functional>
 
 namespace {

@@ -1,5 +1,5 @@
 // FT8, FT4, FT2 and WSPR inside the HF digital receiver: the pieces the decoder (hfdig_ftx.cpp), the WSPR codec (hfdig_wspr.cpp), the
-// test audio (hfdig_ftx_gen.cpp) and the tests share. Not part of the public interface (see dect2/hfdig_ftx.h).
+// test audio (hfdig_ftx_gen.cpp) and the tests share. Not part of the public interface (see dect2/hfdig/hfdig_ftx.h).
 //
 // Sources (read, re-implemented, credited):
 //   WSJT-X (K1JT et al., GPL-3): lib/ft8/genft8.f90, lib/ft4/genft4.f90, lib/ft8/encode174_91.f90, lib/ft8/ldpc_174_91_c_generator.f90,

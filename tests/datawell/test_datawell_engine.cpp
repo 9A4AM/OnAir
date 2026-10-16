@@ -1,7 +1,7 @@
 // Datawell buoy HF link through the engine (setStandard(76)): the synthetic source plays the 2FSK HXV test signal, the receiver reports through
 // latestRx(). No sound.
-#include "dect2/datawell_rx.h"
-#include "dect2/engine.h"
+#include "dect2/datawell/datawell_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

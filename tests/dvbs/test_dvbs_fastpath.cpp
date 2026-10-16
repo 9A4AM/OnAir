@@ -1,7 +1,7 @@
 // DVB-S speed-up check: the receiver with the fast carrier loop and decoder paths must deliver exactly the transport stream that the reference
 // paths (the carrier loop one symbol at a time with libm, as before the speed-up) deliver, for every code rate and for noise levels from clean down
 // to a few tenths of a dB above the point where Viterbi plus Reed-Solomon stop being error free.
-#include "dect2/dvbs_testkit.h"
+#include "dect2/dvbs/dvbs_testkit.h"
 #include "../../core/src/dvbs/dvbs_carrier.h"
 #include <cstdio>
 #include <cstdlib>

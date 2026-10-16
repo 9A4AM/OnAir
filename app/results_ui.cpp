@@ -4,8 +4,8 @@
 // thread only. Each list is emptied by its own Clear.
 #include "app.h"
 #include "platform.h"
-#include "dect2/results_io.h"
-#include "dect2/scanner.h"
+#include "dect2/results/results_io.h"
+#include "dect2/engine/scanner.h"
 #include <cstdio>
 #include <filesystem>
 #include <fstream>

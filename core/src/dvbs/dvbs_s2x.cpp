@@ -1,6 +1,6 @@
 // DVB-S2X MODCODs and constellations, see dvbs_s2x.h. Tables and clauses are those of ETSI EN 302 307-2 V1.2.1, read from its text.
 #include "dvbs_s2x.h"
-#include "dect2/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_s2.h"
 #include <cmath>
 #include <cstdlib>
 #include <cstring>

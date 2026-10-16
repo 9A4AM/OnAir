@@ -2,8 +2,8 @@
 // address, the saved list.
 #include "../core/src/tcp_client.h"
 #include "../core/src/native_common.h"
-#include "dect2/netradio.h"
-#include "dect2/share.h"
+#include "dect2/net/netradio.h"
+#include "dect2/net/share.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>

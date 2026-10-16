@@ -4,9 +4,9 @@
 // OnAir: window, main loop and the layout of the panels.
 #include "app.h"
 #include "contrast.h"
-#include "dect2/iq_file.h"
+#include "dect2/source/iq_file.h"
 #include "gallery.h"
-#include "dect2/crash_report.h"
+#include "dect2/engine/crash_report.h"
 #include "discord_rpc.h"
 #include <chrono>
 #include <cstdlib>

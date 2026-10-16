@@ -1,6 +1,6 @@
 // DTMB channel decoder (see dtmb_chain.h).
-#include "dect2/dtmb_chain.h"
-#include "dect2/dtmb_map.h"
+#include "dect2/dtmb/dtmb_chain.h"
+#include "dect2/dtmb/dtmb_map.h"
 #include "../dvbs/dvbs_compute.h"
 #include <algorithm>
 #include <chrono>

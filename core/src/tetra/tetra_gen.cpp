@@ -1,7 +1,7 @@
 // TETRA test signal (tetra_gen.h).
-#include "dect2/tetra_gen.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/source.h"
+#include "dect2/tetra/tetra_gen.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <random>
 

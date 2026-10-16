@@ -1,5 +1,5 @@
 // Spectrum analyser maths: see specan_dsp.h
-#include "dect2/specan_dsp.h"
+#include "dect2/specan/specan_dsp.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

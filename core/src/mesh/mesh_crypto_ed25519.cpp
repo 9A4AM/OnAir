@@ -1,7 +1,7 @@
 // Ed25519 (RFC 8032 5.1) on the twisted Edwards curve of Curve25519. Field elements are 16 limbs of 16 bits in int64_t
 // (same layout idea as TweetNaCl, written out here); the curve constant d, sqrt(-1) and the base point are derived at
 // start from their definitions, so no long constants are typed in. Variable-time: only for public data and test keys.
-#include "dect2/mesh_crypto.h"
+#include "dect2/mesh/mesh_crypto.h"
 #include <cstring>
 #include <vector>
 

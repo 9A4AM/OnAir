@@ -1,4 +1,4 @@
-#include "dect2/gpu_ldpc.h"
+#include "dect2/dsp/gpu_ldpc.h"
 
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>

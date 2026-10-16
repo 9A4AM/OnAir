@@ -1,6 +1,6 @@
 // Acquisition by FFT (see gnss_acq.h).
-#include "dect2/gnss_acq.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/gnss/gnss_acq.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

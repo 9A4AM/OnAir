@@ -1,5 +1,5 @@
 // DRM (ETSI ES 201 980 V4.3.1): OFDM parameters, pilot, FAC and SDC cell structure, code rate tables.
-#include "dect2/drm_defs.h"
+#include "dect2/drm/drm_defs.h"
 #include "drm_internal.h"
 #include <algorithm>
 #include <cmath>

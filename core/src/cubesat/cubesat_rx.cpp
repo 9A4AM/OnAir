@@ -1,11 +1,11 @@
 // CubeSat telemetry receiver: see cubesat_rx.h. The radio side is the packet receiver's (packet_demod.h), the frame layers are
 // packet_ax25.h and cubesat_proto.h.
-#include "dect2/cubesat_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/cubesat_tel.h"
-#include "dect2/feeds.h"
-#include "dect2/packet_ax25.h"
-#include "dect2/packet_demod.h"
+#include "dect2/cubesat/cubesat_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/cubesat/cubesat_tel.h"
+#include "dect2/net/feeds.h"
+#include "dect2/packet/packet_ax25.h"
+#include "dect2/packet/packet_demod.h"
 #include <algorithm>
 #include <cctype>
 #include <chrono>

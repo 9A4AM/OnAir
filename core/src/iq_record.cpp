@@ -1,5 +1,5 @@
-#include "dect2/iq_record.h"
-#include "dect2/mode_tuning.h"
+#include "dect2/source/iq_record.h"
+#include "dect2/engine/mode_tuning.h"
 #include <algorithm>
 #include <cerrno>
 #include <cmath>

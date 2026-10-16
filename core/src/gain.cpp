@@ -1,4 +1,4 @@
-#include "dect2/gain.h"
+#include "dect2/source/gain.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

@@ -1,6 +1,6 @@
 // Map layers: result lists to markers, satellite footprint and ground track, circle geometry
-#include "dect2/maplayers.h"
-#include "dect2/maidenhead.h"
+#include "dect2/geo/maplayers.h"
+#include "dect2/geo/maidenhead.h"
 #include <cmath>
 #include <cstdio>
 

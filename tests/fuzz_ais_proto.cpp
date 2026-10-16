@@ -1,6 +1,6 @@
 // AIS frame layer under mutation: libFuzzer entry point (clang -fsanitize=fuzzer, -DONAIR_LIBFUZZER) or, by default, a deterministic run of seeded
 // mutations of valid frames and sentences (ONAIR_FUZZ_ITERS, default 200000). Meant to run under DECT2_SANITIZE=ON: any crash or UB report fails it.
-#include "dect2/ais_proto.h"
+#include "dect2/ais/ais_proto.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

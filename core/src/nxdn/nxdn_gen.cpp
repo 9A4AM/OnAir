@@ -1,8 +1,8 @@
 // NXDN test signal (see nxdn_gen.h): whole transmissions as four-level FSK, over noise.
-#include "dect2/nxdn_gen.h"
-#include "dect2/nxdn_rx.h"
-#include "dect2/nxdn_proto.h"
-#include "dect2/gen_util.h"
+#include "dect2/nxdn/nxdn_gen.h"
+#include "dect2/nxdn/nxdn_rx.h"
+#include "dect2/nxdn/nxdn_proto.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

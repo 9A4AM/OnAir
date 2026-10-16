@@ -1,9 +1,9 @@
 // TETRAPOL test signal: one UHF control-channel carrier of GMSK 8 kbit/s data frames (D_SYSTEM_INFO).
-#include "dect2/tetrapol_gen.h"
-#include "dect2/tetrapol_codec.h"
-#include "dect2/tetrapol_rx.h"
-#include "dect2/gen_util.h"
-#include "dect2/gsmr_phy.h"
+#include "dect2/tetrapol/tetrapol_gen.h"
+#include "dect2/tetrapol/tetrapol_codec.h"
+#include "dect2/tetrapol/tetrapol_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/gsmr/gsmr_phy.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>

@@ -2,12 +2,12 @@
 // map), the weather fax picture (zoom, pan, slant, save as PNG) and a tuning aid (the audio spectrum with the tones each service expects).
 #include "app.h"
 #include "gallery.h"
-#include "dect2/results_io.h"
+#include "dect2/results/results_io.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/marine_tel.h"
-#include "dect2/marine_navtex_save.h"
-#include "dect2/marine_wefax_stations.h"
-#include "dect2/updater.h"
+#include "dect2/marine/marine_tel.h"
+#include "dect2/marine/marine_navtex_save.h"
+#include "dect2/marine/marine_wefax_stations.h"
+#include "dect2/engine/updater.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

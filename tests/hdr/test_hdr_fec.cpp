@@ -2,9 +2,9 @@
 // the impulse responses of the convolutional codes, the soft Viterbi decoder on noisy tail-biting words, the Reed-Solomon header code,
 // the interleaver tables (every position used once; the AM block layout of 1012s figure 10-2), and the Layer 2 pieces (SIS, PDU, HDLC,
 // ID3, SIG, LOT) through the decoder. Quick and silent.
-#include "dect2/hdr_fec.h"
-#include "dect2/hdr_gen.h"
-#include "dect2/hdr_l2.h"
+#include "dect2/hdr/hdr_fec.h"
+#include "dect2/hdr/hdr_gen.h"
+#include "dect2/hdr/hdr_l2.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

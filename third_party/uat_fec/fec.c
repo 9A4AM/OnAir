@@ -22,7 +22,7 @@
 #include <math.h>
 #include <unistd.h>
 
-#include "dect2/uat_frame.h"
+#include "dect2/uat/uat_frame.h"
 #include "rs.h"
 
 static void *rs_uplink;

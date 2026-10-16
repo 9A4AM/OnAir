@@ -1,9 +1,9 @@
 // TETRA network information receiver (tetra_rx.h): blocks of input, 25 kHz carriers found in the spectrum, slot synchronised on the
 // training sequences, the broadcast channels decoded.
-#include "dect2/tetra_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/cell_dsp.h"
-#include "dect2/tetra_tel.h"
+#include "dect2/tetra/tetra_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/tetra/tetra_tel.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

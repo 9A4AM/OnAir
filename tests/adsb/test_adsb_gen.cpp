@@ -1,8 +1,8 @@
 // ADS-B test signal generator: determinism, levels, options, the message mix at its rates, and the correctness of what is sent (every frame must carry
 // a valid CRC, every address / parity frame the address of an aircraft that also sends clean ones).
-#include "dect2/adsb_gen.h"
-#include "dect2/adsb_sim.h"
-#include "dect2/modes.h"
+#include "dect2/adsb/adsb_gen.h"
+#include "dect2/adsb/adsb_sim.h"
+#include "dect2/engine/modes.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

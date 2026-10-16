@@ -3,8 +3,8 @@
 // drm_aacenc.cpp (the DRM test signal's encoder, which libavcodec's decoder accepts); the Huffman tables are the ones of drm_aactab.cpp. What differs
 // from DRM: two channels, the standard syntax (no codeword reordering) and the sampling rates 32 and 48 kHz. libavcodec's own encoder cannot be used,
 // it only makes 1024 sample frames.
-#include "dect2/dab_gen.h"
-#include "dect2/drm_fft.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/drm/drm_fft.h"
 #include "../drm/drm_aac_internal.h"
 #include <algorithm>
 #include <cmath>

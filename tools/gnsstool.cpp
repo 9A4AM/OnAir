@@ -6,8 +6,8 @@
 //   --seed N  --lat deg --lon deg --height m  --jammer  --dc X  --noise X (rms per component, default 0.14)
 //   --systems M (simulated systems, gnssSystemBit mask: 1 GPS, 2 GLONASS, 4 BeiDou, 8 Galileo, 16 QZSS, 32 SBAS; default 1)  --center MHz (the tune, default 1575.42)  --rxsys M (systems the receiver looks for, default all)
 // The simulated satellites are synthetic (see docs/modes/gnss.md): nothing here is a real signal.
-#include "dect2/gnss_rx.h"
-#include "dect2/gnss_sim.h"
+#include "dect2/gnss/gnss_rx.h"
+#include "dect2/gnss/gnss_sim.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

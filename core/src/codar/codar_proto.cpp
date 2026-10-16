@@ -1,5 +1,5 @@
 // CODAR / HF ocean radar: the radar bands, the scan plan and the "possible" hint (see codar_rx.h).
-#include "dect2/codar_rx.h"
+#include "dect2/codar/codar_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

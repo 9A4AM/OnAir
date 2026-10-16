@@ -1,8 +1,8 @@
 // VDES: ASM bursts (GMSK 9.6 kbit/s, AIS framing) decode with the payload sent; VDE-TER bursts of 25 / 50 / 100 kHz are detected, their bandwidth, band,
 // level and modulation (pi/4-QPSK, 8PSK, 16QAM) reported; offsets, noise and clock errors; noise alone gives nothing.
-#include "dect2/gen_util.h"
-#include "dect2/vdes_gen.h"
-#include "dect2/vdes_rx.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/vdes/vdes_gen.h"
+#include "dect2/vdes/vdes_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

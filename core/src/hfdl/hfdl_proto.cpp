@@ -1,7 +1,7 @@
 // HFDL layers (hfdl_proto.h)
-#include "dect2/hfdl_proto.h"
-#include "dect2/acars_proto.h"
-#include "dect2/aero_pos.h"
+#include "dect2/hfdl/hfdl_proto.h"
+#include "dect2/acars/acars_proto.h"
+#include "dect2/aero/aero_pos.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

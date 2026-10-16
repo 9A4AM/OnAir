@@ -1,5 +1,5 @@
 // PCSK225 demod + frame assembly (sp5wwp/e-Czas). Input is post-FM-discriminator int16 PCM.
-#include "dect2/eczas_rx.h"
+#include "dect2/eczas/eczas_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>

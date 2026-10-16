@@ -2,8 +2,8 @@
 //   inmctool gen <secs> <file.cs8|.cf32> [--rate sps] [--ebn0 dB] [--cfo Hz] [--drift Hz/s] [--sro ppm] [--seed n] [--invert] [--noiseless] [--offset Hz]
 //   inmctool rx <file> --rate <sps> [--format cs8|cu8|cf32] [--offset Hz]
 // The channel is expected at --offset Hz from the centre of the recording (default -50000, as the engine tunes the radio 50 kHz above the channel).
-#include "dect2/inmc_gen.h"
-#include "dect2/inmc_rx.h"
+#include "dect2/inmc/inmc_gen.h"
+#include "dect2/inmc/inmc_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

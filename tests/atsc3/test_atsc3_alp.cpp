@@ -1,7 +1,7 @@
 // ATSC 3.0 ALP (A/330): header formats, and a stream of mixed IPv4, signaling and TS packets (single, segmented, concatenated) cut into
 // baseband packets and reassembled.
-#include "dect2/atsc3_alp.h"
-#include "dect2/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_alp.h"
+#include "dect2/atsc3/atsc3_bb.h"
 #include <cstdio>
 #include <random>
 

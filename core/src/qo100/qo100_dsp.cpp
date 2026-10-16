@@ -1,5 +1,5 @@
-#include "dect2/qo100_dsp.h"
-#include "dect2/dmr_dsp.h"
+#include "dect2/qo100/qo100_dsp.h"
+#include "dect2/dmr/dmr_dsp.h"
 #include <algorithm>
 #include <cmath>
 

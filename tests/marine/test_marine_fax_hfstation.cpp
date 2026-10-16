@@ -2,7 +2,7 @@
 // station (DWD 7880 kHz, 4583 kHz, Northwood 8040 kHz), tuned 50 Hz off, 15 dB SNR in 3 kHz, a 50 ppm clock error between the
 // station and the receiver, and joined late: no start tone (part way into the phasing), or no start tone and no phasing at all
 // (half way down the picture, where only the picture repeating line after line says where the lines are).
-#include "dect2/marine_rx.h"
+#include "dect2/marine/marine_rx.h"
 #include "../data/marine/fax/fax_util.h"
 #include <cmath>
 #include <complex>

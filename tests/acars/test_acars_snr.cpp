@@ -1,5 +1,5 @@
 // ACARS sensitivity: decode rate against carrier-to-noise ratio (7 kHz band), and against AM depth.
-#include "dect2/acars_sim.h"
+#include "dect2/acars/acars_sim.h"
 #include <cstdio>
 using namespace dect2;
 static int fails = 0;

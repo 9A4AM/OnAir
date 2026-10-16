@@ -1,7 +1,7 @@
 // Linux and Windows services. Linux: dialogs through zenity/kdialog, settings in ~/.config/onair/settings.conf.
 // Windows: the standard Open/Save dialogs, settings in %APPDATA%\\OnAir\\settings.conf.
 #include "platform.h"
-#include "dect2/png.h"
+#include "dect2/common/png.h"
 #include <cstdio>
 #include <filesystem>
 #include <iterator>

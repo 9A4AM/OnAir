@@ -1,5 +1,5 @@
 // Datawell HXV real-time format decoder (see datawell_hxv.h for the sources and what was found rather than published).
-#include "dect2/datawell_hxv.h"
+#include "dect2/datawell/datawell_hxv.h"
 #include <algorithm>
 #include <cmath>
 

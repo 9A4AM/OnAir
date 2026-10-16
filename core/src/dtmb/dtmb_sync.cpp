@@ -1,5 +1,5 @@
 // DTMB frame acquisition (see dtmb_sync.h).
-#include "dect2/dtmb_sync.h"
+#include "dect2/dtmb/dtmb_sync.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

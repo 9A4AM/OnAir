@@ -1,5 +1,5 @@
 // PSK Reporter: the IPFIX encoder (templates, record round trip, size limit), the batcher (dedupe, interval) and the validators.
-#include "dect2/pskreporter.h"
+#include "dect2/net/pskreporter.h"
 #include <cstdio>
 using namespace dect2;
 using namespace dect2::pskr;

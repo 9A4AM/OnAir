@@ -1,8 +1,8 @@
 // Radiosonde: the tuning entry, and the receiver on silence and noise: it reports at a steady rate whatever the chunk size and mode,
 // finds nothing, survives reset(), and stops its thread cleanly.
-#include "dect2/modes.h"
-#include "dect2/sonde_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/engine/modes.h"
+#include "dect2/sonde/sonde_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <cstdio>
 #include <vector>
 using namespace dect2;

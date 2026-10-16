@@ -1,10 +1,10 @@
 // Bluetooth LE advertising monitor: the test signal through the receiver (ble_gen.h, ble_rx.h): each advertising channel, beacons,
 // CRC failures, carrier offsets with noise and two devices, another sample rate, and noise alone.
-#include "dect2/ble_gen.h"
-#include "dect2/ble_proto.h"
-#include "dect2/ble_rx.h"
-#include "dect2/ble_tel.h"
-#include "dect2/gen_util.h"
+#include "dect2/ble/ble_gen.h"
+#include "dect2/ble/ble_proto.h"
+#include "dect2/ble/ble_rx.h"
+#include "dect2/ble/ble_tel.h"
+#include "dect2/dsp/gen_util.h"
 #include <cstdio>
 #include <string>
 #include <vector>

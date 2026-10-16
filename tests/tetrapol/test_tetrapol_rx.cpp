@@ -1,9 +1,9 @@
 // TETRAPOL codec round-trip and receiver on the test signal (D_SYSTEM_INFO).
-#include "dect2/tetrapol_codec.h"
-#include "dect2/tetrapol_gen.h"
-#include "dect2/tetrapol_rx.h"
-#include "dect2/tetrapol_tel.h"
-#include "dect2/modes.h"
+#include "dect2/tetrapol/tetrapol_codec.h"
+#include "dect2/tetrapol/tetrapol_gen.h"
+#include "dect2/tetrapol/tetrapol_rx.h"
+#include "dect2/tetrapol/tetrapol_tel.h"
+#include "dect2/engine/modes.h"
 #include <cstdio>
 #include <cstring>
 #include <vector>

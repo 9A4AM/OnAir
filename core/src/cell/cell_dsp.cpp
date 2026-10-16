@@ -1,6 +1,6 @@
 // Cell towers: resampler, mixer and spectrum (cell_dsp.h).
-#include "dect2/cell_dsp.h"
-#include "dect2/fftutil.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 

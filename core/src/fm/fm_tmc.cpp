@@ -1,5 +1,5 @@
 // RDS-TMC decoder, see rds_tmc.h.
-#include "dect2/rds_tmc.h"
+#include "dect2/fm/rds_tmc.h"
 #include <algorithm>
 #include <cstdio>
 

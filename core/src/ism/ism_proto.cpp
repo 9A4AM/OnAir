@@ -3,7 +3,7 @@
 // Written from rtl_433 (GPL-2.0, https://github.com/merbanan/rtl_433): the slicers follow src/pulse_slicer.c, the bit helpers
 // src/bitbuffer.c and src/bit_util.c, and every decoder names the src/devices/ file it was written from. The timings in the protocol
 // table are the r_device values of those files.
-#include "dect2/ism_proto.h"
+#include "dect2/ism/ism_proto.h"
 #include <algorithm>
 #include <climits>
 #include <cmath>

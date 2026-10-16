@@ -1,10 +1,10 @@
 // ISDB-T on 7 and 8 MHz channels (ABNT NBR 15601, ISDB-T International: the Maldives): the same signal with every time quantity scaled by
 // the channel width / 6. The built-in test signal (as the app makes it) at each width, received with the width set and on automatic, also
 // 20 kHz off the centre: the TMCC must be found, the transport stream must flow and carry its PAT.
-#include "dect2/isdbt.h"
-#include "dect2/isdbt_rx.h"
-#include "dect2/mode_synth.h"
-#include "dect2/source.h"
+#include "dect2/isdbt/isdbt.h"
+#include "dect2/isdbt/isdbt_rx.h"
+#include "dect2/engine/mode_synth.h"
+#include "dect2/source/source.h"
 #include "../jobs.h"
 #include <atomic>
 #include <cmath>

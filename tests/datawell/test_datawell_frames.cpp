@@ -1,6 +1,6 @@
 // Datawell buoy HF link: the bit stream analysis (datawell_frames.h): known CRC check values, the repetition period, the constant start
 // pattern, the CRC attempt on frames built with a few CRCs, and no false positives on random bits.
-#include "dect2/datawell_frames.h"
+#include "dect2/datawell/datawell_frames.h"
 #include <cstdio>
 #include <cstring>
 #include <random>

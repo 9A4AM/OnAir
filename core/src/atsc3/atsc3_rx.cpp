@@ -1,5 +1,5 @@
 #include <deque>
-#include "dect2/atsc3_rx.h"
+#include "dect2/atsc3/atsc3_rx.h"
 #include <algorithm>
 #include <chrono>
 

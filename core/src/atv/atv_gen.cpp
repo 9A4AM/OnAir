@@ -4,11 +4,11 @@
 //   -> carrier amplitude (sync tip 100 %, white 12.5 %) -> vestigial-sideband FIR (complex taps) -> carrier at the vision frequency
 //   -> interpolation to the output rate (position stepped in double precision, so a clock error is just a different step)
 //   + FM sound carrier made at the output rate, ghost, noise.
-#include "dect2/atv_gen.h"
-#include "dect2/atv_card.h"
-#include "dect2/atv_nbtv.h"
+#include "dect2/atv/atv_gen.h"
+#include "dect2/atv/atv_card.h"
+#include "dect2/atv/atv_nbtv.h"
 #include "atv_dsp.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

@@ -1,6 +1,6 @@
 // NB-IoT physical layer (nbiot_phy.h): messages, synchronisation signals, reference signals, OFDM, channel estimate and soft demapping.
-#include "dect2/nbiot_phy.h"
-#include "dect2/fftutil.h"
+#include "dect2/nbiot/nbiot_phy.h"
+#include "dect2/dsp/fftutil.h"
 #include "../cell/cell_lte_int.h"
 #include <algorithm>
 #include <cmath>

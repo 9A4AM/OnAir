@@ -1,8 +1,8 @@
 // Drone Remote ID test signal (rid_gen.h): Open Drone ID in BLE advertising and Wi-Fi beacons, through the existing test generators.
-#include "dect2/rid_gen.h"
-#include "dect2/ble_proto.h"
-#include "dect2/rid_rx.h"
-#include "dect2/wifi_proto.h"
+#include "dect2/rid/rid_gen.h"
+#include "dect2/ble/ble_proto.h"
+#include "dect2/rid/rid_rx.h"
+#include "dect2/wifi/wifi_proto.h"
 #include <cmath>
 #include <complex>
 

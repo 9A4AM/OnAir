@@ -1,6 +1,6 @@
 // AMBE through the user-installed mbelib (see dstar_ambe.h); only the two functions of mbelib.h (1.3) that are needed.
-#include "dect2/dstar_ambe.h"
-#include "dect2/dstar_proto.h"
+#include "dect2/dstar/dstar_ambe.h"
+#include "dect2/dstar/dstar_proto.h"
 #include "../native_common.h"
 #include "../mbe_builtin.h"
 #include <atomic>

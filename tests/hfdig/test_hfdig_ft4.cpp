@@ -2,8 +2,8 @@
 // 2500 Hz) with the receiving side's faults: dial error +-100 Hz, sample clock +-100 ppm, DT +-1.5 s (FT2 +-0.8 s), upside down,
 // noise alone (no false decodes), a start in the middle of a slot.
 #include "hfdig_ftx_testutil.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/mode_synth.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/engine/mode_synth.h"
 using namespace ftxtest;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)

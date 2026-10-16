@@ -3,9 +3,9 @@
 // map, by their locators) and the WSPR spots.
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/hfdig_ftx.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/hfdig_tel.h"
+#include "dect2/hfdig/hfdig_ftx.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/hfdig/hfdig_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

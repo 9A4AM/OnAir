@@ -1,13 +1,13 @@
 // the TV side: player, service list, programme guide, teletext
 #include "app.h"
-#include "dect2/ac4_dec.h"
+#include "dect2/audio/ac4_dec.h"
 
 #include <cctype>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <map>
-#include "dect2/png.h"
+#include "dect2/common/png.h"
 
 namespace {
 // ---- channel logos: a PNG the user picked for a service, copied to <data>/tv-logos/<service>.png and shown on the service card

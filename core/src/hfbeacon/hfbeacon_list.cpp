@@ -1,5 +1,5 @@
-#include "dect2/hfbeacon_list.h"
-#include "dect2/maidenhead.h"
+#include "dect2/hfbeacon/hfbeacon_list.h"
+#include "dect2/geo/maidenhead.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

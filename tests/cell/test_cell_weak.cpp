@@ -2,9 +2,9 @@
 // dB under the strongest, one of them sharing its NID2 (the same PSS). Each must be read to its SIB1 (operator and cell identity): the MIB
 // combined over the 40 ms periods, or borrowed from the strong cell, the strong cell's reference signals and PBCH cancelled from under it,
 // SIB1 combined over its repetitions. Noise alone must give nothing.
-#include "dect2/cell_dsp.h"
-#include "dect2/cell_gen.h"
-#include "dect2/cell_lte.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/cell/cell_gen.h"
+#include "dect2/cell/cell_lte.h"
 #include "../impair.h"
 #include <cmath>
 #include <cstdio>

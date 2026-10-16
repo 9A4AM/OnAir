@@ -3,8 +3,8 @@
 // SPECIFIED rules - single-letter Morse, the 2.9 s / 3 s / 27 s Long Dashes ladder, the NCDXF 10 s slots with four 1 s dashes stepping 10 dB. It does
 // not verify the real beacons' exact timing (the dash start inside the NCDXF slot, the 0.2 s multitone start of the Long Dashes, real keying speeds);
 // those are taken from the sources' text and need real recordings.
-#include "dect2/hfbeacon_dsp.h"
-#include "dect2/hfbeacon_gen.h"
+#include "dect2/hfbeacon/hfbeacon_dsp.h"
+#include "dect2/hfbeacon/hfbeacon_gen.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

@@ -1,7 +1,7 @@
 // Frame acquisition on the test signal: header mode, super-frame position, carrier offset, noise, echo, all three headers.
-#include "dect2/dtmb_front.h"
-#include "dect2/dtmb_gen.h"
-#include "dect2/dtmb_sync.h"
+#include "dect2/dtmb/dtmb_front.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_sync.h"
 #include <cmath>
 #include <cstdio>
 

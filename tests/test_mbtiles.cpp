@@ -1,7 +1,7 @@
 // MBTiles reader (own SQLite file-format reader) and the coarse world outline. The synthetic file is built here page by page (a table leaf, an
 // index leaf, an overflow chain); when the system has the sqlite3 command-line tool, a second, multi-level file made by real SQLite is read too.
-#include "dect2/mbtiles.h"
-#include "dect2/worldlow.h"
+#include "dect2/geo/mbtiles.h"
+#include "dect2/geo/worldlow.h"
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>

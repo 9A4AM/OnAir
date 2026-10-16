@@ -1,7 +1,7 @@
 // DVB-S/S2 receiver signal path: input samples -> symbols. Mixer, half-band decimators, polyphase resampler to two samples per symbol,
 // polyphase root raised cosine matched filter with a Gardner timing loop. Internal to the dvbs_*.cpp files.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <cstddef>
 #include <cstdint>
 #include <vector>

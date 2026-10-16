@@ -1,7 +1,7 @@
 // Zigbee / IEEE 802.15.4 through the engine (setStandard(67)): the synthetic source plays the test schedule, the receiver reports through latestRx().
 // No sound.
-#include "dect2/zigbee_rx.h"
-#include "dect2/engine.h"
+#include "dect2/zigbee/zigbee_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

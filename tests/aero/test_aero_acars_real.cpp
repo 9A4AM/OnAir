@@ -2,7 +2,7 @@
 // Source of the real block: the comment in JAERO's ParserISU::parse (JAERO/aerol.cpp), a captured ADS-C contract request
 // (label A6) uplinked to HB-JHM. Its block check (93 AB) was verified here against CRC-16/KERMIT over the raw bytes
 // from the mode to the ETX (the method acarsdec uses). CRC-16/KERMIT check value: the CRC catalogue lists 0x2189 for "123456789".
-#include "dect2/aero_acars.h"
+#include "dect2/aero/aero_acars.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

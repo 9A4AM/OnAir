@@ -1,11 +1,11 @@
 // TETRA receiver on the test signal: carriers found in the spectrum, synchronised, SYNC / SYSINFO / neighbour broadcasts decoded;
 // +-2 kHz tuning error, +-100 ppm clock error (and a radio 100 ppm off in both), 15 dB SNR, two carriers in one capture, a low sample
 // rate, and noise only.
-#include "dect2/tetra_gen.h"
-#include "dect2/tetra_rx.h"
-#include "dect2/tetra_tel.h"
-#include "dect2/modes.h"
-#include "dect2/source.h"
+#include "dect2/tetra/tetra_gen.h"
+#include "dect2/tetra/tetra_rx.h"
+#include "dect2/tetra/tetra_tel.h"
+#include "dect2/engine/modes.h"
+#include "dect2/source/source.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

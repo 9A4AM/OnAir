@@ -1,6 +1,6 @@
 // GNSS test signal: the simulated sky of gnss_sim.h as the engine's synthetic source (see gnss_gen.h for the options).
-#include "dect2/gnss_gen.h"
-#include "dect2/gnss_sim.h"
+#include "dect2/gnss/gnss_gen.h"
+#include "dect2/gnss/gnss_sim.h"
 
 namespace dect2 {
 

@@ -1,10 +1,10 @@
 // HF ALE receiver against generated calls: a TWS sounding and a long-address TIS sounding, an individual call (TO .. TIS, an LQA,
 // answered and acknowledged), a net call answered by two members, an AMD message, a group call; clean, then at 10 dB SNR in 3 kHz
 // with +50 / -50 Hz tuning errors and 2 % of the bits turned over (the vote and Golay put them right); noise only gives nothing.
-#include "dect2/ale_gen.h"
-#include "dect2/ale_proto.h"
-#include "dect2/ale_rx.h"
-#include "dect2/ale_tel.h"
+#include "dect2/ale/ale_gen.h"
+#include "dect2/ale/ale_proto.h"
+#include "dect2/ale/ale_rx.h"
+#include "dect2/ale/ale_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

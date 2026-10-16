@@ -1,11 +1,11 @@
 // WSPR through the engine as the interface and dect2cli use it: the WSPR entry on the synthetic source. The test signal starts at an
 // arbitrary point of the system clock's 2-minute slots, so the decoder must find the slots from the signals (slot search) and decode the
 // test stations within two slots (240 s) of signal. The source runs faster than real time; the run is counted in seconds of signal.
-#include "dect2/engine.h"
-#include "dect2/engine_testkit.h"
-#include "dect2/hfdig_ftx.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/mode_tuning.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/engine_testkit.h"
+#include "dect2/hfdig/hfdig_ftx.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/engine/mode_tuning.h"
 #include <chrono>
 #include <cstdio>
 #include <set>

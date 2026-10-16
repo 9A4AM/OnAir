@@ -1,8 +1,8 @@
 // CDR against the faults of REAL_WORLD_CHECKLIST.md, applied with tests/impair.h (written independently of the receiver) to the generator's clean
 // signal: 50 ppm tuning errors in band II (+-5.4 kHz at 108 MHz), +-100 ppm sample clocks, swapped I/Q, NaN samples, a USB drop and one
 // combined case (+5.4 kHz, +80 ppm, an echo and 8-bit clipping).
-#include "dect2/cdr_gen.h"
-#include "dect2/cdr_rx.h"
+#include "dect2/cdr/cdr_gen.h"
+#include "dect2/cdr/cdr_rx.h"
 #include "../impair.h"
 #include "../jobs.h"
 #include <atomic>

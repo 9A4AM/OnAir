@@ -1,6 +1,6 @@
 // DEFLATE and gzip decoding, the XML reader, and (further down) IP/UDP, LLS and the service list. gzip test vectors were made with Python.
-#include "dect2/inflate.h"
-#include "dect2/xmlmini.h"
+#include "dect2/common/inflate.h"
+#include "dect2/common/xmlmini.h"
 #include <cstdio>
 #include <cstring>
 #include <string>

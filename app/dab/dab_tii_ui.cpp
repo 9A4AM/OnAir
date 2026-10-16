@@ -7,8 +7,8 @@
 // not in the list can be submitted from here: the app fills in the ids, the user adds where it stands (the issue form of the repository).
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/channel_db.h"
-#include "dect2/updater.h"
+#include "dect2/channels/channel_db.h"
+#include "dect2/engine/updater.h"
 #include <atomic>
 #include <cmath>
 #include <filesystem>

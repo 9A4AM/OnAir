@@ -1,7 +1,7 @@
 // DTMB through the engine, as the GUI uses it: the built-in test signal (synthetic source, standard 9) -> Engine -> telemetry and transport stream
 // analysis. Real time, no files: the engine must lock, decode without dropping input or codewords, and its analysis must find the test-card
 // programme. A second run retunes to another header, modulation, code rate and interleaver with an echo and a carrier offset.
-#include "dect2/engine.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>

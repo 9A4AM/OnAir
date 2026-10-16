@@ -1,9 +1,9 @@
 // LoRa demodulator: preamble search on de-chirped FFTs, sync word and SFD alignment, fractional carrier and timing estimates from the
 // preamble and the down-chirps, symbol demodulation with a timing loop for clock drift, and the coding chain of mesh_lora_code.cpp.
 // The method follows gr-lora_sdr's frame_sync_impl.cc and fft_demod_impl.cc and the paper named in mesh_lora.h; the code is ours.
-#include "dect2/mesh_lora.h"
-#include "dect2/dsp_compat.h"
-#include "dect2/gen_util.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/dsp/dsp_compat.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>

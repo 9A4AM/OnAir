@@ -1,10 +1,10 @@
 // CDR test signal (see cdr_gen.h): multiplex (GY/T 268.2), channel coding, sub-carrier matrix, OFDM with the windowed guard interval,
 // sub-frame allocation (GY/T 268.1), then resampled to the source's rate with the noise and the carrier offset of the SynthConfig.
-#include "dect2/cdr_gen.h"
-#include "dect2/cdr_ldpc.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/fftutil.h"
-#include "dect2/gen_util.h"
+#include "dect2/cdr/cdr_gen.h"
+#include "dect2/cdr/cdr_ldpc.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

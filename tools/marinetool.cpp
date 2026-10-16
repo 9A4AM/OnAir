@@ -3,8 +3,8 @@
 //                                          [--offset Hz] [--lpm n] [--ioc 576|288] [--lines n] [--idle secs] [--phasing secs]
 //   marinetool rx <file> --rate <sps> [--format cs8|cu8|cf32] [--service 0..3] [--freq Hz] [--offset Hz] [--pgm out.pgm]
 // Services: 1 NAVTEX, 2 DSC MF/HF, 3 weather fax, 4 DSC VHF channel 70 (gen); 0 auto, 1 NAVTEX, 2 DSC, 3 fax (rx).
-#include "dect2/marine_gen.h"
-#include "dect2/marine_rx.h"
+#include "dect2/marine/marine_gen.h"
+#include "dect2/marine/marine_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

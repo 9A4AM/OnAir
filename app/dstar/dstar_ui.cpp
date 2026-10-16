@@ -3,9 +3,9 @@
 // voice needs (docs/CODECS.md).
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/dstar_ambe.h"
-#include "dect2/dstar_rx.h"
-#include "dect2/dstar_tel.h"
+#include "dect2/dstar/dstar_ambe.h"
+#include "dect2/dstar/dstar_rx.h"
+#include "dect2/dstar/dstar_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

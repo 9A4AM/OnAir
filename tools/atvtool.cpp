@@ -1,9 +1,9 @@
 // Analog TV: write the test signal to a file (atvtool gen ...) or run the receiver on a recording (atvtool rx ...).
-#include "dect2/atv_card.h"
-#include "dect2/atv_gen.h"
-#include "dect2/atv_nbtv.h"
-#include "dect2/atv_rx.h"
-#include "dect2/atv_testkit.h"
+#include "dect2/atv/atv_card.h"
+#include "dect2/atv/atv_gen.h"
+#include "dect2/atv/atv_nbtv.h"
+#include "dect2/atv/atv_rx.h"
+#include "dect2/atv/atv_testkit.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

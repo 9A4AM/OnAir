@@ -1,8 +1,8 @@
 // Aero SU layer: SU CRC, block sizes, ISU/SSU assembly, ACARS reassembly, logons, system tables.
 // Sources: JAERO JAERO/aerol.cpp and aerol.h (AeroLcrc16, setSettings block sizes, ISUData::update, ParserISU::parse,
 // system table decoding). The real ACARS block is the one in test_aero_acars_real.cpp.
-#include "dect2/aero_su.h"
-#include "dect2/aero_acars.h"
+#include "dect2/aero/aero_su.h"
+#include "dect2/aero/aero_acars.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

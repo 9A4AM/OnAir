@@ -1,6 +1,6 @@
 // ATSC 3.0: the status bar and the Receiver tab (lock, frame structure, service list, statistics)
 #include "app.h"
-#include "dect2/ac4_dec.h"
+#include "dect2/audio/ac4_dec.h"
 
 static const char* modName(int bits) {
     switch (bits) { case 2: return "QPSK"; case 4: return "16QAM"; case 6: return "64QAM"; case 8: return "256QAM"; case 10: return "1024QAM"; case 12: return "4096QAM"; default: return "?"; }

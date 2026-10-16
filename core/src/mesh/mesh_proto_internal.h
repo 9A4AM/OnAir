@@ -1,6 +1,6 @@
 // Shared by the mesh_proto*.cpp files only.
 #pragma once
-#include "dect2/mesh_proto.h"
+#include "dect2/mesh/mesh_proto.h"
 #include <cstdint>
 #include <mutex>
 #include <string>

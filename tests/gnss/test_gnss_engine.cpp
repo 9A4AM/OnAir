@@ -1,7 +1,7 @@
 // GNSS through the engine as the interface and dect2cli use it: the synthetic source plays the simulated sky (8 bit samples, paced twice as fast as a
 // radio), the engine must lock, decode, keep every sample, find the position and report through latestRx().
-#include "dect2/engine.h"
-#include "dect2/gnss_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/gnss/gnss_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdlib>

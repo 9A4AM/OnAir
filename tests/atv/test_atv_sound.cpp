@@ -1,7 +1,7 @@
 // Analog TV, sound: the FM carrier at +5.5 / +6.0 / +6.5 / +4.5 MHz from the vision carrier, discriminator, de-emphasis, 48 kHz out.
 // The generator sends a 1 kHz tone at half of the nominal deviation (through the pre-emphasis of the system), so the receiver must give back a tone
 // of half scale at 1 kHz. Sound that is not there must not appear and sound that stops must stop.
-#include "dect2/atv_testkit.h"
+#include "dect2/atv/atv_testkit.h"
 #include <cmath>
 #include <cstdio>
 

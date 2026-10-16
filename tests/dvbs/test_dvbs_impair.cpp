@@ -1,6 +1,6 @@
 // DVB-S/S2 receiver against real-world faults (tests/impair.h, REAL_WORLD_CHECKLIST.md): the generator's signal is damaged independently of the
 // receiver, then fed through the real receiver, and the checkable test packets are counted.
-#include "dect2/dvbs_testkit.h"
+#include "dect2/dvbs/dvbs_testkit.h"
 #include "../impair.h"
 #include "../jobs.h"
 #include <atomic>

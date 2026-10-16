@@ -1,12 +1,12 @@
 // Signal identifier (sig_ident.h): measures a carrier from its samples and ranks the modes it could be.
-#include "dect2/sig_ident.h"
-#include "dect2/dmr_proto.h"
-#include "dect2/dpmr_proto.h"
-#include "dect2/fftutil.h"
-#include "dect2/nxdn_proto.h"
-#include "dect2/p25_proto.h"
-#include "dect2/pager_proto.h"
-#include "dect2/specx_measure.h"
+#include "dect2/engine/sig_ident.h"
+#include "dect2/dmr/dmr_proto.h"
+#include "dect2/dpmr/dpmr_proto.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/nxdn/nxdn_proto.h"
+#include "dect2/p25/p25_proto.h"
+#include "dect2/pager/pager_proto.h"
+#include "dect2/specx/specx_measure.h"
 #include <algorithm>
 #include <cmath>
 #include <condition_variable>

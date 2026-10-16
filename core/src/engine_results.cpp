@@ -1,8 +1,8 @@
 // Decoded results that outlive mode switches, retunes, restarts and the program itself (engine.h: clearResults ... refreshIdle).
 // Every receiver keeps its lists through reset() and configure(); here they are cleared on the user's Clear, and saved to and loaded
 // from one file per receiver (results_io.h format: a file of another build fails its signature check and is discarded).
-#include "dect2/engine.h"
-#include "dect2/results_io.h"
+#include "dect2/engine/engine.h"
+#include "dect2/results/results_io.h"
 #include <chrono>
 #include <cstdio>
 #include <filesystem>

@@ -2,12 +2,12 @@
 // bits, export). Everything here is the interface thread's; the background jobs hand their results over through the flags.
 #pragma once
 #include "app.h"
-#include "dect2/wb_demod.h"
-#include "dect2/wb_export.h"
-#include "dect2/wb_gen.h"
-#include "dect2/wb_measure.h"
-#include "dect2/wb_view.h"
-#include "dect2/audioout.h"
+#include "dect2/wb/wb_demod.h"
+#include "dect2/wb/wb_export.h"
+#include "dect2/wb/wb_gen.h"
+#include "dect2/wb/wb_measure.h"
+#include "dect2/wb/wb_view.h"
+#include "dect2/audio/audioout.h"
 #include <atomic>
 #include <memory>
 #include <mutex>

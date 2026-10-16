@@ -1,5 +1,5 @@
 // DECT A-field: the CRC, the header fields, the RFPI split, the carrier raster.
-#include "dect2/dect_proto.h"
+#include "dect2/dect/dect_proto.h"
 #include <cstdio>
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)

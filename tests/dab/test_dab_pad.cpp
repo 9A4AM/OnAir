@@ -1,10 +1,10 @@
 // DAB+ slide show: the PAD in the data stream element, X-PAD (variable and short, with and without content indicators), data groups, MOT segments.
 // The generator's signal (dab_gen_pad.cpp, written from the standards without the receiver's code) goes through the PAD decoder directly, through
 // DabAudio (Reed-Solomon, access units, libavcodec) and through the whole receiver; hand made PAD covers the other X-PAD forms and bad data.
-#include "dect2/dab.h"
-#include "dect2/dab_gen.h"
-#include "dect2/dab_pad.h"
-#include "dect2/dab_announce.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/dab/dab_pad.h"
+#include "dect2/dab/dab_announce.h"
 extern "C" {
 #include <libavformat/avformat.h>
 }

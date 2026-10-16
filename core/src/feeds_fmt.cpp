@@ -1,7 +1,7 @@
 // The data feed formats: SBS-1 BaseStation, Beast binary, KISS, APRS-IS, acarsdec and dumpvdl2 JSON.
 // References: the dump1090 / readsb "net_io.c" writers (SBS, Beast), the KISS protocol (Chepponis / Karn 1987),
 // aprs-is.net "IGate" and "q Construct" pages, acarsdec's JSON output, dumpvdl2's JSON output (as acarshub reads them).
-#include "dect2/feeds.h"
+#include "dect2/net/feeds.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

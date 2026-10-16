@@ -2,7 +2,7 @@
 // without a measurement), the rate limit and the LAN filter, the refusals of the one-click sync and its commands, and a request over UDP on the
 // loopback address. The clock itself is never touched.
 #include "../../core/src/netcompat.h"
-#include "dect2/time_ntp.h"
+#include "dect2/time/time_ntp.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

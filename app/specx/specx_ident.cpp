@@ -1,8 +1,8 @@
 // "Identify this signal": the spectrum explorer's region and a right-click on any mode's spectrum hand a region to the engine's capture
-// (dect2/sig_ident.h); this window shows what it measured, the modes it could be, and switches to the best one on that frequency.
+// (dect2/engine/sig_ident.h); this window shows what it measured, the modes it could be, and switches to the best one on that frequency.
 #include "app.h"
-#include "dect2/sig_ident.h"
-#include "dect2/specx_measure.h"
+#include "dect2/engine/sig_ident.h"
+#include "dect2/specx/specx_measure.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

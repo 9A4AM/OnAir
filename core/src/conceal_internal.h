@@ -1,7 +1,7 @@
 // Internals shared by the picture-repair implementations (conceal.cpp: motion search and the CPU synthesis; conceal_d3d11.cpp: the Windows
 // GPU synthesis). Not part of the public interface.
 #pragma once
-#include "dect2/conceal.h"
+#include "dect2/tv/conceal.h"
 #include <cstdint>
 #include <memory>
 #include <utility>

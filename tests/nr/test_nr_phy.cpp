@@ -1,6 +1,6 @@
 // 5G NR cells physical layer: the polar code (construction against 38.212, an independent encoder, list decoding with puncturing,
 // shortening and repetition), PSS / SSS / DMRS sequences, the PBCH payload and the whole PBCH chain, the sync raster.
-#include "dect2/nr_phy.h"
+#include "dect2/nr/nr_phy.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

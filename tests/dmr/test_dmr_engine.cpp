@@ -2,8 +2,8 @@
 // runs the receiver on its analysis thread and publishes RxTelemetry. A base station for 12 s and direct mode for 10 s; the telemetry is read from this
 // thread while the analysis thread feeds, a retune in between must reset the receiver without the sequence number going back, and no samples may be
 // dropped.
-#include "dect2/engine.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

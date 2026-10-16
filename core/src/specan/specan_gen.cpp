@@ -1,8 +1,8 @@
 // Spectrum analyser test signal: plays a HackRF native sweep over a made-up band scene. Every block of 8184 samples is tagged with its
 // tuning (as the radio's sweep header does) and posted to SaSweepTap; the same samples go to the engine. The scene: carriers at
 // 100 MHz (-30 dBFS), 433.92 MHz (-40), 1090 MHz (-35) and 2440 MHz (-25), over a noise floor. modeVal[0] / [1]: the range in MHz.
-#include "dect2/specan_gen.h"
-#include "dect2/specan_dsp.h"
+#include "dect2/specan/specan_gen.h"
+#include "dect2/specan/specan_dsp.h"
 #include <cmath>
 #include <random>
 

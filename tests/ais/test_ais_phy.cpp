@@ -1,8 +1,8 @@
 // AIS physical layer, independent of the generator: real sentences from gpsd's sample.aivdm are framed (flags, stuffing, FCS by a table-driven CRC),
 // NRZI coded and modulated here by a plain textbook GMSK modulator (Gaussian filtered NRZ, BT 0.4, 64 samples per bit, phase by summing), put on
 // the channel they were seen on and fed to the receiver, which must return the very same sentences. Different rates, carrier phases and bit timing.
-#include "dect2/ais_testutil.h"
-#include "dect2/gen_util.h"
+#include "dect2/ais/ais_testutil.h"
+#include "dect2/dsp/gen_util.h"
 #include <cmath>
 #include <cstdio>
 using namespace dect2;

@@ -1,5 +1,5 @@
-#include "dect2/demo_ts.h"
-#include "dect2/videoin.h"
+#include "dect2/tv/demo_ts.h"
+#include "dect2/audio/videoin.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>

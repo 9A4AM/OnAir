@@ -1,4 +1,4 @@
-#include "dect2/specx_measure.h"
+#include "dect2/specx/specx_measure.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

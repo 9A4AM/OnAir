@@ -5,10 +5,10 @@
 //  3. the receiver: generator -> DmrReceiver; every voice burst of the followed slot is decoded, and 480 samples of 8 kHz speech reach the audio tap
 //     as 2880 samples of 48 kHz. (The generator's voice bits are random: this proves the path, not the quality of the speech.)
 // NOT covered: a recording of real DMR (none is available here), so the bit order inside the 72 bit frame is that of the NXDN / DSD tables.
-#include "dect2/dmr_ambe.h"
-#include "dect2/dmr_gen.h"
-#include "dect2/dmr_rx.h"
-#include "dect2/nxdn_proto.h"
+#include "dect2/dmr/dmr_ambe.h"
+#include "dect2/dmr/dmr_gen.h"
+#include "dect2/dmr/dmr_rx.h"
+#include "dect2/nxdn/nxdn_proto.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

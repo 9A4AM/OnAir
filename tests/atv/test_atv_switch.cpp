@@ -1,6 +1,6 @@
 // The interface keeps the number of the last receiver report it took for the whole session (Engine::latestRx). After a run of another mode
 // that number is high, while each receiver counts its own reports from 1: the analog TV reports must still come through at once.
-#include "dect2/engine.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

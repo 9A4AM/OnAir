@@ -1,8 +1,8 @@
 // DVB-S2X (EN 302 307-2): the MODCOD table and its codes, the constellations, the PLS code, a code word round trip through every S2X MODCOD, and
 // generator -> receiver round trips for a spread of them (8APSK to 256APSK, normal and short frames) through noise and a carrier offset, where every
 // transport stream packet has to arrive intact and no frame may fail the BCH decoder.
-#include "dect2/dvbs_s2.h"
-#include "dect2/dvbs_testkit.h"
+#include "dect2/dvbs/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_testkit.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

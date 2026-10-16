@@ -4,9 +4,9 @@
 // messages. County names come only from a table the user loads (docs/same.md). Receive only: the text of an alert is a public broadcast.
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/same_proto.h"
-#include "dect2/same_rx.h"
-#include "dect2/same_tel.h"
+#include "dect2/same/same_proto.h"
+#include "dect2/same/same_rx.h"
+#include "dect2/same/same_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

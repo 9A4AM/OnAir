@@ -2,7 +2,7 @@
 // codewords (measured with `dtmbtool sweep`, see docs/modes/dtmb.md) and no wrong packet may ever come out, also below that point. The thresholds
 // are this receiver's, not the standard's: they sit 1 to 3 dB below the C/N values that planning documents give (3 / 5 / 7 dB for 4QAM at rate
 // 0.4 / 0.6 / 0.8, 9 / 12 / 14 dB for 16QAM, 15 / 17 / 20 dB for 64QAM, Gaussian channel, PN945), which include an implementation margin.
-#include "dect2/dtmb_testkit.h"
+#include "dect2/dtmb/dtmb_testkit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

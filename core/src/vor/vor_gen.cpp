@@ -1,6 +1,6 @@
 // VOR / ILS test signal (see vor_gen.h).
-#include "dect2/vor_gen.h"
-#include "dect2/vor_rx.h"
+#include "dect2/vor/vor_gen.h"
+#include "dect2/vor/vor_rx.h"
 #include <cmath>
 #include <random>
 #include <utility>

@@ -1,14 +1,14 @@
 // Drone Remote ID receiver (rid_rx.h): the BLE and Wi-Fi demodulators side by side, their good packets decoded as Open Drone ID.
-#include "dect2/rid_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/ble_proto.h"
-#include "dect2/ble_rx.h"
-#include "dect2/ble_tel.h"
-#include "dect2/rid_proto.h"
-#include "dect2/rid_tel.h"
-#include "dect2/wifi_proto.h"
-#include "dect2/wifi_rx.h"
-#include "dect2/wifi_tel.h"
+#include "dect2/rid/rid_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/ble/ble_proto.h"
+#include "dect2/ble/ble_rx.h"
+#include "dect2/ble/ble_tel.h"
+#include "dect2/rid/rid_proto.h"
+#include "dect2/rid/rid_tel.h"
+#include "dect2/wifi/wifi_proto.h"
+#include "dect2/wifi/wifi_rx.h"
+#include "dect2/wifi/wifi_tel.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

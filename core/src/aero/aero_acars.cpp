@@ -1,7 +1,7 @@
 // ACARS block parsing and building for the Aero SU layer. Layout and parity rule: JAERO aerol.cpp, ParserISU::parse
 // (the example bytes in its comment are a real captured block and are used as a known-answer test).
 // Block check: CRC-16/KERMIT as in acarsdec's update_crc, verified against that same example (BCS 93 AB).
-#include "dect2/aero_acars.h"
+#include "dect2/aero/aero_acars.h"
 
 #include <cstring>
 

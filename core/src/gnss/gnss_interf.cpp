@@ -1,6 +1,6 @@
 // GNSS interference and spoofing monitor (see gnss_interf.h)
-#include "dect2/gnss_interf.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/gnss/gnss_interf.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

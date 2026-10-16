@@ -3,7 +3,7 @@
 // Robot, PD, VIS codes), cross-checked against the line times in the documentation of MMSSTV and slowrx. Wraase SC2-180 as in slowrx.
 // Tones: sync 1200 Hz, black 1500 Hz, white 2300 Hz, porches and the Robot chroma separators as described per mode.
 #pragma once
-#include "dect2/hfdig_sstv.h"
+#include "dect2/hfdig/hfdig_sstv.h"
 #include <vector>
 
 namespace dect2 {

@@ -1,6 +1,6 @@
 // The native radio drivers (source_native.cpp) against fake vendor libraries: listing, streaming a known tone, retuning, changing the rate, stopping.
 // (The SDRplay fake checks the driver's calls and settings; the struct layouts themselves are checked in sdrplay_api_min.h.)
-#include "dect2/source.h"
+#include "dect2/source/source.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -47,7 +47,7 @@ static size_t drain(IqRing& ring, int ms, std::complex<float>& mean) {
 
 // ---- native-robust: library lookup, open retries, reconnect after an unplug, USB error texts and the Linux USB hints
 #include "../core/src/native_common.h"
-#include "dect2/usb_diag.h"
+#include "dect2/source/usb_diag.h"
 #include <fcntl.h>
 #include <functional>
 

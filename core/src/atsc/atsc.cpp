@@ -1,4 +1,4 @@
-#include "dect2/atsc.h"
+#include "dect2/atsc/atsc.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

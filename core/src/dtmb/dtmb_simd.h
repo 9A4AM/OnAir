@@ -1,7 +1,7 @@
 // Small vector kernels of the DTMB code: dot products of a real filter with a planar complex signal. NEON where it exists, else plain loops
 // with independent accumulators that the compiler can vectorise (float sums are not reassociated by default, so one accumulator would be serial).
 #pragma once
-#include "dect2/simd.h"
+#include "dect2/dsp/simd.h"
 #if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
 #include <arm_neon.h>
 #endif

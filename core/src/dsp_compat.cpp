@@ -1,5 +1,5 @@
-#include "dect2/dsp_compat.h"
-#include "dect2/simd.h"
+#include "dect2/dsp/dsp_compat.h"
+#include "dect2/dsp/simd.h"
 #include <atomic>
 #include <cmath>
 #include <cstdint>

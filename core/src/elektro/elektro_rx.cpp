@@ -1,6 +1,6 @@
 // Elektro-L HRIT / LRIT / GGAK receiver (elektro_rx.h).
-#include "dect2/elektro_rx.h"
-#include "dect2/elektro_tel.h"
+#include "dect2/elektro/elektro_rx.h"
+#include "dect2/elektro/elektro_tel.h"
 #include <algorithm>
 
 namespace dect2 {

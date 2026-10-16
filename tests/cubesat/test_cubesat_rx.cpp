@@ -1,11 +1,11 @@
 // CubeSat telemetry: the test signal (cubesat_gen.h) through the receiver (cubesat_rx.h): each framing alone and all together, with a
 // carrier offset (Doppler) and noise, at two radio rates; every frame sent comes out with the bytes sent and the right framing; frames
 // are named from the satellite table (callsign, frequency, the tracked satellite); noise alone gives no frame.
-#include "dect2/cubesat_gen.h"
-#include "dect2/cubesat_rx.h"
-#include "dect2/cubesat_tel.h"
-#include "dect2/gen_util.h"
-#include "dect2/source.h"
+#include "dect2/cubesat/cubesat_gen.h"
+#include "dect2/cubesat/cubesat_rx.h"
+#include "dect2/cubesat/cubesat_tel.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

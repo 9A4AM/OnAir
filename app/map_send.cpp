@@ -5,7 +5,7 @@
 #ifndef ONAIR_VERSION
 #define ONAIR_VERSION "dev"
 #endif
-#include "dect2/flarm_proto.h"
+#include "dect2/flarm/flarm_proto.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>

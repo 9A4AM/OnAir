@@ -1,6 +1,6 @@
 // 5G NR cells: SSB sequences, the PBCH chain, the MIB, bands and the sync raster, and the test signal (nr_phy.h).
-#include "dect2/nr_phy.h"
-#include "dect2/fftutil.h"
+#include "dect2/nr/nr_phy.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

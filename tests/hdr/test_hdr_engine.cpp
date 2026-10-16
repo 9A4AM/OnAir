@@ -2,10 +2,10 @@
 // the tuning table with 15 dB SNR and a 1 kHz carrier offset, then AM all-digital (MA3) at the 1 Msps the app asks for in the AM band; the engine must find the waveform, decode the station information, both
 // programs, their program data and the picture, report it through latestRx with the mode's standard, and keep up with real time.
 // Real time: about 20 s.
-#include "dect2/engine.h"
-#include "dect2/hdr_gen.h"
-#include "dect2/hdr_rx.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/hdr/hdr_gen.h"
+#include "dect2/hdr/hdr_rx.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

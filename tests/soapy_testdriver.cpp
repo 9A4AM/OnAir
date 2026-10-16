@@ -1,7 +1,7 @@
 // A fake radio for the SoapySDR source test: a SoapySDR driver ("onairtest") that streams OnAir's synthetic DVB-T2 signal.
 // Built as a plugin module; the test points SOAPY_SDR_PLUGIN_PATH at it.
-#include "dect2/ring.h"
-#include "dect2/source.h"
+#include "dect2/common/ring.h"
+#include "dect2/source/source.h"
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Formats.h>
 #include <SoapySDR/Registry.hpp>

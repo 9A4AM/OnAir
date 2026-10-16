@@ -1,6 +1,6 @@
 // Carrier finder and channelizer: see carrierfind.h.
-#include "dect2/carrierfind.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/carrierfind.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 

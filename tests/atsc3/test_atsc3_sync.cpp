@@ -1,5 +1,5 @@
 // Finding the bootstrap in a continuous signal with a carrier frequency offset, and the guard interval offset estimator.
-#include "dect2/atsc3_sync.h"
+#include "dect2/atsc3/atsc3_sync.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

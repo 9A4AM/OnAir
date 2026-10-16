@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #define setenv(k, v, o) _putenv_s(k, v)
 #endif
-#include "dect2/engine.h"
-#include "dect2/ring.h"
-#include "dect2/source.h"
+#include "dect2/engine/engine.h"
+#include "dect2/common/ring.h"
+#include "dect2/source/source.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

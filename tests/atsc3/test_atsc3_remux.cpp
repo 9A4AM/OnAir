@@ -1,7 +1,7 @@
 // MP4 fragments of a video and an audio component (as ROUTE delivers them) are remuxed into one MPEG-2 transport stream. The result is read
 // back with libavformat: one HEVC and one AAC stream, with all frames, in step with each other.
 //   test_atsc3_remux <video.mp4> <audio.mp4>      (the fragmented files in tests/data)
-#include "dect2/atsc3_remux.h"
+#include "dect2/atsc3/atsc3_remux.h"
 #include <chrono>
 #include <cstdio>
 #include <cstring>

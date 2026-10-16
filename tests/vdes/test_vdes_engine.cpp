@@ -1,7 +1,7 @@
 // VDES through the engine (setStandard(65)): the synthetic source plays ASM and VDE-TER bursts, the receiver reports them through latestRx().
-#include "dect2/engine.h"
-#include "dect2/modes.h"
-#include "dect2/vdes_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/modes.h"
+#include "dect2/vdes/vdes_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

@@ -2,9 +2,9 @@
 // antenna rotation period from the main-beam bursts, level, last heard), the aircraft they address (how often, the Comm-B registers asked
 // for, by whom; callsigns from ADS-B when that mode ran earlier in the session), the ACAS / TCAS activity, and the message log.
 #include "app.h"
-#include "dect2/adsb_tel.h"
-#include "dect2/uplink_rx.h"
-#include "dect2/uplink_tel.h"
+#include "dect2/adsb/adsb_tel.h"
+#include "dect2/uplink/uplink_rx.h"
+#include "dect2/uplink/uplink_tel.h"
 #include <algorithm>
 #include <cstdio>
 #include <map>

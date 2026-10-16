@@ -1,6 +1,6 @@
 // Cell towers, LTE: transmit diversity, OFDM and channel estimation shared by the test signal and the receiver (cell_lte_int.h).
 #include "cell_lte_int.h"
-#include "dect2/fftutil.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <cmath>
 

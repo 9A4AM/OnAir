@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #define setenv(k, v, o) _putenv_s(k, v)
 #endif
-#include "dect2/scanner.h"
+#include "dect2/engine/scanner.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

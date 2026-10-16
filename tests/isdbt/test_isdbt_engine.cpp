@@ -1,10 +1,10 @@
 // ISDB-T through the engine, as the GUI uses it: an IQ recording made here (a one-segment layer and a twelve-segment layer carrying the
 // test programme) is opened as a file source with the ISDB-T standard selected; the engine must lock, decode the transport stream and its
 // analysis must see the service with a video and an audio stream.
-#include "dect2/demo_ts.h"
-#include "dect2/engine.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/isdbt_gen.h"
+#include "dect2/tv/demo_ts.h"
+#include "dect2/engine/engine.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/isdbt/isdbt_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

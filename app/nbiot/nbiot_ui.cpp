@@ -3,9 +3,9 @@
 // Receive only: nothing addressed to a device is decoded.
 #include "app.h"
 #include "results_export.h"
-#include "dect2/cell_rx.h"
-#include "dect2/nbiot_rx.h"
-#include "dect2/nbiot_tel.h"
+#include "dect2/cell/cell_rx.h"
+#include "dect2/nbiot/nbiot_rx.h"
+#include "dect2/nbiot/nbiot_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

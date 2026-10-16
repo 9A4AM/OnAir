@@ -1,6 +1,6 @@
 // Front end: transmitter model -> square-root raised cosine at the radio's rate -> matched filter and resampling -> symbols again.
-#include "dect2/dtmb_front.h"
-#include "dect2/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_front.h"
+#include "dect2/dtmb/dtmb_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

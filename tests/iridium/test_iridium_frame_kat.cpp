@@ -5,7 +5,7 @@
 //  - iridium-toolkit FORMAT.md: the printed IRA line (sat 16 beam 37 xyz (+1396,+0711,+0862) -> pos +28.82/+026.99 alt 797, 1 page, FILL=10,
 //    432 symbols) and the printed MSG line (ric 3525766 fmt 5 seq 30, csum 0b, 60 characters, msg: hex);
 //  - gr-iridium lib/iridium_qpsk_demod_impl.cc: the delta symbol to bit mapping.
-#include "dect2/iridium_frame.h"
+#include "dect2/iridium/iridium_frame.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

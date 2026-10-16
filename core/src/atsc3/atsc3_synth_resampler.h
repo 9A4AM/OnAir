@@ -2,7 +2,7 @@
 // 24 tap windowed sinc with 2048 phases is enough (images below -60 dB) and about three times cheaper than the general ExactResampler. For any
 // ratio (the position is tracked in double precision, so a clock offset of a few ppm is exact), output rates from 0.9 times the input rate up.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <vector>
 
 namespace dect2 {

@@ -1,5 +1,5 @@
 // P25 Phase 1 protocol pieces (see p25_proto.h).
-#include "dect2/p25_proto.h"
+#include "dect2/p25/p25_proto.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>

@@ -7,8 +7,8 @@
 //   JAERO aerol.cpp (comment in ParserISU::parse): a real A6 uplink to HB-JHM (contract request).
 // Text sources: airframesio/acars-decoder-typescript lib/plugins/*.test.ts (Label_H1_POS, Label_20_POS, Label_16_N_Space), messages
 // and expected values copied from those tests.
-#include "dect2/aero_adsc.h"
-#include "dect2/aero_pos.h"
+#include "dect2/aero/aero_adsc.h"
+#include "dect2/aero/aero_pos.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

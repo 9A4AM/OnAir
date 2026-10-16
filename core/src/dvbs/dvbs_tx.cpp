@@ -1,6 +1,6 @@
 // DVB-S and DVB-S2 transmitter chains, see dvbs_tx.h.
-#include "dect2/dvbs_tx.h"
-#include "dect2/dvbt.h"
+#include "dect2/dvbs/dvbs_tx.h"
+#include "dect2/dvbt/dvbt.h"
 #include "dvbs_vlsnr.h"
 #include <algorithm>
 #include <cmath>

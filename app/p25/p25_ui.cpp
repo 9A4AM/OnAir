@@ -2,10 +2,10 @@
 // packets), the trunking system (site, adjacent sites, channel identifiers), the talkgroups with their activity, the decoded control
 // messages, and a "?" about the mbelib library the voice needs (docs/CODECS.md). Receive only; encrypted calls are only reported.
 #include "app.h"
-#include "dect2/p25_imbe.h"
-#include "dect2/p25_proto.h"
-#include "dect2/p25_rx.h"
-#include "dect2/p25_tel.h"
+#include "dect2/p25/p25_imbe.h"
+#include "dect2/p25/p25_proto.h"
+#include "dect2/p25/p25_rx.h"
+#include "dect2/p25/p25_tel.h"
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>

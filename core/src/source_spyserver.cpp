@@ -11,7 +11,7 @@
 // takes the IQ band at the decimation its mode needs.
 #include "tcp_client.h"
 #include "native_common.h"
-#include "dect2/netradio.h"
+#include "dect2/net/netradio.h"
 #include <cmath>
 #include <map>
 #include <mutex>

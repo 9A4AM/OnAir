@@ -1,6 +1,6 @@
 // DMR test signal (see dmr_gen.h): the content of a base station or a handset as 4FSK symbols, the pulse shaping and the frequency modulator.
-#include "dect2/dmr_gen.h"
-#include "dect2/dmr_dsp.h"
+#include "dect2/dmr/dmr_gen.h"
+#include "dect2/dmr/dmr_dsp.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

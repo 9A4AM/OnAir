@@ -1,6 +1,6 @@
 // Native driver for the RTL-SDR: the radio's own library is loaded at run time when it is installed. See native_common.h.
 #include "native_common.h"
-#include "dect2/mode_tuning.h"
+#include "dect2/engine/mode_tuning.h"
 #include <map>
 
 namespace dect2 {

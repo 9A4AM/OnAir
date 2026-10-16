@@ -1,8 +1,8 @@
 // PSK31 receiver, whole span: BPSK31 signals across +-100 kHz of a 2.4 Msps capture (dial + 100 Hz .. 3.9 kHz are what it hears with the
 // switch off), one text per signal; CPU time of the receiver; PSK31 clusters (signals 50 Hz apart).
-#include "dect2/psk_gen.h"
-#include "dect2/psk_rx.h"
-#include "dect2/psk_tel.h"
+#include "dect2/psk/psk_gen.h"
+#include "dect2/psk/psk_rx.h"
+#include "dect2/psk/psk_tel.h"
 #include <chrono>
 #include <ctime>
 #include <cmath>

@@ -1,4 +1,4 @@
-#include "dect2/xmlmini.h"
+#include "dect2/common/xmlmini.h"
 #include <cctype>
 #include <cstdlib>
 

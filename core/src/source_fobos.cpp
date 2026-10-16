@@ -10,7 +10,7 @@
 // Below 50 MHz the HF input chosen in the radio settings is used (HF1 unless set otherwise).
 #include "native_common.h"
 #include "native_realddc.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <map>
 
 namespace dect2 {

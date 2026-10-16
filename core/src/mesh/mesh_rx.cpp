@@ -1,11 +1,11 @@
 // Mesh (LoRa) receiver: the channel plan of the region, one channel filter per frequency and bandwidth, one LoRa demodulator per
 // setting, the packet layer on every good frame, and the tables of MeshTelemetry.
-#include "dect2/feeds.h"
-#include "dect2/mesh_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/mesh_lora.h"
-#include "dect2/mesh_presets.h"
-#include "dect2/mesh_proto.h"
+#include "dect2/net/feeds.h"
+#include "dect2/mesh/mesh_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/mesh/mesh_presets.h"
+#include "dect2/mesh/mesh_proto.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

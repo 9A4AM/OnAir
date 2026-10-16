@@ -1,4 +1,4 @@
-#include "dect2/inmc_pkt.h"
+#include "dect2/inmc/inmc_pkt.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

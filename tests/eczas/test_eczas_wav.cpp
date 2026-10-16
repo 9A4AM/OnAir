@@ -1,5 +1,5 @@
 // Decode e-Czas time packets from discriminator WAV recordings (scratchpad/eczas_recordings/).
-#include "dect2/eczas_rx.h"
+#include "dect2/eczas/eczas_rx.h"
 #include <cstdio>
 #include <cstring>
 #include <ctime>

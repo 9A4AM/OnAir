@@ -1,5 +1,5 @@
 // Coded navigation messages: SBAS L1 and Galileo I/NAV (see gnss_msg.h).
-#include "dect2/gnss_msg.h"
+#include "dect2/gnss/gnss_msg.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

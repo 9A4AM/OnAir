@@ -1,7 +1,7 @@
 // CubeSat telemetry through the engine (setStandard(63)): the synthetic source plays every framing, the receiver reports frames through
 // latestRx(). No sound.
-#include "dect2/cubesat_rx.h"
-#include "dect2/engine.h"
+#include "dect2/cubesat/cubesat_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

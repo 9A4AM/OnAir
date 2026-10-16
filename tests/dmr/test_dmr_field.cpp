@@ -1,9 +1,9 @@
 // DMR receiver, conditions of the field: other sample rates, dropouts of the radio's stream, a gain step, an adjacent channel as strong as or
 // stronger than the wanted one, impulse noise and a reset in the middle. Compared with what the generator says it sent (dmr_eval.h). The basics are
 // in tests/test_dmr_rx.cpp, handsets (direct mode, mobile station) in tests/test_dmr_handset.cpp.
-#include "dect2/dmr_eval.h"
-#include "dect2/dmr_gen.h"
-#include "dect2/dmr_rx.h"
+#include "dect2/dmr/dmr_eval.h"
+#include "dect2/dmr/dmr_gen.h"
+#include "dect2/dmr/dmr_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -1,6 +1,6 @@
 // DMR link layer of the receiver, see dmr_link.h.
 #include "dmr_link.h"
-#include "dect2/dmr_dsp.h"
+#include "dect2/dmr/dmr_dsp.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -7,9 +7,9 @@
 #include "results_export.h"
 #include "gfx.h"
 #include "plot.h"
-#include "dect2/specx_measure.h"
-#include "dect2/specx_rx.h"
-#include "dect2/specx_tel.h"
+#include "dect2/specx/specx_measure.h"
+#include "dect2/specx/specx_rx.h"
+#include "dect2/specx/specx_tel.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>

@@ -1,6 +1,6 @@
 // TV channel scan results persist in app-<tv-scan>.bin (results_io.h); round-trip a representative row.
-#include "dect2/results_io.h"
-#include "dect2/scanner.h"
+#include "dect2/results/results_io.h"
+#include "dect2/engine/scanner.h"
 #include <cstdio>
 #include <vector>
 

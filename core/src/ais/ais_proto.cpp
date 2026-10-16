@@ -1,5 +1,5 @@
-#include "dect2/ais_proto.h"
-#include "dect2/ais_tel.h"
+#include "dect2/ais/ais_proto.h"
+#include "dect2/ais/ais_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

@@ -2,7 +2,7 @@
 // offset, echo), independence of the chunk size, the speed.
 #include "../../core/src/atsc3/atsc3_synth_content.h"
 #include "atsc3_sim.h"
-#include "dect2/atsc3_synth.h"
+#include "dect2/atsc3/atsc3_synth.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

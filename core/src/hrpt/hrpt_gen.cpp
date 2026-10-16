@@ -1,8 +1,8 @@
 // HRPT / AHRPT test signal (see hrpt_gen.h).
-#include "dect2/hrpt_gen.h"
-#include "dect2/hrpt_proto.h"
-#include "dect2/hrpt_rx.h"
-#include "dect2/meteor_proto.h"
+#include "dect2/hrpt/hrpt_gen.h"
+#include "dect2/hrpt/hrpt_proto.h"
+#include "dect2/hrpt/hrpt_rx.h"
+#include "dect2/meteor/meteor_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

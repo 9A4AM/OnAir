@@ -1,7 +1,7 @@
 // DVB-C screens: status bar, the analysis row (constellation, equaliser taps, MER history, Reed-Solomon losses), the Receiver tab, the tuner
 // (cable channel, symbol rate, QAM, annex) and the test signal options. The TV tab, services and the player are the shared ones.
 #include "app.h"
-#include "dect2/dvbc_rx.h"
+#include "dect2/dvbc/dvbc_rx.h"
 #include <cmath>
 #include <deque>
 #include <utility>

@@ -1,6 +1,6 @@
 // Shared bits of the Signal workbench tests.
 #pragma once
-#include "dect2/wb_bits.h"
+#include "dect2/wb/wb_bits.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

@@ -1,6 +1,6 @@
 // Constellations used for L1-Basic and L1-Detail (A/322 Annex C).
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <vector>
 
 namespace dect2 {

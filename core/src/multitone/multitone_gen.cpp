@@ -1,7 +1,7 @@
 // Multitone paging test signal (see multitone_gen.h).
-#include "dect2/multitone_gen.h"
-#include "dect2/multitone_rx.h"
-#include "dect2/pager_proto.h"
+#include "dect2/multitone/multitone_gen.h"
+#include "dect2/multitone/multitone_rx.h"
+#include "dect2/pager/pager_proto.h"
 #include <cmath>
 #include <random>
 

@@ -1,12 +1,12 @@
 // CW (Morse) skimmer (see cw_rx.h).
-#include "dect2/cw_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/cw_tel.h"
-#include "dect2/cw_morse.h"
-#include "dect2/pskreporter.h"
-#include "dect2/marine_dsp.h"
-#include "dect2/fftutil.h"
-#include "dect2/widespan.h"
+#include "dect2/cw/cw_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/cw/cw_tel.h"
+#include "dect2/cw/cw_morse.h"
+#include "dect2/net/pskreporter.h"
+#include "dect2/marine/marine_dsp.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/engine/widespan.h"
 #include "../ham_listen.h"
 #include <algorithm>
 #include <atomic>

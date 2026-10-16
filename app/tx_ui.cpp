@@ -1,5 +1,5 @@
 // The transmitter: the RX / TX switch at the top left of the interface and the Transmit panel that fills the main area in TX view. What can be sent is the
-// table in core/include/dect2/tx.h; the session, the radios' sinks and the rules are in core/src/tx.cpp and the radios' sources.
+// table in core/include/dect2/tx/tx.h; the session, the radios' sinks and the rules are in core/src/tx.cpp and the radios' sources.
 //
 // The transmitter is independent of the receivers: it has its own radio choice and its own state (not an App's), so a receiver goes on receiving while it
 // transmits (the owner's example: a HackRF Pro transmits, an RTL-SDR receives and decodes it). A radio is never used by both unless it is genuinely full
@@ -9,7 +9,7 @@
 // view itself opens as RX), and stops when it is stopped, the radio fails or the program ends. Nothing is limited here: frequency and gain go to the
 // driver as typed, and the driver's own refusal is shown as it came.
 #include "app.h"
-#include "dect2/hfdig_sstv.h"
+#include "dect2/hfdig/hfdig_sstv.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

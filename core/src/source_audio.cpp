@@ -1,7 +1,7 @@
 // Sound-card IQ source: WebSDR, VAC, or a radio's speaker/line into the computer (not a replacement for an SDR when you need MHz of bandwidth).
 // Reuses AudioIn (CoreAudio / miniaudio). The microphone is never opened until start().
-#include "dect2/audioin.h"
-#include "dect2/source.h"
+#include "dect2/audio/audioin.h"
+#include "dect2/source/source.h"
 
 #include <atomic>
 #include <chrono>

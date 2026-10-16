@@ -1,10 +1,10 @@
 // DJI drone receiver: see dji_rx.h.
-#include "dect2/dji_rx.h"
-#include "dect2/dji_dsp.h"
-#include "dect2/dji_proto.h"
-#include "dect2/dji_tel.h"
-#include "dect2/fftutil.h"
-#include "dect2/results_io.h"
+#include "dect2/dji/dji_rx.h"
+#include "dect2/dji/dji_dsp.h"
+#include "dect2/dji/dji_proto.h"
+#include "dect2/dji/dji_tel.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

@@ -1,9 +1,9 @@
 // TETRA physical layer and PDUs: channel coding round trips with errors, Reed-Muller, the PDU layouts, and one carrier of the test
 // signal decoded at 4 samples per symbol.
-#include "dect2/tetra_gen.h"
-#include "dect2/tetra_phy.h"
-#include "dect2/tetra_pdu.h"
-#include "dect2/tetra_rx.h"
+#include "dect2/tetra/tetra_gen.h"
+#include "dect2/tetra/tetra_phy.h"
+#include "dect2/tetra/tetra_pdu.h"
+#include "dect2/tetra/tetra_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

@@ -1,8 +1,8 @@
 // VDL Mode 2 receiver: see vdl2_rx.h.
-#include "dect2/vdl2_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/feeds.h"
-#include "dect2/vdl2_proto.h"
+#include "dect2/vdl2/vdl2_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/net/feeds.h"
+#include "dect2/vdl2/vdl2_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

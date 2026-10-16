@@ -6,9 +6,9 @@
 //
 // The formats are interleaved signed 8 bit IQ (cs8), unsigned 8 bit IQ (cu8), float IQ (cf32), and s16: one channel of 16 bit audio that carries a DRM
 // signal at an intermediate frequency (what the Dream decoder takes): it is turned into a complex signal first; --shift moves the signal by that many Hz.
-#include "dect2/drm_gen.h"
-#include "dect2/drm_rx.h"
-#include "dect2/mode_synth.h"
+#include "dect2/drm/drm_gen.h"
+#include "dect2/drm/drm_rx.h"
+#include "dect2/engine/mode_synth.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

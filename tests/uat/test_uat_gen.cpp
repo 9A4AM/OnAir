@@ -1,7 +1,7 @@
-#include "dect2/uat_gen.h"
-#include "dect2/uat_rx.h"
-#include "dect2/modes.h"
-#include "dect2/uat_frame.h"
+#include "dect2/uat/uat_gen.h"
+#include "dect2/uat/uat_rx.h"
+#include "dect2/engine/modes.h"
+#include "dect2/uat/uat_frame.h"
 #include <cstdio>
 #include <cstring>
 using namespace dect2;

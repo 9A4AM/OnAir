@@ -1,7 +1,7 @@
 // Wi-SUN FAN through the engine (setStandard(86)): the synthetic source plays the test schedule at 20 Msps, the receiver reports through latestRx().
 // No sound.
-#include "dect2/wisun_rx.h"
-#include "dect2/engine.h"
+#include "dect2/wisun/wisun_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

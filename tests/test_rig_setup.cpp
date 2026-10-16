@@ -1,7 +1,7 @@
 // Rig setup helpers: the model search, the serial-port filter for every platform, baud choices, host:port detection, and (with Hamlib)
 // the real model list.
-#include "dect2/hamlib_rig.h"
-#include "dect2/rig_setup.h"
+#include "dect2/source/hamlib_rig.h"
+#include "dect2/source/rig_setup.h"
 #include <algorithm>
 #include <cstdio>
 

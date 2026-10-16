@@ -3,13 +3,13 @@
 // summary (10 / 12 / 15 / 17 / 20 m and the others: the beacons of the band heard now and the farthest); a great-circle map from the receiver to
 // every beacon heard, coloured by SNR; the 24 hour history of the selected beacon; and the settings (the list file, frequency error, clock
 // offset, stepping through bands when the capture is narrower than the list). Clicking a row tunes and listens (Listen).
-#include "dect2/timecompat.h"
+#include "dect2/common/timecompat.h"
 #include "app.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/hfbeacon_list.h"
-#include "dect2/hfbeacon_rx.h"
-#include "dect2/hfbeacon_tel.h"
-#include "dect2/maidenhead.h"
+#include "dect2/hfbeacon/hfbeacon_list.h"
+#include "dect2/hfbeacon/hfbeacon_rx.h"
+#include "dect2/hfbeacon/hfbeacon_tel.h"
+#include "dect2/geo/maidenhead.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

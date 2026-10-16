@@ -1,5 +1,5 @@
 // Time signal frames (see time_proto.h).
-#include "dect2/time_proto.h"
+#include "dect2/time/time_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

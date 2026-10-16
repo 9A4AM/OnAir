@@ -2,7 +2,7 @@
 // the state, and a small window with the notes of the new version and the settings. The new version is put in place when the program closes,
 // or at once on request.
 #include "app.h"
-#include "dect2/updater.h"
+#include "dect2/engine/updater.h"
 #include "receivers.h"
 #include <ctime>
 

@@ -1,5 +1,5 @@
 // PSK31 / PSK63 varicode, convolutional code and Viterbi decoder (see psk_varicode.h).
-#include "dect2/psk_varicode.h"
+#include "dect2/psk/psk_varicode.h"
 #include <map>
 
 namespace dect2 {

@@ -1,8 +1,8 @@
 // Radio x mode glue: what each mode asks of a radio fits together, and a radio too slow for a mode or a scan channel it cannot tune is said
 // instead of decoding nothing in silence. The built-in source stands in for the radio (synth.mode 99 sends silence at the rate asked for).
-#include "dect2/engine.h"
-#include "dect2/mode_tuning.h"
-#include "dect2/scanner.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/mode_tuning.h"
+#include "dect2/engine/scanner.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

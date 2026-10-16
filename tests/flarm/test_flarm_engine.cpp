@@ -1,7 +1,7 @@
 // FLARM through the engine (setStandard(68)): the synthetic source plays six made-up aircraft; the receiver reports through latestRx().
-#include "dect2/engine.h"
-#include "dect2/flarm_gen.h"
-#include "dect2/flarm_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/flarm/flarm_gen.h"
+#include "dect2/flarm/flarm_rx.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

@@ -1,6 +1,6 @@
 // HF ALE word and call layer: Golay (every pattern of up to 3 errors corrected, 4 detected), the Gray tones, a word through the vote
 // with one copy wrong, the long addresses, an AMD text and an LQA report through the assembler.
-#include "dect2/ale_proto.h"
+#include "dect2/ale/ale_proto.h"
 #include <cstdio>
 #include <random>
 using namespace dect2;

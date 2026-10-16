@@ -1,11 +1,11 @@
 // Radio astronomy: the receiver integrates the synthetic sky (noise with a sloped band and a weak hydrogen line at kAstroLineKms) fed as
 // fast as it can be made; the line is found at its velocity within 2 km/s with a baseline fit, and with an off-source reference instead
 // (which takes out the slope by itself); frequency-switch folding on made-up spectra; the CSV export read back.
-#include "dect2/astro_dsp.h"
-#include "dect2/astro_gen.h"
-#include "dect2/astro_rx.h"
-#include "dect2/astro_tel.h"
-#include "dect2/source.h"
+#include "dect2/astro/astro_dsp.h"
+#include "dect2/astro/astro_gen.h"
+#include "dect2/astro/astro_rx.h"
+#include "dect2/astro/astro_tel.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>

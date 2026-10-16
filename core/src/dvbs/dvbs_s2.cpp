@@ -1,5 +1,5 @@
 // DVB-S2 and DVB-S2X building blocks, see dvbs_s2.h. Clause numbers refer to ETSI EN 302 307 V1.3.1 unless they name EN 302 307-2 (V1.2.1).
-#include "dect2/dvbs_s2.h"
+#include "dect2/dvbs/dvbs_s2.h"
 #include "dvbs_ldpc_tables.h"
 #include "dvbs_s2x.h"
 #include "dvbs_s2x_tables.h"

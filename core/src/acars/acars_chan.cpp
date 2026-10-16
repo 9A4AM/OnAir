@@ -1,5 +1,5 @@
 #include "acars_chan.h"
-#include "dect2/acars_proto.h"
+#include "dect2/acars/acars_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

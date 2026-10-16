@@ -1,9 +1,9 @@
 // APRS / Packet through the engine, as the interface uses it: the synthetic source plays the mode's test signal (faster than a radio: the receiver
 // is tested, not real time), Engine::setStandard(26) selects the mode, the frames come back through latestRx() with the mode's standard.
-#include "dect2/engine.h"
-#include "dect2/engine_testkit.h"
-#include "dect2/packet_gen.h"
-#include "dect2/packet_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/engine/engine_testkit.h"
+#include "dect2/packet/packet_gen.h"
+#include "dect2/packet/packet_rx.h"
 #include <cstdio>
 using namespace dect2;
 using namespace dect2::enginetest;

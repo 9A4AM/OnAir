@@ -2,10 +2,10 @@
 // data), the decoded headers and end frames, the PMR446 channel presets with "scan all 16", and a "?" about the mbelib library the
 // voice needs (docs/CODECS.md).
 #include "app.h"
-#include "dect2/dpmr_proto.h"
-#include "dect2/dpmr_rx.h"
-#include "dect2/dpmr_tel.h"
-#include "dect2/nxdn_ambe.h"
+#include "dect2/dpmr/dpmr_proto.h"
+#include "dect2/dpmr/dpmr_rx.h"
+#include "dect2/dpmr/dpmr_tel.h"
+#include "dect2/nxdn/nxdn_ambe.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

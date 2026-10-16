@@ -2,9 +2,9 @@
 // and averaged traces or a persistence display, the band allocations in a strip above the chart (height from the font), a hover read-out, a marker and a delta marker,
 // the waterfall of the sweeps below, and CSV export of the current sweep.
 #include "app.h"
-#include "dect2/specan_dsp.h"
-#include "dect2/specan_rx.h"
-#include "dect2/specan_tel.h"
+#include "dect2/specan/specan_dsp.h"
+#include "dect2/specan/specan_rx.h"
+#include "dect2/specan/specan_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <atomic>

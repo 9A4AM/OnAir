@@ -1,8 +1,8 @@
 // NDB ident: a carrier 12 kHz below the capture centre (the mode's tune offset), Morse "NDB" at 7 WPM.
 // Three paths the beacon band actually uses: 400 Hz AM, 1020 Hz AM, and a keyed carrier.
-#include "dect2/ndb_gen.h"
-#include "dect2/ndb_rx.h"
-#include "dect2/ndb_tel.h"
+#include "dect2/ndb/ndb_gen.h"
+#include "dect2/ndb/ndb_rx.h"
+#include "dect2/ndb/ndb_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

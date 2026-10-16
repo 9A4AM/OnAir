@@ -1,11 +1,11 @@
 // HF digital SSTV: test audio -> decoder, every mode, at 20 dB (signal to noise in 3 kHz) with a +-100 Hz tuning error and +-100 ppm of sample
 // clock error; the mode picked from the line period when the VIS header is left out; and a Robot 36 picture through the engine.
 // The long modes are fed straight from the generator, faster than real time.
-#include "dect2/engine.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_sstv.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_sstv.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

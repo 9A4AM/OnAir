@@ -1,8 +1,8 @@
 // HF ALE test signal (see ale_gen.h).
-#include "dect2/ale_gen.h"
-#include "dect2/ale_proto.h"
-#include "dect2/ale_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/ale/ale_gen.h"
+#include "dect2/ale/ale_proto.h"
+#include "dect2/ale/ale_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <cmath>
 #include <complex>
 #include <random>

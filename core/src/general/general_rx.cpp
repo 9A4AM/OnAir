@@ -1,14 +1,14 @@
 // General receiver (see general_rx.h): one channel of the band mixed down, filtered, demodulated (NFM, WFM, AM, USB, LSB, CW),
 // squelched and played; optionally recorded to WAV, one file per transmission.
-#include "dect2/general_rx.h"
-#include "dect2/flac_enc.h"
-#include "dect2/mp3_enc.h"
-#include "dect2/general_tel.h"
-#include "dect2/audioout.h"
-#include "dect2/exact_resampler.h"
-#include "dect2/fftutil.h"
-#include "dect2/qo100_dsp.h"
-#include "dect2/timecompat.h"
+#include "dect2/general/general_rx.h"
+#include "dect2/audio/flac_enc.h"
+#include "dect2/audio/mp3_enc.h"
+#include "dect2/general/general_tel.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/dsp/exact_resampler.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/qo100/qo100_dsp.h"
+#include "dect2/common/timecompat.h"
 #include "../hfdig/hfdig_usb.h"
 #include <algorithm>
 #include <cerrno>

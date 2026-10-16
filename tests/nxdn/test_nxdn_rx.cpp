@@ -1,9 +1,9 @@
 // NXDN receiver against the test signal with real-world faults: both rates, +-1 kHz offset, off centre with clock errors, noise, symbol
 // errors, a call joined late, a call without its release, all at once; and noise only. Silent.
-#include "dect2/nxdn_gen.h"
-#include "dect2/nxdn_rx.h"
-#include "dect2/nxdn_tel.h"
-#include "dect2/nxdn_proto.h"
+#include "dect2/nxdn/nxdn_gen.h"
+#include "dect2/nxdn/nxdn_rx.h"
+#include "dect2/nxdn/nxdn_tel.h"
+#include "dect2/nxdn/nxdn_proto.h"
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>

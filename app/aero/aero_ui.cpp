@@ -2,8 +2,8 @@
 // What the mode does and does not decode is said on the Channels view and in the Receiver tab.
 #include "../adsb/adsb_map.h"
 #include "app.h"
-#include "dect2/aero_tel.h"
-#include "dect2/audioout.h"
+#include "dect2/aero/aero_tel.h"
+#include "dect2/audio/audioout.h"
 #include <algorithm>
 #include <cctype>
 #include <cfloat>

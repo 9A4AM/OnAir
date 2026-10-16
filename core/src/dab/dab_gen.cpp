@@ -1,10 +1,10 @@
 // DAB test transmitter (see dab_gen.h): the ensemble, the FIC, the CIF multiplex, the OFDM frame and the synthetic source around it.
-#include "dect2/dab_gen.h"
-#include "dect2/dab.h"
-#include "dect2/fftutil.h"
-#include "dect2/gen_util.h"
-#include "dect2/dab_tii.h"
-#include "dect2/isdbt_resample.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/dab/dab_tii.h"
+#include "dect2/isdbt/isdbt_resample.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>

@@ -1,6 +1,6 @@
 // FEC round trips: BCH error correction and the whole data path (encode -> noise -> demap -> LDPC -> BCH).
 // The encoder side was compared bit-for-bit with the open-source gr-dvbt2 transmitter (336 configurations).
-#include "dect2/t2fec.h"
+#include "dect2/t2/t2fec.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

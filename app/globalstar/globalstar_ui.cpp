@@ -2,8 +2,8 @@
 // (predicted Doppler of the Globalstar satellites above the horizon, from the TLEs the planner loaded), and the event log. Receive only: the downlink is
 // spread and encrypted and nothing of its content is decoded.
 #include "app.h"
-#include "dect2/globalstar_rx.h"
-#include "dect2/globalstar_tel.h"
+#include "dect2/globalstar/globalstar_rx.h"
+#include "dect2/globalstar/globalstar_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

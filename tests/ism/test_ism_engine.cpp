@@ -1,9 +1,9 @@
 // ISM sensors through the engine (setStandard(30)): the synthetic source plays the 433.92 MHz test scene, the receiver hears its devices
 // and reports through latestRx() with their real frequencies; a retune keeps the report numbers growing and starts a fresh device list.
-#include "dect2/engine.h"
-#include "dect2/ism_gen.h"
-#include "dect2/ism_rx.h"
-#include "dect2/modes.h"
+#include "dect2/engine/engine.h"
+#include "dect2/ism/ism_gen.h"
+#include "dect2/ism/ism_rx.h"
+#include "dect2/engine/modes.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

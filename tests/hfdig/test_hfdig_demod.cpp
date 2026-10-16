@@ -1,12 +1,12 @@
 // HF digital front end demodulators: a Robot 36 SSTV picture sent in narrow FM (as the ISS sends on 145.800 MHz: 3 kHz deviation, a
 // Doppler offset of +1.5 kHz, no pre-emphasis) decodes with NFM; the same picture in upper sideband still decodes with USB (the default);
 // Auto gives USB below 30 MHz and NFM at and above it.
-#include "dect2/hf_demod.h"
-#include "dect2/hfdig_gen.h"
-#include "dect2/hfdig_rx.h"
-#include "dect2/hfdig_sstv.h"
-#include "dect2/hfdig_tel.h"
-#include "dect2/mode_synth.h"
+#include "dect2/audio/hf_demod.h"
+#include "dect2/hfdig/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_rx.h"
+#include "dect2/hfdig/hfdig_sstv.h"
+#include "dect2/hfdig/hfdig_tel.h"
+#include "dect2/engine/mode_synth.h"
 #include <cmath>
 #include <cstdio>
 #include <memory>

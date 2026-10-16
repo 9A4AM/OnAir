@@ -1,6 +1,6 @@
-#include "dect2/hfbeacon_gen.h"
-#include "dect2/hfbeacon_dsp.h"
-#include "dect2/hfbeacon_list.h"
+#include "dect2/hfbeacon/hfbeacon_gen.h"
+#include "dect2/hfbeacon/hfbeacon_dsp.h"
+#include "dect2/hfbeacon/hfbeacon_list.h"
 #include <cmath>
 #include <cstring>
 

@@ -1,6 +1,6 @@
 // Front-end load: how much of real time does the receive path need for a heavy DVB-T2 mode (16K extended, GI 1/4)?
 //   bench_rx [seconds] [fft code 0..5] [ext 0|1] [gi idx] [pace] [hog threads] [snr dB]   (pace > 1 feeds the signal faster than real time: an overloaded receiver)
-#include "dect2/engine.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>

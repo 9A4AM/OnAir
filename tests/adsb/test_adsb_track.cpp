@@ -1,7 +1,7 @@
 // ADS-B frame checks and the aircraft table: published messages go in as sliced frames, the table must come out as the documents say.
 // Messages and positions: "The 1090 Megahertz Riddle" (see test_adsb_msg.cpp). Everything else is built here with the encoders and checked against what was put in.
-#include "dect2/adsb_encode.h"
-#include "dect2/adsb_track.h"
+#include "dect2/adsb/adsb_encode.h"
+#include "dect2/adsb/adsb_track.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

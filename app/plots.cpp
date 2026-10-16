@@ -1,6 +1,6 @@
 // spectrum, waterfall, histogram and constellation plots
 #include "app.h"
-#include "dect2/specan_dsp.h"
+#include "dect2/specan/specan_dsp.h"
 
 // Click on the spectrum or the waterfall to tune to that frequency (a drag still pans). The grid follows the mode: FM 0.1 MHz, DMR 12.5 kHz, else 1 kHz.
 static void clickToTune(App& a, int plotId) {

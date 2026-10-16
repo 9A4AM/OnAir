@@ -1,7 +1,7 @@
 // UAT test signal: modulated downlink frames (DO-282 vectors via dump978 fec_tests).
-#include "dect2/uat_gen.h"
-#include "dect2/uat_rx.h"
-#include "dect2/gen_util.h"
+#include "dect2/uat/uat_gen.h"
+#include "dect2/uat/uat_rx.h"
+#include "dect2/dsp/gen_util.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

@@ -1,8 +1,8 @@
 // Channel estimate, header leakage removal, FFT and equaliser on the test signal (front end included), against the transmitted carriers.
-#include "dect2/dtmb_demod.h"
-#include "dect2/dtmb_front.h"
-#include "dect2/dtmb_gen.h"
-#include "dect2/dtmb_map.h"
+#include "dect2/dtmb/dtmb_demod.h"
+#include "dect2/dtmb/dtmb_front.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_map.h"
 #include <cmath>
 #include <cstdio>
 

@@ -1,8 +1,8 @@
 // GSM-R physical layer: the convolutional code, the FIRE code, the 4-burst interleaver, the SCH, the System Information messages,
 // and GMSK bursts through the equaliser (noise, echo, small frequency error, timing offset).
-#include "dect2/gsmr_gen.h"
-#include "dect2/gsmr_phy.h"
-#include "dect2/gsmr_si.h"
+#include "dect2/gsmr/gsmr_gen.h"
+#include "dect2/gsmr/gsmr_phy.h"
+#include "dect2/gsmr/gsmr_si.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

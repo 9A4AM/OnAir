@@ -1,6 +1,6 @@
 // DTMB front end (see dtmb_front.h).
-#include "dect2/dtmb_front.h"
-#include "dect2/dtmb_defs.h"
+#include "dect2/dtmb/dtmb_front.h"
+#include "dect2/dtmb/dtmb_defs.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -78,7 +78,7 @@ size_t SrrcResampler::available() const {
 }
 
 namespace {
-// The polyphase filter over n outputs; compiled twice on x86-64 (baseline and AVX2 + FMA, see dect2/simd.h)
+// The polyphase filter over n outputs; compiled twice on x86-64 (baseline and AVX2 + FMA, see dect2/dsp/simd.h)
 DECT2_SIMD_BODY void filterLoopBody(const float* re, const float* im, const float* bank, int stride, int half, int64_t& pos, int64_t step, size_t n, cf32* o) {
     const int shift = 32 - 9;   // 512 phases
     for (size_t k = 0; k < n; k++) {

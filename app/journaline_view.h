@@ -1,7 +1,7 @@
 // The Journaline page viewer (ETSI TS 102 979): breadcrumb, menu / text / list pages, back and home, a progress bar of the objects received.
 // Shared by the DAB Journaline tab and the DRM data panel.
 #pragma once
-#include "dect2/dab_journaline.h"
+#include "dect2/dab/dab_journaline.h"
 #include <cstdint>
 #include <vector>
 

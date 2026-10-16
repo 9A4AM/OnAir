@@ -3,8 +3,8 @@
 // lists what happened (ACTIVITY, on the right) and draws the spectrum and waterfall of the 8 kHz audio at the bottom, to tune the tones by eye.
 #include "app.h"
 #include "gfx.h"
-#include "dect2/fftutil.h"
-#include "dect2/hfdig_tel.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/hfdig/hfdig_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

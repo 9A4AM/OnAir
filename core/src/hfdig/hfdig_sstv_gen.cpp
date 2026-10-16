@@ -1,7 +1,7 @@
 // SSTV test signal: the test picture sent in one of the modes (with the VIS header unless asked otherwise), as audio for the HF digital
 // generator (hfdig_gen.h), and the mode table's public accessors. Nothing is transmitted.
-#include "dect2/hfdig_sstv.h"
-#include "dect2/hfdig_gen.h"
+#include "dect2/hfdig/hfdig_sstv.h"
+#include "dect2/hfdig/hfdig_gen.h"
 #include "hfdig_sstv_modes.h"
 #include <algorithm>
 #include <cctype>

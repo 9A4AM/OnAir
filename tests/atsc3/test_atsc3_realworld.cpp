@@ -2,8 +2,8 @@
 // independently of the receiver), through the real Atsc3Rx. Every case must find and decode nearly every frame.
 //   test_atsc3_realworld          all cases
 //   test_atsc3_realworld N        only case N
-#include "dect2/atsc3_rx.h"
-#include "dect2/atsc3_synth.h"
+#include "dect2/atsc3/atsc3_rx.h"
+#include "dect2/atsc3/atsc3_synth.h"
 #include "../impair.h"
 #include <chrono>
 #include <cmath>

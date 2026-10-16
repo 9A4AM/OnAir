@@ -1,7 +1,7 @@
 // Why a USB radio that is plugged in does not show up (Linux): the radio is on the bus, but this user may not open its device file, or the
 // kernel's TV driver holds an RTL-SDR. Read from sysfs, which needs no root. The paths go under DECT2_SYSFS_ROOT when it is set (the tests
 // build a fake /sys and /dev tree in a temp folder), so this code is compiled and tested on every platform.
-#include "dect2/usb_diag.h"
+#include "dect2/source/usb_diag.h"
 #include "native_common.h"
 #include <cstdint>
 #include <cstdio>

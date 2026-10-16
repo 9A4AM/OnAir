@@ -1,7 +1,7 @@
 // Transmitter model -> channel decoder at the symbol level (no radio part): every profile, bit-exact packets, then noise.
-#include "dect2/dtmb_chain.h"
-#include "dect2/dtmb_gen.h"
-#include "dect2/dtmb_map.h"
+#include "dect2/dtmb/dtmb_chain.h"
+#include "dect2/dtmb/dtmb_gen.h"
+#include "dect2/dtmb/dtmb_map.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

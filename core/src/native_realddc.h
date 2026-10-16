@@ -2,7 +2,7 @@
 // directly (the Fobos SDR's HF inputs, the RX888's ADC): source_fobos.cpp, source_rx888.cpp.
 #pragma once
 #include "native_common.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/dsp/dsp_compat.h"
 
 namespace dect2 {
 namespace native {

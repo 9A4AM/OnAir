@@ -1,14 +1,14 @@
-// FT8 / FT4 / FT2 / WSPR decoder (see dect2/hfdig_ftx.h and hfdig_ftx_int.h for the protocols and their sources).
+// FT8 / FT4 / FT2 / WSPR decoder (see dect2/hfdig/hfdig_ftx.h and hfdig_ftx_int.h for the protocols and their sources).
 // Pipeline of one slot: the audio at a rate where a symbol is a power of two samples (FT8 6400 Hz, FT4 / FT2 10667 Hz, WSPR 12000 Hz)
 // -> a spectrogram (one symbol per frame, frames every quarter symbol, bins of half the tone spacing) -> the sync score of every
 // time / frequency (Costas arrays, WSPR's sync vector) -> the best candidates -> each cut out of one large FFT of the slot into a narrow
 // complex baseband (WSJT-X's way) -> a fine fit of time and frequency on the sync symbols -> per-symbol tone amplitudes -> soft bits
 // (non-coherent likelihoods) -> LDPC / CRC (FT) or deinterleaving and Fano (WSPR) -> the message; each decoded signal is rebuilt and
 // subtracted from the slot, and the search runs again on what is left.
-#include "dect2/hfdig_ftx.h"
-#include "dect2/pskreporter.h"
-#include "dect2/wsprnet.h"
-#include "dect2/fftutil.h"
+#include "dect2/hfdig/hfdig_ftx.h"
+#include "dect2/net/pskreporter.h"
+#include "dect2/net/wsprnet.h"
+#include "dect2/dsp/fftutil.h"
 #include "hfdig_ftx_int.h"
 #include "hfdig_wsjt_int.h"
 #include "hfdig_usb.h"

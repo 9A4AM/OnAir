@@ -1,12 +1,12 @@
 // DVB-C receiver: spectrum -> carrier offset and symbol rate, interpolating matched filter + Gardner timing loop (2 samples a symbol),
 // fractionally spaced equaliser (CMA, then decision directed LMS inside a carrier loop), QAM order and spectral inversion tried until the transport
 // stream sync bytes appear, differential decoding of the quadrant, then the DVB-T outer decoder (de-interleaver, Reed-Solomon, energy dispersal).
-#include "dect2/dvbc_rx.h"
-#include "dect2/dvbc.h"
-#include "dect2/dvbt.h"
-#include "dect2/fftutil.h"
-#include "dect2/mode_synth.h"
-#include "dect2/source.h"
+#include "dect2/dvbc/dvbc_rx.h"
+#include "dect2/dvbc/dvbc.h"
+#include "dect2/dvbt/dvbt.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/engine/mode_synth.h"
+#include "dect2/source/source.h"
 #include <algorithm>
 #include <complex>
 #include <cstdlib>

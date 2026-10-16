@@ -1,6 +1,6 @@
 // DSC through the radio layer: how many of the calls sent are decoded with a good ECC, against signal to noise ratio (noise in 3 kHz; in 12.5 kHz on VHF).
 #include "../data/marine/rf_util.h"
-#include "dect2/marine_dsc.h"
+#include "dect2/marine/marine_dsc.h"
 #include <iterator>
 using namespace mt;
 

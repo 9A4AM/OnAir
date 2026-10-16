@@ -1,8 +1,8 @@
 // DAB receiver against the test transmitter (dab_gen): the real DabReceiver locks to the generated ensemble, reads the labels and the sub-channel table exactly,
 // and decodes the audio of every service to the right tones (DAB+ AAC-LC at 48 and 32 kHz, a DAB+ melody, DAB MP2). Then the impairments: a C/N sweep, carrier
 // offsets, clock offsets, the sample rates of the radios and chunk sizes from 1 to 65536 samples. The signal is rounded to 8 bits like the source does.
-#include "dect2/dab.h"
-#include "dect2/dab_gen.h"
+#include "dect2/dab/dab.h"
+#include "dect2/dab/dab_gen.h"
 #include "../jobs.h"
 extern "C" {
 #include <libavcodec/avcodec.h>

@@ -1,4 +1,4 @@
-#include "dect2/inmc_code.h"
+#include "dect2/inmc/inmc_code.h"
 #include <algorithm>
 #include <cstring>
 

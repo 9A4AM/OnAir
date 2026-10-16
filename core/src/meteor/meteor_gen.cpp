@@ -1,7 +1,7 @@
 // Meteor-M LRPT test signal (see meteor_gen.h).
-#include "dect2/meteor_gen.h"
-#include "dect2/meteor_proto.h"
-#include "dect2/meteor_rx.h"
+#include "dect2/meteor/meteor_gen.h"
+#include "dect2/meteor/meteor_proto.h"
+#include "dect2/meteor/meteor_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

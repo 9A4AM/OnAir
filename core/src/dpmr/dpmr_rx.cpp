@@ -1,10 +1,10 @@
 // dPMR receiver (see dpmr_rx.h).
-#include "dect2/dpmr_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/dpmr_tel.h"
-#include "dect2/dpmr_proto.h"
-#include "dect2/nxdn_ambe.h"
-#include "dect2/audioout.h"
+#include "dect2/dpmr/dpmr_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/dpmr/dpmr_tel.h"
+#include "dect2/dpmr/dpmr_proto.h"
+#include "dect2/nxdn/nxdn_ambe.h"
+#include "dect2/audio/audioout.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

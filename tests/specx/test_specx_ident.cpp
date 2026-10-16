@@ -1,18 +1,18 @@
 // Signal identifier (sig_ident.h) on the test signals of the modes: DMR, NXDN96 / NXDN48, P25, dPMR, TETRA, AIS, POCSAG, LoRa, DAB (OFDM),
 // FM broadcast, an AM carrier and plain noise, off the centre and with a carrier error; plus a capture through the Capture thread.
-#include "dect2/ais_gen.h"
-#include "dect2/dab_gen.h"
-#include "dect2/dmr_gen.h"
-#include "dect2/dpmr_gen.h"
-#include "dect2/fm_gen.h"
-#include "dect2/mesh_lora.h"
-#include "dect2/mode_synth.h"
-#include "dect2/nxdn_gen.h"
-#include "dect2/p25_gen.h"
-#include "dect2/pager_gen.h"
-#include "dect2/sig_ident.h"
-#include "dect2/source.h"
-#include "dect2/tetra_gen.h"
+#include "dect2/ais/ais_gen.h"
+#include "dect2/dab/dab_gen.h"
+#include "dect2/dmr/dmr_gen.h"
+#include "dect2/dpmr/dpmr_gen.h"
+#include "dect2/fm/fm_gen.h"
+#include "dect2/mesh/mesh_lora.h"
+#include "dect2/engine/mode_synth.h"
+#include "dect2/nxdn/nxdn_gen.h"
+#include "dect2/p25/p25_gen.h"
+#include "dect2/pager/pager_gen.h"
+#include "dect2/engine/sig_ident.h"
+#include "dect2/source/source.h"
+#include "dect2/tetra/tetra_gen.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

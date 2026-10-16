@@ -1,6 +1,6 @@
 // FM receiver: generator (stereo, pilot, RDS, noise, carrier offset) -> receiver, checking audio, stereo separation, RDS and signal quality.
-#include "dect2/fm_gen.h"
-#include "dect2/fm_rx.h"
+#include "dect2/fm/fm_gen.h"
+#include "dect2/fm/fm_rx.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

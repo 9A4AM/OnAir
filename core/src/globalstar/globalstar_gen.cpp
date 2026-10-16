@@ -1,8 +1,8 @@
 // Globalstar test signal: see globalstar_gen.h.
-#include "dect2/globalstar_gen.h"
-#include "dect2/fftutil.h"
-#include "dect2/gen_util.h"
-#include "dect2/globalstar_rx.h"
+#include "dect2/globalstar/globalstar_gen.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/globalstar/globalstar_rx.h"
 #include <algorithm>
 #include <cmath>
 #include <random>

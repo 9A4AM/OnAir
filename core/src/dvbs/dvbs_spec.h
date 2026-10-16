@@ -1,6 +1,6 @@
 // DVB-S/S2 receiver: power spectrum of the input, and what it says about the carrier (centre, symbol rate, roll-off). Internal.
 #pragma once
-#include "dect2/ring.h"
+#include "dect2/common/ring.h"
 #include <cstdint>
 #include <vector>
 

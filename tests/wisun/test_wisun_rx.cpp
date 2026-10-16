@@ -1,10 +1,10 @@
 // Wi-SUN FAN receiver against the test signal: the whole schedule decoded at 20 Msps (frames hopping over 915.4 - 927.4 MHz), with noise,
 // carrier and clock offsets, at a slow radio's 2.4 Msps (only the channels it takes in), a frame with a damaged FCS, the tables (network,
 // border router, roles, the EAPOL authenticator, links with the RSL from the acks), Clear and the results file.
-#include "dect2/wisun_gen.h"
-#include "dect2/wisun_proto.h"
-#include "dect2/wisun_rx.h"
-#include "dect2/wisun_tel.h"
+#include "dect2/wisun/wisun_gen.h"
+#include "dect2/wisun/wisun_proto.h"
+#include "dect2/wisun/wisun_rx.h"
+#include "dect2/wisun/wisun_tel.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

@@ -2,9 +2,9 @@
 // DVB-S2 carriers sit on the wideband transponder (1 Msym/s at +2.25 MHz, 0.5 Msym/s at -2.5 MHz). The second mode decodes the one that was asked for:
 // the report comes through latestRx2() as standard 7 with a transport stream lock and the symbol rate of that carrier, the stream reaches the
 // engine's analysis (tsSnapshot(): a video and an audio stream) and the first mode goes on reporting QO-100. Other pairs are refused with a reason.
-#include "dect2/dvbs_gen.h"
-#include "dect2/engine.h"
-#include "dect2/qo100_dsp.h"
+#include "dect2/dvbs/dvbs_gen.h"
+#include "dect2/engine/engine.h"
+#include "dect2/qo100/qo100_dsp.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

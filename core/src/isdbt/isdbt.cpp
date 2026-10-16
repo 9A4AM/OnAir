@@ -1,4 +1,4 @@
-#include "dect2/isdbt.h"
+#include "dect2/isdbt/isdbt.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>

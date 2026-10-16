@@ -2,8 +2,8 @@
 // the chirp waterfall with the sweeps marked, the "heard on band X at time Y" history, band presets and a scan over the radar bands.
 // Receive only: broadcast radar signals; nothing is decrypted or transmitted. The ID text is always labelled unverified.
 #include "app.h"
-#include "dect2/codar_rx.h"
-#include "dect2/codar_tel.h"
+#include "dect2/codar/codar_rx.h"
+#include "dect2/codar/codar_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

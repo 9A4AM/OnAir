@@ -2,8 +2,8 @@
 // A producer replays a generated DVB-T2 signal (16K extended, GI 1/4) in real time into a ring; the consumer feeds the receiver and is slowed
 // down to 92% of real time. A frame carries data only if none of its samples were lost, so the test counts frames that arrived intact.
 // With the old behaviour (the producer drops what does not fit) a quarter or more are ruined; with dropBacklog() almost none.
-#include "dect2/t2gen.h"
-#include "dect2/t2rx.h"
+#include "dect2/t2/t2gen.h"
+#include "dect2/t2/t2rx.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

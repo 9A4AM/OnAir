@@ -1,8 +1,8 @@
 // Time signal receiver (see time_rx.h).
-#include "dect2/time_rx.h"
-#include "dect2/results_io.h"
-#include "dect2/time_tel.h"
-#include "dect2/time_proto.h"
+#include "dect2/time/time_rx.h"
+#include "dect2/results/results_io.h"
+#include "dect2/time/time_tel.h"
+#include "dect2/time/time_proto.h"
 #include "../ham_listen.h"
 #include <algorithm>
 #include <atomic>

@@ -1,5 +1,5 @@
 // Drone Remote ID messages (ASTM F3411-22a / ASD-STAN EN 4709-002): decoding, encoding (the test signal) and the BLE / Wi-Fi carriers.
-#include "dect2/rid_proto.h"
+#include "dect2/rid/rid_proto.h"
 #include <cmath>
 #include <cstdio>
 #include <algorithm>

@@ -3,9 +3,9 @@
 // sidetone switch for the focused signal (off until switched on).
 #include "app.h"
 #include "gfx.h"
-#include "dect2/cw_morse.h"
-#include "dect2/cw_rx.h"
-#include "dect2/cw_tel.h"
+#include "dect2/cw/cw_morse.h"
+#include "dect2/cw/cw_rx.h"
+#include "dect2/cw/cw_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

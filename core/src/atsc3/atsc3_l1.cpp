@@ -1,8 +1,8 @@
-#include "dect2/atsc3_l1.h"
-#include "dect2/atsc3_bb.h"
+#include "dect2/atsc3/atsc3_l1.h"
+#include "dect2/atsc3/atsc3_bb.h"
 #include "atsc3_constellations.h"
 #include "atsc3_ldpc.h"
-#include "dect2/t2fec.h"
+#include "dect2/t2/t2fec.h"
 #include <algorithm>
 #include <cmath>
 

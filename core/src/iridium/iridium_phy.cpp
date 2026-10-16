@@ -1,6 +1,6 @@
 // Iridium radio layer: burst detector and per-burst DQPSK demodulator (see iridium_phy.h for the sources of the constants).
-#include "dect2/iridium_phy.h"
-#include "dect2/dsp_compat.h"
+#include "dect2/iridium/iridium_phy.h"
+#include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>

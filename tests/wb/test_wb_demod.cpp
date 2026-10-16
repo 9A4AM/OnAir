@@ -1,6 +1,6 @@
 // Signal workbench: synthetic signals with known bits through the demodulators (FSK, ASK, AFSK, PSK, MSK, GMSK) and known tones through the audio ones.
-#include "dect2/wb_demod.h"
-#include "dect2/wb_gen.h"
+#include "dect2/wb/wb_demod.h"
+#include "dect2/wb/wb_gen.h"
 #include "wb_test.h"
 using namespace dect2::wb;
 using dect2::cf32;

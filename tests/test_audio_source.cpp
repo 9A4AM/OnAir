@@ -1,6 +1,6 @@
 // Sound-card IQ source: AudioIn Tone/Silence through USB analytic IQ, and listAudioInputs() does not crash.
-#include "dect2/audioin.h"
-#include "dect2/source.h"
+#include "dect2/audio/audioin.h"
+#include "dect2/source/source.h"
 #include <cmath>
 #include <cstdio>
 #include <string>

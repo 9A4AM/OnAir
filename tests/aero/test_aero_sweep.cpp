@@ -3,9 +3,9 @@
 // Asserted: at 5 dB (600 / 1200 bit/s, differential MSK) and 3 dB (10500 bit/s, coherent OQPSK) at least 99 % of the SUs are good.
 // For reference, a K = 7 rate 1/2 code with soft decisions needs about 4.4 dB per information bit for a bit error rate of 1e-5 on coherent
 // BPSK, i.e. about 1.4 dB per channel bit; differential detection of MSK costs about 2 to 3 dB more.
-#include "dect2/aero_demod.h"
-#include "dect2/aero_phy.h"
-#include "dect2/gen_util.h"
+#include "dect2/aero/aero_demod.h"
+#include "dect2/aero/aero_phy.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -4,7 +4,7 @@
 #include "dvbs_s2refine.h"
 #include "dvbs_symthread.h"
 #include "dvbs_compute.h"
-#include "dect2/ldpc.h"
+#include "dect2/dsp/ldpc.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>

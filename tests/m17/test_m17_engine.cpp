@@ -1,6 +1,6 @@
 // M17 through the engine (setStandard(33)): the synthetic source plays the test schedule, the receiver reports through latestRx().
-#include "dect2/m17_rx.h"
-#include "dect2/engine.h"
+#include "dect2/m17/m17_rx.h"
+#include "dect2/engine/engine.h"
 #include <chrono>
 #include <cstdio>
 #include <thread>

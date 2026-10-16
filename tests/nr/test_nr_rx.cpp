@@ -1,7 +1,7 @@
 // 5G NR cells search: synthetic SS/PBCH bursts (38.211 / 38.212) through searchDecode at other sample rates, off the centre, with carrier
 // and clock offsets, noise and weak beams; noise alone finds nothing.
-#include "dect2/cell_dsp.h"
-#include "dect2/nr_phy.h"
+#include "dect2/cell/cell_dsp.h"
+#include "dect2/nr/nr_phy.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

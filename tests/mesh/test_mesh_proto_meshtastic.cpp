@@ -3,9 +3,9 @@
 // "08011204746573744800" = TEXT_MESSAGE_APP "test"). The ciphertext of that Data under the default key was computed with
 // OpenSSL 3.6.4 (openssl enc -aes-128-ctr) from the nonce layout in CryptoEngine.cpp, independent of this code.
 // Hand-encoded messages follow the field numbers of meshtastic/protobufs mesh.proto and telemetry.proto.
-#include "dect2/mesh_proto.h"
-#include "dect2/mesh_crypto.h"
-#include "dect2/mesh_pb.h"
+#include "dect2/mesh/mesh_proto.h"
+#include "dect2/mesh/mesh_crypto.h"
+#include "dect2/mesh/mesh_pb.h"
 #include <atomic>
 #include <cstdio>
 #include <cstring>

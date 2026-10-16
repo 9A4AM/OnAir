@@ -1,6 +1,6 @@
 // The shared channel database: CSV with quotes and commas, the merge rules, the submission text and its links (length limit), and a body
 // as scripts/ingest.py in the data repo expects it. No network.
-#include "dect2/channel_db.h"
+#include "dect2/channels/channel_db.h"
 #include <cstdio>
 
 using namespace dect2::chdb;

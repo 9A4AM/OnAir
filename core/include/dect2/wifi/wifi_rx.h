@@ -1,0 +1,55 @@
+// Wi-Fi network monitor: the access points around, from the beacons they broadcast openly on 2.4 GHz, as a phone's Wi-Fi list shows them
+// (SSID, BSSID and vendor, channel, security, rates, beacon interval, level). Passive: it never transmits, probes, associates or
+// joins, and parses only beacons and probe responses; every other frame (data included) is only counted, never decoded.
+//
+// 802.11b DSSS at 1 Mbit/s (IEEE 802.11 clause 15), how APs send their beacons on 2.4 GHz: DBPSK, each symbol spread by Barker-11 at
+// 11 Mchip/s. The input is mixed to 0 Hz and brought to 20 Msps (exactly 20 samples a symbol), correlated with the Barker sequence, and
+// each of the 20 sample phases runs its own differential detector and descrambler (z^-7 + z^-4 + 1, self-synchronising) looking for the
+// long preamble: 32 descrambled ones then the SFD 0xF3A0. The strongest phase decodes the PLCP header (CRC-16) and the MPDU with an
+// early / late timing tracker; the FCS (CRC-32) must pass. Short-preamble and 2 / 5.5 / 11 Mbit/s headers are counted, not decoded;
+// APs that beacon only at OFDM rates (802.11g / n, 6 Mbit/s) are not heard.
+//
+// Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
+// telemetry() and the setters from the interface thread.
+#pragma once
+#include "dect2/engine/mode_tuning.h"
+#include "dect2/common/ring.h"
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
+
+namespace dect2 {
+
+struct WifiTelemetry;   // wifi_tel.h
+
+class WifiReceiver {
+public:
+    WifiReceiver();
+    ~WifiReceiver();
+
+    void configure(double inputRateHz);
+    void setSignalOffset(double hz);
+    void setCenterHz(double hz);          // the radio's centre: the channel shown and noted with each network (0: unknown, a file)
+    bool ready() const;
+    void reset();                         // the demodulator only: the network table stays
+    void clearNetworks();
+    void feed(const cf32* x, size_t n);
+    bool telemetry(WifiTelemetry& out, uint64_t lastSeq);
+    // The network table and the frame log stay through reset(), configure() and retunes: only clearResults() empties them
+    void clearResults();
+    std::string saveResults() const;                     // for the results file (results_io.h)
+    bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
+    void setLogCallback(std::function<void(const std::string&)> cb);
+    // Every good frame (FCS passed; n without the FCS), on the feeding thread: for a mode built on this demodulator (Drone Remote ID). Set before feeding.
+    void setFrameCallback(std::function<void(const uint8_t* mpdu, size_t n, float rssiDbfs)> cb);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> p_;
+};
+
+ModeTuning wifiTuning();
+
+} // namespace dect2

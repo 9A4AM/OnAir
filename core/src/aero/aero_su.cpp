@@ -3,8 +3,8 @@
 // table field positions, ISU/SSU numbering (ISUData::update), ACARS user data (ParserISU::parse).
 // Interleaver block sizes: aerol.cpp setSettings (600: 6x64, 1200: 9x64, 10500: 78x64 channel bits, rate 1/2 coding).
 // Not sourced, left as zero bytes in the builders: the other fields of log-on SUs, fill-in SU content.
-#include "dect2/aero_su.h"
-#include "dect2/aero_acars.h"
+#include "dect2/aero/aero_su.h"
+#include "dect2/aero/aero_acars.h"
 
 #include <algorithm>
 #include <cmath>

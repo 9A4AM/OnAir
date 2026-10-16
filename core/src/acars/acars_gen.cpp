@@ -1,6 +1,6 @@
-#include "dect2/acars_gen.h"
-#include "dect2/aero_adsc.h"
-#include "dect2/gen_util.h"
+#include "dect2/acars/acars_gen.h"
+#include "dect2/aero/aero_adsc.h"
+#include "dect2/dsp/gen_util.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

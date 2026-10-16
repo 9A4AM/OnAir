@@ -1,4 +1,4 @@
-#include "dect2/wb_measure.h"
+#include "dect2/wb/wb_measure.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -1,4 +1,4 @@
-#include "dect2/channel.h"
+#include "dect2/channels/channel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

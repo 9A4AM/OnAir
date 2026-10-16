@@ -2,8 +2,8 @@
 // scan, squelch and hang, the activity log, and the band spectrum with a marker for every channel.
 #include "app.h"
 #include "plot.h"
-#include "dect2/airband_gen.h"
-#include "dect2/airband_tel.h"
+#include "dect2/airband/airband_gen.h"
+#include "dect2/airband/airband_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

@@ -5,7 +5,7 @@
 // Both backends run one thread that asks AudioOut::Impl::render() for a short block of audio and hands it to the device. The thread has a
 // high priority: if it is late, the sound breaks up.
 #include "audioout_impl.h"
-#include "dect2/platform.h"
+#include "dect2/common/platform.h"
 #include <atomic>
 #include <chrono>
 #include <cstdlib>

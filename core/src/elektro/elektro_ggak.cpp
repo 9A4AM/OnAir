@@ -1,8 +1,8 @@
 // Elektro-L GGAK demodulator and test generator (elektro_ggak.h).
-#include "dect2/elektro_ggak.h"
-#include "dect2/fftutil.h"
-#include "dect2/gen_util.h"
-#include "dect2/results_io.h"
+#include "dect2/elektro/elektro_ggak.h"
+#include "dect2/dsp/fftutil.h"
+#include "dect2/dsp/gen_util.h"
+#include "dect2/results/results_io.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

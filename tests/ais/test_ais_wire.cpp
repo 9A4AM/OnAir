@@ -5,8 +5,8 @@
 //   over the octets (poly 0x1021 reflected = 0x8408, init 0xFFFF, xorout 0xFFFF, sent low octet first, each octet LSB first) -> zero insertion after five 1s
 //   -> flags 0x7E -> NRZI (a 0 is a change of level) -> GMSK, BT 0.4, modulation index 0.5, 9600 bd at 96 kHz -> placed at +-25 kHz at 2.4 Msps.
 // The result goes into AisReceiver and the stations, positions and sentences it reports are compared with what the sentences say.
-#include "dect2/ais_rx.h"
-#include "dect2/ais_proto.h"
+#include "dect2/ais/ais_rx.h"
+#include "dect2/ais/ais_proto.h"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>

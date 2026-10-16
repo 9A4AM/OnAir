@@ -1,6 +1,6 @@
 // DJI DroneID: see dji_proto.h.
-#include "dect2/dji_proto.h"
-#include "dect2/fftutil.h"
+#include "dect2/dji/dji_proto.h"
+#include "dect2/dsp/fftutil.h"
 #include <algorithm>
 #include <array>
 #include <cmath>

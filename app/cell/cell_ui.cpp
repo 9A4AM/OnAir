@@ -6,9 +6,9 @@
 #include "app.h"
 #include "results_export.h"
 #include "../adsb/adsb_map.h"
-#include "dect2/cell_ocid.h"
-#include "dect2/cell_rx.h"
-#include "dect2/cell_tel.h"
+#include "dect2/cell/cell_ocid.h"
+#include "dect2/cell/cell_rx.h"
+#include "dect2/cell/cell_tel.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

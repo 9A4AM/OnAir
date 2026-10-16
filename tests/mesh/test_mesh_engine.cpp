@@ -1,7 +1,7 @@
 // Mesh (LoRa) through the engine as the app and dect2cli use it: the synthetic source plays the test signal (8-bit samples, paced
 // faster than a radio when it can), the engine keeps every sample and reports the mesh tables through latestRx().
-#include "dect2/engine.h"
-#include "dect2/mesh_rx.h"
+#include "dect2/engine/engine.h"
+#include "dect2/mesh/mesh_rx.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

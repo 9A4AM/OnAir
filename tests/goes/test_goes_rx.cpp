@@ -2,10 +2,10 @@
 // -> BPSK with a root raised cosine, carrier offset, symbol clock offset and noise) into the receiver, at the RTL-SDR rate and at a
 // HackRF rate; every product must come back byte for byte (Rice and plain images, the JPEG, the admin and EMWIN texts) and every LRIT
 // file must equal the one sent. Noise alone gives nothing.
-#include "dect2/goes_gen.h"
-#include "dect2/goes_rx.h"
-#include "dect2/goes_tel.h"
-#include "dect2/hfdig_hamdrm.h"
+#include "dect2/goes/goes_gen.h"
+#include "dect2/goes/goes_rx.h"
+#include "dect2/goes/goes_tel.h"
+#include "dect2/hfdig/hfdig_hamdrm.h"
 #include <chrono>
 #include <cstdio>
 #include <random>

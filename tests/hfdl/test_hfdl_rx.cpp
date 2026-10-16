@@ -1,8 +1,8 @@
 // HFDL receiver loopback: known squitters and ACARS / performance data bursts at every rate, through the receiver, with a tuning error of
 // +-100 / +-200 Hz, a sample clock off by +-100 ppm, timing offsets, noise, a two-path HF channel with delay and Doppler spread, several channels at once, and noise alone.
-#include "dect2/hfdl_gen.h"
-#include "dect2/hfdl_rx.h"
-#include "dect2/portable_rng.h"
+#include "dect2/hfdl/hfdl_gen.h"
+#include "dect2/hfdl/hfdl_rx.h"
+#include "dect2/dsp/portable_rng.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
