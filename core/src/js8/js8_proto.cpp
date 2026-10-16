@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace js8 {
@@ -167,8 +168,8 @@ const std::vector<std::pair<char, const char*>>& huff() {
     return h;
 }
 
-uint64_t getBits(const uint8_t* b, int from, int n) { uint64_t v = 0; for (int i = 0; i < n; i++) v = (v << 1) | (b[from + i] & 1u); return v; }
-void putBits(uint8_t* b, int from, int n, uint64_t v) { for (int i = 0; i < n; i++) b[from + i] = (uint8_t)((v >> (n - 1 - i)) & 1); }
+uint64_t getBits(const uint8_t* b, int from, int n) { return bits::getMsb(b, (size_t)from, n); }
+void putBits(uint8_t* b, int from, int n, uint64_t v) { bits::putMsb(b, (size_t)from, v, n); }
 
 std::string formatSnr(int snr) {
     char b[16];

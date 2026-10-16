@@ -1,6 +1,7 @@
 // PSK31 / PSK63 varicode, convolutional code and Viterbi decoder (see psk_varicode.h).
 #include "dect2/psk/psk_varicode.h"
 #include <map>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace psk {
@@ -38,7 +39,7 @@ const std::map<uint32_t, int>& codeTable() {
     return t;
 }
 
-int parity(uint32_t v) { v ^= v >> 16; v ^= v >> 8; v ^= v >> 4; v ^= v >> 2; v ^= v >> 1; return (int)(v & 1); }
+int parity(uint32_t v) { return dect2::bits::parity((uint32_t)v); }
 } // namespace
 
 const char* varicode(int c) { return c >= 0 && c < 128 ? kVaricode[c] : ""; }

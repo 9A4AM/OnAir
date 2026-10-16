@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cstring>
 #include <ctime>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace pager {
@@ -13,7 +14,7 @@ namespace {
 
 constexpr uint32_t kGen = 0x769;               // x^10 + x^9 + x^8 + x^6 + x^5 + x^3 + 1
 
-inline int parity32(uint32_t v) { v ^= v >> 16; v ^= v >> 8; v ^= v >> 4; v ^= v >> 2; v ^= v >> 1; return (int)(v & 1); }
+inline int parity32(uint32_t v) { return dect2::bits::parity((uint32_t)v); }
 
 // remainder of a 31-bit polynomial divided by the generator
 uint32_t remainder31(uint32_t c) {

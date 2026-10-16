@@ -5,6 +5,7 @@
 #include "hfdig_kbd_int.h"
 #include <climits>
 #include <cstring>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace kbd {
@@ -101,7 +102,7 @@ private:
 };
 
 // ------------------------------------------------------------------ convolutional code
-inline int parity32(unsigned v) { v ^= v >> 16; v ^= v >> 8; v ^= v >> 4; v ^= v >> 2; v ^= v >> 1; return (int)(v & 1); }
+inline int parity32(unsigned v) { return dect2::bits::parity((uint32_t)v); }
 
 class ConvEnc {
 public:

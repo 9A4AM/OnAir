@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstring>
 #include <sstream>
+#include "dect2/common/bits.h"
+#include "dect2/common/str.h"
 
 namespace dect2 {
 namespace ftx {
@@ -28,21 +30,10 @@ int idx(const char* alpha, char c) {
     return p ? (int)(p - alpha) : -1;
 }
 
-uint64_t getBits(const uint8_t* b, int pos, int n) {
-    uint64_t v = 0;
-    for (int i = 0; i < n; i++) v = (v << 1) | (b[pos + i] & 1);
-    return v;
-}
-void setBits(uint8_t* b, int pos, int n, uint64_t v) {
-    for (int i = 0; i < n; i++) b[pos + i] = (uint8_t)((v >> (n - 1 - i)) & 1);
-}
+uint64_t getBits(const uint8_t* b, int pos, int n) { return bits::getMsb(b, (size_t)pos, n); }
+void setBits(uint8_t* b, int pos, int n, uint64_t v) { bits::putMsb(b, (size_t)pos, v, n); }
 
-std::string trim(const std::string& s) {
-    size_t a = 0, e = s.size();
-    while (a < e && s[a] == ' ') a++;
-    while (e > a && s[e - 1] == ' ') e--;
-    return s.substr(a, e - a);
-}
+std::string trim(const std::string& s) { return dect2::str::trimChars(s, " "); }
 
 std::vector<std::string> split(const std::string& s) {
     std::vector<std::string> out;

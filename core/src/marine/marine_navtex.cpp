@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace marine {
@@ -30,7 +31,7 @@ struct Tables {
 };
 const Tables& tables() { static const Tables t; return t; }
 
-int popcount7(unsigned v) { int n = 0; for (int i = 0; i < 7; i++) n += (v >> i) & 1; return n; }
+int popcount7(unsigned v) { return dect2::bits::popcount(v & 0x7Fu); }
 bool isControl(uint8_t c) { return c == kAlpha || c == kBeta || c == kRep || c == kLtrs || c == kFigs || c == kSpare; }
 
 // ZCZC / NNNN with up to one unreadable character

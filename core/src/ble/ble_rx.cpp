@@ -16,11 +16,13 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kOut = 4e6;              // demodulator rate: 4 samples per bit
 constexpr int kSps = 4;
 constexpr int kMean = 160;                // the running mean the bits are sliced against: 40 bits (preamble and access address)
@@ -28,7 +30,7 @@ constexpr int kMaxBytes = ble::kMaxPdu + 3;
 constexpr int kNeed = (kMaxBytes * 8 + 2) * kSps + 8;   // samples after the access address a candidate waits for
 constexpr int kHist = 40 * kSps + 16;     // samples kept before the oldest pending candidate
 
-int popc(uint32_t v) { int n = 0; while (v) { v &= v - 1; n++; } return n; }
+int popc(uint32_t v) { return dect2::bits::popcount(v); }
 }
 
 struct BleReceiver::Impl {

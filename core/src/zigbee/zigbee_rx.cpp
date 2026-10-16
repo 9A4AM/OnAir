@@ -15,11 +15,13 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kOut = 8e6;              // demodulator rate: 4 samples per chip
 constexpr int kSps = 4;
 constexpr int kChipSamples = kSps;
@@ -30,7 +32,7 @@ constexpr int kNeed = kMaxSyms * kSymSamples + 64;
 constexpr int kHist = 4 * kSymSamples + 64;
 constexpr int kErr = 7;                   // chip errors allowed in a preamble symbol (of 32)
 
-int popc(uint32_t v) { int n = 0; while (v) { v &= v - 1; n++; } return n; }
+int popc(uint32_t v) { return dect2::bits::popcount(v); }
 
 // The sign of the frequency during chip n of a symbol (+1: the phase advances by pi/2): c'_n c'_{n-1} (-1)^(n+1) for the chips c' = +-1 (derived from
 // the O-QPSK half-sine definition: even chips on I, odd on Q delayed by one chip)

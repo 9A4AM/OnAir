@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstring>
 #include <set>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace wsjt {
@@ -25,7 +26,7 @@ constexpr double kSym = 6912.0 / 12000.0, kBaud = 12000.0 / 6912.0;
 constexpr double kRate = 4096.0 / (6912.0 / 12000.0);   // 7111.1 Hz: a symbol is 4096 samples
 constexpr int kN = 4096, kHop = 1024;
 
-inline int parity32(uint32_t x) { x ^= x >> 16; x ^= x >> 8; x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (int)(x & 1); }
+inline int parity32(uint32_t x) { return dect2::bits::parity((uint32_t)x); }
 
 const std::vector<int>& interleaveTable() {   // j0[i]: the position of coded bit i after interleaving
     static const std::vector<int> j0 = [] {

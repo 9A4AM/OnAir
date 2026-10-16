@@ -12,6 +12,8 @@
 #include <cmath>
 #include <deque>
 #include <mutex>
+#include "dect2/common/bits.h"
+#include "dect2/common/str.h"
 
 namespace dect2 {
 
@@ -23,7 +25,7 @@ using pktdemod::kMidRate;
 constexpr int64_t kDupWindow = (int64_t)(0.05 * kMidRate);
 constexpr int kAsmMaxErr = 2;
 
-int popcount32(uint32_t v) { int c = 0; while (v) { c++; v &= v - 1; } return c; }
+int popcount32(uint32_t v) { return dect2::bits::popcount(v); }
 
 uint64_t hashBytes(const std::vector<uint8_t>& d) {
     uint64_t h = 1469598103934665603ULL;
@@ -31,7 +33,7 @@ uint64_t hashBytes(const std::vector<uint8_t>& d) {
     return h;
 }
 
-std::string upper(std::string s) { for (char& c : s) c = (char)std::toupper((unsigned char)c); return s; }
+std::string upper(std::string s) { return dect2::str::upper(std::move(s)); }
 std::string baseCall(const std::string& s) { const size_t d = s.find('-'); return upper(d == std::string::npos ? s : s.substr(0, d)); }
 
 // Hunts for the AX100 (0x930B51DE) and CCSDS (0x1ACFFC1D) sync words in a bit stream, either polarity, then collects the frame:

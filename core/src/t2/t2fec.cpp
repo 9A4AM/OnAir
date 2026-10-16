@@ -9,6 +9,7 @@
 #include <string>
 #include <cstdint>
 #include <vector>
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 
@@ -613,7 +614,7 @@ uint8_t crc8Bits(const uint8_t* bits, int n) {
     return (uint8_t)crc;
 }
 
-static unsigned getBits(const uint8_t* b, int pos, int n) { unsigned v = 0; for (int i = 0; i < n; i++) v = (v << 1) | b[pos + i]; return v; }
+static unsigned getBits(const uint8_t* b, int pos, int n) { return (unsigned)bits::getMsbRaw(b, (size_t)pos, n); }
 
 bool parseBbHeader(const uint8_t* b, BbHeader& h) {
     uint8_t crc = crc8Bits(b, 72);

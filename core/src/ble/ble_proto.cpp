@@ -3,6 +3,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/bits.h"
+#include "dect2/common/str.h"
 
 namespace dect2 {
 namespace ble {
@@ -37,7 +39,7 @@ uint32_t crc24(const uint8_t* d, size_t n, uint32_t init) {
     return s;
 }
 
-static uint8_t rev8(uint8_t v) { uint8_t r = 0; for (int i = 0; i < 8; i++) if (v >> i & 1) r |= (uint8_t)(0x80 >> i); return r; }
+static uint8_t rev8(uint8_t v) { return dect2::bits::reverse8(v); }
 
 // x^7 + x^4 + 1, position 0 set to one and positions 1 to 6 to the channel index (MSB first); held shifted left by one
 void whiten(uint8_t* d, size_t n, int channel) {
@@ -115,12 +117,7 @@ std::string addrText(const uint8_t a[6]) {
     return b;
 }
 
-static std::string hex(const uint8_t* d, size_t n) {
-    std::string s;
-    char b[4];
-    for (size_t i = 0; i < n; i++) { snprintf(b, sizeof b, "%02X", d[i]); s += b; }
-    return s;
-}
+static std::string hex(const uint8_t* d, size_t n) { return dect2::str::toHex(d, n); }
 
 static std::string uuid128(const uint8_t* d) {   // little-endian on the air
     char b[48];

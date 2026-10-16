@@ -15,13 +15,15 @@
 #include <mutex>
 #include <set>
 #include <unordered_map>
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 using namespace dab;
 using cd = std::complex<double>;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr int kMaxShift = 80;      // integer carrier offset searched at the start: +-80 kHz covers 50 ppm at L band (1.49 GHz, 75 kHz)
 constexpr int kBackoff = 16;        // demodulation windows start this many samples before the useful part (inside the guard interval)
 
@@ -30,11 +32,7 @@ std::string labelText(int charset, const uint8_t* d, int n) {
     return text::clean(text::dabCharset(charset, d, (size_t)n));
 }
 
-uint32_t getBits(const uint8_t* d, int pos, int n) {
-    uint32_t v = 0;
-    for (int i = 0; i < n; i++) v = (v << 1) | ((d[(pos + i) >> 3] >> (7 - ((pos + i) & 7))) & 1);
-    return v;
-}
+uint32_t getBits(const uint8_t* d, int pos, int n) { return (uint32_t)bits::getPackedMsb(d, (size_t)pos, n); }
 } // namespace
 
 struct DabReceiver::Impl {
