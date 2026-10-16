@@ -75,14 +75,17 @@ struct HalowReceiver::Impl {
     bool resClear = false, resLoad = false;
     HalowTelemetry loaded;
     double loadedAt = 0;
+    // Moves the network table and frame log from one telemetry to another.
     static void moveLists(HalowTelemetry& to, HalowTelemetry& from) {
         to.nets = std::move(from.nets); to.log = std::move(from.log);
         from.nets.clear(); from.log.clear();
     }
+    // Shifts the signal times of the lists (a loaded file, a restarted clock).
     static void shiftTimes(HalowTelemetry& t, double dt) {
         for (auto& n : t.nets) { n.firstSec += dt; n.lastSec += dt; }
         for (auto& f : t.log) f.sec += dt;
     }
+    // Applies a Clear or a loaded file the interface thread asked for.
     void takeRequests() {
         std::lock_guard<std::mutex> lk(mu);
         if (!resClear && !resLoad) return;
@@ -90,6 +93,7 @@ struct HalowReceiver::Impl {
         if (resLoad) { shiftTimes(loaded, tel.timeSec - loadedAt); moveLists(tel, loaded); resLoad = false; }
         reindex();
     }
+    // Restarts the demodulator for a new rate or offset; the tables stay.
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         lo = 1; loCount = 0;
@@ -104,6 +108,7 @@ struct HalowReceiver::Impl {
         nextPps = rate > 0 ? rate : 1; ppsAcc = 0;
         tel.ppsHist.clear(); tel.pps = 0;
     }
+    // Empties the tables and counters (the chains are rebuilt so their counters restart too).
     void clearAll() {
         const uint64_t seq = tel.seq;
         tel = HalowTelemetry(); tel.seq = seq; tel.inputRate = rate;
@@ -114,6 +119,7 @@ struct HalowReceiver::Impl {
         snrAvg = 0;
         nextPps = rate > 0 ? (double)nIn + rate : 1; ppsAcc = 0;
     }
+    // Rebuilds the lookup tables after the lists changed.
     void reindex() {
         netIdx.clear(); ssidByComp.clear();
         for (size_t i = 0; i < tel.nets.size(); i++) {
@@ -127,6 +133,7 @@ struct HalowReceiver::Impl {
     void trimLog() { while (tel.log.size() > kHlLogMax) tel.log.pop_back(); }
     void pushLog(HlFrame f) { tel.log.insert(tel.log.begin(), std::move(f)); trimLog(); }
 
+    // The table entry of a BSSID, made (and the oldest dropped at the limit) when new.
     HlNet& netEntry(const std::string& key) {
         auto it = netIdx.find(key);
         if (it != netIdx.end()) return tel.nets[it->second];
@@ -244,6 +251,7 @@ struct HalowReceiver::Impl {
 
     void process() { for (auto& c : chains) c->process(); }
 
+    // Publishes the telemetry for the interface thread.
     void report() {
         tel.seq++;
         tel.timeSec = sigSec();
@@ -283,6 +291,7 @@ HalowReceiver::~HalowReceiver() = default;
 void HalowReceiver::configure(double r) { std::lock_guard<std::mutex> lk(p_->mu); p_->rateSet = r; p_->resetReq = true; }
 void HalowReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p_->mu); if (hz != p_->offsetSet) { p_->offsetSet = hz; p_->resetReq = true; } }
 void HalowReceiver::setCenterHz(double hz) { p_->centerHz = hz; }
+// Chooses the widths tried (bit 0 = 1 MHz .. bit 4 = 16 MHz); a change restarts the chains.
 void HalowReceiver::setWidthMask(int mask) {
     mask &= 31;
     if (mask == 0) mask = 31;
@@ -291,6 +300,7 @@ void HalowReceiver::setWidthMask(int mask) {
 int HalowReceiver::widthMask() const { return p_->widthMask.load(); }
 bool HalowReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= halowTuning().minSampleRate - 1; }
 void HalowReceiver::reset() { p_->resetReq = true; }
+// Asks for the tables and the frame log to be emptied (the feed thread does it).
 void HalowReceiver::clearResults() {
     {
         std::lock_guard<std::mutex> lk(p_->mu);
@@ -302,6 +312,7 @@ void HalowReceiver::clearResults() {
     p_->clearReq = true;
 }
 
+// Takes input samples (never blocks): mixes them to the centre, feeds every chain, publishes every 0.25 s of signal.
 void HalowReceiver::feed(const cf32* x, size_t n) {
     Impl& m = *p_;
     if (m.resetReq.exchange(false)) m.resetState();
@@ -349,6 +360,7 @@ void HalowReceiver::feed(const cf32* x, size_t n) {
     m.process();
 }
 
+// Works on what was fed and publishes the telemetry now (tests).
 void HalowReceiver::flush() {
     Impl& m = *p_;
     if (m.rate <= 0) return;
@@ -356,10 +368,12 @@ void HalowReceiver::flush() {
     m.report();
 }
 
+// The network table and frame log as a results file blob.
 std::string HalowReceiver::saveResults() const {
     std::lock_guard<std::mutex> lk(p_->mu);
     return results::pack(p_->pub.timeSec, p_->pub.nets, p_->pub.log);
 }
+// Loads such a blob; false when it is not this build's format.
 bool HalowReceiver::loadResults(const std::string& blob) {
     double t0 = 0;
     HalowTelemetry l;
@@ -374,6 +388,7 @@ bool HalowReceiver::loadResults(const std::string& blob) {
     p_->pub.seq++;
     return true;
 }
+// Copies the latest published telemetry when it is newer than lastSeq.
 bool HalowReceiver::telemetry(HalowTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
     if (p_->pub.seq <= lastSeq) return false;
@@ -382,6 +397,7 @@ bool HalowReceiver::telemetry(HalowTelemetry& out, uint64_t lastSeq) {
 }
 void HalowReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 
+// The engine's tuning entry for Wi-Fi HaLow (std 72).
 ModeTuning halowTuning() {
     ModeTuning t;
     t.stdMode = 72; t.id = "halow"; t.name = "Wi-Fi HaLow (802.11ah)";

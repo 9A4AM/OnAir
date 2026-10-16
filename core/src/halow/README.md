@@ -23,6 +23,9 @@ The radio's rate decides the widest channel. 1 MHz from 2 Msps, 2 MHz from 2 Msp
 The receiver runs one chain per tone grid, so a narrow signal is not looked at through a wide noise band: 1 / 2 / 4 MHz on a 4 Msps grid, 8 MHz on
 8 Msps, 16 MHz on 16 Msps (the 16 MHz channel is two 8 MHz halves around +-128 tones, FFT size 512).
 
+CPU: one core handles Auto 1 - 4 MHz (4 Msps) at about a tenth of its time; Auto, all widths at 20 Msps runs three chains and takes most of a core when the
+band is full of traffic (measured on a laptop: 0.7 - 1.0 of real time with a PPDU every 3 ms). Choosing one width runs only the chain that carries it.
+
 ## Files
 
 | file | job |
@@ -57,5 +60,6 @@ The receiver runs one chain per tone grid, so a narrow signal is not looked at t
 
 * LDPC coding (the 802.11 parity-check matrices of Annex F were not available to check): the frame is counted as "LDPC".
 * More than one spatial stream, STBC: one RF channel is one antenna; the streams cannot be separated. Counted from the SIG field.
+* The duplicate formats S1G_DUP_1M / S1G_DUP_2M (a 1 MHz PPDU repeated across a wider channel, used for some beacons and control frames): the preamble of the copies is not matched to the channel layout, so they are not found.
 * A-MPDU (the delimiters are not parsed), NDP contents, MU-MIMO (S1G_LONG with group ID), S1G short-MAC-header control frames, TWT / RAW scheduling details beyond presence.
 * Decryption of any kind.

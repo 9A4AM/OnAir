@@ -12,6 +12,7 @@ namespace dect2::halow {
 
 namespace {
 
+// A cached FFT of size n for this thread.
 Fft& fftN(int n) {
     static thread_local std::map<int, std::unique_ptr<Fft>> m;
     auto& p = m[n];
@@ -74,6 +75,7 @@ std::vector<uint8_t> encodeData(const std::vector<uint8_t>& scrambled, int nes, 
 
 int presOf(const PpduSpec& s) { return s.pre >= 0 ? s.pre : (s.w == W1 ? Pre1M : PreShort); }
 bool decodable(const PpduSpec& s) { return s.nss == 1 && !s.stbc && !s.ldpc && !s.ndp && !s.agg && dataBitsPerSym(s.w, s.mcs, 1) > 0; }
+// Data symbols of a PPDU: none for NDP, the SIG length for A-MPDU, else from the PSDU length.
 int nDataSyms(const PpduSpec& s) {
     if (s.ndp) return 0;
     if (s.agg) return std::max(0, std::min(511, (int)s.psdu.size()));
@@ -85,6 +87,7 @@ int streamsOf(const PpduSpec& s) { return s.stbc ? s.nss * 2 : s.nss; }
 
 int dataBitsPerSym(const PpduSpec& s) { return s.ndp ? 0 : dataBitsPerSym(s.w, s.mcs, s.nss); }
 
+// Samples of the whole PPDU on the grid of its width.
 size_t ppduSamples(const PpduSpec& s) {
     const WidthInfo& wi = info(s.w);
     const size_t N = (size_t)nfft(s.w), full = N + N / 4;
@@ -93,6 +96,7 @@ size_t ppduSamples(const PpduSpec& s) {
     return (size_t)wi.stfSamples + ltf + (size_t)(wi.sigSyms + extraSyms(pre, streamsOf(s) - 1)) * full + (size_t)nDataSyms(s) * (size_t)symLen(s.w, s.sgi);
 }
 
+// The PPDU: STF, LTF1, SIG, further LTFs (or D-STF / D-LTF / SIG-B) and the data field (clause 23.3.8).
 std::vector<cf32> buildPpdu(const PpduSpec& s) {
     const int w = s.w, N = nfft(w), gi = N / 4, pre = presOf(s);
     const WidthInfo& wi = info(w);

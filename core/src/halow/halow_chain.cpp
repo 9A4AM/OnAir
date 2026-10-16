@@ -81,6 +81,7 @@ struct HalowChain::Impl {
 
     bool active() const { for (int w : widths) if (mask >> w & 1) return true; return false; }
 
+    // Takes mixed samples: resamples them to the chain rate (unless equal) and runs the detector.
     void feed(const cf32* x, size_t n) {
         nIn += (int64_t)n;
         if (!active()) return;   // a manual width that this chain does not carry: nothing to resample or detect
@@ -340,6 +341,7 @@ struct HalowChain::Impl {
 
     // ---------------------------------------------------------------- feed side
 
+    // Works the waiting candidates (a candidate waits until its samples are in) and drops samples nobody needs any more.
     void process() {
         while (!cands.empty()) {
             Cand& c = cands.front();

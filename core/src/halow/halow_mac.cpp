@@ -69,6 +69,7 @@ uint8_t beaconFlags(const BssSpec& b) { return (uint8_t)((b.compressedSsid ? 2 :
 
 } // namespace
 
+// Display name of a security type.
 const char* securityName(int s) {
     switch (s) {
         case Open: return "Open";
@@ -85,6 +86,7 @@ const char* securityName(int s) {
 // IEEE 802.11 FCS: CRC-32 over the frame, sent least significant byte first.
 void appendFcs(std::vector<uint8_t>& f) { putLe(f, wifi::crc32(f.data(), f.size()), 4); }
 
+// True when the last four bytes are the CRC-32 of the rest.
 bool fcsOk(const uint8_t* p, size_t n) {
     if (n < 6) return false;
     const uint32_t c = wifi::crc32(p, n - 4);
@@ -146,6 +148,7 @@ static std::vector<uint8_t> mgmtBody(const BssSpec& b, int subtype, const uint8_
 std::vector<uint8_t> makeMgmtBeacon(const BssSpec& b) { return mgmtBody(b, 8, nullptr); }
 std::vector<uint8_t> makeProbeResponse(const BssSpec& b, const uint8_t* client) { return mgmtBody(b, 5, client); }
 
+// A probe request for an SSID ("" asks for any).
 std::vector<uint8_t> makeProbeRequest(const uint8_t sta[6], const std::string& ssid) {
     std::vector<uint8_t> f = {0x40, 0x00, 0x00, 0x00};
     static const uint8_t bc[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -158,6 +161,7 @@ std::vector<uint8_t> makeProbeRequest(const uint8_t sta[6], const std::string& s
     return f;
 }
 
+// A data frame to the AP with a dummy payload.
 std::vector<uint8_t> makeDataFrame(const uint8_t bssid[6], const uint8_t sta[6], size_t payload) {
     std::vector<uint8_t> f = {0x08, 0x01, 0x00, 0x00};   // data, to DS
     f.insert(f.end(), bssid, bssid + 6);
@@ -222,6 +226,7 @@ void parseIes(const uint8_t* p, size_t n, Frame& f) {
 
 }
 
+// Reads a frame (without its FCS) into Frame; false when it is too short to be one.
 bool parseFrame(const uint8_t* p, size_t n, Frame& f) {
     f = Frame();
     if (n < 2) return false;

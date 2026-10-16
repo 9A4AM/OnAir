@@ -6,6 +6,7 @@
 
 namespace dect2::halow {
 
+// FFT of one symbol window, scaled 1 / N.
 void Demod::fftWin(const cf32* x, cf32* Y) {
     for (int i = 0; i < N; i++) Y[i] = x[i];
     fft_.forward(Y);
@@ -44,6 +45,7 @@ bool pilotFit(const cf32* Y, int N, const std::vector<Layout>& lays, int polIdx,
 }
 }
 
+// SIG symbol: pilots give common phase and slope, the copies of the layout are added with their channel weights.
 bool Demod::sigSym(const cf32* x, const std::vector<Layout>& lays, int polIdx, const cf32* H, std::vector<float>& re, std::vector<float>& im, double& nsum, int& ncnt) {
     if (lays.empty() || !x || !H) return false;
     Y_.resize((size_t)N);
@@ -71,6 +73,7 @@ bool Demod::sigSym(const cf32* x, const std::vector<Layout>& lays, int polIdx, c
     return true;
 }
 
+// Data symbol: equalised tones and the noise variance of each, from the pilots and the training symbols.
 bool Demod::dataSym(const cf32* x, const Layout& lay, int polIdx, const cf32* H, float sigma2Ltf, std::vector<cf32>& z, std::vector<float>& nv) {
     if (!x || !H) return false;
     Y_.resize((size_t)N);
@@ -93,6 +96,7 @@ bool Demod::dataSym(const cf32* x, const Layout& lay, int polIdx, const cf32* H,
     return true;
 }
 
+// Demaps the tones of one symbol and deinterleaves them into coded-bit LLRs in transmit order.
 void symbolLlr(const std::vector<cf32>& z, const std::vector<float>& nv, const WidthInfo& wi, int mcs, std::vector<float>& coded) {
     const Mcs& m = mcsInfo(mcs);
     const int nb = m.nbpscs, ncbps = wi.nsd * nb;
@@ -108,6 +112,7 @@ void symbolLlr(const std::vector<cf32>& z, const std::vector<float>& nv, const W
     else coded.insert(coded.end(), raw.begin(), raw.end());
 }
 
+// Depuncture, Viterbi (per BCC encoder), merge and descramble the whole data field into the PSDU bytes.
 bool decodeDataField(const std::vector<float>& coded, int w, int mcs, int nsym, int len, std::vector<uint8_t>& psdu) {
     const Mcs& m = mcsInfo(mcs);
     const int nd = dataBitsPerSym(w, mcs, 1), nes = encoders(w, mcs, 1);

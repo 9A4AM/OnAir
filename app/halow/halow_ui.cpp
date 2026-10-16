@@ -36,10 +36,12 @@ struct State {
 };
 State S;
 
+// Saves the region, list width and receive width.
 void saveState() {
     plat::prefs().setI("hlReg2", S.region); plat::prefs().setI("hlWidth", S.width); plat::prefs().setI("hlRx", S.rx); plat::prefs().flush();
 }
 
+// Reads them once (the first version's region key is migrated).
 void loadState() {
     if (S.loaded) return;
     S.loaded = true;
@@ -57,6 +59,7 @@ int rxMask() { return S.rx == kAutoNarrow || S.rx == kAutoAll ? 31 : 1 << widthI
 
 bool live(const App& a) { return a.rx.standard == 71; }   // the engine reports its standard code minus one
 
+// UTC time of day of a wall-clock time.
 std::string clock(int64_t t) {
     if (t <= 0) return "-";
     const time_t tt = (time_t)t;
@@ -71,6 +74,7 @@ std::string clock(int64_t t) {
     return b;
 }
 
+// A key and its value on one row.
 void kvRow(const App& a, const char* k, const char* fmt, ...) {
     ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);
     char b[512];
@@ -80,6 +84,7 @@ void kvRow(const App& a, const char* k, const char* fmt, ...) {
 
 std::string lower(std::string s) { for (char& c : s) c = (char)std::tolower((unsigned char)c); return s; }
 
+// The SSID, "(hidden)", or the compressed SSID of a network.
 std::string nameOf(const dect2::HlNet& n) {
     if (n.hasSsid) return n.ssid;
     if (n.hidden) return tr("(hidden)");
@@ -87,6 +92,7 @@ std::string nameOf(const dect2::HlNet& n) {
     return "-";
 }
 
+// True when a network passes the level and text filters.
 bool passes(const dect2::HlNet& n) {
     if (n.rssi < S.minRssi) return false;
     if (!S.filter[0]) return true;
@@ -120,6 +126,7 @@ void rateNote(const App& a) {
     }
 }
 
+// The note that this is receive only, and what each width needs.
 void receiveNote() {
     ImGui::PushTextWrapPos(0);
     ImGui::TextDisabled("%s", tr("Receive only: OnAir never transmits, probes, joins or answers a network, and nothing is decrypted. The security type is what the beacon "
@@ -130,6 +137,7 @@ void receiveNote() {
 
 // ---------------------------------------------------------------- the channel strip: the region's band, the channels, the radio's span and the networks
 
+// The band of the region with the channels of the list width, the radio's span, the tuned frequency and the networks heard.
 void channelStrip(App& a) {
     using namespace dect2::halow;
     const RegionInfo& ri = regionInfo(S.region);
@@ -184,6 +192,7 @@ void channelStrip(App& a) {
 
 // ---------------------------------------------------------------- views
 
+// The filter row of the network list.
 void filters(App& a) {
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("%s", tr("Filter")); ImGui::SameLine(0, 5 * gUi);
@@ -225,6 +234,7 @@ std::string detailOf(const dect2::HlNet& n) {
     return s;
 }
 
+// The network table.
 void networksView(App& a) {
     receiveNote();
     rateNote(a);
@@ -281,6 +291,7 @@ void networksView(App& a) {
     else if (!shown) ImGui::TextDisabled("%s", tr("no network passes the filter"));
 }
 
+// The frame log.
 void framesView(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? tr("starting") : tr("start the receiver to see the frames")); return; }
     const dect2::HalowTelemetry& t = a.rx.halow;
@@ -376,6 +387,7 @@ void statsView(App& a) {
 
 std::vector<dect2::halow::Chan> plan() { return dect2::halow::regionChannels(S.region, S.width); }
 
+// Retunes to the next channel of a scan without resetting the tables.
 void hopTo(App& a, double mhz) {
     if (!a.engine.running() || !live(a)) return;   // wait until activeStd is 71 (engine stdMode 72)
     a.freqMhz = mhz;
@@ -393,6 +405,7 @@ void applyRx(App& a) {
     if (a.engine.running() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[(size_t)a.devIdx].isRadio() && a.tune.sampleRate != old) startReceiver(a);
 }
 
+// Text of a receive width choice.
 const char* rxLabel(int rx, char* b, size_t n) {
     if (rx == kAutoNarrow) snprintf(b, n, "%s", tr("Auto 1 - 4 MHz"));
     else if (rx == kAutoAll) snprintf(b, n, "%s", tr("Auto, all widths"));
@@ -400,6 +413,7 @@ const char* rxLabel(int rx, char* b, size_t n) {
     return b;
 }
 
+// Every frame: pushes the width choice to the receiver and runs the channel scan.
 void tick(App& a) {
     loadState();
     a.engine.halow().setWidthMask(rxMask());
@@ -414,6 +428,7 @@ void tick(App& a) {
     hopTo(a, ch[next].mhz);
 }
 
+// Region, width, channel, receive width and scan controls.
 void tuner(App& a, bool& retune) {
     using namespace dect2::halow;
     loadState();
@@ -502,11 +517,13 @@ void tuner(App& a, bool& retune) {
     rateNote(a);
 }
 
+// The HaLow tab: Networks, Frames, Statistics.
 void tab(App& a) {
     subNav("hlv", S.view, {tr("Networks"), tr("Frames"), tr("Statistics")});
     if (S.view == 0) networksView(a); else if (S.view == 1) framesView(a); else statsView(a);
 }
 
+// The network list on the right.
 void list(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? tr("starting") : tr("stopped")); return; }
     const dect2::HalowTelemetry& t = a.rx.halow;
@@ -527,6 +544,7 @@ void list(App& a) {
     ImGui::EndTable();
 }
 
+// The Receiver tab: what the receiver is doing.
 void receiver(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? tr("starting") : tr("stopped")); return; }
     const dect2::HalowTelemetry& t = a.rx.halow;
@@ -545,6 +563,7 @@ void receiver(App& a) {
     receiveNote();
 }
 
+// The status bar.
 void status(App& a) {
     const bool run = a.engine.running(), on = live(a);
     const SignalStats& st = a.spec.stats;
@@ -558,6 +577,7 @@ void status(App& a) {
     ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(!on ? (run ? tr("starting") : tr("stopped")) : dect2::halowSummary(a.rx.halow).c_str()); ImGui::PopFont();
 }
 
+// The two lines of the top bar.
 void summary(const App& a, std::string& l1, std::string& l2) {
     l1 = "Wi-Fi HaLow (802.11ah)";
     if (live(a)) l2 = dect2::halowSummary(a.rx.halow);

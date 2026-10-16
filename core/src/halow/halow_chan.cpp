@@ -67,6 +67,7 @@ std::vector<Chan> regionChannels(int region, int widthMhz) {
     return v;
 }
 
+// Every channel of every allowed width of a region.
 std::vector<ChanRow> channelTable(int region) {
     const RegionInfo& r = regionInfo(region);
     std::vector<ChanRow> t;
@@ -74,17 +75,20 @@ std::vector<ChanRow> channelTable(int region) {
     return t;
 }
 
+// Centre frequency of an S1G channel from its operating class and number; 0 when the class is not known.
 double chanMhz(int opClass, int ccf) {
     const double s = classStart(opClass);
     return ccf <= 0 || s <= 0 ? 0.0 : s + 0.5 * ccf;
 }
 
+// The number of the channel of that width nearest to a frequency (within 1 MHz), 0 when none.
 int nearestChannel(int region, double mhz, int widthMhz, double* chMhz) {
     int best = 0; double bd = 1.0;
     for (const Chan& c : regionChannels(region, widthMhz)) if (std::fabs(c.mhz - mhz) < bd) { bd = std::fabs(c.mhz - mhz); best = c.ccf; if (chMhz) *chMhz = c.mhz; }
     return best;
 }
 
+// The first region whose band holds the frequency, -1 when none.
 int regionOf(double mhz) {
     for (const RegionInfo& r : table()) for (const Band& b : r.bands) if (mhz >= b.loMhz - 1e-6 && mhz <= b.hiMhz + 1e-6) return (int)r.id;
     return -1;

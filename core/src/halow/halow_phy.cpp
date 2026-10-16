@@ -81,6 +81,7 @@ void buildLayout(int hi, int lo, const std::vector<int>& pil, Layout& lay, int s
     }
 }
 
+// Builds the tone layout, interleaver and preamble sizes of one width (clause 23.3.8, 23.3.9).
 WidthInfo makeInfo(int w) {
     WidthInfo wi;
     wi.w = w;
@@ -144,6 +145,7 @@ WidthInfo makeInfo(int w) {
     return wi;
 }
 
+// A cached FFT of size n for this thread.
 Fft& fftN(int n) {
     static thread_local std::map<int, std::unique_ptr<Fft>> m;
     auto& p = m[n];
@@ -155,6 +157,7 @@ Fft& fftN(int n) {
 
 const char* preambleName(int p) { return p == PreShort ? "short" : p == PreLong ? "long" : "1M"; }
 
+// The tables of a width (clamped to 1 - 16 MHz).
 const WidthInfo& info(int w) {
     static const WidthInfo t[kNumWidths] = {makeInfo(W1), makeInfo(W2), makeInfo(W4), makeInfo(W8), makeInfo(W16)};
     return t[w < 0 ? 0 : w > 4 ? 4 : w];
@@ -162,6 +165,7 @@ const WidthInfo& info(int w) {
 
 // ---------------------------------------------------------------- preamble
 
+// Short training field spectrum: the 2 MHz sequence in every 2 MHz of the channel.
 void stfSpectrum(int w, cf32* x) {
     const int N = nfft(w);
     for (int i = 0; i < N; i++) x[i] = cf32(0, 0);
@@ -176,6 +180,7 @@ void stfSpectrum(int w, cf32* x) {
     }
 }
 
+// Long training field: +-1 on every used tone of the width.
 void ltfSpectrum(int w, float* l) {
     const int N = nfft(w);
     for (int i = 0; i < N; i++) l[i] = 0;
@@ -191,6 +196,7 @@ void ltfSpectrum(int w, float* l) {
     }
 }
 
+// Scale that gives the STF unit power per sample.
 float stfScale(int w) {
     std::vector<cf32> x((size_t)nfft(w));
     stfSpectrum(w, x.data());
@@ -201,6 +207,7 @@ float stfScale(int w) {
 
 float symScale(int w) { return (float)(1.0 / std::sqrt((double)info(w).nUsed)); }
 
+// One long training symbol in the time domain (N samples).
 void ltfTime(int w, cf32* x) {
     const int N = nfft(w);
     std::vector<float> l((size_t)N);
@@ -211,6 +218,7 @@ void ltfTime(int w, cf32* x) {
     for (int i = 0; i < N; i++) x[i] *= g;
 }
 
+// The short training field in the time domain (N samples, four periods of 8 us).
 void stfTime(int w, cf32* x) {
     const int N = nfft(w);
     stfSpectrum(w, x);
@@ -221,6 +229,7 @@ void stfTime(int w, cf32* x) {
 
 // ---------------------------------------------------------------- MCS
 
+// Modulation and rate of an MCS (clause 23.5, table of S1G MCSs).
 const Mcs& mcsInfo(int mcs) {
     static const Mcs t[11] = {{1, 1, 2, false, "BPSK 1/2"},    {2, 1, 2, false, "QPSK 1/2"},   {2, 3, 4, false, "QPSK 3/4"},   {4, 1, 2, false, "16-QAM 1/2"},
                               {4, 3, 4, false, "16-QAM 3/4"},  {6, 2, 3, false, "64-QAM 2/3"},  {6, 3, 4, false, "64-QAM 3/4"}, {6, 5, 6, false, "64-QAM 5/6"},
@@ -241,6 +250,7 @@ bool mcsValid(int w, int mcs, int nss) {
     return true;
 }
 
+// Data bits per OFDM symbol (N_DBPS) of a valid combination, 0 otherwise.
 int dataBitsPerSym(int w, int mcs, int nss) {
     if (!mcsValid(w, mcs, nss)) return 0;
     const Mcs& m = mcsInfo(mcs);
@@ -255,6 +265,7 @@ int encoders(int w, int mcs, int nss) {
     return nd <= 0 ? 1 : (nd + 2399) / 2400;
 }
 
+// Data symbols of a PSDU: ceil((8 + 8 len + 6 N_ES) / N_DBPS), rounded up to even with STBC.
 int dataSymbols(int w, int mcs, int len, int nss, bool stbc) {
     const int nd = dataBitsPerSym(w, mcs, nss);
     if (nd <= 0) return 0;
@@ -265,6 +276,7 @@ int dataSymbols(int w, int mcs, int len, int nss, bool stbc) {
     return n;
 }
 
+// PHY rate in Mbit/s (a 40 us symbol, 36 us with the short guard interval).
 double dataRateMbps(int w, int mcs, int nss, bool sgi) {
     const int nd = dataBitsPerSym(w, mcs, nss);
     return nd <= 0 ? 0.0 : nd / (sgi ? 36.0 : 40.0);

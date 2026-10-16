@@ -30,6 +30,15 @@ int main() {
         CHECK(r.hasCountry && r.country == "US" && r.hasTim && r.dtimPeriod == 3 && r.hasRaw && r.hasTwt && r.txPowerDbm == 24 && r.hasCap && r.longPreamble, "optional elements");
         CHECK(chanMhz(r.opClass, r.ccf) == 902.0 + 0.5 * 16, "operating class %d channel %d is %.1f MHz", r.opClass, r.ccf, chanMhz(r.opClass, r.ccf));
     }
+    {   // independent constants: the CRC-32 check value of the FCS polynomial, and the frame control octets of the standard (version 0; type, subtype)
+        CHECK(wifi::crc32(reinterpret_cast<const uint8_t*>("123456789"), 9) == 0xCBF43926u, "CRC-32 check value");
+        CHECK(makeS1gBeacon(b)[0] == 0x1C && makeMgmtBeacon(b)[0] == 0x80 && makeProbeResponse(b, sta)[0] == 0x50 && makeProbeRequest(sta, "x")[0] == 0x40 && makeDataFrame(mac, sta, 1)[0] == 0x08,
+              "frame control octets: S1G beacon (extension, subtype 1) 0x1C, beacon 0x80, probe response 0x50, probe request 0x40, data 0x08");
+        const auto sb = makeS1gBeacon(b);
+        CHECK(sb.size() > 15 && std::equal(mac, mac + 6, sb.begin() + 4), "S1G beacon: the source address follows frame control and duration");
+        const auto mb = makeMgmtBeacon(b);
+        CHECK(std::equal(mac, mac + 6, mb.begin() + 10) && std::equal(mac, mac + 6, mb.begin() + 16) && mb[4] == 0xFF && mb[9] == 0xFF, "beacon: broadcast DA, SA and BSSID");
+    }
     // the basic MCS map and the long preamble flag
     for (int m = 0; m < 3; m++) { b.maxMcsOneSs = m; b.longPreamble = m != 1; const auto f = makeS1gBeacon(b); Frame r; parseFrame(f.data(), f.size() - 4, r); CHECK(r.basicMcsOneSs == m && r.longPreamble == (m != 1), "MCS map %d", m); }
     {   // short beacon: only the fixed fields and the compressed SSID

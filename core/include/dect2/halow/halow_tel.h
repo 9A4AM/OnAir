@@ -98,6 +98,7 @@ struct HalowTelemetry {
     std::vector<HlFrame> log;          // newest first, at most kHlLogMax
 };
 
+// One line for the status bar and the top bar.
 inline std::string halowSummary(const HalowTelemetry& t) {
     char b[160];
     if (t.blocksOk == 0 && t.sigOk == 0) {

@@ -40,6 +40,7 @@ struct HalowGenerator::Impl {
     std::unique_ptr<ExactResampler> rs[kNumWidths];   // 8 and 16 MHz PPDUs: the long filter keeps the band edge tones (the 24 tap sinc below droops there)
     explicit Impl(const HalowGenConfig& c) : cfg(c), rng(c.seed), noise(c.seed) {}
 
+    // Windowed sinc interpolation of the PPDU at position u (samples), with the given cutoff for a lower radio rate.
     static cf32 interp(const std::vector<cf32>& x, double u, double cutoff) {
         const int64_t i0 = (int64_t)std::floor(u);
         const double fr = u - (double)i0;
@@ -68,6 +69,7 @@ struct HalowGenerator::Impl {
         }
     }
 
+    // Queues the next PPDU of the schedule at the radio rate, with its impairments, and the gap after it.
     void refill() {
         if (done || cfg.frames.empty()) { silence(0.001); return; }
         const HalowGenFrame& f = cfg.frames[idx];
@@ -105,6 +107,7 @@ struct HalowGenerator::Impl {
     }
 };
 
+// Noise per real component from the SNR in 1 MHz and the radio rate.
 double HalowGenerator::noiseSigma(const HalowGenConfig& c) {
     if (c.snrDb >= 99) return 0;
     const double n1 = c.amp * c.amp / std::pow(10.0, c.snrDb / 10);   // noise power in 1 MHz
@@ -126,6 +129,7 @@ HalowGenerator::HalowGenerator(const HalowGenConfig& c) : p_(std::make_unique<Im
 double halowFrameSeconds(const HalowGenFrame& f) { return (double)ppduSamples(specOfFrame(f)) / gridRate(f.width); }
 HalowGenerator::~HalowGenerator() = default;
 
+// Fills out with n samples of the schedule plus noise.
 void HalowGenerator::generate(cf32* out, size_t n) {
     Impl& m = *p_;
     for (size_t i = 0; i < n; i++) {
@@ -136,6 +140,7 @@ void HalowGenerator::generate(cf32* out, size_t n) {
     if (m.sigma > 0) m.noise.add(out, n, m.sigma);
 }
 
+// The networks of the test schedule (see halow_gen.h); the 8 and 16 MHz ones only when the radio rate can hold them.
 std::vector<HalowGenFrame> halowTestSchedule(double radioRate) {
     std::vector<HalowGenFrame> v;
     auto add = [&](std::vector<uint8_t> psdu, int width, int mcs, double cfo, double gap = 0.003, uint8_t seed = 0x5D, int nss = 1) {
@@ -198,6 +203,7 @@ private:
 };
 } // namespace
 
+// The engine's test signal source for HaLow at the given radio rate.
 std::unique_ptr<ModeSynth> makeHalowSynth(const SynthConfig& cfg, double sampleRate) {
     if (sampleRate <= 0) return nullptr;
     return std::make_unique<HalowSynth>(cfg, sampleRate);
