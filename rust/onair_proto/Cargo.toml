@@ -1,0 +1,21 @@
+[package]
+name = "onair_proto"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+description = "OnAir protocol frame layers (AIS) that parse untrusted over-the-air bytes, behind a plain C ABI"
+publish = false
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+panic = "abort"

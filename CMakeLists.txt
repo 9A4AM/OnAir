@@ -96,9 +96,16 @@ if(DECT2_SANITIZE)
   add_link_options(-fsanitize=address,undefined)
 endif()
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(OnairRust)   # DECT2_RUST (AUTO/ON/OFF): the Rust AIS frame layer when cargo and the Rust target are there; sets ONAIR_RUST_ACTIVE
+
 add_library(dect2core STATIC core/src/source.cpp core/src/source_audio.cpp core/src/hamlib_rig.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/engine_results.cpp core/src/t2/t2_tables.cpp core/src/t2/t2gen.cpp core/src/t2/t2rx.cpp core/src/t2/t2rx_sync.cpp core/src/t2/t2rx_symbols.cpp core/src/t2/t2rx_l1.cpp core/src/t2/t2rx_data.cpp core/src/t2/t2pilots.cpp core/src/t2/t2ofdm.cpp core/src/ldpc.cpp core/src/t2/t2l1.cpp core/src/t2/t2interleave.cpp core/src/t2/t2fec_tables.cpp core/src/t2/t2fec.cpp core/src/t2/t2plp.cpp core/src/resampler.cpp core/src/clock_correct.cpp core/src/bbunpack.cpp core/src/ts.cpp core/src/tsout.cpp core/src/scanner.cpp core/src/gain.cpp core/src/channel.cpp core/src/direction.cpp core/src/dsp_compat.cpp core/src/bandwidth.cpp core/src/atsc/atsc.cpp core/src/atsc/atsc_gen.cpp core/src/atsc/atsc_rx.cpp core/src/atsc3/atsc3_bootstrap.cpp core/src/atsc3/atsc3_ofdm.cpp core/src/atsc3/atsc3_tables.cpp core/src/atsc3/atsc3_ldpc.cpp core/src/atsc3/atsc3_ldpc_tables.cpp core/src/atsc3/atsc3_ldpc_tables64.cpp core/src/atsc3/atsc3_data_tables.cpp core/src/atsc3/atsc3_l1.cpp core/src/atsc3/atsc3_sync.cpp core/src/atsc3/atsc3_rx.cpp core/src/atsc3/atsc3_receiver.cpp core/src/atsc3/atsc3_frame.cpp core/src/atsc3/atsc3_remux.cpp core/src/ac4_dec.cpp core/src/ac4_xcode.cpp core/src/atsc3/atsc3_route.cpp core/src/atsc3/atsc3_ip.cpp core/src/inflate.cpp core/src/xmlmini.cpp core/src/atsc3/atsc3_alp.cpp core/src/atsc3/atsc3_ti.cpp core/src/atsc3/atsc3_subframe.cpp core/src/atsc3/atsc3_cellmux.cpp core/src/atsc3/atsc3_bb.cpp core/src/atsc3/atsc3_bicm.cpp core/src/atsc3/atsc3_preamble.cpp core/src/atsc3/atsc3_constellations.cpp core/src/isdbt/isdbt.cpp core/src/isdbt/isdbt_tables_data.cpp core/src/isdbt/isdbt_gen.cpp core/src/isdbt/isdbt_demod.cpp core/src/isdbt/isdbt_rx.cpp core/src/exact_resampler.cpp core/src/updater.cpp core/src/channel_db.cpp core/src/quality.cpp core/src/teletext.cpp core/src/dvbt/dvbt.cpp core/src/dvbt/dvbt_fec.cpp core/src/dvbt/dvbt_gen.cpp core/src/dvbt/dvbt_rx.cpp core/src/player.cpp core/src/es_save.cpp core/src/audioout.cpp core/src/t2/t2_pilot_tables.cpp core/src/fm/fm_rx.cpp core/src/fm/fm_tmc.cpp core/src/fm/fm_gen.cpp core/src/conceal.cpp core/src/nettuner.cpp core/src/hls.cpp core/src/hackrf_usb.cpp core/src/demo_ts.cpp core/src/crash_report.cpp core/src/source_native.cpp core/src/source_rtlsdr.cpp core/src/source_airspy.cpp core/src/source_bladerf.cpp core/src/source_limesdr.cpp core/src/source_plutosdr.cpp core/src/source_usrp.cpp core/src/source_sdrplay.cpp core/src/source_airspyhf.cpp core/src/source_rtltcp.cpp core/src/source_spyserver.cpp core/src/source_hermeslite2.cpp core/src/netradio.cpp core/src/share_server.cpp core/src/usb_diag.cpp core/src/png.cpp core/src/iq_record.cpp core/src/text_charset.cpp core/src/channel_find.cpp core/src/feeds.cpp core/src/feeds_fmt.cpp core/src/pskreporter.cpp core/src/wsprnet.cpp core/src/iq_file.cpp core/src/carrierfind.cpp core/src/wide_modes.cpp core/src/widespan.cpp core/src/device_claims.cpp core/src/source_fobos.cpp core/src/source_rx888.cpp core/src/engine_multitv.cpp core/src/channelizer.cpp core/src/multitv.cpp core/src/ts_record.cpp)
 # The modes added after FM (DVB-S/S2, DTMB, analog TV, DMR, DRM, ADS-B): every core/src/<mode>/*.cpp belongs to its mode, so a mode can add files without editing this list
 set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas vdl4 uat wisun)
+if(ONAIR_RUST_ACTIVE)
+  target_compile_definitions(dect2core PRIVATE DECT2_RUST_PROTO)   # core/src/ais/ais_proto.cpp leaves the covered functions to ais_proto_rs.cpp
+  target_link_libraries(dect2core PRIVATE onair_proto_rs)
+endif()
 target_sources(dect2core PRIVATE core/src/modes.cpp core/src/rate_choice.cpp core/src/passes.cpp core/src/imgproc.cpp core/src/sig_ident.cpp core/src/maidenhead.cpp core/src/maplayers.cpp core/src/tilecache.cpp core/src/mesh_report.cpp)
 target_sources(dect2core PRIVATE core/src/remote_api.cpp core/src/rx_json.cpp core/src/gain_opt.cpp core/src/mesh_report.cpp core/src/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
 target_sources(dect2core PRIVATE core/src/tx.cpp core/src/tx_payload.cpp core/src/tx_voice.cpp core/src/audioin.cpp core/src/videoin.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
@@ -824,10 +831,30 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(fuzz_rx PRIVATE dect2core)
   add_test(NAME fuzz_rx COMMAND fuzz_rx)
 
+  # Rust AIS frame layer against the C++ one: a generated copy of the C++ code (dect2::ais_ref) is the reference
+  if(ONAIR_RUST_ACTIVE)
+    set(AIS_REF_DIR ${CMAKE_BINARY_DIR}/ais_ref)
+    add_custom_command(OUTPUT ${AIS_REF_DIR}/ais_proto_ref.h ${AIS_REF_DIR}/ais_proto_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${AIS_REF_DIR} -P ${CMAKE_SOURCE_DIR}/cmake/gen_ais_ref.cmake
+      DEPENDS core/include/dect2/ais_proto.h core/src/ais/ais_proto.cpp cmake/gen_ais_ref.cmake VERBATIM)
+    set_source_files_properties(core/src/ais/ais_proto.cpp core/src/ais/ais_proto_rs.cpp PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_PROTO)
+    foreach(t test_ais_proto_rs bench_ais_proto)
+      add_executable(${t} tests/${t}.cpp ${AIS_REF_DIR}/ais_proto_ref.cpp core/src/ais/ais_proto.cpp core/src/ais/ais_proto_rs.cpp)
+      target_include_directories(${t} PRIVATE core/include ${AIS_REF_DIR})
+      target_link_libraries(${t} PRIVATE onair_proto_rs)
+    endforeach()
+    add_test(NAME ais_proto_rs COMMAND test_ais_proto_rs)
+  endif()
+
   # seeded mutation runs of the AIS and ANT frame layers (also libFuzzer targets with -DONAIR_LIBFUZZER); meant for DECT2_SANITIZE=ON
   foreach(f ais ant)
     add_executable(fuzz_${f}_proto tests/fuzz_${f}_proto.cpp core/src/${f}/${f}_proto.cpp)   # standalone: only the frame layer, so a sanitizer build stays small
     target_include_directories(fuzz_${f}_proto PRIVATE core/include)
+    if(ONAIR_RUST_ACTIVE AND f STREQUAL "ais")
+      target_sources(fuzz_ais_proto PRIVATE core/src/ais/ais_proto_rs.cpp)
+      target_compile_definitions(fuzz_ais_proto PRIVATE DECT2_RUST_PROTO)
+      target_link_libraries(fuzz_ais_proto PRIVATE onair_proto_rs)
+    endif()
     add_test(NAME fuzz_${f}_proto COMMAND fuzz_${f}_proto)
   endforeach()
 

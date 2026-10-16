@@ -37,3 +37,5 @@ logo-concepts/
 
 # the password of the Docker image's page (packaging/docker/compose.yaml)
 packaging/docker/.env
+rust/onair_proto/Cargo.lock
+rust/onair_proto/target/

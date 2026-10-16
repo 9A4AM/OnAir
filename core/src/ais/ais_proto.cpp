@@ -9,7 +9,12 @@
 namespace dect2 {
 namespace ais {
 
+#ifndef DECT2_RUST_PROTO
+const char* protoImplementation() { return "C++"; }
+#endif
+
 // ---- bit fields
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 uint32_t getU(const Bits& b, size_t pos, size_t len) {
     uint32_t v = 0;
     for (size_t i = 0; i < len; i++) v = (v << 1) | (pos + i < b.size() ? (b[pos + i] & 1u) : 0u);
@@ -29,6 +34,7 @@ std::string getText(const Bits& b, size_t pos, size_t len) {
     while (!s.empty() && (s.back() == '@' || s.back() == ' ')) s.pop_back();
     return s;
 }
+#endif
 void putU(Bits& b, size_t pos, size_t len, uint32_t v) {
     if (b.size() < pos + len) b.resize(pos + len, 0);
     for (size_t i = 0; i < len; i++) b[pos + i] = len - 1 - i < 32 ? (v >> (len - 1 - i)) & 1u : 0u;   // fields wider than 32 bits are zero above
@@ -46,6 +52,7 @@ void putText(Bits& b, size_t pos, size_t len, const std::string& s) {
 }
 
 // ---- frame
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 // Register update of ITU-T X.25 / ISO 13239 (reflected polynomial 0x8408, written 0x1021 in the normal form), the same as AIS-catcher's
 // Decoder::CRC16 (Source/Marine/AIS.cpp): one bit at a time in the order received, start value 0xFFFF, good frames end at 0xF0B8.
 uint16_t fcsRegister(const uint8_t* bits, size_t n) {
@@ -57,10 +64,12 @@ uint16_t fcsRegister(const uint8_t* bits, size_t n) {
     }
     return r;
 }
+#endif
 void appendFcs(Bits& payload) {
     const uint16_t crc = (uint16_t)~fcsRegister(payload.data(), payload.size());
     for (int i = 0; i < 16; i++) payload.push_back((crc >> i) & 1);
 }
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 bool fcsOk(const Bits& frame) { return frame.size() >= 16 && fcsRegister(frame.data(), frame.size()) == kFcsGood; }
 
 Bits stuff(const Bits& in) {
@@ -109,12 +118,15 @@ Bits nrziDecode(const Bits& line, int prevLevel) {
     return out;
 }
 
+#endif
 static const uint8_t kFlag[8] = {0, 1, 1, 1, 1, 1, 1, 0};
 
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 void reverseOctets(Bits& b) {
     for (size_t i = 0; i < b.size(); i += 8) std::reverse(b.begin() + (std::ptrdiff_t)i, b.begin() + (std::ptrdiff_t)std::min(i + 8, b.size()));
 }
 
+#endif
 Bits burstLineBits(const Bits& payload) {
     Bits fr = payload;
     reverseOctets(fr);           // the order on the air (#87); the FCS is computed over the bits as sent
@@ -134,6 +146,7 @@ Bits burstLineBits(const Bits& payload) {
     return line;
 }
 
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 HdlcResult hdlcFrames(const Bits& d) {
     HdlcResult r;
     std::vector<size_t> flags;
@@ -161,15 +174,19 @@ HdlcResult hdlcFrames(const Bits& d) {
     return r;
 }
 
+#endif
 // ---- messages
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 double rateOfTurn(int raw) {
     if (raw == -128) return std::nan("");
     const double v = raw / 4.733;
     return (raw < 0 ? -1.0 : 1.0) * (raw == 127 || raw == -127 ? 720.0 : v * v);
 }
 
+#endif
 const char* shipTypeText(int t) { return aisShipTypeText(t); }
 
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 int classOfMmsi(uint32_t mmsi, int type) {
     switch (type) {
     case 1: case 2: case 3: case 5: case 27: return AIS_CLASS_A;
@@ -370,7 +387,9 @@ bool decodeMessage(const Bits& b, AisMsg& m) {
     return m.valid;
 }
 
+#endif
 // ---- NMEA 0183
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 static char armourChar(uint32_t v) { return (char)(v < 40 ? v + 48 : v + 56); }
 
 std::string armour(const Bits& p, int& fill) {
@@ -396,6 +415,7 @@ uint8_t nmeaChecksum(const std::string& body) {
     return x;
 }
 
+#endif
 std::vector<std::string> toNmea(const Bits& payload, char ch, int seqId) {
     int fill = 0;
     const std::string all = armour(payload, fill);
@@ -414,12 +434,15 @@ std::vector<std::string> toNmea(const Bits& payload, char ch, int seqId) {
     return out;
 }
 
+#ifndef DECT2_RUST_PROTO   // the Rust implementation (rust/onair_proto, core/src/ais/ais_proto_rs.cpp) replaces this block
 bool parseNmea(const std::string& s, std::string& chars, int& fill, int& fragCount, int& fragNo, char* channel) {
     if (s.size() < 12 || (s[0] != '!' && s[0] != '$')) return false;
     const size_t star = s.find('*');
     if (star == std::string::npos || star + 3 > s.size()) return false;
-    unsigned want = 0;
-    if (sscanf(s.c_str() + star + 1, "%2x", &want) != 1) return false;
+    auto hexv = [](char c) { return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1; };
+    const int hi = hexv(s[star + 1]), lo = hexv(s[star + 2]);     // exactly two hex digits (as the Rust parser reads them)
+    if (hi < 0 || lo < 0) return false;
+    const unsigned want = (unsigned)(hi * 16 + lo);
     if (nmeaChecksum(s.substr(1, star - 1)) != want) return false;
     std::vector<std::string> f;
     size_t p = 0;
@@ -438,5 +461,6 @@ bool parseNmea(const std::string& s, std::string& chars, int& fill, int& fragCou
     return fragCount >= 1 && fragNo >= 1 && fragNo <= fragCount && fill >= 0 && fill <= 5;
 }
 
+#endif
 } // namespace ais
 } // namespace dect2

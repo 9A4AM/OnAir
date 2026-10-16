@@ -10,6 +10,9 @@ namespace ais {
 
 using Bits = std::vector<uint8_t>;   // one bit per element, in transmission order
 
+// Which implementation of this layer is compiled in: "C++" or "Rust (rust/onair_proto)" (the CMake option DECT2_RUST).
+const char* protoImplementation();
+
 // ---- bit fields: multi-bit fields are sent most significant bit first
 uint32_t getU(const Bits& b, size_t pos, size_t len);          // bits past the end read as 0
 int32_t getS(const Bits& b, size_t pos, size_t len);           // two's complement

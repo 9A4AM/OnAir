@@ -11,6 +11,7 @@
 //     onair_dvb_554.000MHz_10Msps_20261009-071530.cs8, which reopens with the right rate and format)
 //   dect2cli --standard ble --ble-channel 37|38|39   (Bluetooth LE advertising, receive only: devices and packets in the status line and the log)
 #include "dect2/wisun_proto.h"
+#include "dect2/ais_proto.h"
 #include "dect2/wifi_proto.h"
 #include "dect2/rate_choice.h"
 #include "dect2/ble_proto.h"
@@ -71,7 +72,8 @@ int main(int argc, char** argv) {
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         auto next = [&]() { return i + 1 < argc ? argv[++i] : (char*)""; };
-        if (a == "--hackrf") haveDev = true;
+        if (a == "--version") { printf("dect2cli (OnAir)\nAIS frame layer: %s\n", dect2::ais::protoImplementation()); return 0; }   // which implementation is compiled in (DECT2_RUST)
+        else if (a == "--hackrf") haveDev = true;
         else if (a == "--radio") { const std::string kv = next(); const auto eq = kv.find('='); if (eq != std::string::npos) tune.radio[kv.substr(0, eq)] = kv.substr(eq + 1); }   // a setting of the radio, e.g. --radio iqformat=cs8 (PlutoSDR with Tezuka), --radio ppm=-3
         else if (a == "--atv-fm") atvFm = true;
         else if (a == "--isdbt-bw") { const std::string v = next(); const int b = atoi(v.c_str()); isdbtBw = v == "auto" ? 0 : b == 7 || b == 8 ? b : 6; }   // with --standard isdbt: channel width 6, 7, 8 MHz (the Maldives) or auto
