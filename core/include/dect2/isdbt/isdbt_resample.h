@@ -9,6 +9,7 @@
 #include <cmath>
 #include <numeric>
 #include <vector>
+#include "dect2/common/window.h"
 
 namespace dect2 {
 namespace isdbt {
@@ -79,11 +80,7 @@ public:
     }
 private:
     static constexpr int kHalf = 12, kTaps = 2 * kHalf;
-    static double besselI0(double x) {
-        double s = 1, t = 1;
-        for (int k = 1; k < 40; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; }
-        return s;
-    }
+    static double besselI0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
     int L_ = 0, M_ = 1;
     long i0_ = 0;
     int phase_ = 0;
@@ -155,11 +152,7 @@ public:
         }
     }
 private:
-    static double besselI0(double x) {
-        double s = 1, t = 1;
-        for (int k = 1; k < 40; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; }
-        return s;
-    }
+    static double besselI0(double x) { return dect2::window::besselI0(x, 40, 0.0); }
     bool pass_ = true;
     double step_ = 1.0;
     int half_ = 16, taps_ = 32, stride_ = 32, phases_ = 2048;

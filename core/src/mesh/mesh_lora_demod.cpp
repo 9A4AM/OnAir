@@ -9,19 +9,17 @@
 #include <cstdlib>
 #include <cmath>
 #include <complex>
+#include "dect2/common/mathconst.h"
+#include "dect2/common/window.h"
 
 namespace dect2 {
 namespace lora {
 
 namespace {
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 using cd = std::complex<double>;
 
-double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 60; k++) { t *= (x / (2 * k)) * (x / (2 * k)); s += t; }
-    return s;
-}
+double besselI0(double x) { return dect2::window::besselI0(x, 60, 0.0); }
 double kaiserBeta(double a) { return a > 50 ? 0.1102 * (a - 8.7) : a > 21 ? 0.5842 * std::pow(a - 21, 0.4) + 0.07886 * (a - 21) : 0; }
 } // namespace
 

@@ -10,6 +10,7 @@
 #include <thread>
 #include <memory>
 #include <mutex>
+#include "dect2/common/window.h"
 
 namespace dect2 {
 namespace atsc3 {
@@ -27,11 +28,7 @@ struct Bank {
     std::vector<float> h;   // (phases + 1) x taps
 };
 
-double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 30; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; }
-    return s;
-}
+double besselI0(double x) { return dect2::window::besselI0(x, 30, 0.0); }
 
 Bank makeBank(double ratio) {
     Bank b;

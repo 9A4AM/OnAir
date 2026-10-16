@@ -7,17 +7,15 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include "dect2/common/mathconst.h"
+#include "dect2/common/window.h"
 
 namespace dect2 {
 namespace atvdsp {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
-inline double besselI0(double x) {
-    double s = 1, t = 1;
-    for (int k = 1; k < 60; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; if (t < 1e-14 * s) break; }
-    return s;
-}
+inline double besselI0(double x) { return dect2::window::besselI0(x, 60, 1e-14); }
 
 // Kaiser window shape parameter for a stopband attenuation in dB
 inline double kaiserBeta(double a) { return a > 50 ? 0.1102 * (a - 8.7) : a > 21 ? 0.5842 * std::pow(a - 21, 0.4) + 0.07886 * (a - 21) : 0.0; }
@@ -120,7 +118,7 @@ public:
     void add(cf32* out, size_t n, float sigma) {
         const float k = sigma / 1.41421356f;     // sigma per axis
         for (size_t i = 0; i < n; i++) {
-            const cf32 v = (a_[ia_] + b_[ib_]) * (k * 0.70710678f);
+            const cf32 v = (a_[ia_] + b_[ib_]) * (k * dect2::math::k1OverSqrt2f);
             out[i] += v;
             if (++ia_ == kA) ia_ = 0;
             if (++ib_ == kB) ib_ = 0;

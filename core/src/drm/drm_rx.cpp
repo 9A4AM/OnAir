@@ -26,6 +26,8 @@
 #include <cstring>
 #include <map>
 #include <mutex>
+#include "dect2/common/mathconst.h"
+#include "dect2/common/window.h"
 
 namespace dect2 {
 
@@ -33,7 +35,7 @@ using namespace drm;
 
 namespace {
 constexpr double kFs = 48000.0;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 // part of the band that every spectrum occupancy of the mode shares and where no gain reference is boosted: used until the FAC says which occupancy it is
 const int kSafe[5][2] = {{8, 96}, {5, 87}, {-63, 63}, {-40, 40}, {-100, 100}};
@@ -45,7 +47,7 @@ constexpr double kMinRateE = 100000.0;     // the least input rate the DRM+ lane
 int posMod(int a, int m) { int r = a % m; return r < 0 ? r + m : r; }
 int floorDiv(int a, int b) { int q = a / b; return (a % b != 0 && ((a < 0) != (b < 0))) ? q - 1 : q; }
 int ceilDiv(int a, int b) { return -floorDiv(-a, b); }
-double besselI0(double x) { double s = 1, t = 1; for (int k = 1; k < 50; k++) { t *= (x / (2.0 * k)) * (x / (2.0 * k)); s += t; } return s; }
+double besselI0(double x) { return dect2::window::besselI0(x, 50, 0.0); }
 }
 
 ModeTuning drmTuning() {
