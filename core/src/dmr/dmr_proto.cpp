@@ -1,5 +1,8 @@
 // DMR burst layout and message formats, see dmr_proto.h.
 #include "dect2/dmr/dmr_proto.h"
+#ifdef DECT2_RUST_DMR
+#include "dect2/rs/dmr.h"
+#endif
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -20,6 +23,9 @@ const uint64_t kSyncWords[kSyncCount] = {
     0x7DFFD5F55D5FULL,   // slot 2 voice
     0xD7557F5FF7F5ULL};  // slot 2 data
 
+// Everything from here to the matching #endif is the C++ implementation; with DECT2_RUST_DMR (rust/onair_dmr) dmr_proto_rs.cpp provides the same
+// functions. It stays until the Rust build is mandatory (rust/README.md); tests/dmr/test_dmr_proto_rs.cpp compares the two.
+#ifndef DECT2_RUST_DMR
 const char* syncName(int s) {
     static const char* n[kSyncCount] = {"BS voice", "BS data", "MS voice", "MS data", "RC", "direct 1 voice", "direct 1 data", "direct 2 voice", "direct 2 data"};
     return s >= 0 && s < kSyncCount ? n[s] : "none";
@@ -118,6 +124,9 @@ Bits makeVoiceBurst(const Bits& vs, int sync, int cc, int pi, int lcss, const Bi
     return b;
 }
 
+#endif // DECT2_RUST_DMR
+
+// the three burst slicers are plain vector copies and stay C++ in every build
 Bits burstCentre(const Bits& burst) { return Bits(burst.begin() + 108, burst.begin() + 156); }
 
 void burstDataPayload(const Bits& burst, Bits& p) {
@@ -130,6 +139,8 @@ void burstVoicePayload(const Bits& burst, Bits& vs) {
     vs.insert(vs.end(), burst.begin() + 156, burst.begin() + 264);
 }
 
+
+#ifndef DECT2_RUST_DMR
 SlotTypeInfo burstSlotType(const Bits& burst) {
     SlotTypeInfo r;
     unsigned w = (unsigned)(getBits(burst, 98, 10) << 10 | getBits(burst, 156, 10)), info = 0;
@@ -157,9 +168,14 @@ void bitsToSymbols(const Bits& bits, std::vector<int8_t>& sym) {
 
 // ---------------------------------------------------------------------------------------------------- link control
 
+#endif // DECT2_RUST_DMR
+
+// two byte helpers used everywhere (also by the Rust-backed build)
 uint32_t be24(const uint8_t* p) { return (uint32_t)p[0] << 16 | (uint32_t)p[1] << 8 | p[2]; }
 void putBe24(uint8_t* p, uint32_t v) { p[0] = (uint8_t)(v >> 16); p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)v; }
 
+
+#ifndef DECT2_RUST_DMR
 void packFullLc(const FullLc& lc, uint8_t out[9]) {
     out[0] = (uint8_t)((lc.pf ? 0x80 : 0) | (lc.flco & 0x3F));
     out[1] = (uint8_t)lc.fid;
@@ -602,6 +618,12 @@ std::string TalkerAlias::text() const {
     return textFromBytes(bytes, len, format, true);
 }
 
+#endif // DECT2_RUST_DMR
+
+// the test signal's alias PDU builder stays C++ in every build
+#ifdef DECT2_RUST_DMR
+static int aliasPieces(int format, int length) { return onair_dmr_alias_pieces(format, length); }
+#endif
 int talkerAliasPdus(const std::string& alias, int format, FullLc out[4]) {
     std::vector<uint8_t> bytes;
     int length = 0;

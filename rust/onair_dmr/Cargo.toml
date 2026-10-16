@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
-description = "OnAir DMR (empty skeleton)"
+description = "OnAir DMR frame layer: codes, bursts, link control, data, text"
 
 [dependencies]
 onair_common = { path = "../onair_common" }

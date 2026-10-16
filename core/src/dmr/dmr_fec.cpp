@@ -35,6 +35,10 @@ int popcount32(uint32_t v) {
     return n;
 }
 
+// Everything from here to the matching #endif is the C++ implementation; with DECT2_RUST_DMR (rust/onair_dmr) dmr_fec_rs.cpp provides the same
+// functions. It stays until the Rust build is mandatory (rust/README.md); tests/dmr/test_dmr_proto_rs.cpp compares the two.
+#ifndef DECT2_RUST_DMR
+
 namespace {
 
 // ---------------------------------------------------------------------------------------------------- generator matrices
@@ -600,6 +604,8 @@ void rate1Decode(const Bits& tx196, uint8_t data[24], bool* padOk) {
     bitsToBytes(d, 0, 192, data);
     if (padOk) *padOk = !(tx196[96] | tx196[97] | tx196[98] | tx196[99]);
 }
+
+#endif // DECT2_RUST_DMR
 
 } // namespace dmr
 } // namespace dect2
