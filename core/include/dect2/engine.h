@@ -359,7 +359,6 @@ public:
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
     ElektroReceiver& elektro() { return rxEl_; }   // Elektro-L HRIT / LRIT / GGAK (telemetry through latestRx)
     LbjReceiver& lbj() { return rxLbj_; }   // LBJ railway warnings (telemetry through latestRx)
-    ElektroReceiver& elektro() { return rxEl_; }
     Vdl4Receiver& vdl4() { return rxVdl4_; }   // VDL Mode 4 (telemetry through latestRx)
     UatReceiver& uat() { return rxUat_; }         // UAT 978 MHz ADS-B / FIS-B / TIS-B (telemetry through latestRx)
     MeteorReceiver& meteor() { return rxMeteor_; }   // Meteor-M LRPT: modulation, a new picture (telemetry through latestRx)
