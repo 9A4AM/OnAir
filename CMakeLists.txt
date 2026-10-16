@@ -32,6 +32,7 @@ option(DECT2_WITH_SOAPY "Support generic radios (Airspy, SDRplay, RTL-SDR, Pluto
 option(DECT2_HAVE_HAMLIB "Hamlib CAT rig control (RX/TX frequency, mode, PTT) with IQ or audio on a sound card" ON)
 set(DECT2_RADIO_LIB_DIR "" CACHE PATH "Folder with the radio libraries to ship in the Linux packages (tools/package/collect_radio_libs_linux.sh)")
 option(DECT2_WITH_RFNM "Support the RFNM through librfnm when it is installed (librfnm has a C++ interface only, so it is linked, not loaded at run time like the other radio libraries)" ON)
+option(DECT2_SANITIZE "Developer build with AddressSanitizer and UndefinedBehaviorSanitizer (slow, never for release)" OFF)
 option(DECT2_NO_SIMD "Disable the SIMD intrinsics and use the plain C++ code" OFF)
 option(DECT2_WIN_AVX2 "Windows and macOS on x86-64: build the whole receiver for AVX2 + FMA (the program then refuses to start on older CPUs). Off: baseline x86-64 with the hot loops dispatched to AVX2 at run time (dect2/simd.h); releases must keep it off (issue #74)" OFF)
 option(DECT2_COPY_RUNTIME_DLLS "Windows (MinGW): after each build, copy the DLLs the programs need next to them so they start from the build folder (off by default: the CI and release builds package their own DLLs)" OFF)
@@ -88,6 +89,11 @@ if(DECT2_HAVE_HAMLIB)
 endif()
 if(DECT2_WITH_RFNM)
   pkg_check_modules(RFNM librfnm)
+endif()
+
+if(DECT2_SANITIZE)
+  add_compile_options(-fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address,undefined)
 endif()
 
 add_library(dect2core STATIC core/src/source.cpp core/src/source_audio.cpp core/src/hamlib_rig.cpp core/src/spectrum.cpp core/src/engine.cpp core/src/engine_results.cpp core/src/t2/t2_tables.cpp core/src/t2/t2gen.cpp core/src/t2/t2rx.cpp core/src/t2/t2rx_sync.cpp core/src/t2/t2rx_symbols.cpp core/src/t2/t2rx_l1.cpp core/src/t2/t2rx_data.cpp core/src/t2/t2pilots.cpp core/src/t2/t2ofdm.cpp core/src/ldpc.cpp core/src/t2/t2l1.cpp core/src/t2/t2interleave.cpp core/src/t2/t2fec_tables.cpp core/src/t2/t2fec.cpp core/src/t2/t2plp.cpp core/src/resampler.cpp core/src/clock_correct.cpp core/src/bbunpack.cpp core/src/ts.cpp core/src/tsout.cpp core/src/scanner.cpp core/src/gain.cpp core/src/channel.cpp core/src/direction.cpp core/src/dsp_compat.cpp core/src/bandwidth.cpp core/src/atsc/atsc.cpp core/src/atsc/atsc_gen.cpp core/src/atsc/atsc_rx.cpp core/src/atsc3/atsc3_bootstrap.cpp core/src/atsc3/atsc3_ofdm.cpp core/src/atsc3/atsc3_tables.cpp core/src/atsc3/atsc3_ldpc.cpp core/src/atsc3/atsc3_ldpc_tables.cpp core/src/atsc3/atsc3_ldpc_tables64.cpp core/src/atsc3/atsc3_data_tables.cpp core/src/atsc3/atsc3_l1.cpp core/src/atsc3/atsc3_sync.cpp core/src/atsc3/atsc3_rx.cpp core/src/atsc3/atsc3_receiver.cpp core/src/atsc3/atsc3_frame.cpp core/src/atsc3/atsc3_remux.cpp core/src/ac4_dec.cpp core/src/ac4_xcode.cpp core/src/atsc3/atsc3_route.cpp core/src/atsc3/atsc3_ip.cpp core/src/inflate.cpp core/src/xmlmini.cpp core/src/atsc3/atsc3_alp.cpp core/src/atsc3/atsc3_ti.cpp core/src/atsc3/atsc3_subframe.cpp core/src/atsc3/atsc3_cellmux.cpp core/src/atsc3/atsc3_bb.cpp core/src/atsc3/atsc3_bicm.cpp core/src/atsc3/atsc3_preamble.cpp core/src/atsc3/atsc3_constellations.cpp core/src/isdbt/isdbt.cpp core/src/isdbt/isdbt_tables_data.cpp core/src/isdbt/isdbt_gen.cpp core/src/isdbt/isdbt_demod.cpp core/src/isdbt/isdbt_rx.cpp core/src/exact_resampler.cpp core/src/updater.cpp core/src/channel_db.cpp core/src/quality.cpp core/src/teletext.cpp core/src/dvbt/dvbt.cpp core/src/dvbt/dvbt_fec.cpp core/src/dvbt/dvbt_gen.cpp core/src/dvbt/dvbt_rx.cpp core/src/player.cpp core/src/es_save.cpp core/src/audioout.cpp core/src/t2/t2_pilot_tables.cpp core/src/fm/fm_rx.cpp core/src/fm/fm_tmc.cpp core/src/fm/fm_gen.cpp core/src/conceal.cpp core/src/nettuner.cpp core/src/hls.cpp core/src/hackrf_usb.cpp core/src/demo_ts.cpp core/src/crash_report.cpp core/src/source_native.cpp core/src/source_rtlsdr.cpp core/src/source_airspy.cpp core/src/source_bladerf.cpp core/src/source_limesdr.cpp core/src/source_plutosdr.cpp core/src/source_usrp.cpp core/src/source_sdrplay.cpp core/src/source_airspyhf.cpp core/src/source_rtltcp.cpp core/src/source_spyserver.cpp core/src/source_hermeslite2.cpp core/src/netradio.cpp core/src/share_server.cpp core/src/usb_diag.cpp core/src/png.cpp core/src/iq_record.cpp core/src/text_charset.cpp core/src/channel_find.cpp core/src/feeds.cpp core/src/feeds_fmt.cpp core/src/pskreporter.cpp core/src/wsprnet.cpp core/src/iq_file.cpp core/src/carrierfind.cpp core/src/wide_modes.cpp core/src/widespan.cpp core/src/device_claims.cpp core/src/source_fobos.cpp core/src/source_rx888.cpp core/src/engine_multitv.cpp core/src/channelizer.cpp core/src/multitv.cpp core/src/ts_record.cpp)
@@ -817,6 +823,13 @@ if(DECT2_BUILD_TESTS)
   add_executable(fuzz_rx tests/fuzz_rx.cpp)
   target_link_libraries(fuzz_rx PRIVATE dect2core)
   add_test(NAME fuzz_rx COMMAND fuzz_rx)
+
+  # seeded mutation runs of the AIS and ANT frame layers (also libFuzzer targets with -DONAIR_LIBFUZZER); meant for DECT2_SANITIZE=ON
+  foreach(f ais ant)
+    add_executable(fuzz_${f}_proto tests/fuzz_${f}_proto.cpp core/src/${f}/${f}_proto.cpp)   # standalone: only the frame layer, so a sanitizer build stays small
+    target_include_directories(fuzz_${f}_proto PRIVATE core/include)
+    add_test(NAME fuzz_${f}_proto COMMAND fuzz_${f}_proto)
+  endforeach()
 
   add_executable(test_dvbt tests/dvbt/test_dvbt.cpp)
   target_link_libraries(test_dvbt PRIVATE dect2core)
