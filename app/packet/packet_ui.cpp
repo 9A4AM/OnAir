@@ -123,12 +123,14 @@ ImU32 stationColour(const PacketStation& s, float alpha = 1.f) {
 
 void stationTable(App& a, bool compact) {
     const dect2::PacketTelemetry& t = a.rx.packet;
-    const int cols = compact ? 2 : 5;
+    const bool wide = wideActive(a);
+    const int cols = (compact ? 2 : 5) + (wide && !compact ? 1 : 0);
     ImGuiTableFlags fl = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit;
     if (!ImGui::BeginTable(compact ? "##pk_s" : "##pk_f", cols, fl, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("Callsign", ImGuiTableColumnFlags_WidthStretch);
     if (!compact) ImGui::TableSetupColumn("Symbol");
+    if (wide && !compact) ImGui::TableSetupColumn("Frequency MHz");
     ImGui::TableSetupColumn("Last heard");
     if (!compact) { ImGui::TableSetupColumn("Position"); ImGui::TableSetupColumn("Comment", ImGuiTableColumnFlags_WidthStretch); }
     ImGui::TableHeadersRow();
@@ -142,6 +144,7 @@ void stationTable(App& a, bool compact) {
         if (ImGui::Selectable(s.call.c_str(), s.call == S.sel, ImGuiSelectableFlags_SpanAllColumns)) S.sel = s.call;
         ImGui::PopID();
         if (!compact) { ImGui::TableNextColumn(); ImGui::TextUnformatted(symText(s).c_str()); }
+        if (wide && !compact) { ImGui::TableNextColumn(); wideCarrierCell(a, s.carrierId, s.carrierHz); }
         ImGui::TableNextColumn(); ImGui::TextUnformatted(ageText(t.timeSec - s.lastHeardSec).c_str());
         if (!compact) {
             ImGui::TableNextColumn(); ImGui::TextUnformatted(posText(s).c_str());
@@ -227,7 +230,7 @@ void packetLog(App& a) {
     const dect2::PacketTelemetry& t = a.rx.packet;
     if (ImGui::SmallButton("copy all")) {
         std::string all;
-        for (const auto& f : t.frames) { all += clockText(f.timeSec) + "  " + frameLine(f) + ":" + printable(f.info) + "\n"; }
+        for (const auto& f : t.frames) { if (wideActive(a) && f.carrierId > 0) { char fb[24]; snprintf(fb, sizeof fb, "%.4f  ", radioCenterMhz(a) + f.carrierHz / 1e6); all += fb; } all += clockText(f.timeSec) + "  " + frameLine(f) + ":" + printable(f.info) + "\n"; }
         ImGui::SetClipboardText(all.c_str());
     }
     ImGui::SameLine();
@@ -235,7 +238,9 @@ void packetLog(App& a) {
     ImGui::SameLine();
     ImGui::TextDisabled("the last %zu good packets", t.frames.size());
     ImGui::BeginChild("##pk_log", ImVec2(0, 0), ImGuiChildFlags_Borders);
-    if (ImGui::BeginTable("##pk_t", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
+    const bool wide = wideActive(a);
+    if (ImGui::BeginTable("##pk_t", 3 + (wide ? 1 : 0), ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
+        if (wide) ImGui::TableSetupColumn("Frequency MHz");
         ImGui::TableSetupColumn("Time");
         ImGui::TableSetupColumn("From > To,Path");
         ImGui::TableSetupColumn("Info", ImGuiTableColumnFlags_WidthStretch);
@@ -243,6 +248,7 @@ void packetLog(App& a) {
         ImGui::PushFont(a.mono, 0);
         for (const auto& f : t.frames) {
             ImGui::TableNextRow();
+            if (wide) { ImGui::TableNextColumn(); wideCarrierCell(a, f.carrierId, f.carrierHz); }
             ImGui::TableNextColumn(); ImGui::TextUnformatted(clockText(f.timeSec).c_str());
             ImGui::TableNextColumn(); ImGui::TextUnformatted(frameLine(f).c_str());
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%d baud, %s", f.baud, f.type.c_str());
@@ -299,12 +305,13 @@ void tab(App& a) {
 void list(App& a) {
     loadState();
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see stations"); ImGui::PopTextWrapPos(); return; }
-    if (resultsClearButton("packet")) a.engine.packet().clearResults();
+    if (resultsClearButton("packet")) a.engine.clearResults(26);   // also the whole-span receivers
     ImGui::TextDisabled("%zu stations", a.rx.packet.stations.size());
     stationTable(a, true);
 }
 
 void receiver(App& a) {
+    wideCarriersTable(a, 0);
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const dect2::PacketTelemetry& t = a.rx.packet;
     auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };

@@ -229,7 +229,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     {   // a narrow channel sits tuneOffsetHz away from the radio's centre (a file holds the channel as recorded: no offset)
         const ModeTuning* mto = modeTuning(stdMode_.load());
         const double o = mto && dev.kind != DeviceInfo::File ? -mto->tuneOffsetHz : 0.0;
-        for (int wm : {10, 32, 34, 39, 46, 51, 24}) wide_.configure(wm, rate_, o);
+        for (int wm : {10, 32, 34, 39, 46, 51, 24, 25}) wide_.configure(wm, rate_, o);
         wide_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : tune.centerHz);   // the logs of a whole-span decoder keep their rows' frequencies over a retune
         rxSonde_.setSignalOffset(o);
         rxAis_.setSignalOffset(o);

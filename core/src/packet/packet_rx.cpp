@@ -45,6 +45,7 @@ struct PacketReceiver::Impl {
     std::function<void(const std::string&)> log;
 
     double fs = 0;
+    bool wideInput = false;                // setWideInput(): one carrier brought to 192 ksps by the whole-span bank (the radio's minimum rate does not apply)
     bool isReady = false;
     pktdemod::FmFront fe;
     hfdig::Listen listen;                  // "Listen": the demodulated audio, 8 kHz, on the sound card (off by default)
@@ -77,7 +78,7 @@ struct PacketReceiver::Impl {
     void configure(double rate) {
         fs = rate;
         isReady = false;
-        if (!fe.configure(fs, packetTuning().minSampleRate)) return;
+        if (!fe.configure(fs, wideInput ? 192000.0 : packetTuning().minSampleRate)) return;
         audio8.design(dmr::lowpassTaps(3200.0, 800.0, 48000.0, 50, 9), 6);
         audio48.design(dmr::lowpassTaps(3300.0, 8000.0, kMidRate, 50, 9), 2);
         lp9600[0].design(dmr::lowpassTaps(5200.0, 11000.0, kMidRate, 40, 9), 1);
@@ -268,6 +269,11 @@ PacketReceiver::~PacketReceiver() = default;
 void PacketReceiver::configure(double inputRateHz) {
     std::lock_guard<std::mutex> lk(p_->procMu);
     p_->configure(inputRateHz);
+}
+void PacketReceiver::setWideInput(bool on) {
+    std::lock_guard<std::mutex> lk(p_->procMu);
+    p_->wideInput = on;
+    if (p_->fs > 0) p_->configure(p_->fs);
 }
 void PacketReceiver::setSignalOffset(double hz) {
     std::lock_guard<std::mutex> lk(p_->procMu);

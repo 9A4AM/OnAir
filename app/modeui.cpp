@@ -248,7 +248,7 @@ void secondModeTabs(App& a) {
 // ---------------------------------------------------------------- whole-span decoding
 #include <set>
 static std::set<int>& wideFamilies() {
-    static std::set<int> s = {9, 31, 33, 38, 45, 50, 23};   // DMR, M17, D-STAR, NXDN, dPMR, P25, pagers: one decoder per carrier (core/wide_modes.h)
+    static std::set<int> s = {9, 31, 33, 38, 45, 50, 23, 24};   // DMR, M17, D-STAR, NXDN, dPMR, P25, pagers, APRS / packet: one decoder per carrier (core/wide_modes.h)
     return s;
 }
 bool modeSupportsWide(int family) { return modeSupportsWideHf(family) || wideFamilies().count(family) > 0; }

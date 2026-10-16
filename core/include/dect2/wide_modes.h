@@ -17,7 +17,7 @@ class WideModes {
 public:
     WideModes();
     ~WideModes();
-    static bool supports(int stdMode);           // engine standard: 10 DMR, 32 M17, 34 D-STAR, 39 NXDN, 46 dPMR, 51 P25, 24 pagers
+    static bool supports(int stdMode);           // engine standard: 10 DMR, 32 M17, 34 D-STAR, 39 NXDN, 46 dPMR, 51 P25, 24 pagers, 25 APRS / packet
     static CarrierCfg cfgFor(int stdMode);       // the raster and limits of the mode
     // Sets the span rate; gridOriginHz: the tuned channel's offset from the span centre (the raster passes through it)
     void configure(int stdMode, double spanRate, double gridOriginHz);

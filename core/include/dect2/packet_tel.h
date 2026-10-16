@@ -18,6 +18,8 @@ struct PacketFrameInfo {
     int baud = 1200;
     bool hasPos = false;
     double lat = 0, lon = 0;
+    int carrierId = 0;           // whole-span decoding (wide_modes.h): the carrier it came from (0 = the single receiver); carrierHz: relative to the radio's centre
+    double carrierHz = 0;
 };
 
 // One station heard (by its source callsign, SSID included; objects and items are listed under their own name)
@@ -34,6 +36,8 @@ struct PacketStation {
     std::string comment;
     bool isObject = false;       // an object or item sent by another station
     std::string via;             // the station that sent the object
+    int carrierId = 0;           // whole-span decoding: the carrier it was last heard on
+    double carrierHz = 0;
 };
 
 struct PacketTelemetry {

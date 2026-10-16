@@ -8,6 +8,8 @@
 #include "dect2/p25_rx.h"
 #include "dect2/pager_rx.h"
 #include "dect2/pager_tel.h"
+#include "dect2/packet_rx.h"
+#include "dect2/packet_tel.h"
 #include "dect2/dpmr_tel.h"
 #include "dect2/dstar_tel.h"
 #include "dect2/m17_tel.h"
@@ -51,6 +53,7 @@ struct WideModes::Impl {
     std::unique_ptr<WideBank<DpmrReceiver, DpmrTelemetry>> dpmr;
     std::unique_ptr<WideBank<P25Receiver, P25Telemetry>> p25;
     std::unique_ptr<WideBank<PagerReceiver, PagerTelemetry>> pager;
+    std::unique_ptr<WideBank<PacketReceiver, PacketTelemetry>> packet;
     int pagerProtos = 3, pagerBauds = 7;   // the single receiver's settings, copied to every carrier's receiver (setPagerOptions)
     bool muted = false;
     int sel = 0;
@@ -140,19 +143,52 @@ struct WideModes::Impl {
             return std::string(b);
         };
         pager.reset(new WideBank<PagerReceiver, PagerTelemetry>(g));
+
+        // APRS / packet: one 25 kHz FM channel each (144.800, 144.390 and the neighbours inside one capture); no sound from the carrier receivers
+        WideOps<PacketReceiver, PacketTelemetry> k;
+        k.outRate = 192000; k.occupiedHz = 24000; k.preRollSec = 0.5;
+        k.setup = [](PacketReceiver& r) { r.setWideInput(true); r.setSilent(true); };
+        k.clear = [](PacketReceiver& r) { r.clearResults(); };
+        k.clearLists = [](PacketTelemetry& t) {
+            t.frames.clear(); t.stations.clear(); t.blocksOk = t.blocksBad = 0; t.ok1200 = t.bad1200 = t.ok9600 = t.bad9600 = t.aprsFrames = 0; t.carrier = false;
+        };
+        k.hasLog = [](const PacketTelemetry& t) { return !t.frames.empty() || !t.stations.empty(); };
+        k.append = [](PacketTelemetry& t, const PacketTelemetry& x, double hz) {
+            const double shift = t.timeSec - x.timeSec;   // the carriers' signal clocks started at different moments: bring x onto the primary's
+            t.blocksOk += x.blocksOk; t.blocksBad += x.blocksBad; t.ok1200 += x.ok1200; t.bad1200 += x.bad1200; t.ok9600 += x.ok9600; t.bad9600 += x.bad9600;
+            t.aprsFrames += x.aprsFrames; t.carrier = t.carrier || x.carrier;
+            t.last1200Sec = std::max(t.last1200Sec, x.last1200Sec + shift); t.last9600Sec = std::max(t.last9600Sec, x.last9600Sec + shift); t.lastAprsSec = std::max(t.lastAprsSec, x.lastAprsSec + shift);
+            for (PacketFrameInfo f : x.frames) { f.timeSec += shift; f.carrierId = 1; f.carrierHz = hz; t.frames.push_back(std::move(f)); }
+            std::stable_sort(t.frames.begin(), t.frames.end(), [](const PacketFrameInfo& a, const PacketFrameInfo& b) { return a.timeSec < b.timeSec; });
+            if (t.frames.size() > 200) t.frames.erase(t.frames.begin(), t.frames.end() - 200);
+            for (PacketStation s : x.stations) {   // one row per callsign: the newest hearing, the frames of all
+                s.lastHeardSec += shift; s.carrierId = 1; s.carrierHz = hz;
+                auto it = std::find_if(t.stations.begin(), t.stations.end(), [&](const PacketStation& q) { return q.call == s.call; });
+                if (it == t.stations.end()) t.stations.push_back(std::move(s));
+                else { const uint32_t n = it->count + s.count; if (s.lastHeardSec > it->lastHeardSec) *it = std::move(s); it->count = n; }
+            }
+            std::stable_sort(t.stations.begin(), t.stations.end(), [](const PacketStation& a, const PacketStation& b) { return a.lastHeardSec > b.lastHeardSec; });
+            if (t.stations.size() > 300) t.stations.resize(300);
+        };
+        k.info = [](const PacketTelemetry& t) {
+            if (!t.blocksOk) return std::string();
+            char b[80]; snprintf(b, sizeof b, "%s%s, %llu frames", t.ok1200 ? "1200" : "", t.ok9600 ? (t.ok1200 ? " + 9600" : "9600") : "", (unsigned long long)t.blocksOk);
+            return std::string(b);
+        };
+        packet.reset(new WideBank<PacketReceiver, PacketTelemetry>(k));
     }
 };
 
 WideModes::WideModes() : p_(new Impl()) {}
 WideModes::~WideModes() = default;
 
-bool WideModes::supports(int m) { return m == 10 || m == 32 || m == 34 || m == 39 || m == 46 || m == 51 || m == 24; }
+bool WideModes::supports(int m) { return m == 10 || m == 32 || m == 34 || m == 39 || m == 46 || m == 51 || m == 24 || m == 25; }
 
 CarrierCfg WideModes::cfgFor(int m) {
     CarrierCfg c;
-    c.stepHz = m == 46 ? 6250.0 : m == 24 ? 25000.0 : 12500.0;
+    c.stepHz = m == 46 ? 6250.0 : m == 24 || m == 25 ? 25000.0 : 12500.0;
     c.maxCarriers = 8;
-    if (m == 24) { c.debounceSec = 0.12; c.holdSec = 30; }   // pages come in short bursts
+    if (m == 24 || m == 25) { c.debounceSec = 0.12; c.holdSec = 30; }   // pages come in short bursts
     return c;
 }
 
@@ -166,11 +202,12 @@ void WideModes::configure(int m, double rate, double origin) {
     case 46: p_->dpmr->configure(rate, c); break;
     case 51: p_->p25->configure(rate, c); break;
     case 24: p_->pager->configure(rate, c); break;
+    case 25: p_->packet->configure(rate, c); break;
     }
 }
 
-void WideModes::reset() { p_->dmr->reset(); p_->m17->reset(); p_->dstar->reset(); p_->nxdn->reset(); p_->dpmr->reset(); p_->p25->reset(); p_->pager->reset(); }
-void WideModes::clearResults() { p_->dmr->clearResults(); p_->m17->clearResults(); p_->dstar->clearResults(); p_->nxdn->clearResults(); p_->dpmr->clearResults(); p_->p25->clearResults(); p_->pager->clearResults(); }
+void WideModes::reset() { p_->dmr->reset(); p_->m17->reset(); p_->dstar->reset(); p_->nxdn->reset(); p_->dpmr->reset(); p_->p25->reset(); p_->pager->reset(); p_->packet->reset(); }
+void WideModes::clearResults() { p_->dmr->clearResults(); p_->m17->clearResults(); p_->dstar->clearResults(); p_->nxdn->clearResults(); p_->dpmr->clearResults(); p_->p25->clearResults(); p_->pager->clearResults(); p_->packet->clearResults(); }
 
 void WideModes::feed(int m, const cf32* x, size_t n) {
     switch (m) {
@@ -181,6 +218,7 @@ void WideModes::feed(int m, const cf32* x, size_t n) {
     case 46: p_->dpmr->feed(x, n); break;
     case 51: p_->p25->feed(x, n); break;
     case 24: p_->pager->feed(x, n); break;
+    case 25: p_->packet->feed(x, n); break;
     }
 }
 
@@ -193,6 +231,7 @@ size_t WideModes::liveCount(int m) const {
     case 46: return p_->dpmr->liveCount();
     case 51: return p_->p25->liveCount();
     case 24: return p_->pager->liveCount();
+    case 25: return p_->packet->liveCount();
     }
     return 0;
 }
@@ -206,6 +245,7 @@ std::vector<double> WideModes::liveHz(int m) const {
     case 46: return p_->dpmr->liveHz();
     case 51: return p_->p25->liveHz();
     case 24: return p_->pager->liveHz();
+    case 25: return p_->packet->liveHz();
     }
     return {};
 }
@@ -219,22 +259,23 @@ bool WideModes::ready(int m) const {
     case 46: return p_->dpmr->ready();
     case 51: return p_->p25->ready();
     case 24: return p_->pager->ready();
+    case 25: return p_->packet->ready();
     }
     return false;
 }
 
 void WideModes::setSelected(int id) {
     p_->sel = id;
-    p_->dmr->setSelected(id); p_->m17->setSelected(id); p_->dstar->setSelected(id); p_->nxdn->setSelected(id); p_->dpmr->setSelected(id); p_->p25->setSelected(id); p_->pager->setSelected(id);
+    p_->dmr->setSelected(id); p_->m17->setSelected(id); p_->dstar->setSelected(id); p_->nxdn->setSelected(id); p_->dpmr->setSelected(id); p_->p25->setSelected(id); p_->pager->setSelected(id); p_->packet->setSelected(id);
 }
 
 void WideModes::setMuted(bool m) {
     p_->muted = m;
-    p_->dmr->setMuted(m); p_->m17->setMuted(m); p_->dstar->setMuted(m); p_->nxdn->setMuted(m); p_->dpmr->setMuted(m); p_->p25->setMuted(m); p_->pager->setMuted(m);
+    p_->dmr->setMuted(m); p_->m17->setMuted(m); p_->dstar->setMuted(m); p_->nxdn->setMuted(m); p_->dpmr->setMuted(m); p_->p25->setMuted(m); p_->pager->setMuted(m); p_->packet->setMuted(m);
 }
 
 void WideModes::setCenterHz(double hz) {
-    p_->dmr->setCenterHz(hz); p_->m17->setCenterHz(hz); p_->dstar->setCenterHz(hz); p_->nxdn->setCenterHz(hz); p_->dpmr->setCenterHz(hz); p_->p25->setCenterHz(hz); p_->pager->setCenterHz(hz);
+    p_->dmr->setCenterHz(hz); p_->m17->setCenterHz(hz); p_->dstar->setCenterHz(hz); p_->nxdn->setCenterHz(hz); p_->dpmr->setCenterHz(hz); p_->p25->setCenterHz(hz); p_->pager->setCenterHz(hz); p_->packet->setCenterHz(hz);
 }
 
 void WideModes::setPagerOptions(int protocols, int bauds) {
@@ -266,6 +307,7 @@ bool WideModes::telemetry(int m, RxTelemetry& t, uint64_t& lastSeq) {
     case 46: return fillTel(*p_->dpmr, lastSeq, t, m, t.dpmr, p_->dpmr->ready());
     case 51: return fillTel(*p_->p25, lastSeq, t, m, t.p25, p_->p25->ready());
     case 24: return fillTel(*p_->pager, lastSeq, t, m, t.pager, p_->pager->ready());
+    case 25: return fillTel(*p_->packet, lastSeq, t, m, t.packet, p_->packet->ready());
     }
     return false;
 }
