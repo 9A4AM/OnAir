@@ -132,7 +132,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         // a wide capture for multi-channel TV: the DC spike is inside the span whatever the offset (it would sit in a neighbouring channel), and
         // shifting 60 Msps back by the offset costs a double-precision mixer pass over every sample: the spike is removed instead
         offsetDc_ = true;
-    } else if (autoOffset_ && dev.isRadio() && offsetAllowed()) {
+    } else if (autoOffset_ && dev.isRadio() && dev.kind != DeviceInfo::Hamlib && offsetAllowed()) {
         // a HackRF has no listed maximum (20 Msps); the HackRF Pro tunes exactly only at up to 10 Msps and at 20, so it gets 20 above 10
         double maxRate = dev.maxRateHz > 0 ? dev.maxRateHz : dev.kind == DeviceInfo::HackRF ? 20e6 : 0;
         // a link slower than the converter (a PlutoSDR on its USB cable): no faster than it carries, or than the mode already runs above it
@@ -2744,7 +2744,7 @@ double Engine::captureCentreHz() const {
     TuneSettings t;
     DeviceInfo::Kind k;
     { std::lock_guard<std::mutex> lk(tuneMu_); t = lastTune_; k = lastDev_.kind; }
-    if (k == DeviceInfo::File || k == DeviceInfo::Audio) return t.centerHz;   // a recording or sound card: the dial frequency, not a radio centre
+    if (k == DeviceInfo::File || k == DeviceInfo::Audio || k == DeviceInfo::Hamlib) return t.centerHz;   // dial frequency (sound card / Hamlib + audio IQ)
     const ModeTuning* mt = modeTuning(stdMode_.load());
     return t.centerHz + (mt ? mt->tuneOffsetHz : 0);   // the radio's centre (with offset tuning the samples are shifted back to it)
 }

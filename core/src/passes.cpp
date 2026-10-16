@@ -257,6 +257,28 @@ bool lookAt(const Sgp4& s, const Observer& o, double unixSec, Look& out) {
     return true;
 }
 
+bool geoLookAngles(const Observer& o, double satLonEastDeg, Look& out) {
+    constexpr double R = 6378.137 + 35786.0;   // km from Earth centre (WGS-84 equatorial + nominal GEO height)
+    const double lo = satLonEastDeg * kDeg;
+    const double re[3] = {R * std::cos(lo), R * std::sin(lo), 0.0};
+    const double a = 6378.137, f = 1 / 298.257223563, e2 = f * (2 - f);
+    const double la = o.latDeg * kDeg, obsLo = o.lonDeg * kDeg, sla = std::sin(la), cla = std::cos(la), slo = std::sin(obsLo), clo = std::cos(obsLo);
+    const double N = a / std::sqrt(1 - e2 * sla * sla);
+    const double ob[3] = {(N + o.altKm) * cla * clo, (N + o.altKm) * cla * slo, (N * (1 - e2) + o.altKm) * sla};
+    const double d[3] = {re[0] - ob[0], re[1] - ob[1], re[2] - ob[2]};
+    const double east = -slo * d[0] + clo * d[1];
+    const double north = -sla * clo * d[0] - sla * slo * d[1] + cla * d[2];
+    const double up = cla * clo * d[0] + cla * slo * d[1] + sla * d[2];
+    const double rng = std::sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+    if (rng < 1e-3) return false;
+    out.rangeKm = rng;
+    out.elDeg = std::asin(std::max(-1.0, std::min(1.0, up / rng))) / kDeg;
+    double az = std::atan2(east, north) / kDeg;
+    out.azDeg = az < 0 ? az + 360 : az;
+    out.rangeRateKmS = 0;
+    return true;
+}
+
 double dopplerHz(double freqHz, double rangeRateKmS) { return -freqHz * rangeRateKmS / kC; }
 
 bool subPoint(const Sgp4& s, double unixSec, double& latDeg, double& lonDeg, double& altKm) {

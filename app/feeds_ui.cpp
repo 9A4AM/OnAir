@@ -73,6 +73,7 @@ void loadFeedPrefs(App& a) {
     sc.on = d.getB("shareOn", false); sc.port = (int)d.getI("sharePort", sc.port); sc.lan = d.getI("shareLan", 0) != 0; sc.allowControl = d.getI("shareControl", 0) != 0;
     if (sc.on) dect2::ShareServer::get().configure(sc);
     remoteApiLoadPrefs(a);
+    rotatorLoadPrefs();
 }
 
 // Remote control from the clients of "Share my radio": their frequency and gain commands (only arrive when the box is ticked)
@@ -103,6 +104,7 @@ void saveFeedPrefs(const App& a) {
     d.setS("feedStationId", c.stationId);
     d.setB("shareOn", a.share.on); d.setI("sharePort", a.share.port); d.setI("shareLan", a.share.lan ? 1 : 0); d.setI("shareControl", a.share.allowControl ? 1 : 0);
     remoteApiSavePrefs(a);
+    rotatorSavePrefs();
     d.setB("pskrOn", a.pskr.on); d.setS("pskrCall", a.pskr.call); d.setS("pskrLocator", a.pskr.locator); d.setS("pskrAntenna", a.pskr.antenna);
     d.setB("wsprNetOn", a.wsprNet.on); d.setS("wsprNetCall", a.wsprNet.call); d.setS("wsprNetLocator", a.wsprNet.locator);
 }

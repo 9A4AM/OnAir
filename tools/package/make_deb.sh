@@ -32,7 +32,7 @@ docker run --rm $PF $JOBS -v "$PWD":/src:ro -v $VOL:/build -v $FFV:/ffmpeg -v "$
   set -e
   [ -f /ffmpeg/lib/libavcodec.a ] || /src/tools/package/build_ffmpeg_static.sh /ffmpeg '"$FFSRC"'
   rm -rf /build/radiolibs; /src/tools/package/collect_radio_libs_linux.sh /build/radiolibs
-  cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON -DDECT2_FFMPEG_PREFIX=/ffmpeg -DDECT2_RADIO_LIB_DIR=/build/radiolibs >/dev/null
+  cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DDECT2_HAVE_HAMLIB=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON -DDECT2_FFMPEG_PREFIX=/ffmpeg -DDECT2_RADIO_LIB_DIR=/build/radiolibs >/dev/null
   cmake --build /build -j$(nproc) --target dect2 dect2cli dect2scan 2>&1 | grep -E "error|Error" -A3 | head -30
   cpack -G "DEB;TGZ" 2>&1 | tail -4
   /src/tools/package/make_portable_linux.sh /build /out

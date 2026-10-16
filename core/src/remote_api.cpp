@@ -1,6 +1,7 @@
 // Remote-control API server: see dect2/remote_api.h. One thread accepts; every connection has a thread of its own (at most 16), so a slow or
 // silent client never holds up another one. Blocking sockets with select() for the waits, on top of the helpers of tcp_client.h.
 #include "dect2/remote_api.h"
+#include "dect2/rotator.h"
 #include "dect2/mode_tuning.h"
 #include "netcompat.h"
 #include "tcp_client.h"
@@ -426,8 +427,8 @@ struct RemoteApiServer::Impl {
         };
         if (p == "/api/v1" || p == "/api/v1/") {
             getOnly([] { return std::string("{\"name\":\"OnAir remote API\",\"version\":1,\"endpoints\":[\"GET /api/v1/status\",\"GET /api/v1/devices\",\"GET /api/v1/modes\",\"GET /api/v1/telemetry\","
-                                            "\"GET /api/v1/spectrum?bins=N\",\"GET /api/v1/ws\",\"POST /api/v1/start\",\"POST /api/v1/stop\",\"POST /api/v1/mode\",\"POST /api/v1/frequency\","
-                                            "\"POST /api/v1/samplerate\",\"POST /api/v1/gain\"]}"); });
+                                            "\"GET /api/v1/spectrum?bins=N\",\"GET /api/v1/rotator\",\"GET /api/v1/ws\",\"POST /api/v1/start\",\"POST /api/v1/stop\",\"POST /api/v1/mode\",\"POST /api/v1/frequency\","
+                                            "\"POST /api/v1/samplerate\",\"POST /api/v1/gain\",\"POST /api/v1/rotator/goto\",\"POST /api/v1/rotator/stop\",\"POST /api/v1/rotator/park\"]}"); });
             return;
         }
         if (p == "/api/v1/status") { getOnly([&] { return host.statusJson(); }); return; }
@@ -441,8 +442,13 @@ struct RemoteApiServer::Impl {
             getOnly([&] { return host.spectrumJson(bins, seq); });
             return;
         }
+        if (p == "/api/v1/rotator") {
+            getOnly([] { return Rotator::get().apiStatusJson(); });
+            return;
+        }
         if (p == "/api/v1/ws") { sendErr(s, 426, "WebSocket upgrade required", "Upgrade: websocket\r\n"); return; }   // a proper upgrade is handled before route()
-        const bool known = p == "/api/v1/start" || p == "/api/v1/stop" || p == "/api/v1/mode" || p == "/api/v1/frequency" || p == "/api/v1/samplerate" || p == "/api/v1/gain";
+        const bool known = p == "/api/v1/start" || p == "/api/v1/stop" || p == "/api/v1/mode" || p == "/api/v1/frequency" || p == "/api/v1/samplerate" || p == "/api/v1/gain"
+                         || p == "/api/v1/rotator/goto" || p == "/api/v1/rotator/stop" || p == "/api/v1/rotator/park";
         if (!known) { sendErr(s, 404, "no such endpoint"); return; }
         if (!isPost) { sendErr(s, 405, "use POST", "Allow: POST\r\n"); return; }
         if (!needJson(rq)) { sendErr(s, 415, "Content-Type: application/json required"); return; }
@@ -472,6 +478,18 @@ struct RemoteApiServer::Impl {
             if (num("hz", v)) hz = v; else if (num("msps", v)) hz = v * 1e6; else { fail("give hz or msps (0 = automatic)"); return; }
             if (hz < 0 || hz > 1e9) { fail("sample rate out of range"); return; }
             if (host.setSampleRateHz(hz, err)) okJson(); else fail(err);
+        } else if (p == "/api/v1/rotator/stop") {
+            Rotator::get().stop();
+            okJson();
+        } else if (p == "/api/v1/rotator/park") {
+            Rotator::get().park();
+            okJson();
+        } else if (p == "/api/v1/rotator/goto") {
+            double az = 0, el = 0;
+            if (!num("az", az) && !num("azimuth", az)) { fail("give az or azimuth (corrected degrees)"); return; }
+            if (!num("el", el) && !num("elevation", el)) el = 0;
+            Rotator::get().gotoAzEl(az, el);
+            okJson();
         } else {   // gain
             if (!num("db", v) || v < -100 || v > 200) { fail("db must be a number"); return; }
             if (host.setGainDb(v, err)) okJson(); else fail(err);

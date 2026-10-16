@@ -23,6 +23,8 @@ for p in "$D"/bin/*; do collect "$p"; done
 # codec2 (FreeDV and M17 speech, LGPL-2.1, third_party/codec2): its own shared library, next to the radio libraries (OnAir looks in ../lib of its program)
 cp -a "$B"/libcodec2.so* "$D/lib/" 2>/dev/null || echo "warning: no libcodec2 in $B (built with -DDECT2_BUNDLE_CODEC2=OFF?)"
 mkdir -p "$D/licenses/codec2"; cp $SRC/third_party/codec2/COPYING "$D/licenses/codec2/COPYING"; cp $SRC/third_party/codec2/README-OnAir.md "$D/licenses/codec2/NOTICE.md"
+mkdir -p "$D/licenses/hamlib"; cp $SRC/packaging/licenses/hamlib/README-OnAir.md "$D/licenses/hamlib/NOTICE.md"
+[ -f /usr/share/doc/libhamlib2/copyright ] && cp /usr/share/doc/libhamlib2/copyright "$D/licenses/hamlib/COPYING"
 if [ -f "$SRC/third_party/sddc_fx3/SDDC_FX3.img" ]; then
   mkdir -p "$D/codecs" "$D/licenses/sddc_fx3"
   cp "$SRC/third_party/sddc_fx3/SDDC_FX3.img" "$D/codecs/"

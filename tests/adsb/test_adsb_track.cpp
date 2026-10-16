@@ -168,16 +168,21 @@ static void testPositions() {
     a = find(t, icao);
     CHECK(a->hasPos && a->posKind == 2 && std::fabs(a->lat - lat) < 1e-4 && std::fabs(a->lon - lon) < 2e-4, "global %.5f %.5f kind %d", a->lat, a->lon, a->posKind);
     // then single frames follow it by local decoding
-    CHECK(feed(tr, raw(adsb::encodeAirbornePosition(icao, 5, 11, 20000, false, false, lat + 0.01, lon + 0.01), 15.0)), "third");   // the odd frame is too old for a pair
-    ac = get(tr, icao, 15.0); a = &ac;
+    CHECK(feed(tr, raw(adsb::encodeAirbornePosition(icao, 5, 11, 20000, false, false, lat + 0.01, lon + 0.01), 16.51)), "third");   // global pair expired; local from last fix
+    ac = get(tr, icao, 16.51); a = &ac;
     CHECK(a->posKind == 3 && std::fabs(a->lat - (lat + 0.01)) < 1e-4, "local %.5f kind %d", a->lat, a->posKind);
     CHECK(a->track.size() >= 1, "track history");
-    // frames more than 10 s apart do not make a global fix
+    // frames more than 15 s apart do not make a global fix
     AdsbTracker slow;
     feed(slow, raw(adsb::encodeAirbornePosition(icao, 5, 11, 20000, false, false, lat, lon), 1.0));
     feed(slow, raw(adsb::encodeAirbornePosition(icao, 5, 11, 20000, false, true, lat, lon), 12.5));
     ac = get(slow, icao, 12.5);
-    CHECK(!ac.hasPos, "a pair 11.5 s apart gave a position");
+    CHECK(ac.hasPos && ac.posKind == 2, "a pair 11.5 s apart should still global-decode");
+    AdsbTracker slow2;
+    feed(slow2, raw(adsb::encodeAirbornePosition(icao, 5, 11, 20000, false, false, lat, lon), 1.0));
+    feed(slow2, raw(adsb::encodeAirbornePosition(icao, 5, 11, 20000, false, true, lat, lon), 17.0));
+    ac = get(slow2, icao, 17.0);
+    CHECK(!ac.hasPos, "a pair 16 s apart gave a position");
     // a reference position gives a local decode of the first frame, marked as not confirmed; the pair then confirms it
     AdsbTracker ref;
     ref.setReference(47.5, 9.0);
@@ -344,7 +349,7 @@ static void testExpiryAndLimits() {
     for (auto& f : big.frames) bytes += f.hex.capacity() + f.what.capacity();
     for (auto& a : big.aircraft) bytes += sizeof(AdsbAircraft) + a.callsign.capacity() + a.category.capacity() + a.track.capacity() * sizeof(AdsbTrackPoint);
     printf("  a full report is about %zu bytes (%zu aircraft, longest track %zu points)\n", bytes, big.aircraft.size(), big.aircraft.empty() ? 0 : big.aircraft[0].track.size());
-    CHECK(bytes < 100000 && big.aircraft.size() == 128 && big.aircraft[0].track.size() == 30, "report size %zu", bytes);
+    CHECK(bytes < 110000 && big.aircraft.size() == 128 && big.aircraft[0].track.size() == 40, "report size %zu", bytes);
     // messages per second over the last second
     AdsbTracker rate;
     for (int w = 0; w < 8; w++) {

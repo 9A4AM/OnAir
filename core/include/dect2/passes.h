@@ -51,6 +51,8 @@ double jdToUnix(double jd);
 double gmst(double jd);
 // Look angles of the satellite at a UNIX time; false when the propagator fails (decayed)
 bool lookAt(const Sgp4& s, const Observer& o, double unixSec, Look& out);
+// Geostationary satellite on the equator at satLonEastDeg (east positive, e.g. 19.2 for Astra 19.2°E).
+bool geoLookAngles(const Observer& o, double satLonEastDeg, Look& out);
 // The received frequency offset (Hz) for a downlink on freqHz: -f * range rate / c
 double dopplerHz(double freqHz, double rangeRateKmS);
 // The point under the satellite (geodetic, WGS-84) and its height

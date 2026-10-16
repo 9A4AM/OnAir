@@ -17,6 +17,7 @@ static const size_t kMaxListed = 128;       // aircraft in one telemetry report
 static const size_t kMaxFrames = 64;
 static const size_t kMaxTrack = 80;   // a few minutes of 5 s samples: enough of a trail to read the path on the map
 static const double kMaxSpeedKt = 1800;     // faster than this between two positions is a jump, not a flight
+static const double kGlobalCprPairSec = 15.0; // even/odd airborne pair window (matches cprHave snapshot age)
 static const double kReplyLevelDb = 25.0;   // an address / parity reply is refused when its level differs from the aircraft's mean level by more than this
 static const int kReplyAltFt = 5000;        // ... or its altitude from the last ADS-B altitude (up to 30 s old) by more than this
 
@@ -269,11 +270,11 @@ void AdsbTracker::airbornePosition(Rec& r, const Msg& m, double now) {
     r.cpr[p].lat = m.cprLat; r.cpr[p].lon = m.cprLon; r.cpr[p].t = now; r.cpr[p].valid = true;
     double lat = 0, lon = 0;
     int kind = 0;
-    if (r.cpr[1 - p].valid && std::fabs(now - r.cpr[1 - p].t) <= 10.0 &&
+    if (!a.hasPos && refValid_ && cprLocalAirborne(m.cprLat, m.cprLon, p == 1, refLat_, refLon_, lat, lon)
+             && distanceNm(refLat_, refLon_, lat, lon) <= 180.0) kind = 1;
+    else if (r.cpr[1 - p].valid && std::fabs(now - r.cpr[1 - p].t) <= kGlobalCprPairSec &&
         cprGlobalAirborne(r.cpr[0].lat, r.cpr[0].lon, r.cpr[1].lat, r.cpr[1].lon, p == 1, lat, lon)) kind = 2;
     else if (a.hasPos && now - r.lastPos <= 30.0 && cprLocalAirborne(m.cprLat, m.cprLon, p == 1, a.lat, a.lon, lat, lon)) kind = 3;
-    else if (!a.hasPos && refValid_ && cprLocalAirborne(m.cprLat, m.cprLon, p == 1, refLat_, refLon_, lat, lon)
-             && distanceNm(refLat_, refLon_, lat, lon) <= 180.0) kind = 1;
     if (!kind) return;
     // a position that jumps farther than an aircraft can fly is dropped; the third one in a row is believed (the first was the wrong one)
     if (a.hasPos && a.posKind >= 2 && now - r.lastPos < 60.0) {

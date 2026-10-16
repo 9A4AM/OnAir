@@ -154,6 +154,22 @@ OBJDUMP=${OBJDUMP:-$HOST-objdump}
   mkdir -p "$P/licenses"; cp LimeSuite-23.11.0/COPYING "$P/licenses/LimeSuite-COPYING.txt"; }
 
 # --- libairspyhf 1.6.8 (Airspy HF+): a DLL, linked to the libusb-1.0.dll that ships with UHD (one libusb, the newer MSYS2 one, for both)
+# --- Hamlib 4.6.2 (CAT rig control): libhamlib-4.dll in bin/ and headers for the cross build. Needs hamlib-4.6.2.tar.gz in build-windows-deps/src.
+_hamlib_ready() { [ -f "$P/lib/pkgconfig/hamlib.pc" ] && ls "$P/bin"/libhamlib*.dll "$P/bin"/hamlib.dll 2>/dev/null | grep -q .; }
+if ! _hamlib_ready; then
+  if [ -f "$SRC/hamlib-4.6.2.tar.gz" ]; then
+    step hamlib; unpack hamlib-4.6.2.tar.gz hamlib-4.6.2
+    cmake -S hamlib-4.6.2 -B hamlib-build "-DCMAKE_TOOLCHAIN_FILE=$TC" -DCMAKE_INSTALL_PREFIX=$P -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+      -DBUILD_SHARED_LIBS=ON -DENABLE_WINRADIO=OFF -DENABLE_PYTHON=OFF -DENABLE_PERL=OFF -DENABLE_CSHARP=OFF -DENABLE_JAVA=OFF -DENABLE_TESTING=OFF \
+      -DENABLE_SHARED=ON -DENABLE_STATIC=OFF >/dev/null
+    cmake --build hamlib-build -j$JOBS >/dev/null && cmake --install hamlib-build >/dev/null
+    for d in "$P/bin"/libhamlib*.dll "$P/bin"/hamlib.dll; do [ -f "$d" ] && break; done || { echo "error: Hamlib install produced no DLL in $P/bin"; exit 1; }
+    mkdir -p "$P/licenses"; cp hamlib-4.6.2/COPYING "$P/licenses/hamlib-COPYING.txt" 2>/dev/null || cp hamlib-4.6.2/COPYING.LIB "$P/licenses/hamlib-COPYING.txt" 2>/dev/null || true
+  else
+    echo "note: skip Hamlib (add hamlib-4.6.2.tar.gz to build-windows-deps/src to bundle it)"
+  fi
+fi
+
 [ -f "$P/bin/libairspyhf.dll" ] || { step libairspyhf; unpack airspyhf-1.6.8.tar.gz airspyhf-1.6.8
   cmake -S airspyhf-1.6.8/libairspyhf -B airspyhf-build "-DCMAKE_TOOLCHAIN_FILE=$TC" -DCMAKE_INSTALL_PREFIX=$P -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 "-DCMAKE_C_FLAGS=-std=gnu11" -DLIBUSB_INCLUDE_DIR=$MS/ucrt64/include/libusb-1.0 -DLIBUSB_LIBRARIES=$MS/ucrt64/lib/libusb-1.0.dll.a >/dev/null
   cmake --build airspyhf-build -j$JOBS --target airspyhf >/dev/null && cp airspyhf-build/src/libairspyhf.dll "$P/bin/"

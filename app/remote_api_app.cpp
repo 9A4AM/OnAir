@@ -23,6 +23,7 @@ const char* kindName(DeviceInfo::Kind k) {
     case DeviceInfo::Soapy: return "soapy";
     case DeviceInfo::Native: return "native";
     case DeviceInfo::Audio: return "audio";
+    case DeviceInfo::Hamlib: return "hamlib";
     }
     return "unknown";
 }

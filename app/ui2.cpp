@@ -408,19 +408,19 @@ void sidebar(App& a) {
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
-    if (section(N_("Mode"))) { ImGui::Indent(6 * gUi); modeList(a); ImGui::Unindent(6 * gUi); ImGui::Spacing(); }
-    if (section(a.fmMode ? N_("Tuner (FM)###Tuner") : a.dabMode ? N_("Tuner (DAB)###Tuner") : N_("Tuner"))) {
-        ImGui::Indent(6 * gUi);
-        toolbarParts(a, TbTuner, true);
-        ImGui::Unindent(6 * gUi);
-        ImGui::Spacing();
-    }
     if (section(N_("Gain"))) {
         ImGui::Indent(6 * gUi);
         toolbarParts(a, TbGain, true);
         ImGui::Unindent(6 * gUi);
         ImGui::Spacing();
     }
+    if (section(a.fmMode ? N_("Tuner (FM)###Tuner") : a.dabMode ? N_("Tuner (DAB)###Tuner") : N_("Tuner"))) {
+        ImGui::Indent(6 * gUi);
+        toolbarParts(a, TbTuner, true);
+        ImGui::Unindent(6 * gUi);
+        ImGui::Spacing();
+    }
+    if (section(N_("Mode"))) { ImGui::Indent(6 * gUi); modeList(a); ImGui::Unindent(6 * gUi); ImGui::Spacing(); }
     if (section(N_("Display"))) {
         ImGui::Indent(6 * gUi);
         if (ImGui::Checkbox(tr("Peak hold"), &a.peakHold)) savePrefs(a);
@@ -460,6 +460,7 @@ void sidebar(App& a) {
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
         tool("Transmit...", txViewFlag(), N_("Send this mode's own signal through a radio that can transmit. Off until you start it; needs a licence or permission."));
         tool("Map", a.mapOpen, "A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location");
+        tool("Antenna rotator...", a.rotatorOpen, "Connect a GS-232-compatible rotator (serial or TCP), set azimuth and elevation");
         tool("Scanner (highly experimental)", a.scannerOpen, "HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity");
         ImGui::Separator();
         themeChoice(a, false);
@@ -691,6 +692,8 @@ float menuBar(App& a) {
         const bool running = a.engine.running();
         if (ImGui::BeginMenu(tr("File"))) {
             if (ImGui::MenuItem(tr(running ? "Stop receiver" : "Start receiver"), "Space")) { if (running) a.engine.stop(); else startReceiver(a); }
+            ImGui::Separator();
+            if (ImGui::MenuItem(tr("Exit program"), "Alt+F4")) { if (gWindow) glfwSetWindowShouldClose(gWindow, GLFW_TRUE); }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(tr("Mode"))) {
@@ -752,6 +755,7 @@ float menuBar(App& a) {
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A world map: find a position by coordinates or Maidenhead locator, distance and bearing from your location"));
             if (ImGui::MenuItem(tr("Scanner (highly experimental)"), nullptr, &a.scannerOpen)) {}
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("HIGHLY EXPERIMENTAL: step through a list of frequencies and modes, or a band, and stop on activity"));
+            ImGui::MenuItem(tr("Antenna rotator..."), nullptr, &a.rotatorOpen);
             ImGui::Separator();
             if (ImGui::MenuItem(tr("Classic interface"))) { a.newUi = false; savePrefs(a); }
             ImGui::EndMenu();
@@ -1118,12 +1122,12 @@ void bodyTiles(App& a, float bodyH, ImVec2 disp) {
     tgRect(a, TgToolbar);
     ImGui::TextDisabled("%s", tr("source")); toolbarParts(a, TbSource, true);
     ImGui::Spacing();
-    a.tgMin[TgSwitch] = ImGui::GetCursorScreenPos();
-    ImGui::TextDisabled("%s", tr("mode")); modeList(a);
+    ImGui::TextDisabled("%s", tr("gain")); toolbarParts(a, TbGain, true);
     ImGui::Spacing();
     ImGui::TextDisabled("%s", tr("tuner")); toolbarParts(a, TbTuner, true);
     ImGui::Spacing();
-    ImGui::TextDisabled("%s", tr("gain")); toolbarParts(a, TbGain, true);
+    a.tgMin[TgSwitch] = ImGui::GetCursorScreenPos();
+    ImGui::TextDisabled("%s", tr("mode")); modeList(a);
     if (a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) { ImGui::Spacing(); ImGui::TextDisabled("%s", tr("decoder")); toolbarParts(a, TbDecoder, true); }
     endPane();
     const float row2 = ImGui::GetContentRegionAvail().y;
@@ -1215,9 +1219,9 @@ void bodyFace(App& a, float bodyH, ImVec2 disp) {
         endModule();
         const float modeModH = (kNumModes * 22 + 3 * 20 + 50) * gUi;   // twelve modes in three groups, then the tuner
         beginModule("##f_mode", N_("MODE / TUNER"), ImVec2(rightW, modeModH));
+        toolbarParts(a, TbTuner, true);
         a.tgMin[TgSwitch] = ImGui::GetCursorScreenPos();
         modeList(a);
-        toolbarParts(a, TbTuner, true);
         if (a.family == 0 || a.family == 3 || (modeUi(a.family) && modeUi(a.family)->decoder)) toolbarParts(a, TbDecoder, true);
         endModule();
         const float rest = topH - (cH + 38 * gUi) - modeModH - 9 * gUi;          // what the first two modules leave

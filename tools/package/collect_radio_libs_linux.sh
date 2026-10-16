@@ -48,7 +48,7 @@ build_rtlsdr_blog() {
   rm -rf "$W"
 }
 build_rtlsdr_blog
-for stem in airspy bladeRF iio LimeSuite uhd; do
+for stem in airspy bladeRF hamlib iio LimeSuite uhd; do
   for f in /usr/lib/*-linux-gnu/lib$stem.so.* /usr/lib/lib$stem.so.*; do
     [ -e "$f" ] || continue
     copy_with_links "$f"

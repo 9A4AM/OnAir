@@ -22,6 +22,7 @@
 #include "dect2/t2rx.h"
 #include "dect2/nettuner.h"
 #include "dect2/netradio.h"
+#include "dect2/hamlib_rig.h"
 #include "airplay.h"
 #include "dect2/timecompat.h"
 #include "dect2/platform.h"
@@ -265,6 +266,7 @@ struct App {
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool mapOpen = false;               // the map window (View > Map): positions and Maidenhead locators
+    bool rotatorOpen = false;           // View > Antenna rotator (rotator_ui.cpp)
     int wizStep = 0;
     bool setupOpen = false;             // the setup wizard (language, radio, location, goals); Help > Setup wizard
     int setupStep = 0, setupRegion = 0;
@@ -281,6 +283,12 @@ struct App {
     std::vector<DeviceInfo> devices; // [0]=synthetic, [1]=file, then sound cards, then radios
     // radios on the network the user added (prefs "netRadios"; listed by refreshDevices) and the "Add network radio" window
     std::vector<NetRadio> netRadios;
+    std::vector<HamlibRig> hamlibRigs;   // prefs "hamlibRigs"; serial-CAT rigs listed with the other radios
+    bool hamlibAddOpen = false;
+    int hamlibAddModel = 1025;            // default IC-7300; use rigctl -l for other models
+    char hamlibAddPath[256] = "";
+    char hamlibAddLabel[128] = "";
+    char hamlibAddAudio[128] = "";         // AudioIn id (empty = CAT only, silence IQ)
     struct NetProbe { std::atomic<bool> done{false}; bool ok = false; std::string err; NetRadio radio; };
     std::shared_ptr<NetProbe> netAddProbe;   // a connection test running on a worker thread
     bool netAddOpen = false;
@@ -398,6 +406,7 @@ struct App {
     uint64_t lastSeq = 0;
     Waterfall wf;
     float yMin = -110, yMax = -30;
+    float specZoom = 0.f;   // 0..1 frequency zoom for the vertical slider (0 = full bandwidth, 1 = ~1 kHz span)
     int tuningMode = 0;                 // 0 retune the radio LO on spectrum click, 1 decode offset only (sticky LO)
     bool peakHold = true;               // the max-hold line
     float holdDecay = 4.5f;             // dB a second the max-hold line falls (0: it stays until it is reset)
@@ -587,6 +596,7 @@ bool receiverLocationSet();                        // the user has set it (else 
 void receiverPositionFields(App& a);               // its fields (latitude, longitude, altitude) and the Locate button
 double receiverAltitudeM();                         // its height above sea level, metres (0 until set)
 void setReceiverLocation(App& a, double lat, double lon);   // move it (saved), e.g. View > Map's "Use as my location"
+void syncAdsbReference(App& a);                              // push antenna position into the ADS-B tracker while that mode is running
 struct MapSatRef { std::string name; int norad = 0; const dect2::Sgp4* sgp = nullptr; };
 void passesMapSatellites(std::vector<MapSatRef>& out);   // passes_ui.cpp: the listed satellites with a TLE (for the live map)
 struct MapCellTower { double lat = 0, lon = 0; int rangeM = 0; std::string label; unsigned colour = 0; };
@@ -671,6 +681,7 @@ int modeSlot(const App& a);                    // index of famFreq / famGain for
 int engineStd(const App& a);
 void refreshDevices(App& a);
 void netRadioWindow(App& a);   // the "Add network radio" window (toolbar.cpp)
+void hamlibRigWindow(App& a);  // the "Add Hamlib rig" window (toolbar.cpp)
 void applyBandwidth(App& a);
 // The sample rate chosen per mode and per radio (prefs "rate.<mode id>.<radioKeyOf>", in Hz; absent or 0 = Auto, the mode's own rate)
 std::string rateModeId(const App& a);
@@ -701,6 +712,11 @@ void remoteApiTick(App& a);          // every frame: runs the commands the API q
 void remoteApiSection(App& a);       // the settings panel (in the Data feeds window)
 void shareTick(App& a);             // feeds_ui.cpp: carries out the frequency / gain commands of the clients of "Share my radio" (when allowed)
 void feedsWindow(App& a);          // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
+void rotatorWindow(App& a);        // rotator_ui.cpp: GS-232 rotator connect / status
+void rotatorTick(App& a);          // rotator_ui.cpp: signal-peak azimuth calibration sweep
+void rotatorLoadPrefs();           // rotator_ui.cpp: prefs and optional auto-connect
+void rotatorSavePrefs();
+void rotatorPointBearing(double bearingDeg, double elDeg);
 // The transmitter (tx_ui.cpp): independent of the receivers, with its own radio. The state is not an App's; transmitting is never saved.
 struct ModeDef;
 bool& txViewFlag();                // the RX / TX switch: true = TX view (never saved: the program opens in RX view)
@@ -829,6 +845,16 @@ ChanWidth channelWidth(const App& a);
 std::string widthText(double mhz);   // "7 MHz", "1.536 MHz", "12.5 kHz"
 void channelWidthPopup(App& a);      // automatic or manual, where the mode allows it; otherwise what fixes the width
 void spectrumWaterfall(App& a, float& frac, bool drag);   // the spectrum on top of the waterfall, one panel
+void specFreqViewUpdate(const App& a);                                     // plots.cpp: keep linked frequency pan/zoom in sync with the radio
+void specFreqViewGet(double& loMhz, double& hiMhz);
+void specFreqViewWheel(App& a, float mouseNorm, float wheel, double& loMhz, double& hiMhz);
+bool specDbRangeKeys(App& a);                                              // Ctrl+arrows dB range (3D view has no spectrum plot hover)
+float specPlotBwBtnW();                                                    // plots.cpp: layout of corner controls (same frame)
+float specPlotWideBtnW();
+void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const char* yLabel);
+void wideSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize);
+void multiSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize);
+float specCornerPopup(App& a, const char* label, const char* popId, ImVec2 plotMin, ImVec2 plotSize, float rightUsed, float reserveLeft, float dropY, bool on, const char* tip, void (*body)(App&));
 float bandPlanStripHeight();         // plots.cpp: one text line plus padding; follows the font and resize
 void drawBandPlanStrip(ImDrawList* dl, float x0, float x1, float y, float h, double loMhz, double hiMhz);   // saAllocations in view
 void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, float x1, float y0, float y1);   // specx_ui.cpp: named point / range marks

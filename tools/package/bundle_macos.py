@@ -57,7 +57,8 @@ bundled = []
 # A missing one stops the build (a release without it would silently lose that radio), unless ONAIR_ALLOW_MISSING_RADIO_LIBS=1 (local test builds).
 # The value is how to get it. libiio has no Homebrew formula: Pluto users install ADI's libiio package, so it is optional here.
 REQUIRED = {"rtlsdr": "brew install librtlsdr", "airspy": "brew install airspy", "airspyhf": "brew install airspyhf",
-            "bladeRF": "brew install libbladerf", "LimeSuite": "brew install limesuite", "uhd": "brew install uhd"}
+            "bladeRF": "brew install libbladerf", "LimeSuite": "brew install limesuite", "uhd": "brew install uhd",
+            "hamlib": "brew install hamlib"}
 OPTIONAL = {"iio": "ADI's libiio package (github.com/analogdevicesinc/libiio/releases)"}
 allow_missing = os.environ.get("ONAIR_ALLOW_MISSING_RADIO_LIBS") == "1"
 links = []

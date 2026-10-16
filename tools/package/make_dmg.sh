@@ -9,7 +9,7 @@ BUILD=build-release
 # Homebrew dependencies from the macOS 15 release runners set the supported floor.
 MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-15.0}
 export MACOSX_DEPLOYMENT_TARGET
-cmake -S . -B $BUILD -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_TESTS=OFF -DDECT2_BUILD_APP=ON -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET" -DONAIR_VERSION="$VERSION"
+cmake -S . -B $BUILD -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_TESTS=OFF -DDECT2_BUILD_APP=ON -DDECT2_HAVE_HAMLIB=ON -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOSX_DEPLOYMENT_TARGET" -DONAIR_VERSION="$VERSION"
 cmake --build $BUILD -j"$(sysctl -n hw.ncpu)" --target dect2
 APP=$BUILD/OnAir.app
 rm -rf "$APP"
@@ -40,6 +40,12 @@ REAL=$(ls "$APP"/Contents/Frameworks/libcodec2.*.*.*.dylib | head -1)
 install_name_tool -id "@executable_path/../Frameworks/$(basename "$REAL")" "$REAL"
 cp third_party/codec2/COPYING "$APP/Contents/Resources/licenses/codec2/COPYING"
 cp third_party/codec2/README-OnAir.md "$APP/Contents/Resources/licenses/codec2/NOTICE.md"
+# Hamlib (CAT rig control, LGPL-2.0+): bundled by bundle_macos.py; licence from Homebrew or the system
+mkdir -p "$APP/Contents/Resources/licenses/hamlib"
+cp packaging/licenses/hamlib/README-OnAir.md "$APP/Contents/Resources/licenses/hamlib/NOTICE.md"
+for prefix in /opt/homebrew/opt/hamlib /usr/local/opt/hamlib; do
+  [ -f "$prefix/COPYING" ] && cp "$prefix/COPYING" "$APP/Contents/Resources/licenses/hamlib/COPYING" && break
+done
 if [ -f third_party/sddc_fx3/SDDC_FX3.img ]; then
   mkdir -p "$APP/Contents/MacOS/codecs" "$APP/Contents/Resources/licenses/sddc_fx3"
   cp third_party/sddc_fx3/SDDC_FX3.img "$APP/Contents/MacOS/codecs/"

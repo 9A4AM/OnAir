@@ -159,7 +159,8 @@ void setLimitsFromSetup() {
         else if (!A.haveLimits && !C.st->init) { l[0] = 0; l[1] = 1; }
         if (fit && C.st->fitValid[a] && !(A.haveLimits && A.cond == Cond_Always)) { l[0] = C.st->fit[a][0]; l[1] = C.st->fit[a][1]; }
         if (A.linkMin && A.linkMax) {
-            if (!C.st->init && A.haveLimits) { *A.linkMin = A.min; *A.linkMax = A.max; }   // first frame or a double click: back to the setup limits
+            // first frame / double-click reset: only seed the shared axis when it has no valid range yet (keep slider or wheel zoom)
+            if (!C.st->init && A.haveLimits && *A.linkMax <= *A.linkMin) { *A.linkMin = A.min; *A.linkMax = A.max; }
             if (*A.linkMax > *A.linkMin) { l[0] = *A.linkMin; l[1] = *A.linkMax; }
         }
         if (!(l[1] > l[0])) l[1] = l[0] + 1;

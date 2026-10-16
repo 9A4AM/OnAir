@@ -140,8 +140,8 @@ static void channelBand(const App& a, bool fill) {
 
 // "BW 7 MHz auto" in the top right corner of the spectrum: the width the band shows, and a click opens channelWidthPopup().
 // Left out when it would cover yLabel, which the plot draws in its top left corner.
-static float gBwBtnW = 0, gWideBtnW = 0;   // width of the BW button as drawn this frame (0: none), for the switch beside it
-static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const char* yLabel) {
+float gBwBtnW = 0, gWideBtnW = 0;   // width of the BW button as drawn this frame (0: none), for the switch beside it
+void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const char* yLabel) {
     gBwBtnW = 0;
     const ChanWidth cw = channelWidth(a);
     if (cw.mhz <= 0) return;
@@ -168,7 +168,7 @@ static void channelWidthButton(App& a, ImVec2 plotMin, ImVec2 plotSize, const ch
 }
 
 // "Whole span" switch left of the BW button, for the modes that declare support (modeSupportsWide): decode every signal in the span
-static void wideSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
+void wideSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
     gWideBtnW = 0;
     if (!modeSupportsWide(a.family)) return;
     const char* lb = a.wideDecode ? "Whole span: on###widebtn" : "Whole span###widebtn";
@@ -198,7 +198,7 @@ static bool multiAvailable(const App& a) {
     const double rate = a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate;
     return Engine::slotsInSpan(rate, channelWidth(a).mhz, 0) >= 2;
 }
-static void multiSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
+void multiSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
     if (!multiAvailable(a)) return;
     const bool run = a.engine.multiChannelActive();
     const char* lb = a.mtvOn ? "Multi-channel: on###mtvbtn" : "Multi-channel###mtvbtn";
@@ -308,6 +308,155 @@ static void envelope(const std::vector<float>& y, double x0, double dx, double l
     }
 }
 
+constexpr double kFreqSpanMinMhz = 0.001;   // 1 kHz at full zoom-in
+
+static double sampleRateMhz(const App& a) {
+    return (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
+}
+
+static double freqSpanFromZoom(const App& a, float zoom) {
+    const double maxSpan = std::max(kFreqSpanMinMhz, sampleRateMhz(a));
+    const double minSpan = std::min(kFreqSpanMinMhz, maxSpan);
+    const double z = std::max(0.0, std::min(1.0, (double)zoom));
+    return minSpan * std::pow(maxSpan / minSpan, 1.0 - z);
+}
+
+static float freqZoomFromSpan(const App& a, double spanMhz) {
+    const double maxSpan = std::max(kFreqSpanMinMhz, sampleRateMhz(a));
+    const double minSpan = std::min(kFreqSpanMinMhz, maxSpan);
+    spanMhz = std::max(minSpan, std::min(maxSpan, spanMhz));
+    const double t = std::log(spanMhz / minSpan) / std::log(maxSpan / minSpan);
+    return (float)std::max(0.0, std::min(1.0, 1.0 - t));
+}
+
+static void clampFreqViewToBand(const App& a) {
+    const double fs = sampleRateMhz(a);
+    const double rc = radioCenterMhz(a);
+    const double bLo = rc - fs * 0.5, bHi = rc + fs * 0.5;
+    if (!(gXHi > gXLo)) { gXLo = bLo; gXHi = bHi; return; }
+    double span = std::min(fs, gXHi - gXLo);
+    double center = (gXLo + gXHi) * 0.5;
+    double lo = center - span * 0.5, hi = center + span * 0.5;
+    if (lo < bLo) { lo = bLo; hi = lo + span; }
+    if (hi > bHi) { hi = bHi; lo = hi - span; }
+    if (lo < bLo) lo = bLo;
+    if (hi > bHi) hi = bHi;
+    gXLo = lo;
+    gXHi = hi;
+}
+
+static void applyFreqZoomSlider(App& a, float zoom) {
+    specFreqViewUpdate(a);
+    double span = std::min(sampleRateMhz(a), freqSpanFromZoom(a, zoom));
+    const double center = (gXLo + gXHi) * 0.5;
+    gXLo = center - span * 0.5;
+    gXHi = center + span * 0.5;
+    clampFreqViewToBand(a);
+    a.specZoom = zoom;
+}
+
+static void syncSpecZoomFromFreqView(App& a) {
+    specFreqViewUpdate(a);
+    if (gXHi > gXLo) a.specZoom = freqZoomFromSpan(a, gXHi - gXLo);
+}
+
+static bool gFreqZoomSliderActive = false;
+
+static void specFreqZoomBeforePlots(App& a) {
+    if (gFreqZoomSliderActive) applyFreqZoomSlider(a, a.specZoom);
+    else syncSpecZoomFromFreqView(a);
+}
+
+namespace {
+constexpr float kDbAbsLo = -160.f, kDbAbsHi = 20.f, kDbMinSpan = 10.f;
+
+static void clampDbEndpoints(float& lo, float& hi) {
+    lo = std::max(kDbAbsLo, std::min(kDbAbsHi - kDbMinSpan, lo));
+    hi = std::max(lo + kDbMinSpan, std::min(kDbAbsHi, hi));
+}
+
+static void setLinkedDbRange(App& a, float lo, float hi) {
+    clampDbEndpoints(lo, hi);
+    a.yMin = lo;
+    a.yMax = hi;
+    a.wf.autoTrack = false;
+    a.wf.minDb = lo;
+    a.wf.maxDb = hi;
+}
+
+// SDR++-style vertical Zoom / Max / Min beside the combined spectrum and waterfall.
+static void dbRangeSliders(App& a, ImVec2 colMin, float colW, float h) {
+    if (colW < 28 * gUi || h < 120 * gUi) return;
+    gFreqZoomSliderActive = false;
+    const float sw = std::min(22.f * gUi, colW - 4 * gUi);
+    const float labelH = ImGui::GetTextLineHeight();
+    const float gap = 4 * gUi;
+    const float trackH = std::max(32.f * gUi, (h - 3 * (labelH + gap) - 2 * gap) / 3.f);
+    const ImVec2 keep = ImGui::GetCursorScreenPos();
+    auto centerX = [&](const char* t) {
+        const float tw = ImGui::CalcTextSize(t).x;
+        return colMin.x + std::max(2 * gUi, (colW - tw) * 0.5f);
+    };
+    auto sliderX = [&] { return colMin.x + (colW - sw) * 0.5f; };
+    float y = colMin.y;
+    bool save = false;
+
+    ImGui::SetCursorScreenPos(ImVec2(centerX(tr("Zoom")), y));
+    ImGui::TextUnformatted(tr("Zoom"));
+    y += labelH + gap;
+    ImGui::SetCursorScreenPos(ImVec2(sliderX(), y));
+    ImGui::PushID("dbz");
+    float zoom = a.specZoom;
+    if (ImGui::VSliderFloat("##specfreqzoom", ImVec2(sw, trackH), &zoom, 0.f, 1.f, "")) a.specZoom = zoom;
+    if (ImGui::IsItemActive()) a.specZoom = zoom;
+    gFreqZoomSliderActive = ImGui::IsItemActive();
+    if (gFreqZoomSliderActive) applyFreqZoomSlider(a, a.specZoom);
+    if (ImGui::IsItemDeactivatedAfterEdit()) save = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Frequency zoom (top = narrowest view, down to about 1 kHz)"));
+    ImGui::PopID();
+    y += trackH + gap;
+
+    ImGui::SetCursorScreenPos(ImVec2(centerX(tr("Max")), y));
+    ImGui::TextUnformatted(tr("Max"));
+    y += labelH + gap;
+    float hiKnob = kDbAbsHi + kDbAbsLo - a.yMax;   // vertical slider: up = lower ceiling (SDR++-style)
+    ImGui::SetCursorScreenPos(ImVec2(sliderX(), y));
+    ImGui::PushID("dbmax");
+    const bool maxDrag = ImGui::VSliderFloat("##mx", ImVec2(sw, trackH), &hiKnob, kDbAbsLo, kDbAbsHi, "");
+    if (maxDrag || ImGui::IsItemActive()) {
+        float hi = kDbAbsHi + kDbAbsLo - hiKnob;
+        hi = std::max(hi, a.yMin + kDbMinSpan);
+        a.yMax = hi;
+        a.wf.maxDb = hi;
+        a.wf.autoTrack = false;
+    }
+    if (ImGui::IsItemDeactivatedAfterEdit()) save = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Top of the dB range (higher = more vertical stretch)"));
+    ImGui::PopID();
+    y += trackH + gap;
+
+    ImGui::SetCursorScreenPos(ImVec2(centerX(tr("Min")), y));
+    ImGui::TextUnformatted(tr("Min"));
+    y += labelH + gap;
+    float loKnob = kDbAbsHi + kDbAbsLo - a.yMin;   // up = lower floor
+    ImGui::SetCursorScreenPos(ImVec2(sliderX(), y));
+    ImGui::PushID("dbmin");
+    const bool minDrag = ImGui::VSliderFloat("##mn", ImVec2(sw, trackH), &loKnob, kDbAbsLo, kDbAbsHi, "");
+    if (minDrag || ImGui::IsItemActive()) {
+        float lo = kDbAbsHi + kDbAbsLo - loKnob;
+        lo = std::min(lo, a.yMax - kDbMinSpan);
+        a.yMin = lo;
+        a.wf.minDb = lo;
+        a.wf.autoTrack = false;
+    }
+    if (ImGui::IsItemDeactivatedAfterEdit()) save = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Bottom of the dB range (raises or lowers the trace on screen)"));
+    ImGui::PopID();
+
+    ImGui::SetCursorScreenPos(keep);
+    if (save) savePrefs(a);
+}
+
 // Ctrl+Up / Ctrl+Down move the dB range of the spectrum by 5 dB, Ctrl+Shift+Up / Down widen or narrow it, Ctrl+Home puts it back
 // to the default. Only while the spectrum is hovered, like the frequency keys below (#91).
 static bool dbRangeKeys(App& a) {
@@ -321,7 +470,27 @@ static bool dbRangeKeys(App& a) {
     else return false;
     lo = std::max(-160.f, std::min(20.f, lo)); hi = std::max(-160.f, std::min(20.f, hi));
     if (hi - lo < 10) return false;
-    a.yMin = lo; a.yMax = hi;
+    setLinkedDbRange(a, lo, hi);
+    return true;
+}
+} // namespace
+
+bool specDbRangeKeys(App& a) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (!io.KeyCtrl || io.WantTextInput) return false;
+    const float step = 5;
+    float lo = a.yMin, hi = a.yMax;
+    if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true)) { if (io.KeyShift) { lo -= step; hi += step; } else { lo += step; hi += step; } }
+    else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true)) { if (io.KeyShift) { lo += step; hi -= step; } else { lo -= step; hi -= step; } }
+    else if (ImGui::IsKeyPressed(ImGuiKey_Home)) { lo = -110; hi = -30; }
+    else return false;
+    lo = std::max(-160.f, std::min(20.f, lo)); hi = std::max(-160.f, std::min(20.f, hi));
+    if (hi - lo < 10) return false;
+    a.yMin = lo;
+    a.yMax = hi;
+    a.wf.autoTrack = false;
+    a.wf.minDb = lo;
+    a.wf.maxDb = hi;
     return true;
 }
 
@@ -354,6 +523,51 @@ static float cornerPopup(App& a, const char* label, const char* popId, ImVec2 pl
     return w + m;
 }
 
+void specFreqViewUpdate(const App& a) {
+    const double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
+    static double lastC = 0, lastFs = 0;
+    const double rc = radioCenterMhz(a);
+    if (lastC != rc || lastFs != fs || !(gXHi > gXLo)) { gXLo = rc - fs / 2; gXHi = rc + fs / 2; }
+    lastC = rc;
+    lastFs = fs;
+    const double bLo = rc - fs / 2, bHi = rc + fs / 2;
+    if (gXLo < bLo) { const double s = gXHi - gXLo; gXLo = bLo; gXHi = gXLo + s; }
+    if (gXHi > bHi) { const double s = gXHi - gXLo; gXHi = bHi; gXLo = gXHi - s; }
+}
+
+void specFreqViewGet(double& loMhz, double& hiMhz) {
+    loMhz = gXLo;
+    hiMhz = gXHi;
+}
+
+void specFreqViewWheel(App& a, float mouseNorm, float wheel, double& loMhz, double& hiMhz) {
+    const double fs = (a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate) / 1e6;
+    const double rc = radioCenterMhz(a);
+    const double bLo = rc - fs / 2, bHi = rc + fs / 2;
+    loMhz = gXLo;
+    hiMhz = gXHi;
+    if (!(hiMhz > loMhz)) { loMhz = bLo; hiMhz = bHi; }
+    mouseNorm = std::max(0.f, std::min(1.f, mouseNorm));
+    const double span = hiMhz - loMhz;
+    const double center = loMhz + mouseNorm * span;
+    const double factor = wheel > 0 ? 0.88 : 1.0 / 0.88;
+    double nspan = std::min(fs, std::max(fs / 512.0, span * factor));
+    loMhz = center - mouseNorm * nspan;
+    hiMhz = loMhz + nspan;
+    if (loMhz < bLo) { loMhz = bLo; hiMhz = loMhz + nspan; }
+    if (hiMhz > bHi) { hiMhz = bHi; loMhz = hiMhz - nspan; }
+    gXLo = loMhz;
+    gXHi = hiMhz;
+    syncSpecZoomFromFreqView(a);
+}
+
+float specPlotBwBtnW() { return gBwBtnW; }
+float specPlotWideBtnW() { return gWideBtnW; }
+
+float specCornerPopup(App& a, const char* label, const char* popId, ImVec2 plotMin, ImVec2 plotSize, float rightUsed, float reserveLeft, float dropY, bool on, const char* tip, void (*body)(App&)) {
+    return cornerPopup(a, label, popId, plotMin, plotSize, rightUsed, reserveLeft, dropY, on, tip, body);
+}
+
 float& specWaterfallSplit() {
     static float g = 0.5f;
     return g;
@@ -362,6 +576,7 @@ float& specWaterfallSplit() {
 void resetSpectrum(App& a) {
     a.yMin = -110.f;
     a.yMax = -30.f;
+    a.specZoom = 0.f;
     a.wf.autoTrack = true;
     if (!a.smooth.empty()) {
         a.wf.fitRange(a.smooth, true);
@@ -711,7 +926,8 @@ void spectrumWaterfall(App& a, float& frac, bool drag) {
     const double tPlot0 = glfwGetTime();
     const ImVec2 p = ImGui::GetCursorScreenPos();
     const ImVec2 avail = ImGui::GetContentRegionAvail();
-    const float w = std::max(60.f, avail.x), h = avail.y;
+    const float sliderCol = std::min(52.f * gUi, std::max(0.f, avail.x - 60.f));
+    const float w = std::max(60.f, avail.x - sliderCol), h = avail.y;
     const float stripH = bandPlanStripHeight();
     const float hs = std::floor(std::min(std::max(60.f + stripH, h * frac), std::max(60.f + stripH, h - 60.f)));
     const float y = p.y + hs;
@@ -725,6 +941,7 @@ void spectrumWaterfall(App& a, float& frac, bool drag) {
         ImGui::SetCursorScreenPos(p);
     }
     freqPageKeys();
+    specFreqZoomBeforePlots(a);
     {   // the ranges are kept when the mouse has let go of them (a drag or a wheel zoom changes them all the time)
         static float sMin = 1e9f, sMax = 1e9f, wMin = 1e9f, wMax = 1e9f; static double sT = 0;
         if (sMin == 1e9f) { sMin = a.yMin; sMax = a.yMax; wMin = a.wf.minDb; wMax = a.wf.maxDb; }
@@ -739,6 +956,7 @@ void spectrumWaterfall(App& a, float& frac, bool drag) {
     ImGui::SetCursorScreenPos(ImVec2(p.x, y));
     waterfallPlot(a, ImVec2(w, std::max(60.f, h - hs)), plt::Flags_Flush | plt::Flags_OpenTop);
     ImGui::GetWindowDrawList()->AddLine(ImVec2(p.x, y), ImVec2(p.x + w, y), hot ? IM_COL32(200, 200, 200, 160) : IM_COL32(110, 110, 110, 110), hot ? 2.f : 1.f);
+    if (sliderCol > 0) dbRangeSliders(a, ImVec2(p.x + w, p.y + stripH), sliderCol, std::max(40.f, h - stripH));
     // DECT2_FPS=1: what the spectrum and the waterfall cost on the CPU per frame (building their draw lists), every 2 seconds on stderr
     static const bool perf = getenv("DECT2_FPS") != nullptr;
     if (perf) {

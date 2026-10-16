@@ -19,7 +19,9 @@ if [ -z "$ONAIR_WIN_PARTIAL" ]; then
   for f in libusb-1.0 libstdc++-6 libgcc_s_seh-1 libwinpthread-1; do [ -f "$P/redist/$f.dll" ] || missing="$missing redist/$f.dll"; done
   [ -z "$missing" ] || { echo "error: not in $P:$missing"; echo "run tools/package/cross_deps_windows.sh first (or set ONAIR_WIN_PARTIAL=1 to package without them)"; exit 1; }
 fi
-cmake --fresh -S . -B $BUILD "-DCMAKE_TOOLCHAIN_FILE=$PWD/packaging/windows/mingw-toolchain.cmake" -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DDECT2_WITH_SOAPY=ON -DONAIR_WIN_SOAPY=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5 >/dev/null
+HAMLIB_CMAKE=OFF
+for f in "$P/bin"/libhamlib*.dll "$P/bin"/hamlib.dll; do [ -f "$f" ] && HAMLIB_CMAKE=ON && break; done
+cmake --fresh -S . -B $BUILD "-DCMAKE_TOOLCHAIN_FILE=$PWD/packaging/windows/mingw-toolchain.cmake" -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DDECT2_HAVE_HAMLIB=$HAMLIB_CMAKE -DDECT2_WITH_SOAPY=ON -DONAIR_WIN_SOAPY=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5 >/dev/null
 cmake --build $BUILD -j"$(sysctl -n hw.ncpu 2>/dev/null || nproc)" --target dect2 dect2cli dect2scan
 OUT=${ONAIR_WIN_OUT:-$BUILD/OnAir-$VERSION-windows-x64}
 ZIP=${OUT%/}.zip
@@ -34,6 +36,12 @@ cp "$P/bin/libSoapySDR.dll" "$OUT/"
 # the radios OnAir drives by itself: their libraries next to the program (nothing to install). FTD3XX.dll is FTDI's USB 3 driver library that the
 # LimeSDR Mini needs; it is signed by FTDI, so it is copied as it is (not stripped).
 for d in librtlsdr libairspy libairspyhf libbladeRF libLimeSuite libiio FTD3XX; do if [ -f "$P/bin/$d.dll" ]; then cp "$P/bin/$d.dll" "$OUT/"; else echo "warning: $d.dll is missing in $P/bin (run cross_deps_windows.sh)"; fi; done
+for f in "$P/bin"/libhamlib*.dll "$P/bin"/hamlib.dll; do if [ -f "$f" ]; then cp "$f" "$OUT/"; break; fi; done
+if [ "$HAMLIB_CMAKE" = ON ]; then
+  mkdir -p "$OUT/licenses/hamlib"
+  cp packaging/licenses/hamlib/README-OnAir.md "$OUT/licenses/hamlib/NOTICE.md"
+  [ -f "$P/licenses/hamlib-COPYING.txt" ] && cp "$P/licenses/hamlib-COPYING.txt" "$OUT/licenses/hamlib/COPYING"
+fi
 # libusb and the GCC 16 C++ runtime (libstdc++, libgcc_s, libwinpthread) that the DLLs share. UHD (USRP) is NOT shipped, nor the Boost and
 # Python DLLs only it needs: our MinGW build of it hung or crashed in its device search on a PC without a USRP (the GitHub Windows check of
 # 0.2.1), and a USRP needs the Ettus installer's firmware images anyway. OnAir uses the UHD installed from Ettus (uhd.dll), as 0.2.0 did.

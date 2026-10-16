@@ -132,6 +132,7 @@ void refreshDevices(App& a) {
     for (auto& d : listAudioDevices()) a.devices.push_back(d);
     std::string err;
     setNetworkRadios(a.netRadios);   // the ones the user added by address come after the ones found
+    setHamlibRigs(a.hamlibRigs);
     // HackRF, the radios with a native driver (RTL-SDR, Airspy, BladeRF, LimeSDR, PlutoSDR, USRP) and the rest through SoapySDR
     for (auto& d : listRadios(err)) a.devices.push_back(d);
     for (App* o : receiversAll()) {   // a radio another receiver has open may be missing from the list (drivers cannot look at a radio in use): it stays, as "in use by RX n"
@@ -356,6 +357,7 @@ std::string saveFileDialog(const char* name) { return plat::saveFileDialog(name)
 void loadPrefs(App& a) {
     plat::Prefs& d = plat::prefs();
     a.netRadios = netRadiosFromString(d.getS("netRadios", ""));
+    a.hamlibRigs = hamlibRigsFromString(d.getS("hamlibRigs", ""));
     if (d.has("freqMhz")) a.freqMhz = d.getD("freqMhz", a.freqMhz);
     if (d.has("lna")) a.tune.lnaDb = (int)d.getI("lna", a.tune.lnaDb);
     if (d.has("vga")) a.tune.vgaDb = (int)d.getI("vga", a.tune.vgaDb);
@@ -407,6 +409,7 @@ void loadPrefs(App& a) {
     a.wf.setRate((float)d.getD("wfRate", 0.0));
     if (d.has("specMin") && d.has("specMax")) { a.yMin = (float)d.getD("specMin", a.yMin); a.yMax = (float)d.getD("specMax", a.yMax); }
     if (!(a.yMax - a.yMin >= 10)) { a.yMin = -110; a.yMax = -30; }
+    if (d.has("specZoom")) a.specZoom = std::max(0.f, std::min(1.f, (float)d.getD("specZoom", a.specZoom)));
     if (!(a.wf.maxDb - a.wf.minDb >= 3)) { a.wf.minDb = -100; a.wf.maxDb = -32; }
     a.peakHold = d.getB("specHold", a.peakHold);
     a.holdDecay = std::max(0.f, std::min(60.f, (float)d.getD("holdDecay", a.holdDecay)));
@@ -486,7 +489,10 @@ void loadPrefs(App& a) {
 
 void savePrefs(const App& a) {
     plat::Prefs& d = plat::prefs();
-    if (a.rxId == 1) d.setS("netRadios", netRadiosToString(a.netRadios));
+    if (a.rxId == 1) {
+        d.setS("netRadios", netRadiosToString(a.netRadios));
+        d.setS("hamlibRigs", hamlibRigsToString(a.hamlibRigs));
+    }
     d.setS("devName", a.devIdx >= 2 && a.devIdx < (int)a.devices.size() ? a.devices[a.devIdx].name : std::string());   // the radio of this receiver, found again at the next start
     d.setD("freqMhz", a.freqMhz);
     d.setI("lna", a.tune.lnaDb);
@@ -500,7 +506,7 @@ void savePrefs(const App& a) {
     d.setI("fmChanKhz", a.fmChanKhz);
     if (a.rxId == 1) d.setB("newUi", a.newUi);
     d.setI("wfMap", a.wf.map); d.setB("wfAuto", a.wf.autoTrack); d.setD("wfMin", a.wf.minDb); d.setD("wfMax", a.wf.maxDb); d.setD("wfRate", a.wf.rowsPerSec);
-    d.setD("specMin", a.yMin); d.setD("specMax", a.yMax);
+    d.setD("specMin", a.yMin); d.setD("specMax", a.yMax); d.setD("specZoom", a.specZoom);
     d.setB("specHold", a.peakHold); d.setD("holdDecay", a.holdDecay); d.setD("specAvg", a.specAvgSec);
     d.setB("specFill", a.specFill); d.setB("specGrid", a.specGrid); d.setB("specPeaks", a.specPeaks); d.setB("specReadout", a.specReadout); d.setB("specDbm", a.specDbm);
     d.setI("tuningMode", a.tuningMode);
@@ -696,7 +702,7 @@ void ingestRx(App& a) {
 double radioCenterMhz(const App& a) {
     const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
     const bool file = !a.devices.empty() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() &&
-                      (a.devices[a.devIdx].kind == DeviceInfo::File || a.devices[a.devIdx].isAudio());
+                      (a.devices[a.devIdx].kind == DeviceInfo::File || a.devices[a.devIdx].isAudio() || a.devices[a.devIdx].kind == DeviceInfo::Hamlib);
     return a.freqMhz + (mt && !file ? mt->tuneOffsetHz / 1e6 : 0.0);
 }
 

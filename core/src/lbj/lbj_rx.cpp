@@ -1,10 +1,14 @@
-// LBJ receiver (lbj_rx.h): FM channel, level and AFC tracking; frame decode via lbj_proto (stub).
+// LBJ receiver: FM + POCSAG 1200 on the railway warning channel (~821.2375 MHz). Demodulation reuses the pagers POCSAG path.
 #include "dect2/lbj_rx.h"
 #include "dect2/lbj_proto.h"
+#include "dect2/pager_rx.h"
+#include "dect2/pager_tel.h"
+#include "dect2/exact_resampler.h"
 #include <algorithm>
 #include <cmath>
 #include <ctime>
 #include <mutex>
+#include <unordered_set>
 #include <vector>
 
 namespace dect2 {
@@ -21,47 +25,34 @@ ModeTuning lbjTuning() {
     t.basebandHz = 35000;
     t.bandwidthMhz = 0.035;
     t.minSampleRate = 256000;
-    t.tuneOffsetHz = 50000;   // keep DC out of the passband (common on rtl_tcp setups)
+    t.tuneOffsetHz = 50000;
     return t;
 }
-
-namespace {
-
-constexpr double kPi = 3.14159265358979323846;
-
-float rmsDb(const cf32* x, size_t n) {
-    if (!n) return -200.f;
-    double p = 0;
-    for (size_t i = 0; i < n; i++) p += (double)std::norm(x[i]);
-    p /= (double)n;
-    return p > 1e-20 ? (float)(10.0 * std::log10(p)) : -200.f;
-}
-
-} // namespace
 
 struct LbjReceiver::Impl {
     std::mutex mu;
     LbjTelemetry tel;
     std::function<void(const std::string&)> log;
-    double fs = 0, offHz = 0, centreHz = 0;
+    PagerReceiver pager;
+    ExactResampler rs;
+    std::vector<cf32> rsBuf;
+    uint64_t pagerSeq = 0;
+    std::unordered_set<uint64_t> seenPagerSerial;
+    lbj::LbjSessionState sessions;
+    double fs = 0, pagerFs = 0, offHz = 0, centreHz = 0;
     bool rateSet = false;
-    uint64_t samp = 0;
-    cf32 rot{1.f, 0.f}, step{1.f, 0.f};
-    cf32 prev{1.f, 0.f};
-    std::vector<uint8_t> bitBuf;
-    double nextPub = 0;
 
-    void retune() {
-        const double w = -2 * kPi * offHz / std::max(fs, 1.0);
-        step = cf32((float)std::cos(w), (float)std::sin(w));
+    static double pagerInputRate(double in) {
+        constexpr double kPagerMin = 1000000.0;
+        if (in >= kPagerMin - 1) return in;
+        return 1200000.0;
     }
 
     void pushMessage(LbjMessage m) {
         m.wallTime = (int64_t)std::time(nullptr);
-        m.timeSec = tel.timeSec;
         if (log) {
-            char line[256];
-            snprintf(line, sizeof line, "LBJ %s km %s loco %s", m.train.c_str(), m.kmMarker.c_str(), m.loco.c_str());
+            char line[320];
+            snprintf(line, sizeof line, "LBJ %s km %s %s", m.train.c_str(), m.kmMarker.c_str(), m.speedKmh.c_str());
             log(line);
         }
         if (tel.messages.size() >= kLbjLogMax) tel.messages.pop_back();
@@ -72,53 +63,51 @@ struct LbjReceiver::Impl {
         tel.seq++;
     }
 
-    void processBlock(const cf32* x, size_t n) {
-        const float level = rmsDb(x, n);
-        tel.levelDb = level;
-        tel.cfoHz = offHz;
-        tel.blocks++;
-        if (level < -90.f) {
-            tel.state = tel.messages.empty() ? 1 : 2;
-            return;
+    void ingestPager(const PagerTelemetry& pt) {
+        if (!pt.messages) return;
+        for (const PagerMessage& pm : *pt.messages) {
+            if (pm.flex || pm.speed != kPocsag1200) continue;
+            if (seenPagerSerial.count(pm.serial)) continue;
+            seenPagerSerial.insert(pm.serial);
+            if (!lbj::isLbjPocsagAddress(pm.address)) continue;
+            tel.blocksBad += pm.damaged ? 1 : 0;
+            const std::string& bcd = !pm.numText.empty() ? pm.numText : pm.text;
+            LbjMessage m;
+            if (lbj::parsePocsagPage(pm.address, pm.function, bcd, pm.damaged, pm.timeSec, sessions, m)) pushMessage(std::move(m));
         }
-        // FM discriminator at input rate (feeds the future 48 kHz / 1200 baud chain)
-        for (size_t i = 0; i < n; i++) {
-            const cf32 y = x[i] * rot;
-            rot *= step;
-            const cf32 d = y * std::conj(prev);
-            prev = y;
-            const float disc = std::atan2(d.imag(), d.real());
-            bitBuf.push_back(disc > 0.f ? 1 : 0);
-            if (bitBuf.size() > 8192) bitBuf.erase(bitBuf.begin(), bitBuf.begin() + 4096);
-        }
-        rot /= std::abs(rot);
-        LbjMessage m;
-        if (lbj::tryDecodeFrame(bitBuf.data(), bitBuf.size(), m, tel.timeSec, centreHz)) pushMessage(std::move(m));
-        else tel.state = tel.messages.empty() ? 1 : 2;
-    }
-
-    void maybePublish() {
-        if (tel.timeSec < nextPub) return;
-        nextPub = tel.timeSec + 0.25;
-        tel.seq++;
+        tel.levelDb = pt.levelDb;
+        tel.cfoHz = pt.cfoHz;
+        tel.snrDb = pt.snrDb;
+        tel.blocks = pt.blocksOk + pt.blocksBad;
+        if (tel.messages.empty() && pt.state >= 1) tel.state = 1;
     }
 };
 
-LbjReceiver::LbjReceiver() : p_(std::make_unique<Impl>()) {}
+LbjReceiver::LbjReceiver() : p_(std::make_unique<Impl>()) {
+    p_->pager.setProtocols(1);
+    p_->pager.setPocsagBauds(2);
+}
 LbjReceiver::~LbjReceiver() = default;
 
 void LbjReceiver::configure(double inputRateHz) {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->fs = inputRateHz;
     p_->rateSet = inputRateHz >= lbjTuning().minSampleRate - 1;
-    p_->retune();
+    p_->pagerFs = p_->rateSet ? Impl::pagerInputRate(inputRateHz) : 0;
+    if (p_->rateSet) {
+        p_->pager.configure(p_->pagerFs);
+        if (std::fabs(p_->pagerFs - inputRateHz) > 1) {
+            p_->rs.configure(inputRateHz, p_->pagerFs);
+            p_->rs.reset();
+        }
+    }
     p_->tel.inputRate = inputRateHz;
     p_->tel.state = p_->rateSet ? 1 : 0;
 }
 void LbjReceiver::setSignalOffset(double hz) {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->offHz = hz;
-    p_->retune();
+    p_->pager.setSignalOffset(hz);
 }
 void LbjReceiver::setCenterHz(double hz) {
     std::lock_guard<std::mutex> lk(p_->mu);
@@ -127,15 +116,14 @@ void LbjReceiver::setCenterHz(double hz) {
 }
 bool LbjReceiver::ready() const {
     std::lock_guard<std::mutex> lk(p_->mu);
-    return p_->rateSet;
+    return p_->rateSet && p_->pager.ready();
 }
 void LbjReceiver::reset() {
     std::lock_guard<std::mutex> lk(p_->mu);
-    p_->rot = cf32(1.f, 0.f);
-    p_->prev = cf32(1.f, 0.f);
-    p_->bitBuf.clear();
-    p_->samp = 0;
-    p_->nextPub = 0;
+    p_->pager.reset();
+    p_->pagerSeq = 0;
+    p_->seenPagerSerial.clear();
+    p_->sessions = lbj::LbjSessionState();
     p_->tel = LbjTelemetry();
     p_->tel.inputRate = p_->fs;
     p_->tel.centerHz = p_->centreHz;
@@ -155,10 +143,23 @@ void LbjReceiver::feed(const cf32* x, size_t n) {
         p_->tel.state = 0;
         return;
     }
-    p_->processBlock(x, n);
-    p_->samp += n;
-    p_->tel.timeSec = p_->fs > 0 ? (double)p_->samp / p_->fs : 0;
-    p_->maybePublish();
+    const cf32* px = x;
+    size_t pn = n;
+    if (std::fabs(p_->pagerFs - p_->fs) > 1) {
+        p_->rsBuf.clear();
+        p_->rs.process(x, n, p_->rsBuf);
+        px = p_->rsBuf.data();
+        pn = p_->rsBuf.size();
+    }
+    p_->pager.feed(px, pn);
+    PagerTelemetry pt;
+    if (p_->pager.telemetry(pt, p_->pagerSeq)) {
+        p_->pagerSeq = pt.seq;
+        p_->tel.timeSec = pt.timeSec;
+        p_->ingestPager(pt);
+    } else if (p_->tel.timeSec < pt.timeSec)
+        p_->tel.timeSec = pt.timeSec;
+    p_->tel.blocks++;
 }
 bool LbjReceiver::telemetry(LbjTelemetry& out, uint64_t lastSeq) {
     std::lock_guard<std::mutex> lk(p_->mu);
@@ -208,6 +209,7 @@ bool LbjReceiver::loadResults(const std::string& blob) {
 void LbjReceiver::setLogCallback(std::function<void(const std::string&)> cb) {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->log = std::move(cb);
+    p_->pager.setLogCallback({});
 }
 bool LbjReceiver::busy() const { return false; }
 

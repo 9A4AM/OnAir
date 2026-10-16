@@ -174,6 +174,7 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     dabHistory(a);
     fmHistory(a);
     if (const ModeUi* mu = modeUi(a.family)) if (mu->tick) mu->tick(a);
+    syncAdsbReference(a);
     wideSync(a);
     secondModeTick(a);
     dabScanStep(a);
@@ -320,6 +321,8 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     shareTick(a);
     remoteApiTick(a);
     mapWindow(a);
+    rotatorTick(a);
+    rotatorWindow(a);
     if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel
         static bool opened = false;
         if (!opened) { ImGui::OpenPopup(trw("OnAir crashed")); opened = true; }
@@ -539,12 +542,19 @@ int main(int argc, char** argv) {
     for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (ui = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break; // the whole UI is monospaced
     for (const auto& f : plat::monoFontCandidates()) if (access(f.c_str(), R_OK) == 0 && (app.mono = io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f))) break;
     if (!ui) ui = io.Fonts->AddFontDefault();
-    // CJK service/EPG names: merge a system CJK font (ImGui 1.92 rasterises only the glyphs actually drawn).
-    for (const auto& f : plat::cjkFontCandidates()) if (access(f.c_str(), R_OK) == 0) {
-        ImFontConfig mc; mc.MergeMode = true;
-        mc.DstFont = ui; if (!io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mc)) continue;
-        if (app.mono && app.mono != ui) { ImFontConfig mm; mm.MergeMode = true; mm.DstFont = app.mono; io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mm); }
-        break;
+    // CJK (Korean/Japanese/Chinese): merge every system font that loads (Menlo has no Hangul; DRM Journaline needs it).
+    for (const auto& f : plat::cjkFontCandidates()) {
+        if (access(f.c_str(), R_OK) != 0) continue;
+        ImFontConfig mc;
+        mc.MergeMode = true;
+        mc.DstFont = ui;
+        if (!io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mc)) continue;
+        if (app.mono && app.mono != ui) {
+            ImFontConfig mm;
+            mm.MergeMode = true;
+            mm.DstFont = app.mono;
+            io.Fonts->AddFontFromFileTTF(f.c_str(), 13.0f, &mm);
+        }
     }
     app.ui = ui;
     if (!app.mono) app.mono = ui;

@@ -120,7 +120,7 @@ struct AudioHilbert {
 void audioStereoToIq(const float* stereo, int n, AudioIqMode mode, cf32* out, AudioHilbert& h);
 
 struct DeviceInfo {
-    enum Kind { Synthetic, File, HackRF, Soapy, Native, Audio } kind = Synthetic;   // Native: a radio driven by its own library (experimental), see source_native.cpp. Audio: a sound card (WebSDR / VAC / speaker tap), source_audio.cpp.
+    enum Kind { Synthetic, File, HackRF, Soapy, Native, Audio, Hamlib } kind = Synthetic;   // Native: a radio driven by its own library (experimental), see source_native.cpp. Audio: a sound card (WebSDR / VAC / speaker tap), source_audio.cpp. Hamlib: CAT rig + optional sound card for IQ (source_hamlib.cpp).
     std::string name;   // display name
     std::string serial; // HackRF serial / file path
     std::string board;  // "HackRF One", "HackRF Pro", "airspy", "sdrplay", ...
@@ -150,7 +150,7 @@ struct DeviceInfo {
     double txGainMinDb = 0, txGainMaxDb = 0;
     std::string txGainNote;                // what the TX gain number means on this radio ("HackRF: 0-47 dB TX VGA, +14 dB with the amplifier")
     std::vector<RadioSetting> settings;    // the radio's own settings the app offers (TuneSettings::radio); empty for files and the test signal
-    bool isRadio() const { return kind == HackRF || kind == Soapy || kind == Native; }
+    bool isRadio() const { return kind == HackRF || kind == Soapy || kind == Native || kind == Hamlib; }
     bool isGeneric() const { return kind == Soapy || kind == Native; }   // one overall gain, a sample-rate range reported by the radio
     bool isAudio() const { return kind == Audio; }
 };

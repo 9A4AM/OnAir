@@ -1,4 +1,5 @@
 #include "dect2/mode_synth.h"
+#include "dect2/hamlib_rig.h"
 #include "dect2/source.h"
 #include "dect2/netradio.h"
 #include "dect2/gen_util.h"
@@ -599,6 +600,7 @@ std::vector<DeviceInfo> listRadios(std::string& err) {
         for (const auto& o : out) if (o.kind == d.kind && o.board == d.board && o.nativeArgs == d.nativeArgs && o.soapyArgs == d.soapyArgs) dup = true;
         if (!dup) out.push_back(d);
     }
+    for (auto& d : hamlibRigDevices(hamlibRigs())) out.push_back(d);
     return out;
 }
 
@@ -611,6 +613,7 @@ std::unique_ptr<IqSource> makeSource(const DeviceInfo& d) {
     case DeviceInfo::Native: return makeNativeSource(d);
     case DeviceInfo::Synthetic: return std::make_unique<SyntheticSource>();
     case DeviceInfo::Audio: return makeAudioSource(d);
+    case DeviceInfo::Hamlib: return makeHamlibSource(d);
     default: return nullptr;
     }
 }
@@ -628,6 +631,7 @@ std::unique_ptr<TxSink> makeTxSink(const DeviceInfo& d) {
 #ifdef DECT2_HAVE_SOAPY
     case DeviceInfo::Soapy: return makeSoapyTxSink(d);
 #endif
+    case DeviceInfo::Hamlib: return makeHamlibTxSink(d);
     default: return nullptr;
     }
 }

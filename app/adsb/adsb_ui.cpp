@@ -61,6 +61,8 @@ void setReference(App& a, double lat, double lon) {
     plat::prefs().setD("adsbLat", S.refLat); plat::prefs().setD("adsbLon", S.refLon);
     S.map.lat = S.refLat; S.map.lon = S.refLon;
     savePrefs(a);
+    S.pushedLat = 1e9; S.pushedLon = 1e9;   // force syncAdsbReference to push on the next frame
+    if (a.engine.running() && live(a) && receiverLocationSet()) a.engine.adsb().setReference(S.refLat, S.refLon);
 }
 
 // the antenna position as two numbers and the Locate button: in the Tuner section and in the map's "position" menu
@@ -100,11 +102,11 @@ void tick(App& a) {
     a.tune.synth.modeVal[2] = S.refLat; a.tune.synth.modeVal[3] = S.refLon;   // the simulated traffic flies around the reference point
     const bool run = a.engine.running();
     if (run) {
-        if (!S.wasRunning || S.pushedLat != S.refLat || S.pushedLon != S.refLon) {
+        if (!S.wasRunning) {
             a.engine.adsb().setCorrection(S.correction);
-            S.pushedLat = S.refLat; S.pushedLon = S.refLon;
+            S.pushedLat = S.pushedLon = 1e9;   // receiver may have been running in another tab: push antenna position again
         }
-        if (receiverLocationSet()) a.engine.adsb().setReference(S.refLat, S.refLon);
+        syncAdsbReference(a);
     }
     S.wasRunning = run;
     if (live(a) && a.rx.seq != S.lastSeq) vdl2NoteAdsb(a.rx.adsb);
@@ -822,6 +824,15 @@ bool adsbFullMap(App& a, ImVec2 disp) {
 }
 
 // The receiver's position, shared by every screen that needs one (ADS-B ranges, the pass planner): the ADS-B antenna position
+void syncAdsbReference(App& a) {
+    if (!a.engine.running() || a.rx.standard != 12) return;
+    loadState();
+    if (!receiverLocationSet()) return;
+    if (S.pushedLat == S.refLat && S.pushedLon == S.refLon) return;
+    a.engine.adsb().setReference(S.refLat, S.refLon);
+    S.pushedLat = S.refLat; S.pushedLon = S.refLon;
+}
+
 void receiverLocation(double& lat, double& lon) { loadState(); lat = S.refLat; lon = S.refLon; }
 bool receiverLocationSet() { return plat::prefs().has("adsbLat") && plat::prefs().has("adsbLon"); }
 double receiverAltitudeM() { loadState(); return S.refAltM; }

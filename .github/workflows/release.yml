@@ -57,6 +57,41 @@ jobs:
             echo "base=${base}" >> "$GITHUB_OUTPUT"
           fi
 
+  # Windows first in the workflow file so the cross build starts with macOS/Linux (same runner pool; long cached prefix).
+  windows:
+    name: Windows x64 package
+    needs: version
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cross toolchain
+        run: brew install cmake pkg-config nasm mingw-w64
+      - name: Cache Windows cross prefix
+        id: winpfx
+        uses: actions/cache@v4
+        with:
+          path: onair-win-prefix
+          key: onair-win-prefix-${{ hashFiles('tools/package/cross_deps_windows.sh', 'packaging/windows/mingw-toolchain.cmake') }}
+      - name: Build Windows dependencies
+        if: steps.winpfx.outputs.cache-hit != 'true'
+        env:
+          ONAIR_WIN_PREFIX: ${{ github.workspace }}/onair-win-prefix
+          ONAIR_WIN_WORK: ${{ runner.temp }}/onair-win-work
+        run: |
+          test -d build-windows-deps/src || { echo "error: build-windows-deps/src is missing (vendor tarballs for cross_deps_windows.sh)"; exit 1; }
+          tools/package/cross_deps_windows.sh
+      - name: Build Windows zip and installer
+        env:
+          ONAIR_WIN_PREFIX: ${{ github.workspace }}/onair-win-prefix
+          ONAIR_WIN_BUILD: build-windows
+        run: tools/package/make_windows_cross.sh "${{ needs.version.outputs.ver }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: |
+            build-windows/OnAir-*-windows-x64.zip
+            build-windows/OnAir-*-windows-x64-setup.exe
+
   macos:
     name: macOS disk image (${{ matrix.arch }})
     needs: version
@@ -71,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: brew install cmake pkg-config hackrf soapysdr libusb ffmpeg glfw librtlsdr airspy airspyhf libbladerf limesuite uhd   # the radio libraries go into the app (tools/package/bundle_macos.py)
+        run: brew install cmake pkg-config hackrf soapysdr libusb ffmpeg glfw librtlsdr airspy airspyhf libbladerf limesuite uhd hamlib   # radio libraries and Hamlib go into the app (tools/package/bundle_macos.py)
       - name: Build the app and the .dmg
         run: tools/package/make_dmg.sh "${{ needs.version.outputs.ver }}"
       - uses: actions/upload-artifact@v4
@@ -92,7 +127,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential file cmake pkg-config nasm patchelf curl xz-utils libhackrf-dev libsoapysdr-dev libusb-1.0-0-dev libglfw3-dev libairspy0 libbladerf2 libiio0 liblimesuite20.10-1 libuhd4.1.0
+          sudo apt-get install -y build-essential file cmake pkg-config nasm patchelf curl xz-utils libhackrf-dev libsoapysdr-dev libusb-1.0-0-dev libglfw3-dev libairspy0 libbladerf2 libiio0 liblimesuite20.10-1 libuhd4.1.0 libhamlib-dev
       - name: Cache the static FFmpeg
         id: ffmpeg
         uses: actions/cache@v4
@@ -104,7 +139,7 @@ jobs:
         run: tools/package/collect_radio_libs_linux.sh "$GITHUB_WORKSPACE/build/radiolibs"
       - name: Build
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON -DDECT2_FFMPEG_PREFIX="$HOME/ffmpeg" -DDECT2_RADIO_LIB_DIR="$GITHUB_WORKSPACE/build/radiolibs" -DONAIR_VERSION="${{ needs.version.outputs.ver }}"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=ON -DDECT2_HAVE_HAMLIB=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=ON -DDECT2_FFMPEG_PREFIX="$HOME/ffmpeg" -DDECT2_RADIO_LIB_DIR="$GITHUB_WORKSPACE/build/radiolibs" -DONAIR_VERSION="${{ needs.version.outputs.ver }}"
           cmake --build build -j 4 --target dect2 dect2cli dect2scan
       - name: Package
         run: |
@@ -116,9 +151,9 @@ jobs:
   # Windows: built on a Mac with tools/package/make_windows_cross.sh, which ships the RTL-SDR, Airspy, BladeRF and PlutoSDR
   # libraries and the SoapySDR drivers (MSYS2 has no packages for most of them, so a build here only had HackRF), then
   # attached with: gh release upload <tag> build-windows/OnAir-<version>-windows-x64.zip build-windows/OnAir-<version>-windows-x64-setup.exe
-
   publish:
     name: Attach to the release
+    # macOS/Linux first; Windows attaches in attach-windows (long cross build, must not block the beta).
     needs: [version, macos, linux]
     if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release-')
     runs-on: ubuntu-24.04
@@ -155,3 +190,19 @@ jobs:
             gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber \
               || gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "OnAir ${TAG}" --generate-notes
           fi
+
+  attach-windows:
+    name: Attach Windows to the release
+    needs: [version, publish, windows]
+    if: |
+      (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release-')) &&
+      needs.windows.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: windows-x64, path: dist }
+      - name: Upload Windows zip and installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber

@@ -206,8 +206,10 @@ void showFatalError(const char* title, const char* text) {
 Prefs& basePrefs() { static DefaultsPrefs p; return p; }
 
 std::vector<std::string> uiFontCandidates() { return {"/System/Library/Fonts/Helvetica.ttc"}; }
-std::vector<std::string> cjkFontCandidates() { return {"/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/STHeiti Medium.ttc", "/System/Library/Fonts/STHeiti Light.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc",
-                                                          "/System/Library/Fonts/\xE3\x83\x92\xE3\x83\xA9\xE3\x82\xAE\xE3\x83\x8E\xE8\xA7\x92\xE3\x82\xB4\xE3\x82\xB7\xE3\x83\x83\xE3\x82\xAF W3.ttc"}; }   // the last: Hiragino Kaku Gothic (Japanese)
+std::vector<std::string> cjkFontCandidates() { return {"/System/Library/Fonts/AppleSDGothicNeo.ttc", "/Library/Fonts/AppleGothic.ttf",
+                                                          "/System/Library/Fonts/Supplemental/AppleGothic.ttf", "/System/Library/Fonts/PingFang.ttc",
+                                                          "/System/Library/Fonts/STHeiti Medium.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc",
+                                                          "/System/Library/Fonts/\xE3\x83\x92\xE3\x83\xA9\xE3\x82\xAE\xE3\x83\x8E\xE8\xA7\x92\xE3\x82\xB4\xE3\x82\xB7\xE3\x83\x83\xE3\x82\xAF W3.ttc"}; }
 std::vector<std::string> monoFontCandidates() { return {"/System/Library/Fonts/Menlo.ttc"}; }
 std::string uiLanguage() {
     NSArray<NSString*>* l = [NSLocale preferredLanguages];   // the order of System Settings > Language & Region

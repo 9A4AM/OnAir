@@ -69,7 +69,7 @@ void startReceiver(App& a) {
     if (isFile && a.file.offsetBytes == 0) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate (a SigMF / WAV file says it itself)
     if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
     else {
-        if (a.devices[a.devIdx].isAudio()) a.tune.radio["audio_iq"] = std::to_string(a.audioIqMode);
+        if (a.devices[a.devIdx].isAudio() || a.devices[a.devIdx].kind == DeviceInfo::Hamlib) a.tune.radio["audio_iq"] = std::to_string(a.audioIqMode);
         a.engine.setComputeMode(a.computeMode); a.engine.setStandard(engineStd(a));
         a.engine.start(a.devices[a.devIdx], a.tune, a.file);
         savePrefs(a);
@@ -121,12 +121,14 @@ void sampleRateControl(App& a) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A recording plays at the rate it was made at: set it with the file."));
         return;
     }
-    if (d.isAudio()) {
+    if (d.isAudio() || d.kind == DeviceInfo::Hamlib) {
         const double hz = run ? a.engine.radioRate() : 48000.0;
         char b[64];
-        snprintf(b, sizeof b, "%.0f Hz (sound card)", hz);
+        snprintf(b, sizeof b, "%.0f Hz (%s)", hz, d.kind == DeviceInfo::Hamlib ? tr("Hamlib + audio") : tr("sound card"));
         ImGui::TextUnformatted(b);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("The capture rate of the sound card. The engine runs at this rate; there is no radio to tune."));
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", d.kind == DeviceInfo::Hamlib
+            ? tr("Hamlib sets the rig frequency; IQ or audio is captured at the sound card's rate.")
+            : tr("The capture rate of the sound card. The engine runs at this rate; there is no radio to tune."));
         return;
     }
     if (!run && a.rateCtx != rateContext(a)) applyBandwidth(a);   // another mode, radio or channel width: its own Auto and its own choice
@@ -336,6 +338,72 @@ void netRadioWindow(App& a) {
     ImGui::End();
 }
 
+void hamlibRigWindow(App& a) {
+    if (!a.hamlibAddOpen) return;
+    ImGui::SetNextWindowSize(ImVec2(420 * gUi, 0), ImGuiCond_Appearing);
+    if (!ImGui::Begin(trw("Hamlib rigs"), &a.hamlibAddOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) { ImGui::End(); return; }
+    if (!hamlibSupported()) {
+        ImGui::TextColored(ImVec4(0.95f, 0.78f, 0.25f, 1), "%s", tr("This build has no Hamlib. Rebuild with -DDECT2_HAVE_HAMLIB=ON after installing Hamlib."));
+        ImGui::End();
+        return;
+    }
+    ImGui::TextDisabled("%s", tr("Serial CAT rig: OnAir tunes frequency and mode over Hamlib; IQ or speaker audio comes from a sound card when set."));
+    ImGui::SetNextItemWidth(120 * gUi);
+    ImGui::InputInt(tr("Model"), &a.hamlibAddModel, 0, 0);
+    a.hamlibAddModel = std::max(1, a.hamlibAddModel);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Hamlib rig model number (rigctl -l), e.g. 1025 for IC-7300."));
+    ImGui::SetNextItemWidth(280 * gUi);
+    ImGui::InputTextWithHint(tr("Serial port"), "/dev/cu.usbmodem… or COM3", a.hamlibAddPath, sizeof a.hamlibAddPath);
+    ImGui::SetNextItemWidth(280 * gUi);
+    ImGui::InputTextWithHint(tr("Label"), tr("optional"), a.hamlibAddLabel, sizeof a.hamlibAddLabel);
+    ImGui::SetNextItemWidth(280 * gUi);
+    ImGui::InputTextWithHint(tr("Sound card id"), tr("empty = CAT only (silence IQ)"), a.hamlibAddAudio, sizeof a.hamlibAddAudio);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("The same device id as in “Sound card: …” in the source list. Use a VAC or line input for WebSDR-style IQ."));
+    static bool hamlibPathMissing = false;
+    if (ImGui::Button(tr("Add"))) {
+        HamlibRig r;
+        r.model = a.hamlibAddModel;
+        r.path = a.hamlibAddPath;
+        r.label = a.hamlibAddLabel;
+        r.audioId = a.hamlibAddAudio;
+        if (r.path.empty()) hamlibPathMissing = true;
+        else {
+            hamlibPathMissing = false;
+            const auto it = std::find(a.hamlibRigs.begin(), a.hamlibRigs.end(), r);
+            if (it == a.hamlibRigs.end()) a.hamlibRigs.push_back(r);
+            savePrefs(a);
+            if (!a.engine.running()) {
+                refreshDevices(a);
+                const std::string name = hamlibRigDeviceName(r);
+                for (int i = 0; i < (int)a.devices.size(); i++) if (a.devices[i].name == name) { a.devIdx = i; a.tune.biasTee = false; break; }
+            }
+            a.hamlibAddOpen = false;
+        }
+    }
+    if (hamlibPathMissing) ImGui::TextColored(ImVec4(1.f, 0.45f, 0.4f, 1), "%s", tr("Enter the serial port path."));
+    if (!a.hamlibRigs.empty()) {
+        ImGui::Separator();
+        ImGui::TextDisabled("%s", tr("Added rigs (listed with the others)"));
+        int drop = -1;
+        ImGui::BeginDisabled(a.engine.running());
+        for (int i = 0; i < (int)a.hamlibRigs.size(); i++) {
+            ImGui::PushID(i);
+            if (ImGui::SmallButton(tr("Remove"))) drop = i;
+            ImGui::SameLine();
+            ImGui::TextUnformatted(hamlibRigDeviceName(a.hamlibRigs[i]).c_str());
+            ImGui::PopID();
+        }
+        ImGui::EndDisabled();
+        if (drop >= 0) {
+            a.hamlibRigs.erase(a.hamlibRigs.begin() + drop);
+            savePrefs(a);
+            refreshDevices(a);
+            a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
+        }
+    }
+    ImGui::End();
+}
+
 void toolbarParts(App& a, int mask, bool vertical) {
     bool running = a.engine.running();
     bool retune = false;
@@ -363,6 +431,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
         }
         ImGui::Separator();
         if (ImGui::Selectable(tr("Add network radio…"))) a.netAddOpen = true;
+        if (hamlibSupported() && ImGui::Selectable(tr("Add Hamlib rig…"))) a.hamlibAddOpen = true;
         ImGui::EndCombo();
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
@@ -399,6 +468,7 @@ void toolbarParts(App& a, int mask, bool vertical) {
     ImGui::EndDisabled();
     ImGui::EndDisabled();
     netRadioWindow(a);
+    hamlibRigWindow(a);
     radioMessagesUi(a, vertical);
     {   // a radio too slow for the mode: said here for every mode (the engine's log line was all there was)
         const std::string rw = rateWarning(a);
@@ -540,7 +610,8 @@ void toolbarParts(App& a, int mask, bool vertical) {
     ImGui::EndDisabled();
     if (!isHw && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)"));
     if (isHw) {   // sample clean-up for zero-IF radios; applied as the samples come in, so it works while running
-        if (vertical) ImGui::NewLine(); else flowNext(14 * gUi);
+        if (!vertical) flowNext(14 * gUi);
+        if (vertical) ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 2 * gUi));
         bool iq = a.engine.iqFix().iq;
         // the DC spike (the radio's own oscillator leaking in): left alone, removed, or kept off the channel by offset tuning
         int dcMode = a.engine.autoOffset() ? 2 : a.engine.iqFix().dc ? 1 : 0;
@@ -559,9 +630,10 @@ void toolbarParts(App& a, int mask, bool vertical) {
                                                       "back digitally. Needs a higher sample rate (DAB about 3.5 Msps); a radio too slow for it removes the spike instead.\n"
                                                       "A line that stays at a round frequency (e.g. 650.000 MHz) when you retune is interference from the radio's clock, not the DC spike."));
         if (a.engine.running() && a.engine.offsetHz() > 0) { ImGui::SameLine(); ImGui::TextDisabled(tr("%+.2f MHz"), -a.engine.offsetHz() / 1e6); }
-        if (vertical) ImGui::NewLine(); else flowNext(10 * gUi);
+        if (!vertical) flowNext(10 * gUi);
         if (ImGui::Checkbox(tr("IQ correction"), &iq)) { a.engine.iqFix().iq = iq; savePrefs(a); }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("Corrects I/Q gain and phase imbalance, which puts a faint mirror image of every signal on the other side of the centre.\nMeasured from the signal itself; now %.2f dB, %.1f degrees. Not applied in DTMB and analog TV (their signals fool the measurement)."), a.engine.iqFix().gainDb(), a.engine.iqFix().phaseDeg());
+        if (vertical) ImGui::PopStyleVar();
     }
     if (!curDev.hasBiasTee) a.tune.biasTee = false;   // a radio without antenna power never inherits the setting of another one
     if (const std::string bc = biasContext(a); bc != a.biasCtx) {   // another mode or radio (or the start): its own saved antenna power
@@ -571,10 +643,12 @@ void toolbarParts(App& a, int mask, bool vertical) {
         if (a.tune.biasTee != was && a.engine.running()) retune = true;
     }
     if (curDev.hasBiasTee) {
-        if (vertical) ImGui::NewLine(); else flowNext(14 * gUi);
+        if (!vertical) flowNext(14 * gUi);
+        else ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 2 * gUi));
         if (ImGui::Checkbox(tr("Bias-tee (antenna power)"), &a.tune.biasTee)) { retune = true; saveBiasTee(a); }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Sends DC power up the antenna cable for an active antenna or LNA (e.g. a GNSS patch antenna). Leave it off with a passive antenna, and never with a DC short in the antenna path (some antennas, splitters or filters): it can damage the radio."));
         if (a.family == 12 && !a.tune.biasTee) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", tr("Most GNSS antennas are active and need this on.")); ImGui::PopTextWrapPos(); }
+        if (vertical) ImGui::PopStyleVar();
     }
     if (vertical) radioSettingsUi(a, true);   // radio_ui.cpp: the selected radio's own settings (frequency correction, notch filters, ...); a one-line bar has its button elsewhere
     }
@@ -771,13 +845,14 @@ void secondModeControl(App& a, bool vertical) {
 bool sourceOptionsOpen(const App& a) {
     if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return false;
     const DeviceInfo::Kind k = a.devices[a.devIdx].kind;
-    return k == DeviceInfo::Synthetic || (k == DeviceInfo::File && !a.engine.running()) || k == DeviceInfo::Audio;
+    return k == DeviceInfo::Synthetic || (k == DeviceInfo::File && !a.engine.running()) || k == DeviceInfo::Audio || k == DeviceInfo::Hamlib;
 }
 
 void sourceOptions(App& a) {
     bool running = a.engine.running();
     bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
     const bool isAudio = a.devices[a.devIdx].isAudio();
+    const bool isHamlib = a.devices[a.devIdx].kind == DeviceInfo::Hamlib;
     if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic) {
         SynthConfig& sc = a.tune.synth;
         bool ch = false;
@@ -889,7 +964,20 @@ void sourceOptions(App& a) {
         ImGui::Checkbox(tr("loop"), &a.file.loop);
         flowEnd();
     }
-    if (isAudio) {
+    if (isHamlib) {
+        ImGui::TextDisabled("%s", tr("Hamlib CAT"));
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::PushTextWrapPos(380 * gUi);
+            ImGui::TextUnformatted(tr("Frequency and mode go to the rig over the serial port. Set a sound card id when adding the rig for IQ or a speaker tap; leave it empty for CAT-only (silence IQ)."));
+            ImGui::PopTextWrapPos();
+            ImGui::EndTooltip();
+        }
+        flowEnd();
+    }
+    if (isAudio || isHamlib) {
         ImGui::TextDisabled("%s", tr("sound card"));
         ImGui::SameLine();
         ImGui::TextDisabled("(?)");

@@ -164,6 +164,7 @@ void infoPopup() {
         if (mk->headingDeg >= 0) ImGui::Text("heading %.0fÂ°", mk->headingDeg);
         double rl, ro, km, brg; receiverLocation(rl, ro); dect2::greatCircle(rl, ro, mk->lat, mk->lon, km, brg);
         ImGui::Text("%.1f km at %.0fÂ° from the receiver", km, brg);
+        if (ImGui::Button(tr("Point antenna rotator"))) rotatorPointBearing(brg, 0);
         ImGui::Text("last heard %s ago", dect2::ageText(mk->ageSec).c_str());
         if (!mk->detail.empty()) ImGui::TextDisabled("%s", mk->detail.c_str());
     } else if (S.selLayer == dect2::LayerSat) {

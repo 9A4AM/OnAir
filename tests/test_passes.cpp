@@ -137,6 +137,21 @@ int main() {
     }
     // ---- when to fetch TLEs again: never fetched -> now; a day after a success; a failed try waits 6 hours; a clock set back does not block
     {
+        Observer o;
+        o.latDeg = 54.687;
+        o.lonDeg = 25.280;
+        o.altKm = 0.15;
+        Look l;
+        CHECK(geoLookAngles(o, 19.2, l), "GEO look Vilnius → 19.2°E");
+        CHECK(l.elDeg > 22.0 && l.elDeg < 38.0, "elevation %.2f", l.elDeg);
+        CHECK(l.azDeg > 175.0 && l.azDeg < 195.0, "azimuth %.2f", l.azDeg);
+        Observer eq;
+        eq.latDeg = 0;
+        eq.lonDeg = 0;
+        CHECK(geoLookAngles(eq, 0.0, l), "GEO look equator under 0° sat");
+        CHECK(l.elDeg > 89.0, "zenith el %.2f", l.elDeg);
+    }
+    {
         const double D = 86400, H = 3600, t = 1.8e9;
         CHECK(tleUpdateDue(t, 0, 0), "never fetched: due");
         CHECK(!tleUpdateDue(t, t - 23 * H, 0), "23 h after a success: not due");
