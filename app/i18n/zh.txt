@@ -1121,3 +1121,29 @@ Documentation	文档
 Troubleshooting	故障排除
 Voice codecs (mbelib)	语音编解码器 (mbelib)
 Website	网站
+Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted.	被动：只读取接入点广播的信标、探测响应和 FILS 发现帧。不发射、不连接、不解密。
+all	全部
+Width	宽度
+Std	标准
+First seen	首次发现
+Channels	信道
+This radio is specified up to %.0f MHz: %.0f MHz is out of its range	该无线电的规格上限为 %.0f MHz：%.0f MHz 超出其范围
+This radio is specified from %.0f MHz: %.0f MHz is out of its range	该无线电的规格下限为 %.0f MHz：%.0f MHz 超出其范围
+A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps	20 MHz 信道需要 20 Msps；该无线电仅达到 %.1f Msps
+2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).	2.4 GHz：信道 1 - 14。5 GHz：36 - 177（含 DFS）。6 GHz：1 - 233（Wi-Fi 6E / 7）。
+Domain	地区
+The channels each region allows. All lists every channel.	各地区允许的信道。“全部”列出所有信道。
+other	其他
+One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery.	一次一个 20 MHz 信道。更宽的网络在其 20 MHz 主信道上发送信标。6 GHz：信道 5、21、37 …（PSC）承载 FILS 发现。
+hop##wfhop	跳频##wfhop
+Step through the band's channels; dwell longer than 102.4 ms (the beacon interval).	依次扫描该频段的信道；停留时间需大于 102.4 ms（信标间隔）。
+PSC only##wfpsc	仅 PSC##wfpsc
+skip DFS##wfdfs	跳过 DFS##wfdfs
+Networks	网络
+Beacons	信标
+Strongest	最强
+Networks per channel	每信道网络数
+Channels 1, 6 and 11 do not overlap.	信道 1、6 和 11 互不重叠。
+Amber: DFS channels (radar sharing).	琥珀色：DFS 信道（与雷达共用）。
+Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	亮色数字：优先扫描信道（PSC），FILS 发现帧在其上发送。
+start the receiver to see the channels	启动接收机以查看信道

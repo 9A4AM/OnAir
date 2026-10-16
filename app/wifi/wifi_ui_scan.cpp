@@ -66,7 +66,7 @@ std::string radioNote(const App& a) {
         return b;
     }
     if (d.maxRateHz > 0 && d.maxRateHz < 20e6 - 1) {
-        snprintf(b, sizeof b, tr("A 20 MHz Wi-Fi channel needs 20 Msps; this radio reaches %.1f Msps, so only part of each channel is heard"), d.maxRateHz / 1e6);
+        snprintf(b, sizeof b, tr("A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps"), d.maxRateHz / 1e6);
         return b;
     }
     return "";
@@ -90,7 +90,7 @@ void tunerControls(App& a, bool& retune) {
             }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (UNII-1 to UNII-4, with the radar-sharing DFS channels). 6 GHz (Wi-Fi 6E / 7): channels 1 - 233 (5925 - 7125 MHz)."));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7)."));
     ImGui::SameLine(0, 8 * gUi);
     ImGui::TextDisabled("%s", tr("Domain"));
     ImGui::SameLine(0, 5 * gUi);
@@ -99,7 +99,7 @@ void tunerControls(App& a, bool& retune) {
         for (int d = 0; d < kDomains; d++) if (ImGui::Selectable(domainName(d), d == S.domain)) { S.domain = d; save(); }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Which channels of the band are listed and scanned: each region allows a different set. All lists every channel of the plan."));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("The channels each region allows. All lists every channel."));
     ImGui::TextDisabled("%s", tr("Channel"));
     const int cur = curBand == S.band ? bandChannelOf(S.band, mhz) : 0;
     char label[48];
@@ -114,10 +114,10 @@ void tunerControls(App& a, bool& retune) {
         }
         ImGui::EndCombo();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A 20 MHz channel at a time (20 Msps). Beacons of a 40 / 80 / 160 MHz network are sent on its 20 MHz primary channel too, so the primary is enough. 6 GHz: the preferred scanning channels (PSC) 5, 21, 37 ... carry the FILS discovery frames."));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery."));
     ImGui::SameLine(0, 8 * gUi);
     if (ImGui::Checkbox(tr("hop##wfhop"), &S.hop)) save();
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Step through the channels of the band, one dwell time each. A network beacons about ten times a second, so the dwell has to be longer than 102.4 ms."));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Step through the band's channels; dwell longer than 102.4 ms (the beacon interval)."));
     if (S.hop) {
         ImGui::SameLine(0, 5 * gUi);
         ImGui::SetNextItemWidth(std::min(100 * gUi, ImGui::GetContentRegionAvail().x));

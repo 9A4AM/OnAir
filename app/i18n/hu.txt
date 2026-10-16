@@ -1106,3 +1106,29 @@ Documentation	Dokumentáció
 Troubleshooting	Hibaelhárítás
 Voice codecs (mbelib)	Hangkodekek (mbelib)
 Website	Weboldal
+Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted.	Passzív: csak a hozzáférési pontok beacon, szondaválasz és FILS discovery kereteit olvassa. Semmit nem ad, nem csatlakozik és nem fejt vissza.
+all	mind
+Width	Szélesség
+Std	Szab.
+First seen	Először látva
+Channels	Csatornák
+This radio is specified up to %.0f MHz: %.0f MHz is out of its range	Ez a rádió %.0f MHz-ig specifikált: a(z) %.0f MHz kívül esik a tartományán
+This radio is specified from %.0f MHz: %.0f MHz is out of its range	Ez a rádió %.0f MHz-től specifikált: a(z) %.0f MHz kívül esik a tartományán
+A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps	Egy 20 MHz-es csatornához 20 Msps kell; ez a rádió csak %.1f Msps-t ér el
+2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).	2.4 GHz: 1 - 14. csatorna. 5 GHz: 36 - 177 (DFS-sel). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).
+Domain	Régió
+The channels each region allows. All lists every channel.	A régió által engedélyezett csatornák. A Mind minden csatornát felsorol.
+other	egyéb
+One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery.	Egyszerre egy 20 MHz-es csatorna. A szélesebb hálózatok a 20 MHz-es elsődleges csatornájukon adnak beacont. 6 GHz: az 5., 21., 37. ... csatorna (PSC) hordozza a FILS discoveryt.
+hop##wfhop	léptetés##wfhop
+Step through the band's channels; dwell longer than 102.4 ms (the beacon interval).	A sáv csatornáinak végigjárása; 102.4 ms-nál hosszabb tartózkodás (a beacon-időköz).
+PSC only##wfpsc	csak PSC##wfpsc
+skip DFS##wfdfs	DFS kihagyása##wfdfs
+Networks	Hálózatok
+Beacons	Beaconök
+Strongest	Legerősebb
+Networks per channel	Hálózatok csatornánként
+Channels 1, 6 and 11 do not overlap.	Az 1., 6. és 11. csatorna nem fedi át egymást.
+Amber: DFS channels (radar sharing).	Borostyán: DFS-csatornák (radarral osztott).
+Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Világos számok: előnyben részesített keresési csatornák (PSC), ahol a FILS discovery megy.
+start the receiver to see the channels	indítsd el a vevőt a csatornák megtekintéséhez

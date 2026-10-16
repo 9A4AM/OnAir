@@ -1,13 +1,18 @@
-// Wi-Fi network monitor: the access points around, from the beacons they broadcast openly on 2.4 GHz, as a phone's Wi-Fi list shows them
-// (SSID, BSSID and vendor, channel, security, rates, beacon interval, level). Passive: it never transmits, probes, associates or
-// joins, and parses only beacons and probe responses; every other frame (data included) is only counted, never decoded.
+// Wi-Fi network monitor: the access points around, from the beacons they broadcast openly on 2.4, 5 and 6 GHz, as a phone's Wi-Fi list shows
+// them (SSID, BSSID and vendor, band, channel, width, standard, security, capabilities, beacon interval, level). Passive: it never transmits,
+// probes, associates or joins, and parses only beacons, probe responses and FILS discovery frames; every other frame (data included) is only
+// counted, never decoded.
+//
+// Two PHYs run side by side on the same 20 Msps stream: the 802.11b DSSS chain below (2.4 GHz, and only there or when the band is unknown) and
+// the OFDM receiver of wifi_ofdm.h (every band: 5 and 6 GHz beacons are OFDM at 6 Mbit/s). The band comes from the radio's centre frequency
+// (setCenterHz). A capture of 43.5 Msps or more on 5 / 6 GHz is split into the 20 MHz channels it holds, each with its own OFDM receiver (the
+// channel filter of channelizer.h); a frame heard on the secondary 20 MHz of a wider network (the non-HT duplicate) is counted, not listed twice.
 //
 // 802.11b DSSS at 1 Mbit/s (IEEE 802.11 clause 15), how APs send their beacons on 2.4 GHz: DBPSK, each symbol spread by Barker-11 at
 // 11 Mchip/s. The input is mixed to 0 Hz and brought to 20 Msps (exactly 20 samples a symbol), correlated with the Barker sequence, and
 // each of the 20 sample phases runs its own differential detector and descrambler (z^-7 + z^-4 + 1, self-synchronising) looking for the
 // long preamble: 32 descrambled ones then the SFD 0xF3A0. The strongest phase decodes the PLCP header (CRC-16) and the MPDU with an
-// early / late timing tracker; the FCS (CRC-32) must pass. Short-preamble and 2 / 5.5 / 11 Mbit/s headers are counted, not decoded;
-// APs that beacon only at OFDM rates (802.11g / n, 6 Mbit/s) are not heard.
+// early / late timing tracker; the FCS (CRC-32) must pass. Short-preamble and 2 / 5.5 / 11 Mbit/s headers are counted, not decoded.
 //
 // Written to the engine's contract: configure() once the sample rate is known, feed() from the analysis thread (never blocks),
 // telemetry() and the setters from the interface thread.

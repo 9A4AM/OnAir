@@ -1103,3 +1103,29 @@ Documentation	Documentação
 Troubleshooting	Resolução de problemas
 Voice codecs (mbelib)	Codecs de voz (mbelib)
 Website	Site
+Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted.	Passivo: só são lidos os beacons, respostas de sondagem e quadros FILS discovery que os pontos de acesso difundem. Nada é transmitido, associado ou decifrado.
+all	todos
+Width	Largura
+Std	Pad.
+First seen	Visto pela primeira vez
+Channels	Canais
+This radio is specified up to %.0f MHz: %.0f MHz is out of its range	Este rádio está especificado até %.0f MHz: %.0f MHz está fora do seu alcance
+This radio is specified from %.0f MHz: %.0f MHz is out of its range	Este rádio está especificado a partir de %.0f MHz: %.0f MHz está fora do seu alcance
+A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps	Um canal de 20 MHz precisa de 20 Msps; este rádio só chega a %.1f Msps
+2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).	2.4 GHz: canais 1 - 14. 5 GHz: 36 - 177 (com DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).
+Domain	Domínio
+The channels each region allows. All lists every channel.	Os canais que cada região permite. Todos lista todos os canais.
+other	outro
+One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery.	Um canal de 20 MHz de cada vez. As redes mais largas emitem beacons no seu canal primário de 20 MHz. 6 GHz: os canais 5, 21, 37 ... (PSC) levam o FILS discovery.
+hop##wfhop	saltar##wfhop
+Step through the band's channels; dwell longer than 102.4 ms (the beacon interval).	Percorre os canais da banda; permanência superior a 102.4 ms (o intervalo de beacon).
+PSC only##wfpsc	só PSC##wfpsc
+skip DFS##wfdfs	ignorar DFS##wfdfs
+Networks	Redes
+Beacons	Beacons
+Strongest	Mais forte
+Networks per channel	Redes por canal
+Channels 1, 6 and 11 do not overlap.	Os canais 1, 6 e 11 não se sobrepõem.
+Amber: DFS channels (radar sharing).	Âmbar: canais DFS (partilhados com radar).
+Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Números claros: canais de pesquisa preferidos (PSC), onde o FILS discovery é enviado.
+start the receiver to see the channels	inicie o receptor para ver os canais

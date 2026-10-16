@@ -1,6 +1,7 @@
 // Wi-Fi (IEEE 802.11) pieces of the network monitor: 2.4 GHz channels, the DSSS PHY's scrambler, PLCP header and CRCs, and the
-// management frames access points announce themselves with (beacons and probe responses). Built from IEEE 802.11-2020 clause 15 (DSSS)
-// and 9.3.3 / 9.4.2 (management frames and elements). Only beacons and probe responses are parsed; other frames are only classified.
+// management frames access points announce themselves with (beacons, probe responses and, on 6 GHz, FILS discovery). Built from IEEE 802.11-2020
+// clause 15 (DSSS) and 9.3.3 / 9.4.2 (management frames and elements); the capability and operation elements are in wifi_elems.h, the channel plans
+// of all three bands in wifi_chan.h, the OFDM PHY in wifi_ofdm.h. Only beacons, probe responses and FILS discovery are parsed; other frames are only classified.
 #pragma once
 #include "dect2/wifi/wifi_elems.h"
 #include <cstddef>

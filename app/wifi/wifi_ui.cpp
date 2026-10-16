@@ -64,7 +64,7 @@ ImVec4 securityColour(int s) {
 
 void passiveNote() {
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("%s", tr("Passive: only the beacons, probe responses and FILS discovery frames access points broadcast openly are read, as a phone's Wi-Fi list sees them. OnAir never transmits, probes, joins or decrypts; data frames are only counted. 2.4 GHz beacons are heard as 802.11b (1 Mbit/s) and as OFDM; 5 and 6 GHz beacons as OFDM at 6 Mbit/s."));
+    ImGui::TextDisabled("%s", tr("Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted."));
     ImGui::PopTextWrapPos();
 }
 

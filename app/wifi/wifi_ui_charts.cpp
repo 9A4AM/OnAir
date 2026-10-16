@@ -90,9 +90,9 @@ static void occupancy(const dect2::WifiTelemetry& t) {
         }
     }
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("%s", S.band == Band24 ? tr("A 2.4 GHz network is 20 - 22 MHz wide: channels 1, 6 and 11 do not overlap.")
-                          : S.band == Band5 ? tr("Bars in amber are DFS channels (radar sharing). Each channel is 20 MHz; wider networks use several in a row.")
-                                            : tr("Channel numbers in bright text are the preferred scanning channels (PSC), where FILS discovery frames are sent."));
+    ImGui::TextDisabled("%s", S.band == Band24 ? tr("Channels 1, 6 and 11 do not overlap.")
+                          : S.band == Band5 ? tr("Amber: DFS channels (radar sharing).")
+                                            : tr("Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent."));
     ImGui::PopTextWrapPos();
 }
 
