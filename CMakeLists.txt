@@ -894,6 +894,7 @@ if(DECT2_BUILD_TESTS)
   onair_rust_diff_tests(acars acars_proto acars acars_proto dect2/acars/acars_proto.h "namespace dect2 {" "namespace dect2_acars_ref {" " using namespace dect2;" ${CMAKE_SOURCE_DIR}/core/include/dect2/acars)
   onair_rust_diff_tests(adsb adsb_msg adsb adsb_msg dect2/adsb/adsb_msg.h "namespace dect2::adsb {" "namespace dect2::adsb_ref {" "" "")
   onair_rust_diff_tests(pager pager_proto pager pager_proto dect2/pager/pager_proto.h "namespace pager {" "namespace pager_ref {" "" ${CMAKE_SOURCE_DIR}/core/include/dect2/pager)
+  onair_rust_diff_tests(nxdn nxdn_proto nxdn nxdn_proto dect2/nxdn/nxdn_proto.h "namespace nxdn {" "namespace nxdn_ref {" "" "")
   # AX.25 and APRS: one test program with two generated reference copies (packet_ax25.cpp and packet_aprs.cpp), tests live in tests/packet
   if(ONAIR_RUST_AX25)
     set(_dir ${CMAKE_BINARY_DIR}/ax25_ref)

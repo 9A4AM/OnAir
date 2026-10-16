@@ -9,6 +9,9 @@ namespace nxdn {
 
 const int kFsw[kFswSym] = {-3, 1, -3, 3, -3, -3, 3, 3, -1, 3};
 
+// Everything from here to the matching #endif is the C++ implementation; with DECT2_RUST_NXDN (rust/onair_nxdn) nxdn_proto_rs.cpp provides the
+// same functions. It stays until the Rust build is mandatory (rust/README.md); tests/nxdn/test_nxdn_proto_rs.cpp compares the two.
+#ifndef DECT2_RUST_NXDN
 void pn9(uint8_t* out, int n) {
     uint32_t r = 0xE4;
     for (int i = 0; i < n; i++) {
@@ -236,6 +239,8 @@ void ambeFrame(const uint8_t bits[72], char fr[4][24]) {
     memset(fr, 0, 4 * 24);
     for (int j = 0; j < 36; j++) { fr[nW[j]][nX[j]] = (char)(bits[2 * j] & 1); fr[nY[j]][nZ[j]] = (char)(bits[2 * j + 1] & 1); }
 }
+
+#endif // DECT2_RUST_NXDN
 
 } // namespace nxdn
 } // namespace dect2

@@ -68,7 +68,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 | ax25 | `onair_ax25` | `DECT2_RUST_AX25` | `rs/ax25.h` | AX.25 frame parser, FCS, address / path / TNC-2 text, HDLC receiver, APRS parser (positions, Mic-E, objects, items, messages, weather, telemetry...) | done (frame builder, HDLC / NRZI / G3RUH transmit helpers and receiver in C++) |
 | dmr | `onair_dmr` | `DECT2_RUST_DMR` | `rs/dmr.h` | DMR | not started |
 | p25 | `onair_p25` | `DECT2_RUST_P25` | `rs/p25.h` | P25 | not started |
-| nxdn | `onair_nxdn` | `DECT2_RUST_NXDN` | `rs/nxdn.h` | NXDN | not started |
+| nxdn | `onair_nxdn` | `DECT2_RUST_NXDN` | `rs/nxdn.h` | NXDN frame layer: scrambler, LICH, CRC-6/12/16, SACCH / FACCH1 / CAC coding (convolutional code, interleaver, soft Viterbi), layer 3 messages, AMBE+2 bit order | done (receiver, generator and vocoder glue in C++) |
 | dstar | `onair_dstar` | `DECT2_RUST_DSTAR` | `rs/dstar.h` | D-STAR | not started |
 | tetra | `onair_tetra` | `DECT2_RUST_TETRA` | `rs/tetra.h` | TETRA | not started |
 | vdl2 | `onair_vdl2` | `DECT2_RUST_VDL2` | `rs/vdl2.h` | VDL2 | not started |
