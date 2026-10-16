@@ -237,13 +237,13 @@ int runChild(const Entry& en, double rate, double secs, const std::string& path,
     muteAndConfigure(e, en, spectrum);
     DeviceInfo dev; dev.kind = DeviceInfo::File; dev.name = path;
     FileOptions fo; fo.path = path; fo.format = FileFormat::CS8; fo.sampleRate = rate; fo.loop = false;
-    // order-sensitive FNV-1a of every transport-stream packet the receiver delivers, with a checkpoint every 500 packets: the run stops when the
+    // order-sensitive FNV-1a of every transport-stream packet the receiver delivers, with a checkpoint every 64 packets: the run stops when the
     // file has been processed, so the tail varies with timing, but the common prefix of the checkpoints of two runs must be identical
     std::string tsCps; uint64_t tsN = 0, tsH = 1469598103934665603ull;
     e.setPacketTap([&](const uint8_t* pk, size_t n, const TsSnapshot*, double) {
         for (size_t i = 0; i < n; i++) {
             for (int b = 0; b < 188; b++) tsH = (tsH ^ pk[i * 188 + b]) * 1099511628211ull;
-            if (++tsN % 500 == 0) { char h[24]; snprintf(h, sizeof h, "%s%llx", tsCps.empty() ? "" : ",", (unsigned long long)tsH); tsCps += h; }
+            if (++tsN % 64 == 0) { char h[24]; snprintf(h, sizeof h, "%s%llx", tsCps.empty() ? "" : ",", (unsigned long long)tsH); tsCps += h; }
         }
     });
     const double cpu0 = cpuSeconds();
