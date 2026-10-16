@@ -11,6 +11,7 @@ namespace dect2 {
 
 namespace ism_detail {
 
+// nexus.c: Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 (36 bits PPM, no check: a row repeated 3 times)
 void decNexus(Bits& B, Out& out) {
     const int r = B.findRepeatedRow(3, 36);
     if (r < 0 || B.n[r] > 37) return;

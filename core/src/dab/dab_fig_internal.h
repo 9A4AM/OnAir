@@ -39,7 +39,7 @@ inline const char* const kLanguage[] = {
     "Malaysian", "Malagasay", "Macedonian", "Laotian", "Korean", "Khmer", "Kazakh", "Kannada", "Japanese", "Indonesian", "Hindi", "Hebrew",
     "Hausa", "Gurani", "Gujurati", "Greek", "Georgian", "Fulani", "Dari", "Chuvash", "Chinese", "Burmese", "Bulgarian", "Bengali",
     "Belorussian", "Bambora", "Azerbaijani", "Assamese", "Armenian", "Arabic", "Amharic"};
-const char* language(unsigned c) { return c < sizeof kLanguage / sizeof *kLanguage ? kLanguage[c] : "invalid language code"; }
+inline const char* language(unsigned c) { return c < sizeof kLanguage / sizeof *kLanguage ? kLanguage[c] : "invalid language code"; }
 
 // TS 101 756 tables 14 and 15
 inline const char* const kAnnounce[16] = {"Alarm", "Road Traffic flash", "Transport flash", "Warning/Service", "News flash", "Area weather flash",
@@ -56,13 +56,13 @@ inline const char* const kPty[2][32] = {
      "Oldies", "Soft", "Nostalgia", "Jazz", "Classical", "Rhythm and Blues", "Soft Rhythm and Blues", "Foreign Language",
      "Religious Music", "Religious Talk", "Personality", "Public", "College", "rfu", "rfu", "rfu", "rfu", "rfu", "Weather", "Not used",
      "Not used"}};
-const char* ptyName(int table, unsigned pty) {
+inline const char* ptyName(int table, unsigned pty) {
     if (table < 1 || table > 2) return "unknown international table Id";
     return pty < 32 ? kPty[table - 1][pty] : "invalid programme type";
 }
 
 // TS 101 756 table 2
-const char* dscty(int t) {
+inline const char* dscty(int t) {
     switch (t) {
         case 0: return "Unspecified data";
         case 1: return "Traffic Message Channel (TMC)";
@@ -81,7 +81,7 @@ const char* dscty(int t) {
 
 inline const char* const kCaMode[8] = {"Sub-channel CA", "Data Group CA", "MOT CA", "proprietary CA", "reserved", "reserved", "reserved", "reserved"};
 
-const char* userApp(int t) {   // TS 101 756 table 16
+inline const char* userApp(int t) {   // TS 101 756 table 16
     switch (t) {
         case 0x000: return "Reserved for future definition";
         case 0x001: return "Not used";

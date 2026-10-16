@@ -14,6 +14,56 @@
 
 namespace dect2 {
 
+// ---------------------------------------------------------------- bit_util.c
+
+uint8_t ismCrc8(const uint8_t* m, unsigned n, uint8_t poly, uint8_t init) {
+    uint8_t r = init;
+    for (unsigned i = 0; i < n; i++) {
+        r ^= m[i];
+        for (int b = 0; b < 8; b++) r = (r & 0x80) ? (uint8_t)((r << 1) ^ poly) : (uint8_t)(r << 1);
+    }
+    return r;
+}
+
+uint16_t ismCrc16(const uint8_t* m, unsigned n, uint16_t poly, uint16_t init) {
+    uint16_t r = init;
+    for (unsigned i = 0; i < n; i++) {
+        r ^= (uint16_t)(m[i] << 8);
+        for (int b = 0; b < 8; b++) r = (r & 0x8000) ? (uint16_t)((r << 1) ^ poly) : (uint16_t)(r << 1);
+    }
+    return r;
+}
+
+uint8_t ismLfsrDigest8(const uint8_t* m, unsigned n, uint8_t gen, uint8_t key) {
+    uint8_t sum = 0;
+    for (unsigned k = 0; k < n; k++)
+        for (int i = 7; i >= 0; i--) {
+            if ((m[k] >> i) & 1) sum ^= key;
+            key = (key & 1) ? (uint8_t)((key >> 1) ^ gen) : (uint8_t)(key >> 1);
+        }
+    return sum;
+}
+
+uint8_t ismLfsrDigest8Reflect(const uint8_t* m, int n, uint8_t gen, uint8_t key) {
+    uint8_t sum = 0;
+    for (int k = n - 1; k >= 0; k--)
+        for (int i = 0; i < 8; i++) {
+            if ((m[k] >> i) & 1) sum ^= key;
+            key = (key & 0x80) ? (uint8_t)((key << 1) ^ gen) : (uint8_t)(key << 1);
+        }
+    return sum;
+}
+
+uint16_t ismLfsrDigest16(const uint8_t* m, unsigned n, uint16_t gen, uint16_t key) {
+    uint16_t sum = 0;
+    for (unsigned k = 0; k < n; k++)
+        for (int i = 7; i >= 0; i--) {
+            if ((m[k] >> i) & 1) sum ^= key;
+            key = (key & 1) ? (uint16_t)((key >> 1) ^ gen) : (uint16_t)(key >> 1);
+        }
+    return sum;
+}
+
 namespace {
 
 // Merges every run shorter than minUs into the run before it (the run after it joins that one too): a noise spike of the FSK

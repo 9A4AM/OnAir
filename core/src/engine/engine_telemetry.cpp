@@ -196,8 +196,8 @@ int poll81(Rx& rx, RxTelemetry& t, uint64_t* seqs) {
 
 }   // namespace
 
-// Fills t from the receiver of engine standard `a`. Returns 1 when t
-// holds new telemetry, 0 when there is none, -1 for a mode without a receiver here.
+// The report of the receivers from DVB-S on (the first mode and the second, each with its own report numbers): 1 = a new one in t,
+// 0 = none new, -1 = a is not one of them
 int Engine::pollMode(int a, RxTelemetry& t, uint64_t* seqs) {
     if (wideOn_.load(std::memory_order_relaxed) && WideModes::supports(a)) return wide_.telemetry(a, t, wideSeq_[a & 63]) ? 1 : 0;
     t.wide.clear();

@@ -74,13 +74,13 @@ struct SearchPlan {
     bool lastCfoValid = false;
 };
 
-double cpuNow() {
+inline double cpuNow() {
     timespec ts;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
     return (double)ts.tv_sec + 1e-9 * (double)ts.tv_nsec;
 }
 
-std::string satName(int sys, int prn) { return gnssSatName(sys, prn); }
+inline std::string satName(int sys, int prn) { return gnssSatName(sys, prn); }
 
 } // namespace gnss_rx_detail
 using namespace gnss_rx_detail;
