@@ -6,7 +6,7 @@
   <title>Map · OnAir</title>
   <meta name="description" content="Positions decoded in OnAir. Shared only when the user opts in, and only if the signal carried a location.">
   <link href="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.css" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=15">
 </head>
 <body>
   <div id="map"></div>
@@ -21,9 +21,14 @@
       <span class="load-track" aria-hidden="true"><span class="load-fill" id="loadFill"></span></span>
       <span class="load-pct" id="loadPct">0%</span>
     </span>
-    <span class="counts" id="counts"></span>
+    <span class="counts" id="counts" aria-label="Tracks per layer"></span>
     <span class="clock" id="clock"></span>
-    <input id="q" type="search" placeholder="Find callsign, MMSI, ICAO" autocomplete="off" spellcheck="false">
+    <span class="viewers" id="viewers" hidden></span>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search callsign, reg, hex, MMSI" aria-label="Search callsign, registration, ICAO hex or MMSI" role="combobox" aria-expanded="false" aria-controls="results" aria-autocomplete="list" autocomplete="off" spellcheck="false">
+      <kbd class="slash" aria-hidden="true">/</kbd>
+      <ul id="results" role="listbox" aria-label="Search results" hidden></ul>
+    </div>
     <a class="link donate" href="https://ko-fi.com/adswill" rel="noopener noreferrer" title="Donate on Ko-fi to help keep map.on-air.dev online">Support</a>
     <a class="link" href="https://on-air.dev">Download</a>
   </div>
@@ -41,6 +46,7 @@
       <div><i style="background:#6ccc7a"></i>FLARM</div>
       <div><i style="background:#969a9e"></i>Stale</div>
     </div>
+    <details class="iconkey"><summary>Icon guide</summary><div id="iconkey"></div></details>
     <div class="ptitle row">
       <span>Tracks</span>
       <span class="n" id="trackn">0</span>
@@ -49,10 +55,14 @@
     <div class="note" id="hint">Nothing on the map yet. In OnAir: Server → Send data to map server, then decode something that reports a position.</div>
   </aside>
 
-  <div class="pane inspect" id="card" hidden></div>
+  <div class="demo-banner" id="demoBanner" hidden>DEMO &mdash; synthetic aircraft, ships and sondes for previewing the page. Not real traffic.</div>
+  <div class="overlay" id="overlay" role="status"><span class="spin" aria-hidden="true"></span>Connecting to the live feed&hellip;</div>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <aside class="pane inspect" id="card" aria-label="Track details" hidden></aside>
 
   <div class="status">
     <span id="cursor">—</span>
+    <span class="keys" title="Keyboard shortcuts"><kbd>/</kbd> search <kbd>Esc</kbd> close</span>
     <span class="grow"></span>
     <span id="zoom"></span>
     <span>© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a></span>
@@ -60,6 +70,6 @@
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@5.7.3/dist/maplibre-gl.js"></script>
-  <script src="/app.js?v=12"></script>
+  <script type="module" src="/app.js?v=14"></script>
 </body>
 </html>

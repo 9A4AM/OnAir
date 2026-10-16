@@ -1,9 +1,11 @@
 {
   "name": "onair-map",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test": "node --test test/"
   },
   "devDependencies": {
     "wrangler": "^3.114.15"
