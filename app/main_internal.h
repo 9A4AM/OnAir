@@ -1,0 +1,25 @@
+// Shared by main.cpp, main_window.cpp, main_start.cpp and the main-window layout in ui/ (draw_ui.cpp, main_tabs.cpp):
+// the developer-flag state, the few globals and the helpers that were one file before.
+#pragma once
+#include "app.h"
+
+// The developer and test flags (--autostart, --shot, --stress ...): what main() and its frame loop act on.
+struct DevOpts {
+    bool autostart = false, hackrfStart = false, fileStart = false, stress = false;
+    int stressFrame = 0, stressStep = 0;
+    const char* shotPath = nullptr;
+    double shotAfter = 0;      // dev: take the --shot after this many seconds instead of after a number of frames
+    bool fmScanAuto = false;   // dev: start the FM band scan as soon as the receiver runs
+    int shotFrame = 0;
+};
+
+extern std::string gCrashNote;   // main.cpp: set when the last run crashed or the startup guard acted: shown once in a small window
+extern bool gIdentifyDev;        // ui/draw_ui.cpp: --identify
+extern bool gWayland;            // main_window.cpp: running on a native Wayland display (Linux)
+
+GLFWwindow* createMainWindow(int argc, char** argv);            // main_window.cpp: null when there is no window
+void loadFonts(App& app, ImGuiIO& io);                           // main_window.cpp
+void startApp(App& app, int argc);                               // main_start.cpp: startup guard, first-run dialogs, radios, last results
+void parseDevFlags(App& app, int argc, char** argv, DevOpts& o); // main_start.cpp
+bool anyRunning();                                               // ui/main_tabs.cpp
+void lightenDrawData(ImDrawData* dd, bool light = true, bool highContrast = false);   // ui/light_theme.cpp
