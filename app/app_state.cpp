@@ -358,6 +358,9 @@ void loadPrefs(App& a) {
     plat::Prefs& d = plat::prefs();
     a.netRadios = netRadiosFromString(d.getS("netRadios", ""));
     a.hamlibRigs = hamlibRigsFromString(d.getS("hamlibRigs", ""));
+    a.hamlibAddModel = std::max(1, (int)d.getI("hamlibAddModel", a.hamlibAddModel));
+    a.hamlibAddBaud = std::max(0, (int)d.getI("hamlibAddBaud", 0));
+    snprintf(a.hamlibAddPath, sizeof a.hamlibAddPath, "%s", d.getS("hamlibAddPath", "").c_str());
     if (d.has("freqMhz")) a.freqMhz = d.getD("freqMhz", a.freqMhz);
     if (d.has("lna")) a.tune.lnaDb = (int)d.getI("lna", a.tune.lnaDb);
     if (d.has("vga")) a.tune.vgaDb = (int)d.getI("vga", a.tune.vgaDb);
@@ -494,6 +497,9 @@ void savePrefs(const App& a) {
     if (a.rxId == 1) {
         d.setS("netRadios", netRadiosToString(a.netRadios));
         d.setS("hamlibRigs", hamlibRigsToString(a.hamlibRigs));
+        d.setI("hamlibAddModel", a.hamlibAddModel);   // the picker remembers its last choice
+        d.setI("hamlibAddBaud", a.hamlibAddBaud);
+        d.setS("hamlibAddPath", a.hamlibAddPath);
     }
     d.setS("devName", a.devIdx >= 2 && a.devIdx < (int)a.devices.size() ? a.devices[a.devIdx].name : std::string());   // the radio of this receiver, found again at the next start
     d.setD("freqMhz", a.freqMhz);

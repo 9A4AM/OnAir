@@ -23,6 +23,7 @@
 #include "dect2/nettuner.h"
 #include "dect2/netradio.h"
 #include "dect2/hamlib_rig.h"
+#include "dect2/rig_setup.h"
 #include "airplay.h"
 #include "dect2/timecompat.h"
 #include "dect2/platform.h"
@@ -285,7 +286,14 @@ struct App {
     std::vector<NetRadio> netRadios;
     std::vector<HamlibRig> hamlibRigs;   // prefs "hamlibRigs"; serial-CAT rigs listed with the other radios
     bool hamlibAddOpen = false;
-    int hamlibAddModel = 1025;            // default IC-7300; use rigctl -l for other models
+    int hamlibAddModel = 3073;            // the model picked last (prefs "hamlibAddModel"); 3073 = IC-7300 until the user picks another
+    int hamlibAddBaud = 0;                // 0 = the model's default
+    char hamlibModelQuery[64] = "";       // the search box of the model picker
+    std::vector<RigModelInfo> hamlibModels;   // Hamlib's model list, loaded the first time the window opens
+    std::vector<SerialPortInfo> hamlibPorts;  // serial ports found when the window opened or Refresh was pressed
+    bool hamlibWasOpen = false;
+    uint64_t hamlibRigSeq = 0;            // the last rig-side change applied to the frequency and mode boxes
+    bool hamlibLinkWas = true;            // the CAT link state last logged
     char hamlibAddPath[256] = "";
     char hamlibAddLabel[128] = "";
     char hamlibAddAudio[128] = "";         // AudioIn id (empty = CAT only, silence IQ)

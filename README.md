@@ -310,6 +310,8 @@ OnAir supports the **HackRF One and HackRF Pro** natively, and drives these radi
 - The radios other than the HackRF have had less real-world testing. Notes for specific radios are in **[DEVICES.md](DEVICES.md)**.
 - **Sound card** (the Radio list: **Sound card: …**, including Default input): WebSDR, a virtual audio cable, or a handheld radio's speaker/line into the computer, for HF decoders (FT8, RTTY, CW, SSB) at the capture rate (usually 48 kHz). Four mappings: I/Q stereo, USB audio, LSB audio, mono real. The frequency field is the *dial* the decoder should assume; nothing is tuned. This is not a replacement for an SDR when you need megahertz of bandwidth. Unverified against a real WebSDR.
 
+- **Hamlib rig** (source list: **Add Hamlib rig…**): a CAT-controlled radio such as an Icom IC-R8600 or IC-7300. Search the model by name or type its Hamlib number, pick the serial port from the list OnAir finds (or `host:port` for a `rigctld` on the network), and choose a sound card for the audio or IQ. While the receiver runs the frequency and mode follow in both directions: tune in OnAir and the rig follows, turn the rig's knob and OnAir follows. If the rig is unplugged or `rigctld` stops, OnAir says so and reconnects by itself. Receiving never keys the transmitter. Tested against Hamlib's dummy rig and `rigctld`; not against real rigs.
+
 ### Network radios
 
 Radios on another computer or on the network are added from the source list: pick **Add network radio…**, choose the type, type its address and press **Connect**. OnAir tries the connection for a few seconds and says why when it gets no answer; the radios added are remembered and listed with the others (remove them in the same window).
