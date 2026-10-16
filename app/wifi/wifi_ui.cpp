@@ -1,8 +1,11 @@
-// Wi-Fi network screens: the network table (SSID, hidden ones as hidden, BSSID and vendor, channel, security, level with a short history,
-// last seen, beacon interval, rates) with name, level and security filters, the beacon log, the channel picker and the hop over 1 - 13.
-// Passive: only the beacons and probe responses access points broadcast openly are read; nothing is sent, probed, joined or decrypted.
-#include "app.h"
+// Wi-Fi network screens: the network table (SSID, hidden ones as hidden, BSSID and vendor, band, channel, width, standard, security, level with a
+// short history, first and last seen, beacons, interval, capabilities) with name, level, band and security filters, the beacon log (beacons,
+// probe responses, FILS discovery), and the channels view. The band selector, channel list and hop scan are in wifi_ui_scan.cpp, the channel
+// occupancy chart in wifi_ui_charts.cpp.
+// Passive: only the beacons, probe responses and FILS discovery frames access points broadcast openly are read; nothing is sent, probed, joined or decrypted.
+#include "wifi_ui_int.h"
 #include "ui/ui_common.h"
+#include "dect2/wifi/wifi_chan.h"
 #include "dect2/wifi/wifi_proto.h"
 #include "dect2/wifi/wifi_rx.h"
 #include "dect2/wifi/wifi_tel.h"
@@ -18,30 +21,14 @@
 
 namespace {
 
-struct State {
-    int view = 0;                        // 0 networks, 1 beacons
-    bool loaded = false, hop = false;
-    int hopSec = 3;
-    double lastHop = 0;
-    char filter[64] = "";
-    float minRssi = -120;
-    bool openOnly = false;
-};
-State S;
-
-void loadState() {
-    if (S.loaded) return;
-    S.loaded = true;
-    S.hop = plat::prefs().getB("wifiHop", false);
-    S.hopSec = std::max(1, std::min(30, (int)plat::prefs().getI("wifiHopSec", 3)));
-}
-
-bool live(const App& a) { return a.rx.standard == 55; }   // the engine reports its standard code minus one
+using wfui::S;
+using wfui::live;
 
 std::string lower(std::string s) { for (char& c : s) c = (char)std::tolower((unsigned char)c); return s; }
 
 bool passes(const dect2::WifiAp& d) {
     if (d.rssi < S.minRssi) return false;
+    if (S.bandFilter >= 0 && d.band != S.bandFilter) return false;
     if (S.openOnly && d.security != dect2::wifi::Open && d.security != dect2::wifi::Owe) return false;
     if (!S.filter[0]) return true;
     const std::string f = lower(S.filter);
@@ -57,9 +44,7 @@ ImVec4 securityColour(int s) {
 
 void passiveNote() {
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("Passive: only the beacons and probe responses access points broadcast openly are read, as a phone's Wi-Fi list sees them. "
-                        "OnAir never transmits, probes, joins or decrypts; data frames are only counted. Heard: 802.11b beacons (1 Mbit/s DSSS), "
-                        "which most 2.4 GHz access points send; one that beacons only at OFDM rates (802.11g / n only) does not show.");
+    ImGui::TextDisabled("%s", tr("Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted."));
     ImGui::PopTextWrapPos();
 }
 
@@ -76,6 +61,15 @@ void filters(App& a) {
     flowNext(10 * gUi);
     ImGui::Checkbox("open only", &S.openOnly);
     flowNext(10 * gUi);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("%s", tr("Band")); ImGui::SameLine(0, 5 * gUi);
+    ImGui::SetNextItemWidth(std::min(80 * gUi, ImGui::GetContentRegionAvail().x));
+    if (ImGui::BeginCombo("##wfbf", S.bandFilter < 0 ? tr("all") : dect2::wifi::bandName(S.bandFilter))) {
+        if (ImGui::Selectable(tr("all"), S.bandFilter < 0)) S.bandFilter = -1;
+        for (int b = 0; b < 3; b++) if (ImGui::Selectable(dect2::wifi::bandName(b), S.bandFilter == b)) S.bandFilter = b;
+        ImGui::EndCombo();
+    }
+    flowNext(10 * gUi);
     if (ImGui::Button("Clear")) a.engine.wifi().clearNetworks();
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Forget every network and beacon heard so far");
     flowBreak();
@@ -86,13 +80,14 @@ void networksView(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to see the networks around you"); return; }
     filters(a);
     const dect2::WifiTelemetry& t = a.rx.wifi;
-    if (!ImGui::BeginTable("##wfnet", 10, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX,
+    if (!ImGui::BeginTable("##wfnet", 14, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX,
                            ImVec2(0, ImGui::GetContentRegionAvail().y)))
         return;
     ImGui::TableSetupScrollFreeze(0, 1);
-    ImGui::TableSetupColumn("SSID"); ImGui::TableSetupColumn("BSSID"); ImGui::TableSetupColumn("Vendor"); ImGui::TableSetupColumn("Ch");
-    ImGui::TableSetupColumn("Security"); ImGui::TableSetupColumn("Level"); ImGui::TableSetupColumn("Last seen"); ImGui::TableSetupColumn("Beacons");
-    ImGui::TableSetupColumn("Interval"); ImGui::TableSetupColumn("Rates (Mbit/s)", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("SSID"); ImGui::TableSetupColumn("BSSID"); ImGui::TableSetupColumn("Vendor"); ImGui::TableSetupColumn(tr("Band")); ImGui::TableSetupColumn("Ch");
+    ImGui::TableSetupColumn(tr("Width")); ImGui::TableSetupColumn(tr("Std")); ImGui::TableSetupColumn("Security"); ImGui::TableSetupColumn("Level");
+    ImGui::TableSetupColumn(tr("First seen")); ImGui::TableSetupColumn("Last seen"); ImGui::TableSetupColumn("Beacons"); ImGui::TableSetupColumn("Interval");
+    ImGui::TableSetupColumn(tr("Details"), ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     int shown = 0;
     for (const auto& d : t.aps) {
@@ -110,10 +105,16 @@ void networksView(App& a) {
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(d.bssid.c_str()); ImGui::PopFont();
         ImGui::TableNextColumn(); ImGui::TextUnformatted(d.vendor == "local" ? "(local)" : d.vendor.c_str());
         if (d.vendor == "local" && ImGui::IsItemHovered()) ImGui::SetTooltip("A locally administered BSSID: usually one of several networks of one access point, or a phone hotspot");
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(dect2::wifi::bandName(d.band));
         ImGui::TableNextColumn(); if (d.channel) ImGui::Text("%d", d.channel); else ImGui::TextDisabled("-");
         if (d.heardOn && d.channel && d.heardOn != d.channel && ImGui::IsItemHovered()) ImGui::SetTooltip("heard on channel %d (the channels overlap)", d.heardOn);
+        ImGui::TableNextColumn(); if (d.widthMhz > 20 || !d.standard.empty()) ImGui::Text("%d MHz", d.widthMhz); else ImGui::TextDisabled("-");
+        ImGui::TableNextColumn();
+        if (d.standard.empty()) ImGui::TextDisabled("-"); else ImGui::TextUnformatted(wfui::stdWord(d.standard));
+        if (!d.standard.empty() && ImGui::IsItemHovered()) ImGui::SetTooltip("802.11 %s", d.standard.c_str());
         ImGui::TableNextColumn(); ImGui::TextColored(securityColour(d.security), "%s", dect2::wifi::securityName(d.security, d.enterprise));
-        if (!d.ciphers.empty() && ImGui::IsItemHovered()) ImGui::SetTooltip("ciphers: %s", d.ciphers.c_str());
+        if ((!d.ciphers.empty() || !d.akms.empty()) && ImGui::IsItemHovered())
+            ImGui::SetTooltip("ciphers: %s\nkey management: %s\nprotected management frames: %s", d.ciphers.c_str(), d.akms.c_str(), d.pmf == 2 ? "required" : d.pmf == 1 ? "capable" : "no");
         ImGui::TableNextColumn();
         ImGui::Text("%4.0f", d.rssi);
         if (d.rssiHist.size() >= 2) {
@@ -122,11 +123,24 @@ void networksView(App& a) {
             ImGui::PlotLines("##h", d.rssiHist.data(), (int)d.rssiHist.size(), 0, nullptr, -110, -10, ImVec2(48 * gUi, ImGui::GetTextLineHeight()));
             ImGui::PopID();
         }
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(d.firstWall).c_str());
         ImGui::TableNextColumn(); ImGui::Text(ago < 1 ? "now" : "%.0f s ago", ago);
         ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)d.beacons);
         ImGui::TableNextColumn(); if (d.interval) ImGui::Text("%d TU", d.interval); else ImGui::TextDisabled("-");
         if (d.interval && ImGui::IsItemHovered()) ImGui::SetTooltip("%.1f ms between beacons", d.interval * 1.024);
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(d.rates.c_str());
+        ImGui::TableNextColumn();
+        std::string det = d.caps;
+        auto add = [&](const std::string& x) { if (!x.empty()) { if (!det.empty()) det += "; "; det += x; } };
+        if (!d.akms.empty()) add(d.akms + (d.pmf == 2 ? ", PMF required" : d.pmf == 1 ? ", PMF" : ""));
+        if (!d.country.empty()) add("country " + d.country);
+        if (d.powerConstraint >= 0) add("power constraint " + std::to_string(d.powerConstraint) + " dB");
+        if (d.mdid >= 0) { char m[24]; snprintf(m, sizeof m, "mobility domain %04X", d.mdid); add(m); }
+        if (d.he6Reg >= 0) add(d.he6Reg == 0 ? "indoor AP" : d.he6Reg == 1 ? "standard power AP" : "very low power AP");
+        if (d.fils) add("FILS discovery");
+        if (d.unsolicited) add("unsolicited probe responses");
+        if (!d.neighbors.empty()) add("neighbors: " + d.neighbors);
+        if (det.empty()) det = d.rates.empty() ? "" : "rates " + d.rates;
+        ImGui::TextUnformatted(det.c_str());
     }
     ImGui::EndTable();
     if (t.aps.empty()) ImGui::TextDisabled("nothing heard yet");
@@ -169,55 +183,15 @@ void beaconsView(App& a) {
     if (log.empty()) ImGui::TextDisabled("no beacons yet");
 }
 
-void hopTo(App& a, int ch) {
-    const double mhz = dect2::wifi::channelMhz(ch);
-    a.freqMhz = mhz;
-    a.tune.centerHz = mhz * 1e6;
-    a.engine.retune(a.tune);   // no reset: the network table stays
-}
-
 // ---------------------------------------------------------------- hooks
 
-void tick(App& a) {
-    loadState();
-    if (!a.engine.running() || !S.hop || a.devices[a.devIdx].kind == DeviceInfo::File) { S.lastHop = ImGui::GetTime(); return; }
-    if (ImGui::GetTime() - S.lastHop < S.hopSec) return;
-    S.lastHop = ImGui::GetTime();
-    const int cur = dect2::wifi::channelOf(a.freqMhz);
-    hopTo(a, cur >= 1 && cur < 13 ? cur + 1 : 1);
-}
+void tick(App& a) { wfui::hopTick(a); }
 
-void tuner(App& a, bool& retune) {
-    loadState();
-    ImGui::TextDisabled("Channel");
-    const int cur = dect2::wifi::channelOf(a.freqMhz);
-    char label[32];
-    if (cur) snprintf(label, sizeof label, "%d (%.0f MHz)", cur, dect2::wifi::channelMhz(cur)); else snprintf(label, sizeof label, "other");
-    ImGui::SameLine(0, 5 * gUi);
-    ImGui::SetNextItemWidth(std::min(130 * gUi, ImGui::GetContentRegionAvail().x));
-    if (ImGui::BeginCombo("##wfch", label)) {
-        for (int c = 1; c <= 13; c++) {
-            char b[40];
-            snprintf(b, sizeof b, "%2d  %.0f MHz", c, dect2::wifi::channelMhz(c));
-            if (ImGui::Selectable(b, c == cur)) { tuneFreq(a, dect2::wifi::channelMhz(c)); retune = true; }
-        }
-        ImGui::EndCombo();
-    }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("The 2.4 GHz channels, 5 MHz apart; a network is 22 MHz wide, so channel 6 also hears some of 5 and 7.\n"
-                                                  "OnAir listens to one channel at a time (20 Msps); most networks sit on 1, 6 or 11.");
-    ImGui::SameLine(0, 8 * gUi);
-    if (ImGui::Checkbox("hop", &S.hop)) { plat::prefs().setB("wifiHop", S.hop); plat::prefs().flush(); }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Step through channels 1 to 13, a few seconds each (an AP beacons about ten times a second)");
-    if (S.hop) {
-        ImGui::SameLine(0, 5 * gUi);
-        ImGui::SetNextItemWidth(std::min(70 * gUi, ImGui::GetContentRegionAvail().x));
-        if (ImGui::SliderInt("##wfhs", &S.hopSec, 1, 30, "%d s")) { plat::prefs().setI("wifiHopSec", S.hopSec); plat::prefs().flush(); }
-    }
-}
+void tuner(App& a, bool& retune) { wfui::tunerControls(a, retune); }
 
 void tab(App& a) {
-    subNav("wfv", S.view, {"Networks", "Beacons"});
-    if (S.view == 0) networksView(a); else beaconsView(a);
+    subNav("wfv", S.view, {"Networks", "Beacons", tr("Channels")});
+    if (S.view == 0) networksView(a); else if (S.view == 1) beaconsView(a); else wfui::channelsView(a);
 }
 
 void list(App& a) {
@@ -242,7 +216,8 @@ void receiver(App& a) {
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const dect2::WifiTelemetry& t = a.rx.wifi;
     kvRow(a, "state", "%s", dect2::wifiSummary(t).c_str());
-    if (t.channel) kvRow(a, "channel", "%d (%.0f MHz)%s", t.channel, dect2::wifi::channelMhz(t.channel), S.hop ? ", hopping" : "");
+    if (t.channel) kvRow(a, "channel", "%s ch %d (%.0f MHz)%s%s", dect2::wifi::bandName(t.band), t.channel, dect2::wifi::bandChannelMhz(t.band, t.channel), S.hop ? ", hopping" : "",
+                         t.subChannels > 1 ? (", " + std::to_string(t.subChannels) + " channels at once").c_str() : "");
     kvRow(a, "signal", "symbol SNR %.1f dB, offset %+.1f kHz", t.snrDb, t.cfoHz / 1e3);
     kvRow(a, "frames", "%llu good FCS, %llu bad FCS", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
     kvRow(a, "PLCP headers", "%llu good, %llu bad CRC, %llu at 2 - 11 Mbit/s (not decoded), %llu preambles", (unsigned long long)t.headersOk, (unsigned long long)t.headersBad,
@@ -250,6 +225,9 @@ void receiver(App& a) {
     kvRow(a, "by type", "beacons %llu, probe responses %llu, other management %llu, control %llu, data %llu (counted only)", (unsigned long long)t.beacons,
           (unsigned long long)t.probeResps, (unsigned long long)(t.perType[0] - std::min(t.perType[0], t.beacons + t.probeResps)), (unsigned long long)t.perType[1],
           (unsigned long long)t.perType[2]);
+    kvRow(a, "OFDM", "%llu preambles, %llu SIGNAL good / %llu bad, %llu at other rates, %llu good frames, %llu bad FCS, %llu duplicates on secondary channels, %llu FILS",
+          (unsigned long long)t.ofdmTriggers, (unsigned long long)t.ofdmSignalOk, (unsigned long long)t.ofdmSignalBad, (unsigned long long)t.ofdmOther,
+          (unsigned long long)t.ofdmFrames, (unsigned long long)t.ofdmBadFcs, (unsigned long long)t.dupFrames, (unsigned long long)t.filsFrames);
     kvRow(a, "input", "%.3f Msps, %.1f dBFS", t.inputRate / 1e6, t.levelDb);
     kvRow(a, "signal time", "%.1f s", t.timeSec);
     ImGui::Spacing();

@@ -356,7 +356,7 @@ IoT, 868.1 MHz	IoT, 868.1 MHz
 LoRa mesh, 869.525 MHz	Malla LoRa, 869.525 MHz
 LoRa mesh, 869.618 MHz	Malla LoRa, 869.618 MHz
 Advertising, 2.4 GHz	Anuncios, 2.4 GHz
-Beacons, 2.4 GHz	Balizas, 2.4 GHz
+Beacons, 2.4 / 5 / 6 GHz	Balizas, 2.4 / 5 / 6 GHz
 Balloons, 403 MHz	Globos, 403 MHz
 LF and HF time codes	Códigos horarios LF y HF
 Chirp sweeps, 0 - 30 MHz	Barridos chirp, 0 - 30 MHz
@@ -1121,3 +1121,29 @@ Documentation	Documentación
 Troubleshooting	Solución de problemas
 Voice codecs (mbelib)	Códecs de voz (mbelib)
 Website	Sitio web
+Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted.	Pasivo: solo se leen los beacons, respuestas de sondeo y tramas FILS discovery que difunden los puntos de acceso. No se transmite, une ni descifra nada.
+all	todos
+Width	Ancho
+Std	Est.
+First seen	Visto por primera vez
+Channels	Canales
+This radio is specified up to %.0f MHz: %.0f MHz is out of its range	Este receptor está especificado hasta %.0f MHz: %.0f MHz queda fuera de su rango
+This radio is specified from %.0f MHz: %.0f MHz is out of its range	Este receptor está especificado desde %.0f MHz: %.0f MHz queda fuera de su rango
+A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps	Un canal de 20 MHz necesita 20 Msps; este receptor solo alcanza %.1f Msps
+2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).	2.4 GHz: canales 1 - 14. 5 GHz: 36 - 177 (con DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).
+Domain	Dominio
+The channels each region allows. All lists every channel.	Los canales que permite cada región. Todos muestra todos los canales.
+other	otro
+One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery.	Un canal de 20 MHz a la vez. Las redes más anchas emiten beacons en su canal primario de 20 MHz. 6 GHz: los canales 5, 21, 37 ... (PSC) llevan FILS discovery.
+hop##wfhop	saltar##wfhop
+Step through the band's channels; dwell longer than 102.4 ms (the beacon interval).	Recorre los canales de la banda; permanencia superior a 102.4 ms (el intervalo de beacon).
+PSC only##wfpsc	solo PSC##wfpsc
+skip DFS##wfdfs	omitir DFS##wfdfs
+Networks	Redes
+Beacons	Beacons
+Strongest	Más fuerte
+Networks per channel	Redes por canal
+Channels 1, 6 and 11 do not overlap.	Los canales 1, 6 y 11 no se solapan.
+Amber: DFS channels (radar sharing).	Ámbar: canales DFS (compartidos con radar).
+Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Números brillantes: canales de búsqueda preferidos (PSC), donde se envía FILS discovery.
+start the receiver to see the channels	inicia el receptor para ver los canales

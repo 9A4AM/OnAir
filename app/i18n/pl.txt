@@ -349,7 +349,7 @@ IoT, 868.1 MHz	IoT, 868.1 MHz
 LoRa mesh, 869.525 MHz	LoRa mesh, 869.525 MHz
 LoRa mesh, 869.618 MHz	LoRa mesh, 869.618 MHz
 Advertising, 2.4 GHz	Advertising, 2.4 GHz
-Beacons, 2.4 GHz	Beacony, 2.4 GHz
+Beacons, 2.4 / 5 / 6 GHz	Beacony, 2.4 / 5 / 6 GHz
 Balloons, 403 MHz	Balony, 403 MHz
 LF and HF time codes	Sygnały czasu DF i KF
 Chirp sweeps, 0 - 30 MHz	Przemiatanie chirp, 0 - 30 MHz
@@ -1121,3 +1121,29 @@ Documentation	Dokumentacja
 Troubleshooting	Rozwiązywanie problemów
 Voice codecs (mbelib)	Kodeki głosu (mbelib)
 Website	Strona internetowa
+Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted.	Pasywnie: czytane są tylko beacony, odpowiedzi na sondowanie i ramki FILS discovery nadawane przez punkty dostępu. Nic nie jest nadawane, łączone ani deszyfrowane.
+all	wszystkie
+Width	Szerokość
+Std	Std
+First seen	Pierwszy raz widziana
+Channels	Kanały
+This radio is specified up to %.0f MHz: %.0f MHz is out of its range	To radio jest określone do %.0f MHz: %.0f MHz jest poza jego zakresem
+This radio is specified from %.0f MHz: %.0f MHz is out of its range	To radio jest określone od %.0f MHz: %.0f MHz jest poza jego zakresem
+A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps	Kanał 20 MHz wymaga 20 Msps; to radio osiąga tylko %.1f Msps
+2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).	2.4 GHz: kanały 1 - 14. 5 GHz: 36 - 177 (z DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).
+Domain	Domena
+The channels each region allows. All lists every channel.	Kanały dozwolone w danym regionie. Wszystkie pokazuje każdy kanał.
+other	inne
+One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery.	Jeden kanał 20 MHz naraz. Szersze sieci nadają beacony na swoim kanale głównym 20 MHz. 6 GHz: kanały 5, 21, 37 ... (PSC) niosą FILS discovery.
+hop##wfhop	skakanie##wfhop
+Step through the band's channels; dwell longer than 102.4 ms (the beacon interval).	Przechodzi po kanałach pasma; czas na kanale dłuższy niż 102.4 ms (interwał beaconów).
+PSC only##wfpsc	tylko PSC##wfpsc
+skip DFS##wfdfs	pomiń DFS##wfdfs
+Networks	Sieci
+Beacons	Beacony
+Strongest	Najsilniejsza
+Networks per channel	Sieci na kanał
+Channels 1, 6 and 11 do not overlap.	Kanały 1, 6 i 11 nie nakładają się.
+Amber: DFS channels (radar sharing).	Bursztyn: kanały DFS (współdzielone z radarem).
+Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Jasne liczby: preferowane kanały skanowania (PSC), na których nadawane jest FILS discovery.
+start the receiver to see the channels	uruchom odbiornik, aby zobaczyć kanały

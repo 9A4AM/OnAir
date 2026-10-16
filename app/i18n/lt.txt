@@ -356,7 +356,7 @@ IoT, 868.1 MHz	IoT, 868.1 MHz
 LoRa mesh, 869.525 MHz	LoRa tinklas, 869.525 MHz
 LoRa mesh, 869.618 MHz	LoRa tinklas, 869.618 MHz
 Advertising, 2.4 GHz	Reklaminiai paketai, 2.4 GHz
-Beacons, 2.4 GHz	Švyturiai, 2.4 GHz
+Beacons, 2.4 / 5 / 6 GHz	Švyturiai, 2.4 / 5 / 6 GHz
 Balloons, 403 MHz	Balionai, 403 MHz
 LF and HF time codes	IB ir KB laiko signalai
 Chirp sweeps, 0 - 30 MHz	Čirpų skleidimai, 0 - 30 MHz
@@ -1121,3 +1121,29 @@ Documentation	Dokumentacija
 Troubleshooting	Trikčių šalinimas
 Voice codecs (mbelib)	Balso kodekai (mbelib)
 Website	Svetainė
+Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted.	Pasyvu: skaitomi tik prieigos taškų transliuojami švyturiai, zondavimo atsakai ir FILS discovery kadrai. Niekas nesiunčiama, neprisijungiama ir neiššifruojama.
+all	visi
+Width	Plotis
+Std	Std.
+First seen	Pirmą kartą matyta
+Channels	Kanalai
+This radio is specified up to %.0f MHz: %.0f MHz is out of its range	Šis radijas specifikuotas iki %.0f MHz: %.0f MHz yra už jo ribų
+This radio is specified from %.0f MHz: %.0f MHz is out of its range	Šis radijas specifikuotas nuo %.0f MHz: %.0f MHz yra už jo ribų
+A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps	20 MHz kanalui reikia 20 Msps; šis radijas pasiekia tik %.1f Msps
+2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).	2.4 GHz: kanalai 1 - 14. 5 GHz: 36 - 177 (su DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).
+Domain	Sritis
+The channels each region allows. All lists every channel.	Kanalai, kuriuos leidžia kiekvienas regionas. Visi parodo visus kanalus.
+other	kita
+One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery.	Vienu metu vienas 20 MHz kanalas. Platesni tinklai švyturius siunčia savo 20 MHz pirminiu kanalu. 6 GHz: kanalai 5, 21, 37 ... (PSC) neša FILS discovery.
+hop##wfhop	šokinėti##wfhop
+Step through the band's channels; dwell longer than 102.4 ms (the beacon interval).	Eiti juosmos kanalais; trukmė ilgesnė nei 102.4 ms (švyturio intervalas).
+PSC only##wfpsc	tik PSC##wfpsc
+skip DFS##wfdfs	praleisti DFS##wfdfs
+Networks	Tinklai
+Beacons	Švyturiai
+Strongest	Stipriausias
+Networks per channel	Tinklų skaičius kanale
+Channels 1, 6 and 11 do not overlap.	Kanalai 1, 6 ir 11 nepersidengia.
+Amber: DFS channels (radar sharing).	Gintaro spalva: DFS kanalai (dalijami su radaru).
+Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Šviesūs skaičiai: pageidaujami skenavimo kanalai (PSC), kuriais siunčiamas FILS discovery.
+start the receiver to see the channels	paleiskite imtuvą, kad pamatytumėte kanalus

@@ -344,7 +344,7 @@ IoT, 868.1 MHz	IoT, 868.1 MHz
 LoRa mesh, 869.525 MHz	Ячеистая сеть LoRa, 869.525 MHz
 LoRa mesh, 869.618 MHz	Ячеистая сеть LoRa, 869.618 MHz
 Advertising, 2.4 GHz	Рекламные пакеты, 2.4 GHz
-Beacons, 2.4 GHz	Маяки, 2.4 GHz
+Beacons, 2.4 / 5 / 6 GHz	Маяки, 2.4 / 5 / 6 GHz
 Balloons, 403 MHz	Шары-зонды, 403 MHz
 LF and HF time codes	Сигналы точного времени LF и HF
 Chirp sweeps, 0 - 30 MHz	Чирп-зондирование, 0 - 30 MHz
@@ -1103,3 +1103,29 @@ Documentation	Документация
 Troubleshooting	Устранение неполадок
 Voice codecs (mbelib)	Голосовые кодеки (mbelib)
 Website	Сайт
+Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted.	Пассивно: читаются только маяки, ответы на зондирование и кадры FILS discovery, которые передают точки доступа. Ничего не передаётся, не подключается и не расшифровывается.
+all	все
+Width	Ширина
+Std	Станд.
+First seen	Впервые замечена
+Channels	Каналы
+This radio is specified up to %.0f MHz: %.0f MHz is out of its range	Это радио рассчитано до %.0f МГц: %.0f МГц вне его диапазона
+This radio is specified from %.0f MHz: %.0f MHz is out of its range	Это радио рассчитано от %.0f МГц: %.0f МГц вне его диапазона
+A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps	Для канала 20 МГц нужно 20 Msps; это радио достигает только %.1f Msps
+2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).	2.4 ГГц: каналы 1 - 14. 5 ГГц: 36 - 177 (с DFS). 6 ГГц: 1 - 233 (Wi-Fi 6E / 7).
+Domain	Регион
+The channels each region allows. All lists every channel.	Каналы, разрешённые в регионе. «Все» показывает каждый канал.
+other	другое
+One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery.	По одному каналу 20 МГц за раз. Более широкие сети передают маяки на основном канале 20 МГц. 6 ГГц: каналы 5, 21, 37 ... (PSC) несут FILS discovery.
+hop##wfhop	прыжки##wfhop
+Step through the band's channels; dwell longer than 102.4 ms (the beacon interval).	Перебор каналов диапазона; время на канале больше 102.4 мс (интервал маяков).
+PSC only##wfpsc	только PSC##wfpsc
+skip DFS##wfdfs	без DFS##wfdfs
+Networks	Сети
+Beacons	Маяки
+Strongest	Сильнейшая
+Networks per channel	Сетей на канал
+Channels 1, 6 and 11 do not overlap.	Каналы 1, 6 и 11 не перекрываются.
+Amber: DFS channels (radar sharing).	Янтарный: каналы DFS (общие с радарами).
+Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	Яркие числа: предпочтительные каналы сканирования (PSC), где передаётся FILS discovery.
+start the receiver to see the channels	запустите приёмник, чтобы увидеть каналы

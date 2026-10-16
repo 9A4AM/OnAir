@@ -349,7 +349,7 @@ IoT, 868.1 MHz	IoT、868.1 MHz
 LoRa mesh, 869.525 MHz	LoRa メッシュ、869.525 MHz
 LoRa mesh, 869.618 MHz	LoRa メッシュ、869.618 MHz
 Advertising, 2.4 GHz	アドバタイズ、2.4 GHz
-Beacons, 2.4 GHz	ビーコン、2.4 GHz
+Beacons, 2.4 / 5 / 6 GHz	ビーコン、2.4 / 5 / 6 GHz
 Balloons, 403 MHz	気球、403 MHz
 LF and HF time codes	LF と HF の標準電波
 Chirp sweeps, 0 - 30 MHz	チャープスイープ、0 - 30 MHz
@@ -1121,3 +1121,29 @@ Documentation	ドキュメント
 Troubleshooting	トラブルシューティング
 Voice codecs (mbelib)	音声コーデック (mbelib)
 Website	ウェブサイト
+Passive: only the beacons, probe responses and FILS discovery frames that access points broadcast are read. Nothing is transmitted, joined or decrypted.	パッシブ：アクセスポイントが送出するビーコン、プローブ応答、FILS ディスカバリフレームだけを読み取ります。送信・接続・復号は一切行いません。
+all	すべて
+Width	幅
+Std	規格
+First seen	初回確認
+Channels	チャンネル
+This radio is specified up to %.0f MHz: %.0f MHz is out of its range	この無線機の仕様は %.0f MHz までです：%.0f MHz は範囲外です
+This radio is specified from %.0f MHz: %.0f MHz is out of its range	この無線機の仕様は %.0f MHz からです：%.0f MHz は範囲外です
+A 20 MHz channel needs 20 Msps; this radio reaches only %.1f Msps	20 MHz チャンネルには 20 Msps が必要です。この無線機は %.1f Msps までです
+2.4 GHz: channels 1 - 14. 5 GHz: 36 - 177 (with DFS). 6 GHz: 1 - 233 (Wi-Fi 6E / 7).	2.4 GHz：チャンネル 1～14。5 GHz：36～177（DFS を含む）。6 GHz：1～233（Wi-Fi 6E / 7）。
+Domain	地域
+The channels each region allows. All lists every channel.	各地域で許可されているチャンネル。「すべて」は全チャンネルを表示します。
+other	その他
+One 20 MHz channel at a time. Wider networks beacon on their 20 MHz primary channel. 6 GHz: channels 5, 21, 37 ... (PSC) carry FILS discovery.	一度に 20 MHz チャンネル 1 つ。より広いネットワークは 20 MHz のプライマリチャンネルでビーコンを送ります。6 GHz：チャンネル 5、21、37 …（PSC）で FILS ディスカバリが送られます。
+hop##wfhop	ホップ##wfhop
+Step through the band's channels; dwell longer than 102.4 ms (the beacon interval).	バンドのチャンネルを順に巡回します。滞在時間は 102.4 ms（ビーコン間隔）より長くしてください。
+PSC only##wfpsc	PSC のみ##wfpsc
+skip DFS##wfdfs	DFS を除外##wfdfs
+Networks	ネットワーク
+Beacons	ビーコン
+Strongest	最強
+Networks per channel	チャンネルごとのネットワーク数
+Channels 1, 6 and 11 do not overlap.	チャンネル 1、6、11 は重なりません。
+Amber: DFS channels (radar sharing).	琥珀色：DFS チャンネル（レーダーと共用）。
+Bright numbers: preferred scanning channels (PSC), where FILS discovery is sent.	明るい数字：優先スキャンチャンネル（PSC）。FILS ディスカバリが送られます。
+start the receiver to see the channels	受信機を起動するとチャンネルが表示されます
