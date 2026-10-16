@@ -174,6 +174,9 @@
 #include "dect2/loraraw_rx.h"
 #include "dect2/loraraw_tel.h"
 #include "dect2/loraraw_gen.h"
+#include "dect2/wisun_rx.h"
+#include "dect2/wisun_tel.h"
+#include "dect2/wisun_gen.h"
 #include "dect2/rid_rx.h"
 #include "dect2/rid_tel.h"
 #include "dect2/rid_gen.h"
@@ -278,7 +281,7 @@ static std::vector<ModeTuning> anyFrequency(std::vector<ModeTuning> t) {
 
 static const std::vector<ModeTuning>& table() {
     static const std::vector<ModeTuning> t = anyFrequency({dvbsTuning(), dtmbTuning(), atvTuning(), dmrTuning(), drmTuning(), adsbTuning(), gnssTuning(), sondeTuning(), aisTuning(), marineTuning(), acarsTuning(), inmcTuning(), aeroTuning(), iridiumTuning(), meshTuning(),
-                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), vdl4Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), generalTuning(), timeTuning(), ridTuning(), meteorTuning(), nrTuning(), cubesatTuning(), goesTuning(), globalstarTuning(), vdesTuning(), hrptTuning(), zigbeeTuning(), flarmTuning(), hfbeaconTuning(), djiTuning(), nbiotTuning(), halowTuning(), codarTuning(), wbTuning(), datawellTuning(), multitoneTuning(), sameTuning(), loraRawTuning(), antTuning(), dectTuning(), tetrapolTuning(), elektroTuning(), uatTuning(), ndbTuning()});
+                                               hdrTuning(), cdrTuning(), pagerTuning(), packetTuning(), hfdigTuning(), airbandTuning(), vdl2Tuning(), vdl4Tuning(), ismTuning(), vorTuning(), m17Tuning(), cellTuning(), cwTuning(), dstarTuning(), hfdlTuning(), nxdnTuning(), dpmrTuning(), gsmrTuning(), pskTuning(), js8Tuning(), specxTuning(), specanTuning(), dvbcTuning(), orbcommTuning(), uplinkTuning(), tetraTuning(), aleTuning(), macTuning(), astroTuning(), p25Tuning(), bleTuning(), ionoTuning(), qo100Tuning(), wifiTuning(), generalTuning(), timeTuning(), ridTuning(), meteorTuning(), nrTuning(), cubesatTuning(), goesTuning(), globalstarTuning(), vdesTuning(), hrptTuning(), zigbeeTuning(), flarmTuning(), hfbeaconTuning(), djiTuning(), nbiotTuning(), halowTuning(), codarTuning(), wbTuning(), datawellTuning(), multitoneTuning(), sameTuning(), loraRawTuning(), wisunTuning(), antTuning(), dectTuning(), tetrapolTuning(), elektroTuning(), uatTuning(), ndbTuning()});
     return t;
 }
 
@@ -430,6 +433,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 85: return makeUatSynth(cfg, sampleRate);
     case 77: return makeMultitoneSynth(cfg, sampleRate);
     case 73: return makeLoraRawSynth(cfg, sampleRate);
+    case 86: return makeWisunSynth(cfg, sampleRate);
     case 58: return makeRidSynth(cfg, sampleRate);
     case 61: return makeMeteorSynth(cfg, sampleRate);
     case 59: return makeNrSynth(cfg, sampleRate);
@@ -513,6 +517,7 @@ std::string modeSummary(const RxTelemetry& t) {
     case 84: return uatSummary(t.uat);
     case 76: return multitoneSummary(t.multitone);
     case 72: return loraRawSummary(t.loraraw);
+    case 85: return wisunSummary(t.wisun);
     case 57: return ridSummary(t.rid);
     case 60: return meteorSummary(t.meteor);
     case 58: return nrSummary(t.nr);

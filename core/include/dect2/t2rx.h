@@ -78,6 +78,7 @@
 #include "dect_tel.h"
 #include "multitone_tel.h"
 #include "loraraw_tel.h"
+#include "wisun_tel.h"
 #include "rid_tel.h"
 #include "meteor_tel.h"
 #include "nr_tel.h"
@@ -171,6 +172,7 @@ struct RxTelemetry {
     NbiotTelemetry nbiot;     // valid when standard == 70 (NB-IoT cells)
     ZigbeeTelemetry zigbee;   // valid when standard == 66 (Zigbee / 802.15.4)
     LoraRawTelemetry loraraw; // valid when standard == 72 (LoRa raw)
+    WisunTelemetry wisun;     // valid when standard == 85 (Wi-SUN FAN)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
     WbTelemetry wb;           // valid when standard == 74 (Signal workbench)
     DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)
