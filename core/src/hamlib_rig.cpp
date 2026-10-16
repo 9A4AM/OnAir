@@ -1,5 +1,8 @@
 #include "dect2/hamlib_rig.h"
+#include "dect2/hamlib_link.h"
+#include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <mutex>
 
 namespace dect2 {
@@ -7,6 +10,8 @@ namespace dect2 {
 namespace {
 std::mutex gMu;
 std::vector<HamlibRig> gRigs;
+std::mutex gStateMu;
+HamlibRigState gState;
 
 std::string esc(const std::string& s) {
     std::string r;
@@ -56,7 +61,7 @@ std::string hamlibRigsToString(const std::vector<HamlibRig>& v) {
     for (const auto& r : v) {
         if (r.model <= 0 || r.path.empty()) continue;
         if (!s.empty()) s += ';';
-        s += std::to_string(r.model) + ',' + esc(r.path) + ',' + esc(r.label) + ',' + esc(r.audioId);
+        s += std::to_string(r.model) + ',' + esc(r.path) + ',' + esc(r.label) + ',' + esc(r.audioId) + ',' + (r.baud > 0 ? std::to_string(r.baud) : std::string());
     }
     return s;
 }
@@ -78,9 +83,20 @@ std::vector<HamlibRig> hamlibRigsFromString(const std::string& s) {
         if (r.path.empty()) continue;
         r.label = f.size() > 2 ? unesc(f[2]) : "";
         r.audioId = f.size() > 3 ? unesc(f[3]) : "";
+        r.baud = f.size() > 4 ? std::max(0, atoi(f[4].c_str())) : 0;
         out.push_back(std::move(r));
     }
     return out;
+}
+
+void setHamlibRigState(const HamlibRigState& st) {
+    std::lock_guard<std::mutex> lk(gStateMu);
+    gState = st;
+}
+
+HamlibRigState hamlibRigState() {
+    std::lock_guard<std::mutex> lk(gStateMu);
+    return gState;
 }
 
 void setHamlibRigs(const std::vector<HamlibRig>& v) {
@@ -93,14 +109,33 @@ std::vector<HamlibRig> hamlibRigs() {
     return gRigs;
 }
 
-std::string hamlibRigSerial(int model, const std::string& path) { return std::to_string(model) + ":" + path; }
+std::string hamlibRigSerial(int model, const std::string& path, int baud) {
+    return std::to_string(model) + (baud > 0 ? "@" + std::to_string(baud) : std::string()) + ":" + path;
+}
 
-bool parseHamlibSerial(const std::string& serial, int& model, std::string& path) {
+bool parseHamlibSerial(const std::string& serial, int& model, std::string& path, int& baud) {
     const size_t c = serial.find(':');
     if (c == std::string::npos || c == 0) return false;
-    model = atoi(serial.substr(0, c).c_str());
+    std::string head = serial.substr(0, c);
+    baud = 0;
+    const size_t at = head.find('@');
+    if (at != std::string::npos) {
+        baud = std::max(0, atoi(head.substr(at + 1).c_str()));
+        head.resize(at);
+    }
+    model = atoi(head.c_str());
     path = serial.substr(c + 1);
     return model > 0 && !path.empty();
+}
+
+bool parseHamlibSerial(const std::string& serial, int& model, std::string& path) {
+    int baud = 0;
+    return parseHamlibSerial(serial, model, path, baud);
+}
+
+const std::vector<std::string>& hamlibModeChoices() {
+    static const std::vector<std::string> v = {"USB", "LSB", "AM", "FM", "WFM", "CW", "CWR", "PKTUSB", "PKTLSB", "PKTFM", "RTTY"};
+    return v;
 }
 
 std::string hamlibRigDeviceName(const HamlibRig& r) {
@@ -117,7 +152,7 @@ std::vector<DeviceInfo> hamlibRigDevices(const std::vector<HamlibRig>& v) {
         DeviceInfo d;
         d.kind = DeviceInfo::Hamlib;
         d.board = "hamlib";
-        d.serial = hamlibRigSerial(r.model, r.path);
+        d.serial = hamlibRigSerial(r.model, r.path, r.baud);
         d.nativeArgs = r.audioId;
         d.name = hamlibRigDeviceName(r);
         d.minRateHz = 8000;
@@ -130,8 +165,8 @@ std::vector<DeviceInfo> hamlibRigDevices(const std::vector<HamlibRig>& v) {
         d.txMaxRateHz = 48000;
         d.txGainNote = "Hamlib: PTT and frequency only; RF audio is not sent through Hamlib";
         d.settings = {
-            choiceSetting("hamlib_mode", "Mode", "The rig mode sent over CAT when tuning or transmitting.",
-                          {"USB", "LSB", "AM", "FM", "CW", "PKTUSB", "PKTLSB"}, {"USB", "LSB", "AM", "FM", "CW", "packet USB", "packet LSB"}, "USB", false),
+            choiceSetting("hamlib_mode", "Mode", "The rig mode sent over CAT when tuning or transmitting. A mode you turn on the rig itself shows here.",
+                          hamlibModeChoices(), {"USB", "LSB", "AM", "FM (narrow)", "FM (wide)", "CW", "CW reverse", "packet USB", "packet LSB", "packet FM", "RTTY"}, "USB", false),
             choiceSetting("audio_iq", "Audio IQ", "How the sound card connected for IQ or speaker audio is interpreted (same as a sound-card source).",
                           {"0", "1", "2", "3"}, {"I/Q stereo", "USB audio", "LSB audio", "Mono real"}, "1", false),
         };
@@ -144,6 +179,21 @@ std::vector<DeviceInfo> hamlibRigDevices(const std::vector<HamlibRig>& v) {
 bool hamlibSupported() { return false; }
 std::unique_ptr<IqSource> makeHamlibSource(const DeviceInfo&) { return nullptr; }
 std::unique_ptr<TxSink> makeHamlibTxSink(const DeviceInfo&) { return nullptr; }
+struct HamlibLink::Impl {};
+HamlibLink::HamlibLink() : p_(new Impl) {}
+HamlibLink::~HamlibLink() = default;
+bool HamlibLink::open(const HamlibConn&, std::string& err) { err = "this build has no Hamlib"; return false; }
+void HamlibLink::close() {}
+bool HamlibLink::isOpen() const { return false; }
+bool HamlibLink::setFreq(double, std::string& err) { err = "this build has no Hamlib"; return false; }
+bool HamlibLink::getFreq(double&, std::string& err) { err = "this build has no Hamlib"; return false; }
+bool HamlibLink::setMode(const std::string&, int, std::string& err) { err = "this build has no Hamlib"; return false; }
+bool HamlibLink::getMode(std::string&, int&, std::string& err) { err = "this build has no Hamlib"; return false; }
+bool HamlibLink::setPtt(bool, std::string& err) { err = "this build has no Hamlib"; return false; }
+std::string HamlibLink::info() const { return {}; }
+bool hamlibModeKnown(const std::string&) { return false; }
+std::string hamlibCanonicalMode(const std::string&) { return {}; }
+bool hamlibSameMode(const std::string&, const std::string&) { return false; }
 #endif
 
 } // namespace dect2
