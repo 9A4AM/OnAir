@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-if(APPLE)
+if(APPLE AND NOT DEFINED ANDROID_ABI)
   project(OnAir VERSION 0.2.7 LANGUAGES C CXX OBJCXX)
   set(CMAKE_OBJCXX_STANDARD 20)
 else()
