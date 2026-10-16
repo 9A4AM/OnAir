@@ -293,7 +293,9 @@ export class MapHub {
       if (!fresherPosition(t.age, prev, now)) continue;
       let merged = prev ? mergeTrackMeta(prev, t) : t;
       merged.path = mergePath(prev && prev.path, merged.path, merged.lon, merged.lat);
-      if (merged.heading == null && prev && prev.heading != null) merged.heading = prev.heading;
+      const trailHdg = headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
+      if (trailHdg != null) merged.heading = trailHdg;
+      else if (merged.heading == null && prev && prev.heading != null) merged.heading = prev.heading;
       if (merged.speed == null && prev && prev.speed != null) merged.speed = prev.speed;
       t = merged;
       let pathArr = [];
@@ -467,6 +469,42 @@ function sanitize(raw, now) {
     path: path.slice(-80),
     t: now,
   };
+}
+
+function pathDistanceM(lon1, lat1, lon2, lat2) {
+  const p = Math.PI / 180;
+  const dLat = (lat2 - lat1) * p;
+  const dLon = (lon2 - lon1) * p;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * p) * Math.cos(lat2 * p) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+function bearingDeg(lon1, lat1, lon2, lat2) {
+  const p = Math.PI / 180;
+  const dLon = (lon2 - lon1) * p;
+  const y = Math.sin(dLon) * Math.cos(lat2 * p);
+  const x = Math.cos(lat1 * p) * Math.sin(lat2 * p) - Math.sin(lat1 * p) * Math.cos(lat2 * p) * Math.cos(dLon);
+  return (Math.atan2(y, x) / p + 360) % 360;
+}
+
+/** Datalink fixes often have no heading field; use the stored trail. */
+function headingFromTrail(pathJson, lon, lat, reported) {
+  if (reported != null && Number.isFinite(reported)) return reported;
+  let path = [];
+  try { path = pathJson ? JSON.parse(pathJson) : []; } catch { path = []; }
+  if (!Array.isArray(path)) path = [];
+  const lon2 = lon, lat2 = lat;
+  if (!path.length || path[path.length - 1][0] !== lon2 || path[path.length - 1][1] !== lat2) path.push([lon2, lat2]);
+  if (path.length < 2) return null;
+  const minM = 15;
+  for (let i = path.length - 2; i >= 0; i--) {
+    const [lon1, lat1] = path[i];
+    if (pathDistanceM(lon1, lat1, lon2, lat2) >= minM) return bearingDeg(lon1, lat1, lon2, lat2);
+  }
+  const [lon0, lat0] = path[0];
+  if (pathDistanceM(lon0, lat0, lon2, lat2) >= minM) return bearingDeg(lon0, lat0, lon2, lat2);
+  return null;
 }
 
 function mergePath(oldJson, incoming, lon, lat) {

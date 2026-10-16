@@ -87,6 +87,7 @@ struct PagerReceiver::Impl {
     PagerTelemetry pub;                    // the published report
     std::atomic<bool> resetReq{true};
     std::atomic<int> protoMask{3};        // setProtocols(): 1 POCSAG, 2 FLEX
+    std::atomic<int> pocsagBaudMask{7};   // setPocsagBauds(): 1 512, 2 1200, 4 2400 bd
 
     // ---- receiver thread
     PagerTelemetry tel;
@@ -368,8 +369,10 @@ struct PagerReceiver::Impl {
         }
         if (cur < 4000) return;
         const int pm = protoMask.load();
+        const int bm = pocsagBaudMask.load();
         for (int h = 0; h < 4; h++) {
             if (!(pm & (h == 3 ? 2 : 1))) continue;   // that protocol is off: do not look for its sync
+            if (h < 3 && !(bm & (1 << h))) continue;
             const Hit r = h == 3 ? evalFlex() : evalPocsag(h);
             if (!r.ok) continue;
             peakH = h; best = r;
@@ -695,6 +698,7 @@ bool PagerReceiver::telemetry(PagerTelemetry& out, uint64_t lastSeq) {
     return true;
 }
 void PagerReceiver::setProtocols(int mask) { p_->protoMask = mask & 3; }
+void PagerReceiver::setPocsagBauds(int mask) { p_->pocsagBaudMask = mask & 7; }
 void PagerReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 
 ModeTuning pagerTuning() {

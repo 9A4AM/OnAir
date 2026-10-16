@@ -9,10 +9,11 @@ using namespace dect2;
 static int fails = 0;
 #define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
 
-static PagerTelemetry run(const SynthConfig& cfg, double rate, double seconds, bool noiseOnly = false, int protocols = 3) {
+static PagerTelemetry run(const SynthConfig& cfg, double rate, double seconds, bool noiseOnly = false, int protocols = 3, int pocsagBauds = 7) {
     PagerReceiver rx;
     rx.configure(rate);
     rx.setProtocols(protocols);
+    rx.setPocsagBauds(pocsagBauds);
     rx.setSignalOffset(-pagerTuning().tuneOffsetHz);
     auto syn = makePagerSynth(cfg, rate);
     std::vector<cf32> buf(65536);
@@ -105,6 +106,21 @@ int main() {
         }
         CHECK(t.speeds[kFlex3200_4].messages > 0, "bad FIW dropped FLEX 1600/4 lock (%llu pages)", (unsigned long long)t.speeds[kFlex3200_4].messages);
         printf("  bad FIW: %llu FLEX 1600/4 pages after the first frame's FIW was wiped\n", (unsigned long long)t.speeds[kFlex3200_4].messages);
+    }
+    {   // POCSAG 1200 only: no 512 or 2400 pages
+        SynthConfig c;
+        c.snrDb = 15; c.cfoHz = 500;
+        const PagerTelemetry t = run(c, rate, pagerCycleSeconds() + 1.0, false, 3, 2);
+        int n512 = 0, n1200 = 0, n2400 = 0;
+        const std::vector<PagerMessage> empty;
+        const std::vector<PagerMessage>& got = t.messages ? *t.messages : empty;
+        for (const PagerMessage& m : got) {
+            if (m.flex) continue;
+            if (m.speed == kPocsag512) n512++;
+            else if (m.speed == kPocsag1200) n1200++;
+            else if (m.speed == kPocsag2400) n2400++;
+        }
+        CHECK(n512 == 0 && n2400 == 0 && n1200 > 0, "1200-only baud mask: 512=%d 1200=%d 2400=%d", n512, n1200, n2400);
     }
     {   // the mix with one protocol on (the POCSAG and FLEX entries of the app): only its pages, all of them
         for (int prot = 1; prot <= 2; prot++) {

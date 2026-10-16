@@ -205,7 +205,7 @@ protected:
         collectTransfers();
         // libairspyhf_close() calls libusb_exit while cancelled URBs can still be in flight (Windows 0xc0000005 in ntdll,
         // issue #78, 0.2.5 still crashed). Drain longer, then skip close() if the library still says it is streaming.
-        if (dev_ && airspyhf().is_streaming && airspyhf().is_streaming(dev_)) {
+        if (streamingLocked()) {
             fprintf(stderr, "Airspy HF+: stream still running after stop, leaving the handle (avoids a libusb crash on close)\n");
             fflush(stderr);
             gHfCooling[serial_] = std::chrono::steady_clock::now() + std::chrono::seconds(30);
@@ -220,6 +220,9 @@ protected:
         gHfCooling[serial_] = std::chrono::steady_clock::now() + std::chrono::seconds(3);
         streaming_ = streamed_ = false;
     }
+    bool streamingLocked() const {   // (under api_) libairspyhf is not re-entrant: retune/configure must not overlap is_streaming
+        return dev_ && airspyhf().is_streaming && airspyhf().is_streaming(dev_) != 0;
+    }
     void streamLoop() override {
         {
             std::lock_guard<std::mutex> g(gHfMu);
@@ -230,7 +233,16 @@ protected:
             stopping_ = false;
             if (airspyhf().start(dev_, &AirspyHfSource::callback, this) != 0) { stopLocked(); return; }
         }
-        while (run_ && airspyhf().is_streaming(dev_)) std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        while (run_) {
+            bool on = false;
+            {
+                std::lock_guard<std::mutex> g(gHfMu);
+                std::lock_guard<std::mutex> lk(api_);
+                on = streamingLocked();
+            }
+            if (!on) break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
         std::lock_guard<std::mutex> g(gHfMu);
         std::lock_guard<std::mutex> lk(api_);
         stopLocked();
@@ -242,7 +254,7 @@ private:
         if (!dev_ || !streaming_) return;
         streaming_ = false;
         airspyhf().stop(dev_);
-        for (int i = 0; i < 400 && airspyhf().is_streaming(dev_); i++) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        for (int i = 0; i < 400 && streamingLocked(); i++) std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     // The cancelled USB transfers of a stream that was stopped come back only while libusb handles events, which each control transfer of
     // the library does: a few harmless ones (the attenuator as it is) collect them before the next start or the close. A radio that was
@@ -255,6 +267,7 @@ private:
         }
     }
     static int DECT2_CALL callback(AirspyHfApi::transfer_t* t) {
+        if (!t || !t->ctx) return 0;
         auto* self = static_cast<AirspyHfSource*>(t->ctx);
         if (self->stopping_ || !self->run_ || !t->samples || t->sample_count <= 0) return 0;
         self->push(t->samples, (size_t)t->sample_count);

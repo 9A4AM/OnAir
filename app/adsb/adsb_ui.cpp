@@ -244,6 +244,35 @@ void aircraftTable(App& a, bool compact) {
     ImGui::EndTable();
 }
 
+static double pathDistanceM(double lat1, double lon1, double lat2, double lon2) {
+    const double p = M_PI / 180.0, dLat = (lat2 - lat1) * p, dLon = (lon2 - lon1) * p;
+    const double a = std::sin(dLat / 2) * std::sin(dLat / 2)
+        + std::cos(lat1 * p) * std::cos(lat2 * p) * std::sin(dLon / 2) * std::sin(dLon / 2);
+    return 6371000.0 * 2.0 * std::asin(std::min(1.0, std::sqrt(a)));
+}
+
+static double bearingDeg(double lat1, double lon1, double lat2, double lon2) {
+    const double p = M_PI / 180.0, dLon = (lon2 - lon1) * p;
+    const double y = std::sin(dLon) * std::cos(lat2 * p);
+    const double x = std::cos(lat1 * p) * std::sin(lat2 * p) - std::sin(lat1 * p) * std::cos(lat2 * p) * std::cos(dLon);
+    double b = std::atan2(y, x) / p;
+    if (b < 0) b += 360.0;
+    return b;
+}
+
+static bool planeHeadingDeg(const AdsbAircraft& ac, float& out) {
+    if (ac.hasHeading) { out = (float)ac.headingDeg; return true; }
+    constexpr double kMinM = 15.0;
+    if (ac.hasPos && !ac.track.empty()) {
+        const double lat2 = ac.lat, lon2 = ac.lon;
+        for (size_t i = ac.track.size(); i > 0; i--) {
+            const double lat1 = ac.track[i - 1].lat, lon1 = ac.track[i - 1].lon;
+            if (pathDistanceM(lat1, lon1, lat2, lon2) >= kMinM) { out = (float)bearingDeg(lat1, lon1, lat2, lon2); return true; }
+        }
+    }
+    return false;
+}
+
 // the radar: the receiver in the middle, north up, a ring every few tens of nautical miles
 void radar(App& a, ImVec2 size) {
     const AdsbTelemetry& t = a.rx.adsb;
@@ -282,7 +311,7 @@ void radar(App& a, ImVec2 size) {
             for (const auto& tp : ac.track) { const ImVec2 q = pt(tp.lat, tp.lon); if (!first) dl->AddLine(prev, q, IM_COL32(70, 74, 78, 255)); prev = q; first = false; }
             const ImVec2 q = pt(ac.lat, ac.lon);
             if (std::fabs(q.x - c.x) > R * 1.1f || std::fabs(q.y - c.y) > R * 1.1f) continue;
-            if (ac.hasHeading) { const float h = (float)(ac.headingDeg * M_PI / 180.0); dl->AddLine(q, ImVec2(q.x + std::sin(h) * 10 * gUi, q.y - std::cos(h) * 10 * gUi), col, 1.5f); }
+            { float hdg = 0.f; if (planeHeadingDeg(ac, hdg)) { const float h = hdg * (float)M_PI / 180.f; dl->AddLine(q, ImVec2(q.x + std::sin(h) * 10 * gUi, q.y - std::cos(h) * 10 * gUi), col, 1.5f); } }
             dl->AddCircleFilled(q, (sel ? 4.f : 3.f) * gUi, col);
             char b[48]; snprintf(b, sizeof b, "%s", ac.callsign.empty() ? icaoText(ac.icao).c_str() : ac.callsign.c_str());
             dl->AddText(ImVec2(q.x + 6 * gUi, q.y - 6 * gUi), IM_COL32(190, 194, 198, 255), b);
@@ -404,7 +433,7 @@ void mapView(App& a, ImVec2 size) {
             if (q.x < p0.x - 40 || q.y < p0.y - 40 || q.x > p0.x + size.x + 40 || q.y > p0.y + size.y + 40) continue;
             const bool sel = ac.icao == S.sel;
             const ImU32 fill = ac.emergency ? ImGui::ColorConvertFloat4ToU32(pal::badRed()) : adsbmap::acColour(adsbmap::AcSrc::Adsb, ac.posAgeSec);
-            drawPlane(dl, q, ac.hasHeading ? (float)ac.headingDeg : 0.f, (sel ? 14.f : 12.f) * gUi, fill, sel);
+            { float hdg = 0.f; drawPlane(dl, q, planeHeadingDeg(ac, hdg) ? hdg : 0.f, (sel ? 14.f : 12.f) * gUi, fill, sel); }
             if (S.map.zoom >= 6 || sel) {
                 char l1[48]; snprintf(l1, sizeof l1, "%s", ac.callsign.empty() ? icaoText(ac.icao).c_str() : ac.callsign.c_str());
                 char l2[48] = "", l3[48] = "";

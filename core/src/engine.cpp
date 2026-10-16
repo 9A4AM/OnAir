@@ -70,6 +70,7 @@ void Engine::ingest(cf32* x, size_t n) {
     ShareServer::get().offer(x, n);   // "Share my radio": the same samples to the rtl_tcp clients (nothing while sharing is off)
     dropNonFinite(x, n);
     cleanSamples(iqFix_, offMix_, offsetDc_.load(), x, n, activeStd_.load());
+    decodeMix_.mix(x, n);
     const auto a0 = std::chrono::steady_clock::now();
     lastSamples_ = a0;   // the radio is alive, whether or not the resampler gives a sample out of this block
     if (offResample_) { offBuf_.clear(); offRs_.process(x, n, offBuf_); x = offBuf_.data(); n = offBuf_.size(); }
@@ -167,6 +168,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
     // slots are found from the signals
     hfdig().ftx().setSlotSearch(!live_.load());
     offMix_.set(offHz_, srcRate_);
+    decodeMix_.set(decodeShiftHz_.load(), srcRate_);
     offResample_ = false;
     if (offHz_ > 0) {
         // back to the mode's rate after the shift (if the radio runs faster than the mode asked for)
@@ -2729,6 +2731,13 @@ std::string Engine::secondaryCheck(int pri, int sec, double centreHz, double rat
         return b;
     }
     return "";
+}
+
+void Engine::setDecodeShiftHz(double hz) {
+    if (std::fabs(hz - decodeShiftHz_.load()) < 0.5) return;
+    decodeShiftHz_ = hz;
+    decodeMix_.set(hz, srcRate_);
+    resetReq_ = true;
 }
 
 double Engine::captureCentreHz() const {

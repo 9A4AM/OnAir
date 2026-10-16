@@ -268,7 +268,7 @@ struct CdrReceiver::Impl {
         nIn = 0; nextReport = 0; power = 0; nPower = 0;
         rs = ExactResampler();
         if (curRate > 0) rs.configure(curRate, kFs);
-        cc.configure(curRate, 100e3, 70e3, 6.0);
+        cc.configure(curRate, 100e3, 70e3, 1.5);   // DAB uses 1.5 s; 6 s deferred mixing mid-search caused late lock / delock on file replay
         buf.clear(); buf0 = 0; searchFloor = 0; mirror = false;
         startSearch(0);
         locked = false; lay.reset(); tm = sm = 0;
@@ -318,9 +318,9 @@ struct CdrReceiver::Impl {
                 const int ch = info.nChannels;
                 int frames = len / (2 * ch);
                 if (frames < 1) continue;
-                // Audio arrives in ~640 ms logical-frame bursts; after an underrun AudioOut needs 0.8 s to resume unless the threshold is lowered again.
+                // DRA+ PCM arrives in ~640 ms logical-frame bursts; do not flush around 0.5 s or playback drops every frame.
                 if (!audioOut->playing()) audioOut->setStartThreshold(draRate / 10);
-                if (audioOut->bufferedFrames() > draRate / 2) audioOut->flush();
+                if (audioOut->bufferedFrames() > draRate * 3 / 2) audioOut->flush();   // catch up when the radio clock runs ahead of the sound card
                 std::vector<float> st((size_t)frames * 2);
                 const int16_t* s = reinterpret_cast<const int16_t*>(pcm);
                 for (int i = 0; i < frames; i++) {
@@ -473,6 +473,10 @@ struct CdrReceiver::Impl {
             const double m1 = pilotCoherence(*layoutFor(1, bestSm), s1, f), m3 = pilotCoherence(*layoutFor(3, bestSm), s1, f);
             t = m3 > m1 ? 3 : 1;
         }
+        // Hybrid modes beside FM: the sync sequence alone can lock on the analogue sidebands; scattered pilots must cohere.
+        if (bestSm == 9 || bestSm == 10 || bestSm == 22 || bestSm == 23) {
+            if (pilotCoherence(*layoutFor(t, bestSm), s1, f) < 0.15) return r;
+        }
         r.ok = true; r.metric = best.metric; r.s1 = s1; r.f = f; r.tm = t; r.sm = bestSm; r.dEnd = c.dEnd;
         return r;
     }
@@ -486,6 +490,7 @@ struct CdrReceiver::Impl {
         bsAtLock = bs;
         searchFloor = r.dEnd + 1;
         locked = true;
+        cc.freeze();
         badBeacons = 0; badSi = 0; nSub = 0; siSeen = false;
         tel.tm = tm; tel.sm = sm; tel.ni = lay->ni;
         tel.innerKhz = lay->spec->innerKhz; tel.outerKhz = lay->spec->outerKhz;
@@ -525,13 +530,13 @@ struct CdrReceiver::Impl {
         for (int k : L.syncCarrier) half += cd(y2[(size_t)((k + nb) % nb)] * std::conj(y1[(size_t)((k + nb) % nb)]));
         tel.syncMetric = (float)fit.metric;
         double terr = 0;
-        if (fit.metric > 0.15) {
+        if (fit.metric > 0.12) {
             const double tau = -fit.phase * nb / (2 * M_PI);
             terr = std::remainder((double)w0 + tau - ((double)b0 + tp.tbcp), (double)nb);
             const double df = std::arg(half) * kFs / (2 * M_PI * nb);
             cfo += 0.5 * df;
-            badBeacons = 0;
-        } else badBeacons++;
+            badBeacons = std::max(0, badBeacons - 1);
+        } else if (++badBeacons > 12) badBeacons = 12;   // hybrid FM: occasional weak beacons, not instant unlock at 6
         const double sub0 = (double)b0 + (std::fabs(terr) < 64 ? terr : 0.0);     // this sub-frame's beacon start
         // OFDM symbols
         const int bo = std::max(2, tp.tcp / 4);
@@ -595,9 +600,6 @@ struct CdrReceiver::Impl {
         for (const auto& h : H) hp += std::norm(h);
         hp /= (double)H.size();
         const double nvar = std::max(1e-12, dn > 0 ? dsum / dn / 1.5 : hp * 0.01);
-        const float snr = (float)(10 * std::log10(hp / nvar + 1e-12));
-        snrAvg = tel.subframes == 0 ? snr : 0.8f * snrAvg + 0.2f * snr;
-        tel.snrDb = snrAvg;
         // equalise
         SubData sd;
         sd.z.resize(Y.size());
@@ -607,6 +609,22 @@ struct CdrReceiver::Impl {
             sd.z[e] = Y[e] * std::conj(H[e]) / g;
             sd.nv[e] = (float)(nvar / g);
         }
+        // Es/N0 on data carriers (hybrid FM beside the band makes pilot second-differences look like huge "noise").
+        double sig = 0, noise = 0;
+        int snCnt = 0;
+        for (size_t e = 0; e < Y.size(); e++) {
+            if (L.kind[e] != kElemData) continue;
+            sig += std::norm(sd.z[e]);
+            noise += (double)sd.nv[e];
+            snCnt++;
+        }
+        float snr;
+        if (snCnt > 0) {
+            const double sp = sig / snCnt, np = std::max(1e-12, noise / snCnt);
+            snr = (float)(10 * std::log10(sp / np + 1e-12));
+        } else snr = (float)(10 * std::log10(hp / nvar + 1e-12));
+        snrAvg = tel.subframes == 0 ? snr : 0.8f * snrAvg + 0.2f * snr;
+        tel.snrDb = snrAvg;
         // channel plot: the middle symbol
         tel.chanDb.clear(); tel.chanKhz.clear();
         for (int c = 0; c < cols; c += 2) {
@@ -655,7 +673,9 @@ struct CdrReceiver::Impl {
             }
         } else {
             tel.siBad++;
-            badSi++;
+            // Hybrid FM: SI CRC can fail while the beacon and service data still track; do not treat that like a lost signal.
+            if (fit.metric > 0.5) badSi = std::max(0, badSi - 1);
+            else badSi++;
         }
         // next beacon
         bs = sub0 + kSubframeLen;
@@ -739,6 +759,7 @@ struct CdrReceiver::Impl {
             iters += r.iterations;
             if (r.ok) { tel.blocksOk++; okWords++; } else tel.blocksBad++;
         }
+        if (okWords > 0) badSi = std::max(0, badSi - 1);
         tel.codewords = cw;
         tel.ldpcIterations = cw ? (float)iters / cw : 0;
         tel.logicalFrames++;
@@ -837,9 +858,14 @@ struct CdrReceiver::Impl {
         while (locked) {
             const int64_t need = (int64_t)std::llround(bs) + kSubframeLen + 2048;
             if (bufEnd() < need) break;
-            if ((int64_t)std::llround(bs) + lay->tp->tbcp / 2 < buf0) { unlock("timing"); break; }
+            if ((int64_t)std::llround(bs) + lay->tp->tbcp / 2 < buf0) {
+                const int64_t slip = buf0 - ((int64_t)std::llround(bs) + lay->tp->tbcp / 2);
+                if (slip > kSubframeLen * 2) { unlock("timing"); break; }
+                bs = (double)buf0 + lay->tp->tbcp / 2 + 64;   // processing fell behind: jump to the next beacon in-buffer
+                continue;
+            }
             processSubframe();
-            if (badBeacons >= 6 || badSi >= (siSeen ? 16 : 8)) { unlock(badBeacons >= 6 ? "no beacon" : "no system information"); break; }
+            if (badBeacons >= 12 || badSi >= (siSeen ? 24 : 12)) { unlock(badBeacons >= 12 ? "no beacon" : "no system information"); break; }
         }
         // keep what the next step still needs
         int64_t keep = locked ? (int64_t)std::llround(bs) - 4096 : std::min(searchNext - kSearchHop, pending.empty() ? searchNext : pending.front().dStart) - 4096;
@@ -885,6 +911,7 @@ void CdrReceiver::feed(const cf32* x, size_t n) {
             m.buf0 = m.bufEnd(); m.buf.clear(); m.searchFloor = m.buf0;
             m.locked = false; m.lay.reset(); m.tel.state = 0;
             m.startSearch(m.buf0);
+            m.say("CDR: lost the signal (channel recentring), searching again");
         }
         const cf32* xs = m.cin.data();
         for (size_t i = 0; i < chunk; i++) m.power += (double)std::norm(xs[i]);

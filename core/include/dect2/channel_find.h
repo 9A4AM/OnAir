@@ -21,6 +21,7 @@ public:
     double offsetHz() const { return offset_; }    // where the channel was found (0: in the middle, or nothing found)
     // the offset was just found: the samples given so far were not mixed (a receiver may restart its search); cleared by the call
     bool takeChanged() { const bool c = changed_; changed_ = false; return c; }
+    void freeze() { decided_ = true; }   // stop hunting: the decoder has locked (do not mix later and flush the buffer)
 
 private:
     void measure();

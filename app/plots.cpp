@@ -16,7 +16,7 @@ static void clickToTune(App& a, int plotId) {
     if (a.family == 4 || a.family == 1 || a.family == 3) return;   // ATSC and ISDB-T channels sit on a fixed raster: use the frequency field
     const ImVec2 d = ImGui::GetMouseDragDelta(0, 0);
     if (ImGui::IsMouseReleased(0) && std::fabs(d.x) < 4 && std::fabs(d.y) < 4 && std::fabs(mhz - a.freqMhz) > 1e-6) {
-        if (a.fmMode) fmTune(a, mhz); else tuneFreq(a, mhz);
+        spectrumTune(a, mhz);
         return;
     }
     if (std::fabs(mhz - a.freqMhz) > 1e-6) {
@@ -38,7 +38,8 @@ static void clickToTune(App& a, int plotId) {
         const double lx[2] = {mhz, mhz}, ly[2] = {lim.Y.Min, lim.Y.Max};
         plt::Spec ls; ls.LineColor = ImVec4(0.95f, 0.25f, 0.25f, 0.9f); ls.LineWeight = 1.2f;
         plt::PlotLine("##tunehere", lx, ly, 2, ls);
-        ImGui::SetTooltip(tr("click to tune to %.4f MHz"), mhz);
+        if (a.tuningMode == 1) ImGui::SetTooltip(tr("click to decode %.4f MHz (radio centre stays)"), mhz);
+        else ImGui::SetTooltip(tr("click to tune to %.4f MHz"), mhz);
     }
 }
 
@@ -456,6 +457,16 @@ void specDisplayPopup(App& a) {
     if (ImGui::Checkbox(tr("Level at the cursor"), &a.specReadout)) save = true;
     if (ImGui::Checkbox(tr("Fill under the line"), &a.specFill)) save = true;
     if (ImGui::Checkbox(tr("Grid"), &a.specGrid)) save = true;
+    ImGui::Separator();
+    ImGui::TextDisabled("%s", tr("Spectrum click"));
+    if (ImGui::RadioButton(tr("Retune radio"), a.tuningMode == 0)) { a.tuningMode = 0; save = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Move the radio to the clicked frequency (the usual behaviour)"));
+    if (ImGui::RadioButton(tr("Decode offset only"), a.tuningMode == 1)) { a.tuningMode = 1; save = true; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Keep the radio centre fixed and shift the decoder to the clicked frequency (avoid moving the LO / DC spike)"));
+    if (a.engine.running() && std::fabs(a.engine.decodeShiftHz()) > 1) {
+        ImGui::TextDisabled(tr("Decode shift %+.1f kHz"), a.engine.decodeShiftHz() / 1e3);
+        if (ImGui::SmallButton(tr("Centre decode"))) { a.engine.setDecodeShiftHz(0); savePrefs(a); }
+    }
     ImGui::Separator();
     ImGui::TextDisabled("%s", tr("Unit"));
     if (ImGui::RadioButton("dBFS", !a.specDbm)) { a.specDbm = false; save = true; }

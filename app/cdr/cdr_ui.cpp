@@ -214,7 +214,7 @@ void list(App& a) {
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver to see stations"); ImGui::PopTextWrapPos(); return; }
     if (t.services.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(t.state > 0 ? "reading the multiplex" : "searching for a CDR signal"); ImGui::PopTextWrapPos(); return; }
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("%zu service%s. DRA+ sound is not decoded.", t.services.size(), t.services.size() == 1 ? "" : "s");
+    ImGui::TextDisabled("%zu service%s. Select a service for DRA+ playback.", t.services.size(), t.services.size() == 1 ? "" : "s");
     ImGui::PopTextWrapPos();
     const dect2::CdrServiceInfo* cur = picked(t);
     for (const auto& s : t.services) {

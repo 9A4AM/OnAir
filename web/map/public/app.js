@@ -310,15 +310,26 @@ function bearingDeg(lon1, lat1, lon2, lat2) {
   return (Math.atan2(y, x) / p + 360) % 360;
 }
 
-/** ADS-B heading when present; else direction of the last path segment (VDL2 / ACARS). */
+// Ignore sub-metre jitter; any real trail step (ACARS / VDL2) sets the icon direction.
+const MOVE_BEARING_MIN_M = 15;
+
+/** Reported heading when present; else the direction the aircraft is flying (from the trail). */
 function effectiveHeading(t) {
   if (t.heading != null && Number.isFinite(t.heading)) return t.heading;
-  const path = Array.isArray(t.path) ? t.path : [];
+  if (!Number.isFinite(t.lon) || !Number.isFinite(t.lat)) return null;
+  const path = Array.isArray(t.path) ? t.path.slice() : [];
+  const lon2 = t.lon, lat2 = t.lat;
+  if (!path.length || path[path.length - 1][0] !== lon2 || path[path.length - 1][1] !== lat2) path.push([lon2, lat2]);
   if (path.length < 2) return null;
-  const [lon1, lat1] = path[path.length - 2];
-  const [lon2, lat2] = path[path.length - 1];
-  if (pathDistanceM(lon1, lat1, lon2, lat2) < 120) return null;
-  return bearingDeg(lon1, lat1, lon2, lat2);
+  for (let i = path.length - 2; i >= 0; i--) {
+    const [lon1, lat1] = path[i];
+    const d = pathDistanceM(lon1, lat1, lon2, lat2);
+    if (d >= MOVE_BEARING_MIN_M) return bearingDeg(lon1, lat1, lon2, lat2);
+  }
+  const [lon0, lat0] = path[0];
+  const dTot = pathDistanceM(lon0, lat0, lon2, lat2);
+  if (dTot >= MOVE_BEARING_MIN_M) return bearingDeg(lon0, lat0, lon2, lat2);
+  return null;
 }
 
 function destPoint(t) {
@@ -336,7 +347,7 @@ function geojson() {
   for (const t of tracks.values()) {
     if (!on[t.kind]) continue;
     const hdg = effectiveHeading(t);
-    const rot = kindOf[t.kind] && kindOf[t.kind].rotate && hdg != null;
+    const sym = kindOf[t.kind] && kindOf[t.kind].rotate;
     features.push({
       type: "Feature",
       id: t.id,
@@ -346,8 +357,9 @@ function geojson() {
         icon: iconName(t),
         label: t.label || "",
         color: colorOf(t.kind, t),
-        heading: rot ? hdg : 0,
-        rot: rot ? 1 : 0,
+        heading: hdg != null ? hdg : 0,
+        sym: sym ? 1 : 0,
+        iconRot: sym && hdg != null ? 1 : 0,
         sel: t.id === selected ? 1 : 0,
       },
       geometry: { type: "Point", coordinates: [t.lon, t.lat] },
@@ -406,6 +418,8 @@ function mergePathClient(prev, t) {
   const last = path[path.length - 1];
   if (!last || last[0] !== t.lon || last[1] !== t.lat) path.push([t.lon, t.lat]);
   t.path = path.slice(-80);
+  const hdg = effectiveHeading({ ...t, path, heading: t.heading });
+  if (hdg != null) t.heading = hdg;
   if (t.heading == null && prev && prev.heading != null) t.heading = prev.heading;
   if (t.speed == null && prev && prev.speed != null) t.speed = prev.speed;
   if (prev && prev.meta && !t.meta) t.meta = prev.meta;
@@ -695,6 +709,7 @@ map.on("load", () => {
     id: "dot",
     type: "circle",
     source: "live",
+    filter: ["!", ["in", ["get", "kind"], ["literal", ["aircraft", "flarm", "drone", "vessel"]]]],
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 3, 8, 5],
       "circle-color": ["get", "color"],
@@ -731,12 +746,12 @@ map.on("load", () => {
       type: "symbol",
       source: "live",
       filter: ["any",
-        ["==", ["to-number", ["get", "rot"]], 1],
+        ["==", ["to-number", ["get", "sym"]], 1],
         ["!", ["in", ["get", "kind"], ["literal", ["aircraft", "flarm", "drone", "vessel"]]]],
       ],
       layout: {
         "icon-image": ["coalesce", ["image", ["get", "icon"]], ["image", ["get", "kind"]], ["image", "aircraft"]],
-        "icon-rotate": ["case", ["==", ["to-number", ["get", "rot"]], 1], ["to-number", ["get", "heading"]], 0],
+        "icon-rotate": ["case", ["==", ["to-number", ["get", "iconRot"]], 1], ["to-number", ["get", "heading"]], 0],
         "icon-rotation-alignment": "map",
         "icon-pitch-alignment": "map",
         "icon-allow-overlap": true,

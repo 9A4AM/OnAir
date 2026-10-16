@@ -408,6 +408,7 @@ void loadPrefs(App& a) {
     a.specAvgSec = std::max(0.f, std::min(5.f, (float)d.getD("specAvg", a.specAvgSec)));
     a.specFill = d.getB("specFill", a.specFill); a.specGrid = d.getB("specGrid", a.specGrid); a.specPeaks = d.getB("specPeaks", a.specPeaks);
     a.specReadout = d.getB("specReadout", a.specReadout); a.specDbm = d.getB("specDbm", a.specDbm);
+    if (d.has("tuningMode")) a.tuningMode = std::max(0, std::min(1, (int)d.getI("tuningMode", 0)));
     a.modeGroupsOpen = d.getS("modeGroupsOpen", "");
     if (d.has("uiVariant")) a.uiVariant = std::max(0, std::min(7, (int)d.getI("uiVariant", 0)));
     if (d.has("dtmbBw")) a.dtmbBwMhz = d.getI("dtmbBw", 8) == 6 ? 6 : 8;
@@ -497,6 +498,7 @@ void savePrefs(const App& a) {
     d.setD("specMin", a.yMin); d.setD("specMax", a.yMax);
     d.setB("specHold", a.peakHold); d.setD("holdDecay", a.holdDecay); d.setD("specAvg", a.specAvgSec);
     d.setB("specFill", a.specFill); d.setB("specGrid", a.specGrid); d.setB("specPeaks", a.specPeaks); d.setB("specReadout", a.specReadout); d.setB("specDbm", a.specDbm);
+    d.setI("tuningMode", a.tuningMode);
     const int curSlot = modeSlot(a);
     for (int f = 0; f < kNumSlots; f++) {   // gains per mode (the current mode from the live settings)
         const bool cur = f == curSlot;

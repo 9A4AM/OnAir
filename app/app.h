@@ -398,6 +398,7 @@ struct App {
     uint64_t lastSeq = 0;
     Waterfall wf;
     float yMin = -110, yMax = -30;
+    int tuningMode = 0;                 // 0 retune the radio LO on spectrum click, 1 decode offset only (sticky LO)
     bool peakHold = true;               // the max-hold line
     float holdDecay = 4.5f;             // dB a second the max-hold line falls (0: it stays until it is reset)
     float specAvgSec = 0.08f;           // time constant of the averaged trace in seconds (0: the raw frames)
@@ -804,6 +805,8 @@ enum TbPart { TbSource = 1, TbFreq = 2, TbTuner = 4, TbGain = 8, TbDecoder = 16,
 void toolbarParts(App& a, int mask, bool vertical);   // pieces of the top bar, for the sidebar of the new interface
 void receiverGlance(App& a, float w, float h);       // analysis_tabs.cpp: a few key/value lines about the receiver
 void tuneFreq(App& a, double mhz);                     // set the frequency now (resets the FM receiver)
+void tuneDecode(App& a, double absMhz);                // sticky LO: decode absMhz without moving the radio centre
+void spectrumTune(App& a, double absMhz);              // spectrum / waterfall click (respects tuningMode)
 void uplinkNoteAdsb(const dect2::AdsbTelemetry& t);   // uplink_ui.cpp: callsigns heard by the ADS-B mode in this session
 double meshSampleRate(App& a);                  // mesh_ui.cpp: the radio rate the selected LoRa bandwidth needs (2 Msps; 4 above 500 kHz)
 void dvbsStatusRows(App& a, const DvbsTelemetry& t, bool on, bool run);   // dvbs_ui.cpp: the lock lamps and readouts of a report (QO-100's decoder panel)

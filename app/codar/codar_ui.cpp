@@ -73,7 +73,7 @@ void radarsView(App& a) {
     receiveNote();
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to look for ocean radar sweeps"); return; }
     const dect2::CodarTelemetry& t = a.rx.codar;
-    if (ImGui::Button("Clear")) a.engine.codar().clearResults();
+    if (ImGui::Button("Clear") && live(a)) a.engine.codar().clearResults();
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Forget every radar and event heard so far");
     ImGui::SameLine(0, 8 * gUi);
     ImGui::TextDisabled("%llu sweeps counted, %llu tracks rejected (not linear, too wide or too slow)", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
@@ -211,7 +211,8 @@ void hopTo(App& a, double mhz) {
 
 void tick(App& a) {
     loadState();
-    if (!a.engine.running() || !S.scan || a.devices[a.devIdx].kind == DeviceInfo::File) { S.lastHop = ImGui::GetTime(); return; }
+    const bool fileSrc = a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[(size_t)a.devIdx].kind == DeviceInfo::File;
+    if (!a.engine.running() || !live(a) || !S.scan || fileSrc) { S.lastHop = ImGui::GetTime(); return; }
     if (ImGui::GetTime() - S.lastHop < S.dwellSec) return;
     S.lastHop = ImGui::GetTime();
     const auto plan = dect2::codar::scanPlan(a.tune.sampleRate > 0 ? a.tune.sampleRate : 2e6);

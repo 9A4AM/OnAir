@@ -660,12 +660,39 @@ void toolbarParts(App& a, int mask, bool vertical) {
 
 void toolbar(App& a) { toolbarParts(a, TbAll, false); }
 
+static double dialMhzFromAbs(const App& a, double absMhz) {
+    const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
+    const bool file = !a.devices.empty() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() &&
+                      (a.devices[a.devIdx].kind == DeviceInfo::File || a.devices[a.devIdx].isAudio());
+    return absMhz - (mt && !file ? mt->tuneOffsetHz / 1e6 : 0.0);
+}
+
+void tuneDecode(App& a, double absMhz) {
+    if (a.second.drawing) {
+        a.second.mhz = dialMhzFromAbs(a, absMhz);
+        if (a.second.modeIdx >= 0) a.engine.setSecondaryHz(kModes[a.second.modeIdx].family + 2, absMhz * 1e6);
+        return;
+    }
+    a.freqMhz = dialMhzFromAbs(a, absMhz);
+    if (a.engine.running()) a.engine.setDecodeShiftHz(absMhz * 1e6 - a.engine.captureCentreHz());
+    savePrefs(a);
+}
+
+void spectrumTune(App& a, double absMhz) {
+    if (a.tuningMode == 1) {
+        if (a.fmMode) { a.freqMhz = std::round(std::max(0.0, dialMhzFromAbs(a, absMhz)) * 10.0) / 10.0; tuneDecode(a, absMhz); }
+        else tuneDecode(a, absMhz);
+    } else if (a.fmMode) fmTune(a, absMhz);
+    else tuneFreq(a, dialMhzFromAbs(a, absMhz));
+}
+
 void tuneFreq(App& a, double mhz) {
     if (a.second.drawing) {   // the second mode's screens tune the second mode (a refusal turns it off: secondModeTick)
         a.second.mhz = mhz;
         if (a.second.modeIdx >= 0) a.engine.setSecondaryHz(kModes[a.second.modeIdx].family + 2, mhz * 1e6);
         return;
     }
+    a.engine.setDecodeShiftHz(0);
     const bool moved = std::fabs(a.tune.centerHz - mhz * 1e6) > 1;
     a.freqMhz = mhz;
     a.tune.centerHz = mhz * 1e6;

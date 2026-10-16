@@ -113,11 +113,16 @@ void setListen(App& a, double hz) {
     const double rc = radioCenterMhz(a) * 1e6;
     double lo, hi;
     edges(lo, hi);
-    if (hz + lo < rc - 0.45 * fs || hz + hi > rc + 0.45 * fs) {
+    const bool sticky = a.tuningMode == 1;
+    const double bandLo = rc - 0.45 * fs, bandHi = rc + 0.45 * fs;
+    if (!sticky && (hz + lo < bandLo || hz + hi > bandHi)) {
         S.chanOff = 0;
         tuneFreq(a, hz / 1e6);
         S.lastDial = a.freqMhz;
-    } else S.chanOff = hz - a.freqMhz * 1e6;
+    } else {
+        if (sticky) hz = std::min(bandHi, std::max(bandLo, hz));
+        S.chanOff = hz - a.freqMhz * 1e6;
+    }
     save();
 }
 double snap(double hz) { const double s = stepHz(); return std::round(hz / s) * s; }

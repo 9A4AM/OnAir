@@ -1,5 +1,6 @@
 // Pagers screens: lamps for the signal, the sync and the two protocols; the message list with a filter; the statistics per speed.
 #include "app.h"
+#include "dect2/pager_rx.h"
 #include "dect2/pager_tel.h"
 #include "platform.h"
 #include <algorithm>
@@ -17,18 +18,33 @@ struct State {
     int view = 0;                        // 0 messages, 1 statistics
     char filter[48] = "";                // matches the address or the text
     bool pocsag = true, flex = true;
+    bool baud512 = true, baud1200 = true, baud2400 = true;
+    int pushedBaud = -1;
     bool loaded = false;
     int readMode = dect2::kPocsagReadAuto;   // PocsagReadMode, saved as "pocsagRead"
     std::map<uint32_t, int> byAddress;       // POCSAG address -> kPocsagReadAlpha or kPocsagReadNumeric, saved as "pocsagReadAddr" ("ric:a ric:n ...")
 };
 State S;
 
+int baudMask() {
+    int m = 0;
+    if (S.baud512) m |= 1;
+    if (S.baud1200) m |= 2;
+    if (S.baud2400) m |= 4;
+    return m;
+}
+
 void loadRead() {
     if (S.loaded) return;
     S.loaded = true;
-    const long m = plat::prefs().getI("pocsagRead", dect2::kPocsagReadAuto);
+    plat::Prefs& d = plat::prefs();
+    const long m = d.getI("pocsagRead", dect2::kPocsagReadAuto);
     S.readMode = m >= 0 && m < dect2::kPocsagReadModes ? (int)m : dect2::kPocsagReadAuto;
-    std::istringstream in(plat::prefs().getS("pocsagReadAddr", ""));
+    const long b = d.getI("pocsagBaud", 7);
+    S.baud512 = (b & 1) != 0;
+    S.baud1200 = (b & 2) != 0;
+    S.baud2400 = (b & 4) != 0;
+    std::istringstream in(d.getS("pocsagReadAddr", ""));
     std::string tok;
     while (in >> tok) {
         const size_t c = tok.find(':');
@@ -36,6 +52,11 @@ void loadRead() {
         const unsigned long ric = std::strtoul(tok.c_str(), nullptr, 10);
         S.byAddress[(uint32_t)ric] = tok[c + 1] == 'a' ? dect2::kPocsagReadAlpha : dect2::kPocsagReadNumeric;
     }
+}
+
+void saveBaud(const App& a) {
+    plat::prefs().setI("pocsagBaud", baudMask());
+    savePrefs(a);
 }
 
 void saveRead(const App& a) {
@@ -134,6 +155,16 @@ void messageView(App& a) {
     ImGui::Checkbox("FLEX", &S.flex);
     flowNext(12 * gUi);
     if (S.pocsag) {
+        ImGui::Checkbox("512 bd", &S.baud512);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Decode POCSAG at 512 baud.");
+        flowNext(10 * gUi);
+        ImGui::Checkbox("1200 bd", &S.baud1200);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Decode POCSAG at 1200 baud.");
+        flowNext(10 * gUi);
+        ImGui::Checkbox("2400 bd", &S.baud2400);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Decode POCSAG at 2400 baud. Turn off when only a slower speed is on air to avoid false decodes.");
+        if (ImGui::IsItemDeactivatedAfterEdit()) { saveBaud(a); S.pushedBaud = -1; }
+        flowNext(12 * gUi);
         ImGui::TextDisabled("Message type"); ImGui::SameLine(0, 5 * gUi);
         ImGui::SetNextItemWidth(150 * gUi);
         if (ImGui::BeginCombo("##pgread", dect2::pocsagReadModeName(S.readMode))) {
@@ -249,6 +280,12 @@ void statsView(App& a) {
 
 // ---------------------------------------------------------------- hooks
 
+void tick(App& a) {
+    loadRead();
+    const int m = baudMask();
+    if (m != S.pushedBaud) { a.engine.pager().setPocsagBauds(m); S.pushedBaud = m; }
+}
+
 void tab(App& a) {
     loadRead();
     lampRow(a);
@@ -332,4 +369,5 @@ const ModeUi kPagerUi = {
     .list = list,
     .status = status,
     .summary = summary,
+    .tick = tick,
 };
