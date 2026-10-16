@@ -1,7 +1,7 @@
 const KINDS = [
   { id: "aircraft", name: "Aircraft", color: "#e6e8ea", rotate: true },
   { id: "vessel", name: "Ships", color: "#8cb8eb", rotate: true },
-  { id: "sonde", name: "Sondes", color: "#cc94c7" },
+  { id: "sonde", name: "Sondes", color: "#cc94c7", symbol: true },
   { id: "aprs", name: "APRS", color: "#8ccc9e" },
   { id: "ham", name: "Amateur", color: "#8ccc9e" },
   { id: "drone", name: "Drones", color: "#e0ad6b", rotate: true },
@@ -147,12 +147,18 @@ function icons(colorOfKind) {
     }),
     sonde: iconCanvas(col("sonde"), (g) => {
       g.beginPath();
-      g.arc(0, -8, 14, 0, Math.PI * 2);
-      g.moveTo(-5, 16);
-      g.lineTo(-5, 24);
-      g.lineTo(5, 24);
-      g.lineTo(5, 16);
-      g.closePath();
+      g.ellipse(0, -12, 11, 15, 0, 0, Math.PI * 2);
+      g.moveTo(-3.5, 2);
+      g.quadraticCurveTo(0, 9, 3.5, 2);
+      g.moveTo(0, 9);
+      g.lineTo(0, 14);
+      g.rect(-6.5, 14, 13, 9);
+      g.moveTo(0, 14);
+      g.lineTo(0, 10);
+      g.moveTo(9, 17);
+      g.arc(6, 17, 3.5, -0.55, 0.55);
+      g.moveTo(11, 17);
+      g.arc(6, 17, 6.5, -0.45, 0.45);
     }),
     aprs: iconCanvas(col("aprs"), (g) => {
       g.beginPath();
@@ -292,6 +298,13 @@ function iconName(t) {
   return t.kind;
 }
 
+/** ACARS / VDL2 (and same ingest source) stay a dot until we can point the icon (reported or trail heading). */
+function datalinkDotUntilHeading(t, hdg) {
+  if (t.kind !== "aircraft") return false;
+  const src = srcOf(t);
+  return src === "acars" && hdg == null;
+}
+
 function pathDistanceM(lon1, lat1, lon2, lat2) {
   const p = Math.PI / 180;
   const dLat = (lat2 - lat1) * p;
@@ -332,14 +345,71 @@ function effectiveHeading(t) {
   return null;
 }
 
-function destPoint(t) {
+/** Great-circle point `nm` nautical miles from (lon, lat) along true heading. */
+function aheadPoint(lon, lat, headingDeg, nm) {
+  const rad = Math.PI / 180, r = nm / 3440.065, h = headingDeg * rad, p1 = lat * rad;
+  const lat2 = Math.asin(Math.sin(p1) * Math.cos(r) + Math.cos(p1) * Math.sin(r) * Math.cos(h)) / rad;
+  const lon2 = lon + Math.atan2(Math.sin(h) * Math.sin(r) * Math.cos(p1), Math.cos(r) - Math.sin(p1) * Math.sin(lat2 * rad)) / rad;
+  return [lon2, lat2];
+}
+
+const EXTRAP_MAX_SEC = {
+  adsb: 40, acars: 120, hfdl: 120, sat: 90, flarm: 45, ais: 90, default: 60,
+};
+
+function extrapMaxSec(t) {
+  const s = srcOf(t);
+  return EXTRAP_MAX_SEC[s] || EXTRAP_MAX_SEC.default;
+}
+
+function effectiveSpeedKts(t) {
+  if (Number.isFinite(t.speed) && t.speed >= 8) return t.speed;
+  if (t._prevPos && Number.isFinite(t._prevPosMs)) {
+    const dt = (positionTimeMs(t) - t._prevPosMs) / 1000;
+    if (dt >= 3 && dt < 900) {
+      const [lon1, lat1] = t._prevPos;
+      const dM = pathDistanceM(lon1, lat1, t.lon, t.lat);
+      const kts = (dM / 1852) / (dt / 3600);
+      if (kts >= 8 && kts < 900) return kts;
+    }
+  }
+  return null;
+}
+
+/** Where the icon should be drawn now (dead reckoning between fixes). */
+function displayLonLat(t, nowMs = Date.now()) {
   const hdg = effectiveHeading(t);
-  if (hdg == null || t.speed == null || t.speed < 20) return null;
-  const nm = t.speed * (2 / 60);
-  const rad = Math.PI / 180, r = nm / 3440.065, h = hdg * rad, p1 = t.lat * rad;
-  const lat = Math.asin(Math.sin(p1) * Math.cos(r) + Math.cos(p1) * Math.sin(r) * Math.cos(h)) / rad;
-  const lon = t.lon + Math.atan2(Math.sin(h) * Math.sin(r) * Math.cos(p1), Math.cos(r) - Math.sin(p1) * Math.sin(lat * rad)) / rad;
-  return [lon, lat];
+  const spd = effectiveSpeedKts(t);
+  if (hdg == null || spd == null) return [t.lon, t.lat];
+  const posMs = positionTimeMs(t);
+  let dt = (nowMs - posMs) / 1000;
+  if (!Number.isFinite(dt) || dt < 0) dt = 0;
+  dt = Math.min(dt, extrapMaxSec(t));
+  const nm = spd * (dt / 3600);
+  if (nm < 0.0005) return [t.lon, t.lat];
+  return aheadPoint(t.lon, t.lat, hdg, nm);
+}
+
+function destPoint(t, fromLonLat) {
+  const hdg = effectiveHeading(t);
+  const spd = effectiveSpeedKts(t);
+  if (hdg == null || spd == null || spd < 20) return null;
+  const [lon, lat] = fromLonLat || displayLonLat(t);
+  const nm = spd * (2 / 60);
+  return aheadPoint(lon, lat, hdg, nm);
+}
+
+let motionTimer = 0;
+function refreshMotion() {
+  const live = map.getSource("live");
+  if (live) live.setData(geojson());
+  const tr = map.getSource("trails");
+  if (tr && selected) tr.setData(trailGeo());
+}
+
+function ensureMotionLoop() {
+  if (motionTimer) return;
+  motionTimer = window.setInterval(refreshMotion, 250);
 }
 
 function geojson() {
@@ -347,7 +417,9 @@ function geojson() {
   for (const t of tracks.values()) {
     if (!on[t.kind]) continue;
     const hdg = effectiveHeading(t);
-    const sym = kindOf[t.kind] && kindOf[t.kind].rotate;
+    const k = kindOf[t.kind];
+    const useSym = k && (k.rotate || k.symbol) && !datalinkDotUntilHeading(t, hdg);
+    const dot = datalinkDotUntilHeading(t, hdg);
     features.push({
       type: "Feature",
       id: t.id,
@@ -358,11 +430,12 @@ function geojson() {
         label: t.label || "",
         color: colorOf(t.kind, t),
         heading: hdg != null ? hdg : 0,
-        sym: sym ? 1 : 0,
-        iconRot: sym && hdg != null ? 1 : 0,
+        sym: useSym ? 1 : 0,
+        dot: dot ? 1 : 0,
+        iconRot: k && k.rotate && hdg != null && !dot ? 1 : 0,
         sel: t.id === selected ? 1 : 0,
       },
-      geometry: { type: "Point", coordinates: [t.lon, t.lat] },
+      geometry: { type: "Point", coordinates: displayLonLat(t) },
     });
   }
   return { type: "FeatureCollection", features };
@@ -370,25 +443,27 @@ function geojson() {
 
 function trailGeo() {
   const features = [];
-  for (const t of tracks.values()) {
-    if (!on[t.kind]) continue;
-    const path = Array.isArray(t.path) ? t.path.slice() : [];
-    if (path.length && (path[path.length - 1][0] !== t.lon || path[path.length - 1][1] !== t.lat)) path.push([t.lon, t.lat]);
-    if (path.length >= 2) {
-      features.push({
-        type: "Feature",
-        properties: { id: t.id, color: colorOf(t.kind, t), kind: "trail" },
-        geometry: { type: "LineString", coordinates: path },
-      });
-    }
-    const d = destPoint(t);
-    if (d) {
-      features.push({
-        type: "Feature",
-        properties: { id: t.id, color: colorOf(t.kind, t), kind: "pred" },
-        geometry: { type: "LineString", coordinates: [[t.lon, t.lat], d] },
-      });
-    }
+  if (!selected) return { type: "FeatureCollection", features };
+  const t = tracks.get(selected);
+  if (!t || !on[t.kind]) return { type: "FeatureCollection", features };
+  const [dlon, dlat] = displayLonLat(t);
+  const path = Array.isArray(t.path) ? t.path.slice() : [];
+  if (path.length && (path[path.length - 1][0] !== dlon || path[path.length - 1][1] !== dlat)) path.push([dlon, dlat]);
+  else if (!path.length) path.push([dlon, dlat]);
+  if (path.length >= 2) {
+    features.push({
+      type: "Feature",
+      properties: { id: t.id, color: colorOf(t.kind, t), kind: "trail" },
+      geometry: { type: "LineString", coordinates: path },
+    });
+  }
+  const d = destPoint(t, [dlon, dlat]);
+  if (d) {
+    features.push({
+      type: "Feature",
+      properties: { id: t.id, color: colorOf(t.kind, t), kind: "pred" },
+      geometry: { type: "LineString", coordinates: [[dlon, dlat], d] },
+    });
   }
   return { type: "FeatureCollection", features };
 }
@@ -435,12 +510,29 @@ function mergePathClient(prev, t) {
     if (prev.extra && !t.extra) t.extra = prev.extra;
     if (prev.cat && !t.cat) t.cat = prev.cat;
   }
+  const moved = !prev || prev.lat !== t.lat || prev.lon !== t.lon;
+  if (moved && prev) {
+    t._prevPos = [prev.lon, prev.lat];
+    t._prevPosMs = positionTimeMs(prev);
+  } else if (prev) {
+    t._prevPos = prev._prevPos;
+    t._prevPosMs = prev._prevPosMs;
+  }
   return t;
 }
 
+let upsertPending = null;
 function upsert(list) {
-  for (const t of list) tracks.set(t.id, mergePathClient(tracks.get(t.id), t));
-  apply();
+  if (!upsertPending) upsertPending = [];
+  upsertPending.push(...list);
+  if (upsertPending._scheduled) return;
+  upsertPending._scheduled = true;
+  requestAnimationFrame(() => {
+    const batch = upsertPending;
+    upsertPending = null;
+    for (const t of batch) tracks.set(t.id, mergePathClient(tracks.get(t.id), t));
+    apply();
+  });
 }
 
 function renderLayers() {
@@ -522,7 +614,7 @@ function renderLoad() {
   el.classList.toggle("warn", pct >= 55 && pct < 82);
   el.classList.toggle("hot", pct >= 82);
   const tip = [
-    "Shared map load. 100% = very busy; ingests may be slowed.",
+    "Estimated hub capacity (not CPU). 100% = very busy; ingests may be slowed.",
     "Load " + pct + "%",
     serverLoad.viewers != null ? serverLoad.viewers + " viewers" : "",
     serverLoad.stations != null ? serverLoad.stations + " stations (30m)" : "",
@@ -637,8 +729,9 @@ function focusTrack(id) {
   const t = tracks.get(id);
   if (!t) return;
   showCard(t);
+  const [lon, lat] = displayLonLat(t);
   apply();
-  map.easeTo({ center: [t.lon, t.lat], zoom: Math.max(map.getZoom(), 6.5), duration: 400 });
+  map.easeTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: 400 });
 }
 
 function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
@@ -709,7 +802,10 @@ map.on("load", () => {
     id: "dot",
     type: "circle",
     source: "live",
-    filter: ["!", ["in", ["get", "kind"], ["literal", ["aircraft", "flarm", "drone", "vessel"]]]],
+    filter: ["any",
+      ["==", ["to-number", ["get", "dot"]], 1],
+      ["!=", ["to-number", ["get", "sym"]], 1],
+    ],
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 3, 8, 5],
       "circle-color": ["get", "color"],
@@ -745,10 +841,7 @@ map.on("load", () => {
       id: "sym",
       type: "symbol",
       source: "live",
-      filter: ["any",
-        ["==", ["to-number", ["get", "sym"]], 1],
-        ["!", ["in", ["get", "kind"], ["literal", ["aircraft", "flarm", "drone", "vessel"]]]],
-      ],
+      filter: ["==", ["to-number", ["get", "sym"]], 1],
       layout: {
         "icon-image": ["coalesce", ["image", ["get", "icon"]], ["image", ["get", "kind"]], ["image", "aircraft"]],
         "icon-rotate": ["case", ["==", ["to-number", ["get", "iconRot"]], 1], ["to-number", ["get", "heading"]], 0],
@@ -779,6 +872,7 @@ map.on("load", () => {
     }
   });
   apply();
+  ensureMotionLoop();
 });
 
 map.on("mousemove", (e) => {
@@ -835,27 +929,40 @@ function takeSnapshot(d) {
   if (d.load) serverLoad = d.load;
   apply();
   setLive(true);
+  if (tracks.size) ensureMotionLoop();
 }
 
+let wsOpen = false;
+
 function connect() {
-  fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => setLive(false));
   const proto = location.protocol === "https:" ? "wss" : "ws";
   let ws;
   try { ws = new WebSocket(proto + "://" + location.host + "/ws"); } catch { return; }
-  ws.onopen = () => setLive(true);
+  ws.onopen = () => { wsOpen = true; setLive(true); };
   ws.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.type === "hello") takeSnapshot(m);
     else if (m.type === "load" && m.load) { serverLoad = m.load; renderLoad(); }
     else if (m.type === "upsert") upsert(m.tracks || []);
   };
-  ws.onclose = () => { setLive(false); setTimeout(connect, 5000); };
+  ws.onclose = () => {
+    wsOpen = false;
+    setLive(false);
+    setTimeout(connect, 5000);
+  };
+  setTimeout(() => {
+    if (!wsOpen && tracks.size === 0) {
+      fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => setLive(false));
+    }
+  }, 6000);
 }
 
 connect();
 renderLayers();
 document.getElementById("zoom").textContent = "z " + map.getZoom().toFixed(1);
 
+// Full snapshots are expensive on the hub; rely on WebSocket when connected.
 setInterval(() => {
+  if (wsOpen) return;
   fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => {});
-}, 10000);
+}, 30000);

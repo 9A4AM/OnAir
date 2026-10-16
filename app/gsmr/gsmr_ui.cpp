@@ -2,6 +2,7 @@
 // of System Information 1 and 2, the carriers seen in the spectrum, a band scan for radios that cannot take the whole railway band at
 // once, and the log. Only what base stations broadcast to every mobile is shown.
 #include "app.h"
+#include "results_export.h"
 #include "dect2/gsmr_rx.h"
 #include "dect2/gsmr_si.h"
 #include "dect2/gsmr_tel.h"
@@ -76,6 +77,18 @@ void scanBar(App& a) {
     }
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Clear")) a.engine.gsmr().clearCells();
+    flowNext(10 * gUi);
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "operator", "arfcn", "bsic", "lac", "cell_id", "band", "level_db", "snr_db"};
+        const std::string now = resexp::stamp();
+        for (const auto& c : a.rx.gsmr.cells)
+            t.add({now, resexp::num(c.freqHz, 0), c.railway ? "GSM-R" : "GSM 900", opText(c), c.arfcn >= 0 ? std::to_string(c.arfcn) : "", std::to_string(c.ncc) + "-" + std::to_string(c.bcc),
+                   c.hasLai ? std::to_string(c.lac) : "", c.hasSi3 ? std::to_string(c.cellId) : "", c.railway ? "GSM-R" : "GSM 900",
+                   resexp::num(c.levelDb, 0), resexp::num(c.snrDb, 0)});
+        resexp::saveButton(t, "gsmr", note, "svgsmr");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     flowEnd();
 }
 

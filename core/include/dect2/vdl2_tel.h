@@ -65,6 +65,8 @@ struct Vdl2Aircraft {
     int altFt = 0;
     std::string posKind;
     double posTime = 0;
+    bool hasTrack = false;       // from the report, else from the last two positions
+    double trackDeg = 0;
     std::vector<Vdl2TrackPoint> track;   // oldest first, at most 24
 };
 

@@ -225,6 +225,18 @@ void messageView(App& a) {
 
 ImU32 planeColour(double now, double posTime) { return now - posTime > 1800 ? IM_COL32(150, 154, 158, 220) : IM_COL32(205, 214, 120, 255); }
 
+// an airliner seen from above, nose to the heading
+void drawPlane(ImDrawList* dl, ImVec2 c, float headingDeg, float r, ImU32 fill, bool outline) {
+    static const float pts[][2] = {{0, -1}, {0.09f, -0.75f}, {0.10f, -0.15f}, {1.0f, 0.30f}, {1.0f, 0.46f}, {0.10f, 0.22f}, {0.09f, 0.68f}, {0.40f, 0.90f}, {0.40f, 1.0f}, {0, 0.92f},
+                                   {-0.40f, 1.0f}, {-0.40f, 0.90f}, {-0.09f, 0.68f}, {-0.10f, 0.22f}, {-1.0f, 0.46f}, {-1.0f, 0.30f}, {-0.10f, -0.15f}, {-0.09f, -0.75f}};
+    const int n = (int)(sizeof pts / sizeof *pts);
+    const float h = headingDeg * 3.14159265f / 180.f, ch = std::cos(h), sh = std::sin(h);
+    ImVec2 q[18];
+    for (int i = 0; i < n; i++) q[i] = ImVec2(c.x + (pts[i][0] * ch - pts[i][1] * sh) * r, c.y + (pts[i][0] * sh + pts[i][1] * ch) * r);
+    dl->AddConcavePolyFilled(q, n, fill);
+    dl->AddPolyline(q, n, outline ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 150), ImDrawFlags_Closed, outline ? 1.6f : 1.f);
+}
+
 void mapCanvas(App& a, ImVec2 size) {
     const dect2::Vdl2Telemetry& t = a.rx.vdl2;
     const bool on = live(a);
@@ -264,8 +276,11 @@ void mapCanvas(App& a, ImVec2 size) {
             for (size_t i = 1; i < c.track.size(); i++) dl->AddLine(adsbmap::project(c.track[i - 1].lat, c.track[i - 1].lon), adsbmap::project(c.track[i].lat, c.track[i].lon), (col & 0x00FFFFFF) | 0x90000000, 1.5f);
             const ImVec2 q = adsbmap::project(c.lat, c.lon);
             const bool sel = c.icao == S.selAir;
-            dl->AddCircleFilled(q, (sel ? 6.f : 5.f) * gUi, col);
-            dl->AddCircle(q, (sel ? 6.f : 5.f) * gUi, sel ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 160), 16, sel ? 1.6f : 1.f);
+            if (c.hasTrack) drawPlane(dl, q, (float)c.trackDeg, (sel ? 12.f : 10.f) * gUi, col, sel);
+            else {
+                dl->AddCircleFilled(q, (sel ? 6.f : 5.f) * gUi, col);
+                dl->AddCircle(q, (sel ? 6.f : 5.f) * gUi, sel ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 160), 16, sel ? 1.6f : 1.f);
+            }
             std::string s = c.reg.empty() ? hex6(c.icao) : c.reg;
             if (!c.flight.empty()) s += " " + c.flight;
             if (c.hasAlt) { char b[16]; snprintf(b, sizeof b, " FL%03d", (c.altFt + 50) / 100); s += b; }

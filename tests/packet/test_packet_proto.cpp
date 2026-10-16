@@ -1,6 +1,7 @@
 // APRS / Packet protocol layers: CRC, bit stuffing and HDLC, AX.25 frames, APRS parsing. Pure functions, no signal; instant.
 #include "dect2/packet_aprs.h"
 #include "dect2/packet_ax25.h"
+#include "dect2/packet_demod.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -46,6 +47,35 @@ static void testStuffing() {
     ax25::HdlcRx rx3([&](const std::vector<uint8_t>&, bool ok) { if (!ok) bad++; });
     for (uint8_t b : ax25::nrziEncode(ax25::hdlcBits(fr, 3, 3))) rx3.bit(b);
     CHECK(bad == 1, "bad FCS reported %d times", bad);
+    // two UI frames concatenated with no idle between them (shared preamble flags only)
+    ax25::Frame a, b;
+    a.from.call = "A61AA"; a.to.call = "APRS"; a.info = "first";
+    b.from.call = "A61BB"; b.to.call = "APRS"; b.info = "second";
+    const std::vector<uint8_t> ba = ax25::buildFrame(a), bb = ax25::buildFrame(b);
+    std::vector<uint8_t> b2b = ax25::hdlcBits(ba, 4, 1);
+    const std::vector<uint8_t> tail = ax25::hdlcBits(bb, 4, 3);
+    b2b.insert(b2b.end(), tail.begin(), tail.end());   // closing flag of the first frame, then the second's preamble
+    got.clear();
+    ax25::HdlcRx rx4([&](const std::vector<uint8_t>& d, bool ok) { if (ok) got.push_back(d); });
+    for (uint8_t lv : ax25::nrziEncode(b2b)) rx4.bit(lv);
+    CHECK(got.size() == 2 && got[0] == std::vector<uint8_t>(ba.begin(), ba.end() - 2) && got[1] == std::vector<uint8_t>(bb.begin(), bb.end() - 2),
+          "back-to-back HDLC (%zu)", got.size());
+    // the same bits through the 1200 baud AFSK demodulator (no FM)
+    std::vector<float> au;
+    au.reserve(b2b.size() * 40);
+    double tph = 0;
+    for (uint8_t lv : ax25::nrziEncode(b2b)) {
+        for (int s = 0; s < 40; s++) {
+            tph += 2 * 3.14159265358979323846 * (lv ? 1200.0 : 2200.0) / pktdemod::kAudioRate;
+            au.push_back((float)std::sin(tph));
+        }
+    }
+    got.clear();
+    pktdemod::Afsk1200 dem;
+    dem.init(40, false, 1.f, 0.70f, 0.80f);
+    dem.hdlc.setCallback([&](const std::vector<uint8_t>& d, bool ok) { if (ok) got.push_back(d); });
+    dem.process(au.data(), au.size());
+    CHECK(got.size() == 2, "back-to-back AFSK (%zu)", got.size());
 }
 
 static void testFrame() {

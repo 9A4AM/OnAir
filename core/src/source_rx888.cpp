@@ -476,6 +476,15 @@ static std::string windowsUsbService(uint16_t vid, uint16_t pid) {
 #endif
 }
 
+static bool windowsLibusbDriverBound() {
+#ifndef _WIN32
+    return false;
+#else
+    const std::string svc = windowsUsbService(kRx888Vid, kRx888PidApp);
+    return svc == "winusb" || svc == "libusbk" || svc == "libusb0" || svc.find("libusb") != std::string::npos;
+#endif
+}
+
 // What start() shows when the firmware was written and the new device never became an RX888 MkII we can name.
 // Kept free of the words start() treats as "try again" ("not found", "unplugged"): a retry looks up the boot loader's old
 // address, which has gone, and would replace this with "RX888 MkII not found".
@@ -531,7 +540,9 @@ protected:
             openFailure_ = OpenFailure::Final;
             return false;
         }
-        fprintf(stderr, "RX888 MkII: opened %s, SDDC firmware %d.%d\n", dev.serial.c_str(), info[1], info[2]);
+        fwMajor_ = info[1];
+        fwMinor_ = info[2];
+        fprintf(stderr, "RX888 MkII: opened %s, SDDC firmware %d.%d\n", dev.serial.c_str(), fwMajor_, fwMinor_);
         fflush(stderr);
         gpios_ = 0; vhf_ = -1; adc_ = 0; dat31_ = ad8340_ = lna_ = vga_ = -1; tuneHz_ = 0;
         streamed_ = false;
@@ -749,11 +760,12 @@ private:
     }
 
     // Vendor control transfers: retry PIPE/IO/TIMEOUT/BUSY (common on Windows WinUSB right after open).
-    bool ctl(bool in, uint8_t request, uint16_t val, uint16_t idx, uint8_t* data, uint16_t len, int want) {
+    bool ctl(bool in, uint8_t request, uint16_t val, uint16_t idx, uint8_t* data, uint16_t len, int want, int tries = 0, int delayMs = 0) {
         if (!link_) { lastUsbErr_ = LIBUSB_ERROR_NO_DEVICE; return false; }
-        const int tries = kOnWindows ? 5 : 3;
-        for (int a = 0; a < tries; a++) {
-            if (a) std::this_thread::sleep_for(std::chrono::milliseconds(kOnWindows ? 20 : 8));
+        const int n = tries > 0 ? tries : (kOnWindows ? 5 : 3);
+        const int delay = delayMs > 0 ? delayMs : (kOnWindows ? 20 : 8);
+        for (int a = 0; a < n; a++) {
+            if (a) std::this_thread::sleep_for(std::chrono::milliseconds(delay));
             const int r = link_->control(in, request, val, idx, data, len);
             if (r == want) { lastUsbErr_ = 0; return true; }
             if (in && request == kTestFx3 && want == 4 && r == LIBUSB_ERROR_PIPE) { lastUsbErr_ = 0; return true; }
@@ -762,11 +774,36 @@ private:
         }
         return false;
     }
+    std::string firmwareTag() const {
+        if (fwMajor_ < 0) return {};
+        return ", SDDC firmware " + std::to_string(fwMajor_) + "." + std::to_string(fwMinor_);
+    }
     std::string usbStepErr(const std::string& step) const {
-        std::string e = "RX888 MkII: " + step + " (" + usbErrorText(lastUsbErr_) + ")";
-        if (kOnWindows && (lastUsbErr_ == LIBUSB_ERROR_PIPE || lastUsbErr_ == LIBUSB_ERROR_IO || lastUsbErr_ == LIBUSB_ERROR_NOT_SUPPORTED))
+        std::string e = "RX888 MkII: " + step + " (" + usbErrorText(lastUsbErr_) + ")" + firmwareTag();
+        if (!kOnWindows) return e;
+        const bool pipeIo = lastUsbErr_ == LIBUSB_ERROR_PIPE || lastUsbErr_ == LIBUSB_ERROR_IO;
+        if (windowsLibusbDriverBound()) {
+            if (pipeIo)
+                e += " WinUSB is already bound to this radio. Close HDSDR, ExtIO or any other program that may have the RX888 open, unplug the USB cable and plug it in again, then retry. If it keeps failing, replace SDDC_FX3.img in OnAir's codecs folder with the image from SDDC_Driver v2.0.0 (see third_party/sddc_fx3 in the source tree).";
+            else if (lastUsbErr_ == LIBUSB_ERROR_NOT_SUPPORTED)
+                e += " WinUSB is bound but this request was refused: the RAM firmware may be too old — load SDDC_FX3.img from SDDC_Driver v2.0.0 (unplug and replug so the boot loader at 04b4:00f3 appears, or use the official RX-888 tools once).";
+        } else if (pipeIo || lastUsbErr_ == LIBUSB_ERROR_NOT_SUPPORTED)
             e += " If another SDR program has the radio open, close it. Otherwise install WinUSB for USB\\VID_04B4&PID_00F1 with Zadig (zadig.akeo.ie); the Cypress driver from the official RX-888 setup cannot be used by OnAir.";
         return e;
+    }
+    // RX888R2Radio::SetRFMode(HFMODE): Control(TUNERSTDBY) then VHF off. WinUSB often stalls the first EP0 write after open.
+    bool setTunerStandby() {
+        if (kOnWindows) std::this_thread::sleep_for(std::chrono::milliseconds(15));
+        uint8_t z = 0;
+        if (ctl(false, kTunerStandby, 0, 0, &z, 1, 1, kOnWindows ? 12 : 6, kOnWindows ? 35 : 12)) return true;
+        // Cold start (tuner never brought up this session): some Windows stacks keep returning PIPE even though standby is already the default.
+        if (vhf_ < 0 && lastUsbErr_ == LIBUSB_ERROR_PIPE) {
+            fprintf(stderr, "RX888 MkII: tuner standby stalled with PIPE on a cold start (continuing%s)\n", firmwareTag().c_str());
+            fflush(stderr);
+            lastUsbErr_ = 0;
+            return true;
+        }
+        return false;
     }
     bool setU8(uint8_t request, uint8_t v) { return ctl(false, request, 0, 0, &v, 1, 1); }
     bool setU32(uint8_t request, uint32_t v) { uint8_t b[4]; memcpy(b, &v, 4); return ctl(false, request, 0, 0, b, 4, 4); }
@@ -799,7 +836,7 @@ private:
             if (!setU32(kTunerInit, (uint32_t)kR828dRefHz)) { err = usbStepErr("the VHF input could not be switched on: R828D reference clock"); return false; }
             dat31_ = 63; ad8340_ = 0x83; lna_ = vga_ = -1; tuneHz_ = 0;
         } else {
-            if (!setU8(kTunerStandby, 0)) { err = usbStepErr("the HF input could not be switched on: tuner standby"); return false; }
+            if (!setTunerStandby()) { err = usbStepErr("the HF input could not be switched on: tuner standby"); return false; }
             if (!setGpios(gpioWord(s, false))) { err = usbStepErr("the HF input could not be switched on: antenna switch"); return false; }
             dat31_ = ad8340_ = -1;
         }
@@ -879,6 +916,7 @@ private:
     int vhf_ = -1, decim_ = 2;
     int dat31_ = -1, ad8340_ = -1, lna_ = -1, vga_ = -1;   // what the radio is set to (-1: not yet)
     int lastUsbErr_ = 0;
+    int fwMajor_ = -1, fwMinor_ = -1;
     uint64_t tuneHz_ = 0;
     bool streamed_ = false;
     std::vector<int> set_before_;    // (uploadFirmware) the app-mode radios there were before it

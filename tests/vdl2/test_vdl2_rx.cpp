@@ -20,11 +20,11 @@ static const double kRate = 1e6, kCenter = 136.85e6, kAmp = 0.08;
 struct Sent { double t; double f; uint32_t src, dst; };
 struct Clip { std::vector<cf32> x; std::vector<Sent> sent; };
 
-static double sigmaFor(double esn0) { return std::sqrt(kAmp * kAmp * 0.85 / std::pow(10.0, esn0 / 10) * (kRate / kVdl2SymbolRate) / 2); }
+static double sigmaFor(double esn0, double rate = kRate) { return std::sqrt(kAmp * kAmp * 0.85 / std::pow(10.0, esn0 / 10) * (rate / kVdl2SymbolRate) / 2); }
 
-static void addNoise(std::vector<cf32>& x, double esn0, uint32_t seed) {
+static void addNoise(std::vector<cf32>& x, double esn0, uint32_t seed, double rate = kRate) {
     std::mt19937 r(seed);
-    std::normal_distribution<float> g(0.f, (float)sigmaFor(esn0));
+    std::normal_distribution<float> g(0.f, (float)sigmaFor(esn0, rate));
     for (auto& v : x) v += cf32(g(r), g(r));
 }
 
@@ -37,6 +37,28 @@ static void addBurst(Clip& c, const Vdl2Frames& fr, double t, double f, double l
     vdl2Render(w, c.x.data(), 0, c.x.size(), kRate);
     if ((t + vdl2BurstSeconds(fr)) * kRate < (double)c.x.size() - 2000)
         for (const auto& f1 : fr) { Vdl2Message m; vdl2ParseFrame(f1.data(), f1.size() - 2, m); c.sent.push_back({t, f, m.src, m.dst}); }
+}
+
+static Clip trafficAt(double rate, double secs, double cfo, uint32_t seed, double spreadDb = 0, int aircraft = 8, double rateFactor = 2.5) {
+    Clip c;
+    c.x.assign((size_t)(secs * rate), cf32(0, 0));
+    Vdl2GenOptions o;
+    o.seed = seed; o.levelSpreadDb = spreadDb; o.aircraft = aircraft; o.rateFactor = rateFactor; o.centerHz = kCenter;
+    Vdl2Traffic tr(o);
+    std::mt19937 r(seed);
+    while (true) {
+        const Vdl2TxBurst b = tr.next();
+        if (b.t > secs) break;
+        Vdl2Wave w = vdl2MakeWave(b.frames);
+        w.start = b.t * rate;
+        w.carHz = o.channelsHz[(size_t)b.chan] - kCenter + b.carOffHz + cfo;
+        w.amp = kAmp * std::pow(10.0, b.levelDb / 20);
+        w.phase = (double)(r() % 6283) / 1000;
+        vdl2Render(w, c.x.data(), 0, c.x.size(), rate);
+        if ((b.t + vdl2BurstSeconds(b.frames)) * rate < (double)c.x.size() - 2000)
+            for (const auto& f1 : b.frames) { Vdl2Message m; vdl2ParseFrame(f1.data(), f1.size() - 2, m); c.sent.push_back({b.t, o.channelsHz[(size_t)b.chan], m.src, m.dst}); }
+    }
+    return c;
 }
 
 static Clip traffic(double secs, double cfo, uint32_t seed, double spreadDb = 0, int aircraft = 8, double rateFactor = 2.5) {
@@ -58,9 +80,9 @@ static bool sel(const char* key) { const char* e = getenv("VDL2_ONLY"); return !
 
 struct Result { int sent = 0, found = 0, extra = 0; double tuneErr = 0; };
 
-static Result run(const std::vector<cf32>& x, const std::vector<Sent>& sent, double timeScale = 1.0, int chunk = 16384, double tuneGuess = 0, bool randomChunks = false, double tShift = 0) {
+static Result run(const std::vector<cf32>& x, const std::vector<Sent>& sent, double timeScale = 1.0, int chunk = 16384, double tuneGuess = 0, bool randomChunks = false, double tShift = 0, double rate = kRate) {
     Vdl2Receiver rx;
-    rx.configure(kRate);
+    rx.configure(rate);
     rx.setCenterHz(kCenter);
     if (tuneGuess != 0) rx.setTuneErrorHz(tuneGuess);
     std::mt19937 r(3);
@@ -197,6 +219,14 @@ int main() {
         addNoise(c.x, 25, 18);
         Result res = run(c.x, want);
         row("neighbour 25 kHz away, 30 dB stronger", res, 95);
+    }
+    // HackRF default sample rate (2 Msps, same channel rate after decimation as 1 Msps tests)
+    if (sel("hackrf"))
+    {
+        constexpr double kHackRf = 2e6;
+        Clip c = trafficAt(kHackRf, 6, 0, 21, 10);
+        addNoise(c.x, 25, 22, kHackRf);
+        row("HackRF 2 Msps, Es/N0 25 dB", run(c.x, c.sent, 1.0, 16384, 0, false, 0, kHackRf), 99);
     }
     // noise only, then NaN samples: nothing decoded, nothing breaks
     if (sel("noise"))

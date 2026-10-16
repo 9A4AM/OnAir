@@ -97,10 +97,10 @@ bool parseDatatype(const std::string& dt, FileFormat& fmt, bool& be, std::string
     if (d.size() > 3 && d.compare(d.size() - 3, 3, "_be") == 0) { be = true; d.resize(d.size() - 3); }
     else if (d.size() > 3 && d.compare(d.size() - 3, 3, "_le") == 0) d.resize(d.size() - 3);
     if (d == "cf32") fmt = FileFormat::CF32;
-    else if (d == "ci16") fmt = FileFormat::CI16;
+    else if (d == "ci16" || d == "ri16") fmt = FileFormat::CI16;
     else if (d == "cu16") fmt = FileFormat::CU16;
-    else if (d == "ci8") fmt = FileFormat::CS8;
-    else if (d == "cu8") fmt = FileFormat::CU8;
+    else if (d == "ci8" || d == "ri8") fmt = FileFormat::CS8;   // ri8: legacy OnAir recordings
+    else if (d == "cu8" || d == "ru8") fmt = FileFormat::CU8;
     else { err = "SigMF datatype \"" + dt + "\" is not supported (complex cf32, ci16, cu16, ci8, cu8 are)"; return false; }
     if (fmt == FileFormat::CS8 || fmt == FileFormat::CU8) be = false;
     return true;
@@ -140,8 +140,15 @@ bool probeSigmf(const std::string& metaPath, const std::string& dataPathIn, IqFi
     std::string data = dataPathIn;
     if (data.empty()) {
         const std::string base = metaPath.substr(0, metaPath.size() - strlen(".sigmf-meta"));
-        for (const char* ext : {".sigmf-data", ".SIGMF-DATA"}) if (std::filesystem::exists(fsPath(base + ext))) { data = base + ext; break; }
-        if (data.empty()) { err = "no .sigmf-data file beside " + metaPath; return false; }
+        const std::filesystem::path metaDir = fsPath(metaPath).parent_path();
+        if (const J* ds = g->get("core:dataset"); ds && ds->t == J::Str && !ds->s.empty()) {
+            std::filesystem::path dp = fsPath(ds->s);
+            if (!dp.is_absolute()) dp = metaDir / dp;
+            if (std::filesystem::exists(dp)) data = dp.string();
+        }
+        if (data.empty())
+            for (const char* ext : {".sigmf-data", ".SIGMF-DATA"}) if (std::filesystem::exists(fsPath(base + ext))) { data = base + ext; break; }
+        if (data.empty()) { err = "no IQ data file for " + metaPath + " (expected .sigmf-data or global core:dataset)"; return false; }
     }
     std::error_code ec;
     const uint64_t size = std::filesystem::file_size(fsPath(data), ec);

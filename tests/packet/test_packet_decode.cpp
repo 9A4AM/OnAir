@@ -3,6 +3,7 @@
 #include "dect2/gen_util.h"
 #include "dect2/packet_gen.h"
 #include "dect2/packet_rx.h"
+#include "dect2/packet_ax25.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -75,6 +76,38 @@ int main() {
     run("9600 baud", 2, 18.0, -900.0, 2000000);
     run("both", 0, 18.0, 300.0, 2000000);
     run("1200 baud, 10 Msps", 1, 15.0, 0.0, 10000000);
+    {   // two 1200 baud frames with no inter-packet gap (dense APRS channel)
+        PacketGenFrame f0, f1;
+        f0.baud = f1.baud = 1200;
+        f0.frame.from.call = "A61AA"; f0.frame.to.call = "APRS"; f0.frame.info = "first";
+        f1.frame.from.call = "A61BB"; f1.frame.to.call = "APRS"; f1.frame.info = "second";
+        SynthConfig cfg;
+        cfg.snrDb = 16.0;
+        cfg.cfoHz = 400.0;
+        auto syn = makePacketSynthBurst(cfg, 2000000, {f0, f1}, 0.0);
+        CHECK(syn != nullptr, "burst synth");
+        PacketReceiver rx;
+        rx.configure(2000000);
+        rx.setSignalOffset(-packetTuning().tuneOffsetHz);
+        std::vector<cf32> buf(65536);
+        const size_t total = (size_t)(2.0 * 2000000);
+        for (size_t done = 0; done < total;) {
+            const size_t n = std::min(buf.size(), total - done);
+            syn->generate(buf.data(), n);
+            rx.feed(buf.data(), n);
+            done += n;
+        }
+        PacketTelemetry t;
+        CHECK(rx.telemetry(t, 0), "back-to-back: telemetry");
+        int hit0 = 0, hit1 = 0;
+        for (const PacketFrameInfo& r : t.frames) {
+            if (r.from == f0.frame.from.str() && r.info == f0.frame.info) hit0++;
+            if (r.from == f1.frame.from.str() && r.info == f1.frame.info) hit1++;
+        }
+        printf("back-to-back 1200: %zu decoded, hits %d/%d, bad %llu\n", t.frames.size(), hit0, hit1, (unsigned long long)t.blocksBad);
+        CHECK(hit0 == 1 && hit1 == 1, "back-to-back: %d and %d", hit0, hit1);
+        CHECK(t.blocksBad == 0, "back-to-back bad %llu", (unsigned long long)t.blocksBad);
+    }
     // nothing but noise for 6 s: no frame, no failure counted
     {
         PacketReceiver rx;

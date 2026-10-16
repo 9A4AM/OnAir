@@ -20,8 +20,11 @@ constexpr int kSps = 4;
 constexpr int kSearchSyms = 2 * kHfdlALen;
 constexpr int kChunk = 8;
 constexpr double kMaxCfo = 250.0;
-constexpr int kCoarseHyp = 1;          // trial offsets of the preamble search: -1 .. 1 steps
-constexpr double kCoarseStep = 125.0;   // Hz
+constexpr int kCoarseHyp = 4;          // trial offsets of the preamble search: -4 .. 4 steps
+constexpr double kCoarseStep = 100.0;   // Hz (covers +-400 Hz in 8-symbol chunks; burst() refines +-250 Hz more)
+constexpr double kCoarseThr = 0.40;     // blind preamble correlation
+constexpr double kCoarseThrNearDc = 0.52; // dial channel sits on the LO: need a higher bar (DC spur false locks)
+constexpr double kNearDcHz = 2500.0;
 constexpr int kL = 12;               // feed-forward taps each side, half a symbol apart
 constexpr int kNb = 6;               // feedback taps
 constexpr double kDefCentre = 8.9e6;
@@ -71,7 +74,7 @@ std::vector<double> hfdlChannelsNear(double c, double half) {
 
 struct HfdlReceiver::Impl {
     struct Chan {
-        double dial = 0; int gsId = 0; bool inBand = false;
+        double dial = 0; double offHz = 0; int gsId = 0; bool inBand = false;
         cd ph{1, 0}, rot{1, 0}; int phN = 0;
         int D = 1; cd i1{0, 0}, i2{0, 0}, c1{0, 0}, c2{0, 0}; int dcnt = 0;
         std::vector<cf32> fh; size_t fpos = 0; int M = 1, mcnt = 0;
@@ -128,6 +131,7 @@ struct HfdlReceiver::Impl {
             const int khz = (int)std::lround(f / 1e3);
             k.gsId = std::fabs(f - khz * 1e3) < 1 ? hfdlStationOnKhz(khz) : 0;
             const double off = f + kHfdlCarrierHz - c + offset;
+            k.offHz = off;
             k.inBand = std::fabs(off) < half;
             k.rot = std::polar(1.0, -2 * M_PI * off / rate);
             k.D = D; k.M = M;
@@ -211,9 +215,8 @@ struct HfdlReceiver::Impl {
         return r;
     }
     double coarse(const Chan& k, int64_t s) const {
-        const cf32* p = &k.x[(size_t)(s - k.xBase)];
         double sumA = 0;
-        for (int q = 0; q < kSearchSyms; q++) sumA += std::abs(p[q * kSps]);
+        for (int q = 0; q < kSearchSyms; q++) sumA += std::abs(cubicAt(k.x, (double)(s + q * kSps) - (double)k.xBase));
         if (sumA <= 1e-6 * kSearchSyms) return 0;
         double best = 0;
         for (const auto& ref : coarseRefs()) {
@@ -221,7 +224,7 @@ struct HfdlReceiver::Impl {
             for (int c = 0; c < kSearchSyms / kChunk + 1; c++) {
                 cf32 acc(0, 0);
                 const int k0 = c * kChunk, k1 = std::min(kSearchSyms, k0 + kChunk);
-                for (int q = k0; q < k1; q++) acc += p[q * kSps] * ref[(size_t)q];
+                for (int q = k0; q < k1; q++) acc += cubicAt(k.x, (double)(s + q * kSps) - (double)k.xBase) * ref[(size_t)q];
                 sumC += std::abs(acc);
             }
             best = std::max(best, sumC);
@@ -248,16 +251,29 @@ struct HfdlReceiver::Impl {
     void process(Chan& k) {
         const int64_t end = k.xBase + (int64_t)k.x.size();
         const int64_t span = (int64_t)kSearchSyms * kSps + 16;
+        const int64_t preLen = (int64_t)kHfdlPrekey * kSps;
+        const double thr = std::fabs(k.offHz) < kNearDcHz ? kCoarseThrNearDc : kCoarseThr;
         if (k.searchAt < k.xBase) k.searchAt = k.xBase;
         if (end < k.waitUntil) return;
         while (k.searchAt + span + (int64_t)(kHfdlPreLen + 8) * kSps < end) {
             const int64_t s = k.searchAt;
-            const double m = coarse(k, s);
-            if (m < 0.5) { k.searchAt += 2; continue; }
-            int64_t best = s; double bm = m;
-            for (int64_t q = s - 2; q <= s + 10; q++) { if (q < k.xBase) continue; const double v = coarse(k, q); if (v > bm) { bm = v; best = q; } }
+            double m = coarse(k, s);
+            int64_t tryS = s;
+            if (m < thr && s + preLen + span < end) {
+                const double m2 = coarse(k, s + preLen);
+                if (m2 > m) { m = m2; tryS = s + preLen; }
+            }
+            if (m < thr) { k.searchAt += 2; continue; }
+            int64_t best = tryS;
+            double bm = m;
+            for (int64_t q = tryS - 2; q <= tryS + 10; q++) {
+                if (q < k.xBase) continue;
+                const double v = coarse(k, q);
+                if (v > bm) { bm = v; best = q; }
+            }
             const int r = burst(k, best, end);
-            if (r < 0) return;                // wait for more samples (searchAt unchanged)
+            if (r < 0) return;
+            if (k.searchAt <= s) k.searchAt = s + kSps * 4;   // never spin on a false preamble
         }
         trim(k);
     }

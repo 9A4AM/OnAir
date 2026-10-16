@@ -158,6 +158,17 @@ bool hasGainElement(SoapySDR::Device* dev, const char* want) {
     return false;
 }
 bool rfStage(SoapySDR::Device* dev) { return gainIsReduction(dev, 0) && hasGainElement(dev, "RFGR") && hasGainElement(dev, "IFGR"); }
+
+// Soapy's overall setGain() fills gain-reduction elements from their minimum (RFGR 0 = most RF gain first), which leaves LNA at maximum
+// until IFGR is exhausted and often overloads the ADC. Spread reduction across IFGR then RFGR like the native SDRplay source.
+static void soapyRfIfFromOverall(double g, const SoapySDR::Range& gr, const SoapySDR::Range& ir, const SoapySDR::Range& rr, double& rf, double& ifg) {
+    const double t = gr.maximum() > gr.minimum() ? std::min(1.0, std::max(0.0, (g - gr.minimum()) / (gr.maximum() - gr.minimum()))) : 0;
+    ifg = ir.maximum() - t * (ir.maximum() - ir.minimum());
+    rf = rr.maximum() - t * (rr.maximum() - rr.minimum());
+    ifg = std::min(std::max(ifg, ir.minimum()), ir.maximum());
+    rf = std::min(std::max(std::lround(rf), (long)std::lround(rr.minimum())), (long)std::lround(rr.maximum()));
+    ifg = std::lround(ifg);
+}
 RadioSetting rfSetting(SoapySDR::Device* dev) {
     RadioSetting r;
     r.type = RadioSetting::Choice; r.key = kRfKey; r.label = "RF gain (LNA state)";
@@ -362,8 +373,14 @@ private:
             const double ifg = std::min(std::max(ir.maximum() - (g - gr.minimum()), ir.minimum()), ir.maximum());
             dev_->setGain(SOAPY_SDR_RX, ch, "RFGR", rf);
             dev_->setGain(SOAPY_SDR_RX, ch, "IFGR", ifg);
+        } else if (reduction_ && rfStage(dev_)) {
+            const auto rr = dev_->getGainRange(SOAPY_SDR_RX, ch, "RFGR"), ir = dev_->getGainRange(SOAPY_SDR_RX, ch, "IFGR");
+            double rf, ifg;
+            soapyRfIfFromOverall(g, gr, ir, rr, rf, ifg);
+            dev_->setGain(SOAPY_SDR_RX, ch, "RFGR", rf);
+            dev_->setGain(SOAPY_SDR_RX, ch, "IFGR", ifg);
         } else
-        dev_->setGain(SOAPY_SDR_RX, ch, reduction_ ? gr.maximum() - (g - gr.minimum()) : g);   // a gain-reduction driver: turned around
+            dev_->setGain(SOAPY_SDR_RX, ch, reduction_ ? gr.maximum() - (g - gr.minimum()) : g);   // a gain-reduction driver: turned around
         if (!biasKey_.empty() && s.biasTee != bias_) {
             try { dev_->writeSetting(biasKey_, s.biasTee ? "true" : "false"); bias_ = s.biasTee; } catch (...) {}
         }

@@ -558,7 +558,7 @@ void Demod::Impl::dataSymbol(const ChanBuf& b, std::vector<RxFrame>& out) {
         RxFrame f;
         int corr = 0;
         fd.finish(f.payload, f.crcOk, corr);
-        if (fd.header().crc && !f.crcOk && retried < 2 && std::fabs(loopInt) > 0.02) {
+        if (fd.header().crc && !f.crcOk && retried < 3) {
             // A short preamble at a low SNR leaves the clock drift poorly known: the timing loop catches up, but the first symbols
             // may be lost. The loop's integral then holds the rest of the drift: demodulate the frame again from its start with it.
             retried++;

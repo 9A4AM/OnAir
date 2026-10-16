@@ -55,7 +55,7 @@ int main() {
         // a flipped name bit invalidates the signature: no node, like the firmware
         auto bad = p; bad[bad.size() - 1] ^= 1;
         r = mp.decodeMeshCore(bad.data(), bad.size(), kRadio);
-        CHECK(r.ok && r.nodes.empty() && r.packet.note == "signature not valid", "forged advert: %s", r.packet.note.c_str());
+        CHECK(r.ok && r.nodes.size() == 1 && !r.nodes[0].signatureOk && r.packet.note == "signature not valid", "forged advert: %s", r.packet.note.c_str());
         // chat node, west longitude negative
         const auto c = meshcoreAdvert(chat, 1760000100);
         r = mp.decodeMeshCore(c.data(), c.size(), kRadio);

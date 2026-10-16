@@ -35,14 +35,18 @@ function ttlFor(kind) {
   return TTL_MS[kind] || 20 * 60e3;
 }
 
-/** Soft capacity — used only for the public load meter (not hard limits). */
+/** Soft capacity — public load meter only (not CPU). High caps so a small community stays in single digits. */
 const LOAD_CAP = {
-  tracks: 5000,
-  stations: 200,
-  viewers: 400,
-  ingestPerMin: 700,
-  throttlePerMin: 25,
+  tracks: 15000,
+  stations: 500,
+  viewers: 2000,
+  ingestPerMin: 12000,
+  throttlePerMin: 400,
 };
+
+const UPSERT_COALESCE_MS = 500;
+const SNAPSHOT_CACHE_MS = 4000;
+const LOAD_CACHE_MS = 5000;
 
 function pruneTimeWindow(arr, now, windowMs = 60e3) {
   const cut = now - windowMs;
@@ -177,7 +181,18 @@ export class MapHub {
     this.ingestAt = [];
     this.throttleAt = [];
     this.lastLoadBroadcast = 0;
+    this.lastPrune = 0;
+    this.pendingUpserts = new Map();
+    this.snapshotCache = null;
+    this.snapshotCacheAt = 0;
+    this.loadCache = null;
+    this.loadCacheAt = 0;
     this.ready = this.ctx.blockConcurrencyWhile(() => this.init());
+  }
+
+  invalidateCaches() {
+    this.snapshotCache = null;
+    this.loadCache = null;
   }
 
   touchLoad(now, kind) {
@@ -190,6 +205,14 @@ export class MapHub {
   loadMetrics(now) {
     pruneTimeWindow(this.ingestAt, now);
     pruneTimeWindow(this.throttleAt, now);
+    const viewers = this.ctx.getWebSockets().length;
+    const ingestPerMin = this.ingestAt.length;
+    const throttlePerMin = this.throttleAt.length;
+    if (this.loadCache && now - this.loadCacheAt < LOAD_CACHE_MS) {
+      const c = this.loadCache;
+      const pct = serverLoadPct({ tracks: c.tracks, stations: c.stations, viewers, ingestPerMin, throttlePerMin });
+      return { pct, tracks: c.tracks, stations: c.stations, viewers, ingestPerMin, throttlePerMin };
+    }
     const trackRow = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM tracks").toArray()[0];
     const tracks = trackRow ? trackRow.n : 0;
     const st = this.ctx.storage.sql.exec(
@@ -197,15 +220,14 @@ export class MapHub {
       now - 30 * 60e3,
     ).toArray()[0];
     const stations = st ? st.n : 0;
-    const viewers = this.ctx.getWebSockets().length;
-    const ingestPerMin = this.ingestAt.length;
-    const throttlePerMin = this.throttleAt.length;
+    this.loadCache = { tracks, stations };
+    this.loadCacheAt = now;
     const pct = serverLoadPct({ tracks, stations, viewers, ingestPerMin, throttlePerMin });
     return { pct, tracks, stations, viewers, ingestPerMin, throttlePerMin };
   }
 
   maybeBroadcastLoad(now) {
-    if (now - this.lastLoadBroadcast < 4000) return;
+    if (now - this.lastLoadBroadcast < 12000) return;
     this.lastLoadBroadcast = now;
     this.broadcast({ type: "load", load: this.loadMetrics(now) });
   }
@@ -248,6 +270,35 @@ export class MapHub {
         t INTEGER NOT NULL
       );
     `);
+    this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS idx_tracks_kind_t ON tracks(kind, t)");
+  }
+
+  trackWire(t) {
+    return {
+      id: t.id, kind: t.kind, label: t.label, sub: t.sub,
+      lat: t.lat, lon: t.lon, alt: t.alt, heading: t.heading, speed: t.speed,
+      extra: t.extra, t: t.t, squawk: t.squawk, cat: t.cat, vrate: t.vrate,
+      src: t.src, age: t.age,
+    };
+  }
+
+  async queueUpserts(kept) {
+    for (const t of kept) this.pendingUpserts.set(t.id, this.trackWire(t));
+    const when = Date.now() + UPSERT_COALESCE_MS;
+    const cur = await this.ctx.storage.getAlarm();
+    if (!cur || cur > when + 50) this.ctx.storage.setAlarm(when);
+  }
+
+  flushUpserts() {
+    if (!this.pendingUpserts.size) return;
+    const tracks = [...this.pendingUpserts.values()];
+    this.pendingUpserts.clear();
+    this.broadcast({ type: "upsert", tracks });
+  }
+
+  async alarm() {
+    await this.ready;
+    this.flushUpserts();
   }
 
   async fetch(req) {
@@ -318,9 +369,12 @@ export class MapHub {
       "INSERT INTO stations (id, last, n) VALUES (?, ?, 1) ON CONFLICT(id) DO UPDATE SET last=excluded.last, n=n+1",
       station, now,
     );
-    this.prune(now);
+    this.pruneIfDue(now);
     this.touchLoad(now, "ingest");
-    if (kept.length) this.broadcast({ type: "upsert", tracks: kept });
+    if (kept.length) {
+      this.invalidateCaches();
+      await this.queueUpserts(kept);
+    }
     this.maybeBroadcastLoad(now);
     return json({ ok: true, n: kept.length, load: this.loadMetrics(now) });
   }
@@ -330,25 +384,38 @@ export class MapHub {
       this.ctx.storage.sql.exec("DELETE FROM tracks WHERE kind = ? AND t < ?", kind, now - ttlFor(kind));
     }
     this.ctx.storage.sql.exec("DELETE FROM stations WHERE last < ?", now - 24 * 3600e3);
+    this.lastPrune = now;
+    this.invalidateCaches();
+  }
+
+  pruneIfDue(now) {
+    if (now - this.lastPrune < 45_000) return;
+    this.prune(now);
   }
 
   snapshot() {
     const now = Date.now();
-    this.prune(now);
+    this.pruneIfDue(now);
+    if (this.snapshotCache && now - this.snapshotCacheAt < SNAPSHOT_CACHE_MS) {
+      const cached = this.snapshotCache;
+      return { ...cached, load: this.loadMetrics(now) };
+    }
     const tracks = [];
-    for (const row of this.ctx.storage.sql.exec("SELECT * FROM tracks")) {
-      let path = [];
-      try { path = row.path ? JSON.parse(row.path) : []; } catch { path = []; }
+    for (const row of this.ctx.storage.sql.exec(
+      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age FROM tracks",
+    )) {
       tracks.push({
         id: row.id, kind: row.kind, label: row.label, sub: row.sub,
         lat: row.lat, lon: row.lon, alt: row.alt, heading: row.heading, speed: row.speed,
         extra: row.extra, t: row.t, squawk: row.squawk, cat: row.cat, vrate: row.vrate,
-        src: row.src, age: row.age, path,
+        src: row.src, age: row.age,
       });
     }
     const st = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM stations WHERE last > ?", now - 30 * 60e3).toArray()[0];
-    const load = this.loadMetrics(now);
-    return { now, stations: st ? st.n : 0, tracks, load };
+    const body = { now, stations: st ? st.n : 0, tracks };
+    this.snapshotCache = body;
+    this.snapshotCacheAt = now;
+    return { ...body, load: this.loadMetrics(now) };
   }
 
   live() {

@@ -214,8 +214,17 @@ struct Vdl2Receiver::Impl {
 
     // ---------------------------------------------------------------- burst search on x2
 
+    void beginBurst(Chan& k) {
+        k.state = 1;
+        k.bAt = k.peakAt;
+        k.bCfo = std::arg(k.peakD) * kVdl2SymbolRate / (2 * kPi);
+        k.bNeed = k.bAt + (uint64_t)std::ceil((kVdl2PreambleSyms + 10) * T) + h3.size() + 8;
+        k.info.bursts++;
+    }
+
     void search(Chan& k) {
         const int span = (int)std::ceil(15 * T) + 1;
+        constexpr float kDetThr = 0.56f, kDetDrop = 0.88f;
         while (k.state == 0 && k.searchAt + (uint64_t)span < k.n2) {
             const uint64_t t = k.searchAt;
             if ((double)t < 10 * T + (double)h3.size()) { k.searchAt++; continue; }
@@ -228,25 +237,28 @@ struct Vdl2Receiver::Impl {
             cd D = 0;
             double eh = 0, et = 0;                       // the energy must fill the whole training sequence, not only its start or end
             for (int q = 0; q < 4; q++) { eh += std::norm(s[q]); et += std::norm(s[kVdl2PreambleSyms - 1 - q]); }
-            if (k.floor > 0 && e > 2.5 * k.floor && std::min(eh, et) > 4 * 0.3 * e) {
+            const bool ener = k.floor > 0 && e > 3.0 * k.floor && std::min(eh, et) > 4 * 0.3 * e;
+            if (ener) {
                 for (int q = 0; q + 1 < kVdl2PreambleSyms; q++) {
                     const double dp = (kVdl2PreamblePhase[q + 1] - kVdl2PreamblePhase[q]) * kPi / 4;
                     D += cd(s[q + 1].real(), s[q + 1].imag()) * std::conj(cd(s[q].real(), s[q].imag())) * cd(std::cos(-dp), std::sin(-dp));
                 }
                 M = (float)(std::abs(D) / (e * (kVdl2PreambleSyms - 1)));
             }
-            if (M > 0.55f) {
-                if (!k.peakOn || M > k.peakM) { if (!k.peakOn) k.peakEnd = t + (uint64_t)std::ceil(T); k.peakOn = true; k.peakM = M; k.peakAt = t; k.peakD = D; }
+            if (ener && M >= kDetThr) {
+                if (!k.peakOn || M >= k.peakM) {
+                    if (!k.peakOn) k.peakEnd = t + (uint64_t)std::ceil((kVdl2PreambleSyms + 2) * T);
+                    k.peakOn = true;
+                    k.peakM = M;
+                    k.peakAt = t;
+                    k.peakD = D;
+                }
+            }
+            if (k.peakOn && (t + 1 >= k.peakEnd || (M < k.peakM * kDetDrop && M < kDetThr))) {
+                k.peakOn = false;
+                if (k.peakM >= kDetThr) beginBurst(k);
             }
             k.searchAt++;
-            if (k.peakOn && k.searchAt > k.peakEnd) {
-                k.peakOn = false;
-                k.state = 1;
-                k.bAt = k.peakAt;
-                k.bCfo = std::arg(k.peakD) * kVdl2SymbolRate / (2 * kPi);
-                k.bNeed = k.bAt + (uint64_t)std::ceil((kVdl2PreambleSyms + 10) * T) + h3.size() + 8;
-                k.info.bursts++;
-            }
         }
     }
 
@@ -288,7 +300,7 @@ struct Vdl2Receiver::Impl {
         double bestT = t0, bestV = -1;
         cf32 ref[kVdl2PreambleSyms];
         for (int q = 0; q < kVdl2PreambleSyms; q++) { const double p = kVdl2PreamblePhase[q] * kPi / 4; ref[q] = cf32((float)std::cos(p), (float)-std::sin(p)); }
-        for (double d = -2.0; d <= 2.0001; d += 0.125) {
+        for (double d = -3.0; d <= 3.0001; d += 0.125) {
             cf32 acc(0, 0);
             for (int q = 0; q < kVdl2PreambleSyms; q++) acc += interp(y, t0 + d + q * T) * ref[q];
             if (std::norm(acc) > bestV) { bestV = std::norm(acc); bestT = t0 + d; }
@@ -413,7 +425,7 @@ struct Vdl2Receiver::Impl {
         if (dbg) fprintf(stderr, "vdl2 fail %d at %.4f s on %.3f MHz (cfo %.0f)\n", why, (double)k.bAt / fs1, k.freqHz / 1e6, k.bCfo);
         if (counted) { k.info.bad++; std::lock_guard<std::mutex> lk(mu); tel.blocksBad++; }
         k.state = 0;
-        k.searchAt = k.bAt + 1;
+        k.searchAt = std::max(k.searchAt, k.bAt + (uint64_t)std::ceil((kVdl2PreambleSyms + 4) * T));
         k.peakOn = false;
     }
 
@@ -440,6 +452,14 @@ struct Vdl2Receiver::Impl {
             if (!m.reg.empty()) c.reg = m.reg;
             if (!m.flight.empty() && srcAir) c.flight = m.flight;
             if (m.hasPos && srcAir) {
+                if (c.hasPos) {
+                    const double p1 = c.lat * kPi / 180, p2 = m.lat * kPi / 180, dl = (m.lon - c.lon) * kPi / 180;
+                    const double y = std::sin(dl) * std::cos(p2), x = std::cos(p1) * std::sin(p2) - std::sin(p1) * std::cos(p2) * std::cos(dl);
+                    if (std::hypot(m.lat - c.lat, (m.lon - c.lon) * std::cos(p2)) > 0.01) {
+                        c.hasTrack = true;
+                        c.trackDeg = std::fmod(std::atan2(y, x) * 180 / kPi + 360, 360);
+                    }
+                }
                 c.hasPos = true; c.lat = m.lat; c.lon = m.lon; c.posKind = m.posKind; c.posTime = m.timeSec;
                 if (m.hasAlt) { c.hasAlt = true; c.altFt = m.altFt; }
                 c.track.push_back({m.lat, m.lon, m.hasAlt ? m.altFt : c.altFt, m.timeSec});

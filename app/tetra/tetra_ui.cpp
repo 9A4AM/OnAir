@@ -2,6 +2,7 @@
 // the selected carrier, its neighbour cells, the carriers seen in the spectrum, a scan over a span, and the log. Only what base stations
 // broadcast in the clear to every terminal is shown: nothing is decrypted, no voice, no short data, no subscriber identities.
 #include "app.h"
+#include "results_export.h"
 #include "dect2/gsmr_rx.h"
 #include "dect2/tetra_pdu.h"
 #include "dect2/tetra_rx.h"
@@ -106,6 +107,18 @@ void scanBar(App& a) {
     }
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Clear##tclr")) { a.engine.tetra().clearCells(); S.sel = -1; }
+    flowNext(10 * gUi);
+    {
+        static std::string note;
+        resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "network", "location_area", "colour_code", "encryption", "carrier", "level_db", "snr_db"};
+        const std::string now = resexp::stamp();
+        for (const auto& c : a.rx.tetra.cells)
+            t.add({now, resexp::num(c.nominalHz, 0), "TETRA", netText(c), c.la >= 0 ? std::to_string(c.la) : "", std::to_string(c.colourCode),
+                   c.encryption() ? "yes" : (c.hasSysinfo ? "no" : ""), c.hasSysinfo ? (c.isMain ? "main" : "other") : "",
+                   resexp::num(c.levelDb, 0), resexp::num(c.snrDb, 0)});
+        resexp::saveButton(t, "tetra", note, "svtetra");
+        if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
+    }
     flowNext(4 * gUi);
     helpButton();
     flowEnd();

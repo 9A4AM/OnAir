@@ -141,7 +141,7 @@ float freqDigits(App& a, float fontSize = 30.f) {
     static char typed[32] = "";
     const bool fm = a.fmMode, dab = a.dabMode;
     const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
-    const double lo = mt ? mt->minMhz : 0.001, hi = 1e12;   // up to a trillion MHz, for fun: the radio is the real limit
+    const double lo = mt ? mt->minMhz : 0.001, hi = dect2::kMaxTuneMhz;
     long long hz = (long long)std::llround(a.freqMhz * 1e6);
     constexpr int kD = 19;   // nineteen digits: a trillion MHz (10^18 Hz)
     char buf[24];

@@ -4,6 +4,7 @@
 #include "dect2/mesh_rx.h"
 #include "dect2/results_io.h"
 #include "dect2/mesh_lora.h"
+#include "dect2/mesh_presets.h"
 #include "dect2/mesh_proto.h"
 #include <algorithm>
 #include <atomic>
@@ -67,6 +68,9 @@ std::vector<PlanEntry> customPlan(const MeshLoraSettings& s, double tunedHz, int
 const char* mtRegionOf(int region) { return region == 1 ? "US" : region >= 2 ? "ANZ" : "EU_868"; }
 const char* mcRegionOf(int region) { return region == 1 ? "US" : region == 2 ? "AU" : region == 3 ? "ANZ Mid" : "EU"; }
 
+// api.meshcore.nz preset regions (Europe, North America, Oceania, …)
+const char* meshCorePlanRegion(int region) { return region == 1 ? "North America" : region >= 2 ? "Oceania" : "Europe"; }
+
 std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets, const std::string& mtRegion, const std::string& mtPreset) {
     std::vector<PlanEntry> v;
     if (protocols & 1) {
@@ -84,12 +88,18 @@ std::vector<PlanEntry> regionPlan(int region, int protocols, bool allPresets, co
         }
     }
     if (protocols & 2) {
-        const MeshLoraSettings s = meshcoreDefaults(mcRegionOf(region));
-        if (s.freqHz > 0) {
-            PlanEntry e;
-            e.protocol = 2; e.preset = "MeshCore " + std::string(mcRegionOf(region)); e.freqHz = s.freqHz;
-            e.p.sf = s.sf; e.p.bwHz = s.bwHz; e.p.cr = s.cr; e.p.preamble = s.preamble; e.p.syncWord = s.syncWord; e.p.ldro = s.ldro;
-            v.push_back(e);
+        // One LoRa demod per (freq, SF, BW): the coding rate comes from each frame's header. EU networks often use SF7 4/5
+        // or SF8 4/8 on 869.618 MHz — listening only to the default SF8 preset yields CRC errors on SF7 traffic.
+        const char* mcReg = meshCorePlanRegion(region);
+        bool anyMc = false;
+        for (const auto& pe : meshCoreBuiltinPresets()) {
+            if (pe.region != mcReg) continue;
+            addEntry(v, 2, meshCorePresetToLora(pe));
+            anyMc = true;
+        }
+        if (!anyMc) {
+            const MeshLoraSettings s = meshcoreDefaults(mcRegionOf(region));
+            if (s.freqHz > 0) addEntry(v, 2, s);
         }
     }
     // LoRa APRS and MeshCom: every known frequency (only those inside the captured band get a demodulator)
@@ -290,12 +300,8 @@ struct MeshReceiver::Impl {
         row.sf = di.sf; row.cr = f.hdr.cr; row.bwHz = di.bwHz;
         row.levelDb = (float)f.levelDb; row.snrDb = (float)f.snrDb;
         row.size = (int)f.payload.size(); row.crcOk = f.crcOk;
-        if (!good) {
-            row.note = "CRC error";
-            count(di.protocol, "CRC error");
-            capPush(tel.packets, std::move(row), kPacketCap);
-            return;
-        }
+        const bool crcBad = f.hdr.crc && !f.crcOk;
+        if (crcBad) count(di.protocol, "CRC error");
         MeshRadioInfo ri;
         ri.freqHz = row.freqHz; ri.bwHz = di.bwHz; ri.sf = di.sf; ri.cr = f.hdr.cr; ri.snrDb = f.snrDb; ri.levelDb = f.levelDb; ri.timeSec = t;
         MeshDecodeResult r;
@@ -321,6 +327,7 @@ struct MeshReceiver::Impl {
         else if (proto_ >= 3 || !r.ok) row.raw = meshPrintable(f.payload.data(), std::min<size_t>(f.payload.size(), 255));
         if (!r.ok) {
             row.note = r.packet.note.empty() ? "not a " + std::string(protoName(di.protocol)) + " packet" : r.packet.note;   // (the first one tried)
+            if (crcBad) row.note = row.note == "CRC error" ? row.note : std::string("CRC error") + (row.note.empty() ? "" : "; " + row.note);
             count(di.protocol, "unknown");
             capPush(tel.packets, std::move(row), kPacketCap);
             return;
@@ -330,7 +337,10 @@ struct MeshReceiver::Impl {
         const MeshPacketInfo& pk = r.packet;
         row.parsed = true;
         row.type = pk.type; row.from = pk.from; row.to = pk.to; row.channel = pk.channel; row.packetId = pk.packetId;
-        row.hopLimit = pk.hopLimit; row.hopStart = pk.hopStart; row.decrypted = pk.decrypted; row.note = pk.note; row.detail = pk.detail;
+        row.hopLimit = pk.hopLimit; row.hopStart = pk.hopStart; row.decrypted = pk.decrypted;
+        row.note = pk.note;
+        if (crcBad) row.note = row.note.empty() ? "CRC error" : std::string("CRC error; ") + row.note;
+        row.detail = pk.detail;
         row.path = pk.path;
         count(proto_, pk.type.empty() ? "?" : pk.type);
         const int hops = proto_ == 1 ? (pk.hopStart > 0 && pk.hopLimit >= 0 && pk.hopStart >= pk.hopLimit ? pk.hopStart - pk.hopLimit : -1)

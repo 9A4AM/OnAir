@@ -164,7 +164,7 @@ void send9600(Mod& m, const std::vector<uint8_t>& levels) {
     }
 }
 
-Cycle renderCycle(std::vector<PacketGenFrame> frames) {
+Cycle renderCycle(std::vector<PacketGenFrame> frames, double gap1200 = 0.25, double gap9600 = 0.15) {
     Cycle c;
     c.frames = std::move(frames);
     Mod m;
@@ -176,11 +176,11 @@ Cycle renderCycle(std::vector<PacketGenFrame> frames) {
         if (g.baud == 1200) {
             const std::vector<uint8_t> bits = ax25::hdlcBits(bytes, 24, 4);
             send1200(m, ax25::nrziEncode(bits));
-            m.silence(0.25);
+            if (gap1200 > 0) m.silence(gap1200);
         } else {
             const std::vector<uint8_t> bits = ax25::hdlcBits(bytes, 60, 6);
             send9600(m, ax25::scramble(ax25::nrziEncode(bits), scr));
-            m.silence(0.15);
+            if (gap9600 > 0) m.silence(gap9600);
         }
     }
     if (c.bb.empty()) m.silence(1.0);
@@ -253,6 +253,13 @@ std::unique_ptr<ModeSynth> makePacketSynthFrame(const SynthConfig& cfg, double s
     g.frame = frame;
     g.baud = baud == 9600 ? 9600 : 1200;
     return std::make_unique<PacketSynth>(cfg, sampleRate, renderCycle({std::move(g)}));
+}
+
+std::unique_ptr<ModeSynth> makePacketSynthBurst(const SynthConfig& cfg, double sampleRate, const std::vector<PacketGenFrame>& frames, double interFrameGapSec) {
+    if (sampleRate < packetTuning().minSampleRate - 1 || frames.empty()) return nullptr;
+    std::vector<PacketGenFrame> f(frames.begin(), frames.end());
+    const double g = std::max(0.0, interFrameGapSec);
+    return std::make_unique<PacketSynth>(cfg, sampleRate, renderCycle(std::move(f), g, g));
 }
 
 } // namespace dect2

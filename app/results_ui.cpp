@@ -1,10 +1,11 @@
 // The result lists the screens keep themselves (the receivers keep theirs: Engine::setResultsDir): the DAB and FM band scans, the
-// scanner's hit log, the VOR fix radials and the last weather fax picture. Saved beside the engine's files in <data folder>/results
+// TV channel scan (DVB / ATSC / ISDB-T / DTMB), the experimental scanner's hit log, the VOR fix radials and the last weather fax picture. Saved beside the engine's files in <data folder>/results
 // (app-<name>.bin, results_io.h format: a file of another build is discarded) every 30 s and at exit, loaded at start; the interface
 // thread only. Each list is emptied by its own Clear.
 #include "app.h"
 #include "platform.h"
 #include "dect2/results_io.h"
+#include "dect2/scanner.h"
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -36,6 +37,14 @@ std::vector<Slot> slots() {
                      [](App& a, const std::string& b) { return !a.dabScan.running && dect2::results::unpack(b, a.dabScan.results); }},
         {"fm-scan", [](App& a) { return dect2::results::pack(a.fmScan.results); },
                     [](App& a, const std::string& b) { return !a.fmScan.running && dect2::results::unpack(b, a.fmScan.results); }},
+        {"tv-scan", [](App& a) { return dect2::results::pack(a.scanner.results()); },
+                    [](App& a, const std::string& b) {
+                        if (a.scanner.progress().running) return false;
+                        std::vector<dect2::ScanResult> r;
+                        if (!dect2::results::unpack(b, r)) return false;
+                        a.scanner.setResults(std::move(r));
+                        return true;
+                    }},
         {"scanner", [](App&) { return scannerResultsSave(); }, [](App&, const std::string& b) { return scannerResultsLoad(b); }},
         {"vor-fix", [](App&) { return vorResultsSave(); }, [](App&, const std::string& b) { return vorResultsLoad(b); }},
         {"marine-fax", [](App&) { return marineFaxSave(); }, [](App&, const std::string& b) { return marineFaxLoad(b); }},

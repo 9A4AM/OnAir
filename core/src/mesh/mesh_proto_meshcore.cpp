@@ -46,20 +46,66 @@ const char* advRole(int t) {
     }
 }
 
-// Utils::MACThenDecrypt: HMAC key is the full 32 byte secret, AES key its first 16 bytes
-bool macThenDecrypt(const MeshCoreChannel& c, const uint8_t* src, size_t n, std::vector<uint8_t>& plain) {
-    if (n <= 2) return false;
-    uint8_t mac[32];
-    hmacSha256(c.secret, 32, src + 2, n - 2, mac);
-    if (std::memcmp(mac, src, 2) != 0) return false;
-    plain = aesEcbDecrypt(c.secret, 16, src + 2, n - 2);
-    return !plain.empty();
-}
-
 std::string cleanLine(const uint8_t* p, size_t n) {
     std::string s;
     for (size_t i = 0; i < n && p[i]; i++) s += (p[i] < 0x20) ? ' ' : (char)p[i];
     return s;
+}
+
+// Utils::MACThenDecrypt: HMAC key is the full 32 byte secret, AES key its first 16 bytes
+bool macThenDecrypt(const MeshCoreChannel& c, const uint8_t* src, size_t n, std::vector<uint8_t>& plain) {
+    if (n <= 2) return false;
+    const size_t enc = n - 2;
+    if (enc == 0 || enc % 16 != 0) return false;                       // Utils::MACThenDecrypt
+    uint8_t mac[32];
+    hmacSha256(c.secret, 32, src + 2, enc, mac);
+    if (std::memcmp(mac, src, 2) != 0) return false;
+    plain = aesEcbDecrypt(c.secret, 16, src + 2, enc);
+    return !plain.empty();
+}
+
+bool decodeGroupPayload(int type, int hcnt, const std::string& via, const uint8_t* pay, size_t m, const std::vector<MeshCoreChannel>& chans,
+                        MeshPacketInfo& pi, MeshDecodeResult& r) {
+    if (m < 4) return false;
+    const uint8_t h = pay[0];
+    pi.channelHash = h;
+    pi.channel = meshFmt("0x%02x", h);
+    bool any = false;
+    for (const MeshCoreChannel& c : chans) {
+        if (c.hash != h) continue;
+        any = true;
+        std::vector<uint8_t> d;
+        if (!macThenDecrypt(c, pay + 1, m - 1, d)) continue;
+        pi.decrypted = true;
+        pi.channel = c.name;
+        pi.type = type == 6 ? "GRP_DATA" : "GRP_TXT";
+        if (type == 5) {
+            if (d.size() < 5) { pi.note = "short group text"; return true; }
+            const int txtType = d[4] >> 2;
+            if (txtType != 0) { pi.note = meshFmt("unsupported text type %d", txtType); return true; }
+            const std::string line = cleanLine(d.data() + 5, d.size() - 5);
+            MeshTextMessage t;
+            t.protocol = MeshProtocol::MeshCore;
+            t.channel = c.name;
+            t.senderTime = le32(d.data());
+            t.hops = hcnt;
+            const size_t sep = line.find(": ");
+            if (sep != std::string::npos) { t.from = line.substr(0, sep); t.text = line.substr(sep + 2); }
+            else t.text = line;
+            pi.from = t.from;
+            pi.to = c.name;
+            pi.detail = (t.from.empty() ? "" : t.from + ": ") + t.text + via;
+            r.messages.push_back(t);
+        } else {
+            if (d.size() < 3) { pi.note = "short group data"; return true; }
+            const unsigned dt = d[0] | (d[1] << 8);
+            pi.detail = meshFmt("data type 0x%04x, %u bytes", dt, (unsigned)d[2]) + via;
+        }
+        pi.note.clear();
+        return true;
+    }
+    if (!pi.decrypted) pi.note = any ? "MAC mismatch (wrong key or damaged)" : meshFmt("unknown channel 0x%02x", h);
+    return false;
 }
 
 } // namespace
@@ -146,61 +192,30 @@ MeshDecodeResult MeshProto::decodeMeshCore(const uint8_t* p, size_t n, const Mes
         if (u.hasPosition) pi.detail += meshFmt(", %.5f, %.5f", u.lat, u.lon);
         pi.detail += ok ? ", signature ok" : ", signature NOT valid";
         pi.detail += via;
-        if (!ok) { pi.note = "signature not valid"; break; }           // the firmware drops these
         r.nodes.push_back(u);
+        if (!ok) pi.note = "signature not valid";
         break;
     }
     case 5:
     case 6: {                                                          // GRP_TXT, GRP_DATA
         if (m < 4) { pi.note = "incomplete group packet"; break; }
-        const uint8_t h = pay[0];
-        pi.channelHash = h;
-        pi.channel = meshFmt("0x%02x", h);
         std::vector<MeshCoreChannel> chans;
-        {
-            std::lock_guard<std::mutex> g(s_->m);
-            chans = s_->mc;
-        }
-        bool any = false;
-        for (const MeshCoreChannel& c : chans) {
-            if (c.hash != h) continue;
-            any = true;
-            std::vector<uint8_t> d;
-            if (!macThenDecrypt(c, pay + 1, m - 1, d)) continue;
-            pi.decrypted = true;
-            pi.channel = c.name;
-            if (type == 5) {
-                if (d.size() < 5) { pi.note = "short group text"; break; }
-                if ((d[4] >> 2) != 0) { pi.note = meshFmt("unsupported text type %d", d[4] >> 2); break; }
-                const std::string line = cleanLine(d.data() + 5, d.size() - 5);
-                MeshTextMessage t;
-                t.protocol = MeshProtocol::MeshCore;
-                t.channel = c.name;
-                t.senderTime = le32(d.data());
-                t.hops = hcnt;
-                const size_t sep = line.find(": ");
-                if (sep != std::string::npos) { t.from = line.substr(0, sep); t.text = line.substr(sep + 2); }
-                else t.text = line;
-                pi.from = t.from;
-                pi.to = c.name;
-                pi.detail = (t.from.empty() ? "" : t.from + ": ") + t.text + via;
-                r.messages.push_back(t);
-            } else {
-                if (d.size() < 3) { pi.note = "short group data"; break; }
-                const unsigned dt = d[0] | (d[1] << 8);
-                pi.detail = meshFmt("data type 0x%04x, %u bytes", dt, (unsigned)d[2]) + via;
-            }
-            break;
-        }
-        if (!pi.decrypted && pi.note.empty()) pi.note = any ? "MAC mismatch (wrong key or damaged)" : meshFmt("unknown channel 0x%02x", h);
+        { std::lock_guard<std::mutex> g(s_->m); chans = s_->mc; }
+        decodeGroupPayload(type, hcnt, via, pay, m, chans, pi, r);
         break;
     }
     case 0: case 1: case 2: case 8: {                                  // end-to-end encrypted, dest hash + src hash + MAC + data
         if (m < 4) { pi.note = "incomplete packet"; break; }
         pi.to = meshHex(pay, 1);
         pi.from = meshHex(pay + 1, 1);
-        pi.note = "encrypted (direct)";
-        pi.detail = "to " + pi.to + " from " + pi.from + via;
+        {
+            std::vector<MeshCoreChannel> chans;
+            { std::lock_guard<std::mutex> g(s_->m); chans = s_->mc; }
+            if (!decodeGroupPayload(5, hcnt, via, pay, m, chans, pi, r)) {
+                pi.note = "encrypted (direct)";
+                pi.detail = "to " + pi.to + " from " + pi.from + via;
+            }
+        }
         break;
     }
     case 7: {                                                          // ANON_REQ: dest hash, sender public key, MAC, data

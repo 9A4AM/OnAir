@@ -130,7 +130,7 @@ void GainSweep::finish(GainSetting& g) {
     double bs = -1e9;
     for (size_t i = 0; i < e_.size(); i++) {
         const Entry& x = e_[i];
-        if (!x.done || x.clip > 0.001f) continue;
+        if (!x.done || x.clip > 0.001f || x.overload) continue;
         double s = x.n > 0 ? x.snrDb : -50 - std::fabs(x.rms + 16);
         if (s > bs) { bs = s; bi = (int)i; }
     }
@@ -147,6 +147,7 @@ bool GainSweep::update(double now, const Sample& s, GainSetting& g) {
         if (s.locked) { snrSum_ += s.snrDb; nSnr_++; }
         rmsSum_ += s.rms; nAll_++;
         clipMax_ = std::max<double>(clipMax_, s.clip);
+        if (classifyAdc(s.rms, s.peak, s.clip) == AdcStatus::Overload) e_[idx_].overload = true;
     }
     if (el < settle + measure) return false;
     Entry& e = e_[idx_];

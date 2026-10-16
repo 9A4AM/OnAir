@@ -284,7 +284,12 @@ void applyBandwidth(App& a) {
         if (dv.isGeneric() && dv.gainMaxDb > dv.gainMinDb) {
             const std::string key = dv.board + ":" + (dv.serial.empty() ? dv.name : dv.serial);
             if (a.gainDev.empty()) a.gainDev = key;
-            else if (a.gainDev != key) { a.tune.gainDb = std::round(dv.gainMinDb + 0.6 * (dv.gainMaxDb - dv.gainMinDb)); a.gainDev = key; }
+            else if (a.gainDev != key) {
+                const double frac = dv.board == "sdrplay" ? 0.4 : 0.6;   // Soapy SDRplay: a mid slider still meant max LNA before the RF/IF split
+                a.tune.gainDb = std::round(dv.gainMinDb + frac * (dv.gainMaxDb - dv.gainMinDb));
+                a.gainDev = key;
+                if (dv.board == "sdrplay") a.tune.radio.erase("rfgr");
+            }
         }
         if (dv.isGeneric() && a.tune.gainDb > dv.gainMaxDb && dv.gainMaxDb > 0) a.tune.gainDb = dv.gainMaxDb;
         if (dv.isGeneric() && a.tune.gainDb < dv.gainMinDb && dv.gainMaxDb > dv.gainMinDb) a.tune.gainDb = dv.gainMinDb;   // a gain left by another radio

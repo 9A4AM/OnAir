@@ -525,7 +525,13 @@ void toolbarParts(App& a, int mask, bool vertical) {
         if (ImGui::Button(tr("Stop tune"))) { a.sweep = GainSweep(); }
     } else if (ImGui::Button(tr("Auto-tune")) && running) {
         int rfMax = 0;   // a radio with an RF gain stage (SDRplay RFGR): the sweep covers its states too
-        if (generic) for (const auto& rs : curDev.settings) if (rs.key == "rfgr" && rs.values.size() > 2) rfMax = atoi(rs.values.back().c_str());
+        if (generic) {
+            for (const auto& rs : curDev.settings)
+                if (rs.key == "rfgr" && rs.values.size() > 2)
+                    for (size_t i = rs.values.size(); i-- > 0;)
+                        if (rs.values[i] != "auto") { rfMax = atoi(rs.values[i].c_str()); break; }
+            if (rfMax == 0 && curDev.board == "sdrplay") rfMax = 9;   // known before the radio has been opened once
+        }
         a.sweep.start(ImGui::GetTime(), generic ? (int)curDev.gainMaxDb : 0, rfMax);
         a.agcOn = false;
     }
@@ -687,6 +693,7 @@ void spectrumTune(App& a, double absMhz) {
 }
 
 void tuneFreq(App& a, double mhz) {
+    mhz = std::min(dect2::kMaxTuneMhz, std::max(0.001, mhz));
     if (a.second.drawing) {   // the second mode's screens tune the second mode (a refusal turns it off: secondModeTick)
         a.second.mhz = mhz;
         if (a.second.modeIdx >= 0) a.engine.setSecondaryHz(kModes[a.second.modeIdx].family + 2, mhz * 1e6);

@@ -57,6 +57,7 @@ public:
     void bit(int level);
     bool inFrame() const { return inFrame_; }
     bool flagSeen() const { return flagRecent_ > 0; }   // a flag came a short while ago
+    bool takeClockResync() { const bool r = resyncClock_; resyncClock_ = false; return r; }
 private:
     Callback cb_;
     bool nrzi_;
@@ -64,6 +65,8 @@ private:
     uint8_t pat_ = 0, acc_ = 0;
     int cnt_ = 0;
     bool inFrame_ = false;
+    bool hunting_ = true;
+    bool resyncClock_ = false;
     int flagRecent_ = 0;
     std::vector<uint8_t> buf_;
 };

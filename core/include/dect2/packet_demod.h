@@ -73,6 +73,7 @@ struct Afsk1200 {
     bool lev = false, prevLev = false;
     ax25::HdlcRx hdlc;
     int64_t pos = 0;
+    int snapBits_ = 0;               // after a good frame: snap the clock on edges while the next preamble arrives
 
     void init(int L, bool hann, float g, float inert, float inertLocked) {
         constexpr double kPi = 3.14159265358979323846;
@@ -90,7 +91,7 @@ struct Afsk1200 {
     }
     void reset() {
         ext.assign((size_t)len - 1, 0.f);
-        ph = -0.5f; lev = prevLev = false; pos = 0;
+        ph = -0.5f; lev = prevLev = false; pos = 0; snapBits_ = 0;
         hdlc.reset();
     }
     void process(const float* x, size_t n) {
@@ -107,10 +108,17 @@ struct Afsk1200 {
                 c += v * sr[(size_t)t]; d += v * si[(size_t)t];
             }
             lev = (a * a + b * b) > gain * gain * (c * c + d * d);
-            if (lev != prevLev) ph *= hdlc.flagSeen() ? inertiaLocked : inertia;
+            if (lev != prevLev) {
+                if (snapBits_ > 0) { ph = 0.f; snapBits_--; }
+                else ph *= hdlc.flagSeen() ? inertiaLocked : inertia;
+            }
             prevLev = lev;
             ph += step;
-            if (ph >= 0.5f) { ph -= 1.f; hdlc.bit(lev ? 1 : 0); }
+            if (ph >= 0.5f) {
+                ph -= 1.f;
+                hdlc.bit(lev ? 1 : 0);
+                if (hdlc.takeClockResync()) { ph = 0.f; snapBits_ = 96; }
+            }
             pos++;
         }
         std::copy(ext.end() - (ptrdiff_t)h, ext.end(), ext.begin());
@@ -152,7 +160,8 @@ struct FskSlicer {
                     d = raw ^ ((sr >> 11) & 1u) ^ ((sr >> 16) & 1u);
                     sr = ((sr << 1) | raw) & 0x1FFFFu;
                 }
-                if (bitSink) bitSink((int)d); else hdlc.bit((int)d);
+                if (bitSink) bitSink((int)d);
+                else hdlc.bit((int)d);
             }
             pos++;
         }

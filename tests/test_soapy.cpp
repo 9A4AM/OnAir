@@ -144,6 +144,14 @@ int main(int argc, char** argv) {
             CHECK(ok && ifgr && rfgr && atoi(ifgr) == (full ? 20 : 59) && atoi(rfgr) == (full ? 0 : 9), "gain %.0f of 48: IFGR %s RFGR %s (%s)", gain, ifgr ? ifgr : "-", rfgr ? rfgr : "-", e3.c_str());
             if (src) src->stop();
         }
+        t3.gainDb = 24;
+        auto srcMid = makeSource(g);
+        std::string eMid;
+        const bool okMid = srcMid && srcMid->start(t3, ring, eMid);
+        const char* ifgrM = getenv("ONAIR_TEST_IFGR");
+        const char* rfgrM = getenv("ONAIR_TEST_RFGR");
+        CHECK(okMid && ifgrM && rfgrM && atoi(ifgrM) == 40 && atoi(rfgrM) == 5, "gain 24 of 48: IFGR %s RFGR %s (not max LNA)", ifgrM ? ifgrM : "-", rfgrM ? rfgrM : "-");
+        if (srcMid) srcMid->stop();
     }
     {   // the RF stage (RFGR) is a setting of its own; picked by hand, the gain slider drives the IF gain alone
         DeviceInfo g;

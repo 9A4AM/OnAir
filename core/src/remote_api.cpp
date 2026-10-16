@@ -1,6 +1,7 @@
 // Remote-control API server: see dect2/remote_api.h. One thread accepts; every connection has a thread of its own (at most 16), so a slow or
 // silent client never holds up another one. Blocking sockets with select() for the waits, on top of the helpers of tcp_client.h.
 #include "dect2/remote_api.h"
+#include "dect2/mode_tuning.h"
 #include "netcompat.h"
 #include "tcp_client.h"
 #include <algorithm>
@@ -464,7 +465,7 @@ struct RemoteApiServer::Impl {
         } else if (p == "/api/v1/frequency") {
             double hz = 0;
             if (num("hz", v)) hz = v; else if (num("mhz", v)) hz = v * 1e6; else { fail("give hz or mhz"); return; }
-            if (!(hz > 0) || hz > 1e12) { fail("frequency out of range"); return; }
+            if (!(hz > 0) || hz > kMaxTuneMhz * 1e6) { fail("frequency out of range"); return; }
             if (host.setFrequencyHz(hz, err)) okJson(); else fail(err);
         } else if (p == "/api/v1/samplerate") {
             double hz = 0;

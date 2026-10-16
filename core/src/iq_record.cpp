@@ -34,7 +34,7 @@ std::string recordingFileName(const std::string& modeId, double centerHz, double
     return b;
 }
 
-const char* sigmfDatatype(FileFormat fmt) { return fmt == FileFormat::CF32 ? "cf32_le" : fmt == FileFormat::CU8 ? "ru8_le" : "ri8"; }
+const char* sigmfDatatype(FileFormat fmt) { return fmt == FileFormat::CF32 ? "cf32_le" : fmt == FileFormat::CU8 ? "cu8" : "ci8_le"; }
 
 std::string sigmfUtcNow() {
     const std::time_t t = std::time(nullptr);

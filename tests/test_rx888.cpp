@@ -44,6 +44,9 @@ struct FakeUsb : Rx888Usb {
     int muteAfterJump = 0, muteLeft = 0;       // lists that return nothing once the firmware has jumped
     int nameErrorAfterJump = 0, nameErrorsAfterJump = 0;
     bool dropOnJump = false;                   // the chip leaves and does not come back
+    int standbyPipeLeft = 0;                   // fail the next N TUNERSTDBY requests with PIPE, then succeed
+    bool standbyPipeAlways = false;
+    int standbyAttempts = 0;
     std::atomic<bool> gone{false};
     std::atomic<double> toneHz{7.2e6};
     std::atomic<uint32_t> adc{0}, gpio{0};
@@ -70,6 +73,7 @@ struct FakeUsb : Rx888Usb {
         std::lock_guard<std::mutex> g(mu);
         devs.clear(); log.clear(); ram.clear(); entry = 0; jumps = 0; opens = 0; lists = 0; gone = false; adc = 0; gpio = 0; toneHz = 7.2e6;
         lastOpenBus = lastOpenAddr = 0; muteAfterJump = muteLeft = 0; nameErrorAfterJump = nameErrorsAfterJump = 0; dropOnJump = false;
+        standbyPipeLeft = 0; standbyPipeAlways = false; standbyAttempts = 0;
     }
     Dev* find(int bus, int addr) { for (auto& d : devs) if (d.bus == bus && d.addr == addr) return &d; return nullptr; }
     size_t count(uint8_t req) { std::lock_guard<std::mutex> g(mu); size_t n = 0; for (const auto& e : log) n += e.req == req; return n; }
@@ -109,6 +113,11 @@ struct FakeLink : Rx888Link {
             // read back: whatever chunk contains the range
             for (auto& r : f_->ram) if (addr >= r.first && addr + len <= r.first + r.second.size()) { memcpy(data, r.second.data() + (addr - r.first), len); return len; }
             return -9;
+        }
+        if (req == kTunerStandby && !in) {
+            f_->standbyAttempts++;
+            if (f_->standbyPipeAlways) return -9;   // LIBUSB_ERROR_PIPE
+            if (f_->standbyPipeLeft > 0) { f_->standbyPipeLeft--; return -9; }
         }
         Ev e{in, req, val, idx, std::vector<uint8_t>(data, data + (in ? 0 : len))};
         f_->log.push_back(e);
@@ -635,6 +644,46 @@ static void rateChecks() {
     src->stop();
 }
 
+static void tunerStandbyUsbChecks() {
+    printf("tuner standby USB:\n");
+    TuneSettings s;
+    s.centerHz = 7.0e6; s.sampleRate = 2e6;
+    IqRing ring(1 << 20);
+    std::string err;
+    {   // WinUSB-style PIPE bursts then OK: retries must get through
+        fake.reset();
+        addApp();
+        fake.standbyPipeLeft = 4;
+        auto src = makeNativeSource(findRx888());
+        CHECK(src->start(s, ring, err), "PIPE retries: %s", err.c_str());
+        CHECK(fake.standbyAttempts >= 5 && fake.count(kTunerStandby) >= 1, "standby tries %d log %zu", fake.standbyAttempts, fake.count(kTunerStandby));
+        src->stop();
+    }
+    {   // cold start (VHF tune): persistent PIPE is ignored so the R828D path can come up
+        fake.reset();
+        addApp();
+        fake.standbyPipeAlways = true;
+        s.centerHz = 144e6; s.gainDb = 40;
+        fake.toneHz = 4.57e6 - 150e3;
+        auto src = makeNativeSource(findRx888());
+        CHECK(src->start(s, ring, err), "cold VHF with PIPE standby: %s", err.c_str());
+        CHECK(fake.count(kTunerInit) == 1, "tuner init %zu", fake.count(kTunerInit));
+        src->stop();
+    }
+    {   // warm HF after VHF: standby must not be skipped
+        fake.reset();
+        addApp();
+        fake.standbyPipeAlways = true;
+        s.centerHz = 100e6; s.sampleRate = 2e6; s.gainDb = 40;
+        auto src = makeNativeSource(findRx888());
+        CHECK(src->start(s, ring, err), "start VHF: %s", err.c_str());
+        s.centerHz = 7.1e6; s.gainDb = 30;
+        CHECK(!src->retune(s, err) && err.find("tuner standby") != std::string::npos && err.find("2.2") != std::string::npos,
+              "HF after VHF must not skip PIPE standby: %s", err.c_str());
+        src->stop();
+    }
+}
+
 static void reconnectChecks() {
     printf("unplug and replug:\n");
     fake.reset();
@@ -682,6 +731,7 @@ int main() {
     refusalChecks();
     streamChecks();
     rateChecks();
+    tunerStandbyUsbChecks();
     reconnectChecks();
     benchmark();
     rx888UseUsb(nullptr);

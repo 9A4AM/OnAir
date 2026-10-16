@@ -7,7 +7,7 @@ static void clickToTune(App& a, int plotId) {
     if (a.family == 55) { generalPlotMouse(a, plotId); return; }   // the general receiver: its channel marker, without retuning the radio
     if (!plt::IsPlotHovered() || a.fmScan.running) return;
     double mhz = plt::GetPlotMousePos().x;
-    double lo = 0.001, hi = 1e12;   // any frequency: the radio is the limit
+    double lo = 0.001, hi = dect2::kMaxTuneMhz;
     double grid = 0.001;
     if (a.fmMode) grid = 0.1;
     else if (a.family == 9) grid = 0.0125;

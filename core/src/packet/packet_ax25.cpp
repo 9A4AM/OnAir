@@ -157,7 +157,7 @@ std::vector<uint8_t> scramble(const std::vector<uint8_t>& bits, uint32_t& st) {
 }
 
 void HdlcRx::reset() {
-    prev_ = 0; pat_ = 0; acc_ = 0; cnt_ = 0; inFrame_ = false; flagRecent_ = 0;
+    prev_ = 0; pat_ = 0; acc_ = 0; cnt_ = 0; inFrame_ = false; hunting_ = true; resyncClock_ = false; flagRecent_ = 0;
     buf_.clear();
 }
 
@@ -168,19 +168,27 @@ void HdlcRx::bit(int level) {
     pat_ = (uint8_t)((pat_ >> 1) | (d << 7));
     if (pat_ == 0x7E) {
         // a flag: seven of its bits were already stored, so a frame that ends here leaves seven bits in the accumulator
-        if (inFrame_ && cnt_ == 7 && buf_.size() >= 17 && buf_.size() <= 400) {
+        int flagHold = 16;
+        if (!hunting_ && inFrame_ && cnt_ == 7 && buf_.size() >= 17 && buf_.size() <= 400) {
             const bool ok = fcsOk(buf_.data(), buf_.size());
             if (cb_) {
                 if (ok) cb_(std::vector<uint8_t>(buf_.begin(), buf_.end() - 2), true);
                 else cb_(buf_, false);
             }
+            if (ok) { resyncClock_ = true; flagHold = 48; }
+            hunting_ = true;
+            inFrame_ = false;
+        } else {
+            hunting_ = false;
+            inFrame_ = true;
         }
-        buf_.clear(); acc_ = 0; cnt_ = 0; inFrame_ = true; flagRecent_ = 16;
+        buf_.clear(); acc_ = 0; cnt_ = 0;
+        flagRecent_ = flagHold;
         return;
     }
-    if (pat_ == 0xFE) { inFrame_ = false; buf_.clear(); cnt_ = 0; return; }       // seven ones: abort
+    if (pat_ == 0xFE) { inFrame_ = false; hunting_ = true; buf_.clear(); cnt_ = 0; return; }       // seven ones: abort
     if ((pat_ & 0xFC) == 0x7C) return;                                              // a stuffed zero
-    if (!inFrame_) return;
+    if (hunting_ || !inFrame_) return;
     acc_ = (uint8_t)((acc_ >> 1) | (d << 7));
     if (++cnt_ == 8) {
         if (buf_.size() > 400) { inFrame_ = false; buf_.clear(); cnt_ = 0; return; }

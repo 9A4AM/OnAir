@@ -38,7 +38,7 @@ struct SigmfInfo {
     uint64_t sampleCount = 0;     // 0 leaves it out
     std::string description;      // "" leaves it out
 };
-const char* sigmfDatatype(FileFormat fmt);   // "ri8", "ru8_le", "cf32_le"
+const char* sigmfDatatype(FileFormat fmt);   // "ci8_le", "cu8", "cf32_le"
 std::string sigmfMetaJson(const SigmfInfo& i);
 std::string sigmfUtcNow();
 

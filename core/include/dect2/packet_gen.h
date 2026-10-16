@@ -30,4 +30,7 @@ std::unique_ptr<ModeSynth> makePacketSynth(const SynthConfig& cfg, double sample
 // One custom AX.25 UI frame (and silence around it), looping. baud 1200 or 9600.
 std::unique_ptr<ModeSynth> makePacketSynthFrame(const SynthConfig& cfg, double sampleRate, const ax25::Frame& frame, int baud);
 
+// A short burst of frames with interFrameGapSec between them (0 = back-to-back on the air, no idle).
+std::unique_ptr<ModeSynth> makePacketSynthBurst(const SynthConfig& cfg, double sampleRate, const std::vector<PacketGenFrame>& frames, double interFrameGapSec);
+
 } // namespace dect2

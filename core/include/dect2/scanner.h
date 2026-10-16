@@ -69,6 +69,7 @@ public:
     void stop();
     ScanProgress progress() const;
     std::vector<ScanResult> results() const;
+    void setResults(std::vector<ScanResult> r);   // restore persisted scan results (not while a scan runs)
     static std::vector<double> channels(const ScanConfig& cfg);
 
 private:

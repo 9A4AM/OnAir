@@ -31,6 +31,11 @@ std::vector<double> Scanner::channels(const ScanConfig& c) {
 
 ScanProgress Scanner::progress() const { std::lock_guard<std::mutex> lk(mu_); return prog_; }
 std::vector<ScanResult> Scanner::results() const { std::lock_guard<std::mutex> lk(mu_); return results_; }
+void Scanner::setResults(std::vector<ScanResult> r) {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (prog_.running) return;
+    results_ = std::move(r);
+}
 
 bool Scanner::check(const DeviceInfo& dev, const ScanConfig& cfg, std::string& err) {
     if (!dev.isRadio() && !(cfg.testTune && dev.kind == DeviceInfo::Synthetic)) { err = "scanning needs a radio (the synthetic signal and recordings cannot be scanned)"; return false; }
