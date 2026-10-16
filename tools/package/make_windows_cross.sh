@@ -54,6 +54,14 @@ done
 # codec2 (FreeDV and M17 speech, LGPL-2.1, third_party/codec2): libcodec2.dll next to OnAir.exe, with its licence and notice
 [ -f $BUILD/libcodec2.dll ] && cp $BUILD/libcodec2.dll "$OUT/" || echo "warning: $BUILD/libcodec2.dll is missing (built with -DDECT2_BUNDLE_CODEC2=OFF?)"
 mkdir -p "$OUT/licenses/codec2"; cp third_party/codec2/COPYING "$OUT/licenses/codec2/COPYING"; cp third_party/codec2/README-OnAir.md "$OUT/licenses/codec2/NOTICE.md"
+# RX888 MkII: SDDC_FX3.img (RAM load only, never flashes the radio)
+if [ -f third_party/sddc_fx3/SDDC_FX3.img ]; then
+  mkdir -p "$OUT/codecs" "$OUT/licenses/sddc_fx3"
+  cp third_party/sddc_fx3/SDDC_FX3.img "$OUT/codecs/"
+  cp third_party/sddc_fx3/README-OnAir.md "$OUT/licenses/sddc_fx3/NOTICE.md"
+else
+  echo "warning: third_party/sddc_fx3/SDDC_FX3.img is missing (RX888 boot-loader radios need it)"
+fi
 for f in "$OUT"/*.dll "$OUT"/lib/SoapySDR/modules0.8/*.dll; do
   [ -f "$f" ] || continue
   [ "$(basename "$f")" = FTD3XX.dll ] || $S --strip-unneeded "$f" 2>/dev/null   # debugging information makes libstdc++ alone 29 MB

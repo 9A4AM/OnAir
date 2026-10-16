@@ -40,6 +40,11 @@ REAL=$(ls "$APP"/Contents/Frameworks/libcodec2.*.*.*.dylib | head -1)
 install_name_tool -id "@executable_path/../Frameworks/$(basename "$REAL")" "$REAL"
 cp third_party/codec2/COPYING "$APP/Contents/Resources/licenses/codec2/COPYING"
 cp third_party/codec2/README-OnAir.md "$APP/Contents/Resources/licenses/codec2/NOTICE.md"
+if [ -f third_party/sddc_fx3/SDDC_FX3.img ]; then
+  mkdir -p "$APP/Contents/MacOS/codecs" "$APP/Contents/Resources/licenses/sddc_fx3"
+  cp third_party/sddc_fx3/SDDC_FX3.img "$APP/Contents/MacOS/codecs/"
+  cp third_party/sddc_fx3/README-OnAir.md "$APP/Contents/Resources/licenses/sddc_fx3/NOTICE.md"
+fi
 RTL_FW=$BUILD/rtlsdr-blog-framework
 bash tools/package/build_rtlsdr_blog_macos.sh "$RTL_FW"
 export ONAIR_RTLSDR_FRAMEWORK="$RTL_FW"

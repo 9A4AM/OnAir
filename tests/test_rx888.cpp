@@ -476,8 +476,8 @@ static void streamChecks() {
     // the request order of the SDDC driver: STOPFX3, TESTFX3, then the clock, the HF input, gains; the stream starts after the transfers are queued
     const size_t stop0 = fake.indexOf(kStopFx3), test0 = fake.indexOf(kTestFx3), adc0 = fake.indexOf(kStartAdc), sby = fake.indexOf(kTunerStandby);
     const size_t queued = fake.indexOf(kMarkQueued), start = fake.indexOf(kStartFx3);
-    CHECK(stop0 == 0 && test0 == 1 && adc0 == 2, "order: stop %zu test %zu adc %zu", stop0, test0, adc0);
-    CHECK(sby != (size_t)-1 && sby > adc0, "the tuner was not put in standby for the HF input");
+    CHECK(stop0 == 0 && test0 == 1 && sby != (size_t)-1 && sby > test0 && adc0 > sby,
+          "order: stop %zu test %zu standby %zu adc %zu (SDDC: HF path before ADC)", stop0, test0, sby, adc0);
     CHECK(queued != (size_t)-1 && start != (size_t)-1 && queued < start, "STARTFX3 (%zu) must come after the transfers are queued (%zu)", start, queued);
     CHECK(le(fake.at(adc0)) == 64000000 && fake.at(adc0).data.size() == 4, "ADC clock %llu", (unsigned long long)le(fake.at(adc0)));
     CHECK(fake.count(kGpioFx3) == 0, "GPIO written for the default HF setup (%zu)", fake.count(kGpioFx3));
@@ -619,6 +619,19 @@ static void rateChecks() {
     s.radio["input"] = "hf";
     CHECK(src->start(s, ring, err) && fake.count(kTunerInit) == 0, "input 'hf' at 100 MHz used the tuner");
     CHECK(err.find("half the ADC clock") != std::string::npos, "no range note for 100 MHz on the HF input: '%s'", err.c_str());
+    src->stop();
+    // cold start on VHF: HF path and ADC before the R828D is brought up (SDDC open order)
+    fake.reset();
+    addApp();
+    src = makeNativeSource(findRx888());
+    s = TuneSettings();
+    s.centerHz = 100e6; s.sampleRate = 2e6; s.gainDb = 40;
+    fake.toneHz = 4.57e6 - 150e3;
+    const size_t n0 = fake.size();
+    CHECK(src->start(s, ring, err), "cold VHF start: %s", err.c_str());
+    const size_t sby0 = fake.indexOf(kTunerStandby, n0), adc1 = fake.indexOf(kStartAdc, n0), init0 = fake.indexOf(kTunerInit, n0);
+    CHECK(sby0 != (size_t)-1 && adc1 != (size_t)-1 && init0 != (size_t)-1 && sby0 < adc1 && adc1 < init0,
+          "cold VHF order: standby %zu adc %zu tuner init %zu", sby0, adc1, init0);
     src->stop();
 }
 

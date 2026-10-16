@@ -520,7 +520,7 @@ protected:
             openFailure_ = OpenFailure::Final;
             return false;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(kOnWindows ? 25 : 5));
         setU8(kStopFx3, 0);   // as the SDDC driver: a stream left running by another program is stopped
         uint8_t info[4] = {0};
         const int r = link_->control(true, kTestFx3, 0, 0, info, sizeof info);
@@ -748,10 +748,30 @@ private:
         return false;
     }
 
-    bool setU8(uint8_t request, uint8_t v) { return link_ && link_->control(false, request, 0, 0, &v, 1) == 1; }
-    bool setU32(uint8_t request, uint32_t v) { uint8_t b[4]; memcpy(b, &v, 4); return link_ && link_->control(false, request, 0, 0, b, 4) == 4; }
-    bool setU64(uint8_t request, uint64_t v) { uint8_t b[8]; memcpy(b, &v, 8); return link_ && link_->control(false, request, 0, 0, b, 8) == 8; }
-    bool setArg(uint16_t arg, uint16_t value) { uint8_t z = 0; return link_ && link_->control(false, kSetArg, value, arg, &z, 1) == 1; }
+    // Vendor control transfers: retry PIPE/IO/TIMEOUT/BUSY (common on Windows WinUSB right after open).
+    bool ctl(bool in, uint8_t request, uint16_t val, uint16_t idx, uint8_t* data, uint16_t len, int want) {
+        if (!link_) { lastUsbErr_ = LIBUSB_ERROR_NO_DEVICE; return false; }
+        const int tries = kOnWindows ? 5 : 3;
+        for (int a = 0; a < tries; a++) {
+            if (a) std::this_thread::sleep_for(std::chrono::milliseconds(kOnWindows ? 20 : 8));
+            const int r = link_->control(in, request, val, idx, data, len);
+            if (r == want) { lastUsbErr_ = 0; return true; }
+            if (in && request == kTestFx3 && want == 4 && r == LIBUSB_ERROR_PIPE) { lastUsbErr_ = 0; return true; }
+            lastUsbErr_ = r;
+            if (r != LIBUSB_ERROR_PIPE && r != LIBUSB_ERROR_IO && r != LIBUSB_ERROR_TIMEOUT && r != LIBUSB_ERROR_BUSY) break;
+        }
+        return false;
+    }
+    std::string usbStepErr(const std::string& step) const {
+        std::string e = "RX888 MkII: " + step + " (" + usbErrorText(lastUsbErr_) + ")";
+        if (kOnWindows && (lastUsbErr_ == LIBUSB_ERROR_PIPE || lastUsbErr_ == LIBUSB_ERROR_IO || lastUsbErr_ == LIBUSB_ERROR_NOT_SUPPORTED))
+            e += " If another SDR program has the radio open, close it. Otherwise install WinUSB for USB\\VID_04B4&PID_00F1 with Zadig (zadig.akeo.ie); the Cypress driver from the official RX-888 setup cannot be used by OnAir.";
+        return e;
+    }
+    bool setU8(uint8_t request, uint8_t v) { return ctl(false, request, 0, 0, &v, 1, 1); }
+    bool setU32(uint8_t request, uint32_t v) { uint8_t b[4]; memcpy(b, &v, 4); return ctl(false, request, 0, 0, b, 4, 4); }
+    bool setU64(uint8_t request, uint64_t v) { uint8_t b[8]; memcpy(b, &v, 8); return ctl(false, request, 0, 0, b, 8, 8); }
+    bool setArg(uint16_t arg, uint16_t value) { uint8_t z = 0; return ctl(false, kSetArg, value, arg, &z, 1, 1); }
     bool setGpios(uint32_t w) {
         if (w == gpios_) return true;
         if (!setU32(kGpioFx3, w)) return false;
@@ -772,12 +792,15 @@ private:
     bool switchInput(const TuneSettings& s, bool vhf, std::string& err) {
         if (vhf) {
             // the HF path is shut (maximum attenuation, lowest gain), the VHF antenna switched in, the tuner started
-            bool ok = setArg(kArgDat31, 63) && setArg(kArgAd8340, 1) && setGpios(gpioWord(s, true)) && setArg(kArgAd8340, 0x80 | 3) &&
-                      setU32(kTunerInit, (uint32_t)kR828dRefHz);
-            if (!ok) { err = "RX888 MkII: the VHF input could not be switched on (USB transfer failed)"; return false; }
+            if (!setArg(kArgDat31, 63)) { err = usbStepErr("the VHF input could not be switched on: HF attenuator"); return false; }
+            if (!setArg(kArgAd8340, 1)) { err = usbStepErr("the VHF input could not be switched on: HF IF gain"); return false; }
+            if (!setGpios(gpioWord(s, true))) { err = usbStepErr("the VHF input could not be switched on: antenna switch"); return false; }
+            if (!setArg(kArgAd8340, 0x80 | 3)) { err = usbStepErr("the VHF input could not be switched on: HF VGA"); return false; }
+            if (!setU32(kTunerInit, (uint32_t)kR828dRefHz)) { err = usbStepErr("the VHF input could not be switched on: R828D reference clock"); return false; }
             dat31_ = 63; ad8340_ = 0x83; lna_ = vga_ = -1; tuneHz_ = 0;
         } else {
-            if (!setU8(kTunerStandby, 0) || !setGpios(gpioWord(s, false))) { err = "RX888 MkII: the HF input could not be switched on (USB transfer failed)"; return false; }
+            if (!setU8(kTunerStandby, 0)) { err = usbStepErr("the HF input could not be switched on: tuner standby"); return false; }
+            if (!setGpios(gpioWord(s, false))) { err = usbStepErr("the HF input could not be switched on: antenna switch"); return false; }
             dat31_ = ad8340_ = -1;
         }
         vhf_ = vhf ? 1 : 0;
@@ -791,7 +814,12 @@ private:
         if (!link_) return false;
         const Plan p = plan(s);
         if (!live) {
-            if (!setU32(kStartAdc, p.adc)) { err = "RX888 MkII: the ADC clock of " + mhzText(p.adc) + " was refused (USB transfer failed)"; return false; }
+            // SDDC RadioHandler::Open: HF path (tuner standby, VHF off) before STARTADC. Starting the ADC first breaks RF switching on hardware.
+            if (vhf_ < 0 && !switchInput(s, false, err)) return false;
+            if (!setU32(kStartAdc, p.adc)) {
+                err = usbStepErr("the ADC clock of " + mhzText(p.adc) + " was refused");
+                return false;
+            }
             std::lock_guard<std::mutex> dl(ddcMu_);
             adc_ = p.adc; decim_ = p.decim;
             ddc_.design(decim_);
@@ -850,6 +878,7 @@ private:
     uint32_t gpios_ = 0, adc_ = 0;
     int vhf_ = -1, decim_ = 2;
     int dat31_ = -1, ad8340_ = -1, lna_ = -1, vga_ = -1;   // what the radio is set to (-1: not yet)
+    int lastUsbErr_ = 0;
     uint64_t tuneHz_ = 0;
     bool streamed_ = false;
     std::vector<int> set_before_;    // (uploadFirmware) the app-mode radios there were before it

@@ -45,7 +45,7 @@ const Entry kTable[] = {
      {N_("Install OnAir's blacklist file (the .deb package does it), or run: sudo systemctl restart sdrplay"), N_("Unplug the radio and plug it in again."), nullptr},
      {{Act::CopyText, N_("Copy the command"), "sudo systemctl restart sdrplay", OsLinux}}},
     {"rx888_firmware", "SDDC_FX3.img", N_("The RX888 needs its firmware file"),
-     N_("The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it."),
+     N_("The RX888 MkII has no program of its own in its USB chip: OnAir loads SDDC_FX3.img into RAM when the radio is in boot-loader mode (nothing is flashed to the radio). Official OnAir packages include this file; a copy built by hand may not."),
      {N_("Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below)."), N_("Put the file in OnAir's codecs folder (button below)."), N_("Press the refresh button next to the radio list."), nullptr},
      NONE, NONE, NONE,
      {{Act::OpenUrl, N_("Open driver page"), kSddcReleases, OsAll}, {Act::OpenCodecs, N_("Open codecs folder"), "", OsAll}}},

@@ -68,9 +68,9 @@ simulated FX3. It has never run on a real radio; please report what you see.**
 OnAir talks to the radio over USB itself (no vendor library). HF (direct sampling, 64 or 128 Msps ADC clock) and VHF/UHF (R828D tuner, up
 to about 1.75 GHz) are covered; the sample rate list is 0.25 to 64 Msps.
 
-- The radio has no program of its own: the FX3 needs `SDDC_FX3.img`. It contains Cypress SDK code under Cypress's licence, so OnAir does not
-  ship it. Download it from the SDDC_Driver Releases page and put it in OnAir's codecs folder (the app's help card has a button), or set the
-  environment variable `ONAIR_RX888_FIRMWARE` to the file. OnAir loads it into the radio's RAM each time it is plugged in; nothing is flashed.
+- The radio has no program of its own: the FX3 needs `SDDC_FX3.img`. Official OnAir packages ship it in the `codecs` folder (or, on Linux,
+  `lib/onair/`). OnAir loads it into the radio's **RAM** when needed; **nothing is flashed**. A hand-built copy may need the file from the
+  SDDC_Driver Releases page in the codecs folder, or `ONAIR_RX888_FIRMWARE` pointing at it.
 - It must be on a USB 3 port (the stream is up to 256 MB/s). On Windows install WinUSB with Zadig for both `04b4:00f3` (boot loader) and
   `04b4:00f1` (running); on Linux the udev rule for `04b4:00f1` / `00f3` is needed.
 - A LimeSDR-USB shares `04b4:00f1`; OnAir tells them apart by the product name ("RX888mk2").

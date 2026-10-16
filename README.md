@@ -295,7 +295,7 @@ OnAir supports the **HackRF One and HackRF Pro** natively, and drives these radi
 | **RTL-SDR** | ❌ | ✅ | |
 | **Airspy HF+** | ❌ | Narrow channels only | Specified for HF and 60 – 260 MHz |
 | **Fobos SDR** (agile firmware) | ✅ | ✅ | Contributed, untested here. Specified for 50 MHz – 6 GHz on the RF input, HF on the HF1 / HF2 inputs. Library not included: put RigExpert's `fobos_sdr` library next to OnAir, see [DEVICES.md](DEVICES.md) |
-| **RX888 MkII** | ✅ | ✅ | Experimental, written from the open SDDC protocol and never run on a real radio. USB 3 required. Firmware image not included: put `SDDC_FX3.img` (from the SDDC_Driver Releases page) in OnAir's codecs folder, see [DEVICES.md](DEVICES.md) |
+| **RX888 MkII** | ✅ | ✅ | Experimental native SDDC/USB driver (MkII on real hardware still being hardened). USB 3 required. Packages include `SDDC_FX3.img` (RAM load only); see [DEVICES.md](DEVICES.md) |
 | **Anything else** | depends | depends | Through [SoapySDR](https://github.com/pothosware/SoapySDR), once its SoapySDR module is installed |
 
 - The libraries these radios need are included in the downloads, except as noted above.
