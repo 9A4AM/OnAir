@@ -8,6 +8,7 @@
 #pragma once
 #include "carrierfind.h"
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <deque>
 #include <functional>
@@ -40,6 +41,10 @@ struct WideOps {
     std::function<void(Tel& t)> clearLists;                  // empty the call / message lists of t
     std::function<void(Tel& dst, const Tel& src, double hz)> append;   // append src's list entries (stamped with the carrier frequency hz) to dst
     std::function<std::string(const Tel&)> info;             // short text for the table
+    double preRollSec = 0;                                   // > 0: a carrier found late gets this much of the span from before it was found (bursty signals: the start of the transmission)
+    std::function<double(const Tel&)> freqCorrection;        // optional: Hz to add to the finder's frequency of the carrier (the decoder's own carrier-offset measurement)
+    std::function<bool(const Tel&)> hasLog;                  // optional: false = this telemetry has no list entries, a carrier that goes is not kept in the log
+    std::function<int(const Tel&)> rowState;                 // optional: the table's state (0 searching, 1 partly locked, 2 locked) when the telemetry's own state is not that scale
 };
 
 template <class Rx, class Tel>
@@ -52,10 +57,16 @@ public:
         std::lock_guard<std::mutex> g(m_);
         spanRate_ = spanRate; cfg_ = cfg;
         finder_.configure(spanRate, cfg);
+        hist_.clear();
         live_.clear(); retired_.clear(); sel_ = 0; seq_ = 1;
     }
     bool ready() const { return spanRate_ >= ops_.outRate; }
-    void reset() { std::lock_guard<std::mutex> g(m_); finder_.reset(); live_.clear(); sel_ = 0; seq_++; }   // after a retune: the carriers are new, the logs stay
+    void reset() { std::lock_guard<std::mutex> g(m_); finder_.reset(); hist_.clear(); retireAll(); sel_ = 0; seq_++; }   // after a retune: the carriers are new, the logs stay
+    // The radio's centre frequency (any thread; takes effect with the next feed, on the analysis thread). A carrier that has gone keeps its place
+    // in the log by its absolute frequency, so a retune does not move the old rows.
+    void setCenterHz(double hz) { pendCenter_.store(hz); }
+    // runs f on every live receiver (a setting that changes while carriers are tracked)
+    void forEach(const std::function<void(Rx&)>& f) { std::lock_guard<std::mutex> g(m_); for (auto& s : live_) f(*s->rx); }
     void clearResults() {
         std::lock_guard<std::mutex> g(m_);
         retired_.clear();
@@ -70,6 +81,8 @@ public:
     void feed(const cf32* x, size_t n) {
         std::lock_guard<std::mutex> g(m_);
         if (spanRate_ <= 0) return;
+        const double pc = pendCenter_.load();
+        if (pc != center_) { retireAll(); finder_.reset(); hist_.clear(); sel_ = 0; center_ = pc; seq_++; }   // retuned without a reset: the old carriers are gone
         finder_.feed(x, n);
         for (int id : finder_.takeRemoved()) retire(id);
         for (const Carrier& c : finder_.carriers()) {
@@ -82,6 +95,11 @@ public:
             out.clear();
             s->ch.process(x, n, out);
             if (!out.empty()) s->rx->feed(out.data(), out.size());
+        }
+        if (ops_.preRollSec > 0) {   // keep the last preRollSec of the span (before this block) for a carrier found later
+            const size_t cap = (size_t)(ops_.preRollSec * spanRate_);
+            hist_.insert(hist_.end(), x, x + n);
+            if (hist_.size() > cap) hist_.erase(hist_.begin(), hist_.end() - (long)cap);
         }
     }
 
@@ -97,8 +115,8 @@ public:
         rows.clear();
         Slot* best = nullptr;
         for (auto& s : live_) {
-            WideCarrier r; r.id = s->car.id; r.hz = s->car.hz; r.levelDb = s->car.levelDb; r.snrDb = s->car.snrDb; r.active = s->car.active;
-            r.state = s->tel.state; r.info = ops_.info ? ops_.info(s->tel) : std::string();
+            WideCarrier r; r.id = s->car.id; r.hz = hzOf(*s); r.levelDb = s->car.levelDb; r.snrDb = s->car.snrDb; r.active = s->car.active;
+            r.state = ops_.rowState ? ops_.rowState(s->tel) : s->tel.state; r.info = ops_.info ? ops_.info(s->tel) : std::string();
             rows.push_back(r);
             if (s->car.id == sel_) best = s.get();
         }
@@ -112,8 +130,8 @@ public:
         // the logs: carriers that have gone first, then the live ones (each list keeps its own order)
         if (ops_.append) {
             if (ops_.clearLists) ops_.clearLists(p);
-            for (auto& r : retired_) ops_.append(p, r.tel, r.hz);
-            for (auto& s : live_) ops_.append(p, s->tel, s->car.hz);
+            for (auto& r : retired_) ops_.append(p, r.tel, r.hz - center_);
+            for (auto& s : live_) ops_.append(p, s->tel, hzOf(*s));
         }
         p.seq = seq_;
         primary = std::move(p);
@@ -127,7 +145,7 @@ public:
 
 private:
     struct Slot { Carrier car; std::unique_ptr<Rx> rx; Channelizer ch; Tel tel; uint64_t telSeq = 0; };
-    struct Retired { int id; double hz; Tel tel; };
+    struct Retired { int id; double hz; Tel tel; };   // hz: relative to the span centre plus the centre of that time (absolute)
     Slot* find(int id) { for (auto& s : live_) if (s->car.id == id) return s.get(); return nullptr; }
     Slot* add(const Carrier& c) {
         auto s = std::make_unique<Slot>();
@@ -137,6 +155,11 @@ private:
         if (ops_.setup) ops_.setup(*s->rx);
         if (!s->ch.configure(spanRate_, ops_.outRate, c.hz, ops_.occupiedHz)) return nullptr;
         if (ops_.audio) ops_.audio(*s->rx, !muted_ && c.id == sel_);
+        if (!hist_.empty()) {   // the start of the transmission that made the finder notice the carrier
+            std::vector<cf32> out;
+            s->ch.process(hist_.data(), hist_.size(), out);
+            if (!out.empty()) s->rx->feed(out.data(), out.size());
+        }
         live_.push_back(std::move(s));
         seq_++;
         return live_.back().get();
@@ -144,12 +167,17 @@ private:
     void retire(int id) {
         for (size_t i = 0; i < live_.size(); i++) if (live_[i]->car.id == id) {
             Tel t; if (live_[i]->rx->telemetry(t, 0)) live_[i]->tel = std::move(t);
-            retired_.push_back(Retired{id, live_[i]->car.hz, std::move(live_[i]->tel)});
-            if (retired_.size() > 32) retired_.pop_front();
+            if (!ops_.hasLog || ops_.hasLog(live_[i]->tel)) retired_.push_back(Retired{id, hzOf(*live_[i]) + center_, std::move(live_[i]->tel)});
+            if (retired_.size() > 64) retired_.pop_front();
             if (sel_ == id) sel_ = 0;
             live_.erase(live_.begin() + (long)i); seq_++; return;
         }
     }
+    double hzOf(const Slot& s) const {   // the finder's frequency, refined by what the decoder measured on the carrier
+        const double c = ops_.freqCorrection ? ops_.freqCorrection(s.tel) : 0.0;
+        return s.car.hz + (std::fabs(c) < 0.3 * cfg_.stepHz ? c : 0.0);
+    }
+    void retireAll() { while (!live_.empty()) retire(live_.back()->car.id); }
     void applyAudio() { if (!ops_.audio) return; for (auto& s : live_) ops_.audio(*s->rx, !muted_ && s->car.id == sel_); }
     WideOps<Rx, Tel> ops_;
     mutable std::mutex m_;
@@ -161,6 +189,9 @@ private:
     int sel_ = 0;
     bool muted_ = false;
     uint64_t seq_ = 1;
+    std::vector<cf32> hist_;
+    double center_ = 0;
+    std::atomic<double> pendCenter_{0};
 };
 
 } // namespace dect2

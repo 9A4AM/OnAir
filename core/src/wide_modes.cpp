@@ -6,6 +6,8 @@
 #include "dect2/m17_rx.h"
 #include "dect2/nxdn_rx.h"
 #include "dect2/p25_rx.h"
+#include "dect2/pager_rx.h"
+#include "dect2/pager_tel.h"
 #include "dect2/dpmr_tel.h"
 #include "dect2/dstar_tel.h"
 #include "dect2/m17_tel.h"
@@ -48,6 +50,8 @@ struct WideModes::Impl {
     std::unique_ptr<WideBank<NxdnReceiver, NxdnTelemetry>> nxdn;
     std::unique_ptr<WideBank<DpmrReceiver, DpmrTelemetry>> dpmr;
     std::unique_ptr<WideBank<P25Receiver, P25Telemetry>> p25;
+    std::unique_ptr<WideBank<PagerReceiver, PagerTelemetry>> pager;
+    int pagerProtos = 3, pagerBauds = 7;   // the single receiver's settings, copied to every carrier's receiver (setPagerOptions)
     bool muted = false;
     int sel = 0;
 
@@ -102,18 +106,53 @@ struct WideModes::Impl {
         q.append = [](P25Telemetry& t, const P25Telemetry& s2, double hz) { appendNewestFirst(t.log, s2.log, hz); };
         q.info = [](const P25Telemetry& t) { return t.nac >= 0 ? fmt("NAC %03X", t.nac) : std::string(); };
         p25.reset(new WideBank<P25Receiver, P25Telemetry>(q));
+
+        // pagers: one 25 kHz channel each; the carrier is brought to 192 ksps (the receiver's own front end takes it from there). Pages come in bursts,
+        // so a carrier found late gets the half second before it was found, and a carrier stays for half a minute after its last burst.
+        WideOps<PagerReceiver, PagerTelemetry> g;
+        g.outRate = 192000; g.occupiedHz = 24000; g.preRollSec = 0.5;
+        g.setup = [this](PagerReceiver& r) { r.setWideInput(true); r.setProtocols(pagerProtos); r.setPocsagBauds(pagerBauds); };
+        g.clear = [](PagerReceiver& r) { r.clearResults(); };
+        g.clearLists = [](PagerTelemetry& t) {
+            t.messages.reset(); t.messagesTotal = 0; t.blocksOk = t.blocksBad = 0; t.signal = t.sync = false;
+            for (auto& st : t.speeds) st = PagerSpeedStat();
+        };
+        g.hasLog = [](const PagerTelemetry& t) { return t.messages && !t.messages->empty(); };
+        g.append = [](PagerTelemetry& t, const PagerTelemetry& x, double hz) {
+            t.messagesTotal += x.messagesTotal; t.blocksOk += x.blocksOk; t.blocksBad += x.blocksBad;
+            t.signal = t.signal || x.signal; t.sync = t.sync || x.sync;
+            for (int i = 0; i < kPagerSpeeds; i++) {
+                t.speeds[i].ok += x.speeds[i].ok; t.speeds[i].fixed += x.speeds[i].fixed; t.speeds[i].failed += x.speeds[i].failed;
+                t.speeds[i].messages += x.speeds[i].messages; t.speeds[i].transmissions += x.speeds[i].transmissions;
+            }
+            if (!x.messages || x.messages->empty()) return;
+            auto v = std::make_shared<std::vector<PagerMessage>>(t.messages ? *t.messages : std::vector<PagerMessage>());
+            for (PagerMessage m : *x.messages) { m.carrierId = 1; m.carrierHz = hz; v->push_back(std::move(m)); }
+            std::stable_sort(v->begin(), v->end(), [](const PagerMessage& a, const PagerMessage& b) { return a.wallTime > b.wallTime; });
+            if (v->size() > 2000) v->resize(2000);
+            t.messages = std::move(v);
+        };
+        g.freqCorrection = [](const PagerTelemetry& t) { return t.cfoHz; };   // the receiver's carrier offset (its AFC measures it on every transmission)
+        g.rowState = [](const PagerTelemetry& t) { return t.state == 1 ? 2 : 0; };
+        g.info = [](const PagerTelemetry& t) {
+            if (t.lastSpeed < 0 && !t.messagesTotal) return std::string();
+            char b[80]; snprintf(b, sizeof b, "%s, %llu pages", t.lastSpeed >= 0 ? pagerSpeedName(t.lastSpeed) : "no sync", (unsigned long long)t.messagesTotal);
+            return std::string(b);
+        };
+        pager.reset(new WideBank<PagerReceiver, PagerTelemetry>(g));
     }
 };
 
 WideModes::WideModes() : p_(new Impl()) {}
 WideModes::~WideModes() = default;
 
-bool WideModes::supports(int m) { return m == 10 || m == 32 || m == 34 || m == 39 || m == 46 || m == 51; }
+bool WideModes::supports(int m) { return m == 10 || m == 32 || m == 34 || m == 39 || m == 46 || m == 51 || m == 24; }
 
 CarrierCfg WideModes::cfgFor(int m) {
     CarrierCfg c;
-    c.stepHz = m == 46 ? 6250.0 : 12500.0;
+    c.stepHz = m == 46 ? 6250.0 : m == 24 ? 25000.0 : 12500.0;
     c.maxCarriers = 8;
+    if (m == 24) { c.debounceSec = 0.12; c.holdSec = 30; }   // pages come in short bursts
     return c;
 }
 
@@ -126,11 +165,12 @@ void WideModes::configure(int m, double rate, double origin) {
     case 39: p_->nxdn->configure(rate, c); break;
     case 46: p_->dpmr->configure(rate, c); break;
     case 51: p_->p25->configure(rate, c); break;
+    case 24: p_->pager->configure(rate, c); break;
     }
 }
 
-void WideModes::reset() { p_->dmr->reset(); p_->m17->reset(); p_->dstar->reset(); p_->nxdn->reset(); p_->dpmr->reset(); p_->p25->reset(); }
-void WideModes::clearResults() { p_->dmr->clearResults(); p_->m17->clearResults(); p_->dstar->clearResults(); p_->nxdn->clearResults(); p_->dpmr->clearResults(); p_->p25->clearResults(); }
+void WideModes::reset() { p_->dmr->reset(); p_->m17->reset(); p_->dstar->reset(); p_->nxdn->reset(); p_->dpmr->reset(); p_->p25->reset(); p_->pager->reset(); }
+void WideModes::clearResults() { p_->dmr->clearResults(); p_->m17->clearResults(); p_->dstar->clearResults(); p_->nxdn->clearResults(); p_->dpmr->clearResults(); p_->p25->clearResults(); p_->pager->clearResults(); }
 
 void WideModes::feed(int m, const cf32* x, size_t n) {
     switch (m) {
@@ -140,6 +180,7 @@ void WideModes::feed(int m, const cf32* x, size_t n) {
     case 39: p_->nxdn->feed(x, n); break;
     case 46: p_->dpmr->feed(x, n); break;
     case 51: p_->p25->feed(x, n); break;
+    case 24: p_->pager->feed(x, n); break;
     }
 }
 
@@ -151,6 +192,7 @@ size_t WideModes::liveCount(int m) const {
     case 39: return p_->nxdn->liveCount();
     case 46: return p_->dpmr->liveCount();
     case 51: return p_->p25->liveCount();
+    case 24: return p_->pager->liveCount();
     }
     return 0;
 }
@@ -163,6 +205,7 @@ std::vector<double> WideModes::liveHz(int m) const {
     case 39: return p_->nxdn->liveHz();
     case 46: return p_->dpmr->liveHz();
     case 51: return p_->p25->liveHz();
+    case 24: return p_->pager->liveHz();
     }
     return {};
 }
@@ -175,18 +218,29 @@ bool WideModes::ready(int m) const {
     case 39: return p_->nxdn->ready();
     case 46: return p_->dpmr->ready();
     case 51: return p_->p25->ready();
+    case 24: return p_->pager->ready();
     }
     return false;
 }
 
 void WideModes::setSelected(int id) {
     p_->sel = id;
-    p_->dmr->setSelected(id); p_->m17->setSelected(id); p_->dstar->setSelected(id); p_->nxdn->setSelected(id); p_->dpmr->setSelected(id); p_->p25->setSelected(id);
+    p_->dmr->setSelected(id); p_->m17->setSelected(id); p_->dstar->setSelected(id); p_->nxdn->setSelected(id); p_->dpmr->setSelected(id); p_->p25->setSelected(id); p_->pager->setSelected(id);
 }
 
 void WideModes::setMuted(bool m) {
     p_->muted = m;
-    p_->dmr->setMuted(m); p_->m17->setMuted(m); p_->dstar->setMuted(m); p_->nxdn->setMuted(m); p_->dpmr->setMuted(m); p_->p25->setMuted(m);
+    p_->dmr->setMuted(m); p_->m17->setMuted(m); p_->dstar->setMuted(m); p_->nxdn->setMuted(m); p_->dpmr->setMuted(m); p_->p25->setMuted(m); p_->pager->setMuted(m);
+}
+
+void WideModes::setCenterHz(double hz) {
+    p_->dmr->setCenterHz(hz); p_->m17->setCenterHz(hz); p_->dstar->setCenterHz(hz); p_->nxdn->setCenterHz(hz); p_->dpmr->setCenterHz(hz); p_->p25->setCenterHz(hz); p_->pager->setCenterHz(hz);
+}
+
+void WideModes::setPagerOptions(int protocols, int bauds) {
+    if (protocols == p_->pagerProtos && bauds == p_->pagerBauds) return;
+    p_->pagerProtos = protocols; p_->pagerBauds = bauds;
+    p_->pager->forEach([&](PagerReceiver& r) { r.setProtocols(protocols); r.setPocsagBauds(bauds); });
 }
 
 void WideModes::setLogCallback(std::function<void(const std::string&)> cb) { p_->log = std::move(cb); }
@@ -211,6 +265,7 @@ bool WideModes::telemetry(int m, RxTelemetry& t, uint64_t& lastSeq) {
     case 39: return fillTel(*p_->nxdn, lastSeq, t, m, t.nxdn, p_->nxdn->ready());
     case 46: return fillTel(*p_->dpmr, lastSeq, t, m, t.dpmr, p_->dpmr->ready());
     case 51: return fillTel(*p_->p25, lastSeq, t, m, t.p25, p_->p25->ready());
+    case 24: return fillTel(*p_->pager, lastSeq, t, m, t.pager, p_->pager->ready());
     }
     return false;
 }

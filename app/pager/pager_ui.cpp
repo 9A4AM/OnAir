@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <cmath>
 #include <ctime>
 #include <map>
 #include <sstream>
@@ -182,6 +183,7 @@ void messageView(App& a) {
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("How POCSAG messages are read: as text (alphanumeric) or digits. Right-click an address to fix it for that address.");
         flowNext(12 * gUi);
     }
+    const bool wide = wideActive(a);   // whole span: a Frequency column (the carrier each page came from)
     const bool copy = ImGui::Button("Copy");
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Copy the pages that match the filter to the clipboard, one per line.");
     flowEnd();
@@ -190,12 +192,14 @@ void messageView(App& a) {
         for (const auto& raw : all) {
             const dect2::PagerMessage m = resolved(raw);
             if (!passes(m)) continue;
+            if (wide && m.carrierId > 0) { char fb[24]; snprintf(fb, sizeof fb, "%.4f\t", radioCenterMhz(a) + m.carrierHz / 1e6); txt += fb; }
             txt += clock(m.wallTime) + "\t" + dect2::pagerSpeedName(m.speed) + "\t" + std::to_string(m.address) + "\t" + fnText(m) + "\t" + typeText(m) + "\t" + oneLine(m.text) + "\n";
         }
         ImGui::SetClipboardText(txt.c_str());
     }
-    if (ImGui::BeginTable("##pgmsg", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
+    if (ImGui::BeginTable("##pgmsg", 6 + (wide ? 1 : 0), ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
         ImGui::TableSetupScrollFreeze(0, 1);
+        if (wide) ImGui::TableSetupColumn("Frequency MHz");
         ImGui::TableSetupColumn("Time UTC"); ImGui::TableSetupColumn("Protocol"); ImGui::TableSetupColumn("Address"); ImGui::TableSetupColumn("Fn");
         ImGui::TableSetupColumn("Type"); ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
@@ -208,10 +212,11 @@ void messageView(App& a) {
                 if (shown >= kShown) continue;
                 shown++;
                 ImGui::TableNextRow();
+                if (wide) { ImGui::TableNextColumn(); wideCarrierCell(a, m.carrierId, m.carrierHz); }
                 ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(m.wallTime).c_str());
                 ImGui::TableNextColumn(); ImGui::PushStyleColor(ImGuiCol_Text, pal::accent()); ImGui::TextUnformatted(dect2::pagerSpeedName(m.speed)); ImGui::PopStyleColor();
                 ImGui::TableNextColumn();
-                ImGui::PushID((int)m.serial);
+                ImGui::PushID((int)(m.serial * 31u + (unsigned)(int)std::lround(m.carrierHz / 100.0)));   // serials restart per carrier
                 ImGui::Text("%u", (unsigned)m.address);
                 if (!m.flex && ImGui::BeginPopupContextItem("##pgadr", ImGuiPopupFlags_MouseButtonRight)) {
                     const auto it = S.byAddress.find(m.address);
@@ -297,12 +302,14 @@ void tab(App& a) {
 void list(App& a) {
     loadRead();
     if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "start the receiver to see pages"); ImGui::PopTextWrapPos(); return; }
-    if (resultsClearButton("pager")) a.engine.pager().clearResults();
+    if (resultsClearButton("pager")) a.engine.clearResults(25);   // also the whole-span receivers
     const dect2::PagerTelemetry& t = a.rx.pager;
     const std::vector<dect2::PagerMessage>& all = messagesOf(t);
     ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%llu pages", (unsigned long long)t.messagesTotal); ImGui::PopTextWrapPos();
-    if (!ImGui::BeginTable("##pgl_s", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    const bool wide = wideActive(a);
+    if (!ImGui::BeginTable("##pgl_s", 2 + (wide ? 1 : 0), ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupScrollFreeze(0, 1);
+    if (wide) ImGui::TableSetupColumn("MHz");
     ImGui::TableSetupColumn("Address"); ImGui::TableSetupColumn("Message", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableHeadersRow();
     size_t n = 0;
@@ -310,6 +317,7 @@ void list(App& a) {
         if (n++ >= 100) break;
         const dect2::PagerMessage m = resolved(raw);
         ImGui::TableNextRow();
+        if (wide) { ImGui::TableNextColumn(); wideCarrierCell(a, m.carrierId, m.carrierHz); }
         ImGui::TableNextColumn(); ImGui::Text("%u", (unsigned)m.address);
         ImGui::TableNextColumn(); ImGui::TextUnformatted(ellipsize(m.type == dect2::kPagerTone ? std::string("(tone only)") : oneLine(m.text), ImGui::GetContentRegionAvail().x).c_str());
     }
@@ -317,6 +325,7 @@ void list(App& a) {
 }
 
 void receiver(App& a) {
+    wideCarriersTable(a, 0);
     if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "stopped"); return; }
     const dect2::PagerTelemetry& t = a.rx.pager;
     auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };

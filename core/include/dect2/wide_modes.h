@@ -17,7 +17,7 @@ class WideModes {
 public:
     WideModes();
     ~WideModes();
-    static bool supports(int stdMode);           // engine standard: 10 DMR, 32 M17, 34 D-STAR, 39 NXDN, 46 dPMR, 51 P25
+    static bool supports(int stdMode);           // engine standard: 10 DMR, 32 M17, 34 D-STAR, 39 NXDN, 46 dPMR, 51 P25, 24 pagers
     static CarrierCfg cfgFor(int stdMode);       // the raster and limits of the mode
     // Sets the span rate; gridOriginHz: the tuned channel's offset from the span centre (the raster passes through it)
     void configure(int stdMode, double spanRate, double gridOriginHz);
@@ -28,6 +28,9 @@ public:
     bool telemetry(int stdMode, RxTelemetry& t, uint64_t& lastSeq);
     void setSelected(int carrierId);
     void setMuted(bool m);
+    // The radio's centre frequency: carriers that have gone keep their absolute frequency in the logs over a retune (any thread)
+    void setCenterHz(double hz);
+    void setPagerOptions(int protocols, int pocsagBauds);   // the single receiver's POCSAG / FLEX and baud selection, for the carrier receivers
     size_t liveCount(int stdMode) const;
     std::vector<double> liveHz(int stdMode) const;
     void setLogCallback(std::function<void(const std::string&)> cb);

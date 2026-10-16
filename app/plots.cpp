@@ -187,7 +187,19 @@ void wideSwitch(App& a, ImVec2 plotMin, ImVec2 plotSize) {
         savePrefs(a);
     }
     ImGui::PopStyleColor();
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("decode every signal in the visible span, not just the tuned one"));
+    const bool hovered = ImGui::IsItemHovered();
+    if (hovered) ImGui::SetTooltip("%s", tr("decode every signal in the visible span, not just the tuned one"));
+    if (wideActive(a)) {   // how many decoders run now (each one costs CPU); orange at the limit, where the weakest carriers are dropped
+        const int n = (int)a.rx.wide.size(), cap = WideModes::cfgFor(a.family + 1).maxCarriers;
+        char cb[40]; snprintf(cb, sizeof cb, "%d decoders", n);
+        const ImVec2 cs = ImGui::CalcTextSize(cb);
+        if (plotSize.y > 3 * sz.y + 6 * m) {   // under the row of buttons, at the right edge
+            const ImVec2 q(plotMin.x + plotSize.x - cs.x - 10 * gUi, plotMin.y + m + sz.y + 2 * ImGui::GetStyle().FramePadding.y + 4 * gUi);
+            ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(q.x - 4 * gUi, q.y - 1 * gUi), ImVec2(q.x + cs.x + 4 * gUi, q.y + cs.y + 1 * gUi), IM_COL32(20, 22, 26, 200), 3.f * gUi);
+            ImGui::GetWindowDrawList()->AddText(q, n >= cap ? IM_COL32(240, 120, 80, 255) : IM_COL32(245, 190, 70, 255), cb);
+        }
+        if (n >= cap && hovered) ImGui::SetTooltip("%s", tr("The limit of decoders is reached: the weakest carriers are not decoded. Each decoder uses CPU."));
+    }
     ImGui::SetCursorScreenPos(keep);
 }
 

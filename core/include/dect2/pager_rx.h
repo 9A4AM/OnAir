@@ -31,6 +31,9 @@ public:
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setProtocols(int mask);                         // 1 POCSAG, 2 FLEX (default 3: both)
     void setPocsagBauds(int mask);                       // 1 512, 2 1200, 4 2400 bd (default 7: all three)
+    void setWideInput(bool on);                          // the input is one carrier brought to 192 ksps by the whole-span bank (accepted below the radio's minimum rate)
+    int protocols() const;                               // the masks as set (the whole-span bank copies them to its receivers)
+    int pocsagBauds() const;
     void setLogCallback(std::function<void(const std::string&)> cb);   // events for the log pane; may be called from the receiver thread
 
 private:

@@ -39,6 +39,9 @@ struct PagerMessage {
     std::string numText, alphaText;
     bool looksAlpha = false;     // the alphanumeric reading looks like real text (pager::pocsagLooksAlpha)
     int readHow = 0;             // PocsagReadHow: why type was picked
+    // whole-span decoding (wide_modes.h): the carrier that sent it; carrierId 0 = the single receiver. carrierHz: relative to the radio's centre.
+    int carrierId = 0;
+    double carrierHz = 0;
 };
 
 // How a POCSAG message is read. Networks often ignore the standard (function 0 = numeric): Australian emergency paging sends text with function 0.

@@ -29,6 +29,7 @@ namespace {
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kMidRate = 96000.0;
 constexpr double kWork = 48000.0;
+constexpr double kMinWideRate = 192000.0;   // whole-span decoding hands a receiver its carrier at this rate (setWideInput)
 constexpr size_t kRing = 8192, kMask = kRing - 1;
 constexpr size_t kMaxMessages = 2000;
 constexpr double kMinAmp = 0.2;                // rad/sample: the smallest mean deviation a sync may have (the full one is about 0.6)
@@ -86,6 +87,7 @@ struct PagerReceiver::Impl {
     double offsetHz = 0;                   // setSignalOffset(): where the user's frequency sits in the input
     PagerTelemetry pub;                    // the published report
     std::atomic<bool> resetReq{true};
+    bool wideInput = false;                // setWideInput(): a channelised carrier, not a radio capture
     std::atomic<int> protoMask{3};        // setProtocols(): 1 POCSAG, 2 FLEX
     std::atomic<int> pocsagBaudMask{7};   // setPocsagBauds(): 1 512, 2 1200, 4 2400 bd
 
@@ -172,7 +174,8 @@ struct PagerReceiver::Impl {
 
     void resetState() {
         double r, off;
-        { std::lock_guard<std::mutex> lk(mu); r = rate; off = offsetHz; curRate = r; }
+        bool wideIn;
+        { std::lock_guard<std::mutex> lk(mu); r = rate; off = offsetHz; curRate = r; wideIn = wideInput; }
         const uint64_t s = tel.seq;        // the report number goes on
         const double t0 = tel.timeSec;     // the clock starts again: the kept messages move back by the time it had reached
         tel = PagerTelemetry();
@@ -183,7 +186,7 @@ struct PagerReceiver::Impl {
         stages.clear();
         offPhase = 0;
         afcHz = afcEst = afcPhase = afcLast = 0; afcPrev = cf32(0, 0); afcPow = afcPow2 = afcDisc = 0; afcN = 0; afcBlocks.clear();
-        if (r >= pagerTuning().minSampleRate - 1) {
+        if (r >= pagerTuning().minSampleRate - 1 || (r >= kMinWideRate - 1 && wideIn)) {
             const int d = pickDecimation(r);
             double rr = r;
             for (int f : splitFactors(d)) {
@@ -698,6 +701,9 @@ bool PagerReceiver::telemetry(PagerTelemetry& out, uint64_t lastSeq) {
     return true;
 }
 void PagerReceiver::setProtocols(int mask) { p_->protoMask = mask & 3; }
+int PagerReceiver::protocols() const { return p_->protoMask; }
+int PagerReceiver::pocsagBauds() const { return p_->pocsagBaudMask; }
+void PagerReceiver::setWideInput(bool on) { std::lock_guard<std::mutex> lk(p_->mu); p_->wideInput = on; p_->resetReq = true; }
 void PagerReceiver::setPocsagBauds(int mask) { p_->pocsagBaudMask = mask & 7; }
 void PagerReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 
