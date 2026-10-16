@@ -12,6 +12,21 @@ namespace dect2 {
 namespace same {
 
 namespace {
+// the user's county table is state, so it stays here whichever implementation does the parsing
+struct Counties {
+    std::mutex mu;
+    std::map<int, std::string> names;   // state * 1000 + county
+};
+Counties& counties() { static Counties c; return c; }
+} // namespace
+
+// Parses county CSV text into the table's rows (C++ below, or the Rust version in same_proto_rs.cpp)
+std::map<int, std::string> parseCountyCsv(const std::string& text);
+
+// Everything from here to the matching #endif is the C++ implementation; with DECT2_RUST_SAME (rust/onair_same) same_proto_rs.cpp provides the
+// same functions. It stays until the Rust build is mandatory (rust/README.md); tests/same/test_same_proto_rs.cpp compares the two.
+#ifndef DECT2_RUST_SAME
+namespace {
 
 struct Named { const char* code; const char* name; const char* kind; };
 
@@ -101,12 +116,6 @@ int num(const std::string& s, size_t pos, size_t n) {
     for (size_t i = 0; i < n; i++) v = v * 10 + (s[pos + i] - '0');
     return v;
 }
-
-struct Counties {
-    std::mutex mu;
-    std::map<int, std::string> names;   // state * 1000 + county
-};
-Counties& counties() { static Counties c; return c; }
 
 bool leap(int y) { return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0; }
 
@@ -296,7 +305,7 @@ static bool allDigits(const std::string& s, size_t n) {
     return true;
 }
 
-size_t loadCountyCsv(const std::string& text, std::string* err) {
+std::map<int, std::string> parseCountyCsv(const std::string& text) {
     std::map<int, std::string> t;
     std::istringstream in(text);
     std::string line;
@@ -316,6 +325,12 @@ size_t loadCountyCsv(const std::string& text, std::string* err) {
         if (st < 0 || co <= 0 || name.empty()) continue;   // header, blank or other lines; county 000 is the state
         t[st * 1000 + co] = name;
     }
+    return t;
+}
+#endif // DECT2_RUST_SAME
+
+size_t loadCountyCsv(const std::string& text, std::string* err) {
+    std::map<int, std::string> t = parseCountyCsv(text);
     if (t.empty()) { if (err) *err = "no county lines found (expected SSCCC,Name or SS,CCC,Name or the Census national_county.txt)"; return 0; }
     std::lock_guard<std::mutex> lk(counties().mu);
     counties().names = std::move(t);
