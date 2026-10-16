@@ -13,8 +13,7 @@
 #include <thread>
 using namespace dect2;
 using namespace multitvtest;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static bool has(const std::vector<RateEntry>& v, double hz) { for (auto& e : v) if (std::fabs(e.getHz - hz) < 1) return true; return false; }
 static bool hasName(const std::vector<MultiService>& v, const char* name, int sign) {

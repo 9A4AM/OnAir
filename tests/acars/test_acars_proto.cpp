@@ -5,8 +5,7 @@
 #include <random>
 using namespace dect2;
 
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // independent bit-by-bit CRC-16/KERMIT (reflected polynomial 0x8408), no table
 static uint16_t slowCrc(const uint8_t* p, size_t n) {

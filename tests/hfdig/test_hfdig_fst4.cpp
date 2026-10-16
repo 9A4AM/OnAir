@@ -5,8 +5,7 @@
 #include <chrono>
 #include <cstring>
 using namespace wsjttest;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 using namespace dect2::wsjt;
 
 static bool checksOk(const LdpcTab& t, const uint8_t* cw) {

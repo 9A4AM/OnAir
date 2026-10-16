@@ -11,8 +11,7 @@
 #include <unistd.h>
 using namespace dect2;
 namespace fs = std::filesystem;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static bool waitRx(Engine& e, double secs, bool (*ok)(const RxTelemetry&)) {
     RxTelemetry rx;

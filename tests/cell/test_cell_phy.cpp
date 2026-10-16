@@ -8,8 +8,7 @@
 #include <random>
 #include <set>
 using namespace dect2::cell;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static Bits randBits(std::mt19937& r, size_t n) { Bits b(n); for (auto& v : b) v = r() & 1; return b; }
 

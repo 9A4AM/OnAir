@@ -8,8 +8,7 @@
 #include <cstdio>
 #include <vector>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static GlobalstarTelemetry run(const SynthConfig& sc, double rate, double secs, bool noiseOnly, double rxRatePpm = 0) {
     std::unique_ptr<ModeSynth> g = makeGlobalstarSynth(sc, rate);

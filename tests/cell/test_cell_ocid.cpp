@@ -8,8 +8,7 @@
 #include <thread>
 #include <unistd.h>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     OcidCellKey k; k.mcc = 246; k.mnc = 1; k.lac = 1234; k.cell = 25600 * 256 + 3;

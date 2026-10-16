@@ -7,8 +7,7 @@
 #include <random>
 #include <string>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // symbols of a frame (payload part) to soft bits, with nflip symbol errors
 static void toSoft(uint16_t sync, const uint8_t bits[368], float soft[368], int nflip, std::mt19937& rng) {

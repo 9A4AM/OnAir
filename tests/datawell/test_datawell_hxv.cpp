@@ -10,8 +10,7 @@
 #include <vector>
 using namespace dect2;
 using namespace dect2::datawell;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static uint64_t line(unsigned a, unsigned b, unsigned c, unsigned d) { return ((uint64_t)a << 48) | ((uint64_t)b << 32) | ((uint64_t)c << 16) | d; }
 

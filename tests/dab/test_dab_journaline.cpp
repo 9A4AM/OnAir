@@ -13,8 +13,7 @@
 using namespace dect2;
 typedef std::vector<uint8_t> Bytes;
 
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // ---- generator (independent bitwise CRC)
 static uint16_t crcRef(const uint8_t* d, size_t n) {

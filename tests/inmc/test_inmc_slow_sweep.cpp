@@ -5,8 +5,7 @@
 #include <iterator>
 using namespace dect2;
 using dect2::testpar::CaseOut;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static const double eb[] = {8, 6, 5, 4, 3, 2.5, 2, 1.5, 1, 0};
 static const double kSecs = 112;

@@ -10,8 +10,7 @@
 #include <cstring>
 #include <set>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static void testCodes() {
     // IS-GPS-200 Table 3-I (ICD-GPS-200C Table 3-Ia), "first 10 chips octal", PRN 1..32

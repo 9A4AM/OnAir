@@ -11,8 +11,7 @@
 #include <cstdio>
 #include <vector>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 struct Opt { int scen = 1; int eight = 0, wide = 0; double rate = 20e6, snr = 25, cfo = 0, secs = 3.5, period = 0.64; bool noiseOnly = false; };
 

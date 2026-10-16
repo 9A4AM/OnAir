@@ -7,8 +7,7 @@
 #include <random>
 using namespace dect2;
 using namespace dect2::nbiot;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     // ---- NPSS: cover code of Table 10.2.7.1.1-1, a Zadoff-Chu sequence of constant amplitude

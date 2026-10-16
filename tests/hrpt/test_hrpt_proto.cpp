@@ -6,8 +6,7 @@
 #include <cstdio>
 #include <random>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     // --- the fast Viterbi against the Meteor one and the message, on a noisy random stream (soft values of random size, 4 % hard errors)

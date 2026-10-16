@@ -13,8 +13,7 @@
 #include <random>
 using namespace dect2;
 using namespace dect2::cell;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 struct Got { bool found = false, mib = false, sib1 = false, sib2 = false, sib3 = false, sib4 = false, sib5 = false, wrong = false; int pci = -1, nRb = 0, ports = 0; double cfo = 0, ppm = 0; int nCells = 0; };
 

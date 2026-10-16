@@ -9,8 +9,7 @@
 #include <thread>
 using namespace dect2;
 using namespace dect2::enginetest;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // the receiver makes a report every 0.25 s of signal: its number is a clock that does not depend on how often this thread looks
 static const double kReportsPerSec = 4.0;

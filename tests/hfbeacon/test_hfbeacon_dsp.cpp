@@ -9,8 +9,7 @@
 #include <cstdio>
 #include <vector>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static constexpr double kRate = 192e3, kFc = 7.0e6, kVar = 0.04;
 static hfb::Beacon mk(int kind, double offHz, char letter = 0, int idx = -1, int band = -1) {

@@ -13,8 +13,7 @@
 #include <vector>
 using namespace dect2;
 using namespace dect2::cdr;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static bool range(const std::vector<int>& v, int lo, int hi) {
     if ((int)v.size() != hi - lo + 1) return false;

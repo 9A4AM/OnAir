@@ -5,8 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // How well rx matches tx at the best alignment (shift within +-maxShift bits, inverted or not): the number of errors in the compared stretch
 // (the first and last `trim` bits of tx are left out: filter start-up). Returns the errors; *len the bits compared, *shift and *inv the match.

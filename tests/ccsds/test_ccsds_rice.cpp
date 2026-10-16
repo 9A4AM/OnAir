@@ -6,8 +6,7 @@
 #include <random>
 #include <vector>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static bool roundTrip(const std::vector<uint16_t>& v, const ccsds::RiceParams& p, size_t* bytes = nullptr) {
     const std::vector<uint8_t> c = ccsds::riceEncode(v.data(), v.size(), p);

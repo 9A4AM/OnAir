@@ -7,8 +7,7 @@
 #include <set>
 using namespace dect2;
 using namespace dect2::nr;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static bool crc24c(const Bits& b, void*) { return cell::checkCrc(b, cell::kCrc24C, 24); }
 

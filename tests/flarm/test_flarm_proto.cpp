@@ -5,8 +5,7 @@
 #include <cstdio>
 #include <cstring>
 using namespace dect2::flarm;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     // Known answer: SoftRF's Legacy.h gives the sync word as the Manchester coding of 0xF531FAB6: 55 99 A5 A9 55 66 65 96

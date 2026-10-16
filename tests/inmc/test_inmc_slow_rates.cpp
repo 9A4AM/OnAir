@@ -2,8 +2,7 @@
 // Slow: the generator has to make up to 20 million samples a second.
 #include "dect2/inmc/inmc_testutil.h"
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     const double rates[] = {250000, 960000, 2e6, 2.4e6, 3.2e6, 2.88e6, 8e6, 10e6, 20e6};

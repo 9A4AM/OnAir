@@ -7,8 +7,7 @@
 #include <cstring>
 using namespace dect2;
 using namespace dect2::inmc;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static void put(uint8_t* f, int& pos, const std::vector<uint8_t>& p) { memcpy(f + pos, p.data(), p.size()); pos += (int)p.size(); }
 

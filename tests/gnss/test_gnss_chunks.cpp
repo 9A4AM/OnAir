@@ -8,8 +8,7 @@
 #include <cstring>
 using namespace dect2;
 using namespace dect2::gnsstest;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 struct Snap { std::vector<GnssChannel> ch; uint64_t units = 0; double level = 0; uint64_t seq = 0; };
 

@@ -6,8 +6,7 @@
 #include <cstdio>
 #include <random>
 using namespace dect2;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 // observations for the satellites that the simulation transmits, at true time t
 static std::vector<GnssObs> makeObs(const GnssSim& sim, double t, double bias, bool atmosphere, std::mt19937* rng, double sigma) {

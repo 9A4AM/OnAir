@@ -7,8 +7,7 @@
 #include <random>
 using namespace dect2;
 using namespace dect2::halow;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 int main() {
     // tone layouts: 24 + 2, 52 + 4, 108 + 6 used tones; no DC tone

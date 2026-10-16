@@ -20,8 +20,7 @@ using namespace dect2::enginetest;
 #ifndef SANITIZED
 #define SANITIZED 0
 #endif
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static void run(double rate, double secs, bool checkRef) {
     Engine e;

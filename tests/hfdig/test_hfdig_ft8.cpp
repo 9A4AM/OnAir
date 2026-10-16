@@ -11,8 +11,7 @@
 #include <chrono>
 #include <limits>
 using namespace ftxtest;
-static int fails = 0;
-#define CHECK(c, ...) do { if (!(c)) { printf("FAIL line %d: ", __LINE__); printf(__VA_ARGS__); printf("\n"); fails++; } } while (0)
+#include "../common/test_util.h"
 
 static int count(const std::vector<FtxDecode>& d, const std::vector<Station>& st, int slots, double hzShift, double hzTol, double dtTol,
                  bool mirrored, const char* name) {
