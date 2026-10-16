@@ -1,5 +1,6 @@
 // Wi-Fi HaLow (802.11ah) test signal (see halow_gen.h).
 #include "dect2/halow/halow_gen.h"
+#include "dect2/dsp/exact_resampler.h"
 #include "dect2/dsp/gen_util.h"
 #include "dect2/halow/halow_proto.h"
 #include "dect2/halow/halow_rx.h"
@@ -16,6 +17,15 @@ using namespace halow;
 namespace {
 using dect2::math::kPi;
 constexpr int kHalf = 12;   // sinc taps each side
+
+// the PPDU spec of a schedule entry (a bad FCS flips one PSDU bit after the FCS was computed)
+PpduSpec specOfFrame(const HalowGenFrame& f) {
+    PpduSpec ps;
+    ps.w = f.width; ps.pre = f.pre; ps.mcs = f.mcs; ps.nss = f.nss; ps.stbc = f.stbc; ps.ldpc = f.ldpc; ps.sgi = f.sgi; ps.agg = f.agg; ps.ndp = f.ndp;
+    ps.beamformed = f.beamformed; ps.beamTilt = f.beamTilt; ps.seed = f.seed; ps.psdu = f.psdu;
+    if (f.badFcs && !ps.psdu.empty()) ps.psdu[ps.psdu.size() / 2] ^= 0x10;
+    return ps;
+}
 }
 
 struct HalowGenerator::Impl {
@@ -27,6 +37,7 @@ struct HalowGenerator::Impl {
     std::mt19937 rng;
     genutil::NoiseSource noise;
     float sigma = 0;
+    std::unique_ptr<ExactResampler> rs[kNumWidths];   // 8 and 16 MHz PPDUs: the long filter keeps the band edge tones (the 24 tap sinc below droops there)
     explicit Impl(const HalowGenConfig& c) : cfg(c), rng(c.seed), noise(c.seed) {}
 
     static cf32 interp(const std::vector<cf32>& x, double u, double cutoff) {
@@ -47,24 +58,45 @@ struct HalowGenerator::Impl {
 
     void silence(double sec) { const size_t n = (size_t)std::llround(sec * cfg.rate); for (size_t i = 0; i < n; i++) q.push_back(cf32(0.f, 0.f)); }
 
+    // one echo of the PPDU (multipath): x[n] + g e^{j phi} x[n - d], d in samples of the PPDU's grid
+    void addEcho(std::vector<cf32>& x, int w) {
+        if (cfg.echoGainDb > -90 && cfg.echoDelaySec > 0) {
+            const size_t d = (size_t)std::llround(cfg.echoDelaySec * gridRate(w));
+            const double ph = 2 * kPi * (double)(rng() & 0xFFFF) / 65536.0;
+            const cf32 g = (float)std::pow(10.0, cfg.echoGainDb / 20) * cf32((float)std::cos(ph), (float)std::sin(ph));
+            if (d > 0 && d < x.size()) for (size_t i = x.size(); i-- > d;) x[i] += g * x[i - d];
+        }
+    }
+
     void refill() {
         if (done || cfg.frames.empty()) { silence(0.001); return; }
         const HalowGenFrame& f = cfg.frames[idx];
-        std::vector<uint8_t> psdu = f.psdu;
-        if (f.badFcs && !psdu.empty()) psdu[psdu.size() / 2] ^= 0x10;
-        std::vector<cf32> x = buildPpdu(psdu, f.width, f.mcs, f.seed);
+        const int w = f.width;
+        std::vector<cf32> x = buildPpdu(specOfFrame(f));
+        addEcho(x, w);
         const int pad = 64;
-        x.insert(x.begin(), (size_t)pad, cf32(0, 0));
+        x.insert(x.begin(), (size_t)pad + (rng() & 7), cf32(0, 0));
         x.insert(x.end(), (size_t)pad, cf32(0, 0));
-        const double step = kRate * (1 + cfg.clockPpm * 1e-6) / cfg.rate;
-        const double frac = (double)(rng() & 0xFFFF) / 65536.0;
-        const size_t ns = (size_t)std::ceil(((double)x.size() - kHalf - 1) / step);
+        const double grid = gridRate(w);
         const double off = cfg.dialOffsetHz + cfg.cfoHz + f.cfoHz;
         const double amp = cfg.amp * f.ampScale;
-        const double cutoff = std::min(1.0, cfg.rate / kRate);
-        for (size_t i = 0; i < ns; i++) {
-            const double u = ((double)i - frac) * step;
-            const cf32 s = step == 1.0 && frac == 0.0 ? x[(size_t)u] : interp(x, u, cutoff);
+        std::vector<cf32> y;
+        if (w >= W8) {
+            auto& r = rs[w];
+            if (!r) { r = std::make_unique<ExactResampler>(); if (!r->configure(grid * (1 + cfg.clockPpm * 1e-6), cfg.rate)) r.reset(); }
+            if (r) { r->reset(); r->process(x.data(), x.size(), y); }
+        }
+        if (y.empty()) {
+            const double step = grid * (1 + cfg.clockPpm * 1e-6) / cfg.rate;
+            const double frac = (double)(rng() & 0xFFFF) / 65536.0;
+            const size_t ns = (size_t)std::ceil(((double)x.size() - kHalf - 1) / step);
+            const double cutoff = std::min(1.0, cfg.rate / grid);
+            for (size_t i = 0; i < ns; i++) {
+                const double u = ((double)i - frac) * step;
+                y.push_back(step == 1.0 && frac == 0.0 ? x[(size_t)u] : interp(x, u, cutoff));
+            }
+        }
+        for (const cf32& s : y) {
             ph = std::remainder(ph + 2 * kPi * off / cfg.rate, 2 * kPi);
             q.push_back((float)amp * s * cf32((float)std::cos(ph), (float)std::sin(ph)));
         }
@@ -82,7 +114,16 @@ double HalowGenerator::noiseSigma(const HalowGenConfig& c) {
 HalowGenerator::HalowGenerator(const HalowGenConfig& c) : p_(std::make_unique<Impl>(c)) {
     p_->sigma = (float)noiseSigma(c);
     p_->silence(c.leadSec);
+    for (size_t left = c.skipSamples; left > 0;) {   // start inside a PPDU: the first samples are produced and dropped
+        if (p_->q.empty()) p_->refill();
+        const size_t k = std::min(left, p_->q.size());
+        p_->q.erase(p_->q.begin(), p_->q.begin() + (ptrdiff_t)k);
+        left -= k;
+    }
 }
+
+// duration of a schedule entry's PPDU on the air
+double halowFrameSeconds(const HalowGenFrame& f) { return (double)ppduSamples(specOfFrame(f)) / gridRate(f.width); }
 HalowGenerator::~HalowGenerator() = default;
 
 void HalowGenerator::generate(cf32* out, size_t n) {
@@ -95,11 +136,11 @@ void HalowGenerator::generate(cf32* out, size_t n) {
     if (m.sigma > 0) m.noise.add(out, n, m.sigma);
 }
 
-std::vector<HalowGenFrame> halowTestSchedule() {
+std::vector<HalowGenFrame> halowTestSchedule(double radioRate) {
     std::vector<HalowGenFrame> v;
-    auto add = [&](std::vector<uint8_t> psdu, int width, int mcs, double cfo, double gap = 0.003, uint8_t seed = 0x5D) {
+    auto add = [&](std::vector<uint8_t> psdu, int width, int mcs, double cfo, double gap = 0.003, uint8_t seed = 0x5D, int nss = 1) {
         HalowGenFrame f;
-        f.psdu = std::move(psdu); f.width = width; f.mcs = mcs; f.cfoHz = cfo; f.gapSec = gap; f.seed = seed;
+        f.psdu = std::move(psdu); f.width = width; f.mcs = mcs; f.cfoHz = cfo; f.gapSec = gap; f.seed = seed; f.nss = nss;
         v.push_back(std::move(f));
     };
     BssSpec home;   // EU, 1 MHz, WPA3
@@ -121,7 +162,19 @@ std::vector<HalowGenFrame> halowTestSchedule() {
     meter.timestamp = 4000000; add(makeS1gBeacon(meter), W1, 10, -12e3, 0.003, 0x2B);   // 1 MHz MCS 10 (repetition), the way long range beacons go out
     add(makeProbeResponse(meter, sta), W2, 0, 4e3, 0.003, 0x11);                        // answers a probe with the full SSID
     add(makeDataFrame(home.bssid, sta, 60), W2, 0, -3e3);                                // data: counted, not a network
-    { std::vector<uint8_t> u(90, 0x5A); add(u, W2, 3, 8e3); }                            // a PPDU at MCS 3: the SIG field only
+    { std::vector<uint8_t> u(90, 0x5A); add(u, W2, 3, 8e3, 0.003, 0x5D, 2); }            // a PPDU with two spatial streams: the SIG field only
+    if (radioRate >= recommendedRateHz(W8) - 1) {   // US 8 MHz network: an S1G_LONG-preamble beacon at MCS 2
+        BssSpec lab;
+        { const uint8_t b[6] = {0x8C, 0x1F, 0x64, 0x00, 0x08, 0x08}; std::copy(b, b + 6, lab.bssid); }
+        lab.ssid = "Lab-8MHz"; lab.security = Wpa3Sae; lab.bwInd = 3; lab.opClass = 4; lab.primary = 8; lab.ccf = 8; lab.opWidthMhz = 8; lab.timestamp = 5000000;
+        add(makeS1gBeacon(lab), W8, 2, -7e3);
+    }
+    if (radioRate >= recommendedRateHz(W16) - 1) {   // US 16 MHz network
+        BssSpec wide;
+        { const uint8_t b[6] = {0x8C, 0x1F, 0x64, 0x00, 0x16, 0x16}; std::copy(b, b + 6, wide.bssid); }
+        wide.ssid = "Wide-16MHz"; wide.security = Open; wide.bwInd = 4; wide.opClass = 5; wide.primary = 16; wide.ccf = 16; wide.opWidthMhz = 16; wide.timestamp = 6000000;
+        add(makeS1gBeacon(wide), W16, 1, 9e3);
+    }
     return v;
 }
 
@@ -134,7 +187,7 @@ public:
         c.dialOffsetHz = -halowTuning().tuneOffsetHz;
         c.snrDb = s.snrDb;
         c.cfoHz = s.cfoHz;
-        c.frames = halowTestSchedule();
+        c.frames = halowTestSchedule(rate);
         gen_ = std::make_unique<HalowGenerator>(c);
     }
     double sampleRate() const override { return rate_; }
