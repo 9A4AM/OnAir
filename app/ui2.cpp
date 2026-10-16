@@ -169,7 +169,14 @@ float freqDigits(App& a, float fontSize = 30.f) {
         if (hov) hovIdx = i;
         if (hov && ImGui::IsMouseDoubleClicked(0)) dbl = true;
         else if (ImGui::IsItemClicked(0)) { preClickMhz = a.freqMhz; delta = upper ? place : -place; }
-        if (hov && ImGui::GetIO().MouseWheel != 0) { delta = ImGui::GetIO().MouseWheel > 0 ? place : -place; ImGui::GetIO().MouseWheel = 0; }
+        if (hov && ImGui::GetIO().MouseWheel != 0) {
+            // a mouse wheel notch is 1.0 (one step of this digit); a trackpad sends many small values, which add up to a step each time they reach 1
+            static float wheelAcc = 0;
+            wheelAcc += ImGui::GetIO().MouseWheel;
+            const int steps = (int)wheelAcc;
+            if (steps != 0) { delta = (long long)steps * place; wheelAcc -= (float)steps; }
+            ImGui::GetIO().MouseWheel = 0;
+        }
         if (hov) {
             dl->AddRectFilled(p0, ImVec2(p0.x + cw, p0.y + ch), IM_COL32(255, 255, 255, 18));
             const float my = upper ? p0.y + 2 * gUi : p0.y + ch - 2 * gUi;

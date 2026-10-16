@@ -496,6 +496,19 @@ void toolbarParts(App& a, int mask, bool vertical) {
     ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(110 * gUi);
     ImGui::InputDouble("##freq", &a.freqMhz, 0, 0, "%.3f MHz");
+    if (ImGui::IsItemHovered() && !ImGui::IsItemActive() && ImGui::GetIO().MouseWheel != 0) {   // scroll the frequency: 100 kHz a notch, Shift 1 MHz, Ctrl 1 kHz
+        ImGuiIO& io = ImGui::GetIO();
+        static float wheelAcc = 0;
+        wheelAcc += io.MouseWheel;
+        const int steps = (int)wheelAcc;
+        if (steps != 0) {
+            const double stepMhz = io.KeyShift ? 1.0 : io.KeyCtrl ? 0.001 : 0.1;
+            a.freqMhz = std::max(0.0, a.freqMhz + steps * stepMhz);
+            wheelAcc -= (float)steps;
+            retune = true;
+        }
+        io.MouseWheel = 0;
+    }
     if (!std::isfinite(a.freqMhz) || a.freqMhz < 0) a.freqMhz = 0;   // the only guard: no radio takes a negative frequency (any other value is passed on as typed)
     if (ImGui::IsItemDeactivatedAfterEdit()) retune = true;
     if (vertical) sampleRateControl(a); else { ImGui::SameLine(0, 10 * gUi); sampleRateControl(a); }   // the sample rate, next to the frequency
