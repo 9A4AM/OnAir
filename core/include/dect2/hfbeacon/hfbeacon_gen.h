@@ -31,7 +31,9 @@ public:
     void add(const GenSrc& s);
     void generate(cf32* out, size_t n);
     double utc() const { return t_; }
+    void setNoise(bool on) { noise_ = on; }   // false: the beacons only (what a transmitter sends); the levels stay as if the noise were there
 private:
+    bool noise_ = true;
     struct Src { GenSrc s; double phase = 0, amp = 0; std::vector<std::pair<bool, double>> pat; double patLen = 0; };
     double envelope(const Src& x, double t) const;
     double rate_, centre_, t_, var_;

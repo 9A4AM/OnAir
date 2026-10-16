@@ -202,7 +202,7 @@ int AudioIn::read(float* stereo, int n) {
     if (n <= 0) return 0;
     const float g = p_->gain.load();
     const bool mute = p_->muted.load();
-    if (kind_ == File && !p_->file.empty()) {
+    if (kind_ == File && p_->file.size() >= 2) {   // (a file of one value would divide by zero below)
         for (int i = 0; i < n; i++) {
             const size_t k = p_->filePos % (p_->file.size() / 2);
             const float l = p_->file[k * 2] * g, r = p_->file[k * 2 + 1] * g;

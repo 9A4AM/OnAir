@@ -90,7 +90,8 @@ double Gen::envelope(const Src& x, double t) const {
 
 void Gen::generate(cf32* out, size_t n) {
     const double sg = std::sqrt(var_ / 2), dt = 1.0 / rate_;
-    for (size_t i = 0; i < n; i++) out[i] = cf32((float)(sg * gauss()), (float)(sg * gauss()));
+    if (noise_) for (size_t i = 0; i < n; i++) out[i] = cf32((float)(sg * gauss()), (float)(sg * gauss()));
+    else std::fill(out, out + n, cf32(0.f, 0.f));
     const size_t blk = 64;
     for (Src& x : src_) {
         const double w = 2 * M_PI * (x.s.freqHz - centre_) / rate_;
@@ -116,6 +117,7 @@ class HfbSynth : public ModeSynth {
 public:
     HfbSynth(const SynthConfig& c, double fs) : fs_(fs), g_(fs, (c.modeVal[0] > 0 ? c.modeVal[0] : kHfbSynthDefMhz) * 1e6, 0, 0.04, 7) {
         const double fc = (c.modeVal[0] > 0 ? c.modeVal[0] : kHfbSynthDefMhz) * 1e6;
+        if (c.snrDb >= 100) g_.setNoise(false);   // the transmitter's clean signal (TxSession): the beacons without the receiver's noise floor
         if (c.modeOpt[0] == 1) return;
         // the cluster at 3594.7 + 0.1 i kHz (priyom); the receiver is told the marker by its keying only
         auto put = [&](double khz, char letter, double snr) {

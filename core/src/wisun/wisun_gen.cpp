@@ -49,7 +49,8 @@ struct WisunGenerator::Impl {
     WisunGenConfig cfg;
     genutil::NoiseSource noise;
     float sigma = 0;
-    std::deque<cf32> q;
+    std::vector<cf32> q;   // the samples of the current frame / gap; qpos is the next one out (a vector, not a deque: no per-sample pop)
+    size_t qpos = 0;
     size_t idx = 0;
     bool done = false;
     double ph = 0;
@@ -63,7 +64,7 @@ struct WisunGenerator::Impl {
         silence(cfg.leadSec);
     }
 
-    void silence(double sec) { const size_t n = (size_t)std::llround(sec * cfg.rate); for (size_t i = 0; i < n; i++) q.push_back(cf32(0.f, 0.f)); }
+    void silence(double sec) { const size_t n = (size_t)std::llround(sec * cfg.rate); q.insert(q.end(), n, cf32(0.f, 0.f)); }
 
     void frame(const WisunGenFrame& f) {
         const std::vector<uint8_t> bits = wisunPpduBits(f);
@@ -104,9 +105,8 @@ struct WisunGenerator::Impl {
 
     void generate(cf32* out, size_t n) {
         for (size_t i = 0; i < n; i++) {
-            while (q.empty()) refill();
-            out[i] = q.front();
-            q.pop_front();
+            while (qpos >= q.size()) { q.clear(); qpos = 0; refill(); }
+            out[i] = q[qpos++];
         }
         if (sigma > 0) noise.add(out, n, sigma);
     }
