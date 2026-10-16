@@ -1,5 +1,6 @@
 // Our own plotting on top of Dear ImGui's draw lists. See plot.h.
 #include "plot.h"
+#include "plot_batch.h"
 #include "imgui_internal.h"
 #include <algorithm>
 #include <chrono>
@@ -391,7 +392,8 @@ template <class T> void PlotLine(const char*, const T* xs, const T* ys, int n, c
     const ImU32 u = ImGui::ColorConvertFloat4ToU32(col);
     const ImU32 uf = ImGui::ColorConvertFloat4ToU32(pick(s.MarkerFillColor.w >= 0 ? s.MarkerFillColor : col));
     const float wgt = std::max(0.5f, s.LineWeight) * gStyle.Scale;
-    std::vector<ImVec2> pts;
+    static std::vector<ImVec2> pts;   // kept between calls: no allocation per line per frame
+    pts.clear();
     pts.reserve((size_t)n);
     auto flush = [&] { if (pts.size() > 1) C.dl->AddPolyline(pts.data(), (int)pts.size(), u, 0, wgt); pts.clear(); };
     for (int i = 0; i < n; i++) {
@@ -421,14 +423,21 @@ template <class T> void PlotScatter(const char*, const T* xs, const T* ys, int n
     const ImU32 fill = ImGui::ColorConvertFloat4ToU32(col);
     const ImU32 line = ImGui::ColorConvertFloat4ToU32(s.MarkerLineColor.w >= 0 ? s.MarkerLineColor : col);
     const MarkerType m = s.Marker == Marker_None ? Marker_Circle : s.Marker;
+    // Round dots larger than a pixel go through one batch (all the same colour and size, so the order does not matter and the pixels
+    // are those of one AddCircleFilled each: see plot_batch.h); the rest are drawn one by one as before.
+    const float size = s.MarkerSize * gStyle.Scale;
+    const bool batch = m == Marker_Circle && size * 1.4f > 1.0f;
+    static std::vector<ImVec2> dots; static DotBatch batcher;
+    dots.clear();
     for (int i = 0; i < n; i++) {
         const double x = at(xs, i, s.Stride), y = at(ys, i, s.Stride);
         fitData(x, y);
         if (!std::isfinite(x) || !std::isfinite(y)) continue;
         const ImVec2 p(px(x), py(y));
         if (p.x < C.plot.Min.x - 8 || p.x > C.plot.Max.x + 8 || p.y < C.plot.Min.y - 8 || p.y > C.plot.Max.y + 8) continue;
-        drawMarker(p, m, s.MarkerSize * gStyle.Scale, fill, line);
+        if (batch) dots.push_back(p); else drawMarker(p, m, size, fill, line);
     }
+    if (batch) batcher.draw(C.dl, dots.data(), (int)dots.size(), size * 1.4f, fill);
 }
 
 template <class T> void PlotScatter(const char* label, const T* ys, int n, double xScale, double xStart, const Spec& s) {
