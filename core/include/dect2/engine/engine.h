@@ -470,6 +470,13 @@ private:
     std::vector<cf32> offBuf_;
     double srcRate_ = 0;   // the radio's rate (rate_ is what the receivers get: the same, or the mode's rate with offset tuning)
     bool offsetAllowed() const;
+    // the steps of start() (engine_start.cpp), called in this order
+    void configureTvReceivers(const DeviceInfo& dev, const TuneSettings& tune);
+    void placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tune);
+    void configureDecoderReceivers(const DeviceInfo& dev, const TuneSettings& tune);
+    void configureDataReceivers(const DeviceInfo& dev, const TuneSettings& tune);
+    void checkRateAndResetState(const DeviceInfo& dev, const TuneSettings& tune);
+    void announceAndRun(const DeviceInfo& dev, const TuneSettings& tune);
     // the radio's samples into the receivers: clean-up, offset shift and resampling, spectrum, receiver, accounting
     void ingest(cf32* x, size_t n);
     TeletextDecoder ttx_;
