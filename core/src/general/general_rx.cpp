@@ -22,12 +22,13 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kOutLevel = 0.5;          // full deviation / full AM depth / an SSB tone under the AGC: this peak
 constexpr double kBlockSec = 0.01;         // squelch decisions
 constexpr double kHangSec = 0.15;      // the mute: long enough that a click does not get through. The file hang is separate (setTransmissionGate).
@@ -99,7 +100,7 @@ struct Biquad {
         z1 = z2 = 0;
         on = f0 > 20 && f0 < kGeneralAudioRate / 2 - 100;
         if (!on) return;
-        const double w = 2 * 3.14159265358979323846 * f0 / kGeneralAudioRate, c = std::cos(w), al = std::sin(w) / (2 * q), a0 = 1 + al;
+        const double w = 2 * dect2::math::kPi * f0 / kGeneralAudioRate, c = std::cos(w), al = std::sin(w) / (2 * q), a0 = 1 + al;
         if (kind == 0) { b0 = (1 + c) / 2; b1 = -(1 + c); b2 = (1 + c) / 2; }
         else if (kind == 1) { b0 = (1 - c) / 2; b1 = 1 - c; b2 = (1 - c) / 2; }
         else { b0 = 1; b1 = -2 * c; b2 = 1; }

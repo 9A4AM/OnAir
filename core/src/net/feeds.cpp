@@ -11,13 +11,14 @@
 
 #ifndef _WIN32
 #include <netdb.h>
+#include "dect2/common/timecompat.h"
 #endif
 
 namespace dect2 {
 
 namespace {
 using Clock = std::chrono::steady_clock;
-double nowSec() { return std::chrono::duration<double>(Clock::now().time_since_epoch()).count(); }
+double nowSec() { return dect2::steadyNowSec(); }
 
 bool wouldBlock() {
 #ifdef _WIN32

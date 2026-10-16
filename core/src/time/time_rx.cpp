@@ -14,13 +14,15 @@
 #include <deque>
 #include <mutex>
 #include <vector>
+#include "dect2/common/timecompat.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
 namespace {
 using namespace timesig;
 using cd = std::complex<double>;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 constexpr double kW = 8000;           // working rate
 constexpr int kCar = 160;             // 20 ms carrier window
 constexpr int kFsk = 27;              // one CHU bit (8000 / 300 = 26.7 samples)
@@ -28,7 +30,7 @@ constexpr int kR1 = 4096, kR8 = 32768;   // rings: 4 s at 1 kHz and at 8 kHz
 constexpr int kEnvLag = 9;            // a 1 kHz sample i stands for signal time (i - 9) ms
 constexpr int kBurstLag = 4;          // BPM coded: a 5 ms burst that starts at ms T peaks in the 5 ms window sample T + 4
 
-double wallNow() { return std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count(); }
+double wallNow() { return dect2::systemNowSec(); }
 
 // complex moving sum over a fixed length
 struct Box {

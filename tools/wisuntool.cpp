@@ -20,20 +20,10 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include "dect2/common/timecompat.h"
 using namespace dect2;
 
-static std::string utc(int64_t t) {
-    const time_t tt = (time_t)t;
-    struct tm g;
-#ifdef _WIN32
-    gmtime_s(&g, &tt);
-#else
-    gmtime_r(&tt, &g);
-#endif
-    char b[32];
-    strftime(b, sizeof b, "%Y-%m-%dT%H:%M:%SZ", &g);
-    return b;
-}
+static std::string utc(int64_t t) { return dect2::utcIsoText(t); }
 
 // The frames decoded since the last call (the log is newest first: the new entries, oldest first), with the UTC time and the MPDU hex when asked
 static void printNew(FILE* o, const WisunTelemetry& t, size_t& printed, bool wall = false, bool hex = getenv("WISUN_HEX") != nullptr) {

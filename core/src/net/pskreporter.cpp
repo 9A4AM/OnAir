@@ -11,6 +11,7 @@
 #endif
 #include <random>
 #include <thread>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 namespace pskr {
@@ -165,8 +166,7 @@ struct PskReporter::Impl {
     int64_t lastTemplates = 0;
     sock_t sock = kBadSock; sockaddr_in to{};
     std::string toHost; int toPort = 0;
-
-    static int64_t nowSec() { return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); }
+    static int64_t nowSec() { return dect2::unixNow(); }
     bool credsOk() const { return pskr::validCallsign(cfg.call) && pskr::validLocator(cfg.locator); }
     void closeSock() { if (sock != kBadSock) sockClose(sock); sock = kBadSock; toHost.clear(); }
     bool openSock() {

@@ -12,6 +12,7 @@
 #include <ctime>
 #include <mutex>
 #include <thread>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 
@@ -151,7 +152,7 @@ namespace {
 
 constexpr double kBlockSec = 0.2;
 
-int64_t wallNow() { return (int64_t)std::time(nullptr); }
+int64_t wallNow() { return dect2::unixNow(); }
 
 struct Cand { double off; double maxCfo; bool snapped; double raw; };
 

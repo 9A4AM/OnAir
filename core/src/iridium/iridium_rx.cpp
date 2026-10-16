@@ -18,6 +18,7 @@
 #include <map>
 #include <mutex>
 #include <thread>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 
@@ -74,7 +75,7 @@ struct IridiumReceiver::Impl {
     // iridium-toolkit .bits file: unix time of a burst = bitsWall0 + (timeSec - bitsT0)
     IridiumBitsWriter bitsOut;
     std::atomic<double> bitsWall0{0}, bitsT0{0};
-    static double wallNow() { return std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count(); }
+    static double wallNow() { return dect2::systemNowSec(); }
     void bitsReanchor() { bitsT0 = 0; bitsWall0 = wallNow(); }   // the sample clock restarted (configure / reset)
 
     // results (mu)

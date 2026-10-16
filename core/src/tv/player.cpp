@@ -27,6 +27,7 @@ extern "C" {
 #include <thread>
 #include <utility>
 #include <vector>
+#include "dect2/common/timecompat.h"
 
 namespace dect2 {
 
@@ -52,7 +53,7 @@ std::string avsVideoNote(const std::string& codec, bool haveDecoder, int profile
 }
 
 using Clock = std::chrono::steady_clock;
-static double nowSec() { return std::chrono::duration<double>(Clock::now().time_since_epoch()).count(); }
+static double nowSec() { return dect2::steadyNowSec(); }
 
 struct SubImage { int x, y, w, h; std::vector<uint8_t> rgba; };
 struct Subtitle { double start = 0, end = 0; int canvasW = 720, canvasH = 576; std::vector<SubImage> images; };
