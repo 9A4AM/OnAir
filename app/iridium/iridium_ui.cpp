@@ -151,6 +151,7 @@ void mapView(App& a, ImVec2 size) {
     else if (!withPos) adsbmap::legend(size.x, "no satellite positions yet (they come in ring alerts)");
     else adsbmap::legend(size.x, "%d of %zu satellites with a position; dots: beam centres", withPos, t.sats.size());
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 // ---------------------------------------------------------------- panels

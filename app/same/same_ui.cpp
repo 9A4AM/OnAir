@@ -267,6 +267,7 @@ void mapView(App& a, ImVec2 size) {
     else if (mk.empty()) adsbmap::legend(size.x, "no alert with a state yet");
     else adsbmap::legend(size.x, "approximate: a marker is the middle of the state, moved toward the partial-county direction; not the area of the alert");
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 // ---------------------------------------------------------------- the raw messages

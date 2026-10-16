@@ -259,6 +259,7 @@ void fixMap(App& a, ImVec2 size, const dect2::NavStation* st[2], const dect2::Na
         adsbmap::legend(size.x, "%s", S.db.empty() ? "import a station list to place the stations" : !st[0] || !st[1] ? "both stations must be identified and in the list" : f.why.empty() ? "waiting for both radials" : f.why.c_str());
     }
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 void fixView(App& a) {

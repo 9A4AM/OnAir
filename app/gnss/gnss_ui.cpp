@@ -385,6 +385,7 @@ void mapView(App& a, ImVec2 size) {
     else if (!t.sats.empty()) adsbmap::legend(size.x, "%zu satellite sub-points from the navigation message; white dot: the fix. Fit to see them.", t.sats.size());
     else adsbmap::legend(size.x, "%s", t.fix.valid ? "fix, no satellite orbits yet" : "no fix yet");
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 void channelTable(const App& a, bool compact) {

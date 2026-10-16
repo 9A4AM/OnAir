@@ -328,6 +328,7 @@ void mapCanvas(App& a, ImVec2 size) {
     else if (predicted) adsbmap::legend(size.x, "%d on map (%d predicted), %zu heard", placed, predicted, t.aircraft.size());
     else adsbmap::legend(size.x, "%d of %zu aircraft on map", placed, t.aircraft.size());
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 void mapSide(App& a) {

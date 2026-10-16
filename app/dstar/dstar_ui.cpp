@@ -185,6 +185,7 @@ void mapView(App& a) {
     else if (pos.empty()) adsbmap::legend(size.x, "no positions yet (GPS / D-PRS in the slow data)");
     else adsbmap::legend(size.x, "%zu positions", pos.size());
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 // ---------------------------------------------------------------- hooks

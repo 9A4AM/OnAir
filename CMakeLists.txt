@@ -835,6 +835,10 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_secondary_modes tests/engine/test_secondary_modes.cpp)   # the narrow-channel modes that may run as the second decoder
   target_link_libraries(test_secondary_modes PRIVATE dect2core)
   add_test(NAME secondary_modes COMMAND test_secondary_modes)
+  add_executable(test_mode_rate_sweep tests/engine/test_mode_rate_sweep.cpp)   # every mode x every SDR rate: no crash, hang or divide by zero
+  target_link_libraries(test_mode_rate_sweep PRIVATE dect2core)
+  add_test(NAME mode_rate_sweep COMMAND test_mode_rate_sweep)
+  set_tests_properties(mode_rate_sweep PROPERTIES LABELS slow TIMEOUT 3000)
 
   add_executable(test_sigmf tests/source/test_sigmf.cpp)
   target_link_libraries(test_sigmf PRIVATE dect2core)

@@ -237,6 +237,7 @@ void dscDetail(App& a, const DscCall* c, ImVec2 size) {
     ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls("never the position itself");
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + mh));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 void dscView(App& a) {
