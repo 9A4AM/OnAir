@@ -165,7 +165,6 @@ static void classicShell(App& a, ImVec2 disp) {
     ImGui::SetNextWindowSize(disp);
     ImGui::Begin("##root", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
     txViewSwitch(a);   // RX / TX, top left
-    txViewSwitch(a);   // RX / TX, top left
     if (txViewFlag()) classicTx(a, disp);
     else classicRx(a, disp);
 }
@@ -194,30 +193,34 @@ static void floatingWindows(App& a, ImVec2 disp) {
 
 // a modal note once per start when the last run crashed or the startup guard acted
 static void crashNotePopup(ImVec2 disp) {
-    static bool opened = false;
-    if (!opened) { ImGui::OpenPopup(trw("OnAir crashed")); opened = true; }
-    ImGui::SetNextWindowPos(ImVec2(disp.x * 0.5f, disp.y * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSizeConstraints(ImVec2(420 * gUi, 0), ImVec2(560 * gUi, 400 * gUi));
-    if (ImGui::BeginPopupModal(trw("OnAir crashed"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::PushTextWrapPos(520 * gUi);
-        ImGui::TextUnformatted(gCrashNote.c_str());
-        ImGui::PopTextWrapPos();
-        if (ImGui::Button(tr("OK"))) { gCrashNote.clear(); ImGui::CloseCurrentPopup(); }
-        ImGui::EndPopup();
+    if (!gCrashNote.empty()) {   // once per start; the same text is in the log panel
+        static bool opened = false;
+        if (!opened) { ImGui::OpenPopup(trw("OnAir crashed")); opened = true; }
+        ImGui::SetNextWindowPos(ImVec2(disp.x * 0.5f, disp.y * 0.5f), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(420 * gUi, 0), ImVec2(560 * gUi, 400 * gUi));
+        if (ImGui::BeginPopupModal(trw("OnAir crashed"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::PushTextWrapPos(520 * gUi);
+            ImGui::TextUnformatted(gCrashNote.c_str());
+            ImGui::PopTextWrapPos();
+            if (ImGui::Button(tr("OK"))) { gCrashNote.clear(); ImGui::CloseCurrentPopup(); }
+            ImGui::EndPopup();
+        }
     }
 }
 
 // --hidden: the pop-out video is a panel inside the main window (popout.cpp makes the real window otherwise)
 static void hiddenPopOut(App& a) {
-    ImGui::SetNextWindowSize(ImVec2(640 * gUi, 380 * gUi), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(200, 160), ImGuiCond_FirstUseEver);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
-    if (ImGui::Begin(trw("Video"), &a.popOut)) {
-        if (a.video.has()) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("%s", tr("no picture"));
-        if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+    if (a.popOut && gNoOsWindows) {   // --hidden: no OS window, the pop-out is a panel (popout.cpp makes the real window)
+        ImGui::SetNextWindowSize(ImVec2(640 * gUi, 380 * gUi), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(200, 160), ImGuiCond_FirstUseEver);
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+        if (ImGui::Begin(trw("Video"), &a.popOut)) {
+            if (a.video.has()) a.video.draw(ImGui::GetContentRegionAvail()); else ImGui::TextDisabled("%s", tr("no picture"));
+            if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0)) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
+        }
+        ImGui::End();
+        ImGui::PopStyleColor();
     }
-    ImGui::End();
-    ImGui::PopStyleColor();
 }
 
 void drawUI(App& a, ImVec2 disp, bool draw) {
