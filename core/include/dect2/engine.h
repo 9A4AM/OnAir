@@ -38,6 +38,7 @@
 #include "mode_tuning.h"
 #include "airband_rx.h"
 #include "vdl2_rx.h"
+#include "vdl4_rx.h"
 #include "ism_rx.h"
 #include "vor_rx.h"
 #include "ndb_rx.h"
@@ -86,12 +87,14 @@
 #include "dect_rx.h"
 #include "multitone_rx.h"
 #include "loraraw_rx.h"
+#include "wisun_rx.h"
 #include "rid_rx.h"
 #include "meteor_rx.h"
 #include "nr_rx.h"
 #include "goes_rx.h"
 #include "elektro_rx.h"
 #include "lbj_rx.h"
+#include "uat_rx.h"
 #include "hrpt_rx.h"
 #include "bbunpack.h"
 #include "multitv.h"
@@ -337,6 +340,7 @@ public:
     NbiotReceiver& nbiot() { return rxNb_; }   // NB-IoT cells: clear the cell table (telemetry through latestRx)
     ZigbeeReceiver& zigbee() { return rxZb_; }   // Zigbee / 802.15.4: clear the PAN and device tables (telemetry through latestRx)
     FlarmReceiver& flarm() { return rxFlarm_; }   // FLARM: receiver position, clear (telemetry through latestRx)
+    WisunReceiver& wisun() { return rxWs_; }   // Wi-SUN FAN: region, clear the tables (telemetry through latestRx)
     LoraRawReceiver& loraraw() { return rxLr_; }   // LoRa (raw): settings, clear the frame log (telemetry through latestRx)
     HfbReceiver& hfbeacon() { return rxHfb_; }   // HF beacons: the list, receiver position, ppm, clock offset (telemetry through latestRx)
     DjiReceiver& dji() { return rxDji_; }   // DJI drones: clear the results (telemetry through latestRx)
@@ -355,6 +359,9 @@ public:
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
     ElektroReceiver& elektro() { return rxEl_; }   // Elektro-L HRIT / LRIT / GGAK (telemetry through latestRx)
     LbjReceiver& lbj() { return rxLbj_; }   // LBJ railway warnings (telemetry through latestRx)
+    ElektroReceiver& elektro() { return rxEl_; }
+    Vdl4Receiver& vdl4() { return rxVdl4_; }   // VDL Mode 4 (telemetry through latestRx)
+    UatReceiver& uat() { return rxUat_; }         // UAT 978 MHz ADS-B / FIS-B / TIS-B (telemetry through latestRx)
     MeteorReceiver& meteor() { return rxMeteor_; }   // Meteor-M LRPT: modulation, a new picture (telemetry through latestRx)
     NrReceiver& nr() { return rxNr_; }         // 5G NR cells: clear the cell table (telemetry through latestRx)
     WifiReceiver& wifi() { return rxWifi_; }   // Wi-Fi networks: clear the network table (telemetry through latestRx)
@@ -568,12 +575,15 @@ private:
     TetrapolReceiver rxTetrapol_;
     MultitoneReceiver rxMt_;
     LoraRawReceiver rxLr_;
+    WisunReceiver rxWs_;
     RidReceiver rxRid_;
     MeteorReceiver rxMeteor_;
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
     ElektroReceiver rxEl_;
     LbjReceiver rxLbj_;
+    Vdl4Receiver rxVdl4_;
+    UatReceiver rxUat_;
     HrptReceiver rxHrpt_;
     FlarmReceiver rxFlarm_;
     uint64_t modeSeq_[kPollSeqSlots] = {};      // the last report taken from each of the modes added after FM (same order as above)

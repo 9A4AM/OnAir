@@ -48,6 +48,7 @@ double maxIngestPosAgeSec(const char* kind, const std::string& src) {
     if (!std::strcmp(kind, "station")) return 3600;
     return 300;
 }
+constexpr double kIngestMaxAdsbPosAgeSec = 30.0;   // same as adsb_map acStaleSec: do not publish a frozen CPR fix
 
 std::atomic<bool> gBusy{false};
 std::mutex gThMu;
@@ -217,6 +218,7 @@ bool fresherThan(const Track& a, const Track& b) {
 void addTrack(std::vector<Track>& v, std::unordered_set<std::string>& seen, Track t) {
     if (!t.kind || !*t.kind || t.id.empty() || !validPos(t.lat, t.lon)) return;
     if (t.age > maxIngestPosAgeSec(t.kind, t.src)) return;
+    if (t.kind && std::strcmp(t.kind, "aircraft") == 0 && t.src == "adsb" && t.age > kIngestMaxAdsbPosAgeSec) return;
     if (t.id.size() > 80) t.id.resize(80);
     const std::string key = std::string(t.kind) + ":" + t.id;
     const double ht = t.hasHeard ? t.heardAt : -1;

@@ -206,3 +206,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.version.outputs.tag }}
         run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+  # The Docker image (packaging/docker) of a finished release, for amd64 and arm64: ghcr.io/<owner>/onair:<version> and :latest.
+  # Not for betas: they would rebuild it at every push to a release branch. It installs the .deb just attached above.
+  docker:
+    name: Docker image
+    needs: [version, publish]
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-beta')   # a run started by hand on a beta tag must not become :latest
+    permissions:
+      contents: read
+      packages: write
+      - uses: actions/checkout@v4
+      - id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/onair" >> "$GITHUB_OUTPUT"   # registry names are lower case
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130   # v3.7.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f   # v3.12.0
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9   # v3.7.0
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ github.token }}" }
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8   # v6.19.2
+        with:
+          context: packaging/docker
+          platforms: linux/amd64,linux/arm64
+          build-args: ONAIR_VERSION=${{ needs.version.outputs.ver }}
+          push: true
+          tags: |
+            ${{ steps.img.outputs.name }}:${{ needs.version.outputs.ver }}
+            ${{ steps.img.outputs.name }}:latest

@@ -248,7 +248,7 @@ using SavedChannel = plat::Channel;
 // parts of the window the tour points at
 enum WizTarget { TgNone = 0, TgSwitch, TgToolbar, TgMain, TgRight, TgConst, TgCount };
 
-constexpr int kNumFamilies = 79;   // App::family runs from 0 to kNumFamilies - 1
+constexpr int kNumFamilies = 85;   // App::family runs from 0 to kNumFamilies - 1
 constexpr int kNumSubModes = 31;   // dect2::subModes(): the protocols of HF digital, mesh, pagers, marine and VOR / ILS listed as modes of their own
 constexpr int kNumSlots = kNumFamilies + kNumSubModes;   // what keeps its own frequency and gains: each family, and each protocol entry
 
@@ -464,7 +464,7 @@ struct App {
     int subTv = 0, subRx = 0, subStream = 0; // sub-view of the TV / Receiver / Stream tabs
     std::map<int, std::vector<EpgEvent>> epg;
     double epgT = -10;
-    int guideSid = -1, guideEvent = -1;
+    int guideSid = -1, guideEvent = -1, guidePlaySid = -1; // guide follows playing service until user picks another in the list
     bool fakeEpg = false; // --fakeepg: made-up programmes, for checking the layout when the mux sends none
     char favName[64] = "";
     MultipathDetector mpd;

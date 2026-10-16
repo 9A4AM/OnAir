@@ -98,6 +98,23 @@ int main() {
         CHECK(g[3][2].ch == 'W' && g[3][2].dh == 2, "row 3 continues the double-height character");
         printf("page 123 header: '%s'\n", h.c_str());
     }
+
+    // Finnish / Swedish national option (C12..C14 = 010): 0x5B/0x5C/0x5D → Ä / Ö / Å
+    TtxPage fin;
+    fin.number = 100;
+    fin.national = 2;
+    fin.rowMask = 2;
+    for (int i = 0; i < 40; i++) fin.rows[1][i] = ' ';
+    fin.rows[1][0] = 0x02;
+    fin.rows[1][1] = 'S';
+    fin.rows[1][2] = 0x5B;
+    fin.rows[1][3] = 'H';
+    fin.rows[1][4] = 'K';
+    fin.rows[1][5] = 0x5C;
+    fin.rows[1][6] = 'N';
+    TtxGrid finG;
+    ttxRender(fin, finG);
+    CHECK(finG[1][2].ch == 0x00C4 && finG[1][5].ch == 0x00D6, "Finnish subset Ä Ö (got %04x %04x)", finG[1][2].ch, finG[1][5].ch);
     printf(fails ? "teletext tests FAILED\n" : "teletext tests passed\n");
     return fails ? 1 : 0;
 }
