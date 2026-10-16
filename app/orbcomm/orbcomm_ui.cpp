@@ -1,6 +1,7 @@
 // Orbcomm screens: the satellites on the map (position from their own ephemeris, with the recent track), the satellite list (ID,
 // last heard, Doppler, position), the packet log by type, and per downlink the differential constellation and the eye.
 #include "app.h"
+#include "ui/ui_common.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/orbcomm/orbcomm_rx.h"
 #include <algorithm>
@@ -106,15 +107,7 @@ void mapView(App& a, ImVec2 size) {
     if (clicked) S.selSat = hit;
     dl->PopClipRect();
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 8 * gUi));
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
-    if (ImGui::Button("+", ImVec2(26 * gUi, 0))) { S.map.zoom = std::min(adsbmap::kMaxZoom, S.map.zoom + 1); S.mapFollow = false; }
-    ImGui::SameLine(0, 2 * gUi);
-    if (ImGui::Button("-", ImVec2(26 * gUi, 0))) { S.map.zoom = std::max(adsbmap::kMinZoom, S.map.zoom - 1); S.mapFollow = false; }
-    ImGui::SameLine(0, 6 * gUi);
-    if (ImGui::Button("fit")) S.mapFollow = true;
-    ImGui::PopStyleColor();
-    ImGui::SameLine(0, 6 * gUi);
-    adsbmap::tileControls("never a position");
+    mapCornerButtons(S.map, S.mapFollow, "never a position");
     plat::prefs().setI("orbcommZoom", S.map.zoom);
     int withPos = 0;
     if (on) for (const auto& s : t.sats) if (s.hasPos) withPos++;
@@ -351,9 +344,7 @@ void receiver(App& a) {
 void status(App& a) {
     const bool run = a.engine.running(), on = live(a);
     const OrbcommTelemetry& t = a.rx.orbcomm;
-    const SignalStats& st = a.spec.stats;
-    const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
-    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(12 * gUi);
+    statusIqLamp(a);
     lamp("Carrier", !on ? 0 : t.state >= 1 ? 1 : 0); flowNext(12 * gUi);
     lamp("Frames", !on ? 0 : t.state == 2 ? 1 : t.blocksOk > 0 ? 2 : 0); flowNext(10 * gUi);
     ImGui::TextDisabled("|"); flowNext(10 * gUi);

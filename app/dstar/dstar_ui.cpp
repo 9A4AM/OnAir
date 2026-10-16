@@ -2,6 +2,7 @@
 // positions on a map (the ADS-B map underneath, as for APRS and M17), the calling-channel presets, and a "?" about the mbelib library the
 // voice needs (docs/CODECS.md).
 #include "app.h"
+#include "ui/ui_common.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/dstar/dstar_ambe.h"
 #include "dect2/dstar/dstar_rx.h"
@@ -34,20 +35,6 @@ void load() {
     S.map.zoom = (int)plat::prefs().getI("dstarZoom", 9);
 }
 
-std::string clock(int64_t t) {
-    if (t <= 0) return "-";
-    const time_t tt = (time_t)t;
-    struct tm g;
-#ifdef _WIN32
-    gmtime_s(&g, &tt);
-#else
-    gmtime_r(&tt, &g);
-#endif
-    char b[16];
-    snprintf(b, sizeof b, "%02d:%02d:%02d", g.tm_hour, g.tm_min, g.tm_sec);
-    return b;
-}
-
 std::string myOf(const dect2::DstarCall& c) {
     if (c.my.empty()) return "?";
     return c.sfx.empty() ? c.my : c.my + "/" + c.sfx;
@@ -70,13 +57,6 @@ void presets(App& a) {
     flowEnd();
 }
 
-void kvRow(const App& a, const char* k, const char* fmt, ...) {
-    ImGui::TextDisabled("%s", k); kvColumn(130 * gUi);
-    char b[512];
-    va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof b, fmt, ap); va_end(ap);
-    ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(b); ImGui::PopTextWrapPos(); ImGui::PopFont();
-}
-
 void nowView(App& a) {
     presets(a);
     ImGui::Spacing();
@@ -94,7 +74,7 @@ void nowView(App& a) {
         if (n.flag[0] & 0x08) { ImGui::TextDisabled("note"); kvColumn(130 * gUi); ImGui::TextColored(pal::warnAmber(), "emergency flag set"); }
     }
     kvRow(a, "duration", "%.1f s, %u voice frames", n.durSec, n.voiceFrames);
-    kvRow(a, "started", "%s UTC", clock(n.wallTime).c_str());
+    kvRow(a, "started", "%s UTC", clockText(n.wallTime).c_str());
     kvRow(a, "voice", "%s", n.voice ? "playing (AMBE through mbelib)" : t.ambe ? "-" : "no mbelib: frames counted only");
     if (!n.text.empty()) kvRow(a, "message", "%s%s", n.text.c_str(), n.textBlocks == 15 ? "" : " (part)");
     if (n.hasPos) kvRow(a, "position", "%.5f, %.5f", n.lat, n.lon);
@@ -110,7 +90,7 @@ void callsView(App& a) {
         std::string txt;
         for (const auto& e : log) {
             char b[400];
-            snprintf(b, sizeof b, "%s\t%s\t%s\t%s\t%s\t%s\t%.1f s\t%.2f %%\n", clock(e.wallTime).c_str(), myOf(e).c_str(), e.ur.c_str(), e.rpt1.c_str(), e.rpt2.c_str(), e.text.c_str(), e.durSec, e.berPct);
+            snprintf(b, sizeof b, "%s\t%s\t%s\t%s\t%s\t%s\t%.1f s\t%.2f %%\n", clockText(e.wallTime).c_str(), myOf(e).c_str(), e.ur.c_str(), e.rpt1.c_str(), e.rpt2.c_str(), e.text.c_str(), e.durSec, e.berPct);
             txt += b;
         }
         ImGui::SetClipboardText(txt.c_str());
@@ -124,7 +104,7 @@ void callsView(App& a) {
         ImGui::TableNextRow();
         if (wideActive(a)) { ImGui::TableNextColumn(); wideCarrierCell(a, e.carrierId, e.carrierHz); }
         const ImVec4 c = on ? pal::okGreen() : ImGui::GetStyleColorVec4(ImGuiCol_Text);
-        ImGui::TableNextColumn(); ImGui::TextColored(c, "%s", on ? "on air" : clock(e.wallTime).c_str());
+        ImGui::TableNextColumn(); ImGui::TextColored(c, "%s", on ? "on air" : clockText(e.wallTime).c_str());
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextColored(c, "%s", myOf(e).c_str()); ImGui::PopFont();
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(e.ur.empty() ? "?" : e.ur.c_str()); ImGui::PopFont();
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(e.rpt1.empty() ? "?" : e.rpt1.c_str()); ImGui::PopFont();
@@ -153,7 +133,7 @@ void messageView(App& a) {
     ImGui::TableHeadersRow();
     for (const auto& e : m) {
         ImGui::TableNextRow();
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(e.wallTime).c_str());
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(clockText(e.wallTime).c_str());
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(e.my.empty() ? "?" : e.my.c_str()); ImGui::PopFont();
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(e.ur.empty() ? "?" : e.ur.c_str()); ImGui::PopFont();
         ImGui::TableNextColumn(); ImGui::PushTextWrapPos(0); ImGui::TextUnformatted(e.text.c_str()); ImGui::PopTextWrapPos();
@@ -198,15 +178,7 @@ void mapView(App& a) {
     }
     dl->PopClipRect();
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 8 * gUi));
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));
-    if (ImGui::Button("+", ImVec2(26 * gUi, 0))) { S.map.zoom = std::min(adsbmap::kMaxZoom, S.map.zoom + 1); S.mapFollow = false; }
-    ImGui::SameLine(0, 2 * gUi);
-    if (ImGui::Button("-", ImVec2(26 * gUi, 0))) { S.map.zoom = std::max(adsbmap::kMinZoom, S.map.zoom - 1); S.mapFollow = false; }
-    ImGui::SameLine(0, 6 * gUi);
-    if (ImGui::Button("fit")) S.mapFollow = true;
-    ImGui::PopStyleColor();
-    ImGui::SameLine(0, 6 * gUi);
-    adsbmap::tileControls("never the position itself");
+    mapCornerButtons(S.map, S.mapFollow, "never the position itself");
     plat::prefs().setI("dstarZoom", S.map.zoom);
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + size.y - ImGui::GetTextLineHeight() - 6 * gUi));
     if (!on) adsbmap::legend(size.x, "start the receiver");
@@ -252,7 +224,7 @@ void list(App& a) {
         seen.push_back(e.my);
         ImGui::TableNextRow();
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(myOf(e).c_str()); ImGui::PopFont();
-        ImGui::TableNextColumn(); ImGui::TextDisabled("%s  %s", clock(e.wallTime).c_str(), e.rpt1 == "DIRECT" || e.rpt1.empty() ? "" : e.rpt1.c_str());
+        ImGui::TableNextColumn(); ImGui::TextDisabled("%s  %s", clockText(e.wallTime).c_str(), e.rpt1 == "DIRECT" || e.rpt1.empty() ? "" : e.rpt1.c_str());
     }
     ImGui::EndTable();
 }
@@ -275,17 +247,12 @@ void receiver(App& a) {
 }
 
 void status(App& a) {
-    const bool run = a.engine.running(), on = live(a);
-    const SignalStats& st = a.spec.stats;
-    const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
+    const bool on = live(a);
     StatusPanel panel;
-    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(12 * gUi);
+    statusIqLamp(a);
     lamp("Sync", !on ? 0 : a.rx.dstar.state >= 1 ? 1 : 0); flowNext(10 * gUi);
     lamp("On air", !on ? 0 : a.rx.dstar.state == 2 ? 1 : 0); flowNext(10 * gUi);
-    ImGui::TextDisabled("|"); flowNext(10 * gUi);
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("State"); ImGui::SameLine(0, 5 * gUi);
-    ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(!on ? (run ? "starting" : "stopped") : dect2::dstarSummary(a.rx.dstar).c_str()); ImGui::PopFont();
+    statusState(a, on, [&] { return dect2::dstarSummary(a.rx.dstar); });
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {

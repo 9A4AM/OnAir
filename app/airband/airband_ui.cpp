@@ -1,6 +1,7 @@
 // Airband screens: the channel list with live levels and squelch, adding and editing channels (validated to the 25 / 8.33 kHz raster),
 // scan, squelch and hang, the activity log, and the band spectrum with a marker for every channel.
 #include "app.h"
+#include "ui/ui_common.h"
 #include "gfx/plot.h"
 #include "dect2/airband/airband_gen.h"
 #include "dect2/airband/airband_tel.h"
@@ -124,20 +125,6 @@ void load() {
     if (d.has("airChans")) S.chans = decode(d.getS("airChans", ""));
     else S.chans = dect2::airbandChannelsFor(dect2::airbandTestLayout(), dect2::airbandTuning().defMhz * 1e6);
     S.squelch = (float)d.getD("airSquelch", 6); S.hang = (float)d.getD("airHang", 0.5); S.scan = d.getB("airScan", false);
-}
-
-std::string clock(int64_t t) {
-    if (t <= 0) return "-";
-    const time_t tt = (time_t)t;
-    struct tm g;
-#ifdef _WIN32
-    gmtime_s(&g, &tt);
-#else
-    gmtime_r(&tt, &g);
-#endif
-    char b[16];
-    snprintf(b, sizeof b, "%02d:%02d:%02d", g.tm_hour, g.tm_min, g.tm_sec);
-    return b;
 }
 
 const dect2::AirbandChannelState* stateOf(const App& a, size_t i) {
@@ -287,7 +274,7 @@ void activityView(App& a) {
         std::string txt;
         for (const auto& e : log) {
             char b[200];
-            snprintf(b, sizeof b, "%s\t%s\t%s\t%.1f s\t%.0f dB\t%.1f dBFS\n", clock(e.wallTime).c_str(), e.name.c_str(), e.label.c_str(), e.durSec, e.snrDb, e.levelDb);
+            snprintf(b, sizeof b, "%s\t%s\t%s\t%.1f s\t%.0f dB\t%.1f dBFS\n", clockText(e.wallTime).c_str(), e.name.c_str(), e.label.c_str(), e.durSec, e.snrDb, e.levelDb);
             txt += b;
         }
         ImGui::SetClipboardText(txt.c_str());
@@ -300,7 +287,7 @@ void activityView(App& a) {
     ImGui::TableHeadersRow();
     for (const auto& e : log) {
         ImGui::TableNextRow();
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(e.wallTime).c_str());
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(clockText(e.wallTime).c_str());
         ImGui::TableNextColumn(); ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(e.name.c_str()); ImGui::PopFont();
         ImGui::TableNextColumn(); ImGui::TextUnformatted(e.label.empty() ? "-" : e.label.c_str());
         ImGui::TableNextColumn(); ImGui::Text("%.1f s", e.durSec);
@@ -411,16 +398,11 @@ void receiver(App& a) {
 }
 
 void status(App& a) {
-    const bool run = a.engine.running(), on = live(a);
-    const SignalStats& st = a.spec.stats;
-    const AdcStatus adc = classifyAdc(st.rmsDbfs, st.peak, st.clipFraction);
+    const bool on = live(a);
     StatusPanel panel;
-    lamp("IQ", run ? (adc == AdcStatus::Overload ? 3 : (adc == AdcStatus::Good ? 1 : 2)) : 0, (int)Ic::Wave); flowNext(12 * gUi);
+    statusIqLamp(a);
     lamp("Open", !on ? 0 : a.rx.airband.state == 2 ? 1 : 0); flowNext(10 * gUi);
-    ImGui::TextDisabled("|"); flowNext(10 * gUi);
-    ImGui::AlignTextToFramePadding();
-    ImGui::TextDisabled("State"); ImGui::SameLine(0, 5 * gUi);
-    ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(!on ? (run ? "starting" : "stopped") : dect2::airbandSummary(a.rx.airband).c_str()); ImGui::PopFont();
+    statusState(a, on, [&] { return dect2::airbandSummary(a.rx.airband); });
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {
