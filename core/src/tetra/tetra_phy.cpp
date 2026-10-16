@@ -23,7 +23,7 @@ int dibitPhase(int b1, int b2) {
 
 // ---------------------------------------------------------------- CRC
 
-uint16_t crc16(const uint8_t* b, int n) { return (uint16_t)crc::bits(b, (size_t)n, 16, 0x1021, 0xFFFF, 0xFFFF); }
+uint16_t crc16(const uint8_t* b, int n) { return (uint16_t)crc::bits(b, n > 0 ? (size_t)n : 0, 16, 0x1021, 0xFFFF, 0xFFFF); }
 
 // ---------------------------------------------------------------- RCPC
 

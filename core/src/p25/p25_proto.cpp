@@ -221,7 +221,7 @@ int golay18Decode(uint32_t cw, int* errs) {
     return best <= 3 ? bh : -1;
 }
 
-uint16_t crcCcitt(const uint8_t* bits, int n) { return (uint16_t)crc::bits(bits, (size_t)n, 16, 0x1021, 0, 0xFFFF); }
+uint16_t crcCcitt(const uint8_t* bits, int n) { return (uint16_t)crc::bits(bits, n > 0 ? (size_t)n : 0, 16, 0x1021, 0, 0xFFFF); }
 
 void trellisEncode(const uint8_t bits[96], uint8_t dibits[98]) {
     uint8_t coded[98];
