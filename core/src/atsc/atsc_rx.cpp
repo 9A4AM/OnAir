@@ -392,7 +392,12 @@ struct Core {
         if (mirrorIq) for (auto& v : in) v = std::conj(v);
         if (shiftHz != 0) mixIn(in);
         const double tA = now();
-        for (const cf32& v : in) { inRe.push_back(v.real()); inIm.push_back(v.imag()); }
+        {   // split into the two rows: one resize, then plain stores (a push_back per sample re-checks the capacity twice for every sample)
+            const size_t at = inRe.size();
+            inRe.resize(at + in.size()); inIm.resize(at + in.size());
+            float* __restrict pr = inRe.data() + at; float* __restrict pi = inIm.data() + at;
+            for (size_t i = 0; i < in.size(); i++) { pr[i] = in[i].real(); pi[i] = in[i].imag(); }
+        }
         std::vector<float> dchunk;
         const double room = (double)(inBase + inRe.size()) - J - 2 - pos;
         const size_t nOut = room > 0 ? (size_t)std::ceil(room / step) : 0;
