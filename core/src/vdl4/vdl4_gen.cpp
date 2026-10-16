@@ -36,19 +36,22 @@ public:
     double sampleRate() const override { return rate_; }
     void generate(cf32* out, size_t n) override {
         std::fill(out, out + n, cf32(0, 0));
-        for (size_t i = 0; i < n; i++) {
-            const double now = (pos_ + (int64_t)i) / rate_;
-            while (!q_.empty() && q_.top().t <= now) {
-                const Ev e = q_.top();
-                q_.pop();
-                const double f = ch_[(size_t)e.ch % ch_.size()];
-                const double off = f - centerHz_;
-                vdl4RenderBits(e.bits, out, (int64_t)i, n - i, rate_, e.t - now, off + e.car + cfg_.cfoHz, e.amp, 0);
-            }
+        // A burst can span several blocks (12 ms is 24000 samples at 2 Msps and a block may be shorter or end mid-burst): events that start in this
+        // block join the active list, and every active burst is rendered into every block it overlaps (it used to be cut off at the end of its first block).
+        const double endT = (double)(pos_ + (int64_t)n) / rate_;
+        while (!q_.empty() && q_.top().t < endT) { active_.push_back(q_.top()); q_.pop(); }
+        const double T = rate_ / kVdl4BitRate;
+        for (size_t k = 0; k < active_.size();) {
+            const Ev& e = active_[k];
+            const double startS = e.t * rate_;   // absolute sample position
+            const double f = ch_[(size_t)e.ch % ch_.size()];
+            vdl4RenderBits(e.bits, out, pos_, n, rate_, startS, f - centerHz_ + e.car + cfg_.cfoHz, e.amp, 0);
+            if (startS + ((double)e.bits.size() + 4) * T < (double)(pos_ + (int64_t)n)) active_.erase(active_.begin() + (long)k);
+            else k++;
         }
         if (sigma_ > 0) noise_.add(out, n, sigma_);
         pos_ += (int64_t)n;
-        if (q_.empty() && pos_ / rate_ > 3.0) { pos_ = 0; schedule(0.1); }
+        if (q_.empty() && active_.empty() && pos_ / rate_ > 3.0) { pos_ = 0; schedule(0.1); }
     }
 
 private:
@@ -73,6 +76,7 @@ private:
     float sigma_ = 0;
     std::vector<double> ch_;
     std::priority_queue<Ev, std::vector<Ev>, std::greater<Ev>> q_;
+    std::vector<Ev> active_;
     int64_t pos_ = 0;
 };
 } // namespace
@@ -99,16 +103,21 @@ void vdl4RenderBits(const std::vector<uint8_t>& lineBits, cf32* out, int64_t out
     const int64_t a = std::max<int64_t>(outStart, (int64_t)std::ceil(s0));
     const int64_t b = std::min<int64_t>(outStart + (int64_t)n, (int64_t)std::floor(s1));
     if (a >= b) return;
+    // The phase is the INTEGRAL of the Gaussian-filtered frequency (modulation index 0.5, deviation 4.8 kHz). It was once frequency x elapsed time,
+    // which is not FM: the signal chirped away from the channel after the first few bits and nothing could decode it.
+    const double sg = std::sqrt(std::log(2.0)) / (2 * kPi * 0.28), kk = 1 / (std::sqrt(2.0) * sg);
+    auto ierf = [](double x) { return x * std::erf(x) + std::exp(-x * x) / std::sqrt(kPi); };
+    auto gInt = [&](double tau) { return 0.5 / kk * (ierf((tau + 0.5) * kk) - ierf((tau - 0.5) * kk)) + 0.5; };   // integral of gfskPulse up to tau, 0 -> 1
+    std::vector<double> pre(lineBits.size() + 1, 0.0);   // sum of the +-1 symbols before k: bits that are long past contribute their whole area
+    for (size_t k = 0; k < lineBits.size(); k++) pre[k + 1] = pre[k] + (lineBits[k] ? 1.0 : -1.0);
+    const double dev = 4800.0;
     for (int64_t i = a; i < b; i++) {
         const double u = ((double)i - start) / T;
         const int k0 = (int)std::floor(u);
-        double f = 0;
-        for (int k = k0 - 2; k <= k0 + 2; k++) {
-            if (k < 0 || k >= (int)lineBits.size()) continue;
-            f += (lineBits[(size_t)k] ? 1.0 : -1.0) * gfskPulse(u - k - 0.5);
-        }
-        const double dev = 4800.0;
-        const double ph = 2 * kPi * (f * dev + carHz) * ((double)i - start) / rate + phase;
+        const int lo = std::max(0, k0 - 3), hi = std::min((int)lineBits.size() - 1, k0 + 3);
+        double sum = pre[(size_t)std::min<int>(std::max(lo, 0), (int)lineBits.size())];
+        for (int k = lo; k <= hi; k++) sum += (lineBits[(size_t)k] ? 1.0 : -1.0) * gInt(u - k - 0.5);
+        const double ph = 2 * kPi * dev / kVdl4BitRate * sum + 2 * kPi * carHz * ((double)i - start) / rate + phase;
         const size_t o = (size_t)(i - outStart);
         out[o] += cf32((float)(amp * std::cos(ph)), (float)(amp * std::sin(ph)));
     }

@@ -90,6 +90,7 @@ void mapView(App& a, ImVec2 size) {
         adsbmap::legend(size.x, "%s", on ? "no node or station has sent its position yet" : "start the receiver");
     }
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 void nodeCard(const App& a) {

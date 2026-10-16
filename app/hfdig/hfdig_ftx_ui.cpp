@@ -163,6 +163,7 @@ void mapView(App& a, const dect2::HfdigFtxTelemetry& f, ImVec2 size) {
     if (pts.empty()) adsbmap::legend(size.x, "no locators heard yet");
     else adsbmap::legend(size.x, "%zu stations by their locators (the middle of the square)", pts.size());
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 } // namespace

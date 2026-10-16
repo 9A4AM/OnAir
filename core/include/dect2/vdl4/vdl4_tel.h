@@ -91,6 +91,7 @@ struct Vdl4Telemetry {
     double centerHz = 0;
     double nowSec = 0;
     double inputRate = 0;
+    bool rateOk = true;   // false: the sample rate is below what the mode needs (status line says so)
     uint64_t positionsTotal = 0;
     std::vector<Vdl4Message> messages;
     std::vector<Vdl4Aircraft> aircraft;
@@ -104,6 +105,10 @@ inline std::string vdl4Summary(const Vdl4Telemetry& t) {
     int inBand = 0, act = 0;
     for (const auto& c : t.channels) { inBand += c.inBand; act += c.active; }
     char b[200];
+    if (!t.rateOk) {
+        snprintf(b, sizeof b, "VDL4: sample rate %.0f kHz is too low, use at least 400 kHz (2 Msps or more with a wide capture)", t.inputRate / 1e3);
+        return b;
+    }
     if (!t.channels.empty() && !inBand) return "VDL4: no channel inside the band, tune nearer 136.85 MHz";
     if (t.state == 0) {
         snprintf(b, sizeof b, "VDL4: listening to %d channel%s", inBand, inBand == 1 ? "" : "s");

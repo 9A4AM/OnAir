@@ -267,6 +267,7 @@ void mapView(App& a) {
     else if (npos == 0) adsbmap::legend(size.x, "no grids yet (heartbeats and CQs send them)");
     else adsbmap::legend(size.x, "%d stations at the centre of their grid squares", npos);
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 // ---------------------------------------------------------------- hooks

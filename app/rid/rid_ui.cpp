@@ -270,6 +270,7 @@ void mapView(App& a, ImVec2 size) {
     else if (!withPos) adsbmap::legend(size.x, "no drone positions yet");
     else adsbmap::legend(size.x, "%d drone%s with a position, %d operator%s (O, dashed line to the drone)", withPos, withPos == 1 ? "" : "s", ops, ops == 1 ? "" : "s");
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 void messagesView(App& a) {

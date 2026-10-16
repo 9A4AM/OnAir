@@ -87,6 +87,7 @@ void radar(App& a, ImVec2 size) {
     if (ImGui::IsItemHovered()) ImGui::SetTooltip(S.full ? "Back to the normal layout (Esc)" : "The radar fills the whole window (Esc to leave)");
     ImGui::PopStyleColor();
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 // altitude colours, as on the flight-tracking sites: low and warm, high and cool
@@ -311,6 +312,7 @@ void mapView(App& a, ImVec2 size) {
     else if (!withPos) adsbmap::legend(size.x, "no lat/lon yet: ident, altitude and speed do not need a position. Set the antenna (Tuner, Locate) or wait for both even and odd CPR frames");
     else adsbmap::legend(size.x, "%d of %zu placed · white ADS-B, grey after 30 s", withPos, t.aircraft.size());
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 }  // namespace adsbui

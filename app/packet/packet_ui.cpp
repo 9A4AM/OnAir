@@ -216,6 +216,7 @@ void mapView(App& a, ImVec2 size) {
     else if (!withPos) adsbmap::legend(size.x, "no positions yet");
     else adsbmap::legend(size.x, "%d of %zu stations with a position", withPos, t.stations.size());
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
+    ImGui::Dummy(ImVec2(0, 0));   // an item after SetCursorScreenPos: ImGui otherwise reports "extend window/parent boundaries"
 }
 
 // ---------------------------------------------------------------- the packet log
