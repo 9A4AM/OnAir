@@ -113,6 +113,9 @@ add_library(dect2core STATIC core/src/source/source.cpp core/src/source/source_a
 # The modes added after FM (DVB-S/S2, DTMB, analog TV, DMR, DRM, ADS-B): every core/src/<mode>/*.cpp belongs to its mode, so a mode can add files without editing this list
 set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas vdl4 uat wisun)
 onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (core/src/ais/ais_proto.cpp leaves the covered functions to ais_proto_rs.cpp) and links onair_rs
+# adsb_msg.cpp (and the reference copy the Rust differential test builds) is compiled without fused multiply-add and without the sin+cos -> sincos rewrite:
+# clang and gcc do both by default (arm64, macOS), Rust never does, and the two builds (DECT2_RUST ON and OFF) should give the same numbers bit for bit
+set_source_files_properties(core/src/adsb/adsb_msg.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
 target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx_json.cpp core/src/source/gain_opt.cpp core/src/mesh/mesh_report.cpp core/src/source/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
 target_sources(dect2core PRIVATE core/src/tx/tx.cpp core/src/tx/tx_payload.cpp core/src/tx/tx_voice.cpp core/src/audio/audioin.cpp core/src/audio/videoin.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
@@ -875,6 +878,37 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME ais_proto_rs COMMAND test_ais_proto_rs)
   endif()
 
+  # Rust SAME / ACARS / ADS-B protocol layers against the C++ ones: a generated copy of each C++ file (namespace ..._ref, cmake/gen_rs_ref.cmake) is
+  # the reference of tests/<mode>/test_<mode>_proto_rs.cpp; fuzz_<mode>_proto runs seeded mutations (meant for DECT2_SANITIZE=ON)
+  function(onair_rust_diff_tests MOD NAME DIR BASE HDR FROM TO EXTRA INC)
+    string(TOUPPER ${MOD} _MU)
+    if(NOT ONAIR_RUST_${_MU})
+      return()
+    endif()
+    set(_dir ${CMAKE_BINARY_DIR}/${MOD}_ref)
+    add_custom_command(OUTPUT ${_dir}/${NAME}_ref.h ${_dir}/${NAME}_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=${NAME} -DHDR=${HDR} -DCPP=${DIR}/${BASE}.cpp -DDEF=DECT2_RUST_${_MU}
+              "-DFROM=${FROM}" "-DTO=${TO}" "-DEXTRA=${EXTRA}" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      DEPENDS core/include/${HDR} core/src/${DIR}/${BASE}.cpp cmake/gen_rs_ref.cmake VERBATIM)
+    if(MOD STREQUAL "adsb")   # same flags as the production file (see the note at dect2core)
+      set_source_files_properties(${_dir}/${NAME}_ref.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
+    endif()
+    set(_srcs core/src/${DIR}/${BASE}.cpp core/src/${DIR}/${BASE}_rs.cpp)
+    set_source_files_properties(${_srcs} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_${_MU})
+    add_executable(test_${MOD}_proto_rs tests/${MOD}/test_${MOD}_proto_rs.cpp ${_dir}/${NAME}_ref.cpp ${_srcs})
+    target_include_directories(test_${MOD}_proto_rs PRIVATE core/include ${_dir} ${INC})
+    target_link_libraries(test_${MOD}_proto_rs PRIVATE onair_rs)
+    add_test(NAME ${MOD}_proto_rs COMMAND test_${MOD}_proto_rs)
+    add_executable(fuzz_${MOD}_proto tests/${MOD}/fuzz_${MOD}_proto.cpp ${_srcs})
+    target_include_directories(fuzz_${MOD}_proto PRIVATE core/include ${INC})
+    target_compile_definitions(fuzz_${MOD}_proto PRIVATE DECT2_RUST_${_MU})
+    target_link_libraries(fuzz_${MOD}_proto PRIVATE onair_rs)
+    add_test(NAME fuzz_${MOD}_proto COMMAND fuzz_${MOD}_proto)
+  endfunction()
+  onair_rust_diff_tests(same same_proto same same_proto dect2/same/same_proto.h "namespace same {" "namespace same_ref {" "" "")
+  onair_rust_diff_tests(acars acars_proto acars acars_proto dect2/acars/acars_proto.h "namespace dect2 {" "namespace dect2_acars_ref {" " using namespace dect2;" ${CMAKE_SOURCE_DIR}/core/include/dect2/acars)
+  onair_rust_diff_tests(adsb adsb_msg adsb adsb_msg dect2/adsb/adsb_msg.h "namespace dect2::adsb {" "namespace dect2::adsb_ref {" "" "")
+
   # seeded mutation runs of the AIS and ANT frame layers (also libFuzzer targets with -DONAIR_LIBFUZZER); meant for DECT2_SANITIZE=ON
   foreach(f ais ant)
     add_executable(fuzz_${f}_proto tests/${f}/fuzz_${f}_proto.cpp core/src/${f}/${f}_proto.cpp)   # standalone: only the frame layer, so a sanitizer build stays small
@@ -939,7 +973,7 @@ if(DECT2_BUILD_TESTS)
   # tests/<mode>/test_<mode>_*.cpp: one test program each; tools/<mode>tool.cpp: the mode's generator / receiver tool
   foreach(m ${DECT2_MODES})
     file(GLOB DECT2_MODE_TESTS CONFIGURE_DEPENDS tests/${m}/test_${m}_*.cpp)
-    list(FILTER DECT2_MODE_TESTS EXCLUDE REGEX "/test_ais_proto_rs\\.cpp$")   # built above, only when the Rust crate is
+    list(FILTER DECT2_MODE_TESTS EXCLUDE REGEX "/test_[a-z0-9]+_proto_rs\\.cpp$")   # built above, only when the Rust crate is
     foreach(src ${DECT2_MODE_TESTS})
       get_filename_component(stem ${src} NAME_WE)
       add_executable(${stem} ${src})

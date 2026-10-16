@@ -61,9 +61,9 @@ Then update the status table below and run `tools/rust_check.sh`.
 |---|---|---|---|---|---|
 | common | `onair_common` | - | - | shared CRC/bits/endian/hex/parity/gray/NRZI/Manchester/ring | done (no C ABI) |
 | proto | `onair_proto` | `DECT2_RUST_PROTO` | `rs/proto.h` | AIS frame layer (HDLC, NMEA, messages, MMSI) | done |
-| adsb | `onair_adsb` | `DECT2_RUST_ADSB` | `rs/adsb.h` | ADS-B / Mode S | not started |
-| acars | `onair_acars` | `DECT2_RUST_ACARS` | `rs/acars.h` | ACARS | not started |
-| same | `onair_same` | `DECT2_RUST_SAME` | `rs/same.h` | SAME / EAS | not started |
+| adsb | `onair_adsb` | `DECT2_RUST_ADSB` | `rs/adsb.h` | ADS-B / Mode S message layer (CRC-24, altitude/identity codes, CPR, Comm-B inference, field extraction, geometry) | done (generator, tracker and register in C++) |
+| acars | `onair_acars` | `DECT2_RUST_ACARS` | `rs/acars.h` | ACARS block layer (CRC-16, parity repair, block parsing, label names, OOOI / media advisory text) | done (frame builder in C++) |
+| same | `onair_same` | `DECT2_RUST_SAME` | `rs/same.h` | SAME / EAS header parser, tables, location text, time text, county CSV reader | done (county table state in C++) |
 | pager | `onair_pager` | `DECT2_RUST_PAGER` | `rs/pager.h` | POCSAG / FLEX | not started |
 | ax25 | `onair_ax25` | `DECT2_RUST_AX25` | `rs/ax25.h` | AX.25 / APRS | not started |
 | dmr | `onair_dmr` | `DECT2_RUST_DMR` | `rs/dmr.h` | DMR | not started |
@@ -85,3 +85,25 @@ Then update the status table below and run `tools/rust_check.sh`.
 | engine | `onair_engine` | `DECT2_RUST_ENGINE` | `rs/engine.h` | ring buffer, threading core | not started |
 | fec | `onair_fec` | `DECT2_RUST_FEC` | `rs/fec.h` | LDPC, BCH, Reed-Solomon, Viterbi | not started |
 | usb | `onair_usb` | `DECT2_RUST_USB` | `rs/usb.h` | Android USB SDR drivers | not started |
+
+## The C++ originals are still there
+
+For every converted module the replaced C++ stays in its file under `#ifndef DECT2_RUST_<MODULE>` (AIS: `ais_proto.cpp`; ADS-B: `adsb_msg.cpp`; ACARS:
+`acars_proto.cpp`; SAME: `same_proto.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
+twin is `<file>_rs.cpp` (guarded by `#ifdef DECT2_RUST_<MODULE>`). A later step deletes the `#ifndef` blocks when Rust becomes mandatory; the differential
+tests then keep a frozen copy as their reference (`cmake/gen_rs_ref.cmake` writes it from the C++ file with the switch undefined).
+
+What deliberately stays C++ in the three first converted protocol modules: ADS-B `getBits` / `setBits` / `toHex` (helpers without a length, called in loops by the
+generator and trackers), the encoder and generator (`adsb_encode`, `adsb_gen`), the tracker and register, the demodulator; ACARS `acarsBuildFrame` (transmitter of the
+test signal) and the receiver; SAME's county table (user state with a mutex) and file loader, and the receiver.
+
+## Differential tests and floating point
+
+`tests/<mode>/test_<mode>_proto_rs.cpp` runs the same inputs through the Rust-backed namespace and the frozen C++ copy and requires identical results (doubles bit for
+bit), over the real vectors and 100000+ seeded random / mutated / truncated inputs per function family; `fuzz_<mode>_proto` is the seeded mutation run for the
+sanitizer build (also a libFuzzer target with `-DONAIR_LIBFUZZER`). Both are registered by `onair_rust_diff_tests()` in `CMakeLists.txt`.
+
+Floating point: Rust never fuses `a * b + c` and calls the C math library for `sin`, `cos`, `floor`, `fmod`... (`no_std` has no methods for them; they are declared in `ffi.rs`,
+`math`). clang and gcc fuse multiply-adds on arm64 by default and rewrite `sin(x)` + `cos(x)` into `sincos` on Apple platforms, which changes the last bit. `adsb_msg.cpp` is
+therefore compiled with `-ffp-contract=off -fno-builtin-sin -fno-builtin-cos` in every build (also `DECT2_RUST=OFF`), so ON and OFF give the same numbers bit for bit. Use
+the same flags for any future module that mixes floating point between Rust and C++.
