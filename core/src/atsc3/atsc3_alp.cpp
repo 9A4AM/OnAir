@@ -1,12 +1,13 @@
 #include "dect2/atsc3/atsc3_alp.h"
 #include <algorithm>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace atsc3 {
 
 namespace {
 
-void put16(std::vector<uint8_t>& v, int x) { v.push_back((uint8_t)(x >> 8)); v.push_back((uint8_t)x); }
+void put16(std::vector<uint8_t>& v, int x) { dect2::endian::putBe16(v, x); }
 
 // Base header: packet_type(3) PC(1) HM or S/C (1) length(11)
 void baseHeader(std::vector<uint8_t>& v, int type, int pc, int hmOrSc, int length11) {

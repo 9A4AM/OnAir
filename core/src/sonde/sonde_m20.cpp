@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 using namespace sondebits;
@@ -24,7 +25,7 @@ namespace {
 constexpr int kStdLen = 0x45;
 constexpr int kLeap = 18;                       // GPS - UTC: dxlAPRS sondeudp.c subtracts 18 s from the M20 time of week
 
-inline uint32_t be32(const uint8_t* p) { return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3]; }
+inline uint32_t be32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
 inline int16_t be16s(const uint8_t* p) { return (int16_t)(((unsigned)p[0] << 8) | p[1]); }
 inline void putBe32(uint8_t* p, uint32_t v) { p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16); p[2] = (uint8_t)(v >> 8); p[3] = (uint8_t)v; }
 inline void putBe16(uint8_t* p, uint32_t v) { p[0] = (uint8_t)(v >> 8); p[1] = (uint8_t)v; }

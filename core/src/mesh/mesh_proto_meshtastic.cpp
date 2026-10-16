@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 
@@ -17,8 +18,8 @@ using namespace meshpb;
 
 namespace {
 
-uint32_t le32(const uint8_t* p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); }
-void put32(std::vector<uint8_t>& v, uint32_t x) { for (int i = 0; i < 4; i++) v.push_back((uint8_t)(x >> (8 * i))); }
+uint32_t le32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
+void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putLe32(v, x); }
 
 struct DataMsg {
     int portnum = 0;
