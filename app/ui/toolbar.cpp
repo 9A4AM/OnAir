@@ -72,8 +72,6 @@ static void toolbarSource(App& a, bool vertical, bool running) {
     if (iconFlat(Ic::Refresh, tr("Rescan for devices"))) refreshDevices(a), a.devIdx = std::min(a.devIdx, (int)a.devices.size() - 1);
     ImGui::EndDisabled();
     ImGui::EndDisabled();
-    netRadioWindow(a);
-    hamlibRigWindow(a);
     radioMessagesUi(a, vertical);
     {   // a radio too slow for the mode: said here for every mode (the engine's log line was all there was)
         const std::string rw = rateWarning(a);

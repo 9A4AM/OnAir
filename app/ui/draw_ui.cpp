@@ -166,6 +166,9 @@ static void floatingWindows(App& a, ImVec2 disp) {
     passesWindow(a);
     galleryWindow(a);
     scannerWindow(a);
+    // the "add a radio" windows: here, not with the source controls, so they open whichever layout is up and from the setup wizard too
+    netRadioWindow(a);
+    hamlibRigWindow(a);
     setupWizard(a, disp);
     wizard(a, disp);
     if (gIdentifyDev && a.engine.running() && ImGui::GetFrameCount() > 120) { gIdentifyDev = false; identifyStart(a, radioCenterMhz(a) * 1e6, 0, 0, radioCenterMhz(a) * 1e6); }

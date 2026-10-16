@@ -185,7 +185,7 @@ static void statusNotes(App& a, bool run, AdcStatus adc) {
 void statusBar(App& a) {
     // a radio on the network: the samples that did not arrive (the connection dropped and came back, or the receiver was too slow)
     if (a.engine.running() && a.devIdx >= 0 && a.devIdx < (int)a.devices.size() && a.devices[a.devIdx].kind == DeviceInfo::Native &&
-        (a.devices[a.devIdx].board == "rtltcp" || a.devices[a.devIdx].board == "spyserver")) {
+        (a.devices[a.devIdx].board == "rtltcp" || a.devices[a.devIdx].board == "spyserver" || a.devices[a.devIdx].board == "sdrpp")) {
         const uint64_t lost = a.engine.droppedSamples();
         if (lost) ImGui::TextColored(pal::warnAmber(), tr("Network radio: %llu samples lost (underruns)"), (unsigned long long)lost);
     }
