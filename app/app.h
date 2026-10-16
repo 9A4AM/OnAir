@@ -1,5 +1,5 @@
 // Shared declarations of the OnAir window: the application state, small helpers and the panels that draw the interface.
-// The panels live in widgets.cpp, app_state.cpp, toolbar.cpp, plots.cpp, analysis_tabs.cpp, tv.cpp, scan_outputs.cpp,
+// The panels live in widgets.cpp, app_state.cpp, toolbar*.cpp, plots.cpp, analysis_tabs.cpp, tv.cpp, scan_outputs.cpp,
 // antenna.cpp, dab_ui.cpp, wizard.cpp; main.cpp has the window loop.
 #pragma once
 // OnAir — digital TV receiver (DVB-T2, DVB-T, ATSC) for macOS. Phase 0 shell: sources, spectrum, waterfall, status, log.
@@ -871,7 +871,7 @@ void wbDevOpen(const std::string& path, double rate, int tab);
 void wbDevSelect(double t0Sec, double t1Sec, double f0Hz, double f1Hz);
 void wbDevDemod(int kind, double baud, bool runMeasure, bool runDemod);
 void mainTabs(App& a);          // the tab bar with the tabs that fit the current mode (main.cpp)
-void drawShell2(App& a, ImVec2 disp);   // ui2.cpp: the new interface
+void drawShell2(App& a, ImVec2 disp);   // ui2.cpp: the new interface (its parts: ui2_theme.cpp, ui2_widgets.cpp, ui2_shell.cpp, ui2_faces.cpp)
 void applyUiTheme(App& a);              // ui2.cpp: classic or new colours and shapes
 // plots.cpp
 // The width of the channel the mode's receiver works with: the light band on the spectrum, its edges on the waterfall. DVB-T2 / DVB-T: the
