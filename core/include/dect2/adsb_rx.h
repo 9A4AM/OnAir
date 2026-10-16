@@ -3,6 +3,7 @@
 // telemetry() and the setters from the interface thread (they must be safe while feed() runs).
 #pragma once
 #include "adsb_tel.h"
+#include "adsb_feedin.h"
 #include "adsb_track.h"
 #include "mode_tuning.h"
 #include "ring.h"
@@ -30,6 +31,10 @@ public:
     void clearReference();
     void setCorrection(int bits);                        // error correction of DF11 / 17 / 18: 0 off, 1 one bit (default), 2 two bits
     void setExpiry(double seconds);                      // an aircraft that has been silent this long leaves the table (default 60)
+    // Feeds in from other receivers (Beast or SBS over TCP, "host:port" each): their aircraft go into the same table. Positions from other
+    // receivers are shown, not computed (no MLAT). Hosts outside the local network are refused unless allowNonLan. Works with or without a radio running.
+    void setExternalSources(const std::vector<std::string>& hostPorts, bool allowNonLan);
+    void resetStats();                                   // the range-ring statistics only
     void clearAircraft();                                // empty the table and the statistics
     // The aircraft table and the message list stay through reset(), configure() and retunes (an aircraft still leaves it after the
     // expiry time of signal without a message): only clearResults() empties them at once

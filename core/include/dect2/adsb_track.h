@@ -39,6 +39,19 @@ struct AdsbOptions {
     double expirySec = 60;       // an aircraft that is silent for this long leaves the table
 };
 
+// One aircraft update that comes decoded (an SBS / BaseStation line from another receiver)
+struct AdsbExtUpdate {
+    uint32_t icao = 0;
+    std::string callsign;
+    bool hasAlt = false; int altFt = 0;
+    bool hasSpeed = false; double speedKt = 0;
+    bool hasHeading = false; double headingDeg = 0;
+    bool hasVrate = false; int vrateFpm = 0;
+    bool hasPos = false; double lat = 0, lon = 0;
+    bool hasSquawk = false; int squawk = 0;
+    bool hasGround = false; bool ground = false;
+};
+
 class AdsbTracker {
 public:
     AdsbTracker();
@@ -55,7 +68,13 @@ public:
     // countBad: a frame that fails is counted as a bad one (false when the caller will try the same frame again with other bits)
     bool accept(AdsbRaw& raw, AdsbFrame& out, bool countBad = true);
     // Apply a frame that has been checked elsewhere (tests)
-    void apply(const AdsbFrame& f);
+    // src 0: this receiver. src > 0: a frame from another receiver (its CRC was checked by the caller): it updates the table but not the
+    // local statistics, and it is not passed on to the data feeds. The newest message of any source wins.
+    void apply(const AdsbFrame& f, uint8_t src = 0);
+    void applyExternal(const AdsbExtUpdate& u, uint8_t src, double now);   // a decoded update (SBS); its position is taken as it is
+    uint32_t aircraftFrom(uint8_t src) const;
+    void resetStats();
+    const AdsbRangeStats& stats() const { return stats_; }
     void tick(double now);                               // expire aircraft; call a few times a second
     // Window bookkeeping for the messages-per-second figure: call once per report interval (0.25 s)
     void closeWindow();
@@ -93,6 +112,7 @@ private:
     void airbornePosition(Rec& r, const adsb::Msg& m, double now);
     void surfacePosition(Rec& r, const adsb::Msg& m, double now);
     void commitPosition(Rec& r, double lat, double lon, int kind, double now);
+    void noteStats(const Rec& r);
     bool tryCorrect(AdsbRaw& raw, int len, uint32_t rem, double now);
     bool plausibleReply(const AdsbRaw& raw, int df, int len, uint32_t icao) const;
 
@@ -103,6 +123,8 @@ private:
     uint64_t good_ = 0, bad_ = 0, corrected_ = 0, dfCount_[32] = {};
     uint32_t window_ = 0; uint32_t windows_[4] = {};       // good messages per 0.25 s, last four
     float maxRange_ = 0;
+    AdsbRangeStats stats_;
+    uint8_t curSrc_ = 0;
     double now_ = 0;
     double snrEma_ = 0, levelEma_ = 0; bool snrInit_ = false;
     bool touchedNew_ = false;

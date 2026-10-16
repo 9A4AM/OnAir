@@ -4,6 +4,7 @@
 #include "dect2/adsb_demod.h"
 #include <atomic>
 #include <cmath>
+#include <cstring>
 #include <mutex>
 
 namespace dect2 {
@@ -26,6 +27,30 @@ struct AdsbReceiver::Impl {
     double lastGood = -1e9, lastActivity = -1e9, lastNewLog = -1e9;
     float noiseDbfs = -120;
     uint64_t preambles = 0;
+
+    // another receiver's frame: checked here (CRC), then into the same table; the newest message wins
+    void extFrame(int src, const uint8_t* bytes, int bits) {
+        if (src < 1 || src > 255 || (bits != 112 && bits != 56)) return;
+        AdsbFrame f;
+        memcpy(f.bytes, bytes, bits / 8);
+        f.bits = bits;
+        f.df = (int)adsb::getBits(f.bytes, 1, 5);
+        if (bits == 112 ? (f.df != 17 && f.df != 18) : f.df != 11) return;   // the other formats carry the address only in their parity
+        if (adsb::crc24(f.bytes, bits) != 0) return;
+        if (!adsb::decodeMsg(f.bytes, bits, f.msg)) return;
+        f.icao = adsb::getBits(f.bytes, 9, 24);
+        f.msg.icao = f.icao;
+        f.levelDbfs = -120.f;
+        std::lock_guard<std::mutex> lk(mu);
+        f.timeSec = now;
+        tracker.apply(f, (uint8_t)src);
+    }
+    void extUpdate(int src, const AdsbExtUpdate& u) {
+        if (src < 1 || src > 255) return;
+        std::lock_guard<std::mutex> lk(mu);
+        tracker.applyExternal(u, (uint8_t)src, now);
+    }
+    AdsbFeedIn feedIn;                   // last: it stops its threads first
 
     void say(const std::string& s) {
         std::function<void(const std::string&)> f;
@@ -80,7 +105,18 @@ AdsbReceiver::AdsbReceiver() : p_(std::make_unique<Impl>()) {
     });
 }
 
-AdsbReceiver::~AdsbReceiver() = default;
+AdsbReceiver::~AdsbReceiver() { p_->feedIn.stop(); }
+
+void AdsbReceiver::setExternalSources(const std::vector<std::string>& hostPorts, bool allowNonLan) {
+    Impl* p = p_.get();
+    AdsbFeedIn::Sink sk;
+    sk.frame = [p](int src, const uint8_t* b, int bits) { p->extFrame(src, b, bits); };
+    sk.update = [p](int src, const AdsbExtUpdate& u) { p->extUpdate(src, u); };
+    p->feedIn.setSink(std::move(sk));
+    p->feedIn.setSources(hostPorts, allowNonLan);
+}
+
+void AdsbReceiver::resetStats() { std::lock_guard<std::mutex> lk(p_->mu); p_->tracker.resetStats(); p_->seq++; }
 
 void AdsbReceiver::configure(double inputRateHz) {
     std::lock_guard<std::mutex> lk(p_->mu);
@@ -135,6 +171,13 @@ bool AdsbReceiver::telemetry(AdsbTelemetry& out, uint64_t lastSeq) {
     out.noiseDbfs = p.noiseDbfs;
     out.preambles = p.preambles;
     if (p.state == 0) out.snrDb = 0;
+    AdsbSourceInfo self;
+    self.name = "this receiver"; self.state = p.state == 2 ? 1 : 0; self.msgs = p.tracker.good(); self.aircraft = p.tracker.aircraftFrom(0);
+    out.sources.push_back(self);
+    for (AdsbSourceInfo i : p.feedIn.info()) {
+        i.aircraft = p.tracker.aircraftFrom((uint8_t)(out.sources.size()));
+        out.sources.push_back(std::move(i));
+    }
     return true;
 }
 

@@ -31,6 +31,7 @@ void AdsbTracker::reset() {
     window_ = 0;
     std::memset(windows_, 0, sizeof windows_);
     maxRange_ = 0;
+    stats_ = AdsbRangeStats();
     now_ = 0;
     snrEma_ = levelEma_ = 0; snrInit_ = false;
 }
@@ -46,13 +47,15 @@ void AdsbTracker::shiftTime(double dt) {
     now_ += dt;
 }
 
-std::string AdsbTracker::saveResults() const { return results::pack(now_, rec_, frames_); }
+std::string AdsbTracker::saveResults() const { return results::pack(now_, rec_, frames_, stats_); }
 
 bool AdsbTracker::loadResults(const std::string& blob, double now) {
     double t0 = 0;
     std::unordered_map<uint32_t, Rec> rec;
     std::deque<AdsbFrameInfo> frames;
-    if (!results::unpack(blob, t0, rec, frames)) return false;
+    AdsbRangeStats st;
+    if (!results::unpack(blob, t0, rec, frames, st)) return false;
+    stats_ = std::move(st);
     rec_ = std::move(rec);
     frames_ = std::move(frames);
     const double keep = now_;
@@ -209,14 +212,65 @@ bool AdsbTracker::accept(AdsbRaw& raw, AdsbFrame& out, bool countBad) {
 
 // ---------------------------------------------------------------- the table
 
-void AdsbTracker::apply(const AdsbFrame& f) {
+void AdsbTracker::resetStats() { stats_ = AdsbRangeStats(); stats_.nextSample = now_ + 10; maxRange_ = 0; }
+
+uint32_t AdsbTracker::aircraftFrom(uint8_t src) const {
+    uint32_t n = 0;
+    for (const auto& kv : rec_) if (kv.second.a.srcId == src) n++;
+    return n;
+}
+
+// range statistics: called for every confirmed position
+void AdsbTracker::noteStats(const Rec& r) {
+    const AdsbAircraft& a = r.a;
+    if (a.hasAlt && (!stats_.hasMaxAlt || a.altFt > stats_.maxAltFt)) { stats_.hasMaxAlt = true; stats_.maxAltFt = a.altFt; }
+    if (!refValid_ || !a.hasPos || a.posKind < 2) return;
+    const double d = distanceNm(refLat_, refLon_, a.lat, a.lon);
+    double b = bearingDeg(refLat_, refLon_, a.lat, a.lon);
+    b = std::fmod(std::fmod(b, 360.0) + 360.0, 360.0);
+    const int sec = std::min(kAdsbSectors - 1, (int)(b / 10.0));
+    stats_.sectorMaxNm[sec] = std::max(stats_.sectorMaxNm[sec], (float)d);
+    stats_.rangeHist[std::min(kAdsbRangeBins - 1, (int)(d / 10.0))]++;
+    stats_.positions++;
+    stats_.maxRangeNm = std::max(stats_.maxRangeNm, (float)d);
+}
+
+void AdsbTracker::applyExternal(const AdsbExtUpdate& u, uint8_t src, double now) {
+    Rec& r = touch(u.icao & 0xFFFFFF, now);
+    AdsbAircraft& a = r.a;
+    a.srcId = src;
+    a.messages++;
+    r.lastSeen = now;
+    r.lastTrusted = now;
+    now_ = std::max(now_, now);
+    if (!u.callsign.empty()) a.callsign = u.callsign;
+    if (u.hasAlt) { a.hasAlt = true; a.altFt = u.altFt; r.baroAltTime = r.altTime = now; r.trustedAltFt = u.altFt; }
+    if (u.hasSpeed) { a.hasSpeed = true; a.speedKt = (float)u.speedKt; a.speedKind = 0; r.lastVel = now; }
+    if (u.hasHeading) { a.hasHeading = true; a.headingDeg = (float)u.headingDeg; a.headingIsTrack = true; }
+    if (u.hasVrate) { a.hasVrate = true; a.vrateFpm = u.vrateFpm; }
+    if (u.hasSquawk) {
+        a.hasSquawk = true; a.squawk = u.squawk;
+        r.emergencySq = u.squawk == 7500 ? 5 : u.squawk == 7600 ? 4 : u.squawk == 7700 ? 1 : 0;
+    }
+    if (u.hasGround) a.ground = u.ground;
+    if (u.hasPos && std::fabs(u.lat) <= 90 && std::fabs(u.lon) <= 180 && (u.lat != 0 || u.lon != 0)) {
+        commitPosition(r, u.lat, u.lon, 2, now);
+        noteStats(r);
+    }
+}
+
+void AdsbTracker::apply(const AdsbFrame& f, uint8_t src) {
     const Msg& m = f.msg;
+    curSrc_ = src;
     const bool nonIcao = f.df == 18 && (m.ca == 1 || m.ca == 5);
     const uint32_t key = f.icao | (nonIcao ? 0x1000000u : 0u);
     Rec& r = touch(key, f.timeSec);
     const double posBefore = r.lastPos;
     if (f.bits == 112 ? (f.df == 17 || f.df == 18 || f.df == 19) : f.df == 11) r.lastTrusted = f.timeSec;
     applyMsg(r, f);
+    r.a.srcId = src;
+    if (r.lastPos != posBefore) noteStats(r);
+    if (src) { now_ = std::max(now_, f.timeSec); return; }   // another receiver's frame: no local counters, no frame list, no data feed
     if (Feeds::get().wantAdsb()) {   // the data feeds out (feeds.h), off unless the user turned them on
         FeedAdsbFrame ff;
         memcpy(ff.bytes, f.bytes, sizeof ff.bytes);
@@ -433,6 +487,12 @@ void AdsbTracker::applyMsg(Rec& r, const AdsbFrame& f) {
 
 void AdsbTracker::tick(double now) {
     now_ = std::max(now_, now);
+    while (now >= stats_.nextSample && stats_.rateSeries.size() < 2000) {   // a point every 10 s: message rate and aircraft in the table
+        stats_.rateSeries.push_back((float)(windows_[0] + windows_[1] + windows_[2] + windows_[3]));
+        stats_.countSeries.push_back((uint16_t)std::min<size_t>(rec_.size(), 65535));
+        stats_.nextSample += 10;
+    }
+    if (now >= stats_.nextSample) stats_.nextSample = now + 10;
     for (auto it = rec_.begin(); it != rec_.end();) {
         if (now - it->second.lastSeen > opt_.expirySec) it = rec_.erase(it);
         else ++it;
@@ -475,6 +535,7 @@ void AdsbTracker::snapshot(AdsbTelemetry& t, double now) const {
     t.frames.assign(frames_.begin(), frames_.end());
     t.refValid = refValid_; t.refLat = refLat_; t.refLon = refLon_;
     t.maxRangeNm = maxRange_;
+    t.stats = stats_;
     for (int i = 0; i < 32; i++) t.dfCount[i] = dfCount_[i];
     t.corrected = corrected_;
     t.msgsPerSec = (float)(windows_[0] + windows_[1] + windows_[2] + windows_[3]);   // four windows of 0.25 s

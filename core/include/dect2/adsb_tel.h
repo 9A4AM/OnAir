@@ -39,6 +39,7 @@ struct AdsbAircraft {
     bool hasRa = false; unsigned raAra = 0, raRac = 0; bool raTerminated = false; uint32_t raThreat = 0; float raAgeSec = 0;
     int subnetVersion = -1; bool acasRa = false; uint32_t gicbMask = 0;   // 1,0 and 1,7 capability
     int adsbVersion = -1; int nacp = -1;                     // operational status
+    uint8_t srcId = 0;               // the source that last updated this aircraft: 0 this receiver, 1.. the feeds from other receivers (AdsbTelemetry::sources)
     uint32_t messages = 0;           // messages received from this address
     float ageSec = 0;                // since the last message
     float posAgeSec = 0;             // since the last position
@@ -49,6 +50,30 @@ struct AdsbAircraft {
     bool tisb = false;               // seen in DF18 (TIS-B / ADS-R / non-transponder)
     std::vector<AdsbTrackPoint> track;   // recent positions, oldest first (for the map)
     int cprHave = 0;                 // bit 0: even CPR in the last 15 s, bit 1: odd (table Fix column when there is still no lat/lon)
+};
+
+// Range-ring statistics (per session; reset button; saved with the results). Ranges need a reference position and a confirmed (global) position.
+constexpr int kAdsbSectors = 36;            // 10 degree bearing sectors, sector 0 = 0 - 10 degrees
+constexpr int kAdsbRangeBins = 50;          // 10 nm per bin, the last one is "500 nm and more"
+struct AdsbRangeStats {
+    float sectorMaxNm[kAdsbSectors] = {};   // farthest position per bearing sector
+    uint32_t rangeHist[kAdsbRangeBins] = {};
+    uint64_t positions = 0;                 // positions counted
+    float maxRangeNm = 0;
+    bool hasMaxAlt = false; int maxAltFt = 0;
+    std::vector<float> rateSeries;          // messages per second, one point per 10 s of signal time
+    std::vector<uint16_t> countSeries;      // aircraft in the table, the same points
+    double nextSample = 10;
+};
+
+// A source of aircraft: this receiver (always the first) and the feeds in from other receivers
+struct AdsbSourceInfo {
+    std::string name;                // "this receiver" or host:port
+    std::string format;              // "", "Beast", "SBS"
+    int state = 0;                   // 0 off / connecting, 1 connected
+    uint64_t msgs = 0;               // messages (Beast frames or SBS lines) taken from it
+    uint32_t aircraft = 0;           // aircraft in the table that it updated last
+    std::string error;
 };
 
 struct AdsbFrameInfo {               // one line of the message monitor
@@ -85,6 +110,8 @@ struct AdsbTelemetry {
     float maxRangeNm = 0;                // farthest position seen (needs a reference)
     std::vector<AdsbAircraft> aircraft;  // most recently heard first
     std::vector<AdsbFrameInfo> frames;   // the last 64 good messages, newest last
+    AdsbRangeStats stats;
+    std::vector<AdsbSourceInfo> sources; // [0] is this receiver
 };
 
 // One line for the command line and the log
