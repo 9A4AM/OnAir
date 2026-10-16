@@ -188,7 +188,7 @@ jobs:
             fi
           else
             gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber \
-              || gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "OnAir ${TAG}" --generate-notes
+              || gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "OnAir ${TAG}" --generate-notes --draft   # a draft: it goes public only once every asset is attached
           fi
 
   attach-windows:
