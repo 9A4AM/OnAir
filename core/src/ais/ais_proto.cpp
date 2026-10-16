@@ -17,7 +17,7 @@ uint32_t getU(const Bits& b, size_t pos, size_t len) {
 }
 int32_t getS(const Bits& b, size_t pos, size_t len) {
     uint32_t v = getU(b, pos, len);
-    if (len < 32 && (v >> (len - 1)) & 1u) v |= ~0u << len;
+    if (len > 0 && len < 32 && (v >> (len - 1)) & 1u) v |= ~0u << len;
     return (int32_t)v;
 }
 std::string getText(const Bits& b, size_t pos, size_t len) {
