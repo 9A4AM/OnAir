@@ -80,5 +80,17 @@ void flexDecodePhase(const uint8_t* bits, std::vector<PagerMessage>& out, FlexPh
 // 32 transmitted bits t[0..31] (t[0] first) -> the 32-bit word above
 inline uint32_t wordFromBits(const uint8_t* t) { uint32_t w = 0; for (int i = 0; i < 32; i++) w = (w << 1) | (t[i] & 1u); return w; }
 
+// ---- internals shared by pager_proto.cpp (C++) and pager_proto_rs.cpp (Rust-backed), also what the differential test compares
+std::string alphaFromBits(const std::vector<uint8_t>& bits);                 // 7-bit characters, first bit least significant; padding dropped
+std::string numericFromBits(const std::vector<uint8_t>& bits, bool flex);    // 4-bit digits; flex: FLEX character set and filler 12 dropped
+struct PocsagWord {                                // what one received POCSAG code word is
+    enum Kind { Failed, Idle, Address, Data };
+    int kind = Failed;
+    uint32_t a = 0, b = 0;                         // address: the top 18 address bits and the function bits; data: the 20 data bits
+    int bits = 0;                                  // bits the BCH code corrected
+    bool fixed = false;                            // the word needed a repair
+};
+PocsagWord pocsagClassify(uint32_t raw);
+
 } // namespace pager
 } // namespace dect2

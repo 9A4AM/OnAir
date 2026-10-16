@@ -46,6 +46,21 @@ std::vector<uint8_t> nrziEncode(const std::vector<uint8_t>& bits, uint8_t startL
 // G3RUH scrambler x^17 + x^12 + 1 for 9600 baud (state: the last 17 output bits)
 std::vector<uint8_t> scramble(const std::vector<uint8_t>& bits, uint32_t& state);
 
+// State of the HDLC receiver: a plain struct (same layout as the Rust one in rust/onair_ax25/src/hdlc.rs) so that both implementations share it.
+struct HdlcState {
+    int32_t prev = 0;
+    uint8_t pat = 0, acc = 0;
+    int32_t cnt = 0;
+    bool inFrame = false, hunting = true, resyncClock = false;
+    int32_t flagRecent = 0;
+    uint32_t len = 0;            // bytes in buf
+    uint8_t buf[402] = {};       // frame bytes (at most 401 are stored)
+};
+// One bit through the receiver state: 0 nothing completed, 1 a frame with a good FCS (buf[0..len) without the FCS), 2 a frame of plausible length with
+// a bad FCS (buf[0..len) all bytes). C++ in packet_ax25.cpp, or the Rust one (packet_ax25_rs.cpp) with DECT2_RUST_AX25.
+int hdlcStep(HdlcState& s, int level, bool nrzi, size_t& len);
+void hdlcReset(HdlcState& s);
+
 // Receives the NRZI line levels (or, with nrzi = false, plain HDLC bits) one at a time and cuts out the frames.
 class HdlcRx {
 public:
@@ -53,22 +68,15 @@ public:
     using Callback = std::function<void(const std::vector<uint8_t>& data, bool ok)>;
     explicit HdlcRx(Callback cb = nullptr, bool nrzi = true) : cb_(std::move(cb)), nrzi_(nrzi) {}
     void setCallback(Callback cb) { cb_ = std::move(cb); }
-    void reset();
+    void reset() { hdlcReset(st_); }
     void bit(int level);
-    bool inFrame() const { return inFrame_; }
-    bool flagSeen() const { return flagRecent_ > 0; }   // a flag came a short while ago
-    bool takeClockResync() { const bool r = resyncClock_; resyncClock_ = false; return r; }
+    bool inFrame() const { return st_.inFrame; }
+    bool flagSeen() const { return st_.flagRecent > 0; }   // a flag came a short while ago
+    bool takeClockResync() { const bool r = st_.resyncClock; st_.resyncClock = false; return r; }
 private:
     Callback cb_;
     bool nrzi_;
-    int prev_ = 0;
-    uint8_t pat_ = 0, acc_ = 0;
-    int cnt_ = 0;
-    bool inFrame_ = false;
-    bool hunting_ = true;
-    bool resyncClock_ = false;
-    int flagRecent_ = 0;
-    std::vector<uint8_t> buf_;
+    HdlcState st_;
 };
 
 } // namespace ax25

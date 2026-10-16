@@ -64,8 +64,8 @@ Then update the status table below and run `tools/rust_check.sh`.
 | adsb | `onair_adsb` | `DECT2_RUST_ADSB` | `rs/adsb.h` | ADS-B / Mode S message layer (CRC-24, altitude/identity codes, CPR, Comm-B inference, field extraction, geometry) | done (generator, tracker and register in C++) |
 | acars | `onair_acars` | `DECT2_RUST_ACARS` | `rs/acars.h` | ACARS block layer (CRC-16, parity repair, block parsing, label names, OOOI / media advisory text) | done (frame builder in C++) |
 | same | `onair_same` | `DECT2_RUST_SAME` | `rs/same.h` | SAME / EAS header parser, tables, location text, time text, county CSV reader | done (county table state in C++) |
-| pager | `onair_pager` | `DECT2_RUST_PAGER` | `rs/pager.h` | POCSAG / FLEX | not started |
-| ax25 | `onair_ax25` | `DECT2_RUST_AX25` | `rs/ax25.h` | AX.25 / APRS | not started |
+| pager | `onair_pager` | `DECT2_RUST_PAGER` | `rs/pager.h` | POCSAG / FLEX code word (BCH, repair), word classification, text readers and looks-like-text heuristic, FLEX speed table, FIW, phase decoding | done (generators, POCSAG message assembler and receiver in C++) |
+| ax25 | `onair_ax25` | `DECT2_RUST_AX25` | `rs/ax25.h` | AX.25 frame parser, FCS, address / path / TNC-2 text, HDLC receiver, APRS parser (positions, Mic-E, objects, items, messages, weather, telemetry...) | done (frame builder, HDLC / NRZI / G3RUH transmit helpers and receiver in C++) |
 | dmr | `onair_dmr` | `DECT2_RUST_DMR` | `rs/dmr.h` | DMR | not started |
 | p25 | `onair_p25` | `DECT2_RUST_P25` | `rs/p25.h` | P25 | not started |
 | nxdn | `onair_nxdn` | `DECT2_RUST_NXDN` | `rs/nxdn.h` | NXDN | not started |
@@ -89,13 +89,15 @@ Then update the status table below and run `tools/rust_check.sh`.
 ## The C++ originals are still there
 
 For every converted module the replaced C++ stays in its file under `#ifndef DECT2_RUST_<MODULE>` (AIS: `ais_proto.cpp`; ADS-B: `adsb_msg.cpp`; ACARS:
-`acars_proto.cpp`; SAME: `same_proto.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
+`acars_proto.cpp`; SAME: `same_proto.cpp`; pager: `pager_proto.cpp`; AX.25 / APRS: `packet_ax25.cpp`, `packet_aprs.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
 twin is `<file>_rs.cpp` (guarded by `#ifdef DECT2_RUST_<MODULE>`). A later step deletes the `#ifndef` blocks when Rust becomes mandatory; the differential
 tests then keep a frozen copy as their reference (`cmake/gen_rs_ref.cmake` writes it from the C++ file with the switch undefined).
 
 What deliberately stays C++ in the three first converted protocol modules: ADS-B `getBits` / `setBits` / `toHex` (helpers without a length, called in loops by the
 generator and trackers), the encoder and generator (`adsb_encode`, `adsb_gen`), the tracker and register, the demodulator; ACARS `acarsBuildFrame` (transmitter of the
-test signal) and the receiver; SAME's county table (user state with a mutex) and file loader, and the receiver.
+test signal) and the receiver; SAME's county table (user state with a mutex) and file loader, and the receiver. Pager: `pocsagBits` / `flexPhaseBits` (generators) and the
+`PocsagParser` message assembler (unbounded bit list). AX.25: `buildFrame`, `appendFcs`, `hdlcBits`, `nrziEncode`, `scramble`. `HdlcRx` and the pager `PocsagParser` are thin C++ classes
+over Rust steps (`hdlcStep`, `pocsagClassify`).
 
 ## Differential tests and floating point
 
@@ -104,6 +106,6 @@ bit), over the real vectors and 100000+ seeded random / mutated / truncated inpu
 sanitizer build (also a libFuzzer target with `-DONAIR_LIBFUZZER`). Both are registered by `onair_rust_diff_tests()` in `CMakeLists.txt`.
 
 Floating point: Rust never fuses `a * b + c` and calls the C math library for `sin`, `cos`, `floor`, `fmod`... (`no_std` has no methods for them; they are declared in `ffi.rs`,
-`math`). clang and gcc fuse multiply-adds on arm64 by default and rewrite `sin(x)` + `cos(x)` into `sincos` on Apple platforms, which changes the last bit. `adsb_msg.cpp` is
+`math`). clang and gcc fuse multiply-adds on arm64 by default and rewrite `sin(x)` + `cos(x)` into `sincos` on Apple platforms, which changes the last bit. `adsb_msg.cpp` and `packet_aprs.cpp` (pow) are
 therefore compiled with `-ffp-contract=off -fno-builtin-sin -fno-builtin-cos` in every build (also `DECT2_RUST=OFF`), so ON and OFF give the same numbers bit for bit. Use
 the same flags for any future module that mixes floating point between Rust and C++.
