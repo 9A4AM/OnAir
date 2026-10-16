@@ -131,7 +131,11 @@ static void testReceiver() {
 
 int main() {
 #ifndef DECT2_BUILTIN_MBE_TEST
+#ifdef _WIN32
+    _putenv_s("DECT2_NATIVE_LIBDIR", "/nonexistent");
+#else
     setenv("DECT2_NATIVE_LIBDIR", "/nonexistent", 1);
+#endif
 #endif
     testSplit();
     testDecode();

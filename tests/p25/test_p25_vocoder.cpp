@@ -14,7 +14,11 @@ static int fails = 0;
 
 int main() {
 #ifndef DECT2_BUILTIN_MBE_TEST
-    setenv("DECT2_NATIVE_LIBDIR", "/nonexistent", 1);   // no installed library may be picked up: only the built-in one
+#ifdef _WIN32
+    _putenv_s("DECT2_NATIVE_LIBDIR", "/nonexistent");   // no installed library may be picked up: only the built-in one
+#else
+    setenv("DECT2_NATIVE_LIBDIR", "/nonexistent", 1);
+#endif
 #endif
     std::string p1, p2, p3;
     const bool a = p25ImbeAvailable(&p1), b = dstarAmbeAvailable(&p2), c = nxdnAmbeAvailable(&p3);
