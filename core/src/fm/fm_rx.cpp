@@ -335,6 +335,7 @@ struct FmReceiver::Impl {
     std::vector<float> sIn, dIn, mOut, dOut;
     DeEmphasis deL, deR;
     double deemphUs = 50;
+    std::atomic<bool> forceMono{false};
     RationalResampler audioRs;
     bool audioRsOk = false;
     std::vector<cf32> lr, lr48;
@@ -611,7 +612,7 @@ struct FmReceiver::Impl {
         lpD.process(dIn.data(), n, dOut);
         const size_t na = std::min(mOut.size(), dOut.size());
         lr.resize(na);
-        const float target = pilotLock ? 1.f : 0.f;
+        const float target = (pilotLock && !forceMono.load(std::memory_order_relaxed)) ? 1.f : 0.f;
         for (size_t i = 0; i < na; i++) {
             stereoBlend += (target - stereoBlend) * 0.002f;
             const float m = mOut[i], d = dOut[i] * stereoBlend;
@@ -716,7 +717,7 @@ struct FmReceiver::Impl {
         t.cfoHz += tuneHz;
         t.devKhz = (float)(peakMpx * 75.0);
         t.levelDbfs = pwN ? (float)(10 * std::log10(std::max(pwSum / pwN, 1e-12))) : -120.f;
-        t.stereo = pilotLock && stereoBlend > 0.5f;
+        t.stereo = pilotLock && stereoBlend > 0.5f && !forceMono.load(std::memory_order_relaxed);
         t.pilotPct = pilotLock ? (float)(200 * pI) : 0.f;
         t.rdsSync = rds.synced;
         t.rdsBlockOkPct = rds.okPct;
@@ -765,6 +766,7 @@ void FmReceiver::setDeemphasis(double us) {
     p_->deemphUs = us;
     if (p_->ready) { p_->deL.configure(us, p_->fa); p_->deR.configure(us, p_->fa); }
 }
+void FmReceiver::setMono(bool on) { p_->forceMono = on; }
 void FmReceiver::setStationFinder(bool on) { p_->autoFind = on; }
 
 void FmReceiver::setChannelWidth(double hz) {

@@ -22,6 +22,7 @@ public:
 
     void setVolume(float v);                             // 0 .. 1
     void setMuted(bool m);
+    void setMono(bool on);                               // force mono: the 19 kHz pilot and the stereo decoder are ignored (less noise on a weak station); off = stereo when the pilot is locked
     void setDeemphasis(double microseconds);             // 50 (Europe, Middle East, most of the world) or 75 (Americas, South Korea)
     // The channel filter's pass band, the whole width in Hz (0 = the standard 220 kHz); held to kMin/kMaxChannelWidthHz. Narrower keeps a
     // strong neighbour out at the cost of distortion on loud passages and of RDS; it takes effect with the next samples (any thread).

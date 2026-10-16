@@ -435,6 +435,7 @@ void loadPrefs(App& a) {
     if (a.rxId == 1) {
         a.mapSend = d.getI("mapSend", 0) != 0;
         a.mapConsent = d.getI("mapConsent", 0) != 0;
+        a.mapDeclined = d.getI("mapDeclined", 0) != 0;
         a.mapStationId = d.getS("mapStationId", "");
         a.mapServer = d.getS("mapServer", "");
         if (a.mapSend && !a.mapConsent) a.mapSend = false;   // never on without consent
@@ -463,6 +464,7 @@ void loadPrefs(App& a) {
     if (d.has("fmSaved")) {   // the saved-stations library, separate from the band-scan list in fmStations
         for (const auto& r : fmSavedDecode(d.getS("fmSaved", ""))) a.fmSaved.push_back(r);
     }
+    if (d.has("fmMono")) a.fmMono = d.getI("fmMono", 0) != 0;
     if (d.has("fmDeemph")) a.fmDeemph = d.getI("fmDeemph", 50) == 75 ? 75 : 50;
     if (d.has("fmChanKhz")) { const int k = (int)d.getI("fmChanKhz", 0); a.fmChanKhz = k > 0 ? std::min(300, std::max(100, k)) : 0; }
     if (d.has("compute")) a.computeMode = std::max(0, std::min(2, (int)d.getI("compute", a.computeMode)));   // indexes the CPU / GPU / Auto names
@@ -503,6 +505,7 @@ void savePrefs(const App& a) {
     d.setI("family", a.family);
     { const SubMode* sm = curSub(a); d.setS("subMode", sm ? sm->id : ""); }
     d.setI("fmDeemph", a.fmDeemph);
+    d.setI("fmMono", a.fmMono ? 1 : 0);
     d.setI("fmChanKhz", a.fmChanKhz);
     if (a.rxId == 1) d.setB("newUi", a.newUi);
     d.setI("wfMap", a.wf.map); d.setB("wfAuto", a.wf.autoTrack); d.setD("wfMin", a.wf.minDb); d.setD("wfMax", a.wf.maxDb); d.setD("wfRate", a.wf.rowsPerSec);
@@ -534,6 +537,7 @@ void savePrefs(const App& a) {
     d.setI("discordFreq", a.discordFreq ? 1 : 0);
     d.setI("mapSend", a.mapSend ? 1 : 0);
     d.setI("mapConsent", a.mapConsent ? 1 : 0);
+    d.setI("mapDeclined", a.mapDeclined ? 1 : 0);
     d.setS("mapStationId", a.mapStationId);
     d.setS("mapServer", a.mapServer);
     d.setI("dtmbBw", a.dtmbBwMhz);

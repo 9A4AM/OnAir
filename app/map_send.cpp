@@ -573,10 +573,19 @@ void consentPopup(App& a) {
         ImGui::CloseCurrentPopup();
     }
     ImGui::SameLine();
-    if (ImGui::Button(tr("Cancel"), ImVec2(100 * gUi, 0))) {
+    if (ImGui::Button(tr("Not now"), ImVec2(100 * gUi, 0))) {
         stopSend(s);
         ImGui::CloseCurrentPopup();
     }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Nothing is sent. OnAir asks again the next time it starts."));
+    ImGui::SameLine();
+    if (ImGui::Button(tr("No, do not ask again"), ImVec2(190 * gUi, 0))) {
+        stopSend(s);
+        s.mapDeclined = true;
+        savePrefs(s);
+        ImGui::CloseCurrentPopup();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Nothing is sent and this question is not shown again. You can still turn it on later in the Server menu."));
     ImGui::EndPopup();
 }
 
@@ -613,7 +622,21 @@ void txOffToast() {
     mapToast(tr("The connection to the map server has been turned off. It cannot be turned back on while you are transmitting."));
 }
 
+// The first thing a new user sees: a question whether to take part in the public map, because few people find Server > Send data on their own.
+// It asks at every start until it is answered with "Send positions" or "No, do not ask again" ("Not now" asks again next time); never while
+// transmitting, and the receiver having started is not required.
+void startupQuestion(App& a) {
+    static bool asked = false;
+    if (asked) return;
+    App& s = rootApp(a);
+    if (s.mapConsent || s.mapDeclined || gTxHold || txActive()) { asked = true; return; }
+    if (ImGui::GetFrameCount() < 90) return;   // after the first frames: the window is up and the layout is settled
+    asked = true;
+    gAskConsent = true;
+}
+
 void mapPopups(App& a) {
+    startupQuestion(a);
     consentPopup(a);
     connectingPopup();
     retryPopup();

@@ -146,6 +146,7 @@ void fmHistory(App& a) {
             lastVol = a.volume; lastMute = a.muted; lastScan = a.fmScan.running;
         }
     }
+    { static int lastMono = -1; const int mono = a.fmMono ? 1 : 0; if (a.fmMode && (mono != lastMono || (a.engine.running() && !wasRunning))) { a.engine.fm().setMono(a.fmMono); lastMono = mono; } }
     if (a.fmMode && (a.fmDeemph != lastDe || (a.engine.running() && !wasRunning))) { a.engine.fm().setDeemphasis(a.fmDeemph); lastDe = a.fmDeemph; }
     if (a.fmChanKhz != lastW) { a.engine.fm().setChannelWidth(a.fmChanKhz * 1e3); lastW = a.fmChanKhz; }   // the receiver keeps it between starts
     wasRunning = a.fmMode && a.engine.running();
@@ -322,6 +323,14 @@ void fmRadioPanel(App& a) {
         if (live && fm.rdsSync) snprintf(rds, sizeof rds, "%.0f %% blocks ok", fm.rdsBlockOkPct);
         row(Ic::Wave, "RDS", "%s", rds);
         row(Ic::Warning, "Traffic", "%s", !live ? "-" : fm.trafficAlert ? "ANNOUNCEMENT" : fm.trafficProgram ? "station (TP)" : "no");
+        ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(Ic::Speaker, iconDim(), 0.9f); ImGui::SameLine(0, 5 * gUi); ImGui::TextDisabled("Stereo"); ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-1);
+        if (ImGui::BeginCombo("##fmmono", a.fmMono ? "Mono" : "Auto (stereo when the pilot is locked)")) {
+            if (ImGui::Selectable("Auto (stereo when the pilot is locked)", !a.fmMono)) { a.fmMono = false; savePrefs(a); }
+            if (ImGui::Selectable("Mono", a.fmMono)) { a.fmMono = true; savePrefs(a); }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Mono ignores the stereo part of the signal. On a weak station the stereo part carries most of the hiss, so mono sounds cleaner.");
         ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(Ic::Sliders, iconDim(), 0.9f); ImGui::SameLine(0, 5 * gUi); ImGui::TextDisabled("De-emphasis"); ImGui::TableNextColumn();
         ImGui::SetNextItemWidth(-1);
         // a narrow list: the region in brackets goes first ("50 us"), the box keeps the value

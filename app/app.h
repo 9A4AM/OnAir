@@ -346,6 +346,7 @@ struct App {
     bool reduceCpuHidden = true;   // View > Reduce CPU when hidden: no drawing while the window is minimised or hidden (decoding goes on)
     bool discordOn = false, discordFreq = true;   // View > Show in Discord (opt-in Rich Presence, discord_rpc.cpp) and its "Show the frequency"
     bool mapSend = false, mapConsent = false;     // Server > Send data to map server (opt-in; consent once)
+    bool mapDeclined = false;                     // the start-up question was answered "No, do not ask again" (the Server menu still works)
     std::string mapStationId;                     // client id for /ingest, generated once
     std::string mapServer;                        // empty: https://map.on-air.dev (a local worker URL for developers)
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
@@ -379,6 +380,7 @@ struct App {
     bool dabFollowing = false;
     uint64_t dabRsLast = 0, dabAuLast = 0;
     std::deque<float> fmSnrH, fmPilotH, fmRdsH;
+    bool fmMono = false;      // FM: force mono (a weak station is quieter in mono)
     int fmDeemph = 50;        // FM de-emphasis in microseconds: 50 (Europe, Middle East, most of the world) or 75 (Americas, South Korea)
     int fmChanKhz = 0;        // FM channel filter: 0 = automatic (the receiver's standard 220 kHz), else a manual width of 100 to 300 kHz
     struct DabScan {
