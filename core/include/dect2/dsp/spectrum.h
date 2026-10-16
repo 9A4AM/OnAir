@@ -13,6 +13,9 @@ struct SignalStats {
     uint32_t hist[64] = {}; // |I| and |Q| magnitude histogram (ADC occupancy)
 };
 
+// 10*log10(p) for 1e-14 <= p, the fast form the analyser uses (error below 0.0001 dB)
+float spectrumDb(float p);
+
 struct SpectrumFrame {
     std::vector<float> dbfs; // fftSize bins, DC-centred (-fs/2 .. +fs/2)
     SignalStats stats;
