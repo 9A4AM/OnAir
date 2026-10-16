@@ -1025,10 +1025,10 @@ Rolling window: a sector's furthest position counts only for this long	Finestra 
 Save CSV...	Salva CSV...
 Save PNG...	Salva PNG...
 Set the receiver position first: ranges are measured from it.	Imposta prima la posizione del ricevitore: le portate si misurano da essa.
-The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	L'RX888 MkII non ha un programma proprio nel suo chip USB: il computer lo carica ogni volta che la radio viene collegata. Quel file, SDDC_FX3.img, appartiene al progetto SDDC e ha una licenza propria, quindi OnAir non lo include.
 The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	L'RX888 MkII invia fino a 256 MB al secondo. Richiede una porta USB 3 (SuperSpeed) e un cavo USB 3; su una porta USB 2 non può trasmettere.
 The RX888 is on a USB 2 port	L'RX888 è su una porta USB 2
 The RX888 needs its firmware file	L'RX888 richiede il suo file firmware
+The RX888 MkII has no program of its own in its USB chip: OnAir loads SDDC_FX3.img into RAM when the radio is in boot-loader mode (nothing is flashed to the radio). Official OnAir packages include this file; a copy built by hand may not.	L'RX888 MkII non ha un programma proprio nel chip USB: OnAir carica SDDC_FX3.img in RAM in modalità boot-loader (nulla viene scritto nella radio). I pacchetti ufficiali OnAir includono questo file; una copia compilata a mano potrebbe non includerlo.
 Use a USB 3 cable (the one that came with the radio).	Usa un cavo USB 3 (quello fornito con la radio).
 armed: %s at %s	predisposto: %s alle %s
 last downloaded %s	ultimo download %s

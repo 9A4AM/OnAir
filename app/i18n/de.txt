@@ -1028,7 +1028,7 @@ Channel scan	Kanalsuche
 FM	FM
 # RX888 MkII
 The RX888 needs its firmware file	Das RX888 braucht seine Firmware-Datei
-The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	Der USB-Chip des RX888 MkII hat kein eigenes Programm: Der Computer lädt es bei jedem Anstecken des Radios. Diese Datei, SDDC_FX3.img, gehört zum SDDC-Projekt und hat eine eigene Lizenz, deshalb liegt sie OnAir nicht bei.
+The RX888 MkII has no program of its own in its USB chip: OnAir loads SDDC_FX3.img into RAM when the radio is in boot-loader mode (nothing is flashed to the radio). Official OnAir packages include this file; a copy built by hand may not.	Der USB-Chip des RX888 MkII hat kein eigenes Programm: OnAir lädt SDDC_FX3.img im Bootloader-Modus in den RAM (nichts wird ins Radio geflasht). Offizielle OnAir-Pakete enthalten diese Datei; eine selbst gebaute Kopie eventuell nicht.
 Download SDDC_FX3.img from the Releases page of the SDDC_Driver project (button below).	Lade SDDC_FX3.img von der Releases-Seite des SDDC_Driver-Projekts herunter (Schaltfläche unten).
 Put the file in OnAir's codecs folder (button below).	Lege die Datei in den OnAir-Codec-Ordner (Schaltfläche unten).
 The RX888 is on a USB 2 port	Das RX888 hängt an einem USB-2-Anschluss

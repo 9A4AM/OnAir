@@ -1050,10 +1050,10 @@ Rolling window: a sector's furthest position counts only for this long	移動ウ
 Save CSV...	CSV を保存...
 Save PNG...	PNG を保存...
 Set the receiver position first: ranges are measured from it.	先に受信地点を設定してください。距離はそこから測定されます。
-The RX888 MkII has no program of its own in its USB chip: the computer loads it each time the radio is plugged in. That file, SDDC_FX3.img, belongs to the SDDC project and has a licence of its own, so OnAir does not include it.	RX888 MkII の USB チップには自前のプログラムがなく、無線機を接続するたびにコンピューターが読み込ませます。そのファイル SDDC_FX3.img は SDDC プロジェクトのもので独自のライセンスがあるため、OnAir には含まれていません。
 The RX888 MkII sends up to 256 MB per second. It needs a USB 3 (SuperSpeed) port and a USB 3 cable; on a USB 2 port it cannot stream.	RX888 MkII は最大で毎秒 256 MB を送出します。USB 3 (SuperSpeed) ポートと USB 3 ケーブルが必要で、USB 2 ポートではストリーミングできません。
 The RX888 is on a USB 2 port	RX888 が USB 2 ポートに接続されています
 The RX888 needs its firmware file	RX888 にはファームウェアファイルが必要です
+The RX888 MkII has no program of its own in its USB chip: OnAir loads SDDC_FX3.img into RAM when the radio is in boot-loader mode (nothing is flashed to the radio). Official OnAir packages include this file; a copy built by hand may not.	RX888 MkII の USB チップには自前のプログラムがなく、OnAir はブートローダーモードで SDDC_FX3.img を RAM に読み込みます（無線機には書き込みません）。公式 OnAir パッケージには含まれます。手元でビルドしたコピーには含まれない場合があります。
 Use a USB 3 cable (the one that came with the radio).	USB 3 ケーブル (無線機に付属のもの) を使用してください。
 armed: %s at %s	予約済み: %s、%s
 last downloaded %s	最終ダウンロード %s
