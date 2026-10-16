@@ -143,9 +143,9 @@ float freqDigits(App& a, float fontSize = 30.f) {
     const ModeTuning* mt = a.family >= 6 ? modeTuning(a.family + 2) : nullptr;
     const double lo = mt ? mt->minMhz : 0.001, hi = dect2::kMaxTuneMhz;
     long long hz = (long long)std::llround(a.freqMhz * 1e6);
-    constexpr int kD = 19;   // nineteen digits: a trillion MHz (10^18 Hz)
+    constexpr int kD = 13;   // thirteen digits: up to 1000 GHz (10^12 Hz)
     char buf[24];
-    snprintf(buf, sizeof buf, "%019lld", hz);
+    snprintf(buf, sizeof buf, "%013lld", hz);
     ImGui::PushFont(a.mono, fontSize);
     const ImVec2 cs = ImGui::CalcTextSize("0");
     const float cw = cs.x + 1 * gUi, ch = cs.y;
@@ -771,6 +771,11 @@ float menuBar(App& a) {
         if (ImGui::BeginMenu(tr("Help"))) {
             if (ImGui::MenuItem(tr("Setup wizard"))) setupWizardOpen(a);
             if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
+            ImGui::Separator();
+            if (ImGui::MenuItem(tr("Documentation"))) dect2::openUrl("https://on-air.dev/docs/");
+            if (ImGui::MenuItem(tr("Troubleshooting"))) dect2::openUrl("https://on-air.dev/docs/troubleshooting/");
+            if (ImGui::MenuItem(tr("Voice codecs (mbelib)"))) dect2::openUrl("https://on-air.dev/docs/codecs/");
+            if (ImGui::MenuItem(tr("Website"))) dect2::openUrl("https://on-air.dev/");
             ImGui::EndMenu();
         }
         {   // version + Clear all on the right: reserve real width (long beta tags used to clip Clear all)

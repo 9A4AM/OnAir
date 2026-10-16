@@ -5,7 +5,7 @@
 
 namespace dect2 {
 
-constexpr double kMaxTuneMhz = 999999.0;   // upper limit for the frequency readout and tuneFreq() (the radio may not go there)
+constexpr double kMaxTuneMhz = 1000000.0;   // upper limit for the frequency readout and tuneFreq() (the radio may not go there)
 
 struct SynthConfig;   // source.h
 

@@ -1099,3 +1099,7 @@ LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic, JSON (UDP)
 JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	Righe JSON (un oggetto per riga), tranne GNSS che è NMEA. Spento finché non attivi un feed. Si inviano solo i modi che hanno già messaggi strutturati.
 Support	Support
 Support OnAir on Ko-fi	Support OnAir on Ko-fi
+Documentation	Documentazione
+Troubleshooting	Risoluzione dei problemi
+Voice codecs (mbelib)	Codec vocali (mbelib)
+Website	Sito web

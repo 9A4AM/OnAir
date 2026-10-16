@@ -1102,3 +1102,7 @@ LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic, JSON (UDP)
 JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	JSON-sorok (egy objektum soronként), kivéve a GNSS-t, az NMEA. Ki van kapcsolva, amíg be nem kapcsol egy adatfolyamot. Csak a már strukturált üzenetekkel rendelkező módok mennek.
 Support	Support
 Support OnAir on Ko-fi	Support OnAir on Ko-fi
+Documentation	Dokumentáció
+Troubleshooting	Hibaelhárítás
+Voice codecs (mbelib)	Hangkodekek (mbelib)
+Website	Weboldal
