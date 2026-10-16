@@ -78,7 +78,24 @@ namespace {
 // The polyphase filter over n outputs; compiled twice on x86-64 (baseline and AVX2 + FMA, see dect2/dsp/simd.h)
 DECT2_SIMD_BODY void filterLoopBody(const float* re, const float* im, const float* bank, int stride, int half, int64_t& pos, int64_t step, size_t n, cf32* o) {
     const int shift = 32 - 9;   // 512 phases
-    for (size_t k = 0; k < n; k++) {
+    size_t k = 0;
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+    for (; k + 2 <= n; k += 2) {   // two outputs per pass (independent, so the second does not wait for the first); the positions are exact integers
+        long base[2]; const float* h[2];
+        for (int u = 0; u < 2; u++) {
+            int64_t i0 = pos >> 32;
+            uint32_t ph = (uint32_t)(((uint64_t)(pos & 0xFFFFFFFFll) + (1ull << (shift - 1))) >> shift);
+            if (ph >= 512) { ph = 0; i0++; }
+            base[u] = (long)i0 - (half - 1);
+            h[u] = bank + (size_t)ph * (size_t)stride;
+            pos += step;
+        }
+        float vr[2], vi[2];
+        dotRI2(re + base[0], im + base[0], h[0], re + base[1], im + base[1], h[1], stride, vr[0], vi[0], vr[1], vi[1]);
+        o[k] = cf32(vr[0], vi[0]); o[k + 1] = cf32(vr[1], vi[1]);
+    }
+#endif
+    for (; k < n; k++) {
         int64_t i0 = pos >> 32;
         // nearest of the 512 phases; a carry moves to the next input sample
         uint32_t ph = (uint32_t)(((uint64_t)(pos & 0xFFFFFFFFll) + (1ull << (shift - 1))) >> shift);
