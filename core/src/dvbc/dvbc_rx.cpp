@@ -662,11 +662,14 @@ struct DvbcReceiver::Impl {
             // the mixer is a rotating phasor (renormalised every 256 samples), not a sin/cos per sample
             double pr = std::cos(ncoPh), pi_ = std::sin(ncoPh);
             const double sr = std::cos(ncoStep), si = std::sin(ncoStep);
+            const size_t h0 = hb.size();
+            hb.resize(h0 + take);   // one resize per chunk, then plain stores: a push_back per sample re-checks the capacity every time
+            cf32* __restrict hbOut = hb.data() + h0;
             for (size_t k = 0; k < take; k++) {
                 const std::complex<double> xi(x[i + k].real(), x[i + k].imag());
                 dcI += dcA * (xi - dcI);
                 const std::complex<double> xd = xi - dcI;
-                hb.push_back(cf32((float)xd.real(), (float)xd.imag()) * cf32((float)pr, (float)pi_));
+                hbOut[k] = cf32((float)xd.real(), (float)xd.imag()) * cf32((float)pr, (float)pi_);
                 const double nr = pr * sr - pi_ * si;
                 pi_ = pr * si + pi_ * sr; pr = nr;
                 if ((k & 255) == 255) { const double g = 1.0 / std::sqrt(pr * pr + pi_ * pi_); pr *= g; pi_ *= g; }

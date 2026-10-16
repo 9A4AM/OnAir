@@ -69,7 +69,10 @@ public:
         const int d = (quad - prevQuad_) & 3;
         prevQuad_ = quad;
         const int v = (iqOf(d) << (m_ - 2)) | (sym & ((1 << (m_ - 2)) - 1));
-        for (int b = m_ - 1; b >= 0; b--) bits.push_back((uint8_t)((v >> b) & 1));
+        const size_t at = bits.size();
+        bits.resize(at + (size_t)m_);   // one resize, then stores: a push_back per bit re-checks the capacity for each of the m bits
+        uint8_t* o = bits.data() + at;
+        for (int b = m_ - 1, k = 0; b >= 0; b--, k++) o[k] = (uint8_t)((v >> b) & 1);
     }
 private:
     int m_ = 6, prevQuad_ = 0;
