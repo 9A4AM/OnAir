@@ -1,8 +1,11 @@
 // Our own plotting on top of Dear ImGui's draw lists. See plot.h.
 #include "plot.h"
+#include "plot_batch.h"
 #include "imgui_internal.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <limits>
 #include <string>
@@ -306,6 +309,27 @@ void drawMarker(ImVec2 p, MarkerType m, float size, ImU32 fill, ImU32 line) {
     }
 }
 
+// DECT2_PLOTSTATS=1: the CPU time of every plot (from BeginPlot to the end of EndPlot, so the data calls between are in it) added up per
+// frame, and the number of plots, printed every 2 seconds on stderr. Dev tool for the plot speed work; costs two clock reads per plot when on.
+struct PlotStats {
+    bool on = getenv("DECT2_PLOTSTATS") != nullptr;
+    std::chrono::steady_clock::time_point t0;
+    double acc = 0, worst = 0, frameAcc = 0; int plots = 0, frames = 0, lastFrame = -1; double last = 0;
+    void begin() { if (on) t0 = std::chrono::steady_clock::now(); }
+    void end() {
+        if (!on) return;
+        const double d = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+        const int f = ImGui::GetFrameCount();
+        if (f != lastFrame) { worst = std::max(worst, frameAcc); acc += frameAcc; if (lastFrame >= 0) frames++; frameAcc = 0; lastFrame = f; }
+        frameAcc += d; plots++;
+        const double now = ImGui::GetTime();
+        if (now - last > 2.0 && frames > 0) {
+            fprintf(stderr, "plotstats: %.3f ms avg / %.2f ms max per frame in plots (%d frames, %.1f plots/frame)\n", 1e3 * acc / frames, 1e3 * worst, frames, (double)plots / frames);
+            acc = worst = 0; plots = frames = 0; last = now;
+        }
+    }
+} gPlotStats;
+
 } // namespace
 
 Style& GetStyle() { return gStyle; }
@@ -336,6 +360,7 @@ bool BeginPlot(const char* id, ImVec2 size, int flags) {
         ImGui::ItemSize(s);
     }
     C.active = true;
+    gPlotStats.begin();
     return true;
 }
 
@@ -367,7 +392,8 @@ template <class T> void PlotLine(const char*, const T* xs, const T* ys, int n, c
     const ImU32 u = ImGui::ColorConvertFloat4ToU32(col);
     const ImU32 uf = ImGui::ColorConvertFloat4ToU32(pick(s.MarkerFillColor.w >= 0 ? s.MarkerFillColor : col));
     const float wgt = std::max(0.5f, s.LineWeight) * gStyle.Scale;
-    std::vector<ImVec2> pts;
+    static std::vector<ImVec2> pts;   // kept between calls: no allocation per line per frame
+    pts.clear();
     pts.reserve((size_t)n);
     auto flush = [&] { if (pts.size() > 1) C.dl->AddPolyline(pts.data(), (int)pts.size(), u, 0, wgt); pts.clear(); };
     for (int i = 0; i < n; i++) {
@@ -397,14 +423,21 @@ template <class T> void PlotScatter(const char*, const T* xs, const T* ys, int n
     const ImU32 fill = ImGui::ColorConvertFloat4ToU32(col);
     const ImU32 line = ImGui::ColorConvertFloat4ToU32(s.MarkerLineColor.w >= 0 ? s.MarkerLineColor : col);
     const MarkerType m = s.Marker == Marker_None ? Marker_Circle : s.Marker;
+    // Round dots larger than a pixel go through one batch (all the same colour and size, so the order does not matter and the pixels
+    // are those of one AddCircleFilled each: see plot_batch.h); the rest are drawn one by one as before.
+    const float size = s.MarkerSize * gStyle.Scale;
+    const bool batch = m == Marker_Circle && size * 1.4f > 1.0f;
+    static std::vector<ImVec2> dots; static DotBatch batcher;
+    dots.clear();
     for (int i = 0; i < n; i++) {
         const double x = at(xs, i, s.Stride), y = at(ys, i, s.Stride);
         fitData(x, y);
         if (!std::isfinite(x) || !std::isfinite(y)) continue;
         const ImVec2 p(px(x), py(y));
         if (p.x < C.plot.Min.x - 8 || p.x > C.plot.Max.x + 8 || p.y < C.plot.Min.y - 8 || p.y > C.plot.Max.y + 8) continue;
-        drawMarker(p, m, s.MarkerSize * gStyle.Scale, fill, line);
+        if (batch) dots.push_back(p); else drawMarker(p, m, size, fill, line);
     }
+    if (batch) batcher.draw(C.dl, dots.data(), (int)dots.size(), size * 1.4f, fill);
 }
 
 template <class T> void PlotScatter(const char* label, const T* ys, int n, double xScale, double xStart, const Spec& s) {
@@ -528,6 +561,7 @@ Rect GetPlotLimits() {
 
 void EndPlot() {
     if (!C.active) return;
+    struct Timed { ~Timed() { gPlotStats.end(); } } timed;
     finishSetup();
     C.dl->PopClipRect();
     const float sc = gStyle.Scale, th = ImGui::GetTextLineHeight(), tickLen = gStyle.TickLen * sc, pad = gStyle.Pad * sc;

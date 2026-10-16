@@ -368,10 +368,10 @@ void ingestSpectrum(App& a) {
     const float alpha = a.specAvgSec <= 0.001f ? 1.f : 1.f - std::exp(-dt / a.specAvgSec);   // a time constant, so the look does not depend on the frame rate
     const float fall = a.holdDecay * dt;
     float* sm = a.smooth.data(); float* pk = a.peak.data(); const float* in = f.dbfs.data();
-    for (size_t i = 0; i < n; i++) {
-        sm[i] += alpha * (in[i] - sm[i]);
-        pk[i] = a.holdDecay > 0 ? std::max(pk[i] - fall, in[i]) : std::max(pk[i], in[i]);
-    }
+    // the choice of peak rule is made once, outside the loops, so each is a plain loop the compiler vectorises (the branch inside kept it scalar)
+    for (size_t i = 0; i < n; i++) sm[i] += alpha * (in[i] - sm[i]);
+    if (a.holdDecay > 0) for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i] - fall, in[i]);
+    else for (size_t i = 0; i < n; i++) pk[i] = std::max(pk[i], in[i]);
     if (a.wf.offer(f.dbfs, now)) a.wf.stamp(now);
     if (a.wf.autoTrack && !a.wf.paused && now - a.wf.trackT > 0.25) { a.wf.trackT = now; a.wf.fitRange(a.smooth, false); }
 }
