@@ -33,19 +33,31 @@ State S;
 
 bool live(const App& a) { return a.rx.standard == 27; }   // the engine reports its standard code minus one
 
+// Records use 0x1f between fields and 0x1e between channels so Prefs::setS() (which turns '|' into spaces on Windows/Linux) cannot break them.
 std::string encode(const std::vector<dect2::AirbandChannel>& v) {
     std::string s;
     for (const auto& c : v) {
-        char b[128];
         std::string l = c.label;
-        for (auto& ch : l) if (ch == '|' || ch == ';') ch = ' ';
-        snprintf(b, sizeof b, "%.1f|%d|%d|%d|%d|%s;", c.freqHz, c.is833 ? 1 : 0, c.muted ? 1 : 0, c.solo ? 1 : 0, c.priority ? 1 : 0, l.c_str());
+        for (char& ch : l) if (ch == '\x1e' || ch == '\x1f' || ch == '\n' || ch == '\r' || ch == '|') ch = ' ';
+        char b[64];
+        snprintf(b, sizeof b, "%.1f", c.freqHz);
         s += b;
+        s += '\x1f';
+        s += std::to_string(c.is833 ? 1 : 0);
+        s += '\x1f';
+        s += std::to_string(c.muted ? 1 : 0);
+        s += '\x1f';
+        s += std::to_string(c.solo ? 1 : 0);
+        s += '\x1f';
+        s += std::to_string(c.priority ? 1 : 0);
+        s += '\x1f';
+        s += l;
+        s += '\x1e';
     }
     return s;
 }
 
-std::vector<dect2::AirbandChannel> decode(const std::string& s) {
+static std::vector<dect2::AirbandChannel> decodeLegacy(const std::string& s) {
     std::vector<dect2::AirbandChannel> v;
     std::stringstream ss(s);
     std::string item;
@@ -54,6 +66,32 @@ std::vector<dect2::AirbandChannel> decode(const std::string& s) {
         std::stringstream is(item);
         std::string x;
         while (std::getline(is, x, '|')) f.push_back(x);
+        if (f.size() < 5) continue;
+        dect2::AirbandChannel c;
+        c.freqHz = atof(f[0].c_str()); c.is833 = f[1] == "1"; c.muted = f[2] == "1"; c.solo = f[3] == "1"; c.priority = f[4] == "1";
+        c.label = f.size() > 5 ? f[5] : "";
+        if (dect2::airbandOnRaster(c.freqHz, c.is833)) v.push_back(c);
+    }
+    return v;
+}
+
+std::vector<dect2::AirbandChannel> decode(const std::string& s) {
+    if (s.find('|') != std::string::npos) return decodeLegacy(s);   // macOS NSUserDefaults and old saves
+    std::vector<dect2::AirbandChannel> v;
+    size_t pos = 0;
+    while (pos < s.size()) {
+        size_t rec = s.find('\x1e', pos);
+        if (rec == std::string::npos) rec = s.size();
+        const std::string item = s.substr(pos, rec - pos);
+        pos = rec + 1;
+        std::vector<std::string> f;
+        size_t fp = 0;
+        while (fp < item.size()) {
+            size_t sep = item.find('\x1f', fp);
+            if (sep == std::string::npos) sep = item.size();
+            f.push_back(item.substr(fp, sep - fp));
+            fp = sep + 1;
+        }
         if (f.size() < 5) continue;
         dect2::AirbandChannel c;
         c.freqHz = atof(f[0].c_str()); c.is833 = f[1] == "1"; c.muted = f[2] == "1"; c.solo = f[3] == "1"; c.priority = f[4] == "1";
@@ -75,6 +113,7 @@ void save() {
     plat::Prefs& d = plat::prefs();
     d.setS("airChans", encode(S.chans));
     d.setD("airSquelch", S.squelch); d.setD("airHang", S.hang); d.setB("airScan", S.scan);
+    d.flush();
     S.dirty = true;
 }
 
