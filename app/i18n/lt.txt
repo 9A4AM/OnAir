@@ -1121,3 +1121,8 @@ Documentation	Dokumentacija
 Troubleshooting	Trikčių šalinimas
 Voice codecs (mbelib)	Balso kodekai (mbelib)
 Website	Svetainė
+# map server start-up question
+Keep sending positions	Toliau siųsti pozicijas
+OnAir asks this question at every start. "No, do not ask again" stops it until OnAir is updated.	„OnAir“ šį klausimą užduoda per kiekvieną paleidimą. „Ne, daugiau neklausti“ jį išjungia iki kito „OnAir“ atnaujinimo.
+Nothing is sent in this session. OnAir asks again the next time it starts.	Šioje sesijoje niekas nesiunčiama. „OnAir“ vėl paklaus kitą kartą paleidus.
+Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu.	Niekas nesiunčiama, o šis klausimas nerodomas iki kito „OnAir“ atnaujinimo. Vėliau vis tiek galite įjungti meniu Serveris.

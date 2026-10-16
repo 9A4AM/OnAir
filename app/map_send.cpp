@@ -1,6 +1,7 @@
 // Server > Send data to map server: opted-in POST of decoded positions to map.on-air.dev /ingest.
 // Only positions the signal itself sent (no TLE catalogue, receiver GNSS, RID operator, FLARM stealth, cell towers, synthetic test signal).
 #include "app.h"
+#include "map_ask.h"
 #include "receivers.h"
 #ifndef ONAIR_VERSION
 #define ONAIR_VERSION "dev"
@@ -564,28 +565,33 @@ void consentPopup(App& a) {
     if (!ImGui::BeginPopupModal("##mapconsent", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) return;
     ImGui::PushTextWrapPos(480 * gUi);
     ImGui::TextUnformatted(tr("When this is on, positions decoded from the signals you receive are sent to map.on-air.dev so they can appear on the public map. Catalogue satellite orbits, your receiver location, drone operator locations, privacy-flagged FLARM aircraft, and the built-in test signal are not sent. You can turn this off at any time from Server."));
+    ImGui::Dummy(ImVec2(0, 4 * gUi));
+    ImGui::TextUnformatted(tr("OnAir asks this question at every start. \"No, do not ask again\" stops it until OnAir is updated."));
     ImGui::PopTextWrapPos();
     ImGui::Dummy(ImVec2(0, 8 * gUi));
-    if (ImGui::Button(tr("Send positions"), ImVec2(160 * gUi, 0))) {
+    const bool wasOn = s.mapSend && s.mapConsent;   // sending was already on from an earlier answer
+    if (ImGui::Button(wasOn ? tr("Keep sending positions") : tr("Send positions"), ImVec2(190 * gUi, 0))) {
         ensureStation(s);
         s.mapConsent = true;
-        beginSend(s);
+        s.mapDeclined = false;
+        if (s.mapSend) savePrefs(s); else beginSend(s);
         ImGui::CloseCurrentPopup();
     }
     ImGui::SameLine();
     if (ImGui::Button(tr("Not now"), ImVec2(100 * gUi, 0))) {
-        stopSend(s);
+        stopSend(s);   // no connecting in this session; the question comes again at the next start
         ImGui::CloseCurrentPopup();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Nothing is sent. OnAir asks again the next time it starts."));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Nothing is sent in this session. OnAir asks again the next time it starts."));
     ImGui::SameLine();
     if (ImGui::Button(tr("No, do not ask again"), ImVec2(190 * gUi, 0))) {
         stopSend(s);
         s.mapDeclined = true;
+        s.mapDeclinedVersion = ONAIR_VERSION;
         savePrefs(s);
         ImGui::CloseCurrentPopup();
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Nothing is sent and this question is not shown again. You can still turn it on later in the Server menu."));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu."));
     ImGui::EndPopup();
 }
 
@@ -623,13 +629,14 @@ void txOffToast() {
 }
 
 // The first thing a new user sees: a question whether to take part in the public map, because few people find Server > Send data on their own.
-// It asks at every start until it is answered with "Send positions" or "No, do not ask again" ("Not now" asks again next time); never while
-// transmitting, and the receiver having started is not required.
+// It asks at every start, also after consent was given, until "No, do not ask again" is chosen; that lasts until the next update of OnAir
+// (another ONAIR_VERSION). "Not now" turns sending off for the session only. Never while transmitting.
 void startupQuestion(App& a) {
     static bool asked = false;
     if (asked) return;
     App& s = rootApp(a);
-    if (s.mapConsent || s.mapDeclined || gTxHold || txActive()) { asked = true; return; }
+    if (s.mapDeclined && s.mapDeclinedVersion != ONAIR_VERSION) { s.mapDeclined = false; s.mapDeclinedVersion.clear(); savePrefs(s); }   // an update: ask again
+    if (!mapShouldAsk(s.mapConsent, s.mapDeclined, s.mapDeclinedVersion, ONAIR_VERSION, gTxHold || txActive())) { asked = true; return; }
     if (ImGui::GetFrameCount() < 90) return;   // after the first frames: the window is up and the layout is settled
     asked = true;
     gAskConsent = true;

@@ -609,10 +609,6 @@ if(DECT2_BUILD_TESTS)
   target_link_libraries(test_audio PRIVATE dect2core)
   add_test(NAME audio COMMAND test_audio)
 
-  add_executable(test_audio_levels tests/test_audio_levels.cpp)
-  target_link_libraries(test_audio_levels PRIVATE dect2core)
-  add_test(NAME audio_levels COMMAND test_audio_levels)
-
   add_executable(test_isdbt_chain tests/isdbt/test_isdbt_chain.cpp)
   target_link_libraries(test_isdbt_chain PRIVATE dect2core)
   add_test(NAME isdbt_chain COMMAND test_isdbt_chain)

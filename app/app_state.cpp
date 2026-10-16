@@ -439,6 +439,7 @@ void loadPrefs(App& a) {
         a.mapSend = d.getI("mapSend", 0) != 0;
         a.mapConsent = d.getI("mapConsent", 0) != 0;
         a.mapDeclined = d.getI("mapDeclined", 0) != 0;
+        a.mapDeclinedVersion = d.getS("mapDeclinedVersion", "");
         a.mapStationId = d.getS("mapStationId", "");
         a.mapServer = d.getS("mapServer", "");
         if (a.mapSend && !a.mapConsent) a.mapSend = false;   // never on without consent
@@ -545,6 +546,7 @@ void savePrefs(const App& a) {
     d.setI("mapSend", a.mapSend ? 1 : 0);
     d.setI("mapConsent", a.mapConsent ? 1 : 0);
     d.setI("mapDeclined", a.mapDeclined ? 1 : 0);
+    d.setS("mapDeclinedVersion", a.mapDeclinedVersion);
     d.setS("mapStationId", a.mapStationId);
     d.setS("mapServer", a.mapServer);
     d.setI("dtmbBw", a.dtmbBwMhz);
