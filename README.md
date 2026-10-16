@@ -37,6 +37,7 @@ It is built for people who want a receiver that is both easy to use and honest a
 - [Quick start](#quick-start)
 - [What it receives](#what-it-receives)
 - [Features](#features)
+- [Transmit](#transmit)
 - [Supported radios](#supported-radios) (and [network radios](#network-radios))
 - [Remote-control API](#remote-control-api)
 - [Updates](#updates)
@@ -284,6 +285,17 @@ To try it without a signal, `isdbtgen --out sample.cs8` (built with the tools) m
 - **Logbook export:** "Save results..." writes CSV or JSON, an ADIF logbook (call, grid, band, mode, RST / SNR, UTC) for the ham modes, and KML or GPX for anything with positions (ADS-B, AIS, APRS, FLARM, sondes); pick the format and "since start" or "all".
 - **Light mode** (View → Light) next to the dark palettes; the layout adapts to small windows and 125 % / 150 % display scaling.
 - **Fast:** error correction runs on the GPU where available, and with optimised vector code on the CPU everywhere else.
+
+## Transmit
+
+OnAir is a receiver first, but it can also send the signal of a mode through a radio that can transmit (a HackRF, a PlutoSDR, a SoapySDR radio with a transmit channel, or a Hamlib rig). It is meant for lab, test and amateur use: sending a test signal into a dummy load, checking a receiver or an antenna chain, or an on-air amateur transmission under your own licence. Switch the RX / TX slider at the top left, pick a mode, set the frequency and the radio's TX gain, fill in the payload (callsign, text, file, microphone or the built-in demo signal) and press START TRANSMITTING. "Carrier tune" sends an unmodulated carrier for setting drive and SWR. Nothing is transmitted until you press the button, and nothing restarts by itself.
+
+- **Needs a radio that can transmit.** A receive-only radio (RTL-SDR, Airspy and so on) cannot be used. The transmitter uses its own radio; a receiver can keep running on another one.
+- **A one-time notice** appears the first time you start a transmission and has to be accepted with "I understand".
+- **No frequency or power limits are applied by OnAir.** The frequency and the gain you enter go to the radio as given; only the radio's own limits apply. You are responsible for transmitting lawfully, for holding any licence or permission that is needed where you are, and for not interfering with other users of the spectrum, including services that people rely on for safety. Use an antenna, attenuator or dummy load that suits what you are doing.
+- **Some modes are not offered** (for example GNSS, cellular, Bluetooth, Wi-Fi and the analysis modes). While you transmit, OnAir does not send map data.
+
+The full list of modes offered and not offered, with the reasons, is in [docs/TRANSMIT.md](docs/TRANSMIT.md).
 
 ## Supported radios
 
