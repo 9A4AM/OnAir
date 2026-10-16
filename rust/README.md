@@ -106,6 +106,6 @@ bit), over the real vectors and 100000+ seeded random / mutated / truncated inpu
 sanitizer build (also a libFuzzer target with `-DONAIR_LIBFUZZER`). Both are registered by `onair_rust_diff_tests()` in `CMakeLists.txt`.
 
 Floating point: Rust never fuses `a * b + c` and calls the C math library for `sin`, `cos`, `floor`, `fmod`... (`no_std` has no methods for them; they are declared in `ffi.rs`,
-`math`). clang and gcc fuse multiply-adds on arm64 by default and rewrite `sin(x)` + `cos(x)` into `sincos` on Apple platforms, which changes the last bit. `adsb_msg.cpp` and `packet_aprs.cpp` (pow) are
+`math`). clang and gcc fuse multiply-adds on arm64 by default and rewrite `sin(x)` + `cos(x)` into `sincos` on Apple platforms, which changes the last bit. `adsb_msg.cpp`, `packet_aprs.cpp` (pow), `dmr_fec.cpp` and `p25_proto.cpp` (trellis metrics add squares) are
 therefore compiled with `-ffp-contract=off -fno-builtin-sin -fno-builtin-cos` in every build (also `DECT2_RUST=OFF`), so ON and OFF give the same numbers bit for bit. Use
 the same flags for any future module that mixes floating point between Rust and C++.
