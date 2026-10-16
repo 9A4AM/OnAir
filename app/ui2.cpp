@@ -759,10 +759,24 @@ float menuBar(App& a) {
             if (ImGui::MenuItem(tr("Guided tour"))) { a.wizOpen = true; a.wizX = -1; a.wizStep = 0; a.wizStepT = ImGui::GetTime(); }
             ImGui::EndMenu();
         }
-        {   // the credit, in a quiet box left of the version
+        {   // version + Clear all on the right: reserve real width (long beta tags used to clip Clear all)
+            const ImGuiStyle& ist = ImGui::GetStyle();
+            const float btnPad = 2.f * ist.FramePadding.x + ist.FrameBorderSize;
+            char verLbl[64];
+            snprintf(verLbl, sizeof verLbl, "v%s", ONAIR_VERSION);
+            float updW = ImGui::CalcTextSize(verLbl).x + btnPad;
+            updW = std::max(updW, ImGui::CalcTextSize(tr("restart to update")).x + btnPad);
+            updW = std::max(updW, ImGui::CalcTextSize(tr("downloading 100%")).x + btnPad);
+            updW = std::max(updW, ImGui::CalcTextSize(tr("checking…")).x + btnPad);
+            updW = std::max(updW, ImGui::CalcTextSize(tr("preparing…")).x + btnPad);
+            char updLbl[80];
+            snprintf(updLbl, sizeof updLbl, tr("update %s"), ONAIR_VERSION);
+            updW = std::max(updW, ImGui::CalcTextSize(updLbl).x + btnPad);
+            const float clearW = ImGui::CalcTextSize(tr("Clear all##clearall")).x + btnPad;
+            const float rightReserve = updW + 6.f * gUi + clearW + 12.f * gUi;
             const char* credit = tr("by: Kristijonas Adomaitis, made with help from the community");
-            const float cw = ImGui::CalcTextSize(credit).x + 2 * ImGui::GetStyle().FramePadding.x;
-            const float x = ImGui::GetWindowWidth() - 150 * gUi - cw - 10 * gUi;
+            const float cw = ImGui::CalcTextSize(credit).x + btnPad;
+            const float x = ImGui::GetWindowWidth() - rightReserve - cw - 8.f * gUi;
             if (x > ImGui::GetCursorPosX() + 20 * gUi) {   // only when the menu bar has room for it
                 ImGui::SameLine(x);
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 1, 1, 0.04f));
@@ -775,10 +789,10 @@ float menuBar(App& a) {
                 ImGui::PopStyleColor(4);
                 if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Thank you to everyone who reported bugs, sent recordings and opened pull requests."));
             }
+            ImGui::SameLine(ImGui::GetWindowWidth() - rightReserve);
+            updateButton(a);
+            clearAllButton(a);
         }
-        ImGui::SameLine(ImGui::GetWindowWidth() - 150 * gUi);
-        updateButton(a);
-        clearAllButton(a);
         ImGui::EndMainMenuBar();
     }
     return menuH;
