@@ -12,6 +12,8 @@
 #include <cstring>
 #include <deque>
 #include <memory>
+#include "dect2/common/crc.h"
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 
@@ -20,14 +22,8 @@ const HdrTestContent& hdrTestContent() { static const HdrTestContent c; return c
 // ---------------------------------------------------------------- the logo: a 64 x 64 PNG with a 4-colour palette, stored (not compressed)
 
 namespace {
-uint32_t crc32(const uint8_t* p, size_t n, uint32_t c = 0xFFFFFFFFu) {
-    for (size_t i = 0; i < n; i++) {
-        c ^= p[i];
-        for (int k = 0; k < 8; k++) c = (c & 1) ? (c >> 1) ^ 0xEDB88320u : c >> 1;
-    }
-    return c;
-}
-void be32(std::vector<uint8_t>& v, uint32_t x) { v.push_back((uint8_t)(x >> 24)); v.push_back((uint8_t)(x >> 16)); v.push_back((uint8_t)(x >> 8)); v.push_back((uint8_t)x); }
+uint32_t crc32(const uint8_t* p, size_t n, uint32_t c = 0xFFFFFFFFu) { return dect2::crc::lsbBytes<0xEDB88320u>(p, n, c); }   // raw register, no final inversion
+void be32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putBe32(v, x); }
 void chunk(std::vector<uint8_t>& out, const char* type, const std::vector<uint8_t>& data) {
     be32(out, (uint32_t)data.size());
     std::vector<uint8_t> td(type, type + 4);

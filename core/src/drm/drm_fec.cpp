@@ -5,38 +5,19 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/crc.h"
 #include <map>
 #include <mutex>
+#include "dect2/common/mathconst.h"
 
 namespace dect2 { namespace drm {
 
 // ---------------------------------------------------------------- CRC (Annex D)
 
-namespace {
-uint32_t crcBits(const uint8_t* bits, size_t n, uint32_t poly, int width) {
-    const uint32_t mask = (width == 32) ? 0xFFFFFFFFu : ((1u << width) - 1);
-    uint32_t reg = mask;                                    // all ones at the start
-    for (size_t i = 0; i < n; i++) {
-        const uint32_t fb = ((reg >> (width - 1)) & 1u) ^ (bits[i] & 1u);
-        reg = (reg << 1) & mask;
-        if (fb) reg ^= poly;
-    }
-    return reg ^ mask;                                      // 1's complement before transmission
-}
-}
-
-uint32_t crc8(const uint8_t* bits, size_t n) { return crcBits(bits, n, 0x1D, 8); }
-uint32_t crc16(const uint8_t* bits, size_t n) { return crcBits(bits, n, 0x1021, 16); }
-uint32_t crc8Bytes(const uint8_t* bytes, size_t n) {
-    std::vector<uint8_t> b(n * 8);
-    for (size_t i = 0; i < n; i++) for (int j = 0; j < 8; j++) b[i * 8 + j] = (bytes[i] >> (7 - j)) & 1;
-    return crc8(b.data(), b.size());
-}
-uint32_t crc16Bytes(const uint8_t* bytes, size_t n) {
-    std::vector<uint8_t> b(n * 8);
-    for (size_t i = 0; i < n; i++) for (int j = 0; j < 8; j++) b[i * 8 + j] = (bytes[i] >> (7 - j)) & 1;
-    return crc16(b.data(), b.size());
-}
+uint32_t crc8(const uint8_t* bits, size_t n) { return crc::bits(bits, n, 8, 0x1D, 0xFF, 0xFF); }        // all ones at the start, 1's complement before transmission
+uint32_t crc16(const uint8_t* bits, size_t n) { return crc::bits(bits, n, 16, 0x1021, 0xFFFF, 0xFFFF); }
+uint32_t crc8Bytes(const uint8_t* bytes, size_t n) { return crc::generic(bytes, n, 8, 0x1D, 0xFF, false, false, 0xFF); }
+uint32_t crc16Bytes(const uint8_t* bytes, size_t n) { return crc::crc16Genibus(bytes, n); }
 
 // ---------------------------------------------------------------- energy dispersal (clause 7.2.2): P(X) = X^9 + X^5 + 1, all ones at the start
 
@@ -71,7 +52,7 @@ const std::vector<int>& interleavePerm(int xin, int t) {
 
 // ---------------------------------------------------------------- constellations (clause 7.4, figures 26, 29, 30)
 
-float qamNorm(int levels) { return levels == 1 ? 0.70710678f : levels == 2 ? 0.31622777f : 0.15430335f; }
+float qamNorm(int levels) { return levels == 1 ? dect2::math::k1OverSqrt2f : levels == 2 ? 0.31622777f : 0.15430335f; }
 
 int railValue(int levels, int b0, int b1, int b2) {
     const int idx = b0 + 2 * b1 + 4 * b2;                   // the figures give 7 - 2 idx (64-QAM), 3 - 2 idx (16-QAM), 1 - 2 idx (4-QAM)

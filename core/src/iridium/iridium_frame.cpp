@@ -8,6 +8,9 @@
 #include <cstdio>
 #include <map>
 #include <random>
+#include "dect2/common/crc.h"
+#include "dect2/common/bits.h"
+#include "dect2/common/str.h"
 
 namespace dect2 {
 namespace {
@@ -28,11 +31,7 @@ Bits fromStr(const char* s) {
     for (; *s; s++) b.push_back(*s == '1');
     return b;
 }
-int popc(uint32_t v) {
-    int n = 0;
-    for (; v; v &= v - 1) n++;
-    return n;
-}
+int popc(uint32_t v) { return dect2::bits::popcount(v); }
 int bitDiff(const Bits& a, size_t off, const Bits& pat) {
     int n = 0;
     for (size_t i = 0; i < pat.size(); i++) n += ((off + i < a.size() ? a[off + i] : 0) != pat[i]);
@@ -44,12 +43,7 @@ Bits swapPairs(const Bits& b) {
     for (size_t i = 0; i + 1 < o.size(); i += 2) std::swap(o[i], o[i + 1]);
     return o;
 }
-std::string hexOf(const std::vector<uint8_t>& v, size_t n = std::string::npos) {
-    std::string s;
-    char t[4];
-    for (size_t i = 0; i < v.size() && i < n; i++) { snprintf(t, sizeof t, "%02x", v[i]); s += t; }
-    return s;
-}
+std::string hexOf(const std::vector<uint8_t>& v, size_t n = std::string::npos) { return dect2::str::toHex(v.data(), v.size(), false, 0, n); }
 
 // ---- BCH, GF(2) ----
 int bitLen(uint32_t v) { int n = 0; while (v) { n++; v >>= 1; } return n; }
@@ -173,14 +167,7 @@ double nowUnix() {
 }
 
 // ---- checksums ----
-uint16_t crc16ccitt(const std::vector<uint8_t>& v) {   // crc-ccitt-false: init 0xffff, no reflection, no xor
-    uint16_t c = 0xffff;
-    for (uint8_t x : v) {
-        c ^= uint16_t(x) << 8;
-        for (int k = 0; k < 8; k++) c = (c & 0x8000) ? uint16_t((c << 1) ^ 0x1021) : uint16_t(c << 1);
-    }
-    return c;
-}
+uint16_t crc16ccitt(const std::vector<uint8_t>& v) { return crc::crc16CcittFalse(v.data(), v.size()); }   // crc-ccitt-false
 // iip_crc24 of bitsparser.py: crcmod poly 0x1BBA1B5, reflected, register start 0xffffff, final xor 0x0c91b6 (zero when the frame is good).
 uint32_t crc24ip(const std::vector<uint8_t>& v) {
     uint32_t reg = 0xffffff, rp = 0;

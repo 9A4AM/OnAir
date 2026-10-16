@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace mac {
 
-constexpr double kPiP = 3.14159265358979323846;
+constexpr double kPiP = dect2::math::kPi;
 const char* variantName(int v) { return v == kD ? "D-MAC" : "D2-MAC"; }
 
 Iir1 shelf(double fz, double fp, double gain, double fs) {
@@ -125,17 +127,7 @@ int unham84(uint8_t byte) {
     return tab[byte];
 }
 
-uint16_t crc16(const uint8_t* bytes, size_t n) {
-    uint32_t r = 0;
-    for (size_t i = 0; i < n; i++)
-        for (int b = 0; b < 8; b++) {
-            const int bit = (bytes[i] >> b) & 1;   // LSB first
-            const int fb = ((r >> 15) & 1) ^ bit;
-            r = (r << 1) & 0xFFFF;
-            if (fb) r ^= 0x1021;
-        }
-    return (uint16_t)r;
-}
+uint16_t crc16(const uint8_t* bytes, size_t n) { return (uint16_t)crc::generic(bytes, n, 16, 0x1021, 0, true, false, 0); }   // bytes LSB first into an MSB-first register
 
 const std::vector<int>& interleave() {
     static const std::vector<int> p = [] {

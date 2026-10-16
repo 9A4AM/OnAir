@@ -11,6 +11,8 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+#include "dect2/common/crc.h"
+#include "dect2/common/bits.h"
 
 namespace dect2::cdr {
 
@@ -291,8 +293,8 @@ int crc6(const uint8_t* bits, int n) {
 }
 
 namespace {
-void putBits(uint8_t* b, int pos, int n, int v) { for (int i = 0; i < n; i++) b[pos + i] = (uint8_t)((v >> (n - 1 - i)) & 1); }
-int getBits(const uint8_t* b, int pos, int n) { int v = 0; for (int i = 0; i < n; i++) v = (v << 1) | (b[pos + i] & 1); return v; }
+void putBits(uint8_t* b, int pos, int n, int v) { bits::putMsb(b, (size_t)pos, (uint64_t)(int64_t)v, n); }
+int getBits(const uint8_t* b, int pos, int n) { return (int)bits::getMsb(b, (size_t)pos, n); }
 }
 
 void siToBits(const SysInfo& si, uint8_t* b) {
@@ -375,15 +377,6 @@ uint8_t crc8(const uint8_t* d, size_t n) {
     return (uint8_t)~r;
 }
 
-uint32_t crc32(const uint8_t* d, size_t n) {
-    uint32_t r = 0xFFFFFFFFu;
-    for (size_t i = 0; i < n; i++)
-        for (int b = 7; b >= 0; b--) {
-            const uint32_t in = (d[i] >> b) & 1u, top = r >> 31;
-            r <<= 1;
-            if (in ^ top) r ^= 0x04C11DB7u;
-        }
-    return ~r;
-}
+uint32_t crc32(const uint8_t* d, size_t n) { return ~crc::crc32Mpeg2(d, n); }   // MSB-first CRC-32 with the final inversion
 
 } // namespace dect2::cdr

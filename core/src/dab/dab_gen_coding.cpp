@@ -2,6 +2,7 @@
 // dab_fec.cpp, so that the two can be compared by a test.
 #include "dect2/dab/dab_gen.h"
 #include <cstring>
+#include "dect2/common/crc.h"
 
 namespace dect2 {
 namespace dabgen {
@@ -22,16 +23,7 @@ void scramble(uint8_t* bits, int n) {
 }
 
 // ---------------------------------------------------------------- CRCs
-uint16_t crc16(const uint8_t* d, int n) {
-    unsigned reg = 0xFFFF;
-    for (int i = 0; i < n; i++)
-        for (int b = 7; b >= 0; b--) {
-            const unsigned in = (d[i] >> b) & 1u, fb = ((reg >> 15) & 1u) ^ in;
-            reg = (reg << 1) & 0xFFFFu;
-            if (fb) reg ^= 0x1021u;
-        }
-    return (uint16_t)(~reg & 0xFFFFu);
-}
+uint16_t crc16(const uint8_t* d, int n) { return crc::crc16Genibus(d, (size_t)n); }
 
 uint16_t fireCode(const uint8_t* d, int n) {
     // g(x) = (x^11 + 1)(x^5 + x^3 + x^2 + x + 1), expanded: bits 14 13 12 11 5 3 2 1 0 below x^16

@@ -6,6 +6,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/crc.h"
 
 namespace dect2 {
 namespace dab {
@@ -52,14 +53,7 @@ const std::vector<cf32>& phaseReference() {
 
 // ------------------------------------------------------------------ CRCs and scrambler
 
-uint16_t crc16(const uint8_t* d, int n) {
-    uint16_t crc = 0xFFFF;
-    for (int i = 0; i < n; i++) {
-        crc ^= (uint16_t)(d[i] << 8);
-        for (int b = 0; b < 8; b++) crc = (crc & 0x8000) ? (uint16_t)((crc << 1) ^ 0x1021) : (uint16_t)(crc << 1);
-    }
-    return (uint16_t)~crc;
-}
+uint16_t crc16(const uint8_t* d, int n) { return crc::crc16Genibus(d, (size_t)n); }
 
 uint16_t fireCode(const uint8_t* d, int n) {
     uint16_t crc = 0;

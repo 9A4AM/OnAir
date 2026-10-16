@@ -5,6 +5,8 @@
 #include <cstring>
 #include <mutex>
 #include <vector>
+#include "dect2/common/crc.h"
+#include "dect2/common/bits.h"
 
 namespace dect2 {
 namespace p25 {
@@ -69,8 +71,8 @@ const int iZ[72] = {21, 19, 1, 21, 19, 9, 19, 17, 14, 19, 17, 7, 17, 15, 12, 17,
                     9, 7, 4, 9, 7, 12, 7, 5, 2, 7, 5, 10, 5, 3, 0, 5, 3, 8, 3, 1, 5, 3, 1, 6, 1, 14, 3, 1, 22, 4, 22, 12, 1, 22, 20, 2};
 const int kImbeLen[8] = {23, 23, 23, 23, 15, 15, 15, 7};
 
-void putBits(uint8_t* b, int& p, uint64_t v, int n) { for (int i = n - 1; i >= 0; i--) b[p++] = (uint8_t)((v >> i) & 1); }
-uint64_t getBits(const uint8_t* b, int& p, int n) { uint64_t v = 0; for (int i = 0; i < n; i++) v = (v << 1) | b[p++]; return v; }
+void putBits(uint8_t* b, int& p, uint64_t v, int n) { bits::putMsbAdv(b, p, v, n); }
+uint64_t getBits(const uint8_t* b, int& p, int n) { return bits::getMsbAdvRaw(b, p, n); }
 void bitsToHex(const uint8_t* b, int nHex, uint8_t* hex) { for (int i = 0; i < nHex; i++) { int v = 0; for (int k = 0; k < 6; k++) v = (v << 1) | b[6 * i + k]; hex[i] = (uint8_t)v; } }
 void hexToBits(const uint8_t* hex, int nHex, uint8_t* b) { for (int i = 0; i < nHex; i++) for (int k = 0; k < 6; k++) b[6 * i + k] = (uint8_t)((hex[i] >> (5 - k)) & 1); }
 } // namespace
@@ -215,15 +217,7 @@ int golay18Decode(uint32_t cw, int* errs) {
     return best <= 3 ? bh : -1;
 }
 
-uint16_t crcCcitt(const uint8_t* bits, int n) {
-    uint16_t c = 0;
-    for (int i = 0; i < n; i++) {
-        const bool fb = ((c >> 15) & 1) ^ (bits[i] & 1);
-        c = (uint16_t)(c << 1);
-        if (fb) c ^= 0x1021;
-    }
-    return (uint16_t)~c;
-}
+uint16_t crcCcitt(const uint8_t* bits, int n) { return (uint16_t)crc::bits(bits, (size_t)n, 16, 0x1021, 0, 0xFFFF); }
 
 void trellisEncode(const uint8_t bits[96], uint8_t dibits[98]) {
     uint8_t coded[98];

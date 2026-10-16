@@ -5,6 +5,8 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2::dji {
 
@@ -124,7 +126,7 @@ std::vector<cf32> zcFreq(int root) {
     z.reserve(kCarriers);
     for (int n = 0; n <= 600; n++) {
         if (n == 300) continue;
-        const double ph = -3.14159265358979323846 * root * (double)n * (double)(n + 1) / 601.0;
+        const double ph = -dect2::math::kPi * root * (double)n * (double)(n + 1) / 601.0;
         z.emplace_back((float)std::cos(ph), (float)std::sin(ph));
     }
     return z;
@@ -165,14 +167,7 @@ uint32_t crc24a(const uint8_t* d, size_t n) {
     return crc;
 }
 
-uint16_t crc16Duml(const uint8_t* d, size_t n) {
-    uint16_t crc = 0x3692;
-    for (size_t i = 0; i < n; i++) {
-        crc ^= d[i];
-        for (int b = 0; b < 8; b++) crc = (crc & 1) ? (uint16_t)((crc >> 1) ^ 0x8408) : (uint16_t)(crc >> 1);
-    }
-    return crc;
-}
+uint16_t crc16Duml(const uint8_t* d, size_t n) { return crc::crc16Kermit(d, n, 0x3692); }
 
 std::vector<int> qppInterleaver() { return qpp(); }
 
@@ -352,7 +347,7 @@ BurstResult receiveBurst(const std::vector<cf32>& x) {
     // eight cyclic prefixes in a row look the same when shifted by a symbol: the Zadoff-Chu symbol decides among the neighbours
     std::vector<cf32> y((size_t)N);
     auto derot = [&](double f) {
-        const double step = -2 * 3.14159265358979323846 * f / kFs;
+        const double step = -2 * dect2::math::kPi * f / kFs;
         cf32 ph(1, 0);
         const cf32 inc((float)std::cos(step), (float)std::sin(step));
         for (int n = 0; n < N; n++) { y[(size_t)n] = x[(size_t)n] * ph; ph *= inc; if ((n & 255) == 255) ph /= std::abs(ph); }

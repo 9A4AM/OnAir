@@ -3,6 +3,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/endian.h"
 
 namespace dect2::wifi {
 
@@ -19,24 +21,9 @@ int channelOf(double mhz) {
     return 0;
 }
 
-uint32_t crc32(const uint8_t* p, size_t n) {
-    uint32_t c = 0xFFFFFFFFu;
-    for (size_t i = 0; i < n; i++) {
-        c ^= p[i];
-        for (int k = 0; k < 8; k++) c = (c >> 1) ^ (0xEDB88320u & (0u - (c & 1)));
-    }
-    return ~c;
-}
+uint32_t crc32(const uint8_t* p, size_t n) { return crc::crc32(p, n); }
 
-uint16_t crc16(const uint8_t* bits, size_t n) {
-    uint16_t r = 0xFFFF;
-    for (size_t i = 0; i < n; i++) {
-        const int fb = ((r >> 15) & 1) ^ (bits[i] & 1);
-        r = (uint16_t)(r << 1);
-        if (fb) r ^= 0x1021;
-    }
-    return (uint16_t)~r;
-}
+uint16_t crc16(const uint8_t* bits, size_t n) { return (uint16_t)crc::bits(bits, n, 16, 0x1021, 0xFFFF, 0xFFFF); }
 
 void appendFcs(std::vector<uint8_t>& f) {
     const uint32_t c = crc32(f.data(), f.size());
@@ -81,7 +68,7 @@ const char* securityName(int s, bool ent) {
 }
 
 namespace {
-void put16(std::vector<uint8_t>& v, unsigned x) { v.push_back((uint8_t)x); v.push_back((uint8_t)(x >> 8)); }
+void put16(std::vector<uint8_t>& v, unsigned x) { dect2::endian::putLe16(v, x); }
 void putMac(std::vector<uint8_t>& v, const uint8_t* a) { v.insert(v.end(), a, a + 6); }
 void suite(std::vector<uint8_t>& v, const uint8_t oui[3], uint8_t t) { v.insert(v.end(), oui, oui + 3); v.push_back(t); }
 const uint8_t kRsnOui[3] = {0x00, 0x0F, 0xAC}, kMsOui[3] = {0x00, 0x50, 0xF2};

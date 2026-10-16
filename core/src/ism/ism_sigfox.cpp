@@ -16,6 +16,8 @@
 #include <complex>
 #include <ctime>
 #include <random>
+#include "dect2/common/crc.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 
@@ -30,20 +32,12 @@ constexpr double kGapSec = 0.15;     // an established track (kSureSec on the ai
 constexpr double kSureSec = 0.3;
 constexpr double kRingSec = 3.8;
 constexpr int kPreambleBits = 19;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
 int macBits(int n) { return 16 + 8 * ((n + 3) / 4); }
 int frameBits(int n) { return kPreambleBits + 13 + 16 + 32 + 8 * n + macBits(n) + 16; }
 
-uint16_t crc16(const std::vector<uint8_t>& bits, size_t a, size_t b) {   // CRC-16/CCITT over bits [a, b)
-    uint16_t c = 0xFFFF;
-    for (size_t i = a; i < b; i++) {
-        const bool fb = ((c >> 15) & 1) ^ (bits[i] & 1);
-        c = (uint16_t)(c << 1);
-        if (fb) c ^= 0x1021;
-    }
-    return c;
-}
+uint16_t crc16(const std::vector<uint8_t>& bits, size_t a, size_t b) { return (uint16_t)crc::bits(bits.data() + a, b - a, 16, 0x1021, 0xFFFF); }   // CRC-16/CCITT over bits [a, b)
 
 std::string hexOf(uint64_t v, int digits) {
     char b[24];

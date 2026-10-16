@@ -5,6 +5,9 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include "dect2/common/crc.h"
+#include "dect2/common/bits.h"
+#include "dect2/common/mathconst.h"
 
 namespace dect2 {
 namespace m17 {
@@ -47,7 +50,7 @@ const uint8_t kP1[61] = {1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0
 const uint8_t kP2[12] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0};
 const uint8_t kP3[8] = {1, 1, 1, 1, 1, 1, 1, 0};
 
-inline int parity5(int v) { v &= 0x1F; v ^= v >> 4; v ^= v >> 2; v ^= v >> 1; return v & 1; }
+inline int parity5(int v) { return dect2::bits::parity((uint32_t)(v & 0x1F)); }
 
 // conv-encode n bits (flush included by the caller), puncture with p, append to out
 void convPunct(const uint8_t* in, int n, const uint8_t* p, int plen, std::vector<uint8_t>& out) {
@@ -75,14 +78,7 @@ void interleave(const std::vector<uint8_t>& t3, uint8_t out[368]) { for (int i =
 
 } // namespace
 
-uint16_t crc16(const uint8_t* d, size_t n) {
-    uint16_t c = 0xFFFF;
-    for (size_t i = 0; i < n; i++) {
-        c ^= (uint16_t)d[i] << 8;
-        for (int b = 0; b < 8; b++) c = (c & 0x8000) ? (uint16_t)((c << 1) ^ 0x5935) : (uint16_t)(c << 1);
-    }
-    return c;
-}
+uint16_t crc16(const uint8_t* d, size_t n) { return (uint16_t)crc::msbBytes<16, 0x5935>(d, n, 0xFFFF); }
 
 uint64_t encodeCallsign(const std::string& cs) {
     if (cs == "@ALL") return kBroadcast;
@@ -250,7 +246,7 @@ void buildPacket(const uint8_t chunk[25], bool eof, int counter, uint8_t bits[36
 }
 
 std::vector<float> rrcTaps(int sps, int span) {
-    const double a = 0.5, pi = 3.14159265358979323846;
+    const double a = 0.5, pi = dect2::math::kPi;
     const int n = sps * span + 1, c = n / 2;
     std::vector<float> h((size_t)n);
     double e = 0;

@@ -3,18 +3,13 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/str.h"
 
 namespace dect2 {
 namespace ant {
 
-uint16_t crc16(const uint8_t* p, size_t n) {
-    uint16_t c = 0xFFFF;
-    for (size_t i = 0; i < n; i++) {
-        c ^= (uint16_t)(p[i] << 8);
-        for (int b = 0; b < 8; b++) c = (c & 0x8000) ? (uint16_t)((c << 1) ^ 0x1021) : (uint16_t)(c << 1);
-    }
-    return c;
-}
+uint16_t crc16(const uint8_t* p, size_t n) { return crc::crc16CcittFalse(p, n); }
 
 bool parseFrame(const uint8_t* b, Frame& f) {
     f = Frame();
@@ -336,12 +331,7 @@ Reading decodePayload(int type, const uint8_t p[kPayload]) {
     return r;
 }
 
-std::string hex(const uint8_t* p, size_t n) {
-    std::string s;
-    char b[4];
-    for (size_t i = 0; i < n; i++) { snprintf(b, sizeof b, "%02X", p[i]); s += b; if (i + 1 < n) s += ' '; }
-    return s;
-}
+std::string hex(const uint8_t* p, size_t n) { return dect2::str::toHex(p, n, true, ' '); }
 
 } // namespace ant
 } // namespace dect2

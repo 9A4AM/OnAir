@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstring>
 #include <vector>
+#include "dect2/common/crc.h"
 
 namespace dect2 {
 namespace nxdn {
@@ -31,16 +32,7 @@ bool lichDecode(uint8_t x, Lich& l) {
 }
 
 namespace {
-uint32_t crcGen(const uint8_t* b, int n, int w, uint32_t poly, uint32_t init) {
-    const uint32_t mask = (1u << w) - 1;
-    uint32_t c = init & mask;
-    for (int i = 0; i < n; i++) {
-        const uint32_t a = (b[i] & 1) ^ (c >> (w - 1));
-        c = (c << 1) & mask;
-        if (a) c ^= poly;
-    }
-    return c;
-}
+uint32_t crcGen(const uint8_t* b, int n, int w, uint32_t poly, uint32_t init) { return dect2::crc::bits(b, (size_t)n, w, poly, init); }
 } // namespace
 uint32_t crc6(const uint8_t* b, int n) { return crcGen(b, n, 6, 0x27, 0x3F); }       // x^6 + x^5 + x^2 + x + 1
 uint32_t crc12(const uint8_t* b, int n) { return crcGen(b, n, 12, 0x80F, 0xFFF); }   // x^12 + x^11 + x^3 + x^2 + x + 1

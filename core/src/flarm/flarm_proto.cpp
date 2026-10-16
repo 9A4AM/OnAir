@@ -2,6 +2,11 @@
 #include "dect2/flarm/flarm_proto.h"
 #include <cmath>
 #include <cstring>
+#include "dect2/common/crc.h"
+#include "dect2/common/bits.h"
+#include "dect2/common/linecode.h"
+#include "dect2/common/mathconst.h"
+#include "dect2/common/endian.h"
 
 namespace dect2 {
 namespace flarm {
@@ -10,22 +15,15 @@ namespace {
 constexpr uint32_t kKey1[8] = {0xe43276df, 0xdca83759, 0x9802b8ac, 0x4675a56b, 0xfc78ea65, 0x804b90ea, 0xb76542cd, 0x329dfa32};
 constexpr uint32_t kKey2 = 0x045d9f3b, kKey3 = 0x87b562f4;
 constexpr uint32_t kDelta = 0x9e3779b9;
-constexpr double kPi = 3.14159265358979323846;
+using dect2::math::kPi;
 
-inline uint32_t rd32(const uint8_t* p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); }
-inline void wr32(uint8_t* p, uint32_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24); }
-inline int parity8(uint8_t b) { b ^= b >> 4; b ^= b >> 2; b ^= b >> 1; return b & 1; }
+inline uint32_t rd32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
+inline void wr32(uint8_t* p, uint32_t v) { dect2::endian::storeLe32(p, v); }
+inline int parity8(uint8_t b) { return dect2::bits::parity((uint32_t)b); }
 int signExt(uint32_t v, int bits) { return (int)(v << (32 - bits)) >> (32 - bits); }
 }
 
-uint16_t crc16(const uint8_t* d, size_t n) {
-    uint16_t c = 0xFFFF;
-    for (size_t i = 0; i < n; i++) {
-        c ^= (uint16_t)((uint16_t)d[i] << 8);
-        for (int k = 0; k < 8; k++) c = (c & 0x8000) ? (uint16_t)((c << 1) ^ 0x1021) : (uint16_t)(c << 1);
-    }
-    return c;
-}
+uint16_t crc16(const uint8_t* d, size_t n) { return crc::crc16CcittFalse(d, n); }
 
 void btea(uint32_t* v, int n, const uint32_t key[4], int rounds) {
     uint32_t y, z, sum, p, e;
@@ -165,13 +163,7 @@ const char* addrTypeName(int t) {
     return n[t & 3];
 }
 
-std::vector<uint8_t> manchester(const uint8_t* bytes, size_t n) {
-    std::vector<uint8_t> c;
-    c.reserve(n * 16);
-    for (size_t i = 0; i < n; i++)
-        for (int k = 7; k >= 0; k--) { const int b = (bytes[i] >> k) & 1; c.push_back(b ? 0 : 1); c.push_back(b ? 1 : 0); }
-    return c;
-}
+std::vector<uint8_t> manchester(const uint8_t* bytes, size_t n) { return dect2::linecode::manchesterEncode(bytes, n); }
 
 std::vector<uint8_t> frameToChips(const uint8_t payload[kPayloadBytes], bool withSync) {
     uint8_t f[kFrameBytes];
