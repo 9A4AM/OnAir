@@ -76,7 +76,9 @@ void stepSignal(App& a, TxUi& s, bool running) {
             char lab[96];
             snprintf(lab, sizeof lab, "%s  %.3f##rec%zu", rm->name, s.recent[i].mhz, i);
             const float w = ImGui::CalcTextSize(lab).x + 2 * ImGui::GetStyle().FramePadding.x;
-            if (i > 0 && ImGui::GetContentRegionAvail().x > w + ImGui::GetStyle().ItemSpacing.x) ImGui::SameLine();
+            // stay on the line only when the button fits in what is left of it (the cursor is already on the next line after a button)
+            const float left = ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x - ImGui::GetItemRectMax().x - ImGui::GetStyle().ItemSpacing.x;
+            if (i > 0 && left > w) ImGui::SameLine();
             if (ImGui::SmallButton(lab)) {
                 // the list row of the mode picks the engine family and sub-protocol; search the table for it
                 for (const auto& m : allModes()) {

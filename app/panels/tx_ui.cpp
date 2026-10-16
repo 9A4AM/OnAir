@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 using namespace dect2;
@@ -399,6 +400,7 @@ bool txModeHighlighted(const ModeDef& m) {
 void txDevOpen(App& a, const char* modeId, bool dryRun) {
     TxUi& s = ui();
     s.view = true;
+    if (getenv("DECT2_TXPOP")) s.popped = true;   // dev: the panel starts in its own window
     if (!modeId || !*modeId) return;
     const TxModeSpec* t = txModeById(modeId);
     if (!t) return;

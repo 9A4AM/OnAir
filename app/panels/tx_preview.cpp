@@ -37,14 +37,19 @@ PreviewData make(TxRequest r, const TxModeSpec* mode, double rate) {
     r.videoSrc = 0;
     r.pullAudio = nullptr;
     r.pullVideo = nullptr;
-    std::string err;
-    auto g = makeTxGenerator(*mode, r, rate, err);
-    if (!g) { d.error = err; d.ready = true; return d; }
-    const size_t n = (size_t)std::max(8192.0, std::min(262144.0, rate * 0.25));
-    d.iq.resize(n);
-    g->generate(d.iq.data(), n);
-    size_t lim = 0;
-    txSoftLimit(d.iq.data(), n, &lim);   // the preview shows what the radio would get: after the limiter
+    try {
+        std::string err;
+        auto g = makeTxGenerator(*mode, r, rate, err);
+        if (!g) { d.error = err; d.ready = true; return d; }
+        const size_t n = (size_t)std::max(8192.0, std::min(262144.0, rate * 0.25));
+        d.iq.resize(n);
+        g->generate(d.iq.data(), n);
+        size_t lim = 0;
+        txSoftLimit(d.iq.data(), n, &lim);   // the preview shows what the radio would get: after the limiter
+    } catch (const std::exception& e) {   // a generator that throws must not take the program down through future::get()
+        d.iq.clear();
+        d.error = std::string("the preview could not be made: ") + e.what();
+    }
     d.ready = true;
     return d;
 }
