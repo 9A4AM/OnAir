@@ -1,5 +1,7 @@
 # Voice and audio codecs
 
+> **DMR, P25, NXDN, dPMR and D-STAR voice is silent until you install mbelib.** The calls, IDs and data are shown without it. Its vocoders are patented, so OnAir does not include it: put `libmbe` / `mbelib` in the codecs folder (the **?** button next to the sound has an **Open codecs folder** button), then press **Look again**.
+
 OnAir never ships a patented codec. You install the ones you are allowed to use yourself, and OnAir loads them. The one open codec, **codec2** (FreeDV and M17 speech), comes with OnAir: nothing to install. **Whether you may
 install or use them is your own responsibility: follow the patent and radio-listening law where you live.**
 
@@ -11,7 +13,7 @@ looks for, the exact folders it searches, an **Open codecs folder** button (it m
 
 | Mode | Codec | Library you provide |
 |---|---|---|
-| DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (built into OnAir unless you turned the bundle off; voice is decoded when the vocoder is present) |
+| DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (not included: you install it yourself; voice is silent until you do) |
 | D-STAR | AMBE (patented) | **mbelib** |
 | FreeDV 700D / 700E / 1600, M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
 | FreeDV RADE | RADE neural modem (open, BSD) | **librade** (not codec2): optional; without it the RADE slot stays dark |

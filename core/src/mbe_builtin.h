@@ -1,6 +1,6 @@
 // mbelib built into OnAir (third_party/mbelib, ISC licence). The decoders still look for a user-installed mbelib first
 // (DECT2_MBELIB_PATH, the codecs folders, the system), so a newer or different copy can override this one; when none is found they use
-// these functions. Build with -DDECT2_BUNDLE_MBELIB=OFF to leave it out (then only an installed mbelib works).
+// these functions. Built only with -DDECT2_BUNDLE_MBELIB=ON (off by default: patented, users install mbelib themselves).
 #pragma once
 #ifdef DECT2_BUILTIN_MBE
 extern "C" {

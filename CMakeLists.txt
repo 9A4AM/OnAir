@@ -122,9 +122,9 @@ set_source_files_properties(third_party/uat_fec/fec.c third_party/uat_fec/decode
 file(GLOB DECT2_ATSC3_SYNTH_SRC CONFIGURE_DEPENDS core/src/atsc3/atsc3_synth*.cpp)
 target_sources(dect2core PRIVATE ${DECT2_ATSC3_SYNTH_SRC})
 target_include_directories(dect2core PUBLIC core/include)
-# mbelib (AMBE / IMBE vocoder, ISC licence) built into the receiver library, so P25, NXDN, D-STAR and DMR voice work without installing anything.
-# An installed mbelib still takes priority (docs/CODECS.md). -DDECT2_BUNDLE_MBELIB=OFF leaves the built-in copy out.
-option(DECT2_BUNDLE_MBELIB "Build mbelib into OnAir" ON)
+# mbelib (AMBE / IMBE vocoder, ISC licence). The AMBE / AMBE+2 algorithms are patented, so it is NOT built in by default: users install it
+# themselves (docs/CODECS.md). -DDECT2_BUNDLE_MBELIB=ON builds the copy in third_party/mbelib into OnAir, for your own builds only.
+option(DECT2_BUNDLE_MBELIB "Build mbelib into OnAir (patented vocoder: your own builds only)" OFF)
 if(DECT2_BUNDLE_MBELIB)
   add_library(dect2_mbelib STATIC third_party/mbelib/mbelib.c third_party/mbelib/ecc.c third_party/mbelib/ambe3600x2400.c third_party/mbelib/ambe3600x2450.c third_party/mbelib/imbe7200x4400.c third_party/mbelib/imbe7100x4400.c)
   target_include_directories(dect2_mbelib PUBLIC third_party/mbelib)

@@ -393,6 +393,7 @@ The official builds ship with the Application ID of the OnAir Discord applicatio
 ## Good to know
 
 - Encrypted (scrambled) services cannot be decoded.
+- **DMR, P25, NXDN, dPMR and D-STAR voice is silent until you install mbelib yourself.** OnAir does not include it because the AMBE / IMBE vocoders are patented. Calls, IDs and data work without it. Put the library in the codecs folder (the **?** next to the sound has an **Open codecs folder** button), then press **Look again**. Steps: **[docs/CODECS.md](docs/CODECS.md)**.
 - codec2 (FreeDV and M17 speech) comes with OnAir as a separate shared library, nothing to install. Some other voice and audio codecs are not shipped (AMBE, HDC and DRA+ are patented). **[docs/CODECS.md](docs/CODECS.md)** says how to install the ones you can, and what to use for the others. The **?** button next to the sound of each such mode says the same.
 - **Saving DRA sound.** OnAir cannot decode DRA, but it can save it. In the CDR *Radio* tab, and in the *Player* section of the TV tab for a DTMB service whose sound is DRA (or any service with MPEG audio), press **Save stream**. The raw audio elementary stream goes to `audio-streams/<name>_<date>_<time>.dra` (`.mp2` for MPEG audio) in OnAir's data folder, and the path is shown under the button. Press **Stop saving** (or pick another service) to close the file. Play it with an FFmpeg that has DRA support; user YZYMC reported a build of FFmpeg 7.1.2 with a DRA patch. The commands, assuming such a build:
   ```sh
