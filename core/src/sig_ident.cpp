@@ -223,6 +223,7 @@ const Known kKnown[] = {
     {"D-STAR", "dstar", "", ModGmsk, ModFsk2, {4800}, 6000, 1200, 0, SyncNone, {144, 148, 420, 450, 1240, 1300}, "GMSK 4800 Bd, 6.25 kHz"},
     {"Radiosonde", "sonde", "", ModFsk2, ModGmsk, {4800, 2500, 1200}, 10000, 2400, 1, SyncNone, {400, 406}, "2FSK 4800 Bd (RS41) and others, 400-406 MHz"},
     {"GSM-R / GSM", "gsmr", "", ModGmsk, ModFsk2, {270833}, 200000, 67708, 0, SyncNone, {876, 880, 921, 960, 1805, 1880}, "GMSK 270.833 kBd, 200 kHz"},
+    {"LBJ railway warning", "lbj", "", ModFm, ModFsk2, {1200}, 25000, 1200, 0, SyncNone, {821}, "FM, 1200 bit/s FSK (Chinese railway)"},
     {"Bluetooth LE", "ble", "", ModGmsk, ModFsk2, {1e6, 2e6}, 1.2e6, 250000, 2, SyncNone, {2400, 2484}, "GFSK 1 Mbit/s, bursts"},
     {"ADS-B / Mode S", "adsb", "", ModPulse, ModAm, {1e6, 2e6}, 2.6e6, 0, 2, SyncNone, {1089, 1091}, "PPM pulses 1 Mbit/s, 1090 MHz bursts"},
     {"Mode S uplink", "uplink", "", ModPulse, ModBpsk, {4e6, 1e6}, 6e6, 0, 2, SyncNone, {1029, 1031}, "1030 MHz interrogations"},

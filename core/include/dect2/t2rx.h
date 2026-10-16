@@ -44,6 +44,7 @@
 #include "tetrapol_tel.h"
 #include "mac_tel.h"
 #include "gsmr_tel.h"
+#include "lbj_tel.h"
 #include "dvbc_tel.h"
 #include "orbcomm_tel.h"
 #include "uplink_tel.h"
@@ -191,6 +192,7 @@ struct RxTelemetry {
     TetraTelemetry tetra;       // valid when standard == 47
     MacTelemetry mac;           // valid when standard == 48
     GsmrTelemetry gsmr;         // valid when standard == 40
+    LbjTelemetry lbj;           // valid when standard == 82 (LBJ, engine standard 83)
     struct Dvbt {                // DVB-T only: TPS parameters and the channel decoder's statistics
         bool tpsOk = false, fecSync = false;
         int mode = 0, guard = 0, mod = 0, hier = 0, crHp = 0, crLp = 0, cellId = 0, frameIdx = 0, punctPhase = 0;

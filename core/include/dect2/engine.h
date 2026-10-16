@@ -91,6 +91,7 @@
 #include "nr_rx.h"
 #include "goes_rx.h"
 #include "elektro_rx.h"
+#include "lbj_rx.h"
 #include "hrpt_rx.h"
 #include "bbunpack.h"
 #include "multitv.h"
@@ -349,6 +350,7 @@ public:
     HrptReceiver& hrpt() { return rxHrpt_; }   // HRPT / AHRPT: variant, new picture (telemetry through latestRx)
     GoesReceiver& goes() { return rxGoes_; }   // GOES HRIT: clear the products (telemetry through latestRx)
     ElektroReceiver& elektro() { return rxEl_; }   // Elektro-L HRIT / LRIT / GGAK (telemetry through latestRx)
+    LbjReceiver& lbj() { return rxLbj_; }   // LBJ railway warnings (telemetry through latestRx)
     MeteorReceiver& meteor() { return rxMeteor_; }   // Meteor-M LRPT: modulation, a new picture (telemetry through latestRx)
     NrReceiver& nr() { return rxNr_; }         // 5G NR cells: clear the cell table (telemetry through latestRx)
     WifiReceiver& wifi() { return rxWifi_; }   // Wi-Fi networks: clear the network table (telemetry through latestRx)
@@ -565,6 +567,7 @@ private:
     NrReceiver rxNr_;
     GoesReceiver rxGoes_;
     ElektroReceiver rxEl_;
+    LbjReceiver rxLbj_;
     HrptReceiver rxHrpt_;
     FlarmReceiver rxFlarm_;
     uint64_t modeSeq_[96] = {};      // the last report taken from each of the modes added after FM (same order as above)
