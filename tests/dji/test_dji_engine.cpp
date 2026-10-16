@@ -1,5 +1,5 @@
 // DJI drones through the engine (setStandard(70)): the synthetic source plays DroneID bursts and an OcuSync-like train at 20 Msps, the receiver reports
-// through latestRx(). No sound. Also the recording of that signal with SigMF metadata is not tested here (tests/test_sigmf.cpp does that).
+// through latestRx(). No sound. Also the recording of that signal with SigMF metadata is not tested here (tests/source/test_sigmf.cpp does that).
 #include "dect2/dji/dji_rx.h"
 #include "dect2/dji/dji_gen.h"
 #include "dect2/engine/engine.h"

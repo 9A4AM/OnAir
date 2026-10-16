@@ -2,8 +2,8 @@
 // grey), Save PNG and New picture; the frequency presets and the variant; the receiver's state, the packets heard and the constellation.
 // The tab and the empty-state text say what the mode needs: a dish and a fast radio.
 #include "app.h"
-#include "gfx.h"
-#include "platform.h"
+#include "gfx/gfx.h"
+#include "platform/platform.h"
 #include "dect2/hrpt/hrpt_rx.h"
 #include "dect2/hrpt/hrpt_tel.h"
 #include <algorithm>

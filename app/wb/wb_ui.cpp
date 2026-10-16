@@ -2,7 +2,7 @@
 // measure it, demodulate a band and read the bits. The work is in core/src/wb_*.cpp; this file is the screens: loading, the plots with their
 // mouse handling, the mode hooks. The other tabs are in wb_tabs.cpp.
 #include "wb_state.h"
-#include "scale.h"
+#include "ui/scale.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

@@ -2,7 +2,7 @@
 // echoes and the fading channels of Annex B.1, a reset in the middle. Every line prints the numbers; the checks are set where the receiver is expected to
 // work with some margin, not at the limit (the limits are in docs/modes/drm.md).
 #include "../data/drm/testkit.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cstdio>
 #include <string>

@@ -1,10 +1,10 @@
-// ILS receiver: localizer and glide slope DDM across the needle range and through the faults of tests/impair.h (carrier offset +-5 kHz,
+// ILS receiver: localizer and glide slope DDM across the needle range and through the faults of tests/common/impair.h (carrier offset +-5 kHz,
 // clock +-50 ppm, low SNR, multipath echo, 8-bit clipping); the marker beacons; the localizer identification; the frequency pairing.
 // Target: DDM within 0.005.
 #include "dect2/ils/ils.h"
 #include "dect2/vor/vor_gen.h"
 #include "dect2/vor/vor_rx.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 #include <functional>

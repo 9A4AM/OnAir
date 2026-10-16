@@ -1,4 +1,4 @@
-#include "journaline_view.h"
+#include "panels/journaline_view.h"
 #include "imgui.h"
 #include <cstdio>
 #include <string>

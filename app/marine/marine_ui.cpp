@@ -1,7 +1,7 @@
 // Marine screens: the NAVTEX messages grouped by station with the text panel, the DSC calls (distress in red, the position on a small
 // map), the weather fax picture (zoom, pan, slant, save as PNG) and a tuning aid (the audio spectrum with the tones each service expects).
 #include "app.h"
-#include "gallery.h"
+#include "panels/gallery.h"
 #include "dect2/results/results_io.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/marine/marine_tel.h"

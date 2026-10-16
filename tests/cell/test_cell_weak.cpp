@@ -5,7 +5,7 @@
 #include "dect2/cell/cell_dsp.h"
 #include "dect2/cell/cell_gen.h"
 #include "dect2/cell/cell_lte.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

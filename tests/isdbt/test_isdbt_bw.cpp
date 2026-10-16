@@ -5,7 +5,7 @@
 #include "dect2/isdbt/isdbt_rx.h"
 #include "dect2/engine/mode_synth.h"
 #include "dect2/source/source.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cmath>
 #include <cstdlib>

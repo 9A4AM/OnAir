@@ -2,8 +2,8 @@
 // (sync, L1, channel estimation, de-interleaving, LDPC, BCH), and every decoded baseband frame must equal what was sent.
 #include "dect2/t2/t2gen.h"
 #include "dect2/t2/t2rx.h"
-#include "../impair.h"
-#include "../jobs.h"
+#include "../common/impair.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <chrono>
 #include <cstdio>
@@ -37,7 +37,7 @@ static void runCase(const Case& c) {
     std::vector<cf32> frame;
     std::mt19937 rng(7);
     std::normal_distribution<float> nd(0.f, 1.f);
-    // the whole transmission first: a sample-clock error (the receiver's clock c.sroPpm fast) resamples it as one stream (tests/impair.h)
+    // the whole transmission first: a sample-clock error (the receiver's clock c.sroPpm fast) resamples it as one stream (tests/common/impair.h)
     std::vector<cf32> tx;
     std::vector<size_t> txEnd;
     for (int i = 0; i < nFrames; i++) {

@@ -1,7 +1,7 @@
 // Native driver for the RX888 MkII (a Cypress FX3 USB 3 board: an LTC2208-class 16-bit converter that samples the HF input directly, up to
 // 130 Msps, and an R828D tuner behind the VHF input). No vendor library is used: the radio is driven over USB (libusb) with the protocol of the
 // SDDC firmware, written from the MIT-licensed renardspark/SDDC_Driver (Interface.h, Core/usb/*, Core/radio/RX888R2Radio.cpp), which is ik1xpv's
-// ExtIO_sddc / libsddc. See rx888_usb.h for the requests. NOT tested on a real radio: tests/test_rx888.cpp runs it against a fake FX3.
+// ExtIO_sddc / libsddc. See rx888_usb.h for the requests. NOT tested on a real radio: tests/source/test_rx888.cpp runs it against a fake FX3.
 //
 // - The FX3 has no firmware of its own: it enumerates as 04b4:00f3 until the image of the SDDC project (SDDC_FX3.img) is written into its
 //   RAM, then as 04b4:00f1 "RX888mk2". OnAir does not ship the image (it contains Cypress SDK code under a licence of its own): the driver

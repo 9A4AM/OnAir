@@ -3,7 +3,7 @@
 // over the spectrum and the waterfall. On those plots the channel is a marker: a click puts it there (inside the band the radio
 // covers, without retuning; outside it the radio is retuned), its filter edges can be dragged.
 #include "app.h"
-#include "plot.h"
+#include "gfx/plot.h"
 #include "dect2/general/general_gen.h"
 #include "dect2/general/general_rx.h"
 #include "dect2/general/general_tel.h"

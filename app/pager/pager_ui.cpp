@@ -2,7 +2,7 @@
 #include "app.h"
 #include "dect2/pager/pager_rx.h"
 #include "dect2/pager/pager_tel.h"
-#include "platform.h"
+#include "platform/platform.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdio>

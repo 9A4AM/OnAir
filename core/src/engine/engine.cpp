@@ -46,7 +46,7 @@ static void dropNonFinite(cf32* x, size_t n) {
 // The receiver that runs for an engine standard code (setStandard): 0 and 1 are DVB-T2, 2 DVB-T, ... so it is the code minus one
 static int activeStdFor(int stdMode) { return stdMode >= 2 ? stdMode - 1 : 0; }
 
-// "Remove DC spike" and "IQ correction" of the samples (iq_correct.h), with the part skipped that would harm the active mode (tests/test_iq_modes.cpp):
+// "Remove DC spike" and "IQ correction" of the samples (iq_correct.h), with the part skipped that would harm the active mode (tests/engine/test_iq_modes.cpp):
 // the DC removal where the wanted carrier can sit on the centre (FM, and the modes whose ModeTuning says carrierAtCentre), the IQ correction
 // where the signal is not circular around the centre (ModeTuning::notCircular)
 static void cleanSamples(IqCorrector& fix, OffsetMixer& mix, bool forceDc, cf32* x, size_t n, int activeStd) {

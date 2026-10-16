@@ -1,6 +1,6 @@
 // The "Sync computer clock" section and the optional NTP server (clocksync_ui.h). Nothing here sets the clock by itself: only a click on
 // "Sync now" runs the operating system's administrator prompt, and only for a locked, plausible measurement (core/src/time_ntp.cpp).
-#include "clocksync_ui.h"
+#include "panels/clocksync_ui.h"
 #include "dect2/time/time_ntp.h"
 #include "dect2/time/time_proto.h"
 #include <algorithm>

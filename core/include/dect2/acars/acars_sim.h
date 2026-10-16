@@ -26,7 +26,7 @@ struct AcarsSimCfg {
     double thrDb = 8;
     bool centerSet = true;                // call setCenterHz(gen.centerHz)
     double offsetHz = 0;                  // setSignalOffset
-    std::function<void(cf32* x, size_t n)> mod;   // after generation, before the 8 bit rounding (tests/impair.h faults)
+    std::function<void(cf32* x, size_t n)> mod;   // after generation, before the 8 bit rounding (tests/common/impair.h faults)
 };
 
 struct AcarsSimResult {

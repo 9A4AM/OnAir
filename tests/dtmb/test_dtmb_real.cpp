@@ -1,8 +1,8 @@
-// DTMB against real-world faults (REAL_WORLD_CHECKLIST.md) applied with tests/impair.h, written apart from the receiver and the test kit:
+// DTMB against real-world faults (REAL_WORLD_CHECKLIST.md) applied with tests/common/impair.h, written apart from the receiver and the test kit:
 // a UHF radio 50 ppm off (+-43 kHz at 860 MHz), a sample clock 80 ppm off, and everything at once with an echo and an overdriven 8-bit radio.
 #include "dect2/dtmb/dtmb_gen.h"
 #include "dect2/dtmb/dtmb_rx.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdlib>
 #include <string>

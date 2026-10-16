@@ -1,11 +1,11 @@
-// ATSC 1.0 (8-VSB) against real-world faults (REAL_WORLD_CHECKLIST.md): a clean generated signal, impaired with tests/impair.h (written
+// ATSC 1.0 (8-VSB) against real-world faults (REAL_WORLD_CHECKLIST.md): a clean generated signal, impaired with tests/common/impair.h (written
 // independently of the receiver), through the real AtscReceiver. Every case must give nearly only good packets.
 //   test_atsc_realworld          all cases
 //   test_atsc_realworld N        only case N, with details
 #include "dect2/atsc/atsc_gen.h"
 #include "dect2/atsc/atsc_rx.h"
 #include "dect2/dvbt/dvbt_gen.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

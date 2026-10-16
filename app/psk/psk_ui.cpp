@@ -2,7 +2,7 @@
 // passband (a click picks a signal), the table of every signal (audio frequency, SNR, AFC, the newest text), and the focused signal's
 // chat log (one row per line, with the time) beside its text in big letters, callsigns highlighted.
 #include "app.h"
-#include "gfx.h"
+#include "gfx/gfx.h"
 #include "dect2/cw/cw_morse.h"
 #include "dect2/psk/psk_rx.h"
 #include "dect2/psk/psk_tel.h"

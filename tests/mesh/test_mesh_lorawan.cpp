@@ -10,7 +10,7 @@
 #include "dect2/mesh/mesh_proto.h"
 #include "dect2/mesh/mesh_rx.h"
 #include "dect2/engine/mode_tuning.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 #include <random>

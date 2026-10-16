@@ -1,6 +1,6 @@
 #pragma once
 // The sample rates the app offers for a mode on a radio, and the check of a typed one (the "Sample rate" control under the frequency).
-// Pure functions of the radio's limits and the mode's minimum: tests/test_rate_choice.cpp.
+// Pure functions of the radio's limits and the mode's minimum: tests/engine/test_rate_choice.cpp.
 #include "dect2/source/source.h"
 #include <string>
 #include <utility>

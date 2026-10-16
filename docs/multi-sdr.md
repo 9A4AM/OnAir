@@ -6,7 +6,7 @@ tab strip show the process CPU load.
 
 ## Design: one App / Engine per receiver
 
-`RX 1` is the `App` main() makes. `RX 2..4` are further `App`s made on demand (app/receivers.cpp), each with its own
+`RX 1` is the `App` main() makes. `RX 2..4` are further `App`s made on demand (app/state/receivers.cpp), each with its own
 `Engine`, radio, mode, frequency, gains, rate, scanner, results. The UI code is unchanged: it still gets `App& a`.
 
 - Tabs: a strip at the bottom of the window, `RX 1 | RX 2 | +`, in both interfaces (the classic interface is one
@@ -26,7 +26,7 @@ tab strip show the process CPU load.
 | data feeds out (core/src/net/feeds.cpp: all receivers send into it, settings are RX 1's) | prefs `rx2_freqMhz`, `rx2_family`, `rx2_subMode`, `rx2_lna/vga/gain/amp`, `rx2_g*`, `rx2_fFreq*`, `rx2_devName`, `rx2_bw`, `rx2_standard` |
 | PSK Reporter, Discord status (RX 1), tile cache, map, update check, i18n, codecs, diagnostics | |
 
-`plat::prefs()` is a facade (app/rx_prefs.cpp): with `plat::gPrefRx = n` the per-receiver keys get the prefix `rxn_`.
+`plat::prefs()` is a facade (app/state/rx_prefs.cpp): with `plat::gPrefRx = n` the per-receiver keys get the prefix `rxn_`.
 RX 1 uses today's names, so nothing is lost. Open receivers are remembered (`rxOpen`), not auto-started.
 
 ## Per-mode screen state
@@ -34,7 +34,7 @@ RX 1 uses today's names, so nothing is lost. Open receivers are remembered (`rxO
 Many `app/*_ui.cpp` keep a `static State S` per mode. Two receivers in the same mode would share it, so starting a mode
 another receiver already runs is refused: "RX n already uses this mode: per-receiver state for this mode is not
 separated yet". Separated modes: none yet (every mode is blocked from running twice). Different modes run side by side.
-The app-level results lists the screens keep themselves (app/results_ui.cpp) belong to RX 1 only; engine results
+The app-level results lists the screens keep themselves (app/panels/results_ui.cpp) belong to RX 1 only; engine results
 (the decoded tables) are per receiver.
 
 ## Core audit

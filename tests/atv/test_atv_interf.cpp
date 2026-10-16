@@ -1,7 +1,7 @@
 // Analog TV receiver against things in the path: a gap in the samples, impulse noise, carriers of other signals, ghosts, mains hum, sync compression,
 // a step in the signal level, and the controls (the detector, the standard) while it runs.
 #include "dect2/atv/atv_testkit.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cmath>
 #include <cstdio>

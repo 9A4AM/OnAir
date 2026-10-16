@@ -2,7 +2,7 @@
 // selected cell and a band scan over the 100 kHz LTE raster. Only what cells broadcast to every device is shown: NPSS / NSSS, MIB-NB, SIB1-NB.
 // Receive only: nothing addressed to a device is decoded.
 #include "app.h"
-#include "results_export.h"
+#include "state/results_export.h"
 #include "dect2/cell/cell_rx.h"
 #include "dect2/nbiot/nbiot_rx.h"
 #include "dect2/nbiot/nbiot_tel.h"

@@ -2,9 +2,9 @@
 // of the segments (and the ones still missing), the last finished picture (scaled to fit), the finished files as a list to click, Save, and
 // "Save every picture" (the files as sent, in <data folder>/hamdrm/, named by the time and the sender's file name).
 #include "app.h"
-#include "gallery.h"
-#include "gfx.h"
-#include "platform.h"
+#include "panels/gallery.h"
+#include "gfx/gfx.h"
+#include "platform/platform.h"
 #include "dect2/hfdig/hfdig_tel.h"
 #include "dect2/common/png.h"
 #include <algorithm>

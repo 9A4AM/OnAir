@@ -2,7 +2,7 @@
 // file (hfdig_rtty_ui.cpp, hfdig_sstv_ui.cpp, hfdig_freedv_ui.cpp). The shell also keeps the sound controls in step for FreeDV's speech,
 // lists what happened (ACTIVITY, on the right) and draws the spectrum and waterfall of the 8 kHz audio at the bottom, to tune the tones by eye.
 #include "app.h"
-#include "gfx.h"
+#include "gfx/gfx.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/hfdig/hfdig_tel.h"
 #include <algorithm>

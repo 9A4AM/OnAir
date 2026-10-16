@@ -1,11 +1,11 @@
-// VDL Mode 2 receiver against the test traffic with real-world faults (tests/impair.h and the cases below): frequency offset +-5 kHz,
+// VDL Mode 2 receiver against the test traffic with real-world faults (tests/common/impair.h and the cases below): frequency offset +-5 kHz,
 // sample clock +-50 ppm, low SNR near the decoding threshold, bursts starting in the middle of a buffer, two overlapping bursts on one
 // channel, a strong neighbour 25 kHz away, and noise only. Every frame sent is looked for among the frames decoded (by source,
 // destination and time), and nothing may be decoded that was not sent.
 #include "dect2/vdl2/vdl2_gen.h"
 #include "dect2/vdl2/vdl2_proto.h"
 #include "dect2/vdl2/vdl2_rx.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

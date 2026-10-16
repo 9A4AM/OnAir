@@ -2,10 +2,10 @@
 // progress bar and the mode and slant under it; beside it (under it in a narrow pane) the last finished pictures as thumbnails to click,
 // Save (PNG) and Clear, and "Save every picture" (PNG files in <data folder>/sstv/, named by the time and the mode).
 #include "app.h"
-#include "gallery.h"
-#include "gfx.h"
-#include "icons.h"
-#include "platform.h"
+#include "panels/gallery.h"
+#include "gfx/gfx.h"
+#include "ui/icons.h"
+#include "platform/platform.h"
 #include "dect2/hfdig/hfdig_tel.h"
 #include "dect2/audio/hf_demod.h"
 #include <algorithm>

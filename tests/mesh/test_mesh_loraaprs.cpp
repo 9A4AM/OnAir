@@ -1,7 +1,7 @@
 // LoRa APRS and MeshCom in the mesh mode.
 // 1. Packet layer: LoRa APRS (prefix "<\xff\x01" + TNC2) and MeshCom 4 frames built as the firmwares build them decode to the exact
 //    calls, positions, messages and objects; malformed, truncated, non-ASCII and random payloads are refused or cleaned, never crash.
-// 2. Radio: single LoRa APRS frames (SF12, 125 kHz, sync 0x12) through MeshReceiver with the faults of tests/impair.h applied
+// 2. Radio: single LoRa APRS frames (SF12, 125 kHz, sync 0x12) through MeshReceiver with the faults of tests/common/impair.h applied
 //    independently of the generator: -15 dB SNR in the LoRa band, +-22 kHz tuning error (50 ppm at 433 MHz), +-100 ppm sample clock,
 //    a capture that starts inside a frame, two colliding frames, a frame sent without CRC.
 // 3. The 70 cm test scene (mesh_gen region 2): every LoRa APRS and MeshCom packet of a cycle at -15 dB / +22 kHz / +100 ppm.
@@ -10,7 +10,7 @@
 #include "dect2/mesh/mesh_proto.h"
 #include "dect2/mesh/mesh_rx.h"
 #include "dect2/engine/modes.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

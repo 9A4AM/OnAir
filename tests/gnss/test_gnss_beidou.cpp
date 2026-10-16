@@ -1,7 +1,7 @@
 // BeiDou B1I: the ranging codes, the BCH(15,11,1) code and its interleaving checked against the ICD; then the simulated sky on its own tune
 // (1561.098 MHz): the MEO and IGSO satellites with the D1 message under the NH code, the GEO satellites with D2, the ephemeris compared with what
 // was sent, the position fixed with BeiDou alone; and GPS and BeiDou together in one 20 Msps tune at 1568.26 MHz, BeiDou in the combined fix with
-// the broadcast BDT - GPS offset or a clock unknown of its own. The faults of tests/impair.h: +-5 kHz, a sample clock 20 ppm off, low C/N0, a start
+// the broadcast BDT - GPS offset or a clock unknown of its own. The faults of tests/common/impair.h: +-5 kHz, a sample clock 20 ppm off, low C/N0, a start
 // in the middle of a subframe.
 #include "dect2/gnss/gnss_bds.h"
 #include "dect2/gnss/gnss_codes.h"

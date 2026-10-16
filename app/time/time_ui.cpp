@@ -3,7 +3,7 @@
 // minute log, level / SNR / tick / offset histories, and the station and frequency pickers. LF stations need a radio that tunes below
 // 1 MHz: a note says so when the radio chosen cannot.
 #include "app.h"
-#include "clocksync_ui.h"
+#include "panels/clocksync_ui.h"
 #include "dect2/time/time_proto.h"
 #include "dect2/time/time_rx.h"
 #include "dect2/time/time_tel.h"

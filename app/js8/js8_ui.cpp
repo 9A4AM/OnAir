@@ -2,7 +2,7 @@
 // the newest frames marked, then four views: every frame decoded (UTC, submode, SNR, DT, Hz, text), the messages put together from
 // their frames (directed messages, free text, relays), the stations heard (call, grid, SNR, last heard), and their grids on a map.
 #include "app.h"
-#include "gfx.h"
+#include "gfx/gfx.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/js8/js8_proto.h"
 #include "dect2/js8/js8_rx.h"

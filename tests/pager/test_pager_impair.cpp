@@ -1,8 +1,8 @@
-// Pagers under real-radio faults (REAL_WORLD_CHECKLIST.md): one generator cycle (every POCSAG and FLEX speed) through tests/impair.h, then the
+// Pagers under real-radio faults (REAL_WORLD_CHECKLIST.md): one generator cycle (every POCSAG and FLEX speed) through tests/common/impair.h, then the
 // real receiver, in both polarities. A radio 50 ppm off is 8 kHz at 160 MHz and 23 kHz at 460 MHz. Every page of the cycle must arrive.
 #include "dect2/pager/pager_gen.h"
 #include "dect2/pager/pager_rx.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cstdio>
 #include <functional>
 using namespace dect2;

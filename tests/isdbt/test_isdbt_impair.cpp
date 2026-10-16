@@ -1,10 +1,10 @@
-// ISDB-T receiver against real-world faults (REAL_WORLD_CHECKLIST.md): the generator's signal is damaged with tests/impair.h, which shares
+// ISDB-T receiver against real-world faults (REAL_WORLD_CHECKLIST.md): the generator's signal is damaged with tests/common/impair.h, which shares
 // nothing with the receiver, and must still decode.
 #include "dect2/dsp/exact_resampler.h"
 #include "dect2/isdbt/isdbt_gen.h"
 #include "dect2/isdbt/isdbt_rx.h"
-#include "../impair.h"
-#include "../jobs.h"
+#include "../common/impair.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cmath>
 #include <cstdlib>

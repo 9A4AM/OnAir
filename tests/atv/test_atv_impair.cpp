@@ -2,7 +2,7 @@
 // other sample rates, chunks of any size, 8 bit samples at low level, DC offset and IQ imbalance. The generator makes the signal and draws the
 // card the receiver is compared with. Every line printed here is a number that is in the report.
 #include "dect2/atv/atv_testkit.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cmath>
 #include <cstdio>

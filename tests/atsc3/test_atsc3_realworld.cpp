@@ -1,10 +1,10 @@
-// ATSC 3.0 against real-world faults (REAL_WORLD_CHECKLIST.md): the clean test signal (atsc3_synth.h), impaired with tests/impair.h (written
+// ATSC 3.0 against real-world faults (REAL_WORLD_CHECKLIST.md): the clean test signal (atsc3_synth.h), impaired with tests/common/impair.h (written
 // independently of the receiver), through the real Atsc3Rx. Every case must find and decode nearly every frame.
 //   test_atsc3_realworld          all cases
 //   test_atsc3_realworld N        only case N
 #include "dect2/atsc3/atsc3_rx.h"
 #include "dect2/atsc3/atsc3_synth.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

@@ -6,7 +6,7 @@
 #include "dect2/cell/cell_lte.h"
 #include "dect2/cell/cell_rx.h"
 #include "dect2/cell/cell_tel.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

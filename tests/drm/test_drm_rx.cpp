@@ -1,7 +1,7 @@
 // DRM receiver: generator -> receiver on clean and noisy signals. Checks what the receiver reports (mode, occupancy, services, label, text, time) and that
 // the logical frames of the audio stream come out bit-exact, for every robustness mode, occupancy and constellation, at many input rates and chunk sizes.
 #include "../data/drm/testkit.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cstdio>
 #include <string>

@@ -1,8 +1,8 @@
 // DRM screens: the Radio tab (the band presets, short wave and the VHF bands of DRM+, now playing, text message, time, signal summary), the services
 // list, status lamps, the analysis plots (FAC / SDC / MSC cells, channel, SNR), the Receiver tab with all telemetry and the options of the test signal.
 #include "app.h"
-#include "gallery.h"
-#include "journaline_view.h"
+#include "panels/gallery.h"
+#include "panels/journaline_view.h"
 #include <cmath>
 #include <ctime>
 #include <deque>

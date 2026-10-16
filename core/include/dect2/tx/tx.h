@@ -2,7 +2,7 @@
 //
 // THE LIST (txModes() in tx.cpp is the single source of truth). Deny-list, not allow-list: every engine mode that has a generator is offered,
 // except pointless / jammer / impersonation cases below. The first eight (DVB-T2/T, ATSC, DAB, ISDB-T, DVB-S/S2/S2X, DTMB, ADS-B) and a few
-// extra digital modes (FM, DMR, AIS, APRS, CW, pagers) have an engine round-trip in tests/test_tx.cpp. Other offered rows reuse the mode's
+// extra digital modes (FM, DMR, AIS, APRS, CW, pagers) have an engine round-trip in tests/tx/test_tx.cpp. Other offered rows reuse the mode's
 // *_gen.h / *_tx.h chain; their roundTrip field says so when that loop-back was not run.
 //
 //   id      mode               generator

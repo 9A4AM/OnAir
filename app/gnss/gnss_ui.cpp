@@ -1,7 +1,7 @@
 // GNSS screens: the sky plot, the signal strength of every satellite, the position (card and map), the channel table, the search,
 // the correlator plots and the options of the test signal.
 #include "app.h"
-#include "clocksync_ui.h"
+#include "panels/clocksync_ui.h"
 #include "../adsb/adsb_map.h"
 #include "dect2/gnss/gnss_interf.h"
 #include "dect2/engine/rate_choice.h"

@@ -1,10 +1,10 @@
-// Airband receiver on the test generator with real-world faults (tests/impair.h): squelch timing per channel, no false openings on noise
+// Airband receiver on the test generator with real-world faults (tests/common/impair.h): squelch timing per channel, no false openings on noise
 // or on a strong neighbour 8.33 kHz away, audio SNR, tuning error of +-7 kHz, sample clock, 8-bit clipping, overmodulation, two stations
 // on one channel, very short transmissions, bad samples, channel names.
 #include "dect2/airband/airband_gen.h"
 #include "dect2/airband/airband_rx.h"
 #include "dect2/airband/airband_tel.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>

@@ -43,7 +43,7 @@ namespace dect2 {
 // ---------------------------------------------------------------- the list
 
 namespace {
-constexpr const char* kTrip = "tests/test_tx.cpp";
+constexpr const char* kTrip = "tests/tx/test_tx.cpp";
 constexpr const char* kUnv = "offered from the mode generator; engine round-trip not run in test_tx (unverified)";
 constexpr const char* kOpt = "the mode's SynthConfig (see the mode's *_gen.h)";
 

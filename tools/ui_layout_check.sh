@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Checks the layout of the interface for overlapping, cut-off and squashed controls: runs the developer build of the app (configured with
-# -DDECT2_UI_LAYOUT_CHECK=ON, see app/layout_check.cpp) hidden and muted for every mode and tab at the window sizes and display scales of
+# -DDECT2_UI_LAYOUT_CHECK=ON, see app/ui/layout_check.cpp) hidden and muted for every mode and tab at the window sizes and display scales of
 # common Windows laptops and monitors, and sums up the reports. It never captures the screen and never plays sound. The app runs as a renamed
 # copy, so its settings are its own (macOS: the defaults domain of the copy, deleted after each run) and the real ones are not touched.
 #
 #   tools/ui_layout_check.sh [build dir] [output dir]
 #   environment: JOBS=4 (runs at the same time), QUICK=1 (the three smallest sizes, fewer tabs), SIZES="1366x660@1.25 ..." (WxH@scale),
 #                MODES="dvb fm adsb ..." (only these), VARIANT=n (layout of the new interface, 0-7), CLASSIC=1 (the classic interface),
-#                SHOTS=1 (also a screenshot of each run), RADIO=1 (a fake radio, tests/native_fakes.cpp, selected and stopped instead of the
+#                SHOTS=1 (also a screenshot of each run), RADIO=1 (a fake radio, tests/source/native_fakes.cpp, selected and stopped instead of the
 #                running test signal: the radio's gain, bias-tee and settings controls show)
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -22,7 +22,7 @@ START=--autostart
 if [ "${RADIO:-0}" = 1 ]; then   # the fake vendor libraries of the driver tests, under every name the drivers look for
     ext=.so; [ "$(uname)" = Darwin ] && ext=.dylib
     mkdir -p "$OUT/fakes"
-    c++ -std=c++20 -O1 -shared -fPIC -fvisibility=hidden "$ROOT/tests/native_fakes.cpp" -o "$OUT/fakes/fake$ext" || exit 1
+    c++ -std=c++20 -O1 -shared -fPIC -fvisibility=hidden "$ROOT/tests/source/native_fakes.cpp" -o "$OUT/fakes/fake$ext" || exit 1
     for stem in rtlsdr airspy bladeRF LimeSuite iio uhd airspyhf; do cp "$OUT/fakes/fake$ext" "$OUT/fakes/lib$stem$ext"; done
     cp "$OUT/fakes/fake$ext" "$OUT/fakes/libsdrplay_api.so"
     export DECT2_NATIVE_LIBDIR="$OUT/fakes"

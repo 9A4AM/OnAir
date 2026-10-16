@@ -1,7 +1,7 @@
 // RS41 through the whole receiver: generator -> IQ at several rates -> carrier search, channel, decoder. Rates, carrier offsets,
 // clock offsets, chunk sizes, 8-bit samples, DC offset, a gap, reset(), and the SNR at which frames start to fail.
 #include "dect2/sonde/sonde_testkit.h"
-#include "../impair.h"
+#include "../common/impair.h"
 using namespace dect2;
 using namespace dect2::sondetest;
 

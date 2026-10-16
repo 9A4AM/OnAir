@@ -1,6 +1,6 @@
 // ADS-B: the decoded lists live through reset() and configure(), go into the results file and come back from it, and only
-// clearResults() empties them (tests/results_testkit.h).
-#include "../results_testkit.h"
+// clearResults() empties them (tests/results/results_testkit.h).
+#include "../results/results_testkit.h"
 #include "dect2/adsb/adsb_rx.h"
 #include "dect2/ais/ais_rx.h"
 #include "dect2/source/source.h"

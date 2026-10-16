@@ -23,11 +23,22 @@ Threads: the analysis thread runs the receiver (it must never wait for the inter
 
 | Folder | What is in it |
 |---|---|
-| `core/include/dect2/` | public headers of the receiver library |
-| `core/src/` | the implementation, one file per topic (see above) |
-| `app/` | the window: `main.cpp` (loop and layout), `app.h` (state and shared declarations), and one file per group of panels |
+| `core/include/dect2/<folder>/` | public headers, same folder names as `core/src` (`#include "dect2/<folder>/<name>.h"`) |
+| `core/src/<mode>/` | one folder per decoder mode (DVB-T2 is `t2/`, AIS is `ais/` ...) |
+| `core/src/engine/` | the engine thread, mode table and tuning, scanner, quality, wide-capture helpers |
+| `core/src/source/` | radios and drivers (`source_*.cpp`), Hamlib, rotator, IQ files, gain |
+| `core/src/audio/` | audio and video input/output, AC-4, encoders, shared ham audio front end |
+| `core/src/tv/` | transport stream, player, concealment, HLS, subtitles, teletext |
+| `core/src/dsp/` | FFT and SIMD kernels, resamplers, LDPC (CPU, GPU), IQ correction, spectrum |
+| `core/src/net/` | remote API, share server, network tuner and radio, data feeds, PSKReporter, WSPRnet |
+| `core/src/geo/` | Maidenhead, satellite passes, map layers, tile cache, MBTiles |
+| `core/src/channels/` | channel database and lookup |
+| `core/src/results/` | results serialiser and telemetry JSON (the Android bridge reads these) |
+| `core/src/tx/` | transmit |
+| `core/src/common/` | ring buffer, XML, inflate, PNG, character sets, platform headers |
+| `app/` | the window: `main.cpp` (loop and layout), `app.h` (state and shared declarations); `app/<mode>/` has a mode's screens; topical folders: `ui/`, `gfx/`, `panels/`, `map/`, `scan/`, `state/`, `platform/`, `i18n/` |
 | `tools/` | `dect2cli` (receiver on the command line), `dect2scan` (channel scanner), `package/` (installer scripts), `dev/` (developer helpers) |
-| `tests/` | unit tests, benchmarks and a fuzzer; run with `ctest` |
+| `tests/<folder>/` | unit tests, benchmarks and a fuzzer, in the same folders as `core/src` (`tests/<mode>/test_<mode>_*.cpp` is picked up by a glob); `tests/app/` tests the window code, `tests/bench/` has the benchmarks; run with `ctest` |
 | `packaging/` | icons, Windows installer script and toolchain file, Linux resources |
 | `third_party/` | Dear ImGui and miniaudio, with their licences |
 
@@ -44,3 +55,7 @@ Threads: the analysis thread runs the receiver (it must never wait for the inter
 ## Tests
 
 `ctest --test-dir build` runs the unit tests. Most use synthetic signals produced by the generators in the library (`t2gen.cpp`, `dvbt_gen.cpp`, `atsc_gen.cpp`), so they need no radio. `test_gpu_ldpc` compares the GPU decoder with the CPU one, `test_native` loads fake radio libraries, `test_conceal` checks the picture repair against known pictures. `test_fm_rx` sends a stereo station with RDS and noise through the FM receiver and checks the sound, the stereo separation and the decoded station name and text.
+
+## Notes for outside builds
+
+The Android bridge (`onair-android/native`, outside this repo) includes headers as `dect2/<name>.h`. Since 0.2.7 the headers live in folders: `dect2/remote_api.h` is `dect2/net/remote_api.h`, `dect2/modes.h` is `dect2/engine/modes.h`, `dect2/rx_json.h` is `dect2/results/rx_json.h`, `dect2/adsb_tel.h` is `dect2/adsb/adsb_tel.h`, and so on (mode headers go to their mode folder). `tools/dev/path_moves_0.2.7.txt` lists every old and new path. The bridge only needs `core/include` and the `dect2core` target, so its CMake does not change.

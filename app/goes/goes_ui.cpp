@@ -3,9 +3,9 @@
 // its text (EMWIN ZIP files unpacked); Save, and Save automatically into <data folder>/goes/. The receiver's state and the constellation.
 // A dish (about 1 m, or a grid) with an LNA at the feed is needed: a note says so while nothing is received.
 #include "app.h"
-#include "gallery.h"
-#include "gfx.h"
-#include "platform.h"
+#include "panels/gallery.h"
+#include "gfx/gfx.h"
+#include "platform/platform.h"
 #include "dect2/goes/goes_proto.h"
 #include "dect2/goes/goes_rx.h"
 #include "dect2/goes/goes_tel.h"

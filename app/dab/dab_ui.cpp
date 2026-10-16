@@ -1,7 +1,7 @@
 // DAB / DAB+ digital radio panels.
 #include "app.h"
-#include "journaline_view.h"
-#include "results_export.h"
+#include "panels/journaline_view.h"
+#include "state/results_export.h"
 #include "dect2/dab/dab_announce.h"
 #include "dect2/dab/dab_fig.h"
 #include <ctime>

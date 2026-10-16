@@ -1,4 +1,4 @@
-// DVB-T against real-world faults (REAL_WORLD_CHECKLIST.md), applied with tests/impair.h, which was written apart from the receiver:
+// DVB-T against real-world faults (REAL_WORLD_CHECKLIST.md), applied with tests/common/impair.h, which was written apart from the receiver:
 // a UHF radio off by up to 50 ppm (+-43 kHz at 860 MHz, far more than 20 carriers in 8K and in narrow channels), a sample clock 80 ppm
 // fast, hierarchical transmissions (the receiver gives the high-priority stream), signalling with a reserved LP code rate in a
 // non-hierarchical multiplex, and everything at once with an echo and an overdriven 8-bit radio.
@@ -6,8 +6,8 @@
 #include "dect2/dvbt/dvbt_rx.h"
 #include "dect2/dsp/resampler.h"
 #include "dect2/t2/t2.h"
-#include "../impair.h"
-#include "../jobs.h"
+#include "../common/impair.h"
+#include "../common/jobs.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>

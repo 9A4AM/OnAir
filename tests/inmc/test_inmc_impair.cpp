@@ -1,7 +1,7 @@
 // Inmarsat-C receiver against the impairments of real radios: carrier offset over +-10 ppm of 1.5 GHz and beyond, carrier drift, clock error,
 // every chunk size, 8-bit samples, DC offset, a gap, a reset in the middle of the stream. Eb/N0 8 dB unless a case says otherwise.
 #include "dect2/inmc/inmc_testutil.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include "dect2/engine/test_parallel.h"
 #include <algorithm>
 #include <functional>

@@ -3,7 +3,7 @@
 // offsets, clock offsets, the sample rates of the radios and chunk sizes from 1 to 65536 samples. The signal is rounded to 8 bits like the source does.
 #include "dect2/dab/dab.h"
 #include "dect2/dab/dab_gen.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>

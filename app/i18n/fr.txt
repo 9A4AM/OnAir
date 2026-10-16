@@ -1,5 +1,5 @@
 # OnAir interface in French. One text per line: the English text as in the source, a tab, the translation.
-# \n is a line break. Keep the printf conversions (%s, %d, %.1f ...) in the same order. tests/test_i18n.cpp checks this file.
+# \n is a line break. Keep the printf conversions (%s, %d, %.1f ...) in the same order. tests/app/test_i18n.cpp checks this file.
 #  menus, status words, common buttons
 %.1f dB	%.1f dB
 %s  #%d  %.3f MHz%s	%s  #%d  %.3f MHz%s

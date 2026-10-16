@@ -1,4 +1,4 @@
-// ISM sensors receiver over the air (synthetic): the test scenes through the receiver with the faults of tests/impair.h and the ones of
+// ISM sensors receiver over the air (synthetic): the test scenes through the receiver with the faults of tests/common/impair.h and the ones of
 // the band itself. Every reading must be one of the test devices with its right values (a wrong reading is a failure in every case);
 // the clean cases must hear every device.
 //
@@ -14,7 +14,7 @@
 #include "dect2/ism/ism_gen.h"
 #include "dect2/ism/ism_rx.h"
 #include "dect2/ism/ism_tel.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>

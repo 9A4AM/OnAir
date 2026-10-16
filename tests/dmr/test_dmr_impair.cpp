@@ -2,7 +2,7 @@
 // combined case (offset, +80 ppm clock, an echo, 8-bit clipping) through the real receiver, base station and direct mode. A lone carrier on the
 // 12.5 kHz raster stays the neighbouring channel (test_dmr_radio).
 #include "dect2/dmr/dmr_eval.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 using namespace dect2;

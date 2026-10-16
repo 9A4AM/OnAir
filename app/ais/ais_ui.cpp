@@ -1,9 +1,9 @@
 // AIS screens: the map of vessels (the ADS-B map underneath), the vessel table, the detail panel, the message counters
 // with the rates of the two channels, and the raw NMEA log.
 #include "app.h"
-#include "results_export.h"
+#include "state/results_export.h"
 #include "../adsb/adsb_map.h"
-#include "rangeplot_ui.h"
+#include "map/rangeplot_ui.h"
 #include "dect2/ais/ais_tel.h"
 #include <algorithm>
 #include <cmath>

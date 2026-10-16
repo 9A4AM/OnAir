@@ -1,4 +1,4 @@
-// The faults of tests/impair.h applied to the GNSS test stream chunk by chunk (gnsstest::Options::hook): the stream is far too long to hold whole.
+// The faults of tests/common/impair.h applied to the GNSS test stream chunk by chunk (gnsstest::Options::hook): the stream is far too long to hold whole.
 // - a frequency offset: impair::shift on chunks whose length holds a whole number of its cycles, so that the phase runs on across chunks
 // - a sample clock error: impair::clock on windows of exactly L input samples that give exactly M output samples (ppm = (M / L - 1) * 1e6), so the
 //   sample times run on across the windows; the windows overlap by the interpolator's taps
@@ -6,7 +6,7 @@
 // - a start in the middle: the first `skip` samples are thrown away (impair::skip)
 #pragma once
 #include "dect2/gnss/gnss_testkit.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <deque>
 #include <memory>
 

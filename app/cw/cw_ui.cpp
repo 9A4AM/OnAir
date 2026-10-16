@@ -2,7 +2,7 @@
 // of every signal (frequency, speed, SNR, text) and the focused signal's text in big letters, with the callsigns highlighted; the
 // sidetone switch for the focused signal (off until switched on).
 #include "app.h"
-#include "gfx.h"
+#include "gfx/gfx.h"
 #include "dect2/cw/cw_morse.h"
 #include "dect2/cw/cw_rx.h"
 #include "dect2/cw/cw_tel.h"

@@ -1,8 +1,8 @@
 // Elektro-L N3 / N4 / N5 HRIT / LRIT screens: the same xRIT product list as GOES, with satellite and link presets.
 #include "app.h"
-#include "gallery.h"
-#include "gfx.h"
-#include "platform.h"
+#include "panels/gallery.h"
+#include "gfx/gfx.h"
+#include "platform/platform.h"
 #include "dect2/elektro/elektro_rx.h"
 #include "dect2/elektro/elektro_tel.h"
 #include "dect2/goes/goes_proto.h"

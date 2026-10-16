@@ -31,7 +31,7 @@ airspy_info
 # Fobos SDR (RigExpert)
 
 Not tested on a radio yet: the driver was written against RigExpert's library source and checked with a stand-in for the library
-(`tests/native_fakes.cpp`). Reports are welcome.
+(`tests/source/native_fakes.cpp`). Reports are welcome.
 
 OnAir drives the Fobos SDR through RigExpert's **agile** library, [libfobos-sdr-agile](https://github.com/rigexpert/libfobos-sdr-agile)
 (`fobos_sdr.dll`, `libfobos_sdr.so`). That library only sees radios that run the agile firmware: hardware rev. 4 has it from the factory,

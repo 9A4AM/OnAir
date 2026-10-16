@@ -1,7 +1,7 @@
 // DVB-S/S2 receiver, front end faults: carrier offset, symbol clock offset, signal level, DC offset, IQ imbalance, odd chunk sizes, the input sample rates the
 // radios give and the range of symbol rates. Every packet that comes out has to be right.
 #include "dect2/dvbs/dvbs_testkit.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>

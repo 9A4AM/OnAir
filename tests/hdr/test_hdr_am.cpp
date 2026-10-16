@@ -6,8 +6,8 @@
 // sidebands), which must decode when the signal is good (25 dB).
 #include "dect2/hdr/hdr_gen.h"
 #include "dect2/hdr/hdr_rx.h"
-#include "../impair.h"
-#include "../jobs.h"
+#include "../common/impair.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cmath>
 #include <cstdio>

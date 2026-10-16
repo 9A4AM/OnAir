@@ -2,9 +2,9 @@
 // at night, chosen from the channels sent, or one channel in grey), Save PNG and New picture; the frequency (137.900 / 137.100) and
 // the modulation; the receiver's state, the channels heard and the symbol constellation.
 #include "app.h"
-#include "gallery.h"
-#include "gfx.h"
-#include "platform.h"
+#include "panels/gallery.h"
+#include "gfx/gfx.h"
+#include "platform/platform.h"
 #include "dect2/meteor/meteor_rx.h"
 #include "dect2/meteor/meteor_tel.h"
 #include <algorithm>

@@ -24,5 +24,5 @@ index a23e475..96b971d 100644
 +    add_test(NAME ${tname} COMMAND ${stem})
 +  endforeach()
  
-   add_executable(test_scan_radios tests/test_scan_radios.cpp)
+   add_executable(test_scan_radios tests/engine/test_scan_radios.cpp)
    target_link_libraries(test_scan_radios PRIVATE dect2core)

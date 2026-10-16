@@ -2,7 +2,7 @@
 // its own tune (1602 MHz, 10 Msps): the fourteen frequency channels cut out of the band, the strings found by their time mark, the ephemeris compared
 // with what was sent, the orbit integrated from tb, the position fixed with GLONASS alone; the outermost channels k = -7 and +6 among those in view;
 // and GPS with GLONASS in one 40 Msps tune at 1590.4 MHz, GLONASS with a clock unknown of its own and tau_GPS applied; the "All systems" tune
-// (1582 MHz, 50 Msps) holds the L1, B1I and all fourteen GLONASS bands. The faults of tests/impair.h:
+// (1582 MHz, 50 Msps) holds the L1, B1I and all fourteen GLONASS bands. The faults of tests/common/impair.h:
 // +-5 kHz, a sample clock 20 ppm off, low C/N0, a start in the middle of a string.
 #include "dect2/gnss/gnss_codes.h"
 #include "dect2/gnss/gnss_glo.h"

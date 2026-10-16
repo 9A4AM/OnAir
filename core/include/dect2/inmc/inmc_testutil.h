@@ -23,7 +23,7 @@ struct InmcRunOpts {
     double flipAt = -1;           // from this time on the signal is negated (a cycle slip of the carrier loop: the polarity flips inside a frame)
     double flipBack = -1;         // negated again at this time
     double offsetHz = -50000;     // what the receiver is told
-    std::function<void(cf32* x, size_t n)> mod;   // after generation, before the DC offset and 8 bit rounding (tests/impair.h faults)
+    std::function<void(cf32* x, size_t n)> mod;   // after generation, before the DC offset and 8 bit rounding (tests/common/impair.h faults)
 };
 
 struct InmcRunResult {

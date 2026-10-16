@@ -1,11 +1,11 @@
-// D-STAR receiver against the test signal with real-world faults (tests/impair.h): tuning error +-2 kHz, a channel off centre with a
+// D-STAR receiver against the test signal with real-world faults (tests/common/impair.h): tuning error +-2 kHz, a channel off centre with a
 // clock error, noise, swapped I/Q, bit errors in the header (corrected; or too many, then the header comes from the slow data), lost slow
 // data blocks, a start in the middle of a call (late entry), and a carrier that stops without the end pattern. Silent: no sound device.
 // Each case plays the test schedule once: a repeater call with a message and NMEA GPS, and a simplex call with D-PRS and code squelch.
 #include "dect2/dstar/dstar_gen.h"
 #include "dect2/dstar/dstar_rx.h"
 #include "dect2/dstar/dstar_tel.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>

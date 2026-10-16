@@ -3,7 +3,7 @@
 #include "atsc3_sim.h"
 #include "dect2/atsc3/atsc3_rx.h"
 #include "dect2/atsc3/atsc3_synth.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>

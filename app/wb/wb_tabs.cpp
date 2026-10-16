@@ -1,6 +1,6 @@
 // Signal workbench: the Measure, Demodulate, Bits and Export tabs, the background jobs behind them and the listening.
 #include "wb_state.h"
-#include "scale.h"
+#include "ui/scale.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>

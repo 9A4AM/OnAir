@@ -21,7 +21,7 @@ struct ModeTuning {
     double bandwidthMhz = 1;     // channel width handed to the engine (TuneSettings::bandwidthMhz)
     double minSampleRate = 2e6;  // below this the receiver reports that it cannot work
     double tuneOffsetHz = 0;     // the radio is tuned this far above the user's frequency so a narrow channel avoids the DC spike; the receiver mixes it out (setSignalOffset(-tuneOffsetHz))
-    // What the engine skips of "Remove DC spike" and "IQ correction" (iq_correct.h) for this mode, because it would harm it (tests/test_iq_modes.cpp):
+    // What the engine skips of "Remove DC spike" and "IQ correction" (iq_correct.h) for this mode, because it would harm it (tests/engine/test_iq_modes.cpp):
     bool carrierAtCentre = false;   // the wanted signal can have a carrier on the radio's centre, which the DC removal would take with the spike
     bool notCircular = false;       // the wanted signal is not circular around the centre, which the blind IQ estimate would take for an imbalance
 };

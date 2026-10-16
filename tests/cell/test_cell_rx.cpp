@@ -1,11 +1,11 @@
-// Cell towers, LTE receiver against the test signal with real-world faults (tests/impair.h): carrier offset +-20 kHz, sample clock
+// Cell towers, LTE receiver against the test signal with real-world faults (tests/common/impair.h): carrier offset +-20 kHz, sample clock
 // +-20 ppm, low SNR, multipath, the input starting inside a frame, the radio's own sample rate, every bandwidth and port count, two cells
 // on one carrier, noise only. The system information must read back exactly as sent; nothing else (paging) may come out.
 #include "dect2/cell/cell_asn.h"
 #include "dect2/cell/cell_dsp.h"
 #include "dect2/cell/cell_gen.h"
 #include "dect2/cell/cell_lte.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>

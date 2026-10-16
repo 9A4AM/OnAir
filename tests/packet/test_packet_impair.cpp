@@ -1,8 +1,8 @@
-// APRS / Packet under real-radio faults (REAL_WORLD_CHECKLIST.md): one generator cycle (1200 and 9600 baud) through tests/impair.h, then the
+// APRS / Packet under real-radio faults (REAL_WORLD_CHECKLIST.md): one generator cycle (1200 and 9600 baud) through tests/common/impair.h, then the
 // real receiver. A radio 50 ppm off at 144 MHz is 7.2 kHz out; at 222 MHz 11 kHz. Every frame of the cycle must arrive.
 #include "dect2/packet/packet_gen.h"
 #include "dect2/packet/packet_rx.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cstdio>
 #include <functional>
 using namespace dect2;

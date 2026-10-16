@@ -1,7 +1,7 @@
 // Clean-up of the samples of a zero-IF radio before any receiver sees them: the DC spike (the LO leaking into the ADC, a spike in the
 // middle of the spectrum on the HackRF, RTL-SDR and the like) and IQ imbalance (I and Q with slightly different gains or not quite 90
 // degrees apart, which puts a mirror image of every signal on the other side of the centre). Both are measured from the signal itself,
-// so they need no calibration; both are off unless the user turns them on. tests/test_iq_modes.cpp checks them against every mode.
+// so they need no calibration; both are off unless the user turns them on. tests/engine/test_iq_modes.cpp checks them against every mode.
 #pragma once
 #include <algorithm>
 #include <atomic>

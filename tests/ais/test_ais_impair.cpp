@@ -2,7 +2,7 @@
 // a reset in the middle, bursts at the same time on both channels, a strong station next to a weak one, noise only.
 #include "dect2/ais/ais_testutil.h"
 #include "dect2/dsp/gen_util.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include <cmath>
 #include <cstdio>
 using namespace dect2;
@@ -286,7 +286,7 @@ int main() {
         runReceiver(rx2, x);
         CHECK(true, "nan input survived");
     }
-    // ---- combined, through tests/impair.h: 50 ppm of 162 MHz (8.1 kHz), +80 ppm clock, an echo and 8-bit clipping
+    // ---- combined, through tests/common/impair.h: 50 ppm of 162 MHz (8.1 kHz), +80 ppm clock, an echo and 8-bit clipping
     {
         auto specs = train(40, 21);
         const AisRenderConfig rc = cfgAt(2e6, 25, 3.8);

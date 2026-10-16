@@ -8,9 +8,9 @@
 #endif
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
-#include "plot.h"
-#include "i18n.h"
-#include "fm_saved.h"
+#include "gfx/plot.h"
+#include "i18n/i18n.h"
+#include "state/fm_saved.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -24,7 +24,7 @@
 #include "dect2/net/netradio.h"
 #include "dect2/source/hamlib_rig.h"
 #include "dect2/source/rig_setup.h"
-#include "airplay.h"
+#include "platform/airplay.h"
 #include "dect2/common/timecompat.h"
 #include "dect2/common/platform.h"
 #include "dect2/engine/scanner.h"
@@ -43,12 +43,12 @@
 #include "dect2/net/wsprnet.h"
 #include "dect2/geo/passes.h"
 #include "dect2/geo/maplayers.h"
-#include "theme.h"
-#include "gfx.h"
-#include "icons.h"
-#include "mascot.h"
-#include "scale.h"
-#include "platform.h"
+#include "ui/theme.h"
+#include "gfx/gfx.h"
+#include "ui/icons.h"
+#include "ui/mascot.h"
+#include "ui/scale.h"
+#include "platform/platform.h"
 
 #include <algorithm>
 #include <cmath>
@@ -1017,4 +1017,4 @@ void wizard(App& a, ImVec2 disp);
 void setupWizardOpen(App& a);                        // wizard.cpp: (re)start the setup wizard
 void setupWizard(App& a, ImVec2 disp);               // wizard.cpp: the window, each frame
 #include "dect2/engine/device_claims.h"
-#include "receivers.h"
+#include "state/receivers.h"

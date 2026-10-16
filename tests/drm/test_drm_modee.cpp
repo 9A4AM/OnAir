@@ -7,7 +7,7 @@
 #include "dect2/drm/drm_rx.h"
 #include "dect2/engine/modes.h"
 #include "dect2/engine/mode_synth.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <cmath>
 #include <cstdio>

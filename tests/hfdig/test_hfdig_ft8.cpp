@@ -1,9 +1,9 @@
 // HF digital, FT8: several stations per slot through the decoder, exact messages, at -15 dB (2500 Hz) and with the receiving side's
 // faults: dial error +-100 Hz, sample clock +-100 ppm, DT +-1.5 s, a strong neighbour on top of a weak one (subtraction), upside down
 // (lower sideband), noise alone (no false decodes), a start in the middle of a slot, the clock error shown, a slot search without a
-// start time; and the generator's audio through the whole receiver (IQ at 1 MHz, tests/impair.h: frequency offset, clock, noise).
+// start time; and the generator's audio through the whole receiver (IQ at 1 MHz, tests/common/impair.h: frequency offset, clock, noise).
 #include "hfdig_ftx_testutil.h"
-#include "../impair.h"
+#include "../common/impair.h"
 #include "dect2/hfdig/hfdig_gen.h"
 #include "dect2/hfdig/hfdig_rx.h"
 #include "dect2/hfdig/hfdig_tel.h"

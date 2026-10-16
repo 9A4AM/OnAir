@@ -369,7 +369,7 @@ curl -s -X POST -H 'Content-Type: application/json' -d '{"mhz": 474}' http://127
 curl -s -H "Authorization: Bearer $TOKEN" http://192.168.1.20:8765/api/v1/status
 ```
 
-The server is `core/src/net/remote_api.cpp`; `tests/test_remote_api.cpp` runs a socket client against it, and against the real engine on a generated DVB-T2 signal.
+The server is `core/src/net/remote_api.cpp`; `tests/net/test_remote_api.cpp` runs a socket client against it, and against the real engine on a generated DVB-T2 signal.
 
 ## Updates
 
@@ -381,7 +381,7 @@ OnAir checks GitHub for a newer version a few seconds after it starts (then at m
 
 ## Discord status
 
-Off by default. **View > Show in Discord** shows on your Discord profile that you are using OnAir, the mode and (optionally, **Show the frequency**) the frequency. It needs the Discord desktop app running, talks only to it on your computer, and sends nothing else anywhere. To use your own application in a fork: set the environment variable `ONAIR_DISCORD_APP_ID` (or `kDiscordAppId` in `app/discord_rpc.cpp`) and upload the icon as a Rich Presence art asset named `onair`.
+Off by default. **View > Show in Discord** shows on your Discord profile that you are using OnAir, the mode and (optionally, **Show the frequency**) the frequency. It needs the Discord desktop app running, talks only to it on your computer, and sends nothing else anywhere. To use your own application in a fork: set the environment variable `ONAIR_DISCORD_APP_ID` (or `kDiscordAppId` in `app/platform/discord_rpc.cpp`) and upload the icon as a Rich Presence art asset named `onair`.
 
 ## Good to know
 

@@ -1,5 +1,5 @@
 // The USB side of the RX888 MkII driver (source_rx888.cpp), behind two small interfaces so that the driver can be tested against a fake
-// radio (tests/test_rx888.cpp): rx888Usb() is libusb unless a test put another one in with rx888UseUsb().
+// radio (tests/source/test_rx888.cpp): rx888Usb() is libusb unless a test put another one in with rx888UseUsb().
 //
 // The radio is a Cypress FX3 with the SDDC firmware (ik1xpv's ExtIO_sddc, libsddc; the protocol below is that of the MIT-licensed
 // renardspark/SDDC_Driver, Core/usb and Core/radio/RX888R2Radio.cpp, Interface.h). The FX3 enumerates as 04b4:00f3 (boot loader) until the

@@ -2,7 +2,7 @@
 #include "dect2/dsp/exact_resampler.h"
 #include "dect2/isdbt/isdbt_gen.h"
 #include "dect2/isdbt/isdbt_rx.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>

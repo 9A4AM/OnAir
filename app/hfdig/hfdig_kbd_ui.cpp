@@ -2,7 +2,7 @@
 // The settings of the family (tones and bandwidth, or the variant), the audio frequency of the signal (found by the decoder while none is
 // locked, or typed), the band buttons, the decoded text; Hellschreiber draws what it hears as a picture, lines of columns of 14 pixels.
 #include "app.h"
-#include "platform.h"
+#include "platform/platform.h"
 #include "dect2/hfdig/hfdig_tel.h"
 #include <algorithm>
 #include <cmath>

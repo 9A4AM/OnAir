@@ -3,9 +3,9 @@
 // spectrum over a waterfall (a click puts the SSB dial there) with Listen, the wideband transponder with its DATV carriers and a
 // hand-over to DVB-S/S2, and the drift history. Every frequency shown is the corrected downlink frequency once the beacons are locked.
 #include "app.h"
-#include "results_export.h"
-#include "gfx.h"
-#include "plot.h"
+#include "state/results_export.h"
+#include "gfx/gfx.h"
+#include "gfx/plot.h"
 #include "dect2/qo100/qo100_dsp.h"
 #include "dect2/qo100/qo100_gen.h"
 #include "dect2/qo100/qo100_rx.h"

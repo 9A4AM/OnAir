@@ -1,9 +1,9 @@
 // ADS-B screens: the aircraft table, a radar plot around the receiver, the message monitor, statistics and the options of the test signal.
 #include "app.h"
 #include "dect2/adsb/adsb_units.h"
-#include "results_export.h"
+#include "state/results_export.h"
 #include "adsb_map.h"
-#include "rangeplot_ui.h"
+#include "map/rangeplot_ui.h"
 #include "dect2/adsb/adsb_msg.h"
 #include "dect2/adsb/adsb_reg.h"
 #include <cstring>

@@ -2,7 +2,7 @@
 #include "dect2/dvbt/dvbt_gen.h"
 #include "dect2/dvbt/dvbt_rx.h"
 #include "dect2/t2/t2.h"
-#include "../jobs.h"
+#include "../common/jobs.h"
 #include <atomic>
 #include <chrono>
 #include <cmath>

@@ -4,9 +4,9 @@
 // with its own waterfall and a table of the signals found. No decoder.
 #include <fstream>
 #include "app.h"
-#include "results_export.h"
-#include "gfx.h"
-#include "plot.h"
+#include "state/results_export.h"
+#include "gfx/gfx.h"
+#include "gfx/plot.h"
 #include "dect2/specx/specx_measure.h"
 #include "dect2/specx/specx_rx.h"
 #include "dect2/specx/specx_tel.h"
