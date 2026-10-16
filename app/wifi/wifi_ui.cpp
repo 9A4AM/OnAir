@@ -123,7 +123,7 @@ void networksView(App& a) {
             ImGui::PlotLines("##h", d.rssiHist.data(), (int)d.rssiHist.size(), 0, nullptr, -110, -10, ImVec2(48 * gUi, ImGui::GetTextLineHeight()));
             ImGui::PopID();
         }
-        ImGui::TableNextColumn(); ImGui::TextUnformatted(clock(d.firstWall).c_str());
+        ImGui::TableNextColumn(); ImGui::TextUnformatted(clockText(d.firstWall).c_str());
         ImGui::TableNextColumn(); ImGui::Text(ago < 1 ? "now" : "%.0f s ago", ago);
         ImGui::TableNextColumn(); ImGui::Text("%llu", (unsigned long long)d.beacons);
         ImGui::TableNextColumn(); if (d.interval) ImGui::Text("%d TU", d.interval); else ImGui::TextDisabled("-");
