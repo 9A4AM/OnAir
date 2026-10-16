@@ -126,7 +126,7 @@ std::string saCsv(const SaGrid& g, const std::vector<float>& live, const std::ve
 }
 
 bool saCsvWriteFile(const std::string& path, const SaGrid& g, const std::vector<float>& live, const std::vector<float>& peak, const std::vector<float>& avg) {
-    FILE* f = fopen(path.c_str(), "wb");
+    FILE* f = u8fopen(path, "wb");
     if (!f) return false;
     bool ok = true;
     saCsvStream(g, live, peak, avg, [&](const char* p, size_t n) { if (fwrite(p, 1, n, f) != n) ok = false; return ok; });

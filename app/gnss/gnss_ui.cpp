@@ -592,7 +592,7 @@ void interfExport(const GnssInterference& r) {
     const std::string path = saveFileDialog(nm);
     if (path.empty()) return;
     const std::string csv = gnssInterfCsv(r);
-    FILE* f = fopen(path.c_str(), "wb");
+    FILE* f = dect2::u8fopen(path, "wb");
     S.interfNote = f && fwrite(csv.data(), 1, csv.size(), f) == csv.size() ? "saved " + path : "could not write " + path;
     if (f) fclose(f);
 }

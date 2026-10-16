@@ -46,7 +46,7 @@ inline void rangeView(RangeView& v, ImVec2 size, double unitPerKm, const char* u
     if (ImGui::Button(tr("Save CSV..."))) {
         const std::string path = saveFileDialog((std::string("range-") + kind + "-" + resexp::stamp() + ".csv").c_str());
         if (!path.empty()) {
-            std::ofstream o(path, std::ios::binary);
+            std::ofstream o(dect2::u8file(path), std::ios::binary);
             o << rp.toCsv(now);
             o.flush();
             v.note = (o ? std::string(tr("saved")) : std::string(tr("could not write"))) + " " + path;

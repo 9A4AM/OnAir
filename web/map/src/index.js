@@ -427,13 +427,12 @@ export class MapHub {
     const icao = String(url.searchParams.get("icao") || "").toUpperCase().replace(/[^0-9A-F]/g, "").slice(0, 6);
     const cs = String(url.searchParams.get("cs") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
     if (icao.length !== 6 && cs.length < 3) return json({ error: "query" }, 400);
-    const k = (icao || "-") + ":" + (cs || "-");
+    const k = "v2:" + (icao || "-") + ":" + (cs || "-");
     const now = Date.now();
     const hit = this.ctx.storage.sql.exec("SELECT json, t FROM meta WHERE k = ?", k).toArray()[0];
     if (hit && now - hit.t < 6 * 3600e3) {
       try { return json(JSON.parse(hit.json)); } catch { /* fetch again */ }
     }
-    const out = { type: "", icaoType: "", registration: "", operator: "", origin: "", destination: "", originName: "", destinationName: "" };
     const hdr = { headers: { "User-Agent": "OnAirMap/1.0 (https://on-air.dev; map@on-air.dev)" } };
     const jobs = [];
     if (icao.length === 6) jobs.push(fetch("https://api.adsbdb.com/v0/aircraft/" + icao, hdr).then((r) => r.ok ? r.json() : null).catch(() => null));
@@ -441,23 +440,7 @@ export class MapHub {
     if (cs.length >= 3) jobs.push(fetch("https://api.adsbdb.com/v0/callsign/" + cs, hdr).then((r) => r.ok ? r.json() : null).catch(() => null));
     else jobs.push(Promise.resolve(null));
     const [ac, fl] = await Promise.all(jobs);
-    const a = ac && ac.response && ac.response.aircraft;
-    if (a) {
-      out.icaoType = String(a.icao_type || "").slice(0, 8);
-      const man = String(a.manufacturer || "").trim();
-      const typ = String(a.type || "").trim();
-      out.type = [man, typ].filter(Boolean).join(" ").slice(0, 80) || out.icaoType;
-      out.registration = String(a.registration || "").slice(0, 12);
-      out.operator = String(a.registered_owner || "").slice(0, 48);
-    }
-    const r = fl && fl.response && fl.response.flightroute;
-    if (r) {
-      out.origin = String((r.origin && (r.origin.iata_code || r.origin.icao_code)) || "").slice(0, 4);
-      out.destination = String((r.destination && (r.destination.iata_code || r.destination.icao_code)) || "").slice(0, 4);
-      out.originName = String((r.origin && (r.origin.municipality || r.origin.name)) || "").slice(0, 48);
-      out.destinationName = String((r.destination && (r.destination.municipality || r.destination.name)) || "").slice(0, 48);
-      if (!out.operator && r.airline && r.airline.name) out.operator = String(r.airline.name).slice(0, 48);
-    }
+    const out = buildMeta(ac, fl);
     this.ctx.storage.sql.exec(
       "INSERT INTO meta (k, json, t) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET json=excluded.json, t=excluded.t",
       k, JSON.stringify(out), now,
@@ -603,27 +586,34 @@ async function osmTile(z, x, y) {
   return new Response(r.body, { status: 200, headers: h });
 }
 
-async function lookupAircraft(req) {
-  const url = new URL(req.url);
-  const icao = String(url.searchParams.get("icao") || "").toUpperCase().replace(/[^0-9A-F]/g, "").slice(0, 6);
-  const cs = String(url.searchParams.get("cs") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-  if (icao.length !== 6 && cs.length < 3) return json({ error: "query" }, 400);
-  const cacheKey = new Request("https://map.on-air.dev/meta-cache/" + (icao || "-") + "/" + (cs || "-"));
-  const cached = await caches.default.match(cacheKey);
-  if (cached) return cors(cached);
-  const out = { type: "", icaoType: "", registration: "", operator: "", origin: "", destination: "", originName: "", destinationName: "" };
-  const hdr = { headers: { "User-Agent": "OnAirMap/1.0 (https://on-air.dev; map@on-air.dev)" } };
-  const jobs = [];
-  if (icao.length === 6) jobs.push(fetch("https://api.adsbdb.com/v0/aircraft/" + icao, hdr).then((r) => r.ok ? r.json() : null).catch(() => null));
-  else jobs.push(Promise.resolve(null));
-  if (cs.length >= 3) jobs.push(fetch("https://api.adsbdb.com/v0/callsign/" + cs, hdr).then((r) => r.ok ? r.json() : null).catch(() => null));
-  else jobs.push(Promise.resolve(null));
-  const [ac, fl] = await Promise.all(jobs);
+/** Airport block from an adsbdb flightroute leg; coordinates let the browser compute distance and ETA. */
+function airportOut(a) {
+  if (!a) return null;
+  const lat = Number(a.latitude), lon = Number(a.longitude);
+  return {
+    iata: String(a.iata_code || "").slice(0, 3),
+    icao: String(a.icao_code || "").slice(0, 4),
+    name: String(a.name || "").slice(0, 60),
+    city: String(a.municipality || "").slice(0, 48),
+    country: String(a.country_name || "").slice(0, 40),
+    iso: String(a.country_iso_name || "").slice(0, 2),
+    lat: Number.isFinite(lat) ? lat : null,
+    lon: Number.isFinite(lon) ? lon : null,
+  };
+}
+
+/** Compact metadata the card needs, from the adsbdb aircraft and flightroute responses (either may be null). */
+function buildMeta(ac, fl) {
+  const out = {
+    type: "", icaoType: "", registration: "", operator: "", origin: "", destination: "", originName: "", destinationName: "",
+    manufacturer: "", flightNumber: "", airline: null, route: null,
+  };
   const a = ac && ac.response && ac.response.aircraft;
   if (a) {
     out.icaoType = String(a.icao_type || "").slice(0, 8);
     const man = String(a.manufacturer || "").trim();
     const typ = String(a.type || "").trim();
+    out.manufacturer = man.slice(0, 40);
     out.type = [man, typ].filter(Boolean).join(" ").slice(0, 80) || out.icaoType;
     out.registration = String(a.registration || "").slice(0, 12);
     out.operator = String(a.registered_owner || "").slice(0, 48);
@@ -634,8 +624,37 @@ async function lookupAircraft(req) {
     out.destination = String((r.destination && (r.destination.iata_code || r.destination.icao_code)) || "").slice(0, 4);
     out.originName = String((r.origin && (r.origin.municipality || r.origin.name)) || "").slice(0, 48);
     out.destinationName = String((r.destination && (r.destination.municipality || r.destination.name)) || "").slice(0, 48);
-    if (!out.operator && r.airline && r.airline.name) out.operator = String(r.airline.name).slice(0, 48);
+    out.route = { origin: airportOut(r.origin), destination: airportOut(r.destination) };
+    out.flightNumber = String(r.callsign_iata || "").slice(0, 8);
+    if (r.airline) {
+      out.airline = {
+        name: String(r.airline.name || "").slice(0, 48),
+        iata: String(r.airline.iata || "").slice(0, 3),
+        icao: String(r.airline.icao || "").slice(0, 4),
+        iso: String(r.airline.country_iso || "").slice(0, 2),
+      };
+      if (!out.operator && r.airline.name) out.operator = String(r.airline.name).slice(0, 48);
+    }
   }
+  return out;
+}
+
+async function lookupAircraft(req) {
+  const url = new URL(req.url);
+  const icao = String(url.searchParams.get("icao") || "").toUpperCase().replace(/[^0-9A-F]/g, "").slice(0, 6);
+  const cs = String(url.searchParams.get("cs") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  if (icao.length !== 6 && cs.length < 3) return json({ error: "query" }, 400);
+  const cacheKey = new Request("https://map.on-air.dev/meta-cache/v2/" + (icao || "-") + "/" + (cs || "-"));
+  const cached = await caches.default.match(cacheKey);
+  if (cached) return cors(cached);
+  const hdr = { headers: { "User-Agent": "OnAirMap/1.0 (https://on-air.dev; map@on-air.dev)" } };
+  const jobs = [];
+  if (icao.length === 6) jobs.push(fetch("https://api.adsbdb.com/v0/aircraft/" + icao, hdr).then((r) => r.ok ? r.json() : null).catch(() => null));
+  else jobs.push(Promise.resolve(null));
+  if (cs.length >= 3) jobs.push(fetch("https://api.adsbdb.com/v0/callsign/" + cs, hdr).then((r) => r.ok ? r.json() : null).catch(() => null));
+  else jobs.push(Promise.resolve(null));
+  const [ac, fl] = await Promise.all(jobs);
+  const out = buildMeta(ac, fl);
   const res = json(out);
   const store = new Response(JSON.stringify(out), {
     status: 200,

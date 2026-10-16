@@ -67,7 +67,7 @@ bool live(const App& a) { return a.rx.standard == 31; }   // the engine reports 
 bool isIls(const App& a) { const dect2::SubMode* sm = curSub(a); return sm && sm->sel == 2; }
 
 bool loadDb(const std::string& path) {
-    std::ifstream f(path, std::ios::binary);
+    std::ifstream f(dect2::u8file(path), std::ios::binary);
     if (!f) { S.dbMsg = "cannot open " + path; return false; }
     std::stringstream ss; ss << f.rdbuf();
     std::vector<dect2::NavStation> v;

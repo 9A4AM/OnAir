@@ -174,7 +174,7 @@ void saveCsv(App& a) {
     const std::string path = saveFileDialog(nm);
     if (path.empty()) return;
     const std::string csv = io::ionogramCsv(a.rx.iono);
-    FILE* f = fopen(path.c_str(), "wb");
+    FILE* f = dect2::u8fopen(path, "wb");
     S.note = f && fwrite(csv.data(), 1, csv.size(), f) == csv.size() ? "saved " + path : "could not write " + path;
     if (f) fclose(f);
 }
@@ -408,7 +408,7 @@ void saveHistory(App& a) {
     if (path.empty()) return;
     const auto& s = t.sounders[(size_t)t.sel];
     const std::string csv = io::historyCsv(t.history, s, knownName(s.scale));
-    FILE* f = fopen(path.c_str(), "wb");
+    FILE* f = dect2::u8fopen(path, "wb");
     S.note = f && fwrite(csv.data(), 1, csv.size(), f) == csv.size() ? "saved " + path : "could not write " + path;
     if (f) fclose(f);
 }

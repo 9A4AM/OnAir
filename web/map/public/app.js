@@ -1,15 +1,29 @@
+// app.js - OnAir live map: MapLibre map, layers, live feed (WebSocket + /live), search, stats, selection.
+// Modules: geo.js (maths), types.js (type -> icon shape), shapes.js + icons.js (map icons), airports.js,
+// card.js (info card), demo.js (?demo=1 preview data). Everything here is browser-only glue.
+
+import { iconId, installLazyIcons, paintMini } from "./icons.js";
+import { SHAPES } from "./shapes.js";
+import { iconShape } from "./types.js";
+import { createCard } from "./card.js";
+import { generateDemo, stepDemo } from "./demo.js";
+
+const DEMO = new URLSearchParams(location.search).get("demo") === "1";
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (id) => document.getElementById(id);
+
 const KINDS = [
-  { id: "aircraft", name: "Aircraft", color: "#e6e8ea", rotate: true },
-  { id: "vessel", name: "Ships", color: "#8cb8eb", rotate: true },
-  { id: "sonde", name: "Sondes", color: "#cc94c7", symbol: true },
-  { id: "aprs", name: "APRS", color: "#8ccc9e" },
-  { id: "ham", name: "Amateur", color: "#8ccc9e" },
-  { id: "drone", name: "Drones", color: "#e0ad6b", rotate: true },
-  { id: "flarm", name: "FLARM", color: "#6ccc7a", rotate: true },
-  { id: "sat", name: "Satellites", color: "#c0c2c4" },
-  { id: "buoy", name: "Buoys", color: "#7aa8d4" },
-  { id: "dsc", name: "DSC", color: "#e0ad6b" },
-  { id: "station", name: "Stations", color: "#e0d48f" },
+  { id: "aircraft", name: "Aircraft", color: "#e6e8ea", shape: "narrow" },
+  { id: "vessel", name: "Ships", color: "#8cb8eb", shape: "ship_cargo" },
+  { id: "sonde", name: "Sondes", color: "#cc94c7", shape: "sonde" },
+  { id: "aprs", name: "APRS", color: "#8ccc9e", shape: "aprs_car" },
+  { id: "ham", name: "Amateur", color: "#8ccc9e", shape: "ham" },
+  { id: "drone", name: "Drones", color: "#e0ad6b", shape: "drone" },
+  { id: "flarm", name: "FLARM", color: "#6ccc7a", shape: "glider" },
+  { id: "sat", name: "Satellites", color: "#c0c2c4", shape: "sat" },
+  { id: "buoy", name: "Buoys", color: "#7aa8d4", shape: "buoy" },
+  { id: "dsc", name: "DSC", color: "#e0ad6b", shape: "dsc" },
+  { id: "station", name: "Stations", color: "#e0d48f", shape: "station" },
 ];
 
 const on = Object.fromEntries(KINDS.map((k) => [k.id, true]));
@@ -20,6 +34,9 @@ let liveOk = false;
 let stations = 0;
 let serverLoad = null;
 let query = "";
+let followId = null;      // id being followed (map kept centred)
+let showTrack = true;     // draw the selected track's trail
+let demoMeta = {};
 
 const map = new maplibregl.Map({
   container: "map",
@@ -29,7 +46,7 @@ const map = new maplibregl.Map({
     sources: {
       osm: {
         type: "raster",
-        tiles: [location.origin + "/tiles/{z}/{x}/{y}.png"],
+        tiles: [DEMO && !/on-air\.dev$/.test(location.hostname) ? "https://tile.openstreetmap.org/{z}/{x}/{y}.png" : location.origin + "/tiles/{z}/{x}/{y}.png"],
         tileSize: 256,
         attribution: "© OpenStreetMap",
         maxzoom: 19,
@@ -57,6 +74,7 @@ const map = new maplibregl.Map({
   attributionControl: false,
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }), "bottom-right");
+installLazyIcons(map);
 
 function graticule() {
   const features = [];
@@ -69,171 +87,6 @@ function graticule() {
     features.push({ type: "Feature", geometry: { type: "LineString", coordinates: line } });
   }
   return { type: "FeatureCollection", features };
-}
-
-function iconCanvas(color, draw) {
-  const s = 64;
-  const c = document.createElement("canvas");
-  c.width = s;
-  c.height = s;
-  const g = c.getContext("2d");
-  g.translate(s / 2, s / 2);
-  g.lineJoin = "round";
-  g.lineCap = "round";
-  draw(g);
-  g.fillStyle = color;
-  g.strokeStyle = "#101112";
-  g.lineWidth = 3.2;
-  g.stroke();
-  g.fill();
-  return c;
-}
-
-function asImage(c) {
-  const img = c.getContext("2d").getImageData(0, 0, c.width, c.height);
-  return { width: img.width, height: img.height, data: new Uint8Array(img.data) };
-}
-
-function icons(colorOfKind) {
-  const col = (id) => colorOfKind(id);
-  return {
-    aircraft: iconCanvas(col("aircraft"), (g) => {
-      g.beginPath();
-      g.moveTo(0, -26);
-      g.lineTo(3.2, -10);
-      g.lineTo(24, 5);
-      g.lineTo(24, 10);
-      g.lineTo(3.5, 3);
-      g.lineTo(4.2, 16);
-      g.lineTo(11, 23);
-      g.lineTo(11, 26);
-      g.lineTo(0, 20);
-      g.lineTo(-11, 26);
-      g.lineTo(-11, 23);
-      g.lineTo(-4.2, 16);
-      g.lineTo(-3.5, 3);
-      g.lineTo(-24, 10);
-      g.lineTo(-24, 5);
-      g.lineTo(-3.2, -10);
-      g.closePath();
-    }),
-    glider: iconCanvas(SRC.flarm.color, (g) => {
-      g.beginPath();
-      g.moveTo(0, -26);
-      g.lineTo(2, -6);
-      g.lineTo(28, 2);
-      g.lineTo(28, 7);
-      g.lineTo(2, 3);
-      g.lineTo(2, 16);
-      g.lineTo(-2, 16);
-      g.lineTo(-2, 3);
-      g.lineTo(-28, 7);
-      g.lineTo(-28, 2);
-      g.lineTo(-2, -6);
-      g.closePath();
-    }),
-    vessel: iconCanvas(col("vessel"), (g) => {
-      g.beginPath();
-      g.moveTo(0, -26);
-      g.lineTo(8, -10);
-      g.lineTo(11, 4);
-      g.lineTo(9, 20);
-      g.lineTo(5, 26);
-      g.lineTo(-5, 26);
-      g.lineTo(-9, 20);
-      g.lineTo(-11, 4);
-      g.lineTo(-8, -10);
-      g.closePath();
-    }),
-    sonde: iconCanvas(col("sonde"), (g) => {
-      g.beginPath();
-      g.ellipse(0, -12, 11, 15, 0, 0, Math.PI * 2);
-      g.moveTo(-3.5, 2);
-      g.quadraticCurveTo(0, 9, 3.5, 2);
-      g.moveTo(0, 9);
-      g.lineTo(0, 14);
-      g.rect(-6.5, 14, 13, 9);
-      g.moveTo(0, 14);
-      g.lineTo(0, 10);
-      g.moveTo(9, 17);
-      g.arc(6, 17, 3.5, -0.55, 0.55);
-      g.moveTo(11, 17);
-      g.arc(6, 17, 6.5, -0.45, 0.45);
-    }),
-    aprs: iconCanvas(col("aprs"), (g) => {
-      g.beginPath();
-      g.moveTo(0, -22);
-      g.lineTo(22, 0);
-      g.lineTo(0, 22);
-      g.lineTo(-22, 0);
-      g.closePath();
-    }),
-    ham: iconCanvas(col("ham"), (g) => {
-      g.beginPath();
-      g.moveTo(-2, -24);
-      g.lineTo(2, -24);
-      g.lineTo(2, 16);
-      g.lineTo(12, 26);
-      g.lineTo(-12, 26);
-      g.lineTo(-2, 16);
-      g.closePath();
-    }),
-    drone: iconCanvas(col("drone"), (g) => {
-      g.beginPath();
-      g.arc(-16, -16, 7, 0, Math.PI * 2);
-      g.moveTo(16, -16); g.arc(16, -16, 7, 0, Math.PI * 2);
-      g.moveTo(-16, 16); g.arc(-16, 16, 7, 0, Math.PI * 2);
-      g.moveTo(16, 16); g.arc(16, 16, 7, 0, Math.PI * 2);
-      g.rect(-5, -5, 10, 10);
-    }),
-    flarm: iconCanvas(col("flarm"), (g) => {
-      g.beginPath();
-      g.moveTo(0, -24);
-      g.lineTo(3, -4);
-      g.lineTo(26, 6);
-      g.lineTo(26, 10);
-      g.lineTo(2, 4);
-      g.lineTo(3, 22);
-      g.lineTo(-3, 22);
-      g.lineTo(-2, 4);
-      g.lineTo(-26, 10);
-      g.lineTo(-26, 6);
-      g.lineTo(-3, -4);
-      g.closePath();
-    }),
-    sat: iconCanvas(col("sat"), (g) => {
-      g.beginPath();
-      g.rect(-8, -8, 16, 16);
-      g.rect(-26, -5, 16, 10);
-      g.rect(10, -5, 16, 10);
-    }),
-    buoy: iconCanvas(col("buoy"), (g) => {
-      g.beginPath();
-      g.arc(0, 6, 13, 0, Math.PI * 2);
-      g.moveTo(-2, -20);
-      g.lineTo(2, -20);
-      g.lineTo(2, 0);
-      g.lineTo(-2, 0);
-      g.closePath();
-    }),
-    dsc: iconCanvas(col("dsc"), (g) => {
-      g.beginPath();
-      g.moveTo(-16, 8);
-      g.lineTo(-10, -4);
-      g.lineTo(10, -4);
-      g.lineTo(16, 8);
-      g.lineTo(12, 18);
-      g.lineTo(-12, 18);
-      g.closePath();
-    }),
-    station: iconCanvas(col("station"), (g) => {
-      g.beginPath();
-      g.moveTo(0, 22);
-      g.lineTo(18, -8);
-      g.lineTo(-18, -8);
-      g.closePath();
-    }),
-  };
 }
 
 const SRC = {
@@ -286,16 +139,6 @@ function colorOf(kind, t) {
     }
   }
   return (kindOf[kind] || {}).color || "#c8cacc";
-}
-
-function iconName(t) {
-  const src = srcOf(t);
-  if (src === "flarm") return ageSec(t) > SRC.flarm.stale ? "glider-stale" : "glider";
-  if (src && (t.kind === "aircraft" || t.kind === "flarm")) {
-    const live = ageSec(t) <= SRC[src].stale;
-    return live ? "aircraft-" + src : "aircraft-stale";
-  }
-  return t.kind;
 }
 
 /** ACARS / VDL2 (and same ingest source) stay a dot until we can point the icon (reported or trail heading). */
@@ -399,40 +242,40 @@ function destPoint(t, fromLonLat) {
   return aheadPoint(lon, lat, hdg, nm);
 }
 
-let motionTimer = 0;
-function refreshMotion() {
-  const live = map.getSource("live");
-  if (live) live.setData(geojson());
-  const tr = map.getSource("trails");
-  if (tr && selected) tr.setData(trailGeo());
-}
 
-function ensureMotionLoop() {
-  if (motionTimer) return;
-  motionTimer = window.setInterval(refreshMotion, 250);
+/** Shape name (and colour) for a track; the image id "shape|colour" is created lazily by installLazyIcons. */
+function shapeFor(t) {
+  const ity = (t.meta && t.meta.icaoType) || "";
+  const key = t.kind + "|" + (t.cat || "") + "|" + ity + "|" + (t.extra || "") + "|" + (t.sub || "");
+  if (t._shapeKey !== key) {
+    t._shapeKey = key;
+    t._shape = iconShape({ kind: t.kind, cat: t.cat, extra: t.extra, sub: t.sub, label: t.label, icaoType: ity, hex: icaoOf(t) });
+  }
+  return t._shape;
 }
+function shapeRotates(shape) { return !!(SHAPES[shape] && SHAPES[shape].rotates); }
 
 function geojson() {
   const features = [];
   for (const t of tracks.values()) {
     if (!on[t.kind]) continue;
     const hdg = effectiveHeading(t);
-    const k = kindOf[t.kind];
-    const useSym = k && (k.rotate || k.symbol) && !datalinkDotUntilHeading(t, hdg);
     const dot = datalinkDotUntilHeading(t, hdg);
+    const shape = shapeFor(t);
+    const color = colorOf(t.kind, t);
     features.push({
       type: "Feature",
       id: t.id,
       properties: {
         id: t.id,
         kind: t.kind,
-        icon: iconName(t),
+        icon: iconId(shape, color),
         label: t.label || "",
-        color: colorOf(t.kind, t),
+        color,
         heading: hdg != null ? hdg : 0,
-        sym: useSym ? 1 : 0,
+        sym: dot ? 0 : 1,
         dot: dot ? 1 : 0,
-        iconRot: k && k.rotate && hdg != null && !dot ? 1 : 0,
+        iconRot: shapeRotates(shape) && hdg != null && !dot ? 1 : 0,
         sel: t.id === selected ? 1 : 0,
       },
       geometry: { type: "Point", coordinates: displayLonLat(t) },
@@ -450,7 +293,7 @@ function trailGeo() {
   const path = Array.isArray(t.path) ? t.path.slice() : [];
   if (path.length && (path[path.length - 1][0] !== dlon || path[path.length - 1][1] !== dlat)) path.push([dlon, dlat]);
   else if (!path.length) path.push([dlon, dlat]);
-  if (path.length >= 2) {
+  if (showTrack && path.length >= 2) {
     features.push({
       type: "Feature",
       properties: { id: t.id, color: colorOf(t.kind, t), kind: "trail" },
@@ -468,22 +311,6 @@ function trailGeo() {
   return { type: "FeatureCollection", features };
 }
 
-function apply() {
-  const src = map.getSource("live");
-  if (src) src.setData(geojson());
-  const tr = map.getSource("trails");
-  if (tr) tr.setData(trailGeo());
-  renderLayers();
-  renderList();
-  renderStats();
-  document.getElementById("hint").classList.toggle("hide", tracks.size > 0);
-  if (selected && tracks.has(selected)) showCard(tracks.get(selected));
-  else if (selected && !tracks.has(selected)) {
-    document.getElementById("card").hidden = true;
-    selected = null;
-  }
-}
-
 function mergePathClient(prev, t) {
   if (prev && positionTimeMs(t) + 500 < positionTimeMs(prev)) return prev;
   const cur = Array.isArray(t.path) ? t.path.slice() : [];
@@ -498,6 +325,8 @@ function mergePathClient(prev, t) {
   if (t.heading == null && prev && prev.heading != null) t.heading = prev.heading;
   if (t.speed == null && prev && prev.speed != null) t.speed = prev.speed;
   if (prev && prev.meta && !t.meta) t.meta = prev.meta;
+  // first sighting (this page) feeds the "first seen" and departure estimate on the card
+  t.first = (prev && prev.first) || t.first || { ms: positionTimeMs(t), altFt: t.kind === "aircraft" ? t.alt : null, lat: t.lat, lon: t.lon };
   if (prev) {
     const prevR = SRC_RANK[srcOf(prev)] || 10;
     const incR = SRC_RANK[srcOf(t)] || 10;
@@ -535,107 +364,6 @@ function upsert(list) {
   });
 }
 
-function renderLayers() {
-  const counts = {};
-  for (const t of tracks.values()) counts[t.kind] = (counts[t.kind] || 0) + 1;
-  const el = document.getElementById("layers");
-  el.innerHTML = KINDS.map((k) => {
-    const n = counts[k.id] || 0;
-    return `<label class="${on[k.id] ? "" : "off"}">
-      <input type="checkbox" data-k="${k.id}" ${on[k.id] ? "checked" : ""}>
-      <canvas class="ico" data-icon="${k.id}"></canvas>
-      <span>${k.name}</span>
-      <span class="n">${n}</span>
-    </label>`;
-  }).join("");
-  for (const box of el.querySelectorAll("input")) {
-    box.onchange = () => { on[box.dataset.k] = box.checked; apply(); };
-  }
-  paintMiniIcons(el);
-}
-
-function paintMiniIcons(root) {
-  const set = icons(colorOf);
-  for (const c of root.querySelectorAll("canvas[data-icon]")) {
-    const src = set[c.dataset.icon];
-    if (!src) continue;
-    const n = c.width = c.height = 18;
-    c.getContext("2d").drawImage(src, 0, 0, n, n);
-  }
-}
-
-function visibleTracks() {
-  const q = query.trim().toLowerCase();
-  const out = [];
-  for (const t of tracks.values()) {
-    if (!on[t.kind]) continue;
-    if (q && !(t.label || "").toLowerCase().includes(q) && !t.id.toLowerCase().includes(q) && !(t.sub || "").toLowerCase().includes(q)) continue;
-    out.push(t);
-  }
-  out.sort((a, b) => (a.kind + a.label).localeCompare(b.kind + b.label));
-  return out;
-}
-
-function renderList() {
-  const list = visibleTracks();
-  document.getElementById("trackn").textContent = String(list.length);
-  const el = document.getElementById("list");
-  if (!list.length) {
-    el.innerHTML = `<div class="empty">${tracks.size ? "No tracks in this filter." : "Waiting for reports."}</div>`;
-    return;
-  }
-  const now = Date.now();
-  el.innerHTML = list.slice(0, 400).map((t) => `
-    <button type="button" data-id="${esc(t.id)}" class="${t.id === selected ? "sel" : ""}">
-      <canvas class="sym" data-icon="${t.kind}"></canvas>
-      <span class="lab">${esc(t.label || t.id)}</span>
-      <span class="age">${esc(age(now - t.t))}</span>
-      <span class="sub">${esc(cap(t.kind) + (t.sub ? " · " + t.sub : ""))}</span>
-    </button>`).join("");
-  for (const b of el.querySelectorAll("button")) {
-    b.onclick = () => focusTrack(b.dataset.id);
-  }
-  paintMiniIcons(el);
-}
-
-function renderLoad() {
-  const el = document.getElementById("load");
-  const fill = document.getElementById("loadFill");
-  const pctEl = document.getElementById("loadPct");
-  if (!el || !fill || !pctEl) return;
-  if (!liveOk || !serverLoad || serverLoad.pct == null) {
-    el.hidden = true;
-    return;
-  }
-  el.hidden = false;
-  const pct = Math.max(0, Math.min(100, Number(serverLoad.pct) || 0));
-  fill.style.width = pct + "%";
-  pctEl.textContent = pct + "%";
-  el.classList.toggle("warn", pct >= 55 && pct < 82);
-  el.classList.toggle("hot", pct >= 82);
-  const tip = [
-    "Estimated hub capacity (not CPU). 100% = very busy; ingests may be slowed.",
-    "Load " + pct + "%",
-    serverLoad.viewers != null ? serverLoad.viewers + " viewers" : "",
-    serverLoad.stations != null ? serverLoad.stations + " stations (30m)" : "",
-    serverLoad.tracks != null ? serverLoad.tracks + " tracks stored" : "",
-    serverLoad.ingestPerMin != null ? serverLoad.ingestPerMin + " ingests/min" : "",
-    serverLoad.throttlePerMin ? serverLoad.throttlePerMin + " rate-limits/min" : "",
-  ].filter(Boolean).join(" · ");
-  el.title = tip;
-}
-
-function renderStats() {
-  const pill = document.getElementById("link");
-  pill.classList.toggle("ok", liveOk);
-  pill.querySelector("span").textContent = liveOk ? (stations ? stations + " stations" : "live") : "offline";
-  const counts = {};
-  for (const t of tracks.values()) counts[t.kind] = (counts[t.kind] || 0) + 1;
-  const bits = KINDS.filter((k) => counts[k.id]).map((k) => counts[k.id] + " " + k.name.toLowerCase());
-  document.getElementById("counts").textContent = bits.length ? bits.join("  ·  ") : "no reports";
-  renderLoad();
-}
-
 function icaoOf(t) {
   const m = String(t.id || "").match(/:([0-9A-Fa-f]{6})$/);
   if (m) return m[1].toUpperCase();
@@ -646,92 +374,6 @@ function icaoOf(t) {
 
 function callsignOf(t) {
   return String(t.label || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-}
-
-const metaCache = new Map();
-const metaPending = new Set();
-
-function loadMeta(t) {
-  if (t.kind !== "aircraft" && t.kind !== "flarm") return;
-  const icao = icaoOf(t);
-  const cs = callsignOf(t);
-  if (icao.length !== 6 && cs.length < 3) return;
-  const k = (icao || "-") + ":" + (cs || "-");
-  if (t.meta) return;
-  if (metaCache.has(k)) {
-    t.meta = metaCache.get(k);
-    return;
-  }
-  if (metaPending.has(k)) return;
-  metaPending.add(k);
-  const q = new URLSearchParams();
-  if (icao.length === 6) q.set("icao", icao);
-  if (cs.length >= 3) q.set("cs", cs);
-  fetch("/meta?" + q.toString()).then((r) => r.json()).then((m) => {
-    metaCache.set(k, m);
-    const cur = tracks.get(t.id);
-    if (cur) cur.meta = m;
-    if (selected === t.id) showCard(tracks.get(t.id) || t);
-  }).catch(() => {}).finally(() => metaPending.delete(k));
-}
-
-function showCard(t) {
-  selected = t.id;
-  loadMeta(t);
-  const el = document.getElementById("card");
-  el.hidden = false;
-  const m = t.meta || {};
-  const rows = [];
-  const type = [m.type, m.icaoType ? "(" + m.icaoType + ")" : ""].filter(Boolean).join(" ").trim();
-  if (type) rows.push(["Aircraft", type]);
-  else rows.push(["Source", cap(t.kind) + (t.sub ? " · " + t.sub : "")]);
-  if (m.registration) rows.push(["Reg", m.registration]);
-  if (m.operator) rows.push(["Operator", m.operator]);
-  if (m.origin || m.destination) {
-    const from = (m.origin || "—") + (m.originName ? "  " + m.originName : "");
-    const to = (m.destination || "—") + (m.destinationName ? "  " + m.destinationName : "");
-    rows.push(["From", from]);
-    rows.push(["To", to]);
-  }
-  rows.push(["Position", fmtLat(t.lat) + "  " + fmtLon(t.lon)]);
-  if (t.cat) rows.push(["Category", t.cat]);
-  if (t.squawk != null && t.squawk !== "") rows.push(["Squawk", String(t.squawk).padStart(4, "0")]);
-  if (t.alt != null) rows.push(["Altitude", fmtAlt(t)]);
-  const hdg = effectiveHeading(t);
-  if (hdg != null) {
-    const tag = t.heading == null ? " (from track)" : "";
-    rows.push(["Heading", String(Math.round(hdg)).padStart(3, "0") + "°" + tag]);
-  }
-  if (t.speed != null) rows.push(["Speed", fmtSpeed(t)]);
-  if (t.vrate != null) rows.push(["Vertical", Math.round(t.vrate) + " fpm"]);
-  if (t.extra) rows.push(["", t.extra]);
-  rows.push(["Heard", age(Date.now() - t.t) + " ago"]);
-  el.innerHTML = `<button class="x" id="cx" aria-label="Close">×</button>
-    <div class="k">${esc(t.sub || cap(t.kind))}</div>
-    <h2>${esc(t.label || t.id)}</h2>
-    <table>${rows.map(([a, b]) => `<tr><th>${esc(a)}</th><td>${esc(String(b))}</td></tr>`).join("")}</table>`;
-  document.getElementById("cx").onclick = (e) => {
-    e.stopPropagation();
-    el.hidden = true;
-    selected = null;
-    apply();
-  };
-  applyListSel();
-}
-
-function applyListSel() {
-  for (const b of document.querySelectorAll("#list button")) {
-    b.classList.toggle("sel", b.dataset.id === selected);
-  }
-}
-
-function focusTrack(id) {
-  const t = tracks.get(id);
-  if (!t) return;
-  showCard(t);
-  const [lon, lat] = displayLonLat(t);
-  apply();
-  map.easeTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: 400 });
 }
 
 function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
@@ -769,150 +411,476 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+
+// ---------- layers, list, stats ----------
+
+const miniCache = new Map();
+/** Data URL of a small icon (cached per shape+colour) so lists use <img> instead of redrawing canvases. */
+function miniUrl(shape, color) {
+  const k = shape + color;
+  let u = miniCache.get(k);
+  if (!u) {
+    const c = document.createElement("canvas");
+    paintMini(c, shape, color, 18);
+    u = c.toDataURL();
+    miniCache.set(k, u);
+  }
+  return u;
+}
+
+let layersBuilt = false;
+/** Build the layer toggles once; later calls only refresh the counts (keeps focus and hover state). */
+function renderLayers() {
+  const counts = {};
+  for (const t of tracks.values()) counts[t.kind] = (counts[t.kind] || 0) + 1;
+  const el = $("layers");
+  if (!layersBuilt) {
+    layersBuilt = true;
+    el.innerHTML = KINDS.map((k) => `<label data-k="${k.id}">
+      <input type="checkbox" data-k="${k.id}" checked aria-label="${k.name}">
+      <img class="ico" alt="" src="${miniUrl(k.shape, k.color)}" width="18" height="18">
+      <span>${k.name}</span>
+      <span class="n" data-n="${k.id}">0</span>
+    </label>`).join("");
+    for (const box of el.querySelectorAll("input")) {
+      box.onchange = () => { on[box.dataset.k] = box.checked; box.closest("label").classList.toggle("off", !box.checked); apply(); };
+    }
+  }
+  for (const k of KINDS) {
+    const n = el.querySelector(`[data-n="${k.id}"]`);
+    const v = String(counts[k.id] || 0);
+    if (n && n.textContent !== v) n.textContent = v;
+  }
+}
+
+function matchText(t, q) {
+  const m = t.meta || {};
+  return [t.label, t.id, t.sub, m.registration, m.flightNumber, m.operator].filter(Boolean).join(" ").toLowerCase().includes(q);
+}
+
+function visibleTracks() {
+  const q = query.trim().toLowerCase();
+  const out = [];
+  for (const t of tracks.values()) {
+    if (!on[t.kind]) continue;
+    if (q && !matchText(t, q)) continue;
+    out.push(t);
+  }
+  out.sort((a, b) => (a.kind + a.label).localeCompare(b.kind + b.label));
+  return out;
+}
+
+let listTimer = 0;
+/** The rail list can hold hundreds of rows, so it re-renders at most once a second. */
+function renderListSoon() {
+  if (listTimer) return;
+  listTimer = setTimeout(() => { listTimer = 0; renderList(); }, 1000);
+}
+
+function renderList() {
+  const list = visibleTracks();
+  $("trackn").textContent = String(list.length);
+  const el = $("list");
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">${tracks.size ? "No tracks match this filter." : (liveOk ? "Waiting for reports…" : "Connecting…")}</div>`;
+    return;
+  }
+  const now = Date.now();
+  el.innerHTML = list.slice(0, 400).map((t) => `
+    <button type="button" data-id="${esc(t.id)}" class="${t.id === selected ? "sel" : ""}">
+      <img class="sym" alt="" src="${miniUrl(shapeFor(t), colorOf(t.kind, t))}" width="18" height="18" loading="lazy">
+      <span class="lab">${esc(t.label || t.id)}</span>
+      <span class="age">${esc(age(now - t.t))}</span>
+      <span class="sub">${esc(cap(t.kind) + (t.sub ? " · " + t.sub : ""))}</span>
+    </button>`).join("");
+  for (const b of el.querySelectorAll("button")) b.onclick = () => focusTrack(b.dataset.id);
+}
+
+function renderLoad() {
+  const el = $("load");
+  const fill = $("loadFill");
+  const pctEl = $("loadPct");
+  if (!el || !fill || !pctEl) return;
+  if (!liveOk || !serverLoad || serverLoad.pct == null) { el.hidden = true; return; }
+  el.hidden = false;
+  const pct = Math.max(0, Math.min(100, Number(serverLoad.pct) || 0));
+  fill.style.width = pct + "%";
+  pctEl.textContent = pct + "%";
+  el.classList.toggle("warn", pct >= 55 && pct < 82);
+  el.classList.toggle("hot", pct >= 82);
+  el.title = [
+    "Estimated hub capacity (not CPU). 100% = very busy; ingests may be slowed.",
+    "Load " + pct + "%",
+    serverLoad.viewers != null ? serverLoad.viewers + " viewers" : "",
+    serverLoad.stations != null ? serverLoad.stations + " stations (30m)" : "",
+    serverLoad.tracks != null ? serverLoad.tracks + " tracks stored" : "",
+    serverLoad.ingestPerMin != null ? serverLoad.ingestPerMin + " ingests/min" : "",
+    serverLoad.throttlePerMin ? serverLoad.throttlePerMin + " rate-limits/min" : "",
+  ].filter(Boolean).join(" · ");
+}
+
+/** Menu bar stats: link pill (stations, viewers), one chip per layer with tracks, load meter. */
+function renderStats() {
+  const pill = $("link");
+  pill.classList.toggle("ok", liveOk);
+  const viewers = serverLoad && serverLoad.viewers != null ? serverLoad.viewers : null;
+  const label = DEMO ? "demo" : liveOk ? (stations ? stations + " station" + (stations === 1 ? "" : "s") : "live") : "connecting";
+  pill.querySelector("span").textContent = label;
+  pill.title = DEMO ? "Synthetic demo data" : [liveOk ? "Connected" : "Not connected", stations ? stations + " stations sending (30 min)" : "", viewers != null ? viewers + " viewers" : ""].filter(Boolean).join(" · ");
+  const counts = {};
+  for (const t of tracks.values()) counts[t.kind] = (counts[t.kind] || 0) + 1;
+  const chips = KINDS.filter((k) => counts[k.id]).map((k) =>
+    `<span class="chip" title="${esc(k.name)}"><img alt="" src="${miniUrl(k.shape, k.color)}" width="14" height="14">${counts[k.id].toLocaleString()}<span class="chip-n"> ${esc(k.name.toLowerCase())}</span></span>`);
+  const html = chips.length ? chips.join("") : `<span class="chip-none">${liveOk ? "no reports" : "…"}</span>`;
+  const box = $("counts");
+  if (box._html !== html) { box.innerHTML = html; box._html = html; }
+  const v = $("viewers");
+  if (v) { v.hidden = viewers == null; v.textContent = viewers != null ? viewers + (viewers === 1 ? " viewer" : " viewers") : ""; }
+  renderLoad();
+}
+
+// ---------- apply / upsert ----------
+
+function apply() {
+  const src = map.getSource("live");
+  if (src) src.setData(geojson());
+  const tr = map.getSource("trails");
+  if (tr) tr.setData(trailGeo());
+  renderLayers();
+  renderListSoon();
+  renderStats();
+  $("hint").classList.toggle("hide", tracks.size > 0);
+  $("overlay").hidden = tracks.size > 0 || liveOk || DEMO;
+  if (selected && !tracks.has(selected)) clearSelection();
+  tryHash();
+}
+
+
+// ---------- aircraft metadata (route, type, registration) ----------
+
+const metaCache = new Map();
+const metaPending = new Set();
+
+/** Ask the worker's /meta (adsbdb) once per aircraft/callsign; in demo mode use the built-in table. */
+function loadMeta(t) {
+  if (DEMO) { if (demoMeta[t.id]) t.meta = demoMeta[t.id]; return; }
+  if (t.kind !== "aircraft" && t.kind !== "flarm") return;
+  const icao = icaoOf(t);
+  const cs = callsignOf(t);
+  if (icao.length !== 6 && cs.length < 3) return;
+  const k = (icao || "-") + ":" + (cs || "-");
+  if (t.meta) return;
+  if (metaCache.has(k)) { t.meta = metaCache.get(k); return; }
+  if (metaPending.has(k)) return;
+  metaPending.add(k);
+  const q = new URLSearchParams();
+  if (icao.length === 6) q.set("icao", icao);
+  if (cs.length >= 3) q.set("cs", cs);
+  fetch("/meta?" + q.toString()).then((r) => r.json()).then((m) => {
+    metaCache.set(k, m);
+    const cur = tracks.get(t.id);
+    if (cur) cur.meta = m;
+    if (selected === t.id) refreshCard();
+  }).catch(() => {}).finally(() => metaPending.delete(k));
+}
+
+// ---------- selection and the info card ----------
+
+const card = createCard($("card"), {
+  demo: DEMO,
+  loadPhoto: true,
+  onClose: () => clearSelection(),
+  onFollow: (v) => { followId = v ? selected : null; },
+  onTrack: (v) => { showTrack = v; const tr = map.getSource("trails"); if (tr) tr.setData(trailGeo()); },
+  isFollowing: () => followId != null && followId === selected,
+  isTrackShown: () => showTrack,
+  getDisplayPos: (t) => displayLonLat(t),
+});
+
+/** Copy the derived fields the card reads (colour, heading) onto the track. */
+function prepForCard(t) {
+  t._color = colorOf(t.kind, t);
+  t._hdg = effectiveHeading(t);
+  return t;
+}
+
+function refreshCard() {
+  const t = selected && tracks.get(selected);
+  if (t) card.update(prepForCard(t));
+}
+
+function setHash(t) {
+  try {
+    const hex = t && t.kind === "aircraft" ? String(t.id).split(":")[1] : "";
+    const h = !t ? "" : /^[0-9A-Fa-f]{6}$/.test(hex || "") ? "#hex=" + hex : "#id=" + encodeURIComponent(t.id);
+    history.replaceState(null, "", location.pathname + location.search + h);
+  } catch { /* sandboxed frame */ }
+}
+
+function selectTrack(t) {
+  if (followId && followId !== t.id) followId = null;
+  selected = t.id;
+  loadMeta(t);
+  card.open(prepForCard(t));
+  setHash(t);
+  applyListSel();
+  const src = map.getSource("live");
+  if (src) src.setData(geojson());
+  const tr = map.getSource("trails");
+  if (tr) tr.setData(trailGeo());
+  if (window.matchMedia("(max-width: 860px)").matches) setRailOpen(false);
+}
+
+function clearSelection() {
+  selected = null;
+  followId = null;
+  card.close();
+  setHash(null);
+  applyListSel();
+  const src = map.getSource("live");
+  if (src) src.setData(geojson());
+  const tr = map.getSource("trails");
+  if (tr) tr.setData(trailGeo());
+}
+
+function applyListSel() {
+  for (const b of document.querySelectorAll("#list button")) b.classList.toggle("sel", b.dataset.id === selected);
+}
+
+/** Select a track and fly to it. */
+function focusTrack(id) {
+  const t = tracks.get(id);
+  if (!t) return;
+  selectTrack(t);
+  const [lon, lat] = displayLonLat(t);
+  map.easeTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: REDUCED ? 0 : 500 });
+}
+
+// card refresh at 1 Hz, regardless of how often positions arrive
+setInterval(refreshCard, 1000);
+
+// ---------- deep links: #hex=ABC123 or #id=... ----------
+
+let pendingHash = null;
+let pendingSince = 0;
+function readHash() {
+  const m = location.hash.match(/^#(hex|id)=(.+)$/);
+  if (!m) return null;
+  return m[1] === "hex" ? { hex: m[2].toUpperCase() } : { id: decodeURIComponent(m[2]) };
+}
+pendingHash = readHash();
+pendingSince = Date.now();
+window.addEventListener("hashchange", () => { pendingHash = readHash(); pendingSince = Date.now(); tryHash(); });
+
+/** Open the card for a pending deep link as soon as the track is on the map; tell the user if it never appears. */
+function tryHash() {
+  if (!pendingHash) return;
+  let found = null;
+  if (pendingHash.id) found = tracks.get(pendingHash.id);
+  else for (const t of tracks.values()) if (t.kind === "aircraft" && String(t.id).toUpperCase().endsWith(":" + pendingHash.hex)) { found = t; break; }
+  if (found) { pendingHash = null; focusTrack(found.id); }
+  else if (tracks.size && Date.now() - pendingSince > 15000) { pendingHash = null; toast("That track is not on the map right now."); }
+}
+
+let toastTimer = 0;
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 4500);
+}
+
+// ---------- map layers ----------
+
 map.on("load", () => {
   map.addSource("trails", { type: "geojson", data: trailGeo() });
   map.addSource("live", { type: "geojson", data: geojson() });
   map.addLayer({
-    id: "trail",
-    type: "line",
-    source: "trails",
+    id: "trail", type: "line", source: "trails",
     filter: ["==", ["get", "kind"], "trail"],
-    paint: { "line-color": ["get", "color"], "line-width": 2, "line-opacity": 0.7 },
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": ["get", "color"], "line-width": 2.2, "line-opacity": 0.75 },
   });
   map.addLayer({
-    id: "pred",
-    type: "line",
-    source: "trails",
+    id: "pred", type: "line", source: "trails",
     filter: ["==", ["get", "kind"], "pred"],
-    paint: { "line-color": ["get", "color"], "line-width": 1.2, "line-opacity": 0.4, "line-dasharray": [2, 2] },
+    paint: { "line-color": ["get", "color"], "line-width": 1.2, "line-opacity": 0.45, "line-dasharray": [2, 2] },
   });
+  // selected state: soft glow plus a ring in the track's colour
   map.addLayer({
-    id: "halo",
-    type: "circle",
-    source: "live",
+    id: "halo", type: "circle", source: "live",
     filter: [">", ["to-number", ["get", "sel"]], 0],
     paint: {
-      "circle-radius": 16,
-      "circle-color": "rgba(230,232,234,0.16)",
-      "circle-stroke-width": 1.2,
-      "circle-stroke-color": "#e6e8ea",
+      "circle-radius": 20,
+      "circle-color": ["get", "color"],
+      "circle-opacity": 0.2,
+      "circle-blur": 0.7,
+      "circle-stroke-width": 1.5,
+      "circle-stroke-color": ["get", "color"],
+      "circle-stroke-opacity": 0.9,
     },
   });
   map.addLayer({
-    id: "dot",
-    type: "circle",
-    source: "live",
-    filter: ["any",
-      ["==", ["to-number", ["get", "dot"]], 1],
-      ["!=", ["to-number", ["get", "sym"]], 1],
-    ],
+    id: "dot", type: "circle", source: "live",
+    filter: ["==", ["to-number", ["get", "dot"]], 1],
     paint: {
       "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 3, 8, 5],
       "circle-color": ["get", "color"],
-      "circle-stroke-width": 1,
-      "circle-stroke-color": "#111214",
+      "circle-stroke-width": 1.2,
+      "circle-stroke-color": "#0b0c0d",
     },
   });
-  try {
-    const set = icons(colorOf);
-    for (const k of KINDS) {
-      if (map.hasImage(k.id)) map.removeImage(k.id);
-      map.addImage(k.id, asImage(set[k.id]));
+  map.addLayer({
+    id: "sym", type: "symbol", source: "live",
+    filter: ["==", ["to-number", ["get", "sym"]], 1],
+    layout: {
+      "icon-image": ["get", "icon"],
+      "icon-rotate": ["case", ["==", ["to-number", ["get", "iconRot"]], 1], ["to-number", ["get", "heading"]], 0],
+      "icon-rotation-alignment": "map",
+      "icon-pitch-alignment": "map",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "icon-anchor": "center",
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 1.5, 0.5, 4, 0.7, 8, 0.95, 12, 1.25],
+      "symbol-sort-key": ["to-number", ["get", "sel"]],
+    },
+  });
+  const hit = ["dot", "sym"];
+  /** Nearest feature to the click within a 14 px box, so thin icons are easy to hit on touch screens too. */
+  map.on("click", (e) => {
+    const r = 14;
+    const feats = map.queryRenderedFeatures([[e.point.x - r, e.point.y - r], [e.point.x + r, e.point.y + r]], { layers: hit });
+    if (!feats.length) {
+      if (selected) clearSelection();
+      if (window.matchMedia("(max-width: 860px)").matches) setRailOpen(false);
+      return;
     }
-    map.addImage("glider", asImage(set.glider));
-    map.addImage("glider-stale", asImage(iconCanvas(STALE, (g) => {
-      g.beginPath(); g.moveTo(0, -26); g.lineTo(2, -6); g.lineTo(28, 2); g.lineTo(28, 7); g.lineTo(2, 3); g.lineTo(2, 16);
-      g.lineTo(-2, 16); g.lineTo(-2, 3); g.lineTo(-28, 7); g.lineTo(-28, 2); g.lineTo(-2, -6); g.closePath();
-    })));
-    const plane = (c) => iconCanvas(c, (g) => {
-      g.beginPath();
-      g.moveTo(0, -26); g.lineTo(3.2, -10); g.lineTo(24, 5); g.lineTo(24, 10); g.lineTo(3.5, 3); g.lineTo(4.2, 16);
-      g.lineTo(11, 23); g.lineTo(11, 26); g.lineTo(0, 20); g.lineTo(-11, 26); g.lineTo(-11, 23); g.lineTo(-4.2, 16);
-      g.lineTo(-3.5, 3); g.lineTo(-24, 10); g.lineTo(-24, 5); g.lineTo(-3.2, -10); g.closePath();
-    });
-    map.addImage("aircraft-adsb", asImage(plane(SRC.adsb.color)));
-    map.addImage("aircraft-sat", asImage(plane(SRC.sat.color)));
-    map.addImage("aircraft-acars", asImage(plane(SRC.acars.color)));
-    map.addImage("aircraft-hfdl", asImage(plane(SRC.hfdl.color)));
-    map.addImage("aircraft-stale", asImage(plane(STALE)));
-  } catch (e) { console.warn("map icons", e); }
-  try {
-    map.addLayer({
-      id: "sym",
-      type: "symbol",
-      source: "live",
-      filter: ["==", ["to-number", ["get", "sym"]], 1],
-      layout: {
-        "icon-image": ["coalesce", ["image", ["get", "icon"]], ["image", ["get", "kind"]], ["image", "aircraft"]],
-        "icon-rotate": ["case", ["==", ["to-number", ["get", "iconRot"]], 1], ["to-number", ["get", "heading"]], 0],
-        "icon-rotation-alignment": "map",
-        "icon-pitch-alignment": "map",
-        "icon-allow-overlap": true,
-        "icon-ignore-placement": true,
-        "icon-anchor": "center",
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 1.5, 0.45, 4, 0.62, 8, 0.82, 12, 1],
-      },
-    });
-  } catch (e) { console.warn("map symbols", e); }
-  const hit = ["dot"].concat(map.getLayer("sym") ? ["sym"] : []);
+    let best = null, bd = Infinity;
+    for (const f of feats) {
+      const p = map.project(f.geometry.coordinates);
+      const d = (p.x - e.point.x) ** 2 + (p.y - e.point.y) ** 2;
+      if (d < bd) { bd = d; best = f; }
+    }
+    const t = tracks.get(best.properties.id);
+    if (t) selectTrack(t);
+  });
   for (const layer of hit) {
-    map.on("click", layer, (e) => {
-      const t = tracks.get(e.features[0].properties.id);
-      if (t) { showCard(t); apply(); }
-    });
     map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
     map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
   }
-  map.on("click", (e) => {
-    if (!map.queryRenderedFeatures(e.point, { layers: hit }).length) {
-      document.getElementById("card").hidden = true;
-      selected = null;
-      apply();
-      if (window.matchMedia("(max-width: 860px)").matches) setRailOpen(false);
-    }
-  });
   apply();
   ensureMotionLoop();
 });
 
-map.on("mousemove", (e) => {
-  document.getElementById("cursor").textContent = fmtLat(e.lngLat.lat) + "   " + fmtLon(e.lngLat.lng);
-});
-map.on("move", () => {
-  document.getElementById("zoom").textContent = "z " + map.getZoom().toFixed(1);
-});
+// user panning cancels follow mode
+for (const ev of ["dragstart", "wheel", "touchstart"]) {
+  map.on(ev, (e) => { if (followId && e.originalEvent) { followId = null; card.syncToggles(); } });
+}
+
+map.on("mousemove", (e) => { $("cursor").textContent = fmtLat(e.lngLat.lat) + "   " + fmtLon(e.lngLat.lng); });
+map.on("move", () => { $("zoom").textContent = "z " + map.getZoom().toFixed(1); });
 
 function setRailOpen(open) {
-  const rail = document.getElementById("rail");
-  const backdrop = document.getElementById("railBackdrop");
-  const btn = document.getElementById("panelBtn");
+  const rail = $("rail");
+  const backdrop = $("railBackdrop");
+  const btn = $("panelBtn");
   if (!rail) return;
   rail.classList.toggle("open", open);
-  if (backdrop) {
-    backdrop.classList.toggle("show", open);
-    backdrop.hidden = !open;
-  }
+  if (backdrop) { backdrop.classList.toggle("show", open); backdrop.hidden = !open; }
   if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
 }
+$("panelBtn")?.addEventListener("click", () => setRailOpen(!$("rail")?.classList.contains("open")));
+$("railBackdrop")?.addEventListener("click", () => setRailOpen(false));
 
-document.getElementById("panelBtn")?.addEventListener("click", () => {
-  setRailOpen(!document.getElementById("rail")?.classList.contains("open"));
-});
-document.getElementById("railBackdrop")?.addEventListener("click", () => setRailOpen(false));
+// ---------- search: callsign, registration, ICAO hex, MMSI ----------
 
-document.getElementById("q").addEventListener("input", (e) => {
-  query = e.target.value;
-  renderList();
-});
-document.getElementById("q").addEventListener("keydown", (e) => {
-  if (e.key !== "Enter") return;
-  const list = visibleTracks();
-  if (list[0]) focusTrack(list[0].id);
-});
+const qEl = $("q");
+const resEl = $("results");
+let resItems = [];
+let resIdx = -1;
 
-function tickClock() {
-  document.getElementById("clock").textContent = new Date().toISOString().slice(11, 19) + " UTC";
+/** Rank matches: exact id/label first, then prefix, then substring. Returns at most 8 tracks. */
+function searchTracks(q) {
+  q = q.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const scored = [];
+  for (const t of tracks.values()) {
+    const m = t.meta || {};
+    const keys = [t.label, String(t.id).split(":")[1], m.registration, m.flightNumber].filter(Boolean).map((s) => String(s).toLowerCase());
+    let score = 0;
+    for (const k of keys) {
+      if (k === q) score = Math.max(score, 3);
+      else if (k.startsWith(q)) score = Math.max(score, 2);
+      else if (k.includes(q)) score = Math.max(score, 1);
+    }
+    if (!score && (t.sub || "").toLowerCase().includes(q)) score = 0.5;
+    if (score) scored.push([score, t]);
+  }
+  scored.sort((a, b) => b[0] - a[0] || String(a[1].label).localeCompare(String(b[1].label)));
+  return scored.slice(0, 8).map((x) => x[1]);
 }
+
+function renderResults() {
+  const q = qEl.value;
+  resItems = searchTracks(q);
+  resIdx = resItems.length ? 0 : -1;
+  if (q.trim().length < 2) { resEl.hidden = true; qEl.setAttribute("aria-expanded", "false"); return; }
+  resEl.hidden = false;
+  qEl.setAttribute("aria-expanded", "true");
+  resEl.innerHTML = resItems.length
+    ? resItems.map((t, i) => `<li role="option" id="res${i}" data-id="${esc(t.id)}" aria-selected="${i === 0}"><img alt="" src="${miniUrl(shapeFor(t), colorOf(t.kind, t))}" width="18" height="18"><b>${esc(t.label || t.id)}</b><span>${esc(cap(t.kind) + (t.sub ? " · " + t.sub : ""))}</span></li>`).join("")
+    : `<li class="none">No match on the map right now</li>`;
+  for (const li of resEl.querySelectorAll("li[data-id]")) li.onmousedown = (e) => { e.preventDefault(); pickResult(li.dataset.id); };
+}
+
+function pickResult(id) {
+  resEl.hidden = true;
+  qEl.setAttribute("aria-expanded", "false");
+  qEl.blur();
+  focusTrack(id);
+}
+
+function moveResult(d) {
+  if (!resItems.length) return;
+  resIdx = (resIdx + d + resItems.length) % resItems.length;
+  [...resEl.children].forEach((li, i) => li.setAttribute("aria-selected", String(i === resIdx)));
+  qEl.setAttribute("aria-activedescendant", "res" + resIdx);
+}
+
+let qTimer = 0;
+qEl.addEventListener("input", () => {
+  query = qEl.value;
+  renderListSoon();
+  clearTimeout(qTimer);
+  qTimer = setTimeout(renderResults, 120);
+});
+qEl.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowDown") { e.preventDefault(); moveResult(1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); moveResult(-1); }
+  else if (e.key === "Enter") {
+    if (!resItems.length) renderResults();
+    const t = resItems[Math.max(0, resIdx)];
+    if (t) pickResult(t.id); else toast("No match on the map right now.");
+  } else if (e.key === "Escape") {
+    if (qEl.value) { qEl.value = ""; query = ""; renderResults(); renderListSoon(); }
+    else qEl.blur();
+    e.stopPropagation();
+  }
+});
+qEl.addEventListener("blur", () => { setTimeout(() => { resEl.hidden = true; }, 150); });
+
+// keyboard shortcuts: / search, Esc close
+document.addEventListener("keydown", (e) => {
+  const inField = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || "");
+  if (e.key === "/" && !inField && !e.metaKey && !e.ctrlKey) { e.preventDefault(); qEl.focus(); qEl.select(); return; }
+  if (e.key === "Escape" && !inField) {
+    if (selected) clearSelection();
+    else if ($("rail").classList.contains("open")) setRailOpen(false);
+  }
+});
+
+function tickClock() { $("clock").textContent = new Date().toISOString().slice(11, 19) + " UTC"; }
 tickClock();
 setInterval(tickClock, 1000);
 
@@ -957,12 +925,77 @@ function connect() {
   }, 6000);
 }
 
-connect();
-renderLayers();
-document.getElementById("zoom").textContent = "z " + map.getZoom().toFixed(1);
 
-// Full snapshots are expensive on the hub; rely on WebSocket when connected.
-setInterval(() => {
-  if (wsOpen) return;
-  fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => {});
-}, 30000);
+
+// ---------- motion loop: dead reckoning, selected trail, follow mode ----------
+
+let motionTimer = 0;
+let pulse = 0;
+function refreshMotion() {
+  if (document.hidden) return;
+  const live = map.getSource("live");
+  if (live) live.setData(geojson());
+  const tr = map.getSource("trails");
+  if (tr && selected) tr.setData(trailGeo());
+  if (selected && map.getLayer("halo") && !REDUCED) {
+    pulse = (pulse + 0.25) % 4;
+    map.setPaintProperty("halo", "circle-radius", 19 + 2 * Math.sin(pulse * Math.PI / 2));
+  }
+  if (followId && tracks.has(followId)) {
+    const [lon, lat] = displayLonLat(tracks.get(followId));
+    map.easeTo({ center: [lon, lat], duration: REDUCED ? 0 : 260, easing: (x) => x });
+  }
+}
+
+function ensureMotionLoop() {
+  if (motionTimer) return;
+  motionTimer = window.setInterval(refreshMotion, 250);
+}
+
+/** Fill the collapsible icon guide (what each shape means). */
+function renderIconGuide() {
+  const rows = [
+    ["narrow", "Narrow-body jet"], ["wide", "Wide-body jet"], ["quad", "Four-engine (A380 / 747)"], ["regional", "Regional / business jet"],
+    ["turboprop", "Turboprop"], ["light", "Light aircraft"], ["heli", "Helicopter"], ["military", "Military / fighter"],
+    ["glider", "Glider"], ["balloon", "Balloon"], ["drone", "Drone"], ["ship_cargo", "Cargo ship"], ["ship_tanker", "Tanker"],
+    ["ship_passenger", "Passenger ship"], ["ship_fishing", "Fishing"], ["ship_sailing", "Sailing"], ["ship_tug", "Tug"],
+    ["sonde", "Radiosonde"], ["sat", "Satellite"], ["aprs_car", "APRS vehicle"], ["aprs_house", "APRS home / weather"], ["aprs_digi", "APRS digipeater"],
+  ];
+  $("iconkey").innerHTML = rows.map(([s, n]) => `<div><img alt="" src="${miniUrl(s, "#c8cacc")}" width="18" height="18">${n}</div>`).join("");
+}
+
+// ---------- start ----------
+
+renderLayers();
+renderIconGuide();
+$("zoom").textContent = "z " + map.getZoom().toFixed(1);
+
+if (DEMO) {
+  document.title = "DEMO · " + document.title;
+  $("demoBanner").hidden = false;
+  const d = generateDemo();
+  demoMeta = d.meta;
+  for (const t of d.tracks) if (demoMeta[t.id]) t.meta = demoMeta[t.id];
+  const list = d.tracks;
+  // simple back-trail so selected demo tracks show a line straight away
+  for (const t of list) {
+    if (t.heading != null && t.speed) {
+      const back = [];
+      const probe = { ...t, heading: (t.heading + 180) % 360, path: [] };
+      for (let i = 0; i < 6; i++) { stepDemo([probe], 90); back.unshift([probe.lon, probe.lat]); }
+      t.path = back;
+    }
+  }
+  takeSnapshot({ tracks: list, stations: 3, load: { pct: 12, viewers: 1, stations: 3, tracks: list.length } });
+  stepTimer();
+  function stepTimer() {
+    setInterval(() => { stepDemo([...tracks.values()], 2); apply(); }, 2000);
+  }
+} else {
+  connect();
+  // Full snapshots are expensive on the hub; rely on WebSocket when connected.
+  setInterval(() => {
+    if (wsOpen) return;
+    fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => {});
+  }, 30000);
+}
