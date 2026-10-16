@@ -1,0 +1,12 @@
+# Codacy analysis scope: only OnAir's own source. Vendored libraries, generated and data files are not ours to grade.
+exclude_paths:
+  - "third_party/**"
+  - "app/i18n/**"
+  - "packaging/**"
+  - "web/**/package-lock.json"
+  - "web/**/node_modules/**"
+  - "docs/**"
+  - "voice_listen/**"
+  - "tests/data/**"
+  - "**/*.txt"
+  - "**/generated/**"
