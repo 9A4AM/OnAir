@@ -38,6 +38,7 @@ public:
     bool telemetry(HfdlTelemetry& out, uint64_t lastSeq);
     // The messages, aircraft and ground stations stay through reset(), configure() and retunes: only clearResults() empties them
     void clearResults();
+    void setParallel(bool on);                           // channels in parallel on the shared pool (default) or one after the other; same results either way (tests)
     std::string saveResults() const;                     // for the results file (results_io.h)
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);

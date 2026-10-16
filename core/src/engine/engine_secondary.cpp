@@ -1,6 +1,7 @@
 // The second mode that runs at the same time (setSecondary): capture shifter, start/stop/refresh of the secondary receiver and
 // its thread, and applySubMode().
 #include "dect2/engine/engine.h"
+#include "dect2/common/threadpool.h"
 #include "engine_internal.h"
 #include "dect2/source/converter.h"
 #include "dect2/net/share.h"
@@ -238,6 +239,7 @@ void Engine::pushSecondary(const cf32* x, size_t n) {
 }
 
 void Engine::secondaryLoop(int a) {
+    setThreadName(a >= 0 && a < 10 ? ("onair-rx" + std::to_string(a + 1)).c_str() : "onair-rx");   // one analysis thread per secondary receiver
     setThreadPriority(ThreadPriority::Background);   // below the first mode's sample path
     CaptureShifter mix;
     ExactResampler rs;   // the capture's rate down to the second mode's own
