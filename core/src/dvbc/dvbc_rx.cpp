@@ -356,7 +356,7 @@ struct DvbcReceiver::Impl {
     // (a bump near 100 kHz), which on 256-QAM costs 2 dB of MER. Here the phase of every symbol is measured again from its neighbours'
     // decisions (both sides, the symbol itself left out), a few times over, before the symbols are decided for the outer decoder.
     std::vector<cf32> phBuf;
-    struct Smooth { std::vector<cf32> phOut; std::vector<float> pR, pI, gR, gI, oR, oI; };
+    struct Smooth { std::vector<cf32> phOut; std::vector<float> pR, pI, gR, gI, oR, oI; std::vector<int> cell; };
     Smooth smM;   // the receiver thread's scratch; the outer-decoder thread has its own
     DVBC_HOT
     void smooth(Smooth& sm, const std::vector<cf32>& in, const dvbc::Constellation& c) {
@@ -364,6 +364,8 @@ struct DvbcReceiver::Impl {
         const size_t n = in.size();
         // separate real / imaginary arrays: the FIR and the rotation below then vectorise
         for (auto* v : {&pR, &pI, &gR, &gI, &oR, &oI}) v->resize(n);
+        sm.cell.resize(n);
+        int* __restrict cell = sm.cell.data();
         float* __restrict PR = pR.data(); float* __restrict PI = pI.data();
         float* __restrict GR = gR.data(); float* __restrict GI = gI.data();
         float* __restrict OR = oR.data(); float* __restrict OI = oI.data();
@@ -371,7 +373,8 @@ struct DvbcReceiver::Impl {
         static const float kw[kPhHalf] = {0.97f, 0.88f, 0.75f, 0.59f, 0.41f};   // a Hann window, the centre left out
         const size_t H = kPhHalf;
         for (int it = 0; it < 3; it++) {
-            for (size_t i = 0; i < n; i++) { const cf32 d = c.pts[(size_t)c.decide(cf32(OR[i], OI[i]))]; GR[i] = PR[i] * d.real() + PI[i] * d.imag(); GI[i] = PI[i] * d.real() - PR[i] * d.imag(); }
+            for (size_t i = 0; i < n; i++) cell[i] = c.cellOf(OR[i], OI[i]);   // the decision's arithmetic in a loop of its own: that part vectorises
+            for (size_t i = 0; i < n; i++) { const cf32 d = c.pts[(size_t)c.lut[(size_t)cell[i]]]; GR[i] = PR[i] * d.real() + PI[i] * d.imag(); GI[i] = PI[i] * d.real() - PR[i] * d.imag(); }
             auto rotate = [&](size_t i, float ar, float ai) {
                 const float a2 = ar * ar + ai * ai;
                 const float g = a2 > 0 ? 1.f / std::sqrt(a2) : 0.f;
@@ -439,8 +442,8 @@ struct DvbcReceiver::Impl {
         std::unique_lock<std::mutex> lk(jmu);
         jidle.wait(lk, [&] { return (jobs.empty() && !bbusy) || bstop; });
     }
-    void lockedDecided(cf32 zr, const dvbc::Constellation& c) {
-        const int sym = c.decide(zr);
+    void lockedDecided(cf32 zr, const dvbc::Constellation& c, int cell) {   // cell: c.cellOf(zr), computed for the whole block in one vectorised loop
+        const int sym = c.lut[(size_t)cell];
         const cf32 d = c.pts[(size_t)sym];
         errP = 0.999 * errP + 0.001 * std::norm(zr - d);
         sigP = 0.999 * sigP + 0.001 * std::norm(d);
@@ -463,7 +466,8 @@ struct DvbcReceiver::Impl {
                 {
                     std::lock_guard<std::mutex> bl(bmu);
                     smooth(smB, j.blk, *j.c);
-                    for (size_t i = kPhMargin; i < kPhMargin + kPhBlock; i++) lockedDecided(smB.phOut[i], *j.c);
+                    for (size_t i = kPhMargin; i < kPhMargin + kPhBlock; i++) smB.cell[i] = j.c->cellOf(smB.phOut[i].real(), smB.phOut[i].imag());
+                    for (size_t i = kPhMargin; i < kPhMargin + kPhBlock; i++) lockedDecided(smB.phOut[i], *j.c, smB.cell[i]);
                     outer();
                     pk.swap(out);
                 }
