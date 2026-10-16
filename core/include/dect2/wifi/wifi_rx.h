@@ -34,6 +34,7 @@ public:
     void setCenterHz(double hz);          // the radio's centre: the channel shown and noted with each network (0: unknown, a file)
     bool ready() const;
     void reset();                         // the demodulator only: the network table stays
+    void setReportInterval(double sec);   // seconds of signal between telemetry reports (default 0.25; for tests)
     void clearNetworks();
     void feed(const cf32* x, size_t n);
     bool telemetry(WifiTelemetry& out, uint64_t lastSeq);

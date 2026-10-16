@@ -48,6 +48,7 @@ struct WifiReceiver::Impl {
     std::atomic<bool> resetReq{true}, clearReq{false};
     std::atomic<double> centerHz{0};
     std::atomic<bool> centerChanged{false};
+    double reportSec = 0.25;            // seconds of signal between reports (tests shorten it)
     // OFDM receivers for 5 / 6 GHz (and the 6 Mbit/s beacons some 2.4 GHz APs send): one per 20 MHz channel listened to
     struct Sub {
         ChannelFilter cf;
@@ -185,7 +186,7 @@ struct WifiReceiver::Impl {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         initFront();
         resetDemod();
-        power = 0; nPower = 0; nextReport = 0.25 * rate; lastGood = -100;
+        power = 0; nPower = 0; nextReport = reportSec * rate; lastGood = -100;
         tel.inputRate = rate;
         rebuildSubs();
         shiftTimes(tel, -tel.timeSec);    // the lists stay (clearResults): the clock starts again
@@ -471,6 +472,7 @@ void WifiReceiver::setSignalOffset(double hz) { std::lock_guard<std::mutex> lk(p
 void WifiReceiver::setCenterHz(double hz) { if (hz != p_->centerHz.load()) { p_->centerHz = hz; p_->centerChanged = true; } }
 bool WifiReceiver::ready() const { std::lock_guard<std::mutex> lk(p_->mu); return p_->rateSet >= wifiTuning().minSampleRate - 1; }
 void WifiReceiver::reset() { p_->resetReq = true; }
+void WifiReceiver::setReportInterval(double sec) { std::lock_guard<std::mutex> lk(p_->mu); p_->reportSec = std::max(0.005, sec); p_->resetReq = true; }
 void WifiReceiver::clearNetworks() {
     {
         std::lock_guard<std::mutex> lk(p_->mu);   // the report at once; the feed thread's lists (and counters) on its next block
@@ -490,7 +492,7 @@ void WifiReceiver::feed(const cf32* x, size_t n) {
     if (m.centerChanged.exchange(false)) m.rebuildSubs();
     m.takeRequests();
     if (m.rate < wifiTuning().minSampleRate - 1 || n == 0) {
-        if (m.rate > 0) { m.nIn += (int64_t)n; if ((double)m.nIn >= m.nextReport) { m.nextReport += 0.25 * m.rate; m.report(); } }
+        if (m.rate > 0) { m.nIn += (int64_t)n; if ((double)m.nIn >= m.nextReport) { m.nextReport += m.reportSec * m.rate; m.report(); } }
         return;
     }
     // the OFDM receivers (5 / 6 GHz, and 2.4 GHz beacons sent at 6 Mbit/s and up): every 20 MHz channel through its own channel filter
@@ -509,7 +511,7 @@ void WifiReceiver::feed(const cf32* x, size_t n) {
         for (size_t i = 0; i < n; i++) { const float re = x[i].real(), im = x[i].imag(); if (std::isfinite(re) && std::isfinite(im)) m.power += (double)re * re + (double)im * im; }
         m.nPower += (int64_t)n;
         m.nIn += (int64_t)n;
-        while ((double)m.nIn >= m.nextReport) { m.nextReport += 0.25 * m.rate; m.report(); }
+        while ((double)m.nIn >= m.nextReport) { m.nextReport += m.reportSec * m.rate; m.report(); }
         return;
     }
     for (size_t i = 0; i < n; i++) {
@@ -517,7 +519,7 @@ void WifiReceiver::feed(const cf32* x, size_t n) {
         if (!std::isfinite(re) || !std::isfinite(im)) re = im = 0;
         m.power += (double)re * re + (double)im * im;
         m.input(re, im);
-        if ((double)m.nIn >= m.nextReport) { m.process(); m.nextReport += 0.25 * m.rate; m.report(); }
+        if ((double)m.nIn >= m.nextReport) { m.process(); m.nextReport += m.reportSec * m.rate; m.report(); }
     }
     m.nPower += (int64_t)n;
     m.process();
