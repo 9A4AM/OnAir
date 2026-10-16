@@ -146,8 +146,8 @@ int main() {
         const MeshTelemetry t = run(rx, p, pkt, lf.freqHz, lf.freqHz, 2e6, 300, 8);
         bool got = false, mc = false, lw = false;
         for (const auto& m : t.messages) got |= m.text == "sc";
-        for (const auto& d : t.decoders) { mc |= d.protocol == 2 && d.preset == "MeshCore AU" && std::fabs(d.freqHz - 915.8e6) < 1; lw |= d.protocol == 5; }
-        printf("ANZ plan LongFast %.4f MHz: %s, plan %s, MeshCore AU %s\n", lf.freqHz / 1e6, got ? "decoded" : "MISSING", t.mtRegion.c_str(), mc ? "planned" : "MISSING");
+        for (const auto& d : t.decoders) { mc |= d.protocol == 2 && d.preset.find("Australia") == 0 && std::fabs(d.freqHz - 915.8e6) < 1; lw |= d.protocol == 5; }
+        printf("ANZ plan LongFast %.4f MHz: %s, plan %s, MeshCore Australia %s\n", lf.freqHz / 1e6, got ? "decoded" : "MISSING", t.mtRegion.c_str(), mc ? "planned" : "MISSING");
         CHECK(got && t.region == 2 && t.mtRegion == "ANZ" && !t.custom, "ANZ plan LongFast");
         CHECK(mc && !lw, "ANZ plan: MeshCore AU, no LoRaWAN");
         const MeshNode* nd = t.nodes.empty() ? nullptr : &t.nodes[0];

@@ -292,6 +292,7 @@ static void discoveryChecks() {
     // in the boot loader: listed, with what is missing in its name
     fake.reset();
     fake.devs.push_back({kRx888PidBoot, 3, 9, "", "", ""});
+    setenv("ONAIR_RX888_NO_CODEC_SEARCH", "1", 1);   // an SDDC_FX3.img in the build's codecs folder must not hide the "no image" case
     d = findRx888();
     CHECK(d.board == "rx888" && d.name.find("needs SDDC_FX3.img") != std::string::npos && d.serial.empty(), "boot loader entry: '%s'", d.name.c_str());
     const std::string img = writeTemp(makeImage(64, 0x40000000, 0x40000010), "rx888_list");
@@ -308,6 +309,7 @@ static void firmwareUploadChecks() {
     s.centerHz = 7.0e6; s.sampleRate = 2e6;
     // no image anywhere: refused with a message the Fix-it card matches, and nothing written
     unsetenv("ONAIR_RX888_FIRMWARE");
+    setenv("ONAIR_RX888_NO_CODEC_SEARCH", "1", 1);
     fake.reset();
     fake.devs.push_back({kRx888PidBoot, 3, 9, "", "", ""});
     {

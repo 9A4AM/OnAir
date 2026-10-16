@@ -109,6 +109,8 @@ std::vector<TxModeSpec> makeTxTable() {
         mk("airband", "Airband AM", 28, "makeAirbandSynth, AM voice channels", "tone Hz or WAV file", kUnv),
         mk("vdl2", "VDL Mode 2", 29, "makeVdl2Synth", kOpt, kUnv),
         mk("vdl4", "VDL Mode 4", 84, "makeVdl4Synth", kOpt, kUnv),
+        mk("uat", "UAT 978", 85, "makeUatSynth", kOpt, kUnv),
+        mk("wisun", "Wi-SUN", 86, "makeWisunSynth", kOpt, kUnv),
         mk("vorils", "VOR / ILS", 32, "makeVorSynth", kOpt, kUnv),
         mk("m17", "M17", 33, "makeM17Synth", kOpt, kUnv),
         mk("dstar", "D-STAR", 35, "makeDstarSynth", kOpt, kUnv),
@@ -256,6 +258,7 @@ TxPayloadKind txPayloadKind(const std::string& id) {
     if (id == "uplink") return TxPayloadKind::Uplink;
     if (id == "mesh") return TxPayloadKind::Mesh;
     if (id == "mac") return TxPayloadKind::Mac;
+    if (id == "vdl4" || id == "uat" || id == "wisun") return TxPayloadKind::SatScene;   // demo-traffic generators, no custom message
     return TxPayloadKind::SatScene;   // never a generic callsign dump; unknown ids are treated as a test scene
 }
 

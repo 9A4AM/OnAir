@@ -278,6 +278,7 @@ void rx888SetReenumPollMs(int ms) { gReenumPollOverrideMs = ms; }
 std::vector<std::string> rx888FirmwarePaths() {
     std::vector<std::string> v;
     if (const char* e = getenv("ONAIR_RX888_FIRMWARE")) if (*e) v.push_back(e);
+    if (const char* n = getenv("ONAIR_RX888_NO_CODEC_SEARCH")) if (*n) return v;   // (tests: a firmware image next to the build must not decide the "no image" cases)
     for (const auto& dir : codecFolders()) v.push_back(dir + "SDDC_FX3.img");
     return v;
 }

@@ -332,6 +332,11 @@ struct MeshReceiver::Impl {
             capPush(tel.packets, std::move(row), kPacketCap);
             return;
         }
+        if (proto_ == 5 && crcBad) {   // a LoRaWAN frame with a failed CRC is never trusted: counted and listed, but no device is made from it
+            row.note = row.note.empty() ? "CRC error" : std::string("CRC error; ") + row.note;
+            capPush(tel.packets, std::move(row), kPacketCap);
+            return;
+        }
         if (proto_ == 5) { onLorawan(c, t, f, r, std::move(row)); return; }
         if (proto_ >= 3) { onAprs(proto_, t, f, r, std::move(row)); return; }
         const MeshPacketInfo& pk = r.packet;

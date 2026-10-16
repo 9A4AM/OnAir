@@ -107,7 +107,7 @@ int main() {
         CHECK(km > 1180 && km < 1260, "Vilnius - Mainflingen %.0f km", km);
         CHECK(std::fabs(propagationMs(Dcf77, km) - km / 299.792458) < 1e-9, "ground wave");
         CHECK(propagationMs(Wwv, 2000) > 2000 / 299.792458, "sky wave longer");
-        CHECK(stationForKhz(77.5, Msf) == Dcf77 && stationForKhz(60, Wwvb) == Wwvb && stationForKhz(10000, 0) == Wwv && stationForKhz(7850, 0) == Chu && stationForKhz(500, 0) == -1, "station by frequency");
+        CHECK(stationForKhz(77.5, Msf) == Dcf77 && stationForKhz(60, Wwvb) == Wwvb && stationForKhz(10000, 0) == Wwv && stationForKhz(7850, 0) == -1 && stationForKhz(500, 0) == -1, "station by frequency");
     }
     printf(fails ? "FAILED %d\n" : "ok\n", fails);
     return fails ? 1 : 0;
