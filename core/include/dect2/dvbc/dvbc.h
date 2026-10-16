@@ -32,6 +32,14 @@ struct Constellation {
     std::vector<uint16_t> lut;                  // cells x cells, nearest symbol of each grid cell (corners of the cross constellations included)
     float r2 = 1;                               // CMA modulus E|s|^4 / E|s|^2
     float dmin = 1;
+    // The grid cell of a value (the arithmetic of decide(), without the table lookup): a loop of these over an array vectorises, which the lookup stops
+    inline __attribute__((always_inline)) int cellOf(float re, float im) const {
+        const float k = 1.f / (2 * unit);
+        int ix = (int)(std::clamp(re * k, -64.f, 64.f) + 64.f) - 64 + cells / 2, iy = (int)(std::clamp(im * k, -64.f, 64.f) + 64.f) - 64 + cells / 2;
+        ix = ix < 0 ? 0 : ix >= cells ? cells - 1 : ix;
+        iy = iy < 0 ? 0 : iy >= cells ? cells - 1 : iy;
+        return iy * cells + ix;
+    }
     inline __attribute__((always_inline)) int decide(cf32 z) const {
         // floor() without the library call: shift to positive, truncate (cells <= 16, so +-64 cells is far outside the grid)
         const float k = 1.f / (2 * unit);
@@ -69,7 +77,10 @@ public:
         const int d = (quad - prevQuad_) & 3;
         prevQuad_ = quad;
         const int v = (iqOf(d) << (m_ - 2)) | (sym & ((1 << (m_ - 2)) - 1));
-        for (int b = m_ - 1; b >= 0; b--) bits.push_back((uint8_t)((v >> b) & 1));
+        const size_t at = bits.size();
+        bits.resize(at + (size_t)m_);   // one resize, then stores: a push_back per bit re-checks the capacity for each of the m bits
+        uint8_t* o = bits.data() + at;
+        for (int b = m_ - 1, k = 0; b >= 0; b--, k++) o[k] = (uint8_t)((v >> b) & 1);
     }
 private:
     int m_ = 6, prevQuad_ = 0;

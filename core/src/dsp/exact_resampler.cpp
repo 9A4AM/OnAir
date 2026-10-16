@@ -3,6 +3,10 @@
 #include <immintrin.h>
 #define DECT2_ER_AVX2 1
 #endif
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+#include <arm_neon.h>
+#define DECT2_ER_NEON 1
+#endif
 #include <algorithm>
 #include <cmath>
 #include "dect2/common/window.h"
@@ -74,6 +78,61 @@ size_t resampleLoopPortable(const float* R, const float* M, const float* B, int 
     return produced;
 }
 
+#ifdef DECT2_ER_NEON
+// The same loop with NEON: two 4-lane accumulators are the eight partial sums of the portable loop (lane j of A0 / A1 is its ar[j] / ar[4 + j]),
+// fused multiply-adds like the portable loop gets from the compiler, and the lanes are added in the same tree, so the result is bit-identical.
+// (The compiler's own vectorisation of the portable loop was two lanes wide with a zip per vector: three times the instructions.)
+// Two outputs per pass: their chains are independent, so one's four-cycle multiply-add latency is hidden behind the other's.
+inline cf32 neonJoin(float32x4_t r0, float32x4_t r1, float32x4_t m0, float32x4_t m1) {
+    const float32x4_t pr = vpaddq_f32(r0, r1), pm = vpaddq_f32(m0, m1);   // (0+1) (2+3) (4+5) (6+7)
+    const float32x4_t qr = vpaddq_f32(pr, pm);                            // re: (01+23) (45+67), im: the same
+    return cf32(vgetq_lane_f32(qr, 0) + vgetq_lane_f32(qr, 1), vgetq_lane_f32(qr, 2) + vgetq_lane_f32(qr, 3));
+}
+size_t resampleLoopNeon(const float* R, const float* M, const float* B, int stride, int phases, int hm1, long avail, double& posRef, double step, cf32* o) {
+    size_t produced = 0;
+    double pos = posRef;
+    auto where = [&](double ps, long& base, const float*& h) {
+        const long i0 = (long)ps;
+        base = i0 - hm1;
+        h = B + (size_t)((int)((ps - (double)i0) * phases + 0.5)) * (size_t)stride;
+    };
+    for (;;) {
+        long baseA; const float* hA;
+        where(pos, baseA, hA);
+        if (baseA + stride > avail) break;
+        long baseB; const float* hB;
+        const double posB = pos + step;
+        where(posB, baseB, hB);
+        const float *rA = R + baseA, *mA = M + baseA;
+        float32x4_t r0 = vdupq_n_f32(0), r1 = r0, m0 = r0, m1 = r0;
+        if (baseB + stride <= avail) {
+            const float *rB = R + baseB, *mB = M + baseB;
+            float32x4_t s0 = r0, s1 = r0, n0 = r0, n1 = r0;
+            for (int t = 0; t < stride; t += 8) {
+                const float32x4_t h0 = vld1q_f32(hA + t), h1 = vld1q_f32(hA + t + 4), g0 = vld1q_f32(hB + t), g1 = vld1q_f32(hB + t + 4);
+                r0 = vfmaq_f32(r0, vld1q_f32(rA + t), h0); r1 = vfmaq_f32(r1, vld1q_f32(rA + t + 4), h1);
+                s0 = vfmaq_f32(s0, vld1q_f32(rB + t), g0); s1 = vfmaq_f32(s1, vld1q_f32(rB + t + 4), g1);
+                m0 = vfmaq_f32(m0, vld1q_f32(mA + t), h0); m1 = vfmaq_f32(m1, vld1q_f32(mA + t + 4), h1);
+                n0 = vfmaq_f32(n0, vld1q_f32(mB + t), g0); n1 = vfmaq_f32(n1, vld1q_f32(mB + t + 4), g1);
+            }
+            o[produced++] = neonJoin(r0, r1, m0, m1);
+            o[produced++] = neonJoin(s0, s1, n0, n1);
+            pos = posB + step;
+        } else {
+            for (int t = 0; t < stride; t += 8) {
+                const float32x4_t h0 = vld1q_f32(hA + t), h1 = vld1q_f32(hA + t + 4);
+                r0 = vfmaq_f32(r0, vld1q_f32(rA + t), h0); r1 = vfmaq_f32(r1, vld1q_f32(rA + t + 4), h1);
+                m0 = vfmaq_f32(m0, vld1q_f32(mA + t), h0); m1 = vfmaq_f32(m1, vld1q_f32(mA + t + 4), h1);
+            }
+            o[produced++] = neonJoin(r0, r1, m0, m1);
+            pos = posB;
+        }
+    }
+    posRef = pos;
+    return produced;
+}
+#endif
+
 #ifdef DECT2_ER_AVX2
 // The same loop with 256-bit vectors: stride is a multiple of 8, the real and imaginary rows share the tap row loaded once.
 __attribute__((target("avx2")))
@@ -113,6 +172,9 @@ size_t resampleLoop(const float* R, const float* M, const float* B, int stride, 
 #ifdef DECT2_ER_AVX2
     static const bool avx2 = __builtin_cpu_supports("avx2");
     if (avx2) return resampleLoopAvx2(R, M, B, stride, phases, hm1, avail, pos, step, o);
+#endif
+#ifdef DECT2_ER_NEON
+    return resampleLoopNeon(R, M, B, stride, phases, hm1, avail, pos, step, o);
 #endif
     return resampleLoopPortable(R, M, B, stride, phases, hm1, avail, pos, step, o);
 }

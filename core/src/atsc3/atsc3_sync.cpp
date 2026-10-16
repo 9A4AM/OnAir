@@ -1,3 +1,6 @@
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+#include <arm_neon.h>
+#endif
 #include "dect2/atsc3/atsc3_sync.h"
 #include "dect2/dsp/dsp_compat.h"
 #include <algorithm>
@@ -82,15 +85,41 @@ void resampleExact(const cf32* in, size_t n, double inRate, double outRate, std:
     for (size_t i = 0; i < n; i++) { re[i + pad] = in[i].real(); im[i + pad] = in[i].imag(); }
     out.resize((size_t)count);
     const int taps = b.stride;
+    // where output k reads: the input rows from base and the tap row of its nearest phase
+    auto locate = [&](long k, const float*& h, const float*& r, const float*& m) {
+        const double pos = startOffset + (double)k * step;
+        const long i = (long)std::floor(pos);
+        const int p0 = (int)std::lround((pos - (double)i) * b.phases);   // nearest phase of the fine bank: a timing error below 1/4000 of a sample
+        h = &b.h[(size_t)p0 * taps];
+        const long base = i - (b.half - 1) + pad;
+        r = &re[(size_t)base];
+        m = &im[(size_t)base];
+    };
     auto part = [&](long k0, long k1) {
-        for (long k = k0; k < k1; k++) {
-            const double pos = startOffset + (double)k * step;
-            const long i = (long)std::floor(pos);
-            int p0 = (int)std::lround((pos - (double)i) * b.phases);   // nearest phase of the fine bank: a timing error below 1/4000 of a sample
-            const float* h = &b.h[(size_t)p0 * taps];
-            const long base = i - (b.half - 1) + pad;
-            const float* r = &re[(size_t)base];
-            const float* m = &im[(size_t)base];
+        long k = k0;
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+        // Four outputs at once: each keeps the four partial sums of the scalar loop below (lane j adds taps j, j + 4, ... in order, multiply then
+        // add, lanes joined (0 + 1) + (2 + 3)), so every output is bit-identical; the four independent chains hide the add latency that one
+        // output's chain of 24 dependent additions has (the compiler's own vectorisation of that loop added the lanes one by one).
+        for (; k + 4 <= k1; k += 4) {
+            const float *h[4], *r[4], *m[4];
+            float32x4_t ar[4], ai[4];
+            for (int u = 0; u < 4; u++) { locate(k + u, h[u], r[u], m[u]); ar[u] = ai[u] = vdupq_n_f32(0); }
+            for (int t = 0; t < taps; t += 4)
+                for (int u = 0; u < 4; u++) {
+                    const float32x4_t hv = vld1q_f32(h[u] + t);
+                    ar[u] = vaddq_f32(ar[u], vmulq_f32(vld1q_f32(r[u] + t), hv));
+                    ai[u] = vaddq_f32(ai[u], vmulq_f32(vld1q_f32(m[u] + t), hv));
+                }
+            for (int u = 0; u < 4; u++) {
+                const float32x4_t s = vpaddq_f32(ar[u], ai[u]);   // (re0+re1) (re2+re3) (im0+im1) (im2+im3)
+                out[(size_t)(k + u)] = cf32(vgetq_lane_f32(s, 0) + vgetq_lane_f32(s, 1), vgetq_lane_f32(s, 2) + vgetq_lane_f32(s, 3));
+            }
+        }
+#endif
+        for (; k < k1; k++) {
+            const float *h, *r, *m;
+            locate(k, h, r, m);
             float ar[4] = {0, 0, 0, 0}, ai[4] = {0, 0, 0, 0};
             for (int t = 0; t < taps; t += 4)
                 for (int j = 0; j < 4; j++) { ar[j] += r[t + j] * h[t + j]; ai[j] += m[t + j] * h[t + j]; }

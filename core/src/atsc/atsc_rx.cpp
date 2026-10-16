@@ -31,7 +31,46 @@ namespace atsc {
 DECT2_SIMD_BODY void pfbBlockBody(const float* taps, int J, int NPH, const float* re, const float* im, int64_t base,
                                  double pos0, double step, size_t k0, size_t k1, float* outRe, float* outIm) {
     const int T = 2 * J;
-    for (size_t k = k0; k < k1; k++) {
+    size_t k = k0;
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+    // Two outputs per pass: each is exactly the arithmetic of the loop below, but their eight chains of multiply-adds are independent, so the
+    // four-cycle latency of one output's chain is hidden behind the other's (a single output is latency-bound, not load-bound).
+    for (; k + 2 <= k1; k += 2) {
+        const float *tp[2], *pr[2], *pi_[2];
+        for (int u = 0; u < 2; u++) {
+            const double pos = pos0 + (double)(k + (size_t)u) * step;
+            int64_t i0 = (int64_t)std::floor(pos);
+            int phi = (int)((pos - (double)i0) * NPH + 0.5);
+            if (phi >= NPH) { phi = 0; i0++; }
+            tp[u] = &taps[(size_t)phi * T];
+            const size_t b0 = (size_t)(i0 - base - J + 1);
+            pr[u] = &re[b0]; pi_[u] = &im[b0];
+        }
+        float32x4_t ar[2], ai[2], br[2], bi[2];
+        for (int u = 0; u < 2; u++) ar[u] = ai[u] = br[u] = bi[u] = vdupq_n_f32(0);
+        int j = 0;
+        for (; j + 8 <= T; j += 8)
+            for (int u = 0; u < 2; u++) {
+                const float32x4_t t4 = vld1q_f32(tp[u] + j), u4 = vld1q_f32(tp[u] + j + 4);
+                ar[u] = vfmaq_f32(ar[u], vld1q_f32(pr[u] + j), t4);
+                ai[u] = vfmaq_f32(ai[u], vld1q_f32(pi_[u] + j), t4);
+                br[u] = vfmaq_f32(br[u], vld1q_f32(pr[u] + j + 4), u4);
+                bi[u] = vfmaq_f32(bi[u], vld1q_f32(pi_[u] + j + 4), u4);
+            }
+        for (; j + 4 <= T; j += 4)
+            for (int u = 0; u < 2; u++) {
+                const float32x4_t t4 = vld1q_f32(tp[u] + j);
+                ar[u] = vfmaq_f32(ar[u], vld1q_f32(pr[u] + j), t4);
+                ai[u] = vfmaq_f32(ai[u], vld1q_f32(pi_[u] + j), t4);
+            }
+        for (int u = 0; u < 2; u++) {
+            float sr = vaddvq_f32(vaddq_f32(ar[u], br[u])), si = vaddvq_f32(vaddq_f32(ai[u], bi[u]));
+            for (int jj = j; jj < T; jj++) { sr += pr[u][jj] * tp[u][jj]; si += pi_[u][jj] * tp[u][jj]; }
+            outRe[k + (size_t)u] = sr; outIm[k + (size_t)u] = si;
+        }
+    }
+#endif
+    for (; k < k1; k++) {
         const double pos = pos0 + (double)k * step;
         int64_t i0 = (int64_t)std::floor(pos);
         int phi = (int)((pos - (double)i0) * NPH + 0.5);
@@ -353,7 +392,12 @@ struct Core {
         if (mirrorIq) for (auto& v : in) v = std::conj(v);
         if (shiftHz != 0) mixIn(in);
         const double tA = now();
-        for (const cf32& v : in) { inRe.push_back(v.real()); inIm.push_back(v.imag()); }
+        {   // split into the two rows: one resize, then plain stores (a push_back per sample re-checks the capacity twice for every sample)
+            const size_t at = inRe.size();
+            inRe.resize(at + in.size()); inIm.resize(at + in.size());
+            float* __restrict pr = inRe.data() + at; float* __restrict pi = inIm.data() + at;
+            for (size_t i = 0; i < in.size(); i++) { pr[i] = in[i].real(); pi[i] = in[i].imag(); }
+        }
         std::vector<float> dchunk;
         const double room = (double)(inBase + inRe.size()) - J - 2 - pos;
         const size_t nOut = room > 0 ? (size_t)std::ceil(room / step) : 0;

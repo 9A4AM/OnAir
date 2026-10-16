@@ -237,6 +237,15 @@ int runChild(const Entry& en, double rate, double secs, const std::string& path,
     muteAndConfigure(e, en, spectrum);
     DeviceInfo dev; dev.kind = DeviceInfo::File; dev.name = path;
     FileOptions fo; fo.path = path; fo.format = FileFormat::CS8; fo.sampleRate = rate; fo.loop = false;
+    // order-sensitive FNV-1a of every transport-stream packet the receiver delivers, with a checkpoint every 64 packets: the run stops when the
+    // file has been processed, so the tail varies with timing, but the common prefix of the checkpoints of two runs must be identical
+    std::string tsCps; uint64_t tsN = 0, tsH = 1469598103934665603ull;
+    e.setPacketTap([&](const uint8_t* pk, size_t n, const TsSnapshot*, double) {
+        for (size_t i = 0; i < n; i++) {
+            for (int b = 0; b < 188; b++) tsH = (tsH ^ pk[i * 188 + b]) * 1099511628211ull;
+            if (++tsN % 64 == 0) { char h[24]; snprintf(h, sizeof h, "%s%llx", tsCps.empty() ? "" : ",", (unsigned long long)tsH); tsCps += h; }
+        }
+    });
     const double cpu0 = cpuSeconds();
     if (!e.start(dev, t, fo)) {
         size_t n; std::string last; for (auto& l : e.logSnapshot(n)) last = l;
@@ -282,19 +291,25 @@ int runChild(const Entry& en, double rate, double secs, const std::string& path,
     size_t nlog = 0;
     e.logSnapshot(nlog);
     char dir[] = "/tmp/bench_modes_res_XXXXXX";
-    uint64_t resBytes = 0;
+    uint64_t resBytes = 0, resHash = 1469598103934665603ull;   // FNV-1a over the saved results (order-independent per file): proves the output did not change
     if (mkdtemp(dir)) {
         e.saveResults(dir);
         std::error_code ec;
-        for (auto& f : std::filesystem::directory_iterator(dir, ec)) resBytes += f.file_size(ec);
+        for (auto& f : std::filesystem::directory_iterator(dir, ec)) {
+            resBytes += f.file_size(ec);
+            uint64_t fh = 1469598103934665603ull;
+            if (FILE* rf = fopen(f.path().c_str(), "rb")) { int c; while ((c = fgetc(rf)) != EOF) fh = (fh ^ (uint64_t)c) * 1099511628211ull; fclose(rf); }
+            for (char c : f.path().filename().string()) fh = (fh ^ (uint8_t)c) * 1099511628211ull;
+            resHash += fh;
+        }
         std::filesystem::remove_all(dir, ec);
     }
     const uint64_t lost = e.droppedSamples();
     e.stop();
     printf("{\"cost\":%.6f,\"cpu_total\":%.4f,\"startup_cpu\":%.4f,\"processed\":%.4f,\"rss_mb\":%.1f,\"threads\":%d,\"busiest_thread_frac\":%.3f,"
-           "\"log_lines\":%zu,\"blocks_ok\":%llu,\"result_bytes\":%llu,\"dropped\":%llu,\"wall\":%.3f}\n",
+           "\"log_lines\":%zu,\"blocks_ok\":%llu,\"result_bytes\":%llu,\"result_hash\":\"%016llx\",\"ts_n\":%llu,\"ts_cps\":\"%s\",\"dropped\":%llu,\"wall\":%.3f}\n",
            cost, cpuEnd, startup, proc, peakRssMb(), maxThr, cpuEnd > 0 ? busiest / std::max(cpuSeconds(), 1e-9) : 0.0, nlog,
-           (unsigned long long)rx.blocksOk, (unsigned long long)resBytes, (unsigned long long)lost, wall);
+           (unsigned long long)rx.blocksOk, (unsigned long long)resBytes, (unsigned long long)resHash, (unsigned long long)tsN, tsCps.c_str(), (unsigned long long)lost, wall);
     fflush(stdout);
     _exit(0);   // the engine's destructor adds nothing to the figures and some receivers are slow to tear down
 }

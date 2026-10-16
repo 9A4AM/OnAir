@@ -28,4 +28,22 @@ DECT2_SIMD_BODY void dotRI(const float* re, const float* im, const float* h, int
 #endif
 }
 
+#if defined(__ARM_NEON) && !defined(DECT2_NO_SIMD)
+// Two dot products at once (two outputs of a polyphase filter): each is exactly dotRI's arithmetic, but the eight accumulator chains are independent,
+// so the four-cycle latency of the multiply-adds of one output is hidden behind the other's (one output alone is latency-bound, not load-bound).
+inline void dotRI2(const float* reA, const float* imA, const float* hA, const float* reB, const float* imB, const float* hB, int n,
+                   float& srA, float& siA, float& srB, float& siB) {
+    float32x4_t a0 = vdupq_n_f32(0), a1 = a0, b0 = a0, b1 = a0, c0 = a0, c1 = a0, d0 = a0, d1 = a0;
+    for (int t = 0; t < n; t += 8) {
+        const float32x4_t h0 = vld1q_f32(hA + t), h1 = vld1q_f32(hA + t + 4), g0 = vld1q_f32(hB + t), g1 = vld1q_f32(hB + t + 4);
+        a0 = vfmaq_f32(a0, vld1q_f32(reA + t), h0); a1 = vfmaq_f32(a1, vld1q_f32(reA + t + 4), h1);
+        c0 = vfmaq_f32(c0, vld1q_f32(reB + t), g0); c1 = vfmaq_f32(c1, vld1q_f32(reB + t + 4), g1);
+        b0 = vfmaq_f32(b0, vld1q_f32(imA + t), h0); b1 = vfmaq_f32(b1, vld1q_f32(imA + t + 4), h1);
+        d0 = vfmaq_f32(d0, vld1q_f32(imB + t), g0); d1 = vfmaq_f32(d1, vld1q_f32(imB + t + 4), g1);
+    }
+    srA = vaddvq_f32(vaddq_f32(a0, a1)); siA = vaddvq_f32(vaddq_f32(b0, b1));
+    srB = vaddvq_f32(vaddq_f32(c0, c1)); siB = vaddvq_f32(vaddq_f32(d0, d1));
+}
+#endif
+
 } // namespace dect2::dtmb
