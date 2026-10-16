@@ -9,6 +9,7 @@
 #include "dect2/dmr_gen.h"
 #include "dect2/dmr_rx.h"
 #include "dect2/nxdn_proto.h"
+#include "../test_env.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

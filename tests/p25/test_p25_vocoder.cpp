@@ -3,6 +3,7 @@
 #include "dect2/p25_imbe.h"
 #include "dect2/dstar_ambe.h"
 #include "dect2/nxdn_ambe.h"
+#include "../test_env.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
