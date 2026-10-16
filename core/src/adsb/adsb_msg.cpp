@@ -8,6 +8,38 @@
 
 namespace dect2::adsb {
 
+// Bit access with the standards' numbering and the hex text: simple helpers that stay C++ in every build (they take no length, so they cannot cross
+// the Rust boundary safely, and the generator and the trackers call them in loops)
+uint32_t getBits(const uint8_t* m, int first, int count) {
+    uint32_t v = 0;
+    for (int i = 0; i < count; i++) {
+        const int b = first - 1 + i;
+        v = (v << 1) | ((m[b >> 3] >> (7 - (b & 7))) & 1u);
+    }
+    return v;
+}
+
+void setBits(uint8_t* m, int first, int count, uint32_t value) {
+    for (int i = 0; i < count; i++) {
+        const int b = first - 1 + i;
+        const uint8_t mask = (uint8_t)(0x80 >> (b & 7));
+        if ((value >> (count - 1 - i)) & 1u) m[b >> 3] |= mask; else m[b >> 3] &= (uint8_t)~mask;
+    }
+}
+
+std::string toHex(const uint8_t* b, int nbits) {
+    static const char* d = "0123456789ABCDEF";
+    std::string s;
+    for (int i = 0; i < nbits / 8; i++) { s += d[b[i] >> 4]; s += d[b[i] & 15]; }
+    return s;
+}
+
+
+// Everything below down to the matching #endif is the C++ implementation of the message layer; with DECT2_RUST_ADSB (rust/onair_adsb)
+// adsb_msg_rs.cpp provides the same functions. It stays until the Rust build is mandatory (rust/README.md); tests/adsb/test_adsb_proto_rs.cpp
+// compares the two.
+#ifndef DECT2_RUST_ADSB
+
 // ---------------------------------------------------------------- CRC-24
 
 static const uint32_t* crcTable() {
@@ -46,23 +78,6 @@ int dfLength(int df) {
     case 16: case 17: case 18: case 19: case 20: case 21: return 112;
     case 24: case 25: case 26: case 27: return 112;   // extended length message (ELM): bit 3 is a spare bit and 0, so DF 28 - 31 are not one
     default: return 0;
-    }
-}
-
-uint32_t getBits(const uint8_t* m, int first, int count) {
-    uint32_t v = 0;
-    for (int i = 0; i < count; i++) {
-        const int b = first - 1 + i;
-        v = (v << 1) | ((m[b >> 3] >> (7 - (b & 7))) & 1u);
-    }
-    return v;
-}
-
-void setBits(uint8_t* m, int first, int count, uint32_t value) {
-    for (int i = 0; i < count; i++) {
-        const int b = first - 1 + i;
-        const uint8_t mask = (uint8_t)(0x80 >> (b & 7));
-        if ((value >> (count - 1 - i)) & 1u) m[b >> 3] |= mask; else m[b >> 3] &= (uint8_t)~mask;
     }
 }
 
@@ -602,13 +617,6 @@ std::string raText(unsigned ara, unsigned rac, bool terminated) {
 
 // ---------------------------------------------------------------- message decoding
 
-std::string toHex(const uint8_t* b, int nbits) {
-    static const char* d = "0123456789ABCDEF";
-    std::string s;
-    for (int i = 0; i < nbits / 8; i++) { s += d[b[i] >> 4]; s += d[b[i] & 15]; }
-    return s;
-}
-
 // movement field of a surface position (DO-260B; the ranges as printed in the Riddle, chapter Surface Position). The lower edge of the range is reported.
 static bool movementToKt(unsigned c, double& kt) {
     if (c == 0 || c > 124) return false;
@@ -778,5 +786,7 @@ bool decodeMsg(const uint8_t* b, int nbits, Msg& m) {
     }
     return true;
 }
+
+#endif // DECT2_RUST_ADSB
 
 } // namespace dect2::adsb

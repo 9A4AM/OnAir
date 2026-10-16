@@ -1,6 +1,11 @@
 # onair_acars
 
-Will hold: ACARS (VHF and satellite): message framing, parity, CRC-16, label and block decoding.
-Status: skeleton (only `onair_acars_version`). Plan and conventions: ../README.md.
-C ABI: `src/ffi.rs`, header `core/include/dect2/rs/acars.h`, symbols prefixed `onair_acars_`.
-Shared CRC/bit/hex helpers come from `onair_common`; keep protocol logic in safe modules and `unsafe` in `ffi.rs` only.
+ACARS (ARINC 618) block layer: the block check sequence (CRC-16 KERMIT) and single-bit syndromes, odd parity, acarsdec-style parity / check-sequence repair
+(`repair`), block field parsing with address, label, block id, downlink message number and flight id, text and the H1 sublabel / MFI (`block`), label names and
+the short reading of the Q-label OOOI texts and the SA media advisory (`label`).
+
+No allocation, no panics, `unsafe` only in `ffi.rs`. `acarsBuildFrame` (the transmitter of the test signal) stays in `core/src/acars/acars_proto.cpp`;
+`acars_proto_rs.cpp` is the Rust-backed implementation of the rest of `dect2/acars/acars_proto.h`.
+
+C ABI: `src/ffi.rs`, header `core/include/dect2/rs/acars.h`, symbols prefixed `onair_acars_`. Differential test: `tests/acars/test_acars_proto_rs.cpp` (about 2.8 M
+comparisons), fuzz target `fuzz_acars_proto`. Status and conventions: ../README.md.
