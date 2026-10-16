@@ -1121,3 +1121,8 @@ Documentation	文档
 Troubleshooting	故障排除
 Voice codecs (mbelib)	语音编解码器 (mbelib)
 Website	网站
+# map server start-up question
+Keep sending positions	继续发送位置
+OnAir asks this question at every start. "No, do not ask again" stops it until OnAir is updated.	OnAir 每次启动都会提出这个问题。选择“不，不再询问”后，在 OnAir 更新之前不会再显示。
+Nothing is sent in this session. OnAir asks again the next time it starts.	本次会话不发送任何内容。下次启动时 OnAir 会再次询问。
+Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu.	不发送任何内容，在 OnAir 更新之前不再显示此问题。之后仍可在“服务器”菜单中开启。

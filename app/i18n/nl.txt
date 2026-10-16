@@ -1121,3 +1121,8 @@ Documentation	Documentatie
 Troubleshooting	Probleemoplossing
 Voice codecs (mbelib)	Spraakcodecs (mbelib)
 Website	Website
+# map server start-up question
+Keep sending positions	Posities blijven verzenden
+OnAir asks this question at every start. "No, do not ask again" stops it until OnAir is updated.	OnAir stelt deze vraag bij elke start. „Nee, niet meer vragen” stopt dit tot OnAir wordt bijgewerkt.
+Nothing is sent in this session. OnAir asks again the next time it starts.	In deze sessie wordt niets verzonden. OnAir vraagt het bij de volgende start opnieuw.
+Nothing is sent and this question is not shown again until OnAir is updated. You can still turn it on later in the Server menu.	Er wordt niets verzonden en deze vraag verschijnt niet meer tot OnAir wordt bijgewerkt. Je kunt het later nog aanzetten in het menu Server.

@@ -2,6 +2,7 @@
 // calls render() from its real-time callback.
 #pragma once
 #include "dect2/audio/audioout.h"
+#include "dect2/audio/audiolevel.h"
 #include <atomic>
 #include <vector>
 #include <cstdint>
@@ -15,7 +16,8 @@ struct AudioOut::Impl {
     size_t frames = 0;                // ring capacity in frames (power of two)
     std::atomic<uint64_t> w{0}, r{0}; // frame counters
     std::atomic<uint64_t> written{0}, played{0};
-    std::atomic<float> volume{1.f};
+    std::atomic<float> volume{1.f};   // the slider position 0..1; volumeTaper() makes the gain
+    AudioLeveler leveler;             // render thread only
     std::atomic<bool> muted{false};
     std::atomic<int> underruns{0};
     std::atomic<int> startThreshold{14400};
