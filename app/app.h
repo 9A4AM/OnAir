@@ -167,6 +167,20 @@ struct Waterfall {
     void writeFrom(const float* d, size_t n) {
         const float inv = 255.f / std::max(1.f, maxDb - minDb);
         uint32_t* r = row.data();
+        if (n >= (size_t)W && n % W == 0) {   // the usual 8k..64k FFT: the same number of bins in every column, so no division and a fixed-length max (vectorised)
+            const size_t k = n / W;
+            for (int x = 0; x < W; x++) {
+                const float* c = d + (size_t)x * k;
+                float m = c[0];
+                for (size_t j = 1; j < k; j++) m = std::max(m, c[j]);
+                const float v = (m - minDb) * inv;
+                r[x] = lut[v <= 0.f ? 0 : v >= 255.f ? 255 : (int)v];
+            }
+            writeRow = (writeRow + H - 1) % H;
+            img->update(0, writeRow, W, 1, r);
+            filled = std::min(H, filled + 1);
+            return;
+        }
         for (int x = 0; x < W; x++) {
             const size_t a = (size_t)x * n / W, b = std::max(a + 1, (size_t)(x + 1) * n / W);
             float m = d[a];
