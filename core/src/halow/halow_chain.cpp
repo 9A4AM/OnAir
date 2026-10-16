@@ -59,12 +59,10 @@ struct HalowChain::Impl {
     bool direct = true;
     ExactResampler rs;
     std::vector<cf32> rsOut;
-    // detector
+    // detector: the samples and, in step with them, the lag products y[n] conj(y[n - lag]) and the two powers, so the sliding sums are plain additions
     std::vector<cf32> buf;
+    std::vector<float> pRe, pIm, q1, q2;
     int64_t base = 0, g = 0;
-    std::vector<cf32> prodRing;
-    std::vector<float> p1Ring, p2Ring;
-    int rp = 0;
     std::complex<double> sa{0, 0};
     double sp1 = 0, sp2 = 0;
     int run = 0;
@@ -77,45 +75,57 @@ struct HalowChain::Impl {
         bool w1 = false;
         for (int x : w) if (x == W1) w1 = true;
         gate = w1 ? 2300 : (int64_t)(240e-6 * Ri) + 500 * S;
-        prodRing.assign((size_t)kW, cf32(0, 0)); p1Ring.assign((size_t)kW, 0.f); p2Ring.assign((size_t)kW, 0.f);
         direct = std::fabs(inRate - Ri) < 1.0;
-        if (!direct) rs.configure(inRate, Ri);
+        if (!direct) rs.configure(inRate, Ri, 8);   // 8 lobes: about 55 dB of rejection at half the cost of the 16 lobe filter (three chains run at 20 Msps)
     }
+
+    bool active() const { for (int w : widths) if (mask >> w & 1) return true; return false; }
 
     void feed(const cf32* x, size_t n) {
         nIn += (int64_t)n;
-        if (direct) { for (size_t i = 0; i < n; i++) demod(x[i]); return; }
+        if (!active()) return;   // a manual width that this chain does not carry: nothing to resample or detect
+        if (direct) { detect(x, n); return; }
         rsOut.clear();
         rs.process(x, n, rsOut);
-        for (const cf32& v : rsOut) demod(v);
+        detect(rsOut.data(), rsOut.size());
     }
 
     // ---------------------------------------------------------------- detector
 
-    void demod(cf32 y) {
-        const int64_t n = g;
-        buf.push_back(y);
-        g++;
-        const cf32 y32 = n - lag >= base ? buf[(size_t)(n - lag - base)] : cf32(0, 0);
-        const cf32 a = y * std::conj(y32);
-        const float p1 = std::norm(y), p2 = std::norm(y32);
-        sa += std::complex<double>(a.real() - prodRing[(size_t)rp].real(), a.imag() - prodRing[(size_t)rp].imag());
-        sp1 += (double)p1 - p1Ring[(size_t)rp]; sp2 += (double)p2 - p2Ring[(size_t)rp];
-        prodRing[(size_t)rp] = a; p1Ring[(size_t)rp] = p1; p2Ring[(size_t)rp] = p2;
-        rp = rp + 1 == kW ? 0 : rp + 1;
-        const double m = std::abs(sa) / std::sqrt(sp1 * sp2 + 1e-30);
-        if (m > kThr && sp1 > 1e-8) run++; else run = 0;
-        if (m < 0.3) armed = true;
-        if (armed && run >= kRunMin && n >= quietUntil) {
-            armed = false;
-            st.preambles++;
-            if (cands.size() >= 8) return;   // noise looks like STF forever; unbounded candidates blew the heap on Start
-            std::complex<double> s(0, 0);
-            for (int k = 1; k <= 64 * S; k++) { const cf32& p = prodRing[(size_t)((rp - k + 2 * kW) % kW)]; s += std::complex<double>(p.real(), p.imag()); }
-            Cand c;
-            c.fire = n;
-            c.cfo = std::arg(s) * Ri / (2 * kPi * lag);
-            cands.push_back(c);
+    // The samples at the chain rate: lag products and powers in one pass (which vectorises), then the sliding window sums and the threshold in a second
+    void detect(const cf32* y, size_t n) {
+        if (!n) return;
+        const size_t n0 = buf.size();
+        buf.insert(buf.end(), y, y + n);
+        pRe.resize(n0 + n); pIm.resize(n0 + n); q1.resize(n0 + n); q2.resize(n0 + n);
+        const size_t L = (size_t)lag;
+        for (size_t i = n0; i < n0 + n; i++) {
+            const float yr = buf[i].real(), yi = buf[i].imag();
+            const float zr = i >= L ? buf[i - L].real() : 0.f, zi = i >= L ? buf[i - L].imag() : 0.f;   // before the first lag: nothing to correlate with
+            pRe[i] = yr * zr + yi * zi; pIm[i] = yi * zr - yr * zi; q1[i] = yr * yr + yi * yi; q2[i] = zr * zr + zi * zi;
+        }
+        g += (int64_t)n;
+        const size_t W = (size_t)kW;
+        for (size_t i = n0; i < n0 + n; i++) {
+            double dr = pRe[i], di = pIm[i], d1 = q1[i], d2 = q2[i];
+            if (i >= W) { dr -= pRe[i - W]; di -= pIm[i - W]; d1 -= q1[i - W]; d2 -= q2[i - W]; }
+            sa += std::complex<double>(dr, di); sp1 += d1; sp2 += d2;
+            // |sum| / sqrt(p1 p2) > thr, written with squares: no square root per sample
+            const double a2 = std::norm(sa), pp = sp1 * sp2 + 1e-30;
+            if (a2 > (double)kThr * kThr * pp && sp1 > 1e-8) run++; else run = 0;
+            if (a2 < 0.09 * pp) armed = true;
+            const int64_t nAbs = base + (int64_t)i;
+            if (armed && run >= kRunMin && nAbs >= quietUntil) {
+                armed = false;
+                st.preambles++;
+                if (cands.size() >= 8) continue;   // noise looks like STF forever; unbounded candidates blew the heap on Start
+                std::complex<double> s(0, 0);
+                for (size_t k = 1; k <= (size_t)(64 * S) && k <= i + 1; k++) s += std::complex<double>(pRe[i + 1 - k], pIm[i + 1 - k]);
+                Cand c;
+                c.fire = nAbs;
+                c.cfo = std::arg(s) * Ri / (2 * kPi * lag);
+                cands.push_back(c);
+            }
         }
     }
 
@@ -155,34 +165,49 @@ struct HalowChain::Impl {
             if (!makeSeg(seg, s0, std::min(g, c.fire + gate + 200LL * S), c.cfo)) return 0;
             struct Hyp { int w; int64_t b1; double q; };
             std::vector<Hyp> hyps;
-            for (int w : widths) {
-                if (!(mask >> w & 1)) continue;
-                const bool w1 = w == W1;
-                const int ltag = w1 ? N + N / 4 : N, K = w1 ? 4 : 2;
-                std::vector<cf32> Lt((size_t)N);
-                ltfTime(w, Lt.data());
-                double eL = 0;
-                for (const cf32& v : Lt) eL += std::norm(v);
-                const int64_t bExp = c.fire - 150LL * S + info(w).stfSamples + (w1 ? N / 4 : N / 2);
-                double bestM = 0; int64_t bestB = -1;
-                for (int64_t b = bExp - 128LL * S; b <= bExp + 128LL * S; b++) {
-                    const int64_t r = b - s0;
-                    if (r < 0 || r + (int64_t)(K - 1) * ltag + N > (int64_t)seg.x.size()) continue;
-                    double m = 0;
-                    for (int k = 0; k < K; k++) {
-                        std::complex<float> s(0, 0);
-                        const cf32* p = seg.x.data() + r + (int64_t)k * ltag;
-                        for (int i = 0; i < N; i++) s += p[i] * std::conj(Lt[(size_t)i]);
-                        m += std::abs(s);
+            // The detector fires about 109 samples (x S) after the STF starts, give or take 6 on a strong signal: every width is searched +-40 (x S) around that;
+            // only when none of them gives a clear match (the training field of the right width scores 0.7 and up, a neighbour's 0.27) the wide window of a weak signal's
+            // jittering detection (-150 centre, +-128) is searched too.
+            for (int pass = 0; pass < 2; pass++) {
+                if (pass == 1 && (!hyps.empty() && hyps.front().q >= 0.6)) break;
+                std::vector<Hyp> found;
+                for (int w : widths) {
+                    if (!(mask >> w & 1)) continue;
+                    const bool w1 = w == W1;
+                    const int ltag = w1 ? N + N / 4 : N, K = w1 ? 4 : 2;
+                    std::vector<cf32> Lt((size_t)N);
+                    ltfTime(w, Lt.data());
+                    double eL = 0;
+                    for (const cf32& v : Lt) eL += std::norm(v);
+                    const int64_t bStf = info(w).stfSamples + (w1 ? N / 4 : N / 2);
+                    const int64_t from = pass == 0 ? c.fire - 109LL * S + bStf - 40LL * S : c.fire - 150LL * S + bStf - 128LL * S;
+                    const int64_t to = pass == 0 ? c.fire - 109LL * S + bStf + 40LL * S : c.fire - 150LL * S + bStf + 128LL * S;
+                    double bestM = 0; int64_t bestB = -1;
+                    for (int64_t b = from; b <= to; b++) {
+                        const int64_t r = b - s0;
+                        if (r < 0 || r + (int64_t)(K - 1) * ltag + N > (int64_t)seg.x.size()) continue;
+                        double m = 0;
+                        for (int k = 0; k < K; k++) {
+                            std::complex<float> s(0, 0);
+                            const cf32* p = seg.x.data() + r + (int64_t)k * ltag;
+                            for (int i = 0; i < N; i++) s += p[i] * std::conj(Lt[(size_t)i]);
+                            m += std::abs(s);
+                        }
+                        if (m > bestM) { bestM = m; bestB = b; }
                     }
-                    if (m > bestM) { bestM = m; bestB = b; }
+                    if (bestB < 0) continue;
+                    double eW = 0;
+                    const cf32* p = seg.x.data() + (bestB - s0);
+                    for (int k = 0; k < K; k++) for (int i = 0; i < N; i++) eW += std::norm(p[(int64_t)k * ltag + i]);
+                    const double q = bestM / std::sqrt(eL * eW / K + 1e-30) / K;
+                    if (q > 0.4) found.push_back({w, bestB, q});   // a weaker match is another width's training field or noise
                 }
-                if (bestB < 0) continue;
-                double eW = 0;
-                const cf32* p = seg.x.data() + (bestB - s0);
-                for (int k = 0; k < K; k++) for (int i = 0; i < N; i++) eW += std::norm(p[(int64_t)k * ltag + i]);
-                const double q = bestM / std::sqrt(eL * eW / K + 1e-30) / K;
-                if (q > 0.4) hyps.push_back({w, bestB, q});   // a weaker match is another width's training field (0.27 on a neighbour) or noise
+                for (const Hyp& f : found) {   // keep the better match per width
+                    bool have = false;
+                    for (Hyp& h : hyps) if (h.w == f.w) { have = true; if (f.q > h.q) h = f; }
+                    if (!have) hyps.push_back(f);
+                }
+                std::sort(hyps.begin(), hyps.end(), [](const Hyp& a, const Hyp& b) { return a.q > b.q; });
             }
             std::sort(hyps.begin(), hyps.end(), [](const Hyp& a, const Hyp& b) { return a.q > b.q; });
             for (const Hyp& h : hyps) { Seg work = seg; if (sigAttempt(c, work, h.w, h.b1)) break; }
@@ -331,6 +356,8 @@ struct HalowChain::Impl {
             if (drop > buf.size()) drop = buf.size();
             if (drop) {
                 buf.erase(buf.begin(), buf.begin() + (ptrdiff_t)drop);
+                pRe.erase(pRe.begin(), pRe.begin() + (ptrdiff_t)drop); pIm.erase(pIm.begin(), pIm.begin() + (ptrdiff_t)drop);
+                q1.erase(q1.begin(), q1.begin() + (ptrdiff_t)drop); q2.erase(q2.begin(), q2.begin() + (ptrdiff_t)drop);
                 base += (int64_t)drop;
             }
         }

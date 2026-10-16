@@ -33,6 +33,7 @@ struct HalowReceiver::Impl {
     int64_t nIn = 0;
     std::complex<double> lo{1, 0}, loStep{1, 0};
     int loCount = 0;
+    bool mixOff = false;                 // the signal is not at the centre: mix it there (no mixing at offset 0)
     std::vector<std::unique_ptr<HalowChain>> chains;
     std::vector<cf32> mixed;
     // counters kept across chain restarts (a retune or a new rate rebuilds the chains)
@@ -92,6 +93,7 @@ struct HalowReceiver::Impl {
     void resetState() {
         { std::lock_guard<std::mutex> lk(mu); rate = rateSet; offset = offsetSet; }
         lo = 1; loCount = 0;
+        mixOff = offset != 0;
         loStep = rate > 0 ? std::polar(1.0, -2 * math::kPi * offset / rate) : std::complex<double>(1, 0);
         nIn = 0;
         buildChains();
@@ -316,15 +318,28 @@ void HalowReceiver::feed(const cf32* x, size_t n) {
         const double toRep = m.nextReport - (double)m.nIn;
         if (toRep < (double)take) take = (size_t)std::max(1.0, std::ceil(toRep));
         m.mixed.resize(take);
+        // the signal at the centre of the capture (mixed there when the dial is off), its power, and nothing but finite numbers in it
+        float pw = 0;
         for (size_t i = 0; i < take; i++) {
-            float re = x[pos + i].real(), im = x[pos + i].imag();
-            if (!std::isfinite(re) || !std::isfinite(im)) re = im = 0;
-            m.power += (double)re * re + (double)im * im;
-            const std::complex<double> v = std::complex<double>(re, im) * m.lo;
-            m.lo *= m.loStep;
-            if (++m.loCount >= 4096) { m.lo /= std::abs(m.lo); m.loCount = 0; }
-            m.mixed[i] = cf32((float)v.real(), (float)v.imag());
+            const float re = x[pos + i].real(), im = x[pos + i].imag();
+            pw += re * re + im * im;
+            m.mixed[i] = x[pos + i];
         }
+        if (!std::isfinite(pw)) {   // a NaN or infinity in the block: those samples become zero
+            pw = 0;
+            for (size_t i = 0; i < take; i++) {
+                if (!std::isfinite(m.mixed[i].real()) || !std::isfinite(m.mixed[i].imag())) m.mixed[i] = cf32(0, 0);
+                pw += std::norm(m.mixed[i]);
+            }
+        }
+        m.power += pw;
+        if (m.mixOff)
+            for (size_t i = 0; i < take; i++) {
+                const std::complex<double> v = std::complex<double>(m.mixed[i].real(), m.mixed[i].imag()) * m.lo;
+                m.lo *= m.loStep;
+                if (++m.loCount >= 4096) { m.lo /= std::abs(m.lo); m.loCount = 0; }
+                m.mixed[i] = cf32((float)v.real(), (float)v.imag());
+            }
         for (auto& c : m.chains) c->feed(m.mixed.data(), take);
         m.nIn += (int64_t)take;
         m.nPower += (int64_t)take;

@@ -1106,3 +1106,86 @@ Documentation	Dokumentáció
 Troubleshooting	Hibaelhárítás
 Voice codecs (mbelib)	Hangkodekek (mbelib)
 Website	Weboldal
+#  Wi-Fi HaLow
+(hidden)	(rejtett)
+The radio runs at %.1f Msps: %d MHz channels need at least %.0f Msps (%.0f recommended). Pick the RATE in the top bar or another receive width.	A rádió %.1f Msps sebességgel megy: a %d MHz-es csatornákhoz legalább %.0f Msps kell (%.0f ajánlott). Válassz SEBESSÉGET a felső sávban, vagy másik vételi szélességet.
+At %.1f Msps channels up to %d MHz are read; 16 MHz channels need 16 Msps or more (20 recommended).	%.1f Msps mellett legfeljebb %d MHz-es csatornákat olvas; a 16 MHz-eshez 16 Msps vagy több kell (20 ajánlott).
+Receive only: OnAir never transmits, probes, joins or answers a network, and nothing is decrypted. The security type is what the beacon announces, shown for information. Sub-GHz Wi-Fi HaLow (802.11ah) is for low power sensors and cameras at long range; 1, 2, 4, 8 and 16 MHz channels. 1 and 2 MHz channels work from 2.4 Msps (an RTL-SDR), 4 MHz from 4 Msps, 8 MHz from 10 Msps, 16 MHz from 20 Msps.	Csak vétel: az OnAir sosem ad, nem kérdez, nem csatlakozik és nem válaszol hálózatnak, és semmit sem fejt vissza. A biztonság típusa azt mutatja, amit a beacon hirdet, csak tájékoztatásul. A sub-GHz Wi-Fi HaLow (802.11ah) alacsony fogyasztású, nagy hatótávú szenzorokhoz és kamerákhoz való; 1, 2, 4, 8 és 16 MHz-es csatornák. Az 1 és 2 MHz-es csatornák 2,4 Msps-től (RTL-SDR), a 4 MHz 4 Msps-től, a 8 MHz 10 Msps-től, a 16 MHz 20 Msps-től működnek.
+channel	csatorna
+Filter	Szűrő
+SSID, BSSID, vendor, security, country	SSID, BSSID, gyártó, biztonság, ország
+Level above	Szint e fölött
+%s only	csak %s
+Show all	Mind mutat
+Forget every network and frame heard so far	Az eddig hallott összes hálózat és keret elfelejtése
+last frame:	utolsó keret:
+stream(s)	folyam
+class	osztály
+operating width	működési szélesség
+primary	elsődleges
+country	ország
+power constraint	teljesítménykorlát
+long preamble	hosszú preambulum
+basic rate set	alap sebességkészlet
+click to show only this network's frames	kattints, hogy csak e hálózat kereteit lásd
+start the receiver to see the networks around you	indítsd el a vevőt, hogy lásd a környező hálózatokat
+Frames per second	Keret másodpercenként
+Vendor	Gyártó
+Ch	Cs.
+Width	Szélesség
+Security	Biztonság
+Beacon	Beacon
+Beacons	Beaconök
+Country	Ország
+Last seen	Utoljára látva
+What the beacon announces, for information. OnAir does not decrypt or test anything.	Amit a beacon hirdet, csak tájékoztatásul. Az OnAir nem fejt vissza és nem tesztel semmit.
+nothing heard yet	még nincs vétel
+no network passes the filter	egy hálózat sem felel meg a szűrőnek
+start the receiver to see the frames	indítsd el a vevőt a keretek megtekintéséhez
+Showing %s only	Csak %s látszik
+Copy	Másolás
+%.0f frames/s	%.0f keret/s
+Time UTC	Idő UTC
+Preamble	Preambulum
+Type	Típus
+Len	Hossz
+no frames yet	még nincs keret
+no frame passes the selection	egy keret sem felel meg a kijelölésnek
+start the receiver to see the statistics	indítsd el a vevőt a statisztika megtekintéséhez
+SIG fields read	beolvasott SIG mezők
+Radio rate needed	szükséges rádiósebesség
+%.0f Msps (%.0f recommended)	%.0f Msps (%.0f ajánlott)
+sample rate too low	túl alacsony mintavételi sebesség
+not selected	nincs kiválasztva
+by MCS	MCS szerint
+by streams	folyamok szerint
+by preamble	preambulum szerint
+read from the SIG field only	csak a SIG mezőből olvasva
+%llu several streams, %llu STBC, %llu LDPC, %llu A-MPDU, %llu null data packets	%llu több folyam, %llu STBC, %llu LDPC, %llu A-MPDU, %llu null adatcsomag
+The data field is decoded for one spatial stream with BCC coding at MCS 0 - 10. With several streams (a radio with one antenna cannot separate them), STBC, LDPC coding (parity-check matrices not included) and A-MPDU the frame is detected and counted, its contents are not read.	Az adatmezőt egy térbeli folyamra, BCC kódolással, MCS 0 - 10 között dekódolja. Több folyamnál (egy antennás rádió nem tudja szétválasztani), STBC, LDPC (a paritásmátrixok nincsenek benne) és A-MPDU esetén a keretet észleli és megszámolja, tartalmát nem olvassa.
+Auto 1 - 4 MHz	Auto 1 - 4 MHz
+Auto, all widths	Auto, minden szélesség
+Region	Régió
+The channel width of the list below: S1G channels of this width in the region. What the receiver reads is set by Receive.	Az alábbi lista csatornaszélessége: az ilyen szélességű S1G csatornák a régióban. Amit a vevő olvas, azt a Vétel állítja.
+other	egyéb
+S1G channels of the region and width: centre = start frequency + 0.5 MHz x channel number, with the operating class of the plan	A régió és a szélesség S1G csatornái: közép = kezdőfrekvencia + 0,5 MHz x csatornaszám, a terv működési osztályával
+Receive	Vétel
+Which channel widths the receiver reads. Auto 1 - 4 MHz runs the radio at 4 Msps. Auto, all widths needs 20 Msps (a HackRF, a LimeSDR ...) and reads 1 - 16 MHz.\nOne width sets the radio rate that width needs (2, 4, 5, 10 or 20 Msps) and ignores the other widths.	Mely csatornaszélességeket olvassa a vevő. Az Auto 1 - 4 MHz 4 Msps-en futtatja a rádiót. Az Auto, minden szélesség 20 Msps-t kér (HackRF, LimeSDR ...) és 1 - 16 MHz-et olvas.\nEgy szélesség beállítja a hozzá kellő rádiósebességet (2, 4, 5, 10 vagy 20 Msps) és figyelmen kívül hagyja a többit.
+scan	pásztázás
+Step through the channels of the list, listening to each for the dwell time (a radio that takes in a single channel misses what is\nsent on the others meanwhile). Off: single channel.	Végigmegy a lista csatornáin, mindegyiket a tartózkodási ideig hallgatva (az egy csatornát vevő rádió közben lemarad arról, ami a többin megy\n). Kikapcsolva: egy csatorna.
+Networks	Hálózatok
+Frames	Keretek
+Statistics	Statisztika
+state	állapot
+tuned	behangolva
+signal	jel
+tone SNR %.1f dB, offset %+.1f kHz	hang SNR %.1f dB, eltolás %+.1f kHz
+preambles	preambulumok
+%llu detected, %llu SIG fields read, %llu not readable	%llu észlelve, %llu SIG mező beolvasva, %llu olvashatatlan
+frames	keretek
+%llu good, %llu failed FCS, %llu only counted	%llu jó, %llu hibás FCS, %llu csak megszámolva
+by width	szélesség szerint
+reads	olvas
+up to %d MHz channels at this rate	legfeljebb %d MHz-es csatornák ezzel a sebességgel
+input	bemenet
+signal time	jelidő

@@ -1121,3 +1121,86 @@ Documentation	ドキュメント
 Troubleshooting	トラブルシューティング
 Voice codecs (mbelib)	音声コーデック (mbelib)
 Website	ウェブサイト
+#  Wi-Fi HaLow
+(hidden)	(非表示)
+The radio runs at %.1f Msps: %d MHz channels need at least %.0f Msps (%.0f recommended). Pick the RATE in the top bar or another receive width.	無線機は %.1f Msps で動作中です: %d MHz チャネルには少なくとも %.0f Msps が必要です(推奨 %.0f)。上部バーのレートか別の受信幅を選んでください。
+At %.1f Msps channels up to %d MHz are read; 16 MHz channels need 16 Msps or more (20 recommended).	%.1f Msps では %d MHz までのチャネルを読み取ります。16 MHz チャネルには 16 Msps 以上(推奨 20)が必要です。
+Receive only: OnAir never transmits, probes, joins or answers a network, and nothing is decrypted. The security type is what the beacon announces, shown for information. Sub-GHz Wi-Fi HaLow (802.11ah) is for low power sensors and cameras at long range; 1, 2, 4, 8 and 16 MHz channels. 1 and 2 MHz channels work from 2.4 Msps (an RTL-SDR), 4 MHz from 4 Msps, 8 MHz from 10 Msps, 16 MHz from 20 Msps.	受信専用: OnAir は送信、問い合わせ、接続、応答を一切行わず、何も復号しません。セキュリティの種類はビーコンが告知する内容を参考として表示するだけです。サブ GHz の Wi-Fi HaLow (802.11ah) は低消費電力のセンサーやカメラを長距離でつなぎます。1、2、4、8、16 MHz チャネル。1・2 MHz は 2.4 Msps(RTL-SDR)から、4 MHz は 4 Msps から、8 MHz は 10 Msps から、16 MHz は 20 Msps から動作します。
+channel	チャネル
+Filter	フィルタ
+SSID, BSSID, vendor, security, country	SSID、BSSID、ベンダー、セキュリティ、国
+Level above	次のレベル以上
+%s only	%s のみ
+Show all	すべて表示
+Forget every network and frame heard so far	これまでに受信したネットワークとフレームをすべて消去
+last frame:	最後のフレーム:
+stream(s)	ストリーム
+class	クラス
+operating width	動作幅
+primary	プライマリ
+country	国
+power constraint	電力制限
+long preamble	ロングプリアンブル
+basic rate set	基本レートセット
+click to show only this network's frames	クリックでこのネットワークのフレームだけを表示
+start the receiver to see the networks around you	受信を開始すると周囲のネットワークが表示されます
+Frames per second	毎秒フレーム数
+Vendor	ベンダー
+Ch	Ch
+Width	幅
+Security	セキュリティ
+Beacon	ビーコン
+Beacons	ビーコン数
+Country	国
+Last seen	最終受信
+What the beacon announces, for information. OnAir does not decrypt or test anything.	ビーコンが告知する内容(参考)。OnAir は何も復号・検証しません。
+nothing heard yet	まだ何も受信していません
+no network passes the filter	フィルタに合うネットワークはありません
+start the receiver to see the frames	受信を開始するとフレームが表示されます
+Showing %s only	%s のみ表示中
+Copy	コピー
+%.0f frames/s	%.0f フレーム/秒
+Time UTC	時刻 UTC
+Preamble	プリアンブル
+Type	種類
+Len	長さ
+no frames yet	まだフレームはありません
+no frame passes the selection	選択に合うフレームはありません
+start the receiver to see the statistics	受信を開始すると統計が表示されます
+SIG fields read	読み取った SIG フィールド
+Radio rate needed	必要な無線レート
+%.0f Msps (%.0f recommended)	%.0f Msps(推奨 %.0f)
+sample rate too low	サンプルレートが低すぎます
+not selected	未選択
+by MCS	MCS 別
+by streams	ストリーム別
+by preamble	プリアンブル別
+read from the SIG field only	SIG フィールドのみ読み取り
+%llu several streams, %llu STBC, %llu LDPC, %llu A-MPDU, %llu null data packets	複数ストリーム %llu、STBC %llu、LDPC %llu、A-MPDU %llu、ヌルデータパケット %llu
+The data field is decoded for one spatial stream with BCC coding at MCS 0 - 10. With several streams (a radio with one antenna cannot separate them), STBC, LDPC coding (parity-check matrices not included) and A-MPDU the frame is detected and counted, its contents are not read.	データフィールドは BCC 符号化の 1 空間ストリーム(MCS 0 - 10)で復号します。複数ストリーム(アンテナ 1 本の無線機では分離できません)、STBC、LDPC(パリティ検査行列は未搭載)、A-MPDU のフレームは検出して数えますが、内容は読みません。
+Auto 1 - 4 MHz	自動 1 - 4 MHz
+Auto, all widths	自動(全幅)
+Region	地域
+The channel width of the list below: S1G channels of this width in the region. What the receiver reads is set by Receive.	下のリストのチャネル幅: この地域のこの幅の S1G チャネル。受信が読む幅は「受信」で設定します。
+other	その他
+S1G channels of the region and width: centre = start frequency + 0.5 MHz x channel number, with the operating class of the plan	地域と幅の S1G チャネル: 中心 = 開始周波数 + 0.5 MHz × チャネル番号、プランの動作クラス付き
+Receive	受信
+Which channel widths the receiver reads. Auto 1 - 4 MHz runs the radio at 4 Msps. Auto, all widths needs 20 Msps (a HackRF, a LimeSDR ...) and reads 1 - 16 MHz.\nOne width sets the radio rate that width needs (2, 4, 5, 10 or 20 Msps) and ignores the other widths.	受信機が読むチャネル幅。自動 1 - 4 MHz は無線機を 4 Msps で動かします。自動(全幅)は 20 Msps(HackRF、LimeSDR など)が必要で 1 - 16 MHz を読みます。\n幅を 1 つ選ぶとその幅に必要な無線レート(2、4、5、10、20 Msps)に設定し、他の幅は無視します。
+scan	スキャン
+Step through the channels of the list, listening to each for the dwell time (a radio that takes in a single channel misses what is\nsent on the others meanwhile). Off: single channel.	リストのチャネルを滞在時間ずつ順に聴きます(1 チャネルしか取り込めない無線機は、その間に他のチャネルで送られるものを逃します)。\nオフ: 1 チャネル。
+Networks	ネットワーク
+Frames	フレーム
+Statistics	統計
+state	状態
+tuned	同調
+signal	信号
+tone SNR %.1f dB, offset %+.1f kHz	トーン SNR %.1f dB、オフセット %+.1f kHz
+preambles	プリアンブル
+%llu detected, %llu SIG fields read, %llu not readable	検出 %llu、SIG フィールド読み取り %llu、読み取り不可 %llu
+frames	フレーム
+%llu good, %llu failed FCS, %llu only counted	正常 %llu、FCS 不良 %llu、カウントのみ %llu
+by width	幅別
+reads	読み取り
+up to %d MHz channels at this rate	このレートで %d MHz までのチャネル
+input	入力
+signal time	信号時間

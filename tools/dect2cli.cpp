@@ -388,8 +388,8 @@ int main(int argc, char** argv) {
             }
             if (t.standard == 71)   // Wi-Fi HaLow networks: the table
                 for (const auto& n : t.halow.nets)
-                    printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d %-9s %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
-                           n.seenWidthMhz, n.mcs, n.security.c_str(), n.rssi, n.vendor.c_str());
+                    printf("  halow: %s %-32s ch %3d %6.1f MHz %d MHz MCS %d x%d %-9s %-9s SNR %3.0f dB %6.1f dBFS %s\n", n.bssid.c_str(), n.hasSsid ? n.ssid.c_str() : n.hidden ? "(hidden)" : "(compressed SSID)", n.ccf, n.freqMhz,
+                           n.seenWidthMhz, n.mcs, n.nss, n.security.c_str(), n.pre == 0 ? "S1G_SHORT" : n.pre == 1 ? "S1G_LONG" : "S1G_1M", n.snrDb, n.rssi, n.vendor.c_str());
             if (t.standard == 85) {   // Wi-SUN FAN: frames by type, then the newest frames
                 printf("  wisun types:");
                 for (int k = 0; k < kWsUttTypes; k++) if (t.wisun.perUtt[k]) printf(" %s %llu", wisun::uttShort(k), (unsigned long long)t.wisun.perUtt[k]);

@@ -63,6 +63,17 @@ int main() {
               (unsigned long long)t.perWidth[1], (unsigned long long)t.perWidth[2], (unsigned long long)t.perWidth[3], (unsigned long long)t.perWidth[4]);
         CHECK(findNet(t, "Farm-Sensors") && !findNet(t, "HaLow-Home") && !findNet(t, "OpenCam"), "manual width networks");
     }
+    {   // the radio rates a wide channel can come at (the minimum, the recommended one, a higher one), MCS 9, and the signal off the centre of the capture
+        struct R { int w; double rate; double dial; };
+        for (const R& k : {R{W8, 8e6, 0}, R{W8, 10e6, 0}, R{W8, 12.5e6, 0}, R{W8, 16e6, 0}, R{W8, 20e6, -5e6}, R{W16, 16e6, 0}, R{W16, 20e6, 0}, R{W16, 25e6, 0}, R{W16, 20e6, 1.5e6}, R{W4, 5e6, 0}, R{W4, 8e6, -2e6}, R{W2, 2e6, 0}, R{W2, 2.4e6, 0}, R{W1, 2.4e6, 0}, R{W1, 10e6, 3e6}}) {
+            HalowGenFrame f;
+            f.psdu = payloadFrame(60); f.width = k.w; f.mcs = k.w == W2 ? 4 : 9; if (k.w == W1 || k.w == W2) f.mcs = 4;
+            Impair im = sets()[0];
+            im.dial = k.dial;
+            const Result r = run(f, im, k.rate, 10);
+            CHECK(r.ok >= 9 && r.bad == 0, "%d MHz at %.1f Msps, dial %+.1f MHz: %llu good, %llu bad", 1 << k.w, k.rate / 1e6, k.dial / 1e6, (unsigned long long)r.ok, (unsigned long long)r.bad);
+        }
+    }
     {   // PPDUs that are reported from the SIG field only, at every width
         for (int w = 0; w < kNumWidths; w++) {
             struct K { const char* name; int nss; bool stbc, ldpc, agg, ndp; };

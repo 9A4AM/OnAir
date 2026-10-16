@@ -718,6 +718,8 @@ void refreshDevices(App& a);
 void netRadioWindow(App& a);   // the "Add network radio" window (toolbar.cpp)
 void hamlibRigWindow(App& a);  // the "Add Hamlib rig" window (toolbar.cpp)
 void applyBandwidth(App& a);
+double halowWantedRateHz();       // Wi-Fi HaLow (halow/halow_ui.cpp): the radio rate the chosen receive width needs (4 / 20 Msps for Auto, else the width's own)
+double halowWantedWidthMhz();     // and the widest channel it means, for the spectrum's channel marker
 // The sample rate chosen per mode and per radio (prefs "rate.<mode id>.<radioKeyOf>", in Hz; absent or 0 = Auto, the mode's own rate)
 std::string rateModeId(const App& a);
 std::string rateContext(const App& a);
