@@ -715,8 +715,8 @@ int subIndexOf(const char* id);                // 1 .. kNumSubModes, 0 when not 
 int modeSlot(const App& a);                    // index of famFreq / famGain for the current entry
 int engineStd(const App& a);
 void refreshDevices(App& a);
-void netRadioWindow(App& a);   // the "Add network radio" window (toolbar.cpp)
-void hamlibRigWindow(App& a);  // the "Add Hamlib rig" window (toolbar.cpp)
+void netRadioWindow(App& a);   // the "Add network radio" window (toolbar_rig.cpp)
+void hamlibRigWindow(App& a);  // the "Add Hamlib rig" window (toolbar_rig.cpp)
 void applyBandwidth(App& a);
 // The sample rate chosen per mode and per radio (prefs "rate.<mode id>.<radioKeyOf>", in Hz; absent or 0 = Auto, the mode's own rate)
 std::string rateModeId(const App& a);
@@ -727,7 +727,7 @@ double modeMinSampleRate(const App& a);
 void sampleRateControl(App& a);
 std::string biasContext(const App& a);   // the prefs key of the antenna power for this mode on this radio ("" = none)
 void loadBiasTee(App& a);
-void saveBiasTee(const App& a);   // toolbar.cpp: the "Sample rate" control under the frequency
+void saveBiasTee(const App& a);   // toolbar_source.cpp: the "Sample rate" control under the frequency
 // The radio's own settings (DeviceInfo::settings, TuneSettings::radio), saved per radio: the key a radio is saved under, loading the
 // selected radio's values into a.tune.radio when another radio was chosen, saving them after a change
 std::string radioKeyOf(const DeviceInfo& d);
@@ -797,11 +797,11 @@ bool resultsClearButton(const char* id);
 void scanDbTick(App& a);   // scan_db_ui.cpp: asks to share a finished scan
 void tuneToChannel(App& a, const SavedChannel& c);
 void followBandwidth(App& a);
-void setDvbBandwidth(App& a, int idx);   // toolbar.cpp: the DVB-T2 / DVB-T width kBw[idx] (manual), or idx < 0 for Automatic; a running receiver follows at once
+void setDvbBandwidth(App& a, int idx);   // toolbar_source.cpp: the DVB-T2 / DVB-T width kBw[idx] (manual), or idx < 0 for Automatic; a running receiver follows at once
 void setIsdbtBandwidth(App& a, int mhz);  // isdbt_ui.cpp: 6, 7, 8 or 0 (automatic); a running receiver starts again with it
 const char* isdbtWidthLabel(int mhz);      // isdbt_ui.cpp: "6 MHz", "8 MHz (Maldives)", "Automatic"
 void setDtmbBandwidth(App& a, int mhz);  // dtmb_ui.cpp: 8 or 6 MHz; a running receiver starts again with it
-// toolbar.cpp
+// the top bar: toolbar.cpp, toolbar_source.cpp, toolbar_rig.cpp, statusbar.cpp, mode_select.cpp
 void toolbar(App& a);
 void sourceOptions(App& a);
 bool sourceOptionsOpen(const App& a);   // synthetic, a file not playing, or a sound card
@@ -809,12 +809,14 @@ void statusBar(App& a);
 void gainControl(App& a);
 void standardSwitch(App& a);
 extern float gSwitchWidth;
-// The receiver modes (toolbar.cpp). Adding a mode is one row there.
+// The receiver modes (mode_table.cpp). Adding a mode is one row there.
 // subId: one protocol of a shared receiver (dect2::subModes()), a mode of its own with its own settings, decoder and views
 struct ModeDef { int family; const char* name; int group; ImU32 col; const char* blurb; const char* tip; const char* sub; ImVec4 accent; const char* subId = nullptr; const char* keys = nullptr; };
 extern const ModeDef kModes[];
 extern const int kNumModes;
-constexpr int kNumGroups = 14;   // the headings of the mode lists (toolbar.cpp); UI only, never saved by number
+struct ModeRange { const ModeDef* b; const ModeDef* e; const ModeDef* begin() const { return b; } const ModeDef* end() const { return e; } };
+inline ModeRange allModes() { return {kModes, kModes + kNumModes}; }   // for (const auto& m : allModes())
+constexpr int kNumGroups = 14;   // the headings of the mode lists (mode_table.cpp); UI only, never saved by number
 extern const char* const kGroupNames[kNumGroups];
 extern const ImU32 kGroupCols[kNumGroups];
 // The screens of a mode added after FM (family 6 and up). Each mode has one in its app/<mode>_ui.cpp and modeui.cpp lists them; the shell calls whichever
@@ -849,7 +851,7 @@ void secondModeTabs(App& a);                 // in mainTabs(): the tab "Second: 
 void secondModeControl(App& a, bool vertical);   // the tuner panel: the button and its pop-up (pick a mode and its frequency)
 void selectMode(App& a, int family, const char* subId = nullptr);
 bool modeSelected(const App& a, const ModeDef& m);    // the row of the current mode
-const char* modeSearchBox();                          // a search box at the top of a mode drop-down (toolbar.cpp); returns the query
+const char* modeSearchBox();                          // a search box at the top of a mode drop-down (mode_select.cpp); returns the query
 bool modeMatches(const ModeDef& m, const char* query); // the search box: name, subtitle, description and keywords
 void startReceiver(App& a);     // what the Start button does
 enum TbPart { TbSource = 1, TbFreq = 2, TbTuner = 4, TbGain = 8, TbDecoder = 16, TbAll = 31 };

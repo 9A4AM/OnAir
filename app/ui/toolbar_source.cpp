@@ -1,0 +1,371 @@
+// The source side of the top bar: starting the receiver, the sample-rate control, the DVB bandwidth,
+// the ADC-bits table and the options of the selected source (test signal, IQ file, sound card, Hamlib rig).
+// Split from toolbar.cpp; shared declarations are in app.h and toolbar_internal.h.
+#include "../app.h"
+#include "ui_common.h"
+#include "dect2/engine/rate_choice.h"
+#include "dect2/source/antenna_ports.h"
+#include "dect2/hdr/hdr_rx.h"
+#include "dect2/source/hamlib_link.h"
+#include "dect2/source/iq_file.h"
+#include <algorithm>
+#include <cctype>
+#include <memory>
+#include <thread>
+#include "toolbar_internal.h"
+
+// The converter resolution at the rate in use, for the ADC level advice and the AGC (gain.h): the 8-bit HackRF and RTL-SDR, the 12-bit
+// Airspy, LimeSDR, PlutoSDR, bladeRF, USRP and RFNM, the 14-bit Fobos SDR, the 16-bit HF+ path; the SDRplay ADC gives up bits as its rate rises (API specification:
+// 14 bits to 6.048 MHz, 12 to 8.064, 10 to 9.216, 8 above). Unknown radios, files and the test signal count as 8 bits (as before).
+int adcBitsFor(const DeviceInfo& d, double rateHz) {
+    if (d.kind != DeviceInfo::Native) return 8;
+    if (d.board == "sdrplay") return rateHz <= 6.048e6 ? 14 : rateHz <= 8.064e6 ? 12 : rateHz <= 9.216e6 ? 10 : 8;
+    if (d.board == "airspy" || d.board == "lime" || d.board == "pluto" || d.board == "bladerf" || d.board == "usrp" || d.board == "rfnm") return 12;
+    if (d.board == "airspyhf") return 16;
+    if (d.board == "fobos") return 14;   // (the driver scales its samples to full scale 1.0)
+    if (d.board == "rx888") return 16;   // the RX888 MkII's converter (the driver scales to full scale 1.0)
+    return 8;   // rtlsdr and anything new
+}
+
+// The selected radio's sample rate - the one in use while it runs, else the most it lists - when it is below what the mode's receiver works
+// with (minSampleRateFor, the limit the engine logs at start, which only reached the log). Empty when the rate is fine or not known: a HackRF
+// gives every rate the modes ask for, a SoapySDR radio lists its rates once it has been opened.
+// A .sigmf-meta / .sigmf-data / two-channel .wav says its own rate, centre frequency, sample format and where the samples start.
+static void applyIqFileInfo(App& a, const std::string& path) {
+    a.file.offsetBytes = 0; a.file.endBytes = 0; a.file.bigEndian = false;
+    IqFileInfo info; std::string err;
+    if (!probeIqFile(path, info, err)) { if (!err.empty()) { a.engine.log(err); a.file.path.clear(); } return; }
+    a.file.path = info.dataPath; a.file.format = info.format; a.file.bigEndian = info.bigEndian;
+    a.file.offsetBytes = info.offsetBytes; a.file.endBytes = info.endBytes;
+    if (info.sampleRate > 0) a.file.sampleRate = info.sampleRate;
+    if (info.centerHz > 0) a.freqMhz = info.centerHz / 1e6;
+    a.engine.log("IQ file: " + std::to_string(info.sampleRate / 1e6) + " Msps, " + std::to_string(info.centerHz / 1e6) + " MHz" + (info.description.empty() ? "" : ", " + info.description));
+}
+
+std::string rateWarning(const App& a) {
+    const DeviceInfo& d = a.devices[a.devIdx];
+    if (!d.isRadio()) return "";
+    const bool run = a.engine.running();
+    const double rate = run ? a.engine.sampleRate() : d.isGeneric() ? d.maxRateHz : 0;
+    const double bw = a.family == 4 ? (a.isdbtBwMhz ? a.isdbtBwMhz : 6) : run && a.family == 0 && a.engine.activeBandwidth() > 0 ? a.engine.activeBandwidth() : kBw[a.bwIdx].mhz;
+    double need = minSampleRateFor(engineStd(a), bw);
+    if (engineStd(a) == 23) need = hdrMinSampleRate(a.freqMhz);   // HD Radio AM works from 200 ksps
+    if (a.family == 8 && (a.atvFm || a.atvWide) && !a.atvNbtv) need = std::max(need, 16e6);   // FM video: a link is about 17 MHz wide; system E 14 MHz
+    // a PlutoSDR on its USB cable run above what the cable carries (linkRateFor): why it may break up, and the fix
+    if (run && linkCapHz(d, a.tune) > 0 && rate >= need - 1) return linkNote(d, a.tune, rate);
+    if (rate <= 0 || need <= 0 || rate >= need - 1) return "";
+    char what[64];
+    if (a.family == 0) snprintf(what, sizeof what, "the %g MHz DVB-T2 / DVB-T channel", bw);
+    else { snprintf(what, sizeof what, "this mode"); for (int i = 0; i < kNumModes; i++) if (modeSelected(a, kModes[i])) snprintf(what, sizeof what, "%s", kModes[i].name); }
+    char b[360];
+    snprintf(b, sizeof b, "This radio %s %.3g Msps; %s needs at least %.3g Msps, so %s. %s", run ? "runs at" : "gives at most", rate / 1e6, what, need / 1e6,
+             a.family == 0 ? "only the spectrum is shown" : "the receiver cannot work with it",
+             a.family == 0 && bw > 1.7 ? "Choose a narrower channel (for example 1.7 MHz DVB-T2-Lite) or a faster radio." : "It needs a faster radio.");
+    return b;
+}
+
+void startReceiver(App& a) {
+    if (std::string why; receiverModeBusy(a, &why)) { a.engine.log(why); return; }   // two receivers in one mode share screen state (docs/multi-sdr.md)
+    // a running scan has the radio: the receiver opening it too would take it away from the scan (SDRplay) or fail
+    if (a.scanner.progress().running && a.devices[a.devIdx].isRadio()) { a.engine.log("a scan is using the radio: stop the scan first"); return; }
+    const bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
+    a.tune.centerHz = a.freqMhz * 1e6;
+    applyBandwidth(a);
+    if (isFile && a.file.offsetBytes == 0) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate (a SigMF / WAV file says it itself)
+    if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
+    else {
+        if (a.devices[a.devIdx].isAudio() || a.devices[a.devIdx].kind == DeviceInfo::Hamlib) a.tune.radio["audio_iq"] = std::to_string(a.audioIqMode);
+        a.engine.setComputeMode(a.computeMode); a.engine.setStandard(engineStd(a));
+        a.engine.start(a.devices[a.devIdx], a.tune, a.file);
+        savePrefs(a);
+        a.smooth.clear(); a.peak.clear(); a.lastSeq = 0;
+    }
+}
+
+// A channel width picked while the receiver runs: the receiver follows it, as followBandwidth() does,
+// instead of the engine staying on the width it had found while the toolbar shows the new one
+static void bandwidthNow(App& a) {
+    const double oldRate = a.tune.sampleRate;
+    a.tune.centerHz = a.freqMhz * 1e6;
+    applyBandwidth(a);
+    a.engine.setBandwidthAuto(false);
+    if (a.devices[a.devIdx].isRadio() && a.tune.sampleRate != oldRate) startReceiver(a);   // 8 vs 10 Msps: the radio is opened again
+    else a.engine.setBandwidth(a.tune.bandwidthMhz);
+}
+
+// ---- the sample rate of the radio for this mode: Auto (the mode's own rate), one of the rates that suit the radio and the mode, or a typed one
+static std::string mspsText(double hz) {
+    char b[32];
+    snprintf(b, sizeof b, "%.3f", hz / 1e6);
+    std::string s = b;
+    while (!s.empty() && s.back() == '0') s.pop_back();
+    if (!s.empty() && s.back() == '.') s.pop_back();
+    return s + " Msps";
+}
+static void chooseSampleRate(App& a, double hz) {
+    saveSampleRate(a, hz);
+    const bool restart = a.engine.running() && a.devices[a.devIdx].isRadio();
+    const double old = a.tune.sampleRate;
+    a.tune.centerHz = a.freqMhz * 1e6;
+    applyBandwidth(a);
+    if (restart && a.tune.sampleRate != old) {   // the radio is opened again at the new rate, as after a change of mode
+        a.engine.log("restarting at " + mspsText(a.tune.sampleRate));
+        startReceiver(a);
+        a.mpd.reset(); a.quality.reset();
+    }
+}
+void sampleRateControl(App& a) {
+    const DeviceInfo& d = a.devices[a.devIdx];
+    const bool run = a.engine.running();
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("%s", tr("RATE"));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Sample rate of the radio for this mode"));
+    ImGui::SameLine(0, 5 * gUi);
+    if (d.kind == DeviceInfo::File) {   // the file's own rate (set in the source options); nothing to choose
+        ImGui::TextUnformatted((mspsText(run ? a.engine.radioRate() : a.file.sampleRate) + " (file)").c_str());
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A recording plays at the rate it was made at: set it with the file."));
+        return;
+    }
+    if (d.isAudio() || d.kind == DeviceInfo::Hamlib) {
+        const double hz = run ? a.engine.radioRate() : 48000.0;
+        char b[64];
+        snprintf(b, sizeof b, "%.0f Hz (%s)", hz, d.kind == DeviceInfo::Hamlib ? tr("Hamlib + audio") : tr("sound card"));
+        ImGui::TextUnformatted(b);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", d.kind == DeviceInfo::Hamlib
+            ? tr("Hamlib follows the rig's frequency and mode both ways; IQ or audio is captured at the sound card's rate.")
+            : tr("The capture rate of the sound card. The engine runs at this rate; there is no radio to tune."));
+        return;
+    }
+    if (!run && a.rateCtx != rateContext(a)) applyBandwidth(a);   // another mode, radio or channel width: its own Auto and its own choice
+    // one width wherever the box lands: sized from the space left on the line, it was wider on a line of its own, so in a wrapping
+    // row it moved between the lines every frame
+    const float w = std::min(150.f * gUi, std::max(110.f * gUi, ImGui::GetWindowWidth() - 2 * ImGui::GetStyle().WindowPadding.x));
+    ImGui::SetNextItemWidth(w);
+    const bool radio = d.isRadio();
+    const RateLimits L = rateLimitsOf(d);
+    const double need = modeMinSampleRate(a);
+    const std::string preview = a.chosenRateHz > 0 ? mspsText(a.chosenRateHz) : std::string(tr("Auto")) + " (" + mspsText(a.autoRateHz > 0 ? a.autoRateHz : a.tune.sampleRate) + ")";
+    bool openManual = false;
+    ImGui::BeginDisabled(!radio || a.scanner.progress().running);
+    if (ImGui::BeginCombo("##srate", preview.c_str())) {
+        if (ImGui::Selectable((std::string(tr("Auto")) + " (" + mspsText(a.autoRateHz) + ")").c_str(), a.chosenRateHz == 0) && a.chosenRateHz != 0) chooseSampleRate(a, 0);
+        for (const RateEntry& e : rateEntries(L, need)) {
+            std::string label = mspsText(e.getHz);
+            if (std::fabs(e.askHz - e.getHz) > 1) label += " (for " + mspsText(e.askHz) + ")";
+            const bool sel = a.chosenRateHz > 0 && std::fabs(deliveredRate(L, a.chosenRateHz) - e.getHz) <= 1;
+            if (ImGui::Selectable(label.c_str(), sel) && !sel) chooseSampleRate(a, e.getHz);
+        }
+        ImGui::Separator();
+        if (ImGui::Selectable(tr("Manual…"))) openManual = true;
+        ImGui::EndCombo();
+    }
+    ImGui::EndDisabled();
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+        ImGui::BeginTooltip(); ImGui::PushTextWrapPos(420 * gUi);
+        if (!radio) ImGui::TextWrapped(tr("The test signal is made at the mode's own rate (%s)."), mspsText(a.tune.sampleRate).c_str());
+        else if (a.scanner.progress().running) ImGui::TextWrapped("%s", tr("A scan is using the radio and sets its own rate."));
+        else {
+            ImGui::TextWrapped("%s", tr("Sample rate of the radio for this mode, remembered for this radio. Auto is the mode's own rate."));
+            if (need > 0) ImGui::TextWrapped(tr("This mode needs at least %s."), mspsText(need).c_str());
+            if (L.minHz > 0 || L.maxHz > 0) ImGui::TextWrapped(tr("This radio: %s to %s."), L.minHz > 0 ? mspsText(L.minHz).c_str() : "?", L.maxHz > 0 ? mspsText(L.maxHz).c_str() : "?");
+            ImGui::TextWrapped("%s", tr("A higher rate shows more spectrum but needs more USB bandwidth and processor time: when the status bar reports samples lost on the radio side, choose a lower rate."));
+            if (run && a.engine.radioRate() > 0) ImGui::TextWrapped(tr("The radio runs at %s."), mspsText(a.engine.radioRate()).c_str());
+        }
+        ImGui::PopTextWrapPos(); ImGui::EndTooltip();
+    }
+    if (run && radio && a.tune.sampleRate > 0 && std::fabs(a.engine.sampleRate() - a.tune.sampleRate) > a.tune.sampleRate * 1e-3) {   // the radio rounded it
+        ImGui::SameLine(0, 6 * gUi);
+        ImGui::TextColored(ImVec4(0.9f, 0.7f, 0.28f, 1), tr("runs at %s"), mspsText(a.engine.sampleRate()).c_str());
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("The radio gave %s instead of the %s asked for."), mspsText(a.engine.sampleRate()).c_str(), mspsText(a.tune.sampleRate).c_str());
+    }
+    static double typed = 0;
+    static std::string why;
+    if (openManual) { typed = (a.chosenRateHz > 0 ? a.chosenRateHz : a.tune.sampleRate) / 1e6; why.clear(); ImGui::OpenPopup("##srateman"); }
+    if (ImGui::BeginPopup("##srateman")) {
+        ImGui::TextDisabled("%s", tr("Sample rate (Msps)"));
+        ImGui::SetNextItemWidth(120 * gUi);
+        if (openManual) ImGui::SetKeyboardFocusHere();
+        ImGui::InputDouble("##sratev", &typed, 0, 0, "%.3f");   // InputScalar does not take EnterReturnsTrue (an assertion in Windows builds)
+        const bool enter = ImGui::IsItemDeactivatedAfterEdit() && (ImGui::IsKeyPressed(ImGuiKey_Enter, false) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false));
+        ImGui::SameLine();
+        if (ImGui::Button(tr("Use")) || enter) {
+            const RateCheck c = checkManualRate(L, need, std::round(typed * 1e3) * 1e3);
+            if (c.ok) { chooseSampleRate(a, std::round(typed * 1e3) * 1e3); ImGui::CloseCurrentPopup(); }
+            else why = c.why;
+        }
+        if (!why.empty()) ImGui::TextColored(ImVec4(0.95f, 0.45f, 0.35f, 1), "%s", why.c_str());
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+}
+
+void setDvbBandwidth(App& a, int idx) {
+    if (idx < 0) a.bwAuto = true;   // followBandwidth() hands the detection back to the engine
+    else { a.bwIdx = idx; a.bwAuto = false; if (a.engine.running()) bandwidthNow(a); }
+    savePrefs(a);
+}
+
+bool sourceOptionsOpen(const App& a) {
+    if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return false;
+    const DeviceInfo::Kind k = a.devices[a.devIdx].kind;
+    return k == DeviceInfo::Synthetic || (k == DeviceInfo::File && !a.engine.running()) || k == DeviceInfo::Audio || k == DeviceInfo::Hamlib;
+}
+
+// the synthetic generator: noise, offset and signal-shape controls (per mode)
+static void synthSourceOptions(App& a, bool running) {
+    SynthConfig& sc = a.tune.synth;
+    bool ch = false;
+    ImGui::TextDisabled("%s", tr("synthetic"));
+    flowNext();   // the options wrap onto more lines in a narrow window
+    if (const ModeUi* mu = modeUi(a.family)) {   // a mode added after FM: its own test signal and options
+        bool c2 = false;
+        if (mu->synth) mu->synth(a, c2);
+        else {   // the mode has no options of its own: noise and carrier offset, which every test signal follows
+            ImGui::TextDisabled(tr("%s test signal"), curSub(a) ? curSub(a)->name : modeTuning(a.family + 2)->name);
+            flowNext(14 * gUi); ImGui::TextDisabled("%s", tr("SNR")); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi);
+            float snr = (float)sc.snrDb; if (ImGui::SliderFloat("##ssnr", &snr, 5, 45, "%.0f dB")) { sc.snrDb = snr; c2 = true; }
+            flowNext(); ImGui::TextDisabled("%s", tr("CFO")); ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi);
+            float cfo = (float)(sc.cfoHz / 1e3); if (ImGui::SliderFloat("##scfo", &cfo, -20, 20, "%.2f kHz")) { sc.cfoHz = cfo * 1e3; c2 = true; }
+        }
+        flowEnd();
+        if (c2 && running) a.engine.retune(a.tune);
+        return;
+    }
+    if (a.family >= 2 && a.family <= 5) {   // DAB, ATSC 3.0, ISDB-T and FM: fixed signals, with noise and carrier offset to play with
+        ImGui::TextDisabled(a.family == 2 ? "DAB+ ensemble OnAir DAB, 4 services (tones and a melody)" : a.family == 3 ? "ATSC 3.0 test card, QPSK 8/15" : a.family == 4 ? "ISDB-T mode 3, test programme" : "FM stereo with RDS, 1 kHz left and 3 kHz right");
+        flowNext(14 * gUi); ImGui::TextDisabled("%s", tr("SNR")); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi);
+        float snr = (float)sc.snrDb; if (ImGui::SliderFloat("##ssnr", &snr, 5, 45, "%.0f dB")) { sc.snrDb = snr; ch = true; }
+        flowNext(); ImGui::TextDisabled("%s", tr("CFO")); ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi);
+        float cfo = (float)(sc.cfoHz / 1e3); if (ImGui::SliderFloat("##scfo", &cfo, -20, 20, "%.2f kHz")) { sc.cfoHz = cfo * 1e3; ch = true; }
+        flowEnd();
+        if (ch && running) a.engine.retune(a.tune);
+        return;
+    }
+    if (a.family == 0) { if (ImGui::Checkbox(tr("DVB-T"), &sc.dvbt)) ch = true; flowNext(); }
+    if (a.family == 1) {
+        ImGui::TextDisabled("%s", tr("ATSC 8-VSB, 6 MHz"));
+    } else if (a.family == 2) {
+        ImGui::TextDisabled("%s", tr("DAB ensemble, transmission mode I"));
+    } else if (sc.dvbt) {
+        static const char* fftN[] = {"2K", "8K"}; static const char* gis[] = {"1/32", "1/16", "1/8", "1/4"};
+        static const char* mods[] = {"QPSK", "16-QAM", "64-QAM"}; static const char* rates[] = {"1/2", "2/3", "3/4", "5/6", "7/8"};
+        ImGui::SetNextItemWidth(60 * gUi);
+        if (ImGui::BeginCombo("##tfft", fftN[sc.dvbtMode & 1])) { for (int i = 0; i < 2; i++) if (ImGui::Selectable(fftN[i], i == sc.dvbtMode)) { sc.dvbtMode = i; ch = true; } ImGui::EndCombo(); }
+        flowNext(); ImGui::TextDisabled("%s", tr("GI")); ImGui::SameLine(); ImGui::SetNextItemWidth(66 * gUi);
+        if (ImGui::BeginCombo("##tgi", gis[sc.dvbtGuard & 3])) { for (int i = 0; i < 4; i++) if (ImGui::Selectable(gis[i], i == sc.dvbtGuard)) { sc.dvbtGuard = i; ch = true; } ImGui::EndCombo(); }
+        flowNext(); ImGui::SetNextItemWidth(84 * gUi);
+        if (ImGui::BeginCombo("##tmod", mods[sc.dvbtMod % 3])) { for (int i = 0; i < 3; i++) if (ImGui::Selectable(mods[i], i == sc.dvbtMod)) { sc.dvbtMod = i; ch = true; } ImGui::EndCombo(); }
+        flowNext(); ImGui::SetNextItemWidth(60 * gUi);
+        if (ImGui::BeginCombo("##trate", rates[sc.dvbtRate % 5])) { for (int i = 0; i < 5; i++) if (ImGui::Selectable(rates[i], i == sc.dvbtRate)) { sc.dvbtRate = i; ch = true; } ImGui::EndCombo(); }
+    } else {
+    static const struct { const char* n; int code; } fm[] = {{"2K", 0}, {"8K", 1}, {"4K", 2}, {"1K", 3}, {"16K", 4}, {"32K", 5}};
+    const char* cur = "?";
+    for (auto& f : fm) if (f.code == sc.tx.s2field1) cur = f.n;
+    ImGui::SetNextItemWidth(60 * gUi);
+    if (ImGui::BeginCombo("##sfft", cur)) {
+        for (auto& f : fm) if (ImGui::Selectable(f.n, f.code == sc.tx.s2field1)) { sc.tx.s2field1 = f.code; ch = true; }
+        ImGui::EndCombo();
+    }
+    flowNext(); ImGui::TextDisabled("%s", tr("GI")); ImGui::SameLine();
+    ImGui::SetNextItemWidth(70 * gUi);
+    if (ImGui::BeginCombo("##sgi", guardName(sc.tx.giIdx))) {
+        for (int g = 0; g < kNumGi; g++) if (ImGui::Selectable(guardName(g), g == sc.tx.giIdx)) { sc.tx.giIdx = g; ch = true; }
+        ImGui::EndCombo();
+    }
+    flowNext();
+    if (ImGui::Checkbox(tr("ext"), &sc.tx.ext)) ch = true;
+    flowNext(); ImGui::SetNextItemWidth(62 * gUi);
+    {
+        char ppl[8]; snprintf(ppl, sizeof ppl, "PP%d", sc.tx.pp + 1);
+        if (ImGui::BeginCombo("##spp", ppl)) {
+            for (int q = 0; q < 8; q++) { snprintf(ppl, sizeof ppl, "PP%d", q + 1); if (ImGui::Selectable(ppl, q == sc.tx.pp)) { sc.tx.pp = q; ch = true; } }
+            ImGui::EndCombo();
+        }
+    }
+    flowNext();
+    if (ImGui::Checkbox(tr("TR"), &sc.tx.tr)) ch = true;
+    }
+    flowNext(a.family == 1 || a.family == 2 ? 14 * gUi : -1); ImGui::TextDisabled("%s", tr("SNR")); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi);
+    float snr = (float)sc.snrDb; if (ImGui::SliderFloat("##ssnr", &snr, 0, 40, "%.0f dB")) { sc.snrDb = snr; ch = true; }
+    flowNext(); ImGui::TextDisabled("%s", tr("CFO")); ImGui::SameLine(); ImGui::SetNextItemWidth(110 * gUi);
+    float cfo = (float)(sc.cfoHz / 1e3); if (ImGui::SliderFloat("##scfo", &cfo, -40, 40, "%.2f kHz")) { sc.cfoHz = cfo * 1e3; ch = true; }
+    flowNext(); ImGui::TextDisabled("%s", tr("SRO")); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi);
+    float sro = (float)sc.sroPpm; if (ImGui::SliderFloat("##ssro", &sro, -50, 50, "%.0f ppm")) { sc.sroPpm = sro; ch = true; }
+    flowNext(); ImGui::TextDisabled("%s", tr("echo")); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi);
+    float ec = (float)sc.echoDb; if (ImGui::SliderFloat("##sec", &ec, 0, 20, ec == 0 ? "off" : "-%.0f dB")) { sc.echoDb = ec; ch = true; }
+    flowEnd();
+    if (ch && running) a.engine.retune(a.tune);
+}
+
+// an IQ file: Open, the shown path, sample format, rate and loop
+static void fileSourceOptions(App& a) {
+    ImGui::TextDisabled("%s", tr("file"));
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Open…"))) { auto p = openFileDialog(); if (!p.empty()) { a.file.path = p; a.file.format = guessFormat(p); const double r = guessSampleRate(p); if (r > 0) a.file.sampleRate = r; applyIqFileInfo(a, p); } }
+    ImGui::SameLine();
+    {   // a long path keeps its end (the file name) in a narrow window; the whole of it on hover
+        std::string shown = a.file.path.empty() ? "(none)" : a.file.path;
+        const float room = std::max(80.f * gUi, ImGui::GetContentRegionAvail().x - 8 * gUi);
+        while (shown.size() > 4 && ImGui::CalcTextSize(shown.c_str()).x > room) shown = "..." + shown.substr(std::min(shown.size(), (size_t)4));
+        ImGui::TextUnformatted(shown.c_str());
+        if (shown != a.file.path && !a.file.path.empty() && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", a.file.path.c_str());
+    }
+    flowNext();
+    ImGui::SetNextItemWidth(70 * gUi);
+    const char* fm[] = {"cs8", "cu8", "cf32", "ci16", "cu16"};
+    int fi = (int)a.file.format;
+    if (ImGui::Combo("##ff", &fi, fm, 5)) a.file.format = (FileFormat)fi;
+    flowNext();
+    ImGui::TextDisabled("%s", tr("rate"));
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(110 * gUi);
+    double msps = a.file.sampleRate / 1e6;
+    if (ImGui::InputDouble("##frate", &msps, 0, 0, "%.4f Msps")) a.file.sampleRate = msps * 1e6;
+    flowNext();
+    ImGui::Checkbox(tr("loop"), &a.file.loop);
+    flowEnd();
+}
+
+// the "Hamlib CAT" label with its help tooltip
+static void hamlibSourceNote() {
+    ImGui::TextDisabled("%s", tr("Hamlib CAT"));
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered()) {
+        wrapTooltip(380 * gUi, tr("Frequency and mode go to the rig over the serial port. Set a sound card id when adding the rig for IQ or a speaker tap; leave it empty for CAT-only (silence IQ)."));
+    }
+    flowEnd();
+}
+
+// a sound-card source: the I/Q mode (stereo IQ, USB, LSB, mono) with its help
+static void audioSourceOptions(App& a, bool running) {
+    ImGui::TextDisabled("%s", tr("sound card"));
+    ImGui::SameLine();
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered()) {
+        wrapTooltip(380 * gUi, tr("For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power."));
+    }
+    flowNext();
+    ImGui::SetNextItemWidth(130 * gUi);
+    const char* am[] = {tr("I/Q stereo"), tr("USB audio"), tr("LSB audio"), tr("Mono real")};
+    if (ImGui::Combo("##aiq", &a.audioIqMode, am, 4)) {
+        a.tune.radio["audio_iq"] = std::to_string(a.audioIqMode);
+        savePrefs(a);
+        if (running) { std::string e; a.engine.retune(a.tune); (void)e; }
+    }
+    if (ImGui::IsItemHovered()) {
+        wrapTooltip(380 * gUi, tr("I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio)."));
+    }
+    flowEnd();
+}
+
+void sourceOptions(App& a) {
+    bool running = a.engine.running();
+    bool isFile = a.devices[a.devIdx].kind == DeviceInfo::File;
+    const bool isAudio = a.devices[a.devIdx].isAudio();
+    const bool isHamlib = a.devices[a.devIdx].kind == DeviceInfo::Hamlib;
+    if (a.devices[a.devIdx].kind == DeviceInfo::Synthetic) synthSourceOptions(a, running);
+    if (isFile && !running) fileSourceOptions(a);
+    if (isHamlib) hamlibSourceNote();
+    if (isAudio || isHamlib) audioSourceOptions(a, running);
+}
