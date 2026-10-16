@@ -244,7 +244,12 @@ void mapCanvas(App& a, ImVec2 size) {
     if (S.mapFollow && on) {
         double la0 = 90, la1 = -90, lo0 = 180, lo1 = -180; int n = 0;
         auto add = [&](double la, double lo) { la0 = std::min(la0, la); la1 = std::max(la1, la); lo0 = std::min(lo0, lo); lo1 = std::max(lo1, lo); n++; };
-        for (const auto& c : t.aircraft) if (c.hasPos) add(c.lat, c.lon);
+        for (const auto& c : t.aircraft) {
+            double la, lo;
+            int alt;
+            bool pred = false;
+            if (dect2::vdl2AircraftPositionNow(c, t.nowSec, la, lo, alt, pred)) add(la, lo);
+        }
         for (const auto& g : t.stations) if (g.hasPos) add(g.lat, g.lon);
         if (n) {
             S.map.lat = (la0 + la1) / 2; S.map.lon = (lo0 + lo1) / 2;
@@ -259,7 +264,7 @@ void mapCanvas(App& a, ImVec2 size) {
     dl->PushClipRect(p0, ImVec2(p0.x + size.x, p0.y + size.y), true);
     ImVec2 click; const bool clicked = adsbmap::clickedAt(click);
     float best = 18 * gUi; uint32_t hit = 0;
-    int placed = 0;
+    int placed = 0, predicted = 0;
     if (on) {
         for (const auto& g : t.stations) {   // ground stations: squares
             if (!g.hasPos) continue;
@@ -270,20 +275,32 @@ void mapCanvas(App& a, ImVec2 size) {
             dl->AddText(ImVec2(q.x + 8 * gUi, q.y - 7 * gUi), IM_COL32(200, 220, 245, 255), s.c_str());
         }
         for (const auto& c : t.aircraft) {
-            if (!c.hasPos) continue;
+            double plat, plon;
+            int altFt = 0;
+            bool pred = false;
+            if (!dect2::vdl2AircraftPositionNow(c, t.nowSec, plat, plon, altFt, pred)) continue;
             placed++;
+            if (pred) predicted++;
             const ImU32 col = planeColour(t.nowSec, c.posTime);
             for (size_t i = 1; i < c.track.size(); i++) dl->AddLine(adsbmap::project(c.track[i - 1].lat, c.track[i - 1].lon), adsbmap::project(c.track[i].lat, c.track[i].lon), (col & 0x00FFFFFF) | 0x90000000, 1.5f);
-            const ImVec2 q = adsbmap::project(c.lat, c.lon);
+            if (pred) {
+                const ImVec2 fix = adsbmap::project(c.lat, c.lon);
+                const ImVec2 pq = adsbmap::project(plat, plon);
+                dl->AddLine(fix, pq, (col & 0x00FFFFFF) | 0x50000000, 1.2f);
+                dl->AddCircle(fix, 4.f * gUi, (col & 0x00FFFFFF) | 0xA0000000, 12, 1.2f);
+            }
+            const ImVec2 q = adsbmap::project(plat, plon);
             const bool sel = c.icao == S.selAir;
-            if (c.hasTrack) drawPlane(dl, q, (float)c.trackDeg, (sel ? 12.f : 10.f) * gUi, col, sel);
+            const ImU32 drawCol = pred ? ((col & 0x00FFFFFF) | 0xB0000000) : col;
+            if (c.hasTrack) drawPlane(dl, q, (float)c.trackDeg, (sel ? 12.f : 10.f) * gUi, drawCol, sel);
             else {
-                dl->AddCircleFilled(q, (sel ? 6.f : 5.f) * gUi, col);
+                dl->AddCircleFilled(q, (sel ? 6.f : 5.f) * gUi, drawCol);
                 dl->AddCircle(q, (sel ? 6.f : 5.f) * gUi, sel ? IM_COL32(255, 255, 255, 255) : IM_COL32(0, 0, 0, 160), 16, sel ? 1.6f : 1.f);
             }
             std::string s = c.reg.empty() ? hex6(c.icao) : c.reg;
             if (!c.flight.empty()) s += " " + c.flight;
-            if (c.hasAlt) { char b[16]; snprintf(b, sizeof b, " FL%03d", (c.altFt + 50) / 100); s += b; }
+            if (pred) s += " ~";
+            if (c.hasAlt || altFt) { char b[16]; snprintf(b, sizeof b, " FL%03d", ((pred ? altFt : c.altFt) + 50) / 100); s += b; }
             const ImVec2 ts = ImGui::CalcTextSize(s.c_str());
             const ImVec2 lp(q.x + 9 * gUi, q.y - ts.y * 0.5f - 2 * gUi);
             dl->AddRectFilled(lp, ImVec2(lp.x + ts.x + 8 * gUi, lp.y + ts.y + 4 * gUi), IM_COL32(10, 12, 14, 210), 2.f);
@@ -308,7 +325,8 @@ void mapCanvas(App& a, ImVec2 size) {
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + size.y - ImGui::GetTextLineHeight() - 6 * gUi));
     if (!on) adsbmap::legend(size.x, "start the receiver");
     else if (!placed) adsbmap::legend(size.x, "no position report yet");
-    else adsbmap::legend(size.x, "%d of %zu aircraft placed", placed, t.aircraft.size());
+    else if (predicted) adsbmap::legend(size.x, "%d on map (%d predicted), %zu heard", placed, predicted, t.aircraft.size());
+    else adsbmap::legend(size.x, "%d of %zu aircraft on map", placed, t.aircraft.size());
     ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y + size.y));
 }
 
@@ -318,7 +336,7 @@ void mapSide(App& a) {
     const dect2::Vdl2Aircraft* c = on ? findAir(t, S.selAir) : nullptr;
     if (!c) {
         ImGui::PushTextWrapPos(0);
-        ImGui::TextDisabled("Dots: aircraft positions from ADS-C, ACARS position reports and XID locations. Squares: ground stations (their GSIF).");
+        ImGui::TextDisabled("Dots: last fix; faded plane with ~ is predicted (ADS-C speed/track or two fixes). Line from ring = last reported position. Squares: ground stations.");
         ImGui::PopTextWrapPos();
         if (!on) return;
         int n = 0;
@@ -337,9 +355,17 @@ void mapSide(App& a) {
     ImGui::SameLine();
     if (ImGui::SmallButton("clear")) S.selAir = 0;
     if (!c->flight.empty()) kv("flight", "%s", c->flight.c_str());
-    if (c->hasPos) kv("position", "%.4f %.4f", c->lat, c->lon);
+    if (c->hasPos) {
+        double plat, plon;
+        int altFt = 0;
+        bool pred = false;
+        dect2::vdl2AircraftPositionNow(*c, t.nowSec, plat, plon, altFt, pred);
+        if (pred) kv("position", "~ %.4f %.4f (fix %.4f %.4f, %s ago)", plat, plon, c->lat, c->lon, ago(t.nowSec, c->posTime).c_str());
+        else kv("position", "%.4f %.4f", plat, plon);
+        if (pred && c->hasKin) kv("motion", "track %.0f deg, %.0f kt%s", c->trackDeg, c->groundKt, c->vsFpm ? (", VS " + std::to_string(c->vsFpm) + " fpm").c_str() : "");
+    }
     if (c->hasAlt) kv("altitude", "%d ft", c->altFt);
-    if (!c->posKind.empty()) kv("source", "%s, %s ago", c->posKind.c_str(), ago(t.nowSec, c->posTime).c_str());
+    if (!c->posKind.empty()) kv("fix source", "%s", c->posKind.c_str());
     if (c->groundStation) kv("ground st.", "%s", hex6(c->groundStation).c_str());
     kv("frames", "%u, last %s ago on %.3f MHz", c->messages, ago(t.nowSec, c->lastHeardSec).c_str(), c->freqHz / 1e6);
     auto it = adsbSeen().find(c->icao);
@@ -378,7 +404,14 @@ void aircraftView(const App& a) {
             ImGui::TableNextColumn(); ImGui::Text("%.3f", c.freqHz / 1e6);
             ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(t.nowSec, c.lastHeardSec).c_str());
             ImGui::TableNextColumn(); ImGui::TextUnformatted(c.groundStation ? hex6(c.groundStation).c_str() : "-");
-            ImGui::TableNextColumn(); if (c.hasPos) ImGui::Text("%.3f %.3f%s", c.lat, c.lon, c.hasAlt ? (" " + std::to_string(c.altFt) + " ft").c_str() : ""); else ImGui::TextUnformatted("-");
+            ImGui::TableNextColumn();
+            if (c.hasPos) {
+                double plat, plon;
+                int altFt = 0;
+                bool pred = false;
+                dect2::vdl2AircraftPositionNow(c, t.nowSec, plat, plon, altFt, pred);
+                ImGui::Text("%s%.3f %.3f%s", pred ? "~" : "", plat, plon, (c.hasAlt || altFt) ? (" " + std::to_string(pred ? altFt : c.altFt) + " ft").c_str() : "");
+            } else ImGui::TextUnformatted("-");
         }
     ImGui::EndTable();
 }

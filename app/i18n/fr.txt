@@ -1116,3 +1116,5 @@ GNSS NMEA RMC/GGA (UDP)	GNSS NMEA RMC/GGA (UDP)
 Bluetooth LE advertisements, JSON (UDP)	Annonces Bluetooth LE, JSON (UDP)
 LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic, JSON (UDP)
 JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	Lignes JSON (un objet par ligne), sauf GNSS qui est du NMEA. Désactivé jusqu'à ce que vous allumiez un flux. Seuls les modes qui ont déjà des messages structurés sont envoyés.
+Support	Support
+Support OnAir on Ko-fi	Support OnAir on Ko-fi

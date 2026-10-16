@@ -66,6 +66,11 @@ bool updateOnExit(App& a) {
     return a.upd->apply(false, &err);
 }
 
+void supportButton() {
+    if (ImGui::SmallButton(tr("Support"))) dect2::openUrl("https://ko-fi.com/adswill");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Support OnAir on Ko-fi"));
+}
+
 void updateButton(App& a) {
     Updater& u = U(a);
     const Updater::Status st = u.status();

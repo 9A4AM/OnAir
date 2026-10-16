@@ -73,6 +73,9 @@ to about 1.75 GHz) are covered; the sample rate list is 0.25 to 64 Msps.
   SDDC_Driver Releases page in the codecs folder, or `ONAIR_RX888_FIRMWARE` pointing at it.
 - It must be on a USB 3 port (the stream is up to 256 MB/s). On Windows install WinUSB with Zadig for both `04b4:00f3` (boot loader) and
   `04b4:00f1` (running); on Linux the udev rule for `04b4:00f1` / `00f3` is needed.
+- **Windows quick start (what most users need):** in [Zadig](https://zadig.akeo.ie), turn on **List All Devices**, install **WinUSB** for
+  `04B4:00F3` and again for `04B4:00F1` (`RX888mk2`), **unplug and replug** the cable on a USB 3 port, then press **refresh** in OnAir's
+  radio list. If the Cypress driver from the official RX-888 / HDSDR installer still owns the device, repeat Zadig on `00F1` and replug.
 - A LimeSDR-USB shares `04b4:00f1`; OnAir tells them apart by the product name ("RX888mk2").
 - Settings: ADC clock (auto, 64, 128 MHz or exact), input (auto, HF, VHF), HF attenuator, dither, randomiser, PGA, bias tee.
 

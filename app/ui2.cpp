@@ -780,10 +780,11 @@ float menuBar(App& a) {
             snprintf(updLbl, sizeof updLbl, tr("update %s"), ONAIR_VERSION);
             updW = std::max(updW, ImGui::CalcTextSize(updLbl).x + btnPad);
             const float clearW = ImGui::CalcTextSize(tr("Clear all##clearall")).x + btnPad;
-            const float rightReserve = updW + 6.f * gUi + clearW + 12.f * gUi;
+            const float supportW = ImGui::CalcTextSize(tr("Support")).x + btnPad;
+            const float rightReserve = updW + 6.f * gUi + clearW + 12.f * gUi + supportW + 4.f * gUi;
             const char* credit = tr("by: Kristijonas Adomaitis, made with help from the community");
             const float cw = ImGui::CalcTextSize(credit).x + btnPad;
-            const float x = ImGui::GetWindowWidth() - rightReserve - cw - 8.f * gUi;
+            const float x = ImGui::GetWindowWidth() - rightReserve - cw - supportW - 12.f * gUi;
             if (x > ImGui::GetCursorPosX() + 20 * gUi) {   // only when the menu bar has room for it
                 ImGui::SameLine(x);
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1, 1, 1, 0.04f));
@@ -795,6 +796,8 @@ float menuBar(App& a) {
                 ImGui::PopStyleVar();
                 ImGui::PopStyleColor(4);
                 if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Thank you to everyone who reported bugs, sent recordings and opened pull requests."));
+                ImGui::SameLine();
+                supportButton();
             }
             ImGui::SameLine(ImGui::GetWindowWidth() - rightReserve);
             updateButton(a);

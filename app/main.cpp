@@ -257,6 +257,8 @@ void drawUI(App& a, ImVec2 disp, bool draw) {
     const ImVec2 sw0 = ImGui::GetCursorScreenPos();
     standardSwitch(a);
     if (a.devices[a.devIdx].isRadio()) { ImGui::SameLine(disp.x - 64 - 410 * gUi); radioSettingsUi(a, false); }   // the top bar is full
+    ImGui::SameLine(disp.x - 64 - 370 * gUi);
+    supportButton();
     ImGui::SameLine(disp.x - 64 - 290 * gUi);
     updateButton(a);
     clearAllButton(a);

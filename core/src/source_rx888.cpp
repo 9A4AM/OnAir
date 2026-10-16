@@ -941,6 +941,9 @@ void listRx888(std::vector<DeviceInfo>& out) {
         d.name = "RX888 MkII" + (tail.empty() ? std::string() : " " + tail);
         if (u.bootloader()) d.name += haveImage ? " (firmware is loaded on start, experimental)" : " (needs SDDC_FX3.img, experimental)";
         else d.name += " (experimental)";
+#ifdef _WIN32
+        d.name += " — Zadig WinUSB 00F3+00F1, replug USB";
+#endif
         d.minRateHz = kMinOutHz; d.maxRateHz = kMaxOutHz;   // any rate in between: the clock is divided by a whole number, never below what is asked
         d.gainMinDb = 0; d.gainMaxDb = kRx888GainMaxDb;
         d.minFreqHz = kHfMinHz; d.maxFreqHz = kVhfMaxHz;

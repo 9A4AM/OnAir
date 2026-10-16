@@ -1116,3 +1116,5 @@ GNSS NMEA RMC/GGA (UDP)	GNSS NMEA RMC/GGA（UDP）
 Bluetooth LE advertisements, JSON (UDP)	Bluetooth LE アドバタイズ、JSON（UDP）
 LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic、JSON（UDP）
 JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	JSON行（1行に1オブジェクト）。GNSSだけはNMEAです。フィードを入れるまでオフ。構造化されたメッセージがあるモードだけを送ります。
+Support	Support
+Support OnAir on Ko-fi	Support OnAir on Ko-fi

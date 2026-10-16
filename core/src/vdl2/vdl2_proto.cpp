@@ -1,6 +1,7 @@
 // VDL Mode 2 bit layer, AVLC and the protocols above it: see vdl2_proto.h.
 #include "dect2/vdl2_proto.h"
 #include "dect2/acars_proto.h"
+#include "dect2/aero_adsc.h"
 #include "dect2/aero_pos.h"
 #include <algorithm>
 #include <cmath>
@@ -603,14 +604,51 @@ void readAcars(const uint8_t* p, size_t n, Vdl2Message& m) {
             a.labelText.empty() ? "" : " ", a.labelText.c_str(), a.blockId ? a.blockId : '-', m.acarsCrcOk ? "" : ", check sequence FAILED");
     if (!a.msgNum.empty() || !a.flightId.empty()) addLine(m.detail, "  message %s, flight %s", a.msgNum.empty() ? "-" : a.msgNum.c_str(), a.flightId.empty() ? "-" : a.flightId.c_str());
     if (!a.decoded.empty()) addLine(m.detail, "  reading: %s", a.decoded.c_str());
-    AeroPosition pos;
-    std::string adsc;
     const bool uplink = !m.fromAir;
-    if (aeroPositionFromMessage(a.label, a.text, uplink, pos, &adsc) && pos.valid) {
-        m.hasPos = true; m.lat = pos.lat; m.lon = pos.lon; m.hasAlt = pos.hasAlt; m.altFt = pos.altFt; m.posKind = pos.kind;
-        if (!pos.flightId.empty() && m.flight.empty()) m.flight = pos.flightId;
+    AeroAdscMessage adsc;
+    if (aeroDecodeAdsc(a.text, uplink, adsc)) {
+        const std::string adscText = aeroDescribeAdsc(adsc);
+        if (!adscText.empty()) {
+            addLine(m.detail, "ADS-C (FANS-1/A):");
+            m.detail += adscText;
+            if (m.detail.back() != '\n') m.detail += '\n';
+        }
+        if (adsc.crcOk) {
+            if (adsc.hasEarth && adsc.trackValid) {
+                m.hasKin = true;
+                m.kinTrackDeg = adsc.trackDeg;
+                m.groundKt = adsc.groundKt;
+                m.vsFpm = adsc.vsFpm;
+            }
+            if (adsc.hasPos) {
+                m.hasPos = true;
+                m.lat = adsc.lat;
+                m.lon = adsc.lon;
+                m.hasAlt = true;
+                m.altFt = adsc.altFt;
+                m.posKind = std::string("ADS-C ") + aeroAdscTagName(adsc.posTag);
+            }
+            if (!adsc.flightId.empty() && m.flight.empty()) m.flight = adsc.flightId;
+        }
+        if (adsc.found) m.summary = "ACARS " + a.label + " ADS-C" + (m.hasPos ? " position report" : m.hasKin ? " earth reference" : "");
     }
-    if (!adsc.empty()) { addLine(m.detail, "ADS-C (FANS-1/A):"); m.detail += adsc; if (m.detail.back() != '\n') m.detail += '\n'; m.summary = "ACARS " + a.label + " ADS-C" + (m.hasPos ? " position report" : ""); }
+    if (!m.hasPos) {
+        AeroPosition pos;
+        if (aeroParseTextPosition(a.label, a.text, pos) && pos.valid) {
+            m.hasPos = true;
+            m.lat = pos.lat;
+            m.lon = pos.lon;
+            m.hasAlt = pos.hasAlt;
+            m.altFt = pos.altFt;
+            m.posKind = pos.kind;
+            if (!pos.flightId.empty() && m.flight.empty()) m.flight = pos.flightId;
+            if (pos.hasTrack && pos.hasSpeed) {
+                m.hasKin = true;
+                m.kinTrackDeg = pos.trackDeg;
+                m.groundKt = pos.speedKt;
+            }
+        }
+    }
     // FANS-1/A CPDLC (ARINC 622 IMI AT1 / CR1 / CC1 / DR1): found and named, the ASN.1 PER body is not decoded
     for (const char* imi : {".AT1", ".CR1", ".CC1", ".DR1"}) {
         const size_t at = a.text.find(imi);

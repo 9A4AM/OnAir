@@ -1116,3 +1116,5 @@ GNSS NMEA RMC/GGA (UDP)	GNSS NMEA RMC/GGA（UDP）
 Bluetooth LE advertisements, JSON (UDP)	蓝牙 LE 广播，JSON（UDP）
 LoRa / LoRaWAN / Meshtastic, JSON (UDP)	LoRa / LoRaWAN / Meshtastic，JSON（UDP）
 JSON lines (one object a line) unless GNSS, which is NMEA. Off until you turn a feed on. Only modes that already have structured messages are sent.	JSON 行（每行一个对象）；GNSS 除外，用 NMEA。默认关闭，直到打开某个输出。只发送已有结构化消息的模式。
+Support	Support
+Support OnAir on Ko-fi	Support OnAir on Ko-fi

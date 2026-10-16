@@ -85,8 +85,21 @@ namespace {
 // asked until it says it has stopped; the samples callback does nothing once a stop is under way; the cancelled transfers are collected
 // before the close or the next start with control transfers that always reach the radio (the attenuator as it is); while a radio is
 // open here no listing goes to USB at all: it reports what the last one read.
+// - (issue #160, 0.2.5/0.2.6: Windows Stop) is_streaming() goes false while cancelled URBs are still in flight, so airspyhf_close()
+//   still walks libusb's transfer list after libusb_exit() -> 0xc0000005 in ntdll. On Windows a handle that has streamed is kept open
+//   (stopped) and reused, like libairspy (DECT2_AIRSPYHF_KEEP=0 closes it anyway).
+bool hfKeepHandles() {
+    if (const char* e = getenv("DECT2_AIRSPYHF_KEEP")) return *e && *e != '0';
+#ifdef _WIN32
+    return true;
+#else
+    return false;
+#endif
+}
+struct HfIdleHandle { AirspyHfApi::airspyhf_device* dev; uint64_t serial; };
 std::mutex gHfMu;
-std::set<uint64_t> gHfOpen;                 // serials open in this program
+std::set<uint64_t> gHfOpen;                 // serials open in this program (including kept idle handles)
+std::vector<HfIdleHandle> gHfIdle;          // stopped after a stream, not closed (Windows)
 std::map<uint64_t, DeviceInfo> gHfKnown;    // what the last listing read, per serial
 std::map<uint64_t, std::chrono::steady_clock::time_point> gHfCooling;   // closed recently: listing must not reopen USB
 bool gHfUsed = false;                       // any HF+ was opened here this process (issue #78: list_devices opens every radio)
@@ -110,8 +123,27 @@ protected:
         std::lock_guard<std::mutex> g(gHfMu);
         std::lock_guard<std::mutex> lk(api_);
         if (dev_) return configureLocked(s, err, false);   // (not reached: closeDevice() comes first)
-        if (airspyhf().open_sn(&dev_, serial_) != 0 || !dev_) { dev_ = nullptr; err = "Airspy HF+: cannot open the radio (in use, or the driver is missing)"; return false; }
-        if (airspyhf().set_lib_dsp) airspyhf().set_lib_dsp(dev_, 1);   // the library's own IQ correction and fine tuning
+        reused_ = false;
+        for (size_t i = 0; i < gHfIdle.size(); i++) {
+            if (gHfIdle[i].serial == serial_) {   // kept open after Stop on Windows: no second open_sn
+                dev_ = gHfIdle[i].dev;
+                gHfIdle.erase(gHfIdle.begin() + (long)i);
+                reused_ = true;
+                streamed_ = true;
+                streaming_ = false;
+                stopping_ = true;
+                break;
+            }
+        }
+        if (!dev_) {
+            if (airspyhf().open_sn(&dev_, serial_) != 0 || !dev_) { dev_ = nullptr; err = "Airspy HF+: cannot open the radio (in use, or the driver is missing)"; return false; }
+            if (airspyhf().set_lib_dsp) airspyhf().set_lib_dsp(dev_, 1);   // the library's own IQ correction and fine tuning
+            gHfOpen.insert(serial_);
+            gHfUsed = true;
+            streamed_ = false;
+            freq_ = 0;
+            att_ = -1;
+        }
         agc_ = radioOption(s, "agc", "off");
         airspyhf().set_hf_agc(dev_, agc_ != "off" ? 1 : 0);             // off: the gain slider is in charge (the default)
         if (agc_ != "off" && airspyhf().set_hf_agc_threshold) airspyhf().set_hf_agc_threshold(dev_, agc_ == "high" ? 1 : 0);
@@ -121,11 +153,7 @@ protected:
         bias_ = false;
         int32_t nb = 0;
         hasBias_ = airspyhf().set_bias_tee && airspyhf().get_bias_tee_count && airspyhf().get_bias_tee_count(dev_, &nb) == 0 && nb > 0;
-        gHfOpen.insert(serial_);
-        gHfUsed = true;
-        freq_ = 0;
-        att_ = -1;
-        streaming_ = streamed_ = false;
+        if (!reused_) streaming_ = false;
         stopping_ = true;
         return configureLocked(s, err, false);
     }
@@ -203,15 +231,15 @@ protected:
         if (bias_ && hasBias_) airspyhf().set_bias_tee(dev_, 0);   // antenna power never stays on
         bias_ = false;
         collectTransfers();
-        // libairspyhf_close() calls libusb_exit while cancelled URBs can still be in flight (Windows 0xc0000005 in ntdll,
-        // issue #78, 0.2.5 still crashed). Drain longer, then skip close() if the library still says it is streaming.
+        // libairspyhf_close() calls libusb_exit while cancelled URBs can still be in flight (Windows 0xc0000005 in ntdll, #78/#160).
+        if (streamed_ && hfKeepHandles()) {
+            parkHandleLocked();
+            return;
+        }
         if (streamingLocked()) {
-            fprintf(stderr, "Airspy HF+: stream still running after stop, leaving the handle (avoids a libusb crash on close)\n");
+            fprintf(stderr, "Airspy HF+: stream still running after stop, keeping the handle (avoids a libusb crash on close)\n");
             fflush(stderr);
-            gHfCooling[serial_] = std::chrono::steady_clock::now() + std::chrono::seconds(30);
-            gHfOpen.erase(serial_);
-            streaming_ = streamed_ = false;
-            dev_ = nullptr;
+            parkHandleLocked();
             return;
         }
         airspyhf().close(dev_);
@@ -249,6 +277,11 @@ protected:
     }
 
 private:
+    void parkHandleLocked() {   // (under gHfMu and api_) stopped; not closed — serial stays in gHfOpen
+        gHfIdle.push_back({dev_, serial_});
+        dev_ = nullptr;
+        streaming_ = streamed_ = false;
+    }
     void stopLocked() {   // (under api_) the library's stop, once per start; returns when the library says the stream is over (at most 1 s)
         stopping_ = true;   // the callback lets go at once
         if (!dev_ || !streaming_) return;
@@ -281,6 +314,7 @@ private:
     std::atomic<bool> stopping_{true};   // a stop is under way (or no stream): the samples callback returns at once
     bool streaming_ = false;       // started and not yet stopped
     bool streamed_ = false;        // has streamed since it was opened
+    bool reused_ = false;          // this handle was kept open from an earlier session
     std::string agc_ = "off";      // the radio's AGC as set
     int32_t cal0_ = 0;             // the radio's own calibration (ppb), read at open
     bool calOk_ = false;           // the library can read and set it

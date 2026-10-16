@@ -885,6 +885,7 @@ void isdbtStatus(App& a);
 void isdbtReceiverTab(App& a);
 void updateTick(App& a);
 void updateButton(App& a);
+void supportButton();
 void clearAllButton(App& a);   // top bar, next to the version: empties every decoded list, after an "are you sure"
 bool updateOnExit(App& a);
 void constellationsTab(App& a);

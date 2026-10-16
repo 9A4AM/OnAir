@@ -1,6 +1,7 @@
 // VDL Mode 2 receiver telemetry, shared by the receiver and the UI.
 // The first members of Vdl2Telemetry are copied into RxTelemetry (history plot, top bar): keep them and their meaning.
 #pragma once
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <string>
@@ -45,9 +46,32 @@ struct Vdl2Message {
     bool hasAlt = false;
     int altFt = 0;
     std::string posKind;
+    // ADS-C earth reference (track / ground speed / vertical speed), without a position in the same message
+    bool hasKin = false;
+    double kinTrackDeg = 0;
+    double groundKt = 0;
+    int vsFpm = 0;
 };
 
 struct Vdl2TrackPoint { double lat = 0, lon = 0; int altFt = 0; double time = 0; };
+
+// Dead reckoning from a lat/lon fix (flat-earth nm, same as the aero test routes).
+inline void vdl2MoveFlat(double latDeg, double lonDeg, double trackDeg, double groundKt, double dtSec, double& latOut, double& lonOut) {
+    const double nm = groundKt * dtSec / 3600.0;
+    const double a = trackDeg * 3.14159265358979323846 / 180.0;
+    latOut = latDeg + nm * std::cos(a) / 60.0;
+    lonOut = lonDeg + nm * std::sin(a) / (60.0 * std::cos(latDeg * 3.14159265358979323846 / 180.0));
+}
+
+inline double vdl2DistNm(double lat1, double lon1, double lat2, double lon2) {
+    constexpr double kPi = 3.14159265358979323846;
+    const double r = kPi / 180.0;
+    const double la1 = lat1 * r, la2 = lat2 * r, dlo = (lon2 - lon1) * r, dla = (lat2 - lat1) * r;
+    const double h = std::sin(dla * 0.5) * std::sin(dla * 0.5) + std::cos(la1) * std::cos(la2) * std::sin(dlo * 0.5) * std::sin(dlo * 0.5);
+    return 2.0 * std::asin(std::min(1.0, std::sqrt(h))) * 3440.065;
+}
+
+constexpr double kVdl2PredictMaxSec = 45.0 * 60.0;   // do not extrapolate more than 45 min past the last fix
 
 struct Vdl2Aircraft {
     uint32_t icao = 0;           // 24-bit address
@@ -65,10 +89,39 @@ struct Vdl2Aircraft {
     int altFt = 0;
     std::string posKind;
     double posTime = 0;
-    bool hasTrack = false;       // from the report, else from the last two positions
+    bool hasTrack = false;       // from ADS-C earth ref, the report, or the last two positions
     double trackDeg = 0;
+    bool hasKin = false;         // ADS-C earth reference ground speed (and vsFpm)
+    double groundKt = 0;
+    int vsFpm = 0;
+    double kinTime = 0;          // signal time of the last kinematics update
     std::vector<Vdl2TrackPoint> track;   // oldest first, at most 24
 };
+
+// Last known fix at posTime, optionally advanced to nowSec using ADS-C earth ref or speed from the last track segment.
+inline bool vdl2AircraftPositionNow(const Vdl2Aircraft& c, double nowSec, double& lat, double& lon, int& altFt, bool& predicted) {
+    predicted = false;
+    if (!c.hasPos) return false;
+    lat = c.lat;
+    lon = c.lon;
+    altFt = c.hasAlt ? c.altFt : 0;
+    const double dt = nowSec - c.posTime;
+    if (dt < 2.0 || c.onGround || dt > kVdl2PredictMaxSec) return true;
+    double kt = 0;
+    const double trk = c.trackDeg;
+    if (c.hasKin && c.groundKt >= 15.0) kt = c.groundKt;
+    else if (c.hasTrack && c.track.size() >= 2) {
+        const Vdl2TrackPoint& p0 = c.track[c.track.size() - 2];
+        const Vdl2TrackPoint& p1 = c.track.back();
+        const double seg = p1.time - p0.time;
+        if (seg > 3.0 && seg < 7200.0) kt = vdl2DistNm(p0.lat, p0.lon, p1.lat, p1.lon) / (seg / 3600.0);
+    }
+    if (kt < 15.0 || !c.hasTrack) return true;
+    vdl2MoveFlat(c.lat, c.lon, trk, kt, dt, lat, lon);
+    if (c.hasAlt && c.hasKin && std::abs(c.vsFpm) > 50) altFt = c.altFt + (int)std::lround(c.vsFpm * dt / 60.0);
+    predicted = true;
+    return true;
+}
 
 struct Vdl2GroundStation {
     uint32_t addr = 0;

@@ -120,7 +120,12 @@ struct Vdl2Receiver::Impl {
     // mu held: the clock starts again (configure), the kept lists move back with it
     void shiftTimes(double dt) {
         for (auto& m : tel.messages) m.timeSec += dt;
-        for (auto& a : tel.aircraft) { a.lastHeardSec += dt; if (a.hasPos) a.posTime += dt; for (auto& p : a.track) p.time += dt; }
+        for (auto& a : tel.aircraft) {
+            a.lastHeardSec += dt;
+            if (a.hasPos) a.posTime += dt;
+            if (a.hasKin) a.kinTime += dt;
+            for (auto& p : a.track) p.time += dt;
+        }
         for (auto& g : tel.stations) if (g.lastHeardSec != 0) g.lastHeardSec += dt;
         tel.nowSec += dt;
     }
@@ -451,6 +456,14 @@ struct Vdl2Receiver::Impl {
             else if (m.srcType == 4 || m.srcType == 5) c.groundStation = m.src;
             if (!m.reg.empty()) c.reg = m.reg;
             if (!m.flight.empty() && srcAir) c.flight = m.flight;
+            if (m.hasKin && srcAir) {
+                c.hasKin = true;
+                c.groundKt = m.groundKt;
+                c.vsFpm = m.vsFpm;
+                c.kinTime = m.timeSec;
+                c.hasTrack = true;
+                c.trackDeg = m.kinTrackDeg;
+            }
             if (m.hasPos && srcAir) {
                 if (c.hasPos) {
                     const double p1 = c.lat * kPi / 180, p2 = m.lat * kPi / 180, dl = (m.lon - c.lon) * kPi / 180;
@@ -464,6 +477,15 @@ struct Vdl2Receiver::Impl {
                 if (m.hasAlt) { c.hasAlt = true; c.altFt = m.altFt; }
                 c.track.push_back({m.lat, m.lon, m.hasAlt ? m.altFt : c.altFt, m.timeSec});
                 if (c.track.size() > 24) c.track.erase(c.track.begin());
+                if (!c.hasKin && c.track.size() >= 2) {
+                    const Vdl2TrackPoint& p0 = c.track[c.track.size() - 2];
+                    const Vdl2TrackPoint& p1 = c.track.back();
+                    const double seg = p1.time - p0.time;
+                    if (seg > 3.0 && seg < 7200.0) {
+                        const double kt = vdl2DistNm(p0.lat, p0.lon, p1.lat, p1.lon) / (seg / 3600.0);
+                        if (kt >= 15.0) { c.hasKin = true; c.groundKt = kt; c.kinTime = m.timeSec; }
+                    }
+                }
             }
             tel.aircraft.insert(tel.aircraft.begin(), std::move(c));
             if (tel.aircraft.size() > 200) tel.aircraft.pop_back();
