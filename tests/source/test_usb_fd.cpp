@@ -117,7 +117,7 @@ int main() {
         CHECK(rtlfd::open(&dev, 0) == kUsbBusy && dev == nullptr);
         sys.claimRet = 0;
         dev = nullptr;
-        const int r = rtlfd::open(&dev, 0);   // the fake answers every control read with zeros: no tuner is found, the open must fail without a crash
+        const int r = rtlfd::open(&dev, 0);   // the fake answers every control read with zeros: whatever comes of it, no crash
         printf("open on a silent fake: %d\n", r);
         if (r == 0 && dev) rtlfd::close(dev);
         CHECK(rtlfd::open(&dev, 5) < 0);
