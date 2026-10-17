@@ -1300,3 +1300,4 @@ Status	Állapot
 Running	Fut
 Step	Lépés
 Keyboard	Billentyűzet
+Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz-es lekeverő kb. 1,5-3 GHz-hez (2,4 GHz, 2,3/3,4 GHz). Az antenna és a rádió közé kell kötni; a rádió RF - 1500 MHz-et lát. 1500 MHz alatt nem támogatott.

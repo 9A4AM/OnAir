@@ -33,6 +33,17 @@ int main() {
     CHECK(near(q.ifToRf(739.55e6), 10489.55e6));
     CHECK(near(make("ku-high").rfToIf(11.8e9), 1.2e9));
 
+    // Ham It Down: 2400 MHz at the antenna, the radio at 900 MHz, no mirror, ppm field, below the LO unreachable
+    Converter d = make("hamitdown");
+    CHECK(d.active && !d.inverts() && near(d.effLoHz(), 1500e6));
+    CHECK(near(d.rfToIf(2400e6), 900e6));
+    CHECK(near(d.ifToRf(900e6), 2400e6));
+    CHECK(near(d.ifToRf(d.rfToIf(2403.5e6)), 2403.5e6));
+    CHECK(near(make("hamitdown", {{convKeyPpm(), "2"}}).effLoHz(), 1500e6 + 3000));
+    CHECK(d.reachable(2400e6) && !d.reachable(1400e6) && !d.reachable(1500e6));
+    CHECK(make("hamitdown", {{convKeyInvert(), "1"}}).inverts());
+    CHECK(findConverterPreset("hamitdown") != nullptr);
+
     // ppm: a TCXO LNB 1 ppm fast has its LO 9750 Hz high, so the same antenna frequency lands that much lower at the radio
     Converter b = make("bullseye", {{convKeyPpm(), "1"}});
     CHECK(near(b.effLoHz(), 9750e6 + 9750, 1e-3));

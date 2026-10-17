@@ -276,7 +276,7 @@ OnAir writes the bits only and never decodes voice (the AMBE codec is patented).
 **Get the best reception**
 - A **channel scanner**, **automatic gain tuning**, a **gain optimiser**, and a **direction finder** that helps you aim the antenna; a **pass planner** for satellites.
 - **Your radio, set up properly:** every antenna input is its own entry in the source list, with per-radio settings.
-- **Up-converters and LNBs:** Ham It Up, SpyVerter, QO-100 / Bullseye TCXO / Ku LNB or a custom LO.
+- **Up-converters and LNBs:** Ham It Up, Ham It Down (1500 MHz), SpyVerter, QO-100 / Bullseye TCXO / Ku LNB or a custom LO.
 - **DC spike handling:** leave the radio's centre spike alone, remove it, or keep it off the channel by tuning.
 
 **Share it**
