@@ -2063,3 +2063,51 @@ Save CADU	CADU speichern
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Jeden von Reed-Solomon bestandenen Frame als 1024-Byte-CADU in <Datenordner>/goes/frames.cadu speichern (die gleiche Art Datei wie bei SatDump), um Decoder zu vergleichen
 Open CADU	CADU öffnen
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Eine .cadu-Datei (1024-Byte-Frames, von diesem Programm oder SatDump) durch Reed-Solomon, Pakete und Dateien decodieren; GOES HRIT muss laufen
+Messages	Nachrichten
+Messages...	Nachrichten...
+Every decoded message in one searchable database, with filters and export	Jede dekodierte Nachricht in einer durchsuchbaren Datenbank, mit Filtern und Export
+The message database could not be opened:	Die Nachrichtendatenbank konnte nicht geöffnet werden:
+Search text (words, prefix*)	Suchtext (Wörter, Präfix*)
+Identity	Kennung
+All modes	Alle Modi
+With position	Mit Position
+matching	Treffer
+stored	gespeichert
+Newer	Neuer
+Older	Älter
+Export CSV	CSV exportieren
+Export JSON	JSON exportieren
+Export ADIF	ADIF exportieren
+Storage	Speicher
+Record decoded messages	Dekodierte Nachrichten aufzeichnen
+Most rows (thousands, 0 = no limit)	Höchstzahl Zeilen (Tausend, 0 = unbegrenzt)
+Size cap in MB (0 = none)	Größenlimit in MB (0 = keines)
+Keep days (0 = forever)	Tage behalten (0 = für immer)
+Apply limits now	Limits jetzt anwenden
+Clear all...	Alles löschen...
+Really clear	Wirklich löschen
+The database file:	Die Datenbankdatei:
+Voice audio and encrypted traffic are never stored.	Sprachaudio und verschlüsselter Verkehr werden nie gespeichert.
+Band survey	Bandübersicht
+record every sweep into the survey	jeden Sweep in die Übersicht aufnehmen
+persistent at %.0f%%	dauerhaft ab %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Ein Signal gilt als dauerhaft, wenn es in mindestens diesem Anteil der Sweeps über der Schwelle liegt
+quiet slot %.0f kHz	ruhiger Bereich %.0f kHz
+Clear survey	Übersicht löschen
+Save survey...	Übersicht speichern...
+Load as previous survey...	Als frühere Übersicht laden...
+Export occupancy CSV...	Belegung als CSV exportieren...
+Export persistent signals CSV...	Dauerhafte Signale als CSV exportieren...
+Export picture...	Bild exportieren...
+cannot write the picture	Das Bild kann nicht geschrieben werden
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Sweep starten: jeder Sweep fügt der Übersicht eine Zeile hinzu. Mit "alle" auf einige Minuten läuft sie stundenlang im Hintergrund.
+%zu sweeps over %.1f h	%zu Sweeps über %.1f h
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	seit der früheren Übersicht: Grundrauschen %+.1f dB, Belegung %+.1f%%, %zu neu, %zu weg
+new %.4f MHz, %.0f%% of the time	neu %.4f MHz, %.0f%% der Zeit
+gone %.4f MHz, was %.0f%% of the time	weg %.4f MHz, war %.0f%% der Zeit
+Occupancy %	Belegung %
+Mean dB above floor	Mittel dB über Grundrauschen
+Peak dB above floor	Spitze dB über Grundrauschen
+Quietest slots	Ruhigste Bereiche
+From MHz	Von MHz
+Width kHz	Breite kHz

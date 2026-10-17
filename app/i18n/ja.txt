@@ -2063,3 +2063,51 @@ Save CADU	CADUを保存
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Reed-Solomonを通過した全フレームを1024バイトのCADUとして<データフォルダ>/goes/frames.cadu に保存します(SatDumpが書き出すのと同種のファイル)。デコーダの比較用です
 Open CADU	CADUを開く
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	このプログラムまたはSatDumpの.caduファイル(1024バイトのフレーム)をReed-Solomon、パケット、ファイルの順にデコードします。GOES HRITを実行しておく必要があります
+Messages	メッセージ
+Messages...	メッセージ...
+Every decoded message in one searchable database, with filters and export	デコードしたすべてのメッセージを、検索・フィルター・エクスポートできる1つのデータベースに
+The message database could not be opened:	メッセージデータベースを開けませんでした:
+Search text (words, prefix*)	検索テキスト(単語、前方一致*)
+Identity	識別子
+All modes	すべてのモード
+With position	位置あり
+matching	件一致
+stored	件保存
+Newer	新しい方へ
+Older	古い方へ
+Export CSV	CSVでエクスポート
+Export JSON	JSONでエクスポート
+Export ADIF	ADIFでエクスポート
+Storage	保存
+Record decoded messages	デコードしたメッセージを記録
+Most rows (thousands, 0 = no limit)	最大行数(千単位、0 = 無制限)
+Size cap in MB (0 = none)	サイズ上限(MB、0 = なし)
+Keep days (0 = forever)	保存日数(0 = 無期限)
+Apply limits now	今すぐ上限を適用
+Clear all...	すべて消去...
+Really clear	本当に消去
+The database file:	データベースファイル:
+Voice audio and encrypted traffic are never stored.	音声と暗号化された通信は保存されません。
+Band survey	帯域サーベイ
+record every sweep into the survey	すべてのスイープをサーベイに記録
+persistent at %.0f%%	常時 %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	スイープのうちこの割合以上でしきい値を超える信号を常時信号とみなします
+quiet slot %.0f kHz	静かな帯 %.0f kHz
+Clear survey	サーベイを消去
+Save survey...	サーベイを保存...
+Load as previous survey...	前回のサーベイとして読み込む...
+Export occupancy CSV...	占有率をCSVに書き出す...
+Export persistent signals CSV...	常時信号をCSVに書き出す...
+Export picture...	画像を書き出す...
+cannot write the picture	画像を書き込めません
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	スイープを実行してください。スイープごとにサーベイへ1行追加されます。「間隔」を数分にすると、バックグラウンドで数時間動かせます。
+%zu sweeps over %.1f h	%zu 回のスイープ（%.1f 時間）
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	前回のサーベイから：ノイズフロア %+.1f dB、占有率 %+.1f%%、新規 %zu、消失 %zu
+new %.4f MHz, %.0f%% of the time	新規 %.4f MHz、時間の %.0f%%
+gone %.4f MHz, was %.0f%% of the time	消失 %.4f MHz、以前は時間の %.0f%%
+Occupancy %	占有率 %
+Mean dB above floor	フロア上の平均 dB
+Peak dB above floor	フロア上のピーク dB
+Quietest slots	最も静かな帯
+From MHz	開始 MHz
+Width kHz	幅 kHz

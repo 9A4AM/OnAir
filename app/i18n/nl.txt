@@ -2063,3 +2063,51 @@ Save CADU	CADU opslaan
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Elk frame dat Reed-Solomon doorstaat, als CADU van 1024 bytes in <gegevensmap>/goes/frames.cadu (hetzelfde soort bestand als SatDump schrijft), om decoders te vergelijken
 Open CADU	CADU openen
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Decodeert een .cadu-bestand (frames van 1024 bytes, van dit programma of SatDump) via Reed-Solomon, de pakketten en de bestanden; GOES HRIT moet draaien
+Messages	Berichten
+Messages...	Berichten...
+Every decoded message in one searchable database, with filters and export	Elk gedecodeerd bericht in één doorzoekbare database, met filters en export
+The message database could not be opened:	De berichtendatabase kon niet worden geopend:
+Search text (words, prefix*)	Zoektekst (woorden, voorvoegsel*)
+Identity	Identiteit
+All modes	Alle modi
+With position	Met positie
+matching	gevonden
+stored	opgeslagen
+Newer	Nieuwer
+Older	Ouder
+Export CSV	CSV exporteren
+Export JSON	JSON exporteren
+Export ADIF	ADIF exporteren
+Storage	Opslag
+Record decoded messages	Gedecodeerde berichten opnemen
+Most rows (thousands, 0 = no limit)	Maximaal aantal rijen (duizenden, 0 = onbeperkt)
+Size cap in MB (0 = none)	Groottelimiet in MB (0 = geen)
+Keep days (0 = forever)	Dagen bewaren (0 = altijd)
+Apply limits now	Limieten nu toepassen
+Clear all...	Alles wissen...
+Really clear	Echt wissen
+The database file:	Het databasebestand:
+Voice audio and encrypted traffic are never stored.	Spraakaudio en versleuteld verkeer worden nooit opgeslagen.
+Band survey	Bandonderzoek
+record every sweep into the survey	elke sweep in het onderzoek opnemen
+persistent at %.0f%%	blijvend vanaf %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Een signaal is blijvend als het in minstens dit deel van de sweeps boven de drempel ligt
+quiet slot %.0f kHz	stil gebied %.0f kHz
+Clear survey	Onderzoek wissen
+Save survey...	Onderzoek opslaan...
+Load as previous survey...	Laden als eerder onderzoek...
+Export occupancy CSV...	Bezetting exporteren als CSV...
+Export persistent signals CSV...	Blijvende signalen exporteren als CSV...
+Export picture...	Afbeelding exporteren...
+cannot write the picture	de afbeelding kan niet worden geschreven
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Start een sweep: elke sweep voegt een rij toe aan het onderzoek. Met "elke" op enkele minuten kan het uren op de achtergrond draaien.
+%zu sweeps over %.1f h	%zu sweeps over %.1f u
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	sinds het vorige onderzoek: ruisvloer %+.1f dB, bezetting %+.1f%%, %zu nieuw, %zu weg
+new %.4f MHz, %.0f%% of the time	nieuw %.4f MHz, %.0f%% van de tijd
+gone %.4f MHz, was %.0f%% of the time	weg %.4f MHz, was er %.0f%% van de tijd
+Occupancy %	Bezetting %
+Mean dB above floor	Gemiddeld dB boven ruisvloer
+Peak dB above floor	Piek dB boven ruisvloer
+Quietest slots	Stilste gebieden
+From MHz	Van MHz
+Width kHz	Breedte kHz

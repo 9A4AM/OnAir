@@ -389,6 +389,7 @@ struct App {
     std::string mapStationId;                     // client id for /ingest, generated once
     std::string mapServer;                        // empty: https://map.on-air.dev (a local worker URL for developers)
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
+    bool msgdbOpen = false;        // View > Messages: the decoded-message database (msgdb_ui.cpp)
     bool automationOpen = false;   // View > Automations: rules and scripts (automation_ui.cpp)
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
     dect2::ShareConfig share; // "Share my radio": the rtl_tcp server (off by default; feeds_ui.cpp), saved with the preferences
@@ -794,6 +795,7 @@ void remoteApiSavePrefs(const App& a);
 void remoteApiTick(App& a);          // every frame: runs the commands the API queued for the main thread, publishes the telemetry
 void remoteApiSection(App& a);       // the settings panel (in the Data feeds window)
 void shareTick(App& a);             // feeds_ui.cpp: carries out the frequency / gain commands of the clients of "Share my radio" (when allowed)
+void msgdbWindow(App& a);   // msgdb_ui.cpp: the Messages window (View > Messages); also starts the database and its feed
 void automationWindow(App& a);   // automation_ui.cpp: the Automations window (View > Automations) and, every frame, the engine's actions that touch the receiver
 extern std::string gAutomationShotPath;   // automation_sink.cpp: a screenshot of the program's own window is saved here after the next frame (then cleared)
 void feedsWindow(App& a);          // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
