@@ -64,9 +64,9 @@ struct HalowReceiver::Impl {
             accPre += s.preambles; accSigOk += s.sigOk; accSigBad += s.sigBad; accDataBad += s.dataBad;
             for (int w = 0; w < kNumWidths; w++) accWidth[w] += s.perWidth[w];
         }
-        for (auto& sb : subs) {
+        for (auto& sb : subs) {   // the scan chains see parts of wider signals: only what they read correctly is counted
             const HalowChain::Stats& s = sb.chain->stats();
-            accPre += s.preambles; accSigOk += s.sigOk; accSigBad += s.sigBad; accDataBad += s.dataBad;
+            accSigOk += s.sigOk;
             for (int w = 0; w < kNumWidths; w++) accWidth[w] += s.perWidth[w];
         }
         chains.clear();
@@ -290,12 +290,14 @@ struct HalowReceiver::Impl {
         tel.widthMask = widthMask.load();
         tel.preambles = accPre; tel.sigOk = accSigOk; tel.sigBad = accSigBad; tel.dataBad = accDataBad;
         for (int w = 0; w < kNumWidths; w++) tel.perWidth[w] = accWidth[w];
-        std::vector<const HalowChain*> all;
-        for (auto& c : chains) all.push_back(c.get());
-        for (auto& sb : subs) all.push_back(sb.chain.get());
-        for (const HalowChain* c : all) {
+        for (auto& c : chains) {
             const HalowChain::Stats& s = c->stats();
             tel.preambles += s.preambles; tel.sigOk += s.sigOk; tel.sigBad += s.sigBad; tel.dataBad += s.dataBad;
+            for (int w = 0; w < kNumWidths; w++) tel.perWidth[w] += s.perWidth[w];
+        }
+        for (auto& sb : subs) {
+            const HalowChain::Stats& s = sb.chain->stats();
+            tel.sigOk += s.sigOk;
             for (int w = 0; w < kNumWidths; w++) tel.perWidth[w] += s.perWidth[w];
         }
         tel.snrDb = (float)snrAvg;
