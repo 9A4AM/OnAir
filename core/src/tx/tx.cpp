@@ -1,5 +1,6 @@
 // Transmit: the list of modes OnAir can send (see tx.h for the reasoning), their generators, and the TxSession that feeds a radio.
 #include "dect2/tx/tx.h"
+#include "dect2/common/timecompat.h"
 #include "dect2/atsc/atsc_gen.h"
 #include "dect2/engine/device_claims.h"
 #include "dect2/tv/demo_ts.h"
@@ -808,7 +809,7 @@ void TxSession::note(const std::string& s) {
         const time_t now = time(nullptr);
         char b[32];
         struct tm tmv;
-        localtime_r(&now, &tmv);
+        dect2::localTime(now, &tmv);
         strftime(b, sizeof b, "%H:%M:%S ", &tmv);
         line = std::string(b) + s;
         log_.push_back(line);

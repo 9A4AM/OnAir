@@ -1300,3 +1300,5 @@ Status	Állapot
 Running	Fut
 Step	Lépés
 Keyboard	Billentyűzet
+Re-sync	Újraszinkronizálás
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Eldobja a szinkront és újra keresi a CDR-jelet a rádió leállítása nélkül.\nHasználja, ha a hang a jel kiesése után néma marad.

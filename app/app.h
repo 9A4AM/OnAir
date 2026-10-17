@@ -812,7 +812,8 @@ void wideCarrierCell(const App& a, int carrierId, double relHz);   // a table ce
 void wideCarriersTable(App& a, float h);                // the carriers table: click selects (sound, detail), double click tunes
 double radioCenterMhz(const App& a);   // where the radio is tuned: the frequency plus the mode's tuneOffsetHz (a file source: the frequency as typed)
 void applyOutputs(App& a);
-std::string channelLabel(const SavedChannel& c);
+std::string channelLabel(const SavedChannel& c, const char* unnamed = "DVB-T2 mux");   // 'unnamed' is shown for a channel without a name: the standard of the current mode (muxName)
+const char* muxName(const App& a);                                                        // what an unnamed channel is called in the current mode: 'DTMB', 'DVB-T mux', 'ATSC mux' ...
 void harvestScan(App& a);
 // The result lists the screens keep themselves (results_ui.cpp; the receivers' own are Engine::setResultsDir): load at start, save every
 // 30 s (now: at once, at exit), each into <data folder>/results/app-<name>.bin

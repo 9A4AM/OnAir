@@ -163,7 +163,7 @@ struct HalowChain::Impl {
             if (g < c.fire + gate) return 2;
             const int64_t s0 = std::max(base, c.fire - back);
             Seg seg;
-            if (!makeSeg(seg, s0, std::min(g, c.fire + gate + 200LL * S), c.cfo)) return 0;
+            if (!makeSeg(seg, s0, std::min<int64_t>(g, c.fire + gate + 200LL * S), c.cfo)) return 0;
             struct Hyp { int w; int64_t b1; double q; };
             std::vector<Hyp> hyps;
             // The detector fires about 109 samples (x S) after the STF starts, give or take 6 on a strong signal: every width is searched +-40 (x S) around that;
@@ -215,7 +215,7 @@ struct HalowChain::Impl {
             if (c.stage == 0) { st.sigBad++; return 0; }
             st.sigOk++;
             st.perWidth[c.w]++;
-            quietUntil = std::max(quietUntil, std::min(frameEnd(c.sig, c.b1), c.b1 + 400000LL * S));
+            quietUntil = std::max(quietUntil, std::min<int64_t>(frameEnd(c.sig, c.b1), c.b1 + 400000LL * S));
         }
         return decodeData(c);
     }

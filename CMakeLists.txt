@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 if(APPLE)
-  project(OnAir VERSION 0.2.6 LANGUAGES C CXX OBJCXX)
+  project(OnAir VERSION 0.2.7 LANGUAGES C CXX OBJCXX)
   set(CMAKE_OBJCXX_STANDARD 20)
 else()
-  project(OnAir VERSION 0.2.6 LANGUAGES C CXX)
+  project(OnAir VERSION 0.2.7 LANGUAGES C CXX)
 endif()
 
 # A compiler cache, when one is installed, makes repeat builds take seconds (-DDECT2_CCACHE=OFF turns it off).
@@ -204,7 +204,7 @@ endif()
 if(DECT2_NO_SIMD)
   target_compile_definitions(dect2core PUBLIC DECT2_NO_SIMD)
 endif()
-# The updater compares this string. A beta build passes -DONAIR_VERSION=0.2.6-beta.N so the next beta is seen as newer.
+# The updater compares this string. A beta build passes -DONAIR_VERSION=0.2.7-beta.N so the next beta is seen as newer.
 set(ONAIR_VERSION "${PROJECT_VERSION}" CACHE STRING "Version the program reports to the updater")
 target_compile_definitions(dect2core PUBLIC ONAIR_VERSION="${ONAIR_VERSION}")
 target_include_directories(dect2core PUBLIC ${HACKRF_INCLUDE_DIRS})

@@ -1297,3 +1297,5 @@ Status	Estado
 Running	A funcionar
 Step	Passo
 Keyboard	Teclado
+Re-sync	Ressincronizar
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Descarta o bloqueio e procura de novo o sinal CDR sem parar o rádio.\nUse quando o som continua mudo depois de o sinal desaparecer.

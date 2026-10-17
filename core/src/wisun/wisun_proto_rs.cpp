@@ -3,6 +3,7 @@
 // is not built.
 #ifdef DECT2_RUST_WISUN
 #include "dect2/wisun/wisun_proto.h"
+#include <memory>
 #include "dect2/rs/wisun.h"
 #include <cstdio>
 #include <cstdlib>

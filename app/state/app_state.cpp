@@ -494,9 +494,23 @@ void applyOutputs(App& a) {
     savePrefs(a);
 }
 
-std::string channelLabel(const SavedChannel& c) {
+// The name of an unnamed channel in the current mode (engine standard numbers: 0 DVB-T2, 1 DVB-T, 2 ATSC, 4 ATSC 3.0, 5 ISDB-T, 7 DVB-S/S2, 8 DTMB):
+// a DTMB channel used to be listed as "DVB-T2 mux" (issue: Chinese users read it as a wrong standard).
+const char* muxName(const App& a) {
+    switch (a.engine.activeStandard()) {
+        case 1: return "DVB-T mux";
+        case 2: return "ATSC mux";
+        case 4: return "ATSC 3.0 mux";
+        case 5: return "ISDB-T mux";
+        case 7: return "DVB-S/S2 transponder";
+        case 8: return "DTMB";
+        default: return "DVB-T2 mux";
+    }
+}
+
+std::string channelLabel(const SavedChannel& c, const char* unnamed) {
     char b[200];
-    snprintf(b, sizeof b, "%.3f MHz  %s%s", c.freqMhz, c.name.empty() ? "DVB-T2 mux" : c.name.c_str(), c.nServices > 1 ? (" +" + std::to_string(c.nServices - 1)).c_str() : "");
+    snprintf(b, sizeof b, "%.3f MHz  %s%s", c.freqMhz, c.name.empty() ? unnamed : c.name.c_str(), c.nServices > 1 ? (" +" + std::to_string(c.nServices - 1)).c_str() : "");
     return b;
 }
 
@@ -552,7 +566,7 @@ void tuneToChannel(App& a, const SavedChannel& c) {
     a.engine.player().select(-1);
     a.selService = -1;
     if (a.engine.running() && sameDev && oldBw == a.tune.bandwidthMhz && oldRate == a.tune.sampleRate) {
-        a.engine.log("channel: " + channelLabel(c));
+        a.engine.log("channel: " + channelLabel(c, muxName(a)));
         a.engine.retuneReset(a.tune);
     } else {
         if (a.engine.running()) a.engine.stop();

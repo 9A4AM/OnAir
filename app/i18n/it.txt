@@ -1297,3 +1297,5 @@ Status	Stato
 Running	In funzione
 Step	Passo
 Keyboard	Tastiera
+Re-sync	Risincronizza
+Drop the lock and search for the CDR signal again without stopping the radio.\nUse it when the sound stays silent after the signal faded.	Abbandona l'aggancio e cerca di nuovo il segnale CDR senza fermare la radio.\nUsalo quando l'audio resta muto dopo un calo del segnale.
