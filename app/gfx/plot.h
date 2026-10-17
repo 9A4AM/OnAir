@@ -42,6 +42,7 @@ struct Spec {
     float MarkerSize = 4.0f;
     ImVec4 MarkerFillColor = ImVec4(0, 0, 0, -1);
     ImVec4 MarkerLineColor = ImVec4(0, 0, 0, -1);
+    float FillFade = 0;   // PlotShaded: 0..1, the fill fades to alpha*(1-FillFade) at the reference line (a vertical gradient)
     int Stride = 0;   // bytes between values; 0 = the size of one value
     int Flags = 0;    // InfLines_Horizontal for PlotInfLines
 };
@@ -50,7 +51,7 @@ struct Spec {
 struct Style {
     ImVec4 PlotBg = ImVec4(0.02f, 0.021f, 0.023f, 1);
     ImVec4 Border = ImVec4(0.24f, 0.25f, 0.26f, 1);
-    ImVec4 Grid = ImVec4(0.60f, 0.62f, 0.64f, 0.16f);
+    ImVec4 Grid = ImVec4(0.60f, 0.62f, 0.64f, 0.11f);
     ImVec4 AutoColors[8] = {ImVec4(0.298f, 0.447f, 0.690f, 1), ImVec4(0.867f, 0.518f, 0.322f, 1), ImVec4(0.333f, 0.659f, 0.408f, 1), ImVec4(0.769f, 0.306f, 0.322f, 1),
                             ImVec4(0.506f, 0.447f, 0.702f, 1), ImVec4(0.576f, 0.471f, 0.376f, 1), ImVec4(0.855f, 0.545f, 0.765f, 1), ImVec4(0.549f, 0.549f, 0.549f, 1)};   // lines without a colour
     ImVec4 Text = ImVec4(0.62f, 0.64f, 0.66f, 1);

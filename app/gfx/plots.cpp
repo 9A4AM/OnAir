@@ -1,5 +1,6 @@
 // spectrum, waterfall, histogram and constellation plots
 #include "../app.h"
+#include "plot_util.h"
 #include "dect2/specan/specan_dsp.h"
 
 // Click on the spectrum or the waterfall to tune to that frequency (a drag still pans). The grid follows the mode: FM 0.1 MHz, DMR 12.5 kHz, else 1 kHz.
@@ -295,29 +296,8 @@ static void setupFreqAxis(const App& a) {
     lastC = rc; lastFs = fs;
     plt::SetupAxisLimits(plt::X1, rc - fs / 2, rc + fs / 2, plt::Cond_Once);
     plt::SetupAxisLinks(plt::X1, &gXLo, &gXHi);
-    plt::SetupAxisFormat(plt::X1, "%.2f");
+    plt::SetupAxisFormat(plt::X1, "%freq");
     plt::SetupAxisConstraints(plt::X1, rc - fs / 2, rc + fs / 2);   // pan and zoom stay inside the band the radio hears
-}
-
-// The trace at the full panel width: only the visible bins, and where they are denser than the pixels, the lowest and the highest of
-// each pixel column (an envelope), so no peak is lost to a coarse picture. The bin i sits at x0 + i * dx: no array of frequencies is built.
-static void envelope(const std::vector<float>& y, double x0, double dx, double lo, double hi, int px, std::vector<double>& ox, std::vector<double>& oy) {
-    ox.clear(); oy.clear();
-    const size_t n = y.size();
-    if (n < 2 || !(hi > lo) || !(dx > 0)) return;
-    size_t i0 = (size_t)std::max(0.0, std::floor((lo - x0) / dx) - 1), i1 = (size_t)std::min((double)n - 1, std::ceil((hi - x0) / dx) + 1);
-    if (i0 >= n) i0 = n - 1;
-    if (i1 <= i0) { i1 = std::min(n - 1, i0 + 1); }
-    const size_t cnt = i1 - i0 + 1;
-    if (px < 1 || cnt <= (size_t)px * 2) { for (size_t i = i0; i <= i1; i++) { ox.push_back(x0 + i * dx); oy.push_back(y[i]); } return; }
-    for (int c = 0; c < px; c++) {
-        const size_t a0 = i0 + cnt * c / px, a1 = std::max(a0 + 1, i0 + cnt * (c + 1) / px);
-        size_t imn = a0, imx = a0;
-        for (size_t i = a0; i < a1 && i < n; i++) { if (y[i] < y[imn]) imn = i; if (y[i] > y[imx]) imx = i; }
-        const size_t f = std::min(imn, imx), g = std::max(imn, imx);
-        ox.push_back(x0 + f * dx); oy.push_back(y[f]);
-        if (g != f) { ox.push_back(x0 + g * dx); oy.push_back(y[g]); }
-    }
 }
 
 constexpr double kFreqSpanMinMhz = 0.001;   // 1 kHz at full zoom-in
@@ -637,6 +617,13 @@ void wfDisplayPopup(App& a) {
     ImGui::TextDisabled("%s", tr("Colour map"));
     colourMapList(a);
     ImGui::Separator();
+    ImGui::TextDisabled("%s", tr("Contrast"));
+    ImGui::SetNextItemWidth(170 * gUi);
+    if (ImGui::SliderFloat("##wfgam", &a.wf.gamma, 0.4f, 2.5f, "%.2f")) a.wf.palette();
+    if (ImGui::IsItemDeactivatedAfterEdit()) savePrefs(a);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Below 1 lifts the weak signals, above 1 darkens the noise (double click: 1)"));
+    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) { a.wf.gamma = 1.f; a.wf.palette(); savePrefs(a); }
+    ImGui::Separator();
     ImGui::TextDisabled("%s", tr("Intensity (dB)"));
     ImGui::SetNextItemWidth(170 * gUi);
     if (ImGui::DragFloatRange2("##wfdbp", &a.wf.minDb, &a.wf.maxDb, 1, -160, 20, "%.0f", "%.0f")) a.wf.autoTrack = false;
@@ -785,16 +772,16 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
             const double x0 = rc - fsMhz / 2, dx = fsMhz / (double)nb;   // bin i sits at x0 + i * dx (the same positions xs() lists)
             static std::vector<double> ex, ey;   // kept between frames: no allocation per frame
             if (a.peakHold && a.peak.size() == nb) {
-                plt::Spec ps; ps.LineColor = pal::grey(0.40f); ps.LineWeight = 1.0f;
-                envelope(a.peak, x0, dx, vis.X.Min, vis.X.Max, wpx, ex, ey);
+                plt::Spec ps; ps.LineColor = ImVec4(0.93f, 0.62f, 0.25f, 0.75f); ps.LineWeight = 1.0f;
+                plt::envelope(a.peak, x0, dx, vis.X.Min, vis.X.Max, wpx, ex, ey);
                 plt::PlotLine("peak", ex.data(), ey.data(), (int)ex.size(), ps);
             }
-            envelope(a.smooth, x0, dx, vis.X.Min, vis.X.Max, wpx, ex, ey);
+            plt::envelope(a.smooth, x0, dx, vis.X.Min, vis.X.Max, wpx, ex, ey);
             if (a.specFill && !ex.empty()) {
-                plt::Spec fs; fs.FillColor = pal::accent(0.16f); fs.LineColor = ImVec4(0, 0, 0, 0);
+                plt::Spec fs; fs.FillColor = pal::accent(0.24f); fs.FillFade = 0.85f; fs.LineColor = ImVec4(0, 0, 0, 0);
                 plt::PlotShaded("fill", ex.data(), ey.data(), (int)ex.size(), vis.Y.Min, fs);
             }
-            plt::Spec ss; ss.LineColor = pal::accent(); ss.LineWeight = 1.3f;
+            plt::Spec ss; ss.LineColor = pal::accent(); ss.LineWeight = 1.5f;
             plt::PlotLine("spectrum", ex.data(), ey.data(), (int)ex.size(), ss);
             if (a.specPeaks && ex.size() >= 8) {   // the strongest peaks in view, at least 6% of the view apart, and 12 dB over the mean level
                 double mean = 0;
@@ -828,7 +815,7 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
                     const double mx = mp.x, my = lv;
                     plt::Spec ms; ms.Marker = plt::Marker_Circle; ms.MarkerSize = 3.5f; ms.MarkerFillColor = ms.MarkerLineColor = ms.LineColor = ImVec4(1, 1, 1, 0.9f);
                     plt::PlotScatter("##rd", &mx, &my, 1, ms);
-                    char lb[64]; snprintf(lb, sizeof lb, dbm ? "%.4f MHz  %.1f dBm" : "%.4f MHz  %.1f dBFS", mx, lv + dbmOff);
+                    char lb[64]; snprintf(lb, sizeof lb, dbm ? "%s  %.1f dBm" : "%s  %.1f dBFS", plt::formatFreqUnit(mx).c_str(), lv + dbmOff);
                     const float tw = ImGui::CalcTextSize(lb).x;
                     const bool right = ImGui::GetMousePos().x + tw + 24 * gUi > plotMin.x + plotSize.x;   // beside the point, left of it near the right edge
                     plt::PlotText(lb, mx, my, ImVec2(right ? -tw * 0.5f - 8 * gUi : tw * 0.5f + 8 * gUi, 14 * gUi));
@@ -874,6 +861,32 @@ static void spectrumPlot(App& a, ImVec2 size, int extraFlags) {
         if (!a.engine.running() && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", tr("Start the receiver first"));
         ImGui::EndPopup();
     }
+}
+
+// A small colour scale at the right edge of the waterfall: the colour map from the strongest level (top) to the weakest, with the dB limits.
+static void wfScaleBar(const App& a, ImVec2 plotMin, ImVec2 plotSize) {
+    const float u = gUi;
+    if (plotSize.y < 170 * u || plotSize.x < 200 * u) return;
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const float bw = 7 * u, bh = std::min(plotSize.y - 2 * ImGui::GetTextLineHeight() - 50 * u, 110 * u), fs = ImGui::GetFontSize() * 0.8f;
+    const float off = a.specDbm ? dbmOffset(a) : 0.f;
+    char hi[16], lo[16];
+    snprintf(hi, sizeof hi, "%.0f", a.wf.maxDb + off); snprintf(lo, sizeof lo, "%.0f", a.wf.minDb + off);
+    const float tw = std::max(ImGui::GetFont()->CalcTextSizeA(fs, FLT_MAX, 0, hi).x, ImGui::GetFont()->CalcTextSizeA(fs, FLT_MAX, 0, lo).x);
+    const float x1 = plotMin.x + plotSize.x - 6 * u, x0 = x1 - bw, y0 = plotMin.y + 2 * ImGui::GetTextLineHeight() + 22 * u, y1 = y0 + bh;
+    dl->AddRectFilled(ImVec2(x0 - tw - 8 * u, y0 - fs - 4 * u), ImVec2(x1 + 3 * u, y1 + fs + 4 * u), IM_COL32(5, 6, 8, 150), 3 * u);
+    const int seg = 24;
+    for (int i = 0; i < seg; i++) {
+        const float f0 = 1.f - (float)i / seg, f1 = 1.f - (float)(i + 1) / seg;
+        const ImU32 c0 = a.wf.lut[(int)(f0 * 255)], c1 = a.wf.lut[(int)(f1 * 255)];
+        dl->AddRectFilledMultiColor(ImVec2(x0, y0 + bh * i / seg), ImVec2(x1, y0 + bh * (i + 1) / seg), c0, c0, c1, c1);
+    }
+    dl->AddRect(ImVec2(x0, y0), ImVec2(x1, y1), IM_COL32(150, 155, 160, 90));
+    const ImU32 tc = IM_COL32(200, 205, 210, 190);
+    ImFont* font = ImGui::GetFont();
+    dl->AddText(font, fs, ImVec2(x0 - 4 * u - font->CalcTextSizeA(fs, FLT_MAX, 0, hi).x, y0 - fs * 0.5f), tc, hi);
+    dl->AddText(font, fs, ImVec2(x0 - 4 * u - font->CalcTextSizeA(fs, FLT_MAX, 0, lo).x, y1 - fs * 0.5f), tc, lo);
+    dl->AddText(font, fs, ImVec2(x0 - tw - 4 * u, y0 - fs - 2 * u), tc, a.specDbm ? "dBm" : "dB");
 }
 
 static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
@@ -925,6 +938,7 @@ static void waterfallPlot(App& a, ImVec2 size, int extraFlags) {
         if (frac > 0) plt::PlotImage("top", tex, plt::Point(x0, -frac), plt::Point(x1, 0), ImVec2(0, vNew), ImVec2(1, vNew));
         channelBand(a, false);
         plotMin = plt::GetPlotPos(); plotSize = plt::GetPlotSize();
+        wfScaleBar(a, plotMin, plotSize);
         clickToTune(a, 1);
         plt::EndPlot();
     }

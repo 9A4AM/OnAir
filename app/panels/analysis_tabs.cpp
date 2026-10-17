@@ -608,7 +608,7 @@ void snrTab(App& a) {
         plt::SetupAxes("frequency (MHz)", "SNR (dB)", 0, plt::AxisFlags_AutoFit);
         plt::SetupAxisFormat(plt::X1, "%.2f");
         plt::SetupAxisLimits(plt::X1, xs.front(), xs.back(), plt::Cond_Always);
-        plt::Spec sp; sp.LineColor = ImVec4(0.35f, 0.85f, 0.45f, 1);
+        plt::Spec sp; sp.LineColor = ImVec4(0.35f, 0.85f, 0.45f, 1); sp.FillFade = 0.9f;
         plt::PlotLine("snr", xs.data(), rx.snrDb.data(), (int)xs.size(), sp);
         plt::EndPlot();
     }
