@@ -25,6 +25,11 @@ airspy_info
 ```
 
 - R2 runs at 10 Msps for TV, Mini not tried yet
+- Mini: the radio lists 6 and 3 Msps (an R2 lists 10 and 2.5). The radio settings of a Mini have **10 Msps (unofficial)**, off by default.
+  Turned on, OnAir adds 10 Msps to the rates it may pick (the smallest listed rate that is fast enough, so 10 Msps is used only when the
+  channel needs more than 6) and asks libairspy for it with `airspy_set_samplerate`; the firmware decides. Not tested on a Mini: it is
+  unsupported and may not work, the radio runs warm and may drop samples. If the firmware refuses, the message shows libairspy's error
+  (for example `libairspy error -2 AIRSPY_ERROR_INVALID_PARAM`) and the Mini runs at 6 Msps instead.
 - gain is the linearity gain, 0 to 21
 - 10 Msps needs a decent CPU, a 2-core laptop couldn't keep up with live ATSC
 

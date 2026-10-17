@@ -34,6 +34,7 @@ struct AirspyApi {
     int (DECT2_CALL* start_rx)(airspy_device*, cb_t, void*) = nullptr;
     int (DECT2_CALL* stop_rx)(airspy_device*) = nullptr;
     int (DECT2_CALL* is_streaming)(airspy_device*) = nullptr;   // optional
+    const char* (DECT2_CALL* error_name)(int) = nullptr;   // optional: libairspy's name of an error code
     int (DECT2_CALL* version_string_read)(airspy_device*, char*, uint8_t) = nullptr;   // optional: tells a Mini ("AirSpy MINI ...") from an R2
     bool ok = false;
     DynLib lib;
@@ -48,6 +49,7 @@ struct AirspyApi {
         lib.opt(set_sensitivity_gain, "airspy_set_sensitivity_gain");
         lib.opt(is_streaming, "airspy_is_streaming");
         lib.opt(version_string_read, "airspy_version_string_read");
+        lib.opt(error_name, "airspy_error_name");
         if (ok) ok = init() == 0;
     }
 };
@@ -88,6 +90,13 @@ SteadyClock::time_point gLastClose = SteadyClock::now() - std::chrono::hours(1);
 // per serial: the sample rates and whether it is a Mini (its firmware version string says "AirSpy MINI"), read at a listing (under gDevMu)
 struct AirspyModel { std::vector<std::pair<double, double>> rates; double minRate = 0, maxRate = 0; bool mini = false; };
 std::map<uint64_t, AirspyModel> gModels;
+// "libairspy error -2 (AIRSPY_ERROR_INVALID_PARAM)": the code, and the library's own name for it when it has airspy_error_name
+std::string airspyError(int rc) {
+    std::string s = "libairspy error " + std::to_string(rc);
+    if (airspy().error_name) { const char* n = airspy().error_name(rc); if (n && *n) s += std::string(" ") + n; }
+    return s;
+}
+std::string mspsText(double hz) { char b[24]; snprintf(b, sizeof b, "%g", hz / 1e6); return b; }
 void probe(uint64_t sn, AirspyApi::airspy_device* d) {
     AirspyModel m;
     uint32_t count = 0;
@@ -139,16 +148,26 @@ protected:
             std::vector<uint32_t> rates(std::min<uint32_t>(count, 16));
             if (!rates.empty()) airspy().get_samplerates(dev_, rates.data(), (uint32_t)rates.size());
             std::sort(rates.begin(), rates.end());
+            const std::vector<uint32_t> official = rates;   // what the radio lists
             bool mini = false;
             { std::lock_guard<std::mutex> lk(gDevMu); const auto it = gModels.find(serial_); mini = it != gModels.end() && it->second.mini; }
             // a Mini also runs at 10 Msps, which its firmware takes but does not list (SDR#'s "debug" rate; the radio runs warm): only when asked
             if (mini && radioOption(s, "mini10", "0") == "1" && std::find(rates.begin(), rates.end(), 10000000u) == rates.end()) rates.push_back(10000000u);
             double pick = rates.empty() ? 10e6 : rates.back();
             for (uint32_t r : rates) if (r >= s.sampleRate * 0.999) { pick = r; break; }
-            airspy().set_samplerate(dev_, (uint32_t)pick);
+            // The firmware decides whether a rate it does not list works (the 10 Msps of a Mini): the library's answer is reported, never ignored.
+            // An unofficial rate that is refused falls back to the fastest listed one, so the radio still runs, with the reason in the message.
+            std::string refused;
+            if (const int rc = airspy().set_samplerate(dev_, (uint32_t)pick); rc != 0) {
+                refused = std::string("Airspy: the radio refused ") + mspsText(pick) + " Msps (" + airspyError(rc) + ")";
+                const bool listed = std::find(official.begin(), official.end(), (uint32_t)pick) != official.end();
+                if (listed || official.empty() || airspy().set_samplerate(dev_, official.back()) != 0) { err = refused; openFailure_ = OpenFailure::Final; return false; }
+                pick = official.back();
+            }
             rate_ = pick;
             requested_ = s.sampleRate;
             checkRate(s.sampleRate, err);
+            if (!refused.empty()) err = refused + "; running at " + mspsText(rate_) + " Msps instead. Turn off \"10 Msps (unofficial)\" in the radio settings";
             // this Mini can run at 10 Msps, but only with the unofficial rate switched on in the radio settings
             if (!err.empty() && mini && radioOption(s, "mini10", "0") != "1" && s.sampleRate > rate_ && s.sampleRate <= 10.0e6 * 1.001)
                 err += ". This Airspy Mini can run at 10 Msps: turn on \"10 Msps (unofficial)\" in the radio settings";
