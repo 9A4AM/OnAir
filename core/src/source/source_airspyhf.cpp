@@ -21,6 +21,8 @@ std::string rateText(double hz) {
 }
 }   // namespace
 
+class AirspyHfSource;
+
 struct AirspyHfApi {
     struct airspyhf_device;
     struct transfer_t {   // airspyhf_transfer_t (the samples are float32 I/Q pairs already)
@@ -96,6 +98,10 @@ bool hfKeepHandles() {
     return false;
 #endif
 }
+// What the library's callback is given instead of the source itself (#160, #78): a handle parked after Stop can have transfers still in
+// flight, so the library may call back after the source is gone (and its ring). The context is never freed (a few bytes per source);
+// the source is detached under its lock before it goes, so a callback in progress is waited for and a later one returns at once.
+struct HfCbCtx { std::mutex mu; AirspyHfSource* self = nullptr; };
 struct HfIdleHandle { AirspyHfApi::airspyhf_device* dev; uint64_t serial; };
 std::mutex gHfMu;
 std::set<uint64_t> gHfOpen;                 // serials open in this program (including kept idle handles)
@@ -115,7 +121,7 @@ bool hfListingFrozen() {
 class AirspyHfSource : public NativeSource {
 public:
     explicit AirspyHfSource(uint64_t serial) : serial_(serial) {}
-    ~AirspyHfSource() override { stop(); }
+    ~AirspyHfSource() override { stop(); detachCallback(); }
 
 protected:
     bool openDevice(const TuneSettings& s, std::string& err) override {
@@ -231,6 +237,7 @@ protected:
         if (bias_ && hasBias_) airspyhf().set_bias_tee(dev_, 0);   // antenna power never stays on
         bias_ = false;
         collectTransfers();
+        detachCallback();   // (a parked handle may still call back: it finds no source)
         // libairspyhf_close() calls libusb_exit while cancelled URBs can still be in flight (Windows 0xc0000005 in ntdll, #78/#160).
         if (streamed_ && hfKeepHandles()) {
             parkHandleLocked();
@@ -259,7 +266,8 @@ protected:
             if (streamed_) collectTransfers();   // a restart for another rate: the transfers of the last stream first
             streaming_ = streamed_ = true;       // also when the start fails half way: the library may have threads running, stop() joins them
             stopping_ = false;
-            if (airspyhf().start(dev_, &AirspyHfSource::callback, this) != 0) { stopLocked(); return; }
+            { std::lock_guard<std::mutex> cl(cb_->mu); cb_->self = this; }
+            if (airspyhf().start(dev_, &AirspyHfSource::callback, cb_) != 0) { stopLocked(); return; }
         }
         while (run_) {
             bool on = false;
@@ -277,6 +285,7 @@ protected:
     }
 
 private:
+    void detachCallback() { std::lock_guard<std::mutex> cl(cb_->mu); cb_->self = nullptr; }   // waits for a callback in progress
     void parkHandleLocked() {   // (under gHfMu and api_) stopped; not closed — serial stays in gHfOpen
         gHfIdle.push_back({dev_, serial_});
         dev_ = nullptr;
@@ -301,12 +310,15 @@ private:
     }
     static int DECT2_CALL callback(AirspyHfApi::transfer_t* t) {
         if (!t || !t->ctx) return 0;
-        auto* self = static_cast<AirspyHfSource*>(t->ctx);
-        if (self->stopping_ || !self->run_ || !t->samples || t->sample_count <= 0) return 0;
+        auto* cb = static_cast<HfCbCtx*>(t->ctx);
+        std::lock_guard<std::mutex> cl(cb->mu);
+        AirspyHfSource* self = cb->self;
+        if (!self || self->stopping_ || !self->run_ || !t->samples || t->sample_count <= 0) return 0;
         self->push(t->samples, (size_t)t->sample_count);
         return 0;
     }
     uint64_t serial_;
+    HfCbCtx* cb_ = new HfCbCtx;    // never freed: see HfCbCtx
     AirspyHfApi::airspyhf_device* dev_ = nullptr;
     std::mutex api_;               // the library is entered by one thread at a time for this radio (retune, the stream thread, stop)
     uint32_t freq_ = 0;            // the frequency the radio is set to

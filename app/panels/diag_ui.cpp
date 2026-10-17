@@ -1,5 +1,6 @@
 // Radio problems where the user looks: the listing error, a failed start, a frequency the radio cannot tune and the USB hints, all under the
 // radio picker, plus a "Copy diagnostics" button that puts what a bug report needs on the clipboard.
+#include "dect2/common/u8file.h"
 #include "../app.h"
 #include "dect2/source/converter.h"
 #include "dect2/engine/updater.h"
@@ -366,7 +367,7 @@ void fixitUi(App& a, const fixit::Entry* e, const char* idKey) {
                 case fixit::Act::OpenDiagnostics: ImGui::SetClipboardText(diagnosticsText(a).c_str()); a.diagCopiedAt = ImGui::GetTime(); break;
                 case fixit::Act::OpenCodecs: {
                     const auto d = dect2::codecFolderList();
-                    if (!d.empty()) { std::error_code ec; std::filesystem::create_directories(std::filesystem::u8path(d[0]), ec); dect2::openUrl(d[0]); }
+                    if (!d.empty()) { std::error_code ec; std::filesystem::create_directories(dect2::u8file(d[0]), ec); dect2::openUrl(d[0]); }
                     break;
                 }
                 }

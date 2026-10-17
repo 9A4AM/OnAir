@@ -1,4 +1,5 @@
 // Iridium bursts as gr-iridium iridium-extractor "RAW:" lines (see iridium_bits.h).
+#include "dect2/common/u8file.h"
 #include "dect2/iridium/iridium_bits.h"
 #include "dect2/iridium/iridium_phy.h"
 #include <algorithm>
@@ -33,7 +34,7 @@ bool IridiumBitsWriter::open(const std::string& path, std::string* err) {
     std::lock_guard<std::mutex> lk(mu_);
     if (f_) { fclose(f_); f_ = nullptr; }
     try {
-        const std::filesystem::path p = std::filesystem::u8path(path);
+        const std::filesystem::path p = dect2::u8file(path);
         if (p.has_parent_path()) std::filesystem::create_directories(p.parent_path());
 #ifdef _WIN32
         f_ = _wfopen(p.c_str(), L"wb");

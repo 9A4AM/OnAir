@@ -1,3 +1,4 @@
+#include "dect2/common/u8file.h"
 #include "dect2/source/iq_record.h"
 #include "dect2/engine/mode_tuning.h"
 #include <algorithm>
@@ -84,7 +85,7 @@ void IqRecorder::writeSigmf(bool final) {
     i.dataFile = path_.substr(s == std::string::npos ? 0 : s + 1);
     if (final) { std::lock_guard<std::mutex> lk(mu_); i.sampleCount = samples_; }
     FILE* f = nullptr;
-    try { f = fopen(std::filesystem::u8path(sigmfPath_).string().c_str(), "wb"); } catch (...) {}
+    try { f = fopen(dect2::u8file(sigmfPath_).string().c_str(), "wb"); } catch (...) {}
     if (!f) return;
     const std::string j = sigmfMetaJson(i);
     fwrite(j.data(), 1, j.size(), f);
@@ -96,7 +97,7 @@ bool IqRecorder::start(const std::string& path, FileFormat fmt, double rateHz, s
     if (fmt != FileFormat::CS8 && fmt != FileFormat::CF32) { err = "only 8-bit signed and float files can be recorded"; return false; }
     if (rateHz <= 0) { err = "the radio has no sample rate yet"; return false; }
     try {
-        const std::filesystem::path p = std::filesystem::u8path(path);
+        const std::filesystem::path p = dect2::u8file(path);
         if (p.has_parent_path()) std::filesystem::create_directories(p.parent_path());
 #ifdef _WIN32
         file_ = _wfopen(p.c_str(), L"wb");
@@ -116,7 +117,7 @@ bool IqRecorder::start(const std::string& path, FileFormat fmt, double rateHz, s
     sigmfPath_.clear();
     if (sigmf_) {
         try {
-            const std::filesystem::path p = std::filesystem::u8path(path);
+            const std::filesystem::path p = dect2::u8file(path);
             std::filesystem::path base = p; base.replace_extension("");
             sigmfPath_ = base.string() + ".sigmf-meta";
             sigmfWhen_ = sigmfUtcNow();

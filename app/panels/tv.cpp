@@ -8,6 +8,7 @@
 #include <fstream>
 #include <map>
 #include "dect2/common/png.h"
+#include "dect2/common/u8file.h"
 
 namespace {
 // ---- channel logos: a PNG the user picked for a service, copied to <data>/tv-logos/<service>.png and shown on the service card
@@ -25,7 +26,7 @@ const LogoTex* tvLogo(const std::string& service) {
     auto it = gTvLogos.find(service);
     if (it == gTvLogos.end()) {
         LogoTex t;
-        std::ifstream f(std::filesystem::u8path(tvLogoPath(service)), std::ios::binary);
+        std::ifstream f(dect2::u8file(tvLogoPath(service)), std::ios::binary);
         if (f) {
             std::vector<uint8_t> b((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
             std::vector<uint8_t> rgba;
@@ -43,15 +44,15 @@ const LogoTex* tvLogo(const std::string& service) {
 
 void tvLogoSet(const std::string& service, const std::string& src) {
     std::error_code ec;
-    std::filesystem::create_directories(std::filesystem::u8path(plat::dataDir() + "/tv-logos"), ec);
-    std::filesystem::copy_file(std::filesystem::u8path(src), std::filesystem::u8path(tvLogoPath(service)), std::filesystem::copy_options::overwrite_existing, ec);
+    std::filesystem::create_directories(dect2::u8file(plat::dataDir() + "/tv-logos"), ec);
+    std::filesystem::copy_file(dect2::u8file(src), dect2::u8file(tvLogoPath(service)), std::filesystem::copy_options::overwrite_existing, ec);
     auto it = gTvLogos.find(service);
     if (it != gTvLogos.end()) { delete it->second.img; gTvLogos.erase(it); }
 }
 
 void tvLogoClear(const std::string& service) {
     std::error_code ec;
-    std::filesystem::remove(std::filesystem::u8path(tvLogoPath(service)), ec);
+    std::filesystem::remove(dect2::u8file(tvLogoPath(service)), ec);
     auto it = gTvLogos.find(service);
     if (it != gTvLogos.end()) { delete it->second.img; gTvLogos.erase(it); }
 }
@@ -65,7 +66,7 @@ std::string tvRecordingPath(const std::string& service) {
     std::strftime(ts, sizeof ts, "%Y%m%d_%H%M%S", std::localtime(&now));
     std::error_code ec;
     const std::string dir = plat::dataDir() + "/recordings";
-    std::filesystem::create_directories(dir, ec);
+    std::filesystem::create_directories(dect2::u8file(dir), ec);
     return dir + "/" + name + "_" + ts + ".ts";
 }
 

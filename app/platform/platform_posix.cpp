@@ -280,11 +280,12 @@ struct FilePrefs : Prefs {
         const std::string tmp = path + ".tmp";
         {
             std::ofstream f(fsPath(tmp));
-            if (!f) return;
+            if (!f) { fprintf(stderr, "settings: cannot write %s (the changes are kept in memory and tried again)\n", tmp.c_str()); return; }
             for (auto& e : kv) f << e.first << "=" << e.second << "\n";
             for (auto& c : channels) f << "channel=" << c.freqMhz << "|" << c.bwMhz << "|" << clean(c.name) << "|" << clean(c.mode) << "|" << c.snrDb << "|" << c.nServices << "|" << (c.favourite ? 1 : 0) << "\n";
         }
         if (replaceFile(tmp, path)) dirty = false;
+        else fprintf(stderr, "settings: cannot replace %s (the changes are kept in memory and tried again)\n", path.c_str());
     }
     std::string setAside() override {
         const std::string old = configDir() + "/settings-crashed.conf";

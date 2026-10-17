@@ -4,6 +4,7 @@
 #include "ui/ui_common.h"
 #include "gfx/plot.h"
 #include "dect2/airband/airband_gen.h"
+#include "dect2/airband/airband_store.h"
 #include "dect2/airband/airband_tel.h"
 #include <algorithm>
 #include <cmath>
@@ -34,74 +35,6 @@ State S;
 
 bool live(const App& a) { return a.rx.standard == 27; }   // the engine reports its standard code minus one
 
-// Records use 0x1f between fields and 0x1e between channels so Prefs::setS() (which turns '|' into spaces on Windows/Linux) cannot break them.
-std::string encode(const std::vector<dect2::AirbandChannel>& v) {
-    std::string s;
-    for (const auto& c : v) {
-        std::string l = c.label;
-        for (char& ch : l) if (ch == '\x1e' || ch == '\x1f' || ch == '\n' || ch == '\r' || ch == '|') ch = ' ';
-        char b[64];
-        snprintf(b, sizeof b, "%.1f", c.freqHz);
-        s += b;
-        s += '\x1f';
-        s += std::to_string(c.is833 ? 1 : 0);
-        s += '\x1f';
-        s += std::to_string(c.muted ? 1 : 0);
-        s += '\x1f';
-        s += std::to_string(c.solo ? 1 : 0);
-        s += '\x1f';
-        s += std::to_string(c.priority ? 1 : 0);
-        s += '\x1f';
-        s += l;
-        s += '\x1e';
-    }
-    return s;
-}
-
-static std::vector<dect2::AirbandChannel> decodeLegacy(const std::string& s) {
-    std::vector<dect2::AirbandChannel> v;
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, ';')) {
-        std::vector<std::string> f;
-        std::stringstream is(item);
-        std::string x;
-        while (std::getline(is, x, '|')) f.push_back(x);
-        if (f.size() < 5) continue;
-        dect2::AirbandChannel c;
-        c.freqHz = atof(f[0].c_str()); c.is833 = f[1] == "1"; c.muted = f[2] == "1"; c.solo = f[3] == "1"; c.priority = f[4] == "1";
-        c.label = f.size() > 5 ? f[5] : "";
-        if (dect2::airbandOnRaster(c.freqHz, c.is833)) v.push_back(c);
-    }
-    return v;
-}
-
-std::vector<dect2::AirbandChannel> decode(const std::string& s) {
-    if (s.find('|') != std::string::npos) return decodeLegacy(s);   // macOS NSUserDefaults and old saves
-    std::vector<dect2::AirbandChannel> v;
-    size_t pos = 0;
-    while (pos < s.size()) {
-        size_t rec = s.find('\x1e', pos);
-        if (rec == std::string::npos) rec = s.size();
-        const std::string item = s.substr(pos, rec - pos);
-        pos = rec + 1;
-        std::vector<std::string> f;
-        size_t fp = 0;
-        while (fp < item.size()) {
-            size_t sep = item.find('\x1f', fp);
-            if (sep == std::string::npos) sep = item.size();
-            f.push_back(item.substr(fp, sep - fp));
-            fp = sep + 1;
-        }
-        if (f.size() < 5) continue;
-        dect2::AirbandChannel c;
-        c.freqHz = atof(f[0].c_str()); c.is833 = f[1] == "1"; c.muted = f[2] == "1"; c.solo = f[3] == "1"; c.priority = f[4] == "1";
-        c.label = f.size() > 5 ? f[5] : "";
-        if (dect2::airbandOnRaster(c.freqHz, c.is833)) v.push_back(c);
-    }
-    return v;
-}
-
 // the dial onto a channel outside the span taken in (the dial stays on the 25 kHz raster, where the receiver puts the DC spike between channels)
 void tuneDialTo(App& a, double hz) {
     a.freqMhz = std::round(hz / 25e3) * 25e3 / 1e6;
@@ -112,7 +45,7 @@ void tuneDialTo(App& a, double hz) {
 
 void save() {
     plat::Prefs& d = plat::prefs();
-    d.setS("airChans", encode(S.chans));
+    d.setS("airChans", dect2::airbandEncode(S.chans));
     d.setD("airSquelch", S.squelch); d.setD("airHang", S.hang); d.setB("airScan", S.scan);
     d.flush();
     S.dirty = true;
@@ -122,7 +55,7 @@ void load() {
     if (S.loaded) return;
     S.loaded = true;
     plat::Prefs& d = plat::prefs();
-    if (d.has("airChans")) S.chans = decode(d.getS("airChans", ""));
+    if (d.has("airChans")) S.chans = dect2::airbandDecode(d.getS("airChans", ""));
     else S.chans = dect2::airbandChannelsFor(dect2::airbandTestLayout(), dect2::airbandTuning().defMhz * 1e6);
     S.squelch = (float)d.getD("airSquelch", 6); S.hang = (float)d.getD("airHang", 0.5); S.scan = d.getB("airScan", false);
 }
