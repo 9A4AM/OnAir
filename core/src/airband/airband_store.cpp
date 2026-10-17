@@ -40,7 +40,7 @@ void add(std::vector<AirbandChannel>& v, const std::vector<std::string>& f, bool
     AirbandChannel c;
     c.freqHz = atof(f[0].c_str()); c.is833 = f[1] == "1"; c.muted = f[2] == "1"; c.solo = f[3] == "1"; c.priority = f[4] == "1";
     if (f.size() > 5) c.label = escaped ? unesc(f[5]) : f[5];
-    if (escaped && f.size() > 6 && !f[6].empty()) { const double q = atof(f[6].c_str()); if (q >= -5 && q <= 45) c.squelchDb = (float)q; }
+    if (escaped && f.size() > 6 && !f[6].empty()) { char* e = nullptr; const double q = strtod(f[6].c_str(), &e); if (e && !*e && q >= -5 && q <= 45) c.squelchDb = (float)q; }
     if (airbandOnRaster(c.freqHz, c.is833)) v.push_back(c);
 }
 }   // namespace

@@ -26,7 +26,7 @@ static AirbandChannel ch(double f, bool n, const char* label, bool m = false, bo
 static bool same(const std::vector<AirbandChannel>& a, const std::vector<AirbandChannel>& b) {
     if (a.size() != b.size()) return false;
     for (size_t i = 0; i < a.size(); i++)
-        if (std::abs(a[i].freqHz - b[i].freqHz) > 0.5 || a[i].is833 != b[i].is833 || a[i].label != b[i].label || a[i].muted != b[i].muted || a[i].solo != b[i].solo || a[i].priority != b[i].priority) return false;
+        if (std::abs(a[i].freqHz - b[i].freqHz) > 0.5 || a[i].is833 != b[i].is833 || a[i].label != b[i].label || a[i].muted != b[i].muted || a[i].solo != b[i].solo || a[i].priority != b[i].priority || a[i].squelchDb != b[i].squelchDb) return false;
     return true;
 }
 
@@ -64,5 +64,16 @@ int main() {
     const auto d = airbandDecode("v2:118400000.0,0,0,0,0,ok;garbage;118400100.0,0,0,0,0,off raster;119000000.0,1,0,0,0,fine;");
     CHECK(d.size() == 2 && d[0].label == "ok" && d[1].label == "fine", "damaged records: %zu channels", d.size());
     CHECK(airbandDecode("").empty() && airbandDecode("v2:").empty() && airbandDecode(";;;").empty(), "empty forms");
+    // per-channel squelch: saved, and a v2 list (no squelch field) loads with the global one
+    {
+        std::vector<AirbandChannel> v = {ch(118.5e6, false, "A"), ch(118.7e6, false, "B")};
+        v[1].squelchDb = 12.5f;
+        const auto back = airbandDecode(viaFile(airbandEncode(v)));
+        CHECK(same(v, back) && back.size() == 2 && back[0].squelchDb == kAirbandSquelchGlobal && back[1].squelchDb == 12.5f, "squelch round trip");
+        const auto old = airbandDecode("v2:118500000.0,0,0,0,0,Tower;118700000.0,0,0,0,0,;");
+        CHECK(old.size() == 2 && old[0].squelchDb == kAirbandSquelchGlobal && old[0].label == "Tower", "v2 list");
+        const auto bad = airbandDecode("v3:118500000.0,0,0,0,0,X,999;118700000.0,0,0,0,0,Y,abc;");
+        CHECK(bad.size() == 2 && bad[0].squelchDb == kAirbandSquelchGlobal && bad[1].squelchDb == kAirbandSquelchGlobal, "damaged squelch ignored");
+    }
     return testSummary("airband_store");
 }

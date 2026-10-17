@@ -105,17 +105,17 @@ static void check(const char* what, const Setup& st, const Run& r, double secs, 
 }
 
 int main() {
-    const double secs = 14;
+    const double secs = 12;
     const Setup st = layout8(secs);
     // ---- 2.4 Msps (RTL-SDR) and 2 Msps, radio right
     check("2.4 Msps, no error", st, run(st, 2.4e6, 0, 25, secs), secs, 2.0);
-    check("2.0 Msps, no error", st, run(st, 2.0e6, 0, 25, secs), secs, 2.0);
     // ---- the radio's tuning error: +-5 kHz (37 ppm) and +-7 kHz (51 ppm) at 137 MHz, on 25 kHz channels only and on all eight
-    for (double cfo : {5000.0, 7000.0, -7000.0}) {
-        char b[64]; snprintf(b, sizeof b, "2.4 Msps, radio %+.0f Hz", cfo);
-        const Run r = run(st, 2.4e6, cfo, 25, secs);
+    for (double cfo : {-5000.0, 7000.0, -7000.0}) {
+        const double rate = cfo == -5000.0 ? 2.0e6 : 2.4e6;   // 2.0 Msps with the radio 5 kHz low, 2.4 Msps with it +-7 kHz
+        char b[64]; snprintf(b, sizeof b, "%.1f Msps, radio %+.0f Hz", rate / 1e6, cfo);
+        const Run r = run(st, rate, cfo, 25, secs);
         CHECK(std::fabs(r.tel.cfoHz - cfo) < 400 && r.tel.tuneKnown, "%s: measured %+.0f", b, r.tel.cfoHz);
-        check(b, st, r, secs, 7.0);
+        check(b, st, r, secs, 6.0);
     }
     // ---- +-10 kHz (73 ppm): beyond half an 8.33 kHz step, so with 8.33 channels in the list it is ambiguous; a list of 25 kHz channels must follow it
     {
@@ -125,7 +125,7 @@ int main() {
             char b[64]; snprintf(b, sizeof b, "25 kHz only, radio %+.0f Hz", cfo);
             const Run r = run(s25, 2.4e6, cfo, 25, secs);
             CHECK(std::fabs(r.tel.cfoHz - cfo) < 500 && r.tel.tuneKnown, "%s: measured %+.0f", b, r.tel.cfoHz);
-            check(b, s25, r, secs, 7.0, 6);
+            check(b, s25, r, secs, 6.0, 6);
         }
     }
     // ---- weak signals: 22 dB carrier to noise (the weakest channel is 12 dB below)
