@@ -75,6 +75,7 @@ void startApp(App& app, int argc) {
 void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
     for (int i = 1; i < argc; i++) {
         if (std::string(argv[i]) == "--autostart") o.autostart = true;
+        if (std::string(argv[i]) == "--device" && i + 1 < argc) { o.startDevice = argv[++i]; o.autostart = true; }
         if (std::string(argv[i]) == "--tx") txDevOpen(app, i + 1 < argc && argv[i + 1][0] != '-' ? argv[i + 1] : nullptr, false);   // dev: TX view, optionally on a signal id
         if (std::string(argv[i]) == "--txdry" && i + 1 < argc) txDevOpen(app, argv[++i], true);   // dev: TX view with the test (no RF) running on a signal id
         if (std::string(argv[i]) == "--stress") o.stress = true;   // dev: retune frequency and gain every second, like moving the controls

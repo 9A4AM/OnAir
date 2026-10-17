@@ -147,9 +147,19 @@ static void devAutomation(App& app, DevOpts& o) {
         o.autostart = false;
         app.devIdx = 0;
         if (o.hackrfStart) for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].kind == (o.fileStart ? DeviceInfo::File : DeviceInfo::HackRF) || (!o.fileStart && app.devices[i].isRadio())) app.devIdx = i;
-        app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
-        app.engine.setComputeMode(app.computeMode); app.engine.setStandard(engineStd(app));
-        app.engine.start(app.devices[app.devIdx], app.tune, app.file);
+        bool found = o.startDevice.empty();
+        if (!o.startDevice.empty()) {
+            for (int i = 0; i < (int)app.devices.size(); i++) if (app.devices[i].name == o.startDevice) { app.devIdx = i; found = true; break; }
+            if (!found) {
+                const std::string msg = "Requested source not found: " + o.startDevice + ". Receiver was not started.";
+                app.engine.log(msg); fprintf(stderr, "%s\n", msg.c_str());
+            }
+        }
+        if (found) {
+            app.tune.centerHz = app.freqMhz * 1e6; applyBandwidth(app);
+            app.engine.setComputeMode(app.computeMode); app.engine.setStandard(engineStd(app));
+            app.engine.start(app.devices[app.devIdx], app.tune, app.file);
+        }
     }
     if (o.fmScanAuto && app.fmMode && app.engine.running() && glfwGetTime() > 3.0) {
         o.fmScanAuto = false;
