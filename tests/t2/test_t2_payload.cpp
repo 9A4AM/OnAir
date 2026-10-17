@@ -18,13 +18,13 @@ using testjobs::jprintf;
 static std::atomic<int> fails{0};
 #define CHECK(c, ...) do { if (!(c)) { jprintf("FAIL: " __VA_ARGS__); jprintf("\n"); fails++; } } while (0)
 
-struct Case { const char* name; int s1; bool shortFrame; int mod, cod; bool rot; int ti; double snr; double bw = 8; int fft = 1, gi = 2, pp = 0; bool ext = false; int t2Version = 2; double cfoHz = 0; double sroPpm = 0; double dcDb = -999; };
+struct Case { const char* name; int s1; bool shortFrame; int mod, cod; bool rot; int ti; double snr; double bw = 8; int fft = 1, gi = 2, pp = 0; bool ext = false; int t2Version = 2; double cfoHz = 0; double sroPpm = 0; double dcDb = -999; int multipath = 0, l1Mod = 1; bool checkL1 = false; };
 
 static void runCase(const Case& c) {
     const double fn = nativeRateHz(c.bw);
     TxParams tp;
     tp.s1 = c.s1; tp.s2field1 = c.fft; tp.giIdx = c.gi; tp.ext = c.ext; tp.pp = c.pp; tp.t2Version = c.t2Version; tp.l1Scrambled = true;
-    tp.payload = true; tp.plpShort = c.shortFrame; tp.plpMod = c.mod; tp.plpCod = c.cod; tp.plpRot = c.rot; tp.plpTi = c.ti;
+    tp.l1Mod = c.l1Mod; tp.payload = true; tp.plpShort = c.shortFrame; tp.plpMod = c.mod; tp.plpCod = c.cod; tp.plpRot = c.rot; tp.plpTi = c.ti;
     T2Generator gen(tp);
     T2Receiver rx;
     rx.configure(fn, c.bw);
@@ -45,6 +45,19 @@ static void runCase(const Case& c) {
         sent[i & 0xff] = gen.lastBbFrames();
         tx.insert(tx.end(), frame.begin(), frame.end());
         txEnd.push_back(tx.size());
+    }
+    if (c.multipath) {
+        // the echoes of a real 8 MHz 16K recording at 642 MHz (delays in samples at 9.14 Msps, dB against the first path): a strong pair 4 samples
+        // apart, a cluster out to 20 samples and a tail of weaker echoes to 135 samples. impairment taps are relative to the first path
+        static const struct { int d; double db; double ph; } taps[] = {{0, 0, 0}, {2, -1, 1.3}, {4, 3, 2.1}, {7, -1, 0.4}, {11, -9, 2.9}, {16, -12, 4.0}, {24, -16, 5.1},
+                                                                       {26, -16, 0.7}, {90, -17, 3.3}, {135, -16, 1.9}, {2100, -33, 0.9}};
+        const std::vector<cf32> src = tx;
+        for (auto& v : tx) v = cf32(0, 0);
+        for (auto& t : taps) {
+            if (c.multipath < 2 && t.d > 1000) continue;   // multipath 2 adds a weak echo far out in the guard interval
+            const cf32 g = std::polar((float)std::pow(10.0, t.db / 20), (float)t.ph);
+            for (size_t n = (size_t)t.d; n < tx.size(); n++) tx[n] += g * src[n - (size_t)t.d];
+        }
     }
     std::vector<cf32> rxs;
     if (c.sroPpm != 0) {   // (16 samples of silence each side: the interpolator starts 16 samples in)
@@ -126,6 +139,10 @@ static void runCase(const Case& c) {
         }
     }
     CHECK(blocks2 > 0 && ok2 >= 0.98 * blocks2, "%s: only %d of %d blocks decoded after the first two frames", c.name, ok2, blocks2);
+    if (c.checkL1) {
+        CHECK(t.l1preGood >= (uint64_t)nFrames - 3 && t.l1postGood >= (uint64_t)nFrames - 3, "%s: L1-pre %llu ok / %llu bad, L1-post %llu ok / %llu bad", c.name,
+              (unsigned long long)t.l1preGood, (unsigned long long)t.l1preBad, (unsigned long long)t.l1postGood, (unsigned long long)t.l1postBad);
+    }
     if (c.sroPpm != 0) {   // a clock error is no excuse: once locked, every block and every L1 must decode
         CHECK(ok2 == blocks2, "%s: %d of %d blocks lost after the first two frames", c.name, blocks2 - ok2, blocks2);
         CHECK(t.l1preGood >= (uint64_t)nFrames - 3 && t.l1postGood >= (uint64_t)nFrames - 3, "%s: L1-pre %llu ok / %llu bad, L1-post %llu ok / %llu bad", c.name,
@@ -179,6 +196,10 @@ int main() {
         // the same with the DC offset of that recording (-10 dB): the DC leaks across the FFT and biases the frequency estimate by a few
         // Hz, which left the frame-closing symbol (no continual pilots, so no phase tracking) several radians off. 256QAM 2/3 as on air.
         {"32K GI 1/16 PP4 256QAM DC -10 dB", 0, false, 3, 2, true, 3, 24, 8, 5, 1, 3, false, 2, -12000, 58, -10},
+        {"16K ext PP1 GI 1/4 64QAM 3/5", 0, false, 2, 1, true, 2, 22, 8, 4, 3, 0, true, 2, 0, 0, -999, 0, 3, true},
+        // A real 8 MHz 16K ext PP1 GI 1/4 mux (64-QAM L1-post, 64-QAM 3/5 data) seen through echoes out to 135 samples, a weak one far out in the guard
+        // interval (which widens the delay span the P2 stage keeps) and a -29 Hz carrier offset: L1-pre, L1-post and every data block must decode
+        {"16K ext PP1 GI 1/4 echoes, 64QAM L1", 0, false, 2, 1, true, 2, 26, 8, 4, 3, 0, true, 2, -29, 0, -999, 2,  3, true},
         {"8K GI 1/8 PP2 -100 ppm",       0, false, 2, 2, true, 3, 22, 8, 1, 2, 1, false, 2, 0, -100},
     };
     // the cases are independent: each one runs on its own thread, the output keeps the order of the cases

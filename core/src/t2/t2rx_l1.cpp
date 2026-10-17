@@ -57,7 +57,11 @@ bool T2Receiver::Impl::p2Hypothesis(bool ext, bool final) {
         bool spanOk = !getenv("DECT2_NONARROW") && delaySpan(H, N, lo, hi, back, tMin, tMax);
         if (getenv("DECT2_DEBUG") && spanOk) fprintf(stderr, "  [dbg] delay span %d .. %d samples (G=%d)\n", tMin, tMax, G);
         if (spanOk) {
-            double centre = 0.5 * (tMin + tMax), half = 0.5 * (tMax - tMin) + 48;
+            // The lowpass that cuts the window rolls off over about 0.64 of its half-width (Kaiser, 5/cutoff taps each side), so a path
+            // that sits within that of the window edge is attenuated: a strong main path 10 samples inside a 2100-sample span lost enough
+            // for the P2 equalisation to be three times noisier than without the window, and a 64-QAM L1-post failed (a real mux
+            // with a long weak echo). The margin grows with the span, so every path stays in the flat part of the passband.
+            double centre = 0.5 * (tMin + tMax), half = 0.5 * (tMax - tMin) * 1.4 + 48;
             double cut = half / ((double)N / (2.0 * S));
             if (cut < 0.9) {
                 interp.run(hg, S, K, N, (double)back + centre, H, cut);
@@ -109,8 +113,15 @@ bool T2Receiver::Impl::p2Hypothesis(bool ext, bool final) {
         int neg = 0; for (auto& c : preCells) neg += c.real() < 0;
         fprintf(stderr, "  [dbg] P2 hyp ext=%d: n0 %.4f mean|Re| %.3f neg %d/1840 K %d\n", (int)ext, n0, mr / 1840, neg, K);
     }
+    // (L1-post noise per cell, see tryPost.) Equalising divides by the channel, so a cell on a faded carrier carries its noise amplified by 1/|H|^2:
+    // one flat n0 made 64-QAM L1-post of a frequency-selective channel (deep dips, echoes) fail its LDPC although the BPSK L1-pre was
+    // fine. n0 measured on the pre cells is the mean of those per-cell variances, which fixes the common factor.
     L1Pre pre;
     L1Result r = decodeL1Pre(preCells, n0, pre);
+    // A wrong carrier-mode hypothesis can still pass the L1-pre CRC (the first 1840 cells of the single P2 symbol of a 16K signal fall in
+    // the same places in both layouts), but then the cells after them, the L1-post and the start of the PLP, are read from the wrong
+    // carriers. The signalled BWT_EXT settles it: a pre that contradicts the hypothesis counts as a miss, so the other mode is tried.
+    if (r.ok && fm->kExt != 0 && ((pre.bwtExt != 0) != ext)) { r.ok = false; if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] P2 hyp ext=%d contradicts the signalled BWT_EXT\n", (int)ext); }
     bool preOk = r.ok;
     l1Iters = r.ldpcIters;
     L1Post post;
@@ -118,8 +129,21 @@ bool T2Receiver::Impl::p2Hypothesis(bool ext, bool final) {
     auto tryPost = [&](const L1Pre& pp, L1Post& out) {
         std::vector<cf32> st2;
         p2Gather(sym, nP2, cP2, 1840, pp.postSize, st2);
+        std::vector<float> noiseSt;
+        {
+            // the same gather as the cells, so each noise value follows its cell
+            std::vector<std::vector<cf32>> nsym(nP2, std::vector<cf32>(cP2));
+            for (int l = 0; l < nP2; l++) for (int j = 0; j < cP2; j++) nsym[l][j] = cf32(gsym[l][j].real(), 0);
+            std::vector<cf32> ns;
+            p2Gather(nsym, nP2, cP2, 1840, pp.postSize, ns);
+            double inv = 0;
+            for (int i = 0; i < 1840; i++) inv += 1.0 / std::max(1e-6f, ns[i].real());
+            const double nbase = n0 * 1840.0 / std::max(1e-12, inv);
+            for (size_t i = 1840; i < ns.size() && i < 1840 + (size_t)pp.postSize; i++)
+                noiseSt.push_back((float)std::min(nbase / std::max(1e-6f, ns[i].real()), 50.0 * n0));
+        }
         std::vector<cf32> postCells(st2.begin() + 1840, st2.begin() + 1840 + std::min<size_t>(pp.postSize, st2.size() - 1840));
-        L1Result pr = decodeL1Post(postCells, n0, pp, nP2, (pp.s2 & 1) != 0, out);
+        L1Result pr = decodeL1Post(postCells, n0, pp, nP2, (pp.s2 & 1) != 0, out, noiseSt.empty() ? nullptr : &noiseSt);
         if (getenv("DECT2_DEBUG")) fprintf(stderr, "  [dbg] L1-post: rep %d iters %d bch %d crc %d cells %zu\n", pp.repetition, pr.ldpcIters, (int)pr.bchOk, (int)pr.crcOk, postCells.size());
         return pr.ok;
     };
