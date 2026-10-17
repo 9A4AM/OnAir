@@ -1,6 +1,5 @@
-// TETRA network information parsing on top of the Rust crate rust/onair_tetra (DECT2_RUST_TETRA): the same functions as the parse side of
-// tetra_pdu.cpp, which keeps the encoders and the generator PDUs. Only broadcasts are read (see tetra_pdu.h); empty when the crate is not built.
-#ifdef DECT2_RUST_TETRA
+// TETRA network information parsing on top of the Rust crate rust/onair_tetra: the parse side of tetra_pdu.h;
+// tetra_pdu.cpp keeps the encoders and the generator PDUs. Only broadcasts are read (see tetra_pdu.h).
 #include "dect2/tetra/tetra_pdu.h"
 #include "dect2/rs/tetra.h"
 #include <cstdio>
@@ -117,4 +116,3 @@ int aachDlUsage(uint16_t aa, bool frame18) { return onair_tetra_aach_dl_usage(aa
 const char* dlUsageText(int u) { return reinterpret_cast<const char*>(onair_tetra_dl_usage_text(u)); }
 
 } // namespace dect2::tetra
-#endif // DECT2_RUST_TETRA

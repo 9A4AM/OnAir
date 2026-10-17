@@ -1,4 +1,4 @@
-// Seeded mutation run of the TETRA network information layer (the Rust one under DECT2_RUST_TETRA), meant for DECT2_SANITIZE=ON: SYNC, SYSINFO, the
+// Seeded mutation run of the TETRA network information layer, meant for DECT2_SANITIZE=ON: SYNC, SYSINFO, the
 // signalling block walk, texts and carrier maths must never crash or hang on any bytes (also bytes above 1 and every length). Also a libFuzzer target with
 // -DONAIR_LIBFUZZER.
 #include "dect2/tetra/tetra_pdu.h"
