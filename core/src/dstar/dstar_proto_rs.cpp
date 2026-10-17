@@ -1,6 +1,5 @@
-// D-STAR protocol pieces on top of the Rust crate rust/onair_dstar (DECT2_RUST_DSTAR): the same functions as dstar_proto.cpp, which keeps the sync pattern
-// tables. Empty when the crate is not built.
-#ifdef DECT2_RUST_DSTAR
+// D-STAR protocol pieces on top of the Rust crate rust/onair_dstar: the functions of dstar_proto.h
+// (dstar_proto.cpp keeps the sync pattern tables).
 #include "dect2/dstar/dstar_proto.h"
 #include "dect2/rs/dstar.h"
 #include <cstdio>
@@ -78,4 +77,3 @@ bool parseDprs(const std::string& line, Fix& f) {
 
 } // namespace dstar
 } // namespace dect2
-#endif

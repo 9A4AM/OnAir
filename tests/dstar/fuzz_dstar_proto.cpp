@@ -1,4 +1,4 @@
-// Seeded mutation run of the D-STAR frame layer (the Rust one under DECT2_RUST_DSTAR), meant for DECT2_SANITIZE=ON: header unpack / decode, the FEC pieces, the
+// Seeded mutation run of the D-STAR frame layer, meant for DECT2_SANITIZE=ON: header unpack / decode, the FEC pieces, the
 // flag text and both GPS parsers must never crash or hang on any bytes. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/dstar/dstar_proto.h"
 #include <cstdio>

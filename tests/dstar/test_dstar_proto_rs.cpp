@@ -1,27 +1,24 @@
-// Differential test: the C++ D-STAR frame layer (a generated copy in dect2::dstar_ref, see cmake/gen_rs_ref.cmake) against the Rust one (dect2::dstar when
-// DECT2_RUST is used). The same inputs go to both and every result has to be identical (doubles bit for bit, the fix of a rejected line too): CRC, header
-// pack / unpack, flag texts, the header FEC (interleaver, scrambler, convolutional code, soft Viterbi with noisy / NaN input), the AMBE order, NMEA and D-PRS
-// lines built, mutated and corrupted, over ONAIR_DIFF_ITERS (default 200000) seeded inputs per family.
+// Golden-vector test of the Rust D-STAR frame layer (rust/onair_dstar, dect2::dstar): CRC, header pack / unpack, flag texts, the header FEC (interleaver,
+// scrambler, convolutional code, soft Viterbi with noisy / NaN input), the AMBE order, NMEA and D-PRS lines built, mutated and corrupted (the fix of a rejected
+// line too), over ONAIR_DIFF_ITERS (default 200000) seeded inputs per family. Every result goes into a digest (tests/common/golden.h; doubles rounded to 1e-6,
+// floats widened) compared with the one recorded from the C++ layer the Rust code replaced.
 #include "dect2/dstar/dstar_proto.h"
-#include "dstar_proto_ref.h"
+#include "../common/golden.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <random>
 namespace A = dect2::dstar;
-namespace R = dect2::dstar_ref;
+static golden::Digest dig;
 
-static long fails = 0, checks = 0, parsedNmea = 0, parsedDprs = 0;
-#define SAME(c, ...) do { checks++; if (!(c)) { if (fails++ < 20) { printf("MISMATCH: " __VA_ARGS__); printf("\n"); } } } while (0)
+static long parsedNmea = 0, parsedDprs = 0;
 
 static std::mt19937 g(97531);
 static uint32_t r32() { return g(); }
-static bool dEq(double a, double b) { return memcmp(&a, &b, sizeof a) == 0; }
-static bool fEq(float a, float b) { return memcmp(&a, &b, sizeof a) == 0; }
-template <class T, class U> static bool fixEq(const T& a, const U& b) {
-    return dEq(a.lat, b.lat) && dEq(a.lon, b.lon) && dEq(a.altM, b.altM) && dEq(a.speedKmh, b.speedKmh) && a.course == b.course && a.altValid == b.altValid &&
-           a.velValid == b.velValid && a.call == b.call && a.comment == b.comment && a.aprs == b.aprs;
+static void addBytes(const void* p, size_t n) { dig.bytes(p, n); }
+static void addFix(const A::Fix& a) {
+    dig.add(a.lat, a.lon, a.altM, a.speedKmh, a.course, a.altValid, a.velValid, a.call, a.comment, a.aprs);
 }
 template <class F> static void sentinel(F& f) { f.lat = 1.5; f.lon = 2.5; f.altM = 3.5; f.speedKmh = 4.5; f.course = 77; f.altValid = true; f.call = "OLD"; f.comment = "OLDC"; }
 
@@ -84,16 +81,15 @@ static std::string dprsLine(bool fixCrc) {
 int main() {
     const char* it = getenv("ONAIR_DIFF_ITERS");
     const long iters = it ? atol(it) : 200000;
-    printf("dstar_proto_rs: implementation under test is dect2::dstar (Rust when DECT2_RUST_DSTAR)\n");
 
-    SAME(!memcmp(A::kFrameSync, R::kFrameSync, 15) && !memcmp(A::kDataSync, R::kDataSync, 24) && !memcmp(A::kEndPattern, R::kEndPattern, 48) && !memcmp(A::kSlowScramble, R::kSlowScramble, 3), "tables");
-    for (int f0 = 0; f0 < 256; f0++) { uint8_t f[3] = {(uint8_t)f0, (uint8_t)g(), (uint8_t)g()}; SAME(A::flagText(f) == R::flagText(f), "flagText %d", f0); }
+    addBytes(A::kFrameSync, 15); addBytes(A::kDataSync, 24); addBytes(A::kEndPattern, 48); addBytes(A::kSlowScramble, 3);
+    for (int f0 = 0; f0 < 256; f0++) { uint8_t f[3] = {(uint8_t)f0, (uint8_t)g(), (uint8_t)g()}; dig.add(A::flagText(f)); }
     {   // the interleaver over every input position
         for (int i = 0; i < A::kHeaderBits; i++) {
-            uint8_t in[660] = {}, a[660], b[660];
+            uint8_t in[660] = {}, a[660];
             in[i] = 1;
-            A::interleave(in, a); R::interleave(in, b);
-            SAME(!memcmp(a, b, 660), "interleave %d", i);
+            A::interleave(in, a);
+            addBytes(a, 660);
         }
     }
 
@@ -101,47 +97,47 @@ int main() {
         // CRC, checksum, byte / bit order, scrambler
         uint8_t d[200]; for (auto& x : d) x = (uint8_t)g();
         const size_t n = g() % 201;
-        SAME(A::crc(d, n) == R::crc(d, n), "crc %zu", n);
+        dig.add(A::crc(d, n));
         const std::string s((const char*)d, n);
-        SAME(A::dprsCrc(s) == R::dprsCrc(s) && A::nmeaChecksum(s) == R::nmeaChecksum(s), "dprsCrc / nmeaChecksum");
+        dig.add(A::dprsCrc(s), A::nmeaChecksum(s));
         const int nb = (int)(g() % 40);
-        uint8_t b1[320], b2[320];
-        A::bytesToBits(d, nb, b1); R::bytesToBits(d, nb, b2);
-        SAME(!memcmp(b1, b2, (size_t)nb * 8), "bytesToBits");
-        uint8_t y1[40], y2[40];
-        A::bitsToBytes(b1, nb, y1); R::bitsToBytes(b1, nb, y2);
-        SAME(!memcmp(y1, y2, (size_t)nb), "bitsToBytes");
+        uint8_t b1[320];
+        A::bytesToBits(d, nb, b1);
+        addBytes(b1, (size_t)nb * 8);
+        uint8_t y1[40];
+        A::bitsToBytes(b1, nb, y1);
+        addBytes(y1, (size_t)nb);
         const int sn = (int)(g() % 700);
-        uint8_t c1[700], c2[700];
-        for (int k = 0; k < 700; k++) c1[k] = c2[k] = (uint8_t)(g() % 9 == 0 ? g() : g() & 1);
-        A::scrambleBits(c1, sn); R::scrambleBits(c2, sn);
-        SAME(!memcmp(c1, c2, 700), "scrambleBits");
+        uint8_t c1[700];
+        for (int k = 0; k < 700; k++) c1[k] = (uint8_t)(g() % 9 == 0 ? g() : g() & 1);
+        A::scrambleBits(c1, sn);
+        addBytes(c1, 700);
         const int cn = (int)(g() % 340);
-        uint8_t e1[700] = {}, e2[700] = {};
-        A::convEncode(c1, cn, e1); R::convEncode(c1, cn, e2);
-        SAME(!memcmp(e1, e2, 700), "convEncode");
+        uint8_t e1[700] = {};
+        A::convEncode(c1, cn, e1);
+        addBytes(e1, 700);
 
         // header: fields -> bytes -> FEC -> noisy decode
-        A::Header ha; R::Header hb;
-        for (int k = 0; k < 3; k++) ha.flag[k] = hb.flag[k] = (uint8_t)g();
+        A::Header ha;
+        for (int k = 0; k < 3; k++) ha.flag[k] = (uint8_t)g();
         const std::string f1 = g() % 3 ? RS(g() % 10, "ABCDEFGHIJ0123 /") : rndStr(g() % 10, "\x01\x7f\xff z", 5);
-        ha.rpt2 = hb.rpt2 = f1; ha.rpt1 = hb.rpt1 = RS(g() % 10, "ABCD /"); ha.ur = hb.ur = RS(g() % 10, "CQ X"); ha.my = hb.my = RS(g() % 10, "LY1TST ");
-        ha.sfx = hb.sfx = RS(g() % 6, "D75 ");
-        uint8_t pa[41], pb[41];
-        A::headerPack(ha, pa); R::headerPack(hb, pb);
-        SAME(!memcmp(pa, pb, 41), "headerPack");
+        ha.rpt2 = f1; ha.rpt1 = RS(g() % 10, "ABCD /"); ha.ur = RS(g() % 10, "CQ X"); ha.my = RS(g() % 10, "LY1TST ");
+        ha.sfx = RS(g() % 6, "D75 ");
+        uint8_t pa[41];
+        A::headerPack(ha, pa);
+        addBytes(pa, 41);
         uint8_t in41[41];
-        if (g() % 2) memcpy(in41, pb, 41); else for (auto& x : in41) x = (uint8_t)g();
+        if (g() % 2) memcpy(in41, pa, 41); else for (auto& x : in41) x = (uint8_t)g();
         if (g() % 4 == 0) in41[g() % 41] ^= (uint8_t)(1 << (g() % 8));
-        A::Header ua; R::Header ub;
-        const bool oa = A::headerUnpack(in41, ua), ob = R::headerUnpack(in41, ub);
-        SAME(oa == ob && !memcmp(ua.flag, ub.flag, 3) && ua.rpt2 == ub.rpt2 && ua.rpt1 == ub.rpt1 && ua.ur == ub.ur && ua.my == ub.my && ua.sfx == ub.sfx, "headerUnpack");
+        A::Header ua;
+        const bool oa = A::headerUnpack(in41, ua);
+        dig.add(oa); addBytes(ua.flag, 3); dig.add(ua.rpt2, ua.rpt1, ua.ur, ua.my, ua.sfx);
 
         if (i % 4 == 0) {   // the whole header on the air, a quarter of the iterations (the decoder is the slow part)
             uint8_t hdr[41]; for (auto& x : hdr) x = (uint8_t)g();
-            uint8_t ta[660], tb[660];
-            A::headerEncode(hdr, ta); R::headerEncode(hdr, tb);
-            SAME(!memcmp(ta, tb, 660), "headerEncode");
+            uint8_t tb[660];
+            A::headerEncode(hdr, tb);
+            addBytes(tb, 660);
             float soft[660];
             const int mode = (int)(g() % 5);
             const float sigma = (float)(g() % 30) / 10.f;
@@ -155,42 +151,40 @@ int main() {
                 default: soft[k] = g() % 50 == 0 ? std::nanf("") : (g() % 40 == 0 ? INFINITY : clean + noise); break;
                 }
             }
-            uint8_t da[41], db[41];
-            memset(da, 0, 41); memset(db, 0, 41);
-            const int ea = A::headerDecode(soft, da), eb = R::headerDecode(soft, db);
-            SAME(ea == eb && !memcmp(da, db, 41), "headerDecode mode %d errs %d/%d", mode, ea, eb);
-            float dil[660], dil2[660];
-            A::deinterleave(soft, dil); R::deinterleave(soft, dil2);
-            bool same = true; for (int k = 0; k < 660; k++) same = same && fEq(dil[k], dil2[k]);
-            SAME(same, "deinterleave");
+            uint8_t da[41];
+            memset(da, 0, 41);
+            const int ea = A::headerDecode(soft, da);
+            dig.add(ea); addBytes(da, 41);
+            float dil[660];
+            A::deinterleave(soft, dil);
+            addBytes(dil, sizeof dil);   // bit patterns (the NaN / infinity inputs pass through unchanged)
             // viterbi of a free length
             const int vn = 1 + (int)(g() % 400);
-            uint8_t v1[400], v2[400];
-            const int ra = A::viterbi(soft, vn > 330 ? 330 : vn, v1), rb = R::viterbi(soft, vn > 330 ? 330 : vn, v2);
-            SAME(ra == rb && !memcmp(v1, v2, (size_t)(vn > 330 ? 330 : vn)), "viterbi %d", vn);
+            uint8_t v1[400];
+            const int ra = A::viterbi(soft, vn > 330 ? 330 : vn, v1);
+            dig.add(ra); addBytes(v1, (size_t)(vn > 330 ? 330 : vn));
         }
         uint8_t ab[72]; for (auto& x : ab) x = (uint8_t)g();
-        char fa[4][24], fb[4][24];
-        A::ambeFrame(ab, fa); R::ambeFrame(ab, fb);
-        SAME(!memcmp(fa, fb, sizeof fa), "ambeFrame");
+        char fa[4][24];
+        A::ambeFrame(ab, fa);
+        addBytes(fa, sizeof fa);
 
         // GPS text: built lines (checksum / CRC right or wrong), then mutated
         std::string line = (g() % 2) ? nmeaLine(g() % 5 != 0) : dprsLine(g() % 5 != 0);
         if (g() % 3 == 0) line = mutate(line);
         if (g() % 40 == 0) line = RS(g() % 30, "$$CRC,*>:!0123456789ABCDEFNSEW/=@");
-        A::Fix xa; R::Fix xb;
-        sentinel(xa); sentinel(xb);
+        A::Fix xa;
+        sentinel(xa);
         const bool pn = line.compare(0, 2, "$$") == 0;
-        const bool ra = pn ? A::parseDprs(line, xa) : A::parseNmea(line, xa), rb = pn ? R::parseDprs(line, xb) : R::parseNmea(line, xb);
-        SAME(ra == rb && fixEq(xa, xb), "%s '%s' -> %d/%d lat %g/%g comment '%s'/'%s'", pn ? "parseDprs" : "parseNmea", line.c_str(), ra, rb, xa.lat, xb.lat, xa.comment.c_str(), xb.comment.c_str());
+        const bool ra = pn ? A::parseDprs(line, xa) : A::parseNmea(line, xa);
+        dig.add(ra); addFix(xa);
         if (ra) (pn ? parsedDprs : parsedNmea)++;
         // both parsers on both kinds of line
-        A::Fix qa; R::Fix qb;
-        sentinel(qa); sentinel(qb);
-        SAME((pn ? A::parseNmea(line, qa) : A::parseDprs(line, qa)) == (pn ? R::parseNmea(line, qb) : R::parseDprs(line, qb)) && fixEq(qa, qb), "cross parse");
+        A::Fix qa;
+        sentinel(qa);
+        dig.add(pn ? A::parseNmea(line, qa) : A::parseDprs(line, qa)); addFix(qa);
     }
     printf("dstar_proto_rs: %ld lines parsed as NMEA, %ld as D-PRS\n", parsedNmea, parsedDprs);
-    SAME(parsedNmea > iters / 20 && parsedDprs > iters / 20, "the generated lines should parse often enough to be a useful test");
-    printf("dstar_proto_rs: %ld checks, %ld mismatches\n", checks, fails);
-    return fails ? 1 : 0;
+    if (!(parsedNmea > iters / 20 && parsedDprs > iters / 20)) { printf("the generated lines should parse often enough to be a useful test\n"); return 1; }
+    return golden::check("dstar_proto_rs", dig, 0xb53a42c677ad13e3ull, !it);
 }
