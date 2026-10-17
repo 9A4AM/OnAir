@@ -1973,3 +1973,5 @@ DRA+ audio needs a decoder add-on that is not included (the codec's patent and l
 The DRA+ decoder add-on cannot be used: %s. How to install:	Модуль-декодер DRA+ нельзя использовать: %s. Как установить:
 How to install	Как установить
 The services, signal information and data work without it.	Службы, информация о сигнале и данные работают и без него.
+Interface and windows	Интерфейс и окна
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Меню «Вид» переключает компоновку (Sidebar, Scope, Tiles, Faceplate, Panel), классический интерфейс, размер текста и палитру; сенсорный интерфейс находится в разделе «Инструменты». Окна «Частоты», «Сканер-обзор», «Пеленгатор» и «Автоматизации» открываются отсюда.

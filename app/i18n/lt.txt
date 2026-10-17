@@ -1990,3 +1990,5 @@ DRA+ audio needs a decoder add-on that is not included (the codec's patent and l
 The DRA+ decoder add-on cannot be used: %s. How to install:	DRA+ dekoderio priedo naudoti negalima: %s. Kaip įdiegti:
 How to install	Kaip įdiegti
 The services, signal information and data work without it.	Paslaugos, signalo informacija ir duomenys veikia ir be jo.
+Interface and windows	Sąsaja ir langai
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Rodinys perjungia išdėstymą (Sidebar, Scope, Tiles, Faceplate, Panel), klasikinę sąsają, teksto dydį ir paletę; lietimui skirta sąsaja yra skiltyje Įrankiai. Tokie langai kaip Dažniai, Skenavimo skeneris, Krypties ieškiklis ir Automatizavimas atidaromi iš čia.

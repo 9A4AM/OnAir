@@ -1976,3 +1976,5 @@ DRA+ audio needs a decoder add-on that is not included (the codec's patent and l
 The DRA+ decoder add-on cannot be used: %s. How to install:	A DRA+ dekóder-kiegészítő nem használható: %s. Telepítés:
 How to install	Telepítés menete
 The services, signal information and data work without it.	A szolgáltatások, a jelinformációk és az adatok enélkül is működnek.
+Interface and windows	Felület és ablakok
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	A Nézet menüben váltható az elrendezés (Sidebar, Scope, Tiles, Faceplate, Panel), a klasszikus felület, a szövegméret és a paletta; az érintőfelület az Eszközök alatt van. Az olyan ablakok, mint a Frekvenciák, a Végigsöprő szkenner, az Iránykereső és az Automatizálások innen nyílnak.

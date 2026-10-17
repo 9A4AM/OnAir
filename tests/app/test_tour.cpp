@@ -15,7 +15,7 @@ static std::string readAll(const std::filesystem::path& p) { std::ifstream f(p);
 int main() {
     int n = 0;
     const tour::Step* st = tour::steps(&n);
-    CHECK(n >= 8 && n <= 10, "8 to 10 steps, got %d", n);
+    CHECK(n >= 8 && n <= 11, "8 to 11 steps, got %d", n);
     std::set<std::string> anchors;
     for (int i = 0; i < n; i++) {
         CHECK(st[i].anchor && *st[i].anchor && st[i].title && *st[i].title && st[i].text && *st[i].text, "step %d has an anchor, a title and a text", i);

@@ -1990,3 +1990,5 @@ DRA+ audio needs a decoder add-on that is not included (the codec's patent and l
 The DRA+ decoder add-on cannot be used: %s. How to install:	Le module décodeur DRA+ est inutilisable : %s. Comment l'installer :
 How to install	Comment installer
 The services, signal information and data work without it.	Les services, les informations du signal et les données fonctionnent sans lui.
+Interface and windows	Interface et fenêtres
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Affichage change la disposition (Sidebar, Scope, Tiles, Faceplate, Panel), l'interface classique, la taille du texte et la palette ; l'interface tactile est sous Outils. Des fenêtres comme Fréquences, Scanner de balayage, Radiogoniomètre et Automatisations s'ouvrent d'ici.

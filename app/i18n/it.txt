@@ -1973,3 +1973,5 @@ DRA+ audio needs a decoder add-on that is not included (the codec's patent and l
 The DRA+ decoder add-on cannot be used: %s. How to install:	Il componente decodificatore DRA+ non è utilizzabile: %s. Come installarlo:
 How to install	Come installare
 The services, signal information and data work without it.	I servizi, le informazioni sul segnale e i dati funzionano anche senza.
+Interface and windows	Interfaccia e finestre
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Vista cambia il layout (Sidebar, Scope, Tiles, Faceplate, Panel), l'interfaccia classica, la dimensione del testo e la palette; l'interfaccia touch è sotto Strumenti. Finestre come Frequenze, Scanner di sweep, Radiogoniometro e Automazioni si aprono da qui.

@@ -337,6 +337,8 @@ const char* kVariantNames[8] = {N_("Sidebar"), N_("Scope"), N_("Tiles"), N_("Fac
 
 // the View menu: interface variants, text size, light / high contrast, language, accent, the classic interface
 static void viewMenu(App& a) {
+    const float vx0 = ImGui::GetCursorScreenPos().x, vy0 = ImGui::GetWindowPos().y, vy1 = vy0 + ImGui::GetWindowHeight();
+    struct Mark { float x0, y0, y1; ~Mark() { tourMark("view", ImVec2(x0, y0), ImVec2(ImGui::GetCursorScreenPos().x, y1)); } } mark{vx0, vy0, vy1};   // the tour points at the View menu
     if (ImGui::BeginMenu(tr("View"))) {
         for (int v = 0; v < 8; v++) if (ImGui::MenuItem(tr(kVariantNames[v]), nullptr, a.uiVariant == v)) { a.uiVariant = v; savePrefs(a); }
         ImGui::Separator();

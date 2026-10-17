@@ -1990,3 +1990,5 @@ DRA+ audio needs a decoder add-on that is not included (the codec's patent and l
 The DRA+ decoder add-on cannot be used: %s. How to install:	De DRA+-decoder-add-on kan niet worden gebruikt: %s. Zo installeer je hem:
 How to install	Zo installeer je het
 The services, signal information and data work without it.	De diensten, signaalinformatie en data werken ook zonder.
+Interface and windows	Interface en vensters
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Beeld wisselt de indeling (Sidebar, Scope, Tiles, Faceplate, Panel), de klassieke interface, tekstgrootte en palet; de touchinterface staat onder Tools. Vensters zoals Frequenties, Sweepscanner, Peilontvanger en Automatiseringen openen vanaf hier.
