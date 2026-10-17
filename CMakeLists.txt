@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
+set(ONAIR_ROOT ${CMAKE_CURRENT_SOURCE_DIR})   # the repository root (CMAKE_SOURCE_DIR is the bridge's folder when this is built as a subproject, as the Android app does)
 if(APPLE AND NOT DEFINED ANDROID_ABI)
   project(OnAir VERSION 0.2.7 LANGUAGES C CXX OBJCXX)
   set(CMAKE_OBJCXX_STANDARD 20)
@@ -21,7 +22,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_options(-ffile-prefix-map=${CMAKE_SOURCE_DIR}=onair)   # no build-machine paths inside the programs
+  add_compile_options(-ffile-prefix-map=${ONAIR_ROOT}=onair)   # no build-machine paths inside the programs
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")     # NDEBUG as CMake's own Release flags have it: without it the release builds kept
   set(CMAKE_OBJCXX_FLAGS_RELEASE "-O3 -DNDEBUG")  # the debug assertions, and an ImGui sanity check stopped the app for users (#53)
 endif()
@@ -112,21 +113,21 @@ if(DECT2_SANITIZE_THREAD)
   add_link_options(-fsanitize=thread)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${ONAIR_ROOT}/cmake)
 include(OnairRust)   # DECT2_RUST (AUTO/ON/OFF) and DECT2_RUST_<MODULE>: the Rust workspace rust/ when cargo and the Rust target are there; sets ONAIR_RUST_ACTIVE, ONAIR_RUST_<MODULE>, onair_rust_use()
 
 add_library(dect2core STATIC core/src/source/source.cpp core/src/source/source_audio.cpp core/src/source/audio_if.cpp core/src/source/hamlib_rig.cpp core/src/source/rig_setup.cpp core/src/dsp/spectrum.cpp core/src/engine/engine.cpp core/src/engine/engine_log.cpp core/src/engine/engine_output.cpp core/src/engine/engine_tune.cpp core/src/engine/engine_watch.cpp core/src/engine/engine_loops.cpp core/src/engine/engine_start.cpp core/src/engine/engine_place.cpp core/src/engine/engine_secondary.cpp core/src/engine/engine_telemetry.cpp core/src/results/engine_results.cpp core/src/t2/t2_tables.cpp core/src/t2/t2gen.cpp core/src/t2/t2rx.cpp core/src/t2/t2rx_sync.cpp core/src/t2/t2rx_symbols.cpp core/src/t2/t2rx_l1.cpp core/src/t2/t2rx_data.cpp core/src/t2/t2pilots.cpp core/src/t2/t2ofdm.cpp core/src/dsp/ldpc.cpp core/src/t2/t2l1.cpp core/src/t2/t2interleave.cpp core/src/t2/t2fec_tables.cpp core/src/t2/t2fec.cpp core/src/t2/t2plp.cpp core/src/dsp/resampler.cpp core/src/dsp/clock_correct.cpp core/src/tv/bbunpack.cpp core/src/tv/ts.cpp core/src/tv/tsout.cpp core/src/engine/scanner.cpp core/src/source/gain.cpp core/src/channels/channel.cpp core/src/dsp/direction.cpp core/src/dsp/dsp_compat.cpp core/src/dsp/bandwidth.cpp core/src/atsc/atsc.cpp core/src/atsc/atsc_gen.cpp core/src/atsc/atsc_rx.cpp core/src/atsc3/atsc3_bootstrap.cpp core/src/atsc3/atsc3_ofdm.cpp core/src/atsc3/atsc3_tables.cpp core/src/atsc3/atsc3_ldpc.cpp core/src/atsc3/atsc3_ldpc_tables.cpp core/src/atsc3/atsc3_ldpc_tables64.cpp core/src/atsc3/atsc3_data_tables.cpp core/src/atsc3/atsc3_l1.cpp core/src/atsc3/atsc3_sync.cpp core/src/atsc3/atsc3_rx.cpp core/src/atsc3/atsc3_receiver.cpp core/src/atsc3/atsc3_frame.cpp core/src/atsc3/atsc3_remux.cpp core/src/audio/ac4_dec.cpp core/src/audio/ac4_xcode.cpp core/src/atsc3/atsc3_route.cpp core/src/atsc3/atsc3_ip.cpp core/src/common/inflate.cpp core/src/common/xmlmini.cpp core/src/atsc3/atsc3_alp.cpp core/src/atsc3/atsc3_ti.cpp core/src/atsc3/atsc3_subframe.cpp core/src/atsc3/atsc3_cellmux.cpp core/src/atsc3/atsc3_bb.cpp core/src/atsc3/atsc3_bicm.cpp core/src/atsc3/atsc3_preamble.cpp core/src/atsc3/atsc3_constellations.cpp core/src/isdbt/isdbt.cpp core/src/isdbt/isdbt_tables_data.cpp core/src/isdbt/isdbt_gen.cpp core/src/isdbt/isdbt_demod.cpp core/src/isdbt/isdbt_rx.cpp core/src/dsp/exact_resampler.cpp core/src/engine/updater.cpp core/src/channels/channel_db.cpp core/src/engine/quality.cpp core/src/tv/teletext.cpp core/src/tv/dvbsub.cpp core/src/dvbt/dvbt.cpp core/src/dvbt/dvbt_fec.cpp core/src/dvbt/dvbt_gen.cpp core/src/dvbt/dvbt_rx.cpp core/src/tv/player.cpp core/src/tv/es_save.cpp core/src/audio/audioout.cpp core/src/t2/t2_pilot_tables.cpp core/src/fm/fm_rx.cpp core/src/fm/fm_tmc.cpp core/src/fm/fm_rbds.cpp core/src/fm/fm_gen.cpp core/src/tv/conceal.cpp core/src/net/nettuner.cpp core/src/tv/hls.cpp core/src/source/hackrf_usb.cpp core/src/tv/demo_ts.cpp core/src/engine/crash_report.cpp core/src/source/source_native.cpp core/src/source/source_rtlsdr.cpp core/src/source/source_airspy.cpp core/src/source/source_bladerf.cpp core/src/source/source_limesdr.cpp core/src/source/source_plutosdr.cpp core/src/source/source_usrp.cpp core/src/source/source_sdrplay.cpp core/src/source/source_airspyhf.cpp core/src/source/source_rtltcp.cpp core/src/source/source_spyserver.cpp core/src/source/source_sdrpp.cpp core/src/source/source_hermeslite2.cpp core/src/net/netradio.cpp core/src/net/share_server.cpp core/src/source/usb_diag.cpp core/src/common/png.cpp core/src/common/threadpool.cpp core/src/source/iq_record.cpp core/src/common/text_charset.cpp core/src/channels/channel_find.cpp core/src/channels/memory_bank.cpp core/src/channels/memory_io.cpp core/src/channels/memory_json.cpp core/src/net/feeds.cpp core/src/net/feeds_fmt.cpp core/src/net/pskreporter.cpp core/src/net/wsprnet.cpp core/src/source/iq_file.cpp core/src/dsp/carrierfind.cpp core/src/engine/wide_modes.cpp core/src/engine/widespan.cpp core/src/engine/device_claims.cpp core/src/source/source_fobos.cpp core/src/source/source_rx888.cpp core/src/engine/engine_multitv.cpp core/src/engine/channelizer.cpp core/src/engine/multitv.cpp core/src/tv/ts_record.cpp core/src/sweep/sweep.cpp core/src/sweep/sweep_io.cpp core/src/audio/audio_rec.cpp core/src/channels/freq_db.cpp core/src/source/source_nrspst.cpp core/src/audio/audio_monitor.cpp core/src/audio/clip_ring.cpp core/src/source/source_kiwisdr.cpp core/src/net/kiwi_list.cpp)
 target_sources(dect2core PRIVATE core/src/source/usb_fd.cpp core/src/source/usb_fd_io.cpp)   # radios opened by the platform and handed over as USB descriptors (Android): rtl_fd_shim.h
 # the built-in band plans: data/bandplans/builtin.json compiled in as text (bandplan.cpp parses it); a changed file configures again
-file(READ ${CMAKE_SOURCE_DIR}/data/bandplans/builtin.json _bp_txt)
+file(READ ${ONAIR_ROOT}/data/bandplans/builtin.json _bp_txt)
 file(CONFIGURE OUTPUT ${CMAKE_BINARY_DIR}/generated/bandplans_data.inc CONTENT "static const char kBuiltinBandPlans[] = R\"OnAirBP(${_bp_txt})OnAirBP\";\n" @ONLY)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/data/bandplans/builtin.json)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ONAIR_ROOT}/data/bandplans/builtin.json)
 target_sources(dect2core PRIVATE core/src/bandplan/bandplan.cpp)
 target_include_directories(dect2core PRIVATE ${CMAKE_BINARY_DIR}/generated)
 # the built-in frequency database: data/frequencies/*.tsv compiled in as text (freq_db.cpp parses them); a changed file configures again
 set(_fdb_inc "${CMAKE_BINARY_DIR}/generated/freqdb_data.inc")
 set(_fdb_out "static const char* const kFreqFiles[] = {\n")
-file(GLOB _fdb_files CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/data/frequencies/*.tsv)
+file(GLOB _fdb_files CONFIGURE_DEPENDS ${ONAIR_ROOT}/data/frequencies/*.tsv)
 list(SORT _fdb_files)
 foreach(_f ${_fdb_files})
   file(READ ${_f} _txt)
@@ -136,9 +137,9 @@ endforeach()
 string(APPEND _fdb_out "    nullptr};\n")
 file(CONFIGURE OUTPUT ${_fdb_inc} CONTENT "${_fdb_out}" @ONLY)
 # the built-in airport table: data/airports/airports.tsv (OurAirports, public domain) compiled in as text (airports.cpp parses it)
-file(READ ${CMAKE_SOURCE_DIR}/data/airports/airports.tsv _ap_txt)
+file(READ ${ONAIR_ROOT}/data/airports/airports.tsv _ap_txt)
 file(CONFIGURE OUTPUT ${CMAKE_BINARY_DIR}/generated/airports_data.inc CONTENT "static const char kAirportData[] = R\"OnAirAP(${_ap_txt})OnAirAP\";\n" @ONLY)
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/data/airports/airports.tsv)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ONAIR_ROOT}/data/airports/airports.tsv)
 target_sources(dect2core PRIVATE core/src/airports/airports.cpp)
 # The modes added after FM (DVB-S/S2, DTMB, analog TV, DMR, DRM, ADS-B): every core/src/<mode>/*.cpp belongs to its mode, so a mode can add files without editing this list
 set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas vdl4 uat wisun)
@@ -193,7 +194,7 @@ if(NOT MSVC)
 endif()
 target_link_libraries(dect2core PUBLIC dect2_rnnoise)
 # Lua 5.4 (MIT, third_party/lua): the scripts of the Automations window, in a sandbox (no io, os, package, debug libraries are compiled in)
-file(GLOB _lua_src CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/third_party/lua/*.c)
+file(GLOB _lua_src CONFIGURE_DEPENDS ${ONAIR_ROOT}/third_party/lua/*.c)
 add_library(dect2_lua STATIC ${_lua_src})
 target_include_directories(dect2_lua PUBLIC third_party/lua)
 target_compile_options(dect2_lua PRIVATE -w)
@@ -430,7 +431,7 @@ if(DECT2_BUILD_APP)
   # the interface translations: app/i18n/<code>.txt compiled in as text (i18n.cpp parses them); a changed catalog configures again
   set(_i18n_inc "${CMAKE_BINARY_DIR}/generated/i18n_catalogs.inc")
   set(_i18n_out "static const Catalog kCatalogs[] = {\n")
-  file(GLOB _i18n_files CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/app/i18n/*.txt)
+  file(GLOB _i18n_files CONFIGURE_DEPENDS ${ONAIR_ROOT}/app/i18n/*.txt)
   list(SORT _i18n_files)
   foreach(_f ${_i18n_files})
     get_filename_component(_code ${_f} NAME_WE)
@@ -460,14 +461,14 @@ if(DECT2_BUILD_APP)
   if(WIN32)
     target_link_libraries(dect2 PRIVATE comdlg32 ole32)
     set_target_properties(dect2 PROPERTIES WIN32_EXECUTABLE ON)   # no console window
-    if(EXISTS ${CMAKE_SOURCE_DIR}/packaging/windows/onair.rc)
+    if(EXISTS ${ONAIR_ROOT}/packaging/windows/onair.rc)
       target_sources(dect2 PRIVATE packaging/windows/onair.rc)
     endif()
   endif()
 endif()
 
 # RX888 MkII: SDDC_FX3.img next to dev builds (RAM load only; see third_party/sddc_fx3/README-OnAir.md)
-set(_ONAIR_RX888_FW "${CMAKE_SOURCE_DIR}/third_party/sddc_fx3/SDDC_FX3.img")
+set(_ONAIR_RX888_FW "${ONAIR_ROOT}/third_party/sddc_fx3/SDDC_FX3.img")
 if(EXISTS "${_ONAIR_RX888_FW}")
   function(_onair_bundle_rx888_fw target)
     add_custom_command(TARGET ${target} POST_BUILD
@@ -672,13 +673,13 @@ if(DECT2_BUILD_TESTS)
   if(DECT2_BUILD_APP)   # the catalogs are generated with the app
     add_executable(test_i18n tests/app/test_i18n.cpp app/i18n/i18n.cpp)
     target_include_directories(test_i18n PRIVATE app ${CMAKE_BINARY_DIR}/generated)
-    target_compile_definitions(test_i18n PRIVATE DECT2_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_compile_definitions(test_i18n PRIVATE DECT2_SOURCE_DIR="${ONAIR_ROOT}")
     add_test(NAME i18n COMMAND test_i18n)
     add_executable(test_tour tests/app/test_tour.cpp)   # the first-run tour: steps, anchors, skipping, start rule (app/ui/tour_logic.h)
-    target_compile_definitions(test_tour PRIVATE DECT2_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_compile_definitions(test_tour PRIVATE DECT2_SOURCE_DIR="${ONAIR_ROOT}")
     add_test(NAME tour_logic COMMAND test_tour)
     if(APPLE OR WIN32)   # a hidden window run of the program itself (a renamed copy, its own data and settings folders): applies memories to a receiver and checks its state
-      add_test(NAME memory_recall_app COMMAND ${CMAKE_COMMAND} -DBIN=$<TARGET_FILE:dect2> -DDIR=${CMAKE_BINARY_DIR}/memory_recall_test -P ${CMAKE_SOURCE_DIR}/tests/app/run_memory_recall.cmake)
+      add_test(NAME memory_recall_app COMMAND ${CMAKE_COMMAND} -DBIN=$<TARGET_FILE:dect2> -DDIR=${CMAKE_BINARY_DIR}/memory_recall_test -P ${ONAIR_ROOT}/tests/app/run_memory_recall.cmake)
       set_tests_properties(memory_recall_app PROPERTIES TIMEOUT 120)
     endif()
     add_executable(test_theme tests/app/test_theme.cpp)   # the Light / High contrast text contrast (app/ui/contrast.h, app/ui/theme.h)
@@ -689,7 +690,7 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME touch_logic COMMAND test_touch)
     add_executable(test_credits tests/app/test_credits.cpp)   # no empty field in the Credits table (app/panels/credits_data.h)
     target_include_directories(test_credits PRIVATE app)
-    target_compile_definitions(test_credits PRIVATE DECT2_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_compile_definitions(test_credits PRIVATE DECT2_SOURCE_DIR="${ONAIR_ROOT}")
     add_test(NAME credits COMMAND test_credits)
     add_executable(test_photo_links tests/app/test_photo_links.cpp)   # the database link builder (app/panels/photo_links.h)
     target_include_directories(test_photo_links PRIVATE app)
@@ -881,7 +882,7 @@ if(DECT2_BUILD_TESTS)
   add_test(NAME channel_db COMMAND test_channel_db)
   add_executable(test_bandplan tests/bandplan/test_bandplan.cpp)   # band plans: built-in channel tables, validation, CSV / JSON import and export, damaged files
   target_link_libraries(test_bandplan PRIVATE dect2core)
-  target_compile_definitions(test_bandplan PRIVATE DECT2_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+  target_compile_definitions(test_bandplan PRIVATE DECT2_SOURCE_DIR="${ONAIR_ROOT}")
   add_test(NAME bandplan COMMAND test_bandplan)
   add_executable(test_freq_db tests/channels/test_freq_db.cpp)   # the frequency database: data validity, search and filters, import / export round trip
   target_link_libraries(test_freq_db PRIVATE dect2core)
@@ -962,11 +963,11 @@ if(DECT2_BUILD_TESTS)
 
   add_executable(test_atsc3_remux tests/atsc3/test_atsc3_remux.cpp)
   target_link_libraries(test_atsc3_remux PRIVATE dect2core)
-  add_test(NAME atsc3_remux COMMAND test_atsc3_remux ${CMAKE_SOURCE_DIR}/tests/data/route_video.mp4 ${CMAKE_SOURCE_DIR}/tests/data/route_audio.mp4)
+  add_test(NAME atsc3_remux COMMAND test_atsc3_remux ${ONAIR_ROOT}/tests/data/route_video.mp4 ${ONAIR_ROOT}/tests/data/route_audio.mp4)
 
   add_executable(test_ac4 tests/audio/test_ac4.cpp)
   target_link_libraries(test_ac4 PRIVATE dect2core)
-  add_test(NAME ac4 COMMAND test_ac4 "${FFMPEG_LIBDIR}" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  add_test(NAME ac4 COMMAND test_ac4 "${FFMPEG_LIBDIR}" WORKING_DIRECTORY ${ONAIR_ROOT})
 
   add_executable(test_atsc3_frame tests/atsc3/test_atsc3_frame.cpp)
   target_link_libraries(test_atsc3_frame PRIVATE dect2core)
@@ -974,7 +975,7 @@ if(DECT2_BUILD_TESTS)
 
   add_executable(test_atsc3_receiver tests/atsc3/test_atsc3_receiver.cpp)
   target_link_libraries(test_atsc3_receiver PRIVATE dect2core)
-  add_test(NAME atsc3_receiver COMMAND test_atsc3_receiver ${CMAKE_SOURCE_DIR}/tests/data/route_video.mp4 ${CMAKE_SOURCE_DIR}/tests/data/route_audio.mp4)
+  add_test(NAME atsc3_receiver COMMAND test_atsc3_receiver ${ONAIR_ROOT}/tests/data/route_video.mp4 ${ONAIR_ROOT}/tests/data/route_audio.mp4)
 
   add_executable(test_atsc3_sync tests/atsc3/test_atsc3_sync.cpp)
   target_link_libraries(test_atsc3_sync PRIVATE dect2core)
@@ -982,7 +983,7 @@ if(DECT2_BUILD_TESTS)
 
   add_executable(test_atsc3_stream tests/atsc3/test_atsc3_stream.cpp)
   target_link_libraries(test_atsc3_stream PRIVATE dect2core)
-  add_test(NAME atsc3_stream COMMAND test_atsc3_stream ${CMAKE_SOURCE_DIR}/tests/data/route_video.mp4 ${CMAKE_SOURCE_DIR}/tests/data/route_audio.mp4)
+  add_test(NAME atsc3_stream COMMAND test_atsc3_stream ${ONAIR_ROOT}/tests/data/route_video.mp4 ${ONAIR_ROOT}/tests/data/route_audio.mp4)
 
   add_executable(isdbtgen tools/isdbtgen.cpp)
   target_link_libraries(isdbtgen PRIVATE dect2core)
@@ -998,7 +999,7 @@ if(DECT2_BUILD_TESTS)
 
   add_executable(test_atsc3_engine tests/atsc3/test_atsc3_engine.cpp)
   target_link_libraries(test_atsc3_engine PRIVATE dect2core)
-  add_test(NAME atsc3_engine COMMAND test_atsc3_engine ${CMAKE_SOURCE_DIR}/tests/data/route_video.mp4 ${CMAKE_SOURCE_DIR}/tests/data/route_audio.mp4)
+  add_test(NAME atsc3_engine COMMAND test_atsc3_engine ${ONAIR_ROOT}/tests/data/route_video.mp4 ${ONAIR_ROOT}/tests/data/route_audio.mp4)
   file(GLOB DECT2_ATSC3_SYNTH_TESTS CONFIGURE_DEPENDS tests/atsc3/test_atsc3_synth*.cpp)
   foreach(src ${DECT2_ATSC3_SYNTH_TESTS})
     get_filename_component(stem ${src} NAME_WE)
@@ -1112,7 +1113,7 @@ if(DECT2_BUILD_TESTS)
   if(ONAIR_RUST_PROTO)
     set(AIS_REF_DIR ${CMAKE_BINARY_DIR}/ais_ref)
     add_custom_command(OUTPUT ${AIS_REF_DIR}/ais_proto_ref.h ${AIS_REF_DIR}/ais_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${AIS_REF_DIR} -P ${CMAKE_SOURCE_DIR}/cmake/gen_ais_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${AIS_REF_DIR} -P ${ONAIR_ROOT}/cmake/gen_ais_ref.cmake
       DEPENDS core/include/dect2/ais/ais_proto.h core/src/ais/ais_proto.cpp cmake/gen_ais_ref.cmake VERBATIM)
     set_source_files_properties(core/src/ais/ais_proto.cpp core/src/ais/ais_proto_rs.cpp PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_PROTO)
     foreach(t test_ais_proto_rs bench_ais_proto)
@@ -1132,8 +1133,8 @@ if(DECT2_BUILD_TESTS)
     endif()
     set(_dir ${CMAKE_BINARY_DIR}/${MOD}_ref)
     add_custom_command(OUTPUT ${_dir}/${NAME}_ref.h ${_dir}/${NAME}_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=${NAME} -DHDR=${HDR} -DCPP=${DIR}/${BASE}.cpp -DDEF=DECT2_RUST_${_MU}
-              "-DFROM=${FROM}" "-DTO=${TO}" "-DEXTRA=${EXTRA}" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=${NAME} -DHDR=${HDR} -DCPP=${DIR}/${BASE}.cpp -DDEF=DECT2_RUST_${_MU}
+              "-DFROM=${FROM}" "-DTO=${TO}" "-DEXTRA=${EXTRA}" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
       DEPENDS core/include/${HDR} core/src/${DIR}/${BASE}.cpp cmake/gen_rs_ref.cmake VERBATIM)
     if(MOD STREQUAL "adsb" OR MOD STREQUAL "p25" OR MOD STREQUAL "tetra")   # same flags as the production file (see the note at dect2core)
       set_source_files_properties(${_dir}/${NAME}_ref.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
@@ -1154,9 +1155,9 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME fuzz_${MOD}_proto COMMAND fuzz_${MOD}_proto)
   endfunction()
   onair_rust_diff_tests(same same_proto same same_proto dect2/same/same_proto.h "namespace same {" "namespace same_ref {" "" "")
-  onair_rust_diff_tests(acars acars_proto acars acars_proto dect2/acars/acars_proto.h "namespace dect2 {" "namespace dect2_acars_ref {" " using namespace dect2;" ${CMAKE_SOURCE_DIR}/core/include/dect2/acars)
+  onair_rust_diff_tests(acars acars_proto acars acars_proto dect2/acars/acars_proto.h "namespace dect2 {" "namespace dect2_acars_ref {" " using namespace dect2;" ${ONAIR_ROOT}/core/include/dect2/acars)
   onair_rust_diff_tests(adsb adsb_msg adsb adsb_msg dect2/adsb/adsb_msg.h "namespace dect2::adsb {" "namespace dect2::adsb_ref {" "" "")
-  onair_rust_diff_tests(pager pager_proto pager pager_proto dect2/pager/pager_proto.h "namespace pager {" "namespace pager_ref {" "" ${CMAKE_SOURCE_DIR}/core/include/dect2/pager)
+  onair_rust_diff_tests(pager pager_proto pager pager_proto dect2/pager/pager_proto.h "namespace pager {" "namespace pager_ref {" "" ${ONAIR_ROOT}/core/include/dect2/pager)
   onair_rust_diff_tests(nxdn nxdn_proto nxdn nxdn_proto dect2/nxdn/nxdn_proto.h "namespace nxdn {" "namespace nxdn_ref {" "" "")
   onair_rust_diff_tests(dstar dstar_proto dstar dstar_proto dect2/dstar/dstar_proto.h "namespace dstar {" "namespace dstar_ref {" "" "")
   onair_rust_diff_tests(ts ts_proto tv ts_proto dect2/tv/ts_proto.h "namespace dect2::tsp {" "namespace dect2::tsp_ref {" "" "")
@@ -1175,13 +1176,13 @@ if(DECT2_BUILD_TESTS)
     target_link_libraries(bench_fec_proto PRIVATE onair_rs)
   endif()
   onair_rust_diff_tests(p25 p25_proto p25 p25_proto dect2/p25/p25_proto.h "namespace p25 {" "namespace p25_ref {" "" "")
-  onair_rust_diff_tests(tetra tetra_pdu tetra tetra_pdu dect2/tetra/tetra_pdu.h "namespace dect2::tetra {" "namespace dect2::tetra_ref {" " using dect2::tetra::Bits;" ${CMAKE_SOURCE_DIR}/core/include/dect2/tetra)
+  onair_rust_diff_tests(tetra tetra_pdu tetra tetra_pdu dect2/tetra/tetra_pdu.h "namespace dect2::tetra {" "namespace dect2::tetra_ref {" " using dect2::tetra::Bits;" ${ONAIR_ROOT}/core/include/dect2/tetra)
   # DRM: drm_proto.cpp with a generated reference copy (the records are those of drm_msg.h, so the copy's header includes the real one)
   if(ONAIR_RUST_DRM)
     set(_dir ${CMAKE_BINARY_DIR}/drm_ref)
     add_custom_command(OUTPUT ${_dir}/drm_proto_ref.h ${_dir}/drm_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=drm_proto -DHDR=dect2/drm/drm_proto.h -DCPP=drm/drm_proto.cpp -DDEF=DECT2_RUST_DRM
-              "-DFROM=namespace dect2::drmp {" "-DTO=namespace dect2::drmp_ref {" "-DEXTRA=" "-DINC_FROM=#include \"drm_msg.h\"" "-DINC_TO=#include \"dect2/drm/drm_msg.h\"" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=drm_proto -DHDR=dect2/drm/drm_proto.h -DCPP=drm/drm_proto.cpp -DDEF=DECT2_RUST_DRM
+              "-DFROM=namespace dect2::drmp {" "-DTO=namespace dect2::drmp_ref {" "-DEXTRA=" "-DINC_FROM=#include \"drm_msg.h\"" "-DINC_TO=#include \"dect2/drm/drm_msg.h\"" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
       DEPENDS core/include/dect2/drm/drm_proto.h core/src/drm/drm_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
     set_source_files_properties(core/src/drm/drm_proto.cpp core/src/drm/drm_proto_rs.cpp PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_DRM)
     add_executable(test_drm_proto_rs tests/drm/test_drm_proto_rs.cpp ${_dir}/drm_proto_ref.cpp core/src/drm/drm_proto.cpp core/src/drm/drm_proto_rs.cpp)
@@ -1198,12 +1199,12 @@ if(DECT2_BUILD_TESTS)
   if(ONAIR_RUST_DAB)
     set(_dir ${CMAKE_BINARY_DIR}/dab_ref)
     add_custom_command(OUTPUT ${_dir}/text_charset_ref.h ${_dir}/text_charset_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=text_charset -DHDR=dect2/common/text_charset.h -DCPP=common/text_charset.cpp -DDEF=DECT2_RUST_DVBSI
-              "-DFROM=namespace dect2::text {" "-DTO=namespace dect2::text_ref {" "-DEXTRA=" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=text_charset -DHDR=dect2/common/text_charset.h -DCPP=common/text_charset.cpp -DDEF=DECT2_RUST_DVBSI
+              "-DFROM=namespace dect2::text {" "-DTO=namespace dect2::text_ref {" "-DEXTRA=" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
       DEPENDS core/include/dect2/common/text_charset.h core/src/common/text_charset.cpp cmake/gen_rs_ref.cmake VERBATIM)
     add_custom_command(OUTPUT ${_dir}/dab_proto_ref.h ${_dir}/dab_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=dab_proto -DHDR=dect2/dab/dab_proto.h -DCPP=dab/dab_proto.cpp -DDEF=DECT2_RUST_DAB
-              "-DFROM=namespace dect2::dabp {" "-DTO=namespace dect2::dabp_ref {" "-DEXTRA=" "-DCPP_REPL=namespace textns = dect2::text=>namespace textns = dect2::text_ref@@#include \"dect2/common/text_charset.h\"=>#include \"text_charset_ref.h\"" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=dab_proto -DHDR=dect2/dab/dab_proto.h -DCPP=dab/dab_proto.cpp -DDEF=DECT2_RUST_DAB
+              "-DFROM=namespace dect2::dabp {" "-DTO=namespace dect2::dabp_ref {" "-DEXTRA=" "-DCPP_REPL=namespace textns = dect2::text=>namespace textns = dect2::text_ref@@#include \"dect2/common/text_charset.h\"=>#include \"text_charset_ref.h\"" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
       DEPENDS core/include/dect2/dab/dab_proto.h core/src/dab/dab_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
     set(_srcs core/src/dab/dab_proto.cpp core/src/dab/dab_proto_rs.cpp)
     set_source_files_properties(${_srcs} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_DAB)
@@ -1248,8 +1249,8 @@ if(DECT2_BUILD_TESTS)
         list(GET _f 4 _repl)
       endif()
       add_custom_command(OUTPUT ${_dir}/${_n}_ref.h ${_dir}/${_n}_ref.cpp
-        COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=${_n} -DHDR=${_h} -DCPP=${_c} -DDEF=DECT2_RUST_DVBSI
-                "-DFROM=${_from}" "-DTO=${_to}" "-DEXTRA=" "-DCPP_REPL=${_repl}" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+        COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=${_n} -DHDR=${_h} -DCPP=${_c} -DDEF=DECT2_RUST_DVBSI
+                "-DFROM=${_from}" "-DTO=${_to}" "-DEXTRA=" "-DCPP_REPL=${_repl}" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
         DEPENDS core/include/${_h} core/src/${_c} cmake/gen_rs_ref.cmake VERBATIM)
       list(APPEND _refsrc ${_dir}/${_n}_ref.cpp)
     endforeach()
@@ -1279,8 +1280,8 @@ if(DECT2_BUILD_TESTS)
         set(_incs "-DINC_FROM=#include \"dmr_fec.h\"" "-DINC_TO=#include \"dmr_fec_ref.h\"")
       endif()
       add_custom_command(OUTPUT ${_dir}/dmr_${_b}_ref.h ${_dir}/dmr_${_b}_ref.cpp
-        COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=dmr_${_b} -DHDR=dect2/dmr/dmr_${_b}.h -DCPP=dmr/dmr_${_b}.cpp -DDEF=DECT2_RUST_DMR
-                "-DFROM=namespace dmr {" "-DTO=namespace dmr_ref {" "-DEXTRA=" ${_incs} -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+        COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=dmr_${_b} -DHDR=dect2/dmr/dmr_${_b}.h -DCPP=dmr/dmr_${_b}.cpp -DDEF=DECT2_RUST_DMR
+                "-DFROM=namespace dmr {" "-DTO=namespace dmr_ref {" "-DEXTRA=" ${_incs} -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
         DEPENDS core/include/dect2/dmr/dmr_${_b}.h core/src/dmr/dmr_${_b}.cpp cmake/gen_rs_ref.cmake VERBATIM)
     endforeach()
     set_source_files_properties(${_dir}/dmr_fec_ref.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
@@ -1301,8 +1302,8 @@ if(DECT2_BUILD_TESTS)
     set(_dir ${CMAKE_BINARY_DIR}/ax25_ref)
     foreach(_b ax25 aprs)
       add_custom_command(OUTPUT ${_dir}/packet_${_b}_ref.h ${_dir}/packet_${_b}_ref.cpp
-        COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=packet_${_b} -DHDR=dect2/packet/packet_${_b}.h -DCPP=packet/packet_${_b}.cpp -DDEF=DECT2_RUST_AX25
-                "-DFROM=namespace ${_b} {" "-DTO=namespace ${_b}_ref {" "-DEXTRA=" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+        COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=packet_${_b} -DHDR=dect2/packet/packet_${_b}.h -DCPP=packet/packet_${_b}.cpp -DDEF=DECT2_RUST_AX25
+                "-DFROM=namespace ${_b} {" "-DTO=namespace ${_b}_ref {" "-DEXTRA=" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
         DEPENDS core/include/dect2/packet/packet_${_b}.h core/src/packet/packet_${_b}.cpp cmake/gen_rs_ref.cmake VERBATIM)
     endforeach()
     set_source_files_properties(${_dir}/packet_aprs_ref.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
@@ -1328,7 +1329,7 @@ if(DECT2_BUILD_TESTS)
       list(APPEND _refs ${_dir}/${_b}_ref.cpp)
     endforeach()
     add_custom_command(OUTPUT ${_refs} ${_dir}/mesh_proto_ref.h ${_dir}/mesh_proto_internal_ref.h ${_dir}/mesh_pb_ref.h
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -P ${CMAKE_SOURCE_DIR}/cmake/gen_mesh_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -P ${ONAIR_ROOT}/cmake/gen_mesh_ref.cmake
       DEPENDS core/include/dect2/mesh/mesh_proto.h core/include/dect2/mesh/mesh_pb.h core/src/mesh/mesh_proto_internal.h core/src/mesh/mesh_proto.cpp
               core/src/mesh/mesh_proto_tables.cpp core/src/mesh/mesh_proto_meshtastic.cpp core/src/mesh/mesh_proto_meshcore.cpp core/src/mesh/mesh_proto_aprs.cpp
               core/src/mesh/mesh_proto_lorawan.cpp core/src/mesh/mesh_pb.cpp cmake/gen_mesh_ref.cmake VERBATIM)
@@ -1353,8 +1354,8 @@ if(DECT2_BUILD_TESTS)
   if(ONAIR_RUST_WISUN)
     set(_dir ${CMAKE_BINARY_DIR}/wisun_ref)
     add_custom_command(OUTPUT ${_dir}/wisun_proto_ref.h ${_dir}/wisun_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=wisun_proto -DHDR=dect2/wisun/wisun_proto.h -DCPP=wisun/wisun_proto.cpp -DDEF=DECT2_RUST_WISUN
-              "-DFROM=namespace wisun {" "-DTO=namespace wisun_ref {" "-DEXTRA=" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=wisun_proto -DHDR=dect2/wisun/wisun_proto.h -DCPP=wisun/wisun_proto.cpp -DDEF=DECT2_RUST_WISUN
+              "-DFROM=namespace wisun {" "-DTO=namespace wisun_ref {" "-DEXTRA=" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
       DEPENDS core/include/dect2/wisun/wisun_proto.h core/src/wisun/wisun_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
     set(_real core/src/wisun/wisun_proto.cpp core/src/wisun/wisun_proto_rs.cpp)
     set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_WISUN)
@@ -1374,13 +1375,13 @@ if(DECT2_BUILD_TESTS)
   if(ONAIR_RUST_VDL2)
     set(_dir ${CMAKE_BINARY_DIR}/vdl2_ref)
     add_custom_command(OUTPUT ${_dir}/vdl2_proto_ref.h ${_dir}/vdl2_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=vdl2_proto -DHDR=dect2/vdl2/vdl2_proto.h -DCPP=vdl2/vdl2_proto.cpp -DDEF=DECT2_RUST_VDL2
-              "-DFROM=namespace dect2 {" "-DTO=namespace dect2_vdl2_ref {" "-DEXTRA= using namespace dect2;" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=vdl2_proto -DHDR=dect2/vdl2/vdl2_proto.h -DCPP=vdl2/vdl2_proto.cpp -DDEF=DECT2_RUST_VDL2
+              "-DFROM=namespace dect2 {" "-DTO=namespace dect2_vdl2_ref {" "-DEXTRA= using namespace dect2;" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
       DEPENDS core/include/dect2/vdl2/vdl2_proto.h core/src/vdl2/vdl2_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
     set(_real core/src/vdl2/vdl2_proto.cpp core/src/vdl2/vdl2_proto_rs.cpp)
     set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_VDL2)
     add_executable(test_vdl2_proto_rs tests/vdl2/test_vdl2_proto_rs.cpp ${_dir}/vdl2_proto_ref.cpp ${_real})
-    target_include_directories(test_vdl2_proto_rs PRIVATE core/include core/src/vdl2 ${_dir} ${CMAKE_SOURCE_DIR}/core/include/dect2/vdl2)
+    target_include_directories(test_vdl2_proto_rs PRIVATE core/include core/src/vdl2 ${_dir} ${ONAIR_ROOT}/core/include/dect2/vdl2)
     target_link_libraries(test_vdl2_proto_rs PRIVATE dect2core onair_rs)
     add_test(NAME vdl2_proto_rs COMMAND test_vdl2_proto_rs)
     add_executable(fuzz_vdl2_proto tests/vdl2/fuzz_vdl2_proto.cpp ${_real})
@@ -1395,14 +1396,14 @@ if(DECT2_BUILD_TESTS)
   if(ONAIR_RUST_HFDL)
     set(_dir ${CMAKE_BINARY_DIR}/hfdl_ref)
     add_custom_command(OUTPUT ${_dir}/hfdl_proto_ref.h ${_dir}/hfdl_proto_ref.cpp
-      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=hfdl_proto -DHDR=dect2/hfdl/hfdl_proto.h -DCPP=hfdl/hfdl_proto.cpp -DDEF=DECT2_RUST_HFDL
-              "-DFROM=namespace dect2 {" "-DTO=namespace dect2_hfdl_ref {" "-DEXTRA= using namespace dect2;" "-DCPP_REPL=hfdlReadAcars=>hfdlReadAcarsRef" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      COMMAND ${CMAKE_COMMAND} -DSRC=${ONAIR_ROOT} -DOUT=${_dir} -DNAME=hfdl_proto -DHDR=dect2/hfdl/hfdl_proto.h -DCPP=hfdl/hfdl_proto.cpp -DDEF=DECT2_RUST_HFDL
+              "-DFROM=namespace dect2 {" "-DTO=namespace dect2_hfdl_ref {" "-DEXTRA= using namespace dect2;" "-DCPP_REPL=hfdlReadAcars=>hfdlReadAcarsRef" -P ${ONAIR_ROOT}/cmake/gen_rs_ref.cmake
       DEPENDS core/include/dect2/hfdl/hfdl_proto.h core/src/hfdl/hfdl_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
     set(_real core/src/hfdl/hfdl_proto.cpp core/src/hfdl/hfdl_proto_rs.cpp)
     set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_HFDL)
     set_source_files_properties(${_real} ${_dir}/hfdl_proto_ref.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
     add_executable(test_hfdl_proto_rs tests/hfdl/test_hfdl_proto_rs.cpp ${_dir}/hfdl_proto_ref.cpp ${_real})
-    target_include_directories(test_hfdl_proto_rs PRIVATE core/include core/src/hfdl ${_dir} ${CMAKE_SOURCE_DIR}/core/include/dect2/hfdl)
+    target_include_directories(test_hfdl_proto_rs PRIVATE core/include core/src/hfdl ${_dir} ${ONAIR_ROOT}/core/include/dect2/hfdl)
     target_link_libraries(test_hfdl_proto_rs PRIVATE dect2core onair_rs)
     add_test(NAME hfdl_proto_rs COMMAND test_hfdl_proto_rs)
     add_executable(fuzz_hfdl_proto tests/hfdl/fuzz_hfdl_proto.cpp ${_real})
@@ -1554,14 +1555,14 @@ if(DECT2_BUILD_TESTS)
     endif()
   endforeach()
   if(TARGET test_eczas_wav)
-    target_compile_definitions(test_eczas_wav PRIVATE DECT2_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_compile_definitions(test_eczas_wav PRIVATE DECT2_SOURCE_DIR="${ONAIR_ROOT}")
   endif()
   if(TARGET test_uat_proto AND TARGET test_uat_gen)
     add_custom_target(test_uat DEPENDS test_uat_proto test_uat_gen)
   endif()
 
   if(TEST mesh_presets_meshcore)
-    set_tests_properties(mesh_presets_meshcore PROPERTIES ENVIRONMENT "ONAIR_TEST_DATA=${CMAKE_SOURCE_DIR}/tests/data")
+    set_tests_properties(mesh_presets_meshcore PROPERTIES ENVIRONMENT "ONAIR_TEST_DATA=${ONAIR_ROOT}/tests/data")
   endif()
 
   # Long-running tests (30 s and more): the quick CI on every push skips them (ctest -LE slow),
@@ -1580,7 +1581,7 @@ if(DECT2_BUILD_TESTS)
     endif()
   endforeach()
   # the tests measured at 20 s or more (tests/long_tests.txt, regenerated with tools/test_times.sh after a full run)
-  file(STRINGS "${CMAKE_SOURCE_DIR}/tests/long_tests.txt" DECT2_LONG_TESTS REGEX "^[A-Za-z0-9_]+$")
+  file(STRINGS "${ONAIR_ROOT}/tests/long_tests.txt" DECT2_LONG_TESTS REGEX "^[A-Za-z0-9_]+$")
   foreach(t ${DECT2_LONG_TESTS})
     if(TEST ${t})
       set_tests_properties(${t} PROPERTIES LABELS slow)
@@ -1675,7 +1676,7 @@ if(DECT2_COPY_RUNTIME_DLLS AND MINGW)
     if(TARGET ${t})
       add_custom_command(TARGET ${t} POST_BUILD
         COMMAND ${CMAKE_COMMAND} "-DEXE=$<TARGET_FILE:${t}>" "-DSEARCH_DIR=${DECT2_RUNTIME_DLL_DIR}" "-DOBJDUMP=${CMAKE_OBJDUMP}"
-                "-DEXTRA=${DECT2_EXTRA_RUNTIME_DLLS}" -P ${CMAKE_SOURCE_DIR}/packaging/windows/copy_runtime_dlls.cmake
+                "-DEXTRA=${DECT2_EXTRA_RUNTIME_DLLS}" -P ${ONAIR_ROOT}/packaging/windows/copy_runtime_dlls.cmake
         VERBATIM)
     endif()
   endforeach()
