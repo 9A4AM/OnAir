@@ -1377,3 +1377,13 @@ Project	Project
 Author	Author
 Licence	Licence
 Used for	Used for
+Update source	Origem das atualizações
+Automatic: GitHub	Automático: GitHub
+GitHub only	Só GitHub
+Mirror only	Só espelho
+Use the mirror when GitHub cannot be reached	Usar o espelho quando o GitHub não estiver acessível
+Mirror address (https://host/{url} or a base address)	Endereço do espelho (https://host/{url} ou um endereço base)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	Um espelho é um endereço web de terceiros que você escolheu. Ele vê que você procura atualizações e qual versão usa. Só é usado depois de uma falha do GitHub (nunca com «Só GitHub»), o pacote é verificado com a soma do GitHub quando o GitHub está acessível, e nada é instalado de um espelho sem a sua confirmação.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	A lista de versões veio pelo espelho e o GitHub não estava acessível para confirmar a soma: só o espelho garante este pacote. Nada é instalado sem a sua confirmação.
+I understand, download it anyway	Entendo, baixar mesmo assim
+The list came through the mirror; the checksum was confirmed by GitHub.	A lista veio pelo espelho; a soma de verificação foi confirmada pelo GitHub.

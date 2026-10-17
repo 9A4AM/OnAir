@@ -176,6 +176,9 @@ jobs:
           BASE: ${{ needs.version.outputs.base }}
         run: |
           set -euo pipefail
+          # SHA256SUMS: the checksums of every package, for the update check's fallback when api.github.com is blocked but github.com works
+          # (users behind a mirror). The Windows files are added by the attach-windows job.
+          (cd dist && sha256sum * | grep -v ' SHA256SUMS$' > SHA256SUMS)
           # One beta per version. A new push deletes the previous beta, including its tag, before publishing the replacement.
           # An official tag deletes that beta too, so the finished release is the one people are offered.
           prefix="v${BASE}-beta"
@@ -213,7 +216,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.version.outputs.tag }}
-        run: gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+        run: |
+          set -euo pipefail
+          # add the Windows checksums to the SHA256SUMS the publish job attached
+          mkdir -p sums
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" -p SHA256SUMS -D sums || : > sums/SHA256SUMS
+          (cd dist && sha256sum *) >> sums/SHA256SUMS
+          gh release upload "$TAG" dist/* sums/SHA256SUMS --repo "$GITHUB_REPOSITORY" --clobber
   # The Docker image (packaging/docker) of a finished release, for amd64 and arm64: ghcr.io/<owner>/onair:<version> and :latest.
   # Not for betas: they would rebuild it at every push to a release branch. It installs the .deb just attached above.
   docker:

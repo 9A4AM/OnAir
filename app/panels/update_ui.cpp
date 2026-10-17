@@ -15,11 +15,20 @@ bool resultDismissed = false;
 // the version whose installation failed at the last start: not tried again by itself (the button still does)
 bool failedBefore(const Updater::Status& st, const ReleaseInfo& r) { return st.lastResult.found && !st.lastResult.ok && compareVersions(r.version, st.lastResult.version) == 0; }
 double nowS() { return (double)time(nullptr); }
+// the mirror choices of the settings go to the updater (nothing is sent to a mirror unless they allow it)
+void applyMirror(App& a) {
+    MirrorConfig c;
+    c.source = a.updSrc == 1 ? UpdateSource::GitHubOnly : a.updSrc == 2 ? UpdateSource::MirrorOnly : UpdateSource::Automatic;
+    c.fallback = a.updMirrorOn;
+    c.tmpl = a.updMirror;
+    U(a).setMirror(c);
+}
 bool skipped(const App& a, const ReleaseInfo& r) { return !a.updSkip.empty() && compareVersions(r.version, a.updSkip) <= 0; }
 }
 
 void updateTick(App& a) {
     Updater& u = U(a);
+    applyMirror(a);
     const Updater::Status st = u.status();
     static Updater::Phase lastPhase = Updater::Phase::Idle;
     static double startT = -1;
@@ -48,7 +57,7 @@ void updateTick(App& a) {
         case Updater::Phase::Available:
             a.updLast = nowS(); savePrefs(a);
             a.engine.log("update available: OnAir " + st.release.version + (st.release.prerelease ? tr(" (beta)") : ""));
-            if (a.updAuto && st.autoInstallable && !skipped(a, st.release) && !failedBefore(st, st.release)) { U(a).download(); a.engine.log("downloading OnAir " + st.release.version + " in the background"); }
+            if (a.updAuto && st.autoInstallable && !st.mirrorUnverified && !skipped(a, st.release) && !failedBefore(st, st.release)) { U(a).download(); a.engine.log("downloading OnAir " + st.release.version + " in the background"); }
             break;
         case Updater::Phase::Ready: a.engine.log("OnAir " + st.release.version + " is ready: it is installed when you close the program"); break;
         case Updater::Phase::Failed: a.engine.log("update: " + st.error); break;
@@ -62,6 +71,7 @@ bool updateOnExit(App& a) {
     if (!a.upd) return false;
     const Updater::Status st = a.upd->status();
     if (st.phase != Updater::Phase::Ready || !a.updAuto) return false;
+    if (st.release.fromMirror && !st.release.officialVerified) return false;   // only the mirror vouches for it: installed only by the button, never by itself
     std::string err;
     return a.upd->apply(false, &err);
 }
@@ -135,7 +145,18 @@ void updateButton(App& a) {
                 if (st.kind == InstallKind::WindowsInstall) ImGui::TextDisabled("%s", tr("Windows asks for permission to run the installer."));
                 if (st.kind == InstallKind::LinuxDeb) ImGui::TextDisabled("%s", tr("The system asks for your password to install the package."));
             } else {
-                if (st.autoInstallable) { if (ImGui::Button(tr("Download and install"))) u.download(); }
+                if (st.release.fromMirror) {
+                    ImGui::PushTextWrapPos(0);
+                    if (st.mirrorUnverified) ImGui::TextColored(ImVec4(0.95f, 0.5f, 0.35f, 1), "%s", tr("The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation."));
+                    else ImGui::TextDisabled("%s", tr("The list came through the mirror; the checksum was confirmed by GitHub."));
+                    ImGui::PopTextWrapPos();
+                }
+                if (st.mirrorUnverified && st.autoInstallable) ImGui::Checkbox(tr("I understand, download it anyway"), &a.updConfirm);
+                if (st.autoInstallable) {
+                    ImGui::BeginDisabled(st.mirrorUnverified && !a.updConfirm);
+                    if (ImGui::Button(tr("Download and install"))) u.download(st.mirrorUnverified && a.updConfirm);
+                    ImGui::EndDisabled();
+                }
                 else { ImGui::TextDisabled("%s", tr("This copy of OnAir cannot replace itself.")); }
                 ImGui::SameLine();
                 if (ImGui::Button(tr("Release page"))) u.openReleasePage();
@@ -156,8 +177,24 @@ void updateButton(App& a) {
         ch |= ImGui::Checkbox(tr("Download and install them by themselves"), &a.updAuto);
         ch |= ImGui::Checkbox(tr("Include beta versions"), &a.updPre);
         if (ch) savePrefs(a);
+        {
+            const char* items[3] = {tr("Automatic: GitHub"), tr("GitHub only"), tr("Mirror only")};
+            ImGui::SetNextItemWidth(200 * gUi);
+            if (ImGui::BeginCombo(tr("Update source"), items[std::max(0, std::min(2, a.updSrc))])) {
+                for (int i = 0; i < 3; i++) if (ImGui::Selectable(items[i], a.updSrc == i)) { a.updSrc = i; savePrefs(a); }
+                ImGui::EndCombo();
+            }
+            if (a.updSrc == 0 && ImGui::Checkbox(tr("Use the mirror when GitHub cannot be reached"), &a.updMirrorOn)) savePrefs(a);
+            if (a.updSrc == 2 || (a.updSrc == 0 && a.updMirrorOn)) {
+                char buf[400];
+                snprintf(buf, sizeof buf, "%s", a.updMirror.c_str());
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::InputTextWithHint("##updmirror", tr("Mirror address (https://host/{url} or a base address)"), buf, sizeof buf)) { a.updMirror = buf; savePrefs(a); }
+            }
+        }
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
-        ImGui::TextWrapped("%s", tr("Only github.com is contacted. Downloads are checked against the SHA-256 GitHub lists for the file."));
+        if (a.updSrc == 2 || (a.updSrc == 0 && a.updMirrorOn)) ImGui::TextWrapped("%s", tr("A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation."));
+        else ImGui::TextWrapped("%s", tr("Only github.com is contacted. Downloads are checked against the SHA-256 GitHub lists for the file."));
         ImGui::PopStyleColor();
         ImGui::EndPopup();
     }

@@ -1395,3 +1395,13 @@ Project	Project
 Author	Author
 Licence	Licence
 Used for	Used for
+Update source	Source des mises à jour
+Automatic: GitHub	Automatique : GitHub
+GitHub only	GitHub seulement
+Mirror only	Miroir seulement
+Use the mirror when GitHub cannot be reached	Utiliser le miroir quand GitHub est injoignable
+Mirror address (https://host/{url} or a base address)	Adresse du miroir (https://host/{url} ou une adresse de base)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	Un miroir est une adresse web tierce que vous avez choisie. Il voit que vous cherchez des mises à jour et quelle version vous utilisez. Il n'est utilisé qu'après un échec de GitHub (jamais avec « GitHub seulement »), le paquet est vérifié avec la somme de GitHub quand GitHub est joignable, et rien n'est installé depuis un miroir sans votre confirmation.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	La liste des versions est venue par le miroir et GitHub était injoignable pour confirmer la somme : seul le miroir garantit ce paquet. Rien n'est installé sans votre confirmation.
+I understand, download it anyway	Je comprends, télécharger quand même
+The list came through the mirror; the checksum was confirmed by GitHub.	La liste est venue par le miroir ; la somme a été confirmée par GitHub.

@@ -1377,3 +1377,13 @@ Project	Project
 Author	Author
 Licence	Licence
 Used for	Used for
+Update source	Origine degli aggiornamenti
+Automatic: GitHub	Automatica: GitHub
+GitHub only	Solo GitHub
+Mirror only	Solo mirror
+Use the mirror when GitHub cannot be reached	Usa il mirror quando GitHub non è raggiungibile
+Mirror address (https://host/{url} or a base address)	Indirizzo del mirror (https://host/{url} o un indirizzo base)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	Un mirror è un indirizzo web di terze parti che hai scelto. Vede che cerchi aggiornamenti e quale versione usi. Viene usato solo dopo un errore di GitHub (mai con «Solo GitHub»), il pacchetto è verificato con il checksum di GitHub quando GitHub è raggiungibile, e nulla viene installato da un mirror senza la tua conferma.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	L'elenco delle versioni è arrivato dal mirror e GitHub non era raggiungibile per confermare il checksum: solo il mirror garantisce questo pacchetto. Non si installa nulla senza la tua conferma.
+I understand, download it anyway	Ho capito, scarica comunque
+The list came through the mirror; the checksum was confirmed by GitHub.	L'elenco è arrivato dal mirror; il checksum è stato confermato da GitHub.

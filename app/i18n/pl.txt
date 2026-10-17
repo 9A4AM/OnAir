@@ -1395,3 +1395,13 @@ Project	Project
 Author	Author
 Licence	Licence
 Used for	Used for
+Update source	Źródło aktualizacji
+Automatic: GitHub	Automatyczne: GitHub
+GitHub only	Tylko GitHub
+Mirror only	Tylko serwer lustrzany
+Use the mirror when GitHub cannot be reached	Użyj serwera lustrzanego, gdy GitHub jest niedostępny
+Mirror address (https://host/{url} or a base address)	Adres serwera lustrzanego (https://host/{url} lub adres bazowy)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	Serwer lustrzany to wybrany przez Ciebie adres internetowy osoby trzeciej. Widzi, że sprawdzasz aktualizacje i jakiej wersji używasz. Jest używany tylko po niepowodzeniu GitHub (nigdy przy „Tylko GitHub”), pakiet jest sprawdzany sumą kontrolną z GitHub, gdy GitHub jest osiągalny, a nic z serwera lustrzanego nie jest instalowane bez Twojego potwierdzenia.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	Lista wersji przyszła przez serwer lustrzany, a GitHub był niedostępny, by potwierdzić sumę kontrolną: za ten pakiet ręczy tylko serwer lustrzany. Nic nie zostanie zainstalowane bez Twojego potwierdzenia.
+I understand, download it anyway	Rozumiem, pobierz mimo to
+The list came through the mirror; the checksum was confirmed by GitHub.	Lista przyszła przez serwer lustrzany; sumę kontrolną potwierdził GitHub.

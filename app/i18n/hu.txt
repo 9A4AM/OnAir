@@ -1380,3 +1380,13 @@ Project	Project
 Author	Author
 Licence	Licence
 Used for	Used for
+Update source	Frissítési forrás
+Automatic: GitHub	Automatikus: GitHub
+GitHub only	Csak GitHub
+Mirror only	Csak tükör
+Use the mirror when GitHub cannot be reached	Tükör használata, ha a GitHub nem érhető el
+Mirror address (https://host/{url} or a base address)	Tükör címe (https://host/{url} vagy alapcím)
+A mirror is a third-party web address you chose. It sees that you check for updates and which version you run. It is used only after GitHub fails (not at all with GitHub only), the package is checked against the checksum from GitHub when GitHub can be reached, and nothing is installed from a mirror without your confirmation.	A tükör egy harmadik fél általad választott webcíme. Látja, hogy frissítést keresel és melyik verziót használod. Csak a GitHub hibája után kerül sor rá („Csak GitHub” esetén soha), a csomagot a GitHub ellenőrzőösszegével veti össze a program, ha a GitHub elérhető, és tükörről semmi sem települ a jóváhagyásod nélkül.
+The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	A verziólista a tükrön át jött, és a GitHub nem volt elérhető az ellenőrzőösszeg megerősítéséhez: ezt a csomagot csak a tükör garantálja. Jóváhagyásod nélkül semmi sem települ.
+I understand, download it anyway	Értem, letöltöm mégis
+The list came through the mirror; the checksum was confirmed by GitHub.	A lista a tükrön át jött; az ellenőrzőösszeget a GitHub megerősítette.
