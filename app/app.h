@@ -266,6 +266,7 @@ struct App {
     char netKey[32] = "";
     // first-run tour (wizard.inc)
     bool wizOpen = false, wizStart = false, wizAcked = false;
+    int creditsTab = 0;         // 0 Contributors, 1 Projects and licences (the tab the Credits window opens on)
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
     bool galleryOpen = false;           // the picture gallery (View > Images)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
@@ -456,6 +457,10 @@ struct App {
     bool recSigmf = true;               // write SigMF metadata beside IQ recordings (pref "recSigmf", default on)
     int audioRecFmt = 0;                // audio recording format: 0 = WAV, 1 = FLAC, 2 = MP3 (pref "audioRecFmt")
     bool audioRecGate = false, audioRecSplit = false, audioRecKeep = false;   // only while audio is present / one file per transmission / keep going across retunes (prefs "audioRec...")
+    // "Monitor audio" (prefs "mon...") and the audio output devices
+    bool monOn = false; int monDemod = 4; float monVol = 1.f; int monLatency = 100; bool monYield = true;   // demod 4 = Auto (USB below 30 MHz, NFM above)
+    std::string monDev, monDev2; bool monOut2 = false; float monVol2 = 1.f; double monOffset = 0;
+    bool monNet = false; int monPort = 7355; bool monBindAll = false, monWav = true;
     bool audioRecWasActive = false; int audioRecMode = 0; double audioRecFreq = 0; std::string audioRecDonePath;
     int recFormat = 0;                  // IQ recording format: 0 = 8-bit, 1 = float (pref "recFormat")
     int tvBufMb = 256;                  // TV live buffer for Pause (pref "tvBufMb")
@@ -954,6 +959,7 @@ void isdbtReceiverTab(App& a);
 void updateTick(App& a);
 void updateButton(App& a);
 void supportButton();
+std::string modeCreditsLine(const char* modeName);   // "\n\nCredits: a, b" for a mode's tooltip, empty when nobody is credited for it (credits_ui.cpp)
 void creditsWindow(App& a);   // Help, Credits and licences: the projects OnAir uses (app/panels/credits_ui.cpp)
 void clearAllButton(App& a);   // top bar, next to the version: empties every decoded list, after an "are you sure"
 bool updateOnExit(App& a);

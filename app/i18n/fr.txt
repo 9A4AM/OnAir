@@ -939,13 +939,11 @@ holds	maintient
 last send %s	dernier envoi %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	écoute sur %s port %d, %d client(s), %.1f Mo envoyés, %.1f Mo perdus
 max	max
-mute	muet
 on air	à l'antenne
 partial	partiel
 point %s	point %s
 power (dBm)	puissance (dBm)
 searching for Hermes Lite 2 radios…	recherche de radios Hermes Lite 2…
-sound	son
 up-converter	up-converter
 waiting	en attente
 waterfall dB##wfdb	cascade dB##wfdb
@@ -1382,6 +1380,15 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Predict positions	Prédire les positions
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Comble les trous entre les comptes rendus de position : l'avion se déplace de façon fluide et, quand les messages cessent, sa position est estimée le long de sa route (et de l'itinéraire si un message a indiqué la destination). Les positions prédites sont dessinées en fantôme avec un anneau en pointillés.
+uncertainty	incertitude
+Draws the uncertainty ellipse (95 percent) of every estimated position.	Dessine l'ellipse d'incertitude (95 pour cent) de chaque position estimée.
+predicted from the last position %s ago, +-%.1f NM	prédite à partir de la dernière position il y a %s, +-%.1f NM
+estimated from the ground station only, within about %.0f NM	estimée à partir de la station sol seule, à environ %.0f NM près
+Hear this receiver	Écouter ce récepteur
+Close receiver	Fermer le récepteur
+Radio: %s	Radio : %s
 HD Radio sound needs the HDC codec, which you install yourself (click ?)	Le son HD Radio nécessite le codec HDC, que vous installez vous-même (cliquez sur ?)
 HDC sound codec cannot be used: %s	Le codec son HDC ne peut pas être utilisé : %s
 HDC sound codec not installed (no sound; click ? for the steps)	Codec son HDC non installé (pas de son ; cliquez sur ? pour les étapes)
@@ -1543,3 +1550,71 @@ Each receiver pairs a radio with a mode. This strip switches between them and ch
 Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen joue le signal démodulé. Le volume et la coupure du son sont ici ; Record audio l'enregistre dans un fichier.
 Server sends decoded positions to the public map. Support helps fund development.	Serveur envoie les positions décodées à la carte publique. Soutien aide à financer le développement.
 Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Vous trouverez ici la documentation, le dépannage, les crédits et les licences. Visite guidée relance cette visite.
+Monitor audio	Écoute audio
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Écoute le canal accordé dans n'importe quel mode pour reconnaître un signal : les échantillons de la radio sont démodulés en USB, LSB, FM étroite ou AM. Silencieux tant que le mode joue son propre son.
+Auto: USB below 30 MHz, narrow FM above	Auto : USB sous 30 MHz, FM étroite au-dessus
+Volume of the monitor	Volume de l'écoute
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Réglage fin par rapport à la fréquence accordée, en Hz (un signal SSB s'entend 1 à 2 kHz au-dessus ou au-dessous de sa porteuse)
+(the mode plays)	(le mode joue)
+Audio...	Audio...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Périphériques de sortie de l'écoute, une seconde sortie (par exemple un câble audio virtuel pour fldigi ou WSJT-X) et un flux réseau local
+System default	Par défaut du système
+Output 1	Sortie 1
+Output 2	Sortie 2
+Delay (ms)	Délai (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Audio en file avant la lecture : moins est plus rapide, plus résiste à un ordinateur chargé
+Stay silent while the mode plays	Silencieux tant que le mode joue
+Network audio stream	Flux audio réseau
+WAV header	En-tête WAV
+Allow other computers	Autoriser d'autres ordinateurs
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	Stéréo 16 bits, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, ou un lecteur WAV avec l'en-tête. Sécurité : quiconque atteint le port peut écouter ; laissez « Autoriser d'autres ordinateurs » désactivé si inutile.
+Listeners:	Auditeurs :
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	Crédits
+Contributors	Contributeurs
+Projects and licences	Projets et licences
+People	Personnes
+By mode	Par mode
+pull request	pull request
+optimisation	optimisation
+fix	correction
+bug report	rapport de bug
+samples	enregistrements
+translation	traduction
+testing	tests
+idea	idée
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Merci à tous ceux qui ont envoyé des corrections, signalé des bugs, partagé des enregistrements, traduit ou proposé des idées. L'auteur est Kristijonas Adomaitis.
+Want your name changed or removed? Tell us on Discord or open an issue.	Vous voulez que votre nom soit modifié ou retiré ? Dites-le-nous sur Discord ou ouvrez une issue.
+Decoded only	Décodés seulement
+Hides tone-only pages and pages whose text could not be decoded.	Masque les appels en tonalité seule et les messages dont le texte n'a pas pu être décodé.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu appels en tonalité ou messages non décodés masqués (Décodés seulement)
+%zu tone-only or undecoded pages hidden	%zu appels en tonalité ou messages non décodés masqués
+hidden	masqués
+# LBJ (Chinese railway train warning)
+What LBJ carries	Ce que transporte le LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	Le LBJ est l'avertissement chinois d'approche des trains, sur environ 821,2375 MHz. Chaque locomotive envoie des pages numériques POCSAG à 1200 bit/s : toutes les quelques secondes un message court avec le numéro du train, la vitesse (km/h) et le point kilométrique, et des messages plus longs avec le type et le numéro de la locomotive et l'itinéraire.\n\nOnAir décode lui-même les pages (réception seule). Une valeur vide avait des chiffres abîmés ; une ligne grise avait des erreurs corrigées, vérifiez-la avec le message suivant du même train.
+tune to about 821.2375 MHz and start the receiver	accordez-vous sur environ 821,2375 MHz et démarrez le récepteur
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK 1200 bit/s, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu messages, %llu mots de synchro, %llu vides, %llu contrôles échoués
+listening (level %.0f dBFS, offset %+.0f Hz)	à l'écoute (niveau %.0f dBFS, décalage %+.0f Hz)
+Train	Train
+Speed km/h	Vitesse km/h
+Km post	Point km
+Direction	Sens
+Locomotive	Locomotive
+Route	Itinéraire
+Up	Montante
+Down	Descendante
+Some digits were corrected or lost: check this row against the next message of the train	Certains chiffres ont été corrigés ou perdus : vérifiez cette ligne avec le message suivant du train
+Train warning, 821 MHz	Alerte train, 821 MHz

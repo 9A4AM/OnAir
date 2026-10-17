@@ -2,6 +2,9 @@
 // radio picker, plus a "Copy diagnostics" button that puts what a bug report needs on the clipboard.
 #include "dect2/common/u8file.h"
 #include "dect2/audio/audio_rec.h"
+#include "dect2/audio/audio_monitor.h"
+#include "dect2/audio/audioout.h"
+#include "dect2/audio/hf_demod.h"
 #include "dect2/audio/mp3_enc.h"
 #include "dect2/source/iq_record.h"
 #include "../app.h"
@@ -291,6 +294,90 @@ void audioRecordUi(App& a) {
     flowEnd();
 }
 
+// "Monitor audio": hear the tuned channel of any mode (also the ones without sound of their own), USB / LSB / NFM / AM; the outputs (two devices, a
+// local TCP stream for other programs) are in the "Audio..." pop-up. It stays silent while the mode plays its own sound.
+void audioMonitorUi(App& a) {
+    dect2::AudioMonitor& mon = a.engine.monitor();
+    dect2::MonitorConfig c;
+    c.on = a.monOn; c.demod = dect2::hfDemodResolve(a.monDemod, a.freqMhz); c.volume = a.monVol; c.device = a.monDev; c.out2 = a.monOut2; c.device2 = a.monDev2;
+    c.volume2 = a.monVol2; c.latencyMs = a.monLatency; c.yield = a.monYield; c.net = a.monNet; c.port = a.monPort; c.bindAll = a.monBindAll; c.wav = a.monWav;
+    static std::string last;
+    char key[512];
+    snprintf(key, sizeof key, "%d|%d|%.3f|%s|%d|%s|%.3f|%d|%d|%d|%d|%d|%d", c.on, c.demod, c.volume, c.device.c_str(), c.out2, c.device2.c_str(), c.volume2, c.latencyMs, c.yield, c.net, c.port, c.bindAll, c.wav);
+    if (key != last) { last = key; mon.configure(c); }
+    a.engine.setMonitorOffsetHz(a.monOffset);
+    auto save = [&] {
+        auto& d = plat::prefs();
+        d.setB("monOn", a.monOn); d.setI("monDemod", a.monDemod); d.setD("monVol", a.monVol); d.setD("monVol2", a.monVol2); d.setI("monLatency", a.monLatency);
+        d.setB("monYield", a.monYield); d.setS("monDev", a.monDev); d.setS("monDev2", a.monDev2); d.setB("monOut2", a.monOut2); d.setB("monNet", a.monNet);
+        d.setI("monPort", a.monPort); d.setB("monBindAll", a.monBindAll); d.setB("monWav", a.monWav);
+    };
+    flowNext(10 * gUi);
+    if (ImGui::Checkbox(tr("Monitor audio"), &a.monOn)) save();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound."));
+    const dect2::MonitorStats ms = mon.stats();
+    if (a.monOn) {
+        flowNext(6 * gUi);
+        ImGui::SetNextItemWidth(ImGui::CalcTextSize("Auto").x + ImGui::GetFrameHeight() + 2 * ImGui::GetStyle().FramePadding.x + 4 * gUi);
+        if (ImGui::BeginCombo("##mondemod", dect2::hfDemodName(a.monDemod))) {
+            for (int i = 0; i < dect2::HfDemodCount; i++) if (ImGui::Selectable(dect2::hfDemodName(i), a.monDemod == i)) { a.monDemod = i; save(); }
+            ImGui::EndCombo();
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Auto: USB below 30 MHz, narrow FM above"));
+        flowNext(6 * gUi);
+        ImGui::SetNextItemWidth(70 * gUi);
+        if (ImGui::SliderFloat("##monvol", &a.monVol, 0.f, 1.f, "%.2f")) save();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Volume of the monitor"));
+        flowNext(6 * gUi);
+        ImGui::SetNextItemWidth(70 * gUi);
+        float off = (float)a.monOffset;
+        if (ImGui::InputFloat("Hz##monoff", &off, 0, 0, "%.0f")) { a.monOffset = off; }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)"));
+        flowNext(6 * gUi);
+        if (ms.yielded) ImGui::TextDisabled("%s", tr("(the mode plays)"));
+        else ImGui::TextDisabled("%.0f dB", ms.levelDb);
+    }
+    flowNext(6 * gUi);
+    if (ImGui::SmallButton(tr("Audio..."))) ImGui::OpenPopup("##audioout");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream"));
+    if (ImGui::BeginPopup("##audioout")) {
+        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 380 * gUi);
+        static std::vector<std::string> devs;
+        if (ImGui::IsWindowAppearing()) devs = dect2::AudioOut::devices();
+        auto devCombo = [&](const char* id, std::string& cur) {
+            ImGui::SetNextItemWidth(260 * gUi);
+            if (ImGui::BeginCombo(id, cur.empty() ? tr("System default") : cur.c_str())) {
+                if (ImGui::Selectable(tr("System default"), cur.empty())) { cur.clear(); save(); }
+                for (const std::string& d : devs) if (ImGui::Selectable(d.c_str(), cur == d)) { cur = d; save(); }
+                ImGui::EndCombo();
+            }
+        };
+        ImGui::TextUnformatted(tr("Output 1"));
+        devCombo("##mondev1", a.monDev);
+        if (ImGui::Checkbox(tr("Output 2"), &a.monOut2)) save();
+        if (a.monOut2) { devCombo("##mondev2", a.monDev2); ImGui::SetNextItemWidth(120 * gUi); if (ImGui::SliderFloat("##monvol2", &a.monVol2, 0.f, 1.f, "%.2f")) save(); }
+        ImGui::SetNextItemWidth(120 * gUi);
+        if (ImGui::SliderInt(tr("Delay (ms)"), &a.monLatency, 20, 1000)) save();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Audio queued before it starts playing: lower is quicker, higher survives a busy computer"));
+        if (ImGui::Checkbox(tr("Stay silent while the mode plays"), &a.monYield)) save();
+        ImGui::Separator();
+        if (ImGui::Checkbox(tr("Network audio stream"), &a.monNet)) save();
+        if (a.monNet) {
+            ImGui::SetNextItemWidth(100 * gUi);
+            if (ImGui::InputInt("Port##monport", &a.monPort, 0, 0)) { a.monPort = std::max(1024, std::min(65535, a.monPort)); save(); }
+            if (ImGui::Checkbox(tr("WAV header"), &a.monWav)) save();
+            if (ImGui::Checkbox(tr("Allow other computers"), &a.monBindAll)) save();
+            ImGui::TextDisabled(a.monBindAll ? "0.0.0.0:%d" : "127.0.0.1:%d", a.monPort);
+            ImGui::TextDisabled("%s", tr("16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it."));
+            ImGui::TextDisabled("%s %d", tr("Listeners:"), ms.clients);
+        }
+        if (!ms.error.empty()) ImGui::TextColored(pal::warnAmber(), "%s", ms.error.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::EndPopup();
+    }
+    flowEnd();
+}
+
 } // namespace
 
 std::string radioRangeWarning(const DeviceInfo& d, double freqMhz, const std::map<std::string, std::string>* radio) {
@@ -526,4 +613,5 @@ void radioMessagesUi(App& a, bool vertical) {
     recordUi(a);
     flowNext(10 * gUi);
     audioRecordUi(a);
+    audioMonitorUi(a);
 }

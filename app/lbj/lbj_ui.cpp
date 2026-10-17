@@ -11,11 +11,11 @@ namespace {
 struct State { int sel = 0; };
 State S;
 
-const char* kHelp =
-    "LBJ (列车接近预警) is the Chinese railway train proximity warning broadcast on about 821 MHz.\n\n"
-    "The voice channel carries 1200 bit/s FSK data with train number, kilometre marker, locomotive identity, "
-    "direction and speed. Receive only; nothing is transmitted.\n\n"
-    "This build wires the mode and UI; full frame sync and BCH decode are still being implemented.";
+const char* kHelp = N_(
+    "LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short "
+    "message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and "
+    "number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors "
+    "that were corrected, so check it against the next message of the same train.");
 
 bool live(const App& a) { return a.rx.standard == 82; }
 
@@ -31,10 +31,10 @@ std::string ago(int64_t t) {
 
 void helpButton() {
     if (ImGui::SmallButton("?##lbjhelp")) ImGui::OpenPopup("##lbjhelppop");
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("What LBJ carries");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("What LBJ carries"));
     if (ImGui::BeginPopup("##lbjhelppop")) {
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 32);
-        ImGui::TextUnformatted(kHelp);
+        ImGui::TextUnformatted(tr(kHelp));
         ImGui::PopTextWrapPos();
         ImGui::EndPopup();
     }
@@ -43,39 +43,47 @@ void helpButton() {
 void tab(App& a) {
     helpButton();
     ImGui::SameLine();
-    if (ImGui::SmallButton("Clear")) a.engine.lbj().clearMessages();
+    if (ImGui::SmallButton(tr("Clear"))) a.engine.lbj().clearMessages();
     if (!live(a)) {
-        ImGui::TextDisabled("%s", a.engine.running() ? "starting" : "tune to about 821.2375 MHz and start the receiver");
+        ImGui::TextDisabled("%s", a.engine.running() ? tr("starting") : tr("tune to about 821.2375 MHz and start the receiver"));
         return;
     }
     const dect2::LbjTelemetry& t = a.rx.lbj;
     ImGui::TextDisabled("%s", dect2::lbjSummary(t).c_str());
-    ImGui::TextDisabled("FM, 1200 bit/s FSK, %.2f Msps", t.inputRate / 1e6);
+    ImGui::TextDisabled(tr("FM, 1200 bit/s FSK, %.2f Msps"), t.inputRate / 1e6);
+    ImGui::TextDisabled(tr("%llu messages, %llu sync words, %llu blank, %llu failed checks"), (unsigned long long)t.blocksOk, (unsigned long long)t.blocks, (unsigned long long)t.emptyFrames, (unsigned long long)t.blocksBad);
     if (t.messages.empty()) {
         ImGui::Spacing();
-        ImGui::TextDisabled("listening (level %.0f dBFS, offset %+.0f Hz)", t.levelDb, t.cfoHz);
+        ImGui::TextDisabled(tr("listening (level %.0f dBFS, offset %+.0f Hz)"), t.levelDb, t.cfoHz);
         return;
     }
-    if (ImGui::BeginTable("##lbjlog", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
-        ImGui::TableSetupColumn("Train");
-        ImGui::TableSetupColumn("Km");
-        ImGui::TableSetupColumn("Loco");
-        ImGui::TableSetupColumn("Dir");
-        ImGui::TableSetupColumn("Speed");
-        ImGui::TableSetupColumn("Seen");
+    if (ImGui::BeginTable("##lbjlog", 8, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable, ImVec2(0, ImGui::GetContentRegionAvail().y))) {
+        ImGui::TableSetupColumn(tr("Seen"));
+        ImGui::TableSetupColumn(tr("Train"));
+        ImGui::TableSetupColumn(tr("Speed km/h"));
+        ImGui::TableSetupColumn(tr("Km post"));
+        ImGui::TableSetupColumn(tr("Direction"));
+        ImGui::TableSetupColumn(tr("Locomotive"));
+        ImGui::TableSetupColumn(tr("Route"));
+        ImGui::TableSetupColumn(tr("Level"));
         ImGui::TableHeadersRow();
         for (size_t i = 0; i < t.messages.size(); i++) {
             const auto& m = t.messages[i];
             ImGui::TableNextRow();
+            if (!m.crcOk) ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
             ImGui::TableNextColumn();
             char l[96];
-            snprintf(l, sizeof l, "%s##lbj%zu", m.train.empty() ? "-" : m.train.c_str(), i);
+            snprintf(l, sizeof l, "%s##lbj%zu", ago(m.wallTime).c_str(), i);
             if (ImGui::Selectable(l, S.sel == (int)i, ImGuiSelectableFlags_SpanAllColumns)) S.sel = (int)i;
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(m.kmMarker.empty() ? "-" : m.kmMarker.c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(m.loco.empty() ? "-" : m.loco.c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(m.direction.empty() ? "-" : m.direction.c_str());
+            if (!m.crcOk && ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Some digits were corrected or lost: check this row against the next message of the train"));
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(m.train.empty() ? "-" : m.train.c_str());
             ImGui::TableNextColumn(); ImGui::TextUnformatted(m.speedKmh.empty() ? "-" : m.speedKmh.c_str());
-            ImGui::TableNextColumn(); ImGui::TextUnformatted(ago(m.wallTime).c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(m.kmMarker.empty() ? "-" : m.kmMarker.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(m.direction == "up" ? tr("Up") : (m.direction == "down" ? tr("Down") : "-"));
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(m.loco.empty() ? "-" : m.loco.c_str());
+            ImGui::TableNextColumn(); ImGui::TextUnformatted(m.route.empty() ? "-" : m.route.c_str());
+            ImGui::TableNextColumn(); ImGui::Text("%.0f dB", m.rssiDb);
+            if (!m.crcOk) ImGui::PopStyleColor();
         }
         ImGui::EndTable();
     }
@@ -85,7 +93,7 @@ void receiver(App& a) {
     if (!live(a)) return;
     const dect2::LbjTelemetry& t = a.rx.lbj;
     ImGui::Text("%s", dect2::lbjSummary(t).c_str());
-    ImGui::Text("%llu blocks, %llu decoded", (unsigned long long)t.blocks, (unsigned long long)t.blocksOk);
+    ImGui::Text(tr("%llu messages, %llu sync words, %llu blank, %llu failed checks"), (unsigned long long)t.blocksOk, (unsigned long long)t.blocks, (unsigned long long)t.emptyFrames, (unsigned long long)t.blocksBad);
     ImGui::Text("input %.2f Msps, %.1f dBFS", t.inputRate / 1e6, t.levelDb);
 }
 
@@ -96,7 +104,7 @@ void status(App& a) {
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("State");
     ImGui::SameLine();
-    ImGui::TextUnformatted(live(a) ? dect2::lbjSummary(a.rx.lbj).c_str() : (a.engine.running() ? "starting" : "stopped"));
+    ImGui::TextUnformatted(live(a) ? dect2::lbjSummary(a.rx.lbj).c_str() : (a.engine.running() ? tr("starting") : tr("stopped")));
 }
 
 void summary(const App& a, std::string& l1, std::string& l2) {

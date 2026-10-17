@@ -48,6 +48,7 @@ void wizard(App& a, ImVec2 disp) {
     // the parts of the layouts that already report their rectangle through the older table
     auto legacy = [&](const char* id, int tg) { if (!gAnchors.has(id, frame) && a.tgMax[tg].x > a.tgMin[tg].x) tourMark(id, a.tgMin[tg], a.tgMax[tg]); };
     legacy("modes", TgSwitch); legacy("spectrum", TgMain); legacy("panel", TgRight);
+    if (a.touchUi) for (int i = 0; i < tour::count(); i++) tourMark(tour::steps(nullptr)[i].anchor, ImVec2(0, 0), disp);   // the touch shell has no such parts: every step is a centred card
     if (tour::visibleCount(gAnchors, frame) == 0) {   // nothing to point at yet (the first frames) or at all (a layout without these parts)
         if (ImGui::GetTime() - a.wizStepT > 1.0) tourClose(a);
         return;
@@ -77,7 +78,8 @@ void wizard(App& a, ImVec2 disp) {
     const float margin = 12.f * u, gap = 12.f * u;
     const float W = std::min(340.f * u, disp.x - 2 * margin), H = hMeasured;
     ImVec2 p;
-    if (hi.x + gap + W <= disp.x - margin) p = ImVec2(hi.x + gap, lo.y);
+    if (a.touchUi) p = ImVec2((disp.x - W) * 0.5f, (disp.y - H) * 0.5f);
+    else if (hi.x + gap + W <= disp.x - margin) p = ImVec2(hi.x + gap, lo.y);
     else if (lo.x - gap - W >= margin) p = ImVec2(lo.x - gap - W, lo.y);
     else if (hi.y + gap + H <= disp.y - margin) p = ImVec2((lo.x + hi.x - W) * 0.5f, hi.y + gap);
     else if (lo.y - gap - H >= margin) p = ImVec2((lo.x + hi.x - W) * 0.5f, lo.y - gap - H);
@@ -101,7 +103,7 @@ void wizard(App& a, ImVec2 disp) {
         band(0, hi.y, disp.x, disp.y);
         band(0, lo.y, lo.x, hi.y);
         band(hi.x, lo.y, disp.x, hi.y);
-        fg->AddRect(lo, hi, acc, 2.f, 0, 1.5f);
+            if (!a.touchUi) fg->AddRect(lo, hi, acc, 2.f, 0, 1.5f);
     }
     ImGui::SetNextWindowPos(p);
     ImGui::SetNextWindowSize(ImVec2(W, 0));

@@ -23,6 +23,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
+bool vdl2EstimatedPosition(uint32_t icao, double now, double& lat, double& lon, double& ageSec);   // app/vdl2/vdl2_ui.cpp
+bool hfdlEstimatedPosition(uint32_t key, double now, double& lat, double& lon, double& ageSec);   // app/hfdl/hfdl_ui.cpp
+
 namespace {
 
 constexpr const char* kDefaultOrigin = "https://map.on-air.dev";
@@ -170,6 +173,7 @@ struct Track {
     bool hasAlt = false, hasHdg = false, hasSpd = false, hasVrate = false, hasSquawk = false;
     double alt = 0, hdg = 0, spd = 0, vrate = 0, age = 0;
     int squawk = 0;
+    bool est = false;                // the position is an estimate (dead reckoning, core/src/track), not a received fix: sent as "est":1
     std::vector<std::pair<double, double>> path;
     std::vector<dect2::AcarsLogEntry> msgs;   // interesting ACARS messages not sent yet (only when the user chose to share them)
 };
@@ -349,6 +353,7 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             if (t.id.empty()) continue;
             t.label = a.flight.empty() ? t.id : a.flight; t.lat = a.lat; t.lon = a.lon; t.age = hfdl.nowSec - a.lastHeardSec;
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
+            { double la, lo, ag; if (hfdlEstimatedPosition(a.icao ? a.icao : a.key, hfdl.nowSec, la, lo, ag)) { t.lat = la; t.lon = lo; t.est = true; t.age = 0; t.heardAt = hfdl.nowSec; } }
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
             t.cat = a.posKind;
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
@@ -364,6 +369,7 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             if (t.id.empty()) continue;
             t.label = a.flight.empty() ? t.id : a.flight; t.lat = a.lat; t.lon = a.lon; t.age = vdl.nowSec - a.lastHeardSec;
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
+            { double la, lo, ag; if (vdl2EstimatedPosition(a.icao, vdl.nowSec, la, lo, ag)) { t.lat = la; t.lon = lo; t.est = true; t.age = 0; t.heardAt = vdl.nowSec; } }
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
             t.cat = a.posKind;
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
@@ -520,6 +526,7 @@ std::string buildJson(const std::string& station, const std::vector<Track>& trac
         if (t.hasVrate) { snprintf(b, sizeof b, ",\"vrate\":%.0f", t.vrate); j += b; }
         if (t.hasSquawk) { snprintf(b, sizeof b, ",\"squawk\":\"%04d\"", t.squawk); j += b; }
         snprintf(b, sizeof b, ",\"age\":%.1f", t.age); j += b;
+        if (t.est) j += ",\"est\":1";
         if (!t.src.empty()) { j += ",\"src\":\""; j += jsonEsc(t.src); j += '"'; }
         if (!t.cat.empty()) { j += ",\"cat\":\""; j += jsonEsc(t.cat); j += '"'; }
         if (!t.extra.empty()) { j += ",\"extra\":\""; j += jsonEsc(t.extra); j += '"'; }

@@ -49,6 +49,7 @@
 #include "dect2/vdl2/vdl2_gen.h"
 #include "dect2/vdl4/vdl4_rx.h"
 #include "dect2/vdl4/vdl4_gen.h"
+#include "dect2/lbj/lbj_gen.h"
 #include "dect2/ism/ism_rx.h"
 #include "dect2/ism/ism_gen.h"
 #include "dect2/vor/vor_rx.h"
@@ -435,7 +436,7 @@ std::unique_ptr<ModeSynth> makeModeSynth(int stdMode, const SynthConfig& cfg, do
     case 80: return makeDectSynth(cfg, sampleRate);
     case 81: return makeTetrapolSynth(cfg, sampleRate);
     case 82: return makeElektroSynth(cfg, sampleRate);
-    case 83: return nullptr;
+    case 83: return makeLbjSynth(cfg, sampleRate);
     case 85: return makeUatSynth(cfg, sampleRate);
     case 77: return makeMultitoneSynth(cfg, sampleRate);
     case 73: return makeLoraRawSynth(cfg, sampleRate);

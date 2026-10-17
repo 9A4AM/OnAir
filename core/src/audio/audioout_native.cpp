@@ -179,7 +179,7 @@ void threadMain(NativeBackend* b, AudioOut::Impl* I, int rate) {
 
 bool audioBackendStart(AudioOut::Impl* I, int rate) {
     const char* want = getenv("DECT2_AUDIO");
-    if (!(want && !strcmp(want, "miniaudio"))) {
+    if (!(want && !strcmp(want, "miniaudio")) && I->device.empty()) {   // a named device goes through miniaudio
         auto* b = new NativeBackend;
         b->th = std::thread(threadMain, b, I, rate);
         for (int i = 0; i < 300 && !b->opened; i++) std::this_thread::sleep_for(std::chrono::milliseconds(10));   // the device opens within moments

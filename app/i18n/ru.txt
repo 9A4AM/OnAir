@@ -913,13 +913,11 @@ holds	удерживает
 last send %s	последняя отправка %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	слушает %s порт %d, клиентов: %d, отправлено %.1f MB, отброшено %.1f MB
 max	макс
-mute	без звука
 on air	в эфире
 partial	частично
 point %s	точка %s
 power (dBm)	мощность (dBm)
 searching for Hermes Lite 2 radios…	поиск радио Hermes Lite 2…
-sound	звук
 up-converter	повышающий конвертер
 waiting	ожидание
 waterfall dB##wfdb	водопад dB##wfdb
@@ -1365,6 +1363,15 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Predict positions	Прогноз позиций
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Заполняет промежутки между донесениями о позиции: самолёт движется плавно, а когда сообщения прекращаются, его положение рассчитывается по курсу (и по маршруту, если сообщение называло пункт назначения). Прогнозируемые позиции рисуются как призрак с пунктирным кольцом.
+uncertainty	погрешность
+Draws the uncertainty ellipse (95 percent) of every estimated position.	Рисует эллипс погрешности (95 процентов) каждой оценённой позиции.
+predicted from the last position %s ago, +-%.1f NM	прогноз по последней позиции %s назад, +-%.1f NM
+estimated from the ground station only, within about %.0f NM	оценка только по наземной станции, в пределах примерно %.0f NM
+Hear this receiver	Слушать этот приёмник
+Close receiver	Закрыть приёмник
+Radio: %s	Радио: %s
 HD Radio sound needs the HDC codec, which you install yourself (click ?)	Для звука HD Radio нужен кодек HDC, который вы устанавливаете сами (нажмите ?)
 HDC sound codec cannot be used: %s	Звуковой кодек HDC использовать нельзя: %s
 HDC sound codec not installed (no sound; click ? for the steps)	Звуковой кодек HDC не установлен (нет звука; нажмите ?, чтобы увидеть шаги)
@@ -1526,3 +1533,71 @@ Each receiver pairs a radio with a mode. This strip switches between them and ch
 Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen воспроизводит демодулированный сигнал. Громкость и отключение звука здесь; Record audio сохраняет звук в файл.
 Server sends decoded positions to the public map. Support helps fund development.	Сервер отправляет декодированные позиции на общедоступную карту. Поддержка помогает финансировать разработку.
 Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Здесь находятся документация, устранение неполадок, благодарности и лицензии. Обзор запускает этот обзор снова.
+Monitor audio	Прослушивание
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Слушать настроенный канал в любом режиме, чтобы опознать сигнал: отсчёты радио демодулируются как USB, LSB, узкая FM или AM. Тишина, пока режим играет свой звук.
+Auto: USB below 30 MHz, narrow FM above	Авто: USB ниже 30 МГц, узкая FM выше
+Volume of the monitor	Громкость прослушивания
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Точная подстройка относительно частоты, в Гц (SSB-сигнал слышен на 1–2 кГц выше или ниже несущей)
+(the mode plays)	(режим играет)
+Audio...	Звук...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Устройства вывода для прослушивания, второй выход (например, виртуальный аудиокабель для fldigi или WSJT-X) и локальный сетевой поток
+System default	По умолчанию
+Output 1	Выход 1
+Output 2	Выход 2
+Delay (ms)	Задержка (мс)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Звук в очереди перед воспроизведением: меньше — быстрее, больше — выдержит нагруженный компьютер
+Stay silent while the mode plays	Тишина, пока режим играет
+Network audio stream	Сетевой аудиопоток
+WAV header	Заголовок WAV
+Allow other computers	Разрешить другие компьютеры
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16-бит стерео, 48 кГц. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:ПОРТ или WAV-плеер с заголовком. Безопасность: слушать может любой, кто достучится до порта; не включайте «Разрешить другие компьютеры» без нужды.
+Listeners:	Слушатели:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	Благодарности
+Contributors	Участники
+Projects and licences	Проекты и лицензии
+People	Люди
+By mode	По режимам
+pull request	pull request
+optimisation	оптимизация
+fix	исправление
+bug report	сообщение об ошибке
+samples	записи
+translation	перевод
+testing	тестирование
+idea	идея
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Спасибо всем, кто присылал исправления, сообщал об ошибках, делился записями, переводил и предлагал идеи. Автор — Kristijonas Adomaitis.
+Want your name changed or removed? Tell us on Discord or open an issue.	Хотите, чтобы ваше имя изменили или убрали? Напишите нам в Discord или создайте issue.
+Decoded only	Только расшифрованные
+Hides tone-only pages and pages whose text could not be decoded.	Скрывает вызовы только тоном и сообщения, текст которых не удалось расшифровать.
+%zu tone-only or undecoded pages hidden (Decoded only)	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu (Только расшифрованные)
+%zu tone-only or undecoded pages hidden	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu
+hidden	скрыто
+# LBJ (Chinese railway train warning)
+What LBJ carries	Что передаёт LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ — китайское предупреждение о приближении поезда на частоте около 821,2375 МГц. Каждый локомотив передаёт цифровые страницы POCSAG на 1200 бит/с: раз в несколько секунд короткое сообщение с номером поезда, скоростью (км/ч) и километровым столбом, а также более длинные сообщения с типом и номером локомотива и маршрутом.\n\nOnAir сам декодирует страницы (только приём). Пустое значение имело повреждённые цифры; серая строка содержала исправленные ошибки, поэтому сверьте её со следующим сообщением того же поезда.
+tune to about 821.2375 MHz and start the receiver	настройтесь примерно на 821,2375 МГц и запустите приёмник
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK 1200 бит/с, %.2f Мвыб/с
+%llu messages, %llu sync words, %llu blank, %llu failed checks	сообщений: %llu, слов синхронизации: %llu, пустых: %llu, не прошли проверку: %llu
+listening (level %.0f dBFS, offset %+.0f Hz)	прослушивание (уровень %.0f dBFS, смещение %+.0f Гц)
+Train	Поезд
+Speed km/h	Скорость км/ч
+Km post	Км
+Direction	Направление
+Locomotive	Локомотив
+Route	Маршрут
+Up	Вверх
+Down	Вниз
+Some digits were corrected or lost: check this row against the next message of the train	Часть цифр исправлена или потеряна: сверьте эту строку со следующим сообщением поезда
+Train warning, 821 MHz	Предупреждение о поездах, 821 МГц

@@ -939,13 +939,11 @@ holds	保持
 last send %s	上次发送 %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	正在监听 %s 端口 %d，%d 个客户端，已发送 %.1f MB，已丢弃 %.1f MB
 max	最大
-mute	静音
 on air	播出中
 partial	部分
 point %s	点 %s
 power (dBm)	功率 (dBm)
 searching for Hermes Lite 2 radios…	正在查找 Hermes Lite 2 电台…
-sound	声音
 up-converter	上变频器
 waiting	等待中
 waterfall dB##wfdb	瀑布图 dB##wfdb
@@ -1382,6 +1380,15 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Predict positions	预测位置
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	填补位置报告之间的空白:飞机平滑移动,消息中断后沿航迹(若消息给出了目的地,则沿航路)推算位置。预测位置以带虚线圈的虚影绘制。
+uncertainty	不确定度
+Draws the uncertainty ellipse (95 percent) of every estimated position.	绘制每个估计位置的不确定度椭圆(百分之九十五)。
+predicted from the last position %s ago, +-%.1f NM	根据 %s 前的最后位置预测,+-%.1f NM
+estimated from the ground station only, within about %.0f NM	仅根据地面站估计,约 %.0f NM 范围内
+Hear this receiver	收听此接收器
+Close receiver	关闭接收器
+Radio: %s	电台：%s
 HD Radio sound needs the HDC codec, which you install yourself (click ?)	HD Radio 的声音需要 HDC 编解码器,需要您自己安装(点击 ?)
 HDC sound codec cannot be used: %s	无法使用 HDC 声音编解码器:%s
 HDC sound codec not installed (no sound; click ? for the steps)	未安装 HDC 声音编解码器(无声音;点击 ? 查看步骤)
@@ -1543,3 +1550,71 @@ Each receiver pairs a radio with a mode. This strip switches between them and ch
 Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen 播放解调后的信号。音量和静音在此处；Record audio 会将声音保存为文件。
 Server sends decoded positions to the public map. Support helps fund development.	服务器会把解码得到的位置发送到公共地图。支持有助于资助开发。
 Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	文档、故障排除、致谢和许可证都在这里。导览会重新开始此导览。
+Monitor audio	监听音频
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	在任何模式下收听已调谐的频道以识别信号:无线电采样按USB、LSB、窄带FM或AM解调。模式播放自身声音时保持静音。
+Auto: USB below 30 MHz, narrow FM above	自动:30 MHz以下USB,以上窄带FM
+Volume of the monitor	监听音量
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	相对调谐频率的微调,单位Hz(SSB信号在载波上方或下方1至2 kHz处听到)
+(the mode plays)	(模式正在播放)
+Audio...	音频...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	监听的输出设备、第二路输出(例如供fldigi或WSJT-X使用的虚拟音频线)和本地网络流
+System default	系统默认
+Output 1	输出1
+Output 2	输出2
+Delay (ms)	延迟(毫秒)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	播放前排队的音频:越小越快,越大越能应对繁忙的电脑
+Stay silent while the mode plays	模式播放时保持静音
+Network audio stream	网络音频流
+WAV header	WAV文件头
+Allow other computers	允许其他电脑
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16位立体声,48 kHz。ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:端口,或带文件头的WAV播放器。安全:能访问该端口的人都可以收听;不需要时请保持“允许其他电脑”关闭。
+Listeners:	听众:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	致谢
+Contributors	贡献者
+Projects and licences	项目与许可证
+People	人员
+By mode	按模式
+pull request	拉取请求
+optimisation	优化
+fix	修复
+bug report	错误报告
+samples	录音样本
+translation	翻译
+testing	测试
+idea	创意
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	感谢所有提交修复、报告错误、分享录音、翻译或提出想法的人。作者是 Kristijonas Adomaitis。
+Want your name changed or removed? Tell us on Discord or open an issue.	希望更改或删除您的名字？请在 Discord 告诉我们或提交 issue。
+Decoded only	仅已解码
+Hides tone-only pages and pages whose text could not be decoded.	隐藏仅有音调的呼叫以及文本无法解码的消息。
+%zu tone-only or undecoded pages hidden (Decoded only)	已隐藏 %zu 条仅音调或未解码的消息（仅已解码）
+%zu tone-only or undecoded pages hidden	已隐藏 %zu 条仅音调或未解码的消息
+hidden	已隐藏
+# LBJ (Chinese railway train warning)
+What LBJ carries	LBJ 传送的内容
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ 是中国铁路列车接近预警，频率约 821.2375 MHz。每台机车以 1200 bit/s 发送 POCSAG 数字寻呼：每隔几秒一条短报文，含车次、速度(km/h)和公里标；另有较长报文，含机车型号、机车号和线路。\n\nOnAir 自行解码这些寻呼(仅接收)。空白的值表示数字受损；灰色的行曾纠正过错误，请与同一列车的下一条报文核对。
+tune to about 821.2375 MHz and start the receiver	调谐到约 821.2375 MHz 并启动接收机
+FM, 1200 bit/s FSK, %.2f Msps	FM，1200 bit/s FSK，%.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu 条报文，%llu 个同步字，%llu 条空白，%llu 条校验失败
+listening (level %.0f dBFS, offset %+.0f Hz)	监听中(电平 %.0f dBFS，偏移 %+.0f Hz)
+Train	车次
+Speed km/h	速度 km/h
+Km post	公里标
+Direction	方向
+Locomotive	机车
+Route	线路
+Up	上行
+Down	下行
+Some digits were corrected or lost: check this row against the next message of the train	部分数字已被纠正或丢失：请与该列车的下一条报文核对此行
+Train warning, 821 MHz	列车预警，821 MHz

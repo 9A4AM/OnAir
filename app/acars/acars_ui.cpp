@@ -2,6 +2,7 @@
 #include "../panels/photo_links_ui.h"
 #include "../adsb/adsb_map.h"
 #include "app.h"
+#include "map/pos_predict.h"
 #include "state/results_export.h"
 #include "dect2/acars/acars_tel.h"
 #include <algorithm>
@@ -84,9 +85,30 @@ std::string oneLine(const std::string& s) {
 
 ImVec4 levelColour(float db) { return db >= -60 ? pal::okGreen() : db >= -80 ? pal::warnAmber() : pal::badRed(); }
 
+// ---- position estimates (core/src/track): reports come every few minutes, so the aircraft are dead-reckoned between them
+pospred::Layer gPred;
+std::unordered_map<std::string, double> gFedPosT;
+
+dect2::track::Key estKey(const dect2::AcarsAircraft& c) { return c.icao ? dect2::track::keyFromIcao(c.icao) : dect2::track::keyFromText(c.reg); }
+
+void feedEstimates(const dect2::AcarsTelemetry& t) {
+    gPred.load("acars", true, true);
+    if (!gPred.predict) return;
+    for (const auto& c : t.aircraft) {
+        if (!c.hasPos) continue;
+        double& last = gFedPosT[c.reg];
+        if (last == c.posTime) continue;
+        last = c.posTime;
+        dect2::track::Fix f;
+        if (dect2::track::fixFromAcars(c, f)) gPred.hub.feed(estKey(c), f);
+    }
+    gPred.hub.purge(t.nowSec, 3 * 3600);
+}
+
 // pushes the settings to the receiver
 void tick(App& a) {
     loadState();
+    feedEstimates(a.rx.acars);
     if (!a.engine.running()) { S.wasRunning = false; S.pushedCenter = 0; S.pushedThr = -1; S.pushedChans[0] = '\x01'; S.pushedChans[1] = 0; return; }
     dect2::AcarsReceiver& r = a.engine.acars();
     if (S.pushedCenter != a.freqMhz) { r.setCenterHz(a.freqMhz * 1e6); S.pushedCenter = a.freqMhz; }
@@ -286,9 +308,12 @@ void mapCanvas(App& a, ImVec2 size) {
         }
         for (const auto& c : t.aircraft) {
             if (!c.hasPos) continue;
-            const ImVec2 q = adsbmap::project(c.lat, c.lon);
+            dect2::track::PosEstimate pe;
+            const bool est = gPred.get(estKey(c), t.nowSec, pe, t.nowSec - c.posTime) && pe.valid && !pe.coarse;
+            const ImVec2 q = est ? adsbmap::project(pe.lat, pe.lon) : adsbmap::project(c.lat, c.lon);
             if (q.x < p0.x - 60 || q.y < p0.y - 60 || q.x > p0.x + size.x + 60 || q.y > p0.y + size.y + 60) continue;
             const bool sel = isSel(c);
+            if (est) { pospred::drawPredictionMarks(dl, pe, q, planeColour(c, t.nowSec), gPred.ellipses); pospred::hoverTooltip(pe, q); }
             if (c.hasTrack) drawPlane(dl, q, (float)c.trackDeg, (sel ? 12.f : 10.f) * gUi, planeColour(c, t.nowSec), sel);
             else {
                 dl->AddCircleFilled(q, 5 * gUi, planeColour(c, t.nowSec));
@@ -326,6 +351,8 @@ void mapCanvas(App& a, ImVec2 size) {
     ImGui::SameLine(0, 6 * gUi);
     if (ImGui::Button("fit")) S.mapFollow = true;
     ImGui::PopStyleColor();
+    ImGui::SameLine(0, 6 * gUi);
+    gPred.controls();
     ImGui::SameLine(0, 6 * gUi);
     adsbmap::tileControls("never the position itself");
     plat::prefs().setI("acarsZoom", S.map.zoom);

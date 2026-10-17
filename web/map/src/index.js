@@ -268,6 +268,7 @@ export class MapHub {
     add("src", "TEXT");
     add("age", "REAL");
     add("path", "TEXT");
+    add("est", "INTEGER");   // 1: the position is an estimate (dead reckoning) the app sent, not a received fix
     this.ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS meta (
         k TEXT PRIMARY KEY,
@@ -290,7 +291,7 @@ export class MapHub {
       id: t.id, kind: t.kind, label: t.label, sub: t.sub,
       lat: t.lat, lon: t.lon, alt: t.alt, heading: t.heading, speed: t.speed,
       extra: t.extra, t: t.t, squawk: t.squawk, cat: t.cat, vrate: t.vrate,
-      src: t.src, age: t.age,
+      src: t.src, age: t.age, est: t.est ? 1 : 0,
     };
   }
 
@@ -367,16 +368,16 @@ export class MapHub {
       let pathArr = [];
       try { pathArr = JSON.parse(t.path); } catch { pathArr = []; }
       this.ctx.storage.sql.exec(
-        `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            kind=excluded.kind, label=excluded.label, sub=excluded.sub,
            lat=excluded.lat, lon=excluded.lon, alt=excluded.alt,
            heading=excluded.heading, speed=excluded.speed, extra=excluded.extra, t=excluded.t,
            squawk=excluded.squawk, cat=excluded.cat, vrate=excluded.vrate, src=excluded.src,
-           age=excluded.age, path=excluded.path`,
+           age=excluded.age, path=excluded.path, est=excluded.est`,
         t.id, t.kind, t.label, t.sub, t.lat, t.lon, t.alt, t.heading, t.speed, t.extra, t.t,
-        t.squawk, t.cat, t.vrate, t.src, t.age, t.path,
+        t.squawk, t.cat, t.vrate, t.src, t.age, t.path, t.est ? 1 : 0,
       );
       kept.push({ ...t, path: pathArr });
       if (t.kind === "aircraft" && Array.isArray(raw.msgs) && raw.msgs.length && msgBudgetLeft > 0) {
@@ -459,13 +460,13 @@ export class MapHub {
     }
     const tracks = [];
     for (const row of this.ctx.storage.sql.exec(
-      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age FROM tracks",
+      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, est FROM tracks",
     )) {
       tracks.push({
         id: row.id, kind: row.kind, label: row.label, sub: row.sub,
         lat: row.lat, lon: row.lon, alt: row.alt, heading: row.heading, speed: row.speed,
         extra: row.extra, t: row.t, squawk: row.squawk, cat: row.cat, vrate: row.vrate,
-        src: row.src, age: row.age,
+        src: row.src, age: row.age, est: row.est ? 1 : 0,
       });
     }
     const st = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM stations WHERE last > ?", now - 30 * 60e3).toArray()[0];
@@ -569,6 +570,7 @@ export function sanitize(raw, now) {
     label: String(raw.label || rawId).slice(0, 48),
     sub: String(raw.sub || "").slice(0, 32),
     lat, lon, alt, heading, speed, vrate, age,
+    est: raw.est === 1 || raw.est === true ? 1 : 0,
     squawk,
     src: String(raw.src || "").slice(0, 16),
     cat: String(raw.cat || "").slice(0, 48),

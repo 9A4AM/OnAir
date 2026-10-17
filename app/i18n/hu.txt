@@ -925,13 +925,11 @@ holds	tart
 last send %s	utolsó küldés %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	figyel: %s, %d. port, %d kliens, %.1f MB elküldve, %.1f MB eldobva
 max	max
-mute	néma
 on air	adásban
 partial	részleges
 point %s	pont: %s
 power (dBm)	teljesítmény (dBm)
 searching for Hermes Lite 2 radios…	Hermes Lite 2 rádiók keresése…
-sound	hang
 up-converter	felfelé konverter
 waiting	várakozik
 waterfall dB##wfdb	vízesés dB##wfdb
@@ -1368,6 +1366,15 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Predict positions	Pozíciók előrejelzése
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Kitölti a pozíciójelentések közötti réseket: a repülő egyenletesen mozog, és ha az üzenetek elmaradnak, a pályája mentén (és az útvonal mentén, ha egy üzenet megnevezte az úticélt) számítja a helyét. Az előrejelzett pozíciókat szellemként, szaggatott gyűrűvel rajzolja.
+uncertainty	bizonytalanság
+Draws the uncertainty ellipse (95 percent) of every estimated position.	Kirajzolja minden becsült pozíció bizonytalansági ellipszisét (95 százalék).
+predicted from the last position %s ago, +-%.1f NM	az utolsó pozícióból előrejelezve, %s ezelőtt, +-%.1f NM
+estimated from the ground station only, within about %.0f NM	csak a földi állomásból becsülve, kb. %.0f NM-en belül
+Hear this receiver	Ennek a vevőnek a hallgatása
+Close receiver	Vevő bezárása
+Radio: %s	Rádió: %s
 HD Radio sound needs the HDC codec, which you install yourself (click ?)	A HD Radio hangjához a HDC kodek kell, amelyet magad telepítesz (kattints a ?-re)
 HDC sound codec cannot be used: %s	A HDC hangkodek nem használható: %s
 HDC sound codec not installed (no sound; click ? for the steps)	A HDC hangkodek nincs telepítve (nincs hang; a ?-re kattintva láthatod a lépéseket)
@@ -1529,3 +1536,71 @@ Each receiver pairs a radio with a mode. This strip switches between them and ch
 Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	A Listen a demodulált jelet játssza le. A hangerő és a némítás itt van; a Record audio fájlba menti.
 Server sends decoded positions to the public map. Support helps fund development.	A Szerver a dekódolt pozíciókat a nyilvános térképre küldi. A Támogatás segít finanszírozni a fejlesztést.
 Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Itt található a dokumentáció, a hibaelhárítás, a közreműködők és a licencek. Az Útmutató újra elindítja ezt a bemutatót.
+Monitor audio	Hang figyelése
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Hallgasd a behangolt csatornát bármely módban egy jel felismeréséhez: a rádió mintáit USB, LSB, keskeny FM vagy AM szerint demodulálja. Néma, amíg a mód saját hangot játszik.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB 30 MHz alatt, keskeny FM felette
+Volume of the monitor	A figyelés hangereje
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Finomhangolás a behangolt frekvenciához képest, Hz-ben (az SSB jel 1–2 kHz-cel a vivő felett vagy alatt hallható)
+(the mode plays)	(a mód játszik)
+Audio...	Hang...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	A figyelés kimeneti eszközei, egy második kimenet (pl. virtuális audiokábel fldigihez vagy WSJT-X-hez) és helyi hálózati adatfolyam
+System default	Rendszer alapértelmezett
+Output 1	1. kimenet
+Output 2	2. kimenet
+Delay (ms)	Késleltetés (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Lejátszás előtt sorban álló hang: kevesebb gyorsabb, több kibírja a terhelt gépet
+Stay silent while the mode plays	Néma, amíg a mód játszik
+Network audio stream	Hálózati hangfolyam
+WAV header	WAV-fejléc
+Allow other computers	Más gépek engedélyezése
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16 bites sztereó, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, vagy fejléces WAV-lejátszó. Biztonság: bárki hallgathat, aki eléri a portot; ne kapcsold be a „Más gépek engedélyezése” opciót, ha nem kell.
+Listeners:	Hallgatók:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	Köszönetnyilvánítás
+Contributors	Közreműködők
+Projects and licences	Projektek és licencek
+People	Személyek
+By mode	Módok szerint
+pull request	pull request
+optimisation	optimalizálás
+fix	javítás
+bug report	hibajelentés
+samples	felvételek
+translation	fordítás
+testing	tesztelés
+idea	ötlet
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Köszönet mindenkinek, aki javítást küldött, hibát jelentett, felvételt osztott meg, fordított vagy ötletet adott. A szerző Kristijonas Adomaitis.
+Want your name changed or removed? Tell us on Discord or open an issue.	Szeretnéd, ha módosítanánk vagy törölnénk a neved? Szólj a Discordon, vagy nyiss egy issue-t.
+Decoded only	Csak dekódolt
+Hides tone-only pages and pages whose text could not be decoded.	Elrejti a csak hangjelzéses hívásokat és azokat az üzeneteket, amelyek szövege nem volt dekódolható.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve (Csak dekódolt)
+%zu tone-only or undecoded pages hidden	%zu csak hangjelzéses vagy dekódolatlan üzenet elrejtve
+hidden	elrejtve
+# LBJ (Chinese railway train warning)
+What LBJ carries	Mit visz az LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	Az LBJ a kínai vonat-közeledési figyelmeztetés kb. 821,2375 MHz-en. Minden mozdony 1200 bit/s sebességű numerikus POCSAG-üzeneteket küld: néhány másodpercenként rövid üzenetet a vonatszámmal, a sebességgel (km/h) és a kilométerszelvénnyel, valamint hosszabb üzeneteket a mozdony típusával, számával és az útvonallal.\n\nAz OnAir maga dekódolja az üzeneteket (csak vétel). Az üres érték sérült számjegyeket jelent; a szürke sorban javított hibák voltak, ezért ellenőrizd ugyanannak a vonatnak a következő üzenetével.
+tune to about 821.2375 MHz and start the receiver	hangolj kb. 821,2375 MHz-re és indítsd el a vevőt
+FM, 1200 bit/s FSK, %.2f Msps	FM, 1200 bit/s FSK, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu üzenet, %llu szinkronszó, %llu üres, %llu sikertelen ellenőrzés
+listening (level %.0f dBFS, offset %+.0f Hz)	figyel (szint %.0f dBFS, eltérés %+.0f Hz)
+Train	Vonat
+Speed km/h	Sebesség km/h
+Km post	Szelvény km
+Direction	Irány
+Locomotive	Mozdony
+Route	Útvonal
+Up	Fel
+Down	Le
+Some digits were corrected or lost: check this row against the next message of the train	Néhány számjegyet javítottunk vagy elveszett: ellenőrizd ezt a sort a vonat következő üzenetével
+Train warning, 821 MHz	Vonatfigyelmeztetés, 821 MHz

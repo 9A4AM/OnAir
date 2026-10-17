@@ -930,13 +930,11 @@ holds	保持中
 last send %s	最終送信 %s
 listening on %s port %d, %d client(s), %.1f MB sent, %.1f MB dropped	%s ポート %d で待ち受け中、クライアント %d 件、送信 %.1f MB、破棄 %.1f MB
 max	最大
-mute	ミュート
 on air	運用中
 partial	一部
 point %s	地点 %s
 power (dBm)	電力 (dBm)
 searching for Hermes Lite 2 radios…	Hermes Lite 2 を検索中…
-sound	音声
 up-converter	アップコンバーター
 waiting	待機中
 waterfall dB##wfdb	ウォーターフォール dB##wfdb
@@ -1382,6 +1380,15 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Predict positions	位置を予測
+Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	位置報告の間の空白を補います。機体は滑らかに動き、メッセージが途絶えると進路に沿って(目的地が通知されていれば航路に沿って)推測航法で位置を求めます。予測位置は破線の輪を付けた半透明の機影で描かれます。
+uncertainty	不確かさ
+Draws the uncertainty ellipse (95 percent) of every estimated position.	推定した各位置の不確かさの楕円(95パーセント)を描きます。
+predicted from the last position %s ago, +-%.1f NM	%s前の最後の位置から予測、+-%.1f NM
+estimated from the ground station only, within about %.0f NM	地上局のみから推定、約%.0f NM以内
+Hear this receiver	この受信機の音を聞く
+Close receiver	受信機を閉じる
+Radio: %s	無線機: %s
 HD Radio sound needs the HDC codec, which you install yourself (click ?)	HD Radio の音声には HDC コーデックが必要です。ご自分でインストールしてください(? をクリック)
 HDC sound codec cannot be used: %s	HDC 音声コーデックは使用できません: %s
 HDC sound codec not installed (no sound; click ? for the steps)	HDC 音声コーデックが未インストールです(音なし。手順は ? をクリック)
@@ -1543,3 +1550,71 @@ Each receiver pairs a radio with a mode. This strip switches between them and ch
 Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen は復調した信号を再生します。音量とミュートはここにあり、Record audio はファイルに保存します。
 Server sends decoded positions to the public map. Support helps fund development.	サーバーはデコードした位置情報を公開マップに送信します。サポートは開発資金に役立ちます。
 Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	ドキュメント、トラブルシューティング、クレジット、ライセンスはここにあります。ガイドツアーでこのツアーを再開できます。
+Monitor audio	音声モニター
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	どのモードでも同調したチャンネルを聞いて信号を識別できます。無線のサンプルをUSB、LSB、狭帯域FM、AMとして復調します。モードが自分の音を出している間は無音です。
+Auto: USB below 30 MHz, narrow FM above	自動: 30 MHz未満はUSB、以上は狭帯域FM
+Volume of the monitor	モニターの音量
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	同調周波数からの微調整(Hz)。SSB信号はキャリアの1〜2 kHz上または下で聞こえます
+(the mode plays)	(モードが再生中)
+Audio...	音声...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	モニターの出力デバイス、2つ目の出力(fldigiやWSJT-X用の仮想オーディオケーブルなど)、ローカルネットワークストリーム
+System default	システム既定
+Output 1	出力1
+Output 2	出力2
+Delay (ms)	遅延(ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	再生前にためる音声: 小さいほど速く、大きいほど負荷の高いPCに強い
+Stay silent while the mode plays	モードが再生中は無音
+Network audio stream	ネットワーク音声ストリーム
+WAV header	WAVヘッダー
+Allow other computers	他のコンピューターを許可
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16ビットステレオ、48 kHz。ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:ポート、またはヘッダー付きWAVプレーヤー。セキュリティ: ポートに到達できる人は誰でも聞けます。必要がなければ「他のコンピューターを許可」はオフのままにしてください。
+Listeners:	リスナー:
+video	video
+audio	audio
+profile	profile
+Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work	Video: %s (OnAir cannot decode this video) — audio, subtitles and data still work
+Open in an external player	Open in an external player
+Save the transport stream to a file	Save the transport stream to a file
+Stream it as UDP to %s	Stream it as UDP to %s
+Copy VLC command	Copy VLC command
+Copy mpv command	Copy mpv command
+Copy ffplay command	Copy ffplay command
+Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).
+# credits and contributors
+Credits	クレジット
+Contributors	貢献者
+Projects and licences	プロジェクトとライセンス
+People	人物
+By mode	モード別
+pull request	プルリクエスト
+optimisation	最適化
+fix	修正
+bug report	バグ報告
+samples	録音データ
+translation	翻訳
+testing	テスト
+idea	アイデア
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	修正の送付、バグ報告、録音の共有、翻訳、アイデアの提案をしてくださったすべての方に感謝します。作者は Kristijonas Adomaitis です。
+Want your name changed or removed? Tell us on Discord or open an issue.	名前の変更や削除をご希望ですか？ Discord でお知らせいただくか、issue を作成してください。
+Decoded only	デコード済みのみ
+Hides tone-only pages and pages whose text could not be decoded.	トーンのみの呼び出しと、テキストをデコードできなかったメッセージを非表示にします。
+%zu tone-only or undecoded pages hidden (Decoded only)	トーンのみまたは未デコードのメッセージを%zu件非表示（デコード済みのみ）
+%zu tone-only or undecoded pages hidden	トーンのみまたは未デコードのメッセージを%zu件非表示
+hidden	非表示
+# LBJ (Chinese railway train warning)
+What LBJ carries	LBJが伝える内容
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJは中国の列車接近警報で、約821.2375 MHzで送信されます。各機関車は1200 bit/sのPOCSAG数字ページを送ります。数秒ごとに列車番号・速度(km/h)・キロ程を含む短いメッセージと、機関車の形式と番号・路線を含む長いメッセージです。\n\nOnAir自身がページを復号します(受信のみ)。空欄の値は桁が壊れていたものです。灰色の行は誤りを訂正したものなので、同じ列車の次のメッセージと照合してください。
+tune to about 821.2375 MHz and start the receiver	約821.2375 MHzに合わせて受信を開始してください
+FM, 1200 bit/s FSK, %.2f Msps	FM、1200 bit/s FSK、%.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	メッセージ%llu件、同期ワード%llu件、空%llu件、検査失敗%llu件
+listening (level %.0f dBFS, offset %+.0f Hz)	受信待ち(レベル %.0f dBFS、オフセット %+.0f Hz)
+Train	列車
+Speed km/h	速度 km/h
+Km post	キロ程
+Direction	方向
+Locomotive	機関車
+Route	路線
+Up	上り
+Down	下り
+Some digits were corrected or lost: check this row against the next message of the train	一部の桁が訂正または欠落しました。同じ列車の次のメッセージと照合してください
+Train warning, 821 MHz	列車警報、821 MHz
