@@ -1,0 +1,120 @@
+# who	link	kind	what they did	modes (names as in app/ui/mode_table.cpp, or area:Something)	references (#issue/PR, commit:hash, discord)
+# Source of CONTRIBUTORS.md, docs/credits-for-website.md and app/panels/contributors_data.h (tools/gen_credits.py). One row per contribution; the maintainer is credited as the author, not listed. Only names people already use in public. Never leave a field empty (use - for no link).
+0xVANISHED	https://github.com/0xVANISHED	optimisation	Faster ATSC receiver on Intel/Linux, Airspy notes	ATSC	#1
+modemuser	https://github.com/modemuser	fix	macOS packages target the macOS version they advertise	area:macOS	#4
+drelectro	https://github.com/drelectro	fix	DVB-T timing steps carried into the pilot phase ramp; timing loop and TPS error correction	DVB	#8, commit:9298e71c, commit:0a9a6355
+drelectro	https://github.com/drelectro	optimisation	DVB-T SSE2 Viterbi decoder and a cheaper acquisition search	DVB	commit:79718e62, commit:f0ad14e9
+drelectro	https://github.com/drelectro	fix	Smooth waterfall scrolling, single gain slider placement	area:Interface	#7, #10
+drelectro	https://github.com/drelectro	pull request	Hermes Lite 2 network radio	area:Network radios	#75
+drelectro	https://github.com/drelectro	pull request	RFNM native receive driver	area:Radios	#149
+drelectro	https://github.com/drelectro	pull request	Wi-SUN FAN decoder with regional band plans	Wi-SUN FAN	#147
+drelectro	https://github.com/drelectro	optimisation	HF digital runs from 250 ksps	FT8	#76
+drelectro	https://github.com/drelectro	fix	P25 frame sync pattern	P25	#77
+drelectro	https://github.com/drelectro	pull request	ANZ 915 MeshCore Mid band plan	MeshCore	#124
+drelectro	https://github.com/drelectro	fix	HFDL decodes on air (code polynomial order, preamble search)	HFDL	#175
+drelectro	https://github.com/drelectro	fix	Tests build with MinGW on Windows	area:Build	#173
+A2ureIm4la	https://github.com/A2ureIm4la	fix	DVB-T reception with a HackRF: DC spike, FEC sync backlog, filter width	DVB	#11
+A2ureIm4la	https://github.com/A2ureIm4la	pull request	Maps zoom to 19, working buttons, tiles menu; stale tiles dropped	ADS-B; ACARS	#21, #22
+A2ureIm4la	https://github.com/A2ureIm4la	pull request	Channel width shown on every spectrum	area:Interface	#27
+A2ureIm4la	https://github.com/A2ureIm4la	pull request	Saved Stations library	FM	#123
+WispAyr	https://github.com/WispAyr	fix	LoRa sync symbols as signed 7-bit values	Meshtastic; MeshCore	#24
+F5OEO	https://github.com/F5OEO	pull request	Network PlutoSDR boards, Tezuka firmware, CS8/CS16	area:Network radios	#32
+F5OEO	https://github.com/F5OEO	optimisation	PlutoSDR at native 64/7 Msps for DVB-T/T2; AVX2 resampler	DVB	#33, #34
+F5OEO	https://github.com/F5OEO	pull request	FM video for analog FPV links and analogue TV up to 6 GHz	Analog TV	#36
+F5OEO	https://github.com/F5OEO	pull request	ATSC 3.0 real-signal decoding, ALP/TS delivery, faster LDPC and bootstrap search	ATSC 3.0	#81, #98, #100
+F5OEO	https://github.com/F5OEO	pull request	DAB PAD, FIC analysis, Analyzer tab, announcements, recording; cheaper on ARM boards	DAB / DAB+	#47, commit:bb92f799
+F5OEO	https://github.com/F5OEO	optimisation	DVB-S2 8-bit LDPC decoder for high code rates	DVB-S/S2	#83
+F5OEO	https://github.com/F5OEO	optimisation	DVB-C real time on a 10 Msps radio, stream clock fix	DVB-C	#82
+F5OEO	https://github.com/F5OEO	pull request	ISDB-T decodes the real signal, FEC on a worker thread	ISDB-T	#86
+F5OEO	https://github.com/F5OEO	pull request	GSM-R broadcast information	GSM-R	#41
+ffishman	https://github.com/ffishman	pull request	LongModerate frequency slot; ANZ 915 band plan; packets CSV columns; export and map at the receiver	Meshtastic; MeshCore	#109, #110, #115, #116, #188
+ffishman	https://github.com/ffishman	pull request	Optional full RDS dwell in the FM scan	FM	#111
+ffishman	https://github.com/ffishman	fix	Larger sample buffers for network Plutos; rtl_tcp greeting wait; headless --net-radio	area:Network radios	#119, #186, #187
+ffishman	https://github.com/ffishman	translation	Brazilian Portuguese review and restore	area:Languages	#141, #144
+ffishman	https://github.com/ffishman	fix	Windows: files in folders with accents	area:Windows	#168
+ffishman	https://github.com/ffishman	fix	Linux: bundled codec2 no longer crashes beside the system one	FreeDV	#174
+ffishman	https://github.com/ffishman	fix	HFDL bursts decode again	HFDL	#177
+andriux26	https://github.com/andriux26	pull request	SpyServer network radio	area:Network radios	#107
+andriux26	https://github.com/andriux26	fix	Live mode switch	area:Interface	#191
+andriux26	https://github.com/andriux26	pull request	Editable TLE source list, Keplerpass download	area:Satellite passes	commit:fb4a52aa, commit:4b277a93
+andriux26	https://github.com/andriux26	translation	Lithuanian network radio dialog	area:Languages	commit:992e89fc
+YZYMC	https://github.com/YZYMC	fix	Compile fixes in dvbstool	area:Build	#151, #156
+sbuchweitz	https://github.com/sbuchweitz	pull request	Docker image showing the GUI in a browser	area:Docker	#146
+PU2SWX	https://github.com/PU2SWX	translation	Portuguese (Brazil) interface translation	area:Languages	#117, #141
+MUSTARDTIGERFPV	https://github.com/MUSTARDTIGERFPV	pull request	SDR++ server support; Pluto added by IP no longer crashes	area:Network radios	#171
+OM5NA	-	pull request	Fobos SDR native driver	area:Radios	commit:240c3c75
+gmg2719	https://github.com/gmg2719	samples	Four DTMB IQ recordings and many decode reports	DTMB	#38, #61, #62, #63, #88, #184
+gmg2719	https://github.com/gmg2719	idea	5G NR and LTE band scan requests; LimeSDR and UHD requests	5G NR cells; Cell towers	#64, #65, #89
+xxj737	https://github.com/xxj737	testing	Tested AVS+ and DRA decoding, CDR tuning with Airspy HF+, DTMB labels	DTMB; CDR	#55, #120, #178
+xxj737	https://github.com/xxj737	idea	MHEG-5 for DTMB, update mirror, Android build	DTMB	#176, #183, #122
+grue74	https://github.com/grue74	bug report	DVB-C subtitles, teletext scaling and guide issues	DVB-C	#112, #125, #126
+hgxqk	https://github.com/hgxqk	samples	CDR IQ recordings and DRA+ proposals	CDR	#121, #138
+gvanem	https://github.com/gvanem	fix	Windows crash findings and clang-cl notes (strftime)	area:Windows	#74, #104, #157
+DG9BFC	https://github.com/DG9BFC	testing	Pluto over network and USB tests, network radio and buffer requests	area:Network radios	#18, #28, #96, #97
+DG9BFC	https://github.com/DG9BFC	idea	Pop-out player and DVB-S range requests	DVB-S/S2	#20, #30, #93
+YZYMC	https://github.com/YZYMC	idea	AVS+/DRA decode and CUDA DTMB decoder requests	DTMB; CDR	#39, #55
+YZYMC	https://github.com/YZYMC	samples	LBJ railway signal IQ recordings	LBJ	#153
+tortyl	https://github.com/tortyl	testing	SoapySDR over LAN probe output and testing	area:Network radios	#84
+tortyl	https://github.com/tortyl	idea	E-czas radio time protocol request	Time signals	#155
+WasyaTheWolf	https://github.com/WasyaTheWolf	bug report	Globalstar labels, GNSS sync drops, Iridium features	Globalstar; GNSS; Iridium	#189
+ranaud80	https://github.com/ranaud80	testing	Diagnosis of DAB+ confusion between multiplexes	DAB / DAB+	#179
+DickvanNoort	https://github.com/DickvanNoort	idea	Asked for credit to the code's developers	area:Credits	#190
+Pacjunk	https://github.com/Pacjunk	bug report	DAB+ confused with multiple multiplexes	DAB / DAB+	#179
+dj1fti	https://github.com/dj1fti	testing	DAB+ scan CSV and Astrometa report	DAB / DAB+	#179, #180
+f0cyf	https://github.com/f0cyf	bug report	HFDL, Orbcomm, VDL4 and AIS reports	HFDL; Orbcomm; VDL4; AIS	#66, #181, #182, #87
+zanco48	https://github.com/zanco48	bug report	AIS plotting and RSP2 DVB-T report	AIS; DVB	#87, #101
+Axpelle	https://github.com/Axpelle	bug report	NAVTEX, airband range and weak WEFAX reports	NAVTEX; Airband; Weather fax	#25, #42, #52, #103
+tsalisbury0	https://github.com/tsalisbury0	idea	HD Radio, LTE and NR scanning, HaLow requests	HD Radio; Wi-Fi HaLow (802.11ah)	#143, #164, #165, #167
+DL9DAK	https://github.com/DL9DAK	idea	ADS-B local antenna position and full map	ADS-B	#56, #57
+dhihacker	https://github.com/dhihacker	bug report	Maldives ISDB-T and DVB-T/T2 8 MHz Pluto reports	ISDB-T; DVB	#50, #54, #96
+stdevPavelmc	https://github.com/stdevPavelmc	idea	DTMB 6 MHz request; SDRplay detection on Linux	DTMB	#16, #17
+ea4gja	https://github.com/ea4gja	idea	Amateur television and PAL-FM requests	Analog TV	#13, #15
+BSDnux	https://github.com/BSDnux	idea	List of analogue and MAC TV systems	MAC; Analog TV	#15, #73
+lakisfm1	https://github.com/lakisfm1	bug report	DAB station logo and FM scanning reports	DAB / DAB+; FM	#45, #46
+f5gkw	https://github.com/f5gkw	idea	Mesh, fldigi modes and TETRAPOL requests	TETRAPOL; Meshtastic	#26, #105, #106, #108, #113
+RedmiNote5User	https://github.com/RedmiNote5User	bug report	FM scanner coverage and CDR playback reports	FM; CDR	#135, #138
+michaelgeorge001	https://github.com/michaelgeorge001	idea	Audio output for all modes; CHU time signal removal	Time signals	#140, #150
+kevgfire	https://github.com/kevgfire	idea	UK band plan and USB/LSB requests	General receiver	#159, #161
+trebor-56	https://github.com/trebor-56	idea	LimeSDR Mini request	area:Radios	#20, #169
+PY2PLL	https://github.com/PY2PLL	bug report	AirSpy Discovery stop and Meteor M2-3 LRPT reports	Meteor-M LRPT	#78, #79
+Debegege	https://github.com/Debegege	bug report	DVB-T with a Pluto on Windows 11, 0.2.3 crash, spectrum height question	DVB	#18, #59, #91
+Sunnnset5	https://github.com/Sunnnset5	idea	Audio source and UDP export; services crash	area:Interface	#102, #166
+carlosjs	https://github.com/carlosjs	idea	Basic LoRa decoder; Sigfox	LoRa (raw)	#20, #170
+KvaKKK	https://github.com/KvaKKK	bug report	Meshcore and Meshtastic preset editing	MeshCore; Meshtastic	#60
+pbranly	https://github.com/pbranly	testing	macOS Sequoia DAB/DVB testing	DAB / DAB+	#2, #3, #5
+ea4hwg	https://github.com/ea4hwg	bug report	SDRplay RSPduo tuner 2 API error	area:Radios	#31
+rlabs-oss	https://github.com/rlabs-oss	idea	libiio IP support	area:Network radios	#19
+nmaster2042	https://github.com/nmaster2042	idea	SpyServer support	area:Network radios	#68
+IZ5RZR	https://github.com/IZ5RZR	idea	VDL2 and ACARS on a map	VDL2; ACARS	#99
+mrwish7	https://github.com/mrwish7	idea	Airspy mini 10 MHz spectrum	area:Radios	#49
+xpwina	https://github.com/xpwina	bug report	DTMB decode report	DTMB	#58
+niuniu1138	https://github.com/niuniu1138	idea	Ionospheric sounder request	Ionospheric sounders	#80
+unilabs-exp	https://github.com/unilabs-exp	idea	CSV export resolution and metric units	area:Interface	#85
+Voyager-III	https://github.com/Voyager-III	idea	Fullscreen option	area:Interface	#118
+catheno	https://github.com/catheno	bug report	Airband channel not saved	Airband	#148
+ar8001	https://github.com/ar8001	bug report	DVB-T/T2 not locked on Airspy Mini	DVB	#163
+iu1mrd	https://github.com/iu1mrd	bug report	Airspy HF+ crash	area:Radios	#160
+py2gn	https://github.com/py2gn	bug report	Crash on CPUs without AVX	area:Windows	#74
+mechanicalpotato	https://github.com/mechanicalpotato	bug report	RTL-SDR V4 HF tuning	area:Radios	#133
+richt314	https://github.com/richt314	idea	Touch-friendly interface	area:Interface	#139
+grahampaull	https://github.com/grahampaull	bug report	Lost spectrum display	area:Interface	#142
+dominik0815	https://github.com/dominik0815	bug report	Pop-out fullscreen closing	DVB-S/S2	#71
+WolfgangSchreiner	https://github.com/WolfgangSchreiner	idea	QO-100 and IP radios	QO-100	#97
+DL5BCA	https://github.com/DL5BCA	idea	DVB-S below 700 MHz	DVB-S/S2	#30
+Ugo300	https://github.com/Ugo300	idea	Graves view	area:Interface	#92
+bithunter-99	https://github.com/bithunter-99	idea	DECT receiver	DECT cordless phones	#94
+OnesAndZer0s	https://github.com/OnesAndZer0s	idea	FlexRadio support	area:Radios	#95
+iu0azb	https://github.com/iu0azb	idea	IC-R8600 support	area:Radios	#136
+ic706mk2	https://github.com/ic706mk2	testing	Hermes Lite and QO-100 testing with a Pluto	QO-100	#59, #72
+fe8769a	https://github.com/fe8769a	bug report	Build crash on DragonOS	area:Build	#43
+ryanginn	https://github.com/ryanginn	bug report	DAB+ IQ file decoding	DAB / DAB+	#44
+Tech500	https://github.com/Tech500	bug report	Runtime assert error	area:Interface	#53
+FleXoft	https://github.com/FleXoft	bug report	macOS Sequoia run problem	area:macOS	#3
+hgxqk	https://github.com/hgxqk	testing	Android SDR notes	area:Android	#122
+Ken W4KRR	-	idea	Memory panel	area:Memory	discord
+sugusllly	-	idea	Ham It Down converter support	area:Radios	discord
+nature.van	-	idea	Frequency database, audio recorder, fast scanner with noise floor, photo links, auto stop/start, support button	area:Interface	discord
+Chercheur	-	bug report	SoapyRemote on Windows	area:Network radios	discord
+Shadowman	-	bug report	Found the squawk JSON bug	ADS-B	discord
+Jamiar	-	bug report	Squelch recording bug, with a test clip	area:Interface	discord
+Mikki / YRPÄ	-	bug report	LTE band 31	Cell towers	discord

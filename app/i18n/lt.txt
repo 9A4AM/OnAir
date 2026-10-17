@@ -1579,3 +1579,19 @@ Copy VLC command	Kopijuoti VLC komandą
 Copy mpv command	Kopijuoti mpv komandą
 Copy ffplay command	Kopijuoti ffplay komandą
 Start the UDP stream first, then run the command. Whether the player shows the picture depends on its own build (docs/AVSPLUS.md).	Pirmiausia įjunkite UDP srautą, tada paleiskite komandą. Ar grotuvas rodys vaizdą, priklauso nuo jo paties versijos (docs/AVSPLUS.md).
+# credits and contributors
+Credits	Padėkos
+Contributors	Prisidėjusieji
+Projects and licences	Projektai ir licencijos
+People	Žmonės
+By mode	Pagal režimą
+pull request	pull request
+optimisation	optimizavimas
+fix	pataisymas
+bug report	pranešimas apie klaidą
+samples	įrašai
+translation	vertimas
+testing	testavimas
+idea	idėja
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Ačiū visiems, kurie atsiuntė pataisymų, pranešė apie klaidas, pasidalijo įrašais, vertė ar siūlė idėjų. Autorius yra Kristijonas Adomaitis.
+Want your name changed or removed? Tell us on Discord or open an issue.	Norite, kad pakeistume ar pašalintume jūsų vardą? Parašykite mums Discord arba sukurkite issue.

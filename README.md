@@ -72,7 +72,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 - [Updates](#updates) · [Discord status](#discord-status)
 - [Good to know](#good-to-know) · [Troubleshooting](#troubleshooting)
 - [Build from source](#build-from-source)
-- [Support and community](#support-and-community) · [Credits](#credits) · [License](#license)
+- [Support and community](#support-and-community) · [Credits](#credits) · [Contributors](#contributors) · [License](#license)
 
 ## What it does
 
@@ -582,6 +582,10 @@ OnAir stands on the work of many people. Full list with authors, licences and wh
 - **Data:** map tiles and data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, aircraft data from adsbdb, aircraft photos from Planespotters.net with credit, satellite elements from CelesTrak.
 
 If your work is used and not credited correctly, please open an issue.
+
+## Contributors
+
+Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The full list, with what each person did and for which mode, is in **[CONTRIBUTORS.md](CONTRIBUTORS.md)** (also in the program: Help, Credits, tab Contributors, and in each mode's tooltip). Code contributors: [@0xVANISHED](https://github.com/0xVANISHED), [@A2ureIm4la](https://github.com/A2ureIm4la), [@andriux26](https://github.com/andriux26), [@drelectro](https://github.com/drelectro), [@F5OEO](https://github.com/F5OEO), [@ffishman](https://github.com/ffishman), [@modemuser](https://github.com/modemuser), [@MUSTARDTIGERFPV](https://github.com/MUSTARDTIGERFPV), [@PU2SWX](https://github.com/PU2SWX), [@sbuchweitz](https://github.com/sbuchweitz), [@WispAyr](https://github.com/WispAyr) and [@YZYMC](https://github.com/YZYMC). Want your name changed or removed? Tell us on Discord or open an issue.
 
 ---
 

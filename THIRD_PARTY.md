@@ -151,4 +151,4 @@ Map data (c) OpenStreetMap contributors, available under the Open Database Licen
 
 ## Changing this list
 
-Edit `tools/credits_data.tsv`, then run `python3 tools/gen_credits.py`. It rewrites this file, `docs/credits-for-website.md` and the table shown in the program (`app/panels/credits_data.h`). `tests/app/test_credits.cpp` fails when a field is empty.
+Edit `tools/credits_data.tsv`, then run `python3 tools/gen_credits.py`. It rewrites this file, `docs/credits-for-website.md` and the table shown in the program (`app/panels/credits_data.h`); people are in `tools/contributors.tsv`. `tests/app/test_credits.cpp` fails when a field is empty.
