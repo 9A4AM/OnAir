@@ -17,8 +17,44 @@ using dect2::DectBase;
 struct State {
     int view = 0;               // 0 base stations, 1 burst log
     uint64_t sel = 0;           // the selected base station (RFPI), 0: the newest
+    int band = 0;               // the regional band the carrier buttons and the scan use (dect::band())
+    bool scan = false;          // stepping through the band's carriers, a second and a half each, staying on one that is heard
+    double nextStep = 0;
+    int scanAt = 0;
 };
 State S;
+
+const char* bandName(int b) {
+    switch (b) {
+    case 1: return tr("US / Canada 1920-1930 MHz (DECT 6.0)");
+    case 2: return tr("Brazil 1910-1920 MHz");
+    case 3: return tr("Latin America 1910-1930 MHz");
+    case 4: return tr("US ISM 902-928 MHz (DECT in ISM)");
+    default: return tr("Europe 1880-1900 MHz");
+    }
+}
+const char* bandWhere(int b) {
+    switch (b) {
+    case 1: return tr("USA, Canada: the UPCS band, DECT 6.0 phones");
+    case 2: return tr("Brazil");
+    case 3: return tr("Several Latin American countries");
+    case 4: return tr("USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones are not DECT");
+    default: return tr("Europe, most of Asia, Africa, Australia: the common DECT band");
+    }
+}
+
+// empty when the radio reaches the band; else the message that it cannot (also through a converter: radioRangeWarning applies it)
+std::string reachMessage(const App& a, int band) {
+    if (a.devIdx < 0 || a.devIdx >= (int)a.devices.size()) return "";
+    const DeviceInfo& d = a.devices[(size_t)a.devIdx];
+    if (!d.isRadio()) return "";
+    const double lo = dect::bandLowMhz(band), hi = dect::bandHighMhz(band);
+    if (radioRangeWarning(d, lo, &a.tune.radio).empty() && radioRangeWarning(d, hi, &a.tune.radio).empty()) return "";
+    char b[400];
+    snprintf(b, sizeof b, tr("Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings."),
+             lo, hi, bandName(band), d.minFreqHz / 1e6, d.maxFreqHz / 1e6);
+    return b;
+}
 
 bool live(const App& a) { return a.rx.standard == 79; }   // the engine reports its standard code minus one
 
@@ -64,7 +100,7 @@ void basesView(App& a) {
     const DectBase* b = selected(t);
     if (!b) {
         ImGui::PushTextWrapPos(0);
-        ImGui::TextDisabled("No base station heard yet. A DECT base (a cordless phone's charging stand, a router with a phone, a DECT repeater) sends a beacon every 10 ms on one of ten carriers, 1881.792 - 1897.344 MHz in Europe. Tune to a carrier (the Receiver tab has the list) or step through them.");
+        ImGui::TextDisabled("No base station heard yet. A DECT base (a cordless phone's charging stand, a router with a phone, a DECT repeater) sends a beacon every 10 ms on one of ten carriers, 1881.792 - 1897.344 MHz in Europe (1921.536 - 1928.448 MHz in the US and Canada). Pick the band and tune to a carrier, or scan the band (the Receiver tab).");
         ImGui::PopTextWrapPos();
         return;
     }
@@ -108,7 +144,7 @@ void logView(App& a) {
 }
 
 void tab(App& a) {
-    if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver on a DECT carrier (1881.792 - 1897.344 MHz) to hear base stations"); ImGui::PopTextWrapPos(); return; }
+    if (!live(a)) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled(a.engine.running() ? "starting" : "start the receiver on a DECT carrier (Europe 1881.792 - 1897.344 MHz, US/Canada 1921.536 - 1928.448 MHz) to hear base stations"); ImGui::PopTextWrapPos(); return; }
     ImGui::RadioButton("Base stations##dectv", &S.view, 0); ImGui::SameLine();
     ImGui::RadioButton("Bursts##dectv", &S.view, 1);
     ImGui::Separator();
@@ -149,7 +185,7 @@ void receiver(App& a) {
     const dect2::DectTelemetry& t = a.rx.dect;
     const auto kv = [&](const char* k, const char* fmt, auto... v) { ImGui::TextDisabled("%s", k); kvColumn(130 * gUi); ImGui::PushFont(a.mono, 0); ImGui::PushTextWrapPos(0); ImGui::Text(fmt, v...); ImGui::PopTextWrapPos(); ImGui::PopFont(); };
     kv("state", "%s", t.state ? "bursts heard" : "nothing heard lately");
-    if (t.carrier >= 0) kv("carrier", "%d (%.3f MHz)", t.carrier, t.channelMhz);
+    if (t.carrier >= 0) kv("carrier", "%d (%.3f MHz), %s", t.carrier, t.channelMhz, bandName(t.band));
     else kv("channel", "%s", t.channelMhz > 0 ? (std::to_string(t.channelMhz) + " MHz, not a DECT carrier").c_str() : "a file");
     kv("bursts", "%llu from bases, %llu from handsets", (unsigned long long)t.baseBursts, (unsigned long long)t.handsetBursts);
     kv("A-fields", "%llu good, %llu bad CRC", (unsigned long long)t.blocksOk, (unsigned long long)t.blocksBad);
@@ -180,13 +216,41 @@ void summary(const App& a, std::string& l1, std::string& l2) {
 }
 
 void tuner(App& a, bool& retune) {
-    ImGui::TextDisabled("Carrier");
-    for (int n = 0; n < dect::kCarriers; n++) {
-        ImGui::SameLine(0, 4 * gUi);
-        char l[8]; snprintf(l, sizeof l, "%d##dc%d", n, n);
-        if (ImGui::SmallButton(l)) { tuneFreq(a, dect::carrierMhz(n)); retune = true; }
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("DECT carrier %d, %.3f MHz", n, dect::carrierMhz(n));
+    if (S.band < 0 || S.band >= dect::kBands) S.band = 0;
+    ImGui::TextDisabled("%s", tr("Band"));
+    ImGui::SameLine(0, 4 * gUi);
+    ImGui::SetNextItemWidth(std::min(300 * gUi, ImGui::GetContentRegionAvail().x));
+    if (ImGui::BeginCombo("##dectband", bandName(S.band))) {
+        for (int b = 0; b < dect::kBands; b++) {
+            if (ImGui::Selectable(bandName(b), b == S.band)) { S.band = b; S.scan = false; }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", bandWhere(b));
+        }
+        ImGui::EndCombo();
     }
+    const dect::Band& bd = dect::band(S.band);
+    ImGui::TextDisabled("%s", tr("Carrier"));
+    for (int n = 0; n < bd.count; n++) {
+        ImGui::SameLine(0, 4 * gUi);
+        char l[16]; snprintf(l, sizeof l, "%d##dc%d", n, n);
+        if (ImGui::SmallButton(l)) { tuneFreq(a, dect::carrierMhz(S.band, n)); retune = true; S.scan = false; }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(tr("DECT carrier %d, %.3f MHz"), n, dect::carrierMhz(S.band, n));
+    }
+    ImGui::SameLine(0, 8 * gUi);
+    if (ImGui::SmallButton(S.scan ? tr("Stop scan##dsc") : tr("Scan band##dsc"))) { S.scan = !S.scan; S.scanAt = 0; S.nextStep = 0; }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Steps through the carriers of the band, 1.5 s each, and stays on one while bursts are heard."));
+    if (S.scan && a.engine.running()) {
+        double plan[32];
+        const int k = dect::scanPlan(S.band, plan, 32);
+        const double now = ImGui::GetTime();
+        const bool heard = live(a) && a.rx.dect.state;
+        if (now >= S.nextStep && !heard && k > 0) {
+            tuneFreq(a, plan[S.scanAt % k]); retune = true;
+            S.scanAt++;
+        }
+        if (now >= S.nextStep) S.nextStep = now + 1.5;
+    }
+    const std::string why = reachMessage(a, S.band);
+    if (!why.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextColored(ImVec4(0.95f, 0.65f, 0.2f, 1), "%s", why.c_str()); ImGui::PopTextWrapPos(); }
 }
 
 void synth(App& a, bool& changed) {

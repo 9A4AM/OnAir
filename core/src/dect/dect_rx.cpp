@@ -295,7 +295,9 @@ struct DectReceiver::Impl {
         power = 0; nPower = 0;
         const double c = centerHz.load();
         tel.channelMhz = c > 0 ? (c + offset) / 1e6 : 0;
-        tel.carrier = c > 0 ? dect::carrierOf(tel.channelMhz) : -1;
+        int cn = -1;
+        tel.band = c > 0 ? dect::bandOf(tel.channelMhz, &cn) : -1;
+        tel.carrier = tel.band >= 0 ? cn : -1;
         tel.snrDb = (float)snrAvg;
         tel.state = sigSec() - lastGood < 5 ? 1 : 0;
         tel.dataValid = tel.state >= 1;
@@ -353,7 +355,7 @@ void DectReceiver::setLogCallback(std::function<void(const std::string&)> cb) { 
 ModeTuning dectTuning() {
     ModeTuning t;
     t.stdMode = 80; t.id = "dect"; t.name = "DECT cordless phones";
-    t.minMhz = 1870; t.maxMhz = 1930; t.defMhz = dect::carrierMhz(0);
+    t.minMhz = 900; t.maxMhz = 1930; t.defMhz = dect::carrierMhz(0);
     t.sampleRate = 5000000;
     t.basebandHz = 0;
     t.bandwidthMhz = 1.728;
