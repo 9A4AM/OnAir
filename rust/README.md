@@ -86,6 +86,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 | fec | `onair_fec` | `DECT2_RUST_FEC` | `rs/fec.h` | Reed-Solomon (DVB-T 204/188, ATSC 207/187, DAB 120/110), DVB-T2 BCH (t = 1..12), K = 7 Viterbi (NEON kernel, opt-in `DECT2_RUST_VITERBI`: 4% slower than the C++), LDPC parity-check table builder | done (LDPC decoders, SSE2/AVX2/NEON C++ Viterbi default, other modes' small Viterbi/RS copies in C++) |
 | ring | `onair_ring` | `DECT2_RUST_RING` (default OFF) | `rs/ring.h` | lock-free SPSC sample ring (`IqRing`) behind `common/ring.h`; the generic mutex queues / pool stay in C++ | done, opt-in (see crate README) |
 | usb | `onair_usb` | `DECT2_RUST_USB` | `rs/usb.h` | Android USB SDR drivers | not started |
+| usb | `onair_usb` | `DECT2_RUST_USB` (default OFF) | `rs/usb.h` | RTL-SDR protocol layer over a transfer trait (RTL2832U, R820T/R820T2/R828D, E4000), differential-tested against librtlsdr; Airspy / HackRF to follow | RTL-SDR done, untested on hardware |
 
 ## The C++ originals are still there
 
