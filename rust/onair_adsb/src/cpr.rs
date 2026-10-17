@@ -13,11 +13,11 @@ fn modulo(x: f64, y: f64) -> f64 {
 }
 
 /// Transition latitudes: NL >= n up to |lat| = T[n] for n = 2 ..= 59 (Annex 10 / DO-260B table A-1; the formula acos(sqrt((1 - cos(pi/30)) /
-/// (1 - cos(2 pi / n)))) in degrees gives the table's 10.47047130, 14.82817437, ... 87.0). Stored as computed so that the zone changes land on the same
-/// latitudes as the C++ implementation (a test checks them against the formula).
+/// (1 - cos(2 pi / n)))) in degrees gives the table's 10.47047130, 14.82817437, ... 87.0). Stored as literals (the same table is in the C++ implementation) so the zone changes cannot depend on the
+/// libm; the first one is the table's exact 87.0 (NL = 2 up to and including 87 degrees). A test checks them against the formula.
 #[allow(clippy::excessive_precision)]
 pub static NL_THRESHOLDS: [f64; 58] = [
-    8.69999999999999716e+01,
+    8.70000000000000000e+01,
     8.65353699751210002e+01,
     8.57554162094441779e+01,
     8.48916619070208469e+01,

@@ -82,8 +82,9 @@ pub unsafe extern "C" fn onair_same_state_centre(fips: i32, country: i32, lat: *
     }
 }
 #[no_mangle]
-pub extern "C" fn onair_same_valid_char(c: u8) -> bool {
-    locate::valid_char(c)
+pub extern "C" fn onair_same_valid_char(c: u32) -> bool {
+    // u32, not u8: GCC does not widen a narrow argument and LLVM relies on it (differs on x86-64 Linux)
+    c <= 0xff && locate::valid_char(c as u8)
 }
 /// The message cut to what the format says: writes the start offset to `start` and returns the length (0: neither "ZCZC" nor "NNNN" found).
 #[no_mangle]

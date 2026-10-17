@@ -48,7 +48,7 @@ bool stateCentre(int fips, Country c, double& lat, double& lon) {
     lat = a; lon = b;
     return true;
 }
-bool validChar(uint8_t c) { return onair_same_valid_char(c); }
+bool validChar(uint8_t c) { return onair_same_valid_char((uint32_t)c); }
 
 std::string trimMessage(const std::string& b) {
     size_t start = 0;

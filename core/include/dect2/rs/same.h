@@ -36,7 +36,7 @@ const uint8_t* onair_same_pca_name(int32_t digit);
 const uint8_t* onair_same_state_name(int32_t fips, int32_t country);        // country 0 US, 1 Canada
 const uint8_t* onair_same_state_abbr(int32_t fips, int32_t country);
 bool onair_same_state_centre(int32_t fips, int32_t country, double* lat, double* lon);
-bool onair_same_valid_char(uint8_t c);
+bool onair_same_valid_char(uint32_t c);
 // The message cut to the format: writes the start offset, returns the length (0: no "ZCZC" or "NNNN").
 size_t onair_same_trim_message(const uint8_t* b, size_t n, size_t* start);
 
