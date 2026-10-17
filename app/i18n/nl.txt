@@ -2363,3 +2363,34 @@ Current setting: %.2f ppm	Huidige instelling: %.2f ppm
 No measurements of this radio yet.	Nog geen metingen van deze radio.
 History of this radio (ppm)	Geschiedenis van deze radio (ppm)
 Drift: %+.3f ppm per minute	Drift: %+.3f ppm per minuut
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Vliegtuigen uit de echo's van een omroepzender, met twee coherente kanalen
+Baseline %.1f km, transmitter bearing %.0f degrees	Basislijn %.1f km, richting van de zender %.0f graden
+Cancellation taps	Onderdrukkingstaps
+Cannot open the recording.	De opname kan niet worden geopend.
+Clutter cancelled by %.0f dB, %d detections	Clutter %.0f dB onderdrukt, %d detecties
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Complex float32, kanaal 0 referentie en kanaal 1 bewaking, samplesynchroon.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler in de tijd
+Echo level (dB)	Echoniveau (dB)
+End of the recording.	Einde van de opname.
+Enter the illuminator position.	Voer de positie van de illuminator in.
+False alarm rate 1e-x	Valse-alarmkans 1e-x
+Illuminator	Illuminator
+NLMS instead of ECA	NLMS in plaats van ECA
+Noise-like waveform (DVB-T)	Ruisachtige golfvorm (DVB-T)
+Passive radar	Passieve radar
+Processing	Verwerking
+Range km	Afstand km
+Range rate (m/s)	Afstandsverandering (m/s)
+Range-Doppler map	Afstand-Doppler-kaart
+Rate m/s	Snelheid m/s
+Saved illuminators	Opgeslagen illuminators
+Second target	Tweede doel
+Target range (km)	Afstand van het doel (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Doelen die dichterbij zijn dan het aantal taps in afstandssamples worden door de onderdrukking verborgen.
+The receiver position is the one set for ADS-B.	De positie van de ontvanger is die welke voor ADS-B is ingesteld.
+Tracks	Sporen
+Two recordings (reference, surveillance)	Twee opnames (referentie, bewaking)
+Two-channel recording (cf32)	Tweekanaalsopname (cf32)
+Waiting for data.	Wachten op gegevens.

@@ -2363,3 +2363,34 @@ Current setting: %.2f ppm	現在の設定: %.2f ppm
 No measurements of this radio yet.	このラジオの測定はまだありません。
 History of this radio (ppm)	このラジオの履歴(ppm)
 Drift: %+.3f ppm per minute	ドリフト: 毎分 %+.3f ppm
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	放送局の反射波から航空機を検出（コヒーレントな2チャンネル）
+Baseline %.1f km, transmitter bearing %.0f degrees	基線 %.1f km、送信所の方位 %.0f 度
+Cancellation taps	キャンセレーションのタップ数
+Cannot open the recording.	録音ファイルを開けません。
+Clutter cancelled by %.0f dB, %d detections	クラッタを %.0f dB 抑圧、検出 %d 件
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	複素 float32。チャンネル0が参照、チャンネル1が監視、サンプル同期。
+Doppler Hz	ドップラー Hz
+Doppler over time	ドップラーの時間変化
+Echo level (dB)	エコーレベル (dB)
+End of the recording.	録音の終わり。
+Enter the illuminator position.	照射する送信所の位置を入力してください。
+False alarm rate 1e-x	誤警報率 1e-x
+Illuminator	照射源
+NLMS instead of ECA	ECA の代わりに NLMS
+Noise-like waveform (DVB-T)	雑音状の波形 (DVB-T)
+Passive radar	パッシブレーダー
+Processing	処理
+Range km	距離 km
+Range rate (m/s)	距離変化率 (m/s)
+Range-Doppler map	距離-ドップラーマップ
+Rate m/s	変化率 m/s
+Saved illuminators	保存済みの照射源
+Second target	2つ目の目標
+Target range (km)	目標の距離 (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	距離サンプルで見てタップ数より近い目標は、キャンセレーションにより隠れます。
+The receiver position is the one set for ADS-B.	受信機の位置は ADS-B に設定したものを使います。
+Tracks	トラック
+Two recordings (reference, surveillance)	2つの録音（参照、監視）
+Two-channel recording (cf32)	2チャンネルの録音 (cf32)
+Waiting for data.	データを待っています。

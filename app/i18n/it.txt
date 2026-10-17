@@ -2346,3 +2346,34 @@ Current setting: %.2f ppm	Impostazione attuale: %.2f ppm
 No measurements of this radio yet.	Ancora nessuna misura di questa radio.
 History of this radio (ppm)	Cronologia di questa radio (ppm)
 Drift: %+.3f ppm per minute	Deriva: %+.3f ppm al minuto
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Aerei dagli echi di un trasmettitore broadcast, con due canali coerenti
+Baseline %.1f km, transmitter bearing %.0f degrees	Linea di base %.1f km, direzione del trasmettitore %.0f gradi
+Cancellation taps	Coefficienti di cancellazione
+Cannot open the recording.	Impossibile aprire la registrazione.
+Clutter cancelled by %.0f dB, %d detections	Clutter cancellato di %.0f dB, %d rilevamenti
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Complesso float32, canale 0 riferimento e canale 1 sorveglianza, sincroni al campione.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler nel tempo
+Echo level (dB)	Livello dell'eco (dB)
+End of the recording.	Fine della registrazione.
+Enter the illuminator position.	Inserisci la posizione dell'illuminatore.
+False alarm rate 1e-x	Tasso di falsi allarmi 1e-x
+Illuminator	Illuminatore
+NLMS instead of ECA	NLMS al posto di ECA
+Noise-like waveform (DVB-T)	Forma d'onda simile al rumore (DVB-T)
+Passive radar	Radar passivo
+Processing	Elaborazione
+Range km	Distanza km
+Range rate (m/s)	Variazione della distanza (m/s)
+Range-Doppler map	Mappa distanza-Doppler
+Rate m/s	Velocità m/s
+Saved illuminators	Illuminatori salvati
+Second target	Secondo bersaglio
+Target range (km)	Distanza del bersaglio (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	I bersagli più vicini del numero di coefficienti, in campioni di distanza, vengono nascosti dalla cancellazione.
+The receiver position is the one set for ADS-B.	La posizione del ricevitore è quella impostata per l'ADS-B.
+Tracks	Tracce
+Two recordings (reference, surveillance)	Due registrazioni (riferimento, sorveglianza)
+Two-channel recording (cf32)	Registrazione a due canali (cf32)
+Waiting for data.	In attesa di dati.

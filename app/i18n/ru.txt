@@ -2346,3 +2346,34 @@ Current setting: %.2f ppm	Текущая настройка: %.2f ppm
 No measurements of this radio yet.	Измерений этого радио пока нет.
 History of this radio (ppm)	История этого радио (ppm)
 Drift: %+.3f ppm per minute	Дрейф: %+.3f ppm в минуту
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Самолёты по отражённым сигналам вещательного передатчика, два когерентных канала
+Baseline %.1f km, transmitter bearing %.0f degrees	База %.1f км, азимут передатчика %.0f градусов
+Cancellation taps	Отводы подавления
+Cannot open the recording.	Не удаётся открыть запись.
+Clutter cancelled by %.0f dB, %d detections	Помехи подавлены на %.0f дБ, обнаружений: %d
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Комплексный float32, канал 0 опорный, канал 1 обзорный, синхронные по отсчётам.
+Doppler Hz	Доплер, Гц
+Doppler over time	Доплер во времени
+Echo level (dB)	Уровень эха (дБ)
+End of the recording.	Конец записи.
+Enter the illuminator position.	Введите положение передатчика-подсветки.
+False alarm rate 1e-x	Вероятность ложной тревоги 1e-x
+Illuminator	Передатчик-подсветка
+NLMS instead of ECA	NLMS вместо ECA
+Noise-like waveform (DVB-T)	Шумоподобный сигнал (DVB-T)
+Passive radar	Пассивный радар
+Processing	Обработка
+Range km	Дальность, км
+Range rate (m/s)	Скорость изменения дальности (м/с)
+Range-Doppler map	Карта дальность-Доплер
+Rate m/s	Скорость, м/с
+Saved illuminators	Сохранённые передатчики
+Second target	Вторая цель
+Target range (km)	Дальность цели (км)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Цели ближе, чем число отводов в отсчётах дальности, скрываются подавлением.
+The receiver position is the one set for ADS-B.	Положение приёмника берётся из настроек ADS-B.
+Tracks	Треки
+Two recordings (reference, surveillance)	Две записи (опорная, обзорная)
+Two-channel recording (cf32)	Двухканальная запись (cf32)
+Waiting for data.	Ожидание данных.
