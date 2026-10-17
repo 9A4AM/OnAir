@@ -173,6 +173,8 @@ EXPORT int LMS_GetDeviceList(char (*l)[256]) {
     return model == "twomini" ? 2 : 1;
 }
 EXPORT int LMS_Open(void** d, const char* info, void*) { if (getenv("FAKE_LIME_OPEN_FAIL")) return -1; rec("lime.openInfoOk", info && strstr(info, "LimeSDR") ? 1 : 0); *d = new int(1); return 0; }
+// the reference clock: LMS_SetClockFreq(LMS_CLOCK_EXTREF = 0x2000, Hz); FAKE_LIME_NO_EXTREF makes the library refuse it
+EXPORT int LMS_SetClockFreq(void*, size_t id, double hz) { if (id != 0x2000 || getenv("FAKE_LIME_NO_EXTREF")) return -1; rec("lime.extref", hz); rec("lime.extrefCalls", std::max(0.0, fake_state("lime.extrefCalls")) + 1); return 0; }
 EXPORT int LMS_Close(void* d) { delete (int*)d; return 0; }
 EXPORT int LMS_Init(void*) { return getenv("FAKE_LIME_INIT_FAIL") ? -1 : 0; }
 EXPORT int LMS_EnableChannel(void*, bool tx, size_t ch, bool e) { rec("lime.chanEnabled", (!tx && ch == 0 && e) ? 1 : 0); return 0; }
@@ -554,6 +556,7 @@ EXPORT long long iio_device_attr_write(const void* dev, const char* a, const cha
 }
 EXPORT int iio_device_attr_write_longlong(const void* dev, const char* a, long long v) { rec((std::string("pluto.") + (const char*)dev + "." + a).c_str(), (double)v); count("pluto.xoWrites"); return 0; }
 EXPORT int uhd_usrp_set_clock_source(void*, const char* src, size_t mb) { rec("usrp.clock", strcmp(src, "internal") == 0 ? 1 : strcmp(src, "external") == 0 ? 2 : strcmp(src, "gpsdo") == 0 ? 3 : 0); rec("usrp.clockMb", (double)mb); count("usrp.clockCalls"); return 0; }
+EXPORT int uhd_usrp_set_time_source(void*, const char* src, size_t) { rec("usrp.time", strcmp(src, "none") == 0 ? 1 : strcmp(src, "external") == 0 ? 2 : strcmp(src, "gpsdo") == 0 ? 3 : strcmp(src, "mimo") == 0 ? 4 : 0); count("usrp.timeCalls"); return 0; }
 EXPORT int uhd_get_last_error(char* out, size_t len) { snprintf(out, len, "%s", "fake UHD error"); return 0; }
 EXPORT int uhd_usrp_last_error(void*, char* out, size_t len) { snprintf(out, len, "%s", "fake USRP error"); return 0; }
 EXPORT int uhd_usrp_get_rx_freq_range(void*, size_t, uhd_range* r) { r->lo = 70e6; r->hi = 6e9; return 0; }

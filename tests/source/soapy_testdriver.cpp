@@ -94,6 +94,13 @@ public:
         if (name == "CORR") { corr_ = f; note("PPM", std::to_string(f)); } else { freq_ = f; note("FREQ", std::to_string((long long)std::llround(f))); }
     }
     double getFrequency(const int, const size_t, const std::string& name) const override { return name == "CORR" ? corr_ : freq_; }
+    // clock and time sources, as an Ettus or Lime driver lists them; the pick is noted for the test
+    std::vector<std::string> listClockSources() const override { return {"internal", "external"}; }
+    void setClockSource(const std::string& s) override { clk_ = s; note("CLOCK", s); }
+    std::string getClockSource() const override { return clk_; }
+    std::vector<std::string> listTimeSources() const override { return {"internal", "external", "mimo"}; }
+    void setTimeSource(const std::string& s) override { tm_ = s; note("TIMESRC", s); }
+    std::string getTimeSource() const override { return tm_; }
     SoapySDR::ArgInfoList getSettingInfo() const override {
         SoapySDR::ArgInfo ds;
         ds.key = "direct_samp"; ds.value = "0"; ds.name = "Direct Sampling"; ds.description = "RTL-SDR Direct Sampling Mode";
@@ -182,6 +189,7 @@ private:
     std::map<std::string, std::string> settings_ = {{"direct_samp", "0"}, {"testmode", "false"}, {"biastee", "false"}, {"label", ""}};
     bool agc_ = true;
     std::string antenna_ = "RX1";
+    std::string clk_ = "internal", tm_ = "internal";
 };
 
 SoapySDR::KwargsList findTest(const SoapySDR::Kwargs& args) {

@@ -126,6 +126,19 @@ int main(int argc, char** argv) {
         const char* p = getenv("ONAIR_TEST_PPM");
         CHECK(ok && a && std::string(a) == "2" && b && std::string(b) == "true" && p && std::fabs(atof(p) - 3) < 1e-9, "settings: direct_samp %s testmode %s ppm %s", a ? a : "-", b ? b : "-", p ? p : "-");
         if (s2) s2->stop();
+        // clock and time sources the driver lists: offered with the radio's own choice as default, written only when another is picked
+        const RadioSetting* ck = find("clocksrc");
+        const RadioSetting* ts = find("timesrc");
+        CHECK(ck && ck->type == RadioSetting::Choice && ck->def == "internal" && ck->values.size() == 2 && ck->restart, "clock source setting: %s", ck ? ck->def.c_str() : "missing");
+        CHECK(ts && ts->values.size() == 3 && ts->names[2] == "MIMO cable", "time source setting");
+        CHECK(!getenv("ONAIR_TEST_CLOCK") && !getenv("ONAIR_TEST_TIMESRC"), "defaults wrote a clock or time source");
+        t2.radio = {{"clocksrc", "external"}, {"timesrc", "mimo"}};
+        auto s3 = makeSource(d);
+        ok = s3 && s3->start(t2, ring, e2);
+        const char* c3 = getenv("ONAIR_TEST_CLOCK");
+        const char* m3 = getenv("ONAIR_TEST_TIMESRC");
+        CHECK(ok && c3 && std::string(c3) == "external" && m3 && std::string(m3) == "mimo", "clock %s time %s", c3 ? c3 : "-", m3 ? m3 : "-");
+        if (s3) s3->stop();
     }
     {   // a driver whose gains are reductions: the top of the gain slider is the least reduction
         DeviceInfo g;

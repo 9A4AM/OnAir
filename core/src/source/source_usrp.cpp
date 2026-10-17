@@ -49,6 +49,7 @@ struct UhdApi {
     err_t (DECT2_CALL* get_rx_antennas)(usrp_t*, size_t, strvec_t**) = nullptr;
     err_t (DECT2_CALL* set_rx_antenna)(usrp_t*, const char*, size_t) = nullptr;
     err_t (DECT2_CALL* set_clock_source)(usrp_t*, const char*, size_t) = nullptr;   // optional: the reference clock of a motherboard
+    err_t (DECT2_CALL* set_time_source)(usrp_t*, const char*, size_t) = nullptr;    // optional: where the PPS (time) comes from
     bool ok = false;
     DynLib lib;
     UhdApi() {
@@ -70,7 +71,7 @@ struct UhdApi {
         if (ok) {
             lib.opt(get_last_error, "uhd_get_last_error"); lib.opt(usrp_last_error, "uhd_usrp_last_error"); lib.opt(get_rx_freq_range, "uhd_usrp_get_rx_freq_range");
             lib.opt(get_rx_num_channels, "uhd_usrp_get_rx_num_channels"); lib.opt(get_rx_antennas, "uhd_usrp_get_rx_antennas"); lib.opt(set_rx_antenna, "uhd_usrp_set_rx_antenna");
-            lib.opt(set_clock_source, "uhd_usrp_set_clock_source");
+            lib.opt(set_clock_source, "uhd_usrp_set_clock_source"); lib.opt(set_time_source, "uhd_usrp_set_time_source");
         }
     }
     // UHD's text for the last failure, on one line (its messages can span several)
@@ -160,6 +161,15 @@ protected:
         if (const std::string clk = radioOption(s, "clock", "default"); clk != "default") {
             if (!uhd().set_clock_source || uhd().set_clock_source(dev_, clk.c_str(), 0) != 0) {
                 err = "USRP: the reference clock \"" + clk + "\" was refused" + (uhd().set_clock_source ? ": " + uhd().text(dev_) : std::string(" (this UHD cannot set it)"));
+                openFailure_ = OpenFailure::Final;
+                return false;
+            }
+        }
+        // the time (PPS) source (TuneSettings "time"): UHD's own choice unless picked. "external" = the PPS SMA, "gpsdo" = the GPS module, "mimo" = the
+        // MIMO cable of an N2xx/X3xx pair. Sample capture does not need it; it only matters when radios are to be aligned in time.
+        if (const std::string ts = radioOption(s, "time", "default"); ts != "default") {
+            if (!uhd().set_time_source || uhd().set_time_source(dev_, ts.c_str(), 0) != 0) {
+                err = "USRP: the time source \"" + ts + "\" was refused" + (uhd().set_time_source ? ": " + uhd().text(dev_) : std::string(" (this UHD cannot set it)"));
                 openFailure_ = OpenFailure::Final;
                 return false;
             }
@@ -344,6 +354,11 @@ void listUsrp(std::vector<DeviceInfo>& out) {
                                         "The 10 MHz reference the USRP locks to. Default: UHD's choice (the internal oscillator; a B2xx with a GPSDO fitted\n"
                                         "uses the GPSDO). External: a 10 MHz reference on the REF input. Takes effect when the radio is started.",
                                         {"default", "internal", "external", "gpsdo"}, {"Default", "Internal", "External 10 MHz", "GPSDO"}, "default", true),
+                          choiceSetting("time", "Time source (PPS)",
+                                        "Where the radio takes its one-pulse-per-second time reference from. Default: UHD's choice. None: no PPS. External: a PPS\n"
+                                        "on the PPS input. GPSDO: the GPS module. MIMO: the MIMO cable of an N2xx / X3xx pair. Only needed to line radios up in\n"
+                                        "time. Takes effect when the radio is started.",
+                                        {"default", "none", "external", "gpsdo", "mimo"}, {"Default", "None", "External PPS", "GPSDO", "MIMO cable"}, "default", true),
                           choiceSetting("wire", "Wire format",
                                         "The sample format between the USRP and the computer. sc16: 16-bit samples (default). sc8: 8-bit samples, half the\n"
                                         "Ethernet/USB load: use it when a network USRP drops samples at high rates. Takes effect when the radio is started.",
