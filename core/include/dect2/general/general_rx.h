@@ -71,6 +71,10 @@ public:
     void setVolume(float v);                         // 0 .. 1
     void setMuted(bool m);
     void setAudioFilters(double hpHz, double lpHz, double notchHz);   // on the audio: high-pass, low-pass, notch (Hz; 0 = off)
+    // Neural noise remover (RNNoise, speech only), after the audio filters: on/off and a dry/wet strength 0..1. Off by default; delays the audio
+    // by about 20 ms while on. For NFM, WFM and AM voice; it damages SSB data, CW and music.
+    void setNoiseRemover(bool on, float strength);
+    float noiseRemoverVad() const;                   // speech probability of the last 10 ms (0 while off)
     void setSilent(bool s);                          // demodulate but never open the sound device (tests, command line)
     void setAudioTap(std::function<void(const float* x, size_t n)> cb);   // tests: the 48 kHz audio after the squelch
 

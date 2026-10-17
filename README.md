@@ -268,6 +268,7 @@ OnAir writes the bits only and never decodes voice (the AMBE codec is patented).
 **See your signal**
 - Spectrum and waterfall (colour maps, pause and scroll-back, averaging, max hold, peak markers), every constellation, signal-to-noise and error figures.
 - A single **quality score**, and an **echo (multipath) detector**.
+- **Neural noise remover** for speech in the General receiver (NFM, WFM, AM) and Airband: RNNoise ([BSD-3-Clause](third_party/rnnoise/COPYING)) in the Listen chain, off by default, with a strength slider. See [docs/noise-remover.md](docs/noise-remover.md).
 - **DAB transmitter map:** OnAir reads the transmitter identification (TII) that DAB networks send and lists the transmitters heard.
 
 **Tablets and touch screens**

@@ -1405,3 +1405,7 @@ A mirror is a third-party web address you chose. It sees that you check for upda
 The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	バージョン一覧はミラー経由で、GitHub に接続できずチェックサムを確認できませんでした。このパッケージを保証するのはミラーだけです。確認なしにはインストールしません。
 I understand, download it anyway	理解しました。それでもダウンロードする
 The list came through the mirror; the checksum was confirmed by GitHub.	一覧はミラー経由ですが、チェックサムは GitHub で確認されました。
+Noise remover (neural)##gennr	ノイズ除去（ニューラル）##gennr
+Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	処理後と元の音声の混ぜ具合：右へ動かすほどノイズが減り、左は元の音に近づきます。約20 msの遅延が加わります。
+Speech only; do not use on music or data modes.	音声専用。音楽やデータモードでは使わないでください。
+Noise remover (neural)##airnr	ノイズ除去（ニューラル）##airnr

@@ -329,6 +329,33 @@ int main() {
         remove(path.c_str()); remove(iq.c_str()); remove("transmissions.csv");
     }
 
+    // neural noise remover: off (the default, and setNoiseRemover(false)) leaves the audio bit-identical; on gives as many samples, finite
+    {
+        auto go = [&](int mode) {   // 0 untouched, 1 explicitly off, 2 on
+            SynthConfig sc;
+            sc.mode = 57; sc.snrDb = 12; sc.modeOpt[0] = 0; sc.modeOpt[1] = 0; sc.modeVal[0] = 0; sc.modeVal[1] = 1000;
+            auto syn = makeGeneralSynth(sc, kRate);
+            GeneralReceiver r;
+            r.configure(kRate);
+            r.setSignalOffset(-generalTuning().tuneOffsetHz);
+            r.setSilent(true);
+            r.setDemod(GenNfm);
+            r.setWidthHz(generalDefaultWidth(GenNfm));
+            if (mode == 1) r.setNoiseRemover(false, 1.f);
+            if (mode == 2) r.setNoiseRemover(true, 1.f);
+            std::vector<float> a;
+            r.setAudioTap([&](const float* x, size_t n) { a.insert(a.end(), x, x + n); });
+            std::vector<cf32> buf(20000);
+            for (double t = 0; t < 1.5; t += buf.size() / kRate) { syn->generate(buf.data(), buf.size()); r.feed(buf.data(), buf.size()); }
+            return a;
+        };
+        const auto a0 = go(0), a1 = go(1), a2 = go(2);
+        CHECK(!a0.empty() && a0.size() == a1.size() && std::memcmp(a0.data(), a1.data(), a0.size() * sizeof(float)) == 0, "noise remover off is bit-identical");
+        bool fin = a2.size() == a0.size();
+        for (float v : a2) fin = fin && std::isfinite(v) && std::fabs(v) <= 1.f;
+        CHECK(fin, "noise remover on keeps the sample count (%zu vs %zu) and stays finite", a2.size(), a0.size());
+    }
+
     printf(fails ? "general rx: %d FAILED\n" : "general rx: all passed\n", fails);
     return fails ? 1 : 0;
 }

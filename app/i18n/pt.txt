@@ -1387,3 +1387,7 @@ A mirror is a third-party web address you chose. It sees that you check for upda
 The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	A lista de versões veio pelo espelho e o GitHub não estava acessível para confirmar a soma: só o espelho garante este pacote. Nada é instalado sem a sua confirmação.
 I understand, download it anyway	Entendo, baixar mesmo assim
 The list came through the mirror; the checksum was confirmed by GitHub.	A lista veio pelo espelho; a soma de verificação foi confirmada pelo GitHub.
+Noise remover (neural)##gennr	Removedor de ruído (neural)##gennr
+Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Mistura do áudio limpo com o original: à direita remove mais ruído, à esquerda mantém mais o original. Acrescenta cerca de 20 ms de atraso.
+Speech only; do not use on music or data modes.	Só para voz; não usar com música nem modos de dados.
+Noise remover (neural)##airnr	Removedor de ruído (neural)##airnr

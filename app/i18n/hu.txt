@@ -1390,3 +1390,7 @@ A mirror is a third-party web address you chose. It sees that you check for upda
 The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	A verziólista a tükrön át jött, és a GitHub nem volt elérhető az ellenőrzőösszeg megerősítéséhez: ezt a csomagot csak a tükör garantálja. Jóváhagyásod nélkül semmi sem települ.
 I understand, download it anyway	Értem, letöltöm mégis
 The list came through the mirror; the checksum was confirmed by GitHub.	A lista a tükrön át jött; az ellenőrzőösszeget a GitHub megerősítette.
+Noise remover (neural)##gennr	Zajszűrő (neurális)##gennr
+Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	A tisztított és az eredeti hang keveréke: jobbra több zajt távolít el, balra több marad az eredetiből. Kb. 20 ms késleltetést ad.
+Speech only; do not use on music or data modes.	Csak beszédhez; ne használd zenéhez vagy adatmódokhoz.
+Noise remover (neural)##airnr	Zajszűrő (neurális)##airnr

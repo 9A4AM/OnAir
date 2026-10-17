@@ -1387,3 +1387,7 @@ A mirror is a third-party web address you chose. It sees that you check for upda
 The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	Список версий пришёл через зеркало, а GitHub был недоступен для подтверждения контрольной суммы: за этот пакет ручается только зеркало. Без вашего подтверждения ничего не устанавливается.
 I understand, download it anyway	Понимаю, всё равно скачать
 The list came through the mirror; the checksum was confirmed by GitHub.	Список пришёл через зеркало; контрольная сумма подтверждена GitHub.
+Noise remover (neural)##gennr	Шумоподавление (нейросеть)##gennr
+Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Смесь очищенного и исходного звука: вправо — больше шума убирается, влево — больше исходного. Добавляет около 20 мс задержки.
+Speech only; do not use on music or data modes.	Только для речи; не используйте для музыки и режимов данных.
+Noise remover (neural)##airnr	Шумоподавление (нейросеть)##airnr

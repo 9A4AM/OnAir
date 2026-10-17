@@ -1405,3 +1405,7 @@ A mirror is a third-party web address you chose. It sees that you check for upda
 The list of versions came through the mirror and GitHub could not be reached to confirm the checksum: only the mirror vouches for this package. Nothing is installed without your confirmation.	De lijst met versies kwam via de mirror en GitHub was niet bereikbaar om de checksum te bevestigen: alleen de mirror staat in voor dit pakket. Zonder uw bevestiging wordt niets geïnstalleerd.
 I understand, download it anyway	Ik begrijp het, toch downloaden
 The list came through the mirror; the checksum was confirmed by GitHub.	De lijst kwam via de mirror; de checksum is door GitHub bevestigd.
+Noise remover (neural)##gennr	Ruisonderdrukking (neuraal)##gennr
+Mix of cleaned and original audio: right removes more noise, left keeps more of the original. Adds about 20 ms of delay.	Mix van gereinigd en origineel geluid: naar rechts meer ruis weg, naar links meer van het origineel. Voegt ongeveer 20 ms vertraging toe.
+Speech only; do not use on music or data modes.	Alleen spraak; niet gebruiken bij muziek of datamodi.
+Noise remover (neural)##airnr	Ruisonderdrukking (neuraal)##airnr

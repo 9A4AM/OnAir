@@ -80,6 +80,7 @@ public:
     void setTuneErrorHz(double hz);                      // a starting guess of the radio's tuning error (tests); measured from then on
 
     // Sound (volume, mute) as in FmReceiver; the app pushes its shared controls here.
+    void setNoiseRemover(bool on, float strength);       // neural noise remover (RNNoise) on the mixed audio: on/off, strength 0..1; off by default, adds about 22 ms
     void setVolume(float v);                             // 0 .. 1
     void setMuted(bool m);
     void setSilent(bool s);                              // decode but do not open the sound device (tests, command line)

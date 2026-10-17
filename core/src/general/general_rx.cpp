@@ -5,6 +5,7 @@
 #include "dect2/audio/mp3_enc.h"
 #include "dect2/general/general_tel.h"
 #include "dect2/audio/audioout.h"
+#include "dect2/audio/neural_nr.h"
 #include "dect2/dsp/exact_resampler.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/qo100/qo100_dsp.h"
@@ -263,6 +264,7 @@ struct GeneralReceiver::Impl {
     // audio filters: high-pass, low-pass and a notch. The speaker hears the squelched audio; the file hears the signal.
     std::atomic<float> afHp{0}, afLp{0}, afNotch{0};
     AudioFilt spk, dry;
+    NeuralNr nrSpk{48000}, nrDry{48000};   // neural noise remover (RNNoise), off by default: the speaker's audio and the file's
     FlacEnc flac; bool flacOn = false;   // the open file is FLAC, not WAV
     Mp3Enc mp3; bool mp3On = false; bool recMp3 = false;   // MP3 through LAME when it is installed
     bool recFlac = false; std::vector<std::string> recTags;   // format and tags of the per-transmission files
@@ -460,12 +462,13 @@ struct GeneralReceiver::Impl {
         const bool haveAud = !aud.empty();
         if (haveAud) {
             spk.apply(aud, afHp, afLp, afNotch);
+            nrSpk.process(aud.data(), aud.size());   // no-op while off
             for (float v : aud) audPow += (double)v * v;
             audN += aud.size();
             if (tapReq.exchange(false)) { std::lock_guard<std::mutex> lk(mu); tap = tapSet; }
             if (tap) tap(aud.data(), aud.size());
         }
-        if (!dryAud.empty()) dry.apply(dryAud, afHp, afLp, afNotch);
+        if (!dryAud.empty()) { dry.apply(dryAud, afHp, afLp, afNotch); nrDry.process(dryAud.data(), dryAud.size()); }
         {
             std::lock_guard<std::mutex> lk(wavMu);
             if (txOn && open && !wav) beginTransmission();
@@ -761,6 +764,8 @@ void GeneralReceiver::setAgc(bool on, float g) {
 void GeneralReceiver::setDeemphUs(double us) { std::lock_guard<std::mutex> lk(p_->mu); if (p_->cfgSet.deemphUs != us) { p_->cfgSet.deemphUs = std::max(0.0, us); p_->cfgDirty = true; } }
 void GeneralReceiver::setCwPitchHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); hz = std::clamp(hz, 200.0, 1500.0); if (p_->cfgSet.pitch != hz) { p_->cfgSet.pitch = hz; p_->cfgDirty = true; } }
 void GeneralReceiver::setVolume(float v) { p_->volume = std::clamp(v, 0.f, 1.f); }
+void GeneralReceiver::setNoiseRemover(bool on, float strength) { p_->nrSpk.setStrength(strength); p_->nrDry.setStrength(strength); p_->nrSpk.setEnabled(on); p_->nrDry.setEnabled(on); }
+float GeneralReceiver::noiseRemoverVad() const { return p_->nrSpk.enabled() ? p_->nrSpk.vad() : 0.f; }
 void GeneralReceiver::setAudioFilters(double hpHz, double lpHz, double notchHz) { p_->afHp = (float)hpHz; p_->afLp = (float)lpHz; p_->afNotch = (float)notchHz; }
 void GeneralReceiver::setMuted(bool m) { p_->muted = m; }
 void GeneralReceiver::setSilent(bool s) { p_->silent = s; }
