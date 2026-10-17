@@ -1388,3 +1388,10 @@ Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 約1.5〜3 GHz (2.4 GHz、2.3/3.4 GHz) 用の1500 MHzダウンコンバーターです。アンテナと無線機の間に接続します。無線機には RF - 1500 MHz が見えます。1500 MHz未満は非対応です。
 Contrast	コントラスト
 Below 1 lifts the weak signals, above 1 darkens the noise (double click: 1)	Below 1 lifts the weak signals, above 1 darkens the noise (double click: 1)
+Credits and licences	Credits and licences
+OnAir is free software under the GNU General Public License v3 or later. It is built on the work of the people and projects below; thank you.	OnAir is free software under the GNU General Public License v3 or later. It is built on the work of the people and projects below; thank you.
+Click a link to open it in your browser. The full notices and open licence points are in THIRD_PARTY.md.	Click a link to open it in your browser. The full notices and open licence points are in THIRD_PARTY.md.
+Project	Project
+Author	Author
+Licence	Licence
+Used for	Used for
