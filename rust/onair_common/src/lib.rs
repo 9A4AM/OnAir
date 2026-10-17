@@ -11,3 +11,4 @@ pub mod manchester;
 pub mod nrzi;
 pub mod parity;
 pub mod ring;
+pub mod text;

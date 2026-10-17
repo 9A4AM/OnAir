@@ -22,12 +22,15 @@
 #include "dect2/uat/uat_frame.h"
 #include "dect2/uat/uat_decode_c.h"
 
+// Decoding half: replaced by rust/onair_uat (uat_decode_rs.cpp) when DECT2_RUST_UAT is defined; the display functions below stay C.
+#ifndef DECT2_RUST_UAT
 static void uat_decode_hdr(uint8_t *frame, struct uat_adsb_mdb *mdb)
 {
     mdb->mdb_type = (frame[0] >> 3) & 0x1f;
     mdb->address_qualifier = (address_qualifier_t) (frame[0] & 0x07);
     mdb->address = (frame[1] << 16) | (frame[2] << 8) | frame[3];
 }
+#endif // DECT2_RUST_UAT
 
 static const char *address_qualifier_names[8] = {
     "ICAO address via ADS-B",
@@ -51,6 +54,8 @@ static void uat_display_hdr(const struct uat_adsb_mdb *mdb, FILE *to)
             address_qualifier_names[mdb->address_qualifier]);
 }
 
+// Decoding half: replaced by rust/onair_uat (uat_decode_rs.cpp) when DECT2_RUST_UAT is defined; the display functions below stay C.
+#ifndef DECT2_RUST_UAT
 static double dimensions_widths[16] = {
     11.5, 23, 28.5, 34, 33, 38, 39.5, 45, 45, 52, 59.5, 67, 72.5, 80, 80, 90
 };
@@ -170,6 +175,7 @@ static void uat_decode_sv(uint8_t *frame, struct uat_adsb_mdb *mdb)
         mdb->tisb_site_id = 0;
     }
 }
+#endif // DECT2_RUST_UAT
 
 static void uat_display_sv(const struct uat_adsb_mdb *mdb, FILE *to)
 {
@@ -267,6 +273,8 @@ static void uat_display_sv(const struct uat_adsb_mdb *mdb, FILE *to)
             mdb->tisb_site_id);
 }
 
+// Decoding half: replaced by rust/onair_uat (uat_decode_rs.cpp) when DECT2_RUST_UAT is defined; the display functions below stay C.
+#ifndef DECT2_RUST_UAT
 static char base40_alphabet[40] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ  ..";
 static void uat_decode_ms(uint8_t *frame, struct uat_adsb_mdb *mdb)
 {
@@ -313,6 +321,7 @@ static void uat_decode_ms(uint8_t *frame, struct uat_adsb_mdb *mdb)
     if (mdb->callsign[0])
         mdb->callsign_type = (frame[26] & 0x02 ? CS_CALLSIGN : CS_SQUAWK);
 }
+#endif // DECT2_RUST_UAT
 
 static const char *emitter_category_names[40] = {
     "No information",                          // A0
@@ -402,6 +411,8 @@ static void uat_display_ms(const struct uat_adsb_mdb *mdb, FILE *to)
             mdb->heading_type == HT_MAGNETIC ? "magnetic heading" : "true heading");
 }
 
+// Decoding half: replaced by rust/onair_uat (uat_decode_rs.cpp) when DECT2_RUST_UAT is defined; the display functions below stay C.
+#ifndef DECT2_RUST_UAT
 static void uat_decode_auxsv(uint8_t *frame, struct uat_adsb_mdb *mdb)
 {
     int raw_alt = (frame[29] << 4) | ((frame[30] & 0xf0) >> 4);
@@ -414,6 +425,7 @@ static void uat_decode_auxsv(uint8_t *frame, struct uat_adsb_mdb *mdb)
 
     mdb->has_auxsv = 1;
 }    
+#endif // DECT2_RUST_UAT
 
 
 static void uat_display_auxsv(const struct uat_adsb_mdb *mdb, FILE *to)
@@ -442,6 +454,8 @@ static void uat_display_auxsv(const struct uat_adsb_mdb *mdb, FILE *to)
     }
 }
 
+// Decoding half: replaced by rust/onair_uat (uat_decode_rs.cpp) when DECT2_RUST_UAT is defined; the display functions below stay C.
+#ifndef DECT2_RUST_UAT
 void uat_decode_adsb_mdb(uint8_t *frame, struct uat_adsb_mdb *mdb)
 {
     static struct uat_adsb_mdb mdb_zero;
@@ -482,6 +496,7 @@ void uat_decode_adsb_mdb(uint8_t *frame, struct uat_adsb_mdb *mdb)
         break;
     }
 }
+#endif // DECT2_RUST_UAT
 
 void uat_display_adsb_mdb(const struct uat_adsb_mdb *mdb, FILE *to)
 {
@@ -492,6 +507,8 @@ void uat_display_adsb_mdb(const struct uat_adsb_mdb *mdb, FILE *to)
 }
 
 
+// Decoding half: replaced by rust/onair_uat (uat_decode_rs.cpp) when DECT2_RUST_UAT is defined; the display functions below stay C.
+#ifndef DECT2_RUST_UAT
 static void uat_decode_info_frame(struct uat_uplink_info_frame *frame)
 {
     unsigned t_opt;
@@ -615,6 +632,7 @@ void uat_decode_uplink_mdb(uint8_t *frame, struct uat_uplink_mdb *mdb)
         }
     }
 }
+#endif // DECT2_RUST_UAT
 
 static void display_generic_data(uint8_t *data, uint16_t length, FILE *to)
 {

@@ -1,5 +1,6 @@
 // VDL Mode 2 bit layer, AVLC and the protocols above it: see vdl2_proto.h.
 #include "dect2/vdl2/vdl2_proto.h"
+#include "vdl2_internal.h"
 #include "dect2/acars/acars_proto.h"
 #include "dect2/aero/aero_adsc.h"
 #include "dect2/aero/aero_pos.h"
@@ -22,6 +23,9 @@ int vdl2StepForBits(int b) {
 
 // ---------------------------------------------------------------- scrambler, header
 
+// The C++ below up to the matching #endif is replaced by rust/onair_vdl2 (vdl2_proto_rs.cpp) when DECT2_RUST_VDL2 is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/vdl2/test_vdl2_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_VDL2
 void vdl2Scramble(std::vector<uint8_t>& bits, size_t from) {
     uint16_t s = kVdl2LfsrSeed;
     for (size_t i = from; i < bits.size(); i++) {
@@ -89,9 +93,11 @@ bool vdl2Layout(uint32_t lenBits, Vdl2Layout& l) {
     else l.lastLen = kVdl2RsK;
     return l.dataOct > 0 && l.fecOct > 0;
 }
+#endif // DECT2_RUST_VDL2
 
 // ---------------------------------------------------------------- Reed-Solomon
 
+#ifndef DECT2_RUST_VDL2
 namespace {
 struct Gf {
     uint8_t exp[512], log[256];
@@ -212,12 +218,15 @@ int vdl2RsDecode(uint8_t cw[kVdl2RsN], int nParity) {
     if (2 * fixed + nEr > kRoots) return -1;
     return fixed;
 }
+#endif // DECT2_RUST_VDL2
 
 // ---------------------------------------------------------------- burst body
 
 namespace {
 void putOctet(std::vector<uint8_t>& bits, uint8_t v) { for (int b = 0; b < 8; b++) bits.push_back((v >> b) & 1); }
+#ifndef DECT2_RUST_VDL2
 uint8_t getOctet(const uint8_t* bits) { uint8_t v = 0; for (int b = 0; b < 8; b++) v |= (uint8_t)((bits[b] & 1) << b); return v; }
+#endif // DECT2_RUST_VDL2
 } // namespace
 
 std::vector<uint8_t> vdl2BurstBits(const std::vector<uint8_t>& dataBits) {
@@ -248,6 +257,7 @@ std::vector<uint8_t> vdl2BurstBits(const std::vector<uint8_t>& dataBits) {
     return out;
 }
 
+#ifndef DECT2_RUST_VDL2
 bool vdl2BurstData(const uint8_t* bits, const Vdl2Layout& l, uint32_t lenBits, std::vector<uint8_t>& dataBits, int& rsFixed) {
     rsFixed = 0;
     std::vector<std::vector<uint8_t>> rows(l.blocks, std::vector<uint8_t>(kVdl2RsN, 0));
@@ -278,9 +288,11 @@ bool vdl2BurstData(const uint8_t* bits, const Vdl2Layout& l, uint32_t lenBits, s
     }
     return true;
 }
+#endif // DECT2_RUST_VDL2
 
 // ---------------------------------------------------------------- HDLC
 
+#ifndef DECT2_RUST_VDL2
 namespace {
 uint16_t crcReg(const uint8_t* p, size_t n) {
     uint16_t c = 0xFFFF;
@@ -291,6 +303,7 @@ uint16_t crcReg(const uint8_t* p, size_t n) {
 
 uint16_t vdl2Fcs(const uint8_t* p, size_t n) { return (uint16_t)~crcReg(p, n); }
 bool vdl2FcsOk(const uint8_t* p, size_t n) { return n >= 2 && crcReg(p, n) == 0xF0B8; }
+#endif // DECT2_RUST_VDL2
 
 std::vector<uint8_t> vdl2HdlcBits(const std::vector<std::vector<uint8_t>>& frames) {
     std::vector<uint8_t> out;
@@ -309,6 +322,7 @@ std::vector<uint8_t> vdl2HdlcBits(const std::vector<std::vector<uint8_t>>& frame
     return out;
 }
 
+#ifndef DECT2_RUST_VDL2
 std::vector<std::vector<uint8_t>> vdl2HdlcFrames(const std::vector<uint8_t>& bits) {
     std::vector<std::vector<uint8_t>> out;
     std::vector<uint8_t> cur;
@@ -339,9 +353,11 @@ std::vector<std::vector<uint8_t>> vdl2HdlcFrames(const std::vector<uint8_t>& bit
     }
     return out;
 }
+#endif // DECT2_RUST_VDL2
 
 // ---------------------------------------------------------------- AVLC
 
+#ifndef DECT2_RUST_VDL2
 namespace {
 uint32_t rev28(uint32_t v) { return rev(v, 28); }
 } // namespace
@@ -365,6 +381,7 @@ Vdl2Addr vdl2GetAddr(const uint8_t* o) {
 const char* vdl2AddrTypeName(int t) {
     switch (t) { case 1: return "aircraft"; case 4: return "ground station (ADM)"; case 5: return "ground station (DEL)"; case 7: return "all stations"; default: return "reserved"; }
 }
+#endif // DECT2_RUST_VDL2
 
 uint8_t vdl2ControlI(int ns, int nr, bool p) { return (uint8_t)(((ns & 7) << 1) | (p ? 0x10 : 0) | ((nr & 7) << 5)); }
 
@@ -382,6 +399,7 @@ std::vector<uint8_t> vdl2Frame(const Vdl2Addr& dst, const Vdl2Addr& src, uint8_t
 // ---- protocol readers ----
 namespace {
 
+#ifndef DECT2_RUST_VDL2
 std::string hexs(const uint8_t* p, size_t n, size_t max = 24) { std::string s = dect2::str::toHex(p, n, true, 0, max); if (n > max) s += "..."; return s; }
 
 std::string bcd(const uint8_t* p, int digits, int startNibble) {
@@ -393,6 +411,7 @@ std::string bcd(const uint8_t* p, int digits, int startNibble) {
     }
     return s;
 }
+#endif // DECT2_RUST_VDL2
 
 void addLine(std::string& d, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
 void addLine(std::string& d, const char* fmt, ...) {
@@ -401,6 +420,7 @@ void addLine(std::string& d, const char* fmt, ...) {
     d += b; d += '\n';
 }
 
+#ifndef DECT2_RUST_VDL2
 double signed12(int v) { return (v & 0x800) ? v - 0x1000 : v; }
 
 const char* cotpName(uint8_t c) {
@@ -572,6 +592,7 @@ void readXid(const uint8_t* p, size_t n, Vdl2Message& m) {
     addLine(m.detail, "XID: %s%s", desc, any ? "" : ", no parameters read");
     m.detail += lines;
 }
+#endif // DECT2_RUST_VDL2
 
 void readAcars(const uint8_t* p, size_t n, Vdl2Message& m) {
     // p: from the SOH; mode .. suffix, check bytes, an optional DEL
@@ -660,6 +681,10 @@ void readAcars(const uint8_t* p, size_t n, Vdl2Message& m) {
 
 } // namespace
 
+// The ACARS reader (ARINC 618 block, ADS-C, position text) is not part of the Rust crate; the Rust-backed vdl2ParseFrame calls it through this.
+void vdl2ReadAcars(const uint8_t* p, size_t n, Vdl2Message& m) { readAcars(p, n, m); }
+
+#ifndef DECT2_RUST_VDL2
 bool vdl2ParseFrame(const uint8_t* f, size_t n, Vdl2Message& m) {
     if (n < 9) return false;
     const Vdl2Addr d = vdl2GetAddr(f), s = vdl2GetAddr(f + 4);
@@ -697,6 +722,7 @@ bool vdl2ParseFrame(const uint8_t* f, size_t n, Vdl2Message& m) {
     }
     return true;
 }
+#endif // DECT2_RUST_VDL2
 
 // ---------------------------------------------------------------- builders
 

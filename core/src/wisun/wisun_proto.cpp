@@ -12,6 +12,9 @@ namespace wisun {
 
 // ---------------------------------------------------------------- PHY
 
+// The C++ below up to the matching #endif is replaced by rust/onair_wisun (wisun_proto_rs.cpp) when DECT2_RUST_WISUN is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/wisun/test_wisun_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_WISUN
 Phr parsePhr(uint16_t v) {
     Phr p;
     p.modeSwitch = (v >> 15) & 1;
@@ -61,6 +64,8 @@ bool fcsOk(const uint8_t* p, size_t n, bool fcs2) {
     const uint32_t f = (uint32_t)p[n - 4] | (uint32_t)p[n - 3] << 8 | (uint32_t)p[n - 2] << 16 | (uint32_t)p[n - 1] << 24;
     return crc32(p, n - 4) == f;
 }
+
+#endif // DECT2_RUST_WISUN
 
 void addFcs(std::vector<uint8_t>& m, bool fcs2) {
     if (fcs2) {
@@ -188,6 +193,7 @@ int channelOf(const ChannelPlan& p, double mhz) {
     return std::abs(k - ch) <= 0.5 ? ch : -1;
 }
 
+#ifndef DECT2_RUST_WISUN
 const char* regDomainName(int c) {
     switch (c) {
     case 0x00: return "World";
@@ -210,11 +216,13 @@ const char* regDomainName(int c) {
     default: return "?";
     }
 }
+#endif // DECT2_RUST_WISUN
 
 // ---------------------------------------------------------------- names
 
 const char* frameTypeName(int t) { return zigbee::frameTypeName(t); }
 
+#ifndef DECT2_RUST_WISUN
 const char* uttName(int t) {
     switch (t) {
     case PA: return "PAN Advert";
@@ -267,6 +275,8 @@ std::string scheduleText(const Schedule& s) {
     return out;
 }
 
+#endif // DECT2_RUST_WISUN
+
 std::string euiText(uint64_t e) { return zigbee::addrText(e); }
 
 std::string srcText(const Frame& f) {
@@ -282,6 +292,7 @@ std::string dstText(const Frame& f) {
 
 // ---------------------------------------------------------------- parsing
 
+#ifndef DECT2_RUST_WISUN
 namespace {
 uint16_t le16(const uint8_t* p) { return (uint16_t)dect2::endian::loadLe16(p); }
 uint32_t le24(const uint8_t* p) { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16; }
@@ -539,6 +550,7 @@ Frame parse(const uint8_t* d, size_t n) {
     f.info = s;
     return f;
 }
+#endif // DECT2_RUST_WISUN
 
 // ---------------------------------------------------------------- building
 

@@ -10,6 +10,9 @@ namespace dect2 {
 
 namespace {
 
+// The C++ below up to the matching #endif is replaced by rust/onair_mesh (mesh_proto_rs.cpp) when DECT2_RUST_MESH is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/mesh/test_mesh_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_MESH
 struct MacDef { uint8_t cid; const char* up; int upLen; const char* down; int downLen; };
 // name and payload length of each command (-1: not sent in that direction)
 const MacDef kMac[] = {
@@ -59,12 +62,17 @@ const OuiDef kOuis[] = {
     {0x70B3D5, "IEEE small-vendor block"},
 };
 
+#endif // DECT2_RUST_MESH
+
+#ifndef DECT2_RUST_MESH
 uint32_t le32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
 uint64_t le64(const uint8_t* p) { return (uint64_t)dect2::endian::loadLe64(p); }
 uint32_t be32(const uint8_t* p) { return (uint32_t)dect2::endian::loadBe32(p); }
+#endif // DECT2_RUST_MESH
 void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putLe32(v, x); }
 void putMic(std::vector<uint8_t>& v, uint32_t mic) { for (int i = 3; i >= 0; i--) v.push_back((uint8_t)(mic >> (8 * i))); }
 
+#ifndef DECT2_RUST_MESH
 // the FOpts MAC commands: names, and the values of the ones that say something about the device or the link
 void macCommands(const uint8_t* p, size_t n, bool uplink, MeshDecodeResult::Lorawan& w) {
     size_t i = 0;
@@ -94,8 +102,11 @@ void macCommands(const uint8_t* p, size_t n, bool uplink, MeshDecodeResult::Lora
     }
 }
 
+#endif // DECT2_RUST_MESH
+
 } // namespace
 
+#ifndef DECT2_RUST_MESH
 const char* lorawanMTypeName(int t) {
     static const char* const n[] = {"Join request", "Join accept", "Unconfirmed up", "Unconfirmed down", "Confirmed up", "Confirmed down", "Rejoin request", "Proprietary"};
     return t >= 0 && t < 8 ? n[t] : "?";
@@ -227,6 +238,8 @@ MeshDecodeResult meshDecodeLorawan(const uint8_t* p, size_t n) {
     pk.decrypted = false;
     return r;
 }
+
+#endif // DECT2_RUST_MESH
 
 std::vector<MeshLoraSettings> lorawanPresets(int region) {
     std::vector<MeshLoraSettings> v;

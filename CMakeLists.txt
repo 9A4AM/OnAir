@@ -996,6 +996,96 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME fuzz_packet_proto COMMAND fuzz_packet_proto)
   endif()
 
+  # Mesh packet layers (Meshtastic, MeshCore, LoRaWAN, LoRa APRS, MeshCom): frozen copies of the seven C++ files in dect2_mesh_ref (cmake/gen_mesh_ref.cmake) against the
+  # Rust-backed real implementation; the test links dect2core for the rest (crypto, APRS parser), its own objects come first so its copies of the mesh files win
+  if(ONAIR_RUST_MESH)
+    set(_dir ${CMAKE_BINARY_DIR}/mesh_ref)
+    set(_refs "")
+    foreach(_b mesh_proto mesh_proto_tables mesh_proto_meshtastic mesh_proto_meshcore mesh_proto_aprs mesh_proto_lorawan mesh_pb)
+      list(APPEND _refs ${_dir}/${_b}_ref.cpp)
+    endforeach()
+    add_custom_command(OUTPUT ${_refs} ${_dir}/mesh_proto_ref.h ${_dir}/mesh_proto_internal_ref.h ${_dir}/mesh_pb_ref.h
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -P ${CMAKE_SOURCE_DIR}/cmake/gen_mesh_ref.cmake
+      DEPENDS core/include/dect2/mesh/mesh_proto.h core/include/dect2/mesh/mesh_pb.h core/src/mesh/mesh_proto_internal.h core/src/mesh/mesh_proto.cpp
+              core/src/mesh/mesh_proto_tables.cpp core/src/mesh/mesh_proto_meshtastic.cpp core/src/mesh/mesh_proto_meshcore.cpp core/src/mesh/mesh_proto_aprs.cpp
+              core/src/mesh/mesh_proto_lorawan.cpp core/src/mesh/mesh_pb.cpp cmake/gen_mesh_ref.cmake VERBATIM)
+    set(_real "")
+    foreach(_b mesh_proto mesh_proto_tables mesh_proto_meshtastic mesh_proto_meshcore mesh_proto_aprs mesh_proto_lorawan mesh_pb mesh_proto_rs mesh_proto_lora_rs mesh_pb_rs)
+      list(APPEND _real core/src/mesh/${_b}.cpp)
+    endforeach()
+    set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_MESH)
+    add_executable(test_mesh_proto_rs tests/mesh/test_mesh_proto_rs.cpp tests/mesh/rs_part2_mesh.cpp ${_refs} ${_real})
+    add_executable(fuzz_mesh_proto tests/mesh/fuzz_mesh_proto.cpp ${_real})
+    foreach(_t test_mesh_proto_rs fuzz_mesh_proto)
+      target_include_directories(${_t} PRIVATE core/include core/src/mesh ${_dir})
+      target_compile_definitions(${_t} PRIVATE DECT2_RUST_MESH)
+      target_link_libraries(${_t} PRIVATE dect2core onair_rs)
+    endforeach()
+    add_test(NAME mesh_proto_rs COMMAND test_mesh_proto_rs)
+    add_test(NAME fuzz_mesh_proto COMMAND fuzz_mesh_proto)
+  endif()
+
+  # Wi-SUN frame layers: a frozen copy of wisun_proto.cpp (cmake/gen_rs_ref.cmake) against the Rust-backed real one; links dect2core for the 2.4 GHz helpers it calls
+  # (zigbee names / addresses), the test's own objects come first
+  if(ONAIR_RUST_WISUN)
+    set(_dir ${CMAKE_BINARY_DIR}/wisun_ref)
+    add_custom_command(OUTPUT ${_dir}/wisun_proto_ref.h ${_dir}/wisun_proto_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=wisun_proto -DHDR=dect2/wisun/wisun_proto.h -DCPP=wisun/wisun_proto.cpp -DDEF=DECT2_RUST_WISUN
+              "-DFROM=namespace wisun {" "-DTO=namespace wisun_ref {" "-DEXTRA=" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      DEPENDS core/include/dect2/wisun/wisun_proto.h core/src/wisun/wisun_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
+    set(_real core/src/wisun/wisun_proto.cpp core/src/wisun/wisun_proto_rs.cpp)
+    set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_WISUN)
+    add_executable(test_wisun_proto_rs tests/wisun/test_wisun_proto_rs.cpp ${_dir}/wisun_proto_ref.cpp ${_real})
+    target_include_directories(test_wisun_proto_rs PRIVATE core/include ${_dir})
+    target_link_libraries(test_wisun_proto_rs PRIVATE dect2core onair_rs)
+    add_test(NAME wisun_proto_rs COMMAND test_wisun_proto_rs)
+    add_executable(fuzz_wisun_proto tests/wisun/fuzz_wisun_proto.cpp ${_real})
+    target_include_directories(fuzz_wisun_proto PRIVATE core/include)
+    target_compile_definitions(fuzz_wisun_proto PRIVATE DECT2_RUST_WISUN)
+    target_link_libraries(fuzz_wisun_proto PRIVATE dect2core onair_rs)
+    add_test(NAME fuzz_wisun_proto COMMAND fuzz_wisun_proto)
+  endif()
+
+  # VDL Mode 2 layers: a frozen copy of vdl2_proto.cpp (namespace dect2_vdl2_ref) against the Rust-backed real one; links dect2core for the ACARS / aero code, the
+  # test's own objects come first
+  if(ONAIR_RUST_VDL2)
+    set(_dir ${CMAKE_BINARY_DIR}/vdl2_ref)
+    add_custom_command(OUTPUT ${_dir}/vdl2_proto_ref.h ${_dir}/vdl2_proto_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=vdl2_proto -DHDR=dect2/vdl2/vdl2_proto.h -DCPP=vdl2/vdl2_proto.cpp -DDEF=DECT2_RUST_VDL2
+              "-DFROM=namespace dect2 {" "-DTO=namespace dect2_vdl2_ref {" "-DEXTRA= using namespace dect2;" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      DEPENDS core/include/dect2/vdl2/vdl2_proto.h core/src/vdl2/vdl2_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
+    set(_real core/src/vdl2/vdl2_proto.cpp core/src/vdl2/vdl2_proto_rs.cpp)
+    set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_VDL2)
+    add_executable(test_vdl2_proto_rs tests/vdl2/test_vdl2_proto_rs.cpp ${_dir}/vdl2_proto_ref.cpp ${_real})
+    target_include_directories(test_vdl2_proto_rs PRIVATE core/include core/src/vdl2 ${_dir} ${CMAKE_SOURCE_DIR}/core/include/dect2/vdl2)
+    target_link_libraries(test_vdl2_proto_rs PRIVATE dect2core onair_rs)
+    add_test(NAME vdl2_proto_rs COMMAND test_vdl2_proto_rs)
+    add_executable(fuzz_vdl2_proto tests/vdl2/fuzz_vdl2_proto.cpp ${_real})
+    target_include_directories(fuzz_vdl2_proto PRIVATE core/include core/src/vdl2)
+    target_compile_definitions(fuzz_vdl2_proto PRIVATE DECT2_RUST_VDL2)
+    target_link_libraries(fuzz_vdl2_proto PRIVATE dect2core onair_rs)
+    add_test(NAME fuzz_vdl2_proto COMMAND fuzz_vdl2_proto)
+  endif()
+
+  # UAT message decoding (dump978 uat_decode.c): the reference is a copy of the C file with the two decode functions renamed ref_*, compiled without DECT2_RUST_UAT
+  if(ONAIR_RUST_UAT)
+    set(_dir ${CMAKE_BINARY_DIR}/uat_ref)
+    file(MAKE_DIRECTORY ${_dir})
+    configure_file(core/src/uat/uat_decode.c ${_dir}/uat_decode_ref.c COPYONLY)
+    set_source_files_properties(${_dir}/uat_decode_ref.c PROPERTIES LANGUAGE C COMPILE_DEFINITIONS "uat_decode_adsb_mdb=ref_uat_decode_adsb_mdb;uat_decode_uplink_mdb=ref_uat_decode_uplink_mdb;uat_display_adsb_mdb=ref_uat_display_adsb_mdb;uat_display_uplink_mdb=ref_uat_display_uplink_mdb")
+    set_source_files_properties(core/src/uat/uat_decode.c PROPERTIES LANGUAGE C COMPILE_DEFINITIONS DECT2_RUST_UAT)
+    set_source_files_properties(core/src/uat/uat_decode_rs.cpp PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_UAT)
+    add_executable(test_uat_proto_rs tests/uat/test_uat_proto_rs.cpp ${_dir}/uat_decode_ref.c core/src/uat/uat_decode.c core/src/uat/uat_decode_rs.cpp)
+    target_include_directories(test_uat_proto_rs PRIVATE core/include)
+    target_link_libraries(test_uat_proto_rs PRIVATE onair_rs)
+    add_test(NAME uat_proto_rs COMMAND test_uat_proto_rs)
+    add_executable(fuzz_uat_proto tests/uat/fuzz_uat_proto.cpp core/src/uat/uat_decode.c core/src/uat/uat_decode_rs.cpp)
+    target_include_directories(fuzz_uat_proto PRIVATE core/include)
+    target_compile_definitions(fuzz_uat_proto PRIVATE DECT2_RUST_UAT)
+    target_link_libraries(fuzz_uat_proto PRIVATE onair_rs)
+    add_test(NAME fuzz_uat_proto COMMAND fuzz_uat_proto)
+  endif()
+
   # seeded mutation runs of the AIS and ANT frame layers (also libFuzzer targets with -DONAIR_LIBFUZZER); meant for DECT2_SANITIZE=ON
   foreach(f ais ant)
     add_executable(fuzz_${f}_proto tests/${f}/fuzz_${f}_proto.cpp core/src/${f}/${f}_proto.cpp)   # standalone: only the frame layer, so a sanitizer build stays small

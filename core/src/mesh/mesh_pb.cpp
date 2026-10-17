@@ -3,6 +3,9 @@
 namespace dect2 {
 namespace meshpb {
 
+// The C++ below up to the matching #endif is replaced by rust/onair_mesh (mesh_proto_rs.cpp) when DECT2_RUST_MESH is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/mesh/test_mesh_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_MESH
 bool Reader::varint(uint64_t& v) {
     v = 0;
     for (int i = 0; i < 10; i++) {
@@ -73,6 +76,8 @@ void readRepeatedVarint(const Field& f, std::vector<uint64_t>& out) {
         out.push_back(v);
     }
 }
+
+#endif // DECT2_RUST_MESH
 
 void Writer::packedFixed32(uint32_t field, const std::vector<uint32_t>& v) {
     if (v.empty()) return;

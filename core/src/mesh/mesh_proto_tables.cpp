@@ -4,6 +4,9 @@
 
 namespace dect2 {
 
+// The C++ below up to the matching #endif is replaced by rust/onair_mesh (mesh_proto_rs.cpp) when DECT2_RUST_MESH is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/mesh/test_mesh_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_MESH
 const MeshEnumName kMeshHwModels[] = {
     {0, "UNSET"},
     {1, "TLORA_V2"},
@@ -243,5 +246,7 @@ const MeshEnumName kMeshRoutingErrors[] = {
     {39, "PKI_SEND_FAIL_PUBLIC_KEY"},
     {-1, nullptr}
 };
+
+#endif // DECT2_RUST_MESH
 
 }
