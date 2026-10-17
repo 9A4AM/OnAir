@@ -35,7 +35,7 @@ public:
     bool feedText(Key k, const std::string& label, const std::string& text, double now, double utcSecOfDay);
     void setRoute(Key k, const RouteHint& r);
     // ground stations: where the station is, and which aircraft talked to it last
-    void setStation(uint32_t id, double lat, double lon);
+    void setStation(uint32_t id, double lat, double lon, double rangeNm = 0);   // rangeNm 0: line of sight at the aircraft's altitude (VHF); HF stations give their usual reach
     void noteStation(Key k, uint32_t stationId, double t);
     // The estimate. For an aircraft that has no position at all but talked to a ground station with a known position, a coarse estimate
     // (the station's line-of-sight disc: `coarse` set, ellipse = disc) is returned instead.
@@ -56,7 +56,8 @@ private:
     };
     TrackOptions opt_;
     std::unordered_map<Key, Entry> e_;
-    std::map<uint32_t, std::pair<double, double>> st_;
+    struct St { double lat, lon, rangeNm; };
+    std::map<uint32_t, St> st_;
     WindField wind_;
 };
 

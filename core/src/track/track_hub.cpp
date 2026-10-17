@@ -112,7 +112,7 @@ void TrackHub::setRoute(Key k, const RouteHint& r) {
     it->second.est.setRoute(r);
 }
 
-void TrackHub::setStation(uint32_t id, double lat, double lon) { st_[id] = {lat, lon}; }
+void TrackHub::setStation(uint32_t id, double lat, double lon, double rangeNm) { st_[id] = {lat, lon, rangeNm}; }
 
 void TrackHub::noteStation(Key k, uint32_t id, double t) {
     auto it = e_.find(k);
@@ -129,9 +129,9 @@ bool TrackHub::estimate(Key k, double now, PosEstimate& o, bool quick) const {
     o = PosEstimate();
     if (e.stationT < -1e17 || s == st_.end()) return false;
     const double alt = e.hasAlt ? e.lastAltM / kFt : 35000.0;
-    const double rangeM = losRangeNm(alt) * kNm;
+    const double rangeM = (s->second.rangeNm > 0 ? s->second.rangeNm : losRangeNm(alt)) * kNm;
     o.valid = true; o.coarse = true; o.predicted = true;
-    o.lat = s->second.first; o.lon = s->second.second;
+    o.lat = s->second.lat; o.lon = s->second.lon;
     o.ellipse.majorM = o.ellipse.minorM = rangeM * 0.97;      // a uniform disc of radius R has its 95 % circle at 0.97 R
     o.sigmaH = rangeM / std::sqrt(2.0);
     o.cEE = o.cNN = o.sigmaH * o.sigmaH * 0.5;
