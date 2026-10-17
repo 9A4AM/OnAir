@@ -6,6 +6,7 @@
 #include "dect2/dsp/fftutil.h"
 #include "dect2/dab/dab_tii.h"
 #include "dect2/dab/dab_fig.h"
+#include "dect2/dab/dab_proto.h"
 #include "dect2/dsp/resampler.h"
 #include "dect2/channels/channel_find.h"
 #include <algorithm>
@@ -394,9 +395,8 @@ struct DabReceiver::Impl {
         DabFigRecord r;
         r.type = type;
         r.data.assign(d, d + len);
-        if (type == 0) { r.cn = d[0] >> 7; r.oe = (d[0] >> 6) & 1; r.pd = (d[0] >> 5) & 1; r.ext = d[0] & 31; }
-        else if (type == 1) { r.oe = (d[0] >> 3) & 1; r.ext = d[0] & 7; }
-        else if (type == 2 || type == 5) r.ext = d[0] & 7;
+        const dabp::FigHead fh = dabp::figHead(type, d, (size_t)len);   // the FIG header flags (dab_proto: Rust with DECT2_RUST_DAB)
+        r.cn = fh.cn; r.oe = fh.oe; r.pd = fh.pd; r.ext = fh.ext;
         std::string key;
         key += (char)type;
         if (type == 0 && (r.ext == 0 || r.ext == 10)) key += (char)r.ext;   // the CIF count / the clock: the latest only
@@ -426,222 +426,151 @@ struct DabReceiver::Impl {
     }
 
     void parseFib(const uint8_t* fib, int slot) {
-        int i = 0;
-        while (i < 30 && fib[i] != 0xFF) {
-            const int type = fib[i] >> 5, len = fib[i] & 31;
-            if (i + 1 + len > 30) break;
-            const uint8_t* d = fib + i + 1;
-            i += 1 + len;
-            if (len < 1) continue;
-            recordFig(type, d, len, slot);
-            if (type == 0) parseFig0(d, len);
-            else if (type == 1) parseFig1(d, len);
-            else if (type == 2) parseFig2(d, len);
+        int used = 0;
+        for (const dabp::FigRef& f : dabp::fibWalk(fib, 30, used)) {
+            const uint8_t* d = fib + f.off;
+            const int len = (int)f.len;
+            recordFig(f.type, d, len, slot);
+            if (f.type == 0) parseFig0(d, len);
+            else if (f.type == 1) parseFig1(d, len);
+            else if (f.type == 2) parseFig2(d, len);
         }
-        lastFill[slot] = std::min(i, 30);
-        ficFill += (uint64_t)std::min(i, 30);
+        lastFill[slot] = std::min(used, 30);
+        ficFill += (uint64_t)std::min(used, 30);
         ficFibs++;
     }
 
+    // FIG 0: the parsing is dab_proto (fig0*); this applies the entries to the ensemble tables
     void parseFig0(const uint8_t* d, int len) {
-        const int ext = d[0] & 31, pd = (d[0] >> 5) & 1;
-        const uint8_t* b = d + 1;
-        const int n = len - 1;
+        const size_t n = (size_t)len;
+        const int ext = d[0] & 31;
         // C/N = 1 in the sub-channel and service organisation: the configuration after an announced reconfiguration. Only the current one is
         // followed (the new one arrives with C/N = 0 once it is in force).
         if ((d[0] & 0x80) && (ext == 1 || ext == 2)) return;
-        if (ext == 0 && n >= 2) ens.eid = (uint16_t)((b[0] << 8) | b[1]);
-        else if (ext == 1) {
-            int p = 0;
-            while (p + 3 <= n) {
+        if (ext == 0) {
+            int eid;
+            if (dabp::fig0Eid(d, n, eid)) ens.eid = (uint16_t)eid;
+        } else if (ext == 1) {
+            for (const dabp::Fig01Sub& e : dabp::fig0Subchannels(d, n)) {
                 DabSubchannel s;
-                s.id = b[p] >> 2;
-                s.start = ((b[p] & 3) << 8) | b[p + 1];
-                if (b[p + 2] & 0x80) {
-                    if (p + 4 > n) break;
+                s.id = e.id;
+                s.start = e.start;
+                if (e.eep) {
                     s.eep = true;
-                    s.option = (b[p + 2] >> 4) & 7;
-                    s.level = (b[p + 2] >> 2) & 3;
-                    s.size = ((b[p + 2] & 3) << 8) | b[p + 3];
+                    s.option = e.option;
+                    s.level = e.level;
+                    s.size = e.size;
                     int nn, br, info;
                     s.bitrate = eepGeometry(s.size, s.option, s.level, nn, br, info) ? br : 0;
-                    p += 4;
                 } else {
                     s.eep = false;
-                    s.uepIndex = b[p + 2] & 0x3F;
+                    s.uepIndex = e.uepIndex;
                     int lv, info;
-                    if (!(b[p + 2] & 0x40) && uepGeometry(s.uepIndex, s.size, s.bitrate, lv, info)) s.level = lv - 1;
+                    if (!e.uepTable && uepGeometry(s.uepIndex, s.size, s.bitrate, lv, info)) s.level = lv - 1;
                     else { s.size = 0; s.bitrate = 0; }   // table switch 1 is not defined
-                    p += 3;
                 }
                 ens.subs[s.id] = s;
             }
         } else if (ext == 3) {   // packet mode service components: SCId -> sub-channel, address (EN 300 401 clause 6.3.2)
-            int p = 0;
-            while (p + 5 <= n) {
-                const int scid = (b[p] << 4) | (b[p + 1] >> 4);
+            for (const dabp::Fig03Packet& e : dabp::fig0Packet(d, n)) {
                 DabEnsemble::PacketComp pc;
-                pc.dg = !(b[p + 2] & 0x80);   // the DG flag set means NO data groups are used
-                pc.dscty = b[p + 2] & 0x3F;
-                pc.subId = b[p + 3] >> 2;
-                pc.address = ((b[p + 3] & 3) << 8) | b[p + 4];
-                const bool ca = b[p + 1] & 1;
-                ens.packet[scid] = pc;
-                p += 5 + (ca ? 2 : 0);
+                pc.dg = e.dg;
+                pc.dscty = e.dscty;
+                pc.subId = e.subId;
+                pc.address = e.address;
+                ens.packet[e.scid] = pc;
             }
         } else if (ext == 2) {
-            int p = 0;
-            while (p + 3 <= n) {
-                uint32_t sid;
-                if (pd == 0) { sid = (uint32_t)((b[p] << 8) | b[p + 1]); p += 2; }
-                else { if (p + 5 > n) break; sid = ((uint32_t)b[p] << 24) | ((uint32_t)b[p + 1] << 16) | ((uint32_t)b[p + 2] << 8) | b[p + 3]; p += 4; }
-                const int nc = b[p] & 15;
-                p++;
-                DabService& sv = ens.services[sid];
-                sv.sid = sid;
+            for (const dabp::Fig02Service& e : dabp::fig0Services(d, n)) {
+                DabService& sv = ens.services[e.sid];
+                sv.sid = e.sid;
                 std::vector<DabComponent> comps;
-                for (int c = 0; c < nc && p + 2 <= n; c++, p += 2) {
+                for (const dabp::Fig02Comp& c : e.comps) {
                     DabComponent dc;
-                    dc.tmid = b[p] >> 6;
-                    if (dc.tmid == 0) { dc.ascty = b[p] & 63; dc.subId = b[p + 1] >> 2; dc.primary = (b[p + 1] >> 1) & 1; }
-                    else if (dc.tmid == 3) { dc.scid = ((b[p] & 0x3F) << 6) | (b[p + 1] >> 2); dc.primary = (b[p + 1] >> 1) & 1; }
-                    else if (dc.tmid == 1) { dc.dscty = b[p] & 63; dc.subId = b[p + 1] >> 2; dc.primary = (b[p + 1] >> 1) & 1; }
+                    dc.tmid = c.tmid; dc.ascty = c.ascty; dc.dscty = c.dscty; dc.subId = c.subId; dc.scid = c.scid; dc.primary = c.primary;
                     comps.push_back(dc);
                 }
                 sv.comps = comps;
             }
         } else if (ext == 13) {   // user applications (TS 101 756 table 16): which sub-channel carries DMB video
-            int p = 0;
-            while (p + (pd ? 5 : 3) <= n) {
-                uint32_t sid;
-                if (pd == 0) { sid = (uint32_t)((b[p] << 8) | b[p + 1]); p += 2; }
-                else { sid = ((uint32_t)b[p] << 24) | ((uint32_t)b[p + 1] << 16) | ((uint32_t)b[p + 2] << 8) | b[p + 3]; p += 4; }
-                const int scids = b[p] >> 4, nua = b[p] & 15;
-                p++;
-                for (int u = 0; u < nua && p + 2 <= n; u++) {
-                    const int type = (b[p] << 3) | (b[p + 1] >> 5), len = b[p + 1] & 31;
-                    p += 2;
-                    if (p + len > n) break;
-                    if (type == 0x44a) {   // Journaline: its user application data (version, extended header length, point of entry)
-                        DabService& sv = ens.services[sid];
-                        sv.sid = sid;
-                        int v, x, en;
-                        if (jlUserAppData(b + p, (size_t)len, v, x, en)) { sv.journaline = true; sv.jlScIdS = scids; sv.jlExt = x; sv.jlEntry = en; }
-                    }
-                    if (scids == 0 && u == 0) {   // the primary component's first application (PAD applications of a DMB radio service follow it)
-                        DabService& sv = ens.services[sid];
-                        sv.sid = sid;
-                        sv.userApp = type;
-                        if (type == 0x009 && len >= 1) sv.dmbProfile = b[p];
-                    }
-                    p += len;
+            for (const dabp::Fig013App& a : dabp::fig0UserApps(d, n)) {
+                if (a.type == 0x44a) {   // Journaline: its user application data (version, extended header length, point of entry)
+                    DabService& sv = ens.services[a.sid];
+                    sv.sid = a.sid;
+                    int v, x, en;
+                    if (jlUserAppData(d + a.off, (size_t)a.len, v, x, en)) { sv.journaline = true; sv.jlScIdS = a.scids; sv.jlExt = x; sv.jlEntry = en; }
+                }
+                if (a.scids == 0 && a.index == 0) {   // the primary component's first application (PAD applications of a DMB radio service follow it)
+                    DabService& sv = ens.services[a.sid];
+                    sv.sid = a.sid;
+                    sv.userApp = a.type;
+                    if (a.type == 0x009 && a.len >= 1) sv.dmbProfile = d[a.off];
                 }
             }
         } else if (ext == 17) {   // programme type: S/D flag, P/S flag, language, programme type, complementary type
-            int p = 0;
-            while (p + 3 <= n) {
-                const uint32_t sid = (uint32_t)((b[p] << 8) | b[p + 1]);
-                const bool sd = b[p + 2] & 0x80, primary = !(b[p + 2] & 0x40), l = b[p + 2] & 0x20, cc = b[p + 2] & 0x10;
-                p += 3;
+            for (const dabp::Fig017Pty& e : dabp::fig0Pty(d, n)) {
                 PtyInfo pi;
-                if (l && p < n) { pi.lang = b[p]; p++; }
-                if (p < n) { pi.pty = b[p] & 0x1F; p++; }
-                if (cc) p++;
-                if (primary && pi.pty >= 0) { PtyInfo& e = ptyInfo[sid]; if (pi.lang < 0) pi.lang = e.lang; pi.dyn = sd; e = pi; }
+                pi.lang = e.lang;
+                pi.pty = e.pty;
+                if (e.primary && pi.pty >= 0) { PtyInfo& x = ptyInfo[e.sid]; if (pi.lang < 0) pi.lang = x.lang; pi.dyn = e.sd; x = pi; }
             }
         } else if (ext == 18) {   // announcement support: SId, ASu flags, clusters
-            int p = 0;
-            while (p + 5 <= n) {
-                const uint32_t sid = (uint32_t)((b[p] << 8) | b[p + 1]);
+            for (const dabp::Fig018Support& e : dabp::fig0AnnSupport(d, n)) {
                 DabAnnSupport as;
-                as.asu = (unsigned)((b[p + 2] << 8) | b[p + 3]);
-                const int nc = b[p + 4] & 0x1F;
-                p += 5;
-                for (int c = 0; c < nc && p < n; c++, p++) as.clusters.push_back(b[p]);
-                annSup[sid] = as;
+                as.asu = e.asu;
+                as.clusters = e.clusters;
+                annSup[e.sid] = as;
             }
         } else if (ext == 19) {   // announcement switching: cluster, ASw flags, new flag, region flag, sub-channel
-            int p = 0;
-            while (p + 4 <= n) {
+            for (const dabp::Fig019Switch& e : dabp::fig0AnnSwitch(d, n)) {
                 DabAnnSwitch sw;
-                sw.cluster = b[p];
-                sw.asw = (unsigned)((b[p + 1] << 8) | b[p + 2]);
-                sw.newFlag = b[p + 3] & 0x80;
-                sw.region = b[p + 3] & 0x40;
-                sw.subId = b[p + 3] & 0x3F;
-                p += 4 + (sw.region ? 1 : 0);
+                sw.cluster = e.cluster;
+                sw.asw = e.asw;
+                sw.newFlag = e.newFlag;
+                sw.region = e.region;
+                sw.subId = e.subId;
                 annSw[sw.cluster] = {sw, ficFrames};
             }
-        } else if (ext == 10 && n >= 4) {
-            const uint32_t mjd = getBits(b, 1, 17);
-            const int flag = (int)getBits(b, 20, 1);
-            const int hh = (int)getBits(b, 21, 5), mm = (int)getBits(b, 26, 6);
-            int ss = 0;
-            if (flag && n >= 6) ss = (int)getBits(b, 32, 6);
-            if (mjd > 40587) ens.utc = (int64_t)(mjd - 40587) * 86400 + hh * 3600 + mm * 60 + ss;
+        } else if (ext == 10) {
+            dabp::Fig010Time t;
+            if (dabp::fig0Time(d, n, t) && t.mjd > 40587) ens.utc = t.utc;
         }
     }
 
     void parseFig1(const uint8_t* d, int len) {
-        const int ext = d[0] & 7, cs = d[0] >> 4;
-        const uint8_t* b = d + 1;
-        const int n = len - 1;
+        dabp::Fig1Label l;
+        if (!dabp::fig1(d, (size_t)len, l)) return;
         auto done = [&](int e, uint32_t id) { return fig2Done.count(std::to_string(e) + ":" + std::to_string(id)) > 0; };   // a FIG 2 label of it is known: that one is kept
-        if (ext == 0 && n >= 18) { if (!done(0, 0)) ens.label = labelText(cs, b + 2, 16); }
-        else if (ext == 1 && n >= 18) {
-            const uint32_t sid = (uint32_t)((b[0] << 8) | b[1]);
-            DabService& sv = ens.services[sid];
-            sv.sid = sid;
-            if (!done(1, sid)) sv.label = labelText(cs, b + 2, 16);
-        } else if (ext == 5 && n >= 20) {   // data service label (32-bit SId), e.g. DMB television
-            const uint32_t sid = ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
-            DabService& sv = ens.services[sid];
-            sv.sid = sid;
-            if (!done(5, sid)) sv.label = labelText(cs, b + 4, 16);
-        } else if (ext == 4 && n >= 20) {   // service component label: P/D, SCIdS, SId, label
-            const bool pd = b[0] & 0x80;
-            const int scids = b[0] & 0x0F, il = pd ? 4 : 2;
-            if (n < 1 + il + 18) return;
-            const uint32_t sid = pd ? (((uint32_t)b[1] << 24) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 8) | b[4]) : (uint32_t)((b[1] << 8) | b[2]);
-            const auto it = ens.services.find(sid);
-            if (it != ens.services.end() && !fig2Done.count("4:" + std::to_string(sid) + ":" + std::to_string(scids))) it->second.compLabels[scids] = labelText(cs, b + 1 + il, 16);
+        if (l.ext == 0) { if (!done(0, 0)) ens.label = labelText(l.charset, d + l.off, 16); }
+        else if (l.ext == 1 || l.ext == 5) {   // programme service label (16 bit SId), data service label (32 bit SId, e.g. DMB television)
+            DabService& sv = ens.services[l.sid];
+            sv.sid = l.sid;
+            if (!done(l.ext, l.sid)) sv.label = labelText(l.charset, d + l.off, 16);
+        } else if (l.ext == 4) {   // service component label: P/D, SCIdS, SId, label
+            const auto it = ens.services.find(l.sid);
+            if (it != ens.services.end() && !fig2Done.count("4:" + std::to_string(l.sid) + ":" + std::to_string(l.scids))) it->second.compLabels[l.scids] = labelText(l.charset, d + l.off, 16);
         }
     }
 
     // FIG 2: labels in UTF-8 or UCS-2 of up to 8 segments (EN 300 401 8.1.13, TS 103 176)
     void parseFig2(const uint8_t* d, int len) {
-        const int toggle = d[0] >> 7, seg = (d[0] >> 4) & 7, rfu = (d[0] >> 3) & 1, ext = d[0] & 7;
-        int idl = 0;
-        switch (ext) {
-            case 0: case 1: idl = 2; break;
-            case 4: idl = (len > 1 && (d[1] & 0x80)) ? 5 : 3; break;
-            case 5: idl = 4; break;
-            default: return;
-        }
-        if (len <= 1 + idl) return;
-        uint32_t sid = 0;
-        int scids = 0;
+        dabp::Fig2Seg g;
+        if (!dabp::fig2(d, (size_t)len, g)) return;
+        const int ext = g.ext, seg = g.seg;
+        const uint32_t sid = g.sid;
+        const int scids = g.scids;
         std::string key = std::to_string(ext) + ":";
         if (ext == 0) key += "0";
-        else if (ext == 1) { sid = (uint32_t)((d[1] << 8) | d[2]); key += std::to_string(sid); }
-        else if (ext == 5) { sid = ((uint32_t)d[1] << 24) | ((uint32_t)d[2] << 16) | ((uint32_t)d[3] << 8) | d[4]; key += std::to_string(sid); }
-        else {
-            scids = d[1] & 0x0F;
-            sid = idl == 5 ? (((uint32_t)d[2] << 24) | ((uint32_t)d[3] << 16) | ((uint32_t)d[4] << 8) | d[5]) : (uint32_t)((d[2] << 8) | d[3]);
-            key += std::to_string(sid) + ":" + std::to_string(scids);
-        }
+        else if (ext == 1 || ext == 5) key += std::to_string(sid);
+        else key += std::to_string(sid) + ":" + std::to_string(scids);
         LabelSegs& L = fig2Segs[key];
-        if (L.toggle != toggle) { L = LabelSegs(); L.toggle = toggle; }
-        const uint8_t* p = d + 1 + idl;
-        int n = len - 1 - idl;
+        if (L.toggle != g.toggle) { L = LabelSegs(); L.toggle = g.toggle; }
         if (seg == 0) {
-            L.ucs2 = p[0] >> 7;
-            L.total = ((p[0] >> 4) & 7) + 1;
-            const int skip = rfu ? 1 : 3;   // text control, or Rfa and the character flag field
-            if (n <= skip) return;
-            p += skip; n -= skip;
+            L.ucs2 = g.ucs2;
+            L.total = g.total;
+            if (!g.valid) return;
         }
-        L.segs[seg].assign(p, p + n);
+        L.segs[seg].assign(d + g.textOff, d + g.textOff + g.textLen);
         if (!L.total || (int)L.segs.size() != L.total) return;
         std::vector<uint8_t> all;
         for (int i = 0; i < L.total; i++) {

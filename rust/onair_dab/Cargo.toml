@@ -4,7 +4,8 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
-description = "OnAir DAB (empty skeleton)"
+description = "OnAir DAB data layers: FIB / FIG parsing, MOT headers and data groups, PAD, packet mode, Journaline framing"
 
 [dependencies]
 onair_common = { path = "../onair_common" }
+onair_dvbsi = { path = "../onair_dvbsi" }

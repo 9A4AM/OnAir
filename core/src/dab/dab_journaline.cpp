@@ -1,6 +1,7 @@
 // Journaline decoder, see dab_journaline.h. Clause numbers are those of ETSI TS 102 979 V1.1.1 unless named otherwise.
 #include "dect2/dab/dab_journaline.h"
 #include "dect2/dab/dab.h"
+#include "dect2/dab/dab_proto.h"
 #include "dect2/common/inflate.h"
 #include <algorithm>
 #include "dect2/common/endian.h"
@@ -139,18 +140,15 @@ uint16_t be16(const uint8_t* p) { return (uint16_t)dect2::endian::loadBe16(p); }
 
 } // namespace
 
+// The framing checks (data group, TOC block, user application data, packet headers) are dab_proto (Rust with DECT2_RUST_DAB).
 bool jlDataGroup(const uint8_t* d, size_t n, int& type, const uint8_t*& field, size_t& fieldLen, bool* crcBad) {
     if (crcBad) *crcBad = false;
-    if (n < 4) return false;
-    // extension flag 0, CRC flag 1, segment flag 0, user access flag 0
-    if ((d[0] & 0xF0) != 0x40) return false;
-    const int t = d[0] & 0x0F;
-    if (t != 0 && t != 6) return false;
-    if (n - 4 > kMaxField) return false;
-    if (dab::crc16(d, (int)n - 2) != be16(d + n - 2)) { if (crcBad) *crcBad = true; return false; }
-    type = t;
+    const dabp::JlGroup g = dabp::jlDataGroup(d, n);
+    if (g.status == 2) { if (crcBad) *crcBad = true; return false; }
+    if (g.status != 0) return false;
+    type = g.type;
     field = d + 2;
-    fieldLen = n - 4;
+    fieldLen = g.fieldLen;
     return true;
 }
 
@@ -181,23 +179,16 @@ bool jlParseObject(const uint8_t* d, size_t n, int extHeader, JlObject& o) {
 }
 
 bool jlParseToc(const uint8_t* d, size_t n, int& revision, int& blockCount, int& blockIndex, int& objectCount, int& timeoutMin, std::vector<JlTocEntry>& entries) {
-    if (n < 13 || d[0] != 0x54) return false;
-    revision = d[1]; blockCount = d[2]; blockIndex = d[3];
-    objectCount = be16(d + 6); timeoutMin = be16(d + 8);
-    const size_t entLen = d[10], extLen = be16(d + 11);
-    if (entLen < 3 || blockCount < 1 || blockIndex >= blockCount) return false;
-    size_t p = 13 + extLen;
+    dabp::JlTocInfo info;
+    std::vector<dabp::JlTocEntry> ents;
+    if (!dabp::jlParseToc(d, n, info, ents)) return false;
+    revision = info.revision; blockCount = info.blockCount; blockIndex = info.blockIndex; objectCount = info.objectCount; timeoutMin = info.timeoutMin;
     entries.clear();
-    for (; p + entLen <= n && entries.size() < 2048; p += entLen) entries.push_back({be16(d + p), d[p + 2]});
-    return !entries.empty();
-}
-
-bool jlUserAppData(const uint8_t* d, size_t n, int& version, int& extHeader, int& entry) {
-    if (n < 2) return false;
-    version = d[0]; extHeader = d[1];
-    entry = n >= 4 ? be16(d + 2) : -1;
+    for (const dabp::JlTocEntry& e : ents) entries.push_back({(uint16_t)e.id, (uint8_t)e.desc});
     return true;
 }
+
+bool jlUserAppData(const uint8_t* d, size_t n, int& version, int& extHeader, int& entry) { return dabp::jlUserAppData(d, n, version, extHeader, entry); }
 
 // ---------------------------------------------------------------- the service
 
@@ -273,13 +264,14 @@ std::vector<JlObject> JournalineDecoder::all() const {
 // header: [length code 2][continuity index 2][first 1][last 1][address 10 bits] [command 1][useful data length 7], data field, CRC-16 of all before.
 
 bool DabPacketDemux::packet(const uint8_t* p, size_t len, std::vector<uint8_t>& out) {
-    if (dab::crc16(p, (int)len - 2) != be16(p + len - 2)) { badPackets++; return false; }
+    const dabp::DabPacket k = dabp::dabPacket(p, len);
+    if (!k.crcOk) { badPackets++; return false; }
     packets++;
-    const int ci = (p[0] >> 4) & 3;
-    const bool first = p[0] & 8, last = p[0] & 4;
-    const int addr = ((p[0] & 3) << 8) | p[1];
-    const bool cmd = p[2] & 0x80;
-    const size_t ul = p[2] & 0x7F;
+    const int ci = k.ci;
+    const bool first = k.first, last = k.last;
+    const int addr = k.addr;
+    const bool cmd = k.cmd;
+    const size_t ul = k.ul;
     if (addr != addr_ || cmd || ul > len - 5) return true;   // somebody else's packet, a command or padding: valid, not ours
     if (ci == lastCi_) return true;   // the continuity index counts every packet of the address: the same one again is a repetition
     if (on_ && !first && ci != ((lastCi_ + 1) & 3)) { on_ = false; asm_.clear(); }   // a packet was lost: the group is gone

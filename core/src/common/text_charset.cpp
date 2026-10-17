@@ -3,6 +3,7 @@
 #include "dect2/common/text_charset.h"
 
 namespace dect2::text {
+#ifndef DECT2_RUST_DVBSI   // with Rust (rust/onair_dvbsi) the tables and the converters live there: text_charset_rs.cpp
 namespace {
 // EBU Latin (ETSI TS 101 756 Annex C; welle.io charsets.cpp, checked against ODR-PadEnc charset.cpp)
 const uint16_t kEbuLatin[256] = {
@@ -161,6 +162,7 @@ bool invisible(uint32_t c) {
            (c >= 0xFFF9 && c <= 0xFFFB) || c > 0x10FFFF;
 }
 } // namespace
+#endif
 
 void appendUtf8(std::string& o, uint32_t c) {
     if (c < 0x80) o += (char)c;
@@ -169,6 +171,7 @@ void appendUtf8(std::string& o, uint32_t c) {
     else { o += (char)(0xF0 | (c >> 18)); o += (char)(0x80 | ((c >> 12) & 0x3F)); o += (char)(0x80 | ((c >> 6) & 0x3F)); o += (char)(0x80 | (c & 0x3F)); }
 }
 
+#ifndef DECT2_RUST_DVBSI
 std::string ebuLatin(const uint8_t* p, size_t n) {
     std::string o;
     for (size_t i = 0; i < n; i++) appendUtf8(o, kEbuLatin[p[i]]);
@@ -244,4 +247,5 @@ std::string clean(const std::string& s) {
     }
     return o;
 }
+#endif
 } // namespace dect2::text

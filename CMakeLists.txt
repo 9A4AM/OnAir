@@ -118,10 +118,11 @@ include(OnairRust)   # DECT2_RUST (AUTO/ON/OFF) and DECT2_RUST_<MODULE>: the Rus
 add_library(dect2core STATIC core/src/source/source.cpp core/src/source/source_audio.cpp core/src/source/hamlib_rig.cpp core/src/source/rig_setup.cpp core/src/dsp/spectrum.cpp core/src/engine/engine.cpp core/src/engine/engine_log.cpp core/src/engine/engine_output.cpp core/src/engine/engine_tune.cpp core/src/engine/engine_watch.cpp core/src/engine/engine_loops.cpp core/src/engine/engine_start.cpp core/src/engine/engine_place.cpp core/src/engine/engine_secondary.cpp core/src/engine/engine_telemetry.cpp core/src/results/engine_results.cpp core/src/t2/t2_tables.cpp core/src/t2/t2gen.cpp core/src/t2/t2rx.cpp core/src/t2/t2rx_sync.cpp core/src/t2/t2rx_symbols.cpp core/src/t2/t2rx_l1.cpp core/src/t2/t2rx_data.cpp core/src/t2/t2pilots.cpp core/src/t2/t2ofdm.cpp core/src/dsp/ldpc.cpp core/src/t2/t2l1.cpp core/src/t2/t2interleave.cpp core/src/t2/t2fec_tables.cpp core/src/t2/t2fec.cpp core/src/t2/t2plp.cpp core/src/dsp/resampler.cpp core/src/dsp/clock_correct.cpp core/src/tv/bbunpack.cpp core/src/tv/ts.cpp core/src/tv/tsout.cpp core/src/engine/scanner.cpp core/src/source/gain.cpp core/src/channels/channel.cpp core/src/dsp/direction.cpp core/src/dsp/dsp_compat.cpp core/src/dsp/bandwidth.cpp core/src/atsc/atsc.cpp core/src/atsc/atsc_gen.cpp core/src/atsc/atsc_rx.cpp core/src/atsc3/atsc3_bootstrap.cpp core/src/atsc3/atsc3_ofdm.cpp core/src/atsc3/atsc3_tables.cpp core/src/atsc3/atsc3_ldpc.cpp core/src/atsc3/atsc3_ldpc_tables.cpp core/src/atsc3/atsc3_ldpc_tables64.cpp core/src/atsc3/atsc3_data_tables.cpp core/src/atsc3/atsc3_l1.cpp core/src/atsc3/atsc3_sync.cpp core/src/atsc3/atsc3_rx.cpp core/src/atsc3/atsc3_receiver.cpp core/src/atsc3/atsc3_frame.cpp core/src/atsc3/atsc3_remux.cpp core/src/audio/ac4_dec.cpp core/src/audio/ac4_xcode.cpp core/src/atsc3/atsc3_route.cpp core/src/atsc3/atsc3_ip.cpp core/src/common/inflate.cpp core/src/common/xmlmini.cpp core/src/atsc3/atsc3_alp.cpp core/src/atsc3/atsc3_ti.cpp core/src/atsc3/atsc3_subframe.cpp core/src/atsc3/atsc3_cellmux.cpp core/src/atsc3/atsc3_bb.cpp core/src/atsc3/atsc3_bicm.cpp core/src/atsc3/atsc3_preamble.cpp core/src/atsc3/atsc3_constellations.cpp core/src/isdbt/isdbt.cpp core/src/isdbt/isdbt_tables_data.cpp core/src/isdbt/isdbt_gen.cpp core/src/isdbt/isdbt_demod.cpp core/src/isdbt/isdbt_rx.cpp core/src/dsp/exact_resampler.cpp core/src/engine/updater.cpp core/src/channels/channel_db.cpp core/src/engine/quality.cpp core/src/tv/teletext.cpp core/src/tv/dvbsub.cpp core/src/dvbt/dvbt.cpp core/src/dvbt/dvbt_fec.cpp core/src/dvbt/dvbt_gen.cpp core/src/dvbt/dvbt_rx.cpp core/src/tv/player.cpp core/src/tv/es_save.cpp core/src/audio/audioout.cpp core/src/t2/t2_pilot_tables.cpp core/src/fm/fm_rx.cpp core/src/fm/fm_tmc.cpp core/src/fm/fm_rbds.cpp core/src/fm/fm_gen.cpp core/src/tv/conceal.cpp core/src/net/nettuner.cpp core/src/tv/hls.cpp core/src/source/hackrf_usb.cpp core/src/tv/demo_ts.cpp core/src/engine/crash_report.cpp core/src/source/source_native.cpp core/src/source/source_rtlsdr.cpp core/src/source/source_airspy.cpp core/src/source/source_bladerf.cpp core/src/source/source_limesdr.cpp core/src/source/source_plutosdr.cpp core/src/source/source_usrp.cpp core/src/source/source_sdrplay.cpp core/src/source/source_airspyhf.cpp core/src/source/source_rtltcp.cpp core/src/source/source_spyserver.cpp core/src/source/source_sdrpp.cpp core/src/source/source_hermeslite2.cpp core/src/net/netradio.cpp core/src/net/share_server.cpp core/src/source/usb_diag.cpp core/src/common/png.cpp core/src/common/threadpool.cpp core/src/source/iq_record.cpp core/src/common/text_charset.cpp core/src/channels/channel_find.cpp core/src/net/feeds.cpp core/src/net/feeds_fmt.cpp core/src/net/pskreporter.cpp core/src/net/wsprnet.cpp core/src/source/iq_file.cpp core/src/dsp/carrierfind.cpp core/src/engine/wide_modes.cpp core/src/engine/widespan.cpp core/src/engine/device_claims.cpp core/src/source/source_fobos.cpp core/src/source/source_rx888.cpp core/src/engine/engine_multitv.cpp core/src/engine/channelizer.cpp core/src/engine/multitv.cpp core/src/tv/ts_record.cpp)
 # The modes added after FM (DVB-S/S2, DTMB, analog TV, DMR, DRM, ADS-B): every core/src/<mode>/*.cpp belongs to its mode, so a mode can add files without editing this list
 set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas vdl4 uat wisun)
+target_sources(dect2core PRIVATE core/src/tv/ts_proto.cpp core/src/tv/ts_proto_rs.cpp core/src/common/text_charset_rs.cpp core/src/tv/dvb_text.cpp core/src/tv/dvb_text_rs.cpp core/src/tv/teletext_rs.cpp core/src/tv/dvbsub_rs.cpp)   # MPEG-TS parsing layer (C++ or the Rust crate onair_ts)
 onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (core/src/ais/ais_proto.cpp leaves the covered functions to ais_proto_rs.cpp) and links onair_rs
 # adsb_msg.cpp and the APRS parser (and the reference copies the Rust differential test builds) is compiled without fused multiply-add and without the sin+cos -> sincos rewrite:
 # clang and gcc do both by default (arm64, macOS), Rust never does, and the two builds (DECT2_RUST ON and OFF) should give the same numbers bit for bit
-set_source_files_properties(core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/p25/p25_proto.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
+set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/p25/p25_proto.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
 target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx_json.cpp core/src/source/gain_opt.cpp core/src/mesh/mesh_report.cpp core/src/source/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
 target_sources(dect2core PRIVATE core/src/tx/tx.cpp core/src/tx/tx_payload.cpp core/src/tx/tx_voice.cpp core/src/audio/audioin.cpp core/src/audio/videoin.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
@@ -946,7 +947,102 @@ if(DECT2_BUILD_TESTS)
   onair_rust_diff_tests(pager pager_proto pager pager_proto dect2/pager/pager_proto.h "namespace pager {" "namespace pager_ref {" "" ${CMAKE_SOURCE_DIR}/core/include/dect2/pager)
   onair_rust_diff_tests(nxdn nxdn_proto nxdn nxdn_proto dect2/nxdn/nxdn_proto.h "namespace nxdn {" "namespace nxdn_ref {" "" "")
   onair_rust_diff_tests(dstar dstar_proto dstar dstar_proto dect2/dstar/dstar_proto.h "namespace dstar {" "namespace dstar_ref {" "" "")
+  onair_rust_diff_tests(ts ts_proto tv ts_proto dect2/tv/ts_proto.h "namespace dect2::tsp {" "namespace dect2::tsp_ref {" "" "")
   onair_rust_diff_tests(p25 p25_proto p25 p25_proto dect2/p25/p25_proto.h "namespace p25 {" "namespace p25_ref {" "" "")
+  # DRM: drm_proto.cpp with a generated reference copy (the records are those of drm_msg.h, so the copy's header includes the real one)
+  if(ONAIR_RUST_DRM)
+    set(_dir ${CMAKE_BINARY_DIR}/drm_ref)
+    add_custom_command(OUTPUT ${_dir}/drm_proto_ref.h ${_dir}/drm_proto_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=drm_proto -DHDR=dect2/drm/drm_proto.h -DCPP=drm/drm_proto.cpp -DDEF=DECT2_RUST_DRM
+              "-DFROM=namespace dect2::drmp {" "-DTO=namespace dect2::drmp_ref {" "-DEXTRA=" "-DINC_FROM=#include \"drm_msg.h\"" "-DINC_TO=#include \"dect2/drm/drm_msg.h\"" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      DEPENDS core/include/dect2/drm/drm_proto.h core/src/drm/drm_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
+    set_source_files_properties(core/src/drm/drm_proto.cpp core/src/drm/drm_proto_rs.cpp PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_DRM)
+    add_executable(test_drm_proto_rs tests/drm/test_drm_proto_rs.cpp ${_dir}/drm_proto_ref.cpp core/src/drm/drm_proto.cpp core/src/drm/drm_proto_rs.cpp)
+    target_include_directories(test_drm_proto_rs PRIVATE core/include ${_dir})
+    target_link_libraries(test_drm_proto_rs PRIVATE onair_rs)
+    add_test(NAME drm_proto_rs COMMAND test_drm_proto_rs)
+    add_executable(fuzz_drm_proto tests/drm/fuzz_drm_proto.cpp core/src/drm/drm_proto.cpp core/src/drm/drm_proto_rs.cpp)
+    target_include_directories(fuzz_drm_proto PRIVATE core/include)
+    target_compile_definitions(fuzz_drm_proto PRIVATE DECT2_RUST_DRM)
+    target_link_libraries(fuzz_drm_proto PRIVATE onair_rs)
+    add_test(NAME fuzz_drm_proto COMMAND fuzz_drm_proto)
+  endif()
+  # DAB: dab_proto.cpp with a generated reference copy; its caption text goes through a reference copy of text_charset.cpp too (the C++ one, not the Rust one)
+  if(ONAIR_RUST_DAB)
+    set(_dir ${CMAKE_BINARY_DIR}/dab_ref)
+    add_custom_command(OUTPUT ${_dir}/text_charset_ref.h ${_dir}/text_charset_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=text_charset -DHDR=dect2/common/text_charset.h -DCPP=common/text_charset.cpp -DDEF=DECT2_RUST_DVBSI
+              "-DFROM=namespace dect2::text {" "-DTO=namespace dect2::text_ref {" "-DEXTRA=" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      DEPENDS core/include/dect2/common/text_charset.h core/src/common/text_charset.cpp cmake/gen_rs_ref.cmake VERBATIM)
+    add_custom_command(OUTPUT ${_dir}/dab_proto_ref.h ${_dir}/dab_proto_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=dab_proto -DHDR=dect2/dab/dab_proto.h -DCPP=dab/dab_proto.cpp -DDEF=DECT2_RUST_DAB
+              "-DFROM=namespace dect2::dabp {" "-DTO=namespace dect2::dabp_ref {" "-DEXTRA=" "-DCPP_REPL=namespace textns = dect2::text=>namespace textns = dect2::text_ref@@#include \"dect2/common/text_charset.h\"=>#include \"text_charset_ref.h\"" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      DEPENDS core/include/dect2/dab/dab_proto.h core/src/dab/dab_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
+    set(_srcs core/src/dab/dab_proto.cpp core/src/dab/dab_proto_rs.cpp)
+    set_source_files_properties(${_srcs} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_DAB)
+    add_executable(test_dab_proto_rs tests/dab/test_dab_proto_rs.cpp ${_dir}/dab_proto_ref.cpp ${_dir}/text_charset_ref.cpp ${_srcs})
+    target_include_directories(test_dab_proto_rs PRIVATE core/include ${_dir})
+    target_link_libraries(test_dab_proto_rs PRIVATE onair_rs)
+    add_test(NAME dab_proto_rs COMMAND test_dab_proto_rs)
+    add_executable(fuzz_dab_proto tests/dab/fuzz_dab_proto.cpp ${_srcs})
+    target_include_directories(fuzz_dab_proto PRIVATE core/include)
+    target_compile_definitions(fuzz_dab_proto PRIVATE DECT2_RUST_DAB)
+    target_link_libraries(fuzz_dab_proto PRIVATE onair_rs)
+    add_test(NAME fuzz_dab_proto COMMAND fuzz_dab_proto)
+  endif()
+  function(onair_link_iconv tgt)   # dvb_text.cpp calls iconv: libiconv on macOS, a separate library on some systems, built into glibc elsewhere
+    if(APPLE)
+      target_link_libraries(${tgt} PRIVATE iconv)
+    else()
+      find_package(Iconv QUIET)
+      if(Iconv_FOUND AND NOT Iconv_IS_BUILT_IN)
+        target_link_libraries(${tgt} PRIVATE Iconv::Iconv)
+      endif()
+    endif()
+  endfunction()
+  # DVB service information: four layers in one test program (text_charset.cpp, dvb_text.cpp, teletext.cpp, dvbsub.cpp), each with a generated reference copy; the
+  # dvb_text copy calls the text_charset copy. The whole decoder classes of teletext.cpp and dvbsub.cpp are in their copies too (end-to-end comparison).
+  if(ONAIR_RUST_DVBSI)
+    set(_dir ${CMAKE_BINARY_DIR}/dvbsi_ref)
+    set(_L_text_charset "dect2/common/text_charset.h|common/text_charset.cpp|namespace dect2::text {|namespace dect2::text_ref {|")
+    set(_L_dvb_text "dect2/tv/dvb_text.h|tv/dvb_text.cpp|namespace dect2::dvbsi {|namespace dect2::dvbsi_ref {|#include \"dect2/common/text_charset.h\"=>#include \"text_charset_ref.h\"@@namespace textns = dect2::text=>namespace textns = dect2::text_ref")
+    set(_L_teletext "dect2/tv/teletext.h|tv/teletext.cpp|namespace dect2 {|namespace dect2_ref {|")
+    set(_L_dvbsub "dect2/tv/dvbsub.h|tv/dvbsub.cpp|namespace dect2 {|namespace dect2_ref {|")
+    set(_refsrc "")
+    foreach(_n text_charset dvb_text teletext dvbsub)
+      string(REPLACE "|" ";" _f "${_L_${_n}}")
+      list(GET _f 0 _h)
+      list(GET _f 1 _c)
+      list(GET _f 2 _from)
+      list(GET _f 3 _to)
+      list(LENGTH _f _fl)
+      set(_repl "")
+      if(_fl GREATER 4)
+        list(GET _f 4 _repl)
+      endif()
+      add_custom_command(OUTPUT ${_dir}/${_n}_ref.h ${_dir}/${_n}_ref.cpp
+        COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=${_n} -DHDR=${_h} -DCPP=${_c} -DDEF=DECT2_RUST_DVBSI
+                "-DFROM=${_from}" "-DTO=${_to}" "-DEXTRA=" "-DCPP_REPL=${_repl}" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+        DEPENDS core/include/${_h} core/src/${_c} cmake/gen_rs_ref.cmake VERBATIM)
+      list(APPEND _refsrc ${_dir}/${_n}_ref.cpp)
+    endforeach()
+    set_source_files_properties(${_dir}/dvbsub_ref.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
+    set(_srcs core/src/common/text_charset.cpp core/src/common/text_charset_rs.cpp core/src/tv/dvb_text.cpp core/src/tv/dvb_text_rs.cpp core/src/tv/teletext.cpp core/src/tv/teletext_rs.cpp
+              core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp)
+    set_source_files_properties(${_srcs} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_DVBSI)
+    set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
+    add_executable(test_dvbsi_proto_rs tests/dvbsi/test_dvbsi_proto_rs.cpp ${_refsrc} ${_srcs})
+    target_include_directories(test_dvbsi_proto_rs PRIVATE core/include ${_dir})
+    target_link_libraries(test_dvbsi_proto_rs PRIVATE onair_rs)
+    onair_link_iconv(test_dvbsi_proto_rs)
+    add_test(NAME dvbsi_proto_rs COMMAND test_dvbsi_proto_rs)
+    add_executable(fuzz_dvbsi_proto tests/dvbsi/fuzz_dvbsi_proto.cpp ${_srcs})
+    target_include_directories(fuzz_dvbsi_proto PRIVATE core/include)
+    target_compile_definitions(fuzz_dvbsi_proto PRIVATE DECT2_RUST_DVBSI)
+    target_link_libraries(fuzz_dvbsi_proto PRIVATE onair_rs)
+    onair_link_iconv(fuzz_dvbsi_proto)
+    add_test(NAME fuzz_dvbsi_proto COMMAND fuzz_dvbsi_proto)
+  endif()
   # DMR: two layers in one test program (dmr_fec.cpp, dmr_proto.cpp), each with a generated reference copy; the proto copy includes the fec copy
   if(ONAIR_RUST_DMR)
     set(_dir ${CMAKE_BINARY_DIR}/dmr_ref)
