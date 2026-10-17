@@ -245,3 +245,16 @@ Any radio SoapySDR supports can sit on another computer (a Raspberry Pi, a PC in
 3. **Add network radio...**, type **SoapyRemote**, the server's address and port 55132. Leave "Remote driver" empty to list what the server offers (a sound card is skipped), or type the driver (`rtlsdr`) or `driver=sdrplay,serial=1`.
 
 The radio is then listed as `SoapyRemote host:port: driver` and works like a local SoapySDR radio. The network must carry the stream: use wired Ethernet for more than a few Msps. A server that logs `SoapyRPCUnpacker::recv(header)` is on a different SoapyRemote version than this computer's client: install the same version on both. Not tested against real hardware; the arguments, server listing, errors and the stream path are tested against fakes.
+
+## Sound card: narrowband IF and audio-frequency signals
+
+A sound card ("Sound card: ..." in the radio list) feeds real audio to the decoders. To use a receiver's IF or audio output (an IC-7300's 12 kHz IF over USB audio, SSB audio, an AF tap, a VAC from another program) set, in the source options row:
+
+- **Mode**: *Real (mono)* (or USB / LSB audio) turns the real samples into complex IQ (Hilbert), so only one sideband is kept; *I/Q stereo* keeps left = I, right = Q.
+- **Channel**: left, right or left + right (stereo cards, mono taps).
+- **IF centre**: the audio frequency of the signal's centre, in Hz (12000 for a 12 kHz IF, 0 for plain audio, up to half the sample rate). It is shifted to 0 Hz. Set the **frequency field** to the radio frequency that centre stands for (the rig's dial frequency); mode presets (FT8 14.074 MHz, WSPR, CW, RTTY, DRM, time signals) then work as with an SDR.
+- **Swap sideband**: mirrors the spectrum, for a receiver that outputs the other sideband (or LSB).
+- **Remove DC**, **gain** (-20..+40 dB) and an input **level** bar (turns red when the card clips: lower the radio's output or the card's input level).
+- **Sample rate**: 8 kHz to 192 kHz (8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48, 88.2, 96, 176.4, 192); the card resamples to it. Applies when the receiver starts. A 455 kHz IF does not fit a sound card (half the rate is the limit): mix it down first.
+
+Settings are saved. Tested with synthetic audio files through the sound-card path (`tests/audio/test_audio_if.cpp`: tone, FT8-like, RTTY-like, offsets, sideband, all rates, channels, DC, gain); not with a real card or rig.

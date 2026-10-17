@@ -48,12 +48,9 @@ Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
 Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	文件
 File to send	File to send
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	用于 WebSDR、虚拟声卡线（VAC）或把电台扬声器/线路接入电脑。需要兆赫带宽时不能代替 SDR。
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	用于 WebSDR、虚拟声卡线（VAC）或把电台扬声器/线路接入电脑。需要兆赫带宽时不能代替 SDR。频率栏是解码器应假定的刻度；声卡不会调谐。没有增益或天线供电。
 Free text	Free text
 Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	增益控制只对电台有效（不用于录音、声卡或合成信号）
 I/Q stereo	I/Q 立体声
-I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q 立体声：左为 I、右为 Q（HDSDR / WebSDR VAC）。USB 音频：把扬声器分接的实音频变成解析 IQ，用于 FT8、RTTY、CW、SSB。LSB 音频：同样，取共轭。单声道实数：I 为样点，Q 为 0（实采样，不是 FM 鉴频器音频）。
 ICAO address	ICAO address
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
@@ -72,7 +69,6 @@ Mic level	Mic level
 Microphone	Microphone
 MMSI	MMSI
 Mode	模式
-Mono real	单声道实数
 Morse identification, up to four letters.	Morse identification, up to four letters.
 Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
@@ -1288,3 +1284,16 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini 在 Windows 上需要 FTDI 的 FT60x 驱动(不是 Zadig),在 Linux 上需要 udev 规则,并需运行一次 "LimeUtil --update",使其固件与库版本匹配。
+Real (mono)	实数（单声道）
+Left	左
+Right	右
+Left + right	左 + 右
+IF centre	中频中心
+Swap sideband	交换边带
+Remove DC	去除直流
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	用于 WebSDR、虚拟音频线（VAC），或电台的扬声器、线路或中频输出接入电脑。需要兆赫带宽时不能替代 SDR。频率栏是解码器应假定的刻度（中频中心的射频频率）；声卡不会被调谐。
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q 立体声：左为 I，右为 Q（HDSDR / WebSDR VAC）。USB 音频：将实数音频转为解析 IQ，用于来自扬声器抽头或接收机音频的 FT8、RTTY、CW、SSB。LSB 音频：相同，镜像。实数（单声道）：实数采样（音频抽头、12 kHz 等中频）转为解析信号，并配有下方的边带开关。
+The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above.	信号中心在声卡中的音频频率，例如电台 12 kHz 中频输出填 12000，普通音频填 0。它会被移到 0 Hz，使解码器在上方刻度频率处看到信号。
+Mirror the spectrum: for a receiver whose output is the other sideband.	镜像频谱：用于输出为另一边带的接收机。
+The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	声卡采样率，8 至 192 kHz。更高的采样率可显示更多中频。在接收机启动时生效。
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	用于 WebSDR、虚拟声卡线（VAC）或把电台扬声器/线路接入电脑。需要兆赫带宽时不能代替 SDR。

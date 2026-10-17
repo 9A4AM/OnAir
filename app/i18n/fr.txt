@@ -48,12 +48,9 @@ Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
 Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	Fichier
 File to send	File to send
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Pour WebSDR, un câble audio virtuel (VAC) ou le haut-parleur / la ligne d'une radio vers l'ordinateur. Pas un remplacement d'un SDR quand il faut des mégahertz de bande.
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	Pour WebSDR, un câble audio virtuel (VAC) ou le haut-parleur / la ligne d'une radio vers l'ordinateur. Pas un remplacement d'un SDR quand il faut des mégahertz de bande. Le champ fréquence est le cadran que le décodeur doit prendre ; la carte son n'est pas accordée. Pas de gain ni d'alimentation d'antenne.
 Free text	Free text
 Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	Les commandes de gain s'appliquent seulement aux radios (pas à un enregistrement, une carte son ou le signal synthétique)
 I/Q stereo	I/Q stéréo
-I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q stéréo : gauche = I, droite = Q (HDSDR / WebSDR VAC). Audio USB : audio réel vers IQ analytique pour FT8, RTTY, CW, SSB depuis un haut-parleur. Audio LSB : le même, conjugué. Mono réel : I est l'échantillon, Q vaut 0 (échantillonnage réel, pas l'audio d'un discriminateur FM).
 ICAO address	ICAO address
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
@@ -72,7 +69,6 @@ Mic level	Mic level
 Microphone	Microphone
 MMSI	MMSI
 Mode	Mode
-Mono real	Mono réel
 Morse identification, up to four letters.	Morse identification, up to four letters.
 Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
@@ -1288,3 +1284,16 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	Un LimeSDR Mini a besoin sous Windows du pilote FT60x de FTDI (pas Zadig), sous Linux des règles udev, et une fois de "LimeUtil --update" pour que son gateware corresponde à la bibliothèque.
+Real (mono)	Réel (mono)
+Left	Gauche
+Right	Droite
+Left + right	Gauche + droite
+IF centre	Centre FI
+Swap sideband	Inverser la bande latérale
+Remove DC	Retirer le DC
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Pour WebSDR, un câble audio virtuel (VAC) ou la sortie haut-parleur, ligne ou FI d'une radio vers l'ordinateur. Ne remplace pas un SDR quand il faut des mégahertz de bande. Le champ de fréquence est le cadran que le décodeur doit supposer (la fréquence radio du centre de la FI) ; la carte son n'est pas accordée.
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stéréo : la gauche est I, la droite est Q (HDSDR / WebSDR VAC). Audio USB : audio réel vers IQ analytique pour FT8, RTTY, CW, BLU depuis une prise haut-parleur ou l'audio d'un récepteur. Audio LSB : pareil, en miroir. Réel (mono) : échantillons réels (une prise BF, une FI comme 12 kHz) rendus analytiques, avec le commutateur de bande latérale ci-dessous.
+The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above.	La fréquence audio du centre du signal dans la carte son, par exemple 12000 pour la sortie FI 12 kHz d'une radio, ou 0 pour de l'audio normal. Elle est ramenée à 0 Hz, donc le décodeur voit le signal à la fréquence du cadran ci-dessus.
+Mirror the spectrum: for a receiver whose output is the other sideband.	Inverse le spectre : pour un récepteur dont la sortie est l'autre bande latérale.
+The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	La fréquence d'échantillonnage de la carte son, 8 à 192 kHz. Une fréquence plus haute montre plus d'une FI. Elle s'applique au démarrage du récepteur.
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Pour WebSDR, un câble audio virtuel (VAC) ou le haut-parleur / la ligne d'une radio vers l'ordinateur. Pas un remplacement d'un SDR quand il faut des mégahertz de bande.

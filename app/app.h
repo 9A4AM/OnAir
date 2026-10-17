@@ -345,7 +345,13 @@ struct App {
     int devIdx = 0;
     TuneSettings tune;
     FileOptions file;
-    int audioIqMode = 0;          // AudioIqMode: I/Q stereo, USB audio, LSB audio, mono real (sound-card source)
+    int audioIqMode = 0;          // AudioIqMode: I/Q stereo, USB audio, LSB audio, real (mono) (sound-card source)
+    int audioChan = 0;            // 0 left, 1 right, 2 left + right (the real modes)
+    double audioIfHz = 0;         // the audio frequency the dial sits at (a receiver's IF): shifted down to 0 Hz
+    bool audioInvert = false;          // swap the sideband
+    bool audioDc = true;              // remove the card's DC offset
+    double audioGainDb = 0;       // input gain
+    int audioRate = 48000;        // the sound card's sample rate (8 kHz to 192 kHz); applied at start
     int bwIdx = 0;
     int constView = 0;        // data constellation: 0 cells, 1 density, 2 clusters
     struct ConstStats {       // statistics of the decoded cells, collected over the last few seconds
@@ -872,6 +878,7 @@ bool modeSelected(const App& a, const ModeDef& m);    // the row of the current 
 const char* modeSearchBox();                          // a search box at the top of a mode drop-down (mode_select.cpp); returns the query
 bool modeMatches(const ModeDef& m, const char* query); // the search box: name, subtitle, description and keywords
 void startReceiver(App& a);     // what the Start button does
+void applyAudioSettings(App& a);   // the sound-card options into a.tune.radio (toolbar_source.cpp)
 enum TbPart { TbSource = 1, TbFreq = 2, TbTuner = 4, TbGain = 8, TbDecoder = 16, TbAll = 31 };
 void toolbarParts(App& a, int mask, bool vertical);   // pieces of the top bar, for the sidebar of the new interface
 void receiverGlance(App& a, float w, float h);       // analysis_tabs.cpp: a few key/value lines about the receiver

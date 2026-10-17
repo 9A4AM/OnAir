@@ -5,6 +5,7 @@
 #include "ui_common.h"
 #include "dect2/engine/rate_choice.h"
 #include "dect2/source/antenna_ports.h"
+#include "dect2/source/audio_if.h"
 #include "dect2/hdr/hdr_rx.h"
 #include "dect2/source/hamlib_link.h"
 #include "dect2/source/iq_file.h"
@@ -74,7 +75,7 @@ void startReceiver(App& a) {
     if (isFile && a.file.offsetBytes == 0) { const double r = guessSampleRate(a.file.path); if (r > 0) a.file.sampleRate = r; } // the name says the rate (a SigMF / WAV file says it itself)
     if (isFile && a.file.path.empty()) a.engine.log("choose an IQ file first");
     else {
-        if (a.devices[a.devIdx].isAudio() || a.devices[a.devIdx].kind == DeviceInfo::Hamlib) a.tune.radio["audio_iq"] = std::to_string(a.audioIqMode);
+        if (a.devices[a.devIdx].isAudio() || a.devices[a.devIdx].kind == DeviceInfo::Hamlib) applyAudioSettings(a);
         a.engine.setComputeMode(a.computeMode); a.engine.setStandard(engineStd(a));
         a.engine.start(a.devices[a.devIdx], a.tune, a.file);
         savePrefs(a);
@@ -337,24 +338,82 @@ static void hamlibSourceNote() {
     flowEnd();
 }
 
-// a sound-card source: the I/Q mode (stereo IQ, USB, LSB, mono) with its help
+// The sound-card settings into the tune settings the source reads (keys: audio_if.h)
+void applyAudioSettings(App& a) {
+    auto& r = a.tune.radio;
+    r["audio_iq"] = std::to_string(a.audioIqMode);
+    r["audio_chan"] = std::to_string(a.audioChan);
+    r["audio_if_hz"] = std::to_string(a.audioIfHz);
+    r["audio_invert"] = a.audioInvert ? "1" : "0";
+    r["audio_dc"] = a.audioDc ? "1" : "0";
+    r["audio_gain_db"] = std::to_string(a.audioGainDb);
+    r["audio_rate"] = std::to_string(a.audioRate);
+}
+
+// a sound-card source: the I/Q mode (stereo IQ, USB, LSB, real mono) with its help, then the IF / AF options
 static void audioSourceOptions(App& a, bool running) {
     ImGui::TextDisabled("%s", tr("sound card"));
     ImGui::SameLine();
     ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered()) {
-        wrapTooltip(380 * gUi, tr("For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power."));
+        wrapTooltip(380 * gUi, tr("For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned."));
     }
+    auto changed = [&] { applyAudioSettings(a); savePrefs(a); if (running) a.engine.retune(a.tune); };
     flowNext();
     ImGui::SetNextItemWidth(130 * gUi);
-    const char* am[] = {tr("I/Q stereo"), tr("USB audio"), tr("LSB audio"), tr("Mono real")};
-    if (ImGui::Combo("##aiq", &a.audioIqMode, am, 4)) {
-        a.tune.radio["audio_iq"] = std::to_string(a.audioIqMode);
-        savePrefs(a);
-        if (running) { std::string e; a.engine.retune(a.tune); (void)e; }
-    }
+    const char* am[] = {tr("I/Q stereo"), tr("USB audio"), tr("LSB audio"), tr("Real (mono)")};
+    if (ImGui::Combo("##aiq", &a.audioIqMode, am, 4)) changed();
     if (ImGui::IsItemHovered()) {
-        wrapTooltip(380 * gUi, tr("I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio)."));
+        wrapTooltip(380 * gUi, tr("I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below."));
+    }
+    if (a.audioIqMode != 0) {   // a real signal: which channel
+        flowNext();
+        ImGui::SetNextItemWidth(110 * gUi);
+        const char* ch[] = {tr("Left"), tr("Right"), tr("Left + right")};
+        if (ImGui::Combo("##achan", &a.audioChan, ch, 3)) changed();
+    }
+    flowNext();
+    ImGui::TextDisabled("%s", tr("IF centre"));
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(95 * gUi);
+    if (ImGui::InputDouble("##aif", &a.audioIfHz, 0, 0, "%.0f Hz")) { a.audioIfHz = std::max(-96000.0, std::min(96000.0, a.audioIfHz)); changed(); }
+    if (ImGui::IsItemHovered()) {
+        wrapTooltip(380 * gUi, tr("The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above."));
+    }
+    flowNext();
+    if (ImGui::Checkbox(tr("Swap sideband"), &a.audioInvert)) changed();
+    if (ImGui::IsItemHovered()) wrapTooltip(380 * gUi, tr("Mirror the spectrum: for a receiver whose output is the other sideband."));
+    flowNext();
+    if (ImGui::Checkbox(tr("Remove DC"), &a.audioDc)) changed();
+    flowNext();
+    ImGui::SetNextItemWidth(90 * gUi);
+    float g = (float)a.audioGainDb;
+    if (ImGui::SliderFloat("##again", &g, -20.f, 40.f, "%.0f dB")) { a.audioGainDb = g; changed(); }
+    flowNext();
+    int n = 0;
+    const int* rates = audioRateChoices(n);
+    int cur = 0;
+    for (int i = 0; i < n; i++) if (rates[i] == a.audioRate) cur = i;
+    char label[24];
+    snprintf(label, sizeof label, "%g kHz", rates[cur] / 1000.0);
+    ImGui::SetNextItemWidth(95 * gUi);
+    if (ImGui::BeginCombo("##arate", label)) {
+        for (int i = 0; i < n; i++) {
+            char l[24];
+            snprintf(l, sizeof l, "%g kHz", rates[i] / 1000.0);
+            if (ImGui::Selectable(l, i == cur)) { a.audioRate = rates[i]; applyAudioSettings(a); savePrefs(a); }
+        }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) wrapTooltip(380 * gUi, tr("The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started."));
+    if (running) {   // the input level: the bar fills to full scale, red when it clips
+        flowNext();
+        const float lv = audioSourceLevel();
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, lv > 0.95f ? ImVec4(0.9f, 0.25f, 0.2f, 1) : ImVec4(0.3f, 0.7f, 0.4f, 1));
+        ImGui::ProgressBar(std::min(1.f, lv), ImVec2(70 * gUi, 0), "");
+        ImGui::PopStyleColor();
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", tr("Level"));
     }
     flowEnd();
 }

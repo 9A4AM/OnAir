@@ -131,6 +131,8 @@ const std::vector<PrefKey>& keyTable() {
         shared(text("uiLang", AT(a.uiLang))),
         shared(num("uiTheme", AT(a.uiTheme), 1, 0, 2, true)),
         shared(num("audioIq", AT(a.audioIqMode), 0, 0, 3)),
+        shared(num("audioChan", AT(a.audioChan), 0, 0, 2)), shared(dbl("audioIfHz", AT(a.audioIfHz), 0)), shared(flagI("audioInvert", AT(a.audioInvert), false)),
+        shared(flagI("audioDc", AT(a.audioDc), true)), shared(dbl("audioGainDb", AT(a.audioGainDb), 0)), shared(num("audioRate", AT(a.audioRate), 48000, 8000, 192000)),
         shared(flagFn("smoothGaps", [](const App& a) { return a.engine.player().conceal(); }, [](App& a, bool v) { a.engine.player().setConceal(v); })),
         shared(flagFn("dcRemove", [](const App& a) { return (bool)a.engine.iqFix().dc.load(); }, [](App& a, bool v) { a.engine.iqFix().dc = v; })),
         shared(flagFn("offsetTune", [](const App& a) { return a.engine.autoOffset(); }, [](App& a, bool v) { a.engine.setAutoOffset(v); })),

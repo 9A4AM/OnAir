@@ -48,12 +48,9 @@ Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
 Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	Fájl
 File to send	File to send
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR-hez, virtuális hangkábelhez (VAC), vagy a rádió hangszórójához/vonalához a számítógépen. Nem helyettesíti az SDR-t, ha megahertznyi sávszélesség kell.
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	WebSDR-hez, virtuális hangkábelhez (VAC), vagy a rádió hangszórójához/vonalához a számítógépen. Nem helyettesíti az SDR-t, ha megahertznyi sávszélesség kell. A gyakoriságmező a dekóder által feltételezett tárcsa; a hangkártya nincs hangolva. Nincs erősítés és antenna-táp.
 Free text	Free text
 Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	Az erősítésszabályzók csak rádiókra vonatkoznak (nem felvételre, hangkártyára vagy a szintetikus jelre)
 I/Q stereo	I/Q sztereó
-I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q sztereó: bal = I, jobb = Q (HDSDR / WebSDR VAC). USB hang: valós hang analitikus IQ-vá FT8, RTTY, CW, SSB-hez hangszóróról. LSB hang: ugyanez, konjugált. Mono valós: I a minta, Q = 0 (valós mintavétel, nem FM-diszkriminátor hang).
 ICAO address	ICAO address
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
@@ -72,7 +69,6 @@ Mic level	Mic level
 Microphone	Microphone
 MMSI	MMSI
 Mode	Üzemmód
-Mono real	Mono valós
 Morse identification, up to four letters.	Morse identification, up to four letters.
 Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
@@ -1273,3 +1269,16 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	A LimeSDR Minihez Windowson az FTDI FT60x illesztőprogramja kell (nem a Zadig), Linuxon az udev szabályok, és egyszer a "LimeUtil --update", hogy a gateware egyezzen a könyvtárral.
+Real (mono)	Valós (mono)
+Left	Bal
+Right	Jobb
+Left + right	Bal + jobb
+IF centre	KF közép
+Swap sideband	Oldalsáv cseréje
+Remove DC	DC eltávolítása
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	WebSDR-hez, virtuális audiokábelhez (VAC) vagy egy rádió hangszóró-, vonal- vagy KF-kimenetéhez a számítógépen. Nem helyettesít egy SDR-t, ha megahertzes sávszélesség kell. A frekvenciamező a tárcsa, amelyet a dekódernek fel kell tételeznie (a KF közép rádiófrekvenciája); a hangkártyát nem hangolják.
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q sztereó: a bal I, a jobb Q (HDSDR / WebSDR VAC). USB hang: valós hang analitikus IQ-vá FT8-hoz, RTTY-hoz, CW-hez, SSB-hez hangszóró-leágazásról vagy egy vevő hangjából. LSB hang: ugyanez, tükrözve. Valós (mono): valós minták (egy NF-leágazás, egy 12 kHz-es KF) analitikussá téve, az alábbi oldalsáv-kapcsolóval.
+The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above.	A jel közepének hangfrekvenciája a hangkártyán, például 12000 egy rádió 12 kHz-es KF-kimenetéhez, vagy 0 sima hanghoz. 0 Hz-re tolódik, így a dekóder a jelet a fenti tárcsafrekvencián látja.
+Mirror the spectrum: for a receiver whose output is the other sideband.	Tükrözi a spektrumot: olyan vevőhöz, amelynek kimenete a másik oldalsáv.
+The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	A hangkártya mintavételi frekvenciája, 8-tól 192 kHz-ig. A nagyobb több KF-et mutat. A vevő indításakor lép érvénybe.
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR-hez, virtuális hangkábelhez (VAC), vagy a rádió hangszórójához/vonalához a számítógépen. Nem helyettesíti az SDR-t, ha megahertznyi sávszélesség kell.

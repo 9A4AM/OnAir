@@ -43,12 +43,9 @@ Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
 Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	ファイル
 File to send	File to send
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR、仮想オーディオケーブル（VAC）、無線機のスピーカー／ライン入力用。MHz単位の帯域が必要なときのSDRの代わりにはなりません。
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	WebSDR、仮想オーディオケーブル（VAC）、無線機のスピーカー／ライン入力用。MHz単位の帯域が必要なときのSDRの代わりにはなりません。周波数欄はデコーダーが仮定するダイヤルで、サウンドカードはチューニングしません。ゲインもアンテナ給電もありません。
 Free text	Free text
 Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	ゲイン操作はラジオのみです（録音、サウンドカード、合成信号には使いません）
 I/Q stereo	I/Q ステレオ
-I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Qステレオ：左がI、右がQ（HDSDR / WebSDR VAC）。USBオーディオ：スピーカタップからのFT8/RTTY/CW/SSB向け実音声を解析IQへ。LSBオーディオ：同じ信号の共役。モノ実数：Iがサンプル、Qは0（実サンプリング。FMディスクリミネータ音声ではありません）。
 ICAO address	ICAO address
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
@@ -65,7 +62,6 @@ Mic level	Mic level
 Microphone	Microphone
 MMSI	MMSI
 Mode	モード
-Mono real	モノ実数
 Morse identification, up to four letters.	Morse identification, up to four letters.
 Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
@@ -1288,3 +1284,16 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini には、Windows では FTDI の FT60x ドライバ(Zadig ではありません)、Linux では udev ルール、そしてゲートウェアをライブラリに合わせるための一度きりの「LimeUtil --update」が必要です。
+Real (mono)	実数（モノ）
+Left	左
+Right	右
+Left + right	左 + 右
+IF centre	IF中心
+Swap sideband	サイドバンドを反転
+Remove DC	DCを除去
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	WebSDR、仮想オーディオケーブル（VAC）、またはラジオのスピーカー・ライン・IF出力をコンピューターへ。メガヘルツの帯域が必要な場合はSDRの代わりにはなりません。周波数欄はデコーダーが想定するダイヤル（IF中心の無線周波数）で、サウンドカードは同調されません。
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Qステレオ：左がI、右がQ（HDSDR / WebSDR VAC）。USBオーディオ：スピーカー出力や受信機の音声からのFT8、RTTY、CW、SSB向けに、実数音声を解析的IQへ。LSBオーディオ：同じで反転。実数（モノ）：実数サンプル（AF出力や12 kHzなどのIF）を解析的にし、下のサイドバンドスイッチを使います。
+The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above.	サウンドカード内の信号中心の音声周波数。例：ラジオの12 kHz IF出力なら12000、通常の音声なら0。0 Hzへシフトされるため、デコーダーは上のダイヤル周波数で信号を見ます。
+Mirror the spectrum: for a receiver whose output is the other sideband.	スペクトルを反転：出力が反対側のサイドバンドの受信機用。
+The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	サウンドカードのサンプルレート（8〜192 kHz）。高いほどIFをより広く表示します。受信機の開始時に適用されます。
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR、仮想オーディオケーブル（VAC）、無線機のスピーカー／ライン入力用。MHz単位の帯域が必要なときのSDRの代わりにはなりません。

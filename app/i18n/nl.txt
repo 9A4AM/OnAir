@@ -43,12 +43,9 @@ Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
 Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	Bestand
 File to send	File to send
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Voor WebSDR, een virtuele audiokabel (VAC) of de luidspreker/lijn van een radio naar de computer. Geen vervanging voor een SDR als u megahertz bandbreedte nodig hebt.
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	Voor WebSDR, een virtuele audiokabel (VAC) of de luidspreker/lijn van een radio naar de computer. Geen vervanging voor een SDR als u megahertz bandbreedte nodig hebt. Het frequentieveld is de kiesfrequentie voor de decoder; de geluidskaart wordt niet afgestemd. Geen versterking of antennevoeding.
 Free text	Free text
 Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	Versterkingsregelaars gelden alleen voor radio's (niet voor een opname, een geluidskaart of het synthetische signaal)
 I/Q stereo	I/Q-stereo
-I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q-stereo: links is I, rechts is Q (HDSDR / WebSDR VAC). USB-audio: reële audio naar analytische IQ voor FT8, RTTY, CW, SSB vanaf een luidspreker. LSB-audio: hetzelfde, toegevoegd. Mono reëel: I is het sample, Q is 0 (reële bemonstering, geen FM-discriminatoraudio).
 ICAO address	ICAO address
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
@@ -65,7 +62,6 @@ Mic level	Mic level
 Microphone	Microphone
 MMSI	MMSI
 Mode	Modus
-Mono real	Mono reëel
 Morse identification, up to four letters.	Morse identification, up to four letters.
 Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
@@ -1288,3 +1284,16 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	Een LimeSDR Mini heeft onder Windows het FT60x-stuurprogramma van FTDI nodig (niet Zadig), onder Linux de udev-regels, en eenmalig "LimeUtil --update" zodat de gateware bij de bibliotheek past.
+Real (mono)	Reëel (mono)
+Left	Links
+Right	Rechts
+Left + right	Links + rechts
+IF centre	MF-midden
+Swap sideband	Zijband omkeren
+Remove DC	DC verwijderen
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Voor WebSDR, een virtuele audiokabel (VAC) of de luidspreker-, lijn- of MF-uitgang van een radio naar de computer. Geen vervanging voor een SDR als je megahertz bandbreedte nodig hebt. Het frequentieveld is de afstemming die de decoder moet aannemen (de radiofrequentie van het MF-midden); de geluidskaart wordt niet afgestemd.
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stereo: links is I, rechts is Q (HDSDR / WebSDR VAC). USB-audio: reële audio naar analytische IQ voor FT8, RTTY, CW, SSB van een luidsprekeraftakking of de audio van een ontvanger. LSB-audio: hetzelfde, gespiegeld. Reëel (mono): reële samples (een LF-aftakking, een MF zoals 12 kHz) analytisch gemaakt, met de zijbandschakelaar hieronder.
+The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above.	De audiofrequentie van het midden van het signaal in de geluidskaart, bijvoorbeeld 12000 voor de 12 kHz MF-uitgang van een radio, of 0 voor gewone audio. Het wordt naar 0 Hz verschoven, zodat de decoder het signaal op de afstemfrequentie hierboven ziet.
+Mirror the spectrum: for a receiver whose output is the other sideband.	Spiegelt het spectrum: voor een ontvanger waarvan de uitgang de andere zijband is.
+The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	De samplefrequentie van de geluidskaart, 8 tot 192 kHz. Een hogere frequentie toont meer van een MF. Geldt bij het starten van de ontvanger.
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Voor WebSDR, een virtuele audiokabel (VAC) of de luidspreker/lijn van een radio naar de computer. Geen vervanging voor een SDR als u megahertz bandbreedte nodig hebt.

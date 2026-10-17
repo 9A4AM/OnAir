@@ -43,12 +43,9 @@ Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
 Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	Файл
 File to send	File to send
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Для WebSDR, виртуального аудиокабеля (VAC) или динамика/линейного выхода рации в компьютер. Это не замена SDR, когда нужны мегагерцы полосы.
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	Для WebSDR, виртуального аудиокабеля (VAC) или динамика/линейного выхода рации в компьютер. Это не замена SDR, когда нужны мегагерцы полосы. Поле частоты — циферблат для декодера; звуковая карта не настраивается. Нет усиления и питания антенны.
 Free text	Free text
 Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	Регуляторы усиления действуют только на радио (не на запись, звуковую карту или синтетический сигнал)
 I/Q stereo	I/Q стерео
-I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q стерео: левый — I, правый — Q (HDSDR / WebSDR VAC). USB-звук: вещественное аудио в аналитический IQ для FT8, RTTY, CW, SSB с динамика. LSB-звук: то же, сопряжённое. Моно вещественное: I — отсчёт, Q — 0 (вещественная выборка, не звук FM-дискриминатора).
 ICAO address	ICAO address
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
@@ -65,7 +62,6 @@ Mic level	Mic level
 Microphone	Microphone
 MMSI	MMSI
 Mode	Режим
-Mono real	Моно вещественное
 Morse identification, up to four letters.	Morse identification, up to four letters.
 Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
@@ -1270,3 +1266,16 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini требует в Windows драйвер FT60x от FTDI (не Zadig), в Linux правила udev и однократный запуск "LimeUtil --update", чтобы его gateware соответствовал библиотеке.
+Real (mono)	Вещественный (моно)
+Left	Левый
+Right	Правый
+Left + right	Левый + правый
+IF centre	Центр ПЧ
+Swap sideband	Поменять боковую полосу
+Remove DC	Убрать постоянную составляющую
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	Для WebSDR, виртуального аудиокабеля (VAC) или выхода динамика, линейного выхода либо выхода ПЧ радио в компьютер. Не заменяет SDR, когда нужны мегагерцы полосы. Поле частоты — настройка, которую должен принять декодер (радиочастота центра ПЧ); звуковая карта не настраивается.
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q стерео: левый — I, правый — Q (HDSDR / WebSDR VAC). USB-звук: вещественный звук в аналитический IQ для FT8, RTTY, CW, SSB с отвода динамика или звука приёмника. LSB-звук: то же, зеркально. Вещественный (моно): вещественные отсчёты (отвод НЧ, ПЧ вроде 12 кГц) делаются аналитическими, с переключателем боковой полосы ниже.
+The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above.	Звуковая частота центра сигнала в звуковой карте, например 12000 для выхода ПЧ 12 кГц радио или 0 для обычного звука. Сдвигается к 0 Гц, поэтому декодер видит сигнал на частоте настройки выше.
+Mirror the spectrum: for a receiver whose output is the other sideband.	Зеркалит спектр: для приёмника, выход которого — другая боковая полоса.
+The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	Частота дискретизации звуковой карты, 8–192 кГц. Более высокая показывает больше ПЧ. Применяется при запуске приёмника.
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	Для WebSDR, виртуального аудиокабеля (VAC) или динамика/линейного выхода рации в компьютер. Это не замена SDR, когда нужны мегагерцы полосы.

@@ -48,12 +48,9 @@ Empty: the demo Mode S uplink scene.	Empty: the demo Mode S uplink scene.
 Empty: the demo VDES scene.	Empty: the demo VDES scene.
 File	Failas
 File to send	File to send
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR, virtualiam garso kabeliui (VAC) arba radijo garsiakalbiui / linijai į kompiuterį. Ne SDR pakaitalas, kai reikia megahercų juostos.
-For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume; the sound card is not tuned. There is no gain or antenna power.	WebSDR, virtualiam garso kabeliui (VAC) arba radijo garsiakalbiui / linijai į kompiuterį. Ne SDR pakaitalas, kai reikia megahercų juostos. Dažnio laukas – rinkimo dažnis dekoderiui; garso plokštė nederinama. Nėra stiprinimo ir antenos maitinimo.
 Free text	Free text
 Gain controls apply to radios only (not to a recording, a sound card, or the synthetic signal)	Stiprinimo valdikliai taikomi tik radijams (ne įrašui, garso plokštei ar sintetiniam signalui)
 I/Q stereo	I/Q stereo
-I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap. LSB audio: the same, conjugate. Mono real: I is the sample, Q is 0 (real sampling, not FM discriminator audio).	I/Q stereo: kairė yra I, dešinė Q (HDSDR / WebSDR VAC). USB garsas: realus garsas į analitinį IQ FT8, RTTY, CW, SSB iš garsiakalbio. LSB garsas: tas pats, jungtinis. Mono realus: I yra ėminys, Q yra 0 (reali atranka, ne FM diskriminatoriaus garsas).
 ICAO address	ICAO address
 Image (PNG / PPM)	Image (PNG / PPM)
 Image (PPM)	Image (PPM)
@@ -72,7 +69,6 @@ Mic level	Mic level
 Microphone	Microphone
 MMSI	MMSI
 Mode	Režimas
-Mono real	Mono realus
 Morse identification, up to four letters.	Morse identification, up to four letters.
 Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test	Multitone paging is not transmitted: the generator is not the real (unpublished) format, only a detector test
 NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.	NAVTEX sends the text (ZCZC / NNNN are added when missing). DSC (when that service is selected) uses the MMSI.
@@ -1288,3 +1284,16 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini sistemoje Windows reikia FTDI FT60x tvarkyklės (ne Zadig), sistemoje Linux - udev taisyklių, o vieną kartą paleisti "LimeUtil --update", kad jo gateware atitiktų biblioteką.
+Real (mono)	Realus (mono)
+Left	Kairysis
+Right	Dešinysis
+Left + right	Kairysis + dešinysis
+IF centre	IF centras
+Swap sideband	Apversti juostą
+Remove DC	Pašalinti nuolatinę dedamąją
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker, line or IF output into the computer. Not a replacement for an SDR when you need megahertz of bandwidth. The frequency field is the dial the decoder should assume (the radio frequency of the IF centre); the sound card is not tuned.	WebSDR, virtualiam garso kabeliui (VAC) arba radijo garsiakalbio, linijos ar IF išvesties į kompiuterį. Ne SDR pakaitalas, kai reikia megahercų juostos. Dažnio laukas – rinkimo dažnis dekoderiui (IF centro radijo dažnis); garso plokštė nederinama.
+I/Q stereo: left is I, right is Q (HDSDR / WebSDR VAC). USB audio: real audio to analytic IQ for FT8, RTTY, CW, SSB from a speaker tap or a receiver's audio. LSB audio: the same, mirrored. Real (mono): real samples (an AF tap, an IF such as 12 kHz) made analytic, with the sideband switch below.	I/Q stereo: kairysis yra I, dešinysis yra Q (HDSDR / WebSDR VAC). USB garsas: realus garsas į analitinį IQ FT8, RTTY, CW, SSB iš garsiakalbio atšakos ar imtuvo garso. LSB garsas: tas pats, veidrodiškai. Realus (mono): realūs mėginiai (garso atšaka, IF kaip 12 kHz) paverčiami analitiniais, su juostos jungikliu žemiau.
+The audio frequency of the signal's centre in the sound card, for example 12000 for a radio's 12 kHz IF output, or 0 for plain audio. It is shifted down to 0 Hz, so the decoder sees the signal at the dial frequency above.	Signalo centro garso dažnis garso plokštėje, pavyzdžiui, 12000 radijo 12 kHz IF išvesčiai arba 0 paprastam garsui. Perstumiamas į 0 Hz, todėl dekoderis mato signalą aukščiau nurodytu rinkimo dažniu.
+Mirror the spectrum: for a receiver whose output is the other sideband.	Atspindi spektrą: imtuvui, kurio išvestis yra kita juosta.
+The sound card's sample rate, 8 to 192 kHz. A wider rate shows more of an IF. It applies when the receiver is started.	Garso plokštės mėginių dažnis, 8–192 kHz. Didesnis rodo daugiau IF. Taikomas paleidus imtuvą.
+For WebSDR, a virtual audio cable (VAC), or a radio's speaker or line into the computer. Not a replacement for an SDR when you need megahertz of bandwidth.	WebSDR, virtualiam garso kabeliui (VAC) arba radijo garsiakalbiui / linijai į kompiuterį. Ne SDR pakaitalas, kai reikia megahercų juostos.

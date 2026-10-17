@@ -23,3 +23,12 @@ gain, rates and retuning work as for a local radio. Errors say what to do: no So
 SoapySDR's registered drivers; the text says where to get it), server unreachable (the 3 s probe), server up but no radio listed. A build
 without SoapySDR keeps the type but says so. Discovery is by typing the host (avahi is not used: it is unavailable on Windows).
 Tests: `tests/net/test_netradio.cpp` (arguments, offers, help, module-missing probe) and `tests/source/test_soapy.cpp` (fake driver).
+
+## Sound-card IF / AF input (issue #137)
+
+`source_audio.cpp` captures stereo audio (`AudioIn`: miniaudio / CoreAudio at `audio_rate`, 8-192 kHz) and `audio_if.cpp` (`audioIfProcess`) makes IQ:
+gain, DC removal, channel (`audio_chan`), real -> analytic (Hilbert) for the real modes, shift by `-audio_if_hz` so the IF centre lands on 0 Hz,
+then sideband inversion (LSB or `audio_invert`). The dial is not touched: the user sets it to the radio frequency of the IF centre. Tutorial: with an
+IC-7300 in USB with its 12 kHz IF on the USB audio, pick the sound card, mode Real (mono), IF centre 12000 Hz, dial 14.074 MHz, and FT8 decodes as
+from an SDR (the radio's own filters and AGC do the front end). A serial of `file:<wav>` plays a WAV as the sound card (tests). Level for a meter:
+`audioSourceLevel()`. Tests: `tests/audio/test_audio_if.cpp`, `tests/audio/test_audio_source.cpp`.
