@@ -17,7 +17,7 @@
 #else
 #include <fcntl.h>
 #include <unistd.h>
-#if defined(__has_include) && __has_include(<execinfo.h>)
+#if defined(__has_include) && __has_include(<execinfo.h>) && !defined(__ANDROID__)   // bionic declares backtrace() only from API 33
 #include <execinfo.h>
 #define DECT2_HAVE_BACKTRACE 1
 #endif

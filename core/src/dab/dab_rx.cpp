@@ -104,6 +104,14 @@ struct DabReceiver::Impl {
     DabPacketDemux demux;
     int selPktAddr = -1, selJlExt = 0;
     bool selJlPad = false;
+    // SPI (programme guide): a second sub-channel decoded next to the selected one (packet mode data service), its data groups go to spiDec
+    DabSpiDecoder spiDec;
+    DabPacketDemux spiDemux;
+    int spiReq = -1, spiAddr = -1, spiSel = -1;
+    bool spiDirty = false;
+    DabSubchannel spiSub;
+    std::vector<std::vector<int8_t>> spiHist;
+    uint64_t spiCif = 0;
 
     Impl() : bin(kCarriers), prsConj(kTu) {
         const auto& tab = freqInterleaver();
@@ -115,6 +123,8 @@ struct DabReceiver::Impl {
         hist.assign(16, {});
         audio.select(-1, false, 0);
         audio.setDataGroupSink([this](const uint8_t* g, size_t n) { if (selJlPad) jl.feedDataGroup(g, n); });
+        audio.setMotSink([this](const MotObject& o) { if (spiReq >= 0 && spiAddr == -2) spiDec.motObject(o); });   // SPI in the PAD of the selected service (spiAddr -2)
+        spiHist.assign(16, {});
         dmb.setPacketSink([this](const uint8_t* pk, size_t n) { if (pktCb) pktCb(pk, n, 0.024); });
     }
 
@@ -451,7 +461,7 @@ struct DabReceiver::Impl {
             int eid;
             if (dabp::fig0Eid(d, n, eid)) {
                 // a different ensemble id on the same tuning (a new mux): drop what the previous one told us, the sub-channel ids are only valid per ensemble
-                if (ens.eid != 0 && ens.eid != (uint16_t)eid) { ens = DabEnsemble(); ptyInfo.clear(); annSup.clear(); annSw.clear(); fig2Segs.clear(); fig2Done.clear(); }
+                if (ens.eid != 0 && ens.eid != (uint16_t)eid) { ens = DabEnsemble(); ptyInfo.clear(); annSup.clear(); annSw.clear(); fig2Segs.clear(); fig2Done.clear(); spiDec.reset(); spiDec.clearStore(); spiDirty = true; }
                 ens.eid = (uint16_t)eid;
             }
         } else if (ext == 1) {
@@ -503,6 +513,12 @@ struct DabReceiver::Impl {
                     sv.sid = a.sid;
                     int v, x, en;
                     if (jlUserAppData(d + a.off, (size_t)a.len, v, x, en)) { sv.journaline = true; sv.jlScIdS = a.scids; sv.jlExt = x; sv.jlEntry = en; }
+                }
+                if (a.type == 0x007) {   // SPI: the profiles are the bytes of the user application data up to a 0x00
+                    DabService& sv = ens.services[a.sid];
+                    sv.sid = a.sid;
+                    sv.spi = true; sv.spiScIdS = a.scids; sv.spiProfiles.clear();
+                    for (int i = 0; i < a.len && d[a.off + i] != 0; i++) sv.spiProfiles.push_back(d[a.off + i]);
                 }
                 if (a.scids == 0 && a.index == 0) {   // the primary component's first application (PAD applications of a DMB radio service follow it)
                     DabService& sv = ens.services[a.sid];
@@ -615,6 +631,53 @@ struct DabReceiver::Impl {
     }
 
     void decodeMsc() {
+        decodeMain();
+        decodeAux();
+    }
+
+    // The programme guide sub-channel (packet mode): decoded next to the selected one, its packets go to the SPI decoder
+    void decodeAux() {
+        {
+            std::lock_guard<std::mutex> lk(mu);
+            if (spiReq < 0) { spiSel = -1; return; }
+            if (spiAddr == -2) { spiSel = -1; return; }   // SPI comes from the PAD of the selected service: no extra sub-channel
+            auto it = ens.subs.find(spiReq);
+            if (it == ens.subs.end()) return;
+            if (spiDirty || spiSel != spiReq) {
+                spiSub = it->second; spiSel = spiReq; spiDirty = false;
+                spiHist.assign(16, {}); spiCif = 0;
+                spiDemux.setAddress(spiAddr);
+                spiDemux.setMaxGroup(16384);
+            } else if (it->second.start != spiSub.start || it->second.size != spiSub.size || it->second.eep != spiSub.eep || it->second.option != spiSub.option || it->second.level != spiSub.level || it->second.uepIndex != spiSub.uepIndex) {
+                spiSub = it->second; spiHist.assign(16, {}); spiCif = 0;
+            }
+        }
+        if (spiSub.size <= 0 || spiSub.start + spiSub.size > kCifCu) return;
+        int n, br, info, sz, lv;
+        if (spiSub.eep ? !eepGeometry(spiSub.size, spiSub.option, spiSub.level, n, br, info) : !uepGeometry(spiSub.uepIndex, sz, br, lv, info)) return;
+        const int bits = spiSub.size * kCuBits;
+        std::vector<int8_t> mother((size_t)(4 * (info + 6))), one((size_t)bits);
+        std::vector<uint8_t> dec((size_t)info), bytes((size_t)info / 8);
+        static const int kMap[16] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
+        for (int c = 0; c < kCifPerFrame; c++) {
+            const int8_t* src = &mscSoft[(size_t)c * kCifBits + (size_t)spiSub.start * kCuBits];
+            spiHist[spiCif % 16].assign(src, src + bits);
+            spiCif++;
+            if (spiCif < 16) continue;
+            for (int i = 0; i < bits; i++) {
+                const uint64_t t = spiCif - 1 - (uint64_t)(15 - kMap[i & 15]);
+                one[(size_t)i] = spiHist[t % 16][(size_t)i];
+            }
+            if (spiSub.eep ? !eepDepuncture(one.data(), spiSub.size, spiSub.option, spiSub.level, mother.data()) : !uepDepuncture(one.data(), spiSub.uepIndex, mother.data())) return;
+            viterbiDecode(mother.data(), info, dec.data());
+            descramble(dec.data(), info);
+            for (int i = 0; i < info / 8; i++) { uint8_t v = 0; for (int b = 0; b < 8; b++) v = (uint8_t)((v << 1) | dec[(size_t)i * 8 + (size_t)b]); bytes[(size_t)i] = v; }
+            if (tap) tap(spiSel, bytes.data(), (int)bytes.size());
+            spiDemux.feed(bytes.data(), bytes.size(), [this](const uint8_t* g, size_t m) { spiDec.dataGroup(g, m); });
+        }
+    }
+
+    void decodeMain() {
         {
             std::lock_guard<std::mutex> lk(mu);
             applySelection();
@@ -690,6 +753,7 @@ struct DabReceiver::Impl {
         std::lock_guard<std::mutex> lk(mu);
         telSeq++;
         ens = DabEnsemble();   // services of the previous mux must not survive a retune (#179)
+        spiDec.reset(); spiDec.clearStore(); spiDirty = true; spiHist.assign(16, {}); spiCif = 0;
         tel = DabTelemetry(); tel.seq = telSeq;
         hist.assign(16, {}); cifCount = 0;
         ptyInfo.clear(); annSup.clear(); annSw.clear(); fig2Segs.clear(); fig2Done.clear();
@@ -793,6 +857,24 @@ int DabReceiver::selected() const { return p_->selReq; }
 DabAudio& DabReceiver::audio() { return p_->audio; }
 DmbDecoder& DabReceiver::dmb() { return p_->dmb; }
 JournalineDecoder& DabReceiver::journaline() { return p_->jl; }
+DabSpiDecoder& DabReceiver::spi() { return p_->spiDec; }
+void DabReceiver::selectSpi(int subId, int packetAddress) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (subId == p_->spiReq && packetAddress == p_->spiAddr) return;
+    p_->spiReq = subId;
+    p_->spiAddr = subId < 0 ? -1 : packetAddress;
+    p_->spiDirty = true;
+    p_->spiDemux.reset();
+    if (subId < 0) p_->spiSel = -1;
+}
+DabReceiver::SpiLink DabReceiver::spiLink() const {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    const DabPacketDemux& d = p_->spiDemux;
+    SpiLink l;
+    l.packets = d.packets; l.bad = d.badPackets; l.lost = d.lostPackets; l.orphan = d.orphanPackets; l.other = d.otherIdPackets; l.empty = d.emptyPackets; l.unitsOk = d.unitsOk; l.unitsDropped = d.unitsDropped;
+    return l;
+}
+int DabReceiver::spiSelected() const { return p_->spiReq; }
 void DabReceiver::selectJournaline(int subId, int packetAddress, int extHeader) {
     std::lock_guard<std::mutex> lk(p_->mu);
     p_->jl.reset();

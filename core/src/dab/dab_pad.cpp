@@ -193,6 +193,7 @@ void DabPadDecoder::motObject(const MotObject& m) {
     const std::string& name = m.name;
     const std::string& category = m.category;
     if (ctype != 2) {                                                   // not a picture: the SPI service information is XML
+        if (motSink_) motSink_(m);
         if (b.size() < 20) return;
         const std::string xml((const char*)b.data(), b.size());
         if (xml.find("<service") != std::string::npos && xml.find("multimedia") != std::string::npos) spi(xml);

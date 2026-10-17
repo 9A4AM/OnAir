@@ -82,6 +82,9 @@ struct DabFicInfo {
     std::vector<Link> links;
     struct Tx { int mainId = 0; double lat = 0, lng = 0; };   // FIG 0/22 main identifiers
     std::vector<Tx> transmitters;
+    // FIG 0/22 sub-identifiers: a transmitter of the network at an offset from its main identifier's position (the main one must have been heard)
+    struct SubTx { int mainId = 0, subId = 0, delayUs = 0; double lat = 0, lng = 0; bool placed = false; };
+    std::vector<SubTx> subTransmitters;
 };
 DabFicInfo dabFicInfo(const DabFicAnalysis& a);
 const char* dabLanguageName(int code);

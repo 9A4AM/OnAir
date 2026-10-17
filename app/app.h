@@ -371,6 +371,7 @@ struct App {
     int atvNbtv = 0;          // analog TV: 0 television, 1 NBTV / mechanical TV on AM, 2 the same on narrow FM (the audio is the picture)
     int atvNbtvLines = 32;    // NBTV / mechanical: lines (24 .. 240) and pictures a second; 32 at 12.5 is the NBTVA standard
     float atvNbtvFps = 12.5f;
+    bool identifyTool = false;   // the Identify tool (key I): a click or a drag on the spectrum identifies the signal instead of tuning (never saved)
     bool wideDecode = false;  // "Whole span": decode every carrier in the visible span, not only the tuned one (only for modes that opt in: modeSupportsWide)
     uint64_t wideFamMask = 0; // the switch per mode family (bit = family); wideDecode is the current mode's bit
     int wideSel = 0;          // the carrier the sound and the detail follow (0: the best locked one)
@@ -389,6 +390,7 @@ struct App {
     std::string mapStationId;                     // client id for /ingest, generated once
     std::string mapServer;                        // empty: https://map.on-air.dev (a local worker URL for developers)
     bool feedsOpen = false;   // View > Data feeds: the window (feeds_ui.cpp)
+    bool msgdbOpen = false;        // View > Messages: the decoded-message database (msgdb_ui.cpp)
     bool automationOpen = false;   // View > Automations: rules and scripts (automation_ui.cpp)
     dect2::FeedConfig feeds;  // the data feeds out (all off by default), saved with the preferences
     dect2::ShareConfig share; // "Share my radio": the rtl_tcp server (off by default; feeds_ui.cpp), saved with the preferences
@@ -794,6 +796,7 @@ void remoteApiSavePrefs(const App& a);
 void remoteApiTick(App& a);          // every frame: runs the commands the API queued for the main thread, publishes the telemetry
 void remoteApiSection(App& a);       // the settings panel (in the Data feeds window)
 void shareTick(App& a);             // feeds_ui.cpp: carries out the frequency / gain commands of the clients of "Share my radio" (when allowed)
+void msgdbWindow(App& a);   // msgdb_ui.cpp: the Messages window (View > Messages); also starts the database and its feed
 void automationWindow(App& a);   // automation_ui.cpp: the Automations window (View > Automations) and, every frame, the engine's actions that touch the receiver
 extern std::string gAutomationShotPath;   // automation_sink.cpp: a screenshot of the program's own window is saved here after the next frame (then cleared)
 void feedsWindow(App& a);          // feeds_ui.cpp: the "Data feeds" window (View > Data feeds)
@@ -953,6 +956,10 @@ void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, floa
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)
 void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widthHz, double rfOfCentreHz);
 void identifyAt(App& a, double clickMhz);
+void identifyRegion(App& a, double loMhz, double hiMhz);   // a dragged region (MHz)
+void identifyAll(App& a);                                  // every signal in the capture, in a table
+void identifyTuned(App& a, double freqHz, double bwHz);    // tunes the radio to a signal found by the sweep and identifies it there
+bool identifyRegionMhz(double& loMhz, double& hiMhz);      // the region of the open card, to draw it on the plots
 void identifyWindow(App& a);   // every frame: the window while it is open
 // general_ui.cpp: the general receiver's channel marker on the spectrum (plotId 0) and the waterfall (1): a click puts the channel
 // there (inside the band, without retuning the radio), its filter edges can be dragged
@@ -1058,6 +1065,11 @@ void dabTuneMhz(App& a, double mhz);   // dab_ui.cpp: tunes the running receiver
 bool dabLogoImage(App& a, const DabEnsemble& ens, uint32_t sid, float h);   // dab_ui.cpp: the station logo (SPI / slide show) of a service
 void dabSlidePanel(App& a, const DabEnsemble& ens, float maxH);   // dab_ui.cpp: the latest slide show picture with its name
 void dabAnalyzerTab(App& a);       // dab_analyzer_ui.cpp: the ensemble as a tree with details and the MSC allocation
+void dabGuideTab(App& a);          // dab_guide_ui.cpp: the programme guide (SPI, ETSI TS 102 818 / 371)
+bool dabHasSpi(const DabEnsemble& ens);
+void dabSpiTick(App& a);           // dab_guide_ui.cpp: every frame in DAB mode: starts the collection, the cache, the logos
+std::string dabSpiNowText(App& a, uint32_t sid);   // "title (until 21:00)   Next: title (21:00)" from the guide, "" when unknown
+void dabLogoSet(uint16_t eid, uint32_t sid, int w, int h, const uint32_t* rgba);   // dab_ui.cpp: gives the station logo cache a picture
 void dabJournalineTab(App& a);     // dab_ui.cpp: Journaline pages (ETSI TS 102 979)
 bool dabHasJournaline(const DabEnsemble& ens);
 void dabFicTab(App& a);            // dab_fic_ui.cpp: the FIC, FIG by FIG, as a tree

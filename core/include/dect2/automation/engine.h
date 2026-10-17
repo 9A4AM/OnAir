@@ -70,7 +70,10 @@ public:
     std::string scriptError(const std::string& id) const;
 
     // true when some enabled rule or script wants events of this family (a lock-free read for the decoders)
-    bool wants(int family) const { return family >= 0 && family < kFamilies && (mask_.load(std::memory_order_relaxed) >> family & 1); }
+    bool wants(int family) const { return family >= 0 && family < kFamilies && ((mask_.load(std::memory_order_relaxed) | tapMask_.load(std::memory_order_relaxed)) >> family & 1); }
+    // A tap sees every submitted event of the given families (bit = 1 << Family), on the decoder's thread, whether or not a rule wants it. It must not block
+    // (the message database only queues). Pass an empty function to remove it.
+    void setTap(std::function<void(const Event&)> f, uint32_t familyMask);
     void submit(Event&& ev);                             // queue; never blocks
     uint64_t dropped() const { return dropped_.load(); }
 
@@ -92,6 +95,9 @@ public:
 private:
     std::unique_ptr<Impl> p_;
     std::atomic<uint32_t> mask_{0};
+    std::atomic<uint32_t> tapMask_{0};
+    std::mutex tapMu_;
+    std::function<void(const Event&)> tap_;
     std::atomic<uint64_t> dropped_{0};
 };
 

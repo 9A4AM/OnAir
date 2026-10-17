@@ -600,10 +600,6 @@ Region %s, %s wide	Bereich %s, %s breit
 collecting samples	sammle Samples
 Working it out...	Wird ermittelt...
 Nothing to identify here.	Hier gibt es nichts zu identifizieren.
-Looks like: %s	Sieht aus wie: %s
-Looks like: %s (frame sync found %dx)	Sieht aus wie: %s (Rahmensync %dx gefunden)
-No mode fits well.	Keine Betriebsart passt gut.
-Open %s on this frequency	%s auf dieser Frequenz öffnen
 Switch to %s and tune to %s	Zu %s wechseln und auf %s abstimmen
 Candidates	Kandidaten
 (sync %dx)	(Sync %dx)
@@ -2052,6 +2048,37 @@ How to install	So installieren
 The services, signal information and data work without it.	Die Dienste, Signalinformationen und Daten funktionieren auch ohne.
 Interface and windows	Oberfläche und Fenster
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Ansicht schaltet das Layout um (Sidebar, Scope, Tiles, Faceplate, Panel), die klassische Oberfläche, Textgröße und Palette; die Touch-Oberfläche steht unter Tools. Fenster wie Frequenzen, Sweep-Scanner, Peilung und Automatisierungen öffnen sich von hier.
+# programme guide (SPI)
+Guide	Guide
+until	bis
+Genre	Genre
+Saved	Gespeichert
+Now	Jetzt
+objects	Objekte
+services	Dienste
+programmes	Sendungen
+scheduled	geplant
+objects decoded	Objekte dekodiert
+Guide data	Guide-Daten
+last update	letzte Aktualisierung
+no update yet	noch keine Aktualisierung
+not collecting	sammelt nicht
+from the cache	aus dem Cache
+cached data, expires with time	Daten aus dem Cache, laufen mit der Zeit ab
+waiting for the carousel directory...	warte auf das Verzeichnis des Karussells...
+Export XMLTV	XMLTV exportieren
+Collect the guide in the background	Guide im Hintergrund sammeln
+Could not write the file.	Die Datei konnte nicht geschrieben werden.
+Listen to this station	Diesen Sender hören
+search title or description	Titel oder Beschreibung suchen
+Nothing matches.	Nichts gefunden.
+No description in the guide.	Keine Beschreibung im Guide.
+Click a programme in the grid or the search results to see its details.	Eine Sendung im Raster oder in den Suchergebnissen anklicken, um Details zu sehen.
+Start the receiver on a DAB channel to see the guide.	Empfänger auf einem DAB-Kanal starten, um den Guide zu sehen.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Dieses Ensemble kündigt keinen Programmführer an (SPI, User Application 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Der Guide dieses Ensembles wird im PAD eines Senders ausgestrahlt: diesen Sender abspielen, um ihn zu sammeln.
+The broadcaster sends service information (names, logos) but no programme schedule.	Der Sender überträgt Dienstinformationen (Namen, Logos), aber keinen Sendeplan.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Noch kein Sendeplan empfangen. Ein Guide-Karussell kann mehrere Minuten für einen Durchlauf brauchen.
 Air-interface encryption: %s	Verschlüsselung der Luftschnittstelle: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu Signalisierungs-PDUs mit gesetztem Verschlüsselungsmodus (nicht entschlüsselt); %llu Blöcke unlesbar (CRC fehlerhaft)
 none advertised	keine angekündigt
@@ -2059,3 +2086,96 @@ class 2	Klasse 2
 class 3	Klasse 3
 available	verfügbar
 unknown	unbekannt
+Save CADU	CADU speichern
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Jeden von Reed-Solomon bestandenen Frame als 1024-Byte-CADU in <Datenordner>/goes/frames.cadu speichern (die gleiche Art Datei wie bei SatDump), um Decoder zu vergleichen
+Open CADU	CADU öffnen
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Eine .cadu-Datei (1024-Byte-Frames, von diesem Programm oder SatDump) durch Reed-Solomon, Pakete und Dateien decodieren; GOES HRIT muss laufen
+Messages	Nachrichten
+Messages...	Nachrichten...
+Every decoded message in one searchable database, with filters and export	Jede dekodierte Nachricht in einer durchsuchbaren Datenbank, mit Filtern und Export
+The message database could not be opened:	Die Nachrichtendatenbank konnte nicht geöffnet werden:
+Search text (words, prefix*)	Suchtext (Wörter, Präfix*)
+Identity	Kennung
+All modes	Alle Modi
+With position	Mit Position
+matching	Treffer
+stored	gespeichert
+Newer	Neuer
+Older	Älter
+Export CSV	CSV exportieren
+Export JSON	JSON exportieren
+Export ADIF	ADIF exportieren
+Storage	Speicher
+Record decoded messages	Dekodierte Nachrichten aufzeichnen
+Most rows (thousands, 0 = no limit)	Höchstzahl Zeilen (Tausend, 0 = unbegrenzt)
+Size cap in MB (0 = none)	Größenlimit in MB (0 = keines)
+Keep days (0 = forever)	Tage behalten (0 = für immer)
+Apply limits now	Limits jetzt anwenden
+Clear all...	Alles löschen...
+Really clear	Wirklich löschen
+The database file:	Die Datenbankdatei:
+Voice audio and encrypted traffic are never stored.	Sprachaudio und verschlüsselter Verkehr werden nie gespeichert.
+Band survey	Bandübersicht
+record every sweep into the survey	jeden Sweep in die Übersicht aufnehmen
+persistent at %.0f%%	dauerhaft ab %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Ein Signal gilt als dauerhaft, wenn es in mindestens diesem Anteil der Sweeps über der Schwelle liegt
+quiet slot %.0f kHz	ruhiger Bereich %.0f kHz
+Clear survey	Übersicht löschen
+Save survey...	Übersicht speichern...
+Load as previous survey...	Als frühere Übersicht laden...
+Export occupancy CSV...	Belegung als CSV exportieren...
+Export persistent signals CSV...	Dauerhafte Signale als CSV exportieren...
+Export picture...	Bild exportieren...
+cannot write the picture	Das Bild kann nicht geschrieben werden
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Sweep starten: jeder Sweep fügt der Übersicht eine Zeile hinzu. Mit "alle" auf einige Minuten läuft sie stundenlang im Hintergrund.
+%zu sweeps over %.1f h	%zu Sweeps über %.1f h
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	seit der früheren Übersicht: Grundrauschen %+.1f dB, Belegung %+.1f%%, %zu neu, %zu weg
+new %.4f MHz, %.0f%% of the time	neu %.4f MHz, %.0f%% der Zeit
+gone %.4f MHz, was %.0f%% of the time	weg %.4f MHz, war %.0f%% der Zeit
+Occupancy %	Belegung %
+Mean dB above floor	Mittel dB über Grundrauschen
+Peak dB above floor	Spitze dB über Grundrauschen
+Quietest slots	Ruhigste Bereiche
+From MHz	Von MHz
+Width kHz	Breite kHz
+Propagation	Ausbreitung
+open	offen
+marginal	grenzwertig
+closed	geschlossen
+Best band now	Bestes Band jetzt
+Stations	Stationen
+Best SNR	Bester SNR
+Farthest	Weitester
+Heard from	Gehört von
+Forget the history	Verlauf löschen
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Was dieser Empfänger gehört hat, nach Band: Baken (NCDXF/IARU, Long Dashes, Einzelbuchstaben, Träger) und die im HF-Digital-Bildschirm dekodierten FT8-/FT4-/FT2-/WSPR-Stationen. Ein Band gilt als offen, wenn in den letzten 30 Minuten mindestens 3 Stationen gehört wurden. Nur der eigene Empfänger: nichts wird heruntergeladen, also kein Solar-Flux und kein K-Index.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	In den letzten 30 Minuten nichts gehört: HF-Baken oder den HF-Digital-Bildschirm starten und laufen lassen.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Letzte 24 Stunden (UTC), Zellen zu 15 Minuten, dunkler: weniger Stationen
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f Baud
+, %s wide	, %s breit
+, bursts (%.0f %% on)	, Bursts (%.0f %% aktiv)
+, every %.3g ms	, alle %.3g ms
+, useful symbol %.4g us	, Nutzsymbol %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Eine Bewertung ist der Anteil der zutreffenden Hinweise; die Prozentwerte sind an OnAirs eigenen Testsignalen kalibriert, nicht an jedem echten Signal.
+Add to memory	Zu Memory hinzufügen
+Best guess	Beste Vermutung
+Copy as text	Als Text kopieren
+Could be %s (%.0f %%) or %s (%.0f %%).	Könnte %s (%.0f %%) oder %s (%.0f %%) sein.
+Could not open this mode.	Dieser Modus lässt sich nicht öffnen.
+Evidence for %s:	Belege für %s:
+I do not know what this is: nothing I know fits well enough to say.	Ich weiß nicht, was das ist: nichts, was ich kenne, passt gut genug.
+Identify all signals	Alle Signale identifizieren
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identifizieren: Signal anklicken oder darüberziehen. Esc oder I beendet das Werkzeug.
+Measured	Gemessen
+Most likely %s, %.0f %% sure.	Am ehesten %s, zu %.0f %% sicher.
+No signal stands out of the noise here.	Hier hebt sich kein Signal vom Rauschen ab.
+Open in %s	In %s öffnen
+Opened %s	%s geöffnet
+Perhaps %s (%.0f %%).	Vielleicht %s (%.0f %%).
+Signals in the view	Signale im Ausschnitt
+The frequency list has here:	Die Frequenzliste kennt hier:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Was ist das? Signal anklicken oder darüberziehen: OnAir sagt, was es ist und wie sicher es dabei ist. Taste I. Umschalt+Ziehen geht auch ohne das Werkzeug.
+Why?	Warum?
+Identify selected	Ausgewählte identifizieren
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Das Radio auf das ausgewählte Signal abstimmen und sagen, was es ist (der Empfänger muss in einem Modus laufen, dessen Abtastrate es abdeckt)

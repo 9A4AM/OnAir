@@ -600,10 +600,6 @@ Region %s, %s wide	区域 %s，宽 %s
 collecting samples	正在采集样本
 Working it out...	正在分析...
 Nothing to identify here.	这里没有可识别的信号。
-Looks like: %s	看起来像：%s
-Looks like: %s (frame sync found %dx)	看起来像：%s（找到帧同步 %dx）
-No mode fits well.	没有十分匹配的模式。
-Open %s on this frequency	在此频率打开 %s
 Switch to %s and tune to %s	切换到 %s 并调谐到 %s
 Candidates	候选
 (sync %dx)	（同步 %dx）
@@ -2052,6 +2048,37 @@ How to install	安装方法
 The services, signal information and data work without it.	没有它,服务、信号信息和数据仍可正常使用。
 Interface and windows	界面与窗口
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	“视图”菜单可切换布局（Sidebar、Scope、Tiles、Faceplate、Panel）、经典界面、文字大小和配色；触控界面位于“工具”下。频率、扫频扫描器、测向和自动化等窗口也从这里打开。
+# programme guide (SPI)
+Guide	节目指南
+until	直到
+Genre	类型
+Saved	已保存
+Now	现在
+objects	对象
+services	服务
+programmes	节目
+scheduled	已排期
+objects decoded	已解码对象
+Guide data	指南数据
+last update	上次更新
+no update yet	尚无更新
+not collecting	未在收集
+from the cache	来自缓存
+cached data, expires with time	缓存数据，随时间过期
+waiting for the carousel directory...	正在等待轮播目录...
+Export XMLTV	导出 XMLTV
+Collect the guide in the background	在后台收集指南
+Could not write the file.	无法写入文件。
+Listen to this station	收听此电台
+search title or description	按标题或描述搜索
+Nothing matches.	没有匹配项。
+No description in the guide.	指南中没有描述。
+Click a programme in the grid or the search results to see its details.	点击网格或搜索结果中的节目以查看详情。
+Start the receiver on a DAB channel to see the guide.	在 DAB 频道上启动接收机即可查看指南。
+This ensemble does not announce a programme guide (SPI, user application 0x007).	此复用未公布节目指南（SPI，用户应用 0x007）。
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	此复用的指南通过某电台的 PAD 发送：播放该电台即可收集。
+The broadcaster sends service information (names, logos) but no programme schedule.	广播商发送了服务信息（名称、台标），但没有节目表。
+No programme schedule received yet. A guide carousel can take several minutes to come round.	尚未收到节目表。指南轮播转一圈可能需要几分钟。
 Air-interface encryption: %s	空中接口加密：%s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu 个设置了加密模式的信令PDU（未解密）；%llu 个不可读块（CRC错误）
 none advertised	未公布
@@ -2059,3 +2086,96 @@ class 2	2类
 class 3	3类
 available	可用
 unknown	未知
+Save CADU	保存 CADU
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	把每个通过 Reed-Solomon 的帧按 1024 字节 CADU 写入 <数据文件夹>/goes/frames.cadu(与 SatDump 写出的文件同类),用于比较解码器
+Open CADU	打开 CADU
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	把 .cadu 文件(1024 字节帧,来自本程序或 SatDump)依次送过 Reed-Solomon、数据包和文件解码;GOES HRIT 必须在运行
+Messages	消息
+Messages...	消息...
+Every decoded message in one searchable database, with filters and export	所有解码的消息集中在一个可搜索的数据库中,支持筛选和导出
+The message database could not be opened:	无法打开消息数据库:
+Search text (words, prefix*)	搜索文本(单词,前缀*)
+Identity	标识
+All modes	所有模式
+With position	有位置
+matching	条匹配
+stored	条已存储
+Newer	较新
+Older	较旧
+Export CSV	导出 CSV
+Export JSON	导出 JSON
+Export ADIF	导出 ADIF
+Storage	存储
+Record decoded messages	记录解码的消息
+Most rows (thousands, 0 = no limit)	最大行数(千,0 = 不限)
+Size cap in MB (0 = none)	大小上限(MB,0 = 无)
+Keep days (0 = forever)	保留天数(0 = 永久)
+Apply limits now	立即应用限制
+Clear all...	全部清除...
+Really clear	确认清除
+The database file:	数据库文件:
+Voice audio and encrypted traffic are never stored.	语音音频和加密通信从不存储。
+Band survey	频段调查
+record every sweep into the survey	将每次扫描记入调查
+persistent at %.0f%%	持续 %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	信号在至少这一比例的扫描中高于阈值即视为持续信号
+quiet slot %.0f kHz	安静频段 %.0f kHz
+Clear survey	清除调查
+Save survey...	保存调查...
+Load as previous survey...	载入为上次调查...
+Export occupancy CSV...	导出占用率为 CSV...
+Export persistent signals CSV...	导出持续信号为 CSV...
+Export picture...	导出图片...
+cannot write the picture	无法写入图片
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	开始扫描：每次扫描会为调查增加一行。将“每隔”设为几分钟，可在后台运行数小时。
+%zu sweeps over %.1f h	%zu 次扫描，历时 %.1f 小时
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	自上次调查以来：底噪 %+.1f dB，占用率 %+.1f%%，新增 %zu，消失 %zu
+new %.4f MHz, %.0f%% of the time	新增 %.4f MHz，占时间 %.0f%%
+gone %.4f MHz, was %.0f%% of the time	消失 %.4f MHz，原占时间 %.0f%%
+Occupancy %	占用率 %
+Mean dB above floor	高于底噪的平均 dB
+Peak dB above floor	高于底噪的峰值 dB
+Quietest slots	最安静的频段
+From MHz	起始 MHz
+Width kHz	宽度 kHz
+Propagation	传播
+open	开放
+marginal	临界
+closed	关闭
+Best band now	当前最佳波段
+Stations	电台数
+Best SNR	最佳信噪比
+Farthest	最远
+Heard from	接收自
+Forget the history	清除历史
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	本接收机按波段听到的内容:信标(NCDXF/IARU、Long Dashes、单字母、载波)以及在 HF 数字界面解码的 FT8 / FT4 / FT2 / WSPR 电台。最近 30 分钟内至少听到 3 个电台即视为波段开放。仅使用自己的接收机:不下载任何数据,因此没有太阳通量和 K 指数。
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	最近 30 分钟没有听到任何信号:请启动 HF 信标或 HF 数字界面并保持运行。
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	最近 24 小时(UTC),每格 15 分钟,颜色越深电台越少
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f 波特
+, %s wide	, 带宽 %s
+, bursts (%.0f %% on)	, 突发 (开启 %.0f %%)
+, every %.3g ms	, 每 %.3g 毫秒
+, useful symbol %.4g us	, 有效符号 %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	得分是成立的依据所占的比例;百分比是用 OnAir 自带的测试信号校准的,并未在所有真实信号上验证。
+Add to memory	添加到 Memory
+Best guess	最佳判断
+Copy as text	复制为文本
+Could be %s (%.0f %%) or %s (%.0f %%).	可能是 %s (%.0f %%) 或 %s (%.0f %%)。
+Could not open this mode.	无法打开此模式。
+Evidence for %s:	%s 的依据:
+I do not know what this is: nothing I know fits well enough to say.	不知道这是什么:已知的类型都不够吻合。
+Identify all signals	识别所有信号
+Identify: click a signal or drag across it. Esc or I leaves the tool.	识别:点击信号或在其上拖动。按 Esc 或 I 退出此工具。
+Measured	测量值
+Most likely %s, %.0f %% sure.	很可能是 %s,把握 %.0f %%。
+No signal stands out of the noise here.	这里没有信号高出噪声。
+Open in %s	在 %s 中打开
+Opened %s	已打开 %s
+Perhaps %s (%.0f %%).	也许是 %s (%.0f %%)。
+Signals in the view	视图中的信号
+The frequency list has here:	频率列表在此处有:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	这是什么?点击信号或在其上拖动,OnAir 会告诉你它是什么以及有多大把握。快捷键 I。按住 Shift 拖动无需启用该工具。
+Why?	为什么?
+Identify selected	识别所选
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	将无线电调谐到所选信号并说明它是什么(接收器须处于采样率能覆盖该信号的模式)

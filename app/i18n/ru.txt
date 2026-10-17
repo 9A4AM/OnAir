@@ -579,10 +579,6 @@ Region %s, %s wide	Область %s, шириной %s
 collecting samples	сбор отсчётов
 Working it out...	Вычисление...
 Nothing to identify here.	Здесь нечего определять.
-Looks like: %s	Похоже на: %s
-Looks like: %s (frame sync found %dx)	Похоже на: %s (синхронизация кадров найдена %dx)
-No mode fits well.	Ни один режим не подходит.
-Open %s on this frequency	Открыть %s на этой частоте
 Switch to %s and tune to %s	Переключиться на %s и настроиться на %s
 Candidates	Кандидаты
 (sync %dx)	(синхр. %dx)
@@ -2035,6 +2031,37 @@ How to install	Как установить
 The services, signal information and data work without it.	Службы, информация о сигнале и данные работают и без него.
 Interface and windows	Интерфейс и окна
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Меню «Вид» переключает компоновку (Sidebar, Scope, Tiles, Faceplate, Panel), классический интерфейс, размер текста и палитру; сенсорный интерфейс находится в разделе «Инструменты». Окна «Частоты», «Сканер-обзор», «Пеленгатор» и «Автоматизации» открываются отсюда.
+# programme guide (SPI)
+Guide	Телегид
+until	до
+Genre	Жанр
+Saved	Сохранено
+Now	Сейчас
+objects	объекты
+services	службы
+programmes	передачи
+scheduled	в расписании
+objects decoded	декодированные объекты
+Guide data	Данные гида
+last update	последнее обновление
+no update yet	обновлений пока нет
+not collecting	не собирается
+from the cache	из кэша
+cached data, expires with time	данные из кэша, со временем устаревают
+waiting for the carousel directory...	ожидание каталога карусели...
+Export XMLTV	Экспорт XMLTV
+Collect the guide in the background	Собирать гид в фоне
+Could not write the file.	Не удалось записать файл.
+Listen to this station	Слушать эту станцию
+search title or description	поиск по названию или описанию
+Nothing matches.	Ничего не найдено.
+No description in the guide.	В гиде нет описания.
+Click a programme in the grid or the search results to see its details.	Нажмите на передачу в сетке или в результатах поиска, чтобы увидеть подробности.
+Start the receiver on a DAB channel to see the guide.	Запустите приёмник на канале DAB, чтобы увидеть гид.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Этот ансамбль не объявляет программный гид (SPI, пользовательское приложение 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Гид этого ансамбля передаётся в PAD станции: включите эту станцию, чтобы собрать его.
+The broadcaster sends service information (names, logos) but no programme schedule.	Вещатель передаёт сведения о службах (названия, логотипы), но не программу передач.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Программа передач ещё не получена. Оборот карусели гида может занять несколько минут.
 Air-interface encryption: %s	Шифрование радиоинтерфейса: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu сигнальных PDU с режимом шифрования (не расшифровано); %llu нечитаемых блоков (ошибка CRC)
 none advertised	не объявлено
@@ -2042,3 +2069,96 @@ class 2	класс 2
 class 3	класс 3
 available	доступно
 unknown	неизвестно
+Save CADU	Сохранять CADU
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Каждый кадр, прошедший Reed-Solomon, как CADU по 1024 байта в <папка данных>/goes/frames.cadu (такой же файл пишет SatDump), для сравнения декодеров
+Open CADU	Открыть CADU
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Декодирует файл .cadu (кадры по 1024 байта, из этой программы или SatDump) через Reed-Solomon, пакеты и файлы; GOES HRIT должен работать
+Messages	Сообщения
+Messages...	Сообщения...
+Every decoded message in one searchable database, with filters and export	Все декодированные сообщения в одной базе с поиском, фильтрами и экспортом
+The message database could not be opened:	Не удалось открыть базу сообщений:
+Search text (words, prefix*)	Текст для поиска (слова, префикс*)
+Identity	Идентификатор
+All modes	Все режимы
+With position	С позицией
+matching	найдено
+stored	сохранено
+Newer	Новее
+Older	Старее
+Export CSV	Экспорт CSV
+Export JSON	Экспорт JSON
+Export ADIF	Экспорт ADIF
+Storage	Хранение
+Record decoded messages	Записывать декодированные сообщения
+Most rows (thousands, 0 = no limit)	Макс. строк (тысяч, 0 = без ограничения)
+Size cap in MB (0 = none)	Предел размера в МБ (0 = нет)
+Keep days (0 = forever)	Хранить дней (0 = всегда)
+Apply limits now	Применить ограничения сейчас
+Clear all...	Очистить всё...
+Really clear	Точно очистить
+The database file:	Файл базы данных:
+Voice audio and encrypted traffic are never stored.	Голосовой звук и зашифрованный трафик никогда не сохраняются.
+Band survey	Обзор диапазона
+record every sweep into the survey	записывать каждый проход в обзор
+persistent at %.0f%%	постоянный от %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Сигнал считается постоянным, если он выше порога хотя бы в такой доле проходов
+quiet slot %.0f kHz	тихий участок %.0f кГц
+Clear survey	Очистить обзор
+Save survey...	Сохранить обзор...
+Load as previous survey...	Загрузить как прежний обзор...
+Export occupancy CSV...	Экспорт занятости в CSV...
+Export persistent signals CSV...	Экспорт постоянных сигналов в CSV...
+Export picture...	Экспорт изображения...
+cannot write the picture	не удаётся записать изображение
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Запустите проход: каждый проход добавляет строку в обзор. Если «каждые» задано в несколько минут, он может часами работать в фоне.
+%zu sweeps over %.1f h	%zu проходов за %.1f ч
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	с прежнего обзора: шумовой пол %+.1f дБ, занятость %+.1f%%, новых %zu, исчезло %zu
+new %.4f MHz, %.0f%% of the time	новый %.4f МГц, %.0f%% времени
+gone %.4f MHz, was %.0f%% of the time	исчез %.4f МГц, был %.0f%% времени
+Occupancy %	Занятость %
+Mean dB above floor	Среднее дБ над шумом
+Peak dB above floor	Пик дБ над шумом
+Quietest slots	Самые тихие участки
+From MHz	От МГц
+Width kHz	Ширина кГц
+Propagation	Прохождение
+open	открыт
+marginal	на грани
+closed	закрыт
+Best band now	Лучший диапазон сейчас
+Stations	Станции
+Best SNR	Лучший SNR
+Farthest	Самая дальняя
+Heard from	Слышно из
+Forget the history	Очистить историю
+What this receiver has heard, by band: beacons (NCDXF/IARU, Long Dashes, single letters, carriers) and the FT8 / FT4 / FT2 / WSPR stations decoded in the HF digital screen. A band is open when at least 3 stations were heard in the last 30 minutes. Own receiver only: nothing is downloaded, so no solar flux or K index.	Что этот приёмник слышал по диапазонам: маяки (NCDXF/IARU, Long Dashes, одиночные буквы, несущие) и станции FT8 / FT4 / FT2 / WSPR, декодированные на экране HF-цифры. Диапазон открыт, если за последние 30 минут услышаны не менее 3 станций. Только свой приёмник: ничего не скачивается, поэтому нет солнечного потока и K-индекса.
+Nothing heard in the last 30 minutes: start the HF beacons or the HF digital screen and leave it running.	За последние 30 минут ничего не слышно: запустите HF-маяки или экран HF-цифры и оставьте работать.
+Last 24 hours (UTC), 15 minute cells, darker: fewer stations	Последние 24 часа (UTC), ячейки по 15 минут, темнее: меньше станций
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f бод
+, %s wide	, ширина %s
+, bursts (%.0f %% on)	, пакеты (включён %.0f %%)
+, every %.3g ms	, каждые %.3g мс
+, useful symbol %.4g us	, полезный символ %.4g мкс
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Оценка — доля подтверждающихся признаков; проценты откалиброваны по собственным тестовым сигналам OnAir, а не по всем реальным сигналам.
+Add to memory	Добавить в Memory
+Best guess	Лучшая догадка
+Copy as text	Копировать как текст
+Could be %s (%.0f %%) or %s (%.0f %%).	Возможно, %s (%.0f %%) или %s (%.0f %%).
+Could not open this mode.	Не удалось открыть этот режим.
+Evidence for %s:	Признаки для %s:
+I do not know what this is: nothing I know fits well enough to say.	Не знаю, что это: ничто из известного мне не подходит достаточно хорошо.
+Identify all signals	Определить все сигналы
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Определение: щёлкните сигнал или проведите по нему мышью. Esc или I выходит из режима.
+Measured	Измерено
+Most likely %s, %.0f %% sure.	Скорее всего %s, уверенность %.0f %%.
+No signal stands out of the noise here.	Здесь ни один сигнал не выделяется из шума.
+Open in %s	Открыть в %s
+Opened %s	Открыт %s
+Perhaps %s (%.0f %%).	Возможно, %s (%.0f %%).
+Signals in the view	Сигналы в окне
+The frequency list has here:	В списке частот здесь есть:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Что это? Щёлкните сигнал или проведите по нему мышью, и OnAir скажет, что это и насколько он уверен. Клавиша I. Shift+перетаскивание работает и без режима.
+Why?	Почему?
+Identify selected	Определить выбранный
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Настроить радио на выбранный сигнал и сказать, что это (приёмник должен работать в режиме, частота дискретизации которого его покрывает)

@@ -3,6 +3,8 @@
 // core/src/sweep (docs/scanner.md); this file is the window and the worker thread.
 #include "../app.h"
 #include "dect2/sweep/sweep.h"
+#include "dect2/sweep/survey.h"
+#include "../gfx/gfx.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -33,6 +35,14 @@ struct State {
     float compareChange = 0; bool haveCompare = false; SweepDiff diff;
     int sel = -1;
     uint64_t seq = 0;
+    // band survey
+    Survey survey, prevSurvey;
+    bool recordSurvey = true, havePrev = false;
+    float minOccPct = 50.f, slotKHz = 200.f;
+    std::vector<PersistentSignal> persist;
+    std::vector<QuietSlot> quiet;
+    SurveyDiff sdiff;
+    uint64_t cacheSeq = ~0ull; float cacheThr = -1, cacheOcc = -1, cacheSlot = -1; bool cachePrev = false;
 };
 State S;
 
@@ -49,6 +59,7 @@ void worker(DeviceInfo dev, TuneSettings t, SweepConfig c, bool autoSettle) {
     runSchedule(src, c, [&](const Sweep& s) {
         std::lock_guard<std::mutex> l(S.mu);
         S.last = s; S.log.update(s); S.seq++;
+        if (S.recordSurvey) S.survey.add(s);
         std::vector<float> row(kHistCols, -150.f);
         for (size_t i = 0; i < s.bins(); i++) { float& r = row[std::min<size_t>(kHistCols - 1, i * kHistCols / s.bins())]; r = std::max(r, s.db[i]); }
         S.history.push_front(std::move(row));
@@ -86,6 +97,7 @@ void startSweep(App& a) {
     c.startHz = S.fromMHz * 1e6; c.stopHz = std::max(S.toMHz, S.fromMHz + 0.01f) * 1e6; c.binHz = S.binKHz * 1e3; c.dwellSec = S.dwellMs / 1e3;
     c.settleSec = S.settleMs / 1e3; c.floorPercentile = S.floorPct; c.thresholdDb = S.thrDb; c.minIntervalSec = S.everySec;
     S.cancel = false; S.running = true; S.msg.clear(); S.history.clear(); S.log.clear();
+    if (!S.survey.rows() || std::fabs(S.survey.startHz() - c.startHz) > 1e3) S.survey.clear();   // a new range starts a new survey; the same range goes on
     S.th = std::thread(worker, dev, t, c, S.autoSettle);
 }
 
@@ -123,6 +135,99 @@ void csvButtons(App& a) {
     if (ImGui::SmallButton(tr("Save signal log..."))) {
         const std::string p = saveFileDialog("signals.csv");
         if (!p.empty()) { std::lock_guard<std::mutex> l(S.mu); if (!writeSignalsCsv(p, S.log.records(), err)) S.msg = err; }
+    }
+}
+
+
+// The band survey: the sweeps of one range kept over time (core/src/sweep/survey.cpp)
+void surveyPanel(App& a) {
+    (void)a;
+    if (!ImGui::CollapsingHeader(tr("Band survey"))) return;
+    std::string err;
+    std::lock_guard<std::mutex> l(S.mu);
+    S.survey.setThreshold(S.thrDb);
+    ImGui::Checkbox(tr("record every sweep into the survey"), &S.recordSurvey);
+    ImGui::SameLine(); ImGui::SetNextItemWidth(130 * gUi); ImGui::SliderFloat("##socc", &S.minOccPct, 5, 100, tr("persistent at %.0f%%"));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("A signal is persistent when it is above the threshold in at least this share of the sweeps"));
+    ImGui::SameLine(); ImGui::SetNextItemWidth(130 * gUi); ImGui::SliderFloat("##sslot", &S.slotKHz, 10, 2000, tr("quiet slot %.0f kHz"), ImGuiSliderFlags_Logarithmic);
+    if (ImGui::SmallButton(tr("Clear survey"))) { S.survey.clear(); S.cacheSeq = ~0ull; }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Save survey..."))) { const std::string p = saveFileDialog("survey.oasurv"); if (!p.empty() && !S.survey.save(p, err)) S.msg = err; }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Load as previous survey..."))) {
+        const std::string p = openFileDialog();
+        if (!p.empty()) { if (S.prevSurvey.load(p, err)) { S.havePrev = true; S.cacheSeq = ~0ull; } else S.msg = err; }
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Export occupancy CSV..."))) { const std::string p = saveFileDialog("occupancy.csv"); if (!p.empty() && !S.survey.exportOccupancyCsv(p, err)) S.msg = err; }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Export persistent signals CSV..."))) { const std::string p = saveFileDialog("persistent.csv"); if (!p.empty() && !S.survey.exportSignalsCsv(p, S.minOccPct / 100.0, err)) S.msg = err; }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(tr("Export picture..."))) {
+        const std::string p = saveFileDialog("survey.png");
+        if (!p.empty()) { const int w = 1600, h = (int)std::min<size_t>(1200, std::max<size_t>(100, S.survey.rows())); const auto img = S.survey.heatmap(w, h); if (!gfx::writePng(p.c_str(), img.data(), w, h)) S.msg = tr("cannot write the picture"); }
+    }
+    if (S.survey.rows() == 0) { ImGui::TextDisabled("%s", tr("Run a sweep: every sweep adds a row to the survey. With \"every\" set to a few minutes it can run for hours in the background.")); return; }
+    if (S.cacheSeq != S.seq || S.cacheThr != S.thrDb || S.cacheOcc != S.minOccPct || S.cacheSlot != S.slotKHz || S.cachePrev != S.havePrev) {
+        S.persist = S.survey.persistent(S.minOccPct / 100.0);
+        S.quiet = S.survey.quiet(S.slotKHz * 1e3, 8);
+        if (S.havePrev) S.sdiff = compareSurveys(S.prevSurvey, S.survey, S.minOccPct / 100.0);
+        S.cacheSeq = S.seq; S.cacheThr = S.thrDb; S.cacheOcc = S.minOccPct; S.cacheSlot = S.slotKHz; S.cachePrev = S.havePrev;
+    }
+    ImGui::Text(tr("%zu sweeps over %.1f h"), S.survey.rows(), (S.survey.lastTime() - S.survey.firstTime()) / 3600.0);
+    if (S.havePrev) {
+        ImGui::TextColored(ImVec4(.6f, .9f, 1, 1), tr("since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone"), S.sdiff.floorChangeDb,
+                           S.sdiff.occupancyChange * 100.0, S.sdiff.appeared.size(), S.sdiff.vanished.size());
+        for (const auto& p : S.sdiff.appeared) ImGui::BulletText(tr("new %.4f MHz, %.0f%% of the time"), p.freqHz / 1e6, p.occupancy * 100.0);
+        for (const auto& p : S.sdiff.vanished) ImGui::BulletText(tr("gone %.4f MHz, was %.0f%% of the time"), p.freqHz / 1e6, p.occupancy * 100.0);
+    }
+    // occupancy heatmap: time down, frequency across
+    {
+        const int cols = 600, rws = (int)std::min<size_t>(150, S.survey.rows());
+        const size_t B = S.survey.bins(), R = S.survey.rows();
+        std::vector<float> g((size_t)rws * cols, 0.f);
+        for (int y = 0; y < rws; y++) {
+            const size_t r0 = (size_t)y * R / rws, r1 = std::max(r0 + 1, (size_t)(y + 1) * R / rws);
+            for (size_t r = r0; r < r1 && r < R; r++)
+                for (size_t i = 0; i < B; i++) { float& c = g[(size_t)y * cols + std::min<size_t>(cols - 1, i * cols / B)]; c = std::max(c, S.survey.level(r, i)); }
+        }
+        if (plt::BeginPlot("##surveyhm", ImVec2(-1, 200 * gUi), plt::Flags_NoLegend)) {
+            plt::SetupAxes("MHz", "");
+            const double x0 = S.survey.startHz() / 1e6, x1 = S.survey.freqOf(B - 1) / 1e6;
+            plt::SetupAxisLimits(plt::X1, x0, x1, plt::Cond_Always);
+            plt::SetupAxisLimits(plt::Y1, 0, 1, plt::Cond_Always);
+            plt::PushColormap(0);
+            plt::PlotHeatmap("occ", g.data(), rws, cols, 0.f, 35.f, nullptr, plt::Point(x0, 0), plt::Point(x1, 1));
+            plt::EndPlot();
+        }
+    }
+    if (ImGui::BeginTable("##persist", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, ImVec2(0, 130 * gUi))) {
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableSetupColumn(tr("MHz")); ImGui::TableSetupColumn(tr("Bandwidth kHz")); ImGui::TableSetupColumn(tr("Occupancy %"));
+        ImGui::TableSetupColumn(tr("Mean dB above floor")); ImGui::TableSetupColumn(tr("Peak dB above floor"));
+        ImGui::TableHeadersRow();
+        for (const auto& p : S.persist) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("%.4f", p.freqHz / 1e6);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", p.bwHz / 1e3);
+            ImGui::TableNextColumn(); ImGui::Text("%.0f", p.occupancy * 100.0);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", p.meanDb);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", p.maxDb);
+        }
+        ImGui::EndTable();
+    }
+    ImGui::Text("%s", tr("Quietest slots"));
+    if (ImGui::BeginTable("##quiet", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders)) {
+        ImGui::TableSetupColumn(tr("From MHz")); ImGui::TableSetupColumn(tr("Width kHz")); ImGui::TableSetupColumn(tr("Occupancy %")); ImGui::TableSetupColumn(tr("Peak dB above floor"));
+        ImGui::TableHeadersRow();
+        for (const auto& q : S.quiet) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn(); ImGui::Text("%.4f", q.startHz / 1e6);
+            ImGui::TableNextColumn(); ImGui::Text("%.0f", q.widthHz / 1e3);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", q.occupancy * 100.0);
+            ImGui::TableNextColumn(); ImGui::Text("%.1f", q.maxDb);
+        }
+        ImGui::EndTable();
     }
 }
 
@@ -218,6 +323,7 @@ void window(App& a) {
             plt::EndPlot();
         }
     }
+    surveyPanel(a);
     // activity log
     ImGui::Text("%s", tr("Signals found"));
     ImGui::SameLine();
@@ -233,6 +339,9 @@ void window(App& a) {
     ImGui::SameLine();
     ImGui::BeginDisabled(S.sel < 0 || S.sel >= (int)recs.size());
     if (ImGui::Button(tr("Tune to selected"))) tuneTo(a, recs[S.sel].freqHz);
+    ImGui::SameLine();
+    if (ImGui::Button(tr("Identify selected"))) { stopSweep(); identifyTuned(a, recs[S.sel].freqHz, recs[S.sel].bwHz); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)"));
     ImGui::EndDisabled();
     if (ImGui::BeginTable("##sweepsigs", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders | ImGuiTableFlags_Sortable, ImVec2(0, 0))) {
         ImGui::TableSetupScrollFreeze(0, 1);

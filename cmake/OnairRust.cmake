@@ -154,7 +154,7 @@ else()
   set(_prof_dir "release")
 endif()
 
-set(_ws_dir "${CMAKE_SOURCE_DIR}/rust")
+set(_ws_dir "${ONAIR_ROOT}/rust")
 set(_cargo_target "${CMAKE_BINARY_DIR}/rust")
 if(_out_sub)
   set(_lib "${_cargo_target}/${_out_sub}/${_prof_dir}/libonair_rs.a")
