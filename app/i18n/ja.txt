@@ -2342,6 +2342,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	残差 %.1f Hz -> %.1f Hz (使用 %d、除外 %d)、受信機オフセット %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	平均近点角 %+.3f 度、平均運動 %+.5f 回転/日、軌道傾斜角 %+.4f 度、RAAN %+.4f 度
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	予測の推定時間誤差: 前 %.1f 秒、後 %.1f 秒 (1シグマ)
+Also share GPS interference cells (counts per area, no aircraft)	GPS妨害セルも共有する（エリアごとの件数のみ、航空機情報なし）
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	ADS-B受信機の周囲の0.5度四方（約55 km）ごとに、直近1時間に受信した航空機の数と、そのうちGPS位置が不良と報告した数を送ります。送るのは各区画のこの2つの数字だけで、航空機の識別情報、航跡、あなたの位置は送りません。公開マップのGPS妨害レイヤーに使われますが、妨害の証拠ではなく目安です。選択するまでオフです。
 Calibrate...	校正...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	FM局または周波数既知のキャリアに対して、このラジオの周波数誤差を測定します
 Frequency calibration	周波数校正
@@ -2364,3 +2366,46 @@ Drift: %+.3f ppm per minute	ドリフト: 毎分 %+.3f ppm
 Translate to English	英語に翻訳
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	他の言語の音声は、原文の横にオフラインで英語にも翻訳されます。多言語モデルが必要で、プロセッサ時間が約1.5倍かかります。エンジンが追いつかない場合はスキップされます。何も送信されません。他の言語への翻訳はできません。
 The loaded model is English only: translation needs a multilingual model.	読み込まれたモデルは英語専用です。翻訳には多言語モデルが必要です。
+Schedule passes by itself	通過を自動でスケジュール
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	チェックしたグループの通過を優先度の高い順に1つずつ取り、操作なしで開始・同調・録音します。重なる通過は短縮またはスキップされ、自分で起動した受信機には手を触れません。
+Priority (higher wins)	優先度(高い方が優先)
+Keep the SDR free every day	毎日SDRを空けておく
+from %d:00	%d:00から
+to %d:00	%d:00まで
+Nothing planned.	予定なし。
+planned	予定済み
+trimmed	短縮
+skipped: SDR reserved	スキップ: SDR予約中
+skipped: too short	スキップ: 短すぎる
+skipped: higher priority	スキップ: 優先度が高い通過あり
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	放送局の反射波から航空機を検出（コヒーレントな2チャンネル）
+Baseline %.1f km, transmitter bearing %.0f degrees	基線 %.1f km、送信所の方位 %.0f 度
+Cancellation taps	キャンセレーションのタップ数
+Cannot open the recording.	録音ファイルを開けません。
+Clutter cancelled by %.0f dB, %d detections	クラッタを %.0f dB 抑圧、検出 %d 件
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	複素 float32。チャンネル0が参照、チャンネル1が監視、サンプル同期。
+Doppler Hz	ドップラー Hz
+Doppler over time	ドップラーの時間変化
+Echo level (dB)	エコーレベル (dB)
+End of the recording.	録音の終わり。
+Enter the illuminator position.	照射する送信所の位置を入力してください。
+False alarm rate 1e-x	誤警報率 1e-x
+Illuminator	照射源
+NLMS instead of ECA	ECA の代わりに NLMS
+Noise-like waveform (DVB-T)	雑音状の波形 (DVB-T)
+Passive radar	パッシブレーダー
+Processing	処理
+Range km	距離 km
+Range rate (m/s)	距離変化率 (m/s)
+Range-Doppler map	距離-ドップラーマップ
+Rate m/s	変化率 m/s
+Saved illuminators	保存済みの照射源
+Second target	2つ目の目標
+Target range (km)	目標の距離 (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	距離サンプルで見てタップ数より近い目標は、キャンセレーションにより隠れます。
+The receiver position is the one set for ADS-B.	受信機の位置は ADS-B に設定したものを使います。
+Tracks	トラック
+Two recordings (reference, surveillance)	2つの録音（参照、監視）
+Two-channel recording (cf32)	2チャンネルの録音 (cf32)
+Waiting for data.	データを待っています。

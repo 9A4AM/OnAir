@@ -60,7 +60,7 @@ public:
 private:
     void traceback(int emit, bool all);
     alignas(16) int16_t m_[64];
-    uint64_t dec_[160];
+    uint8_t dec_[160][64];   // the survivor decision (0 / 1) of each state at each step
     int n_ = 0, sinceNorm_ = 0;
     std::vector<uint8_t> out_;
 };

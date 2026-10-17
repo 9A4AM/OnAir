@@ -175,6 +175,7 @@ static void classicShell(App& a, ImVec2 disp) {
 static void floatingWindows(App& a, ImVec2 disp) {
     passesWindow(a);
     dfWindow(a);
+    passiveRadarWindow(a);
     galleryWindow(a);
     scannerWindow(a);
     sweepWindow(a);

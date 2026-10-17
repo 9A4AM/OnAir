@@ -2325,6 +2325,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	остаток %.1f Гц -> %.1f Гц (использовано %d, отброшено %d); смещение приёмника %+.0f Гц
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	средняя аномалия %+.3f град., среднее движение %+.5f об/сут, наклонение %+.4f град., RAAN %+.4f град.
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	ожидаемая ошибка времени прогноза: %.1f с до, %.1f с после (1 сигма)
+Also share GPS interference cells (counts per area, no aircraft)	Также передавать ячейки помех GPS (счётчики по областям, без самолётов)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Для каждого квадрата 0,5 градуса (около 55 км) вокруг вашего приёмника ADS-B: сколько самолётов было услышано за последний час и сколько из них сообщили о плохой позиции GPS. Для квадрата отправляются только эти два числа, никогда идентификаторы самолётов, треки или ваше местоположение. Они питают слой помех GPS публичной карты и служат признаком, а не доказательством глушения. Выключено, пока вы не включите.
 Calibrate...	Калибровка...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	Измерить ошибку частоты этого радио по FM-станции или несущей известной частоты
 Frequency calibration	Калибровка частоты
@@ -2347,3 +2349,46 @@ Drift: %+.3f ppm per minute	Дрейф: %+.3f ppm в минуту
 Translate to English	Переводить на английский
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Речь на другом языке дополнительно переводится на английский, офлайн, рядом с оригиналом. Нужна многоязычная модель; требует примерно в 1,5 раза больше времени процессора; пропускается, если движок не успевает. Ничего не отправляется. Перевода на другие языки нет.
 The loaded model is English only: translation needs a multilingual model.	Загружена модель только для английского: для перевода нужна многоязычная модель.
+Schedule passes by itself	Планировать пролёты автоматически
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Берёт пролёты отмеченных групп по одному, сначала с высшим приоритетом, и сама запускает, настраивает и записывает каждый. Пересекающиеся пролёты укорачиваются или пропускаются; приёмник, запущенный вами, не трогается.
+Priority (higher wins)	Приоритет (больший побеждает)
+Keep the SDR free every day	Освобождать SDR каждый день
+from %d:00	с %d:00
+to %d:00	до %d:00
+Nothing planned.	Ничего не запланировано.
+planned	запланирован
+trimmed	укорочен
+skipped: SDR reserved	пропущен: SDR зарезервирован
+skipped: too short	пропущен: слишком короткий
+skipped: higher priority	пропущен: приоритет выше
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Самолёты по отражённым сигналам вещательного передатчика, два когерентных канала
+Baseline %.1f km, transmitter bearing %.0f degrees	База %.1f км, азимут передатчика %.0f градусов
+Cancellation taps	Отводы подавления
+Cannot open the recording.	Не удаётся открыть запись.
+Clutter cancelled by %.0f dB, %d detections	Помехи подавлены на %.0f дБ, обнаружений: %d
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Комплексный float32, канал 0 опорный, канал 1 обзорный, синхронные по отсчётам.
+Doppler Hz	Доплер, Гц
+Doppler over time	Доплер во времени
+Echo level (dB)	Уровень эха (дБ)
+End of the recording.	Конец записи.
+Enter the illuminator position.	Введите положение передатчика-подсветки.
+False alarm rate 1e-x	Вероятность ложной тревоги 1e-x
+Illuminator	Передатчик-подсветка
+NLMS instead of ECA	NLMS вместо ECA
+Noise-like waveform (DVB-T)	Шумоподобный сигнал (DVB-T)
+Passive radar	Пассивный радар
+Processing	Обработка
+Range km	Дальность, км
+Range rate (m/s)	Скорость изменения дальности (м/с)
+Range-Doppler map	Карта дальность-Доплер
+Rate m/s	Скорость, м/с
+Saved illuminators	Сохранённые передатчики
+Second target	Вторая цель
+Target range (km)	Дальность цели (км)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Цели ближе, чем число отводов в отсчётах дальности, скрываются подавлением.
+The receiver position is the one set for ADS-B.	Положение приёмника берётся из настроек ADS-B.
+Tracks	Треки
+Two recordings (reference, surveillance)	Две записи (опорная, обзорная)
+Two-channel recording (cf32)	Двухканальная запись (cf32)
+Waiting for data.	Ожидание данных.

@@ -2342,6 +2342,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	rest %.1f Hz -> %.1f Hz (%d gebruikt, %d verworpen); ontvangeroffset %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	gemiddelde anomalie %+.3f graden, gemiddelde beweging %+.5f omw/dag, inclinatie %+.4f graden, RAAN %+.4f graden
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	geschatte tijdfout van de voorspelling: %.1f s ervoor, %.1f s erna (1 sigma)
+Also share GPS interference cells (counts per area, no aircraft)	Deel ook GPS-storingscellen (tellingen per gebied, geen vliegtuigen)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Voor elk vierkant van 0,5 graad (ongeveer 55 km) rond uw ADS-B-ontvanger: hoeveel vliegtuigen het afgelopen uur zijn gehoord en hoeveel daarvan een slechte GPS-positie meldden. Per vierkant worden alleen deze twee getallen verstuurd, nooit identiteiten van vliegtuigen, sporen of uw locatie. Het voedt de GPS-storingslaag van de openbare kaart en is een aanwijzing, geen bewijs van jamming. Uit totdat u het kiest.
 Calibrate...	Kalibreren...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	De frequentiefout van deze radio meten aan een FM-zender of een draaggolf met bekende frequentie
 Frequency calibration	Frequentiekalibratie
@@ -2364,3 +2366,46 @@ Drift: %+.3f ppm per minute	Drift: %+.3f ppm per minuut
 Translate to English	Vertalen naar Engels
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	Spraak in een andere taal wordt ook offline naar het Engels vertaald, naast het origineel. Vereist een meertalig model en kost ongeveer 1,5 keer meer processortijd; wordt overgeslagen als de engine het niet bijhoudt. Er wordt niets verzonden. Vertalen naar andere talen is niet mogelijk.
 The loaded model is English only: translation needs a multilingual model.	Het geladen model is alleen Engels: vertalen vereist een meertalig model.
+Schedule passes by itself	Overvluchten zelf plannen
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Neemt de overvluchten van de aangevinkte groepen één voor één op, hoogste prioriteit eerst, en start, stemt af en neemt elk op zonder jouw tussenkomst. Overlappende overvluchten worden ingekort of overgeslagen; een ontvanger die je zelf startte blijft ongemoeid.
+Priority (higher wins)	Prioriteit (hoger wint)
+Keep the SDR free every day	SDR elke dag vrijhouden
+from %d:00	vanaf %d:00
+to %d:00	tot %d:00
+Nothing planned.	Niets gepland.
+planned	gepland
+trimmed	ingekort
+skipped: SDR reserved	overgeslagen: SDR gereserveerd
+skipped: too short	overgeslagen: te kort
+skipped: higher priority	overgeslagen: hogere prioriteit
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Vliegtuigen uit de echo's van een omroepzender, met twee coherente kanalen
+Baseline %.1f km, transmitter bearing %.0f degrees	Basislijn %.1f km, richting van de zender %.0f graden
+Cancellation taps	Onderdrukkingstaps
+Cannot open the recording.	De opname kan niet worden geopend.
+Clutter cancelled by %.0f dB, %d detections	Clutter %.0f dB onderdrukt, %d detecties
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Complex float32, kanaal 0 referentie en kanaal 1 bewaking, samplesynchroon.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler in de tijd
+Echo level (dB)	Echoniveau (dB)
+End of the recording.	Einde van de opname.
+Enter the illuminator position.	Voer de positie van de illuminator in.
+False alarm rate 1e-x	Valse-alarmkans 1e-x
+Illuminator	Illuminator
+NLMS instead of ECA	NLMS in plaats van ECA
+Noise-like waveform (DVB-T)	Ruisachtige golfvorm (DVB-T)
+Passive radar	Passieve radar
+Processing	Verwerking
+Range km	Afstand km
+Range rate (m/s)	Afstandsverandering (m/s)
+Range-Doppler map	Afstand-Doppler-kaart
+Rate m/s	Snelheid m/s
+Saved illuminators	Opgeslagen illuminators
+Second target	Tweede doel
+Target range (km)	Afstand van het doel (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Doelen die dichterbij zijn dan het aantal taps in afstandssamples worden door de onderdrukking verborgen.
+The receiver position is the one set for ADS-B.	De positie van de ontvanger is die welke voor ADS-B is ingesteld.
+Tracks	Sporen
+Two recordings (reference, surveillance)	Twee opnames (referentie, bewaking)
+Two-channel recording (cf32)	Tweekanaalsopname (cf32)
+Waiting for data.	Wachten op gegevens.

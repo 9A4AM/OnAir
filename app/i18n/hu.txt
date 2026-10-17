@@ -2328,6 +2328,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	maradék %.1f Hz -> %.1f Hz (%d felhasználva, %d elvetve); vevőeltolás %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	közepes anomália %+.3f fok, közepes mozgás %+.5f ford./nap, inklináció %+.4f fok, RAAN %+.4f fok
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	az előrejelzés becsült időhibája: %.1f s előtte, %.1f s utána (1 szigma)
+Also share GPS interference cells (counts per area, no aircraft)	GPS-zavarási cellák megosztása is (területenkénti számok, repülők nélkül)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Az ADS-B vevője körül minden 0,5 fokos négyzetre (kb. 55 km): hány repülőgépet hallott az elmúlt órában, és közülük hány jelentett rossz GPS-pozíciót. Négyzetenként csak ez a két szám megy el, repülőgép-azonosító, nyomvonal vagy az Ön helye soha. A nyilvános térkép GPS-zavarási rétegét táplálja, és jelzés, nem bizonyíték zavarásra. Kikapcsolva, amíg be nem kapcsolja.
 Calibrate...	Kalibrálás...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	A rádió frekvenciahibájának mérése egy FM-adóhoz vagy ismert frekvenciájú vivőhöz képest
 Frequency calibration	Frekvenciakalibrálás
@@ -2350,3 +2352,46 @@ Drift: %+.3f ppm per minute	Sodródás: %+.3f ppm percenként
 Translate to English	Fordítás angolra
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	A más nyelven elhangzó beszédet a program offline angolra is lefordítja, az eredeti mellett. Többnyelvű modellt igényel, és kb. 1,5-szer több processzoridőbe kerül; kimarad, ha a motor nem bírja tartani a lépést. Semmi sem kerül elküldésre. Más nyelvekre fordítás nem érhető el.
 The loaded model is English only: translation needs a multilingual model.	A betöltött modell csak angol: a fordításhoz többnyelvű modell kell.
+Schedule passes by itself	Átvonulások automatikus ütemezése
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	A bejelölt csoportok átvonulásait egymás után veszi, a legnagyobb prioritásúval kezdve, és mindegyiket magától indítja, hangolja és rögzíti. Az átfedő átvonulásokat lerövidíti vagy kihagyja; a te indította vevőhöz nem nyúl.
+Priority (higher wins)	Prioritás (a magasabb nyer)
+Keep the SDR free every day	SDR szabadon tartása naponta
+from %d:00	%d:00-tól
+to %d:00	%d:00-ig
+Nothing planned.	Nincs betervezve semmi.
+planned	betervezve
+trimmed	lerövidítve
+skipped: SDR reserved	kihagyva: az SDR le van foglalva
+skipped: too short	kihagyva: túl rövid
+skipped: higher priority	kihagyva: magasabb prioritás
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Repülőgépek egy műsorszóró adó visszaverődéseiből, két koherens csatornával
+Baseline %.1f km, transmitter bearing %.0f degrees	Alapvonal %.1f km, az adó iránya %.0f fok
+Cancellation taps	Kioltási együtthatók
+Cannot open the recording.	A felvétel nem nyitható meg.
+Clutter cancelled by %.0f dB, %d detections	Zavar elnyomva %.0f dB-lel, %d észlelés
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Komplex float32, a 0. csatorna referencia, az 1. megfigyelő, mintaszinkron.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler az idő függvényében
+Echo level (dB)	Visszhang szintje (dB)
+End of the recording.	A felvétel vége.
+Enter the illuminator position.	Add meg a megvilágító adó helyét.
+False alarm rate 1e-x	Téves riasztás aránya 1e-x
+Illuminator	Megvilágító adó
+NLMS instead of ECA	NLMS az ECA helyett
+Noise-like waveform (DVB-T)	Zajszerű jelalak (DVB-T)
+Passive radar	Passzív radar
+Processing	Feldolgozás
+Range km	Távolság km
+Range rate (m/s)	Távolságváltozás sebessége (m/s)
+Range-Doppler map	Távolság–Doppler térkép
+Rate m/s	Sebesség m/s
+Saved illuminators	Mentett megvilágító adók
+Second target	Második cél
+Target range (km)	Cél távolsága (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Azokat a célokat, amelyek közelebb vannak, mint az együtthatók száma távolságmintákban, elrejti a kioltás.
+The receiver position is the one set for ADS-B.	A vevő helyzete az ADS-B-hez beállított.
+Tracks	Pályák
+Two recordings (reference, surveillance)	Két felvétel (referencia, megfigyelő)
+Two-channel recording (cf32)	Kétcsatornás felvétel (cf32)
+Waiting for data.	Adatra várakozás.

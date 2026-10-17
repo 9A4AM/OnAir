@@ -9,6 +9,7 @@
 #include "map/rangeplot_ui.h"
 #include "dect2/adsb/adsb_msg.h"
 #include "dect2/adsb/adsb_reg.h"
+#include "dect2/adsb/adsb_jam.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -32,6 +33,8 @@ struct State {
     adsbmap::View map;
     bool mapHome = true;                        // the map follows the antenna position until the user drags it
     dect2::adsbu::Units units;                  // display units (prefs adsbUnits, adsbSpeedUnit)
+    dect2::GpsJamGrid jam;                      // GPS interference per 0.5 degree cell, from the accuracy the aircraft report (app clock, last hour)
+    bool jamLayer = false;                      // draw it on the map (prefs adsbGpsJam)
     bool winds = false;                         // "winds aloft": wind arrows at the aircraft (from Comm-B)
     bool full = false;                          // the map or radar fills the whole window (Esc or the same button to leave)
     double ctxLat = 0, ctxLon = 0;              // where the map was right-clicked

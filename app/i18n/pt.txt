@@ -2325,6 +2325,8 @@ grey: predicted by the downloaded elements, blue: refined, green: measured, ambe
 residual %.1f Hz -> %.1f Hz (%d used, %d rejected); receiver offset %+.0f Hz	resíduo %.1f Hz -> %.1f Hz (%d usadas, %d rejeitadas); desvio do recetor %+.0f Hz
 mean anomaly %+.3f deg, mean motion %+.5f rev/day, inclination %+.4f deg, RAAN %+.4f deg	anomalia média %+.3f graus, movimento médio %+.5f rev/dia, inclinação %+.4f graus, RAAN %+.4f graus
 estimated timing error of the prediction: %.1f s before, %.1f s after (1 sigma)	erro de tempo estimado da previsão: %.1f s antes, %.1f s depois (1 sigma)
+Also share GPS interference cells (counts per area, no aircraft)	Partilhar também células de interferência GPS (contagens por zona, sem aeronaves)
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	Para cada quadrado de 0,5 graus (cerca de 55 km) à volta do seu recetor ADS-B: quantas aeronaves foram ouvidas na última hora e quantas indicaram uma má posição GPS. Só estes dois números por quadrado são enviados, nunca identidades de aeronaves, rastos nem a sua localização. Alimenta a camada de interferência GPS do mapa público e é um indício, não uma prova de interferência. Desligado até o escolher.
 Calibrate...	Calibrar...
 Measure this radio's frequency error against an FM station or a carrier of known frequency	Medir o erro de frequência deste rádio com uma estação FM ou uma portadora de frequência conhecida
 Frequency calibration	Calibração de frequência
@@ -2347,3 +2349,46 @@ Drift: %+.3f ppm per minute	Deriva: %+.3f ppm por minuto
 Translate to English	Traduzir para inglês
 Speech in another language is also translated to English, offline, next to the original. Needs a multilingual model and costs about 1.5 times more processor time; it is skipped when the engine cannot keep up. Nothing is sent anywhere. Translation into other languages is not available.	A fala noutro idioma também é traduzida para inglês, offline, junto ao original. Requer um modelo multilingue e custa cerca de 1,5 vezes mais tempo de processador; é ignorada quando o motor não acompanha. Nada é enviado. A tradução para outros idiomas não está disponível.
 The loaded model is English only: translation needs a multilingual model.	O modelo carregado é apenas inglês: a tradução requer um modelo multilingue.
+Schedule passes by itself	Agendar passagens automaticamente
+Takes the passes of the ticked groups one at a time, highest priority first, and starts, tunes and records each one without you. Overlapping passes are trimmed or skipped; a receiver you started yourself is left alone.	Pega as passagens dos grupos marcados uma de cada vez, da maior prioridade para a menor, e inicia, sintoniza e grava cada uma sem você. Passagens sobrepostas são encurtadas ou ignoradas; um receptor iniciado por você não é tocado.
+Priority (higher wins)	Prioridade (a maior vence)
+Keep the SDR free every day	Manter o SDR livre todos os dias
+from %d:00	das %d:00
+to %d:00	às %d:00
+Nothing planned.	Nada agendado.
+planned	agendada
+trimmed	encurtada
+skipped: SDR reserved	ignorada: SDR reservado
+skipped: too short	ignorada: curta demais
+skipped: higher priority	ignorada: prioridade maior
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Aviões a partir dos ecos de um emissor de radiodifusão, com dois canais coerentes
+Baseline %.1f km, transmitter bearing %.0f degrees	Linha de base %.1f km, rumo do emissor %.0f graus
+Cancellation taps	Coeficientes de cancelamento
+Cannot open the recording.	Não é possível abrir a gravação.
+Clutter cancelled by %.0f dB, %d detections	Clutter cancelado em %.0f dB, %d deteções
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Complexo float32, canal 0 referência e canal 1 vigilância, sincronizados por amostra.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler ao longo do tempo
+Echo level (dB)	Nível do eco (dB)
+End of the recording.	Fim da gravação.
+Enter the illuminator position.	Introduza a posição do iluminador.
+False alarm rate 1e-x	Taxa de falsos alarmes 1e-x
+Illuminator	Iluminador
+NLMS instead of ECA	NLMS em vez de ECA
+Noise-like waveform (DVB-T)	Forma de onda tipo ruído (DVB-T)
+Passive radar	Radar passivo
+Processing	Processamento
+Range km	Distância km
+Range rate (m/s)	Variação da distância (m/s)
+Range-Doppler map	Mapa distância-Doppler
+Rate m/s	Velocidade m/s
+Saved illuminators	Iluminadores guardados
+Second target	Segundo alvo
+Target range (km)	Distância do alvo (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Os alvos mais próximos do que o número de coeficientes, em amostras de distância, ficam ocultos pelo cancelamento.
+The receiver position is the one set for ADS-B.	A posição do receptor é a definida para o ADS-B.
+Tracks	Pistas
+Two recordings (reference, surveillance)	Duas gravações (referência, vigilância)
+Two-channel recording (cf32)	Gravação de dois canais (cf32)
+Waiting for data.	A aguardar dados.

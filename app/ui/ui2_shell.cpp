@@ -226,6 +226,7 @@ void sidebar(App& a) {
         };
         tool("Passes", a.passesOpen, "Satellite passes and automatic tuning");
         tool("Direction finder", a.dfOpen, N_("Bearing and position of a transmitter from an antenna array such as the KrakenSDR"));
+        tool("Passive radar", a.passiveRadarOpen, N_("Aircraft from the echoes of a broadcast transmitter, with two coherent channels"));
         tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
         tool("Messages...", a.msgdbOpen, N_("Every decoded message in one searchable database, with filters and export"));
@@ -385,6 +386,7 @@ static void viewMenu(App& a) {
         ImGui::Separator();
         if (ImGui::MenuItem(tr("Passes"), nullptr, &a.passesOpen)) {}
         ImGui::MenuItem(tr("Direction finder"), nullptr, &a.dfOpen);
+        ImGui::MenuItem(tr("Passive radar"), nullptr, &a.passiveRadarOpen);
         ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
         ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
         ImGui::MenuItem(tr("Messages..."), nullptr, &a.msgdbOpen);
