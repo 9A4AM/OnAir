@@ -40,6 +40,26 @@ bool live(const App& a) { return a.rx.standard == kStd; }
 const ImVec4 kGood(0.40f, 0.85f, 0.50f, 1), kWarn(0.95f, 0.60f, 0.25f, 1);
 const char* kDraNote = "DRA+ sound of the selected service";
 
+// The DRA+ decoder is an add-on the user installs (docs/CODECS.md). Amber notice with an exclamation mark and the way to the steps when it is not
+// there (or cannot be used); a green line when it is loaded.
+void draNotice(const dect2::CdrTelemetry& t, bool compact) {
+    if (t.draFound) {
+        ImGui::TextColored(kGood, "%s", tr("DRA+ decoder loaded"));
+        if (!compact) { ImGui::SameLine(); codecHelpButton(CodecHelp::Dra); }
+        return;
+    }
+    iconInline(Ic::Warning, ImGui::GetColorU32(kWarn));
+    ImGui::SameLine(0, 5 * gUi);
+    ImGui::PushTextWrapPos(0);
+    if (t.draProblem.empty())
+        ImGui::TextColored(kWarn, "%s", tr("DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:"));
+    else
+        ImGui::TextColored(kWarn, tr("The DRA+ decoder add-on cannot be used: %s. How to install:"), t.draProblem.c_str());
+    ImGui::PopTextWrapPos();
+    codecHelpButton(CodecHelp::Dra, tr("How to install"));
+    if (!compact) { ImGui::SameLine(); ImGui::TextDisabled("%s", tr("The services, signal information and data work without it.")); }
+}
+
 const char* rateText(int r) { static const char* n[] = {"1/4", "1/3", "1/2", "3/4"}; return r >= 0 && r < 4 ? n[r] : "-"; }
 const char* modName(int m) { return m >= 0 && m <= 2 ? dect2::cdr::modText(m) : "-"; }
 
@@ -147,7 +167,7 @@ void details(App& a, float w, float h) {
     if (s->audio) {
         snprintf(b, sizeof b, "%d units, %d bytes per logical frame", s->audioUnits, s->audioBytes); kvRow(a, "received", b);
         ImGui::TextDisabled("sound"); kvColumn(110 * gUi);
-        { codecHelpButton(CodecHelp::Dra); ImGui::SameLine(); ImGui::PushTextWrapPos(0); ImGui::TextColored(kWarn, "%s", kDraNote); ImGui::PopTextWrapPos(); }
+        draNotice(t, false);
         if (a.engine.cdr().savingAudioStream()) {
             if (ImGui::Button("Stop saving")) a.engine.cdr().stopSaveAudioStream();
             ImGui::SameLine(); ImGui::TextDisabled("%.1f kB written", a.engine.cdr().savedAudioBytes() / 1024.0);
@@ -156,7 +176,7 @@ void details(App& a, float w, float h) {
                 S.savedPath = streamSavePathImpl(serviceName(*s)) + ".dra";
                 if (!a.engine.cdr().saveAudioStream(s->id, S.savedPath)) { S.saveErr = "cannot write " + S.savedPath; S.savedPath.clear(); } else S.saveErr.clear();
             }
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Write the raw DRA+ sound of this service to a .dra file you can play with FFmpeg (see the README).\nOnAir itself cannot decode it.");
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Write the raw DRA+ sound of this service to a .dra file you can play with FFmpeg (see the README).\nOnAir plays it only with the DRA+ decoder add-on installed.");
         }
         if (!S.saveErr.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextColored(kWarn, "%s", S.saveErr.c_str()); ImGui::PopTextWrapPos(); }
         else if (!S.savedPath.empty()) { ImGui::PushTextWrapPos(0); ImGui::TextDisabled("%s", S.savedPath.c_str()); ImGui::PopTextWrapPos(); }
@@ -225,6 +245,7 @@ void list(App& a) {
     ImGui::PushTextWrapPos(0);
     ImGui::TextDisabled("%zu service%s. Select a service for DRA+ playback.", t.services.size(), t.services.size() == 1 ? "" : "s");
     ImGui::PopTextWrapPos();
+    { bool anyAudio = false; for (const auto& s : t.services) anyAudio |= s.audio; if (anyAudio && !t.draFound) draNotice(t, true); }
     const dect2::CdrServiceInfo* cur = picked(t);
     for (const auto& s : t.services) {
         ImGui::PushID(s.id);
@@ -385,7 +406,7 @@ void receiver(App& a) {
     }
     sectionHeader(Ic::Warning, "Not supported");
     ImGui::PushTextWrapPos(0);
-    ImGui::TextDisabled("%s.", kDraNote);
+    ImGui::TextDisabled("%s.", t.draFound ? kDraNote : "DRA+ sound needs the decoder add-on (not included, see the ! notice in the service panel)");
     ImGui::TextDisabled("The electronic service guide (service names, programme types), hierarchical modulation and unequal protection are not decoded.");
     for (const auto& n : t.notes) ImGui::TextColored(kWarn, "%s", n.c_str());
     ImGui::PopTextWrapPos();

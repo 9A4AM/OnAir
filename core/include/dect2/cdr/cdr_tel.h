@@ -71,8 +71,10 @@ struct CdrTelemetry {
     float ldpcIterations = 0;              // average of the last logical frame
     int codewords = 0;                     // per logical frame
     int capacityBytes = 0;                 // service multiplex frame size
-    // audio decoder of the listened service
-    uint64_t draUnitsIn = 0, draUnitsBad = 0;   // audio units sent to the decoder / refused by it
+    // audio decoder of the listened service (the DRA+ add-on, cdr_dra.h)
+    bool draFound = false;                 // the add-on was found and is usable
+    std::string draPath, draProblem;       // where; why a library that was found cannot be used ("" when none was found at all)
+    uint64_t draUnitsIn = 0, draUnitsBad = 0;   // audio units received / refused by the decoder (counted without the add-on too)
     uint64_t draResets = 0;                // audio decoders rebuilt because nothing came out of them
     int draRateHz = 0;                     // sample rate of the last decoded audio frame
     uint64_t draPcmFrames = 0;             // PCM frames the decoder returned (sample frames)

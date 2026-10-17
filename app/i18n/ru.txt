@@ -1967,3 +1967,9 @@ Reported by the aircraft.	Сообщено самолётом.
 Estimated by the position filter from the position reports (not broadcast by the aircraft).	Оценено фильтром положения по сообщениям о положении (самолёт это не передаёт).
 Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Вычислено по 2 положениям с интервалом %s: среднее за это время; изогнутый путь длиннее прямой, поэтому реальная скорость может быть выше. Курс — средний азимут.
 Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Вычислено по 2 положениям с интервалом %s (расстояние на эллипсоиде WGS-84, делённое на время). Самолёт не сообщил скорость.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	Декодер DRA+ загружен
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	Для звука DRA+ нужен дополнительный модуль-декодер, который не входит в комплект (патентный и лицензионный статус кодека неясен). Как установить:
+The DRA+ decoder add-on cannot be used: %s. How to install:	Модуль-декодер DRA+ нельзя использовать: %s. Как установить:
+How to install	Как установить
+The services, signal information and data work without it.	Службы, информация о сигнале и данные работают и без него.

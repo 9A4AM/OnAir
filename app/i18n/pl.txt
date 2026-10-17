@@ -1984,3 +1984,9 @@ Reported by the aircraft.	Podane przez statek powietrzny.
 Estimated by the position filter from the position reports (not broadcast by the aircraft).	Oszacowane przez filtr pozycji na podstawie raportów pozycji (statek powietrzny tego nie nadaje).
 Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Wyliczone z 2 pozycji oddalonych o %s: średnia z tego czasu; tor zakrzywiony jest dłuższy niż linia prosta, więc rzeczywista prędkość może być większa. Kurs to średni azymut.
 Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Wyliczone z 2 pozycji oddalonych o %s (odległość na elipsoidzie WGS-84 podzielona przez czas). Statek powietrzny nie podał prędkości.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	Dekoder DRA+ wczytany
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	Dźwięk DRA+ wymaga dodatku z dekoderem, który nie jest dołączony (status patentowy i licencyjny kodeka jest niejasny). Jak zainstalować:
+The DRA+ decoder add-on cannot be used: %s. How to install:	Nie można użyć dodatku z dekoderem DRA+: %s. Jak zainstalować:
+How to install	Jak zainstalować
+The services, signal information and data work without it.	Usługi, informacje o sygnale i dane działają bez niego.

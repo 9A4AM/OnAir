@@ -1984,3 +1984,9 @@ Reported by the aircraft.	由飞机报告。
 Estimated by the position filter from the position reports (not broadcast by the aircraft).	由位置滤波器根据位置报告估算 (飞机并未广播)。
 Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	由相隔 %s 的 2 个位置推算: 该时段内的平均值; 弯曲航迹比直线更长, 因此实际速度可能更高。航迹角为平均方位。
 Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	由相隔 %s 的 2 个位置推算 (WGS-84 椭球面上的距离除以时间)。飞机未报告速度。
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	已加载 DRA+ 解码器
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	DRA+ 声音需要一个未随附的解码器插件(该编解码器的专利和许可状况不明确)。安装方法:
+The DRA+ decoder add-on cannot be used: %s. How to install:	无法使用 DRA+ 解码器插件:%s。安装方法:
+How to install	安装方法
+The services, signal information and data work without it.	没有它,服务、信号信息和数据仍可正常使用。

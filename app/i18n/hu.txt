@@ -1970,3 +1970,9 @@ Reported by the aircraft.	A légijármű jelentette.
 Estimated by the position filter from the position reports (not broadcast by the aircraft).	A helyzetszűrő becsülte a pozíciójelentésekből (a légijármű nem sugározza).
 Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	2, %s különbséggel mért pozícióból származtatva: az adott idő átlaga; a görbe pálya hosszabb az egyenesnél, ezért a valódi sebesség nagyobb lehet. Az irány az átlagos irányszög.
 Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	2, %s különbséggel mért pozícióból származtatva (a WGS-84 ellipszoidon mért távolság osztva az idővel). A légijármű nem jelentett sebességet.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	DRA+ dekóder betöltve
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	A DRA+ hanghoz egy dekóder-kiegészítő kell, amely nincs mellékelve (a kodek szabadalmi és licencállapota tisztázatlan). Telepítés:
+The DRA+ decoder add-on cannot be used: %s. How to install:	A DRA+ dekóder-kiegészítő nem használható: %s. Telepítés:
+How to install	Telepítés menete
+The services, signal information and data work without it.	A szolgáltatások, a jelinformációk és az adatok enélkül is működnek.

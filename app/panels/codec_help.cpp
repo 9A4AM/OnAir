@@ -2,6 +2,7 @@
 // the codec was found and where, what it is, how to install it on this computer, where to put it, a link to the full page, and "Look again".
 #include "../app.h"
 #include "dect2/audio/ac4_dec.h"
+#include "dect2/cdr/cdr_dra.h"
 #include "dect2/hdr/hdr_hdc.h"
 #include "dect2/hfdig/hfdig_freedv.h"
 #include "dect2/dstar/dstar_ambe.h"
@@ -96,8 +97,29 @@ Text textOf(CodecHelp c) {
                 true};
     case CodecHelp::Dra:
         return {"DRA+ (CDR sound)",
-                "CDR sound uses DRA+, a patented codec without an open description. OnAir shows the services, but plays no sound.",
-                "There is no free DRA+ decoder to install at this time.", false};
+                "CDR sound is coded with DRA+. OnAir does not include a DRA+ decoder: the codec's patent and licence status is unclear, and the decoder "
+                "OnAir was tested with was written by a third party (maliwen2015, github.com/maliwen2015/ffmpeg_cavs_dra, MIT as published there), "
+                "so it is an add-on you install yourself, like the HD Radio and voice codecs. Without it the CDR services, signal information and "
+                "data still work, and the raw sound can be saved to a .dra file. With the add-on (libonair_dra) in the codecs folder OnAir plays the "
+                "service you select. Whether you may use it depends on the patent and licence rules where you live: check them first.",
+#if defined(__APPLE__)
+                "Build the add-on yourself (full steps in docs/CODECS.md; the OnAir source has tools/addons/dra):\n"
+                "  brew install cmake git python3\n  git clone https://github.com/adswill/OnAir && cd OnAir/tools/addons/dra\n"
+                "  python3 extract_dra.py\n  cmake -S . -B build -DDRA_SRC=dra_src && cmake --build build\n"
+                "Copy libonair_dra.dylib from the build folder into the codecs folder below.",
+#elif defined(_WIN32)
+                "Build the add-on yourself (full steps in docs/CODECS.md; the OnAir source has tools/addons/dra). In MSYS2 MINGW64:\n"
+                "  pacman -S --needed git python mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make\n"
+                "  git clone https://github.com/adswill/OnAir && cd OnAir/tools/addons/dra\n"
+                "  python extract_dra.py\n  cmake -S . -B build -G \"MSYS Makefiles\" -DDRA_SRC=dra_src && cmake --build build\n"
+                "Copy onair_dra.dll into the codecs folder below. Use 64-bit if OnAir is 64-bit.",
+#else
+                "Build the add-on yourself (full steps in docs/CODECS.md; the OnAir source has tools/addons/dra):\n"
+                "  sudo apt install git python3 cmake build-essential\n  git clone https://github.com/adswill/OnAir && cd OnAir/tools/addons/dra\n"
+                "  python3 extract_dra.py\n  cmake -S . -B build -DDRA_SRC=dra_src && cmake --build build\n"
+                "Copy libonair_dra.so from the build folder into the codecs folder below.",
+#endif
+                true};
     case CodecHelp::AeroAmbe:
         return {"AMBE (Inmarsat Aero voice)",
                 "Aero C channel voice uses an AMBE vocoder, which is patented. OnAir decodes the P channel data only; it does not tune voice "
@@ -207,10 +229,10 @@ const char* codecNeedMbe() {
     return t.c_str();
 }
 
-void codecHelpButton(CodecHelp c) {
+void codecHelpButton(CodecHelp c, const char* label) {
     const Text t = textOf(c);
     ImGui::PushID((int)c + 7100);
-    if (ImGui::SmallButton("?")) ImGui::OpenPopup("codechelp");
+    if (ImGui::SmallButton(label)) ImGui::OpenPopup("codechelp");
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("How to get the %s codec", t.title);
     if (ImGui::BeginPopup("codechelp")) {
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30);
@@ -249,10 +271,12 @@ void codecHelpButton(CodecHelp c) {
             ImGui::PopID();
             return;
         }
-        if (c == CodecHelp::Hdc) {   // its own layout: a patched FAAD2, neither mbelib nor codec2
+        if (c == CodecHelp::Hdc || c == CodecHelp::Dra) {   // their own layout: a library the user builds (patched FAAD2 / the DRA+ add-on)
+            const bool dra = c == CodecHelp::Dra;
             std::string path, problem;
-            if (dect2::hdr::hdcAvailable(&path, &problem)) ImGui::TextColored(pal::okGreen(), "HDC library found: %s", path.c_str());
-            else if (!problem.empty()) ImGui::TextColored(pal::warnAmber(), "HDC library found but not usable (%s): %s", path.c_str(), problem.c_str());
+            if (dra ? dect2::cdr::draAvailable(&path, &problem) : dect2::hdr::hdcAvailable(&path, &problem)) ImGui::TextColored(pal::okGreen(), dra ? "DRA+ decoder loaded: %s" : "HDC library found: %s", path.c_str());
+            else if (!problem.empty()) ImGui::TextColored(pal::warnAmber(), dra ? "DRA+ add-on found but not usable (%s): %s" : "HDC library found but not usable (%s): %s", path.c_str(), problem.c_str());
+            else if (dra) ImGui::TextColored(pal::warnAmber(), "DRA+ decoder add-on not installed: services and data are shown, without sound");
             else ImGui::TextColored(pal::warnAmber(), "HDC sound codec not installed: stations and data are shown, without sound");
             ImGui::Spacing();
             ImGui::TextUnformatted(t.what);
@@ -262,9 +286,9 @@ void codecHelpButton(CodecHelp c) {
             ImGui::Spacing();
             ImGui::TextDisabled("File names OnAir looks for");
             std::string names;
-            for (const auto& n : dect2::hdr::hdcFileNames()) names += (names.empty() ? "" : ", ") + n;
+            for (const auto& n : dra ? dect2::cdr::draFileNames() : dect2::hdr::hdcFileNames()) names += (names.empty() ? "" : ", ") + n;
             ImGui::TextUnformatted(names.c_str());
-            ImGui::TextDisabled("Folders, in this order (or set DECT2_FAAD_HDC_PATH to the file)");
+            ImGui::TextDisabled(dra ? "Folders, in this order (or set DECT2_DRA_PATH to the file)" : "Folders, in this order (or set DECT2_FAAD_HDC_PATH to the file)");
             for (const auto& d : dect2::codecSearchPlaces()) ImGui::BulletText("%s", d.c_str());
             ImGui::Spacing();
             const auto folders = dect2::codecFolderList();
@@ -277,7 +301,7 @@ void codecHelpButton(CodecHelp c) {
                 if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s\n(made if it does not exist)", folders.back().c_str());
                 ImGui::SameLine();
             }
-            if (ImGui::Button("Look again")) dect2::hdr::hdcRescan();
+            if (ImGui::Button("Look again")) { if (dra) dect2::cdr::draRescan(); else dect2::hdr::hdcRescan(); }
             ImGui::SameLine();
             if (ImGui::Button("Full instructions")) dect2::openUrl(kDocUrl);
             ImGui::PopTextWrapPos();

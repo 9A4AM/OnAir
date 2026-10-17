@@ -1984,3 +1984,9 @@ Reported by the aircraft.	Gemeld door het vliegtuig.
 Estimated by the position filter from the position reports (not broadcast by the aircraft).	Geschat door het positiefilter uit de positiemeldingen (niet uitgezonden door het vliegtuig).
 Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Afgeleid uit 2 posities met %s ertussen: een gemiddelde over die tijd; een gebogen pad is langer dan de rechte lijn, dus de werkelijke snelheid kan hoger zijn. De koers is de gemiddelde peiling.
 Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Afgeleid uit 2 posities met %s ertussen (afstand op de WGS-84-ellipsoïde gedeeld door de tijd). Het vliegtuig heeft geen snelheid gemeld.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	DRA+-decoder geladen
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	DRA+-geluid heeft een decoder-add-on nodig die niet is meegeleverd (de octrooi- en licentiestatus van de codec is onduidelijk). Zo installeer je hem:
+The DRA+ decoder add-on cannot be used: %s. How to install:	De DRA+-decoder-add-on kan niet worden gebruikt: %s. Zo installeer je hem:
+How to install	Zo installeer je het
+The services, signal information and data work without it.	De diensten, signaalinformatie en data werken ook zonder.
