@@ -299,6 +299,8 @@ struct App {
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
     bool memoryOpen = false;            // the Memory window (View > Memory, Ctrl+M; app/memory)
+    bool freqOpen = false;              // the Frequencies window (View > Frequencies, Ctrl+Shift+F; app/freqdb)
+    bool freqTab = false;               // the Frequencies panel as a tab of the main screen (saved as freqTab)
     bool memoryTab = false;             // the Memory panel as a tab of the main screen (View > Memory as a tab; saved as memTab)
     bool mapOpen = false;               // the map window (View > Map): positions and Maidenhead locators
     bool rotatorOpen = false;           // View > Antenna rotator (rotator_ui.cpp)
@@ -680,6 +682,10 @@ void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a fi
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
 void memoryWindow(App& a);                         // memory_ui.cpp: the Memory window (a.memoryOpen), the Ctrl+M key, the scan of the flagged memories, every frame
+void freqdbWindow(App& a);                          // freqdb_ui.cpp: the Frequencies window (a.freqOpen), the Ctrl+Shift+F key, every frame
+void freqdbTabItem(App& a);                         // freqdb_ui.cpp: the "Frequencies" tab when it is switched on (inside the main tab bar)
+void freqdbTabToggle(App& a);
+void freqdbKnownCombo(App& a, float width);         // freqdb_ui.cpp: the Tuner panel's "Known frequencies" drop-down for the mode on screen
 void memoryTabItem(App& a);                        // memory_ui.cpp: the "Memory" tab when View > Memory as a tab is on (inside the main tab bar)
 int memorySelfTest(App& a);                        // memory_selftest.cpp: --memory-selftest, the recall checked on a hidden run (exit code = failures)
 void memoryDev(int what);                          // memory_ui.cpp: --memdev (screenshots)

@@ -1,0 +1,233 @@
+# Broadcast: DAB blocks, TV channel plans, FM band edges (no stations)
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   @mode / @region / @category / @source set the defaults for the lines below
+@region GLOBAL
+@category broadcast
+@source ETSI EN 300 401 (DAB blocks); ITU-R BT.470 and national channel plans (DVB-T/T2, ATSC, ISDB-T, DTMB); ITU Radio Regulations broadcasting allocations
+@mode dab
+@region EU
+174.928|DAB block 5A|1536|Band III
+176.640|DAB block 5B|1536|Band III
+178.352|DAB block 5C|1536|Band III
+180.064|DAB block 5D|1536|Band III
+181.936|DAB block 6A|1536|Band III
+183.648|DAB block 6B|1536|Band III
+185.360|DAB block 6C|1536|Band III
+187.072|DAB block 6D|1536|Band III
+188.928|DAB block 7A|1536|Band III
+190.640|DAB block 7B|1536|Band III
+192.352|DAB block 7C|1536|Band III
+194.064|DAB block 7D|1536|Band III
+195.936|DAB block 8A|1536|Band III
+197.648|DAB block 8B|1536|Band III
+199.360|DAB block 8C|1536|Band III
+201.072|DAB block 8D|1536|Band III
+202.928|DAB block 9A|1536|Band III
+204.640|DAB block 9B|1536|Band III
+206.352|DAB block 9C|1536|Band III
+208.064|DAB block 9D|1536|Band III
+209.936|DAB block 10A|1536|Band III
+211.648|DAB block 10B|1536|Band III
+213.360|DAB block 10C|1536|Band III
+215.072|DAB block 10D|1536|Band III
+216.928|DAB block 11A|1536|Band III
+218.640|DAB block 11B|1536|Band III
+220.352|DAB block 11C|1536|Band III
+222.064|DAB block 11D|1536|Band III
+223.936|DAB block 12A|1536|Band III
+225.648|DAB block 12B|1536|Band III
+227.360|DAB block 12C|1536|Band III
+229.072|DAB block 12D|1536|Band III
+230.784|DAB block 13A|1536|Band III
+232.496|DAB block 13B|1536|Band III
+234.208|DAB block 13C|1536|Band III
+235.776|DAB block 13D|1536|Band III
+237.488|DAB block 13E|1536|Band III
+239.200|DAB block 13F|1536|Band III
+@mode dvb
+@region EU
+177.5|DVB-T/T2 VHF channel 5|7000|7 MHz channels, band III
+184.5|DVB-T/T2 VHF channel 6|7000|7 MHz channels, band III
+191.5|DVB-T/T2 VHF channel 7|7000|7 MHz channels, band III
+198.5|DVB-T/T2 VHF channel 8|7000|7 MHz channels, band III
+205.5|DVB-T/T2 VHF channel 9|7000|7 MHz channels, band III
+212.5|DVB-T/T2 VHF channel 10|7000|7 MHz channels, band III
+219.5|DVB-T/T2 VHF channel 11|7000|7 MHz channels, band III
+226.5|DVB-T/T2 VHF channel 12|7000|7 MHz channels, band III
+474|DVB-T/T2 UHF channel 21|8000|8 MHz channels
+482|DVB-T/T2 UHF channel 22|8000|8 MHz channels
+490|DVB-T/T2 UHF channel 23|8000|8 MHz channels
+498|DVB-T/T2 UHF channel 24|8000|8 MHz channels
+506|DVB-T/T2 UHF channel 25|8000|8 MHz channels
+514|DVB-T/T2 UHF channel 26|8000|8 MHz channels
+522|DVB-T/T2 UHF channel 27|8000|8 MHz channels
+530|DVB-T/T2 UHF channel 28|8000|8 MHz channels
+538|DVB-T/T2 UHF channel 29|8000|8 MHz channels
+546|DVB-T/T2 UHF channel 30|8000|8 MHz channels
+554|DVB-T/T2 UHF channel 31|8000|8 MHz channels
+562|DVB-T/T2 UHF channel 32|8000|8 MHz channels
+570|DVB-T/T2 UHF channel 33|8000|8 MHz channels
+578|DVB-T/T2 UHF channel 34|8000|8 MHz channels
+586|DVB-T/T2 UHF channel 35|8000|8 MHz channels
+594|DVB-T/T2 UHF channel 36|8000|8 MHz channels
+602|DVB-T/T2 UHF channel 37|8000|8 MHz channels
+610|DVB-T/T2 UHF channel 38|8000|8 MHz channels
+618|DVB-T/T2 UHF channel 39|8000|8 MHz channels
+626|DVB-T/T2 UHF channel 40|8000|8 MHz channels
+634|DVB-T/T2 UHF channel 41|8000|8 MHz channels
+642|DVB-T/T2 UHF channel 42|8000|8 MHz channels
+650|DVB-T/T2 UHF channel 43|8000|8 MHz channels
+658|DVB-T/T2 UHF channel 44|8000|8 MHz channels
+666|DVB-T/T2 UHF channel 45|8000|8 MHz channels
+674|DVB-T/T2 UHF channel 46|8000|8 MHz channels
+682|DVB-T/T2 UHF channel 47|8000|8 MHz channels
+690|DVB-T/T2 UHF channel 48|8000|8 MHz channels
+698|DVB-T/T2 UHF channel 49|8000|8 MHz channels
+706|DVB-T/T2 UHF channel 50|8000|8 MHz channels
+714|DVB-T/T2 UHF channel 51|8000|8 MHz channels
+722|DVB-T/T2 UHF channel 52|8000|8 MHz channels
+730|DVB-T/T2 UHF channel 53|8000|8 MHz channels
+738|DVB-T/T2 UHF channel 54|8000|8 MHz channels
+746|DVB-T/T2 UHF channel 55|8000|8 MHz channels
+754|DVB-T/T2 UHF channel 56|8000|8 MHz channels
+762|DVB-T/T2 UHF channel 57|8000|8 MHz channels
+770|DVB-T/T2 UHF channel 58|8000|8 MHz channels
+778|DVB-T/T2 UHF channel 59|8000|8 MHz channels
+786|DVB-T/T2 UHF channel 60|8000|8 MHz channels
+@mode dtmb
+@region CN
+474|DTMB UHF channel 21|8000|8 MHz channels
+482|DTMB UHF channel 22|8000|8 MHz channels
+490|DTMB UHF channel 23|8000|8 MHz channels
+498|DTMB UHF channel 24|8000|8 MHz channels
+506|DTMB UHF channel 25|8000|8 MHz channels
+514|DTMB UHF channel 26|8000|8 MHz channels
+522|DTMB UHF channel 27|8000|8 MHz channels
+530|DTMB UHF channel 28|8000|8 MHz channels
+538|DTMB UHF channel 29|8000|8 MHz channels
+546|DTMB UHF channel 30|8000|8 MHz channels
+554|DTMB UHF channel 31|8000|8 MHz channels
+562|DTMB UHF channel 32|8000|8 MHz channels
+570|DTMB UHF channel 33|8000|8 MHz channels
+578|DTMB UHF channel 34|8000|8 MHz channels
+586|DTMB UHF channel 35|8000|8 MHz channels
+594|DTMB UHF channel 36|8000|8 MHz channels
+602|DTMB UHF channel 37|8000|8 MHz channels
+610|DTMB UHF channel 38|8000|8 MHz channels
+618|DTMB UHF channel 39|8000|8 MHz channels
+626|DTMB UHF channel 40|8000|8 MHz channels
+634|DTMB UHF channel 41|8000|8 MHz channels
+642|DTMB UHF channel 42|8000|8 MHz channels
+650|DTMB UHF channel 43|8000|8 MHz channels
+658|DTMB UHF channel 44|8000|8 MHz channels
+666|DTMB UHF channel 45|8000|8 MHz channels
+674|DTMB UHF channel 46|8000|8 MHz channels
+682|DTMB UHF channel 47|8000|8 MHz channels
+690|DTMB UHF channel 48|8000|8 MHz channels
+698|DTMB UHF channel 49|8000|8 MHz channels
+706|DTMB UHF channel 50|8000|8 MHz channels
+714|DTMB UHF channel 51|8000|8 MHz channels
+722|DTMB UHF channel 52|8000|8 MHz channels
+730|DTMB UHF channel 53|8000|8 MHz channels
+738|DTMB UHF channel 54|8000|8 MHz channels
+746|DTMB UHF channel 55|8000|8 MHz channels
+754|DTMB UHF channel 56|8000|8 MHz channels
+762|DTMB UHF channel 57|8000|8 MHz channels
+770|DTMB UHF channel 58|8000|8 MHz channels
+778|DTMB UHF channel 59|8000|8 MHz channels
+786|DTMB UHF channel 60|8000|8 MHz channels
+794|DTMB UHF channel 61|8000|8 MHz channels
+802|DTMB UHF channel 62|8000|8 MHz channels
+810|DTMB UHF channel 63|8000|8 MHz channels
+818|DTMB UHF channel 64|8000|8 MHz channels
+826|DTMB UHF channel 65|8000|8 MHz channels
+834|DTMB UHF channel 66|8000|8 MHz channels
+842|DTMB UHF channel 67|8000|8 MHz channels
+850|DTMB UHF channel 68|8000|8 MHz channels
+@mode atsc
+@region US
+57|ATSC channel 2|6000|6 MHz channels
+63|ATSC channel 3|6000|6 MHz channels
+69|ATSC channel 4|6000|6 MHz channels
+79|ATSC channel 5|6000|6 MHz channels
+85|ATSC channel 6|6000|6 MHz channels
+177|ATSC channel 7|6000|6 MHz channels
+183|ATSC channel 8|6000|6 MHz channels
+189|ATSC channel 9|6000|6 MHz channels
+195|ATSC channel 10|6000|6 MHz channels
+201|ATSC channel 11|6000|6 MHz channels
+207|ATSC channel 12|6000|6 MHz channels
+213|ATSC channel 13|6000|6 MHz channels
+473|ATSC channel 14|6000|6 MHz channels
+479|ATSC channel 15|6000|6 MHz channels
+485|ATSC channel 16|6000|6 MHz channels
+491|ATSC channel 17|6000|6 MHz channels
+497|ATSC channel 18|6000|6 MHz channels
+503|ATSC channel 19|6000|6 MHz channels
+509|ATSC channel 20|6000|6 MHz channels
+515|ATSC channel 21|6000|6 MHz channels
+521|ATSC channel 22|6000|6 MHz channels
+527|ATSC channel 23|6000|6 MHz channels
+533|ATSC channel 24|6000|6 MHz channels
+539|ATSC channel 25|6000|6 MHz channels
+545|ATSC channel 26|6000|6 MHz channels
+551|ATSC channel 27|6000|6 MHz channels
+557|ATSC channel 28|6000|6 MHz channels
+563|ATSC channel 29|6000|6 MHz channels
+569|ATSC channel 30|6000|6 MHz channels
+575|ATSC channel 31|6000|6 MHz channels
+581|ATSC channel 32|6000|6 MHz channels
+587|ATSC channel 33|6000|6 MHz channels
+593|ATSC channel 34|6000|6 MHz channels
+599|ATSC channel 35|6000|6 MHz channels
+605|ATSC channel 36|6000|6 MHz channels
+@mode isdbt
+@region JP
+473.143|ISDB-T UHF channel 14|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+479.143|ISDB-T UHF channel 15|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+485.143|ISDB-T UHF channel 16|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+491.143|ISDB-T UHF channel 17|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+497.143|ISDB-T UHF channel 18|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+503.143|ISDB-T UHF channel 19|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+509.143|ISDB-T UHF channel 20|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+515.143|ISDB-T UHF channel 21|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+521.143|ISDB-T UHF channel 22|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+527.143|ISDB-T UHF channel 23|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+533.143|ISDB-T UHF channel 24|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+539.143|ISDB-T UHF channel 25|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+545.143|ISDB-T UHF channel 26|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+551.143|ISDB-T UHF channel 27|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+557.143|ISDB-T UHF channel 28|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+563.143|ISDB-T UHF channel 29|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+569.143|ISDB-T UHF channel 30|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+575.143|ISDB-T UHF channel 31|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+581.143|ISDB-T UHF channel 32|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+587.143|ISDB-T UHF channel 33|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+593.143|ISDB-T UHF channel 34|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+599.143|ISDB-T UHF channel 35|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+605.143|ISDB-T UHF channel 36|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+611.143|ISDB-T UHF channel 37|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+617.143|ISDB-T UHF channel 38|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+623.143|ISDB-T UHF channel 39|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+629.143|ISDB-T UHF channel 40|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+635.143|ISDB-T UHF channel 41|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+641.143|ISDB-T UHF channel 42|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+647.143|ISDB-T UHF channel 43|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+653.143|ISDB-T UHF channel 44|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+659.143|ISDB-T UHF channel 45|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+665.143|ISDB-T UHF channel 46|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+671.143|ISDB-T UHF channel 47|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+677.143|ISDB-T UHF channel 48|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+683.143|ISDB-T UHF channel 49|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+689.143|ISDB-T UHF channel 50|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+695.143|ISDB-T UHF channel 51|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+701.143|ISDB-T UHF channel 52|6000|Japan and Brazil 6 MHz UHF plan (centre carries a +1/7 MHz offset)
+@mode fm
+@category broadcast
+87.5|FM broadcast band start (international)|200|87.5-108 MHz|fm|EU|
+88.1|FM broadcast first channel (Americas)|200|88.1-107.9 MHz, 200 kHz spacing|fm|NA|
+76.0|FM broadcast band start (Japan)|200|76-95 MHz|fm|JP|
+65.8|FM OIRT band start|100|65.8-74 MHz (Eastern Europe, mostly retired)|fm|RU|
+@mode hdr
+98.5|HD Radio (app default)|400|In-band on-channel digital sideband with an FM station|hdr|US|
+@mode drm
+9.5|DRM30 shortwave (app default)|10||drm|GLOBAL|

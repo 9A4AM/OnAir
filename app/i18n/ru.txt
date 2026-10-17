@@ -1368,3 +1368,32 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: понижающий конвертер 1500 МГц примерно для 1,5-3 ГГц (2,4 ГГц, 2,3/3,4 ГГц). Включите его между антенной и радио; радио видит RF - 1500 МГц. Ниже 1500 МГц не поддерживается.
+# frequency database
+%zu built in, %zu yours	встроенных %zu, ваших %zu
+Add entry...	Добавить запись...
+Add frequency	Добавить частоту
+Add to Memory	Добавить в Memory
+Added to Memory.	Добавлено в Memory.
+Already in Memory.	Уже есть в Memory.
+An entry with this frequency and mode exists already.	Запись с такой частотой и режимом уже есть.
+Category	Категория
+Could not save 	Не удалось сохранить 
+Could not tune to this entry.	Не удалось настроиться на эту запись.
+Exports your own entries (not the built-in ones)	Экспортирует ваши собственные записи (без встроенных)
+Frequencies	Частоты
+Frequencies...	Частоты...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	Импортировано записей: %zu, пропущено: %zu (дубликаты или строки без частоты).
+Keeps this entry in the Memory panel	Сохраняет эту запись в панели Memory
+Known frequencies (%zu)	Известные частоты (%zu)
+Mine	Мои
+Nothing matches. Clear the search or the filters.	Ничего не найдено. Очистите поиск или фильтры.
+Nothing to import in this file.	В этом файле нечего импортировать.
+Only the entries you added or imported	Только записи, которые вы добавили или импортировали
+Open the Frequencies panel...	Открыть панель частот...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Читает файл CSV или JSON, записанный через Экспорт (или панелью Memory), либо простой список строк «частота,название» (МГц). Записи с уже существующими частотой и режимом пропускаются.
+Search name, notes, mode, frequency (162.4)	Поиск: название, заметки, режим, частота (162.4)
+Show Frequencies as a tab	Показывать Частоты как вкладку
+Source...	Источник...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Переключается на режим записи, применяет его настройку и настраивается на частоту. Двойной щелчок по строке делает то же самое. Работающий приёмник перезапускается при смене режима.
+Tuned: %s  %s MHz	Настроено: %s  %s МГц
+Well-known frequencies of this mode: pick one to tune to it	Известные частоты этого режима: выберите одну, чтобы настроиться

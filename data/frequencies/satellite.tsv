@@ -1,0 +1,67 @@
+# Satellite: weather satellites, GNSS, Iridium, Inmarsat, Globalstar, Orbcomm
+# freq_mhz|name|bandwidth_khz|notes[|mode|region|category]   @mode / @region / @category / @source set the defaults for the lines below
+@region GLOBAL
+@category satellite
+@source Operator interface control documents (NOAA, EUMETSAT, Roscosmos/Meteor, GPS IS-GPS-200/705, Galileo OS SIS ICD, BeiDou ICD, GLONASS ICD), ITU filings; published downlink frequencies
+@mode meteor
+@category weather
+137.100|Meteor-M LRPT|150|QPSK 72 kbit/s; frequency changes between satellites and with interference|meteor||
+137.900|Meteor-M LRPT (alternate)|150||meteor||
+@mode general
+@category weather
+137.100|NOAA 19 APT|40|137.100 MHz, analogue picture; the General receiver shows the audio|general||
+137.620|NOAA 15 APT|40||general||
+137.9125|NOAA 18 APT|40||general||
+@mode hrpt
+@category weather
+1698.000|NOAA HRPT|3000|NOAA 19 high resolution picture (also 1702.5, 1707.0 MHz)|hrpt||
+1701.300|Metop AHRPT|4500|Metop-B/C|hrpt||
+1704.500|FengYun-3 AHRPT|4500|FY-3 series (approximate; also 7.8 GHz X-band)|hrpt||
+@mode goes
+@category weather
+1694.100|GOES-R HRIT / EMWIN|1000|GOES-East/West high rate information transmission|goes||
+1692.700|GOES-R EMWIN|400||goes||
+@mode elektro
+@category weather
+1691.000|Elektro-L LRIT|1000|Roscosmos geostationary weather satellite|elektro||
+@mode gnss
+@category navigation
+1575.42|GPS L1 C/A / Galileo E1 / BeiDou B1C / QZSS L1|2||gnss||
+1227.6|GPS L2 / QZSS L2|2||gnss||
+1176.45|GPS L5 / Galileo E5a / BeiDou B2a / NavIC L5|20||gnss||
+1207.14|Galileo E5b / BeiDou B2b|20||gnss||
+1278.75|Galileo E6 / QZSS L6|40||gnss||
+1268.52|BeiDou B3I|20||gnss||
+1561.1|BeiDou B1I|4||gnss||
+1602|GLONASS L1 (FDMA centre)|8||gnss||
+1246|GLONASS L2 (FDMA centre)|8||gnss||
+2492.03|NavIC S-band|16||gnss||
+@mode iridium
+@category satellite
+1626.000|Iridium L-band downlink|450|1616-1626.5 MHz, 1 MHz wide simplex channels|iridium||
+1626.270|Iridium ring alert / paging|100|Iridium Ring Alert channel|iridium||
+1622.000|Iridium band centre (app default)|450||iridium||
+@mode globalstar
+1618.250|Globalstar uplink centre|1230|L-band uplink 1610-1626.5 MHz|globalstar||
+2491.750|Globalstar downlink centre|1230|S-band downlink 2483.5-2500 MHz|globalstar||
+@mode orbcomm
+137.200|Orbcomm downlink low|25|137-138 MHz band, 4800 baud|orbcomm||
+137.500|Orbcomm downlink|25||orbcomm||
+137.800|Orbcomm downlink high|25||orbcomm||
+137.250|Orbcomm (app default)|25||orbcomm||
+@mode inmc
+1537.100|Inmarsat-C NCS TDM (IOR)|5|STD-C TDM carrier, 1200 baud BPSK|inmc||
+1541.450|Inmarsat-C NCS TDM|5|STD-C TDM carrier; channels differ per region, check current lists|inmc||
+@mode aero
+1545.000|Inmarsat Aero P-channel|10|Classic Aero 600/1200 bit/s group|aero||
+1545.570|Inmarsat Aero (app default)|10||aero||
+@mode same
+@category weather
+@region US
+162.400|NOAA Weather Radio channel WX1|12.5|NFM with SAME / EAS tones; US and Canada|same||
+162.425|NOAA Weather Radio channel WX2|12.5|NFM with SAME / EAS tones; US and Canada|same||
+162.450|NOAA Weather Radio channel WX3|12.5|NFM with SAME / EAS tones; US and Canada|same||
+162.475|NOAA Weather Radio channel WX4|12.5|NFM with SAME / EAS tones; US and Canada|same||
+162.500|NOAA Weather Radio channel WX5|12.5|NFM with SAME / EAS tones; US and Canada|same||
+162.525|NOAA Weather Radio channel WX6|12.5|NFM with SAME / EAS tones; US and Canada|same||
+162.550|NOAA Weather Radio channel WX7|12.5|NFM with SAME / EAS tones; US and Canada|same||

@@ -1386,3 +1386,32 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz žeminantis keitiklis maždaug 1,5-3 GHz dažniams (2,4 GHz, 2,3/3,4 GHz). Junkite tarp antenos ir radijo; radijas mato RF - 1500 MHz. Žemiau 1500 MHz nepalaikoma.
+# frequency database
+%zu built in, %zu yours	%zu įmontuoti, %zu jūsų
+Add entry...	Pridėti įrašą...
+Add frequency	Pridėti dažnį
+Add to Memory	Pridėti į Memory
+Added to Memory.	Pridėta į Memory.
+Already in Memory.	Jau yra Memory.
+An entry with this frequency and mode exists already.	Įrašas su šiuo dažniu ir režimu jau yra.
+Category	Kategorija
+Could not save 	Nepavyko išsaugoti 
+Could not tune to this entry.	Nepavyko derinti šio įrašo.
+Exports your own entries (not the built-in ones)	Eksportuoja jūsų pačių įrašus (ne įmontuotus)
+Frequencies	Dažniai
+Frequencies...	Dažniai...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	Importuota įrašų: %zu, praleista: %zu (dublikatai arba eilutės be dažnio).
+Keeps this entry in the Memory panel	Išsaugo šį įrašą Memory skydelyje
+Known frequencies (%zu)	Žinomi dažniai (%zu)
+Mine	Mano
+Nothing matches. Clear the search or the filters.	Nieko nerasta. Išvalykite paiešką arba filtrus.
+Nothing to import in this file.	Šiame faile nėra ką importuoti.
+Only the entries you added or imported	Tik jūsų pridėti arba importuoti įrašai
+Open the Frequencies panel...	Atidaryti dažnių skydelį...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Nuskaito CSV arba JSON failą, parašytą Eksportu (arba Memory skydeliu), arba paprastą eilučių 'dažnis,pavadinimas' sąrašą (MHz). Įrašai su jau esančiu dažniu ir režimu praleidžiami.
+Search name, notes, mode, frequency (162.4)	Ieškoti: pavadinimas, pastabos, režimas, dažnis (162.4)
+Show Frequencies as a tab	Rodyti dažnius kaip skirtuką
+Source...	Šaltinis...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Perjungia į įrašo režimą, pritaiko jo derinimą ir suderina dažnį. Dukart spustelėjus eilutę atsitinka tas pats. Veikiantis imtuvas paleidžiamas iš naujo pasikeitus režimui.
+Tuned: %s  %s MHz	Suderinta: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Šio režimo žinomi dažniai: pasirinkite, kad suderintumėte

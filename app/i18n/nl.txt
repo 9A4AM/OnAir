@@ -1386,3 +1386,32 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz neerwaartse converter voor ongeveer 1,5 tot 3 GHz (2,4 GHz, 2,3/3,4 GHz). Sluit hem aan tussen antenne en radio; de radio ziet RF - 1500 MHz. Onder 1500 MHz wordt niet ondersteund.
+# frequency database
+%zu built in, %zu yours	%zu ingebouwd, %zu van jou
+Add entry...	Item toevoegen...
+Add frequency	Frequentie toevoegen
+Add to Memory	Toevoegen aan Memory
+Added to Memory.	Toegevoegd aan Memory.
+Already in Memory.	Staat al in Memory.
+An entry with this frequency and mode exists already.	Er is al een item met deze frequentie en modus.
+Category	Categorie
+Could not save 	Kon niet opslaan: 
+Could not tune to this entry.	Kon niet afstemmen op dit item.
+Exports your own entries (not the built-in ones)	Exporteert je eigen items (niet de ingebouwde)
+Frequencies	Frequenties
+Frequencies...	Frequenties...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu items geïmporteerd, %zu overgeslagen (dubbele of regels zonder frequentie).
+Keeps this entry in the Memory panel	Bewaart dit item in het Memory-paneel
+Known frequencies (%zu)	Bekende frequenties (%zu)
+Mine	Mijn
+Nothing matches. Clear the search or the filters.	Niets gevonden. Wis de zoekopdracht of de filters.
+Nothing to import in this file.	Er valt niets te importeren in dit bestand.
+Only the entries you added or imported	Alleen de items die je hebt toegevoegd of geïmporteerd
+Open the Frequencies panel...	Het Frequenties-paneel openen...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Leest een CSV- of JSON-bestand dat door Exporteren (of het Memory-paneel) is geschreven, of een eenvoudige lijst met regels 'frequentie,naam' (MHz). Items met een frequentie en modus die al bestaan worden overgeslagen.
+Search name, notes, mode, frequency (162.4)	Zoek naam, notities, modus, frequentie (162.4)
+Show Frequencies as a tab	Frequenties als tabblad tonen
+Source...	Bron...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Schakelt naar de modus van het item, past de afstemming toe en stemt af op de frequentie. Een dubbelklik op een regel doet hetzelfde. Een draaiende ontvanger herstart bij een andere modus.
+Tuned: %s  %s MHz	Afgestemd: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Bekende frequenties van deze modus: kies er een om erop af te stemmen

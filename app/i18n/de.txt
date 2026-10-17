@@ -1386,3 +1386,32 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500-MHz-Abwärtskonverter für etwa 1,5 bis 3 GHz (2,4 GHz, 2,3/3,4 GHz). Zwischen Antenne und Radio schalten; das Radio sieht HF - 1500 MHz. Unter 1500 MHz wird nicht unterstützt.
+# frequency database
+%zu built in, %zu yours	%zu eingebaut, %zu eigene
+Add entry...	Eintrag hinzufügen...
+Add frequency	Frequenz hinzufügen
+Add to Memory	Zu Memory hinzufügen
+Added to Memory.	Zu Memory hinzugefügt.
+Already in Memory.	Schon in Memory.
+An entry with this frequency and mode exists already.	Ein Eintrag mit dieser Frequenz und Betriebsart gibt es schon.
+Category	Kategorie
+Could not save 	Konnte nicht speichern: 
+Could not tune to this entry.	Auf diesen Eintrag lässt sich nicht abstimmen.
+Exports your own entries (not the built-in ones)	Exportiert nur Ihre eigenen Einträge (nicht die eingebauten)
+Frequencies	Frequenzen
+Frequencies...	Frequenzen...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu Einträge importiert, %zu übersprungen (Duplikate oder Zeilen ohne Frequenz).
+Keeps this entry in the Memory panel	Legt diesen Eintrag im Memory-Fenster ab
+Known frequencies (%zu)	Bekannte Frequenzen (%zu)
+Mine	Eigene
+Nothing matches. Clear the search or the filters.	Nichts passt. Suche oder Filter zurücksetzen.
+Nothing to import in this file.	In dieser Datei ist nichts zu importieren.
+Only the entries you added or imported	Nur die Einträge, die Sie hinzugefügt oder importiert haben
+Open the Frequencies panel...	Frequenzen-Fenster öffnen...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Liest eine CSV- oder JSON-Datei, die von Export (oder vom Memory-Fenster) geschrieben wurde, oder eine einfache Liste mit Zeilen 'Frequenz,Name' (MHz). Einträge mit gleicher Frequenz und Betriebsart werden übersprungen.
+Search name, notes, mode, frequency (162.4)	Suche in Name, Notizen, Betriebsart, Frequenz (162.4)
+Show Frequencies as a tab	Frequenzen als Tab anzeigen
+Source...	Quelle...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Wechselt in die Betriebsart des Eintrags, wendet deren Abstimmung an und stimmt auf die Frequenz ab. Ein Doppelklick auf eine Zeile macht dasselbe. Ein laufender Empfänger startet bei Moduswechsel neu.
+Tuned: %s  %s MHz	Abgestimmt: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Bekannte Frequenzen dieser Betriebsart: eine wählen, um darauf abzustimmen

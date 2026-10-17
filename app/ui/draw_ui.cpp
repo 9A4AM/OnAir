@@ -171,6 +171,7 @@ static void floatingWindows(App& a, ImVec2 disp) {
     galleryWindow(a);
     scannerWindow(a);
     memoryWindow(a);
+    freqdbWindow(a);
     // the "add a radio" windows: here, not with the source controls, so they open whichever layout is up and from the setup wizard too
     netRadioWindow(a);
     hamlibRigWindow(a);

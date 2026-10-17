@@ -1386,3 +1386,32 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 約1.5〜3 GHz (2.4 GHz、2.3/3.4 GHz) 用の1500 MHzダウンコンバーターです。アンテナと無線機の間に接続します。無線機には RF - 1500 MHz が見えます。1500 MHz未満は非対応です。
+# frequency database
+%zu built in, %zu yours	内蔵 %zu 件、自分の %zu 件
+Add entry...	項目を追加...
+Add frequency	周波数を追加
+Add to Memory	Memory に追加
+Added to Memory.	Memory に追加しました。
+Already in Memory.	すでに Memory にあります。
+An entry with this frequency and mode exists already.	この周波数とモードの項目はすでにあります。
+Category	カテゴリ
+Could not save 	保存できませんでした: 
+Could not tune to this entry.	この項目に同調できませんでした。
+Exports your own entries (not the built-in ones)	自分の項目をエクスポートします(内蔵のものは含みません)
+Frequencies	周波数
+Frequencies...	周波数...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	%zu 件をインポートし、%zu 件をスキップしました(重複、または周波数のない行)。
+Keeps this entry in the Memory panel	この項目を Memory パネルに保存します
+Known frequencies (%zu)	既知の周波数 (%zu)
+Mine	自分の
+Nothing matches. Clear the search or the filters.	一致するものがありません。検索またはフィルタを解除してください。
+Nothing to import in this file.	このファイルにはインポートするものがありません。
+Only the entries you added or imported	自分で追加またはインポートした項目のみ
+Open the Frequencies panel...	周波数パネルを開く...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	エクスポート(または Memory パネル)で書き出した CSV / JSON ファイル、または「周波数,名前」の行の単純なリスト(MHz)を読み込みます。周波数とモードがすでにある項目はスキップされます。
+Search name, notes, mode, frequency (162.4)	名前・メモ・モード・周波数で検索 (162.4)
+Show Frequencies as a tab	周波数をタブとして表示
+Source...	出典...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	項目のモードに切り替え、そのモードの同調設定を適用して周波数に同調します。行をダブルクリックしても同じです。動作中の受信機はモードが変わると再起動します。
+Tuned: %s  %s MHz	同調: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	このモードの既知の周波数: 選ぶと同調します

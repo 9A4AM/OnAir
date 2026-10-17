@@ -1368,3 +1368,32 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: convertitore discendente da 1500 MHz per circa 1,5-3 GHz (2,4 GHz, 2,3/3,4 GHz). Collegalo tra l'antenna e la radio; la radio vede RF - 1500 MHz. Sotto i 1500 MHz non è supportato.
+# frequency database
+%zu built in, %zu yours	%zu integrate, %zu tue
+Add entry...	Aggiungi voce...
+Add frequency	Aggiungi frequenza
+Add to Memory	Aggiungi a Memory
+Added to Memory.	Aggiunta a Memory.
+Already in Memory.	Già in Memory.
+An entry with this frequency and mode exists already.	Esiste già una voce con questa frequenza e modo.
+Category	Categoria
+Could not save 	Impossibile salvare 
+Could not tune to this entry.	Impossibile sintonizzare questa voce.
+Exports your own entries (not the built-in ones)	Esporta le tue voci (non quelle integrate)
+Frequencies	Frequenze
+Frequencies...	Frequenze...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	Importate %zu voci, %zu saltate (duplicati o righe senza frequenza).
+Keeps this entry in the Memory panel	Tiene questa voce nel pannello Memory
+Known frequencies (%zu)	Frequenze note (%zu)
+Mine	Mie
+Nothing matches. Clear the search or the filters.	Nessuna corrispondenza. Svuota la ricerca o i filtri.
+Nothing to import in this file.	Niente da importare in questo file.
+Only the entries you added or imported	Solo le voci che hai aggiunto o importato
+Open the Frequencies panel...	Apri il pannello Frequenze...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	Legge un file CSV o JSON scritto da Esporta (o dal pannello Memory), o un semplice elenco di righe 'frequenza,nome' (MHz). Le voci con frequenza e modo già presenti vengono saltate.
+Search name, notes, mode, frequency (162.4)	Cerca nome, note, modo, frequenza (162.4)
+Show Frequencies as a tab	Mostra Frequenze come scheda
+Source...	Fonte...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Passa al modo della voce, applica la sua sintonia e sintonizza la frequenza. Un doppio clic su una riga fa lo stesso. Un ricevitore attivo riparte quando cambia il modo.
+Tuned: %s  %s MHz	Sintonizzato: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	Frequenze note di questo modo: sceglierne una per sintonizzarla

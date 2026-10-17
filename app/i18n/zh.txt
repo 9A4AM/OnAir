@@ -1386,3 +1386,32 @@ Edit memory	Edit memory
 Click to make this a favourite	Click to make this a favourite
 Favourite: kept at the top. Click to remove	Favourite: kept at the top. Click to remove
 Ham It Down: 1500 MHz down-converter for about 1.5 to 3 GHz (2.4 GHz, 2.3/3.4 GHz). Connect it between the antenna and the radio; the radio sees RF - 1500 MHz. Below 1500 MHz is not supported.	Ham It Down: 1500 MHz 下变频器,适用于约 1.5 至 3 GHz (2.4 GHz、2.3/3.4 GHz)。接在天线和电台之间;电台看到的是 RF - 1500 MHz。低于 1500 MHz 不支持。
+# frequency database
+%zu built in, %zu yours	内置 %zu 条,自己的 %zu 条
+Add entry...	添加条目...
+Add frequency	添加频率
+Add to Memory	添加到 Memory
+Added to Memory.	已添加到 Memory。
+Already in Memory.	已在 Memory 中。
+An entry with this frequency and mode exists already.	已有相同频率和模式的条目。
+Category	类别
+Could not save 	无法保存 
+Could not tune to this entry.	无法调谐到此条目。
+Exports your own entries (not the built-in ones)	导出你自己的条目(不含内置条目)
+Frequencies	频率
+Frequencies...	频率...
+Imported %zu entries, %zu skipped (duplicates or lines without a frequency).	已导入 %zu 条,跳过 %zu 条(重复或没有频率的行)。
+Keeps this entry in the Memory panel	将此条目保存到 Memory 面板
+Known frequencies (%zu)	已知频率 (%zu)
+Mine	我的
+Nothing matches. Clear the search or the filters.	没有匹配项。请清除搜索或筛选。
+Nothing to import in this file.	此文件中没有可导入的内容。
+Only the entries you added or imported	仅显示你添加或导入的条目
+Open the Frequencies panel...	打开频率面板...
+Reads a CSV or JSON file written by Export (or by the Memory panel), or a plain list of 'frequency,name' lines (MHz). Entries on a frequency and mode that exist already are skipped.	读取由导出(或 Memory 面板)写出的 CSV 或 JSON 文件,或由「频率,名称」行组成的简单列表(MHz)。频率和模式已存在的条目会被跳过。
+Search name, notes, mode, frequency (162.4)	搜索名称、备注、模式、频率 (162.4)
+Show Frequencies as a tab	将频率显示为标签页
+Source...	来源...
+Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	切换到条目的模式,应用其调谐设置并调谐到该频率。双击一行效果相同。模式改变时,正在运行的接收机会重新启动。
+Tuned: %s  %s MHz	已调谐: %s  %s MHz
+Well-known frequencies of this mode: pick one to tune to it	此模式的已知频率:选择一个即可调谐
