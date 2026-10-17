@@ -128,5 +128,7 @@ void standardSwitch(App& a) {
     ImGui::SetCursorScreenPos(ImVec2(p.x + total + 14, p.y));
     ImGui::AlignTextToFramePadding();
     ImGui::TextDisabled("%s", cur->blurb);
-    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + h + ImGui::GetStyle().ItemSpacing.y));
+    // the cursor to the line below: a Dummy after the move, as a bare SetCursorScreenPos at the end of a pane does not extend it and ImGui asserts (a Debug build, #104)
+    ImGui::SetCursorScreenPos(ImVec2(p.x, p.y + h));
+    ImGui::Dummy(ImVec2(0, 0));
 }
