@@ -245,7 +245,7 @@ static void testTdt(const Buf& s) {
     withExact(s, [&](const uint8_t* p, int n) {
         A::Tdt a; R::Tdt r;
         const bool ba = A::parseTdt(p, n, a), br = R::parseTdt(p, n, r);
-        SAME(ba == br && (!ba || (a.unix == r.unix && a.text == r.text)), "tdt n=%d: '%s' vs '%s'", n, ba ? a.text.c_str() : "-", br ? r.text.c_str() : "-");
+        SAME(ba == br && (!ba || (a.unixSec == r.unixSec && a.text == r.text)), "tdt n=%d: '%s' vs '%s'", n, ba ? a.text.c_str() : "-", br ? r.text.c_str() : "-");
         if (ba && br) okCount[6]++;
     });
 }

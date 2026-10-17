@@ -255,7 +255,7 @@ bool parseTdt(const uint8_t* s, int len, Tdt& out) {
     y += k; m = m - 1 - k * 12;
     char b[40]; snprintf(b, sizeof b, "%04d-%02d-%02d %02d:%02d:%02d UTC", 1900 + y, m, d, hh, mm, ss);
     out.text = b;
-    out.unix = (int64_t)(mjd - 40587) * 86400 + hh * 3600 + mm * 60 + ss;
+    out.unixSec = (int64_t)(mjd - 40587) * 86400 + hh * 3600 + mm * 60 + ss;
     return true;
 }
 

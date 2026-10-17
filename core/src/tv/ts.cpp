@@ -252,7 +252,7 @@ void TsDemux::parseTdt(const uint8_t* s, int len) {
     tsp::Tdt d;
     if (!tsp::parseTdt(s, len, d)) return;
     utc_ = d.text;
-    tdtUnix_ = d.unix;
+    tdtUnix_ = d.unixSec;
     tdtAt_ = streamClock_;
 }
 

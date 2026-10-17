@@ -38,7 +38,7 @@ bool parseNit(const uint8_t* s, int len, Nit& out);   // false: len < 10
 struct Tvct { std::string name; int major = 0, minor = 0, prog = 0, stype = 0; };
 bool parseTvct(const uint8_t* s, int len, int& tsid, std::vector<Tvct>& out);   // false: len < 14
 
-struct Tdt { int64_t unix = 0; std::string text; };   // text: "YYYY-MM-DD hh:mm:ss UTC"
+struct Tdt { int64_t unixSec = 0; std::string text; };   // text: "YYYY-MM-DD hh:mm:ss UTC"
 bool parseTdt(const uint8_t* s, int len, Tdt& out);   // false: len < 8
 
 struct EitEvent {

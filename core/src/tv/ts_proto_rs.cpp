@@ -122,7 +122,7 @@ bool parseTvct(const uint8_t* s, int len, int& tsid, std::vector<Tvct>& out) {
 bool parseTdt(const uint8_t* s, int len, Tdt& out) {
     OnairTsTdt t;
     if (!onair_ts_parse_tdt(s, L(len), &t)) return false;
-    out.unix = t.unix_s;
+    out.unixSec = t.unix_s;
     out.text.assign((const char*)t.text, t.text_len);
     return true;
 }
