@@ -1,6 +1,5 @@
-// NXDN common air interface on top of the Rust crate rust/onair_nxdn (DECT2_RUST_NXDN): the same functions as nxdn_proto.cpp (which keeps the
-// frame sync word table). Empty when the crate is not built.
-#ifdef DECT2_RUST_NXDN
+// NXDN common air interface on top of the Rust crate rust/onair_nxdn: the functions of nxdn_proto.h
+// (nxdn_proto.cpp keeps the frame sync word table).
 #include "dect2/nxdn/nxdn_proto.h"
 #include "dect2/rs/nxdn.h"
 #include <cstdio>
@@ -72,4 +71,3 @@ void ambeFrame(const uint8_t bits[72], char fr[4][24]) { onair_nxdn_ambe_frame(b
 
 } // namespace nxdn
 } // namespace dect2
-#endif
