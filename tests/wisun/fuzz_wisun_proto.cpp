@@ -1,4 +1,4 @@
-// Seeded mutation run of the Wi-SUN frame layers (the Rust ones under DECT2_RUST_WISUN), meant for DECT2_SANITIZE=ON: parse() of any bytes, the PHY helpers, the name
+// Seeded mutation run of the Wi-SUN frame layers, meant for DECT2_SANITIZE=ON: parse() of any bytes, the PHY helpers, the name
 // functions and scheduleText must never crash or hang. Also a libFuzzer target with -DONAIR_LIBFUZZER.
 #include "dect2/wisun/wisun_proto.h"
 #include <cstdio>

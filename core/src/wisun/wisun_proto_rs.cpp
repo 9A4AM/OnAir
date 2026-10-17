@@ -1,7 +1,5 @@
-// Wi-SUN FAN / IEEE 802.15.4g frame layers on top of the Rust crate rust/onair_wisun (DECT2_RUST_WISUN): the same functions as wisun_proto.cpp, which keeps the
-// C++ under #ifndef DECT2_RUST_WISUN together with the channel plan tables, the MPDU builder and the text helpers that call the 2.4 GHz mode. Empty when the crate
-// is not built.
-#ifdef DECT2_RUST_WISUN
+// Wi-SUN FAN / IEEE 802.15.4g frame layers on top of the Rust crate rust/onair_wisun: the functions of wisun_proto.h;
+// wisun_proto.cpp keeps the channel plan tables, the MPDU builder and the text helpers that call the 2.4 GHz mode.
 #include "dect2/wisun/wisun_proto.h"
 #include <memory>
 #include "dect2/rs/wisun.h"
@@ -103,4 +101,3 @@ Frame parse(const uint8_t* mpdu, size_t n) {
 
 } // namespace wisun
 } // namespace dect2
-#endif
