@@ -142,6 +142,7 @@ static void textSizeKeys(App& app) {
 
 // the developer flags that act once the receiver runs: --autostart, --fmscan, --stress
 static void devAutomation(App& app, DevOpts& o) {
+    if (o.memSelfTest && ++o.memFrame == 3) { fflush(stdout); std::exit(memorySelfTest(app)); }   // the Memory recall check (tests/app/run_memory_recall.cmake)
     if (o.autostart) {
         o.autostart = false;
         app.devIdx = 0;

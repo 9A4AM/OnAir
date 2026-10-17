@@ -12,6 +12,7 @@ struct DevOpts {
     double shotAfter = 0;      // dev: take the --shot after this many seconds instead of after a number of frames
     bool fmScanAuto = false;   // dev: start the FM band scan as soon as the receiver runs
     int shotFrame = 0;
+    bool memSelfTest = false; int memFrame = 0;   // dev: --memory-selftest: apply memories to this receiver, check, exit
 };
 
 extern std::string gCrashNote;   // main.cpp: set when the last run crashed or the startup guard acted: shown once in a small window

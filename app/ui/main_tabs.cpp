@@ -119,6 +119,7 @@ void mainTabs(App& a) {
             if (mu->stream && tabItem(N_("Stream"), Ic::Layers)) { streamTab(a); ImGui::EndTabItem(); }
             if (mu->scan && tabItem(N_("Scan"), Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
             if (tabItem(N_("History"), Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+            memoryTabItem(a);
             secondModeTabs(a);
             ImGui::EndTabBar();
             return;
@@ -135,6 +136,7 @@ void mainTabs(App& a) {
         if (tabItem(N_("Scan"), Ic::Scan)) { scanTab(a); ImGui::EndTabItem(); }
         if (!a.fmMode && tabItem(N_("Antenna"), Ic::Compass)) { antennaTab(a); ImGui::EndTabItem(); }
         if (tabItem(N_("History"), Ic::Chart)) { historyLogTab(a); ImGui::EndTabItem(); }
+        memoryTabItem(a);
         secondModeTabs(a);
         ImGui::EndTabBar();
     }

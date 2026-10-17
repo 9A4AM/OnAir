@@ -4,6 +4,7 @@
 // covers, without retuning; outside it the radio is retuned), its filter edges can be dragged.
 #include "app.h"
 #include "gfx/plot.h"
+#include "memory/memory_options.h"
 #include "dect2/general/general_gen.h"
 #include "dect2/general/general_rx.h"
 #include "dect2/general/general_tel.h"
@@ -516,6 +517,35 @@ void synth(App& a, bool& changed) {
 }
 
 } // namespace
+
+
+// ---- the Memory panel (app/memory): the listening frequency and the options a memory keeps for this mode
+double generalListenHz(const App& a) { load(); return listenHz(a); }
+void generalRecallHz(App& a, double hz) { load(); S.chanOff = 0; a.freqMhz = hz / 1e6; S.lastDial = a.freqMhz; save(); }   // the channel back on the dial, the dial on hz
+
+namespace {
+std::string numS(double v) { char b[32]; snprintf(b, sizeof b, "%.6g", v); return b; }
+double numV(const std::string& s, double def) { char* e = nullptr; const double d = strtod(s.c_str(), &e); return e == s.c_str() ? def : d; }
+const bool gGenOptions = [] {
+    auto is = [](const App& a) { return a.family == 55; };
+    MemoryOptionReg r1({"genDemod", is, [](const App&) { load(); return std::to_string(S.demod); },
+                        [](App&, const std::string& v) { load(); S.demod = std::clamp((int)numV(v, S.demod), 0, (int)dect2::GenDemodCount - 1); save(); }});
+    MemoryOptionReg r2({"genWidthHz", is, [](const App&) { load(); return numS(S.width[S.demod]); },
+                        [](App&, const std::string& v) { load(); S.width[S.demod] = dect2::generalClampWidth(S.demod, numV(v, S.width[S.demod])); save(); }});
+    MemoryOptionReg r3({"genSquelch", is, [](const App&) { load(); return std::string(S.sqOn ? (S.sqAuto ? "auto" : "level") : "off"); },
+                        [](App&, const std::string& v) { load(); S.sqOn = v != "off"; S.sqAuto = v != "level"; save(); }});
+    MemoryOptionReg r4({"genSquelchDb", is, [](const App&) { load(); return numS(S.sqDb); },
+                        [](App&, const std::string& v) { load(); S.sqDb = (float)std::clamp(numV(v, S.sqDb), -130.0, 0.0); save(); }});
+    MemoryOptionReg r5({"genAgc", is, [](const App&) { load(); return std::string(S.agc ? "1" : "0"); }, [](App&, const std::string& v) { load(); S.agc = v == "1"; save(); }});
+    MemoryOptionReg r6({"genGainDb", is, [](const App&) { load(); return numS(S.gainDb); },
+                        [](App&, const std::string& v) { load(); S.gainDb = (float)std::clamp(numV(v, S.gainDb), -20.0, 80.0); save(); }});
+    MemoryOptionReg r7({"genPitchHz", is, [](const App&) { load(); return numS(S.pitch); },
+                        [](App&, const std::string& v) { load(); S.pitch = (float)std::clamp(numV(v, S.pitch), 200.0, 1500.0); save(); }});
+    MemoryOptionReg r8({"genDeemph", is, [](const App&) { load(); return std::to_string(S.demod == dect2::GenNfm ? S.deNfm : S.deWfm); },
+                        [](App&, const std::string& v) { load(); int& d = S.demod == dect2::GenNfm ? S.deNfm : S.deWfm; d = std::clamp((int)numV(v, d), 0, 3); save(); }});
+    return true;
+}();
+}  // namespace
 
 // ---- the channel marker on the spectrum and the waterfall (plots.cpp)
 
