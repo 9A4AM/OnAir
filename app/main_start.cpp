@@ -7,6 +7,7 @@
 #include "app.h"
 #include "ui/contrast.h"
 #include "ui/touch.h"
+#include "ui/tour_logic.h"
 #include "dect2/source/iq_file.h"
 #include "panels/gallery.h"
 #include "dect2/engine/crash_report.h"
@@ -42,9 +43,10 @@ void startApp(App& app, int argc) {
         fprintf(stderr, "%s\n", guardNote.c_str());
         gCrashNote = gCrashNote.empty() ? guardNote : gCrashNote + "\n\n" + guardNote;
     }
-    app.wizOpen = argc == 1 && !plat::prefs().getB("wizardDone", false);   // the tour runs on the very first start only
-    if (argc == 1 && !plat::prefs().getB("setupDone", false)) { app.wizOpen = false; setupWizardOpen(app); }   // the setup comes first; the tour follows it
-    if (getenv("DECT2_WIZARD")) app.wizOpen = true;
+    const bool setupPending = argc == 1 && !plat::prefs().getB("setupDone", false);
+    app.wizOpen = tour::autoStart(argc == 1, plat::prefs().getB(tour::prefKey(), false), setupPending);   // the tour runs on the very first start only
+    if (setupPending) { app.wizOpen = false; setupWizardOpen(app); }   // the setup comes first; the tour follows it
+    if (getenv("DECT2_WIZARD")) app.wizOpen = true;   // test hook: open the tour at start-up (DECT2_WIZSTEP picks the step)
     if (getenv("DECT2_SETUP")) { app.wizOpen = false; setupWizardOpen(app); if (const char* ss = getenv("DECT2_SETUPSTEP")) app.setupStep = atoi(ss); }
     app.wizStepT = ImGui::GetTime();
     app.engine.player().setHardwareDecode(plat::prefs().getB("hwVideo", true));
@@ -80,6 +82,7 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--shotdelay" && i + 1 < argc) o.shotAfter = atof(argv[++i]);
         if (std::string(argv[i]) == "--fmscan") o.fmScanAuto = true;
         if (std::string(argv[i]) == "--passes") app.passesOpen = true;
+        if (std::string(argv[i]) == "--df") app.dfOpen = true;
         if (std::string(argv[i]) == "--images") app.galleryOpen = true;   // dev: open View > Images
         if (std::string(argv[i]) == "--hamlib") app.hamlibAddOpen = true;   // dev: open the Add Hamlib rig window
         if (std::string(argv[i]) == "--map") app.mapOpen = true;   // dev: open View > Map
@@ -90,6 +93,7 @@ void parseDevFlags(App& app, int argc, char** argv, DevOpts& o) {
         if (std::string(argv[i]) == "--scanner") app.scannerOpen = true;   // dev: open View > Scanner   // dev: open View > Passes
         if (std::string(argv[i]) == "--tle" && i + 1 < argc) passesDevTle(argv[++i]);   // dev: TLEs from a file for the pass planner (no download)
         if (std::string(argv[i]) == "--rx2") addReceiver();   // dev: a second receiver at once (no warning dialog)
+        if (std::string(argv[i]) == "--tour") { app.wizOpen = true; app.wizStep = i + 1 < argc && argv[i + 1][0] != '-' ? atoi(argv[++i]) : -1; }   // dev: open the tour (at this step)
         if (std::string(argv[i]) == "--mute") { app.muted = true; app.volume = 0; }
         if (std::string(argv[i]) == "--wbfile" && i + 1 < argc) {   // dev: the Signal workbench opens this recording (--wbrate for a raw file, --wbtab, --wbsel, --wbkind, --wbbaud, --wbrun)
             double rate = 0; int tab = 0;

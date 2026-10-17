@@ -41,6 +41,7 @@ struct AcarsTrackPoint {
     double lat = 0, lon = 0;
     int altFt = 0;
     double time = 0;             // signal seconds
+    int repSecOfDay = -1;        // the time inside the report as seconds of the UTC day (text report time, or ADS-C seconds past the hour placed on the wall clock hour); -1 none
 };
 
 struct AcarsAircraft {

@@ -1,5 +1,6 @@
 // HFDL receiver (hfdl_rx.h)
 #include "dect2/hfdl/hfdl_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/common/threadpool.h"
 #include "dect2/results/results_io.h"
 #include "dect2/hfdl/hfdl_proto.h"
@@ -429,6 +430,14 @@ struct HfdlReceiver::Impl {
                 m.bps = R.bps; m.slots = R.twoSlots ? 2 : 1;
                 note(dial, m);
                 tel.messages.insert(tel.messages.begin(), m);
+                if (automation::wants(automation::FHfdl)) {   // the automations (automation/engine.h)
+                    automation::Event ev("hfdl.message");
+                    char hx[8];
+                    snprintf(hx, sizeof hx, "%06X", m.icao & 0xFFFFFF);
+                    ev.at(automation::wallNow(), "HFDL", m.freqHz);
+                    ev.str("kind", m.kind).str("summary", m.summary).str("icao", m.icao ? hx : "").flag("uplink", m.uplink).num("snr_db", m.snrDb);
+                    automation::emit(std::move(ev));
+                }
             }
             if (tel.messages.size() > kHfdlMsgMax) tel.messages.resize(kHfdlMsgMax);
         });

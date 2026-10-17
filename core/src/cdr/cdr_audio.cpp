@@ -1,5 +1,5 @@
 #include "cdr_audio.h"
-#include "dradec.h"
+#include "dect2/cdr/cdr_dra.h"
 #include <algorithm>
 
 namespace dect2 {
@@ -19,10 +19,11 @@ size_t draFrameBytes(const uint8_t* p, size_t n) {
 }
 
 CdrAudio::CdrAudio(bool headless) : headless_(headless) {}
-CdrAudio::~CdrAudio() { if (dra_) DRADecDestroy(dra_); }
+CdrAudio::~CdrAudio() { if (dra_ && api_) api_->destroy(dra_); }
 
 void CdrAudio::resetDecoder() {
-    if (dra_) { DRADecDestroy(dra_); dra_ = nullptr; }
+    if (dra_ && api_) api_->destroy(dra_);
+    dra_ = nullptr;
     playingId_ = -1;
     unitsSincePcm_ = 0;
 }
@@ -37,7 +38,14 @@ void CdrAudio::play(int want, uint16_t id, const std::vector<cdr::AudioUnit>& un
         lastListen_ = want;
         flush();
     }
-    if (!dra_) dra_ = DRADecCreate();
+    if (!dra_) {
+        api_ = cdr::draApi();         // the add-on may have been installed while running ("Look again")
+        if (!api_) {                  // no decoder: the units are only counted; the receiver says why (CdrTelemetry::draFound)
+            for (const auto& u : units) if (!u.data.empty()) tel.draUnitsIn++;
+            return;
+        }
+        dra_ = api_->create();
+    }
     if (!dra_) return;
     for (const auto& u : units) {
         if (u.data.empty()) continue;
@@ -51,15 +59,15 @@ void CdrAudio::play(int want, uint16_t id, const std::vector<cdr::AudioUnit>& un
             const size_t n = u.data.size();
             size_t at = 0, fed = 0;
             for (size_t fb; (fb = draFrameBytes(d + at, n - at)) != 0; at += fb, fed++)
-                if (DRADecSendData(dra_, const_cast<unsigned char*>(d + at), (int)fb) != 0) { sent = false; break; }
-            if (!fed && sent) sent = DRADecSendData(dra_, const_cast<unsigned char*>(d), (int)n) == 0;      // no header found: the decoder decides
+                if (api_->send(dra_, const_cast<unsigned char*>(d + at), (int)fb) != 0) { sent = false; break; }
+            if (!fed && sent) sent = api_->send(dra_, const_cast<unsigned char*>(d), (int)n) == 0;      // no header found: the decoder decides
         }
         if (!sent) { tel.draUnitsBad++; continue; }
         if (++unitsSincePcm_ > kStuckUnits) {                // fed and fed, nothing comes out: a latched decoder (bad header, odd frame size)
             const int keep = playingId_;
             resetDecoder();
             playingId_ = keep;
-            dra_ = DRADecCreate();
+            dra_ = api_->create();
             if (!dra_) return;
             tel.draResets++;
             continue;
@@ -67,9 +75,9 @@ void CdrAudio::play(int want, uint16_t id, const std::vector<cdr::AudioUnit>& un
         for (;;) {
             unsigned char* pcm = nullptr;
             int len = 0;
-            if (DRADecRecvFrame(dra_, &pcm, &len) != 0) break;
-            DRAFrameInfo info;
-            if (DRADecGetFrameInfo(dra_, &info) != 0 || info.nSampleRate < 8000 || info.nChannels < 1 || !pcm || len < 4) continue;
+            if (api_->recv(dra_, &pcm, &len) != 0) break;
+            cdr::DraFrameInfo info;
+            if (api_->info(dra_, &info) != 0 || info.nSampleRate < 8000 || info.nChannels < 1 || !pcm || len < 4) continue;
             // the decoder returns one frame of 1024 samples, mono or an interleaved stereo pair (a 5.1 stream is mixed down to the pair)
             const int ch = std::min(info.nChannels, 2);
             const int frames = std::min(len / (2 * ch), 1024);

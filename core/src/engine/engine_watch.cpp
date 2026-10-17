@@ -1,6 +1,7 @@
 // Watching the radio and the sample path: unplugged-radio detection and reconnect, catching up after a stall, and the
 // delivery/sample-loss accounting that feeds the status bar.
 #include "dect2/engine/engine.h"
+#include "dect2/automation/engine.h"
 #include "engine_internal.h"
 #include "dect2/source/converter.h"
 #include "dect2/net/share.h"
@@ -38,6 +39,7 @@ void Engine::watchRadio() {
     if (!radioLost_) {
         if (now - lastSamples_ > seconds(2)) {
             radioLost_ = true;
+            automation::receiverState("dropped", "the radio stopped sending samples");
             nextReconnect_ = now + seconds(1);
             log(lastDev_.kind == DeviceInfo::HackRF ? "radio stopped sending samples (unplugged?) - waiting for it to come back" : "radio stopped sending samples - press Stop and Start to open it again");
         }
@@ -55,6 +57,7 @@ void Engine::watchRadio() {
         reconnectErr_.clear();
         resetReq_ = true;   // the receiver starts again from the new samples
         log("radio reconnected");
+        automation::receiverState("reconnected", "the radio is back");
     } else if (err != reconnectErr_) {
         reconnectErr_ = err;
         log("radio not available yet: " + err);
@@ -74,6 +77,7 @@ void Engine::catchUp() {
     const auto now = std::chrono::steady_clock::now();
     if (now - lastSkipLog_ > std::chrono::seconds(10)) {
         lastSkipLog_ = now;
+        automation::receiverState("overload", "the receiver cannot keep up with the sample rate");
         char b[200];
         snprintf(b, sizeof b, "the receiver cannot keep up with the sample rate: skipped %.2f s of signal (%llu skips so far). Close other programs, use a narrower channel or a lower sample rate", skipped / std::max(1.0, srcRate_), (unsigned long long)skipEvents_);
         log(b);

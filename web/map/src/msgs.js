@@ -11,7 +11,7 @@ export const MSG_STATION_PER_MIN = 120;
 export const MSG_TOTAL_MAX = 6000;        // rows in the whole table; the oldest go first
 
 const CATS = new Set(["free", "crew", "ops", "company", "maint", "fault", "other"]);
-const MODES = new Set(["ACARS", "VDL2", "HFDL", "SATCOM", "OTHER"]);
+const MODES = new Set(["ACARS", "VDL2", "HFDL", "SATCOM", "VOICE", "OTHER"]);   // VOICE: airband radio calls turned into text by the sender's speech engine (opt-in, public)
 
 // C0/C1 controls (the newline stays), zero-width and bidi-override characters, line/paragraph separators, BOM become a space.
 function stripCtl(x) {

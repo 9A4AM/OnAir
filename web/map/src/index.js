@@ -1,29 +1,31 @@
 import { sanitizeList, mergeStored, takeBudget, MSG_TTL_MS, MSG_TOTAL_MAX, MSG_PER_INGEST } from "./msgs.js";
+import { parseIngestBody } from "./lenient-json.js";
+import { TrailStore, SqlBackend } from "./trail-store.js";
+import { parseTrailRequest } from "./trail.js";
+import { TrackBook, sanitize, positionTimeMs, TTL_MS } from "./track-book.js";
+import { computeFixes, DOA_TTL_MS, MAX_DOA_PER_INGEST } from "./doa.js";
 
-const KINDS = new Set([
-  "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station", "gnss",
-]);
 
-const TTL_MS = {
-  aircraft: 15 * 60e3,
-  vessel: 30 * 60e3,
-  sonde: 3 * 3600e3,
-  aprs: 45 * 60e3,
-  ham: 45 * 60e3,
-  drone: 20 * 60e3,
-  flarm: 15 * 60e3,
-  sat: 20 * 60e3,
-  gnss: 10 * 60e3,
-  buoy: 2 * 3600e3,
-  dsc: 60 * 60e3,
-  station: 6 * 3600e3,
-};
+// sanitize is exported for the tests (it already was, from this file)
+export { sanitize };
+
+// ---- cost knobs (see README, "Cost model") -------------------------------------------------------------------------
+const FLUSH_MS = 10_000;       // write-behind: changed tracks go to SQLite at most this often (one transaction)
+const BROADCAST_MS = 1000;     // WebSocket upserts are batched for this long
+const PRUNE_EVERY_MS = 600_000; // SQL clean-up (expired rows, orphan trails, caps) - never per request
+const LIVE_EDGE_S = 3;         // /live is cached at the Cloudflare edge for this long (Worker, caches.default)
+const LOAD_CACHE_MS = 5000;
+const META_TTL_S = 86400;         // /meta (adsbdb lookups) in the edge cache
+const META_MISS_TTL_S = 300;
+const STATION_PERSIST_MS = 60_000;
+const EXPIRE_EVERY_MS = 15_000;
 
 function cors(res) {
   const h = new Headers(res.headers);
   h.set("Access-Control-Allow-Origin", "*");
   h.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  h.set("Access-Control-Allow-Headers", "Content-Type");
+  h.set("Access-Control-Allow-Headers", "Content-Type, If-None-Match");
+  h.set("Access-Control-Expose-Headers", "ETag");
   return new Response(res.body, { status: res.status, headers: h });
 }
 
@@ -34,11 +36,7 @@ function json(obj, status = 200) {
   }));
 }
 
-function ttlFor(kind) {
-  return TTL_MS[kind] || 20 * 60e3;
-}
-
-/** Soft capacity — public load meter only (not CPU). High caps so a small community stays in single digits. */
+/** Soft capacity - public load meter only (not CPU). High caps so a small community stays in single digits. */
 const LOAD_CAP = {
   tracks: 15000,
   stations: 500,
@@ -47,13 +45,11 @@ const LOAD_CAP = {
   throttlePerMin: 400,
 };
 
-const UPSERT_COALESCE_MS = 500;
-const SNAPSHOT_CACHE_MS = 4000;
-const LOAD_CACHE_MS = 5000;
-
 function pruneTimeWindow(arr, now, windowMs = 60e3) {
   const cut = now - windowMs;
-  while (arr.length && arr[0] < cut) arr.shift();
+  let i = 0;
+  while (i < arr.length && arr[i] < cut) i++;
+  if (i) arr.splice(0, i);
 }
 
 function serverLoadPct({ tracks, stations, viewers, ingestPerMin, throttlePerMin }) {
@@ -68,177 +64,33 @@ function serverLoadPct({ tracks, stations, viewers, ingestPerMin, throttlePerMin
   return Math.round(Math.min(100, peak * 100));
 }
 
-/** Wall-clock ms of the position report (ingest time minus client age field). */
-function positionTimeMs(tMs, ageSec) {
-  const a = Number(ageSec);
-  if (Number.isFinite(a) && a > 0) return tMs - a * 1000;
-  return tMs;
-}
-
-function fresherPosition(incomingAge, prevRow, now) {
-  if (!prevRow) return true;
-  const inT = positionTimeMs(now, incomingAge);
-  const prevT = positionTimeMs(prevRow.t, prevRow.age);
-  return inT >= prevT - 500;
-}
-
-const SRC_RANK = {
-  adsb: 40, ais: 38, flarm: 35, acars: 30, hfdl: 28, aprs: 25, ham: 25, sonde: 20, sat: 22, dsc: 18, buoy: 12,
-};
-
-/** Max position age (seconds) accepted at ingest — aligned with map UI stale colouring. */
-const MAX_INGEST_AGE_SEC = {
-  aircraft: { default: 45, adsb: 30, acars: 30, hfdl: 30, sat: 60 },
-  vessel: { default: 90, ais: 90 },
-  flarm: { default: 30 },
-  drone: { default: 45 },
-  aprs: { default: 120 },
-  ham: { default: 120 },
-  sonde: { default: 900 },
-  sat: { default: 180 },
-  gnss: { default: 120 },
-  dsc: { default: 600 },
-  buoy: { default: 7200 },
-  station: { default: 3600 },
-};
-
-function maxIngestAgeSec(kind, src) {
-  const spec = MAX_INGEST_AGE_SEC[kind];
-  if (!spec) return 300;
-  const s = String(src || "").toLowerCase();
-  if (s && spec[s] != null) return spec[s];
-  return spec.default ?? 300;
-}
-
-function normalizeIcao(s) {
-  const x = String(s || "").toUpperCase().replace(/[^0-9A-F]/g, "");
-  return x.length === 6 ? x : "";
-}
-
-function normalizeMmsi(s) {
-  const x = String(s || "").replace(/\D/g, "");
-  if (x.length >= 9) return x.slice(-9);
-  return x.length ? x : "";
-}
-
-/** Stable client id before kind prefix (ICAO, MMSI, callsign, serial, …). */
-function canonicalClientId(kind, raw) {
-  const rawId = String(raw.id || "").slice(0, 80);
-  if (!rawId) return null;
-  switch (kind) {
-    case "aircraft": {
-      const icao = normalizeIcao(raw.icao) || normalizeIcao(rawId);
-      return icao || rawId;
-    }
-    case "vessel":
-    case "dsc": {
-      const mmsi = normalizeMmsi(raw.mmsi) || normalizeMmsi(rawId);
-      return mmsi || rawId;
-    }
-    case "flarm": {
-      const hex = normalizeIcao(raw.id) || normalizeIcao(rawId);
-      return hex || rawId;
-    }
-    case "aprs":
-    case "ham": {
-      const cs = rawId.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 12);
-      return cs || rawId;
-    }
-    default:
-      return rawId;
-  }
-}
-
-function trackStorageId(kind, raw) {
-  const id = canonicalClientId(kind, raw);
-  if (!id) return null;
-  return `${kind}:${id}`;
-}
-
-function srcRank(src) {
-  return SRC_RANK[String(src || "").toLowerCase()] || 10;
-}
-
-/** When merging a fresher fix, keep the better label / source if the update is from a weaker link. */
-function mergeTrackMeta(prev, inc) {
-  if (!prev) return inc;
-  const out = { ...inc };
-  const prevR = srcRank(prev.src);
-  const incR = srcRank(inc.src);
-  if (incR < prevR) {
-    out.sub = prev.sub || inc.sub;
-    out.src = prev.src || inc.src;
-    const weakLabel = !inc.label || inc.label === inc.rawId || inc.label === inc.id;
-    if (prev.label && weakLabel) out.label = prev.label;
-  }
-  if (prev.squawk && !inc.squawk) out.squawk = prev.squawk;
-  if (prev.extra && !inc.extra) out.extra = prev.extra;
-  if (prev.cat && !inc.cat) out.cat = prev.cat;
-  return out;
-}
+/** SQL CASE giving each kind's TTL, so one DELETE expires every kind (one table scan instead of one per kind). */
+const TTL_CASE = "CASE kind " + Object.entries(TTL_MS).map(([k, v]) => `WHEN '${k}' THEN ${v}`).join(" ") + " ELSE 1200000 END";
 
 export class MapHub {
   constructor(ctx, env) {
     this.ctx = ctx;
     this.env = env;
-    this.sockets = new Set();
     this.ingestAt = [];
     this.throttleAt = [];
     this.lastLoadBroadcast = 0;
-    this.lastPrune = 0;
-    this.pendingUpserts = new Map();
-    this.msgBudget = new Map();   // station -> times of recent accepted messages (rate limit)
-    this.snapshotCache = null;
-    this.snapshotCacheAt = 0;
+    this.lastPrune = Date.now();
+    this.lastExpire = 0;
+    this.book = new TrackBook(Date.now());
+    this.stationMap = new Map();      // id -> { last, n, wAt, dirty }
+    this.msgCache = new Map();        // aircraft id -> { list, dirty }
+    this.msgBudget = new Map();       // station -> times of recent accepted messages (rate limit)
+    this.pendingUpserts = new Map();  // id -> row, waiting for the next WebSocket batch
+    this.broadcastTimer = null;
+    this.alarmAt = 0;
     this.loadCache = null;
     this.loadCacheAt = 0;
     this.ready = this.ctx.blockConcurrencyWhile(() => this.init());
   }
 
-  invalidateCaches() {
-    this.snapshotCache = null;
-    this.loadCache = null;
-  }
-
-  touchLoad(now, kind) {
-    if (kind === "throttle") this.throttleAt.push(now);
-    else this.ingestAt.push(now);
-    pruneTimeWindow(this.ingestAt, now);
-    pruneTimeWindow(this.throttleAt, now);
-  }
-
-  loadMetrics(now) {
-    pruneTimeWindow(this.ingestAt, now);
-    pruneTimeWindow(this.throttleAt, now);
-    const viewers = this.ctx.getWebSockets().length;
-    const ingestPerMin = this.ingestAt.length;
-    const throttlePerMin = this.throttleAt.length;
-    if (this.loadCache && now - this.loadCacheAt < LOAD_CACHE_MS) {
-      const c = this.loadCache;
-      const pct = serverLoadPct({ tracks: c.tracks, stations: c.stations, viewers, ingestPerMin, throttlePerMin });
-      return { pct, tracks: c.tracks, stations: c.stations, viewers, ingestPerMin, throttlePerMin };
-    }
-    const trackRow = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM tracks").toArray()[0];
-    const tracks = trackRow ? trackRow.n : 0;
-    const st = this.ctx.storage.sql.exec(
-      "SELECT COUNT(*) AS n FROM stations WHERE last > ?",
-      now - 30 * 60e3,
-    ).toArray()[0];
-    const stations = st ? st.n : 0;
-    this.loadCache = { tracks, stations };
-    this.loadCacheAt = now;
-    const pct = serverLoadPct({ tracks, stations, viewers, ingestPerMin, throttlePerMin });
-    return { pct, tracks, stations, viewers, ingestPerMin, throttlePerMin };
-  }
-
-  maybeBroadcastLoad(now) {
-    if (now - this.lastLoadBroadcast < 12000) return;
-    this.lastLoadBroadcast = now;
-    this.broadcast({ type: "load", load: this.loadMetrics(now) });
-  }
-
   async init() {
-    this.ctx.storage.sql.exec(`
+    const sql = this.ctx.storage.sql;
+    sql.exec(`
       CREATE TABLE IF NOT EXISTS tracks (
         id TEXT PRIMARY KEY,
         kind TEXT NOT NULL,
@@ -258,9 +110,9 @@ export class MapHub {
         n INTEGER NOT NULL
       );
     `);
-    const cols = this.ctx.storage.sql.exec("PRAGMA table_info(tracks)").toArray().map((r) => r.name);
+    const cols = sql.exec("PRAGMA table_info(tracks)").toArray().map((r) => r.name);
     const add = (name, typ) => {
-      if (!cols.includes(name)) this.ctx.storage.sql.exec(`ALTER TABLE tracks ADD COLUMN ${name} ${typ}`);
+      if (!cols.includes(name)) sql.exec(`ALTER TABLE tracks ADD COLUMN ${name} ${typ}`);
     };
     add("squawk", "TEXT");
     add("cat", "TEXT");
@@ -268,58 +120,162 @@ export class MapHub {
     add("src", "TEXT");
     add("age", "REAL");
     add("path", "TEXT");
+    add("dv", "INTEGER");    // 1: speed / heading / vertical rate are derived from position reports (or estimated), not broadcast
     add("est", "INTEGER");   // 1: the position is an estimate (dead reckoning) the app sent, not a received fix
-    this.ctx.storage.sql.exec(`
+    sql.exec(`
       CREATE TABLE IF NOT EXISTS meta (
         k TEXT PRIMARY KEY,
         json TEXT NOT NULL,
         t INTEGER NOT NULL
       );
-    `);
-    this.ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS msgs (
         id TEXT PRIMARY KEY,
         json TEXT NOT NULL,
         t INTEGER NOT NULL
       );
     `);
-    this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS idx_tracks_kind_t ON tracks(kind, t)");
+    // (kind, t) index dropped: it cost an extra billed row for every track write; expiry is one scan per prune instead.
+    sql.exec("DROP INDEX IF EXISTS idx_tracks_kind_t");
+    // Position history per track (see trail.js for the limits). Inserts are buffered and written inside flush().
+    this.trails = new TrailStore(new SqlBackend(sql), { buffer: true });
+    // The whole live picture is read once per start; from here on SQLite is write-behind storage, not the source.
+    const now = Date.now();
+    this.book.load(sql.exec(
+      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est, dv FROM tracks",
+    ).toArray());
+    this.book.expire(now);
+    for (const r of sql.exec("SELECT id, last, n FROM stations").toArray()) this.stationMap.set(r.id, { last: r.last, n: r.n, wAt: now, dirty: false });
+    if (typeof WebSocketRequestResponsePair === "function" && this.ctx.setWebSocketAutoResponse) {
+      // a client "ping" is answered by the runtime without waking the object
+      this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
+    }
+    if (this.book.pending || this.book.size) this.armFlush(now);
   }
 
-  trackWire(t) {
-    return {
-      id: t.id, kind: t.kind, label: t.label, sub: t.sub,
-      lat: t.lat, lon: t.lon, alt: t.alt, heading: t.heading, speed: t.speed,
-      extra: t.extra, t: t.t, squawk: t.squawk, cat: t.cat, vrate: t.vrate,
-      src: t.src, age: t.age, est: t.est ? 1 : 0,
-    };
+  // ---------- load meter ----------
+
+  touchLoad(now, kind) {
+    if (kind === "throttle") this.throttleAt.push(now);
+    else this.ingestAt.push(now);
+    pruneTimeWindow(this.ingestAt, now);
+    pruneTimeWindow(this.throttleAt, now);
   }
 
-  async queueUpserts(kept) {
-    for (const t of kept) this.pendingUpserts.set(t.id, this.trackWire(t));
-    const when = Date.now() + UPSERT_COALESCE_MS;
-    const cur = await this.ctx.storage.getAlarm();
-    if (!cur || cur > when + 50) this.ctx.storage.setAlarm(when);
+  loadMetrics(now) {
+    pruneTimeWindow(this.ingestAt, now);
+    pruneTimeWindow(this.throttleAt, now);
+    const viewers = this.ctx.getWebSockets().length;
+    const ingestPerMin = this.ingestAt.length;
+    const throttlePerMin = this.throttleAt.length;
+    if (!this.loadCache || now - this.loadCacheAt >= LOAD_CACHE_MS) {
+      let stations = 0;
+      for (const s of this.stationMap.values()) if (s.last > now - 30 * 60e3) stations++;
+      this.loadCache = { tracks: this.book.size, stations };
+      this.loadCacheAt = now;
+    }
+    const c = this.loadCache;
+    const pct = serverLoadPct({ tracks: c.tracks, stations: c.stations, viewers, ingestPerMin, throttlePerMin });
+    return { pct, tracks: c.tracks, stations: c.stations, viewers, ingestPerMin, throttlePerMin };
   }
 
-  flushUpserts() {
-    if (!this.pendingUpserts.size) return;
-    const tracks = [...this.pendingUpserts.values()];
-    this.pendingUpserts.clear();
-    this.broadcast({ type: "upsert", tracks });
+  maybeBroadcastLoad(now) {
+    if (now - this.lastLoadBroadcast < 12000) return;
+    this.lastLoadBroadcast = now;
+    this.broadcast({ type: "load", load: this.loadMetrics(now) });
+  }
+
+  // ---------- write-behind ----------
+
+  armFlush(now) {
+    if (this.alarmAt > now) return;
+    this.alarmAt = now + FLUSH_MS;
+    this.ctx.storage.setAlarm(this.alarmAt);
   }
 
   async alarm() {
     await this.ready;
-    this.flushUpserts();
+    this.alarmAt = 0;
+    this.flush(Date.now());
   }
+
+  /** One transaction: changed tracks, removed tracks, stations, ACARS messages, buffered trail points (+ prune when due). */
+  flush(now) {
+    this.book.expire(now);
+    this.lastExpire = now;
+    const { upserts, deletes } = this.book.takePersist(now);
+    const sql = this.ctx.storage.sql;
+    const stations = [];
+    for (const [id, s] of this.stationMap) if (s.dirty && now - s.wAt >= STATION_PERSIST_MS) stations.push([id, s]);
+    const msgs = [];
+    for (const [id, m] of this.msgCache) if (m.dirty) msgs.push([id, m]);
+    this.ctx.storage.transactionSync(() => {
+      for (const t of upserts) {
+        sql.exec(
+          `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est, dv)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET
+             kind=excluded.kind, label=excluded.label, sub=excluded.sub,
+             lat=excluded.lat, lon=excluded.lon, alt=excluded.alt,
+             heading=excluded.heading, speed=excluded.speed, extra=excluded.extra, t=excluded.t,
+             squawk=excluded.squawk, cat=excluded.cat, vrate=excluded.vrate, src=excluded.src,
+             age=excluded.age, path=excluded.path, est=excluded.est, dv=excluded.dv`,
+          t.id, t.kind, t.label, t.sub, t.lat, t.lon, t.alt, t.heading, t.speed, t.extra, t.t,
+          t.squawk, t.cat, t.vrate, t.src, t.age, JSON.stringify(t.path), t.est ? 1 : 0, t.dv ? 1 : 0,
+        );
+      }
+      for (let i = 0; i < deletes.length; i += 90) {
+        const chunk = deletes.slice(i, i + 90);
+        sql.exec(`DELETE FROM tracks WHERE id IN (${chunk.map(() => "?").join(",")})`, ...chunk);
+      }
+      for (const [id, s] of stations) {
+        sql.exec("INSERT INTO stations (id, last, n) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET last=excluded.last, n=excluded.n", id, s.last, s.n);
+        s.dirty = false; s.wAt = now;
+      }
+      for (const [id, m] of msgs) {
+        if (m.list.length) sql.exec("INSERT INTO msgs (id, json, t) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET json=excluded.json, t=excluded.t", id, JSON.stringify(m.list), m.list[0].t);
+        m.dirty = false;
+      }
+      this.trails.flush();
+      if (now - this.lastPrune >= PRUNE_EVERY_MS) this.prune(now);
+    });
+    if (this.book.pending || this.dirtyStations() || msgs.length) this.armFlush(now);
+  }
+
+  dirtyStations() {
+    for (const s of this.stationMap.values()) if (s.dirty) return true;
+    return false;
+  }
+
+  /** SQL clean-up. Runs from flush() every PRUNE_EVERY_MS: bulk deletes, each one table scan (rows read are almost free). */
+  prune(now) {
+    const sql = this.ctx.storage.sql;
+    this.pruneMsgs(now);
+    sql.exec(`DELETE FROM tracks WHERE t < ? - ${TTL_CASE}`, now);   // safety net; the book already expires in memory
+    sql.exec("DELETE FROM stations WHERE last < ?", now - 24 * 3600e3);
+    for (const [id, s] of this.stationMap) if (s.last < now - 24 * 3600e3) this.stationMap.delete(id);
+    this.trails.prune(now); // after the tracks: trails of expired tracks go with them
+    this.msgCache.clear();
+    this.lastPrune = now;
+  }
+
+  pruneMsgs(now) {
+    const sql = this.ctx.storage.sql;
+    sql.exec("DELETE FROM msgs WHERE t < ?", now - MSG_TTL_MS);
+    const n = sql.exec("SELECT COUNT(*) AS n FROM msgs").toArray()[0];
+    if (n && n.n > MSG_TOTAL_MAX) {
+      sql.exec("DELETE FROM msgs WHERE id IN (SELECT id FROM msgs ORDER BY t ASC LIMIT ?)", n.n - MSG_TOTAL_MAX);
+    }
+  }
+
+  // ---------- requests ----------
 
   async fetch(req) {
     await this.ready;
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
     if (url.pathname === "/ingest" && req.method === "POST") return this.ingest(req);
-    if (url.pathname === "/live" && req.method === "GET") return this.live();
+    if (url.pathname === "/live" && req.method === "GET") return this.live(url, req);
+    if ((url.pathname === "/trail" || url.pathname === "/trails") && req.method === "GET") return this.trailsReq(url);
     if (url.pathname === "/meta" && req.method === "GET") return this.meta(req);
     if (url.pathname === "/msgs" && req.method === "GET") return this.msgs(req);
     if (url.pathname === "/ws") return this.ws(req);
@@ -327,10 +283,9 @@ export class MapHub {
   }
 
   async ingest(req) {
-    const ip = req.headers.get("CF-Connecting-IP") || "0";
     let body;
     try {
-      body = await req.json();
+      body = parseIngestBody(await req.text());
     } catch {
       return json({ error: "bad json" }, 400);
     }
@@ -340,85 +295,87 @@ export class MapHub {
     if (tracks.length > 250) return json({ error: "too many" }, 413);
 
     const now = Date.now();
-    const prev = this.ctx.storage.sql.exec("SELECT last, n FROM stations WHERE id = ?", station).toArray()[0];
-    if (prev && now - prev.last < 1500) {
+    let st = this.stationMap.get(station);
+    if (st && now - st.last < 1500) {
       this.touchLoad(now, "throttle");
       this.maybeBroadcastLoad(now);
       return json({ error: "slow down" }, 429);
     }
 
-    const kept = [];
+    let kept = 0;
     let msgBudgetLeft = MSG_PER_INGEST;
+    let doaLeft = MAX_DOA_PER_INGEST;
+    let sawDoa = false;
     for (const raw of tracks) {
-      let t = sanitize(raw, now);
+      if (raw && raw.kind === "doa") { if (doaLeft-- <= 0) continue; }
+      const t = sanitize(raw, now, station);
       if (!t) continue;
-      const prev = this.ctx.storage.sql.exec(
-        "SELECT t, age, path, heading, speed, label, sub, src, squawk FROM tracks WHERE id = ?",
-        t.id,
-      ).toArray()[0];
-      if (!fresherPosition(t.age, prev, now)) continue;
-      let merged = prev ? mergeTrackMeta(prev, t) : t;
-      if (t.kind !== "gnss") merged.path = mergePath(prev && prev.path, merged.path, merged.lon, merged.lat);
-      else merged.path = [];
-      const trailHdg = t.kind === "gnss" ? null : headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
-      if (trailHdg != null) merged.heading = trailHdg;
-      else if (merged.heading == null && prev && prev.heading != null) merged.heading = prev.heading;
-      if (merged.speed == null && prev && prev.speed != null) merged.speed = prev.speed;
-      t = merged;
-      let pathArr = [];
-      try { pathArr = JSON.parse(t.path); } catch { pathArr = []; }
-      this.ctx.storage.sql.exec(
-        `INSERT INTO tracks (id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, path, est)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(id) DO UPDATE SET
-           kind=excluded.kind, label=excluded.label, sub=excluded.sub,
-           lat=excluded.lat, lon=excluded.lon, alt=excluded.alt,
-           heading=excluded.heading, speed=excluded.speed, extra=excluded.extra, t=excluded.t,
-           squawk=excluded.squawk, cat=excluded.cat, vrate=excluded.vrate, src=excluded.src,
-           age=excluded.age, path=excluded.path, est=excluded.est`,
-        t.id, t.kind, t.label, t.sub, t.lat, t.lon, t.alt, t.heading, t.speed, t.extra, t.t,
-        t.squawk, t.cat, t.vrate, t.src, t.age, t.path, t.est ? 1 : 0,
-      );
-      kept.push({ ...t, path: pathArr });
-      if (t.kind === "aircraft" && Array.isArray(raw.msgs) && raw.msgs.length && msgBudgetLeft > 0) {
+      const row = this.book.accept(t, now);
+      if (!row) continue;
+      kept++;
+      this.trails.record(row.id, { t: positionTimeMs(now, row.age), lat: row.lat, lon: row.lon, alt: row.alt, hdg: row.heading }, now);
+      if (row.visible) this.pendingUpserts.set(row.id, row);
+      if (row.kind === "doa") sawDoa = true;
+      if (row.kind === "aircraft" && Array.isArray(raw.msgs) && raw.msgs.length && msgBudgetLeft > 0) {
         let list = sanitizeList(raw.msgs, now).slice(0, msgBudgetLeft);
         list = list.slice(0, takeBudget(this.msgBudget, station, list.length, now));
         msgBudgetLeft -= list.length;
-        if (list.length) this.storeMsgs(t.id, list, now);
+        if (list.length) this.storeMsgs(row.id, list, now);
       }
     }
-    this.ctx.storage.sql.exec(
-      "INSERT INTO stations (id, last, n) VALUES (?, ?, 1) ON CONFLICT(id) DO UPDATE SET last=excluded.last, n=n+1",
-      station, now,
-    );
-    this.pruneIfDue(now);
+    if (st) { st.last = now; st.n++; st.dirty = true; }
+    else { st = { last: now, n: 1, wAt: 0, dirty: true }; this.stationMap.set(station, st); }
+    if (sawDoa) for (const f of this.currentFixes(now)) this.pendingUpserts.set(f.id, f);   // derived fix markers go out with the bearings
     this.touchLoad(now, "ingest");
-    if (kept.length) {
-      this.invalidateCaches();
-      await this.queueUpserts(kept);
-    }
+    this.loadCache = null;
+    this.armFlush(now);
+    this.scheduleBroadcast();
     this.maybeBroadcastLoad(now);
-    return json({ ok: true, n: kept.length, load: this.loadMetrics(now) });
+    return json({ ok: true, n: kept, load: this.loadMetrics(now) });
+  }
+
+  /** Fix markers where bearing lines from different stations on one frequency cross (derived from memory, never stored). */
+  currentFixes(now) {
+    const rows = this.book.doaRows().filter((r) => r.t > now - DOA_TTL_MS);
+    return rows.length > 1 ? computeFixes(rows, now).map((f) => ({ est: 0, dv: 0, _fix: true, ...f })) : [];
+  }
+
+  /** The cached tracks array with the current fix markers appended. */
+  tracksWithFixes(now) {
+    const tj = this.book.tracksJson();
+    const fixes = this.currentFixes(now);
+    if (!fixes.length) return tj;
+    const extra = fixes.map((f) => JSON.stringify(this.fixWire(f))).join(",");
+    return tj.length > 2 ? tj.slice(0, -1) + "," + extra + "]" : "[" + extra + "]";
+  }
+
+  fixWire(t) {
+    return {
+      id: t.id, kind: t.kind, label: t.label, sub: t.sub, lat: t.lat, lon: t.lon, alt: t.alt, heading: t.heading, speed: t.speed,
+      extra: t.extra, t: t.t, squawk: t.squawk, cat: t.cat, vrate: t.vrate, src: t.src, age: t.age, est: t.est ? 1 : 0, dv: t.dv ? 1 : 0,
+    };
+  }
+
+  // ---------- ACARS messages (cached in memory, written back with the flush) ----------
+
+  msgEntry(id) {
+    let e = this.msgCache.get(id);
+    if (!e) {
+      const row = this.ctx.storage.sql.exec("SELECT json FROM msgs WHERE id = ?", id).toArray()[0];
+      let old = [];
+      if (row) { try { old = JSON.parse(row.json); } catch { old = []; } }
+      e = { list: Array.isArray(old) ? old : [], dirty: false };
+      this.msgCache.set(id, e);
+    }
+    return e;
   }
 
   storeMsgs(id, list, now) {
-    const row = this.ctx.storage.sql.exec("SELECT json FROM msgs WHERE id = ?", id).toArray()[0];
-    let old = [];
-    if (row) { try { old = JSON.parse(row.json); } catch { old = []; } }
-    const merged = mergeStored(Array.isArray(old) ? old : [], list, now);
+    const e = this.msgEntry(id);
+    const merged = mergeStored(e.list, list, now);
     if (!merged.length) return;
-    this.ctx.storage.sql.exec(
-      "INSERT INTO msgs (id, json, t) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET json=excluded.json, t=excluded.t",
-      id, JSON.stringify(merged), merged[0].t,
-    );
-  }
-
-  pruneMsgs(now) {
-    this.ctx.storage.sql.exec("DELETE FROM msgs WHERE t < ?", now - MSG_TTL_MS);
-    const n = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM msgs").toArray()[0];
-    if (n && n.n > MSG_TOTAL_MAX) {
-      this.ctx.storage.sql.exec("DELETE FROM msgs WHERE id IN (SELECT id FROM msgs ORDER BY t ASC LIMIT ?)", n.n - MSG_TOTAL_MAX);
-    }
+    e.list = merged;
+    e.dirty = true;
   }
 
   /** GET /msgs?id=<ICAO hex or track id>: the stored ACARS messages of one aircraft (newest first). Not part of /live. */
@@ -428,56 +385,63 @@ export class MapHub {
     const hex = raw.replace(/^aircraft:/, "").toUpperCase().replace(/[^0-9A-F]/g, "");
     const id = hex.length === 6 && /^(aircraft:)?[0-9A-Fa-f]{6}$/.test(raw) ? "aircraft:" + hex : "aircraft:" + raw.replace(/^aircraft:/, "");
     if (id.length < 10) return json({ error: "query" }, 400);
-    const row = this.ctx.storage.sql.exec("SELECT json FROM msgs WHERE id = ?", id).toArray()[0];
-    let list = [];
-    if (row) { try { list = JSON.parse(row.json); } catch { list = []; } }
     const now = Date.now();
-    list = list.filter((m) => now - m.t <= MSG_TTL_MS);
+    const list = this.msgEntry(id).list.filter((m) => now - m.t <= MSG_TTL_MS);
     return json({ id, msgs: list });
   }
 
-  prune(now) {
-    this.pruneMsgs(now);
-    for (const kind of KINDS) {
-      this.ctx.storage.sql.exec("DELETE FROM tracks WHERE kind = ? AND t < ?", kind, now - ttlFor(kind));
-    }
-    this.ctx.storage.sql.exec("DELETE FROM stations WHERE last < ?", now - 24 * 3600e3);
-    this.lastPrune = now;
-    this.invalidateCaches();
+  // ---------- /live ----------
+
+  expireIfDue(now) {
+    if (now - this.lastExpire < EXPIRE_EVERY_MS) return;
+    this.lastExpire = now;
+    this.book.expire(now);
+    if (this.book.pending) this.armFlush(now);
   }
 
-  pruneIfDue(now) {
-    if (now - this.lastPrune < 45_000) return;
-    this.prune(now);
-  }
-
-  snapshot() {
+  /**
+   * /live: the full JSON as before (plus `version`). `?since=<version>` returns only what changed
+   * ({ delta: true, tracks: [changed], removed: [ids], version }) or the full snapshot when `since` is unknown or too old.
+   * `?trails=1` adds each track's history.
+   */
+  live(url, req) {
     const now = Date.now();
-    this.pruneIfDue(now);
-    if (this.snapshotCache && now - this.snapshotCacheAt < SNAPSHOT_CACHE_MS) {
-      const cached = this.snapshotCache;
-      return { ...cached, load: this.loadMetrics(now) };
+    this.expireIfDue(now);
+    const book = this.book;
+    const lm = this.loadMetrics(now);
+    const load = JSON.stringify(lm);
+    const stations = lm.stations;
+    const sinceRaw = url.searchParams.get("since");
+    const hdr = { "Content-Type": "application/json; charset=utf-8" };
+    if (sinceRaw != null) {
+      const parts = book.deltaParts(Number(sinceRaw));
+      if (parts) {
+        if (Number(sinceRaw) === book.version) {
+          return cors(new Response(`{"now":${now},"version":${book.version},"delta":true,"stations":${stations},"tracks":[],"removed":[],"load":${load}}`,
+            { headers: { ...hdr, "Cache-Control": "no-store" } }));
+        }
+        return cors(new Response(`{"now":${now},"version":${book.version},"delta":true,"stations":${stations},"tracks":${parts.tracks},"removed":${JSON.stringify(parts.removed)},"load":${load}}`,
+          { headers: { ...hdr, "Cache-Control": "no-store" } }));
+      }
     }
-    const tracks = [];
-    for (const row of this.ctx.storage.sql.exec(
-      "SELECT id, kind, label, sub, lat, lon, alt, heading, speed, extra, t, squawk, cat, vrate, src, age, est FROM tracks",
-    )) {
-      tracks.push({
-        id: row.id, kind: row.kind, label: row.label, sub: row.sub,
-        lat: row.lat, lon: row.lon, alt: row.alt, heading: row.heading, speed: row.speed,
-        extra: row.extra, t: row.t, squawk: row.squawk, cat: row.cat, vrate: row.vrate,
-        src: row.src, age: row.age, est: row.est ? 1 : 0,
-      });
+    if (url.searchParams.get("trails") === "1") {
+      const all = this.trails.all();
+      const tracks = JSON.parse(this.tracksWithFixes(now)).map((t) => (all[t.id] ? { ...t, trail: all[t.id] } : t));
+      return cors(new Response(JSON.stringify({ now, version: book.version, stations, tracks, load: JSON.parse(load) }), { headers: { ...hdr, "Cache-Control": "no-store" } }));
     }
-    const st = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM stations WHERE last > ?", now - 30 * 60e3).toArray()[0];
-    const body = { now, stations: st ? st.n : 0, tracks };
-    this.snapshotCache = body;
-    this.snapshotCacheAt = now;
-    return { ...body, load: this.loadMetrics(now) };
+    const etag = `W/"${book.version}"`;
+    if (req && req.headers.get("If-None-Match") === etag) {
+      return cors(new Response(null, { status: 304, headers: { ETag: etag, "Cache-Control": `public, max-age=${LIVE_EDGE_S}` } }));
+    }
+    return cors(new Response(`{"now":${now},"version":${book.version},"stations":${stations},"tracks":${this.tracksWithFixes(now)},"load":${load}}`,
+      { headers: { ...hdr, "Cache-Control": `public, max-age=${LIVE_EDGE_S}`, ETag: etag } }));
   }
 
-  live() {
-    return json(this.snapshot());
+  /** GET /trail?id=<track id> or /trails?ids=a,b,c -> { trails: { id: [points] } } (one request for every visible track). */
+  trailsReq(url) {
+    const q = parseTrailRequest(url.searchParams);
+    if (!q) return json({ error: "query" }, 400);
+    return json({ now: Date.now(), trails: this.trails.get(q.ids) });
   }
 
   async meta(req) {
@@ -506,6 +470,8 @@ export class MapHub {
     return json(out);
   }
 
+  // ---------- WebSocket (Hibernation API: acceptWebSocket + handlers, so idle viewers do not keep the object billed) ----------
+
   async ws(req) {
     if (req.headers.get("Upgrade") !== "websocket") return json({ error: "ws" }, 426);
     const pair = new WebSocketPair();
@@ -513,119 +479,51 @@ export class MapHub {
     const server = pair[1];
     this.ctx.acceptWebSocket(server);
     const now = Date.now();
-    server.send(JSON.stringify({ type: "hello", ...this.snapshot() }));
+    this.expireIfDue(now);
+    const book = this.book;
+    const lm = this.loadMetrics(now);
+    server.send(`{"type":"hello","now":${now},"version":${book.version},"stations":${lm.stations},"tracks":${this.tracksWithFixes(now)},"load":${JSON.stringify(lm)}}`);
     this.maybeBroadcastLoad(now);
     return new Response(null, { status: 101, webSocket: client });
   }
 
   webSocketMessage() {}
-  webSocketClose() {}
+  webSocketClose(ws, code) {
+    try { ws.close(code >= 1000 && code < 5000 && code !== 1005 && code !== 1006 ? code : 1000, "closing"); } catch { /* already closed */ }
+  }
   webSocketError() {}
 
-  broadcast(msg) {
-    const s = JSON.stringify(msg);
+  scheduleBroadcast() {
+    if (this.broadcastTimer || !this.pendingUpserts.size) return;
+    if (!this.ctx.getWebSockets().length) { this.pendingUpserts.clear(); return; }  // nobody to tell: no work
+    this.broadcastTimer = setTimeout(() => { this.broadcastTimer = null; this.sendUpserts(); }, BROADCAST_MS);
+  }
+
+  sendUpserts() {
+    if (!this.pendingUpserts.size) return;
+    const parts = [];
+    for (const row of this.pendingUpserts.values()) {
+      if (row._fix) parts.push(JSON.stringify(this.fixWire(row)));
+      else if (this.book.rows.get(row.id) === row) parts.push(this.book.wire(row));
+    }
+    this.pendingUpserts.clear();
+    if (parts.length) this.sendAll(`{"type":"upsert","tracks":[${parts.join(",")}]}`);
+  }
+
+  sendAll(s) {
     for (const ws of this.ctx.getWebSockets()) {
       try { ws.send(s); } catch { /* closed */ }
     }
   }
-}
 
-export function sanitize(raw, now) {
-  if (!raw || typeof raw !== "object") return null;
-  const kind = String(raw.kind || "");
-  if (!KINDS.has(kind)) return null;
-  const lat = Number(raw.lat), lon = Number(raw.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
-  if (lat === 0 && lon === 0) return null;
-  const storageId = trackStorageId(kind, raw);
-  if (!storageId) return null;
-  const rawId = String(raw.id || "").slice(0, 80);
-  const clientId = canonicalClientId(kind, raw) || rawId;
-  const icao = kind === "aircraft" ? (normalizeIcao(raw.icao) || normalizeIcao(clientId)) : "";
-  const mmsi = (kind === "vessel" || kind === "dsc") ? (normalizeMmsi(raw.mmsi) || normalizeMmsi(clientId)) : "";
-  const alt = Number.isFinite(Number(raw.alt)) ? Number(raw.alt) : null;
-  const heading = Number.isFinite(Number(raw.heading)) ? Number(raw.heading) : null;
-  const speed = Number.isFinite(Number(raw.speed)) ? Number(raw.speed) : null;
-  const vrate = Number.isFinite(Number(raw.vrate)) ? Number(raw.vrate) : null;
-  const age = Number.isFinite(Number(raw.age)) ? Number(raw.age) : 0;
-  if (age > maxIngestAgeSec(kind, raw.src)) return null;
-  const squawk = raw.squawk == null || raw.squawk === "" ? null : String(raw.squawk).slice(0, 8);
-  const path = [];
-  if (Array.isArray(raw.path)) {
-    for (const pt of raw.path.slice(-80)) {
-      let la, lo;
-      if (Array.isArray(pt) && pt.length >= 2) { la = Number(pt[0]); lo = Number(pt[1]); }
-      else if (pt && typeof pt === "object") { la = Number(pt.lat); lo = Number(pt.lon); }
-      else continue;
-      if (Number.isFinite(la) && Number.isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) path.push([lo, la]);
+  broadcast(msg) {
+    const sockets = this.ctx.getWebSockets();
+    if (!sockets.length) return;
+    const s = JSON.stringify(msg);   // one serialisation for every socket
+    for (const ws of sockets) {
+      try { ws.send(s); } catch { /* closed */ }
     }
   }
-  path.push([lon, lat]);
-  return {
-    id: storageId,
-    kind,
-    rawId: clientId,
-    icao,
-    mmsi,
-    label: String(raw.label || rawId).slice(0, 48),
-    sub: String(raw.sub || "").slice(0, 32),
-    lat, lon, alt, heading, speed, vrate, age,
-    est: raw.est === 1 || raw.est === true ? 1 : 0,
-    squawk,
-    src: String(raw.src || "").slice(0, 16),
-    cat: String(raw.cat || "").slice(0, 48),
-    extra: String(raw.extra || "").slice(0, 120),
-    path: kind === "gnss" ? [] : path.slice(-80),   // no trails for navigation satellites
-    t: now,
-  };
-}
-
-function pathDistanceM(lon1, lat1, lon2, lat2) {
-  const p = Math.PI / 180;
-  const dLat = (lat2 - lat1) * p;
-  const dLon = (lon2 - lon1) * p;
-  const a = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1 * p) * Math.cos(lat2 * p) * Math.sin(dLon / 2) ** 2;
-  return 6371000 * 2 * Math.asin(Math.min(1, Math.sqrt(a)));
-}
-
-function bearingDeg(lon1, lat1, lon2, lat2) {
-  const p = Math.PI / 180;
-  const dLon = (lon2 - lon1) * p;
-  const y = Math.sin(dLon) * Math.cos(lat2 * p);
-  const x = Math.cos(lat1 * p) * Math.sin(lat2 * p) - Math.sin(lat1 * p) * Math.cos(lat2 * p) * Math.cos(dLon);
-  return (Math.atan2(y, x) / p + 360) % 360;
-}
-
-/** Datalink fixes often have no heading field; use the stored trail. */
-function headingFromTrail(pathJson, lon, lat, reported) {
-  if (reported != null && Number.isFinite(reported)) return reported;
-  let path = [];
-  try { path = pathJson ? JSON.parse(pathJson) : []; } catch { path = []; }
-  if (!Array.isArray(path)) path = [];
-  const lon2 = lon, lat2 = lat;
-  if (!path.length || path[path.length - 1][0] !== lon2 || path[path.length - 1][1] !== lat2) path.push([lon2, lat2]);
-  if (path.length < 2) return null;
-  const minM = 15;
-  for (let i = path.length - 2; i >= 0; i--) {
-    const [lon1, lat1] = path[i];
-    if (pathDistanceM(lon1, lat1, lon2, lat2) >= minM) return bearingDeg(lon1, lat1, lon2, lat2);
-  }
-  const [lon0, lat0] = path[0];
-  if (pathDistanceM(lon0, lat0, lon2, lat2) >= minM) return bearingDeg(lon0, lat0, lon2, lat2);
-  return null;
-}
-
-function mergePath(oldJson, incoming, lon, lat) {
-  let old = [];
-  try { old = oldJson ? JSON.parse(oldJson) : []; } catch { old = []; }
-  if (!Array.isArray(old)) old = [];
-  let neu = Array.isArray(incoming) ? incoming.slice() : [];
-  if (neu.length <= 1 && old.length >= 2) neu = old.slice();
-  else if (old.length > neu.length) neu = old.slice();
-  const last = neu[neu.length - 1];
-  if (!last || last[0] !== lon || last[1] !== lat) neu.push([lon, lat]);
-  return JSON.stringify(neu.slice(-80));
 }
 
 async function osmTile(z, x, y) {
@@ -715,16 +613,37 @@ async function lookupAircraft(req) {
   const [ac, fl] = await Promise.all(jobs);
   const out = buildMeta(ac, fl);
   const res = json(out);
+  // aircraft data rarely changes: a day. When adsbdb knew nothing (or failed) only 5 minutes, so a hiccup is not remembered.
+  const ttl = ac || fl ? META_TTL_S : META_MISS_TTL_S;
   const store = new Response(JSON.stringify(out), {
     status: 200,
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=21600" },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": `public, max-age=${ttl}` },
   });
   await caches.default.put(cacheKey, store);
   return res;
 }
 
+
+/**
+ * GET /live through the Cloudflare edge cache (caches.default): one Durable Object call per LIVE_EDGE_S per data centre,
+ * however many viewers poll. ETag / If-None-Match answers 304 without a body. `?since=` and `?trails=1` go to the hub.
+ */
+async function cachedLive(req, env, ctx, url) {
+  const key = new Request(url.origin + "/live", { method: "GET" });
+  let res = await caches.default.match(key);
+  if (!res) {
+    res = await env.MAP.get(env.MAP.idFromName("hub-v2")).fetch(new Request(url.origin + "/live", { method: "GET" }));
+    if (res.status === 200) ctx.waitUntil(caches.default.put(key, res.clone()));
+  }
+  const etag = res.headers.get("ETag");
+  if (etag && req.headers.get("If-None-Match") === etag) {
+    return cors(new Response(null, { status: 304, headers: { ETag: etag, "Cache-Control": `public, max-age=${LIVE_EDGE_S}` } }));
+  }
+  return cors(res);
+}
+
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const tile = url.pathname.match(/^\/tiles\/(\d+)\/(\d+)\/(\d+)\.png$/);
     if (tile) return osmTile(+tile[1], +tile[2], +tile[3]);
@@ -732,7 +651,11 @@ export default {
       if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (req.method === "GET") return lookupAircraft(req);
     }
-    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/msgs" || url.pathname === "/ws";
+    if (url.pathname === "/live" && req.method === "GET" && !url.searchParams.has("since") && url.searchParams.get("trails") !== "1") {
+      return cachedLive(req, env, ctx, url);
+    }
+    const api = url.pathname === "/ingest" || url.pathname === "/live" || url.pathname === "/msgs" || url.pathname === "/ws"
+      || url.pathname === "/trail" || url.pathname === "/trails";
     if (api) {
       const id = env.MAP.idFromName("hub-v2");
       return env.MAP.get(id).fetch(req);

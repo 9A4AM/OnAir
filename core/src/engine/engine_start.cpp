@@ -1,6 +1,7 @@
 // Engine::start(): opens the source, plans offset tuning, configures every receiver for the new sample rate and channel, and
 // starts the worker threads. The long body is split into small steps called in the original order.
 #include "dect2/engine/engine.h"
+#include "dect2/automation/engine.h"
 #include "engine_internal.h"
 #include "dect2/source/converter.h"
 #include "dect2/net/share.h"
@@ -49,7 +50,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         // a wide capture for multi-channel TV: the DC spike is inside the span whatever the offset (it would sit in a neighbouring channel), and
         // shifting 60 Msps back by the offset costs a double-precision mixer pass over every sample: the spike is removed instead
         offsetDc_ = true;
-    } else if (autoOffset_ && dev.isRadio() && dev.kind != DeviceInfo::Hamlib && offsetAllowed()) {
+    } else if (autoOffset_ && dev.isRadio() && dev.kind != DeviceInfo::Hamlib && dev.board != "kiwisdr" && offsetAllowed()) {   // not a 12 kHz window
         // a HackRF has no listed maximum (20 Msps); the HackRF Pro tunes exactly only at up to 10 Msps and at 20, so it gets 20 above 10
         double maxRate = dev.maxRateHz > 0 ? dev.maxRateHz : dev.kind == DeviceInfo::HackRF ? 20e6 : 0;
         // a link slower than the converter (a PlutoSDR on its USB cable): no faster than it carries, or than the mode already runs above it
@@ -100,6 +101,7 @@ bool Engine::start(const DeviceInfo& dev, const TuneSettings& tune, const FileOp
         lastDev_ = dev; lastTune_ = tune; lastFile_ = file;
     }
     radioLost_ = false; lastSamples_ = std::chrono::steady_clock::now(); reconnectErr_.clear();
+    automation::receiverState("started", "receiver started");
     logP1Count_ = 0; logGi_ = -2; logState_ = -1; logFrameSyms_ = 0;
     bwMhz_ = tune.bandwidthMhz; bwActive_ = bwMhz_;
     bwDetected_ = 0; bwReset_ = true; bwReq_ = false;
@@ -219,6 +221,7 @@ void Engine::placeNarrowReceivers(const DeviceInfo& dev, const TuneSettings& tun
         rxCube_.setDialHz(dev.kind != DeviceInfo::File ? tune.centerHz : 0.0);   // names frames after the satellite table
         rxLr_.setSignalOffset(o);
         rxWs_.setSignalOffset(o);
+        rxEcz_.setSignalOffset(o);
         rxWs_.setDialHz(tune.centerHz);   // a file: where its channels are when it does not say
         rxWs_.setCenterHz(dev.kind != DeviceInfo::File ? radioTune(tune).centerHz : 0.0);   // where every Wi-SUN channel lies in the band taken in
         rxZb_.setSignalOffset(o);
@@ -419,6 +422,9 @@ void Engine::configureDataReceivers(const DeviceInfo& dev, const TuneSettings& t
     rxLr_.setLogCallback([this](const std::string& s) { log(s); });
     rxWs_.configure(rate_);
     rxWs_.setLogCallback([this](const std::string& s) { log(s); });
+    rxEcz_.configure(rate_);
+    rxEcz_.setLogCallback([this](const std::string& s) { log(s); });
+    rxEcz_.setClockMode(dev.kind == DeviceInfo::File ? 0 : 1);   // a file has no clock to compare; a radio and the test signal run on the computer's
     rxHfb_.configure(rate_);
     rxHfb_.setLogCallback([this](const std::string& s) { log(s); });
     rxHfb_.setCenterHz(radioTune(tune).centerHz);

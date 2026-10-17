@@ -80,6 +80,7 @@
 #include "dect2/multitone/multitone_tel.h"
 #include "dect2/loraraw/loraraw_tel.h"
 #include "dect2/wisun/wisun_tel.h"
+#include "dect2/eczas/eczas_tel.h"
 #include "dect2/rid/rid_tel.h"
 #include "dect2/meteor/meteor_tel.h"
 #include "dect2/nr/nr_tel.h"
@@ -174,6 +175,7 @@ struct RxTelemetry {
     ZigbeeTelemetry zigbee;   // valid when standard == 66 (Zigbee / 802.15.4)
     LoraRawTelemetry loraraw; // valid when standard == 72 (LoRa raw)
     WisunTelemetry wisun;     // valid when standard == 85 (Wi-SUN FAN)
+    EczasTelemetry eczas;     // valid when standard == 86 (e-Czas, 225 kHz Poland)
     HfbTelemetry hfb;         // valid when standard == 68 (HF beacons)
     WbTelemetry wb;           // valid when standard == 74 (Signal workbench)
     DatawellTelemetry datawell;   // valid when standard == 75 (Datawell buoy HF link)

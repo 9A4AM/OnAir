@@ -2,13 +2,20 @@
 // Modules: geo.js (maths), types.js (type -> icon shape), shapes.js + icons.js (map icons), airports.js,
 // card.js (info card), demo.js (?demo=1 preview data). Everything here is browser-only glue.
 
-import { iconId, installLazyIcons, paintMini } from "./icons.js";
+import { iconId, installLazyIcons, paintMini, altitudeColor, altitudeGradientCss, ALT_STOPS } from "./icons.js";
 import { SHAPES } from "./shapes.js";
-import { iconShape } from "./types.js";
+import { iconShape, vesselScale } from "./types.js";
 import { createCard } from "./card.js";
+import { dfFeatures } from "./df.js";
+import { createSheet } from "./sheet.js";
 import { generateDemo, stepDemo } from "./demo.js";
+import { watchMapTheme, themeKey, onThemeChange } from "./theme.js";
+import { mergeTrails, appendLive, toLine } from "./trail.js";
 
 const DEMO = new URLSearchParams(location.search).get("demo") === "1";
+// ?view=lat,lon,zoom opens the map there (used for screenshots and shared links)
+const VIEW = (new URLSearchParams(location.search).get("view") || "").split(",").map(Number);
+const HAS_VIEW = VIEW.length === 3 && VIEW.every(Number.isFinite);
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = (id) => document.getElementById(id);
 
@@ -18,13 +25,15 @@ const KINDS = [
   { id: "sonde", name: "Sondes", color: "#cc94c7", shape: "sonde" },
   { id: "aprs", name: "APRS", color: "#8ccc9e", shape: "aprs_car" },
   { id: "ham", name: "Amateur", color: "#8ccc9e", shape: "ham" },
-  { id: "drone", name: "Drones", color: "#e0ad6b", shape: "drone" },
+  { id: "drone", name: "Drones", color: "#e0ad6b", shape: "drone_rid" },
   { id: "flarm", name: "FLARM", color: "#6ccc7a", shape: "glider" },
   { id: "sat", name: "Satellites", color: "#c0c2c4", shape: "sat" },
   { id: "buoy", name: "Buoys", color: "#7aa8d4", shape: "buoy" },
   { id: "dsc", name: "DSC", color: "#e0ad6b", shape: "dsc" },
   { id: "station", name: "Stations", color: "#e0d48f", shape: "station" },
-  { id: "gnss", name: "GNSS satellites", color: "#9ad0f0", shape: "sat" },
+  { id: "gnss", name: "GNSS satellites", color: "#9ad0f0", shape: "sat_gnss" },
+  { id: "doa", name: "DF bearings", color: "#ff9a4d", shape: "station" },
+  { id: "fix", name: "DF fixes", color: "#ff5a5a", shape: "station" },
 ];
 
 const on = Object.fromEntries(KINDS.map((k) => [k.id, true]));
@@ -32,12 +41,16 @@ const kindOf = Object.fromEntries(KINDS.map((k) => [k.id, k]));
 let tracks = new Map();
 let selected = null;
 let liveOk = false;
+let everLive = false;
 let stations = 0;
 let serverLoad = null;
 let query = "";
 let followId = null;      // id being followed (map kept centred)
-let showTrack = true;     // draw the selected track's trail
+let showTrack = true;     // draw the selected track's trail (remembered across reloads)
+try { if (localStorage.getItem("onair.map.showTrack") === "0") showTrack = false; } catch { /* storage blocked */ }
 let demoMeta = {};
+let altMode = false;      // colour aircraft by altitude (remembered)
+try { altMode = localStorage.getItem("onair.map.altColor") === "1"; } catch { /* storage blocked */ }
 
 const map = new maplibregl.Map({
   container: "map",
@@ -68,14 +81,15 @@ const map = new maplibregl.Map({
       } },
     ],
   },
-  center: [12, 28],
-  zoom: 2.15,
+  center: HAS_VIEW ? [VIEW[1], VIEW[0]] : [12, 28],
+  zoom: HAS_VIEW ? VIEW[2] : 2.15,
   minZoom: 1.2,
   fadeDuration: 0,
   attributionControl: false,
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }), "bottom-right");
 installLazyIcons(map);
+if (DEMO) window.__onairMap = map;   // handle for screenshots / debugging of the demo
 
 function graticule() {
   const features = [];
@@ -143,7 +157,13 @@ function colorOf(kind, t) {
     const src = srcOf(t);
     if (src) {
       const spec = SRC[src];
-      return ageSec(t) > spec.stale ? STALE : spec.color;
+      if (ageSec(t) > spec.stale) return STALE;
+      if (altMode && kind === "aircraft") {
+        if (t.alt != null && t.alt <= 100 && (t.speed == null || t.speed < 40)) return "#9aa0a6";   // on the ground
+        const c = altitudeColor(t.alt);
+        if (c) return c;
+      }
+      return spec.color;
     }
   }
   return (kindOf[kind] || {}).color || "#c8cacc";
@@ -251,22 +271,48 @@ function destPoint(t, fromLonLat) {
 }
 
 
-/** Shape name (and colour) for a track; the image id "shape|colour" is created lazily by installLazyIcons. */
+/** Shape name (and colour) for a track; the image id "shape|colour|theme" is created lazily by installLazyIcons. */
 function shapeFor(t) {
   const ity = (t.meta && t.meta.icaoType) || "";
-  const key = t.kind + "|" + (t.cat || "") + "|" + ity + "|" + (t.extra || "") + "|" + (t.sub || "");
+  // aircraft with neither a type nor a category are guessed from speed and altitude: re-evaluate when those change a lot
+  const guess = t.kind === "aircraft" && !ity && !t.cat ? Math.round((t.alt || 0) / 6000) + "/" + Math.round((t.speed || 0) / 80) : "";
+  const key = t.kind + "|" + (t.cat || "") + "|" + ity + "|" + (t.extra || "") + "|" + (t.sub || "") + "|" + guess;
   if (t._shapeKey !== key) {
     t._shapeKey = key;
-    t._shape = iconShape({ kind: t.kind, cat: t.cat, extra: t.extra, sub: t.sub, label: t.label, icaoType: ity, hex: icaoOf(t) });
+    t._shape = iconShape({ kind: t.kind, cat: t.cat, extra: t.extra, sub: t.sub, label: t.label, src: t.src, icaoType: ity, hex: icaoOf(t),
+      wake: t.meta && t.meta.wake, speed: t.speed, alt: t.alt });
+    t._scale = t.kind === "vessel" ? vesselScale({ shape: t._shape, cat: t.cat, extra: t.extra, sub: t.sub }) : 1;
   }
   return t._shape;
 }
 function shapeRotates(shape) { return !!(SHAPES[shape] && SHAPES[shape].rotates); }
 
+/** Course for drawing: eases toward the reported one by the shortest arc, so icons turn smoothly instead of jumping. */
+function easedHeading(t, hdg) {
+  if (hdg == null) return 0;
+  if (REDUCED || t._dh == null) { t._dh = hdg; return hdg; }
+  const d = ((hdg - t._dh + 540) % 360) - 180;
+  if (Math.abs(d) < 0.5) t._dh = hdg; else t._dh = (t._dh + d * 0.4 + 360) % 360;
+  return t._dh;
+}
+
+/** Returns a (lon, lat) => bool for the padded viewport, or null when everything is in view anyway (few tracks, world view). */
+function viewTest() {
+  if (tracks.size <= 150 || !map.loaded() || map.getZoom() < 3) return null;
+  const b = map.getBounds();
+  const w = b.getWest(), e = b.getEast(), s = b.getSouth(), n = b.getNorth();
+  if (e - w >= 300) return null;
+  const cx = (w + e) / 2, cy = (s + n) / 2, hx = (e - w) / 2 * 1.3 + 0.2, hy = (n - s) / 2 * 1.3 + 0.2;
+  return (lon, lat) => Math.abs(((lon - cx + 540) % 360 + 360) % 360 - 180) <= hx && Math.abs(lat - cy) <= hy;
+}
+
 function geojson() {
   const features = [];
+  const theme = themeKey();
+  const inView = viewTest();   // beyond ~150 tracks only what is on (or near) the screen is handed to the renderer
   for (const t of tracks.values()) {
-    if (!on[t.kind]) continue;
+    if (!on[t.kind] || t.kind === "doa" || t.kind === "fix") continue;   // drawn by the DF layers
+    if (inView && t.id !== selected && !inView(t.lon, t.lat)) continue;
     const hdg = effectiveHeading(t);
     const dot = datalinkDotUntilHeading(t, hdg);
     const shape = shapeFor(t);
@@ -277,13 +323,15 @@ function geojson() {
       properties: {
         id: t.id,
         kind: t.kind,
-        icon: iconId(shape, color),
+        icon: iconId(shape, color, theme),
         label: t.label || "",
         color,
-        heading: hdg != null ? hdg : 0,
+        heading: dot ? 0 : easedHeading(t, hdg),
+        scale: t._scale || 1,
         sym: dot ? 0 : 1,
         dot: dot ? 1 : 0,
-        iconRot: shapeRotates(shape) && hdg != null && !dot ? 1 : 0,
+        // a heading derived from position reports (dv) at walking pace is noise: do not turn the icon on it
+        iconRot: shapeRotates(shape) && hdg != null && !dot && !(t.dv && !(t.speed >= 8)) ? 1 : 0,
         sel: t.id === selected ? 1 : 0,
         est: t.est ? 1 : 0,   // an estimated (dead-reckoned) position: drawn as a ghost
       },
@@ -294,12 +342,19 @@ function geojson() {
 }
 
 function trailGeo() {
+  const g = trailGeoSelected();
+  g.features.push(...dfFeatures(tracks, on, Date.now()));
+  return g;
+}
+
+function trailGeoSelected() {
   const features = [];
   if (!selected) return { type: "FeatureCollection", features };
   const t = tracks.get(selected);
   if (!t || !on[t.kind] || t.kind === "gnss") return { type: "FeatureCollection", features };
   const [dlon, dlat] = displayLonLat(t);
-  const path = Array.isArray(t.path) ? t.path.slice() : [];
+  // t.tpts = server history merged with the fixes this page saw (see fetchTrail); t.path is the short fallback
+  const path = t.tpts && t.tpts.length >= 2 ? toLine(t.tpts) : Array.isArray(t.path) ? t.path.slice() : [];
   if (path.length && (path[path.length - 1][0] !== dlon || path[path.length - 1][1] !== dlat)) path.push([dlon, dlat]);
   else if (!path.length) path.push([dlon, dlat]);
   if (showTrack && path.length >= 2) {
@@ -332,7 +387,7 @@ function mergePathClient(prev, t) {
   const hdg = effectiveHeading({ ...t, path, heading: t.heading });
   if (hdg != null) t.heading = hdg;
   if (t.heading == null && prev && prev.heading != null) t.heading = prev.heading;
-  if (t.speed == null && prev && prev.speed != null) t.speed = prev.speed;
+  if (t.speed == null && prev && prev.speed != null) { t.speed = prev.speed; if (prev.dv) t.dv = 1; }
   if (prev && prev.meta && !t.meta) t.meta = prev.meta;
   // first sighting (this page) feeds the "first seen" and departure estimate on the card
   t.first = (prev && prev.first) || t.first || { ms: positionTimeMs(t), altFt: t.kind === "aircraft" ? t.alt : null, lat: t.lat, lon: t.lon };
@@ -348,6 +403,9 @@ function mergePathClient(prev, t) {
     if (prev.extra && !t.extra) t.extra = prev.extra;
     if (prev.cat && !t.cat) t.cat = prev.cat;
   }
+  // carry the timestamped trail forward and add this fix (dedupes against what the server already holds)
+  t.tpts = prev && prev.tpts ? prev.tpts : [];
+  t.tpts = appendLive(t.tpts, positionTimeMs(t), t.lat, t.lon, t.alt, t.heading);
   const moved = !prev || prev.lat !== t.lat || prev.lon !== t.lon;
   if (moved && prev) {
     t._prevPos = [prev.lon, prev.lat];
@@ -394,7 +452,7 @@ function fmtAlt(t) {
 }
 
 function fmtSpeed(t) {
-  if (t.kind === "aircraft" || t.kind === "flarm") return Math.round(t.speed) + " kt";
+  if (t.kind === "aircraft" || t.kind === "flarm") return (t.dv ? "~" : "") + Math.round(t.speed) + " kt";
   if (t.kind === "vessel") return Number(t.speed).toFixed(1) + " kn";
   return Number(t.speed).toFixed(1);
 }
@@ -426,16 +484,18 @@ function esc(s) {
 const miniCache = new Map();
 /** Data URL of a small icon (cached per shape+colour) so lists use <img> instead of redrawing canvases. */
 function miniUrl(shape, color) {
-  const k = shape + color;
+  const k = shape + color + themeKey();
   let u = miniCache.get(k);
   if (!u) {
     const c = document.createElement("canvas");
-    paintMini(c, shape, color, 18);
+    paintMini(c, shape, color, 18, themeKey());
     u = c.toDataURL();
     miniCache.set(k, u);
   }
   return u;
 }
+
+watchMapTheme(map);
 
 let layersBuilt = false;
 /** Build the layer toggles once; later calls only refresh the counts (keeps focus and hover state). */
@@ -495,7 +555,7 @@ function renderList() {
     return;
   }
   const now = Date.now();
-  el.innerHTML = list.slice(0, 400).map((t) => `
+  el.innerHTML = list.slice(0, 200).map((t) => `
     <button type="button" data-id="${esc(t.id)}" class="${t.id === selected ? "sel" : ""}">
       <img class="sym" alt="" src="${miniUrl(shapeFor(t), colorOf(t.kind, t))}" width="18" height="18" loading="lazy">
       <span class="lab">${esc(t.label || t.id)}</span>
@@ -533,7 +593,8 @@ function renderStats() {
   const pill = $("link");
   pill.classList.toggle("ok", liveOk);
   const viewers = serverLoad && serverLoad.viewers != null ? serverLoad.viewers : null;
-  const label = DEMO ? "demo" : liveOk ? (stations ? stations + " station" + (stations === 1 ? "" : "s") : "live") : "connecting";
+  if (liveOk) everLive = true;
+  const label = DEMO ? "demo" : liveOk ? (stations ? stations + " station" + (stations === 1 ? "" : "s") : "live") : everLive ? "reconnecting" : "connecting";
   pill.querySelector("span").textContent = label;
   pill.title = DEMO ? "Synthetic demo data" : [liveOk ? "Connected" : "Not connected", stations ? stations + " stations sending (30 min)" : "", viewers != null ? viewers + " viewers" : ""].filter(Boolean).join(" · ");
   const counts = {};
@@ -595,12 +656,23 @@ function loadMeta(t) {
 
 // ---------- selection and the info card ----------
 
+const sheet = createSheet({
+  host: $("card"), map, mq: window.matchMedia("(max-width: 860px)"), reduced: REDUCED,
+  getLngLat: () => (selected && tracks.has(selected) ? displayLonLat(tracks.get(selected)) : null),
+});
+
 const card = createCard($("card"), {
   demo: DEMO,
   loadPhoto: true,
   onClose: () => clearSelection(),
   onFollow: (v) => { followId = v ? selected : null; },
-  onTrack: (v) => { showTrack = v; const tr = map.getSource("trails"); if (tr) tr.setData(trailGeo()); },
+  onTrack: (v) => {
+    showTrack = v;
+    try { localStorage.setItem("onair.map.showTrack", v ? "1" : "0"); } catch { /* storage blocked */ }
+    if (v && selected) fetchTrail(selected);
+    const tr = map.getSource("trails");
+    if (tr) tr.setData(trailGeo());
+  },
   isFollowing: () => followId != null && followId === selected,
   isTrackShown: () => showTrack,
   getDisplayPos: (t) => displayLonLat(t),
@@ -626,11 +698,29 @@ function setHash(t) {
   } catch { /* sandboxed frame */ }
 }
 
+/** Pull the hub's stored history for a track (one request) and merge it with the points seen live. */
+const trailAsked = new Map(); // id -> ms of the last request, so reselecting does not hammer the hub
+function fetchTrail(id) {
+  if (DEMO || !showTrack) return;
+  const now = Date.now();
+  if (now - (trailAsked.get(id) || 0) < 30000) return;
+  trailAsked.set(id, now);
+  fetch("/trail?id=" + encodeURIComponent(id)).then((r) => (r.ok ? r.json() : null)).then((d) => {
+    const pts = d && d.trails && d.trails[id];
+    const t = tracks.get(id);
+    if (!pts || !t) return;
+    t.tpts = mergeTrails(pts, t.tpts);
+    if (selected === id) { const tr = map.getSource("trails"); if (tr) tr.setData(trailGeo()); }
+  }).catch(() => { trailAsked.delete(id); });
+}
+
 function selectTrack(t) {
   if (followId && followId !== t.id) followId = null;
   selected = t.id;
   loadMeta(t);
+  fetchTrail(t.id);
   card.open(prepForCard(t));
+  sheet.onOpen();
   setHash(t);
   applyListSel();
   const src = map.getSource("live");
@@ -644,6 +734,7 @@ function clearSelection() {
   selected = null;
   followId = null;
   card.close();
+  sheet.onClose();
   setHash(null);
   applyListSel();
   const src = map.getSource("live");
@@ -662,7 +753,8 @@ function focusTrack(id) {
   if (!t) return;
   selectTrack(t);
   const [lon, lat] = displayLonLat(t);
-  map.easeTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: REDUCED ? 0 : 500 });
+  // recentre keeps the marker in the free area above the phone sheet (plain centring on desktop)
+  sheet.recentre(true, { center: [lon, lat], zoom: Math.max(map.getZoom(), 6.5), duration: REDUCED ? 0 : 500 });
 }
 
 // card refresh at 1 Hz, regardless of how often positions arrive
@@ -716,6 +808,22 @@ map.on("load", () => {
     filter: ["==", ["get", "kind"], "pred"],
     paint: { "line-color": ["get", "color"], "line-width": 1.2, "line-opacity": 0.45, "line-dasharray": [2, 2] },
   });
+  // direction finding: bearing wedges and lines from the stations, fix markers with their 95 % ellipse
+  map.addLayer({ id: "dfwedge", type: "fill", source: "trails", filter: ["==", ["get", "kind"], "dfwedge"],
+    paint: { "fill-color": "#ff9a4d", "fill-opacity": ["*", 0.12, ["get", "fade"]] } });
+  map.addLayer({ id: "dfell", type: "fill", source: "trails", filter: ["==", ["get", "kind"], "dfell"],
+    paint: { "fill-color": "#ff5a5a", "fill-opacity": 0.18 } });
+  map.addLayer({ id: "dfellline", type: "line", source: "trails", filter: ["==", ["get", "kind"], "dfell"],
+    paint: { "line-color": "#ff5a5a", "line-width": 1.5, "line-opacity": 0.9 } });
+  map.addLayer({ id: "dfline", type: "line", source: "trails", filter: ["==", ["get", "kind"], "dfline"],
+    paint: { "line-color": "#ff9a4d", "line-width": 2, "line-opacity": ["*", 0.9, ["get", "fade"]], "line-dasharray": [4, 2] } });
+  map.addLayer({ id: "dfstation", type: "circle", source: "trails", filter: ["==", ["get", "kind"], "dfstation"],
+    paint: { "circle-radius": 5, "circle-color": "#ff9a4d", "circle-stroke-width": 1.2, "circle-stroke-color": "#0b0c0d" } });
+  map.addLayer({ id: "dffix", type: "circle", source: "trails", filter: ["==", ["get", "kind"], "dffix"],
+    paint: { "circle-radius": 7, "circle-color": "#ff5a5a", "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
+  map.addLayer({ id: "dffixlabel", type: "symbol", source: "trails", filter: ["==", ["get", "kind"], "dffix"],
+    layout: { "text-field": ["concat", "TX ", ["get", "label"]], "text-size": 12, "text-offset": [0, 1.4], "text-anchor": "top", "text-font": ["Open Sans Regular"] },
+    paint: { "text-color": "#ffd0d0", "text-halo-color": "#0b0c0d", "text-halo-width": 1.5 } });
   // selected state: soft glow plus a ring in the track's colour
   map.addLayer({
     id: "halo", type: "circle", source: "live",
@@ -723,9 +831,9 @@ map.on("load", () => {
     paint: {
       "circle-radius": 20,
       "circle-color": ["get", "color"],
-      "circle-opacity": 0.2,
-      "circle-blur": 0.7,
-      "circle-stroke-width": 1.5,
+      "circle-opacity": 0.1,
+      "circle-blur": 0,
+      "circle-stroke-width": 1.6,
       "circle-stroke-color": ["get", "color"],
       "circle-stroke-opacity": 0.9,
     },
@@ -752,10 +860,32 @@ map.on("load", () => {
       "icon-allow-overlap": true,
       "icon-ignore-placement": true,
       "icon-anchor": "center",
-      "icon-size": ["interpolate", ["linear"], ["zoom"], 1.5, 0.5, 4, 0.7, 8, 0.95, 12, 1.25],
+      "icon-size": ["interpolate", ["linear"], ["zoom"], 1.5, ["*", 0.5, ["get", "scale"]], 4, ["*", 0.7, ["get", "scale"]], 8, ["*", 0.95, ["get", "scale"]], 12, ["*", 1.25, ["get", "scale"]]],
       "symbol-sort-key": ["to-number", ["get", "sel"]],
     },
     paint: { "icon-opacity": ["case", ["==", ["to-number", ["get", "est"]], 1], 0.5, 1] },
+  });
+  // callsigns: only for the selected track, and for everything once zoomed in (the renderer drops labels that would collide)
+  const labelLayout = {
+    "text-field": ["get", "label"],
+    "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+    "text-size": 11,
+    "text-anchor": "top",
+    "text-offset": [0, 1.5],
+    "text-optional": true,
+  };
+  const dark = themeKey() === "d";
+  map.addLayer({
+    id: "lab", type: "symbol", source: "live", minzoom: 7.5,
+    filter: ["all", ["!=", ["get", "label"], ""], ["==", ["to-number", ["get", "sel"]], 0], ["!=", ["get", "kind"], "gnss"]],
+    layout: { ...labelLayout, "text-allow-overlap": false, "text-ignore-placement": false },
+    paint: { "text-color": dark ? "#dfe2e5" : "#14181c", "text-halo-color": dark ? "#0b0c0d" : "#ffffff", "text-halo-width": 1.4, "text-opacity": 0.92 },
+  });
+  map.addLayer({
+    id: "lab_sel", type: "symbol", source: "live",
+    filter: [">", ["to-number", ["get", "sel"]], 0],
+    layout: { ...labelLayout, "text-size": 12, "text-allow-overlap": true, "text-ignore-placement": true, "text-offset": [0, 1.9] },
+    paint: { "text-color": dark ? "#ffffff" : "#000000", "text-halo-color": dark ? "#0b0c0d" : "#ffffff", "text-halo-width": 1.6 },
   });
   const hit = ["dot", "sym"];
   /** Nearest feature to the click within a 14 px box, so thin icons are easy to hit on touch screens too. */
@@ -784,6 +914,9 @@ map.on("load", () => {
   ensureMotionLoop();
 });
 
+// the visible part of the map changed: hand the renderer the tracks that are now near the screen
+map.on("moveend", () => { const src = map.getSource("live"); if (src && tracks.size > 150) src.setData(geojson()); });
+
 // user panning cancels follow mode
 for (const ev of ["dragstart", "wheel", "touchstart"]) {
   map.on(ev, (e) => { if (followId && e.originalEvent) { followId = null; card.syncToggles(); } });
@@ -803,6 +936,13 @@ function setRailOpen(open) {
 }
 $("panelBtn")?.addEventListener("click", () => setRailOpen(!$("rail")?.classList.contains("open")));
 $("railBackdrop")?.addEventListener("click", () => setRailOpen(false));
+$("railClose")?.addEventListener("click", () => setRailOpen(false));
+for (const [id, v] of [["layersAll", true], ["layersNone", false]]) {
+  $(id)?.addEventListener("click", () => {
+    for (const box of $("layers").querySelectorAll("input")) { box.checked = v; on[box.dataset.k] = v; box.closest("label").classList.toggle("off", !v); }
+    apply();
+  });
+}
 
 // ---------- search: callsign, registration, ICAO hex, MMSI ----------
 
@@ -900,7 +1040,31 @@ function setLive(ok) {
   renderStats();
 }
 
+let liveVersion = 0;   // hub version of the data in `tracks` (for /live?since=)
+let liveFullAt = 0;
+
+/** A /live?since= answer: only the changed tracks and the ids that went away. */
+function takeDelta(d) {
+  for (const t of d.tracks || []) tracks.set(t.id, mergePathClient(tracks.get(t.id), t));
+  for (const id of d.removed || []) tracks.delete(id);
+  stations = d.stations || 0;
+  if (d.load) serverLoad = d.load;
+  liveVersion = d.version || liveVersion;
+  apply();
+  setLive(true);
+}
+
+/** Polling fallback (WebSocket down): small deltas, with a full snapshot at the start and every 5 minutes. */
+function pollLive() {
+  const full = !liveVersion || Date.now() - liveFullAt > 300000;
+  fetch(full ? "/live" : "/live?since=" + liveVersion).then((r) => r.json()).then((d) => {
+    if (d.delta) takeDelta(d); else takeSnapshot(d);
+  }).catch(() => setLive(false));
+}
+
 function takeSnapshot(d) {
+  liveVersion = d.version || 0;
+  liveFullAt = Date.now();
   const next = new Map();
   for (const t of d.tracks || []) next.set(t.id, mergePathClient(tracks.get(t.id), t));
   tracks = next;
@@ -931,7 +1095,7 @@ function connect() {
   };
   setTimeout(() => {
     if (!wsOpen && tracks.size === 0) {
-      fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => setLive(false));
+      pollLive();
     }
   }, 6000);
 }
@@ -965,15 +1129,60 @@ function ensureMotionLoop() {
 
 /** Fill the collapsible icon guide (what each shape means). */
 function renderIconGuide() {
-  const rows = [
-    ["narrow", "Narrow-body jet"], ["wide", "Wide-body jet"], ["quad", "Four-engine (A380 / 747)"], ["regional", "Regional / business jet"],
-    ["turboprop", "Turboprop"], ["light", "Light aircraft"], ["heli", "Helicopter"], ["military", "Military / fighter"],
-    ["glider", "Glider"], ["balloon", "Balloon"], ["drone", "Drone"], ["ship_cargo", "Cargo ship"], ["ship_tanker", "Tanker"],
-    ["ship_passenger", "Passenger ship"], ["ship_fishing", "Fishing"], ["ship_sailing", "Sailing"], ["ship_tug", "Tug"],
-    ["sonde", "Radiosonde"], ["sat", "Satellite"], ["aprs_car", "APRS vehicle"], ["aprs_house", "APRS home / weather"], ["aprs_digi", "APRS digipeater"],
-  ];
-  $("iconkey").innerHTML = rows.map(([s, n]) => `<div><img alt="" src="${miniUrl(s, "#c8cacc")}" width="18" height="18">${n}</div>`).join("");
+  const g = (title, rows) => `<h4>${title}</h4>` + rows.map(([s, n]) => `<div><img alt="" src="${miniUrl(s, "#c8cacc")}" width="22" height="22">${n}</div>`).join("");
+  $("iconkey").innerHTML =
+    g("Aircraft", [
+      ["narrow", "Narrow-body jet"], ["wide", "Wide-body twin"], ["quad", "Four-engine (A380 / 747)"], ["regional", "Regional jet"], ["bizjet", "Business jet"],
+      ["turboprop", "Turboprop"], ["light", "Light aircraft"], ["lighttwin", "Light twin"], ["heli", "Helicopter"], ["fighter", "Fighter"],
+      ["delta", "Delta-wing fighter"], ["transport", "Military transport"], ["glider", "Glider"], ["balloon", "Balloon"], ["airship", "Airship"],
+      ["uav", "Fixed-wing UAV"], ["plane", "Unknown aircraft"], ["vehicle", "Ground vehicle"],
+    ])
+    + g("Ships (the dashed line is the course)", [
+      ["ship_cargo", "Cargo"], ["ship_tanker", "Tanker"], ["ship_passenger", "Passenger / ferry"], ["ship_hsc", "High-speed craft"], ["ship_tug", "Tug"],
+      ["ship_fishing", "Fishing"], ["ship_sailing", "Sailing"], ["ship_pleasure", "Pleasure craft"], ["ship_military", "Military"], ["ship_sar", "Search and rescue"],
+      ["ship_pilot", "Pilot"], ["ship_dredger", "Dredger"], ["ship_other", "Other / unknown"],
+    ])
+    + g("Other", [
+      ["drone", "Drone"], ["drone_rid", "Drone with Remote ID"], ["sonde", "Radiosonde"], ["sat", "Satellite"], ["sat_gnss", "GNSS satellite"],
+      ["aprs_car", "APRS vehicle"], ["aprs_truck", "APRS truck"], ["aprs_house", "APRS home"], ["aprs_wx", "APRS weather station"],
+      ["aprs_digi", "APRS digipeater"], ["aprs_balloon", "APRS balloon"], ["aprs_ship", "APRS boat"], ["ham", "Amateur station"], ["buoy", "Buoy"],
+    ]);
 }
+
+// altitude colouring: option + legend in the Filters sheet
+function syncAltUi() {
+  const box = $("altColor");
+  if (box) box.checked = altMode;
+  const lg = $("altLegend");
+  if (lg) lg.hidden = !altMode;
+  const bar = $("altBar");
+  if (bar) bar.style.background = altitudeGradientCss();
+}
+$("altColor")?.addEventListener("change", (e) => {
+  altMode = e.target.checked;
+  try { localStorage.setItem("onair.map.altColor", altMode ? "1" : "0"); } catch { /* storage blocked */ }
+  syncAltUi();
+  apply();
+});
+syncAltUi();
+
+// the map theme flipped: icons get the other outline colour, labels and the small icons follow
+onThemeChange((k) => {
+  const dark = k === "d";
+  for (const [id, light] of [["lab", "#dfe2e5"], ["lab_sel", "#ffffff"]]) {
+    try {
+      map.setPaintProperty(id, "text-color", dark ? light : (id === "lab" ? "#14181c" : "#000000"));
+      map.setPaintProperty(id, "text-halo-color", dark ? "#0b0c0d" : "#ffffff");
+    } catch { /* layers not added yet */ }
+  }
+  for (const k2 of KINDS) {
+    const img = document.querySelector(`#layers label[data-k="${k2.id}"] img.ico`);
+    if (img) img.src = miniUrl(k2.shape, k2.color);
+  }
+  renderIconGuide();
+  renderListSoon();
+  apply();
+});
 
 // ---------- start ----------
 
@@ -1007,6 +1216,6 @@ if (DEMO) {
   // Full snapshots are expensive on the hub; rely on WebSocket when connected.
   setInterval(() => {
     if (wsOpen) return;
-    fetch("/live").then((r) => r.json()).then(takeSnapshot).catch(() => {});
+    pollLive();
   }, 30000);
 }

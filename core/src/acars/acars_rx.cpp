@@ -1,4 +1,5 @@
 #include "dect2/acars/acars_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/net/feeds.h"
 #include "dect2/acars/acars_proto.h"
 #include "dect2/aero/aero_pos.h"
@@ -333,6 +334,13 @@ struct AcarsReceiver::Impl {
             }
         }
         if (Feeds::get().wantAcars()) Feeds::get().acars(m);   // the data feed out (feeds.h), off unless the user turned it on
+        if (automation::wants(automation::FAcars)) {   // the automations (automation/engine.h)
+            automation::Event ev("acars.message");
+            ev.at(automation::wallNow(), "ACARS", m.freqHz);
+            ev.str("tail", m.reg).str("flight", m.flightId).str("label", m.label).str("text", m.text).flag("downlink", m.downlink).str("msg_num", m.msgNum);
+            if (m.hasPos) ev.num("lat", m.lat).num("lon", m.lon);
+            automation::emit(std::move(ev));
+        }
         msgs.push_front(std::move(m));
         if (msgs.size() > 200) msgs.pop_back();
     }
@@ -362,7 +370,14 @@ struct AcarsReceiver::Impl {
         a.reportSecPastHour = p.secPastHour; a.reportSecOfDay = p.secOfDay;
         a.route = p.route;
         if (a.track.empty() || a.track.back().lat != p.lat || a.track.back().lon != p.lon) {
-            a.track.push_back({p.lat, p.lon, p.altFt, tSec});
+            int rep = -1;
+            if (p.secOfDay >= 0) rep = p.secOfDay;
+            else if (p.secPastHour >= 0 && wall > 0) {   // ADS-C: the hour of the wall clock, one hour back when that puts the report in the future
+                int64_t at = wall - wall % 3600 + (int64_t)p.secPastHour;
+                if (at > wall + 120) at -= 3600;
+                rep = (int)(((at % 86400) + 86400) % 86400);
+            }
+            a.track.push_back({p.lat, p.lon, p.altFt, tSec, rep});
             if (a.track.size() > kMaxTrack) a.track.erase(a.track.begin());
         }
     }

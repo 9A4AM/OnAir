@@ -2,7 +2,7 @@
 
 <h1 align="center">OnAir</h1>
 
-<p align="center"><b>Receive TV, radio, aircraft, ships, satellites, two-way radio, pagers, time signals and more: 111 modes with one software-defined radio.</b><br>
+<p align="center"><b>Receive TV, radio, aircraft, ships, satellites, two-way radio, pagers, time signals and more: 112 modes with one software-defined radio.</b><br>
 Free and open source, for macOS, Windows, Linux and Android.</p>
 
 <p align="center">
@@ -111,7 +111,7 @@ OnAir is a receiver first. It can also send test signals through a transmit-capa
 - **Share my radio:** an rtl_tcp server for the radio OnAir is running.
 - **More radios:** Fobos SDR, RX888 MkII (native USB 3 driver), RFNM, Red Pitaya, Pluto+ Ethernet, SpyServer, SDR++ server, Hermes Lite 2.
 - **Transmit** of test signals into a dummy load, with the modes offered listed in [docs/TRANSMIT.md](docs/TRANSMIT.md).
-- **New modes** since 0.2.5: Wi-SUN FAN, UAT 978 MHz, VDL Mode 4, TETRAPOL, Elektro-L, LBJ (Chinese railway warnings), DECT, ANT+ sensors, NB-IoT and 5G NR cells, MAC, DVB-C, MeshCom, Q65 and the other WSJT modes, and more (111 modes in all).
+- **New modes** since 0.2.5: Wi-SUN FAN, e-Czas (Polish time service on 225 kHz), UAT 978 MHz, VDL Mode 4, TETRAPOL, Elektro-L, LBJ (Chinese railway warnings), DECT, ANT+ sensors, NB-IoT and 5G NR cells, MAC, DVB-C, MeshCom, Q65 and the other WSJT modes, and more (112 modes in all).
 - **Interface:** Light and High contrast themes, an accent colour, colour maps and scroll-back for the spectrum, a General receiver with up to 4 channels and MP3 / FLAC recording, a one-button **Record audio** in the Source panel (next to Record IQ) that saves the sound you hear in any mode to WAV, FLAC or MP3 (optionally only while there is sound, one file per transmission), **Monitor audio** (Source panel): hear the tuned channel of any mode, also the decoders that have no sound of their own, as USB / LSB / narrow FM / AM, on a chosen output device, a second device (a virtual audio cable for fldigi, WSJT-X, multimon-ng) or a local TCP stream (off by default, 127.0.0.1 only unless you allow other computers; see docs/AUDIO.md), a "Save bug report" zip, translations (German, French, Spanish, Chinese, Lithuanian, Hungarian, Japanese, Polish, Dutch, Portuguese, Italian, Russian).
 - **Docker image** that shows the OnAir GUI in a browser, published with each release.
 - **mbelib is no longer included** (patented AMBE/IMBE vocoders): see [Good to know](#good-to-know).
@@ -172,10 +172,10 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 
 ## Modes
 
-111 modes, grouped as in the app. Every receiver is built from the published specifications and tested on generated signals (carrier offsets, noise, echoes, clock errors) and, where recordings exist, on real captures. Reports and recordings from your own antenna help most: send them on [Discord](https://discord.gg/Kky9c6atm) or upload them to the [signal sample library](https://files.on-air.dev). Where a mode has a specific caveat it is said below. **Receive only** means nothing is transmitted, decrypted or joined.
+112 modes, grouped as in the app. Every receiver is built from the published specifications and tested on generated signals (carrier offsets, noise, echoes, clock errors) and, where recordings exist, on real captures. Reports and recordings from your own antenna help most: send them on [Discord](https://discord.gg/Kky9c6atm) or upload them to the [signal sample library](https://files.on-air.dev). Where a mode has a specific caveat it is said below. **Receive only** means nothing is transmitted, decrypted or joined.
 
 <details>
-<summary><b>All 111 modes, by family</b></summary>
+<summary><b>All 112 modes, by family</b></summary>
 
 ### TV
 
@@ -193,7 +193,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 - **DAB / DAB+** with a transmitter map from the TII, Journaline and MOT slide show.
 - **FM** (87.5 - 108 MHz): stereo and RDS (station name, radio text, programme type, traffic flags), band scan, saved stations, Mono switch.
 - **DRM** (DRM30 and DRM+) on long, medium and short wave: audio, station information and the data services (slide show, website, EPG, TPEG, Journaline).
-- **HD Radio** (NRSC-5, FM and AM) and **CDR** (China Digital Radio). HDC and DRA audio are patented: see [Good to know](#good-to-know) (HD Radio sound plays with a codec you build yourself).
+- **HD Radio** (NRSC-5, FM and AM) and **CDR** (China Digital Radio). HDC and DRA audio are patented or of unclear status: see [Good to know](#good-to-know). HD Radio and CDR sound play only with a codec add-on you build yourself ([docs/CODECS.md](docs/CODECS.md)); the stations, services and data work without it.
 
 ### Aviation
 
@@ -221,7 +221,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 
 ### Cellular and rail
 
-- **Cell towers** (LTE MIB / SIB1 - SIB5; towers on a map with an [OpenCelliD](#tools-and-notes) key), **5G NR cells** (SS/PBCH, PCI, RSRP, MIB; SIB1 is not decoded yet), **NB-IoT cells**, **GSM-R** (921 - 925 MHz) and **LBJ** (Chinese railway train warnings). Public broadcast information only.
+- **Cell towers** (LTE MIB / SIB1 - SIB5; towers on a map with an [OpenCelliD](#tools-and-notes) key), **5G NR cells** (SS/PBCH, PCI, RSRP, MIB; SIB1 is not decoded yet), **NB-IoT cells**, **GSM-R** (921 - 925 MHz) and **LBJ** (Chinese railway train warnings at 821.2375 MHz: train number, speed, kilometre post, direction; see [docs/lbj.md](docs/lbj.md)). Public broadcast information only.
 
 ### Pagers
 
@@ -237,7 +237,7 @@ No radio? Open an IQ recording through the *IQ recording file* source (cs8, cu8,
 ### Weather and science
 
 - **Radiosondes** (400 - 406 MHz and LMS6-1680; tracks and landing prediction), **NOAA Weather Radio SAME** (EAS alert decoder).
-- **Time signals** (DCF77, MSF, WWVB, JJY, WWV / WWVH, BPM, BPC and more; the computer clock can be synced) and **Ionospheric sounders** (ionograms from chirp sounders).
+- **Time signals** (DCF77, MSF, WWVB, JJY, WWV / WWVH, BPM, BPC and more; the computer clock can be synced), **e-Czas** (Poland's official time on 225 kHz long wave, from a long-wave capable radio or an upconverter; [how to receive it](docs/eczas.md)) and **Ionospheric sounders** (ionograms from chirp sounders).
 - **Radio astronomy** (21 cm hydrogen line and OH lines).
 
 ### Amateur: digital
@@ -389,6 +389,7 @@ Add them from the source list: **Add network radio…**, choose the type, type i
 | **SoapyRemote** (any SoapySDR radio shared by `SoapySDRServer --bind`) | the computer running the server | 55132 |
 | **SpyServer** (Airspy's server, as SDR# and SDR++ use it) | the computer running SpyServer | 5555 |
 | **SDR++ server** (SDR++ run as `sdrpp --server`, any source SDR++ has) | the computer running it | 5259 |
+| **KiwiSDR** (HF receiver on the network, 12 kHz IQ; experimental, see [docs/kiwisdr.md](docs/kiwisdr.md)) | the receiver (or **Find KiwiSDR** for the public list) | 8073 |
 | **SDRplay nRSP-ST** (through SDRconnect's WebSocket API; experimental, see [docs/nrsp-st.md](docs/nrsp-st.md)) | the computer running SDRconnect, with its WebSocket server on | 5454 |
 | **Hermes Lite 2** | found by itself on your networks (or type its address) | 1024 |
 | **Red Pitaya** (SDR transceiver app, HPSDR protocol 1) | found by itself on your networks (or type its address) | 1024 |
@@ -467,8 +468,8 @@ Off by default. **View > Show in Discord** shows on your Discord profile that yo
 >
 > **HD Radio sound is not included.** HDC is a proprietary codec of Xperi, so OnAir shows the stations, program data and pictures but is silent until you build the HDC-patched FAAD2 (`libfaad_hdc`) yourself from the open-source nrsc5 patch and put it in the codecs folder, then press **Look again** (the **?** next to the sound). Steps and the legal note: **[docs/CODECS.md](docs/CODECS.md#hd-radio-sound-hdc-build-it-yourself)**.
 
-- codec2 (FreeDV and M17 speech) comes with OnAir as a separate shared library, nothing to install. Some other voice and audio codecs are not shipped (AMBE, HDC and DRA+ are patented). **[docs/CODECS.md](docs/CODECS.md)** says how to install the ones you can, and what to use for the others; the **?** button next to the sound of each such mode says the same.
-- **Saving DRA sound.** OnAir cannot decode DRA, but it can save it. In the CDR *Radio* tab, and in the *Player* section of the TV tab for a DTMB service whose sound is DRA (or any service with MPEG audio), press **Save stream**. The raw audio goes to `audio-streams/<name>_<date>_<time>.dra` (`.mp2` for MPEG audio) in OnAir's data folder; press **Stop saving** to close the file. Play it with an FFmpeg that has DRA support (`ffplay stream.dra`, or `ffplay -f dra stream.dra` if it is not recognised); a normal FFmpeg cannot read `.dra`, while `.mp2` plays anywhere.
+- codec2 (FreeDV and M17 speech) comes with OnAir as a separate shared library, nothing to install. Some other voice and audio codecs are not shipped (AMBE and HDC are patented, DRA+ is of unclear status). **[docs/CODECS.md](docs/CODECS.md)** says how to install the ones you can, and what to use for the others; the **?** button next to the sound of each such mode says the same.
+- **Saving DRA sound.** OnAir does not include a DRA decoder (CDR sound needs the optional add-on in [docs/CODECS.md](docs/CODECS.md#dra-cdr-sound), TV DRA needs a patched FFmpeg), but it can save the raw sound. In the CDR *Radio* tab, and in the *Player* section of the TV tab for a DTMB service whose sound is DRA (or any service with MPEG audio), press **Save stream**. The raw audio goes to `audio-streams/<name>_<date>_<time>.dra` (`.mp2` for MPEG audio) in OnAir's data folder; press **Stop saving** to close the file. Play it with an FFmpeg that has DRA support (`ffplay stream.dra`, or `ffplay -f dra stream.dra` if it is not recognised); a normal FFmpeg cannot read `.dra`, while `.mp2` plays anywhere.
 - Reception depends heavily on your antenna and location. A weak or echo-filled signal is the usual cause of a broken picture; the quality score and echo detector help you improve it.
 - Receiving broadcasts is legal in most places, but laws differ. Check the rules where you live.
 

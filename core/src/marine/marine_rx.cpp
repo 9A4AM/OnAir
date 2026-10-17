@@ -1,4 +1,5 @@
 #include "../audio/ham_listen.h"
+#include "dect2/automation/engine.h"
 #include "dect2/marine/marine_rx.h"
 #include "dect2/marine/marine_dsc.h"
 #include "dect2/marine/marine_dsp.h"
@@ -48,6 +49,7 @@ struct MarineReceiver::Impl {
     std::atomic<double> faxSlant{0};
     std::atomic<bool> faxAuto{true};
     std::atomic<bool> faxDirty{true};
+    std::atomic<bool> faxClearReq{false};     // clearFax(): the receiver thread zeroes its fax bookkeeping
     std::function<void(const std::string&)> log;
 
     Front front;
@@ -122,6 +124,14 @@ struct MarineReceiver::Impl {
         DscCall c = c0;
         c.vhf = vhfPath;
         c.rxSec = secs(); c.rxTime = wallNow();
+        if (automation::wants(automation::FDsc)) {   // the automations (automation/engine.h)
+            automation::Event ev("dsc.call");
+            ev.at(automation::wallNow(), "Marine", vhfPath ? 156.525e6 : 0);
+            std::string sum = c.formatName + (c.categoryName.empty() ? "" : ", " + c.categoryName) + (c.distress ? ", " + c.natureName : "");
+            ev.str("category", c.distress ? "distress" : c.categoryName).str("from_mmsi", c.fromMmsi).str("to_mmsi", c.to).str("summary", sum);
+            if (c.hasPos) ev.num("lat", c.lat).num("lon", c.lon);
+            automation::emit(std::move(ev));
+        }
         std::lock_guard<std::mutex> lk(telMu);
         tel.dsc.push_back(c);
         if (tel.dsc.size() > 100) tel.dsc.erase(tel.dsc.begin());
@@ -151,6 +161,7 @@ struct MarineReceiver::Impl {
     }
 
     void applyFaxSettings() {
+        if (faxClearReq.exchange(false)) { faxLinesSeen = 0; prevFaxState = 0; }
         if (!faxDirty.exchange(false)) return;
         fax.setLpm(faxLpm.load());
         fax.setIoc(faxIoc.load());
@@ -307,7 +318,11 @@ void MarineReceiver::clearMessages() {
     p_->tel.navtex.clear(); p_->tel.dsc.clear();
     p_->tel.seq++;
 }
-void MarineReceiver::clearResults() { clearMessages(); }
+void MarineReceiver::clearFax() {
+    p_->fax.reset();                 // takes the decoder's own lock, so it is safe while the receiver thread pushes audio
+    p_->faxClearReq = true;
+}
+void MarineReceiver::clearResults() { clearMessages(); clearFax(); }
 std::string MarineReceiver::saveResults() const {
     std::lock_guard<std::mutex> lk(p_->telMu);
     return results::pack(p_->lastNow, p_->tel.navtex, p_->tel.dsc, p_->tel.navtexCount, p_->tel.dscCount);

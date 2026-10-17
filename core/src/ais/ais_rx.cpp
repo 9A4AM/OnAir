@@ -3,6 +3,7 @@
 // decimated to 48 kHz (5 samples per bit). A power detector finds the bursts (they are short and stand alone), each one is cut out of a ring of samples
 // and decoded offline by aisDecodeBurst (ais_phy.cpp). The message layer and the station table are here.
 #include "dect2/ais/ais_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/net/feeds.h"
 #include "dect2/ais/ais_phy.h"
 #include "dect2/ais/ais_proto.h"
@@ -97,6 +98,7 @@ struct Chan {
 struct Rec {
     AisVessel v;
     double lastHeard = 0;
+    double autoEmit = -1e9;   // the automations: when this vessel was last reported
 };
 
 } // namespace
@@ -271,6 +273,15 @@ struct AisReceiver::Impl {
         if (m.type == 21) {
             v.aidType = m.aidType; v.virtualAid = m.virtualAid;
             if (m.second < 60) v.offPosition = m.offPosition;
+        }
+        if (m.hasPos && automation::wants(automation::FAis) && tnow - r.autoEmit >= 5.0) {   // the automations: a position report, at most every 5 s per vessel
+            r.autoEmit = tnow;
+            static const char* const cls[] = {"A", "B", "base", "aid", "SAR", "other"};
+            automation::Event ev("ais.vessel");
+            ev.at(automation::wallNow(), "AIS", chan == 'B' ? 162.025e6 : 161.975e6);
+            ev.num("mmsi", m.mmsi).str("name", v.name).str("callsign", v.callsign).num("ship_type", v.shipType).num("lat", v.lat).num("lon", v.lon)
+                .num("sog_kt", v.sog).num("cog_deg", v.cog).num("nav_status", v.navStatus).str("class", cls[v.cls >= 0 && v.cls <= 5 ? v.cls : 5]).str("destination", v.destination);
+            automation::emit(std::move(ev));
         }
     }
 

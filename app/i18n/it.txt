@@ -166,7 +166,6 @@ Back	Indietro
 Next	Avanti
 Finish	Fine
 Skip	Salta
-Skip tour	Salta il tour
 Dismiss	Ignora
 Again	Ancora
 Auto	Auto
@@ -209,7 +208,6 @@ New interface	Nuova interfaccia
 Try the new interface. You can switch back at any time.	Prova la nuova interfaccia. Puoi tornare indietro in qualsiasi momento.
 Guided tour	Tour guidato
 Tour	Tour
-Take the guided tour with Onny	Fai il tour guidato con Onny
 by: Kristijonas Adomaitis, made with help from the community	di: Kristijonas Adomaitis, realizzato con l'aiuto della comunità
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Grazie a tutti coloro che hanno segnalato bug, inviato registrazioni e aperto pull request.
 Source	Sorgente
@@ -467,20 +465,6 @@ Radio settings (%d changed)	Impostazioni radio (%d modificate)
 %s: frequency correction and the other settings of this radio	%s: correzione di frequenza e le altre impostazioni di questa radio
 The driver's own settings show up here\nonce this radio has been started.	Le impostazioni proprie del driver compaiono qui\ndopo che questa radio è stata avviata.
 0 = libiio's default	0 = predefinito di libiio
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Ciao, sono Onny! Sono una piccola TV che vive in OnAir. Vuoi un tour veloce? Dura circa un minuto e ti mostro tutto con un segnale dimostrativo, quindi non ti serve ancora nessun hardware.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Quassù c'è il selettore del tipo di trasmissione che vuoi: DVB per la maggior parte della TV digitale del mondo, ATSC per il Nord America e DAB per la radio digitale. OnAir li ha tutti e tre in un unico posto.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Vediamolo in azione! Avvio un segnale finto. È un trasmettitore di prova che gira dentro l'app, quindi non serve collegare nulla.
-Start the demo signal	Avvia il segnale dimostrativo
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Vedi la linea ondulata? È lo spettro: quanto è forte tutto ciò che c'è in onda, da sinistra a destra. Il gobbone al centro è il nostro canale. Sotto, il waterfall mostra la stessa cosa che scorre lentamente nel tempo.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	E questi quattro riquadri mostrano i punti che vede il ricevitore. Quando il segnale è buono, i punti si raccolgono in gruppi ordinati. Punti disordinati significano un segnale rumoroso. Ora è una demo pulita, quindi dovrebbero essere ordinati!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Qui trovi i canali quando il ricevitore si aggancia. Clicca su uno per guardarlo. C'è anche un lettore con immagine e audio, un orologio e opzioni per registrare o trasmettere in streaming ciò che guardi.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Passiamo al sodo. Scegli qui la tua radio, scegli una frequenza e imposta il guadagno. Il guadagno è quanto la radio amplifica il segnale: poco e si perde, troppo e distorce. Il pulsante Sintonia auto trova un buon valore per te.
-Stop the demo and look for my radio	Ferma la demo e cerca la mia radio
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Non sai dove sono i canali? La scheda Scansione li cerca per te. Una buona antenna, messa in alto e vicino a una finestra, fa più differenza di qualsiasi altra cosa. Promesso!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Il tour è finito! Puoi condividere i tuoi canali con altri dispositivi dalla scheda Stream (Uscite), e richiamarmi quando vuoi con il pulsante Tour in alto a destra. Buona visione!
-Good news: I can see "%s"!	Buone notizie: vedo "%s"!
-(I can't see a radio right now. Plug it in and press the button again.)	(Al momento non vedo nessuna radio. Collegala e premi di nuovo il pulsante.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Su Windows un HackRF ha bisogno una volta del driver WinUSB: installalo con Zadig, su zadig.akeo.ie.
 Weather (137 MHz)	Meteo (137 MHz)
 Amateur	Radioamatori
 Amateur satellites	Satelliti radioamatoriali
@@ -1249,7 +1233,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	Un LimeSDR Mini richiede su Windows il driver FT60x di FTDI (non Zadig), su Linux le regole udev, e una volta "LimeUtil --update" perché il suo gateware corrisponda alla libreria.
 Real (mono)	Reale (mono)
 Left	Sinistra
 Right	Destra
@@ -1380,6 +1363,61 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Sunday	domenica
+Monday	lunedì
+Tuesday	martedì
+Wednesday	mercoledì
+Thursday	giovedì
+Friday	venerdì
+Saturday	sabato
+Your radio cannot tune 225 kHz.	La tua radio non può sintonizzarsi su 225 kHz.
+Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.	Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.
+time decoded, two packets agree	ora decodificata, due pacchetti concordano
+time decoded (one packet)	ora decodificata (un pacchetto)
+carrier found, waiting for a time packet	portante trovata, in attesa di un pacchetto orario
+searching for the carrier	ricerca della portante
+start the receiver to read the time service	avvia il ricevitore per leggere il servizio orario
+local time	ora locale
+last packet	ultimo pacchetto
+summer time	ora legale
+the local time changes next Sunday at 01:00 UTC (summer / standard time)	l’ora locale cambia domenica prossima alle 01:00 UTC (legale / solare)
+no change announced	nessun cambio annunciato
+leap second	secondo intercalare
+one is to be removed at the end of the quarter	ne sarà tolto uno alla fine del trimestre
+one is to be added at the end of the quarter	ne sarà aggiunto uno alla fine del trimestre
+none announced	nessuno annunciato
+transmitter	trasmettitore
+computer clock	orologio del computer
+ahead	in anticipo
+behind	in ritardo
+The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.	The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.
+nothing to compare (a recording)	niente da confrontare (una registrazione)
+once the time is decoded	dopo la decodifica dell’ora
+path	percorso
+; set your position in ADS-B (Receiver position) for the right delay	; set your position in ADS-B (Receiver position) for the right delay
+clock offset	scarto dell’orologio
+level	livello
+start the receiver to see the signal	avvia il ricevitore per vedere il segnale
+carrier	portante
+phase of the carrier	fase della portante
+The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.	The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.
+signal at the bit slicer	segnale al decisore di bit
+The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.	The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.
+Computer UTC	UTC del computer
+Frame	Frame
+Result	Risultato
+no frame yet: a time packet comes every few slots of the minute frame	ancora nessun frame: un pacchetto orario arriva ogni pochi slot del frame del minuto
+, audio recording	, registrazione audio
+Recording of the radio's audio	Registrazione dell’audio della radio
+Audio, not IQ	Audio, non IQ
+The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.	The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.
+carrier tone Hz	tono della portante Hz
+The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).	The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).
+Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).	Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).
+Carrier	Portante
+Sync	Sincr.
+The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
+LW time service, Poland	servizio orario LW, Polonia
 Predict positions	Prevedi le posizioni
 Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Riempie i vuoti tra i rapporti di posizione: l'aereo si muove in modo fluido e, quando i messaggi cessano, la sua posizione è stimata lungo la rotta (e lungo il piano di volo se un messaggio ha indicato la destinazione). Le posizioni previste sono disegnate come un fantasma con un anello tratteggiato.
 uncertainty	incertezza
@@ -1512,7 +1550,6 @@ Source...	Fonte...
 Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Passa al modo della voce, applica la sua sintonia e sintonizza la frequenza. Un doppio clic su una riga fa lo stesso. Un ricevitore attivo riparte quando cambia il modo.
 Tuned: %s  %s MHz	Sintonizzato: %s  %s MHz
 Well-known frequencies of this mode: pick one to tune to it	Frequenze note di questo modo: sceglierne una per sintonizzarla
-Carrier	Carrier
 Stop scan##dsc	Stop scan##dsc
 Scan band##dsc	Scan band##dsc
 DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
@@ -1529,6 +1566,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	L'nRSP-ST si raggiunge tramite SDRconnect: avvia SDRconnect (o la sua versione headless) su un computer con il server WebSocket attivo (porta 5454) e l'nRSP-ST selezionato, poi scrivi l'indirizzo di quel computer. Non serve né viene salvata alcuna password.
+#  the guided tour
+Tuning and gain	Sintonia e guadagno
+Modes	Modi
+Spectrum and waterfall	Spettro e cascata
+Mode panel	Pannello del modo
+Memory and frequencies	Memoria e frequenze
+Receivers	Ricevitori
+Audio	Audio
+Server and support	Server e supporto
+Done	Fatto
+Take the guided tour	Avvia il tour guidato
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Scegli la radio o la registrazione che fornisce i campioni. Record IQ salva il segnale grezzo per riprodurlo in seguito.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Imposta qui frequenza, banda e frequenza di campionamento. Guadagno e AGC fissano il livello d'ingresso; Secondo modo decodifica un altro modo dalla stessa acquisizione.
+%d modes, grouped by family. Use the search box to find one by name.	%d modi, raggruppati per famiglia. Usa la casella di ricerca per trovarne uno per nome.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Fai clic per sintonizzare e scorri per ingrandire. Peak hold mantiene il livello più alto visto su ogni frequenza.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Ogni modo ha schede proprie per l'uscita decodificata, le impostazioni e gli strumenti. Cambiano con il modo selezionato.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Memoria conserva le frequenze con il loro modo e le impostazioni. Frequenze e piani di banda elencano cosa è in onda, per modo.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Ogni ricevitore abbina una radio a un modo. Questa barra permette di passare dall'uno all'altro e sceglie quale riproduce l'audio.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen riproduce il segnale demodulato. Volume e muto sono qui; Record audio lo salva in un file.
+Server sends decoded positions to the public map. Support helps fund development.	Server invia le posizioni decodificate alla mappa pubblica. Supporto aiuta a finanziare lo sviluppo.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Qui trovi documentazione, risoluzione dei problemi, crediti e licenze. Tour guidato avvia di nuovo questo tour.
 Monitor audio	Monitor audio
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Ascolta il canale sintonizzato in qualsiasi modo per riconoscere un segnale: i campioni della radio sono demodulati come USB, LSB, FM stretta o AM. Muto mentre il modo riproduce il proprio audio.
 Auto: USB below 30 MHz, narrow FM above	Auto: USB sotto i 30 MHz, FM stretta sopra
@@ -1636,3 +1694,344 @@ Start the receiver to see what is on the air.	Avvia il ricevitore per vedere cos
 Add all	Aggiungi tutti
 Nothing yet: carriers show here a moment after they start transmitting.	Ancora niente: le portanti compaiono qui un attimo dopo l'inizio della trasmissione.
 The radio's tuning error is not measured yet: names may be off by a channel.	L'errore di sintonia della radio non è ancora misurato: i nomi possono essere sfasati di un canale.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	Impossibile aprire la registrazione (float32 complesso interlacciato, un campione di ogni canale uno dopo l'altro).
+The recording has a different number of channels than the array.	La registrazione ha un numero di canali diverso da quello dell'array.
+Choose a source first.	Scegli prima una sorgente.
+No data to calibrate with.	Nessun dato per calibrare.
+Calibration stored.	Calibrazione salvata.
+Add this bearing	Aggiungi questo rilevamento
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Conserva il rilevamento attuale e la tua posizione come una linea. Spostati o prendi rilevamenti da altre stazioni, aggiungi altre linee e la posizione viene fissata dove si incrociano.
+Clear lines	Cancella le linee
+Position	Posizione
+95%% ellipse %.1f x %.1f km, %d of %d lines used	Ellisse al 95%% %.1f x %.1f km, %d linee usate su %d
+The lines do not cross (parallel, or they meet behind the stations).	Le linee non si incrociano (parallele, o si incontrano dietro le stazioni).
+Direction finder	Radiogoniometro
+Simulator (demo, no hardware)	Simulatore (demo, senza hardware)
+Recording (cf32 / SigMF)	Registrazione (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	File di rilevamenti KrakenSDR (JSON)
+Lock to the tuned frequency	Blocca sulla frequenza sintonizzata
+Run	Attivo
+path of the recording	percorso della registrazione
+a file the DoA server's JSON lines are saved to	un file in cui vengono salvate le righe JSON del server DoA
+channels	canali
+kS/s	kS/s
+Bearing	Rilevamento
+Confidence	Confidenza
+Sidelobe %.0f dB, coherence %.2f	Lobo laterale %.0f dB, coerenza %.2f
+Waiting for a bearing.	In attesa di un rilevamento.
+Array and estimator	Array e stimatore
+Circular (KrakenSDR)	Circolare (KrakenSDR)
+Linear	Lineare
+Array	Array
+Elements	Elementi
+Spacing (wavelengths)	Spaziatura (lunghezze d'onda)
+Array orientation	Orientamento dell'array
+Compass offset	Offset della bussola
+Added to every bearing: where the array's own north points relative to true north.	Aggiunto a ogni rilevamento: dove punta il nord dell'array rispetto al nord vero.
+Interferometer	Interferometro
+Estimator	Stimatore
+Sources	Sorgenti
+Forward-backward averaging (reflections)	Media avanti-indietro (riflessioni)
+Calibration	Calibrazione
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Dai a tutti i canali lo stesso segnale: la sorgente di rumore del ricevitore (KrakenSDR: attivala nel DAQ) o un segnale da un rilevamento noto. 2. Scegli la modalità corrispondente e premi Calibra. Le differenze tra i canali vengono misurate e rimosse.
+Common noise source	Sorgente di rumore comune
+Known bearing	Rilevamento noto
+Bearing of the source	Rilevamento della sorgente
+Calibrate	Calibra
+Forget	Dimentica
+Use calibration	Usa la calibrazione
+Not calibrated.	Non calibrato.
+Simulated channel errors	Errori di canale simulati
+Simulator	Simulatore
+Transmitter bearing	Rilevamento del trasmettitore
+Spin	Ruota
+SNR per channel	SNR per canale
+Second transmitter	Secondo trasmettitore
+Second bearing	Secondo rilevamento
+Position fix	Determinazione della posizione
+Sharing	Condivisione
+Share my bearing on the map server	Condividi il mio rilevamento sul server della mappa
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Richiede Server > Invia dati al server della mappa. Salgono solo il rilevamento, la sua incertezza, la frequenza e la posizione della tua stazione; la mappa mostra dove si incrociano i rilevamenti di più stazioni.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Rilevamento e posizione di un trasmettitore con un array di antenne come il KrakenSDR
+Decoded only	Solo decodificati
+Hides tone-only pages and pages whose text could not be decoded.	Nasconde le chiamate solo tono e i messaggi il cui testo non è stato decodificato.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu chiamate solo tono o messaggi non decodificati nascosti (Solo decodificati)
+%zu tone-only or undecoded pages hidden	%zu chiamate solo tono o messaggi non decodificati nascosti
+hidden	nascosti
+# LBJ (Chinese railway train warning)
+What LBJ carries	Cosa trasmette l'LBJ
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	L'LBJ è l'avviso cinese di avvicinamento dei treni su circa 821,2375 MHz. Ogni locomotiva invia pagine numeriche POCSAG a 1200 bit/s: ogni pochi secondi un messaggio breve con numero del treno, velocità (km/h) e progressiva chilometrica, e messaggi più lunghi con tipo e numero della locomotiva e linea.\n\nOnAir decodifica le pagine da solo (solo ricezione). Un valore vuoto aveva cifre danneggiate; una riga grigia aveva errori corretti, quindi confrontala con il messaggio successivo dello stesso treno.
+tune to about 821.2375 MHz and start the receiver	sintonizza circa 821,2375 MHz e avvia il ricevitore
+FM, 1200 bit/s FSK, %.2f Msps	FM, FSK a 1200 bit/s, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu messaggi, %llu parole di sincronismo, %llu vuoti, %llu controlli falliti
+listening (level %.0f dBFS, offset %+.0f Hz)	in ascolto (livello %.0f dBFS, scostamento %+.0f Hz)
+Train	Treno
+Speed km/h	Velocità km/h
+Km post	Progr. km
+Direction	Direzione
+Locomotive	Locomotiva
+Route	Linea
+Up	Ascendente
+Down	Discendente
+Some digits were corrected or lost: check this row against the next message of the train	Alcune cifre sono state corrette o perse: confronta questa riga con il messaggio successivo del treno
+Train warning, 821 MHz	Avviso treni, 821 MHz
+clear picture	cancella immagine
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Cancella l'immagine e le righe raccolte dal decodificatore e avvia una nuova immagine al prossimo tono di avvio o alla prossima fasatura. Le immagini già nell'elenco a destra restano.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Cancella gli elenchi NAVTEX e DSC e l'immagine del fax meteo.
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Clip radio: salva gli ultimi momenti (spettrogramma, audio, messaggi decodificati) in un file da condividere. Tasto: C
+Radio clip	Clip radio
+Last:	Ultimi:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Ciò che il ricevitore ha visto, il più vecchio a sinistra. Più chiaro significa segnale più forte. Trascina per scegliere la parte da salvare.
+Include:	Includi:
+Spectrogram picture	Immagine dello spettrogramma
+Decoded messages	Messaggi decodificati
+Title	Titolo
+Your station position is never included.	La posizione della tua stazione non viene mai inclusa.
+Could not save:	Salvataggio non riuscito:
+Saved: %s (zip %.1f MB)	Salvato: %s (zip %.1f MB)
+Save clip	Salva clip
+Nothing to save: no waterfall, audio or decoded rows in this range	Niente da salvare: in questo intervallo non ci sono waterfall, audio o righe decodificate
+Saving...	Salvataggio...
+Copy Discord post text	Copia il testo per Discord
+Copied: paste it into Discord and attach the files	Copiato: incollalo su Discord e allega i file
+Open folder	Apri cartella
+Memory kept for clips	Memoria per i clip
+Waterfall history	Cronologia del waterfall
+%d min	%d min
+%d MB max	max %d MB
+Audio history	Cronologia audio
+%d s	%d s
+Decoded rows history	Cronologia delle righe decodificate
+Uses about %.1f MB now	Ora usa circa %.1f MB
+Decoded rows are kept from the results tables you have open.	Le righe decodificate vengono conservate dalle tabelle dei risultati aperte.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Password
+blank if the owner set none	vuota se il proprietario non l'ha impostata
+Find KiwiSDR…	Trova KiwiSDR…
+pick a public receiver from the list	scegli un ricevitore pubblico dall'elenco
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	Un KiwiSDR è un ricevitore su internet che copre da 0 a 30 MHz; OnAir ne usa il flusso IQ a 12 kHz. Quelli pubblici hanno pochi posti utente e molti chiudono la sessione dopo circa 30 minuti: usa una sola connessione per ricevitore ed esci quando hai finito. La password è salvata nelle impostazioni di OnAir.
+S-meter %.0f dBm%s	S-meter %.0f dBm%s
+, ADC overload	, sovraccarico ADC
+Find KiwiSDR	Trova KiwiSDR
+Download the public list	Scarica l'elenco pubblico
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Scarica da internet l'elenco dei ricevitori KiwiSDR pubblici quando fai clic (una sola richiesta, mai all'avvio).
+downloading the list…	scaricamento dell'elenco…
+filter by name, place or antenna	filtra per nome, luogo o antenna
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	I ricevitori pubblici hanno pochi posti utente e molti chiudono la sessione dopo circa 30 minuti. Scegline uno non pieno ed esci quando hai finito.
+Location	Posizione
+Users	Utenti
+Distance	Distanza
+offline	offline
+full	pieno
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Aggiunge questo ricevitore alle radio di rete (non si collega finché non lo scegli come radio).
+The downloaded list has no receivers OnAir can read.	L'elenco scaricato non contiene ricevitori che OnAir sappia leggere.
+Could not download the list. Check the internet connection.	Impossibile scaricare l'elenco. Controlla la connessione a internet.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Trascrizione della voce: %s
+Voice (radio calls)	Voce (chiamate radio)
+No radio call with this aircraft's callsign heard yet	Nessuna chiamata con il nominativo di questo aeromobile ancora ascoltata
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	La trascrizione dal vivo è disattivata (Visualizza > Trascrizioni). Le chiamate della banda aeronautica sarebbero elencate qui per nominativo.
+Live captions: loading the speech model ...	Sottotitoli dal vivo: caricamento del modello vocale ...
+Live captions: off.	Sottotitoli dal vivo: disattivati.
+Set up transcripts	Configura le trascrizioni
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Trasforma in testo ciò che viene detto sui canali della banda aeronautica mentre lo si ascolta. Serve un modello vocale che scarichi o metti nella cartella dei modelli.
+Live captions	Sottotitoli dal vivo
+working ...	elaborazione ...
+listening ...	in ascolto ...
+Transcripts	Trascrizioni
+Airband is off in the transcript settings	La banda aeronautica è disattivata nelle impostazioni di trascrizione
+Nothing heard yet.	Ancora nulla di ascoltato.
+Cannot write %s	Impossibile scrivere %s
+Saved %s	Salvato %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Privacy: ciò che si dice sulla radio aeronautica pubblica è pubblico, ma il motore vocale gira qui, sul tuo computer, e il testo resta nella tua cartella dati. Non usarlo per conversazioni private: marittimo, radioamatori, CB e ogni altro modo restano disattivati finché non li scegli, e una riga visibile mostra quando la trascrizione è attiva.
+Transcribe speech	Trascrivi la voce
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Interruttore generale. Durante una trasmissione l'audio viene ritagliato, inviato al motore vocale e trasformato in testo. Non gira nulla finché i canali sono silenziosi.
+Airband channels	Canali della banda aeronautica
+Marine VHF	VHF marittimo
+Any other mode that plays sound (amateur, CB, FM ...)	Qualsiasi altro modo che riproduce suono (radioamatori, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Prende il suono che ascolti. Musica e conversazioni private non sono pensate per questo: lascialo disattivato se non serve.
+Speech model	Modello vocale
+none	nessuno
+Open models folder	Apri la cartella dei modelli
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Metti qui un file di modello whisper.cpp (ggml-*.bin) per usarlo. La cartella viene creata se non esiste.
+No speech model yet. Download one below, or put a model file in the models folder.	Ancora nessun modello vocale. Scaricane uno qui sotto o metti un file di modello nella cartella dei modelli.
+Loading the speech model ...	Caricamento del modello vocale ...
+Speech model loaded.	Modello vocale caricato.
+This build has no speech engine.	Questa versione non ha un motore vocale.
+checking	verifica
+Download speech model:	Scarica un modello vocale:
+%s %d MB	%s %d MB
+Already downloaded	Già scaricato
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Solo inglese. tiny è il più veloce (tempo reale su un portatile), small capisce più parole e richiede un computer più potente.
+Other languages (multilingual models)	Altre lingue (modelli multilingue)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	Il modello caricato è solo inglese: per altre lingue serve un modello multilingue (tiny, base o small senza .en).
+CPU threads	Thread della CPU
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Quanti thread del processore può usare il motore vocale per una trasmissione. Meno thread consumano meno batteria e richiedono più tempo.
+Keep transcripts (days)	Conserva le trascrizioni (giorni)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Ascoltate %llu, tenute %llu, scartate %llu (silenzio, rumore, ripetizioni), saltate %llu (troppo lento), velocità %.2f x tempo reale
+Download the speech model %s (%d MB)?	Scaricare il modello vocale %s (%d MB)?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir chiede questo solo file al repository dei modelli (huggingface.co) e non invia altro. Il file viene verificato con una somma SHA-256 fissa e scartato se non corrisponde. Il modello ha licenza MIT.
+Download	Scarica
+Delete all saved transcripts? This cannot be undone.	Eliminare tutte le trascrizioni salvate? Non si può annullare.
+Delete all	Elimina tutto
+Transcription is off.	La trascrizione è disattivata.
+Hide settings	Nascondi impostazioni
+Settings and speech model	Impostazioni e modello vocale
+Search the text ...	Cerca nel testo ...
+All frequencies	Tutte le frequenze
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Un nominativo (DLH123), una marca (N123AB) o un indirizzo ICAO (3C6444)
+An airport code or name found in the channel name or the text (EYVI, Tower)	Un codice o nome di aeroporto trovato nel nome del canale o nel testo (EYVI, Tower)
+%zu of %zu	%zu di %zu
+Copy all shown	Copia tutto ciò che è mostrato
+Export %s	Esporta %s
+Delete all ...	Elimina tutto ...
+Time (UTC)	Ora (UTC)
+Sure	Sicuro
+Speaker (a guess from the wording)	Parlante (stimato dalle parole)
+Click to copy this line	Clic per copiare questa riga
+Aircraft on the screen	Aeromobile sullo schermo
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Condividi anche le trascrizioni delle chiamate radio degli aeromobili (il testo diventa pubblico sulla mappa)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	Il testo delle chiamate radio della banda aeronautica che un motore vocale su questo computer ha ricavato da ciò che ricevi (finestra Trascrizioni), collegato all'aeromobile dal nominativo pronunciato e mostrato per 48 ore sulla scheda pubblica dell'aeromobile nella mappa. Può contenere errori. I numeri di telefono vengono rimossi prima. Si condivide solo la banda aeronautica, mai marittimo, radioamatori o altri canali. Disattivato finché non lo scegli, e puoi disattivarlo in qualsiasi momento.
+Transcripts ...	Trascrizioni ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Ciò che si dice sulla banda aeronautica e su altri canali vocali, come testo: sottotitoli dal vivo, ricerca, esportazione. Disattivato finché non lo attivi.
+# Automations window
+%d firings. Dropped events: %llu	%d attivazioni. Eventi scartati: %llu
+(the whole rule)	(l'intera regola)
+Add a condition	Aggiungi una condizione
+Add a copy	Aggiungi una copia
+Add an action...	Aggiungi un'azione...
+Advanced	Avanzate
+Allow running programs	Consenti l'esecuzione di programmi
+Allow this rule to run it	Consenti a questa regola di eseguirlo
+Any event	Qualsiasi evento
+Apply	Applica
+Arguments, one per line	Argomenti, uno per riga
+Arguments:	Argomenti:
+At most per hour (0: no limit)	Al massimo per ora (0: nessun limite)
+Automations	Automazioni
+Automations...	Automazioni...
+Bot token	Token del bot
+Cannot write the file.	Impossibile scrivere il file.
+Chat id	ID della chat
+Choose a rule on the left, or make a new one.	Scegli una regola a sinistra o creane una nuova.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Scegli in «separatamente per ogni» cosa distinguere, così ogni elemento ha il proprio stato.
+Columns (optional)	Colonne (facoltativo)
+Confirm this rule...	Conferma questa regola...
+Confirmed	Confermata
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definisci function on_event(e). e.type, e.mode, e.freq, e.time e i campi dell'evento (e.callsign, e.squawk ...).\n\nAzioni: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nAiuti: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTesto: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Niente io, os, load, require, pcall né pattern; 1 milione di istruzioni, 250 ms e 16 MB per script.
+Delete...	Elimina...
+Distance, km	Distanza, km
+Does not fire for the sample event:	Non scatta con l'evento di esempio:
+Duplicate	Duplica
+Edit	Modifica
+Edit as text and apply, or copy it to share.	Modificalo come testo e applicalo, oppure copialo per condividerlo.
+Every event	Ogni evento
+Expression (and'ed to the conditions above)	Espressione (in AND con le condizioni sopra)
+Expression is fine.	L'espressione è corretta.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Campi, and or not, confronti, contains startswith endswith matches in, aritmetica, distance_km() within() inside() hour() ...
+File name	Nome del file
+File:	File:
+Fire with sample event	Attiva con evento di esempio
+Frequency, MHz	Frequenza, MHz
+Generic JSON	JSON generico
+Imported, switched off. Look it over, then switch it on.	Importata, disattivata. Controllala, poi attivala.
+Insert an example...	Inserisci un esempio...
+Inside an area (polygon)	Dentro un'area (poligono)
+JSON body (optional)	Corpo JSON (facoltativo)
+Keep	Mantieni
+Last error:	Ultimo errore:
+Limits	Limiti
+Lua script	Script Lua
+Manage	Gestisci
+Memory name	Nome della memoria
+Mode id (optional)	ID della modalità (facoltativo)
+New rule	Nuova regola
+New script	Nuovo script
+No location test	Nessun test di posizione
+No rules yet. Make one, or add a recipe.	Ancora nessuna regola. Creane una o aggiungi una ricetta.
+Not active:	Non attiva:
+Not imported:	Non importata:
+Note	Nota
+Nothing has fired yet.	Non è ancora scattato nulla.
+Notification	Notifica
+Off. A rule may start a program only when this is on and you confirmed that rule.	Disattivato. Una regola può avviare un programma solo se questo è attivo e hai confermato quella regola.
+Only between these local hours	Solo tra queste ore locali
+Pick one event type to choose its fields from a list.	Scegli un tipo di evento per scegliere i suoi campi da un elenco.
+Points as lat,lon; lat,lon; ...	Punti come lat,lon; lat,lon; ...
+Program	Programma
+Program:	Programma:
+Quiet after firing, seconds	Pausa dopo l'attivazione, secondi
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Regole e script pronti. L'aggiunta crea una copia modificabile; parte disattivata.
+Really delete	Elimina davvero
+Really does the actions, once, with a made-up event.	Esegue davvero le azioni, una volta, con un evento fittizio.
+Recall a memory	Richiama una memoria
+Receives these events	Riceve questi eventi
+Recipes	Ricette
+Recipes...	Ricette...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Regole e script: quando viene decodificato qualcosa, notifica, registra, sintonizza o chiama un webhook
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Regole: quando viene decodificato qualcosa (un aereo trasmette 7700, un messaggio pager dice fuoco, una nave entra in un'area ...), fai qualcosa (notifica, registra, sintonizza, annota, chiama un webhook). Gli script fanno lo stesso in Lua.
+Run a program (advanced)	Esegui un programma (avanzato)
+Run a program?	Eseguire un programma?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Avvia un programma su questo computer. Disattivato finché non lo consenti sotto e confermi questa regola.
+Save a screenshot	Salva uno screenshot
+Saved to	Salvato in
+Seconds	Secondi
+Server (optional)	Server (facoltativo)
+Service	Servizio
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Mostra cosa farebbe la regola con un evento fittizio. Non viene inviato né avviato nulla.
+Sound alert	Avviso sonoro
+Test (dry run)	Prova (simulazione)
+Test with a sample event	Prova con un evento di esempio
+Text can use:	Il testo può usare:
+The receiver position is not set (ADS-B window).	La posizione del ricevitore non è impostata (finestra ADS-B).
+The recipe file	Il file della ricetta
+The script ran and did nothing for this event.	Lo script è stato eseguito e non ha fatto nulla per questo evento.
+Then do	Allora fai
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Questa regola avvierà il programma qui sotto su questo computer a ogni attivazione, con testo dei segnali decodificati negli argomenti. Chiunque possa inviare un segnale simile può influenzarlo. Consentilo solo se l'hai scritta tu o ti fidi di chi l'ha scritta.
+Topic	Argomento
+WAV file (empty: beeps)	File WAV (vuoto: bip)
+Webhook	Webhook
+Webhook address	Indirizzo del webhook
+What can a script do?	Cosa può fare uno script?
+When this happens	Quando succede questo
+Within a distance of a point	Entro una distanza da un punto
+Within a distance of my receiver	Entro una distanza dal mio ricevitore
+Write a CSV log row	Scrivi una riga nel log CSV
+all of the conditions	tutte le condizioni
+and only if	e solo se
+any of the conditions	una delle condizioni
+contains	contiene
+ends with	finisce con
+equals	è uguale a
+has a value	ha un valore
+is at least	è almeno
+is at most	è al massimo
+is less than	è minore di
+is more than	è maggiore di
+is not	non è
+is one of (a, b, c)	è uno di (a, b, c)
+last fired %s, %d times	ultima attivazione %s, %d volte
+matches (* ?)	corrisponde a (* ?)
+only as it comes in	solo all'ingresso
+separately for each	separatamente per ogni
+starts with	inizia con
+to	a
+when it is inside	quando è dentro
+when it is outside	quando è fuori
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f gradi (media)
+Reported by the aircraft.	Comunicato dall'aeromobile.
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	Stimato dal filtro di posizione dai rapporti di posizione (non trasmesso dall'aeromobile).
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Ricavato da 2 posizioni distanti %s: una media su quel tempo; un percorso curvo è più lungo della linea retta, quindi la velocità reale può essere maggiore. La rotta è la direzione media.
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Ricavato da 2 posizioni distanti %s (distanza sull'ellissoide WGS-84 divisa per il tempo). L'aeromobile non ha comunicato una velocità.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	Decodificatore DRA+ caricato
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	L'audio DRA+ richiede un componente decodificatore non incluso (lo stato di brevetto e licenza del codec non è chiaro). Come installarlo:
+The DRA+ decoder add-on cannot be used: %s. How to install:	Il componente decodificatore DRA+ non è utilizzabile: %s. Come installarlo:
+How to install	Come installare
+The services, signal information and data work without it.	I servizi, le informazioni sul segnale e i dati funzionano anche senza.
+Interface and windows	Interfaccia e finestre
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Vista cambia il layout (Sidebar, Scope, Tiles, Faceplate, Panel), l'interfaccia classica, la dimensione del testo e la palette; l'interfaccia touch è sotto Strumenti. Finestre come Frequenze, Scanner di sweep, Radiogoniometro e Automazioni si aprono da qui.

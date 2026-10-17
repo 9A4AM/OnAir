@@ -5,6 +5,7 @@
 #include "../app.h"
 #include "gallery.h"
 #include "dect2/geo/passes.h"
+#include "dect2/automation/engine.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -318,6 +319,12 @@ void disarmOnce() {
 void endPass(App& a, bool los) {
     S.inPass = false;
     a.engine.log("pass of " + S.passName + (los ? " ends (LOS)" : ": tracking stopped"));
+    if (los && dect2::automation::wants(dect2::automation::FSatellite)) {   // the automations (satellite.los)
+        dect2::automation::Event ev("satellite.los");
+        ev.at(dect2::automation::wallNow(), "", S.nominalMhz * 1e6);
+        ev.str("name", S.passName);
+        dect2::automation::emit(std::move(ev));
+    }
     if (S.weRecord) { a.engine.stopRecording(); S.weRecord = false; }
     if (S.weStarted && a.engine.running()) a.engine.stop();
     S.weStarted = false;
@@ -344,6 +351,12 @@ void trackTick(App& a) {
     if (active && !S.inPass) {   // AOS
         S.inPass = true; S.passLos = r->p.los; S.passName = sat.name; S.weStarted = false; S.weRecord = false; S.recTried = false; S.nominalMhz = sat.mhz; S.lastTune = 0;
         a.engine.log("pass of " + sat.name + " begins (AOS)");
+        if (dect2::automation::wants(dect2::automation::FSatellite)) {   // the automations (satellite.aos)
+            dect2::automation::Event ev("satellite.aos");
+            ev.at(dect2::automation::wallNow(), "", sat.mhz * 1e6);
+            ev.str("name", sat.name).num("max_el_deg", r->p.maxElDeg);
+            dect2::automation::emit(std::move(ev));
+        }
         if (sat.family == kCubesat) a.engine.cubesat().setTracked(sat.norad, sat.name);   // names the frames of the pass
         if (S.autoStart && !a.engine.running()) {
             if (a.family != sat.family) selectMode(a, sat.family);

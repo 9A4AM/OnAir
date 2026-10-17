@@ -168,7 +168,6 @@ Back	Terug
 Next	Volgende
 Finish	Voltooien
 Skip	Overslaan
-Skip tour	Rondleiding overslaan
 Dismiss	Sluiten
 Again	Opnieuw
 Auto	Auto
@@ -212,7 +211,6 @@ New interface	Nieuwe interface
 Try the new interface. You can switch back at any time.	Probeer de nieuwe interface. Je kunt op elk moment terugschakelen.
 Guided tour	Rondleiding
 Tour	Rondleiding
-Take the guided tour with Onny	Volg de rondleiding met Onny
 by: Kristijonas Adomaitis, made with help from the community	door: Kristijonas Adomaitis, gemaakt met hulp van de community
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	Dank aan iedereen die bugs meldde, opnames instuurde en pull requests opende.
 Source	Bron
@@ -477,21 +475,6 @@ Radio settings (%d changed)	Radio-instellingen (%d gewijzigd)
 %s: frequency correction and the other settings of this radio	%s: frequentiecorrectie en de overige instellingen van deze radio
 The driver's own settings show up here\nonce this radio has been started.	De eigen instellingen van het stuurprogramma verschijnen hier\nzodra deze radio is gestart.
 0 = libiio's default	0 = standaardwaarde van libiio
-#  the guided tour
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	Hoi, ik ben Onny! Ik ben een kleine tv die in OnAir woont. Zin in een korte rondleiding? Die duurt ongeveer een minuut en ik laat je alles zien met een demosignaal, dus je hebt nog geen hardware nodig.
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	Hier bovenin kies je wat voor soort uitzending je wilt: DVB voor het meeste digitale tv in de wereld, ATSC voor Noord-Amerika en DAB voor digitale radio. OnAir heeft alle drie op één plek.
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	Laten we het in actie zien! Ik start een nepsignaal. Het is een testzender die in de app draait, dus er hoeft niets aangesloten te worden.
-Start the demo signal	Demosignaal starten
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	Zie je die kronkelende lijn? Dat is het spectrum: hoe sterk alles in de ether is, van links naar rechts. De hoge bult in het midden is ons kanaal. Daaronder toont de waterval hetzelfde, langzaam voorbijschuivend in de tijd.
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	En deze vier vakken tonen de stippen die de ontvanger ziet. Bij een goed signaal verzamelen de stippen zich in nette groepjes. Rommelige stippen betekenen een ruisig signaal. Nu is het een schone demo, dus ze zouden er netjes uit moeten zien!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	Hier vind je de kanalen zodra de ontvanger vergrendeld is. Klik er een aan om te kijken. Er is ook een speler met beeld en geluid, een klok en opties om op te nemen of te streamen wat je kijkt.
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	Nu het echte werk. Kies hier je radio, kies een frequentie en stel de versterking in. Versterking is hoeveel je radio het signaal opvoert: te weinig en het gaat verloren, te veel en het vervormt. De knop Auto-afstemming vindt een goede waarde voor je.
-Stop the demo and look for my radio	Demo stoppen en naar mijn radio zoeken
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	Weet je niet waar de kanalen zijn? Het tabblad Scan zoekt voor je. Een goede antenne, hoog en bij een raam geplaatst, maakt meer verschil dan wat dan ook. Beloofd!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	Dat was de hele rondleiding! Je kunt je kanalen met andere apparaten delen via het tabblad Stream (Uitgangen), en met de knop Rondleiding rechtsboven haal je me op elk moment terug. Veel kijkplezier!
-Good news: I can see "%s"!	Goed nieuws: ik zie "%s"!
-(I can't see a radio right now. Plug it in and press the button again.)	(Ik zie nu geen radio. Sluit hem aan en druk nogmaals op de knop.)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Onder Windows heeft een HackRF eenmalig zijn WinUSB-stuurprogramma nodig: installeer het met Zadig, op zadig.akeo.ie.
 #  passes
 Weather (137 MHz)	Weer (137 MHz)
 Amateur	Amateur
@@ -1267,7 +1250,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	Een LimeSDR Mini heeft onder Windows het FT60x-stuurprogramma van FTDI nodig (niet Zadig), onder Linux de udev-regels, en eenmalig "LimeUtil --update" zodat de gateware bij de bibliotheek past.
 Real (mono)	Reëel (mono)
 Left	Links
 Right	Rechts
@@ -1398,6 +1380,61 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Sunday	zondag
+Monday	maandag
+Tuesday	dinsdag
+Wednesday	woensdag
+Thursday	donderdag
+Friday	vrijdag
+Saturday	zaterdag
+Your radio cannot tune 225 kHz.	Je radio kan niet afstemmen op 225 kHz.
+Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.	Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.
+time decoded, two packets agree	tijd gedecodeerd, twee pakketten komen overeen
+time decoded (one packet)	tijd gedecodeerd (één pakket)
+carrier found, waiting for a time packet	draaggolf gevonden, wacht op een tijdpakket
+searching for the carrier	draaggolf zoeken
+start the receiver to read the time service	start de ontvanger om de tijddienst te lezen
+local time	lokale tijd
+last packet	laatste pakket
+summer time	zomertijd
+the local time changes next Sunday at 01:00 UTC (summer / standard time)	de lokale tijd verspringt volgende zondag om 01:00 UTC (zomer-/wintertijd)
+no change announced	geen wijziging aangekondigd
+leap second	schrikkelseconde
+one is to be removed at the end of the quarter	er wordt er aan het einde van het kwartaal één verwijderd
+one is to be added at the end of the quarter	er wordt er aan het einde van het kwartaal één toegevoegd
+none announced	geen aangekondigd
+transmitter	zender
+computer clock	computerklok
+ahead	voor
+behind	achter
+The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.	The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.
+nothing to compare (a recording)	niets om mee te vergelijken (een opname)
+once the time is decoded	zodra de tijd is gedecodeerd
+path	pad
+; set your position in ADS-B (Receiver position) for the right delay	; set your position in ADS-B (Receiver position) for the right delay
+clock offset	klokafwijking
+level	niveau
+start the receiver to see the signal	start de ontvanger om het signaal te zien
+carrier	draaggolf
+phase of the carrier	fase van de draaggolf
+The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.	The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.
+signal at the bit slicer	signaal bij de bitslicer
+The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.	The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.
+Computer UTC	Computer-UTC
+Frame	Frame
+Result	Resultaat
+no frame yet: a time packet comes every few slots of the minute frame	nog geen frame: een tijdpakket komt om de paar slots van het minuutframe
+, audio recording	, audio-opname
+Recording of the radio's audio	Opname van het radiogeluid
+Audio, not IQ	Audio, geen IQ
+The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.	The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.
+carrier tone Hz	draaggolftoon Hz
+The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).	The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).
+Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).	Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).
+Carrier	Draaggolf
+Sync	Sync
+The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
+LW time service, Poland	LW-tijddienst, Polen
 Predict positions	Posities voorspellen
 Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	Vult de gaten tussen positiemeldingen: het vliegtuig beweegt vloeiend en wordt, als de berichten stoppen, langs zijn koers doorgerekend (en langs de route als een bericht de bestemming noemde). Voorspelde posities worden getekend als een spook met een stippellijnring.
 uncertainty	onzekerheid
@@ -1530,7 +1567,6 @@ Source...	Bron...
 Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	Schakelt naar de modus van het item, past de afstemming toe en stemt af op de frequentie. Een dubbelklik op een regel doet hetzelfde. Een draaiende ontvanger herstart bij een andere modus.
 Tuned: %s  %s MHz	Afgestemd: %s  %s MHz
 Well-known frequencies of this mode: pick one to tune to it	Bekende frequenties van deze modus: kies er een om erop af te stemmen
-Carrier	Carrier
 Stop scan##dsc	Stop scan##dsc
 Scan band##dsc	Scan band##dsc
 DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
@@ -1547,6 +1583,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	De nRSP-ST wordt bereikt via SDRconnect: start SDRconnect (of de headless versie) op een computer met de WebSocket-server aan (poort 5454) en de nRSP-ST geselecteerd, en typ het adres van die computer. Er is geen wachtwoord nodig en er wordt er geen opgeslagen.
+#  the guided tour
+Tuning and gain	Afstemmen en versterking
+Modes	Modi
+Spectrum and waterfall	Spectrum en waterval
+Mode panel	Modipaneel
+Memory and frequencies	Geheugen en frequenties
+Receivers	Ontvangers
+Audio	Audio
+Server and support	Server en steun
+Done	Klaar
+Take the guided tour	Rondleiding starten
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	Kies de radio of opname die de samples levert. Record IQ slaat het ruwe signaal op voor latere weergave.
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	Stel hier frequentie, band en samplefrequentie in. Gain en AGC bepalen het ingangsniveau; Tweede modus decodeert een andere modus uit dezelfde opname.
+%d modes, grouped by family. Use the search box to find one by name.	%d modi, gegroepeerd per familie. Zoek met het zoekvak een modus op naam.
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	Klik om af te stemmen en scrol om te zoomen. Peak hold bewaart het sterkste niveau dat op elke frequentie is gezien.
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	Elke modus heeft eigen tabbladen voor gedecodeerde uitvoer, instellingen en hulpmiddelen. Ze veranderen met de gekozen modus.
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	Geheugen bewaart frequenties met hun modus en instellingen. Frequenties en bandplannen tonen wat er per modus in de lucht is.
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	Elke ontvanger koppelt een radio aan een modus. Deze balk schakelt ertussen en bepaalt welke het geluid afspeelt.
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen speelt het gedemoduleerde signaal af. Volume en dempen staan hier; Record audio slaat het op in een bestand.
+Server sends decoded positions to the public map. Support helps fund development.	Server stuurt gedecodeerde posities naar de openbare kaart. Steun helpt de ontwikkeling te financieren.
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	Hier staan documentatie, probleemoplossing, dankwoord en licenties. Rondleiding start deze rondleiding opnieuw.
 Monitor audio	Audio meeluisteren
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Luister in elke modus naar het afgestemde kanaal om een signaal te herkennen: de samples van de radio worden gedemoduleerd als USB, LSB, smalle FM of AM. Stil zolang de modus eigen geluid speelt.
 Auto: USB below 30 MHz, narrow FM above	Auto: USB onder 30 MHz, smalle FM erboven
@@ -1654,3 +1711,344 @@ Start the receiver to see what is on the air.	Start de ontvanger om te zien wat 
 Add all	Alles toevoegen
 Nothing yet: carriers show here a moment after they start transmitting.	Nog niets: draaggolven verschijnen hier even nadat ze beginnen te zenden.
 The radio's tuning error is not measured yet: names may be off by a channel.	De afstemfout van de radio is nog niet gemeten: namen kunnen één kanaal ernaast zitten.
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	De opname kan niet worden geopend (complexe float32, afwisselend: van elk kanaal om beurten één sample).
+The recording has a different number of channels than the array.	De opname heeft een ander aantal kanalen dan de array.
+Choose a source first.	Kies eerst een bron.
+No data to calibrate with.	Geen gegevens om mee te kalibreren.
+Calibration stored.	Kalibratie opgeslagen.
+Add this bearing	Deze peiling toevoegen
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	Bewaart de huidige peiling en je positie als een lijn. Verplaats je of neem peilingen van andere stations, voeg meer lijnen toe en de positie wordt bepaald waar ze elkaar kruisen.
+Clear lines	Lijnen wissen
+Position	Positie
+95%% ellipse %.1f x %.1f km, %d of %d lines used	95%%-ellips %.1f x %.1f km, %d van %d lijnen gebruikt
+The lines do not cross (parallel, or they meet behind the stations).	De lijnen kruisen elkaar niet (parallel, of ze ontmoeten elkaar achter de stations).
+Direction finder	Peilontvanger
+Simulator (demo, no hardware)	Simulator (demo, geen hardware)
+Recording (cf32 / SigMF)	Opname (cf32 / SigMF)
+KrakenSDR bearing file (JSON)	KrakenSDR-peilbestand (JSON)
+Lock to the tuned frequency	Vergrendelen op de afgestemde frequentie
+Run	Actief
+path of the recording	pad van de opname
+a file the DoA server's JSON lines are saved to	een bestand waarin de JSON-regels van de DoA-server worden opgeslagen
+channels	kanalen
+kS/s	kS/s
+Bearing	Peiling
+Confidence	Betrouwbaarheid
+Sidelobe %.0f dB, coherence %.2f	Zijlob %.0f dB, coherentie %.2f
+Waiting for a bearing.	Wachten op een peiling.
+Array and estimator	Array en schatter
+Circular (KrakenSDR)	Cirkelvormig (KrakenSDR)
+Linear	Lineair
+Array	Array
+Elements	Elementen
+Spacing (wavelengths)	Afstand (golflengten)
+Array orientation	Oriëntatie van de array
+Compass offset	Kompasverschuiving
+Added to every bearing: where the array's own north points relative to true north.	Wordt bij elke peiling opgeteld: waar het noorden van de array naartoe wijst ten opzichte van het ware noorden.
+Interferometer	Interferometer
+Estimator	Schatter
+Sources	Bronnen
+Forward-backward averaging (reflections)	Voorwaarts-achterwaarts middelen (reflecties)
+Calibration	Kalibratie
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. Geef alle kanalen hetzelfde signaal: de ruisbron van de ontvanger (KrakenSDR: schakel die in de DAQ in) of een signaal uit een bekende richting. 2. Kies de passende modus en druk op Kalibreren. De verschillen tussen de kanalen worden gemeten en verwijderd.
+Common noise source	Gemeenschappelijke ruisbron
+Known bearing	Bekende peiling
+Bearing of the source	Peiling van de bron
+Calibrate	Kalibreren
+Forget	Vergeten
+Use calibration	Kalibratie gebruiken
+Not calibrated.	Niet gekalibreerd.
+Simulated channel errors	Gesimuleerde kanaalfouten
+Simulator	Simulator
+Transmitter bearing	Peiling van de zender
+Spin	Draaien
+SNR per channel	SNR per kanaal
+Second transmitter	Tweede zender
+Second bearing	Tweede peiling
+Position fix	Positiebepaling
+Sharing	Delen
+Share my bearing on the map server	Mijn peiling delen met de kaartserver
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	Vereist Server > Gegevens naar de kaartserver sturen. Alleen de peiling, de onzekerheid, de frequentie en de positie van je station gaan omhoog; de kaart toont waar peilingen van meerdere stations elkaar kruisen.
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	Peiling en positie van een zender met een antennearray zoals de KrakenSDR
+Decoded only	Alleen gedecodeerd
+Hides tone-only pages and pages whose text could not be decoded.	Verbergt alleen-toon-oproepen en berichten waarvan de tekst niet gedecodeerd kon worden.
+%zu tone-only or undecoded pages hidden (Decoded only)	%zu alleen-toon- of niet-gedecodeerde berichten verborgen (Alleen gedecodeerd)
+%zu tone-only or undecoded pages hidden	%zu alleen-toon- of niet-gedecodeerde berichten verborgen
+hidden	verborgen
+# LBJ (Chinese railway train warning)
+What LBJ carries	Wat LBJ uitzendt
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJ is de Chinese waarschuwing voor naderende treinen op ongeveer 821,2375 MHz. Elke locomotief verstuurt numerieke POCSAG-pagina's van 1200 bit/s: om de paar seconden een kort bericht met treinnummer, snelheid (km/u) en kilometerpaal, en langere berichten met locomotieftype en -nummer en de route.\n\nOnAir decodeert de pagina's zelf (alleen ontvangen). Een lege waarde had beschadigde cijfers; een grijze regel had gecorrigeerde fouten, vergelijk hem dus met het volgende bericht van dezelfde trein.
+tune to about 821.2375 MHz and start the receiver	stem af op ongeveer 821,2375 MHz en start de ontvanger
+FM, 1200 bit/s FSK, %.2f Msps	FM, 1200 bit/s FSK, %.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	%llu berichten, %llu syncwoorden, %llu leeg, %llu mislukte controles
+listening (level %.0f dBFS, offset %+.0f Hz)	luistert (niveau %.0f dBFS, afwijking %+.0f Hz)
+Train	Trein
+Speed km/h	Snelheid km/u
+Km post	Km-paal
+Direction	Richting
+Locomotive	Locomotief
+Route	Route
+Up	Op
+Down	Neer
+Some digits were corrected or lost: check this row against the next message of the train	Sommige cijfers zijn gecorrigeerd of verloren: vergelijk deze regel met het volgende bericht van de trein
+Train warning, 821 MHz	Treinwaarschuwing, 821 MHz
+clear picture	afbeelding wissen
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	Wist de afbeelding en de regels die de decoder heeft verzameld, en begint een nieuwe afbeelding bij de volgende starttoon of fasering. Afbeeldingen die al in de lijst rechts staan blijven.
+Clears the NAVTEX and DSC lists and the weather fax picture.	Wist de NAVTEX- en DSC-lijsten en de weerfaxafbeelding.
+# radio clips
+Clip	Clip
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	Radioclip: slaat de laatste momenten (spectrogram, audio, gedecodeerde berichten) op als bestand om te delen. Toets: C
+Radio clip	Radioclip
+Last:	Laatste:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	Wat de ontvanger zag, het oudste links. Helderder is een sterker signaal. Sleep om het op te slaan deel te kiezen.
+Include:	Opnemen:
+Spectrogram picture	Spectrogramafbeelding
+Decoded messages	Gedecodeerde berichten
+Title	Titel
+Your station position is never included.	Je stationspositie wordt nooit opgenomen.
+Could not save:	Opslaan mislukt:
+Saved: %s (zip %.1f MB)	Opgeslagen: %s (zip %.1f MB)
+Save clip	Clip opslaan
+Nothing to save: no waterfall, audio or decoded rows in this range	Niets om op te slaan: in dit bereik is geen waterval, audio of gedecodeerde rij
+Saving...	Opslaan...
+Copy Discord post text	Discord-tekst kopiëren
+Copied: paste it into Discord and attach the files	Gekopieerd: plak het in Discord en voeg de bestanden toe
+Open folder	Map openen
+Memory kept for clips	Geheugen voor clips
+Waterfall history	Waterval-geschiedenis
+%d min	%d min
+%d MB max	max. %d MB
+Audio history	Audiogeschiedenis
+%d s	%d s
+Decoded rows history	Geschiedenis van gedecodeerde rijen
+Uses about %.1f MB now	Gebruikt nu ongeveer %.1f MB
+Decoded rows are kept from the results tables you have open.	Gedecodeerde rijen worden bewaard uit de resultaattabellen die je open hebt.
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Wachtwoord
+blank if the owner set none	leeg als de eigenaar er geen heeft ingesteld
+Find KiwiSDR…	KiwiSDR zoeken…
+pick a public receiver from the list	kies een openbare ontvanger uit de lijst
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	Een KiwiSDR is een ontvanger op internet die 0 tot 30 MHz bestrijkt; OnAir gebruikt zijn 12 kHz IQ-stroom. Openbare ontvangers hebben weinig gebruikersplaatsen en veel beëindigen een sessie na ongeveer 30 minuten: gebruik één verbinding per ontvanger en stop als je klaar bent. Het wachtwoord wordt bewaard in de instellingen van OnAir.
+S-meter %.0f dBm%s	S-meter %.0f dBm%s
+, ADC overload	, ADC-overbelasting
+Find KiwiSDR	KiwiSDR zoeken
+Download the public list	Openbare lijst downloaden
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Downloadt bij een klik de lijst met openbare KiwiSDR-ontvangers van internet (één verzoek, nooit bij het opstarten).
+downloading the list…	lijst wordt gedownload…
+filter by name, place or antenna	filter op naam, plaats of antenne
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	Openbare ontvangers hebben weinig gebruikersplaatsen en veel beëindigen een sessie na ongeveer 30 minuten. Kies er een die niet vol is en stop als je klaar bent.
+Location	Locatie
+Users	Gebruikers
+Distance	Afstand
+offline	offline
+full	vol
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Voegt deze ontvanger toe aan de netwerkradio's (hij maakt pas verbinding als je hem als radio kiest).
+The downloaded list has no receivers OnAir can read.	De gedownloade lijst bevat geen ontvangers die OnAir kan lezen.
+Could not download the list. Check the internet connection.	De lijst kon niet worden gedownload. Controleer de internetverbinding.
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	Spraak wordt getranscribeerd: %s
+Voice (radio calls)	Spraak (radio-oproepen)
+No radio call with this aircraft's callsign heard yet	Nog geen oproep met de roepletters van dit vliegtuig gehoord
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	Live transcriptie staat uit (Beeld > Transcripties). Oproepen op de luchtvaartband zouden hier per roepletters staan.
+Live captions: loading the speech model ...	Live ondertiteling: spraakmodel wordt geladen ...
+Live captions: off.	Live ondertiteling: uit.
+Set up transcripts	Transcripties instellen
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	Zet wat op de luchtvaartkanalen wordt gezegd om in tekst terwijl het wordt gehoord. Daarvoor is een spraakmodel nodig dat je downloadt of in de modellenmap zet.
+Live captions	Live ondertiteling
+working ...	bezig ...
+listening ...	luistert ...
+Transcripts	Transcripties
+Airband is off in the transcript settings	Luchtvaartband staat uit in de transcriptie-instellingen
+Nothing heard yet.	Nog niets gehoord.
+Cannot write %s	Kan niet schrijven: %s
+Saved %s	Opgeslagen: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	Privacy: wat op de openbare luchtvaartradio wordt gezegd is openbaar, maar de spraakengine draait hier op je computer en de tekst blijft in je gegevensmap. Gebruik het niet voor privégesprekken: marifoon, amateur, CB en elke andere modus staan uit tot je ze kiest, en een zichtbare regel toont wanneer transcriptie aan staat.
+Transcribe speech	Spraak transcriberen
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	Hoofdschakelaar. Tijdens een uitzending wordt het geluid uitgeknipt, naar de spraakengine gestuurd en omgezet in tekst. Zolang de kanalen stil zijn, draait er niets.
+Airband channels	Luchtvaartkanalen
+Marine VHF	Marifoon (VHF)
+Any other mode that plays sound (amateur, CB, FM ...)	Elke andere modus die geluid afspeelt (amateur, CB, FM ...)
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	Neemt het geluid dat je hoort. Muziek en privégesprekken zijn hier niet voor bedoeld: laat het uit tenzij je het nodig hebt.
+Speech model	Spraakmodel
+none	geen
+Open models folder	Modellenmap openen
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	Zet hier een whisper.cpp-modelbestand (ggml-*.bin) neer om het te gebruiken. De map wordt aangemaakt als ze niet bestaat.
+No speech model yet. Download one below, or put a model file in the models folder.	Nog geen spraakmodel. Download er hieronder een of zet een modelbestand in de modellenmap.
+Loading the speech model ...	Spraakmodel wordt geladen ...
+Speech model loaded.	Spraakmodel geladen.
+This build has no speech engine.	Deze versie heeft geen spraakengine.
+checking	controleren
+Download speech model:	Spraakmodel downloaden:
+%s %d MB	%s %d MB
+Already downloaded	Al gedownload
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	Alleen Engels. tiny is het snelst (realtime op een laptop), small hoort meer woorden en heeft een krachtigere computer nodig.
+Other languages (multilingual models)	Andere talen (meertalige modellen)
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	Het geladen model is alleen Engels: andere talen hebben een meertalig model nodig (tiny, base of small zonder .en).
+CPU threads	CPU-threads
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	Hoeveel processorthreads de spraakengine voor één uitzending mag gebruiken. Minder threads gebruiken minder accu en duren langer.
+Keep transcripts (days)	Transcripties bewaren (dagen)
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	Gehoord %llu, bewaard %llu, weggelaten %llu (stilte, ruis, herhalingen), overgeslagen %llu (te traag), snelheid %.2f x realtime
+Download the speech model %s (%d MB)?	Spraakmodel %s (%d MB) downloaden?
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir vraagt dit ene bestand op bij de modelopslag (huggingface.co) en verstuurt verder niets. Het bestand wordt gecontroleerd met een vaste SHA-256-checksum en weggegooid als het niet klopt. Het model heeft een MIT-licentie.
+Download	Downloaden
+Delete all saved transcripts? This cannot be undone.	Alle opgeslagen transcripties verwijderen? Dit kan niet ongedaan worden gemaakt.
+Delete all	Alles verwijderen
+Transcription is off.	Transcriptie staat uit.
+Hide settings	Instellingen verbergen
+Settings and speech model	Instellingen en spraakmodel
+Search the text ...	In de tekst zoeken ...
+All frequencies	Alle frequenties
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	Roepletters (DLH123), registratie (N123AB) of ICAO-adres (3C6444)
+An airport code or name found in the channel name or the text (EYVI, Tower)	Een luchthavencode of -naam in de kanaalnaam of de tekst (EYVI, Tower)
+%zu of %zu	%zu van %zu
+Copy all shown	Alles wat getoond wordt kopiëren
+Export %s	%s exporteren
+Delete all ...	Alles verwijderen ...
+Time (UTC)	Tijd (UTC)
+Sure	Zeker
+Speaker (a guess from the wording)	Spreker (een gok op basis van de woorden)
+Click to copy this line	Klik om deze regel te kopiëren
+Aircraft on the screen	Vliegtuig op het scherm
+Also share transcripts of aircraft radio calls (text becomes public on the map)	Ook transcripties van radio-oproepen van vliegtuigen delen (tekst wordt openbaar op de kaart)
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	De tekst van oproepen op de luchtvaartband die een spraakengine op deze computer van je ontvangst heeft gemaakt (venster Transcripties), gekoppeld aan het vliegtuig via de uitgesproken roepletters en 48 uur openbaar getoond op de kaart van dat vliegtuig. Kan fouten bevatten. Telefoonnummers worden eerst verwijderd. Alleen de luchtvaartband wordt gedeeld, nooit marifoon, amateur of andere kanalen. Uit tot je het kiest, en je kunt het altijd uitzetten.
+Transcripts ...	Transcripties ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	Wat op de luchtvaartband en andere spraakkanalen wordt gezegd, als tekst: live ondertiteling, zoeken, exporteren. Uit tot je het aanzet.
+# Automations window
+%d firings. Dropped events: %llu	%d keer uitgevoerd. Weggegooide gebeurtenissen: %llu
+(the whole rule)	(de hele regel)
+Add a condition	Voorwaarde toevoegen
+Add a copy	Kopie toevoegen
+Add an action...	Actie toevoegen...
+Advanced	Geavanceerd
+Allow running programs	Programma's starten toestaan
+Allow this rule to run it	Deze regel mag het starten
+Any event	Elke gebeurtenis
+Apply	Toepassen
+Arguments, one per line	Argumenten, één per regel
+Arguments:	Argumenten:
+At most per hour (0: no limit)	Maximaal per uur (0: geen limiet)
+Automations	Automatiseringen
+Automations...	Automatiseringen...
+Bot token	Bot-token
+Cannot write the file.	Het bestand kan niet worden geschreven.
+Chat id	Chat-id
+Choose a rule on the left, or make a new one.	Kies links een regel of maak een nieuwe.
+Choose what to tell apart in "separately for each" so every thing has its own state.	Kies bij "afzonderlijk voor elk" wat onderscheiden wordt, zodat alles een eigen status heeft.
+Columns (optional)	Kolommen (optioneel)
+Confirm this rule...	Deze regel bevestigen...
+Confirmed	Bevestigd
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	Definieer function on_event(e). e.type, e.mode, e.freq, e.time en de velden van de gebeurtenis (e.callsign, e.squawk ...).\n\nActies: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHulpjes: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nTekst: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). Geen io, os, load, require, pcall of patroonherkenning; 1 miljoen instructies, 250 ms en 16 MB per script.
+Delete...	Verwijderen...
+Distance, km	Afstand, km
+Does not fire for the sample event:	Gaat niet af voor de voorbeeldgebeurtenis:
+Duplicate	Dupliceren
+Edit	Bewerken
+Edit as text and apply, or copy it to share.	Bewerk het als tekst en pas toe, of kopieer het om te delen.
+Every event	Elke gebeurtenis
+Expression (and'ed to the conditions above)	Uitdrukking (met EN aan de voorwaarden hierboven gekoppeld)
+Expression is fine.	De uitdrukking is in orde.
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	Velden, and or not, vergelijkingen, contains startswith endswith matches in, rekenen, distance_km() within() inside() hour() ...
+File name	Bestandsnaam
+File:	Bestand:
+Fire with sample event	Afvuren met voorbeeldgebeurtenis
+Frequency, MHz	Frequentie, MHz
+Generic JSON	Algemeen JSON
+Imported, switched off. Look it over, then switch it on.	Geïmporteerd, uitgeschakeld. Bekijk het en schakel het dan in.
+Insert an example...	Voorbeeld invoegen...
+Inside an area (polygon)	Binnen een gebied (veelhoek)
+JSON body (optional)	JSON-inhoud (optioneel)
+Keep	Behouden
+Last error:	Laatste fout:
+Limits	Limieten
+Lua script	Lua-script
+Manage	Beheren
+Memory name	Geheugennaam
+Mode id (optional)	Modus-id (optioneel)
+New rule	Nieuwe regel
+New script	Nieuw script
+No location test	Geen locatietest
+No rules yet. Make one, or add a recipe.	Nog geen regels. Maak er een of voeg een recept toe.
+Not active:	Niet actief:
+Not imported:	Niet geïmporteerd:
+Note	Notitie
+Nothing has fired yet.	Er is nog niets afgegaan.
+Notification	Melding
+Off. A rule may start a program only when this is on and you confirmed that rule.	Uit. Een regel mag alleen een programma starten als dit aan staat en je die regel hebt bevestigd.
+Only between these local hours	Alleen tussen deze lokale uren
+Pick one event type to choose its fields from a list.	Kies één gebeurtenistype om de velden uit een lijst te kiezen.
+Points as lat,lon; lat,lon; ...	Punten als breedte,lengte; breedte,lengte; ...
+Program	Programma
+Program:	Programma:
+Quiet after firing, seconds	Rust na afgaan, seconden
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	Kant-en-klare regels en scripts. Toevoegen maakt een bewerkbare kopie; die staat eerst uit.
+Really delete	Echt verwijderen
+Really does the actions, once, with a made-up event.	Voert de acties echt één keer uit met een verzonnen gebeurtenis.
+Recall a memory	Geheugen oproepen
+Receives these events	Ontvangt deze gebeurtenissen
+Recipes	Recepten
+Recipes...	Recepten...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	Regels en scripts: als iets wordt gedecodeerd, melden, opnemen, afstemmen of een webhook aanroepen
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	Regels: wanneer iets wordt gedecodeerd (een vliegtuig zendt 7700, een pagerbericht zegt brand, een schip betreedt een gebied ...), doe iets (melden, opnemen, afstemmen, loggen, een webhook aanroepen). Scripts doen hetzelfde in Lua.
+Run a program (advanced)	Een programma uitvoeren (geavanceerd)
+Run a program?	Een programma uitvoeren?
+Runs a program on this computer. Off until you allow it below and confirm this rule.	Start een programma op deze computer. Uit tot je het hieronder toestaat en deze regel bevestigt.
+Save a screenshot	Schermafbeelding opslaan
+Saved to	Opgeslagen in
+Seconds	Seconden
+Server (optional)	Server (optioneel)
+Service	Dienst
+Shows what the rule would do with a made-up event. Nothing is sent or started.	Toont wat de regel met een verzonnen gebeurtenis zou doen. Er wordt niets verzonden of gestart.
+Sound alert	Geluidssignaal
+Test (dry run)	Testen (droogloop)
+Test with a sample event	Testen met een voorbeeldgebeurtenis
+Text can use:	Tekst kan gebruiken:
+The receiver position is not set (ADS-B window).	De positie van de ontvanger is niet ingesteld (ADS-B-venster).
+The recipe file	Het receptbestand
+The script ran and did nothing for this event.	Het script liep en deed niets voor deze gebeurtenis.
+Then do	Doe dan
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	Deze regel start elke keer dat ze afgaat het onderstaande programma op deze computer, met tekst uit de gedecodeerde signalen in de argumenten. Iedereen die zo'n signaal kan zenden, kan dit beïnvloeden. Sta het alleen toe als je het zelf schreef of de maker vertrouwt.
+Topic	Onderwerp
+WAV file (empty: beeps)	WAV-bestand (leeg: piepjes)
+Webhook	Webhook
+Webhook address	Webhook-adres
+What can a script do?	Wat kan een script?
+When this happens	Wanneer dit gebeurt
+Within a distance of a point	Binnen een afstand van een punt
+Within a distance of my receiver	Binnen een afstand van mijn ontvanger
+Write a CSV log row	Een CSV-logregel schrijven
+all of the conditions	alle voorwaarden
+and only if	en alleen als
+any of the conditions	een van de voorwaarden
+contains	bevat
+ends with	eindigt op
+equals	is gelijk aan
+has a value	heeft een waarde
+is at least	is minstens
+is at most	is hoogstens
+is less than	is kleiner dan
+is more than	is groter dan
+is not	is niet
+is one of (a, b, c)	is een van (a, b, c)
+last fired %s, %d times	laatst %s, %d keer
+matches (* ?)	komt overeen met (* ?)
+only as it comes in	alleen bij binnenkomst
+separately for each	afzonderlijk voor elk
+starts with	begint met
+to	tot
+when it is inside	wanneer het binnen is
+when it is outside	wanneer het buiten is
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f graden (gemiddelde)
+Reported by the aircraft.	Gemeld door het vliegtuig.
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	Geschat door het positiefilter uit de positiemeldingen (niet uitgezonden door het vliegtuig).
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	Afgeleid uit 2 posities met %s ertussen: een gemiddelde over die tijd; een gebogen pad is langer dan de rechte lijn, dus de werkelijke snelheid kan hoger zijn. De koers is de gemiddelde peiling.
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	Afgeleid uit 2 posities met %s ertussen (afstand op de WGS-84-ellipsoïde gedeeld door de tijd). Het vliegtuig heeft geen snelheid gemeld.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	DRA+-decoder geladen
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	DRA+-geluid heeft een decoder-add-on nodig die niet is meegeleverd (de octrooi- en licentiestatus van de codec is onduidelijk). Zo installeer je hem:
+The DRA+ decoder add-on cannot be used: %s. How to install:	De DRA+-decoder-add-on kan niet worden gebruikt: %s. Zo installeer je hem:
+How to install	Zo installeer je het
+The services, signal information and data work without it.	De diensten, signaalinformatie en data werken ook zonder.
+Interface and windows	Interface en vensters
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Beeld wisselt de indeling (Sidebar, Scope, Tiles, Faceplate, Panel), de klassieke interface, tekstgrootte en palet; de touchinterface staat onder Tools. Vensters zoals Frequenties, Sweepscanner, Peilontvanger en Automatiseringen openen vanaf hier.

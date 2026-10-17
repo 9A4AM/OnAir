@@ -1,5 +1,6 @@
 // Drone Remote ID receiver (rid_rx.h): the BLE and Wi-Fi demodulators side by side, their good packets decoded as Open Drone ID.
 #include "dect2/rid/rid_rx.h"
+#include "dect2/automation/engine.h"
 #include "dect2/results/results_io.h"
 #include "dect2/ble/ble_proto.h"
 #include "dect2/ble/ble_rx.h"
@@ -193,6 +194,16 @@ struct RidReceiver::Impl {
             tel.log.insert(tel.log.begin(), std::move(l));
         }
         if (tel.log.size() > kRidLogMax) tel.log.resize(kRidLogMax);
+        if (d.hasPos && automation::wants(automation::FRid) && sigSec() - d.autoEmitSec >= 5.0) {   // the automations: at most every 5 s per drone
+            d.autoEmitSec = sigSec();
+            automation::Event ev("rid.drone");
+            ev.at(automation::wallNow(), "Remote ID", 0);
+            ev.str("id", !d.serial.empty() ? d.serial : !d.sessionId.empty() ? d.sessionId : !d.caaId.empty() ? d.caaId : d.mac).str("mac", d.mac).num("lat", d.lat).num("lon", d.lon);
+            if (d.altGeo > -1000) ev.num("alt_m", d.altGeo);
+            if (d.speed >= 0) ev.num("speed_ms", d.speed);
+            if (d.hasOperator) ev.num("op_lat", d.opLat).num("op_lon", d.opLon);
+            automation::emit(std::move(ev));
+        }
     }
 
     void onBle(const ble::Adv& a, int ch, float rssi) {

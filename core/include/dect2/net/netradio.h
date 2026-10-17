@@ -1,5 +1,5 @@
 // Radios on the network that the user adds by address (issues #28, #54, #68): a PlutoSDR by IP, an rtl_tcp server, a SoapyRemote server,
-// a SpyServer, an SDR++ server, a Hermes Lite 2 or a Red Pitaya (found by discovery, or by address).
+// a SpyServer, an SDR++ server, a Hermes Lite 2, a Red Pitaya, a KiwiSDR (found by discovery, or by address).
 // They are listed with the other radios (listRadios) once setNetworkRadios() has them.
 #pragma once
 #include "dect2/source/source.h"
@@ -10,10 +10,10 @@
 namespace dect2 {
 
 struct NetRadio {
-    enum Type { Pluto = 0, RtlTcp = 1, SoapyRemote = 2, SpyServer = 3, HermesLite2 = 4, RedPitaya = 5, SdrppServer = 6, NrspSt = 7 } type = RtlTcp;
+    enum Type { Pluto = 0, RtlTcp = 1, SoapyRemote = 2, SpyServer = 3, HermesLite2 = 4, RedPitaya = 5, SdrppServer = 6, NrspSt = 7, KiwiSdr = 8 } type = RtlTcp;
     std::string host;   // name or address ("ip:" in front of a Pluto's is accepted and dropped)
     int port = 0;       // 0 = the type's default (a Pluto: libiio's own, 30431)
-    std::string remote; // SoapyRemote only: which of the server's radios to ask for, "mirisdr" or "driver=mirisdr,serial=1" (empty: the ones it lists)
+    std::string remote; // KiwiSDR: the password ("" = none; stored in the settings, never shown or logged). SoapyRemote: which of the server's radios to ask for, "mirisdr" or "driver=mirisdr,serial=1" (empty: the ones it lists)
     bool operator==(const NetRadio& o) const { return type == o.type && host == o.host && port == o.port && remote == o.remote; }
 };
 
@@ -42,7 +42,7 @@ int netRadioDefaultPort(NetRadio::Type t);            // 0 (Pluto), 1234, 55132,
 const char* netRadioDefaultHost(NetRadio::Type t);    // "192.168.2.1" for a Pluto, "" otherwise
 int netRadioPort(const NetRadio& r);                  // the port connected to (a Pluto without one: 30431, its iiod)
 
-// The list as the settings keep it: "rtltcp,host,port;pluto,host,0;soapyremote,host,port;spyserver,host,port;hl2,host,port;redpitaya,host,port;sdrpp,host,port" (and back; bad
+// The list as the settings keep it: "rtltcp,host,port;pluto,host,0;soapyremote,host,port;spyserver,host,port;hl2,host,port;redpitaya,host,port;sdrpp,host,port;kiwisdr,host,port,password" (and back; bad
 // items are skipped)
 std::string netRadiosToString(const std::vector<NetRadio>& v);
 std::vector<NetRadio> netRadiosFromString(const std::string& s);
@@ -53,6 +53,8 @@ std::vector<NetRadio> networkRadios();
 // The device entries of these radios: a Pluto as the native "ip:<host>" entry, rtl_tcp as the native "rtltcp" one, SoapyRemote as the
 // SoapySDR device "driver=remote,remote=tcp://host:port" (left out when built without SoapySDR)
 std::vector<DeviceInfo> netRadioDevices(const std::vector<NetRadio>& v);
+// "host:port" of r as the radio's device entry keys it (nativeArgs of a native radio)
+std::string netRadioHostPort(const NetRadio& r);
 // The name the entry of r has in the radio list
 std::string netRadioDeviceName(const NetRadio& r);
 

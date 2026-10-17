@@ -1,9 +1,11 @@
 // Server > Send data to map server: opted-in POST of decoded positions to map.on-air.dev /ingest.
 // Only positions the signal itself sent (no TLE catalogue, receiver GNSS, RID operator, FLARM stealth, cell towers, synthetic test signal).
+#include "derived_kin.h"
 #include "../app.h"
 #include "../state/receivers.h"
 #include "map_ask.h"
 #include "../adsb/adsb_acars.h"
+#include "../transcribe/transcribe_app.h"
 #ifndef ONAIR_VERSION
 #define ONAIR_VERSION "dev"
 #endif
@@ -25,6 +27,9 @@
 
 bool vdl2EstimatedPosition(uint32_t icao, double now, double& lat, double& lon, double& ageSec);   // app/vdl2/vdl2_ui.cpp
 bool hfdlEstimatedPosition(uint32_t key, double now, double& lat, double& lon, double& ageSec);   // app/hfdl/hfdl_ui.cpp
+derivedkin::Info acarsKinematics(const dect2::AcarsAircraft& c, double now);   // app/acars/acars_ui.cpp
+derivedkin::Info vdl2Kinematics(const dect2::Vdl2Aircraft& c, double now);     // app/vdl2/vdl2_ui.cpp
+derivedkin::Info hfdlKinematics(const dect2::HfdlAircraft& c, double now);     // app/hfdl/hfdl_ui.cpp
 
 namespace {
 
@@ -173,10 +178,25 @@ struct Track {
     bool hasAlt = false, hasHdg = false, hasSpd = false, hasVrate = false, hasSquawk = false;
     double alt = 0, hdg = 0, spd = 0, vrate = 0, age = 0;
     int squawk = 0;
+    double dfFreq = 0, dfSigma = 0, dfConf = 0;   // kind "doa": frequency (Hz), bearing sigma (deg) and confidence (0..1) sent next to hdg
+    bool dv = false;                 // speed / heading / vertical rate are derived from position reports (or estimated), not broadcast: sent as "dv":1
     bool est = false;                // the position is an estimate (dead reckoning, core/src/track), not a received fix: sent as "est":1
     std::vector<std::pair<double, double>> path;
     std::vector<dect2::AcarsLogEntry> msgs;   // interesting ACARS messages not sent yet (only when the user chose to share them)
 };
+
+// Speed, heading and vertical rate of a track that only has positions: the measured ones stay; the others come from the estimator or from
+// two position reports (core/include/dect2/geo/kinematics.h) and are flagged. The heading is sent only when it is good enough to turn an icon.
+void applyKin(Track& t, const derivedkin::Info& k, bool measuredGs, bool measuredTrack) {
+    if (!measuredTrack) t.hasHdg = false;
+    if (!measuredGs) t.hasSpd = false;
+    const dect2::geo::KinValue& v = k.v;
+    bool flagged = false;
+    if (!measuredGs && v.hasGs) { t.hasSpd = true; t.spd = v.gsKt; flagged = true; }
+    if (!measuredTrack && v.hasTrack && v.trackOk) { t.hasHdg = true; t.hdg = v.trackDeg; flagged = true; }
+    if (!t.hasVrate && v.hasVs && v.src != dect2::geo::KinSource::Measured) { t.hasVrate = true; t.vrate = v.vsFpm; flagged = true; }
+    if (flagged) t.dv = true;
+}
 
 struct RunGate {
     uint64_t epoch = 0;
@@ -319,8 +339,9 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             t.lat = a.lat; t.lon = a.lon; t.age = acars.nowSec - a.lastHeardSec;
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
-            if (a.hasTrack) { t.hasHdg = true; t.hdg = a.trackDeg; }
+            if (a.hasTrack && a.hasSpeed) { t.hasHdg = true; t.hdg = a.trackDeg; }
             if (a.hasSpeed) { t.hasSpd = true; t.spd = a.speedKt; }
+            applyKin(t, acarsKinematics(a, acars.nowSec), a.hasSpeed, a.hasTrack && a.hasSpeed);
             t.cat = a.posKind;
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
             addTrack(v, seen, std::move(t));
@@ -355,6 +376,7 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             { double la, lo, ag; if (hfdlEstimatedPosition(a.icao ? a.icao : a.key, hfdl.nowSec, la, lo, ag)) { t.lat = la; t.lon = lo; t.est = true; t.age = 0; t.heardAt = hfdl.nowSec; } }
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
+            applyKin(t, hfdlKinematics(a, hfdl.nowSec), false, false);
             t.cat = a.posKind;
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
             addTrack(v, seen, std::move(t));
@@ -371,6 +393,12 @@ void collectFrom(App& rx, std::vector<Track>& v, std::unordered_set<std::string>
             t.hasHeard = true; t.heardAt = a.lastHeardSec;
             { double la, lo, ag; if (vdl2EstimatedPosition(a.icao, vdl.nowSec, la, lo, ag)) { t.lat = la; t.lon = lo; t.est = true; t.age = 0; t.heardAt = vdl.nowSec; } }
             if (a.hasAlt) { t.hasAlt = true; t.alt = a.altFt; }
+            if (a.hasKin) {   // ADS-C earth reference: measured
+                t.hasSpd = true; t.spd = a.groundKt;
+                if (a.hasTrack) { t.hasHdg = true; t.hdg = a.trackDeg; }
+                t.hasVrate = true; t.vrate = a.vsFpm;
+            }
+            applyKin(t, vdl2Kinematics(a, vdl.nowSec), a.hasKin, a.hasKin && a.hasTrack);
             t.cat = a.posKind;
             for (const auto& p : a.track) t.path.push_back({p.lat, p.lon});
             addTrack(v, seen, std::move(t));
@@ -502,6 +530,32 @@ void attachMsgs(std::vector<Track>& tracks) {
     if (sent.size() > 3000) sent.clear();
 }
 
+// What was said on the radio to an aircraft (airband transcripts, transcribe/transcribe_app.h), as messages of mode VOICE, not sent before. Only with the
+// user's own choice (Server > also share transcripts), only airband, only text the speech engine was fairly sure of; phone numbers are removed.
+void attachVoice(std::vector<Track>& tracks) {
+    static std::unordered_map<std::string, int64_t> sent;    // track id > time of the newest transcript sent
+    std::unordered_map<std::string, int> holders;
+    for (const Track& t : tracks) if (t.kind && !std::strcmp(t.kind, "aircraft") && !t.label.empty() && t.label != t.id) holders[dect2::acarsNormFlight(t.label)]++;
+    for (Track& t : tracks) {
+        if (!t.kind || std::strcmp(t.kind, "aircraft")) continue;
+        const auto h = holders.find(dect2::acarsNormFlight(t.label));
+        std::vector<dect2::AcarsLogEntry> v = tx::voiceForTrack(t.id, t.label == t.id ? std::string() : t.label, h == holders.end() ? 1 : h->second);
+        const int64_t from = sent.count(t.id) ? sent[t.id] : 0;
+        int64_t newest = from;
+        int n = 0;
+        for (auto it = v.rbegin(); it != v.rend(); ++it) {      // oldest first
+            if (it->wall <= from) continue;
+            dect2::AcarsLogEntry e = *it;
+            e.text = dect2::acarsRedact(e.text);
+            if (e.text.empty()) continue;
+            newest = std::max(newest, e.wall);
+            if (n++ < 3) t.msgs.push_back(std::move(e));   // a few per aircraft per upload, together with the ACARS ones the server takes five
+        }
+        if (newest > from) sent[t.id] = newest;
+    }
+    if (sent.size() > 3000) sent.clear();
+}
+
 std::string buildJson(const std::string& station, const std::vector<Track>& tracks) {
     std::string j = "{\"station\":\"" + jsonEsc(station) + "\",\"tracks\":[";
     bool first = true;
@@ -526,7 +580,9 @@ std::string buildJson(const std::string& station, const std::vector<Track>& trac
         if (t.hasVrate) { snprintf(b, sizeof b, ",\"vrate\":%.0f", t.vrate); j += b; }
         if (t.hasSquawk) { snprintf(b, sizeof b, ",\"squawk\":\"%04d\"", t.squawk); j += b; }
         snprintf(b, sizeof b, ",\"age\":%.1f", t.age); j += b;
+        if (t.dfFreq > 0) { snprintf(b, sizeof b, ",\"freq\":%.0f,\"sigma\":%.1f,\"conf\":%.2f", t.dfFreq, t.dfSigma, t.dfConf); j += b; }
         if (t.est) j += ",\"est\":1";
+        if (t.dv && (t.hasSpd || t.hasHdg || t.hasVrate)) j += ",\"dv\":1";
         if (!t.src.empty()) { j += ",\"src\":\""; j += jsonEsc(t.src); j += '"'; }
         if (!t.cat.empty()) { j += ",\"cat\":\""; j += jsonEsc(t.cat); j += '"'; }
         if (!t.extra.empty()) { j += ",\"extra\":\""; j += jsonEsc(t.extra); j += '"'; }
@@ -625,6 +681,21 @@ void msgsToggle(App& s, bool menu) {
         ImGui::SetTooltip("%s", tr("Messages an aircraft sent by ACARS (free text, crew, operations, company and maintenance messages), shown on that aircraft's card on the public map for 48 hours. Phone numbers and e-mail addresses are removed first. Position reports and link tests are not part of this. You can turn it off at any time."));
     if (!hit) return;
     s.mapMsgs = menu ? !s.mapMsgs : v;
+    savePrefs(s);
+}
+
+// "Also share transcripts": what the airband voice transcripts say to or about an aircraft, on that aircraft's card. Public radio, but the text may be wrong
+// or name people, so this is its own choice and off until chosen. Only airband; nothing from marine, ham or other private channels.
+void voiceToggle(App& s, bool menu) {
+    bool v = s.mapVoice;
+    const char* label = tr("Also share transcripts of aircraft radio calls (text becomes public on the map)");
+    bool hit = false;
+    if (menu) hit = ImGui::MenuItem(label, nullptr, v);
+    else hit = ImGui::Checkbox(label, &v) && v != s.mapVoice;
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("%s", tr("The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time."));
+    if (!hit) return;
+    s.mapVoice = menu ? !s.mapVoice : v;
     savePrefs(s);
 }
 
@@ -756,6 +827,7 @@ void mapSendServerMenu(App& a) {
     if (!ImGui::BeginMenu(tr("Server"))) { mapPopups(a); return; }
     sendToggle(a, true);
     if (rootApp(a).mapSend) msgsToggle(rootApp(a), true);
+    if (rootApp(a).mapSend) voiceToggle(rootApp(a), true);
     ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
     ImGui::EndMenu();
     mapPopups(a);
@@ -767,6 +839,7 @@ void mapSendButton(App& a) {
     if (ImGui::BeginPopup("##serverpop")) {
         sendToggle(a, false);
         if (rootApp(a).mapSend) msgsToggle(rootApp(a), false);
+        if (rootApp(a).mapSend) voiceToggle(rootApp(a), false);
         ImGui::TextDisabled("%s", tr("The map is at map.on-air.dev"));
         ImGui::EndPopup();
     }
@@ -839,7 +912,16 @@ void mapSendTick(App& a) {
     std::vector<Track> tracks;
     std::unordered_set<std::string> seen;
     for (App* r : receiversAll()) if (r) collectFrom(*r, tracks, seen);
+    {   // the direction finder's bearing, only when the user chose to share it (View > Direction finder > Sharing)
+        DfMapLine dl;
+        if (dfMapLine(s, dl) && tracks.size() < kMaxTracks) {
+            Track t; t.kind = "doa"; t.src = "df"; t.id = "df"; t.label = "DF"; t.lat = dl.lat; t.lon = dl.lon; t.age = dl.ageSec;
+            t.hasHdg = true; t.hdg = dl.bearing; t.dfFreq = dl.freqHz; t.dfSigma = dl.sigma; t.dfConf = dl.conf;
+            if (validPos(t.lat, t.lon)) tracks.push_back(std::move(t));
+        }
+    }
     if (s.mapMsgs) attachMsgs(tracks);
+    if (s.mapVoice) attachVoice(tracks);
     const bool ping = gPingNow || needHb || (tracks.empty() && (ph == kConnecting || ph == kRetry));
     if (!gPingNow && !needHb && !tracks.empty()) {
         static int64_t lastSend = 0;

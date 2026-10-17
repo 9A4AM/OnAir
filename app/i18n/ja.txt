@@ -168,7 +168,6 @@ Back	戻る
 Next	次へ
 Finish	完了
 Skip	スキップ
-Skip tour	ツアーをスキップ
 Dismiss	閉じる
 Again	もう一度
 Auto	自動
@@ -212,7 +211,6 @@ New interface	新しいインターフェース
 Try the new interface. You can switch back at any time.	新しいインターフェースを試せます。いつでも元に戻せます。
 Guided tour	ガイドツアー
 Tour	ツアー
-Take the guided tour with Onny	Onny と一緒にガイドツアーを見る
 by: Kristijonas Adomaitis, made with help from the community	作者: Kristijonas Adomaitis、コミュニティの協力で制作
 Thank you to everyone who reported bugs, sent recordings and opened pull requests.	不具合の報告、録音の提供、プルリクエストをしてくださったみなさん、ありがとうございます。
 Source	ソース
@@ -477,21 +475,6 @@ Radio settings (%d changed)	無線機の設定 (%d 件変更)
 %s: frequency correction and the other settings of this radio	%s: この無線機の周波数補正とその他の設定
 The driver's own settings show up here\nonce this radio has been started.	ドライバー固有の設定は、この無線機を一度\n開始するとここに表示されます。
 0 = libiio's default	0 = libiio の既定値
-#  the guided tour
-Hi, I'm Onny! I'm a little TV who lives in OnAir. Want a quick tour? It takes about a minute, and I'll show you everything with a demo signal, so you don't need any hardware yet.	こんにちは、Onny です! OnAir に住んでいる小さなテレビです。簡単なツアーはいかがですか? 約 1 分で、デモ信号を使ってすべてをご案内しますので、ハードウェアはまだ必要ありません。
-Up here is the switch for what kind of broadcast you want: DVB for most of the world's digital TV, ATSC for North America, and DAB for digital radio. OnAir has all three in one place.	ここ上部では、受信したい放送の種類を切り替えます。世界の多くのデジタルテレビは DVB、北米は ATSC、デジタルラジオは DAB です。OnAir ならこの 3 つがひとつにまとまっています。
-Let's see it in action! I'll start a pretend signal. It is a test transmitter running inside the app, so nothing needs to be plugged in.	実際に動かしてみましょう! 模擬信号を開始します。アプリの中で動くテスト用の送信機なので、何もつなぐ必要はありません。
-Start the demo signal	デモ信号を開始
-See the wiggly line? That is the spectrum: how strong everything on the air is, from left to right. The tall bump in the middle is our channel. Below it, the waterfall shows the same thing slowly scrolling by in time.	このくねくねした線が見えますか? これがスペクトラムで、電波の強さを左から右へ表しています。中央の高い山が私たちのチャンネルです。その下のウォーターフォールは、同じ内容を時間とともにゆっくりスクロールして表示します。
-And these four boxes show the dots the receiver sees. When the signal is good, the dots gather into tidy clusters. Messy dots mean a noisy signal. Right now it's a clean demo, so they should look neat!	そしてこの 4 つの枠は、受信機が見ている点を表示します。信号が良いと点はきれいにまとまります。点が乱れているのはノイズが多い信号です。今はきれいなデモなので、整って見えるはずです!
-Over here you'll find the channels once the receiver locks on. Click one to watch it. There's also a player with picture and sound, a clock, and options to record or stream what you're watching.	ここには、受信機がロックするとチャンネルが並びます。クリックすると視聴できます。映像と音声のプレーヤー、時計、視聴中の番組を録画・配信するオプションもあります。
-Now for the real thing. Pick your radio here, choose a frequency, and set the gain. Gain is how much your radio boosts the signal: too little and it's lost, too much and it distorts. The Auto-tune button finds a good value for you.	では本番です。ここで無線機を選び、周波数を決め、ゲインを設定します。ゲインは無線機が信号をどれだけ増幅するかで、小さすぎると信号が埋もれ、大きすぎると歪みます。自動調整ボタンが良い値を見つけてくれます。
-Stop the demo and look for my radio	デモを停止して無線機を探す
-Don't know where the channels are? The Scan tab searches for you. A good antenna, placed high and near a window, makes a bigger difference than anything else. I promise!	チャンネルの場所がわかりませんか? スキャンタブが探してくれます。高い場所の窓際に置いた良いアンテナは、何よりも大きな違いを生みます。約束します!
-That's the whole tour! You can share your channels with other devices from the Stream tab (Outputs), and bring me back any time with the Tour button at the top right. Happy watching!	ツアーは以上です! ストリームタブ (出力) から、チャンネルを他の機器と共有できます。右上のツアーボタンを押せば、いつでも私を呼び戻せます。楽しい視聴を!
-Good news: I can see "%s"!	朗報です: 「%s」が見つかりました!
-(I can't see a radio right now. Plug it in and press the button again.)	(今は無線機が見つかりません。接続してもう一度ボタンを押してください。)
-On Windows a HackRF needs its WinUSB driver once: install it with Zadig, at zadig.akeo.ie.	Windows では、HackRF に WinUSB ドライバーが一度だけ必要です。zadig.akeo.ie の Zadig でインストールしてください。
 #  passes
 Weather (137 MHz)	気象 (137 MHz)
 Amateur	アマチュア
@@ -1267,7 +1250,6 @@ Auto (RBDS on odd tenths)	Auto (RBDS on odd tenths)
 RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
-A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini には、Windows では FTDI の FT60x ドライバ(Zadig ではありません)、Linux では udev ルール、そしてゲートウェアをライブラリに合わせるための一度きりの「LimeUtil --update」が必要です。
 Real (mono)	実数（モノ）
 Left	左
 Right	右
@@ -1398,6 +1380,61 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Sunday	日曜日
+Monday	月曜日
+Tuesday	火曜日
+Wednesday	水曜日
+Thursday	木曜日
+Friday	金曜日
+Saturday	土曜日
+Your radio cannot tune 225 kHz.	お使いの無線機は 225 kHz に同調できません。
+Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.	Long wave needs an SDRplay, an Airspy HF+, an RTL-SDR in direct sampling mode, or an upconverter in front of a radio that starts at a few MHz (set it under the radio's settings), and a long wire or a ferrite rod antenna. A BFO recording of the radio's audio also plays: tick Audio, not IQ in the Receiver tab.
+time decoded, two packets agree	時刻を復号、2 パケットが一致
+time decoded (one packet)	時刻を復号（1 パケット）
+carrier found, waiting for a time packet	搬送波を検出、時刻パケット待ち
+searching for the carrier	搬送波を探索中
+start the receiver to read the time service	受信を開始すると時報サービスを読み取ります
+local time	現地時刻
+last packet	直近のパケット
+summer time	夏時間
+the local time changes next Sunday at 01:00 UTC (summer / standard time)	現地時刻は次の日曜 01:00 UTC に切り替わります（夏時間／標準時）
+no change announced	変更の予告なし
+leap second	うるう秒
+one is to be removed at the end of the quarter	四半期末に 1 秒削除されます
+one is to be added at the end of the quarter	四半期末に 1 秒挿入されます
+none announced	予告なし
+transmitter	送信所
+computer clock	コンピュータの時計
+ahead	進み
+behind	遅れ
+The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.	The computer clock when each time packet began, minus the stamp in the packet and the path delay, averaged over the last packets. It includes the radio's buffering (the earliest arrival is used). The frame timing of the service is from its description (GUM, v1.0) and not yet checked against a signal with a known clock: use it as an indication.
+nothing to compare (a recording)	比較対象なし（録音）
+once the time is decoded	時刻の復号後
+path	伝搬路
+; set your position in ADS-B (Receiver position) for the right delay	; set your position in ADS-B (Receiver position) for the right delay
+clock offset	時計のずれ
+level	レベル
+start the receiver to see the signal	受信を開始すると信号を表示します
+carrier	搬送波
+phase of the carrier	搬送波の位相
+The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.	The last two seconds of the carrier's phase, one point per 8 ms, newest brightest. The service keys the phase between two states 36 degrees apart (50 bit/s); a clean signal shows two tight clusters.
+signal at the bit slicer	ビット判定器の信号
+The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.	The phase change over each 20 ms bit: a step of +-1 is a bit that changes the keying state, 0 one that does not; the slicer decides at half (dashed). The last two seconds.
+Computer UTC	コンピュータ UTC
+Frame	フレーム
+Result	結果
+no frame yet: a time packet comes every few slots of the minute frame	フレームはまだありません。時刻パケットは 1 分フレームの数スロットごとに届きます
+, audio recording	、音声の録音
+Recording of the radio's audio	ラジオ音声の録音
+Audio, not IQ	IQ ではなく音声
+The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.	The file is a recording of a receiver's audio (SSB / CW) tuned a little off 225 kHz, so the carrier is a tone (a WAV with the audio on the left channel and silence on the right; a mono WAV: eczastool rx reads it directly). Not for IQ files or radios.
+carrier tone Hz	搬送波トーン Hz
+The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).	The pitch of the carrier in the recording: 1000 Hz when the radio's dial was 224 kHz (upper sideband).
+Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).	Not used: the Reed-Solomon bytes of the frame (a frame with a wrong check byte is dropped, not repaired).
+Carrier	搬送波
+Sync	同期
+The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).	The test signal carries the computer's time with a time packet every 12 s: the clock offset should stay near zero (the simulator's own buffering shows in it).
+LW time service, Poland	長波時報サービス（ポーランド）
 Predict positions	位置を予測
 Fills the gaps between position reports: the aircraft moves smoothly and, when messages stop, is dead-reckoned along its track (and along the route when a message named the destination). Predicted positions are drawn as a ghost with a dashed ring.	位置報告の間の空白を補います。機体は滑らかに動き、メッセージが途絶えると進路に沿って(目的地が通知されていれば航路に沿って)推測航法で位置を求めます。予測位置は破線の輪を付けた半透明の機影で描かれます。
 uncertainty	不確かさ
@@ -1530,7 +1567,6 @@ Source...	出典...
 Switches to the entry's mode, applies the mode's tuning and tunes to the frequency. A double-click on a row does the same. A running receiver restarts when the mode changes.	項目のモードに切り替え、そのモードの同調設定を適用して周波数に同調します。行をダブルクリックしても同じです。動作中の受信機はモードが変わると再起動します。
 Tuned: %s  %s MHz	同調: %s  %s MHz
 Well-known frequencies of this mode: pick one to tune to it	このモードの既知の周波数: 選ぶと同調します
-Carrier	Carrier
 Stop scan##dsc	Stop scan##dsc
 Scan band##dsc	Scan band##dsc
 DECT carrier %d, %.3f MHz	DECT carrier %d, %.3f MHz
@@ -1547,6 +1583,27 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	nRSP-STにはSDRconnect経由で接続します。WebSocketサーバー（ポート5454）を有効にし、nRSP-STを選択した状態で、コンピューター上のSDRconnect（またはヘッドレス版）を起動し、そのコンピューターのアドレスを入力してください。パスワードは不要で、保存もされません。
+#  the guided tour
+Tuning and gain	チューニングとゲイン
+Modes	モード
+Spectrum and waterfall	スペクトルとウォーターフォール
+Mode panel	モードパネル
+Memory and frequencies	メモリと周波数
+Receivers	受信機
+Audio	オーディオ
+Server and support	サーバーとサポート
+Done	完了
+Take the guided tour	ガイドツアーを開始
+Choose the radio or recording that supplies samples. Record IQ saves the raw signal for later playback.	サンプルを供給する無線機または録音を選びます。Record IQ は生の信号を保存し、後で再生できます。
+Set the frequency, band and sample rate here. Gain and AGC set the input level; Second mode decodes another mode from the same capture.	ここで周波数、バンド、サンプルレートを設定します。ゲインと AGC は入力レベルを決め、セカンドモードは同じ受信データから別のモードをデコードします。
+%d modes, grouped by family. Use the search box to find one by name.	%d 個のモードをファミリーごとに分類しています。検索ボックスで名前から探せます。
+Click to tune and scroll to zoom. Peak hold keeps the strongest level seen on each frequency.	クリックで同調し、スクロールで拡大します。ピークホールドは各周波数で観測した最大レベルを保持します。
+Each mode has its own tabs for decoded output, settings and tools. They change with the selected mode.	各モードには、デコード結果、設定、ツール用の専用タブがあります。選択したモードに応じて変わります。
+Memory stores frequencies with their mode and settings. Frequencies and band plans list what is on air, per mode.	メモリは周波数をモードと設定とともに保存します。周波数とバンドプランは、モードごとの運用状況を示します。
+Each receiver pairs a radio with a mode. This strip switches between them and chooses which one plays sound.	各受信機は無線機とモードの組み合わせです。このバーで切り替え、音声を出す受信機を選びます。
+Listen plays the demodulated signal. Volume and mute are here; Record audio saves it to a file.	Listen は復調した信号を再生します。音量とミュートはここにあり、Record audio はファイルに保存します。
+Server sends decoded positions to the public map. Support helps fund development.	サーバーはデコードした位置情報を公開マップに送信します。サポートは開発資金に役立ちます。
+Documentation, troubleshooting, credits and licences are here. Guided tour starts this tour again.	ドキュメント、トラブルシューティング、クレジット、ライセンスはここにあります。ガイドツアーでこのツアーを再開できます。
 Monitor audio	音声モニター
 Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	どのモードでも同調したチャンネルを聞いて信号を識別できます。無線のサンプルをUSB、LSB、狭帯域FM、AMとして復調します。モードが自分の音を出している間は無音です。
 Auto: USB below 30 MHz, narrow FM above	自動: 30 MHz未満はUSB、以上は狭帯域FM
@@ -1654,3 +1711,344 @@ Start the receiver to see what is on the air.	受信機を開始すると、送�
 Add all	すべて追加
 Nothing yet: carriers show here a moment after they start transmitting.	まだありません。搬送波は送信開始の少し後にここに表示されます。
 The radio's tuning error is not measured yet: names may be off by a channel.	受信機の同調誤差はまだ測定されていません。名前が 1 チャンネルずれている可能性があります。
+# direction finder
+Cannot open the recording (interleaved complex float32, one sample of every channel after the other).	録音を開けません（複素float32のインターリーブ形式で、各チャンネルのサンプルが順に並んだもの）。
+The recording has a different number of channels than the array.	録音のチャンネル数がアレイと異なります。
+Choose a source first.	先にソースを選んでください。
+No data to calibrate with.	校正に使うデータがありません。
+Calibration stored.	校正を保存しました。
+Add this bearing	この方位を追加
+Keeps the current bearing and your position as a line. Move, or take bearings from other stations, add more lines and the position is fixed where they cross.	現在の方位とあなたの位置を1本の線として保持します。移動するか他局の方位を使って線を追加すると、交差する場所で位置が決まります。
+Clear lines	線をクリア
+Position	位置
+95%% ellipse %.1f x %.1f km, %d of %d lines used	95%%楕円 %.1f x %.1f km、%d/%d本の線を使用
+The lines do not cross (parallel, or they meet behind the stations).	線が交差しません（平行、または局の後方で交わります）。
+Direction finder	方向探知機
+Simulator (demo, no hardware)	シミュレーター（デモ、ハードウェア不要）
+Recording (cf32 / SigMF)	録音（cf32 / SigMF）
+KrakenSDR bearing file (JSON)	KrakenSDR方位ファイル（JSON）
+Lock to the tuned frequency	同調周波数に固定
+Run	実行
+path of the recording	録音のパス
+a file the DoA server's JSON lines are saved to	DoAサーバーのJSON行の保存先ファイル
+channels	チャンネル
+kS/s	kS/s
+Bearing	方位
+Confidence	信頼度
+Sidelobe %.0f dB, coherence %.2f	サイドローブ %.0f dB、コヒーレンス %.2f
+Waiting for a bearing.	方位を待っています。
+Array and estimator	アレイと推定器
+Circular (KrakenSDR)	円形（KrakenSDR）
+Linear	直線
+Array	アレイ
+Elements	素子
+Spacing (wavelengths)	間隔（波長）
+Array orientation	アレイの向き
+Compass offset	コンパスオフセット
+Added to every bearing: where the array's own north points relative to true north.	すべての方位に加算されます：アレイの北が真北に対してどこを向いているか。
+Interferometer	干渉計
+Estimator	推定器
+Sources	信号源
+Forward-backward averaging (reflections)	前後平均（反射）
+Calibration	校正
+1. Feed all channels the same signal: the receiver's noise source (KrakenSDR: switch it on in the DAQ), or a signal from a known bearing. 2. Choose the matching mode and press Calibrate. The offsets between the channels are measured and removed.	1. すべてのチャンネルに同じ信号を与えます：受信機のノイズソース（KrakenSDR：DAQでオンにする）、または既知の方位からの信号。2. 対応するモードを選んで「校正」を押します。チャンネル間の差が測定され、除去されます。
+Common noise source	共通ノイズソース
+Known bearing	既知の方位
+Bearing of the source	信号源の方位
+Calibrate	校正
+Forget	忘れる
+Use calibration	校正を使用
+Not calibrated.	未校正。
+Simulated channel errors	シミュレートしたチャンネル誤差
+Simulator	シミュレーター
+Transmitter bearing	送信機の方位
+Spin	回転
+SNR per channel	チャンネルごとのSNR
+Second transmitter	2番目の送信機
+Second bearing	2番目の方位
+Position fix	位置の算出
+Sharing	共有
+Share my bearing on the map server	自分の方位を地図サーバーで共有
+Needs Server > Send data to map server. Only the bearing, its uncertainty, the frequency and your station position go up; the map shows where bearings from several stations cross.	サーバー > 地図サーバーにデータを送信 が必要です。送信されるのは方位とその不確かさ、周波数、あなたの局の位置だけです。地図には複数の局の方位が交差する場所が表示されます。
+Bearing and position of a transmitter from an antenna array such as the KrakenSDR	KrakenSDRのようなアンテナアレイによる送信機の方位と位置
+Decoded only	デコード済みのみ
+Hides tone-only pages and pages whose text could not be decoded.	トーンのみの呼び出しと、テキストをデコードできなかったメッセージを非表示にします。
+%zu tone-only or undecoded pages hidden (Decoded only)	トーンのみまたは未デコードのメッセージを%zu件非表示（デコード済みのみ）
+%zu tone-only or undecoded pages hidden	トーンのみまたは未デコードのメッセージを%zu件非表示
+hidden	非表示
+# LBJ (Chinese railway train warning)
+What LBJ carries	LBJが伝える内容
+LBJ is the Chinese railway train approach warning on about 821.2375 MHz. Every locomotive sends 1200 bit/s POCSAG numeric pages: a short message every few seconds with the train number, the speed (km/h) and the kilometre post, and longer messages with the locomotive type and number and the route.\n\nOnAir decodes the pages itself (receive only). A value that is blank had damaged digits; a row in grey had errors that were corrected, so check it against the next message of the same train.	LBJは中国の列車接近警報で、約821.2375 MHzで送信されます。各機関車は1200 bit/sのPOCSAG数字ページを送ります。数秒ごとに列車番号・速度(km/h)・キロ程を含む短いメッセージと、機関車の形式と番号・路線を含む長いメッセージです。\n\nOnAir自身がページを復号します(受信のみ)。空欄の値は桁が壊れていたものです。灰色の行は誤りを訂正したものなので、同じ列車の次のメッセージと照合してください。
+tune to about 821.2375 MHz and start the receiver	約821.2375 MHzに合わせて受信を開始してください
+FM, 1200 bit/s FSK, %.2f Msps	FM、1200 bit/s FSK、%.2f Msps
+%llu messages, %llu sync words, %llu blank, %llu failed checks	メッセージ%llu件、同期ワード%llu件、空%llu件、検査失敗%llu件
+listening (level %.0f dBFS, offset %+.0f Hz)	受信待ち(レベル %.0f dBFS、オフセット %+.0f Hz)
+Train	列車
+Speed km/h	速度 km/h
+Km post	キロ程
+Direction	方向
+Locomotive	機関車
+Route	路線
+Up	上り
+Down	下り
+Some digits were corrected or lost: check this row against the next message of the train	一部の桁が訂正または欠落しました。同じ列車の次のメッセージと照合してください
+Train warning, 821 MHz	列車警報、821 MHz
+clear picture	画像を消去
+Clears the picture and the lines the decoder has collected, and starts a new picture at the next start tone or phasing. Pictures already in the list on the right stay.	画像とデコーダーが集めたラインを消去し、次のスタートトーンまたは位相合わせから新しい画像を始めます。右のリストにある画像はそのまま残ります。
+Clears the NAVTEX and DSC lists and the weather fax picture.	NAVTEX と DSC のリストと気象ファックスの画像を消去します。
+# radio clips
+Clip	クリップ
+Radio clip: save the last moments (spectrogram, audio, decoded messages) as a file to share. Key: C	ラジオクリップ: 直近の様子(スペクトログラム、音声、デコードしたメッセージ)を共有用のファイルとして保存します。キー: C
+Radio clip	ラジオクリップ
+Last:	直近:
+What the receiver saw, oldest on the left. Brighter is a stronger signal. Drag to choose the part to save.	受信機が捉えた内容(左が最も古い)。明るいほど強い信号です。ドラッグして保存する範囲を選びます。
+Include:	含める:
+Spectrogram picture	スペクトログラム画像
+Decoded messages	デコードしたメッセージ
+Title	タイトル
+Your station position is never included.	あなたの局の位置情報は含まれません。
+Could not save:	保存できませんでした:
+Saved: %s (zip %.1f MB)	保存しました: %s (zip %.1f MB)
+Save clip	クリップを保存
+Nothing to save: no waterfall, audio or decoded rows in this range	保存するものがありません: この範囲にはウォーターフォール、音声、デコード済みの行がありません
+Saving...	保存中...
+Copy Discord post text	Discord用の文章をコピー
+Copied: paste it into Discord and attach the files	コピーしました: Discordに貼り付けてファイルを添付してください
+Open folder	フォルダーを開く
+Memory kept for clips	クリップ用に保持するメモリ
+Waterfall history	ウォーターフォールの履歴
+%d min	%d 分
+%d MB max	最大 %d MB
+Audio history	音声の履歴
+%d s	%d 秒
+Decoded rows history	デコード済み行の履歴
+Uses about %.1f MB now	現在およそ %.1f MB 使用
+Decoded rows are kept from the results tables you have open.	デコード済みの行は、開いている結果テーブルから保持されます。
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	パスワード
+blank if the owner set none	所有者が設定していなければ空欄
+Find KiwiSDR…	KiwiSDR を探す…
+pick a public receiver from the list	リストから公開レシーバーを選ぶ
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	KiwiSDR はインターネット上の 0〜30 MHz をカバーするレシーバーで、OnAir はその 12 kHz の IQ ストリームを使います。公開レシーバーはユーザー枠が少なく、約 30 分でセッションを終了するものが多いです。1 台につき接続は 1 つだけにし、使い終わったら切断してください。パスワードは OnAir の設定に保存されます。
+S-meter %.0f dBm%s	Sメーター %.0f dBm%s
+, ADC overload	、ADC オーバーロード
+Find KiwiSDR	KiwiSDR を探す
+Download the public list	公開リストをダウンロード
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	クリックしたときに、公開 KiwiSDR レシーバーのリストをインターネットからダウンロードします（リクエストは 1 回、起動時には行いません）。
+downloading the list…	リストをダウンロード中…
+filter by name, place or antenna	名前・場所・アンテナで絞り込み
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	公開レシーバーはユーザー枠が少なく、約 30 分でセッションを終了するものが多いです。満員でないものを選び、使い終わったら切断してください。
+Location	場所
+Users	ユーザー
+Distance	距離
+offline	オフライン
+full	満員
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	このレシーバーをネットワークラジオに追加します（ラジオとして選ぶまで接続しません）。
+The downloaded list has no receivers OnAir can read.	ダウンロードしたリストに OnAir が読めるレシーバーがありません。
+Could not download the list. Check the internet connection.	リストをダウンロードできませんでした。インターネット接続を確認してください。
+# live transcripts (docs/TRANSCRIBE.md)
+Transcribing speech: %s	音声を文字起こし中: %s
+Voice (radio calls)	音声（無線交信）
+No radio call with this aircraft's callsign heard yet	この機体のコールサインでの交信はまだ聞こえていません
+Live transcription is off (View > Transcripts). Airband calls would be listed here by callsign.	ライブ文字起こしはオフです（表示 > 文字起こし）。航空無線の交信はここにコールサイン別に並びます。
+Live captions: loading the speech model ...	ライブ字幕: 音声モデルを読み込み中 ...
+Live captions: off.	ライブ字幕: オフ。
+Set up transcripts	文字起こしの設定
+Turns what is said on the airband channels into text as it is heard. It needs a speech model that you download or put in the models folder.	航空無線チャンネルで話された内容を、聞こえたそばから文字にします。ダウンロードするか、モデルフォルダーに置いた音声モデルが必要です。
+Live captions	ライブ字幕
+working ...	処理中 ...
+listening ...	待機中 ...
+Transcripts	文字起こし
+Airband is off in the transcript settings	文字起こし設定で航空無線がオフです
+Nothing heard yet.	まだ何も聞こえていません。
+Cannot write %s	書き込めません: %s
+Saved %s	保存しました: %s
+Privacy: what is said on public aviation radio is public, but the speech engine runs here on your computer and the text is kept in your data folder. Do not use it on private conversations: marine, amateur, CB and every other mode are off until you choose them, and a visible line shows whenever transcription is on.	プライバシー: 公開の航空無線で話された内容は公開情報ですが、音声認識はこのコンピューター上で動き、テキストはデータフォルダーに保存されます。私的な会話には使わないでください。海上、アマチュア、CB などその他のモードは、選ぶまでオフで、文字起こし中は常に表示が出ます。
+Transcribe speech	音声を文字起こしする
+Master switch. While a transmission is going on the audio is cut out, sent to the speech engine and turned into text. Nothing runs while the channels are quiet.	マスタースイッチ。送信中の音声を切り出して音声認識に渡し、テキストにします。チャンネルが静かな間は何も動きません。
+Airband channels	航空無線チャンネル
+Marine VHF	海上VHF
+Any other mode that plays sound (amateur, CB, FM ...)	音を出すその他のモード（アマチュア、CB、FM ...）
+Takes the sound you hear. Music and private conversations are not meant for this: leave it off unless you need it.	聞こえている音を取り込みます。音楽や私的な会話向けではありません。必要がなければオフのままにしてください。
+Speech model	音声モデル
+none	なし
+Open models folder	モデルフォルダーを開く
+Put a whisper.cpp model file (ggml-*.bin) here to use it. The folder is made if it does not exist.	whisper.cpp のモデルファイル（ggml-*.bin）をここに置くと使えます。フォルダーがなければ作成されます。
+No speech model yet. Download one below, or put a model file in the models folder.	音声モデルがまだありません。下からダウンロードするか、モデルファイルをモデルフォルダーに置いてください。
+Loading the speech model ...	音声モデルを読み込み中 ...
+Speech model loaded.	音声モデルを読み込みました。
+This build has no speech engine.	このビルドには音声認識エンジンがありません。
+checking	確認中
+Download speech model:	音声モデルをダウンロード:
+%s %d MB	%s %d MB
+Already downloaded	ダウンロード済み
+English only. tiny is the fastest (real time on a laptop), small hears more words and needs a stronger computer.	英語のみ。tiny が最速（ノートPCでリアルタイム）、small は聞き取れる語が多く、より高性能なコンピューターが必要です。
+Other languages (multilingual models)	その他の言語（多言語モデル）
+The loaded model is English only: other languages need a multilingual model (tiny, base or small without .en).	読み込み済みのモデルは英語専用です。他の言語には多言語モデル（.en なしの tiny、base、small）が必要です。
+CPU threads	CPU スレッド数
+How many processor threads the speech engine may use for one transmission. Fewer threads use less battery and take longer.	1回の送信に音声認識が使えるプロセッサのスレッド数。少ないほど電力を節約しますが、時間がかかります。
+Keep transcripts (days)	文字起こしの保存期間（日）
+Heard %llu, kept %llu, left out %llu (silence, noise, repeats), skipped %llu (too slow), speed %.2f x real time	検出 %llu、採用 %llu、除外 %llu（無音、ノイズ、繰り返し）、スキップ %llu（処理が遅い）、速度 %.2f x リアルタイム
+Download the speech model %s (%d MB)?	音声モデル %s（%d MB）をダウンロードしますか？
+OnAir asks the model repository (huggingface.co) for this one file and sends nothing else. The file is checked against a fixed SHA-256 checksum and thrown away if it does not match. The model is MIT licensed.	OnAir はモデルのリポジトリ（huggingface.co）にこの1ファイルだけを要求し、ほかには何も送りません。ファイルは固定の SHA-256 チェックサムで検証され、一致しなければ破棄されます。モデルは MIT ライセンスです。
+Download	ダウンロード
+Delete all saved transcripts? This cannot be undone.	保存したすべての文字起こしを削除しますか？ 元に戻せません。
+Delete all	すべて削除
+Transcription is off.	文字起こしはオフです。
+Hide settings	設定を隠す
+Settings and speech model	設定と音声モデル
+Search the text ...	テキストを検索 ...
+All frequencies	すべての周波数
+A callsign (DLH123), a registration (N123AB) or an ICAO address (3C6444)	コールサイン（DLH123）、登録記号（N123AB）、または ICAO アドレス（3C6444）
+An airport code or name found in the channel name or the text (EYVI, Tower)	チャンネル名またはテキストに含まれる空港コードまたは名前（EYVI、Tower）
+%zu of %zu	%zu / %zu
+Copy all shown	表示中をすべてコピー
+Export %s	%s を書き出す
+Delete all ...	すべて削除 ...
+Time (UTC)	時刻 (UTC)
+Sure	確度
+Speaker (a guess from the wording)	話者（言葉からの推測）
+Click to copy this line	クリックでこの行をコピー
+Aircraft on the screen	画面上の機体
+Also share transcripts of aircraft radio calls (text becomes public on the map)	航空機の無線交信の文字起こしも共有する（テキストは地図上で公開されます）
+The text of airband radio calls that a speech engine on this computer made from what you receive (Transcripts window), linked to the aircraft by the callsign spoken in it, shown on that aircraft's card on the public map for 48 hours. It can contain mistakes. Phone numbers are removed first. Only airband is shared, never marine, amateur or other channels. Off until you choose it, and you can turn it off at any time.	受信した内容からこのコンピューター上の音声認識が作った航空無線の交信テキスト（文字起こしウィンドウ）を、話されたコールサインで機体に結び付け、地図上のその機体のカードに48時間公開します。誤りを含むことがあります。電話番号は先に取り除かれます。共有するのは航空無線のみで、海上、アマチュア、その他のチャンネルは共有しません。選ぶまでオフで、いつでもオフにできます。
+Transcripts ...	文字起こし ...
+What is said on the airband and other voice channels, as text: live captions, search, export. Off until you turn it on.	航空無線やその他の音声チャンネルで話された内容をテキストで: ライブ字幕、検索、書き出し。オンにするまでオフです。
+# Automations window
+%d firings. Dropped events: %llu	%d 件の実行。破棄されたイベント: %llu
+(the whole rule)	(ルール全体)
+Add a condition	条件を追加
+Add a copy	コピーを追加
+Add an action...	アクションを追加...
+Advanced	詳細
+Allow running programs	プログラムの実行を許可
+Allow this rule to run it	このルールに実行を許可する
+Any event	任意のイベント
+Apply	適用
+Arguments, one per line	引数（1行に1つ）
+Arguments:	引数:
+At most per hour (0: no limit)	1時間あたり最大（0: 無制限）
+Automations	自動化
+Automations...	自動化...
+Bot token	ボットトークン
+Cannot write the file.	ファイルを書き込めません。
+Chat id	チャット ID
+Choose a rule on the left, or make a new one.	左のルールを選ぶか、新しく作成してください。
+Choose what to tell apart in "separately for each" so every thing has its own state.	「個別に扱う対象」で区別する項目を選ぶと、それぞれが独自の状態を持ちます。
+Columns (optional)	列（任意）
+Confirm this rule...	このルールを確認...
+Confirmed	確認済み
+Define function on_event(e). e.type, e.mode, e.freq, e.time and the event's fields (e.callsign, e.squawk ...).\n\nActions: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...).\nHelpers: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table).\nText: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b). No io, os, load, require, pcall or pattern matching; 1 million instructions, 250 ms and 16 MB per script.	function on_event(e) を定義します。e.type、e.mode、e.freq、e.time とイベントのフィールド（e.callsign、e.squawk など）が使えます。\n\nアクション: notify(title, text), sound(file), record_iq(seconds), record_audio(seconds), tune(hz, mode), memory(name), webhook(url, text_or_table), screenshot(), log(text), log_row(file, a, b, ...)。\n補助: distance_km(lat, lon), bearing_deg(lat, lon), now(), hour(), json(table)。\n文字列: s:contains(x), s:starts_with(x), s:ends_with(x), s:matches('a*b'), s:replace(a, b)。io、os、load、require、pcall、パターン照合は使えません。1スクリプトあたり100万命令、250 ms、16 MB。
+Delete...	削除...
+Distance, km	距離 (km)
+Does not fire for the sample event:	サンプルイベントでは実行されません:
+Duplicate	複製
+Edit	編集
+Edit as text and apply, or copy it to share.	テキストとして編集して適用するか、共有用にコピーします。
+Every event	すべてのイベント
+Expression (and'ed to the conditions above)	式（上の条件と AND で結合）
+Expression is fine.	式は問題ありません。
+Fields, and or not, comparisons, contains startswith endswith matches in, arithmetic, distance_km() within() inside() hour() ...	フィールド、and or not、比較、contains startswith endswith matches in、算術、distance_km() within() inside() hour() ...
+File name	ファイル名
+File:	ファイル:
+Fire with sample event	サンプルイベントで実行
+Frequency, MHz	周波数 (MHz)
+Generic JSON	汎用 JSON
+Imported, switched off. Look it over, then switch it on.	インポートしました（オフ）。内容を確認してからオンにしてください。
+Insert an example...	例を挿入...
+Inside an area (polygon)	エリア（多角形）の内側
+JSON body (optional)	JSON 本文（任意）
+Keep	残す
+Last error:	直近のエラー:
+Limits	制限
+Lua script	Lua スクリプト
+Manage	管理
+Memory name	メモリー名
+Mode id (optional)	モード ID（任意）
+New rule	新しいルール
+New script	新しいスクリプト
+No location test	位置の判定なし
+No rules yet. Make one, or add a recipe.	ルールはまだありません。作成するか、レシピを追加してください。
+Not active:	無効:
+Not imported:	インポートできません:
+Note	メモ
+Nothing has fired yet.	まだ何も実行されていません。
+Notification	通知
+Off. A rule may start a program only when this is on and you confirmed that rule.	オフ。これがオンで、かつそのルールを確認済みの場合にのみ、ルールはプログラムを起動できます。
+Only between these local hours	次の現地時刻の間のみ
+Pick one event type to choose its fields from a list.	イベントの種類を1つ選ぶと、そのフィールドを一覧から選べます。
+Points as lat,lon; lat,lon; ...	点は 緯度,経度; 緯度,経度; ... の形式
+Program	プログラム
+Program:	プログラム:
+Quiet after firing, seconds	実行後の待機（秒）
+Ready-made rules and scripts. Adding one makes a copy that you can edit; it starts switched off.	すぐ使えるルールとスクリプト。追加すると編集可能なコピーが作られ、最初はオフです。
+Really delete	本当に削除
+Really does the actions, once, with a made-up event.	架空のイベントで、アクションを1回だけ実際に実行します。
+Recall a memory	メモリーを呼び出す
+Receives these events	受け取るイベント
+Recipes	レシピ
+Recipes...	レシピ...
+Rules and scripts: when something is decoded, notify, record, tune or call a webhook	ルールとスクリプト: 何かがデコードされたら、通知・録音・同調・Webhook 呼び出しを行います
+Rules: when something is decoded (an aircraft squawks 7700, a pager message says fire, a vessel enters an area ...), do something (notify, record, tune, log, call a webhook). Scripts do the same in Lua.	ルール: 何かがデコードされたとき（航空機が 7700 を発信、ポケベルのメッセージに「火災」、船舶がエリアに進入 など）に、何かを行います（通知、録音、同調、ログ、Webhook 呼び出し）。スクリプトは Lua で同じことができます。
+Run a program (advanced)	プログラムを実行（上級）
+Run a program?	プログラムを実行しますか？
+Runs a program on this computer. Off until you allow it below and confirm this rule.	このコンピューターでプログラムを起動します。下で許可し、このルールを確認するまでオフです。
+Save a screenshot	スクリーンショットを保存
+Saved to	保存先
+Seconds	秒
+Server (optional)	サーバー（任意）
+Service	サービス
+Shows what the rule would do with a made-up event. Nothing is sent or started.	架空のイベントでルールが何をするかを表示します。何も送信・起動されません。
+Sound alert	警告音
+Test (dry run)	テスト（ドライラン）
+Test with a sample event	サンプルイベントでテスト
+Text can use:	テキストで使えるもの:
+The receiver position is not set (ADS-B window).	受信機の位置が未設定です（ADS-B ウィンドウ）。
+The recipe file	レシピファイル
+The script ran and did nothing for this event.	スクリプトは実行されましたが、このイベントでは何もしませんでした。
+Then do	そのとき実行
+This rule will start the program below, on this computer, every time it fires, with text from the decoded signals in its arguments. Anyone who can send such a signal can influence it. Only allow it if you wrote it or trust the one who did.	このルールは、実行されるたびに、デコードした信号のテキストを引数に含めて、下のプログラムをこのコンピューターで起動します。そのような信号を送れる人なら誰でも影響を与えられます。自分で書いた場合か、作者を信頼できる場合のみ許可してください。
+Topic	トピック
+WAV file (empty: beeps)	WAV ファイル（空欄: ビープ音）
+Webhook	Webhook
+Webhook address	Webhook のアドレス
+What can a script do?	スクリプトでできること
+When this happens	次のことが起きたとき
+Within a distance of a point	ある地点から一定距離以内
+Within a distance of my receiver	受信機から一定距離以内
+Write a CSV log row	CSV ログに1行書き込む
+all of the conditions	すべての条件
+and only if	かつ次の場合のみ
+any of the conditions	いずれかの条件
+contains	を含む
+ends with	で終わる
+equals	と等しい
+has a value	値がある
+is at least	以上
+is at most	以下
+is less than	より小さい
+is more than	より大きい
+is not	ではない
+is one of (a, b, c)	(a, b, c) のいずれか
+last fired %s, %d times	最終実行 %s、%d 回
+matches (* ?)	(* ?) に一致
+only as it comes in	進入時のみ
+separately for each	個別に扱う対象
+starts with	で始まる
+to	～
+when it is inside	内側のとき
+when it is outside	外側のとき
+# derived speed, track and vertical rate
+%s%.0f deg (average)	%s%.0f 度 (平均)
+Reported by the aircraft.	航空機が報告した値です。
+Estimated by the position filter from the position reports (not broadcast by the aircraft).	位置報告から位置フィルターが推定した値です (航空機は送信していません)。
+Derived from 2 positions %s apart: an average over that time; a curved path is longer than the straight line, so the real speed may be higher. The track is the average bearing.	%s 間隔の2つの位置から算出: その間の平均値です。曲がった経路は直線より長いため、実際の速度はより大きい可能性があります。針路は平均方位です。
+Derived from 2 positions %s apart (distance on the WGS-84 ellipsoid divided by the time). The aircraft did not report a speed.	%s 間隔の2つの位置から算出 (WGS-84 楕円体上の距離を時間で割った値)。航空機は速度を報告していません。
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	DRA+デコーダーを読み込みました
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	DRA+の音声には、同梱されていないデコーダーアドオンが必要です(このコーデックの特許とライセンスの状況は不明確です)。インストール方法:
+The DRA+ decoder add-on cannot be used: %s. How to install:	DRA+デコーダーアドオンを使用できません: %s。インストール方法:
+How to install	インストール方法
+The services, signal information and data work without it.	サービス、信号情報、データはアドオンなしでも動作します。
+Interface and windows	インターフェースとウィンドウ
+View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	表示メニューでは、レイアウト（Sidebar、Scope、Tiles、Faceplate、Panel）、クラシックインターフェース、文字サイズ、パレットを切り替えられます。タッチインターフェースは「ツール」にあります。周波数、スイープスキャナー、方向探知、オートメーションなどのウィンドウもここから開きます。

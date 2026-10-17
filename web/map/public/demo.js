@@ -1,6 +1,7 @@
 // demo.js - ?demo=1 preview data: ~60 synthetic aircraft, ships, sondes, APRS stations and satellites.
 // Everything here is invented for previewing the page offline; the page shows a DEMO banner while it is active.
 
+import { destination } from "./df.js";
 import { airportByCode } from "./airports.js";
 import { distanceNm, bearing } from "./geo.js";
 
@@ -137,6 +138,44 @@ export function generateDemo(nowMs = Date.now()) {
     push({ id, kind: "aircraft", label: "DMO" + (100 + n), sub: "ADS-B", src: "adsb", cat: ty[2], lat, lon, alt: 20000 + R() * 18000, heading: R() * 360, speed: 380 + R() * 100, vrate: 0, squawk: "2000", t: nowMs, age: 0, path: [] });
     meta[id] = { type: ty[1], icaoType: ty[0], registration: "DM-O" + n, operator: "Demo Air", origin: "", destination: "", route: null };
     n++;
+  }
+  // ---- icon showcase: one of every aircraft family (altitudes spread so the altitude colours show), ships by AIS type, small craft ----
+  const SHOW_AC = [["A320", "A3"], ["B77W", "A5"], ["A388", "A5"], ["E190", "A2"], ["GLF5", "A2"], ["AT72", "A2"], ["C172", "A1"], ["BE58", "A1"],
+    ["EC45", "A7"], ["F16", "A6"], ["EUFI", "A6"], ["C17", "A5"], ["GLID", "B1"], ["BALL", "B2"], ["ARSH", "B2"], ["MQ9", "B6"], ["", ""], ["B744", "A5"]];
+  SHOW_AC.forEach(([ty, cat], i) => {
+    const id = "aircraft:5A" + (1000 + i).toString(16).toUpperCase().padStart(4, "0");
+    const lat = 53.3 - Math.floor(i / 6) * 1.0, lon = 0.8 + (i % 6) * 1.5;
+    const alt = ty === "BALL" ? 1800 : ty === "C172" || ty === "GLID" ? 3500 : ty === "EC45" ? 900 : [4000, 12000, 26000, 31000, 36000, 41000][i % 6] + (ty === "" ? 0 : 0);
+    push({ id, kind: "aircraft", label: ty ? "SHW" + ty : "UNKNWN", sub: "ADS-B", src: "adsb", cat: ty ? cat : "", lat, lon, alt, heading: (i * 47) % 360, speed: ty === "BALL" ? 6 : ty === "C172" ? 95 : ty === "EC45" ? 110 : ty === "GLID" ? 60 : 300 + (i % 5) * 45, vrate: 0, squawk: "2000", t: nowMs, age: 0, path: [] });
+    if (ty) meta[id] = { type: ty, icaoType: ty, registration: "SH-" + i, operator: "Showcase", origin: "", destination: "", route: null };
+  });
+  const SHOW_SHIPS = [["Cargo (70)", "L 250 m"], ["Tanker (80)", "L 180 m"], ["Passenger (60)", "L 160 m"], ["High speed craft (42)", ""], ["Tug (52)", ""],
+    ["Fishing (30)", ""], ["Sailing (36)", ""], ["Pleasure craft (37)", ""], ["Military ops (35)", "L 130 m"], ["Search and rescue (51)", ""], ["Pilot vessel (50)", ""],
+    ["Dredging (33)", ""], ["Other (90)", ""]];
+  SHOW_SHIPS.forEach(([cat, extra], i) => {
+    push({ id: "vessel:2" + String(55000000 + i * 913).slice(0, 8), kind: "vessel", label: cat.split(" (")[0].toUpperCase().slice(0, 14), sub: "AIS", src: "ais", cat, extra,
+      lat: 55.9 - Math.floor(i / 7) * 0.8, lon: 1.8 + (i % 7) * 0.95, heading: (i * 53) % 360, speed: 5 + (i % 4) * 4, t: nowMs, age: 0, path: [] });
+  });
+  push({ id: "drone:RID1", kind: "drone", label: "DJI-AIR3", sub: "Remote ID", src: "rid", lat: 51.4, lon: 11.2, alt: 80, heading: 20, speed: 9, t: nowMs, age: 0, path: [] });
+  push({ id: "drone:FW1", kind: "drone", label: "WINGTRA", sub: "ADS-B", src: "adsb", extra: "fixed wing", lat: 51.4, lon: 12.8, alt: 120, heading: 250, speed: 40, t: nowMs, age: 0, path: [] });
+  [["WX-HOME", "weather station", 51.0, 9.4], ["TRUCK-1", "truck", 51.0, 10.6], ["HAB-1", "balloon", 51.0, 11.8], ["BOAT-1", "boat", 51.0, 13.0]].forEach(([cs, ex, lat, lon]) => {
+    push({ id: "aprs:" + cs, kind: "aprs", label: cs, sub: "APRS", src: "aprs", extra: ex, lat, lon, t: nowMs, age: 0, path: [] });
+  });
+  [["G05", "GPS", 49.0, 14.4], ["E11", "Galileo", 49.0, 15.4], ["C08", "BeiDou", 49.0, 16.4], ["R17", "GLONASS", 49.0, 17.4]].forEach(([n, sub, lat, lon]) => {
+    push({ id: "gnss:" + n, kind: "gnss", label: n, sub, src: "gnss", lat, lon, alt: 20000, t: nowMs, age: 0, path: [] });
+  });
+  // direction finding demo: three stations around Vilnius hear a 433.92 MHz transmitter; the server would intersect the lines into a fix
+  {
+    const tx = { lat: 54.70, lon: 25.30 };
+    [[250, 24], [120, 31], [10, 19]].forEach(([brg, km], i) => {
+      const [lon, lat] = destination(tx.lat, tx.lon, brg, km * 1000);
+      const back = (Math.atan2(Math.sin((tx.lon - lon) * Math.PI / 180) * Math.cos(tx.lat * Math.PI / 180),
+        Math.cos(lat * Math.PI / 180) * Math.sin(tx.lat * Math.PI / 180) - Math.sin(lat * Math.PI / 180) * Math.cos(tx.lat * Math.PI / 180) * Math.cos((tx.lon - lon) * Math.PI / 180)) * 180 / Math.PI + 360) % 360;
+      push({ id: "doa:demo" + i + "-433920", kind: "doa", label: "433.920 MHz", sub: Math.round(back) + "\u00b0", lat, lon, heading: back + (i - 1) * 1.5, alt: null, speed: null,
+        extra: JSON.stringify({ f: 433920000, s: 3, c: 0.85 }), t: nowMs, src: "df", age: 0 });
+    });
+    push({ id: "fix:433920", kind: "fix", label: "433.920 MHz", sub: "3 stations", lat: tx.lat + 0.002, lon: tx.lon - 0.003, alt: null, heading: null, speed: null,
+      extra: JSON.stringify({ a: 1900, b: 700, o: 35, n: 3, r: 1.4, f: 433920000 }), t: nowMs, src: "df", age: 0 });
   }
   return { tracks, meta };
 }

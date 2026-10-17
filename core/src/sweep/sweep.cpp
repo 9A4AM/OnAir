@@ -1,4 +1,5 @@
 #include "dect2/sweep/sweep.h"
+#include "dect2/automation/engine.h"
 #include "dect2/common/threadpool.h"
 #include "dect2/dsp/dsp_compat.h"
 #include "dect2/dsp/spectrum.h"
@@ -225,6 +226,12 @@ void SignalLog::update(const Sweep& s) {
             r.freqHz = d.freqHz; r.bwHz = d.bwHz; r.peakDb = d.peakDb; r.snrDb = r.maxSnrDb = d.snrDb;
             r.firstSeen = r.lastSeen = s.timeSec; r.count = 1;
             rec_.push_back(r);
+            if (automation::wants(automation::FSignal)) {   // the automations (automation/engine.h): a signal that was not in the log before
+                automation::Event ev("signal.new");
+                ev.at(automation::wallNow(), "Sweep", r.freqHz);
+                ev.num("bw_hz", r.bwHz).num("peak_db", r.peakDb).num("snr_db", r.snrDb);
+                automation::emit(std::move(ev));
+            }
         } else {
             hit->count++;
             hit->lastSeen = s.timeSec;

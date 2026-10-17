@@ -82,6 +82,18 @@ static void session(const char* name, bool dirty, double secs) {
     CHECK(q.ok && q.meanCorr > 0.9 && std::fabs(q.drift) < 1.5, "%s: correlation %.3f drift %.2f", name, q.meanCorr, q.drift);
     CHECK(rx.marine.serviceActive == 3, "%s: service %d", name, rx.marine.serviceActive);
     CHECK(e.droppedSamples() == 0, "%s: dropped %llu samples", name, (unsigned long long)e.droppedSamples());
+    {   // the "clear picture" button: the picture is gone at once, and the change counter moves so the viewer drops its copy
+        FaxImage keep; uint64_t s0 = 0;
+        CHECK(e.marine().latestImage(keep, s0) || s0 > 0, "%s: a picture before the clear", name);
+        e.marine().clearFax();
+        FaxImage after; uint64_t s1 = s0;
+        CHECK(e.marine().latestImage(after, s1) && s1 != s0, "%s: clearFax did not move the picture's change counter", name);
+        CHECK(after.height == 0 && after.pix.empty(), "%s: picture still %dx%d after clearFax", name, after.width, after.height);
+        e.marine().clearResults();      // the top bar's Clear all goes through this
+        FaxImage after2; uint64_t s2 = s1;
+        e.marine().latestImage(after2, s2);
+        CHECK(after2.height == 0, "%s: picture %dx%d after clearResults", name, after2.width, after2.height);
+    }
     e.stop();
 }
 

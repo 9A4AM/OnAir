@@ -598,7 +598,7 @@ bool sdrppErrorText(uint8_t c, std::string& text) {
 // ------------------------------------------------------------------ network radios
 namespace {
 const char* typeKey(uint32_t t) {
-    return t == 0 ? "pluto" : t == 2 ? "soapyremote" : t == 3 ? "spyserver" : t == 4 ? "hl2" : t == 5 ? "redpitaya" : t == 6 ? "sdrpp" : t == 7 ? "nrspst" : "rtltcp";
+    return t == 0 ? "pluto" : t == 2 ? "soapyremote" : t == 3 ? "spyserver" : t == 4 ? "hl2" : t == 5 ? "redpitaya" : t == 6 ? "sdrpp" : t == 7 ? "nrspst" : t == 8 ? "kiwisdr" : "rtltcp";
 }
 } // namespace
 
@@ -609,9 +609,9 @@ std::string cleanHost(const std::string& h) {
     return r;
 }
 std::string radioTypeName(uint32_t t) {
-    return t == 0 ? "PlutoSDR" : t == 2 ? "SoapyRemote" : t == 3 ? "SpyServer" : t == 4 ? "Hermes Lite 2" : t == 5 ? "Red Pitaya" : t == 6 ? "SDR++ server" : t == 7 ? "SDRplay nRSP-ST (SDRconnect)" : "rtl_tcp";
+    return t == 0 ? "PlutoSDR" : t == 2 ? "SoapyRemote" : t == 3 ? "SpyServer" : t == 4 ? "Hermes Lite 2" : t == 5 ? "Red Pitaya" : t == 6 ? "SDR++ server" : t == 7 ? "SDRplay nRSP-ST (SDRconnect)" : t == 8 ? "KiwiSDR" : "rtl_tcp";
 }
-int radioDefaultPort(uint32_t t) { return t == 0 ? 0 : t == 2 ? 55132 : t == 3 ? 5555 : (t == 4 || t == 5) ? 1024 : t == 6 ? 5259 : t == 7 ? 5454 : 1234; }
+int radioDefaultPort(uint32_t t) { return t == 0 ? 0 : t == 2 ? 55132 : t == 3 ? 5555 : (t == 4 || t == 5) ? 1024 : t == 6 ? 5259 : t == 7 ? 5454 : t == 8 ? 8073 : 1234; }
 std::string radioDefaultHost(uint32_t t) { return t == 0 ? "192.168.2.1" : ""; }
 int radioPort(uint32_t t, int port) {
     if (port > 0) return port;
@@ -624,7 +624,7 @@ std::string radiosToString(const std::vector<Radio>& v) {
         const std::string h = cleanHost(r.host);
         if (h.empty()) continue;
         std::string rem;
-        if (r.kind == 2) for (char c : r.remote) if (c != ';') rem += c;
+        if (r.kind == 2 || r.kind == 8) for (char c : r.remote) if (c != ';') rem += c;
         s += (s.empty() ? "" : ";") + std::string(typeKey(r.kind)) + "," + h + "," + std::to_string(r.port > 0 ? r.port : 0) + (rem.empty() ? "" : "," + rem);
     }
     return s;
@@ -651,10 +651,11 @@ std::vector<Radio> radiosFromString(const std::string& s) {
         else if (t == "redpitaya") r.kind = 5;
         else if (t == "sdrpp") r.kind = 6;
         else if (t == "nrspst") r.kind = 7;
+        else if (t == "kiwisdr") r.kind = 8;
         else continue;
         r.host = cleanHost(item.substr(c1 + 1, c2 - c1 - 1));
         r.port = atoi(item.c_str() + c2 + 1);
-        if (c3 != std::string::npos && r.kind == 2) r.remote = item.substr(c3 + 1);
+        if (c3 != std::string::npos && (r.kind == 2 || r.kind == 8)) r.remote = item.substr(c3 + 1);
         if (r.port < 0 || r.port > 65535) r.port = 0;
         if (r.host.empty()) continue;
         bool dup = false;
