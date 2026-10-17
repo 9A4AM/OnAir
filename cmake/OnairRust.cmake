@@ -15,7 +15,8 @@
 # active module (so `#ifndef DECT2_RUST_<MODULE>` blocks drop out) and links onair_rs. With the Rust build unavailable it does nothing.
 set(DECT2_RUST "AUTO" CACHE STRING "Rust code: AUTO (when cargo is found), ON, OFF")
 set_property(CACHE DECT2_RUST PROPERTY STRINGS AUTO ON OFF)
-set(ONAIR_RUST_ALL_MODULES PROTO ADSB ACARS SAME PAGER AX25 DMR P25 NXDN DSTAR TETRA VDL2 HFDL MESH WISUN UAT TS DVBSI DAB DRM FILES NET ENGINE FEC USB)
+set(DECT2_RUST_RING "OFF" CACHE STRING "Rust implementation of the RING module (IqRing): AUTO, ON, OFF; OFF until proven")   # before the loop below, so it stays OFF by default
+set(ONAIR_RUST_ALL_MODULES PROTO ADSB ACARS SAME PAGER AX25 DMR P25 NXDN DSTAR TETRA VDL2 HFDL MESH WISUN UAT TS DVBSI DAB DRM FILES NET ENGINE FEC USB RING)
 set(ONAIR_RUST_ACTIVE FALSE)
 set(ONAIR_RUST_MODULES "")
 set(_rust_forced "")

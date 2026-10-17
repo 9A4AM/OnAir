@@ -26,6 +26,7 @@ pub use onair_nxdn as nxdn;
 pub use onair_p25 as p25;
 pub use onair_pager as pager;
 pub use onair_proto as proto;
+pub use onair_ring as ring;
 pub use onair_same as same;
 pub use onair_tetra as tetra;
 pub use onair_ts as ts;
