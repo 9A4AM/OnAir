@@ -1580,3 +1580,25 @@ Hides tone-only pages and pages whose text could not be decoded.	Oculta as chama
 %zu tone-only or undecoded pages hidden (Decoded only)	%zu chamadas só de tom ou mensagens não decodificadas ocultas (Só decodificadas)
 %zu tone-only or undecoded pages hidden	%zu chamadas só de tom ou mensagens não decodificadas ocultas
 hidden	ocultas
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Palavra-passe
+blank if the owner set none	vazio se o proprietário não definiu nenhuma
+Find KiwiSDR…	Encontrar KiwiSDR…
+pick a public receiver from the list	escolher um recetor público da lista
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	Um KiwiSDR é um recetor na internet que cobre de 0 a 30 MHz; o OnAir usa o seu fluxo IQ de 12 kHz. Os públicos têm poucas vagas de utilizador e muitos terminam a sessão após cerca de 30 minutos: use uma só ligação por recetor e saia quando acabar. A palavra-passe fica guardada nas definições do OnAir.
+S-meter %.0f dBm%s	S-meter %.0f dBm%s
+, ADC overload	, sobrecarga do ADC
+Find KiwiSDR	Encontrar KiwiSDR
+Download the public list	Transferir a lista pública
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	Transfere da internet a lista de recetores KiwiSDR públicos ao clicar (um só pedido, nunca ao iniciar).
+downloading the list…	a transferir a lista…
+filter by name, place or antenna	filtrar por nome, local ou antena
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	Os recetores públicos têm poucas vagas de utilizador e muitos terminam a sessão após cerca de 30 minutos. Escolha um que não esteja cheio e saia quando acabar.
+Location	Localização
+Users	Utilizadores
+Distance	Distância
+offline	offline
+full	cheio
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Adiciona este recetor aos rádios de rede (só liga quando o escolher como rádio).
+The downloaded list has no receivers OnAir can read.	A lista transferida não tem recetores que o OnAir consiga ler.
+Could not download the list. Check the internet connection.	Não foi possível transferir a lista. Verifique a ligação à internet.

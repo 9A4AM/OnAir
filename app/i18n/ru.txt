@@ -1580,3 +1580,25 @@ Hides tone-only pages and pages whose text could not be decoded.	Скрывае�
 %zu tone-only or undecoded pages hidden (Decoded only)	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu (Только расшифрованные)
 %zu tone-only or undecoded pages hidden	Скрыто вызовов только тоном или нерасшифрованных сообщений: %zu
 hidden	скрыто
+# KiwiSDR (Network radios, Find KiwiSDR)
+Password	Пароль
+blank if the owner set none	пусто, если владелец не задал
+Find KiwiSDR…	Найти KiwiSDR…
+pick a public receiver from the list	выбрать публичный приёмник из списка
+A KiwiSDR is a receiver on the internet that covers 0 to 30 MHz; OnAir takes its 12 kHz IQ stream. Public ones have few user slots and many end a session after about 30 minutes: use one connection per receiver and leave when you are done. The password is kept in OnAir's settings.	KiwiSDR — это приёмник в интернете, покрывающий 0–30 МГц; OnAir использует его IQ-поток 12 кГц. У публичных мало мест для пользователей, и многие завершают сеанс примерно через 30 минут: используйте одно соединение на приёмник и отключайтесь, когда закончите. Пароль хранится в настройках OnAir.
+S-meter %.0f dBm%s	S-метр %.0f дБм%s
+, ADC overload	, перегрузка АЦП
+Find KiwiSDR	Найти KiwiSDR
+Download the public list	Скачать публичный список
+Downloads the list of public KiwiSDR receivers from the internet when you click (one request, never at startup).	По щелчку скачивает из интернета список публичных приёмников KiwiSDR (один запрос, никогда при запуске).
+downloading the list…	список загружается…
+filter by name, place or antenna	фильтр по названию, месту или антенне
+Public receivers have few user slots, and many end a session after about 30 minutes. Pick one that is not full, and leave it when you are done.	У публичных приёмников мало мест для пользователей, и многие завершают сеанс примерно через 30 минут. Выберите не занятый полностью и отключайтесь, когда закончите.
+Location	Местоположение
+Users	Пользователи
+Distance	Расстояние
+offline	не в сети
+full	занят
+Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Добавляет этот приёмник в сетевые радио (он не подключается, пока вы не выберете его как радио).
+The downloaded list has no receivers OnAir can read.	В скачанном списке нет приёмников, которые OnAir может прочитать.
+Could not download the list. Check the internet connection.	Не удалось скачать список. Проверьте подключение к интернету.

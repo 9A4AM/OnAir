@@ -219,6 +219,8 @@ std::string soapyRemoteFailureHelp(const std::string& args) {
     return s + "in the Remote driver box. A sound card (audio) is not a radio.";
 }
 
+std::string netRadioHostPort(const NetRadio& r) { return hostPort(cleanHost(r.host), netRadioPort(r)); }
+
 std::string netRadioDeviceName(const NetRadio& r) {
     switch (r.type) {
     case NetRadio::Pluto: return native::plutoDevice(plutoUri(r)).name;

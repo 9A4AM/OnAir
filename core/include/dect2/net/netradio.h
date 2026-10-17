@@ -53,6 +53,8 @@ std::vector<NetRadio> networkRadios();
 // The device entries of these radios: a Pluto as the native "ip:<host>" entry, rtl_tcp as the native "rtltcp" one, SoapyRemote as the
 // SoapySDR device "driver=remote,remote=tcp://host:port" (left out when built without SoapySDR)
 std::vector<DeviceInfo> netRadioDevices(const std::vector<NetRadio>& v);
+// "host:port" of r as the radio's device entry keys it (nativeArgs of a native radio)
+std::string netRadioHostPort(const NetRadio& r);
 // The name the entry of r has in the radio list
 std::string netRadioDeviceName(const NetRadio& r);
 
