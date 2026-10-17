@@ -1,5 +1,6 @@
 // Our own plotting on top of Dear ImGui's draw lists. See plot.h.
 #include "plot.h"
+#include "plot_util.h"
 #include "plot_batch.h"
 #include "../ui/touch.h"
 #include "imgui_internal.h"
@@ -113,6 +114,7 @@ double niceStep(double range, double wanted) {
 std::string formatTick(int a, double v, double step) {
     char b[64];
     const std::string& fmt = C.ax[a].fmt;
+    if (fmt == "%freq") return formatFreqTick(v, step);   // MHz with the decimals the step needs
     if (!fmt.empty()) { snprintf(b, sizeof b, fmt.c_str(), v); return b; }
     if (C.ax[a].scale == Scale_Log10) { snprintf(b, sizeof b, "%g", v); return b; }
     const int dec = std::max(0, (int)std::ceil(-std::log10(std::max(step, 1e-12)) - 1e-9));
@@ -481,7 +483,9 @@ template <class T> void PlotBars(const char*, const T* xs, const T* ys, int n, d
 template <class T> void PlotShaded(const char*, const T* xs, const T* ys, int n, double yRef, const Spec& s) {
     if (!C.active) return;
     finishSetup();
-    const ImU32 fill = ImGui::ColorConvertFloat4ToU32(pick(s.FillColor));
+    const ImVec4 fc = pick(s.FillColor);
+    const ImU32 fill = ImGui::ColorConvertFloat4ToU32(fc);
+    const ImU32 fillLow = ImGui::ColorConvertFloat4ToU32(ImVec4(fc.x, fc.y, fc.z, fc.w * fillBottomAlpha(s.FillFade)));
     const ImDrawListFlags keep = C.dl->Flags;
     if (n > 400) C.dl->Flags &= ~ImDrawListFlags_AntiAliasedFill;   // a trace of thousands of columns: two plain triangles each, without the feathered edge
     for (int i = 0; i + 1 < n; i++) {
@@ -489,6 +493,15 @@ template <class T> void PlotShaded(const char*, const T* xs, const T* ys, int n,
         fitData(x0, y0); fitData(x1, y1);
         if (!std::isfinite(x0 + x1 + y0 + y1)) continue;
         const ImVec2 q[4] = {ImVec2(px(x0), py(y0)), ImVec2(px(x1), py(y1)), ImVec2(px(x1), py(yRef)), ImVec2(px(x0), py(yRef))};
+        if (s.FillFade > 0) {   // a vertical gradient: the quad as two triangles, the bottom corners at the faded alpha (no feathered edge)
+            C.dl->PrimReserve(6, 4);
+            const ImVec2 uv = C.dl->_Data->TexUvWhitePixel;
+            const unsigned base = C.dl->_VtxCurrentIdx;
+            for (int k = 0; k < 4; k++) C.dl->PrimWriteVtx(q[k], uv, k < 2 ? fill : fillLow);
+            const ImDrawIdx ix[6] = {0, 1, 2, 0, 2, 3};
+            for (int k = 0; k < 6; k++) C.dl->PrimWriteIdx((ImDrawIdx)(base + ix[k]));
+            continue;
+        }
         C.dl->AddConvexPolyFilled(q, 4, fill);
     }
     C.dl->Flags = keep;

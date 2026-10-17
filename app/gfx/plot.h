@@ -42,6 +42,7 @@ struct Spec {
     float MarkerSize = 4.0f;
     ImVec4 MarkerFillColor = ImVec4(0, 0, 0, -1);
     ImVec4 MarkerLineColor = ImVec4(0, 0, 0, -1);
+    float FillFade = 0;   // PlotShaded: 0..1, the fill fades to alpha*(1-FillFade) at the reference line (a vertical gradient)
     int Stride = 0;   // bytes between values; 0 = the size of one value
     int Flags = 0;    // InfLines_Horizontal for PlotInfLines
 };
