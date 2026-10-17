@@ -2052,6 +2052,37 @@ How to install	インストール方法
 The services, signal information and data work without it.	サービス、信号情報、データはアドオンなしでも動作します。
 Interface and windows	インターフェースとウィンドウ
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	表示メニューでは、レイアウト（Sidebar、Scope、Tiles、Faceplate、Panel）、クラシックインターフェース、文字サイズ、パレットを切り替えられます。タッチインターフェースは「ツール」にあります。周波数、スイープスキャナー、方向探知、オートメーションなどのウィンドウもここから開きます。
+# programme guide (SPI)
+Guide	番組ガイド
+until	終了
+Genre	ジャンル
+Saved	保存しました
+Now	現在
+objects	オブジェクト
+services	サービス
+programmes	番組
+scheduled	放送予定
+objects decoded	デコード済みオブジェクト
+Guide data	ガイドデータ
+last update	最終更新
+no update yet	まだ更新なし
+not collecting	収集していません
+from the cache	キャッシュから
+cached data, expires with time	キャッシュデータ（時間とともに期限切れ）
+waiting for the carousel directory...	カルーセルのディレクトリを待っています...
+Export XMLTV	XMLTVをエクスポート
+Collect the guide in the background	バックグラウンドでガイドを収集
+Could not write the file.	ファイルを書き込めませんでした。
+Listen to this station	この局を聴く
+search title or description	タイトルまたは説明で検索
+Nothing matches.	一致するものはありません。
+No description in the guide.	ガイドに説明はありません。
+Click a programme in the grid or the search results to see its details.	グリッドまたは検索結果の番組をクリックすると詳細が表示されます。
+Start the receiver on a DAB channel to see the guide.	ガイドを見るにはDABチャンネルで受信を開始してください。
+This ensemble does not announce a programme guide (SPI, user application 0x007).	このアンサンブルは番組ガイド（SPI、ユーザーアプリケーション0x007）を告知していません。
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	このアンサンブルのガイドは局のPADで送信されています。その局を再生すると収集できます。
+The broadcaster sends service information (names, logos) but no programme schedule.	放送局はサービス情報（名前、ロゴ）を送っていますが、番組表はありません。
+No programme schedule received yet. A guide carousel can take several minutes to come round.	番組表はまだ受信していません。ガイドのカルーセルが一周するのに数分かかることがあります。
 Air-interface encryption: %s	エア・インターフェース暗号化: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	暗号化モードが設定された信号PDU %llu 個 (復号なし)、読み取れないブロック %llu 個 (CRC不一致)
 none advertised	通知なし

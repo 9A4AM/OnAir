@@ -2035,6 +2035,37 @@ How to install	Как установить
 The services, signal information and data work without it.	Службы, информация о сигнале и данные работают и без него.
 Interface and windows	Интерфейс и окна
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Меню «Вид» переключает компоновку (Sidebar, Scope, Tiles, Faceplate, Panel), классический интерфейс, размер текста и палитру; сенсорный интерфейс находится в разделе «Инструменты». Окна «Частоты», «Сканер-обзор», «Пеленгатор» и «Автоматизации» открываются отсюда.
+# programme guide (SPI)
+Guide	Телегид
+until	до
+Genre	Жанр
+Saved	Сохранено
+Now	Сейчас
+objects	объекты
+services	службы
+programmes	передачи
+scheduled	в расписании
+objects decoded	декодированные объекты
+Guide data	Данные гида
+last update	последнее обновление
+no update yet	обновлений пока нет
+not collecting	не собирается
+from the cache	из кэша
+cached data, expires with time	данные из кэша, со временем устаревают
+waiting for the carousel directory...	ожидание каталога карусели...
+Export XMLTV	Экспорт XMLTV
+Collect the guide in the background	Собирать гид в фоне
+Could not write the file.	Не удалось записать файл.
+Listen to this station	Слушать эту станцию
+search title or description	поиск по названию или описанию
+Nothing matches.	Ничего не найдено.
+No description in the guide.	В гиде нет описания.
+Click a programme in the grid or the search results to see its details.	Нажмите на передачу в сетке или в результатах поиска, чтобы увидеть подробности.
+Start the receiver on a DAB channel to see the guide.	Запустите приёмник на канале DAB, чтобы увидеть гид.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Этот ансамбль не объявляет программный гид (SPI, пользовательское приложение 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Гид этого ансамбля передаётся в PAD станции: включите эту станцию, чтобы собрать его.
+The broadcaster sends service information (names, logos) but no programme schedule.	Вещатель передаёт сведения о службах (названия, логотипы), но не программу передач.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Программа передач ещё не получена. Оборот карусели гида может занять несколько минут.
 Air-interface encryption: %s	Шифрование радиоинтерфейса: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu сигнальных PDU с режимом шифрования (не расшифровано); %llu нечитаемых блоков (ошибка CRC)
 none advertised	не объявлено

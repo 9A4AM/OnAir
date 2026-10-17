@@ -2052,6 +2052,37 @@ How to install	Jak zainstalować
 The services, signal information and data work without it.	Usługi, informacje o sygnale i dane działają bez niego.
 Interface and windows	Interfejs i okna
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Widok przełącza układ (Sidebar, Scope, Tiles, Faceplate, Panel), interfejs klasyczny, rozmiar tekstu i paletę; interfejs dotykowy jest w sekcji Narzędzia. Okna takie jak Częstotliwości, Skaner przemiatający, Namierzanie i Automatyzacje otwierają się stąd.
+# programme guide (SPI)
+Guide	Przewodnik
+until	do
+Genre	Gatunek
+Saved	Zapisano
+Now	Teraz
+objects	obiekty
+services	usługi
+programmes	programy
+scheduled	zaplanowane
+objects decoded	zdekodowane obiekty
+Guide data	Dane przewodnika
+last update	ostatnia aktualizacja
+no update yet	brak aktualizacji
+not collecting	nie zbiera
+from the cache	z pamięci podręcznej
+cached data, expires with time	dane z pamięci podręcznej, wygasają z czasem
+waiting for the carousel directory...	oczekiwanie na katalog karuzeli...
+Export XMLTV	Eksportuj XMLTV
+Collect the guide in the background	Zbieraj przewodnik w tle
+Could not write the file.	Nie udało się zapisać pliku.
+Listen to this station	Słuchaj tej stacji
+search title or description	szukaj w tytule lub opisie
+Nothing matches.	Nic nie pasuje.
+No description in the guide.	Brak opisu w przewodniku.
+Click a programme in the grid or the search results to see its details.	Kliknij program w siatce lub wynikach wyszukiwania, aby zobaczyć szczegóły.
+Start the receiver on a DAB channel to see the guide.	Uruchom odbiornik na kanale DAB, aby zobaczyć przewodnik.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Ten multipleks nie zapowiada przewodnika programowego (SPI, aplikacja użytkownika 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Przewodnik tego multipleksu jest nadawany w PAD stacji: odtwórz tę stację, aby go zebrać.
+The broadcaster sends service information (names, logos) but no programme schedule.	Nadawca wysyła informacje o usługach (nazwy, logo), ale nie ramówkę.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Ramówka jeszcze nie została odebrana. Obieg karuzeli przewodnika może trwać kilka minut.
 Air-interface encryption: %s	Szyfrowanie interfejsu radiowego: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu jednostek sygnalizacyjnych z trybem szyfrowania (nie odszyfrowano); %llu nieczytelnych bloków (błąd CRC)
 none advertised	brak ogłoszonego

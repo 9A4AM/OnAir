@@ -2035,6 +2035,37 @@ How to install	Come installare
 The services, signal information and data work without it.	I servizi, le informazioni sul segnale e i dati funzionano anche senza.
 Interface and windows	Interfaccia e finestre
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Vista cambia il layout (Sidebar, Scope, Tiles, Faceplate, Panel), l'interfaccia classica, la dimensione del testo e la palette; l'interfaccia touch è sotto Strumenti. Finestre come Frequenze, Scanner di sweep, Radiogoniometro e Automazioni si aprono da qui.
+# programme guide (SPI)
+Guide	Guida
+until	fino alle
+Genre	Genere
+Saved	Salvato
+Now	Adesso
+objects	oggetti
+services	servizi
+programmes	programmi
+scheduled	programmati
+objects decoded	oggetti decodificati
+Guide data	Dati della guida
+last update	ultimo aggiornamento
+no update yet	nessun aggiornamento
+not collecting	non in raccolta
+from the cache	dalla cache
+cached data, expires with time	dati in cache, scadono con il tempo
+waiting for the carousel directory...	in attesa della directory del carosello...
+Export XMLTV	Esporta XMLTV
+Collect the guide in the background	Raccogli la guida in background
+Could not write the file.	Impossibile scrivere il file.
+Listen to this station	Ascolta questa stazione
+search title or description	cerca nel titolo o nella descrizione
+Nothing matches.	Nessun risultato.
+No description in the guide.	Nessuna descrizione nella guida.
+Click a programme in the grid or the search results to see its details.	Fai clic su un programma nella griglia o nei risultati per vederne i dettagli.
+Start the receiver on a DAB channel to see the guide.	Avvia il ricevitore su un canale DAB per vedere la guida.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Questo ensemble non annuncia una guida ai programmi (SPI, applicazione utente 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	La guida di questo ensemble è trasmessa nel PAD di una stazione: ascolta quella stazione per raccoglierla.
+The broadcaster sends service information (names, logos) but no programme schedule.	L'emittente invia informazioni di servizio (nomi, loghi) ma non il palinsesto.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Nessun palinsesto ricevuto finora. Un carosello della guida può impiegare diversi minuti per un giro.
 Air-interface encryption: %s	Cifratura dell'interfaccia radio: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu PDU di segnalazione con modo di cifratura (non decifrate); %llu blocchi illeggibili (CRC errato)
 none advertised	nessuna annunciata

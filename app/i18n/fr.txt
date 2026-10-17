@@ -2052,6 +2052,37 @@ How to install	Comment installer
 The services, signal information and data work without it.	Les services, les informations du signal et les données fonctionnent sans lui.
 Interface and windows	Interface et fenêtres
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Affichage change la disposition (Sidebar, Scope, Tiles, Faceplate, Panel), l'interface classique, la taille du texte et la palette ; l'interface tactile est sous Outils. Des fenêtres comme Fréquences, Scanner de balayage, Radiogoniomètre et Automatisations s'ouvrent d'ici.
+# programme guide (SPI)
+Guide	Guide
+until	jusqu'à
+Genre	Genre
+Saved	Enregistré
+Now	Maintenant
+objects	objets
+services	services
+programmes	programmes
+scheduled	programmés
+objects decoded	objets décodés
+Guide data	Données du guide
+last update	dernière mise à jour
+no update yet	pas encore de mise à jour
+not collecting	pas de collecte
+from the cache	depuis le cache
+cached data, expires with time	données en cache, expirent avec le temps
+waiting for the carousel directory...	attente du répertoire du carrousel...
+Export XMLTV	Exporter en XMLTV
+Collect the guide in the background	Collecter le guide en arrière-plan
+Could not write the file.	Impossible d'écrire le fichier.
+Listen to this station	Écouter cette station
+search title or description	rechercher dans le titre ou la description
+Nothing matches.	Aucun résultat.
+No description in the guide.	Pas de description dans le guide.
+Click a programme in the grid or the search results to see its details.	Cliquez sur un programme de la grille ou des résultats pour voir ses détails.
+Start the receiver on a DAB channel to see the guide.	Démarrez le récepteur sur un canal DAB pour voir le guide.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Ce multiplex n'annonce pas de guide des programmes (SPI, application utilisateur 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Le guide de ce multiplex est diffusé dans le PAD d'une station : écoutez cette station pour le collecter.
+The broadcaster sends service information (names, logos) but no programme schedule.	Le diffuseur envoie des informations de service (noms, logos) mais pas de grille des programmes.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Aucune grille reçue pour l'instant. Un carrousel de guide peut mettre plusieurs minutes à faire un tour.
 Air-interface encryption: %s	Chiffrement de l'interface air : %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu PDU de signalisation avec un mode de chiffrement (non déchiffrées) ; %llu blocs illisibles (CRC faux)
 none advertised	aucun annoncé

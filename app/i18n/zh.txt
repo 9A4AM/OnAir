@@ -2052,6 +2052,37 @@ How to install	安装方法
 The services, signal information and data work without it.	没有它,服务、信号信息和数据仍可正常使用。
 Interface and windows	界面与窗口
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	“视图”菜单可切换布局（Sidebar、Scope、Tiles、Faceplate、Panel）、经典界面、文字大小和配色；触控界面位于“工具”下。频率、扫频扫描器、测向和自动化等窗口也从这里打开。
+# programme guide (SPI)
+Guide	节目指南
+until	直到
+Genre	类型
+Saved	已保存
+Now	现在
+objects	对象
+services	服务
+programmes	节目
+scheduled	已排期
+objects decoded	已解码对象
+Guide data	指南数据
+last update	上次更新
+no update yet	尚无更新
+not collecting	未在收集
+from the cache	来自缓存
+cached data, expires with time	缓存数据，随时间过期
+waiting for the carousel directory...	正在等待轮播目录...
+Export XMLTV	导出 XMLTV
+Collect the guide in the background	在后台收集指南
+Could not write the file.	无法写入文件。
+Listen to this station	收听此电台
+search title or description	按标题或描述搜索
+Nothing matches.	没有匹配项。
+No description in the guide.	指南中没有描述。
+Click a programme in the grid or the search results to see its details.	点击网格或搜索结果中的节目以查看详情。
+Start the receiver on a DAB channel to see the guide.	在 DAB 频道上启动接收机即可查看指南。
+This ensemble does not announce a programme guide (SPI, user application 0x007).	此复用未公布节目指南（SPI，用户应用 0x007）。
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	此复用的指南通过某电台的 PAD 发送：播放该电台即可收集。
+The broadcaster sends service information (names, logos) but no programme schedule.	广播商发送了服务信息（名称、台标），但没有节目表。
+No programme schedule received yet. A guide carousel can take several minutes to come round.	尚未收到节目表。指南轮播转一圈可能需要几分钟。
 Air-interface encryption: %s	空中接口加密：%s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu 个设置了加密模式的信令PDU（未解密）；%llu 个不可读块（CRC错误）
 none advertised	未公布
