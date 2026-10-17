@@ -6358,6 +6358,8 @@ void ImGui::EndChild()
     const ImGuiID backup_within_end_child_id = g.WithinEndChildID;
     IM_ASSERT(child_window->Flags & ImGuiWindowFlags_ChildWindow);   // Mismatched BeginChild()/EndChild() calls
 
+    if (ImGuiTouchEndChild)
+        ImGuiTouchEndChild(child_window);   // touch interface: drag and fling scrolling of every scrolling child window and table
     g.WithinEndChildID = child_window->ID;
     ImVec2 child_size = child_window->Size;
     End();
@@ -11799,6 +11801,7 @@ bool ImGui::BeginItemTooltip()
 float ImGuiTouchRowMin = 0.0f;
 bool (*ImGuiTouchTooltipGate)() = NULL;
 void (*ImGuiTouchPlaceWindow)(ImGuiWindow*) = NULL;
+void (*ImGuiTouchEndChild)(ImGuiWindow*) = NULL;
 
 bool ImGui::BeginTooltipEx(ImGuiTooltipFlags tooltip_flags, ImGuiWindowFlags extra_window_flags)
 {

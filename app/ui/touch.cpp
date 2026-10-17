@@ -15,6 +15,7 @@ extern std::string gForceTab;   // main.cpp: select this tab next frame
 namespace touch {
 
 std::string gDevOpen;
+void kineticScrollWindow(ImGuiWindow* w);
 
 namespace {
 bool gOn = false;
@@ -71,6 +72,7 @@ void setOn(bool v) {
     gOn = v;
     ImGuiTouchTooltipGate = v ? tooltipGate : nullptr;
     ImGuiTouchPlaceWindow = v ? placeWindow : nullptr;
+    ImGuiTouchEndChild = v ? kineticScrollWindow : nullptr;
     if (!v) { ImGuiTouchRowMin = 0; gFrame = GestureFrame(); gRec.reset(); gKin.clear(); }
 }
 
@@ -133,15 +135,20 @@ void swipeTabs(int dir) {
     if (n >= 0 && n < (int)gTabsLast.size()) { gForceTab = gTabsLast[(size_t)n].first; }
 }
 
-void kineticScroll(bool rows) {
+// Drag-scroll and fling for the child window that is ending. A press on the background scrolls; on a row of a table or of the mode picker (items
+// that are only tapped, never dragged) it scrolls too, and the row is not "clicked" because the finger has left it by the release. A press on
+// a slider, a plot or a text box stays theirs. The innermost scrollable window under the finger claims the drag.
+void kineticScrollWindow(ImGuiWindow* w) {
     if (!gOn) return;
-    ImGuiWindow* w = ImGui::GetCurrentWindow();
     ImGuiIO& io = ImGui::GetIO();
     Kinetic& k = gKin[w->ID];
-    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ImGui::IsMouseClicked(0)) {
+    static int claimFrame = -1;
+    const bool rows = strstr(w->Name, "Table_") || strstr(w->Name, "##tmodes");
+    if (w->ScrollMax.y > 0 && ImGui::IsMouseClicked(0) && claimFrame != ImGui::GetFrameCount() && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+        claimFrame = ImGui::GetFrameCount();
         k.stop();
         gDragOwner = w->ID;
-        gDragOk = rows || !ImGui::IsAnyItemActive();   // a press on a slider or plot is theirs; on a row (when allowed) or the background it scrolls
+        gDragOk = rows || !ImGui::IsAnyItemActive();
     }
     const bool mine = gDragOwner == w->ID && gDragOk && w->ScrollMax.y > 0;
     if (mine && gFrame.panning) ImGui::SetScrollY(w, std::max(0.f, std::min(w->ScrollMax.y, w->Scroll.y - gFrame.panDy)));

@@ -378,11 +378,13 @@ IM_MSVC_RUNTIME_CHECKS_RESTORE
 // OnAir touch interface hooks (app/ui/touch.cpp sets them; all are off / null in the normal interface, so nothing changes there).
 //  TouchRowMin: least height in pixels of a Selectable / menu / combo row (0 = off).
 //  TouchTooltipGate: when set and it returns false, tooltips are not shown (touch: only after a long press).
+//  TouchEndChild: called at the end of every child window (and table body) so the touch interface can drag-scroll it.
 //  TouchPlaceWindow: called for every top-level window and popup after ImGui placed it, to make it a bottom sheet / full screen.
 struct ImGuiWindow;
 extern float ImGuiTouchRowMin;
 extern bool (*ImGuiTouchTooltipGate)();
 extern void (*ImGuiTouchPlaceWindow)(ImGuiWindow*);
+extern void (*ImGuiTouchEndChild)(ImGuiWindow*);   // called as a child window ends (still the current window): drag-scroll it
 
 namespace ImGui
 {

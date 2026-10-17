@@ -1288,3 +1288,21 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini には、Windows では FTDI の FT60x ドライバ(Zadig ではありません)、Linux では udev ルール、そしてゲートウェアをライブラリに合わせるための一度きりの「LimeUtil --update」が必要です。
+# the touch interface (app/ui/touch*.cpp)
+Touch	タッチ
+Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time.	タッチ操作用の画面に切り替えます（大きなボタン、画面上のテンキー）。いつでも元に戻せます。
+Touch interface	タッチ操作画面
+For tablets and touch screens: big buttons, an on-screen keypad for the frequency, a full-screen mode picker.	タブレットやタッチ画面向け：大きなボタン、周波数用の画面テンキー、全画面のモード選択。
+now %s MHz	現在 %s MHz
+Tuning step	チューニングステップ
+Stop the receiver to change the mode.	モードを変えるには受信を停止してください。
+Menu	メニュー
+Desktop interface	デスクトップ画面
+Receive view	受信表示
+Transmit view	送信表示
+Volume	音量
+More	その他
+Status	状態
+Running	動作中
+Step	ステップ
+Keyboard	キーボード

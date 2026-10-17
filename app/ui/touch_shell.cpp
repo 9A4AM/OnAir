@@ -124,7 +124,6 @@ void tunerSheet(App& a) {
     toolbarParts(a, TbSource | TbTuner | TbDecoder, true);
     if (sourceOptionsOpen(a)) sourceOptions(a);
     if (a.devices[a.devIdx].isRadio()) radioSettingsUi(a, true);
-    kineticScroll();
     ImGui::EndChild();
     endSheet();
 }
@@ -142,7 +141,6 @@ void moreSheet(App& a) {
         if (gMorePage == 1) statusBar(a);
         else if (gMorePage == 2) rightPanel(a);
         else constellationsTab(a);
-        kineticScroll(true);
         ImGui::EndChild();
     }
     endSheet();
@@ -169,11 +167,9 @@ void shell(App& a, ImVec2 disp) {
     const ImVec2 bodyMin = ImGui::GetWindowPos(), bodyMax = ImVec2(bodyMin.x + ImGui::GetWindowSize().x, bodyMin.y + ImGui::GetWindowSize().y);
     if (txViewFlag()) txPanel(a);
     else {
-        statusBar(a);
-        ImGui::Separator();
+        if (disp.y >= disp.x) { statusBar(a); ImGui::Separator(); }   // portrait: the mode's status line on top; landscape keeps the height for the picture (More > Status)
         mainTabs(a);
     }
-    kineticScroll();
     ImGui::EndChild();
     const GestureFrame& g = gesture();
     if (g.swipe && !pressedOnItem() && g.cx >= bodyMin.x && g.cx <= bodyMax.x && g.cy >= bodyMin.y && g.cy <= bodyMax.y && !ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId))

@@ -38,9 +38,6 @@ void feedPointer(int id, float x, float y, bool down);
 void noteTab(const char* name, bool open);   // tabItem() tells which tabs exist and which is open (swipe between tabs)
 void swipeTabs(int dir);                     // select the next / previous tab of the last frame (dir -1 / +1)
 
-// Drag-scroll and fling for the window being built (call it last, before End / EndChild): drag the background, or a row when rows is true.
-void kineticScroll(bool rows = false);
-
 // A button at least as big as a target, optionally filled with the accent (the primary action of a row).
 bool bigButton(const char* label, ImVec2 size = ImVec2(0, 0), bool primary = false);
 

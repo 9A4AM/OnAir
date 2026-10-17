@@ -158,7 +158,7 @@ void modePickerSheet(App& a, ImVec2 disp) {
     static char q[48] = "";
     if (ImGui::IsWindowAppearing()) q[0] = 0;
     const float kb = keyboardAvailable() ? ImGui::CalcTextSize(tr("Keyboard")).x + ImGui::GetStyle().FramePadding.x * 2 + ImGui::GetStyle().ItemSpacing.x : 0.f;
-    ImGui::SetNextItemWidth(-kb);
+    ImGui::SetNextItemWidth(kb > 0 ? -kb : -FLT_MIN);
     ImGui::InputTextWithHint("##tmodeq", tr("search (FT8, LoRa, APRS...)"), q, sizeof q);
     if (kb > 0) { ImGui::SameLine(); if (ImGui::Button(tr("Keyboard"), ImVec2(0, target()))) showSystemKeyboard(); }
     if (a.engine.running()) ImGui::TextColored(pal::warnAmber(), "%s", tr("Stop the receiver to change the mode."));
@@ -192,7 +192,6 @@ void modePickerSheet(App& a, ImVec2 disp) {
             ImGui::PopID();
         }
     }
-    kineticScroll(true);
     ImGui::EndChild();
     endSheet();
 }

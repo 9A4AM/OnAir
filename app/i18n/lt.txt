@@ -1288,3 +1288,21 @@ RDS (Europe)	RDS (Europe)
 RBDS (US)	RBDS (US)
 RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.	RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there.
 A LimeSDR Mini needs FTDI's FT60x driver on Windows (not Zadig), the udev rules on Linux, and "LimeUtil --update" once so its gateware matches the library.	LimeSDR Mini sistemoje Windows reikia FTDI FT60x tvarkyklės (ne Zadig), sistemoje Linux - udev taisyklių, o vieną kartą paleisti "LimeUtil --update", kad jo gateware atitiktų biblioteką.
+# the touch interface (app/ui/touch*.cpp)
+Touch	Jutiklis
+Switch to the touch interface (big buttons, on-screen keypad). You can switch back at any time.	Perjungti į jutiklinę sąsają (dideli mygtukai, ekrano skaičių klaviatūra). Bet kada galite grįžti.
+Touch interface	Jutiklinė sąsaja
+For tablets and touch screens: big buttons, an on-screen keypad for the frequency, a full-screen mode picker.	Planšetėms ir jutikliniams ekranams: dideli mygtukai, ekrano skaičių klaviatūra dažniui, viso ekrano režimo parinkiklis.
+now %s MHz	dabar %s MHz
+Tuning step	Derinimo žingsnis
+Stop the receiver to change the mode.	Sustabdykite imtuvą, kad pakeistumėte režimą.
+Menu	Meniu
+Desktop interface	Darbalaukio sąsaja
+Receive view	Priėmimo vaizdas
+Transmit view	Siuntimo vaizdas
+Volume	Garsumas
+More	Daugiau
+Status	Būsena
+Running	Veikia
+Step	Žingsnis
+Keyboard	Klaviatūra
