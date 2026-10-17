@@ -106,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: brew install cmake pkg-config nasm hackrf soapysdr libusb glfw librtlsdr airspy airspyhf libbladerf limesuite uhd hamlib   # radio libraries and Hamlib go into the app (tools/package/bundle_macos.py)
+        run: brew install cmake pkg-config nasm hackrf soapysdr soapyremote libusb glfw librtlsdr airspy airspyhf libbladerf limesuite uhd hamlib   # radio libraries and Hamlib go into the app (tools/package/bundle_macos.py)
       # No Homebrew FFmpeg (it is --enable-gpl): the LGPL static build of tools/package/build_ffmpeg_static.sh, cached per architecture and script version
       - name: Cache the static FFmpeg
         id: ffmpeg

@@ -88,9 +88,13 @@ for f in "$APP"/Contents/Frameworks/*.dylib; do
     done
   done
 done
+# the SoapyRemote module (BSL-1.0, bundled by bundle_macos.py) is not a *.dylib in Frameworks/: its formula's licence is copied explicitly
+for root in /opt/homebrew/opt /usr/local/opt; do
+  if [ -d "$root/soapyremote" ]; then mkdir -p "$HBLIC/soapyremote"; for t in "$root"/soapyremote/COPYING* "$root"/soapyremote/LICENSE*; do if [ -f "$t" ]; then cp "$t" "$HBLIC/soapyremote/"; fi; done; fi
+done
 # the app is signed ad hoc (no developer certificate): macOS shows a one-time "unidentified developer" prompt on first launch
 python3 tools/package/scrub_paths.py "$APP"   # no build-machine paths in the shipped files (before signing)
-for f in "$APP"/Contents/Frameworks/*.dylib; do [ -L "$f" ] || codesign --force -s - "$f" >/dev/null 2>&1; done
+for f in "$APP"/Contents/Frameworks/*.dylib "$APP"/Contents/Frameworks/SoapySDR/modules0.8/*; do [ -L "$f" ] || [ ! -f "$f" ] || codesign --force -s - "$f" >/dev/null 2>&1; done
 codesign --force --deep -s - "$APP" >/dev/null 2>&1
 STAGE=$BUILD/dmg
 rm -rf $STAGE && mkdir -p $STAGE

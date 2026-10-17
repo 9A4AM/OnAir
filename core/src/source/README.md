@@ -20,7 +20,7 @@ A radio plugged into another computer is used through SoapySDR's own remote prot
 **SoapyRemote** network radio (host, port 55132, optionally the remote radio's driver or `driver=x,serial=y`). `core/src/net/netradio.cpp` builds
 `driver=remote,remote=tcp://host:port,remote:timeout=5000000[,remote:driver=...]` and the normal Soapy source (`source_soapy.cpp`) opens it, so
 gain, rates and retuning work as for a local radio. Errors say what to do: no SoapyRemote client module (`soapyRemoteModuleAvailable`, checks
-SoapySDR's registered drivers; the text says where to get it), server unreachable (the 3 s probe), server up but no radio listed. A build
+SoapySDR's registered drivers; the text is chosen per platform by `soapyRemoteModuleHelpFor`: Windows and macOS packages bundle the module, so there it says the installation is damaged; Linux says `apt install soapysdr-module-remote`), server unreachable (the 3 s probe), server up but no radio listed. A build
 without SoapySDR keeps the type but says so. Discovery is by typing the host (avahi is not used: it is unavailable on Windows).
 Tests: `tests/net/test_netradio.cpp` (arguments, offers, help, module-missing probe) and `tests/source/test_soapy.cpp` (fake driver).
 
