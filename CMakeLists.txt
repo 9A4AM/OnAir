@@ -128,6 +128,9 @@ option(DECT2_RUST_VITERBI "Use the Rust NEON Viterbi decoder of onair_fec on aar
 if(DECT2_RUST_VITERBI AND ONAIR_RUST_FEC)
   target_compile_definitions(dect2core PRIVATE ONAIR_RUST_VITERBI)
 endif()
+if(ONAIR_RUST_RING)
+  target_compile_definitions(dect2core PUBLIC DECT2_RUST_RING)   # ring.h is included by the app and the tests too: every user must see the same IqRing
+endif()
 onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (core/src/ais/ais_proto.cpp leaves the covered functions to ais_proto_rs.cpp) and links onair_rs
 # adsb_msg.cpp and the APRS parser (and the reference copies the Rust differential test builds) is compiled without fused multiply-add and without the sin+cos -> sincos rewrite:
 # clang and gcc do both by default (arm64, macOS), Rust never does, and the two builds (DECT2_RUST ON and OFF) should give the same numbers bit for bit
@@ -569,6 +572,13 @@ if(DECT2_BUILD_TESTS)
   find_package(Threads REQUIRED)
   target_link_libraries(test_common_threads PRIVATE Threads::Threads)
   add_test(NAME common_threads COMMAND test_common_threads)
+  if(ONAIR_RUST_ACTIVE)   # the Rust ring against the C++ ring: differential, stress, benchmark (links only the Rust archive, not the core)
+    add_executable(test_ring_rs tests/common/test_ring_rs.cpp)
+    target_include_directories(test_ring_rs PRIVATE core/include)
+    target_compile_definitions(test_ring_rs PRIVATE DECT2_RING_BOTH)
+    target_link_libraries(test_ring_rs PRIVATE onair_rs Threads::Threads)
+    add_test(NAME common_ring_rs COMMAND test_ring_rs)
+  endif()
   add_test(NAME common_threads_single COMMAND ${CMAKE_COMMAND} -E env DECT2_THREADS=0 $<TARGET_FILE:test_common_threads>)
   add_executable(test_png tests/common/test_png.cpp)
   target_link_libraries(test_png PRIVATE dect2core)
