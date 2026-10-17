@@ -2165,3 +2165,86 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Miért?
 Identify selected	A kijelölt azonosítása
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)
+# Protocol lab window
+Paste at least two packets, one per line.	Illessz be legalább két csomagot, soronként egyet.
+constant	állandó
+counter	számláló
+check value	ellenőrzőérték
+few values	kevés érték
+varying	változó
+Load a recording of the unknown signal, or paste packets you already have, and the lab works out how the signal is built: modulation, baud rate, preamble, CRC and fields. Nothing is decrypted.	Tölts be egy felvételt az ismeretlen jelről, vagy illeszd be a meglévő csomagokat, és a labor kideríti a jel felépítését: moduláció, baudráta, előtag, CRC és mezők. Semmit sem fejt vissza.
+Recording	Felvétel
+Browse...	Tallózás...
+Format	Formátum
+Sample rate (Hz)	Mintavételi frekvencia (Hz)
+Signal offset from the centre (Hz)	A jel eltolása a középponttól (Hz)
+Signal bandwidth (Hz, 0 = all)	Jel sávszélessége (Hz, 0 = az egész)
+Read the offset and the width off the waterfall of the recording; the lab mixes the signal to the centre and cuts away the rest.	Olvasd le az eltolást és a szélességet a felvétel vízesésdiagramjáról; a labor a jelet a középre keveri, a többit levágja.
+Analyse the recording	Felvétel elemzése
+Packets	Csomagok
+One packet per line, as hex bytes or as bits. The packets are taken as sliced from the air: the preamble and the sync word may still be in them.	Soronként egy csomag, hexa bájtokként vagy bitekként. A csomagokat úgy vesszük, ahogy az éterből kiszeletelték: az előtag és a szinkronszó még bennük lehet.
+Lines are bits (0 and 1)	A sorok bitek (0 és 1)
+Analyse the packets	Csomagok elemzése
+Demo signals	Demójelek
+Made-up signals with a known structure, to see what the lab finds. None of them is a real protocol.	Kitalált jelek ismert szerkezettel, hogy lásd, mit talál a labor. Egyik sem valódi protokoll.
+Make it and analyse	Létrehozás és elemzés
+Demodulator	Demodulátor
+Baud (0 = find it)	Baud (0 = megkeresni)
+Gap (ms)	Szünet (ms)
+A pause shorter than this does not end a packet. Raise it for signals with long runs of silence inside a packet.	Ennél rövidebb szünet nem zár le csomagot. Növeld olyan jeleknél, amelyekben egy csomagon belül hosszú csend van.
+Working...	Dolgozik...
+%zu bursts found.	%zu löket található.
+Nothing found.	Nem található semmi.
+Line coding	Vonalkódolás
+Sync word	Szinkronszó
+Check value	Ellenőrzőérték
+Whitening	Fehérítés
+Score	Pontszám
+after a preamble	előtag után
+The best reading is first. A check value that holds for most packets is strong evidence; without one, treat the rest as a guess.	A legjobb értelmezés van elöl. A legtöbb csomagra érvényes ellenőrzőérték erős bizonyíték; nélküle a többi csak találgatás.
+No packets.	Nincs csomag.
+Bytes from the start of the sync word. Grey: constant, blue: counter, green: check value, yellow: few values.	Bájtok a szinkronszó elejétől. Szürke: állandó, kék: számláló, zöld: ellenőrzőérték, sárga: kevés érték.
+Packet %d, byte %d	%d. csomag, %d. bájt
+Readings that could fit this packet	Értelmezések, amelyek illhetnek ehhez a csomaghoz
+No fields.	Nincsenek mezők.
+C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C állandó, N számláló, K ellenőrzőérték, E kevés érték, V változó; bájtonként egy betű a szinkronszó elejétől.
+Byte	Bájt
+Kind	Fajta
+Entropy (bits per byte)	Entrópia (bit bájtonként)
+Distinct values	Különböző értékek
+adds %d each packet	csomagonként %d-et ad hozzá
+follows byte %d (r = %.2f)	a(z) %d. bájtot követi (r = %.2f)
+looks random: a check value, a key or encrypted data	véletlenszerűnek látszik: ellenőrzőérték, kulcs vagy titkosított adat
+Two packets are needed.	Két csomag kell.
+Packet A	A csomag
+Packet B	B csomag
+^ marks the bits that differ.	^ jelöli az eltérő biteket.
+No check value found. Either the packets have none, it covers something this search does not try (for example header bytes in another order), the bits still hold errors, or the payload is whitened or encrypted. Try another demodulator, the other polarity or a cleaner recording.	Nem található ellenőrzőérték. Vagy nincs a csomagokban, vagy olyasmit fed le, amit ez a keresés nem próbál (például más sorrendű fejlécbájtokat), vagy a bitek még hibásak, vagy az adat fehérített vagy titkosított. Próbálj másik demodulátort, a másik polaritást vagy tisztább felvételt.
+Covers bytes	Lefedett bájtok
+Polynomial	Polinom
+Init	Kezdőérték
+XOR out	Záró XOR
+Reflect	Tükrözés
+Byte order	Bájtsorrend
+input and output	bemenet és kimenet
+input only	csak bemenet
+output only	csak kimenet
+big endian	big endian
+little endian	little endian
+When all packets are the same length, the init value and the XOR-out value cannot be told apart: several pairs fit equally well and the first plain one is shown. A short check value (8 bit) with few packets can fit by chance; the more packets that agree, the better.	Ha minden csomag egyforma hosszú, a kezdőérték és a záró XOR nem különböztethető meg: több pár egyformán jó, az első egyszerű látszik. Kevés csomag mellett egy rövid (8 bites) ellenőrzőérték véletlenül is egyezhet; minél több csomag egyezik, annál jobb.
+Protocol name	Protokoll neve
+Copy protocol (JSON)	Protokoll másolása (JSON)
+Save protocol...	Protokoll mentése...
+Copy packets as bits	Csomagok másolása bitként
+Save packets as bits...	Csomagok mentése bitként...
+Copy packets as hex	Csomagok másolása hexában
+rtl_433 decoder line (a starting point, not a tested decoder):	rtl_433 dekóder sor (kiindulópont, nem tesztelt dekóder):
+Copy the rtl_433 line	Az rtl_433 sor másolása
+The bit file has one packet per line; tools such as Universal Radio Hacker can open protocol text like that.	A bitfájlban soronként egy csomag van; az olyan eszközök, mint a Universal Radio Hacker, meg tudnak nyitni ilyen protokollszöveget.
+Bytes	Bájtok
+Fields	Mezők
+Compare	Összehasonlítás
+Export	Exportálás
+Protocol lab	Protokollabor
+Protocol lab...	Protokollabor...
+Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	Egy ismeretlen digitális jel felépítésének kiderítése: moduláció, baudráta, szinkronszó, CRC és mezők, exporttal

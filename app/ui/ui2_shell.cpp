@@ -229,6 +229,7 @@ void sidebar(App& a) {
         tool("Images", a.galleryOpen, "The pictures the receivers have decoded");
         tool("Data feeds...", a.feedsOpen, "Send decoded data to other programs and services");
         tool("Messages...", a.msgdbOpen, N_("Every decoded message in one searchable database, with filters and export"));
+        tool("Protocol lab...", a.protolabOpen, N_("Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export"));
         tool("Automations...", a.automationOpen, N_("Rules and scripts: when something is decoded, notify, record, tune or call a webhook"));
         tool("Memory...", a.memoryOpen, "The frequencies you keep, with mode and settings (Ctrl+M)");
         tool("Frequencies...", a.freqOpen, "Known frequencies of every mode (Ctrl+Shift+F)");
@@ -387,6 +388,7 @@ static void viewMenu(App& a) {
         ImGui::MenuItem(tr("Images"), nullptr, &a.galleryOpen);
         ImGui::MenuItem(tr("Data feeds..."), nullptr, &a.feedsOpen);
         ImGui::MenuItem(tr("Messages..."), nullptr, &a.msgdbOpen);
+        ImGui::MenuItem(tr("Protocol lab..."), nullptr, &a.protolabOpen);
         ImGui::MenuItem(tr("Automations..."), nullptr, &a.automationOpen);
         ImGui::MenuItem(tr("Memory..."), "Ctrl+M", &a.memoryOpen);
         ImGui::MenuItem(tr("Frequencies..."), "Ctrl+Shift+F", &a.freqOpen);

@@ -2179,3 +2179,86 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Kodėl?
 Identify selected	Atpažinti pažymėtą
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Suderina radiją su pažymėtu signalu ir pasako, kas tai yra (imtuvas turi veikti režimu, kurio atrankos dažnis jį apima)
+# Protocol lab window
+Paste at least two packets, one per line.	Įklijuokite bent du paketus, po vieną eilutėje.
+constant	pastovus
+counter	skaitiklis
+check value	kontrolinė reikšmė
+few values	mažai reikšmių
+varying	kintantis
+Load a recording of the unknown signal, or paste packets you already have, and the lab works out how the signal is built: modulation, baud rate, preamble, CRC and fields. Nothing is decrypted.	Įkelkite nežinomo signalo įrašą arba įklijuokite jau turimus paketus, ir laboratorija išsiaiškins, kaip signalas sudarytas: moduliaciją, perdavimo spartą, preambulę, CRC ir laukus. Niekas neiššifruojama.
+Recording	Įrašas
+Browse...	Naršyti...
+Format	Formatas
+Sample rate (Hz)	Diskretizavimo dažnis (Hz)
+Signal offset from the centre (Hz)	Signalo nuokrypis nuo centro (Hz)
+Signal bandwidth (Hz, 0 = all)	Signalo juostos plotis (Hz, 0 = visa)
+Read the offset and the width off the waterfall of the recording; the lab mixes the signal to the centre and cuts away the rest.	Nuokrypį ir plotį nuskaitykite iš įrašo krioklio; laboratorija perkels signalą į centrą ir nupjaus likusį.
+Analyse the recording	Analizuoti įrašą
+Packets	Paketai
+One packet per line, as hex bytes or as bits. The packets are taken as sliced from the air: the preamble and the sync word may still be in them.	Vienas paketas eilutėje, šešioliktainiais baitais arba bitais. Paketai imami tokie, kokie išpjauti iš eterio: juose gali likti preambulė ir sinchronizavimo žodis.
+Lines are bits (0 and 1)	Eilutės yra bitai (0 ir 1)
+Analyse the packets	Analizuoti paketus
+Demo signals	Demonstraciniai signalai
+Made-up signals with a known structure, to see what the lab finds. None of them is a real protocol.	Sugalvoti signalai su žinoma sandara, kad matytumėte, ką laboratorija suranda. Nė vienas nėra tikras protokolas.
+Make it and analyse	Sukurti ir analizuoti
+Demodulator	Demoduliatorius
+Baud (0 = find it)	Bodai (0 = rasti)
+Gap (ms)	Pauzė (ms)
+A pause shorter than this does not end a packet. Raise it for signals with long runs of silence inside a packet.	Trumpesnė pauzė paketo nebaigia. Padidinkite signalams su ilgomis tylos atkarpomis paketo viduje.
+Working...	Dirbama...
+%zu bursts found.	Rasta paketų serijų: %zu.
+Nothing found.	Nieko nerasta.
+Line coding	Linijos kodavimas
+Sync word	Sinchronizavimo žodis
+Check value	Kontrolinė reikšmė
+Whitening	Maišymas
+Score	Įvertis
+after a preamble	po preambulės
+The best reading is first. A check value that holds for most packets is strong evidence; without one, treat the rest as a guess.	Geriausias aiškinimas pirmas. Kontrolinė reikšmė, tinkanti daugumai paketų, yra stiprus įrodymas; be jos likusi dalis tėra spėjimas.
+No packets.	Paketų nėra.
+Bytes from the start of the sync word. Grey: constant, blue: counter, green: check value, yellow: few values.	Baitai nuo sinchronizavimo žodžio pradžios. Pilka: pastovus, mėlyna: skaitiklis, žalia: kontrolinė reikšmė, geltona: mažai reikšmių.
+Packet %d, byte %d	Paketas %d, baitas %d
+Readings that could fit this packet	Aiškinimai, kurie galėtų tikti šiam paketui
+No fields.	Laukų nėra.
+C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C pastovus, N skaitiklis, K kontrolinė reikšmė, E mažai reikšmių, V kintantis; viena raidė baitui nuo sinchronizavimo žodžio pradžios.
+Byte	Baitas
+Kind	Rūšis
+Entropy (bits per byte)	Entropija (bitai baitui)
+Distinct values	Skirtingos reikšmės
+adds %d each packet	prideda %d kiekviename pakete
+follows byte %d (r = %.2f)	seka baitą %d (r = %.2f)
+looks random: a check value, a key or encrypted data	atrodo atsitiktinis: kontrolinė reikšmė, raktas arba užšifruoti duomenys
+Two packets are needed.	Reikia dviejų paketų.
+Packet A	Paketas A
+Packet B	Paketas B
+^ marks the bits that differ.	^ žymi besiskiriančius bitus.
+No check value found. Either the packets have none, it covers something this search does not try (for example header bytes in another order), the bits still hold errors, or the payload is whitened or encrypted. Try another demodulator, the other polarity or a cleaner recording.	Kontrolinė reikšmė nerasta. Arba paketuose jos nėra, arba ji apima tai, ko ši paieška nebando (pavyzdžiui, antraštės baitus kita tvarka), arba bituose dar yra klaidų, arba duomenys sumaišyti ar užšifruoti. Išbandykite kitą demoduliatorių, kitą poliarizaciją arba švaresnį įrašą.
+Covers bytes	Apima baitus
+Polynomial	Polinomas
+Init	Pradinė reikšmė
+XOR out	Galutinis XOR
+Reflect	Atspindys
+Byte order	Baitų tvarka
+input and output	įvestis ir išvestis
+input only	tik įvestis
+output only	tik išvestis
+big endian	didžiausiasis pirmas (big endian)
+little endian	mažiausiasis pirmas (little endian)
+When all packets are the same length, the init value and the XOR-out value cannot be told apart: several pairs fit equally well and the first plain one is shown. A short check value (8 bit) with few packets can fit by chance; the more packets that agree, the better.	Kai visi paketai vienodo ilgio, pradinės reikšmės ir galutinio XOR atskirti negalima: kelios poros tinka vienodai gerai, rodoma pirmoji paprasta. Trumpa kontrolinė reikšmė (8 bitų) su nedaug paketų gali sutapti atsitiktinai; kuo daugiau paketų sutampa, tuo geriau.
+Protocol name	Protokolo pavadinimas
+Copy protocol (JSON)	Kopijuoti protokolą (JSON)
+Save protocol...	Išsaugoti protokolą...
+Copy packets as bits	Kopijuoti paketus kaip bitus
+Save packets as bits...	Išsaugoti paketus kaip bitus...
+Copy packets as hex	Kopijuoti paketus šešioliktaine forma
+rtl_433 decoder line (a starting point, not a tested decoder):	rtl_433 dekoderio eilutė (pradžios taškas, ne išbandytas dekoderis):
+Copy the rtl_433 line	Kopijuoti rtl_433 eilutę
+The bit file has one packet per line; tools such as Universal Radio Hacker can open protocol text like that.	Bitų faile yra vienas paketas eilutėje; tokie įrankiai kaip Universal Radio Hacker gali atidaryti tokį protokolo tekstą.
+Bytes	Baitai
+Fields	Laukai
+Compare	Palyginti
+Export	Eksportuoti
+Protocol lab	Protokolų laboratorija
+Protocol lab...	Protokolų laboratorija...
+Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	Išsiaiškinti nežinomo skaitmeninio signalo sandarą: moduliaciją, spartą, sinchronizavimo žodį, CRC ir laukus, su eksportu

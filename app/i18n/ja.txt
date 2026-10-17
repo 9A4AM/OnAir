@@ -2179,3 +2179,86 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	なぜ?
 Identify selected	選択を識別
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	選択した信号に無線機を合わせて、その正体を示します (サンプルレートが信号をカバーするモードでレシーバーが動作している必要があります)
+# Protocol lab window
+Paste at least two packets, one per line.	パケットを1行に1つずつ、2つ以上貼り付けてください。
+constant	定数
+counter	カウンタ
+check value	チェック値
+few values	値が少ない
+varying	可変
+Load a recording of the unknown signal, or paste packets you already have, and the lab works out how the signal is built: modulation, baud rate, preamble, CRC and fields. Nothing is decrypted.	未知の信号の録音を読み込むか、手元のパケットを貼り付けると、ラボが信号の構造（変調、ボーレート、プリアンブル、CRC、フィールド）を割り出します。復号は一切行いません。
+Recording	録音
+Browse...	参照...
+Format	形式
+Sample rate (Hz)	サンプルレート (Hz)
+Signal offset from the centre (Hz)	中心からの信号のずれ (Hz)
+Signal bandwidth (Hz, 0 = all)	信号の帯域幅 (Hz、0 = 全体)
+Read the offset and the width off the waterfall of the recording; the lab mixes the signal to the centre and cuts away the rest.	録音のウォーターフォールからずれと幅を読み取ってください。ラボが信号を中心に移し、残りを除去します。
+Analyse the recording	録音を解析
+Packets	パケット
+One packet per line, as hex bytes or as bits. The packets are taken as sliced from the air: the preamble and the sync word may still be in them.	1行に1パケット、16進バイトまたはビットで入力します。パケットは電波から切り出したままの状態として扱われ、プリアンブルや同期ワードが残っていることがあります。
+Lines are bits (0 and 1)	各行はビット (0 と 1)
+Analyse the packets	パケットを解析
+Demo signals	デモ信号
+Made-up signals with a known structure, to see what the lab finds. None of them is a real protocol.	構造が既知の架空の信号で、ラボが何を見つけるかを確認できます。実在のプロトコルではありません。
+Make it and analyse	作成して解析
+Demodulator	復調器
+Baud (0 = find it)	ボー (0 = 自動検出)
+Gap (ms)	間隔 (ms)
+A pause shorter than this does not end a packet. Raise it for signals with long runs of silence inside a packet.	これより短い無信号ではパケットは終わりません。パケット内に長い無信号がある信号では大きくしてください。
+Working...	処理中...
+%zu bursts found.	バーストが %zu 個見つかりました。
+Nothing found.	何も見つかりませんでした。
+Line coding	ラインコード
+Sync word	同期ワード
+Check value	チェック値
+Whitening	ホワイトニング
+Score	スコア
+after a preamble	プリアンブルの後
+The best reading is first. A check value that holds for most packets is strong evidence; without one, treat the rest as a guess.	最も有力な解釈が先頭です。大半のパケットで成り立つチェック値は強い根拠になります。なければ、残りは推測です。
+No packets.	パケットがありません。
+Bytes from the start of the sync word. Grey: constant, blue: counter, green: check value, yellow: few values.	同期ワードの先頭からのバイト。灰色: 定数、青: カウンタ、緑: チェック値、黄: 値が少ない。
+Packet %d, byte %d	パケット %d、バイト %d
+Readings that could fit this packet	このパケットに当てはまりうる解釈
+No fields.	フィールドがありません。
+C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C 定数、N カウンタ、K チェック値、E 値が少ない、V 可変。同期ワードの先頭から1バイトにつき1文字。
+Byte	バイト
+Kind	種類
+Entropy (bits per byte)	エントロピー (ビット/バイト)
+Distinct values	異なる値の数
+adds %d each packet	パケットごとに %d 増える
+follows byte %d (r = %.2f)	バイト %d に追従 (r = %.2f)
+looks random: a check value, a key or encrypted data	ランダムに見えます: チェック値、鍵、または暗号化データ
+Two packets are needed.	パケットが2つ必要です。
+Packet A	パケット A
+Packet B	パケット B
+^ marks the bits that differ.	^ は異なるビットを示します。
+No check value found. Either the packets have none, it covers something this search does not try (for example header bytes in another order), the bits still hold errors, or the payload is whitened or encrypted. Try another demodulator, the other polarity or a cleaner recording.	チェック値が見つかりませんでした。パケットに無い、この検索が試さない範囲を対象にしている（例: 順序の違うヘッダバイト）、ビットにまだ誤りがある、またはペイロードがホワイトニングや暗号化されている可能性があります。別の復調器、逆の極性、よりきれいな録音を試してください。
+Covers bytes	対象バイト
+Polynomial	多項式
+Init	初期値
+XOR out	最終 XOR
+Reflect	反転
+Byte order	バイト順
+input and output	入力と出力
+input only	入力のみ
+output only	出力のみ
+big endian	ビッグエンディアン
+little endian	リトルエンディアン
+When all packets are the same length, the init value and the XOR-out value cannot be told apart: several pairs fit equally well and the first plain one is shown. A short check value (8 bit) with few packets can fit by chance; the more packets that agree, the better.	すべてのパケットが同じ長さの場合、初期値と最終 XOR は区別できません。複数の組が同じようによく合い、最初の単純なものを表示します。パケットが少ないと短いチェック値 (8 ビット) は偶然合うことがあります。一致するパケットが多いほど確からしくなります。
+Protocol name	プロトコル名
+Copy protocol (JSON)	プロトコルをコピー (JSON)
+Save protocol...	プロトコルを保存...
+Copy packets as bits	パケットをビットでコピー
+Save packets as bits...	パケットをビットで保存...
+Copy packets as hex	パケットを16進でコピー
+rtl_433 decoder line (a starting point, not a tested decoder):	rtl_433 デコーダ行 (出発点であり、検証済みのデコーダではありません):
+Copy the rtl_433 line	rtl_433 行をコピー
+The bit file has one packet per line; tools such as Universal Radio Hacker can open protocol text like that.	ビットファイルは1行に1パケットです。Universal Radio Hacker などのツールでこの形式のプロトコルテキストを開けます。
+Bytes	バイト
+Fields	フィールド
+Compare	比較
+Export	エクスポート
+Protocol lab	プロトコルラボ
+Protocol lab...	プロトコルラボ...
+Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	未知のデジタル信号の構造を割り出す: 変調、ボーレート、同期ワード、CRC、フィールド（エクスポート付き）

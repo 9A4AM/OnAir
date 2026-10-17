@@ -2179,3 +2179,86 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	¿Por qué?
 Identify selected	Identificar la seleccionada
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Sintoniza la radio en la señal seleccionada y dice qué es (el receptor debe estar en un modo cuya tasa de muestreo la cubra)
+# Protocol lab window
+Paste at least two packets, one per line.	Pega al menos dos paquetes, uno por línea.
+constant	constante
+counter	contador
+check value	valor de control
+few values	pocos valores
+varying	variable
+Load a recording of the unknown signal, or paste packets you already have, and the lab works out how the signal is built: modulation, baud rate, preamble, CRC and fields. Nothing is decrypted.	Carga una grabación de la señal desconocida, o pega paquetes que ya tengas, y el laboratorio averigua cómo está construida la señal: modulación, velocidad en baudios, preámbulo, CRC y campos. No se descifra nada.
+Recording	Grabación
+Browse...	Examinar...
+Format	Formato
+Sample rate (Hz)	Frecuencia de muestreo (Hz)
+Signal offset from the centre (Hz)	Desplazamiento de la señal respecto al centro (Hz)
+Signal bandwidth (Hz, 0 = all)	Ancho de banda de la señal (Hz, 0 = todo)
+Read the offset and the width off the waterfall of the recording; the lab mixes the signal to the centre and cuts away the rest.	Lee el desplazamiento y el ancho en la cascada de la grabación; el laboratorio lleva la señal al centro y elimina el resto.
+Analyse the recording	Analizar la grabación
+Packets	Paquetes
+One packet per line, as hex bytes or as bits. The packets are taken as sliced from the air: the preamble and the sync word may still be in them.	Un paquete por línea, como bytes en hexadecimal o como bits. Los paquetes se toman tal como salieron del aire: el preámbulo y la palabra de sincronización pueden seguir en ellos.
+Lines are bits (0 and 1)	Las líneas son bits (0 y 1)
+Analyse the packets	Analizar los paquetes
+Demo signals	Señales de demostración
+Made-up signals with a known structure, to see what the lab finds. None of them is a real protocol.	Señales inventadas con una estructura conocida, para ver qué encuentra el laboratorio. Ninguna es un protocolo real.
+Make it and analyse	Crear y analizar
+Demodulator	Demodulador
+Baud (0 = find it)	Baudios (0 = averiguar)
+Gap (ms)	Pausa (ms)
+A pause shorter than this does not end a packet. Raise it for signals with long runs of silence inside a packet.	Una pausa más corta que esto no termina un paquete. Súbelo para señales con silencios largos dentro de un paquete.
+Working...	Trabajando...
+%zu bursts found.	%zu ráfagas encontradas.
+Nothing found.	No se encontró nada.
+Line coding	Codificación de línea
+Sync word	Palabra de sincronización
+Check value	Valor de control
+Whitening	Aleatorización
+Score	Puntuación
+after a preamble	tras un preámbulo
+The best reading is first. A check value that holds for most packets is strong evidence; without one, treat the rest as a guess.	La mejor lectura va primero. Un valor de control que se cumple en la mayoría de los paquetes es una prueba sólida; sin él, el resto es una suposición.
+No packets.	Sin paquetes.
+Bytes from the start of the sync word. Grey: constant, blue: counter, green: check value, yellow: few values.	Bytes desde el inicio de la palabra de sincronización. Gris: constante, azul: contador, verde: valor de control, amarillo: pocos valores.
+Packet %d, byte %d	Paquete %d, byte %d
+Readings that could fit this packet	Lecturas que podrían encajar en este paquete
+No fields.	Sin campos.
+C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C constante, N contador, K valor de control, E pocos valores, V variable; una letra por byte desde el inicio de la palabra de sincronización.
+Byte	Byte
+Kind	Tipo
+Entropy (bits per byte)	Entropía (bits por byte)
+Distinct values	Valores distintos
+adds %d each packet	suma %d en cada paquete
+follows byte %d (r = %.2f)	sigue al byte %d (r = %.2f)
+looks random: a check value, a key or encrypted data	parece aleatorio: un valor de control, una clave o datos cifrados
+Two packets are needed.	Se necesitan dos paquetes.
+Packet A	Paquete A
+Packet B	Paquete B
+^ marks the bits that differ.	^ marca los bits que difieren.
+No check value found. Either the packets have none, it covers something this search does not try (for example header bytes in another order), the bits still hold errors, or the payload is whitened or encrypted. Try another demodulator, the other polarity or a cleaner recording.	No se encontró valor de control. O los paquetes no lo tienen, o cubre algo que esta búsqueda no prueba (por ejemplo bytes de cabecera en otro orden), o los bits aún tienen errores, o la carga está aleatorizada o cifrada. Prueba otro demodulador, la otra polaridad o una grabación más limpia.
+Covers bytes	Cubre los bytes
+Polynomial	Polinomio
+Init	Valor inicial
+XOR out	XOR final
+Reflect	Reflejo
+Byte order	Orden de bytes
+input and output	entrada y salida
+input only	solo entrada
+output only	solo salida
+big endian	big endian
+little endian	little endian
+When all packets are the same length, the init value and the XOR-out value cannot be told apart: several pairs fit equally well and the first plain one is shown. A short check value (8 bit) with few packets can fit by chance; the more packets that agree, the better.	Cuando todos los paquetes tienen la misma longitud, el valor inicial y el XOR final no se pueden distinguir: varios pares encajan igual de bien y se muestra el primero sencillo. Un valor de control corto (8 bits) con pocos paquetes puede coincidir por casualidad; cuantos más paquetes coincidan, mejor.
+Protocol name	Nombre del protocolo
+Copy protocol (JSON)	Copiar protocolo (JSON)
+Save protocol...	Guardar protocolo...
+Copy packets as bits	Copiar paquetes como bits
+Save packets as bits...	Guardar paquetes como bits...
+Copy packets as hex	Copiar paquetes como hexadecimal
+rtl_433 decoder line (a starting point, not a tested decoder):	línea de decodificador rtl_433 (un punto de partida, no un decodificador probado):
+Copy the rtl_433 line	Copiar la línea de rtl_433
+The bit file has one packet per line; tools such as Universal Radio Hacker can open protocol text like that.	El archivo de bits tiene un paquete por línea; herramientas como Universal Radio Hacker pueden abrir texto de protocolo así.
+Bytes	Bytes
+Fields	Campos
+Compare	Comparar
+Export	Exportar
+Protocol lab	Laboratorio de protocolos
+Protocol lab...	Laboratorio de protocolos...
+Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	Descubrir cómo es una señal digital desconocida: modulación, baudios, palabra de sincronización, CRC y campos, con exportación

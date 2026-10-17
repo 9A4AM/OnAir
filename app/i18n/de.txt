@@ -2179,3 +2179,86 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Warum?
 Identify selected	Ausgewählte identifizieren
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Das Radio auf das ausgewählte Signal abstimmen und sagen, was es ist (der Empfänger muss in einem Modus laufen, dessen Abtastrate es abdeckt)
+# Protocol lab window
+Paste at least two packets, one per line.	Mindestens zwei Pakete einfügen, eines pro Zeile.
+constant	konstant
+counter	Zähler
+check value	Prüfwert
+few values	wenige Werte
+varying	veränderlich
+Load a recording of the unknown signal, or paste packets you already have, and the lab works out how the signal is built: modulation, baud rate, preamble, CRC and fields. Nothing is decrypted.	Lade eine Aufnahme des unbekannten Signals oder füge Pakete ein, die du schon hast, und das Labor ermittelt den Aufbau des Signals: Modulation, Baudrate, Präambel, CRC und Felder. Nichts wird entschlüsselt.
+Recording	Aufnahme
+Browse...	Durchsuchen...
+Format	Format
+Sample rate (Hz)	Abtastrate (Hz)
+Signal offset from the centre (Hz)	Signalabstand von der Mitte (Hz)
+Signal bandwidth (Hz, 0 = all)	Signalbandbreite (Hz, 0 = alles)
+Read the offset and the width off the waterfall of the recording; the lab mixes the signal to the centre and cuts away the rest.	Lies Abstand und Breite im Wasserfall der Aufnahme ab; das Labor mischt das Signal in die Mitte und schneidet den Rest weg.
+Analyse the recording	Aufnahme analysieren
+Packets	Pakete
+One packet per line, as hex bytes or as bits. The packets are taken as sliced from the air: the preamble and the sync word may still be in them.	Ein Paket pro Zeile, als Hex-Bytes oder als Bits. Die Pakete gelten so, wie sie aus der Luft gelesen wurden: Präambel und Synchronwort können noch darin sein.
+Lines are bits (0 and 1)	Zeilen sind Bits (0 und 1)
+Analyse the packets	Pakete analysieren
+Demo signals	Demo-Signale
+Made-up signals with a known structure, to see what the lab finds. None of them is a real protocol.	Erfundene Signale mit bekanntem Aufbau, um zu sehen, was das Labor findet. Keines davon ist ein echtes Protokoll.
+Make it and analyse	Erzeugen und analysieren
+Demodulator	Demodulator
+Baud (0 = find it)	Baud (0 = ermitteln)
+Gap (ms)	Lücke (ms)
+A pause shorter than this does not end a packet. Raise it for signals with long runs of silence inside a packet.	Eine Pause, die kürzer ist, beendet kein Paket. Erhöhe den Wert bei Signalen mit langen stillen Stellen innerhalb eines Pakets.
+Working...	Läuft...
+%zu bursts found.	%zu Bursts gefunden.
+Nothing found.	Nichts gefunden.
+Line coding	Leitungscode
+Sync word	Synchronwort
+Check value	Prüfwert
+Whitening	Whitening
+Score	Wertung
+after a preamble	nach einer Präambel
+The best reading is first. A check value that holds for most packets is strong evidence; without one, treat the rest as a guess.	Die beste Deutung steht zuerst. Ein Prüfwert, der für die meisten Pakete stimmt, ist ein starkes Indiz; ohne ihn ist der Rest eine Vermutung.
+No packets.	Keine Pakete.
+Bytes from the start of the sync word. Grey: constant, blue: counter, green: check value, yellow: few values.	Bytes ab Beginn des Synchronworts. Grau: konstant, blau: Zähler, grün: Prüfwert, gelb: wenige Werte.
+Packet %d, byte %d	Paket %d, Byte %d
+Readings that could fit this packet	Deutungen, die zu diesem Paket passen könnten
+No fields.	Keine Felder.
+C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C konstant, N Zähler, K Prüfwert, E wenige Werte, V veränderlich; ein Buchstabe pro Byte ab Beginn des Synchronworts.
+Byte	Byte
+Kind	Art
+Entropy (bits per byte)	Entropie (Bit pro Byte)
+Distinct values	Verschiedene Werte
+adds %d each packet	addiert %d pro Paket
+follows byte %d (r = %.2f)	folgt Byte %d (r = %.2f)
+looks random: a check value, a key or encrypted data	wirkt zufällig: ein Prüfwert, ein Schlüssel oder verschlüsselte Daten
+Two packets are needed.	Es werden zwei Pakete benötigt.
+Packet A	Paket A
+Packet B	Paket B
+^ marks the bits that differ.	^ markiert die abweichenden Bits.
+No check value found. Either the packets have none, it covers something this search does not try (for example header bytes in another order), the bits still hold errors, or the payload is whitened or encrypted. Try another demodulator, the other polarity or a cleaner recording.	Kein Prüfwert gefunden. Entweder haben die Pakete keinen, er deckt etwas ab, das diese Suche nicht versucht (zum Beispiel Kopf-Bytes in anderer Reihenfolge), die Bits enthalten noch Fehler, oder die Nutzdaten sind verwürfelt oder verschlüsselt. Versuche einen anderen Demodulator, die andere Polarität oder eine sauberere Aufnahme.
+Covers bytes	Deckt Bytes
+Polynomial	Polynom
+Init	Startwert
+XOR out	XOR-Ausgang
+Reflect	Spiegelung
+Byte order	Bytereihenfolge
+input and output	Eingang und Ausgang
+input only	nur Eingang
+output only	nur Ausgang
+big endian	Big Endian
+little endian	Little Endian
+When all packets are the same length, the init value and the XOR-out value cannot be told apart: several pairs fit equally well and the first plain one is shown. A short check value (8 bit) with few packets can fit by chance; the more packets that agree, the better.	Wenn alle Pakete gleich lang sind, lassen sich Startwert und XOR-Ausgang nicht unterscheiden: mehrere Paare passen gleich gut, gezeigt wird das erste einfache. Ein kurzer Prüfwert (8 Bit) mit wenigen Paketen kann zufällig passen; je mehr Pakete übereinstimmen, desto besser.
+Protocol name	Protokollname
+Copy protocol (JSON)	Protokoll kopieren (JSON)
+Save protocol...	Protokoll speichern...
+Copy packets as bits	Pakete als Bits kopieren
+Save packets as bits...	Pakete als Bits speichern...
+Copy packets as hex	Pakete als Hex kopieren
+rtl_433 decoder line (a starting point, not a tested decoder):	rtl_433-Decoderzeile (ein Ausgangspunkt, kein getesteter Decoder):
+Copy the rtl_433 line	rtl_433-Zeile kopieren
+The bit file has one packet per line; tools such as Universal Radio Hacker can open protocol text like that.	Die Bitdatei hat ein Paket pro Zeile; Werkzeuge wie Universal Radio Hacker können solchen Protokolltext öffnen.
+Bytes	Bytes
+Fields	Felder
+Compare	Vergleichen
+Export	Exportieren
+Protocol lab	Protokoll-Labor
+Protocol lab...	Protokoll-Labor...
+Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	Den Aufbau eines unbekannten digitalen Signals ermitteln: Modulation, Baudrate, Synchronwort, CRC und Felder, mit Export

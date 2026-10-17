@@ -2162,3 +2162,86 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Почему?
 Identify selected	Определить выбранный
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Настроить радио на выбранный сигнал и сказать, что это (приёмник должен работать в режиме, частота дискретизации которого его покрывает)
+# Protocol lab window
+Paste at least two packets, one per line.	Вставьте не менее двух пакетов, по одному в строке.
+constant	постоянное
+counter	счётчик
+check value	контрольное значение
+few values	мало значений
+varying	изменяющееся
+Load a recording of the unknown signal, or paste packets you already have, and the lab works out how the signal is built: modulation, baud rate, preamble, CRC and fields. Nothing is decrypted.	Загрузите запись неизвестного сигнала или вставьте уже имеющиеся пакеты, и лаборатория выяснит устройство сигнала: модуляцию, скорость в бодах, преамбулу, CRC и поля. Ничего не расшифровывается.
+Recording	Запись
+Browse...	Обзор...
+Format	Формат
+Sample rate (Hz)	Частота дискретизации (Гц)
+Signal offset from the centre (Hz)	Смещение сигнала от центра (Гц)
+Signal bandwidth (Hz, 0 = all)	Полоса сигнала (Гц, 0 = вся)
+Read the offset and the width off the waterfall of the recording; the lab mixes the signal to the centre and cuts away the rest.	Считайте смещение и ширину с водопада записи; лаборатория перенесёт сигнал в центр и отрежет остальное.
+Analyse the recording	Анализировать запись
+Packets	Пакеты
+One packet per line, as hex bytes or as bits. The packets are taken as sliced from the air: the preamble and the sync word may still be in them.	Один пакет в строке, в виде шестнадцатеричных байтов или битов. Пакеты берутся такими, как вышли из эфира: преамбула и слово синхронизации могут ещё в них быть.
+Lines are bits (0 and 1)	Строки — это биты (0 и 1)
+Analyse the packets	Анализировать пакеты
+Demo signals	Демонстрационные сигналы
+Made-up signals with a known structure, to see what the lab finds. None of them is a real protocol.	Придуманные сигналы с известной структурой, чтобы увидеть, что найдёт лаборатория. Ни один из них не настоящий протокол.
+Make it and analyse	Создать и анализировать
+Demodulator	Демодулятор
+Baud (0 = find it)	Бод (0 = найти)
+Gap (ms)	Пауза (мс)
+A pause shorter than this does not end a packet. Raise it for signals with long runs of silence inside a packet.	Более короткая пауза не завершает пакет. Увеличьте её для сигналов с длинными паузами внутри пакета.
+Working...	Работаю...
+%zu bursts found.	Найдено всплесков сигнала: %zu.
+Nothing found.	Ничего не найдено.
+Line coding	Линейный код
+Sync word	Слово синхронизации
+Check value	Контрольное значение
+Whitening	Скремблирование
+Score	Оценка
+after a preamble	после преамбулы
+The best reading is first. A check value that holds for most packets is strong evidence; without one, treat the rest as a guess.	Лучшее прочтение стоит первым. Контрольное значение, верное для большинства пакетов, — сильное свидетельство; без него остальное — предположение.
+No packets.	Нет пакетов.
+Bytes from the start of the sync word. Grey: constant, blue: counter, green: check value, yellow: few values.	Байты от начала слова синхронизации. Серый: постоянное, синий: счётчик, зелёный: контрольное значение, жёлтый: мало значений.
+Packet %d, byte %d	Пакет %d, байт %d
+Readings that could fit this packet	Прочтения, которые могли бы подойти к этому пакету
+No fields.	Нет полей.
+C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C постоянное, N счётчик, K контрольное значение, E мало значений, V изменяющееся; по одной букве на байт от начала слова синхронизации.
+Byte	Байт
+Kind	Тип
+Entropy (bits per byte)	Энтропия (бит на байт)
+Distinct values	Различных значений
+adds %d each packet	прибавляет %d в каждом пакете
+follows byte %d (r = %.2f)	следует за байтом %d (r = %.2f)
+looks random: a check value, a key or encrypted data	выглядит случайным: контрольное значение, ключ или зашифрованные данные
+Two packets are needed.	Нужны два пакета.
+Packet A	Пакет A
+Packet B	Пакет B
+^ marks the bits that differ.	^ отмечает различающиеся биты.
+No check value found. Either the packets have none, it covers something this search does not try (for example header bytes in another order), the bits still hold errors, or the payload is whitened or encrypted. Try another demodulator, the other polarity or a cleaner recording.	Контрольное значение не найдено. Либо его нет в пакетах, либо оно охватывает то, что этот поиск не пробует (например, байты заголовка в другом порядке), либо в битах ещё есть ошибки, либо данные скремблированы или зашифрованы. Попробуйте другой демодулятор, другую полярность или более чистую запись.
+Covers bytes	Охватывает байты
+Polynomial	Полином
+Init	Начальное значение
+XOR out	Итоговый XOR
+Reflect	Отражение
+Byte order	Порядок байтов
+input and output	вход и выход
+input only	только вход
+output only	только выход
+big endian	прямой порядок (big endian)
+little endian	обратный порядок (little endian)
+When all packets are the same length, the init value and the XOR-out value cannot be told apart: several pairs fit equally well and the first plain one is shown. A short check value (8 bit) with few packets can fit by chance; the more packets that agree, the better.	Когда все пакеты одной длины, начальное значение и итоговый XOR не различить: несколько пар подходят одинаково, показана первая простая. Короткое контрольное значение (8 бит) при малом числе пакетов может совпасть случайно; чем больше пакетов совпадает, тем лучше.
+Protocol name	Название протокола
+Copy protocol (JSON)	Копировать протокол (JSON)
+Save protocol...	Сохранить протокол...
+Copy packets as bits	Копировать пакеты как биты
+Save packets as bits...	Сохранить пакеты как биты...
+Copy packets as hex	Копировать пакеты в hex
+rtl_433 decoder line (a starting point, not a tested decoder):	строка декодера rtl_433 (отправная точка, а не проверенный декодер):
+Copy the rtl_433 line	Копировать строку rtl_433
+The bit file has one packet per line; tools such as Universal Radio Hacker can open protocol text like that.	В файле битов один пакет в строке; такие программы, как Universal Radio Hacker, умеют открывать подобный текст протокола.
+Bytes	Байты
+Fields	Поля
+Compare	Сравнить
+Export	Экспорт
+Protocol lab	Лаборатория протоколов
+Protocol lab...	Лаборатория протоколов...
+Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	Выяснить устройство неизвестного цифрового сигнала: модуляцию, скорость, слово синхронизации, CRC и поля, с экспортом

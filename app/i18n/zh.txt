@@ -2179,3 +2179,86 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	为什么?
 Identify selected	识别所选
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	将无线电调谐到所选信号并说明它是什么(接收器须处于采样率能覆盖该信号的模式)
+# Protocol lab window
+Paste at least two packets, one per line.	请至少粘贴两个数据包，每行一个。
+constant	常量
+counter	计数器
+check value	校验值
+few values	取值很少
+varying	变化
+Load a recording of the unknown signal, or paste packets you already have, and the lab works out how the signal is built: modulation, baud rate, preamble, CRC and fields. Nothing is decrypted.	加载未知信号的录音，或粘贴已有的数据包，实验室会推断信号的构成：调制方式、波特率、前导码、CRC 和各字段。不会解密任何内容。
+Recording	录音
+Browse...	浏览...
+Format	格式
+Sample rate (Hz)	采样率 (Hz)
+Signal offset from the centre (Hz)	信号相对中心的偏移 (Hz)
+Signal bandwidth (Hz, 0 = all)	信号带宽 (Hz，0 = 全部)
+Read the offset and the width off the waterfall of the recording; the lab mixes the signal to the centre and cuts away the rest.	在录音的瀑布图上读出偏移和宽度；实验室会把信号混频到中心并滤除其余部分。
+Analyse the recording	分析录音
+Packets	数据包
+One packet per line, as hex bytes or as bits. The packets are taken as sliced from the air: the preamble and the sync word may still be in them.	每行一个数据包，用十六进制字节或比特表示。数据包按从空中切出的原样处理：其中可能仍含前导码和同步字。
+Lines are bits (0 and 1)	每行是比特（0 和 1）
+Analyse the packets	分析数据包
+Demo signals	演示信号
+Made-up signals with a known structure, to see what the lab finds. None of them is a real protocol.	结构已知的虚构信号，用来查看实验室能发现什么。它们都不是真实协议。
+Make it and analyse	生成并分析
+Demodulator	解调器
+Baud (0 = find it)	波特率（0 = 自动查找）
+Gap (ms)	间隔 (ms)
+A pause shorter than this does not end a packet. Raise it for signals with long runs of silence inside a packet.	短于此值的停顿不会结束一个数据包。若数据包内部有较长的静默，请调大。
+Working...	处理中...
+%zu bursts found.	找到 %zu 个突发。
+Nothing found.	未找到任何内容。
+Line coding	线路编码
+Sync word	同步字
+Check value	校验值
+Whitening	白化
+Score	评分
+after a preamble	在前导码之后
+The best reading is first. A check value that holds for most packets is strong evidence; without one, treat the rest as a guess.	最佳解读排在最前。若校验值对大多数数据包成立，就是有力的证据；否则其余只是猜测。
+No packets.	没有数据包。
+Bytes from the start of the sync word. Grey: constant, blue: counter, green: check value, yellow: few values.	从同步字开头起的字节。灰色：常量，蓝色：计数器，绿色：校验值，黄色：取值很少。
+Packet %d, byte %d	数据包 %d，字节 %d
+Readings that could fit this packet	可能适用于此数据包的解读
+No fields.	没有字段。
+C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C 常量，N 计数器，K 校验值，E 取值很少，V 变化；从同步字开头起每字节一个字母。
+Byte	字节
+Kind	类型
+Entropy (bits per byte)	熵（每字节比特数）
+Distinct values	不同取值数
+adds %d each packet	每个数据包加 %d
+follows byte %d (r = %.2f)	跟随字节 %d (r = %.2f)
+looks random: a check value, a key or encrypted data	看起来是随机的：校验值、密钥或加密数据
+Two packets are needed.	需要两个数据包。
+Packet A	数据包 A
+Packet B	数据包 B
+^ marks the bits that differ.	^ 标出不同的比特。
+No check value found. Either the packets have none, it covers something this search does not try (for example header bytes in another order), the bits still hold errors, or the payload is whitened or encrypted. Try another demodulator, the other polarity or a cleaner recording.	未找到校验值。可能是数据包没有校验值，或它覆盖了本搜索未尝试的范围（例如顺序不同的头部字节），或比特中仍有错误，或载荷经过白化或加密。请尝试其他解调器、另一种极性或更干净的录音。
+Covers bytes	覆盖字节
+Polynomial	多项式
+Init	初始值
+XOR out	输出异或
+Reflect	位反转
+Byte order	字节序
+input and output	输入和输出
+input only	仅输入
+output only	仅输出
+big endian	大端
+little endian	小端
+When all packets are the same length, the init value and the XOR-out value cannot be told apart: several pairs fit equally well and the first plain one is shown. A short check value (8 bit) with few packets can fit by chance; the more packets that agree, the better.	当所有数据包长度相同时，无法区分初始值和输出异或：多组取值同样吻合，这里显示第一组简单的。较短的校验值（8 位）在数据包很少时可能碰巧吻合；吻合的数据包越多越可靠。
+Protocol name	协议名称
+Copy protocol (JSON)	复制协议 (JSON)
+Save protocol...	保存协议...
+Copy packets as bits	以比特复制数据包
+Save packets as bits...	以比特保存数据包...
+Copy packets as hex	以十六进制复制数据包
+rtl_433 decoder line (a starting point, not a tested decoder):	rtl_433 解码器行（起点，而非经过测试的解码器）：
+Copy the rtl_433 line	复制 rtl_433 行
+The bit file has one packet per line; tools such as Universal Radio Hacker can open protocol text like that.	比特文件每行一个数据包；Universal Radio Hacker 等工具可以打开这样的协议文本。
+Bytes	字节
+Fields	字段
+Compare	比较
+Export	导出
+Protocol lab	协议实验室
+Protocol lab...	协议实验室...
+Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	推断未知数字信号的构成：调制、波特率、同步字、CRC 和字段，并可导出

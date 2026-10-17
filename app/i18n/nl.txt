@@ -2179,3 +2179,86 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	Waarom?
 Identify selected	Geselecteerde identificeren
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Stemt de radio af op het geselecteerde signaal en zegt wat het is (de ontvanger moet in een modus staan waarvan de samplefrequentie het dekt)
+# Protocol lab window
+Paste at least two packets, one per line.	Plak minstens twee pakketten, één per regel.
+constant	constant
+counter	teller
+check value	controlewaarde
+few values	weinig waarden
+varying	wisselend
+Load a recording of the unknown signal, or paste packets you already have, and the lab works out how the signal is built: modulation, baud rate, preamble, CRC and fields. Nothing is decrypted.	Laad een opname van het onbekende signaal, of plak pakketten die je al hebt, en het lab zoekt uit hoe het signaal is opgebouwd: modulatie, baudsnelheid, preambule, CRC en velden. Er wordt niets ontsleuteld.
+Recording	Opname
+Browse...	Bladeren...
+Format	Formaat
+Sample rate (Hz)	Samplefrequentie (Hz)
+Signal offset from the centre (Hz)	Afstand van het signaal tot het midden (Hz)
+Signal bandwidth (Hz, 0 = all)	Signaalbandbreedte (Hz, 0 = alles)
+Read the offset and the width off the waterfall of the recording; the lab mixes the signal to the centre and cuts away the rest.	Lees de afstand en de breedte af in de waterval van de opname; het lab mengt het signaal naar het midden en knipt de rest weg.
+Analyse the recording	Opname analyseren
+Packets	Pakketten
+One packet per line, as hex bytes or as bits. The packets are taken as sliced from the air: the preamble and the sync word may still be in them.	Eén pakket per regel, als hex-bytes of als bits. De pakketten worden genomen zoals ze uit de lucht kwamen: preambule en synchronisatiewoord kunnen er nog in zitten.
+Lines are bits (0 and 1)	Regels zijn bits (0 en 1)
+Analyse the packets	Pakketten analyseren
+Demo signals	Demosignalen
+Made-up signals with a known structure, to see what the lab finds. None of them is a real protocol.	Verzonnen signalen met een bekende opbouw, om te zien wat het lab vindt. Geen ervan is een echt protocol.
+Make it and analyse	Maken en analyseren
+Demodulator	Demodulator
+Baud (0 = find it)	Baud (0 = zoeken)
+Gap (ms)	Pauze (ms)
+A pause shorter than this does not end a packet. Raise it for signals with long runs of silence inside a packet.	Een kortere pauze beëindigt geen pakket. Verhoog dit voor signalen met lange stiltes binnen een pakket.
+Working...	Bezig...
+%zu bursts found.	%zu bursts gevonden.
+Nothing found.	Niets gevonden.
+Line coding	Lijncodering
+Sync word	Synchronisatiewoord
+Check value	Controlewaarde
+Whitening	Whitening
+Score	Score
+after a preamble	na een preambule
+The best reading is first. A check value that holds for most packets is strong evidence; without one, treat the rest as a guess.	De beste lezing staat bovenaan. Een controlewaarde die voor de meeste pakketten klopt is een sterke aanwijzing; zonder is de rest een gok.
+No packets.	Geen pakketten.
+Bytes from the start of the sync word. Grey: constant, blue: counter, green: check value, yellow: few values.	Bytes vanaf het begin van het synchronisatiewoord. Grijs: constant, blauw: teller, groen: controlewaarde, geel: weinig waarden.
+Packet %d, byte %d	Pakket %d, byte %d
+Readings that could fit this packet	Lezingen die bij dit pakket kunnen passen
+No fields.	Geen velden.
+C constant, N counter, K check value, E few values, V varying; one letter per byte from the start of the sync word.	C constant, N teller, K controlewaarde, E weinig waarden, V wisselend; één letter per byte vanaf het begin van het synchronisatiewoord.
+Byte	Byte
+Kind	Soort
+Entropy (bits per byte)	Entropie (bits per byte)
+Distinct values	Verschillende waarden
+adds %d each packet	telt %d op per pakket
+follows byte %d (r = %.2f)	volgt byte %d (r = %.2f)
+looks random: a check value, a key or encrypted data	lijkt willekeurig: een controlewaarde, een sleutel of versleutelde data
+Two packets are needed.	Er zijn twee pakketten nodig.
+Packet A	Pakket A
+Packet B	Pakket B
+^ marks the bits that differ.	^ markeert de bits die verschillen.
+No check value found. Either the packets have none, it covers something this search does not try (for example header bytes in another order), the bits still hold errors, or the payload is whitened or encrypted. Try another demodulator, the other polarity or a cleaner recording.	Geen controlewaarde gevonden. Of de pakketten hebben er geen, of hij dekt iets wat deze zoektocht niet probeert (bijvoorbeeld kopbytes in een andere volgorde), of de bits bevatten nog fouten, of de lading is gewhitened of versleuteld. Probeer een andere demodulator, de andere polariteit of een schonere opname.
+Covers bytes	Dekt bytes
+Polynomial	Polynoom
+Init	Beginwaarde
+XOR out	XOR-uit
+Reflect	Spiegeling
+Byte order	Bytevolgorde
+input and output	ingang en uitgang
+input only	alleen ingang
+output only	alleen uitgang
+big endian	big endian
+little endian	little endian
+When all packets are the same length, the init value and the XOR-out value cannot be told apart: several pairs fit equally well and the first plain one is shown. A short check value (8 bit) with few packets can fit by chance; the more packets that agree, the better.	Als alle pakketten even lang zijn, zijn beginwaarde en XOR-uit niet te onderscheiden: meerdere paren passen even goed en het eerste eenvoudige wordt getoond. Een korte controlewaarde (8 bit) met weinig pakketten kan toevallig kloppen; hoe meer pakketten kloppen, hoe beter.
+Protocol name	Protocolnaam
+Copy protocol (JSON)	Protocol kopiëren (JSON)
+Save protocol...	Protocol opslaan...
+Copy packets as bits	Pakketten als bits kopiëren
+Save packets as bits...	Pakketten als bits opslaan...
+Copy packets as hex	Pakketten als hex kopiëren
+rtl_433 decoder line (a starting point, not a tested decoder):	rtl_433-decoderregel (een startpunt, geen geteste decoder):
+Copy the rtl_433 line	rtl_433-regel kopiëren
+The bit file has one packet per line; tools such as Universal Radio Hacker can open protocol text like that.	Het bitbestand heeft één pakket per regel; programma's zoals Universal Radio Hacker kunnen zulke protocoltekst openen.
+Bytes	Bytes
+Fields	Velden
+Compare	Vergelijken
+Export	Exporteren
+Protocol lab	Protocollab
+Protocol lab...	Protocollab...
+Work out an unknown digital signal: modulation, baud rate, sync word, CRC and fields, with an export	De opbouw van een onbekend digitaal signaal uitzoeken: modulatie, baud, synchronisatiewoord, CRC en velden, met export
