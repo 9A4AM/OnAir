@@ -340,14 +340,14 @@ static void sdrppFamily(long iters) {
 
 // ------------------------------------------------------------------------------------------------------------------------------ network radios
 static std::string radioList() {
-    static const char* keys[] = {"pluto", "rtltcp", "soapyremote", "spyserver", "hl2", "redpitaya", "sdrpp", "nrspst", "bogus", ""};
+    static const char* keys[] = {"pluto", "rtltcp", "soapyremote", "spyserver", "hl2", "redpitaya", "sdrpp", "nrspst", "kiwisdr", "bogus", ""};
     static const char* hosts[] = {"192.168.2.1", " 192.168.2.1 ", "ip:pluto.local", "tcp://h", "ip:tcp://h", "tcp://ip:h", "ip:", "", "h,x", "a;b", "[::1]", "host name", "\tx\t", "ip: ip:h"};
     static const char* ports[] = {"0", "1234", "65535", "65536", "-1", "x", "", "99999999999", "4294967297", " 5", "+7", "12 34"};
     std::string s;
     const int n = (int)(r32() % 6);
     for (int i = 0; i < n; i++) {
         if (i) s += r32() % 20 ? ";" : ";;";
-        s += pick(keys, 9) + std::string(r32() % 25 ? "," : "") + pick(hosts, 14) + (r32() % 25 ? "," : "") + pick(ports, 12);
+        s += pick(keys, 10) + std::string(r32() % 25 ? "," : "") + pick(hosts, 14) + (r32() % 25 ? "," : "") + pick(ports, 12);
         if (r32() % 3 == 0) s += "," + (r32() % 2 ? std::string("driver=mirisdr,serial=1") : rtext("ab=,;x ", 8));
     }
     return s;

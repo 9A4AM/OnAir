@@ -18,6 +18,8 @@ pub const RED_PITAYA: u32 = 5;
 pub const SDRPP_SERVER: u32 = 6;
 /// SDRplay nRSP-ST (SDRconnect WebSocket API).
 pub const NRSP_ST: u32 = 7;
+/// KiwiSDR (HF receiver on the network, WebSocket on port 8073); its `remote` text is the password, if it has one.
+pub const KIWI_SDR: u32 = 8;
 
 /// The key of a type in the settings text (an unknown type is written as rtl_tcp).
 pub fn type_key(t: u32) -> &'static str {
@@ -29,6 +31,7 @@ pub fn type_key(t: u32) -> &'static str {
         RED_PITAYA => "redpitaya",
         SDRPP_SERVER => "sdrpp",
         NRSP_ST => "nrspst",
+        KIWI_SDR => "kiwisdr",
         _ => "rtltcp",
     }
 }
@@ -43,6 +46,7 @@ pub fn type_name(t: u32) -> &'static str {
         RED_PITAYA => "Red Pitaya",
         SDRPP_SERVER => "SDR++ server",
         NRSP_ST => "SDRplay nRSP-ST (SDRconnect)",
+        KIWI_SDR => "KiwiSDR",
         _ => "rtl_tcp",
     }
 }
@@ -56,6 +60,7 @@ pub fn default_port(t: u32) -> i32 {
         HERMES_LITE2 | RED_PITAYA => 1024,
         SDRPP_SERVER => 5259,
         NRSP_ST => 5454,
+        KIWI_SDR => 8073,
         _ => 1234,
     }
 }
@@ -134,6 +139,7 @@ fn type_from_key(t: &[u8]) -> Option<u32> {
         b"redpitaya" => RED_PITAYA,
         b"sdrpp" => SDRPP_SERVER,
         b"nrspst" => NRSP_ST,
+        b"kiwisdr" => KIWI_SDR,
         _ => return None,
     })
 }
@@ -160,7 +166,7 @@ pub fn parse(s: &[u8], radios: &mut [Radio], arena: &mut [u8]) -> usize {
         let hl = clean_host(raw_host, &mut arena[used..used + raw_host.len()]);
         let mut port = atoi(&item[c2 + 1..]);
         let mut remote = Span::default();
-        if let (Some(c3), SOAPY_REMOTE) = (c3, kind) {
+        if let (Some(c3), SOAPY_REMOTE | KIWI_SDR) = (c3, kind) {
             remote = Span { off: (base + c3 + 1) as u32, len: (item.len() - c3 - 1) as u32 };
         }
         if !(0..=65535).contains(&port) {
@@ -191,7 +197,7 @@ pub fn parse(s: &[u8], radios: &mut [Radio], arena: &mut [u8]) -> usize {
     n
 }
 
-/// Formats a list (`host` and `remote` are ranges of `pool`): items with an empty cleaned host are left out, a SoapyRemote's remote text loses its ';', a port of 0 or
+/// Formats a list (`host` and `remote` are ranges of `pool`): items with an empty cleaned host are left out, a SoapyRemote's remote text (a KiwiSDR's password) loses its ';', a port of 0 or
 /// less is written as 0. Writes up to `out.len()` bytes and returns the full length.
 pub fn format(radios: &[Radio], pool: &[u8], out: &mut [u8]) -> usize {
     let mut n = 0usize;
@@ -232,7 +238,7 @@ pub fn format(radios: &[Radio], pool: &[u8], out: &mut [u8]) -> usize {
             }
         }
         put(&digits[d..], &mut n);
-        if r.kind == SOAPY_REMOTE {
+        if r.kind == SOAPY_REMOTE || r.kind == KIWI_SDR {
             let rem = sl(r.remote);
             if rem.iter().any(|&c| c != b';') {
                 put(b",", &mut n);
@@ -245,4 +251,24 @@ pub fn format(radios: &[Radio], pool: &[u8], out: &mut [u8]) -> usize {
         }
     }
     n
+}
+
+#[cfg(test)]
+mod kiwi_tests {
+    use super::*;
+
+    #[test]
+    fn kiwisdr_keeps_its_password_and_the_tables_name_it() {
+        let text = b"kiwisdr,kiwi.example.org,8074,pass word;kiwisdr,h2,0;rtltcp,h3,1,notkept";
+        let mut radios = [Radio::default(); 4];
+        let mut arena = vec![0u8; text.len()];
+        let n = parse(text, &mut radios, &mut arena);
+        assert_eq!(n, 3);
+        assert_eq!(radios[0].kind, KIWI_SDR);
+        let rem = |r: &Radio| &text[r.remote.off as usize..(r.remote.off + r.remote.len) as usize];
+        assert_eq!(rem(&radios[0]), b"pass word");
+        assert_eq!(radios[1].remote.len, 0);
+        assert_eq!(radios[2].remote.len, 0);
+        assert_eq!((type_key(KIWI_SDR), type_name(KIWI_SDR), default_port(KIWI_SDR)), ("kiwisdr", "KiwiSDR", 8073));
+    }
 }
