@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <string>
@@ -186,6 +187,7 @@ void sMeter(const App& a) {
 }
 
 void extraChannelsUi(App& a);
+bool amBroadcast(const App& a);
 void audioFiltersUi(App& a);
 
 void controls(App& a) {
@@ -214,6 +216,16 @@ void controls(App& a) {
     for (int d = 0; d < dect2::GenDemodCount; d++) {
         if (d) ImGui::SameLine();
         if (ImGui::RadioButton(dect2::generalDemodName(d), S.demod == d)) setDemod(d);
+    }
+    if (amBroadcast(a)) {   // medium wave and the shortwave broadcast bands (kHz: centre of the band, or a common frequency)
+        static const struct { const char* name; double khz; } kPre[] = {
+            {"MW 531", 531}, {"MW 999", 999}, {"MW 1368", 1368}, {"MW 1566", 1566}, {"49 m", 6000}, {"41 m", 7300}, {"31 m", 9700}, {"25 m", 11800}, {"22 m", 13700}, {"19 m", 15400}, {"16 m", 17700}, {"13 m", 21600}, {"11 m", 25800}};
+        ImGui::TextDisabled("presets");
+        for (const auto& pr : kPre) {
+            ImGui::SameLine(0, 4 * gUi);
+            if (ImGui::SmallButton(pr.name)) { S.chanOff = 0; tuneFreq(a, pr.khz / 1e3); S.lastDial = a.freqMhz; save(); }
+        }
+        ImGui::TextDisabled("MW steps are 9 kHz (Europe, Asia) or 10 kHz (Americas); set the step above. Needs a radio that reaches medium wave (HF / direct sampling).");
     }
     // filter width presets
     ImGui::SameLine(0, 16 * gUi);
@@ -424,8 +436,16 @@ void extraChannelsUi(App& a) {
     }
 }
 
+bool amBroadcast(const App& a) { const dect2::SubMode* sm = curSub(a); return sm && !strcmp(sm->id, "am"); }
+
 void tick(App& a) {
     load();
+    {   // the AM broadcast entry opens in AM (once per visit; the demodulator can be changed afterwards)
+        static bool wasAm = false;
+        const bool am = amBroadcast(a);
+        if (am && !wasAm && S.demod != dect2::GenAm) { S.demod = dect2::GenAm; save(); }
+        wasAm = am;
+    }
     if (S.lastDial >= 0 && std::fabs(a.freqMhz - S.lastDial) > 1e-9) { S.chanOff = 0; save(); }   // the dial was moved elsewhere
     S.lastDial = a.freqMhz;
     auto& r = a.engine.general();
