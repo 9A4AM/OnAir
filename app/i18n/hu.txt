@@ -2045,3 +2045,7 @@ class 2	2. osztály
 class 3	3. osztály
 available	elérhető
 unknown	ismeretlen
+Save CADU	CADU mentése
+Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Minden Reed-Solomon által elfogadott keret 1024 bájtos CADU-ként a <adatmappa>/goes/frames.cadu fájlba (ugyanolyan fájl, mint amit a SatDump ír), a dekóderek összehasonlításához
+Open CADU	CADU megnyitása
+Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Egy .cadu fájl (1024 bájtos keretek, ebből a programból vagy a SatDumpból) dekódolása Reed-Solomonon, csomagokon és fájlokon át; a GOES HRIT-nek futnia kell

@@ -44,6 +44,11 @@ public:
     bool loadResults(const std::string& blob);           // false: not this build's format, nothing changes
     void setLogCallback(std::function<void(const std::string&)> cb);
     // every whole LRIT file (headers and data) as it is completed, from the analysis thread
+    // every good frame as a 1024 byte CADU (sync word, then the 1020 bytes derandomised, as SatDump writes them), from the analysis thread
+    void setCaduCallback(std::function<void(const uint8_t*)> cb);
+    // decode the frames of a .cadu file (1024 byte CADUs, derandomised or as sent) through Reed-Solomon and the upper layers; done on the
+    // analysis thread at its next feed(), so it needs the mode running
+    void importCadu(std::vector<uint8_t> data);
     void setFileCallback(std::function<void(const std::vector<uint8_t>&, int vcid, int apid)> cb);
 
 private:
