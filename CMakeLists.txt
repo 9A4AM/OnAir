@@ -165,6 +165,9 @@ onair_rust_use(dect2core)   # -DDECT2_RUST_<MODULE> for every active module (cor
 set_source_files_properties(core/src/tv/dvbsub.cpp core/src/tv/dvbsub_rs.cpp core/src/adsb/adsb_msg.cpp core/src/dmr/dmr_fec.cpp core/src/p25/p25_proto.cpp core/src/tetra/tetra_pdu.cpp core/src/tetra/tetra_pdu_rs.cpp core/src/packet/packet_aprs.cpp core/src/packet/packet_aprs_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-sin;-fno-builtin-cos")
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/geo/pass_sched.cpp core/src/geo/doppler_fit.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp)
 target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/geo/pass_sched.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/engine/sig_known.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
+target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/geo/doppler_fit.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp)
+target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp core/src/df/df.cpp core/src/df/source.cpp core/src/df/position.cpp core/src/radar/passive.cpp)
+target_sources(dect2core PRIVATE core/src/engine/modes.cpp core/src/engine/rate_choice.cpp core/src/geo/passes.cpp core/src/dsp/imgproc.cpp core/src/engine/sig_ident.cpp core/src/engine/sig_known.cpp core/src/geo/maidenhead.cpp core/src/geo/maplayers.cpp core/src/geo/tilecache.cpp core/src/mesh/mesh_report.cpp)
 target_sources(dect2core PRIVATE core/src/net/remote_api.cpp core/src/results/rx_json.cpp core/src/source/gain_opt.cpp core/src/mesh/mesh_report.cpp core/src/source/rotator.cpp)   # remote-control API server, telemetry JSON, gain optimiser, mesh report text, antenna rotator
 target_sources(dect2core PRIVATE core/src/tx/tx.cpp core/src/tx/tx_payload.cpp core/src/tx/tx_voice.cpp core/src/audio/audioin.cpp core/src/audio/videoin.cpp core/src/audio/neural_nr.cpp)   # transmit: modes, payloads, live voice/video, the TX session (tx.h)
 foreach(m ${DECT2_MODES})
@@ -401,7 +404,7 @@ if(DECT2_BUILD_APP)
   set(IMGUI_SOURCES
     third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp
     third_party/imgui/backends/imgui_impl_glfw.cpp)
-  set(APP_SOURCES app/main.cpp app/main_window.cpp app/main_start.cpp app/ui/draw_ui.cpp app/ui/touch.cpp app/ui/touch_sheets.cpp app/ui/touch_shell.cpp app/ui/main_tabs.cpp app/ui/light_theme.cpp app/state/app_state.cpp app/state/prefs.cpp app/ui/widgets.cpp app/ui/toolbar.cpp app/ui/toolbar_source.cpp app/ui/toolbar_rig.cpp app/ui/statusbar.cpp app/ui/mode_table.cpp app/ui/mode_select.cpp app/ui/ui_common.cpp app/panels/radio_ui.cpp app/gfx/plots.cpp app/panels/analysis_tabs.cpp app/panels/tv.cpp app/panels/subs_ui.cpp app/scan/scan_outputs.cpp app/panels/antenna.cpp app/fm/fm_ui.cpp app/ui/ui2.cpp app/ui/ui2_theme.cpp app/ui/ui2_widgets.cpp app/ui/ui2_shell.cpp app/ui/ui2_faces.cpp app/panels/modeui.cpp app/atsc3/atsc3_ui.cpp app/isdbt/isdbt_ui.cpp app/panels/update_ui.cpp app/scan/scan_db_ui.cpp app/panels/diag_ui.cpp app/ui/wizard.cpp app/gfx/plot.cpp app/gfx/gfx_png.cpp app/ui/popout.cpp app/panels/codec_help.cpp app/platform/discord_rpc.cpp app/panels/passes_ui.cpp app/df/df_ui.cpp app/panels/feeds_ui.cpp app/scan/scanner_ui.cpp app/memory/memory_options.cpp app/memory/memory_ui.cpp app/memory/memory_edit.cpp app/memory/memory_selftest.cpp app/map/map_ui.cpp app/map/map_send.cpp app/panels/rotator_ui.cpp app/panels/results_ui.cpp app/state/rx_prefs.cpp app/state/receivers.cpp app/panels/fixit.cpp app/panels/gallery_ui.cpp app/state/results_export.cpp app/state/results_export_ui.cpp app/panels/credits_ui.cpp app/bandplan/bandplan_ui.cpp app/sweep/sweep_ui.cpp app/freqdb/freqdb_ui.cpp app/ui/tour.cpp app/clips/clips_core.cpp app/clips/clips_gen.cpp app/clips/clips_ui.cpp app/transcribe/transcribe_app.cpp app/panels/automation_ui.cpp app/plugin/plugin_app.cpp app/panels/automation_sink.cpp app/panels/msgdb_ui.cpp app/platform/spawn.cpp app/panels/tvrec_ui.cpp)
+  set(APP_SOURCES app/main.cpp app/main_window.cpp app/main_start.cpp app/ui/draw_ui.cpp app/ui/touch.cpp app/ui/touch_sheets.cpp app/ui/touch_shell.cpp app/ui/main_tabs.cpp app/ui/light_theme.cpp app/state/app_state.cpp app/state/prefs.cpp app/ui/widgets.cpp app/ui/toolbar.cpp app/ui/toolbar_source.cpp app/ui/toolbar_rig.cpp app/ui/statusbar.cpp app/ui/mode_table.cpp app/ui/mode_select.cpp app/ui/ui_common.cpp app/panels/radio_ui.cpp app/gfx/plots.cpp app/panels/analysis_tabs.cpp app/panels/tv.cpp app/panels/subs_ui.cpp app/scan/scan_outputs.cpp app/panels/antenna.cpp app/fm/fm_ui.cpp app/ui/ui2.cpp app/ui/ui2_theme.cpp app/ui/ui2_widgets.cpp app/ui/ui2_shell.cpp app/ui/ui2_faces.cpp app/panels/modeui.cpp app/atsc3/atsc3_ui.cpp app/isdbt/isdbt_ui.cpp app/panels/update_ui.cpp app/scan/scan_db_ui.cpp app/panels/diag_ui.cpp app/ui/wizard.cpp app/gfx/plot.cpp app/gfx/gfx_png.cpp app/ui/popout.cpp app/panels/codec_help.cpp app/platform/discord_rpc.cpp app/panels/passes_ui.cpp app/df/df_ui.cpp app/panels/feeds_ui.cpp app/scan/scanner_ui.cpp app/memory/memory_options.cpp app/memory/memory_ui.cpp app/memory/memory_edit.cpp app/memory/memory_selftest.cpp app/map/map_ui.cpp app/map/map_send.cpp app/panels/rotator_ui.cpp app/panels/results_ui.cpp app/state/rx_prefs.cpp app/state/receivers.cpp app/panels/fixit.cpp app/panels/gallery_ui.cpp app/state/results_export.cpp app/state/results_export_ui.cpp app/panels/credits_ui.cpp app/bandplan/bandplan_ui.cpp app/sweep/sweep_ui.cpp app/freqdb/freqdb_ui.cpp app/ui/tour.cpp app/clips/clips_core.cpp app/clips/clips_gen.cpp app/clips/clips_ui.cpp app/transcribe/transcribe_app.cpp app/panels/automation_ui.cpp app/plugin/plugin_app.cpp app/panels/automation_sink.cpp app/panels/msgdb_ui.cpp app/platform/spawn.cpp app/panels/tvrec_ui.cpp app/radar/passive_ui.cpp)
   foreach(m ${DECT2_MODES})   # app/<mode>/*.cpp: the screens of a mode added after FM
     file(GLOB DECT2_MODE_UI CONFIGURE_DEPENDS app/${m}/*.cpp)
     list(APPEND APP_SOURCES ${DECT2_MODE_UI})
@@ -821,6 +824,9 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_df_position tests/df/test_df_position.cpp)
   target_link_libraries(test_df_position PRIVATE dect2core)
   add_test(NAME df_position COMMAND test_df_position)
+  add_executable(test_passive_radar tests/radar/test_passive_radar.cpp)
+  target_link_libraries(test_passive_radar PRIVATE dect2core)
+  add_test(NAME passive_radar COMMAND test_passive_radar)
   add_executable(test_nav tests/geo/test_nav.cpp)
   target_include_directories(test_nav PRIVATE core/include)
   add_test(NAME nav COMMAND test_nav)
@@ -925,6 +931,14 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_exact_resampler tests/dsp/test_exact_resampler.cpp)
   target_link_libraries(test_exact_resampler PRIVATE dect2core)
   add_test(NAME exact_resampler COMMAND test_exact_resampler)
+
+  add_executable(test_dji_resampler tests/dsp/test_dji_resampler.cpp)
+  target_link_libraries(test_dji_resampler PRIVATE dect2core)
+  add_test(NAME dji_resampler COMMAND test_dji_resampler)
+
+  add_executable(test_iono_dechirp tests/dsp/test_iono_dechirp.cpp)
+  target_link_libraries(test_iono_dechirp PRIVATE dect2core)
+  add_test(NAME iono_dechirp COMMAND test_iono_dechirp)
 
   add_executable(test_isdbt_rx tests/isdbt/test_isdbt_rx.cpp)
   target_link_libraries(test_isdbt_rx PRIVATE dect2core)

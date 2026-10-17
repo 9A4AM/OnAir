@@ -108,20 +108,33 @@ const VitTab& vt() { static const VitTab t; return t; }
 
 void Viterbi::reset() { for (auto& v : m_) v = 0; n_ = 0; sinceNorm_ = 0; out_.clear(); }
 
+// The 32 butterflies of a step as four groups of eight int16 lanes (compiler vector extension: NEON, SSE2 or AVX where there is one, plain
+// scalar code elsewhere); the integer arithmetic and the tie rule (the upper branch wins only when strictly greater) are those of the scalar loop.
+typedef int16_t V8 __attribute__((vector_size(16)));
+
 void Viterbi::push(int a, int b) {
     const VitTab& T = vt();
     const int16_t A = (int16_t)a, B = (int16_t)b;
+    alignas(16) int16_t ev[32], od[32], s0[32], s1[32];
+    for (int j = 0; j < 32; j += 8) {
+        V8 lo, hi, sa0, sb0, sa1, sb1, sa2, sb2, sa3, sb3;
+        std::memcpy(&lo, m_ + j, 16); std::memcpy(&hi, m_ + j + 32, 16);
+        std::memcpy(&sa0, T.sa[0] + j, 16); std::memcpy(&sb0, T.sb[0] + j, 16);
+        std::memcpy(&sa1, T.sa[1] + j, 16); std::memcpy(&sb1, T.sb[1] + j, 16);
+        std::memcpy(&sa2, T.sa[2] + j, 16); std::memcpy(&sb2, T.sb[2] + j, 16);
+        std::memcpy(&sa3, T.sa[3] + j, 16); std::memcpy(&sb3, T.sb[3] + j, 16);
+        const V8 c0 = lo + sa0 * A + sb0 * B, c1 = hi + sa1 * A + sb1 * B;
+        const V8 c2 = lo + sa2 * A + sb2 * B, c3 = hi + sa3 * A + sb3 * B;
+        const V8 m0 = c1 > c0, m1 = c3 > c2;                 // -1 where the upper branch wins
+        const V8 e = (m0 & c1) | (~m0 & c0), o = (m1 & c3) | (~m1 & c2);
+        std::memcpy(ev + j, &e, 16); std::memcpy(od + j, &o, 16);
+        std::memcpy(s0 + j, &m0, 16); std::memcpy(s1 + j, &m1, 16);
+    }
     alignas(16) int16_t nm[64];
-    uint64_t d = 0;
+    uint8_t* d = dec_[n_++];
     for (int j = 0; j < 32; j++) {
-        const int16_t lo = m_[j], hi = m_[j + 32];
-        const int16_t c0 = (int16_t)(lo + T.sa[0][j] * A + T.sb[0][j] * B), c1 = (int16_t)(hi + T.sa[1][j] * A + T.sb[1][j] * B);
-        const int16_t c2 = (int16_t)(lo + T.sa[2][j] * A + T.sb[2][j] * B), c3 = (int16_t)(hi + T.sa[3][j] * A + T.sb[3][j] * B);
-        const bool s0 = c1 > c0, s1 = c3 > c2;
-        nm[2 * j] = s0 ? c1 : c0;
-        nm[2 * j + 1] = s1 ? c3 : c2;
-        d |= (uint64_t)s0 << (2 * j);
-        d |= (uint64_t)s1 << (2 * j + 1);
+        nm[2 * j] = ev[j]; nm[2 * j + 1] = od[j];
+        d[2 * j] = (uint8_t)(s0[j] & 1); d[2 * j + 1] = (uint8_t)(s1[j] & 1);
     }
     if (++sinceNorm_ >= 32) {   // 32 steps grow a metric by at most 32 x 254
         sinceNorm_ = 0;
@@ -129,7 +142,6 @@ void Viterbi::push(int a, int b) {
         for (int s = 0; s < 64; s++) nm[s] = (int16_t)(nm[s] - base);
     }
     for (int s = 0; s < 64; s++) m_[s] = nm[s];
-    dec_[n_++] = d;
     if (n_ >= kTb + kEmit) traceback(kEmit, false);
 }
 
@@ -139,11 +151,11 @@ void Viterbi::traceback(int emit, bool all) {
     uint8_t bits[160];
     for (int t = n_ - 1; t >= 0; t--) {
         bits[t] = (uint8_t)(s & 1);
-        s = (s >> 1) | (int)((dec_[t] >> s & 1) << 5);
+        s = (s >> 1) | (int)(dec_[t][s] << 5);
     }
     const int k = all ? n_ : emit;
     out_.insert(out_.end(), bits, bits + k);
-    for (int i = k; i < n_; i++) dec_[i - k] = dec_[i];
+    for (int i = k; i < n_; i++) std::memcpy(dec_[i - k], dec_[i], 64);
     n_ -= k;
 }
 

@@ -2375,3 +2375,34 @@ trimmed	已缩短
 skipped: SDR reserved	已跳过:SDR 已预留
 skipped: too short	已跳过:太短
 skipped: higher priority	已跳过:有更高优先级
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	利用广播发射机的回波探测飞机，需要两个相干通道
+Baseline %.1f km, transmitter bearing %.0f degrees	基线 %.1f 公里，发射机方位 %.0f 度
+Cancellation taps	抵消抽头数
+Cannot open the recording.	无法打开录音文件。
+Clutter cancelled by %.0f dB, %d detections	杂波已抵消 %.0f dB，检测到 %d 个目标
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	复数 float32，通道0为参考，通道1为监视，逐采样同步。
+Doppler Hz	多普勒 Hz
+Doppler over time	多普勒随时间变化
+Echo level (dB)	回波电平 (dB)
+End of the recording.	录音结束。
+Enter the illuminator position.	请输入照射源（发射机）的位置。
+False alarm rate 1e-x	虚警率 1e-x
+Illuminator	照射源
+NLMS instead of ECA	用 NLMS 代替 ECA
+Noise-like waveform (DVB-T)	类噪声波形 (DVB-T)
+Passive radar	无源雷达
+Processing	处理
+Range km	距离 km
+Range rate (m/s)	距离变化率 (m/s)
+Range-Doppler map	距离-多普勒图
+Rate m/s	速率 m/s
+Saved illuminators	已保存的照射源
+Second target	第二个目标
+Target range (km)	目标距离 (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	比抽头数（以距离采样计）更近的目标会被抵消处理掩盖。
+The receiver position is the one set for ADS-B.	接收机位置使用为 ADS-B 设置的位置。
+Tracks	航迹
+Two recordings (reference, surveillance)	两个录音（参考、监视）
+Two-channel recording (cf32)	双通道录音 (cf32)
+Waiting for data.	正在等待数据。

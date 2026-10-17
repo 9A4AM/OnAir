@@ -2358,3 +2358,34 @@ trimmed	encurtada
 skipped: SDR reserved	ignorada: SDR reservado
 skipped: too short	ignorada: curta demais
 skipped: higher priority	ignorada: prioridade maior
+# passive radar
+Aircraft from the echoes of a broadcast transmitter, with two coherent channels	Aviões a partir dos ecos de um emissor de radiodifusão, com dois canais coerentes
+Baseline %.1f km, transmitter bearing %.0f degrees	Linha de base %.1f km, rumo do emissor %.0f graus
+Cancellation taps	Coeficientes de cancelamento
+Cannot open the recording.	Não é possível abrir a gravação.
+Clutter cancelled by %.0f dB, %d detections	Clutter cancelado em %.0f dB, %d deteções
+Complex float32, channel 0 reference and channel 1 surveillance, sample-synchronous.	Complexo float32, canal 0 referência e canal 1 vigilância, sincronizados por amostra.
+Doppler Hz	Doppler Hz
+Doppler over time	Doppler ao longo do tempo
+Echo level (dB)	Nível do eco (dB)
+End of the recording.	Fim da gravação.
+Enter the illuminator position.	Introduza a posição do iluminador.
+False alarm rate 1e-x	Taxa de falsos alarmes 1e-x
+Illuminator	Iluminador
+NLMS instead of ECA	NLMS em vez de ECA
+Noise-like waveform (DVB-T)	Forma de onda tipo ruído (DVB-T)
+Passive radar	Radar passivo
+Processing	Processamento
+Range km	Distância km
+Range rate (m/s)	Variação da distância (m/s)
+Range-Doppler map	Mapa distância-Doppler
+Rate m/s	Velocidade m/s
+Saved illuminators	Iluminadores guardados
+Second target	Segundo alvo
+Target range (km)	Distância do alvo (km)
+Targets closer than the tap count in range samples are hidden by the cancellation.	Os alvos mais próximos do que o número de coeficientes, em amostras de distância, ficam ocultos pelo cancelamento.
+The receiver position is the one set for ADS-B.	A posição do receptor é a definida para o ADS-B.
+Tracks	Pistas
+Two recordings (reference, surveillance)	Duas gravações (referência, vigilância)
+Two-channel recording (cf32)	Gravação de dois canais (cf32)
+Waiting for data.	A aguardar dados.

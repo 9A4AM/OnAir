@@ -1,4 +1,5 @@
 #include "dect2/iono/iono_dsp.h"
+#include "dect2/iono/iono_dechirp.h"
 #include "dect2/results/results_io.h"
 #include "dect2/dsp/fftutil.h"
 #include "dect2/iono/iono_scale.h"
@@ -222,7 +223,7 @@ struct Processor::Impl {
         size_t k = 0;
         if (g0 + m <= s.gEntry) return;
         if (g0 < s.gEntry && s.blk.empty() && s.dc == 0) k = (size_t)(s.gEntry - g0);
-        for (; k < m; k++) {
+        while (k < m) {
             const uint64_t gi = g0 + k;
             if (s.dc == 0) {
                 if (s.blk.empty()) {
@@ -233,9 +234,10 @@ struct Processor::Impl {
                 s.w = std::polar(1.0, -2 * M_PI * fb / fs);
                 s.z /= std::abs(s.z);
             }
-            s.acc += cd(x[k].real(), x[k].imag()) * s.z;
-            s.z *= s.w; s.w *= s.dw;
-            if (++s.dc == s.D) {
+            const size_t len = std::min(m - k, (size_t)(s.D - s.dc));   // up to the end of this decimated sample
+            iono::dechirpRun(x + k, len, s.z, s.w, s.dw, std::arg(s.dw), s.acc);
+            k += len; s.dc += (int)len;
+            if (s.dc == s.D) {
                 s.blk.push_back(cf32((float)(s.acc.real() / s.D), (float)(s.acc.imag() / s.D)));
                 s.acc = 0; s.dc = 0;
                 if ((int)s.blk.size() == kM) { block(s); s.blk.clear(); }

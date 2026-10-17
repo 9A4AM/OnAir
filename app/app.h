@@ -271,6 +271,7 @@ struct App {
     bool creditsOpen = false;   // the Credits window (Help menu, the "by: ..." button)
     bool galleryOpen = false;           // the picture gallery (View > Images)
     bool dfOpen = false;                // the direction finder window (View > Direction finder; app/df)
+    bool passiveRadarOpen = false;      // the passive radar window (View > Passive radar; app/radar)
     bool passesOpen = false;            // the satellite pass planner window (View > Passes)
     bool sweepOpen = false;             // the sweep scanner window (View > Sweep scanner)
     bool scannerOpen = false;           // the scanner window (View > Scanner, highly experimental)
@@ -685,6 +686,7 @@ std::string mapSendDiagnosticsBlock(const App& a);  // map.on-air.dev ingest sta
 void passesDevTle(const std::string& path);       // dev (--tle): TLEs from a file, as if pasted
 std::vector<std::pair<std::string, double>> passesGlobalstarDoppler(double unixSec, double freqHz);   // passes_ui.cpp: Globalstar satellites above the horizon and their Doppler (TLEs from the planner)
 struct DfMapLine { double lat = 0, lon = 0, bearing = 0, sigma = 5, conf = 0, freqHz = 0, ageSec = 0; };
+void passiveRadarWindow(App& a);                    // passive_ui.cpp: the passive radar window (a.passiveRadarOpen), every frame
 void dfWindow(App& a);                              // df_ui.cpp: the direction finder window (a.dfOpen), every frame
 bool dfMapLine(const App& a, DfMapLine& out);       // df_ui.cpp: the current bearing as a map line, only when the user chose to share it and it is fresh and confident
 void passesWindow(App& a);                         // passes_ui.cpp: the satellite pass planner window (a.passesOpen) and its tracking, every frame
