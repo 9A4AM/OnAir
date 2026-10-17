@@ -1400,3 +1400,6 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Hear this receiver	收听此接收器
+Close receiver	关闭接收器
+Radio: %s	电台：%s

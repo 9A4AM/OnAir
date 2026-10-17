@@ -1400,3 +1400,6 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Hear this receiver	Écouter ce récepteur
+Close receiver	Fermer le récepteur
+Radio: %s	Radio : %s

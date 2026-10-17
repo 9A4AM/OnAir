@@ -1382,3 +1382,6 @@ No identifier to look up	No identifier to look up
 Opens %s in your browser (nothing is loaded until you click)	Opens %s in your browser (nothing is loaded until you click)
 Pictures and details in a public database: opens your browser	Pictures and details in a public database: opens your browser
 Preferred site	Preferred site
+Hear this receiver	Ouvir este receptor
+Close receiver	Fechar receptor
+Radio: %s	Rádio: %s
