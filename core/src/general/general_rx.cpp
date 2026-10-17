@@ -280,7 +280,8 @@ struct GeneralReceiver::Impl {
     // per-transmission recording (wavMu held for the plain fields; the atomics are read from the sample loop)
     bool txOn = false; std::string txDir, txPrefix; double txMinSec = 0.5; int txN = 0, txKept = 0; bool txFile = false;
     std::atomic<double> txPreRoll{0}, txHang{0}, listenHz{0};
-    std::atomic<bool> txIq{false}, txCsv{false}, wantDry{false}, wantIq{false};
+    std::atomic<bool> txIq{false}, txCsv{false}, wantDry{false}, wantIq{false}, plainRec{false};
+    bool plainGate = false; double plainClosedFor = 0;   // single-file recording with the squelch on: written only while open, plus hang
     bool iqThis = false;                // this file has a channel-IQ sibling
     std::string iqPath, txIso;
     double txHz = 0, txOpenSec = 0, txClosedFor = 0;
@@ -452,7 +453,7 @@ struct GeneralReceiver::Impl {
         const float target = open ? 1.f : 0.f;
         ramp += std::clamp(target - ramp, -1.f / 240, 1.f / 240);   // 5 ms
         aud.push_back(std::clamp(dry * ramp, -1.f, 1.f));
-        if (wantDry.load(std::memory_order_relaxed)) dryAud.push_back(dry);
+        if (wantDry.load(std::memory_order_relaxed) || plainRec.load(std::memory_order_relaxed)) dryAud.push_back(dry);
     }
 
     void play() {
@@ -470,7 +471,23 @@ struct GeneralReceiver::Impl {
             if (txOn && open && !wav) beginTransmission();
             if (wav) {
                 if (txFile) writePcm(dryAud.data(), dryAud.size());
-                else if (haveAud) writePcm(aud.data(), aud.size());
+                else if (cfg.sqOn && !dryAud.empty()) {
+                    // squelch on: the single file keeps only what the squelch let through, plus the pre-roll and the hang
+                    const double dt = (double)dryAud.size() / kGeneralAudioRate;
+                    if (open) {
+                        if (!plainGate) {
+                            plainGate = true;
+                            std::vector<float> pre;
+                            preAud.copyTail((size_t)std::lround(std::clamp(txPreRoll.load(), 0.0, 3.0) * kGeneralAudioRate), pre);
+                            writePcm(pre.data(), pre.size());
+                        }
+                        plainClosedFor = 0;
+                    } else if (plainGate) {
+                        plainClosedFor += dt;
+                        if (plainClosedFor > std::clamp(txHang.load(), 0.0, 3.0)) plainGate = false;
+                    }
+                    if (plainGate) writePcm(dryAud.data(), dryAud.size());
+                } else if (haveAud) { plainGate = false; writePcm(aud.data(), aud.size()); }
                 if (txFile && iqThis) writeIq(iqBlk.data(), iqBlk.size());
             }
             if (txFile) {
@@ -480,7 +497,7 @@ struct GeneralReceiver::Impl {
                 const double hangFor = std::clamp(txHang.load(), 0.0, 3.0);
                 if (!open && txClosedFor >= hangFor) endTransmission();
             }
-            if (txOn) {
+            if (txOn || (wav && !txFile)) {
                 sizeRings();
                 if (!dryAud.empty()) preAud.push(dryAud.data(), dryAud.size());
                 if ((txIq.load() || iqThis) && !iqBlk.empty()) preIq.push(iqBlk.data(), iqBlk.size());
@@ -760,7 +777,9 @@ bool GeneralReceiver::startRecording(const std::string& path) {
         p_->openFile(path, asFlac, asMp3);
         p_->wavFrames = 0;
         p_->wavPath = path;
+        p_->plainGate = false; p_->plainClosedFor = 0;
         ok = p_->wav != nullptr;
+        p_->plainRec.store(ok);
         if (ok) { p_->wavErr.clear(); msg = "General receiver: recording audio to " + path; }
         else { p_->wavErr = std::string("cannot write ") + path + ": " + std::strerror(errno); msg = "General receiver: " + p_->wavErr; }
     }
@@ -773,6 +792,7 @@ void GeneralReceiver::stopRecording() {
     {
         std::lock_guard<std::mutex> lk(p_->wavMu);
         if (!p_->wav) return;
+        p_->plainRec.store(false);
         char b[64]; snprintf(b, sizeof b, " (%.1f s)", p_->wavFrames / kGeneralAudioRate);
         msg = "General receiver: recording stopped, " + p_->wavPath + b;
         if (p_->txFile) p_->endTransmission(); else p_->closeWav();
