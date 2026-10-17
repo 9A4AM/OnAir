@@ -266,6 +266,13 @@ public:
     // Every burst of transport stream packets is also handed to this function (the network tuner); it runs on the receiver thread, so it must be quick.
     // `secs` is how long the burst represents in the stream, so a client can hand it to a player at that rate instead of in one lump.
     void setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> f);
+    // The TV recorder's tap: every packet of the multiplex in stream order (EPG, recordings, timeshift). Separate from setPacketTap (the network tuner).
+    void setRecorderTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> f);
+    // true: the live multiplex no longer feeds the player (a recording or the timeshift buffer is playing through player().push() instead)
+    void setPlayerExternal(bool on) { playerExternal_ = on; }
+    bool playerExternal() const { return playerExternal_; }
+    // The subtitle decoders follow the stream that plays through player().push() while setPlayerExternal(true)
+    void feedPlaybackSubtitles(const uint8_t* pkts, size_t n) { for (size_t i = 0; i < n; i++) { ttx_.feedTs(pkts + i * 188); dvbsub_.feedTs(pkts + i * 188); } }
     void setOutputs(const OutputConfig& c) { outputs_.configure(c); }
     OutputConfig outputConfig() const { return outputs_.config(); }
     OutputStats outputStats() const { return outputs_.stats(); }
@@ -289,6 +296,8 @@ public:
     int dabSelected() const { return rxD_.selected(); }
     void dabSelectJournaline(int sub, int packetAddress, int ext) { rxD_.selectJournaline(sub, packetAddress, ext); }
     dect2::JournalineDecoder& dabJournaline() { return rxD_.journaline(); }
+    void dabSelectSpi(int sub, int packetAddress) { rxD_.selectSpi(sub, packetAddress); }   // the programme guide (SPI): the sub-channel to collect it from (-1 off, address -2: the PAD)
+    dect2::DabSpiDecoder& dabSpi() { return rxD_.spi(); }
     DabAudio& dabAudio() { return rxD_.audio(); }
     FmReceiver& fm() { return rxFm_; }   // volume, mute and de-emphasis of the FM receiver
     DvbsReceiver& dvbs() { return rxDvbs_; }   // DVB-S/S2: the receiver's own controls and results (the interface reads telemetry through latestRx)
@@ -466,6 +475,8 @@ private:
     TsSnapshot tsSnap_;
     OutputManager outputs_;
     std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> tap_;
+    std::function<void(const uint8_t*, size_t, const TsSnapshot*, double secs)> rtap_;
+    std::atomic<bool> playerExternal_{false};
     Player player_;
     IqCorrector iqFix_;
     // offset tuning (offset_tune.h): the radio is tuned offHz_ below the channel at offRate_, and offMix_ brings the channel back to the centre;

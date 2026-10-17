@@ -32,6 +32,7 @@ static void shift(std::vector<cf32>& x, double fs, double hz) {
 static Result run(const char* name, const std::vector<cf32>& x, double fs, double rfHz, const char* expect, int mod, double rate = 0,
                   int minSync = 0, Options o = Options()) {
     o.rfHz = rfHz;
+    o.usePriors = false;   // the signal alone (the frequency database knows 868.1 MHz as the LoRaWAN channel; the prior has its own test in test_specx_idfeatures)
     const auto t0 = std::chrono::steady_clock::now();
     Result r = identify(x.data(), x.size(), fs, o);
     const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();

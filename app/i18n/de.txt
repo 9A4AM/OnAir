@@ -600,10 +600,6 @@ Region %s, %s wide	Bereich %s, %s breit
 collecting samples	sammle Samples
 Working it out...	Wird ermittelt...
 Nothing to identify here.	Hier gibt es nichts zu identifizieren.
-Looks like: %s	Sieht aus wie: %s
-Looks like: %s (frame sync found %dx)	Sieht aus wie: %s (Rahmensync %dx gefunden)
-No mode fits well.	Keine Betriebsart passt gut.
-Open %s on this frequency	%s auf dieser Frequenz öffnen
 Switch to %s and tune to %s	Zu %s wechseln und auf %s abstimmen
 Candidates	Kandidaten
 (sync %dx)	(Sync %dx)
@@ -2052,6 +2048,37 @@ How to install	So installieren
 The services, signal information and data work without it.	Die Dienste, Signalinformationen und Daten funktionieren auch ohne.
 Interface and windows	Oberfläche und Fenster
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	Ansicht schaltet das Layout um (Sidebar, Scope, Tiles, Faceplate, Panel), die klassische Oberfläche, Textgröße und Palette; die Touch-Oberfläche steht unter Tools. Fenster wie Frequenzen, Sweep-Scanner, Peilung und Automatisierungen öffnen sich von hier.
+# programme guide (SPI)
+Guide	Guide
+until	bis
+Genre	Genre
+Saved	Gespeichert
+Now	Jetzt
+objects	Objekte
+services	Dienste
+programmes	Sendungen
+scheduled	geplant
+objects decoded	Objekte dekodiert
+Guide data	Guide-Daten
+last update	letzte Aktualisierung
+no update yet	noch keine Aktualisierung
+not collecting	sammelt nicht
+from the cache	aus dem Cache
+cached data, expires with time	Daten aus dem Cache, laufen mit der Zeit ab
+waiting for the carousel directory...	warte auf das Verzeichnis des Karussells...
+Export XMLTV	XMLTV exportieren
+Collect the guide in the background	Guide im Hintergrund sammeln
+Could not write the file.	Die Datei konnte nicht geschrieben werden.
+Listen to this station	Diesen Sender hören
+search title or description	Titel oder Beschreibung suchen
+Nothing matches.	Nichts gefunden.
+No description in the guide.	Keine Beschreibung im Guide.
+Click a programme in the grid or the search results to see its details.	Eine Sendung im Raster oder in den Suchergebnissen anklicken, um Details zu sehen.
+Start the receiver on a DAB channel to see the guide.	Empfänger auf einem DAB-Kanal starten, um den Guide zu sehen.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Dieses Ensemble kündigt keinen Programmführer an (SPI, User Application 0x007).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Der Guide dieses Ensembles wird im PAD eines Senders ausgestrahlt: diesen Sender abspielen, um ihn zu sammeln.
+The broadcaster sends service information (names, logos) but no programme schedule.	Der Sender überträgt Dienstinformationen (Namen, Logos), aber keinen Sendeplan.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Noch kein Sendeplan empfangen. Ein Guide-Karussell kann mehrere Minuten für einen Durchlauf brauchen.
 Air-interface encryption: %s	Verschlüsselung der Luftschnittstelle: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu Signalisierungs-PDUs mit gesetztem Verschlüsselungsmodus (nicht entschlüsselt); %llu Blöcke unlesbar (CRC fehlerhaft)
 none advertised	keine angekündigt
@@ -2111,6 +2138,59 @@ Peak dB above floor	Spitze dB über Grundrauschen
 Quietest slots	Ruhigste Bereiche
 From MHz	Von MHz
 Width kHz	Breite kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Wähle eine Sendung, um Details zu sehen.
+Cancel recording	Aufnahme abbrechen
+Record	Aufnehmen
+Stop series	Serie beenden
+Record series	Serie aufnehmen
+The broadcaster sends no series identifier for this programme.	Der Sender übermittelt keine Serienkennung für diese Sendung.
+No reminder	Keine Erinnerung
+Remind me	Erinnern
+Watch	Ansehen
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nicht genug Tuner: Das überschneidet sich mit einer Aufnahme auf einem anderen Multiplex und wird nicht aufgenommen.
+No description broadcast.	Keine Beschreibung gesendet.
+Waiting for the service list...	Warte auf die Senderliste ...
+Search title or description	Titel oder Beschreibung suchen
+This multiplex only	Nur dieses Multiplex
+time zone:	Zeitzone:
+this computer	dieser Computer
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Noch keine Programminformationen empfangen. Sender übertragen sie in den EIT-Tabellen, die sich alle paar Sekunden (jetzt/nächste) bis alle paar Minuten (Programmvorschau) wiederholen. Manche Multiplexe senden gar keine.
+Opening the recording...	Aufnahme wird geöffnet ...
+Pause (timeshift)	Pause (Timeshift)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Hält das Live-Fernsehen an und schreibt es weiter auf die Festplatte, damit du fortsetzen oder zurückspulen kannst.
+buffered	gepuffert
+Timeshift	Timeshift
+Play	Wiedergabe
+behind live	hinter Live
+Live	Live
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	Aufnahmen laufen nur, solange OnAir geöffnet und der Computer wach ist; ein schlafender Computer nimmt nichts auf. Verschlüsselte Dienste werden so aufgezeichnet, wie sie ankommen, und nicht entschlüsselt. Nur für den privaten Gebrauch.
+Scheduled	Geplant
+recording	nimmt auf
+conflict	Konflikt
+any multiplex	beliebiges Multiplex
+series	Serie
+waiting for the tuner	wartet auf den Tuner
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nichts geplant. Wähle eine Sendung im Programmführer oder füge unten eine manuelle Aufnahme hinzu.
+Manual recording	Manuelle Aufnahme
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Beginnt zu dieser Uhrzeit (heute, oder morgen, wenn sie vorbei ist), ohne Zugabe.
+Recorded	Aufgenommen
+No recordings yet.	Noch keine Aufnahmen.
+Export	Exportieren
+Delete this recording and its subtitle files?	Diese Aufnahme und ihre Untertiteldateien löschen?
+free	frei
+Recorder settings	Rekorder-Einstellungen
+Folder	Ordner
+Start earlier (s)	Früher beginnen (s)
+End later (s)	Später beenden (s)
+Tuners	Tuner
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Wie viele verschiedene Multiplexe gleichzeitig empfangen werden können. Dienste desselben Multiplex werden immer zusammen aufgenommen.
+Keep free (GB)	Frei lassen (GB)
+Stop after signal loss (s, 0 = never)	Nach Signalverlust stoppen (s, 0 = nie)
+Save teletext subtitles next to recordings (.srt, .vtt)	Teletext-Untertitel neben den Aufnahmen speichern (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Beim Start einer geplanten Aufnahme auf deren Kanal abstimmen
+Timeshift buffer on disk	Timeshift-Puffer auf der Festplatte
+minutes	Minuten
 Propagation	Ausbreitung
 open	offen
 marginal	grenzwertig
@@ -2171,3 +2251,78 @@ Try plugins again	Plugins erneut versuchen
 Turn it on	Einschalten
 blocks	Blöcke
 by	von
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d Bins im letzten Spektrum markiert
+Add spectrum at the target l	Spektrum bei Ziel-l hinzufügen
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   Standort %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Objekt                Az     El     Kulmination (UTC)  Aufgang  Untergang
+Calibration / RFI	Kalibrierung / RFI
+Capture cold	Kalt erfassen
+Capture hot	Heiß erfassen
+Cassiopeia A	Cassiopeia A
+Clear map	Karte leeren
+Compute	Berechnen
+Custom (RA / Dec)	Eigene (RA / Dec)
+Cygnus A	Cygnus A
+Elevation of the selected body over the UTC day (hours)	Höhe des gewählten Objekts über den UTC-Tag (Stunden)
+Fit lines	Linien anpassen
+Flag and interpolate RFI	RFI markieren und interpolieren
+Galactic position	Galaktische Position
+IAU standard solar motion (off: Schoenrich 2010)	IAU-Standardsonnenbewegung (aus: Schoenrich 2010)
+LSR axis	LSR-Achse
+Moon	Mond
+No processed spectrum yet.	Noch kein verarbeitetes Spektrum.
+Nothing logged yet.	Noch nichts protokolliert.
+Open session	Sitzung öffnen
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Antenne auf jede galaktische Länge l bei b = 0 richten (in Geschwindigkeit einstellen), integrieren, dann das Spektrum hier hinzufügen.
+Pointing	Ausrichtung
+R0 kpc	R0 kpc
+Sagittarius A*	Sagittarius A*
+Save CSV	CSV speichern
+Save FITS	FITS speichern
+Save SigMF text	SigMF-Text speichern
+Save session	Sitzung speichern
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	Standort ist der Empfängerstandort (Ansicht > Karte). Zeit ist die Computeruhr, UTC.
+Sun	Sonne
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	Die Rotationskurve braucht Spektren bei mehreren Längen zwischen 0 und 90 (oder 270 und 360).
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	Zum Ziel hin: Erdrotation %+.2f, Bahn %+.2f, Sonne %+.2f; gesamt %+.2f km/s (zur topozentrischen Geschwindigkeit addieren)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Geschwindigkeit
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   Empfänger %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y-Faktor: ein Spektrum an einer heißen Last (Absorber bei Raumtemperatur), dann an einer kalten Last (oder dem kalten Himmel) erfassen, mit deren Temperaturen.
+cold K	kalt K
+fit rms %.3f K	Anpassungs-RMS %.3f K
+hot K	heiß K
+no positions yet	noch keine Positionen
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	Spitze K, Mitte km/s (LSR), FWHM km/s, Fläche K km/s; ein Sigma
+sigma	Sigma
+sky + spill K	Himmel + Spill K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f Baud
+, %s wide	, %s breit
+, bursts (%.0f %% on)	, Bursts (%.0f %% aktiv)
+, every %.3g ms	, alle %.3g ms
+, useful symbol %.4g us	, Nutzsymbol %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	Eine Bewertung ist der Anteil der zutreffenden Hinweise; die Prozentwerte sind an OnAirs eigenen Testsignalen kalibriert, nicht an jedem echten Signal.
+Add to memory	Zu Memory hinzufügen
+Best guess	Beste Vermutung
+Copy as text	Als Text kopieren
+Could be %s (%.0f %%) or %s (%.0f %%).	Könnte %s (%.0f %%) oder %s (%.0f %%) sein.
+Could not open this mode.	Dieser Modus lässt sich nicht öffnen.
+Evidence for %s:	Belege für %s:
+I do not know what this is: nothing I know fits well enough to say.	Ich weiß nicht, was das ist: nichts, was ich kenne, passt gut genug.
+Identify all signals	Alle Signale identifizieren
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Identifizieren: Signal anklicken oder darüberziehen. Esc oder I beendet das Werkzeug.
+Measured	Gemessen
+Most likely %s, %.0f %% sure.	Am ehesten %s, zu %.0f %% sicher.
+No signal stands out of the noise here.	Hier hebt sich kein Signal vom Rauschen ab.
+Open in %s	In %s öffnen
+Opened %s	%s geöffnet
+Perhaps %s (%.0f %%).	Vielleicht %s (%.0f %%).
+Signals in the view	Signale im Ausschnitt
+The frequency list has here:	Die Frequenzliste kennt hier:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Was ist das? Signal anklicken oder darüberziehen: OnAir sagt, was es ist und wie sicher es dabei ist. Taste I. Umschalt+Ziehen geht auch ohne das Werkzeug.
+Why?	Warum?
+Identify selected	Ausgewählte identifizieren
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	Das Radio auf das ausgewählte Signal abstimmen und sagen, was es ist (der Empfänger muss in einem Modus laufen, dessen Abtastrate es abdeckt)

@@ -49,6 +49,10 @@ struct DabService {
     // FIG 0/13 user applications of the primary component (TS 101 756 table 16: 0x009 = DMB), -1 = none signalled
     int userApp = -1;
     // Journaline (user application 0x44a, TS 102 979): carried in the PAD of the audio component or in a packet mode component
+    // SPI, the electronic programme guide (user application 0x007, TS 102 371): the service component FIG 0/13 signals it for, and its profiles (1 basic, 2 advanced)
+    bool spi = false;
+    int spiScIdS = 0;
+    std::vector<int> spiProfiles;
     bool journaline = false;
     int jlScIdS = 0;      // the service component (index into comps) FIG 0/13 signals it for
     int jlExt = 0;        // its extended header length

@@ -37,6 +37,8 @@ public:
     DabPadDecoder& operator=(const DabPadDecoder&) = delete;
     void reset();
     void setDataGroupSink(std::function<void(const uint8_t*, size_t)> cb) { sink_ = std::move(cb); }   // survives reset()
+    // The MOT objects that are not pictures (SPI programme guide objects sent in the PAD), as they complete; survives reset()
+    void setMotSink(std::function<void(const MotObject&)> cb) { motSink_ = std::move(cb); }
     // One DAB+ access unit (raw AAC data block, CRC removed). Looks for the data stream element that carries the PAD.
     // The PAD bytes in the element are in the order of EN 300 401 figure 29 (as at the end of an MP2 frame): the two F-PAD bytes last, the X-PAD
     // before them with the byte sent first right next to the F-PAD.
@@ -59,6 +61,7 @@ public:
 
 private:
     std::function<void(const uint8_t*, size_t)> sink_;
+    std::function<void(const MotObject&)> motSink_;
     void subfield(int type, const uint8_t* d, int n);
     void dataGroup(const uint8_t* d, int n);
     void motObject(const MotObject& o);   // a MOT object is complete (the reassembly is MotDecoder, shared with DRM)

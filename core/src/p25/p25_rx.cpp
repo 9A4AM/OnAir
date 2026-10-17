@@ -538,6 +538,13 @@ struct P25Receiver::Impl {
 
     void onTsbk(const p25::Tsbk& t, int nac) {
         tel.control = true;
+        {
+            static std::atomic<uint64_t> seq{0};
+            P25TsbkRec r;
+            r.seq = ++seq; r.nac = nac; r.opcode = t.opcode; r.mfid = t.mfid; r.args = t.args; r.sigSec = sigSec();
+            tel.tsbks.push_back(r);
+            if (tel.tsbks.size() > kP25TsbkMax) tel.tsbks.erase(tel.tsbks.begin(), tel.tsbks.end() - (long)kP25TsbkMax);
+        }
         if (t.mfid != 0 && t.mfid != 1) return;   // a manufacturer's own
         const uint64_t a = t.args;
         char b[200];

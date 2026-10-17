@@ -371,6 +371,7 @@ struct App {
     int atvNbtv = 0;          // analog TV: 0 television, 1 NBTV / mechanical TV on AM, 2 the same on narrow FM (the audio is the picture)
     int atvNbtvLines = 32;    // NBTV / mechanical: lines (24 .. 240) and pictures a second; 32 at 12.5 is the NBTVA standard
     float atvNbtvFps = 12.5f;
+    bool identifyTool = false;   // the Identify tool (key I): a click or a drag on the spectrum identifies the signal instead of tuning (never saved)
     bool wideDecode = false;  // "Whole span": decode every carrier in the visible span, not only the tuned one (only for modes that opt in: modeSupportsWide)
     uint64_t wideFamMask = 0; // the switch per mode family (bit = family); wideDecode is the current mode's bit
     int wideSel = 0;          // the carrier the sound and the detail follow (0: the best locked one)
@@ -961,6 +962,10 @@ void specxDrawBookmarks(ImDrawList* dl, double loHz, double hiHz, float x0, floa
 // has at sampleCentreRadioHz (rfOfCentreHz: its RF, for the bands); identifyAt: the signal under a click on the spectrum (MHz)
 void identifyStart(App& a, double sampleCentreRadioHz, double offHz, double widthHz, double rfOfCentreHz);
 void identifyAt(App& a, double clickMhz);
+void identifyRegion(App& a, double loMhz, double hiMhz);   // a dragged region (MHz)
+void identifyAll(App& a);                                  // every signal in the capture, in a table
+void identifyTuned(App& a, double freqHz, double bwHz);    // tunes the radio to a signal found by the sweep and identifies it there
+bool identifyRegionMhz(double& loMhz, double& hiMhz);      // the region of the open card, to draw it on the plots
 void identifyWindow(App& a);   // every frame: the window while it is open
 // general_ui.cpp: the general receiver's channel marker on the spectrum (plotId 0) and the waterfall (1): a click puts the channel
 // there (inside the band, without retuning the radio), its filter edges can be dragged
@@ -1025,6 +1030,12 @@ void drawTtxGrid(ImDrawList* dl, ImFont* f, ImVec2 o, float cw, float ch, const 
 void teletextTab(App& a);
 const EpgEvent* epgCurrent(const App& a, int sid, const EpgEvent** next = nullptr);
 void guideTab(App& a);
+void tvGuideTab(App& a);            // tvrec_ui.cpp: the programme guide grid, search, record / remind
+void tvRecordingsTab(App& a);       // scheduled and finished recordings, recorder settings
+void tvPlaybackBar(App& a);         // timeshift pause / rewind / live and the controls of a recording being played
+void tvRecTick(App& a);             // every frame: the recorder's clock, the schedule, the guide cache
+void tvRecOverrideTs(App& a);       // while a recording plays, a.ts is that stream's service list
+void tvRecShutdown(App& a);         // before the engine goes: finishes the recordings that run
 void playerTab(App& a);
 void rightPanel(App& a);
 void tvTab(App& a);
@@ -1066,6 +1077,11 @@ void dabTuneMhz(App& a, double mhz);   // dab_ui.cpp: tunes the running receiver
 bool dabLogoImage(App& a, const DabEnsemble& ens, uint32_t sid, float h);   // dab_ui.cpp: the station logo (SPI / slide show) of a service
 void dabSlidePanel(App& a, const DabEnsemble& ens, float maxH);   // dab_ui.cpp: the latest slide show picture with its name
 void dabAnalyzerTab(App& a);       // dab_analyzer_ui.cpp: the ensemble as a tree with details and the MSC allocation
+void dabGuideTab(App& a);          // dab_guide_ui.cpp: the programme guide (SPI, ETSI TS 102 818 / 371)
+bool dabHasSpi(const DabEnsemble& ens);
+void dabSpiTick(App& a);           // dab_guide_ui.cpp: every frame in DAB mode: starts the collection, the cache, the logos
+std::string dabSpiNowText(App& a, uint32_t sid);   // "title (until 21:00)   Next: title (21:00)" from the guide, "" when unknown
+void dabLogoSet(uint16_t eid, uint32_t sid, int w, int h, const uint32_t* rgba);   // dab_ui.cpp: gives the station logo cache a picture
 void dabJournalineTab(App& a);     // dab_ui.cpp: Journaline pages (ETSI TS 102 979)
 bool dabHasJournaline(const DabEnsemble& ens);
 void dabFicTab(App& a);            // dab_fic_ui.cpp: the FIC, FIG by FIG, as a tree

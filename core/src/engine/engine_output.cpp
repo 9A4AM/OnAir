@@ -64,12 +64,14 @@ void Engine::onPlp(const PlpResult& r) {
     tsSnap_ = demux_.snapshot();
     outputs_.packets(frameBuf_.data(), frameBuf_.size() / 188, &tsSnap_);
     if (tap_) tap_(frameBuf_.data(), frameBuf_.size() / 188, &tsSnap_, r.frameSec);
-    if (player_.selected() >= 0) { const auto tp = std::chrono::steady_clock::now(); player_.push(frameBuf_.data(), frameBuf_.size() / 188, tsSnap_); gPlpPushUs += usSince(tp); }
+    if (rtap_) rtap_(frameBuf_.data(), frameBuf_.size() / 188, &tsSnap_, r.frameSec);
+    if (player_.selected() >= 0 && !playerExternal_) { const auto tp = std::chrono::steady_clock::now(); player_.push(frameBuf_.data(), frameBuf_.size() / 188, tsSnap_); gPlpPushUs += usSince(tp); }
     frameBuf_.clear();
     outputs_.burstDone(r.frameSec);
 }
 
 void Engine::setPacketTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double)> f) { std::lock_guard<std::mutex> lk(tsMu_); tap_ = std::move(f); }
+void Engine::setRecorderTap(std::function<void(const uint8_t*, size_t, const TsSnapshot*, double)> f) { std::lock_guard<std::mutex> lk(tsMu_); rtap_ = std::move(f); }
 TsSnapshot Engine::tsSnapshot() { std::lock_guard<std::mutex> lk(tsMu_); return tsSnap_; }
 std::map<int, std::vector<EpgEvent>> Engine::epg() {
     if (mtvActive_.load()) { if (auto m = mtvGet()) return m->epg(m->selected()); }

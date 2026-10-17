@@ -55,6 +55,14 @@ struct P25Talkgroup {
     bool encrypted = false, emergency = false, active = false;
 };
 
+// A control channel message that decoded (the trunking follower's input). seq is process-wide and grows with every TSBK of every receiver
+struct P25TsbkRec {
+    uint64_t seq = 0;
+    int nac = -1, opcode = 0, mfid = 0;
+    uint64_t args = 0;
+    double sigSec = 0;           // the receiver's signal time
+};
+
 struct P25Telemetry {
     uint64_t seq = 0;
     int state = 0;               // 0 searching, 1 frames seen recently, 2 a call on air
@@ -83,10 +91,12 @@ struct P25Telemetry {
     P25Call now;
     std::vector<P25Call> log;    // newest first, at most kP25LogMax
     std::vector<std::string> events;   // newest first: decoded control messages as text
+    std::vector<P25TsbkRec> tsbks;     // the last decoded TSBKs, oldest first, at most kP25TsbkMax
 };
 
 constexpr size_t kP25LogMax = 300;
 constexpr size_t kP25TgMax = 200;
+constexpr size_t kP25TsbkMax = 96;
 
 inline std::string p25Id(int v) { return v < 0 ? std::string("?") : std::to_string(v); }
 

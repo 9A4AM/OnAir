@@ -588,10 +588,6 @@ Region %s, %s wide	Régió %s, %s széles
 collecting samples	minták gyűjtése
 Working it out...	Kiszámítás...
 Nothing to identify here.	Itt nincs mit azonosítani.
-Looks like: %s	Úgy tűnik: %s
-Looks like: %s (frame sync found %dx)	Úgy tűnik: %s (keretszinkron %dx találva)
-No mode fits well.	Egyik üzemmód sem illik jól.
-Open %s on this frequency	%s megnyitása ezen a frekvencián
 Switch to %s and tune to %s	Váltás erre: %s, és hangolás: %s
 Candidates	Jelöltek
 (sync %dx)	(szinkron %dx)
@@ -2038,6 +2034,37 @@ How to install	Telepítés menete
 The services, signal information and data work without it.	A szolgáltatások, a jelinformációk és az adatok enélkül is működnek.
 Interface and windows	Felület és ablakok
 View switches the layout (Sidebar, Scope, Tiles, Faceplate, Panel), the classic interface, text size and palette; Touch interface is under Tools. Windows such as Frequencies, Sweep scanner, Direction finder and Automations open from here.	A Nézet menüben váltható az elrendezés (Sidebar, Scope, Tiles, Faceplate, Panel), a klasszikus felület, a szövegméret és a paletta; az érintőfelület az Eszközök alatt van. Az olyan ablakok, mint a Frekvenciák, a Végigsöprő szkenner, az Iránykereső és az Automatizálások innen nyílnak.
+# programme guide (SPI)
+Guide	Műsorfüzet
+until	eddig:
+Genre	Műfaj
+Saved	Mentve
+Now	Most
+objects	objektum
+services	szolgáltatás
+programmes	műsor
+scheduled	ütemezett
+objects decoded	dekódolt objektum
+Guide data	Műsorfüzet-adatok
+last update	utolsó frissítés
+no update yet	még nincs frissítés
+not collecting	nem gyűjt
+from the cache	a gyorsítótárból
+cached data, expires with time	gyorsítótárazott adat, idővel lejár
+waiting for the carousel directory...	várakozás a körhinta könyvtárára...
+Export XMLTV	XMLTV exportálása
+Collect the guide in the background	Műsorfüzet gyűjtése a háttérben
+Could not write the file.	A fájl nem írható.
+Listen to this station	Az adó meghallgatása
+search title or description	keresés cím vagy leírás alapján
+Nothing matches.	Nincs találat.
+No description in the guide.	Nincs leírás a műsorfüzetben.
+Click a programme in the grid or the search results to see its details.	Kattintson egy műsorra a rácson vagy a találatok között a részletekhez.
+Start the receiver on a DAB channel to see the guide.	Indítsa el a vevőt egy DAB csatornán a műsorfüzet megtekintéséhez.
+This ensemble does not announce a programme guide (SPI, user application 0x007).	Ez az egyveleg nem jelez műsorfüzetet (SPI, 0x007 felhasználói alkalmazás).
+The guide of this ensemble is sent in the PAD of a station: play that station to collect it.	Ennek az egyvelegnek a műsorfüzete egy adó PAD-jében megy: játssza le azt az adót a gyűjtéshez.
+The broadcaster sends service information (names, logos) but no programme schedule.	A műsorszóró szolgáltatásinformációt (nevek, logók) küld, de műsorrendet nem.
+No programme schedule received yet. A guide carousel can take several minutes to come round.	Még nem érkezett műsorrend. Egy műsorfüzet-körhinta több percig is eltarthat egy körrel.
 Air-interface encryption: %s	Légi interfész titkosítása: %s
 %llu signalling PDUs with an encryption mode set (not decrypted); %llu blocks unreadable (CRC failed)	%llu jelzés-PDU titkosítási móddal (nincs visszafejtve); %llu olvashatatlan blokk (hibás CRC)
 none advertised	nincs hirdetve
@@ -2097,6 +2124,59 @@ Peak dB above floor	Csúcs dB a zajszint felett
 Quietest slots	Legcsendesebb sávok
 From MHz	Innen (MHz)
 Width kHz	Szélesség kHz
+# TV recorder: guide, recordings, timeshift
+Pick a programme to see its details.	Válassz egy műsort a részletek megtekintéséhez.
+Cancel recording	Felvétel törlése
+Record	Felvétel
+Stop series	Sorozat leállítása
+Record series	Sorozat felvétele
+The broadcaster sends no series identifier for this programme.	A műsorszolgáltató nem küld sorozatazonosítót ehhez a műsorhoz.
+No reminder	Nincs emlékeztető
+Remind me	Emlékeztess
+Watch	Megnézem
+Not enough tuners: this overlaps a recording on another multiplex and will not be recorded.	Nincs elég tuner: ez egy másik multiplexen zajló felvétellel ütközik, ezért nem lesz rögzítve.
+No description broadcast.	Nincs leírás a adásban.
+Waiting for the service list...	Várakozás a szolgáltatáslistára...
+Search title or description	Cím vagy leírás keresése
+This multiplex only	Csak ez a multiplex
+time zone:	időzóna:
+this computer	ez a számítógép
+No programme information received yet. Broadcasters send it in the EIT tables, which repeat every few seconds (now/next) to a few minutes (schedule). Some multiplexes send none at all.	Még nem érkezett műsorinformáció. A műsorszolgáltatók az EIT táblákban küldik, amelyek néhány másodpercenként (most/következő) vagy néhány percenként (műsorrend) ismétlődnek. Egyes multiplexek egyáltalán nem küldenek.
+Opening the recording...	Felvétel megnyitása...
+Pause (timeshift)	Szünet (időeltolás)
+Freezes live TV and keeps recording it to disk, so you can resume or rewind.	Megállítja az élő adást, és tovább rögzíti a lemezre, így folytathatod vagy visszatekerhetsz.
+buffered	pufferelve
+Timeshift	Időeltolás
+Play	Lejátszás
+behind live	az élő adás mögött
+Live	Élő
+Recordings run only while OnAir is open and the computer is awake; a sleeping computer records nothing. Scrambled services are recorded as they arrive and are not decoded. For personal use only.	A felvételek csak akkor futnak, ha az OnAir meg van nyitva és a számítógép ébren van; alvó gép nem rögzít semmit. A kódolt szolgáltatások úgy kerülnek rögzítésre, ahogy megérkeznek, nem lesznek dekódolva. Kizárólag személyes használatra.
+Scheduled	Ütemezett
+recording	rögzít
+conflict	ütközés
+any multiplex	bármely multiplex
+series	sorozat
+waiting for the tuner	várakozik a tunerre
+Nothing scheduled. Pick a programme in the Guide, or add a manual recording below.	Nincs ütemezve semmi. Válassz műsort az útmutatóban, vagy adj hozzá kézi felvételt lent.
+Manual recording	Kézi felvétel
+Starts at this clock time (today, or tomorrow when it has passed), no padding.	Ekkor kezdődik (ma, vagy holnap, ha már elmúlt), ráhagyás nélkül.
+Recorded	Felvett
+No recordings yet.	Még nincs felvétel.
+Export	Exportálás
+Delete this recording and its subtitle files?	Törlöd ezt a felvételt és a feliratfájljait?
+free	szabad
+Recorder settings	Felvevő beállításai
+Folder	Mappa
+Start earlier (s)	Korábbi kezdés (mp)
+End later (s)	Későbbi befejezés (mp)
+Tuners	Tunerek
+How many different multiplexes can be received at once. Services of the same multiplex always record together.	Hány különböző multiplex fogható egyszerre. Ugyanazon multiplex szolgáltatásai mindig együtt rögzíthetők.
+Keep free (GB)	Szabadon hagyandó (GB)
+Stop after signal loss (s, 0 = never)	Leállítás jelvesztés után (mp, 0 = soha)
+Save teletext subtitles next to recordings (.srt, .vtt)	Teletext feliratok mentése a felvételek mellé (.srt, .vtt)
+Tune to a scheduled recording's channel when it starts	Ütemezett felvétel indulásakor az adott csatornára hangolás
+Timeshift buffer on disk	Időeltolás puffer a lemezen
+minutes	perc
 Propagation	Terjedés
 open	nyitott
 marginal	határeset
@@ -2157,3 +2237,78 @@ Try plugins again	Bővítmények újrapróbálása
 Turn it on	Bekapcsolás
 blocks	blokk
 by	készítő:
+# radio astronomy toolkit
+%d bins flagged in the last spectrum	%d csatorna megjelölve az utolsó spektrumban
+Add spectrum at the target l	Spektrum hozzáadása a cél l értékén
+Az %.1f  El %.1f   site %.3f, %.3f	Az %.1f  El %.1f   hely %.3f, %.3f
+Body                 Az     El     transit (UTC)  rise    set	Égitest               Az     El     átmenet (UTC)  kelte   nyugta
+Calibration / RFI	Kalibrálás / RFI
+Capture cold	Hideg rögzítése
+Capture hot	Meleg rögzítése
+Cassiopeia A	Cassiopeia A
+Clear map	Térkép törlése
+Compute	Számítás
+Custom (RA / Dec)	Egyéni (RA / Dec)
+Cygnus A	Cygnus A
+Elevation of the selected body over the UTC day (hours)	A kiválasztott égitest magassága az UTC nap során (óra)
+Fit lines	Vonalak illesztése
+Flag and interpolate RFI	RFI jelölése és interpolálása
+Galactic position	Galaktikus pozíció
+IAU standard solar motion (off: Schoenrich 2010)	IAU szabványos naptérmozgás (ki: Schoenrich 2010)
+LSR axis	LSR tengely
+Moon	Hold
+No processed spectrum yet.	Még nincs feldolgozott spektrum.
+Nothing logged yet.	Még nincs naplóbejegyzés.
+Open session	Munkamenet megnyitása
+Point the antenna at each galactic longitude l along b = 0 (set it in Velocity), integrate, then add the spectrum here.	Irányítsa az antennát minden l galaktikus hosszúságra b = 0 mellett (a Sebesség fülön állítható), integráljon, majd adja hozzá a spektrumot.
+Pointing	Irányítás
+R0 kpc	R0 kpc
+Sagittarius A*	Sagittarius A*
+Save CSV	CSV mentése
+Save FITS	FITS mentése
+Save SigMF text	SigMF szöveg mentése
+Save session	Munkamenet mentése
+Site is the receiver location (View > Map). Time is the computer clock, UTC.	A hely a vevő helye (Nézet > Térkép). Az idő a számítógép órája, UTC.
+Sun	Nap
+The rotation curve needs spectra at several longitudes between 0 and 90 (or 270 and 360).	A forgási görbéhez több hosszúságon kell spektrum 0 és 90 (vagy 270 és 360) között.
+Towards the target: Earth rotation %+.2f, orbit %+.2f, Sun %+.2f; total %+.2f km/s (add to the topocentric velocity)	A cél felé: Föld forgása %+.2f, pálya %+.2f, Nap %+.2f; összesen %+.2f km/s (a topocentrikus sebességhez adandó)
+Tsys K	Tsys K
+V0 km/s	V0 km/s
+Velocity	Sebesség
+Y = %.3f   receiver %.1f K   Tsys %.1f K	Y = %.3f   vevő %.1f K   Tsys %.1f K
+Y-factor: capture a spectrum looking at a hot load (room-temperature absorber), then at a cold load (or the cold sky), with their temperatures.	Y-tényező: rögzítsen egy spektrumot meleg terhelésen (szobahőmérsékletű elnyelő), majd hideg terhelésen (vagy a hideg égen), a hőmérsékleteikkel.
+cold K	hideg K
+fit rms %.3f K	illesztés rms %.3f K
+hot K	meleg K
+no positions yet	még nincs pozíció
+peak K, centre km/s (LSR), FWHM km/s, area K km/s; one sigma	csúcs K, közép km/s (LSR), FWHM km/s, terület K km/s; egy szigma
+sigma	szigma
+sky + spill K	ég + túlcsordulás K
+# identify a signal (specx_ident.cpp): the card, the confidence wording, the batch table
+, %.0f baud	, %.0f baud
+, %s wide	, %s széles
+, bursts (%.0f %% on)	, impulzusok (%.0f %% aktív)
+, every %.3g ms	, %.3g ms-onként
+, useful symbol %.4g us	, hasznos szimbólum %.4g µs
+A score is the share of the evidence that holds; the percentages are calibrated on OnAir's own test signals, not on every real signal.	A pontszám a teljesülő bizonyítékok aránya; a százalékokat az OnAir saját tesztjelein kalibráltuk, nem minden valódi jelen.
+Add to memory	Hozzáadás a Memoryhoz
+Best guess	Legjobb tipp
+Copy as text	Másolás szövegként
+Could be %s (%.0f %%) or %s (%.0f %%).	Lehet %s (%.0f %%) vagy %s (%.0f %%).
+Could not open this mode.	Ezt a módot nem sikerült megnyitni.
+Evidence for %s:	%s mellett szóló bizonyítékok:
+I do not know what this is: nothing I know fits well enough to say.	Nem tudom, mi ez: semmi, amit ismerek, nem illik elég jól.
+Identify all signals	Minden jel azonosítása
+Identify: click a signal or drag across it. Esc or I leaves the tool.	Azonosítás: kattints egy jelre, vagy húzd át rajta. Esc vagy I kilép az eszközből.
+Measured	Mért
+Most likely %s, %.0f %% sure.	Valószínűleg %s, %.0f %% biztos.
+No signal stands out of the noise here.	Itt egy jel sem emelkedik ki a zajból.
+Open in %s	Megnyitás: %s
+Opened %s	%s megnyitva
+Perhaps %s (%.0f %%).	Talán %s (%.0f %%).
+Signals in the view	Jelek a nézetben
+The frequency list has here:	A frekvencialista itt ezt tartalmazza:
+What is this? Click a signal, or drag across it, and OnAir says what it is and how sure it is. Key I. Shift+drag does it without the tool.	Mi ez? Kattints egy jelre, vagy húzd át rajta, és az OnAir megmondja, mi az és mennyire biztos. I billentyű. A Shift+húzás az eszköz nélkül is működik.
+Why?	Miért?
+Identify selected	A kijelölt azonosítása
+Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	A rádiót a kijelölt jelre hangolja, és megmondja, mi az (a vevőnek olyan módban kell lennie, amelynek mintavételi sebessége lefedi)
