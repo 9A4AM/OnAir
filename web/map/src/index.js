@@ -1,3 +1,4 @@
+import { parseIngestBody } from "./lenient-json.js";
 import { TrailStore, SqlBackend } from "./trail-store.js";
 import { parseTrailRequest } from "./trail.js";
 
@@ -322,7 +323,7 @@ export class MapHub {
     const ip = req.headers.get("CF-Connecting-IP") || "0";
     let body;
     try {
-      body = await req.json();
+      body = parseIngestBody(await req.text());
     } catch {
       return json({ error: "bad json" }, 400);
     }
