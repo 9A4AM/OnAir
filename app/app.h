@@ -553,7 +553,7 @@ struct App {
     double updLast = 0;                // when the last check was made (seconds since 1970)
     int updSrc = 0;                    // update source: 0 automatic (GitHub), 1 GitHub only, 2 mirror only
     bool updMirrorOn = false;          // automatic: also try the mirror when GitHub fails (off until the user turns it on)
-    std::string updMirror;             // the mirror address the user typed
+    std::string updMirror = "https://mirror.on-air.dev/{url}";   // the mirror address (the project's own mirror until the user types another); it is only contacted when the user chose the mirror
     bool updConfirm = false;           // the user ticked "download it anyway" for a package only the mirror vouches for
     std::string updSkip;               // a version the user chose to skip
     DirectionFinder dir;
