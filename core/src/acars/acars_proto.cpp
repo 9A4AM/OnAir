@@ -36,29 +36,34 @@ struct SynTable {
 };
 const SynTable& synTab() { static const SynTable t; return t; }
 
-bool repairWithParity(uint8_t* txt, int len, uint16_t crc, const int* pr, int pn, int idx, int& flips) {
-    if (idx == pn) {
-        if (crc == 0) return true;
-        for (int e = 0; e < 2; e++)                      // what is left may be an error in the check bytes themselves
-            for (int b = 0; b < 8; b++)
-                if (synTab().s[e][b] == crc) return true;
-        return false;
-    }
-    const int e = len - pr[idx] + 1;
-    for (int b = 0; b < 8; b++) {
-        if (repairWithParity(txt, len, (uint16_t)(crc ^ synTab().s[e][b]), pr, pn, idx + 1, flips)) {
-            txt[pr[idx]] ^= (uint8_t)(1 << b);
-            flips++;
-            return true;
-        }
-    }
-    return false;
-}
-
-bool repairDouble(uint8_t* txt, int len, uint16_t crc, int& flips) {
+bool inCheckBytes(uint16_t crc) {
     for (int e = 0; e < 2; e++)
         for (int b = 0; b < 8; b++)
             if (synTab().s[e][b] == crc) return true;
+    return false;
+}
+
+// Each byte with wrong parity has one bit wrong (an odd number of bits, and one is the likeliest). The choice of a bit for each of the pn
+// bytes is stepped through like the digits of a counter (the first byte is the most significant digit); the first choice whose combined
+// syndrome equals the residue wins. What is left over may be an error in the check bytes themselves.
+bool repairWithParity(uint8_t* txt, int len, uint16_t crc, const int* pr, int pn, int& flips) {
+    int bit[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    for (;;) {
+        uint16_t c = crc;
+        for (int i = 0; i < pn; i++) c ^= synTab().s[len - pr[i] + 1][bit[i]];
+        if (c == 0 || inCheckBytes(c)) {
+            for (int i = 0; i < pn; i++) txt[pr[i]] ^= (uint8_t)(1 << bit[i]);
+            flips += pn;
+            return true;
+        }
+        int i = pn - 1;
+        while (i >= 0 && ++bit[i] == 8) bit[i--] = 0;
+        if (i < 0) return false;
+    }
+}
+
+bool repairDouble(uint8_t* txt, int len, uint16_t crc, int& flips) {
+    if (inCheckBytes(crc)) return true;
     for (int k = 0; k < len; k++) {
         const int e = len - k + 1;
         for (int i = 0; i < 8; i++)
@@ -73,7 +78,7 @@ bool repairDouble(uint8_t* txt, int len, uint16_t crc, int& flips) {
 }
 
 struct LabelName { char a, b; const char* text; };
-// Names that the decoders' own message formats support (acarsdec label.c reads fields from these labels), plus the service labels
+// Names of labels that decoders in common use give fields for, plus the service labels
 // of ARINC 618. The full ARINC 620 list is not public and is not reproduced; unknown labels show with no name.
 const LabelName kLabels[] = {
     {'_', 'd', "Command or response"},
@@ -108,7 +113,8 @@ const LabelName kLabels[] = {
     {'4', '4', "Position or ETA report"},
 };
 
-// Field layout of the Q labels (acarsdec label.c): which 4 characters of the text hold what.
+// Field layout of the Q labels (the OOOI report formats of ARINC 620 as airlines use them; also documented in acarsdec's and libacars's
+// label handling): which 4 characters of the text hold what.
 struct QField { char kind; int off; };      // 'o' origin, 'd' destination, 'O' out, 'F' off, 'N' on, 'I' in, 'E' ETA
 struct QLayout { char b; QField f[6]; };
 const QLayout kQ[] = {
@@ -181,7 +187,7 @@ bool acarsRepairBlock(uint8_t* txt, int len, const uint8_t crc[2], int& fixedBit
     c = acarsCrcUpdate(c, crc[0]);
     c = acarsCrcUpdate(c, crc[1]);
     if (pn) {
-        if (!repairWithParity(txt, len, c, pr, pn, 0, fixedBits)) return false;
+        if (!repairWithParity(txt, len, c, pr, pn, fixedBits)) return false;
     } else if (c) {
         if (!repairDouble(txt, len, c, fixedBits)) return false;
     }

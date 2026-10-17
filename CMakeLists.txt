@@ -1381,6 +1381,12 @@ if(DECT2_BUILD_APP AND NOT APPLE)
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS_PRIVATE_DIRS "${CMAKE_INSTALL_FULL_LIBDIR}/onair")
   endif()
   install(FILES README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} OPTIONAL)
+  install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME copyright OPTIONAL)   # Debian's name for the licence file
+  install(FILES THIRD_PARTY.md docs/LICENSE-NOTICES-BINARIES.md DESTINATION ${CMAKE_INSTALL_DOCDIR} OPTIONAL)
+  install(DIRECTORY LICENSES DESTINATION ${CMAKE_INSTALL_DOCDIR} OPTIONAL)
+  if(DECT2_RADIO_LIB_DIR AND EXISTS "${DECT2_RADIO_LIB_DIR}.licenses")   # copyright files of the bundled system libraries
+    install(DIRECTORY ${DECT2_RADIO_LIB_DIR}.licenses/ DESTINATION ${CMAKE_INSTALL_DOCDIR}/system-libs)
+  endif()
   if(TARGET onair_codec2)   # codec2 (LGPL-2.1): its own shared library in <prefix>/lib/onair, where the program looks (../lib/onair), with licence and notice
     install(TARGETS onair_codec2 LIBRARY DESTINATION lib/onair RUNTIME DESTINATION lib/onair)
     install(FILES third_party/codec2/COPYING DESTINATION ${CMAKE_INSTALL_DOCDIR}/codec2)

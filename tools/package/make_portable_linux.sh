@@ -36,6 +36,14 @@ for l in "$D"/lib/*.so*; do patchelf --set-rpath '$ORIGIN' "$l" 2>/dev/null || t
 mkdir -p "$D/share/applications" "$D/share/icons"
 cp $SRC/packaging/linux/onair.desktop "$D/share/applications/"; cp $SRC/packaging/icons/onair_1024.png "$D/share/icons/onair.png"
 cp $SRC/LICENSE "$D/LICENSE"
+$SRC/tools/package/add_license_files.sh "$D" "$SRC"   # THIRD_PARTY.md, LICENSES/, LICENSE-NOTICES-BINARIES.md (licence of every bundled library, source offer)
+# the Debian copyright file of each bundled system library (the ones built here, RTL-SDR Blog and codec2, are covered by the files above)
+mkdir -p "$D/licenses/system-libs"
+for l in "$D"/lib/*.so.*; do
+  b=$(basename "$(readlink -f "$l")")
+  pkg=$(dpkg -S "*/$b" 2>/dev/null | head -1 | cut -d: -f1)
+  [ -n "$pkg" ] && [ -f "/usr/share/doc/$pkg/copyright" ] && cp "/usr/share/doc/$pkg/copyright" "$D/licenses/system-libs/$pkg.copyright"
+done
 # udev rules and the kernel-driver blacklist for the radios, with the script that installs them (the .deb installs them itself)
 mkdir -p "$D/udev"
 cp $SRC/packaging/linux/60-onair-sdr.rules $SRC/packaging/linux/onair-rtlsdr-blacklist.conf $SRC/packaging/linux/onair-sdrplay-blacklist.conf "$D/udev/"

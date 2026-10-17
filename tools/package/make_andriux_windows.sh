@@ -70,6 +70,7 @@ for name in librtlsdr libairspy libairspyhf libbladeRF libLimeSuite libiio libuh
   fi
 done
 cp LICENSE "$OUT/LICENSE.txt"
+tools/package/add_license_files.sh "$OUT"   # THIRD_PARTY.md, LICENSES/, LICENSE-NOTICES-BINARIES.md (licence of every bundled DLL, source offer)
 cat > "$OUT/README-LT.txt" <<'TXT'
 OnAir v0.2.3 Andriux Edition - Windows x64 (bandomoji versija)
 

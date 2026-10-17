@@ -57,5 +57,13 @@ for stem in airspy bladeRF hamlib iio LimeSuite uhd; do
 done
 # the libraries find each other next to themselves
 for l in "$OUT"/*.so*; do [ -L "$l" ] || patchelf --set-rpath '$ORIGIN' "$l" 2>/dev/null || true; done
+# the Debian copyright file of every system library gathered (the .deb installs the folder next to the documentation); the RTL-SDR Blog
+# build is GPL-2.0-or-later, see docs/LICENSE-NOTICES-BINARIES.md
+LIC="$OUT.licenses"; mkdir -p "$LIC"
+for l in "$OUT"/*.so.*; do
+  [ -L "$l" ] && continue
+  pkg=$(dpkg -S "*/$(basename "$l")" 2>/dev/null | head -1 | cut -d: -f1)
+  if [ -n "$pkg" ] && [ -f "/usr/share/doc/$pkg/copyright" ]; then cp "/usr/share/doc/$pkg/copyright" "$LIC/$pkg.copyright"; fi
+done
 ls "$OUT" | wc -l
 du -sh "$OUT" | cut -f1

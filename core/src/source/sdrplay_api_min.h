@@ -4,6 +4,11 @@
 // public copies e.g. in github.com/DSheirer/sdrtrunk artifacts/sdrplay-api-headers/v3_15), and the "SDRplay API Specification" v3.15.
 // The library is loaded at run time (source_sdrplay.cpp), so nothing here links against it.
 //
+// Licence note: this file holds only what the binary interface needs so that OnAir can call the library the user installs from SDRplay:
+// struct layouts, field order and types, constant values and function signatures (interoperability facts), in OnAir's own names, layout
+// and wording. It contains no SDRplay source code, comments or documentation text, and no SDRplay library or header is shipped with OnAir.
+// The SDRplay API itself is the user's own download under SDRplay's licence.
+//
 // Every struct the library reads or writes is here with the official field order and types, the nested ones that OnAir only passes
 // through included, because the library fills them in its own layout. The official headers set no packing and no calling convention:
 // natural alignment and the platform's default C convention (DECT2_CALL, __cdecl on Windows). Their C enums are 4 bytes on every compiler

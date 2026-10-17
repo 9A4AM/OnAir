@@ -56,6 +56,21 @@ bash tools/package/build_rtlsdr_blog_macos.sh "$RTL_FW"
 export ONAIR_RTLSDR_FRAMEWORK="$RTL_FW"
 python3 tools/package/bundle_macos.py "$APP" || { echo "Failed to bundle radio libraries"; exit 1; }
 python3 tools/package/check_macos_target.py "$APP"
+# licence files: the project's own, and the licence file of the Homebrew formula behind every bundled library
+mkdir -p "$APP/Contents/Resources"
+tools/package/add_license_files.sh "$APP/Contents/Resources"
+HBLIC="$APP/Contents/Resources/licenses/homebrew"
+for f in "$APP"/Contents/Frameworks/*.dylib; do
+  b=$(basename "$f")
+  for root in /opt/homebrew/opt /usr/local/opt; do
+    for d in "$root"/*/; do
+      if [ -e "${d}lib/$b" ]; then
+        n=$(basename "$d"); mkdir -p "$HBLIC/$n"
+        for t in "$d"COPYING* "$d"LICENSE* "$d"LICENCE* "$d"COPYRIGHT*; do if [ -f "$t" ]; then cp "$t" "$HBLIC/$n/"; fi; done
+      fi
+    done
+  done
+done
 # the app is signed ad hoc (no developer certificate): macOS shows a one-time "unidentified developer" prompt on first launch
 python3 tools/package/scrub_paths.py "$APP"   # no build-machine paths in the shipped files (before signing)
 for f in "$APP"/Contents/Frameworks/*.dylib; do [ -L "$f" ] || codesign --force -s - "$f" >/dev/null 2>&1; done

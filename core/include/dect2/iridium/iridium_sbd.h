@@ -1,6 +1,6 @@
 // Iridium short burst data (Phase B): IDA frames joined into packets, the SBD headers, ACARS messages inside them.
-// Rules from iridium-toolkit (iridiumtk/reassembler/ida.py and sbd.py), read from its source; not checked against a real
-// recording. ACARS parity and any ACARS checksum are not checked (the IDA frames carry their own CRC).
+// Format knowledge about IDA reassembly and SBD headers (as documented by iridium-toolkit, which has no licence file; no code copied);
+// not checked against a real recording. ACARS parity and any ACARS checksum are not checked (the IDA frames carry their own CRC).
 #pragma once
 #include "iridium_frame.h"
 #include <cstdint>

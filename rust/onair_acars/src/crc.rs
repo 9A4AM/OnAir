@@ -1,4 +1,4 @@
-//! The ACARS block check sequence (ARINC 618 section 3.2.3.4 as acarsdec implements it): CRC-16 of the "KERMIT" kind (reflected polynomial 0x8408,
+//! The ACARS block check sequence (ARINC 618 section 3.2.3.4): CRC-16 of the "KERMIT" kind (reflected polynomial 0x8408,
 //! start 0, no final xor), over every byte from the mode character to the suffix and then the two check bytes (low byte first): 0 for a good block.
 
 const fn make_table() -> [u16; 256] {
