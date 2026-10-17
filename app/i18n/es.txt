@@ -1785,3 +1785,9 @@ full	lleno
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Añade este receptor a las radios de red (no se conecta hasta que lo elijas como radio).
 The downloaded list has no receivers OnAir can read.	La lista descargada no tiene receptores que OnAir pueda leer.
 Could not download the list. Check the internet connection.	No se pudo descargar la lista. Comprueba la conexión a internet.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	Decodificador DRA+ cargado
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	El audio DRA+ necesita un complemento decodificador que no está incluido (la situación de patentes y licencia del códec no está clara). Cómo instalarlo:
+The DRA+ decoder add-on cannot be used: %s. How to install:	No se puede usar el complemento decodificador DRA+: %s. Cómo instalarlo:
+How to install	Cómo instalar
+The services, signal information and data work without it.	Los servicios, la información de la señal y los datos funcionan sin él.

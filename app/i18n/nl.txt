@@ -1785,3 +1785,9 @@ full	vol
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Voegt deze ontvanger toe aan de netwerkradio's (hij maakt pas verbinding als je hem als radio kiest).
 The downloaded list has no receivers OnAir can read.	De gedownloade lijst bevat geen ontvangers die OnAir kan lezen.
 Could not download the list. Check the internet connection.	De lijst kon niet worden gedownload. Controleer de internetverbinding.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	DRA+-decoder geladen
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	DRA+-geluid heeft een decoder-add-on nodig die niet is meegeleverd (de octrooi- en licentiestatus van de codec is onduidelijk). Zo installeer je hem:
+The DRA+ decoder add-on cannot be used: %s. How to install:	De DRA+-decoder-add-on kan niet worden gebruikt: %s. Zo installeer je hem:
+How to install	Zo installeer je het
+The services, signal information and data work without it.	De diensten, signaalinformatie en data werken ook zonder.

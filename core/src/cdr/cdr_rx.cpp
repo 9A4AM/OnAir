@@ -11,6 +11,7 @@
 #include "dect2/cdr/cdr_rx.h"
 #include "dect2/cdr/cdr_defs.h"
 #include "cdr_audio.h"
+#include "dect2/cdr/cdr_dra.h"
 #include "dect2/cdr/cdr_ldpc.h"
 #include "dect2/cdr/cdr_mux.h"
 #include "dect2/dsp/exact_resampler.h"
@@ -205,6 +206,7 @@ struct CdrReceiver::Impl {
     std::atomic<int> listenId{0};          // service to play; 0: none
     std::atomic<float> volume{1.f};
     std::atomic<bool> muted{false};
+    bool draSaid = false;                  // the "DRA+ add-on missing" line has been logged for this signal
     CdrAudio audio;                        // DRA+ decoder and sound output of the service the user listens to
     // receiver thread
     CdrTelemetry tel;
@@ -287,7 +289,7 @@ struct CdrReceiver::Impl {
         locked = false; lay.reset(); tm = sm = 0;
         for (auto& r : store) for (auto& s2 : r) s2 = SubData();
         svc.clear(); svcOrder.clear(); haveSmct = false; snrAvg = 0;
-        audio.resetAll();
+        audio.resetAll(); draSaid = false;
         noSiRun = 0; jumpRun = 0; rejected.clear(); goodAt = 0;
     }
 
@@ -870,6 +872,12 @@ struct CdrReceiver::Impl {
         tel.levelDb = nPower ? (float)(10 * std::log10(power / (double)nPower + 1e-20)) : -200.f;
         tel.cfoHz = cfo + (mirror ? -1 : 1) * cc.offsetHz();
         if (!locked) tel.state = 0;
+        tel.draFound = draAvailable(&tel.draPath, &tel.draProblem);
+        if (!draSaid && !tel.draFound && listenId.load() != 0 && tel.state >= 3) {      // once per signal: why there is no sound
+            draSaid = true;
+            say(tel.draProblem.empty() ? "CDR: DRA+ audio needs a decoder add-on that is not included (see the ? next to the sound)"
+                                       : "CDR: the DRA+ add-on cannot be used: " + tel.draProblem);
+        }
         if (tel.status.empty() || tel.state != 0) tel.status = locked ? cdrStateText(tel.state) : "searching for a CDR beacon";
         tel.clipPct = nPower ? (float)(100.0 * (double)nClip / (double)nPower) : 0.f;
         clipRuns = tel.clipPct > 2.f ? clipRuns + 1 : 0;

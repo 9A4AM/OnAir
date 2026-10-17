@@ -1785,3 +1785,9 @@ full	満員
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	このレシーバーをネットワークラジオに追加します（ラジオとして選ぶまで接続しません）。
 The downloaded list has no receivers OnAir can read.	ダウンロードしたリストに OnAir が読めるレシーバーがありません。
 Could not download the list. Check the internet connection.	リストをダウンロードできませんでした。インターネット接続を確認してください。
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	DRA+デコーダーを読み込みました
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	DRA+の音声には、同梱されていないデコーダーアドオンが必要です(このコーデックの特許とライセンスの状況は不明確です)。インストール方法:
+The DRA+ decoder add-on cannot be used: %s. How to install:	DRA+デコーダーアドオンを使用できません: %s。インストール方法:
+How to install	インストール方法
+The services, signal information and data work without it.	サービス、信号情報、データはアドオンなしでも動作します。

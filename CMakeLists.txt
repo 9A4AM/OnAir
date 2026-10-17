@@ -175,15 +175,6 @@ add_library(dect2track STATIC core/src/track/track_imm.cpp core/src/track/track_
 target_include_directories(dect2track PUBLIC core/include)
 target_link_libraries(dect2core PUBLIC dect2track)
 target_include_directories(dect2core PRIVATE ${CMAKE_BINARY_DIR}/generated)
-# DRA+ (CDR audio). The decoder plays the audio units of a CDR service.
-add_library(dect2_dra STATIC third_party/dra/dradec.c)
-target_include_directories(dect2_dra PUBLIC third_party/dra)
-set_target_properties(dect2_dra PROPERTIES POSITION_INDEPENDENT_CODE ON)
-if(NOT MSVC)
-  target_compile_options(dect2_dra PRIVATE -w)
-  target_link_libraries(dect2_dra PUBLIC m)
-endif()
-target_link_libraries(dect2core PUBLIC dect2_dra)
 # RNNoise (BSD-3-Clause, Xiph.Org): the neural noise remover in the Listen chain. Plain C99, small embedded model; no -ffast-math (it refuses it).
 add_library(dect2_rnnoise STATIC
   third_party/rnnoise/src/denoise.c third_party/rnnoise/src/rnn.c third_party/rnnoise/src/rnn_data.c
@@ -1453,6 +1444,21 @@ if(DECT2_BUILD_TESTS)
       add_dependencies(${t} ${_hdc_fakes})
       target_compile_definitions(${t} PRIVATE "FAKE_HDC_GOOD=\"$<TARGET_FILE:fake_faad_hdc0>\"" "FAKE_HDC_BADVER=\"$<TARGET_FILE:fake_faad_hdc1>\""
                                  "FAKE_HDC_NOINIT=\"$<TARGET_FILE:fake_faad_hdc2>\"" "FAKE_HDC_BADLAYOUT=\"$<TARGET_FILE:fake_faad_hdc3>\"")
+    endif()
+  endforeach()
+  # fake DRA+ add-on libraries (a good one and two that must be refused) for the CDR sound tests; the real one is the user's own build (docs/CODECS.md)
+  set(_dra_fakes "")
+  foreach(v 0 1 2)
+    add_library(fake_onair_dra${v} MODULE tests/cdr/fake_onair_dra.c)
+    set_target_properties(fake_onair_dra${v} PROPERTIES PREFIX "" C_VISIBILITY_PRESET hidden)
+    target_compile_definitions(fake_onair_dra${v} PRIVATE FAKE_VARIANT=${v})
+    list(APPEND _dra_fakes fake_onair_dra${v})
+  endforeach()
+  foreach(t test_cdr_dra_addon)
+    if(TARGET ${t})
+      add_dependencies(${t} ${_dra_fakes})
+      target_compile_definitions(${t} PRIVATE "FAKE_DRA_GOOD=\"$<TARGET_FILE:fake_onair_dra0>\"" "FAKE_DRA_NOFUNC=\"$<TARGET_FILE:fake_onair_dra1>\""
+                                 "FAKE_DRA_NOCREATE=\"$<TARGET_FILE:fake_onair_dra2>\"")
     endif()
   endforeach()
   if(TARGET test_eczas_wav)

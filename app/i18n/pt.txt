@@ -1768,3 +1768,9 @@ full	cheio
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Adiciona este recetor aos rádios de rede (só liga quando o escolher como rádio).
 The downloaded list has no receivers OnAir can read.	A lista transferida não tem recetores que o OnAir consiga ler.
 Could not download the list. Check the internet connection.	Não foi possível transferir a lista. Verifique a ligação à internet.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	Decodificador DRA+ carregado
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	O áudio DRA+ precisa de um complemento decodificador que não está incluído (a situação de patentes e licença do codec não é clara). Como instalar:
+The DRA+ decoder add-on cannot be used: %s. How to install:	O complemento decodificador DRA+ não pode ser usado: %s. Como instalar:
+How to install	Como instalar
+The services, signal information and data work without it.	Os serviços, as informações do sinal e os dados funcionam sem ele.

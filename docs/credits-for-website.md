@@ -14,7 +14,7 @@ The full notices and the open licence points are in [THIRD_PARTY.md](https://git
 | stb_truetype, stb_rect_pack, stb_textedit | Sean Barrett and contributors | MIT or public domain | third_party/imgui/imstb_*.h (fonts and text input) | vendored, compiled in |
 | miniaudio | David Reid | Public domain or MIT-0 | third_party/miniaudio (sound output and input) | vendored, compiled in |
 | codec2 | David Rowe and contributors | LGPL-2.1 | third_party/codec2 (FreeDV and M17 speech) | vendored, built as a separate shared library, loaded at run time |
-| DRA decoder (dradec) | maliwen2015, from ffmpeg_cavs_dra | MIT (as published there) | third_party/dra (CDR digital radio audio) | vendored, compiled in |
+| DRA decoder (dradec) | maliwen2015, from ffmpeg_cavs_dra | MIT (as published there) | CDR digital radio audio (optional add-on, tools/addons/dra) | loaded at run time, user installs it |
 | uat_fec (Reed-Solomon for UAT) | Oliver Jowett (dump978); Phil Karn KA9Q (RS library) | GPL-2.0-or-later (Jowett); LGPL (Karn) | third_party/uat_fec, core/src/uat/uat_decode.c, uat_fec_bridge.c (978 MHz UAT) | vendored, compiled in |
 | SDDC_FX3.img (RX888 MkII firmware) | Oscar Steila ik1xpv (ExtIO_sddc); renardspark (SDDC_Driver); Cypress FX3 SDK parts | MIT (SDDC projects); Cypress/Infineon SDK terms for its parts | third_party/sddc_fx3, copied to the codecs folder | binary firmware, loaded into the radio's RAM at run time |
 | nrsc5 | Theori, Clayton Smith and contributors | GPL-3.0-or-later | core/src/hdr (HD Radio) | ported (adapted), compiled in |

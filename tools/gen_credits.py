@@ -46,7 +46,7 @@ CONFLICTS = """## Licence audit: decisions and open points, stated plainly
 
 Nothing found is GPL-2.0-only code or a non-commercial licence inside the OnAir binary. What was decided for each point of the audit:
 
-1. **third_party/dra/dradec.c (DRA decoder). Kept.** Published by maliwen2015 under MIT (repository https://github.com/maliwen2015/ffmpeg_cavs_dra, file taken from its ffmpeg-7.1.2_cavs_dra.patch; repository state of 2026-08-14, head eb94ceb). The MIT text and attribution are next to the file. The upstream origin of the DRA reference decoder is not stated there; if its owner objects, the file is removed (CDR would lose audio).
+1. **DRA decoder (CDR sound). Not shipped, no source here.** The decoder of maliwen2015 (https://github.com/maliwen2015/ffmpeg_cavs_dra, MIT as published; it sits inside ffmpeg-7.1.2_cavs_dra.patch, state of 2026-08-14, head eb94ceb) was vendored before; where it first came from is not stated there and the patent status of DRA / DRA+ is not verified. So it is now an add-on the user installs (loaded at run time like mbelib and the HDC library): this repository holds only the loader and tools/addons/dra (a script that fetches the source and a CMake file that builds libonair_dra). docs/CODECS.md has the steps.
 2. **third_party/sddc_fx3/SDDC_FX3.img (RX888 firmware). Kept.** The SDDC project itself distributes this exact image (145868 bytes) as the release asset of https://github.com/renardspark/SDDC_Driver/releases/tag/v2.0.0 under MIT (firmware source: https://github.com/ik1xpv/ExtIO_sddc, SDDC_FX3). The Cypress/Infineon FX3 SDK object code inside is redistributable on FX3 devices under that SDK's licence, which we could not read in full. It is loaded into the radio's RAM and never linked. The note shipped beside it says how to download the image yourself instead.
 3. **acarsdec (core/src/acars). Closed.** acarsdec's `msk.c` is under the GNU Library GPL version 2 only, which cannot be combined into a GPL-3 work. The OnAir MSK demodulator was a close translation of it (same loop constants and structure), so it was re-written from the ARINC 618 description: a half-sine matched filter at the bit boundaries, a decision-directed carrier reference and an early-late bit clock. The parity repair was restructured and gives identical results on 20000 random corruptions. CRC-16/KERMIT, the odd-parity rule, the syndrome table and the frame layout are facts of ARINC 618 / standard algorithms. acarsdec stays in the credits for the documented formats.
 4. **iridium-toolkit (core/src/iridium). Kept, licence unknown.** The repository has no licence file. OnAir's C++ was written from the facts of the air interface (bit layouts, BCH polynomials, field meanings), which are not copyrightable, not from copied code. The owner may ask muccc to add a licence.
@@ -81,7 +81,7 @@ Copyright (c) 2017-2020 Oscar Steila ik1xpv (ExtIO_sddc); SDDC_Driver by renards
 
 ### DRA decoder (MIT)
 
-Copyright (c) 2021 maliwen2015 (ffmpeg_cavs_dra). The full text is in `third_party/dra/LICENSE-ffmpeg_cavs_dra.txt`. See the open points above.
+Copyright (c) 2021 maliwen2015 (ffmpeg_cavs_dra). Not part of OnAir or its packages: the user fetches the source from that repository, which carries the MIT text. See the open points above.
 
 ### miniaudio (public domain or MIT-0)
 

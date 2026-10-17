@@ -1768,3 +1768,9 @@ full	занят
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Добавляет этот приёмник в сетевые радио (он не подключается, пока вы не выберете его как радио).
 The downloaded list has no receivers OnAir can read.	В скачанном списке нет приёмников, которые OnAir может прочитать.
 Could not download the list. Check the internet connection.	Не удалось скачать список. Проверьте подключение к интернету.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	Декодер DRA+ загружен
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	Для звука DRA+ нужен дополнительный модуль-декодер, который не входит в комплект (патентный и лицензионный статус кодека неясен). Как установить:
+The DRA+ decoder add-on cannot be used: %s. How to install:	Модуль-декодер DRA+ нельзя использовать: %s. Как установить:
+How to install	Как установить
+The services, signal information and data work without it.	Службы, информация о сигнале и данные работают и без него.

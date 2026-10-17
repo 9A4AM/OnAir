@@ -1785,3 +1785,9 @@ full	已满
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	把此接收机添加到网络电台（在你把它选为电台之前不会连接）。
 The downloaded list has no receivers OnAir can read.	下载的列表中没有 OnAir 能读取的接收机。
 Could not download the list. Check the internet connection.	无法下载列表。请检查网络连接。
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	已加载 DRA+ 解码器
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	DRA+ 声音需要一个未随附的解码器插件(该编解码器的专利和许可状况不明确)。安装方法:
+The DRA+ decoder add-on cannot be used: %s. How to install:	无法使用 DRA+ 解码器插件:%s。安装方法:
+How to install	安装方法
+The services, signal information and data work without it.	没有它,服务、信号信息和数据仍可正常使用。

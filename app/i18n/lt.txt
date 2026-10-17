@@ -1785,3 +1785,9 @@ full	pilnas
 Adds this receiver to the Network radios (it does not connect until you pick it as the radio).	Prideda šį imtuvą prie tinklo radijų (jis neprisijungs, kol nepasirinksite jo kaip radijo).
 The downloaded list has no receivers OnAir can read.	Atsisiųstame sąraše nėra imtuvų, kuriuos OnAir gali perskaityti.
 Could not download the list. Check the internet connection.	Nepavyko atsisiųsti sąrašo. Patikrinkite interneto ryšį.
+# CDR: DRA+ decoder add-on notice
+DRA+ decoder loaded	DRA+ dekoderis įkeltas
+DRA+ audio needs a decoder add-on that is not included (the codec's patent and licence status is unclear). How to install:	DRA+ garsui reikia dekoderio priedo, kuris neįtrauktas (kodeko patentų ir licencijos padėtis neaiški). Kaip įdiegti:
+The DRA+ decoder add-on cannot be used: %s. How to install:	DRA+ dekoderio priedo naudoti negalima: %s. Kaip įdiegti:
+How to install	Kaip įdiegti
+The services, signal information and data work without it.	Paslaugos, signalo informacija ir duomenys veikia ir be jo.

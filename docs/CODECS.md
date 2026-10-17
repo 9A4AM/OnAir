@@ -2,6 +2,8 @@
 
 > **DMR, P25, NXDN, dPMR and D-STAR voice is silent until you install mbelib.** The calls, IDs and data are shown without it. Its vocoders are patented, so OnAir does not include it: put `libmbe` / `mbelib` in the codecs folder (the **?** button next to the sound has an **Open codecs folder** button), then press **Look again**.
 
+> **CDR (China Digital Radio) sound is silent until you install the DRA+ add-on.** The services, signal information and data work without it. See [DRA+ (CDR sound)](#dra-cdr-sound).
+
 > **HD Radio sound is silent until you install the HDC codec.** The stations, program data and pictures are shown without it. See [HD Radio sound](#hd-radio-sound-hdc-build-it-yourself).
 
 OnAir never ships a patented codec. You install the ones you are allowed to use yourself, and OnAir loads them. The one open codec, **codec2** (FreeDV and M17 speech), comes with OnAir: nothing to install. **Whether you may
@@ -18,6 +20,7 @@ looks for, the exact folders it searches, an **Open codecs folder** button (it m
 | DMR, P25 Phase 1, NXDN, dPMR | AMBE+2 / IMBE (patented) | **mbelib** (not included: you install it yourself; voice is silent until you do) |
 | D-STAR | AMBE (patented) | **mbelib** |
 | HD Radio (NRSC-5, FM and AM) | HDC (patented, owned by Xperi) | a **patched FAAD2** (`libfaad_hdc`) that you build yourself (see below); sound is silent until you do |
+| CDR (China Digital Radio) | DRA+ (patent and licence status not verified) | the **DRA+ add-on** (`libonair_dra`) that you build yourself (see [DRA+ (CDR sound)](#dra-cdr-sound)); sound is silent until you do |
 | FreeDV 700D / 700E / 1600, M17 | codec2 (open, LGPL) | **codec2**: comes with OnAir (the library `libcodec2` next to the program) |
 | FreeDV RADE | RADE neural modem (open, BSD) | **librade** (not codec2): optional; without it the RADE slot stays dark |
 | TETRA | its own speech codec | nothing from you: it is not mbelib and not codec2 |
@@ -31,7 +34,7 @@ and M17. If a digital-voice mode says "mbelib not found", you need **mbelib**, a
 
 OnAir tries these file names. Folders are searched in this order; inside each folder every name is tried before the next folder.
 
-1. The `DECT2_MBELIB_PATH` / `DECT2_CODEC2_PATH` / `DECT2_FAAD_HDC_PATH` environment variable (a full path), if set.
+1. The `DECT2_MBELIB_PATH` / `DECT2_CODEC2_PATH` / `DECT2_FAAD_HDC_PATH` / `DECT2_DRA_PATH` environment variable (a full path), if set.
 2. The OnAir **codecs folders** (below).
 3. The libraries that ship with OnAir: the program's own folder (Windows: next to `OnAir.exe`; Linux: next to `dect2`, and `../lib/onair` and `../lib` of it, which is where the `.deb` and the portable package put codec2; macOS: inside the app, `Contents/Frameworks` and `Contents/Resources`). A copy you put in a codecs folder (step 2) wins over the shipped one.
 4. The system: Windows `PATH`; macOS `/opt/homebrew/lib`, `/usr/local/lib`, `/opt/local/lib`; Linux `/usr/local/lib`, `/usr/lib`, `/usr/lib64`, the multiarch folder.
@@ -40,6 +43,7 @@ OnAir tries these file names. Folders are searched in this order; inside each fo
 |---|---|---|---|
 | mbelib | `mbelib.dll`, `libmbe.dll`, `libmbe-1.dll`, `mbe.dll` | `libmbe.1.3.dylib`, `libmbe.1.dylib`, `libmbe.dylib` | `libmbe.so.1.3`, `libmbe.so.1`, `libmbe.so` |
 | HDC (patched FAAD2) | `libfaad_hdc.dll`, `faad_hdc.dll`, `libfaad2-hdc.dll`, `faad2-hdc.dll` | `libfaad_hdc.dylib`, `libfaad_hdc.2.dylib`, `libfaad2-hdc.dylib` | `libfaad_hdc.so`, `libfaad_hdc.so.2`, `libfaad2-hdc.so` (any `libfaad_hdc.so.*`) |
+| DRA+ add-on | `onair_dra.dll`, `libonair_dra.dll` | `libonair_dra.dylib` | `libonair_dra.so` |
 | codec2 | `codec2.dll`, `libcodec2.dll` | `libcodec2.1.2.dylib` ... `libcodec2.dylib` | `libcodec2.so.1.2` ... `libcodec2.so` (any `libcodec2.so.*`) |
 
 ### The OnAir codecs folders
@@ -187,8 +191,64 @@ Then open **HD Radio** and press **Look again** in the **?** popup next to the s
 
 ## DRA+ (CDR sound)
 
-CDR sound uses DRA+, a patented codec that is not openly described. OnAir lists the services but plays no sound. There is no free
-DRA+ decoder to install at this time. You can save the raw sound with **Save stream** and play it in an FFmpeg built with a DRA patch (see the README, "Saving DRA sound").
+**CDR sound is silent until you install the DRA+ add-on.** CDR (China Digital Radio) codes its sound with DRA+. OnAir does not include a DRA+
+decoder and contains no DRA+ decoder source: whether DRA / DRA+ is covered by patents, and where the decoder we tested with came from, has not
+been verified. So it is handled like mbelib and HDC: an add-on that you obtain and build yourself, which OnAir loads when it is found.
+
+**What works without it:** everything but the sound. The multiplex, the services and their names, signal quality, the plots and all data are shown;
+you can pick a service and use **Save stream** to write its raw DRA+ sound to a `.dra` file (see the README, "Saving DRA sound"). When you select
+a service with sound and the add-on is missing, the CDR panel shows an amber **!** notice with a **How to install** button, and the log says so once.
+With the add-on loaded the line turns into a green *DRA+ decoder loaded*.
+
+**What the add-on is:** one small shared library, `libonair_dra`, made from the open-source DRA decoder in maliwen2015's repository
+<https://github.com/maliwen2015/ffmpeg_cavs_dra> (MIT as published there; it sits in the file `ffmpeg-7.1.2_cavs_dra.patch`). It exports five C
+functions (`DRADecCreate`, `DRADecDestroy`, `DRADecGetFrameInfo`, `DRADecSendData`, `DRADecRecvFrame`); OnAir feeds it one DRA frame at a time and
+plays the 16-bit PCM it returns. It reads no files and uses no network. OnAir includes only the loader and the build files in `tools/addons/dra`;
+the decoder source is **not** in this repository and no prebuilt library is ever shipped, installed or put in a package.
+
+**Where to put it** (the exact file name matters):
+
+| OS | File name | Codecs folder (the **?** popup has an **Open codecs folder** button) |
+|---|---|---|
+| macOS | `libonair_dra.dylib` | `~/Library/Application Support/OnAir/codecs/` (or a `codecs` folder next to `OnAir.app`) |
+| Linux | `libonair_dra.so` | `~/.local/share/onair/codecs/` (or `$XDG_DATA_HOME/onair/codecs/`; or a `codecs` folder next to the program) |
+| Windows | `onair_dra.dll` (or `libonair_dra.dll`) | `%LOCALAPPDATA%\OnAir\codecs\` (or a `codecs` folder next to `OnAir.exe`) |
+
+Or set `DECT2_DRA_PATH` to the full path of the file. Press **Look again** in the **?** popup: no restart is needed.
+
+**Build it** (about a minute; you need git, Python 3, CMake and a C compiler). The build files are in the OnAir source, `tools/addons/dra`:
+
+macOS:
+```
+brew install cmake git python3
+git clone https://github.com/adswill/OnAir && cd OnAir/tools/addons/dra
+python3 extract_dra.py
+cmake -S . -B build -DDRA_SRC=dra_src && cmake --build build
+mkdir -p ~/Library/Application\ Support/OnAir/codecs && cp build/libonair_dra.dylib ~/Library/Application\ Support/OnAir/codecs/
+```
+Linux:
+```
+sudo apt install git python3 cmake build-essential
+git clone https://github.com/adswill/OnAir && cd OnAir/tools/addons/dra
+python3 extract_dra.py
+cmake -S . -B build -DDRA_SRC=dra_src && cmake --build build
+mkdir -p ~/.local/share/onair/codecs && cp build/libonair_dra.so ~/.local/share/onair/codecs/
+```
+Windows (MSYS2 MINGW64 shell; use the 64-bit one if OnAir is 64-bit):
+```
+pacman -S --needed git python mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make
+git clone https://github.com/adswill/OnAir && cd OnAir/tools/addons/dra
+python extract_dra.py
+cmake -S . -B build -G "MSYS Makefiles" -DDRA_SRC=dra_src && cmake --build build
+mkdir -p "$LOCALAPPDATA/OnAir/codecs" && cp build/onair_dra.dll "$LOCALAPPDATA/OnAir/codecs/"
+```
+`extract_dra.py` downloads the patch from the repository above and writes `dradec.c` and `dradec.h` (it also removes the bandwidth-extension
+rate doubling, which made the sound play at twice the speed; it refuses to run if the upstream file is not the version it knows). Instead of
+downloading, you can point it at a copy of the patch you already have: `python3 extract_dra.py ffmpeg-7.1.2_cavs_dra.patch`. The library may need
+`libgcc_s_seh-1.dll` and `libwinpthread-1.dll` from `C:\msys64\mingw64\bin` next to it on Windows.
+
+Whether you may build and use it depends on the patent and licence rules of your country; check them first. OnAir has been tested with a stand-in
+library in its automated tests and with the decoder built from the source above on recordings; there is no guarantee for other builds.
 
 ## AVS+, AVS2, AVS3 and DRA (DTMB television in China)
 
