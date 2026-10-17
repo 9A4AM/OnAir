@@ -4,6 +4,7 @@
 #include "dect2/results/results_io.h"
 #include "dect2/airband/airband_tel.h"
 #include "dect2/airband/airband_gen.h"
+#include "dect2/airband/airband_seen.h"
 #include "dect2/audio/audioout.h"
 #include "dect2/audio/neural_nr.h"
 #include "dect2/dsp/fftutil.h"
@@ -235,6 +236,8 @@ struct AirbandReceiver::Impl {
     Up6 up;
     std::unique_ptr<AudioOut> audioOut;
     std::deque<AirbandActivity> act;
+    AirbandBandWatch watch;
+    double nextWatch = 0;
 
     double sigSec() const { return curRate > 0 ? (double)nIn / curRate : 0; }
 
@@ -319,6 +322,7 @@ struct AirbandReceiver::Impl {
         up.reset();
         if (audioOut) audioOut->flush();
         if (curRate > 0) design();
+        watch.configure(curRate, center); nextWatch = 0.5;
         buildChannels(list);
         int inb = 0;
         for (const auto& c : ch) inb += c.inBand;
@@ -696,6 +700,7 @@ struct AirbandReceiver::Impl {
         tel.snrDb = open ? bestOpen : any ? best : 0;
         tel.blocksOk = tx; tel.blocksBad = 0;
         tel.activity.assign(act.begin(), act.end());
+        tel.seen = watch.seen();
         std::lock_guard<std::mutex> lk(mu);
         pub = tel;
     }
@@ -746,9 +751,16 @@ void AirbandReceiver::feed(const cf32* x, size_t n) {
     for (size_t o = 0; o < n; o += piece) {
         const size_t k = std::min(piece, n - o);
         for (size_t i = 0; i < m.ch.size(); i++) if (m.ch[i].inBand) m.runChannel(m.ch[i], (int)i, m.clean.data() + o, k);
+        m.watch.feed(m.clean.data() + o, k);
         m.nIn += (int64_t)k;
         m.output();
         if (m.sigSec() >= m.nextEst) { m.nextEst += 0.5; m.estimateTune(); }
+        if (m.sigSec() >= m.nextWatch) {
+            m.nextWatch += 0.5;
+            std::vector<double> listed;
+            for (const auto& c : m.ch) listed.push_back(c.cfg.freqHz);
+            m.watch.update(m.sigSec(), m.tuneErr, m.tuneKnown, listed);
+        }
         while ((double)m.nIn >= m.nextReport) { m.nextReport += 0.25 * m.curRate; m.report(); }
     }
 }

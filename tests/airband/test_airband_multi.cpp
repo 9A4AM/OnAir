@@ -145,6 +145,34 @@ int main() {
         for (const auto& e : r2.tel.activity) if (e.chan == 2) c3++;
         CHECK(c3 >= 3, "per-channel squelch low: channel C %d openings", c3);
     }
+    // ---- the band watch: channels that are on the air but not in the list are found, named right, and listed ones are not repeated
+    for (double cfo : {0.0, 6000.0}) {
+        std::vector<AirbandChannel> l = {st.list[0], st.list[1], st.list[2]};
+        const Run r = run(st, 2.4e6, cfo, 25, secs, &l);
+        int found = 0, wrong = 0;
+        for (int c = 3; c < 8; c++) {
+            const std::string nm = airbandName(st.list[(size_t)c].freqHz, st.list[(size_t)c].is833);
+            bool hit = false;
+            for (const auto& x : r.tel.seen) if (x.name == nm && std::fabs(x.freqHz - st.list[(size_t)c].freqHz) < 5 && x.is833 == st.list[(size_t)c].is833) hit = true;
+            found += hit;
+            CHECK(hit, "band watch (radio %+.0f Hz): channel %s not seen", cfo, nm.c_str());
+        }
+        for (const auto& x : r.tel.seen) {
+            bool known = false;
+            for (int c = 0; c < 8; c++) if (std::fabs(x.freqHz - st.list[(size_t)c].freqHz) < 5) known = true;
+            if (!known || (x.freqHz == st.list[0].freqHz || x.freqHz == st.list[1].freqHz || x.freqHz == st.list[2].freqHz)) { wrong++; printf("    watch: unexpected %s %.1f\n", x.name.c_str(), x.freqHz); }
+        }
+        CHECK(wrong == 0, "band watch (radio %+.0f Hz): %d unexpected entries of %zu", cfo, wrong, r.tel.seen.size());
+        printf("  band watch, radio %+.0f Hz: %d of 5 unlisted channels seen, %zu entries\n", cfo, found, r.tel.seen.size());
+    }
+    // ---- noise only: the band watch finds nothing
+    {
+        Setup q = st;
+        for (auto& g : q.gen) g.levelDb = -200;
+        std::vector<AirbandChannel> none;
+        const Run r = run(q, 2.4e6, 0, 20, 12, &none);
+        CHECK(r.tel.seen.empty() && r.tel.activity.empty(), "noise: %zu carriers seen", r.tel.seen.size());
+    }
     // ---- grouping of a frequency list into captures
     {
         std::vector<double> f = {118.5e6, 118.525e6, 121.9e6, 121.7e6, 123.45e6, 126.7e6, 127.0e6, 135.0e6};

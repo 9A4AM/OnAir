@@ -39,6 +39,18 @@ struct AirbandActivity {
     bool heterodyne = false;
 };
 
+// A carrier seen on the air that is not in the channel list (the band watch of airband_seen.h)
+struct AirbandSeen {
+    double freqHz = 0;           // the channel frequency, the radio's tuning error taken out
+    bool is833 = false;          // not on the 25 kHz raster (an 8.33 kHz channel)
+    std::string name;            // as dialled: "118.505"
+    float excessDb = 0;          // carrier above the noise around it, in one 300 - 600 Hz bin, at its strongest
+    uint32_t hits = 0;           // 0.5 s reports it was present in
+    double lastSec = 0;          // signal time it was last present
+    bool activeNow = false;
+    bool approx = false;         // the tuning error was a guess (too few carriers to measure it)
+};
+
 struct AirbandTelemetry {
     uint64_t seq = 0;            // grows with every report
     int state = 0;               // 0 no channel in the band, 1 listening, 2 a channel is open
@@ -59,6 +71,7 @@ struct AirbandTelemetry {
     bool scan = false;           // scan: one channel at a time, stops on activity
     int scanChan = -1;           // the channel the scan stopped on (-1 = scanning)
     std::vector<AirbandChannelState> channels;
+    std::vector<AirbandSeen> seen;           // carriers on the raster that are not in the list, strongest activity first
     std::vector<AirbandActivity> activity;   // newest first, at most kAirbandLogMax
 };
 
