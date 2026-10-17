@@ -78,6 +78,11 @@ void Engine::ingest(cf32* x, size_t n) {
     if (sigid_.armed()) sigid_.push(x, n);
     feedSpectrum(x, n);
     if (const int s = secAct_.load(); s >= 0 && s != activeStd_.load()) pushSecondary(x, n);   // the second mode: a copy, before the first receiver
+    if (monitor_.enabled()) {   // "Monitor audio": the tuned channel, a copy
+        double dial;
+        { std::lock_guard<std::mutex> lk(tuneMu_); dial = lastTune_.centerHz; }
+        monitor_.push(x, n, rate_.load(), dial + monitorOffsetHz_.load() - captureCentreHz());
+    }
     feedRx(x, n);
     tRx_ += std::chrono::duration<double>(std::chrono::steady_clock::now() - a0).count();
     nSamp_ += n;
@@ -87,6 +92,7 @@ Engine::Engine() : t0_(std::chrono::steady_clock::now()) {}
 Engine::~Engine() { stop(); flushResults(); }
 
 void Engine::stop() {
+    monitor_.stop();   // the audio goes quiet with the radio (the setting stays; the next start brings it back)
     stopSecondary();   // stays asked for: the next start() brings it back
     player_.select(-1);
     if (!running_ && !src_) return;

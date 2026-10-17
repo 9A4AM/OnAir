@@ -1522,3 +1522,22 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	К nRSP-ST подключаются через SDRconnect: запустите SDRconnect (или его headless-версию) на компьютере с включённым WebSocket-сервером (порт 5454) и выбранным nRSP-ST и введите адрес этого компьютера. Пароль не нужен и не сохраняется.
+Monitor audio	Прослушивание
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Слушать настроенный канал в любом режиме, чтобы опознать сигнал: отсчёты радио демодулируются как USB, LSB, узкая FM или AM. Тишина, пока режим играет свой звук.
+Auto: USB below 30 MHz, narrow FM above	Авто: USB ниже 30 МГц, узкая FM выше
+Volume of the monitor	Громкость прослушивания
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Точная подстройка относительно частоты, в Гц (SSB-сигнал слышен на 1–2 кГц выше или ниже несущей)
+(the mode plays)	(режим играет)
+Audio...	Звук...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Устройства вывода для прослушивания, второй выход (например, виртуальный аудиокабель для fldigi или WSJT-X) и локальный сетевой поток
+System default	По умолчанию
+Output 1	Выход 1
+Output 2	Выход 2
+Delay (ms)	Задержка (мс)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Звук в очереди перед воспроизведением: меньше — быстрее, больше — выдержит нагруженный компьютер
+Stay silent while the mode plays	Тишина, пока режим играет
+Network audio stream	Сетевой аудиопоток
+WAV header	Заголовок WAV
+Allow other computers	Разрешить другие компьютеры
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16-бит стерео, 48 кГц. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:ПОРТ или WAV-плеер с заголовком. Безопасность: слушать может любой, кто достучится до порта; не включайте «Разрешить другие компьютеры» без нужды.
+Listeners:	Слушатели:

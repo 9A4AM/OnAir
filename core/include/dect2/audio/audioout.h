@@ -2,6 +2,8 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace dect2 {
 
@@ -9,6 +11,14 @@ class AudioOut {
 public:
     AudioOut();
     ~AudioOut();
+    // Output devices by name (the system's list; the first is the default, shown as ""). setDevice() before start(): "" = the system default.
+    // A named device is opened through miniaudio (Windows, Linux) or a HAL unit (macOS); one that is not found falls back to the default.
+    static std::vector<std::string> devices();
+    void setDevice(const std::string& name) { device_ = name; }
+    const std::string& device() const { return device_; }
+    // A monitor output (audio_monitor.h) is not "the mode's sound": the monitor yields while any other, unmuted AudioOut has written lately.
+    void setMonitorRole(bool m) { monitor_ = m; }
+    static int msSinceModeWrite();      // milliseconds since an unmuted non-monitor output last wrote (large when never)
     bool start(int sampleRate = 48000);
     void stop();
     // Interleaved stereo float. Returns frames accepted (drops if the ring is full).
@@ -32,6 +42,8 @@ private:
     std::unique_ptr<Impl> p_;
     int rate_ = 48000;
     bool running_ = false;
+    bool monitor_ = false;
+    std::string device_;
 };
 
 } // namespace dect2

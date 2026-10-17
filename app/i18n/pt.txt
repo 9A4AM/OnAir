@@ -1522,3 +1522,22 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	O nRSP-ST é acedido através do SDRconnect: execute o SDRconnect (ou a versão headless) num computador com o servidor WebSocket ligado (porta 5454) e o nRSP-ST selecionado, e escreva o endereço desse computador. Não é necessária nem guardada nenhuma palavra-passe.
+Monitor audio	Monitorizar áudio
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Ouve o canal sintonizado em qualquer modo para reconhecer um sinal: as amostras do rádio são desmoduladas como USB, LSB, FM estreita ou AM. Silencioso enquanto o modo toca o seu próprio som.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB abaixo de 30 MHz, FM estreita acima
+Volume of the monitor	Volume do monitor
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Ajuste fino em relação à frequência sintonizada, em Hz (um sinal SSB ouve-se 1 a 2 kHz acima ou abaixo da portadora)
+(the mode plays)	(o modo toca)
+Audio...	Áudio...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Dispositivos de saída do monitor, uma segunda saída (por exemplo um cabo de áudio virtual para fldigi ou WSJT-X) e um fluxo de rede local
+System default	Predefinição do sistema
+Output 1	Saída 1
+Output 2	Saída 2
+Delay (ms)	Atraso (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Áudio em fila antes de tocar: menos é mais rápido, mais aguenta um computador ocupado
+Stay silent while the mode plays	Silencioso enquanto o modo toca
+Network audio stream	Fluxo de áudio na rede
+WAV header	Cabeçalho WAV
+Allow other computers	Permitir outros computadores
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	Estéreo de 16 bits, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORTA, ou um leitor WAV com o cabeçalho. Segurança: quem alcançar a porta pode ouvir; deixe 'Permitir outros computadores' desligado se não precisar.
+Listeners:	Ouvintes:

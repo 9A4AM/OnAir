@@ -1540,3 +1540,22 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	De nRSP-ST wordt bereikt via SDRconnect: start SDRconnect (of de headless versie) op een computer met de WebSocket-server aan (poort 5454) en de nRSP-ST geselecteerd, en typ het adres van die computer. Er is geen wachtwoord nodig en er wordt er geen opgeslagen.
+Monitor audio	Audio meeluisteren
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Luister in elke modus naar het afgestemde kanaal om een signaal te herkennen: de samples van de radio worden gedemoduleerd als USB, LSB, smalle FM of AM. Stil zolang de modus eigen geluid speelt.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB onder 30 MHz, smalle FM erboven
+Volume of the monitor	Volume van het meeluisteren
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Fijnafstemming ten opzichte van de afgestemde frequentie, in Hz (een SSB-signaal hoor je 1 tot 2 kHz boven of onder de draaggolf)
+(the mode plays)	(de modus speelt)
+Audio...	Audio...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Uitvoerapparaten voor het meeluisteren, een tweede uitgang (bijv. een virtuele audiokabel voor fldigi of WSJT-X) en een lokale netwerkstream
+System default	Systeemstandaard
+Output 1	Uitgang 1
+Output 2	Uitgang 2
+Delay (ms)	Vertraging (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Audio in de wachtrij voor het afspelen: lager is sneller, hoger overleeft een drukke computer
+Stay silent while the mode plays	Stil zolang de modus speelt
+Network audio stream	Netwerk-audiostream
+WAV header	WAV-header
+Allow other computers	Andere computers toestaan
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:POORT, of een WAV-speler met header. Beveiliging: wie de poort kan bereiken kan meeluisteren; laat 'Andere computers toestaan' uit tenzij nodig.
+Listeners:	Luisteraars:

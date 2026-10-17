@@ -1540,3 +1540,22 @@ USA, standard DECT in the 900 MHz ISM band: rare, most 900 MHz cordless phones a
 Europe, most of Asia, Africa, Australia: the common DECT band	Europe, most of Asia, Africa, Australia: the common DECT band
 Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.	Your radio cannot tune %.3f - %.3f MHz (the %s band); its range is %.6g - %.6g MHz. Use a radio that reaches it (HackRF, PlutoSDR, LimeSDR, BladeRF) or a converter set under the radio's settings.
 The nRSP-ST is reached through SDRconnect: run SDRconnect (or its headless build) on a computer with the WebSocket server on (port 5454) and its nRSP-ST selected, and type that computer's address. No password is needed or stored.	nRSP-ST pasiekiamas per SDRconnect: paleiskite SDRconnect (arba jo headless versiją) kompiuteryje su įjungtu WebSocket serveriu (prievadas 5454) ir pasirinktu nRSP-ST, tada įveskite to kompiuterio adresą. Slaptažodžio nereikia ir jis nesaugomas.
+Monitor audio	Garso stebėjimas
+Listen to the tuned channel in any mode, to recognise a signal: the radio's samples are demodulated as USB, LSB, narrow FM or AM. Silent while the mode plays its own sound.	Klausykitės suderinto kanalo bet kuriuo režimu, kad atpažintumėte signalą: radijo mėginiai demoduliuojami kaip USB, LSB, siaura FM arba AM. Tylu, kol režimas groja savo garsą.
+Auto: USB below 30 MHz, narrow FM above	Auto: USB žemiau 30 MHz, siaura FM aukščiau
+Volume of the monitor	Stebėjimo garsas
+Fine tuning from the tuned frequency, in Hz (an SSB signal is heard 1 to 2 kHz above or below its carrier)	Tikslus derinimas nuo suderinto dažnio, Hz (SSB signalas girdimas 1–2 kHz virš ar žemiau nešlio)
+(the mode plays)	(režimas groja)
+Audio...	Garsas...
+Output devices for the monitor, a second output (for example a virtual audio cable for fldigi or WSJT-X) and a local network stream	Stebėjimo išvesties įrenginiai, antra išvestis (pvz., virtualus garso kabelis fldigi ar WSJT-X) ir vietinis tinklo srautas
+System default	Sistemos numatytasis
+Output 1	Išvestis 1
+Output 2	Išvestis 2
+Delay (ms)	Vėlinimas (ms)
+Audio queued before it starts playing: lower is quicker, higher survives a busy computer	Garsas eilėje prieš grojimą: mažiau greičiau, daugiau atlaiko apkrautą kompiuterį
+Stay silent while the mode plays	Tylu, kol režimas groja
+Network audio stream	Tinklo garso srautas
+WAV header	WAV antraštė
+Allow other computers	Leisti kitus kompiuterius
+16-bit stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORT, or a WAV player with the header on. Security: anyone who can reach the port can listen; leave 'Allow other computers' off unless you need it.	16 bitų stereo, 48 kHz. ffplay -f s16le -ar 48000 -ac 2 tcp://127.0.0.1:PORTAS arba WAV grotuvas su antraštė. Sauga: klausytis gali kiekvienas, pasiekiantis prievadą; neįjunkite „Leisti kitus kompiuterius“ be reikalo.
+Listeners:	Klausytojai:
