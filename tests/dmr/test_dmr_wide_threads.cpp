@@ -4,7 +4,11 @@
 #include "dect2/dmr/dmr_gen.h"
 #include "dect2/engine/wide_modes.h"
 #include "dect2/t2/t2rx.h"
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <sys/resource.h>
+#endif
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -13,7 +17,17 @@
 #include <vector>
 using namespace dect2;
 static const double kFs = 2.4e6;
-static double cpu() { rusage u; getrusage(RUSAGE_SELF, &u); return u.ru_utime.tv_sec + u.ru_stime.tv_sec + (u.ru_utime.tv_usec + u.ru_stime.tv_usec) * 1e-6; }
+static double cpu() {
+#ifdef _WIN32
+    FILETIME c, e, k, u;   // 100 ns units
+    GetProcessTimes(GetCurrentProcess(), &c, &e, &k, &u);
+    auto t = [](const FILETIME& f) { return ((uint64_t)f.dwHighDateTime << 32 | f.dwLowDateTime) * 1e-7; };
+    return t(k) + t(u);
+#else
+    rusage u; getrusage(RUSAGE_SELF, &u);
+    return u.ru_utime.tv_sec + u.ru_stime.tv_sec + (u.ru_utime.tv_usec + u.ru_stime.tv_usec) * 1e-6;
+#endif
+}
 
 struct Out { std::vector<std::string> rows; std::vector<std::string> calls; std::vector<std::string> log; double wall = 0, cpuS = 0; };
 
