@@ -275,14 +275,14 @@ export function createCard(host, api) {
       add("Type", type || (t.cat ? "Category " + t.cat : ""));
       add("ICAO hex", String(t.id).split(":")[1] || "");
     } else {
-      add("Source", cap(t.kind) + (t.sub ? " · " + t.sub : ""));
+      add("Source", t.kind === "gnss" ? "GNSS satellite · " + (t.sub || "") + " (decoded broadcast ephemeris)" : cap(t.kind) + (t.sub ? " · " + t.sub : ""));
     }
     if (t.squawk != null && t.squawk !== "") {
       const sq = squawkMeaning(t.squawk);
       add("Squawk", sq.code + (sq.text ? " — " + sq.text : ""), sq.emergency ? "alert" : "");
     }
     if (t.alt != null) {
-      const alt = t.kind === "sat" ? (t.alt > 50 ? t.alt.toFixed(0) : t.alt.toFixed(1)) + " km"
+      const alt = t.kind === "sat" || t.kind === "gnss" ? (t.alt > 50 ? t.alt.toFixed(0) : t.alt.toFixed(1)) + " km"
         : t.kind === "aircraft" ? Math.round(t.alt).toLocaleString() + " ft"
         : Math.round(t.alt).toLocaleString() + " m";
       add(t.kind === "aircraft" ? "Altitude (baro)" : "Altitude", alt);

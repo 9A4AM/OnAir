@@ -1,5 +1,5 @@
 const KINDS = new Set([
-  "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station",
+  "aircraft", "vessel", "sonde", "aprs", "ham", "drone", "flarm", "sat", "buoy", "dsc", "station", "gnss",
 ]);
 
 const TTL_MS = {
@@ -11,6 +11,7 @@ const TTL_MS = {
   drone: 20 * 60e3,
   flarm: 15 * 60e3,
   sat: 20 * 60e3,
+  gnss: 10 * 60e3,
   buoy: 2 * 3600e3,
   dsc: 60 * 60e3,
   station: 6 * 3600e3,
@@ -93,6 +94,7 @@ const MAX_INGEST_AGE_SEC = {
   ham: { default: 120 },
   sonde: { default: 900 },
   sat: { default: 180 },
+  gnss: { default: 120 },
   dsc: { default: 600 },
   buoy: { default: 7200 },
   station: { default: 3600 },
@@ -343,8 +345,9 @@ export class MapHub {
       ).toArray()[0];
       if (!fresherPosition(t.age, prev, now)) continue;
       let merged = prev ? mergeTrackMeta(prev, t) : t;
-      merged.path = mergePath(prev && prev.path, merged.path, merged.lon, merged.lat);
-      const trailHdg = headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
+      if (t.kind !== "gnss") merged.path = mergePath(prev && prev.path, merged.path, merged.lon, merged.lat);
+      else merged.path = [];
+      const trailHdg = t.kind === "gnss" ? null : headingFromTrail(merged.path, merged.lon, merged.lat, merged.heading);
       if (trailHdg != null) merged.heading = trailHdg;
       else if (merged.heading == null && prev && prev.heading != null) merged.heading = prev.heading;
       if (merged.speed == null && prev && prev.speed != null) merged.speed = prev.speed;
@@ -472,7 +475,7 @@ export class MapHub {
   }
 }
 
-function sanitize(raw, now) {
+export function sanitize(raw, now) {
   if (!raw || typeof raw !== "object") return null;
   const kind = String(raw.kind || "");
   if (!KINDS.has(kind)) return null;
@@ -516,7 +519,7 @@ function sanitize(raw, now) {
     src: String(raw.src || "").slice(0, 16),
     cat: String(raw.cat || "").slice(0, 48),
     extra: String(raw.extra || "").slice(0, 120),
-    path: path.slice(-80),
+    path: kind === "gnss" ? [] : path.slice(-80),   // no trails for navigation satellites
     t: now,
   };
 }

@@ -350,9 +350,11 @@ void mapView(App& a, ImVec2 size) {
     }
     dl->PopClipRect();
     if (tip) {
-        ImGui::SetTooltip("%s (%s)  %.2f, %.2f  %.0f km\n%s%s%s", satNameK(tip->sys, tip->prn, tip->fcn).c_str(), gnssSystemName(tip->sys),
+        char ag[48] = "";
+        if (tip->fromEphemeris && tip->ephAgeS >= 0) snprintf(ag, sizeof ag, "  (ephemeris %.1f h from its reference time%s)", tip->ephAgeS / 3600.0, gnssEphemerisStale(*tip) ? ", stale" : "");
+        ImGui::SetTooltip("%s (%s)  %.2f, %.2f  %.0f km\n%s%s%s%s", satNameK(tip->sys, tip->prn, tip->fcn).c_str(), gnssSystemName(tip->sys),
                           tip->lat, tip->lon, tip->altKm, tip->tracked ? "tracked" : "not tracked", tip->used ? ", in the fix" : "",
-                          tip->fromEphemeris ? "" : "  (almanac)");
+                          tip->fromEphemeris ? "" : "  (almanac)", ag);
     }
     ImGui::SetCursorScreenPos(ImVec2(p0.x + 8 * gUi, p0.y + 8 * gUi));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.06f, 0.07f, 0.08f, 0.85f));

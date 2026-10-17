@@ -32,7 +32,7 @@ void GnssReceiver::Impl::telFix(GnssTelemetry& t, double signalNow, float best, 
 
 // Satellite positions from the ephemerides, in the table of satellites
 void GnssReceiver::Impl::telSatellites(GnssTelemetry& t) {
-    auto pushSat = [&](int sys, int prn, int fcn, const double pos[3], bool fromEph, int health, bool used) {
+    auto pushSat = [&](int sys, int prn, int fcn, const double pos[3], bool fromEph, int health, bool used, double ephAgeS) {
         if (t.sats.size() >= 96) return;
         double lat, lon, h;
         ecefToLla(pos, &lat, &lon, &h);
@@ -40,7 +40,7 @@ void GnssReceiver::Impl::telSatellites(GnssTelemetry& t) {
         GnssSatPos s;
         s.sys = sys; s.prn = prn; s.fcn = fcn;
         s.lat = lat; s.lon = lon; s.altKm = h / 1e3;
-        s.fromEphemeris = fromEph; s.health = health; s.used = used;
+        s.fromEphemeris = fromEph; s.health = health; s.used = used; s.ephAgeS = fromEph ? ephAgeS : -1;
         for (auto& tr : trackers) {
             const bool match = sys == GnssGlonass ? (tr->sys == GnssGlonass && tr->fcn == fcn)
                                                   : (tr->sys == sys && tr->prn == prn);
@@ -64,13 +64,13 @@ void GnssReceiver::Impl::telSatellites(GnssTelemetry& t) {
             else if (sat[p].alm.valid) gpsAlmanacPos(sat[p].alm, gpsTowNow, pos);
             else continue;
             const int health = fromEph ? (sat[p].eph.health ? 1 : 0) : (sat[p].alm.health ? 1 : 0);
-            pushSat(GnssGps, p, 0, pos, fromEph, health, sol[p].used);
+            pushSat(GnssGps, p, 0, pos, fromEph, health, sol[p].used, fromEph ? std::fabs(gpsWrap(gpsTowNow - sat[p].eph.toe)) : -1);
         }
         for (int p = 193; p <= 202; p++) {
             if (!sat[p].hasEph) continue;
             double pos[3];
             gpsEphemerisState(sat[p].eph, gpsTowNow, pos, nullptr);
-            pushSat(GnssQzss, p, 0, pos, true, sat[p].eph.health ? 1 : 0, sol[p].used);
+            pushSat(GnssQzss, p, 0, pos, true, sat[p].eph.health ? 1 : 0, sol[p].used, std::fabs(gpsWrap(gpsTowNow - sat[p].eph.toe)));
         }
     }
     double galTow = gpsTowNow >= 0 ? gpsTowNow + ggtoAt(gpsTowNow) : -1;
@@ -80,7 +80,7 @@ void GnssReceiver::Impl::telSatellites(GnssTelemetry& t) {
             if (!gsat[p].hasEph) continue;
             double pos[3];
             gpsEphemerisState(gsat[p].eph, galTow, pos, nullptr);
-            pushSat(GnssGalileo, p, 0, pos, true, gsat[p].eph.health ? 1 : 0, gsol[p].used);
+            pushSat(GnssGalileo, p, 0, pos, true, gsat[p].eph.health ? 1 : 0, gsol[p].used, std::fabs(gpsWrap(galTow - gsat[p].eph.toe)));
         }
     }
     double bdtTow = -1;
@@ -95,7 +95,7 @@ void GnssReceiver::Impl::telSatellites(GnssTelemetry& t) {
             if (!bsat[p].hasEph) continue;
             double pos[3];
             gpsEphemerisState(bsat[p].eph, bdtTow, pos, nullptr);
-            pushSat(GnssBeidou, p, 0, pos, true, bsat[p].eph.health ? 1 : 0, bsol[p].used);
+            pushSat(GnssBeidou, p, 0, pos, true, bsat[p].eph.health ? 1 : 0, bsol[p].used, std::fabs(gpsWrap(bdtTow - bsat[p].eph.toe)));
         }
     }
     const double gloTod = gpsTowNow >= 0 ? gpsToGloTod(gpsTowNow) : -1;
@@ -105,7 +105,8 @@ void GnssReceiver::Impl::telSatellites(GnssTelemetry& t) {
         if (tod < 0) tod = gloEph[i].tb;
         double pos[3];
         gloEphemerisState(gloEph[i], tod, pos, nullptr, nullptr, 60.0);
-        pushSat(GnssGlonass, gloEph[i].n, i + kGloMinK, pos, true, gloEph[i].healthy() ? 0 : 1, glsol[i].used);
+        pushSat(GnssGlonass, gloEph[i].n, i + kGloMinK, pos, true, gloEph[i].healthy() ? 0 : 1, glsol[i].used,
+                std::fabs(std::remainder(tod - gloEph[i].tb, 86400.0)));
     }
 }
 

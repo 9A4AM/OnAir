@@ -24,6 +24,7 @@ const KINDS = [
   { id: "buoy", name: "Buoys", color: "#7aa8d4", shape: "buoy" },
   { id: "dsc", name: "DSC", color: "#e0ad6b", shape: "dsc" },
   { id: "station", name: "Stations", color: "#e0d48f", shape: "station" },
+  { id: "gnss", name: "GNSS satellites", color: "#9ad0f0", shape: "sat" },
 ];
 
 const on = Object.fromEntries(KINDS.map((k) => [k.id, true]));
@@ -130,7 +131,14 @@ function positionTimeMs(t) {
   return t.t;
 }
 
+// GNSS constellations, by the "sub" the app sends
+const GNSS_COLORS = { gps: "#5aa0f0", galileo: "#f0b840", beidou: "#e86060", glonass: "#d070e0", qzss: "#50d0a0", sbas: "#a8b0b8" };
+
 function colorOf(kind, t) {
+  if (kind === "gnss") {
+    if (t && ageSec(t) > 60) return STALE;
+    return GNSS_COLORS[String((t && t.sub) || "").toLowerCase()] || (kindOf.gnss || {}).color;
+  }
   if (t) {
     const src = srcOf(t);
     if (src) {
@@ -288,7 +296,7 @@ function trailGeo() {
   const features = [];
   if (!selected) return { type: "FeatureCollection", features };
   const t = tracks.get(selected);
-  if (!t || !on[t.kind]) return { type: "FeatureCollection", features };
+  if (!t || !on[t.kind] || t.kind === "gnss") return { type: "FeatureCollection", features };
   const [dlon, dlat] = displayLonLat(t);
   const path = Array.isArray(t.path) ? t.path.slice() : [];
   if (path.length && (path[path.length - 1][0] !== dlon || path[path.length - 1][1] !== dlat)) path.push([dlon, dlat]);
@@ -379,7 +387,7 @@ function callsignOf(t) {
 function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 function fmtAlt(t) {
-  if (t.kind === "sat") return (t.alt > 50 ? t.alt.toFixed(0) : t.alt.toFixed(1)) + " km";
+  if (t.kind === "sat" || t.kind === "gnss") return (t.alt > 50 ? t.alt.toFixed(0) : t.alt.toFixed(1)) + " km";
   if (t.kind === "aircraft") return Math.round(t.alt) + " ft";
   return Math.round(t.alt) + " m";
 }

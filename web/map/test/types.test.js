@@ -47,6 +47,7 @@ test("APRS and other layers", () => {
   assert.equal(aprsShape({}), "aprs");
   assert.equal(iconShape({ kind: "sonde" }), "sonde");
   assert.equal(iconShape({ kind: "sat" }), "sat");
+  assert.equal(iconShape({ kind: "gnss", sub: "Galileo" }), "sat");
   assert.equal(iconShape({ kind: "flarm", cat: "Glider" }), "glider");
 });
 

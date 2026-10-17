@@ -109,7 +109,8 @@ export function iconShape(t) {
     case "vessel": return vesselShape(t);
     case "aprs": return aprsShape(t);
     case "sonde": return "sonde";
-    case "sat": return "sat";
+    case "sat":
+    case "gnss": return "sat";
     case "drone": return "drone";
     case "ham": return "ham";
     case "buoy": return "buoy";
