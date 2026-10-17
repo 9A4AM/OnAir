@@ -18,6 +18,11 @@ impl<'a> Buf<'a> {
     pub fn new(out: &'a mut [u8]) -> Self {
         Buf { out, len: 0, overflow: false }
     }
+    /// A writer over `out` that continues after the first `len` bytes (already written).
+    pub fn resume(out: &'a mut [u8], len: usize) -> Self {
+        let len = len.min(out.len());
+        Buf { out, len, overflow: false }
+    }
     /// Bytes written so far.
     pub fn len(&self) -> usize {
         self.len
@@ -128,6 +133,12 @@ impl<const N: usize> Str<N> {
     /// Builds the text with a writer.
     pub fn write(&mut self, f: impl FnOnce(&mut Buf)) {
         let mut w = Buf::new(&mut self.b);
+        f(&mut w);
+        self.len = w.len() as u16;
+    }
+    /// Appends text built by a writer that sees the existing text (so it can tell whether to add a separator).
+    pub fn append(&mut self, f: impl FnOnce(&mut Buf)) {
+        let mut w = Buf::resume(&mut self.b, self.len as usize);
         f(&mut w);
         self.len = w.len() as u16;
     }

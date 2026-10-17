@@ -1021,6 +1021,27 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME fuzz_mesh_proto COMMAND fuzz_mesh_proto)
   endif()
 
+  # Wi-SUN frame layers: a frozen copy of wisun_proto.cpp (cmake/gen_rs_ref.cmake) against the Rust-backed real one; links dect2core for the 2.4 GHz helpers it calls
+  # (zigbee names / addresses), the test's own objects come first
+  if(ONAIR_RUST_WISUN)
+    set(_dir ${CMAKE_BINARY_DIR}/wisun_ref)
+    add_custom_command(OUTPUT ${_dir}/wisun_proto_ref.h ${_dir}/wisun_proto_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=wisun_proto -DHDR=dect2/wisun/wisun_proto.h -DCPP=wisun/wisun_proto.cpp -DDEF=DECT2_RUST_WISUN
+              "-DFROM=namespace wisun {" "-DTO=namespace wisun_ref {" "-DEXTRA=" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      DEPENDS core/include/dect2/wisun/wisun_proto.h core/src/wisun/wisun_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
+    set(_real core/src/wisun/wisun_proto.cpp core/src/wisun/wisun_proto_rs.cpp)
+    set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_WISUN)
+    add_executable(test_wisun_proto_rs tests/wisun/test_wisun_proto_rs.cpp ${_dir}/wisun_proto_ref.cpp ${_real})
+    target_include_directories(test_wisun_proto_rs PRIVATE core/include ${_dir})
+    target_link_libraries(test_wisun_proto_rs PRIVATE dect2core onair_rs)
+    add_test(NAME wisun_proto_rs COMMAND test_wisun_proto_rs)
+    add_executable(fuzz_wisun_proto tests/wisun/fuzz_wisun_proto.cpp ${_real})
+    target_include_directories(fuzz_wisun_proto PRIVATE core/include)
+    target_compile_definitions(fuzz_wisun_proto PRIVATE DECT2_RUST_WISUN)
+    target_link_libraries(fuzz_wisun_proto PRIVATE dect2core onair_rs)
+    add_test(NAME fuzz_wisun_proto COMMAND fuzz_wisun_proto)
+  endif()
+
   # UAT message decoding (dump978 uat_decode.c): the reference is a copy of the C file with the two decode functions renamed ref_*, compiled without DECT2_RUST_UAT
   if(ONAIR_RUST_UAT)
     set(_dir ${CMAKE_BINARY_DIR}/uat_ref)

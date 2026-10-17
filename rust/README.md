@@ -74,7 +74,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 | vdl2 | `onair_vdl2` | `DECT2_RUST_VDL2` | `rs/vdl2.h` | VDL2 | not started |
 | hfdl | `onair_hfdl` | `DECT2_RUST_HFDL` | `rs/hfdl.h` | HFDL | not started |
 | mesh | `onair_mesh` | `DECT2_RUST_MESH` | `rs/mesh.h` | LoRa mesh packet layers: protobuf reader, Meshtastic header / Data / port payloads, MeshCore header and key-free payloads, LoRaWAN MAC frames (MHDR, FHDR, MAC commands, join / rejoin), LoRa APRS and MeshCom frames, name and key tables | done (AES / HMAC / Ed25519 and channel tables, LoRa PHY, builders and settings tables in C++) |
-| wisun | `onair_wisun` | `DECT2_RUST_WISUN` | `rs/wisun.h` | Wi-SUN | not started |
+| wisun | `onair_wisun` | `DECT2_RUST_WISUN` | `rs/wisun.h` | Wi-SUN FAN frame layers: PHR, PN9 whitening, FCS, 802.15.4 MAC header, header / payload IEs (schedules, PAN, network name, POM), MPX / EAPOL summary, names | done (demodulator, receiver, generator, channel plan tables and the MPDU builder in C++) |
 | uat | `onair_uat` | `DECT2_RUST_UAT` | `rs/uat.h` | UAT 978 message layer: downlink (header, state vector, mode status, aux SV), uplink frame, information frames, FIS-B APDU headers | done (FEC, demodulator, tracker, display text and UI mapping in C / C++) |
 | ts | `onair_ts` | `DECT2_RUST_TS` | `rs/ts.h` | MPEG-TS, PSI, EIT | not started |
 | dvbsi | `onair_dvbsi` | `DECT2_RUST_DVBSI` | `rs/dvbsi.h` | DVB service info, teletext, subtitles | not started |
@@ -89,7 +89,7 @@ Then update the status table below and run `tools/rust_check.sh`.
 ## The C++ originals are still there
 
 For every converted module the replaced C++ stays in its file under `#ifndef DECT2_RUST_<MODULE>` (AIS: `ais_proto.cpp`; ADS-B: `adsb_msg.cpp`; ACARS:
-`acars_proto.cpp`; SAME: `same_proto.cpp`; pager: `pager_proto.cpp`; AX.25 / APRS: `packet_ax25.cpp`, `packet_aprs.cpp`; NXDN: `nxdn_proto.cpp`; DMR: `dmr_fec.cpp`, `dmr_proto.cpp`; P25: `p25_proto.cpp`; D-STAR: `dstar_proto.cpp`; UAT: `uat_decode.c`; mesh: `mesh_proto*.cpp`, `mesh_pb.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
+`acars_proto.cpp`; SAME: `same_proto.cpp`; pager: `pager_proto.cpp`; AX.25 / APRS: `packet_ax25.cpp`, `packet_aprs.cpp`; NXDN: `nxdn_proto.cpp`; DMR: `dmr_fec.cpp`, `dmr_proto.cpp`; P25: `p25_proto.cpp`; D-STAR: `dstar_proto.cpp`; UAT: `uat_decode.c`; Wi-SUN: `wisun_proto.cpp`; mesh: `mesh_proto*.cpp`, `mesh_pb.cpp`), because `DECT2_RUST=OFF` builds and cross builds without a Rust target must keep working. The Rust-backed
 twin is `<file>_rs.cpp` (guarded by `#ifdef DECT2_RUST_<MODULE>`). A later step deletes the `#ifndef` blocks when Rust becomes mandatory; the differential
 tests then keep a frozen copy as their reference (`cmake/gen_rs_ref.cmake` writes it from the C++ file with the switch undefined).
 
