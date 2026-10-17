@@ -134,6 +134,11 @@ foreach(_f ${_fdb_files})
 endforeach()
 string(APPEND _fdb_out "    nullptr};\n")
 file(CONFIGURE OUTPUT ${_fdb_inc} CONTENT "${_fdb_out}" @ONLY)
+# the built-in airport table: data/airports/airports.tsv (OurAirports, public domain) compiled in as text (airports.cpp parses it)
+file(READ ${CMAKE_SOURCE_DIR}/data/airports/airports.tsv _ap_txt)
+file(CONFIGURE OUTPUT ${CMAKE_BINARY_DIR}/generated/airports_data.inc CONTENT "static const char kAirportData[] = R\"OnAirAP(${_ap_txt})OnAirAP\";\n" @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/data/airports/airports.tsv)
+target_sources(dect2core PRIVATE core/src/airports/airports.cpp)
 # The modes added after FM (DVB-S/S2, DTMB, analog TV, DMR, DRM, ADS-B): every core/src/<mode>/*.cpp belongs to its mode, so a mode can add files without editing this list
 set(DECT2_MODES dvbs dtmb atv dmr drm adsb gnss dab sonde ais marine acars inmc aero iridium mesh hdr cdr pager packet hfdig airband vdl2 ism vor ils m17 cell cw dstar hfdl nxdn gsmr psk js8 specx wb specan dvbc dpmr orbcomm uplink tetra tetrapol ale mac astro p25 ble iono qo100 wifi general time rid meteor nr cubesat ccsds goes globalstar vdes hrpt zigbee flarm hfbeacon dji nbiot halow codar datawell same multitone loraraw ant dect elektro ndb lbj eczas vdl4 uat wisun)
 target_sources(dect2core PRIVATE core/src/tv/ts_proto.cpp core/src/tv/ts_proto_rs.cpp core/src/common/text_charset_rs.cpp core/src/tv/dvb_text.cpp core/src/tv/dvb_text_rs.cpp core/src/tv/teletext_rs.cpp core/src/tv/dvbsub_rs.cpp)   # MPEG-TS parsing layer (C++ or the Rust crate onair_ts)
@@ -790,6 +795,9 @@ if(DECT2_BUILD_TESTS)
   add_executable(test_freq_db tests/channels/test_freq_db.cpp)   # the frequency database: data validity, search and filters, import / export round trip
   target_link_libraries(test_freq_db PRIVATE dect2core)
   add_test(NAME freq_db COMMAND test_freq_db)
+  add_executable(test_airports tests/airports/test_airports.cpp)   # airport table: built-in data, search, near, channels of an airport, OurAirports import
+  target_link_libraries(test_airports PRIVATE dect2core)
+  add_test(NAME airports COMMAND test_airports)
   add_executable(test_memory_bank tests/channels/test_memory_bank.cpp)   # the memory bank: model, JSON / CSV, damaged files, atomic save, recall order
   target_link_libraries(test_memory_bank PRIVATE dect2core)
   add_test(NAME memory_bank COMMAND test_memory_bank)
