@@ -59,6 +59,9 @@ static void tickReceiver(App& a) {
 // F toggles the video-only view; Escape leaves it
 static void videoOnlyKeys(App& a) {
     ImGuiIO& io = ImGui::GetIO();
+    // I toggles the Identify tool (a click or a drag on the spectrum identifies the signal), Escape leaves it
+    if (!io.WantTextInput && !io.KeyCtrl && !io.KeySuper && !io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_I, false)) a.identifyTool = !a.identifyTool;
+    if (a.identifyTool && !io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) a.identifyTool = false;
     if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
         if (a.videoOnly) { a.videoOnly = false; if (glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
         else if (a.video.has()) { a.videoOnly = true; if (!glfwGetWindowMonitor(gWindow)) toggleFullscreen(); }
