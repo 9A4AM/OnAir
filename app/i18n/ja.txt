@@ -2226,3 +2226,5 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	なぜ?
 Identify selected	選択を識別
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	選択した信号に無線機を合わせて、その正体を示します (サンプルレートが信号をカバーするモードでレシーバーが動作している必要があります)
+Also share GPS interference cells (counts per area, no aircraft)	GPS妨害セルも共有する（エリアごとの件数のみ、航空機情報なし）
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	ADS-B受信機の周囲の0.5度四方（約55 km）ごとに、直近1時間に受信した航空機の数と、そのうちGPS位置が不良と報告した数を送ります。送るのは各区画のこの2つの数字だけで、航空機の識別情報、航跡、あなたの位置は送りません。公開マップのGPS妨害レイヤーに使われますが、妨害の証拠ではなく目安です。選択するまでオフです。

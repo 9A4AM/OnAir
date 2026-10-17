@@ -2226,3 +2226,5 @@ What is this? Click a signal, or drag across it, and OnAir says what it is and h
 Why?	为什么?
 Identify selected	识别所选
 Tune the radio to the selected signal and say what it is (needs the receiver in a mode whose sample rate covers it)	将无线电调谐到所选信号并说明它是什么(接收器须处于采样率能覆盖该信号的模式)
+Also share GPS interference cells (counts per area, no aircraft)	同时分享GPS干扰网格（按区域计数，不含飞机信息）
+For every 0.5 degree square (about 55 km) around your ADS-B receiver: how many aircraft were heard in the last hour and how many of them reported a poor GPS position. Only these two numbers per square are sent, never aircraft identities, tracks or your location. It feeds the GPS interference layer of the public map and is an indicator, not proof of jamming. Off until you choose it.	对于ADS-B接收机周围每个0.5度方格（约55公里）：过去一小时听到多少架飞机，其中多少架报告了较差的GPS位置。每个方格只发送这两个数字，绝不发送飞机身份、航迹或您的位置。它用于公共地图的GPS干扰图层，只是迹象，不能证明存在干扰。在您选择之前保持关闭。

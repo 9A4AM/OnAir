@@ -158,6 +158,25 @@ static void drawTrails(ImDrawList* dl, const AdsbTelemetry& t) {
     }
 }
 
+// GPS interference: the 0.5 degree cells where many of the aircraft heard in the last hour reported a poor GPS position (NACp / NIC low, or a position
+// jump). An indicator, not proof of jamming: old transponders and shaded antennas look the same.
+static void drawJam(ImDrawList* dl, ImVec2 p0, ImVec2 size) {
+    static const ImU32 col[4] = {IM_COL32(63, 174, 90, 70), IM_COL32(230, 194, 41, 95), IM_COL32(240, 138, 36, 120), IM_COL32(224, 68, 58, 150)};
+    const auto cells = S.jam.cells(ImGui::GetTime());
+    const ImVec2 mouse = ImGui::GetIO().MousePos;
+    const dect2::GpsJamCell* tip = nullptr;
+    for (const auto& c : cells) {
+        const int lv = c.level();
+        if (lv < 0) continue;
+        const ImVec2 a = adsbmap::project(c.south(), c.west()), b = adsbmap::project(c.south() + dect2::kGpsJamCellDeg, c.west() + dect2::kGpsJamCellDeg);
+        const ImVec2 lo(std::min(a.x, b.x), std::min(a.y, b.y)), hi(std::max(a.x, b.x), std::max(a.y, b.y));
+        if (hi.x < p0.x || hi.y < p0.y || lo.x > p0.x + size.x || lo.y > p0.y + size.y) continue;
+        dl->AddRectFilled(lo, hi, col[lv]);
+        if (mouse.x >= lo.x && mouse.x < hi.x && mouse.y >= lo.y && mouse.y < hi.y && ImGui::IsWindowHovered()) tip = &c;
+    }
+    if (tip) ImGui::SetTooltip("%d of %d aircraft reported a poor GPS position in the last hour (%d with a position jump).\nAn indicator, not proof of jamming.", tip->degraded, tip->aircraft, tip->jumps);
+}
+
 // winds aloft: an arrow downwind from each aircraft, 1 px per kt, a tick per 50 kt
 static void drawWinds(ImDrawList* dl, const AdsbTelemetry& t) {
     for (const auto& ac : t.aircraft) {   // winds aloft: an arrow downwind from the aircraft, 1 px per kt, a tick per 50 kt
@@ -257,6 +276,9 @@ static void mapCorner(App& a, ImVec2 p0, ImVec2 size, bool wrongRef, double area
     if (ImGui::Checkbox("winds aloft", &S.winds)) { plat::prefs().setB("adsbWinds", S.winds); plat::prefs().flush(); }
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Wind arrows (downwind) at the aircraft, coloured by altitude: derived from Comm-B 5,0 + 6,0 replies, or reported in 4,4.");
     ImGui::SameLine(0, 6 * gUi);
+    if (ImGui::Checkbox("GPS interference", &S.jamLayer)) { plat::prefs().setB("adsbGpsJam", S.jamLayer); plat::prefs().flush(); }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Shades 0.5 degree squares by the share of aircraft that reported a poor GPS position (NACp / NIC low, or a position jump) in the last hour; at least 3 aircraft per square. An indicator, not proof of jamming.");
+    ImGui::SameLine(0, 6 * gUi);
     gPred.load("adsb", true, false);
     gPred.controls();
     ImGui::SameLine(0, 6 * gUi);
@@ -310,6 +332,7 @@ void mapView(App& a, ImVec2 size) {
     ImVec2 click; const bool clicked = adsbmap::clickedAt(click);
     gPred.load("adsb", true, false);
     if (on && gPred.predict) gPred.feedAdsb(t.aircraft, ImGui::GetTime());
+    if (on && S.jamLayer) drawJam(dl, p0, size);
     if (on) {
         drawTrails(dl, t);
         if (S.winds) drawWinds(dl, t);
