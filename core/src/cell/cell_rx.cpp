@@ -101,6 +101,23 @@ std::vector<int> lteBandsOfHz(double hz) {
     return v;
 }
 
+LteBandChoice lteBandFor(double hz, int sib1Band) {
+    LteBandChoice c;
+    const std::vector<int> all = lteBandsOfHz(hz);
+    if (sib1Band >= 1 && sib1Band <= 63) {
+        c.band = sib1Band; c.confirmed = true;
+        for (int b : all) if (b != sib1Band) c.also.push_back(b);
+        return c;
+    }
+    std::vector<int> pool;
+    for (int b : all) if (sib1Band != 64 || b > 64) pool.push_back(b);
+    if (pool.empty()) return c;
+    c.band = pool[0];
+    c.confirmed = sib1Band == 64 && pool.size() == 1;   // the only band above 64 that holds it
+    for (size_t i = 1; i < pool.size(); i++) c.also.push_back(pool[i]);
+    return c;
+}
+
 const char* lteOperatorName(int mcc, int mnc) {
     struct O { int mcc, mnc; const char* name; };
     static const O t[] = {
@@ -348,7 +365,7 @@ struct CellReceiver::Impl {
             tel.cells.push_back(CellTower());
             t = &tel.cells.back();
             t->freqHz = nominal; t->earfcn = ear; t->pci = r.found.pci; t->firstWall = wallNow();
-            t->band = ear >= 0 ? lteBandOfEarfcn(ear) : 0;
+            if (ear >= 0) { const LteBandChoice bc = lteBandFor(nominal, 0); t->band = bc.band; t->bandConfirmed = false; t->bandsAlso = bc.also; }
         }
         t->tdd = r.found.tdd; t->extCp = r.found.extCp;
         if (r.mib.ok) { t->hasMib = true; t->nRb = r.mib.nRb; t->ports = r.mib.ports; t->phichDur = r.mib.phichDur; t->phichRes = r.mib.phichRes; t->sfn = r.mib.sfn; }
@@ -384,8 +401,9 @@ struct CellReceiver::Impl {
                 t->tac = s.tac; t->cellId = s.cellId; t->enb = s.cellId >> 8; t->sector = (int)(s.cellId & 255);
                 t->barred = s.barred; t->qRxLevMinDbm = s.qRxLevMinDbm; t->pMaxDbm = s.pMax;
                 if (s.band > 0) {
-                    t->band = s.band;
-                    if (center > 0) { const int e = lteNearestEarfcn(t->freqHz, s.band); if (e >= 0) t->earfcn = e; }
+                    const LteBandChoice bc = lteBandFor(t->freqHz, s.band);   // 64: a band above 64 (66, 71...), from the frequency
+                    if (bc.band > 0) { t->band = bc.band; t->bandConfirmed = bc.confirmed; t->bandsAlso = bc.also; }
+                    if (center > 0 && t->band > 0) { const int e = lteNearestEarfcn(t->freqHz, t->band); if (e >= 0) t->earfcn = e; }
                 }
                 t->sched.clear();
                 for (const auto& e : s.sched) { CellSched cs; cs.periodRf = e.periodRf; cs.sibs = e.sibs; t->sched.push_back(cs); }

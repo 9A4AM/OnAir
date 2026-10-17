@@ -60,6 +60,12 @@ int lteBandOfEarfcn(int earfcn);               // 0 when not in the table
 int lteNearestEarfcn(double hz, int preferBand = 0);   // the channel nearest to hz (within 50 kHz), -1 outside every band
 std::vector<int> lteBandsOfHz(double hz);      // every band holding hz, most common (European) first
 int lteHzToEarfcn(double hz, int preferBand = 0);   // -1 when no band holds it (the 100 kHz raster)
+// The band of a cell on hz (#164). Many bands overlap (2110-2155 MHz is band 1, 4, 10, 65 and 66; 758-768 is 14 and 28), so the frequency alone
+// does not say. sib1Band is SIB1's freqBandIndicator, 0 when SIB1 is not read yet: 1..63 is the band itself; 64 means "a band above 64,
+// the number is in an extension that is not read": the band is then taken from the bands above 64 that hold hz (617-652 MHz: 71).
+// confirmed is false when it is a guess from the frequency (the first of the bands that hold it), also lists the other bands that hold hz.
+struct LteBandChoice { int band = 0; bool confirmed = false; std::vector<int> also; };
+LteBandChoice lteBandFor(double hz, int sib1Band);
 // The operator of an MCC-MNC, from a short built-in list of public network codes ("" unknown); the country of the MCC
 const char* lteOperatorName(int mcc, int mnc);
 const char* lteCountry(int mcc);

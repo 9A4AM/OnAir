@@ -44,8 +44,34 @@ struct State {
     bool keyLoaded = false, showKey = false, fitted = false;
     char key[128] = {};
     std::unique_ptr<dect2::OcidLookup> ocid;
+    char hide[48] = {};           // "Hide bands": band numbers whose cells are left out of the list and the export (#164)
 };
 State S;
+
+// the band numbers typed in the hide box ("14 28, 64")
+std::vector<int> hiddenBands() {
+    std::vector<int> v;
+    for (const char* p = S.hide; *p; ) {
+        if (*p >= '0' && *p <= '9') { char* e; v.push_back((int)strtol(p, &e, 10)); p = e; } else p++;
+    }
+    return v;
+}
+bool hidden(const dect2::CellTower& c) {
+    const std::vector<int> h = hiddenBands();
+    return !h.empty() && c.band > 0 && std::find(h.begin(), h.end(), c.band) != h.end();
+}
+// "B66 (also B4, B25)"; a band taken from the frequency alone is "B1? (or B4, B10)" until SIB1 has been read
+std::string bandText(const dect2::CellTower& c) {
+    if (!c.band) return "?";
+    std::string o = "B" + std::to_string(c.band) + (c.bandConfirmed ? "" : "?");
+    if (!c.bandsAlso.empty()) {
+        o += c.bandConfirmed ? " (also " : " (or ";
+        for (size_t i = 0; i < c.bandsAlso.size() && i < 4; i++) o += (i ? ", B" : "B") + std::to_string(c.bandsAlso[i]);
+        if (c.bandsAlso.size() > 4) o += "...";
+        o += ")";
+    }
+    return o;
+}
 
 bool live(const App& a) { return a.rx.standard == 33; }
 
@@ -179,14 +205,19 @@ void scanBar(App& a) {
     flowNext(10 * gUi);
     if (ImGui::SmallButton("Clear")) a.engine.cell().clearCells();
     flowNext(10 * gUi);
+    ImGui::TextDisabled("Hide bands"); ImGui::SameLine(); ImGui::SetNextItemWidth(90 * gUi); ImGui::InputTextWithHint("##cbhide", "e.g. 14 28", S.hide, sizeof S.hide);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Band numbers whose cells are left out of the list and the export (a cell is shown in the first band that holds its frequency\nuntil its SIB1 is read; an unwanted band can be hidden here).");
+    flowNext(10 * gUi);
     {
         static std::string note;
         resexp::Table t; t.cols = {"time", "frequency_hz", "mode", "operator", "band", "earfcn", "pci", "enb", "sector", "tac", "width_mhz", "rsrp_db", "rsrq_db"};
         const std::string now = resexp::stamp();
-        for (const auto& c : a.rx.cell.cells)
+        for (const auto& c : a.rx.cell.cells) {
+            if (hidden(c)) continue;
             t.add({now, resexp::num(c.freqHz, 0), "LTE", opText(c), c.band ? std::to_string(c.band) : "", c.earfcn >= 0 ? std::to_string(c.earfcn) : "", std::to_string(c.pci),
                    c.hasSib1 ? std::to_string(c.enb) : "", c.hasSib1 ? std::to_string(c.sector) : "", c.hasSib1 ? std::to_string(c.tac) : "",
                    c.hasMib ? resexp::num(c.nRb * 0.2, 1) : "", resexp::num(c.rsrpDb, 1), resexp::num(c.rsrqDb, 1)});
+        }
         resexp::saveButton(t, "lte", note, "svcell");
         if (!note.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", note.c_str()); }
     }
@@ -206,12 +237,13 @@ void cellTable(App& a) {
     ImGui::TableHeadersRow();
     for (size_t i = 0; i < t.cells.size(); i++) {
         const auto& c = t.cells[i];
+        if (hidden(c)) continue;
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
         char l[96]; snprintf(l, sizeof l, "%s##c%zu", wide ? opText(c).c_str() : (c.hasSib1 && !c.plmns.empty() ? c.plmns[0].c_str() : "-"), i);
         if (ImGui::Selectable(l, S.sel == (int)i, ImGuiSelectableFlags_SpanAllColumns)) S.sel = (int)i;
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s, %.1f MHz, TAC %u, %.1f MHz wide, RSRQ %.1f dB, seen %s ago", opText(c).c_str(), c.freqHz / 1e6, c.tac, c.nRb * 0.2, c.rsrqDb, ago(c.lastWall).c_str());
-        ImGui::TableNextColumn(); if (c.band) ImGui::Text("B%d", c.band); else ImGui::TextDisabled("?");
+        ImGui::TableNextColumn(); if (c.band) ImGui::TextUnformatted(bandText(c).c_str()); else ImGui::TextDisabled("?");
         if (c.freqHz > 0 && ImGui::IsItemHovered()) {   // a frequency can lie in several bands; the EARFCN follows from the band
             std::string o;
             for (int b : dect2::lteBandsOfHz(c.freqHz)) o += (o.empty() ? "" : ", ") + std::string("B") + std::to_string(b) + " EARFCN " + std::to_string(dect2::lteNearestEarfcn(c.freqHz, b));
