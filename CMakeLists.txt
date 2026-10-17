@@ -124,6 +124,7 @@ target_sources(dect2core PRIVATE core/src/files/files_proto.cpp core/src/files/f
 target_sources(dect2core PRIVATE core/src/net/net_proto.cpp core/src/net/net_proto_rs.cpp)   # remote API HTTP / WebSocket text, rtl_tcp, SpyServer, SDR++ server and network radio list parsing (C++ or the Rust crate onair_net)
 # the TLE epoch / B* arithmetic (pow, floor) must come out the same bit for bit in the C++ and the Rust build: no fused multiply-add, the C library pow
 set_source_files_properties(core/src/files/files_proto.cpp core/src/files/files_proto_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off;-fno-builtin-pow")
+set_source_files_properties(core/src/hfdl/hfdl_proto.cpp core/src/hfdl/hfdl_proto_rs.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")   # Viterbi / coordinate arithmetic identical in the C++ and Rust builds
 option(DECT2_RUST_VITERBI "Use the Rust NEON Viterbi decoder of onair_fec on aarch64 (about 4% slower than the C++ NEON one, so off by default)" OFF)
 if(DECT2_RUST_VITERBI AND ONAIR_RUST_FEC)
   target_compile_definitions(dect2core PRIVATE ONAIR_RUST_VITERBI)
@@ -1201,6 +1202,28 @@ if(DECT2_BUILD_TESTS)
     target_compile_definitions(fuzz_vdl2_proto PRIVATE DECT2_RUST_VDL2)
     target_link_libraries(fuzz_vdl2_proto PRIVATE dect2core onair_rs)
     add_test(NAME fuzz_vdl2_proto COMMAND fuzz_vdl2_proto)
+  endif()
+
+  # HFDL layers: a frozen copy of hfdl_proto.cpp (namespace dect2_hfdl_ref) against the Rust-backed real one; links dect2core for the ACARS / aero code, the test's own
+  # objects come first. -ffp-contract=off keeps the Viterbi / coordinate arithmetic identical in both copies
+  if(ONAIR_RUST_HFDL)
+    set(_dir ${CMAKE_BINARY_DIR}/hfdl_ref)
+    add_custom_command(OUTPUT ${_dir}/hfdl_proto_ref.h ${_dir}/hfdl_proto_ref.cpp
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -DNAME=hfdl_proto -DHDR=dect2/hfdl/hfdl_proto.h -DCPP=hfdl/hfdl_proto.cpp -DDEF=DECT2_RUST_HFDL
+              "-DFROM=namespace dect2 {" "-DTO=namespace dect2_hfdl_ref {" "-DEXTRA= using namespace dect2;" "-DCPP_REPL=hfdlReadAcars=>hfdlReadAcarsRef" -P ${CMAKE_SOURCE_DIR}/cmake/gen_rs_ref.cmake
+      DEPENDS core/include/dect2/hfdl/hfdl_proto.h core/src/hfdl/hfdl_proto.cpp cmake/gen_rs_ref.cmake VERBATIM)
+    set(_real core/src/hfdl/hfdl_proto.cpp core/src/hfdl/hfdl_proto_rs.cpp)
+    set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_HFDL)
+    set_source_files_properties(${_real} ${_dir}/hfdl_proto_ref.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
+    add_executable(test_hfdl_proto_rs tests/hfdl/test_hfdl_proto_rs.cpp ${_dir}/hfdl_proto_ref.cpp ${_real})
+    target_include_directories(test_hfdl_proto_rs PRIVATE core/include core/src/hfdl ${_dir} ${CMAKE_SOURCE_DIR}/core/include/dect2/hfdl)
+    target_link_libraries(test_hfdl_proto_rs PRIVATE dect2core onair_rs)
+    add_test(NAME hfdl_proto_rs COMMAND test_hfdl_proto_rs)
+    add_executable(fuzz_hfdl_proto tests/hfdl/fuzz_hfdl_proto.cpp ${_real})
+    target_include_directories(fuzz_hfdl_proto PRIVATE core/include core/src/hfdl)
+    target_compile_definitions(fuzz_hfdl_proto PRIVATE DECT2_RUST_HFDL)
+    target_link_libraries(fuzz_hfdl_proto PRIVATE dect2core onair_rs)
+    add_test(NAME fuzz_hfdl_proto COMMAND fuzz_hfdl_proto)
   endif()
 
   # UAT message decoding (dump978 uat_decode.c): the reference is a copy of the C file with the two decode functions renamed ref_*, compiled without DECT2_RUST_UAT
