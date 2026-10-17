@@ -15,10 +15,15 @@ namespace dect2 {
 
 using namespace meshcrypto;
 
+// The C++ below up to the matching #endif is replaced by rust/onair_mesh (mesh_proto_rs.cpp) when DECT2_RUST_MESH is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/mesh/test_mesh_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_MESH
 const char* meshEnumName(const MeshEnumName* t, int v) {
     for (; t->name; t++) if (t->value == v) return t->name;
     return nullptr;
 }
+
+#endif // DECT2_RUST_MESH
 
 std::string meshHex(const uint8_t* p, size_t n) { return hexEncode(p, n); }
 
@@ -39,6 +44,7 @@ const uint8_t* meshtasticDefaultKey() { return kDefaultPsk; }
 static const uint8_t kMeshcorePublic[16] = {0x8b, 0x33, 0x87, 0xe9, 0xc5, 0xcd, 0xea, 0x6a, 0xc9, 0xe5, 0xed, 0xba, 0xa1, 0x15, 0xcd, 0x72};
 const uint8_t* meshcorePublicSecret() { return kMeshcorePublic; }
 
+#ifndef DECT2_RUST_MESH
 std::string meshtasticNodeIdString(uint32_t num) { return meshFmt("!%08x", num); }
 
 std::string meshtasticHwModelName(int hw) {
@@ -76,6 +82,8 @@ bool meshtasticExpandPsk(const std::vector<uint8_t>& psk, std::vector<uint8_t>& 
     else if (key.size() > 16 && key.size() < 32) key.resize(32, 0);
     return true;
 }
+
+#endif // DECT2_RUST_MESH
 
 bool meshLoraLdro(int sf, double bwHz) {
     if (bwHz <= 0) return false;

@@ -15,8 +15,12 @@ using namespace meshcrypto;
 
 namespace {
 
-uint32_t le32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
 void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putLe32(v, x); }
+
+// The C++ below up to the matching #endif is replaced by rust/onair_mesh (mesh_proto_rs.cpp) when DECT2_RUST_MESH is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/mesh/test_mesh_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_MESH
+uint32_t le32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
 
 const char* typeName(int t) {
     switch (t) {
@@ -53,18 +57,6 @@ std::string cleanLine(const uint8_t* p, size_t n) {
     return s;
 }
 
-// Utils::MACThenDecrypt: HMAC key is the full 32 byte secret, AES key its first 16 bytes
-bool macThenDecrypt(const MeshCoreChannel& c, const uint8_t* src, size_t n, std::vector<uint8_t>& plain) {
-    if (n <= 2) return false;
-    const size_t enc = n - 2;
-    if (enc == 0 || enc % 16 != 0) return false;                       // Utils::MACThenDecrypt
-    uint8_t mac[32];
-    hmacSha256(c.secret, 32, src + 2, enc, mac);
-    if (std::memcmp(mac, src, 2) != 0) return false;
-    plain = aesEcbDecrypt(c.secret, 16, src + 2, enc);
-    return !plain.empty();
-}
-
 bool decodeGroupPayload(int type, int hcnt, const std::string& via, const uint8_t* pay, size_t m, const std::vector<MeshCoreChannel>& chans,
                         MeshPacketInfo& pi, MeshDecodeResult& r) {
     if (m < 4) return false;
@@ -76,7 +68,7 @@ bool decodeGroupPayload(int type, int hcnt, const std::string& via, const uint8_
         if (c.hash != h) continue;
         any = true;
         std::vector<uint8_t> d;
-        if (!macThenDecrypt(c, pay + 1, m - 1, d)) continue;
+        if (!meshcoreMacThenDecrypt(c, pay + 1, m - 1, d)) continue;
         pi.decrypted = true;
         pi.channel = c.name;
         pi.type = type == 6 ? "GRP_DATA" : "GRP_TXT";
@@ -109,8 +101,23 @@ bool decodeGroupPayload(int type, int hcnt, const std::string& via, const uint8_
     return false;
 }
 
+#endif // DECT2_RUST_MESH
+
 } // namespace
 
+// Utils::MACThenDecrypt: HMAC key is the full 32 byte secret, AES key its first 16 bytes
+bool meshcoreMacThenDecrypt(const MeshCoreChannel& c, const uint8_t* src, size_t n, std::vector<uint8_t>& plain) {
+    if (n <= 2) return false;
+    const size_t enc = n - 2;
+    if (enc == 0 || enc % 16 != 0) return false;                       // Utils::MACThenDecrypt
+    uint8_t mac[32];
+    hmacSha256(c.secret, 32, src + 2, enc, mac);
+    if (std::memcmp(mac, src, 2) != 0) return false;
+    plain = aesEcbDecrypt(c.secret, 16, src + 2, enc);
+    return !plain.empty();
+}
+
+#ifndef DECT2_RUST_MESH
 MeshDecodeResult MeshProto::decodeMeshCore(const uint8_t* p, size_t n, const MeshRadioInfo&) const {
     MeshDecodeResult r;
     MeshPacketInfo& pi = r.packet;
@@ -258,6 +265,8 @@ MeshDecodeResult MeshProto::decodeMeshCore(const uint8_t* p, size_t n, const Mes
     }
     return r;
 }
+
+#endif // DECT2_RUST_MESH
 
 // ---- builders ----
 

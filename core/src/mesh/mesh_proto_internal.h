@@ -39,6 +39,8 @@ struct MeshProto::State {
 std::string meshHex(const uint8_t* p, size_t n);
 std::string meshFmt(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 const uint8_t* meshtasticDefaultKey();                          // 16 bytes
+// Utils::MACThenDecrypt of MeshCore: the 2 byte MAC (HMAC-SHA256 over the ciphertext) is checked, then AES-128-ECB decrypts; false when it does not match
+bool meshcoreMacThenDecrypt(const MeshCoreChannel& c, const uint8_t* src, size_t n, std::vector<uint8_t>& plain);
 bool meshcoreMakeChannel(const std::string& name, const uint8_t* secret, size_t len, MeshCoreChannel& out);
 
 } // namespace dect2

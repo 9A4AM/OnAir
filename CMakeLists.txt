@@ -992,6 +992,35 @@ if(DECT2_BUILD_TESTS)
     add_test(NAME fuzz_packet_proto COMMAND fuzz_packet_proto)
   endif()
 
+  # Mesh packet layers (Meshtastic, MeshCore, LoRaWAN, LoRa APRS, MeshCom): frozen copies of the seven C++ files in dect2_mesh_ref (cmake/gen_mesh_ref.cmake) against the
+  # Rust-backed real implementation; the test links dect2core for the rest (crypto, APRS parser), its own objects come first so its copies of the mesh files win
+  if(ONAIR_RUST_MESH)
+    set(_dir ${CMAKE_BINARY_DIR}/mesh_ref)
+    set(_refs "")
+    foreach(_b mesh_proto mesh_proto_tables mesh_proto_meshtastic mesh_proto_meshcore mesh_proto_aprs mesh_proto_lorawan mesh_pb)
+      list(APPEND _refs ${_dir}/${_b}_ref.cpp)
+    endforeach()
+    add_custom_command(OUTPUT ${_refs} ${_dir}/mesh_proto_ref.h ${_dir}/mesh_proto_internal_ref.h ${_dir}/mesh_pb_ref.h
+      COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DOUT=${_dir} -P ${CMAKE_SOURCE_DIR}/cmake/gen_mesh_ref.cmake
+      DEPENDS core/include/dect2/mesh/mesh_proto.h core/include/dect2/mesh/mesh_pb.h core/src/mesh/mesh_proto_internal.h core/src/mesh/mesh_proto.cpp
+              core/src/mesh/mesh_proto_tables.cpp core/src/mesh/mesh_proto_meshtastic.cpp core/src/mesh/mesh_proto_meshcore.cpp core/src/mesh/mesh_proto_aprs.cpp
+              core/src/mesh/mesh_proto_lorawan.cpp core/src/mesh/mesh_pb.cpp cmake/gen_mesh_ref.cmake VERBATIM)
+    set(_real "")
+    foreach(_b mesh_proto mesh_proto_tables mesh_proto_meshtastic mesh_proto_meshcore mesh_proto_aprs mesh_proto_lorawan mesh_pb mesh_proto_rs mesh_proto_lora_rs mesh_pb_rs)
+      list(APPEND _real core/src/mesh/${_b}.cpp)
+    endforeach()
+    set_source_files_properties(${_real} PROPERTIES COMPILE_DEFINITIONS DECT2_RUST_MESH)
+    add_executable(test_mesh_proto_rs tests/mesh/test_mesh_proto_rs.cpp tests/mesh/rs_part2_mesh.cpp ${_refs} ${_real})
+    add_executable(fuzz_mesh_proto tests/mesh/fuzz_mesh_proto.cpp ${_real})
+    foreach(_t test_mesh_proto_rs fuzz_mesh_proto)
+      target_include_directories(${_t} PRIVATE core/include core/src/mesh ${_dir})
+      target_compile_definitions(${_t} PRIVATE DECT2_RUST_MESH)
+      target_link_libraries(${_t} PRIVATE dect2core onair_rs)
+    endforeach()
+    add_test(NAME mesh_proto_rs COMMAND test_mesh_proto_rs)
+    add_test(NAME fuzz_mesh_proto COMMAND fuzz_mesh_proto)
+  endif()
+
   # UAT message decoding (dump978 uat_decode.c): the reference is a copy of the C file with the two decode functions renamed ref_*, compiled without DECT2_RUST_UAT
   if(ONAIR_RUST_UAT)
     set(_dir ${CMAKE_BINARY_DIR}/uat_ref)

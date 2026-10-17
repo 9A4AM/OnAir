@@ -98,6 +98,45 @@ impl<'a> Buf<'a> {
     }
 }
 
+/// A byte string of at most `N` bytes.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct Str<const N: usize> {
+    /// Length used.
+    pub len: u16,
+    /// The bytes (not NUL terminated).
+    pub b: [u8; N],
+}
+
+impl<const N: usize> Default for Str<N> {
+    fn default() -> Self {
+        Str { len: 0, b: [0; N] }
+    }
+}
+
+impl<const N: usize> Str<N> {
+    /// The bytes.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.b[..self.len as usize]
+    }
+    /// Replaces the text (cut at `N` bytes).
+    pub fn set(&mut self, s: &[u8]) {
+        let n = s.len().min(N);
+        self.b[..n].copy_from_slice(&s[..n]);
+        self.len = n as u16;
+    }
+    /// Builds the text with a writer.
+    pub fn write(&mut self, f: impl FnOnce(&mut Buf)) {
+        let mut w = Buf::new(&mut self.b);
+        f(&mut w);
+        self.len = w.len() as u16;
+    }
+    /// Empties the text.
+    pub fn clear(&mut self) {
+        self.len = 0;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

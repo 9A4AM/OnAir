@@ -14,6 +14,9 @@
 
 namespace dect2 {
 
+// The C++ below up to the matching #endif is replaced by rust/onair_mesh (mesh_proto_rs.cpp) when DECT2_RUST_MESH is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/mesh/test_mesh_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_MESH
 namespace {
 
 bool callChar(unsigned char c) { return isalnum(c) || c == '-'; }
@@ -202,6 +205,8 @@ MeshDecodeResult meshDecodeMeshCom(const uint8_t* p, size_t n) {
     }
     return r;
 }
+
+#endif // DECT2_RUST_MESH
 
 std::vector<MeshLoraSettings> loraAprsPresets() {
     struct Row { const char* name; double mhz; int sf, cr; };

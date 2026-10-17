@@ -18,8 +18,12 @@ using namespace meshpb;
 
 namespace {
 
-uint32_t le32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
 void put32(std::vector<uint8_t>& v, uint32_t x) { dect2::endian::putLe32(v, x); }
+
+// The C++ below up to the matching #endif is replaced by rust/onair_mesh (mesh_proto_rs.cpp) when DECT2_RUST_MESH is defined; it stays for DECT2_RUST=OFF
+// builds and as the reference of tests/mesh/test_mesh_proto_rs.cpp (rust/README.md).
+#ifndef DECT2_RUST_MESH
+uint32_t le32(const uint8_t* p) { return (uint32_t)dect2::endian::loadLe32(p); }
 
 struct DataMsg {
     int portnum = 0;
@@ -263,8 +267,11 @@ void decodePort(const DataMsg& d, uint32_t from, uint32_t to, const MeshPacketIn
     }
 }
 
+#endif // DECT2_RUST_MESH
+
 } // namespace
 
+#ifndef DECT2_RUST_MESH
 MeshDecodeResult MeshProto::decodeMeshtastic(const uint8_t* p, size_t n, const MeshRadioInfo&) const {
     MeshDecodeResult r;
     MeshPacketInfo& pi = r.packet;
@@ -326,6 +333,8 @@ MeshDecodeResult MeshProto::decodeMeshtastic(const uint8_t* p, size_t n, const M
     else pi.note = meshFmt("unknown channel 0x%02x", chan);
     return r;
 }
+
+#endif // DECT2_RUST_MESH
 
 // ---- builders ----
 std::vector<uint8_t> meshtasticData(int portnum, const std::vector<uint8_t>& payload, bool wantResponse, uint32_t dest, uint32_t source,
