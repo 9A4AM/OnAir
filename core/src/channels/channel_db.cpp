@@ -1,6 +1,7 @@
 // The shared channel database: see channel_db.h.
 #include "dect2/common/text_charset.h"
 #include "dect2/channels/channel_db.h"
+#include "dect2/files/files_proto.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -38,47 +39,12 @@ bool sameChannel(const Row& a, const Row& b) { return std::fabs(a.freqMhz - b.fr
 
 } // namespace
 
-std::string csvQuote(const std::string& f) {
-    if (f.find_first_of(",\"\r\n") == std::string::npos) return f;
-    std::string o = "\"";
-    for (char c : f) { if (c == '"') o += '"'; o += c; }
-    return o + "\"";
-}
+// CSV text and the services list: core/src/files/files_proto.cpp (C++) or the Rust crate onair_files
+std::string csvQuote(const std::string& f) { return filesp::csvQuote(f); }
 
-std::vector<std::vector<std::string>> csvParse(const std::string& t) {
-    std::vector<std::vector<std::string>> out;
-    std::vector<std::string> rec;
-    std::string f;
-    bool q = false, any = false;
-    auto endRec = [&]() {
-        rec.push_back(f); f.clear();
-        if (!(rec.size() == 1 && rec[0].empty())) out.push_back(rec);
-        rec.clear(); any = false;
-    };
-    for (size_t i = 0; i < t.size(); i++) {
-        const char c = t[i];
-        if (q) {
-            if (c == '"') { if (i + 1 < t.size() && t[i + 1] == '"') { f += '"'; i++; } else q = false; }
-            else f += c;
-        } else if (c == '"') { q = true; any = true; }
-        else if (c == ',') { rec.push_back(f); f.clear(); any = true; }
-        else if (c == '\n') endRec();
-        else if (c == '\r') {}
-        else { f += c; any = true; }
-    }
-    if (any || !f.empty() || !rec.empty()) endRec();
-    return out;
-}
+std::vector<std::vector<std::string>> csvParse(const std::string& t) { return filesp::csvParse(t); }
 
-std::vector<std::string> splitServices(const std::string& s, char sep) {
-    std::vector<std::string> v;
-    std::string cur;
-    for (char c : s + std::string(1, sep)) {
-        if (c == sep) { cur = trim(cur); if (!cur.empty()) v.push_back(cur); cur.clear(); }
-        else cur += c;
-    }
-    return v;
-}
+std::vector<std::string> splitServices(const std::string& s, char sep) { return filesp::splitList(s, sep); }
 
 std::vector<Row> parseChannels(const std::string& csv) {
     std::vector<Row> rows;

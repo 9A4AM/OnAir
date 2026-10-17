@@ -1,5 +1,6 @@
 #include "dect2/common/u8file.h"
 #include "dect2/source/iq_record.h"
+#include "dect2/files/files_proto.h"
 #include "dect2/engine/mode_tuning.h"
 #include <algorithm>
 #include <cerrno>
@@ -50,31 +51,8 @@ std::string sigmfUtcNow() {
     return b;
 }
 
-static std::string jsonStr(const std::string& s) {
-    std::string o = "\"";
-    for (unsigned char c : s) {
-        if (c == '"' || c == '\\') { o += '\\'; o += (char)c; }
-        else if (c < 0x20) { char b[8]; snprintf(b, sizeof b, "\\u%04x", c); o += b; }
-        else o += (char)c;
-    }
-    return o + "\"";
-}
-
-std::string sigmfMetaJson(const SigmfInfo& i) {
-    char b[96];
-    std::string j = "{\n  \"global\": {\n";
-    j += std::string("    \"core:datatype\": \"") + sigmfDatatype(i.fmt) + "\",\n";
-    snprintf(b, sizeof b, "%.10g", i.rateHz);
-    j += std::string("    \"core:sample_rate\": ") + b + ",\n";
-    j += "    \"core:version\": \"1.0.0\",\n";
-    if (i.sampleCount) j += "    \"core:sample_count\": " + std::to_string(i.sampleCount) + ",\n";
-    if (!i.dataFile.empty()) j += "    \"core:dataset\": " + jsonStr(i.dataFile) + ",\n";
-    if (!i.description.empty()) j += "    \"core:description\": " + jsonStr(i.description) + ",\n";
-    j += "    \"core:recorder\": \"OnAir\"\n  },\n  \"captures\": [\n    {\n      \"core:sample_start\": 0";
-    if (i.centerHz > 0) { snprintf(b, sizeof b, "%.1f", i.centerHz); j += std::string(",\n      \"core:frequency\": ") + b; }
-    if (!i.datetimeUtc.empty()) j += ",\n      \"core:datetime\": " + jsonStr(i.datetimeUtc);
-    j += "\n    }\n  ],\n  \"annotations\": []\n}\n";
-    return j;
+std::string sigmfMetaJson(const SigmfInfo& i) {   // the text: core/src/files/files_proto.cpp (C++) or the Rust crate onair_files
+    return filesp::sigmfRecorderMeta(sigmfDatatype(i.fmt), i.rateHz, i.centerHz, i.datetimeUtc, i.dataFile, i.sampleCount, i.description);
 }
 
 void IqRecorder::writeSigmf(bool final) {
