@@ -2046,3 +2046,26 @@ Save CADU	Сохранять CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Каждый кадр, прошедший Reed-Solomon, как CADU по 1024 байта в <папка данных>/goes/frames.cadu (такой же файл пишет SatDump), для сравнения декодеров
 Open CADU	Открыть CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Декодирует файл .cadu (кадры по 1024 байта, из этой программы или SatDump) через Reed-Solomon, пакеты и файлы; GOES HRIT должен работать
+Band survey	Обзор диапазона
+record every sweep into the survey	записывать каждый проход в обзор
+persistent at %.0f%%	постоянный от %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Сигнал считается постоянным, если он выше порога хотя бы в такой доле проходов
+quiet slot %.0f kHz	тихий участок %.0f кГц
+Clear survey	Очистить обзор
+Save survey...	Сохранить обзор...
+Load as previous survey...	Загрузить как прежний обзор...
+Export occupancy CSV...	Экспорт занятости в CSV...
+Export persistent signals CSV...	Экспорт постоянных сигналов в CSV...
+Export picture...	Экспорт изображения...
+cannot write the picture	не удаётся записать изображение
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Запустите проход: каждый проход добавляет строку в обзор. Если «каждые» задано в несколько минут, он может часами работать в фоне.
+%zu sweeps over %.1f h	%zu проходов за %.1f ч
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	с прежнего обзора: шумовой пол %+.1f дБ, занятость %+.1f%%, новых %zu, исчезло %zu
+new %.4f MHz, %.0f%% of the time	новый %.4f МГц, %.0f%% времени
+gone %.4f MHz, was %.0f%% of the time	исчез %.4f МГц, был %.0f%% времени
+Occupancy %	Занятость %
+Mean dB above floor	Среднее дБ над шумом
+Peak dB above floor	Пик дБ над шумом
+Quietest slots	Самые тихие участки
+From MHz	От МГц
+Width kHz	Ширина кГц

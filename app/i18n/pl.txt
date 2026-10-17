@@ -2063,3 +2063,26 @@ Save CADU	Zapisz CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Każda ramka, która przejdzie Reed-Solomon, jako CADU o 1024 bajtach do <folder danych>/goes/frames.cadu (taki sam plik, jaki zapisuje SatDump), do porównywania dekoderów
 Open CADU	Otwórz CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Dekoduje plik .cadu (ramki po 1024 bajty, z tego programu lub SatDump) przez Reed-Solomon, pakiety i pliki; GOES HRIT musi działać
+Band survey	Badanie pasma
+record every sweep into the survey	zapisuj każde przemiatanie w badaniu
+persistent at %.0f%%	stały od %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Sygnał jest stały, gdy przekracza próg w co najmniej tej części przemiatań
+quiet slot %.0f kHz	cichy zakres %.0f kHz
+Clear survey	Wyczyść badanie
+Save survey...	Zapisz badanie...
+Load as previous survey...	Wczytaj jako poprzednie badanie...
+Export occupancy CSV...	Eksportuj zajętość do CSV...
+Export persistent signals CSV...	Eksportuj stałe sygnały do CSV...
+Export picture...	Eksportuj obraz...
+cannot write the picture	nie można zapisać obrazu
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Uruchom przemiatanie: każde dodaje wiersz do badania. Z ustawieniem „co" na kilka minut może działać godzinami w tle.
+%zu sweeps over %.1f h	%zu przemiatań w %.1f godz.
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	od poprzedniego badania: poziom szumu %+.1f dB, zajętość %+.1f%%, %zu nowych, %zu zniknęło
+new %.4f MHz, %.0f%% of the time	nowy %.4f MHz, przez %.0f%% czasu
+gone %.4f MHz, was %.0f%% of the time	zniknął %.4f MHz, był przez %.0f%% czasu
+Occupancy %	Zajętość %
+Mean dB above floor	Średnia dB nad szumem
+Peak dB above floor	Szczyt dB nad szumem
+Quietest slots	Najcichsze zakresy
+From MHz	Od MHz
+Width kHz	Szerokość kHz

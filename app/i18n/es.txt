@@ -2063,3 +2063,26 @@ Save CADU	Guardar CADU
 Every frame Reed-Solomon passes, as 1024 byte CADUs into <data folder>/goes/frames.cadu (the same kind of file SatDump writes), to compare decoders	Cada trama que pasa Reed-Solomon, como CADU de 1024 bytes en <carpeta de datos>/goes/frames.cadu (el mismo tipo de archivo que escribe SatDump), para comparar decodificadores
 Open CADU	Abrir CADU
 Decode a .cadu file (1024 byte frames, from this program or SatDump) through Reed-Solomon, the packets and the files; GOES HRIT must be running	Decodifica un archivo .cadu (tramas de 1024 bytes, de este programa o de SatDump) con Reed-Solomon, los paquetes y los archivos; GOES HRIT debe estar en marcha
+Band survey	Estudio de banda
+record every sweep into the survey	registrar cada barrido en el estudio
+persistent at %.0f%%	persistente al %.0f%%
+A signal is persistent when it is above the threshold in at least this share of the sweeps	Una señal es persistente cuando supera el umbral en al menos esta parte de los barridos
+quiet slot %.0f kHz	franja tranquila %.0f kHz
+Clear survey	Borrar estudio
+Save survey...	Guardar estudio...
+Load as previous survey...	Cargar como estudio anterior...
+Export occupancy CSV...	Exportar ocupación a CSV...
+Export persistent signals CSV...	Exportar señales persistentes a CSV...
+Export picture...	Exportar imagen...
+cannot write the picture	no se puede escribir la imagen
+Run a sweep: every sweep adds a row to the survey. With "every" set to a few minutes it can run for hours in the background.	Inicia un barrido: cada barrido añade una fila al estudio. Con "cada" en unos minutos puede funcionar horas en segundo plano.
+%zu sweeps over %.1f h	%zu barridos en %.1f h
+since the previous survey: floor %+.1f dB, occupancy %+.1f%%, %zu new, %zu gone	desde el estudio anterior: ruido de fondo %+.1f dB, ocupación %+.1f%%, %zu nuevas, %zu desaparecidas
+new %.4f MHz, %.0f%% of the time	nueva %.4f MHz, el %.0f%% del tiempo
+gone %.4f MHz, was %.0f%% of the time	desaparecida %.4f MHz, estaba el %.0f%% del tiempo
+Occupancy %	Ocupación %
+Mean dB above floor	Media dB sobre el ruido
+Peak dB above floor	Pico dB sobre el ruido
+Quietest slots	Franjas más tranquilas
+From MHz	Desde MHz
+Width kHz	Ancho kHz
