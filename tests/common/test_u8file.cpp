@@ -35,6 +35,22 @@ int main() {
     for (const auto& e : fs::directory_iterator(u8file(dir), ec)) { n++; CHECK(e.path().filename() == u8file("\xC3\x81rea de Trabalho"), "unexpected folder"); }
     CHECK(n == 1, std::to_string(n) + " folders instead of 1");
 
+    // #166: a service name cut in the middle of a character or in Latin-1 must give a usable path, not a filesystem_error (abort on Windows)
+    CHECK(u8valid("Das Erste") == "Das Erste", "ASCII changed");
+    CHECK(u8valid("\xC3\x81rea") == "\xC3\x81rea", "valid UTF-8 changed");
+    CHECK(u8valid("ARD\xC3") == "ARD_", "truncated sequence");
+    CHECK(u8valid("Caf\xE9 TV") == "Caf_ TV", "Latin-1 byte");
+    CHECK(u8valid("a\xED\xA0\x80z") == "a___z", "surrogate");
+    CHECK(u8valid("\xC0\x80") == "__", "overlong");
+    CHECK(u8valid("\xF4\x90\x80\x80") == "____", "above U+10FFFF");
+    bool threw = false;
+    try {
+        const std::string bad = dir + "/Rai\xC3 \xE9\xFF.png";
+        std::ofstream o(u8file(bad), std::ios::binary); o << "x";
+        fs::remove(u8file(bad), ec);
+    } catch (...) { threw = true; }
+    CHECK(!threw, "invalid UTF-8 path threw");
+
     fs::remove_all(u8file(dir), ec);
     if (fails) { printf("%d failure(s)\n", fails); return 1; }
     printf("u8file: ok\n");

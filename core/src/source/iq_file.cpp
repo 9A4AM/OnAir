@@ -1,3 +1,4 @@
+#include "dect2/common/u8file.h"
 #include "dect2/source/iq_file.h"
 #include <algorithm>
 #include <cmath>
@@ -82,7 +83,7 @@ struct P {
 
 std::string lower(std::string x) { return dect2::str::lower(std::move(x)); }
 bool endsWith(const std::string& s, const char* e) { size_t n = strlen(e); return s.size() >= n && lower(s.substr(s.size() - n)) == e; }
-std::filesystem::path fsPath(const std::string& p) { return std::filesystem::u8path(p); }
+std::filesystem::path fsPath(const std::string& p) { return dect2::u8file(p); }
 
 bool readAll(const std::string& path, std::string& out) {
     std::ifstream f(fsPath(path), std::ios::binary);
