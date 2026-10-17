@@ -8,6 +8,7 @@
 #include <mutex>
 #ifdef DECT2_HAVE_SOAPY
 #include <SoapySDR/Device.hpp>
+#include <SoapySDR/Registry.hpp>
 #include "dect2/common/str.h"
 #endif
 
@@ -125,7 +126,31 @@ std::vector<std::map<std::string, std::string>> defaultEnumerate(const std::stri
     return out;
 }
 std::string soapyArgs(const NetRadio& r);
+int gRemoteModule = -1;   // tests: 0 = the client module is missing, 1 = present, -1 = ask SoapySDR
 } // namespace
+
+void setSoapyRemoteModuleOverride(int v) { std::lock_guard<std::mutex> lk(gEnumMu); gRemoteModule = v; }
+
+// SoapySDR opens "driver=remote" only when SoapyRemote's client module (remoteSupport) is installed next to the library: it
+// registers a "remote" driver. Without it SoapySDR says only "no match", which tells a user nothing (issue #84).
+bool soapyRemoteModuleAvailable() {
+    {
+        std::lock_guard<std::mutex> lk(gEnumMu);
+        if (gRemoteModule >= 0) return gRemoteModule == 1;
+        if (gEnum) return true;   // a replaced enumerator is a test's fake server: nothing to install
+    }
+#ifdef DECT2_HAVE_SOAPY
+    try { return SoapySDR::Registry::listFindFunctions().count("remote") > 0; } catch (...) { return false; }
+#else
+    return false;
+#endif
+}
+
+const char* soapyRemoteModuleHelp() {
+    return "SoapySDR here has no SoapyRemote client module, so it cannot reach a remote radio. Install SoapyRemote (github.com/pothosware/SoapyRemote) "
+           "on this computer: Windows, PothosSDR; macOS, brew install soapyremote; Debian/Ubuntu, apt install soapyremote-server (it brings the client module); "
+           "then restart OnAir. The server needs SoapySDRServer --bind running on the radio's computer.";
+}
 
 std::string soapyRemoteArgs(const NetRadio& r) {
     std::string a = remoteBase(r);
@@ -197,6 +222,7 @@ std::string soapyRemoteFailureHelp(const std::string& args) {
         const auto it = gOffered.find(key);
         if (it != gOffered.end()) all = it->second.all;
     }
+    if (!soapyRemoteModuleAvailable()) return soapyRemoteModuleHelp();
     std::string s = "The SoapyRemote server " + key + " did not give OnAir a radio. ";
     if (all.empty()) return s + "It lists no radios: check that SoapySDRServer runs there and that the radio's SoapySDR module (for example mirisdr or sdrplay) is installed on that computer, then pick the radio, or type its driver in the Remote driver box.";
     std::string pick;
@@ -257,6 +283,7 @@ bool probeNetRadio(const NetRadio& r, int timeoutMs, std::string& err) {
 #ifndef DECT2_HAVE_SOAPY
     if (r.type == NetRadio::SoapyRemote) { err = "this build of OnAir has no SoapySDR, which SoapyRemote needs"; return false; }
 #endif
+    if (r.type == NetRadio::SoapyRemote && !soapyRemoteModuleAvailable()) { err = soapyRemoteModuleHelp(); return false; }
     if (r.type == NetRadio::SpyServer) return native::spyServerProbe(host, netRadioPort(r), timeoutMs, err);   // HELLO, then its DEVICE_INFO
     if (r.type == NetRadio::HermesLite2) return native::hermesLite2Probe(host, netRadioPort(r), timeoutMs, err);   // UDP: a discovery to it
     if (r.type == NetRadio::RedPitaya) return native::redPitayaProbe(host, netRadioPort(r), timeoutMs, err);

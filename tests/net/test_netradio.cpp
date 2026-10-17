@@ -814,6 +814,16 @@ static void testSoapyRemote() {
     CHECK(v2.size() == 1 && v2[0].soapyArgs == soapyRemoteArgs(r));
 #endif
     setSoapyEnumerator(nullptr);
+    // the client module missing: the help says where to get it (also from the probe, before any connection is tried)
+    setSoapyRemoteModuleOverride(0);
+    CHECK(!soapyRemoteModuleAvailable());
+    CHECK(std::string(soapyRemoteModuleHelp()).find("SoapyRemote") != std::string::npos && std::string(soapyRemoteModuleHelp()).find("install") != std::string::npos);
+    CHECK(soapyRemoteFailureHelp(soapyRemoteArgs(plain)) == soapyRemoteModuleHelp());
+    std::string perr;
+    CHECK(!probeNetRadio(plain, 300, perr) && perr == soapyRemoteModuleHelp());
+    setSoapyRemoteModuleOverride(1);
+    CHECK(soapyRemoteModuleAvailable());
+    setSoapyRemoteModuleOverride(-1);
 }
 
 static void testPrefs() {

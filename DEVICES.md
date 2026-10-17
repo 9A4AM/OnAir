@@ -235,3 +235,13 @@ Listed as **Sound card: Default input** and each capture device. Uses the same `
 **Tested and not tested.** The loop-back tests, the HackRF sample conversion, the PlutoSDR path against a fake libiio and the SoapySDR path against a fake driver
 all run in the test suite (`test_tx`). Nothing here has been transmitted by a real radio: the three real TX paths are built from the radios' documented
 interfaces and have never been run on hardware.
+
+## SoapySDR over the network (SoapyRemote)
+
+Any radio SoapySDR supports can sit on another computer (a Raspberry Pi, a PC in the attic) and be used here:
+
+1. On the computer with the radio install SoapySDR, the radio's module and SoapyRemote; run `SoapySDRServer --bind` (port 55132; check with `SoapySDRUtil --find` there).
+2. Here, install SoapyRemote too (its client module; on Windows it comes with PothosSDR, macOS `brew install soapyremote`, Linux `apt install soapyremote-server`). OnAir tells you if it is missing.
+3. **Add network radio...**, type **SoapyRemote**, the server's address and port 55132. Leave "Remote driver" empty to list what the server offers (a sound card is skipped), or type the driver (`rtlsdr`) or `driver=sdrplay,serial=1`.
+
+The radio is then listed as `SoapyRemote host:port: driver` and works like a local SoapySDR radio. The network must carry the stream: use wired Ethernet for more than a few Msps. A server that logs `SoapyRPCUnpacker::recv(header)` is on a different SoapyRemote version than this computer's client: install the same version on both. Not tested against real hardware; the arguments, server listing, errors and the stream path are tested against fakes.

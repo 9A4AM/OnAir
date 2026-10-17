@@ -29,6 +29,10 @@ using SoapyEnumerateFn = std::vector<std::map<std::string, std::string>> (*)(con
 void setSoapyEnumerator(SoapyEnumerateFn fn);   // nullptr: SoapySDR's own; also forgets what was remembered
 // The radios the server of r offers (asks it, then remembers the answer for a minute). Blocks while it asks: not for the UI thread.
 std::vector<RemoteSoapyDevice> soapyRemoteList(const NetRadio& r, bool includeAudio = false);
+// Whether SoapySDR has SoapyRemote's client module (the "remote" driver); false without SoapySDR. Tests force it: 0 / 1, -1 = real.
+bool soapyRemoteModuleAvailable();
+const char* soapyRemoteModuleHelp();   // where to get it and how to install it
+void setSoapyRemoteModuleOverride(int v);
 // The plain-language reason a SoapyRemote radio could not be opened: what the server offers and what to type in "Remote driver". "" for other args.
 std::string soapyRemoteFailureHelp(const std::string& soapyArgs);
 
