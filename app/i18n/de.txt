@@ -1593,3 +1593,64 @@ testing	Tests
 idea	Idee
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Danke an alle, die Korrekturen geschickt, Fehler gemeldet, Aufnahmen geteilt, übersetzt oder Ideen vorgeschlagen haben. Autor ist Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Soll dein Name geändert oder entfernt werden? Sag es uns auf Discord oder eröffne ein Issue.
+# airband: airport search, band watch
+Airport data updated: %s	Flughafendaten aktualisiert: %s
+Airport data not updated: %s	Flughafendaten nicht aktualisiert: %s
+Memory set %s: %d added, %d already there.	Speichersatz %s: %d hinzugefügt, %d schon vorhanden.
+Airports	Flughäfen
+Airport	Flughafen
+EGLL, LHR, Heathrow, Vilnius ...	EDDF, FRA, Frankfurt, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	ICAO- oder IATA-Code, Name oder Stadt. Einen Flughafen wählen, um alle seine Frequenzen als Kanäle zu laden.
+Near me	In meiner Nähe
+Airports within the radius of your station position (Settings), nearest first.	Flughäfen im Umkreis Ihrer Stationsposition (Einstellungen), die nächsten zuerst.
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	Zuerst die Stationsposition festlegen (Einstellungen oder ADS-B-Karte): dann werden die Flughäfen in der Nähe aufgelistet.
+Your station position is not set.	Ihre Stationsposition ist nicht festgelegt.
+Type a code, a name or a city.	Code, Name oder Stadt eingeben.
+No airport found.	Kein Flughafen gefunden.
+Code	Code
+Place	Ort
+km	km
+Freq.	Freq.
+This airport has no frequency in the airband in the table.	Dieser Flughafen hat in der Tabelle keine Frequenz im Flugfunkband.
+%d more outside the airband (not received here).	%d weitere außerhalb des Flugfunkbands (hier nicht empfangbar).
+Load channels	Kanäle laden
+Loaded %s	%s geladen
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	Ersetzt die Kanalliste durch die Frequenzen dieses Flughafens und stellt das Radio so ein, dass möglichst viele bei dieser Abtastrate hineinpassen.
+Add to list	Zur Liste hinzufügen
+Added %s	%s hinzugefügt
+Save as memory set	Als Speichersatz sichern
+One memory per channel, in the group of this airport (Memory panel).	Ein Speicher pro Kanal, in der Gruppe dieses Flughafens (Speicher-Panel).
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	Die Frequenzen verteilen sich über %.1f MHz; das Radio erfasst %.1f MHz auf einmal, also sind es %zu Aufnahmen. Auf jede abstimmen:
+Imported table:	Importierte Tabelle:
+Built-in table (OurAirports, public domain):	Eingebaute Tabelle (OurAirports, gemeinfrei):
+Community data: can be out of date. Never use it for navigation.	Gemeinschaftsdaten: können veraltet sein. Niemals zur Navigation verwenden.
+Downloading ...	Lade herunter ...
+Refresh from the web	Aus dem Web aktualisieren
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	Lädt airports.csv und airport-frequencies.csv von https://davidmegginson.github.io/ourairports-data/ (etwa 14 MB) nur auf Klick, nie von selbst. Die SHA-256 des Empfangenen wird angezeigt.
+Import CSV ...	CSV importieren ...
+Imported: %s	Importiert: %s
+Import failed: %s	Import fehlgeschlagen: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	airports.csv wählen, dann airport-frequencies.csv (OurAirports-Format).
+Back to built-in	Zurück zur eingebauten
+Using the built-in table again.	Die eingebaute Tabelle wird wieder verwendet.
+Hold	Halten
+Stay on the channel the scan stopped on, also after it has gone quiet.	Bleibt auf dem Kanal, bei dem der Suchlauf angehalten hat, auch wenn er wieder still ist.
+Noise remover (neural)	Rauschentferner (neuronal)
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d von %zu Kanälen liegen außerhalb dessen, was das Radio jetzt erfasst. Auf eine Aufnahme abstimmen:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	Keiner der %zu Kanäle liegt in dem, was das Radio jetzt erfasst. Auf eine Aufnahme abstimmen:
+On air: %s	Auf Sendung: %s
+No signal: every channel is quiet.	Kein Signal: alle Kanäle sind still.
+no signal	kein Signal
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	Squelch dieses Kanals (Träger zu Rauschen, dB). In Klammern: es gilt der globale Squelch. Ziehen zum Einstellen; Rechtsklick zurück zum globalen.
+tune here	hier abstimmen
+Back to hearing every open channel.	Zurück zum Hören aller offenen Kanäle.
+Hear only this channel (solo), whatever else is on the air.	Nur diesen Kanal hören (Solo), was sonst auch läuft.
+Only active	Nur aktive
+Show only the channels that are open or were heard in the last 30 seconds.	Nur Kanäle zeigen, die offen sind oder in den letzten 30 Sekunden zu hören waren.
+%d quiet channels hidden	%d stille Kanäle ausgeblendet
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	Noch kein Kanal: oben einen Flughafen suchen, eine Frequenz hinzufügen oder sehen, was gesendet wird (Reiter Auf Sendung).
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	Träger im ganzen Aufnahmebereich, die nicht in Ihrer Liste stehen, die aktivsten zuerst. Fügen Sie hinzu, was Sie hören wollen.
+Start the receiver to see what is on the air.	Empfänger starten, um zu sehen, was gesendet wird.
+Add all	Alle hinzufügen
+Nothing yet: carriers show here a moment after they start transmitting.	Noch nichts: Träger erscheinen hier kurz nach Sendebeginn.
+The radio's tuning error is not measured yet: names may be off by a channel.	Der Abstimmfehler des Radios ist noch nicht gemessen: Namen können um einen Kanal danebenliegen.

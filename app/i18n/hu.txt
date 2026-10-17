@@ -1578,3 +1578,64 @@ testing	tesztelés
 idea	ötlet
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Köszönet mindenkinek, aki javítást küldött, hibát jelentett, felvételt osztott meg, fordított vagy ötletet adott. A szerző Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Szeretnéd, ha módosítanánk vagy törölnénk a neved? Szólj a Discordon, vagy nyiss egy issue-t.
+# airband: airport search, band watch
+Airport data updated: %s	Repülőtéri adatok frissítve: %s
+Airport data not updated: %s	A repülőtéri adatok nem frissültek: %s
+Memory set %s: %d added, %d already there.	%s memóriakészlet: %d hozzáadva, %d már megvolt.
+Airports	Repülőterek
+Airport	Repülőtér
+EGLL, LHR, Heathrow, Vilnius ...	LHBP, BUD, Budapest, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	ICAO- vagy IATA-kód, név vagy város. Válassz repülőteret, és az összes frekvenciája csatornaként betöltődik.
+Near me	Közelemben
+Airports within the radius of your station position (Settings), nearest first.	A saját állomáspozíció (Beállítások) sugarán belüli repülőterek, a legközelebbi elöl.
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	Előbb add meg az állomás helyét (Beállítások vagy ADS-B térkép), akkor listázzuk a környező repülőtereket.
+Your station position is not set.	Az állomás helye nincs megadva.
+Type a code, a name or a city.	Írj be kódot, nevet vagy várost.
+No airport found.	Nincs ilyen repülőtér.
+Code	Kód
+Place	Hely
+km	km
+Freq.	Frekv.
+This airport has no frequency in the airband in the table.	Ennek a repülőtérnek nincs frekvenciája a repülési sávban a táblázatban.
+%d more outside the airband (not received here).	további %d a repülési sávon kívül (itt nem vehető).
+Load channels	Csatornák betöltése
+Loaded %s	%s betöltve
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	Lecseréli a csatornalistát a repülőtér frekvenciáira, és úgy hangolja a rádiót, hogy a mintavételi sebesség mellett minél több beleférjen.
+Add to list	Hozzáadás a listához
+Added %s	%s hozzáadva
+Save as memory set	Mentés memóriakészletként
+One memory per channel, in the group of this airport (Memory panel).	Csatornánként egy memória, a repülőtér csoportjában (Memória panel).
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	A frekvenciák %.1f MHz-en oszlanak el; a rádió egyszerre %.1f MHz-et fog át, így %zu felvétel kell. Hangolj mindegyikre:
+Imported table:	Importált táblázat:
+Built-in table (OurAirports, public domain):	Beépített táblázat (OurAirports, közkincs):
+Community data: can be out of date. Never use it for navigation.	Közösségi adatok: elavultak lehetnek. Navigációra soha ne használd.
+Downloading ...	Letöltés ...
+Refresh from the web	Frissítés a webről
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	Az airports.csv és airport-frequencies.csv fájlt a https://davidmegginson.github.io/ourairports-data/ címről (kb. 14 MB) csak kattintásra tölti le, magától soha. A kapott fájlok SHA-256 értékét megmutatja.
+Import CSV ...	CSV importálása ...
+Imported: %s	Importálva: %s
+Import failed: %s	Az importálás nem sikerült: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	Válaszd az airports.csv, majd az airport-frequencies.csv fájlt (OurAirports formátum).
+Back to built-in	Vissza a beépítetthez
+Using the built-in table again.	Újra a beépített táblázat használatban.
+Hold	Tartás
+Stay on the channel the scan stopped on, also after it has gone quiet.	Azon a csatornán marad, ahol a pásztázás megállt, akkor is, ha elhallgatott.
+Noise remover (neural)	Zajszűrő (neurális)
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d / %zu csatorna kívül esik azon, amit a rádió most átfog. Hangolj egy felvételre:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	A %zu csatorna egyike sem esik abba, amit a rádió most átfog. Hangolj egy felvételre:
+On air: %s	Adásban: %s
+No signal: every channel is quiet.	Nincs jel: minden csatorna csendes.
+no signal	nincs jel
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	A csatorna saját squelchje (vivő/zaj, dB). Zárójelben: a globális érvényes. Húzással állítható; jobb kattintás: vissza a globálisra.
+tune here	hangolás ide
+Back to hearing every open channel.	Vissza az összes nyitott csatorna hallgatásához.
+Hear only this channel (solo), whatever else is on the air.	Csak ezt a csatornát hallgatja (szóló), bármi is van máshol.
+Only active	Csak aktívak
+Show only the channels that are open or were heard in the last 30 seconds.	Csak a nyitott vagy az elmúlt 30 másodpercben hallott csatornákat mutatja.
+%d quiet channels hidden	%d csendes csatorna rejtve
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	Még nincs csatorna: keress repülőteret fent, adj hozzá frekvenciát, vagy nézd meg, mi van adásban (Adásban fül).
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	A teljes felvételen adásban lévő, a listádon nem szereplő vivők, a legaktívabbak elöl. Add hozzá, amit hallani akarsz.
+Start the receiver to see what is on the air.	Indítsd el a vevőt, hogy lásd, mi van adásban.
+Add all	Összes hozzáadása
+Nothing yet: carriers show here a moment after they start transmitting.	Még semmi: a vivők az adás kezdete után egy pillanattal jelennek meg itt.
+The radio's tuning error is not measured yet: names may be off by a channel.	A rádió hangolási hibája még nincs megmérve: a nevek egy csatornával eltérhetnek.

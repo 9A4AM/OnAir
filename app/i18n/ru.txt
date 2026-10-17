@@ -1575,3 +1575,64 @@ testing	тестирование
 idea	идея
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Спасибо всем, кто присылал исправления, сообщал об ошибках, делился записями, переводил и предлагал идеи. Автор — Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Хотите, чтобы ваше имя изменили или убрали? Напишите нам в Discord или создайте issue.
+# airband: airport search, band watch
+Airport data updated: %s	Данные аэропортов обновлены: %s
+Airport data not updated: %s	Данные аэропортов не обновлены: %s
+Memory set %s: %d added, %d already there.	Набор памяти %s: добавлено %d, уже было %d.
+Airports	Аэропорты
+Airport	Аэропорт
+EGLL, LHR, Heathrow, Vilnius ...	UUEE, SVO, Шереметьево, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	Код ICAO или IATA, название или город. Выберите аэропорт, чтобы загрузить все его частоты как каналы.
+Near me	Рядом со мной
+Airports within the radius of your station position (Settings), nearest first.	Аэропорты в заданном радиусе от положения вашей станции (Настройки), ближайшие первыми.
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	Сначала задайте положение станции (Настройки или карта ADS-B): тогда будут показаны ближайшие аэропорты.
+Your station position is not set.	Положение станции не задано.
+Type a code, a name or a city.	Введите код, название или город.
+No airport found.	Аэропорт не найден.
+Code	Код
+Place	Место
+km	км
+Freq.	Част.
+This airport has no frequency in the airband in the table.	У этого аэропорта в таблице нет частот в авиадиапазоне.
+%d more outside the airband (not received here).	еще %d вне авиадиапазона (здесь не принимаются).
+Load channels	Загрузить каналы
+Loaded %s	%s загружен
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	Заменяет список каналов частотами этого аэропорта и настраивает радио так, чтобы охватить как можно больше при данной частоте дискретизации.
+Add to list	Добавить в список
+Added %s	%s добавлен
+Save as memory set	Сохранить как набор памяти
+One memory per channel, in the group of this airport (Memory panel).	По одной ячейке на канал, в группе этого аэропорта (панель Память).
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	Частоты распределены на %.1f МГц; радио охватывает сразу %.1f МГц, поэтому нужно %zu захватов. Настройтесь на каждый:
+Imported table:	Импортированная таблица:
+Built-in table (OurAirports, public domain):	Встроенная таблица (OurAirports, общественное достояние):
+Community data: can be out of date. Never use it for navigation.	Данные сообщества: могут быть устаревшими. Никогда не используйте для навигации.
+Downloading ...	Загрузка ...
+Refresh from the web	Обновить из сети
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	Загружает airports.csv и airport-frequencies.csv с https://davidmegginson.github.io/ourairports-data/ (около 14 МБ) только по щелчку, никогда сам. Показывается SHA-256 полученного.
+Import CSV ...	Импорт CSV ...
+Imported: %s	Импортировано: %s
+Import failed: %s	Не удалось импортировать: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	Выберите airports.csv, затем airport-frequencies.csv (формат OurAirports).
+Back to built-in	Вернуться к встроенной
+Using the built-in table again.	Снова используется встроенная таблица.
+Hold	Удерж.
+Stay on the channel the scan stopped on, also after it has gone quiet.	Остаётся на канале, где остановилось сканирование, даже после того как он затих.
+Noise remover (neural)	Шумоподавитель (нейросеть)
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d из %zu каналов вне того, что радио охватывает сейчас. Настройтесь на захват:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	Ни один из %zu каналов не попадает в то, что радио охватывает сейчас. Настройтесь на захват:
+On air: %s	В эфире: %s
+No signal: every channel is quiet.	Нет сигнала: все каналы молчат.
+no signal	нет сигнала
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	Шумоподавитель этого канала (несущая/шум, дБ). В скобках: действует общий. Перетащите, чтобы задать; правый щелчок возвращает общий.
+tune here	настроиться
+Back to hearing every open channel.	Вернуться к прослушиванию всех открытых каналов.
+Hear only this channel (solo), whatever else is on the air.	Слушать только этот канал (соло), что бы ни шло на других.
+Only active	Только активные
+Show only the channels that are open or were heard in the last 30 seconds.	Показывать только каналы, открытые или слышимые за последние 30 секунд.
+%d quiet channels hidden	Скрыто тихих каналов: %d
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	Каналов пока нет: найдите аэропорт выше, добавьте частоту или посмотрите, что в эфире (вкладка В эфире).
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	Несущие в эфире во всём захвате, которых нет в вашем списке, самые активные первыми. Добавьте те, что хотите слушать.
+Start the receiver to see what is on the air.	Запустите приёмник, чтобы увидеть, что в эфире.
+Add all	Добавить все
+Nothing yet: carriers show here a moment after they start transmitting.	Пока ничего: несущие появляются здесь вскоре после начала передачи.
+The radio's tuning error is not measured yet: names may be off by a channel.	Ошибка настройки радио ещё не измерена: названия могут отличаться на один канал.

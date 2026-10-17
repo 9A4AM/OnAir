@@ -1593,3 +1593,64 @@ testing	テスト
 idea	アイデア
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	修正の送付、バグ報告、録音の共有、翻訳、アイデアの提案をしてくださったすべての方に感謝します。作者は Kristijonas Adomaitis です。
 Want your name changed or removed? Tell us on Discord or open an issue.	名前の変更や削除をご希望ですか？ Discord でお知らせいただくか、issue を作成してください。
+# airband: airport search, band watch
+Airport data updated: %s	空港データを更新しました: %s
+Airport data not updated: %s	空港データを更新できませんでした: %s
+Memory set %s: %d added, %d already there.	メモリセット %s: %d 件追加、%d 件は登録済み。
+Airports	空港
+Airport	空港
+EGLL, LHR, Heathrow, Vilnius ...	RJTT, HND, 羽田, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	ICAO または IATA コード、名前、都市名。空港を選ぶと、その周波数がすべてチャンネルとして読み込まれます。
+Near me	現在地の近く
+Airports within the radius of your station position (Settings), nearest first.	局の位置（設定）から半径内の空港を近い順に表示します。
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	先に局の位置（設定または ADS-B マップ）を設定してください。周辺の空港が一覧表示されます。
+Your station position is not set.	局の位置が設定されていません。
+Type a code, a name or a city.	コード、名前、または都市名を入力してください。
+No airport found.	空港が見つかりません。
+Code	コード
+Place	場所
+km	km
+Freq.	周波数
+This airport has no frequency in the airband in the table.	この空港には、表に航空バンドの周波数がありません。
+%d more outside the airband (not received here).	ほかに %d 件は航空バンド外です（ここでは受信できません）。
+Load channels	チャンネルを読み込む
+Loaded %s	%s を読み込みました
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	チャンネル一覧をこの空港の周波数に置き換え、サンプルレートで入る限り多くを含むように受信機を同調します。
+Add to list	一覧に追加
+Added %s	%s を追加しました
+Save as memory set	メモリセットとして保存
+One memory per channel, in the group of this airport (Memory panel).	チャンネルごとに 1 つのメモリを、この空港のグループに作成します（メモリパネル）。
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	周波数は %.1f MHz にわたって分布し、受信機は一度に %.1f MHz を取り込むため、%zu 回に分かれます。それぞれに同調してください:
+Imported table:	インポートした表:
+Built-in table (OurAirports, public domain):	内蔵の表 (OurAirports、パブリックドメイン):
+Community data: can be out of date. Never use it for navigation.	コミュニティのデータで、古い場合があります。航法には絶対に使わないでください。
+Downloading ...	ダウンロード中 ...
+Refresh from the web	ウェブから更新
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	クリックしたときだけ https://davidmegginson.github.io/ourairports-data/ から airports.csv と airport-frequencies.csv（約 14 MB）をダウンロードします。自動では行いません。受信したファイルの SHA-256 が表示されます。
+Import CSV ...	CSV をインポート ...
+Imported: %s	インポートしました: %s
+Import failed: %s	インポートに失敗しました: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	airports.csv、続いて airport-frequencies.csv を選んでください（OurAirports 形式）。
+Back to built-in	内蔵に戻す
+Using the built-in table again.	再び内蔵の表を使います。
+Hold	ホールド
+Stay on the channel the scan stopped on, also after it has gone quiet.	スキャンが止まったチャンネルに、静かになった後も留まります。
+Noise remover (neural)	ノイズ除去（ニューラル）
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d / %zu チャンネルが現在の受信範囲外です。取り込みに同調してください:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	%zu 個のチャンネルはどれも現在の受信範囲に入っていません。取り込みに同調してください:
+On air: %s	送信中: %s
+No signal: every channel is quiet.	信号なし: すべてのチャンネルが静かです。
+no signal	信号なし
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	このチャンネルのスケルチ（搬送波対雑音、dB）。括弧付きは全体のスケルチを使用。ドラッグで設定、右クリックで全体に戻します。
+tune here	ここに同調
+Back to hearing every open channel.	開いているすべてのチャンネルを聞く状態に戻します。
+Hear only this channel (solo), whatever else is on the air.	このチャンネルだけを聞きます（ソロ）。他が送信していても同様です。
+Only active	アクティブのみ
+Show only the channels that are open or were heard in the last 30 seconds.	開いている、または直近 30 秒以内に受信したチャンネルだけを表示します。
+%d quiet channels hidden	静かなチャンネル %d 件を非表示
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	チャンネルがありません。上で空港を検索するか、周波数を追加するか、送信中の信号を確認してください（「電波状況」タブ）。
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	取り込み全体で送信中の、一覧にない搬送波を、活動の多い順に表示します。聞きたいものを追加してください。
+Start the receiver to see what is on the air.	受信機を開始すると、送信中の信号が表示されます。
+Add all	すべて追加
+Nothing yet: carriers show here a moment after they start transmitting.	まだありません。搬送波は送信開始の少し後にここに表示されます。
+The radio's tuning error is not measured yet: names may be off by a channel.	受信機の同調誤差はまだ測定されていません。名前が 1 チャンネルずれている可能性があります。

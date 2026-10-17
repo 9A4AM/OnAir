@@ -1593,3 +1593,64 @@ testing	testen
 idea	idee
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Dank aan iedereen die fixes stuurde, bugs meldde, opnames deelde, vertaalde of ideeën aandroeg. De auteur is Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Wil je dat je naam wordt aangepast of verwijderd? Laat het ons weten op Discord of open een issue.
+# airband: airport search, band watch
+Airport data updated: %s	Luchthavengegevens bijgewerkt: %s
+Airport data not updated: %s	Luchthavengegevens niet bijgewerkt: %s
+Memory set %s: %d added, %d already there.	Geheugenset %s: %d toegevoegd, %d al aanwezig.
+Airports	Luchthavens
+Airport	Luchthaven
+EGLL, LHR, Heathrow, Vilnius ...	EHAM, AMS, Schiphol, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	ICAO- of IATA-code, naam of plaats. Kies een luchthaven om al zijn frequenties als kanalen te laden.
+Near me	Bij mij in de buurt
+Airports within the radius of your station position (Settings), nearest first.	Luchthavens binnen de straal van je stationspositie (Instellingen), dichtstbijzijnde eerst.
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	Stel eerst je stationspositie in (Instellingen of ADS-B-kaart): dan worden de luchthavens in de buurt getoond.
+Your station position is not set.	Je stationspositie is niet ingesteld.
+Type a code, a name or a city.	Typ een code, naam of plaats.
+No airport found.	Geen luchthaven gevonden.
+Code	Code
+Place	Plaats
+km	km
+Freq.	Freq.
+This airport has no frequency in the airband in the table.	Deze luchthaven heeft in de tabel geen frequentie in de luchtvaartband.
+%d more outside the airband (not received here).	nog %d buiten de luchtvaartband (hier niet te ontvangen).
+Load channels	Kanalen laden
+Loaded %s	%s geladen
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	Vervangt de kanaallijst door de frequenties van deze luchthaven en stemt de radio af zodat er zoveel mogelijk in de samplerate passen.
+Add to list	Aan lijst toevoegen
+Added %s	%s toegevoegd
+Save as memory set	Opslaan als geheugenset
+One memory per channel, in the group of this airport (Memory panel).	Eén geheugen per kanaal, in de groep van deze luchthaven (Geheugenpaneel).
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	De frequenties lopen over %.1f MHz; de radio neemt %.1f MHz tegelijk, dus het zijn %zu opnames. Stem op elk af:
+Imported table:	Geïmporteerde tabel:
+Built-in table (OurAirports, public domain):	Ingebouwde tabel (OurAirports, publiek domein):
+Community data: can be out of date. Never use it for navigation.	Gemeenschapsdata: kan verouderd zijn. Nooit gebruiken voor navigatie.
+Downloading ...	Downloaden ...
+Refresh from the web	Vernieuwen via het web
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	Downloadt airports.csv en airport-frequencies.csv van https://davidmegginson.github.io/ourairports-data/ (ongeveer 14 MB) alleen als je klikt, nooit vanzelf. De SHA-256 van het ontvangene wordt getoond.
+Import CSV ...	CSV importeren ...
+Imported: %s	Geïmporteerd: %s
+Import failed: %s	Importeren mislukt: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	Kies airports.csv en daarna airport-frequencies.csv (OurAirports-formaat).
+Back to built-in	Terug naar ingebouwd
+Using the built-in table again.	De ingebouwde tabel wordt weer gebruikt.
+Hold	Vasthouden
+Stay on the channel the scan stopped on, also after it has gone quiet.	Blijft op het kanaal waar de scan stopte, ook als het weer stil is.
+Noise remover (neural)	Ruisonderdrukker (neuraal)
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d van %zu kanalen vallen buiten wat de radio nu opneemt. Stem op een opname af:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	Geen van de %zu kanalen valt binnen wat de radio nu opneemt. Stem op een opname af:
+On air: %s	In de lucht: %s
+No signal: every channel is quiet.	Geen signaal: alle kanalen zijn stil.
+no signal	geen signaal
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	Squelch van dit kanaal (draaggolf/ruis, dB). Tussen haakjes: de globale squelch geldt. Sleep om in te stellen; rechtsklik om terug te gaan naar de globale.
+tune here	hier afstemmen
+Back to hearing every open channel.	Terug naar het horen van elk open kanaal.
+Hear only this channel (solo), whatever else is on the air.	Alleen dit kanaal horen (solo), wat er ook elders is.
+Only active	Alleen actief
+Show only the channels that are open or were heard in the last 30 seconds.	Toont alleen kanalen die open zijn of de laatste 30 seconden te horen waren.
+%d quiet channels hidden	%d stille kanalen verborgen
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	Nog geen kanaal: zoek hierboven een luchthaven, voeg een frequentie toe of bekijk wat er in de lucht is (tabblad In de lucht).
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	Draaggolven in de lucht in de hele opname die niet in je lijst staan, de meest actieve eerst. Voeg toe wat je wilt horen.
+Start the receiver to see what is on the air.	Start de ontvanger om te zien wat er in de lucht is.
+Add all	Alles toevoegen
+Nothing yet: carriers show here a moment after they start transmitting.	Nog niets: draaggolven verschijnen hier even nadat ze beginnen te zenden.
+The radio's tuning error is not measured yet: names may be off by a channel.	De afstemfout van de radio is nog niet gemeten: namen kunnen één kanaal ernaast zitten.

@@ -1593,3 +1593,64 @@ testing	pruebas
 idea	idea
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Gracias a todos los que enviaron correcciones, informaron de errores, compartieron grabaciones, tradujeron o propusieron ideas. El autor es Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	¿Quieres que cambiemos o quitemos tu nombre? Dínoslo en Discord o abre un issue.
+# airband: airport search, band watch
+Airport data updated: %s	Datos de aeropuertos actualizados: %s
+Airport data not updated: %s	Datos de aeropuertos no actualizados: %s
+Memory set %s: %d added, %d already there.	Conjunto de memorias %s: %d añadidas, %d ya estaban.
+Airports	Aeropuertos
+Airport	Aeropuerto
+EGLL, LHR, Heathrow, Vilnius ...	LEMD, MAD, Madrid, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	Código OACI o IATA, nombre o ciudad. Elige un aeropuerto para cargar todas sus frecuencias como canales.
+Near me	Cerca de mí
+Airports within the radius of your station position (Settings), nearest first.	Aeropuertos dentro del radio de la posición de tu estación (Ajustes), los más cercanos primero.
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	Primero fija la posición de tu estación (Ajustes o el mapa ADS-B): así se listan los aeropuertos cercanos.
+Your station position is not set.	La posición de tu estación no está fijada.
+Type a code, a name or a city.	Escribe un código, un nombre o una ciudad.
+No airport found.	No se encontró ningún aeropuerto.
+Code	Código
+Place	Lugar
+km	km
+Freq.	Frec.
+This airport has no frequency in the airband in the table.	Este aeropuerto no tiene frecuencias en la banda aérea en la tabla.
+%d more outside the airband (not received here).	%d más fuera de la banda aérea (no se reciben aquí).
+Load channels	Cargar canales
+Loaded %s	%s cargado
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	Sustituye la lista de canales por las frecuencias de este aeropuerto y sintoniza la radio para abarcar tantas como permita la frecuencia de muestreo.
+Add to list	Añadir a la lista
+Added %s	%s añadido
+Save as memory set	Guardar como conjunto de memorias
+One memory per channel, in the group of this airport (Memory panel).	Una memoria por canal, en el grupo de este aeropuerto (panel Memoria).
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	Las frecuencias se reparten en %.1f MHz; la radio abarca %.1f MHz a la vez, así que son %zu capturas. Sintoniza cada una:
+Imported table:	Tabla importada:
+Built-in table (OurAirports, public domain):	Tabla incorporada (OurAirports, dominio público):
+Community data: can be out of date. Never use it for navigation.	Datos comunitarios: pueden estar desactualizados. No los uses nunca para navegar.
+Downloading ...	Descargando ...
+Refresh from the web	Actualizar desde la web
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	Descarga airports.csv y airport-frequencies.csv de https://davidmegginson.github.io/ourairports-data/ (unos 14 MB) solo al pulsar, nunca por sí solo. Se muestra el SHA-256 de lo recibido.
+Import CSV ...	Importar CSV ...
+Imported: %s	Importado: %s
+Import failed: %s	Falló la importación: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	Elige airports.csv y después airport-frequencies.csv (formato OurAirports).
+Back to built-in	Volver a la incorporada
+Using the built-in table again.	Se usa de nuevo la tabla incorporada.
+Hold	Retener
+Stay on the channel the scan stopped on, also after it has gone quiet.	Se queda en el canal donde se detuvo el barrido, incluso cuando se queda en silencio.
+Noise remover (neural)	Reductor de ruido (neuronal)
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d de %zu canales están fuera de lo que la radio abarca ahora. Sintoniza una captura:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	Ninguno de los %zu canales está dentro de lo que la radio abarca ahora. Sintoniza una captura:
+On air: %s	En el aire: %s
+No signal: every channel is quiet.	Sin señal: todos los canales están en silencio.
+no signal	sin señal
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	Squelch de este canal (portadora a ruido, dB). Entre paréntesis: rige el global. Arrastra para fijarlo; clic derecho para volver al global.
+tune here	sintonizar aquí
+Back to hearing every open channel.	Volver a oír todos los canales abiertos.
+Hear only this channel (solo), whatever else is on the air.	Oír solo este canal (solo), pase lo que pase en los demás.
+Only active	Solo activos
+Show only the channels that are open or were heard in the last 30 seconds.	Muestra solo los canales abiertos o escuchados en los últimos 30 segundos.
+%d quiet channels hidden	%d canales en silencio ocultos
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	Aún no hay canales: busca un aeropuerto arriba, añade una frecuencia o mira qué hay en el aire (pestaña En el aire).
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	Portadoras en el aire en toda la captura que no están en tu lista, las más activas primero. Añade las que quieras oír.
+Start the receiver to see what is on the air.	Inicia el receptor para ver qué hay en el aire.
+Add all	Añadir todos
+Nothing yet: carriers show here a moment after they start transmitting.	Aún nada: las portadoras aparecen aquí un momento después de empezar a transmitir.
+The radio's tuning error is not measured yet: names may be off by a channel.	El error de sintonía de la radio aún no está medido: los nombres pueden errar por un canal.

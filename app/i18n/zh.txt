@@ -1593,3 +1593,64 @@ testing	测试
 idea	创意
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	感谢所有提交修复、报告错误、分享录音、翻译或提出想法的人。作者是 Kristijonas Adomaitis。
 Want your name changed or removed? Tell us on Discord or open an issue.	希望更改或删除您的名字？请在 Discord 告诉我们或提交 issue。
+# airband: airport search, band watch
+Airport data updated: %s	机场数据已更新：%s
+Airport data not updated: %s	机场数据未更新：%s
+Memory set %s: %d added, %d already there.	记忆组 %s：新增 %d 个，已有 %d 个。
+Airports	机场
+Airport	机场
+EGLL, LHR, Heathrow, Vilnius ...	ZBAA, PEK, 首都, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	ICAO 或 IATA 代码、名称或城市。选择机场即可把它的全部频率载入为频道。
+Near me	我附近
+Airports within the radius of your station position (Settings), nearest first.	按本台位置（设置）半径内的机场，由近到远。
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	请先设置本台位置（设置或 ADS-B 地图），之后会列出周围的机场。
+Your station position is not set.	尚未设置本台位置。
+Type a code, a name or a city.	请输入代码、名称或城市。
+No airport found.	未找到机场。
+Code	代码
+Place	地点
+km	公里
+Freq.	频率
+This airport has no frequency in the airband in the table.	该机场在表中没有航空波段的频率。
+%d more outside the airband (not received here).	另有 %d 个在航空波段之外（此处无法接收）。
+Load channels	载入频道
+Loaded %s	已载入 %s
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	用该机场的频率替换频道列表，并调谐电台，使采样率允许的范围内尽量多的频道落在其中。
+Add to list	添加到列表
+Added %s	已添加 %s
+Save as memory set	保存为记忆组
+One memory per channel, in the group of this airport (Memory panel).	每个频道一个记忆，放在该机场的分组中（记忆面板）。
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	这些频率分布在 %.1f MHz 范围内；电台一次可覆盖 %.1f MHz，因此需要 %zu 次采集。请依次调谐：
+Imported table:	已导入的表：
+Built-in table (OurAirports, public domain):	内置表（OurAirports，公有领域）：
+Community data: can be out of date. Never use it for navigation.	社区数据，可能已过时。切勿用于导航。
+Downloading ...	正在下载 ...
+Refresh from the web	从网络更新
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	仅在您点击时才从 https://davidmegginson.github.io/ourairports-data/ 下载 airports.csv 和 airport-frequencies.csv（约 14 MB），绝不自动下载。会显示所收文件的 SHA-256。
+Import CSV ...	导入 CSV ...
+Imported: %s	已导入：%s
+Import failed: %s	导入失败：%s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	先选择 airports.csv，再选择 airport-frequencies.csv（OurAirports 格式）。
+Back to built-in	恢复内置表
+Using the built-in table again.	已重新使用内置表。
+Hold	保持
+Stay on the channel the scan stopped on, also after it has gone quiet.	停留在扫描停下的频道，即使它已安静下来。
+Noise remover (neural)	降噪（神经网络）
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d / %zu 个频道在电台当前覆盖范围之外。请调谐到一段采集：
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	%zu 个频道都不在电台当前覆盖范围内。请调谐到一段采集：
+On air: %s	正在通话：%s
+No signal: every channel is quiet.	无信号：所有频道均安静。
+no signal	无信号
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	此频道的静噪（载波噪声比，dB）。括号内表示使用全局静噪。拖动设置；右键恢复为全局。
+tune here	调谐到此
+Back to hearing every open channel.	恢复收听所有打开的频道。
+Hear only this channel (solo), whatever else is on the air.	只收听此频道（独奏），不管其他频道有无通话。
+Only active	仅活动
+Show only the channels that are open or were heard in the last 30 seconds.	仅显示已打开或最近 30 秒内有声音的频道。
+%d quiet channels hidden	已隐藏 %d 个安静频道
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	还没有频道：在上方搜索机场、添加频率，或查看正在通话的信号（“空中信号”标签）。
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	整段采集中正在发射、但不在您列表里的载波，按活动程度排序。请添加您想收听的。
+Start the receiver to see what is on the air.	启动接收机以查看空中信号。
+Add all	全部添加
+Nothing yet: carriers show here a moment after they start transmitting.	暂无：载波开始发射后片刻会显示在这里。
+The radio's tuning error is not measured yet: names may be off by a channel.	尚未测量电台的调谐误差：名称可能偏差一个频道。

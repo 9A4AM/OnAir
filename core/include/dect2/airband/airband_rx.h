@@ -87,6 +87,7 @@ public:
     void setSquelchDb(float db);                         // carrier to noise threshold, -5 .. 30 dB (default 6)
     void setHangSec(float s);                            // 0 .. 3 s (default 0.5)
     void setScan(bool on);
+    void setScanHold(bool on);                           // scan: stay on the channel it stopped on, also after it closed
     void setTuneErrorHz(double hz);                      // a starting guess of the radio's tuning error (tests); measured from then on
 
     // Sound (volume, mute) as in FmReceiver; the app pushes its shared controls here.

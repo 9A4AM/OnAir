@@ -1593,3 +1593,64 @@ testing	testy
 idea	pomysł
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Dziękujemy wszystkim, którzy przysłali poprawki, zgłosili błędy, udostępnili nagrania, tłumaczyli lub podsunęli pomysły. Autorem jest Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Chcesz zmienić lub usunąć swoje imię? Napisz do nas na Discordzie albo otwórz zgłoszenie (issue).
+# airband: airport search, band watch
+Airport data updated: %s	Dane lotnisk zaktualizowane: %s
+Airport data not updated: %s	Dane lotnisk nie zostały zaktualizowane: %s
+Memory set %s: %d added, %d already there.	Zestaw pamięci %s: dodano %d, %d już było.
+Airports	Lotniska
+Airport	Lotnisko
+EGLL, LHR, Heathrow, Vilnius ...	EPWA, WAW, Warszawa, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	Kod ICAO lub IATA, nazwa albo miasto. Wybierz lotnisko, aby wczytać wszystkie jego częstotliwości jako kanały.
+Near me	W pobliżu
+Airports within the radius of your station position (Settings), nearest first.	Lotniska w promieniu od pozycji stacji (Ustawienia), najbliższe najpierw.
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	Najpierw ustaw pozycję stacji (Ustawienia lub mapa ADS-B): wtedy pokażemy lotniska wokół.
+Your station position is not set.	Pozycja stacji nie jest ustawiona.
+Type a code, a name or a city.	Wpisz kod, nazwę lub miasto.
+No airport found.	Nie znaleziono lotniska.
+Code	Kod
+Place	Miejsce
+km	km
+Freq.	Częst.
+This airport has no frequency in the airband in the table.	To lotnisko nie ma w tabeli częstotliwości w paśmie lotniczym.
+%d more outside the airband (not received here).	jeszcze %d poza pasmem lotniczym (tu nie odbierane).
+Load channels	Wczytaj kanały
+Loaded %s	Wczytano %s
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	Zastępuje listę kanałów częstotliwościami tego lotniska i stroi radio tak, by objąć jak najwięcej przy danej częstotliwości próbkowania.
+Add to list	Dodaj do listy
+Added %s	Dodano %s
+Save as memory set	Zapisz jako zestaw pamięci
+One memory per channel, in the group of this airport (Memory panel).	Jedna pamięć na kanał, w grupie tego lotniska (panel Pamięć).
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	Częstotliwości rozciągają się na %.1f MHz; radio obejmuje naraz %.1f MHz, więc potrzeba %zu przechwyceń. Dostrój do każdego:
+Imported table:	Zaimportowana tabela:
+Built-in table (OurAirports, public domain):	Wbudowana tabela (OurAirports, domena publiczna):
+Community data: can be out of date. Never use it for navigation.	Dane społeczności: mogą być nieaktualne. Nigdy nie używaj ich do nawigacji.
+Downloading ...	Pobieranie ...
+Refresh from the web	Odśwież z internetu
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	Pobiera airports.csv i airport-frequencies.csv z https://davidmegginson.github.io/ourairports-data/ (ok. 14 MB) tylko po kliknięciu, nigdy samo. Pokazuje SHA-256 pobranych plików.
+Import CSV ...	Importuj CSV ...
+Imported: %s	Zaimportowano: %s
+Import failed: %s	Import nie powiódł się: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	Wybierz airports.csv, a potem airport-frequencies.csv (format OurAirports).
+Back to built-in	Wróć do wbudowanej
+Using the built-in table again.	Znów używana jest wbudowana tabela.
+Hold	Zatrzymaj
+Stay on the channel the scan stopped on, also after it has gone quiet.	Zostaje na kanale, na którym zatrzymało się skanowanie, także gdy ucichnie.
+Noise remover (neural)	Usuwanie szumów (neuronowe)
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d z %zu kanałów jest poza tym, co radio teraz obejmuje. Dostrój do przechwycenia:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	Żaden z %zu kanałów nie mieści się w tym, co radio teraz obejmuje. Dostrój do przechwycenia:
+On air: %s	Na antenie: %s
+No signal: every channel is quiet.	Brak sygnału: wszystkie kanały milczą.
+no signal	brak sygnału
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	Squelch tego kanału (nośna do szumu, dB). W nawiasie: obowiązuje globalny. Przeciągnij, aby ustawić; prawy klik wraca do globalnego.
+tune here	dostrój tutaj
+Back to hearing every open channel.	Powrót do słuchania wszystkich otwartych kanałów.
+Hear only this channel (solo), whatever else is on the air.	Słuchaj tylko tego kanału (solo), cokolwiek dzieje się gdzie indziej.
+Only active	Tylko aktywne
+Show only the channels that are open or were heard in the last 30 seconds.	Pokazuje tylko kanały otwarte lub słyszane w ostatnich 30 sekundach.
+%d quiet channels hidden	Ukryto %d cichych kanałów
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	Brak kanałów: wyszukaj lotnisko powyżej, dodaj częstotliwość albo zobacz, co jest na antenie (karta Na antenie).
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	Nośne na antenie w całym przechwyceniu, których nie ma na liście, najaktywniejsze najpierw. Dodaj te, które chcesz słyszeć.
+Start the receiver to see what is on the air.	Uruchom odbiornik, aby zobaczyć, co jest na antenie.
+Add all	Dodaj wszystkie
+Nothing yet: carriers show here a moment after they start transmitting.	Na razie nic: nośne pojawiają się tu chwilę po rozpoczęciu nadawania.
+The radio's tuning error is not measured yet: names may be off by a channel.	Błąd strojenia radia nie został jeszcze zmierzony: nazwy mogą być przesunięte o kanał.

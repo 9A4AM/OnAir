@@ -205,7 +205,7 @@ struct AirbandReceiver::Impl {
     double rate = 0, offsetHz = 0, centerSet = 0;
     std::vector<AirbandChannel> chanSet;
     float sqlSet = 6, hangSet = 0.5f;
-    bool scanSet = false;
+    bool scanSet = false, holdSet = false;
     double tuneGuess = 0; bool tuneGuessReq = false;
     AirbandTelemetry pub;
     std::atomic<bool> resetReq{true}, chanReq{false}, tapsReq{false};
@@ -229,7 +229,7 @@ struct AirbandReceiver::Impl {
     double nextReport = 0, nextEst = 0;
     double power = 0; int64_t nPower = 0;
     float sql = 6, hang = 0.5f;
-    bool scan = false;
+    bool scan = false, scanHold = false;
     int scanCh = -1; double scanIdleSince = -1;
     std::vector<cf32> clean, wide, nb;
     std::vector<float> mix, pcm;
@@ -307,7 +307,7 @@ struct AirbandReceiver::Impl {
         std::function<void(const std::string&)> cb;
         std::vector<AirbandChannel> list;
         { std::lock_guard<std::mutex> lk(mu); curRate = rate; cb = log; center = centerSet > 0 ? centerSet : kDefaultDialHz; list = chanSet;
-          sql = sqlSet; hang = hangSet; scan = scanSet; }
+          sql = sqlSet; hang = hangSet; scan = scanSet; scanHold = holdSet; }
         const uint64_t s = tel.seq;
         AirbandTelemetry keep;             // the activity log stays (clearResults): the clock starts again, it moves back with it
         moveLists(keep, tel);
@@ -613,7 +613,7 @@ struct AirbandReceiver::Impl {
         int prioOpen = -1;
         for (size_t i = 0; i < ch.size(); i++) if (ch[i].inBand && ch[i].active && ch[i].cfg.priority && !ch[i].cfg.muted) prioOpen = (int)i;
         if (scan) {
-            const bool keep = scanCh >= 0 && scanCh < (int)ch.size() && (ch[(size_t)scanCh].active || now - ch[(size_t)scanCh].lastEndSec < kScanResume);
+            const bool keep = scanCh >= 0 && scanCh < (int)ch.size() && (ch[(size_t)scanCh].active || scanHold || now - ch[(size_t)scanCh].lastEndSec < kScanResume);
             if (prioOpen >= 0 && scanCh != prioOpen) scanCh = prioOpen;
             else if (!keep) {
                 scanCh = -1;
@@ -731,7 +731,7 @@ void AirbandReceiver::feed(const cf32* x, size_t n) {
     m.takeRequests();
     {
         std::lock_guard<std::mutex> lk(m.mu);
-        m.sql = m.sqlSet; m.hang = m.hangSet; m.scan = m.scanSet;
+        m.sql = m.sqlSet; m.hang = m.hangSet; m.scan = m.scanSet; m.scanHold = m.holdSet;
         if (m.tuneGuessReq) { m.tuneGuessReq = false; m.tuneErr = m.tuneGuess; m.tuneKnown = false; for (auto& c : m.ch) m.setFine(c); }
     }
     if (m.chanReq.exchange(false)) { std::vector<AirbandChannel> l; { std::lock_guard<std::mutex> lk(m.mu); l = m.chanSet; } m.applyFlags(l); }
@@ -801,6 +801,7 @@ void AirbandReceiver::setChannels(const std::vector<AirbandChannel>& c) { std::l
 void AirbandReceiver::setSquelchDb(float db) { std::lock_guard<std::mutex> lk(p_->mu); p_->sqlSet = std::max(-5.f, std::min(30.f, db)); }
 void AirbandReceiver::setHangSec(float s) { std::lock_guard<std::mutex> lk(p_->mu); p_->hangSet = std::max(0.f, std::min(3.f, s)); }
 void AirbandReceiver::setScan(bool on) { std::lock_guard<std::mutex> lk(p_->mu); p_->scanSet = on; }
+void AirbandReceiver::setScanHold(bool on) { std::lock_guard<std::mutex> lk(p_->mu); p_->holdSet = on; }
 void AirbandReceiver::setTuneErrorHz(double hz) { std::lock_guard<std::mutex> lk(p_->mu); p_->tuneGuess = hz; p_->tuneGuessReq = true; }
 void AirbandReceiver::setVolume(float v) { p_->volume = std::max(0.f, std::min(1.f, v)); }
 void AirbandReceiver::setMuted(bool m) { p_->muted = m; }

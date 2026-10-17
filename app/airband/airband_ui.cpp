@@ -4,6 +4,7 @@
 #include "ui/ui_common.h"
 #include "gfx/plot.h"
 #include "dect2/airband/airband_gen.h"
+#include "airband/airport_ui.h"
 #include "dect2/airband/airband_store.h"
 #include "dect2/airband/airband_tel.h"
 #include <algorithm>
@@ -22,9 +23,12 @@ struct State {
     std::vector<dect2::AirbandChannel> chans;
     float squelch = 6, hang = 0.5f;
     bool nrOn = false; float nrStr = 80;   // neural noise remover
-    bool scan = false;
+    bool scan = false, hold = false;
+    bool onlyActive = false;             // channels list: only those open or heard in the last 30 s
+    bool defaultList = false;            // the list is the built-in one (test signal) or empty, never saved by the user
+    int lastKind = -1;
     bool dirty = true;                   // push the list and the settings to the receiver
-    int view = 0;                        // 0 channels, 1 activity, 2 spectrum
+    int view = 0;                        // 0 channels, 1 on the air, 2 activity, 3 spectrum
     char addName[24] = "", addLabel[32] = "";
     std::string addErr;
     int editing = -1;
@@ -48,17 +52,25 @@ void save() {
     plat::Prefs& d = plat::prefs();
     d.setS("airChans", dect2::airbandEncode(S.chans));
     d.setD("airSquelch", S.squelch); d.setD("airHang", S.hang); d.setB("airScan", S.scan);
+    S.defaultList = false;
+    d.setB("airHold", S.hold); d.setB("airOnlyActive", S.onlyActive);
     d.setB("airNr", S.nrOn); d.setD("airNrStr", S.nrStr);
     d.flush();
     S.dirty = true;
 }
 
-void load() {
+bool synthetic(const App& a) { return a.devIdx >= 0 && (size_t)a.devIdx < a.devices.size() && a.devices[(size_t)a.devIdx].kind == DeviceInfo::Synthetic; }
+
+void load(const App& a) {
     if (S.loaded) return;
     S.loaded = true;
     plat::Prefs& d = plat::prefs();
     if (d.has("airChans")) S.chans = dect2::airbandDecode(d.getS("airChans", ""));
-    else S.chans = dect2::airbandChannelsFor(dect2::airbandTestLayout(), dect2::airbandTuning().defMhz * 1e6);
+    else {   // the test signal's channels only for the test signal: a real radio starts with an empty list (search an airport, or see what is on the air)
+        S.defaultList = true;
+        if (synthetic(a)) S.chans = dect2::airbandChannelsFor(dect2::airbandTestLayout(), dect2::airbandTuning().defMhz * 1e6);
+    }
+    S.hold = d.getB("airHold", false); S.onlyActive = d.getB("airOnlyActive", false);
     S.squelch = (float)d.getD("airSquelch", 6); S.hang = (float)d.getD("airHang", 0.5); S.scan = d.getB("airScan", false);
     S.nrOn = d.getB("airNr", false); S.nrStr = (float)std::clamp(d.getD("airNrStr", 80), 0.0, 100.0);
 }
@@ -74,6 +86,11 @@ const dect2::AirbandChannelState* stateOf(const App& a, size_t i) {
 void controls(App& a) {
     if (ImGui::Checkbox("Scan", &S.scan)) save();
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("Play one channel at a time: stop on the first that opens (the priority channel first), go on 2 s after it closed.\nOff: every open channel is mixed; an open priority channel pushes the others 12 dB down.");
+    if (S.scan) {
+        flowNext(6 * gUi);
+        if (ImGui::Checkbox(tr("Hold##airhold"), &S.hold)) save();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Stay on the channel the scan stopped on, also after it has gone quiet."));
+    }
     flowNext(12 * gUi);
     ImGui::AlignTextToFramePadding(); ImGui::TextDisabled("Squelch"); ImGui::SameLine(0, 5 * gUi);
     ImGui::SetNextItemWidth(140 * gUi);
@@ -139,24 +156,89 @@ void addRow(App& a) {
 
 // ---------------------------------------------------------------- the views
 
+// the channels of an airport (or of the band watch) into the list: replace it, or add what is not there yet; sorted by frequency
+void applyChannels(const std::vector<dect2::AirbandChannel>& ch, bool replace) {
+    if (replace) S.chans = ch;
+    else for (const auto& c : ch) {
+        bool dup = false;
+        for (const auto& o : S.chans) dup |= std::fabs(o.freqHz - c.freqHz) < 1 && o.is833 == c.is833;
+        if (!dup) S.chans.push_back(c);
+    }
+    std::sort(S.chans.begin(), S.chans.end(), [](const auto& x, const auto& y) { return x.freqHz < y.freqHz; });
+    S.editing = -1;
+    save();
+}
+
+ImU32 ledColour(const dect2::AirbandChannelState* s, double now) {
+    if (!s) return IM_COL32(90, 90, 90, 255);
+    if (!s->inBand) return IM_COL32(150, 70, 60, 255);
+    if (s->open) return s->heterodyne ? IM_COL32(230, 170, 50, 255) : IM_COL32(90, 220, 120, 255);
+    if (s->transmissions > 0 && now - s->lastSec < 30) return IM_COL32(60, 130, 80, 255);   // heard a moment ago
+    return IM_COL32(85, 90, 100, 255);
+}
+
+void led(ImU32 col) {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImVec2 p = ImGui::GetCursorScreenPos();
+    const float h = ImGui::GetTextLineHeight(), r = 4.5f * gUi;
+    dl->AddCircleFilled(ImVec2(p.x + r + 1, p.y + h / 2), r, col);
+    ImGui::Dummy(ImVec2(2 * r + 4, h));
+    ImGui::SameLine(0, 2 * gUi);
+}
+
+// What is in the list but outside what the radio takes in: one button per capture that holds some of it
+void captureBanner(App& a) {
+    if (!live(a) || S.chans.empty()) return;
+    const auto& t = a.rx.airband;
+    int in = 0;
+    for (const auto& c : t.channels) in += c.inBand;
+    if (t.channels.size() != S.chans.size() || in == (int)S.chans.size()) return;
+    std::vector<double> f;
+    for (const auto& c : S.chans) f.push_back(c.freqHz);
+    const auto g = dect2::airbandPlanGroups(f, dect2::airbandUsableSpanHz(a.engine.sampleRate() > 0 ? a.engine.sampleRate() : a.tune.sampleRate));
+    ImGui::PushTextWrapPos(0);
+    if (in) ImGui::TextColored(pal::warnAmber(), tr("%d of %zu channels are outside what the radio takes in now. Tune to a capture:"), (int)S.chans.size() - in, S.chans.size());
+    else ImGui::TextColored(pal::warnAmber(), tr("None of the %zu channels is inside what the radio takes in now. Tune to a capture:"), S.chans.size());
+    ImGui::PopTextWrapPos();
+    for (size_t k = 0; k < g.size(); k++) {
+        char b[96];
+        snprintf(b, sizeof b, "%.3f - %.3f MHz (%zu)##capt%zu", g[k].loHz / 1e6, g[k].hiHz / 1e6, g[k].members.size(), k);
+        if (ImGui::Button(b)) airportTuneCentre(a, g[k].centerHz);
+        flowNext(4 * gUi);
+    }
+    flowEnd();
+}
+
 void channelView(App& a) {
     controls(a);
+    airportSection(a, applyChannels);
     addRow(a);
     ImGui::Spacing();
-    const int nc = 9;
-    if (!ImGui::BeginTable("##airch", nc, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    captureBanner(a);
+    const auto& tel = a.rx.airband;
+    if (live(a) && !S.chans.empty()) {
+        std::string names;
+        int open = 0, inBand = 0;
+        for (const auto& c : tel.channels) { inBand += c.inBand; if (c.open) { open++; names += (names.empty() ? "" : ", ") + (c.label.empty() ? c.name : c.label); } }
+        if (open) ImGui::TextColored(pal::okGreen(), tr("On air: %s"), names.c_str());
+        else if (inBand) ImGui::TextDisabled("%s", tr("No signal: every channel is quiet."));
+    }
+    const int nc = 11;
+    if (!ImGui::BeginTable("##airch", nc, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollX, ImVec2(0, ImGui::GetContentRegionAvail().y - ImGui::GetFrameHeightWithSpacing()))) return;
     ImGui::TableSetupScrollFreeze(1, 1);
     ImGui::TableSetupColumn("Channel"); ImGui::TableSetupColumn("Name"); ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthFixed, 110 * gUi);
-    ImGui::TableSetupColumn("Squelch"); ImGui::TableSetupColumn("Carrier"); ImGui::TableSetupColumn("Heard");
-    ImGui::TableSetupColumn("M"); ImGui::TableSetupColumn("S"); ImGui::TableSetupColumn("P");
+    ImGui::TableSetupColumn("Sq"); ImGui::TableSetupColumn("State"); ImGui::TableSetupColumn("Carrier"); ImGui::TableSetupColumn("Heard");
+    ImGui::TableSetupColumn("Listen"); ImGui::TableSetupColumn("M"); ImGui::TableSetupColumn("S"); ImGui::TableSetupColumn("P");
     ImGui::TableHeadersRow();
-    int remove = -1;
+    int remove = -1, hidden = 0;
     for (size_t i = 0; i < S.chans.size(); i++) {
         dect2::AirbandChannel& c = S.chans[i];
         const dect2::AirbandChannelState* s = stateOf(a, i);
+        if (S.onlyActive && live(a) && s && !(s->open || (s->transmissions > 0 && tel.timeSec - s->lastSec < 30))) { hidden++; continue; }
         ImGui::PushID((int)i);
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
+        led(ledColour(s, tel.timeSec));
         ImGui::PushFont(a.mono, 0);
         ImGui::Text("%s", dect2::airbandName(c.freqHz, c.is833).c_str());
         ImGui::PopFont();
@@ -177,18 +259,26 @@ void channelView(App& a) {
             const float snr = s ? s->snrDb : -99;
             const float frac = std::max(0.f, std::min(1.f, (snr + 5) / 45));
             char ov[32] = "";
-            if (s && s->inBand) snprintf(ov, sizeof ov, "%.0f dB", snr);
+            if (s && s->inBand) { if (s->open || snr > 0) snprintf(ov, sizeof ov, "%.0f dB", snr); else snprintf(ov, sizeof ov, "%s", tr("no signal")); }
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, s && s->open ? pal::accent() : pal::grey(0.45f));
             ImGui::ProgressBar(frac, ImVec2(110 * gUi, 0), ov);
             ImGui::PopStyleColor();
-            if (ImGui::IsItemHovered() && s) ImGui::SetTooltip("carrier to noise %.1f dB (squelch %.0f dB), channel power %.1f dBFS", s->snrDb, S.squelch, s->levelDb);
+            if (ImGui::IsItemHovered() && s) ImGui::SetTooltip("carrier to noise %.1f dB (squelch %.0f dB), channel power %.1f dBFS", s->snrDb, c.squelchDb > -50 ? c.squelchDb : S.squelch, s->levelDb);
+        }
+        ImGui::TableNextColumn();
+        {
+            const bool own = c.squelchDb > -50;
+            float v = own ? c.squelchDb : S.squelch;
+            ImGui::SetNextItemWidth(58 * gUi);
+            if (ImGui::DragFloat("##sq", &v, 0.2f, -5.f, 45.f, own ? "%.0f" : "(%.0f)")) c.squelchDb = std::max(-5.f, std::min(45.f, v));
+            if (ImGui::IsItemDeactivatedAfterEdit()) save();
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one."));
+            if (own && ImGui::IsItemClicked(ImGuiMouseButton_Right)) { c.squelchDb = dect2::kAirbandSquelchGlobal; save(); }
         }
         ImGui::TableNextColumn();
         if (!s) ImGui::TextDisabled("-");
         else if (!s->inBand) {   // outside the span the radio takes in around the dial (#52): one click moves the dial there
-            ImGui::PushID((int)i);
-            if (ImGui::SmallButton("tune here")) tuneDialTo(a, c.freqHz);
-            ImGui::PopID();
+            if (ImGui::SmallButton(tr("tune here"))) tuneDialTo(a, c.freqHz);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Out of band: the radio takes in %.1f MHz around the dial (the sample rate), and this channel is outside it.\n"
                                                          "Click to move the dial to it, or raise the sample rate (Tuner) to take in more of 118 - 137 MHz at once.", a.engine.sampleRate() / 1e6);
         }
@@ -198,6 +288,17 @@ void channelView(App& a) {
         if (s && s->open) ImGui::Text("%+.0f Hz", s->carrierHz); else ImGui::TextDisabled("-");
         ImGui::TableNextColumn();
         if (s) ImGui::Text("%llu", (unsigned long long)s->transmissions); else ImGui::TextDisabled("-");
+        ImGui::TableNextColumn();
+        {
+            bool only = c.solo;
+            for (size_t k = 0; k < S.chans.size(); k++) if (k != i && S.chans[k].solo) only = false;
+            if (ImGui::SmallButton(only ? tr("Stop##lis") : tr("Listen##lis"))) {
+                for (size_t k = 0; k < S.chans.size(); k++) S.chans[k].solo = !only && k == i;
+                if (!only) S.chans[i].muted = false;
+                save();
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", only ? tr("Back to hearing every open channel.") : tr("Hear only this channel (solo), whatever else is on the air."));
+        }
         ImGui::TableNextColumn(); if (ImGui::Checkbox("##m", &c.muted)) save();
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Mute: listened to and logged, not played.");
         ImGui::TableNextColumn(); if (ImGui::Checkbox("##s", &c.solo)) save();
@@ -209,7 +310,63 @@ void channelView(App& a) {
     }
     ImGui::EndTable();
     if (remove >= 0) { S.chans.erase(S.chans.begin() + remove); S.editing = -1; save(); }
-    if (S.chans.empty()) ImGui::TextDisabled("no channel: add one above");
+    if (ImGui::Checkbox(tr("Only active##airact"), &S.onlyActive)) save();
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Show only the channels that are open or were heard in the last 30 seconds."));
+    if (hidden) { ImGui::SameLine(0, 8 * gUi); ImGui::TextDisabled(tr("%d quiet channels hidden"), hidden); }
+    if (S.chans.empty()) {
+        ImGui::SameLine(0, 8 * gUi);
+        ImGui::TextDisabled("%s", tr("No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab)."));
+    }
+}
+
+// carriers the band watch found that are not in the list
+void seenView(App& a) {
+    ImGui::PushTextWrapPos(0);
+    ImGui::TextDisabled("%s", tr("Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear."));
+    ImGui::PopTextWrapPos();
+    if (!live(a)) { ImGui::TextDisabled("%s", a.engine.running() ? tr("starting") : tr("Start the receiver to see what is on the air.")); return; }
+    const auto& seen = a.rx.airband.seen;
+    std::vector<const dect2::AirbandSeen*> v;
+    for (const auto& x : seen) {
+        bool listed = false;
+        for (const auto& c : S.chans) listed |= std::fabs(c.freqHz - x.freqHz) < 1200;
+        if (!listed) v.push_back(&x);
+    }
+    if (ImGui::Button(tr("Add all##seenall")) && !v.empty()) {
+        std::vector<dect2::AirbandChannel> add;
+        for (const auto* x : v) { dect2::AirbandChannel c; c.freqHz = x->freqHz; c.is833 = x->is833; c.label = airportLabelFor(x->freqHz); add.push_back(c); }
+        applyChannels(add, false);
+    }
+    if (v.empty()) { flowNext(8 * gUi); ImGui::TextDisabled("%s", tr("Nothing yet: carriers show here a moment after they start transmitting.")); }
+    flowEnd();
+    if (!v.empty() && v.front()->approx) ImGui::TextColored(pal::warnAmber(), "%s", tr("The radio's tuning error is not measured yet: names may be off by a channel."));
+    if (!ImGui::BeginTable("##airseen", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
+    ImGui::TableSetupScrollFreeze(0, 1);
+    ImGui::TableSetupColumn("Channel"); ImGui::TableSetupColumn("Airport"); ImGui::TableSetupColumn("Level"); ImGui::TableSetupColumn("Heard");
+    ImGui::TableSetupColumn("Last"); ImGui::TableSetupColumn("");
+    ImGui::TableHeadersRow();
+    for (size_t i = 0; i < v.size(); i++) {
+        const dect2::AirbandSeen& x = *v[i];
+        ImGui::PushID((int)i);
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        led(x.activeNow ? IM_COL32(90, 220, 120, 255) : IM_COL32(85, 90, 100, 255));
+        ImGui::PushFont(a.mono, 0); ImGui::TextUnformatted(x.name.c_str()); ImGui::PopFont();
+        ImGui::SameLine(); ImGui::TextDisabled("%s", x.is833 ? "8.33" : "25");
+        ImGui::TableNextColumn();
+        const std::string lb = airportLabelFor(x.freqHz);
+        ImGui::TextUnformatted(lb.empty() ? "-" : lb.c_str());
+        ImGui::TableNextColumn(); ImGui::Text("%.0f dB", x.excessDb);
+        ImGui::TableNextColumn(); ImGui::Text("%u", x.hits);
+        ImGui::TableNextColumn(); if (x.activeNow) ImGui::TextColored(pal::okGreen(), "%s", tr("now")); else ImGui::TextDisabled("%.0f s", a.rx.airband.timeSec - x.lastSec);
+        ImGui::TableNextColumn();
+        if (ImGui::SmallButton(tr("Add##seen"))) {
+            dect2::AirbandChannel c; c.freqHz = x.freqHz; c.is833 = x.is833; c.label = lb;
+            applyChannels({c}, false);
+        }
+        ImGui::PopID();
+    }
+    ImGui::EndTable();
 }
 
 void activityView(App& a) {
@@ -281,13 +438,19 @@ void spectrumView(App& a) {
 // ---------------------------------------------------------------- hooks
 
 void tick(App& a) {
-    load();
+    load(a);
+    const int kind = synthetic(a) ? 0 : 1;
+    if (S.defaultList && kind != S.lastKind) {   // an untouched default follows the source: the test channels for the test signal, none for a radio
+        S.chans = kind == 0 ? dect2::airbandChannelsFor(dect2::airbandTestLayout(), dect2::airbandTuning().defMhz * 1e6) : std::vector<dect2::AirbandChannel>();
+        S.dirty = true;
+    }
+    S.lastKind = kind;
     const bool run = a.engine.running() && a.rx.standard == 27;
     if (!a.engine.running()) { S.wasRunning = false; return; }
     dect2::AirbandReceiver& r = a.engine.airband();
     r.setNoiseRemover(S.nrOn, S.nrStr / 100.f);
     if (!S.wasRunning || S.dirty) {
-        r.setChannels(S.chans); r.setSquelchDb(S.squelch); r.setHangSec(S.hang); r.setScan(S.scan);
+        r.setChannels(S.chans); r.setSquelchDb(S.squelch); r.setHangSec(S.hang); r.setScan(S.scan); r.setScanHold(S.hold);
         S.dirty = false;
     }
     if (!S.wasRunning || a.volume != S.pushedVol || a.muted != S.pushedMute) {   // the sound controls are shared with the other modes
@@ -299,13 +462,13 @@ void tick(App& a) {
 }
 
 void tab(App& a) {
-    load();
-    subNav("airv", S.view, {"Channels", "Activity", "Spectrum"});
-    if (S.view == 0) channelView(a); else if (S.view == 1) activityView(a); else spectrumView(a);
+    load(a);
+    subNav("airv", S.view, {"Channels", tr("On the air"), "Activity", "Spectrum"});
+    if (S.view == 0) channelView(a); else if (S.view == 1) seenView(a); else if (S.view == 2) activityView(a); else spectrumView(a);
 }
 
 void list(App& a) {
-    load();
+    load(a);
     if (!ImGui::BeginTable("##airl", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingFixedFit, ImVec2(0, ImGui::GetContentRegionAvail().y))) return;
     ImGui::TableSetupColumn("Channel"); ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthStretch);
     for (size_t i = 0; i < S.chans.size(); i++) {

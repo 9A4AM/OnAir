@@ -1593,3 +1593,64 @@ testing	testavimas
 idea	idėja
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Ačiū visiems, kurie atsiuntė pataisymų, pranešė apie klaidas, pasidalijo įrašais, vertė ar siūlė idėjų. Autorius yra Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Norite, kad pakeistume ar pašalintume jūsų vardą? Parašykite mums Discord arba sukurkite issue.
+# airband: airport search, band watch
+Airport data updated: %s	Oro uostų duomenys atnaujinti: %s
+Airport data not updated: %s	Oro uostų duomenys neatnaujinti: %s
+Memory set %s: %d added, %d already there.	Atminties rinkinys %s: pridėta %d, jau buvo %d.
+Airports	Oro uostai
+Airport	Oro uostas
+EGLL, LHR, Heathrow, Vilnius ...	EYVI, VNO, Vilnius, Kaunas ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	ICAO ar IATA kodas, pavadinimas ar miestas. Pasirinkite oro uostą – visi jo dažniai bus įkelti kaip kanalai.
+Near me	Šalia manęs
+Airports within the radius of your station position (Settings), nearest first.	Oro uostai nurodytu atstumu nuo jūsų stoties vietos (Nustatymai), artimiausi pirmi.
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	Pirmiausia nustatykite stoties vietą (Nustatymai arba ADS-B žemėlapis) – tada bus parodyti aplinkiniai oro uostai.
+Your station position is not set.	Jūsų stoties vieta nenustatyta.
+Type a code, a name or a city.	Įveskite kodą, pavadinimą ar miestą.
+No airport found.	Oro uostų nerasta.
+Code	Kodas
+Place	Vieta
+km	km
+Freq.	Daž.
+This airport has no frequency in the airband in the table.	Šio oro uosto lentelėje nėra aviacijos juostos dažnių.
+%d more outside the airband (not received here).	Dar %d už aviacijos juostos ribų (čia nepriimami).
+Load channels	Įkelti kanalus
+Loaded %s	%s įkeltas
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	Pakeičia kanalų sąrašą šio oro uosto dažniais ir suderina radiją, kad tilptų kiek leidžia atrankos dažnis.
+Add to list	Pridėti į sąrašą
+Added %s	%s pridėtas
+Save as memory set	Išsaugoti kaip atminties rinkinį
+One memory per channel, in the group of this airport (Memory panel).	Po vieną atmintį kanalui, šio oro uosto grupėje (Atminties skydelis).
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	Dažniai pasiskirstę per %.1f MHz; radijas vienu metu priima %.1f MHz, todėl reikia %zu užfiksavimų. Suderinkite kiekvieną:
+Imported table:	Importuota lentelė:
+Built-in table (OurAirports, public domain):	Įmontuota lentelė (OurAirports, viešasis turtas):
+Community data: can be out of date. Never use it for navigation.	Bendruomenės duomenys: gali būti pasenę. Niekada nenaudokite navigacijai.
+Downloading ...	Atsisiunčiama ...
+Refresh from the web	Atnaujinti iš interneto
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	Tik paspaudus atsisiunčia airports.csv ir airport-frequencies.csv iš https://davidmegginson.github.io/ourairports-data/ (apie 14 MB), niekada pati. Parodomas gautų failų SHA-256.
+Import CSV ...	Importuoti CSV ...
+Imported: %s	Importuota: %s
+Import failed: %s	Importuoti nepavyko: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	Pasirinkite airports.csv, tada airport-frequencies.csv (OurAirports formatas).
+Back to built-in	Grįžti prie įmontuotos
+Using the built-in table again.	Vėl naudojama įmontuota lentelė.
+Hold	Laikyti
+Stay on the channel the scan stopped on, also after it has gone quiet.	Lieka kanale, ties kuriuo sustojo skenavimas, net kai jis nutyla.
+Noise remover (neural)	Triukšmo šalinimas (neuroninis)
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d iš %zu kanalų yra už to, ką radijas dabar priima. Suderinkite užfiksavimą:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	Nė vienas iš %zu kanalų nepatenka į tai, ką radijas dabar priima. Suderinkite užfiksavimą:
+On air: %s	Eteryje: %s
+No signal: every channel is quiet.	Signalo nėra: visi kanalai tylūs.
+no signal	nėra signalo
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	Šio kanalo triukšmų slopintuvas (nešlys/triukšmas, dB). Skliausteliuose – galioja bendras. Tempkite norėdami nustatyti; dešinysis spustelėjimas grąžina bendrą.
+tune here	derinti čia
+Back to hearing every open channel.	Grįžti prie visų atvirų kanalų klausymo.
+Hear only this channel (solo), whatever else is on the air.	Girdėti tik šį kanalą (solo), kad ir kas vyktų kitur.
+Only active	Tik aktyvūs
+Show only the channels that are open or were heard in the last 30 seconds.	Rodo tik atvirus arba per pastarąsias 30 sekundžių girdėtus kanalus.
+%d quiet channels hidden	%d tylių kanalų paslėpta
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	Kanalų dar nėra: aukščiau ieškokite oro uosto, pridėkite dažnį arba pažiūrėkite, kas eteryje (skirtukas Eteryje).
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	Visame užfiksavime eteryje esantys nešliai, kurių nėra jūsų sąraše, aktyviausi pirmi. Pridėkite tuos, kuriuos norite girdėti.
+Start the receiver to see what is on the air.	Paleiskite imtuvą, kad pamatytumėte, kas eteryje.
+Add all	Pridėti visus
+Nothing yet: carriers show here a moment after they start transmitting.	Kol kas nieko: nešliai čia atsiranda trumpai po to, kai pradeda transliuoti.
+The radio's tuning error is not measured yet: names may be off by a channel.	Radijo derinimo paklaida dar neišmatuota: pavadinimai gali skirtis vienu kanalu.

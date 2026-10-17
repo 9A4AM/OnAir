@@ -1575,3 +1575,64 @@ testing	testes
 idea	ideia
 Thank you to everyone who sent fixes, reported bugs, shared recordings, translated or suggested ideas. The author is Kristijonas Adomaitis.	Obrigado a todos que enviaram correções, relataram bugs, compartilharam gravações, traduziram ou sugeriram ideias. O autor é Kristijonas Adomaitis.
 Want your name changed or removed? Tell us on Discord or open an issue.	Quer que seu nome seja alterado ou removido? Avise-nos no Discord ou abra uma issue.
+# airband: airport search, band watch
+Airport data updated: %s	Dados de aeroportos atualizados: %s
+Airport data not updated: %s	Dados de aeroportos não atualizados: %s
+Memory set %s: %d added, %d already there.	Conjunto de memórias %s: %d adicionadas, %d já existiam.
+Airports	Aeroportos
+Airport	Aeroporto
+EGLL, LHR, Heathrow, Vilnius ...	LPPT, LIS, Lisboa, Vilnius ...
+ICAO or IATA code, name or city. Pick an airport to load all its frequencies as channels.	Código ICAO ou IATA, nome ou cidade. Escolha um aeroporto para carregar todas as suas frequências como canais.
+Near me	Perto de mim
+Airports within the radius of your station position (Settings), nearest first.	Aeroportos dentro do raio da posição da sua estação (Definições), os mais próximos primeiro.
+Set your station position first (Settings or the ADS-B map): then the airports around you are listed.	Defina primeiro a posição da sua estação (Definições ou mapa ADS-B): depois os aeroportos à volta são listados.
+Your station position is not set.	A posição da sua estação não está definida.
+Type a code, a name or a city.	Escreva um código, um nome ou uma cidade.
+No airport found.	Nenhum aeroporto encontrado.
+Code	Código
+Place	Local
+km	km
+Freq.	Freq.
+This airport has no frequency in the airband in the table.	Este aeroporto não tem frequências na banda aeronáutica na tabela.
+%d more outside the airband (not received here).	mais %d fora da banda aeronáutica (não recebidas aqui).
+Load channels	Carregar canais
+Loaded %s	%s carregado
+Replace the channel list with this airport's frequencies and tune the radio to hold as many as the sample rate allows.	Substitui a lista de canais pelas frequências deste aeroporto e sintoniza o rádio para abranger quantas a taxa de amostragem permitir.
+Add to list	Adicionar à lista
+Added %s	%s adicionado
+Save as memory set	Guardar como conjunto de memórias
+One memory per channel, in the group of this airport (Memory panel).	Uma memória por canal, no grupo deste aeroporto (painel Memória).
+The frequencies spread over %.1f MHz; the radio takes in %.1f MHz at once, so they come in %zu captures. Tune to each:	As frequências estendem-se por %.1f MHz; o rádio abrange %.1f MHz de cada vez, por isso são %zu capturas. Sintonize cada uma:
+Imported table:	Tabela importada:
+Built-in table (OurAirports, public domain):	Tabela incorporada (OurAirports, domínio público):
+Community data: can be out of date. Never use it for navigation.	Dados da comunidade: podem estar desatualizados. Nunca os use para navegação.
+Downloading ...	A transferir ...
+Refresh from the web	Atualizar da web
+Downloads airports.csv and airport-frequencies.csv from https://davidmegginson.github.io/ourairports-data/ (about 14 MB) when you click, never by itself. The SHA-256 of what came is shown.	Transfere airports.csv e airport-frequencies.csv de https://davidmegginson.github.io/ourairports-data/ (cerca de 14 MB) só ao clicar, nunca sozinho. O SHA-256 do que chegou é mostrado.
+Import CSV ...	Importar CSV ...
+Imported: %s	Importado: %s
+Import failed: %s	A importação falhou: %s
+Pick airports.csv, then airport-frequencies.csv (OurAirports format).	Escolha airports.csv e depois airport-frequencies.csv (formato OurAirports).
+Back to built-in	Voltar à incorporada
+Using the built-in table again.	A tabela incorporada é usada novamente.
+Hold	Manter
+Stay on the channel the scan stopped on, also after it has gone quiet.	Fica no canal onde a varredura parou, mesmo depois de ficar em silêncio.
+Noise remover (neural)	Removedor de ruído (neural)
+%d of %zu channels are outside what the radio takes in now. Tune to a capture:	%d de %zu canais estão fora do que o rádio abrange agora. Sintonize uma captura:
+None of the %zu channels is inside what the radio takes in now. Tune to a capture:	Nenhum dos %zu canais está dentro do que o rádio abrange agora. Sintonize uma captura:
+On air: %s	No ar: %s
+No signal: every channel is quiet.	Sem sinal: todos os canais estão em silêncio.
+no signal	sem sinal
+This channel's squelch (carrier to noise, dB). In brackets: the global squelch applies. Drag to set; right-click to go back to the global one.	Squelch deste canal (portadora/ruído, dB). Entre parênteses: aplica-se o global. Arraste para definir; clique direito para voltar ao global.
+tune here	sintonizar aqui
+Back to hearing every open channel.	Voltar a ouvir todos os canais abertos.
+Hear only this channel (solo), whatever else is on the air.	Ouvir apenas este canal (solo), aconteça o que acontecer nos outros.
+Only active	Só ativos
+Show only the channels that are open or were heard in the last 30 seconds.	Mostra apenas os canais abertos ou ouvidos nos últimos 30 segundos.
+%d quiet channels hidden	%d canais silenciosos ocultos
+No channel yet: search an airport above, add a frequency, or see what is on the air (On the air tab).	Ainda sem canais: procure um aeroporto acima, adicione uma frequência ou veja o que está no ar (separador No ar).
+Carriers on the air in the whole capture that are not in your list, strongest activity first. Add the ones you want to hear.	Portadoras no ar em toda a captura que não estão na sua lista, as mais ativas primeiro. Adicione as que quer ouvir.
+Start the receiver to see what is on the air.	Inicie o recetor para ver o que está no ar.
+Add all	Adicionar todos
+Nothing yet: carriers show here a moment after they start transmitting.	Ainda nada: as portadoras aparecem aqui pouco depois de começarem a transmitir.
+The radio's tuning error is not measured yet: names may be off by a channel.	O erro de sintonia do rádio ainda não foi medido: os nomes podem estar errados por um canal.
