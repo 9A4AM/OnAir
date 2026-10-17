@@ -148,6 +148,11 @@ void fmHistory(App& a) {
     }
     { static int lastMono = -1; const int mono = a.fmMono ? 1 : 0; if (a.fmMode && (mono != lastMono || (a.engine.running() && !wasRunning))) { a.engine.fm().setMono(a.fmMono); lastMono = mono; } }
     if (a.fmMode && (a.fmDeemph != lastDe || (a.engine.running() && !wasRunning))) { a.engine.fm().setDeemphasis(a.fmDeemph); lastDe = a.fmDeemph; }
+    {   // the RDS / RBDS choice follows the tuned frequency under Auto: pushed when the setting or the tenth of a MHz changes
+        static long lastRegion = -1;
+        const long key = a.fmRegion * 100000L + std::lround(a.freqMhz * 10);
+        if (a.fmMode && (key != lastRegion || (a.engine.running() && !wasRunning))) { a.engine.fm().setRdsRegion(a.fmRegion, a.freqMhz); lastRegion = key; }
+    }
     if (a.fmChanKhz != lastW) { a.engine.fm().setChannelWidth(a.fmChanKhz * 1e3); lastW = a.fmChanKhz; }   // the receiver keeps it between starts
     wasRunning = a.fmMode && a.engine.running();
     if (a.rx.standard != 6 || a.rx.seq == lastSeq) return;
@@ -318,11 +323,23 @@ void fmRadioPanel(App& a) {
         row(Ic::Antenna, "Frequency", "%.1f MHz", a.freqMhz);
         row(Ic::Radio, "Station", "%s", live && !fmTrim(fm.psName).empty() ? fmTrim(fm.psName).c_str() : "-");
         row(Ic::Layers, "Programme", "%s", live && !fm.ptyText.empty() && fm.ptyText != "None" ? fm.ptyText.c_str() : "-");
+        if (live && fm.rbds && !fm.callSign.empty()) row(Ic::Radio, tr("Call letters"), "%s", fm.callSign.c_str());
         row(Ic::Speaker, "Sound", "%s", !live ? "-" : fm.stereo ? "stereo" : "mono");
         char rds[48] = "-";
         if (live && fm.rdsSync) snprintf(rds, sizeof rds, "%.0f %% blocks ok", fm.rdsBlockOkPct);
         row(Ic::Wave, "RDS", "%s", rds);
         row(Ic::Warning, "Traffic", "%s", !live ? "-" : fm.trafficAlert ? "ANNOUNCEMENT" : fm.trafficProgram ? "station (TP)" : "no");
+        ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(Ic::Wave, iconDim(), 0.9f); ImGui::SameLine(0, 5 * gUi); ImGui::TextDisabled("%s", tr("RDS standard")); ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-1);
+        {   // the programme type names and call letters differ between RDS and the US RBDS
+            static const char* const names[3] = {N_("Auto (RBDS on odd tenths)"), N_("RDS (Europe)"), N_("RBDS (US)")};
+            const std::string cur = fitCaption(tr(names[a.fmRegion]), ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - 2 * ImGui::GetStyle().FramePadding.x);
+            if (ImGui::BeginCombo("##fmreg", cur.c_str())) {
+                for (int i = 0; i < 3; i++) if (ImGui::Selectable(tr(names[i]), a.fmRegion == i)) { a.fmRegion = i; savePrefs(a); }
+                ImGui::EndCombo();
+            }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("RDS and the US RBDS share the data but name the programme types differently, and RBDS stations send call letters. Auto uses RBDS on the US channel raster (87.9, 88.1 ... 107.9 MHz); Europe has stations on those channels too, so pick RDS (Europe) there."));
+        }
         ImGui::TableNextRow(); ImGui::TableNextColumn(); iconInline(Ic::Speaker, iconDim(), 0.9f); ImGui::SameLine(0, 5 * gUi); ImGui::TextDisabled("Stereo"); ImGui::TableNextColumn();
         ImGui::SetNextItemWidth(-1);
         if (ImGui::BeginCombo("##fmmono", a.fmMono ? "Mono" : "Auto (stereo when the pilot is locked)")) {

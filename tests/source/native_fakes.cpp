@@ -100,7 +100,13 @@ EXPORT int airspy_get_samplerates(as_dev*, uint32_t* b, uint32_t len) {   // air
     b[0] = mini ? 6000000 : 10000000; if (len > 1) b[1] = mini ? 3000000 : 2500000; return 0;
 }
 EXPORT int airspy_version_string_read(as_dev*, char* v, uint8_t len) { snprintf(v, len, "%s", fake_state("airspy.mini") == 1 ? "AirSpy MINI v1.0.0-rc10-6-g4008185 2020-05-08" : "AirSpy NOS v1.0.0-rc10-6-g4008185 2020-05-08"); return 0; }
-EXPORT int airspy_set_samplerate(as_dev*, uint32_t r) { rec("airspy.rate", r); return 0; }
+// airspy.refuse10 = 1: the firmware does not take the unlisted 10 Msps of a Mini; airspy.refuseAll = 1: it takes no rate (-2 = AIRSPY_ERROR_INVALID_PARAM)
+EXPORT int airspy_set_samplerate(as_dev*, uint32_t r) {
+    rec("airspy.rateCalls", std::max(0.0, fake_state("airspy.rateCalls")) + 1);
+    if (fake_state("airspy.refuseAll") == 1 || (fake_state("airspy.refuse10") == 1 && r == 10000000)) return -2;
+    rec("airspy.rate", r); return 0;
+}
+EXPORT const char* airspy_error_name(int e) { return e == -2 ? "AIRSPY_ERROR_INVALID_PARAM" : "AIRSPY_ERROR_OTHER"; }
 EXPORT int airspy_set_sample_type(as_dev*, int t) { rec("airspy.type", t); return 0; }
 EXPORT int airspy_set_freq(as_dev*, uint32_t f) { rec("airspy.freq", f); return 0; }
 EXPORT int airspy_set_linearity_gain(as_dev*, uint8_t g) { rec("airspy.gain", g); rec("airspy.table", 0); return 0; }

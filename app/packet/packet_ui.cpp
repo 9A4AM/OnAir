@@ -17,6 +17,7 @@ struct State {
     adsbmap::View map;
     bool mapFollow = true;           // the map fits the stations until the user drags it
     bool logScroll = true;
+    int pushedNarrow = -1;
     bool listen = false; int pushedListen = -1; float pushedVol = -1; int pushedMute = -1;
 };
 State S;
@@ -284,6 +285,7 @@ void tick(App& a) {
     loadState();
     if (!a.engine.running()) return;
     dect2::PacketReceiver& r = a.engine.packet();
+    if ((int)a.packetNarrow != S.pushedNarrow) { r.setNarrowChannel(a.packetNarrow); S.pushedNarrow = a.packetNarrow; }
     if ((int)S.listen != S.pushedListen) { r.setListen(S.listen); S.pushedListen = S.listen; }
     if (a.volume != S.pushedVol || (int)a.muted != S.pushedMute) {
         r.setVolume(a.volume); r.setMuted(a.muted);
@@ -296,6 +298,15 @@ void tab(App& a) {
     lamps(a);
     flowNext(10 * gUi);
     listenControls(a, S.listen, "packetListen", "pkt", "Hear the channel: the demodulated audio, the AFSK tones of 1200 baud packet (1200 / 2200 Hz); decoding is the same either way");
+    ImGui::TextDisabled("%s", tr("Channel")); ImGui::SameLine(0, 5 * gUi);
+    ImGui::SetNextItemWidth(80 * gUi);
+    if (ImGui::BeginCombo("##pktbw", a.packetNarrow ? tr("12.5 kHz") : tr("25 kHz"))) {
+        if (ImGui::Selectable(tr("25 kHz"), !a.packetNarrow)) { a.packetNarrow = false; savePrefs(a); }
+        if (ImGui::Selectable(tr("12.5 kHz"), a.packetNarrow)) { a.packetNarrow = true; savePrefs(a); }
+        ImGui::EndCombo();
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tr("Receive filter width. 12.5 kHz cuts a neighbouring channel better (often best for APRS) but needs the signal on the channel centre; 25 kHz is the wider, more forgiving filter."));
+    flowNext(10 * gUi);
     subNav("pktv", S.view, {"Stations", "Map", "Packets"});
     if (S.view == 2) { packetLog(a); return; }
     if (S.view == 1) { mapView(a, ImGui::GetContentRegionAvail()); return; }

@@ -718,6 +718,39 @@ static void radioSettingsChecks(const char* dir, const char* ext) {
                 } else CHECK(false, "Airspy Mini start: %s", e.c_str());
             }
         }
+        {   // the rate list logic of a Mini, by the requested rate and the opt-in: the smallest listed rate that is fast enough, 10 Msps only when opted in
+            struct Case { double want; bool on; double expect; bool note; } cases[] = {
+                {2.5e6, false, 3e6, false}, {3e6, false, 3e6, false}, {4e6, false, 6e6, false}, {6e6, false, 6e6, false},
+                {8e6, false, 6e6, true}, {10e6, false, 6e6, true},          // not listed: the fastest listed one, and the message says how to get 10
+                {4e6, true, 6e6, false}, {6.5e6, true, 10e6, false}, {10e6, true, 10e6, false}};
+            for (const Case& c : cases) {
+                TuneSettings t; t.centerHz = 522e6; t.sampleRate = c.want; t.gainDb = 10; t.bandwidthMhz = 8;
+                if (c.on) t.radio["mini10"] = "1";
+                auto ms = makeSource(m);
+                e.clear();
+                const bool ok = ms->start(t, ring, e);
+                CHECK(ok && st("airspy.rate") == c.expect, "Airspy Mini asked %.1f Msps, opt-in %d: rate %.0f (wanted %.0f) %s", c.want / 1e6, (int)c.on, st("airspy.rate"), c.expect, e.c_str());
+                CHECK((e.find("10 Msps") != std::string::npos) == c.note, "Airspy Mini asked %.1f Msps, opt-in %d: message '%s'", c.want / 1e6, (int)c.on, e.c_str());
+                if (ok) ms->stop();
+            }
+            // the firmware refuses the unlisted rate: the library's error is reported, the radio runs at the fastest listed rate
+            set("airspy.refuse10", 1);
+            TuneSettings t; t.centerHz = 522e6; t.sampleRate = 10e6; t.gainDb = 10; t.bandwidthMhz = 8; t.radio["mini10"] = "1";
+            auto ms = makeSource(m);
+            e.clear();
+            const bool ok = ms->start(t, ring, e);
+            CHECK(ok && st("airspy.rate") == 6e6, "Airspy Mini 10 Msps refused: rate %.0f", st("airspy.rate"));
+            CHECK(e.find("refused 10 Msps") != std::string::npos && e.find("-2") != std::string::npos && e.find("AIRSPY_ERROR_INVALID_PARAM") != std::string::npos && e.find("6 Msps") != std::string::npos,
+                  "Airspy Mini refusal message: '%s'", e.c_str());
+            if (ok) ms->stop();
+            // a rate the radio lists that fails is a failed start with the same clear message, not a silent one
+            set("airspy.refuse10", 0); set("airspy.refuseAll", 1);
+            t.sampleRate = 6e6; t.radio.clear();
+            auto ms2 = makeSource(m);
+            e.clear();
+            CHECK(!ms2->start(t, ring, e) && e.find("refused 6 Msps") != std::string::npos && e.find("-2") != std::string::npos, "Airspy listed rate refused: '%s'", e.c_str());
+            set("airspy.refuseAll", 0);
+        }
         set("airspy.mini", 0);
         (void)first("airspy");
     }

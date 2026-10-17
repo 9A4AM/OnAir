@@ -20,6 +20,8 @@ public:
 
     void configure(double inputRateHz);
     void setWideInput(bool on);                          // the input is one carrier at 192 ksps from the whole-span bank (accepted below the radio's minimum rate)
+    void setNarrowChannel(bool on);                      // channel filter width: false 25 kHz (default), true 12.5 kHz (rejects a neighbouring channel better; the signal must be centred)
+    bool narrowChannel() const;
     void setSignalOffset(double hz);                     // where the user's frequency sits relative to 0 Hz in the input
     bool ready() const;                                  // false when the input rate is too low for this mode
     void reset();                                        // after a retune: forget the signal (the frames and stations stay: clearResults)

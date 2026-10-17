@@ -91,6 +91,7 @@ struct PagerReceiver::Impl {
     std::atomic<bool> resetReq{true};
     bool wideInput = false;                // setWideInput(): a channelised carrier, not a radio capture
     std::atomic<int> protoMask{3};        // setProtocols(): 1 POCSAG, 2 FLEX
+    std::atomic<bool> narrow{false};      // setNarrowChannel(): the channel filter of a 12.5 kHz channel, not 25 kHz
     std::atomic<int> pocsagBaudMask{7};   // setPocsagBauds(): 1 512, 2 1200, 4 2400 bd
 
     // ---- receiver thread
@@ -201,7 +202,10 @@ struct PagerReceiver::Impl {
             rsPass = std::fabs(rr - kMidRate) < 0.01;
             built = rsPass || rs.configure(rr, kMidRate);
             if (!rsPass) rs.reset();
-            fin.design(dmr::lowpassTaps(10000.0, 14000.0, kMidRate, 60, 9), 2);
+            // 25 kHz channel: +-10 kHz. 12.5 kHz channel: +-6.5 kHz (the pager deviation is 4.5 kHz, so the signal fits and a neighbour
+            // 12.5 kHz away, whose nearer edge is at 6.5 kHz, is cut hard instead of reaching the discriminator)
+            if (narrow.load()) fin.design(dmr::lowpassTaps(6500.0, 9500.0, kMidRate, 60, 9), 2);
+            else fin.design(dmr::lowpassTaps(10000.0, 14000.0, kMidRate, 60, 9), 2);
             design();
         }
         (void)off;
@@ -706,6 +710,11 @@ void PagerReceiver::setProtocols(int mask) { p_->protoMask = mask & 3; }
 int PagerReceiver::protocols() const { return p_->protoMask; }
 int PagerReceiver::pocsagBauds() const { return p_->pocsagBaudMask; }
 void PagerReceiver::setWideInput(bool on) { std::lock_guard<std::mutex> lk(p_->mu); p_->wideInput = on; p_->resetReq = true; }
+void PagerReceiver::setNarrowChannel(bool on) {
+    std::lock_guard<std::mutex> lk(p_->mu);
+    if (p_->narrow.exchange(on) != on) p_->resetReq = true;   // the filter is rebuilt by the receiver thread
+}
+bool PagerReceiver::narrowChannel() const { return p_->narrow; }
 void PagerReceiver::setPocsagBauds(int mask) { p_->pocsagBaudMask = mask & 7; }
 void PagerReceiver::setLogCallback(std::function<void(const std::string&)> cb) { std::lock_guard<std::mutex> lk(p_->mu); p_->log = std::move(cb); }
 

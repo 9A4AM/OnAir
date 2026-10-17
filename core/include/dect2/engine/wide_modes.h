@@ -31,6 +31,7 @@ public:
     // The radio's centre frequency: carriers that have gone keep their absolute frequency in the logs over a retune (any thread)
     void setCenterHz(double hz);
     void setPagerOptions(int protocols, int pocsagBauds);   // the single receiver's POCSAG / FLEX and baud selection, for the carrier receivers
+    void setNarrowChannels(bool pager, bool packet);        // 12.5 kHz channel filter in the pager / packet carrier receivers (25 kHz carrier spacing stays)
     size_t liveCount(int stdMode) const;
     std::vector<double> liveHz(int stdMode) const;
     void setLogCallback(std::function<void(const std::string&)> cb);
